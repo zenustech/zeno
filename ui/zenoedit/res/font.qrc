@@ -1,0 +1,7 @@
+<RCC>
+  <qresource prefix="/">
+    <file>font/HarmonyOS_Sans/HarmonyOS_Sans_Black.ttf</file>
+	<file>font/HarmonyOS_Sans/HarmonyOS_Sans_Bold.ttf</file>
+	<file>font/HarmonyOS_Sans/HarmonyOS_Sans_Regular.ttf</file>
+  </qresource>
+</RCC>

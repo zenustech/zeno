@@ -1,6 +1,6 @@
 #ifdef ZENO_BENCHMARKING
 #include <zeno/utils/Timer.h>
-#include <zeno/utils/format.h>
+#include <zeno/utils/cformat.h>
 #include <algorithm>
 #include <cstdlib>
 #include <cstdio>
@@ -59,7 +59,7 @@ std::string Timer::getLog() {
 
     res += "   avg   |   min   |   max   |  total  | cnt | tag\n";
     for (auto const &[tag, stat]: sortstats) {
-        res += format("%9d|%9d|%9d|%9d|%5d| %s\n",
+        res += cformat("%9d|%9d|%9d|%9d|%5d| %s\n",
                 stat.total_us / stat.count_rec,
                 stat.min_us, stat.max_us, stat.total_us,
                 stat.count_rec, tag.c_str());
@@ -71,7 +71,7 @@ namespace {
     static struct TimerAtexitHelper {
         ~TimerAtexitHelper() {
             auto log = Timer::getLog();
-            if (auto env = getenv("ZEN_TIMER"); env) {
+            if (auto env = getenv("ZENO_TIMER"); env) {
                 FILE *fp = fopen(env, "w");
                 fprintf(fp, "%s", log.c_str());
                 fclose(fp);

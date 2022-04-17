@@ -29,6 +29,7 @@ zeno_output.txt
 .*.un~
 tags
 *~
+.vim_localrc
 
 # ide files
 .vs
@@ -60,6 +61,9 @@ CMakeSettings.json
 /k.zsg
 /z
 .vim_localrc
+
+Debug/
+Release/
 
 # zhxx files
 assets/smoke

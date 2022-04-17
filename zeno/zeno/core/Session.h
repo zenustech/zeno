@@ -8,8 +8,8 @@
 
 namespace zeno {
 
+struct Graph;
 struct Session;
-struct Scene;
 struct INode;
 
 struct INodeClass {
@@ -34,16 +34,26 @@ struct ImplNodeClass : INodeClass {
 };
 
 struct IObject;
+struct GlobalState;
+struct GlobalComm;
+struct GlobalStatus;
 
 struct Session {
     std::map<std::string, std::unique_ptr<INodeClass>> nodeClasses;
-    std::unique_ptr<Scene> defaultScene;
+
+    std::unique_ptr<GlobalState> const globalState;
+    std::unique_ptr<GlobalComm> const globalComm;
+    std::unique_ptr<GlobalStatus> const globalStatus;
 
     ZENO_API Session();
     ZENO_API ~Session();
 
-    ZENO_API Scene &getDefaultScene();
-    ZENO_API std::unique_ptr<Scene> createScene();
+    Session(Session const &) = delete;
+    Session &operator=(Session const &) = delete;
+    Session(Session &&) = delete;
+    Session &operator=(Session &&) = delete;
+
+    ZENO_API std::unique_ptr<Graph> createGraph();
     ZENO_API std::string dumpDescriptors() const;
     ZENO_API void defNodeClass(std::string const &id, std::unique_ptr<INodeClass> &&cls);
     ZENO_API void defOverloadNodeClass(std::string const &id, std::vector<std::string> const &types,

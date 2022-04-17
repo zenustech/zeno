@@ -10,7 +10,7 @@ find_package(TBB CONFIG REQUIRED COMPONENTS tbb tbbmalloc)
 find_package(IlmBase REQUIRED COMPONENTS Half REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(OpenVDB REQUIRED)
-add_library(zeno_Euler SHARED nodesys.cpp)
+add_library(zeno_Euler OBJECT nodesys.cpp)
 
 #simd compiler flags
 if (WIN32)
@@ -36,7 +36,6 @@ endif()
 target_link_libraries(zeno_Euler PRIVATE OpenVDB::openvdb )
 target_link_libraries(zeno_Euler PRIVATE Eigen3::Eigen)
 
-target_link_libraries(zeno_Euler PUBLIC zeno)
-target_link_libraries(zeno_Euler PRIVATE zeno_nodep)
+target_link_libraries(zeno_Euler PUBLIC zenocore)
 target_include_directories(zeno_Euler PRIVATE ../oldzenbase/include)
 target_include_directories(zeno_Euler PRIVATE ../zenvdb/include)

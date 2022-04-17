@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="52px" height="42px" viewBox="0 0 52 42" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>MUTE_light</title>
+    <g id="ZENO@2Prototype-NodeEditor" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="SimpleNode" transform="translate(-1427.000000, -72.000000)" fill="#523DC4">
+            <g id="Group" transform="translate(854.000000, 72.000000)">
+                <g id="MUTE_light" transform="translate(573.959860, 0.000000)">
+                    <polygon id="Rectangle" opacity="0.104422433" points="12.0802803 -1.51545443e-14 50.0802803 -3.20646287e-14 38 42 -1.7334319e-14 42"></polygon>
+                    <path d="M39.15,38 L38,42 L0,42 L1.15,38 L39.15,38 Z" id="Combined-Shape"></path>
+                    <polygon id="Path" fill-rule="nonzero" points="25.0401403 19 25.0401403 15 27.0401403 15 33.0401403 21 27.0401403 27 25.0401403 27 25.0401403 23 17.0401401 23 17.04014 19"></polygon>
+                </g>
+            </g>
+        </g>
+    </g>
+</svg>

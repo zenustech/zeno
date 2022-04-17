@@ -21,12 +21,16 @@ decltype(auto) boolean_switch(bool b, Func &&func) {
     return std::visit(std::forward<Func>(func), boolean_variant(b));
 }
 
+struct index_variant_monostate {
+    static inline constexpr size_t value = static_cast<size_t>(-1);
+};
+
 namespace index_variant_details {
     template <class Ret, bool HasMono, std::size_t I, std::size_t N>
     Ret helper_impl(std::size_t i) {
         if constexpr (I >= N) {
             if constexpr (HasMono) {
-                return std::monostate{};
+                return index_variant_monostate{};
             } else {
                 throw std::bad_variant_access{};
             }
@@ -42,7 +46,7 @@ namespace index_variant_details {
     template <std::size_t N, bool HasMono, std::size_t ...Is>
     auto helper_call(std::size_t i, std::index_sequence<Is...>) {
         using Ret = std::conditional_t<HasMono
-            , std::variant<std::monostate, std::integral_constant<std::size_t, Is>...>
+            , std::variant<index_variant_monostate, std::integral_constant<std::size_t, Is>...>
             , std::variant<std::integral_constant<std::size_t, Is>...>
             >;
         return helper_impl<Ret, HasMono, 0, N>(i);

@@ -164,6 +164,7 @@ ZENO_API std::string EmissionPass::determineExpr(IObject *object) const {
     } else if (auto tree = dynamic_cast<ShaderObject *>(object)) {
         return "tmp" + std::to_string(varmap.at(tree->node.get()));
     }
+    return {};
 }
 
 ZENO_API void EmissionPass::emitCode(std::string const &line) {

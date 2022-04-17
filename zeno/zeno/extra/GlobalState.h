@@ -2,11 +2,15 @@
 
 #include <zeno/utils/api.h>
 #include <string>
+#include <memory>
+#include <vector>
 
 namespace zeno {
 
+struct IObject;
+
 struct GlobalState {
-    std::string iopath = "/tmp/zenio";
+    bool working = false;
     int frameid = 0;
     int substepid = 0;
     float frame_time = 0.03f;
@@ -32,14 +36,14 @@ struct GlobalState {
         return substepid == 0;
     }
 
+    ZENO_API GlobalState();
+    ZENO_API ~GlobalState();
+
     ZENO_API bool substepBegin();
     ZENO_API void substepEnd();
     ZENO_API void frameBegin();
     ZENO_API void frameEnd();
-    ZENO_API void setFrameid(int _frameid);
-    ZENO_API void setIOPath(std::string const &iopath_);
+    ZENO_API void clearState();
 };
-
-ZENO_API extern GlobalState state;
 
 }

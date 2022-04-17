@@ -1,7 +1,8 @@
 #pragma once
 
 #include <zeno/utils/vec.h>
-#include <zeno/utils/Exception.h>
+#include <zeno/utils/Error.h>
+#include <zeno/utils/type_traits.h>
 #include <variant>
 #include <vector>
 #include <map>
@@ -16,7 +17,10 @@ struct AttrVector {
         , std::vector<vec3i>
         , std::vector<int>
         >;
-    using ValueType = ValT;
+
+    using value_type = ValT;
+    using iterator = typename std::vector<ValT>::iterator;
+    using const_iterator = typename std::vector<ValT>::const_iterator;
 
     std::vector<ValT> values;
     std::map<std::string, VariantType> attrs;
@@ -209,7 +213,7 @@ struct AttrVector {
         //_ensure_update();
         auto it = attrs.find(name);
         if (it == attrs.end())
-            throw Exception("invalid primitive attribute name: `" + name + "`");
+            throw makeError<KeyError>(name, "attribute", "PrimitiveObject::attr");
         return it->second;
     }
 
@@ -217,7 +221,7 @@ struct AttrVector {
         //_ensure_update();
         auto it = attrs.find(name);
         if (it == attrs.end())
-            throw Exception("invalid primitive attribute name: `" + name + "`");
+            throw makeError<KeyError>(name, "attribute", "PrimitiveObject::attr");
         return it->second;
     }
 

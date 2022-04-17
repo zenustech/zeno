@@ -1,0 +1,83 @@
+#include <zeno/zeno.h>
+#include <zeno/extra/GlobalState.h>
+#include <zeno/extra/ISubgraphNode.h>
+
+namespace zeno {
+
+
+ZENO_API void ISubgraphNode::apply() {
+    auto subg = get_subgraph();
+
+    // VIEW subnodes only if subgraph is VIEW'ed
+    subg->isViewed = has_option("VIEW");
+
+    for (auto const &[key, obj]: inputs) {
+        subg->setGraphInput(key, obj);
+    }
+    subg->applyGraph();
+
+    for (auto &[key, obj]: subg->subOutputs) {
+        if (subg->isViewed && !subg->hasAnyView) {
+            getGlobalState()->addViewObject(obj);
+            subg->hasAnyView = true;
+        }
+        set_output(key, std::move(obj));
+    }
+
+    subg->subInputs.clear();
+    subg->subOutputs.clear();
+}
+
+ZENO_API ISubgraphNode::ISubgraphNode() = default;
+ZENO_API ISubgraphNode::~ISubgraphNode() = default;
+
+
+ZENO_API Graph *ISerialSubgraphNode::get_subgraph() {
+    if (!subg) {
+        subg = std::make_unique<Graph>();
+        subg->session = graph->session;
+        auto json = get_subgraph_json();
+        subg->loadGraph(json);
+    }
+    return subg.get();
+}
+
+ZENO_API ISerialSubgraphNode::ISerialSubgraphNode() = default;
+ZENO_API ISerialSubgraphNode::~ISerialSubgraphNode() = default;
+
+
+ZENO_API Graph *SubgraphNode::get_subgraph() {
+    return subgraph.get();
+}
+
+namespace {
+struct SubgraphNodeClass : INodeClass {
+    using INodeClass::INodeClass;
+
+    virtual ~SubgraphNodeClass() override = default;
+
+    virtual std::unique_ptr<INode> new_instance() const override {
+        return std::make_unique<SubgraphNode>();
+    }
+};
+}
+
+ZENO_API SubgraphNode::SubgraphNode() {
+    subgraph = std::make_unique<Graph>();
+    subgraph->subgraphNode = this;
+    subgraphNodeClass = std::make_unique<SubgraphNodeClass>(Descriptor{});
+    // TODO: finalize subgraphNodeClass later!
+    this->nodeClass = subgraphNodeClass.get();
+}
+
+ZENO_API SubgraphNode::~SubgraphNode() = default;
+
+/*ZENDEFNODE(SubgraphNode, {
+    {},
+    {},
+    {},
+    {"subgraph"},
+});*/
+
+
+}

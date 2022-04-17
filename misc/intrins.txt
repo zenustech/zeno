@@ -1,0 +1,15 @@
+xmmintrin SSE
+emmintrin SSE2
+pmmintrin SSE3
+tmmintrin SSSE3
+smmintrin SSE4.1
+nmmintrin SSE4.2
+immintrin AVX
+immintrin AVX2
+
+
+movelh   = a1 a2 b1 b2
+unpacklo = a1 b1 a2 b2
+movehl   = b3 b4 a3 a4
+unpackhi = a3 b3 a4 b4
+shuffle  = ai aj bk bl

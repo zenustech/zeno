@@ -2,6 +2,7 @@
 #include <zeno/extra/ShaderNode.h>
 #include <zeno/types/ShaderObject.h>
 #include <zeno/utils/string.h>
+#include <algorithm>
 
 namespace zeno {
 

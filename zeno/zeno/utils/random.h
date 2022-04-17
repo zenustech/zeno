@@ -21,7 +21,7 @@ static inline T frand(unsigned int i) {
 
 template <class T = float>
 static inline T frand() {
-#ifdef _WIN32
+#ifndef __linux__
     return (T)rand() / (T)RAND_MAX;
 #else
     return (T)drand48();
@@ -30,7 +30,7 @@ static inline T frand() {
 
 static inline void sfrand(unsigned long i) {
     srand(i);
-#ifndef _WIN32
+#ifdef __linux__
     srand48(i);
 #endif
 }

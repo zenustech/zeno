@@ -1,0 +1,125 @@
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>c57d13b4-07ff-43b3-8449-f467f947bd45</ProjectGuid>
+    <ProjectHome>.</ProjectHome>
+    <StartupFile>..\run.py</StartupFile>
+    <SearchPath>
+    </SearchPath>
+    <WorkingDirectory>..</WorkingDirectory>
+    <OutputPath>.</OutputPath>
+    <Name>zeno2qt</Name>
+    <RootNamespace>zeno2qt</RootNamespace>
+    <IsWindowsApplication>False</IsWindowsApplication>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+    <DebugSymbols>true</DebugSymbols>
+    <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+    <DebugSymbols>true</DebugSymbols>
+    <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="main.py" />
+    <Compile Include="system\dll.py" />
+    <Compile Include="system\fileio.py" />
+    <Compile Include="system\launch.py" />
+    <Compile Include="system\main.py" />
+    <Compile Include="system\run.py" />
+    <Compile Include="system\serial.py" />
+    <Compile Include="system\utils.py" />
+    <Compile Include="system\zpmio.py" />
+    <Compile Include="system\__init__.py" />
+    <Compile Include="system\__main__.py" />
+    <Compile Include="ui\editor\blackboard.py" />
+    <Compile Include="ui\editor\button.py" />
+    <Compile Include="ui\editor\color_picker_window.py" />
+    <Compile Include="ui\editor\curvemap.py" />
+    <Compile Include="ui\editor\curve_editor.py" />
+    <Compile Include="ui\editor\edge.py" />
+    <Compile Include="ui\editor\heatmap.py" />
+    <Compile Include="ui\editor\locale.py" />
+    <Compile Include="ui\editor\makedict.py" />
+    <Compile Include="ui\editor\makelist.py" />
+    <Compile Include="ui\editor\misc.py" />
+    <Compile Include="ui\editor\node.py" />
+    <Compile Include="ui\editor\param.py" />
+    <Compile Include="ui\editor\scene.py" />
+    <Compile Include="ui\editor\socket.py" />
+    <Compile Include="ui\editor\textarea.py" />
+    <Compile Include="ui\editor\window.py" />
+    <Compile Include="ui\editor\__init__.py" />
+    <Compile Include="ui\main.py" />
+    <Compile Include="ui\utils.py" />
+    <Compile Include="ui\visualize\camera_keyframe.py" />
+    <Compile Include="ui\visualize\dialog.py" />
+    <Compile Include="ui\visualize\timeline.py" />
+    <Compile Include="ui\visualize\viewport.py" />
+    <Compile Include="ui\visualize\zenvis.py" />
+    <Compile Include="ui\visualize\__init__.py" />
+    <Compile Include="ui\window.py" />
+    <Compile Include="ui\__init__.py" />
+    <Compile Include="ui\__main__.py" />
+    <Compile Include="utils.py" />
+    <Compile Include="__init__.py" />
+    <Compile Include="__main__.py" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="system\" />
+    <Folder Include="system\__pycache__\" />
+    <Folder Include="ui\" />
+    <Folder Include="ui\editor\" />
+    <Folder Include="ui\editor\__pycache__\" />
+    <Folder Include="ui\visualize\" />
+    <Folder Include="ui\visualize\__pycache__\" />
+    <Folder Include="ui\__pycache__\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="system\__pycache__\dll.cpython-39.pyc" />
+    <Content Include="system\__pycache__\fileio.cpython-39.pyc" />
+    <Content Include="system\__pycache__\launch.cpython-39.pyc" />
+    <Content Include="system\__pycache__\main.cpython-39.pyc" />
+    <Content Include="system\__pycache__\run.cpython-39.pyc" />
+    <Content Include="system\__pycache__\serial.cpython-39.pyc" />
+    <Content Include="system\__pycache__\utils.cpython-39.pyc" />
+    <Content Include="system\__pycache__\__init__.cpython-39.pyc" />
+    <Content Include="system\__pycache__\__main__.cpython-39.pyc" />
+    <Content Include="ui\editor\__pycache__\blackboard.cpython-39.pyc" />
+    <Content Include="ui\editor\__pycache__\button.cpython-39.pyc" />
+    <Content Include="ui\editor\__pycache__\curvemap.cpython-39.pyc" />
+    <Content Include="ui\editor\__pycache__\edge.cpython-39.pyc" />
+    <Content Include="ui\editor\__pycache__\heatmap.cpython-39.pyc" />
+    <Content Include="ui\editor\__pycache__\locale.cpython-39.pyc" />
+    <Content Include="ui\editor\__pycache__\makedict.cpython-39.pyc" />
+    <Content Include="ui\editor\__pycache__\makelist.cpython-39.pyc" />
+    <Content Include="ui\editor\__pycache__\misc.cpython-39.pyc" />
+    <Content Include="ui\editor\__pycache__\node.cpython-39.pyc" />
+    <Content Include="ui\editor\__pycache__\param.cpython-39.pyc" />
+    <Content Include="ui\editor\__pycache__\scene.cpython-39.pyc" />
+    <Content Include="ui\editor\__pycache__\socket.cpython-39.pyc" />
+    <Content Include="ui\editor\__pycache__\textarea.cpython-39.pyc" />
+    <Content Include="ui\editor\__pycache__\window.cpython-39.pyc" />
+    <Content Include="ui\editor\__pycache__\__init__.cpython-39.pyc" />
+    <Content Include="ui\visualize\__pycache__\camera_keyframe.cpython-39.pyc" />
+    <Content Include="ui\visualize\__pycache__\dialog.cpython-39.pyc" />
+    <Content Include="ui\visualize\__pycache__\timeline.cpython-39.pyc" />
+    <Content Include="ui\visualize\__pycache__\viewport.cpython-39.pyc" />
+    <Content Include="ui\visualize\__pycache__\zenvis.cpython-39.pyc" />
+    <Content Include="ui\visualize\__pycache__\__init__.cpython-39.pyc" />
+    <Content Include="ui\__pycache__\main.cpython-39.pyc" />
+    <Content Include="ui\__pycache__\utils.cpython-39.pyc" />
+    <Content Include="ui\__pycache__\window.cpython-39.pyc" />
+    <Content Include="ui\__pycache__\__init__.cpython-39.pyc" />
+  </ItemGroup>
+  <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
+  <!-- Uncomment the CoreCompile target to enable the Build command in
+       Visual Studio and specify your pre- and post-build commands in
+       the BeforeBuild and AfterBuild targets below. -->
+  <!--<Target Name="CoreCompile" />-->
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+</Project>

@@ -37,7 +37,7 @@ endif()
 set(FLIP_SOURCE levelset_util.cpp FLIP_vdb.h FLIP_vdb.cpp simd_vdb_poisson.h simd_vdb_poisson.cpp )
 file(GLOB NOSYS_SOURCE nosys/*.cpp nosys/*.h)
 
-add_library(zeno_FastFLIP SHARED ${FLIP_SOURCE} ${NOSYS_SOURCE})
+add_library(zeno_FastFLIP OBJECT ${FLIP_SOURCE} ${NOSYS_SOURCE})
 
 #simd compiler flags
 if (MSVC)
@@ -71,7 +71,6 @@ ENDIF()
 target_link_libraries(zeno_FastFLIP PRIVATE partio)
 
 
-target_link_libraries(zeno_FastFLIP PUBLIC zeno)
-target_link_libraries(zeno_FastFLIP PRIVATE zeno_nodep)
+target_link_libraries(zeno_FastFLIP PUBLIC zenocore)
 target_include_directories(zeno_FastFLIP PRIVATE ../oldzenbase/include)
 target_include_directories(zeno_FastFLIP PRIVATE ../zenvdb/include)

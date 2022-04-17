@@ -8,6 +8,9 @@ namespace zeno {
 struct StringObject : IObjectClone<StringObject> {
   std::string value;
 
+  StringObject() = default;
+  StringObject(std::string const &value) : value(value) {}
+
   std::string const &get() const {
     return value;
   }

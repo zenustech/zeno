@@ -4,7 +4,7 @@
 #include <zeno/types/StringObject.h>
 #include <zeno/types/ConditionObject.h>
 #include <zeno/extra/evaluate_condition.h>
-#include <zeno/types/MutableObject.h>
+#include <zeno/core/Graph.h>
 
 
 namespace zeno {
@@ -151,7 +151,7 @@ ZENO_DEFNODE(CacheLastFrameEnd)(
 );
 
 
-struct MakeMutable : zeno::INode {
+/*struct MakeMutable : zeno::INode {
     virtual void apply() override {
         auto obj = get_input2("anyobj");
         auto ptr = std::make_shared<MutableObject>();
@@ -198,7 +198,7 @@ ZENDEFNODE(ReadMutable, {
     {"anyobj"},
     {},
     {"control"},
-});
+});*/
 
 
 }

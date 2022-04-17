@@ -44,7 +44,7 @@ set(FEM_MUSCLE_SOURCE_FILES
     force_model.cpp
 )
 
-add_library(zeno_FEM SHARED ${FEM_MUSCLE_SOURCE_FILES})
+add_library(zeno_FEM OBJECT ${FEM_MUSCLE_SOURCE_FILES})
 target_link_libraries(zeno_FEM PRIVATE Eigen3::Eigen)
 target_link_libraries(zeno_FEM PUBLIC OpenMP::OpenMP_CXX)
 
@@ -56,8 +56,8 @@ target_include_directories(zeno_FEM PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src/bspline   
 )
 
+target_link_libraries(zeno_FEM PUBLIC zenocore)
 target_link_libraries(zeno_FEM PUBLIC zeno)
-target_link_libraries(zeno_FEM PRIVATE zeno_nodep)
 target_link_libraries(zeno_FEM PRIVATE igl::core)
 target_include_directories(zeno_FEM PRIVATE ../oldzenbase/include)
 target_include_directories(zeno_FEM PRIVATE ../zenvdb/include)

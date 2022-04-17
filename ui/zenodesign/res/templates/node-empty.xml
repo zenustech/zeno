@@ -1,0 +1,43 @@
+<node>
+	<header>
+		<component id="name" x="32" y="2" w="116" h="22">
+			<text id="" x="32" y="2" w="116" h="22" font-family="SimSun">ReadVDBGrid</text>
+		</component>
+		<component id="status" x="32" y="24" w="208" h="48">
+			<image id="mute" x="48" y="32" w="32" h="32" normal="" hovered="" selected=""/>
+			<image id="view" x="96" y="32" w="32" h="32" normal="" hovered="" selected=""/>
+			<image id="prep" x="144" y="32" w="32" h="32" normal="" hovered="" selected=""/>
+		</component>
+		<component id="control" x="32" y="72" w="32" h="32">
+			<image id="collapse" x="40.0714" y="80.2143" w="16" h="16" normal="" hovered="" selected=""/>
+		</component>
+		<component id="display" x="194" y="34" w="32" h="32">
+			<image id="display-image" x="194" y="34" w="32" h="32" normal="" hovered="" selected=""/>
+		</component>
+		<background id="header-backboard" x="32" y="72" w="208" h="32" radius="10px 10px 0px 0px" normal-clr="#323232" hoverd-clr="#323232" selected-clr="#323232" >
+			<image id="header-backboard-image" x="32" y="72" w="208" h="32" normal="" hovered="" selected=""/>
+		</background>
+	</header>
+	<body>
+		<component id="topleftsocket" x="-1" y="111" w="128" h="32">
+			<image id="ltsocket-image" x="15" y="111" w="32" h="32" normal="" hovered="" selected=""/>
+			<text id="ltsocket-text" x="55" y="119" w="27" h="17" font-family="SimSun">SRC</text>
+		</component>
+		<component id="bottomleftsocket" x="-1" y="167" w="128" h="32">
+			<image id="lbsocket-image" x="15" y="167" w="32" h="32" normal="" hovered="" selected=""/>
+			<text id="lbsocket-text" x="55" y="175" w="32" h="17" font-family="SimSun">COND</text>
+		</component>
+		<component id="toprightsocket" x="135" y="111" w="136" h="32">
+			<image id="rtsocket-image" x="223" y="111" w="32" h="32" normal="" hovered="" selected=""/>
+			<text id="rtsocket-text" x="183" y="119" w="31" h="18" font-family="SimSun">data</text>
+		</component>
+		<component id="bottomrightsocket" x="135" y="167" w="136" h="32">
+			<image id="rbsocket-image" x="223" y="167" w="32" h="32" normal="" hovered="" selected=""/>
+			<text id="rbsocket-text" x="175" y="175" w="42" h="18" font-family="SimSun">Output</text>
+		</component>
+        <background id="body-backboard" x="32" y="104" w="208" h="128" radius="0px 0px 0px 0px" normal-clr="#27497C" hoverd-clr="#27497C" selected-clr="#821EA8">
+			<image id="body-backboard-image" x="32" y="104" w="208" h="128" normal="" hovered="" selected=""/>
+		</background>
+	</body>
+</node>
+

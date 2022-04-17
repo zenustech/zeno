@@ -40,7 +40,6 @@ struct PrimitiveScatter : INode {
             std::uniform_real_distribution<float> unif;
 
             retprim->verts.resize(npoints);
-#pragma omp simd
             for (size_t i = 0; i < npoints; i++) {
                 auto val = unif(gen);
                 auto it = std::lower_bound(cdf.begin(), cdf.end(), val);
@@ -78,7 +77,6 @@ struct PrimitiveScatter : INode {
             std::uniform_real_distribution<float> unif;
 
             retprim->verts.resize(npoints);
-#pragma omp simd
             for (size_t i = 0; i < npoints; i++) {
                 auto val = unif(gen);
                 auto it = std::lower_bound(cdf.begin(), cdf.end(), val);

@@ -51,115 +51,120 @@ namespace zeno
             return size;
         }
 
-        std::vector<char> serialize()
+        void serialize(char *str)
         {
-            std::vector<char> str;
-            str.resize(serializeSize());
-
             size_t i{0};
 
             auto vertLen{vert.size()};
-            memcpy(str.data() + i, &vertLen, sizeof(vertLen));
+            memcpy(str + i, &vertLen, sizeof(vertLen));
             i += sizeof(vertLen);
 
-            vert.copy(str.data() + i, vertLen);
+            vert.copy(str + i, vertLen);
             i += vertLen;
 
             auto fragLen{frag.size()};
-            memcpy(str.data() + i, &fragLen, sizeof(fragLen));
+            memcpy(str + i, &fragLen, sizeof(fragLen));
             i += sizeof(fragLen);
 
-            frag.copy(str.data() + i, fragLen);
+            frag.copy(str + i, fragLen);
             i += fragLen;
 
             auto commonLen{common.size()};
-            memcpy(str.data() + i, &commonLen, sizeof(commonLen));
+            memcpy(str + i, &commonLen, sizeof(commonLen));
             i += sizeof(commonLen);
 
-            common.copy(str.data() + i, commonLen);
+            common.copy(str + i, commonLen);
             i += commonLen;
 
             auto extensionsLen{extensions.size()};
-            memcpy(str.data() + i, &extensionsLen, sizeof(extensionsLen));
+            memcpy(str + i, &extensionsLen, sizeof(extensionsLen));
             i += sizeof(extensionsLen);
 
-            extensions.copy(str.data() + i, extensionsLen);
+            extensions.copy(str + i, extensionsLen);
             i += extensionsLen;
 
             auto tex2DsSize{tex2Ds.size()};
-            memcpy(str.data() + i, &tex2DsSize, sizeof(tex2DsSize));
+            memcpy(str + i, &tex2DsSize, sizeof(tex2DsSize));
             i += sizeof(tex2DsSize);
 
             for (const auto &tex2D : tex2Ds)
             {
                 auto tex2DStr = tex2D->serialize();
                 auto tex2DStrSize = tex2DStr.size();
-                memcpy(str.data() + i, &tex2DStrSize, sizeof(tex2DStrSize));
+                memcpy(str + i, &tex2DStrSize, sizeof(tex2DStrSize));
                 i += sizeof(tex2DStrSize);
 
-                memcpy(str.data() + i, tex2DStr.data(), tex2DStrSize);
+                memcpy(str + i, tex2DStr.data(), tex2DStrSize);
                 i += tex2DStrSize;
             }
+        }
 
+        std::vector<char> serialize()
+        {
+            std::vector<char> str(serializeSize());
+            serialize(str.data());
             return str;
         }
 
-        static MaterialObject deserialize(const std::vector<char> &str)
+        void deserialize(const char *str)
         {
-            MaterialObject mtl;
-
             size_t i{0};
 
             size_t vertLen;
-            memcpy(&vertLen, str.data() + i, sizeof(vertLen));
+            memcpy(&vertLen, str + i, sizeof(vertLen));
             i += sizeof(vertLen);
 
-            mtl.vert = std::string{str.data() + i, vertLen};
+            this->vert = std::string{str + i, vertLen};
             i += vertLen;
 
             size_t fragLen;
-            memcpy(&fragLen, str.data() + i, sizeof(fragLen));
+            memcpy(&fragLen, str + i, sizeof(fragLen));
             i += sizeof(fragLen);
 
-            mtl.frag = std::string{str.data() + i, fragLen};
+            this->frag = std::string{str + i, fragLen};
             i += fragLen;
 
             size_t commonLen;
-            memcpy(&commonLen, str.data() + i, sizeof(commonLen));
+            memcpy(&commonLen, str + i, sizeof(commonLen));
             i += sizeof(commonLen);
 
-            mtl.common = std::string{str.data() + i, commonLen};
+            this->common = std::string{str + i, commonLen};
             i += commonLen;
 
             size_t extensionsLen;
-            memcpy(&extensionsLen, str.data() + i, sizeof(extensionsLen));
+            memcpy(&extensionsLen, str + i, sizeof(extensionsLen));
             i += sizeof(extensionsLen);
 
-            mtl.extensions = std::string{str.data() + i, extensionsLen};
+            this->extensions = std::string{str + i, extensionsLen};
             i += extensionsLen;
 
             size_t tex2DsSize;
-            memcpy(&tex2DsSize, str.data() + i, sizeof(tex2DsSize));
+            memcpy(&tex2DsSize, str + i, sizeof(tex2DsSize));
             i += sizeof(tex2DsSize);
-            mtl.tex2Ds.resize(tex2DsSize);
+            this->tex2Ds.resize(tex2DsSize);
 
             for (size_t j{0}; j < tex2DsSize; ++j)
 
             {
                 size_t tex2DStrSize;
-                memcpy(&tex2DStrSize, str.data() + i, sizeof(tex2DStrSize));
+                memcpy(&tex2DStrSize, str + i, sizeof(tex2DStrSize));
                 i += sizeof(tex2DStrSize);
 
                 std::vector<char> tex2DStr;
                 tex2DStr.resize(tex2DStrSize);
-                memcpy(tex2DStr.data(), str.data() + i, tex2DStrSize);
+                memcpy(tex2DStr.data(), str + i, tex2DStrSize);
                 i += tex2DStrSize;
 
                 auto tex2D = std::make_shared<Texture2DObject>(
                     Texture2DObject::deserialize(tex2DStr));
-                mtl.tex2Ds[j] = tex2D;
+                this->tex2Ds[j] = tex2D;
             }
+        }
 
+        static MaterialObject deserialize(const std::vector<char> &str)
+        {
+            MaterialObject mtl;
+            mtl.deserialize(str.data());
             return mtl;
         }
 

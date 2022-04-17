@@ -31,14 +31,13 @@ set(SKINNING_SOURCE_FILES
     arap.cpp
 )
 
-add_library(zeno_SKINNING SHARED ${SKINNING_SOURCE_FILES})
+add_library(zeno_SKINNING OBJECT ${SKINNING_SOURCE_FILES})
 target_link_libraries(zeno_SKINNING PRIVATE Eigen3::Eigen)
 target_link_libraries(zeno_SKINNING PUBLIC OpenMP::OpenMP_CXX)
 
 target_link_libraries(zeno_SKINNING PRIVATE igl::core igl::cgal igl::tetgen)
 # target_link_libraries(zeno_SKINNING PRIVATE libTetWild)
 
-target_link_libraries(zeno_SKINNING PUBLIC zeno)
-target_link_libraries(zeno_SKINNING PRIVATE zeno_nodep)
+target_link_libraries(zeno_SKINNING PUBLIC zenocore)
 target_include_directories(zeno_SKINNING PRIVATE ../oldzenbase/include)
 target_include_directories(zeno_SKINNING PRIVATE ../zenvdb/include)

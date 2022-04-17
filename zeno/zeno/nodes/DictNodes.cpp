@@ -5,6 +5,7 @@
 #include <zeno/types/NumericObject.h>
 #include <zeno/utils/string.h>
 #include <iostream>
+namespace zeno {
 namespace {
 
 struct DictSize : zeno::INode {
@@ -29,7 +30,7 @@ struct DictGetItem : zeno::INode {
         auto dict = get_input<zeno::DictObject>("dict");
         auto key = get_input<zeno::StringObject>("key")->get();
         auto obj = dict->lut.at(key);
-        set_output2("object", std::move(obj));
+        set_output("object", std::move(obj));
     }
 };
 
@@ -60,7 +61,7 @@ struct DictSetItem : zeno::INode {
     virtual void apply() override {
         auto dict = get_input<zeno::DictObject>("dict");
         auto key = get_input<zeno::StringObject>("key")->get();
-        auto obj = get_input2("object");
+        auto obj = get_input("object");
         dict->lut[key] = std::move(obj);
         set_output("dict", std::move(dict));
     }
@@ -80,8 +81,8 @@ struct MakeDict : zeno::INode {
         auto keys = zeno::split_str(inkeys, '\n');
         auto dict = std::make_shared<zeno::DictObject>();
         for (auto const &key: keys) {
-            if (has_input2(key)) {
-                auto obj = get_input2(key);
+            if (has_input(key)) {
+                auto obj = get_input(key);
                 dict->lut[key] = std::move(obj);
             }
         }
@@ -127,7 +128,7 @@ struct ExtractDict : zeno::INode {
             if (it == dict->lut.end())
                 continue;
             auto obj = dict->lut.at(key);
-            set_output2(key, std::move(obj));
+            set_output(key, std::move(obj));
         }
     }
 };
@@ -160,4 +161,5 @@ ZENDEFNODE(DictGetKeyList, {
     {"dict"},
 });
 
+}
 }

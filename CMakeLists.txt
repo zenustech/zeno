@@ -1,93 +1,158 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.15)
 
-#if(DEFINED ENV{VCPKG_ROOT} AND NOT DEFINED CMAKE_TOOLCHAIN_FILE)
-#set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" CACHE STRING "settle from environ VCPKG_ROOT")
-#endif()
+if (DEFINED ENV{VCPKG_ROOT} AND NOT DEFINED CMAKE_TOOLCHAIN_FILE)
+    message(STATUS "VCPKG_ROOT: $ENV{VCPKG_ROOT}")
+    set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" CACHE STRING "")
+endif()
 
+if (DEFINED ENV{VCPKG_TRIPLET} AND NOT DEFINED VCPKG_TARGET_TRIPLET)
+    message(STATUS "VCPKG_TRIPLET: $ENV{VCPKG_TRIPLET}")
+    set(VCPKG_TARGET_TRIPLET "$ENV{VCPKG_TRIPLET}" CACHE STRING "")
+endif()
+
+# Please use VS2019+ or GCC 9+
 set(CMAKE_CXX_STANDARD 17)
-project(zeno LANGUAGES C CXX)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+project(zeno
+    LANGUAGES C CXX
+    DESCRIPTION "Open-source node system framework for simulation and others"
+    HOMEPAGE_URL https://github.com/zenustech/zeno
+    )
+
+if (PROJECT_BINARY_DIR STREQUAL PROJECT_SOURCE_DIR)
+    message(WARNING "The binary directory of CMake cannot be the same as source directory!"
+        "Please consider use 'cmake -B build' to specify a different binary directory."
+        "Otherwise ZENO may fail to build, or make Git hard to exclude binary files.")
+endif()
+
+# Otherwise we can't link SHARED libs with STATIC libs
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
 if (NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release)
 endif()
-if (CMAKE_COMPILER_IS_GNUCC)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w")
-endif()
-if (MSVC)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /w")
+message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
+
+if (WIN32)
+    # get rid of 'min', 'max' macros; get back 'M_PI', 'M_E'
+    add_definitions(-DNOMINMAX -D_USE_MATH_DEFINES)
 endif()
 
-option(ZENO_BUILD_TESTS "Build tests for ZENO" OFF)
-#option(ZENO_BUILD_LAUNCHER "Build ZENO wrapper launcher" OFF)
-option(ZENO_BUILD_EXTENSIONS "Build extension modules for ZENO" ON)
-option(ZENO_GLOBALSTATE "Enable ZENO frame and substep support" ON)
-option(ZENO_VISUALIZATION "Enable ZENO visualization support" ON)
+option(ZENO_BUILD_EDITOR "Build ZENO Editor" ON)
+option(ZENO_BUILD_DESIGNER "Build ZENO Designer" OFF)
+option(ZENO_BUILD_TESTER "Build ZENO Quick Tester" OFF)
 option(ZENO_FAULTHANDLER "Enable ZENO fault handler for traceback" ON)
 option(ZENO_BENCHMARKING "Enable ZENO benchmarking timer" ON)
 option(ZENO_PARALLEL_STL "Enable parallel STL in ZENO" OFF)
-option(ZENO_ENABLE_PYTHON "Enable ZENO Python bindings" ON)
 option(ZENO_ENABLE_OPENMP "Enable OpenMP in ZENO for parallelism" ON)
-option(ZENO_FAIL_SILENTLY "Silently supress error as possible" OFF)
-option(ZENO_HIDE_SYMBOLS "Hide DLL symbols from global scope" OFF)
+option(ZENO_ENABLE_SPDLOG "Enable spdlog in ZENO for logging" OFF)
+option(ZENO_ENABLE_MAGICENUM "Enable magicenum in ZENO for enum reflection" ON)
+option(ZENO_MULTIPROCESS "Enable multiprocessing for ZENO" ON)
+option(ZENO_OUT_TO_BIN "Output files to a fixed directory" ON)
+option(ZENO_USE_CCACHE "Use CCache if found in path" ON)
+option(ZENO_NO_WARNING "Disable compiler warnings" ON)
+option(ZENO_INSTALL_TARGET "Enable installation targets" ON)
 
-if (UNIX)
+if (ZENO_USE_CCACHE AND NOT MSVC)  # speed up compilation by cache (https://ccache.dev)
     find_program(CCACHE_PROGRAM ccache)
     if (CCACHE_PROGRAM)
+        message(STATUS "Found CCache: ${CCACHE_PROGRAM}")
         set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ${CCACHE_PROGRAM})
         set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK ${CCACHE_PROGRAM})
-        message(STATUS "Found CCache: ${CCACHE_PROGRAM}")
     endif()
 endif()
 
-if (ZENO_ENABLE_PYTHON)
-    set(OUTPUT_DIR ${PROJECT_SOURCE_DIR}/zenqt/bin)
-    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${OUTPUT_DIR})
-    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${OUTPUT_DIR})
-    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${OUTPUT_DIR})
-    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_DEBUG ${OUTPUT_DIR})
-    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG ${OUTPUT_DIR})
-    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_DEBUG ${OUTPUT_DIR})
-    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE ${OUTPUT_DIR})
-    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${OUTPUT_DIR})
-    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE ${OUTPUT_DIR})
+if (ZENO_NO_WARNING)
+    if (CMAKE_COMPILER_IS_GNUCC)
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-all -Wno-cpp -Wno-deprecated-declarations -Werror=return-type")
+    endif()
+    if (MSVC)
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /w")
+    endif()
+endif()
+
+if (ZENO_OUT_TO_BIN)
+    # Otherwise Windows (which doesn't support RPATH) cannot find the DLLs at runtime
+    set(ZENO_OUTPUT_DIR ${PROJECT_BINARY_DIR}/bin)
+    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${ZENO_OUTPUT_DIR})
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${ZENO_OUTPUT_DIR})
+    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${ZENO_OUTPUT_DIR})
+    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_DEBUG ${ZENO_OUTPUT_DIR})
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG ${ZENO_OUTPUT_DIR})
+    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_DEBUG ${ZENO_OUTPUT_DIR})
+    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE ${ZENO_OUTPUT_DIR})
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${ZENO_OUTPUT_DIR})
+    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE ${ZENO_OUTPUT_DIR})
     if (WIN32)
-        set(CMAKE_DEBUG_POSTFIX "")
+        set(CMAKE_DEBUG_POSTFIX "")  # No more annoying zeno_d.dll
     endif()
 endif()
-
-include_directories(external/include)
-
-if (ZENO_ENABLE_PYTHON)
-    add_subdirectory(external/pybind11)
-endif()
-
-add_subdirectory(external/spdlog)
 
 if (ZENO_FAULTHANDLER)
     add_subdirectory(external/backward-cpp)
 endif()
 
+if (ZENO_ENABLE_SPDLOG)
+    add_subdirectory(external/spdlog)
+endif()
+
+add_subdirectory(external/include)
 add_subdirectory(zeno)
+add_subdirectory(projects)
 
-if (ZENO_ENABLE_PYTHON)
-    add_subdirectory(pyzeno)
+if (ZENO_MULTIPROCESS)
+    message(STATUS "Building Zeno Runner")
+    add_subdirectory(ui/zenorunner)
 endif()
 
-if (ZENO_VISUALIZATION)
+if (ZENO_BUILD_EDITOR OR ZENO_BUILD_DESIGNER)
+    message(STATUS "Building Zeno UI Library")
+    add_subdirectory(ui/zenoui)
+    add_subdirectory(ui/zenoio)
+endif()
+
+if (ZENO_BUILD_EDITOR)
+    message(STATUS "Building Zeno Editor")
     add_subdirectory(external/glad)
-    add_subdirectory(zenvis)
+    add_subdirectory(external/stb_image)
+    add_subdirectory(ui/zenovis)
+    add_subdirectory(ui/zenoedit)
 endif()
 
-if (ZENO_BUILD_EXTENSIONS)
-    add_subdirectory(projects)
+if (ZENO_BUILD_DESIGNER)
+    message(STATUS "Building Zeno Designer")
+    add_subdirectory(ui/zenodesign)
 endif()
 
-if (ZENO_BUILD_TESTS)
-    add_subdirectory(tests)
+if (ZENO_BUILD_TESTER)
+    message(STATUS "Building Zeno Quick Tester")
+    add_subdirectory(ui/zenotest)
 endif()
 
-#if (ZENO_BUILD_LAUNCHER)
-#    add_subdirectory(scripts/launcher)
-#endif()
+if (ZENO_INSTALL_TARGET)
+    message(STATUS "Adding Zeno Installation Target")
+    set(ZENO_TARGETS zenodes zenocore zenoinclude zenoedit)
+    if (ZENO_MULTIPROCESS)
+        list(APPEND ZENO_TARGETS zenorunner)
+    endif()
+    install(
+        TARGETS ${ZENO_TARGETS}
+        EXPORT ZenoTargets
+        LIBRARY DESTINATION lib
+        ARCHIVE DESTINATION lib
+        RUNTIME DESTINATION bin
+        PUBLIC_HEADER DESTINATION include
+        )
+    install(
+        EXPORT ZenoTargets
+        FILE ZenoTargets.cmake
+        NAMESPACE Zeno::
+        DESTINATION lib/cmake/Zeno
+        )
+    configure_file(misc/ZenoConfig.cmake.in ZenoConfig.cmake @ONLY)
+    install(
+        FILES ${CMAKE_CURRENT_BINARY_DIR}/ZenoConfig.cmake
+        DESTINATION lib/cmake/Zeno
+        )
+endif()

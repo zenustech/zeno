@@ -1,5 +1,3 @@
-#include <glm/ext/matrix_transform.hpp>
-#include <type_traits>
 #include <zeno/zeno.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/NumericObject.h>
@@ -9,7 +7,7 @@
 #include <glm/gtx/transform.hpp>
 #include <glm/gtx/quaternion.hpp>
 #include <cstring>
-#include <variant>
+
 namespace zeno {
 
 /*struct SetMatrix : zeno::INode{//ZHXX: use Assign instead!
@@ -59,7 +57,7 @@ ZENDEFNODE(MakeLocalSys, {
     {"math"},
 });
 
-struct TransformPrimitive : zeno::INode {//TODO: refactor with boolean variant
+struct TransformPrimitive : zeno::INode {//zhxx happy node
     static glm::vec3 mapplypos(glm::mat4 const &matrix, glm::vec3 const &vector) {
         auto vector4 = matrix * glm::vec4(vector, 1.0f);
         return glm::vec3(vector4) / vector4.w;
@@ -131,11 +129,9 @@ struct TransformPrimitive : zeno::INode {//TODO: refactor with boolean variant
                 nrm[i] = zeno::other_to_vec<3>(n);
             }
         }
-        
-        auto oMat = std::make_shared<MatrixObject>();
-        oMat->m = matrix;
+        //auto oMat = std::make_shared<MatrixObject>();
+        //oMat->m = matrix;
         set_output("outPrim", std::move(outprim));
-        set_output("Matrix", oMat);
     }
 };
 
@@ -143,7 +139,6 @@ ZENDEFNODE(TransformPrimitive, {
     {
     {"PrimitiveObject", "prim"},
     {"vec3f", "translation", "0,0,0"},
-    {"vec3f", "offset", "0,0,0"},
     {"vec3f", "eulerXYZ", "0,0,0"},
     {"vec4f", "quatRotation", "0,0,0,1"},
     {"vec3f", "scaling", "1,1,1"},
@@ -151,31 +146,9 @@ ZENDEFNODE(TransformPrimitive, {
     {"preTransform"},
     {"local"},
     },
-    {{"outPrim"}, {"Matrix"}},
-    {},
-    {"primitive"},
-});
-
-
-struct TranslatePrimitive : zeno::INode {
-    virtual void apply() override {
-        auto translation = get_input<zeno::NumericObject>("translation")->get<zeno::vec3f>();
-        auto prim = get_input<PrimitiveObject>("prim");
-        auto &pos = prim->attr<vec3f>("pos");
-        #pragma omp parallel for
-        for (int i = 0; i < pos.size(); i++) {
-            pos[i] += translation;
-        }
-        set_output("prim", std::move(prim));
-    }
-};
-
-ZENDEFNODE(TranslatePrimitive, {
     {
-    {"PrimitiveObject", "prim"},
-    {"vec3f", "translation", "0,0,0"},
+    {"PrimitiveObject", "outPrim"}
     },
-    {"prim"},
     {},
     {"primitive"},
 });

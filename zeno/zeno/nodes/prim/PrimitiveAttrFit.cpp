@@ -113,7 +113,7 @@ namespace zeno {
                 if (autoMinMax) {
                     auto minv = getAxis(attrSrc[0], axisSrc);
                     auto maxv = getAxis(attrSrc[0], axisSrc);
-#ifndef _WIN32
+#ifndef _MSC_VER
 #pragma omp parallel for reduction(min:minv) reduction(max:maxv)
 #endif
                     for (intptr_t i = 0; i < attrSrc.size(); ++i) {

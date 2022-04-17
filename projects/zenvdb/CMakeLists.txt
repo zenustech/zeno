@@ -18,7 +18,7 @@ endif()
 # FUN FACT: DID U KNOW THAT MICROSOFT BUYS GITHUB? #
 ####################################################
 
-add_library(zeno_zenvdb SHARED ${PROJECT_SOURCE})
+add_library(zeno_zenvdb OBJECT ${PROJECT_SOURCE})
 target_include_directories(zeno_zenvdb PUBLIC include)
 target_include_directories(zeno_zenvdb PRIVATE ../oldzenbase/include)
 
@@ -35,5 +35,4 @@ if (WIN32)
   target_compile_options(zeno_zenvdb PRIVATE -DNOMINMAX -D_USE_MATH_DEFINES)
 endif()
 
-target_link_libraries(zeno_zenvdb PUBLIC zeno)
-target_link_libraries(zeno_zenvdb PRIVATE zeno_nodep)
+target_link_libraries(zeno_zenvdb PUBLIC zenocore)

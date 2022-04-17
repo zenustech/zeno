@@ -10,7 +10,7 @@
 namespace zeno {
 
 
-static inline auto split_str(std::string const &s, char delimiter = ' ') {
+static std::vector<std::string> split_str(std::string const &s, char delimiter = ' ') {
     std::vector<std::string> tokens;
     std::string token;
     std::istringstream iss(s);
@@ -31,7 +31,7 @@ static std::string join_str(std::vector<T> const &elms, S const &delim) {
   return ss.str();
 }
 
-static bool starts_with(std::string line, std::string pattern) {
+static bool starts_with(std::string const &line, std::string const &pattern) {
 	return line.find(pattern) == 0;
 }
 

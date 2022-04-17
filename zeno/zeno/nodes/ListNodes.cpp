@@ -28,7 +28,7 @@ struct ListGetItem : zeno::INode {
         auto list = get_input<zeno::ListObject>("list");
         auto index = get_input<zeno::NumericObject>("index")->get<int>();
         auto obj = list->arr.at(index);
-        set_output2("object", std::move(obj));
+        set_output("object", std::move(obj));
     }
 };
 
@@ -48,7 +48,7 @@ struct ExtractList : zeno::INode {
             int index = std::stoi(key);
             if (list->arr.size() > index) {
                 auto obj = list->arr[index];
-                set_output2(key, std::move(obj));
+                set_output(key, std::move(obj));
             }
         }
     }
@@ -143,7 +143,7 @@ struct MakeSmallList : zeno::INode {
                     list->arr.push_back(std::move(obj));
                 }
             } else {
-                auto obj = get_input2(name);
+                auto obj = get_input(name);
                 list->arr.push_back(std::move(obj));
             }
         }
@@ -195,7 +195,7 @@ struct NumericRangeList : zeno::INode {
         auto stop = get_input2<int>("stop");
         auto skip = get_input2<int>("skip");
         for (int i = start; i < stop; i += skip) {
-            list->arr.emplace_back(i);
+            list->arr.emplace_back(std::make_shared<NumericObject>(i));
         }
         set_output("list", std::move(list));
     }
@@ -209,7 +209,7 @@ ZENDEFNODE(NumericRangeList, {
     });
 
 
-#ifdef ZENO_VISUALIZATION
+/*#ifdef ZENO_VISUALIZATION
 struct ToVisualize_ListObject : zeno::INode {
     virtual void apply() override {
         auto list = get_input<ListObject>("list");
@@ -234,6 +234,6 @@ ZENO_DEFOVERLOADNODE(ToVisualize, _ListObject, typeid(ListObject).name())({
         {{"string", "path", ""}},
         {"list"},
 });
-#endif
+#endif*/
 
 }

@@ -279,7 +279,7 @@ struct ReadAlembic : INode {
         if (has_input("frameid")) {
             frameid = get_input<NumericObject>("frameid")->get<int>();
         } else {
-            frameid = zeno::state.frameid;
+            frameid = getGlobalState()->frameid;
         }
         auto abctree = std::make_shared<ABCTree>();
         {
@@ -300,7 +300,7 @@ struct ReadAlembic : INode {
 };
 
 ZENDEFNODE(ReadAlembic, {
-    {{"readpath", "path"}, {"frameid"}},
+    {{"readpath", "path"}, {"int", "frameid"}},
     {{"ABCTree", "abctree"}},
     {},
     {"alembic"},

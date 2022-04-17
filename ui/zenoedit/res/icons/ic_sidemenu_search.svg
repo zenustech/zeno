@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="16px" height="16px" viewBox="0 0 16 16" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>ic_sidemenu_search</title>
+    <g id="ZENO@2NodeEditor" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="子图的右键菜单" transform="translate(-33.000000, -134.000000)" fill-rule="nonzero">
+            <g id="Vertical_Bar" transform="translate(25.000000, 62.000000)">
+                <g id="Search" transform="translate(0.000000, 64.000000)">
+                    <g id="ic_sidemenu_search" transform="translate(8.000000, 8.000000)">
+                        <rect id="矩形" fill="#000000" opacity="0" x="0" y="0" width="16" height="16"></rect>
+                        <path d="M14.996,13.603 L11.874,10.481 C12.6013442,9.46642054 12.9923426,8.24935932 12.992,7.001 C12.992,3.688 10.305,1.001 6.992,1.001 C3.679,1.001 1,3.687 1,7 C1,10.313 3.679,13 6.992,13 C8.24038038,13.0004772 9.45748178,12.6094659 10.472,11.882 L13.594,15.004 L14.996,13.603 Z M6.992,11 C4.782861,11 2.992,9.209139 2.992,7 C2.992,4.790861 4.782861,3 6.992,3 C9.201139,3 10.992,4.790861 10.992,7 C10.992,9.209139 9.201139,11 6.992,11 Z" id="形状" fill="#858280"></path>
+                    </g>
+                </g>
+            </g>
+        </g>
+    </g>
+</svg>

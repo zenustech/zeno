@@ -10,10 +10,10 @@
 #include <memory>
 #include <tuple>
 #include <set>
-#if __has_include(<zeno/utils/logger.h>)
-#include <zeno/utils/logger.h>
+#if __has_include(<zeno/utils/logstd.h>)
+#include <zeno/utils/logstd.h>
 namespace zfx {
-using namespace zeno::loggerstd;
+using namespace zeno::__logstd;
 }
 #else
 #pragma message("falling back to iostream")

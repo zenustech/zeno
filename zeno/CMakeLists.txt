@@ -1,29 +1,21 @@
-file(GLOB ZENO_SOURCE */*.cpp */*/*.cpp */*/*/*.cpp */*/*/*/*.cpp */*.h */*/*.h */*/*/*.h */*/*/*/*.h)
+file(GLOB_RECURSE ZENO_SOURCE CONFIGURE_DEPENDS *.h *.cpp)
 
-add_library(zeno SHARED ${ZENO_SOURCE})
+add_library(zenocore OBJECT ${ZENO_SOURCE})
 
 if (ZENO_ENABLE_OPENMP)
     find_package(OpenMP)
     if (TARGET OpenMP::OpenMP_CXX)
-        message("found package: OpenMP::OpenMP_CXX")
-        target_link_libraries(zeno PRIVATE OpenMP::OpenMP_CXX)
-        target_compile_options(zeno # MSVC, GNU, Clang, Intel
-            PUBLIC   $<$<COMPILE_LANGUAGE:CXX>: $<IF:$<CXX_COMPILER_ID:MSVC>, /openmp:llvm /openmp:experimental, -fopenmp $<IF:$<CXX_COMPILER_ID:Clang>, , > >>
-        )
+        message(STATUS "Found OpenMP::OpenMP_CXX")
+        target_link_libraries(zenocore PRIVATE OpenMP::OpenMP_CXX)
+    else()
+        message(WARNING "Not found OpenMP")
     endif()
 endif()
-if (ZENO_VISUALIZATION)
-    target_compile_definitions(zeno PUBLIC -DZENO_VISUALIZATION)
-    if (UNIX OR APPLE)
-		target_link_libraries(zeno PRIVATE stdc++fs)  # for <experimental/filesystem>
-	endif()
-endif()
-if (ZENO_GLOBALSTATE)
-    target_compile_definitions(zeno PUBLIC -DZENO_GLOBALSTATE)
-endif()
+
 if (ZENO_BENCHMARKING)
-    target_compile_definitions(zeno PRIVATE -DZENO_BENCHMARKING)
+    target_compile_definitions(zenocore PRIVATE -DZENO_BENCHMARKING)
 endif()
+
 if (ZENO_PARALLEL_STL)
     if (MSVC)
         find_package(TBB)
@@ -38,16 +30,33 @@ if (ZENO_PARALLEL_STL)
         target_compile_definitions(zeno PRIVATE -DZENO_PARALLEL_STL)
     endif()
 endif()
+
 if (ZENO_FAIL_SILENTLY)
     target_compile_definitions(zeno PRIVATE -DZENO_FAIL_SILENTLY)
 endif()
+
 if (ZENO_FAULTHANDLER)
-    target_compile_definitions(zeno PRIVATE -DZENO_FAULTHANDLER)
-    target_sources(zeno PRIVATE ${BACKWARD_ENABLE})
-    add_backward(zeno)
+    target_compile_definitions(zenocore PRIVATE -DZENO_FAULTHANDLER)
+    add_backward(zenocore)
 endif()
 
-target_compile_definitions(zeno PRIVATE -DDLL_ZENO)
-target_include_directories(zeno PUBLIC .)
+# we are not using shared libraries now, so no need for this:
+target_compile_definitions(zenocore PRIVATE -DZENO_DLLEXPORT INTERFACE -DZENO_DLLIMPORT)
+target_include_directories(zenocore PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    $<INSTALL_INTERFACE:include/Zeno/zenocore>)
 
-target_link_libraries(zeno PUBLIC spdlog)
+if (ZENO_INSTALL_TARGET)
+    install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} DESTINATION include/Zeno/zenocore)
+endif()
+
+target_link_libraries(zenocore PUBLIC zenoinclude)
+
+if (ZENO_ENABLE_SPDLOG)
+    target_link_libraries(zenocore PUBLIC spdlog)
+    target_compile_definitions(zenocore PUBLIC -DZENO_ENABLE_SPDLOG)
+endif()
+
+if (ZENO_ENABLE_MAGICENUM)
+    target_compile_definitions(zenocore PUBLIC -DZENO_ENABLE_MAGICENUM)
+endif()

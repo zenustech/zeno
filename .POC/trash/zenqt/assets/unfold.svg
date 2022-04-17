@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="16px" height="17px" viewBox="0 0 16 17" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>collapse</title>
+    <g id="Node" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="画板" transform="translate(-137.000000, -116.000000)" fill-rule="nonzero">
+            <g id="collapse" transform="translate(137.000000, 116.500000)">
+                <rect id="矩形" fill="#000000" opacity="0" x="0" y="0" width="16" height="16"></rect>
+                <path d="M13.8125,4 L12.640625,4 C12.5609375,4 12.4859375,4.0390625 12.4390625,4.103125 L8,10.221875 L3.5609375,4.103125 C3.5140625,4.0390625 3.4390625,4 3.359375,4 L2.1875,4 C2.0859375,4 2.0265625,4.115625 2.0859375,4.1984375 L7.5953125,11.79375 C7.7953125,12.06875 8.2046875,12.06875 8.403125,11.79375 L13.9125,4.1984375 C13.9734375,4.115625 13.9140625,4 13.8125,4 Z" id="路径" fill="#FFFFFF"></path>
+            </g>
+        </g>
+    </g>
+</svg>

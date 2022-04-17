@@ -1,11 +1,6 @@
-[project-build]
-command=python build.py
-output=quickfix
-cwd=$(VIM_ROOT)
-save=2
-
-[project-run]
-command=ZEN_OPEN=/tmp/a.zsg python run.py
-output=terminal
-cwd=$(VIM_ROOT)
-save=2
+[+]
+build_type=Debug
+build_target=zenoedit
+run_environ=ZENO_LOGLEVEL=debug ZENO_OPEN=/tmp/a.zsg
+run_target="$(VIM:build_dir)/bin/zenoedit"
+build_configs=-DZENO_MULTIPROCESS:BOOL=ON

@@ -1,28 +1,20 @@
-cmake_minimum_required(VERSION 3.10)
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} /usr/lib/cmake/OpenVDB /usr/local/lib/cmake/OpenVDB ${CMAKE_CURRENT_SOURCE_DIR}/cmake)  # cihou zhxx
+add_library(zeno_nodep INTERFACE)  # deprecated
 
-set(CMAKE_MODULE_PATH /usr/lib/cmake/OpenVDB ${CMAKE_CURRENT_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
+add_library(zenodes SHARED dummy.cpp)
+target_link_libraries(zenodes PUBLIC zenocore)
 
-set(EXTENSIONS_LIST ZenoFX oldzenbase zenvdb FastFLIP FLIPtools Rigid BulletTools cgmesh gmpm mesher Euler OldZMS OldZFX EasyGL FEM Alembic LSystem Skinning Functional TreeSketch HerculesTools)
-set(EXTENSIONS_ENABLE_LIST ZenoFX oldzenbase)
+set(ZENO_EXTENSIONS ZenoFX oldzenbase zenvdb FastFLIP FLIPtools Rigid BulletTools cgmesh gmpm mesher Euler OldZMS OldZFX EasyGL FEM Alembic LSystem Skinning Functional TreeSketch HerculesTools)
+foreach (name IN ITEMS ${ZENO_EXTENSIONS})
+    option(ZENO_WITH_${name} "Build ZENO with extension: ${name}" OFF)
 
-add_library(zeno_nodep INTERFACE)
-if (ZENO_HIDE_SYMBOLS AND UNIX)
-    message("Hidding symbols from ZENO libraries...")
-    target_link_libraries(zeno_nodep INTERFACE -Wl,--version-script,${CMAKE_CURRENT_SOURCE_DIR}/../scripts/linker.map)
-endif()
-
-foreach (name IN ITEMS ${EXTENSIONS_LIST})
-    if (${name} IN_LIST EXTENSIONS_ENABLE_LIST)
-        set(val ON)
-    else()
-        set(val OFF)
-    endif()
-    option(EXTENSION_${name} "Build ZENO with extension: ${name}" ${val})
-endforeach()
-
-foreach (name IN ITEMS ${EXTENSIONS_LIST})
-    if (${EXTENSION_${name}})
-        message("*** Building ZENO with extension: ${name}")
+    if (ZENO_WITH_${name})
+        message(STATUS "Building ZENO with extension: ${name}")
         add_subdirectory(${name})
+        if (NOT TARGET zeno_${name})
+            message(WARNING "Please use 'zeno_${name}' as the target name of ZENO extension, otherwise it won't be linked")
+        else()
+            target_link_libraries(zenodes PRIVATE zeno_${name})
+        endif()
     endif()
 endforeach()

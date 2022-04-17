@@ -3,6 +3,7 @@
 #include <cstring>
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/PrimitiveObject.h>
+#include <zeno/types/UserData.h>
 #include <zeno/utils/vec.h>
 #include <zeno/zeno.h>
 
@@ -72,7 +73,7 @@ struct Make1DLinePrimitive : INode {
           prim->lines[x][1] = x + 1;
         }
     }
-    prim->userData.get("nx") = std::make_shared<NumericObject>((int)nx);//zhxx
+    prim->userData().set("nx", std::make_shared<NumericObject>((int)nx));//zhxx
     set_output("prim", std::move(prim));
   }
 };
@@ -110,7 +111,8 @@ struct Make2DGridPrimitive : INode {
         vec3f o = has_input("origin") ?
             get_input<NumericObject>("origin")->get<vec3f>() : vec3f(0);
         if (has_input("scale")) {
-            auto scale = get_input<NumericObject>("scale")->get<float>();
+            auto obj = get_input<NumericObject>("scale");
+            auto scale = obj->is<int>() ? obj->get<int>() : obj->get<float>();
             ax *= scale;
             ay *= scale;
         }
@@ -152,8 +154,8 @@ struct Make2DGridPrimitive : INode {
           prim->tris[index * 2 + 1][2] = y * nx + x;
         }
     }
-    prim->userData.get("nx") = std::make_shared<NumericObject>((int)nx);//zhxx
-    prim->userData.get("ny") = std::make_shared<NumericObject>((int)ny);//zhxx
+    prim->userData().set("nx", std::make_shared<NumericObject>((int)nx));//zhxx
+    prim->userData().set("ny", std::make_shared<NumericObject>((int)ny));//zhxx
     set_output("prim", std::move(prim));
   }
 };

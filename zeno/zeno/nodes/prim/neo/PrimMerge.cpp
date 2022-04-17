@@ -9,7 +9,7 @@ namespace {
 struct PrimMerge : INode {
     virtual void apply() override {
         auto list = get_input<ListObject>("listPrim");
-        auto primList = list->get<std::shared_ptr<PrimitiveObject>>();
+        auto primList = list->get<PrimitiveObject>();
         auto tagAttr = get_input<StringObject>("tagAttr")->get();
         auto outprim = std::make_shared<PrimitiveObject>();
 

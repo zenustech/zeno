@@ -8,8 +8,8 @@ namespace zeno {
 struct PrimitiveAddAttr : zeno::INode {
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
-        auto name = std::get<std::string>(get_param("name"));
-        auto type = std::get<std::string>(get_param("type"));
+        auto name = get_param<std::string>("name");
+        auto type = get_param<std::string>("type");
         if (type == "float") {
             if (has_input("fillValue")) {
                 auto fillvalue = get_input<NumericObject>("fillValue")->get<float>();
@@ -56,29 +56,24 @@ struct PrimitiveGetAttrValue : zeno::INode {
         auto index = get_input<zeno::NumericObject>("index")->get<int>();
 
         auto value = std::make_shared<zeno::NumericObject>();
-        if(name!="pos"){
-            auto &it = prim->attr(name);
+        auto &it = prim->attr(name);
 
-            if (type == "float") {
-                value->set<float>(0);
-                    std::vector<float>& attr_arr = std::get<std::vector<float>>(it);
-                    if (index < attr_arr.size()) {
-                        value->set<float>(attr_arr[index]);
-                    }
-            }
-            else if (type == "float3") {
-                value->set<vec3f>(vec3f(0, 0, 0));
-                    std::vector<vec3f>& attr_arr = std::get<std::vector<vec3f>>(it);
-                    if (index < attr_arr.size()) {
-                        value->set<vec3f>(attr_arr[index]);
-                    }
-            }
-            else {
-                throw Exception("Bad attribute type: " + type);
-            }
-        } else {
-            value->set<vec3f>(vec3f(0,0,0));
-            value->set<vec3f>(prim->verts[index]);
+        if (type == "float") {
+            value->set<float>(0);
+                std::vector<float>& attr_arr = std::get<std::vector<float>>(it);
+                if (index < attr_arr.size()) {
+                    value->set<float>(attr_arr[index]);
+                }
+        }
+        else if (type == "float3") {
+            value->set<vec3f>(vec3f(0, 0, 0));
+                std::vector<vec3f>& attr_arr = std::get<std::vector<vec3f>>(it);
+                if (index < attr_arr.size()) {
+                    value->set<vec3f>(attr_arr[index]);
+                }
+        }
+        else {
+            throw Exception("Bad attribute type: " + type);
         }
         set_output("value", std::move(value));
     }

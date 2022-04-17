@@ -2,31 +2,41 @@
 
 #include <zeno/utils/api.h>
 #include <zeno/utils/safe_dynamic_cast.h>
-#include <zeno/utils/UserData.h>
 #include <string>
 #include <memory>
+#include <any>
 
 namespace zeno {
+
+struct UserData;
 
 struct IObject {
     using polymorphic_base_type = IObject;
 
-    UserData userData;
+    mutable std::any m_userData;
 
 #ifndef ZENO_APIFREE
     ZENO_API IObject();
+    ZENO_API IObject(IObject const &);
+    ZENO_API IObject(IObject &&);
+    ZENO_API IObject &operator=(IObject const &);
+    ZENO_API IObject &operator=(IObject &&);
     ZENO_API virtual ~IObject();
 
     ZENO_API virtual std::shared_ptr<IObject> clone() const;
     ZENO_API virtual std::shared_ptr<IObject> move_clone();
     ZENO_API virtual bool assign(IObject *other);
     ZENO_API virtual bool move_assign(IObject *other);
+
+    ZENO_API UserData &userData() const;
 #else
     virtual ~IObject() = default;
     virtual std::shared_ptr<IObject> clone() const { return nullptr; }
     virtual std::shared_ptr<IObject> move_clone() { return nullptr; }
     virtual bool assign(IObject *other) { return false; }
     virtual bool move_assign(IObject *other) { return false; }
+
+    UserData &userData() { return *reinterpret_cast<UserData *>(0); }
 #endif
 
     template <class T>
@@ -72,5 +82,7 @@ struct IObjectClone : Base {
         return true;
     }
 };
+
+using zany = std::shared_ptr<IObject>;
 
 }

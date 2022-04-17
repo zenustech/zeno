@@ -16,14 +16,22 @@ struct NumericObject : IObjectClone<NumericObject> {
   NumericValue value;
 
   NumericObject() = default;
-  NumericObject(NumericValue value) : value(value) {}
+  NumericObject(NumericValue const &value) : value(value) {}
+
+  NumericValue &get() {
+      return value;
+  }
+
+  NumericValue const &get() const {
+      return value;
+  }
 
   template <class T>
   T get() const {
     return std::visit([] (auto const &val) -> T {
         using V = std::decay_t<decltype(val)>;
         if constexpr (!std::is_constructible_v<T, V>) {
-            throw Exception((std::string)"NumericObject expect `" + typeid(T).name() + "`, got `" + typeid(V).name());
+            throw makeError<TypeError>(typeid(T), typeid(V), "NumericObject::get<T>");
         } else {
             return T(val);
         }
@@ -31,7 +39,7 @@ struct NumericObject : IObjectClone<NumericObject> {
   }
 
   template <class T>
-  bool is() {
+  bool is() const {
     return std::holds_alternative<T>(value);
   }
 
@@ -40,5 +48,6 @@ struct NumericObject : IObjectClone<NumericObject> {
     value = x;
   }
 };
+
 
 }

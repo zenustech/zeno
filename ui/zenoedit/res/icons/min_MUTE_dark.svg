@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="33px" height="42px" viewBox="0 0 33 42" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>min_MUTE_dark</title>
+    <g id="ZENO@2Prototype-NodeEditor" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="SimpleNode" transform="translate(-1113.000000, -122.000000)">
+            <g id="Group" transform="translate(854.000000, 72.000000)">
+                <g id="min_MUTE_dark" transform="translate(259.839439, 50.000000)">
+                    <polygon id="min_MUTE_light" fill="#3E3E3E" points="12.0802803 -1.51545443e-14 32.0802803 0 20 42 -5.60485385e-13 42"></polygon>
+                    <path d="M13.0802803,0 L1,42 L0,42 L12.0802803,0 L13.0802803,0 Z" id="Combined-Shape" fill="#484848"></path>
+                </g>
+            </g>
+        </g>
+    </g>
+</svg>
