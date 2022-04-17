@@ -13,7 +13,6 @@ struct Camera {
     int nx{512}, ny{512};
     int oldnx{512}, oldny{512};
 
-    double g_aspect{1};
     double last_xpos{}, last_ypos{};
     glm::vec3 center;
 
@@ -26,10 +25,6 @@ struct Camera {
     float g_dof = -1.f;
     float g_aperature = 0.05f;
     float m_sample_weight = 0.0f;
-
-    void setAspect(float _aspect) {
-        g_aspect = _aspect;
-    }
 
     void setDOF(float _dof) {
         g_dof = _dof;
@@ -53,7 +48,7 @@ struct Camera {
 
     void clearCameraControl() {
         g_camSetFromNode = 0;
-        proj = glm::perspective(glm::radians(45.0), g_aspect, 0.1, 20000.0);
+        proj = glm::perspective(glm::radians(45.0), getAspect(), 0.1, 20000.0);
         g_dof = -1;
         g_fov = 45.0;
         g_near = 0.1;
@@ -72,12 +67,16 @@ struct Camera {
         normal_check = check;
     }
 
+    double getAspect() const {
+        return (double)ny / (double)nx;
+    }
+
     void setCamera(glm::vec3 pos, glm::vec3 front, glm::vec3 up, double _fov,
                    double fnear, double ffar, double _dof, int set) {
         front = glm::normalize(front);
         up = glm::normalize(up);
         cview = glm::lookAt(pos, pos + front, up);
-        cproj = glm::perspective(glm::radians(_fov), g_aspect, fnear, ffar);
+        cproj = glm::perspective(glm::radians(_fov), getAspect(), fnear, ffar);
         g_fov = _fov;
         g_near = fnear;
         g_far = ffar;
@@ -121,14 +120,14 @@ struct Camera {
 
         if (ortho_mode) {
             view = glm::lookAt(center - back, center, up);
-            proj = glm::ortho(-radius * g_aspect, radius * g_aspect, -radius,
+            proj = glm::ortho(-radius * getAspect(), radius * getAspect(), -radius,
                               radius, -100.0, 100.0);
             g_view = view;
             g_proj = proj;
         } else {
             view = glm::lookAt(center - back * (float)radius, center, up);
             proj = glm::perspective(
-                glm::radians(fov), g_aspect, 0.1,
+                glm::radians(fov), getAspect(), 0.1,
                 20000.0 * std::max(1.0f, (float)radius / 10000.f));
             g_fov = fov;
             g_near = 0.1;
@@ -151,7 +150,7 @@ struct Camera {
         center = glm::vec3(0, 0, 0);
         radius = 5.0;
         gizmo_view = glm::lookAt(center - back, center, up);
-        gizmo_proj = glm::ortho(-radius * g_aspect, radius * g_aspect, -radius,
+        gizmo_proj = glm::ortho(-radius * getAspect(), radius * getAspect(), -radius,
                                 radius, -100.0, 100.0);
     }
 

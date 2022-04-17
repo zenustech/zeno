@@ -77,7 +77,7 @@ void Session::new_frame() {
 void Session::new_frame_offline(std::string path) {
     char buf[1024];
     sprintf(buf, "%s/%06d.png", path.c_str(), impl->curr_frameid);
-    zeno::log_infof("saving screen {}x{} to {}", impl->scene->camera->nx,
+    zeno::log_info("saving screen {}x{} to {}", impl->scene->camera->nx,
                     impl->scene->camera->ny, buf);
     do_screenshot(buf);
 }

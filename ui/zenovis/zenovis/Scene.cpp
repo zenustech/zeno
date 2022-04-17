@@ -83,7 +83,7 @@ void Scene::my_paint_graphics(float samples, float isDepthPass) {
     CHECK_GL(glViewport(0, 0, camera->nx, camera->ny));
     vao->bind();
     camera->m_sample_weight = 1.0f / samples;
-    drawSceneDepthSafe(camera->g_aspect, false, isDepthPass, camera->show_grid);
+    drawSceneDepthSafe(camera->getAspect(), false, isDepthPass, camera->show_grid);
     if (isDepthPass != 1.0 && camera->show_grid) {
         CHECK_GL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
         draw_small_axis();
