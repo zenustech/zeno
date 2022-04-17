@@ -133,7 +133,7 @@ struct Light {
         maxX = midX + size;
         minY = midY - size;
         maxY = maxY + size;
-        glm::mat4 lightProjection =
+        const glm::mat4 lightProjection =
             glm::ortho(minX * lightScale, maxX * lightScale, minY * lightScale,
                        maxY * lightScale, maxZ, -minZ);
         m_nearPlane[layer] = maxZ;
