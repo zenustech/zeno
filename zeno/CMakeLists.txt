@@ -31,10 +31,6 @@ if (ZENO_PARALLEL_STL)
     endif()
 endif()
 
-if (ZENO_FAIL_SILENTLY)
-    target_compile_definitions(zeno PRIVATE -DZENO_FAIL_SILENTLY)
-endif()
-
 if (ZENO_FAULTHANDLER)
     target_compile_definitions(zenocore PRIVATE -DZENO_FAULTHANDLER)
     add_backward(zenocore)

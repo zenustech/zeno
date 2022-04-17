@@ -190,8 +190,8 @@ struct ReflectivePass : zeno::disable_copy {
                                         GL_TEXTURE_RECTANGLE, reflectiveMaps[i],
                                         0));
 
-        glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        CHECK_GL(glClearColor(0.0f, 0.0f, 0.0f, 0.0f));
+        CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
     }
     void BeginSecondReflective(int i, int nx, int ny) {
         CHECK_GL(glDisable(GL_BLEND));
@@ -211,12 +211,12 @@ struct ReflectivePass : zeno::disable_copy {
                                         GL_TEXTURE_RECTANGLE,
                                         reflectiveMaps[i + 8], 0));
 
-        glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        CHECK_GL(glClearColor(0.0f, 0.0f, 0.0f, 0.0f));
+        CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
     }
     void EndReflective() {
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        glUseProgram(0);
+        CHECK_GL(glBindFramebuffer(GL_FRAMEBUFFER, 0));
+        CHECK_GL(glUseProgram(0));
         CHECK_GL(glEnable(GL_BLEND));
         CHECK_GL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
         CHECK_GL(glEnable(GL_DEPTH_TEST));
@@ -235,8 +235,8 @@ struct ReflectivePass : zeno::disable_copy {
             reflectiveMaps[i] = reflectiveMaps[i + 8];
             reflectiveMaps[i + 8] = temp;
         }
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        glUseProgram(0);
+        CHECK_GL(glBindFramebuffer(GL_FRAMEBUFFER, 0));
+        CHECK_GL(glUseProgram(0));
         CHECK_GL(glEnable(GL_BLEND));
         CHECK_GL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
         CHECK_GL(glEnable(GL_DEPTH_TEST));
