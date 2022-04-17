@@ -96,28 +96,28 @@ void main(void)
 
     ~DepthPass() {
         if (emptyVAO)
-            glDeleteVertexArrays(1, &emptyVAO);
+            CHECK_GL(glDeleteVertexArrays(1, &emptyVAO));
         if (msfborgb)
-            glDeleteRenderbuffers(1, &msfborgb);
+            CHECK_GL(glDeleteRenderbuffers(1, &msfborgb));
         if (msfbod)
-            glDeleteRenderbuffers(1, &msfbod);
+            CHECK_GL(glDeleteRenderbuffers(1, &msfbod));
         if (tonemapfbo)
-            glDeleteFramebuffers(1, &tonemapfbo);
+            CHECK_GL(glDeleteFramebuffers(1, &tonemapfbo));
         if (ssfborgb)
-            glDeleteRenderbuffers(1, &ssfborgb);
+            CHECK_GL(glDeleteRenderbuffers(1, &ssfborgb));
         if (ssfbod)
-            glDeleteRenderbuffers(1, &ssfbod);
+            CHECK_GL(glDeleteRenderbuffers(1, &ssfbod));
         if (sfbo)
-            glDeleteFramebuffers(1, &sfbo);
+            CHECK_GL(glDeleteFramebuffers(1, &sfbo));
         if (texRect)
-            glDeleteTextures(1, &sfbo);
+            CHECK_GL(glDeleteTextures(1, &sfbo));
         for (int i = 0; i < 16; i++)
             if (texRects[i])
-                glDeleteTextures(1, &texRects[i]);
+                CHECK_GL(glDeleteTextures(1, &texRects[i]));
     }
 
     void ScreenFillQuad(GLuint tex, float msweight, int samplei) {
-        glDisable(GL_DEPTH_TEST);
+        CHECK_GL(glDisable(GL_DEPTH_TEST));
         if (emptyVAO == 0)
             CHECK_GL(glGenVertexArrays(1, &emptyVAO));
         CHECK_GL(glViewport(0, 0, camera()->nx, camera()->ny));
@@ -128,8 +128,8 @@ void main(void)
         tmProg->use();
         tmProg->set_uniformi("hdr_image", 0);
         tmProg->set_uniform("msweight", msweight);
-        CHECK_GL(glActiveTexture(GL_TEXTURE0);
-        CHECK_GL(glBindTexture(GL_TEXTURE_RECTANGLE, tex);
+        CHECK_GL(glActiveTexture(GL_TEXTURE0));
+        CHECK_GL(glBindTexture(GL_TEXTURE_RECTANGLE, tex));
 
         CHECK_GL(glEnableVertexAttribArray(0));
         CHECK_GL(glBindVertexArray(emptyVAO));
@@ -328,7 +328,7 @@ void main(void)
         if (camera()->g_dof > 0) {
 
             for (int dofsample = 0; dofsample < 16; dofsample++) {
-                glDisable(GL_MULTISAMPLE);
+                CHECK_GL(glDisable(GL_MULTISAMPLE));
                 glm::vec3 object =
                     camera()->g_camPos +
                     camera()->g_dof * glm::normalize(camera()->g_camView);
@@ -355,8 +355,7 @@ void main(void)
                 scene->my_paint_graphics(1.0, 0.0);
                 CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, tonemapfbo));
                 CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, regularFBO));
-                CHECK_GL(
-                    glBindTexture(GL_TEXTURE_RECTANGLE, texRects[dofsample]));
+                CHECK_GL(glBindTexture(GL_TEXTURE_RECTANGLE, texRects[dofsample]));
                 CHECK_GL(glFramebufferTexture2D(
                     GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE,
                     texRects[dofsample], 0));
@@ -393,7 +392,7 @@ void main(void)
             ScreenFillQuad(texRect, 1.0, 0);
 
         } else {
-            glDisable(GL_MULTISAMPLE);
+            CHECK_GL(glDisable(GL_MULTISAMPLE));
             //ZPass();
             glm::vec3 object =
                 camera()->g_camPos + 1.0f * glm::normalize(camera()->g_camView);
@@ -417,12 +416,11 @@ void main(void)
             CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, tonemapfbo));
             CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, regularFBO));
             CHECK_GL(glBindTexture(GL_TEXTURE_RECTANGLE, texRects[0]));
-            CHECK_GL(
-                glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+            CHECK_GL(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
                                        GL_TEXTURE_RECTANGLE, texRects[0], 0));
-            glBlitFramebuffer(0, 0, camera()->nx, camera()->ny, 0, 0,
+            CHECK_GL(glBlitFramebuffer(0, 0, camera()->nx, camera()->ny, 0, 0,
                               camera()->nx, camera()->ny, GL_COLOR_BUFFER_BIT,
-                              GL_NEAREST);
+                              GL_NEAREST));
 
             CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, regularFBO));
             CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, target_fbo));
