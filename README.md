@@ -102,7 +102,12 @@ Thank you to all the people who have already contributed to ZENO!
 
 ## Write your own extension!
 
-See [zenustech/zeno_addon_wizard](https://github.com/zenustech/zeno_addon_wizard) for an example on how to write custom nodes in ZENO.
+See [`zenustech/zeno_addon_wizard`](https://github.com/zenustech/zeno_addon_wizard) for an example on how to write custom nodes in ZENO.
+
+## Legacy version of Zeno
+
+Currently the [`master`](https://github.com/zenustech/tree/master) branch is for Zeno 2.0.
+You may find Zeno 1.0 in the [`legacy`](https://github.com/zenustech/tree/legacy) branch.
 
 ## License
 
