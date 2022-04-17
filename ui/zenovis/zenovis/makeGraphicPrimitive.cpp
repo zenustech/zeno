@@ -816,11 +816,11 @@ struct GraphicPrimitive : IGraphic {
                 auto name = "lightDir[" + std::to_string(lightNo) + "]";
                 triObj.prog->set_uniform(name.c_str(), light->lightDir);
                 name = "shadowTint[" + std::to_string(lightNo) + "]";
-                triObj.prog->set_uniform(name.c_str(), light->shadowTint);
+                triObj.prog->set_uniform(name.c_str(), light->getShadowTint());
                 name = "shadowSoftness[" + std::to_string(lightNo) + "]";
                 triObj.prog->set_uniform(name.c_str(), light->shadowSoftness);
                 name = "lightIntensity[" + std::to_string(lightNo) + "]";
-                triObj.prog->set_uniform(name.c_str(), light->lightColor * light->intensity);
+                triObj.prog->set_uniform(name.c_str(), light->getIntensity());
                 for (size_t i = 0; i < Light::cascadeCount + 1; i++)
                 {
                     auto name1 = "near[" + std::to_string(lightNo * (Light::cascadeCount + 1) + i) + "]";
