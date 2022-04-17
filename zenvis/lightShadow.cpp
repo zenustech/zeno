@@ -70,6 +70,14 @@ extern std::vector<ReflectivePlane> getReflectivePlanes()
 {
     return ReflectivePlanes;
 }
+extern glm::vec3 getReflectiveNormal(int i)
+{
+    return ReflectivePlanes[i].n;
+}
+extern glm::vec3 getReflectiveCenter(int i)
+{
+    return ReflectivePlanes[i].c;
+}
 extern void setReflectivePlane(int i, glm::vec3 n, glm::vec3 c)
 {
     
