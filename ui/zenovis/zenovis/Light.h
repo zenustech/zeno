@@ -33,6 +33,7 @@ struct Light {
     static constexpr int cascadeCount = 7;
     glm::vec3 lightColor = glm::vec3(1.0);
     float intensity = 10.0;
+    float lightScale = 1.0;
 
     Light() {
         initCascadeShadow();
@@ -132,9 +133,9 @@ struct Light {
         maxX = midX + size;
         minY = midY - size;
         maxY = maxY + size;
-        const glm::mat4 lightProjection =
-            glm::ortho(minX * 30, maxX * 30, minY * 30, maxY * 30, maxZ, -minZ);
-        // std::cout<<minX<<" "<<maxX<<" "<<minY<<" "<<maxY<<" "<<minZ<<" "<<maxZ<<std::endl;
+        glm::mat4 lightProjection =
+            glm::ortho(minX * lightScale, maxX * lightScale, minY * lightScale,
+                       maxY * lightScale, maxZ, -minZ);
         m_nearPlane[layer] = maxZ;
         m_farPlane[layer] = -minZ;
         lightMV = lightProjection * lightView;
