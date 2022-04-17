@@ -14,6 +14,7 @@ public:
     ZenoMainWindow(QWidget* parent = nullptr, Qt::WindowFlags flags = Qt::WindowFlags());
     ~ZenoMainWindow();
     ZenoGraphsEditor* editor() const { return m_pEditor; };
+    bool inDlgEventLoop() const;
 
 public slots:
     void onRunClicked(int nFrames);
@@ -63,6 +64,7 @@ private:
     QMultiMap<DOCK_TYPE, ZenoDockWidget*> m_docks;
 
     ZenoGraphsEditor* m_pEditor;
+    bool m_bInDlgEventloop;
 };
 
 #endif

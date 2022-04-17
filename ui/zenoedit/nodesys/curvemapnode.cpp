@@ -1,6 +1,7 @@
 #include "curvemapnode.h"
 #include "../curvemap/zcurvemapeditor.h"
 #include "../model/curvemodel.h"
+#include <zenoui/util/cihou.h>
 
 
 MakeCurvemapNode::MakeCurvemapNode(const NodeUtilParam& params, QGraphicsItem* parent)
@@ -60,7 +61,7 @@ void MakeCurvemapNode::onEditClicked()
 
 		QVector<QPointF> points, handlers;
 
-		QStringList L = pointsStr.split(" ", Qt::SkipEmptyParts);
+		QStringList L = pointsStr.split(" ", QtSkipEmptyParts);
 		if (!L.isEmpty())
 		{
 			int n = 0;

@@ -150,7 +150,12 @@ ZExpandableSection* ZenoPropPanel::paramsBox(IGraphsModel* pModel, const QModelI
 				pComboBox->setItemDelegate(new ZComboBoxItemDelegate(pComboBox));
 				pComboBox->setObjectName(paramName);
 				pComboBox->setProperty("control", param.control);
+
+#if QT_VERSION >= QT_VERSION_CHECK(5, 15, 0)
 				connect(pComboBox, &QComboBox::textActivated, this, &ZenoPropPanel::onParamEditFinish);
+#else
+				connect(pComboBox, SIGNAL(activated(const QString&)), this, SLOT(onParamEditFinish()));
+#endif
 
 				pLayout->addWidget(pComboBox, r++, 1);
 				break;

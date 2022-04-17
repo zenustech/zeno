@@ -4,8 +4,6 @@
 #include "curveutil.h"
 #include <zenoui/util/uihelper.h>
 #include "curvesitem.h"
-#include <QtGui/private/qbezier_p.h>
-#include <QtGui/private/qstroker_p.h>
 
 using namespace curve_util;
 

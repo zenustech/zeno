@@ -15,6 +15,7 @@
 #include "ui_zenographseditor.h"
 #include "nodesview/zsubnetlistitemdelegate.h"
 #include "searchitemdelegate.h"
+#include <zenoui/util/cihou.h>
 
 
 ZenoGraphsEditor::ZenoGraphsEditor(ZenoMainWindow* pMainWin)
@@ -369,7 +370,7 @@ void ZenoGraphsEditor::activateTab(const QString& subGraphName, const QString& p
 		idx = m_ui->graphsViewTab->addTab(pView, subGraphName);
 
         connect(pView, &ZenoSubGraphView::pathUpdated, this, [=](QString newPath) {
-            QStringList L = newPath.split("/", Qt::SkipEmptyParts);
+            QStringList L = newPath.split("/", QtSkipEmptyParts);
             QString subgName = L.last();
             activateTab(subgName, newPath);
         });

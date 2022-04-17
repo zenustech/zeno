@@ -4,6 +4,19 @@
 #include <QUuid>
 
 
+VarToggleScope::VarToggleScope(bool* pbVar)
+    : m_pbVar(pbVar)
+{
+    Q_ASSERT(m_pbVar);
+    *m_pbVar = true;
+}
+
+VarToggleScope::~VarToggleScope()
+{
+    *m_pbVar = false;
+}
+
+
 BlockSignalScope::BlockSignalScope(QObject* pObj)
     : m_pObject(pObj)
 {
