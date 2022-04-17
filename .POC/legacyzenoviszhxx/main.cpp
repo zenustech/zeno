@@ -65,7 +65,9 @@ void setLightData(
   float softness,
   std::tuple<float, float, float> tint,
   std::tuple<float, float, float> color,
-  float intensity
+  float intensity,
+  float scale,
+  bool enable
 ) {
   auto &scene = Scene::getInstance();
   auto count = scene.lights.size();
@@ -92,6 +94,8 @@ void setLightData(
     std::get<2>(color)
   );
   light->intensity = intensity;
+  light->lightScale = scale;
+  light->m_isEnabled = enable;
 }
 
 int getLightCount() {
@@ -105,13 +109,20 @@ void addLight() {
   scene.addLight();
 }
 
+void removeLight(int i) {
+  auto &scene = Scene::getInstance();
+  scene.removeLight(i);
+}
+
 std::tuple<
   std::tuple<float, float, float>,
   float,
   float,
   std::tuple<float, float, float>,
   std::tuple<float, float, float>,
-  float
+  float,
+  float,
+  bool
 > getLight(int i) {
   auto &scene = Scene::getInstance();
   auto &l = scene.lights.at(i);
@@ -126,7 +137,9 @@ std::tuple<
     l->shadowSoftness,
     {t.x, t.y, t.z},
     {c.x, c.y, c.z},
-    ins
+    ins,
+    l->lightScale,
+    l->m_isEnabled,
   };
 }
 

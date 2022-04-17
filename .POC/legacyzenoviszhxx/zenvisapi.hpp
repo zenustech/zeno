@@ -49,16 +49,21 @@ void setLightData(
   float softness,
   std::tuple<float, float, float> tint,
   std::tuple<float, float, float> color,
-  float intensity
+  float intensity,
+  float scale,
+  bool enable
 );
 int getLightCount();
 void addLight();
+void removeLight(int i);
 std::tuple<
   std::tuple<float, float, float>,
   float,
   float,
   std::tuple<float, float, float>,
   std::tuple<float, float, float>,
-  float
+  float,
+  float,
+  bool
 > getLight(int i);
 }

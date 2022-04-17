@@ -3,8 +3,8 @@
 #include <zeno/zeno.h>
 #include <zeno/logger.h>
 #include <zeno/ListObject.h>
-#include <zeno/NumericObject.h>
-#include <zeno/PrimitiveObject.h>
+#include <zeno/types/PrimitiveObject.h>
+#include <zeno/types/NumericObject.h>
 #include <zeno/utils/UserData.h>
 #include <zeno/StringObject.h>
 
@@ -29,8 +29,10 @@
 
 #include <Eigen/Geometry> 
 
-namespace zeno {
+#include <type_traits>
+#include <variant>
 
+namespace zeno {
 struct MuscleModelObject : zeno::IObject {
     MuscleModelObject() = default;
     std::shared_ptr<BaseForceModel> _forceModel;
@@ -41,10 +43,26 @@ struct DampingForceModel : zeno::IObject {
     std::shared_ptr<DiricletDampingModel> _dampForce;
 };
 
+
+// A Light Weight For Matrix Free Solver
+struct FEMIntegrator2 : zeno::IObject {
+    FEMIntegrator2() = default;
+    std::shared_ptr<BaseIntegrator> _staticPtr;
+    std::shared_ptr<BaseIntegrator> _dynamicPtr;
+
+    std::shared_ptr<MuscleModelObject> muscle;
+    std::shared_ptr<DampingForceModel> damp;
+
+    size_t _stepID;
+};
+
 struct FEMIntegrator : zeno::IObject {
     FEMIntegrator() = default;
     // the set of data structure which remain unchanged
-    std::shared_ptr<BaseIntegrator> _intPtr;
+    std::shared_ptr<BaseIntegrator> _staticPtr;
+    std::shared_ptr<BaseIntegrator> _dynamicPtr;
+
+
     std::shared_ptr<MuscleModelObject> muscle;
     std::shared_ptr<DampingForceModel> damp;
 
@@ -155,7 +173,7 @@ struct FEMIntegrator : zeno::IObject {
             // we denote the average surface area of a tet as the characteristic norm
             _elmCharacteristicNorm[elm_id] = (A012 + A013 + A123 + A023) / 4;
         }      
-    }
+    };
 
     // Except for the static parameters set during the contruction process, you can manipulate
     // the dynamic parameters of FEM mesh in prim using wrangle.
@@ -216,6 +234,12 @@ struct FEMIntegrator : zeno::IObject {
             attrbs.emp.Act = Mat3x3d::Identity();
         }
 
+
+        attrbs.use_dynamic= false;
+        if(elmView->has_attr("dynamic_mark")){
+            attrbs.use_dynamic = fabs(elmView->attr<float>("dynamic_mark")[elm_id] - 1.0) < 1e-3;
+        }
+
         // Support Interpolatee-Driven Mechanics
 
         attrbs.emp.E = Es[elm_id];
@@ -272,6 +296,8 @@ struct FEMIntegrator : zeno::IObject {
             std::vector<double> objBuffer(nm_elms);
 
             const auto& cpos = shape->attr<zeno::vec3f>("curPos");
+            const auto& ppos = shape->attr<zeno::vec3f>("prePos");
+            const auto& pppos = shape->attr<zeno::vec3f>("preprePos");
 
             std::vector<std::vector<Vec3d>> interpPs;
             std::vector<std::vector<Vec3d>> interpWs;
@@ -286,15 +312,27 @@ struct FEMIntegrator : zeno::IObject {
                 attrbs.interpPs = interpPs[elm_id];
                 attrbs.interpWs = interpWs[elm_id];
 
-                std::vector<Vec12d> elm_traj(1);
-                for(size_t i = 0;i < 4;++i)
+                std::vector<Vec12d> elm_traj(3);
+                for(size_t i = 0;i < 4;++i){
                     elm_traj[0].segment(i*3,3) << cpos[tet[i]][0],cpos[tet[i]][1],cpos[tet[i]][2];
-
-                FEM_Scaler elm_obj = 0;
-                _intPtr->EvalElmObj(attrbs,
-                    muscle->_forceModel,
-                    damp->_dampForce,
-                    elm_traj,&objBuffer[elm_id]);
+                    if(attrbs.use_dynamic){
+                        elm_traj[1].segment(i*3,3) << ppos[tet[i]][0],ppos[tet[i]][1],ppos[tet[i]][2];
+                        elm_traj[2].segment(i*3,3) << pppos[tet[i]][0],pppos[tet[i]][1],pppos[tet[i]][2];
+                    }
+                }
+  
+                objBuffer[elm_id] = 0;
+                if(attrbs.use_dynamic){
+                    _dynamicPtr->EvalElmObj(attrbs,
+                        muscle->_forceModel,
+                        damp->_dampForce,
+                        elm_traj,&objBuffer[elm_id]);  
+                }else{
+                    _staticPtr->EvalElmObj(attrbs,
+                        muscle->_forceModel,
+                        damp->_dampForce,
+                        elm_traj,&objBuffer[elm_id]);  
+                }
             }
 
             for(size_t elm_id = 0;elm_id < nm_elms;++elm_id){
@@ -314,6 +352,8 @@ struct FEMIntegrator : zeno::IObject {
             std::vector<Vec12d> derivBuffer(nm_elms);
             
             const auto& cpos = shape->attr<zeno::vec3f>("curPos");
+            const auto& ppos = shape->attr<zeno::vec3f>("prePos");
+            const auto& pppos = shape->attr<zeno::vec3f>("preprePos");
 
             std::vector<std::vector<Vec3d>> interpPs;
             std::vector<std::vector<Vec3d>> interpWs;
@@ -329,14 +369,28 @@ struct FEMIntegrator : zeno::IObject {
                 attrbs.interpPs = interpPs[elm_id];
                 attrbs.interpWs = interpWs[elm_id];
 
-                std::vector<Vec12d> elm_traj(1);
-                for(size_t i = 0;i < 4;++i)
+                std::vector<Vec12d> elm_traj(3);
+                for(size_t i = 0;i < 4;++i){
                     elm_traj[0].segment(i*3,3) << cpos[tet[i]][0],cpos[tet[i]][1],cpos[tet[i]][2];
+                    if(attrbs.use_dynamic){
+                        elm_traj[1].segment(i*3,3) << ppos[tet[i]][0],ppos[tet[i]][1],ppos[tet[i]][2];
+                        elm_traj[2].segment(i*3,3) << pppos[tet[i]][0],pppos[tet[i]][1],pppos[tet[i]][2];
+                    }
+                }
 
-                _intPtr->EvalElmObjDeriv(attrbs,
-                    muscle->_forceModel,
-                    damp->_dampForce,
-                    elm_traj,&objBuffer[elm_id],derivBuffer[elm_id]);
+                objBuffer[elm_id] = 0;
+                derivBuffer[elm_id].setZero();
+                if(attrbs.use_dynamic){
+                    _dynamicPtr->EvalElmObjDeriv(attrbs,
+                        muscle->_forceModel,
+                        damp->_dampForce,
+                        elm_traj,&objBuffer[elm_id],derivBuffer[elm_id]);  
+                }else{
+                    _staticPtr->EvalElmObjDeriv(attrbs,
+                        muscle->_forceModel,
+                        damp->_dampForce,
+                        elm_traj,&objBuffer[elm_id],derivBuffer[elm_id]);  
+                }
             }
 
             deriv.setZero();
@@ -354,7 +408,7 @@ struct FEMIntegrator : zeno::IObject {
         const std::shared_ptr<PrimitiveObject>& interpShape,
         VecXd& deriv,VecXd& HValBuffer,bool enforce_spd) {
             FEM_Scaler obj = 0;
-            size_t clen = _intPtr->GetCouplingLength();
+            size_t clen = _staticPtr->GetCouplingLength();
             size_t nm_elms = shape->quads.size();
 
             std::vector<double> objBuffer(nm_elms);
@@ -362,6 +416,8 @@ struct FEMIntegrator : zeno::IObject {
             std::vector<Mat12x12d> HBuffer(nm_elms);
 
             const auto& cpos = shape->attr<zeno::vec3f>("curPos");
+            const auto& ppos = shape->attr<zeno::vec3f>("prePos");
+            const auto& pppos = shape->attr<zeno::vec3f>("preprePos");
 
             std::vector<std::vector<Vec3d>> interpPs;
             std::vector<std::vector<Vec3d>> interpWs;
@@ -377,16 +433,29 @@ struct FEMIntegrator : zeno::IObject {
                 attrbs.interpPs = interpPs[elm_id];
                 attrbs.interpWs = interpWs[elm_id];   
 
-                std::vector<Vec12d> elm_traj(1);
-                for(size_t i = 0;i < 4;++i)
+                std::vector<Vec12d> elm_traj(3);
+                for(size_t i = 0;i < 4;++i){
                     elm_traj[0].segment(i*3,3) << cpos[tet[i]][0],cpos[tet[i]][1],cpos[tet[i]][2];
+                    if(attrbs.use_dynamic){
+                        elm_traj[1].segment(i*3,3) << ppos[tet[i]][0],ppos[tet[i]][1],ppos[tet[i]][2];
+                        elm_traj[2].segment(i*3,3) << pppos[tet[i]][0],pppos[tet[i]][1],pppos[tet[i]][2];
+                    }
+                }
 
 
-                _intPtr->EvalElmObjDerivJacobi(attrbs,
-                    muscle->_forceModel,
-                    damp->_dampForce,
-                    elm_traj,
-                    &objBuffer[elm_id],derivBuffer[elm_id],HBuffer[elm_id],enforce_spd);
+                if(attrbs.use_dynamic){
+                    _dynamicPtr->EvalElmObjDerivJacobi(attrbs,
+                        muscle->_forceModel,
+                        damp->_dampForce,
+                        elm_traj,
+                        &objBuffer[elm_id],derivBuffer[elm_id],HBuffer[elm_id],enforce_spd);
+                }else{
+                    _staticPtr->EvalElmObjDerivJacobi(attrbs,
+                        muscle->_forceModel,
+                        damp->_dampForce,
+                        elm_traj,
+                        &objBuffer[elm_id],derivBuffer[elm_id],HBuffer[elm_id],enforce_spd);
+                }
             }
 
             deriv.setZero();

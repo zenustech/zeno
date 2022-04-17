@@ -32,6 +32,8 @@ extern bool renderReflect(int i);
 extern int getReflectionViewID();
 extern void setCamera(glm::vec3 pos, glm::vec3 front, glm::vec3 up, double _fov, double fnear, double ffar, double _dof, int set);
 extern unsigned int getDepthTexture();
+extern glm::vec3 getReflectiveNormal(int i);
+extern glm::vec3 getReflectiveCenter(int i);
 
 struct drawObject
 {
@@ -861,6 +863,10 @@ struct GraphicPrimitive : IGraphic {
                     continue;
                 auto name = "reflectMVP[" + std::to_string(i) + "]";
                 triObj.prog->set_uniform(name.c_str(), getReflectMVP(i));
+                name = "reflect_normals[" + std::to_string(i) + "]";
+                triObj.prog->set_uniform(name.c_str(), getReflectiveNormal(i));
+                name = "reflect_centers[" + std::to_string(i) + "]";
+                triObj.prog->set_uniform(name.c_str(), getReflectiveCenter(i));
                 auto name2 = "reflectionMap"+std::to_string(i);
                 triObj.prog->set_uniformi(name2.c_str(),texOcp);
                 CHECK_GL(glActiveTexture(GL_TEXTURE0+texOcp));
@@ -2418,7 +2424,8 @@ uniform float reflectPass;
 uniform float reflectionViewID;
 uniform float depthPass;
 uniform sampler2DRect depthBuffer;
-
+uniform vec3 reflect_normals[16];
+uniform vec3 reflect_centers[16];
 vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 old_tangent) {
     vec4 projPos = mView * vec4(position.xyz, 1.0);
     //normal = normalize(normal);
@@ -2439,6 +2446,8 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 old_tangent) {
     /* custom_shader_begin */
 )" + mtl->frag + R"(
     if(reflectPass==1.0 && mat_reflection==1.0 )
+        discard;
+    if(reflectPass==1.0 && dot(reflect_normals[int(reflectionViewID)], position-reflect_centers[int(reflectionViewID)])<0)
         discard;
     /* custom_shader_end */
     if(mat_opacity>=0.99 && mat_reflection!=1.0)

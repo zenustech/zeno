@@ -2,6 +2,93 @@
 
 namespace zeno{
 
+
+
+// a jiggle deformer use successive 3 frames
+struct Jiggle : zeno::INode {
+    virtual void apply() override {
+        auto prim = get_input<zeno::PrimitiveObject>("prim");
+        // the deformation without jiggling
+        const auto& cpos_vec =  prim->attr<zeno::vec3f>("curPos");
+        const auto& ppos_vec =  prim->attr<zeno::vec3f>("prePos");
+        const auto& pppos_vec = prim->attr<zeno::vec3f>("preprePos");
+
+        // the first time Jiggle get called
+        if(!prim->has_attr("curJiggle")){
+            prim->add_attr<zeno::vec3f>("curJiggle");
+            prim->add_attr<zeno::vec3f>("preJiggle");
+            prim->add_attr<zeno::vec3f>("prepreJiggle");
+            auto& cjiggle = prim->attr<zeno::vec3f>("curJiggle");
+            auto& pjiggle =   prim->attr<zeno::vec3f>("preJiggle");
+            auto& ppjiggle =  prim->attr<zeno::vec3f>("prepreJiggle");
+
+            #pragma omp parallel for
+            for(size_t i = 0;i < prim->size();++i){
+                cjiggle[i] = ppos_vec[i];
+                pjiggle[i] = ppos_vec[i];
+                ppjiggle[i] = ppos_vec[i];
+            }
+        }
+
+        auto& cjiggle = prim->attr<zeno::vec3f>("curJiggle");
+        auto& pjiggle =   prim->attr<zeno::vec3f>("preJiggle");
+        auto& ppjiggle =  prim->attr<zeno::vec3f>("prepreJiggle");
+
+        auto jiggleStiffness = get_input2<float>("jiggleStiffness");
+        auto jiggleDamp = get_input2<float>("jiggleDamping");
+
+        if(jiggleDamp > 0.8){
+            std::cout << "input jiggle damp >= 0.8, clamp to 0.8" << std::endl;
+            jiggleDamp = 0.8;
+        }
+
+        auto jiggleRate = get_input2<float>("jiggleRate");
+
+        auto jdt = 1.0/jiggleRate;
+
+
+//  try explicit integrator first
+        #pragma omp parallel for
+        for(size_t i = 0;i < prim->size();++i){
+            const auto& cpos = cpos_vec[i];
+            const auto& ppos = ppos_vec[i];
+            const auto& pppos = pppos_vec[i];
+
+            ppjiggle[i] = pjiggle[i];
+            pjiggle[i] = cjiggle[i];
+
+            auto& cj = cjiggle[i];
+            const auto& pj = pjiggle[i];
+            const auto& ppj = ppjiggle[i];
+
+//          the previous velocity applied with damping
+            auto jvec = (1 - jiggleDamp) * (pj - ppj)/jdt;
+
+// compute accel
+            auto tension = cpos - pjiggle[i];
+
+            cj += jvec * jdt + 0.5 * tension * jdt * jdt;
+        }
+
+
+        set_output("prim",prim); 
+    }
+};
+
+
+ZENDEFNODE(Jiggle, {
+    {"prim",
+        {"float","jiggleStiffness","10"},
+        {"float","jiggleDamping","0.5"},
+        {"float","jiggleRate","1"}
+    },
+    {"prim"},
+    {},
+    {"FEM"},
+});
+
+
+
 struct SolveFEM : zeno::INode {
     virtual void apply() override {
         // std::cout << "BEGIN SOLVER " << std::endl;
@@ -38,6 +125,14 @@ struct SolveFEM : zeno::INode {
         HBuffer.resize(integrator->_connMatrix.nonZeros());
 
         auto& cpos = shape->attr<zeno::vec3f>("curPos");
+        auto& ppos = shape->attr<zeno::vec3f>("prePos");
+        auto& pppos = shape->attr<zeno::vec3f>("preprePos");
+
+        for(size_t i = 0;i < shape->size();++i){
+            pppos[i] = ppos[i];
+            ppos[i] = cpos[i];
+        }
+
 
         size_t iter_idx = 0;
 
