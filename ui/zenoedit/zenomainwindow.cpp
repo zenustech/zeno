@@ -615,12 +615,12 @@ void ZenoMainWindow::readSettings2()
     settings.endGroup();
 }
 
-void ZenoMainWindow::onRunClicked(int nFrames)
+void ZenoMainWindow::onRunClicked(int beginFrame, int endFrame)
 {
     auto pGraphsMgr = zenoApp->graphsManagment();
     IGraphsModel* pModel = pGraphsMgr->currentModel();
     GraphsModel* pLegacy = qobject_cast<GraphsModel*>(pModel);
-    launchProgram(pLegacy, nFrames);
+    launchProgram(pLegacy, beginFrame, endFrame);
 }
 
 void ZenoMainWindow::onNodesSelected(const QModelIndex& subgIdx, const QModelIndexList& nodes, bool select)

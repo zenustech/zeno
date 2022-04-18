@@ -176,13 +176,14 @@ void killProgramJSON()
 
 }
 
-void launchProgram(GraphsModel* pModel, int nframes)
+void launchProgram(GraphsModel* pModel, int beginFrame, int endFrame)
 {
 	rapidjson::StringBuffer s;
 	RAPIDJSON_WRITER writer(s);
     {
         JsonArrayBatch batch(writer);
-        JsonHelper::AddVariantList({"setAdhocNumFrames", nframes}, "int", writer);
+        JsonHelper::AddVariantList({"setBeginFrameNumber", beginFrame}, "int", writer);
+        JsonHelper::AddVariantList({"setEndFrameNumber", endFrame}, "int", writer);
         serializeScene(pModel, writer);
     }
     std::string progJson(s.GetString());
