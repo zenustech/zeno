@@ -33,7 +33,7 @@ bool __format(Os &os, It fb, It fe, std::tuple<Args const &...> const &args) {
 
 template <class Os, class ...Args>
 bool format_to(Os &os, std::string_view fmt, Args const &...args) {
-    return __format<0>(os, fmt.begin(), fmt.end(), std::tuple<Args const &...>(args...));
+    return __format<0>(os, fmt.data(), fmt.data() + fmt.size(), std::tuple<Args const &...>(args...));
 }
 
 template <class ...Args>
