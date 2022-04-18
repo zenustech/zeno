@@ -17,7 +17,7 @@ ZENO_API ErrorException::ErrorException(std::shared_ptr<Error> &&err) noexcept
 #endif
 }
 
-ZENO_API ErrorException::~ErrorException() = default;
+ZENO_API ErrorException::~ErrorException() noexcept = default;
 
 ZENO_API char const *ErrorException::what() const noexcept {
     return err->what().c_str();
@@ -31,7 +31,7 @@ ZENO_API Error::Error(std::string_view message) noexcept
     : message(message) {
 }
 
-ZENO_API Error::~Error() = default;
+ZENO_API Error::~Error() noexcept = default;
 
 ZENO_API std::string const &Error::what() const {
     return message;

@@ -12,7 +12,7 @@ struct Error {
     std::string message;
 
     ZENO_API explicit Error(std::string_view message) noexcept;
-    ZENO_API virtual ~Error();
+    ZENO_API virtual ~Error() noexcept;
     ZENO_API std::string const &what() const;
 
     Error(Error const &) = delete;
