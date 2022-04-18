@@ -3,8 +3,9 @@
 ## Software requirements
 
 To work with Zeno, you need:
+
 ```cpp
-Git >= 2.0 && CMake >= 3.18 && Qt >= 5.14 && (MSVC >= 2019 || GCC >= 9 || Clang >= 11) && (Windows || Linux) && 64bit
+Git >= 2.0 && CMake >= 3.18 && Qt >= 5.12 && (MSVC >= 2019 || GCC >= 9 || Clang >= 11) && (Windows || Linux) && 64bit
 ```
 
 ### Windows
@@ -43,14 +44,20 @@ sudo apt-get install -y qt5-default
 sudo apt-get install libqt5svg5*
 ```
 
-> We haven't tested Zeno on WSL (they doesn't have X11 by default), but please give feedback if you meet trouble there, we'd happy to help you resolve :)
+> Note: We recommend to use Ubuntu 20.04 (or above) if possible. Ubuntu 18.04 users may need to install Qt 5.14.x from the official installer manually.
 
 ### Arch Linux
+
+Arch Linux is @archibate's recommended environment, as it always provide latest packages.
 
 ```bash
 sudo pacman -S git cmake make g++
 sudo pacman -S qt5-base
 ```
+
+### WSL
+
+We haven't tested Zeno 2.0 on WSL (they doesn't have X11 by default). But please give feedback if you meet trouble there, we'd happy to help you resolve :) Related video: https://www.bilibili.com/video/BV1u44y1N78v
 
 ### Mac OS X
 
@@ -58,7 +65,7 @@ Please refer to this video for installation guide :) https://www.bilibili.com/vi
 
 ## Building Zeno
 
-### Clone source code
+### Get source code
 
 Now that development tools are ready, let's clone the source code of Zeno from GitHub:
 
