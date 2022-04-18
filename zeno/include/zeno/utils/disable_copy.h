@@ -22,4 +22,4 @@ struct explicit_default_ctor {
     explicit explicit_default_ctor() = default;
 };
 
-};
+}
