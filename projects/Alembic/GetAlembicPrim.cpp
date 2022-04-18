@@ -150,34 +150,6 @@ ZENDEFNODE(GetAlembicPrim, {
     {"alembic"},
 });
 
-struct AllAlembicPrim : INode {
-    virtual void apply() override {
-        auto abctree = get_input<ABCTree>("abctree");
-        auto prims = std::make_shared<zeno::ListObject>();
-        int use_xform = get_input<NumericObject>("use_xform")->get<int>();
-        if (use_xform) {
-            prims = get_xformed_prims(abctree);
-        } else {
-            abctree->visitPrims([&] (auto const &p) {
-                auto np = std::static_pointer_cast<PrimitiveObject>(p->clone());
-                prims->arr.push_back(np);
-            });
-        }
-        auto outprim = primitive_merge(prims);
-        set_output("prim", std::move(outprim));
-    }
-};
-
-ZENDEFNODE(AllAlembicPrim, {
-    {
-        {"ABCTree", "abctree"},
-        {"int", "use_xform", "0"}
-    },
-    {{"PrimitiveObject", "prim"}},
-    {},
-    {"alembic"},
-});
-
 struct GetAlembicCamera : INode {
     virtual void apply() override {
         auto abctree = get_input<ABCTree>("abctree");
