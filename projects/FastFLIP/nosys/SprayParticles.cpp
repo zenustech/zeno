@@ -69,11 +69,23 @@ bool pointInTriangle(const zeno::vec3f& query_point,
     float beta = zeno::dot(zeno::cross(w, v),n) / zeno::dot(n,n);
     float alpha = 1 - gamma - beta;
     // The point P′ lies inside T if:
+    weights = vec3f(gamma, beta, alpha);
     return ((0 <= alpha) && (alpha <= 1) &&
             (0 <= beta)  && (beta  <= 1) &&
             (0 <= gamma) && (gamma <= 1));
 }
 // to do where to put this func??
+void baryCentricInterpolation(zeno::vec3f &p,
+                           zeno::vec3f &vert1, zeno::vec3f &vert2,
+                           zeno::vec3f &vert3, zeno::vec3f &weights) {
+  float a1 = area(p, vert2, vert3);
+  float a2 = area(p, vert1, vert3);
+  float a = area(vert1, vert2, vert3);
+  float w1 = a1 / (a+1e-7);
+  float w2 = a2 / (a+1e-7);
+  float w3 = 1 - w1 - w2;
+  weights = zeno::vec3f(w1, w2, w3);
+}
 template <class T>
 T baryCentricInterpolation(T &v1, T &v2, T &v3, zeno::vec3f &p,
                            zeno::vec3f &vert1, zeno::vec3f &vert2,
@@ -86,7 +98,6 @@ T baryCentricInterpolation(T &v1, T &v2, T &v3, zeno::vec3f &p,
   float w3 = 1 - w1 - w2;
   return w1 * v1 + w2 * v2 + w3 * v3;
 }
-
 struct SprayParticles : zeno::INode {
   virtual void apply() override {
     auto dx = get_input("Dx")->as<NumericObject>()->get<float>();
@@ -97,7 +108,7 @@ struct SprayParticles : zeno::INode {
     
     
     auto result = zeno::IObject::make<PrimitiveObject>();
-    tbb::concurrent_vector<std::tuple<zeno::vec3f,zeno::vec3f>> data(0);
+    tbb::concurrent_vector<std::tuple<zeno::vec3f,zeno::vec3f, zeno::vec3f>> data(0);
     //tbb::concurrent_vector<zeno::vec3f> vel(0);
     size_t n = prim->tris.size();
     tbb::parallel_for((size_t)0, (size_t)n, (size_t)1, [&](size_t index)
@@ -122,25 +133,31 @@ struct SprayParticles : zeno::INode {
       // vel.emplace_back(vel2);
       // pos.emplace_back(c);
       // vel.emplace_back(vel3);
-      data.emplace_back(std::make_tuple(a, zeno::vec3f(vi[0],vi[1],vi[2])));
-      data.emplace_back(std::make_tuple(b, zeno::vec3f(vi[0],vi[1],vi[2])));
-      data.emplace_back(std::make_tuple(c, zeno::vec3f(vi[0],vi[1],vi[2])));
+      data.emplace_back(std::make_tuple(a, zeno::vec3f((float)(vi[0]),(float)(vi[1]),(float)(vi[2])), vec3f(1,0,0)));
+      data.emplace_back(std::make_tuple(b, zeno::vec3f((float)(vi[0]),(float)(vi[1]),(float)(vi[2])), vec3f(0,1,0)));
+      data.emplace_back(std::make_tuple(c, zeno::vec3f((float)(vi[0]),(float)(vi[1]),(float)(vi[2])), vec3f(0,0,1)));
       for (int kk = 0; kk < kn; kk++) {
         zeno::vec3f vij = b + (float)kk * 0.5f * dx * dir3;
         if (ptInTriangle(vij, a, b, c)) {
-              data.emplace_back(std::make_tuple(vij,zeno::vec3f(vi[0],vi[1],vi[2])));
+          zeno::vec3f w;
+          baryCentricInterpolation(vij,a,b,c,w);
+              data.emplace_back(std::make_tuple(vij,zeno::vec3f((float)(vi[0]),(float)(vi[1]),(float)(vi[2])), w));
         }
       }
       for (int ii = 0; ii < in; ii++) {
         zeno::vec3f vij = a + (float)ii * 0.5f * dx * dir1;
         if (ptInTriangle(vij, a, b, c)) {
-          data.emplace_back(std::make_tuple(vij,zeno::vec3f(vi[0],vi[1],vi[2])));
+          zeno::vec3f w;
+          baryCentricInterpolation(vij,a,b,c,w);
+              data.emplace_back(std::make_tuple(vij,zeno::vec3f((float)(vi[0]),(float)(vi[1]),(float)(vi[2])), w));
         }
       }
       for (int jj = 0; jj < jn; jj++) {
         zeno::vec3f vij = a + (float)jj * 0.5f * dx * dir2;
         if (ptInTriangle(vij, a, b, c)) {
-          data.emplace_back(std::make_tuple(vij,zeno::vec3f(vi[0],vi[1],vi[2])));
+          zeno::vec3f w;
+          baryCentricInterpolation(vij,a,b,c,w);
+              data.emplace_back(std::make_tuple(vij,zeno::vec3f((float)(vi[0]),(float)(vi[1]),(float)(vi[2])), w));
         }
       }
       for (int ii = 0; ii < in; ii++) {
@@ -148,17 +165,21 @@ struct SprayParticles : zeno::INode {
           zeno::vec3f vij =
               a + (float)ii * 0.5f * dx * dir1 + (float)jj * 0.5f * dx * dir2;
           if (ptInTriangle(vij, a, b, c)) {
-            data.emplace_back(std::make_tuple(vij,zeno::vec3f(vi[0],vi[1],vi[2])));
+            zeno::vec3f w;
+          baryCentricInterpolation(vij,a,b,c,w);
+              data.emplace_back(std::make_tuple(vij,zeno::vec3f((float)(vi[0]),(float)(vi[1]),(float)(vi[2])), w));
           }
         }
       }
     });
     result->resize(data.size());
     result->add_attr<zeno::vec3f>("TriIndex");
+    result->add_attr<zeno::vec3f>("InitWeight");
 #pragma omp parallel for
     for (int index = 0; index < data.size(); index++) {
       result->verts[index] = std::get<0>(data[index]);
       result->attr<zeno::vec3f>("TriIndex")[index] = std::get<1>(data[index]);
+      result->attr<zeno::vec3f>("InitWeight")[index] = std::get<2>(data[index]);
     }
     set_output("particles", std::move(result));
   }
@@ -181,28 +202,27 @@ static int defSprayParticles = zeno::defNodeClass<SprayParticles>(
                            "primitive",
                        }});
 
-static void BarycentricInterpPrimitive(PrimitiveObject* dst, const PrimitiveObject* src, int i, int v0, int v1, int v2,
-zeno::vec3f &pdst, zeno::vec3f &pos0, zeno::vec3f &pos1, zeno::vec3f &pos2)
+static void BarycentricInterpPrimitive(PrimitiveObject* _dst, const PrimitiveObject* _src, int i, int v0, int v1, int v2,
+zeno::vec3f &pdst, zeno::vec3f &pos0, zeno::vec3f &pos1, zeno::vec3f &pos2, zeno::vec3f &w)
 {
-  for(auto key:src->attr_keys())
+  for(auto key:_src->attr_keys())
   {
-      if (key!="TriIndex"&&key!="pos")
-      std::visit([i, v0, v1, v2, &pdst, &pos0, &pos1, &pos2](auto &&dst, auto &&src) {
+      if (key!="TriIndex"&&key!="pos"&&key!="InitWeight")
+      std::visit([i, v0, v1, v2, &pdst, &pos0, &pos1, &pos2, &w](auto &&dst, auto &&src) {
           using DstT = std::remove_cv_t<std::remove_reference_t<decltype(dst)>>;
           using SrcT = std::remove_cv_t<std::remove_reference_t<decltype(src)>>;
           if constexpr (std::is_same_v<DstT, SrcT>) {
               auto val1 = src[v0];
               auto val2 = src[v1];
               auto val3 = src[v2];
-              // auto val = baryCentricInterpolation(val1, val2, val3, pdst, 
-              //              pos0, pos1, pos2);
-              zeno::vec3f w;
-              pointInTriangle(pdst, pos0, pos1, pos2, w);
-              dst[i] = w[0]*val1 + w[1]*val2 + w[2]*val3;
+              auto val = w[0] * val1 + w[1] * val2 + w[2]*val3;
+              //zeno::vec3f w;
+              //pointInTriangle(pdst, pos0, pos1, pos2, w);
+              dst[i] = val;
           } else  {
               throw std::runtime_error("the same attr of both primitives are of different types.");
           }
-      }, dst->attr(key), src->attr(key));
+      }, _dst->attr(key), _src->attr(key));
   }
 }
 struct InterpMeshBarycentric : INode{
@@ -212,7 +232,7 @@ struct InterpMeshBarycentric : INode{
     auto triIndex = points->attr<zeno::vec3f>("TriIndex");
     for(auto key:prim->attr_keys())
     { 
-        if(key!="pos"&&key!="TriIndex")
+        if(key!="pos"&&key!="TriIndex"&&key!="InitWeight")
        std::visit([&points, key](auto &&ref) {
                     using T = std::remove_cv_t<std::remove_reference_t<decltype(ref[0])>>;
                     points->add_attr<T>(key);
@@ -222,8 +242,9 @@ struct InterpMeshBarycentric : INode{
   tbb::parallel_for((size_t)0, (size_t)(points->size()), (size_t)1, [&](size_t index) 
   {
       auto tidx = triIndex[index];
-      int v0 = tidx[0], v1 = tidx[1], v2 = tidx[2];
-      BarycentricInterpPrimitive(points.get(), prim.get(), index, v0, v1, v2, points->verts[index], prim->verts[v0], prim->verts[v1], prim->verts[v2]);
+      int v0 = (int)(tidx[0]), v1 = (int)(tidx[1]), v2 = (int)(tidx[2]);
+      vec3f w = points->attr<zeno::vec3f>("InitWeight")[index];
+      BarycentricInterpPrimitive(points.get(), prim.get(), index, v0, v1, v2, points->verts[index], prim->verts[v0], prim->verts[v1], prim->verts[v2], w);
   });
 
     set_output("oParticles", get_input("Particles"));

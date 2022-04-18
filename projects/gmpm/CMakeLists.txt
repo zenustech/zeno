@@ -67,6 +67,7 @@ target_compile_options(zeno_zsfluid
 add_library(zeno_mpm SHARED)
 target_sources(zeno_mpm PRIVATE
   utils/IndexBuckets.cu
+  mpm/Boundary.cu
   mpm/Generation.cu
   mpm/Generation.cpp
   mpm/Transfer.cu

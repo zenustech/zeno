@@ -54,6 +54,16 @@ namespace zenvis
         static constexpr int cascadeCount = 7;
         glm::vec3 lightColor = glm::vec3(1.0);
         float intensity = 10.0;
+        float lightScale = 1.0;
+        bool m_isEnabled = true;
+        glm::vec3 getShadowTint()
+        {
+            return m_isEnabled?shadowTint:glm::vec3(1.0);
+        }
+        glm::vec3 getIntensity()
+        {
+            return m_isEnabled?intensity*lightColor:glm::vec3(0.0);
+        }
         Light()
         {
             initCascadeShadow();
@@ -160,7 +170,8 @@ namespace zenvis
             maxX = midX + size;
             minY = midY - size;
             maxY = maxY + size;
-            const glm::mat4 lightProjection = glm::ortho(minX * 30, maxX * 30, minY * 30, maxY * 30, maxZ, -minZ);
+            //std::cout<<"lightscale:"<<lightScale<<std::endl;
+            const glm::mat4 lightProjection = glm::ortho(minX * lightScale, maxX * lightScale, minY * lightScale, maxY * lightScale, maxZ, -minZ);
             // std::cout<<minX<<" "<<maxX<<" "<<minY<<" "<<maxY<<" "<<minZ<<" "<<maxZ<<std::endl;
             m_nearPlane[layer] = maxZ;
             m_farPlane[layer] = -minZ;

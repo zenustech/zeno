@@ -92,8 +92,7 @@ struct ZenoParticles : IObjectClone<ZenoParticles> {
   // (iii) lagrangian mesh element quadrature particle
   // tracker particle for
   enum category_e : int { mpm, curve, surface, tet, tracker };
-  using particles_t =
-      zs::TileVector<float, 32, unsigned char, zs::ZSPmrAllocator<false>>;
+  using particles_t = zs::TileVector<float, 32>;
   auto &getParticles() noexcept { return particles; }
   const auto &getParticles() const noexcept { return particles; }
   auto &getQuadraturePoints() {
@@ -131,14 +130,18 @@ struct ZenoParticles : IObjectClone<ZenoParticles> {
   }
   std::size_t numParticles() const noexcept { return particles.size(); }
   std::size_t numElements() const noexcept { return (*elements).size(); }
+  bool hasSprayedParticles() const noexcept {
+    return sprayedOffset == numParticles();
+  }
 
-  bool asBoundary = false;
   particles_t particles{};
   std::optional<particles_t> elements{};
   category_e category{category_e::mpm}; // 0: conventional mpm particle, 1:
                                         // curve, 2: surface, 3: tet
-  std::shared_ptr<PrimitiveObject> prim;
+  std::shared_ptr<PrimitiveObject> prim{};
   ZenoConstitutiveModel model{};
+  std::size_t sprayedOffset{};
+  bool asBoundary = false;
 };
 
 struct ZenoPartition : IObjectClone<ZenoPartition> {

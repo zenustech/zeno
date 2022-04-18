@@ -209,7 +209,9 @@ void setLightData(
   float softness,
   std::tuple<float, float, float> tint,
   std::tuple<float, float, float> color,
-  float intensity
+  float intensity,
+  float scale,
+  bool enable
 ) {
   auto &scene = Scene::getInstance();
   auto count = scene.lights.size();
@@ -236,6 +238,8 @@ void setLightData(
     std::get<2>(color)
   );
   light->intensity = intensity;
+  light->lightScale = scale;
+  light->m_isEnabled = enable;
 }
 
 int getLightCount() {
@@ -249,13 +253,20 @@ void addLight() {
   scene.addLight();
 }
 
+void removeLight(int i) {
+  auto &scene = Scene::getInstance();
+  scene.removeLight(i);
+}
+
 std::tuple<
   std::tuple<float, float, float>,
   float,
   float,
   std::tuple<float, float, float>,
   std::tuple<float, float, float>,
-  float
+  float,
+  float,
+  bool
 > getLight(int i) {
   auto &scene = Scene::getInstance();
   auto &l = scene.lights.at(i);
@@ -270,7 +281,9 @@ std::tuple<
     l->shadowSoftness,
     {t.x, t.y, t.z},
     {c.x, c.y, c.z},
-    ins
+    ins,
+    l->lightScale,
+    l->m_isEnabled,
   };
 }
 
@@ -341,7 +354,7 @@ static void shadowPass()
 }
 
 
-static void drawSceneDepthSafe(float aspRatio, float sampleweight, bool reflect, float isDepthPass, bool show_grid=false)
+static void drawSceneDepthSafe(float aspRatio, float sampleweight, bool reflect, float isDepthPass, bool _show_grid=false)
 {
 
     //glEnable(GL_BLEND);
@@ -366,7 +379,7 @@ static void drawSceneDepthSafe(float aspRatio, float sampleweight, bool reflect,
           gra->setMultiSampleWeight(sampleweight);
           gra->draw(reflect, isDepthPass);
         }
-        if (isDepthPass != 1.0 && show_grid) {
+        if (isDepthPass != 1.0 && _show_grid) {
           axis->draw(false, 0.0);
           grid->draw(false, 0.0);
         }
@@ -403,7 +416,7 @@ static void my_paint_graphics(float samples, float isDepthPass) {
   
   CHECK_GL(glViewport(0, 0, nx, ny));
   vao->bind();
-  drawSceneDepthSafe((float)(nx * 1.0 / ny), 1.0/samples, false, isDepthPass, true);
+  drawSceneDepthSafe((float)(nx * 1.0 / ny), 1.0/samples, false, isDepthPass, show_grid);
   if (isDepthPass!=1.0 && show_grid) {
     CHECK_GL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
         draw_small_axis();
@@ -659,9 +672,13 @@ static void paint_graphics(GLuint target_fbo = 0) {
   
   
   if(g_dof>0){
-    
+    glDisable(GL_MULTISAMPLE);
+    glBindRenderbuffer(GL_RENDERBUFFER, msfborgb);              
+    glRenderbufferStorageMultisample(GL_RENDERBUFFER, 1, GL_RGBA32F, nx, ny);
+    CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, msfbod));
+    CHECK_GL(glRenderbufferStorageMultisample(GL_RENDERBUFFER, 1, GL_DEPTH_COMPONENT32F, nx, ny));
     for(int dofsample=0;dofsample<16;dofsample++){
-          glDisable(GL_MULTISAMPLE);
+          
           glm::vec3 object = g_camPos + g_dof * glm::normalize(g_camView);
           glm::vec3 right = glm::normalize(glm::cross(object - g_camPos, g_camUp));
           glm::vec3 p_up = glm::normalize(glm::cross(right, object - g_camPos));
@@ -710,7 +727,11 @@ static void paint_graphics(GLuint target_fbo = 0) {
     ScreenFillQuad(texRect,1.0,0);
 
   } else {
-    glDisable(GL_MULTISAMPLE);
+    glEnable(GL_MULTISAMPLE);
+    glBindRenderbuffer(GL_RENDERBUFFER, msfborgb);              
+    glRenderbufferStorageMultisample(GL_RENDERBUFFER, 8, GL_RGBA32F, nx, ny);
+    CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, msfbod));
+    CHECK_GL(glRenderbufferStorageMultisample(GL_RENDERBUFFER, 8, GL_DEPTH_COMPONENT32F, nx, ny));
     //ZPass();
     glm::vec3 object = g_camPos + 1.0f * glm::normalize(g_camView);
     glm::vec3 right = glm::normalize(glm::cross(object - g_camPos, g_camUp));
@@ -719,6 +740,7 @@ static void paint_graphics(GLuint target_fbo = 0) {
     CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, tonemapfbo));
     CHECK_GL(glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER,
                   GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, msfborgb));
+    
     CHECK_GL(glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER,
                   GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, msfbod));
     CHECK_GL(glDrawBuffer(GL_COLOR_ATTACHMENT0));
@@ -736,6 +758,7 @@ static void paint_graphics(GLuint target_fbo = 0) {
     CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, target_fbo));
     //tmProg->set_uniform("msweight",1.0);
     ScreenFillQuad(texRects[0],1.0,0);
+    glDisable(GL_MULTISAMPLE);
     
   }
   //std::this_thread::sleep_for(std::chrono::milliseconds(30));
