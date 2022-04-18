@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.19) # TODO: wxl cihou object-library!
+cmake_minimum_required(VERSION 3.19)
 
 # assume cuda
 project(MPM CXX CUDA)
@@ -19,7 +19,6 @@ target_compile_options(zeno_zstest PRIVATE "-march=native")
 endif()
 target_link_libraries(zeno_zstest PRIVATE zensim)
 target_link_libraries(zeno_zstest PUBLIC zenodes)
-target_link_libraries(zeno_zstest PRIVATE zeno_nodep)
 target_link_libraries(zeno_zstest PUBLIC ZFX)
 target_include_directories(zeno_zstest PRIVATE ../oldzenbase/include)
 target_include_directories(zeno_zstest PRIVATE ../zenvdb/include)
@@ -35,7 +34,6 @@ target_compile_options(zeno_cutest PRIVATE "-march=native")
 endif()
 target_link_libraries(zeno_cutest PRIVATE zensim)
 target_link_libraries(zeno_cutest PUBLIC zenodes)
-target_link_libraries(zeno_cutest PRIVATE zeno_nodep)
 target_link_libraries(zeno_cutest PUBLIC ZFX)
 target_include_directories(zeno_cutest PRIVATE ../oldzenbase/include)
 target_include_directories(zeno_cutest PRIVATE ../zenvdb/include)
@@ -75,7 +73,6 @@ target_sources(zeno_mpm PRIVATE
   mpm/Temp.cu
 )
 target_link_libraries(zeno_mpm PRIVATE zensim)
-target_link_libraries(zeno_mpm PRIVATE zeno_nodep)
 target_link_libraries(zeno_mpm PUBLIC zenodes ZFX)
 target_include_directories(zeno_mpm PRIVATE ../oldzenbase/include)
 target_include_directories(zeno_mpm PRIVATE ../zenvdb/include)
@@ -124,7 +121,6 @@ endif()
 find_package(OpenMP REQUIRED)
 target_link_libraries(zeno_zsfft PRIVATE zpc zpcomp OpenMP::OpenMP_CXX CUDA::cufft)
 target_link_libraries(zeno_zsfft PUBLIC zenodes)
-target_link_libraries(zeno_zsfft PRIVATE zeno_nodep)
 target_link_libraries(zeno_zsfft PUBLIC ZFX)
 target_include_directories(zeno_zsfft PRIVATE ../oldzenbase/include)
 target_include_directories(zeno_zsfft PRIVATE ../zenvdb/include)
@@ -174,7 +170,9 @@ target_include_directories(zeno_zsfem PRIVATE ../zenvdb/include)
 
 find_package(OpenMP REQUIRED)
 target_link_libraries(zeno_zsfft PRIVATE zensim zpcomp OpenMP::OpenMP_CXX CUDA::cufft)
-target_link_libraries(zeno_zsfft PUBLIC zenodes)
 target_link_libraries(zeno_zsfft PUBLIC ZFX)
 target_include_directories(zeno_zsfft PRIVATE ../oldzenbase/include)
 target_include_directories(zeno_zsfft PRIVATE ../zenvdb/include)
+
+# TODO: CMAKE_LINK_WHAT_YOU_USE=ON
+target_link_libraries(zeno PUBLIC zeno_zsfem zeno_zsfft zeno_zstest zeno_cutest zeno_zsfluid zeno_mpm)

@@ -18,21 +18,19 @@ endif()
 # FUN FACT: DID U KNOW THAT MICROSOFT BUYS GITHUB? #
 ####################################################
 
-add_library(zeno_zenvdb OBJECT ${PROJECT_SOURCE})
-target_include_directories(zeno_zenvdb PUBLIC include)
-target_include_directories(zeno_zenvdb PRIVATE ../oldzenbase/include)
+target_sources(zeno PRIVATE ${PROJECT_SOURCE})
+target_include_directories(zeno PUBLIC include)
+target_include_directories(zeno PRIVATE ../oldzenbase/include)
 
 find_package(OpenMP)
 if (TARGET OpenMP::OpenMP_CXX)
     message("found package: OpenMP::OpenMP_CXX")
-    target_link_libraries(zeno_zenvdb PRIVATE OpenMP::OpenMP_CXX)
+    target_link_libraries(zeno PRIVATE OpenMP::OpenMP_CXX)
 endif()
 
 find_package(TBB REQUIRED COMPONENTS tbb tbbmalloc)
 find_package(OpenVDB REQUIRED)
-target_link_libraries(zeno_zenvdb PRIVATE OpenVDB::openvdb TBB::tbbmalloc TBB::tbb)
+target_link_libraries(zeno PRIVATE OpenVDB::openvdb TBB::tbbmalloc TBB::tbb)
 if (WIN32)
-  target_compile_options(zeno_zenvdb PRIVATE -DNOMINMAX -D_USE_MATH_DEFINES)
+  target_compile_options(zeno PRIVATE -DNOMINMAX -D_USE_MATH_DEFINES)
 endif()
-
-target_link_libraries(zeno_zenvdb PUBLIC zenocore)

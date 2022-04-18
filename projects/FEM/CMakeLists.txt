@@ -1,11 +1,10 @@
 cmake_minimum_required(VERSION 3.16)
-set(CMAKE_CXX_STANDARD 17)
 
 if(WIN32)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /bigobj")
 endif(WIN32)
 
-project(zeno_FEM)
+project(zeno)
 
 find_package(Eigen3 REQUIRED NO_MODULE)
 
@@ -44,11 +43,11 @@ set(FEM_MUSCLE_SOURCE_FILES
     force_model.cpp
 )
 
-add_library(zeno_FEM OBJECT ${FEM_MUSCLE_SOURCE_FILES})
-target_link_libraries(zeno_FEM PRIVATE Eigen3::Eigen)
-target_link_libraries(zeno_FEM PUBLIC OpenMP::OpenMP_CXX)
+target_sources(zeno PRIVATE ${FEM_MUSCLE_SOURCE_FILES})
+target_link_libraries(zeno PRIVATE Eigen3::Eigen)
+target_link_libraries(zeno PUBLIC OpenMP::OpenMP_CXX)
 
-target_include_directories(zeno_FEM PUBLIC 
+target_include_directories(zeno PUBLIC 
     ${CMAKE_CURRENT_SOURCE_DIR}/src/math
     ${CMAKE_CURRENT_SOURCE_DIR}/src/mesh
     ${CMAKE_CURRENT_SOURCE_DIR}/src/force_model
@@ -56,7 +55,6 @@ target_include_directories(zeno_FEM PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src/bspline   
 )
 
-target_link_libraries(zeno_FEM PUBLIC zenocore)
-target_link_libraries(zeno_FEM PRIVATE igl::core)
-target_include_directories(zeno_FEM PRIVATE ../oldzenbase/include)
-target_include_directories(zeno_FEM PRIVATE ../zenvdb/include)
+target_link_libraries(zeno PRIVATE igl::core)
+target_include_directories(zeno PRIVATE ../oldzenbase/include)
+target_include_directories(zeno PRIVATE ../zenvdb/include)

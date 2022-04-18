@@ -1,7 +1,7 @@
 file(GLOB_RECURSE source CONFIGURE_DEPENDS include/*.h include/*.cpp)
 
 add_library(zenovis OBJECT ${source})
-target_link_libraries(zenovis PUBLIC glad zenoinclude zenostbi zenocore)
+target_link_libraries(zenovis PUBLIC glad zenoinclude zenostbi zeno)
 target_include_directories(zenovis PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include/Zeno/zenovis>)
