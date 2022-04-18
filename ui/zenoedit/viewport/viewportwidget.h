@@ -82,7 +82,7 @@ public:
 
 public slots:
     void updateFrame();
-    void onRunClicked(int nFrames);
+    void onRunClicked(int beginFrame, int endFrame);
 
 signals:
     void frameUpdated(int new_frame);

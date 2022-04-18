@@ -267,7 +267,7 @@ DisplayWidget::DisplayWidget(ZenoMainWindow* pMainWin)
 	connect(&Zenovis::GetInstance(), SIGNAL(frameUpdated(int)), m_timeline, SLOT(onTimelineUpdate(int)));
 	connect(m_timeline, SIGNAL(playForward(bool)), &Zenovis::GetInstance(), SLOT(startPlay(bool)));
 	connect(m_timeline, SIGNAL(sliderValueChanged(int)), &Zenovis::GetInstance(), SLOT(setCurrentFrameId(int)));
-	connect(m_timeline, SIGNAL(run(int)), this, SLOT(onRunClicked(int)));
+	connect(m_timeline, SIGNAL(run(int, int)), this, SLOT(onRunClicked(int, int)));
 
 	QTimer* pTimer = new QTimer;
 	connect(pTimer, SIGNAL(timeout()), this, SLOT(updateFrame()));
@@ -296,10 +296,10 @@ void DisplayWidget::updateFrame()
     m_view->update();
 }
 
-void DisplayWidget::onRunClicked(int nFrames)
+void DisplayWidget::onRunClicked(int beginFrame, int endFrame)
 {
 	auto pGraphsMgr = zenoApp->graphsManagment();
 	IGraphsModel* pModel = pGraphsMgr->currentModel();
 	GraphsModel* pLegacy = qobject_cast<GraphsModel*>(pModel);
-	launchProgram(pLegacy, nFrames);
+	launchProgram(pLegacy, beginFrame, endFrame);
 }

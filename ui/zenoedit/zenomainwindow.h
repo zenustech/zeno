@@ -17,7 +17,7 @@ public:
     bool inDlgEventLoop() const;
 
 public slots:
-    void onRunClicked(int nFrames);
+    void onRunClicked(int beginFrame, int endFrame);
     void openFileDialog();
     void onNewFile();
     bool openFile(QString filePath);
