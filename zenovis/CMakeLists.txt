@@ -8,7 +8,7 @@ target_include_directories(zenovis PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/glad/include>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/stbi/include>
-    $<INSTALL_INTERFACE:include/Zeno/zenovis>)
+    $<INSTALL_INTERFACE:include/Zeno/zenovis/include>)
 
 if (ZENO_INSTALL_TARGET)
     install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include DESTINATION include/Zeno/zenovis)

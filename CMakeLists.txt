@@ -96,7 +96,6 @@ if (ZENO_ENABLE_SPDLOG)
     add_subdirectory(external/spdlog)
 endif()
 
-add_subdirectory(external/include)
 add_subdirectory(zeno)
 add_subdirectory(projects)
 

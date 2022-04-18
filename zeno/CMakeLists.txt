@@ -40,14 +40,14 @@ endif()
 #target_compile_definitions(zeno PRIVATE -DZENO_DLLEXPORT INTERFACE -DZENO_DLLIMPORT)
 target_include_directories(zeno PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:include/Zeno/zeno>)
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/tpls/include>
+    $<INSTALL_INTERFACE:include/Zeno/zeno/include>)
 
 if (ZENO_INSTALL_TARGET)
     install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include DESTINATION include/Zeno/zeno)
+    install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/tpls/include DESTINATION include/Zeno/zeno)
     install(TARGETS zeno EXPORT ZenoTargets)
 endif()
-
-target_link_libraries(zeno PUBLIC zenoinclude)
 
 if (ZENO_ENABLE_SPDLOG)
     target_link_libraries(zeno PUBLIC spdlog)
