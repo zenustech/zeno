@@ -30,9 +30,11 @@ Git >= 2.0 && CMake >= 3.16 && Qt >= 5.12 && (MSVC >= 2019 || GCC >= 9 || Clang 
 
 > JOKE: Yes, we have to register a Qt account to install Qt... because the Qt company sucks :)
 
-5. If the install location is `C:\Qt\Qt5.14.2`, then add `C:\Qt\Qt5.14.2\msvc2019_64\bin` to the `PATH` environment variable.
+5. If the install location is `C:\Qt\Qt5.14.2`, then add `C:\Qt\Qt5.14.2\msvc2017_64\bin` to the `PATH` environment variable.
 
-> This is to allow the `zeno.exe` being able to find `Qt5Widgets.dll` there. Otherwise you need to manually copy `C:\Qt\Qt5.12.12\bin\msvc2019_64\bin\Qt5Widgets.dll` and other DLLs to `build\bin`. After this step rebooting the computer (or at least restart Visual Studio) would be best.
+> Because offcial Qt prebuilt binaries not matching VS2019, please use msvc2017_64 rather than msvc2019_64.
+
+> This is to allow the `zeno.exe` being able to find `Qt5Widgets.dll` there. Otherwise you need to manually copy `C:\Qt\Qt5.14.2\bin\msvc2017_64\bin\Qt5Widgets.dll` and other DLLs to `build\bin`. After this step rebooting the computer (or at least restart Visual Studio) would be best.
 
 ### Ubuntu
 
