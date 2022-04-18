@@ -126,7 +126,7 @@ endif()
 
 if (ZENO_INSTALL_TARGET)
     message(STATUS "Adding Zeno Installation Target")
-    set(ZENO_TARGETS zenocore zenoprojects zenoinclude zenoedit)
+    set(ZENO_TARGETS zenocore zenodes zenoinclude zenoedit)
     if (ZENO_MULTIPROCESS)
         list(APPEND ZENO_TARGETS zenorunner)
     endif()

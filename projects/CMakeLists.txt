@@ -1,8 +1,8 @@
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} /usr/lib/cmake/OpenVDB /usr/local/lib/cmake/OpenVDB ${CMAKE_CURRENT_SOURCE_DIR}/cmake)  # cihou zhxx
 add_library(zeno_nodep INTERFACE)  # deprecated
 
-add_library(zenoprojects SHARED dummy.cpp)
-target_link_libraries(zenoprojects PUBLIC zenocore)
+add_library(zenodes SHARED dummy.cpp)
+target_link_libraries(zenodes PUBLIC zenocore)
 
 set(ZENO_EXTENSIONS ZenoFX oldzenbase zenvdb FastFLIP FLIPtools Rigid BulletTools cgmesh gmpm mesher Euler OldZMS OldZFX EasyGL FEM Alembic LSystem Skinning Functional TreeSketch HerculesTools)
 foreach (name IN ITEMS ${ZENO_EXTENSIONS})
@@ -14,7 +14,7 @@ foreach (name IN ITEMS ${ZENO_EXTENSIONS})
         if (NOT TARGET zeno_${name})
             message(WARNING "Please use 'zeno_${name}' as the target name of ZENO extension, otherwise it won't be linked")
         else()
-            target_link_libraries(zenoprojects PRIVATE zeno_${name})
+            target_link_libraries(zenodes PRIVATE zeno_${name})
         endif()
     endif()
 endforeach()
