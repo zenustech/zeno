@@ -83,8 +83,7 @@ struct ProgramRunData {
         if (chkfail()) return;
         if (g_state == KILLING) return;
 
-        auto nframes = graph->adhocNumFrames;
-        for (int frame = 0; frame < nframes; frame++) {
+        for (int frame = graph->beginFrameNumber; frame < graph->endFrameNumber; frame++) {
             zeno::log_info("begin frame {}", frame);
             session->globalComm->newFrame();
             session->globalState->frameBegin();

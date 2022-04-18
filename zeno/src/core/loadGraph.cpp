@@ -83,8 +83,10 @@ ZENO_API void Graph::loadGraph(const char *json) {
                     setNodeOption(di[1].GetString(), di[2].GetString());*/
                 } else if (cmd == "bindNodeInput") {
                     bindNodeInput(di[1].GetString(), di[2].GetString(), di[3].GetString(), di[4].GetString());
-                } else if (cmd == "setAdhocNumFrames") {
-                    this->adhocNumFrames = di[1].GetInt();
+                } else if (cmd == "setBeginFrameNumber") {
+                    this->beginFrameNumber = di[1].GetInt();
+                } else if (cmd == "setEndFrameNumber") {
+                    this->endFrameNumber = di[1].GetInt();
                 } else {
                     log_warn("got unexpected command: {}", cmd);
                 }

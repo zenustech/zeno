@@ -38,7 +38,7 @@ struct Graph {
     std::map<std::string, std::string> portalIns;
     std::map<std::string, zany> portals;
     std::set<std::string> nodesToExec;
-    int adhocNumFrames = 0;
+    int beginFrameNumber = 0, endFrameNumber = 0;
 
     std::unique_ptr<Context> ctx;
 
