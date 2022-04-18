@@ -5,9 +5,9 @@ on:
   #- cron: '0 8 * * 6'  # Release at Beijing Time 16:00 Sat
   #workflow_dispatch:
   push:
-    branches: [ zeno2 ]
+    branches: [ master ]
   pull_request:
-    branches: [ zeno2 ]
+    branches: [ master ]
     #branches: [ stable ]
     #tags: [ 'v*' ]
 
