@@ -57,7 +57,6 @@ target_include_directories(zeno_FEM PUBLIC
 )
 
 target_link_libraries(zeno_FEM PUBLIC zenocore)
-target_link_libraries(zeno_FEM PUBLIC zeno)
 target_link_libraries(zeno_FEM PRIVATE igl::core)
 target_include_directories(zeno_FEM PRIVATE ../oldzenbase/include)
 target_include_directories(zeno_FEM PRIVATE ../zenvdb/include)
