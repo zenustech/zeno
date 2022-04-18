@@ -525,7 +525,7 @@ class SetLightDialog(QWidget):
         lkf.dir = self.sphere_xyz(phi, theta)
         lkf.height = float(self.height_spinbox.text())
         lkf.softness = float(self.softness_spinbox.text())
-        lkf.scale = float(self.softness_spinbox.text())
+        lkf.scale = float(self.scale_spinbox.text())
         lkf.enable = 1.0 if self.enable_checkbox.checkState() == Qt.Checked else 0.0
         lkf.tint = (
             self.shadow_tint_spinbox_r.value(),

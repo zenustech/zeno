@@ -170,6 +170,7 @@ namespace zenvis
             maxX = midX + size;
             minY = midY - size;
             maxY = maxY + size;
+            //std::cout<<"lightscale:"<<lightScale<<std::endl;
             const glm::mat4 lightProjection = glm::ortho(minX * lightScale, maxX * lightScale, minY * lightScale, maxY * lightScale, maxZ, -minZ);
             // std::cout<<minX<<" "<<maxX<<" "<<minY<<" "<<maxY<<" "<<minZ<<" "<<maxZ<<std::endl;
             m_nearPlane[layer] = maxZ;

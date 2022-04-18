@@ -672,9 +672,13 @@ static void paint_graphics(GLuint target_fbo = 0) {
   
   
   if(g_dof>0){
-    
+    glDisable(GL_MULTISAMPLE);
+    glBindRenderbuffer(GL_RENDERBUFFER, msfborgb);              
+    glRenderbufferStorageMultisample(GL_RENDERBUFFER, 1, GL_RGBA32F, nx, ny);
+    CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, msfbod));
+    CHECK_GL(glRenderbufferStorageMultisample(GL_RENDERBUFFER, 1, GL_DEPTH_COMPONENT32F, nx, ny));
     for(int dofsample=0;dofsample<16;dofsample++){
-          glDisable(GL_MULTISAMPLE);
+          
           glm::vec3 object = g_camPos + g_dof * glm::normalize(g_camView);
           glm::vec3 right = glm::normalize(glm::cross(object - g_camPos, g_camUp));
           glm::vec3 p_up = glm::normalize(glm::cross(right, object - g_camPos));
@@ -723,7 +727,11 @@ static void paint_graphics(GLuint target_fbo = 0) {
     ScreenFillQuad(texRect,1.0,0);
 
   } else {
-    glDisable(GL_MULTISAMPLE);
+    glEnable(GL_MULTISAMPLE);
+    glBindRenderbuffer(GL_RENDERBUFFER, msfborgb);              
+    glRenderbufferStorageMultisample(GL_RENDERBUFFER, 8, GL_RGBA32F, nx, ny);
+    CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, msfbod));
+    CHECK_GL(glRenderbufferStorageMultisample(GL_RENDERBUFFER, 8, GL_DEPTH_COMPONENT32F, nx, ny));
     //ZPass();
     glm::vec3 object = g_camPos + 1.0f * glm::normalize(g_camView);
     glm::vec3 right = glm::normalize(glm::cross(object - g_camPos, g_camUp));
@@ -732,6 +740,7 @@ static void paint_graphics(GLuint target_fbo = 0) {
     CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, tonemapfbo));
     CHECK_GL(glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER,
                   GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, msfborgb));
+    
     CHECK_GL(glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER,
                   GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, msfbod));
     CHECK_GL(glDrawBuffer(GL_COLOR_ATTACHMENT0));
@@ -749,6 +758,7 @@ static void paint_graphics(GLuint target_fbo = 0) {
     CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, target_fbo));
     //tmProg->set_uniform("msweight",1.0);
     ScreenFillQuad(texRects[0],1.0,0);
+    glDisable(GL_MULTISAMPLE);
     
   }
   //std::this_thread::sleep_for(std::chrono::milliseconds(30));
