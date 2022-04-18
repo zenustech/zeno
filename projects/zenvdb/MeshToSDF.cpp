@@ -18,7 +18,7 @@ namespace zeno {
 
 struct MeshToSDF : zeno::INode{
     virtual void apply() override {
-    auto h = get_param<float>("voxel_size"));
+    auto h = std::get<float>(get_param("voxel_size"));
     if(has_input("Dx"))
     {
       h = get_input("Dx")->as<NumericObject>()->get<float>();
@@ -42,7 +42,7 @@ struct MeshToSDF : zeno::INode{
         triangles[i] = openvdb::Vec3I(i*3, i*3+1, i*3+2);
     }
     auto vdbtransform = openvdb::math::Transform::createLinearTransform(h);
-    if(get_param<std::string>("type"))==std::string("vertex"))
+    if(std::get<std::string>(get_param("type"))==std::string("vertex"))
     {
         vdbtransform->postTranslate(openvdb::Vec3d{ -0.5,-0.5,-0.5 }*double(h));
     }
@@ -68,7 +68,7 @@ static int defMeshToSDF = zeno::defNodeClass<MeshToSDF>("MeshToSDF",
 
 struct PrimitiveToSDF : zeno::INode{
     virtual void apply() override {
-    //auto h = get_param<float>("voxel_size"));
+    //auto h = std::get<float>(get_param("voxel_size"));
     //if(has_input("Dx"))
     //{
       //h = get_input<NumericObject>("Dx")->get<float>();
@@ -94,7 +94,7 @@ struct PrimitiveToSDF : zeno::INode{
         triangles[i] = openvdb::Vec3I(mesh->tris[i][0], mesh->tris[i][1], mesh->tris[i][2]);
     }
     auto vdbtransform = openvdb::math::Transform::createLinearTransform(h);
-    if(get_param<std::string>("type"))==std::string("vertex"))
+    if(std::get<std::string>(get_param("type"))==std::string("vertex"))
     {
         vdbtransform->postTranslate(openvdb::Vec3d{ -0.5,-0.5,-0.5 }*double(h));
     }

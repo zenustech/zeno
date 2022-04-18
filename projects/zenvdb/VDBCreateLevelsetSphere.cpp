@@ -9,7 +9,7 @@ namespace zeno {
 
 struct VDBCreateLevelsetSphere : zeno::INode {
   virtual void apply() override {
-    //auto dx = get_param<float>("dx"));
+    //auto dx = std::get<float>(get_param("dx"));
     float dx=0.08f;
     if(has_input("Dx"))
     {
