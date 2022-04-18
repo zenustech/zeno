@@ -120,8 +120,8 @@ struct PrimitivePerlinNoiseAttr : INode {
         offset = get_input<zeno::NumericObject>("seed")->get<zeno::vec3f>();
     auto res = std::make_shared<zeno::NumericObject>();
     float f = has_input("freq")? get_input<zeno::NumericObject>("freq")->get<float>() : 1.0f;
-    auto attrName = std::get<std::string>(get_param("attrName"));
-    auto attrType = std::get<std::string>(get_param("attrType"));
+    auto attrName = get_param<std::string>(("attrName"));
+    auto attrType = get_param<std::string>(("attrType"));
     auto &pos = prim->verts;
     if (!prim->has_attr(attrName)) {
         if (attrType == "float3") prim->add_attr<vec3f>(attrName);

@@ -12,8 +12,8 @@ struct PrimitiveFillAttr : INode {
   virtual void apply() override {
     auto prim = get_input<PrimitiveObject>("prim");
     auto value = get_input<NumericObject>("value")->value;
-    auto attrName = std::get<std::string>(get_param("attrName"));
-    auto attrType = std::get<std::string>(get_param("attrType"));
+    auto attrName = get_param<std::string>(("attrName"));
+    auto attrType = get_param<std::string>(("attrType"));
     if (std::holds_alternative<vec3f>(value)) {
         attrType = "float3";
     }
@@ -63,7 +63,7 @@ void print_cout(vec3f const &a) {
 struct PrimitivePrintAttr : INode {
   virtual void apply() override {
     auto prim = get_input<PrimitiveObject>("prim");
-    auto attrName = std::get<std::string>(get_param("attrName"));
+    auto attrName = get_param<std::string>(("attrName"));
     prim->attr_visit(attrName, [attrName](auto const &arr) {
         printf("attribute `%s`, length %zd:\n", attrName.c_str(), arr.size());
         for (int i = 0; i < arr.size(); i++) {
@@ -95,14 +95,14 @@ ZENDEFNODE(PrimitivePrintAttr,
 struct PrimitiveRandomizeAttr : INode {
   virtual void apply() override {
     auto prim = get_input<PrimitiveObject>("prim");
-    auto min = std::get<float>(get_param("min"));
-    auto minY = std::get<float>(get_param("minY"));
-    auto minZ = std::get<float>(get_param("minZ"));
-    auto max = std::get<float>(get_param("max"));
-    auto maxY = std::get<float>(get_param("maxY"));
-    auto maxZ = std::get<float>(get_param("maxZ"));
-    auto attrName = std::get<std::string>(get_param("attrName"));
-    auto attrType = std::get<std::string>(get_param("attrType"));
+    auto min = get_param<float>(("min"));
+    auto minY = get_param<float>(("minY"));
+    auto minZ = get_param<float>(("minZ"));
+    auto max = get_param<float>(("max"));
+    auto maxY = get_param<float>(("maxY"));
+    auto maxZ = get_param<float>(("maxZ"));
+    auto attrName = get_param<std::string>(("attrName"));
+    auto attrType = get_param<std::string>(("attrType"));
     if (!prim->has_attr(attrName)) {
         if (attrType == "float3") prim->add_attr<vec3f>(attrName);
         else if (attrType == "float") prim->add_attr<float>(attrName);
@@ -151,8 +151,8 @@ struct PrimitiveRandomAttr : INode {
         std::make_shared<PrimitiveObject>();
     auto min = get_input<NumericObject>("min");
     auto max = get_input<NumericObject>("max");
-    auto attrName = std::get<std::string>(get_param("attrName"));
-    auto attrType = std::get<std::string>(get_param("attrType"));
+    auto attrName = get_param<std::string>(("attrName"));
+    auto attrType = get_param<std::string>(("attrType"));
     if (!prim->has_attr(attrName)) {
         if (attrType == "float3") prim->add_attr<vec3f>(attrName);
         else if (attrType == "float") prim->add_attr<float>(attrName);
