@@ -43,7 +43,7 @@ struct CacheVDBGrid : zeno::INode {
     int m_framecounter = 0;
 
     virtual void preApply() override {
-        if (has_option("MUTE")) {
+        if (get_param<bool>("mute")) {
             requireInput("inGrid");
             set_output("outGrid", get_input("inGrid"));
             return;
@@ -88,6 +88,7 @@ ZENDEFNODE(CacheVDBGrid,
     {"string", "dir", "/tmp/cache"},
     {"string", "prefix", ""},
     {"bool", "ignore", "0"},
+    {"bool", "mute", "0"},
     }, /* category: */ {
     "openvdb",
     }});

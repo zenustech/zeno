@@ -16,7 +16,7 @@ endif()
 ####################################################
 
 # add cmake file
-include (common)
+#include (common)
 
 find_package(TBB REQUIRED COMPONENTS tbb tbbmalloc)
 #find_package(IlmBase REQUIRED COMPONENTS Half REQUIRED)
