@@ -11,9 +11,9 @@ struct ParticleAddDV : zeno::INode {
     auto particles = get_input("Particles")->as<VDBPointsGrid>();
     auto dv = get_input("dv")->as<zeno::NumericObject>()->get<zeno::vec3f>();
 
-    float vx = get_param<float>("vx"));
-    float vy = get_param<float>("vy"));
-    float vz = get_param<float>("vz"));
+    float vx = std::get<float>(get_param("vx"));
+    float vy = std::get<float>(get_param("vy"));
+    float vz = std::get<float>(get_param("vz"));
     openvdb::Vec3R _dv = openvdb::Vec3R(dv[0], dv[1], dv[2]);
     FLIP_vdb::point_integrate_vector(particles->m_grid, _dv, "vel");
   }

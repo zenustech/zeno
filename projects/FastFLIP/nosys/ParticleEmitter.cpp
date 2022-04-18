@@ -10,9 +10,9 @@ struct ParticleEmitter : zeno::INode {
   virtual void apply() override {
     auto particles = get_input("Particles")->as<VDBPointsGrid>();
     auto shape = get_input("ShapeSDF")->as<VDBFloatGrid>();
-    float vx = get_param<float>("vx"));
-    float vy = get_param<float>("vy"));
-    float vz = get_param<float>("vz"));
+    float vx = std::get<float>(get_param("vx"));
+    float vy = std::get<float>(get_param("vy"));
+    float vz = std::get<float>(get_param("vz"));
 
     openvdb::Vec3fGrid::Ptr velocityVolume = nullptr;
     if (has_input("VelocityVolume")) {

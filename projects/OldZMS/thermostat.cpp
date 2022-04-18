@@ -8,7 +8,7 @@ struct ScaleVelocity: zeno::INode {
   virtual void apply() override {
     auto prim = get_input("prim")->as<PrimitiveObject>();
     float temperature = get_input("temperature")->as<NumericObject>()->get<float>();
-    float rel_err = get_param<float>("rel_error_to_scale"));
+    float rel_err = std::get<float>(get_param("rel_error_to_scale"));
     // random initialize for now
     auto &vel = prim->attr<zeno::vec3f>("vel");
     int n = vel.size();

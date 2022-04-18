@@ -11,7 +11,7 @@ namespace zeno {
 struct CFL : zeno::INode {
   virtual void apply() override {
     auto velocity = get_input("Velocity")->as<VDBFloat3Grid>();
-    float dx = get_param<float>("dx"));
+    float dx = std::get<float>(get_param("dx"));
     if(has_input("Dx"))
     {
       dx = get_input("Dx")->as<NumericObject>()->get<float>();

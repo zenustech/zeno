@@ -16,7 +16,7 @@ struct TetrahedralizeSurface : zeno::INode {
     virtual void apply() override {
         auto surf = get_input<zeno::PrimitiveObject>("surf");
         auto res = std::make_shared<zeno::PrimitiveObject>();
-        auto min_radius_edge_ratio = get_param<float>("mrer"));
+        auto min_radius_edge_ratio = std::get<float>(get_param("mrer"));
 
         Eigen::MatrixXd V;
         Eigen::MatrixXi F;

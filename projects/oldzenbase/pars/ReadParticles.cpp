@@ -43,7 +43,7 @@ static void readpars(
 
 struct ReadParticles : zeno::INode {
   virtual void apply() override {
-    auto path = get_param<std::string>("path"));
+    auto path = std::get<std::string>(get_param("path"));
     auto pars = zeno::IObject::make<ParticlesObject>();
     readpars(path.c_str(), pars->pos, pars->vel);
     set_output("pars", pars);

@@ -4,7 +4,7 @@ namespace zeno {
     
 struct MakeElasticForceModel : zeno::INode {
     virtual void apply() override {
-        auto model_type = get_param<std::string>("ForceModel"));
+        auto model_type = std::get<std::string>(get_param("ForceModel"));
         auto aniso_strength = get_param<float>("aniso_strength");
         auto res = std::make_shared<MuscleModelObject>();
         if(model_type == "Fiberic"){

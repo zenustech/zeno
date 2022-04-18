@@ -42,8 +42,8 @@ static int defPeriodicBoundary = zeno::defNodeClass<PeriodicBoundary>("PeriodicB
 struct SimulationBox : zeno::INode {
   virtual void apply() override {
     auto prim = get_input("prim")->as<PrimitiveObject>();
-    auto boxlength = get_param<float>("boxlength"));
-    auto n_particles = get_param<int>("n_particles"));
+    auto boxlength = std::get<float>(get_param("boxlength"));
+    auto n_particles = std::get<int>(get_param("n_particles"));
     prim->resize(n_particles);
     prim->add_attr<zeno::vec3f>("pos");
     prim->add_attr<zeno::vec3f>("vel");

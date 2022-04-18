@@ -23,7 +23,7 @@ namespace zeno {
 struct AssembleSolvePPE : zeno::INode {
   virtual void apply() override {
     auto dt = get_input("dt")->as<zeno::NumericObject>()->get<float>();
-    auto dx = get_param<float>("dx"));
+    auto dx = std::get<float>(get_param("dx"));
     if(has_input("Dx"))
     {
       dx = get_input("Dx")->as<NumericObject>()->get<float>();
