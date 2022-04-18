@@ -1,4 +1,4 @@
-file(GLOB_RECURSE source CONFIGURE_DEPENDS include/*.h include/*.cpp)
+file(GLOB_RECURSE source CONFIGURE_DEPENDS include/*.h src/*.cpp)
 
 add_library(zeno OBJECT ${source})
 
