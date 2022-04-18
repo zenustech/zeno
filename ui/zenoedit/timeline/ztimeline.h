@@ -17,14 +17,17 @@ signals:
     void playForwardOneFrame();
     void playForwardLastFrame();
     int sliderValueChanged(int);
-    void run(int);
+    void run(int, int);
 
 public slots:
     void onTimelineUpdate(int frameid);
+    void onFrameEditted();
 
 private:
     int m_frames;
     ZSlider* m_slider;
+    QLineEdit* m_pFrameFrom;
+    QLineEdit* m_pFrameTo;
 };
 
 #endif
