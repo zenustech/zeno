@@ -8,15 +8,15 @@ namespace zeno {
 
 struct MakeVDBGrid : zeno::INode {
   virtual void apply() override {
-    //auto dx = std::get<float>(get_param("dx"));
+    //auto dx = get_param<float>("dx"));
     float dx=0.08f;
     if(has_input("Dx"))
     {
       dx = get_input("Dx")->as<NumericObject>()->get<float>();
     }
-    auto type = std::get<std::string>(get_param("type"));
-    auto structure = std::get<std::string>(get_param("structure"));
-    auto name = std::get<std::string>(get_param("name"));
+    auto type = get_param<std::string>("type"));
+    auto structure = get_param<std::string>("structure"));
+    auto name = get_param<std::string>("name"));
     std::shared_ptr<VDBGrid> data;
     if (type == "float") {
       auto tmp = zeno::IObject::make<VDBFloatGrid>();

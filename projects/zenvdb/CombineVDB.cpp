@@ -11,7 +11,7 @@ namespace zeno {
 
 // struct SetVDBTransform : zeno::INode {
 //   virtual void apply() override {
-//     auto dx = std::get<float>(get_param("dx"));
+//     auto dx = get_param<float>("dx"));
 //     auto grid = get_input("grid")->as<VDBGrid>();
 //     auto position = zeno::get_float3<openvdb::Vec3f>(get_param("position"));
 //     auto rotation = zeno::get_float3<openvdb::Vec3f>(get_param("rotation"));
@@ -102,7 +102,7 @@ struct CombineVDB : zeno::INode{
     
     if(targetType == sourceType && targetType==std::string("FloatGrid"))
     {
-        auto OpType = std::get<std::string>(get_param("OpType"));
+        auto OpType = get_param<std::string>("OpType"));
         dataf = zeno::IObject::make<VDBFloatGrid>();
         
         auto target = get_input("FieldA")->as<VDBFloatGrid>();
@@ -129,7 +129,7 @@ struct CombineVDB : zeno::INode{
             set_output("FieldOut", result);
         }
     }
-    auto OpType = std::get<std::string>(get_param("OpType"));
+    auto OpType = get_param<std::string>("OpType"));
     if(OpType==std::string("Add"))
     {
       if(targetType == sourceType && targetType==std::string("FloatGrid")){
