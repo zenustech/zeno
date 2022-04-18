@@ -33,7 +33,7 @@ ZENO_API Error::Error(std::string_view message) noexcept
 
 ZENO_API Error::~Error() noexcept = default;
 
-ZENO_API std::string const &Error::what() const {
+ZENO_API std::string const &Error::what() const noexcept {
     return message;
 }
 

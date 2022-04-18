@@ -13,7 +13,7 @@ struct Error {
 
     ZENO_API explicit Error(std::string_view message) noexcept;
     ZENO_API virtual ~Error() noexcept;
-    ZENO_API std::string const &what() const;
+    ZENO_API std::string const &what() const noexcept;
 
     Error(Error const &) = delete;
     Error &operator=(Error const &) = delete;
@@ -25,7 +25,7 @@ struct StdError : Error {
     std::exception_ptr eptr;
 
     ZENO_API explicit StdError(std::exception_ptr &&eptr) noexcept;
-    ZENO_API ~StdError() override;
+    ZENO_API ~StdError() noexcept override;
 };
 
 struct TypeError : Error {
@@ -34,7 +34,7 @@ struct TypeError : Error {
     std::string hint;
 
     ZENO_API explicit TypeError(std::type_info const &expect, std::type_info const &got, std::string const &hint = "nohint") noexcept;
-    ZENO_API ~TypeError() override;
+    ZENO_API ~TypeError() noexcept override;
 };
 
 struct KeyError : Error {
@@ -43,7 +43,7 @@ struct KeyError : Error {
     std::string hint;
 
     ZENO_API explicit KeyError(std::string const &key, std::string const &type = "key", std::string const &hint = "nohint") noexcept;
-    ZENO_API ~KeyError() override;
+    ZENO_API ~KeyError() noexcept override;
 };
 
 class ErrorException : public std::exception {
