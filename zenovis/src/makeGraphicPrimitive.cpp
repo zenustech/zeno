@@ -2468,7 +2468,8 @@ uniform float reflectPass;
 uniform float reflectionViewID;
 uniform float depthPass;
 uniform sampler2DRect depthBuffer;
-
+uniform vec3 reflect_normals[16];
+uniform vec3 reflect_centers[16];
 vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 old_tangent) {
     vec4 projPos = mView * vec4(position.xyz, 1.0);
     //normal = normalize(normal);
