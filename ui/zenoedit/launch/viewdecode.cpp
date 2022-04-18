@@ -33,6 +33,7 @@ struct PacketProc {
 
     void onStart() {
         globalCommNeedClean = 1;
+        globalCommNeedNewFrame = 0;
         zeno::getSession().globalState->clearState();
         zeno::getSession().globalStatus->clearState();
         zeno::getSession().globalState->working = true;
