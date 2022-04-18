@@ -16,15 +16,15 @@ endif()
 ####################################################
 
 # add cmake file
-include (common)
+#include (common)
 
 find_package(TBB REQUIRED COMPONENTS tbb tbbmalloc)
 #find_package(IlmBase REQUIRED COMPONENTS Half REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(OpenVDB REQUIRED)
-if (WIN32)
-  include_directories(C:/Users/archibate/packages/openvdb_x64-windows/include/)
-endif()
+# if (WIN32)
+#   include_directories(C:/Users/archibate/packages/openvdb_x64-windows/include/)
+# endif()
 find_package(OpenMP)
 if (OPENMP_FOUND)
     set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
