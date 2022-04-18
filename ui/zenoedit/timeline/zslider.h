@@ -9,6 +9,7 @@ class ZSlider : public QWidget
 public:
     ZSlider(QWidget* parent = nullptr);
     virtual QSize sizeHint() const override;
+    void setFromTo(int from, int to);
 
 protected:
     void paintEvent(QPaintEvent* event);
@@ -30,7 +31,7 @@ private:
 
     int m_left;
     int m_right;
-    int m_value;
+    int m_from, m_value, m_to;
     QTransform m_transform;
 };
 

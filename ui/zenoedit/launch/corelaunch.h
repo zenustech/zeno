@@ -5,7 +5,7 @@
 
 class GraphsModel;
 
-void launchProgram(GraphsModel* pModel, int nframes);
+void launchProgram(GraphsModel* pModel, int beginFrame, int endFrame);
 void killProgram();
 
 #endif

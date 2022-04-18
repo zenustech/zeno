@@ -3,8 +3,10 @@
 ZSlider::ZSlider(QWidget* parent)
     : QWidget(parent)
     , m_left(0)
-    , m_right(100)
+    , m_right(250)
     , m_value(0)
+    , m_from(m_left)
+    , m_to(m_right)
 {
     setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
 }
@@ -43,7 +45,7 @@ void drawText(QPainter* painter, qreal x, qreal y, Qt::Alignment flags,
 
 void ZSlider::setSliderValue(int value)
 {
-    m_value = qMin(qMax(m_left, value), m_right);
+    m_value = qMin(qMax(m_from, value), m_to - 1);
     update();
     emit sliderValueChange(value);
 }
@@ -61,6 +63,14 @@ int ZSlider::_frameToPos(int frame)
     return m_sHMargin + frame * distPerFrame;
 }
 
+void ZSlider::setFromTo(int from, int to)
+{
+    m_from = from;
+    m_to = to;
+    m_value = m_from;
+    update();
+}
+
 int ZSlider::_getframes()
 {
     int frames = 0;
@@ -68,15 +78,15 @@ int ZSlider::_getframes()
     int W = width();
     if (W < 250)
     {
-        frames = 1. / 15 * n;
+        frames = 1. / 7 * n;
     }
     else if (W < 500)
     {
-        frames = 1. / 7 * n;
+        frames = 1. / 3 * n;
     }
     else if (W < 700)
     {
-        frames = 1. / 2 * n;
+        frames = n;
     }
     else
     {
@@ -95,19 +105,26 @@ void ZSlider::paintEvent(QPaintEvent* event)
     QFont font("Calibre", 9);
     QFontMetrics metrics(font);
     painter.setFont(font);
-    painter.setPen(QPen(QColor(153, 153, 153)));
 
     for (int i = m_left, j = 0; i <= m_right; i += (n / std::max(1, frames)), j++)
     {
         int h = 0, ytext = height() / 2 - h / 2;
         int x = _frameToPos(i);
+        QString scaleValue = QString::number(i);
+        if (m_from <= i && i <= m_to - 1)
+        {
+            painter.setPen(QPen(QColor(153, 153, 153)));
+        }
+        else {
+            painter.setPen(QPen(QColor(66, 66, 66)));
+        }
+
         if (j % 10 == 0)
         {
             h = 30;
 
             //draw time tick
             int xpos = _frameToPos(i);
-            QString scaleValue = QString::number(i);
             int textWidth = metrics.horizontalAdvance(scaleValue);
             painter.drawText(QPoint(xpos - textWidth / 2, height() / 2 - 20), scaleValue);
         }
@@ -119,6 +136,7 @@ void ZSlider::paintEvent(QPaintEvent* event)
         painter.drawLine(QPointF(x, y), QPointF(x, y + h));
     }
 
+    painter.setPen(QPen(QColor(153, 153, 153)));
     drawSlideHandle(&painter);
 }
 
