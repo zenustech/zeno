@@ -19,6 +19,15 @@ struct ListObject : IObjectClone<ListObject> {
       return res;
   }
 
+  template <class T = IObject>
+  std::vector<T *> getRaw() {
+      std::vector<T *> res;
+      for (auto const &val: arr) {
+          res.push_back(safe_dynamic_cast<T>(val.get()));
+      }
+      return res;
+  }
+
   template <class T>
   std::vector<T> getLiterial() {
       std::vector<T> res;
