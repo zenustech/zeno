@@ -28,27 +28,31 @@ struct Header {
 };
 
 struct PacketProc {
-    int globalStateNeedClean = 0;
+    int globalCommNeedClean = 0;
+    int globalCommNeedNewFrame = 0;
 
     void onStart() {
-        globalStateNeedClean = 1;
+        globalCommNeedClean = 1;
         zeno::getSession().globalState->clearState();
         zeno::getSession().globalStatus->clearState();
         zeno::getSession().globalState->working = true;
     }
 
     void onFinish() {
-        clearGlobalStateIfNeeded();
+        clearGlobalIfNeeded();
         zeno::getSession().globalState->working = false;
     }
 
-    void clearGlobalStateIfNeeded() {
-        if (globalStateNeedClean) {
-            zeno::log_debug("PacketProc::clearGlobalStateIfNeeded");
+    void clearGlobalIfNeeded() {
+        if (globalCommNeedClean) {
+            zeno::log_debug("PacketProc::clearGlobalStateIfNeeded: globalStateNeedClean");
             zeno::getSession().globalComm->clearState();
-            if (globalStateNeedClean >= 2)
-                zeno::getSession().globalComm->newFrame();
-            globalStateNeedClean = 0;
+            globalCommNeedClean = 0;
+        }
+        if (globalCommNeedNewFrame) {
+            zeno::log_debug("PacketProc::clearGlobalStateIfNeeded: globalCommNeedNewFrame");
+            zeno::getSession().globalComm->newFrame();
+            globalCommNeedNewFrame = 0;
         }
     }
 
@@ -62,11 +66,11 @@ struct PacketProc {
                 zeno::log_warn("failed to decode view object");
                 return false;
             }
-            clearGlobalStateIfNeeded();
+            clearGlobalIfNeeded();
             zeno::getSession().globalComm->addViewObject(object);
 
         } else if (action == "newFrame") {
-            globalStateNeedClean = 2; // postpone `zeno::getSession().globalComm->newFrame();`
+            globalCommNeedNewFrame = 1; // postpone `zeno::getSession().globalComm->newFrame();`
 
         } else if (action == "reportStatus") {
             std::string statJson{buf, len};
