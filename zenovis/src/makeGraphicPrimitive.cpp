@@ -2224,7 +2224,7 @@ float sampleShadowArray(int lightNo, vec2 coord, int layer)
 {
     vec4 res;
     
-    res = texture(shadowMap[lightNo * (cascadeCount + 1) + layer], coord);
+    res = texture(shadowMap[lightNo * (cascadeCount + 1) + layer], clamp(coord,vec2(0.01), vec2(0.99)));
 
     return res.r;    
 }
@@ -2240,6 +2240,25 @@ float PCFLayer(int lightNo, float currentDepth, float bias, vec3 pos, int layer,
             vec3 noise = random3(pos+vec3(x, y,0)*0.01*softness);
             float pcfDepth = sampleShadowArray(lightNo, coord + (vec2(x, y) * softness + noise.xy) * texelSize, layer); 
             shadow += (currentDepth - bias) > pcfDepth  ? 1.0 : 0.0;        
+        }    
+    }
+    float size = 2.0*float(k)+1.0;
+    return shadow /= (size*size);
+}
+float PCFLayer2(int lightNo, float currentDepth1, float currentDepth2, float bias, vec3 pos, int layer, int k, float softness, vec2 coord1, vec2 coord2)
+{
+    float shadow = 0.0;
+    
+    vec2 texelSize = 1.0 / vec2(textureSize(shadowMap[lightNo * (cascadeCount + 1) + 0], 0));
+    for(int x = -k; x <= k; ++x)
+    {
+        for(int y = -k; y <= k; ++y)
+        {
+            vec3 noise = random3(pos+vec3(x, y,0)*0.01*softness);
+            float pcfDepth1 = sampleShadowArray(lightNo, coord1 + (vec2(x, y) * softness + noise.xy) * texelSize, layer);
+            
+            float pcfDepth2 = sampleShadowArray(lightNo, coord2 + (vec2(x, y) * softness + noise.xy) * texelSize, layer+1); 
+            shadow += ((currentDepth1 - bias) > pcfDepth1 || (currentDepth2 - bias) > pcfDepth2) ? 1.0 : 0.0;        
         }    
     }
     float size = 2.0*float(k)+1.0;
@@ -2299,20 +2318,26 @@ float ShadowCalculation(int lightNo, vec3 fragPosWorldSpace, float softness)
     // }
 
     // PCF
-    float shadow1 = PCFLayer(lightNo, currentDepth, bias, fragPosWorldSpace, layer, 3, softness, projCoords.xy);
-    float shadow2 = shadow1;
-    float coef = 0.0;
-    if(layer>=1){
+    //float shadow1 = PCFLayer(lightNo, currentDepth, bias, fragPosWorldSpace, layer, 3, softness, projCoords.xy);
+    //float shadow2 = shadow1;
+    //float coef = 0.0;
+    if(layer<cascadeCount){
         //bm = 1 / (cascadePlaneDistances[lightNo * cascadeCount + (layer-1)] * biasModifier);
-        fragPosLightSpace = lightSpaceMatrices[lightNo * (cascadeCount + 1) + (layer-1)] * vec4(fragPosWorldSpace, 1.0);
-        projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
-        projCoords * 0.5 + 0.5;
-        shadow2 = PCFLayer(lightNo, currentDepth, bias, fragPosWorldSpace, layer-1, 3, softness, projCoords.xy);
-        float coef = (depthValue - cascadePlaneDistances[lightNo * cascadeCount + (layer-1)])/(cascadePlaneDistances[lightNo * cascadeCount + layer] - cascadePlaneDistances[lightNo * cascadeCount + (layer-1)]);
+        fragPosLightSpace = lightSpaceMatrices[lightNo * (cascadeCount + 1) + (layer+1)] * vec4(fragPosWorldSpace, 1.0);
+        vec3 projCoords2 = fragPosLightSpace.xyz / fragPosLightSpace.w;
+        projCoords2 = projCoords2 * 0.5 + 0.5;
+        return PCFLayer2(lightNo, currentDepth, projCoords2.z, bias, fragPosWorldSpace, layer, 3, softness, projCoords.xy, projCoords2.xy);
+        // vec2 d = abs(projCoords.xy-vec2(0.5));
+        // float sdf = max(d.x, d.y)-0.5;
+        // float coef = smoothstep(0,0.05,sdf + 0.05);
+    }
+    else
+    {
+        return PCFLayer(lightNo, currentDepth, bias, fragPosWorldSpace, layer, 3, softness, projCoords.xy);
     }
     
         
-    return mix(shadow1, shadow2, coef);
+    /* return mix(shadow1, shadow2, coef); */
 }
 float PCFAttLayer(int lightNo, float currentDepth, float bias, vec3 pos, int layer, int k, float softness, vec2 coord, float near, float far)
 {

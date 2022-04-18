@@ -327,9 +327,14 @@ void main(void)
         }
 
         if (camera()->g_dof > 0) {
+            CHECK_GL(glDisable(GL_MULTISAMPLE));
+            CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, msfborgb));
+            CHECK_GL(glRenderbufferStorageMultisample(GL_RENDERBUFFER, 1, GL_RGBA32F, camera()->nx, camera()->ny));
+            CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, msfbod));
+            CHECK_GL(glRenderbufferStorageMultisample(GL_RENDERBUFFER, 1, GL_DEPTH_COMPONENT32F, camera()->nx, camera()->ny));
 
             for (int dofsample = 0; dofsample < 16; dofsample++) {
-                CHECK_GL(glDisable(GL_MULTISAMPLE));
+                /* CHECK_GL(glDisable(GL_MULTISAMPLE)); */
                 glm::vec3 object =
                     camera()->g_camPos +
                     camera()->g_dof * glm::normalize(camera()->g_camView);
@@ -394,7 +399,12 @@ void main(void)
             ScreenFillQuad(texRect, 1.0, 0);
 
         } else {
-            CHECK_GL(glDisable(GL_MULTISAMPLE));
+            /* CHECK_GL(glDisable(GL_MULTISAMPLE)); */
+            CHECK_GL(glEnable(GL_MULTISAMPLE));
+            CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, msfborgb));
+            CHECK_GL(glRenderbufferStorageMultisample(GL_RENDERBUFFER, 8, GL_RGBA32F, camera()->nx, camera()->ny));
+            CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, msfbod));
+            CHECK_GL(glRenderbufferStorageMultisample(GL_RENDERBUFFER, 8, GL_DEPTH_COMPONENT32F, camera()->nx, camera()->ny));
             //ZPass();
             glm::vec3 object =
                 camera()->g_camPos + 1.0f * glm::normalize(camera()->g_camView);
@@ -429,6 +439,7 @@ void main(void)
             CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, target_fbo));
             //tmProg->set_uniform("msweight",1.0);//already set in camera::set_program_uniforms
             ScreenFillQuad(texRects[0], 1.0, 0);
+            CHECK_GL(glDisable(GL_MULTISAMPLE));
         }
         //std::this_thread::sleep_for(std::chrono::milliseconds(30));
         //glBlitFramebuffer(0, 0,camera()->nx,camera()->ny, 0, 0,camera()->nx,camera()->ny, GL_COLOR_BUFFER_BIT, GL_NEAREST);
