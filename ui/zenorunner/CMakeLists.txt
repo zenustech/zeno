@@ -8,3 +8,7 @@ if (ZENO_FAULTHANDLER)
     add_backward(zenorunner)
 endif()
 target_link_libraries(zenorunner PRIVATE zeno)
+
+if (ZENO_INSTALL_TARGET)
+    install(TARGETS zenorunner EXPORT ZenoTargets)
+endif()

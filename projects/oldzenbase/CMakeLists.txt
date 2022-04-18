@@ -2,7 +2,7 @@ file(GLOB PROJECT_SOURCE include/*/*.h *.cpp mesh/*.cpp pars/*.cpp prim/*.cpp *.
 
 target_sources(zeno PRIVATE ${PROJECT_SOURCE})
 target_compile_definitions(zeno PRIVATE -DDLL_ZENBASE)
-target_include_directories(zeno PUBLIC include)
+target_include_directories(zeno PRIVATE include)
 
 find_package(OpenMP)
 if (TARGET OpenMP::OpenMP_CXX)

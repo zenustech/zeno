@@ -5,7 +5,7 @@ add_definitions(-D__TBB_CPP20_COMPARISONS_PRESENT=0)
 # FUN FACT: DID U KNOW THAT MICROSOFT LOVES LINUX? #
 ####################################################
 if (MSVC)  # must use this to make msvc linker happy
-    target_compile_options(zeno PUBLIC
+    target_compile_options(zeno PRIVATE
             $<$<CONFIG:>:/bigobj>
             $<$<CONFIG:Debug>:/bigobj>
             $<$<CONFIG:Release>:/bigobj>
@@ -56,16 +56,16 @@ endif()
 if (WIN32)
   target_compile_options(zeno PRIVATE -DNOMINMAX -D_USE_MATH_DEFINES)
 endif()
-if (UNIX)
-  target_link_directories(zeno PUBLIC /usr/lib/x86_64-linux-gnu:/usr/local/lib)
-endif()
+# if (UNIX)
+#   target_link_directories(zeno PRIVATE /usr/lib/x86_64-linux-gnu:/usr/local/lib)
+# endif()
 target_link_libraries(zeno PRIVATE OpenVDB::openvdb)
 target_link_libraries(zeno PRIVATE Eigen3::Eigen)
 
 add_subdirectory(partio)
-IF (NOT WIN32)
-    INSTALL(TARGETS partio DESTINATION lib)
-ENDIF()
+# IF (NOT WIN32)
+#     INSTALL(TARGETS partio DESTINATION lib)
+# ENDIF()
 target_link_libraries(zeno PRIVATE partio)
 
 

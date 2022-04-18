@@ -25,3 +25,7 @@ if (ZENO_MULTIPROCESS)
     target_compile_definitions(zenoedit PRIVATE -DZENO_MULTIPROCESS)
     add_dependencies(zenoedit zenorunner)
 endif()
+
+if (ZENO_INSTALL_TARGET)
+    install(TARGETS zenoedit EXPORT ZenoTargets)
+endif()

@@ -50,7 +50,7 @@ option(ZENO_ENABLE_MAGICENUM "Enable magicenum in ZENO for enum reflection" ON)
 option(ZENO_MULTIPROCESS "Enable multiprocessing for ZENO" ON)
 option(ZENO_OUT_TO_BIN "Output files to a fixed directory" ON)
 option(ZENO_USE_CCACHE "Use CCache if found in path" ON)
-option(ZENO_NO_WARNING "Disable compiler warnings" ON)
+option(ZENO_NO_WARNING "Disable compiler warnings" OFF)
 option(ZENO_INSTALL_TARGET "Enable installation targets" OFF)
 
 if (ZENO_USE_CCACHE AND NOT MSVC)  # speed up compilation by cache (https://ccache.dev)
@@ -125,19 +125,6 @@ if (ZENO_BUILD_DESIGNER)
 endif()
 
 if (ZENO_INSTALL_TARGET)
-    message(STATUS "Adding Zeno Installation Target")
-    set(ZENO_TARGETS zeno zenoinclude zenoedit)
-    if (ZENO_MULTIPROCESS)
-        list(APPEND ZENO_TARGETS zenorunner)
-    endif()
-    install(
-        TARGETS ${ZENO_TARGETS}
-        EXPORT ZenoTargets
-        LIBRARY DESTINATION lib
-        ARCHIVE DESTINATION lib
-        RUNTIME DESTINATION bin
-        PUBLIC_HEADER DESTINATION include
-        )
     install(
         EXPORT ZenoTargets
         FILE ZenoTargets.cmake

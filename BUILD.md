@@ -5,7 +5,7 @@
 To work with Zeno, you need:
 
 ```cpp
-Git >= 2.0 && CMake >= 3.18 && Qt >= 5.12 && (MSVC >= 2019 || GCC >= 9 || Clang >= 11) && (Windows || Linux) && 64bit
+Git >= 2.0 && CMake >= 3.16 && Qt >= 5.12 && (MSVC >= 2019 || GCC >= 9 || Clang >= 11) && (Windows || Linux) && 64bit
 ```
 
 ### Windows

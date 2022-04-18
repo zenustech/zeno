@@ -44,6 +44,7 @@ target_include_directories(zeno PUBLIC
 
 if (ZENO_INSTALL_TARGET)
     install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include DESTINATION include/Zeno/zeno)
+    install(TARGETS zeno EXPORT ZenoTargets)
 endif()
 
 target_link_libraries(zeno PUBLIC zenoinclude)

@@ -19,8 +19,15 @@ endif()
 ####################################################
 
 target_sources(zeno PRIVATE ${PROJECT_SOURCE})
-target_include_directories(zeno PUBLIC include)
 target_include_directories(zeno PRIVATE ../oldzenbase/include)
+
+target_include_directories(zeno PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include/Zeno/zeno>)
+
+if (ZENO_INSTALL_TARGET)
+    install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include DESTINATION include/Zeno/zeno)
+endif()
 
 find_package(OpenMP)
 if (TARGET OpenMP::OpenMP_CXX)

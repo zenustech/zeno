@@ -2,15 +2,16 @@ add_subdirectory(ZFX)
 
 target_include_directories(zeno PRIVATE .)
 
-target_link_libraries(zeno PUBLIC ZFX)
+target_link_libraries(zeno PRIVATE $<BUILD_INTERFACE:ZFX>)
 target_sources(zeno PRIVATE nw.cpp pw.cpp pnw.cpp ppw.cpp pew.cpp dbg_printf.h)
 
-if (EXTENSION_zenvdb)
+if (ZENO_WITH_zenvdb)
     option(ZENOFX_ENABLE_OPENVDB "Enable OpenVDB wrangler in ZenoFX" ON)
+    option(ZENOFX_ENABLE_LBVH "Enable Linear BVH wrangler in ZenoFX" ON)
 else()
     option(ZENOFX_ENABLE_OPENVDB "Enable OpenVDB wrangler in ZenoFX" OFF)
+    option(ZENOFX_ENABLE_LBVH "Enable Linear BVH wrangler in ZenoFX" OFF)
 endif()
-option(ZENOFX_ENABLE_LBVH "Enable Linear BVH wrangler in ZenoFX" OFF)
 
 if (ZENOFX_ENABLE_OPENVDB)
     find_package(OpenVDB REQUIRED)

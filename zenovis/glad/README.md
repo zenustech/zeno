@@ -6,9 +6,8 @@ Ready to use GLAD as a OpenGL API loader
 If you encounter problems with glad, try run following scripts yourself:
 
 ```
-python -m pip install --user glad
-rm -rf external/glad
-glad --generator c --out-path external/glad
+pip install glad
+python -m glad --out-path . --generator c --api gl=3.2 --profile core
 ```
 
 ### Tips

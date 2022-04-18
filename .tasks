@@ -3,4 +3,4 @@ build_type=Debug
 build_target=zenoedit
 run_environ=ZENO_LOGLEVEL=debug ZENO_OPEN=/tmp/a.zsg
 run_target="$(VIM:build_dir)/bin/zenoedit"
-build_configs=-DZENO_MULTIPROCESS:BOOL=ON
+build_configs=-DZENO_NO_WARNING:BOOL=ON -DZENO_MULTIPROCESS:BOOL=ON -DZENO_INSTALL_TARGET:BOOL=ON -DZENO_WITH_ZenoFX:BOOL=ON -DZENO_WITH_zenvdb:BOOL=ON
