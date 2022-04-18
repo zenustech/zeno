@@ -69,9 +69,6 @@ jobs:
     - name: Checkout Repo
       uses: actions/checkout@v2
 
-    - name: Install CMake
-      uses: lukka/get-cmake@v3.16.3
-
     - name: Cache Qt
       id: cache-qt
       uses: actions/cache@v1
