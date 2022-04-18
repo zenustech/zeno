@@ -44,8 +44,8 @@ static std::shared_ptr<VDBGrid> readvdb(std::string path, std::string type)
 
 struct ReadVDBGrid : zeno::INode {
   virtual void apply() override {
-    auto path = std::get<std::string>(get_param("path"));
-    auto type = std::get<std::string>(get_param("type"));
+    auto path = get_param<std::string>(("path"));
+    auto type = get_param<std::string>(("type"));
     auto data = readvdb(path, type);
     set_output("data", data);
   }
@@ -68,7 +68,7 @@ static int defReadVDBGrid = zeno::defNodeClass<ReadVDBGrid>(
 struct ImportVDBGrid : zeno::INode {
   virtual void apply() override {
     auto path = get_input("path")->as<zeno::StringObject>();
-    auto type = std::get<std::string>(get_param("type"));
+    auto type = get_param<std::string>(("type"));
     auto data = readvdb(path->get(), type);
     set_output("data", std::move(data));
   }

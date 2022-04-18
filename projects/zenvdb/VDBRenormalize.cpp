@@ -19,8 +19,8 @@ namespace zeno {
   virtual void apply() override {
 
     auto inoutSDF = get_input("inoutSDF")->as<VDBFloatGrid>();
-    int normIter = std::get<int>(get_param("iterations"));
-    int dilateIter = std::get<int>(get_param("dilateIters"));
+    int normIter = get_param<int>(("iterations"));
+    int dilateIter = get_param<int>(("dilateIters"));
     auto lstracker = openvdb::tools::LevelSetTracker<openvdb::FloatGrid>(*(inoutSDF->m_grid));
     lstracker.setState({openvdb::math::FIRST_BIAS, openvdb::math::TVD_RK3, 1, 1});
     lstracker.setTrimming(openvdb::tools::lstrack::TrimMode::kNone);
@@ -90,8 +90,8 @@ struct  VDBSmoothSDF : zeno::INode { /* cihou old graph */
   virtual void apply() override {
 
     auto inoutSDF = get_input("inoutSDF")->as<VDBFloatGrid>();
-    int width = std::get<int>(get_param("width"));
-    int iterations = std::get<int>(get_param("iterations"));
+    int width = get_param<int>(("width"));
+    int iterations = get_param<int>(("iterations"));
     auto lsf = openvdb::tools::Filter<openvdb::FloatGrid>(*(inoutSDF->m_grid));
     lsf.setGrainSize(1);
     lsf.gaussian(width, iterations, nullptr);

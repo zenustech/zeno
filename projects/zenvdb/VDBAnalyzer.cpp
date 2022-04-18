@@ -13,7 +13,7 @@ struct ScalarFieldAnalyzer : zeno::INode {
     virtual void apply() override {
         auto inSDF = get_input("InVDB")->as<VDBFloatGrid>();
         auto grid = inSDF->m_grid;
-        auto OpType = std::get<std::string>(get_param("Operator"));
+        auto OpType = get_param<std::string>(("Operator"));
         if (OpType == "Gradient") {
             auto result = std::make_shared<VDBFloat3Grid>(openvdb::tools::gradient(*grid));
             set_output("OutVDB", std::move(result));
@@ -67,7 +67,7 @@ struct VectorFieldAnalyzer : zeno::INode {
     virtual void apply() override {
         auto inSDF = get_input("InVDB")->as<VDBFloat3Grid>();
         auto grid = inSDF->m_grid;
-        auto OpType = std::get<std::string>(get_param("Operator"));
+        auto OpType = get_param<std::string>(("Operator"));
         if (OpType == "Divergence") {
             auto result = std::make_shared<VDBFloatGrid>(openvdb::tools::divergence(*grid));
             set_output("OutVDB", std::move(result));
