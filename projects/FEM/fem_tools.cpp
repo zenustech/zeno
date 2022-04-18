@@ -561,7 +561,7 @@ struct InterpolateElmAttrib : zeno::INode {
         auto prim = get_input<zeno::PrimitiveObject>("prim");
         auto elmView = get_input<zeno::PrimitiveObject>("elmView");
         auto attr_name = get_param<std::string>("attrName");
-        auto attr_type = std::get<std::string>(get_param("attrType"));
+        auto attr_type = get_param<std::string>("attrType"));
 
         if(!prim->has_attr(attr_name)){
             throw std::runtime_error("INPUT PRIMITIVE DOES NOT HAVE THE SPECIFIED ATTRIB");

@@ -51,8 +51,8 @@ ZENDEFNODE(PrimitiveAddAttr,
 struct PrimitiveGetAttrValue : zeno::INode {
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
-        auto name = std::get<std::string>(get_param("name"));
-        auto type = std::get<std::string>(get_param("type"));
+        auto name = get_param<std::string>("name"));
+        auto type = get_param<std::string>("type"));
         auto index = get_input<zeno::NumericObject>("index")->get<int>();
 
         auto value = std::make_shared<zeno::NumericObject>();
@@ -94,8 +94,8 @@ ZENDEFNODE(PrimitiveGetAttrValue,
 struct PrimitiveSetAttrValue : zeno::INode {
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
-        auto name = std::get<std::string>(get_param("name"));
-        auto type = std::get<std::string>(get_param("type"));
+        auto name = get_param<std::string>("name"));
+        auto type = get_param<std::string>("type"));
         auto index = get_input<zeno::NumericObject>("index")->get<int>();
         auto &it = prim->attr(name);
 

@@ -28,7 +28,7 @@ static void writepars(
 
 struct WriteParticles : zeno::INode {
   virtual void apply() override {
-    auto path = std::get<std::string>(get_param("path"));
+    auto path = get_param<std::string>("path"));
     auto pars = get_input("pars")->as<ParticlesObject>();
     writepars(path.c_str(), pars->pos, pars->vel);
   }

@@ -29,7 +29,7 @@ namespace zeno {
 
 struct WriteBgeo : zeno::INode {
   virtual void apply() override {
-    auto path = std::get<std::string>(get_param("path"));
+    auto path = get_param<std::string>("path"));
     auto data = get_input("data")->as<ParticlesObject>();
     outputBgeo(path, data->pos, data->vel);
   }

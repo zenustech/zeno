@@ -164,7 +164,7 @@ ZENDEFNODE(DenseFieldToVDB, {
 
 struct GetDenseField : zeno::INode {
   virtual void apply() override {
-    auto field = std::get<std::string>(get_param("FieldName"));
+    auto field = get_param<std::string>("FieldName"));
     auto gas = get_input("inSolverData")->as<ZenCompressAero>()->gas;
     if (field == std::string("p")) {
       auto oField = zeno::IObject::make<DenseFloatGrid>();

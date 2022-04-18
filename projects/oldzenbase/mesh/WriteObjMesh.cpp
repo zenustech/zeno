@@ -38,7 +38,7 @@ static void writeobj(
 
 struct WriteObjMesh : zeno::INode {
   virtual void apply() override {
-    auto path = std::get<std::string>(get_param("path"));
+    auto path = get_param<std::string>("path"));
     auto mesh = get_input("mesh")->as<MeshObject>();
     writeobj(path.c_str(), mesh->vertices, mesh->uvs, mesh->normals);
   }
