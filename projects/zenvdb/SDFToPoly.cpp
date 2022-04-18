@@ -95,6 +95,7 @@ static int defSDFToPrimitive = zeno::defNodeClass<SDFToPrimitive>("SDFToPrimitiv
     }});
 
 
+#if 0
 struct ConvertTo_VDBFloatGrid_PrimitiveObject : SDFToPoly {
     virtual void apply() override {
         SDFToPoly::apply();
@@ -131,5 +132,6 @@ ZENO_DEFOVERLOADNODE(ToVisualize, _VDBFloatGrid, typeid(VDBFloatGrid).name())({
         {{"string", "path", ""}},
         {"primitive"},
 });
+#endif
  
 }
