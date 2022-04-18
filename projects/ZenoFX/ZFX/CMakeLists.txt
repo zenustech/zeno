@@ -6,7 +6,7 @@ option(ZFX_ENABLE_CUDA "Build ZFX with CUDA support" ON)
 
 set(CMAKE_CXX_STANDARD 17)
 
-add_library(ZFX
+add_library(ZFX STATIC
 # ls {,include/zfx/}*{,/*}.{h,cpp} | grep -v main.cpp
 AST.h
 ConstantFold.cpp
@@ -47,7 +47,6 @@ zfx.cpp
     )
 target_include_directories(ZFX PUBLIC include)
 if (ZFX_PRINT_IR)
-    target_link_libraries(ZFX PRIVATE zeno)
     target_compile_definitions(ZFX PRIVATE -DZFX_PRINT_IR)
 endif()
 if (ZFX_ENABLE_CUDA)

@@ -51,7 +51,7 @@ option(ZENO_MULTIPROCESS "Enable multiprocessing for ZENO" ON)
 option(ZENO_OUT_TO_BIN "Output files to a fixed directory" ON)
 option(ZENO_USE_CCACHE "Use CCache if found in path" ON)
 option(ZENO_NO_WARNING "Disable compiler warnings" ON)
-option(ZENO_INSTALL_TARGET "Enable installation targets" ON)
+option(ZENO_INSTALL_TARGET "Enable installation targets" OFF)
 
 if (ZENO_USE_CCACHE AND NOT MSVC)  # speed up compilation by cache (https://ccache.dev)
     find_program(CCACHE_PROGRAM ccache)
