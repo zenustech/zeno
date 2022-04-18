@@ -113,8 +113,6 @@ endif()
 
 if (ZENO_BUILD_EDITOR)
     message(STATUS "Building Zeno Editor")
-    add_subdirectory(external/glad)
-    add_subdirectory(external/stb_image)
     add_subdirectory(ui/zenoedit)
     add_subdirectory(zenovis)
 endif()
