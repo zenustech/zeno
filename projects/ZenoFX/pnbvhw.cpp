@@ -242,9 +242,8 @@ struct ParticlesNeighborBvhWrangle : zeno::INode {
     std::vector<std::pair<std::string, int>> parnames;
     for (auto const &[key_, obj] : params->lut) {
       auto key = '$' + key_;
-      if (auto o = zeno::silent_any_cast<zeno::NumericValue>(obj);
-          o.has_value()) {
-        auto par = o.value();
+      if (auto o = std::dynamic_pointer_cast<zeno::NumericObject>(obj); o) {
+        auto par = o->value;
         auto dim = std::visit(
             [&](auto const &v) {
               using T = std::decay_t<decltype(v)>;

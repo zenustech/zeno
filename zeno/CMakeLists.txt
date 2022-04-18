@@ -1,6 +1,10 @@
 file(GLOB_RECURSE source CONFIGURE_DEPENDS include/*.h src/*.cpp)
 
-add_library(zeno OBJECT ${source})
+if (ZENO_BUILD_SHARED)
+    add_library(zeno SHARED ${source})
+else()
+    add_library(zeno OBJECT ${source})
+endif()
 
 if (ZENO_ENABLE_OPENMP)
     find_package(OpenMP)
@@ -31,8 +35,8 @@ if (ZENO_PARALLEL_STL)
     endif()
 endif()
 
-if (ZENO_FAULTHANDLER)
-    target_compile_definitions(zeno PRIVATE -DZENO_FAULTHANDLER)
+if (ZENO_ENABLE_BACKWARD)
+    target_compile_definitions(zeno PRIVATE -DZENO_ENABLE_BACKWARD)
     add_backward(zeno)
 endif()
 

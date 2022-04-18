@@ -1,6 +1,6 @@
 #include <zeno/utils/Error.h>
 #include <zeno/utils/cppdemangle.h>
-#ifdef ZENO_FAULTHANDLER
+#ifdef ZENO_ENABLE_BACKWARD
 #include <backward.hpp>
 #endif
 
@@ -8,7 +8,7 @@ namespace zeno {
 
 ZENO_API ErrorException::ErrorException(std::shared_ptr<Error> &&err) noexcept
     : err(std::move(err)) {
-#ifdef ZENO_FAULTHANDLER
+#ifdef ZENO_ENABLE_BACKWARD
     backward::StackTrace st;
     st.load_here(32);
     st.skip_n_firsts(3);
