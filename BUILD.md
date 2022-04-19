@@ -65,9 +65,7 @@ We haven't tested Zeno 2.0 on WSL (they doesn't have X11 by default). But please
 
 Please refer to this video for installation guide :) https://www.bilibili.com/video/BV1uT4y1P7CX
 
-## Building Zeno
-
-### Get source code
+## Get source code
 
 Now that development tools are ready, let's clone the source code of Zeno from GitHub:
 
@@ -80,7 +78,7 @@ cd zeno
 
 > May also try `git clone https://github.com/zenustech/zeno.git --depth=1` for only fetching the latest commit, to reduce transmit data size for faster clone.
 
-### Fetch submodules (optional)
+## Fetch submodules (optional)
 
 You may optionally get the submodules of Zeno as well (for some extension modules):
 
@@ -92,29 +90,33 @@ git submodule update --init --recursive
 
 > If you find GitHub slow: edit `.gitmodules` and replace GitHub URLs by your corresponding [Gitee](https://gitee.com) mirrors, and re-run the above command.
 
-### Configure CMake
+## Build Zeno
+
+Quickly recall our CMake knowledge:
+
+1. The first step `cmake -B build` called *configure*, it generates the `build/` directory containing `Makefile`.
+2. The second step `cmake --build build` called *build*, equivalant to `make -C build` on Linux and call MSBuild on Windows.
 
 ### Windows
 
 ```bash
 cmake -B build -DQt5_DIR="C:/Qt/Qt5.14.2/msvc2017_64/lib/cmake"
+cmake --build build --config Release
 ```
 
 Please replace the `C:/Qt/Qt5.14.2` by your custom Qt install location. And make sure you use `/` instead of `\\`, since CMake doesn't recognize `\\`.
+
+> The `--config Release` argument is **only required on Windows**, thank to the fact that MSBuild is a multi-config generator.
+> If you use `-DCMAKE_BUILD_TYPE=Debug` in the *configure* phase, then you should also `--config Debug` in the *build* phase.
 
 ### Linux
 
 ```bash
 cmake -B build
-```
-
-### Build Zeno
-
-Starts to build (`4` here means using 4 CPU threads):
-
-```bash
 cmake --build build --parallel 4
 ```
+
+> `--parallel 4` here means using 4 CPU threads.
 
 ## Run Zeno
 
@@ -133,6 +135,10 @@ build/bin/zenoedit
 ```
 
 This should shows up an node editor window if everything is working well.
+
+## Building Zeno extensions (optional)
+
+Now you may go ahead building extension modules of Zeno, see [`docs/BUILD_EXT.md`](docs/BUILD_EXT.md).
 
 ## References
 
