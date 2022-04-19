@@ -82,14 +82,13 @@ jobs:
         version: 5.15.2
         cached: ${{ steps.cache-qt.outputs.cache-hit }}
 
-    - name: Configure Project
-      run: cmake -B build -DCMAKE_BUILD_TYPE=${{needs.check.outputs.type}} -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/release-root ${{matrix.cmake_args}}
-
-    - name: Build Project
-      run: cmake --build build
-
-    - name: Install Project
-      run: cmake --build build --target install
+    - name: 'Run CMake with Ninja, install dependencies with vcpkg, build with CMake'
+      uses: lukka/run-cmake@v3
+      with:
+        cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
+        cmakeAppendedArgs: -DCMAKE_BUILD_TYPE=${{needs.check.outputs.type}} ${{matrix.cmake_args}}
+        buildDirectory: ${{github.workspace}}/build
+        useVcpkgToolchainFile: false
 
     - name: Packaging
       if: ${{ needs.check.outputs.deploy == 'true' }}
@@ -100,7 +99,7 @@ jobs:
       uses: actions/upload-artifact@v2
       with:
         name: ${{runner.os}}-${{needs.check.outputs.type}}-Package
-        path: ${{github.workspace}}/release-root/out.${{ runner.os == 'Linux' && 'tar.gz' || 'zip' }}
+        path: ${{github.workspace}}/build/out.${{ runner.os == 'Linux' && 'tar.gz' || 'zip' }}
 
   deploy:
     strategy:

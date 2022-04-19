@@ -54,7 +54,8 @@ Fig.6 - Large scale Fluids in ZENO
 ## Download binary release
 
 Go to the [release page](https://github.com/zenustech/zeno/releases/), and click Assets -> download `zeno-windows-20xx.x.x.zip` (`zeno-linux-20xx.x.x.tar.gz` for Linux).
-Then, extract this archive, and simply run `launcher.exe` (`./launcher` for Linux), then the node editor window will shows up if everything is working well.
+
+Then, extract this archive, and simply run `000_start.bat` (`./000_start.sh` for Linux), then the node editor window will shows up if everything is working well.
 
 ## How to play
 
