@@ -85,6 +85,11 @@ void Session::set_background_color(float r, float g, float b) {
     impl->scene->camera->bgcolor = glm::vec3(r, g, b);
 }
 
+std::tuple<float, float, float> Session::get_background_color() {
+    auto c = impl->scene->camera->bgcolor;
+    return {c[0], c[1], c[2]};
+}
+
 void Session::set_curr_frameid(int frameid) {
     impl->curr_frameid = std::max(frameid, 0);
 }

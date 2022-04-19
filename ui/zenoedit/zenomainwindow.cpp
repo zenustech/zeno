@@ -140,6 +140,18 @@ void ZenoMainWindow::initMenu()
 
         pAction = new QAction(tr("Background Color"), this);
         pDisplay->addAction(pAction);
+        connect(pAction, &QAction::triggered, this, [=]() {
+            auto [r, g, b] = Zenovis::GetInstance().getSessionRef()->get_background_color();
+            auto c = QColor::fromRgbF(r, g, b);
+            c = QColorDialog::getColor(c);
+            if (c.isValid()) {
+                Zenovis::GetInstance().getSessionRef()->set_background_color(
+                    c.redF(),
+                    c.greenF(),
+                    c.blueF()
+                );
+            }
+        });
 
         pDisplay->addSeparator();
 

@@ -81,6 +81,11 @@ void Zenovis::setSmoothShading(bool flag)
     session->set_smooth_shading(flag);
 }
 
+std::unique_ptr<zenovis::Session>& Zenovis::getSessionRef()
+{
+    return session;
+}
+
 int Zenovis::setCurrentFrameId(int frameid)
 {
     if (frameid < 0)

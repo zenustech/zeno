@@ -46,6 +46,7 @@ public:
     void setNormalCheck(bool flag);
     void setRenderWireframe(bool flag);
     void setSmoothShading(bool flag);
+    std::unique_ptr<zenovis::Session>& getSessionRef();
 
 //private:
     Zenovis();
