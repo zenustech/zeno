@@ -43,6 +43,7 @@ public:
     void recordGL(const std::string& record_path);
     int getCurrentFrameId();
     void setShowGrid(bool flag);
+    void setNormalCheck(bool flag);
 
 //private:
     Zenovis();

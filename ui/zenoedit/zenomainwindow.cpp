@@ -148,6 +148,14 @@ void ZenoMainWindow::initMenu()
         pAction->setChecked(false);
         pDisplay->addAction(pAction);
 
+        pAction = new QAction(tr("Normal Check"), this);
+        pAction->setCheckable(true);
+        pAction->setChecked(false);
+        pDisplay->addAction(pAction);
+        connect(pAction, &QAction::triggered, this, [=]() {
+            Zenovis::GetInstance().setNormalCheck(pAction->isChecked());
+        });
+
         pAction = new QAction(tr("Wireframe"), this);
         pAction->setCheckable(true);
         pAction->setChecked(false);

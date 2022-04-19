@@ -66,6 +66,11 @@ void Zenovis::setShowGrid(bool flag)
     m_show_grid = flag;
 }
 
+void Zenovis::setNormalCheck(bool flag)
+{
+    session->set_normal_check(flag);
+}
+
 int Zenovis::setCurrentFrameId(int frameid)
 {
     if (frameid < 0)
