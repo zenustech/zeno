@@ -256,7 +256,7 @@ struct Light {
             //CHECK_GL(glGenTextures(1, &(DepthMaps[i])));
             //CHECK_GL(glBindTexture(GL_TEXTURE_2D, DepthMaps[i]));
             CHECK_GL(glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_DEPTH_COMPONENT32F,
-                    depthMapResolution, depthMapResolution, (cascadeCount + 1) * 16, 0,
+                    depthMapResolution, depthMapResolution, (cascadeCount + 1) * 2, 0,
                     GL_DEPTH_COMPONENT, GL_FLOAT, nullptr));
             CHECK_GL(glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER,
                     GL_LINEAR));

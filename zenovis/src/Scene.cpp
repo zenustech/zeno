@@ -43,6 +43,7 @@ Scene::Scene()
 
     mReflectivePass->initReflectiveMaps(camera->nx, camera->ny);
 
+    lights.push_back(std::make_unique<Light>());
     hudGraphics.push_back(makeGraphicGrid(this));
     hudGraphics.push_back(makeGraphicAxis(this));
     //setup_env_map("Default");
