@@ -43,7 +43,7 @@ If you use Linux the setup would be much easier, simply run these commands:
 ```bash
 sudo apt-get install -y git cmake make g++
 sudo apt-get install -y qt5-default
-sudo apt-get install libqt5svg5*
+sudo apt-get install -y libqt5svg5-dev
 ```
 
 > Note: We recommend to use Ubuntu 20.04 (or above) if possible. Ubuntu 18.04 users may need to install Qt 5.14.x from the official installer manually.

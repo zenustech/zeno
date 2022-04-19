@@ -2,14 +2,6 @@ cmake_minimum_required(VERSION 3.16)
 set(CMAKE_CXX_STANDARD 17)
 
 find_package(Eigen3 REQUIRED NO_MODULE)
-
-if(WIN32)
-    if(TARGET igl::core)
-    else()
-        find_package(libigl REQUIRED)
-    endif()
-endif(WIN32)
-
 find_package(OpenMP)
 if(NOT OpenMP_CXX_FOUND)
 
