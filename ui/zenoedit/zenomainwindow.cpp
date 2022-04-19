@@ -159,6 +159,10 @@ void ZenoMainWindow::initMenu()
         pAction = new QAction(tr("Wireframe"), this);
         pAction->setCheckable(true);
         pAction->setChecked(false);
+        pDisplay->addAction(pAction);
+        connect(pAction, &QAction::triggered, this, [=]() {
+            Zenovis::GetInstance().setRenderWireframe(pAction->isChecked());
+        });
 
         pDisplay->addSeparator();
 

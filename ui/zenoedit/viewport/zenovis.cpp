@@ -71,6 +71,11 @@ void Zenovis::setNormalCheck(bool flag)
     session->set_normal_check(flag);
 }
 
+void Zenovis::setRenderWireframe(bool flag)
+{
+    session->set_render_wireframe(flag);
+}
+
 int Zenovis::setCurrentFrameId(int frameid)
 {
     if (frameid < 0)

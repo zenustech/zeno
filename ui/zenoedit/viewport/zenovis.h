@@ -44,6 +44,7 @@ public:
     int getCurrentFrameId();
     void setShowGrid(bool flag);
     void setNormalCheck(bool flag);
+    void setRenderWireframe(bool flag);
 
 //private:
     Zenovis();
