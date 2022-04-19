@@ -138,7 +138,17 @@ This should shows up an node editor window if everything is working well.
 
 ## Building Zeno extensions (optional)
 
-Now you may go ahead building extension modules of Zeno, see [`docs/BUILD_EXT.md`](docs/BUILD_EXT.md).
+Zeno is a C++ project with thousands of `.cpp` files. However what you have just built is just some
+hundreds of them. To build the full-featured version of Zeno, you need to build the Zeno extension modules.
+
+> Why not build the extension modules by default? Because they require a lot of dedicated setup, which can
+> be unfriendly to new users. E.g., some of them depends on `x86_64` architecture, or the `CUDA` toolkit.
+
+> We decide to keep **the core part of Zeno** build without any dependencies to **make it easy for new users**.
+> People with dependencies installed may turn on some of the extensions manually if they'd like to.
+> (In fact, the Zeno editor which requires Qt may also be turned off, building only the API of Zeno core).
+
+If you are ready to challage, please go ahead to [`docs/BUILD_EXT.md`](docs/BUILD_EXT.md).
 
 ## References
 
