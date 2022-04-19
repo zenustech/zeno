@@ -46,6 +46,10 @@ void Session::set_render_wireframe(bool render_wireframe) {
     impl->scene->camera->render_wireframe = render_wireframe;
 }
 
+void Session::set_smooth_shading(bool smooth) {
+    impl->scene->camera->smooth_shading = smooth;
+}
+
 void Session::new_frame() {
     impl->scene->draw();
 }

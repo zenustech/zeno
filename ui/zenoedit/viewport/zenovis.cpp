@@ -76,6 +76,11 @@ void Zenovis::setRenderWireframe(bool flag)
     session->set_render_wireframe(flag);
 }
 
+void Zenovis::setSmoothShading(bool flag)
+{
+    session->set_smooth_shading(flag);
+}
+
 int Zenovis::setCurrentFrameId(int frameid)
 {
     if (frameid < 0)

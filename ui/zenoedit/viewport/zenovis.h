@@ -45,6 +45,7 @@ public:
     void setShowGrid(bool flag);
     void setNormalCheck(bool flag);
     void setRenderWireframe(bool flag);
+    void setSmoothShading(bool flag);
 
 //private:
     Zenovis();

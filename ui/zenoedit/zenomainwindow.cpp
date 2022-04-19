@@ -147,6 +147,9 @@ void ZenoMainWindow::initMenu()
         pAction->setCheckable(true);
         pAction->setChecked(false);
         pDisplay->addAction(pAction);
+        connect(pAction, &QAction::triggered, this, [=]() {
+            Zenovis::GetInstance().setSmoothShading(pAction->isChecked());
+        });
 
         pAction = new QAction(tr("Normal Check"), this);
         pAction->setCheckable(true);
