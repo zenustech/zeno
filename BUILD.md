@@ -97,7 +97,7 @@ git submodule update --init --recursive
 ### Windows
 
 ```bash
-cmake -B build -DQt5_DIR="C:/Qt/Qt5.14.2/msvc2017_64/lib/cmake"
+cmake -B build -DQt5_DIR="C:/Qt/Qt5.14.2/msvc2017_64/lib/cmake/Qt5"
 ```
 
 Please replace the `C:/Qt/Qt5.14.2` by your custom Qt install location. And make sure you use `/` instead of `\\`, since CMake doesn't recognize `\\`.
