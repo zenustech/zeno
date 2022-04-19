@@ -82,7 +82,7 @@ jobs:
         - os: Windows
 
     if: ${{ needs.check.outputs.deploy == 'true' }}
-    needs: [build]
+    needs: [check, build]
     runs-on: ubuntu-latest
     #continue-on-error: true
 
