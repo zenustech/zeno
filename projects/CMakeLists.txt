@@ -18,6 +18,8 @@ set(ZENO_EXTENSIONS
     Functional
     TreeSketch
     )
+add_subdirectory(SharedExtension)
+
 foreach (name IN ITEMS ${ZENO_EXTENSIONS})
     option(ZENO_WITH_${name} "Build ZENO with extension: ${name}" OFF)
     if (ZENO_WITH_${name})

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <zeno/core/IObject.h>
+#include <zeno/funcs/LiterialConverter.h>
 #include <memory>
 #include <string>
 #include <map>

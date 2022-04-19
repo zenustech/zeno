@@ -119,3 +119,5 @@ cmake -B build -DCMAKE_BUILD_TYPE=Release -DZENO_WITH_ZenoFX:BOOL=ON -DZENOFX_EN
 NVIDIA users may additionally specify `-DZENO_WITH_gmpm:BOOL=ON -DZENO_WITH_mesher:BOOL=ON` in arguments for building CUDA support.
 
 > NOTE: **CUDA 11.x requried**.
+
+> NOTE: ZenoFX must be enabled when gmpm is enabled, because gmpm depends on ZenoFX.
