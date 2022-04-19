@@ -485,25 +485,25 @@ void preIntegrate(GLuint inEnvMap)
       glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f,  0.0f, -1.0f), glm::vec3(0.0f, -1.0f,  0.0f))
   };
   envCubemap = inEnvMap;
-  glBindTexture(GL_TEXTURE_CUBE_MAP, envCubemap);
-  glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
+  CHECK_GL(glBindTexture(GL_TEXTURE_CUBE_MAP, envCubemap));
+  CHECK_GL(glGenerateMipmap(GL_TEXTURE_CUBE_MAP));
 /////////////////////////////////////////////////////////////////////////////////////////////////////
   if(irradianceMap==0){
-    glGenTextures(1, &irradianceMap);
-    glBindTexture(GL_TEXTURE_CUBE_MAP, irradianceMap);
+    CHECK_GL(glGenTextures(1, &irradianceMap));
+    CHECK_GL(glBindTexture(GL_TEXTURE_CUBE_MAP, irradianceMap));
     for (unsigned int i = 0; i < 6; ++i)
     {
-        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB16F, 128, 128, 0, GL_RGB, GL_FLOAT, nullptr);
+        CHECK_GL(glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB16F, 128, 128, 0, GL_RGB, GL_FLOAT, nullptr));
     }
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    CHECK_GL(glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
+    CHECK_GL(glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
+    CHECK_GL(glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE));
+    CHECK_GL(glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
+    CHECK_GL(glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
   }
-  glBindFramebuffer(GL_FRAMEBUFFER, captureFBO);
-  glBindRenderbuffer(GL_RENDERBUFFER, captureRBO);
-  glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, 128, 128);
+  CHECK_GL(glBindFramebuffer(GL_FRAMEBUFFER, captureFBO));
+  CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, captureRBO));
+  CHECK_GL(glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, 128, 128));
 
   // pbr: solve diffuse integral by convolution to create an irradiance (cube)map.
   // -----------------------------------------------------------------------------
@@ -511,10 +511,10 @@ void preIntegrate(GLuint inEnvMap)
   preintIrradianceProg->set_uniformi("environmentMap", 0);
   preintIrradianceProg->set_uniform("projection", captureProjection);
   glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_CUBE_MAP, envCubemap);
+  CHECK_GL(glBindTexture(GL_TEXTURE_CUBE_MAP, envCubemap));
 
   glViewport(0, 0, 128, 128); // don't forget to configure the viewport to the capture dimensions.
-  glBindFramebuffer(GL_FRAMEBUFFER, captureFBO);
+  CHECK_GL(glBindFramebuffer(GL_FRAMEBUFFER, captureFBO));
   CHECK_GL(glClearColor(0.0f, 0.0f, 0.0f, 0.0f));
   CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 
