@@ -6,6 +6,7 @@
 #include <zeno/types/PrimitiveObject.h>
 #include "EigenUtils.h"
 #include "igl_sink.h"
+#include <zeno/types/UserData.h>
 
 namespace {
 
@@ -97,7 +98,7 @@ struct PrimitiveListBoolOp : PrimitiveBooleanOp {
 
         auto VFA = get_param<bool>("doMeshFix") ? prim_to_eigen_with_fix(primA.get()) : prim_to_eigen(primA.get());
 
-        auto listB = primListB->get<std::shared_ptr<PrimitiveObject>>();
+        auto listB = primListB->get<PrimitiveObject>();
         std::vector<std::pair<bool, std::shared_ptr<PrimitiveObject>>> listC(listB.size());
 
         #pragma omp parallel for
@@ -113,7 +114,7 @@ struct PrimitiveListBoolOp : PrimitiveBooleanOp {
         lutList->arr.resize(listC.size());
         int lutcnt=-1;
         for (auto const &[anyFromA, primPtr]: listC) { lutcnt++;
-            primPtr->userData.get("anyFromA") = anyFromA;
+            primPtr->userData().set("anyFromA", objectFromLiterial(anyFromA));
             if (get_param<bool>("noNullMesh") && primPtr->size() == 0) {
                 auto cnt = std::make_shared<NumericObject>();
                 cnt->set((int)-1);
