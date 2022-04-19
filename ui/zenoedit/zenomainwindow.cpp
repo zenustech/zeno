@@ -197,6 +197,10 @@ void ZenoMainWindow::initMenu()
         QAction* pAction = new QAction(tr("Screenshot"), this);
         pAction->setShortcut(QKeySequence("F12"));
         pRecord->addAction(pAction);
+        connect(pAction, &QAction::triggered, this, [=]() {
+            auto s = QDateTime::currentDateTime().toString(QString("yyyy-dd-MM_hh-mm-ss.png"));
+            Zenovis::GetInstance().getSessionRef()->do_screenshot(s.toStdString());
+        });
 
         pAction = new QAction(tr("Record Video"), this);
         pAction->setShortcut(QKeySequence(tr("Shift+F12")));
