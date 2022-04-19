@@ -75,8 +75,8 @@ struct DoSkinning : zeno::INode {
         auto algorithm = get_param<std::string>(("algorithm"));
         auto attr_prefix = get_param<std::string>("attr_prefix");
 
-        auto Qs_ = get_input<zeno::ListObject>("Qs")->get<std::shared_ptr<NumericObject>>();
-        auto Ts_ = get_input<zeno::ListObject>("Ts")->get<std::shared_ptr<NumericObject>>();
+        auto Qs_ = get_input<zeno::ListObject>("Qs")->get<NumericObject>();
+        auto Ts_ = get_input<zeno::ListObject>("Ts")->get<NumericObject>();
 
         // std::cout << "GOT QS AND TS INPUT" << std::endl;
         size_t dim = 3;

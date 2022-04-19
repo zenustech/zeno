@@ -64,10 +64,11 @@ if (ZENO_USE_CCACHE AND NOT MSVC)  # speed up compilation by cache (https://ccac
 endif()
 
 if (ZENO_NO_WARNING)
-    if (CMAKE_COMPILER_IS_GNUCC)
+    if (CMAKE_CXX_COMPILER_ID MATCHES "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-all -Wno-cpp -Wno-deprecated-declarations -Wno-enum-compare -Werror=return-type")
+        # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-all -Wno-cpp -Wno-deprecated-declarations -Wno-enum-compare -Wno-ignored-attributes -Wno-extra -Werror=return-type")
     endif()
-    if (MSVC)
+    if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /w")
     endif()
 endif()

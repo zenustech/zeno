@@ -7,8 +7,6 @@ target_sources(zeno PRIVATE ${ZEN_RIGID_SOURCE})
 target_include_directories(zeno PRIVATE .)
 target_include_directories(zeno PRIVATE bullet3/src)
 
-target_link_libraries(zeno PRIVATE spdlog)
-
 #if (UNIX)
     #set(CMAKE_LINK_WHAT_YOU_USE TRUE)
     #target_link_libraries(zeno PRIVATE -Wl,--whole-archive)
