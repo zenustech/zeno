@@ -134,6 +134,9 @@ void ZenoMainWindow::initMenu()
         pAction->setCheckable(true);
         pAction->setChecked(true);
         pDisplay->addAction(pAction);
+        connect(pAction, &QAction::triggered, this, [=]() {
+            Zenovis::GetInstance().setShowGrid(pAction->isChecked());
+        });
 
         pAction = new QAction(tr("Background Color"), this);
         pDisplay->addAction(pAction);

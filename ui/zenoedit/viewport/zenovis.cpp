@@ -61,6 +61,11 @@ void Zenovis::startPlay(bool bPlaying)
     m_playing = bPlaying;
 }
 
+void Zenovis::setShowGrid(bool flag)
+{
+    m_show_grid = flag;
+}
+
 int Zenovis::setCurrentFrameId(int frameid)
 {
     if (frameid < 0)

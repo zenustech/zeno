@@ -42,6 +42,7 @@ public:
     void paintGL();
     void recordGL(const std::string& record_path);
     int getCurrentFrameId();
+    void setShowGrid(bool flag);
 
 //private:
     Zenovis();
