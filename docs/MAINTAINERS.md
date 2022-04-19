@@ -25,7 +25,7 @@ This will install Zeno **globally in your system**.
 
 The deployment is automated via GitHub CI, see `.github/workflows/cmake.yml`.
 
-To trigger it, simply push a commit message containing like:
+To trigger it, simply push a commit message containing `[release]`, for example:
 
 ```bash
 git commit -m "[release] some description"
