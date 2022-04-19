@@ -39,7 +39,7 @@ static void _check_opengl_error(const char *file, int line, const char *hint) {
     auto err = glGetError();
     if (err != GL_NO_ERROR) {
         auto msg = get_opengl_error_string(err);
-        throw zeno::makeError((std::string)file + ':' + std::to_string(line) + hint + ": " + msg);
+        throw zeno::makeError((std::string)file + ':' + std::to_string(line) + ": " + hint + ": " + msg);
     }
 }
 

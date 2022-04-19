@@ -174,7 +174,7 @@ void main(void)
                     gra->drawShadow(light.get());
                 }
                 scene->vao->unbind();
-                light->EndShadowMap();
+                light->EndShadowMap(i);
             }
         }
     }
