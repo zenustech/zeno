@@ -1,10 +1,8 @@
 cmake_minimum_required(VERSION 3.19)
-set(CMAKE_CXX_STANDARD 17)
-project(zeno_mesher)
 add_definitions(-D__TBB_CPP20_COMPARISONS_PRESENT=0)  
 
 # add cmake file
-include (common)
+# include (common)
 
 
 find_package(Eigen3 REQUIRED)
@@ -19,10 +17,9 @@ if (OPENMP_FOUND)
 endif()
 
 file (GLOB ZEN_MESHER_SOURCE *.cpp)
-add_library(zeno_mesher OBJECT ${ZEN_MESHER_SOURCE})
-target_include_directories(zeno_mesher PRIVATE mpmmeshing/)
+target_sources(zeno PRIVATE ${ZEN_MESHER_SOURCE})
+target_include_directories(zeno PRIVATE mpmmeshing/)
 
 
-target_link_libraries(zeno_mesher PRIVATE mpmmeshing )
-target_link_libraries(zeno_mesher PRIVATE Eigen3::Eigen)
-target_link_libraries(zeno_mesher PUBLIC zenocore)
+target_link_libraries(zeno PRIVATE mpmmeshing)
+target_link_libraries(zeno PRIVATE Eigen3::Eigen)

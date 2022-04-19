@@ -2,9 +2,9 @@
 
 [![CMake](https://github.com/zenustech/zeno/actions/workflows/cmake.yml/badge.svg)](https://github.com/zenustech/zeno/actions/workflows/cmake.yml) [![License](https://img.shields.io/badge/license-MPLv2-blue)](LICENSE) [![Version](https://img.shields.io/github/v/release/zenustech/zeno)](https://github.com/zenustech/zeno/releases)
 
-[Download](https://github.com/zenustech/zeno/releases) | [Repo](https://github.com/zenustech/zeno) | [About us](https://zenustech.com) | [Tutorial](https://zenustech.com/tutorial) | [Videos](https://space.bilibili.com/263032155) | [Q&A Forum](https://github.com/zenustech/zeno/discussions) | [Build from source](https://github.com/zenustech/zeno/blob/master/BUILD.md) | [Contributor Guidelines](https://github.com/zenustech/zeno/blob/master/docs/contributing.md) | [Bug report](https://github.com/zenustech/zeno/issues)
+[Download](https://github.com/zenustech/zeno/releases) | [Repo](https://github.com/zenustech/zeno) | [About us](https://zenustech.com) | [Tutorial](https://zenustech.com/tutorial) | [Videos](https://space.bilibili.com/263032155) | [Q&A Forum](https://github.com/zenustech/zeno/discussions) | [Build from source](https://github.com/zenustech/zeno/blob/master/BUILD.md) | [Contributor Guidelines](https://github.com/zenustech/zeno/blob/master/docs/CONTRIBUTING.md) | [Bug report](https://github.com/zenustech/zeno/issues)
 
-[国内高速下载](https://zenustech.com/d/) | [Gitee 镜像仓库](https://gitee.com/zenustech/zeno) | [公司主页](https://zenustech.com) | [中文教程](https://zenustech.com/tutorial) | [视频教程](https://space.bilibili.com/263032155) | [问答论坛](https://github.com/zenustech/zeno/discussions) | [从源码构建](https://github.com/zenustech/zeno/blob/master/BUILD.md) | [贡献者指南](https://github.com/zenustech/zeno/blob/master/docs/contributing.md) | [BUG 反馈](https://github.com/zenustech/zeno/issues)
+[国内高速下载](https://zenustech.com/d/) | [Gitee 镜像仓库](https://gitee.com/zenustech/zeno) | [公司主页](https://zenustech.com) | [中文教程](https://zenustech.com/tutorial) | [视频教程](https://space.bilibili.com/263032155) | [问答论坛](https://github.com/zenustech/zeno/discussions) | [从源码构建](https://github.com/zenustech/zeno/blob/master/BUILD.md) | [贡献者指南](https://github.com/zenustech/zeno/blob/master/docs/CONTRIBUTING.md) | [BUG 反馈](https://github.com/zenustech/zeno/issues)
 
 Open-source node system framework, to change your algorithmic code into useful tools to create much more complicated simulations!
 
@@ -54,7 +54,8 @@ Fig.6 - Large scale Fluids in ZENO
 ## Download binary release
 
 Go to the [release page](https://github.com/zenustech/zeno/releases/), and click Assets -> download `zeno-windows-20xx.x.x.zip` (`zeno-linux-20xx.x.x.tar.gz` for Linux).
-Then, extract this archive, and simply run `launcher.exe` (`./launcher` for Linux), then the node editor window will shows up if everything is working well.
+
+Then, extract this archive, and simply run `000_start.bat` (`./000_start.sh` for Linux), then the node editor window will shows up if everything is working well.
 
 ## How to play
 
@@ -72,8 +73,11 @@ If you find the binary version didn't worked properly or some error message has 
 
 To build ZENO from source, you need:
 
-- GCC 9+ or MSVC 19.28+, and CMake 3.18+ to build ZENO.
-- (Optional) OpenVDB for building volume nodes; CUDA for GPU nodes.
+- GCC 9+ or MSVC 19.28+, and CMake 3.16+ to build ZENO.
+- Qt 5.12+ to build the ZENO Qt editor.
+- (Optional) OpenVDB for volume nodes.
+- (Optional) Eigen3 for solver nodes.
+- (Optional) CUDA 11 for GPU nodes.
 
 > Hint: WSL is not recommended because of its limited GUI and OpenGL support.
 

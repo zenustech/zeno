@@ -1,1 +1,0 @@
-{"No4711": {"name": "RadObjMesh", "inputs": {"SRC": null, "COND": null}, "params": {}, "uipos": [-256.0, -61.0], "options": []}, "No22074": {"name": "MeshToPrimitive", "inputs": {"meshIn": ["No4711", "mesh"], "mesh": ["No4711", "mesh"], "SRC": null, "COND": null}, "params": {}, "uipos": [85.0, 161.0], "options": []}}

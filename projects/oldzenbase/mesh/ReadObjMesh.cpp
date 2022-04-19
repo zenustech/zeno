@@ -144,7 +144,7 @@ static void readobj(
 
 struct ReadObjMesh : zeno::INode {
   virtual void apply() override {
-    auto path = std::get<std::string>(get_param("path"));
+    auto path = get_param<std::string>(("path"));
     auto mesh = zeno::IObject::make<MeshObject>();
     readobj(path.c_str(), mesh->vertices, mesh->uvs, mesh->normals);
     set_output("mesh", mesh);

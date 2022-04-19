@@ -14,7 +14,7 @@
 #include "ABCTree.h"
 #include <cstring>
 #include <cstdio>
-#include <spdlog/spdlog.h>
+#include <zeno/utils/log.h>
 
 
 using namespace Alembic::AbcGeom;

@@ -15,13 +15,13 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 project(zeno
-    LANGUAGES C CXX
+    LANGUAGES CXX
     DESCRIPTION "Open-source node system framework for simulation and others"
     HOMEPAGE_URL https://github.com/zenustech/zeno
     )
 
 if (PROJECT_BINARY_DIR STREQUAL PROJECT_SOURCE_DIR)
-    message(WARNING "The binary directory of CMake cannot be the same as source directory!"
+    message(FATAL_ERROR "The binary directory of CMake cannot be the same as source directory!"
         "Please consider use 'cmake -B build' to specify a different binary directory."
         "Otherwise ZENO may fail to build, or make Git hard to exclude binary files.")
 endif()
@@ -39,20 +39,20 @@ if (WIN32)
     add_definitions(-DNOMINMAX -D_USE_MATH_DEFINES)
 endif()
 
-option(ZENO_BUILD_EDITOR "Build ZENO Editor" ON)
-option(ZENO_BUILD_DESIGNER "Build ZENO Designer" OFF)
-option(ZENO_BUILD_TESTER "Build ZENO Quick Tester" OFF)
-option(ZENO_FAULTHANDLER "Enable ZENO fault handler for traceback" ON)
+option(ZENO_BUILD_EDITOR "Build ZENO editor" ON)
+option(ZENO_BUILD_DESIGNER "Build ZENO designer" OFF)
 option(ZENO_BENCHMARKING "Enable ZENO benchmarking timer" ON)
+option(ZENO_MULTIPROCESS "Enable multiprocessing for ZENO" ON)
 option(ZENO_PARALLEL_STL "Enable parallel STL in ZENO" OFF)
+option(ZENO_ENABLE_BACKWARD "Enable ZENO fault handler for traceback" ON)
 option(ZENO_ENABLE_OPENMP "Enable OpenMP in ZENO for parallelism" ON)
 option(ZENO_ENABLE_SPDLOG "Enable spdlog in ZENO for logging" OFF)
 option(ZENO_ENABLE_MAGICENUM "Enable magicenum in ZENO for enum reflection" ON)
-option(ZENO_MULTIPROCESS "Enable multiprocessing for ZENO" ON)
 option(ZENO_OUT_TO_BIN "Output files to a fixed directory" ON)
+option(ZENO_BUILD_SHARED "Build shared library for ZENO" ON)
 option(ZENO_USE_CCACHE "Use CCache if found in path" ON)
 option(ZENO_NO_WARNING "Disable compiler warnings" ON)
-option(ZENO_INSTALL_TARGET "Enable installation targets" ON)
+option(ZENO_INSTALL_TARGET "Enable installation targets" OFF)
 
 if (ZENO_USE_CCACHE AND NOT MSVC)  # speed up compilation by cache (https://ccache.dev)
     find_program(CCACHE_PROGRAM ccache)
@@ -64,10 +64,10 @@ if (ZENO_USE_CCACHE AND NOT MSVC)  # speed up compilation by cache (https://ccac
 endif()
 
 if (ZENO_NO_WARNING)
-    if (CMAKE_COMPILER_IS_GNUCC)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-all -Wno-cpp -Wno-deprecated-declarations -Werror=return-type")
+    if (CMAKE_CXX_COMPILER_ID MATCHES "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-all -Wno-cpp -Wno-deprecated-declarations -Wno-enum-compare -Wno-ignored-attributes -Wno-extra -Werror=return-type")
     endif()
-    if (MSVC)
+    if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /w")
     endif()
 endif()
@@ -89,7 +89,7 @@ if (ZENO_OUT_TO_BIN)
     endif()
 endif()
 
-if (ZENO_FAULTHANDLER)
+if (ZENO_ENABLE_BACKWARD)
     add_subdirectory(external/backward-cpp)
 endif()
 
@@ -97,7 +97,6 @@ if (ZENO_ENABLE_SPDLOG)
     add_subdirectory(external/spdlog)
 endif()
 
-add_subdirectory(external/include)
 add_subdirectory(zeno)
 add_subdirectory(projects)
 
@@ -114,10 +113,8 @@ endif()
 
 if (ZENO_BUILD_EDITOR)
     message(STATUS "Building Zeno Editor")
-    add_subdirectory(external/glad)
-    add_subdirectory(external/stb_image)
-    add_subdirectory(ui/zenovis)
     add_subdirectory(ui/zenoedit)
+    add_subdirectory(zenovis)
 endif()
 
 if (ZENO_BUILD_DESIGNER)
@@ -125,25 +122,7 @@ if (ZENO_BUILD_DESIGNER)
     add_subdirectory(ui/zenodesign)
 endif()
 
-if (ZENO_BUILD_TESTER)
-    message(STATUS "Building Zeno Quick Tester")
-    add_subdirectory(ui/zenotest)
-endif()
-
 if (ZENO_INSTALL_TARGET)
-    message(STATUS "Adding Zeno Installation Target")
-    set(ZENO_TARGETS zenodes zenocore zenoinclude zenoedit)
-    if (ZENO_MULTIPROCESS)
-        list(APPEND ZENO_TARGETS zenorunner)
-    endif()
-    install(
-        TARGETS ${ZENO_TARGETS}
-        EXPORT ZenoTargets
-        LIBRARY DESTINATION lib
-        ARCHIVE DESTINATION lib
-        RUNTIME DESTINATION bin
-        PUBLIC_HEADER DESTINATION include
-        )
     install(
         EXPORT ZenoTargets
         FILE ZenoTargets.cmake

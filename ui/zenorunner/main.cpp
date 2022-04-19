@@ -71,11 +71,10 @@ static void runner_main(std::string const &progJson) {
 
     std::vector<char> buffer;
 
-    auto nframes = graph->adhocNumFrames;
-    for (int frame = 0; frame < nframes; frame++) {
+    for (int frame = graph->beginFrameNumber; frame < graph->endFrameNumber; frame++) {
         zeno::log_info("begin frame {}", frame);
-        session->globalState->frameBegin();
         session->globalComm->newFrame();
+        session->globalState->frameBegin();
         while (session->globalState->substepBegin())
         {
             graph->applyNodesToExec();

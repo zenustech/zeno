@@ -1,4 +1,5 @@
 #include <zeno/zeno.h>
+#include <zeno/types/UserData.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/PrimitiveObject.h>
 //-------attached some cuda library for FFT-----------------
@@ -784,7 +785,7 @@ struct OceanCompute : zeno::INode {
     
     //grid->userData.get("h") = std::make_shared<NumericObject>(CalOcean->L_scale * h);
     //grid->userData.get("transform") = std::make_shared<NumericObject>(0.5f * zeno::vec3f(CalOcean->L_scale * CalOcean->patchSize, 0, CalOcean->L_scale * CalOcean->patchSize));
-    grid->userData.get("dt") = std::make_shared<NumericObject>((float)(t2-t));
+    grid->userData().set("dt", std::make_shared<NumericObject>((float)(t2-t)));
     set_output("OceanData", grid);
     }
 };
@@ -966,7 +967,7 @@ struct OceanCuCompute : zeno::INode {
     write_back(mapx, CalOcean->d_mapx);
     write_back(repos, CalOcean->d_repos);
     write_back(revel, CalOcean->d_revel);
-    grid->userData.get("dt") = std::make_shared<NumericObject>((float)(t2-t));
+    grid->userData().set("dt", std::make_shared<NumericObject>((float)(t2-t)));
     set_output("OceanData", grid);
     }
 };

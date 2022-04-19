@@ -1,9 +1,0 @@
-usr/include
-usr/lib/*/lib*.a
-usr/lib/*/lib*.so
-usr/lib/*/pkgconfig/*.pc
-#usr/share/doc/libftgl-dev/html
-#usr/share/doc/libftgl-dev/ftgl.pdf
-#usr/share/doc/libftgl-dev/*.txt
-#/usr/share/cmake-2.8/Modules/FindFTGL.cmake
-#/usr/lib/cmake/FTGL/*.cmake

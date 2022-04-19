@@ -10,6 +10,7 @@
 #include <zeno/types/DictObject.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/PrimitiveObject.h>
+#include <zeno/types/UserData.h>
 
 namespace zeno {
 
@@ -51,8 +52,11 @@ struct ConfigConstitutiveModel : INode {
     const auto get_arg = [&params](const char *const tag, auto type) {
       using T = typename RM_CVREF_T(type)::type;
       std::optional<T> ret{};
-      if (auto it = params->lut.find(tag); it != params->lut.end())
-        ret = safe_any_cast<T>(it->second);
+      if (auto it = params->lut.find(tag); it != params->lut.end()) {
+        if (auto p = std::dynamic_pointer_cast<NumericObject>(it->second)) {
+          ret = p->get<T>();
+        }
+      }
       return ret;
     };
     auto anisoTypeStr = get_input2<std::string>("aniso");

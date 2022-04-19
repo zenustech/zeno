@@ -8,7 +8,10 @@
 ZTimeline::ZTimeline(QWidget* parent)
     : QWidget(parent)
     , m_slider(nullptr)
+    , m_pFrameFrom(nullptr)
+    , m_pFrameTo(nullptr)
 {
+    setFocusPolicy(Qt::ClickFocus);
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
 	QPalette pal = palette();
 	pal.setColor(QPalette::Window, QColor(30, 30, 30));
@@ -17,9 +20,15 @@ ZTimeline::ZTimeline(QWidget* parent)
 
     QHBoxLayout* pLayout = new QHBoxLayout;
 
-    QLineEdit* pFrame = new QLineEdit;
-    pFrame->setText("1");
-    pFrame->setFixedSize(ZenoStyle::dpiScaledSize(QSize(50, 24)));
+    m_pFrameFrom = new QLineEdit;
+    m_pFrameFrom->setText("0");
+    m_pFrameFrom->setFixedSize(ZenoStyle::dpiScaledSize(QSize(50, 24)));
+    connect(m_pFrameFrom, SIGNAL(editingFinished()), this, SLOT(onFrameEditted()));
+
+    m_pFrameTo = new QLineEdit;
+    m_pFrameTo->setFixedSize(ZenoStyle::dpiScaledSize(QSize(50, 24)));
+    m_pFrameTo->setText("1");
+    connect(m_pFrameTo, SIGNAL(editingFinished()), this, SLOT(onFrameEditted()));
 
     QPushButton* pRun = new QPushButton(tr("Run"));
     pRun->setProperty("cssClass", "grayButton");
@@ -48,8 +57,10 @@ ZTimeline::ZTimeline(QWidget* parent)
     plblForwardLastFrame->setIcons(QSize(20, 20), ":/icons/playforward_lastframe.svg", ":/icons/playforward_lastframe_hover.svg");
 
     m_slider = new ZSlider;
+    m_slider->setFromTo(0, 1);
     
-    pLayout->addWidget(pFrame);
+    pLayout->addWidget(m_pFrameFrom);
+    pLayout->addWidget(m_pFrameTo);
     pLayout->addWidget(pRun);
     pLayout->addWidget(pKill);
     pLayout->addWidget(plblBackwardFirstFrame);
@@ -59,18 +70,33 @@ ZTimeline::ZTimeline(QWidget* parent)
     pLayout->addWidget(plblForwardOneFrame);
     pLayout->addWidget(plblForwardLastFrame);
     pLayout->addWidget(m_slider);
+    pLayout->setContentsMargins(20, 3, 20, 0);
 
     setLayout(pLayout);
 
     connect(plblForward, SIGNAL(toggled(bool)), this, SIGNAL(playForward(bool)));
     connect(m_slider, SIGNAL(sliderValueChange(int)), this, SIGNAL(sliderValueChanged(int)));
     connect(pRun, &QPushButton::clicked, this, [=]() {
-        int frames = pFrame->text().toInt();
-        emit run(frames);
+        if (m_pFrameFrom->text().isEmpty() || m_pFrameTo->text().isEmpty())
+            return;
+        int frameFrom = m_pFrameFrom->text().toInt();
+        int frameTo = m_pFrameTo->text().toInt();
+        if (frameTo > frameFrom)
+            emit run(frameFrom, frameTo);
     });
 }
 
 void ZTimeline::onTimelineUpdate(int frameid)
 {
     m_slider->setSliderValue(frameid);
+}
+
+void ZTimeline::onFrameEditted()
+{
+    if (m_pFrameFrom->text().isEmpty() || m_pFrameTo->text().isEmpty())
+        return;
+    int frameFrom = m_pFrameFrom->text().toInt();
+    int frameTo = m_pFrameTo->text().toInt();
+    if (frameTo > frameFrom)
+        m_slider->setFromTo(frameFrom, frameTo);
 }

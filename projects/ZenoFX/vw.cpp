@@ -27,7 +27,7 @@ struct Buffer {
 template <class GridPtr>
 void vdb_wrangle(zfx::x64::Executable *exec, GridPtr &grid, bool modifyActive) {
     auto velman = openvdb::tree::LeafManager<std::decay_t<decltype(grid->tree())>>(grid->tree());
-    zeno::boolean_switch([&] (auto modifyActive) {
+    zeno::boolean_switch(modifyActive, [&] (auto modifyActive) {
     auto wrangler = [&](auto &leaf, openvdb::Index leafpos) {
         for (auto iter = leaf.beginValueOn(); iter != leaf.endValueOn(); ++iter) {
             iter.modifyValue([&](auto &v) {
@@ -122,10 +122,10 @@ struct VDBWrangle : zeno::INode {
             exec->parameter(prog->param_id(name, dimid)) = value;
         }
         auto modifyActive = (get_input<zeno::StringObject>("ModifyActive")->get())=="true";
-        if (auto p = dynamic_pointer_cast<zeno::VDBFloatGrid>(grid); p.has_value())
-            vdb_wrangle(exec, p.value()->m_grid, modifyActive);
-        else if (auto p = dynamic_pointer_cast<zeno::VDBFloat3Grid>(grid); p.has_value())
-            vdb_wrangle(exec, p.value()->m_grid, modifyActive);
+        if (auto p = std::dynamic_pointer_cast<zeno::VDBFloatGrid>(grid); p)
+            vdb_wrangle(exec, p->m_grid, modifyActive);
+        else if (auto p = std::dynamic_pointer_cast<zeno::VDBFloat3Grid>(grid); p)
+            vdb_wrangle(exec, p->m_grid, modifyActive);
 
         set_output("grid", std::move(grid));
     }

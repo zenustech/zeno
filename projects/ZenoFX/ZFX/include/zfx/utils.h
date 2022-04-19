@@ -10,13 +10,13 @@
 #include <memory>
 #include <tuple>
 #include <set>
-#if __has_include(<zeno/utils/logstd.h>)
+#if 0
 #include <zeno/utils/logstd.h>
 namespace zfx {
 using namespace zeno::__logstd;
 }
 #else
-#pragma message("falling back to iostream")
+//#pragma message("falling back to iostream")
 #include <iostream>
 namespace zfx {
 using std::cout;

@@ -7,6 +7,7 @@
 #include "zenonewmenu.h"
 #include <zenoui/comctrl/zlabel.h>
 #include <zenoui/comctrl/ziconbutton.h>
+#include <zenoui/util/cihou.h>
 
 
 _ZenoSubGraphView::_ZenoSubGraphView(QWidget *parent)
@@ -370,7 +371,7 @@ void LayerPathWidget::setPath(const QString& path)
 		pLayout->removeItem(pItem);
 	}
 
-	QStringList L = m_path.split("/", Qt::SkipEmptyParts);
+	QStringList L = m_path.split("/", QtSkipEmptyParts);
 	for (int i = 0; i < L.length(); i++)
 	{
 		const QString& item = L[i];

@@ -318,7 +318,11 @@ void GraphsModel::initDescriptors()
 {
     NODE_DESCS descs = getCoreDescs();
     NODE_DESCS subgDescs = getSubgraphDescs();
-    descs.insert(subgDescs);
+    for (QString key : subgDescs.keys())
+    {
+        Q_ASSERT(descs.find(key) == descs.end());
+        descs.insert(key, subgDescs[key]);
+    }
     setDescriptors(descs);
 }
 

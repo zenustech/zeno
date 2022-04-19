@@ -1,4 +1,0 @@
-#pragma once
-
-namespace openvdb {
-}

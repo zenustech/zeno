@@ -248,6 +248,7 @@ ZENO_DEFOVERLOADNODE(ConvertTo, _VDBPointsGrid_PrimitiveObject, typeid(VDBPoints
         {"primitive"},
 });
 
+#if 0
 // TODO: ToVisualize is deprecated in zeno2, please impl this directly in the zenovis module later...
 struct ToVisualize_VDBPointsGrid : VDBPointsToPrimitive {
     virtual void apply() override {
@@ -267,6 +268,7 @@ ZENO_DEFOVERLOADNODE(ToVisualize, _VDBPointsGrid, typeid(VDBPointsGrid).name())(
         {{"string", "path", ""}},
         {"primitive"},
 });
+#endif
 
 
 }

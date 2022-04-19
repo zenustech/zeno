@@ -83,8 +83,7 @@ struct ProgramRunData {
         if (chkfail()) return;
         if (g_state == KILLING) return;
 
-        auto nframes = graph->adhocNumFrames;
-        for (int frame = 0; frame < nframes; frame++) {
+        for (int frame = graph->beginFrameNumber; frame < graph->endFrameNumber; frame++) {
             zeno::log_info("begin frame {}", frame);
             session->globalComm->newFrame();
             session->globalState->frameBegin();
@@ -177,13 +176,14 @@ void killProgramJSON()
 
 }
 
-void launchProgram(GraphsModel* pModel, int nframes)
+void launchProgram(GraphsModel* pModel, int beginFrame, int endFrame)
 {
 	rapidjson::StringBuffer s;
 	RAPIDJSON_WRITER writer(s);
     {
         JsonArrayBatch batch(writer);
-        JsonHelper::AddVariantList({"setAdhocNumFrames", nframes}, "int", writer);
+        JsonHelper::AddVariantList({"setBeginFrameNumber", beginFrame}, "int", writer);
+        JsonHelper::AddVariantList({"setEndFrameNumber", endFrame}, "int", writer);
         serializeScene(pModel, writer);
     }
     std::string progJson(s.GetString());

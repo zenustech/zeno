@@ -12,9 +12,9 @@ namespace zeno {
 
 struct RandomParticles : zeno::INode {
   virtual void apply() override {
-    int count = std::get<int>(get_param("count"));
-    float Prange = std::get<float>(get_param("Prange"));
-    float Vrange = std::get<float>(get_param("Vrange"));
+    int count = get_param<int>(("count"));
+    float Prange = get_param<float>(("Prange"));
+    float Vrange = get_param<float>(("Vrange"));
     auto pars = zeno::IObject::make<ParticlesObject>();
 
     for (int i = 0; i < count; i++) {

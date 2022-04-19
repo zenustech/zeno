@@ -9,7 +9,7 @@ This repo aims to provide a great tool for both technical artists and CG develop
 
 One may create complicated simulation scenarios by simply connecting the nodes provided by the system. For example, here's a molecular simulation built by our users:
 
-![lennardjones.zsg](images/lennardjones.jpg "arts/lennardjones.zsg")
+![lennardjones.zsg](https://github.com/zenustech/zeno_assets/blob/master/images/lennardjones.jpg "arts/lennardjones.zsg")
 
 This is the charm of visual-programming, not only the direction of data-flow, but also the logic-flow of the solution algorithm is presented at no more clarity.
 In fact, building this molecular simulation from scratch took no more than 7 minutes!
@@ -23,7 +23,7 @@ By connecting these nodes, you can literally create your unique solver that best
 your need, rather than being limited by the imagination of software programmers.
 For example, here @zhxx1987 created two-way coupled fluid-rigid simulation by adding some nodes to pass momentums from surfaces despite the FLIP solver didn't support fluid-rigid coupling at the first place:
 
-![Rigid_pool2.zsg](images/FSI.gif "arts/Rigid_pool2.zsg")
+![Rigid_pool2.zsg](https://github.com/zenustech/zeno_assets/blob/master/images/FSI.gif "arts/Rigid_pool2.zsg")
 
 
 ## Performant
@@ -35,7 +35,7 @@ low-level details.
 Performance-wisely, it's shown by @zhxx1987 that our FLIP solver is 4x faster than
 Houdini at large scale.
 
-![FLIPSolver.zsg](images/FLIPSolver.jpg "arts/FLIPSolver.zsg")
+![FLIPSolver.zsg](https://github.com/zenustech/zeno_assets/blob/master/images/FLIPSolver.jpg "arts/FLIPSolver.zsg")
 
 ## Control-flows
 
@@ -43,7 +43,7 @@ Unlike many pure functional node systems (e.g. Blender), ZENO has a strong time-
 and provide a lot of control-flow nodes including CachedOnce, BeginForEach, EndFor, etc.
 This enable you to make turing-equivalent programs that fit real-world problems.
 
-![forloop.zsg](images/forloop.jpg "arts/forloop.zsg")
+![forloop.zsg](https://github.com/zenustech/zeno_assets/blob/master/images/forloop.jpg "arts/forloop.zsg")
 
 ## Simplicity
 
@@ -54,7 +54,7 @@ Zeno adopts a highly decoupled design of things, making extending it becoming su
 
 Here's an example on how to add a ZENO node with its C++ API:
 
-[![zeno_addon_wizard/YourProject/CustomNumber.cpp](images/demo_project.png)](https://github.com/zenustech/zeno_addon_wizard/blob/main/YourProject/CustomNumber.cpp)
+[![zeno_addon_wizard/YourProject/CustomNumber.cpp](https://github.com/zenustech/zeno_assets/blob/master/images/demo_project.png)](https://github.com/zenustech/zeno_addon_wizard/blob/main/YourProject/CustomNumber.cpp)
 
 ## Extensible
 
@@ -77,7 +77,7 @@ Loading these libraries would add corresponding functional nodes into ZENO,
 after which you can creating node graphs with them for simulation.
 You may also add your own solver nodes to ZENO with this workflow if you'd like.
 
-![demoproject.zsg](images/demoprojgraph.jpg "arts/demoproject.zsg")
+![demoproject.zsg](https://github.com/zenustech/zeno_assets/blob/master/images/demoprojgraph.jpg "arts/demoproject.zsg")
 
 ## Integratable
 
@@ -86,12 +86,12 @@ ZENO as a **Blender addon**! With that, you can enjoy the flexibilty of ZENO
 node system and all other powerful tools in Blender. See `Blender addon` section
 for more information.
 
-![blender.blend](images/blender.jpg "assets/blender.blend")
+![blender.blend](https://github.com/zenustech/zeno_assets/blob/master/images/blender.jpg "assets/blender.blend")
 
 <!--
 ## ZenCompute (@littlemine)
 
 Open-source code development framework to easily develop high-performance physical simulation code that both run on cpu and gpu with out too much effort. Now intergrated into ZENO.
 
-[![ZenCompute development framework](images/zencompute.png)](https://github.com/zenustech/zpc)
+[![ZenCompute development framework](https://github.com/zenustech/zeno_assets/blob/master/images/zencompute.png)](https://github.com/zenustech/zpc)
 -->

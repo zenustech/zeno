@@ -14,8 +14,8 @@ struct SDFToPoly : zeno::INode{
     virtual void apply() override {
     auto sdf = get_input("SDF")->as<VDBFloatGrid>();
     auto mesh = IObject::make<PrimitiveObject>();
-    auto adaptivity = std::get<float>(get_param("adaptivity"));
-    auto isoValue = std::get<float>(get_param("isoValue"));
+    auto adaptivity = get_param<float>(("adaptivity"));
+    auto isoValue = get_param<float>(("isoValue"));
     auto allowQuads = get_param<bool>("allowQuads");
     std::vector<openvdb::Vec3s> points(0);
     std::vector<openvdb::Vec3I> tris(0);
@@ -95,6 +95,7 @@ static int defSDFToPrimitive = zeno::defNodeClass<SDFToPrimitive>("SDFToPrimitiv
     }});
 
 
+#if 0
 struct ConvertTo_VDBFloatGrid_PrimitiveObject : SDFToPoly {
     virtual void apply() override {
         SDFToPoly::apply();
@@ -131,5 +132,6 @@ ZENO_DEFOVERLOADNODE(ToVisualize, _VDBFloatGrid, typeid(VDBFloatGrid).name())({
         {{"string", "path", ""}},
         {"primitive"},
 });
+#endif
  
 }

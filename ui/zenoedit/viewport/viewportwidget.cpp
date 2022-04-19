@@ -6,6 +6,7 @@
 #include "model/graphsmodel.h"
 #include "launch/corelaunch.h"
 #include "zenoapplication.h"
+#include "zenomainwindow.h"
 
 
 CameraControl::CameraControl(QWidget* parent)
@@ -111,8 +112,20 @@ ViewportWidget::~ViewportWidget()
 {
 }
 
+namespace {
+struct OpenGLProcAddressHelper {
+    inline static QOpenGLContext *ctx;
+
+    static void *getProcAddress(const char *name) {
+        return (void *)ctx->getProcAddress(name);
+    }
+};
+}
+
 void ViewportWidget::initializeGL()
 {
+    OpenGLProcAddressHelper::ctx = context();
+    Zenovis::GetInstance().loadGLAPI((void *)OpenGLProcAddressHelper::getProcAddress);
     Zenovis::GetInstance().initializeGL();
 }
 
@@ -216,10 +229,11 @@ QDMRecordMenu::QDMRecordMenu()
 }
 
 
-DisplayWidget::DisplayWidget(QWidget* parent)
-    : QWidget(parent)
+DisplayWidget::DisplayWidget(ZenoMainWindow* pMainWin)
+    : QWidget(pMainWin)
     , m_view(nullptr)
     , m_timeline(nullptr)
+    , m_mainWin(pMainWin)
 {
     QVBoxLayout* pLayout = new QVBoxLayout;
     pLayout->setContentsMargins(0, 0, 0, 0);
@@ -253,7 +267,7 @@ DisplayWidget::DisplayWidget(QWidget* parent)
 	connect(&Zenovis::GetInstance(), SIGNAL(frameUpdated(int)), m_timeline, SLOT(onTimelineUpdate(int)));
 	connect(m_timeline, SIGNAL(playForward(bool)), &Zenovis::GetInstance(), SLOT(startPlay(bool)));
 	connect(m_timeline, SIGNAL(sliderValueChanged(int)), &Zenovis::GetInstance(), SLOT(setCurrentFrameId(int)));
-	connect(m_timeline, SIGNAL(run(int)), this, SLOT(onRunClicked(int)));
+	connect(m_timeline, SIGNAL(run(int, int)), this, SLOT(onRunClicked(int, int)));
 
 	QTimer* pTimer = new QTimer;
 	connect(pTimer, SIGNAL(timeout()), this, SLOT(updateFrame()));
@@ -272,19 +286,20 @@ void DisplayWidget::init()
 
 QSize DisplayWidget::sizeHint() const
 {
-    //¿¼ÂÇnoviewµÄÇé¿ö¡£
     return QSize(12, 400);
 }
 
 void DisplayWidget::updateFrame()
 {
+    if (m_mainWin && m_mainWin->inDlgEventLoop())
+        return;
     m_view->update();
 }
 
-void DisplayWidget::onRunClicked(int nFrames)
+void DisplayWidget::onRunClicked(int beginFrame, int endFrame)
 {
 	auto pGraphsMgr = zenoApp->graphsManagment();
 	IGraphsModel* pModel = pGraphsMgr->currentModel();
 	GraphsModel* pLegacy = qobject_cast<GraphsModel*>(pModel);
-	launchProgram(pLegacy, nFrames);
+	launchProgram(pLegacy, beginFrame, endFrame);
 }

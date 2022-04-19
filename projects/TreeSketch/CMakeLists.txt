@@ -1,18 +1,14 @@
 cmake_minimum_required(VERSION 3.10)
 
-add_library(zeno_TreeSketch OBJECT
-    SketchTree.cpp
+target_sources(zeno PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/SketchTree.cpp
 )
 
-target_include_directories(zeno_TreeSketch PRIVATE
+target_include_directories(zeno PRIVATE
     include
 )
 
-target_sources(zeno_TreeSketch PRIVATE
-    src/TreeSketchMath.cpp
-    src/TreeSketchTreeObj.cpp
-)
-
-target_link_libraries(zeno_TreeSketch PUBLIC
-    zenocore
+target_sources(zeno PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/TreeSketchMath.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/TreeSketchTreeObj.cpp
 )
