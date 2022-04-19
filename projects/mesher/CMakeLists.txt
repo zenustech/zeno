@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.19)
 add_definitions(-D__TBB_CPP20_COMPARISONS_PRESENT=0)  
 
 # add cmake file
-include (common)
+# include (common)
 
 
 find_package(Eigen3 REQUIRED)
