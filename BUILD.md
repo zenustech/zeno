@@ -100,7 +100,7 @@ Quickly recall our CMake knowledge:
 ### Windows
 
 ```bash
-cmake -B build -DQt5_DIR="C:/Qt/Qt5.14.2/msvc2017_64/lib/cmake"
+cmake -B build -DQt5_DIR="C:/Qt/Qt5.14.2/msvc2017_64/lib/cmake/Qt5"
 cmake --build build --config Release
 ```
 
