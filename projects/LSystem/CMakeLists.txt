@@ -1,9 +1,7 @@
-cmake_minimum_required(VERSION 3.10)
-
 add_subdirectory(LSystem)
 
 target_sources(zeno PRIVATE
-    zeno.cpp
+    zeno_LSystem.cpp
 )
 find_package(OpenMP)
 if (TARGET OpenMP::OpenMP_CXX)
@@ -11,4 +9,4 @@ if (TARGET OpenMP::OpenMP_CXX)
     target_link_libraries(zeno PRIVATE OpenMP::OpenMP_CXX)
 endif()
 
-target_link_libraries(zeno PUBLIC LSystem)
+target_link_libraries(zeno PUBLIC $<BUILD_INTERFACE:LSystem>)

@@ -9,6 +9,8 @@
 #include <voro++/voro++.hh>
 #include "EigenUtils.h"
 #include "igl_sink.h"
+#include <zeno/types/UserData.h>
+#include <mutex>
 #include <vector>
 #include <tuple>
 
@@ -103,7 +105,7 @@ struct AABBVoronoi : INode {
                         isBoundary = true;
                     } else {
                         if (auto ncid = neigh[i] - 1; ncid > cid) {
-                            neighs->arr.push_back(vec2i(cid, ncid));
+                            neighs->arr.push_back(objectFromLiterial(vec2i(cid, ncid)));
                         }
                     }
                     int len = f_vert[j];
@@ -115,7 +117,7 @@ struct AABBVoronoi : INode {
                     j = j + 1 + len;
                 }
 
-                prim->userData.get("isBoundary") = std::make_shared<NumericObject>(isBoundary);
+                prim->userData().set("isBoundary", std::make_shared<NumericObject>(isBoundary));
                 pieces->arr.push_back(std::move(prim));
 
                 cid++;
@@ -125,7 +127,7 @@ struct AABBVoronoi : INode {
         log_info("AABBVoronoi got {} pieces, {} neighs", pieces->arr.size(), neighs->arr.size());
 
         if (triangulate) {
-            for (auto const &prim: pieces->get<std::shared_ptr<PrimitiveObject>>()) {
+            for (auto const &prim: pieces->get<PrimitiveObject>()) {
                 prim_triangulate(prim.get());
             }
         }
@@ -169,15 +171,15 @@ struct VoronoiFracture : AABBVoronoi {
         }
         bmin -= 1e-6f;
         bmax += 1e-6f;
-        inputs["bboxMin"] = bmin;
-        inputs["bboxMax"] = bmax;
-        inputs["triangulate:"] = true;
+        inputs["bboxMin"] = objectFromLiterial(bmin);
+        inputs["bboxMax"] = objectFromLiterial(bmax);
+        inputs["triangulate:"] = objectFromLiterial(true);
 
         AABBVoronoi::apply();
 
-        auto primListB = safe_any_cast<std::shared_ptr<ListObject>>(outputs.at("primList"));
-        auto neighListB = safe_any_cast<std::shared_ptr<ListObject>>(outputs.at("neighList"));
-        auto listB = primListB->get<std::shared_ptr<PrimitiveObject>>();
+        auto primListB = std::dynamic_pointer_cast<ListObject>(outputs.at("primList"));
+        auto neighListB = std::dynamic_pointer_cast<ListObject>(outputs.at("neighList"));
+        auto listB = primListB->get<PrimitiveObject>();
         std::map<int, std::shared_ptr<PrimitiveObject>> dictC;
         std::mutex mtx;
 
@@ -199,7 +201,7 @@ struct VoronoiFracture : AABBVoronoi {
                 }
                 auto primC = std::make_shared<PrimitiveObject>();
                 eigen_to_prim(VC, FC, primC.get());
-                primC->userData.get("isBoundary") = anyFromA;
+                primC->userData().set("isBoundary", objectFromLiterial(anyFromA));
                 std::lock_guard _(mtx);
                 dictC.emplace(i, std::move(primC));
             } else {
@@ -207,7 +209,7 @@ struct VoronoiFracture : AABBVoronoi {
             }
         }
 
-        auto neighB = neighListB->get<zeno::vec2i>();
+        auto neighB = neighListB->getLiterial<zeno::vec2i>();
         auto primListC = std::make_shared<ListObject>();
         std::map<int, int> dictD;
         for (auto const &[key, prim]: dictC) {
@@ -222,7 +224,7 @@ struct VoronoiFracture : AABBVoronoi {
                     zeno::vec2i c2(xit->second, yit->second);
                     //log_trace("VoronoiFracture: neigh {} and {}", c2[0], c2[1]);
                     //auto ret = std::make_shared<NumericObject>(); ret->set(c2);
-                    neighListC->arr.push_back(c2);
+                    neighListC->arr.push_back(objectFromLiterial(c2));
                 }
             }
         }
@@ -261,7 +263,7 @@ struct SimplifyVoroNeighborList : INode {
         auto newNeighList = std::make_shared<ListObject>();
 
         std::map<int, std::vector<int>> lut;
-        for (auto const &ind: neighList->get<vec2i>()) {
+        for (auto const &ind: neighList->getLiterial<vec2i>()) {
             auto x = ind[0], y = ind[1];
             lut[x].push_back(y);
             lut[y].push_back(x);
@@ -283,7 +285,7 @@ struct SimplifyVoroNeighborList : INode {
         }
 
         for (auto const &[x, y]: edges) {
-            newNeighList->arr.push_back(vec2i(x, y));
+            newNeighList->arr.push_back(objectFromLiterial(vec2i(x, y)));
         }
         set_output("newNeighList", std::move(newNeighList));
     }

@@ -10,6 +10,10 @@ add_subdirectory(zecomp)
 
 find_package(CUDAToolkit)
 
+if (NOT ZENO_WITH_ZenoFX)
+    message(FATAL_ERROR "ZenoFX must be enabled when gmpm is enabled. Please specify the -DZENO_WITH_ZenoFX:BOOL=ON argument!")
+endif()
+
 add_library(zeno_zstest SHARED test.cpp)
 target_compile_features(zeno_zstest PRIVATE cxx_std_17)
 
@@ -18,8 +22,7 @@ else()
 target_compile_options(zeno_zstest PRIVATE "-march=native")
 endif()
 target_link_libraries(zeno_zstest PRIVATE zensim)
-target_link_libraries(zeno_zstest PUBLIC zenodes)
-target_link_libraries(zeno_zstest PUBLIC ZFX)
+target_link_libraries(zeno_zstest PUBLIC zeno $<BUILD_INTERFACE:ZFX>)
 target_include_directories(zeno_zstest PRIVATE ../oldzenbase/include)
 target_include_directories(zeno_zstest PRIVATE ../zenvdb/include)
 
@@ -33,8 +36,7 @@ else()
 target_compile_options(zeno_cutest PRIVATE "-march=native")
 endif()
 target_link_libraries(zeno_cutest PRIVATE zensim)
-target_link_libraries(zeno_cutest PUBLIC zenodes)
-target_link_libraries(zeno_cutest PUBLIC ZFX)
+target_link_libraries(zeno_cutest PUBLIC zeno $<BUILD_INTERFACE:ZFX>)
 target_include_directories(zeno_cutest PRIVATE ../oldzenbase/include)
 target_include_directories(zeno_cutest PRIVATE ../zenvdb/include)
 set_target_properties(zeno_cutest
@@ -54,7 +56,7 @@ target_sources(zeno_zsfluid PRIVATE
 )
 set_source_files_properties(volume/VolumeOperator.cu volume/Transfer.cu PROPERTIES  LANGUAGE CUDA)
 target_link_libraries(zeno_zsfluid PRIVATE zensim)
-target_link_libraries(zeno_zsfluid PUBLIC zenodes ZFX)
+target_link_libraries(zeno_zsfluid PUBLIC zeno $<BUILD_INTERFACE:ZFX>)
 target_include_directories(zeno_zsfluid PRIVATE ../oldzenbase/include)
 target_include_directories(zeno_zsfluid PRIVATE ../zenvdb/include)
 target_compile_options(zeno_zsfluid
@@ -73,7 +75,7 @@ target_sources(zeno_mpm PRIVATE
   mpm/Temp.cu
 )
 target_link_libraries(zeno_mpm PRIVATE zensim)
-target_link_libraries(zeno_mpm PUBLIC zenodes ZFX)
+target_link_libraries(zeno_mpm PUBLIC zeno $<BUILD_INTERFACE:ZFX>)
 target_include_directories(zeno_mpm PRIVATE ../oldzenbase/include)
 target_include_directories(zeno_mpm PRIVATE ../zenvdb/include)
 if (NOT MSVC)
@@ -120,8 +122,7 @@ endif()
 
 find_package(OpenMP REQUIRED)
 target_link_libraries(zeno_zsfft PRIVATE zpc zpcomp OpenMP::OpenMP_CXX CUDA::cufft)
-target_link_libraries(zeno_zsfft PUBLIC zenodes)
-target_link_libraries(zeno_zsfft PUBLIC ZFX)
+target_link_libraries(zeno_zsfft PUBLIC zeno $<BUILD_INTERFACE:ZFX>)
 target_include_directories(zeno_zsfft PRIVATE ../oldzenbase/include)
 target_include_directories(zeno_zsfft PRIVATE ../zenvdb/include)
 
@@ -163,16 +164,19 @@ else()
 target_compile_options(zeno_zsfem PRIVATE "-march=native")
 endif()
 target_link_libraries(zeno_zsfem PRIVATE zensim)
-target_link_libraries(zeno_zsfem PUBLIC zenodes)
-target_link_libraries(zeno_zsfem PUBLIC ZFX)
+target_link_libraries(zeno_zsfem PUBLIC zeno $<BUILD_INTERFACE:ZFX>)
 target_include_directories(zeno_zsfem PRIVATE ../oldzenbase/include)
 target_include_directories(zeno_zsfem PRIVATE ../zenvdb/include)
 
 find_package(OpenMP REQUIRED)
 target_link_libraries(zeno_zsfft PRIVATE zensim zpcomp OpenMP::OpenMP_CXX CUDA::cufft)
-target_link_libraries(zeno_zsfft PUBLIC ZFX)
+target_link_libraries(zeno_zsfft PUBLIC zeno $<BUILD_INTERFACE:ZFX>)
 target_include_directories(zeno_zsfft PRIVATE ../oldzenbase/include)
 target_include_directories(zeno_zsfft PRIVATE ../zenvdb/include)
 
-# TODO: CMAKE_LINK_WHAT_YOU_USE=ON
-target_link_libraries(zeno PUBLIC zeno_zsfem zeno_zsfft zeno_zstest zeno_cutest zeno_zsfluid zeno_mpm)
+set(GMPM_LIBS zeno_zsfem zeno_zsfft zeno_zstest zeno_cutest zeno_zsfluid zeno_mpm)
+
+target_link_libraries(zenoSharedExtension PRIVATE ${GMPM_LIBS})
+if (ZENO_INSTALL_TARGET)
+    install(TARGETS ${GMPM_LIBS} EXPORT ZenoTargets)
+endif()

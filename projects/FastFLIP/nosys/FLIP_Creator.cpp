@@ -9,7 +9,7 @@ namespace zeno {
 struct FLIPCreator : zeno::INode {
   virtual void apply() override {
 
-    auto dx = std::get<float>(get_param("dx"));
+    auto dx = get_param<float>(("dx"));
     if(has_input("Dx"))
     {
       dx = get_input("Dx")->as<NumericObject>()->get<float>();

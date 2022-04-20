@@ -4,18 +4,9 @@ if(WIN32)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /bigobj")
 endif(WIN32)
 
-project(zeno)
+#project(zenoFEM)
 
 find_package(Eigen3 REQUIRED NO_MODULE)
-
-if(WIN32)
-    if(TARGET igl::core)
-    else()
-        find_package(libigl REQUIRED)
-    endif()
-endif(WIN32)
-
-
 find_package(OpenMP)
 if(NOT OpenMP_CXX_FOUND)
 
@@ -47,7 +38,7 @@ target_sources(zeno PRIVATE ${FEM_MUSCLE_SOURCE_FILES})
 target_link_libraries(zeno PRIVATE Eigen3::Eigen)
 target_link_libraries(zeno PUBLIC OpenMP::OpenMP_CXX)
 
-target_include_directories(zeno PUBLIC 
+target_include_directories(zeno PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src/math
     ${CMAKE_CURRENT_SOURCE_DIR}/src/mesh
     ${CMAKE_CURRENT_SOURCE_DIR}/src/force_model

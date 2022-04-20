@@ -1,4 +1,5 @@
 /* auto generated from: arts/testvorosplit.zsg */
+#if 0
 #include <zeno/zeno.h>
 #include <zeno/extra/ISubgraphNode.h>
 namespace {
@@ -16,3 +17,4 @@ ZENDEFNODE(PrimitiveVoronoi, {
     {"cgmesh"},
 });
 }
+#endif

@@ -18,7 +18,7 @@ endif()
 
 target_link_libraries(zenoedit PRIVATE Qt5::Widgets Qt5::OpenGL)
 target_link_libraries(zenoedit PRIVATE zenoui zenoio zenovis)
-target_link_libraries(zenoedit PRIVATE zeno)
+target_link_libraries(zenoedit PRIVATE zeno zenoSharedExtension)
 target_include_directories(zenoedit PRIVATE . .. ../zenoui)
 target_include_directories(zenoedit PRIVATE ${Qt5Widgets_PRIVATE_INCLUDE_DIRS})
 if (ZENO_MULTIPROCESS)

@@ -1,8 +1,11 @@
+enable_language(C)
+
 file(GLOB_RECURSE source CONFIGURE_DEPENDS include/*.h src/*.cpp)
 file(GLOB_RECURSE glad_source CONFIGURE_DEPENDS glad/include/*.h glad/src/*.c)
 file(GLOB_RECURSE stbi_source CONFIGURE_DEPENDS stbi/include/*.h stbi/src/*.c)
 
 add_library(zenovis OBJECT ${source} ${glad_source} ${stbi_source})
+target_link_libraries(zenovis PRIVATE ${CMAKE_DL_LIBS})
 target_link_libraries(zenovis PUBLIC zeno)
 target_include_directories(zenovis PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>

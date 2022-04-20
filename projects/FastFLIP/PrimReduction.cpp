@@ -64,8 +64,8 @@ static T prim_reduce(PrimitiveObject *prim, std::string channel, std::string typ
 struct PrimTbbReduction : zeno::INode {
     virtual void apply() override{
         auto prim = get_input<PrimitiveObject>("prim");
-        auto attrToReduce = std::get<std::string>(get_param("attr"));
-        auto op = std::get<std::string>(get_param("op"));
+        auto attrToReduce = get_param<std::string>(("attr"));
+        auto op = get_param<std::string>(("op"));
         zeno::NumericValue result;
         if (prim->attr_is<zeno::vec3f>(attrToReduce))
             result = prim_reduce<zeno::vec3f>(prim.get(), attrToReduce, op);

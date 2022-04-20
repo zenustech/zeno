@@ -67,7 +67,7 @@ struct SolveBiharmonicWeight : zeno::INode {
         {
             throw std::runtime_error("BBW GENERATION FAIL");
         }
-        assert(W.rows() == V.rows() && W.cols() == C.rows());
+        //assert(W.rows() == V.rows() && W.cols() == C.rows());
         igl::normalize_row_sums(W,W);
 
         for(size_t i = 0;i < W.cols();++i){
@@ -101,7 +101,7 @@ struct GenerateSkinningWeight : zeno::INode {
         auto bone_influence_radius = get_param<float>("bone_radius");
         auto cage_influence_radius = get_param<float>("cage_radius");
         // auto duplicate = (int)get_param<float>("duplicate");
-        // auto bone_type = std::get<std::string>(get_param("boneType"));
+        // auto bone_type = get_param<std::string>(("boneType"));
         auto duplicate = (int)get_param<float>("duplicate");
         Eigen::MatrixXd V;
         Eigen::MatrixXi T;

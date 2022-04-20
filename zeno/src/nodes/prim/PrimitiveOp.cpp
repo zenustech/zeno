@@ -27,9 +27,9 @@ struct PrimitiveUnaryOp : INode {
   virtual void apply() override {
     auto primA = get_input<PrimitiveObject>("primA");
     auto primOut = get_input<PrimitiveObject>("primOut");
-    auto attrA = std::get<std::string>(get_param("attrA"));
-    auto attrOut = std::get<std::string>(get_param("attrOut"));
-    auto op = std::get<std::string>(get_param("op"));
+    auto attrA = get_param<std::string>(("attrA"));
+    auto attrOut = get_param<std::string>(("attrOut"));
+    auto op = get_param<std::string>(("op"));
     primOut->attr_visit(attrOut, [&] (auto &arrOut) { primA->attr_visit(attrA, [&] (auto &arrA) {
         if constexpr (is_vec_castable_v<decltype(arrOut[0]), decltype(arrA[0])>) {
             if (0) {
@@ -97,10 +97,10 @@ struct PrimitiveBinaryOp : INode {
     auto primA = get_input<PrimitiveObject>("primA");
     auto primB = get_input<PrimitiveObject>("primB");
     auto primOut = get_input<PrimitiveObject>("primOut");
-    auto attrA = std::get<std::string>(get_param("attrA"));
-    auto attrB = std::get<std::string>(get_param("attrB"));
-    auto attrOut = std::get<std::string>(get_param("attrOut"));
-    auto op = std::get<std::string>(get_param("op"));
+    auto attrA = get_param<std::string>(("attrA"));
+    auto attrB = get_param<std::string>(("attrB"));
+    auto attrOut = get_param<std::string>(("attrOut"));
+    auto op = get_param<std::string>(("op"));
     primOut->attr_visit(attrOut, [&] (auto &arrOut) { primA->attr_visit(attrA, [&] (auto &arrA) { primB->attr_visit(attrB, [&] (auto &arrB) {
         if constexpr (is_decay_same_v<decltype(arrOut[0]),
             is_vec_promotable_t<decltype(arrA[0]), decltype(arrB[0])>>) {
@@ -168,9 +168,9 @@ struct PrimitiveMix : INode {
         else {
             primOut = std::make_shared<zeno::PrimitiveObject>(*primA);
         }
-        auto attrA = std::get<std::string>(get_param("attrA"));
-        auto attrB = std::get<std::string>(get_param("attrB"));
-        auto attrOut = std::get<std::string>(get_param("attrOut"));
+        auto attrA = get_param<std::string>(("attrA"));
+        auto attrB = get_param<std::string>(("attrB"));
+        auto attrOut = get_param<std::string>(("attrOut"));
         auto coef = get_input<NumericObject>("coef")->get<float>();
         
     primOut->attr_visit(attrOut, [&] (auto &arrOut) { primA->attr_visit(attrA, [&] (auto &arrA) { primB->attr_visit(attrB, [&] (auto &arrB) {
@@ -222,9 +222,9 @@ struct PrimitiveHalfBinaryOp : INode {
   virtual void apply() override {
     auto primA = get_input<PrimitiveObject>("primA");
     auto primOut = get_input<PrimitiveObject>("primOut");
-    auto attrA = std::get<std::string>(get_param("attrA"));
-    auto attrOut = std::get<std::string>(get_param("attrOut"));
-    auto op = std::get<std::string>(get_param("op"));
+    auto attrA = get_param<std::string>(("attrA"));
+    auto attrOut = get_param<std::string>(("attrOut"));
+    auto op = get_param<std::string>(("op"));
     auto const &valB = get_input<NumericObject>("valueB")->value;
     primOut->attr_visit(attrOut, [&] (auto &arrOut) { primA->attr_visit(attrA, [&] (auto &arrA) { std::visit([&] (auto &valB) {
         if constexpr (is_decay_same_v<decltype(arrOut[0]),

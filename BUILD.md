@@ -30,9 +30,11 @@ Git >= 2.0 && CMake >= 3.16 && Qt >= 5.12 && (MSVC >= 2019 || GCC >= 9 || Clang 
 
 > JOKE: Yes, we have to register a Qt account to install Qt... because the Qt company sucks :)
 
-5. If the install location is `C:\Qt\Qt5.14.2`, then add `C:\Qt\Qt5.14.2\msvc2019_64\bin` to the `PATH` environment variable.
+5. If the install location is `C:\Qt\Qt5.14.2`, then add `C:\Qt\Qt5.14.2\msvc2017_64\bin` to the `PATH` environment variable.
 
-> This is to allow the `zeno.exe` being able to find `Qt5Widgets.dll` there. Otherwise you need to manually copy `C:\Qt\Qt5.12.12\bin\msvc2019_64\bin\Qt5Widgets.dll` and other DLLs to `build\bin`. After this step rebooting the computer (or at least restart Visual Studio) would be best.
+> This is to allow the `zeno.exe` being able to find `Qt5Widgets.dll` there. Otherwise you need to manually copy `C:\Qt\Qt5.14.2\bin\msvc2017_64\bin\Qt5Widgets.dll` and other DLLs to `build\bin`. After this step rebooting the computer (or at least restart Visual Studio) would be best.
+
+> JOKE: Because offcial Qt prebuilt binaries not matching VS2019, so we have to use `msvc2017_64` rather than `msvc2019_64`, it works too.
 
 ### Ubuntu
 
@@ -41,7 +43,7 @@ If you use Linux the setup would be much easier, simply run these commands:
 ```bash
 sudo apt-get install -y git cmake make g++
 sudo apt-get install -y qt5-default
-sudo apt-get install libqt5svg5*
+sudo apt-get install -y libqt5svg5-dev
 ```
 
 > Note: We recommend to use Ubuntu 20.04 (or above) if possible. Ubuntu 18.04 users may need to install Qt 5.14.x from the official installer manually.
@@ -63,9 +65,7 @@ We haven't tested Zeno 2.0 on WSL (they doesn't have X11 by default). But please
 
 Please refer to this video for installation guide :) https://www.bilibili.com/video/BV1uT4y1P7CX
 
-## Building Zeno
-
-### Get source code
+## Get source code
 
 Now that development tools are ready, let's clone the source code of Zeno from GitHub:
 
@@ -78,7 +78,7 @@ cd zeno
 
 > May also try `git clone https://github.com/zenustech/zeno.git --depth=1` for only fetching the latest commit, to reduce transmit data size for faster clone.
 
-### Fetch submodules (optional)
+## Fetch submodules (optional)
 
 You may optionally get the submodules of Zeno as well (for some extension modules):
 
@@ -90,29 +90,33 @@ git submodule update --init --recursive
 
 > If you find GitHub slow: edit `.gitmodules` and replace GitHub URLs by your corresponding [Gitee](https://gitee.com) mirrors, and re-run the above command.
 
-### Configure CMake
+## Build Zeno
+
+Quickly recall our CMake knowledge:
+
+1. The first step `cmake -B build` called *configure*, it generates the `build/` directory containing `Makefile`.
+2. The second step `cmake --build build` called *build*, equivalant to `make -C build` on Linux and call MSBuild on Windows.
 
 ### Windows
 
 ```bash
-cmake -B build -DQt5_DIR="C:/Qt/Qt5.14.2/msvc2019_64/lib/cmake"
+cmake -B build -DQt5_DIR="C:/Qt/Qt5.14.2/msvc2017_64/lib/cmake/Qt5"
+cmake --build build --config Release
 ```
 
 Please replace the `C:/Qt/Qt5.14.2` by your custom Qt install location. And make sure you use `/` instead of `\\`, since CMake doesn't recognize `\\`.
+
+> The `--config Release` argument is **only required on Windows**, thank to the fact that MSBuild is a multi-config generator.
+> If you use `-DCMAKE_BUILD_TYPE=Debug` in the *configure* phase, then you should also `--config Debug` in the *build* phase.
 
 ### Linux
 
 ```bash
 cmake -B build
-```
-
-### Build Zeno
-
-Starts to build (`4` here means using 4 CPU threads):
-
-```bash
 cmake --build build --parallel 4
 ```
+
+> `--parallel 4` here means using 4 CPU threads.
 
 ## Run Zeno
 
@@ -131,6 +135,20 @@ build/bin/zenoedit
 ```
 
 This should shows up an node editor window if everything is working well.
+
+## Building Zeno extensions (optional)
+
+Zeno is a C++ project with thousands of `.cpp` files. However what you have just built is just some
+hundreds of them. To build the full-featured version of Zeno, you need to build the Zeno extension modules.
+
+> Why not build the extension modules by default? Because they require a lot of dedicated setup, which can
+> be unfriendly to new users. E.g., some of them depends on `x86_64` architecture, or the `CUDA` toolkit.
+
+> We decide to keep **the core part of Zeno** build without any dependencies to **make it easy for new users**.
+> People with dependencies installed may turn on some of the extensions manually if they'd like to.
+> (In fact, the Zeno editor which requires Qt may also be turned off, building only the API of Zeno core).
+
+If you are ready to challage, please go ahead to [`docs/BUILD_EXT.md`](docs/BUILD_EXT.md).
 
 ## References
 

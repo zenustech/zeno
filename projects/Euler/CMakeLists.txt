@@ -2,10 +2,9 @@ cmake_minimum_required(VERSION 3.19)
 add_definitions(-D__TBB_CPP20_COMPARISONS_PRESENT=0)  
 
 # add cmake file
-include (common)
+# include (common)
 
 find_package(TBB CONFIG REQUIRED COMPONENTS tbb tbbmalloc)
-find_package(IlmBase REQUIRED COMPONENTS Half REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(OpenVDB REQUIRED)
 target_sources(zeno PRIVATE nodesys.cpp)
@@ -34,6 +33,5 @@ endif()
 target_link_libraries(zeno PRIVATE OpenVDB::openvdb )
 target_link_libraries(zeno PRIVATE Eigen3::Eigen)
 
-target_link_libraries(zeno PUBLIC zeno)
 target_include_directories(zeno PRIVATE ../oldzenbase/include)
 target_include_directories(zeno PRIVATE ../zenvdb/include)

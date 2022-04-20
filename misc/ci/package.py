@@ -3,8 +3,8 @@ import sys
 import subprocess
 import shutil
 
-binpath = os.path.join('release-dist', 'bin')
-outpath = os.path.join('release-dist', 'out')
+binpath = os.path.join('build', 'bin')
+outpath = os.path.join('build', 'out')
 
 os.mkdir(outpath)
 if sys.platform == 'win32':

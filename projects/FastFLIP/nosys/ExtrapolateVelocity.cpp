@@ -532,7 +532,7 @@ namespace zeno {
 
 struct Vec3FieldExtrapolate : zeno::INode {
   virtual void apply() override {
-    int n = std::get<int>(get_param("NumIterates"));
+    int n = get_param<int>(("NumIterates"));
     auto velocity = get_input("Field")->as<VDBFloat3Grid>();
 
     vdb_velocity_extrapolator::extrapolate(n, velocity->m_grid);

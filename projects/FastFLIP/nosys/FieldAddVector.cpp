@@ -15,9 +15,9 @@ namespace zeno {
 struct FieldAddVector : zeno::INode {
   virtual void apply() override {
     // auto dt = get_input("dt")->as<zeno::NumericObject>()->get<float>();
-    // float vx = std::get<float>(get_param("vx"));
-    // float vy = std::get<float>(get_param("vy"));
-    // float vz = std::get<float>(get_param("vz"));
+    // float vx = get_param<float>(("vx"));
+    // float vy = get_param<float>(("vy"));
+    // float vz = get_param<float>(("vz"));
     auto ivec3 =
         get_input("invec3")->as<zeno::NumericObject>()->get<zeno::vec3f>();
     auto velocity = get_input("Velocity")->as<VDBFloat3Grid>();

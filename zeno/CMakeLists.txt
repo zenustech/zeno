@@ -41,7 +41,10 @@ if (ZENO_ENABLE_BACKWARD)
 endif()
 
 # we are not using shared libraries now, so no need for this:
-#target_compile_definitions(zeno PRIVATE -DZENO_DLLEXPORT INTERFACE -DZENO_DLLIMPORT)
+if (ZENO_BUILD_SHARED)
+    target_compile_definitions(zeno PRIVATE -DZENO_DLLEXPORT INTERFACE -DZENO_DLLIMPORT)
+endif()
+
 target_include_directories(zeno PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/tpls/include>
