@@ -134,8 +134,8 @@ namespace JsonHelper
 			}
 			else 
 			{
-				if (varType != QVariant::Invalid)
-					zeno::log_warn("bad param info qvariant type {}", value.typeName() ? value.typeName() : "(null)");
+				if (varType != QVariant::Invalid)  // FIXME: so many QVector<qreal>???
+					zeno::log_trace("bad param info qvariant type {}", value.typeName() ? value.typeName() : "(null)");
 				writer.String("");
 			}
 		}

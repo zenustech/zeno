@@ -34,7 +34,6 @@ jobs:
       matrix:
         include:
         - os: ubuntu-18.04  # cihou linuxdeployqt
-          cmake_args: -DCMAKE_CXX_COMPILER=g++-9
           cxx: g++-9
         - os: windows-2022
 
@@ -48,7 +47,7 @@ jobs:
 
     - name: Set Compiler Environment
       if: ${{ matrix.cxx != '' }}
-      uses: lukka/set-shell-env@v1
+      uses: trevorlloydelliott/set-environment-variables@latest
       with:
         CXX: ${{ matrix.cxx }}
 
@@ -64,6 +63,12 @@ jobs:
       with:
         version: 5.15.2
         cached: ${{ steps.cache-qt.outputs.cache-hit }}
+
+    - name: Setup VCPKG
+      uses: lukka/run-vcpkg@v10
+      with:
+        vcpkgJsonGlob: '**/vcpkg.json'
+        runVcpkgInstall: true
 
     - name: 'Run CMake with Ninja, install dependencies with vcpkg, build with CMake'
       uses: lukka/run-cmake@v3

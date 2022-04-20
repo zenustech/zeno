@@ -46,11 +46,13 @@ sudo apt-get install -y qt5-default
 sudo apt-get install -y libqt5svg5-dev
 ```
 
-> Note: We recommend to use Ubuntu 20.04 (or above) if possible. Ubuntu 18.04 users may need to install Qt 5.14.x from the official installer manually.
+> NOTE: We highly recommend to use **Ubuntu 20.04 (or above)** whenever possible.
+> Ubuntu 18.04 users may have to install `Qt >= 5.12` from the official installer manually.
+> As a contrast, Ubuntu 20.04 users can easily get Qt 5.12 by running `apt install qt5-default`.
 
 ### Arch Linux
 
-Arch Linux is @archibate's recommended environment, as it always provide latest packages.
+Arch Linux is my recommended environment, as it always provide latest packages.
 
 ```bash
 sudo pacman -S git cmake make g++
@@ -59,7 +61,8 @@ sudo pacman -S qt5-base
 
 ### WSL
 
-We haven't tested Zeno 2.0 on WSL (they doesn't have X11 by default). But please give feedback if you meet trouble there, we'd happy to help you resolve :) Related video: https://www.bilibili.com/video/BV1u44y1N78v
+We haven't tested Zeno 2.0 on WSL (they doesn't have X11 by default). But please give feedback if you meet trouble there, we'd happy to help you resolve :)
+My video about how to setup X11 in WSL1: https://www.bilibili.com/video/BV1u44y1N78v
 
 ### Mac OS X
 
@@ -80,11 +83,13 @@ cd zeno
 
 ## Fetch submodules (optional)
 
-You may optionally get the submodules of Zeno as well (for some extension modules):
+You may *optionally* get the submodules of Zeno as well (for some extension modules like [ZPC](github.com/zenustech/zpc) or [LibIGL](https://github.com/zenustech/libigl)):
 
 ```bash
 git submodule update --init --recursive
 ```
+
+> The submodules are really huge (~40MB), if you find it too slow, you may give up for now and try it later. Zeno can still build without these submodules.
 
 > Hint: `git submodule update --init --recursive` should also be executed every time you `git pull` (when you'd like to synchronize with latest updates).
 
@@ -108,6 +113,8 @@ Please replace the `C:/Qt/Qt5.14.2` by your custom Qt install location. And make
 
 > The `--config Release` argument is **only required on Windows**, thank to the fact that MSBuild is a multi-config generator.
 > If you use `-DCMAKE_BUILD_TYPE=Debug` in the *configure* phase, then you should also `--config Debug` in the *build* phase.
+
+> Also, Windows doesn't support `--parallel` argument, which means MSBuild is a single-threaded build system, you have to wait.
 
 ### Linux
 
@@ -163,4 +170,5 @@ If you are ready to challage, please go ahead to [`docs/BUILD_EXT.md`](docs/BUIL
 - [OpenVDB cookbook](https://www.openvdb.org/documentation/doxygen/codeExamples.html)
 - [OpenGL online references](http://docs.gl)
 - [Jiayao's learning materials](https://github.com/jiayaozhang/OpenVDB_and_TBB)
+- [My public course on CMake](https://www.bilibili.com/video/BV16P4y1g7MH?spm_id_from=333.999.0.0)
 - [ZENO bug report & feedback](https://github.com/zenustech/zeno/issues)
