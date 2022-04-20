@@ -78,7 +78,7 @@ public:
     DisplayWidget(ZenoMainWindow* parent = nullptr);
     ~DisplayWidget();
     void init();
-    QSize sizeHint() const;
+    QSize sizeHint() const override;
 
 public slots:
     void updateFrame();

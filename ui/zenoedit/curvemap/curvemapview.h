@@ -32,12 +32,12 @@ signals:
 	void nodeItemsGeometryChanged();
 
 protected:
-	void wheelEvent(QWheelEvent* event);
+	void wheelEvent(QWheelEvent* event) override;
 	void drawBackground(QPainter* painter, const QRectF& rect) override;
-	void mousePressEvent(QMouseEvent* event);
-	void mouseMoveEvent(QMouseEvent* event);
-	void mouseReleaseEvent(QMouseEvent* event);
-	void resizeEvent(QResizeEvent* event);
+	void mousePressEvent(QMouseEvent* event) override;
+	void mouseMoveEvent(QMouseEvent* event) override;
+	void mouseReleaseEvent(QMouseEvent* event) override;
+	void resizeEvent(QResizeEvent* event) override;
 
 private slots:
     void onSelectionChanged();

@@ -45,7 +45,7 @@ _VISIT_OBJECT_TYPE
 
 using namespace _implObjectCodec;
 
-std::shared_ptr<IObject> _decodeObjectImpl(const char *buf, size_t len) {
+static std::shared_ptr<IObject> _decodeObjectImpl(const char *buf, size_t len) {
     if (len < sizeof(ObjectHeader)) {
         log_error("data too short, giving up");
         return nullptr;

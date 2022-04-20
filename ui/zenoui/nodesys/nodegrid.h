@@ -11,7 +11,7 @@ class NodeGridLineItem : public QGraphicsLineItem
 {
 public:
     NodeGridLineItem(NodeGridItem* grid, qreal x1, qreal y1, qreal x2, qreal y2, QGraphicsItem* parent = nullptr);
-    void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget);
+    void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) override;
 
 private:
     NodeGridItem* m_grid;

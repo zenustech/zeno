@@ -17,7 +17,7 @@ public:
 	void setColor(const QColor& clrGrid, const QColor& clrBackground);
 	QRectF boundingRect() const override;
 	void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget = nullptr) override;
-	void mousePressEvent(QGraphicsSceneMouseEvent* event);
+	void mousePressEvent(QGraphicsSceneMouseEvent* event) override;
 	void initTransform();
 	void addCurve(CurveModel* model);
     bool isFuncCurve() const;

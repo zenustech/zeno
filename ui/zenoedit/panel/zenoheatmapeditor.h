@@ -87,9 +87,9 @@ public slots:
 	void setColor(const QColor& clr);
 
 protected:
-	void mousePressEvent(QMouseEvent* event);
-	void mouseMoveEvent(QMouseEvent* event);
-	void paintEvent(QPaintEvent* event);
+	void mousePressEvent(QMouseEvent* event) override;
+	void mouseMoveEvent(QMouseEvent* event) override;
+	void paintEvent(QPaintEvent* event) override;
 
 private:
 	void updateColorByMouse(const QPointF& pos);
@@ -109,10 +109,10 @@ signals:
 	void colorPicked(QColor);
 
 protected:
-	bool eventFilter(QObject* watched, QEvent* event);
-	void dragEnterEvent(QDragEnterEvent* event);
-	void mousePressEvent(QMouseEvent* event);
-	void dropEvent(QDropEvent* event);
+	bool eventFilter(QObject* watched, QEvent* event) override;
+	void dragEnterEvent(QDragEnterEvent* event) override;
+	void mousePressEvent(QMouseEvent* event) override;
+	void dropEvent(QDropEvent* event) override;
 
 private slots:
 	void onAddRampBtnClicked();

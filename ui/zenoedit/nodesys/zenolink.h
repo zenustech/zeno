@@ -45,7 +45,7 @@ public:
     void getFixedInfo(QString& nodeId, QString& sockName, QPointF& fixedPos, bool& bFixedInput);
 
 protected:
-    void mouseMoveEvent(QGraphicsSceneMouseEvent *event);
+    void mouseMoveEvent(QGraphicsSceneMouseEvent *event) override;
 
     enum { Type = ZTYPE_TEMPLINK };
     int type() const override;

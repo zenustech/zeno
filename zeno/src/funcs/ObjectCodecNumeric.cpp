@@ -8,6 +8,7 @@ namespace zeno {
 
 namespace _implObjectCodec {
 
+std::shared_ptr<NumericObject> decodeNumericObject(const char *it);
 std::shared_ptr<NumericObject> decodeNumericObject(const char *it) {
     auto obj = std::make_shared<NumericObject>();
     size_t index = *(size_t *)it;
@@ -25,6 +26,7 @@ std::shared_ptr<NumericObject> decodeNumericObject(const char *it) {
     return succ ? obj : nullptr;
 }
 
+bool encodeNumericObject(NumericObject const *obj, std::back_insert_iterator<std::vector<char>> it);
 bool encodeNumericObject(NumericObject const *obj, std::back_insert_iterator<std::vector<char>> it) {
     size_t index = obj->value.index();
     it = std::copy_n((char const *)&index, sizeof(index), it);

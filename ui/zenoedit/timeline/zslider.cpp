@@ -29,7 +29,7 @@ void ZSlider::mouseMoveEvent(QMouseEvent* event)
     setSliderValue(_posToFrame(pt.x()));
 }
 
-void drawText(QPainter* painter, qreal x, qreal y, Qt::Alignment flags,
+static void drawText(QPainter* painter, qreal x, qreal y, Qt::Alignment flags,
     const QString& text, QRectF* boundingRect = 0)
 {
     const qreal size = 32767.0;

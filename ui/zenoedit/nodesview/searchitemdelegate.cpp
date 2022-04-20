@@ -19,7 +19,7 @@ void SearchItemDelegate::initStyleOption(QStyleOptionViewItem* option, const QMo
     QStyledItemDelegate::initStyleOption(option, index);
 }
 
-QVector<QTextLayout::FormatRange> _getSearchFormatRange(const QString& content, const QString& searchText)
+static QVector<QTextLayout::FormatRange> _getSearchFormatRange(const QString& content, const QString& searchText)
 {
 	QVector<QTextLayout::FormatRange> selections;
 	int idx = 0;
