@@ -8,12 +8,11 @@
 #include <zenovis/opengl/shader.h>
 
 namespace zenovis {
+namespace {
 
 using opengl::Buffer;
 using opengl::Program;
 using zeno::vec3f;
-
-namespace {
 
 static const char *vert_code = R"(
     #version 120

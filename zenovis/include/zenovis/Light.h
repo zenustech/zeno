@@ -61,10 +61,10 @@ struct Light {
         shadowCascadeLevels[6] = far / 2.0;
     }
 
-    void setShadowMV(opengl::Program *shader) {
-        glm::mat4 model = glm::mat4(1.0f);
-        shader->set_uniform("mView", lightMV);
-    }
+    /* void setShadowMV(opengl::Program *shader) { */
+    /*     glm::mat4 model = glm::mat4(1.0f); */
+    /*     shader->set_uniform("mView", lightMV); */
+    /* } */
 
     std::vector<glm::vec4>
     getFrustumCornersWorldSpace(const glm::mat4 &projview) {

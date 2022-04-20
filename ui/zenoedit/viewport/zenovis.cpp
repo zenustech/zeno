@@ -92,7 +92,7 @@ void Zenovis::_uploadStatus()
 {
     session->set_window_size(m_resolution[0], m_resolution[1]);
     session->look_perspective(m_perspective.cx, m_perspective.cy, m_perspective.cz, m_perspective.theta,
-        m_perspective.phi, m_perspective.radius, m_perspective.fov, false);
+        m_perspective.phi, m_perspective.radius, m_perspective.fov, m_perspective.ortho_mode);
 }
 
 void Zenovis::_recieveStatus()

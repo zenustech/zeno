@@ -23,6 +23,7 @@
 #include <zenovis/opengl/shader.h>
 #include <zenovis/opengl/texture.h>
 namespace zenovis {
+namespace {
 using namespace opengl;
 
 /* extern float getCamFar(); */
@@ -39,15 +40,16 @@ using namespace opengl;
 /* extern void setCamera(glm::vec3 pos, glm::vec3 front, glm::vec3 up, double _fov, double fnear, double ffar, double _dof, int set); */
 /* extern unsigned int getDepthTexture(); */
 
-struct drawObject {
+struct ZhxxDrawObject {
     std::unique_ptr<Buffer> vbo;
     std::unique_ptr<Buffer> ebo;
     std::unique_ptr<Buffer> instvbo;
     size_t count = 0;
-    Program *prog;
-    Program *shadowprog;
+    Program *prog{};
+    Program *shadowprog{};
 };
-static void parsePointsDrawBuffer(zeno::PrimitiveObject *prim, drawObject &obj) {
+
+static void parsePointsDrawBuffer(zeno::PrimitiveObject *prim, ZhxxDrawObject &obj) {
     auto const &pos = prim->attr<zeno::vec3f>("pos");
     auto const &clr = prim->attr<zeno::vec3f>("clr");
     auto const &nrm = prim->attr<zeno::vec3f>("nrm");
@@ -73,7 +75,7 @@ static void parsePointsDrawBuffer(zeno::PrimitiveObject *prim, drawObject &obj) 
                            points_count * sizeof(prim->points[0]));
     }
 }
-static void parseLinesDrawBuffer(zeno::PrimitiveObject *prim, drawObject &obj) {
+static void parseLinesDrawBuffer(zeno::PrimitiveObject *prim, ZhxxDrawObject &obj) {
     auto const &pos = prim->attr<zeno::vec3f>("pos");
     auto const &clr = prim->attr<zeno::vec3f>("clr");
     auto const &nrm = prim->attr<zeno::vec3f>("nrm");
@@ -155,7 +157,7 @@ static void computeTrianglesTangent(zeno::PrimitiveObject *prim) {
     }
 }
 static void parseTrianglesDrawBufferCompress(zeno::PrimitiveObject *prim,
-                                      drawObject &obj) {
+                                      ZhxxDrawObject &obj) {
     //TICK(parse);
     auto const &pos = prim->attr<zeno::vec3f>("pos");
     auto const &clr = prim->attr<zeno::vec3f>("clr");
@@ -237,7 +239,7 @@ static void parseTrianglesDrawBufferCompress(zeno::PrimitiveObject *prim,
     }
     /* TOCK(bindebo); */
 }
-static void parseTrianglesDrawBuffer(zeno::PrimitiveObject *prim, drawObject &obj) {
+static void parseTrianglesDrawBuffer(zeno::PrimitiveObject *prim, ZhxxDrawObject &obj) {
     /* TICK(parse); */
     auto const &pos = prim->attr<zeno::vec3f>("pos");
     auto const &clr = prim->attr<zeno::vec3f>("clr");
@@ -304,16 +306,15 @@ struct GraphicPrimitive : IGraphic {
     //std::unique_ptr<Buffer> tris_ebo;
     size_t tris_count;
 
-    drawObject pointObj;
-    drawObject lineObj;
-    drawObject triObj;
+    ZhxxDrawObject pointObj;
+    ZhxxDrawObject lineObj;
+    ZhxxDrawObject triObj;
     std::vector<std::unique_ptr<Texture>> textures;
     bool prim_has_mtl = false;
     bool prim_has_inst = false;
     int prim_inst_amount = 0;
 
-    explicit GraphicPrimitive(Scene *scene_,
-                              std::shared_ptr<zeno::PrimitiveObject> prim)
+    explicit GraphicPrimitive(Scene *scene_, std::shared_ptr<zeno::PrimitiveObject> prim)
         : scene(scene_) {
         zeno::log_trace("rendering primitive size {}", prim->size());
 
@@ -486,19 +487,19 @@ struct GraphicPrimitive : IGraphic {
                     scene->mReflectivePass->setReflectivePlane(
                         refID, glm::vec3(n[0], n[1], n[2]), c);
                 }
-                if (code.find("mat_isCamera = float(float(1))") !=
-                    std::string::npos) {
-                    auto pos = prim->attr<zeno::vec3f>("pos")[0];
-                    auto up = prim->attr<zeno::vec3f>("nrm")[0];
-                    auto view = prim->attr<zeno::vec3f>("clr")[0];
-                    auto fov = prim->attr<zeno::vec3f>("uv")[0][0];
-                    auto dof = prim->attr<zeno::vec3f>("uv")[0][1];
-                    auto ffar = prim->attr<zeno::vec3f>("uv")[0][2];
-                    scene->camera->setCamera(
-                        glm::vec3(pos[0], pos[1], pos[2]),
-                        glm::vec3(view[0], view[1], view[2]),
-                        glm::vec3(up[0], up[1], up[2]), fov, 0.1, ffar, dof, 1);
-                }
+                /* if (code.find("mat_isCamera = float(float(1))") != std::string::npos) { */
+                /*     // TODO: you bing a wo kao */
+                /*     auto pos = prim->attr<zeno::vec3f>("pos")[0]; */
+                /*     auto up = prim->attr<zeno::vec3f>("nrm")[0]; */
+                /*     auto view = prim->attr<zeno::vec3f>("clr")[0]; */
+                /*     auto fov = prim->attr<zeno::vec3f>("uv")[0][0]; */
+                /*     auto dof = prim->attr<zeno::vec3f>("uv")[0][1]; */
+                /*     auto ffar = prim->attr<zeno::vec3f>("uv")[0][2]; */
+                /*     scene->camera->setCamera( */
+                /*         glm::vec3(pos[0], pos[1], pos[2]), */
+                /*         glm::vec3(view[0], view[1], view[2]), */
+                /*         glm::vec3(up[0], up[1], up[2]), fov, 0.1, ffar, dof, 1); */
+                /* } */
             }
             if (!triObj.prog) {
                 triObj.prog = get_tris_program(nullptr, nullptr);
@@ -514,8 +515,7 @@ struct GraphicPrimitive : IGraphic {
             load_texture2Ds(prim->mtl->tex2Ds);
         }
         //load_textures(path);
-        prim_has_mtl =
-            (prim->mtl != nullptr) && triObj.prog && triObj.shadowprog;
+        prim_has_mtl = (prim->mtl != nullptr) && triObj.prog && triObj.shadowprog;
 
         if (prim->inst != nullptr) {
             prim_has_inst = true;
@@ -602,7 +602,8 @@ struct GraphicPrimitive : IGraphic {
             }
 
             triObj.shadowprog->use();
-            light->setShadowMV(triObj.shadowprog);
+            //light->setShadowMV(triObj.shadowprog);
+            triObj.shadowprog->set_uniform("mView", light->lightMV);
             if (prim_has_mtl) {
                 const int &texsSize = textures.size();
                 for (int texId = 0; texId < texsSize; ++texId) {
@@ -2700,6 +2701,8 @@ void main()
         return scene->shaderMan->compile_program(vert, frag);
     }
 };
+
+}
 
 std::unique_ptr<IGraphic> makeGraphicPrimitive(Scene *scene, std::shared_ptr<zeno::IObject> obj) {
     if (auto prim = std::dynamic_pointer_cast<zeno::PrimitiveObject>(obj))
