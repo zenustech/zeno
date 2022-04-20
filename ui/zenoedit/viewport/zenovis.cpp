@@ -60,6 +60,31 @@ void Zenovis::startPlay(bool bPlaying)
     m_playing = bPlaying;
 }
 
+void Zenovis::setShowGrid(bool flag)
+{
+    m_show_grid = flag;
+}
+
+void Zenovis::setNormalCheck(bool flag)
+{
+    session->set_normal_check(flag);
+}
+
+void Zenovis::setRenderWireframe(bool flag)
+{
+    session->set_render_wireframe(flag);
+}
+
+void Zenovis::setSmoothShading(bool flag)
+{
+    session->set_smooth_shading(flag);
+}
+
+std::unique_ptr<zenovis::Session>& Zenovis::getSessionRef()
+{
+    return session;
+}
+
 int Zenovis::setCurrentFrameId(int frameid)
 {
     if (frameid < 0)
