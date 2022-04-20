@@ -97,6 +97,7 @@ struct ProgramRunData {
             }
             if (g_state == KILLING) return;
             session->globalState->frameEnd();
+            session->globalComm->finishFrame();
             zeno::log_debug("end frame {}", frame);
             if (chkfail()) return;
         }

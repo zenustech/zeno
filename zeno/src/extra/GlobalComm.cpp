@@ -5,35 +5,44 @@
 namespace zeno {
 
 ZENO_API void GlobalComm::newFrame() {
-    std::lock_guard lck(mtx);
-    frames.emplace_back();
-    log_debug("GlobalComm::newFrame {}", frames.size());
+    std::lock_guard lck(m_mtx);
+    m_frames.emplace_back();
+    log_debug("GlobalComm::newFrame {}", m_frames.size());
+}
+
+ZENO_API void GlobalComm::finishFrame() {
+    std::lock_guard lck(m_mtx);
+    m_maxPlayFrame += 1;
+    log_debug("GlobalComm::finishFrame {}", m_maxPlayFrame);
 }
 
 ZENO_API void GlobalComm::addViewObject(std::shared_ptr<IObject> const &object) {
-    std::lock_guard lck(mtx);
-    log_debug("GlobalComm::addViewObject {}", frames.size());
-    frames.back().view_objects.push_back(object);
+    std::lock_guard lck(m_mtx);
+    log_debug("GlobalComm::addViewObject {}", m_frames.size());
+    if (m_frames.empty()) throw makeError("empty frame cache");
+    m_frames.back().view_objects.push_back(object);
 }
 
 ZENO_API void GlobalComm::clearState() {
-    std::lock_guard lck(mtx);
-    frames.clear();
+    std::lock_guard lck(m_mtx);
+    m_frames.clear();
+    m_maxPlayFrame = 0;
 }
 
-ZENO_API int GlobalComm::countFrames() {
-    std::lock_guard lck(mtx);
-    return frames.size();
+ZENO_API int GlobalComm::maxPlayFrames() {
+    std::lock_guard lck(m_mtx);
+    return m_maxPlayFrame; // m_frames.size();
 }
 
 ZENO_API std::vector<std::shared_ptr<IObject>> GlobalComm::getViewObjects(int frameid) {
-    std::lock_guard lck(mtx);
-    if (frameid < 0 || frameid >= frames.size()) return {};
-    return frames[frameid].view_objects;
+    std::lock_guard lck(m_mtx);
+    if (frameid < 0 || frameid >= m_frames.size()) return {};
+    return m_frames[frameid].view_objects;
 }
 
 ZENO_API std::vector<std::shared_ptr<IObject>> GlobalComm::getViewObjects() {
-    return frames.back().view_objects;
+    std::lock_guard lck(m_mtx);
+    return m_frames.back().view_objects;
 }
 
 }

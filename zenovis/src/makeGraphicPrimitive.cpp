@@ -179,12 +179,12 @@ void parseTrianglesDrawBufferCompress(zeno::PrimitiveObject *prim,
             tang1[tris[i][j]] += area * tang[i];
         }
     }
-    std::cout << "1111111111111111\n";
+    /* std::cout << "1111111111111111\n"; */
 #pragma omp parallel for
     for (int i = 0; i < tang1.size(); i++) {
         tang1[i] = tang[i] / (zeno::length(tang[i]) + 0.000001);
     }
-    std::cout << "2222222222222222\n";
+    /* std::cout << "2222222222222222\n"; */
     std::vector<int> issueTris(0);
     for (int i = 0; i < tris.size(); i++) {
         //if all verts not visited
@@ -206,7 +206,7 @@ void parseTrianglesDrawBufferCompress(zeno::PrimitiveObject *prim,
     {
         //emit new verts
     }
-    std::cout << "3333333333333333333\n";
+    /* std::cout << "3333333333333333333\n"; */
 
     //end compressed tri assign
     obj.count = tris1.size();
@@ -334,7 +334,8 @@ struct GraphicPrimitive : IGraphic {
         bool need_computeNormal =
             !primNormalCorrect || !(prim->has_attr("nrm"));
         if (prim->tris.size() && need_computeNormal) {
-            std::cout << "computing normal\n";
+            /* std::cout << "computing normal\n"; */
+            zeno::log_trace("computing normal");
             zeno::primCalcNormal(prim.get(), 1);
         }
         if (!prim->has_attr("nrm")) {
