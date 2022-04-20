@@ -16,7 +16,7 @@ using opengl::Buffer;
 using opengl::Program;
 using zeno::vec3f;
 
-struct GraphicCamera : IGraphic {
+struct GraphicLight : IGraphic {
     Scene *scene;
 
     std::unique_ptr<Buffer> vbo;
@@ -24,12 +24,8 @@ struct GraphicCamera : IGraphic {
 
     Program *prog;
 
-    explicit GraphicCamera(Scene *scene_, std::shared_ptr<zeno::CameraObject> cam) : scene(scene_) {
-        scene->camera->setCamera(
-                glm::vec3(cam->pos[0], cam->pos[1], cam->pos[2]),
-                glm::vec3(cam->view[0], cam->view[1], cam->view[2]),
-                glm::vec3(cam->up[0], cam->up[1], cam->up[2]),
-                cam->fov, cam->fnear, cam->ffar, cam->dof);
+    explicit GraphicLight(Scene *scene_, std::shared_ptr<zeno::LightObject> cam) : scene(scene_) {
+        // TODO: implement modify scene->light
     }
 
     virtual void draw(bool reflect, float depthPass) override {
@@ -41,9 +37,9 @@ struct GraphicCamera : IGraphic {
 
 }
 
-std::unique_ptr<IGraphic> makeGraphicCamera(Scene *scene, std::shared_ptr<zeno::IObject> obj) {
-    if (auto cam = std::dynamic_pointer_cast<zeno::CameraObject>(obj))
-        return std::make_unique<GraphicCamera>(scene, std::move(cam));
+std::unique_ptr<IGraphic> makeGraphicLight(Scene *scene, std::shared_ptr<zeno::IObject> obj) {
+    if (auto lit = std::dynamic_pointer_cast<zeno::LightObject>(obj))
+        return std::make_unique<GraphicLight>(scene, std::move(lit));
     return nullptr;
 }
 
