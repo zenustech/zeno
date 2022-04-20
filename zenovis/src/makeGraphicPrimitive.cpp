@@ -2307,7 +2307,7 @@ float ShadowCalculation(int lightNo, vec3 fragPosWorldSpace, float softness, vec
 {
     float shadow = 0.0;
     
-    vec2 texelSize = 1.0 / vec2(textureSize(shadowMap[lightNo * (cascadeCount + 1) + 0], 0));
+    vec2 texelSize = 1.0 / vec2(textureSize(shadowMap, 0).xy);
     for(int x = -k; x <= k; ++x)
     {
         for(int y = -k; y <= k; ++y)
@@ -2596,7 +2596,8 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 old_tangent) {
     mat3 TBN = mat3(tan, cross(normal, tan), normal);
 
     new_normal = TBN*mat_normal;
-    mat3 eyeinvmat = transpose(inverse(mat3(mView[0].xyz, mView[1].xyz, mView[2].xyz)));
+    mat3 eyemat = mat3(mView[0].xyz, mView[1].xyz, mView[2].xyz);
+    mat3 eyeinvmat = transpose(inverse(eyemat));
     new_normal = eyeinvmat*new_normal;
     //vec3 up        = abs(new_normal.z) < 0.999 ? vec3(0.0, 0.0, 1.0) : vec3(1.0, 0.0, 0.0);
     vec3 tangent = eyemat*tan;//   = normalize(cross(up, new_normal));
