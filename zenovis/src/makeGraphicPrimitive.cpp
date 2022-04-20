@@ -615,7 +615,7 @@ struct GraphicPrimitive : IGraphic {
             triObj.ebo->bind();
 
             if (prim_has_inst) {
-                CHECK_GL(glDrawElementsInstancedARB(
+                CHECK_GL(glDrawElementsInstanced(
                     GL_TRIANGLES, /*count=*/triObj.count * 3, GL_UNSIGNED_INT,
                     /*first=*/0, prim_inst_amount));
             } else {

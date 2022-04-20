@@ -51,7 +51,7 @@ struct Buffer : zeno::disable_copy {
     }
 
     void attrib_divisor(GLuint index, GLuint divisor) const {
-        CHECK_GL(glVertexAttribDivisorARB(index, divisor));
+        CHECK_GL(glVertexAttribDivisor(index, divisor));
     }
 
     void disable_attribute(GLuint index) const {
