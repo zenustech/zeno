@@ -31,6 +31,7 @@ public:
 
 protected:
     void paintEvent(QPaintEvent* event) override;
+    bool event(QEvent* event);
 
 signals:
     void maximizeTriggered();
@@ -46,6 +47,7 @@ private slots:
 
 private:
     void init(ZenoMainWindow* pMainWin);
+    bool isTopLevelWin();
 
     DOCK_TYPE m_type;
     Qt::WindowFlags m_oldFlags;

@@ -99,6 +99,31 @@ void ZenoDockWidget::paintEvent(QPaintEvent* event)
     _base::paintEvent(event);
 }
 
+bool ZenoDockWidget::event(QEvent* event)
+{
+    switch (event->type())
+    {
+        case QEvent::MouseButtonDblClick:
+        {
+            onFloatTriggered();
+            return true;
+        }
+        case QEvent::NonClientAreaMouseButtonDblClick:
+        {
+            // for the case of dblclicking the titlebar of float top-level window.
+            if (isTopLevelWin())
+                return true;
+        }
+    }
+    return _base::event(event);
+}
+
+bool ZenoDockWidget::isTopLevelWin()
+{
+    Qt::WindowFlags flags = windowFlags();
+    return flags & m_newFlags;
+}
+
 void ZenoDockWidget::init(ZenoMainWindow* pMainWin)
 {
     QPalette palette = this->palette();
@@ -167,8 +192,14 @@ void ZenoDockWidget::onFloatTriggered()
         if (qobject_cast<ZenoGraphsEditor *>(widget()))
         {
             setWindowFlags(m_oldFlags);
-            setParent(zenoApp->getMainWindow());
+            ZenoMainWindow* pMainWin = zenoApp->getMainWindow();
             //need redock
+            pMainWin->restoreDockWidget(this);
+            bool bVisible = isVisible();
+            if (!bVisible)
+            {
+                setVisible(true);
+            }
         }
         setFloating(false);
     }
