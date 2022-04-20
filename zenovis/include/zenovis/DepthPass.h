@@ -361,14 +361,13 @@ void main(void)
                 scene->my_paint_graphics(1.0, 0.0);
                 CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, tonemapfbo));
                 CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, regularFBO));
-                CHECK_GL(
-                    glBindTexture(GL_TEXTURE_RECTANGLE, texRects[dofsample]));
+                CHECK_GL(glBindTexture(GL_TEXTURE_RECTANGLE, texRects[dofsample]));
                 CHECK_GL(glFramebufferTexture2D(
                     GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE,
                     texRects[dofsample], 0));
-                glBlitFramebuffer(0, 0, camera()->nx, camera()->ny, 0, 0,
+                CHECK_GL(glBlitFramebuffer(0, 0, camera()->nx, camera()->ny, 0, 0,
                                   camera()->nx, camera()->ny,
-                                  GL_COLOR_BUFFER_BIT, GL_NEAREST);
+                                  GL_COLOR_BUFFER_BIT, GL_NEAREST));
             }
             CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, tonemapfbo));
             CHECK_GL(glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER,
@@ -392,9 +391,9 @@ void main(void)
             CHECK_GL(glFramebufferTexture2D(GL_FRAMEBUFFER,
                                             GL_COLOR_ATTACHMENT0,
                                             GL_TEXTURE_RECTANGLE, texRect, 0));
-            glBlitFramebuffer(0, 0, camera()->nx, camera()->ny, 0, 0,
+            CHECK_GL(glBlitFramebuffer(0, 0, camera()->nx, camera()->ny, 0, 0,
                               camera()->nx, camera()->ny, GL_COLOR_BUFFER_BIT,
-                              GL_NEAREST);
+                              GL_NEAREST));
             CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, target_fbo));
             ScreenFillQuad(texRect, 1.0, 0);
 
@@ -428,8 +427,7 @@ void main(void)
             CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, tonemapfbo));
             CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, regularFBO));
             CHECK_GL(glBindTexture(GL_TEXTURE_RECTANGLE, texRects[0]));
-            CHECK_GL(
-                glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+            CHECK_GL(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
                                        GL_TEXTURE_RECTANGLE, texRects[0], 0));
             CHECK_GL(glBlitFramebuffer(0, 0, camera()->nx, camera()->ny, 0, 0,
                                        camera()->nx, camera()->ny,

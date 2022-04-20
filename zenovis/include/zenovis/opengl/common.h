@@ -1,7 +1,6 @@
 #pragma once
 
 #include <cstdio>
-#include <zeno/utils/Error.h>
 #include <cstdlib>
 #include <cstring>
 #include <glad/glad.h>
@@ -13,6 +12,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <zeno/utils/Error.h>
 
 namespace zenovis::opengl {
 
@@ -37,16 +37,21 @@ static const char *get_opengl_error_string(GLenum err) {
 
 static void _check_opengl_error(const char *file, int line, const char *hint) {
     auto err = glGetError();
+#if defined(__GUNC__) || defined(__clang__)
+    if (__builtin_expect(!!(err != GL_NO_ERROR), 0)) {
+#else
     if (err != GL_NO_ERROR) {
+#endif
         auto msg = get_opengl_error_string(err);
-        throw zeno::makeError((std::string)file + ':' + std::to_string(line) + ": " + hint + ": " + msg);
+        throw zeno::makeError((std::string)file + ':' + std::to_string(line) +
+                              ": " + hint + ": " + msg);
     }
 }
 
-#define CHECK_GL(x)                                                   \
-    do {                                                              \
-        (x);                                                          \
-        zenovis::opengl::_check_opengl_error(__FILE__, __LINE__, #x); \
+#define CHECK_GL(x)                                                     \
+    do {                                                                \
+        (x);                                                            \
+        ::zenovis::opengl::_check_opengl_error(__FILE__, __LINE__, #x); \
     } while (0)
 
 } // namespace zenovis::opengl

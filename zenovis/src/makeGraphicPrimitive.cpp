@@ -711,8 +711,7 @@ struct GraphicPrimitive : IGraphic {
             //printf("ALLPOINTS\n");
             pointObj.prog->use();
             scene->camera->set_program_uniforms(pointObj.prog);
-            CHECK_GL(
-                glDrawArrays(GL_POINTS, /*first=*/0, /*count=*/vertex_count));
+            CHECK_GL(glDrawArrays(GL_POINTS, /*first=*/0, /*count=*/vertex_count));
         }
 
         if (points_count) {
@@ -937,9 +936,9 @@ struct GraphicPrimitive : IGraphic {
             }
 
             if (scene->camera->render_wireframe) {
-                glEnable(GL_POLYGON_OFFSET_LINE);
-                glPolygonOffset(-1, -1);
-                glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+                CHECK_GL(glEnable(GL_POLYGON_OFFSET_LINE));
+                CHECK_GL(glPolygonOffset(-1, -1));
+                CHECK_GL(glPolygonMode(GL_FRONT_AND_BACK, GL_LINE));
                 triObj.prog->set_uniformi("mRenderWireframe", true);
                 if (prim_has_inst) {
                     CHECK_GL(glDrawElementsInstancedARB(
@@ -950,8 +949,8 @@ struct GraphicPrimitive : IGraphic {
                                             /*count=*/triObj.count * 3,
                                             GL_UNSIGNED_INT, /*first=*/0));
                 }
-                glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-                glDisable(GL_POLYGON_OFFSET_LINE);
+                CHECK_GL(glPolygonMode(GL_FRONT_AND_BACK, GL_FILL));
+                CHECK_GL(glDisable(GL_POLYGON_OFFSET_LINE));
             }
             triObj.ebo->unbind();
             if (triObj.vbo) {

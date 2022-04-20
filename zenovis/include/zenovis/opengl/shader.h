@@ -41,8 +41,7 @@ struct Shader : zeno::disable_copy {
             GLsizei logLength;
             CHECK_GL(glGetShaderiv(sha, GL_INFO_LOG_LENGTH, &logLength));
             std::vector<GLchar> log(logLength + 1);
-            CHECK_GL(
-                glGetShaderInfoLog(sha, logLength, &logLength, log.data()));
+            CHECK_GL(glGetShaderInfoLog(sha, logLength, &logLength, log.data()));
             log[logLength] = 0;
             throw zeno::makeError("Error compiling shader:\n" +
                                   shader_add_line_info(source) + "\n" +
@@ -63,7 +62,7 @@ struct Program : zeno::disable_copy {
     }
 
     void attach(Shader const &shader) const {
-        glAttachShader(pro, shader.sha);
+        CHECK_GL(glAttachShader(pro, shader.sha));
     }
 
     void link() const {
@@ -74,8 +73,7 @@ struct Program : zeno::disable_copy {
             GLsizei logLength;
             CHECK_GL(glGetProgramiv(pro, GL_INFO_LOG_LENGTH, &status));
             std::vector<GLchar> log(logLength + 1);
-            CHECK_GL(
-                glGetProgramInfoLog(pro, logLength, &logLength, log.data()));
+            CHECK_GL(glGetProgramInfoLog(pro, logLength, &logLength, log.data()));
             log[logLength] = 0;
             throw zeno::makeError((std::string) "Error linking program:\n" +
                                   log.data());

@@ -183,24 +183,20 @@ struct Light {
             CHECK_GL(glGenFramebuffers(1, &lightFBO));
             CHECK_GL(glGenTextures(1, &lightDepthMaps));
             CHECK_GL(glBindTexture(GL_TEXTURE_2D, lightDepthMaps));
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F,
+            CHECK_GL(glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F,
                          depthMapResolution, depthMapResolution, 0,
-                         GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S,
-                            GL_CLAMP_TO_BORDER);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T,
-                            GL_CLAMP_TO_BORDER);
+                         GL_DEPTH_COMPONENT, GL_FLOAT, nullptr));
+            CHECK_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
+            CHECK_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
+            CHECK_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER));
+            CHECK_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER));
             const float borderColor[] = {1.0, 1.0, 1.0, 1.0};
-            glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR,
-                             borderColor);
+            CHECK_GL(glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor));
             // attach depth texture as FBO's depth buffer
-            glBindFramebuffer(GL_FRAMEBUFFER, lightFBO);
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
-                                   GL_TEXTURE_2D, lightDepthMaps, 0);
-            glDrawBuffer(GL_NONE);
-            glReadBuffer(GL_NONE);
+            CHECK_GL(glBindFramebuffer(GL_FRAMEBUFFER, lightFBO));
+            CHECK_GL(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, lightDepthMaps, 0));
+            CHECK_GL(glDrawBuffer(GL_NONE));
+            CHECK_GL(glReadBuffer(GL_NONE));
 
             // glGenTextures(1, &lightDepthMaps);
             // glBindTexture(GL_TEXTURE_2D_ARRAY, lightDepthMaps);
@@ -298,8 +294,8 @@ struct Light {
         const auto lightMatrices = getLightSpaceMatrices(near, far, proj, view);
         CHECK_GL(glBindBuffer(GL_UNIFORM_BUFFER, matricesUBO));
         for (size_t i = 0; i < lightMatrices.size(); ++i) {
-            glBufferSubData(GL_UNIFORM_BUFFER, i * sizeof(glm::mat4x4),
-                            sizeof(glm::mat4x4), &lightMatrices[i]);
+            CHECK_GL(glBufferSubData(GL_UNIFORM_BUFFER, i * sizeof(glm::mat4x4),
+                            sizeof(glm::mat4x4), &lightMatrices[i]));
         }
         CHECK_GL(glBindBuffer(GL_UNIFORM_BUFFER, 0));
 
@@ -329,8 +325,8 @@ struct Light {
         CHECK_GL(glReadBuffer(GL_NONE));
 
         // glDisable(GL_CULL_FACE);
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        glUseProgram(0);
+        CHECK_GL(glBindFramebuffer(GL_FRAMEBUFFER, 0));
+        CHECK_GL(glUseProgram(0));
         CHECK_GL(glEnable(GL_BLEND));
         CHECK_GL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
         CHECK_GL(glEnable(GL_DEPTH_TEST));
