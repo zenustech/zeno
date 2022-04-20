@@ -164,17 +164,27 @@ void ZenoDockWidget::onFloatTriggered()
 {
     if (isFloating())
     {
+        if (qobject_cast<ZenoGraphsEditor *>(widget()))
+        {
+            setWindowFlags(m_oldFlags);
+            setParent(zenoApp->getMainWindow());
+            //need redock
+        }
         setFloating(false);
     }
     else
     {
         setFloating(true);
-        //setParent(nullptr);
-        //setWindowFlags(Qt::CustomizeWindowHint |
-        //    Qt::Window |
-        //    Qt::WindowMinimizeButtonHint |
-        //    Qt::WindowMaximizeButtonHint |
-        //    Qt::WindowCloseButtonHint);
-        //show();
+        m_oldFlags = windowFlags();
+        if (qobject_cast<ZenoGraphsEditor*>(widget()))
+        {
+            setParent(nullptr);
+            m_newFlags = Qt::CustomizeWindowHint | Qt::Window |
+                         Qt::WindowMinimizeButtonHint |
+                         Qt::WindowMaximizeButtonHint |
+                         Qt::WindowCloseButtonHint;
+            setWindowFlags(m_newFlags);
+            show();
+        }
     }
 }

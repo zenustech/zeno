@@ -48,6 +48,8 @@ private:
     void init(ZenoMainWindow* pMainWin);
 
     DOCK_TYPE m_type;
+    Qt::WindowFlags m_oldFlags;
+    Qt::WindowFlags m_newFlags;
 };
 
 
