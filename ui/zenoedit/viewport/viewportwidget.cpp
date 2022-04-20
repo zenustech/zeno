@@ -98,13 +98,13 @@ ViewportWidget::ViewportWidget(QWidget* parent)
     , m_camera(nullptr)
 {
     QSurfaceFormat fmt;
-    int nsamples = 16;  //todo
+    int nsamples = 16;  // TODO: adjust in a zhouhang-panel
     fmt.setSamples(nsamples);
-    fmt.setVersion(3, 0);
+    fmt.setVersion(3, 3);
     fmt.setProfile(QSurfaceFormat::CoreProfile);
     setFormat(fmt);
 
-    m_camera = std::make_shared<CameraControl>(new CameraControl);
+    m_camera = std::make_shared<CameraControl>();
     Zenovis::GetInstance().m_camera_control = m_camera;
 }
 
