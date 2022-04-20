@@ -13,6 +13,16 @@ std::unique_ptr<IGraphic> makeGraphic(Scene *scene, std::shared_ptr<zeno::IObjec
         return ig;
     }
 
+    if (auto ig = makeGraphicLight(scene, obj)) {
+        zeno::log_trace("load_object: light");
+        return ig;
+    }
+
+    if (auto ig = makeGraphicCamera(scene, obj)) {
+        zeno::log_trace("load_object: camera");
+        return ig;
+    }
+
     zeno::log_debug("load_object: unexpected view object {}",
                     zeno::cppdemangle(typeid(*obj)));
 

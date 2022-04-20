@@ -9,6 +9,8 @@ struct Scene;
 
 std::unique_ptr<IGraphic> makeGraphic(Scene *scene, std::shared_ptr<zeno::IObject> obj);
 std::unique_ptr<IGraphic> makeGraphicPrimitive(Scene *scene, std::shared_ptr<zeno::IObject> obj);
+std::unique_ptr<IGraphic> makeGraphicLight(Scene *scene, std::shared_ptr<zeno::IObject> obj);
+std::unique_ptr<IGraphic> makeGraphicCamera(Scene *scene, std::shared_ptr<zeno::IObject> obj);
 std::unique_ptr<IGraphic> makeGraphicAxis(Scene *scene);
 std::unique_ptr<IGraphic> makeGraphicGrid(Scene *scene);
 
