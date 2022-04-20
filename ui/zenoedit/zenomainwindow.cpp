@@ -134,9 +134,24 @@ void ZenoMainWindow::initMenu()
         pAction->setCheckable(true);
         pAction->setChecked(true);
         pDisplay->addAction(pAction);
+        connect(pAction, &QAction::triggered, this, [=]() {
+            Zenovis::GetInstance().setShowGrid(pAction->isChecked());
+        });
 
         pAction = new QAction(tr("Background Color"), this);
         pDisplay->addAction(pAction);
+        connect(pAction, &QAction::triggered, this, [=]() {
+            auto [r, g, b] = Zenovis::GetInstance().getSessionRef()->get_background_color();
+            auto c = QColor::fromRgbF(r, g, b);
+            c = QColorDialog::getColor(c);
+            if (c.isValid()) {
+                Zenovis::GetInstance().getSessionRef()->set_background_color(
+                    c.redF(),
+                    c.greenF(),
+                    c.blueF()
+                );
+            }
+        });
 
         pDisplay->addSeparator();
 
@@ -144,10 +159,25 @@ void ZenoMainWindow::initMenu()
         pAction->setCheckable(true);
         pAction->setChecked(false);
         pDisplay->addAction(pAction);
+        connect(pAction, &QAction::triggered, this, [=]() {
+            Zenovis::GetInstance().setSmoothShading(pAction->isChecked());
+        });
+
+        pAction = new QAction(tr("Normal Check"), this);
+        pAction->setCheckable(true);
+        pAction->setChecked(false);
+        pDisplay->addAction(pAction);
+        connect(pAction, &QAction::triggered, this, [=]() {
+            Zenovis::GetInstance().setNormalCheck(pAction->isChecked());
+        });
 
         pAction = new QAction(tr("Wireframe"), this);
         pAction->setCheckable(true);
         pAction->setChecked(false);
+        pDisplay->addAction(pAction);
+        connect(pAction, &QAction::triggered, this, [=]() {
+            Zenovis::GetInstance().setRenderWireframe(pAction->isChecked());
+        });
 
         pDisplay->addSeparator();
 
@@ -167,6 +197,10 @@ void ZenoMainWindow::initMenu()
         QAction* pAction = new QAction(tr("Screenshot"), this);
         pAction->setShortcut(QKeySequence("F12"));
         pRecord->addAction(pAction);
+        connect(pAction, &QAction::triggered, this, [=]() {
+            auto s = QDateTime::currentDateTime().toString(QString("yyyy-dd-MM_hh-mm-ss.png"));
+            Zenovis::GetInstance().getSessionRef()->do_screenshot(s.toStdString());
+        });
 
         pAction = new QAction(tr("Record Video"), this);
         pAction->setShortcut(QKeySequence(tr("Shift+F12")));

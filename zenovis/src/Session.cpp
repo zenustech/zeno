@@ -46,6 +46,10 @@ void Session::set_render_wireframe(bool render_wireframe) {
     impl->scene->camera->render_wireframe = render_wireframe;
 }
 
+void Session::set_smooth_shading(bool smooth) {
+    impl->scene->camera->smooth_shading = smooth;
+}
+
 void Session::new_frame() {
     impl->scene->draw();
 }
@@ -79,6 +83,11 @@ void Session::set_perspective(std::array<double, 16> viewArr,
 
 void Session::set_background_color(float r, float g, float b) {
     impl->scene->camera->bgcolor = glm::vec3(r, g, b);
+}
+
+std::tuple<float, float, float> Session::get_background_color() {
+    auto c = impl->scene->camera->bgcolor;
+    return {c[0], c[1], c[2]};
 }
 
 void Session::set_curr_frameid(int frameid) {
