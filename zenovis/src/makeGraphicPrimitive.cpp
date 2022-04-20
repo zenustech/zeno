@@ -1,6 +1,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <zenovis/makeGraphic.h>
 #include <zeno/types/InstancingObject.h>
 #include <zeno/types/MaterialObject.h>
 #include <zeno/types/PrimitiveObject.h>
@@ -46,7 +47,7 @@ struct drawObject {
     Program *prog;
     Program *shadowprog;
 };
-void parsePointsDrawBuffer(zeno::PrimitiveObject *prim, drawObject &obj) {
+static void parsePointsDrawBuffer(zeno::PrimitiveObject *prim, drawObject &obj) {
     auto const &pos = prim->attr<zeno::vec3f>("pos");
     auto const &clr = prim->attr<zeno::vec3f>("clr");
     auto const &nrm = prim->attr<zeno::vec3f>("nrm");
@@ -72,7 +73,7 @@ void parsePointsDrawBuffer(zeno::PrimitiveObject *prim, drawObject &obj) {
                            points_count * sizeof(prim->points[0]));
     }
 }
-void parseLinesDrawBuffer(zeno::PrimitiveObject *prim, drawObject &obj) {
+static void parseLinesDrawBuffer(zeno::PrimitiveObject *prim, drawObject &obj) {
     auto const &pos = prim->attr<zeno::vec3f>("pos");
     auto const &clr = prim->attr<zeno::vec3f>("clr");
     auto const &nrm = prim->attr<zeno::vec3f>("nrm");
@@ -106,7 +107,7 @@ void parseLinesDrawBuffer(zeno::PrimitiveObject *prim, drawObject &obj) {
     }
 }
 
-void computeTrianglesTangent(zeno::PrimitiveObject *prim) {
+static void computeTrianglesTangent(zeno::PrimitiveObject *prim) {
     const auto &tris = prim->tris;
     const auto &pos = prim->attr<zeno::vec3f>("pos");
     auto const &nrm = prim->attr<zeno::vec3f>("nrm");
@@ -153,7 +154,7 @@ void computeTrianglesTangent(zeno::PrimitiveObject *prim) {
         }
     }
 }
-void parseTrianglesDrawBufferCompress(zeno::PrimitiveObject *prim,
+static void parseTrianglesDrawBufferCompress(zeno::PrimitiveObject *prim,
                                       drawObject &obj) {
     //TICK(parse);
     auto const &pos = prim->attr<zeno::vec3f>("pos");
@@ -236,7 +237,7 @@ void parseTrianglesDrawBufferCompress(zeno::PrimitiveObject *prim,
     }
     /* TOCK(bindebo); */
 }
-void parseTrianglesDrawBuffer(zeno::PrimitiveObject *prim, drawObject &obj) {
+static void parseTrianglesDrawBuffer(zeno::PrimitiveObject *prim, drawObject &obj) {
     /* TICK(parse); */
     auto const &pos = prim->attr<zeno::vec3f>("pos");
     auto const &clr = prim->attr<zeno::vec3f>("clr");
@@ -2700,8 +2701,7 @@ void main()
     }
 };
 
-std::unique_ptr<IGraphic>
-makeGraphicPrimitive(Scene *scene, std::shared_ptr<zeno::IObject> obj) {
+std::unique_ptr<IGraphic> makeGraphicPrimitive(Scene *scene, std::shared_ptr<zeno::IObject> obj) {
     if (auto prim = std::dynamic_pointer_cast<zeno::PrimitiveObject>(obj))
         return std::make_unique<GraphicPrimitive>(scene, std::move(prim));
     return nullptr;

@@ -40,7 +40,7 @@ public:
     bool isPressed() const;
     bool isHovered() const;
     int buttonOption() const;
-    virtual QSize sizeHint() const;
+    virtual QSize sizeHint() const override;
     void setBackgroundClr(const QColor& hoverClr, const QColor& downClr, const QColor& checkedClr);
     void setMargins(const QMargins& margins);
 
@@ -63,13 +63,13 @@ signals:
     void RButtonPressed();
 
 protected:
-    virtual bool event(QEvent* e);
-    virtual void enterEvent(QEvent* e);
-    virtual void leaveEvent(QEvent* e);
-    virtual void paintEvent(QPaintEvent* event);
+    virtual bool event(QEvent* e) override;
+    virtual void enterEvent(QEvent* e) override;
+    virtual void leaveEvent(QEvent* e) override;
+    virtual void paintEvent(QPaintEvent* event) override;
     virtual void initStyleOption(ZStyleOptionToolButton* option) const;
-    virtual void mousePressEvent(QMouseEvent* e);
-    virtual void mouseReleaseEvent(QMouseEvent* e);
+    virtual void mousePressEvent(QMouseEvent* e) override;
+    virtual void mouseReleaseEvent(QMouseEvent* e) override;
 
     virtual void initColors(ZStyleOptionToolButton* option) const;
     virtual QBrush backgrondColor(QStyle::State state) const;

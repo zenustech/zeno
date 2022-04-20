@@ -13,7 +13,7 @@ public:
 	explicit IGraphsModel(QObject* parent = nullptr) : QAbstractItemModel(parent) {}
 	virtual void beginTransaction(const QString& name) = 0;
 	virtual void endTransaction() = 0;
-	virtual QModelIndex index(int row, int column, const QModelIndex& parent = QModelIndex()) const = 0;
+	virtual QModelIndex index(int row, int column, const QModelIndex& parent = QModelIndex()) const override = 0;
 	virtual QModelIndex index(const QString& subGraphName) const = 0;
 	virtual QModelIndex index(const QString& id, const QModelIndex& subGpIdx) = 0;
 	virtual QModelIndex index(int r, const QModelIndex& subGpIdx) = 0;

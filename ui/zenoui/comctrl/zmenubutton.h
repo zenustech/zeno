@@ -21,8 +21,8 @@ protected slots:
     virtual void popupChildWidget();
 
 protected:
-    virtual bool event(QEvent* e);
-    void initStyleOption(ZStyleOptionToolButton* option) const;
+    virtual bool event(QEvent* e) override;
+    void initStyleOption(ZStyleOptionToolButton* option) const override;
     void paintEvent(QPaintEvent* event) override;
 };
 

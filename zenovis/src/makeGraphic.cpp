@@ -3,11 +3,9 @@
 #include <zeno/utils/cppdemangle.h>
 #include <zeno/utils/log.h>
 #include <zenovis/IGraphic.h>
+#include <zenovis/makeGraphic.h>
 
 namespace zenovis {
-
-extern std::unique_ptr<IGraphic>
-makeGraphicPrimitive(Scene *scene, std::shared_ptr<zeno::IObject> obj);
 
 std::unique_ptr<IGraphic> makeGraphic(Scene *scene, std::shared_ptr<zeno::IObject> obj) {
     if (auto ig = makeGraphicPrimitive(scene, obj)) {

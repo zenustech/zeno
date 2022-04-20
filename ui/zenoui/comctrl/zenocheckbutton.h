@@ -19,8 +19,8 @@ public:
 	QSize sizeHint() const override;
 
 protected:
-	void enterEvent(QEvent* event);
-	void leaveEvent(QEvent* event);
+	void enterEvent(QEvent* event) override;
+	void leaveEvent(QEvent* event) override;
 	void mousePressEvent(QMouseEvent* event) override;
 	void mouseReleaseEvent(QMouseEvent* event) override;
 	void paintEvent(QPaintEvent* event) override;

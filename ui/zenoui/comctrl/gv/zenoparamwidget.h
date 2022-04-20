@@ -41,7 +41,7 @@ public:
     QSize sizeHint() const override;
 
 protected:
-    void paintEvent(QPaintEvent* e);
+    void paintEvent(QPaintEvent* e) override;
 };
 
 class ZenoGvLineEdit : public QLineEdit
@@ -51,7 +51,7 @@ public:
     ZenoGvLineEdit(QWidget* parent = nullptr);
 
 protected:
-    void paintEvent(QPaintEvent *e);
+    void paintEvent(QPaintEvent *e) override;
 };
 
 /// <summary>
@@ -107,7 +107,7 @@ public:
     QSize sizeHint(const QStyleOptionViewItem &option, const QModelIndex &index) const override;
 
 protected:
-    void initStyleOption(QStyleOptionViewItem *option, const QModelIndex &index) const;
+    void initStyleOption(QStyleOptionViewItem *option, const QModelIndex &index) const override;
 };
 
 class ZenoGvComboBox : public QComboBox
@@ -166,7 +166,7 @@ public:
     void setText(const QString &text);
 
 protected:
-    bool eventFilter(QObject *object, QEvent *event);
+    bool eventFilter(QObject *object, QEvent *event) override;
 
 signals:
     void textChanged();

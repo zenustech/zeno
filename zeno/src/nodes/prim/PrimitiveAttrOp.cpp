@@ -51,11 +51,11 @@ ZENDEFNODE(PrimitiveFillAttr,
     }});
 
 
-void print_cout(float x) {
+static void print_cout(float x) {
     printf("%f\n", x);
 }
 
-void print_cout(vec3f const &a) {
+static void print_cout(vec3f const &a) {
     printf("%f %f %f\n", a[0], a[1], a[2]);
 }
 

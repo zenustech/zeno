@@ -65,7 +65,7 @@ endif()
 
 if (ZENO_NO_WARNING)
     if (CMAKE_CXX_COMPILER_ID MATCHES "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-all -Wno-cpp -Wno-deprecated-declarations -Wno-enum-compare -Wno-ignored-attributes -Wno-extra -Werror=return-type -Wnon-virtual-dtor -Wsuggest-override")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-all -Wno-cpp -Wno-deprecated-declarations -Wno-enum-compare -Wno-ignored-attributes -Wno-extra -Werror=return-type -Wnon-virtual-dtor -Wsuggest-override -Wmissing-declarations")
     endif()
     if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /w")
