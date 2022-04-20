@@ -106,6 +106,7 @@ void ZenoDockTitleWidget::onDockSwitchClicked()
 
 ZenoEditorDockTitleWidget::ZenoEditorDockTitleWidget(QWidget* parent)
 	: ZenoDockTitleWidget(parent)
+	, m_lblTitle(nullptr)
 {
 
 }
@@ -128,7 +129,16 @@ void ZenoEditorDockTitleWidget::initModel()
 void ZenoEditorDockTitleWidget::initTitleContent(QHBoxLayout* pHLayout)
 {
 	pHLayout->addWidget(initMenu());
-	pHLayout->addStretch();
+    pHLayout->addStretch();
+
+    m_lblTitle = new QLabel;
+    QPalette pal = m_lblTitle->palette();
+    pal.setColor(QPalette::WindowText, QColor(255, 255, 255, 128));
+    m_lblTitle->setPalette(pal);
+    m_lblTitle->setFont(QFont("HarmonyOS Sans", 11));
+
+    pHLayout->addWidget(m_lblTitle);
+    pHLayout->addStretch();
 }
 
 QAction* ZenoEditorDockTitleWidget::createAction(const QString& text)
@@ -143,6 +153,7 @@ QAction* ZenoEditorDockTitleWidget::createAction(const QString& text)
 QMenuBar* ZenoEditorDockTitleWidget::initMenu()
 {
 	QMenuBar* pMenuBar = new QMenuBar(this);
+    pMenuBar->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Preferred);
 
 	QMenu* pAdd = new QMenu(tr("Add"));
 	{
@@ -208,7 +219,7 @@ QMenuBar* ZenoEditorDockTitleWidget::initMenu()
 
 void ZenoEditorDockTitleWidget::setTitle(const QString& title)
 {
-	m_title = title;
+    m_lblTitle->setText(title);
 	update();
 }
 
@@ -217,11 +228,11 @@ void ZenoEditorDockTitleWidget::onModelInited(IGraphsModel* pModel)
 	const QString& fn = pModel->fileName();
 	if (fn.isEmpty())
 	{
-		m_title = "newFile";
+		m_lblTitle->setText("newFile");
 	}
 	else
 	{
-		m_title = fn;
+		m_lblTitle->setText(fn);
 	}
 
 	connect(pModel, SIGNAL(modelClear()), this, SLOT(onModelClear()));
@@ -232,7 +243,7 @@ void ZenoEditorDockTitleWidget::onModelInited(IGraphsModel* pModel)
 
 void ZenoEditorDockTitleWidget::onModelClear()
 {
-	m_title = "";
+    m_lblTitle->setText("");
 	update();
 }
 
@@ -244,14 +255,16 @@ void ZenoEditorDockTitleWidget::onDirtyChanged()
 	QString name = pModel->fileName();
 	if (name.isEmpty())
 		name = "newFile";
+	QString title;
 	if (bDirty)
 	{
-		m_title = name + "*";
+		title = name + "*";
 	}
 	else
 	{
-		m_title = name;
+		title = name;
 	}
+	m_lblTitle->setText(title);
 	update();
 }
 
@@ -261,18 +274,13 @@ void ZenoEditorDockTitleWidget::onPathChanged(const QString& newPath)
 	QString fn;
 	if (fi.isFile())
 		fn = fi.fileName();
-	m_title = fn;
+	m_lblTitle->setText(fn);
 	update();
 }
 
 void ZenoEditorDockTitleWidget::paintEvent(QPaintEvent* event)
 {
 	ZenoDockTitleWidget::paintEvent(event);
-
-	QPainter p(this);
-	p.setPen(QPen(QColor(255,255,255, 128)));
-	p.setFont(QFont("HarmonyOS Sans", 11));
-	p.drawText(rect(), Qt::AlignCenter, m_title);
 }
 
 

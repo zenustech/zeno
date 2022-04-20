@@ -112,6 +112,12 @@ void ZenoGraphsEditor::initSignals()
 
 void ZenoGraphsEditor::resetModel(IGraphsModel* pModel)
 {
+    if (!pModel)
+    {
+        onModelCleared();
+        return;
+    }
+
     auto mgr = zenoApp->graphsManagment();
     m_model = pModel;
     Q_ASSERT(m_model);
@@ -125,12 +131,17 @@ void ZenoGraphsEditor::resetModel(IGraphsModel* pModel)
     m_ui->mainStackedWidget->setCurrentWidget(m_ui->mainEditor);
     m_ui->graphsViewTab->clear();
 
-    connect(pModel, &IGraphsModel::modelClear, this, [=]() { m_ui->mainStackedWidget->setCurrentWidget(m_ui->welcomePage); });
+    connect(pModel, &IGraphsModel::modelClear, this, &ZenoGraphsEditor::onModelCleared);
 	connect(pModel, SIGNAL(rowsAboutToBeRemoved(const QModelIndex&, int, int)), this, SLOT(onSubGraphsToRemove(const QModelIndex&, int, int)));
 	connect(pModel, SIGNAL(modelReset()), this, SLOT(onModelReset()));
 	connect(pModel, SIGNAL(graphRenamed(const QString&, const QString&)), this, SLOT(onSubGraphRename(const QString&, const QString&)));
 
     activateTab("main");
+}
+
+void ZenoGraphsEditor::onModelCleared()
+{
+    m_ui->mainStackedWidget->setCurrentWidget(m_ui->welcomePage);
 }
 
 void ZenoGraphsEditor::onSubGraphsToRemove(const QModelIndex& parent, int first, int last)

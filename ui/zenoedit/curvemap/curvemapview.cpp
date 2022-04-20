@@ -101,8 +101,11 @@ void CurveMapView::gentle_zoom(qreal factor)
 
 	m_factor = transform().m11();
 
-	m_pHScalar->update();
-	m_pVScalar->update();
+	if (m_pHScalar && m_pVScalar)
+	{
+        m_pHScalar->update();
+        m_pVScalar->update();
+	}
 }
 
 void CurveMapView::resizeEvent(QResizeEvent* event)
@@ -112,8 +115,11 @@ void CurveMapView::resizeEvent(QResizeEvent* event)
 	setSceneRect(m_fixedSceneRect);
 	
 	fitInView(m_fixedSceneRect, Qt::IgnoreAspectRatio);
-    m_pHScalar->update();
-    m_pVScalar->update();
+	if (m_pHScalar && m_pVScalar)
+	{
+        m_pHScalar->update();
+        m_pVScalar->update();
+	}
 }
 
 CurveGrid* CurveMapView::gridItem() const
@@ -209,8 +215,11 @@ void CurveMapView::mouseMoveEvent(QMouseEvent* event)
 		translate(-delta.x(), -delta.y());
 		_last_mouse_pos = event->pos();
 
-		m_pHScalar->update();
-		m_pVScalar->update();
+		if (m_pHScalar && m_pVScalar)
+		{
+			m_pHScalar->update();
+			m_pVScalar->update();
+		}
 	}
 	QGraphicsView::mouseMoveEvent(event);
 }
