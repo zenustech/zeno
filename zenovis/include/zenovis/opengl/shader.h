@@ -5,7 +5,19 @@
 
 namespace zenovis::opengl {
 
-struct ShaderCompileException {};
+static std::string shader_add_line_info(std::string const &source) {
+    std::string res = "1 ";
+    int line = 2;
+    for (auto const &c: source) {
+        res.push_back(c);
+        if (c == '\n') {
+            res += std::to_string(line) + ' ';
+            line++;
+        }
+    }
+    res.push_back('\n');
+    return res;
+}
 
 struct Shader : zeno::disable_copy {
     GLuint sha;
@@ -32,7 +44,8 @@ struct Shader : zeno::disable_copy {
             CHECK_GL(
                 glGetShaderInfoLog(sha, logLength, &logLength, log.data()));
             log[logLength] = 0;
-            throw zeno::makeError("Error compiling shader:\n" + source + "\n" +
+            throw zeno::makeError("Error compiling shader:\n" +
+                                  shader_add_line_info(source) + "\n" +
                                   log.data());
         }
     }
@@ -64,7 +77,7 @@ struct Program : zeno::disable_copy {
             CHECK_GL(
                 glGetProgramInfoLog(pro, logLength, &logLength, log.data()));
             log[logLength] = 0;
-            throw zeno::makeError((std::string)"Error linking program:\n" +
+            throw zeno::makeError((std::string) "Error linking program:\n" +
                                   log.data());
         }
     }

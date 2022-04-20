@@ -16,8 +16,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
-    - id: is-release-step
+    - name: Checkout Repo
+      uses: actions/checkout@v2
+
+    - name: Check if is release commit
+      id: is-release-step
       uses: mstachniuk/ci-skip@v1.2.0
       with:
         commit-filter: '[release]'
@@ -32,6 +35,7 @@ jobs:
         include:
         - os: ubuntu-18.04  # cihou linuxdeployqt
           cmake_args: -DCMAKE_CXX_COMPILER=g++-9
+          cxx: g++-9
         - os: windows-2022
 
     runs-on: ${{ matrix.os }}
@@ -41,6 +45,12 @@ jobs:
     steps:
     - name: Checkout Repo
       uses: actions/checkout@v2
+
+    - name: Set Compiler Environment
+      if: ${{ matrix.cxx != '' }}
+      uses: lukka/set-shell-env@v1
+      with:
+        CXX: ${{ matrix.cxx }}
 
     - name: Cache Qt
       id: cache-qt
@@ -87,7 +97,9 @@ jobs:
     #continue-on-error: true
 
     steps:
-    - uses: actions/checkout@v2
+    - name: Checkout Repo
+      uses: actions/checkout@v2
+
     - name: Versioning
       id: versioning
       run: python misc/ci/get_version.py

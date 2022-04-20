@@ -8,14 +8,14 @@
 #include <vector>
 #include <cstring>
 #include <iostream>
-#include <spdlog/spdlog.h>
+#include <zeno/utils/log.h>
 
 namespace zeno{
 struct StringToMesh : zeno::INode {
     virtual void apply() override {
         auto alphaset = std::make_shared<zeno::ListObject>();
         for (auto i = 33; i <= 126; i++) {
-            auto path = fmt::format("assets/ascii/{:03}.obj", i);
+            auto path = zeno::format("assets/ascii/{:03}.obj", i);
             auto prim = std::make_shared<zeno::PrimitiveObject>();
             auto &pos = prim->verts;
             auto &uv = prim->verts.add_attr<zeno::vec3f>("uv");
