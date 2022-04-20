@@ -7,6 +7,7 @@ namespace zeno {
 
 namespace _implObjectCodec {
 
+std::shared_ptr<StringObject> decodeStringObject(const char *it);
 std::shared_ptr<StringObject> decodeStringObject(const char *it) {
     auto obj = std::make_shared<StringObject>();
     size_t size = *(int *)it;
@@ -15,6 +16,7 @@ std::shared_ptr<StringObject> decodeStringObject(const char *it) {
     return obj;
 }
 
+bool encodeStringObject(StringObject const *obj, std::back_insert_iterator<std::vector<char>> it);
 bool encodeStringObject(StringObject const *obj, std::back_insert_iterator<std::vector<char>> it) {
     size_t size = obj->value.size();
     char const *data = obj->value.data();

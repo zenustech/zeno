@@ -40,14 +40,15 @@ struct Camera {
         std::memcpy(glm::value_ptr(proj), projArr.data(), projArr.size());
     }
 
-    float g_near, g_far, g_fov;
-    glm::mat4 g_view, g_proj;
-    glm::vec3 g_camPos, g_camView, g_camUp;
-    int g_camSetFromNode = 0;
-    glm::mat4 cview, cproj;
+    float g_near{}, g_far{}, g_fov{};
+    glm::mat4 g_view{}, g_proj{};
+    glm::vec3 g_camPos{}, g_camView{}, g_camUp{};
+    bool cameraLocked = false;
+    /* int g_camSetFromNode = 0; */
+    /* glm::mat4 cview, cproj; */
 
     void clearCameraControl() {
-        g_camSetFromNode = 0;
+        /* g_camSetFromNode = 0; */
         proj = glm::perspective(glm::radians(45.0), getAspect(), 0.1, 20000.0);
         g_dof = -1;
         g_fov = 45.0;
@@ -72,37 +73,37 @@ struct Camera {
     }
 
     void setCamera(glm::vec3 pos, glm::vec3 front, glm::vec3 up, double _fov,
-                   double fnear, double ffar, double _dof, int set) {
+                   double fnear, double ffar, double _dof) {
         front = glm::normalize(front);
         up = glm::normalize(up);
-        cview = glm::lookAt(pos, pos + front, up);
-        cproj = glm::perspective(glm::radians(_fov), getAspect(), fnear, ffar);
+        g_view = glm::lookAt(pos, pos + front, up);
+        g_proj = glm::perspective(glm::radians(_fov), getAspect(), fnear, ffar);
         g_fov = _fov;
         g_near = fnear;
         g_far = ffar;
-        g_view = cview;
-        g_proj = cproj;
         g_camPos = pos;
         g_camView = glm::normalize(front);
         g_camUp = glm::normalize(up);
         g_dof = _dof;
-        g_camSetFromNode = set;
+        /* g_camSetFromNode = set; */
+        cameraLocked = true;
     }
 
     void look_perspective(double cx, double cy, double cz, double theta,
                           double phi, double radius, double fov,
                           bool ortho_mode) {
-        if (g_camSetFromNode == 1) {
-            view = cview;
-            proj = cproj;
+        if (cameraLocked) return;
+        /* if (g_camSetFromNode == 1) { */
+        /*     view = cview; */
+        /*     proj = cproj; */
             /* auto &scene = Scene::getInstance(); */
             /* auto &lights = scene.lights; */
             /* for (auto &light : lights) { */
             /*     light->gfov = fov; */
             /*     light->gaspect = g_aspect; */
             /* } */
-            return;
-        }
+        /*     return; */
+        /* } */
         /* auto &scene = Scene::getInstance(); */
         /* auto &lights = scene.lights; */
         /* for (auto &light : lights) { */

@@ -9,15 +9,12 @@ class SubnetItemDelegated : public QStyledItemDelegate
 	typedef QStyledItemDelegate _base;
 public:
 	SubnetItemDelegated(QWidget* parent);
-	void setModelData(QWidget* editor,
-		QAbstractItemModel* model,
-		const QModelIndex& index) const;
-	void paint(QPainter* painter, const QStyleOptionViewItem& option,
-		const QModelIndex& index) const;
-	QSize sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const;
+	void setModelData(QWidget* editor, QAbstractItemModel* model, const QModelIndex& index) const override;
+	void paint(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const override;
+	QSize sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const override;
 
 protected:
-	void initStyleOption(QStyleOptionViewItem* option, const QModelIndex& index) const;
+	void initStyleOption(QStyleOptionViewItem* option, const QModelIndex& index) const override;
 
 private:
 	void drawExpandArrow(QPainter* painter, const QStyleOptionViewItem& option) const;

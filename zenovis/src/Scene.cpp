@@ -24,8 +24,8 @@ Scene::Scene()
     CHECK_GL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
     CHECK_GL(glEnable(GL_DEPTH_TEST));
     CHECK_GL(glEnable(GL_PROGRAM_POINT_SIZE));
-    //CHECK_GL(glEnable(GL_PROGRAM_POINT_SIZE_ARB));
-    //CHECK_GL(glEnable(GL_POINT_SPRITE_ARB));
+    //CHECK_GL(glEnable(GL_PROGRAM_POINT_SIZE));
+    //CHECK_GL(glEnable(GL_POINT_SPRITE));
     //CHECK_GL(glEnable(GL_SAMPLE_COVERAGE));
     //CHECK_GL(glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE));
     //CHECK_GL(glEnable(GL_SAMPLE_ALPHA_TO_ONE));
@@ -43,6 +43,7 @@ Scene::Scene()
 
     mReflectivePass->initReflectiveMaps(camera->nx, camera->ny);
 
+    lights.push_back(std::make_unique<Light>());
     hudGraphics.push_back(makeGraphicGrid(this));
     hudGraphics.push_back(makeGraphicAxis(this));
     //setup_env_map("Default");

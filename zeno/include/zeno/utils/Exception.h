@@ -12,8 +12,8 @@ private:
 public:
 #ifndef ZENO_APIFREE
   ZENO_API BaseException(std::string_view msg) noexcept;
-  ZENO_API ~BaseException() noexcept;
-  ZENO_API char const *what() const noexcept;
+  ZENO_API ~BaseException() noexcept override;
+  ZENO_API char const *what() const noexcept override;
 #else
   BaseException(std::string_view msg) noexcept : msg(msg) {}
   ~BaseException() noexcept = default;

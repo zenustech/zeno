@@ -126,8 +126,7 @@ struct ReflectivePass : zeno::disable_copy {
 
             CHECK_GL(glBindFramebuffer(GL_FRAMEBUFFER, reflectFBO));
             CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, reflectRBO));
-            CHECK_GL(
-                glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24,
+            CHECK_GL(glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24,
                                       reflectResolution, reflectResolution));
             CHECK_GL(glFramebufferRenderbuffer(GL_FRAMEBUFFER,
                                                GL_DEPTH_ATTACHMENT,
@@ -135,8 +134,7 @@ struct ReflectivePass : zeno::disable_copy {
 
             for (int i = 0; i < reflectiveMaps.size(); i++) {
                 CHECK_GL(glGenTextures(1, &(reflectiveMaps[i])));
-                CHECK_GL(
-                    glBindTexture(GL_TEXTURE_RECTANGLE, reflectiveMaps[i]));
+                CHECK_GL(glBindTexture(GL_TEXTURE_RECTANGLE, reflectiveMaps[i]));
                 CHECK_GL(glTexImage2D(GL_TEXTURE_RECTANGLE, 0, GL_RGB16F, nx,
                                       ny, 0, GL_RGB, GL_FLOAT, 0));
                 CHECK_GL(glTexParameteri(GL_TEXTURE_RECTANGLE,
@@ -155,10 +153,8 @@ struct ReflectivePass : zeno::disable_copy {
             CHECK_GL(glBindFramebuffer(GL_FRAMEBUFFER, 0));
 
             for (int i = 0; i < reflectiveMaps.size(); i++) {
-                CHECK_GL(
-                    glBindTexture(GL_TEXTURE_RECTANGLE, reflectiveMaps[i]));
-                CHECK_GL(glTexImage2D(GL_TEXTURE_RECTANGLE, 0, GL_RGB16F, nx,
-                                      ny, 0, GL_RGB, GL_FLOAT, 0));
+                CHECK_GL(glBindTexture(GL_TEXTURE_RECTANGLE, reflectiveMaps[i]));
+                CHECK_GL(glTexImage2D(GL_TEXTURE_RECTANGLE, 0, GL_RGB16F, nx, ny, 0, GL_RGB, GL_FLOAT, 0));
                 CHECK_GL(glTexParameteri(GL_TEXTURE_RECTANGLE,
                                          GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
                 CHECK_GL(glTexParameteri(GL_TEXTURE_RECTANGLE,

@@ -15,7 +15,7 @@ public:
         setSize(QSizeF(width, height));
     }
 
-    void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget = 0);
+    void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget = 0) override;
     QRectF boundingRect() const override;
 
 private:

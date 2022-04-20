@@ -42,11 +42,7 @@ public:
     void paintGL();
     void recordGL(const std::string& record_path);
     int getCurrentFrameId();
-    void setShowGrid(bool flag);
-    void setNormalCheck(bool flag);
-    void setRenderWireframe(bool flag);
-    void setSmoothShading(bool flag);
-    std::unique_ptr<zenovis::Session>& getSessionRef();
+    zenovis::Session *getSession() const;
 
 //private:
     Zenovis();
@@ -62,7 +58,6 @@ public:
     QVector2D m_resolution;
     PerspectiveInfo m_perspective;
     int m_cache_frames;
-    bool m_show_grid;
     bool m_playing;
     CameraKeyframeWidget* m_camera_keyframe;
     std::shared_ptr<CameraControl> m_camera_control;

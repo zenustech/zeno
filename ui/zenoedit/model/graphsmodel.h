@@ -36,10 +36,10 @@ public:
     SubGraphModel *subGraph(int idx) const;
     SUBMODEL_SCENE subGraphScene(int idx) const;
     SubGraphModel *currentGraph();
-    void switchSubGraph(const QString& graphName);
-    void newSubgraph(const QString& graphName);
-    void reloadSubGraph(const QString& graphName);
-    void renameSubGraph(const QString& oldName, const QString& newName);
+    void switchSubGraph(const QString& graphName) override;
+    void newSubgraph(const QString& graphName) override;
+    void reloadSubGraph(const QString& graphName) override;
+    void renameSubGraph(const QString& oldName, const QString& newName) override;
     QItemSelectionModel* selectionModel() const;
     NODE_DESCS descriptors() const override;
     void setDescriptors(const NODE_DESCS& nodesParams) override;
@@ -56,15 +56,15 @@ public:
     QString fileName() const override;
     void setFilePath(const QString& fn) override;
     QModelIndex index(int row, int column, const QModelIndex& parent = QModelIndex()) const override;
-    QModelIndex index(const QString& subGraphName) const;
+    QModelIndex index(const QString& subGraphName) const override;
     QModelIndex indexBySubModel(SubGraphModel* pSubModel) const;
-    QModelIndex linkIndex(int r);
+    QModelIndex linkIndex(int r) override;
     QModelIndex parent(const QModelIndex& child) const override;
     bool setData(const QModelIndex& index, const QVariant& value, int role = Qt::EditRole) override;
     QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
     int rowCount(const QModelIndex& parent = QModelIndex()) const override;
     int columnCount(const QModelIndex& parent = QModelIndex()) const override;
-    Qt::ItemFlags flags(const QModelIndex& index) const;
+    Qt::ItemFlags flags(const QModelIndex& index) const override;
     void revert(const QModelIndex& idx);
 
     //IGraphsModel
@@ -100,7 +100,7 @@ public:
 	void clearSubGraph(const QModelIndex& subGpIdx) override;
     void clear() override;
 	void reload(const QModelIndex& subGpIdx) override;
-	void onModelInited();
+	void onModelInited() override;
 	void undo() override;
 	void redo() override;
     QModelIndexList searchInSubgraph(const QString& objName, const QModelIndex& subgIdx) override;

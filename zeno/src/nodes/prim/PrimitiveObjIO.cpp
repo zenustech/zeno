@@ -210,7 +210,7 @@ ZENDEFNODE(ExportObjPrimitive,
         }});
 
 //--------------------- dict--------------------------//
-std::shared_ptr<zeno::DictObject>
+static std::shared_ptr<zeno::DictObject>
 read_obj_file_dict(
         std::vector<zeno::vec3f> &vertices,
         //std::vector<zeno::vec3f> &uvs,

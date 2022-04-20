@@ -10,7 +10,7 @@ public:
     ZShapeBar(QWidget* parent = nullptr);
 
 protected:
-    void paintEvent(QPaintEvent* e);
+    void paintEvent(QPaintEvent* e) override;
 
 private:
 
@@ -23,7 +23,7 @@ public:
     ZTextureBar(QWidget* parent = nullptr);
 
 protected:
-    void paintEvent(QPaintEvent* e);
+    void paintEvent(QPaintEvent* e) override;
 };
 
 class ZToolbar : public QWidget

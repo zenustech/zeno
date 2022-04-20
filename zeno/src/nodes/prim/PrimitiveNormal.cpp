@@ -1,4 +1,5 @@
 #include <zeno/zeno.h>
+#include <zeno/funcs/PrimitiveUtils.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/utils/vec.h>

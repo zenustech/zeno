@@ -47,7 +47,7 @@ struct Texture : zeno::disable_copy {
         stbi_set_flip_vertically_on_load(true);
         unsigned char *img = stbi_load(path, &nx, &ny, &nc, 0);
         int maxSize;
-        glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxSize);
+        CHECK_GL(glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxSize));
         nx = std::min(std::max(nx, 1), maxSize);
         ny = std::min(std::max(ny, 1), maxSize);
         assert(img);

@@ -1,6 +1,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <zenovis/makeGraphic.h>
 #include <zeno/types/InstancingObject.h>
 #include <zeno/types/MaterialObject.h>
 #include <zeno/types/PrimitiveObject.h>
@@ -22,6 +23,7 @@
 #include <zenovis/opengl/shader.h>
 #include <zenovis/opengl/texture.h>
 namespace zenovis {
+namespace {
 using namespace opengl;
 
 /* extern float getCamFar(); */
@@ -38,15 +40,16 @@ using namespace opengl;
 /* extern void setCamera(glm::vec3 pos, glm::vec3 front, glm::vec3 up, double _fov, double fnear, double ffar, double _dof, int set); */
 /* extern unsigned int getDepthTexture(); */
 
-struct drawObject {
+struct ZhxxDrawObject {
     std::unique_ptr<Buffer> vbo;
     std::unique_ptr<Buffer> ebo;
     std::unique_ptr<Buffer> instvbo;
     size_t count = 0;
-    Program *prog;
-    Program *shadowprog;
+    Program *prog{};
+    Program *shadowprog{};
 };
-void parsePointsDrawBuffer(zeno::PrimitiveObject *prim, drawObject &obj) {
+
+static void parsePointsDrawBuffer(zeno::PrimitiveObject *prim, ZhxxDrawObject &obj) {
     auto const &pos = prim->attr<zeno::vec3f>("pos");
     auto const &clr = prim->attr<zeno::vec3f>("clr");
     auto const &nrm = prim->attr<zeno::vec3f>("nrm");
@@ -72,7 +75,7 @@ void parsePointsDrawBuffer(zeno::PrimitiveObject *prim, drawObject &obj) {
                            points_count * sizeof(prim->points[0]));
     }
 }
-void parseLinesDrawBuffer(zeno::PrimitiveObject *prim, drawObject &obj) {
+static void parseLinesDrawBuffer(zeno::PrimitiveObject *prim, ZhxxDrawObject &obj) {
     auto const &pos = prim->attr<zeno::vec3f>("pos");
     auto const &clr = prim->attr<zeno::vec3f>("clr");
     auto const &nrm = prim->attr<zeno::vec3f>("nrm");
@@ -106,7 +109,7 @@ void parseLinesDrawBuffer(zeno::PrimitiveObject *prim, drawObject &obj) {
     }
 }
 
-void computeTrianglesTangent(zeno::PrimitiveObject *prim) {
+static void computeTrianglesTangent(zeno::PrimitiveObject *prim) {
     const auto &tris = prim->tris;
     const auto &pos = prim->attr<zeno::vec3f>("pos");
     auto const &nrm = prim->attr<zeno::vec3f>("nrm");
@@ -153,8 +156,8 @@ void computeTrianglesTangent(zeno::PrimitiveObject *prim) {
         }
     }
 }
-void parseTrianglesDrawBufferCompress(zeno::PrimitiveObject *prim,
-                                      drawObject &obj) {
+static void parseTrianglesDrawBufferCompress(zeno::PrimitiveObject *prim,
+                                      ZhxxDrawObject &obj) {
     //TICK(parse);
     auto const &pos = prim->attr<zeno::vec3f>("pos");
     auto const &clr = prim->attr<zeno::vec3f>("clr");
@@ -179,12 +182,12 @@ void parseTrianglesDrawBufferCompress(zeno::PrimitiveObject *prim,
             tang1[tris[i][j]] += area * tang[i];
         }
     }
-    std::cout << "1111111111111111\n";
+    /* std::cout << "1111111111111111\n"; */
 #pragma omp parallel for
     for (int i = 0; i < tang1.size(); i++) {
         tang1[i] = tang[i] / (zeno::length(tang[i]) + 0.000001);
     }
-    std::cout << "2222222222222222\n";
+    /* std::cout << "2222222222222222\n"; */
     std::vector<int> issueTris(0);
     for (int i = 0; i < tris.size(); i++) {
         //if all verts not visited
@@ -206,7 +209,7 @@ void parseTrianglesDrawBufferCompress(zeno::PrimitiveObject *prim,
     {
         //emit new verts
     }
-    std::cout << "3333333333333333333\n";
+    /* std::cout << "3333333333333333333\n"; */
 
     //end compressed tri assign
     obj.count = tris1.size();
@@ -236,7 +239,7 @@ void parseTrianglesDrawBufferCompress(zeno::PrimitiveObject *prim,
     }
     /* TOCK(bindebo); */
 }
-void parseTrianglesDrawBuffer(zeno::PrimitiveObject *prim, drawObject &obj) {
+static void parseTrianglesDrawBuffer(zeno::PrimitiveObject *prim, ZhxxDrawObject &obj) {
     /* TICK(parse); */
     auto const &pos = prim->attr<zeno::vec3f>("pos");
     auto const &clr = prim->attr<zeno::vec3f>("clr");
@@ -303,16 +306,15 @@ struct GraphicPrimitive : IGraphic {
     //std::unique_ptr<Buffer> tris_ebo;
     size_t tris_count;
 
-    drawObject pointObj;
-    drawObject lineObj;
-    drawObject triObj;
+    ZhxxDrawObject pointObj;
+    ZhxxDrawObject lineObj;
+    ZhxxDrawObject triObj;
     std::vector<std::unique_ptr<Texture>> textures;
     bool prim_has_mtl = false;
     bool prim_has_inst = false;
     int prim_inst_amount = 0;
 
-    explicit GraphicPrimitive(Scene *scene_,
-                              std::shared_ptr<zeno::PrimitiveObject> prim)
+    explicit GraphicPrimitive(Scene *scene_, std::shared_ptr<zeno::PrimitiveObject> prim)
         : scene(scene_) {
         zeno::log_trace("rendering primitive size {}", prim->size());
 
@@ -334,7 +336,8 @@ struct GraphicPrimitive : IGraphic {
         bool need_computeNormal =
             !primNormalCorrect || !(prim->has_attr("nrm"));
         if (prim->tris.size() && need_computeNormal) {
-            std::cout << "computing normal\n";
+            /* std::cout << "computing normal\n"; */
+            zeno::log_trace("computing normal");
             zeno::primCalcNormal(prim.get(), 1);
         }
         if (!prim->has_attr("nrm")) {
@@ -484,19 +487,19 @@ struct GraphicPrimitive : IGraphic {
                     scene->mReflectivePass->setReflectivePlane(
                         refID, glm::vec3(n[0], n[1], n[2]), c);
                 }
-                if (code.find("mat_isCamera = float(float(1))") !=
-                    std::string::npos) {
-                    auto pos = prim->attr<zeno::vec3f>("pos")[0];
-                    auto up = prim->attr<zeno::vec3f>("nrm")[0];
-                    auto view = prim->attr<zeno::vec3f>("clr")[0];
-                    auto fov = prim->attr<zeno::vec3f>("uv")[0][0];
-                    auto dof = prim->attr<zeno::vec3f>("uv")[0][1];
-                    auto ffar = prim->attr<zeno::vec3f>("uv")[0][2];
-                    scene->camera->setCamera(
-                        glm::vec3(pos[0], pos[1], pos[2]),
-                        glm::vec3(view[0], view[1], view[2]),
-                        glm::vec3(up[0], up[1], up[2]), fov, 0.1, ffar, dof, 1);
-                }
+                /* if (code.find("mat_isCamera = float(float(1))") != std::string::npos) { */
+                /*     // TODO: you bing a wo kao */
+                /*     auto pos = prim->attr<zeno::vec3f>("pos")[0]; */
+                /*     auto up = prim->attr<zeno::vec3f>("nrm")[0]; */
+                /*     auto view = prim->attr<zeno::vec3f>("clr")[0]; */
+                /*     auto fov = prim->attr<zeno::vec3f>("uv")[0][0]; */
+                /*     auto dof = prim->attr<zeno::vec3f>("uv")[0][1]; */
+                /*     auto ffar = prim->attr<zeno::vec3f>("uv")[0][2]; */
+                /*     scene->camera->setCamera( */
+                /*         glm::vec3(pos[0], pos[1], pos[2]), */
+                /*         glm::vec3(view[0], view[1], view[2]), */
+                /*         glm::vec3(up[0], up[1], up[2]), fov, 0.1, ffar, dof, 1); */
+                /* } */
             }
             if (!triObj.prog) {
                 triObj.prog = get_tris_program(nullptr, nullptr);
@@ -512,8 +515,7 @@ struct GraphicPrimitive : IGraphic {
             load_texture2Ds(prim->mtl->tex2Ds);
         }
         //load_textures(path);
-        prim_has_mtl =
-            (prim->mtl != nullptr) && triObj.prog && triObj.shadowprog;
+        prim_has_mtl = (prim->mtl != nullptr) && triObj.prog && triObj.shadowprog;
 
         if (prim->inst != nullptr) {
             prim_has_inst = true;
@@ -600,7 +602,8 @@ struct GraphicPrimitive : IGraphic {
             }
 
             triObj.shadowprog->use();
-            light->setShadowMV(triObj.shadowprog);
+            //light->setShadowMV(triObj.shadowprog);
+            triObj.shadowprog->set_uniform("mView", light->lightMV);
             if (prim_has_mtl) {
                 const int &texsSize = textures.size();
                 for (int texId = 0; texId < texsSize; ++texId) {
@@ -614,7 +617,7 @@ struct GraphicPrimitive : IGraphic {
             triObj.ebo->bind();
 
             if (prim_has_inst) {
-                CHECK_GL(glDrawElementsInstancedARB(
+                CHECK_GL(glDrawElementsInstanced(
                     GL_TRIANGLES, /*count=*/triObj.count * 3, GL_UNSIGNED_INT,
                     /*first=*/0, prim_inst_amount));
             } else {
@@ -710,8 +713,7 @@ struct GraphicPrimitive : IGraphic {
             //printf("ALLPOINTS\n");
             pointObj.prog->use();
             scene->camera->set_program_uniforms(pointObj.prog);
-            CHECK_GL(
-                glDrawArrays(GL_POINTS, /*first=*/0, /*count=*/vertex_count));
+            CHECK_GL(glDrawArrays(GL_POINTS, /*first=*/0, /*count=*/vertex_count));
         }
 
         if (points_count) {
@@ -818,7 +820,7 @@ struct GraphicPrimitive : IGraphic {
                 texOcp++;
 
                 triObj.prog->set_uniform("farPlane", scene->camera->g_far);
-                triObj.prog->set_uniformi("cascadeCount", Light::cascadeCount);
+                //triObj.prog->set_uniformi("cascadeCount", Light::cascadeCount);
                 for (int lightNo = 0; lightNo < lights.size(); ++lightNo) {
                     auto &light = lights[lightNo];
                     auto name = "lightDir[" + std::to_string(lightNo) + "]";
@@ -848,19 +850,21 @@ struct GraphicPrimitive : IGraphic {
                             "]";
                         triObj.prog->set_uniform(name2.c_str(),
                                                  light->m_farPlane[i]);
-
-                        auto name =
-                            "shadowMap[" +
-                            std::to_string(lightNo * (Light::cascadeCount + 1) +
-                                           i) +
-                            "]";
-                        triObj.prog->set_uniformi(name.c_str(), texOcp);
-                        CHECK_GL(glActiveTexture(GL_TEXTURE0 + texOcp));
-                        if (auto shadowMap = light->DepthMaps[i];
-                            shadowMap != (unsigned int)-1)
-                            CHECK_GL(glBindTexture(GL_TEXTURE_2D, shadowMap));
-                        texOcp++;
+                        /*  */
+                        /* auto name = "shadowMap[" + std::to_string(lightNo * (Light::cascadeCount + 1) + i) + "]"; */
+                        /* triObj.prog->set_uniformi(name.c_str(), texOcp); */
+                        /* CHECK_GL(glActiveTexture(GL_TEXTURE0 + texOcp)); */
+                        /* if (auto shadowMap = light->DepthMaps[i]; */
+                        /*     shadowMap != (unsigned int)-1) */
+                        /*     CHECK_GL(glBindTexture(GL_TEXTURE_2D, shadowMap)); */
+                        /* texOcp++; */
                     }
+                        
+                    triObj.prog->set_uniformi("shadowMap", texOcp);
+                    CHECK_GL(glActiveTexture(GL_TEXTURE0 + texOcp));
+                    if (auto shadowMap = light->depthMapsArr; shadowMap != (GLuint)-1)
+                        CHECK_GL(glBindTexture(GL_TEXTURE_2D_ARRAY, shadowMap));
+                    texOcp++;
                     for (size_t i = 0; i < Light::cascadeCount; ++i) {
                         auto name =
                             "cascadePlaneDistances[" +
@@ -934,9 +938,9 @@ struct GraphicPrimitive : IGraphic {
             }
 
             if (scene->camera->render_wireframe) {
-                glEnable(GL_POLYGON_OFFSET_LINE);
-                glPolygonOffset(-1, -1);
-                glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+                CHECK_GL(glEnable(GL_POLYGON_OFFSET_LINE));
+                CHECK_GL(glPolygonOffset(-1, -1));
+                CHECK_GL(glPolygonMode(GL_FRONT_AND_BACK, GL_LINE));
                 triObj.prog->set_uniformi("mRenderWireframe", true);
                 if (prim_has_inst) {
                     CHECK_GL(glDrawElementsInstancedARB(
@@ -947,8 +951,8 @@ struct GraphicPrimitive : IGraphic {
                                             /*count=*/triObj.count * 3,
                                             GL_UNSIGNED_INT, /*first=*/0));
                 }
-                glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-                glDisable(GL_POLYGON_OFFSET_LINE);
+                CHECK_GL(glPolygonMode(GL_FRONT_AND_BACK, GL_FILL));
+                CHECK_GL(glDisable(GL_POLYGON_OFFSET_LINE));
             }
             triObj.ebo->unbind();
             if (triObj.vbo) {
@@ -2195,7 +2199,8 @@ float brightness(vec3 c)
 }
 uniform int lightNum; 
 uniform vec3 light[16];
-uniform sampler2D shadowMap[128];
+const int cascadeCount = 7;   // number of frusta - 1
+uniform sampler2DArray shadowMap;
 uniform vec3 lightIntensity[16];
 uniform vec3 shadowTint[16];
 uniform float shadowSoftness[16];
@@ -2209,7 +2214,6 @@ uniform float far[128];
 uniform mat4 lightSpaceMatrices[128];
 //};
 uniform float cascadePlaneDistances[112];
-uniform int cascadeCount;   // number of frusta - 1
 vec3 random3(vec3 c) {
 	float j = 4096.0*sin(dot(c,vec3(17.0, 59.4, 15.0)));
 	vec3 r;
@@ -2222,17 +2226,15 @@ vec3 random3(vec3 c) {
 }
 float sampleShadowArray(int lightNo, vec2 coord, int layer)
 {
-    vec4 res;
-    
-    res = texture(shadowMap[lightNo * (cascadeCount + 1) + layer], clamp(coord,vec2(0.01), vec2(0.99)));
-
-    return res.r;    
+    vec2 c = clamp(coord,vec2(0.01), vec2(0.99));
+    int index = lightNo * (cascadeCount + 1) + layer;
+    return texture(shadowMap, vec3(c, index)).r;
 }
 float PCFLayer(int lightNo, float currentDepth, float bias, vec3 pos, int layer, int k, float softness, vec2 coord)
 {
     float shadow = 0.0;
     
-    vec2 texelSize = 1.0 / vec2(textureSize(shadowMap[lightNo * (cascadeCount + 1) + 0], 0));
+    vec2 texelSize = 1.0 / vec2(textureSize(shadowMap, 0).xy);
     for(int x = -k; x <= k; ++x)
     {
         for(int y = -k; y <= k; ++y)
@@ -2249,7 +2251,7 @@ float PCFLayer2(int lightNo, float currentDepth1, float currentDepth2, float bia
 {
     float shadow = 0.0;
     
-    vec2 texelSize = 1.0 / vec2(textureSize(shadowMap[lightNo * (cascadeCount + 1) + 0], 0));
+    vec2 texelSize = 1.0 / vec2(textureSize(shadowMap, 0).xy);
     for(int x = -k; x <= k; ++x)
     {
         for(int y = -k; y <= k; ++y)
@@ -2344,7 +2346,7 @@ float PCFAttLayer(int lightNo, float currentDepth, float bias, vec3 pos, int lay
     
     float length = 0.0;
     float res = far;
-    vec2 texelSize = 1.0 / vec2(textureSize(shadowMap[lightNo * (cascadeCount + 1) + 0], 0));
+    vec2 texelSize = 1.0 / vec2(textureSize(shadowMap, 0).xy);
     for(int x = -k; x <= k; ++x)
     {
         for(int y = -k; y <= k; ++y)
@@ -2435,6 +2437,7 @@ vec4 sampleReflectRectID(vec2 coord, int id)
     if(id==13) return texture2DRect(reflectionMap13, coord);
     if(id==14) return texture2DRect(reflectionMap14, coord);
     if(id==15) return texture2DRect(reflectionMap15, coord);
+    return vec4(0.0);
 }
 float mad(float a, float b, float c)
 {
@@ -2485,7 +2488,7 @@ vec3 reflectionCalculation(vec3 worldPos, int id)
     projCoords = projCoords * 0.5 + 0.5;
     if (projCoords.x>=0&&projCoords.x<=1&&projCoords.y>=0&&projCoords.y<=1)
     {
-        return sampleReflectRectID(projCoords.xy * vec2(textureSize(reflectionMap0,0)), id ).xyz;
+        return sampleReflectRectID(projCoords.xy * vec2(textureSize(reflectionMap0)), id ).xyz;
     }
     return vec3(0,0,0);
 }
@@ -2699,8 +2702,9 @@ void main()
     }
 };
 
-std::unique_ptr<IGraphic>
-makeGraphicPrimitive(Scene *scene, std::shared_ptr<zeno::IObject> obj) {
+}
+
+std::unique_ptr<IGraphic> makeGraphicPrimitive(Scene *scene, std::shared_ptr<zeno::IObject> obj) {
     if (auto prim = std::dynamic_pointer_cast<zeno::PrimitiveObject>(obj))
         return std::make_unique<GraphicPrimitive>(scene, std::move(prim));
     return nullptr;

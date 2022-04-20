@@ -73,6 +73,7 @@ static void runner_main(std::string const &progJson) {
 
     for (int frame = graph->beginFrameNumber; frame < graph->endFrameNumber; frame++) {
         zeno::log_info("begin frame {}", frame);
+
         session->globalComm->newFrame();
         session->globalState->frameBegin();
         while (session->globalState->substepBegin())
@@ -82,6 +83,7 @@ static void runner_main(std::string const &progJson) {
             if (session->globalStatus->failed())
                 return onfail();
         }
+        session->globalComm->finishFrame();
 
         auto viewObjs = session->globalComm->getViewObjects();
         zeno::log_debug("runner got {} view objects", viewObjs.size());
@@ -95,6 +97,8 @@ static void runner_main(std::string const &progJson) {
                 send_packet("{\"action\":\"viewObject\"}", buffer.data(), buffer.size());
             buffer.clear();
         }
+
+        send_packet("{\"action\":\"finishFrame\"}", "", 0);
 
         if (session->globalStatus->failed())
             return onfail();

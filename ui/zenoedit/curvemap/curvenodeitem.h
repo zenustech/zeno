@@ -33,8 +33,8 @@ class CurveHandlerItem : public QGraphicsObject
 public:
 	CurveHandlerItem(CurveNodeItem* pNode, const QPointF& pos, QGraphicsItem* parent = nullptr);
 	~CurveHandlerItem();
-	void paint(QPainter*, const QStyleOptionGraphicsItem*, QWidget*);
-	QRectF boundingRect(void) const;
+	void paint(QPainter*, const QStyleOptionGraphicsItem*, QWidget*) override;
+	QRectF boundingRect(void) const override;
 	void setOtherHandle(CurveHandlerItem* other);
     bool isMouseEventTriggered();
     void setUpdateNotify(bool bNotify);
@@ -65,7 +65,7 @@ public:
 	CurveNodeItem(const QModelIndex& idx, CurveMapView* pView, const QPointF& nodePos, CurveGrid* parentItem, CurvesItem* curve);
 	void initHandles(const QPointF& leftHandle, const QPointF& rightHandle);
     void onHandleUpdate(CurveHandlerItem* pItem);
-	QRectF boundingRect(void) const;
+	QRectF boundingRect(void) const override;
     void toggle(bool bChecked);
     bool isToggled() const;
     CurveHandlerItem* leftHandle() const;
@@ -80,7 +80,7 @@ public:
     HANDLE_TYPE hdlType() const;
     void setHdlType(HANDLE_TYPE type);
 
-	void paint(QPainter*, const QStyleOptionGraphicsItem*, QWidget*);
+	void paint(QPainter*, const QStyleOptionGraphicsItem*, QWidget*) override;
 
 signals:
 	void geometryChanged();
@@ -88,7 +88,7 @@ signals:
 
 protected:
 	QVariant itemChange(GraphicsItemChange change, const QVariant& value) override;
-	void keyPressEvent(QKeyEvent* event);
+	void keyPressEvent(QKeyEvent* event) override;
 
 private:
 	CurveHandlerItem* m_left;

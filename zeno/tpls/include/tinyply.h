@@ -340,13 +340,13 @@ template<typename T> void ply_cast_ascii(void * dest, std::istream & is)
     *(static_cast<T *>(dest)) = ply_read_ascii<T>(is);
 }
 
-int64_t find_element(const std::string & key, const std::vector<PlyElement> & list)
+inline int64_t find_element(const std::string & key, const std::vector<PlyElement> & list)
 {
     for (size_t i = 0; i < list.size(); i++) if (list[i].name == key) return i;
     return -1;
 }
 
-int64_t find_property(const std::string & key, const std::vector<PlyProperty> & list)
+inline int64_t find_property(const std::string & key, const std::vector<PlyProperty> & list)
 {
     for (size_t i = 0; i < list.size(); ++i) if (list[i].name == key) return i;
     return -1;

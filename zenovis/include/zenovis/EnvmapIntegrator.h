@@ -379,26 +379,26 @@ void renderCube()
             -1.0f,  1.0f, -1.0f,  0.0f,  1.0f,  0.0f, 0.0f, 1.0f, // top-left
             -1.0f,  1.0f,  1.0f,  0.0f,  1.0f,  0.0f, 0.0f, 0.0f  // bottom-left        
         };
-        glGenVertexArrays(1, &cubeVAO);
-        glGenBuffers(1, &cubeVBO);
+        CHECK_GL(glGenVertexArrays(1, &cubeVAO));
+        CHECK_GL(glGenBuffers(1, &cubeVBO));
         // fill buffer
-        glBindBuffer(GL_ARRAY_BUFFER, cubeVBO);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+        CHECK_GL(glBindBuffer(GL_ARRAY_BUFFER, cubeVBO));
+        CHECK_GL(glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW));
         // link vertex attributes
-        glBindVertexArray(cubeVAO);
-        glEnableVertexAttribArray(0);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
-        glEnableVertexAttribArray(1);
-        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
-        glEnableVertexAttribArray(2);
-        glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-        glBindVertexArray(0);
+        CHECK_GL(glBindVertexArray(cubeVAO));
+        CHECK_GL(glEnableVertexAttribArray(0));
+        CHECK_GL(glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0));
+        CHECK_GL(glEnableVertexAttribArray(1));
+        CHECK_GL(glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float))));
+        CHECK_GL(glEnableVertexAttribArray(2));
+        CHECK_GL(glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float))));
+        CHECK_GL(glBindBuffer(GL_ARRAY_BUFFER, 0));
+        CHECK_GL(glBindVertexArray(0));
     }
     // render Cube
-    glBindVertexArray(cubeVAO);
-    glDrawArrays(GL_TRIANGLES, 0, 36);
-    glBindVertexArray(0);
+    CHECK_GL(glBindVertexArray(cubeVAO));
+    CHECK_GL(glDrawArrays(GL_TRIANGLES, 0, 36));
+    CHECK_GL(glBindVertexArray(0));
 }
 unsigned int quadVAO = 0;
 unsigned int quadVBO;
@@ -414,19 +414,19 @@ void renderQuad()
              1.0f, -1.0f, 0.0f, 1.0f, 0.0f,
         };
         // setup plane VAO
-        glGenVertexArrays(1, &quadVAO);
-        glGenBuffers(1, &quadVBO);
-        glBindVertexArray(quadVAO);
-        glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW);
-        glEnableVertexAttribArray(0);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
-        glEnableVertexAttribArray(1);
-        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+        CHECK_GL(glGenVertexArrays(1, &quadVAO));
+        CHECK_GL(glGenBuffers(1, &quadVBO));
+        CHECK_GL(glBindVertexArray(quadVAO));
+        CHECK_GL(glBindBuffer(GL_ARRAY_BUFFER, quadVBO));
+        CHECK_GL(glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW));
+        CHECK_GL(glEnableVertexAttribArray(0));
+        CHECK_GL(glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0));
+        CHECK_GL(glEnableVertexAttribArray(1));
+        CHECK_GL(glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float))));
     }
-    glBindVertexArray(quadVAO);
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-    glBindVertexArray(0);
+    CHECK_GL(glBindVertexArray(quadVAO));
+    CHECK_GL(glDrawArrays(GL_TRIANGLE_STRIP, 0, 4));
+    CHECK_GL(glBindVertexArray(0));
 }
 void preIntegrate(GLuint inEnvMap)
 {
@@ -437,18 +437,18 @@ void preIntegrate(GLuint inEnvMap)
         return;
     }
         GLint oldFBO = 0;
-        glGetIntegerv(GL_FRAMEBUFFER_BINDING, &oldFBO);
+        CHECK_GL(glGetIntegerv(GL_FRAMEBUFFER_BINDING, &oldFBO));
         GLint oldVAO = 0;
-        glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &oldVAO);
+        CHECK_GL(glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &oldVAO));
   CHECK_GL(glDisable(GL_BLEND));
   CHECK_GL(glDisable(GL_DEPTH_TEST));
   CHECK_GL(glDisable(GL_PROGRAM_POINT_SIZE));///????ZHXX???
   CHECK_GL(glDisable(GL_MULTISAMPLE));
-  glEnable(GL_DEPTH_TEST);
+  CHECK_GL(glEnable(GL_DEPTH_TEST));
   // set depth function to less than AND equal for skybox depth trick.
-  glDepthFunc(GL_LEQUAL);
+  CHECK_GL(glDepthFunc(GL_LEQUAL));
   // enable seamless cubemap sampling for lower mip levels in the pre-filter map.
-  glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
+  CHECK_GL(glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS));
 
   if(preintIrradianceProg==nullptr)
   {
@@ -463,13 +463,13 @@ void preIntegrate(GLuint inEnvMap)
     preintBRDFProg = scene->shaderMan->compile_program(BRDFVS, BRDFFS);
   }
   if(captureFBO==0 && captureRBO==0){
-    glGenFramebuffers(1, &captureFBO);
-    glGenRenderbuffers(1, &captureRBO);
+    CHECK_GL(glGenFramebuffers(1, &captureFBO));
+    CHECK_GL(glGenRenderbuffers(1, &captureRBO));
 
-    glBindFramebuffer(GL_FRAMEBUFFER, captureFBO);
-    glBindRenderbuffer(GL_RENDERBUFFER, captureRBO);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, 1024, 1024);
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, captureRBO);
+    CHECK_GL(glBindFramebuffer(GL_FRAMEBUFFER, captureFBO));
+    CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, captureRBO));
+    CHECK_GL(glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, 1024, 1024));
+    CHECK_GL(glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, captureRBO));
   }
 
   // pbr: set up projection and view matrices for capturing data onto the 6 cubemap face directions
@@ -485,63 +485,63 @@ void preIntegrate(GLuint inEnvMap)
       glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f,  0.0f, -1.0f), glm::vec3(0.0f, -1.0f,  0.0f))
   };
   envCubemap = inEnvMap;
-  glBindTexture(GL_TEXTURE_CUBE_MAP, envCubemap);
-  glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
+  CHECK_GL(glBindTexture(GL_TEXTURE_CUBE_MAP, envCubemap));
+  CHECK_GL(glGenerateMipmap(GL_TEXTURE_CUBE_MAP));
 /////////////////////////////////////////////////////////////////////////////////////////////////////
   if(irradianceMap==0){
-    glGenTextures(1, &irradianceMap);
-    glBindTexture(GL_TEXTURE_CUBE_MAP, irradianceMap);
+    CHECK_GL(glGenTextures(1, &irradianceMap));
+    CHECK_GL(glBindTexture(GL_TEXTURE_CUBE_MAP, irradianceMap));
     for (unsigned int i = 0; i < 6; ++i)
     {
-        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB16F, 128, 128, 0, GL_RGB, GL_FLOAT, nullptr);
+        CHECK_GL(glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB16F, 128, 128, 0, GL_RGB, GL_FLOAT, nullptr));
     }
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    CHECK_GL(glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
+    CHECK_GL(glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
+    CHECK_GL(glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE));
+    CHECK_GL(glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
+    CHECK_GL(glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
   }
-  glBindFramebuffer(GL_FRAMEBUFFER, captureFBO);
-  glBindRenderbuffer(GL_RENDERBUFFER, captureRBO);
-  glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, 128, 128);
+  CHECK_GL(glBindFramebuffer(GL_FRAMEBUFFER, captureFBO));
+  CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, captureRBO));
+  CHECK_GL(glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, 128, 128));
 
   // pbr: solve diffuse integral by convolution to create an irradiance (cube)map.
   // -----------------------------------------------------------------------------
   preintIrradianceProg->use();
   preintIrradianceProg->set_uniformi("environmentMap", 0);
   preintIrradianceProg->set_uniform("projection", captureProjection);
-  glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_CUBE_MAP, envCubemap);
+  CHECK_GL(glActiveTexture(GL_TEXTURE0));
+  CHECK_GL(glBindTexture(GL_TEXTURE_CUBE_MAP, envCubemap));
 
-  glViewport(0, 0, 128, 128); // don't forget to configure the viewport to the capture dimensions.
-  glBindFramebuffer(GL_FRAMEBUFFER, captureFBO);
+  CHECK_GL(glViewport(0, 0, 128, 128)); // don't forget to configure the viewport to the capture dimensions.
+  CHECK_GL(glBindFramebuffer(GL_FRAMEBUFFER, captureFBO));
   CHECK_GL(glClearColor(0.0f, 0.0f, 0.0f, 0.0f));
   CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 
   for (unsigned int i = 0; i < 6; ++i)
   {
       preintIrradianceProg->set_uniform("view", captureViews[i]);
-      glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, irradianceMap, 0);
-      glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+      CHECK_GL(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, irradianceMap, 0));
+      CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 
       renderCube();
   }
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  CHECK_GL(glBindFramebuffer(GL_FRAMEBUFFER, 0));
 ////////////////////////////////////////////////////////////////////////////////////////////
   if(prefilterMap==0){
-    glGenTextures(1, &prefilterMap);
-    glBindTexture(GL_TEXTURE_CUBE_MAP, prefilterMap);
+    CHECK_GL(glGenTextures(1, &prefilterMap));
+    CHECK_GL(glBindTexture(GL_TEXTURE_CUBE_MAP, prefilterMap));
     for (unsigned int i = 0; i < 6; ++i)
     {
-        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB16F, 1024, 1024, 0, GL_RGB, GL_FLOAT, nullptr);
+        CHECK_GL(glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB16F, 1024, 1024, 0, GL_RGB, GL_FLOAT, nullptr));
     }
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR); // be sure to set minification filter to mip_linear 
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    CHECK_GL(glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
+    CHECK_GL(glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
+    CHECK_GL(glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE));
+    CHECK_GL(glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR)); // be sure to set minification filter to mip_linear 
+    CHECK_GL(glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
     // generate mipmaps for the cubemap so OpenGL automatically allocates the required memory.
-    glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
+    CHECK_GL(glGenerateMipmap(GL_TEXTURE_CUBE_MAP));
   }
 
   // pbr: run a quasi monte-carlo simulation on the environment lighting to create a prefilter (cube)map.
@@ -549,10 +549,10 @@ void preIntegrate(GLuint inEnvMap)
   preIntSpecularProg->use();
   preIntSpecularProg->set_uniformi("environmentMap", 0);
   preIntSpecularProg->set_uniform("projection", captureProjection);
-  glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_CUBE_MAP, envCubemap);
+  CHECK_GL(glActiveTexture(GL_TEXTURE0));
+  CHECK_GL(glBindTexture(GL_TEXTURE_CUBE_MAP, envCubemap));
 
-  glBindFramebuffer(GL_FRAMEBUFFER, captureFBO);
+  CHECK_GL(glBindFramebuffer(GL_FRAMEBUFFER, captureFBO));
   CHECK_GL(glClearColor(0.0f, 0.0f, 0.0f, 0.0f));
   CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
   unsigned int maxMipLevels = 8;
@@ -561,53 +561,53 @@ void preIntegrate(GLuint inEnvMap)
       // reisze framebuffer according to mip-level size.
       unsigned int mipWidth  = static_cast<unsigned int>(1024 * std::pow(0.5, mip));
       unsigned int mipHeight = static_cast<unsigned int>(1024 * std::pow(0.5, mip));
-      glBindRenderbuffer(GL_RENDERBUFFER, captureRBO);
-      glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, mipWidth, mipHeight);
-      glViewport(0, 0, mipWidth, mipHeight);
+      CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, captureRBO));
+      CHECK_GL(glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, mipWidth, mipHeight));
+      CHECK_GL(glViewport(0, 0, mipWidth, mipHeight));
 
       float roughness = (float)mip / (float)(maxMipLevels - 1);
       preIntSpecularProg->set_uniform("roughness", roughness);
       for (unsigned int i = 0; i < 6; ++i)
       {
           preIntSpecularProg->set_uniform("view", captureViews[i]);
-          glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, prefilterMap, mip);
+          CHECK_GL(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, prefilterMap, mip));
 
-          glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+          CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
           renderCube();
       }
   }
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  CHECK_GL(glBindFramebuffer(GL_FRAMEBUFFER, 0));
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   if(brdfLUTTexture==0)
   {
-    glGenTextures(1, &brdfLUTTexture);
+    CHECK_GL(glGenTextures(1, &brdfLUTTexture));
 
     // pre-allocate enough memory for the LUT texture.
-    glBindTexture(GL_TEXTURE_2D, brdfLUTTexture);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RG16F, 1024, 1024, 0, GL_RG, GL_FLOAT, 0);
+    CHECK_GL(glBindTexture(GL_TEXTURE_2D, brdfLUTTexture));
+    CHECK_GL(glTexImage2D(GL_TEXTURE_2D, 0, GL_RG16F, 1024, 1024, 0, GL_RG, GL_FLOAT, 0));
     // be sure to set wrapping mode to GL_CLAMP_TO_EDGE
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    CHECK_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
+    CHECK_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
+    CHECK_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
+    CHECK_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
   }
   // then re-configure capture framebuffer object and render screen-space quad with BRDF shader.
-  glBindTexture(GL_TEXTURE_2D, brdfLUTTexture);
-  glBindFramebuffer(GL_FRAMEBUFFER, captureFBO);
-  glBindRenderbuffer(GL_RENDERBUFFER, captureRBO);
-  glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, 1024, 1024);
-  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, brdfLUTTexture, 0);
+  CHECK_GL(glBindTexture(GL_TEXTURE_2D, brdfLUTTexture));
+  CHECK_GL(glBindFramebuffer(GL_FRAMEBUFFER, captureFBO));
+  CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, captureRBO));
+  CHECK_GL(glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, 1024, 1024));
+  CHECK_GL(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, brdfLUTTexture, 0));
 
-  glViewport(0, 0, 1024, 1024);
+  CHECK_GL(glViewport(0, 0, 1024, 1024));
   CHECK_GL(glClearColor(0.0f, 0.0f, 0.0f, 0.0f));
   CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
   preintBRDFProg->use();
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
   renderQuad();
 
-  glBindFramebuffer(GL_FRAMEBUFFER, oldFBO);
-  glBindVertexArray(oldVAO);
-  glUseProgram(0);
+  CHECK_GL(glBindFramebuffer(GL_FRAMEBUFFER, oldFBO));
+  CHECK_GL(glBindVertexArray(oldVAO));
+  CHECK_GL(glUseProgram(0));
   CHECK_GL(glEnable(GL_BLEND));
   CHECK_GL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
   CHECK_GL(glEnable(GL_DEPTH_TEST));

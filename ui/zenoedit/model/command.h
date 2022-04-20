@@ -12,8 +12,8 @@ class AddNodeCommand : public QUndoCommand
 public:
     AddNodeCommand(const QString& id, const NODE_DATA& data, GraphsModel* pModel, QPersistentModelIndex subgIdx);
     ~AddNodeCommand();
-    void redo();
-    void undo();
+    void redo() override;
+    void undo() override;
 
 private:
     QString m_id;
@@ -27,8 +27,8 @@ class RemoveNodeCommand : public QUndoCommand
 public:
     RemoveNodeCommand(int row, NODE_DATA data, GraphsModel* pModel, QPersistentModelIndex subgIdx);
     ~RemoveNodeCommand();
-    void redo();
-    void undo();
+    void redo() override;
+    void undo() override;
 
 private:
     QString m_id;
@@ -42,8 +42,8 @@ class AddLinkCommand : public QUndoCommand
 {
 public:
     AddLinkCommand(EdgeInfo info, GraphsModel* pModel, QPersistentModelIndex subgIdx);
-	void redo();
-	void undo();
+	void redo() override;
+	void undo() override;
 
 private:
 	EdgeInfo m_info;
@@ -56,8 +56,8 @@ class RemoveLinkCommand : public QUndoCommand
 {
 public:
     RemoveLinkCommand(QPersistentModelIndex linkIdx, GraphsModel* pModel, QPersistentModelIndex subgIdx);
-    void redo();
-    void undo();
+    void redo() override;
+    void undo() override;
 
 private:
     EdgeInfo m_info;
@@ -71,8 +71,8 @@ class UpdateDataCommand : public QUndoCommand
 {
 public:
     UpdateDataCommand(const QString& nodeid, const PARAM_UPDATE_INFO& updateInfo, GraphsModel* pModel, QPersistentModelIndex subgIdx);
-    void redo();
-    void undo();
+    void redo() override;
+    void undo() override;
 
 private:
     PARAM_UPDATE_INFO m_updateInfo;
@@ -85,8 +85,8 @@ class UpdateStateCommand : public QUndoCommand
 {
 public:
     UpdateStateCommand(const QString& nodeid, STATUS_UPDATE_INFO info, GraphsModel* pModel, QPersistentModelIndex subgIdx);
-    void redo();
-    void undo();
+    void redo() override;
+    void undo() override;
 
 private:
     QString m_nodeid;
@@ -99,8 +99,8 @@ class UpdateSocketCommand : public QUndoCommand
 {
 public:
     UpdateSocketCommand(const QString& nodeid, SOCKET_UPDATE_INFO info, GraphsModel* pModel, QPersistentModelIndex subgIdx);
-    void redo();
-    void undo();
+    void redo() override;
+    void undo() override;
 
 private:
     SOCKET_UPDATE_INFO m_info;
@@ -113,8 +113,8 @@ class UpdateDescCommand : public QUndoCommand
 {
 public:
     UpdateDescCommand(const QString& descName, const SOCKET_UPDATE_INFO& info, GraphsModel* pModel);
-    void redo();
-    void undo();
+    void redo() override;
+    void undo() override;
 
 private:
     SOCKET_UPDATE_INFO m_info;

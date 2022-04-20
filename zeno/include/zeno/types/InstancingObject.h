@@ -14,7 +14,7 @@ namespace zeno
     struct InstancingObject
         : IObjectClone<InstancingObject>
     {
-        int amount;
+        int amount{};
         std::vector<glm::mat4> modelMatrices;
 
         std::size_t serializeSize()

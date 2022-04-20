@@ -73,6 +73,9 @@ struct PacketProc {
         } else if (action == "newFrame") {
             globalCommNeedNewFrame = 1; // postpone `zeno::getSession().globalComm->newFrame();`
 
+        } else if (action == "finishFrame") {
+            zeno::getSession().globalComm->finishFrame();
+
         } else if (action == "reportStatus") {
             std::string statJson{buf, len};
             zeno::getSession().globalStatus->fromJson(statJson);

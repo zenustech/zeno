@@ -17,7 +17,9 @@ struct Light {
     glm::mat4 lightSpaceMatrix;
     std::vector<glm::mat4> lightSpaceMatrices;
     std::vector<float> shadowCascadeLevels;
-    std::vector<unsigned int> DepthMaps;
+    //std::vector<GLuint> DepthMaps;
+    GLuint depthMapsArr{};
+    GLuint depthMapTmp{};
     std::vector<float> m_nearPlane;
     std::vector<float> m_farPlane;
     glm::vec3 lightDir = glm::normalize(glm::vec3(1, 1, 0));
@@ -59,10 +61,10 @@ struct Light {
         shadowCascadeLevels[6] = far / 2.0;
     }
 
-    void setShadowMV(opengl::Program *shader) {
-        glm::mat4 model = glm::mat4(1.0f);
-        shader->set_uniform("mView", lightMV);
-    }
+    /* void setShadowMV(opengl::Program *shader) { */
+    /*     glm::mat4 model = glm::mat4(1.0f); */
+    /*     shader->set_uniform("mView", lightMV); */
+    /* } */
 
     std::vector<glm::vec4>
     getFrustumCornersWorldSpace(const glm::mat4 &projview) {
@@ -174,31 +176,27 @@ struct Light {
 
     void initCascadeShadow() {
         setCascadeLevels(10000);
-        DepthMaps.resize(cascadeCount + 1);
+        //DepthMaps.resize(cascadeCount + 1);
         m_nearPlane.resize(cascadeCount + 1);
         m_farPlane.resize(cascadeCount + 1);
         if (lightFBO == 0) {
             CHECK_GL(glGenFramebuffers(1, &lightFBO));
             CHECK_GL(glGenTextures(1, &lightDepthMaps));
             CHECK_GL(glBindTexture(GL_TEXTURE_2D, lightDepthMaps));
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F,
+            CHECK_GL(glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F,
                          depthMapResolution, depthMapResolution, 0,
-                         GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S,
-                            GL_CLAMP_TO_BORDER);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T,
-                            GL_CLAMP_TO_BORDER);
-            float borderColor[] = {1.0, 1.0, 1.0, 1.0};
-            glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR,
-                             borderColor);
+                         GL_DEPTH_COMPONENT, GL_FLOAT, nullptr));
+            CHECK_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
+            CHECK_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
+            CHECK_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER));
+            CHECK_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER));
+            const float borderColor[] = {1.0, 1.0, 1.0, 1.0};
+            CHECK_GL(glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor));
             // attach depth texture as FBO's depth buffer
-            glBindFramebuffer(GL_FRAMEBUFFER, lightFBO);
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
-                                   GL_TEXTURE_2D, lightDepthMaps, 0);
-            glDrawBuffer(GL_NONE);
-            glReadBuffer(GL_NONE);
+            CHECK_GL(glBindFramebuffer(GL_FRAMEBUFFER, lightFBO));
+            CHECK_GL(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, lightDepthMaps, 0));
+            CHECK_GL(glDrawBuffer(GL_NONE));
+            CHECK_GL(glReadBuffer(GL_NONE));
 
             // glGenTextures(1, &lightDepthMaps);
             // glBindTexture(GL_TEXTURE_2D_ARRAY, lightDepthMaps);
@@ -218,25 +216,27 @@ struct Light {
             // glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, lightDepthMaps, 0,0);
             // glDrawBuffer(GL_NONE);
             // glReadBuffer(GL_NONE);
-            glBindFramebuffer(GL_FRAMEBUFFER, 0);
-            for (int i = 0; i < DepthMaps.size(); i++) {
-                CHECK_GL(glGenTextures(1, &(DepthMaps[i])));
-                CHECK_GL(glBindTexture(GL_TEXTURE_2D, DepthMaps[i]));
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F,
-                             depthMapResolution, depthMapResolution, 0,
-                             GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
-                                GL_LINEAR);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER,
-                                GL_LINEAR);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S,
-                                GL_CLAMP_TO_BORDER);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T,
-                                GL_CLAMP_TO_BORDER);
-                float borderColor[] = {1.0, 1.0, 1.0, 1.0};
-                glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR,
-                                 borderColor);
-            }
+            CHECK_GL(glBindFramebuffer(GL_FRAMEBUFFER, 0));
+
+            CHECK_GL(glGenTextures(1, &depthMapTmp));
+            CHECK_GL(glBindTexture(GL_TEXTURE_2D, depthMapTmp));
+            /* for (int i = 0; i < cascadeCount + 1; i++) { */
+            //CHECK_GL(glGenTextures(1, &(DepthMaps[i])));
+            //CHECK_GL(glBindTexture(GL_TEXTURE_2D, DepthMaps[i]));
+            CHECK_GL(glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F,
+                    depthMapResolution, depthMapResolution, 0,
+                    GL_DEPTH_COMPONENT, GL_FLOAT, nullptr));
+            CHECK_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
+                    GL_LINEAR));
+            CHECK_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER,
+                    GL_LINEAR));
+            CHECK_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S,
+                    GL_CLAMP_TO_BORDER));
+            CHECK_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T,
+                    GL_CLAMP_TO_BORDER));
+            //float borderColor[] = {1.0f, 1.0f, 1.0f, 1.0f};
+            CHECK_GL(glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR,
+                    borderColor));
 
             int status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
             if (status != GL_FRAMEBUFFER_COMPLETE) {
@@ -245,6 +245,29 @@ struct Light {
             }
 
             CHECK_GL(glBindFramebuffer(GL_FRAMEBUFFER, 0));
+
+            CHECK_GL(glGenTextures(1, &depthMapsArr));
+            CHECK_GL(glBindTexture(GL_TEXTURE_2D_ARRAY, depthMapsArr));
+            /* for (int i = 0; i < cascadeCount + 1; i++) { */
+            //CHECK_GL(glGenTextures(1, &(DepthMaps[i])));
+            //CHECK_GL(glBindTexture(GL_TEXTURE_2D, DepthMaps[i]));
+            CHECK_GL(glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_DEPTH_COMPONENT32F,
+                    depthMapResolution, depthMapResolution, (cascadeCount + 1) * 2, 0,
+                    GL_DEPTH_COMPONENT, GL_FLOAT, nullptr));
+            CHECK_GL(glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER,
+                    GL_LINEAR));
+            CHECK_GL(glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER,
+                    GL_LINEAR));
+            CHECK_GL(glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S,
+                    GL_CLAMP_TO_BORDER));
+            CHECK_GL(glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T,
+                    GL_CLAMP_TO_BORDER));
+            //float borderColor[] = {1.0f, 1.0f, 1.0f, 1.0f};
+            CHECK_GL(glTexParameterfv(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_BORDER_COLOR,
+                    borderColor));
+            /* } */
+            CHECK_GL(glBindFramebuffer(GL_FRAMEBUFFER, 0));
+        /* } */
         }
         if (matricesUBO == 0) {
             CHECK_GL(glGenBuffers(1, &matricesUBO));
@@ -269,12 +292,12 @@ struct Light {
 
         // 0. UBO setup
         const auto lightMatrices = getLightSpaceMatrices(near, far, proj, view);
-        glBindBuffer(GL_UNIFORM_BUFFER, matricesUBO);
+        CHECK_GL(glBindBuffer(GL_UNIFORM_BUFFER, matricesUBO));
         for (size_t i = 0; i < lightMatrices.size(); ++i) {
-            glBufferSubData(GL_UNIFORM_BUFFER, i * sizeof(glm::mat4x4),
-                            sizeof(glm::mat4x4), &lightMatrices[i]);
+            CHECK_GL(glBufferSubData(GL_UNIFORM_BUFFER, i * sizeof(glm::mat4x4),
+                            sizeof(glm::mat4x4), &lightMatrices[i]));
         }
-        glBindBuffer(GL_UNIFORM_BUFFER, 0);
+        CHECK_GL(glBindBuffer(GL_UNIFORM_BUFFER, 0));
 
         // //1 shadow map
         // auto lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, -1000.0f,1000.0f);
@@ -283,22 +306,27 @@ struct Light {
         lightSpaceMatrix = lightMatrices[i];
         lightMV = lightSpaceMatrix;
 
-        glViewport(0, 0, depthMapResolution, depthMapResolution);
-        glBindFramebuffer(GL_FRAMEBUFFER, lightFBO);
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
-                               GL_TEXTURE_2D, DepthMaps[i], 0);
+        CHECK_GL(glViewport(0, 0, depthMapResolution, depthMapResolution));
+        CHECK_GL(glBindFramebuffer(GL_FRAMEBUFFER, lightFBO));
+        CHECK_GL(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
+                               GL_TEXTURE_2D, depthMapTmp, 0));
 
-        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-        glClear(GL_DEPTH_BUFFER_BIT);
+        CHECK_GL(glClearColor(0.1f, 0.1f, 0.1f, 1.0f));
+        CHECK_GL(glClear(GL_DEPTH_BUFFER_BIT));
 
         // glEnable(GL_CULL_FACE);
         // glCullFace(GL_FRONT);  // peter panning
     }
 
-    void EndShadowMap() {
+    void EndShadowMap(int i) {
+        CHECK_GL(glReadBuffer(GL_DEPTH_ATTACHMENT));
+        CHECK_GL(glCopyTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0,
+                    0, 0, i, 0, 0, depthMapResolution, depthMapResolution));
+        CHECK_GL(glReadBuffer(GL_NONE));
+
         // glDisable(GL_CULL_FACE);
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        glUseProgram(0);
+        CHECK_GL(glBindFramebuffer(GL_FRAMEBUFFER, 0));
+        CHECK_GL(glUseProgram(0));
         CHECK_GL(glEnable(GL_BLEND));
         CHECK_GL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
         CHECK_GL(glEnable(GL_DEPTH_TEST));

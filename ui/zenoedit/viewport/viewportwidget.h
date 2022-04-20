@@ -53,15 +53,15 @@ class ViewportWidget : public QOpenGLWidget
 public:
     ViewportWidget(QWidget* parent = nullptr);
     ~ViewportWidget();
-    void initializeGL();
+    void initializeGL() override;
     void resizeGL(int nx, int ny) override;
     void paintGL() override;
     void checkRecord();
 
 protected:
-    void mousePressEvent(QMouseEvent* event);
-    void mouseMoveEvent(QMouseEvent* event);
-    void wheelEvent(QWheelEvent* event);
+    void mousePressEvent(QMouseEvent* event) override;
+    void mouseMoveEvent(QMouseEvent* event) override;
+    void wheelEvent(QWheelEvent* event) override;
 
 private:
     std::shared_ptr<CameraControl> m_camera;
@@ -78,7 +78,7 @@ public:
     DisplayWidget(ZenoMainWindow* parent = nullptr);
     ~DisplayWidget();
     void init();
-    QSize sizeHint() const;
+    QSize sizeHint() const override;
 
 public slots:
     void updateFrame();

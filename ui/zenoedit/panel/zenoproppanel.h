@@ -18,7 +18,7 @@ public:
     virtual QSize minimumSizeHint() const override;
 
 protected:
-    void mousePressEvent(QMouseEvent* event);
+    void mousePressEvent(QMouseEvent* event) override;
 
 public slots:
     void onDataChanged(const QModelIndex& subGpIdx, const QModelIndex& idx, int role);
