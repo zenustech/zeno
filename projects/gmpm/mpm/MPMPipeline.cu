@@ -361,7 +361,7 @@ struct UpdateZSGrid : INode {
                   mass = 1.f / mass;
 
                   auto vel = block.pack<3>("v", ci) * mass;
-                  vel += accel * stepDt;
+                  // vel += accel * stepDt;
                   block.set("v", ci, vel);
 
                   auto vdiff = block.pack<3>("vdiff", ci) * mass;
