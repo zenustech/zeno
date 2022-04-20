@@ -2226,7 +2226,8 @@ vec3 random3(vec3 c) {
 }
 float sampleShadowArray(int lightNo, vec2 coord, int layer)
 {
-    vec2 c = clamp(coord,vec2(0.01), vec2(0.99));
+    //vec2 c = clamp(coord,vec2(0.01), vec2(0.99));
+    vec2 c = clamp(coord,vec2(0), vec2(1));
     int index = lightNo * (cascadeCount + 1) + layer;
     return texture(shadowMap, vec3(c, index)).r;
 }
@@ -2260,11 +2261,65 @@ float PCFLayer2(int lightNo, float currentDepth1, float currentDepth2, float bia
             float pcfDepth1 = sampleShadowArray(lightNo, coord1 + (vec2(x, y) * softness + noise.xy) * texelSize, layer);
             
             float pcfDepth2 = sampleShadowArray(lightNo, coord2 + (vec2(x, y) * softness + noise.xy) * texelSize, layer+1); 
-            shadow += ((currentDepth1 - bias) > pcfDepth1 || (currentDepth2 - bias) > pcfDepth2) ? 1.0 : 0.0;        
+            //shadow += ((currentDepth1 - bias) > pcfDepth1 || (currentDepth2 - bias) > pcfDepth2) ? 1.0 : 0.0;        
+            float s1 = ((currentDepth1 - bias) > pcfDepth1)?1.0 : 0.0;
+            float s2 = ((currentDepth2 - bias) > pcfDepth2)?1.0 : 0.0;
+            shadow += mix(s1, s2, 0.5);
         }    
     }
     float size = 2.0*float(k)+1.0;
     return shadow /= (size*size);
+}
+float ShadowHit(int lightNo, vec3 fragPosWorldSpace)
+{
+    vec4 fragPosViewSpace = mView * vec4(fragPosWorldSpace, 1.0);
+    float depthValue = abs(fragPosViewSpace.z);
+    int layer = -1;
+    for (int i = 0; i < cascadeCount; ++i)
+    {
+        vec4 fragPosLightSpace = lightSpaceMatrices[lightNo * (cascadeCount + 1) + i] * vec4(fragPosWorldSpace, 1.0);
+        // perform perspective divide
+        vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+        // transform to [0,1] range
+        projCoords = projCoords * 0.5 + 0.5;
+        if (projCoords.x>=0&&projCoords.x<=1&&projCoords.y>=0&&projCoords.y<=1)
+        {
+            layer = i;
+            break;
+        }
+    }
+    if (layer == -1)
+    {
+        layer = cascadeCount;
+    }
+    vec4 fragPosLightSpace = lightSpaceMatrices[lightNo * (cascadeCount + 1) + layer] * vec4(fragPosWorldSpace, 1.0);
+    // perform perspective divide
+    vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+    // transform to [0,1] range
+    projCoords = projCoords * 0.5 + 0.5;
+    // get depth of current fragment from light's perspective
+    float currentDepth = projCoords.z;
+    vec3 normal = normalize(iNormal);
+    float bias = max(0.00001 * (1.0 - dot(normal, light[0])), 0.000001);
+    return (currentDepth - bias) > sampleShadowArray(lightNo, projCoords.xy, layer)?1.0:0.0;
+}
+float ShadowCalculation(int lightNo, vec3 fragPosWorldSpace, float softness, vec3 tang, vec3 bitang, int k)
+{
+    float shadow = 0.0;
+    
+    vec2 texelSize = 1.0 / vec2(textureSize(shadowMap[lightNo * (cascadeCount + 1) + 0], 0));
+    for(int x = -k; x <= k; ++x)
+    {
+        for(int y = -k; y <= k; ++y)
+        {
+            vec3 noise = random3(fragPosWorldSpace+vec3(x, y,0)*0.01*softness);
+            vec2 pvec = noise.xy + vec2(x,y) * 0.01 * softness;
+            vec3 ppos = fragPosWorldSpace + pvec.x * tang + pvec.y * bitang;
+            shadow += ShadowHit(lightNo, ppos);
+        }    
+    }
+    float size = 2.0*float(k)+1.0;
+    return shadow /= (size*size); 
 }
 float ShadowCalculation(int lightNo, vec3 fragPosWorldSpace, float softness)
 {
@@ -2307,7 +2362,7 @@ float ShadowCalculation(int lightNo, vec3 fragPosWorldSpace, float softness)
     }
     // calculate bias (based on depth map resolution and slope)
     vec3 normal = normalize(iNormal);
-    float bias = max(0.0001 * (1.0 - dot(normal, light[0])), 0.00001);
+    float bias = max(0.00001 * (1.0 - dot(normal, light[0])), 0.000001);
     // float bm = bias;
     // const float biasModifier = 0.5f;
     // if (layer == cascadeCount)
@@ -2544,13 +2599,14 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 old_tangent) {
     mat3 eyeinvmat = transpose(inverse(mat3(mView[0].xyz, mView[1].xyz, mView[2].xyz)));
     new_normal = eyeinvmat*new_normal;
     //vec3 up        = abs(new_normal.z) < 0.999 ? vec3(0.0, 0.0, 1.0) : vec3(1.0, 0.0, 0.0);
-    vec3 tangent = eyeinvmat*tan;//   = normalize(cross(up, new_normal));
-    vec3 bitangent = eyeinvmat*TBN[1];// = cross(new_normal, tangent);
+    vec3 tangent = eyemat*tan;//   = normalize(cross(up, new_normal));
+    vec3 bitangent = eyemat*TBN[1];// = cross(new_normal, tangent);
     //pixarONB(new_normal, tangent, bitangent);
     color = vec3(0,0,0);
     vec3 realColor = vec3(0,0,0);
     for(int lightId=0; lightId<lightNum; lightId++){
-        light_dir = mat3(mView[0].xyz, mView[1].xyz, mView[2].xyz)*lightDir[lightId];
+        //light_dir = mat3(mView[0].xyz, mView[1].xyz, mView[2].xyz)*lightDir[lightId];
+        light_dir = eyemat*lightDir[lightId];
         vec3 photoReal = BRDF(mat_basecolor, mat_metallic,mat_subsurface,mat_specular,mat_roughness,mat_specularTint,mat_anisotropic,mat_sheen,mat_sheenTint,mat_clearcoat,mat_clearcoatGloss,normalize(light_dir), normalize(view_dir), normalize(new_normal),normalize(tangent), normalize(bitangent)) * lightIntensity[lightId];// * vec3(1, 1, 1) * mat_zenxposure;
         vec3 NPR = ToonDisneyBRDF(mat_basecolor, mat_metallic,0,mat_specular,mat_roughness,mat_specularTint,mat_anisotropic,mat_sheen,mat_sheenTint,mat_clearcoat,mat_clearcoatGloss,normalize(light_dir), normalize(view_dir), normalize(new_normal),normalize(tangent), normalize(bitangent)) * lightIntensity[lightId];// * vec3(1, 1, 1) * mat_zenxposure;
 
