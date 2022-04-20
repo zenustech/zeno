@@ -42,11 +42,7 @@ public:
     void paintGL();
     void recordGL(const std::string& record_path);
     int getCurrentFrameId();
-    void setShowGrid(bool flag);
-    void setNormalCheck(bool flag);
-    void setRenderWireframe(bool flag);
-    void setSmoothShading(bool flag);
-    std::unique_ptr<zenovis::Session>& getSessionRef();
+    zenovis::Session *getSession() const;
 
 //private:
     Zenovis();

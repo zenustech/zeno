@@ -135,21 +135,18 @@ void ZenoMainWindow::initMenu()
         pAction->setChecked(true);
         pDisplay->addAction(pAction);
         connect(pAction, &QAction::triggered, this, [=]() {
-            Zenovis::GetInstance().setShowGrid(pAction->isChecked());
+            Zenovis::GetInstance().getSession()->set_show_grid(pAction->isChecked());
         });
 
         pAction = new QAction(tr("Background Color"), this);
         pDisplay->addAction(pAction);
         connect(pAction, &QAction::triggered, this, [=]() {
-            auto [r, g, b] = Zenovis::GetInstance().getSessionRef()->get_background_color();
+            auto [r, g, b] = Zenovis::GetInstance().getSession()->get_background_color();
             auto c = QColor::fromRgbF(r, g, b);
             c = QColorDialog::getColor(c);
             if (c.isValid()) {
-                Zenovis::GetInstance().getSessionRef()->set_background_color(
-                    c.redF(),
-                    c.greenF(),
-                    c.blueF()
-                );
+                Zenovis::GetInstance().getSession()->set_background_color(
+                    c.redF(), c.greenF(), c.blueF());
             }
         });
 
@@ -160,7 +157,7 @@ void ZenoMainWindow::initMenu()
         pAction->setChecked(false);
         pDisplay->addAction(pAction);
         connect(pAction, &QAction::triggered, this, [=]() {
-            Zenovis::GetInstance().setSmoothShading(pAction->isChecked());
+            Zenovis::GetInstance().getSession()->set_smooth_shading(pAction->isChecked());
         });
 
         pAction = new QAction(tr("Normal Check"), this);
@@ -168,7 +165,7 @@ void ZenoMainWindow::initMenu()
         pAction->setChecked(false);
         pDisplay->addAction(pAction);
         connect(pAction, &QAction::triggered, this, [=]() {
-            Zenovis::GetInstance().setNormalCheck(pAction->isChecked());
+            Zenovis::GetInstance().getSession()->set_normal_check(pAction->isChecked());
         });
 
         pAction = new QAction(tr("Wireframe"), this);
@@ -176,7 +173,7 @@ void ZenoMainWindow::initMenu()
         pAction->setChecked(false);
         pDisplay->addAction(pAction);
         connect(pAction, &QAction::triggered, this, [=]() {
-            Zenovis::GetInstance().setRenderWireframe(pAction->isChecked());
+            Zenovis::GetInstance().getSession()->set_render_wireframe(pAction->isChecked());
         });
 
         pDisplay->addSeparator();
@@ -199,7 +196,7 @@ void ZenoMainWindow::initMenu()
         pRecord->addAction(pAction);
         connect(pAction, &QAction::triggered, this, [=]() {
             auto s = QDateTime::currentDateTime().toString(QString("yyyy-dd-MM_hh-mm-ss.png"));
-            Zenovis::GetInstance().getSessionRef()->do_screenshot(s.toStdString());
+            Zenovis::GetInstance().getSession()->do_screenshot(s.toStdString());
         });
 
         pAction = new QAction(tr("Record Video"), this);
