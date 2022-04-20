@@ -539,6 +539,8 @@ struct ToZSParticles : INode {
                      normal[1], normal[2]);
 
 #if 1
+          eles.tuple<9>("DmInv", ei) = mat3::identity();
+          eles.tuple<9>("F", ei) = Dmat;
           // let this be a failed element
           eles("mu", ei) = 0;
           eles("lam", ei) = 0;
@@ -549,7 +551,6 @@ struct ToZSParticles : INode {
           
           throw std::runtime_error(
               "there exists degenerated triangle surface element");
-
           using mat2 = zs::vec<double, 2, 2>;
           auto D2 = mat2{Dstar(0, 0), Dstar(0, 1), Dstar(1, 0), Dstar(1, 1)};
           auto [Q2, R2] = zs::math::qr(D2);
