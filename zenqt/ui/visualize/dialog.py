@@ -159,6 +159,8 @@ class RecordVideoDialog(QDialog):
         else:
             dir_path = display.get_output_path('.mp4')
         dir_path = dir_path.replace('.', '_') + '_images'
+        if os.path.exists(dir_path):
+            shutil.rmtree(dir_path, ignore_errors=True)
         os.makedirs(dir_path)
 
         display.view.record_path = dir_path
