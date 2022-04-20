@@ -57,7 +57,6 @@ public:
     QVector2D m_resolution;
     PerspectiveInfo m_perspective;
     int m_cache_frames;
-    bool m_show_grid;
     bool m_playing;
     CameraKeyframeWidget* m_camera_keyframe;
     std::shared_ptr<CameraControl> m_camera_control;

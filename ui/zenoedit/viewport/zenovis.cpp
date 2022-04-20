@@ -13,7 +13,6 @@ Zenovis::Zenovis()
     , m_render_fps(0)
     , m_resolution(QPoint(1,1))
     , m_cache_frames(10)
-    , m_show_grid(true)
     , m_playing(false)
     , m_camera_keyframe(nullptr)
 {
@@ -109,7 +108,6 @@ void Zenovis::_frameUpdate()
         frameid += 1;
     frameid = setCurrentFrameId(frameid);
     //zenvis::auto_gc_frame_data(m_cache_frames);
-    session->set_show_grid(m_show_grid);
 
     auto viewObjs = zeno::getSession().globalComm->getViewObjects(frameid);
 
