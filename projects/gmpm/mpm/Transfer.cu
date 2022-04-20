@@ -355,7 +355,7 @@ struct ZSParticleToZSGrid : INode {
         match([&](auto &elasticModel) {
           if (parObjPtr->category == ZenoParticles::surface) {
             p2g_surface_force(cudaPol, elasticModel, pars, eles, partition,
-                              stepDt, grid);
+                              stepDt, grid, zsgrid->transferScheme == "flip");
           }
         })(model.getElasticModel());
       } else if (parObjPtr->category != ZenoParticles::tracker) {
