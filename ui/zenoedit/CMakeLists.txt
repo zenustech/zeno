@@ -16,6 +16,8 @@ if (ZENO_ENABLE_BACKWARD)
     add_backward(zenoedit)
 endif()
 
+find_package(Threads REQUIRED)
+target_link_libraries(zenoedit PRIVATE Threads::Threads)
 target_link_libraries(zenoedit PRIVATE Qt5::Widgets Qt5::OpenGL)
 target_link_libraries(zenoedit PRIVATE zenoui zenoio zenovis)
 target_link_libraries(zenoedit PRIVATE zeno zenoSharedExtension)
