@@ -255,12 +255,23 @@ struct BuildPrimitiveSequence : INode {
 
               int eid = reinterpret_bits<int>(verts("eid", dst));
               auto tri = eles.pack<3>("inds", eid).reinterpret_bits<int>();
-              auto v0 = verts.pack<3>("vel", tri[0]);
-              auto v1 = verts.pack<3>("vel", tri[1]);
-              auto v2 = verts.pack<3>("vel", tri[2]);
-
               auto ws = verts.pack<3>("weights", dst);
-              verts.tuple<3>("vel", dst) = ws[0] * v0 + ws[1] * v1 + ws[2] * v2;
+              {
+                auto v0 = verts.pack<3>("vel", tri[0]);
+                auto v1 = verts.pack<3>("vel", tri[1]);
+                auto v2 = verts.pack<3>("vel", tri[2]);
+
+                verts.tuple<3>("vel", dst) =
+                    ws[0] * v0 + ws[1] * v1 + ws[2] * v2;
+              }
+              {
+                auto p0 = verts.pack<3>("pos", tri[0]);
+                auto p1 = verts.pack<3>("pos", tri[1]);
+                auto p2 = verts.pack<3>("pos", tri[2]);
+
+                verts.tuple<3>("pos", dst) =
+                    ws[0] * p0 + ws[1] * p1 + ws[2] * p2;
+              }
             });
       }
     } else {
@@ -607,7 +618,8 @@ struct ZSParticlesToPrimitiveObject : INode {
              dst.data(), sizeof(float) * size);
       }
     }
-    /// elements
+/// elements
+#if 0
     if (zsprim->isMeshPrimitive()) {
       auto &zseles = zsprim->getQuadraturePoints();
       int nVertsPerEle = static_cast<int>(zsprim->category) + 1;
@@ -659,6 +671,7 @@ struct ZSParticlesToPrimitiveObject : INode {
         break;
       };
     }
+#endif
     fmt::print(fg(fmt::color::cyan), "done executing "
                                      "ZSParticlesToPrimitiveObject\n");
     set_output("prim", prim);

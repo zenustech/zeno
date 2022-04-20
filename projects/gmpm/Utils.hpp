@@ -371,8 +371,8 @@ inline void histogram_sort_primitives(ExecPol &pol, ZenoParticles &primitive,
           for (int chn = 0; chn != tmp.numChannels(); ++chn)
             prims(chn, ei) = tmp(chn, o_eid);
           for (int d = 0; d != degree; ++d)
-            prims("inds", d, ei) =
-                vertIndices[reinterpret_bits<int>(prims("inds", d, ei))];
+            prims("inds", d, ei) = reinterpret_bits<float>(
+                vertIndices[reinterpret_bits<int>(prims("inds", d, ei))]);
           prims("id", ei) = o_eid;
         });
   }
