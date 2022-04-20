@@ -60,11 +60,13 @@ struct ZSParticleToZSGrid : INode {
                          const typename ZenoPartition::table_t &partition,
                          const float dt, typename ZenoGrid::grid_t &grid) {
     using namespace zs;
+    bool materialParamOverride =
+        eles.hasProperty("mu") && eles.hasProperty("lam");
     cudaPol(range(eles.size()), [verts = proxy<execspace_e::cuda>({}, verts),
                                  eles = proxy<execspace_e::cuda>({}, eles),
                                  table = proxy<execspace_e::cuda>(partition),
                                  grid = proxy<execspace_e::cuda>({}, grid),
-                                 model, dt,
+                                 model = model, materialParamOverride, dt,
                                  dxinv =
                                      1.f /
                                      grid.dx] __device__(size_t pi) mutable {
@@ -85,6 +87,10 @@ struct ZSParticleToZSGrid : INode {
       constexpr auto k = 100.f;
       auto [Q, R] = math::gram_schmidt(F);
       mat2 R2{R(0, 0), R(0, 1), R(1, 0), R(1, 1)};
+      if (materialParamOverride) {
+        model.mu = eles("mu", pi);
+        model.lam = eles("lam", pi);
+      }
       auto P2 = model.first_piola(R2); // use as F
       auto Pplane = mat3::zeros();
       Pplane(0, 0) = P2(0, 0);
