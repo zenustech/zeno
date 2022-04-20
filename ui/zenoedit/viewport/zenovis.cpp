@@ -72,18 +72,18 @@ int Zenovis::setCurrentFrameId(int frameid)
     int nFrames = zeno::getSession().globalComm->countFrames();
     if (frameid >= nFrames)
         frameid = nFrames - 1;
-    int cur_frameid = session->get_curr_frameid();
+    zeno::log_debug("now frame {}/{}", frameid, nFrames);
+    int old_frameid = session->get_curr_frameid();
     session->set_curr_frameid(frameid);
-    if (cur_frameid != frameid && m_camera_keyframe && m_camera_control)
-    {
-        PerspectiveInfo r;
-        bool ret = m_camera_keyframe->queryFrame(frameid, r);
-        if (ret)
-        {
-            m_camera_control->setKeyFrame();
-            m_camera_control->updatePerspective();
-            emit frameUpdated(frameid);
+    if (old_frameid != frameid) {
+        if (m_camera_keyframe && m_camera_control) {
+            PerspectiveInfo r;
+            if (m_camera_keyframe->queryFrame(frameid, r)) {
+                m_camera_control->setKeyFrame();
+                m_camera_control->updatePerspective();
+            }
         }
+        emit frameUpdated(frameid);
     }
     return frameid;
 }
@@ -97,7 +97,7 @@ void Zenovis::_uploadStatus()
 
 void Zenovis::_recieveStatus()
 {
-    int frameid = session->get_curr_frameid();
+    int frameid = getCurrentFrameId();
     /* double solver_interval = session->get_solver_interval(); */
     /* double render_fps = session->get_render_fps(); */
     /* m_solver_interval = solver_interval; */
@@ -109,8 +109,10 @@ void Zenovis::_frameUpdate()
     //if fileio.isIOPathChanged() :
     //    core.clear_graphics()
     int frameid = getCurrentFrameId();
-    if (m_playing)
+    if (m_playing) {
+        zeno::log_debug("playing at frame {}", frameid);
         frameid += 1;
+    }
     frameid = setCurrentFrameId(frameid);
     //zenvis::auto_gc_frame_data(m_cache_frames);
 

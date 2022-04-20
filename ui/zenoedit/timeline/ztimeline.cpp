@@ -88,7 +88,10 @@ ZTimeline::ZTimeline(QWidget* parent)
 
 void ZTimeline::onTimelineUpdate(int frameid)
 {
+    bool blocked = m_slider->signalsBlocked();
+    m_slider->blockSignals(true);
     m_slider->setSliderValue(frameid);
+    m_slider->blockSignals(blocked);
 }
 
 void ZTimeline::onFrameEditted()
