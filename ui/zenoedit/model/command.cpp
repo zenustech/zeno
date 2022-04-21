@@ -60,7 +60,7 @@ void RemoveNodeCommand::redo()
 
 void RemoveNodeCommand::undo()
 {
-    m_model->insertRow(m_row, m_data, m_subgIdx);
+    m_model->addNode(m_data, m_subgIdx);
 }
 
 
