@@ -167,7 +167,7 @@ void main(void)
         auto &lights = scene->lights;
         for (auto &light : lights) {
             for (int i = 0; i < Light::cascadeCount + 1; i++) {
-                light->BeginShadowMap(camera()->g_near, camera()->g_far,
+                light->BeginShadowMap(camera()->m_near, camera()->m_far,
                                       light->lightDir, camera()->proj,
                                       camera()->view, i);
                 scene->vao->bind();
@@ -337,15 +337,15 @@ void main(void)
             for (int dofsample = 0; dofsample < 16; dofsample++) {
                 /* CHECK_GL(glDisable(GL_MULTISAMPLE)); */
                 glm::vec3 object =
-                    camera()->g_camPos +
-                    camera()->m_dof * glm::normalize(camera()->g_camView);
+                    camera()->m_camPos +
+                    camera()->m_dof * glm::normalize(camera()->m_camView);
                 glm::vec3 right = glm::normalize(
-                    glm::cross(object - camera()->g_camPos, camera()->g_camUp));
+                    glm::cross(object - camera()->m_camPos, camera()->m_camUp));
                 glm::vec3 p_up = glm::normalize(
-                    glm::cross(right, object - camera()->g_camPos));
+                    glm::cross(right, object - camera()->m_camPos));
                 glm::vec3 bokeh = right * cosf(dofsample * 2.0 * M_PI / 16.0) +
                                   p_up * sinf(dofsample * 2.0 * M_PI / 16.0);
-                camera()->view = glm::lookAt(camera()->g_camPos + 0.05f * bokeh,
+                camera()->view = glm::lookAt(camera()->m_camPos + 0.05f * bokeh,
                                              object, p_up);
                 //ZPass();
                 CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, tonemapfbo));
@@ -407,12 +407,12 @@ void main(void)
             CHECK_GL(glRenderbufferStorageMultisample(GL_RENDERBUFFER, 8, GL_DEPTH_COMPONENT32F, camera()->m_nx, camera()->m_ny));
             //ZPass();
             glm::vec3 object =
-                camera()->g_camPos + 1.0f * glm::normalize(camera()->g_camView);
+                camera()->m_camPos + 1.0f * glm::normalize(camera()->m_camView);
             glm::vec3 right = glm::normalize(
-                glm::cross(object - camera()->g_camPos, camera()->g_camUp));
+                glm::cross(object - camera()->m_camPos, camera()->m_camUp));
             glm::vec3 p_up =
-                glm::normalize(glm::cross(right, object - camera()->g_camPos));
-            camera()->view = glm::lookAt(camera()->g_camPos, object, p_up);
+                glm::normalize(glm::cross(right, object - camera()->m_camPos));
+            camera()->view = glm::lookAt(camera()->m_camPos, object, p_up);
             CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, tonemapfbo));
             CHECK_GL(glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER,
                                                GL_COLOR_ATTACHMENT0,

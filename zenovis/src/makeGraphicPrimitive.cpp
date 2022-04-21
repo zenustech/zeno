@@ -819,7 +819,7 @@ struct GraphicPrimitive : IGraphic {
                     CHECK_GL(glBindTexture(GL_TEXTURE_2D, brdfLUT));
                 texOcp++;
 
-                triObj.prog->set_uniform("farPlane", scene->camera->g_far);
+                triObj.prog->set_uniform("farPlane", scene->camera->m_far);
                 //triObj.prog->set_uniformi("cascadeCount", Light::cascadeCount);
                 for (int lightNo = 0; lightNo < lights.size(); ++lightNo) {
                     auto &light = lights[lightNo];

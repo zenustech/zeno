@@ -71,11 +71,11 @@ void Scene::drawSceneDepthSafe(float aspRatio, bool reflect, float isDepthPass,
     // CHECK_GL(glClearColor(bgcolor.r, bgcolor.g, bgcolor.b, 0.0f));
     CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 
-    float range[] = {camera->g_near, 500, 1000, 2000, 8000, camera->g_far};
+    float range[] = {camera->m_near, 500, 1000, 2000, 8000, camera->m_far};
     for (int i = 5; i >= 1; i--) {
         CHECK_GL(glClearDepth(1));
         CHECK_GL(glClear(GL_DEPTH_BUFFER_BIT));
-        camera->proj = glm::perspective(glm::radians(camera->g_fov), aspRatio,
+        camera->proj = glm::perspective(glm::radians(camera->m_fov), aspRatio,
                                         range[i - 1], range[i]);
 
         for (auto const &gra : graphics()) {

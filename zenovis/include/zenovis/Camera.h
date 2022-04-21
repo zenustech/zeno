@@ -13,16 +13,23 @@ struct Camera {
     glm::mat4x4 view{1}, proj{1};
 
     int m_nx{512}, m_ny{512};
-    int m_oldnx{512}, m_oldny{512};
 
     float m_point_scale = 1.f;
-    glm::vec3 m_camera_center{0, 0, -1};
-    float m_camera_radius = 1.f;
     float m_grid_scale = 1.f;
     float m_grid_blend = 0.f;
-    float m_dof = -1.f;
     float m_aperature = 0.05f;
     float m_sample_weight = 0.0f;
+
+    float m_dof = -1.f;
+    float m_near = -0.1f;
+    float m_far = 20000.0f;
+    float m_fov = 45.0f;
+
+    float m_camRadius = 1.f;
+    glm::vec3 m_camCenter{0, 0, 0};
+    glm::vec3 m_camPos{0, 0, 1};
+    glm::vec3 m_camView{0, 0, -1};
+    glm::vec3 m_camUp{0, 1, 0};
 
     void setDOF(float _dof) {
         m_dof = _dof;
@@ -37,22 +44,17 @@ struct Camera {
         std::memcpy(glm::value_ptr(view), viewArr.data(), viewArr.size());
         std::memcpy(glm::value_ptr(proj), projArr.data(), projArr.size());
     }
-
-    float g_near{}, g_far{}, g_fov{};
-    glm::mat4 g_view{}, g_proj{};
-    glm::vec3 g_camPos{}, g_camView{}, g_camUp{};
     /* int g_camSetFromNode = 0; */
     /* glm::mat4 cview, cproj; */
 
-    void clearCameraControl() {
-        /* g_camSetFromNode = 0; */
-        proj = glm::perspective(glm::radians(45.0f), getAspect(), 0.1f, 20000.0f);
-        m_dof = -1;
-        g_fov = 45.0;
-        g_near = 0.1;
-        g_far = 20000;
-        g_proj = proj;
-    }
+    //void clearCameraControl() {
+        //[> g_camSetFromNode = 0; <]
+        //proj = glm::perspective(glm::radians(45.0f), getAspect(), 0.1f, 20000.0f);
+        //m_dof = -1;
+        //m_fov = 45.0;
+        //m_near = 0.1;
+        //m_far = 20000;
+    //}
 
     bool smooth_shading = false;
     bool normal_check = false;
@@ -73,14 +75,14 @@ struct Camera {
                    float fnear, float ffar, float _dof) {
         front = glm::normalize(front);
         up = glm::normalize(up);
-        g_view = glm::lookAt(pos, pos + front, up);
-        g_proj = glm::perspective(glm::radians(_fov), getAspect(), fnear, ffar);
-        g_fov = _fov;
-        g_near = fnear;
-        g_far = ffar;
-        g_camPos = pos;
-        g_camView = glm::normalize(front);
-        g_camUp = glm::normalize(up);
+        view = glm::lookAt(pos, pos + front, up);
+        proj = glm::perspective(glm::radians(_fov), getAspect(), fnear, ffar);
+        m_fov = _fov;
+        m_near = fnear;
+        m_far = ffar;
+        m_camPos = pos;
+        m_camView = glm::normalize(front);
+        m_camUp = glm::normalize(up);
         m_dof = _dof;
         /* g_camSetFromNode = set; */
     }
@@ -118,21 +120,17 @@ struct Camera {
             view = glm::lookAt(center - back, center, up);
             proj = glm::ortho(-radius * getAspect(), radius * getAspect(), -radius,
                               radius, -100.0f, 100.0f);
-            g_view = view;
-            g_proj = proj;
         } else {
             view = glm::lookAt(center - back * (float)radius, center, up);
             proj = glm::perspective(
                 glm::radians(fov), getAspect(), 0.1f,
                 20000.0f * std::max(1.0f, (float)radius / 10000.f));
-            g_fov = fov;
-            g_near = 0.1f;
-            g_far = 20000.0f * std::max(1.0f, (float)radius / 10000.f);
-            g_view = view;
-            g_proj = proj;
-            g_camPos = center - back * (float)radius;
-            g_camView = back * (float)radius;
-            g_camUp = up;
+            m_fov = fov;
+            m_near = 0.1f;
+            m_far = 20000.0f * std::max(1.0f, (float)radius / 10000.f);
+            m_camPos = center - back * (float)radius;
+            m_camView = back * (float)radius;
+            m_camUp = up;
         }
         float level = std::max(std::log(radius) / std::log(5.0f) - 1.0f, -1.0f);
         m_grid_scale = std::pow(5.f, std::floor(level));
@@ -145,8 +143,8 @@ struct Camera {
         //gizmo_view = glm::lookAt(back, glm::vec3(0), up);
         //gizmo_proj = glm::ortho(-radius * getAspect(), radius * getAspect(), -radius,
                                 //radius, -100.0f, 100.0f);
-        m_camera_center = center;
-        m_camera_radius = radius;
+        m_camCenter = center;
+        m_camRadius = radius;
     }
 
     void set_program_uniforms(opengl::Program *pro) {
@@ -162,8 +160,8 @@ struct Camera {
         pro->set_uniform("mPointScale", m_point_scale);
         pro->set_uniform("mSmoothShading", smooth_shading);
         pro->set_uniform("mNormalCheck", normal_check);
-        pro->set_uniform("mCameraRadius", m_camera_radius);
-        pro->set_uniform("mCameraCenter", m_camera_center);
+        pro->set_uniform("mCameraRadius", m_camRadius);
+        pro->set_uniform("mCameraCenter", m_camCenter);
         pro->set_uniform("mGridScale", m_grid_scale);
         pro->set_uniform("mGridBlend", m_grid_blend);
         pro->set_uniform("mSampleWeight", m_sample_weight);

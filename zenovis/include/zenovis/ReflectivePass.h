@@ -252,20 +252,21 @@ struct ReflectivePass : zeno::disable_copy {
         for (int i = 0; i < 8; i++) {
             if (!renderReflect(i))
                 continue;
-            setReflectivePlane(i, camera()->g_camPos, camera()->g_camView,
-                               camera()->g_camUp);
+            setReflectivePlane(i, camera()->m_camPos, camera()->m_camView,
+                               camera()->m_camUp);
             BeginReflective(i, camera()->m_nx, camera()->m_ny);
             scene->vao->bind();
+            auto old_view = camera()->view;
             camera()->view = getReflectViewMat(i);
             setReflectionViewID(i);
-            glm::mat4 p = glm::perspective((float)glm::radians(camera()->g_fov),
+            glm::mat4 p = glm::perspective((float)glm::radians(camera()->m_fov),
                                            (float)camera()->getAspect(),
-                                           (float)camera()->g_near,
-                                           (float)camera()->g_far);
+                                           (float)camera()->m_near,
+                                           (float)camera()->m_far);
             setReflectMVP(i, p * camera()->view);
             scene->drawSceneDepthSafe(camera()->getAspect(), true, 1.0f, false);
             scene->vao->unbind();
-            camera()->view = camera()->g_view;
+            camera()->view = old_view;
         }
         EndReflective();
     }
