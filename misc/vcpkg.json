@@ -25,6 +25,7 @@
     "cgmesh": {
       "description": "Enable mesh processing nodes",
       "dependencies": [
+        "cgal",
         "openblas",
         "lapack"
       ]
@@ -37,9 +38,18 @@
           "features": [ "hdf5" ]
         }
       ]
+    },
+    "cuda": {
+      "description": "Enable CUDA nodes, for MPM simulation algorithm",
+      "dependencies": [
+        {
+          "name": "cuda",
+          "version>=": "11.1"
+        }
+      ]
     }
   },
   "default-features": [
-      "qt", "openvdb"
+      "qt", "openvdb", "cgmesh", "alembic"
   ]
 }

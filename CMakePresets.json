@@ -1,0 +1,63 @@
+{
+  "version": 3,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 16,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "basic",
+      "displayName": "Default configuration",
+      "description": "Default build without no dependencies",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "full",
+      "inherits": "basic",
+      "displayName": "Default configuration",
+      "description": "Build all extension modules that are CPU-only",
+      "cacheVariables": {
+        "ZENO_WITH_ZenoFX": "ON",
+        "ZENOFX_ENABLE_OPENVDB": "ON",
+        "ZENOFX_ENABLE_LBVH": "ON",
+        "ZENO_WITH_zenvdb": "ON",
+        "ZENO_WITH_FastFLIP": "ON",
+        "ZENO_WITH_FEM": "ON",
+        "ZENO_WITH_Rigid": "ON",
+        "ZENO_WITH_cgmesh": "ON",
+        "ZENO_WITH_oldzenbase": "ON",
+        "ZENO_WITH_TreeSketch": "ON",
+        "ZENO_WITH_Skinning": "ON",
+        "ZENO_WITH_Euler": "ON",
+        "ZENO_WITH_Functional": "ON",
+        "ZENO_WITH_LSystem": "ON",
+        "ZENO_WITH_Alembic": "ON"
+      }
+    },
+    {
+      "name": "full-cuda",
+      "inherits": "full",
+      "displayName": "Default configuration plus CUDA",
+      "description": "Additionally build with CUDA extension modules",
+      "cacheVariables": {
+        "ZENO_WITH_gmpm": "ON",
+        "ZENO_WITH_mesher": "ON"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "basic",
+      "configurePreset": "basic"
+    },
+    {
+      "name": "default",
+      "configurePreset": "default"
+    }
+  ]
+}
