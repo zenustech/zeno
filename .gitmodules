@@ -4,6 +4,3 @@
 [submodule "projects/cgmesh/libigl"]
 	path = projects/cgmesh/libigl
 	url = https://github.com/zenustech/libigl.git
-[submodule "external/assets"]
-    path = external/assets
-	url = https://github.com/zenustech/zeno_assets.git
