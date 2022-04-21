@@ -93,6 +93,8 @@ class ZenoParamLabel : public ZenoParamWidget
 public:
     ZenoParamLabel(const QString &text, const QFont& font, const QBrush& fill, QGraphicsItem *parent = nullptr);
     void setAlignment(Qt::Alignment alignment);
+    void setText(const QString& text);
+    void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) override;
 
 private:
     QLabel* m_label;

@@ -930,7 +930,7 @@ void GraphsModel::updateParamInfo(const QString& id, PARAM_UPDATE_INFO info, con
 		pGraph->updateParam(id, info.name, info.newValue);
 
         const QString& nodeName = pGraph->index(id).data(ROLE_OBJNAME).toString();
-        if (nodeName == "SubInput" || nodeName == "SubOutput")
+        if (info.name == "name" && (nodeName == "SubInput" || nodeName == "SubOutput"))
         {
             SOCKET_UPDATE_INFO updateInfo;
             updateInfo.bInput = (nodeName == "SubInput");

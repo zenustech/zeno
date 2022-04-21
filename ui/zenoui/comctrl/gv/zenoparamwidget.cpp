@@ -159,6 +159,17 @@ void ZenoParamLabel::setAlignment(Qt::Alignment alignment)
     m_label->setAlignment(alignment);
 }
 
+void ZenoParamLabel::setText(const QString& text)
+{
+    m_label->setText(text);
+}
+
+void ZenoParamLabel::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget*  widget)
+{
+    painter->fillRect(boundingRect(), QColor(0,0,0));
+    ZenoParamWidget::paint(painter, option, widget);
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////////
 ZComboBoxItemDelegate::ZComboBoxItemDelegate(QObject *parent)
