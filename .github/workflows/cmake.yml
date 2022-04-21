@@ -73,10 +73,10 @@ jobs:
       run: git clone https://github.com/microsoft/vcpkg.git ${{ github.workspace }}/vcpkg
 
     - name: Update Vcpkg
-      run:
-        - cd ${{ github.workspace }}/vcpkg
-        - git pull
-        - cd ${{ github.workspace }}
+      run: |
+        cd ${{ github.workspace }}/vcpkg
+        git pull
+        cd ${{ github.workspace }}
 
     - name: Setup Vcpkg
       uses: lukka/run-vcpkg@v10
