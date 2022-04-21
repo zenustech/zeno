@@ -259,10 +259,12 @@ struct Light {
                     GL_DEPTH_COMPONENT, GL_FLOAT, nullptr));
             CHECK_GL(glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST));
             CHECK_GL(glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
-            CHECK_GL(glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER));
-            CHECK_GL(glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER));
+            //CHECK_GL(glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER));
+            //CHECK_GL(glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER));
+            CHECK_GL(glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP));
+            CHECK_GL(glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP));
             //float borderColor[] = {1.0f, 1.0f, 1.0f, 1.0f};
-            CHECK_GL(glTexParameterfv(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_BORDER_COLOR, borderColor));
+            //CHECK_GL(glTexParameterfv(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_BORDER_COLOR, borderColor));
             /* } */
             CHECK_GL(glBindFramebuffer(GL_FRAMEBUFFER, 0));
         /* } */
@@ -309,7 +311,7 @@ struct Light {
         CHECK_GL(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
                                GL_TEXTURE_2D, depthMapTmp, 0));
 
-        CHECK_GL(glClearColor(0.1f, 0.1f, 0.1f, 1.0f));
+        CHECK_GL(glClearColor(0.2f, 0.1f, 0.1f, 1.0f));
         CHECK_GL(glClear(GL_DEPTH_BUFFER_BIT));
 
         // glEnable(GL_CULL_FACE);
