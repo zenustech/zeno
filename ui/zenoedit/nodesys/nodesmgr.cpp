@@ -16,16 +16,9 @@ void NodesMgr::createNewNode(IGraphsModel* pModel, QModelIndex subgIdx, const QS
 	node[ROLE_OBJID] = nodeid;
 	node[ROLE_OBJNAME] = descName;
 	node[ROLE_NODETYPE] = nodeType(descName);
-
-	INPUT_SOCKETS inputs = desc.inputs;
-	OUTPUT_SOCKETS outputs = desc.outputs;
-
-	node[ROLE_INPUTS] = QVariant::fromValue(inputs);
-	node[ROLE_OUTPUTS] = QVariant::fromValue(outputs);
-
-	PARAMS_INFO params = desc.params;
-    AppHelper::correctSubIOName(pModel, subgIdx, descName, params);
-	node[ROLE_PARAMETERS] = QVariant::fromValue(params);
+	node[ROLE_INPUTS] = QVariant::fromValue(desc.inputs);
+	node[ROLE_OUTPUTS] = QVariant::fromValue(desc.outputs);
+	node[ROLE_PARAMETERS] = QVariant::fromValue(desc.params);
 	node[ROLE_OBJPOS] = pt;
 	node[ROLE_COLLASPED] = false;
 

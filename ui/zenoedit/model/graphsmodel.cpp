@@ -2,6 +2,7 @@
 #include "graphsmodel.h"
 #include <zenoui/model/modelrole.h>
 #include <zenoui/util/uihelper.h>
+#include "util/apphelper.h"
 #include <zeno/zeno.h>
 #include <zenoui/util/cihou.h>
 #include "zenoapplication.h"
@@ -646,7 +647,21 @@ void GraphsModel::addNode(const NODE_DATA& nodeData, const QModelIndex& subGpIdx
     {
         SubGraphModel* pGraph = subGraph(subGpIdx.row());
         Q_ASSERT(pGraph);
-        pGraph->appendItem(nodeData);
+
+        NODE_DATA nodeData2 = nodeData;
+        PARAMS_INFO params = nodeData2[ROLE_PARAMETERS].value<PARAMS_INFO>();
+        QString descName = nodeData[ROLE_OBJNAME].toString();
+        if (descName == "SubInput" || descName == "SubOutput")
+        {
+            AppHelper::correctSubIOName(this, subGpIdx, descName, params);
+            nodeData2[ROLE_PARAMETERS] = QVariant::fromValue(params);
+            pGraph->appendItem(nodeData2);
+        }
+        else
+        {
+            pGraph->appendItem(nodeData);
+        }
+
         //update desc if meet subinput/suboutput node.
         if (!bEnableIOProc)
         {
