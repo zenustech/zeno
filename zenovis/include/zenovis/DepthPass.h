@@ -183,6 +183,7 @@ void main(void)
     void paint_graphics(GLuint target_fbo = 0) {
         CHECK_GL(glClearColor(camera()->bgcolor.r, camera()->bgcolor.g,
                               camera()->bgcolor.b, 0.0f));
+        //CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
         if (enable_hdr && tmProg == nullptr) {
             tmProg = scene->shaderMan->compile_program(qvert, qfrag);
             if (!tmProg) {

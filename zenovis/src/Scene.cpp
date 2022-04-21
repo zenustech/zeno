@@ -107,6 +107,7 @@ void Scene::draw_small_axis() { /* TODO: implement this */
 }
 
 void Scene::draw(unsigned int target_fbo) {
+    //CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
     /* ZHXX DONT MODIFY ME */
     mDepthPass->paint_graphics(target_fbo);
 }
