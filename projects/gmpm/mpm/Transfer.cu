@@ -814,10 +814,10 @@ struct ZSBoundaryPrimitiveToZSGrid : INode {
   void p2g_momentum(zs::CudaExecutionPolicy &cudaPol, std::size_t offset,
                     std::size_t size,
                     const typename ZenoParticles::particles_t &pars,
-                    const typename ZenoPartition::table_t &partition,
-                    typename ZenoGrid::grid_t &grid,
+                    ZenoPartition &zspartition, typename ZenoGrid::grid_t &grid,
                     bool includeNormal = false) {
     using namespace zs;
+    const typename ZenoPartition::table_t &partition = zspartition.get();
 
     Vector<int> flag{pars.get_allocator(), 1};
     flag.setVal(0);
@@ -835,8 +835,8 @@ struct ZSBoundaryPrimitiveToZSGrid : INode {
       auto mass = pars("mass", pi);
       auto nrm = pars.pack<3>("nrm", pi);
 
-      auto arena = make_local_arena<grid_e::collocated, kernel_e::quadratic>(
-          grid.dx, pos);
+      auto arena =
+          make_local_arena<grid_e::collocated, kernel_e::linear>(grid.dx, pos);
 
       for (auto loc : arena.range()) {
         auto coord = arena.coord(loc);
@@ -859,16 +859,19 @@ struct ZSBoundaryPrimitiveToZSGrid : INode {
             atomic_add(exec_cuda, &block("nrm", d, cellid), W * mass * nrm[d]);
       }
     });
-    if (flag.getVal() != 0)
+    if (flag.getVal() != 0) {
+      zspartition.requestRebuild = true;
       fmt::print(fg(fmt::color::red),
                  "encountering boundary particles breaking CFL\n");
+    }
   }
   void apply() override {
     fmt::print(fg(fmt::color::green),
                "begin executing ZSBoundaryPrimitiveToZSGrid\n");
 
     auto parObjPtrs = RETRIEVE_OBJECT_PTRS(ZenoParticles, "ZSParticles");
-    auto &partition = get_input<ZenoPartition>("ZSPartition")->get();
+    auto zspartition = get_input<ZenoPartition>("ZSPartition");
+    auto &partition = zspartition->get();
     auto zsgrid = get_input<ZenoGrid>("ZSGrid");
     auto &grid = zsgrid->get();
 
@@ -888,11 +891,11 @@ struct ZSBoundaryPrimitiveToZSGrid : INode {
       auto sprayedSize = pars.size() - sprayedOffset;
       auto size = sprayedOffset;
       if (sprayedSize == 0) {
-        p2g_momentum(cudaPol, 0, pars.size(), pars, partition, grid, false);
-        p2g_momentum(cudaPol, 0, eles.size(), eles, partition, grid, true);
+        p2g_momentum(cudaPol, 0, pars.size(), pars, *zspartition, grid, false);
+        p2g_momentum(cudaPol, 0, eles.size(), eles, *zspartition, grid, true);
       } else {
-        p2g_momentum(cudaPol, sprayedOffset, sprayedSize, pars, partition, grid,
-                     true);
+        p2g_momentum(cudaPol, sprayedOffset, sprayedSize, pars, *zspartition,
+                     grid, true);
       }
       fmt::print("[boundary particle p2g] dx: {}, npars: {}, neles: {}\n",
                  grid.dx, pars.size(), eles.size());
