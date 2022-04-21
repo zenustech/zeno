@@ -63,6 +63,9 @@ jobs:
         version: 5.15.2
         cached: ${{ steps.cache-qt.outputs.cache-hit }}
 
+    - name: Setup Platform
+      run: python misc/ci/setup_plat.py
+
     - name: Setup Vcpkg
       uses: lukka/run-vcpkg@v10
       with:
