@@ -36,17 +36,12 @@ void Zenovis::initializeGL()
 
 void Zenovis::paintGL()
 {
-    _frameUpdate();
-    _uploadStatus();
+    doFrameUpdate();
     session->new_frame();
-    _recieveStatus();
 }
 
 void Zenovis::recordGL(const std::string& record_path)
 {
-    session->set_window_size(m_resolution[0], m_resolution[1]);
-    session->look_perspective(m_perspective.cx, m_perspective.cy, m_perspective.cz, 
-        m_perspective.theta, m_perspective.phi, m_perspective.radius, m_perspective.fov, m_perspective.ortho_mode);
     session->new_frame_offline(record_path);
 }
 
@@ -88,23 +83,8 @@ int Zenovis::setCurrentFrameId(int frameid)
     return frameid;
 }
 
-void Zenovis::_uploadStatus()
-{
-    session->set_window_size(m_resolution[0], m_resolution[1]);
-    session->look_perspective(m_perspective.cx, m_perspective.cy, m_perspective.cz, m_perspective.theta,
-        m_perspective.phi, m_perspective.radius, m_perspective.fov, m_perspective.ortho_mode);
-}
 
-void Zenovis::_recieveStatus()
-{
-    int frameid = getCurrentFrameId();
-    /* double solver_interval = session->get_solver_interval(); */
-    /* double render_fps = session->get_render_fps(); */
-    /* m_solver_interval = solver_interval; */
-    /* m_render_fps = render_fps; */
-}
-
-void Zenovis::_frameUpdate()
+void Zenovis::doFrameUpdate()
 {
     //if fileio.isIOPathChanged() :
     //    core.clear_graphics()

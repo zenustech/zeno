@@ -72,8 +72,8 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent* event)
 void CameraControl::updatePerspective()
 {
     float cx = m_center[0], cy = m_center[1], cz = m_center[2];
-    Zenovis::GetInstance().m_perspective = PerspectiveInfo(cx, cy, cz, m_theta, m_phi, m_radius, m_fov, m_ortho_mode);
-    Zenovis::GetInstance().m_resolution = m_res;
+    Zenovis::GetInstance().updatePerspective(PerspectiveInfo(cx, cy, cz, m_theta, m_phi, m_radius, m_fov, m_ortho_mode));
+    Zenovis::GetInstance().updateResolution(m_res);
 }
 
 void CameraControl::fakeWheelEvent(QWheelEvent* event)
@@ -105,7 +105,7 @@ ViewportWidget::ViewportWidget(QWidget* parent)
     setFormat(fmt);
 
     m_camera = std::make_shared<CameraControl>();
-    Zenovis::GetInstance().m_camera_control = m_camera;
+    Zenovis::GetInstance().m_camera_control = m_camera.get();
 }
 
 ViewportWidget::~ViewportWidget()

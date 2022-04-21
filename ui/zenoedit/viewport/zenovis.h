@@ -46,9 +46,7 @@ public:
 
 //private:
     Zenovis();
-    void _uploadStatus();
-    void _recieveStatus();
-    void _frameUpdate();
+    void doFrameUpdate();
 
     //static QString sIoPath;
 
@@ -59,8 +57,8 @@ public:
     PerspectiveInfo m_perspective;
     int m_cache_frames;
     bool m_playing;
-    CameraKeyframeWidget* m_camera_keyframe;
-    std::shared_ptr<CameraControl> m_camera_control;
+    CameraKeyframeWidget* m_camera_keyframe{};
+    CameraControl* m_camera_control{};
     //QList<FRAME_FILE> m_frame_files;
 };
 

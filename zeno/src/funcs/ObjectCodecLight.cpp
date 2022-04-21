@@ -17,7 +17,7 @@ std::shared_ptr<LightObject> decodeLightObject(const char *it) {
 
 bool encodeLightObject(LightObject const *obj, std::back_insert_iterator<std::vector<char>> it);
 bool encodeLightObject(LightObject const *obj, std::back_insert_iterator<std::vector<char>> it) {
-    it = std::copy_n((char const *)obj, sizeof(*obj), it);
+    it = std::copy_n((char const *)static_cast<LightData const *>(obj), sizeof(*obj), it);
     return true;
 }
 
