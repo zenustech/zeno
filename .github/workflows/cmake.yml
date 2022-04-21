@@ -34,14 +34,17 @@ jobs:
       matrix:
         include:
         - os: ubuntu-18.04  # cihou linuxdeployqt
+          triplet: x64-linux
           cxx: g++-9
         - os: windows-2022
+          triplet: x64-windows
 
     runs-on: ${{ matrix.os }}
     needs: [check]
 
     env:
       CXX: ${{ matrix.cxx }}
+      VCPKG_DEFAULT_TRIPLET: ${{ matrix.triplet }}
 
     steps:
     - name: Checkout Repo
@@ -60,26 +63,10 @@ jobs:
         version: 5.15.2
         cached: ${{ steps.cache-qt.outputs.cache-hit }}
 
-    - name: Cache Vcpkg
-      id: cache-vcpkg
-      uses: actions/cache@v1
-      with:
-        path: ${{ github.workspace }}/vcpkg
-        key: ${{ runner.os }}-VcpkgCache
-
-    - name: Download Vcpkg
-      if: ${{ !steps.cache-vcpkg.outputs.cache-hit }}
-      run: git clone https://github.com/microsoft/vcpkg.git ${{ github.workspace }}/vcpkg
-
-    - name: Update Vcpkg
-      run: |
-        cd ${{ github.workspace }}/vcpkg
-        git pull
-        cd ${{ github.workspace }}
-
     - name: Setup Vcpkg
       uses: lukka/run-vcpkg@v10
       with:
+        vcpkgGitCommitId: e0c3408c778c54788393c4a739f6f3507aff77cb
         vcpkgDirectory: ${{ github.workspace }}/vcpkg
         vcpkgJsonGlob: '**/vcpkg.json'
         runVcpkgInstall: true
