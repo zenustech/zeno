@@ -17,16 +17,24 @@
       }
     },
     {
-      "name": "default",
+      "name": "openvdb",
       "inherits": "basic",
-      "displayName": "Default configuration",
-      "description": "Build all extension modules that are CPU-only",
+      "displayName": "OpenVDB-only configuration",
+      "description": "Additionally build the OpenVDB extensions",
       "cacheVariables": {
         "ZENO_WITH_ZenoFX": "ON",
         "ZENOFX_ENABLE_OPENVDB": "ON",
         "ZENOFX_ENABLE_LBVH": "ON",
         "ZENO_WITH_zenvdb": "ON",
-        "ZENO_WITH_FastFLIP": "ON",
+        "ZENO_WITH_FastFLIP": "ON"
+      }
+    },
+    {
+      "name": "default",
+      "inherits": "openvdb",
+      "displayName": "CPU-only configuration",
+      "description": "Build all extension modules that are CPU-only",
+      "cacheVariables": {
         "ZENO_WITH_FEM": "ON",
         "ZENO_WITH_Rigid": "ON",
         "ZENO_WITH_cgmesh": "ON",
@@ -42,7 +50,7 @@
     {
       "name": "cuda",
       "inherits": "default",
-      "displayName": "Default configuration plus CUDA",
+      "displayName": "CPU + CUDA configuration",
       "description": "Additionally build with CUDA extension modules",
       "cacheVariables": {
         "ZENO_WITH_gmpm": "ON",
