@@ -31,23 +31,4 @@ void SubnetNode::onParamEditFinished(PARAM_CONTROL editCtrl, const QString& para
 		return;
 
 	ZenoNode::onParamEditFinished(editCtrl, paramName, textValue);
-
-	SOCKET_UPDATE_INFO info;
-	info.bInput = m_bInput;
-
-	if (paramName == "name")
-	{
-		info.oldInfo.name = oldName;
-		info.newInfo.name = textValue;
-		info.updateWay = SOCKET_UPDATE_NAME;
-		pModel->updateDescInfo(subnetName, info, true);
-	}
-	else if (paramName == "type")
-	{
-		//todo
-	}
-	else if (paramName == "defl")
-	{
-		//todo
-	}
 }

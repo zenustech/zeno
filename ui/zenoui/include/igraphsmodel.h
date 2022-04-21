@@ -47,7 +47,6 @@ public:
 	virtual QVariant getNodeStatus(const QString& id, int role, const QModelIndex& subGpIdx) = 0;
 	virtual void updateNodeStatus(const QString& nodeid, STATUS_UPDATE_INFO info, const QModelIndex& subgIdx, bool enableTransaction = false) = 0;
 	virtual void updateLinkInfo(const QPersistentModelIndex& linkIdx, const LINK_UPDATE_INFO& info, bool enableTransaction = false) = 0;
-	virtual void updateDescInfo(const QString& descName, const SOCKET_UPDATE_INFO& updateInfo, bool enableTransaction = false) = 0;
 	virtual NODE_DATA itemData(const QModelIndex& index, const QModelIndex& subGpIdx) const = 0;
 	virtual QString name(const QModelIndex& subGpIdx) const = 0;
 	virtual void setName(const QString& name, const QModelIndex& subGpIdx) = 0;
