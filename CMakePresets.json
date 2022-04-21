@@ -8,8 +8,8 @@
   "configurePresets": [
     {
       "name": "basic",
-      "displayName": "Default configuration",
-      "description": "Default build without no dependencies",
+      "displayName": "Basic configuration",
+      "description": "Build without any dependencies",
       "generator": "Ninja",
       "binaryDir": "${sourceDir}/build",
       "cacheVariables": {
@@ -17,7 +17,7 @@
       }
     },
     {
-      "name": "full",
+      "name": "default",
       "inherits": "basic",
       "displayName": "Default configuration",
       "description": "Build all extension modules that are CPU-only",
@@ -40,8 +40,8 @@
       }
     },
     {
-      "name": "full-cuda",
-      "inherits": "full",
+      "name": "cuda",
+      "inherits": "default",
       "displayName": "Default configuration plus CUDA",
       "description": "Additionally build with CUDA extension modules",
       "cacheVariables": {
