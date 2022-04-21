@@ -2396,6 +2396,7 @@ float ShadowCalculation(int lightNo, vec3 fragPosWorldSpace, float softness)
         
     /* return mix(shadow1, shadow2, coef); */
 }
+)" + R"(
 float PCFAttLayer(int lightNo, float currentDepth, float bias, vec3 pos, int layer, int k, float softness, vec2 coord, float near, float far)
 {
     
