@@ -375,6 +375,7 @@ void ZenoSubGraphScene::paste(QPointF pos)
 		for (int i = 0; i < pNodesData->m_vecNodes.size(); i++)
 		{
 			NODE_DATA& data = pNodesData->m_vecNodes[i];
+            data[ROLE_OBJID] = UiHelper::generateUuid(data[ROLE_OBJNAME].toString());
 			QPointF orginalPos = data[ROLE_OBJPOS].toPointF();
 			data[ROLE_OBJPOS] = orginalPos + offset;
 		}

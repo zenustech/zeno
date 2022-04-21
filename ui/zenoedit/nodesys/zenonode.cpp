@@ -657,6 +657,7 @@ void ZenoNode::onSocketUpdated(const SOCKET_UPDATE_INFO& info)
                 _socket_ctrl sock;
 				sock.socket = new ZenoSocketItem(m_renderParams.socket, m_renderParams.szSocket, this);
 				sock.socket_text = new ZenoTextLayoutItem(newName, m_renderParams.socketFont, m_renderParams.socketClr.color());
+                sock.socket_text->setRight(true);
                 m_outSockets[newName] = sock;
 
                 int r = std::max(m_inSockets.count() + m_outSockets.count() - 1, 0);
@@ -837,6 +838,7 @@ QGraphicsLayout* ZenoNode::initSockets()
         for (auto outSock : outputs.keys())
         {
             ZenoTextLayoutItem *pSocketItem = new ZenoTextLayoutItem(outSock, m_renderParams.socketFont, m_renderParams.socketClr.color());
+            pSocketItem->setRight(true);
 
             QGraphicsLinearLayout *pMiniLayout = new QGraphicsLinearLayout(Qt::Horizontal);
             pMiniLayout->addStretch();

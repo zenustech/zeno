@@ -91,7 +91,7 @@ public:
     void updateSocketDefl(const QString& id, PARAM_UPDATE_INFO info, const QModelIndex& subGpIdx) override;
     QVariant getNodeStatus(const QString& id, int role, const QModelIndex& subGpIdx) override;
     void updateNodeStatus(const QString& nodeid, STATUS_UPDATE_INFO info, const QModelIndex& subgIdx, bool enableTransaction = false) override;
-    void updateDescInfo(const QString& descName, const SOCKET_UPDATE_INFO& updateInfo, bool enableTransaction = false) override;
+
 	NODE_DATA itemData(const QModelIndex& index, const QModelIndex& subGpIdx) const override;
 	QString name(const QModelIndex& subGpIdx) const override;
 	void setName(const QString& name, const QModelIndex& subGpIdx) override;
@@ -135,6 +135,7 @@ private:
     NODE_DESCS getSubgraphDescs();
     NODE_DESCS getCoreDescs();
     void onSubInfoChanged(SubGraphModel* pSubModel, const QModelIndex& idx, bool bInput, bool bInsert);
+    void updateDescInfo(const QString& descName, const SOCKET_UPDATE_INFO& updateInfo);
 
     QVector<SUBMODEL_SCENE> m_subGraphs;
     QItemSelectionModel* m_selection;

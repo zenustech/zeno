@@ -2,6 +2,7 @@
 #include "graphsmodel.h"
 #include <zenoui/model/modelrole.h>
 #include <zenoui/util/uihelper.h>
+#include "util/apphelper.h"
 #include <zeno/zeno.h>
 #include <zenoui/util/cihou.h>
 #include "zenoapplication.h"
@@ -631,6 +632,11 @@ int GraphsModel::itemCount(const QModelIndex& subGpIdx) const
 
 void GraphsModel::addNode(const NODE_DATA& nodeData, const QModelIndex& subGpIdx, bool enableTransaction)
 {
+    //TODO: add this at the beginning of all apis?
+    bool bEnableIOProc = zenoApp->IsIOProcessing();
+    if (bEnableIOProc)
+        enableTransaction = false;
+
     if (enableTransaction)
     {
         QString id = nodeData[ROLE_OBJID].toString();
@@ -641,10 +647,74 @@ void GraphsModel::addNode(const NODE_DATA& nodeData, const QModelIndex& subGpIdx
     {
         SubGraphModel* pGraph = subGraph(subGpIdx.row());
         Q_ASSERT(pGraph);
-        if (pGraph)
+
+        NODE_DATA nodeData2 = nodeData;
+        PARAMS_INFO params = nodeData2[ROLE_PARAMETERS].value<PARAMS_INFO>();
+        QString descName = nodeData[ROLE_OBJNAME].toString();
+        if (descName == "SubInput" || descName == "SubOutput")
+        {
+            AppHelper::correctSubIOName(this, subGpIdx, descName, params);
+            nodeData2[ROLE_PARAMETERS] = QVariant::fromValue(params);
+            pGraph->appendItem(nodeData2);
+        }
+        else
         {
             pGraph->appendItem(nodeData);
         }
+
+        //update desc if meet subinput/suboutput node.
+        if (!bEnableIOProc)
+        {
+            const QModelIndex &idx = pGraph->index(nodeData[ROLE_OBJID].toString());
+            const QString &objName = idx.data(ROLE_OBJNAME).toString();
+            bool bInserted = true;
+            if (objName == "SubInput")
+                onSubInfoChanged(pGraph, idx, true, bInserted);
+            else if (objName == "SubOutput") 
+                onSubInfoChanged(pGraph, idx, false, bInserted);
+        }
+    }
+}
+
+void GraphsModel::removeNode(const QString& nodeid, const QModelIndex& subGpIdx, bool enableTransaction)
+{
+	SubGraphModel* pGraph = subGraph(subGpIdx.row());
+	Q_ASSERT(pGraph);
+    if (!pGraph)
+        return;
+
+    bool bEnableIOProc = zenoApp->IsIOProcessing();
+    if (bEnableIOProc)
+        enableTransaction = false;
+
+    if (enableTransaction)
+    {
+        QModelIndex idx = pGraph->index(nodeid);
+        int row = idx.row();
+        const NODE_DATA& data = pGraph->itemData(idx);
+
+        RemoveNodeCommand* pCmd = new RemoveNodeCommand(row, data, this, subGpIdx);
+        m_stack->push(pCmd);
+    }
+    else
+    {
+        
+        const QModelIndex &idx = pGraph->index(nodeid);
+        const QString &objName = idx.data(ROLE_OBJNAME).toString();
+        if (!bEnableIOProc)
+        {
+            //if subnode removed, the whole graphs referred to it should be update.
+            bool bInserted = false;
+            if (objName == "SubInput")
+            {
+                onSubInfoChanged(pGraph, idx, true, bInserted);
+            }
+            else if (objName == "SubOutput")
+            {
+                onSubInfoChanged(pGraph, idx, false, bInserted);
+            }
+        }
+        pGraph->removeNode(nodeid, false);
     }
 }
 
@@ -700,30 +770,6 @@ void GraphsModel::importNodeLinks(const QList<NODE_DATA>& nodes, const QModelInd
 		}
 	}
     endTransaction();
-}
-
-void GraphsModel::removeNode(const QString& nodeid, const QModelIndex& subGpIdx, bool enableTransaction)
-{
-	SubGraphModel* pGraph = subGraph(subGpIdx.row());
-	Q_ASSERT(pGraph);
-    if (!pGraph)
-        return;
-
-    if (enableTransaction)
-    {
-        QModelIndex idx = pGraph->index(nodeid);
-        int row = idx.row();
-        const NODE_DATA& data = pGraph->itemData(idx);
-
-        m_stack->beginMacro("remove single node");
-        RemoveNodeCommand* pCmd = new RemoveNodeCommand(row, data, this, subGpIdx);
-        m_stack->push(pCmd);
-        m_stack->endMacro();
-    }
-    else
-    {
-        pGraph->removeNode(nodeid, false);
-    }
 }
 
 void GraphsModel::removeNode(int row, const QModelIndex& subGpIdx)
@@ -881,10 +927,19 @@ void GraphsModel::updateParamInfo(const QString& id, PARAM_UPDATE_INFO info, con
     {
 		SubGraphModel* pGraph = subGraph(subGpIdx.row());
 		Q_ASSERT(pGraph);
-		if (pGraph)
-		{
-			pGraph->updateParam(id, info.name, info.newValue);
-		}
+		pGraph->updateParam(id, info.name, info.newValue);
+
+        const QString& nodeName = pGraph->index(id).data(ROLE_OBJNAME).toString();
+        if (info.name == "name" && (nodeName == "SubInput" || nodeName == "SubOutput"))
+        {
+            SOCKET_UPDATE_INFO updateInfo;
+            updateInfo.bInput = (nodeName == "SubInput");
+            updateInfo.oldInfo.name = info.oldValue.toString();
+            updateInfo.newInfo.name = info.newValue.toString();
+
+            updateInfo.updateWay = SOCKET_UPDATE_NAME;
+            updateDescInfo(pGraph->name(), updateInfo);
+        }
     }
 }
 
@@ -934,100 +989,90 @@ void GraphsModel::updateNodeStatus(const QString& nodeid, STATUS_UPDATE_INFO inf
     }
 }
 
-void GraphsModel::updateDescInfo(const QString& descName, const SOCKET_UPDATE_INFO& updateInfo, bool enableTransaction)
+void GraphsModel::updateDescInfo(const QString& descName, const SOCKET_UPDATE_INFO& updateInfo)
 {
-    if (enableTransaction)
-    {
-        UpdateDescCommand* pCmd = new UpdateDescCommand(descName, updateInfo, this);
-        m_stack->push(pCmd);
+	Q_ASSERT(m_nodesDesc.find(descName) != m_nodesDesc.end());
+	NODE_DESC& desc = m_nodesDesc[descName];
+	switch (updateInfo.updateWay)
+	{
+		case SOCKET_INSERT:
+		{
+            const QString& nameValue = updateInfo.newInfo.name;
+            if (updateInfo.bInput)
+            {
+                // add SubInput
+                Q_ASSERT(desc.inputs.find(nameValue) == desc.inputs.end());
+                INPUT_SOCKET inputSocket;
+                inputSocket.info = updateInfo.newInfo;
+                desc.inputs[nameValue] = inputSocket;
+            }
+            else
+            {
+                // add SubOutput
+                Q_ASSERT(desc.outputs.find(nameValue) == desc.outputs.end());
+                OUTPUT_SOCKET outputSocket;
+                outputSocket.info = updateInfo.newInfo;
+                desc.outputs[nameValue] = outputSocket;
+            }
+            break;
+        }
+        case SOCKET_REMOVE:
+        {
+            const QString& nameValue = updateInfo.newInfo.name;
+            if (updateInfo.bInput)
+            {
+                Q_ASSERT(desc.inputs.find(nameValue) != desc.inputs.end());
+                desc.inputs.remove(nameValue);
+            }
+            else
+            {
+                Q_ASSERT(desc.outputs.find(nameValue) != desc.outputs.end());
+                desc.outputs.remove(nameValue);
+            }
+            break;
+        }
+        case SOCKET_UPDATE_NAME:
+        {
+            const QString& oldName = updateInfo.oldInfo.name;
+            const QString& newName = updateInfo.newInfo.name;
+            if (updateInfo.bInput)
+            {
+                Q_ASSERT(desc.inputs.find(oldName) != desc.inputs.end() &&
+                    desc.inputs.find(newName) == desc.inputs.end());
+                desc.inputs[newName] = desc.inputs[oldName];
+                desc.inputs.remove(oldName);
+            }
+            else
+            {
+                Q_ASSERT(desc.outputs.find(oldName) != desc.outputs.end() &&
+                    desc.outputs.find(newName) == desc.outputs.end());
+                desc.outputs[newName] = desc.outputs[oldName];
+                desc.outputs.remove(oldName);
+            }
+            break;
+        }
+        case SOCKET_UPDATE_DEFL:
+        {
+            break;
+        }
+        case SOCKET_UPDATE_TYPE:
+        {
+            break;
+        }
     }
-    else
+
+    for (int i = 0; i < m_subGraphs.size(); i++)
     {
-		Q_ASSERT(m_nodesDesc.find(descName) != m_nodesDesc.end());
-		NODE_DESC& desc = m_nodesDesc[descName];
-		switch (updateInfo.updateWay)
-		{
-		    case SOCKET_INSERT:
-		    {
-			    const QString& nameValue = updateInfo.newInfo.name;
-			    if (updateInfo.bInput)
-			    {
-				    // add SubInput
-				    Q_ASSERT(desc.inputs.find(nameValue) == desc.inputs.end());
-				    INPUT_SOCKET inputSocket;
-				    inputSocket.info = updateInfo.newInfo;
-				    desc.inputs[nameValue] = inputSocket;
-			    }
-			    else
-			    {
-				    // add SubOutput
-				    Q_ASSERT(desc.outputs.find(nameValue) == desc.outputs.end());
-				    OUTPUT_SOCKET outputSocket;
-				    outputSocket.info = updateInfo.newInfo;
-				    desc.outputs[nameValue] = outputSocket;
-			    }
-			    break;
-		    }
-		    case SOCKET_REMOVE:
-		    {
-			    const QString& nameValue = updateInfo.newInfo.name;
-			    if (updateInfo.bInput)
-			    {
-				    Q_ASSERT(desc.inputs.find(nameValue) != desc.inputs.end());
-				    desc.inputs.remove(nameValue);
-			    }
-			    else
-			    {
-				    Q_ASSERT(desc.outputs.find(nameValue) != desc.outputs.end());
-				    desc.outputs.remove(nameValue);
-			    }
-			    break;
-		    }
-		    case SOCKET_UPDATE_NAME:
-		    {
-			    const QString& oldName = updateInfo.oldInfo.name;
-			    const QString& newName = updateInfo.newInfo.name;
-			    if (updateInfo.bInput)
-			    {
-				    Q_ASSERT(desc.inputs.find(oldName) != desc.inputs.end() &&
-					    desc.inputs.find(newName) == desc.inputs.end());
-				    desc.inputs[newName] = desc.inputs[oldName];
-				    desc.inputs.remove(oldName);
-			    }
-			    else
-			    {
-				    Q_ASSERT(desc.outputs.find(oldName) != desc.outputs.end() &&
-					    desc.outputs.find(newName) == desc.outputs.end());
-				    desc.outputs[newName] = desc.outputs[oldName];
-				    desc.outputs.remove(oldName);
-			    }
-			    break;
-		    }
-		    case SOCKET_UPDATE_DEFL:
-		    {
-
-                break;
-		    }
-		    case SOCKET_UPDATE_TYPE:
-		    {
-
-                break;
-		    }
-		}
-
-		for (int i = 0; i < m_subGraphs.size(); i++)
-		{
-			SubGraphModel* pModel = m_subGraphs[i].pModel;
-			if (pModel->name() != descName)
-			{
-				QModelIndexList results = pModel->match(index(0, 0), ROLE_OBJNAME, descName, -1, Qt::MatchContains);
-				for (auto idx : results)
-				{
-					const QString& nodeId = idx.data(ROLE_OBJID).toString();
-					updateSocket(nodeId, updateInfo, index(i, 0), false);
-				}
-			}
-		}
+        SubGraphModel* pModel = m_subGraphs[i].pModel;
+        if (pModel->name() != descName)
+        {
+            QModelIndexList results = pModel->match(index(0, 0), ROLE_OBJNAME, descName, -1, Qt::MatchContains);
+            for (auto idx : results)
+            {
+                const QString& nodeId = idx.data(ROLE_OBJID).toString();
+                updateSocket(nodeId, updateInfo, index(i, 0), false);
+            }
+        }
     }
 }
 
@@ -1176,22 +1221,7 @@ void GraphsModel::on_subg_rowsInserted(const QModelIndex& parent, int first, int
 {
     SubGraphModel* pSubModel = qobject_cast<SubGraphModel*>(sender());
     Q_ASSERT(pSubModel);
-
-    if (!zenoApp->IsIOProcessing())
-    {
-		const QModelIndex& idx = pSubModel->index(first, 0);
-		const QString& objName = idx.data(ROLE_OBJNAME).toString();
-        bool bInserted = true;
-        if (objName == "SubInput") {
-            onSubInfoChanged(pSubModel, idx, true, bInserted);
-        }
-        else if (objName == "SubOutput") {
-            onSubInfoChanged(pSubModel, idx, false, bInserted);
-        }
-    }
-
     QModelIndex subgIdx = indexBySubModel(pSubModel);
-    //sync to view.
     emit _rowsInserted(subgIdx, parent, first, last);
 }
 
@@ -1199,20 +1229,6 @@ void GraphsModel::on_subg_rowsAboutToBeRemoved(const QModelIndex& parent, int fi
 {
     SubGraphModel* pSubModel = qobject_cast<SubGraphModel*>(sender());
     Q_ASSERT(pSubModel);
-
-    if (!zenoApp->IsIOProcessing())
-    {
-		const QModelIndex& idx = pSubModel->index(first, 0);
-		const QString& objName = idx.data(ROLE_OBJNAME).toString();
-        bool bInserted = false;
-		if (objName == "SubInput") {
-			onSubInfoChanged(pSubModel, idx, true, bInserted);
-		}
-		else if (objName == "SubOutput") {
-			onSubInfoChanged(pSubModel, idx, false, bInserted);
-		}
-    }
-
     QModelIndex subgIdx = indexBySubModel(pSubModel);
     emit _rowsAboutToBeRemoved(subgIdx, parent, first, last);
 }
@@ -1319,7 +1335,7 @@ void GraphsModel::onSubInfoChanged(SubGraphModel* pSubModel, const QModelIndex& 
     updateInfo.oldInfo = updateInfo.newInfo = info;
 
     const QString& subnetNodeName = pSubModel->name();
-    updateDescInfo(subnetNodeName, updateInfo, false);
+    updateDescInfo(subnetNodeName, updateInfo);
 }
 
 QList<SEARCH_RESULT> GraphsModel::search(const QString& content, int searchOpts)

@@ -8,6 +8,7 @@
 ZenoApplication::ZenoApplication(int &argc, char **argv)
     : QApplication(argc, argv)
     , m_pGraphs(new GraphsManagment(this))
+    , m_bIOProcessing(false)
 {
     initFonts();
     initStyleSheets();

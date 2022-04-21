@@ -1,6 +1,7 @@
 #include "nodesmgr.h"
 #include "fuzzy_search.h"
 #include <zenoui/util/uihelper.h>
+#include "util/apphelper.h"
 #include <zeno/utils/log.h>
 
 
@@ -21,9 +22,7 @@ void NodesMgr::createNewNode(IGraphsModel* pModel, QModelIndex subgIdx, const QS
 	node[ROLE_OBJPOS] = pt;
 	node[ROLE_COLLASPED] = false;
 
-	pModel->beginTransaction("add node");
 	pModel->addNode(node, subgIdx, true);
-	pModel->endTransaction();
 }
 
 NODE_TYPE NodesMgr::nodeType(const QString& name)
