@@ -33,7 +33,7 @@ jobs:
     strategy:
       matrix:
         include:
-        - os: ubuntu-18.04  # cihou linuxdeployqt
+        - os: ubuntu-18.04
           triplet: x64-linux
           cxx: g++-9
         - os: windows-2022
@@ -64,10 +64,12 @@ jobs:
         cached: ${{ steps.cache-qt.outputs.cache-hit }}
 
     - name: Setup Platform
-      run: python misc/ci/setup_plat.py
+      if: ${{ matrix.triplet != '' }}
+      run: python misc/ci/setup.py
 
     - name: Setup Vcpkg
       uses: lukka/run-vcpkg@v10
+      if: ${{ matrix.triplet != '' }}
       with:
         vcpkgGitCommitId: e0c3408c778c54788393c4a739f6f3507aff77cb
         vcpkgDirectory: ${{ github.workspace }}/vcpkg
