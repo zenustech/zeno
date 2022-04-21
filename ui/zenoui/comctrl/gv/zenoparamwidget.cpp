@@ -315,6 +315,7 @@ ZenoTextLayoutItem::ZenoTextLayoutItem(const QString &text, const QFont &font, c
     : QGraphicsLayoutItem()
     , QGraphicsTextItem(text, parent)
     , m_text(text)
+    , m_bRight(false)
 {
     setZValue(ZVALUE_ELEMENT);
     setFont(font);
@@ -330,7 +331,11 @@ void ZenoTextLayoutItem::setGeometry(const QRectF& geom)
     prepareGeometryChange();
     QGraphicsLayoutItem::setGeometry(geom);
     setPos(geom.topLeft());
-    //emit geometrySetup(scenePos());
+}
+
+void ZenoTextLayoutItem::setRight(bool right)
+{
+    m_bRight = right;
 }
 
 QRectF ZenoTextLayoutItem::boundingRect() const
@@ -341,7 +346,18 @@ QRectF ZenoTextLayoutItem::boundingRect() const
 
 void ZenoTextLayoutItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
 {
-    QGraphicsTextItem::paint(painter, option, widget);
+    //painter->fillRect(boundingRect(), QColor(0, 0, 0));
+    if (m_bRight)
+    {
+        QString text = toPlainText();
+        painter->setFont(this->font());
+        painter->setPen(QPen(this->defaultTextColor()));
+        painter->drawText(boundingRect(), Qt::AlignRight | Qt::AlignCenter, text);
+    }
+    else
+    {
+        QGraphicsTextItem::paint(painter, option, widget);
+    }
 }
 
 QSizeF ZenoTextLayoutItem::sizeHint(Qt::SizeHint which, const QSizeF &constraint) const

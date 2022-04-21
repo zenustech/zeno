@@ -200,6 +200,7 @@ class ZenoTextLayoutItem : public QGraphicsLayoutItem, public QGraphicsTextItem
 public:
     ZenoTextLayoutItem(const QString &text, const QFont &font, const QColor &color, QGraphicsItem *parent = nullptr);
     void setGeometry(const QRectF &rect) override;
+    void setRight(bool right);
     QRectF boundingRect() const override;
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) override;
 
@@ -211,6 +212,7 @@ protected:
 
 private:
     QString m_text;
+    bool m_bRight;
 };
 
 class ZenoBoardTextLayoutItem : public QGraphicsLayoutItem, public QGraphicsTextItem
