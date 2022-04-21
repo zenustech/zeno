@@ -290,8 +290,8 @@ struct ToZSParticles : INode {
           eleD[i][0] = obj[tri[1]] - obj[tri[0]];
           eleD[i][1] = obj[tri[2]] - obj[tri[0]];
 
-          auto normal = cross(toTV3(eleD[i][1]).normalized(),
-                              toTV3(eleD[i][0]).normalized())
+          auto normal = cross(toTV3(eleD[i][0]).normalized(),
+                              toTV3(eleD[i][1]).normalized())
                             .normalized();
           eleD[i][2] = fromTV3(normal);
 

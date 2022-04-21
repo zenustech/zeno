@@ -27,7 +27,7 @@ struct ZSPartitionForZSParticles : INode {
     auto cudaPol = cuda_exec().device(0);
 
     bool cached = get_param<std::string>("strategy") == "cache" ? true : false;
-    if (cached && table->hasTags()) {
+    if (!table->requestRebuild && cached && table->hasTags()) {
       zs::Vector<int> bRebuild{1, memsrc_e::device, 0};
       bRebuild.setVal(0);
       cudaPol(range(table->numBoundaryEntries()), // table->getTags(),
@@ -108,6 +108,8 @@ struct ZSPartitionForZSParticles : INode {
       identify_boundary_indices(cudaPol, *table, wrapv<grid_t::side_length>{});
     }
     table->rebuilt = true;
+    if (table->requestRebuild) // request processed
+      table->requestRebuild = false;
 
     fmt::print("partition of [{}] blocks for {} particles\n", partition.size(),
                cnt);

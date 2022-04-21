@@ -218,9 +218,15 @@ struct BuildPrimitiveSequence : INode {
       auto sprayedOffset = zsprimseq->sprayedOffset;
       auto sprayedSize = numV - sprayedOffset;
       auto size = sprayedOffset;
-      if (size != next->numParticles() || numE != next->numElements())
+      if (size != next->numParticles() || numE != next->numElements()) {
+        fmt::print(
+            "current numVerts ({} + {}) (i.e. {}), numEles ({}).\nIncoming "
+            "boundary primitive numVerts ({}), numEles ({})\n",
+            size, sprayedSize, numV, numE, next->numParticles(),
+            next->numElements());
         throw std::runtime_error(
             fmt::format("prim size mismatch with current sequence prim!\n"));
+      }
 
       fmt::print("{} verts (including {} sprayed), {} elements\n", numV,
                  sprayedSize, numE);
@@ -353,8 +359,10 @@ ZENDEFNODE(UpdatePrimitiveFromZSParticles, {
 struct MakeZSPartition : INode {
   void apply() override {
     auto partition = std::make_shared<ZenoPartition>();
-    partition->get() =
-        typename ZenoPartition::table_t{(std::size_t)1, zs::memsrc_e::um, 0};
+    partition->get() = typename ZenoPartition::table_t{(std::size_t)1,
+                                                       zs::memsrc_e::device, 0};
+    partition->requestRebuild = false;
+    partition->rebuilt = false;
     set_output("ZSPartition", partition);
   }
 };
@@ -384,7 +392,8 @@ struct MakeZSGrid : INode {
       throw std::runtime_error(fmt::format(
           "unrecognized transfer scheme [{}]\n", grid->transferScheme));
 
-    grid->get() = typename ZenoGrid::grid_t{tags, dx, 1, zs::memsrc_e::um, 0};
+    grid->get() =
+        typename ZenoGrid::grid_t{tags, dx, 1, zs::memsrc_e::device, 0};
 
     using traits = zs::grid_traits<typename ZenoGrid::grid_t>;
     fmt::print("grid of dx [{}], side_length [{}], block_size [{}]\n",
@@ -428,18 +437,18 @@ struct MakeZSLevelSet : INode {
 
     if (cateStr == "collocated") {
       auto tmp = typename ZenoLevelSet::template spls_t<zs::grid_e::collocated>{
-          tags, dx, 1, zs::memsrc_e::um, 0};
+          tags, dx, 1, zs::memsrc_e::device, 0};
       tmp.reset(zs::cuda_exec(), 0);
       ls->getLevelSet() = std::move(tmp);
     } else if (cateStr == "cellcentered") {
       auto tmp =
           typename ZenoLevelSet::template spls_t<zs::grid_e::cellcentered>{
-              tags, dx, 1, zs::memsrc_e::um, 0};
+              tags, dx, 1, zs::memsrc_e::device, 0};
       tmp.reset(zs::cuda_exec(), 0);
       ls->getLevelSet() = std::move(tmp);
     } else if (cateStr == "staggered") {
       auto tmp = typename ZenoLevelSet::template spls_t<zs::grid_e::staggered>{
-          tags, dx, 1, zs::memsrc_e::um, 0};
+          tags, dx, 1, zs::memsrc_e::device, 0};
       tmp.reset(zs::cuda_exec(), 0);
       ls->getLevelSet() = std::move(tmp);
     } else if (cateStr == "const_velocity") {

@@ -179,6 +179,7 @@ struct ZenoPartition : IObjectClone<ZenoPartition> {
   table_t table;
   zs::optional<tag_t> tags;
   zs::optional<indices_t> boundaryIndices;
+  bool requestRebuild{false};
   bool rebuilt;
 };
 
