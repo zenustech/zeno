@@ -88,6 +88,82 @@ ZENDEFNODE(Jiggle, {
 });
 
 
+struct Jiggle2 : zeno::INode {
+    virtual void apply() override {
+        auto prim = get_input<zeno::PrimitiveObject>("prim");
+        auto jprim = get_input<zeno::PrimitiveObject>("jprim");
+
+        const auto& cpos_vec =  prim->attr<zeno::vec3f>("curPos");
+        const auto& ppos_vec =  prim->attr<zeno::vec3f>("prePos");
+        const auto& pppos_vec = prim->attr<zeno::vec3f>("preprePos");
+
+        auto& j_cpos_vec = jprim->attr<zeno::vec3f>("curJiggle");
+        auto& j_ppos_vec = jprim->attr<zeno::vec3f>("preJiggle");
+        auto& j_pppos_vec= jprim->attr<zeno::vec3f>("prepreJiggle");
+
+        auto jiggleStiffness = get_input2<float>("jiggleRate");
+        auto characterLen = get_input2<float>("characterLen");
+        auto jiggleScale = get_input2<float>("jiggleScale");
+        // jiggleStiffness /= characterLen;
+
+        auto jiggleDamp = get_input2<float>("jiggleDamping");
+        // auto jiggleWeight = get_input2<float>("jiggleWeight");
+
+        auto jiggleWs = jprim->attr<float>("jws");
+
+        if(jiggleDamp > 0.8) {
+            std::cout << "Input jiggle damp >= 0.8, clamp to 0.8" << std::endl;
+            jiggleDamp = 0.8;
+        }
+
+        // auto jiggleRate = get_input2<float>("jiggleRate");
+        // auto jiggle
+        // auto jiggleStiffness = 1.0/jiggleRate;
+        auto jdt = 1;
+
+        #pragma omp parallel for
+        for(size_t i = 0;i < prim->size();++i){
+            const auto& cpos = cpos_vec[i];
+            const auto& ppos = ppos_vec[i];
+            const auto& pppos= pppos_vec[i];
+            
+            j_pppos_vec[i] = j_ppos_vec[i];
+            j_ppos_vec[i] = j_cpos_vec[i];
+
+            auto& cj = j_cpos_vec[i];
+            const auto& pj = j_ppos_vec[i];
+            const auto& ppj = j_pppos_vec[i];
+
+            auto jvec = (1 - jiggleDamp) * (pj - ppj)/jdt;    
+
+            auto tension = jiggleStiffness * (cpos - pj);
+            cj += jvec * jdt + 0.5 * tension * jdt * jdt;  
+
+            auto jw = jiggleScale * jiggleWs[i];
+
+            cj = cpos * (1 - jw) + jw * cj;
+            // if(i == 0)
+            //     std::cout << "cj : " << cj[0] << "\t" << cj[1] << "\t" << cj[2] << std::endl;  
+        }
+
+        set_output("jprim",jprim); 
+
+    }
+};
+
+ZENDEFNODE(Jiggle2, {
+    {"prim","jprim",
+        // {"float","jiggleWeight","1"},
+        {"float","jiggleDamping","0.5"},
+        {"float","jiggleRate","5"},
+        {"float","characterLen","1"},
+        {"float","jiggleScale","1"},
+    },
+    {"jprim"},
+    {},
+    {"FEM"},
+});
+
 
 struct SolveFEM : zeno::INode {
     virtual void apply() override {
