@@ -1220,24 +1220,22 @@ QVariant ZenoNode::itemChange(GraphicsItemChange change, const QVariant &value)
     }
     else if (change == QGraphicsItem::ItemPositionChange)
     {
-        emit nodePositionChange(nodeId());
-    }
-    else if (change == QGraphicsItem::ItemPositionHasChanged)
-    {
-        QPointF pos = this->scenePos();
+        QPointF pos = value.toPointF();
         int x = pos.x(), y = pos.y();
         x = x - x % SCENE_GRID_SIZE;
         y = y - y % SCENE_GRID_SIZE;
-        if (x != pos.x() && y != pos.y())
+        return QPointF(x, y);
+    }
+    else if (change == QGraphicsItem::ItemPositionHasChanged)
+    {
+        IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
+        QPointF newPos = value.toPointF();
+        QPointF oldPos = pGraphsModel->getNodeStatus(nodeId(), ROLE_OBJPOS, m_subGpIndex).toPointF();
+        if (newPos != oldPos)
         {
-            pos.setX(x);
-            pos.setY(y);
-            IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
-            QPointF oldPos = pGraphsModel->getNodeStatus(nodeId(), ROLE_OBJPOS, m_subGpIndex).toPointF();
-
             STATUS_UPDATE_INFO info;
             info.role = ROLE_OBJPOS;
-            info.newValue = pos;
+            info.newValue = newPos;
             info.oldValue = oldPos;
             pGraphsModel->updateNodeStatus(nodeId(), info, m_subGpIndex, false);
         }

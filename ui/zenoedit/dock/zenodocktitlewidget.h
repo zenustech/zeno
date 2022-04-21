@@ -53,7 +53,7 @@ private:
 	QMenuBar* initMenu();
 	QAction* createAction(const QString& text);
 
-	QString m_title;
+	QLabel* m_lblTitle;
 };
 
 class ZenoPropDockTitleWidget : public ZenoDockTitleWidget

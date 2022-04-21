@@ -272,6 +272,7 @@ ZenoParamMultilineStr::ZenoParamMultilineStr(const QString &value, LineEditParam
     m_pTextEdit->installEventFilter(this);
     m_pTextEdit->setFrameShape(QFrame::NoFrame);
     m_pTextEdit->setFont(param.font);
+    m_pTextEdit->setMinimumSize(ZenoStyle::dpiScaledSize(QSize(256, 228)));
 
 	QTextCharFormat format;
     QFont font("HarmonyOS Sans", 12);

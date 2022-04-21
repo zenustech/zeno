@@ -44,6 +44,7 @@ public slots:
 private slots:
 	void onSubGraphsToRemove(const QModelIndex&, int, int);
 	void onModelReset();
+    void onModelCleared();
 	void onSubGraphRename(const QString& oldName, const QString& newName);
     void onSearchEdited(const QString& content);
     void onMenuActionTriggered(QAction* pAction);

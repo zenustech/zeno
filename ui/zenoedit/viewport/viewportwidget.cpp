@@ -300,6 +300,8 @@ void DisplayWidget::onRunClicked(int beginFrame, int endFrame)
 {
 	auto pGraphsMgr = zenoApp->graphsManagment();
 	IGraphsModel* pModel = pGraphsMgr->currentModel();
+    if (!pModel)
+        return;
 	GraphsModel* pLegacy = qobject_cast<GraphsModel*>(pModel);
 	launchProgram(pLegacy, beginFrame, endFrame);
 }
