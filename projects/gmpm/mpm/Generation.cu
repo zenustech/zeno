@@ -628,7 +628,7 @@ struct ZSParticlesToPrimitiveObject : INode {
       }
     }
 /// elements
-#if 0
+#if 1
     if (zsprim->isMeshPrimitive()) {
       auto &zseles = zsprim->getQuadraturePoints();
       int nVertsPerEle = static_cast<int>(zsprim->category) + 1;

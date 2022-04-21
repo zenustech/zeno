@@ -815,7 +815,7 @@ struct ZSBoundaryPrimitiveToZSGrid : INode {
                     std::size_t size,
                     const typename ZenoParticles::particles_t &pars,
                     ZenoPartition &zspartition, typename ZenoGrid::grid_t &grid,
-                    bool includeNormal = false) {
+                    bool primitiveAsBoundary, bool includeNormal = false) {
     using namespace zs;
     const typename ZenoPartition::table_t &partition = zspartition.get();
 
@@ -860,9 +860,11 @@ struct ZSBoundaryPrimitiveToZSGrid : INode {
       }
     });
     if (flag.getVal() != 0) {
-      zspartition.requestRebuild = true;
-      fmt::print(fg(fmt::color::red),
-                 "encountering boundary particles breaking CFL\n");
+      if (!primitiveAsBoundary) {
+        zspartition.requestRebuild = true;
+        fmt::print(fg(fmt::color::red),
+                   "encountering boundary particles breaking CFL\n");
+      }
     }
   }
   void apply() override {
@@ -891,11 +893,13 @@ struct ZSBoundaryPrimitiveToZSGrid : INode {
       auto sprayedSize = pars.size() - sprayedOffset;
       auto size = sprayedOffset;
       if (sprayedSize == 0) {
-        p2g_momentum(cudaPol, 0, pars.size(), pars, *zspartition, grid, false);
-        p2g_momentum(cudaPol, 0, eles.size(), eles, *zspartition, grid, true);
+        p2g_momentum(cudaPol, 0, pars.size(), pars, *zspartition, grid,
+                     parObjPtr->asBoundary, false);
+        p2g_momentum(cudaPol, 0, eles.size(), eles, *zspartition, grid,
+                     parObjPtr->asBoundary, true);
       } else {
         p2g_momentum(cudaPol, sprayedOffset, sprayedSize, pars, *zspartition,
-                     grid, true);
+                     grid, parObjPtr->asBoundary, true);
       }
       fmt::print("[boundary particle p2g] dx: {}, npars: {}, neles: {}\n",
                  grid.dx, pars.size(), eles.size());
