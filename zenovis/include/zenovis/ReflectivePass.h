@@ -246,7 +246,7 @@ struct ReflectivePass : zeno::disable_copy {
     }
 
     void reflectivePass() {
-        updateReflectTexture(camera()->nx, camera()->ny);
+        updateReflectTexture(camera()->m_nx, camera()->m_ny);
 
         //loop over reflective planes
         for (int i = 0; i < 8; i++) {
@@ -254,7 +254,7 @@ struct ReflectivePass : zeno::disable_copy {
                 continue;
             setReflectivePlane(i, camera()->g_camPos, camera()->g_camView,
                                camera()->g_camUp);
-            BeginReflective(i, camera()->nx, camera()->ny);
+            BeginReflective(i, camera()->m_nx, camera()->m_ny);
             scene->vao->bind();
             camera()->view = getReflectViewMat(i);
             setReflectionViewID(i);

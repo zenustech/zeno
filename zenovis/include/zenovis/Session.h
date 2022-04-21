@@ -25,14 +25,14 @@ struct Session : zeno::disable_copy {
     void set_window_size(int nx, int ny);
     void set_curr_frameid(int frameid);
     int get_curr_frameid();
-    /* double get_solver_interval(); */
-    /* double get_render_fps(); */
+    /* float get_solver_interval(); */
+    /* float get_render_fps(); */
     void set_show_grid(bool flag);
-    void look_perspective(double cx, double cy, double cz, double theta,
-                          double phi, double radius, double fov,
+    void look_perspective(float cx, float cy, float cz, float theta,
+                          float phi, float radius, float fov,
                           bool ortho_mode);
-    void set_perspective(std::array<double, 16> viewArr,
-                         std::array<double, 16> projArr);
+    void set_perspective(std::array<float, 16> const &viewArr,
+                         std::array<float, 16> const &projArr);
     void do_screenshot(std::string path);
     void new_frame_offline(std::string path);
     void set_background_color(float r, float g, float b);

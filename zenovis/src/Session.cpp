@@ -26,8 +26,8 @@ Session::Session() : impl(std::make_unique<Impl>()) {
 Session::~Session() = default;
 
 void Session::set_window_size(int nx, int ny) {
-    impl->scene->camera->nx = nx;
-    impl->scene->camera->ny = ny;
+    impl->scene->camera->m_nx = nx;
+    impl->scene->camera->m_ny = ny;
 }
 
 void Session::set_show_grid(bool show_grid) {
@@ -57,27 +57,26 @@ void Session::new_frame() {
 void Session::new_frame_offline(std::string path) {
     char buf[1024];
     sprintf(buf, "%s/%06d.png", path.c_str(), impl->curr_frameid);
-    zeno::log_info("saving screen {}x{} to {}", impl->scene->camera->nx,
-                    impl->scene->camera->ny, buf);
+    zeno::log_info("saving screen {}x{} to {}", impl->scene->camera->m_nx,
+                    impl->scene->camera->m_ny, buf);
     do_screenshot(buf);
 }
 
 void Session::do_screenshot(std::string path) {
     std::vector<char> pixels = impl->scene->record_frame_offline();
     stbi_flip_vertically_on_write(true);
-    stbi_write_png(path.c_str(), impl->scene->camera->nx,
-                   impl->scene->camera->ny, 3, &pixels[0], 0);
+    stbi_write_png(path.c_str(), impl->scene->camera->m_nx,
+                   impl->scene->camera->m_ny, 3, &pixels[0], 0);
 }
 
-void Session::look_perspective(double cx, double cy, double cz, double theta,
-                               double phi, double radius, double fov,
+void Session::look_perspective(float cx, float cy, float cz, float theta,
+                               float phi, float radius, float fov,
                                bool ortho_mode) {
-    impl->scene->camera->setCamera(cx, cy, cz, theta, phi, radius, fov,
-                                          ortho_mode);
+    impl->scene->camera->setCamera(cx, cy, cz, theta, phi, radius, fov, ortho_mode);
 }
 
-void Session::set_perspective(std::array<double, 16> viewArr,
-                              std::array<double, 16> projArr) {
+void Session::set_perspective(std::array<float, 16> const &viewArr,
+                              std::array<float, 16> const &projArr) {
     impl->scene->camera->setCamera(viewArr, projArr);
 }
 

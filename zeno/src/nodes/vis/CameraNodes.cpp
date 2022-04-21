@@ -19,9 +19,9 @@ struct MakeCamera : INode {
 
 ZENO_DEFNODE(MakeCamera)({
     {
-        {"vec3f", "pos", "0,0,-1"},
+        {"vec3f", "pos", "0,0,1"},
         {"vec3f", "up", "0,1,0"},
-        {"vec3f", "view", "0,0,1"},
+        {"vec3f", "view", "0,0,-1"},
         {"float", "dof", "-1"},
         {"float", "far", "0.1"},
         {"float", "near", "20000"},
