@@ -80,8 +80,8 @@ jobs:
       uses: lukka/run-cmake@v10
       with:
         cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
-        configurePreset: basic
-        buildPreset: basic
+        configurePreset: default
+        buildPreset: default
 
     - name: Packaging
       if: ${{ needs.check.outputs.deploy == 'true' }}
