@@ -51,6 +51,6 @@
     }
   },
   "default-features": [
-      "openvdb", "cgmesh", "alembic"
+      "openvdb", "cgmesh"
   ]
 }

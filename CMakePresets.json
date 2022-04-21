@@ -42,8 +42,7 @@
         "ZENO_WITH_Skinning": "ON",
         "ZENO_WITH_Euler": "ON",
         "ZENO_WITH_Functional": "ON",
-        "ZENO_WITH_LSystem": "ON",
-        "ZENO_WITH_Alembic": "ON"
+        "ZENO_WITH_LSystem": "ON"
       }
     },
     {
