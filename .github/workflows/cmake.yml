@@ -27,7 +27,6 @@ jobs:
 
     outputs:
       deploy: ${{ steps.is-release-step.outputs.ci-skip == 'true' }}
-      type: ${{ steps.is-release-step.outputs.ci-skip == 'true' && 'Release' || 'Debug' }}
 
   build:
     strategy:
@@ -79,9 +78,7 @@ jobs:
     - name: Run CMake
       uses: lukka/run-cmake@v10
       with:
-        cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
-        configurePreset: default
-        buildPreset: default
+        configurePreset: ${{ (matrix.triplet != '' && 'default' || 'basic') + (needs.check.outputs.deploy && '' || '-debug') }}
 
     - name: Packaging
       if: ${{ needs.check.outputs.deploy == 'true' }}
@@ -91,7 +88,7 @@ jobs:
       if: ${{ needs.check.outputs.deploy == 'true' }}
       uses: actions/upload-artifact@v2
       with:
-        name: ${{runner.os}}-${{needs.check.outputs.type}}-Package
+        name: ${{runner.os}}-Package
         path: ${{github.workspace}}/build/out.${{ runner.os == 'Linux' && 'tar.gz' || 'zip' }}
 
   deploy:
@@ -116,7 +113,7 @@ jobs:
     - name: Download Release Artifact
       uses: actions/download-artifact@v2
       with:
-        name: ${{matrix.os}}-${{needs.check.outputs.type}}-Package
+        name: ${{matrix.os}}-Package
         path: ${{github.workspace}}/release-artifact
 
     - name: Create Release

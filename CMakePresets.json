@@ -10,7 +10,6 @@
       "name": "basic",
       "displayName": "Basic configuration",
       "description": "Build without any dependencies",
-      "generator": "Ninja",
       "binaryDir": "${sourceDir}/build",
       "cacheVariables": {
         "BUILD_TYPE": "Release"
@@ -19,7 +18,7 @@
     {
       "name": "openvdb",
       "inherits": "basic",
-      "displayName": "OpenVDB-only configuration",
+      "displayName": "OpenVDB configuration",
       "description": "Additionally build the OpenVDB extensions",
       "cacheVariables": {
         "ZENO_WITH_ZenoFX": "ON",
@@ -32,7 +31,7 @@
     {
       "name": "default",
       "inherits": "openvdb",
-      "displayName": "CPU-only configuration",
+      "displayName": "Default configuration",
       "description": "Build all extension modules that are CPU-only",
       "cacheVariables": {
         "ZENO_WITH_FEM": "ON",
@@ -50,22 +49,28 @@
     {
       "name": "cuda",
       "inherits": "default",
-      "displayName": "CPU + CUDA configuration",
+      "displayName": "CUDA configuration",
       "description": "Additionally build with CUDA extension modules",
       "cacheVariables": {
         "ZENO_WITH_gmpm": "ON",
         "ZENO_WITH_mesher": "ON"
       }
-    }
-  ],
-  "buildPresets": [
-    {
-      "name": "basic",
-      "configurePreset": "basic"
     },
     {
-      "name": "default",
-      "configurePreset": "default"
+      "name": "basic-debug",
+      "inherits": "basic",
+      "description": "Basic configuration (Debug)",
+      "cacheVariables": {
+        "BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "default-debug",
+      "inherits": "default",
+      "description": "Default configuration (Debug)",
+      "cacheVariables": {
+        "BUILD_TYPE": "Debug"
+      }
     }
   ]
 }
