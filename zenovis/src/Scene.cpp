@@ -132,6 +132,7 @@ std::vector<char> Scene::record_frame_offline() {
     CHECK_GL(glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
                                        GL_RENDERBUFFER, rbo2));
     CHECK_GL(glDrawBuffer(GL_COLOR_ATTACHMENT0));
+    CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 
     draw(fbo);
 
