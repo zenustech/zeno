@@ -51,7 +51,6 @@ public:
     OUTPUT_SOCKETS outputParams() const;
 
 signals:
-    void nodePositionChange(const QString&);
     void socketClicked(const QString& id, bool bInput, const QString& name);
     void doubleClicked(const QString &nodename);
     void paramChanged(const QString& nodeid, const QString& paramName, const QVariant& var);
