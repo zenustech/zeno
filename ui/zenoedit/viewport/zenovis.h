@@ -30,6 +30,7 @@ class Zenovis : public QObject
 
 signals:
     void frameUpdated(int);
+    void perspectiveUpdated(PerspectiveInfo);
 
 public slots:
     void startPlay(bool bPlaying);
@@ -43,6 +44,7 @@ public:
     void recordGL(const std::string& record_path);
     int getCurrentFrameId();
     zenovis::Session *getSession() const;
+    void updatePerspective(QVector2D const &resolution, PerspectiveInfo const &perspective);
 
 //private:
     Zenovis();

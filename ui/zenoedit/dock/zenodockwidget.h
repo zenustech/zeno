@@ -31,7 +31,7 @@ public:
 
 protected:
     void paintEvent(QPaintEvent* event) override;
-    bool event(QEvent* event);
+    bool event(QEvent* event) override;
 
 signals:
     void maximizeTriggered();

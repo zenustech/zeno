@@ -50,6 +50,16 @@ int Zenovis::getCurrentFrameId()
     return session->get_curr_frameid();
 }
 
+void Zenovis::updatePerspective(QVector2D const &resolution, PerspectiveInfo const &perspective)
+{
+    m_resolution = resolution;
+    m_perspective = perspective;
+    session->look_perspective(perspective.cx, perspective.cy, perspective.cz,
+                              perspective.theta, perspective.phi, perspective.radius,
+                              perspective.fov, perspective.ortho_mode);
+    emit perspectiveUpdated(perspective);
+}
+
 void Zenovis::startPlay(bool bPlaying)
 {
     m_playing = bPlaying;
@@ -82,7 +92,6 @@ int Zenovis::setCurrentFrameId(int frameid)
     }
     return frameid;
 }
-
 
 void Zenovis::doFrameUpdate()
 {

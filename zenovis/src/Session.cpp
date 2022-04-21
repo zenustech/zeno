@@ -72,13 +72,13 @@ void Session::do_screenshot(std::string path) {
 void Session::look_perspective(double cx, double cy, double cz, double theta,
                                double phi, double radius, double fov,
                                bool ortho_mode) {
-    impl->scene->camera->look_perspective(cx, cy, cz, theta, phi, radius, fov,
+    impl->scene->camera->setCamera(cx, cy, cz, theta, phi, radius, fov,
                                           ortho_mode);
 }
 
 void Session::set_perspective(std::array<double, 16> viewArr,
                               std::array<double, 16> projArr) {
-    impl->scene->camera->set_perspective(viewArr, projArr);
+    impl->scene->camera->setCamera(viewArr, projArr);
 }
 
 void Session::set_background_color(float r, float g, float b) {

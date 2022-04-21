@@ -34,8 +34,8 @@ struct Camera {
         g_aperature = _apt;
     }
 
-    void set_perspective(std::array<double, 16> viewArr,
-                         std::array<double, 16> projArr) {
+    void setCamera(std::array<double, 16> const &viewArr,
+                   std::array<double, 16> const &projArr) {
         std::memcpy(glm::value_ptr(view), viewArr.data(), viewArr.size());
         std::memcpy(glm::value_ptr(proj), projArr.data(), projArr.size());
     }
@@ -43,7 +43,6 @@ struct Camera {
     float g_near{}, g_far{}, g_fov{};
     glm::mat4 g_view{}, g_proj{};
     glm::vec3 g_camPos{}, g_camView{}, g_camUp{};
-    bool cameraLocked = false;
     /* int g_camSetFromNode = 0; */
     /* glm::mat4 cview, cproj; */
 
@@ -86,13 +85,11 @@ struct Camera {
         g_camUp = glm::normalize(up);
         g_dof = _dof;
         /* g_camSetFromNode = set; */
-        cameraLocked = true;
     }
 
-    void look_perspective(double cx, double cy, double cz, double theta,
-                          double phi, double radius, double fov,
-                          bool ortho_mode) {
-        if (cameraLocked) return;
+    void setCamera(double cx, double cy, double cz, double theta,
+                   double phi, double radius, double fov,
+                   bool ortho_mode) {
         /* if (g_camSetFromNode == 1) { */
         /*     view = cview; */
         /*     proj = cproj; */
