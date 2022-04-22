@@ -250,7 +250,7 @@ struct Light {
             //CHECK_GL(glGenTextures(1, &(DepthMaps[i])));
             //CHECK_GL(glBindTexture(GL_TEXTURE_2D, DepthMaps[i]));
             CHECK_GL(glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_DEPTH_COMPONENT32F,
-                    depthMapResolution, depthMapResolution, (cascadeCount + 1) * 2, 0,
+                    depthMapResolution, depthMapResolution, (cascadeCount + 1) * 16, 0,
                     GL_DEPTH_COMPONENT, GL_FLOAT, nullptr));
             CHECK_GL(glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST));
             CHECK_GL(glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
@@ -306,7 +306,7 @@ struct Light {
         CHECK_GL(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
                                GL_TEXTURE_2D, depthMapTmp, 0));
 
-        CHECK_GL(glClearColor(0.2f, 0.1f, 0.1f, 1.0f));
+        CHECK_GL(glClearColor(0.0f, 0.0f, 0.0f, 0.0f));
         CHECK_GL(glClear(GL_DEPTH_BUFFER_BIT));
 
         // glEnable(GL_CULL_FACE);
@@ -315,6 +315,7 @@ struct Light {
 
     void EndShadowMap(int i) {
         CHECK_GL(glReadBuffer(GL_DEPTH_ATTACHMENT));
+        CHECK_GL(glBindTexture(GL_TEXTURE_2D_ARRAY, depthMapsArr));
         CHECK_GL(glCopyTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0,
                     0, 0, i, 0, 0, depthMapResolution, depthMapResolution));
         CHECK_GL(glReadBuffer(GL_NONE));
