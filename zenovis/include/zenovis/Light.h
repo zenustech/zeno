@@ -20,11 +20,11 @@ struct Light;
 struct LightCluster : zeno::disable_copy {
     //std::vector<GLuint> DepthMaps;
     GLuint depthMapsArr{};
-    int depthMapsArrCount = 0;
     GLuint depthMapTmp{};
     GLuint lightFBO = 0;
-    GLuint lightDepthMaps = 0;
     GLuint matricesUBO = 0;
+    /* GLuint lightDepthMaps = 0; */
+    int depthMapsArrCount = 0;
 
     static constexpr unsigned int depthMapResolution = 4096;
     static constexpr int layerCount = 8;
@@ -65,9 +65,13 @@ struct LightCluster : zeno::disable_copy {
             CHECK_GL(glDeleteTextures(1, &depthMapTmp));
             depthMapTmp = 0;
         }
-        if (depthMapTmp != 0) {
+        if (lightFBO != 0) {
             CHECK_GL(glDeleteFramebuffers(1, &lightFBO));
-            depthMapTmp = 0;
+            lightFBO = 0;
+        }
+        if (matricesUBO != 0) {
+            CHECK_GL(glDeleteBuffers(1, &matricesUBO));
+            matricesUBO = 0;
         }
     }
 
@@ -80,8 +84,8 @@ struct LightCluster : zeno::disable_copy {
         //DepthMaps.resize(layerCount);
         if (lightFBO == 0) {
             CHECK_GL(glGenFramebuffers(1, &lightFBO));
-            CHECK_GL(glGenTextures(1, &lightDepthMaps));
-            CHECK_GL(glBindTexture(GL_TEXTURE_2D, lightDepthMaps));
+            CHECK_GL(glGenTextures(1, &depthMapTmp));
+            CHECK_GL(glBindTexture(GL_TEXTURE_2D, depthMapTmp));
             CHECK_GL(glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F,
                                   depthMapResolution, depthMapResolution, 0,
                                   GL_DEPTH_COMPONENT, GL_FLOAT, nullptr));
@@ -101,7 +105,7 @@ struct LightCluster : zeno::disable_copy {
             // attach depth texture as FBO's depth buffer
             CHECK_GL(glBindFramebuffer(GL_FRAMEBUFFER, lightFBO));
             CHECK_GL(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
-                                            GL_TEXTURE_2D, lightDepthMaps, 0));
+                                            GL_TEXTURE_2D, depthMapTmp, 0));
             /* CHECK_GL(glDrawBuffer(GL_NONE)); */ //??
             /* CHECK_GL(glReadBuffer(GL_NONE)); */ //??
 
