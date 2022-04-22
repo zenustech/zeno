@@ -768,7 +768,7 @@ struct GraphicPrimitive : IGraphic {
             triObj.prog->use();
             scene->camera->set_program_uniforms(triObj.prog);
 
-            auto &lights = scene->lights;
+            auto &lights = scene->lightCluster->lights;
             triObj.prog->set_uniformi("lightNum", lights.size());
             for (int lightNo = 0; lightNo < lights.size(); ++lightNo) {
                 auto &light = lights[lightNo];
@@ -834,10 +834,10 @@ struct GraphicPrimitive : IGraphic {
                     name = "lightIntensity[" + std::to_string(lightNo) + "]";
                     triObj.prog->set_uniform(name.c_str(),
                                              light->getIntensity());
-                    for (size_t i = 0; i < Light::layerCount; i++) {
+                    for (size_t i = 0; i < LightCluster::layerCount; i++) {
                         auto name1 =
                             "near[" +
-                            std::to_string(lightNo * Light::layerCount +
+                            std::to_string(lightNo * LightCluster::layerCount +
                                            i) +
                             "]";
                         triObj.prog->set_uniform(name1.c_str(),
@@ -845,7 +845,7 @@ struct GraphicPrimitive : IGraphic {
 
                         auto name2 =
                             "far[" +
-                            std::to_string(lightNo * Light::layerCount +
+                            std::to_string(lightNo * LightCluster::layerCount +
                                            i) +
                             "]";
                         triObj.prog->set_uniform(name2.c_str(),
@@ -862,13 +862,13 @@ struct GraphicPrimitive : IGraphic {
                         
                     triObj.prog->set_uniformi("shadowMap", texOcp);
                     CHECK_GL(glActiveTexture(GL_TEXTURE0 + texOcp));
-                    if (auto shadowMap = light->depthMapsArr; shadowMap != (GLuint)-1)
+                    if (auto shadowMap = light->cluster->depthMapsArr; shadowMap != (GLuint)-1)
                         CHECK_GL(glBindTexture(GL_TEXTURE_2D_ARRAY, shadowMap));
                     texOcp++;
-                    for (size_t i = 0; i < Light::cascadeCount; ++i) {
+                    for (size_t i = 0; i < LightCluster::cascadeCount; ++i) {
                         auto name =
                             "cascadePlaneDistances[" +
-                            std::to_string(lightNo * Light::cascadeCount + i) +
+                            std::to_string(lightNo * LightCluster::cascadeCount + i) +
                             "]";
                         triObj.prog->set_uniform(name.c_str(),
                                                  light->shadowCascadeLevels[i]);
@@ -880,7 +880,7 @@ struct GraphicPrimitive : IGraphic {
                     for (size_t i = 0; i < matrices.size(); i++) {
                         auto name =
                             "lightSpaceMatrices[" +
-                            std::to_string(lightNo * Light::layerCount +
+                            std::to_string(lightNo * LightCluster::layerCount +
                                            i) +
                             "]";
                         triObj.prog->set_uniform(name.c_str(), matrices[i]);
@@ -2199,9 +2199,9 @@ float brightness(vec3 c)
 }
 uniform int lightNum; 
 uniform vec3 light[16];
-const int cascadeCount = )" + std::to_string(Light::cascadeCount) + R"(;   // number of frusta - 1
-const int layerCount = )" + std::to_string(Light::layerCount) + R"(;   // number of frusta
-const int lightCount = )" + std::to_string(Light::lightCount) + R"(;   // number of lights
+const int cascadeCount = )" + std::to_string(LightCluster::cascadeCount) + R"(;   // number of frusta - 1
+const int layerCount = )" + std::to_string(LightCluster::layerCount) + R"(;   // number of frusta
+const int lightCount = )" + std::to_string(LightCluster::lightCount) + R"(;   // number of lights
 uniform sampler2DArray shadowMap;
 uniform vec3 lightIntensity[lightCount];
 uniform vec3 shadowTint[lightCount];

@@ -10,6 +10,7 @@ struct Camera;
 struct ShaderManager;
 struct EnvmapManager;
 struct GraphicsManager;
+struct LightCluster;
 struct Light;
 struct IGraphic;
 struct DepthPass;
@@ -21,7 +22,7 @@ struct VAO;
 
 struct Scene : zeno::disable_copy {
     std::unique_ptr<Camera> camera;
-    std::vector<std::unique_ptr<Light>> lights;
+    std::unique_ptr<LightCluster> lightCluster;
     std::vector<std::unique_ptr<IGraphic>> hudGraphics;
 
     std::unique_ptr<ShaderManager> shaderMan;

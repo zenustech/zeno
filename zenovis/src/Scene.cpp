@@ -31,6 +31,8 @@ Scene::Scene()
     //CHECK_GL(glEnable(GL_SAMPLE_ALPHA_TO_ONE));
     CHECK_GL(glEnable(GL_MULTISAMPLE));
 
+    lightCluster = std::make_unique<LightCluster>(this);
+
     vao = std::make_unique<opengl::VAO>();
 
     auto version = (const char *)glGetString(GL_VERSION);
@@ -43,7 +45,7 @@ Scene::Scene()
 
     mReflectivePass->initReflectiveMaps(camera->m_nx, camera->m_ny);
 
-    lights.push_back(std::make_unique<Light>(this));
+    lightCluster->addLight();
     hudGraphics.push_back(makeGraphicGrid(this));
     hudGraphics.push_back(makeGraphicAxis(this));
     //setup_env_map("Default");

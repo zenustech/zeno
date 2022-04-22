@@ -164,9 +164,10 @@ void main(void)
     }
 
     void shadowPass() {
-        auto &lights = scene->lights;
+        scene->lightCluster->updateDepthMapsArr();
+        auto &lights = scene->lightCluster->lights;
         for (auto &light : lights) {
-            for (int i = 0; i < Light::cascadeCount + 1; i++) {
+            for (int i = 0; i < LightCluster::layerCount; i++) {
                 light->BeginShadowMap(camera()->m_near, camera()->m_far,
                                       camera()->proj, camera()->view, i);
                 scene->vao->bind();
