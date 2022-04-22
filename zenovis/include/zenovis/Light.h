@@ -229,22 +229,17 @@ struct Light {
             CHECK_GL(glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F,
                     depthMapResolution, depthMapResolution, 0,
                     GL_DEPTH_COMPONENT, GL_FLOAT, nullptr));
-            CHECK_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
-                    GL_LINEAR));
-            CHECK_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER,
-                    GL_LINEAR));
-            CHECK_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S,
-                    GL_CLAMP_TO_BORDER));
-            CHECK_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T,
-                    GL_CLAMP_TO_BORDER));
-            const float borderColor[] = {1.0f, 1.0f, 1.0f, 1.0f};
-            CHECK_GL(glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR,
-                    borderColor));
+            CHECK_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST));
+            CHECK_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
+            CHECK_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP));
+            CHECK_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP));
+            //const float borderColor[] = {1.0f, 1.0f, 1.0f, 1.0f};
+            //CHECK_GL(glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR,
+                    //borderColor));
 
             int status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
             if (status != GL_FRAMEBUFFER_COMPLETE) {
-                throw zeno::makeError(
-                    "ERROR::FRAMEBUFFER:: Framebuffer is not complete!\n");
+                throw zeno::makeError("ERROR::FRAMEBUFFER:: Framebuffer is not complete!\n");
             }
 
             CHECK_GL(glBindFramebuffer(GL_FRAMEBUFFER, 0));

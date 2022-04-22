@@ -80,7 +80,7 @@ jobs:
     - name: Run CMake
       uses: lukka/run-cmake@v10
       with:
-        configurePreset: ${{ (matrix.triplet != '' && 'default' || 'basic') }}${{ (needs.check.outputs.deploy && '' || '-debug') }}
+        configurePreset: ${{ (matrix.triplet != '' && 'default' || 'basic') }}${{ (needs.check.outputs.deploy == 'true' && '' || '-debug') }}
 
     - name: Packaging
       if: ${{ needs.check.outputs.deploy == 'true' }}

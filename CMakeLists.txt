@@ -32,6 +32,7 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 if (NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release)
 endif()
+message(STATUS "Build directory: ${PROJECT_BINARY_DIR}")
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 
 if (WIN32)
