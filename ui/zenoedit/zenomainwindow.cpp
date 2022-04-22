@@ -195,8 +195,8 @@ void ZenoMainWindow::initMenu()
         pAction->setShortcut(QKeySequence("F12"));
         pRecord->addAction(pAction);
         connect(pAction, &QAction::triggered, this, [=]() {
-            //auto s = QDateTime::currentDateTime().toString(QString("yyyy-dd-MM_hh-mm-ss.png"));
-            auto s = QString("/tmp/a.png");
+            auto s = QDateTime::currentDateTime().toString(QString("yyyy-dd-MM_hh-mm-ss.png"));
+            //auto s = QString("/tmp/a.png");
             Zenovis::GetInstance().getSession()->do_screenshot(s.toStdString());
         });
 
