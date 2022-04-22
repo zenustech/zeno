@@ -498,18 +498,42 @@ void ZenoGraphsEditor::onSearchItemClicked(const QModelIndex& index)
 void ZenoGraphsEditor::onMenuActionTriggered(QAction* pAction)
 {
     const QString& text = pAction->text();
-    if (text == "Collaspe")
+    if (text == tr("Collaspe"))
     {
         ZenoSubGraphView* pView = qobject_cast<ZenoSubGraphView*>(m_ui->graphsViewTab->currentWidget());
         Q_ASSERT(pView);
         QModelIndex subgIdx = pView->scene()->subGraphIndex();
         m_model->collaspe(subgIdx);
     }
-    else if (text == "Expand")
+    else if (text == tr("Expand"))
 	{
 		ZenoSubGraphView* pView = qobject_cast<ZenoSubGraphView*>(m_ui->graphsViewTab->currentWidget());
 		Q_ASSERT(pView);
 		QModelIndex subgIdx = pView->scene()->subGraphIndex();
 		m_model->expand(subgIdx);
+    }
+    else if (text == tr("Easy Subgraph"))
+    {
+        ZenoSubGraphView* pView = qobject_cast<ZenoSubGraphView*>(m_ui->graphsViewTab->currentWidget());
+        if (pView)
+        {
+            ZenoSubGraphScene* pScene = pView->scene();
+            QModelIndexList nodes = pScene->selectNodesIndice();
+            bool bOk = false;
+            QString newSubgName = QInputDialog::getText(this, tr("create subnet"), tr("new subgraph name:") , QLineEdit::Normal, "subgraph name", &bOk);
+            if (bOk)
+            {
+                QModelIndex fromSubgIdx = pView->scene()->subGraphIndex();
+                QModelIndex toSubgIdx = m_model->extractSubGraph(nodes, fromSubgIdx, newSubgName, true);
+                if (toSubgIdx.isValid())
+                {
+                    activateTab(toSubgIdx.data(ROLE_OBJNAME).toString());
+                }
+            }
+            else
+            {
+                //todo: msg to feedback.
+            }
+        }
     }
 }

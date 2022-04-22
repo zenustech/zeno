@@ -93,7 +93,8 @@ void GraphsTreeModel::on_subg_rowsInserted(const QModelIndex& parent, int first,
 
 	const QString& subName = pModel->name();
 	QModelIndexList lst = match(index(0, 0), ROLE_OBJNAME, subName, -1, Qt::MatchRecursive);
-	Q_ASSERT(lst.size() == 1);
+	//Q_ASSERT(lst.size() == 1);
+	//todo: multiple case.
 	QModelIndex subgIdx = lst[0];
 	QStandardItem* pSubgItem = itemFromIndex(subgIdx);
 
@@ -123,9 +124,12 @@ void GraphsTreeModel::on_subg_rowsAboutToBeRemoved(const QModelIndex& parent, in
 
 	const QString& subName = pModel->name();
 	QModelIndexList lst = match(index(0, 0), ROLE_OBJNAME, subName, -1, Qt::MatchRecursive);
-	Q_ASSERT(lst.size() == 1);
-	QModelIndex subgIdx = lst[0];
-	removeRow(first, subgIdx);
+	//Q_ASSERT(lst.size() == 1);
+	if (lst.size() == 1)
+	{
+		QModelIndex subgIdx = lst[0];
+		removeRow(first, subgIdx);
+	}
 }
 
 void GraphsTreeModel::on_subg_rowsRemoved(const QModelIndex& parent, int first, int last)

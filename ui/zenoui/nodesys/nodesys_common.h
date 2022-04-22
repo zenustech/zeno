@@ -39,7 +39,8 @@ struct SEARCH_RECORD {
 
 struct NODES_MIME_DATA : public QObjectUserData
 {
-    QList<NODE_DATA> m_vecNodes;
+    QModelIndexList nodes;
+    QPersistentModelIndex m_fromSubg;
 };
 
 enum STATUS_BTN

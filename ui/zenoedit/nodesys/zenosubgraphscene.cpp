@@ -304,6 +304,20 @@ void ZenoSubGraphScene::redo()
     pGraphsModel->redo();
 }
 
+QModelIndexList ZenoSubGraphScene::selectNodesIndice() const
+{
+    QModelIndexList nodesIndice;
+    QList<QGraphicsItem *> selItems = selectedItems();
+    for (auto item : selItems)
+    {
+        if (ZenoNode *pNode = qgraphicsitem_cast<ZenoNode *>(item))
+        {
+            nodesIndice.append(pNode->index());
+        }
+    }
+    return nodesIndice;
+}
+
 void ZenoSubGraphScene::copy()
 {
     QList<QGraphicsItem*> selItems = this->selectedItems();
@@ -314,7 +328,6 @@ void ZenoSubGraphScene::copy()
     QMap<QString, ZenoNode*> selNodes;
 
     QModelIndexList nodesIndice, linkIndice;
-
     for (auto item : selItems)
     {
         if (ZenoNode *pNode = qgraphicsitem_cast<ZenoNode *>(item))
@@ -323,37 +336,15 @@ void ZenoSubGraphScene::copy()
             selNodes.insert(pNode->nodeId(), pNode);
         }
     }
-    for (auto item : selItems)
-    {
-        if (ZenoFullLink* pLink = qgraphicsitem_cast<ZenoFullLink*>(item))
-        {
-            const QPersistentModelIndex& index = pLink->linkInfo();
-            const QString& inputNode = index.data(ROLE_INNODE).toString();
-            const QString& outputNode = index.data(ROLE_OUTNODE).toString();
-            if (selNodes.find(inputNode) == selNodes.end() ||
-                selNodes.find(outputNode) == selNodes.end())
-            {
-                continue;
-            }
-            selLinks.append(index);
-            linkIndice.append(index);
-        }
-    }
 
     if (selNodes.isEmpty())
     {
         QApplication::clipboard()->clear();
     }
 
-	IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
-	Q_ASSERT(pGraphsModel);
-    QMap<QString, NODE_DATA> newNodes = UiHelper::dumpItems(pGraphsModel, m_subgIdx, nodesIndice, linkIndice);
-
     NODES_MIME_DATA* pNodesData = new NODES_MIME_DATA;
-    for (auto node : newNodes)
-    {
-        pNodesData->m_vecNodes.push_back(node);
-    }
+    pNodesData->nodes = nodesIndice;
+    pNodesData->m_fromSubg = m_subgIdx;
 
     QMimeData *pMimeData = new QMimeData;
     pMimeData->setUserData(MINETYPE_MULTI_NODES, pNodesData);
@@ -368,27 +359,11 @@ void ZenoSubGraphScene::paste(QPointF pos)
     if (QObjectUserData *pUserData = pMimeData->userData(MINETYPE_MULTI_NODES))
     {
         NODES_MIME_DATA* pNodesData = static_cast<NODES_MIME_DATA*>(pUserData);
-        if (pNodesData->m_vecNodes.isEmpty())
+        if (pNodesData->nodes.isEmpty())
             return;
-
-        QPointF offset = pos - pNodesData->m_vecNodes[0][ROLE_OBJPOS].toPointF();
-		for (int i = 0; i < pNodesData->m_vecNodes.size(); i++)
-		{
-			NODE_DATA& data = pNodesData->m_vecNodes[i];
-            data[ROLE_OBJID] = UiHelper::generateUuid(data[ROLE_OBJNAME].toString());
-			QPointF orginalPos = data[ROLE_OBJPOS].toPointF();
-			data[ROLE_OBJPOS] = orginalPos + offset;
-		}
-
-        pGraphsModel->importNodeLinks(pNodesData->m_vecNodes, m_subgIdx);
-
+        pGraphsModel->copyPaste(pNodesData->m_fromSubg, pNodesData->nodes, m_subgIdx, pos, true);
         clearSelection();
-        for (auto node : pNodesData->m_vecNodes)
-        {
-            const QString &id = node[ROLE_OBJID].toString();
-            Q_ASSERT(m_nodes.find(id) != m_nodes.end());
-            m_nodes[id]->setSelected(true);
-        }
+        //todo: select them
     }
 }
 
