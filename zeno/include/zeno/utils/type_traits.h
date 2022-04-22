@@ -104,6 +104,30 @@ struct function_traits<R (T::*)(Args...) const> {
     using argument_types = std::tuple<Args...>;
 };
 
+template <class T>
+struct remove_cvref : std::remove_cv<std::remove_reference_t<T>> {
+};
+
+template <class T>
+using remove_cvref_t = typename remove_cvref<T>::type;
+
+template <class T>
+struct type_identity {
+    using type = T;
+};
+
+template <class T>
+using type_identity_t = typename type_identity<T>::type;
+
+template <auto Val>
+struct value_constant : std::integral_constant<decltype(Val), Val> {
+};
+
+// usage example:
+// static_for<0, n>([&] (auto index) {
+//     std::array<int, index.value> arr;
+//     return false;   // true to break the loop
+// });
 template <int First, int Last, typename Lambda>
 inline constexpr bool static_for(Lambda const &f) {
     if constexpr (First < Last) {

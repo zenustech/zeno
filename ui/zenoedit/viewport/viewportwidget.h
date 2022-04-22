@@ -47,9 +47,9 @@ private:
     QVector2D m_res;
 };
 
-class ViewportWidget : public QOpenGLWidget
+class ViewportWidget : public QGLWidget
 {
-    typedef QOpenGLWidget _base;
+    typedef QGLWidget _base;
 public:
     ViewportWidget(QWidget* parent = nullptr);
     ~ViewportWidget();

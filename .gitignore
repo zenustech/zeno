@@ -1,35 +1,8 @@
-# python files
-__pycache__
-*.egg-info
-dist
-
 # cmake files
 build
-cmake-build-*
-
-# binary files
-*.zpm
-*.exe
-*.a
-*.la
-*.so
-*.dll
-*.lib
-*.dylib
-*.pyd
-a.out
-
-# output files
-/zenqt/bin
-outputs
-zeno_output.txt
-
-# vim files
-.*.swp
-.*.un~
-tags
-*~
-.vim_localrc
+cmake-build-*/
+Debug/
+Release/
 
 # ide files
 .vs
@@ -37,42 +10,6 @@ tags
 .vscode
 .cache
 .run
-*.pdb
-*.ilk
-*.manifest
-*.exp
 CMakeSettings.json
-
-# archibate files
-/GNUmakefile
-/a.h
-/a.json
-/a.zsl
-/a.zsg
-/b.zsg
-/c.zsg
-/d.zsg
-/e.zsg
-/f.zsg
-/g.zsg
-/h.zsg
-/i.zsg
-/j.zsg
-/k.zsg
-/z
+CMakeUserPresets.json
 .vim_localrc
-
-Debug/
-Release/
-
-# zhxx files
-assets/smoke
-projects/Euler
-
-# xinlei files
-assets/upper_slate_v01
-assets/character
-
-# temp path setting
-zenqt/assets/cache_path.txt
-

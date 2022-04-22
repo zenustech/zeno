@@ -41,7 +41,7 @@ Scene::Scene()
     mDepthPass = std::make_unique<DepthPass>(this);
     mReflectivePass = std::make_unique<ReflectivePass>(this);
 
-    mReflectivePass->initReflectiveMaps(camera->nx, camera->ny);
+    mReflectivePass->initReflectiveMaps(camera->m_nx, camera->m_ny);
 
     lights.push_back(std::make_unique<Light>());
     hudGraphics.push_back(makeGraphicGrid(this));
@@ -71,11 +71,11 @@ void Scene::drawSceneDepthSafe(float aspRatio, bool reflect, float isDepthPass,
     // CHECK_GL(glClearColor(bgcolor.r, bgcolor.g, bgcolor.b, 0.0f));
     CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 
-    float range[] = {camera->g_near, 500, 1000, 2000, 8000, camera->g_far};
+    float range[] = {camera->m_near, 500, 1000, 2000, 8000, camera->m_far};
     for (int i = 5; i >= 1; i--) {
         CHECK_GL(glClearDepth(1));
         CHECK_GL(glClear(GL_DEPTH_BUFFER_BIT));
-        camera->proj = glm::perspective(glm::radians(camera->g_fov), aspRatio,
+        camera->proj = glm::perspective(glm::radians(camera->m_fov), aspRatio,
                                         range[i - 1], range[i]);
 
         for (auto const &gra : graphics()) {
@@ -91,7 +91,7 @@ void Scene::drawSceneDepthSafe(float aspRatio, bool reflect, float isDepthPass,
 
 void Scene::my_paint_graphics(float samples, float isDepthPass) {
 
-    CHECK_GL(glViewport(0, 0, camera->nx, camera->ny));
+    CHECK_GL(glViewport(0, 0, camera->m_nx, camera->m_ny));
     vao->bind();
     camera->m_sample_weight = 1.0f / samples;
     drawSceneDepthSafe(camera->getAspect(), false, isDepthPass,
@@ -107,22 +107,23 @@ void Scene::draw_small_axis() { /* TODO: implement this */
 }
 
 void Scene::draw(unsigned int target_fbo) {
+    //CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
     /* ZHXX DONT MODIFY ME */
     mDepthPass->paint_graphics(target_fbo);
 }
 
 std::vector<char> Scene::record_frame_offline() {
-    std::vector<char> pixels(camera->nx * camera->ny * 3);
+    std::vector<char> pixels(camera->m_nx * camera->m_ny * 3);
 
     GLuint fbo, rbo1, rbo2;
     CHECK_GL(glGenRenderbuffers(1, &rbo1));
     CHECK_GL(glGenRenderbuffers(1, &rbo2));
     CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, rbo1));
-    CHECK_GL(glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA, camera->nx,
-                                   camera->ny));
+    CHECK_GL(glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA, camera->m_nx,
+                                   camera->m_ny));
     CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, rbo2));
     CHECK_GL(glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT32F,
-                                   camera->nx, camera->ny));
+                                   camera->m_nx, camera->m_ny));
 
     CHECK_GL(glGenFramebuffers(1, &fbo));
     CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo));
@@ -131,20 +132,22 @@ std::vector<char> Scene::record_frame_offline() {
     CHECK_GL(glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
                                        GL_RENDERBUFFER, rbo2));
     CHECK_GL(glDrawBuffer(GL_COLOR_ATTACHMENT0));
+    CHECK_GL(glClearColor(camera->bgcolor.r, camera->bgcolor.g,
+                          camera->bgcolor.b, 0.0f));
+    CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 
     draw(fbo);
 
-    if (glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER) ==
-        GL_FRAMEBUFFER_COMPLETE) {
+    if (glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE) {
         CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo));
-        CHECK_GL(glBlitFramebuffer(0, 0, camera->nx, camera->ny, 0, 0,
-                                   camera->nx, camera->ny, GL_COLOR_BUFFER_BIT,
+        CHECK_GL(glBlitFramebuffer(0, 0, camera->m_nx, camera->m_ny, 0, 0,
+                                   camera->m_nx, camera->m_ny, GL_COLOR_BUFFER_BIT,
                                    GL_NEAREST));
         CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo));
         CHECK_GL(glBindBuffer(GL_PIXEL_PACK_BUFFER, 0));
         CHECK_GL(glReadBuffer(GL_COLOR_ATTACHMENT0));
 
-        CHECK_GL(glReadPixels(0, 0, camera->nx, camera->ny, GL_RGB,
+        CHECK_GL(glReadPixels(0, 0, camera->m_nx, camera->m_ny, GL_RGB,
                               GL_UNSIGNED_BYTE, &pixels[0]));
     }
 

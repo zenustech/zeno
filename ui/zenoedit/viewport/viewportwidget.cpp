@@ -72,8 +72,7 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent* event)
 void CameraControl::updatePerspective()
 {
     float cx = m_center[0], cy = m_center[1], cz = m_center[2];
-    Zenovis::GetInstance().m_perspective = PerspectiveInfo(cx, cy, cz, m_theta, m_phi, m_radius, m_fov, m_ortho_mode);
-    Zenovis::GetInstance().m_resolution = m_res;
+    Zenovis::GetInstance().updatePerspective(m_res, PerspectiveInfo(cx, cy, cz, m_theta, m_phi, m_radius, m_fov, m_ortho_mode));
 }
 
 void CameraControl::fakeWheelEvent(QWheelEvent* event)
@@ -94,18 +93,18 @@ void CameraControl::setKeyFrame()
 
 
 ViewportWidget::ViewportWidget(QWidget* parent)
-    : QOpenGLWidget(parent)
+    : QGLWidget(parent)
     , m_camera(nullptr)
 {
-    QSurfaceFormat fmt;
+    QGLFormat fmt;
     int nsamples = 16;  // TODO: adjust in a zhouhang-panel
     fmt.setSamples(nsamples);
     fmt.setVersion(3, 2);
-    fmt.setProfile(QSurfaceFormat::CoreProfile);
+    fmt.setProfile(QGLFormat::CoreProfile);
     setFormat(fmt);
 
     m_camera = std::make_shared<CameraControl>();
-    Zenovis::GetInstance().m_camera_control = m_camera;
+    Zenovis::GetInstance().m_camera_control = m_camera.get();
 }
 
 ViewportWidget::~ViewportWidget()
@@ -114,7 +113,7 @@ ViewportWidget::~ViewportWidget()
 
 namespace {
 struct OpenGLProcAddressHelper {
-    inline static QOpenGLContext *ctx;
+    inline static QGLContext *ctx;
 
     static void *getProcAddress(const char *name) {
         return (void *)ctx->getProcAddress(name);

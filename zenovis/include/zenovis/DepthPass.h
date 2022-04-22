@@ -77,13 +77,13 @@ vec3 ACESFitted(vec3 color, float gamma)
 }
 
 
-uniform sampler2DRect hdr_image;
+uniform sampler2DRect mHdrImage;
+uniform float mSampleWeight;
 out vec4 oColor;
-uniform float msweight;
 void main(void)
 {
-  vec3 color = texture2DRect(hdr_image, gl_FragCoord.xy).rgb;
-	oColor = vec4(color * msweight, 1);
+  vec3 color = texture2DRect(mHdrImage, gl_FragCoord.xy).rgb;
+	oColor = vec4(color * mSampleWeight, 1);
   
 }
 )";
@@ -93,6 +93,7 @@ void main(void)
     GLuint texRect = 0, regularFBO = 0;
     GLuint texRects[16] = {0};
     GLuint emptyVAO = 0;
+    int m_camera_oldnx, m_camera_oldny;
 
     ~DepthPass() {
         if (emptyVAO)
@@ -116,18 +117,18 @@ void main(void)
                 CHECK_GL(glDeleteTextures(1, &texRects[i]));
     }
 
-    void ScreenFillQuad(GLuint tex, float msweight, int samplei) {
+    void ScreenFillQuad(GLuint tex, float mSampleWeight, int samplei) {
         CHECK_GL(glDisable(GL_DEPTH_TEST));
         if (emptyVAO == 0)
             CHECK_GL(glGenVertexArrays(1, &emptyVAO));
-        CHECK_GL(glViewport(0, 0, camera()->nx, camera()->ny));
+        CHECK_GL(glViewport(0, 0, camera()->m_nx, camera()->m_ny));
         if (samplei == 0) {
             CHECK_GL(glClearColor(0, 0, 0, 0.0f));
             CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
         }
         tmProg->use();
-        tmProg->set_uniformi("hdr_image", 0);
-        tmProg->set_uniform("msweight", msweight);
+        tmProg->set_uniformi("mHdrImage", 0);
+        tmProg->set_uniform("mSampleWeight", mSampleWeight);
         CHECK_GL(glActiveTexture(GL_TEXTURE0));
         CHECK_GL(glBindTexture(GL_TEXTURE_RECTANGLE, tex));
 
@@ -157,8 +158,8 @@ void main(void)
         CHECK_GL(glBindTexture(GL_TEXTURE_RECTANGLE, texRect));
         CHECK_GL(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
                                         GL_TEXTURE_RECTANGLE, texRect, 0));
-        CHECK_GL(glBlitFramebuffer(0, 0, camera()->nx, camera()->ny, 0, 0,
-                                   camera()->nx, camera()->ny,
+        CHECK_GL(glBlitFramebuffer(0, 0, camera()->m_nx, camera()->m_ny, 0, 0,
+                                   camera()->m_nx, camera()->m_ny,
                                    GL_COLOR_BUFFER_BIT, GL_NEAREST));
     }
 
@@ -166,7 +167,7 @@ void main(void)
         auto &lights = scene->lights;
         for (auto &light : lights) {
             for (int i = 0; i < Light::cascadeCount + 1; i++) {
-                light->BeginShadowMap(camera()->g_near, camera()->g_far,
+                light->BeginShadowMap(camera()->m_near, camera()->m_far,
                                       light->lightDir, camera()->proj,
                                       camera()->view, i);
                 scene->vao->bind();
@@ -182,6 +183,7 @@ void main(void)
     void paint_graphics(GLuint target_fbo = 0) {
         CHECK_GL(glClearColor(camera()->bgcolor.r, camera()->bgcolor.g,
                               camera()->bgcolor.b, 0.0f));
+        //CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
         if (enable_hdr && tmProg == nullptr) {
             tmProg = scene->shaderMan->compile_program(qvert, qfrag);
             if (!tmProg) {
@@ -205,8 +207,8 @@ void main(void)
         if (target_fbo == 0)
             target_fbo = zero_draw_fbo;
 
-        if (msfborgb == 0 || camera()->oldnx != camera()->nx ||
-            camera()->oldny != camera()->ny) {
+        if (msfborgb == 0 || m_camera_oldnx != camera()->m_nx ||
+            m_camera_oldny != camera()->m_ny) {
             if (msfborgb != 0) {
                 CHECK_GL(glDeleteRenderbuffers(1, &msfborgb));
                 msfborgb = 0;
@@ -220,15 +222,15 @@ void main(void)
             CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, msfborgb));
             auto num_samples = camera()->getNumSamples();
             CHECK_GL(glRenderbufferStorageMultisample(
-                GL_RENDERBUFFER, num_samples, GL_RGBA32F, camera()->nx,
-                camera()->ny));
+                GL_RENDERBUFFER, num_samples, GL_RGBA32F, camera()->m_nx,
+                camera()->m_ny));
 
             CHECK_GL(glGenRenderbuffers(1, &ssfborgb));
             CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, ssfborgb));
             /* begin cihou mesa */
             /* end cihou mesa */
             CHECK_GL(glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA32F,
-                                           camera()->nx, camera()->ny));
+                                           camera()->m_nx, camera()->m_ny));
 
             if (msfbod != 0) {
                 CHECK_GL(glDeleteRenderbuffers(1, &msfbod));
@@ -238,7 +240,7 @@ void main(void)
             CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, msfbod));
             CHECK_GL(glRenderbufferStorageMultisample(
                 GL_RENDERBUFFER, num_samples, GL_DEPTH_COMPONENT32F,
-                camera()->nx, camera()->ny));
+                camera()->m_nx, camera()->m_ny));
 
             if (ssfbod != 0) {
                 CHECK_GL(glDeleteRenderbuffers(1, &ssfbod));
@@ -247,8 +249,8 @@ void main(void)
             CHECK_GL(glGenRenderbuffers(1, &ssfbod));
             CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, ssfbod));
             CHECK_GL(glRenderbufferStorage(GL_RENDERBUFFER,
-                                           GL_DEPTH_COMPONENT32F, camera()->nx,
-                                           camera()->ny));
+                                           GL_DEPTH_COMPONENT32F, camera()->m_nx,
+                                           camera()->m_ny));
 
             if (tonemapfbo != 0) {
                 CHECK_GL(glDeleteFramebuffers(1, &tonemapfbo));
@@ -291,7 +293,7 @@ void main(void)
                                          GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
 
                 CHECK_GL(glTexImage2D(GL_TEXTURE_RECTANGLE, 0, GL_RGBA32F,
-                                      camera()->nx, camera()->ny, 0, GL_RGBA,
+                                      camera()->m_nx, camera()->m_ny, 0, GL_RGBA,
                                       GL_FLOAT, nullptr));
             }
             for (int i = 0; i < 16; i++) {
@@ -311,7 +313,7 @@ void main(void)
                                              GL_CLAMP_TO_EDGE));
 
                     CHECK_GL(glTexImage2D(GL_TEXTURE_RECTANGLE, 0, GL_RGBA32F,
-                                          camera()->nx, camera()->ny, 0,
+                                          camera()->m_nx, camera()->m_ny, 0,
                                           GL_RGBA, GL_FLOAT, nullptr));
                 }
             }
@@ -322,29 +324,29 @@ void main(void)
                                             GL_TEXTURE_RECTANGLE, texRect, 0));
             CHECK_GL(glBindFramebuffer(GL_FRAMEBUFFER, zero_fbo));
 
-            camera()->oldnx = camera()->nx;
-            camera()->oldny = camera()->ny;
+            m_camera_oldnx = camera()->m_nx;
+            m_camera_oldny = camera()->m_ny;
         }
 
-        if (camera()->g_dof > 0) {
+        if (camera()->m_dof > 0) {
             CHECK_GL(glDisable(GL_MULTISAMPLE));
             CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, msfborgb));
-            CHECK_GL(glRenderbufferStorageMultisample(GL_RENDERBUFFER, 1, GL_RGBA32F, camera()->nx, camera()->ny));
+            CHECK_GL(glRenderbufferStorageMultisample(GL_RENDERBUFFER, 1, GL_RGBA32F, camera()->m_nx, camera()->m_ny));
             CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, msfbod));
-            CHECK_GL(glRenderbufferStorageMultisample(GL_RENDERBUFFER, 1, GL_DEPTH_COMPONENT32F, camera()->nx, camera()->ny));
+            CHECK_GL(glRenderbufferStorageMultisample(GL_RENDERBUFFER, 1, GL_DEPTH_COMPONENT32F, camera()->m_nx, camera()->m_ny));
 
             for (int dofsample = 0; dofsample < 16; dofsample++) {
                 /* CHECK_GL(glDisable(GL_MULTISAMPLE)); */
                 glm::vec3 object =
-                    camera()->g_camPos +
-                    camera()->g_dof * glm::normalize(camera()->g_camView);
+                    camera()->m_camPos +
+                    camera()->m_dof * glm::normalize(camera()->m_camView);
                 glm::vec3 right = glm::normalize(
-                    glm::cross(object - camera()->g_camPos, camera()->g_camUp));
+                    glm::cross(object - camera()->m_camPos, camera()->m_camUp));
                 glm::vec3 p_up = glm::normalize(
-                    glm::cross(right, object - camera()->g_camPos));
+                    glm::cross(right, object - camera()->m_camPos));
                 glm::vec3 bokeh = right * cosf(dofsample * 2.0 * M_PI / 16.0) +
                                   p_up * sinf(dofsample * 2.0 * M_PI / 16.0);
-                camera()->view = glm::lookAt(camera()->g_camPos + 0.05f * bokeh,
+                camera()->view = glm::lookAt(camera()->m_camPos + 0.05f * bokeh,
                                              object, p_up);
                 //ZPass();
                 CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, tonemapfbo));
@@ -365,8 +367,8 @@ void main(void)
                 CHECK_GL(glFramebufferTexture2D(
                     GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE,
                     texRects[dofsample], 0));
-                CHECK_GL(glBlitFramebuffer(0, 0, camera()->nx, camera()->ny, 0, 0,
-                                  camera()->nx, camera()->ny,
+                CHECK_GL(glBlitFramebuffer(0, 0, camera()->m_nx, camera()->m_ny, 0, 0,
+                                  camera()->m_nx, camera()->m_ny,
                                   GL_COLOR_BUFFER_BIT, GL_NEAREST));
             }
             CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, tonemapfbo));
@@ -391,8 +393,8 @@ void main(void)
             CHECK_GL(glFramebufferTexture2D(GL_FRAMEBUFFER,
                                             GL_COLOR_ATTACHMENT0,
                                             GL_TEXTURE_RECTANGLE, texRect, 0));
-            CHECK_GL(glBlitFramebuffer(0, 0, camera()->nx, camera()->ny, 0, 0,
-                              camera()->nx, camera()->ny, GL_COLOR_BUFFER_BIT,
+            CHECK_GL(glBlitFramebuffer(0, 0, camera()->m_nx, camera()->m_ny, 0, 0,
+                              camera()->m_nx, camera()->m_ny, GL_COLOR_BUFFER_BIT,
                               GL_NEAREST));
             CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, target_fbo));
             ScreenFillQuad(texRect, 1.0, 0);
@@ -401,17 +403,17 @@ void main(void)
             /* CHECK_GL(glDisable(GL_MULTISAMPLE)); */
             CHECK_GL(glEnable(GL_MULTISAMPLE));
             CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, msfborgb));
-            CHECK_GL(glRenderbufferStorageMultisample(GL_RENDERBUFFER, 8, GL_RGBA32F, camera()->nx, camera()->ny));
+            CHECK_GL(glRenderbufferStorageMultisample(GL_RENDERBUFFER, 8, GL_RGBA32F, camera()->m_nx, camera()->m_ny));
             CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, msfbod));
-            CHECK_GL(glRenderbufferStorageMultisample(GL_RENDERBUFFER, 8, GL_DEPTH_COMPONENT32F, camera()->nx, camera()->ny));
+            CHECK_GL(glRenderbufferStorageMultisample(GL_RENDERBUFFER, 8, GL_DEPTH_COMPONENT32F, camera()->m_nx, camera()->m_ny));
             //ZPass();
             glm::vec3 object =
-                camera()->g_camPos + 1.0f * glm::normalize(camera()->g_camView);
+                camera()->m_camPos + 1.0f * glm::normalize(camera()->m_camView);
             glm::vec3 right = glm::normalize(
-                glm::cross(object - camera()->g_camPos, camera()->g_camUp));
+                glm::cross(object - camera()->m_camPos, camera()->m_camUp));
             glm::vec3 p_up =
-                glm::normalize(glm::cross(right, object - camera()->g_camPos));
-            camera()->view = glm::lookAt(camera()->g_camPos, object, p_up);
+                glm::normalize(glm::cross(right, object - camera()->m_camPos));
+            camera()->view = glm::lookAt(camera()->m_camPos, object, p_up);
             CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, tonemapfbo));
             CHECK_GL(glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER,
                                                GL_COLOR_ATTACHMENT0,
@@ -429,13 +431,13 @@ void main(void)
             CHECK_GL(glBindTexture(GL_TEXTURE_RECTANGLE, texRects[0]));
             CHECK_GL(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
                                        GL_TEXTURE_RECTANGLE, texRects[0], 0));
-            CHECK_GL(glBlitFramebuffer(0, 0, camera()->nx, camera()->ny, 0, 0,
-                                       camera()->nx, camera()->ny,
+            CHECK_GL(glBlitFramebuffer(0, 0, camera()->m_nx, camera()->m_ny, 0, 0,
+                                       camera()->m_nx, camera()->m_ny,
                                        GL_COLOR_BUFFER_BIT, GL_NEAREST));
 
             CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, regularFBO));
             CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, target_fbo));
-            //tmProg->set_uniform("msweight",1.0);//already set in camera::set_program_uniforms
+            //tmProg->set_uniform("mSampleWeight",1.0);//already set in camera::set_program_uniforms
             ScreenFillQuad(texRects[0], 1.0, 0);
             CHECK_GL(glDisable(GL_MULTISAMPLE));
         }

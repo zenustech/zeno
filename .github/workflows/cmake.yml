@@ -27,30 +27,29 @@ jobs:
 
     outputs:
       deploy: ${{ steps.is-release-step.outputs.ci-skip == 'true' }}
-      type: ${{ steps.is-release-step.outputs.ci-skip == 'true' && 'Release' || 'Debug' }}
 
   build:
     strategy:
       matrix:
         include:
-        - os: ubuntu-18.04  # cihou linuxdeployqt
-          cmake_args: -DCMAKE_CXX_COMPILER=g++-9
+        - os: ubuntu-18.04
+          triplet: x64-linux
           cxx: g++-9
         - os: windows-2022
+          triplet: x64-windows
 
     runs-on: ${{ matrix.os }}
     needs: [check]
-    #continue-on-error: true
+
+    env:
+      CXX: ${{ matrix.cxx }}
+      VCPKG_DEFAULT_TRIPLET: ${{ matrix.triplet }}
 
     steps:
     - name: Checkout Repo
       uses: actions/checkout@v2
-
-    - name: Set Compiler Environment
-      if: ${{ matrix.cxx != '' }}
-      uses: lukka/set-shell-env@v1
       with:
-        CXX: ${{ matrix.cxx }}
+        submodules: true
 
     - name: Cache Qt
       id: cache-qt
@@ -65,13 +64,23 @@ jobs:
         version: 5.15.2
         cached: ${{ steps.cache-qt.outputs.cache-hit }}
 
-    - name: 'Run CMake with Ninja, install dependencies with vcpkg, build with CMake'
-      uses: lukka/run-cmake@v3
+    - name: Setup Dependencies
+      if: ${{ matrix.triplet != '' }}
+      run: python misc/ci/setup.py
+
+    - name: Setup Vcpkg
+      uses: lukka/run-vcpkg@v10
+      if: ${{ matrix.triplet != '' }}
       with:
-        cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
-        cmakeAppendedArgs: -DCMAKE_BUILD_TYPE=${{needs.check.outputs.type}} ${{matrix.cmake_args}}
-        buildDirectory: ${{github.workspace}}/build
-        useVcpkgToolchainFile: false
+        vcpkgGitCommitId: e0c3408c778c54788393c4a739f6f3507aff77cb
+        vcpkgDirectory: ${{ github.workspace }}/vcpkg
+        vcpkgJsonGlob: '**/vcpkg.json'
+        runVcpkgInstall: true
+
+    - name: Run CMake
+      uses: lukka/run-cmake@v10
+      with:
+        configurePreset: ${{ (matrix.triplet != '' && 'default' || 'basic') }}${{ (needs.check.outputs.deploy == 'true' && '' || '-debug') }}
 
     - name: Packaging
       if: ${{ needs.check.outputs.deploy == 'true' }}
@@ -81,7 +90,7 @@ jobs:
       if: ${{ needs.check.outputs.deploy == 'true' }}
       uses: actions/upload-artifact@v2
       with:
-        name: ${{runner.os}}-${{needs.check.outputs.type}}-Package
+        name: ${{runner.os}}-Package
         path: ${{github.workspace}}/build/out.${{ runner.os == 'Linux' && 'tar.gz' || 'zip' }}
 
   deploy:
@@ -94,7 +103,6 @@ jobs:
     if: ${{ needs.check.outputs.deploy == 'true' }}
     needs: [check, build]
     runs-on: ubuntu-latest
-    #continue-on-error: true
 
     steps:
     - name: Checkout Repo
@@ -107,7 +115,7 @@ jobs:
     - name: Download Release Artifact
       uses: actions/download-artifact@v2
       with:
-        name: ${{matrix.os}}-${{needs.check.outputs.type}}-Package
+        name: ${{matrix.os}}-Package
         path: ${{github.workspace}}/release-artifact
 
     - name: Create Release
@@ -120,7 +128,7 @@ jobs:
         prerelease: false
         tag_name: ${{ steps.versioning.outputs.version }}
         release_name: ${{ steps.versioning.outputs.version }}
-        body: "(Automated Release by Github Actions / 由 GitHub CI/CD 自动发布)\n\n- branch ${{ github.ref }}\n- commit ${{ github.sha }}\n- message ${{ github.event.head_commit.message }}\n- version ${{ steps.versioning.outputs.version }}\n\n- Windows: After download, extract the zip file to a directory, then double-click the file `000_start.bat` in that directory to start our application. Alternatively you may manually run `zenoedit.exe`. If you encounter bugs, please let us know by submitting a [Github Issue](https://github.com/zenustech/zeno/issues), thank for your support!\n- Linux: Our released binary support Ubuntu 18.04 and above (glibcxx >= 3.4.26, glibc >= 2.14), otherwise please build from source. Extract the downloaded tar.gz to a directory, then run `bash 000_start.sh` in that directory to start our application. Alternatively you may manually run `usr/bin/zenoedit` in there. Try `chmod +x usr/bin/*` if they don't have execute permission.\n- Windows: 下载后，把 zip 文件解压到一个目录，然后双击其中的 `000_start.bat` 这个文件，即可启动我们的程序。此外您也可以找到 `zenoedit.exe` 直接双击运行。如果您遇到了 BUG，请通过提交 [Github Issue](https://github.com/zenustech/zeno/issues) 的方式来反馈给我们, 感谢您的支持！\n- Linux: 我们发布的二进制版支持 Ubuntu 18.04 以上的系统 (glibcxx >= 3.4.26, glibc >= 2.14)，否则请从源码构建。把下载的 tar.gz 文件解压到一个目录，然后在那个目录中运行命令 `bash 000_start.sh` 即可启动我们的程序。此外您也可以直接运行其中的 `usr/bin/zenoedit`。如果遇到没有执行权限的问题可以试试看 `chmod +x usr/bin/*`。"
+        body: "(Automated Release by Github Actions / 由 GitHub CI/CD 自动发布)\n\n- branch ${{ github.ref }}\n- commit `${{ github.sha }}`\n- message `${{ github.event.head_commit.message }}`\n- version `${{ steps.versioning.outputs.version }}`\n\n- Windows: After download, extract the zip file to a directory, then double-click the file `000_start.bat` in that directory to start our application. Alternatively you may manually run `zenoedit.exe`. If you encounter bugs, please let us know by submitting a [Github Issue](https://github.com/zenustech/zeno/issues), thank for your support!\n- Linux: Our released binary support Ubuntu 18.04 and above (glibcxx >= 3.4.26, glibc >= 2.14), otherwise please build from source. Extract the downloaded tar.gz to a directory, then run `bash 000_start.sh` in that directory to start our application. Alternatively you may manually run `usr/bin/zenoedit` in there. Try `chmod +x usr/bin/*` if they don't have execute permission.\n- Windows: 下载后，把 zip 文件解压到一个目录，然后双击其中的 `000_start.bat` 这个文件，即可启动我们的程序。此外您也可以找到 `zenoedit.exe` 直接双击运行。如果您遇到了 BUG，请通过提交 [Github Issue](https://github.com/zenustech/zeno/issues) 的方式来反馈给我们, 感谢您的支持！\n- Linux: 我们发布的二进制版支持 Ubuntu 18.04 以上的系统 (glibcxx >= 3.4.26, glibc >= 2.14)，否则请从源码构建。把下载的 tar.gz 文件解压到一个目录，然后在那个目录中运行命令 `bash 000_start.sh` 即可启动我们的程序。此外您也可以直接运行其中的 `usr/bin/zenoedit`。如果遇到没有执行权限的问题可以试试看 `chmod +x usr/bin/*`。"
 
     - name: Upload Release Asset
       uses: actions/upload-release-asset@v1

@@ -50,6 +50,7 @@ static void serializeGraph(SubGraphModel* pModel, GraphsModel* pGraphsModel, QSt
 
             if (graphNames.indexOf(name) != -1)
             {
+                zeno::log_critical("got subgraph {}", name.toStdString());
                 auto nextGraphIdPrefix = ident + "/";
                 SubGraphModel* pSubModel = pGraphsModel->subGraph(name);
                 serializeGraph(pSubModel, pGraphsModel, graphNames, writer, nextGraphIdPrefix);

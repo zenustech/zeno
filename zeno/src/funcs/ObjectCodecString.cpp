@@ -3,6 +3,7 @@
 #include <zeno/utils/log.h>
 #include <algorithm>
 #include <cstring>
+
 namespace zeno {
 
 namespace _implObjectCodec {

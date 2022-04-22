@@ -1,6 +1,8 @@
 #include <zeno/funcs/ObjectCodec.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/StringObject.h>
+#include <zeno/types/CameraObject.h>
+#include <zeno/types/LightObject.h>
 #include <zeno/utils/cppdemangle.h>
 #include <zeno/types/UserData.h>
 #include <zeno/utils/log.h>
@@ -11,11 +13,18 @@ namespace zeno {
 
 namespace {
 
+#define _VISIT_OBJECT_TYPE \
+    _PER_OBJECT_TYPE(PrimitiveObject) \
+    _PER_OBJECT_TYPE(NumericObject) \
+    _PER_OBJECT_TYPE(StringObject) \
+    _PER_OBJECT_TYPE(CameraObject) \
+    _PER_OBJECT_TYPE(LightObject)
+
+#define _PER_OBJECT_TYPE(TypeName) TypeName,
 enum class ObjectType : int32_t {
-    PrimitiveObject,
-    NumericObject,
-    StringObject,
+    _VISIT_OBJECT_TYPE
 };
+#undef _PER_OBJECT_TYPE
 
 struct ObjectHeader {
     constexpr static uint32_t kMagicNumber = 0xc0febabe;
@@ -30,10 +39,6 @@ struct ObjectHeader {
 
 namespace _implObjectCodec {
 
-#define _VISIT_OBJECT_TYPE \
-    _PER_OBJECT_TYPE(PrimitiveObject) \
-    _PER_OBJECT_TYPE(StringObject) \
-    _PER_OBJECT_TYPE(NumericObject)
 
 #define _PER_OBJECT_TYPE(TypeName) \
 std::shared_ptr<TypeName> decode##TypeName(const char *it); \

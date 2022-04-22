@@ -25,6 +25,7 @@
     "cgmesh": {
       "description": "Enable mesh processing nodes",
       "dependencies": [
+        "cgal",
         "openblas",
         "lapack"
       ]
@@ -32,14 +33,24 @@
     "alembic": {
       "description": "Enable Alembic nodes, for .abc format support",
       "dependencies": [
+        "hdf5",
         {
           "name": "alembic",
           "features": [ "hdf5" ]
         }
       ]
+    },
+    "cuda": {
+      "description": "Enable CUDA nodes, for MPM simulation algorithm",
+      "dependencies": [
+        {
+          "name": "cuda",
+          "version>=": "11.1.0"
+        }
+      ]
     }
   },
   "default-features": [
-      "qt", "openvdb"
+      "openvdb", "cgmesh"
   ]
 }
