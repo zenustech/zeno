@@ -113,17 +113,17 @@ void Scene::draw(unsigned int target_fbo) {
 }
 
 std::vector<char> Scene::record_frame_offline() {
-    std::vector<char> pixels(camera->m_nx * camera->m_ny * 3);
+    int m_nx = camera->m_nx - (camera->m_nx % 4);
+    int m_ny = camera->m_ny;
+    std::vector<char> pixels(m_nx * m_ny * 3);
 
     GLuint fbo, rbo1, rbo2;
     CHECK_GL(glGenRenderbuffers(1, &rbo1));
     CHECK_GL(glGenRenderbuffers(1, &rbo2));
     CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, rbo1));
-    CHECK_GL(glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA, camera->m_nx,
-                                   camera->m_ny));
+    CHECK_GL(glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA, m_nx, m_ny));
     CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, rbo2));
-    CHECK_GL(glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT32F,
-                                   camera->m_nx, camera->m_ny));
+    CHECK_GL(glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT32F, m_nx, m_ny));
 
     CHECK_GL(glGenFramebuffers(1, &fbo));
     CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo));
@@ -140,15 +140,12 @@ std::vector<char> Scene::record_frame_offline() {
 
     if (glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE) {
         CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo));
-        CHECK_GL(glBlitFramebuffer(0, 0, camera->m_nx, camera->m_ny, 0, 0,
-                                   camera->m_nx, camera->m_ny, GL_COLOR_BUFFER_BIT,
-                                   GL_NEAREST));
+        CHECK_GL(glBlitFramebuffer(0, 0, m_nx, m_ny, 0, 0, m_nx, m_ny, GL_COLOR_BUFFER_BIT, GL_NEAREST));
         CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo));
         CHECK_GL(glBindBuffer(GL_PIXEL_PACK_BUFFER, 0));
         CHECK_GL(glReadBuffer(GL_COLOR_ATTACHMENT0));
 
-        CHECK_GL(glReadPixels(0, 0, camera->m_nx, camera->m_ny, GL_RGB,
-                              GL_UNSIGNED_BYTE, &pixels[0]));
+        CHECK_GL(glReadPixels(0, 0, m_nx, m_ny, GL_RGB, GL_UNSIGNED_BYTE, &pixels[0]));
     }
 
     CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0));
