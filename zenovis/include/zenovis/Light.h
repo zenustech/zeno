@@ -15,13 +15,14 @@
 
 namespace zenovis {
 
-struct Light {
+struct Light : zeno::disable_copy {
     glm::mat4 lightMV;
     glm::mat4 lightSpaceMatrix;
     std::vector<glm::mat4> lightSpaceMatrices;
     std::vector<float> shadowCascadeLevels;
     //std::vector<GLuint> DepthMaps;
     GLuint depthMapsArr{};
+    int depthMapsArrCount = 0;
     GLuint depthMapTmp{};
     std::vector<float> m_nearPlane;
     std::vector<float> m_farPlane;
@@ -29,12 +30,12 @@ struct Light {
     glm::vec3 shadowTint = glm::vec3(0.2f);
     float lightHight = 1000.0;
     float shadowSoftness = 1.0;
-    unsigned int lightFBO = 0;
-    unsigned int lightDepthMaps = 0;
-    unsigned int depthMapResolution = 4096;
-    unsigned int matricesUBO = 0;
+    GLuint lightFBO = 0;
+    GLuint lightDepthMaps = 0;
+    GLuint matricesUBO = 0;
+    static constexpr unsigned int depthMapResolution = 4096;
     static constexpr int layerCount = 8;
-    static constexpr int lightCount = 1;
+    static constexpr int lightCount = 16;
     static constexpr int cascadeCount = layerCount - 1;
     glm::vec3 lightColor = glm::vec3(1.0);
     float intensity = 10.0;
@@ -45,6 +46,21 @@ struct Light {
 
     explicit Light(Scene *scene_) : scene(scene_) {
         initCascadeShadow();
+    }
+
+    ~Light() {
+        if (depthMapsArr != 0) {
+            CHECK_GL(glDeleteTextures(1, &depthMapsArr));
+            depthMapsArr = 0;
+        }
+        if (depthMapTmp != 0) {
+            CHECK_GL(glDeleteTextures(1, &depthMapTmp));
+            depthMapTmp = 0;
+        }
+        if (depthMapTmp != 0) {
+            CHECK_GL(glDeleteFramebuffers(1, &lightFBO));
+            depthMapTmp = 0;
+        }
     }
 
     glm::vec3 getShadowTint() {
@@ -91,8 +107,8 @@ struct Light {
     }
 
     glm::mat4 getLightSpaceMatrix(int layer, const float nearPlane,
-                                  const float farPlane, glm::mat4 &proj,
-                                  glm::mat4 &view) {
+                                  const float farPlane, glm::mat4 const &proj,
+                                  glm::mat4 const &view) {
         auto p = glm::perspective(glm::radians(scene->camera->m_fov),
                 scene->camera->getAspect(), nearPlane, farPlane);
         const auto corners = getFrustumCornersWorldSpace(p * view);
@@ -154,8 +170,8 @@ struct Light {
     }
 
     std::vector<glm::mat4> getLightSpaceMatrices(float near, float far,
-                                                 glm::mat4 &proj,
-                                                 glm::mat4 &view) {
+                                                 glm::mat4 const &proj,
+                                                 glm::mat4 const &view) {
         std::vector<glm::mat4> ret;
         for (size_t i = 0; i < layerCount; ++i) {
             if (i == 0) {
@@ -198,8 +214,8 @@ struct Light {
             // attach depth texture as FBO's depth buffer
             CHECK_GL(glBindFramebuffer(GL_FRAMEBUFFER, lightFBO));
             CHECK_GL(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, lightDepthMaps, 0));
-            CHECK_GL(glDrawBuffer(GL_NONE));
-            CHECK_GL(glReadBuffer(GL_NONE));
+            /* CHECK_GL(glDrawBuffer(GL_NONE)); *///??
+            /* CHECK_GL(glReadBuffer(GL_NONE)); *///??
 
             // glGenTextures(1, &lightDepthMaps);
             // glBindTexture(GL_TEXTURE_2D_ARRAY, lightDepthMaps);
@@ -221,47 +237,28 @@ struct Light {
             // glReadBuffer(GL_NONE);
             CHECK_GL(glBindFramebuffer(GL_FRAMEBUFFER, 0));
 
-            CHECK_GL(glGenTextures(1, &depthMapTmp));
-            CHECK_GL(glBindTexture(GL_TEXTURE_2D, depthMapTmp));
-            /* for (int i = 0; i < layerCount; i++) { */
-            //CHECK_GL(glGenTextures(1, &(DepthMaps[i])));
-            //CHECK_GL(glBindTexture(GL_TEXTURE_2D, DepthMaps[i]));
-            CHECK_GL(glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F,
-                    depthMapResolution, depthMapResolution, 0,
-                    GL_DEPTH_COMPONENT, GL_FLOAT, nullptr));
-            CHECK_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST));
-            CHECK_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
-            CHECK_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP));
-            CHECK_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP));
-            //const float borderColor[] = {1.0f, 1.0f, 1.0f, 1.0f};
-            //CHECK_GL(glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR,
-                    //borderColor));
+            /* CHECK_GL(glGenTextures(1, &depthMapTmp)); */
+            /* CHECK_GL(glBindTexture(GL_TEXTURE_2D, depthMapTmp)); */
+            /* // for (int i = 0; i < layerCount; i++) { */
+            /* //CHECK_GL(glGenTextures(1, &(DepthMaps[i]))); */
+            /* //CHECK_GL(glBindTexture(GL_TEXTURE_2D, DepthMaps[i])); */
+            /* CHECK_GL(glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F, */
+            /*         depthMapResolution, depthMapResolution, 0, */
+            /*         GL_DEPTH_COMPONENT, GL_FLOAT, nullptr)); */
+            /* CHECK_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)); */
+            /* CHECK_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)); */
+            /* CHECK_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP)); */
+            /* CHECK_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP)); */
+            /* //const float borderColor[] = {1.0f, 1.0f, 1.0f, 1.0f}; */
+            /* //CHECK_GL(glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, */
+            /*         //borderColor)); */
 
             int status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
             if (status != GL_FRAMEBUFFER_COMPLETE) {
                 throw zeno::makeError("ERROR::FRAMEBUFFER:: Framebuffer is not complete!\n");
             }
 
-            CHECK_GL(glBindFramebuffer(GL_FRAMEBUFFER, 0));
-
-            CHECK_GL(glGenTextures(1, &depthMapsArr));
-            CHECK_GL(glBindTexture(GL_TEXTURE_2D_ARRAY, depthMapsArr));
-            /* for (int i = 0; i < layerCount; i++) { */
-            //CHECK_GL(glGenTextures(1, &(DepthMaps[i])));
-            //CHECK_GL(glBindTexture(GL_TEXTURE_2D, DepthMaps[i]));
-            CHECK_GL(glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_DEPTH_COMPONENT32F,
-                    depthMapResolution, depthMapResolution, (cascadeCount + 1) * lightCount, 0,
-                    GL_DEPTH_COMPONENT, GL_FLOAT, nullptr));
-            CHECK_GL(glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST));
-            CHECK_GL(glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
-            //CHECK_GL(glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER));
-            //CHECK_GL(glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER));
-            CHECK_GL(glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP));
-            CHECK_GL(glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP));
-            //float borderColor[] = {1.0f, 1.0f, 1.0f, 1.0f};
-            //CHECK_GL(glTexParameterfv(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_BORDER_COLOR, borderColor));
-            /* } */
-            CHECK_GL(glBindFramebuffer(GL_FRAMEBUFFER, 0));
+            reserveDepthMapsArr(lightCount);
         /* } */
         }
         if (matricesUBO == 0) {
@@ -274,8 +271,41 @@ struct Light {
         }
     }
 
+    void reserveDepthMapsArr(int licount) {
+        if (depthMapsArrCount == licount) {
+            return;
+        }
+
+        if (depthMapsArr != 0) {
+            CHECK_GL(glDeleteTextures(1, &depthMapsArr));
+            depthMapsArr = 0;
+        }
+
+        CHECK_GL(glBindFramebuffer(GL_FRAMEBUFFER, 0));
+
+        CHECK_GL(glGenTextures(1, &depthMapsArr));
+        CHECK_GL(glBindTexture(GL_TEXTURE_2D_ARRAY, depthMapsArr));
+        /* for (int i = 0; i < layerCount; i++) { */
+        //CHECK_GL(glGenTextures(1, &(DepthMaps[i])));
+        //CHECK_GL(glBindTexture(GL_TEXTURE_2D, DepthMaps[i]));
+        CHECK_GL(glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_DEPTH_COMPONENT32F,
+                    depthMapResolution, depthMapResolution, layerCount * licount, 0,
+                    GL_DEPTH_COMPONENT, GL_FLOAT, nullptr));
+        CHECK_GL(glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST));
+        CHECK_GL(glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
+        //CHECK_GL(glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER));
+        //CHECK_GL(glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER));
+        CHECK_GL(glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP));
+        CHECK_GL(glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP));
+        //float borderColor[] = {1.0f, 1.0f, 1.0f, 1.0f};
+        //CHECK_GL(glTexParameterfv(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_BORDER_COLOR, borderColor));
+        /* } */
+        CHECK_GL(glBindFramebuffer(GL_FRAMEBUFFER, 0));
+        depthMapsArrCount = licount;
+    }
+
     void BeginShadowMap(float near, float far, glm::vec3 lightdir,
-                        glm::mat4 &proj, glm::mat4 &view, int i) {
+                        glm::mat4 const &proj, glm::mat4 const &view, int i) {
         CHECK_GL(glDisable(GL_BLEND));
         CHECK_GL(glDisable(GL_DEPTH_TEST));
         CHECK_GL(glDisable(GL_PROGRAM_POINT_SIZE)); ///????ZHXX???
@@ -303,8 +333,8 @@ struct Light {
 
         CHECK_GL(glViewport(0, 0, depthMapResolution, depthMapResolution));
         CHECK_GL(glBindFramebuffer(GL_FRAMEBUFFER, lightFBO));
-        CHECK_GL(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
-                               GL_TEXTURE_2D, depthMapTmp, 0));
+        /* CHECK_GL(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, */
+        /*                        GL_TEXTURE_2D, depthMapTmp, 0)); */
 
         CHECK_GL(glClearColor(0.0f, 0.0f, 0.0f, 0.0f));
         CHECK_GL(glClear(GL_DEPTH_BUFFER_BIT));
@@ -318,7 +348,7 @@ struct Light {
         CHECK_GL(glBindTexture(GL_TEXTURE_2D_ARRAY, depthMapsArr));
         CHECK_GL(glCopyTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0,
                     0, 0, i, 0, 0, depthMapResolution, depthMapResolution));
-        CHECK_GL(glReadBuffer(GL_NONE));
+        /* CHECK_GL(glReadBuffer(GL_NONE)); */
 
         // glDisable(GL_CULL_FACE);
         CHECK_GL(glBindFramebuffer(GL_FRAMEBUFFER, 0));
