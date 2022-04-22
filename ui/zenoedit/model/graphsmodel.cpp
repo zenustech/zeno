@@ -1040,6 +1040,7 @@ void GraphsModel::updateDescInfo(const QString& descName, const SOCKET_UPDATE_IN
                 Q_ASSERT(desc.inputs.find(oldName) != desc.inputs.end() &&
                     desc.inputs.find(newName) == desc.inputs.end());
                 desc.inputs[newName] = desc.inputs[oldName];
+                desc.inputs[newName].info.name = newName;
                 desc.inputs.remove(oldName);
             }
             else
@@ -1047,6 +1048,7 @@ void GraphsModel::updateDescInfo(const QString& descName, const SOCKET_UPDATE_IN
                 Q_ASSERT(desc.outputs.find(oldName) != desc.outputs.end() &&
                     desc.outputs.find(newName) == desc.outputs.end());
                 desc.outputs[newName] = desc.outputs[oldName];
+                desc.outputs[newName].info.name = newName;
                 desc.outputs.remove(oldName);
             }
             break;
