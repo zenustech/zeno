@@ -97,7 +97,7 @@ ViewportWidget::ViewportWidget(QWidget* parent)
     , m_camera(nullptr)
 {
     QGLFormat fmt;
-    int nsamples = 16;  // TODO: adjust in a zhouhang-panel
+    int nsamples = 1;  // TODO: adjust in a zhouhang-panel
     fmt.setSamples(nsamples);
     fmt.setVersion(3, 2);
     fmt.setProfile(QGLFormat::CoreProfile);
