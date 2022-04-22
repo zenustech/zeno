@@ -1,5 +1,6 @@
 #pragma once
 
+#include <zenovis/Camera.h>
 #include <array>
 #include <cmath>
 #include <cstdlib>
@@ -9,6 +10,8 @@
 #include <zeno/utils/Error.h>
 #include <zeno/utils/fuck_win.h>
 #include <zenovis/opengl/shader.h>
+#include <zenovis/Scene.h>
+#include <zenovis/Light.h>
 
 namespace zenovis {
 
@@ -25,8 +28,6 @@ struct Light {
     glm::vec3 lightDir = glm::normalize(glm::vec3(1, 1, 0));
     glm::vec3 shadowTint = glm::vec3(0.2f);
     float lightHight = 1000.0;
-    float gfov{};
-    float gaspect{};
     float shadowSoftness = 1.0;
     unsigned int lightFBO = 0;
     unsigned int lightDepthMaps = 0;
@@ -38,16 +39,18 @@ struct Light {
     float lightScale = 1.0;
     bool m_isEnabled = true;
 
+    Scene *scene;
+
+    explicit Light(Scene *scene_) : scene(scene_) {
+        initCascadeShadow();
+    }
+
     glm::vec3 getShadowTint() {
         return m_isEnabled ? shadowTint : glm::vec3(1.0);
     }
 
     glm::vec3 getIntensity() {
         return m_isEnabled ? intensity * lightColor : glm::vec3(0.0);
-    }
-
-    Light() {
-        initCascadeShadow();
     }
 
     void setCascadeLevels(float far) {
@@ -85,17 +88,12 @@ struct Light {
         return frustumCorners;
     }
 
-    std::vector<glm::vec4> getFrustumCornersWorldSpace(const glm::mat4 &proj,
-                                                       const glm::mat4 &view) {
-        return getFrustumCornersWorldSpace(proj * view);
-    }
-
     glm::mat4 getLightSpaceMatrix(int layer, const float nearPlane,
                                   const float farPlane, glm::mat4 &proj,
                                   glm::mat4 &view) {
-        auto p =
-            glm::perspective(glm::radians(gfov), gaspect, nearPlane, farPlane);
-        const auto corners = getFrustumCornersWorldSpace(p, view);
+        auto p = glm::perspective(glm::radians(scene->camera->m_fov),
+                scene->camera->getAspect(), nearPlane, farPlane);
+        const auto corners = getFrustumCornersWorldSpace(p * view);
 
         glm::vec3 center = glm::vec3(0, 0, 0);
         for (const auto &v : corners) {
