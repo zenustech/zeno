@@ -221,9 +221,9 @@ void main(void)
             CHECK_GL(glGenRenderbuffers(1, &msfborgb));
             CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, msfborgb));
             auto num_samples = camera()->getNumSamples();
-            /* CHECK_GL(glRenderbufferStorageMultisample( */
-            /*     GL_RENDERBUFFER, num_samples, GL_RGBA32F, camera()->m_nx, */
-            /*     camera()->m_ny)); */
+            CHECK_GL(glRenderbufferStorageMultisample(
+                GL_RENDERBUFFER, num_samples, GL_RGBA32F, camera()->m_nx,
+                camera()->m_ny));
 
             CHECK_GL(glGenRenderbuffers(1, &ssfborgb));
             CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, ssfborgb));
@@ -238,9 +238,9 @@ void main(void)
             }
             CHECK_GL(glGenRenderbuffers(1, &msfbod));
             CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, msfbod));
-            /* CHECK_GL(glRenderbufferStorageMultisample( */
-            /*     GL_RENDERBUFFER, num_samples, GL_DEPTH_COMPONENT32F, */
-            /*     camera()->m_nx, camera()->m_ny)); */
+            CHECK_GL(glRenderbufferStorageMultisample(
+                GL_RENDERBUFFER, num_samples, GL_DEPTH_COMPONENT32F,
+                camera()->m_nx, camera()->m_ny));
 
             if (ssfbod != 0) {
                 CHECK_GL(glDeleteRenderbuffers(1, &ssfbod));

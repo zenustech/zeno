@@ -179,10 +179,10 @@ struct Camera {
     int getNumSamples() {
         if (_m_ready_num_samples < 0) {
             /* begin cihou mesa */
-            int max_num_samples = _m_ready_num_samples;
+            int max_num_samples = _m_default_num_samples;
             CHECK_GL(glGetIntegerv(GL_MAX_INTEGER_SAMPLES, &max_num_samples));
-            _m_ready_num_samples = std::min(_m_ready_num_samples, max_num_samples);
-            printf("num samples: %d\n", _m_ready_num_samples);
+            _m_ready_num_samples = std::min(_m_default_num_samples, max_num_samples);
+            /* printf("num samples: %d\n", _m_ready_num_samples); */
             /* end cihou mesa */
         }
         return _m_ready_num_samples;
