@@ -2203,7 +2203,7 @@ float brightness(vec3 c)
 uniform int lightNum; 
 uniform vec3 light[16];
 const int cascadeCount = 7;   // number of frusta - 1
-uniform sampler2D shadowMap[128];
+uniform sampler2D shadowMap[256];
 uniform vec3 lightIntensity[16];
 uniform vec3 shadowTint[16];
 uniform float shadowSoftness[16];
