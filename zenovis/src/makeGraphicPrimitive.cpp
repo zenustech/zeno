@@ -834,10 +834,10 @@ struct GraphicPrimitive : IGraphic {
                     name = "lightIntensity[" + std::to_string(lightNo) + "]";
                     triObj.prog->set_uniform(name.c_str(),
                                              light->getIntensity());
-                    for (size_t i = 0; i < Light::cascadeCount + 1; i++) {
+                    for (size_t i = 0; i < Light::layerCount; i++) {
                         auto name1 =
                             "near[" +
-                            std::to_string(lightNo * (Light::cascadeCount + 1) +
+                            std::to_string(lightNo * Light::layerCount +
                                            i) +
                             "]";
                         triObj.prog->set_uniform(name1.c_str(),
@@ -845,7 +845,7 @@ struct GraphicPrimitive : IGraphic {
 
                         auto name2 =
                             "far[" +
-                            std::to_string(lightNo * (Light::cascadeCount + 1) +
+                            std::to_string(lightNo * Light::layerCount +
                                            i) +
                             "]";
                         triObj.prog->set_uniform(name2.c_str(),
@@ -880,7 +880,7 @@ struct GraphicPrimitive : IGraphic {
                     for (size_t i = 0; i < matrices.size(); i++) {
                         auto name =
                             "lightSpaceMatrices[" +
-                            std::to_string(lightNo * (Light::cascadeCount + 1) +
+                            std::to_string(lightNo * Light::layerCount +
                                            i) +
                             "]";
                         triObj.prog->set_uniform(name.c_str(), matrices[i]);
@@ -1149,7 +1149,7 @@ layout(triangle_strip, max_vertices = 3) out;
 
 layout (std140, binding = 0) uniform LightSpaceMatrices
 {
-    mat4 lightSpaceMatrices[128];
+    mat4 lightSpaceMatrices[lightCount * layerCount];
 };
 
 void main()
@@ -2199,21 +2199,23 @@ float brightness(vec3 c)
 }
 uniform int lightNum; 
 uniform vec3 light[16];
-const int cascadeCount = 7;   // number of frusta - 1
+const int cascadeCount = )" + std::to_string(Light::cascadeCount) + R"(;   // number of frusta - 1
+const int layerCount = )" + std::to_string(Light::layerCount) + R"(;   // number of frusta
+const int lightCount = )" + std::to_string(Light::lightCount) + R"(;   // number of lights
 uniform sampler2DArray shadowMap;
-uniform vec3 lightIntensity[16];
-uniform vec3 shadowTint[16];
-uniform float shadowSoftness[16];
-uniform vec3 lightDir[16];
+uniform vec3 lightIntensity[lightCount];
+uniform vec3 shadowTint[lightCount];
+uniform float shadowSoftness[lightCount];
+uniform vec3 lightDir[lightCount];
 uniform float farPlane;
-uniform mat4 lview[16];
-uniform float near[128];
-uniform float far[128];
+uniform mat4 lview[lightCount];
+uniform float near[lightCount * layerCount];
+uniform float far[lightCount * layerCount];
 //layout (std140, binding = 0) uniform LightSpaceMatrices
 //{
-uniform mat4 lightSpaceMatrices[128];
+uniform mat4 lightSpaceMatrices[lightCount * layerCount];
 //};
-uniform float cascadePlaneDistances[112];
+uniform float cascadePlaneDistances[lightCount * cascadeCount];
 vec3 random3(vec3 c) {
 	float j = 4096.0*sin(dot(c,vec3(17.0, 59.4, 15.0)));
 	vec3 r;
@@ -2228,7 +2230,7 @@ float sampleShadowArray(int lightNo, vec2 coord, int layer)
 {
     //vec2 c = clamp(coord,vec2(0.01), vec2(0.99));
     vec2 c = clamp(coord,vec2(0), vec2(1));
-    int index = lightNo * (cascadeCount + 1) + layer;
+    int index = lightNo * layerCount + layer;
     return texture(shadowMap, vec3(c, index)).r;
 }
 float PCFLayer(int lightNo, float currentDepth, float bias, vec3 pos, int layer, int k, float softness, vec2 coord)
@@ -2277,7 +2279,7 @@ float ShadowHit(int lightNo, vec3 fragPosWorldSpace)
     int layer = -1;
     for (int i = 0; i < cascadeCount; ++i)
     {
-        vec4 fragPosLightSpace = lightSpaceMatrices[lightNo * (cascadeCount + 1) + i] * vec4(fragPosWorldSpace, 1.0);
+        vec4 fragPosLightSpace = lightSpaceMatrices[lightNo * layerCount + i] * vec4(fragPosWorldSpace, 1.0);
         // perform perspective divide
         vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
         // transform to [0,1] range
@@ -2292,7 +2294,7 @@ float ShadowHit(int lightNo, vec3 fragPosWorldSpace)
     {
         layer = cascadeCount;
     }
-    vec4 fragPosLightSpace = lightSpaceMatrices[lightNo * (cascadeCount + 1) + layer] * vec4(fragPosWorldSpace, 1.0);
+    vec4 fragPosLightSpace = lightSpaceMatrices[lightNo * layerCount + layer] * vec4(fragPosWorldSpace, 1.0);
     // perform perspective divide
     vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
     // transform to [0,1] range
@@ -2330,7 +2332,7 @@ float ShadowCalculation(int lightNo, vec3 fragPosWorldSpace, float softness)
     int layer = -1;
     for (int i = 0; i < cascadeCount; ++i)
     {
-        vec4 fragPosLightSpace = lightSpaceMatrices[lightNo * (cascadeCount + 1) + i] * vec4(fragPosWorldSpace, 1.0);
+        vec4 fragPosLightSpace = lightSpaceMatrices[lightNo * layerCount + i] * vec4(fragPosWorldSpace, 1.0);
         // perform perspective divide
         vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
         // transform to [0,1] range
@@ -2346,7 +2348,7 @@ float ShadowCalculation(int lightNo, vec3 fragPosWorldSpace, float softness)
         layer = cascadeCount;
     }
 
-    vec4 fragPosLightSpace = lightSpaceMatrices[lightNo * (cascadeCount + 1) + layer] * vec4(fragPosWorldSpace, 1.0);
+    vec4 fragPosLightSpace = lightSpaceMatrices[lightNo * layerCount + layer] * vec4(fragPosWorldSpace, 1.0);
     // perform perspective divide
     vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
     // transform to [0,1] range
@@ -2380,7 +2382,7 @@ float ShadowCalculation(int lightNo, vec3 fragPosWorldSpace, float softness)
     //float coef = 0.0;
     if(layer<cascadeCount){
         //bm = 1 / (cascadePlaneDistances[lightNo * cascadeCount + (layer-1)] * biasModifier);
-        fragPosLightSpace = lightSpaceMatrices[lightNo * (cascadeCount + 1) + (layer+1)] * vec4(fragPosWorldSpace, 1.0);
+        fragPosLightSpace = lightSpaceMatrices[lightNo * layerCount + (layer+1)] * vec4(fragPosWorldSpace, 1.0);
         vec3 projCoords2 = fragPosLightSpace.xyz / fragPosLightSpace.w;
         projCoords2 = projCoords2 * 0.5 + 0.5;
         return PCFLayer2(lightNo, currentDepth, projCoords2.z, bias, fragPosWorldSpace, layer, 3, softness, projCoords.xy, projCoords2.xy);

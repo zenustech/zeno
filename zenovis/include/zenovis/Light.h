@@ -33,7 +33,9 @@ struct Light {
     unsigned int lightDepthMaps = 0;
     unsigned int depthMapResolution = 4096;
     unsigned int matricesUBO = 0;
-    static constexpr int cascadeCount = 7;
+    static constexpr int layerCount = 8;
+    static constexpr int lightCount = 1;
+    static constexpr int cascadeCount = layerCount - 1;
     glm::vec3 lightColor = glm::vec3(1.0);
     float intensity = 10.0;
     float lightScale = 1.0;
@@ -155,7 +157,7 @@ struct Light {
                                                  glm::mat4 &proj,
                                                  glm::mat4 &view) {
         std::vector<glm::mat4> ret;
-        for (size_t i = 0; i < cascadeCount + 1; ++i) {
+        for (size_t i = 0; i < layerCount; ++i) {
             if (i == 0) {
                 ret.push_back(getLightSpaceMatrix(
                     i, near, shadowCascadeLevels[i], proj, view));
@@ -174,9 +176,9 @@ struct Light {
 
     void initCascadeShadow() {
         setCascadeLevels(10000);
-        //DepthMaps.resize(cascadeCount + 1);
-        m_nearPlane.resize(cascadeCount + 1);
-        m_farPlane.resize(cascadeCount + 1);
+        //DepthMaps.resize(layerCount);
+        m_nearPlane.resize(layerCount);
+        m_farPlane.resize(layerCount);
         if (lightFBO == 0) {
             CHECK_GL(glGenFramebuffers(1, &lightFBO));
             CHECK_GL(glGenTextures(1, &lightDepthMaps));
@@ -221,7 +223,7 @@ struct Light {
 
             CHECK_GL(glGenTextures(1, &depthMapTmp));
             CHECK_GL(glBindTexture(GL_TEXTURE_2D, depthMapTmp));
-            /* for (int i = 0; i < cascadeCount + 1; i++) { */
+            /* for (int i = 0; i < layerCount; i++) { */
             //CHECK_GL(glGenTextures(1, &(DepthMaps[i])));
             //CHECK_GL(glBindTexture(GL_TEXTURE_2D, DepthMaps[i]));
             CHECK_GL(glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F,
@@ -244,11 +246,11 @@ struct Light {
 
             CHECK_GL(glGenTextures(1, &depthMapsArr));
             CHECK_GL(glBindTexture(GL_TEXTURE_2D_ARRAY, depthMapsArr));
-            /* for (int i = 0; i < cascadeCount + 1; i++) { */
+            /* for (int i = 0; i < layerCount; i++) { */
             //CHECK_GL(glGenTextures(1, &(DepthMaps[i])));
             //CHECK_GL(glBindTexture(GL_TEXTURE_2D, DepthMaps[i]));
             CHECK_GL(glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_DEPTH_COMPONENT32F,
-                    depthMapResolution, depthMapResolution, (cascadeCount + 1) * 16, 0,
+                    depthMapResolution, depthMapResolution, (cascadeCount + 1) * lightCount, 0,
                     GL_DEPTH_COMPONENT, GL_FLOAT, nullptr));
             CHECK_GL(glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST));
             CHECK_GL(glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
