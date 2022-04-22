@@ -314,7 +314,7 @@ struct Light {
     }
 
     void EndShadowMap(int i) {
-        CHECK_GL(glReadBuffer(GL_DEPTH_ATTACHMENT));
+        CHECK_GL(glReadBuffer(GL_COLOR_ATTACHMENT0));
         CHECK_GL(glBindTexture(GL_TEXTURE_2D_ARRAY, depthMapsArr));
         CHECK_GL(glCopyTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0,
                     0, 0, i, 0, 0, depthMapResolution, depthMapResolution));
