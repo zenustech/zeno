@@ -850,21 +850,24 @@ struct GraphicPrimitive : IGraphic {
                             "]";
                         triObj.prog->set_uniform(name2.c_str(),
                                                  light->m_farPlane[i]);
-                        /*  */
-                        /* auto name = "shadowMap[" + std::to_string(lightNo * (Light::cascadeCount + 1) + i) + "]"; */
-                        /* triObj.prog->set_uniformi(name.c_str(), texOcp); */
-                        /* CHECK_GL(glActiveTexture(GL_TEXTURE0 + texOcp)); */
-                        /* if (auto shadowMap = light->DepthMaps[i]; */
-                        /*     shadowMap != (unsigned int)-1) */
-                        /*     CHECK_GL(glBindTexture(GL_TEXTURE_2D, shadowMap)); */
-                        /* texOcp++; */
+                          
+                         auto name = "shadowMap[" + std::to_string(lightNo * (Light::cascadeCount + 1) + i) + "]"; 
+                         triObj.prog->set_uniformi(name.c_str(), texOcp); 
+                         CHECK_GL(glActiveTexture(GL_TEXTURE0 + texOcp)); 
+                         if (auto shadowMap = light->DepthMaps[i]; 
+                             shadowMap != (unsigned int)-1) 
+                             CHECK_GL(glBindTexture(GL_TEXTURE_2D, shadowMap)); 
+                         texOcp++; 
                     }
                         
-                    triObj.prog->set_uniformi("shadowMap", texOcp);
-                    CHECK_GL(glActiveTexture(GL_TEXTURE0 + texOcp));
-                    if (auto shadowMap = light->depthMapsArr; shadowMap != (GLuint)-1)
-                        CHECK_GL(glBindTexture(GL_TEXTURE_2D_ARRAY, shadowMap));
-                    texOcp++;
+                    //for (size_t i = 0; i < Light::cascadeCount + 1; i++) {
+                        //triObj.prog->set_uniformi("shadowMap", texOcp);
+                        //CHECK_GL(glActiveTexture(GL_TEXTURE0 + texOcp));
+                        //if (auto shadowMap = light->DepthMaps[i]; shadowMap != (GLuint)-1)
+                            //CHECK_GL(glBindTexture(GL_TEXTURE_2D_ARRAY, shadowMap));
+                        //texOcp++;
+                    //}
+
                     for (size_t i = 0; i < Light::cascadeCount; ++i) {
                         auto name =
                             "cascadePlaneDistances[" +
@@ -2200,7 +2203,7 @@ float brightness(vec3 c)
 uniform int lightNum; 
 uniform vec3 light[16];
 const int cascadeCount = 7;   // number of frusta - 1
-uniform sampler2DArray shadowMap;
+uniform sampler2D shadowMap[256];
 uniform vec3 lightIntensity[16];
 uniform vec3 shadowTint[16];
 uniform float shadowSoftness[16];
@@ -2229,13 +2232,13 @@ float sampleShadowArray(int lightNo, vec2 coord, int layer)
     //vec2 c = clamp(coord,vec2(0.01), vec2(0.99));
     vec2 c = clamp(coord,vec2(0), vec2(1));
     int index = lightNo * (cascadeCount + 1) + layer;
-    return texture(shadowMap, vec3(c, index)).r;
+    return texture(shadowMap[index], vec2(c)).r;
 }
 float PCFLayer(int lightNo, float currentDepth, float bias, vec3 pos, int layer, int k, float softness, vec2 coord)
 {
     float shadow = 0.0;
     
-    vec2 texelSize = 1.0 / vec2(textureSize(shadowMap, 0).xy);
+    vec2 texelSize = 1.0 / vec2(textureSize(shadowMap[0], 0).xy);
     for(int x = -k; x <= k; ++x)
     {
         for(int y = -k; y <= k; ++y)
@@ -2252,7 +2255,7 @@ float PCFLayer2(int lightNo, float currentDepth1, float currentDepth2, float bia
 {
     float shadow = 0.0;
     
-    vec2 texelSize = 1.0 / vec2(textureSize(shadowMap, 0).xy);
+    vec2 texelSize = 1.0 / vec2(textureSize(shadowMap[0], 0).xy);
     for(int x = -k; x <= k; ++x)
     {
         for(int y = -k; y <= k; ++y)
@@ -2307,7 +2310,7 @@ float ShadowCalculation(int lightNo, vec3 fragPosWorldSpace, float softness, vec
 {
     float shadow = 0.0;
     
-    vec2 texelSize = 1.0 / vec2(textureSize(shadowMap, 0).xy);
+    vec2 texelSize = 1.0 / vec2(textureSize(shadowMap[0], 0).xy);
     for(int x = -k; x <= k; ++x)
     {
         for(int y = -k; y <= k; ++y)
@@ -2402,7 +2405,7 @@ float PCFAttLayer(int lightNo, float currentDepth, float bias, vec3 pos, int lay
     
     float length = 0.0;
     float res = far;
-    vec2 texelSize = 1.0 / vec2(textureSize(shadowMap, 0).xy);
+    vec2 texelSize = 1.0 / vec2(textureSize(shadowMap[0], 0).xy);
     for(int x = -k; x <= k; ++x)
     {
         for(int y = -k; y <= k; ++y)
