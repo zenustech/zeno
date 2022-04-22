@@ -132,12 +132,13 @@ std::vector<char> Scene::record_frame_offline() {
     CHECK_GL(glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
                                        GL_RENDERBUFFER, rbo2));
     CHECK_GL(glDrawBuffer(GL_COLOR_ATTACHMENT0));
+    CHECK_GL(glClearColor(camera->bgcolor.r, camera->bgcolor.g,
+                          camera->bgcolor.b, 0.0f));
     CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 
     draw(fbo);
 
-    if (glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER) ==
-        GL_FRAMEBUFFER_COMPLETE) {
+    if (glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE) {
         CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo));
         CHECK_GL(glBlitFramebuffer(0, 0, camera->m_nx, camera->m_ny, 0, 0,
                                    camera->m_nx, camera->m_ny, GL_COLOR_BUFFER_BIT,
