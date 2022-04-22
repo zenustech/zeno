@@ -22,7 +22,7 @@ struct Light {
     //GLuint depthMapTmp{};
     std::vector<float> m_nearPlane;
     std::vector<float> m_farPlane;
-    glm::vec3 lightDir = glm::normalize(glm::vec3(1, 1, 0));
+    glm::vec3 lightDir = glm::normalize(glm::vec3(0, 1, 0));
     glm::vec3 shadowTint = glm::vec3(0.2f);
     float lightHight = 1000.0;
     float gfov{};
@@ -303,11 +303,10 @@ struct Light {
 
         CHECK_GL(glViewport(0, 0, depthMapResolution, depthMapResolution));
         CHECK_GL(glBindFramebuffer(GL_FRAMEBUFFER, lightFBO));
-        //CHECK_GL(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
-                               //GL_TEXTURE_2D, depthMapTmp, 0));
-        CHECK_GL(glBindTexture(GL_TEXTURE_2D_ARRAY, DepthMaps[i]));
+        CHECK_GL(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
+                               GL_TEXTURE_2D, DepthMaps[i], 0));
 
-        CHECK_GL(glClearColor(0.0f, 0.0f, 0.0f, 0.0f));
+        CHECK_GL(glClearColor(0.1f, 0.1f, 0.1f, 1.0f));
         CHECK_GL(glClear(GL_DEPTH_BUFFER_BIT));
 
         // glEnable(GL_CULL_FACE);

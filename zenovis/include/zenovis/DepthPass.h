@@ -191,7 +191,7 @@ void main(void)
             }
         }
 
-        if (!enable_hdr || 1) {
+        if (!enable_hdr) {
             if (target_fbo)
                 CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, target_fbo));
             return scene->my_paint_graphics(1.0, 0.0);
