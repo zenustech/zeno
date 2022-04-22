@@ -93,14 +93,14 @@ void CameraControl::setKeyFrame()
 
 
 ViewportWidget::ViewportWidget(QWidget* parent)
-    : QOpenGLWidget(parent)
+    : QGLWidget(parent)
     , m_camera(nullptr)
 {
-    QSurfaceFormat fmt;
+    QGLFormat fmt;
     int nsamples = 16;  // TODO: adjust in a zhouhang-panel
     fmt.setSamples(nsamples);
     fmt.setVersion(3, 2);
-    fmt.setProfile(QSurfaceFormat::CoreProfile);
+    fmt.setProfile(QGLFormat::CoreProfile);
     setFormat(fmt);
 
     m_camera = std::make_shared<CameraControl>();
@@ -113,7 +113,7 @@ ViewportWidget::~ViewportWidget()
 
 namespace {
 struct OpenGLProcAddressHelper {
-    inline static QOpenGLContext *ctx;
+    inline static QGLContext *ctx;
 
     static void *getProcAddress(const char *name) {
         return (void *)ctx->getProcAddress(name);
