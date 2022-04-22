@@ -304,7 +304,7 @@ struct Light : zeno::disable_copy {
         depthMapsArrCount = licount;
     }
 
-    void BeginShadowMap(float near, float far, glm::vec3 lightdir,
+    void BeginShadowMap(float near, float far,
                         glm::mat4 const &proj, glm::mat4 const &view, int i) {
         CHECK_GL(glDisable(GL_BLEND));
         CHECK_GL(glDisable(GL_DEPTH_TEST));
@@ -313,7 +313,6 @@ struct Light : zeno::disable_copy {
         CHECK_GL(glEnable(GL_DEPTH_TEST));
         CHECK_GL(glDepthFunc(GL_LESS));
         setCascadeLevels(far);
-        lightDir = lightdir;
 
         // 0. UBO setup
         const auto lightMatrices = getLightSpaceMatrices(near, far, proj, view);

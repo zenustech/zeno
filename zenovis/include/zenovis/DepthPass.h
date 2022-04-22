@@ -168,8 +168,7 @@ void main(void)
         for (auto &light : lights) {
             for (int i = 0; i < Light::cascadeCount + 1; i++) {
                 light->BeginShadowMap(camera()->m_near, camera()->m_far,
-                                      light->lightDir, camera()->proj,
-                                      camera()->view, i);
+                                      camera()->proj, camera()->view, i);
                 scene->vao->bind();
                 for (auto const &gra : scene->graphics()) {
                     gra->drawShadow(light.get());
