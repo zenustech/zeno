@@ -20,7 +20,6 @@ target_include_directories(zenoedit PRIVATE . .. ../zenoui)
 target_include_directories(zenoedit PRIVATE ${Qt5Widgets_PRIVATE_INCLUDE_DIRS})
 if (ZENO_MULTIPROCESS)
     target_compile_definitions(zenoedit PRIVATE -DZENO_MULTIPROCESS)
-    add_dependencies(zenoedit zenorunner)
 endif()
 
 if (ZENO_INSTALL_TARGET)

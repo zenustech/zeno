@@ -105,18 +105,18 @@ struct ProgramRunData {
             reportStatus(*session->globalStatus);
         }
 #else
-        auto execDir = QCoreApplication::applicationDirPath().toStdString();
-#if defined(Q_OS_WIN)
-        auto runnerCmd = execDir + "\\zenorunner.exe";
-#else
-        auto runnerCmd = execDir + "/zenorunner";
-#endif
+        //auto execDir = QCoreApplication::applicationDirPath().toStdString();
+//#if defined(Q_OS_WIN)
+        //auto runnerCmd = execDir + "\\zenorunner.exe";
+//#else
+        //auto runnerCmd = execDir + "/zenorunner";
+//#endif
 
         g_proc = std::make_unique<QProcess>();
         g_proc->setInputChannelMode(QProcess::InputChannelMode::ManagedInputChannel);
         g_proc->setReadChannel(QProcess::ProcessChannel::StandardOutput);
         g_proc->setProcessChannelMode(QProcess::ProcessChannelMode::ForwardedErrorChannel);
-        g_proc->start(QString::fromStdString(runnerCmd), QStringList());
+        g_proc->start(QCoreApplication::applicationFilePath(), QStringList({"-runner"}));
         if (!g_proc->waitForStarted(-1)) {
             zeno::log_warn("process failed to get started, giving up");
             return;

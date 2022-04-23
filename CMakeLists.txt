@@ -91,16 +91,11 @@ if (ZENO_OUT_TO_BIN)
 endif()
 
 if (ZENO_ENABLE_BACKWARD)
-    add_subdirectory(zeno/tpls/backward)
+    add_subdirectory(zeno/tpls/backward-cpp)
 endif()
 
 add_subdirectory(zeno)
 add_subdirectory(projects)
-
-if (ZENO_MULTIPROCESS)
-    message(STATUS "Building Zeno Runner")
-    add_subdirectory(ui/zenorunner)
-endif()
 
 if (ZENO_BUILD_EDITOR OR ZENO_BUILD_DESIGNER)
     message(STATUS "Building Zeno UI Library")
