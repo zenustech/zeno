@@ -77,10 +77,12 @@ struct LightCluster : zeno::disable_copy {
     /*     shader->set_uniform("mView", lightMV); */
     /* } */
 
+#define ZENO_LIGHT_USE_TEXTURE_LAYER
     void initCascadeShadow() {
         //DepthMaps.resize(layerCount);
         if (lightFBO == 0) {
             CHECK_GL(glGenFramebuffers(1, &lightFBO));
+#ifndef ZENO_LIGHT_USE_TEXTURE_LAYER
             CHECK_GL(glGenTextures(1, &depthMapTmp));
             CHECK_GL(glBindTexture(GL_TEXTURE_2D, depthMapTmp));
             CHECK_GL(glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F, depthMapResolution, depthMapResolution, 0,
@@ -140,6 +142,7 @@ struct LightCluster : zeno::disable_copy {
                 throw zeno::makeError("ERROR::FRAMEBUFFER:: Framebuffer is not complete!");
             }
             CHECK_GL(glBindFramebuffer(GL_FRAMEBUFFER, 0));
+#endif
             /* } */
         }
         if (matricesUBO == 0) {
@@ -336,12 +339,14 @@ struct Light : zeno::disable_copy {
         /* CHECK_GL(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, */
         /*                        GL_TEXTURE_2D, depthMapTmp, 0)); */
 
-        //const int index = myLightNo * LightCluster::layerCount + i;
-        //CHECK_GL(glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, cluster->depthMapsArr, 0, index));
-        //int status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-        //if (status != GL_FRAMEBUFFER_COMPLETE) {
-            //throw zeno::makeError("ERROR::FRAMEBUFFER:: Framebuffer is not complete!");
-        //}
+#ifdef ZENO_LIGHT_USE_TEXTURE_LAYER
+        const int index = myLightNo * LightCluster::layerCount + i;
+        CHECK_GL(glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, cluster->depthMapsArr, 0, index));
+        int status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+        if (status != GL_FRAMEBUFFER_COMPLETE) {
+            throw zeno::makeError("ERROR::FRAMEBUFFER:: Framebuffer is not complete!");
+        }
+#endif
 
         //CHECK_GL(glClearColor(0.0f, 0.0f, 0.0f, 0.0f));
         CHECK_GL(glClear(GL_DEPTH_BUFFER_BIT));
@@ -351,12 +356,14 @@ struct Light : zeno::disable_copy {
     }
 
     void EndShadowMap(int i) {
+#ifndef ZENO_LIGHT_USE_TEXTURE_LAYER
         /* CHECK_GL(glReadBuffer(GL_COLOR_ATTACHMENT0)); */
         CHECK_GL(glBindTexture(GL_TEXTURE_2D_ARRAY, cluster->depthMapsArr));
         const int index = myLightNo * LightCluster::layerCount + i;
         CHECK_GL(glCopyTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, index, 0, 0, LightCluster::depthMapResolution,
                                      LightCluster::depthMapResolution));
         /* CHECK_GL(glReadBuffer(GL_NONE)); */
+#endif
 
         // glDisable(GL_CULL_FACE);
         CHECK_GL(glBindFramebuffer(GL_FRAMEBUFFER, 0));
