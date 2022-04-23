@@ -60,8 +60,8 @@ std::vector<IGraphic *> Scene::graphics() const {
     return gras;
 }
 
-void Scene::drawSceneDepthSafe(float aspRatio, bool reflect, float isDepthPass,
-                               bool _show_grid) {
+void Scene::drawSceneDepthSafe(bool reflect, bool isDepthPass) {
+    auto aspRatio = camera->getAspect();
 
     //glEnable(GL_BLEND);
     //glBlendFunc(GL_ONE, GL_ONE);
@@ -71,7 +71,8 @@ void Scene::drawSceneDepthSafe(float aspRatio, bool reflect, float isDepthPass,
     // std::cout<<"camUp:"<<g_camUp.x<<","<<g_camUp.y<<","<<g_camUp.z<<std::endl;
     //CHECK_GL(glDisable(GL_MULTISAMPLE));
     // CHECK_GL(glClearColor(bgcolor.r, bgcolor.g, bgcolor.b, 0.0f));
-    CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
+    CHECK_GL(glClearColor(camera->bgcolor.r, camera->bgcolor.g, camera->bgcolor.b, 0.0f));
+    CHECK_GL(glClear(GL_COLOR_BUFFER_BIT));
 
     float range[] = {camera->m_near, 500, 1000, 2000, 8000, camera->m_far};
     for (int i = 5; i >= 1; i--) {
@@ -83,7 +84,7 @@ void Scene::drawSceneDepthSafe(float aspRatio, bool reflect, float isDepthPass,
         for (auto const &gra : graphics()) {
             gra->draw(reflect, isDepthPass);
         }
-        if (isDepthPass != 1.0f && _show_grid) {
+        if (isDepthPass != 1.0f && camera->show_grid) {
             for (auto const &hudgra : hudGraphics) {
                 hudgra->draw(false, 0.0f);
             }
@@ -91,14 +92,13 @@ void Scene::drawSceneDepthSafe(float aspRatio, bool reflect, float isDepthPass,
     }
 }
 
-void Scene::my_paint_graphics(float samples, float isDepthPass) {
+void Scene::my_paint_graphics(int samples, bool isDepthPass) {
 
     CHECK_GL(glViewport(0, 0, camera->m_nx, camera->m_ny));
     vao->bind();
-    camera->m_sample_weight = 1.0f / samples;
-    drawSceneDepthSafe(camera->getAspect(), false, isDepthPass,
-                       camera->show_grid);
-    if (isDepthPass != 1.0 && camera->show_grid) {
+    camera->m_sample_weight = 1.0f / (float)samples;
+    drawSceneDepthSafe(false, isDepthPass);
+    if (!isDepthPass && camera->show_grid) {
         CHECK_GL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
         draw_small_axis();
     }

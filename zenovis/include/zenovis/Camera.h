@@ -21,7 +21,7 @@ struct Camera {
     float m_sample_weight = 0.0f;
 
     float m_dof = -1.f;
-    float m_near = -0.1f;
+    float m_near = 0.1f;
     float m_far = 20000.0f;
     float m_fov = 45.0f;
 

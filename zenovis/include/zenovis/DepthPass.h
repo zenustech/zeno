@@ -150,7 +150,7 @@ void main(void)
         CHECK_GL(glDrawBuffer(GL_COLOR_ATTACHMENT0));
         CHECK_GL(glClearColor(0, 0, 0, 0));
         CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
-        scene->my_paint_graphics(1.0, 1.0);
+        scene->my_paint_graphics(1, true);
         CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, tonemapfbo));
         CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, regularFBO));
         CHECK_GL(glBindTexture(GL_TEXTURE_RECTANGLE, texRect));
@@ -177,7 +177,7 @@ void main(void)
 
     void paint_graphics(GLuint target_fbo = 0) {
         if (enable_hdr && tmProg == nullptr) {
-            tmProg = scene->shaderMan->compile_program(qvert, qfrag);
+            //tmProg = scene->shaderMan->compile_program(qvert, qfrag);
             if (!tmProg) {
                 zeno::log_error("failed to compile zhxx (c) HDR pass");
                 enable_hdr = false;
@@ -195,10 +195,8 @@ void main(void)
             target_fbo = zero_draw_fbo;
 
         if (!enable_hdr) {
-            CHECK_GL(glClearColor(camera()->bgcolor.r, camera()->bgcolor.g, camera()->bgcolor.b, 0.0f));
-            CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
             CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, target_fbo));
-            scene->my_paint_graphics(1.0, 0.0);
+            scene->my_paint_graphics(1, false);
             return;
         }
 
@@ -323,7 +321,7 @@ void main(void)
                 CHECK_GL(glDrawBuffer(GL_COLOR_ATTACHMENT0));
                 CHECK_GL(glClearColor(camera()->bgcolor.r, camera()->bgcolor.g, camera()->bgcolor.b, 0.0f));
                 CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
-                scene->my_paint_graphics(1.0, 0.0);
+                scene->my_paint_graphics(1, false);
                 CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, tonemapfbo));
                 CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, regularFBO));
                 CHECK_GL(glBindTexture(GL_TEXTURE_RECTANGLE, texRects[dofsample]));
@@ -372,7 +370,7 @@ void main(void)
             CHECK_GL(glDrawBuffer(GL_COLOR_ATTACHMENT0));
             CHECK_GL(glClearColor(camera()->bgcolor.r, camera()->bgcolor.g, camera()->bgcolor.b, 0.0f));
             CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
-            scene->my_paint_graphics(1.0, 0.0);
+            scene->my_paint_graphics(1, false);
             CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, tonemapfbo));
             CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, regularFBO));
             CHECK_GL(glBindTexture(GL_TEXTURE_RECTANGLE, texRects[0]));
