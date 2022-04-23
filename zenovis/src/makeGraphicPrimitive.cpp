@@ -773,7 +773,7 @@ struct GraphicPrimitive : IGraphic {
             for (int lightNo = 0; lightNo < lights.size(); ++lightNo) {
                 auto &light = lights[lightNo];
                 auto name = "light[" + std::to_string(lightNo) + "]";
-                triObj.prog->set_uniform(name.c_str(), light->lightDir);
+                triObj.prog->set_uniform(name.c_str(), light->getLightDir());
             }
 
             triObj.prog->set_uniformi("mRenderWireframe", false);
@@ -824,7 +824,7 @@ struct GraphicPrimitive : IGraphic {
                 for (int lightNo = 0; lightNo < lights.size(); ++lightNo) {
                     auto &light = lights[lightNo];
                     auto name = "lightDir[" + std::to_string(lightNo) + "]";
-                    triObj.prog->set_uniform(name.c_str(), light->lightDir);
+                    triObj.prog->set_uniform(name.c_str(), light->getLightDir());
                     name = "shadowTint[" + std::to_string(lightNo) + "]";
                     triObj.prog->set_uniform(name.c_str(),
                                              light->getShadowTint());

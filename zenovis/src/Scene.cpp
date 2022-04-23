@@ -45,7 +45,6 @@ Scene::Scene()
 
     mReflectivePass->initReflectiveMaps(camera->m_nx, camera->m_ny);
 
-    lightCluster->addLight();
     hudGraphics.push_back(makeGraphicGrid(this));
     hudGraphics.push_back(makeGraphicAxis(this));
     //setup_env_map("Default");

@@ -24,7 +24,8 @@ struct GraphicLight : IGraphic {
 
     Program *prog;
 
-    explicit GraphicLight(Scene *scene_, std::shared_ptr<zeno::LightObject> cam) : scene(scene_) {
+    explicit GraphicLight(Scene *scene_, std::shared_ptr<zeno::LightObject> const &lit) : scene(scene_) {
+        scene->lightCluster->addLight(static_cast<zeno::LightData const &>(*lit));
         // TODO: implement modify scene->light
     }
 

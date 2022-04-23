@@ -8,6 +8,7 @@
 #include <glm/geometric.hpp>
 #include <zeno/utils/Error.h>
 #include <zeno/utils/fuck_win.h>
+#include <zeno/types/LightObject.h>
 #include <zenovis/Camera.h>
 #include <zenovis/Light.h>
 #include <zenovis/Scene.h>
@@ -182,14 +183,16 @@ struct LightCluster : zeno::disable_copy {
         depthMapsArrCount = licount;
     }
 
-    template <class LightT = Light> void addLight() {
+    template <class LightT = Light> void addLight(zeno::LightData const &data) {
         int lightNo(lights.size());
-        lights.push_back(std::make_unique<LightT>(this, lightNo));
+        auto lit = std::make_unique<LightT>(this, lightNo);
+        lit->setData(data);
+        lights.push_back(std::move(lit));
     }
 
 }; // struct LightCluster
 
-struct Light : zeno::disable_copy {
+struct Light : zeno::disable_copy, zeno::LightData {
     LightCluster *const cluster;
     int myLightNo = 0;
 
@@ -199,26 +202,34 @@ struct Light : zeno::disable_copy {
         setCascadeLevels(10000);
     }
 
+    void setData(zeno::LightData const &dat) {
+        static_cast<LightData &>(*this) = dat;
+    }
+
     glm::mat4 lightMV;
+    std::vector<glm::mat4> lightSpaceMatrices;
     std::vector<float> shadowCascadeLevels;
     std::vector<float> m_nearPlane;
     std::vector<float> m_farPlane;
-    glm::vec3 lightDir = glm::normalize(glm::vec3(1, 1, 0));
-    glm::vec3 shadowTint = glm::vec3(0.2f);
-    float lightHight = 1000.0;
-    float shadowSoftness = 1.0;
-    glm::vec3 lightColor = glm::vec3(1.0);
-    float intensity = 10.0;
-    float lightScale = 1.0;
-    std::vector<glm::mat4> lightSpaceMatrices;
-    bool m_isEnabled = true;
+    //glm::vec3 lightDir = glm::normalize(glm::vec3(1, 1, 0));
+    //glm::vec3 shadowTint = glm::vec3(0.2f);
+    //float lightHight = 1000.0;
+    //float shadowSoftness = 1.0;
+    //glm::vec3 lightColor = glm::vec3(1.0);
+    //float intensity = 10.0;
+    //float lightScale = 1.0;
+    //bool isEnabled = true;
 
-    glm::vec3 getShadowTint() {
-        return m_isEnabled ? shadowTint : glm::vec3(1.0);
+    glm::vec3 getShadowTint() const {
+        return isEnabled ? zeno::vec_to_other<glm::vec3>(shadowTint) : glm::vec3(1.0);
     }
 
-    glm::vec3 getIntensity() {
-        return m_isEnabled ? intensity * lightColor : glm::vec3(0.0);
+    glm::vec3 getIntensity() const {
+        return isEnabled ? intensity * zeno::vec_to_other<glm::vec3>(lightColor) : glm::vec3(0.0);
+    }
+
+    glm::vec3 getLightDir() const {
+        return zeno::vec_to_other<glm::vec3>(lightDir);
     }
 
     void setCascadeLevels(float far) {
@@ -244,8 +255,9 @@ struct Light : zeno::disable_copy {
         }
         center /= corners.size();
         // std::cout<<center.x<<" "<<center.y<<" "<<center.z<<std::endl;
-        glm::vec3 up = lightDir.y > 0.99 ? glm::vec3(0, 0, 1) : glm::vec3(0, 1, 0);
-        const auto lightView = glm::lookAt(center + lightHight * normalize(lightDir), center, up);
+        auto lidir = getLightDir();
+        glm::vec3 up = lidir.y > 0.99 ? glm::vec3(0, 0, 1) : glm::vec3(0, 1, 0);
+        const auto lightView = glm::lookAt(center + lightHight * normalize(lidir), center, up);
 
         float minX = std::numeric_limits<float>::max();
         float maxX = std::numeric_limits<float>::min();
