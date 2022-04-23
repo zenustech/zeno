@@ -127,8 +127,16 @@ void Scene::my_paint_graphics(int samples, bool isDepthPass) {
 void Scene::draw_small_axis() { /* TODO: implement this */
 }
 
+bool Scene::anyGraphicHasMaterial() {
+    for (auto const &gra : graphics()) {
+        if (gra->hasMaterial())
+            return true;
+    }
+    return false;
+}
+
 void Scene::draw(unsigned int target_fbo) {
-    if (1) {
+    if (!anyGraphicHasMaterial()) {
         CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, target_fbo));
         fast_paint_graphics();
         return;

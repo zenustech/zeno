@@ -42,6 +42,7 @@ struct Scene : zeno::disable_copy {
     void my_paint_graphics(int samples, bool isDepthPass);
     void draw_small_axis();
     std::vector<char> record_frame_offline();
+    bool anyGraphicHasMaterial();
 
     void draw(unsigned int target_fbo = 0);
 };

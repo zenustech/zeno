@@ -2761,6 +2761,10 @@ void main()
         //printf("!!!!%s!!!!\n", frag.c_str());
         return scene->shaderMan->compile_program(vert, frag);
     }
+
+    virtual bool hasMaterial() const override {
+        return prim_has_mtl;
+    }
 };
 
 }
