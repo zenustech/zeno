@@ -31,7 +31,7 @@ struct GraphicCamera : IGraphic {
                 cam->fov, cam->fnear, cam->ffar, cam->dof);
     }
 
-    virtual void draw(bool reflect, float depthPass) override {
+    virtual void draw(bool reflect, bool depthPass) override {
     }
 
     virtual void drawShadow(Light *light) override {

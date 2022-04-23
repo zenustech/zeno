@@ -7,7 +7,7 @@ namespace zenovis {
 struct Light;
 
 struct IGraphic {
-    virtual void draw(bool reflect, float depthPass) = 0;
+    virtual void draw(bool reflect, bool depthPass) = 0;
     virtual void drawShadow(Light *light) = 0;
     virtual ~IGraphic() = default;
 };

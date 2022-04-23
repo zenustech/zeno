@@ -34,6 +34,10 @@ void Session::set_show_grid(bool show_grid) {
     impl->scene->camera->show_grid = show_grid;
 }
 
+void Session::set_lookdev(LookdevType lookdev) {
+    impl->scene->camera->lookdev = lookdev;
+}
+
 void Session::set_num_samples(int num_samples) {
     impl->scene->camera->setNumSamples(num_samples);
 }

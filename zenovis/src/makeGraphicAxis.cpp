@@ -100,7 +100,7 @@ struct GraphicAxis : IGraphic {
     }
     virtual void drawShadow(Light *light) override {
     }
-    virtual void draw(bool reflect, float depthPass) override {
+    virtual void draw(bool reflect, bool depthPass) override {
         vbo->bind();
         vbo->attribute(0, sizeof(float) * 0, sizeof(float) * 6, GL_FLOAT, 3);
         vbo->attribute(1, sizeof(float) * 3, sizeof(float) * 6, GL_FLOAT, 3);

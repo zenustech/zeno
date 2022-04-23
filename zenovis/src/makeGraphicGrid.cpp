@@ -114,7 +114,7 @@ struct GraphicGrid : IGraphic {
     virtual void drawShadow(Light *light) override {
     }
 
-    virtual void draw(bool reflect, float depthPass) override {
+    virtual void draw(bool reflect, bool depthPass) override {
         vbo->bind();
         vbo->attribute(0, sizeof(float) * 0, sizeof(float) * 3, GL_FLOAT, 3);
 

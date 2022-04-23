@@ -28,7 +28,7 @@ struct GraphicLight : IGraphic {
         // TODO: implement modify scene->light
     }
 
-    virtual void draw(bool reflect, float depthPass) override {
+    virtual void draw(bool reflect, bool depthPass) override {
     }
 
     virtual void drawShadow(Light *light) override {

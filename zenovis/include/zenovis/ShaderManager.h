@@ -3,6 +3,7 @@
 #include <memory>
 #include <string>
 #include <unordered_map>
+#include <zeno/utils/log.h>
 #include <zeno/utils/disable_copy.h>
 #include <zenovis/opengl/shader.h>
 
@@ -33,13 +34,24 @@ struct ShaderManager : zeno::disable_copy {
 
     std::unordered_map<std::string, std::unique_ptr<opengl::Program>> _programs;
 
+    template <bool supressErr = false>
     opengl::Program *compile_program(std::string const &vert,
                                      std::string const &frag,
                                      std::string const &geo = {}) {
         auto key = vert + frag + geo;
         auto it = _programs.find(key);
         if (it == _programs.end()) {
-            auto prog = _createProgram(vert, frag, geo);
+            std::unique_ptr<opengl::Program> prog;
+            if constexpr (!supressErr) {
+                prog = _createProgram(vert, frag, geo);
+            } else {
+                try {
+                    prog = _createProgram(vert, frag, geo);
+                } catch (zeno::ErrorException const &e) {
+                    zeno::log_error("{}", e.what());
+                    prog = nullptr;
+                }
+            }
             auto progPtr = prog.get();
             _programs.emplace(key, std::move(prog));
             return progPtr;

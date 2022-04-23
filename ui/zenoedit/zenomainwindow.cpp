@@ -138,6 +138,15 @@ void ZenoMainWindow::initMenu()
             Zenovis::GetInstance().getSession()->set_show_grid(pAction->isChecked());
         });
 
+        pAction = new QAction(tr("Lookdev Quality"), this);
+        pAction->setCheckable(true);
+        pAction->setChecked(false);
+        pDisplay->addAction(pAction);
+        connect(pAction, &QAction::triggered, this, [=]() {
+            auto lookdev = pAction->isChecked() ? zenovis::LookdevType::Quality : zenovis::LookdevType::Speed;
+            Zenovis::GetInstance().getSession()->set_lookdev(lookdev);
+        });
+
         pAction = new QAction(tr("Background Color"), this);
         pDisplay->addAction(pAction);
         connect(pAction, &QAction::triggered, this, [=]() {

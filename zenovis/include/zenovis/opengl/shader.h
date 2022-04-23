@@ -2,6 +2,7 @@
 
 #include <zeno/utils/disable_copy.h>
 #include <zenovis/opengl/common.h>
+#include <zeno/utils/Error.h>
 
 namespace zenovis::opengl {
 
@@ -43,9 +44,10 @@ struct Shader : zeno::disable_copy {
             std::vector<GLchar> log(logLength + 1);
             CHECK_GL(glGetShaderInfoLog(sha, logLength, &logLength, log.data()));
             log[logLength] = 0;
-            throw zeno::makeError("Error compiling shader:\n" +
+            std::string err = "Error compiling shader:\n" +
                                   shader_add_line_info(source) + "\n" +
-                                  log.data());
+                                  log.data();
+            throw zeno::makeError(std::move(err));
         }
     }
 };
@@ -75,8 +77,8 @@ struct Program : zeno::disable_copy {
             std::vector<GLchar> log(logLength + 1);
             CHECK_GL(glGetProgramInfoLog(pro, logLength, &logLength, log.data()));
             log[logLength] = 0;
-            throw zeno::makeError((std::string) "Error linking program:\n" +
-                                  log.data());
+            std::string err = (std::string)"Error linking program:\n" + log.data();
+            throw zeno::makeError(std::move(err));
         }
     }
 

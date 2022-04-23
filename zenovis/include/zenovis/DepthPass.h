@@ -23,7 +23,6 @@ struct DepthPass : zeno::disable_copy {
         return scene->camera.get();
     }
 
-    bool enable_hdr = true;
     /* BEGIN ZHXX HAPPY */
 
     inline static const char *qvert = R"(
@@ -94,7 +93,7 @@ void main(void)
     GLuint texRect = 0, regularFBO = 0;
     GLuint texRects[16] = {0};
     GLuint emptyVAO = 0;
-    int m_camera_oldnx, m_camera_oldny;
+    int m_camera_oldnx{}, m_camera_oldny{};
 
     ~DepthPass() {
         if (emptyVAO)
@@ -176,29 +175,22 @@ void main(void)
     }
 
     void paint_graphics(GLuint target_fbo = 0) {
-        if (enable_hdr && tmProg == nullptr) {
-            //tmProg = scene->shaderMan->compile_program(qvert, qfrag);
+        if (tmProg == nullptr) {
+            tmProg = scene->shaderMan->compile_program(qvert, qfrag);
             if (!tmProg) {
-                zeno::log_error("failed to compile zhxx (c) HDR pass");
-                enable_hdr = false;
+                throw zeno::makeError("failed to compile zhxx (c) HDR pass");
             }
         }
 
         shadowPass();
         scene->mReflectivePass->reflectivePass();
 
-        GLint zero_fbo = 0;
-        /* CHECK_GL(glGetIntegerv(GL_FRAMEBUFFER_BINDING, &zero_fbo)); */
-        GLint zero_draw_fbo = 0;
-        /* CHECK_GL(glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &zero_draw_fbo)); */
-        if (target_fbo == 0)
-            target_fbo = zero_draw_fbo;
-
-        if (!enable_hdr) {
-            CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, target_fbo));
-            scene->my_paint_graphics(1, false);
-            return;
-        }
+        /* GLint zero_fbo = 0; */
+        /* * CHECK_GL(glGetIntegerv(GL_FRAMEBUFFER_BINDING, &zero_fbo)); * */
+        /* GLint zero_draw_fbo = 0; */
+        /* * CHECK_GL(glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &zero_draw_fbo)); * */
+        /* if (target_fbo == 0) */
+        /*     target_fbo = zero_draw_fbo; */
 
         if (msfborgb == 0 || m_camera_oldnx != camera()->m_nx || m_camera_oldny != camera()->m_ny) {
             if (msfborgb != 0) {
@@ -291,7 +283,7 @@ void main(void)
             CHECK_GL(glBindFramebuffer(GL_FRAMEBUFFER, regularFBO));
             CHECK_GL(glBindTexture(GL_TEXTURE_RECTANGLE, texRect));
             CHECK_GL(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE, texRect, 0));
-            CHECK_GL(glBindFramebuffer(GL_FRAMEBUFFER, zero_fbo));
+            CHECK_GL(glBindFramebuffer(GL_FRAMEBUFFER, 0));
 
             m_camera_oldnx = camera()->m_nx;
             m_camera_oldny = camera()->m_ny;
@@ -315,8 +307,7 @@ void main(void)
                 camera()->view = glm::lookAt(camera()->m_camPos + 0.05f * bokeh, object, p_up);
                 //ZPass();
                 CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, tonemapfbo));
-                CHECK_GL(
-                    glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, msfborgb));
+                CHECK_GL(glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, msfborgb));
                 CHECK_GL(glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, msfbod));
                 CHECK_GL(glDrawBuffer(GL_COLOR_ATTACHMENT0));
                 CHECK_GL(glClearColor(camera()->bgcolor.r, camera()->bgcolor.g, camera()->bgcolor.b, 0.0f));
@@ -336,7 +327,7 @@ void main(void)
             CHECK_GL(glDrawBuffer(GL_COLOR_ATTACHMENT0));
             CHECK_GL(glEnable(GL_BLEND));
             CHECK_GL(glBlendFunc(GL_ONE, GL_ONE));
-            CHECK_GL(glad_glBlendEquation(GL_FUNC_ADD));
+            CHECK_GL(glBlendEquation(GL_FUNC_ADD));
             for (int dofsample = 0; dofsample < 16; dofsample++) {
                 //CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, regularFBO));
 
@@ -350,6 +341,7 @@ void main(void)
                                        GL_COLOR_BUFFER_BIT, GL_NEAREST));
             CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, target_fbo));
             ScreenFillQuad(texRect, 1.0, 0);
+            CHECK_GL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
 
         } else {
             /* CHECK_GL(glDisable(GL_MULTISAMPLE)); */

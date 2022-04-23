@@ -37,6 +37,7 @@ struct Scene : zeno::disable_copy {
 
     std::vector<IGraphic *> graphics() const;
 
+    void fast_paint_graphics();
     void drawSceneDepthSafe(bool reflect, bool isDepthPass);
     void my_paint_graphics(int samples, bool isDepthPass);
     void draw_small_axis();

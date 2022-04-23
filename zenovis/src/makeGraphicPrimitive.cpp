@@ -524,7 +524,7 @@ struct GraphicPrimitive : IGraphic {
     }
 
     virtual void drawShadow(Light *light) override {
-        if (!prim_has_mtl)
+        if (!(scene->camera->lookdev != LookdevType::Speed && prim_has_mtl))
             return;
         int id = 0;
         for (id = 0; id < textures.size(); id++) {
@@ -604,7 +604,7 @@ struct GraphicPrimitive : IGraphic {
             triObj.shadowprog->use();
             //light->setShadowMV(triObj.shadowprog);
             triObj.shadowprog->set_uniform("mView", light->lightMV);
-            if (prim_has_mtl) {
+            if (scene->camera->lookdev != LookdevType::Speed && prim_has_mtl) {
                 const int &texsSize = textures.size();
                 for (int texId = 0; texId < texsSize; ++texId) {
                     std::string texName = "zenotex" + std::to_string(texId);
@@ -642,8 +642,8 @@ struct GraphicPrimitive : IGraphic {
             }
         }
     }
-    virtual void draw(bool reflect, float depthPass) override {
-        if (prim_has_mtl)
+    virtual void draw(bool reflect, bool depthPass) override {
+        if (scene->camera->lookdev != LookdevType::Speed && prim_has_mtl)
             scene->envmapMan->ensureGlobalMapExist();
 
         int id = 0;
@@ -778,7 +778,7 @@ struct GraphicPrimitive : IGraphic {
 
             triObj.prog->set_uniformi("mRenderWireframe", false);
 
-            if (prim_has_mtl) {
+            if (scene->camera->lookdev != LookdevType::Speed && prim_has_mtl) {
                 const int &texsSize = textures.size();
                 int texOcp = 0;
                 for (int texId = 0; texId < texsSize; ++texId) {
@@ -937,7 +937,7 @@ struct GraphicPrimitive : IGraphic {
                                         GL_UNSIGNED_INT, /*first=*/0));
             }
 
-            if (scene->camera->render_wireframe) {
+            if (/*(camera->lookdev != LookdevType::Production && object_selected) &&*/ scene->camera->render_wireframe) {
                 CHECK_GL(glEnable(GL_POLYGON_OFFSET_LINE));
                 CHECK_GL(glPolygonOffset(-1, -1));
                 CHECK_GL(glPolygonMode(GL_FRONT_AND_BACK, GL_LINE));
@@ -2552,7 +2552,7 @@ vec3 reflectionCalculation(vec3 worldPos, int id)
 }
 uniform float reflectPass;
 uniform float reflectionViewID;
-uniform float depthPass;
+uniform bool depthPass;
 uniform sampler2DRect depthBuffer;
 uniform vec3 reflect_normals[16];
 uniform vec3 reflect_centers[16];
@@ -2583,7 +2583,7 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 old_tangent) {
     if(mat_opacity>=0.99 && mat_reflection!=1.0)
         discard;
     
-    //if(depthPass>=0.99)
+    //if(depthPass)
     //{
     //    return abs(projPos.zzz);
     //}
@@ -2743,8 +2743,9 @@ void main()
   }
 
   vec3 color = studioShading(albedo, viewdir, normal, tangent);
+  color *= mSampleWeight;
   
-  fColor = vec4(color*mSampleWeight, 1);
+  fColor = vec4(color, 1);
   
   if (mNormalCheck) {
       float intensity = clamp((mView * vec4(normal, 0)).z, 0, 1) * 0.4 + 0.6;

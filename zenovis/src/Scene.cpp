@@ -65,7 +65,7 @@ void Scene::drawSceneDepthSafe(bool reflect, bool isDepthPass) {
 
     //glEnable(GL_BLEND);
     //glBlendFunc(GL_ONE, GL_ONE);
-    CHECK_GL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
+    /* CHECK_GL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)); */
     // std::cout<<"camPos:"<<g_camPos.x<<","<<g_camPos.y<<","<<g_camPos.z<<std::endl;
     // std::cout<<"camView:"<<g_camView.x<<","<<g_camView.y<<","<<g_camView.z<<std::endl;
     // std::cout<<"camUp:"<<g_camUp.x<<","<<g_camUp.y<<","<<g_camUp.z<<std::endl;
@@ -84,12 +84,32 @@ void Scene::drawSceneDepthSafe(bool reflect, bool isDepthPass) {
         for (auto const &gra : graphics()) {
             gra->draw(reflect, isDepthPass);
         }
-        if (isDepthPass != 1.0f && camera->show_grid) {
+        if (camera->lookdev != LookdevType::Production && !isDepthPass && camera->show_grid) {
             for (auto const &hudgra : hudGraphics) {
-                hudgra->draw(false, 0.0f);
+                hudgra->draw(false, false);
             }
         }
     }
+}
+
+void Scene::fast_paint_graphics() {
+    CHECK_GL(glViewport(0, 0, camera->m_nx, camera->m_ny));
+    vao->bind();
+    camera->m_sample_weight = 1.0f;
+    /* CHECK_GL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)); */
+    CHECK_GL(glClearColor(camera->bgcolor.r, camera->bgcolor.g, camera->bgcolor.b, 0.0f));
+    CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
+
+    for (auto const &gra : graphics()) {
+        gra->draw(false, false);
+    }
+    if (camera->lookdev != LookdevType::Production && camera->show_grid) {
+        for (auto const &hudgra : hudGraphics) {
+            hudgra->draw(false, false);
+        }
+        draw_small_axis();
+    }
+    vao->unbind();
 }
 
 void Scene::my_paint_graphics(int samples, bool isDepthPass) {
@@ -98,8 +118,7 @@ void Scene::my_paint_graphics(int samples, bool isDepthPass) {
     vao->bind();
     camera->m_sample_weight = 1.0f / (float)samples;
     drawSceneDepthSafe(false, isDepthPass);
-    if (!isDepthPass && camera->show_grid) {
-        CHECK_GL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
+    if (camera->lookdev != LookdevType::Production && !isDepthPass && camera->show_grid) {
         draw_small_axis();
     }
     vao->unbind();
@@ -109,6 +128,12 @@ void Scene::draw_small_axis() { /* TODO: implement this */
 }
 
 void Scene::draw(unsigned int target_fbo) {
+    if (camera->lookdev == LookdevType::Speed) {
+        CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, target_fbo));
+        fast_paint_graphics();
+        return;
+    }
+
     //CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
     /* ZHXX DONT MODIFY ME */
     mDepthPass->paint_graphics(target_fbo);
