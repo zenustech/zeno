@@ -524,7 +524,7 @@ struct GraphicPrimitive : IGraphic {
     }
 
     virtual void drawShadow(Light *light) override {
-        if (prim_has_mtl)
+        if (!prim_has_mtl)
             return;
         int id = 0;
         for (id = 0; id < textures.size(); id++) {

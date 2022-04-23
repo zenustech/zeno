@@ -11,11 +11,6 @@ set_property(TARGET zenoedit PROPERTY AUTOMOC ON)
 set_property(TARGET zenoedit PROPERTY AUTORCC ON)
 set_property(TARGET zenoedit PROPERTY WIN32_EXECUTABLE OFF)
 
-if (ZENO_ENABLE_BACKWARD)
-    target_sources(zenoedit PRIVATE ${BACKWARD_ENABLE})
-    add_backward(zenoedit)
-endif()
-
 find_package(Threads REQUIRED)
 target_link_libraries(zenoedit PRIVATE Threads::Threads)
 target_link_libraries(zenoedit PRIVATE Qt5::Widgets Qt5::OpenGL)

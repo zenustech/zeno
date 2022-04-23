@@ -57,7 +57,8 @@ if (ZENO_INSTALL_TARGET)
 endif()
 
 if (ZENO_ENABLE_SPDLOG)
-    target_link_libraries(zeno PUBLIC spdlog)
+    find_package(spdlog REQUIRED)
+    target_link_libraries(zeno PUBLIC spdlog::spdlog)
     target_compile_definitions(zeno PUBLIC -DZENO_ENABLE_SPDLOG)
 endif()
 
