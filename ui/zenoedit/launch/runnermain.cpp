@@ -110,6 +110,7 @@ static void runner_start(std::string const &progJson) {
 
 }
 
+int runner_main();
 int runner_main() {
     fprintf(stderr, "Zeno runner started...\n");
     fprintf(stdout, "(stdout ping test)\n");
