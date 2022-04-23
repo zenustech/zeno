@@ -5,7 +5,6 @@
 #include <glm/mat4x4.hpp>
 #include <glm/vec3.hpp>
 #include <zenovis/opengl/shader.h>
-#include <zenovis/Lookdev.h>
 
 namespace zenovis {
 
@@ -168,7 +167,6 @@ struct Camera {
         pro->set_uniform("mSampleWeight", m_sample_weight);
     }
 
-    LookdevType lookdev = LookdevType::Speed;
     bool show_grid = true;
     bool render_wireframe = false;
 

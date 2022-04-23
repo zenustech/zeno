@@ -84,7 +84,7 @@ void Scene::drawSceneDepthSafe(bool reflect, bool isDepthPass) {
         for (auto const &gra : graphics()) {
             gra->draw(reflect, isDepthPass);
         }
-        if (camera->lookdev != LookdevType::Production && !isDepthPass && camera->show_grid) {
+        if (!isDepthPass && camera->show_grid) {
             for (auto const &hudgra : hudGraphics) {
                 hudgra->draw(false, false);
             }
@@ -103,7 +103,7 @@ void Scene::fast_paint_graphics() {
     for (auto const &gra : graphics()) {
         gra->draw(false, false);
     }
-    if (camera->lookdev != LookdevType::Production && camera->show_grid) {
+    if (camera->show_grid) {
         for (auto const &hudgra : hudGraphics) {
             hudgra->draw(false, false);
         }
@@ -118,7 +118,7 @@ void Scene::my_paint_graphics(int samples, bool isDepthPass) {
     vao->bind();
     camera->m_sample_weight = 1.0f / (float)samples;
     drawSceneDepthSafe(false, isDepthPass);
-    if (camera->lookdev != LookdevType::Production && !isDepthPass && camera->show_grid) {
+    if (!isDepthPass && camera->show_grid) {
         draw_small_axis();
     }
     vao->unbind();
@@ -128,7 +128,7 @@ void Scene::draw_small_axis() { /* TODO: implement this */
 }
 
 void Scene::draw(unsigned int target_fbo) {
-    if (camera->lookdev == LookdevType::Speed) {
+    if (1) {
         CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, target_fbo));
         fast_paint_graphics();
         return;

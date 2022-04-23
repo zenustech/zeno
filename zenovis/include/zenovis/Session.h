@@ -7,7 +7,6 @@
 #include <vector>
 #include <zeno/core/IObject.h>
 #include <zeno/utils/disable_copy.h>
-#include <zenovis/Lookdev.h>
 
 namespace zenovis {
 
@@ -29,7 +28,6 @@ struct Session : zeno::disable_copy {
     /* float get_solver_interval(); */
     /* float get_render_fps(); */
     void set_show_grid(bool flag);
-    void set_lookdev(LookdevType flag);
     void look_perspective(float cx, float cy, float cz, float theta,
                           float phi, float radius, float fov,
                           bool ortho_mode);

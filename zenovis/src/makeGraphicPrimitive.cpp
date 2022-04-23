@@ -524,7 +524,7 @@ struct GraphicPrimitive : IGraphic {
     }
 
     virtual void drawShadow(Light *light) override {
-        if (!(scene->camera->lookdev != LookdevType::Speed && prim_has_mtl))
+        if (prim_has_mtl)
             return;
         int id = 0;
         for (id = 0; id < textures.size(); id++) {
@@ -604,7 +604,7 @@ struct GraphicPrimitive : IGraphic {
             triObj.shadowprog->use();
             //light->setShadowMV(triObj.shadowprog);
             triObj.shadowprog->set_uniform("mView", light->lightMV);
-            if (scene->camera->lookdev != LookdevType::Speed && prim_has_mtl) {
+            if (prim_has_mtl) {
                 const int &texsSize = textures.size();
                 for (int texId = 0; texId < texsSize; ++texId) {
                     std::string texName = "zenotex" + std::to_string(texId);
@@ -643,7 +643,7 @@ struct GraphicPrimitive : IGraphic {
         }
     }
     virtual void draw(bool reflect, bool depthPass) override {
-        if (scene->camera->lookdev != LookdevType::Speed && prim_has_mtl)
+        if (prim_has_mtl)
             scene->envmapMan->ensureGlobalMapExist();
 
         int id = 0;
@@ -778,7 +778,7 @@ struct GraphicPrimitive : IGraphic {
 
             triObj.prog->set_uniformi("mRenderWireframe", false);
 
-            if (scene->camera->lookdev != LookdevType::Speed && prim_has_mtl) {
+            if (prim_has_mtl) {
                 const int &texsSize = textures.size();
                 int texOcp = 0;
                 for (int texId = 0; texId < texsSize; ++texId) {
@@ -937,7 +937,7 @@ struct GraphicPrimitive : IGraphic {
                                         GL_UNSIGNED_INT, /*first=*/0));
             }
 
-            if (/*(camera->lookdev != LookdevType::Production && object_selected) &&*/ scene->camera->render_wireframe) {
+            if (scene->camera->render_wireframe) {
                 CHECK_GL(glEnable(GL_POLYGON_OFFSET_LINE));
                 CHECK_GL(glPolygonOffset(-1, -1));
                 CHECK_GL(glPolygonMode(GL_FRONT_AND_BACK, GL_LINE));
