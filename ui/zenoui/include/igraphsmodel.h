@@ -29,6 +29,8 @@ public:
 	virtual void removeLinks(const QList<QPersistentModelIndex>& info, const QModelIndex& subGpIdx, bool enableTransaction = false) = 0;
 	virtual void removeLink(const QPersistentModelIndex& linkIdx, const QModelIndex& subGpIdx, bool enableTransaction = false) = 0;
 	virtual void removeSubGraph(const QString& name) = 0;
+	virtual void copyPaste(const QModelIndex& fromSubg, const QModelIndexList& srcNodes, const QModelIndex& toSubg, QPointF pos, bool enableTrans = false) = 0;
+	virtual QModelIndex extractSubGraph(const QModelIndexList& nodes, const QModelIndex& fromSubg, const QString& toSubg, bool enableTrans = false) = 0;
 
 	/*
 	 fork subnet node indexed by subnetNodeIdx under subgIdx. 

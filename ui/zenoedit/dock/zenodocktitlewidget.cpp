@@ -167,6 +167,7 @@ QMenuBar* ZenoEditorDockTitleWidget::initMenu()
 		pEdit->addAction(createAction(tr("Redo")));
 		pEdit->addAction(createAction(tr("Collaspe")));
 		pEdit->addAction(createAction(tr("Expand")));
+        pEdit->addAction(createAction(tr("Easy Subgraph")));
 	}
 
 	QMenu* pGo = new QMenu(tr("Go"));
