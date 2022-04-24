@@ -1,4 +1,5 @@
 #include <zeno/funcs/ObjectCodec.h>
+#include <zeno/types/IObjectXMacro.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/StringObject.h>
 #include <zeno/types/CameraObject.h>
@@ -13,16 +14,9 @@ namespace zeno {
 
 namespace {
 
-#define _VISIT_OBJECT_TYPE \
-    _PER_OBJECT_TYPE(PrimitiveObject) \
-    _PER_OBJECT_TYPE(NumericObject) \
-    _PER_OBJECT_TYPE(StringObject) \
-    _PER_OBJECT_TYPE(CameraObject) \
-    _PER_OBJECT_TYPE(LightObject)
-
-#define _PER_OBJECT_TYPE(TypeName) TypeName,
+#define _PER_OBJECT_TYPE(TypeName, ...) TypeName,
 enum class ObjectType : int32_t {
-    _VISIT_OBJECT_TYPE
+    ZENO_XMACRO_IObject(_PER_OBJECT_TYPE)
 };
 #undef _PER_OBJECT_TYPE
 
@@ -40,10 +34,10 @@ struct ObjectHeader {
 namespace _implObjectCodec {
 
 
-#define _PER_OBJECT_TYPE(TypeName) \
+#define _PER_OBJECT_TYPE(TypeName, ...) \
 std::shared_ptr<TypeName> decode##TypeName(const char *it); \
 bool encode##TypeName(TypeName const *obj, std::back_insert_iterator<std::vector<char>> it);
-_VISIT_OBJECT_TYPE
+ZENO_XMACRO_IObject(_PER_OBJECT_TYPE)
 #undef _PER_OBJECT_TYPE
 
 }
@@ -60,10 +54,10 @@ static std::shared_ptr<IObject> _decodeObjectImpl(const char *buf, size_t len) {
 
     if (0) {
 
-#define _PER_OBJECT_TYPE(TypeName) \
+#define _PER_OBJECT_TYPE(TypeName, ...) \
     } else if (header.type == ObjectType::TypeName) { \
         return decode##TypeName(it);
-    _VISIT_OBJECT_TYPE
+ZENO_XMACRO_IObject(_PER_OBJECT_TYPE)
 #undef _PER_OBJECT_TYPE
 
     } else {
@@ -110,12 +104,12 @@ static bool _encodeObjectImpl(IObject const *object, std::vector<char> &buf) {
 
     if (0) {
 
-#define _PER_OBJECT_TYPE(TypeName) \
+#define _PER_OBJECT_TYPE(TypeName, ...) \
     } else if (auto obj = dynamic_cast<TypeName const *>(object)) { \
         header.type = ObjectType::TypeName; \
         it = std::copy_n((char *)&header, sizeof(ObjectHeader), it); \
         return encode##TypeName(obj, it);
-    _VISIT_OBJECT_TYPE
+ZENO_XMACRO_IObject(_PER_OBJECT_TYPE)
 #undef _PER_OBJECT_TYPE
 
     } else {

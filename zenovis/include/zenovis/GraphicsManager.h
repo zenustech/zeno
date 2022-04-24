@@ -2,6 +2,7 @@
 #include <vector>
 #include <zeno/types/MapStablizer.h>
 #include <zeno/types/PolymorphicMap.h>
+#include <zeno/types/PolymorphicVisitor.h>
 #include <zeno/utils/log.h>
 #include <zenovis/makeGraphic.h>
 #include <zenovis/Scene.h>
