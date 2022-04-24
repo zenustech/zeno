@@ -23,11 +23,10 @@ struct VAO;
 struct Scene : zeno::disable_copy {
     std::unique_ptr<Camera> camera;
     std::unique_ptr<LightCluster> lightCluster;
-    std::vector<std::unique_ptr<IGraphic>> hudGraphics;
-
     std::unique_ptr<ShaderManager> shaderMan;
     std::unique_ptr<EnvmapManager> envmapMan;
     std::unique_ptr<GraphicsManager> graphicsMan;
+    std::vector<std::unique_ptr<IGraphic>> hudGraphics;
     std::unique_ptr<DepthPass> mDepthPass;
     std::unique_ptr<ReflectivePass> mReflectivePass;
     std::unique_ptr<opengl::VAO> vao;

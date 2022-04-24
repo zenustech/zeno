@@ -26,6 +26,19 @@ struct MapStablizer {
         return m_curr.end();
     }
 
+    template <class T = void>
+    decltype(auto) values() const {
+        if constexpr (std::is_void_v<T>)
+            return m_curr.values();
+        else
+            return m_curr.template values<T>();
+    }
+
+    template <class T>
+    std::size_t size() const {
+        return m_curr.template size<T>();
+    }
+
     std::size_t size() const {
         return m_curr.size();
     }

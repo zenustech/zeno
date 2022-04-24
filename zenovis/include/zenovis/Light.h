@@ -191,6 +191,10 @@ struct LightCluster : zeno::disable_copy {
         return lightNo;
     }
 
+    void clearLights() {
+        lights.clear();
+    }
+
 }; // struct LightCluster
 
 struct Light : zeno::disable_copy, zeno::LightData {
