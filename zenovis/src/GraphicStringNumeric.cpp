@@ -32,10 +32,9 @@ struct GraphicNumeric : IGraphic {
     Scene *scene;
 
     explicit GraphicNumeric(Scene *scene_, zeno::NumericObject *num) : scene(scene_) {
-        zeno::to_string(zeno::vec3f(1.0f, 2.0f, 3.0f));
-        //std::visit([&] (auto &val) {
-            //zeno::log_info("ToView got NumericObject with content: {}", val);
-        //}, num->value);
+        std::visit([&] (auto &val) {
+            zeno::log_info("ToView got NumericObject with content: {}", val);
+        }, num->value);
     }
 
     virtual void draw(bool reflect, bool depthPass) override {
