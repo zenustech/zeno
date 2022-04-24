@@ -3,7 +3,6 @@
 #include <zeno/utils/cppdemangle.h>
 #include <zeno/utils/log.h>
 #include <zenovis/IGraphic.h>
-#include <zenovis/makeGraphic.h>
 
 namespace zenovis {
 

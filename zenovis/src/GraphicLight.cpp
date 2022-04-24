@@ -4,7 +4,6 @@
 #include <zenovis/IGraphic.h>
 #include <zenovis/Scene.h>
 #include <zenovis/ShaderManager.h>
-#include <zenovis/makeGraphic.h>
 #include <zenovis/opengl/buffer.h>
 #include <zenovis/opengl/shader.h>
 #include <zeno/types/LightObject.h>

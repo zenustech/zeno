@@ -3,7 +3,7 @@
 #include <zeno/utils/MapStablizer.h>
 #include <zeno/utils/PolymorphicMap.h>
 #include <zeno/utils/log.h>
-#include <zenovis/makeGraphic.h>
+#include <zenovis/IGraphic.h>
 #include <zenovis/Scene.h>
 
 namespace zenovis {

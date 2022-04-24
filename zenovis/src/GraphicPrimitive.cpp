@@ -1,7 +1,6 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include <zenovis/makeGraphic.h>
 #include <zeno/types/InstancingObject.h>
 #include <zeno/types/MaterialObject.h>
 #include <zeno/types/PrimitiveObject.h>

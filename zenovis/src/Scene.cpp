@@ -3,7 +3,6 @@
 #include <zenovis/EnvmapManager.h>
 #include <zenovis/GraphicsManager.h>
 #include <zenovis/IGraphic.h>
-#include <zenovis/makeGraphic.h>
 #include <zenovis/ReflectivePass.h>
 #include <zenovis/Scene.h>
 #include <zenovis/ShaderManager.h>

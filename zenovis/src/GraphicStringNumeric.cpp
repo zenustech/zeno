@@ -1,6 +1,7 @@
 #include <zenovis/IGraphic.h>
-#include <zenovis/makeGraphic.h>
 #include <zeno/types/StringObject.h>
+#include <zeno/types/NumericObject.h>
+#include <zeno/utils/log.h>
 
 namespace zenovis {
 namespace {
@@ -25,13 +26,16 @@ void ToGraphicVisitor::visit(zeno::StringObject *obj) {
      this->out_result = std::make_unique<GraphicString>(this->in_scene, obj);
 }
 
+namespace {
+
 struct GraphicNumeric : IGraphic {
     Scene *scene;
 
     explicit GraphicNumeric(Scene *scene_, zeno::NumericObject *num) : scene(scene_) {
-        std::visit([&] (auto &val) {
-            zeno::log_info("ToView got NumericObject with content: {}", val);
-        }, num->value);
+        zeno::to_string(zeno::vec3f(1.0f, 2.0f, 3.0f));
+        //std::visit([&] (auto &val) {
+            //zeno::log_info("ToView got NumericObject with content: {}", val);
+        //}, num->value);
     }
 
     virtual void draw(bool reflect, bool depthPass) override {

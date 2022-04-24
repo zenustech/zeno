@@ -238,8 +238,9 @@ inline auto vapply(F const &f, T const &a, S const &b) {
 
 template <class T, class S>
 inline constexpr bool
-    is_vapply_v = (is_vec_v<T> || is_vec_v<S>)&&(!is_vec_v<T> || !is_vec_v<S> ||
-                                                 is_vec_n<T> == is_vec_n<S>);
+    is_vapply_v = (is_vec_v<T> || is_vec_v<S>) &&
+    (std::is_arithmetic_v<T> || std::is_arithmetic_v<S>
+     || is_vec_n<T> == is_vec_n<S>);
 
 template <class T, class S, class F,
           std::enable_if_t<is_vapply_v<T, S>, bool> = true>
