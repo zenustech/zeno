@@ -1,6 +1,7 @@
 #include <unordered_map>
 #include <vector>
 #include <zeno/types/MapStablizer.h>
+#include <zeno/types/PolymorphicMap.h>
 #include <zeno/utils/log.h>
 #include <zenovis/makeGraphic.h>
 #include <zenovis/Scene.h>
@@ -10,7 +11,8 @@ namespace zenovis {
 struct GraphicsManager {
     Scene *scene;
 
-    zeno::MapStablizer<std::shared_ptr<zeno::IObject>, std::unique_ptr<IGraphic>> graphics;
+    zeno::MapStablizer<zeno::PolymorphicMap<std::unordered_map<
+        std::shared_ptr<zeno::IObject>, std::unique_ptr<IGraphic>>>> graphics;
 
     //std::unordered_map<std::shared_ptr<zeno::IObject>,
                        //std::unique_ptr<IGraphic>>

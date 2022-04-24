@@ -1,16 +1,20 @@
 #pragma once
 
 #include <vector>
-#include <unordered_map>
 #include <type_traits>
 #include <memory>
 
 namespace zeno {
 
-template <class Key, class Ptr, class Map = std::unordered_map<Key, Ptr>>
+template <class Map>
 struct PolymorphicMap {
-    using Base = typename std::pointer_traits<Ptr>::element_type;
-    static_assert(std::is_polymorphic_v<Base>);
+    using key_type = typename Map::key_type;
+    using mapped_type = typename Map::mapped_type;
+
+    using element_type = typename std::pointer_traits<mapped_type>::element_type;
+    static_assert(std::is_polymorphic_v<element_type>);
+
+    using value_type = typename Map::value_type;
 
     Map m_curr;
 
@@ -34,18 +38,21 @@ struct PolymorphicMap {
         return m_curr.size();
     }
 
-    auto find(Key const &key) const {
+    auto find(key_type const &key) const {
         return m_curr.find(key);
     }
 
-    bool try_emplace(Key const &key, Ptr ptr) {
-        auto [it, succ] = m_curr.try_emplace(key, std::move(ptr));
-        return succ;
+    void clear() {
+        m_curr.clear();
+    }
+
+    auto try_emplace(key_type const &key, mapped_type ptr) {
+        return m_curr.try_emplace(key, std::move(ptr));
     }
 
     template <class Derived>
     std::vector<Derived *> values() const {
-        static_assert(std::is_base_of_v<Base, Derived>);
+        static_assert(std::is_base_of_v<element_type, Derived>);
         std::vector<Derived *> ret;
         for (auto const &[key, ptr]: m_curr) {
             auto p = std::addressof(*ptr);
@@ -56,8 +63,8 @@ struct PolymorphicMap {
         return ret;
     }
 
-    std::vector<Base *> values() const {
-        std::vector<Base *> ret;
+    std::vector<element_type *> values() const {
+        std::vector<element_type *> ret;
         ret.reserve(m_curr.size());
         for (auto const &[key, ptr]: m_curr) {
             auto p = std::addressof(*ptr);
@@ -71,7 +78,7 @@ struct PolymorphicMap {
         if constexpr (std::is_void_v<Derived>) {
             return m_curr.size();
         } else {
-            static_assert(std::is_base_of_v<Base, Derived>);
+            static_assert(std::is_base_of_v<element_type, Derived>);
             std::size_t ret = 0;
             for (auto const &[key, ptr]: m_curr) {
                 auto p = std::addressof(*ptr);
@@ -82,8 +89,6 @@ struct PolymorphicMap {
             return ret;
         }
     }
-};
-
 };
 
 }

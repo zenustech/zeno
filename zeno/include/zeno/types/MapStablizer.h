@@ -1,13 +1,15 @@
 #pragma once
 
 #include <utility>
-#include <unordered_map>
 #include <zeno/utils/scope_exit.h>
 
 namespace zeno {
 
-template <class Key, class Val, class Map = std::unordered_map<Key, Val>>
+template <class Map>
 struct MapStablizer {
+    using key_type = typename Map::key_type;
+    using mapped_type = typename Map::mapped_type;
+
     Map m_curr, m_next;
 
     auto begin() const {
@@ -43,8 +45,12 @@ struct MapStablizer {
         return m_curr.size();
     }
 
-    auto find(Key const &key) const {
+    auto find(key_type const &key) const {
         return m_curr.find(key);
+    }
+
+    void clear() {
+        m_curr.clear();
     }
 
     struct InsertPass : scope_finalizer<InsertPass> {
@@ -53,9 +59,8 @@ struct MapStablizer {
         explicit InsertPass(MapStablizer &that_) : that(that_) {}
 
         template <class ...Args>
-        bool try_emplace(Key const &key, Args &&...args) {
-            auto [it, succ] = that.m_next.try_emplace(key, std::forward<Args>(args)...);
-            return succ;
+        auto try_emplace(key_type const &key, Args &&...args) {
+            return that.m_next.try_emplace(key, std::forward<Args>(args)...);
         }
 
         void _scope_finalize() {
