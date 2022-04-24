@@ -30,6 +30,8 @@ Scene::Scene()
     //CHECK_GL(glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE));
     //CHECK_GL(glEnable(GL_SAMPLE_ALPHA_TO_ONE));
     CHECK_GL(glEnable(GL_MULTISAMPLE));
+    CHECK_GL(glPixelStorei(GL_UNPACK_ALIGNMENT, 1));
+    CHECK_GL(glPixelStorei(GL_PACK_ALIGNMENT, 1));
 
     lightCluster = std::make_unique<LightCluster>(this);
 
