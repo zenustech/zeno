@@ -1,5 +1,4 @@
 #include <zeno/utils/vec.h>
-#include <zeno/types/MapStablizer.h>
 #include <zeno/types/UserData.h>
 #include <zenovis/Camera.h>
 #include <zenovis/IGraphic.h>
@@ -17,8 +16,8 @@ namespace {
 struct GraphicLight : IGraphic {
     Scene *scene;
 
-    explicit GraphicLight(Scene *scene_, std::shared_ptr<zeno::LightObject> const &lit) : scene(scene_) {
-        auto nodeid = lit->userData().get("ident");
+    explicit GraphicLight(Scene *scene_, zeno::LightObject *lit) : scene(scene_) {
+        //auto nodeid = lit->userData().get("ident");
         scene->lightCluster->addLight(static_cast<zeno::LightData const &>(*lit));
         // TODO: implement modify scene->light
     }
@@ -32,10 +31,8 @@ struct GraphicLight : IGraphic {
 
 }
 
-std::unique_ptr<IGraphic> makeGraphicLight(Scene *scene, std::shared_ptr<zeno::IObject> obj) {
-    if (auto lit = std::dynamic_pointer_cast<zeno::LightObject>(obj))
-        return std::make_unique<GraphicLight>(scene, std::move(lit));
-    return nullptr;
+void ToGraphicVisitor::visit(zeno::LightObject *obj) {
+     this->out_result = std::make_unique<GraphicLight>(this->in_scene, obj);
 }
 
 }

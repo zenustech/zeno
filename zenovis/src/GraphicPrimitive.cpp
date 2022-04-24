@@ -314,7 +314,7 @@ struct GraphicPrimitive : IGraphic {
     bool prim_has_inst = false;
     int prim_inst_amount = 0;
 
-    explicit GraphicPrimitive(Scene *scene_, std::shared_ptr<zeno::PrimitiveObject> prim)
+    explicit GraphicPrimitive(Scene *scene_, zeno::PrimitiveObject *prim)
         : scene(scene_) {
         zeno::log_trace("rendering primitive size {}", prim->size());
 
@@ -338,7 +338,7 @@ struct GraphicPrimitive : IGraphic {
         if (prim->tris.size() && need_computeNormal) {
             /* std::cout << "computing normal\n"; */
             zeno::log_trace("computing normal");
-            zeno::primCalcNormal(prim.get(), 1);
+            zeno::primCalcNormal(&*prim, 1);
         }
         if (!prim->has_attr("nrm")) {
             auto &nrm = prim->add_attr<zeno::vec3f>("nrm");
@@ -427,7 +427,7 @@ struct GraphicPrimitive : IGraphic {
                                        lines_count * sizeof(prim->lines[0]));
                 lineObj.vbo = nullptr;
             } else {
-                parseLinesDrawBuffer(prim.get(), lineObj);
+                parseLinesDrawBuffer(&*prim, lineObj);
             }
             lineObj.prog = get_lines_program();
         }
@@ -448,8 +448,8 @@ struct GraphicPrimitive : IGraphic {
                                       tris_count * sizeof(prim->tris[0]));
                 triObj.vbo = nullptr;
             } else {
-                computeTrianglesTangent(prim.get());
-                parseTrianglesDrawBuffer(prim.get(), triObj);
+                computeTrianglesTangent(&*prim);
+                parseTrianglesDrawBuffer(&*prim, triObj);
             }
 
             if (prim->inst != nullptr) {
@@ -2769,10 +2769,8 @@ void main()
 
 }
 
-std::unique_ptr<IGraphic> makeGraphicPrimitive(Scene *scene, std::shared_ptr<zeno::IObject> obj) {
-    if (auto prim = std::dynamic_pointer_cast<zeno::PrimitiveObject>(obj))
-        return std::make_unique<GraphicPrimitive>(scene, std::move(prim));
-    return nullptr;
+void ToGraphicVisitor::visit(zeno::PrimitiveObject *obj) {
+     this->out_result = std::make_unique<GraphicPrimitive>(this->in_scene, obj);
 }
 
 } // namespace zenovis

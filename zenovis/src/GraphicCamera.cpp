@@ -23,7 +23,7 @@ struct GraphicCamera : IGraphic {
 
     Program *prog;
 
-    explicit GraphicCamera(Scene *scene_, std::shared_ptr<zeno::CameraObject> cam) : scene(scene_) {
+    explicit GraphicCamera(Scene *scene_, zeno::CameraObject *cam) : scene(scene_) {
         scene->camera->setCamera(
                 glm::vec3(cam->pos[0], cam->pos[1], cam->pos[2]),
                 glm::vec3(cam->view[0], cam->view[1], cam->view[2]),
@@ -40,10 +40,8 @@ struct GraphicCamera : IGraphic {
 
 }
 
-std::unique_ptr<IGraphic> makeGraphicCamera(Scene *scene, std::shared_ptr<zeno::IObject> obj) {
-    if (auto cam = std::dynamic_pointer_cast<zeno::CameraObject>(obj))
-        return std::make_unique<GraphicCamera>(scene, std::move(cam));
-    return nullptr;
+void ToGraphicVisitor::visit(zeno::CameraObject *obj) {
+     this->out_result = std::make_unique<GraphicCamera>(this->in_scene, obj);
 }
 
 }
