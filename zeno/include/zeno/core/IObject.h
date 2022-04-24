@@ -14,6 +14,7 @@ struct IObject {
     using polymorphic_base_type = IObject;
 
     mutable std::any m_userData;
+    //std::string nodeid;
 
 #ifndef ZENO_APIFREE
     ZENO_API IObject();

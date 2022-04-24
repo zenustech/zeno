@@ -183,11 +183,12 @@ struct LightCluster : zeno::disable_copy {
         depthMapsArrCount = licount;
     }
 
-    template <class LightT = Light> void addLight(zeno::LightData const &data) {
+    template <class LightT = Light> int addLight(zeno::LightData const &data) {
         int lightNo(lights.size());
         auto lit = std::make_unique<LightT>(this, lightNo);
         lit->setData(data);
         lights.push_back(std::move(lit));
+        return lightNo;
     }
 
 }; // struct LightCluster

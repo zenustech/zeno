@@ -1,4 +1,6 @@
 #include <zeno/utils/vec.h>
+#include <zeno/types/MapStablizer.h>
+#include <zeno/types/UserData.h>
 #include <zenovis/Camera.h>
 #include <zenovis/IGraphic.h>
 #include <zenovis/Scene.h>
@@ -12,19 +14,11 @@
 namespace zenovis {
 namespace {
 
-using opengl::Buffer;
-using opengl::Program;
-using zeno::vec3f;
-
 struct GraphicLight : IGraphic {
     Scene *scene;
 
-    std::unique_ptr<Buffer> vbo;
-    size_t vertex_count;
-
-    Program *prog;
-
     explicit GraphicLight(Scene *scene_, std::shared_ptr<zeno::LightObject> const &lit) : scene(scene_) {
+        auto nodeid = lit->userData().get("ident");
         scene->lightCluster->addLight(static_cast<zeno::LightData const &>(*lit));
         // TODO: implement modify scene->light
     }

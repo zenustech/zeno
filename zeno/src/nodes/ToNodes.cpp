@@ -28,7 +28,8 @@ struct ToView : zeno::INode {
             } else {
                 log_debug("ToView: added view object of type {}", cppdemangle(typeid(*p)));
                 pp->userData().set("ident", objectFromLiterial(this->myname));
-                getThisSession()->globalComm->addViewObject(pp);
+                //pp->nodeid = this->myname;
+                getThisSession()->globalComm->addViewObject(std::move(pp));
             }
         }
         set_output("object", std::move(p));

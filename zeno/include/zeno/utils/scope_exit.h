@@ -1,6 +1,7 @@
 #pragma once
 
 #include <utility>
+#include <type_traits>
 
 namespace zeno {
 
@@ -51,5 +52,40 @@ public:
 
 template <class Func>
 scope_exit(Func) -> scope_exit<Func>;
+
+
+template <class Derived>
+class scope_finalizer {
+    struct finalize_functor {
+        //static_assert(std::is_base_of_v<scope_finalizer, Derived>);
+
+        Derived &that;
+
+        void operator()() const {
+            that._scope_finalize();
+        }
+    };
+
+    scope_exit<finalize_functor> guard;
+
+public:
+    explicit scope_finalizer() : guard(finalize_functor{static_cast<Derived &>(*this)}) {
+    }
+
+    scope_finalizer(scope_finalizer const &) = default;
+    scope_finalizer &operator=(scope_finalizer const &) = default;
+
+    bool has_value() const {
+        return guard.has_value();
+    }
+
+    void release() {
+        return guard.release();
+    }
+
+    void reset() {
+        return guard.reset();
+    }
+};
 
 }
