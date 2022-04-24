@@ -14,11 +14,16 @@ namespace {
 
 struct GraphicLight : IGraphic {
     Scene *scene;
+    zeno::LightData lightData;
 
     explicit GraphicLight(Scene *scene_, zeno::LightObject *lit) : scene(scene_) {
         //auto nodeid = lit->userData().get("ident");
-        scene->lightCluster->addLight(static_cast<zeno::LightData const &>(*lit));
+        lightData = static_cast<zeno::LightData const &>(*lit);
         // TODO: implement modify scene->light
+    }
+
+    void addToScene() {
+        scene->lightCluster->addLight(lightData);
     }
 
     virtual void draw(bool reflect, bool depthPass) override {

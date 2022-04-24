@@ -64,15 +64,6 @@ if (ZENO_USE_CCACHE AND NOT MSVC)  # speed up compilation by cache (https://ccac
     endif()
 endif()
 
-if (ZENO_NO_WARNING)
-    if (CMAKE_CXX_COMPILER_ID MATCHES "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-all -Wno-cpp -Wno-deprecated-declarations -Wno-enum-compare -Wno-ignored-attributes -Wno-extra -Werror=return-type -Wnon-virtual-dtor -Wsuggest-override -Wmissing-declarations -Wconversion-null")
-    endif()
-    if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /w")
-    endif()
-endif()
-
 if (ZENO_OUT_TO_BIN)
     # Otherwise Windows (which doesn't support RPATH) cannot find the DLLs at runtime
     set(ZENO_OUTPUT_DIR ${PROJECT_BINARY_DIR}/bin)
@@ -87,6 +78,15 @@ if (ZENO_OUT_TO_BIN)
     set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE ${ZENO_OUTPUT_DIR})
     if (WIN32)
         set(CMAKE_DEBUG_POSTFIX "")  # No more annoying zeno_d.dll
+    endif()
+endif()
+
+if (ZENO_NO_WARNING)
+    if (CMAKE_CXX_COMPILER_ID MATCHES "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        add_compile_options(-Wno-all -Wno-cpp -Wno-deprecated-declarations -Wno-enum-compare -Wno-ignored-attributes -Wno-extra -Werror=return-type -Wnon-virtual-dtor -Wsuggest-override -Wmissing-declarations -Wconversion-null)
+    endif()
+    if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+        add_compile_options(-w)
     endif()
 endif()
 
