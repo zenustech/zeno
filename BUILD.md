@@ -55,8 +55,9 @@ sudo apt-get install -y libqt5svg5-dev
 Arch Linux is my recommended environment, as it always provide latest packages.
 
 ```bash
-sudo pacman -S git cmake make g++
-sudo pacman -S qt5-base
+sudo pacman -Syu
+sudo pacman -S git cmake make gcc
+sudo pacman -S qt5-base qt5-svg
 ```
 
 ### WSL
