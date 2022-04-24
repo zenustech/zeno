@@ -50,7 +50,6 @@ CurveHandlerItem::CurveHandlerItem(CurveNodeItem* pNode, const QPointF& offset, 
 
     m_line->setLine(QLineF(hdlPosInGrid, nodePosInGrid));
     m_line->setZValue(10);
-    m_line->hide();
 
 	setFlags(ItemIsMovable | ItemIsSelectable | ItemSendsScenePositionChanges);
     setFlag(ItemSendsGeometryChanges, true);
@@ -149,6 +148,10 @@ bool CurveHandlerItem::isMouseEventTriggered()
 
 void CurveHandlerItem::toggle(bool bToggle)
 {
+    if (pos() == QPointF(0, 0))
+	{
+        bToggle = false;
+	}
     setVisible(bToggle);
     m_line->setVisible(bToggle);
 }
@@ -238,15 +241,15 @@ CurveNodeItem::CurveNodeItem(const QModelIndex& idx, CurveMapView* pView, const 
 
 void CurveNodeItem::initHandles(const QPointF& leftOffset, const QPointF& rightOffset)
 {
-	if (leftOffset != QPointF(0, 0))
+	m_left = new CurveHandlerItem(this, leftOffset, this);
+	if (leftOffset == QPointF(0, 0))
 	{
-		m_left = new CurveHandlerItem(this, leftOffset, this);
 		m_left->hide();
 	}
 
-	if (rightOffset != QPointF(0, 0))
+	m_right = new CurveHandlerItem(this, rightOffset, this);
+	if (rightOffset == QPointF(0, 0))
 	{
-		m_right = new CurveHandlerItem(this, rightOffset, this);
 		m_right->hide();
 	}
 

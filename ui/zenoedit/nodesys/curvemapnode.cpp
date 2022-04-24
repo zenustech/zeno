@@ -116,6 +116,15 @@ void MakeCurvemapNode::onEditClicked()
 				}
 				handlers.append(pt);
 			}
+        }
+		else
+		{
+			points.append(QPointF(rg.xFrom, rg.yFrom));
+            points.append(QPointF(rg.xTo, rg.yTo));
+            handlers.append(QPointF(0, 0));
+            handlers.append(QPointF(0, 0));
+            handlers.append(QPointF(-0, -0));
+            handlers.append(QPointF(0, 0));
 		}
 
 		CurveModel* pModel = new CurveModel(rg, this);

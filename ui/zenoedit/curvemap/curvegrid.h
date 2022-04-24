@@ -25,9 +25,6 @@ public:
     QPointF logicToScene(QPointF logicPos);
     QPointF sceneToLogic(QPointF scenePos);
 
-signals:
-    void nodesDataChanged();
-
 private:
 	QColor m_clrGrid, m_clrBg;
 	QRectF m_initRc;

@@ -60,7 +60,6 @@ void CurveGrid::addCurve(CurveModel* model)
 {
     CurvesItem* pCurves = new CurvesItem(m_view, this, m_initRc, this);
 	pCurves->initCurves(model);
-    connect(pCurves, SIGNAL(nodesDataChanged()), this, SIGNAL(nodesDataChanged()));
     m_curves["only-one"] = pCurves;
 }
 
