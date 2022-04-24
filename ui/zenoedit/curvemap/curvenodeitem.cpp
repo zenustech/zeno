@@ -50,6 +50,7 @@ CurveHandlerItem::CurveHandlerItem(CurveNodeItem* pNode, const QPointF& offset, 
 
     m_line->setLine(QLineF(hdlPosInGrid, nodePosInGrid));
     m_line->setZValue(10);
+    m_line->hide();
 
 	setFlags(ItemIsMovable | ItemIsSelectable | ItemSendsScenePositionChanges);
     setFlag(ItemSendsGeometryChanges, true);
@@ -101,9 +102,20 @@ QVariant CurveHandlerItem::itemChange(GraphicsItemChange change, const QVariant&
 		QPointF hdlPosInGrid = m_node->grid()->mapFromScene(scenePos());
 		QPointF nodePosInGrid = m_node->pos();
 		m_line->setLine(QLineF(hdlPosInGrid, nodePosInGrid));
-
         if (m_bNotify)
-			m_node->onHandleUpdate(this);
+        {
+            CurveModel* pModel = m_node->curves()->model();
+            CurveGrid *pGrid = m_node->grid();
+            QPointF offset = pGrid->sceneToLogic(scenePos()) - pGrid->sceneToLogic(m_node->scenePos());
+            if (this == m_node->leftHandle())
+            {
+                pModel->setData(m_node->index(), offset, ROLE_LEFTPOS);
+            }
+            else
+            {
+                pModel->setData(m_node->index(), offset, ROLE_RIGHTPOS);
+            }
+        }
 	}
 	else if (change == QGraphicsItem::ItemScenePositionHasChanged)
 	{
@@ -242,79 +254,13 @@ CurveNodeItem::CurveNodeItem(const QModelIndex& idx, CurveMapView* pView, const 
 void CurveNodeItem::initHandles(const QPointF& leftOffset, const QPointF& rightOffset)
 {
 	m_left = new CurveHandlerItem(this, leftOffset, this);
-	if (leftOffset == QPointF(0, 0))
-	{
-		m_left->hide();
-	}
+	m_left->hide();
 
 	m_right = new CurveHandlerItem(this, rightOffset, this);
-	if (rightOffset == QPointF(0, 0))
-	{
-		m_right->hide();
-	}
+	m_right->hide();
 
-	if (m_left && m_right)
-	{
-		m_left->setOtherHandle(m_right);
-        m_right->setOtherHandle(m_left);
-	}
-}
-
-void CurveNodeItem::onHandleUpdate(CurveHandlerItem* pItem)
-{
-	Q_ASSERT(pItem && m_index.isValid());
-	int type = m_index.data(ROLE_TYPE).toInt();
-	{
-		//update the pos of another handle.
-        CurveModel *const pModel = m_curve->model();
-        QVector2D roffset(rightHandlePos() - pos());
-        QVector2D loffset(leftHandlePos() - pos());
-        if (m_left == pItem)
-		{
-			if (m_right && type != HDL_FREE)
-			{
-				qreal length = roffset.length();
-				if (type == HDL_ALIGNED)
-					length = loffset.length();
-				roffset = -loffset.normalized() * length;
-				QPointF newPos = roffset.toPointF() + pos();
-				newPos = mapFromScene(newPos);
-
-				m_right->setUpdateNotify(false);
-				m_right->setPos(newPos);
-				m_right->setUpdateNotify(true);
-
-				//sync to model.
-				QPointF offset = m_grid->sceneToLogic(m_right->scenePos()) - m_grid->sceneToLogic(scenePos());
-				pModel->setData(m_index, offset, ROLE_RIGHTPOS);
-			}
-			QPointF offset = m_grid->sceneToLogic(m_left->scenePos()) - m_grid->sceneToLogic(scenePos());
-			pModel->setData(m_index, offset, ROLE_LEFTPOS);
-		}
-		
-		if (m_right == pItem)
-		{
-			if (m_left && type != HDL_FREE)
-			{
-				qreal length = loffset.length();
-				if (type == HDL_ALIGNED)
-					length = roffset.length();
-				loffset = -roffset.normalized() * length;
-				QPointF newPos = loffset.toPointF() + pos();
-				newPos = mapFromScene(newPos);
-
-				m_left->setUpdateNotify(false);
-				m_left->setPos(newPos);
-				m_left->setUpdateNotify(true);
-
-				//sync to model.
-				QPointF offset = m_grid->sceneToLogic(m_left->scenePos()) - m_grid->sceneToLogic(scenePos());
-				pModel->setData(m_index, offset, ROLE_LEFTPOS);
-			}
-			QPointF offset = m_grid->sceneToLogic(m_right->scenePos()) - m_grid->sceneToLogic(scenePos());
-			pModel->setData(m_index, offset, ROLE_RIGHTPOS);
-		}
-    }
+    m_left->setOtherHandle(m_right);
+    m_right->setOtherHandle(m_left);
 }
 
 void CurveNodeItem::toggle(bool bChecked)
@@ -435,8 +381,7 @@ QVariant CurveNodeItem::itemChange(GraphicsItemChange change, const QVariant& va
                 CurveNodeItem *pNext = m_curve->nodeItem(i + 1);
                 CurveHandlerItem *pRightHdl = pLast->rightHandle();
                 CurveHandlerItem *pLeftHdl = pNext->leftHandle();
-                newPos.setX(qMin(qMax(newPos.x(), pRightHdl->scenePos().x()),
-                                 pLeftHdl->scenePos().x()));
+                newPos.setX(qMin(qMax(newPos.x(), pRightHdl->scenePos().x()), pLeftHdl->scenePos().x()));
 			}
 			return newPos;
         }

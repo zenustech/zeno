@@ -123,7 +123,7 @@ void MakeCurvemapNode::onEditClicked()
             points.append(QPointF(rg.xTo, rg.yTo));
             handlers.append(QPointF(0, 0));
             handlers.append(QPointF(0, 0));
-            handlers.append(QPointF(-0, -0));
+            handlers.append(QPointF(0, 0));
             handlers.append(QPointF(0, 0));
 		}
 
