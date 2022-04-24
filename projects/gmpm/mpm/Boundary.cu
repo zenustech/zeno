@@ -38,12 +38,19 @@ struct ApplyGridBoundaryOnZSGrid : INode {
             ? collider_e::Sticky
             : (typeStr == "slip" ? collider_e::Slip : collider_e::Separate);
 
+    SmallString vtag = "v";
+    if (zsgrid->transferScheme == "apic")
+      ;
+    else if (zsgrid->transferScheme == "flip")
+      vtag = "vstar";
+    else if (zsgrid->transferScheme == "aflip")
+      vtag = "vstar";
     cudaPol(Collapse{boundaryPartition.size(), boundaryGrid.block_size},
             [grid = proxy<execspace_e::cuda>({}, grid),
              boundaryGrid = proxy<execspace_e::cuda>({}, boundaryGrid),
              table = proxy<execspace_e::cuda>(partition),
-             boundaryTable = proxy<execspace_e::cuda>(boundaryPartition),
-             type] __device__(int bi, int ci) mutable {
+             boundaryTable = proxy<execspace_e::cuda>(boundaryPartition), type,
+             vtag] __device__(int bi, int ci) mutable {
               using table_t = RM_CVREF_T(table);
               auto boundaryBlock = boundaryGrid.block(bi);
               if (boundaryBlock("m", ci) == 0.f)
@@ -57,18 +64,18 @@ struct ApplyGridBoundaryOnZSGrid : INode {
               if (block("m", ci) == 0.f)
                 return;
               if (type == collider_e::Sticky)
-                block.set("v", ci, boundaryBlock.pack<3>("v", ci));
+                block.set(vtag, ci, boundaryBlock.pack<3>("v", ci));
               else {
                 auto v_object = boundaryBlock.pack<3>("v", ci);
                 auto normal = boundaryBlock.pack<3>("nrm", ci);
-                auto v = block.pack<3>("v", ci);
+                auto v = block.pack<3>(vtag, ci);
                 v -= v_object;
                 auto proj = normal.dot(v);
                 if ((type == collider_e::Separate && proj < 0) ||
                     type == collider_e::Slip)
                   v -= proj * normal;
                 v += v_object;
-                block.set("v", ci, v);
+                block.set(vtag, ci, v);
               }
             });
 
@@ -113,7 +120,7 @@ struct ApplyBoundaryOnZSGrid : INode {
                   block.set("v", ci, vel);
                 }
               });
-    else if (transferScheme == "flip")
+    else if (transferScheme == "aflip" || transferScheme == "flip")
       cudaPol(Collapse{partition.size(), ZenoGrid::grid_t::block_space()},
               [grid = proxy<execspace_e::cuda>({}, grid),
                table = proxy<execspace_e::cuda>(partition),
@@ -121,16 +128,13 @@ struct ApplyBoundaryOnZSGrid : INode {
                 auto block = grid.block(bi);
                 auto mass = block("m", ci);
                 if (mass != 0.f) {
-                  auto vel = block.pack<3>("v", ci);
                   auto pos =
                       (table._activeKeys[bi] + grid.cellid_to_coord(ci)) *
                       grid.dx;
-                  boundary.resolveCollision(pos, vel);
-                  block.set("v", ci, vel);
 
-                  auto vdiff = block.pack<3>("vdiff", ci);
-                  boundary.resolveCollision(pos, vdiff);
-                  block.set("vdiff", ci, vdiff);
+                  auto vstar = block.pack<3>("vstar", ci);
+                  boundary.resolveCollision(pos, vstar);
+                  block.set("vstar", ci, vstar);
                 }
               });
   }

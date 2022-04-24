@@ -383,9 +383,11 @@ struct MakeZSGrid : INode {
     grid->transferScheme = get_input2<std::string>("transfer");
     // default is "apic"
     if (grid->transferScheme == "flip")
-      tags.emplace_back(zs::PropertyTag{"vdiff", 3});
+      tags.emplace_back(zs::PropertyTag{"vstar", 3});
     else if (grid->transferScheme == "apic")
       ;
+    else if (grid->transferScheme == "aflip")
+      tags.emplace_back(zs::PropertyTag{"vstar", 3});
     else if (grid->transferScheme == "boundary")
       tags.emplace_back(zs::PropertyTag{"nrm", 3});
     else
@@ -426,9 +428,11 @@ struct MakeZSLevelSet : INode {
     if (ls->transferScheme == "unknown")
       ;
     else if (ls->transferScheme == "flip")
-      tags.emplace_back(zs::PropertyTag{"vdiff", 3});
+      tags.emplace_back(zs::PropertyTag{"vstar", 3});
     else if (ls->transferScheme == "apic")
       ;
+    else if (ls->transferScheme == "aflip")
+      tags.emplace_back(zs::PropertyTag{"vstar", 3});
     else if (ls->transferScheme == "boundary")
       tags.emplace_back(zs::PropertyTag{"nrm", 3});
     else
@@ -484,7 +488,8 @@ ZENDEFNODE(MakeZSLevelSet,
            {
                {{"float", "dx", "0.1"}, "aux"},
                {"ZSLevelSet"},
-               {{"enum unknown apic flip boundary", "transfer", "unknown"},
+               {{"enum unknown apic flip aflip boundary", "transfer",
+                 "unknown"},
                 {"enum cellcentered collocated staggered const_velocity",
                  "category", "cellcentered"}},
                {"SOP"},

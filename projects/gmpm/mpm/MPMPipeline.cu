@@ -353,7 +353,8 @@ struct UpdateZSGrid : INode {
                   atomic_max(exec_cuda, ptr, velSqr);
                 }
               });
-    else if (zsgrid->transferScheme == "flip")
+    else if (zsgrid->transferScheme == "flip" ||
+             zsgrid->transferScheme == "aflip")
       cudaPol(Collapse{partition.size(), ZenoGrid::grid_t::block_space()},
               [grid = proxy<execspace_e::cuda>({}, grid), stepDt, accel,
                ptr = velSqr.data()] __device__(int bi, int ci) mutable {
@@ -366,9 +367,9 @@ struct UpdateZSGrid : INode {
                   // vel += accel * stepDt;
                   block.set("v", ci, vel);
 
-                  auto vdiff = block.pack<3>("vdiff", ci) * mass;
-                  vdiff += accel * stepDt;
-                  block.set("vdiff", ci, vdiff);
+                  auto vstar =
+                      block.pack<3>("vstar", ci) * mass + vel + accel * stepDt;
+                  block.set("vstar", ci, vstar);
 
                   /// cfl dt
                   auto velSqr = vel.l2NormSqr();
@@ -469,7 +470,7 @@ struct ZSReturnMapping : INode {
 #endif
       // hard code ftm
       constexpr auto gamma = 0.f;
-      constexpr auto k = 100.f;
+      constexpr auto k = 400.f;
       constexpr auto friction_coeff = 0.f;
 // constexpr auto friction_coeff = 0.17f;
 #if 1
