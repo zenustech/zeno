@@ -26,6 +26,15 @@ if (PROJECT_BINARY_DIR STREQUAL PROJECT_SOURCE_DIR)
         "Otherwise ZENO may fail to build, or make Git hard to exclude binary files.")
 endif()
 
+option(ZENO_BUILD_EDITOR "Build ZENO editor" ON)
+option(ZENO_BUILD_DESIGNER "Build ZENO designer" OFF)
+option(ZENO_MULTIPROCESS "Enable multiprocessing for ZENO" ON)
+option(ZENO_OUT_TO_BIN "Output files to a fixed directory" ON)
+option(ZENO_BUILD_SHARED "Build shared library for ZENO" ON)
+option(ZENO_USE_CCACHE "Use CCache if found in path" ON)
+option(ZENO_NO_WARNING "Use customized compiler warnings" ON)
+option(ZENO_INSTALL_TARGET "Enable installation targets" ON)
+
 # Otherwise we can't link SHARED libs with STATIC libs
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
@@ -39,23 +48,6 @@ if (WIN32)
     # get rid of 'min', 'max' macros; get back 'M_PI', 'M_E'
     add_definitions(-DNOMINMAX -D_USE_MATH_DEFINES)
 endif()
-
-option(ZENO_BUILD_EDITOR "Build ZENO editor" ON)
-option(ZENO_BUILD_DESIGNER "Build ZENO designer" OFF)
-option(ZENO_BENCHMARKING "Enable ZENO benchmarking timer" ON)
-option(ZENO_MULTIPROCESS "Enable multiprocessing for ZENO" ON)
-option(ZENO_PARALLEL_STL "Enable parallel STL in ZENO" OFF)
-option(ZENO_ENABLE_BACKWARD "Enable ZENO fault handler for traceback" OFF)
-option(ZENO_ENABLE_OPENMP "Enable OpenMP in ZENO for parallelism" ON)
-option(ZENO_ENABLE_SPDLOG "Enable spdlog in ZENO for logging" OFF)
-option(ZENO_ENABLE_MAGICENUM "Enable magicenum in ZENO for enum reflection" ON)
-option(ZENO_ENABLE_OPENEXR "Enable OpenEXR in ZENO for HDR images I/O" OFF)
-option(ZENO_SYSTEM_ALEMBIC "Use Alembic found in system instead of submodule" OFF)
-option(ZENO_OUT_TO_BIN "Output files to a fixed directory" ON)
-option(ZENO_BUILD_SHARED "Build shared library for ZENO" ON)
-option(ZENO_USE_CCACHE "Use CCache if found in path" ON)
-option(ZENO_NO_WARNING "Use customized compiler warnings" ON)
-option(ZENO_INSTALL_TARGET "Enable installation targets" OFF)
 
 if (ZENO_NO_WARNING)
     set(ZENO_OLD_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
@@ -91,10 +83,6 @@ if (ZENO_OUT_TO_BIN)
     if (WIN32)
         set(CMAKE_DEBUG_POSTFIX "")  # No more annoying zeno_d.dll
     endif()
-endif()
-
-if (ZENO_ENABLE_BACKWARD)
-    add_subdirectory(zeno/tpls/backward-cpp)
 endif()
 
 add_subdirectory(zeno)

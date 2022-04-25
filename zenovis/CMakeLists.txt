@@ -1,3 +1,5 @@
+option(ZENO_ENABLE_OPENEXR "Enable OpenEXR in ZENO for HDR images I/O" OFF)
+
 enable_language(C)
 
 file(GLOB_RECURSE source CONFIGURE_DEPENDS include/*.h src/*.cpp)

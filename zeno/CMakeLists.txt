@@ -1,3 +1,10 @@
+option(ZENO_BENCHMARKING "Enable ZENO benchmarking timer" ON)
+option(ZENO_PARALLEL_STL "Enable parallel STL in ZENO" OFF)
+option(ZENO_ENABLE_OPENMP "Enable OpenMP in ZENO for parallelism" ON)
+option(ZENO_ENABLE_SPDLOG "Enable spdlog in ZENO for logging" OFF)
+option(ZENO_ENABLE_MAGICENUM "Enable magicenum in ZENO for enum reflection" ON)
+option(ZENO_ENABLE_BACKWARD "Enable ZENO fault handler for traceback" OFF)
+
 file(GLOB_RECURSE source CONFIGURE_DEPENDS include/*.h src/*.cpp)
 
 if (ZENO_BUILD_SHARED)
@@ -36,6 +43,7 @@ if (ZENO_PARALLEL_STL)
 endif()
 
 if (ZENO_ENABLE_BACKWARD)
+    add_subdirectory(tpls/backward-cpp)
     target_compile_definitions(zeno PUBLIC -DZENO_ENABLE_BACKWARD)
     target_sources(zeno PRIVATE ${BACKWARD_ENABLE})
     add_backward(zeno)

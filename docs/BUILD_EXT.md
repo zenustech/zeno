@@ -111,3 +111,28 @@ NVIDIA users may additionally specify `-DZENO_WITH_gmpm:BOOL=ON -DZENO_WITH_mesh
 > NOTE: **CUDA 11.x requried**.
 
 > NOTE: ZenoFX must be enabled when gmpm is enabled, because gmpm depends on ZenoFX.
+
+### Using CMake presets (experimental)
+
+Latest version of CMake supports `CMakePresets.json` and `--preset`, so you may use the following command instead of above huge command lines:
+
+```bash
+cmake --preset default
+cmake --build --preset default
+```
+
+And for people who would like to build with CUDA support:
+
+```bash
+cmake --preset cuda
+cmake --build --preset cuda
+```
+
+The `default` or `cuda` here is called the preset name, see `CMakePresets.json` at the root of project directory for more presets and their details.
+
+Note that you may still specify extra arguments under preset mode, for example:
+
+```bash
+cmake --preset default -G Ninja -DCMAKE_INSTALL_PREFIX:BOOL=/opt/zeno
+cmake --build --preset default --parallel
+```
