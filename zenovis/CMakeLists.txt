@@ -17,11 +17,18 @@ target_include_directories(zenovis PUBLIC
 
 if (ZENO_ENABLE_OPENEXR)
     # PENG-SENSEI: SO OPENEXR FXXK YOU!!!!
-    find_package(IlmBase CONFIG REQUIRED)
-    # note: 2 targets were omitted.
-    target_link_libraries(zenovis PRIVATE IlmBase::Iex IlmBase::Half IlmBase::Imath IlmBase::IexMath)
+    find_package(IlmBase CONFIG)
     find_package(OpenEXR CONFIG REQUIRED)
-    target_link_libraries(zenovis PRIVATE OpenEXR::IlmImf OpenEXR::IlmImfUtil OpenEXR::IlmImfConfig)
+    target_link_libraries(zenovis PRIVATE
+        $<TARGET_NAME_IF_EXISTS:IlmBase::Iex>
+        $<TARGET_NAME_IF_EXISTS:IlmBase::Half>
+        $<TARGET_NAME_IF_EXISTS:IlmBase::Imath>
+        $<TARGET_NAME_IF_EXISTS:IlmBase::IexMath>
+        $<TARGET_NAME_IF_EXISTS:OpenEXR::OpenEXR>
+        $<TARGET_NAME_IF_EXISTS:OpenEXR::IlmImf>
+        $<TARGET_NAME_IF_EXISTS:OpenEXR::IlmImfUtil>
+        $<TARGET_NAME_IF_EXISTS:OpenEXR::IlmImfConfig>
+    )
     target_compile_definitions(zenovis PRIVATE -DZENO_ENABLE_OPENEXR)
 endif()
 
