@@ -108,13 +108,13 @@ endif()
 if (ZENO_INSTALL_TARGET)
     install(
         EXPORT ZenoTargets
-        FILE ZenoTargets.cmake
+        FILE ZenoConfig.cmake
         NAMESPACE Zeno::
         DESTINATION lib/cmake/Zeno
         )
-    configure_file(misc/ZenoConfig.cmake.in ZenoConfig.cmake @ONLY)
-    install(
-        FILES ${CMAKE_CURRENT_BINARY_DIR}/ZenoConfig.cmake
-        DESTINATION lib/cmake/Zeno
-        )
+    #configure_file(misc/ZenoConfig.cmake.in ZenoConfig.cmake @ONLY)
+    #install(
+        #FILES ${CMAKE_CURRENT_BINARY_DIR}/ZenoConfig.cmake
+        #DESTINATION lib/cmake/Zeno
+        #)
 endif()
