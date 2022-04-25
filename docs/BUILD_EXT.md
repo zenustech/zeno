@@ -41,7 +41,7 @@ pacman -S tbb openvdb eigen3 cgal lapack openblas hdf5
 ### Ubuntu
 
 ```bash
-sudo apt-get install -y libtbb-dev libopenvdb-dev libeigen3-dev libcgal-dev liblapack-dev libopenblas-dev
+sudo apt-get install -y libtbb-dev libopenvdb-dev libeigen3-dev libcgal-dev liblapack-dev libopenblas-dev libhdf5-dev
 ```
 
 > It's highly recommended to use Ubuntu 20.04 or above, otherwise you have to build some libraries from source.
