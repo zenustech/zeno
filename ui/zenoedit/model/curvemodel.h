@@ -30,6 +30,7 @@ public:
     ~CurveModel();
     //method for temporary node like MakeCurvemap, DynamicNumber¡£
     void initItems(CURVE_RANGE rg, const QVector<QPointF>& points, const QVector<QPointF>& handlers);
+    bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::EditRole) override;
     void resetRange(const CURVE_RANGE& rg);
     CURVE_RANGE range() const;
 

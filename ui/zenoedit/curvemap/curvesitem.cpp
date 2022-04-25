@@ -84,12 +84,9 @@ void CurvesItem::onDataChanged(const QModelIndex &topLeft, const QModelIndex &bo
     int role = roles[0];
     QPointF logicNodePos = topLeft.data(ROLE_NODEPOS).toPointF();
     QPointF sceneNodePos = m_grid->logicToScene(logicNodePos);
-    HANDLE_TYPE nodeType = (HANDLE_TYPE)topLeft.data(ROLE_TYPE).toInt();
 
     QPointF leftLogicOffset = topLeft.data(ROLE_LEFTPOS).toPointF();
     QPointF rightLogicOffset = topLeft.data(ROLE_RIGHTPOS).toPointF();
-    QVector2D roffset(m_grid->logicToScene(rightLogicOffset + logicNodePos) - sceneNodePos);
-    QVector2D loffset(m_grid->logicToScene(leftLogicOffset + logicNodePos) - sceneNodePos);
 
     switch (role)
     {
@@ -101,61 +98,19 @@ void CurvesItem::onDataChanged(const QModelIndex &topLeft, const QModelIndex &bo
         case ROLE_LEFTPOS:
         {
             CurveHandlerItem* pLeftHdl = pNode->leftHandle();
-            pLeftHdl->setUpdateNotify(false);
             leftLogicOffset = pNode->mapFromScene(m_grid->logicToScene(leftLogicOffset + logicNodePos));
+            //pLeftHdl->setUpdateNotify(false);
             pLeftHdl->setPos(leftLogicOffset);
-            pLeftHdl->setUpdateNotify(true);
-
-            //update another hdl.
-            if (nodeType != HDL_FREE && rightLogicOffset != QPointF(0, 0))
-            {
-                qreal length = roffset.length();
-                if (nodeType == HDL_ALIGNED)
-                    length = loffset.length();
-                roffset = -loffset.normalized() * length;
-                QPointF newScenePos = roffset.toPointF() + sceneNodePos;
-                QPointF newPos = pNode->mapFromScene(newScenePos);
-
-                CurveHandlerItem *pRightHdl = pNode->rightHandle();
-                pRightHdl->setUpdateNotify(false);
-                pRightHdl->setPos(newPos);
-                pRightHdl->setUpdateNotify(true);
-
-                //have to manually update model data to avoid infinte notify loop.
-                BlockSignalScope scope(m_model);
-                rightLogicOffset = m_grid->sceneToLogic(newScenePos) - logicNodePos;
-                m_model->setData(topLeft, rightLogicOffset, ROLE_RIGHTPOS);
-            }
+            //pLeftHdl->setUpdateNotify(true);
             break;
         }
         case ROLE_RIGHTPOS:
         {
             CurveHandlerItem* pRightHdl = pNode->rightHandle();
             rightLogicOffset = pNode->mapFromScene(m_grid->logicToScene(rightLogicOffset + logicNodePos));
-            pRightHdl->setUpdateNotify(false);
+            //pRightHdl->setUpdateNotify(false);
             pRightHdl->setPos(rightLogicOffset);
-            pRightHdl->setUpdateNotify(true);
-
-            //update another hdl.
-            if (nodeType != HDL_FREE && leftLogicOffset != QPointF(0, 0))
-            {
-                qreal length = loffset.length();
-                if (nodeType == HDL_ALIGNED)
-                    length = roffset.length();
-                loffset = -roffset.normalized() * length;
-
-                QPointF newScenePos = loffset.toPointF() + sceneNodePos;
-                QPointF newPos = pNode->mapFromScene(newScenePos);
-
-                CurveHandlerItem* pLeftHdl = pNode->leftHandle();
-                pLeftHdl->setUpdateNotify(false);
-                pLeftHdl->setPos(newPos);
-                pLeftHdl->setUpdateNotify(true);
-
-                BlockSignalScope scope(m_model);
-                leftLogicOffset = m_grid->sceneToLogic(newScenePos) - logicNodePos;
-                m_model->setData(topLeft, leftLogicOffset, ROLE_LEFTPOS);
-            }
+            //pRightHdl->setUpdateNotify(true);
             break;
         }
     }
