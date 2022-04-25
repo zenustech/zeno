@@ -24,6 +24,7 @@
         "ZENO_WITH_ZenoFX": "ON",
         "ZENOFX_ENABLE_OPENVDB": "ON",
         "ZENOFX_ENABLE_LBVH": "ON",
+        "ZENO_ENABLE_OPENEXR": "ON",
         "ZENO_WITH_zenvdb": "ON",
         "ZENO_WITH_FastFLIP": "ON",
         "ZENO_WITH_oldzenbase": "ON"
