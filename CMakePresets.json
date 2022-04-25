@@ -12,7 +12,7 @@
       "description": "Build without any dependencies",
       "binaryDir": "${sourceDir}/build",
       "cacheVariables": {
-        "BUILD_TYPE": "Release"
+        "CMAKE_BUILD_TYPE": "Release"
       }
     },
     {
@@ -60,7 +60,7 @@
       "inherits": "basic",
       "description": "Basic configuration (Debug)",
       "cacheVariables": {
-        "BUILD_TYPE": "Debug"
+        "CMAKE_BUILD_TYPE": "Debug"
       }
     },
     {
@@ -68,7 +68,7 @@
       "inherits": "default",
       "description": "Default configuration (Debug)",
       "cacheVariables": {
-        "BUILD_TYPE": "Debug"
+        "CMAKE_BUILD_TYPE": "Debug"
       }
     }
   ],
@@ -80,7 +80,7 @@
     },
     {
       "name": "default-debug",
-      "configurePreset": "basic",
+      "configurePreset": "basic-debug",
       "configuration": "Debug"
     }
   ]

@@ -35,22 +35,13 @@ If you succeed to build ZenoFX, let's move on to build other more complicated ex
 ### Arch Linux (recommended)
 
 ```bash
-pacman -S tbb openvdb eigen3 cgal lapack openblas alembic
+pacman -S tbb openvdb eigen3 cgal lapack openblas hdf5
 ```
 
 ### Ubuntu
 
 ```bash
 sudo apt-get install -y libtbb-dev libopenvdb-dev libeigen3-dev libcgal-dev liblapack-dev libopenblas-dev
-
-# Install alembic from source:
-sudo apt-get install -y libhdf5-dev
-git clone https://github.com/zenustech/alembic.git --depth=1
-cd alembic
-cmake -B build -DCMAKE_BUILD_TYPE=Release
-cmake --build build --parallel 4
-sudo cmake --build build --target install
-cd ..
 ```
 
 > It's highly recommended to use Ubuntu 20.04 or above, otherwise you have to build some libraries from source.
@@ -80,7 +71,7 @@ cd vcpkg
 .\vcpkg install cgal:x64-windows
 .\vcpkg install lapack:x64-windows
 .\vcpkg install openblas:x64-windows
-.\vcpkg install alembic[hdf5]:x64-windows
+.\vcpkg install hdf5:x64-windows
 ```
 
 > Notice that you must install the `English Pack` for VS2019 for vcpkg to work. This can be done by clicking the `Language` panel in the VS2019 installer. (JOKE: the maintainer of vcpkg speaks Chinese too..)
