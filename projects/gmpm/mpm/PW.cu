@@ -2,8 +2,8 @@
 #include "../Utils.hpp"
 #include "zensim/cuda/execution/ExecutionPolicy.cuh"
 #include "zensim/cuda/simulation/wrangler/Wrangler.hpp" //
-#include "zensim/tpls/fmt/color.h"
-#include "zensim/tpls/fmt/format.h"
+#include "zensim/zpc_tpls/fmt/color.h"
+#include "zensim/zpc_tpls/fmt/format.h"
 
 // from projects/ZenoFX/pw.cpp : ParticlesWrangle
 #include <cassert>
