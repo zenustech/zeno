@@ -55,6 +55,12 @@ option(ZENO_USE_CCACHE "Use CCache if found in path" ON)
 option(ZENO_NO_WARNING "Use customized compiler warnings" ON)
 option(ZENO_INSTALL_TARGET "Enable installation targets" OFF)
 
+if (ZENO_NO_WARNING)
+    if (CMAKE_CXX_COMPILER_ID MATCHES "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+        add_compile_options(-w)
+    endif()
+endif()
+
 if (ZENO_USE_CCACHE AND NOT MSVC)  # speed up compilation by cache (https://ccache.dev)
     find_program(CCACHE_PROGRAM ccache)
     if (CCACHE_PROGRAM)

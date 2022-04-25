@@ -81,6 +81,7 @@ jobs:
       uses: lukka/run-cmake@v10
       with:
         configurePreset: ${{ (matrix.triplet != '' && 'default' || 'basic') }}${{ (needs.check.outputs.deploy == 'true' && '' || '-debug') }}
+        buildPreset: default${{ (needs.check.outputs.deploy == 'true' && '' || '-debug') }}
 
     - name: Packaging
       if: ${{ needs.check.outputs.deploy == 'true' }}
@@ -90,7 +91,7 @@ jobs:
       if: ${{ needs.check.outputs.deploy == 'true' }}
       uses: actions/upload-artifact@v2
       with:
-        name: ${{runner.os}}-Package
+        name: ${{ runner.os }}-Package
         path: ${{github.workspace}}/build/out.${{ runner.os == 'Linux' && 'tar.gz' || 'zip' }}
 
   deploy:
@@ -115,8 +116,8 @@ jobs:
     - name: Download Release Artifact
       uses: actions/download-artifact@v2
       with:
-        name: ${{matrix.os}}-Package
-        path: ${{github.workspace}}/release-artifact
+        name: ${{ matrix.os }}-Package
+        path: ${{ github.workspace }}/release-artifact
 
     - name: Create Release
       id: create_release

@@ -118,7 +118,7 @@ public:
 	void getAtt(size_t n, openvdb::Index32& att) const { att = openvdb::Index32(n); }
 };
 
-openvdb::FloatGrid::Ptr particleToLevelset(const std::vector<zeno::vec3f>& pos, double radius, double voxelSize)
+static openvdb::FloatGrid::Ptr particleToLevelset(const std::vector<zeno::vec3f>& pos, double radius, double voxelSize)
 {
     MyParticleList pa(pos.size(), radius);
     tbb::parallel_for(0, (int)pos.size(), 1, [&](int p)

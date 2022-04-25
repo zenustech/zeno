@@ -183,7 +183,7 @@ std::vector<char> Scene::record_frame_offline() {
         CHECK_GL(glReadBuffer(GL_COLOR_ATTACHMENT0));
 
         CHECK_GL(glReadPixels(0, 0, camera->m_nx, camera->m_ny, GL_RGB,
-                              GL_UNSIGNED_BYTE, &pixels[0]));
+                              GL_UNSIGNED_BYTE, pixels.data()));
     }
 
     CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0));

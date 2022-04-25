@@ -33,11 +33,7 @@
     "alembic": {
       "description": "Enable Alembic nodes, for .abc format support",
       "dependencies": [
-        "hdf5",
-        {
-          "name": "alembic",
-          "features": [ "hdf5" ]
-        }
+        "hdf5"
       ]
     },
     "cuda": {
@@ -51,6 +47,6 @@
     }
   },
   "default-features": [
-      "openvdb", "cgmesh"
+      "openvdb", "cgmesh", "alembic"
   ]
 }
