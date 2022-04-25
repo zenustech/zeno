@@ -68,7 +68,36 @@ void CurveHandlerItem::setOtherHandle(CurveHandlerItem *other)
 
 QVariant CurveHandlerItem::itemChange(GraphicsItemChange change, const QVariant& value)
 {
-	if (change == QGraphicsItem::ItemPositionHasChanged)
+    if (change == QGraphicsItem::ItemPositionChange)
+	{
+        if (m_node->grid()->isFuncCurve())
+		{
+            QPointF newPos = value.toPointF();
+            int i = m_node->curves()->indexOf(m_node);
+            if (m_node->leftHandle() == this)
+			{
+                QPointF lastNodePos = m_node->mapFromScene(m_node->curves()->nodePos(i - 1));
+                newPos.setX(qMax(lastNodePos.x(), newPos.x()));
+                if (m_other)
+				{
+                    QPointF rightHdlPos = m_other->pos();
+                    newPos.setX(qMin(newPos.x(), rightHdlPos.x()));
+				}
+            }
+			else if (m_node->rightHandle() == this)
+			{
+                QPointF nextNodePos = m_node->mapFromScene(m_node->curves()->nodePos(i + 1));
+                newPos.setX(qMin(nextNodePos.x(), newPos.x()));
+                if (m_other)
+				{
+                    QPointF leftHdlPos = m_other->pos();
+                    newPos.setX(qMax(newPos.x(), leftHdlPos.x()));
+				}
+            }
+            return newPos;
+		}
+	}
+	else if (change == QGraphicsItem::ItemPositionHasChanged)
 	{
 		QPointF hdlPosInGrid = m_node->grid()->mapFromScene(scenePos());
 		QPointF nodePosInGrid = m_node->pos();
@@ -326,6 +355,15 @@ QVariant CurveNodeItem::itemChange(GraphicsItemChange change, const QVariant& va
 				m_right->toggle(false);
 			}
 		}
+	}
+	else if (change == QGraphicsItem::ItemPositionChange)
+	{
+		QPointF newPos = value.toPointF();
+		QPointF newLogicPos = m_grid->sceneToLogic(newPos);
+		CurveModel* pModel = m_curve->model();
+		newLogicPos = pModel->clipNodePos(m_index, newLogicPos);
+		newPos = m_grid->logicToScene(newLogicPos);
+		return newPos;
 	}
 	else if (change == QGraphicsItem::ItemPositionHasChanged)
 	{

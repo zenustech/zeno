@@ -33,6 +33,14 @@ public:
     bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::EditRole) override;
     void resetRange(const CURVE_RANGE& rg);
     CURVE_RANGE range() const;
+    QPointF clipNodePos(const QModelIndex& idx, const QPointF& currPos);
+
+    QPointF adjustLastRightHdl(const QModelIndex& currIdx);
+    QPointF adjustCurrLeftHdl(const QModelIndex& currIdx);
+    QPointF adjustNextLeftHdl(const QModelIndex& currIdx);
+    QPointF adjustCurrRightHdl(const QModelIndex& currIdx);
+    QPair<QPointF, QPointF> adjustWhenLeftHdlChanged(const QModelIndex& currIdx, QPointF newPos);
+    QPair<QPointF, QPointF> adjustWhenRightHdlChanged(const QModelIndex& currIdx, QPointF newPos);
 
 signals:
     void rangeChanged(CURVE_RANGE);

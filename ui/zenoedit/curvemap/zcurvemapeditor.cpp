@@ -197,11 +197,10 @@ void ZCurveMapEditor::onLineEditFinished()
         QPointF leftHdlOffset = leftHdlScene - nodeScenePos;
         QPointF rightHdlOffset = rightHdlScene - nodeScenePos;
 
-        node->setPos(nodeScenePos);
-        if (node->leftHandle())
-            node->leftHandle()->setPos(leftHdlOffset);
-        if (node->rightHandle())
-            node->rightHandle()->setPos(rightHdlOffset);
+        const QModelIndex& idx = node->index();
+        m_model->setData(idx, logicPos, ROLE_NODEPOS);
+        m_model->setData(idx, QPointF(leftX, leftY), ROLE_LEFTPOS);
+        m_model->setData(idx, QPointF(rightX, rightY), ROLE_RIGHTPOS);
     }
 }
 
