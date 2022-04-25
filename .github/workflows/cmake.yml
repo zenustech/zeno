@@ -28,10 +28,10 @@ jobs:
       matrix:
         include:
         - os: ubuntu-18.04
-          #triplet: x64-linux
+          triplet: x64-linux
           cxx: g++-9
         - os: windows-2022
-          #triplet: x64-windows
+          triplet: x64-windows
 
     runs-on: ${{ matrix.os }}
     needs: [check]
@@ -67,7 +67,7 @@ jobs:
       uses: lukka/run-vcpkg@v10
       if: ${{ matrix.triplet != '' }}
       with:
-        vcpkgGitCommitId: 2ac61f87f69f0484b8044f95ab274038fbaf7bdd
+        vcpkgGitCommitId: 79afdf87b338e4ca0ac6dd781e4e755d6ec940a1
         vcpkgDirectory: ${{ github.workspace }}/vcpkg
         vcpkgJsonGlob: '**/vcpkg.json'
         runVcpkgInstall: true
