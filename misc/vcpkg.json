@@ -16,6 +16,7 @@
       "dependencies": [
         "tbb",
         "eigen3",
+        "openexr",
         {
           "name": "openvdb",
           "version>=": "8.0.0"
