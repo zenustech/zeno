@@ -13,6 +13,12 @@ target_include_directories(zenovis PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/stbi/include>
     $<INSTALL_INTERFACE:include/Zeno/zenovis/include>)
 
+if (ZENO_ENABLE_OPENEXR)
+    find_package(OpenEXR REQUIRED)
+    target_link_libraries(zenovis PRIVATE OpenEXR::OpenEXR)
+    target_compile_definitions(zenovis PRIVATE -DZENO_ENABLE_OPENEXR)
+endif()
+
 if (ZENO_INSTALL_TARGET)
     install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include DESTINATION include/Zeno/zenovis)
     install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/glad/include DESTINATION include/Zeno/zenovis)

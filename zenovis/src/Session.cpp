@@ -6,6 +6,13 @@
 #include <zenovis/Session.h>
 #include <zenovis/GraphicsManager.h>
 #include <zenovis/opengl/common.h>
+#include <zeno/utils/format.h>
+#ifdef ZENO_ENABLE_OPENEXR
+#include <ImfPixelType.h>
+#include <ImfRgbaFile.h>
+#include <ImfArray.h>
+#endif
+#include <map>
 
 namespace zenovis {
 
@@ -56,17 +63,61 @@ void Session::new_frame() {
 
 void Session::new_frame_offline(std::string path) {
     char buf[1024];
-    sprintf(buf, "%s/%06d.png", path.c_str(), impl->curr_frameid);
+    auto newpath = zeno::format("{}/{:06d}.png", path, impl->curr_frameid);
     zeno::log_info("saving screen {}x{} to {}", impl->scene->camera->m_nx,
                     impl->scene->camera->m_ny, buf);
     do_screenshot(buf);
 }
 
-void Session::do_screenshot(std::string path) {
-    std::vector<char> pixels = impl->scene->record_frame_offline();
+void Session::do_screenshot(std::string path, std::string type) {
+    auto hdrSize = std::map<std::string, int>{
+        {"png", 1},
+        {"jpg", 1},
+        {"bmp", 1},
+        {"exr", 2},
+        {"hdr", 4},
+    }.at(type);
+    auto nx = impl->scene->camera->m_nx;
+    auto ny = impl->scene->camera->m_ny;
+    std::vector<char> pixels = impl->scene->record_frame_offline(hdrSize, 3);
+
     stbi_flip_vertically_on_write(true);
-    stbi_write_png(path.c_str(), impl->scene->camera->m_nx,
-                   impl->scene->camera->m_ny, 3, &pixels[0], 0);
+    std::map<std::string, std::function<void()>>{
+    {"png", [&] {
+        stbi_write_png(path.c_str(), nx, ny, 3, pixels.data(), 0);
+    }},
+    {"jpg", [&] {
+        stbi_write_jpg(path.c_str(), nx, ny, 3, pixels.data(), 80);
+    }},
+    {"bmp", [&] {
+        stbi_write_bmp(path.c_str(), nx, ny, 3, pixels.data());
+    }},
+#ifdef ZENO_ENABLE_OPENEXR
+    {"exr", [&] {
+        auto pix = (Imath::half *)pixels.data();
+        Imf::RgbaOutputFile file(path.c_str(), nx, ny, Imf::WRITE_RGBA);
+        Imf::Array2D<Imf::Rgba> px(ny, nx);
+        int i = 0;
+        for (int y = 0; y < ny; ++y) {
+          for (int x = 0; x < nx; ++x) {
+            Imf::Rgba &p = px[ny - 1 - y][x];
+            // Imf::Rgba &p = px[ny][nx];
+            p.r = pix[i];
+            p.g = pix[i + 1];
+            p.b = pix[i + 2];
+            p.a = 0;
+            i += 3;
+          }
+        }
+        file.setFrameBuffer(&px[0][0], 1, nx);
+        file.writePixels(ny);
+    }},
+#endif
+    {"hdr", [&] {
+        stbi_write_hdr(path.c_str(), impl->scene->camera->m_nx,
+                       impl->scene->camera->m_ny, 3, (float *)pixels.data());
+    }},
+    }.at(type)();
 }
 
 void Session::look_perspective(float cx, float cy, float cz, float theta,

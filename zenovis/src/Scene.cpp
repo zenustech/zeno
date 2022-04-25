@@ -9,6 +9,7 @@
 #include <zenovis/opengl/buffer.h>
 #include <zenovis/opengl/common.h>
 #include <zenovis/opengl/vao.h>
+#include <map>
 
 namespace zenovis {
 
@@ -147,8 +148,20 @@ void Scene::draw(unsigned int target_fbo) {
     mDepthPass->paint_graphics(target_fbo);
 }
 
-std::vector<char> Scene::record_frame_offline() {
-    std::vector<char> pixels(camera->m_nx * camera->m_ny * 3);
+std::vector<char> Scene::record_frame_offline(int hdrSize, int rgbComps) {
+    auto hdrType = std::map<int, int>{
+        {1, GL_UNSIGNED_BYTE},
+        {2, GL_HALF_FLOAT},
+        {4, GL_FLOAT},
+    }.at(hdrSize);
+    auto rgbType = std::map<int, int>{
+        {1, GL_RED},
+        {2, GL_RG},
+        {3, GL_RGB},
+        {4, GL_RGBA},
+    }.at(rgbComps);
+
+    std::vector<char> pixels(camera->m_nx * camera->m_ny * rgbComps * hdrSize);
 
     GLuint fbo, rbo1, rbo2;
     CHECK_GL(glGenRenderbuffers(1, &rbo1));
@@ -182,8 +195,8 @@ std::vector<char> Scene::record_frame_offline() {
         CHECK_GL(glBindBuffer(GL_PIXEL_PACK_BUFFER, 0));
         CHECK_GL(glReadBuffer(GL_COLOR_ATTACHMENT0));
 
-        CHECK_GL(glReadPixels(0, 0, camera->m_nx, camera->m_ny, GL_RGB,
-                              GL_UNSIGNED_BYTE, pixels.data()));
+        CHECK_GL(glReadPixels(0, 0, camera->m_nx, camera->m_ny, rgbType,
+                              hdrType, pixels.data()));
     }
 
     CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0));
