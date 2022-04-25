@@ -18,13 +18,14 @@ struct ZSParticleToZSGrid : INode {
   void p2g_apic_momentum(zs::CudaExecutionPolicy &cudaPol,
                          const typename ZenoParticles::particles_t &pars,
                          const typename ZenoPartition::table_t &partition,
-                         typename ZenoGrid::grid_t &grid) {
+                         typename ZenoGrid::grid_t &grid,
+                         bool isAffineAugmented = true) {
     using namespace zs;
     cudaPol(range(pars.size()),
             [pars = proxy<execspace_e::cuda>({}, pars),
              table = proxy<execspace_e::cuda>(partition),
-             grid = proxy<execspace_e::cuda>({}, grid),
-             dxinv = 1.f / grid.dx] __device__(size_t pi) mutable {
+             grid = proxy<execspace_e::cuda>({}, grid), dxinv = 1.f / grid.dx,
+             isAffineAugmented] __device__(size_t pi) mutable {
               using grid_t = RM_CVREF_T(grid);
               const auto Dinv = 4.f * dxinv * dxinv;
               auto pos = pars.pack<3>("pos", pi);
@@ -47,6 +48,8 @@ struct ZSParticleToZSGrid : INode {
                 const auto cellid = grid_t::coord_to_cellid(localIndex);
                 atomic_add(exec_cuda, &block("m", cellid), mass * W);
                 auto Cxixp = C * xixp;
+                if (!isAffineAugmented)
+                  Cxixp = Cxixp.zeros();
                 for (int d = 0; d != 3; ++d)
                   atomic_add(exec_cuda, &block("v", d, cellid),
                              W * mass * (vel[d] + Cxixp[d]));
@@ -409,13 +412,17 @@ struct ZSParticleToZSGrid : INode {
                       stepDt, grid);
         })(model.getElasticModel(), model.getAnisoElasticModel());
       else if (parObjPtr->category == ZenoParticles::surface) {
+        bool isAffineAugmented = zsgrid->transferScheme == "apic" ||
+                                 zsgrid->transferScheme == "aflip";
         auto &eles = parObjPtr->getQuadraturePoints();
-        p2g_apic_momentum(cudaPol, pars, partition, grid);
-        p2g_apic_momentum(cudaPol, eles, partition, grid);
+        p2g_apic_momentum(cudaPol, pars, partition, grid, isAffineAugmented);
+        p2g_apic_momentum(cudaPol, eles, partition, grid, isAffineAugmented);
         match([&](auto &elasticModel) {
           if (parObjPtr->category == ZenoParticles::surface) {
             p2g_surface_force(cudaPol, elasticModel, pars, eles, partition,
-                              stepDt, grid, zsgrid->transferScheme == "flip");
+                              stepDt, grid,
+                              zsgrid->transferScheme == "flip" ||
+                                  zsgrid->transferScheme == "aflip");
           }
         })(model.getElasticModel());
       } else if (parObjPtr->category != ZenoParticles::tracker) {
