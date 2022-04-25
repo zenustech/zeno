@@ -16,14 +16,12 @@ target_include_directories(zenovis PUBLIC
     $<INSTALL_INTERFACE:include/Zeno/zenovis/include>)
 
 if (ZENO_ENABLE_OPENEXR)
-    # https://github.com/AcademySoftwareFoundation/openvdb/blob/ac97c17ed88dcfb392a2262076a1c7b5056298a8/openvdb/openvdb/cmd/CMakeLists.txt
     # PENG-SENSEI: SO OPENEXR FXXK YOU!!!!
-    find_package(OpenEXR REQUIRED COMPONENTS IlmImf)
-    target_link_libraries(zenovis PRIVATE
-    $<TARGET_NAME_IF_EXISTS:OpenEXR::OpenEXR>
-    $<TARGET_NAME_IF_EXISTS:OpenEXR::IlmImf>
-    $<TARGET_NAME_IF_EXISTS:OpenEXR::IlmImfUtil>
-    )
+    find_package(IlmBase CONFIG REQUIRED)
+    # note: 2 targets were omitted.
+    target_link_libraries(main PRIVATE IlmBase::Iex IlmBase::Half IlmBase::Imath IlmBase::IexMath)
+    find_package(OpenEXR CONFIG REQUIRED)
+    target_link_libraries(main PRIVATE OpenEXR::IlmImf OpenEXR::IlmImfUtil OpenEXR::IlmImfConfig)
     target_compile_definitions(zenovis PRIVATE -DZENO_ENABLE_OPENEXR)
 endif()
 
