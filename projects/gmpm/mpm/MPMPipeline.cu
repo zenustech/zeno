@@ -372,7 +372,7 @@ struct UpdateZSGrid : INode {
                   block.set("vstar", ci, vstar);
 
                   /// cfl dt
-                  auto velSqr = vel.l2NormSqr();
+                  auto velSqr = vstar.l2NormSqr();
                   atomic_max(exec_cuda, ptr, velSqr);
                 }
               });

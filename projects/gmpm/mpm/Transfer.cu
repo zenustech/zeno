@@ -291,7 +291,8 @@ struct ZSParticleToZSGrid : INode {
           printf("THE HELL!");
         auto block = grid.block(blockno);
 
-        auto massW = arena.weight(loc) * mass;
+        auto W = arena.weight(loc);
+        auto massW = W * mass;
         auto Wgrad = arena.weightGradients(loc) * dxinv;
         const auto cellid = grid_t::coord_to_cellid(localIndex);
 
@@ -299,7 +300,7 @@ struct ZSParticleToZSGrid : INode {
         auto fdt = contrib * Wgrad;
         for (int d = 0; d != 3; ++d) {
           atomic_add(exec_cuda, &block("v", d, cellid), massW * vel[d]);
-          atomic_add(exec_cuda, &block("vstar", d, cellid), fdt[d]);
+          atomic_add(exec_cuda, &block("vstar", d, cellid), W * fdt[d]);
         }
       }
     });
@@ -629,10 +630,13 @@ struct ZSGridToZSParticle : INode {
                       C += W * Dinv * dyadic_prod(vs, xixp);
                     }
                     constexpr float flip = 0.99f;
+                    const auto beta = pars("beta", pi);
                     auto vp0 = pars.pack<3>("vel", pi);
                     pars.tuple<3>("vel", pi) = vstar + flip * (vp0 - vel);
                     pars.tuple<3 * 3>("C", pi) = C;
-                    pos += vstar * dt;
+                    // pos += vstar * dt;
+                    // beta=0->pure aflip
+                    pos += dt * (vstar + beta * flip * (vp0 - vel));
                     pars.tuple<3>("pos", pi) = pos;
 
                     auto F = pars.pack<3, 3>("F", pi);
@@ -707,14 +711,16 @@ struct ZSGridToZSParticle : INode {
                     }
                     // vel
                     constexpr float flip = 0.99f;
+                    const auto beta = pars("beta", pi);
                     auto vp0 = pars.pack<3>("vel", pi);
                     pars.tuple<3>("vel", pi) = vstar + flip * (vp0 - vel);
                     // C
                     auto skew = 0.5f * (C - C.transpose());
                     auto sym = 0.5f * (C + C.transpose());
-                    C = skew + 0.3f * sym;
+                    C = skew + sym;
                     pars.tuple<9>("C", pi) = C;
-                    pos += vstar * dt;
+                    // pos += vstar * dt;  // (a)flip
+                    pos += dt * (vstar + beta * flip * (vp0 - vel));
                     pars.tuple<3>("pos", pi) = pos;
                   });
         else
@@ -751,7 +757,7 @@ struct ZSGridToZSParticle : INode {
                     // C
                     auto skew = 0.5f * (C - C.transpose());
                     auto sym = 0.5f * (C + C.transpose());
-                    C = skew + 0.3f * sym;
+                    C = skew + sym;
                     pars.tuple<9>("C", pi) = C;
                     // pos
                     pos += vel * dt;
@@ -759,12 +765,13 @@ struct ZSGridToZSParticle : INode {
                   });
         auto &eles = parObjPtr->getQuadraturePoints();
         if (parObjPtr->category == ZenoParticles::surface) {
+          const zs::SmallString vtag = isFlipStyle ? "vstar" : "v";
           cudaPol(range(eles.size()),
                   [verts = proxy<execspace_e::cuda>({}, pars),
                    eles = proxy<execspace_e::cuda>({}, eles),
                    table = proxy<execspace_e::cuda>(partition),
                    grid = proxy<execspace_e::cuda>({}, grid), dt = stepDt,
-                   dxinv = 1.f / grid.dx] __device__(size_t pi) mutable {
+                   dxinv = 1.f / grid.dx, vtag] __device__(size_t pi) mutable {
                     using mat2 = zs::vec<float, 2, 2>;
                     using mat3 = zs::vec<float, 3, 3>;
                     using grid_t = RM_CVREF_T(grid);
@@ -783,13 +790,13 @@ struct ZSGridToZSParticle : INode {
                       auto xixp = arena.diff(loc);
                       auto W = arena.weight(loc);
                       auto vi = block.pack<3>(
-                          "v", grid_t::coord_to_cellid(localIndex));
+                          vtag, grid_t::coord_to_cellid(localIndex));
 
                       C += W * Dinv * dyadic_prod(vi, xixp);
                     }
                     auto skew = 0.5f * (C - C.transpose());
                     auto sym = 0.5f * (C + C.transpose());
-                    C = skew + 0.3f * sym;
+                    C = skew + sym;
                     eles.tuple<9>("C", pi) = C;
 
                     // section 4.3

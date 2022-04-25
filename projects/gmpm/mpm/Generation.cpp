@@ -331,7 +331,8 @@ struct ToZSParticles : INode {
 
     // attributes
     std::vector<zs::PropertyTag> tags{{"mass", 1}, {"pos", 3}, {"vel", 3},
-                                      {"vol", 1},  {"C", 9},   {"vms", 1}};
+                                      {"vol", 1},  {"C", 9},   {"vms", 1},
+                                      {"beta", 1} /*asflip, for positional adjustment*/};
     std::vector<zs::PropertyTag> eleTags{
         {"mass", 1}, {"pos", 3},   {"vel", 3},
         {"vol", 1},  {"C", 9},     {"F", 9},
@@ -457,7 +458,8 @@ struct ToZSParticles : INode {
         // plasticity
         if (hasLogJp)
           pars("logJp", pi) = -0.04;
-        pars("vms", pi) = 0; // vms
+        pars("vms", pi) = 0;  // vms
+        pars("beta", pi) = 0; // for positional adjustment
 
         // additional attributes
         for (auto &prop : auxAttribs) {
