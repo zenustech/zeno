@@ -33,10 +33,10 @@ jobs:
       matrix:
         include:
         - os: ubuntu-18.04
-          triplet: x64-linux
+          #triplet: x64-linux
           cxx: g++-9
         - os: windows-2022
-          triplet: x64-windows
+          #triplet: x64-windows
 
     runs-on: ${{ matrix.os }}
     needs: [check]
