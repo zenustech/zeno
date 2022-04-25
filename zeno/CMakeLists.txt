@@ -21,7 +21,7 @@ if (ZENO_BENCHMARKING)
 endif()
 
 if (ZENO_PARALLEL_STL)
-    if (MSVC)
+    if (NOT MSVC)
         find_package(TBB)
         if (TBB_FOUND)
             target_link_libraries(zeno PRIVATE TBB::tbb)

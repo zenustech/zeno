@@ -1,3 +1,5 @@
+enable_language(C)
+
 target_include_directories(zeno PRIVATE .)
 
 find_package(Eigen3 REQUIRED)
