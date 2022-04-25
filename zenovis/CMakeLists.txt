@@ -16,8 +16,32 @@ target_include_directories(zenovis PUBLIC
     $<INSTALL_INTERFACE:include/Zeno/zenovis/include>)
 
 if (ZENO_ENABLE_OPENEXR)
-    find_package(OpenEXR REQUIRED)
-    target_link_libraries(zenovis PRIVATE OpenEXR::OpenEXR)
+    # https://github.com/AcademySoftwareFoundation/openvdb/blob/ac97c17ed88dcfb392a2262076a1c7b5056298a8/openvdb/openvdb/cmd/CMakeLists.txt
+    # PENG-SENSEI: SO OPENEXR FXXK YOU!!!!
+    find_package(Imath CONFIG)
+    if (NOT TARGET Imath::Imath)
+      find_package(IlmBase REQUIRED COMPONENTS Half Iex IlmThread Imath)
+    endif()
+    if (NOT TARGET Imath::Imath)
+      find_package(OpenEXR REQUIRED COMPONENTS IlmImf)
+    else()
+      find_package(OpenEXR CONFIG REQUIRED)
+    endif()
+    target_link_libraries(zenovis PRIVATE
+    # For Imath/OpenEXR v3.X
+    $<TARGET_NAME_IF_EXISTS:Imath::Imath>
+    $<TARGET_NAME_IF_EXISTS:OpenEXR::OpenEXR>
+    $<TARGET_NAME_IF_EXISTS:OpenEXR::OpenEXRUtil>
+    $<TARGET_NAME_IF_EXISTS:OpenEXR::IlmThread>
+    $<TARGET_NAME_IF_EXISTS:OpenEXR::Iex>
+    # For IlmBase/OpenEXR v2.X
+    $<TARGET_NAME_IF_EXISTS:IlmBase::Half>
+    $<TARGET_NAME_IF_EXISTS:OpenEXR::IlmImf>
+    $<TARGET_NAME_IF_EXISTS:OpenEXR::IlmImfUtil>
+    $<TARGET_NAME_IF_EXISTS:IlmBase::IlmThread>
+    $<TARGET_NAME_IF_EXISTS:IlmBase::Iex>
+    $<TARGET_NAME_IF_EXISTS:IlmBase::Imath>
+    )
     target_compile_definitions(zenovis PRIVATE -DZENO_ENABLE_OPENEXR)
 endif()
 
