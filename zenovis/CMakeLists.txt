@@ -1,7 +1,5 @@
 option(ZENO_ENABLE_OPENEXR "Enable OpenEXR in ZENO for HDR images I/O" OFF)
 
-enable_language(C)
-
 file(GLOB_RECURSE source CONFIGURE_DEPENDS include/*.h src/*.cpp)
 file(GLOB_RECURSE glad_source CONFIGURE_DEPENDS glad/include/*.h glad/src/*.c)
 file(GLOB_RECURSE stbi_source CONFIGURE_DEPENDS stbi/include/*.h stbi/src/*.c)

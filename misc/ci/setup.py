@@ -9,7 +9,7 @@ if sys.platform == 'linux':
     ])
     subprocess.check_call([
         'sudo', 'apt-get', 'install', '-y',
-        'autoconf-archive',
+        'autoconf-archive', 'libcgal-dev',
     ])
 
-shutil.move(os.path.join('misc', 'vcpkg.json'), 'vcpkg.json')
+shutil.move(os.path.join('misc', 'ci', 'vcpkg.json'), 'vcpkg.json')
