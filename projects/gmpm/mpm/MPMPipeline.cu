@@ -327,7 +327,7 @@ struct UpdateZSGrid : INode {
     velSqr[0] = 0;
     auto cudaPol = cuda_exec().device(0);
 
-    if (zsgrid->transferScheme == "apic")
+    if (zsgrid->isPicStyle())
       cudaPol(Collapse{partition.size(), ZenoGrid::grid_t::block_space()},
               [grid = proxy<execspace_e::cuda>({}, grid),
                /*table = proxy<execspace_e::cuda>(partition), */ stepDt, accel,
@@ -353,11 +353,10 @@ struct UpdateZSGrid : INode {
                   atomic_max(exec_cuda, ptr, velSqr);
                 }
               });
-    else if (zsgrid->transferScheme == "flip" ||
-             zsgrid->transferScheme == "aflip")
+    else if (zsgrid->isFlipStyle())
       cudaPol(Collapse{partition.size(), ZenoGrid::grid_t::block_space()},
               [grid = proxy<execspace_e::cuda>({}, grid), stepDt, accel,
-               ptr = velSqr.data()] __device__(int bi, int ci) mutable {
+               ptr = velSqr.data()] __device__(auto bi, auto ci) mutable {
                 auto block = grid.block(bi);
                 auto mass = block("m", ci);
                 if (mass != 0.f) {

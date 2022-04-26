@@ -413,17 +413,15 @@ struct ZSParticleToZSGrid : INode {
                       stepDt, grid);
         })(model.getElasticModel(), model.getAnisoElasticModel());
       else if (parObjPtr->category == ZenoParticles::surface) {
-        bool isAffineAugmented = zsgrid->transferScheme == "apic" ||
-                                 zsgrid->transferScheme == "aflip";
+        bool isAffineAugmented = zsgrid->isAffineAugmented();
+        bool isFlipStyle = zsgrid->isFlipStyle();
         auto &eles = parObjPtr->getQuadraturePoints();
         p2g_apic_momentum(cudaPol, pars, partition, grid, isAffineAugmented);
         p2g_apic_momentum(cudaPol, eles, partition, grid, isAffineAugmented);
         match([&](auto &elasticModel) {
           if (parObjPtr->category == ZenoParticles::surface) {
             p2g_surface_force(cudaPol, elasticModel, pars, eles, partition,
-                              stepDt, grid,
-                              zsgrid->transferScheme == "flip" ||
-                                  zsgrid->transferScheme == "aflip");
+                              stepDt, grid, isFlipStyle);
           }
         })(model.getElasticModel());
       } else if (parObjPtr->category != ZenoParticles::tracker) {
@@ -675,8 +673,7 @@ struct ZSGridToZSParticle : INode {
                   pars.tuple<3>("pos", pi) = pos;
                 });
       } else if (parObjPtr->category != ZenoParticles::mpm) {
-        bool isFlipStyle = zsgrid->transferScheme == "flip" ||
-                           zsgrid->transferScheme == "aflip";
+        bool isFlipStyle = zsgrid->isFlipStyle();
         if (isFlipStyle)
           cudaPol(range(pars.size()),
                   [pars = proxy<execspace_e::cuda>({}, pars),
@@ -707,7 +704,7 @@ struct ZSGridToZSParticle : INode {
                       auto vs = block.pack<3>(
                           "vstar", grid_t::coord_to_cellid(localIndex));
                       vstar += vs * W;
-                      C += W * Dinv * dyadic_prod(vstar, xixp);
+                      C += W * Dinv * dyadic_prod(vs, xixp);
                     }
                     // vel
                     constexpr float flip = 0.99f;

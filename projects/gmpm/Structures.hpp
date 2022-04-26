@@ -190,6 +190,19 @@ struct ZenoGrid : IObjectClone<ZenoGrid> {
   auto &get() noexcept { return grid; }
   const auto &get() const noexcept { return grid; }
 
+  bool isPicStyle() const noexcept { return transferScheme == "apic"; }
+  bool hasPositionalAdjustment() const noexcept {
+    return transferScheme == "asflip";
+  }
+  bool isFlipStyle() const noexcept {
+    return transferScheme == "flip" || transferScheme == "aflip" ||
+           transferScheme == "sflip" || transferScheme == "asflip";
+  }
+  bool isAffineAugmented() const noexcept {
+    return transferScheme == "apic" || transferScheme == "aflip" ||
+           transferScheme == "asflip";
+  }
+
   grid_t grid;
   std::string transferScheme; //
   std::shared_ptr<ZenoPartition> partition;
