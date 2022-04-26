@@ -7,6 +7,7 @@
 
 namespace zeno {
 
+std::shared_ptr<VDBGrid> readGenericVDBGrid(const std::string &fn);
 std::shared_ptr<VDBGrid> readGenericVDBGrid(const std::string &fn) {
   using GridTypes = std::tuple
     < openvdb::points::PointDataGrid

@@ -89,8 +89,12 @@ typedef long int j_voidint;
 typedef int	 j_voidint;
 #endif 
 
+#ifndef UBYTE_MAX
 #define UBYTE_MAX	255
+#endif
+#ifndef UINT16_MAX
 #define UINT16_MAX	65535
+#endif
 
 #define FABS(a) (((a)<0)?(-(a)):(a))
 #define LOG2(a) (log(a)/log(2))

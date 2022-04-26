@@ -228,7 +228,7 @@ If you have trouble setting up developing environment, please let us help by ope
 
 <!-- * `assets` - binary assets for some examples to run. -->
 * `docs` - documentations for Zeno developers and contributors.
-* `external` - third-party libraries of Zeno as submodules.
+<!-- * `external` - third-party libraries of Zeno as submodules. -->
 <!-- * `graphs` - example graphs to demostrate the use of Zeno. -->
 * `misc` - some random files and scripts used by CI.
 * `projects` - source code of Zeno extension modules.
@@ -246,7 +246,7 @@ We generally follows the [Google C++ Style Guide](https://google.github.io/style
 - We use `T const &t` instead of `const T& t`
 - We allow implicit conversions when used properly
 - We allow exceptions as we widely adopted smart pointers for exception-safety
-- We avoid using STL streams (`std::cout` and so on) -- use `zeno::format` instead
+- We avoid using STL streams (`std::cout` and so on) -- use `zeno::format` and `zeno::log_info` instead
 - We don't add `Copyright blah blah` to codebase since we're programmers, not lawyers
 - We mainly use `smallCamelCase` for functions, `underline_case` for variables
 - We don't add trialling underscope like `m_google_style_`, we use `m_zeno_style`

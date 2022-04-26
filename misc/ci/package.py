@@ -9,7 +9,6 @@ outpath = os.path.join('build', 'out')
 os.mkdir(outpath)
 if sys.platform == 'win32':
     shutil.move(os.path.join(binpath, 'zenoedit.exe'), os.path.join(outpath, 'zenoedit.exe'))
-    shutil.move(os.path.join(binpath, 'zenorunner.exe'), os.path.join(outpath, 'zenorunner.exe'))
     for target in os.listdir(binpath):
         if target.endswith('.dll'):
             shutil.move(os.path.join(binpath, target), os.path.join(outpath, target))
@@ -36,7 +35,7 @@ elif sys.platform == 'linux':
     os.mkdir(os.path.join(outpath, 'usr', 'lib'))
     os.mkdir(os.path.join(outpath, 'usr', 'bin'))
     shutil.copytree(os.path.join('misc', 'ci', 'share'), os.path.join(outpath, 'usr', 'share'))
-    for target in ['zenoedit', 'zenorunner']:
+    for target in ['zenoedit']:
         shutil.move(os.path.join(binpath, target), os.path.join(outpath, 'usr', 'bin', target))
     for target in os.listdir(binpath):
         if 'so' in target.split('.'):
@@ -44,7 +43,7 @@ elif sys.platform == 'linux':
     subprocess.check_call([
         '../linuxdeployqt',
         os.path.join(outpath, 'usr', 'share', 'applications', 'zeno.desktop'),
-        '-executable=' + os.path.join(outpath, 'usr', 'bin', 'zenorunner'),
+        #'-executable=' + os.path.join(outpath, 'usr', 'bin', 'zenorunner'),
         '-bundle-non-qt-libs',
     ])
     shutil.copyfile(os.path.join('misc', 'ci', 'launch', '000_start.sh'), os.path.join(outpath, '000_start.sh'))

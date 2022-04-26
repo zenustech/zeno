@@ -1,12 +1,20 @@
+import os
 import sys
 import subprocess
+import shutil
 
 if sys.platform == 'linux':
+    print('linux detected')
     subprocess.check_call([
         'sudo', 'apt-get', 'update', '-y',
     ])
     subprocess.check_call([
         'sudo', 'apt-get', 'install', '-y',
-        'autoconf-archive',
+        'autoconf-archive', 'libcgal-dev',
     ])
+elif sys.platform == 'win32':
+    print('windows detected')
+else:
+    assert False, sys.platform
 
+shutil.move(os.path.join('misc', 'ci', 'vcpkg.json'), 'vcpkg.json')

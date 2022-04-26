@@ -10,7 +10,7 @@
 //points, triangles, quads, 4, 4);
 
 namespace zeno {
-void subtractMesh(float dt, MeshObject* a, MeshObject* b,
+static void subtractMesh(float dt, MeshObject* a, MeshObject* b,
                   ParticlesObject* c)
 {
     size_t n = a->vertices.size();

@@ -35,22 +35,13 @@ If you succeed to build ZenoFX, let's move on to build other more complicated ex
 ### Arch Linux (recommended)
 
 ```bash
-pacman -S tbb openvdb eigen3 cgal lapack openblas alembic
+pacman -S tbb openvdb eigen openexr cgal lapack openblas hdf5
 ```
 
 ### Ubuntu
 
 ```bash
-sudo apt-get install -y libtbb-dev libopenvdb-dev libeigen3-dev libcgal-dev liblapack-dev libopenblas-dev
-
-# Install alembic from source:
-sudo apt-get install -y libhdf5-dev
-git clone https://github.com/zenustech/alembic.git --depth=1
-cd alembic
-cmake -B build -DCMAKE_BUILD_TYPE=Release
-cmake --build build --parallel 4
-sudo cmake --build build --target install
-cd ..
+sudo apt-get install -y libtbb-dev libopenvdb-dev libeigen3-dev libopenexr-dev libcgal-dev liblapack-dev libopenblas-dev libhdf5-dev
 ```
 
 > It's highly recommended to use Ubuntu 20.04 or above, otherwise you have to build some libraries from source.
@@ -80,7 +71,7 @@ cd vcpkg
 .\vcpkg install cgal:x64-windows
 .\vcpkg install lapack:x64-windows
 .\vcpkg install openblas:x64-windows
-.\vcpkg install alembic[hdf5]:x64-windows
+.\vcpkg install hdf5:x64-windows
 ```
 
 > Notice that you must install the `English Pack` for VS2019 for vcpkg to work. This can be done by clicking the `Language` panel in the VS2019 installer. (JOKE: the maintainer of vcpkg speaks Chinese too..)
@@ -108,15 +99,40 @@ cmake -B build -DCMAKE_TOOLCHAIN_FILE="C:/vcpkg/scripts/buildsystems/vcpkg.cmake
 The full-featured version of Zeno can be built as follows:
 
 ```bash
-cmake -B build -DCMAKE_BUILD_TYPE=Release -DZENO_WITH_ZenoFX:BOOL=ON -DZENOFX_ENABLE_OPENVDB:BOOL=ON -DZENOFX_ENABLE_LBVH:BOOL=ON -DZENO_WITH_zenvdb:BOOL=ON -DZENO_WITH_FastFLIP:BOOL=ON -DZENO_WITH_FEM:BOOL=ON -DZENO_WITH_Rigid:BOOL=ON -DZENO_WITH_cgmesh:BOOL=ON -DZENO_WITH_oldzenbase:BOOL=ON -DZENO_WITH_TreeSketch:BOOL=ON -DZENO_WITH_Skinning:BOOL=ON -DZENO_WITH_Euler:BOOL=ON -DZENO_WITH_Functional:BOOL=ON -DZENO_WITH_LSystem:BOOL=ON -DZENO_WITH_Alembic:BOOL=ON -DZENO_WITH_gmpm:BOOL=ON -DZENO_WITH_mesher:BOOL=ON
+cmake -B build -DCMAKE_BUILD_TYPE=Release -DZENO_WITH_ZenoFX:BOOL=ON -DZENOFX_ENABLE_OPENVDB:BOOL=ON -DZENOFX_ENABLE_LBVH:BOOL=ON -DZENO_ENABLE_OPENEXR:BOOL=ON -DZENO_WITH_zenvdb:BOOL=ON -DZENO_WITH_FastFLIP:BOOL=ON -DZENO_WITH_FEM:BOOL=ON -DZENO_WITH_Rigid:BOOL=ON -DZENO_WITH_cgmesh:BOOL=ON -DZENO_WITH_oldzenbase:BOOL=ON -DZENO_WITH_TreeSketch:BOOL=ON -DZENO_WITH_Skinning:BOOL=ON -DZENO_WITH_Euler:BOOL=ON -DZENO_WITH_Functional:BOOL=ON -DZENO_WITH_LSystem:BOOL=ON -DZENO_WITH_Alembic:BOOL=ON
 ```
 
 > See also `misc/run.sh`.
 
-### Enabling GPU extensions
+### Enabling CUDA extensions
 
 NVIDIA users may additionally specify `-DZENO_WITH_gmpm:BOOL=ON -DZENO_WITH_mesher:BOOL=ON` in arguments for building CUDA support.
 
 > NOTE: **CUDA 11.x requried**.
 
 > NOTE: ZenoFX must be enabled when gmpm is enabled, because gmpm depends on ZenoFX.
+
+### Using CMake presets (experimental)
+
+Latest version of CMake supports `CMakePresets.json` and `--preset`, so you may use the following command instead of above huge command lines:
+
+```bash
+cmake --preset default
+cmake --build --preset default
+```
+
+And for people who would like to build with CUDA support:
+
+```bash
+cmake --preset cuda
+cmake --build --preset cuda
+```
+
+The `default` or `cuda` here is called the preset name, see `CMakePresets.json` at the root of project directory for more presets and their details.
+
+Note that you may still specify extra arguments under preset mode, for example:
+
+```bash
+cmake --preset default -G Ninja -DCMAKE_INSTALL_PREFIX:BOOL=/opt/zeno
+cmake --build --preset default --parallel
+```

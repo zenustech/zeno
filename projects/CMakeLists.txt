@@ -20,6 +20,16 @@ set(ZENO_EXTENSIONS
     )
 add_subdirectory(SharedExtension)
 
+if (ZENO_NO_WARNING)
+    set(CMAKE_CXX_FLAGS "${ZENO_OLD_CXX_FLAGS}")
+    if (CMAKE_CXX_COMPILER_ID MATCHES "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w")
+    endif()
+    if (CMAKE_C_COMPILER_ID MATCHES "GNU" OR CMAKE_C_COMPILER_ID MATCHES "Clang" OR CMAKE_C_COMPILER_ID MATCHES "MSVC")
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -w")
+    endif()
+endif()
+
 foreach (name IN ITEMS ${ZENO_EXTENSIONS})
     option(ZENO_WITH_${name} "Build ZENO with extension: ${name}" OFF)
     if (ZENO_WITH_${name})

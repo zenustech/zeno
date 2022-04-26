@@ -14,7 +14,7 @@
 #include <zeno/ZenoInc.h>
 
 namespace zeno {
-openvdb::points::PointDataGrid::Ptr particleArrayToGrid
+static openvdb::points::PointDataGrid::Ptr particleArrayToGrid
     ( std::vector<openvdb::Vec3f> const &positions
     , std::vector<openvdb::Vec3f> const &velocitys
     , float dx

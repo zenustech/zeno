@@ -11,13 +11,13 @@ namespace _implObjectCodec {
 std::shared_ptr<LightObject> decodeLightObject(const char *it);
 std::shared_ptr<LightObject> decodeLightObject(const char *it) {
     auto obj = std::make_shared<LightObject>();
-    it = std::copy_n(it, sizeof(*obj), (char *)static_cast<LightData *>(obj.get()));
+    it = std::copy_n(it, sizeof(LightData), (char *)static_cast<LightData *>(obj.get()));
     return obj;
 }
 
 bool encodeLightObject(LightObject const *obj, std::back_insert_iterator<std::vector<char>> it);
 bool encodeLightObject(LightObject const *obj, std::back_insert_iterator<std::vector<char>> it) {
-    it = std::copy_n((char const *)static_cast<LightData const *>(obj), sizeof(*obj), it);
+    it = std::copy_n((char const *)static_cast<LightData const *>(obj), sizeof(LightData), it);
     return true;
 }
 

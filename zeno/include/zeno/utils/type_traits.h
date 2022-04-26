@@ -4,8 +4,12 @@
 #include <memory>
 #include <variant>
 #include <functional>
+#include <utility>
 
 namespace zeno {
+
+template <class T, class...>
+using first_t = T;
 
 template <class T>
 struct is_tuple : std::false_type {
@@ -111,6 +115,11 @@ struct remove_cvref : std::remove_cv<std::remove_reference_t<T>> {
 template <class T>
 using remove_cvref_t = typename remove_cvref<T>::type;
 
+#define ZENO_RMCVREF(...) ::zeno::remove_cvref_t<decltype(__VA_ARGS__)>
+#define ZENO_DECAY(...) std::decay_t<decltype(__VA_ARGS__)>
+#define ZENO_FWD(x) std::forward<decltype(x)>(x)
+#define ZENO_CRTP(Derived, Base, ...) Derived : Base<Derived __VA_ARGS__>
+
 template <class T>
 struct type_identity {
     using type = T;
@@ -118,6 +127,14 @@ struct type_identity {
 
 template <class T>
 using type_identity_t = typename type_identity<T>::type;
+
+template <class ...Ts>
+struct type_identity_list {
+    using type = std::tuple<type_identity<Ts>...>;
+};
+
+template <class ...Ts>
+using type_identity_list_t = typename type_identity_list<Ts...>::type;
 
 template <auto Val>
 struct value_constant : std::integral_constant<decltype(Val), Val> {
@@ -138,6 +155,16 @@ inline constexpr bool static_for(Lambda const &f) {
         }
     }
     return false;
+}
+
+template <class To, class T>
+inline constexpr To implicit_cast(T &&t) {
+    return std::forward<T>(t);
+}
+
+template <class T>
+inline constexpr T as_copy(T const &t) {
+    return t;
 }
 
 }

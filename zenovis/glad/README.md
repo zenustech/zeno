@@ -8,7 +8,7 @@ If you encounter problems with glad, try run following scripts yourself:
 
 ```
 pip install glad
-python -m glad --out-path . --generator c --api gl=3.3 --profile core
+python -m glad --out-path . --generator c --api gl=3.2 --profile core
 ```
 
 ### Tips
