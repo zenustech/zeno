@@ -352,7 +352,15 @@ static void shadowPass()
     }
   }
 }
-
+glm::mat4 MakeInfReversedZProjRH(float fovY_radians, float aspectWbyH, float zNear)
+{
+    float f = 1.0f / tan(fovY_radians / 2.0f);
+    return glm::mat4(
+        f / aspectWbyH, 0.0f,  0.0f,  0.0f,
+                  0.0f,    f,  0.0f,  0.0f,
+                  0.0f, 0.0f,  0.0f, -1.0f,
+                  0.0f, 0.0f, zNear,  0.0f);
+}
 
 static void drawSceneDepthSafe(float aspRatio, float sampleweight, bool reflect, float isDepthPass, bool _show_grid=false)
 {
@@ -365,26 +373,42 @@ static void drawSceneDepthSafe(float aspRatio, float sampleweight, bool reflect,
     // std::cout<<"camUp:"<<g_camUp.x<<","<<g_camUp.y<<","<<g_camUp.z<<std::endl;
     //CHECK_GL(glDisable(GL_MULTISAMPLE));
       CHECK_GL(glClearColor(bgcolor.r, bgcolor.g, bgcolor.b, 0.0f));
-      CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
+      CHECK_GL(glClear(GL_COLOR_BUFFER_BIT ));
     
       
-      float range[] = {g_near, 500, 1000, 2000, 8000, g_far};
-      for(int i=5; i>=1; i--)
-      {
-        CHECK_GL(glClearDepth(1));
-        CHECK_GL(glClear(GL_DEPTH_BUFFER_BIT));
-        proj = glm::perspective(glm::radians(g_fov), aspRatio/*(float)(nx * 1.0 / ny)*/, range[i-1], range[i]);
+      // float range[] = {g_near, 500, 1000, 2000, 8000, g_far};
+      // for(int i=5; i>=1; i--)
+      // {
+      //   CHECK_GL(glClearDepth(1));
+      //   CHECK_GL(glClear(GL_DEPTH_BUFFER_BIT));
+      //   proj = glm::perspective(glm::radians(g_fov), aspRatio/*(float)(nx * 1.0 / ny)*/, range[i-1], range[i]);
         
-        for (auto const &[key, gra]: current_frame_data()->graphics) {
-          gra->setMultiSampleWeight(sampleweight);
-          gra->draw(reflect, isDepthPass);
-        }
-        if (isDepthPass != 1.0 && _show_grid) {
-          axis->draw(false, 0.0);
-          grid->draw(false, 0.0);
-        }
+      //   for (auto const &[key, gra]: current_frame_data()->graphics) {
+      //     gra->setMultiSampleWeight(sampleweight);
+      //     gra->draw(reflect, isDepthPass);
+      //   }
+      //   if (isDepthPass != 1.0 && _show_grid) {
+      //     axis->draw(false, 0.0);
+      //     grid->draw(false, 0.0);
+      //   }
+      // }
+      CHECK_GL(glClearDepth(0));
+      CHECK_GL(glClear(GL_DEPTH_BUFFER_BIT));
+      glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE);
+      glEnable(GL_DEPTH_TEST);
+      glDepthFunc(GL_GEQUAL);
+      proj = MakeInfReversedZProjRH(glm::radians(g_fov), aspRatio, 0.01f);
+      for (auto const &[key, gra]: current_frame_data()->graphics) {
+        gra->setMultiSampleWeight(sampleweight);
+        gra->draw(reflect, isDepthPass);
       }
-
+      if (isDepthPass != 1.0 && _show_grid) {
+        axis->draw(false, 0.0);
+        grid->draw(false, 0.0);
+      }
+      CHECK_GL(glClearDepth(1));
+      glClipControl(GL_LOWER_LEFT, GL_NEGATIVE_ONE_TO_ONE);
+      glDepthFunc(GL_LESS);
 }
 extern void setReflectionViewID(int i);
 extern bool renderReflect(int i);
