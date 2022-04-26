@@ -9,7 +9,6 @@
 namespace zenovis {
 
 struct Camera {
-    glm::vec3 bgcolor{0.23f, 0.23f, 0.23f};
     glm::mat4x4 view{1}, proj{1};
 
     int m_nx{512}, m_ny{512};
@@ -55,17 +54,6 @@ struct Camera {
         //m_near = 0.1;
         //m_far = 20000;
     //}
-
-    bool smooth_shading = false;
-    bool normal_check = false;
-
-    void set_smooth_shading(bool smooth) {
-        smooth_shading = smooth;
-    }
-
-    void set_normal_check(bool check) {
-        normal_check = check;
-    }
 
     float getAspect() const {
         return (float)m_nx / (float)m_ny;
@@ -158,17 +146,12 @@ struct Camera {
         pro->set_uniform("mInvView", glm::inverse(view));
         pro->set_uniform("mInvProj", glm::inverse(proj));
         pro->set_uniform("mPointScale", m_point_scale);
-        pro->set_uniform("mSmoothShading", smooth_shading);
-        pro->set_uniform("mNormalCheck", normal_check);
         pro->set_uniform("mCameraRadius", m_camRadius);
         pro->set_uniform("mCameraCenter", m_camCenter);
         pro->set_uniform("mGridScale", m_grid_scale);
         pro->set_uniform("mGridBlend", m_grid_blend);
         pro->set_uniform("mSampleWeight", m_sample_weight);
     }
-
-    bool show_grid = true;
-    bool render_wireframe = false;
 
     int _m_default_num_samples = 8;
     int _m_ready_num_samples = -1;

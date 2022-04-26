@@ -4,6 +4,7 @@
 #include <zenovis/IGraphic.h>
 #include <zenovis/Scene.h>
 #include <zenovis/Session.h>
+#include <zenovis/DrawOptions.h>
 #include <zenovis/GraphicsManager.h>
 #include <zenovis/opengl/common.h>
 #include <zeno/utils/format.h>
@@ -38,7 +39,7 @@ void Session::set_window_size(int nx, int ny) {
 }
 
 void Session::set_show_grid(bool show_grid) {
-    impl->scene->camera->show_grid = show_grid;
+    impl->scene->drawOptions->show_grid = show_grid;
 }
 
 void Session::set_num_samples(int num_samples) {
@@ -46,15 +47,15 @@ void Session::set_num_samples(int num_samples) {
 }
 
 void Session::set_normal_check(bool check) {
-    impl->scene->camera->normal_check = check;
+    impl->scene->drawOptions->normal_check = check;
 }
 
 void Session::set_render_wireframe(bool render_wireframe) {
-    impl->scene->camera->render_wireframe = render_wireframe;
+    impl->scene->drawOptions->render_wireframe = render_wireframe;
 }
 
 void Session::set_smooth_shading(bool smooth) {
-    impl->scene->camera->smooth_shading = smooth;
+    impl->scene->drawOptions->smooth_shading = smooth;
 }
 
 void Session::new_frame() {
@@ -132,11 +133,11 @@ void Session::set_perspective(std::array<float, 16> const &viewArr,
 }
 
 void Session::set_background_color(float r, float g, float b) {
-    impl->scene->camera->bgcolor = glm::vec3(r, g, b);
+    impl->scene->drawOptions->bgcolor = glm::vec3(r, g, b);
 }
 
 std::tuple<float, float, float> Session::get_background_color() {
-    auto c = impl->scene->camera->bgcolor;
+    auto c = impl->scene->drawOptions->bgcolor;
     return {c[0], c[1], c[2]};
 }
 

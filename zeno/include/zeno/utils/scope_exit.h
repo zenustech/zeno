@@ -72,8 +72,8 @@ public:
     explicit scope_finalizer() : guard(finalize_functor{static_cast<Derived &>(*this)}) {
     }
 
-    scope_finalizer(scope_finalizer const &) = default;
-    scope_finalizer &operator=(scope_finalizer const &) = default;
+    scope_finalizer(scope_finalizer const &) = delete;
+    scope_finalizer &operator=(scope_finalizer const &) = delete;
 
     bool has_value() const {
         return guard.has_value();
@@ -87,5 +87,44 @@ public:
         return guard.reset();
     }
 };
+
+
+template <class T>
+class scope_modify : public scope_finalizer<scope_modify<T>> {
+    T &dst;
+    T old;
+
+public:
+    template <class U = T>
+    scope_modify(T &dst_, U &&val_)
+        : dst(dst_), old(std::exchange(dst_, std::forward<U>(val_))) {
+    }
+
+    void _scope_finalize() {
+        dst = std::move(old);
+    }
+};
+
+
+template <class T, class U = T, class = std::enable_if_t<!std::is_const_v<T>>>
+scope_modify(T &, U &&) -> scope_modify<T>;
+
+template <class T>
+class scope_bind : public scope_finalizer<scope_bind<T>> {
+    T dst;
+
+public:
+    template <class ...Args>
+    scope_bind(T &dst_, Args &&...args) : dst(dst_) {
+        dst.bind(std::forward<Args>(args)...);
+    }
+
+    void _scope_finalize() {
+        dst.unbind();
+    }
+};
+
+template <class T>
+scope_bind(T &) -> scope_bind<T>;
 
 }

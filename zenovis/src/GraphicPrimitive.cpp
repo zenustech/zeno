@@ -11,6 +11,7 @@
 #include <zeno/utils/ticktock.h>
 #include <zeno/utils/vec.h>
 #include <zenovis/Camera.h>
+#include <zenovis/DrawOptions.h>
 #include <zenovis/DepthPass.h>
 #include <zenovis/EnvmapManager.h>
 #include <zenovis/IGraphic.h>
@@ -641,7 +642,7 @@ struct GraphicPrimitive final : IGraphicDraw {
             }
         }
     }
-    virtual void draw(bool reflect, bool depthPass) override {
+    virtual void draw() override {
         if (prim_has_mtl)
             scene->envmapMan->ensureGlobalMapExist();
 
@@ -767,6 +768,9 @@ struct GraphicPrimitive final : IGraphicDraw {
             triObj.prog->use();
             scene->camera->set_program_uniforms(triObj.prog);
 
+            triObj.prog->set_uniform("mSmoothShading", scene->drawOptions->smooth_shading);
+            triObj.prog->set_uniform("mNormalCheck", scene->drawOptions->normal_check);
+
             auto &lights = scene->lightCluster->lights;
             triObj.prog->set_uniformi("lightNum", lights.size());
             for (int lightNo = 0; lightNo < lights.size(); ++lightNo) {
@@ -886,7 +890,7 @@ struct GraphicPrimitive final : IGraphicDraw {
                     }
                 }
 
-                if (reflect) {
+                if (scene->drawOptions->passReflect) {
                     triObj.prog->set_uniform("reflectPass", 1.0f);
                 } else {
                     triObj.prog->set_uniform("reflectPass", 0.0f);
@@ -916,7 +920,8 @@ struct GraphicPrimitive final : IGraphicDraw {
                         scene->mReflectivePass->getReflectMaps()[i]));
                     texOcp++;
                 }
-                triObj.prog->set_uniform("depthPass", depthPass);
+                //TODO: depthPass seems unused in the shader? remove it?
+                triObj.prog->set_uniform("depthPass", scene->drawOptions->passIsDepthPass);
                 triObj.prog->set_uniformi("depthBuffer", texOcp);
                 CHECK_GL(glActiveTexture(GL_TEXTURE0 + texOcp));
                 CHECK_GL(glBindTexture(GL_TEXTURE_RECTANGLE,
@@ -936,7 +941,7 @@ struct GraphicPrimitive final : IGraphicDraw {
                                         GL_UNSIGNED_INT, /*first=*/0));
             }
 
-            if (scene->camera->render_wireframe) {
+            if (scene->drawOptions->render_wireframe) {
                 CHECK_GL(glEnable(GL_POLYGON_OFFSET_LINE));
                 CHECK_GL(glPolygonOffset(-1, -1));
                 CHECK_GL(glPolygonMode(GL_FRONT_AND_BACK, GL_LINE));

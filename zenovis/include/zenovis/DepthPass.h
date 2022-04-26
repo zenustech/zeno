@@ -9,6 +9,7 @@
 #include <zenovis/ReflectivePass.h>
 #include <zenovis/Scene.h>
 #include <zenovis/ShaderManager.h>
+#include <zenovis/DrawOptions.h>
 #include <zenovis/opengl/shader.h>
 #include <zenovis/opengl/vao.h>
 
@@ -311,7 +312,7 @@ void main(void)
                 CHECK_GL(glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, msfborgb));
                 CHECK_GL(glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, msfbod));
                 CHECK_GL(glDrawBuffer(GL_COLOR_ATTACHMENT0));
-                CHECK_GL(glClearColor(camera()->bgcolor.r, camera()->bgcolor.g, camera()->bgcolor.b, 0.0f));
+                CHECK_GL(glClearColor(scene->drawOptions->bgcolor.r, scene->drawOptions->bgcolor.g, scene->drawOptions->bgcolor.b, 0.0f));
                 CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
                 scene->my_paint_graphics(1, false);
                 CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, tonemapfbo));
@@ -361,7 +362,7 @@ void main(void)
             CHECK_GL(glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, msfborgb));
             CHECK_GL(glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, msfbod));
             CHECK_GL(glDrawBuffer(GL_COLOR_ATTACHMENT0));
-            CHECK_GL(glClearColor(camera()->bgcolor.r, camera()->bgcolor.g, camera()->bgcolor.b, 0.0f));
+            CHECK_GL(glClearColor(scene->drawOptions->bgcolor.r, scene->drawOptions->bgcolor.g, scene->drawOptions->bgcolor.b, 0.0f));
             CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
             scene->my_paint_graphics(1, false);
             CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, tonemapfbo));

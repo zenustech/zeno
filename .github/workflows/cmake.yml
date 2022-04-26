@@ -11,9 +11,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout Repo
-      uses: actions/checkout@v2
-
     - name: Check if is release commit
       id: is-release-step
       uses: mstachniuk/ci-skip@v1.2.0

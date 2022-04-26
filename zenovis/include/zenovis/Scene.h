@@ -8,6 +8,7 @@
 namespace zenovis {
 
 struct Camera;
+struct DrawOptions;
 struct ShaderManager;
 struct EnvmapManager;
 struct GraphicsManager;
@@ -24,6 +25,7 @@ struct VAO;
 
 struct Scene : zeno::disable_copy {
     std::unique_ptr<Camera> camera;
+    std::unique_ptr<DrawOptions> drawOptions;
     std::unique_ptr<LightCluster> lightCluster;
     std::unique_ptr<ShaderManager> shaderMan;
     std::unique_ptr<EnvmapManager> envmapMan;

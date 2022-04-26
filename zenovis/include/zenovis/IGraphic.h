@@ -14,7 +14,7 @@ struct IGraphic {
 
 struct IGraphicDraw : IGraphic {
     virtual bool hasMaterial() const { return false; }
-    virtual void draw(bool reflect, bool depthPass) = 0;
+    virtual void draw() = 0;
     virtual void drawShadow(Light *light) = 0;
 };
 

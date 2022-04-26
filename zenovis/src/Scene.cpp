@@ -9,6 +9,7 @@
 #include <zenovis/opengl/buffer.h>
 #include <zenovis/opengl/common.h>
 #include <zenovis/opengl/vao.h>
+#include <zeno/utils/scope_exit.h>
 #include <map>
 
 namespace zenovis {
@@ -72,7 +73,7 @@ void Scene::drawSceneDepthSafe(bool reflect, bool isDepthPass) {
     // std::cout<<"camUp:"<<g_camUp.x<<","<<g_camUp.y<<","<<g_camUp.z<<std::endl;
     //CHECK_GL(glDisable(GL_MULTISAMPLE));
     // CHECK_GL(glClearColor(bgcolor.r, bgcolor.g, bgcolor.b, 0.0f));
-    CHECK_GL(glClearColor(camera->bgcolor.r, camera->bgcolor.g, camera->bgcolor.b, 0.0f));
+    CHECK_GL(glClearColor(drawOptions->bgcolor.r, drawOptions->bgcolor.g, drawOptions->bgcolor.b, 0.0f));
     CHECK_GL(glClear(GL_COLOR_BUFFER_BIT));
 
     float range[] = {camera->m_near, 500, 1000, 2000, 8000, camera->m_far};
@@ -82,12 +83,18 @@ void Scene::drawSceneDepthSafe(bool reflect, bool isDepthPass) {
         camera->proj = glm::perspective(glm::radians(camera->m_fov), aspRatio,
                                         range[i - 1], range[i]);
 
-        for (auto const &gra : graphicsMan->graphics.values<IGraphicDraw>()) {
-            gra->draw(reflect, isDepthPass);
+        {
+            zeno::scope_modify unused1{drawOptions->passReflect, reflect};
+            zeno::scope_modify unused2{drawOptions->passIsDepthPass, isDepthPass};
+            for (auto const &gra : graphicsMan->graphics.values<IGraphicDraw>()) {
+                gra->draw();
+            }
         }
-        if (!isDepthPass && camera->show_grid) {
+        if (!isDepthPass && drawOptions->show_grid) {
+            zeno::scope_modify unused1{drawOptions->passReflect, false};
+            zeno::scope_modify unused2{drawOptions->passIsDepthPass, false};
             for (auto const &hudgra : hudGraphics) {
-                hudgra->draw(false, false);
+                hudgra->draw();
             }
         }
     }
@@ -98,15 +105,17 @@ void Scene::fast_paint_graphics() {
     vao->bind();
     camera->m_sample_weight = 1.0f;
     /* CHECK_GL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)); */
-    CHECK_GL(glClearColor(camera->bgcolor.r, camera->bgcolor.g, camera->bgcolor.b, 0.0f));
+    CHECK_GL(glClearColor(drawOptions->bgcolor.r, drawOptions->bgcolor.g, drawOptions->bgcolor.b, 0.0f));
     CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 
+    zeno::scope_modify unused1{drawOptions->passReflect, false};
+    zeno::scope_modify unused2{drawOptions->passIsDepthPass, false};
     for (auto const &gra : graphicsMan->graphics.values<IGraphicDraw>()) {
-        gra->draw(false, false);
+        gra->draw();
     }
-    if (camera->show_grid) {
+    if (drawOptions->show_grid) {
         for (auto const &hudgra : hudGraphics) {
-            hudgra->draw(false, false);
+            hudgra->draw();
         }
         draw_small_axis();
     }
@@ -119,7 +128,7 @@ void Scene::my_paint_graphics(int samples, bool isDepthPass) {
     vao->bind();
     camera->m_sample_weight = 1.0f / (float)samples;
     drawSceneDepthSafe(false, isDepthPass);
-    if (!isDepthPass && camera->show_grid) {
+    if (!isDepthPass && drawOptions->show_grid) {
         draw_small_axis();
     }
     vao->unbind();
@@ -185,8 +194,8 @@ std::vector<char> Scene::record_frame_offline(int hdrSize, int rgbComps) {
     CHECK_GL(glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
                                        GL_RENDERBUFFER, rbo2));
     CHECK_GL(glDrawBuffer(GL_COLOR_ATTACHMENT0));
-    CHECK_GL(glClearColor(camera->bgcolor.r, camera->bgcolor.g,
-                          camera->bgcolor.b, 0.0f));
+    CHECK_GL(glClearColor(drawOptions->bgcolor.r, drawOptions->bgcolor.g,
+                          drawOptions->bgcolor.b, 0.0f));
     CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 
     draw(fbo);
