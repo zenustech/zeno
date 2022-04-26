@@ -198,6 +198,203 @@ ZENDEFNODE(ApplyBoundaryOnZSGrid, {
                                       {"MPM"},
                                   });
 
+struct ComputeParticleBeta : INode {
+  template <typename Model, typename AnisoModel>
+  void determine_beta(zs::CudaExecutionPolicy &cudaPol, const Model &model,
+                      const AnisoModel &anisoModel,
+                      typename ZenoParticles::particles_t &pars,
+                      const typename ZenoPartition::table_t &partition,
+                      const float dt, const typename ZenoGrid::grid_t &grid) {
+    using namespace zs;
+    cudaPol(range(pars.size()), [pars = proxy<execspace_e::cuda>({}, pars),
+                                 table = proxy<execspace_e::cuda>(partition),
+                                 grid = proxy<execspace_e::cuda>({}, grid),
+                                 model = model, dt,
+                                 anisoModel] __device__(size_t pi) mutable {
+      using grid_t = RM_CVREF_T(grid);
+      auto pos = pars.pack<3>("pos", pi);
+      auto vp = pars.pack<3>("vel", pi);
+      pos += dt * vp;
+
+      float Jp_critical = 1.f;
+      // nadp (Jpc = 1)
+      // nacc
+      if constexpr (is_same_v<RM_CVREF_T(anisoModel),
+                              NonAssociativeCamClay<float>>) {
+        Jp_critical = 1.1f; //(not implemented)
+      }
+      // von mises (not implemented)
+
+      auto arena =
+          make_local_arena<grid_e::collocated, kernel_e::linear>(grid.dx, pos);
+
+      bool movingIn = false;
+      for (auto loc : arena.range()) {
+        auto coord = arena.coord(loc);
+        auto localIndex = coord & (grid_t::side_length - 1);
+        auto blockno = table.query(coord - localIndex);
+        if (blockno < 0) // in case it is a partition for boundary grid
+          continue;
+        auto block = grid.block(blockno);
+
+        const auto cellid = grid_t::coord_to_cellid(localIndex);
+        // this cell already touched
+        bool insideBoundary = block("m", cellid) != 0.f;
+        if (insideBoundary) {
+          auto boundaryVel = block.pack<3>("v", cellid);
+          auto boundaryNrm = block.pack<3>("nrm", cellid);
+          if ((vp - boundaryVel).dot(boundaryNrm) < 0) {
+            movingIn = true;
+            break;
+          }
+        }
+      }
+      if (movingIn)
+        pars("beta", pi) = 0.f;
+      else { // check critical volume ratio
+        auto F = pars.pack<3, 3>("F", pi);
+        auto J = determinant(F.template cast<double>());
+        if (J > Jp_critical) // apply positional adjustment
+          pars("beta", pi) = 0.2f;
+        else
+          pars("beta", pi) = 0.f; // assume beta_min = 0
+      }
+    });
+  }
+  template <typename Model, typename AnisoModel, typename LsView>
+  void determine_beta_sdf(zs::CudaExecutionPolicy &cudaPol, LsView lsv,
+                          const ZenoBoundary &boundary, const Model &model,
+                          const AnisoModel &anisoModel, const float dt,
+                          typename ZenoParticles::particles_t &pars) {
+    using namespace zs;
+    auto collider = boundary.getBoundary(lsv);
+    cudaPol(range(pars.size()), [pars = proxy<execspace_e::cuda>({}, pars),
+                                 boundary = collider, model = model, dt,
+                                 anisoModel] __device__(size_t pi) mutable {
+      auto pos = pars.pack<3>("pos", pi);
+      auto vp = pars.pack<3>("vel", pi);
+      pos += dt * vp;
+
+      float Jp_critical = 1.f;
+      // nadp (Jpc = 1)
+      // nacc
+      if constexpr (is_same_v<RM_CVREF_T(anisoModel),
+                              NonAssociativeCamClay<float>>) {
+        Jp_critical = 1.1f; //(not implemented)
+      }
+      // von mises (not implemented)
+
+      auto X = boundary.R.transpose() * (pos - boundary.b) / boundary.s;
+      if (boundary.levelset.getSignedDistance(X) < 0) {
+        auto nrm = boundary.R * boundary.levelset.getNormal(X);
+        auto vel = boundary.R * boundary.levelset.getMaterialVelocity(X) +
+                   boundary.dbdt;
+        if ((vp - vel).dot(nrm) < 0) {
+          pars("beta", pi) = 0.f;
+          return;
+        }
+      }
+      // check critical volume ratio
+      auto F = pars.pack<3, 3>("F", pi);
+      auto J = determinant(F.template cast<double>());
+      if (J > Jp_critical) // apply positional adjustment
+        pars("beta", pi) = 0.2f;
+      else
+        pars("beta", pi) = 0.f; // assume beta_min = 0
+    });
+  }
+
+  void apply() override {
+    fmt::print(fg(fmt::color::green), "begin executing ComputeParticleBeta\n");
+
+    using namespace zs;
+    auto cudaPol = cuda_exec().device(0);
+    auto parObjPtrs = RETRIEVE_OBJECT_PTRS(ZenoParticles, "ZSParticles");
+    auto &partition = get_input<ZenoPartition>("ZSPartition")->get();
+    auto stepDt = get_input<zeno::NumericObject>("dt")->get<float>();
+
+    if (has_input<ZenoGrid>("ZSBoundary(Grid)")) {
+      auto zsgrid = get_input<ZenoGrid>("ZSBoundary(Grid)");
+      auto &grid = zsgrid->get();
+
+      if (zsgrid->transferScheme != "boundary")
+        throw std::runtime_error("the grid passed in for computing particle "
+                                 "beta should represent a boundary!");
+
+      for (auto &&parObjPtr : parObjPtrs) {
+        auto &pars = parObjPtr->getParticles();
+        auto &model = parObjPtr->getModel();
+
+        fmt::print("[ComputeParticleBeta] dx: {}, dt: {}, npars: {}\n", grid.dx,
+                   stepDt, pars.size());
+
+        if (parObjPtr->category == ZenoParticles::mpm ||
+            parObjPtr->category == ZenoParticles::surface)
+          match([&](auto &elasticModel, auto &anisoElasticModel) {
+            determine_beta(cudaPol, elasticModel, anisoElasticModel, pars,
+                           partition, stepDt, grid);
+          })(model.getElasticModel(), model.getAnisoElasticModel());
+      }
+    } else if (has_input<ZenoBoundary>("ZSBoundary(Grid)")) {
+      auto boundary = get_input<ZenoBoundary>("ZSBoundary(Grid)");
+      using basic_ls_t = typename ZenoLevelSet::basic_ls_t;
+      using const_sdf_vel_ls_t = typename ZenoLevelSet::const_sdf_vel_ls_t;
+      using const_transition_ls_t =
+          typename ZenoLevelSet::const_transition_ls_t;
+      for (auto &&parObjPtr : parObjPtrs) {
+        auto &pars = parObjPtr->getParticles();
+        auto &model = parObjPtr->getModel();
+
+        if (parObjPtr->category == ZenoParticles::mpm ||
+            parObjPtr->category == ZenoParticles::surface)
+          match([&](auto &elasticModel, auto &anisoElasticModel) {
+            if (boundary->zsls)
+              match([&](const auto &ls) {
+                if constexpr (is_same_v<RM_CVREF_T(ls), basic_ls_t>) {
+                  match([&](const auto &lsPtr) {
+                    auto lsv = get_level_set_view<execspace_e::cuda>(lsPtr);
+                    determine_beta_sdf(cudaPol, lsv, *boundary, elasticModel,
+                                       anisoElasticModel, stepDt, pars);
+                  })(ls._ls);
+                } else if constexpr (is_same_v<RM_CVREF_T(ls),
+                                               const_sdf_vel_ls_t>) {
+                  match([&](auto lsv) {
+                    determine_beta_sdf(cudaPol, SdfVelFieldView{lsv}, *boundary,
+                                       elasticModel, anisoElasticModel, stepDt,
+                                       pars);
+                  })(ls.template getView<execspace_e::cuda>());
+                } else if constexpr (is_same_v<RM_CVREF_T(ls),
+                                               const_transition_ls_t>) {
+                  match([&](auto fieldPair) {
+                    auto &fvSrc = std::get<0>(fieldPair);
+                    auto &fvDst = std::get<1>(fieldPair);
+                    determine_beta_sdf(
+                        cudaPol,
+                        TransitionLevelSetView{SdfVelFieldView{fvSrc},
+                                               SdfVelFieldView{fvDst},
+                                               ls._stepDt, ls._alpha},
+                        *boundary, elasticModel, anisoElasticModel, stepDt,
+                        pars);
+                  })(ls.template getView<zs::execspace_e::cuda>());
+                }
+              })(boundary->zsls->getLevelSet());
+          })(model.getElasticModel(), model.getAnisoElasticModel());
+      }
+    }
+
+    fmt::print(fg(fmt::color::cyan), "done executing ComputeParticleBeta\n");
+    set_output("ZSParticles", get_input("ZSParticles"));
+  }
+};
+
+ZENDEFNODE(ComputeParticleBeta,
+           {
+               {"ZSParticles", "ZSPartition", "ZSBoundary(Grid)", "dt"},
+               {"ZSParticles"},
+               {},
+               {"MPM"},
+           });
+
 struct ApplyWindImpulseOnZSGrid : INode {
   template <typename VelSplsViewT>
   void computeWindImpulse(zs::CudaExecutionPolicy &cudaPol, float windDragCoeff,
