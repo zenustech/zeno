@@ -1,4 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
+if (NOT ZENO_WITH_cgmesh)
+    message(FATAL_ERROR "ZENO_WITH_cgmesh must be ON when ZENO_WITH_FEM is ON")
+endif()
 
 if(WIN32)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /bigobj")
