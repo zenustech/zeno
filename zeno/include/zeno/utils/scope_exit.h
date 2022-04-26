@@ -11,7 +11,7 @@ class scope_exit {
     bool enabled;
 
 public:
-    scope_exit(Func &&func) : func(std::forward<Func>(func)), enabled(true) {
+    scope_exit(Func &&func) : func(std::move(func)), enabled(true) {
     }
 
     bool has_value() const {
@@ -52,6 +52,17 @@ public:
 
 template <class Func>
 scope_exit(Func) -> scope_exit<Func>;
+
+
+template <class Func>
+class scope_enter : public scope_exit<std::invoke_result_t<Func>> {
+public:
+    scope_enter(Func &&func) : scope_exit<std::invoke_result_t<Func>>(std::move(func)()) {
+    }
+};
+
+template <class Func>
+scope_enter(Func) -> scope_enter<Func>;
 
 
 template <class Derived>
