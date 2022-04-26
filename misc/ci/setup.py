@@ -14,5 +14,7 @@ if sys.platform == 'linux':
     ])
 elif sys.platform == 'win32':
     print('windows detected')
+else:
+    assert False, sys.platform
 
 shutil.move(os.path.join('misc', 'ci', 'vcpkg.json'), 'vcpkg.json')
