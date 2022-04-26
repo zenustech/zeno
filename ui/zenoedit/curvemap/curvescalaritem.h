@@ -21,6 +21,9 @@ protected:
 	void mousePressEvent(QGraphicsSceneMouseEvent* event) override;
 
 private:
+	qreal clipPos(qreal x);
+	qreal pos2val(qreal val);
+
 	const qreal width = 38;
 	const qreal height = 24;
 	qreal m_value;
@@ -39,6 +42,7 @@ public:
 	QRectF boundingRect() const override;
     CURVE_RANGE range() const;
 	void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget = nullptr) override;
+    int nFrames() const;
 
 signals:
 	void frameChanged(qreal);
@@ -57,6 +61,7 @@ private:
 	CurveMapView* m_view;
 	bool m_bHorizontal;
 	bool m_bFrame;		//time frame scalar.
+	int m_nFrames;
 	CurveSliderItem* m_slider;
 };
 

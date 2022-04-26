@@ -35,7 +35,7 @@ void CurveSliderItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* o
 
 	QFont font("HarmonyOS Sans", 11);
     painter->setFont(font);
-	QString numText = QString::number(m_value, 'g', 2);
+	QString numText = QString::number(m_value);
 
 	painter->drawText(rc, numText, QTextOption(Qt::AlignCenter));
 	painter->restore();
@@ -47,20 +47,43 @@ QVariant CurveSliderItem::itemChange(GraphicsItemChange change, const QVariant& 
 	{
         qreal w = m_scalar->boundingRect().width();
         QPointF newPos = value.toPointF();
-        newPos.setX(int(qMax(0., qMin(w, newPos.x()))));
+        newPos.setX(qMax(0., qMin(w, newPos.x())));
+        qreal x_ = clipPos(newPos.x());
+        newPos.setX(x_);
         newPos.setY(m_yoffset);
         return newPos;
 	}
 	else if (change == QGraphicsItem::ItemPositionHasChanged)
 	{
         QPointF newPos = value.toPointF();
-        qreal x = newPos.x();
-        qreal w = m_scalar->boundingRect().width();
-        CURVE_RANGE rg = m_scalar->range();
-        m_value = x / w * (rg.xTo - rg.xFrom);
+        m_value = pos2val(newPos.x());
         emit m_scalar->frameChanged(m_value);
 	}
 	return value;
+}
+
+qreal CurveSliderItem::clipPos(qreal x)
+{
+    CURVE_RANGE rg = m_scalar->range();
+    int nFrames = m_scalar->nFrames();
+    int nGrids = nFrames * 5;
+    qreal w = m_scalar->boundingRect().width();
+    qreal szGrid = w / nGrids;
+	int n = x / szGrid;
+    qreal x_ = n * szGrid;
+	return x_;
+}
+
+qreal CurveSliderItem::pos2val(qreal x)
+{
+    CURVE_RANGE rg = m_scalar->range();
+    int nFrames = m_scalar->nFrames();
+    int nGrids = nFrames * 5;
+    qreal w = m_scalar->boundingRect().width();
+    qreal szGrid = w / nGrids;
+    int n = x / szGrid;
+    qreal val = n * (rg.xTo - rg.xFrom) / nGrids;
+	return val;
 }
 
 void CurveSliderItem::mousePressEvent(QGraphicsSceneMouseEvent* event)
@@ -83,6 +106,7 @@ CurveScalarItem::CurveScalarItem(bool bHorizontal, bool bFrame, CurveMapView* pV
 	, m_view(pView)
 	, m_bFrame(bFrame)
 	, m_slider(nullptr)
+	, m_nFrames(0)
 {
 	setFlag(QGraphicsItem::ItemIgnoresTransformations);
     setZValue(-20);
@@ -179,29 +203,17 @@ void CurveScalarItem::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
     _base::mouseMoveEvent(event);
 }
 
+int CurveScalarItem::nFrames() const
+{
+    return m_nFrames;
+}
+
 void CurveScalarItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
 {
-	qreal n = 0;
-
 	painter->save();
 
-	int from = 0, to = 0;
-	QRectF rc = m_view->rect();
 	const QRectF& rcGrid = m_view->gridBoundingRect();
-	if (m_bHorizontal)
-	{
-		n = rcGrid.width();
-		from = 0;
-		to = n;
-	}
-	else
-	{
-		n = rcGrid.height();
-		from = 0;
-		to = n;
-	}
-
-	if (n <= 0)
+	if (rcGrid.width() <= 0 || rcGrid.height() <= 0)
 		return;
 
 	const QTransform &trans = m_view->transform();
@@ -210,7 +222,7 @@ void CurveScalarItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* o
 
 	int prec = 2;
     auto frames = curve_util::numframes(trans.m11(), trans.m22());
-    int nFrames = m_bHorizontal ? frames.first : frames.second;
+    m_nFrames = m_bHorizontal ? frames.first : frames.second;
 
 	CURVE_RANGE rg = m_view->range();
 
@@ -229,12 +241,12 @@ void CurveScalarItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* o
 	if (m_bHorizontal)
 	{
 		qreal realWidth = rcGrid.width() * scaleX;
-		qreal step = realWidth / nFrames;
+		qreal step = realWidth / m_nFrames;
 		qreal y = option->rect.top();
-		for (int i = 0; i <= nFrames; i++)
+		for (int i = 0; i <= m_nFrames; i++)
 		{
 			const qreal x = step * i;
-            qreal scalar = (rg.xTo - rg.xFrom) * i / nFrames + rg.xFrom;
+            qreal scalar = (rg.xTo - rg.xFrom) * i / m_nFrames + rg.xFrom;
 
 			QString numText = QString::number(scalar);//, 'g', prec);
             qreal textWidth = metrics.horizontalAdvance(numText);
@@ -246,7 +258,7 @@ void CurveScalarItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* o
                 qreal y = 3./4 * rcBound.height();
                 painter->setPen(QColor(100, 100, 100));
 				painter->drawLine(QPointF(x, y), QPointF(x, rcBound.height() - 1));
-				if (i < nFrames)
+                if (i < m_nFrames)
 				{
 					int _nFrames = 5;
 					const qreal _step = step / _nFrames;
@@ -263,12 +275,12 @@ void CurveScalarItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* o
 	else
 	{
 		qreal realHeight = rcGrid.height() * scaleY;
-		qreal step = realHeight / nFrames;
+		qreal step = realHeight / m_nFrames;
 		qreal x = option->rect.left();
-        for (int i = 0; i <= nFrames; i++)
+        for (int i = 0; i <= m_nFrames; i++)
 		{
 			const qreal y = step * i;
-            qreal scalar = (rg.yTo - rg.yFrom) * (nFrames - i) / nFrames + rg.yFrom;
+            qreal scalar = (rg.yTo - rg.yFrom) * (m_nFrames - i) / m_nFrames + rg.yFrom;
 			QString numText = QString::number(scalar);
 			qreal textHeight = metrics.height();
 			painter->drawText(QPointF(x + 10, y + textHeight / 2), numText);
