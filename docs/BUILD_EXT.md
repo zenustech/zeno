@@ -35,7 +35,7 @@ If you succeed to build ZenoFX, let's move on to build other more complicated ex
 ### Arch Linux (recommended)
 
 ```bash
-pacman -S tbb openvdb eigen3 openexr cgal lapack openblas hdf5
+pacman -S tbb openvdb eigen openexr cgal lapack openblas hdf5
 ```
 
 ### Ubuntu
@@ -104,7 +104,7 @@ cmake -B build -DCMAKE_BUILD_TYPE=Release -DZENO_WITH_ZenoFX:BOOL=ON -DZENOFX_EN
 
 > See also `misc/run.sh`.
 
-### Enabling GPU extensions
+### Enabling CUDA extensions
 
 NVIDIA users may additionally specify `-DZENO_WITH_gmpm:BOOL=ON -DZENO_WITH_mesher:BOOL=ON` in arguments for building CUDA support.
 
