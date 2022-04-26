@@ -418,10 +418,7 @@ void ZenoMainWindow::exportGraph()
     pGraphs->importGraph(path);
 
     QString content;
-    if (path.endsWith(".cpp")) {
-        //     graphs = serial.serializeGraphs(prog['graph'], has_subgraphs=False)
-        //     content = self.do_export_cpp(graphs)
-    } else {
+    {
         rapidjson::StringBuffer s;
         RAPIDJSON_WRITER writer(s);
         IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
@@ -431,7 +428,60 @@ void ZenoMainWindow::exportGraph()
             serializeScene(model, writer);
         }
         content = QString(s.GetString());
-        if (path.endsWith(".h")) {
+
+        if (path.endsWith(".cpp")) {
+
+            QString res = R"RAW(/* auto generated from: )RAW";
+            res.append(R"RAW( */
+#include <zeno/zeno.h>
+#include <zeno/extra/ISubgraphNode.h>
+namespace {)RAW");
+
+            decltype(auto) descs = model->descriptors();
+            for (int i = 0; i < model->rowCount(); i++) {
+                auto subg = model->subGraph(i);
+                auto key = subg->name();
+                auto it = descs.find(key);
+                if (it == descs.end()) throw;
+                auto const &desc = *it;
+
+                res.append("struct ");
+                res.append(key);
+                res.append(R"RAW( : zeno::ISerialSubgraphNode {
+    virtual const char *get_subgraph_json() override {
+        return R"ZSL(
+)RAW");
+                res.append(subgJson);
+                res.append(R"RAW("
+)ZSL";
+            }
+    }
+};
+ZENDEFNODE( )RAW");
+
+                res.append(key);
+                res.append(R"RAW(, {
+    {)RAW");
+                res.append(', '.join('{"%s", "%s", "%s"}' % (x, y, z) for x, y, z in desc['inputs'] if y != 'SRC'));
+                res.append(R"RAW(},
+    {)RAW");
+                res.append(', '.join('{"%s", "%s", "%s"}' % (x, y, z) for x, y, z in desc['outputs'] if y != 'DST'));
+                res.append(R"RAW(}
+    {)RAW");
+                res.append(', '.join('{"%s", "%s", "%s"}' % (x, y, z) for x, y, z in desc['params']));
+                res.append(R"RAW(},
+    {)RAW");
+                res.append(', '.join('"%s"' % x for x in desc['categories']));
+                res.append(R"RAW(},
+});
+)RAW";
+
+
+            content.prepend("R\"ZSL(");
+            content.append(")ZSL\"\n");
+
+        } else if (path.endsWith(".h")) {
+
             content.prepend("R\"ZSL(");
             content.append(")ZSL\"\n");
         }
