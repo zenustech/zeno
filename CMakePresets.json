@@ -27,6 +27,7 @@
         "ZENO_ENABLE_OPENEXR": "ON",
         "ZENO_WITH_zenvdb": "ON",
         "ZENO_WITH_FastFLIP": "ON",
+        "ZENO_WITH_Rigid": "ON",
         "ZENO_WITH_oldzenbase": "ON"
       }
     },
@@ -37,7 +38,6 @@
       "description": "Build all extension modules that are CPU-only",
       "cacheVariables": {
         "ZENO_WITH_FEM": "ON",
-        "ZENO_WITH_Rigid": "ON",
         "ZENO_WITH_cgmesh": "ON",
         "ZENO_WITH_TreeSketch": "ON",
         "ZENO_WITH_Skinning": "ON",
@@ -66,9 +66,25 @@
       }
     },
     {
+      "name": "openvdb-debug",
+      "inherits": "openvdb",
+      "description": "OpenVDB configuration (Debug)",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
       "name": "default-debug",
       "inherits": "default",
       "description": "Default configuration (Debug)",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "cuda-debug",
+      "inherits": "cuda",
+      "description": "CUDA configuration (Debug)",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug"
       }
