@@ -94,9 +94,9 @@ void Session::do_screenshot(std::string path, std::string type) {
     }},
 #ifdef ZENO_ENABLE_OPENEXR
     {"exr", [&] {
-        auto pix = (Imath::half *)pixels.data();
         Imf::RgbaOutputFile file(path.c_str(), nx, ny, Imf::WRITE_RGBA);
         Imf::Array2D<Imf::Rgba> px(ny, nx);
+        auto pix = reinterpret_cast<decltype(px[0][0].r) *>(pixels.data());
         int i = 0;
         for (int y = 0; y < ny; ++y) {
           for (int x = 0; x < nx; ++x) {

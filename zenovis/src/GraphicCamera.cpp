@@ -29,12 +29,6 @@ struct GraphicCamera final : IGraphic {
                 glm::vec3(cam->up[0], cam->up[1], cam->up[2]),
                 cam->fov, cam->fnear, cam->ffar, cam->dof);
     }
-
-    virtual void draw(bool reflect, bool depthPass) override {
-    }
-
-    virtual void drawShadow(Light *light) override {
-    }
 };
 
 }

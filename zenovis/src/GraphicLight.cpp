@@ -25,12 +25,6 @@ struct GraphicLight final : IGraphicLight {
     virtual void addToScene() override {
         scene->lightCluster->addLight(lightData);
     }
-
-    virtual void draw(bool reflect, bool depthPass) override {
-    }
-
-    virtual void drawShadow(Light *light) override {
-    }
 };
 
 }
