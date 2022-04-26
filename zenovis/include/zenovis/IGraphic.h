@@ -9,11 +9,11 @@ struct Light;
 struct Scene;
 
 struct IGraphic {
-    virtual bool hasMaterial() const { return false; }
     virtual ~IGraphic() = default;
 };
 
 struct IGraphicDraw : IGraphic {
+    virtual bool hasMaterial() const { return false; }
     virtual void draw(bool reflect, bool depthPass) = 0;
     virtual void drawShadow(Light *light) = 0;
 };

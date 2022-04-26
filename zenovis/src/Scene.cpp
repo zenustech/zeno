@@ -129,7 +129,7 @@ void Scene::draw_small_axis() { /* TODO: implement this */
 }
 
 bool Scene::anyGraphicHasMaterial() {
-    for (auto const &gra : graphics()) {
+    for (auto const &gra : graphicsMan->graphics.values<IGraphicDraw>()) {
         if (gra->hasMaterial())
             return true;
     }
@@ -145,6 +145,11 @@ void Scene::draw(unsigned int target_fbo) {
 
     //CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
     /* ZHXX DONT MODIFY ME */
+    lightCluster->clearLights();
+    for (auto const &litgra: graphicsMan->graphics.values<IGraphicLight>()) {
+        litgra->addToScene();  // inside this will call lightCluster->addLight()
+    }
+
     mDepthPass->paint_graphics(target_fbo);
 }
 

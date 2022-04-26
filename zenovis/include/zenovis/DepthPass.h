@@ -5,6 +5,7 @@
 #include <zenovis/Camera.h>
 #include <zenovis/IGraphic.h>
 #include <zenovis/Light.h>
+#include <zenovis/GraphicsManager.h>
 #include <zenovis/ReflectivePass.h>
 #include <zenovis/Scene.h>
 #include <zenovis/ShaderManager.h>
@@ -165,7 +166,7 @@ void main(void)
             for (int i = 0; i < LightCluster::layerCount; i++) {
                 light->BeginShadowMap(camera()->m_near, camera()->m_far, camera()->proj, camera()->view, i);
                 scene->vao->bind();
-                for (auto const &gra : scene->graphics()) {
+                for (auto const &gra : scene->graphicsMan->graphics.values<IGraphicDraw>()) {
                     gra->drawShadow(light.get());
                 }
                 scene->vao->unbind();
