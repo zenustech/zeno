@@ -160,6 +160,7 @@ ZENDEFNODE(ZSPoissonDiskSample,
 
 struct ToZSParticles : INode {
   void apply() override {
+    using namespace zs;
     fmt::print(fg(fmt::color::green), "begin executing ToZensimParticles\n");
     auto model = get_input<ZenoConstitutiveModel>("ZSModel");
 
@@ -182,6 +183,11 @@ struct ToZSParticles : INode {
     outParticles->prim = inParticles;
     // model
     outParticles->getModel() = *model;
+    float mu, lam;
+    zs::match([&mu, &lam](const auto &elasticModel) {
+      mu = elasticModel.mu;
+      lam = elasticModel.lam;
+    })(model->getElasticModel());
 
     /// category, size
     std::size_t size{obj.size()};
@@ -218,7 +224,6 @@ struct ToZSParticles : INode {
     outParticles->category = category;
 
     // per vertex (node) vol, pos, vel
-    using namespace zs;
     auto ompExec = zs::omp_exec();
 
     if (bindMesh) {
@@ -326,7 +331,8 @@ struct ToZSParticles : INode {
 
     // attributes
     std::vector<zs::PropertyTag> tags{{"mass", 1}, {"pos", 3}, {"vel", 3},
-                                      {"vol", 1},  {"C", 9},   {"vms", 1}};
+                                      {"vol", 1},  {"C", 9},   {"vms", 1},
+                                      {"beta", 1} /*asflip, for positional adjustment*/};
     std::vector<zs::PropertyTag> eleTags{
         {"mass", 1}, {"pos", 3},   {"vel", 3},
         {"vol", 1},  {"C", 9},     {"F", 9},
@@ -345,6 +351,9 @@ struct ToZSParticles : INode {
           throw std::runtime_error(
               "mesh particles should not use the 'J' attribute.");
       }
+    } else {
+      eleTags.emplace_back(zs::PropertyTag{"mu", 1});
+      eleTags.emplace_back(zs::PropertyTag{"lam", 1});
     }
 
     if (hasOrientation) {
@@ -397,7 +406,7 @@ struct ToZSParticles : INode {
 
     {
       pars = typename ZenoParticles::particles_t{tags, size, memsrc_e::host};
-      ompExec(zs::range(size), [pars = proxy<execspace_e::host>({}, pars),
+      ompExec(zs::range(size), [pars = proxy<execspace_e::openmp>({}, pars),
                                 hasLogJp, hasOrientation, hasF, &model, &obj,
                                 velsPtr, nrmsPtr, bindMesh, &dofVol, category,
                                 &inParticles, &auxAttribs](size_t pi) mutable {
@@ -449,7 +458,8 @@ struct ToZSParticles : INode {
         // plasticity
         if (hasLogJp)
           pars("logJp", pi) = -0.04;
-        pars("vms", pi) = 0; // vms
+        pars("vms", pi) = 0;  // vms
+        pars("beta", pi) = 0; // for positional adjustment
 
         // additional attributes
         for (auto &prop : auxAttribs) {
@@ -468,10 +478,10 @@ struct ToZSParticles : INode {
       outParticles->elements =
           typename ZenoParticles::particles_t{eleTags, eleSize, memsrc_e::host};
       auto &eles = outParticles->getQuadraturePoints(); // tilevector
-      ompExec(zs::range(eleSize), [eles = proxy<execspace_e::host>({}, eles),
-                                   &model, velsPtr, nrmsPtr, &eleVol, &elePos,
-                                   &obj, &eleVel, &eleD, category, &quads,
-                                   &tris, &lines](size_t ei) mutable {
+      ompExec(zs::range(eleSize), [eles = proxy<execspace_e::openmp>({}, eles),
+                                   &model, &mu, &lam, velsPtr, nrmsPtr, &eleVol,
+                                   &elePos, &obj, &eleVel, &eleD, category,
+                                   &quads, &tris, &lines](size_t ei) mutable {
         using vec3 = zs::vec<double, 3>;
         using mat3 = zs::vec<double, 3, 3>;
         // vol, mass
@@ -486,6 +496,9 @@ struct ToZSParticles : INode {
           eles.tuple<3>("vel", ei) = eleVel[ei];
         else
           eles.tuple<3>("vel", ei) = vec3::zeros();
+
+        eles("mu", ei) = mu;
+        eles("lam", ei) = lam;
 
         // deformation
         const auto &D = eleD[ei]; // [col]
@@ -507,7 +520,7 @@ struct ToZSParticles : INode {
         auto normal = col(Dmat, 2);
         // could qr decomp here first (tech doc)
 
-        zs::Rotation<double, 3> rot0{normal, vec3{0, 0, 1}};
+        zs::Rotation<double, 3> rot0{normal.normalized(), vec3{0, 0, 1}};
         auto u = rot0 * t0;
         auto v = rot0 * t1;
         zs::Rotation<double, 3> rot1{u.normalized(), vec3{1, 0, 0}};
@@ -529,10 +542,30 @@ struct ToZSParticles : INode {
 #if 1
           eles.tuple<9>("DmInv", ei) = mat3::identity();
           eles.tuple<9>("F", ei) = Dmat;
+          // let this be a failed element
+          eles("mu", ei) = 0;
+          eles("lam", ei) = 0;
+          auto invDstar = zs::inverse(Dstar);
+          eles.tuple<9>("DmInv", ei) = invDstar;
+          eles.tuple<9>("F", ei) = Dmat * invDstar;
 #else
           
           throw std::runtime_error(
               "there exists degenerated triangle surface element");
+          using mat2 = zs::vec<double, 2, 2>;
+          auto D2 = mat2{Dstar(0, 0), Dstar(0, 1), Dstar(1, 0), Dstar(1, 1)};
+          auto [Q2, R2] = zs::math::qr(D2);
+          auto R2Inv = inverse(R2);
+          fmt::print("R2Inv: {}, {}; {}, {}\n", R2Inv(0, 0), R2Inv(0, 1),
+                     R2Inv(1, 0), R2Inv(1, 1));
+          auto invDstar = zs::inverse(Dstar);
+          fmt::print("invD2: {}, {}; {}, {}\n", invDstar(0, 0), invDstar(0, 1),
+                     invDstar(1, 0), invDstar(1, 1));
+          auto F = Dmat * invDstar;
+          fmt::print("F({}): {}, {}, {}; {}, {}, {}; {}, {}, {}\n",
+                     zs::determinant(F), F(0, 0), F(0, 1), F(0, 2), F(1, 0),
+                     F(1, 1), F(1, 2), F(2, 0), F(2, 1), F(2, 2));
+          getchar();
 #endif
         } else {
           auto invDstar = zs::inverse(Dstar);

@@ -7,8 +7,8 @@
 #include "zensim/math/matrix/QRSVD.hpp"
 #include "zensim/omp/execution/ExecutionPolicy.hpp"
 #include "zensim/simulation/Utils.hpp"
-#include "zensim/tpls/fmt/color.h"
-#include "zensim/tpls/fmt/format.h"
+#include "zensim/zpc_tpls/fmt/color.h"
+#include "zensim/zpc_tpls/fmt/format.h"
 #include <zeno/types/ListObject.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/PrimitiveObject.h>

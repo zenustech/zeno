@@ -5,8 +5,8 @@
 #include "zensim/geometry/VdbSampler.h"
 #include "zensim/io/ParticleIO.hpp"
 #include "zensim/omp/execution/ExecutionPolicy.hpp"
-#include "zensim/tpls/fmt/color.h"
-#include "zensim/tpls/fmt/format.h"
+#include "zensim/zpc_tpls/fmt/color.h"
+#include "zensim/zpc_tpls/fmt/format.h"
 #include <zeno/types/DictObject.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/PrimitiveObject.h>
@@ -214,9 +214,15 @@ struct BuildPrimitiveSequence : INode {
       auto sprayedOffset = zsprimseq->sprayedOffset;
       auto sprayedSize = numV - sprayedOffset;
       auto size = sprayedOffset;
-      if (size != next->numParticles() || numE != next->numElements())
+      if (size != next->numParticles() || numE != next->numElements()) {
+        fmt::print(
+            "current numVerts ({} + {}) (i.e. {}), numEles ({}).\nIncoming "
+            "boundary primitive numVerts ({}), numEles ({})\n",
+            size, sprayedSize, numV, numE, next->numParticles(),
+            next->numElements());
         throw std::runtime_error(
             fmt::format("prim size mismatch with current sequence prim!\n"));
+      }
 
       fmt::print("{} verts (including {} sprayed), {} elements\n", numV,
                  sprayedSize, numE);
@@ -251,12 +257,23 @@ struct BuildPrimitiveSequence : INode {
 
               int eid = reinterpret_bits<int>(verts("eid", dst));
               auto tri = eles.pack<3>("inds", eid).reinterpret_bits<int>();
-              auto v0 = verts.pack<3>("vel", tri[0]);
-              auto v1 = verts.pack<3>("vel", tri[1]);
-              auto v2 = verts.pack<3>("vel", tri[2]);
-
               auto ws = verts.pack<3>("weights", dst);
-              verts.tuple<3>("vel", dst) = ws[0] * v0 + ws[1] * v1 + ws[2] * v2;
+              {
+                auto v0 = verts.pack<3>("vel", tri[0]);
+                auto v1 = verts.pack<3>("vel", tri[1]);
+                auto v2 = verts.pack<3>("vel", tri[2]);
+
+                verts.tuple<3>("vel", dst) =
+                    ws[0] * v0 + ws[1] * v1 + ws[2] * v2;
+              }
+              {
+                auto p0 = verts.pack<3>("pos", tri[0]);
+                auto p1 = verts.pack<3>("pos", tri[1]);
+                auto p2 = verts.pack<3>("pos", tri[2]);
+
+                verts.tuple<3>("pos", dst) =
+                    ws[0] * p0 + ws[1] * p1 + ws[2] * p2;
+              }
             });
       }
     } else {
@@ -338,8 +355,10 @@ ZENDEFNODE(UpdatePrimitiveFromZSParticles, {
 struct MakeZSPartition : INode {
   void apply() override {
     auto partition = std::make_shared<ZenoPartition>();
-    partition->get() =
-        typename ZenoPartition::table_t{(std::size_t)1, zs::memsrc_e::um, 0};
+    partition->get() = typename ZenoPartition::table_t{(std::size_t)1,
+                                                       zs::memsrc_e::device, 0};
+    partition->requestRebuild = false;
+    partition->rebuilt = false;
     set_output("ZSPartition", partition);
   }
 };
@@ -360,16 +379,19 @@ struct MakeZSGrid : INode {
     grid->transferScheme = get_input2<std::string>("transfer");
     // default is "apic"
     if (grid->transferScheme == "flip")
-      tags.emplace_back(zs::PropertyTag{"vdiff", 3});
+      tags.emplace_back(zs::PropertyTag{"vstar", 3});
     else if (grid->transferScheme == "apic")
       ;
+    else if (grid->transferScheme == "aflip")
+      tags.emplace_back(zs::PropertyTag{"vstar", 3});
     else if (grid->transferScheme == "boundary")
       tags.emplace_back(zs::PropertyTag{"nrm", 3});
     else
       throw std::runtime_error(fmt::format(
           "unrecognized transfer scheme [{}]\n", grid->transferScheme));
 
-    grid->get() = typename ZenoGrid::grid_t{tags, dx, 1, zs::memsrc_e::um, 0};
+    grid->get() =
+        typename ZenoGrid::grid_t{tags, dx, 1, zs::memsrc_e::device, 0};
 
     using traits = zs::grid_traits<typename ZenoGrid::grid_t>;
     fmt::print("grid of dx [{}], side_length [{}], block_size [{}]\n",
@@ -402,9 +424,11 @@ struct MakeZSLevelSet : INode {
     if (ls->transferScheme == "unknown")
       ;
     else if (ls->transferScheme == "flip")
-      tags.emplace_back(zs::PropertyTag{"vdiff", 3});
+      tags.emplace_back(zs::PropertyTag{"vstar", 3});
     else if (ls->transferScheme == "apic")
       ;
+    else if (ls->transferScheme == "aflip")
+      tags.emplace_back(zs::PropertyTag{"vstar", 3});
     else if (ls->transferScheme == "boundary")
       tags.emplace_back(zs::PropertyTag{"nrm", 3});
     else
@@ -413,18 +437,18 @@ struct MakeZSLevelSet : INode {
 
     if (cateStr == "collocated") {
       auto tmp = typename ZenoLevelSet::template spls_t<zs::grid_e::collocated>{
-          tags, dx, 1, zs::memsrc_e::um, 0};
+          tags, dx, 1, zs::memsrc_e::device, 0};
       tmp.reset(zs::cuda_exec(), 0);
       ls->getLevelSet() = std::move(tmp);
     } else if (cateStr == "cellcentered") {
       auto tmp =
           typename ZenoLevelSet::template spls_t<zs::grid_e::cellcentered>{
-              tags, dx, 1, zs::memsrc_e::um, 0};
+              tags, dx, 1, zs::memsrc_e::device, 0};
       tmp.reset(zs::cuda_exec(), 0);
       ls->getLevelSet() = std::move(tmp);
     } else if (cateStr == "staggered") {
       auto tmp = typename ZenoLevelSet::template spls_t<zs::grid_e::staggered>{
-          tags, dx, 1, zs::memsrc_e::um, 0};
+          tags, dx, 1, zs::memsrc_e::device, 0};
       tmp.reset(zs::cuda_exec(), 0);
       ls->getLevelSet() = std::move(tmp);
     } else if (cateStr == "const_velocity") {
@@ -460,7 +484,8 @@ ZENDEFNODE(MakeZSLevelSet,
            {
                {{"float", "dx", "0.1"}, "aux"},
                {"ZSLevelSet"},
-               {{"enum unknown apic flip boundary", "transfer", "unknown"},
+               {{"enum unknown apic flip aflip boundary", "transfer",
+                 "unknown"},
                 {"enum cellcentered collocated staggered const_velocity",
                  "category", "cellcentered"}},
                {"SOP"},
@@ -603,7 +628,8 @@ struct ZSParticlesToPrimitiveObject : INode {
              dst.data(), sizeof(float) * size);
       }
     }
-    /// elements
+/// elements
+#if 1
     if (zsprim->isMeshPrimitive()) {
       auto &zseles = zsprim->getQuadraturePoints();
       int nVertsPerEle = static_cast<int>(zsprim->category) + 1;
@@ -655,6 +681,7 @@ struct ZSParticlesToPrimitiveObject : INode {
         break;
       };
     }
+#endif
     fmt::print(fg(fmt::color::cyan), "done executing "
                                      "ZSParticlesToPrimitiveObject\n");
     set_output("prim", prim);

@@ -6,8 +6,8 @@
 #include "zensim/math/matrix/QRSVD.hpp"
 #include "zensim/omp/execution/ExecutionPolicy.hpp"
 #include "zensim/simulation/Utils.hpp"
-#include "zensim/tpls/fmt/color.h"
-#include "zensim/tpls/fmt/format.h"
+#include "zensim/zpc_tpls/fmt/color.h"
+#include "zensim/zpc_tpls/fmt/format.h"
 #include <zeno/types/ListObject.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/PrimitiveObject.h>
@@ -27,7 +27,7 @@ struct ZSPartitionForZSParticles : INode {
     auto cudaPol = cuda_exec().device(0);
 
     bool cached = get_param<std::string>("strategy") == "cache" ? true : false;
-    if (cached && table->hasTags()) {
+    if (!table->requestRebuild && cached && table->hasTags()) {
       zs::Vector<int> bRebuild{1, memsrc_e::device, 0};
       bRebuild.setVal(0);
       cudaPol(range(table->numBoundaryEntries()), // table->getTags(),
@@ -108,6 +108,8 @@ struct ZSPartitionForZSParticles : INode {
       identify_boundary_indices(cudaPol, *table, wrapv<grid_t::side_length>{});
     }
     table->rebuilt = true;
+    if (table->requestRebuild) // request processed
+      table->requestRebuild = false;
 
     fmt::print("partition of [{}] blocks for {} particles\n", partition.size(),
                cnt);
@@ -325,7 +327,7 @@ struct UpdateZSGrid : INode {
     velSqr[0] = 0;
     auto cudaPol = cuda_exec().device(0);
 
-    if (zsgrid->transferScheme == "apic")
+    if (zsgrid->isPicStyle())
       cudaPol(Collapse{partition.size(), ZenoGrid::grid_t::block_space()},
               [grid = proxy<execspace_e::cuda>({}, grid),
                /*table = proxy<execspace_e::cuda>(partition), */ stepDt, accel,
@@ -351,25 +353,25 @@ struct UpdateZSGrid : INode {
                   atomic_max(exec_cuda, ptr, velSqr);
                 }
               });
-    else if (zsgrid->transferScheme == "flip")
+    else if (zsgrid->isFlipStyle())
       cudaPol(Collapse{partition.size(), ZenoGrid::grid_t::block_space()},
               [grid = proxy<execspace_e::cuda>({}, grid), stepDt, accel,
-               ptr = velSqr.data()] __device__(int bi, int ci) mutable {
+               ptr = velSqr.data()] __device__(auto bi, auto ci) mutable {
                 auto block = grid.block(bi);
                 auto mass = block("m", ci);
                 if (mass != 0.f) {
                   mass = 1.f / mass;
 
                   auto vel = block.pack<3>("v", ci) * mass;
-                  vel += accel * stepDt;
+                  // vel += accel * stepDt;
                   block.set("v", ci, vel);
 
-                  auto vdiff = block.pack<3>("vdiff", ci) * mass;
-                  vdiff += accel * stepDt;
-                  block.set("vdiff", ci, vdiff);
+                  auto vstar =
+                      block.pack<3>("vstar", ci) * mass + vel + accel * stepDt;
+                  block.set("vstar", ci, vstar);
 
                   /// cfl dt
-                  auto velSqr = vel.l2NormSqr();
+                  auto velSqr = vstar.l2NormSqr();
                   atomic_max(exec_cuda, ptr, velSqr);
                 }
               });
@@ -467,7 +469,7 @@ struct ZSReturnMapping : INode {
 #endif
       // hard code ftm
       constexpr auto gamma = 0.f;
-      constexpr auto k = 100.f;
+      constexpr auto k = 400.f;
       constexpr auto friction_coeff = 0.f;
 // constexpr auto friction_coeff = 0.17f;
 #if 1
