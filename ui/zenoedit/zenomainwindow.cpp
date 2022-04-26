@@ -10,13 +10,14 @@
 #include "graphsmanagment.h"
 #include "model/graphsmodel.h"
 #include "launch/corelaunch.h"
+#include "launch/serialize.h"
 #include "nodesview/zenographseditor.h"
 #include <zenoio/reader/zsgreader.h>
 #include <zenoio/writer/zsgwriter.h>
 #include <zeno/utils/log.h>
 #include <zenoui/style/zenostyle.h>
 #include <zenoui/util/uihelper.h>
-
+#include <zenoui/model/modeldata.h>
 
 ZenoMainWindow::ZenoMainWindow(QWidget *parent, Qt::WindowFlags flags)
     : QMainWindow(parent, flags)
@@ -406,6 +407,38 @@ void ZenoMainWindow::importGraph()
     pGraphs->importGraph(filePath);
 }
 
+void ZenoMainWindow::exportGraph()
+{
+    QString path = QFileDialog::getSaveFileName(this, "Path to Save", "", "C++ Source File(*.cpp);; C++ Header File(*.h);; JSON file(*.json);; All Files(*);;");
+	if (path.isEmpty()) {
+		return;
+    }
+
+    auto pGraphs = zenoApp->graphsManagment();
+    pGraphs->importGraph(path);
+
+    QString content;
+    if (path.endsWith(".cpp")) {
+        //     graphs = serial.serializeGraphs(prog['graph'], has_subgraphs=False)
+        //     content = self.do_export_cpp(graphs)
+    } else {
+        rapidjson::StringBuffer s;
+        RAPIDJSON_WRITER writer(s);
+        IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+        GraphsModel * model = (GraphsModel *)pModel;
+        {
+            JsonArrayBatch batch(writer);
+            serializeScene(model, writer);
+        }
+        content = QString(s.GetString());
+        if (path.endsWith(".h")) {
+            content.prepend("R\"ZSL(");
+            content.append(")ZSL\"\n");
+        }
+    }
+    this->saveContent(content, path);
+}
+
 bool ZenoMainWindow::openFile(QString filePath)
 {
     auto pGraphs = zenoApp->graphsManagment();
@@ -514,6 +547,20 @@ bool ZenoMainWindow::saveFile(QString filePath)
     f.close();
     pModel->setFilePath(filePath);
     pModel->clearDirty();
+    return true;
+}
+
+bool ZenoMainWindow::saveContent(const QString& strContent, QString filePath)
+{
+    QFile f(filePath);
+    if (!f.open(QIODevice::WriteOnly)) {
+        qWarning() << Q_FUNC_INFO << "Failed to open" << filePath << f.errorString();
+        zeno::log_error("Failed to open zsg for write: {} ({})",
+                       filePath.toStdString(), f.errorString().toStdString());
+        return false;
+    }
+    f.write(strContent.toUtf8());
+    f.close();
     return true;
 }
 

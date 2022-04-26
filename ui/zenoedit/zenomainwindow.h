@@ -22,6 +22,7 @@ public slots:
     void onNewFile();
     bool openFile(QString filePath);
     bool saveFile(QString filePath);
+    bool saveContent(const QString& strContent, QString filePath);
     void saveQuit();
     void save();
     void saveAs();
@@ -30,6 +31,7 @@ public slots:
     void onToggleDockWidget(DOCK_TYPE, bool);
     void onDockSwitched(DOCK_TYPE);
     void importGraph();
+    void exportGraph();
     void onNodesSelected(const QModelIndex& subgIdx, const QModelIndexList& nodes, bool select);
 
 protected:
