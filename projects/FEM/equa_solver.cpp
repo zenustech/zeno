@@ -1,4 +1,5 @@
 #include "declares.h"
+#include <LBFGS.h>
 
 namespace zeno{
 
@@ -160,6 +161,253 @@ ZENDEFNODE(Jiggle2, {
         {"float","jiggleScale","1"},
     },
     {"jprim"},
+    {},
+    {"FEM"},
+});
+
+struct LaplaceOperator : zeno::IObject {
+    LaplaceOperator() = default;
+    std::shared_ptr<PrimitiveObject> mesh;
+    Eigen::SimplicialLLT<Eigen::SparseMatrix<FEM_Scaler>> laplace_solver;
+};
+
+struct BuildLapaceOperator : zeno::INode {
+    void AssignElmInterpShape(size_t nm_elms,
+        const std::shared_ptr<PrimitiveObject>& interpShape,
+        std::vector<std::vector<Vec3d>>& interpPs,
+        std::vector<std::vector<Vec3d>>& interpWs){
+            interpPs.resize(nm_elms);
+            interpWs.resize(nm_elms);
+            for(size_t i = 0;i < nm_elms;++i){
+                interpPs[i].clear();
+                interpWs[i].clear();
+            }
+            // std::cout << "TRY ASSIGN INTERP SHAPE" << std::endl;
+            if(interpShape && interpShape->has_attr("embed_id") && interpShape->has_attr("embed_w")){
+                // std::cout << "ASSIGN ATTRIBUTES" << std::endl;
+                const auto& elm_ids = interpShape->attr<float>("embed_id");
+                const auto& elm_ws = interpShape->attr<zeno::vec3f>("embed_w");
+                const auto& pos = interpShape->verts;
+
+                // #pragma omp parallel for 
+                for(size_t i = 0;i < interpShape->size();++i){
+                    auto elm_id = elm_ids[i];
+                    const auto& pos = interpShape->verts[i];
+                    const auto& w = elm_ws[i];
+                    interpPs[elm_id].emplace_back(pos[0],pos[1],pos[2]);
+                    interpWs[elm_id].emplace_back(w[0],w[1],w[2]);
+                }
+            }
+            // if(!interpShape){
+            //     std::cout << "NULLPTR FOR INTERPSHAPE" << std::endl;
+            // }
+            // if()
+    }
+
+    virtual void apply() override {
+        auto prim = get_input<zeno::PrimitiveObject>("prim");
+        auto elmView = get_input<zeno::PrimitiveObject>("elmView");
+        auto integrator = get_input<FEMIntegrator>("integrator");
+        std::shared_ptr<PrimitiveObject> interpShape = has_input("skin") ? get_input<PrimitiveObject>("skin") : nullptr;
+        auto res = std::make_shared<LaplaceOperator>();
+        res->mesh = prim;
+        Eigen::SparseMatrix<FEM_Scaler> L;
+        L.resize(prim->size() * 3,prim->size() * 3);
+
+        std::vector<Mat9x12d> elm_dFdx;
+        std::vector<float> elm_stiffness;
+        elm_dFdx.resize(prim->quads.size());
+        elm_stiffness.resize(prim->quads.size());
+
+        std::vector<std::vector<Vec3d>> interpPs;
+        std::vector<std::vector<Vec3d>> interpWs;
+        AssignElmInterpShape(prim->quads.size(),interpShape,interpPs,interpWs);
+
+        #pragma omp parallel for
+        for(size_t elm_id = 0;elm_id < prim->quads.size();++elm_id){
+            const auto& elm = prim->quads[elm_id];
+            Mat3x3d Dm;
+            for(size_t i = 1;i < 4;++i){
+                const auto& vert = prim->verts[elm[i]];
+                const auto& vert0 = prim->verts[elm[0]];
+                auto vi0 = vert - vert0; 
+                Dm.col(i - 1) << vi0[0],vi0[1],vi0[2];
+            }
+
+            Mat3x3d DmInv = Dm.inverse();
+            double m = DmInv(0,0);
+            double n = DmInv(0,1);
+            double o = DmInv(0,2);
+            double p = DmInv(1,0);
+            double q = DmInv(1,1);
+            double r = DmInv(1,2);
+            double s = DmInv(2,0);
+            double t = DmInv(2,1);
+            double u = DmInv(2,2);
+
+            double t1 = - m - p - s;
+            double t2 = - n - q - t;
+            double t3 = - o - r - u; 
+
+            elm_dFdx[elm_id] << 
+                t1, 0, 0, m, 0, 0, p, 0, 0, s, 0, 0, 
+                0,t1, 0, 0, m, 0, 0, p, 0, 0, s, 0,
+                0, 0,t1, 0, 0, m, 0, 0, p, 0, 0, s,
+                t2, 0, 0, n, 0, 0, q, 0, 0, t, 0, 0,
+                0,t2, 0, 0, n, 0, 0, q, 0, 0, t, 0,
+                0, 0,t2, 0, 0, n, 0, 0, q, 0, 0, t,
+                t3, 0, 0, o, 0, 0, r, 0, 0, u, 0, 0,
+                0,t3, 0, 0, o, 0, 0, r, 0, 0, u, 0,
+                0, 0,t3, 0, 0, o, 0, 0, r, 0, 0, u;
+
+            auto E  = elmView->attr<float>("E")[elm_id];
+            auto nu = elmView->attr<float>("nu")[elm_id];
+
+            auto lambda = ElasticModel::Enu2Lambda(E,nu);
+            auto mu = ElasticModel::Enu2Mu(E,nu); 
+
+            elm_stiffness[elm_id] = lambda + mu;         
+        }
+
+        const auto& vols = elmView->attr<float>("V");
+
+
+        std::vector<Eigen::Triplet<FEM_Scaler>> triplets;
+        triplets.resize(prim->quads.size() * 12 * 12);
+
+
+//      Compute the Laplace Operator For Elastic Object
+        #pragma omp parallel for
+        for(size_t elm_id = 0;elm_id < prim->quads.size();++elm_id){
+            const auto& elm = prim->quads[elm_id];
+            Mat12x12d elm_H = elm_stiffness[elm_id] * vols[elm_id] * elm_dFdx[elm_id].transpose() * elm_dFdx[elm_id];
+
+            auto interpPenalty = elmView->has_attr("embed_PC") ? elmView->attr<float>("embed_PC")[elm_id] : 0;
+
+            if(interpPs[elm_id].size() > 0){
+                for(size_t i = 0;i < interpPs[elm_id].size();++i){
+                    const auto& ipos = interpPs[elm_id][i];
+                    const auto& w = interpWs[elm_id][i];
+
+                    Vec4d iw;
+                    iw << w[0],w[1],w[2],1-w[0]-w[1]-w[2];
+
+                    for(size_t j = 0;j < 4;++j)
+                        for(size_t k = 0;k < 4;++k){
+                            FEM_Scaler alpha = interpPenalty * iw[j] * iw[k] / interpPs[elm_id].size();
+                            elm_H.block(j * 3,k*3,3,3).diagonal() += Vec3d::Constant(alpha);
+                        }                    
+                }
+            }            
+
+            for(size_t i = 0;i < 12;++i)
+                for(size_t j = 0;j < 12;++j){
+                    size_t vr_id = i / 3;
+                    size_t dr_id = i % 3;
+                    size_t vc_id = j / 3;
+                    size_t dc_id = j % 3;
+                    auto val = elm_H(i,j);
+                    triplets[elm_id * 12 * 12 + (vr_id * 3 + dr_id) * 12 + vc_id * 3 + dc_id] = Eigen::Triplet<FEM_Scaler>(elm[vr_id] * 3 + dr_id,elm[vc_id] * 3 + dc_id,val);
+                }
+                
+
+        }
+        L.setZero();
+        L.setFromTriplets(triplets.begin(),triplets.end());
+        res->laplace_solver.compute(L);
+
+        set_output("res",std::move(res));
+    }
+};
+
+ZENDEFNODE(BuildLapaceOperator,{
+    {"prim","elmView","integrator","skin"
+    },
+    {"res"},
+    {},
+    {"FEM"},
+});
+
+
+
+struct SolveFEMFast : zeno::INode {
+    virtual void apply() override {
+        using namespace LBFGSpp;
+
+        auto integrator = get_input<FEMIntegrator>("integrator");
+        auto shape = get_input<PrimitiveObject>("shape");
+        auto& cpos = shape->attr<zeno::vec3f>("curPos");
+        auto& ppos = shape->attr<zeno::vec3f>("prePos");
+        auto& pppos = shape->attr<zeno::vec3f>("preprePos");
+        auto laplace_op = get_input<LaplaceOperator>("laplaceOp");
+        for(size_t i = 0;i < shape->size();++i){
+            pppos[i] = ppos[i];
+            ppos[i] = cpos[i];
+        }
+
+        auto elmView = get_input<PrimitiveObject>("elmView");
+
+        std::shared_ptr<PrimitiveObject> interpShape = has_input("skin") ? get_input<PrimitiveObject>("skin") : nullptr;
+        auto max_iters = get_input2<int>("maxNRIters");
+        auto max_linesearch = get_input2<int>("maxBTLs");
+        auto c1 = get_input2<float>("ArmijoCoeff");
+        auto c2 = get_input2<float>("CurvatureCoeff");
+        auto beta = get_input2<float>("BTL_shrinkingRate");
+        auto epsilon = get_input2<float>("epsilon");
+        auto rel_epsilon = get_input2<float>("rel_epsilon");
+
+        auto window_size = get_input2<int>("window_size");
+
+        LBFGSParam<FEM_Scaler> param;
+        param.m = window_size;
+        param.epsilon = epsilon;
+        param.epsilon_rel = rel_epsilon;
+        param.max_iterations = max_iters;
+        param.max_linesearch = max_linesearch;
+        param.ftol = c1;
+        param.wolfe = c2;
+
+        param.check_param();
+
+
+        LBFGSSolver<FEM_Scaler> solver(param);
+
+        Eigen::VectorXd _x(shape->size() * 3);
+        for(size_t i = 0;i < shape->size();++i)
+            _x.segment(i*3,3) << cpos[i][0],cpos[i][1],cpos[i][2];
+
+
+        FEM_Scaler _fx;
+        int niter = solver.minimize(
+            [&](const Eigen::VectorXd& x,Eigen::VectorXd& grad) mutable {
+                // std::cout << "HELO LAMBDA TEST" << std::endl;
+                for(size_t i = 0;i < shape->size();++i)
+                    cpos[i] = zeno::vec3f(x[i*3 + 0],x[i*3 + 1],x[i*3 + 2]);
+                return integrator->EvalObjDeriv(shape,elmView,interpShape,grad);
+            },
+            _x,
+            _fx,// TODO: define the inverse of initial hessian approximation
+            [&](const Eigen::VectorXd& b) mutable {
+                auto res = laplace_op->laplace_solver.solve(b);
+                return res;
+            },
+            true
+        );
+
+        for(size_t i = 0;i < shape->size();++i)
+            cpos[i] = zeno::vec3f(_x[i*3+ 0],_x[i*3+1],_x[i*3+2]);
+
+        std::cout << "FINISH STEPPING " << "\t" << niter << "\t" << max_iters << std::endl;
+        set_output("shape",shape); 
+    }
+};
+
+ZENDEFNODE(SolveFEMFast,{
+    {"integrator","shape","elmView","laplaceOp","skin",{"int","maxNRIters","10"},{"int","maxBTLs","10"},{"float","ArmijoCoeff","0.01"},
+        {"float","CurvatureCoeff","0.9"},{"float","BTL_shrinkingRate","0.5"},
+        {"float","epsilon","1e-8"},{"float","rel_epsilon","1e-5"},{"int","window_size","5"}
+    },
+    {"shape"},
     {},
     {"FEM"},
 });
