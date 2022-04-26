@@ -84,6 +84,7 @@ jobs:
         runVcpkgInstall: true
 
     - name: Cache CMake
+      #if: ${{ needs.check.outputs.type != 'release' }}
       uses: actions/cache@v3
       with:
         path: ${{ github.workspace }}/build
