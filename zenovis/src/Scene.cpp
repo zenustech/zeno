@@ -18,6 +18,7 @@ Scene::~Scene() = default;
 
 Scene::Scene()
     : camera(std::make_unique<Camera>()),
+      drawOptions(std::make_unique<DrawOptions>()),
       shaderMan(std::make_unique<ShaderManager>()) {
 
     CHECK_GL(glDepthRangef(0, 30000));
@@ -91,8 +92,8 @@ void Scene::drawSceneDepthSafe(bool reflect, bool isDepthPass) {
             }
         }
         if (!isDepthPass && drawOptions->show_grid) {
-            zeno::scope_modify unused1{drawOptions->passReflect, false};
-            zeno::scope_modify unused2{drawOptions->passIsDepthPass, false};
+            zeno::scope_modify unused3{drawOptions->passReflect, false};
+            zeno::scope_modify unused4{drawOptions->passIsDepthPass, false};
             for (auto const &hudgra : hudGraphics) {
                 hudgra->draw();
             }
