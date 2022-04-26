@@ -22,7 +22,6 @@ public slots:
     void onNewFile();
     bool openFile(QString filePath);
     bool saveFile(QString filePath);
-    bool saveContent(const QString& strContent, QString filePath);
     void saveQuit();
     void save();
     void saveAs();

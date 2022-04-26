@@ -436,7 +436,7 @@ void ZenoMainWindow::exportGraph()
             content.append(")ZSL\"\n");
         }
     }
-    this->saveContent(content, path);
+    saveContent(content, path);
 }
 
 bool ZenoMainWindow::openFile(QString filePath)
@@ -532,35 +532,27 @@ void ZenoMainWindow::save()
     }
 }
 
+static bool saveContent(const QString& strContent, QString filePath)
+{
+    QFile f(filePath);
+    if (!f.open(QIODevice::WriteOnly)) {
+        qWarning() << Q_FUNC_INFO << "Failed to open" << filePath << f.errorString();
+        zeno::log_error("Failed to open file for write: {} ({})",
+                       filePath.toStdString(), f.errorString().toStdString());
+        return false;
+    }
+    f.write(strContent.toUtf8());
+    f.close();
+    return true;
+}
+
 bool ZenoMainWindow::saveFile(QString filePath)
 {
     IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
     QString strContent = ZsgWriter::getInstance().dumpProgramStr(pModel);
-    QFile f(filePath);
-    if (!f.open(QIODevice::WriteOnly)) {
-        qWarning() << Q_FUNC_INFO << "Failed to open" << filePath << f.errorString();
-        zeno::log_error("Failed to open zsg for write: {} ({})",
-                       filePath.toStdString(), f.errorString().toStdString());
-        return false;
-    }
-    f.write(strContent.toUtf8());
-    f.close();
+    saveContent(strContent, filePath);
     pModel->setFilePath(filePath);
     pModel->clearDirty();
-    return true;
-}
-
-bool ZenoMainWindow::saveContent(const QString& strContent, QString filePath)
-{
-    QFile f(filePath);
-    if (!f.open(QIODevice::WriteOnly)) {
-        qWarning() << Q_FUNC_INFO << "Failed to open" << filePath << f.errorString();
-        zeno::log_error("Failed to open zsg for write: {} ({})",
-                       filePath.toStdString(), f.errorString().toStdString());
-        return false;
-    }
-    f.write(strContent.toUtf8());
-    f.close();
     return true;
 }
 
