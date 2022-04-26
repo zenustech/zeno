@@ -52,14 +52,14 @@ Scene::Scene()
     //setup_env_map("Default");
 }
 
-std::vector<IGraphic *> Scene::graphics() const {
-    std::vector<IGraphic *> gras;
-    gras.reserve(graphicsMan->graphics.size());
-    for (auto const &[key, val] : graphicsMan->graphics) {
-        gras.push_back(val.get());
-    }
-    return gras;
-}
+//zeno::PolymorphicVector<std::vector<IGraphic *>> Scene::graphics() const {
+    //zeno::PolymorphicVector<std::vector<IGraphic *>> gras;
+    //gras.reserve(graphicsMan->graphics.size());
+    //for (auto const &[key, val] : graphicsMan->graphics) {
+        //gras.push_back(val.get());
+    //}
+    //return gras;
+//}
 
 void Scene::drawSceneDepthSafe(bool reflect, bool isDepthPass) {
     auto aspRatio = camera->getAspect();
@@ -82,7 +82,7 @@ void Scene::drawSceneDepthSafe(bool reflect, bool isDepthPass) {
         camera->proj = glm::perspective(glm::radians(camera->m_fov), aspRatio,
                                         range[i - 1], range[i]);
 
-        for (auto const &gra : graphics()) {
+        for (auto const &gra : graphicsMan->graphics.values<IGraphicDraw>()) {
             gra->draw(reflect, isDepthPass);
         }
         if (!isDepthPass && camera->show_grid) {
@@ -101,7 +101,7 @@ void Scene::fast_paint_graphics() {
     CHECK_GL(glClearColor(camera->bgcolor.r, camera->bgcolor.g, camera->bgcolor.b, 0.0f));
     CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 
-    for (auto const &gra : graphics()) {
+    for (auto const &gra : graphicsMan->graphics.values<IGraphicDraw>()) {
         gra->draw(false, false);
     }
     if (camera->show_grid) {

@@ -3,6 +3,7 @@
 #include <memory>
 #include <vector>
 #include <zeno/utils/disable_copy.h>
+#include <zeno/utils/PolymorphicVector.h>
 
 namespace zenovis {
 
@@ -13,6 +14,7 @@ struct GraphicsManager;
 struct LightCluster;
 struct Light;
 struct IGraphic;
+struct IGraphicDraw;
 struct DepthPass;
 struct ReflectivePass;
 
@@ -26,15 +28,13 @@ struct Scene : zeno::disable_copy {
     std::unique_ptr<ShaderManager> shaderMan;
     std::unique_ptr<EnvmapManager> envmapMan;
     std::unique_ptr<GraphicsManager> graphicsMan;
-    std::vector<std::unique_ptr<IGraphic>> hudGraphics;
+    std::vector<std::unique_ptr<IGraphicDraw>> hudGraphics;
     std::unique_ptr<DepthPass> mDepthPass;
     std::unique_ptr<ReflectivePass> mReflectivePass;
     std::unique_ptr<opengl::VAO> vao;
 
     Scene();
     ~Scene();
-
-    std::vector<IGraphic *> graphics() const;
 
     void fast_paint_graphics();
     void drawSceneDepthSafe(bool reflect, bool isDepthPass);

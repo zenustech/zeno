@@ -7,7 +7,7 @@
 namespace zenovis {
 
 std::unique_ptr<IGraphic> makeGraphic(Scene *scene, zeno::IObject *obj) {
-    ToGraphicVisitor visitor;
+    MakeGraphicVisitor visitor;
     visitor.in_scene = scene;
     obj->accept(&visitor);
     auto res = std::move(visitor.out_result);

@@ -6,16 +6,14 @@
 
 namespace zeno {
 
-template <class Map>
-struct PolymorphicMap {
-    using key_type = typename Map::key_type;
-    using mapped_type = typename Map::mapped_type;
-    using value_type = typename Map::value_type;
+template <class Vector>
+struct PolymorphicVector {
+    using value_type = typename Vector::value_type;
 
-    using element_type = typename std::pointer_traits<mapped_type>::element_type;
+    using element_type = typename std::pointer_traits<value_type>::element_type;
     static_assert(std::is_polymorphic_v<element_type>);
 
-    Map m_curr;
+    Vector m_curr;
 
     auto begin() const {
         return m_curr.begin();
@@ -37,23 +35,27 @@ struct PolymorphicMap {
         return m_curr.size();
     }
 
-    auto find(key_type const &key) const {
-        return m_curr.find(key);
+    void reserve(std::size_t n) {
+        return m_curr.reserve(n);
+    }
+
+    void resize(std::size_t n) {
+        return m_curr.resize(n);
     }
 
     void clear() {
         m_curr.clear();
     }
 
-    auto try_emplace(key_type const &key, mapped_type ptr) {
-        return m_curr.try_emplace(key, std::move(ptr));
+    auto push_back(value_type ptr) {
+        return m_curr.push_back(std::move(ptr));
     }
 
     template <class Derived>
     std::vector<Derived *> values() const {
         static_assert(std::is_base_of_v<element_type, Derived>);
         std::vector<Derived *> ret;
-        for (auto const &[key, ptr]: m_curr) {
+        for (auto const &ptr: m_curr) {
             auto p = std::addressof(*ptr);
             if (auto q = dynamic_cast<Derived *>(p)) {
                 ret.push_back(q);
@@ -65,32 +67,9 @@ struct PolymorphicMap {
     std::vector<element_type *> values() const {
         std::vector<element_type *> ret;
         ret.reserve(m_curr.size());
-        for (auto const &[key, ptr]: m_curr) {
+        for (auto const &ptr: m_curr) {
             auto p = std::addressof(*ptr);
             ret.push_back(p);
-        }
-        return ret;
-    }
-
-    template <class Derived>
-    std::vector<std::pair<key_type, Derived *>> pairs() const {
-        static_assert(std::is_base_of_v<element_type, Derived>);
-        std::vector<std::pair<key_type, Derived *>> ret;
-        for (auto const &[key, ptr]: m_curr) {
-            auto p = std::addressof(*ptr);
-            if (auto q = dynamic_cast<Derived *>(p)) {
-                ret.push_back(key, q);
-            }
-        }
-        return ret;
-    }
-
-    std::vector<std::pair<key_type, element_type *>> pairs() const {
-        std::vector<std::pair<key_type, element_type *>> ret;
-        ret.reserve(m_curr.size());
-        for (auto const &[key, ptr]: m_curr) {
-            auto p = std::addressof(*ptr);
-            ret.push_back(key, p);
         }
         return ret;
     }

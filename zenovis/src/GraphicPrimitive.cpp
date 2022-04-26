@@ -286,7 +286,7 @@ static void parseTrianglesDrawBuffer(zeno::PrimitiveObject *prim, ZhxxDrawObject
     }
     /* TOCK(bindebo); */
 }
-struct GraphicPrimitive : IGraphic {
+struct GraphicPrimitive final : IGraphicDraw {
     Scene *scene;
     std::unique_ptr<Buffer> vbo;
     std::unique_ptr<Buffer> instvbo;
@@ -2768,7 +2768,7 @@ void main()
 
 }
 
-void ToGraphicVisitor::visit(zeno::PrimitiveObject *obj) {
+void MakeGraphicVisitor::visit(zeno::PrimitiveObject *obj) {
      this->out_result = std::make_unique<GraphicPrimitive>(this->in_scene, obj);
 }
 

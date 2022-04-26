@@ -6,29 +6,23 @@
 namespace zenovis {
 namespace {
 
-struct GraphicString : IGraphic {
+struct GraphicString final : IGraphic {
     Scene *scene;
 
     explicit GraphicString(Scene *scene_, zeno::StringObject *str) : scene(scene_) {
         zeno::log_info("ToView got StringObject with content: {}", str->get());
     }
-
-    virtual void draw(bool reflect, bool depthPass) override {
-    }
-
-    virtual void drawShadow(Light *light) override {
-    }
 };
 
 }
 
-void ToGraphicVisitor::visit(zeno::StringObject *obj) {
+void MakeGraphicVisitor::visit(zeno::StringObject *obj) {
      this->out_result = std::make_unique<GraphicString>(this->in_scene, obj);
 }
 
 namespace {
 
-struct GraphicNumeric : IGraphic {
+struct GraphicNumeric final : IGraphic {
     Scene *scene;
 
     explicit GraphicNumeric(Scene *scene_, zeno::NumericObject *num) : scene(scene_) {
@@ -36,17 +30,11 @@ struct GraphicNumeric : IGraphic {
             zeno::log_info("ToView got NumericObject with content: {}", val);
         }, num->value);
     }
-
-    virtual void draw(bool reflect, bool depthPass) override {
-    }
-
-    virtual void drawShadow(Light *light) override {
-    }
 };
 
 }
 
-void ToGraphicVisitor::visit(zeno::NumericObject *obj) {
+void MakeGraphicVisitor::visit(zeno::NumericObject *obj) {
      this->out_result = std::make_unique<GraphicNumeric>(this->in_scene, obj);
 }
 

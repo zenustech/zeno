@@ -55,7 +55,7 @@ static const char *frag_code = R"(
     }
 )";
 
-struct GraphicAxis : IGraphic {
+struct GraphicAxis final : IGraphicDraw {
     Scene *scene;
 
     std::unique_ptr<Buffer> vbo;
@@ -116,7 +116,7 @@ struct GraphicAxis : IGraphic {
 
 } // namespace
 
-std::unique_ptr<IGraphic> makeGraphicAxis(Scene *scene) {
+std::unique_ptr<IGraphicDraw> makeGraphicAxis(Scene *scene) {
     return std::make_unique<GraphicAxis>(scene);
 }
 

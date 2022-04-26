@@ -14,7 +14,7 @@ using opengl::Buffer;
 using opengl::Program;
 using zeno::vec3f;
 
-struct GraphicCamera : IGraphic {
+struct GraphicCamera final : IGraphic {
     Scene *scene;
 
     std::unique_ptr<Buffer> vbo;
@@ -39,7 +39,7 @@ struct GraphicCamera : IGraphic {
 
 }
 
-void ToGraphicVisitor::visit(zeno::CameraObject *obj) {
+void MakeGraphicVisitor::visit(zeno::CameraObject *obj) {
      this->out_result = std::make_unique<GraphicCamera>(this->in_scene, obj);
 }
 

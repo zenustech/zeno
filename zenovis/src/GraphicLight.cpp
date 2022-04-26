@@ -12,7 +12,7 @@
 namespace zenovis {
 namespace {
 
-struct GraphicLight : IGraphic {
+struct GraphicLight final : IGraphicLight {
     Scene *scene;
     zeno::LightData lightData;
 
@@ -22,7 +22,7 @@ struct GraphicLight : IGraphic {
         // TODO: implement modify scene->light
     }
 
-    void addToScene() {
+    virtual void addToScene() override {
         scene->lightCluster->addLight(lightData);
     }
 
@@ -35,7 +35,7 @@ struct GraphicLight : IGraphic {
 
 }
 
-void ToGraphicVisitor::visit(zeno::LightObject *obj) {
+void MakeGraphicVisitor::visit(zeno::LightObject *obj) {
      this->out_result = std::make_unique<GraphicLight>(this->in_scene, obj);
 }
 

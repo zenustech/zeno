@@ -86,7 +86,7 @@ static const char *frag_code = R"(
     }
 )";
 
-struct GraphicGrid : IGraphic {
+struct GraphicGrid final : IGraphicDraw {
     Scene *scene;
 
     std::unique_ptr<Buffer> vbo;
@@ -129,7 +129,7 @@ struct GraphicGrid : IGraphic {
 
 } // namespace
 
-std::unique_ptr<IGraphic> makeGraphicGrid(Scene *scene) {
+std::unique_ptr<IGraphicDraw> makeGraphicGrid(Scene *scene) {
     return std::make_unique<GraphicGrid>(scene);
 }
 

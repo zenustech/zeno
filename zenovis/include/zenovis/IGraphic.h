@@ -9,13 +9,20 @@ struct Light;
 struct Scene;
 
 struct IGraphic {
-    virtual void draw(bool reflect, bool depthPass) = 0;
-    virtual void drawShadow(Light *light) = 0;
     virtual bool hasMaterial() const { return false; }
     virtual ~IGraphic() = default;
 };
 
-struct ToGraphicVisitor : zeno::IObjectVisitor {
+struct IGraphicDraw : IGraphic {
+    virtual void draw(bool reflect, bool depthPass) = 0;
+    virtual void drawShadow(Light *light) = 0;
+};
+
+struct IGraphicLight : IGraphic {
+    virtual void addToScene() = 0;
+};
+
+struct MakeGraphicVisitor : zeno::IObjectVisitor {
     Scene *in_scene{};
     std::unique_ptr<IGraphic> out_result;
 
@@ -26,7 +33,7 @@ ZENO_XMACRO_IObject(_ZENO_PER_XMACRO)
 };
 
 std::unique_ptr<IGraphic> makeGraphic(Scene *scene, zeno::IObject *obj);
-std::unique_ptr<IGraphic> makeGraphicAxis(Scene *scene);
-std::unique_ptr<IGraphic> makeGraphicGrid(Scene *scene);
+std::unique_ptr<IGraphicDraw> makeGraphicAxis(Scene *scene);
+std::unique_ptr<IGraphicDraw> makeGraphicGrid(Scene *scene);
 
 } // namespace zenovis
