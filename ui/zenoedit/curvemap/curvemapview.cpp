@@ -32,7 +32,7 @@ CurveMapView::~CurveMapView()
 {
 }
 
-void CurveMapView::init(CurveModel* model)
+void CurveMapView::init(CurveModel* model, bool timeFrame)
 {
 	QGraphicsScene* pScene = new QGraphicsScene;
 	setScene(pScene);
@@ -44,8 +44,8 @@ void CurveMapView::init(CurveModel* model)
 	m_gridMargins.setTop(64);
 	m_gridMargins.setBottom(64);
 
-	m_pHScalar = new CurveScalarItem(true, this);
-	m_pVScalar = new CurveScalarItem(false, this);
+	m_pHScalar = new CurveScalarItem(true, timeFrame, this);
+	m_pVScalar = new CurveScalarItem(false, false, this);
 	connect(horizontalScrollBar(), SIGNAL(valueChanged(int)), m_pHScalar, SLOT(update()));
 	connect(verticalScrollBar(), SIGNAL(valueChanged(int)), m_pVScalar, SLOT(update()));
     connect(pScene, SIGNAL(selectionChanged()), this, SLOT(onSelectionChanged()));

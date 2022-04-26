@@ -84,10 +84,10 @@ void ZCurveMapEditor::initButtonShadow()
     }
 }
 
-void ZCurveMapEditor::init(CurveModel* model)
+void ZCurveMapEditor::init(CurveModel* model, bool bTimeFrame)
 {
     m_model = model;
-    m_ui->gridview->init(model);
+    m_ui->gridview->init(model, bTimeFrame);
     CURVE_RANGE range = model->range();
     m_ui->editXFrom->setText(QString::number(range.xFrom));
     m_ui->editXTo->setText(QString::number(range.xTo));

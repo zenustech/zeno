@@ -23,7 +23,7 @@ class ZCurveMapEditor : public QDialog
 public:
 	ZCurveMapEditor(QWidget* parent = nullptr);
 	~ZCurveMapEditor();
-	void init(CurveModel* model);
+	void init(CurveModel* model, bool bTimeFrame);
 
 public slots:
 	void onButtonToggled(QAbstractButton* btn, bool bToggled);

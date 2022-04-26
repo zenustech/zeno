@@ -131,7 +131,7 @@ void MakeCurvemapNode::onEditClicked()
 		pModel->initItems(rg, points, handlers);
 
 		ZCurveMapEditor* pEditor = new ZCurveMapEditor;
-		pEditor->init(pModel);
+		pEditor->init(pModel, false);
 		pEditor->show();
 	}
 }
