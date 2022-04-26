@@ -107,6 +107,7 @@ void ZCurveMapEditor::initSignals()
 {
     connect(m_pGroupHdlType, SIGNAL(buttonToggled(QAbstractButton *, bool)), this, SLOT(onButtonToggled(QAbstractButton*, bool)));
     connect(m_ui->gridview, &CurveMapView::nodeItemsSelectionChanged, this, &ZCurveMapEditor::onNodesSelectionChanged);
+    connect(m_ui->gridview, &CurveMapView::frameChanged, this, &ZCurveMapEditor::onFrameChanged);
 }
 
 void ZCurveMapEditor::onButtonToggled(QAbstractButton* btn, bool bToggled)
@@ -268,4 +269,9 @@ void ZCurveMapEditor::onNodesDataChanged()
 void ZCurveMapEditor::onNodesSelectionChanged(QList<CurveNodeItem*> lst)
 {
     onNodesDataChanged();
+}
+
+void ZCurveMapEditor::onFrameChanged(qreal frame)
+{
+    m_ui->editFrame->setText(QString::number(frame));
 }

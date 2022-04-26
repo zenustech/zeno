@@ -49,6 +49,7 @@ void CurveMapView::init(CurveModel* model, bool timeFrame)
 	connect(horizontalScrollBar(), SIGNAL(valueChanged(int)), m_pHScalar, SLOT(update()));
 	connect(verticalScrollBar(), SIGNAL(valueChanged(int)), m_pVScalar, SLOT(update()));
     connect(pScene, SIGNAL(selectionChanged()), this, SLOT(onSelectionChanged()));
+    connect(m_pHScalar, SIGNAL(frameChanged(qreal)), this, SIGNAL(frameChanged(qreal)));
 
 	QRectF rc = scene()->sceneRect();
 	rc = sceneRect();
@@ -241,12 +242,14 @@ int CurveMapView::frames(bool bHorizontal) const
 	{
 		int W = width();
 		int wtf = W * m_factor * 0.015;
+		return 10;
 		return wtf;
 	}
 	else
 	{
 		int H = height();
 		int wtf = H * m_factor * 0.015;
+		return 10;
 		return wtf;
 	}
 }

@@ -130,6 +130,8 @@ void CurveGrid::paint(QPainter* painter, const QStyleOptionGraphicsItem* option,
 		y += steps;
 	}
 
+	painter->save();
+	painter->setRenderHint(QPainter::Antialiasing, false);
 	painter->fillRect(rc, m_clrBg);
 	
 	QPen pen(QColor(m_clrGrid), 1. / factor);
@@ -137,4 +139,5 @@ void CurveGrid::paint(QPainter* painter, const QStyleOptionGraphicsItem* option,
 
 	painter->drawRect(rc);
 	painter->drawLines(innerLines.data(), innerLines.size());
+    painter->restore();
 }

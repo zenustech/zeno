@@ -30,6 +30,7 @@ public:
 signals:
 	void nodeItemsSelectionChanged(QList<CurveNodeItem*>);
 	void nodeItemsGeometryChanged();
+	void frameChanged(qreal);
 
 protected:
 	void wheelEvent(QWheelEvent* event) override;

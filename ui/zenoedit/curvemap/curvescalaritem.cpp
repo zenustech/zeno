@@ -11,7 +11,7 @@ CurveSliderItem::CurveSliderItem(CurveScalarItem *parent)
 	, m_yoffset(5)
 {
     setPos(QPointF(0, m_yoffset));
-    setFlags(ItemIsMovable | ItemSendsScenePositionChanges);
+    setFlags(ItemIsMovable | ItemSendsScenePositionChanges | ItemIsSelectable);
     m_line = new QGraphicsLineItem(this);
     m_line->setPen(QPen(QColor(255, 255, 255), 2));
     m_line->setLine(QLineF(0, height + 1, 0, 10000));
@@ -22,7 +22,7 @@ QRectF CurveSliderItem::boundingRect() const
     return QRectF(-width / 2, 0, width, height);
 }
 
-void CurveSliderItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
+void CurveSliderItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
 {
     painter->save();
     painter->setRenderHint(QPainter::Antialiasing, false);
@@ -47,7 +47,7 @@ QVariant CurveSliderItem::itemChange(GraphicsItemChange change, const QVariant& 
 	{
         qreal w = m_scalar->boundingRect().width();
         QPointF newPos = value.toPointF();
-        newPos.setX(qMax(0., qMin(w, newPos.x())));
+        newPos.setX(int(qMax(0., qMin(w, newPos.x()))));
         newPos.setY(m_yoffset);
         return newPos;
 	}
@@ -209,18 +209,8 @@ void CurveScalarItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* o
     qreal scaleY = trans.m22();
 
 	int prec = 2;
-	int nFrames = 0;
-	if (m_bHorizontal)
-	{
-        nFrames = m_view->frames(true);
-	}
-	else
-	{
-        nFrames = m_view->frames(false);
-	}
-
     auto frames = curve_util::numframes(trans.m11(), trans.m22());
-    nFrames = m_bHorizontal ? frames.first : frames.second;
+    int nFrames = m_bHorizontal ? frames.first : frames.second;
 
 	CURVE_RANGE rg = m_view->range();
 
@@ -239,36 +229,32 @@ void CurveScalarItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* o
 	if (m_bHorizontal)
 	{
 		qreal realWidth = rcGrid.width() * scaleX;
-        n *= scaleX;
 		qreal step = realWidth / nFrames;
 		qreal y = option->rect.top();
-		for (qreal i = 0; i <= realWidth + 0.005; i += step)
+		for (int i = 0; i <= nFrames; i++)
 		{
-			qreal x = i;
-			qreal scalar = (rg.xTo - rg.xFrom) * (i - 0) / n + rg.xFrom;
-			if (i == realWidth)
-			{
-				scalar = rg.xTo;
-			}
-			
-			QString numText = QString::number(scalar, 'g', prec);
-			qreal textWidth = metrics.horizontalAdvance(numText);
-			painter->setPen(QPen(QColor(153, 153, 153)));
-			painter->drawText(QPoint(x - textWidth / 2, y + 22), numText);
+			const qreal x = step * i;
+            qreal scalar = (rg.xTo - rg.xFrom) * i / nFrames + rg.xFrom;
+
+			QString numText = QString::number(scalar);//, 'g', prec);
+            qreal textWidth = metrics.horizontalAdvance(numText);
+            painter->setPen(QPen(QColor(153, 153, 153)));
+            painter->drawText(QPoint(x - textWidth / 2, y + 22), numText);
 
 			if (m_bFrame)
 			{
-                int y = 3./4 * rcBound.height();
+                qreal y = 3./4 * rcBound.height();
                 painter->setPen(QColor(100, 100, 100));
 				painter->drawLine(QPointF(x, y), QPointF(x, rcBound.height() - 1));
-				if (i > 0)
+				if (i < nFrames)
 				{
 					int _nFrames = 5;
-					qreal _step = step / _nFrames;
-					for (qreal j = i - step + _step; j < i; j += _step)
+					const qreal _step = step / _nFrames;
+					for (int j = 1; j < _nFrames; j++)
 					{
-						int y = 9./10 * rcBound.height();
-						painter->drawLine(QPointF(j, y), QPointF(j, rcBound.height() - 1));  
+						const qreal x_ = x + _step * j;
+						y = 9./10 * rcBound.height();
+						painter->drawLine(QPointF(x_, y), QPointF(x_, rcBound.height() - 1));
 					}
 				}
 			}
@@ -276,25 +262,17 @@ void CurveScalarItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* o
 	}
 	else
 	{
-		qreal realHeight = rcGrid.height() * trans.m22();
-		n *= scaleY;
+		qreal realHeight = rcGrid.height() * scaleY;
 		qreal step = realHeight / nFrames;
 		qreal x = option->rect.left();
-		for (qreal i = realHeight; i > 0; i -= step)
-		{	
-			qreal y = i;
-			qreal scalar = (rg.yTo - rg.yFrom) * (n - i) / n + rg.yFrom;
-			QString numText = QString::number(scalar, 'g', prec);
+        for (int i = 0; i <= nFrames; i++)
+		{
+			const qreal y = step * i;
+            qreal scalar = (rg.yTo - rg.yFrom) * (nFrames - i) / nFrames + rg.yFrom;
+			QString numText = QString::number(scalar);
 			qreal textHeight = metrics.height();
-
 			painter->drawText(QPointF(x + 10, y + textHeight / 2), numText);
-		}
-
-		qreal y = 0;
-		qreal scalar = rg.yTo;
-		QString numText = QString::number(scalar, 'g', prec);
-		qreal textHeight = metrics.height();
-		painter->drawText(QPointF(x + 10, y + textHeight / 2), numText);
+        }
 	}
 
 	painter->restore();

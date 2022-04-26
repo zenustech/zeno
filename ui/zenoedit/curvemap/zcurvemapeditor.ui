@@ -328,6 +328,30 @@
        <item>
         <widget class="ZIconLabel" name="btnLockX"/>
        </item>
+       <item>
+        <widget class="QLabel" name="label_6">
+         <property name="styleSheet">
+          <string notr="true">QLabel
+{
+	font: 14px 'HarmonyOS Sans';
+	color: rgb(133, 130, 128);
+}</string>
+         </property>
+         <property name="text">
+          <string>Frame</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLineEdit" name="editFrame">
+         <property name="contextMenuPolicy">
+          <enum>Qt::DefaultContextMenu</enum>
+         </property>
+         <property name="readOnly">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
       </layout>
      </item>
      <item row="1" column="3">
@@ -353,6 +377,27 @@
        </item>
        <item>
         <widget class="ZIconLabel" name="btnLockY"/>
+       </item>
+       <item>
+        <widget class="QLabel" name="label_7">
+         <property name="styleSheet">
+          <string notr="true">QLabel
+{
+	font: 14px 'HarmonyOS Sans';
+	color: rgb(133, 130, 128);
+}</string>
+         </property>
+         <property name="text">
+          <string>Value</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLineEdit" name="editValue">
+         <property name="readOnly">
+          <bool>true</bool>
+         </property>
+        </widget>
        </item>
       </layout>
      </item>
