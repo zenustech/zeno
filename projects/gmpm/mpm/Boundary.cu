@@ -199,31 +199,22 @@ ZENDEFNODE(ApplyBoundaryOnZSGrid, {
                                   });
 
 struct ComputeParticleBeta : INode {
-  template <typename Model, typename AnisoModel>
-  void determine_beta(zs::CudaExecutionPolicy &cudaPol, const Model &model,
-                      const AnisoModel &anisoModel,
+  void determine_beta(zs::CudaExecutionPolicy &cudaPol,
                       typename ZenoParticles::particles_t &pars,
                       const typename ZenoPartition::table_t &partition,
-                      const float dt, const typename ZenoGrid::grid_t &grid) {
+                      const float dt, const typename ZenoGrid::grid_t &grid,
+                      float JpcDefault = 1.f) {
     using namespace zs;
     cudaPol(range(pars.size()), [pars = proxy<execspace_e::cuda>({}, pars),
                                  table = proxy<execspace_e::cuda>(partition),
-                                 grid = proxy<execspace_e::cuda>({}, grid),
-                                 model = model, dt,
-                                 anisoModel] __device__(size_t pi) mutable {
+                                 grid = proxy<execspace_e::cuda>({}, grid), dt,
+                                 JpcDefault] __device__(size_t pi) mutable {
       using grid_t = RM_CVREF_T(grid);
       auto pos = pars.pack<3>("pos", pi);
       auto vp = pars.pack<3>("vel", pi);
       pos += dt * vp;
 
-      float Jp_critical = 1.f;
-      // nadp (Jpc = 1)
-      // nacc
-      if constexpr (is_same_v<RM_CVREF_T(anisoModel),
-                              NonAssociativeCamClay<float>>) {
-        Jp_critical = 1.1f; //(not implemented)
-      }
-      // von mises (not implemented)
+      float Jp_critical = JpcDefault;
 
       auto arena =
           make_local_arena<grid_e::collocated, kernel_e::linear>(grid.dx, pos);
@@ -261,28 +252,21 @@ struct ComputeParticleBeta : INode {
       }
     });
   }
-  template <typename Model, typename AnisoModel, typename LsView>
+  template <typename LsView>
   void determine_beta_sdf(zs::CudaExecutionPolicy &cudaPol, LsView lsv,
-                          const ZenoBoundary &boundary, const Model &model,
-                          const AnisoModel &anisoModel, const float dt,
-                          typename ZenoParticles::particles_t &pars) {
+                          const ZenoBoundary &boundary, const float dt,
+                          typename ZenoParticles::particles_t &pars,
+                          float JpcDefault = 1.f) {
     using namespace zs;
     auto collider = boundary.getBoundary(lsv);
     cudaPol(range(pars.size()), [pars = proxy<execspace_e::cuda>({}, pars),
-                                 boundary = collider, model = model, dt,
-                                 anisoModel] __device__(size_t pi) mutable {
+                                 boundary = collider, JpcDefault,
+                                 dt] __device__(size_t pi) mutable {
       auto pos = pars.pack<3>("pos", pi);
       auto vp = pars.pack<3>("vel", pi);
       pos += dt * vp;
 
-      float Jp_critical = 1.f;
-      // nadp (Jpc = 1)
-      // nacc
-      if constexpr (is_same_v<RM_CVREF_T(anisoModel),
-                              NonAssociativeCamClay<float>>) {
-        Jp_critical = 1.1f; //(not implemented)
-      }
-      // von mises (not implemented)
+      float Jp_critical = JpcDefault;
 
       auto X = boundary.R.transpose() * (pos - boundary.b) / boundary.s;
       if (boundary.levelset.getSignedDistance(X) < 0) {
@@ -331,8 +315,11 @@ struct ComputeParticleBeta : INode {
         if (parObjPtr->category == ZenoParticles::mpm ||
             parObjPtr->category == ZenoParticles::surface)
           match([&](auto &elasticModel, auto &anisoElasticModel) {
-            determine_beta(cudaPol, elasticModel, anisoElasticModel, pars,
-                           partition, stepDt, grid);
+            float JpcDefault = 1.f;
+            if constexpr (is_same_v<RM_CVREF_T(anisoElasticModel),
+                                    NonAssociativeCamClay<float>>)
+              JpcDefault = 1.1f;
+            determine_beta(cudaPol, pars, partition, stepDt, grid, JpcDefault);
           })(model.getElasticModel(), model.getAnisoElasticModel());
       }
     } else if (has_input<ZenoBoundary>("ZSBoundary(Grid)")) {
@@ -346,39 +333,43 @@ struct ComputeParticleBeta : INode {
         auto &model = parObjPtr->getModel();
 
         if (parObjPtr->category == ZenoParticles::mpm ||
-            parObjPtr->category == ZenoParticles::surface)
+            parObjPtr->category == ZenoParticles::surface) {
+          float JpcDefault = 1.f;
           match([&](auto &elasticModel, auto &anisoElasticModel) {
-            if (boundary->zsls)
-              match([&](const auto &ls) {
-                if constexpr (is_same_v<RM_CVREF_T(ls), basic_ls_t>) {
-                  match([&](const auto &lsPtr) {
-                    auto lsv = get_level_set_view<execspace_e::cuda>(lsPtr);
-                    determine_beta_sdf(cudaPol, lsv, *boundary, elasticModel,
-                                       anisoElasticModel, stepDt, pars);
-                  })(ls._ls);
-                } else if constexpr (is_same_v<RM_CVREF_T(ls),
-                                               const_sdf_vel_ls_t>) {
-                  match([&](auto lsv) {
-                    determine_beta_sdf(cudaPol, SdfVelFieldView{lsv}, *boundary,
-                                       elasticModel, anisoElasticModel, stepDt,
-                                       pars);
-                  })(ls.template getView<execspace_e::cuda>());
-                } else if constexpr (is_same_v<RM_CVREF_T(ls),
-                                               const_transition_ls_t>) {
-                  match([&](auto fieldPair) {
-                    auto &fvSrc = std::get<0>(fieldPair);
-                    auto &fvDst = std::get<1>(fieldPair);
-                    determine_beta_sdf(
-                        cudaPol,
-                        TransitionLevelSetView{SdfVelFieldView{fvSrc},
-                                               SdfVelFieldView{fvDst},
-                                               ls._stepDt, ls._alpha},
-                        *boundary, elasticModel, anisoElasticModel, stepDt,
-                        pars);
-                  })(ls.template getView<zs::execspace_e::cuda>());
-                }
-              })(boundary->zsls->getLevelSet());
+            if constexpr (is_same_v<RM_CVREF_T(anisoElasticModel),
+                                    NonAssociativeCamClay<float>>)
+              JpcDefault = 1.1f;
           })(model.getElasticModel(), model.getAnisoElasticModel());
+
+          if (boundary->zsls)
+            match([&](const auto &ls) {
+              if constexpr (is_same_v<RM_CVREF_T(ls), basic_ls_t>) {
+                match([&](const auto &lsPtr) {
+                  auto lsv = get_level_set_view<execspace_e::cuda>(lsPtr);
+                  determine_beta_sdf(cudaPol, lsv, *boundary, stepDt, pars,
+                                     JpcDefault);
+                })(ls._ls);
+              } else if constexpr (is_same_v<RM_CVREF_T(ls),
+                                             const_sdf_vel_ls_t>) {
+                match([&](auto lsv) {
+                  determine_beta_sdf(cudaPol, SdfVelFieldView{lsv}, *boundary,
+                                     stepDt, pars, JpcDefault);
+                })(ls.template getView<execspace_e::cuda>());
+              } else if constexpr (is_same_v<RM_CVREF_T(ls),
+                                             const_transition_ls_t>) {
+                match([&](auto fieldPair) {
+                  auto &fvSrc = std::get<0>(fieldPair);
+                  auto &fvDst = std::get<1>(fieldPair);
+                  determine_beta_sdf(
+                      cudaPol,
+                      TransitionLevelSetView{SdfVelFieldView{fvSrc},
+                                             SdfVelFieldView{fvDst}, ls._stepDt,
+                                             ls._alpha},
+                      *boundary, stepDt, pars, JpcDefault);
+                })(ls.template getView<zs::execspace_e::cuda>());
+              }
+            })(boundary->zsls->getLevelSet());
+        }
       }
     }
 
