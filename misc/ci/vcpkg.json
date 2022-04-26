@@ -17,6 +17,7 @@
         "tbb",
         "eigen3",
         "openexr",
+        "blosc",
         {
           "name": "openvdb",
           "version>=": "8.0.0"

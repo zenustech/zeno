@@ -18,17 +18,23 @@ jobs:
         commit-filter: '[release]'
 
     outputs:
-      deploy: ${{ steps.is-release-step.outputs.ci-skip == 'true' }}
+      type: ${{ steps.is-release-step.outputs.ci-skip == 'true' && 'release' || 'debug' }}
 
   build:
     strategy:
       matrix:
         include:
-        - os: ubuntu-18.04
+        - label: x86_64-linux-cpu
+          os: ubuntu-18.04
           triplet: x64-linux
           cxx: g++-9
-        - os: windows-2022
+          gpu: cpu
+          pkgext: tar.gz
+        - label: x86_64-windows-cpu
+          os: windows-2022
           triplet: x64-windows
+          gpu: cpu
+          pkgext: zip
 
     runs-on: ${{ matrix.os }}
     needs: [check]
@@ -55,6 +61,14 @@ jobs:
       with:
         version: 5.15.2
         cached: ${{ steps.cache-qt.outputs.cache-hit }}
+        setup-python: false
+
+    - name: Install CUDA toolkit
+      if: ${{ matrix.gpu == 'cuda' }}
+      uses: Jimver/cuda-toolkit@v0.2.5
+      id: cuda-toolkit
+      with:
+        cuda: 11.5.1
 
     - name: Setup Dependencies
       if: ${{ matrix.triplet != '' }}
@@ -69,25 +83,34 @@ jobs:
         vcpkgJsonGlob: '**/vcpkg.json'
         runVcpkgInstall: true
 
+    - name: Cache CMake
+      uses: actions/cache@v3
+      with:
+        path: ${{ github.workspace }}/build
+        key: ${{ matrix.os }}-${{ matrix.triplet }}-${{ matrix.cxx }}-${{ matrix.gpu }}-${{ needs.check.outputs.type }}-CMake-1
+
+    - name: Clean CMake Cache
+      run: rm -rf ${{ github.workspace }}/build/CMakeCache.txt
+
     - name: Run CMake
       uses: lukka/run-cmake@v10
       with:
-        configurePreset: ${{ (matrix.triplet != '' && 'default' || 'basic') }}${{ (needs.check.outputs.deploy == 'true' && '' || '-debug') }}
-        buildPreset: default${{ (needs.check.outputs.deploy == 'true' && '' || '-debug') }}
+        configurePreset: ${{ (matrix.triplet != '' && (matrix.gpu == 'cuda' && 'cuda' || 'default') || 'basic') }}${{ (needs.check.outputs.type == 'release' && '' || '-debug') }}
+        buildPreset: default${{ (needs.check.outputs.type == 'release' && '' || '-debug') }}
 
     - name: Packaging
-      if: ${{ needs.check.outputs.deploy == 'true' }}
+      if: ${{ needs.check.outputs.type == 'release' }}
       run: python misc/ci/package.py
 
     - name: Upload Release Artifact
-      if: ${{ needs.check.outputs.deploy == 'true' }}
+      if: ${{ needs.check.outputs.type == 'release' }}
       uses: actions/upload-artifact@v2
       with:
-        name: ${{ runner.os }}-Package
-        path: ${{github.workspace}}/build/out.${{ runner.os == 'Linux' && 'tar.gz' || 'zip' }}
+        name: ${{ matrix.label }}-Package
+        path: ${{github.workspace}}/build/out.${{ matrix.pkgext }}
 
   release:
-    if: ${{ needs.check.outputs.deploy == 'true' }}
+    if: ${{ needs.check.outputs.type == 'release' }}
     needs: [check, build]
     runs-on: ubuntu-latest
 
@@ -119,10 +142,12 @@ jobs:
     strategy:
       matrix:
         include:
-        - os: Linux
-        - os: Windows
+        - label: x86_64-linux-cpu
+          pkgext: tar.gz
+        - label: x86_64-windows-cpu
+          pkgext: zip
 
-    if: ${{ needs.check.outputs.deploy == 'true' }}
+    if: ${{ needs.check.outputs.type == 'true' }}
     needs: [check, build, release]
     runs-on: ubuntu-latest
 
@@ -146,16 +171,16 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ needs.release.outputs.upload_url }}
-        asset_path: ${{github.workspace}}/release-artifact/out.${{ matrix.os == 'Linux' && 'tar.gz' || 'zip' }}
-        asset_name: zeno-${{ needs.release.outputs.version }}-${{ matrix.os }}.${{ matrix.os == 'Linux' && 'tar.gz' || 'zip' }}
-        asset_content_type: ${{ matrix.os == 'Linux' && 'application/x-gzip' || 'application/zip' }}
+        asset_path: ${{github.workspace}}/release-artifact/out.${{ matrix.pkgext }}
+        asset_name: zeno-${{ needs.release.outputs.version }}-${{ matrix.os }}.${{ matrix.pkgext }}
+        asset_content_type: ${{ matrix.pkgext == 'tar.gz' && 'application/x-gzip' || 'application/zip' }}
 
     - name: Upload To Server
       uses: easingthemes/ssh-deploy@v2.1.2
       env:
         SSH_PRIVATE_KEY: ${{ secrets.REMOTE_SSH_KEY }}
         ARGS: '-rltgoDzvO --delete'
-        SOURCE: release-artifact/out.${{ matrix.os == 'Linux' && 'tar.gz' || 'zip' }}
+        SOURCE: release-artifact/out.${{ matrix.pkgext }}
         REMOTE_HOST: ${{ secrets.REMOTE_HOST }}
         REMOTE_USER: ${{ secrets.REMOTE_USER }}
-        TARGET: ${{ secrets.REMOTE_TARGET }}/zeno-${{ needs.release.outputs.version }}-${{ matrix.os }}.${{ matrix.os == 'Linux' && 'tar.gz' || 'zip' }}
+        TARGET: ${{ secrets.REMOTE_TARGET }}/zeno-${{ needs.release.outputs.version }}-${{ matrix.label }}.${{ matrix.pkgext }}
