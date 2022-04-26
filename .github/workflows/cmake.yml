@@ -61,7 +61,7 @@ jobs:
       with:
         version: 5.15.2
         cached: ${{ steps.cache-qt.outputs.cache-hit }}
-        setup-python: false
+        setup-python: true
 
     - name: Setup Dependencies
       if: ${{ matrix.triplet != '' }}
