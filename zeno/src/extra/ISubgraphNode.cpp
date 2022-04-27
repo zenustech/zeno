@@ -9,6 +9,7 @@ ZENO_API void ISubgraphNode::apply() {
     auto json = get_subgraph_json();
     Graph gra;
     gra.loadGraph(json);
+    gra.subInputNodes.
     gra.applyNodesToExec();
 }
 
