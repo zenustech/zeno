@@ -8,5 +8,6 @@ class GraphsModel;
 class SubGraphModel;
 
 void serializeScene(GraphsModel* pModel, RAPIDJSON_WRITER& writer);
+QString translateGraphToCpp(const char *subgJson, size_t subgJsonLen, GraphsModel *model);
 
 #endif

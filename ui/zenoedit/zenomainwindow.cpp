@@ -377,89 +377,9 @@ void ZenoMainWindow::importGraph() {
     pGraphs->importGraph(filePath);
 }
 
-static QString translateGraphToCpp(QString const &subgJson, GraphsModel *model) {
-    QString res = R"RAW(/* auto generated from: )RAW";
-    res.append(model->filePath());
-    res.append(R"RAW( */
-#include <zeno/extra/ISubgraphNode.h>
-#include <zeno/zeno.h>
-namespace {
-)RAW");
-
-    decltype(auto) descs = model->descriptors();
-    for (int i = 0; i < model->rowCount(); i++) {
-        auto subg = model->subGraph(i);
-        auto key = subg->name();
-        auto it = descs.find(key);
-        if (it == descs.end())
-            throw;
-        auto const &desc = *it;
-
-        res.append("struct ");
-        res.append(key);
-        res.append(R"RAW( : zeno::ISerialSubgraphNode {
-    virtual const char *get_subgraph_json() override {
-        return R"ZSL(
-)RAW");
-        res.append(subgJson);
-        res.append(R"RAW("
-)ZSL";
-            }
-    }
-};
-ZENO_DEFNODE()RAW");
-
-        res.append(key);
-        res.append(R"RAW()({
-    {)RAW");
-        for (auto const &[_, entry] : desc.inputs) {
-            res.append(R"RAW({")RAW");
-            res.append(entry.info.type);
-            res.append(R"RAW(", ")RAW");
-            res.append(entry.info.name);
-            res.append(R"RAW(", ")RAW");
-            // FIXME: UiHelper::variantToString seems doesn't support vec3f
-            res.append(UiHelper::variantToString(entry.info.defaultValue));
-            res.append(R"RAW("}, )RAW");
-        }
-        res.append(R"RAW(},
-    {)RAW");
-        for (auto const &[_, entry] : desc.outputs) {
-            res.append(R"RAW({")RAW");
-            res.append(entry.info.type);
-            res.append(R"RAW(", ")RAW");
-            res.append(entry.info.name);
-            res.append(R"RAW(", ")RAW");
-            res.append(UiHelper::variantToString(entry.info.defaultValue));
-            res.append(R"RAW("}, )RAW");
-        }
-        res.append(R"RAW(}
-    {)RAW");
-        for (auto const &entry : desc.params) {
-            res.append(R"RAW({")RAW");
-            res.append(entry.typeDesc);
-            res.append(R"RAW(", ")RAW");
-            res.append(entry.name);
-            res.append(R"RAW(", ")RAW");
-            res.append(UiHelper::variantToString(entry.defaultValue));
-            res.append(R"RAW("}, )RAW");
-        }
-        res.append(R"RAW(},
-    {)RAW");
-        for (auto const &category : desc.categories) {
-            res.append(R"RAW(")RAW");
-            res.append(category);
-            res.append(R"RAW(", )RAW");
-        }
-        res.append(R"RAW(},
-});
-)RAW");
-    }
-    return res;
-}
-
 static bool saveContent(const QString &strContent, QString filePath) {
     QFile f(filePath);
+    zeno::log_debug("saving {} chars to file [{}]", strContent.size(), filePath.toStdString());
     if (!f.open(QIODevice::WriteOnly)) {
         qWarning() << Q_FUNC_INFO << "Failed to open" << filePath << f.errorString();
         zeno::log_error("Failed to open file for write: {} ({})", filePath.toStdString(),
@@ -468,6 +388,7 @@ static bool saveContent(const QString &strContent, QString filePath) {
     }
     f.write(strContent.toUtf8());
     f.close();
+    zeno::log_debug("saved successfully");
     return true;
 }
 
@@ -478,8 +399,8 @@ void ZenoMainWindow::exportGraph() {
         return;
     }
 
-    auto pGraphs = zenoApp->graphsManagment();
-    pGraphs->importGraph(path);
+    //auto pGraphs = zenoApp->graphsManagment();
+    //pGraphs->importGraph(path);
 
     QString content;
     {
@@ -491,9 +412,10 @@ void ZenoMainWindow::exportGraph() {
             JsonArrayBatch batch(writer);
             serializeScene(model, writer);
         }
-        content = QString(s.GetString());
         if (path.endsWith(".cpp")) {
-            content = translateGraphToCpp(content, model);
+            content = translateGraphToCpp(s.GetString(), s.GetLength(), model);
+        } else {
+            content = QString(s.GetString());
         }
     }
     saveContent(content, path);
