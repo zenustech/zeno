@@ -121,53 +121,22 @@ void ZCurveMapEditor::onButtonToggled(QAbstractButton* btn, bool bToggled)
         CurveNodeItem* node = lst[0];
         QModelIndex idx = node->index();
         Q_ASSERT(idx.isValid());
-        //todo: when change type from vector to other, should init a offset
-        // otherwise it's hard to control them.
 
         if (btn == m_ui->btnVector)
         {
             m_model->setData(idx, HDL_VECTOR, ROLE_TYPE);
-
-            //todo: model sync to items.
-            //m_model->setData(idx, 0, ROLE_LEFTPOS);
-            //m_model->setData(idx, 0, ROLE_RIGHTPOS);
-            //temp code:
-            if (node->leftHandle()) {
-                node->leftHandle()->setPos(QPointF(0, 0));
-                node->leftHandle()->toggle(false);
-            }
-            if (node->rightHandle()) {
-                node->rightHandle()->setPos(QPointF(0, 0));
-                node->rightHandle()->toggle(false);
-            }
         }
-        else
+        else if (btn == m_ui->btnAligned)
         {
-            bool bVector = m_model->data(idx, ROLE_TYPE).toInt() == HDL_VECTOR;
-            if (btn == m_ui->btnAligned)
-            {
-                m_model->setData(idx, HDL_ALIGNED, ROLE_TYPE);
-            }
-            else if (btn == m_ui->btnAsymmetry)
-            {
-                m_model->setData(idx, HDL_ASYM, ROLE_TYPE);
-            }
-            else if (btn == m_ui->btnFree)
-            {
-                m_model->setData(idx, HDL_FREE, ROLE_TYPE);
-            }
-            //show handles.
-            if (bVector)
-            {
-                if (node->leftHandle())
-                {
-                    node->leftHandle()->setPos(QPointF(-0.1, -0.1));
-                }
-                if (node->rightHandle())
-                {
-                    node->rightHandle()->setPos(QPointF(0.1, 0.1));
-                }
-            }
+            m_model->setData(idx, HDL_ALIGNED, ROLE_TYPE);
+        }
+        else if (btn == m_ui->btnAsymmetry)
+        {
+            m_model->setData(idx, HDL_ASYM, ROLE_TYPE);
+        }
+        else if (btn == m_ui->btnFree)
+        {
+            m_model->setData(idx, HDL_FREE, ROLE_TYPE);
         }
     }
 }

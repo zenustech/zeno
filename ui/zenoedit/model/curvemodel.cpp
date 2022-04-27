@@ -258,7 +258,10 @@ bool CurveModel::setData(const QModelIndex& index, const QVariant& value, int ro
         case ROLE_LEFTPOS:
         {
             if (r == 0)
+            {
+                QStandardItemModel::setData(index, QPointF(0, 0), ROLE_LEFTPOS);
                 return false;
+            }
 
             QPointF oldPos = this->data(index, ROLE_LEFTPOS).toPointF();
             if (oldPos == value.toPointF())
@@ -274,7 +277,10 @@ bool CurveModel::setData(const QModelIndex& index, const QVariant& value, int ro
         case ROLE_RIGHTPOS:
         {
             if (r == n - 1)
+            {
+                QStandardItemModel::setData(index, QPointF(0, 0), ROLE_RIGHTPOS);
                 return false;
+            }
 
             QPointF oldPos = this->data(index, ROLE_RIGHTPOS).toPointF();
             if (oldPos == value.toPointF())
@@ -290,6 +296,67 @@ bool CurveModel::setData(const QModelIndex& index, const QVariant& value, int ro
         case ROLE_TYPE:
         {
             //todo:
+            CURVE_RANGE rg = range();
+            qreal xscale = (rg.xTo - rg.xFrom) / 10.;
+
+            HANDLE_TYPE oldType = (HANDLE_TYPE)this->data(index, ROLE_TYPE).toInt();
+            HANDLE_TYPE newType = (HANDLE_TYPE)value.toInt();
+            //QStandardItemModel::setData(index, newType, ROLE_TYPE);
+
+            switch (newType)
+            {
+                case HDL_ALIGNED:
+                {
+                    if (oldType == HDL_VECTOR)
+                    {
+                        QPointF leftOffset(-xscale, 0);
+                        QPointF rightOffset(xscale, 0);
+                        QStandardItemModel::setData(index, leftOffset, ROLE_LEFTPOS);
+                        QStandardItemModel::setData(index, rightOffset, ROLE_RIGHTPOS);
+                    }
+                    QPointF leftOffset = this->data(index, ROLE_LEFTPOS).toPointF();
+                    QPointF rightOffset = this->data(index, ROLE_RIGHTPOS).toPointF();
+                    if (leftOffset != QPointF(0, 0))
+                    {
+                        rightOffset = -leftOffset;
+                        QStandardItemModel::setData(index, rightOffset, ROLE_RIGHTPOS);
+                    }
+                    else if (rightOffset != QPointF(0, 0))
+                    {
+                        leftOffset = -rightOffset;
+                        QStandardItemModel::setData(index, leftOffset, ROLE_LEFTPOS);
+                    }
+                    break;
+                }
+                case HDL_ASYM:
+                {
+                    if (oldType == HDL_VECTOR)
+                    {
+                        QPointF leftOffset(-xscale, 0);
+                        QPointF rightOffset(xscale, 0);
+                        QStandardItemModel::setData(index, leftOffset, ROLE_LEFTPOS);
+                        QStandardItemModel::setData(index, rightOffset, ROLE_RIGHTPOS);
+                    }
+                    break;
+                }
+                case HDL_FREE:
+                {
+                    if (oldType == HDL_VECTOR)
+                    {
+                        QPointF leftOffset(-xscale, 0);
+                        QPointF rightOffset(xscale, 0);
+                        QStandardItemModel::setData(index, leftOffset, ROLE_LEFTPOS);
+                        QStandardItemModel::setData(index, rightOffset, ROLE_RIGHTPOS);
+                    }
+                    break;
+                }
+                case HDL_VECTOR:
+                {
+                    QStandardItemModel::setData(index, QPointF(0, 0), ROLE_LEFTPOS);
+                    QStandardItemModel::setData(index, QPointF(0, 0), ROLE_RIGHTPOS);
+                    break;
+                }
+            }
             break;
         }
     }

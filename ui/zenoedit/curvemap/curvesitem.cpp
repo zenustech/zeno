@@ -99,18 +99,31 @@ void CurvesItem::onDataChanged(const QModelIndex &topLeft, const QModelIndex &bo
         {
             CurveHandlerItem* pLeftHdl = pNode->leftHandle();
             leftLogicOffset = pNode->mapFromScene(m_grid->logicToScene(leftLogicOffset + logicNodePos));
-            //pLeftHdl->setUpdateNotify(false);
             pLeftHdl->setPos(leftLogicOffset);
-            //pLeftHdl->setUpdateNotify(true);
             break;
         }
         case ROLE_RIGHTPOS:
         {
             CurveHandlerItem* pRightHdl = pNode->rightHandle();
             rightLogicOffset = pNode->mapFromScene(m_grid->logicToScene(rightLogicOffset + logicNodePos));
-            //pRightHdl->setUpdateNotify(false);
             pRightHdl->setPos(rightLogicOffset);
-            //pRightHdl->setUpdateNotify(true);
+            break;
+        }
+        case ROLE_TYPE:
+        {
+            HANDLE_TYPE type = (HANDLE_TYPE)topLeft.data(ROLE_TYPE).toInt();
+            CurveHandlerItem *pLeftHdl = pNode->leftHandle();
+            CurveHandlerItem *pRightHdl = pNode->rightHandle();
+            if (type == HDL_VECTOR)
+            {
+                if (pLeftHdl) pLeftHdl->toggle(false);
+                if (pRightHdl) pRightHdl->toggle(false);
+            }
+            else
+            {
+                if (pLeftHdl && r > 0) pLeftHdl->toggle(true);
+                if (pRightHdl && r < m_model->rowCount() - 1) pRightHdl->toggle(true);
+            }
             break;
         }
     }

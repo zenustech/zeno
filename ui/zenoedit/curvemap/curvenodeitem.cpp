@@ -76,8 +76,11 @@ QVariant CurveHandlerItem::itemChange(GraphicsItemChange change, const QVariant&
             int i = m_node->curves()->indexOf(m_node);
             if (m_node->leftHandle() == this)
 			{
-                QPointF lastNodePos = m_node->mapFromScene(m_node->curves()->nodePos(i - 1));
-                newPos.setX(qMax(lastNodePos.x(), newPos.x()));
+                if (i > 0)
+				{
+                    QPointF lastNodePos = m_node->mapFromScene(m_node->curves()->nodePos(i - 1));
+                    newPos.setX(qMax(lastNodePos.x(), newPos.x()));
+				}
                 if (m_other)
 				{
                     QPointF rightHdlPos = m_other->pos();
@@ -86,8 +89,11 @@ QVariant CurveHandlerItem::itemChange(GraphicsItemChange change, const QVariant&
             }
 			else if (m_node->rightHandle() == this)
 			{
-                QPointF nextNodePos = m_node->mapFromScene(m_node->curves()->nodePos(i + 1));
-                newPos.setX(qMin(nextNodePos.x(), newPos.x()));
+                if (i + 1 < m_node->curves()->nodeCount())
+				{
+					QPointF nextNodePos = m_node->mapFromScene(m_node->curves()->nodePos(i + 1));
+					newPos.setX(qMin(nextNodePos.x(), newPos.x()));
+				}
                 if (m_other)
 				{
                     QPointF leftHdlPos = m_other->pos();
