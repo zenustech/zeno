@@ -137,6 +137,10 @@ struct type_identity {
 template <class T>
 using type_identity_t = typename type_identity<T>::type;
 
+template <class T>
+static inline constexpr type_identity<T> type_identity_v{};
+
+
 template <class ...Ts>
 struct type_identity_list {
     using type = std::tuple<type_identity<Ts>...>;
@@ -144,6 +148,9 @@ struct type_identity_list {
 
 template <class ...Ts>
 using type_identity_list_t = typename type_identity_list<Ts...>::type;
+
+template <class ...Ts>
+static inline constexpr type_identity_list<Ts...> type_identity_list_v{};
 
 
 template <auto Val>
@@ -153,20 +160,21 @@ struct value_constant : std::integral_constant<decltype(Val), Val> {
 template <auto Val>
 static inline constexpr value_constant<Val> value_constant_v{};
 
+template <auto Val>
+constexpr std::integral_constant<decltype(Val), Val> make_integral_constant() {
+    return {};
+}
+
 
 struct avoided_void {
     using type = void;
     constexpr void operator()() const {}
+    constexpr operator bool() { return false; }
 };
 
 template <class T, class U = avoided_void>
 struct avoid_void {
-    using type = T;
-};
-
-template <class U>
-struct avoid_void<void, U> {
-    using type = U;
+    using type = std::conditional_t<std::is_void_v<T>, U, T>;
 };
 
 template <class F, class ...Args>
@@ -179,7 +187,7 @@ constexpr decltype(auto) avoid_void_call(F &&f, Args &&...args) {
     }
 }
 
-template <class T, class U>
+template <class T, class U = avoided_void>
 using avoid_void_t = typename avoid_void<T, U>::type;
 
 
@@ -188,10 +196,10 @@ using avoid_void_t = typename avoid_void<T, U>::type;
 //     std::array<int, index.value> arr;
 //     return false;   // true to break the loop
 // });
-template <int First, int Last, typename Lambda>
+template <auto First, auto Last, typename Lambda>
 inline constexpr bool static_for(Lambda const &f) {
     if constexpr (First < Last) {
-        if (f(std::integral_constant<int, First>{})) {
+        if (avoid_void_call(f, make_integral_constant<First>())) {
             return true;
         } else {
             return static_for<First + 1, Last>(f);
@@ -200,9 +208,20 @@ inline constexpr bool static_for(Lambda const &f) {
     return false;
 }
 
+
 template <class To, class T>
 inline constexpr To implicit_cast(T &&t) {
     return std::forward<T>(t);
+}
+
+template <class To, class T>
+inline constexpr To braced_cast(T &&t) {
+    return To{std::forward<T>(t)};
+}
+
+template <class To, class T>
+inline constexpr To cstyle_cast(T &&t) {
+    return To(std::forward<T>(t));
 }
 
 template <class T>
