@@ -462,61 +462,42 @@ struct ZSReturnMapping : INode {
     using namespace zs;
     cudaPol(range(eles.size()), [eles = proxy<execspace_e::cuda>(
                                      {}, eles)] __device__(size_t pi) mutable {
-#if 1
       auto d = eles.pack<3, 3>("d", pi);
-#else
-      auto F = eles.pack<3, 3>("F", pi);
-#endif
       // hard code ftm
       constexpr auto gamma = 0.f;
-      constexpr auto k = 400.f;
+      constexpr auto k = 40000.f;
       constexpr auto friction_coeff = 0.f;
-// constexpr auto friction_coeff = 0.17f;
-#if 1
+      // constexpr auto friction_coeff = 0.17f;
       auto [Q, R] = math::gram_schmidt(d);
-#else
-      auto [Q, R] = math::gram_schmidt(F);
-#endif
+      auto apply = [&, &Q = Q, &R = R]() {
+        d = Q * R;
+        eles.tuple<9>("d", pi) = d;
+        eles.tuple<9>("F", pi) = d * eles.pack<3, 3>("DmInv", pi);
+      };
       if (gamma == 0.f) {
         R(0, 2) = R(1, 2) = 0;
         R(2, 2) = zs::min(R(2, 2), 1.f);
+        apply();
       } else if (R(2, 2) > 1) {
         R(0, 2) = R(1, 2) = 0;
         R(2, 2) = 1;
+        apply();
       } else if (R(2, 2) <= 0) { // inversion
         R(0, 2) = R(1, 2) = 0;
         R(2, 2) = zs::max(R(2, 2), -1.f);
+        apply();
       } else if (R(2, 2) < 1) {
         auto rr = R(0, 2) * R(0, 2) + R(1, 2) * R(1, 2);
         auto r33_m_1 = R(2, 2) - 1;
-#if 0
-        auto r11_r22 = R(0, 0) * R(1, 1);
-        auto fn = k * r33_m_1 * r33_m_1 / r11_r22; // normal traction
-        auto ff = gamma * zs::sqrt(rr) / r11_r22;  // tangential traction
-        if (ff >= friction_coeff * fn) {
-          auto scale = friction_coeff * fn / ff;
-          R(0, 2) *= scale;
-          R(1, 2) *= scale;
-        }
-#else
         auto gamma_over_k = gamma / k;
         auto zz = friction_coeff  * r33_m_1 * r33_m_1; // normal traction
         if (gamma_over_k * gamma_over_k * rr - zz * zz > 0) {
           auto scale = zz / (gamma_over_k * zs::sqrt(rr));
           R(0, 2) *= scale;
           R(1, 2) *= scale;
+          apply();
         }
-#endif
       }
-#if 1
-      d = Q * R;
-      eles.tuple<9>("d", pi) = d;
-      eles.tuple<9>("F", pi) = d * eles.pack<3, 3>("DmInv", pi);
-#else
-      F = Q * R;
-      eles.tuple<9>("F", pi) = F;
-      eles.tuple<9>("d", pi) = F * inverse(eles.pack<3, 3>("DmInv", pi));
-#endif
     });
   }
   void apply() override {

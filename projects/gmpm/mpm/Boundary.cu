@@ -305,9 +305,14 @@ struct ComputeParticleBeta : INode {
         auto [Q, R] = math::gram_schmidt(d);
         if (R(2, 2) > 0.999f) // apply positional adjustment
 #else
-      auto F = eles.pack<3, 3>("F", ei);
-      auto J = determinant(F);
-      if (J > Jp_critical) // apply positional adjustment
+        auto F = eles.pack<3, 3>("F", ei);
+        auto J = determinant(F);  // area ratio * nrm ratio
+        auto d = eles.pack<3, 3>("d", ei);
+        auto J0inv = zs::abs(determinant(eles.pack<3, 3>("DmInv", ei)));
+        auto [Q, R] = math::gram_schmidt(d);
+        auto Jn = zs::abs(R(0, 0) * R(1, 1) - R(1, 0) * R(0, 1));
+        J /= (Jn * J0inv);  // normal direction
+        if (J > Jp_critical) // apply positional adjustment
 #endif
         for (int vi = 0; vi != 3; ++vi)
           pars("beta", tri[vi]) = 0.2f;
@@ -387,7 +392,12 @@ struct ComputeParticleBeta : INode {
       if (R(2, 2) > 0.999f) // apply positional adjustment
 #else
       auto F = eles.pack<3, 3>("F", ei);
-      auto J = determinant(F);
+      auto J = determinant(F);  // area ratio * nrm ratio
+      auto d = eles.pack<3, 3>("d", ei);
+      auto J0inv = zs::abs(determinant(eles.pack<3, 3>("DmInv", ei)));
+      auto [Q, R] = math::gram_schmidt(d);
+      auto Jn = zs::abs(R(0, 0) * R(1, 1) - R(1, 0) * R(0, 1));
+      J /= (Jn * J0inv);  // normal direction
       if (J > Jp_critical) // apply positional adjustment
 #endif
       for (int vi = 0; vi != 3; ++vi)
