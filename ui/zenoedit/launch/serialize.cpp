@@ -162,9 +162,10 @@ void serializeScene(GraphsModel* pModel, RAPIDJSON_WRITER& writer)
 
 static void appendSerializedCharArray(QString &res, const char *buf, size_t len) {
     for (auto p = buf; p < buf + len; p++) {
-        res.append(QString::number((int)*p));
+        res.append(QString::number((int)(uint8_t)*p));
         res.append(',');
     }
+    res.append('0');
 }
 
 QString translateGraphToCpp(const char *subgJson, size_t subgJsonLen, GraphsModel *model)
@@ -192,12 +193,12 @@ namespace {
 struct )RAW");
         res.append(key);
         res.append(R"RAW( final : zeno::ISerialSubgraphNode {
-    static const char mydata[] = {)RAW");
+    static const uint8_t mydata[] = {)RAW");
         appendSerializedCharArray(res, subgJson, subgJsonLen);
         res.append(R"RAW(};
 
     virtual const char *get_subgraph_json() override {
-        return mydata;
+        return (const char *)mydata;
     }
 };
 
