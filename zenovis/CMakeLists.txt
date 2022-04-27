@@ -16,7 +16,10 @@ target_include_directories(zenovis PUBLIC
 if (ZENO_ENABLE_OPENEXR)
     # PENG-SENSEI: SO OPENEXR FXXK YOU!!!!
     find_package(IlmBase CONFIG)
-    find_package(OpenEXR CONFIG REQUIRED)
+    find_package(OpenEXR CONFIG)
+    if (NOT TARGET OpenEXR::OpenEXR AND NOT TARGET OpenEXR::IlmIlmUtil AND NOT TARGET IlmBase::Half)
+        message(WARNING "OpenEXR::OpenEXR or IlmBase::Half not found!")
+    endif()
     target_link_libraries(zenovis PRIVATE
         $<TARGET_NAME_IF_EXISTS:IlmBase::Iex>
         $<TARGET_NAME_IF_EXISTS:IlmBase::Half>

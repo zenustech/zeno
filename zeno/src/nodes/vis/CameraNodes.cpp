@@ -54,7 +54,7 @@ struct MakeLight : INode {
 ZENO_DEFNODE(MakeLight)({
     {
         {"vec3f", "lightDir", "1,1,0"},
-        {"float", "intensity", "100"},
+        {"float", "intensity", "10"},
         {"vec3f", "shadowTint", "0.2,0.2,0.2"},
         {"float", "lightHight", "1000.0"},
         {"float", "shadowSoftness", "1.0"},
