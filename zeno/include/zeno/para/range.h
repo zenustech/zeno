@@ -46,10 +46,18 @@ struct range {
         return e;
     }
 
-    void operator[](std::ptrdiff_t n) const {
-        It it = b;
-        std::advance(It, n);
-        return *it;
+    range &operator++() const {
+        b = std::next(b);
+        return *this;
+    }
+
+    range &operator+=(std::ptrdiff_t n) const {
+        std::advance(b, n);
+        return *this;
+    }
+
+    decltype(auto) operator*() const {
+        return *b;
     }
 
     void removePrefix(std::ptrdiff_t n) const {
