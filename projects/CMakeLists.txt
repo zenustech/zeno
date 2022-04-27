@@ -37,3 +37,17 @@ foreach (name IN ITEMS ${ZENO_EXTENSIONS})
         add_subdirectory(${name})
     endif()
 endforeach()
+
+set(ZENO_EXTENSION_TOOLS
+    FLIPtools
+    cgmeshTools
+    BulletTools
+    HerculesTools
+    )
+foreach (name IN ITEMS ${ZENO_EXTENSION_TOOLS})
+    option(ZENO_WITH_TOOL_${name} "Build ZENO with extension tool: ${name}" OFF)
+    if (ZENO_WITH_TOOL_${name})
+        message(STATUS "Building ZENO with extension tool: ${name}")
+        add_subdirectory(tools/${name})
+    endif()
+endforeach()

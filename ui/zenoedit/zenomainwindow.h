@@ -30,6 +30,7 @@ public slots:
     void onToggleDockWidget(DOCK_TYPE, bool);
     void onDockSwitched(DOCK_TYPE);
     void importGraph();
+    void exportGraph();
     void onNodesSelected(const QModelIndex& subgIdx, const QModelIndexList& nodes, bool select);
 
 protected:

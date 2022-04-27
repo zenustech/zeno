@@ -28,7 +28,9 @@
         "ZENO_WITH_zenvdb": "ON",
         "ZENO_WITH_FastFLIP": "ON",
         "ZENO_WITH_Rigid": "ON",
-        "ZENO_WITH_oldzenbase": "ON"
+        "ZENO_WITH_oldzenbase": "ON",
+        "ZENO_WITH_TOOL_FLIPTools": "ON",
+        "ZENO_WITH_TOOL_BulletTools": "ON"
       }
     },
     {
@@ -43,7 +45,9 @@
         "ZENO_WITH_Skinning": "ON",
         "ZENO_WITH_Euler": "ON",
         "ZENO_WITH_Functional": "ON",
-        "ZENO_WITH_LSystem": "ON"
+        "ZENO_WITH_LSystem": "ON",
+        "ZENO_WITH_TOOL_cgmeshTools": "ON",
+        "ZENO_WITH_TOOL_HerculesTools": "ON"
       }
     },
     {
