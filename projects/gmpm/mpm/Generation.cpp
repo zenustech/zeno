@@ -227,6 +227,13 @@ struct ToZSParticles : INode {
     auto ompExec = zs::omp_exec();
 
     if (bindMesh) {
+      using TV3 = zs::vec<double, 3>;
+      const auto toTV3 = [](const zeno::vec3f &x) {
+        return TV3{x[0], x[1], x[2]};
+      };
+      const auto fromTV3 = [](const TV3 &x) {
+        return zeno::vec3f{(float)x[0], (float)x[1], (float)x[2]};
+      };
       switch (category) {
       // tet
       case ZenoParticles::tet: {
@@ -255,19 +262,12 @@ struct ToZSParticles : INode {
       } break;
       // surface
       case ZenoParticles::surface: {
-        using TV3 = zs::vec<double, 3>;
-        const auto triArea = [&obj](vec3i tri) {
-          TV3 p0 = TV3{obj[tri[0]][0], obj[tri[0]][1], obj[tri[0]][2]};
-          TV3 p1 = TV3{obj[tri[1]][0], obj[tri[1]][1], obj[tri[1]][2]};
-          TV3 p2 = TV3{obj[tri[2]][0], obj[tri[2]][1], obj[tri[2]][2]};
+        const auto triArea = [&obj, &toTV3](vec3i tri) {
+          TV3 p0 = toTV3(obj[tri[0]]);
+          TV3 p1 = toTV3(obj[tri[1]]);
+          TV3 p2 = toTV3(obj[tri[2]]);
           return (p1 - p0).cross(p2 - p0).norm() * 0.5;
           // return length(cross(obj[tri[1]] - p0, obj[tri[2]] - p0)) * 0.5;
-        };
-        const auto toTV3 = [](const zeno::vec3f &x) {
-          return TV3{x[0], x[1], x[2]};
-        };
-        const auto fromTV3 = [](const TV3 &x) {
-          return zeno::vec3f{(float)x[0], (float)x[1], (float)x[2]};
         };
         for (std::size_t i = 0; i != eleSize; ++i) {
           auto tri = tris[i];
@@ -296,30 +296,30 @@ struct ToZSParticles : INode {
           eleD[i][2] = fromTV3(normal);
 
           for (auto pi : tri)
-            dofVol[pi] += std::max(v, limits<float>::epsilon() * 10.) / 3;
+            dofVol[pi] += eleVol[i] / 3;
         }
       } break;
       // curve
       case ZenoParticles::curve: {
-        const auto lineLength = [&obj](vec2i line) {
-          return length(obj[line[1]] - obj[line[0]]);
+        const auto lineLength = [&obj, &toTV3](vec2i line) {
+          TV3 p0 = toTV3(obj[line[0]]);
+          TV3 p1 = toTV3(obj[line[1]]);
+          return (p1 - p0).length();
         };
         for (std::size_t i = 0; i != eleSize; ++i) {
           auto line = lines[i];
           auto v = lineLength(line) * model->dx * model->dx;
-          eleVol[i] = v;
+          eleVol[i] = std::max(v, limits<float>::epsilon() * 10.);
           elePos[i] = (obj[line[0]] + obj[line[1]]) / 2;
           if (velsPtr)
             eleVel[i] = (velsPtr[line[0]] + velsPtr[line[1]]) / 2;
           eleD[i][0] = obj[line[1]] - obj[line[0]];
-          if (auto n = cross(vec3f{0, 1, 0}, eleD[i][0]);
-              lengthSquared(n) > zs::limits<float>::epsilon() * 128) {
-            eleD[i][1] = normalize(n);
-          } else
-            eleD[i][1] = normalize(cross(vec3f{1, 0, 0}, eleD[i][0]));
-          eleD[i][2] = normalize(cross(eleD[i][0], eleD[i][1]));
+          TV3 ln = toTV3(eleD[i][0]);
+          TV3 n1 = ln.orthogonal().normalized();
+          eleD[i][1] = fromTV3(n1);
+          eleD[i][2] = fromTV3(ln.cross(n1).normalized());
           for (auto pi : line)
-            dofVol[pi] += v / 2;
+            dofVol[pi] += eleVol[i] / 2;
         }
       } break;
       default:;
