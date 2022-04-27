@@ -102,7 +102,7 @@ The full-featured version of Zeno can be built as follows:
 cmake -B build -DCMAKE_BUILD_TYPE=Release -DZENO_WITH_ZenoFX:BOOL=ON -DZENOFX_ENABLE_OPENVDB:BOOL=ON -DZENOFX_ENABLE_LBVH:BOOL=ON -DZENO_ENABLE_OPENEXR:BOOL=ON -DZENO_WITH_zenvdb:BOOL=ON -DZENO_WITH_FastFLIP:BOOL=ON -DZENO_WITH_FEM:BOOL=ON -DZENO_WITH_Rigid:BOOL=ON -DZENO_WITH_cgmesh:BOOL=ON -DZENO_WITH_oldzenbase:BOOL=ON -DZENO_WITH_TreeSketch:BOOL=ON -DZENO_WITH_Skinning:BOOL=ON -DZENO_WITH_Euler:BOOL=ON -DZENO_WITH_Functional:BOOL=ON -DZENO_WITH_LSystem:BOOL=ON -DZENO_WITH_Alembic:BOOL=ON
 ```
 
-> See also `misc/run.sh`.
+> See also `misc/run.sh` (you can use this script instead for the full-featured build).
 
 ### Enabling CUDA extensions
 
@@ -111,6 +111,15 @@ NVIDIA users may additionally specify `-DZENO_WITH_gmpm:BOOL=ON -DZENO_WITH_mesh
 > NOTE: **CUDA 11.x requried**.
 
 > NOTE: ZenoFX must be enabled when gmpm is enabled, because gmpm depends on ZenoFX.
+
+### Enabling subgraph extensions
+
+Some of the extensions are purely made with Zeno subgraphs, they lays in the directory
+`projects/tools` and their contents are basically hard-encoded subgraph JSON strings.
+To enable them, just specify `-DZENO_WITH_TOOL_FLIPtools:BOOL=ON -DZENO_WITH_TOOL_BulletTools:BOOL=ON -DZENO_WITH_TOOL_HerculesTools:BOOL=ON`.
+Enabling them you will find our well-packaged high-level nodes like `FLIPSimTemplate`,
+they were exported from another subgraph file using Ctrl-Shfit-E by the way, see the
+source code of `FLIPtools` for the original graph file name.
 
 ### Using CMake presets (experimental)
 
