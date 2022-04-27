@@ -181,6 +181,14 @@ void ZenoMainWindow::initMenu()
         pAction = new QAction(tr("Camera Keyframe"), this);
         pDisplay->addAction(pAction);
 
+        pAction = new QAction(tr("Show Camera Info"), this);
+        pAction->setCheckable(true);
+        pDisplay->addAction(pAction);
+        connect(pAction, &QAction::triggered, this, [=]() {
+            bool flag = pAction->isChecked();
+            zenoApp->setStatus("camera/show_info", flag);
+        });
+
         pDisplay->addSeparator();
 
         pAction = new QAction(tr("Use English"), this);

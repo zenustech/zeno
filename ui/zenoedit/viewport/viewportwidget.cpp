@@ -67,6 +67,7 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent* event)
     }
     m_lastPos = QPointF(xpos, ypos);
     updatePerspective();
+    showInfo();
 }
 
 void CameraControl::updatePerspective()
@@ -84,6 +85,7 @@ void CameraControl::fakeWheelEvent(QWheelEvent* event)
         m_fov /= scale;
     m_radius *= scale;
     updatePerspective();
+    showInfo();
 }
 
 void CameraControl::setKeyFrame()
@@ -91,6 +93,42 @@ void CameraControl::setKeyFrame()
     //todo
 }
 
+void CameraControl::showInfo() {
+    if (zenoApp->getStatus("camera/show_info").toBool()) {
+        auto p = realPos();
+        float cos_t = cos(m_theta);
+        float sin_t = sin(m_theta);
+        float cos_p = cos(m_phi);
+        float sin_p = sin(m_phi);
+        QVector3D back(cos_t * sin_p, sin_t, -cos_t * cos_p);
+        QVector3D up(-sin_t * sin_p, cos_t, sin_t * cos_p);
+        QVector3D right = QVector3D::crossProduct(up, back);
+        up = QVector3D::crossProduct(back, right);
+        right.normalize();
+        up.normalize();
+        qDebug() << QString("real pos: (%1, %2, %3), up: (%4, %5, %6), right: (%7, %8, %9), fov: %10")
+            .arg(p.x())
+            .arg(p.y())
+            .arg(p.z())
+            .arg(up.x())
+            .arg(up.y())
+            .arg(up.z())
+            .arg(right.x())
+            .arg(right.y())
+            .arg(right.z())
+            .arg(m_fov)
+        ;
+    }
+}
+
+QVector3D CameraControl::realPos() const {
+    float cos_t = std::cos(m_theta);
+    float sin_t = std::sin(m_theta);
+    float cos_p = std::cos(m_phi);
+    float sin_p = std::sin(m_phi);
+    QVector3D back(cos_t * sin_p, sin_t, -cos_t * cos_p);
+    return m_center - back * m_radius;
+}
 
 ViewportWidget::ViewportWidget(QWidget* parent)
     : QGLWidget(parent)

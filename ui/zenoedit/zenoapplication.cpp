@@ -81,3 +81,15 @@ ZenoMainWindow* ZenoApplication::getMainWindow()
 			return mainWindow;
 	return nullptr;
 }
+
+void ZenoApplication::setStatus(const QString& key, QVariant v) {
+    m_global_status[key] = v;
+}
+
+QVariant ZenoApplication::getStatus(const QString& key) {
+    if (m_global_status.contains(key)) {
+        return m_global_status[key];
+    } else {
+        return {};
+    }
+}

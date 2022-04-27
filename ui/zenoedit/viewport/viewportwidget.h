@@ -34,6 +34,8 @@ public:
     void fakeMousePressEvent(QMouseEvent* event);
     void fakeMouseMoveEvent(QMouseEvent* event);
     void fakeWheelEvent(QWheelEvent* event);
+    void showInfo();
+    QVector3D realPos() const;
 
 private:
     bool m_mmb_pressed;
