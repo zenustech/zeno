@@ -88,7 +88,7 @@ struct ZSParticleToZSGrid : INode {
           using mat2 = zs::vec<float, 2, 2>;
           using mat3 = zs::vec<float, 3, 3>;
           constexpr auto gamma = 0.f;
-          constexpr auto k = 400.f;
+          constexpr auto k = 40000.f;
           auto [Q, R] = math::gram_schmidt(F);
           mat2 R2{R(0, 0), R(0, 1), R(1, 0), R(1, 1)};
           if (materialParamOverride) {
