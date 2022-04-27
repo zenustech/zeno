@@ -516,6 +516,58 @@ struct ComputeParticleBeta : INode {
             })(boundary->zsls->getLevelSet());
         }
       }
+    } else {
+      for (auto &&parObjPtr : parObjPtrs) {
+        auto &pars = parObjPtr->getParticles();
+        auto &model = parObjPtr->getModel();
+
+        if (parObjPtr->category == ZenoParticles::mpm ||
+            parObjPtr->category == ZenoParticles::surface) {
+          bool isMeshPrimitive = parObjPtr->isMeshPrimitive();
+          float JpcDefault = 1.f;
+          match([&](auto &elasticModel, auto &anisoElasticModel) {
+            if constexpr (is_same_v<RM_CVREF_T(anisoElasticModel),
+                                    NonAssociativeCamClay<float>>)
+              JpcDefault = 1.1f;
+          })(model.getElasticModel(), model.getAnisoElasticModel());
+          if (isMeshPrimitive) {
+            auto &eles = parObjPtr->getQuadraturePoints();
+            cudaPol(range(eles.size()),
+                    [pars = proxy<execspace_e::cuda>({}, pars),
+                     eles = proxy<execspace_e::cuda>({}, eles),
+                     Jp_critical = JpcDefault] __device__(size_t ei) mutable {
+                      auto tri =
+                          eles.pack<3>("inds", ei).reinterpret_bits<int>();
+
+                      auto F = eles.pack<3, 3>("F", ei);
+                      auto J = determinant(F); // area ratio * nrm ratio
+                      auto d = eles.pack<3, 3>("d", ei);
+                      auto J0inv =
+                          zs::abs(determinant(eles.pack<3, 3>("DmInv", ei)));
+                      auto [Q, R] = math::gram_schmidt(d);
+                      auto Jn = zs::abs(R(0, 0) * R(1, 1) - R(1, 0) * R(0, 1));
+                      J /= (Jn * J0inv);   // normal direction
+                      if (J > Jp_critical) // apply positional adjustment
+                        for (int vi = 0; vi != 3; ++vi)
+                          pars("beta", tri[vi]) = 0.5f;
+                      else
+                        for (int vi = 0; vi != 3; ++vi)
+                          pars("beta", tri[vi]) = 0.f;
+                    });
+          } else {
+            cudaPol(range(pars.size()),
+                    [pars = proxy<execspace_e::cuda>({}, pars),
+                     Jp_critical = JpcDefault] __device__(size_t pi) mutable {
+                      auto F = pars.pack<3, 3>("F", pi);
+                      auto J = determinant(F); // area ratio * nrm ratio
+                      if (J > Jp_critical)     // apply positional adjustment
+                        pars("beta", pi) = 0.5f;
+                      else
+                        pars("beta", pi) = 0.f;
+                    });
+          }
+        }
+      }
     }
 
     fmt::print(fg(fmt::color::cyan), "done executing ComputeParticleBeta\n");
