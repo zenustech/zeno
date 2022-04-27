@@ -40,6 +40,7 @@ endforeach()
 
 set(ZENO_EXTENSION_TOOLS
     FLIPtools
+    cgmeshTools
     BulletTools
     HerculesTools
     )

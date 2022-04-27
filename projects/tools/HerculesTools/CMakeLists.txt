@@ -1,1 +1,1 @@
-target_sources(zeno OBJECT HerculesTools.cpp)
+target_sources(zeno PRIVATE HerculesTools.cpp)

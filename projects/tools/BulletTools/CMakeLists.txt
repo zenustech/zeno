@@ -1,1 +1,1 @@
-target_sources(zeno PUBLIC stub.cpp)
+target_sources(zeno PRIVATE stub.cpp)

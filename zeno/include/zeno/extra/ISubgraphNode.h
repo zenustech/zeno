@@ -12,4 +12,6 @@ struct ISubgraphNode : INode {
     ZENO_API virtual void apply() override;
 };
 
+using ISerialSubgraphNode = ISubgraphNode;
+
 }

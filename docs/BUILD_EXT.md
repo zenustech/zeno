@@ -116,7 +116,7 @@ NVIDIA users may additionally specify `-DZENO_WITH_gmpm:BOOL=ON -DZENO_WITH_mesh
 
 Some of the extensions are purely made with Zeno subgraphs, they lays in the directory
 `projects/tools` and their contents are basically hard-encoded subgraph JSON strings.
-To enable them, just specify `-DZENO_WITH_TOOL_FLIPtools:BOOL=ON -DZENO_WITH_TOOL_BulletTools:BOOL=ON -DZENO_WITH_TOOL_HerculesTools:BOOL=ON`.
+To enable them, just specify `-DZENO_WITH_TOOL_FLIPtools:BOOL=ON -DZENO_WITH_TOOL_cgmeshTools:BOOL=ON -DZENO_WITH_TOOL_BulletTools:BOOL=ON -DZENO_WITH_TOOL_HerculesTools:BOOL=ON`.
 Enabling them you will find our well-packaged high-level nodes like `FLIPSimTemplate`,
 they were exported from another subgraph file using Ctrl-Shfit-E by the way, see the
 source code of `FLIPtools` for the original graph file name.
