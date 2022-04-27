@@ -4,12 +4,17 @@
 #include <memory>
 #include <variant>
 #include <functional>
+#include <type_traits>
 #include <utility>
 
 namespace zeno {
 
 template <class T, class...>
 using first_t = T;
+
+template <auto Val, class...>
+static inline constexpr auto first_v = Val;
+
 
 template <class T>
 struct is_tuple : std::false_type {
@@ -52,6 +57,7 @@ struct variant_to_tuple<std::variant<Ts...>> {
     using type = std::tuple<Ts...>;
 };
 
+
 template <class T>
 struct is_shared_ptr : std::false_type {
 };
@@ -69,6 +75,7 @@ template <class T>
 struct remove_shared_ptr<std::shared_ptr<T>> {
     using type = T;
 };
+
 
 template <class T>
 struct function_traits : function_traits<decltype(&T::operator())> {
@@ -108,6 +115,7 @@ struct function_traits<R (T::*)(Args...) const> {
     using argument_types = std::tuple<Args...>;
 };
 
+
 template <class T>
 struct remove_cvref : std::remove_cv<std::remove_reference_t<T>> {
 };
@@ -119,6 +127,7 @@ using remove_cvref_t = typename remove_cvref<T>::type;
 #define ZENO_DECAY(...) std::decay_t<decltype(__VA_ARGS__)>
 #define ZENO_FWD(x) std::forward<decltype(x)>(x)
 #define ZENO_CRTP(Derived, Base, ...) Derived : Base<Derived __VA_ARGS__>
+
 
 template <class T>
 struct type_identity {
@@ -136,9 +145,43 @@ struct type_identity_list {
 template <class ...Ts>
 using type_identity_list_t = typename type_identity_list<Ts...>::type;
 
+
 template <auto Val>
 struct value_constant : std::integral_constant<decltype(Val), Val> {
 };
+
+template <auto Val>
+static inline constexpr value_constant<Val> value_constant_v{};
+
+
+struct avoided_void {
+    using type = void;
+    constexpr void operator()() const {}
+};
+
+template <class T, class U = avoided_void>
+struct avoid_void {
+    using type = T;
+};
+
+template <class U>
+struct avoid_void<void, U> {
+    using type = U;
+};
+
+template <class F, class ...Args>
+constexpr decltype(auto) avoid_void_call(F &&f, Args &&...args) {
+    if constexpr (std::is_void_v<std::invoke_result_t<F, Args...>>) {
+        std::forward<F>(f)(std::forward<Args>(args)...);
+        return avoided_void{};
+    } else {
+        return std::forward<F>(f)(std::forward<Args>(args)...);
+    }
+}
+
+template <class T, class U>
+using avoid_void_t = typename avoid_void<T, U>::type;
+
 
 // usage example:
 // static_for<0, n>([&] (auto index) {
