@@ -150,14 +150,21 @@ void CurvesItem::onNodesInserted(const QModelIndex& parent, int first, int last)
         Q_ASSERT(r > 0 && r < m_vecNodes.size());
 
         QPointF pos = idx.data(ROLE_NODEPOS).toPointF();
+        QPointF nodeScenePos = m_grid->logicToScene(pos);
         QPointF leftOffset = idx.data(ROLE_LEFTPOS).toPointF();
         QPointF rightOffset = idx.data(ROLE_RIGHTPOS).toPointF();
 
         //insert a new node.
-        CurveNodeItem *pNewNode = new CurveNodeItem(idx, m_view, m_grid->logicToScene(pos), m_grid, this);
+        CurveNodeItem *pNewNode = new CurveNodeItem(idx, m_view, nodeScenePos, m_grid, this);
         connect(pNewNode, SIGNAL(geometryChanged()), this, SLOT(onNodeGeometryChanged()));
         connect(pNewNode, SIGNAL(deleteTriggered()), this, SLOT(onNodeDeleted()));
-        pNewNode->initHandles(m_grid->logicToScene(leftOffset), m_grid->logicToScene(rightOffset));
+
+        QPointF leftScenePos = m_grid->logicToScene(pos + leftOffset);
+        QPointF rightScenePos = m_grid->logicToScene(pos + rightOffset);
+        QPointF leftSceneOffset = leftScenePos - nodeScenePos;
+        QPointF rightSceneOffset = rightScenePos - nodeScenePos;
+
+        pNewNode->initHandles(leftSceneOffset, rightSceneOffset);
         m_vecNodes.insert(r, pNewNode);
 
         // update curve
@@ -297,14 +304,17 @@ void CurvesItem::onPathClicked(const QPointF& pos)
     Q_ASSERT(pItem);
     int i = m_vecCurves.indexOf(pItem);
 
+    CURVE_RANGE rg = m_model->range();
+    qreal xscale = (rg.xTo - rg.xFrom) / 10.;
+
     QPointF logicPos = m_grid->sceneToLogic(pos);
-    QPointF leftOffset(-50, 0);
-    QPointF rightOffset(50, 0);
+    QPointF leftOffset(-xscale, 0);
+    QPointF rightOffset(xscale, 0);
 
     QStandardItem* pModelItem = new QStandardItem;
     pModelItem->setData(logicPos, ROLE_NODEPOS);
-    pModelItem->setData(m_grid->sceneToLogic(leftOffset), ROLE_LEFTPOS);
-    pModelItem->setData(m_grid->sceneToLogic(rightOffset), ROLE_RIGHTPOS);
+    pModelItem->setData(leftOffset, ROLE_LEFTPOS);
+    pModelItem->setData(rightOffset, ROLE_RIGHTPOS);
     pModelItem->setData(HDL_ASYM, ROLE_TYPE);
     m_model->insertRow(i + 1, pModelItem);
 }

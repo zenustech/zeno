@@ -70,7 +70,7 @@ qreal CurveSliderItem::clipPos(qreal x)
     qreal w = m_scalar->boundingRect().width();
     qreal szGrid = w / nGrids;
 	int n = x / szGrid;
-    qreal x_ = n * szGrid;
+    qreal x_ = n * szGrid + 0.0000001;
 	return x_;
 }
 
@@ -95,8 +95,15 @@ void CurveSliderItem::resetPosition()
 {
     qreal w = m_scalar->boundingRect().width();
     CURVE_RANGE rg = m_scalar->range();
-    qreal x = w * m_value / (rg.xTo - rg.xFrom);
-    setPos(x, m_yoffset);
+    int nFrames = m_scalar->nFrames();
+    if (nFrames > 0)
+	{
+        int nGrids = nFrames * 5;
+        qreal szPerGrid = w / nGrids;
+        int n = m_value * nGrids / (rg.xTo - rg.xFrom);
+        qreal x = n * szPerGrid;
+        setPos(x, m_yoffset);
+	}
 }
 
 
