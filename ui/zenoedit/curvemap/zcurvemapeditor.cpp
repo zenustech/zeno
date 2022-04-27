@@ -105,16 +105,10 @@ CurveModel* ZCurveMapEditor::currentModel()
 {
     if (m_bTimeline)
     {
-        QModelIndex idx = m_ui->channelView->currentIndex();
-        QString id = idx.data(Qt::DisplayRole).toString();
-        if (m_models.find(id) != m_models.end())
-        {
-            return m_models[id];
-        }
-        else
-        {
+        auto lst = m_ui->gridview->getSelectedNodes();
+        if (lst.size() == 0)
             return nullptr;
-        }
+        return lst[0]->curves()->model();
     }
     else
     {
