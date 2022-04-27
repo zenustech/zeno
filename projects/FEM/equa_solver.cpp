@@ -1,5 +1,6 @@
 #include "declares.h"
 #include <LBFGS.h>
+#include <ctime>
 
 namespace zeno{
 
@@ -266,7 +267,8 @@ struct BuildLapaceOperator : zeno::INode {
             auto lambda = ElasticModel::Enu2Lambda(E,nu);
             auto mu = ElasticModel::Enu2Mu(E,nu); 
 
-            elm_stiffness[elm_id] = lambda + mu;         
+            // elm_stiffness[elm_id] = lambda + mu;  
+            elm_stiffness[elm_id] = 2.0066 * mu + 1.0122 * lambda;       
         }
 
         const auto& vols = elmView->attr<float>("V");
@@ -377,27 +379,48 @@ struct SolveFEMFast : zeno::INode {
             _x.segment(i*3,3) << cpos[i][0],cpos[i][1],cpos[i][2];
 
 
+
+        FEM_Scaler f_time_expense = 0;
+        FEM_Scaler h_time_expense = 0;
+        FEM_Scaler total_time_expense = 0;
+
+        auto total_time_start = std::clock();
+
         FEM_Scaler _fx;
         int niter = solver.minimize(
             [&](const Eigen::VectorXd& x,Eigen::VectorXd& grad) mutable {
+
                 // std::cout << "HELO LAMBDA TEST" << std::endl;
+                #pragma omp parallel for
                 for(size_t i = 0;i < shape->size();++i)
                     cpos[i] = zeno::vec3f(x[i*3 + 0],x[i*3 + 1],x[i*3 + 2]);
-                return integrator->EvalObjDeriv(shape,elmView,interpShape,grad);
+
+                auto f_start = std::clock();    
+                auto obj = integrator->EvalObjDeriv(shape,elmView,interpShape,grad);
+
+                f_time_expense += ((float)std::clock() - (float)f_start)/CLOCKS_PER_SEC/10;
+
+                return obj;
             },
             _x,
             _fx,// TODO: define the inverse of initial hessian approximation
             [&](const Eigen::VectorXd& b) mutable {
+                auto h_start = std::clock();
                 auto res = laplace_op->laplace_solver.solve(b);
+                // std::cout << "EVAL_H" << std::endl;
+                h_time_expense += ((float)std::clock() - (float)h_start)/CLOCKS_PER_SEC/10;
                 return res;
             },
             true
         );
 
+
         for(size_t i = 0;i < shape->size();++i)
             cpos[i] = zeno::vec3f(_x[i*3+ 0],_x[i*3+1],_x[i*3+2]);
 
-        std::cout << "FINISH STEPPING " << "\t" << niter << "\t" << max_iters << std::endl;
+        total_time_expense = ((float)std::clock() - (float)total_time_start)/CLOCKS_PER_SEC/10;
+
+        std::cout << "FINISH STEPPING " << "\t" << niter << "\t" << max_iters << "\t" << total_time_expense << "\t" << f_time_expense << "\t" << h_time_expense << std::endl;
         set_output("shape",shape); 
     }
 };
