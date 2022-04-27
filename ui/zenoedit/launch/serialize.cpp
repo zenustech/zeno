@@ -151,8 +151,8 @@ void serializeScene(GraphsModel* pModel, RAPIDJSON_WRITER& writer)
     //ret.push_back(item);
 
 	QStringList graphs;
-	for (int i = 0; i < pmodel->rowcount(); i++)
-		graphs.push_back(pmodel->subgraph(i)->name());
+	for (int i = 0; i < pModel->rowCount(); i++)
+		graphs.push_back(pModel->subGraph(i)->name());
 
     SubGraphModel* pSubModel = pModel->subGraph("main");
     serializeGraph(pSubModel, pModel, graphs, writer, "");

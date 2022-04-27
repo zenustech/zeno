@@ -291,6 +291,7 @@ QString UiHelper::variantToString(const QVariant& var)
 	{
 		value = var.toBool() ? "true" : "false";
 	}
+    // TODO: LUZH how to detect QVector<qreal> for vec3f?
 	else zeno::log_warn("bad qt variant {}", var.typeName());
 
     return value;
@@ -452,3 +453,4 @@ QPainterPath UiHelper::getRoundPath(QRectF r, int lt_radius, int rt_radius, int 
     path.closeSubpath();
     return path;
 }
+
