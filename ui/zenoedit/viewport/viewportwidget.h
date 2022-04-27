@@ -5,6 +5,7 @@
 #include <QtOpenGL>
 #include "comctrl/zmenubar.h"
 #include "comctrl/zmenu.h"
+#include <optional>
 
 class ZTimeline;
 class ZenoMainWindow;
@@ -36,6 +37,8 @@ public:
     void fakeWheelEvent(QWheelEvent* event);
     void showInfo();
     QVector3D realPos() const;
+    QVector3D screenToWorldRay(float x, float y) const;
+    QVariant hitOnFloor(float x, float y) const;
 
 private:
     bool m_mmb_pressed;

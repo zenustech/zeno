@@ -28,10 +28,17 @@ void CameraControl::setRes(QVector2D res)
 
 void CameraControl::fakeMousePressEvent(QMouseEvent* event)
 {
-    if (!(event->buttons() & Qt::MiddleButton))
-        return;
+    if (event->buttons() & Qt::MiddleButton) {
+        m_lastPos = event->pos();
+    } else if (event->buttons() & Qt::LeftButton) {
+        auto flag = zenoApp->getStatus("camera/show_info");
+        if (!flag.isNull() && flag.toBool()) {
+            float x = (float)event->x() / m_res.x();
+            float y = (float)event->y() / m_res.y();
 
-    m_lastPos = event->pos();
+            qDebug() << hitOnFloor(x, y);
+        }
+    }
 }
 
 void CameraControl::fakeMouseMoveEvent(QMouseEvent* event)
@@ -128,6 +135,43 @@ QVector3D CameraControl::realPos() const {
     float sin_p = std::sin(m_phi);
     QVector3D back(cos_t * sin_p, sin_t, -cos_t * cos_p);
     return m_center - back * m_radius;
+}
+
+// x, y from [0, 1]
+QVector3D CameraControl::screenToWorldRay(float x, float y) const {
+    float cos_t = cos(m_theta);
+    float sin_t = sin(m_theta);
+    float cos_p = cos(m_phi);
+    float sin_p = sin(m_phi);
+    QVector3D back(cos_t * sin_p, sin_t, -cos_t * cos_p);
+    QVector3D up(-sin_t * sin_p, cos_t, sin_t * cos_p);
+    QVector3D right = QVector3D::crossProduct(up, back);
+    up = QVector3D::crossProduct(back, right);
+    right.normalize();
+    up.normalize();
+    QMatrix4x4 view;
+    view.setToIdentity();
+    view.lookAt(realPos(), m_center, up);
+    x = (x - 0.5) * 2;
+    y = (y - 0.5) * (-2);
+    float v = std::tan(m_fov * M_PI / 180.f * 0.5f);
+    float aspect = res().x() / res().y();
+    auto dir = QVector3D(v * x * aspect, v * y, -1);
+    dir = dir.normalized();
+    dir = view.inverted().mapVector(dir);
+    return dir;
+}
+
+QVariant CameraControl::hitOnFloor(float x, float y) const {
+    auto dir = screenToWorldRay(x, y);
+    auto pos = realPos();
+    float t = (0 - pos.y()) / dir.y();
+    if (t > 0) {
+        auto p = pos + dir * t;
+        return p;
+    } else {
+        return {};
+    }
 }
 
 ViewportWidget::ViewportWidget(QWidget* parent)
