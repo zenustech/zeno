@@ -39,6 +39,7 @@ namespace curve_util
 	};
 
 	QRectF fitInRange(CURVE_RANGE rg, const QMargins& margins);
+	QRectF initGridSize(const QSize& sz, const QMargins& margins);
 	QModelIndex findUniqueItem(QAbstractItemModel* pModel, int role, QVariant value);
 	QPair<int, int> numframes(qreal scaleX, qreal scaleY);
 }

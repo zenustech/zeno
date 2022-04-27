@@ -36,8 +36,9 @@ void CurveMapView::init(CurveModel* model, bool timeFrame)
 {
 	QGraphicsScene* pScene = new QGraphicsScene;
 	setScene(pScene);
+
+	//todo: union range when multiple models have been added.
     m_range = model->range();
-    m_model = model;
 
 	m_gridMargins.setLeft(64);
 	m_gridMargins.setRight(64);
@@ -54,7 +55,7 @@ void CurveMapView::init(CurveModel* model, bool timeFrame)
 	QRectF rc = scene()->sceneRect();
 	rc = sceneRect();
 
-	m_fixedSceneRect = curve_util::fitInRange(m_range, m_gridMargins);
+	m_fixedSceneRect = curve_util::initGridSize(QSize(512, 512), m_gridMargins);
 
 	m_grid = new CurveGrid(this, m_fixedSceneRect);
 	m_grid->addCurve(model);
@@ -64,6 +65,20 @@ void CurveMapView::init(CurveModel* model, bool timeFrame)
 	pScene->addItem(m_pHScalar);
 	pScene->addItem(m_pVScalar);
 	pScene->addItem(m_grid);
+}
+
+void CurveMapView::addCurve(CurveModel* model)
+{
+    Q_ASSERT(m_grid);
+    m_grid->addCurve(model);
+
+	QMargins margins = m_gridMargins;
+    m_grid->resetTransform(m_fixedSceneRect.marginsRemoved(margins), model->range());
+}
+
+CURVE_RANGE CurveMapView::range() const
+{
+    return m_range;
 }
 
 QPointF CurveMapView::mapLogicToScene(const QPointF& logicPos)

@@ -4,20 +4,22 @@
 #include <zenoui/style/zenostyle.h>
 #include "curvenodeitem.h"
 #include "../model/curvemodel.h"
+#include "curvesitem.h"
 #include <zenoui/util/uihelper.h>
 
 
-ZCurveMapEditor::ZCurveMapEditor(QWidget* parent)
+ZCurveMapEditor::ZCurveMapEditor(bool bTimeline, QWidget* parent)
 	: QDialog(parent)
     , m_pGroupHdlType(nullptr)
-    , m_model(nullptr)
+    , m_channelModel(nullptr)
+    , m_bTimeline(bTimeline)
 {
     initUI();
+    initChannelModel();
 }
 
 ZCurveMapEditor::~ZCurveMapEditor()
 {
-
 }
 
 void ZCurveMapEditor::initUI()
@@ -84,10 +86,60 @@ void ZCurveMapEditor::initButtonShadow()
     }
 }
 
+void ZCurveMapEditor::initChannelModel()
+{
+    //temp code
+    if (m_bTimeline)
+    {
+        m_channelModel = new QStandardItemModel(this);
+        QStandardItem* pRootItem = new QStandardItem("Channels");
+        m_channelModel->appendRow(pRootItem);
+        m_ui->channelView->setModel(m_channelModel);
+
+        m_selection = new QItemSelectionModel(m_channelModel);
+    }
+    m_ui->channelView->setVisible(m_bTimeline);
+}
+
+CurveModel* ZCurveMapEditor::currentModel()
+{
+    if (m_bTimeline)
+    {
+        QModelIndex idx = m_ui->channelView->currentIndex();
+        QString id = idx.data(Qt::DisplayRole).toString();
+        if (m_models.find(id) != m_models.end())
+        {
+            return m_models[id];
+        }
+        else
+        {
+            return nullptr;
+        }
+    }
+    else
+    {
+        Q_ASSERT(m_models.size() == 1);
+        return m_models[0];
+    }
+}
+
 void ZCurveMapEditor::init(CurveModel* model, bool bTimeFrame)
 {
-    m_model = model;
+    QString id = model->id();
+    m_models.insert(id, model);
     m_ui->gridview->init(model, bTimeFrame);
+    if (bTimeFrame)
+    {
+        QStandardItem* pItem = new QStandardItem(model->id());
+        pItem->setCheckable(true);
+        pItem->setCheckState(Qt::Checked);
+        QStandardItem* pRootItem = m_channelModel->itemFromIndex(m_channelModel->index(0, 0));
+        pRootItem->appendRow(pItem);
+
+        CurveGrid *pGrid = m_ui->gridview->gridItem();
+        pGrid->setCurvesColor(id, QColor(206, 47, 47));
+    }
+
     CURVE_RANGE range = model->range();
     m_ui->editXFrom->setText(QString::number(range.xFrom));
     m_ui->editXTo->setText(QString::number(range.xTo));
@@ -110,9 +162,29 @@ void ZCurveMapEditor::initSignals()
     connect(m_ui->gridview, &CurveMapView::frameChanged, this, &ZCurveMapEditor::onFrameChanged);
 }
 
+void ZCurveMapEditor::addCurve(CurveModel* model)
+{
+    QString id = model->id();
+    m_models.insert(id, model);
+    m_ui->gridview->addCurve(model);
+
+    QStandardItem *pItem = new QStandardItem(model->id());
+    pItem->setCheckable(true);
+    pItem->setCheckState(Qt::Checked);
+    QStandardItem *pRootItem = m_channelModel->itemFromIndex(m_channelModel->index(0, 0));
+    pRootItem->appendRow(pItem);
+
+    CurveGrid *pGrid = m_ui->gridview->gridItem();
+    pGrid->setCurvesColor(id, QColor(48, 123, 205));
+
+    connect(model, &CurveModel::dataChanged, this, &ZCurveMapEditor::onNodesDataChanged);
+    connect(m_channelModel, &QStandardItemModel::dataChanged, this, &ZCurveMapEditor::onChannelModelDataChanged);
+}
+
 void ZCurveMapEditor::onButtonToggled(QAbstractButton* btn, bool bToggled)
 {
-    if (!bToggled)
+    CurveModel *pModel = currentModel();
+    if (!bToggled || !pModel)
         return;
 
     auto lst = m_ui->gridview->getSelectedNodes();
@@ -124,25 +196,29 @@ void ZCurveMapEditor::onButtonToggled(QAbstractButton* btn, bool bToggled)
 
         if (btn == m_ui->btnVector)
         {
-            m_model->setData(idx, HDL_VECTOR, ROLE_TYPE);
+            pModel->setData(idx, HDL_VECTOR, ROLE_TYPE);
         }
         else if (btn == m_ui->btnAligned)
         {
-            m_model->setData(idx, HDL_ALIGNED, ROLE_TYPE);
+            pModel->setData(idx, HDL_ALIGNED, ROLE_TYPE);
         }
         else if (btn == m_ui->btnAsymmetry)
         {
-            m_model->setData(idx, HDL_ASYM, ROLE_TYPE);
+            pModel->setData(idx, HDL_ASYM, ROLE_TYPE);
         }
         else if (btn == m_ui->btnFree)
         {
-            m_model->setData(idx, HDL_FREE, ROLE_TYPE);
+            pModel->setData(idx, HDL_FREE, ROLE_TYPE);
         }
     }
 }
 
+
+
 void ZCurveMapEditor::onLineEditFinished()
 {
+    CurveModel* pModel = currentModel();
+
     QObject *pEdit = sender();
     if (pEdit == m_ui->editPtX) {
     
@@ -168,14 +244,25 @@ void ZCurveMapEditor::onLineEditFinished()
         QPointF rightHdlOffset = rightHdlScene - nodeScenePos;
 
         const QModelIndex& idx = node->index();
-        m_model->setData(idx, logicPos, ROLE_NODEPOS);
-        m_model->setData(idx, QPointF(leftX, leftY), ROLE_LEFTPOS);
-        m_model->setData(idx, QPointF(rightX, rightY), ROLE_RIGHTPOS);
+        pModel->setData(idx, logicPos, ROLE_NODEPOS);
+        pModel->setData(idx, QPointF(leftX, leftY), ROLE_LEFTPOS);
+        pModel->setData(idx, QPointF(rightX, rightY), ROLE_RIGHTPOS);
     }
 }
 
 void ZCurveMapEditor::onNodesDataChanged()
 {
+    CurveModel* pModel = qobject_cast<CurveModel*>(sender());// currentModel();
+    if (!pModel)
+    {
+        //temp
+        auto lst = m_ui->gridview->getSelectedNodes();
+        if (lst.isEmpty())
+            return;
+        pModel = lst[0]->curves()->model();
+        Q_ASSERT(pModel);
+    }
+
     CurveGrid *pGrid = m_ui->gridview->gridItem();
     auto lst = m_ui->gridview->getSelectedNodes();
     bool enableEditor = lst.size() == 1;
@@ -188,15 +275,15 @@ void ZCurveMapEditor::onNodesDataChanged()
    
     if (lst.size() == 1)
     {
-        Q_ASSERT(pGrid && m_model);
+        Q_ASSERT(pGrid && pModel);
         CurveNodeItem *node = lst[0];
         const QModelIndex& idx = node->index();
-        QPointF logicPos = m_model->data(idx, ROLE_NODEPOS).toPointF();
+        QPointF logicPos = pModel->data(idx, ROLE_NODEPOS).toPointF();
         m_ui->editPtX->setText(QString::number(logicPos.x(), 'g', 3));
         m_ui->editPtY->setText(QString::number(logicPos.y(), 'g', 3));
 
-        QPointF leftPos = m_model->data(idx, ROLE_LEFTPOS).toPointF();
-        QPointF rightPos = m_model->data(idx, ROLE_RIGHTPOS).toPointF();
+        QPointF leftPos = pModel->data(idx, ROLE_LEFTPOS).toPointF();
+        QPointF rightPos = pModel->data(idx, ROLE_RIGHTPOS).toPointF();
 
         m_ui->editTanLeftX->setText(QString::number(leftPos.x(), 'g', 3));
         m_ui->editTanLeftY->setText(QString::number(leftPos.y() , 'g', 3));
@@ -238,6 +325,31 @@ void ZCurveMapEditor::onNodesDataChanged()
 void ZCurveMapEditor::onNodesSelectionChanged(QList<CurveNodeItem*> lst)
 {
     onNodesDataChanged();
+}
+
+void ZCurveMapEditor::onChannelModelDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles)
+{
+    if (!topLeft.isValid() || roles.isEmpty())
+        return;
+
+    QString id = topLeft.data(Qt::DisplayRole).toString();
+    if (roles[0] == Qt::CheckStateRole)
+    {
+        Q_ASSERT(m_models.find(id) != m_models.end());
+
+        CurveGrid* pGrid = m_ui->gridview->gridItem();
+        Q_ASSERT(pGrid);
+
+        Qt::CheckState state = topLeft.data(Qt::CheckStateRole).value<Qt::CheckState>();
+        if (state == Qt::Checked)
+        {
+            pGrid->setCurvesVisible(id, true);
+        }
+        else if (state == Qt::Unchecked)
+        {
+            pGrid->setCurvesVisible(id, false);
+        }
+    }
 }
 
 void ZCurveMapEditor::onFrameChanged(qreal frame)

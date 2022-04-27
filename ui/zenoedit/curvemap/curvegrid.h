@@ -2,6 +2,7 @@
 #define __CURVE_GRID_H__
 
 #include <QtWidgets>
+#include <zenoui/model/modeldata.h>
 
 class CurveMapView;
 class CurveNodeItem;
@@ -18,9 +19,11 @@ public:
 	QRectF boundingRect() const override;
 	void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget = nullptr) override;
 	void mousePressEvent(QGraphicsSceneMouseEvent* event) override;
-	void initTransform();
+	void resetTransform(QRectF rc, CURVE_RANGE rg);
 	void addCurve(CurveModel* model);
     bool isFuncCurve() const;
+    void setCurvesVisible(QString id, bool bVisible);
+    void setCurvesColor(QString id, QColor color);
     CurveMapView* view() const { return m_view; }
     QPointF logicToScene(QPointF logicPos);
     QPointF sceneToLogic(QPointF scenePos);

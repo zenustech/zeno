@@ -18,7 +18,7 @@ class CurvePathItem : public QObject
 {
 	Q_OBJECT
 public:
-    CurvePathItem(QGraphicsItem* parent = nullptr);
+    CurvePathItem(QColor color, QGraphicsItem* parent = nullptr);
 
 protected:
     void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
@@ -65,7 +65,6 @@ class CurveNodeItem : public QGraphicsObject
 public:
 	CurveNodeItem(const QModelIndex& idx, CurveMapView* pView, const QPointF& nodePos, CurveGrid* parentItem, CurvesItem* curve);
 	void initHandles(const QPointF& leftHandle, const QPointF& rightHandle);
-    void onHandleUpdate(CurveHandlerItem* pItem);
 	QRectF boundingRect(void) const override;
     void toggle(bool bChecked);
     bool isToggled() const;

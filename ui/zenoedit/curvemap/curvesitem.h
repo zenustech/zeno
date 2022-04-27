@@ -17,6 +17,8 @@ public:
     void initCurves(CurveModel* model);
     int nodeCount() const;
     int indexOf(CurveNodeItem *pItem) const;
+    void setColor(const QColor& color);
+    void _setVisible(bool bVisible);
     QPointF nodePos(int i) const;
     CurveNodeItem* nodeItem(int i) const;
     CurveModel* model() const;
@@ -37,6 +39,7 @@ private:
     CurveMapView* m_view;
     CurveGrid* m_grid;
     CurveModel* m_model;
+    QColor m_color;
 };
 
 #endif

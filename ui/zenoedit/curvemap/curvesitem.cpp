@@ -12,6 +12,7 @@ CurvesItem::CurvesItem(CurveMapView* pView, CurveGrid* grid, const QRectF& rc, Q
     , m_grid(grid)
     , m_model(nullptr)
 {
+    m_color = QColor(77, 77, 77);
 }
 
 CurvesItem::~CurvesItem()
@@ -47,7 +48,7 @@ void CurvesItem::initCurves(CurveModel* model)
 			continue;
 		}
 
-		CurvePathItem* pathItem = new CurvePathItem(this);
+		CurvePathItem* pathItem = new CurvePathItem(m_color, this);
         connect(pathItem, SIGNAL(clicked(const QPointF&)), this, SLOT(onPathClicked(const QPointF&)));
 
 		QPainterPath path;
@@ -190,7 +191,7 @@ void CurvesItem::onNodesInserted(const QModelIndex& parent, int first, int last)
                 rightNodePos = pRightNode->pos();
 
         CurvePathItem *pLeftHalf = m_vecCurves[r - 1];
-        CurvePathItem *pRightHalf = new CurvePathItem(this);
+        CurvePathItem *pRightHalf = new CurvePathItem(m_color, this);
         connect(pRightHalf, SIGNAL(clicked(const QPointF&)), this, SLOT(onPathClicked(const QPointF &)));
         m_vecCurves.insert(r, pRightHalf);
 
@@ -238,6 +239,27 @@ void CurvesItem::onNodesAboutToBeRemoved(const QModelIndex& parent, int first, i
 int CurvesItem::indexOf(CurveNodeItem *pItem) const
 {
     return m_vecNodes.indexOf(pItem);
+}
+
+void CurvesItem::setColor(const QColor& color)
+{
+    m_color = color;
+    for (auto item : m_vecCurves)
+    {
+        const int penWidth = item->pen().width();
+        QPen pen(color, penWidth);
+        item->setPen(pen);
+    }
+}
+
+void CurvesItem::_setVisible(bool bVisible)
+{
+    for (auto item : m_vecNodes) {
+        item->setVisible(bVisible);
+    }
+    for (auto item : m_vecCurves) {
+        item->setVisible(bVisible);
+    }
 }
 
 int CurvesItem::nodeCount() const

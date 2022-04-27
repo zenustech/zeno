@@ -1,23 +1,22 @@
 #include "curvemodel.h"
 
 
-CurveModel::CurveModel(const CURVE_RANGE& rg, QObject* parent)
+CurveModel::CurveModel(const QString& id, const CURVE_RANGE& rg, QObject* parent)
     : QStandardItemModel(parent)
     , m_range(rg)
+    , m_id(id)
 {
-
 }
 
-CurveModel::CurveModel(const CURVE_RANGE& rg, int rows, int columns, QObject *parent)
+CurveModel::CurveModel(const QString& id, const CURVE_RANGE& rg, int rows, int columns, QObject *parent)
     : QStandardItemModel(rows, columns, parent)
     , m_range(rg)
+    , m_id(id)
 {
-
 }
 
 CurveModel::~CurveModel()
 {
-
 }
 
 void CurveModel::initItems(CURVE_RANGE rg, const QVector<QPointF>& pts, const QVector<QPointF>& handlers)
@@ -49,6 +48,11 @@ void CurveModel::resetRange(const CURVE_RANGE& rg)
 CURVE_RANGE CurveModel::range() const
 {
     return m_range;
+}
+
+QString CurveModel::id() const
+{
+    return m_id;
 }
 
 QPointF CurveModel::clipNodePos(const QModelIndex& index, const QPointF& currPos)

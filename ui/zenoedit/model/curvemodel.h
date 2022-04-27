@@ -25,14 +25,15 @@ class CurveModel : public QStandardItemModel
 {
     Q_OBJECT
 public:
-    explicit CurveModel(const CURVE_RANGE& rg, QObject *parent = nullptr);
-    CurveModel(const CURVE_RANGE& rg, int rows, int columns, QObject *parent = nullptr);
+    explicit CurveModel(const QString& id, const CURVE_RANGE& rg, QObject *parent = nullptr);
+    CurveModel(const QString& id, const CURVE_RANGE& rg, int rows, int columns, QObject *parent = nullptr);
     ~CurveModel();
     //method for temporary node like MakeCurvemap, DynamicNumber¡£
     void initItems(CURVE_RANGE rg, const QVector<QPointF>& points, const QVector<QPointF>& handlers);
     bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::EditRole) override;
     void resetRange(const CURVE_RANGE& rg);
     CURVE_RANGE range() const;
+    QString id() const;
     QPointF clipNodePos(const QModelIndex& idx, const QPointF& currPos);
 
     QPointF adjustLastRightHdl(const QModelIndex& currIdx);
@@ -47,6 +48,7 @@ signals:
 
 private:
     CURVE_RANGE m_range;
+    QString m_id;
 };
 
 #endif

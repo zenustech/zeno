@@ -16,6 +16,14 @@ namespace curve_util
 		return rc;
 	}
 
+	QRectF initGridSize(const QSize& sz, const QMargins& margins)
+	{
+        QRectF rc;
+		rc.setWidth(sz.width() + margins.left() + margins.right());
+        rc.setHeight(sz.height() + margins.top() + margins.bottom());
+		return rc;
+	}
+
 	QModelIndex findUniqueItem(QAbstractItemModel* pModel, int role, QVariant value)
 	{
 		auto lst = pModel->match(pModel->index(0, 0), role, value);

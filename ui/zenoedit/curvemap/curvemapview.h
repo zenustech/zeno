@@ -16,7 +16,8 @@ public:
 	CurveMapView(QWidget* parent = nullptr);
 	~CurveMapView();
 	void init(CurveModel* model, bool timeFrame);
-	CURVE_RANGE range() const { return m_range; }
+	void addCurve(CurveModel* model);
+	CURVE_RANGE range() const;
 	int frames(bool bHorizontal) const;
     bool isSmoothCurve() const;
 	QMargins margins() const { return m_gridMargins; }
@@ -59,7 +60,6 @@ private:
 	CurveGrid* m_grid;
 	CurveScalarItem* m_pHScalar;
 	CurveScalarItem* m_pVScalar;
-	CurveModel const* m_model;
 	QVector<CurveNodeItem*> m_nodes;
 	QVector<QGraphicsPathItem*> m_curves;
 	const double m_factor_step = 0.1;

@@ -13,23 +13,22 @@ CurveGrid::CurveGrid(CurveMapView* pView, const QRectF& rc, QGraphicsItem* paren
 	, m_initRc(rc)
 	, m_bFCurve(true)
 {
-	initTransform();
+    QMargins margins = m_view->margins();
+    m_initRc = m_initRc.marginsRemoved(margins);
+	resetTransform(m_initRc, m_view->range());
 }
 
-void CurveGrid::initTransform()
+void CurveGrid::resetTransform(QRectF rc, CURVE_RANGE rg)
 {
     QMargins margins = m_view->margins();
-
-    m_initRc = m_initRc.marginsRemoved(margins);
+    m_initRc = rc;
 
 	//setup the transform.
-	CURVE_RANGE rg = m_view->range();
-
 	QPolygonF polygonIn;
-	polygonIn << m_initRc.topLeft()
-		<< m_initRc.topRight()
-		<< m_initRc.bottomRight()
-		<< m_initRc.bottomLeft();
+	polygonIn << rc.topLeft()
+		<< rc.topRight()
+		<< rc.bottomRight()
+		<< rc.bottomLeft();
 
 	QPolygonF polygonOut;
 	polygonOut << QPointF(rg.xFrom, rg.yTo)
@@ -51,16 +50,21 @@ void CurveGrid::initTransform()
 		return;
 	}
 
+	//example:
+    /*
 	QPointF pos1 = m_transform.map(m_initRc.topLeft());
 	QPointF pos2 = m_transform.map(m_initRc.bottomRight());
 	QPointF pos3 = m_transform.map(m_initRc.center());
+	*/
 }
 
 void CurveGrid::addCurve(CurveModel* model)
 {
     CurvesItem* pCurves = new CurvesItem(m_view, this, m_initRc, this);
 	pCurves->initCurves(model);
-    m_curves["only-one"] = pCurves;
+    QString id = model->id();
+    Q_ASSERT(!id.isEmpty());
+    m_curves[id] = pCurves;
 }
 
 QPointF CurveGrid::logicToScene(QPointF logicPos)
@@ -78,6 +82,22 @@ QPointF CurveGrid::sceneToLogic(QPointF scenePos)
 bool CurveGrid::isFuncCurve() const
 {
     return m_bFCurve;
+}
+
+void CurveGrid::setCurvesVisible(QString id, bool bVisible)
+{
+    if (m_curves.find(id) != m_curves.end())
+	{
+        m_curves[id]->_setVisible(bVisible);
+	}
+}
+
+void CurveGrid::setCurvesColor(QString id, QColor color)
+{
+    if (m_curves.find(id) != m_curves.end())
+	{
+        m_curves[id]->setColor(color);
+    }
 }
 
 void CurveGrid::setColor(const QColor& clrGrid, const QColor& clrBackground)

@@ -9,12 +9,12 @@
 using namespace curve_util;
 
 
-CurvePathItem::CurvePathItem(QGraphicsItem *parent)
+CurvePathItem::CurvePathItem(QColor color, QGraphicsItem *parent)
     : QObject(nullptr)
 	, QGraphicsPathItem(parent)
 {
-    const int penWidth = 2;
-    QPen pen(QColor(77, 77, 77), penWidth);
+    const int penWidth = 3;
+    QPen pen(color, penWidth);
     pen.setStyle(Qt::SolidLine);
     setPen(pen);
     setZValue(9);
