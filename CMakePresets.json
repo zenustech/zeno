@@ -29,7 +29,7 @@
         "ZENO_WITH_FastFLIP": "ON",
         "ZENO_WITH_Rigid": "ON",
         "ZENO_WITH_oldzenbase": "ON",
-        "ZENO_WITH_TOOL_FLIPTools": "ON",
+        "ZENO_WITH_TOOL_FLIPtools": "ON",
         "ZENO_WITH_TOOL_BulletTools": "ON"
       }
     },
