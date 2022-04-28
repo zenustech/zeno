@@ -27,7 +27,7 @@ set(SKINNING_SOURCE_FILES
 
 target_sources(zeno PRIVATE ${SKINNING_SOURCE_FILES})
 target_link_libraries(zeno PRIVATE Eigen3::Eigen)
-target_link_libraries(zeno PUBLIC OpenMP::OpenMP_CXX)
+target_link_libraries(zeno PRIVATE OpenMP::OpenMP_CXX)
 
 target_link_libraries(zeno PRIVATE igl::core $<TARGET_NAME_IF_EXISTS:igl::cgal> igl::tetgen)
 # target_link_libraries(zeno PRIVATE libTetWild)
