@@ -12,8 +12,11 @@
 #include <zeno/utils/vec.h>
 #include <zenovis/Camera.h>
 #include <zenovis/DrawOptions.h>
+#include <zenovis/DepthPass.h>
+#include <zenovis/EnvmapManager.h>
 #include <zenovis/IGraphic.h>
 #include <zenovis/Light.h>
+#include <zenovis/ReflectivePass.h>
 #include <zenovis/Scene.h>
 #include <zenovis/ShaderManager.h>
 #include <zenovis/opengl/buffer.h>

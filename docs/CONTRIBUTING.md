@@ -234,6 +234,8 @@ If you have trouble setting up developing environment, please let us help by ope
 * `projects` - source code of Zeno extension modules.
 * `ui` - source code of Zeno editor UI (written in Qt5).
 * `zeno` - source code of Zeno node system core.
+* `zenovis` - source code of Zeno visualization system.
+* `zenoplay` - source code of Zeno real-time rendering system.
 <!-- * `.POC` - proof-of-concept and deprecated code archive. -->
 * `.github` - GitHub workflow and template files.
 

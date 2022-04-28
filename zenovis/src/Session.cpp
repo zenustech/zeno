@@ -44,7 +44,7 @@ void Session::set_show_grid(bool show_grid) {
 }
 
 void Session::set_num_samples(int num_samples) {
-    impl->scene->camera->setNumSamples(num_samples);
+    // TODO
 }
 
 void Session::set_normal_check(bool check) {

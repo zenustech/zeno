@@ -7,7 +7,6 @@
 #include <zenovis/opengl/buffer.h>
 #include <zenovis/opengl/shader.h>
 #include <zeno/types/LightObject.h>
-#include <zenovis/Light.h>
 
 namespace zenovis {
 namespace {
@@ -23,7 +22,7 @@ struct GraphicLight final : IGraphicLight {
     }
 
     virtual void addToScene() override {
-        scene->lightCluster->addLight(lightData);
+        //scene->lightCluster->addLight(lightData);
     }
 };
 
