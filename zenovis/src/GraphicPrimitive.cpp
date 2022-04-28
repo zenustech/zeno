@@ -28,7 +28,6 @@ struct ZhxxDrawObject {
     std::unique_ptr<Buffer> instvbo;
     size_t count = 0;
     Program *prog{};
-    Program *shadowprog{};
 };
 
 static void parsePointsDrawBuffer(zeno::PrimitiveObject *prim, ZhxxDrawObject &obj) {
@@ -57,6 +56,7 @@ static void parsePointsDrawBuffer(zeno::PrimitiveObject *prim, ZhxxDrawObject &o
                            points_count * sizeof(prim->points[0]));
     }
 }
+
 static void parseLinesDrawBuffer(zeno::PrimitiveObject *prim, ZhxxDrawObject &obj) {
     auto const &pos = prim->attr<zeno::vec3f>("pos");
     auto const &clr = prim->attr<zeno::vec3f>("clr");
@@ -138,6 +138,7 @@ static void computeTrianglesTangent(zeno::PrimitiveObject *prim) {
         }
     }
 }
+
 static void parseTrianglesDrawBufferCompress(zeno::PrimitiveObject *prim, ZhxxDrawObject &obj) {
     //TICK(parse);
     auto const &pos = prim->attr<zeno::vec3f>("pos");
@@ -220,6 +221,7 @@ static void parseTrianglesDrawBufferCompress(zeno::PrimitiveObject *prim, ZhxxDr
     }
     /* TOCK(bindebo); */
 }
+
 static void parseTrianglesDrawBuffer(zeno::PrimitiveObject *prim, ZhxxDrawObject &obj) {
     /* TICK(parse); */
     auto const &pos = prim->attr<zeno::vec3f>("pos");
@@ -268,6 +270,7 @@ static void parseTrianglesDrawBuffer(zeno::PrimitiveObject *prim, ZhxxDrawObject
     }
     /* TOCK(bindebo); */
 }
+
 struct GraphicPrimitive final : IGraphicDraw {
     Scene *scene;
     std::unique_ptr<Buffer> vbo;
@@ -299,7 +302,7 @@ struct GraphicPrimitive final : IGraphicDraw {
         zeno::log_trace("rendering primitive size {}", prim->size());
 
         prim_has_inst = prim->inst != nullptr;
-        prim_inst_amount = prim->inst->amount;
+        prim_inst_amount = prim->inst ? prim->inst->amount : 0;
 
         if (!prim->has_attr("pos")) {
             auto &pos = prim->add_attr<zeno::vec3f>("pos");

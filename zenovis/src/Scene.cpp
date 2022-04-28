@@ -19,8 +19,8 @@ Scene::Scene()
       drawOptions(std::make_unique<DrawOptions>()),
       shaderMan(std::make_unique<ShaderManager>()) {
 
-    CHECK_GL(glEnable(GL_BLEND));
-    CHECK_GL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
+    //CHECK_GL(glEnable(GL_BLEND));
+    //CHECK_GL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
     CHECK_GL(glEnable(GL_DEPTH_TEST));
     CHECK_GL(glEnable(GL_PROGRAM_POINT_SIZE));
     CHECK_GL(glEnable(GL_MULTISAMPLE));
@@ -36,15 +36,17 @@ Scene::Scene()
 
     hudGraphics.push_back(makeGraphicGrid(this));
     hudGraphics.push_back(makeGraphicAxis(this));
+
+    glm::vec3 a;
+    auto [x, y, z] = a;
 }
 
 void Scene::draw() {
     CHECK_GL(glViewport(0, 0, camera->m_nx, camera->m_ny));
-    vao->bind();
-    CHECK_GL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
     CHECK_GL(glClearColor(drawOptions->bgcolor.r, drawOptions->bgcolor.g, drawOptions->bgcolor.b, 0.0f));
     CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 
+    vao->bind();
     for (auto const &gra : graphicsMan->graphics.values<IGraphicDraw>()) {
         gra->draw();
     }

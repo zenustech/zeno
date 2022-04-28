@@ -16,21 +16,21 @@ in vec3 iNormal;
 in vec3 iTexCoord;
 in vec3 iTangent;
 out vec4 fColor;
-uniform samplerCube skybox;
 
-uniform samplerCube irradianceMap;
-uniform samplerCube prefilterMap;
-uniform sampler2D brdfLUT;
+void pixarONB(vec3 n, out vec3 b1, out vec3 b2) {
+	vec3 up = abs(n.z) < 0.999 ? vec3(0.0, 0.0, 1.0) : vec3(1.0, 0.0, 0.0);
+    b1 = normalize(cross(up, n));
+    b2 = cross(n, b1);
+}
 
-vec3 pbr(vec3 albedo, float roughness, float metallic, float specular,
-    vec3 nrm, vec3 idir, vec3 odir) {
+vec3 pbr(vec3 albedo, float roughness, float metallic, float specular, vec3 nrm, vec3 idir, vec3 odir) {
 
   vec3 hdir = normalize(idir + odir);
-  float NoH = max(0., dot_c(hdir, nrm));
-  float NoL = max(0., dot_c(idir, nrm));
-  float NoV = max(0., dot_c(odir, nrm));
-  float VoH = clamp(dot_c(odir, hdir), 0., 1.);
-  float LoH = clamp(dot_c(idir, hdir), 0., 1.);
+  float NoH = max(1e-5, dot(hdir, nrm));
+  float NoL = max(1e-5, dot(idir, nrm));
+  float NoV = max(1e-5, dot(odir, nrm));
+  float VoH = clamp(dot(odir, hdir), 1e-5, 1.);
+  float LoH = clamp(dot(idir, hdir), 1e-5, 1.);
 
   vec3 f0 = metallic * albedo + (1. - metallic) * 0.16 * specular;
   vec3 fdf = f0 + (1. - f0) * pow(1. - VoH, 5.);
@@ -100,16 +100,15 @@ void main() {
   }
 
   vec3 color = studioShading(albedo, viewdir, normal, tangent);
-  color *= mSampleWeight;
   
   fColor = vec4(color, 1);
   
   if (mNormalCheck) {
       float intensity = clamp((mView * vec4(normal, 0)).z, 0, 1) * 0.4 + 0.6;
       if (gl_FrontFacing) {
-        fColor = vec4(0.42 * intensity*mSampleWeight, 0.42 * intensity*mSampleWeight, 0.93 * intensity*mSampleWeight, 1);
+        fColor = vec4(0.42 * intensity, 0.42 * intensity, 0.93 * intensity, 1);
       } else {
-        fColor = vec4(0.87 * intensity*mSampleWeight, 0.22 * intensity*mSampleWeight, 0.22 * intensity*mSampleWeight, 1);
+        fColor = vec4(0.87 * intensity, 0.22 * intensity, 0.22 * intensity, 1);
       }
   }
 }

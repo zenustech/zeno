@@ -117,6 +117,21 @@ struct GraphicGrid final : IGraphicDraw {
 
         prog->use();
         scene->camera->set_program_uniforms(prog);
+
+        {
+            auto camera_radius = scene->camera->m_lodradius;
+            auto camera_center = scene->camera->m_lodcenter;
+            float level = std::max(std::log(camera_radius) / std::log(5.0f) - 1.0f, -1.0f);
+            auto grid_scale = std::pow(5.f, std::floor(level));
+            auto ratio_clamp = [](float value, float lower_bound, float upper_bound) {
+                float ratio = (value - lower_bound) / (upper_bound - lower_bound);
+                return std::min(std::max(ratio, 0.0f), 1.0f);
+            };
+            auto grid_blend = ratio_clamp(level - std::floor(level), 0.8f, 1.0f);
+            prog->set_uniform("mCameraRadius", camera_radius);
+            prog->set_uniform("mCameraCenter", camera_center);
+        }
+
         CHECK_GL(glDrawArrays(GL_TRIANGLES, 0, vertex_count));
 
         vbo->disable_attribute(0);
