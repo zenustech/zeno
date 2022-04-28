@@ -6,7 +6,21 @@ However Zeno has many useful extension modules in the `projects/` folder. Despit
 great power of these extensions, they require a lot of dependencies like OpenVDB,
 therefore a very complicated setup is needed.
 
-### Enable extensions by CMake arguments
+## Fetch submodules
+
+You may need to get the submodules of Zeno to build some of our extension modules:
+
+```bash
+git submodule update --init --recursive
+```
+
+> The submodules are really huge (~40MB), if you find it too slow, you may give up for now and try it later. Zeno can still build without these submodules.
+
+> Hint: `git submodule update --init --recursive` should also be executed every time you `git pull` (when you'd like to synchronize with latest updates).
+
+> If you find GitHub slow: edit `.gitmodules` and replace GitHub URLs by your corresponding [Gitee](https://gitee.com) mirrors, and re-run the above command.
+
+## Enable extensions by CMake arguments
 
 Due to the complexity of extension modules, the are **not built by default** to be
 friendly to new users. You may manually enable building them by passing CMake arguments.
@@ -45,7 +59,11 @@ sudo apt-get install -y libblosc-dev libboost-iostreams-dev zlib1g-dev libtbb-de
 sudo apt-get install -y libeigen3-dev libcgal-dev liblapack-dev libopenblas-dev libhdf5-dev
 ```
 
-> It's highly recommended to use Ubuntu 20.04 or above, otherwise you may have to build some libraries from source.
+> It's highly recommended to use **Ubuntu 20.04 or above** for getting latest version of libraries.
+
+> OpenVDB 9.0.0 is now bundled as a submodule of Zeno, so no need to install `libopenvdb-dev`
+> (which is only 7.2.0) from `apt` anymore. But as a result we need to install the dependencies
+> of OpenVDB like the `blosc`, `zlib`, `tbb`, and `boost` here.
 
 ### Windows
 

@@ -42,17 +42,25 @@ If you use Linux the setup would be much easier, simply run these commands:
 
 ```bash
 sudo apt-get install -y git cmake make g++
-sudo apt-get install -y qt5-default
-sudo apt-get install -y libqt5svg5-dev
+sudo apt-get install -y qt5-default libqt5svg5-dev
 ```
 
 > NOTE: We highly recommend to use **Ubuntu 20.04 (or above)** whenever possible.
-> Ubuntu 18.04 users may have to install `Qt >= 5.12` from the official installer manually.
+
+#### If you want to use Ubuntu 18.04 anyway...
+
+Ubuntu 18.04 users may have to install `Qt >= 5.12` from the official installer manually.
+
 > As a contrast, Ubuntu 20.04 users can easily get Qt 5.12 by running `apt install qt5-default`.
 
-### Arch Linux
+Also note that the default GCC version of Ubuntu 18.04 is GCC 7, you may need to `apt install g++-9`
+then add `export CXX=g++-9` in your `.bashrc` and restart the shell.
 
-Arch Linux is my recommended environment, as it always provide latest packages.
+> As a contrast, Ubuntu 20.04 users have GCC 9 by default (which have full C++17 support for Zeno).
+
+### Arch Linux (recommended)
+
+Arch Linux is the author's recommended environment, as it always provide latest version of packages.
 
 ```bash
 sudo pacman -Syu
@@ -62,8 +70,14 @@ sudo pacman -S qt5-base qt5-svg
 
 ### WSL
 
-We haven't tested Zeno 2.0 on WSL (they doesn't have X11 by default). But please give feedback if you meet trouble there, we'd happy to help you resolve :)
+We haven't tested Zeno 2.0 on WSL (they doesn't have X11 by default). But please
+[give feedback](https://github.com/zenustech/zeno/issues) if you meet trouble there,
+we'd happy to help you resolve :)
 My video about how to setup X11 in WSL1: https://www.bilibili.com/video/BV1u44y1N78v
+
+> We recommend to use native Windows instead of WSL, to prevent OpenGL and CUDA driver issues.
+> Yes, **Virtual machines, WSL, and Docker**, are not recommended due to their poor GPU support.
+> Using native Linux would be the best choice in my opinion.
 
 ### Mac OS X
 
@@ -81,20 +95,6 @@ cd zeno
 > If you find GitHub slow: use `git clone https://gitee.com/zenustech/zeno.git` instead, which is our [official Gitee mirror](https://gitee.com/zenustech/zeno).
 
 > May also try `git clone https://github.com/zenustech/zeno.git --depth=1` for only fetching the latest commit, to reduce transmit data size for faster clone.
-
-## Fetch submodules (optional)
-
-You may *optionally* get the submodules of Zeno as well (for some extension modules like [ZPC](github.com/zenustech/zpc) or [LibIGL](https://github.com/zenustech/libigl)):
-
-```bash
-git submodule update --init --recursive
-```
-
-> The submodules are really huge (~40MB), if you find it too slow, you may give up for now and try it later. Zeno can still build without these submodules.
-
-> Hint: `git submodule update --init --recursive` should also be executed every time you `git pull` (when you'd like to synchronize with latest updates).
-
-> If you find GitHub slow: edit `.gitmodules` and replace GitHub URLs by your corresponding [Gitee](https://gitee.com) mirrors, and re-run the above command.
 
 ## Build Zeno
 
