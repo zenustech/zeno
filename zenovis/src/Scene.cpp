@@ -1,6 +1,7 @@
 #include <zenovis/Scene.h>
 #include <zenovis/Camera.h>
 #include <zenovis/IGraphic.h>
+#include <zenovis/DrawOptions.h>
 #include <zenovis/GraphicsManager.h>
 #include <zenovis/ShaderManager.h>
 #include <zenovis/opengl/buffer.h>

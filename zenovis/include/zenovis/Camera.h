@@ -19,15 +19,15 @@ struct Camera {
         return (float)m_nx / (float)m_ny;
     }
 
-    void setCamera(glm::vec3 pos, glm::vec3 front, glm::vec3 up, float fov, float fnear, float ffar, float radius, bool ortho_mode) {
+    void setCamera(glm::vec3 pos, glm::vec3 front, glm::vec3 up, float fov, float fnear, float ffar, float scale = 1.f) {
         front = glm::normalize(front);
         up = glm::normalize(up);
-        if (ortho_mode) {
+        if (fov <= 0) {
             m_view = glm::lookAt(pos, pos + front, up);
-            m_proj = glm::ortho(-radius * getAspect(), radius * getAspect(), -radius,
-                              radius, fnear, ffar);
+            m_proj = glm::ortho(-scale * getAspect(), scale * getAspect(), -scale,
+                              scale, fnear, ffar);
         } else {
-            m_view = glm::lookAt(pos, pos + radius * front, up);
+            m_view = glm::lookAt(pos, pos + front, up);
             m_proj = glm::perspective(glm::radians(fov), getAspect(), fnear, ffar);
         }
         m_near = fnear;
@@ -35,7 +35,7 @@ struct Camera {
         m_fov = fov;
     }
 
-    void setCamera(float cx, float cy, float cz, float theta, float phi, float radius, float fov, bool ortho_mode) {
+    void setCamera(float cx, float cy, float cz, float theta, float phi, float radius, float fov) {
         auto center = glm::vec3(cx, cy, cz);
 
         float cos_t = glm::cos(theta), sin_t = glm::sin(theta);
@@ -43,12 +43,12 @@ struct Camera {
         glm::vec3 back(cos_t * sin_p, sin_t, -cos_t * cos_p);
         glm::vec3 up(-sin_t * sin_p, cos_t, sin_t * cos_p);
 
-        if (!ortho_mode) {
+        if (!(fov <= 0)) {
             auto fnear = 0.1f;
             auto ffar = 20000.0f * std::max(1.0f, (float)radius / 10000.f);
-            setCamera(center - back * radius, -back, up, fov, fnear, ffar, radius, ortho_mode);
+            setCamera(center - back * radius, -back, up, fov, fnear, ffar);
         } else {
-            setCamera(center - back * radius, -back, up, 0.f, -100.f, 100.f, radius, ortho_mode);
+            setCamera(center - back * radius, -back, up, 0.f, -100.f, 100.f, radius);
         }
     }
 
