@@ -6,16 +6,16 @@
 #include <zeno/utils/disable_copy.h>
 #include <zeno/utils/fuck_win.h>
 #include <zenovis/zhxx/Camera.h>
-#include <zenovis/zhxx/Scene.h>
+#include <zenovis/zhxx/ZhxxScene.h>
 #include <zenovis/opengl/common.h>
 #include <zenovis/opengl/vao.h>
 
 namespace zenovis {
 
 struct ReflectivePass : zeno::disable_copy {
-    Scene *scene;
+    ZhxxScene *scene;
 
-    explicit ReflectivePass(Scene *scene) : scene(scene) {
+    explicit ReflectivePass(ZhxxScene *scene) : scene(scene) {
     }
 
     Camera *camera() const {

@@ -4,7 +4,7 @@
 #include <zenovis/GraphicsManager.h>
 #include <zenovis/IGraphic.h>
 #include <zenovis/zhxx/ReflectivePass.h>
-#include <zenovis/zhxx/Scene.h>
+#include <zenovis/zhxx/ZhxxScene.h>
 #include <zenovis/ShaderManager.h>
 #include <zenovis/opengl/buffer.h>
 #include <zenovis/opengl/common.h>
@@ -14,9 +14,9 @@
 
 namespace zenovis::zhxx {
 
-Scene::~Scene() = default;
+ZhxxScene::~ZhxxScene() = default;
 
-Scene::Scene()
+ZhxxScene::ZhxxScene()
     : camera(std::make_unique<Camera>()),
       drawOptions(std::make_unique<DrawOptions>()),
       shaderMan(std::make_unique<ShaderManager>()) {
@@ -54,7 +54,7 @@ Scene::Scene()
     //setup_env_map("Default");
 }
 
-//zeno::PolymorphicVector<std::vector<IGraphic *>> Scene::graphics() const {
+//zeno::PolymorphicVector<std::vector<IGraphic *>> ZhxxScene::graphics() const {
     //zeno::PolymorphicVector<std::vector<IGraphic *>> gras;
     //gras.reserve(graphicsMan->graphics.size());
     //for (auto const &[key, val] : graphicsMan->graphics) {
@@ -63,7 +63,7 @@ Scene::Scene()
     //return gras;
 //}
 
-void Scene::drawSceneDepthSafe(bool reflect, bool isDepthPass) {
+void ZhxxScene::drawSceneDepthSafe(bool reflect, bool isDepthPass) {
     auto aspRatio = camera->getAspect();
 
     //glEnable(GL_BLEND);
@@ -101,7 +101,7 @@ void Scene::drawSceneDepthSafe(bool reflect, bool isDepthPass) {
     }
 }
 
-void Scene::fast_paint_graphics() {
+void ZhxxScene::fast_paint_graphics() {
     CHECK_GL(glViewport(0, 0, camera->m_nx, camera->m_ny));
     vao->bind();
     camera->m_sample_weight = 1.0f;
@@ -123,7 +123,7 @@ void Scene::fast_paint_graphics() {
     vao->unbind();
 }
 
-void Scene::my_paint_graphics(int samples, bool isDepthPass) {
+void ZhxxScene::my_paint_graphics(int samples, bool isDepthPass) {
 
     CHECK_GL(glViewport(0, 0, camera->m_nx, camera->m_ny));
     vao->bind();
@@ -135,10 +135,10 @@ void Scene::my_paint_graphics(int samples, bool isDepthPass) {
     vao->unbind();
 }
 
-void Scene::draw_small_axis() { /* TODO: implement this */
+void ZhxxScene::draw_small_axis() { /* TODO: implement this */
 }
 
-bool Scene::anyGraphicHasMaterial() {
+bool ZhxxScene::anyGraphicHasMaterial() {
     for (auto const &gra : graphicsMan->graphics.values<IGraphicDraw>()) {
         if (gra->hasMaterial())
             return true;
@@ -146,7 +146,7 @@ bool Scene::anyGraphicHasMaterial() {
     return false;
 }
 
-void Scene::draw(unsigned int target_fbo) {
+void ZhxxScene::draw(unsigned int target_fbo) {
     if (!anyGraphicHasMaterial()) {
         CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, target_fbo));
         fast_paint_graphics();
@@ -163,7 +163,7 @@ void Scene::draw(unsigned int target_fbo) {
     mDepthPass->paint_graphics(target_fbo);
 }
 
-std::vector<char> Scene::record_frame_offline(int hdrSize, int rgbComps) {
+std::vector<char> ZhxxScene::record_frame_offline(int hdrSize, int rgbComps) {
     auto hdrType = std::map<int, int>{
         {1, GL_UNSIGNED_BYTE},
         {2, GL_HALF_FLOAT},

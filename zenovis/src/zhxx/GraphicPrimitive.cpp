@@ -17,7 +17,7 @@
 #include <zenovis/IGraphic.h>
 #include <zenovis/zhxx/Light.h>
 #include <zenovis/zhxx/ReflectivePass.h>
-#include <zenovis/zhxx/Scene.h>
+#include <zenovis/zhxx/ZhxxScene.h>
 #include <zenovis/ShaderManager.h>
 #include <zenovis/opengl/buffer.h>
 #include <zenovis/opengl/shader.h>
@@ -288,7 +288,7 @@ static void parseTrianglesDrawBuffer(zeno::PrimitiveObject *prim, ZhxxDrawObject
     /* TOCK(bindebo); */
 }
 struct GraphicPrimitive final : IGraphicDraw {
-    Scene *scene;
+    ZhxxScene *scene;
     std::unique_ptr<Buffer> vbo;
     std::unique_ptr<Buffer> instvbo;
     size_t vertex_count;
@@ -314,7 +314,7 @@ struct GraphicPrimitive final : IGraphicDraw {
     bool prim_has_inst = false;
     int prim_inst_amount = 0;
 
-    explicit GraphicPrimitive(Scene *scene_, zeno::PrimitiveObject *prim)
+    explicit GraphicPrimitive(ZhxxScene *scene_, zeno::PrimitiveObject *prim)
         : scene(scene_) {
         zeno::log_trace("rendering primitive size {}", prim->size());
 

@@ -7,7 +7,7 @@
 #include <zenovis/zhxx/Light.h>
 #include <zenovis/GraphicsManager.h>
 #include <zenovis/zhxx/ReflectivePass.h>
-#include <zenovis/zhxx/Scene.h>
+#include <zenovis/zhxx/ZhxxScene.h>
 #include <zenovis/ShaderManager.h>
 #include <zenovis/DrawOptions.h>
 #include <zenovis/opengl/shader.h>
@@ -16,9 +16,9 @@
 namespace zenovis::zhxx {
 
 struct DepthPass : zeno::disable_copy {
-    Scene *scene;
+    ZhxxScene *scene;
 
-    explicit DepthPass(Scene *scene) : scene(scene) {
+    explicit DepthPass(ZhxxScene *scene) : scene(scene) {
     }
 
     Camera *camera() const {

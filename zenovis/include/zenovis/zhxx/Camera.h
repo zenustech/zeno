@@ -81,7 +81,7 @@ struct Camera {
         /* if (g_camSetFromNode == 1) { */
         /*     view = cview; */
         /*     proj = cproj; */
-            /* auto &scene = Scene::getInstance(); */
+            /* auto &scene = ZhxxScene::getInstance(); */
             /* auto &lights = scene.lights; */
             /* for (auto &light : lights) { */
             /*     light->gfov = fov; */
@@ -89,7 +89,7 @@ struct Camera {
             /* } */
         /*     return; */
         /* } */
-        /* auto &scene = Scene::getInstance(); */
+        /* auto &scene = ZhxxScene::getInstance(); */
         /* auto &lights = scene.lights; */
         /* for (auto &light : lights) { */
         /*     light->gfov = fov; */

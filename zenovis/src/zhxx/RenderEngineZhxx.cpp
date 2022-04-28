@@ -8,9 +8,9 @@ namespace zenovis::zhxx {
 struct RenderEngineZhxx : RenderEngine {
 
     std::unique_ptr<opengl::VAO> vao = std::make_unique<opengl::VAO>();
-    Scene *scene;
+    ZhxxScene *scene;
 
-    RenderEngineZhxx(Scene *scene_) : scene(scene_) {
+    RenderEngineZhxx(ZhxxScene *scene_) : scene(scene_) {
         CHECK_GL(glEnable(GL_BLEND));
         CHECK_GL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
         CHECK_GL(glEnable(GL_DEPTH_TEST));
@@ -29,7 +29,7 @@ struct RenderEngineZhxx : RenderEngine {
 
 namespace zenovis {
 
-std::unique_ptr<RenderEngine> makeRenderEngineZhxx(Scene *scene) {
+std::unique_ptr<RenderEngine> makeRenderEngineZhxx(ZhxxScene *scene) {
     return std::make_unique<zhxx::RenderEngineZhxx>(scene);
 }
 

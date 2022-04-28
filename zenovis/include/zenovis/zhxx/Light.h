@@ -10,7 +10,7 @@
 #include <zeno/utils/fuck_win.h>
 #include <zeno/types/LightObject.h>
 #include <zenovis/zhxx/Camera.h>
-#include <zenovis/zhxx/Scene.h>
+#include <zenovis/zhxx/ZhxxScene.h>
 #include <zenovis/opengl/shader.h>
 
 namespace zenovis {
@@ -44,11 +44,11 @@ struct LightCluster : zeno::disable_copy {
         return frustumCorners;
     }
 
-    Scene *const scene;
+    ZhxxScene *const scene;
 
     std::vector<std::unique_ptr<Light>> lights;
 
-    explicit LightCluster(Scene *scene_) : scene(scene_) {
+    explicit LightCluster(ZhxxScene *scene_) : scene(scene_) {
         initCascadeShadow();
     }
 

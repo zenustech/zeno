@@ -9,16 +9,16 @@
 #include <zeno/utils/log.h>
 #include <zenovis/opengl/shader.h>
 #include <zenovis/ShaderManager.h>
-#include <zenovis/zhxx/Scene.h>
+#include <zenovis/zhxx/ZhxxScene.h>
 
 namespace zenovis::zhxx {
 /* begin zhxx happy */
 
 struct EnvmapIntegrator {
 
-Scene *scene;
+ZhxxScene *scene;
 
-explicit EnvmapIntegrator(Scene *scene) : scene(scene) {}
+explicit EnvmapIntegrator(ZhxxScene *scene) : scene(scene) {}
 
 constexpr static const char *VS = R"(
 #version 330 core

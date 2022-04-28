@@ -18,9 +18,9 @@ struct EnvmapManager {
     std::unordered_map<std::string, GLuint> envTextureCache;
     std::unique_ptr<EnvmapIntegrator> integrator;
 
-    Scene *scene;
+    ZhxxScene *scene;
 
-    explicit EnvmapManager(Scene *scene)
+    explicit EnvmapManager(ZhxxScene *scene)
         : scene(scene), integrator(std::make_unique<EnvmapIntegrator>(scene)) {
     }
 
