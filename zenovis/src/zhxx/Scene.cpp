@@ -1,10 +1,10 @@
-#include <zenovis/Camera.h>
-#include <zenovis/DepthPass.h>
+#include <zenovis/zhxx/Camera.h>
+#include <zenovis/zhxx/DepthPass.h>
 #include <zenovis/EnvmapManager.h>
 #include <zenovis/GraphicsManager.h>
 #include <zenovis/IGraphic.h>
-#include <zenovis/ReflectivePass.h>
-#include <zenovis/Scene.h>
+#include <zenovis/zhxx/ReflectivePass.h>
+#include <zenovis/zhxx/Scene.h>
 #include <zenovis/ShaderManager.h>
 #include <zenovis/opengl/buffer.h>
 #include <zenovis/opengl/common.h>
@@ -12,7 +12,7 @@
 #include <zeno/utils/scope_exit.h>
 #include <map>
 
-namespace zenovis {
+namespace zenovis::zhxx {
 
 Scene::~Scene() = default;
 

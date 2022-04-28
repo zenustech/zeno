@@ -9,9 +9,9 @@
 #include <zeno/utils/log.h>
 #include <zenovis/opengl/shader.h>
 #include <zenovis/ShaderManager.h>
-#include <zenovis/Scene.h>
+#include <zenovis/zhxx/Scene.h>
 
-namespace zenovis {
+namespace zenovis::zhxx {
 /* begin zhxx happy */
 
 struct EnvmapIntegrator {

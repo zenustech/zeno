@@ -5,8 +5,8 @@
 #include <vector>
 #include <zeno/utils/disable_copy.h>
 #include <zeno/utils/fuck_win.h>
-#include <zenovis/Camera.h>
-#include <zenovis/Scene.h>
+#include <zenovis/zhxx/Camera.h>
+#include <zenovis/zhxx/Scene.h>
 #include <zenovis/opengl/common.h>
 #include <zenovis/opengl/vao.h>
 

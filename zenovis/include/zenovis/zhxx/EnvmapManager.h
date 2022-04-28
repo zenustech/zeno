@@ -7,7 +7,7 @@
 #include <stb_image.h>
 #include <unordered_map>
 #include <zeno/utils/log.h>
-#include <zenovis/EnvmapIntegrator.h>
+#include <zenovis/zhxx/EnvmapIntegrator.h>
 #include <zenovis/opengl/common.h>
 
 namespace zenovis {

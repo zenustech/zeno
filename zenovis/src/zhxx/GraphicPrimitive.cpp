@@ -10,19 +10,19 @@
 #include <zeno/utils/orthonormal.h>
 #include <zeno/utils/ticktock.h>
 #include <zeno/utils/vec.h>
-#include <zenovis/Camera.h>
+#include <zenovis/zhxx/Camera.h>
 #include <zenovis/DrawOptions.h>
-#include <zenovis/DepthPass.h>
-#include <zenovis/EnvmapManager.h>
+#include <zenovis/zhxx/DepthPass.h>
+#include <zenovis/zhxx/EnvmapManager.h>
 #include <zenovis/IGraphic.h>
-#include <zenovis/Light.h>
-#include <zenovis/ReflectivePass.h>
-#include <zenovis/Scene.h>
+#include <zenovis/zhxx/Light.h>
+#include <zenovis/zhxx/ReflectivePass.h>
+#include <zenovis/zhxx/Scene.h>
 #include <zenovis/ShaderManager.h>
 #include <zenovis/opengl/buffer.h>
 #include <zenovis/opengl/shader.h>
 #include <zenovis/opengl/texture.h>
-namespace zenovis {
+namespace zenovis::zhxx {
 namespace {
 using namespace opengl;
 

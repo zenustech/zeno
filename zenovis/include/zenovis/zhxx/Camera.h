@@ -6,7 +6,7 @@
 #include <glm/vec3.hpp>
 #include <zenovis/opengl/shader.h>
 
-namespace zenovis {
+namespace zenovis::zhxx {
 
 struct Camera {
     glm::mat4x4 view{1}, proj{1};

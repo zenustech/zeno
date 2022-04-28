@@ -9,9 +9,8 @@
 #include <zeno/utils/Error.h>
 #include <zeno/utils/fuck_win.h>
 #include <zeno/types/LightObject.h>
-#include <zenovis/Camera.h>
-#include <zenovis/Light.h>
-#include <zenovis/Scene.h>
+#include <zenovis/zhxx/Camera.h>
+#include <zenovis/zhxx/Scene.h>
 #include <zenovis/opengl/shader.h>
 
 namespace zenovis {

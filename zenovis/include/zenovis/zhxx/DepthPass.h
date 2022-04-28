@@ -2,18 +2,18 @@
 
 #include <zeno/utils/disable_copy.h>
 #include <zeno/utils/log.h>
-#include <zenovis/Camera.h>
+#include <zenovis/zhxx/Camera.h>
 #include <zenovis/IGraphic.h>
-#include <zenovis/Light.h>
+#include <zenovis/zhxx/Light.h>
 #include <zenovis/GraphicsManager.h>
-#include <zenovis/ReflectivePass.h>
-#include <zenovis/Scene.h>
+#include <zenovis/zhxx/ReflectivePass.h>
+#include <zenovis/zhxx/Scene.h>
 #include <zenovis/ShaderManager.h>
 #include <zenovis/DrawOptions.h>
 #include <zenovis/opengl/shader.h>
 #include <zenovis/opengl/vao.h>
 
-namespace zenovis {
+namespace zenovis::zhxx {
 
 struct DepthPass : zeno::disable_copy {
     Scene *scene;
