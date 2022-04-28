@@ -6,7 +6,7 @@ pkgdesc="Open-source node system framework for simulation and others"
 arch=('x86_64')
 url='https://github.com/zenustech/zeno'
 license=('MPL2')
-depends=("qt5-base" "qt5-svg" "openvdb" "eigen" "cgal" "openblas" "lapack" "hdf5")
+depends=("qt5-base" "qt5-svg" "tbb" "openvdb" "openexr" "eigen" "cgal" "lapack" "openblas" "alembic" "hdf5")
 makedepends=("git" "cmake" "ninja")
 optdepends=()
 source=("${pkgname}::git+${url}.git")
@@ -24,7 +24,7 @@ prepare() {
 
 build() {
     cd "${pkgname}"
-    cmake --preset default -G Ninja -DCMAKE_INSTALL_PREFIX="${pkgdir}" -DZENO_SYSTEM_ALEMBIC:BOOL=ON
+    cmake --preset default -G Ninja -DCMAKE_INSTALL_PREFIX="${pkgdir}" -DZENO_SYSTEM_ALEMBIC:BOOL=ON -DZENO_SYSTEM_OPENVDB:BOOL=ON
     cmake --build --preset default --parallel
 }
 
