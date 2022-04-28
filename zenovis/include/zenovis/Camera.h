@@ -5,7 +5,6 @@
 #include <glm/mat4x4.hpp>
 #include <glm/vec3.hpp>
 #include <zenovis/opengl/shader.h>
-#include <zeno/utils/zeno_p.h>
 
 namespace zenovis {
 
@@ -30,13 +29,13 @@ struct Camera {
             m_proj = glm::ortho(-radius * getAspect(), radius * getAspect(), -radius,
                               radius, fnear, ffar);
         } else {
-            ZENO_P(pos);
-            ZENO_P(front);
-            ZENO_P(up);
+            //ZENO_P(pos);
+            //ZENO_P(front);
+            //ZENO_P(up);
             m_view = glm::lookAt(pos, pos + front, up);
             m_proj = glm::perspective(glm::radians(fov), getAspect(), fnear, ffar);
-            ZENO_P(m_view);
-            ZENO_P(m_proj);
+            //ZENO_P(m_view);
+            //ZENO_P(m_proj);
         }
         m_lodradius = radius;
         m_lodcenter = pos;
@@ -50,15 +49,15 @@ struct Camera {
 
         float cos_t = glm::cos(theta), sin_t = glm::sin(theta);
         float cos_p = glm::cos(phi), sin_p = glm::sin(phi);
-        glm::vec3 back(cos_t * sin_p, sin_t, -cos_t * cos_p);
+        glm::vec3 front(cos_t * sin_p, sin_t, -cos_t * cos_p);
         glm::vec3 up(-sin_t * sin_p, cos_t, sin_t * cos_p);
 
         if (!(fov <= 0)) {
             auto fnear = 0.1f;
             auto ffar = 20000.0f * std::max(1.0f, (float)radius / 10000.f);
-            setCamera(center + back * radius, -back, up, fov, fnear, ffar, radius);
+            setCamera(center - front * radius, front, up, fov, fnear, ffar, radius);
         } else {
-            setCamera(center + back * radius, -back, up, 0.f, -100.f, 100.f, radius);
+            setCamera(center - front * radius, front, up, 0.f, -100.f, 100.f, radius);
         }
     }
 

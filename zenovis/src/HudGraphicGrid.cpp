@@ -97,13 +97,13 @@ struct GraphicGrid final : IGraphicDraw {
     explicit GraphicGrid(Scene *scene_) : scene(scene_) {
         vbo = std::make_unique<Buffer>(GL_ARRAY_BUFFER);
         std::vector<zeno::vec3f> mem;
-        float bound = 1000;
-        mem.push_back(vec3f(-bound, 0, -bound));
-        mem.push_back(vec3f(-bound, 0, bound));
-        mem.push_back(vec3f(bound, 0, -bound));
-        mem.push_back(vec3f(-bound, 0, bound));
-        mem.push_back(vec3f(bound, 0, bound));
-        mem.push_back(vec3f(bound, 0, -bound));
+        float bound = 1000.0f;
+        mem.push_back(vec3f(-bound, 0.0f, -bound));
+        mem.push_back(vec3f(-bound, 0.0f, bound));
+        mem.push_back(vec3f(bound, 0.0f, -bound));
+        mem.push_back(vec3f(-bound, 0.0f, bound));
+        mem.push_back(vec3f(bound, 0.0f, bound));
+        mem.push_back(vec3f(bound, 0.0f, -bound));
         vertex_count = mem.size();
 
         vbo->bind_data(mem.data(), mem.size() * sizeof(mem[0]));
@@ -128,14 +128,18 @@ struct GraphicGrid final : IGraphicDraw {
                 return std::min(std::max(ratio, 0.0f), 1.0f);
             };
             auto grid_blend = ratio_clamp(level - std::floor(level), 0.8f, 1.0f);
+            //ZENO_P(camera_radius);
+            //ZENO_P(camera_center);
+            //ZENO_P(grid_blend);
             prog->set_uniform("mCameraRadius", camera_radius);
             prog->set_uniform("mCameraCenter", camera_center);
+            prog->set_uniform("mGridBlend", grid_blend);
+            prog->set_uniform("mGridScale", grid_scale);
         }
 
         CHECK_GL(glDrawArrays(GL_TRIANGLES, 0, vertex_count));
 
         vbo->disable_attribute(0);
-        vbo->disable_attribute(1);
         vbo->unbind();
     }
 };
