@@ -140,6 +140,6 @@ QPushButton[cssClass="curve-preset"]
 
 QPushButton[cssClass="curve-preset"]:pressed
 {
-	background-color: #000000;
+	background-color: rgb(26, 26, 26);
 	color: #8A8A8C;
 }

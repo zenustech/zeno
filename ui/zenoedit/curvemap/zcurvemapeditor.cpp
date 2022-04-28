@@ -6,6 +6,7 @@
 #include "../model/curvemodel.h"
 #include "curvesitem.h"
 #include <zenoui/util/uihelper.h>
+#include <zenoui/comctrl/effect/innershadoweffect.h>
 
 
 ZCurveMapEditor::ZCurveMapEditor(bool bTimeline, QWidget* parent)
@@ -46,8 +47,8 @@ void ZCurveMapEditor::initUI()
     m_ui->btnLockY->setIcons(ZenoStyle::dpiScaledSize(QSize(17, 17)),
                              ":/icons/ic_tool_unlock.svg", "", ":/icons/ic_tool_lock.svg");
 
-    //initButtonShadow();
     initStylesheet();
+    initButtonShadow();
     //initSize();
     initSignals();
 }
@@ -81,15 +82,11 @@ void ZCurveMapEditor::initStylesheet()
 
 void ZCurveMapEditor::initButtonShadow()
 {
-    //todo: qt don't offer the implementation of inner shadow, need to implement.
     auto btnList = findChildren<QPushButton*>();
     for (QPushButton* btn : btnList)
     {
-        QGraphicsDropShadowEffect *shadowEffect = new QGraphicsDropShadowEffect;
-        shadowEffect->setColor(QColor(27, 27, 27, 255 * 0.5));
-        shadowEffect->setOffset(0, -1);
-        shadowEffect->setBlurRadius(0);
-        btn->setGraphicsEffect(shadowEffect);
+        InnerShadowEffect *effect = new InnerShadowEffect;
+        btn->setGraphicsEffect(effect);
     }
 }
 
@@ -203,8 +200,6 @@ void ZCurveMapEditor::onButtonToggled(QAbstractButton* btn, bool bToggled)
         }
     }
 }
-
-
 
 void ZCurveMapEditor::onLineEditFinished()
 {

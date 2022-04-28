@@ -250,25 +250,6 @@ void CurveMapView::mouseReleaseEvent(QMouseEvent* event)
 	}
 }
 
-int CurveMapView::frames(bool bHorizontal) const
-{
-	//hard to cihou grids...
-	if (bHorizontal)
-	{
-		int W = width();
-		int wtf = W * m_factor * 0.015;
-		return 10;
-		return wtf;
-	}
-	else
-	{
-		int H = height();
-		int wtf = H * m_factor * 0.015;
-		return 10;
-		return wtf;
-	}
-}
-
 bool CurveMapView::isSmoothCurve() const
 {
     return m_bSmoothCurve;
