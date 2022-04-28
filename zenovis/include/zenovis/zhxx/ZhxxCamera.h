@@ -8,7 +8,7 @@
 
 namespace zenovis::zhxx {
 
-struct Camera {
+struct ZhxxCamera {
     glm::mat4x4 view{1}, proj{1};
 
     int m_nx{512}, m_ny{512};

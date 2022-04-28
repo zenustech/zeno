@@ -9,13 +9,13 @@
 #include <zeno/utils/Error.h>
 #include <zeno/utils/fuck_win.h>
 #include <zeno/types/LightObject.h>
-#include <zenovis/zhxx/Camera.h>
+#include <zenovis/zhxx/ZhxxCamera.h>
 #include <zenovis/zhxx/ZhxxScene.h>
 #include <zenovis/opengl/shader.h>
 
 namespace zenovis {
 
-struct Light;
+struct ZhxxLight;
 
 struct LightCluster : zeno::disable_copy {
     //std::vector<GLuint> DepthMaps;
@@ -46,7 +46,7 @@ struct LightCluster : zeno::disable_copy {
 
     ZhxxScene *const scene;
 
-    std::vector<std::unique_ptr<Light>> lights;
+    std::vector<std::unique_ptr<ZhxxLight>> lights;
 
     explicit LightCluster(ZhxxScene *scene_) : scene(scene_) {
         initCascadeShadow();
@@ -182,7 +182,7 @@ struct LightCluster : zeno::disable_copy {
         depthMapsArrCount = licount;
     }
 
-    template <class LightT = Light> int addLight(zeno::LightData const &data) {
+    template <class LightT = ZhxxLight> int addLight(zeno::LightData const &data) {
         int lightNo(lights.size());
         auto lit = std::make_unique<LightT>(this, lightNo);
         lit->setData(data);
@@ -196,11 +196,11 @@ struct LightCluster : zeno::disable_copy {
 
 }; // struct LightCluster
 
-struct Light : zeno::disable_copy, zeno::LightData {
+struct ZhxxLight : zeno::disable_copy, zeno::LightData {
     LightCluster *const cluster;
     int myLightNo = 0;
 
-    explicit Light(LightCluster *cluster_, int myLightNo) : cluster(cluster_) {
+    explicit ZhxxLight(LightCluster *cluster_, int myLightNo) : cluster(cluster_) {
         m_nearPlane.resize(LightCluster::layerCount);
         m_farPlane.resize(LightCluster::layerCount);
         setCascadeLevels(10000);

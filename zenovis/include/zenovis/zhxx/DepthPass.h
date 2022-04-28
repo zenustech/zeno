@@ -2,9 +2,9 @@
 
 #include <zeno/utils/disable_copy.h>
 #include <zeno/utils/log.h>
-#include <zenovis/zhxx/Camera.h>
+#include <zenovis/zhxx/ZhxxCamera.h>
 #include <zenovis/IGraphic.h>
-#include <zenovis/zhxx/Light.h>
+#include <zenovis/zhxx/ZhxxLight.h>
 #include <zenovis/GraphicsManager.h>
 #include <zenovis/zhxx/ReflectivePass.h>
 #include <zenovis/zhxx/ZhxxScene.h>
@@ -21,7 +21,7 @@ struct DepthPass : zeno::disable_copy {
     explicit DepthPass(ZhxxScene *scene) : scene(scene) {
     }
 
-    Camera *camera() const {
+    ZhxxCamera *camera() const {
         return scene->camera.get();
     }
 

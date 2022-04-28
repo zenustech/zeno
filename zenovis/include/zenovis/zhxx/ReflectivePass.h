@@ -5,7 +5,7 @@
 #include <vector>
 #include <zeno/utils/disable_copy.h>
 #include <zeno/utils/fuck_win.h>
-#include <zenovis/zhxx/Camera.h>
+#include <zenovis/zhxx/ZhxxCamera.h>
 #include <zenovis/zhxx/ZhxxScene.h>
 #include <zenovis/opengl/common.h>
 #include <zenovis/opengl/vao.h>
@@ -18,7 +18,7 @@ struct ReflectivePass : zeno::disable_copy {
     explicit ReflectivePass(ZhxxScene *scene) : scene(scene) {
     }
 
-    Camera *camera() const {
+    ZhxxCamera *camera() const {
         return scene->camera.get();
     }
 
