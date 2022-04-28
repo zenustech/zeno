@@ -32,4 +32,21 @@ ZENO_API UserData &IObject::userData() const {
     return std::any_cast<UserData &>(m_userData);
 }
 
+ZENO_API void IObject::accept(IObjectVisitor *visitor) {
+    visitor->visit(this);
+}
+
+#define _ZENO_PER_XMACRO(TypeName, ...) \
+ZENO_API void IObjectVisitor::visit(TypeName *object) { \
+    visit(reinterpret_cast<IObject *>(object)); \
+}
+ZENO_XMACRO_IObject(_ZENO_PER_XMACRO)
+#undef _ZENO_PER_XMACRO
+
+ZENO_API void IObjectVisitor::visit(IObject *object) {
+    /* do nothing */
+}
+
+ZENO_API IObjectVisitor::~IObjectVisitor() = default;
+
 }

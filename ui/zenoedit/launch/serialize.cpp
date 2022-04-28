@@ -3,6 +3,7 @@
 #include <zeno/utils/logger.h>
 #include <model/modeldata.h>
 #include <model/modelrole.h>
+#include <zenoui/util/uihelper.h>
 
 using namespace JsonHelper;
 
@@ -156,4 +157,101 @@ void serializeScene(GraphsModel* pModel, RAPIDJSON_WRITER& writer)
 
     SubGraphModel* pSubModel = pModel->subGraph("main");
     serializeGraph(pSubModel, pModel, graphs, writer, "");
+}
+
+
+static void appendSerializedCharArray(QString &res, const char *buf, size_t len) {
+    for (auto p = buf; p < buf + len; p++) {
+        res.append(QString::number((int)(uint8_t)*p));
+        res.append(',');
+    }
+    res.append('0');
+}
+
+QString translateGraphToCpp(const char *subgJson, size_t subgJsonLen, GraphsModel *model)
+{
+    QString res = R"RAW(/* auto generated from: )RAW";
+    res.append(model->filePath());
+    res.append(R"RAW( */
+#include <zeno/extra/ISubgraphNode.h>
+#include <zeno/zeno.h>
+namespace {
+)RAW");
+
+    decltype(auto) descs = model->descriptors();
+    for (int i = 0; i < model->rowCount(); i++) {
+        auto subg = model->subGraph(i);
+        auto key = subg->name();
+        if (key == "main") continue;
+        if (!descs.contains(key)) {
+            zeno::log_warn("cannot find subgraph `{}` in descriptors table", key.toStdString());
+            continue;
+        }
+        auto const &desc = descs[key];
+
+        res.append(R"RAW(
+struct )RAW");
+        res.append(key);
+        res.append(R"RAW( final : zeno::ISerialSubgraphNode {
+    static const uint8_t mydata[] = {)RAW");
+        appendSerializedCharArray(res, subgJson, subgJsonLen);
+        res.append(R"RAW(};
+
+    virtual const char *get_subgraph_json() override {
+        return (const char *)mydata;
+    }
+};
+
+ZENO_DEFNODE()RAW");
+
+        res.append(key);
+        res.append(R"RAW()({
+    {)RAW");
+        for (auto const &[_, entry] : desc.inputs) {
+            res.append(R"RAW({")RAW");
+            res.append(entry.info.type);
+            res.append(R"RAW(", ")RAW");
+            res.append(entry.info.name);
+            res.append(R"RAW(", ")RAW");
+            // FIXME: UiHelper::variantToString seems doesn't support vec3f
+            res.append(UiHelper::variantToString(entry.info.defaultValue));
+            res.append(R"RAW("}, )RAW");
+        }
+        res.append(R"RAW(},
+    {)RAW");
+        for (auto const &[_, entry] : desc.outputs) {
+            res.append(R"RAW({")RAW");
+            res.append(entry.info.type);
+            res.append(R"RAW(", ")RAW");
+            res.append(entry.info.name);
+            res.append(R"RAW(", ")RAW");
+            res.append(UiHelper::variantToString(entry.info.defaultValue));
+            res.append(R"RAW("}, )RAW");
+        }
+        res.append(R"RAW(}
+    {)RAW");
+        for (auto const &entry : desc.params) {
+            res.append(R"RAW({")RAW");
+            res.append(entry.typeDesc);
+            res.append(R"RAW(", ")RAW");
+            res.append(entry.name);
+            res.append(R"RAW(", ")RAW");
+            res.append(UiHelper::variantToString(entry.defaultValue));
+            res.append(R"RAW("}, )RAW");
+        }
+        res.append(R"RAW(},
+    {)RAW");
+        for (auto const &category : desc.categories) {
+            res.append(R"RAW(")RAW");
+            res.append(category);
+            res.append(R"RAW(", )RAW");
+        }
+        res.append(R"RAW(},
+});
+)RAW");
+    }
+    res.append(R"RAW(
+}
+)RAW");
+    return res;
 }

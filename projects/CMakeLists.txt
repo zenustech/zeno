@@ -20,10 +20,28 @@ set(ZENO_EXTENSIONS
     )
 add_subdirectory(SharedExtension)
 
+if (ZENO_NO_WARNING)
+    add_compile_options(-w)
+endif()
+
 foreach (name IN ITEMS ${ZENO_EXTENSIONS})
     option(ZENO_WITH_${name} "Build ZENO with extension: ${name}" OFF)
     if (ZENO_WITH_${name})
         message(STATUS "Building ZENO with extension: ${name}")
         add_subdirectory(${name})
+    endif()
+endforeach()
+
+set(ZENO_EXTENSION_TOOLS
+    FLIPtools
+    cgmeshTools
+    BulletTools
+    HerculesTools
+    )
+foreach (name IN ITEMS ${ZENO_EXTENSION_TOOLS})
+    option(ZENO_WITH_TOOL_${name} "Build ZENO with extension tool: ${name}" OFF)
+    if (ZENO_WITH_TOOL_${name})
+        message(STATUS "Building ZENO with extension tool: ${name}")
+        add_subdirectory(tools/${name})
     endif()
 endforeach()

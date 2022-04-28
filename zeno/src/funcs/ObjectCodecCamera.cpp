@@ -11,13 +11,13 @@ namespace _implObjectCodec {
 std::shared_ptr<CameraObject> decodeCameraObject(const char *it);
 std::shared_ptr<CameraObject> decodeCameraObject(const char *it) {
     auto obj = std::make_shared<CameraObject>();
-    it = std::copy_n(it, sizeof(*obj), (char *)static_cast<CameraData *>(obj.get()));
+    it = std::copy_n(it, sizeof(CameraData), (char *)static_cast<CameraData *>(obj.get()));
     return obj;
 }
 
 bool encodeCameraObject(CameraObject const *obj, std::back_insert_iterator<std::vector<char>> it);
 bool encodeCameraObject(CameraObject const *obj, std::back_insert_iterator<std::vector<char>> it) {
-    it = std::copy_n((char const *)static_cast<CameraData const *>(obj), sizeof(*obj), it);
+    it = std::copy_n((char const *)static_cast<CameraData const *>(obj), sizeof(CameraData), it);
     return true;
 }
 

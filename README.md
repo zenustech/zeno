@@ -1,20 +1,6 @@
 # ZENO node system
 
-[![CMake](https://github.com/zenustech/zeno/actions/workflows/cmake.yml/badge.svg)](https://github.com/zenustech/zeno/actions/workflows/cmake.yml)
-[![License](https://img.shields.io/badge/license-MPLv2-blue)](LICENSE)
-[![Version](https://img.shields.io/github/v/release/zenustech/zeno)](https://github.com/zenustech/zeno/releases) 
-
-![Lines of code](https://img.shields.io/tokei/lines/github/zenustech/zeno)
-![Code size](https://img.shields.io/github/languages/code-size/zenustech/zeno)
-![Repo size](https://img.shields.io/github/repo-size/zenustech/zeno)
-
-![Commit activity](https://img.shields.io/github/commit-activity/m/zenustech/zeno)
-![Commits since latest release](https://img.shields.io/github/commits-since/zenustech/zeno/latest)
-![GitHub contributors](https://img.shields.io/github/contributors/zenustech/zeno)
-
-![GitHub release downloads](https://img.shields.io/github/downloads/zenustech/zeno/total)
-![GitHub latest release downloads](https://img.shields.io/github/downloads/zenustech/zeno/latest/total)
-![Repo stars](https://img.shields.io/github/stars/zenustech/zeno?style=social)
+[![CMake](https://github.com/zenustech/zeno/actions/workflows/cmake.yml/badge.svg)](https://github.com/zenustech/zeno/actions/workflows/cmake.yml) [![License](https://img.shields.io/badge/license-MPLv2-blue)](LICENSE) [![Version](https://img.shields.io/github/v/release/zenustech/zeno)](https://github.com/zenustech/zeno/releases)
 
 [Download](https://github.com/zenustech/zeno/releases) | [Repo](https://github.com/zenustech/zeno) | [About us](https://zenustech.com) | [Tutorial](https://zenustech.com/tutorial) | [Videos](https://space.bilibili.com/263032155) | [Q&A Forum](https://github.com/zenustech/zeno/discussions) | [Build from source](https://github.com/zenustech/zeno/blob/master/BUILD.md) | [Contributor Guidelines](https://github.com/zenustech/zeno/blob/master/docs/CONTRIBUTING.md) | [Bug report](https://github.com/zenustech/zeno/issues)
 
@@ -38,29 +24,29 @@ Integrated Toolbox, from volumetric geometry process tools (OpenVDB), to state-o
 
 ## Gallery
 
-Fig.1 - Robot hit water
+Fig.1 - Cloth simulation
 
-<img src="http://zenustech.oss-cn-beijing.aliyuncs.com/Place-in-Github/GIF/crag_hit_water.gif" width="640" position="left">
+<img src="https://github.com/Hanswanglin/ZENO_README_SRC/blob/main/gif/Webp/simulation_cloth_1.webp" width="640" position="left">
 
-Fig.2 - SuperSonic Flow
+Fig.2 - Fluid simulation
 
-<img src="http://zenustech.oss-cn-beijing.aliyuncs.com/Place-in-Github/GIF/shock.gif" width="640" position="left">
+<img src="https://github.com/Hanswanglin/ZENO_README_SRC/blob/main/gif/Webp/simulation_fluid_1.webp" width="640" position="left">
 
-Fig.3 - Fluid-structure interaction in ZENO
+Fig.3 - Rigid simulation
 
-<img src="http://zenustech.oss-cn-beijing.aliyuncs.com/Place-in-Github/GIF/crush-water2.gif" width="640" position="left">
+<img src="https://github.com/Hanswanglin/ZENO_README_SRC/blob/main/gif/Webp/simulation_rigid_1.webp" width="640" position="left">
 
-Fig.4 - Rigid fracture in ZENO
+Fig.4 - Biological simulation
 
-<img src="http://zenustech.oss-cn-beijing.aliyuncs.com/Place-in-Github/GIF/mid-autumn-festival.gif" width="640" position="left">
+<img src="http://zenustech.oss-cn-beijing.aliyuncs.com/Place-in-Github/202204/simulation_biology.webp" width="640" position="left">
 
-Fig.5 - Muscular-skeleton simulation in ZENO
+Fig.5 - Procedural material
 
-<img src="http://zenustech.oss-cn-beijing.aliyuncs.com/Place-in-Github/GIF/muscle2.gif" width="640" position="left">
+<img src="https://github.com/Hanswanglin/ZENO_README_SRC/blob/main/gif/Webp/procedural_material_1.webp" width="640" position="left">
 
-Fig.6 - Large scale Fluids in ZENO
+Fig.6 - Procedural modeling
 
-<img src="http://zenustech.oss-cn-beijing.aliyuncs.com/Place-in-Github/GIF/pyramid.gif" width="640" position="left">
+<img src="http://zenustech.oss-cn-beijing.aliyuncs.com/Place-in-Github/202204/procrdural_modeling.webp" width="640" position="left">
 
 
 # End-user Installation

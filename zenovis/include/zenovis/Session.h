@@ -33,7 +33,7 @@ struct Session : zeno::disable_copy {
                           bool ortho_mode);
     void set_perspective(std::array<float, 16> const &viewArr,
                          std::array<float, 16> const &projArr);
-    void do_screenshot(std::string path);
+    void do_screenshot(std::string path, std::string type = "png");
     void new_frame_offline(std::string path);
     void set_background_color(float r, float g, float b);
     std::tuple<float, float, float> get_background_color();

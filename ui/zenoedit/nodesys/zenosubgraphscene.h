@@ -27,6 +27,7 @@ public:
     void paste(QPointF pos);
     QRectF nodesBoundingRect() const;
     QModelIndex subGraphIndex() const;
+    QModelIndexList selectNodesIndice() const;
     void select(const QString& id);
 
 protected:

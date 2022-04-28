@@ -55,8 +55,8 @@ struct EdgeInfo
     QString outputSock;
     QString inputSock;
     EdgeInfo() = default;
-    EdgeInfo(const QString &srcId, const QString &dstId, const QString &srcPort, const QString &dstPort)
-        : outputNode(srcId), inputNode(dstId), outputSock(srcPort), inputSock(dstPort) {}
+    EdgeInfo(const QString &outNode, const QString &inNode, const QString &outSock, const QString &inSock)
+        : outputNode(outNode), inputNode(inNode), outputSock(outSock), inputSock(inSock) {}
     bool operator==(const EdgeInfo &rhs) const {
         return outputNode == rhs.outputNode && inputNode == rhs.inputNode &&
                outputSock == rhs.outputSock && inputSock == rhs.inputSock;

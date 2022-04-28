@@ -9,4 +9,4 @@ if (TARGET OpenMP::OpenMP_CXX)
     target_link_libraries(zeno PRIVATE OpenMP::OpenMP_CXX)
 endif()
 
-target_link_libraries(zeno PUBLIC $<BUILD_INTERFACE:LSystem>)
+target_link_libraries(zeno PRIVATE LSystem)

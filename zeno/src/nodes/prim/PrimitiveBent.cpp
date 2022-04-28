@@ -3,7 +3,7 @@
 #include <zeno/types/StringObject.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/utils/orthonormal.h>
-#include <zeno/utils/parallel.h>
+#include <zeno/utils/parallel_reduce.h>
 #include <sstream>
 #include <iostream>
 #include <cmath>

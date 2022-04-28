@@ -291,7 +291,25 @@ QString UiHelper::variantToString(const QVariant& var)
 	{
 		value = var.toBool() ? "true" : "false";
 	}
-	else zeno::log_warn("bad qt variant {}", var.typeName());
+	else if (var.type() == QVariant::Invalid)
+    {
+        zeno::log_warn("bad qt variant {}", var.typeName());
+    }
+    else
+    {
+        if (var.type() == QVariant::UserType) {
+            QVector<qreal> vec = var.value<QVector<qreal>>();
+            if (vec.isEmpty()) {
+                zeno::log_warn("unexpected qt variant {}", var.typeName());
+            } else {
+                QString res = QString::number(vec[0]);
+                for (size_t i = 1; i < vec.size(); i++) {
+                    res.append(QString::number(vec[i]));
+                }
+                return res;
+            }
+        }
+    }
 
     return value;
 }
@@ -452,3 +470,4 @@ QPainterPath UiHelper::getRoundPath(QRectF r, int lt_radius, int rt_radius, int 
     path.closeSubpath();
     return path;
 }
+
