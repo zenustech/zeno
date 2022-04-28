@@ -1,24 +1,16 @@
 name: Integrated Test
 
 on:
-  #schedule:
-  #- cron: '0 8 * * 6'  # Release at Beijing Time 16:00 Sat
-  #workflow_dispatch:
   push:
     branches: [ master ]
   pull_request:
     branches: [ master ]
-    #branches: [ stable ]
-    #tags: [ 'v*' ]
 
 jobs:
   check:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout Repo
-      uses: actions/checkout@v2
-
     - name: Check if is release commit
       id: is-release-step
       uses: mstachniuk/ci-skip@v1.2.0
@@ -26,17 +18,23 @@ jobs:
         commit-filter: '[release]'
 
     outputs:
-      deploy: ${{ steps.is-release-step.outputs.ci-skip == 'true' }}
+      type: ${{ steps.is-release-step.outputs.ci-skip == 'true' && 'release' || 'debug' }}
 
   build:
     strategy:
       matrix:
         include:
-        - os: ubuntu-18.04
+        - label: x86_64-linux-cpu
+          os: ubuntu-18.04
           triplet: x64-linux
           cxx: g++-9
-        - os: windows-2022
+          gpu: cpu
+          pkgext: tar.gz
+        - label: x86_64-windows-cpu
+          os: windows-2022
           triplet: x64-windows
+          gpu: cpu
+          pkgext: zip
 
     runs-on: ${{ matrix.os }}
     needs: [check]
@@ -63,45 +61,95 @@ jobs:
       with:
         version: 5.15.2
         cached: ${{ steps.cache-qt.outputs.cache-hit }}
+        setup-python: true
 
     - name: Setup Dependencies
       if: ${{ matrix.triplet != '' }}
       run: python misc/ci/setup.py
 
+    - name: Install CUDA toolkit
+      if: ${{ matrix.gpu == 'cuda' }}
+      uses: Jimver/cuda-toolkit@v0.2.5
+      id: cuda-toolkit
+      with:
+        cuda: 11.5.1
+
     - name: Setup Vcpkg
       uses: lukka/run-vcpkg@v10
       if: ${{ matrix.triplet != '' }}
       with:
-        vcpkgGitCommitId: e0c3408c778c54788393c4a739f6f3507aff77cb
+        vcpkgGitCommitId: 79afdf87b338e4ca0ac6dd781e4e755d6ec940a1
         vcpkgDirectory: ${{ github.workspace }}/vcpkg
         vcpkgJsonGlob: '**/vcpkg.json'
         runVcpkgInstall: true
 
+    - name: Cache CMake
+      #if: ${{ needs.check.outputs.type != 'release' }}
+      uses: actions/cache@v3
+      with:
+        path: ${{ github.workspace }}/build
+        key: ${{ matrix.os }}-${{ matrix.triplet }}-${{ matrix.cxx }}-${{ matrix.gpu }}-${{ needs.check.outputs.type }}-CMake-1
+
+    - name: Clean CMake Cache
+      run: rm -rf ${{ github.workspace }}/build/CMakeCache.txt
+
     - name: Run CMake
       uses: lukka/run-cmake@v10
       with:
-        configurePreset: ${{ (matrix.triplet != '' && 'default' || 'basic') }}${{ (needs.check.outputs.deploy == 'true' && '' || '-debug') }}
+        configurePreset: ${{ (matrix.triplet != '' && (matrix.gpu == 'cuda' && 'cuda' || 'default') || 'basic') }}${{ (needs.check.outputs.type == 'release' && '' || '-debug') }}
+        buildPreset: default${{ (needs.check.outputs.type == 'release' && '' || '-debug') }}
 
     - name: Packaging
-      if: ${{ needs.check.outputs.deploy == 'true' }}
+      if: ${{ needs.check.outputs.type == 'release' }}
       run: python misc/ci/package.py
 
     - name: Upload Release Artifact
-      if: ${{ needs.check.outputs.deploy == 'true' }}
+      if: ${{ needs.check.outputs.type == 'release' }}
       uses: actions/upload-artifact@v2
       with:
-        name: ${{runner.os}}-Package
-        path: ${{github.workspace}}/build/out.${{ runner.os == 'Linux' && 'tar.gz' || 'zip' }}
+        name: ${{ matrix.label }}-Package
+        path: ${{github.workspace}}/build/out.${{ matrix.pkgext }}
+
+  release:
+    if: ${{ needs.check.outputs.type == 'release' }}
+    needs: [check, build]
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repo
+      uses: actions/checkout@v2
+
+    - name: Versioning
+      id: versioning
+      run: python misc/ci/get_version.py
+
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        draft: false
+        prerelease: false
+        tag_name: ${{ steps.versioning.outputs.version }}
+        release_name: ${{ steps.versioning.outputs.version }}
+        body: "(Automated Release by Github Actions / 由 GitHub CI/CD 自动发布)\n\n- branch `${{ github.ref }}`\n- commit `${{ github.sha }}`\n- message `${{ github.event.head_commit.message }}`\n- version `${{ steps.versioning.outputs.version }}`\n\n- Windows: After download, extract the zip file to a directory, then double-click the file `000_start.bat` in that directory to start our application. Alternatively you may manually run `zenoedit.exe`. If you encounter bugs, please let us know by submitting a [Github Issue](https://github.com/zenustech/zeno/issues), thank for your support!\n- Linux: Our released binary support Ubuntu 18.04 and above (glibcxx >= 3.4.26, glibc >= 2.14), otherwise please build from source. Extract the downloaded tar.gz to a directory, then run `bash 000_start.sh` in that directory to start our application. Alternatively you may manually run `usr/bin/zenoedit` in there. Try `chmod +x usr/bin/*` if they don't have execute permission.\n- Windows: 下载后，把 zip 文件解压到一个目录，然后双击其中的 `000_start.bat` 这个文件，即可启动我们的程序。此外您也可以找到 `zenoedit.exe` 直接双击运行。如果您遇到了 BUG，请通过提交 [Github Issue](https://github.com/zenustech/zeno/issues) 的方式来反馈给我们, 感谢您的支持！\n- Linux: 我们发布的二进制版支持 Ubuntu 18.04 以上的系统 (glibcxx >= 3.4.26, glibc >= 2.14)，否则请从源码构建。把下载的 tar.gz 文件解压到一个目录，然后在那个目录中运行命令 `bash 000_start.sh` 即可启动我们的程序。此外您也可以直接运行其中的 `usr/bin/zenoedit`。如果遇到没有执行权限的问题可以试试看 `chmod +x usr/bin/*`。"
+
+    outputs:
+      version: ${{ steps.versioning.outputs.version }}
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
 
   deploy:
     strategy:
       matrix:
         include:
-        - os: Linux
-        - os: Windows
+        - label: x86_64-linux-cpu
+          pkgext: tar.gz
+        - label: x86_64-windows-cpu
+          pkgext: zip
 
-    if: ${{ needs.check.outputs.deploy == 'true' }}
-    needs: [check, build]
+    if: ${{ needs.check.outputs.type == 'true' }}
+    needs: [check, build, release]
     runs-on: ubuntu-latest
 
     steps:
@@ -115,37 +163,25 @@ jobs:
     - name: Download Release Artifact
       uses: actions/download-artifact@v2
       with:
-        name: ${{matrix.os}}-Package
-        path: ${{github.workspace}}/release-artifact
-
-    - name: Create Release
-      id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        draft: true
-        prerelease: false
-        tag_name: ${{ steps.versioning.outputs.version }}
-        release_name: ${{ steps.versioning.outputs.version }}
-        body: "(Automated Release by Github Actions / 由 GitHub CI/CD 自动发布)\n\n- branch ${{ github.ref }}\n- commit `${{ github.sha }}`\n- message `${{ github.event.head_commit.message }}`\n- version `${{ steps.versioning.outputs.version }}`\n\n- Windows: After download, extract the zip file to a directory, then double-click the file `000_start.bat` in that directory to start our application. Alternatively you may manually run `zenoedit.exe`. If you encounter bugs, please let us know by submitting a [Github Issue](https://github.com/zenustech/zeno/issues), thank for your support!\n- Linux: Our released binary support Ubuntu 18.04 and above (glibcxx >= 3.4.26, glibc >= 2.14), otherwise please build from source. Extract the downloaded tar.gz to a directory, then run `bash 000_start.sh` in that directory to start our application. Alternatively you may manually run `usr/bin/zenoedit` in there. Try `chmod +x usr/bin/*` if they don't have execute permission.\n- Windows: 下载后，把 zip 文件解压到一个目录，然后双击其中的 `000_start.bat` 这个文件，即可启动我们的程序。此外您也可以找到 `zenoedit.exe` 直接双击运行。如果您遇到了 BUG，请通过提交 [Github Issue](https://github.com/zenustech/zeno/issues) 的方式来反馈给我们, 感谢您的支持！\n- Linux: 我们发布的二进制版支持 Ubuntu 18.04 以上的系统 (glibcxx >= 3.4.26, glibc >= 2.14)，否则请从源码构建。把下载的 tar.gz 文件解压到一个目录，然后在那个目录中运行命令 `bash 000_start.sh` 即可启动我们的程序。此外您也可以直接运行其中的 `usr/bin/zenoedit`。如果遇到没有执行权限的问题可以试试看 `chmod +x usr/bin/*`。"
+        name: ${{ matrix.os }}-Package
+        path: ${{ github.workspace }}/release-artifact
 
     - name: Upload Release Asset
       uses: actions/upload-release-asset@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ${{github.workspace}}/release-artifact/out.${{ matrix.os == 'Linux' && 'tar.gz' || 'zip' }}
-        asset_name: zeno-${{ steps.versioning.outputs.version }}-${{ matrix.os }}.${{ matrix.os == 'Linux' && 'tar.gz' || 'zip' }}
-        asset_content_type: ${{ matrix.os == 'Linux' && 'application/x-gzip' || 'application/zip' }}
+        upload_url: ${{ needs.release.outputs.upload_url }}
+        asset_path: ${{github.workspace}}/release-artifact/out.${{ matrix.pkgext }}
+        asset_name: zeno-${{ needs.release.outputs.version }}-${{ matrix.os }}.${{ matrix.pkgext }}
+        asset_content_type: ${{ matrix.pkgext == 'tar.gz' && 'application/x-gzip' || 'application/zip' }}
 
     - name: Upload To Server
       uses: easingthemes/ssh-deploy@v2.1.2
       env:
         SSH_PRIVATE_KEY: ${{ secrets.REMOTE_SSH_KEY }}
         ARGS: '-rltgoDzvO --delete'
-        SOURCE: release-artifact/out.${{ matrix.os == 'Linux' && 'tar.gz' || 'zip' }}
+        SOURCE: release-artifact/out.${{ matrix.pkgext }}
         REMOTE_HOST: ${{ secrets.REMOTE_HOST }}
         REMOTE_USER: ${{ secrets.REMOTE_USER }}
-        TARGET: ${{ secrets.REMOTE_TARGET }}/zeno-${{ steps.versioning.outputs.version }}-${{ matrix.os }}.${{ matrix.os == 'Linux' && 'tar.gz' || 'zip' }}
+        TARGET: ${{ secrets.REMOTE_TARGET }}/zeno-${{ needs.release.outputs.version }}-${{ matrix.label }}.${{ matrix.pkgext }}

@@ -35,10 +35,13 @@ struct Graph {
     SubgraphNode *subgraphNode = nullptr;
 
     std::map<std::string, std::unique_ptr<INode>> nodes;
-    std::map<std::string, std::string> portalIns;
-    std::map<std::string, zany> portals;
     std::set<std::string> nodesToExec;
     int beginFrameNumber = 0, endFrameNumber = 0;
+
+    std::map<std::string, std::string> portalIns;
+    std::map<std::string, zany> portals;
+    std::map<std::string, std::string> subInputNodes;
+    std::map<std::string, std::string> subOutputNodes;
 
     std::unique_ptr<Context> ctx;
 

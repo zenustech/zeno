@@ -2,6 +2,7 @@
 
 #include <zeno/utils/api.h>
 #include <zeno/utils/safe_dynamic_cast.h>
+#include <zeno/types/IObjectXMacro.h>
 #include <string>
 #include <memory>
 #include <any>
@@ -9,11 +10,13 @@
 namespace zeno {
 
 struct UserData;
+struct IObjectVisitor;
 
 struct IObject {
     using polymorphic_base_type = IObject;
 
     mutable std::any m_userData;
+    //std::string nodeid;
 
 #ifndef ZENO_APIFREE
     ZENO_API IObject();
@@ -27,6 +30,7 @@ struct IObject {
     ZENO_API virtual std::shared_ptr<IObject> move_clone();
     ZENO_API virtual bool assign(IObject *other);
     ZENO_API virtual bool move_assign(IObject *other);
+    ZENO_API virtual void accept(IObjectVisitor *visitor);
 
     ZENO_API UserData &userData() const;
 #else
@@ -35,6 +39,7 @@ struct IObject {
     virtual std::shared_ptr<IObject> move_clone() { return nullptr; }
     virtual bool assign(IObject *other) { return false; }
     virtual bool move_assign(IObject *other) { return false; }
+    ZENO_API virtual void accept(IObjectVisitor *visitor) {}
 
     UserData &userData() { return *reinterpret_cast<UserData *>(0); }
 #endif
@@ -52,9 +57,46 @@ struct IObject {
     const T *as() const { return zeno::safe_dynamic_cast<T>(this); }
 };
 
-template <class Derived, class Base = IObject>
-struct IObjectClone : Base {
-    using has_iobject_clone = std::true_type;
+
+#define _ZENO_PER_XMACRO(TypeName, ...) \
+struct TypeName;
+ZENO_XMACRO_IObject(_ZENO_PER_XMACRO)
+#undef _ZENO_PER_XMACRO
+
+
+struct IObjectVisitor {
+#ifdef ZENO_APIFREE
+#define _ZENO_PER_XMACRO(TypeName, ...) \
+    virtual void visit(TypeName *object) { \
+        visit(reinterpret_cast<IObject *>(object)); \
+    }
+ZENO_XMACRO_IObject(_ZENO_PER_XMACRO)
+#undef _ZENO_PER_XMACRO
+
+    virtual void visit(IObject *object) {
+    }
+
+    virtual ~IObjectVisitor() = default;
+#else
+#define _ZENO_PER_XMACRO(TypeName, ...) \
+    ZENO_API virtual void visit(TypeName *object);
+ZENO_XMACRO_IObject(_ZENO_PER_XMACRO)
+#undef _ZENO_PER_XMACRO
+
+    ZENO_API virtual void visit(IObject *object);
+
+    ZENO_API virtual ~IObjectVisitor();
+#endif
+};
+
+
+template <class Derived, class CustomBase = IObject>
+struct IObjectClone : CustomBase {
+    //using has_iobject_clone = std::true_type;
+
+    virtual void accept(IObjectVisitor *visitor) override {
+        visitor->visit(static_cast<Derived *>(this));
+    }
 
     virtual std::shared_ptr<IObject> clone() const override {
         return std::make_shared<Derived>(static_cast<Derived const &>(*this));

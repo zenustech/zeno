@@ -18,9 +18,9 @@ endif()
 
 
 target_include_directories(zeno PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
-if (UNIX)
-    target_link_directories(zeno PUBLIC /usr/lib/x86_64-linux-gnu:/usr/local/lib)
-endif()
+#if (UNIX)
+    #target_link_directories(zeno PRIVATE /usr/lib/x86_64-linux-gnu:/usr/local/lib)
+#endif()
 
 target_link_libraries(zeno PRIVATE TBB::tbb TBB::tbbmalloc)
 # target_link_libraries(zeno PRIVATE bow)

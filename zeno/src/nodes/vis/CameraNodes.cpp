@@ -1,5 +1,6 @@
 #include <zeno/zeno.h>
 #include <zeno/types/CameraObject.h>
+#include <zeno/types/LightObject.h>
 
 namespace zeno {
 
@@ -23,12 +24,46 @@ ZENO_DEFNODE(MakeCamera)({
         {"vec3f", "up", "0,1,0"},
         {"vec3f", "view", "0,0,-1"},
         {"float", "dof", "-1"},
-        {"float", "far", "0.1"},
-        {"float", "near", "20000"},
+        {"float", "near", "0.1"},
+        {"float", "far", "20000"},
         {"float", "fov", "45"},
     },
     {
         {"CameraObject", "camera"},
+    },
+    {},
+    {"scenevis"},
+});
+
+
+struct MakeLight : INode {
+    virtual void apply() override {
+        auto light = std::make_unique<LightObject>();
+        light->lightDir = normalize(get_input2<vec3f>("lightDir"));
+        light->intensity = get_input2<float>("intensity");
+        light->shadowTint = get_input2<vec3f>("shadowTint");
+        light->lightHight = get_input2<float>("lightHight");
+        light->shadowSoftness = get_input2<float>("shadowSoftness");
+        light->lightColor = get_input2<vec3f>("lightColor");
+        light->lightScale = get_input2<float>("lightScale");
+        light->isEnabled = get_input2<bool>("isEnabled");
+        set_output("light", std::move(light));
+    }
+};
+
+ZENO_DEFNODE(MakeLight)({
+    {
+        {"vec3f", "lightDir", "1,1,0"},
+        {"float", "intensity", "10"},
+        {"vec3f", "shadowTint", "0.2,0.2,0.2"},
+        {"float", "lightHight", "1000.0"},
+        {"float", "shadowSoftness", "1.0"},
+        {"vec3f", "lightColor", "1,1,1"},
+        {"float", "lightScale", "1"},
+        {"bool", "isEnabled", "1"},
+    },
+    {
+        {"LightObject", "light"},
     },
     {},
     {"scenevis"},

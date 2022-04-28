@@ -6,7 +6,7 @@
 #include <zeno/utils/orthonormal.h>
 #include <zeno/utils/variantswitch.h>
 #include <zeno/utils/ticktock.h>
-#include <zeno/utils/parallel.h>
+#include <zeno/utils/parallel_reduce.h>
 #include <sstream>
 #include <iostream>
 #include <cmath>

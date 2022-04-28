@@ -1,4 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
+if (NOT ZENO_WITH_cgmesh)
+    message(FATAL_ERROR "ZENO_WITH_cgmesh must be ON when ZENO_WITH_FEM is ON")
+endif()
 
 if(WIN32)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /bigobj")
@@ -36,7 +39,7 @@ set(FEM_MUSCLE_SOURCE_FILES
 
 target_sources(zeno PRIVATE ${FEM_MUSCLE_SOURCE_FILES})
 target_link_libraries(zeno PRIVATE Eigen3::Eigen)
-target_link_libraries(zeno PUBLIC OpenMP::OpenMP_CXX)
+target_link_libraries(zeno PRIVATE OpenMP::OpenMP_CXX)
 
 target_include_directories(zeno PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src/math

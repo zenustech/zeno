@@ -35,3 +35,8 @@ git push
 Push it, then GitHub CI will do the depolyment automatically for you.
 
 It will create a release with tag, for example, `v2022.4.19` (today's date).
+
+## Other notes
+
+Despite vcpkg supports Linux and MacOS too (by using `x64-linux` suffix), it's way too unstable than the
+system package manager. So we still recommended to use `apt` or `pacman` on Linux for stable experience.

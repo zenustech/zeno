@@ -1,7 +1,7 @@
 #include <zeno/zeno.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/NumericObject.h>
-#include <zeno/utils/parallel.h>
+#include <zeno/utils/parallel_reduce.h>
 #include <zeno/utils/vec.h>
 #include <cstring>
 #include <cstdlib>

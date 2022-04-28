@@ -1,12 +1,15 @@
 #pragma once
 
 #include <zeno/utils/disable_copy.h>
+#include <zeno/utils/log.h>
 #include <zenovis/Camera.h>
 #include <zenovis/IGraphic.h>
 #include <zenovis/Light.h>
+#include <zenovis/GraphicsManager.h>
 #include <zenovis/ReflectivePass.h>
 #include <zenovis/Scene.h>
 #include <zenovis/ShaderManager.h>
+#include <zenovis/DrawOptions.h>
 #include <zenovis/opengl/shader.h>
 #include <zenovis/opengl/vao.h>
 
@@ -22,7 +25,6 @@ struct DepthPass : zeno::disable_copy {
         return scene->camera.get();
     }
 
-    bool enable_hdr = true;
     /* BEGIN ZHXX HAPPY */
 
     inline static const char *qvert = R"(
@@ -93,7 +95,7 @@ void main(void)
     GLuint texRect = 0, regularFBO = 0;
     GLuint texRects[16] = {0};
     GLuint emptyVAO = 0;
-    int m_camera_oldnx, m_camera_oldny;
+    int m_camera_oldnx{}, m_camera_oldny{};
 
     ~DepthPass() {
         if (emptyVAO)
@@ -144,34 +146,28 @@ void main(void)
     }
     void ZPass() {
         CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, tonemapfbo));
-        CHECK_GL(glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER,
-                                           GL_COLOR_ATTACHMENT0,
-                                           GL_RENDERBUFFER, msfborgb));
-        CHECK_GL(glFramebufferRenderbuffer(
-            GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, msfbod));
+        CHECK_GL(glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, msfborgb));
+        CHECK_GL(glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, msfbod));
         CHECK_GL(glDrawBuffer(GL_COLOR_ATTACHMENT0));
         CHECK_GL(glClearColor(0, 0, 0, 0));
         CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
-        scene->my_paint_graphics(1.0, 1.0);
+        scene->my_paint_graphics(1, true);
         CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, tonemapfbo));
         CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, regularFBO));
         CHECK_GL(glBindTexture(GL_TEXTURE_RECTANGLE, texRect));
-        CHECK_GL(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-                                        GL_TEXTURE_RECTANGLE, texRect, 0));
-        CHECK_GL(glBlitFramebuffer(0, 0, camera()->m_nx, camera()->m_ny, 0, 0,
-                                   camera()->m_nx, camera()->m_ny,
+        CHECK_GL(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE, texRect, 0));
+        CHECK_GL(glBlitFramebuffer(0, 0, camera()->m_nx, camera()->m_ny, 0, 0, camera()->m_nx, camera()->m_ny,
                                    GL_COLOR_BUFFER_BIT, GL_NEAREST));
     }
 
     void shadowPass() {
-        auto &lights = scene->lights;
+        scene->lightCluster->updateDepthMapsArr();
+        auto &lights = scene->lightCluster->lights;
         for (auto &light : lights) {
-            for (int i = 0; i < Light::cascadeCount + 1; i++) {
-                light->BeginShadowMap(camera()->m_near, camera()->m_far,
-                                      light->lightDir, camera()->proj,
-                                      camera()->view, i);
+            for (int i = 0; i < LightCluster::layerCount; i++) {
+                light->BeginShadowMap(camera()->m_near, camera()->m_far, camera()->proj, camera()->view, i);
                 scene->vao->bind();
-                for (auto const &gra : scene->graphics()) {
+                for (auto const &gra : scene->graphicsMan->graphics.values<IGraphicDraw>()) {
                     gra->drawShadow(light.get());
                 }
                 scene->vao->unbind();
@@ -181,34 +177,24 @@ void main(void)
     }
 
     void paint_graphics(GLuint target_fbo = 0) {
-        CHECK_GL(glClearColor(camera()->bgcolor.r, camera()->bgcolor.g,
-                              camera()->bgcolor.b, 0.0f));
-        //CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
-        if (enable_hdr && tmProg == nullptr) {
+        if (tmProg == nullptr) {
             tmProg = scene->shaderMan->compile_program(qvert, qfrag);
             if (!tmProg) {
-                enable_hdr = false;
+                throw zeno::makeError("failed to compile zhxx (c) HDR pass");
             }
-        }
-
-        if (!enable_hdr || 1) {
-            if (target_fbo)
-                CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, target_fbo));
-            return scene->my_paint_graphics(1.0, 0.0);
         }
 
         shadowPass();
         scene->mReflectivePass->reflectivePass();
 
-        GLint zero_fbo = 0;
-        CHECK_GL(glGetIntegerv(GL_FRAMEBUFFER_BINDING, &zero_fbo));
-        GLint zero_draw_fbo = 0;
-        CHECK_GL(glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &zero_draw_fbo));
-        if (target_fbo == 0)
-            target_fbo = zero_draw_fbo;
+        /* GLint zero_fbo = 0; */
+        /* * CHECK_GL(glGetIntegerv(GL_FRAMEBUFFER_BINDING, &zero_fbo)); * */
+        /* GLint zero_draw_fbo = 0; */
+        /* * CHECK_GL(glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &zero_draw_fbo)); * */
+        /* if (target_fbo == 0) */
+        /*     target_fbo = zero_draw_fbo; */
 
-        if (msfborgb == 0 || m_camera_oldnx != camera()->m_nx ||
-            m_camera_oldny != camera()->m_ny) {
+        if (msfborgb == 0 || m_camera_oldnx != camera()->m_nx || m_camera_oldny != camera()->m_ny) {
             if (msfborgb != 0) {
                 CHECK_GL(glDeleteRenderbuffers(1, &msfborgb));
                 msfborgb = 0;
@@ -221,16 +207,12 @@ void main(void)
             CHECK_GL(glGenRenderbuffers(1, &msfborgb));
             CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, msfborgb));
             auto num_samples = camera()->getNumSamples();
-            CHECK_GL(glRenderbufferStorageMultisample(
-                GL_RENDERBUFFER, num_samples, GL_RGBA32F, camera()->m_nx,
-                camera()->m_ny));
+            CHECK_GL(glRenderbufferStorageMultisample(GL_RENDERBUFFER, num_samples, GL_RGBA32F, camera()->m_nx,
+                                                      camera()->m_ny));
 
             CHECK_GL(glGenRenderbuffers(1, &ssfborgb));
             CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, ssfborgb));
-            /* begin cihou mesa */
-            /* end cihou mesa */
-            CHECK_GL(glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA32F,
-                                           camera()->m_nx, camera()->m_ny));
+            CHECK_GL(glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA32F, camera()->m_nx, camera()->m_ny));
 
             if (msfbod != 0) {
                 CHECK_GL(glDeleteRenderbuffers(1, &msfbod));
@@ -238,9 +220,8 @@ void main(void)
             }
             CHECK_GL(glGenRenderbuffers(1, &msfbod));
             CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, msfbod));
-            CHECK_GL(glRenderbufferStorageMultisample(
-                GL_RENDERBUFFER, num_samples, GL_DEPTH_COMPONENT32F,
-                camera()->m_nx, camera()->m_ny));
+            CHECK_GL(glRenderbufferStorageMultisample(GL_RENDERBUFFER, num_samples, GL_DEPTH_COMPONENT32F,
+                                                      camera()->m_nx, camera()->m_ny));
 
             if (ssfbod != 0) {
                 CHECK_GL(glDeleteRenderbuffers(1, &ssfbod));
@@ -248,9 +229,7 @@ void main(void)
             }
             CHECK_GL(glGenRenderbuffers(1, &ssfbod));
             CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, ssfbod));
-            CHECK_GL(glRenderbufferStorage(GL_RENDERBUFFER,
-                                           GL_DEPTH_COMPONENT32F, camera()->m_nx,
-                                           camera()->m_ny));
+            CHECK_GL(glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT32F, camera()->m_nx, camera()->m_ny));
 
             if (tonemapfbo != 0) {
                 CHECK_GL(glDeleteFramebuffers(1, &tonemapfbo));
@@ -283,46 +262,30 @@ void main(void)
             }
             CHECK_GL(glBindTexture(GL_TEXTURE_RECTANGLE, texRect));
             {
-                CHECK_GL(glTexParameteri(GL_TEXTURE_RECTANGLE,
-                                         GL_TEXTURE_MIN_FILTER, GL_NEAREST));
-                CHECK_GL(glTexParameteri(GL_TEXTURE_RECTANGLE,
-                                         GL_TEXTURE_MAG_FILTER, GL_NEAREST));
-                CHECK_GL(glTexParameteri(GL_TEXTURE_RECTANGLE,
-                                         GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
-                CHECK_GL(glTexParameteri(GL_TEXTURE_RECTANGLE,
-                                         GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
+                CHECK_GL(glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_MIN_FILTER, GL_NEAREST));
+                CHECK_GL(glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
+                CHECK_GL(glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
+                CHECK_GL(glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
 
-                CHECK_GL(glTexImage2D(GL_TEXTURE_RECTANGLE, 0, GL_RGBA32F,
-                                      camera()->m_nx, camera()->m_ny, 0, GL_RGBA,
+                CHECK_GL(glTexImage2D(GL_TEXTURE_RECTANGLE, 0, GL_RGBA32F, camera()->m_nx, camera()->m_ny, 0, GL_RGBA,
                                       GL_FLOAT, nullptr));
             }
             for (int i = 0; i < 16; i++) {
                 CHECK_GL(glBindTexture(GL_TEXTURE_RECTANGLE, texRects[i]));
                 {
-                    CHECK_GL(glTexParameteri(GL_TEXTURE_RECTANGLE,
-                                             GL_TEXTURE_MIN_FILTER,
-                                             GL_NEAREST));
-                    CHECK_GL(glTexParameteri(GL_TEXTURE_RECTANGLE,
-                                             GL_TEXTURE_MAG_FILTER,
-                                             GL_NEAREST));
-                    CHECK_GL(glTexParameteri(GL_TEXTURE_RECTANGLE,
-                                             GL_TEXTURE_WRAP_S,
-                                             GL_CLAMP_TO_EDGE));
-                    CHECK_GL(glTexParameteri(GL_TEXTURE_RECTANGLE,
-                                             GL_TEXTURE_WRAP_T,
-                                             GL_CLAMP_TO_EDGE));
+                    CHECK_GL(glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_MIN_FILTER, GL_NEAREST));
+                    CHECK_GL(glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
+                    CHECK_GL(glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
+                    CHECK_GL(glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
 
-                    CHECK_GL(glTexImage2D(GL_TEXTURE_RECTANGLE, 0, GL_RGBA32F,
-                                          camera()->m_nx, camera()->m_ny, 0,
+                    CHECK_GL(glTexImage2D(GL_TEXTURE_RECTANGLE, 0, GL_RGBA32F, camera()->m_nx, camera()->m_ny, 0,
                                           GL_RGBA, GL_FLOAT, nullptr));
                 }
             }
             CHECK_GL(glBindFramebuffer(GL_FRAMEBUFFER, regularFBO));
             CHECK_GL(glBindTexture(GL_TEXTURE_RECTANGLE, texRect));
-            CHECK_GL(glFramebufferTexture2D(GL_FRAMEBUFFER,
-                                            GL_COLOR_ATTACHMENT0,
-                                            GL_TEXTURE_RECTANGLE, texRect, 0));
-            CHECK_GL(glBindFramebuffer(GL_FRAMEBUFFER, zero_fbo));
+            CHECK_GL(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE, texRect, 0));
+            CHECK_GL(glBindFramebuffer(GL_FRAMEBUFFER, 0));
 
             m_camera_oldnx = camera()->m_nx;
             m_camera_oldny = camera()->m_ny;
@@ -333,55 +296,40 @@ void main(void)
             CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, msfborgb));
             CHECK_GL(glRenderbufferStorageMultisample(GL_RENDERBUFFER, 1, GL_RGBA32F, camera()->m_nx, camera()->m_ny));
             CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, msfbod));
-            CHECK_GL(glRenderbufferStorageMultisample(GL_RENDERBUFFER, 1, GL_DEPTH_COMPONENT32F, camera()->m_nx, camera()->m_ny));
+            CHECK_GL(glRenderbufferStorageMultisample(GL_RENDERBUFFER, 1, GL_DEPTH_COMPONENT32F, camera()->m_nx,
+                                                      camera()->m_ny));
 
             for (int dofsample = 0; dofsample < 16; dofsample++) {
                 /* CHECK_GL(glDisable(GL_MULTISAMPLE)); */
-                glm::vec3 object =
-                    camera()->m_camPos +
-                    camera()->m_dof * glm::normalize(camera()->m_camView);
-                glm::vec3 right = glm::normalize(
-                    glm::cross(object - camera()->m_camPos, camera()->m_camUp));
-                glm::vec3 p_up = glm::normalize(
-                    glm::cross(right, object - camera()->m_camPos));
-                glm::vec3 bokeh = right * cosf(dofsample * 2.0 * M_PI / 16.0) +
-                                  p_up * sinf(dofsample * 2.0 * M_PI / 16.0);
-                camera()->view = glm::lookAt(camera()->m_camPos + 0.05f * bokeh,
-                                             object, p_up);
+                glm::vec3 object = camera()->m_camPos + camera()->m_dof * glm::normalize(camera()->m_camView);
+                glm::vec3 right = glm::normalize(glm::cross(object - camera()->m_camPos, camera()->m_camUp));
+                glm::vec3 p_up = glm::normalize(glm::cross(right, object - camera()->m_camPos));
+                glm::vec3 bokeh =
+                    right * cosf(dofsample * 2.0 * M_PI / 16.0) + p_up * sinf(dofsample * 2.0 * M_PI / 16.0);
+                camera()->view = glm::lookAt(camera()->m_camPos + 0.05f * bokeh, object, p_up);
                 //ZPass();
                 CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, tonemapfbo));
-                CHECK_GL(glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER,
-                                                   GL_COLOR_ATTACHMENT0,
-                                                   GL_RENDERBUFFER, msfborgb));
-                CHECK_GL(glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER,
-                                                   GL_DEPTH_ATTACHMENT,
-                                                   GL_RENDERBUFFER, msfbod));
+                CHECK_GL(glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, msfborgb));
+                CHECK_GL(glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, msfbod));
                 CHECK_GL(glDrawBuffer(GL_COLOR_ATTACHMENT0));
-                CHECK_GL(glClearColor(camera()->bgcolor.r, camera()->bgcolor.g,
-                                      camera()->bgcolor.b, 0.0f));
+                CHECK_GL(glClearColor(scene->drawOptions->bgcolor.r, scene->drawOptions->bgcolor.g, scene->drawOptions->bgcolor.b, 0.0f));
                 CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
-                scene->my_paint_graphics(1.0, 0.0);
+                scene->my_paint_graphics(1, false);
                 CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, tonemapfbo));
                 CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, regularFBO));
                 CHECK_GL(glBindTexture(GL_TEXTURE_RECTANGLE, texRects[dofsample]));
-                CHECK_GL(glFramebufferTexture2D(
-                    GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE,
-                    texRects[dofsample], 0));
-                CHECK_GL(glBlitFramebuffer(0, 0, camera()->m_nx, camera()->m_ny, 0, 0,
-                                  camera()->m_nx, camera()->m_ny,
-                                  GL_COLOR_BUFFER_BIT, GL_NEAREST));
+                CHECK_GL(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE,
+                                                texRects[dofsample], 0));
+                CHECK_GL(glBlitFramebuffer(0, 0, camera()->m_nx, camera()->m_ny, 0, 0, camera()->m_nx, camera()->m_ny,
+                                           GL_COLOR_BUFFER_BIT, GL_NEAREST));
             }
             CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, tonemapfbo));
-            CHECK_GL(glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER,
-                                               GL_COLOR_ATTACHMENT0,
-                                               GL_RENDERBUFFER, msfborgb));
-            CHECK_GL(glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER,
-                                               GL_DEPTH_ATTACHMENT,
-                                               GL_RENDERBUFFER, msfbod));
+            CHECK_GL(glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, msfborgb));
+            CHECK_GL(glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, msfbod));
             CHECK_GL(glDrawBuffer(GL_COLOR_ATTACHMENT0));
             CHECK_GL(glEnable(GL_BLEND));
             CHECK_GL(glBlendFunc(GL_ONE, GL_ONE));
-            CHECK_GL(glad_glBlendEquation(GL_FUNC_ADD));
+            CHECK_GL(glBlendEquation(GL_FUNC_ADD));
             for (int dofsample = 0; dofsample < 16; dofsample++) {
                 //CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, regularFBO));
 
@@ -390,14 +338,12 @@ void main(void)
             CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, tonemapfbo));
             CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, regularFBO));
             CHECK_GL(glBindTexture(GL_TEXTURE_RECTANGLE, texRect));
-            CHECK_GL(glFramebufferTexture2D(GL_FRAMEBUFFER,
-                                            GL_COLOR_ATTACHMENT0,
-                                            GL_TEXTURE_RECTANGLE, texRect, 0));
-            CHECK_GL(glBlitFramebuffer(0, 0, camera()->m_nx, camera()->m_ny, 0, 0,
-                              camera()->m_nx, camera()->m_ny, GL_COLOR_BUFFER_BIT,
-                              GL_NEAREST));
+            CHECK_GL(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE, texRect, 0));
+            CHECK_GL(glBlitFramebuffer(0, 0, camera()->m_nx, camera()->m_ny, 0, 0, camera()->m_nx, camera()->m_ny,
+                                       GL_COLOR_BUFFER_BIT, GL_NEAREST));
             CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, target_fbo));
             ScreenFillQuad(texRect, 1.0, 0);
+            CHECK_GL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
 
         } else {
             /* CHECK_GL(glDisable(GL_MULTISAMPLE)); */
@@ -405,34 +351,26 @@ void main(void)
             CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, msfborgb));
             CHECK_GL(glRenderbufferStorageMultisample(GL_RENDERBUFFER, 8, GL_RGBA32F, camera()->m_nx, camera()->m_ny));
             CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, msfbod));
-            CHECK_GL(glRenderbufferStorageMultisample(GL_RENDERBUFFER, 8, GL_DEPTH_COMPONENT32F, camera()->m_nx, camera()->m_ny));
+            CHECK_GL(glRenderbufferStorageMultisample(GL_RENDERBUFFER, 8, GL_DEPTH_COMPONENT32F, camera()->m_nx,
+                                                      camera()->m_ny));
             //ZPass();
-            glm::vec3 object =
-                camera()->m_camPos + 1.0f * glm::normalize(camera()->m_camView);
-            glm::vec3 right = glm::normalize(
-                glm::cross(object - camera()->m_camPos, camera()->m_camUp));
-            glm::vec3 p_up =
-                glm::normalize(glm::cross(right, object - camera()->m_camPos));
+            glm::vec3 object = camera()->m_camPos + 1.0f * glm::normalize(camera()->m_camView);
+            glm::vec3 right = glm::normalize(glm::cross(object - camera()->m_camPos, camera()->m_camUp));
+            glm::vec3 p_up = glm::normalize(glm::cross(right, object - camera()->m_camPos));
             camera()->view = glm::lookAt(camera()->m_camPos, object, p_up);
             CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, tonemapfbo));
-            CHECK_GL(glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER,
-                                               GL_COLOR_ATTACHMENT0,
-                                               GL_RENDERBUFFER, msfborgb));
-            CHECK_GL(glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER,
-                                               GL_DEPTH_ATTACHMENT,
-                                               GL_RENDERBUFFER, msfbod));
+            CHECK_GL(glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, msfborgb));
+            CHECK_GL(glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, msfbod));
             CHECK_GL(glDrawBuffer(GL_COLOR_ATTACHMENT0));
-            CHECK_GL(glClearColor(camera()->bgcolor.r, camera()->bgcolor.g,
-                                  camera()->bgcolor.b, 0.0f));
+            CHECK_GL(glClearColor(scene->drawOptions->bgcolor.r, scene->drawOptions->bgcolor.g, scene->drawOptions->bgcolor.b, 0.0f));
             CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
-            scene->my_paint_graphics(1.0, 0.0);
+            scene->my_paint_graphics(1, false);
             CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, tonemapfbo));
             CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, regularFBO));
             CHECK_GL(glBindTexture(GL_TEXTURE_RECTANGLE, texRects[0]));
-            CHECK_GL(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-                                       GL_TEXTURE_RECTANGLE, texRects[0], 0));
-            CHECK_GL(glBlitFramebuffer(0, 0, camera()->m_nx, camera()->m_ny, 0, 0,
-                                       camera()->m_nx, camera()->m_ny,
+            CHECK_GL(
+                glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE, texRects[0], 0));
+            CHECK_GL(glBlitFramebuffer(0, 0, camera()->m_nx, camera()->m_ny, 0, 0, camera()->m_nx, camera()->m_ny,
                                        GL_COLOR_BUFFER_BIT, GL_NEAREST));
 
             CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, regularFBO));

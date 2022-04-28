@@ -264,7 +264,7 @@ struct ReflectivePass : zeno::disable_copy {
                                            (float)camera()->m_near,
                                            (float)camera()->m_far);
             setReflectMVP(i, p * camera()->view);
-            scene->drawSceneDepthSafe(camera()->getAspect(), true, 1.0f, false);
+            scene->drawSceneDepthSafe(true, true);
             scene->vao->unbind();
             camera()->view = old_view;
         }

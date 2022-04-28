@@ -15,7 +15,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 project(zeno
-    LANGUAGES CXX
+    LANGUAGES CXX C
     DESCRIPTION "Open-source node system framework for simulation and others"
     HOMEPAGE_URL https://github.com/zenustech/zeno
     )
@@ -25,6 +25,15 @@ if (PROJECT_BINARY_DIR STREQUAL PROJECT_SOURCE_DIR)
         "Please consider use 'cmake -B build' to specify a different binary directory."
         "Otherwise ZENO may fail to build, or make Git hard to exclude binary files.")
 endif()
+
+option(ZENO_BUILD_EDITOR "Build ZENO editor" ON)
+option(ZENO_BUILD_DESIGNER "Build ZENO designer" OFF)
+option(ZENO_MULTIPROCESS "Enable multiprocessing for ZENO" ON)
+option(ZENO_OUT_TO_BIN "Output files to a fixed directory" ON)
+option(ZENO_BUILD_SHARED "Build shared library for ZENO" ON)
+option(ZENO_USE_CCACHE "Use CCache if found in path" ON)
+option(ZENO_NO_WARNING "Use customized compiler warnings" ON)
+option(ZENO_INSTALL_TARGET "Enable installation targets" ON)
 
 # Otherwise we can't link SHARED libs with STATIC libs
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
@@ -40,20 +49,15 @@ if (WIN32)
     add_definitions(-DNOMINMAX -D_USE_MATH_DEFINES)
 endif()
 
-option(ZENO_BUILD_EDITOR "Build ZENO editor" ON)
-option(ZENO_BUILD_DESIGNER "Build ZENO designer" OFF)
-option(ZENO_BENCHMARKING "Enable ZENO benchmarking timer" ON)
-option(ZENO_MULTIPROCESS "Enable multiprocessing for ZENO" ON)
-option(ZENO_PARALLEL_STL "Enable parallel STL in ZENO" OFF)
-option(ZENO_ENABLE_BACKWARD "Enable ZENO fault handler for traceback" ON)
-option(ZENO_ENABLE_OPENMP "Enable OpenMP in ZENO for parallelism" ON)
-option(ZENO_ENABLE_SPDLOG "Enable spdlog in ZENO for logging" OFF)
-option(ZENO_ENABLE_MAGICENUM "Enable magicenum in ZENO for enum reflection" ON)
-option(ZENO_OUT_TO_BIN "Output files to a fixed directory" ON)
-option(ZENO_BUILD_SHARED "Build shared library for ZENO" ON)
-option(ZENO_USE_CCACHE "Use CCache if found in path" ON)
-option(ZENO_NO_WARNING "Use customized compiler warnings" ON)
-option(ZENO_INSTALL_TARGET "Enable installation targets" OFF)
+if (ZENO_NO_WARNING)
+    set(ZENO_OLD_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+    if (CMAKE_CXX_COMPILER_ID MATCHES "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-all -Wno-cpp -Wno-deprecated-declarations -Wno-enum-compare -Wno-ignored-attributes -Wno-extra -Wreturn-type -Wmissing-declarations -Wnon-virtual-dtor -Wsuggest-override -Wconversion-null")
+    endif()
+    if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w")
+    endif()
+endif()
 
 if (ZENO_USE_CCACHE AND NOT MSVC)  # speed up compilation by cache (https://ccache.dev)
     find_program(CCACHE_PROGRAM ccache)
@@ -61,15 +65,6 @@ if (ZENO_USE_CCACHE AND NOT MSVC)  # speed up compilation by cache (https://ccac
         message(STATUS "Found CCache: ${CCACHE_PROGRAM}")
         set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ${CCACHE_PROGRAM})
         set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK ${CCACHE_PROGRAM})
-    endif()
-endif()
-
-if (ZENO_NO_WARNING)
-    if (CMAKE_CXX_COMPILER_ID MATCHES "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-all -Wno-cpp -Wno-deprecated-declarations -Wno-enum-compare -Wno-ignored-attributes -Wno-extra -Werror=return-type -Wnon-virtual-dtor -Wsuggest-override -Wmissing-declarations -Wconversion-null")
-    endif()
-    if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /w")
     endif()
 endif()
 
@@ -85,26 +80,11 @@ if (ZENO_OUT_TO_BIN)
     set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE ${ZENO_OUTPUT_DIR})
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${ZENO_OUTPUT_DIR})
     set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE ${ZENO_OUTPUT_DIR})
-    if (WIN32)
-        set(CMAKE_DEBUG_POSTFIX "")  # No more annoying zeno_d.dll
-    endif()
-endif()
-
-if (ZENO_ENABLE_BACKWARD)
-    add_subdirectory(external/backward-cpp)
-endif()
-
-if (ZENO_ENABLE_SPDLOG)
-    add_subdirectory(external/spdlog)
+    set(CMAKE_DEBUG_POSTFIX "")  # No more annoying zeno_d.dll
 endif()
 
 add_subdirectory(zeno)
 add_subdirectory(projects)
-
-if (ZENO_MULTIPROCESS)
-    message(STATUS "Building Zeno Runner")
-    add_subdirectory(ui/zenorunner)
-endif()
 
 if (ZENO_BUILD_EDITOR OR ZENO_BUILD_DESIGNER)
     message(STATUS "Building Zeno UI Library")
@@ -126,13 +106,13 @@ endif()
 if (ZENO_INSTALL_TARGET)
     install(
         EXPORT ZenoTargets
-        FILE ZenoTargets.cmake
+        FILE ZenoConfig.cmake
         NAMESPACE Zeno::
         DESTINATION lib/cmake/Zeno
         )
-    configure_file(misc/ZenoConfig.cmake.in ZenoConfig.cmake @ONLY)
-    install(
-        FILES ${CMAKE_CURRENT_BINARY_DIR}/ZenoConfig.cmake
-        DESTINATION lib/cmake/Zeno
-        )
+    #configure_file(misc/ZenoConfig.cmake.in ZenoConfig.cmake @ONLY)
+    #install(
+        #FILES ${CMAKE_CURRENT_BINARY_DIR}/ZenoConfig.cmake
+        #DESTINATION lib/cmake/Zeno
+        #)
 endif()
