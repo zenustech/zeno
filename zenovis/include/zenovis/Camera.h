@@ -72,9 +72,6 @@ struct Camera {
         pro->set_uniform("mInvView", glm::inverse(m_view));
         pro->set_uniform("mInvProj", glm::inverse(m_proj));
 
-        auto point_scale = 21.6f / std::tan(m_fov * 0.5f * 3.1415926f / 180.0f);
-        pro->set_uniform("mPointScale", point_scale);
-
         //pro->set_uniform("mCameraRadius", m_camRadius);
         //pro->set_uniform("mCameraCenter", m_camCenter);
         //pro->set_uniform("mGridScale", m_grid_scale);
