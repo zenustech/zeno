@@ -1,11 +1,9 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include <zeno/types/InstancingObject.h>
-#include <zeno/types/MaterialObject.h>
 #include <zeno/types/PrimitiveObject.h>
+#include <zeno/types/InstancingObject.h>
 #include <zeno/types/PrimitiveTools.h>
-#include <zeno/types/TextureObject.h>
 #include <zeno/utils/logger.h>
 #include <zeno/utils/orthonormal.h>
 #include <zeno/utils/ticktock.h>
@@ -18,8 +16,10 @@
 #include <zenovis/opengl/buffer.h>
 #include <zenovis/opengl/shader.h>
 #include <zenovis/opengl/texture.h>
+
 namespace zenovis {
 namespace {
+
 using namespace opengl;
 
 struct ZhxxDrawObject {
@@ -297,6 +297,9 @@ struct GraphicPrimitive final : IGraphicDraw {
     explicit GraphicPrimitive(Scene *scene_, zeno::PrimitiveObject *prim)
         : scene(scene_) {
         zeno::log_trace("rendering primitive size {}", prim->size());
+
+        prim_has_inst = prim->inst != nullptr;
+        prim_inst_amount = prim->inst->amount;
 
         if (!prim->has_attr("pos")) {
             auto &pos = prim->add_attr<zeno::vec3f>("pos");
@@ -633,10 +636,10 @@ struct GraphicPrimitive final : IGraphicDraw {
     }
 
     Program *get_tris_program() {
-        auto vert = inst != nullptr ?
-#include "shader/tris.glsl"
+        auto vert = prim_has_inst ?
+#include "shader/tris.vert"
         :
-#include "shader/tris_inst.glsl"
+#include "shader/tris_inst.vert"
         ;
 
         auto frag =

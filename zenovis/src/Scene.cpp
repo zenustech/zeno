@@ -27,8 +27,6 @@ Scene::Scene()
     CHECK_GL(glPixelStorei(GL_UNPACK_ALIGNMENT, 1));
     CHECK_GL(glPixelStorei(GL_PACK_ALIGNMENT, 1));
 
-    lightCluster = std::make_unique<LightCluster>(this);
-
     vao = std::make_unique<opengl::VAO>();
 
     auto version = (const char *)glGetString(GL_VERSION);
