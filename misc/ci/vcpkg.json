@@ -16,12 +16,13 @@
       "dependencies": [
         "tbb",
         "eigen3",
-        "openexr",
         "blosc",
-        {
-          "name": "openvdb",
-          "version>=": "8.0.0"
-        }
+        "zlib",
+        "boost-iosystems",
+        "boost-any",
+        "boost-algorithm",
+        "boost-uuid",
+        "boost-interprocess"
       ]
     },
     "cgmesh": {

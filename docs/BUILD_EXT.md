@@ -35,21 +35,17 @@ If you succeed to build ZenoFX, let's move on to build other more complicated ex
 ### Arch Linux (recommended)
 
 ```bash
-pacman -S tbb openvdb eigen openexr cgal lapack openblas hdf5
+pacman -S tbb blosc boost zlib eigen cgal lapack openblas hdf5
 ```
 
 ### Ubuntu
 
 ```bash
-sudo apt-get install -y libtbb-dev libopenvdb-dev libeigen3-dev libopenexr-dev libcgal-dev liblapack-dev libopenblas-dev libhdf5-dev
+sudo apt-get install -y libblosc-dev libboost-iostreams-dev zlib1g-dev libtbb-dev
+sudo apt-get install -y libeigen3-dev libcgal-dev liblapack-dev libopenblas-dev libhdf5-dev
 ```
 
-> It's highly recommended to use Ubuntu 20.04 or above, otherwise you have to build some libraries from source.
-
-> If you install some libraries from source, it will be likely installed in the `/usr/local` directory.
-> Say OpenVDB for example, CMake only searches `/usr/lib/cmake/OpenVDB/FindOpenVDB.cmake`.
-> It will not find your actual OpenVDB in `/usr/local/lib/cmake/OpenVDB/FindOpenVDB.cmake`.
-> you may need to specify `-DOpenVDB_DIR=/usr/local/lib/cmake/OpenVDB` in this case.
+> It's highly recommended to use Ubuntu 20.04 or above, otherwise you may have to build some libraries from source.
 
 ### Windows
 
@@ -65,8 +61,14 @@ git clone https://github.com/microsoft/vcpkg.git --depth=1
 cd vcpkg
 .\bootstrap-vcpkg.bat
 .\vcpkg integrate install
+.\vcpkg install zlib:x64-windows
+.\vcpkg install blosc:x64-windows
 .\vcpkg install tbb:x64-windows
-.\vcpkg install openvdb:x64-windows
+.\vcpkg install boost-iostreams:x64-windows
+.\vcpkg install boost-any:x64-windows
+.\vcpkg install boost-algorithm:x64-windows
+.\vcpkg install boost-uuid:x64-windows
+.\vcpkg install boost-interprocess:x64-windows
 .\vcpkg install eigen3:x64-windows
 .\vcpkg install cgal:x64-windows
 .\vcpkg install lapack:x64-windows
