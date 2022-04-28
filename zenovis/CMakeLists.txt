@@ -14,31 +14,41 @@ target_include_directories(zenovis PUBLIC
     $<INSTALL_INTERFACE:include/Zeno/zenovis/include>)
 
 if (ZENO_ENABLE_OPENEXR)
-    # PENG-SENSEI: SO OPENEXR FXXK YOU!!!!
-    find_package(IlmBase CONFIG)
-    find_package(OpenEXR CONFIG)
-    if (NOT TARGET OpenEXR::OpenEXR
-            AND NOT TARGET IlmBase::Iex
-            AND NOT TARGET IlmBase::Half
-            AND NOT TARGET IlmBase::Imath
-            AND NOT TARGET IlmBase::IexMath
-            AND NOT TARGET OpenEXR::IlmImf
-            AND NOT TARGET OpenEXR::IlmImfUtil
-            AND NOT TARGET OpenEXR::IlmImfConfig
-            )
-        message(FATAL_ERROR "OpenEXR or IlmBase not found! Please run:\n"
-            "apt uninstall -y libilmbase-dev && apt install -y libopenexr-dev")
+    option(ZENO_SYSTEM_OPENEXR "Use OpenEXR found in system instead of submodule" OFF)
+    if (ZENO_SYSTEM_OPENEXR)
+        # PENG-SENSEI: SO OPENEXR FXXK YOU!!!!
+        find_package(IlmBase CONFIG)
+        find_package(OpenEXR CONFIG)
+        if (NOT TARGET OpenEXR::OpenEXR
+                AND NOT TARGET IlmBase::Iex
+                AND NOT TARGET IlmBase::Half
+                AND NOT TARGET IlmBase::Imath
+                AND NOT TARGET IlmBase::IexMath
+                AND NOT TARGET OpenEXR::IlmImf
+                AND NOT TARGET OpenEXR::IlmImfUtil
+                AND NOT TARGET OpenEXR::IlmImfConfig
+                )
+            message(FATAL_ERROR "OpenEXR or IlmBase not found! Please run:\n"
+                "apt uninstall -y libilmbase-dev && apt install -y libopenexr-dev")
+        endif()
+        target_link_libraries(zenovis PRIVATE
+            $<TARGET_NAME_IF_EXISTS:IlmBase::Iex>
+            $<TARGET_NAME_IF_EXISTS:IlmBase::Half>
+            $<TARGET_NAME_IF_EXISTS:IlmBase::Imath>
+            $<TARGET_NAME_IF_EXISTS:IlmBase::IexMath>
+            $<TARGET_NAME_IF_EXISTS:OpenEXR::OpenEXR>
+            $<TARGET_NAME_IF_EXISTS:OpenEXR::IlmImf>
+            $<TARGET_NAME_IF_EXISTS:OpenEXR::IlmImfUtil>
+            $<TARGET_NAME_IF_EXISTS:OpenEXR::IlmImfConfig>
+        )
+    else()
+        if (NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/openexr/CMakeLists.txt)
+            message(FATAL_ERROR "openexr submodule not found! Please run: git submodule update --init --recursive")
+        endif()
+        add_subdirectory(openexr)
+        target_link_libraries(zenovis PRIVATE OpenEXR)
+        target_include_directories(zenovis PRIVATE openexr/src/lib/OpenEXR)
     endif()
-    target_link_libraries(zenovis PRIVATE
-        $<TARGET_NAME_IF_EXISTS:IlmBase::Iex>
-        $<TARGET_NAME_IF_EXISTS:IlmBase::Half>
-        $<TARGET_NAME_IF_EXISTS:IlmBase::Imath>
-        $<TARGET_NAME_IF_EXISTS:IlmBase::IexMath>
-        $<TARGET_NAME_IF_EXISTS:OpenEXR::OpenEXR>
-        $<TARGET_NAME_IF_EXISTS:OpenEXR::IlmImf>
-        $<TARGET_NAME_IF_EXISTS:OpenEXR::IlmImfUtil>
-        $<TARGET_NAME_IF_EXISTS:OpenEXR::IlmImfConfig>
-    )
     target_compile_definitions(zenovis PRIVATE -DZENO_ENABLE_OPENEXR)
 endif()
 

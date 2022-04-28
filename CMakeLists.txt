@@ -80,9 +80,7 @@ if (ZENO_OUT_TO_BIN)
     set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE ${ZENO_OUTPUT_DIR})
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${ZENO_OUTPUT_DIR})
     set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE ${ZENO_OUTPUT_DIR})
-    if (WIN32)
-        set(CMAKE_DEBUG_POSTFIX "")  # No more annoying zeno_d.dll
-    endif()
+    set(CMAKE_DEBUG_POSTFIX "")  # No more annoying zeno_d.dll
 endif()
 
 add_subdirectory(zeno)
