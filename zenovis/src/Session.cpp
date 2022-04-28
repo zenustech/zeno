@@ -14,6 +14,7 @@
 #include <ImfArray.h>
 #endif
 #include <map>
+#include <functional>
 
 namespace zenovis {
 
