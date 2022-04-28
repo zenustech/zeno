@@ -246,7 +246,7 @@ struct ComputeParticleBeta : INode {
         auto F = pars.pack<3, 3>("F", pi);
         auto J = determinant(F.template cast<double>());
         if (J > Jp_critical) // apply positional adjustment
-          pars("beta", pi) = 0.2f;
+          pars("beta", pi) = 0.5f;
         else
           pars("beta", pi) = 0.f; // assume beta_min = 0
       }
@@ -350,7 +350,7 @@ struct ComputeParticleBeta : INode {
       auto F = pars.pack<3, 3>("F", pi);
       auto J = determinant(F.template cast<double>());
       if (J > Jp_critical) // apply positional adjustment
-        pars("beta", pi) = 0.2f;
+        pars("beta", pi) = 0.5f;
       else
         pars("beta", pi) = 0.f; // assume beta_min = 0
     });
@@ -549,7 +549,7 @@ struct ComputeParticleBeta : INode {
                       J /= (Jn * J0inv);   // normal direction
                       if (J > Jp_critical) // apply positional adjustment
                         for (int vi = 0; vi != 3; ++vi)
-                          pars("beta", tri[vi]) = 0.5f;
+                          pars("beta", tri[vi]) = 0.2f;
                       else
                         for (int vi = 0; vi != 3; ++vi)
                           pars("beta", tri[vi]) = 0.f;
