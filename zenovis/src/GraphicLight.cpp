@@ -7,12 +7,11 @@
 #include <zenovis/opengl/buffer.h>
 #include <zenovis/opengl/shader.h>
 #include <zeno/types/LightObject.h>
-#include <zenovis/Light.h>
 
 namespace zenovis {
 namespace {
 
-struct GraphicLight final : IGraphicLight {
+struct GraphicLight final : IGraphic {
     Scene *scene;
     zeno::LightData lightData;
 
@@ -20,10 +19,6 @@ struct GraphicLight final : IGraphicLight {
         //auto nodeid = lit->userData().get("ident");
         lightData = static_cast<zeno::LightData const &>(*lit);
         // TODO: implement modify scene->light
-    }
-
-    virtual void addToScene() override {
-        scene->lightCluster->addLight(lightData);
     }
 };
 

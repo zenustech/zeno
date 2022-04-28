@@ -13,13 +13,7 @@ struct IGraphic {
 };
 
 struct IGraphicDraw : IGraphic {
-    virtual bool hasMaterial() const { return false; }
     virtual void draw() = 0;
-    virtual void drawShadow(Light *light) = 0;
-};
-
-struct IGraphicLight : IGraphic {
-    virtual void addToScene() = 0;
 };
 
 struct MakeGraphicVisitor : zeno::IObjectVisitor {

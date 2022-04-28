@@ -44,7 +44,7 @@ void Session::set_show_grid(bool show_grid) {
 }
 
 void Session::set_num_samples(int num_samples) {
-    impl->scene->camera->setNumSamples(num_samples);
+    // TODO
 }
 
 void Session::set_normal_check(bool check) {
@@ -125,12 +125,7 @@ void Session::do_screenshot(std::string path, std::string type) {
 void Session::look_perspective(float cx, float cy, float cz, float theta,
                                float phi, float radius, float fov,
                                bool ortho_mode) {
-    impl->scene->camera->setCamera(cx, cy, cz, theta, phi, radius, fov, ortho_mode);
-}
-
-void Session::set_perspective(std::array<float, 16> const &viewArr,
-                              std::array<float, 16> const &projArr) {
-    impl->scene->camera->setCamera(viewArr, projArr);
+    impl->scene->camera->setCamera(cx, cy, cz, theta, phi, radius, ortho_mode ? 0.f : fov);
 }
 
 void Session::set_background_color(float r, float g, float b) {

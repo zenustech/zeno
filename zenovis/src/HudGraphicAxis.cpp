@@ -97,8 +97,7 @@ struct GraphicAxis final : IGraphicDraw {
 
         lines_prog = scene->shaderMan->compile_program(vert_code, frag_code);
     }
-    virtual void drawShadow(Light *light) override {
-    }
+
     virtual void draw() override {
         vbo->bind();
         vbo->attribute(0, sizeof(float) * 0, sizeof(float) * 6, GL_FLOAT, 3);
