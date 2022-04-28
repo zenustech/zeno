@@ -23,7 +23,6 @@ class ZCurveMapEditor : public QDialog
 public:
 	ZCurveMapEditor(bool bTimeline, QWidget* parent = nullptr);
 	~ZCurveMapEditor();
-	void init(CurveModel* model, bool bTimeFrame);
     void addCurve(CurveModel* model);
 
 public slots:
@@ -35,6 +34,7 @@ public slots:
 	void onLineEditFinished();
 
 private:
+	void init();
 	void initUI();
 	void initSize();
     void initSignals();

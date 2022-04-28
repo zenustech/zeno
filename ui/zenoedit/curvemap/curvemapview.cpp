@@ -15,6 +15,7 @@ CurveMapView::CurveMapView(QWidget* parent)
 	, m_pVScalar(nullptr)
 	, m_grid(nullptr)
 	, m_bSmoothCurve(true)
+	, m_range({0,1,0,1})
 {
 	setRenderHint(QPainter::Antialiasing);
 	setViewportUpdateMode(QGraphicsView::FullViewportUpdate);//it's easy but not efficient
@@ -32,13 +33,10 @@ CurveMapView::~CurveMapView()
 {
 }
 
-void CurveMapView::init(CurveModel* model, bool timeFrame)
+void CurveMapView::init(bool timeFrame)
 {
 	QGraphicsScene* pScene = new QGraphicsScene;
 	setScene(pScene);
-
-	//todo: union range when multiple models have been added.
-    m_range = model->range();
 
 	m_gridMargins.setLeft(64);
 	m_gridMargins.setRight(64);
@@ -58,7 +56,6 @@ void CurveMapView::init(CurveModel* model, bool timeFrame)
 	m_fixedSceneRect = curve_util::initGridSize(QSize(512, 512), m_gridMargins);
 
 	m_grid = new CurveGrid(this, m_fixedSceneRect);
-	m_grid->addCurve(model);
 	m_grid->setColor(QColor(32, 32, 32), QColor(22, 22, 24));
 	m_grid->setZValue(-100);
 
@@ -69,11 +66,14 @@ void CurveMapView::init(CurveModel* model, bool timeFrame)
 
 void CurveMapView::addCurve(CurveModel* model)
 {
-    Q_ASSERT(m_grid);
-    m_grid->addCurve(model);
+    Q_ASSERT(m_grid && model);
 
-	QMargins margins = m_gridMargins;
-    m_grid->resetTransform(m_fixedSceneRect.marginsRemoved(margins), model->range());
+	//todo: union range.
+    m_range = model->range();
+    m_grid->resetTransform(m_fixedSceneRect.marginsRemoved(m_gridMargins), m_range);
+    m_grid->addCurve(model);
+    m_pHScalar->update();
+    m_pVScalar->update();
 }
 
 CURVE_RANGE CurveMapView::range() const

@@ -127,15 +127,19 @@ void MakeCurvemapNode::onEditClicked()
             handlers.append(QPointF(0, 0));
 		}
 
-		CurveModel *pModel = new CurveModel("Channel-X", rg, this);
-		pModel->initItems(rg, points, handlers);
-
 		ZCurveMapEditor *pEditor = new ZCurveMapEditor(true);
-		pEditor->init(pModel, true);
+
+        CurveModel *pModel = new CurveModel("Channel-X", rg, this);
+		pModel->initItems(rg, points, handlers);
+		pEditor->addCurve(pModel);
 
 		CurveModel *pModel2 = new CurveModel("Channel-Y", rg, this);
         pModel2->initItems(rg, {{rg.xFrom, rg.yTo}, {rg.xTo, rg.yFrom}}, {{0,0}, {0,0}, {0,0}, {0,0}});
 		pEditor->addCurve(pModel2);
+
+		CurveModel *pModel3 = new CurveModel("Channel-Z", rg, this);
+        pModel3->initItems(rg, {{rg.xFrom, rg.yTo / 2}, {rg.xTo, rg.yTo / 2}}, {{0,0}, {0,0}, {0,0}, {0,0}});
+		pEditor->addCurve(pModel3);
 
 		pEditor->show();
 	}

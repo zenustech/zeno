@@ -16,6 +16,7 @@ ZCurveMapEditor::ZCurveMapEditor(bool bTimeline, QWidget* parent)
 {
     initUI();
     initChannelModel();
+    init();
 }
 
 ZCurveMapEditor::~ZCurveMapEditor()
@@ -95,6 +96,7 @@ void ZCurveMapEditor::initChannelModel()
         QStandardItem* pRootItem = new QStandardItem("Channels");
         m_channelModel->appendRow(pRootItem);
         m_ui->channelView->setModel(m_channelModel);
+        m_ui->channelView->expandAll();
 
         m_selection = new QItemSelectionModel(m_channelModel);
     }
@@ -117,30 +119,16 @@ CurveModel* ZCurveMapEditor::currentModel()
     }
 }
 
-void ZCurveMapEditor::init(CurveModel* model, bool bTimeFrame)
+void ZCurveMapEditor::init()
 {
-    QString id = model->id();
-    m_models.insert(id, model);
-    m_ui->gridview->init(model, bTimeFrame);
-    if (bTimeFrame)
-    {
-        QStandardItem* pItem = new QStandardItem(model->id());
-        pItem->setCheckable(true);
-        pItem->setCheckState(Qt::Checked);
-        QStandardItem* pRootItem = m_channelModel->itemFromIndex(m_channelModel->index(0, 0));
-        pRootItem->appendRow(pItem);
+    m_ui->gridview->init(m_bTimeline);
 
-        CurveGrid *pGrid = m_ui->gridview->gridItem();
-        pGrid->setCurvesColor(id, QColor(206, 47, 47));
-    }
-
-    CURVE_RANGE range = model->range();
+    CURVE_RANGE range = m_ui->gridview->range();
     m_ui->editXFrom->setText(QString::number(range.xFrom));
     m_ui->editXTo->setText(QString::number(range.xTo));
     m_ui->editYFrom->setText(QString::number(range.yFrom));
     m_ui->editYTo->setText(QString::number(range.yTo));
 
-    connect(model, &CurveModel::dataChanged, this, &ZCurveMapEditor::onNodesDataChanged);
     connect(m_ui->editPtX, SIGNAL(editingFinished()), this, SLOT(onLineEditFinished()));
     connect(m_ui->editPtY, SIGNAL(editingFinished()), this, SLOT(onLineEditFinished()));
     connect(m_ui->editTanLeftX, SIGNAL(editingFinished()), this, SLOT(onLineEditFinished()));
@@ -158,6 +146,8 @@ void ZCurveMapEditor::initSignals()
 
 void ZCurveMapEditor::addCurve(CurveModel* model)
 {
+    static const QColor preset[] = {"#CE2F2F", "#307BCD", "#2FCD5F"};
+
     QString id = model->id();
     m_models.insert(id, model);
     m_ui->gridview->addCurve(model);
@@ -166,10 +156,21 @@ void ZCurveMapEditor::addCurve(CurveModel* model)
     pItem->setCheckable(true);
     pItem->setCheckState(Qt::Checked);
     QStandardItem *pRootItem = m_channelModel->itemFromIndex(m_channelModel->index(0, 0));
-    pRootItem->appendRow(pItem);
 
+    int n = pRootItem->rowCount();
+    QColor curveClr;
+    if (n < sizeof(preset) / sizeof(QColor))
+    {
+        curveClr = preset[n];
+    }
+    else
+    {
+        curveClr = QColor(77, 77, 77);
+    }
+
+    pRootItem->appendRow(pItem);
     CurveGrid *pGrid = m_ui->gridview->gridItem();
-    pGrid->setCurvesColor(id, QColor(48, 123, 205));
+    pGrid->setCurvesColor(id, curveClr);
 
     connect(model, &CurveModel::dataChanged, this, &ZCurveMapEditor::onNodesDataChanged);
     connect(m_channelModel, &QStandardItemModel::dataChanged, this, &ZCurveMapEditor::onChannelModelDataChanged);

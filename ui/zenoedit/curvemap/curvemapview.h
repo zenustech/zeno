@@ -15,7 +15,7 @@ class CurveMapView : public QGraphicsView
 public:
 	CurveMapView(QWidget* parent = nullptr);
 	~CurveMapView();
-	void init(CurveModel* model, bool timeFrame);
+	void init(bool timeFrame);
 	void addCurve(CurveModel* model);
 	CURVE_RANGE range() const;
 	int frames(bool bHorizontal) const;
