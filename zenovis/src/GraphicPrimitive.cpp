@@ -594,7 +594,7 @@ struct GraphicPrimitive final : IGraphicDraw {
 
             if (scene->drawOptions->render_wireframe) {
                 CHECK_GL(glEnable(GL_POLYGON_OFFSET_LINE));
-                CHECK_GL(glPolygonOffset(-1, -1));
+                CHECK_GL(glPolygonOffset(0, 0));
                 CHECK_GL(glPolygonMode(GL_FRONT_AND_BACK, GL_LINE));
                 triObj.prog->set_uniformi("mRenderWireframe", true);
                 if (prim_has_inst) {
