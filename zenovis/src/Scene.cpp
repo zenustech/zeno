@@ -36,9 +36,6 @@ Scene::Scene()
 
     hudGraphics.push_back(makeGraphicGrid(this));
     hudGraphics.push_back(makeGraphicAxis(this));
-
-    glm::vec3 a;
-    zeno::to_string(a);
 }
 
 void Scene::draw() {

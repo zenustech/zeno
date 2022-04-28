@@ -30,8 +30,13 @@ struct Camera {
             m_proj = glm::ortho(-radius * getAspect(), radius * getAspect(), -radius,
                               radius, fnear, ffar);
         } else {
+            ZENO_P(pos);
+            ZENO_P(front);
+            ZENO_P(up);
             m_view = glm::lookAt(pos, pos + front, up);
             m_proj = glm::perspective(glm::radians(fov), getAspect(), fnear, ffar);
+            ZENO_P(m_view);
+            ZENO_P(m_proj);
         }
         m_lodradius = radius;
         m_lodcenter = pos;
@@ -51,9 +56,9 @@ struct Camera {
         if (!(fov <= 0)) {
             auto fnear = 0.1f;
             auto ffar = 20000.0f * std::max(1.0f, (float)radius / 10000.f);
-            setCamera(center - back * radius, -back, up, fov, fnear, ffar, radius);
+            setCamera(center + back * radius, -back, up, fov, fnear, ffar, radius);
         } else {
-            setCamera(center - back * radius, -back, up, 0.f, -100.f, 100.f, radius);
+            setCamera(center + back * radius, -back, up, 0.f, -100.f, 100.f, radius);
         }
     }
 
