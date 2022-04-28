@@ -13,10 +13,7 @@ struct ShaderManager;
 struct GraphicsManager;
 struct IGraphic;
 struct IGraphicDraw;
-
-namespace opengl {
-struct VAO;
-}
+struct RenderEngine;
 
 struct Scene : zeno::disable_copy {
     std::unique_ptr<Camera> camera;
@@ -24,7 +21,7 @@ struct Scene : zeno::disable_copy {
     std::unique_ptr<ShaderManager> shaderMan;
     std::unique_ptr<GraphicsManager> graphicsMan;
     std::vector<std::unique_ptr<IGraphicDraw>> hudGraphics;
-    std::unique_ptr<opengl::VAO> vao;
+    std::unique_ptr<RenderEngine> renderEngine;
 
     Scene();
     ~Scene();
