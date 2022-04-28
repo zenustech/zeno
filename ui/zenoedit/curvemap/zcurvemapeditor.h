@@ -32,6 +32,7 @@ public slots:
     void onNodesDataChanged();
 	void onFrameChanged(qreal frame);
 	void onLineEditFinished();
+    void onLockBtnToggled(bool bToggle);
 
 private:
 	void init();

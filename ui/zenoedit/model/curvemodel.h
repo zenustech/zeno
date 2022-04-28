@@ -11,6 +11,8 @@ enum CURVE_ROLE
     ROLE_LEFTPOS,   //left handle pos offset,
     ROLE_RIGHTPOS,  //right handle pos
     ROLE_TYPE,
+    ROLE_LOCKX,
+    ROLE_LOCKY
 };
 
 enum HANDLE_TYPE

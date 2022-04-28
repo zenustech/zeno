@@ -33,12 +33,18 @@ void ZCurveMapEditor::initUI()
     m_ui->btnLoadPreset->setProperty("cssClass", "curve-preset");
     m_ui->btnSavePreset->setProperty("cssClass", "curve-preset");
 
+    //todo: move to ui file.
     m_pGroupHdlType = new QButtonGroup(this);
     m_pGroupHdlType->setExclusive(true);
     m_pGroupHdlType->addButton(m_ui->btnFree, HDL_FREE);
     m_pGroupHdlType->addButton(m_ui->btnAligned, HDL_ALIGNED);
     m_pGroupHdlType->addButton(m_ui->btnVector, HDL_VECTOR);
     m_pGroupHdlType->addButton(m_ui->btnAsymmetry, HDL_ASYM);
+
+    m_ui->btnLockX->setIcons(ZenoStyle::dpiScaledSize(QSize(17, 17)),
+                             ":/icons/ic_tool_unlock.svg", "", ":/icons/ic_tool_lock.svg");
+    m_ui->btnLockY->setIcons(ZenoStyle::dpiScaledSize(QSize(17, 17)),
+                             ":/icons/ic_tool_unlock.svg", "", ":/icons/ic_tool_lock.svg");
 
     //initButtonShadow();
     initStylesheet();
@@ -89,34 +95,22 @@ void ZCurveMapEditor::initButtonShadow()
 
 void ZCurveMapEditor::initChannelModel()
 {
-    //temp code
-    if (m_bTimeline)
-    {
-        m_channelModel = new QStandardItemModel(this);
-        QStandardItem* pRootItem = new QStandardItem("Channels");
-        m_channelModel->appendRow(pRootItem);
-        m_ui->channelView->setModel(m_channelModel);
-        m_ui->channelView->expandAll();
+    m_channelModel = new QStandardItemModel(this);
+    QStandardItem* pRootItem = new QStandardItem("Channels");
+    m_channelModel->appendRow(pRootItem);
+    m_ui->channelView->setModel(m_channelModel);
+    m_ui->channelView->expandAll();
 
-        m_selection = new QItemSelectionModel(m_channelModel);
-    }
+    m_selection = new QItemSelectionModel(m_channelModel);
     m_ui->channelView->setVisible(m_bTimeline);
 }
 
 CurveModel* ZCurveMapEditor::currentModel()
 {
-    if (m_bTimeline)
-    {
-        auto lst = m_ui->gridview->getSelectedNodes();
-        if (lst.size() == 0)
-            return nullptr;
-        return lst[0]->curves()->model();
-    }
-    else
-    {
-        Q_ASSERT(m_models.size() == 1);
-        return m_models[0];
-    }
+    auto lst = m_ui->gridview->getSelectedNodes();
+    if (lst.size() == 0)
+        return nullptr;
+    return lst[0]->curves()->model();
 }
 
 void ZCurveMapEditor::init()
@@ -142,6 +136,8 @@ void ZCurveMapEditor::initSignals()
     connect(m_pGroupHdlType, SIGNAL(buttonToggled(QAbstractButton *, bool)), this, SLOT(onButtonToggled(QAbstractButton*, bool)));
     connect(m_ui->gridview, &CurveMapView::nodeItemsSelectionChanged, this, &ZCurveMapEditor::onNodesSelectionChanged);
     connect(m_ui->gridview, &CurveMapView::frameChanged, this, &ZCurveMapEditor::onFrameChanged);
+    connect(m_ui->btnLockX, SIGNAL(toggled(bool)), this, SLOT(onLockBtnToggled(bool)));
+    connect(m_ui->btnLockY, SIGNAL(toggled(bool)), this, SLOT(onLockBtnToggled(bool)));
 }
 
 void ZCurveMapEditor::addCurve(CurveModel* model)
@@ -213,6 +209,8 @@ void ZCurveMapEditor::onButtonToggled(QAbstractButton* btn, bool bToggled)
 void ZCurveMapEditor::onLineEditFinished()
 {
     CurveModel* pModel = currentModel();
+    if (!pModel)
+        return;
 
     QObject *pEdit = sender();
     if (pEdit == m_ui->editPtX) {
@@ -247,38 +245,42 @@ void ZCurveMapEditor::onLineEditFinished()
 
 void ZCurveMapEditor::onNodesDataChanged()
 {
-    CurveModel* pModel = qobject_cast<CurveModel*>(sender());// currentModel();
-    if (!pModel)
-    {
-        //temp
-        auto lst = m_ui->gridview->getSelectedNodes();
-        if (lst.isEmpty())
-            return;
-        pModel = lst[0]->curves()->model();
-        Q_ASSERT(pModel);
-    }
-
     CurveGrid *pGrid = m_ui->gridview->gridItem();
     auto lst = m_ui->gridview->getSelectedNodes();
     bool enableEditor = lst.size() == 1;
     m_ui->editPtX->setEnabled(enableEditor);
+    m_ui->editPtX->setText("");
     m_ui->editPtY->setEnabled(enableEditor);
+    m_ui->editPtY->setText("");
     m_ui->editTanLeftX->setEnabled(enableEditor);
+    m_ui->editTanLeftX->setText("");
     m_ui->editTanLeftY->setEnabled(enableEditor);
+    m_ui->editTanLeftY->setText("");
     m_ui->editTanRightX->setEnabled(enableEditor);
+    m_ui->editTanRightX->setText("");
     m_ui->editTanRightY->setEnabled(enableEditor);
+    m_ui->editTanRightY->setText("");
+    m_ui->btnLockX->setEnabled(enableEditor);
+    m_ui->btnLockX->toggle(false);
+    m_ui->btnLockX->setText("");
+    m_ui->btnLockY->setEnabled(enableEditor);
+    m_ui->btnLockY->toggle(false);
+    m_ui->btnLockY->setText("");
    
     if (lst.size() == 1)
     {
-        Q_ASSERT(pGrid && pModel);
+        Q_ASSERT(pGrid);
         CurveNodeItem *node = lst[0];
         const QModelIndex& idx = node->index();
-        QPointF logicPos = pModel->data(idx, ROLE_NODEPOS).toPointF();
+        QPointF logicPos = idx.data(ROLE_NODEPOS).toPointF();
         m_ui->editPtX->setText(QString::number(logicPos.x(), 'g', 3));
         m_ui->editPtY->setText(QString::number(logicPos.y(), 'g', 3));
 
-        QPointF leftPos = pModel->data(idx, ROLE_LEFTPOS).toPointF();
-        QPointF rightPos = pModel->data(idx, ROLE_RIGHTPOS).toPointF();
+        QPointF leftPos = idx.data(ROLE_LEFTPOS).toPointF();
+        QPointF rightPos = idx.data(ROLE_RIGHTPOS).toPointF();
+
+        bool bLockX = idx.data(ROLE_LOCKX).toBool();
+        bool bLockY = idx.data(ROLE_LOCKY).toBool();
 
         m_ui->editTanLeftX->setText(QString::number(leftPos.x(), 'g', 3));
         m_ui->editTanLeftY->setText(QString::number(leftPos.y() , 'g', 3));
@@ -290,6 +292,11 @@ void ZCurveMapEditor::onNodesDataChanged()
         BlockSignalScope scope3(m_ui->btnFree);
         BlockSignalScope scope4(m_ui->btnVector);
         BlockSignalScope scope(m_pGroupHdlType);
+        BlockSignalScope scope_(m_ui->btnLockX);
+        BlockSignalScope scope__(m_ui->btnLockY);
+
+        m_ui->btnLockX->toggle(bLockX);
+        m_ui->btnLockY->toggle(bLockY);
 
         switch (idx.data(ROLE_TYPE).toInt())
         {
@@ -313,6 +320,25 @@ void ZCurveMapEditor::onNodesDataChanged()
                 m_ui->btnVector->setChecked(true);
                 break;
             }
+        }
+    }
+}
+
+void ZCurveMapEditor::onLockBtnToggled(bool bToggle)
+{
+    if (sender() != m_ui->btnLockX && sender() != m_ui->btnLockY)
+        return;
+
+    auto lst = m_ui->gridview->getSelectedNodes();
+    if (lst.size() == 1)
+    {
+        CurveNodeItem *node = lst[0];
+        QModelIndex idx = node->index();
+        Q_ASSERT(idx.isValid());
+        CurveModel *pModel = currentModel();
+        if (pModel)
+        {
+            pModel->setData(idx, bToggle, sender() == m_ui->btnLockX ? ROLE_LOCKX : ROLE_LOCKY);
         }
     }
 }

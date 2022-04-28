@@ -59,11 +59,19 @@ QPointF CurveModel::clipNodePos(const QModelIndex& index, const QPointF& currPos
 {
     qreal epsilon = (m_range.xTo - m_range.xFrom) / 1000;
     QPointF newNodePos = currPos;
-    if (newNodePos == this->data(index, ROLE_NODEPOS).toPointF())
+    QPointF oldPos = index.data(ROLE_NODEPOS).toPointF();
+    if (newNodePos == oldPos)
         return newNodePos;
 
     int r = index.row(), n = rowCount();
-    if (r == 0)
+    bool bLockX = index.data(ROLE_LOCKX).toBool();
+    bool bLockY = index.data(ROLE_LOCKY).toBool();
+
+    if (bLockX)
+    {
+        newNodePos.setX(oldPos.x());
+    }
+    else if (r == 0)
     {
         newNodePos.setX(m_range.xFrom);
     }
@@ -77,7 +85,15 @@ QPointF CurveModel::clipNodePos(const QModelIndex& index, const QPointF& currPos
         QPointF nextPos = this->data(this->index(r + 1, 0), ROLE_NODEPOS).toPointF();
         newNodePos.setX(qMin(qMax(newNodePos.x() + epsilon, lastPos.x()), nextPos.x() - epsilon));
     }
-    newNodePos.setY(qMin(qMax(newNodePos.y(), m_range.yFrom), m_range.yTo));
+
+    if (bLockY)
+    {
+        newNodePos.setY(oldPos.y());
+    }
+    else
+    {
+        newNodePos.setY(qMin(qMax(newNodePos.y(), m_range.yFrom), m_range.yTo));
+    }
     return newNodePos;
 }
 
