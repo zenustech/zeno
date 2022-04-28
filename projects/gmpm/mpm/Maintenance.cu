@@ -6,8 +6,8 @@
 #include "zensim/geometry/VdbSampler.h"
 #include "zensim/io/ParticleIO.hpp"
 #include "zensim/omp/execution/ExecutionPolicy.hpp"
-#include "zensim/tpls/fmt/color.h"
-#include "zensim/tpls/fmt/format.h"
+#include "zensim/zpc_tpls/fmt/color.h"
+#include "zensim/zpc_tpls/fmt/format.h"
 #include <zeno/types/DictObject.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/PrimitiveObject.h>

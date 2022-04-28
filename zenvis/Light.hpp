@@ -85,7 +85,7 @@ namespace zenvis
         void setShadowMV(Program *shader)
         {
             glm::mat4 model = glm::mat4(1.0f);
-            shader->set_uniform("mView", lightMV);
+            shader->set_uniform("mVP", lightMV);
         }
 
         std::vector<glm::vec4> getFrustumCornersWorldSpace(const glm::mat4 &projview)
@@ -215,8 +215,8 @@ namespace zenvis
                 CHECK_GL(glBindTexture(GL_TEXTURE_2D, lightDepthMaps));
                 glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F, depthMapResolution, depthMapResolution,
                              0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP );
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP );
                 // float borderColor[] = {1.0, 1.0, 1.0, 1.0};
@@ -253,8 +253,8 @@ namespace zenvis
                         CHECK_GL(glBindTexture(GL_TEXTURE_2D, DepthMaps[i]));
                         glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F, depthMapResolution, depthMapResolution,
                                     0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
-                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
                         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
                         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
                         // float borderColor[] = {1.0, 1.0, 1.0, 1.0};
@@ -264,8 +264,8 @@ namespace zenvis
                         CHECK_GL(glBindTexture(GL_TEXTURE_2D, DepthMaps[i]));
                         glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F, depthMapResolution, depthMapResolution,
                                     0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
-                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
                         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
                         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
                         float borderColor[] = {1.0, 1.0, 1.0, 1.0};
