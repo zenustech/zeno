@@ -7,3 +7,6 @@
 [submodule "projects/Alembic/Alembic"]
 	path = projects/Alembic/Alembic
 	url = https://github.com/zenustech/Alembic.git
+[submodule "projects/zenvdb/openvdb"]
+	path = projects/zenvdb/openvdb
+	url = https://github.com/zenustech/openvdb.git

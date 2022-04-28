@@ -17,8 +17,17 @@ if (ZENO_ENABLE_OPENEXR)
     # PENG-SENSEI: SO OPENEXR FXXK YOU!!!!
     find_package(IlmBase CONFIG)
     find_package(OpenEXR CONFIG)
-    if (NOT TARGET OpenEXR::OpenEXR AND NOT TARGET OpenEXR::IlmIlmUtil AND NOT TARGET IlmBase::Half)
-        message(WARNING "OpenEXR::OpenEXR or IlmBase::Half not found!")
+    if (NOT TARGET OpenEXR::OpenEXR
+            AND NOT TARGET IlmBase::Iex
+            AND NOT TARGET IlmBase::Half
+            AND NOT TARGET IlmBase::Imath
+            AND NOT TARGET IlmBase::IexMath
+            AND NOT TARGET OpenEXR::IlmImf
+            AND NOT TARGET OpenEXR::IlmImfUtil
+            AND NOT TARGET OpenEXR::IlmImfConfig
+            )
+        message(FATAL_ERROR "OpenEXR or IlmBase not found! Please run:\n"
+            "apt uninstall -y libilmbase-dev && apt install -y libopenexr-dev")
     endif()
     target_link_libraries(zenovis PRIVATE
         $<TARGET_NAME_IF_EXISTS:IlmBase::Iex>
