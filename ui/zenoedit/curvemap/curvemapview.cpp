@@ -15,6 +15,7 @@ CurveMapView::CurveMapView(QWidget* parent)
 	, m_pVScalar(nullptr)
 	, m_grid(nullptr)
 	, m_bSmoothCurve(true)
+	, m_range({0,1,0,1})
 {
 	setRenderHint(QPainter::Antialiasing);
 	setViewportUpdateMode(QGraphicsView::FullViewportUpdate);//it's easy but not efficient
@@ -32,37 +33,52 @@ CurveMapView::~CurveMapView()
 {
 }
 
-void CurveMapView::init(CurveModel* model)
+void CurveMapView::init(bool timeFrame)
 {
 	QGraphicsScene* pScene = new QGraphicsScene;
 	setScene(pScene);
-    m_range = model->range();
-    m_model = model;
 
 	m_gridMargins.setLeft(64);
 	m_gridMargins.setRight(64);
 	m_gridMargins.setTop(64);
 	m_gridMargins.setBottom(64);
 
-	m_pHScalar = new CurveScalarItem(true, this);
-	m_pVScalar = new CurveScalarItem(false, this);
+	m_pHScalar = new CurveScalarItem(true, timeFrame, this);
+	m_pVScalar = new CurveScalarItem(false, false, this);
 	connect(horizontalScrollBar(), SIGNAL(valueChanged(int)), m_pHScalar, SLOT(update()));
 	connect(verticalScrollBar(), SIGNAL(valueChanged(int)), m_pVScalar, SLOT(update()));
     connect(pScene, SIGNAL(selectionChanged()), this, SLOT(onSelectionChanged()));
+    connect(m_pHScalar, SIGNAL(frameChanged(qreal)), this, SIGNAL(frameChanged(qreal)));
 
 	QRectF rc = scene()->sceneRect();
 	rc = sceneRect();
 
-	m_fixedSceneRect = curve_util::fitInRange(m_range, m_gridMargins);
+	m_fixedSceneRect = curve_util::initGridSize(QSize(512, 512), m_gridMargins);
 
 	m_grid = new CurveGrid(this, m_fixedSceneRect);
-	m_grid->addCurve(model);
 	m_grid->setColor(QColor(32, 32, 32), QColor(22, 22, 24));
 	m_grid->setZValue(-100);
 
 	pScene->addItem(m_pHScalar);
 	pScene->addItem(m_pVScalar);
 	pScene->addItem(m_grid);
+}
+
+void CurveMapView::addCurve(CurveModel* model)
+{
+    Q_ASSERT(m_grid && model);
+
+	//todo: union range.
+    m_range = model->range();
+    m_grid->resetTransform(m_fixedSceneRect.marginsRemoved(m_gridMargins), m_range);
+    m_grid->addCurve(model);
+    m_pHScalar->update();
+    m_pVScalar->update();
+}
+
+CURVE_RANGE CurveMapView::range() const
+{
+    return m_range;
 }
 
 QPointF CurveMapView::mapLogicToScene(const QPointF& logicPos)
@@ -241,12 +257,14 @@ int CurveMapView::frames(bool bHorizontal) const
 	{
 		int W = width();
 		int wtf = W * m_factor * 0.015;
+		return 10;
 		return wtf;
 	}
 	else
 	{
 		int H = height();
 		int wtf = H * m_factor * 0.015;
+		return 10;
 		return wtf;
 	}
 }

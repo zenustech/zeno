@@ -17,20 +17,21 @@ public:
     void initCurves(CurveModel* model);
     int nodeCount() const;
     int indexOf(CurveNodeItem *pItem) const;
+    void setColor(const QColor& color);
+    void _setVisible(bool bVisible);
     QPointF nodePos(int i) const;
     CurveNodeItem* nodeItem(int i) const;
     CurveModel* model() const;
     QRectF boundingRect() const override;
 	void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget = nullptr) override;
 
-signals:
-    void nodesDataChanged();
-
 public slots:
     void onNodeGeometryChanged();
 	void onNodeDeleted();
     void onPathClicked(const QPointF& pos);
     void onDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles = QVector<int>());
+    void onNodesInserted(const QModelIndex &parent, int first, int last);
+    void onNodesAboutToBeRemoved(const QModelIndex &parent, int first, int last);
 
 private:
     QVector<CurveNodeItem*> m_vecNodes;
@@ -38,6 +39,7 @@ private:
     CurveMapView* m_view;
     CurveGrid* m_grid;
     CurveModel* m_model;
+    QColor m_color;
 };
 
 #endif

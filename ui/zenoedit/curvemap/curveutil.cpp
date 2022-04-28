@@ -16,6 +16,14 @@ namespace curve_util
 		return rc;
 	}
 
+	QRectF initGridSize(const QSize& sz, const QMargins& margins)
+	{
+        QRectF rc;
+		rc.setWidth(sz.width() + margins.left() + margins.right());
+        rc.setHeight(sz.height() + margins.top() + margins.bottom());
+		return rc;
+	}
+
 	QModelIndex findUniqueItem(QAbstractItemModel* pModel, int role, QVariant value)
 	{
 		auto lst = pModel->match(pModel->index(0, 0), role, value);
@@ -28,6 +36,28 @@ namespace curve_util
 	{
 		int wtfX = 10 * scaleX * 1;
         int wtfY = 10 * scaleY * 1;
-        return {wtfX, wtfY};
+		int nX = 10, nY = 5;
+        if (4 <= scaleX && scaleX < 12)
+		{
+			nX = 20;        
+		}
+		else if (12 <= scaleX)
+		{
+            nX = 40;
+		}
+
+		if (2 <= scaleY && scaleY < 4)
+		{
+			nY = 10;
+        }
+		else if (4 <= scaleY)
+		{
+			nY = 20;
+        } 
+		else if (8 <= scaleY)
+		{
+            nY = 40;
+		}
+		return {nX, nY};
 	}
 }
