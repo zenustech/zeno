@@ -2,6 +2,18 @@
 
 namespace zenovis {
 
+void Camera::setCamera(zeno::CameraData const &cam) {
+    this->setCamera(
+            glm::vec3(cam.pos[0], cam.pos[1], cam.pos[2]),
+            glm::vec3(cam.view[0], cam.view[1], cam.view[2]),
+            glm::vec3(cam.up[0], cam.up[1], cam.up[2]),
+            cam.fov, cam.fnear, cam.ffar, 2.0f);
+    /* this->m_nx = cam.nx; */
+    /* this->m_ny = cam.ny; */
+    this->m_dof = cam.dof;
+    this->m_aperature = cam.aperature;
+}
+
 void Camera::setCamera(glm::vec3 pos, glm::vec3 front, glm::vec3 up, float fov, float fnear, float ffar, float radius) {
     front = glm::normalize(front);
     up = glm::normalize(up);
