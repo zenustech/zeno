@@ -27,7 +27,14 @@ Scene::Scene()
     auto version = (const char *)glGetString(GL_VERSION);
     zeno::log_info("OpenGL version: {}", version ? version : "(null)");
 
-    renderEngine = makeRenderEngineBate(this);
+    switchRenderEngine("bate");
+}
+
+void Scene::switchRenderEngine(std::string const &name) {
+    std::map<std::string, std::function<void()>>{
+    {"bate", [&] { renderEngine = makeRenderEngineBate(this); }},
+    {"zhxx", [&] { renderEngine = makeRenderEngineZhxx(this); }},
+    }.at(name)();
 }
 
 void Scene::setObjects(std::vector<std::shared_ptr<zeno::IObject>> const &objs) {

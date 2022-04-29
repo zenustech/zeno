@@ -16,7 +16,7 @@ struct GraphicLight final : IGraphic {
     zeno::LightData lightData;
 
     explicit GraphicLight(Scene *scene_, zeno::LightObject *lit) : scene(scene_) {
-        //auto nodeid = lit->userData().get("ident");
+        //auto nodeid = lit->userData().get("nodeid");
         lightData = static_cast<zeno::LightData const &>(*lit);
         // TODO: implement modify scene->light
     }

@@ -172,6 +172,15 @@ void ZenoMainWindow::initMenu() {
 
         pDisplay->addSeparator();
 
+        pAction = new QAction(tr("High-quality Render"), this);
+        pAction->setCheckable(true);
+        pAction->setChecked(false);
+        pDisplay->addAction(pAction);
+        connect(pAction, &QAction::triggered, this,
+                [=]() { Zenovis::GetInstance().getSession()->set_render_engine(pAction->isChecked() ? "zhxx" : "bate"); });
+
+        pDisplay->addSeparator();
+
         pAction = new QAction(tr("Use English"), this);
         pAction->setCheckable(true);
         pAction->setChecked(true);

@@ -26,6 +26,7 @@ struct Scene : zeno::disable_copy {
     ~Scene();
 
     void draw();
+    void switchRenderEngine(std::string const &name);
     void setObjects(std::vector<std::shared_ptr<zeno::IObject>> const &objs);
     std::vector<char> record_frame_offline(int hdrSize = 1, int rgbComps = 3);
     static void loadGLAPI(void *procaddr);

@@ -35,6 +35,7 @@ struct Session : zeno::disable_copy {
     void set_smooth_shading(bool smooth);
     void set_normal_check(bool check);
     void set_render_wireframe(bool render_wireframe);
+    void set_render_engine(std::string const &name);
     static void load_opengl_api(void *procaddr);
 };
 

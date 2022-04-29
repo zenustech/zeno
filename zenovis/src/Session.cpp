@@ -148,6 +148,10 @@ void Session::load_objects(std::vector<std::shared_ptr<zeno::IObject>> const &ob
     impl->scene->setObjects(objs);
 }
 
+void Session::set_render_engine(std::string const &name) {
+    impl->scene->switchRenderEngine(name);
+}
+
 void Session::load_opengl_api(void *procaddr) {
     Scene::loadGLAPI(procaddr);
 }
