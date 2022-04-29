@@ -1,14 +1,16 @@
 #include <zenovis/RenderEngine.h>
 #include <zenovis/DrawOptions.h>
 #include <zenovis/GraphicsManager.h>
+#include <zenovis/zhxx/ZhxxScene.h>
 #include <zenovis/opengl/vao.h>
 
 namespace zenovis::zhxx {
 
 struct RenderEngineZhxx : RenderEngine {
 
+    Scene *scene;
     std::unique_ptr<opengl::VAO> vao = std::make_unique<opengl::VAO>();
-    ZhxxScene *scene;
+    std::unique_ptr<ZhxxScene> zhxxScene = std::make_unique<ZhxxScene>();
 
     RenderEngineZhxx(ZhxxScene *scene_) : scene(scene_) {
         CHECK_GL(glEnable(GL_BLEND));
@@ -29,7 +31,7 @@ struct RenderEngineZhxx : RenderEngine {
 
 namespace zenovis {
 
-std::unique_ptr<RenderEngine> makeRenderEngineZhxx(ZhxxScene *scene) {
+std::unique_ptr<RenderEngine> makeRenderEngineZhxx(Scene *scene) {
     return std::make_unique<zhxx::RenderEngineZhxx>(scene);
 }
 
