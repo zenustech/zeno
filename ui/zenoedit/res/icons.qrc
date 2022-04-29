@@ -119,5 +119,12 @@
     <file>icons/ic_handle_vector-on.svg</file>
     <file>icons/ic_tool_lock.svg</file>
     <file>icons/ic_tool_unlock.svg</file>
+    <file>icons/timeline-play.svg</file>
+    <file>icons/timeline-nextframe.svg</file>
+    <file>icons/timeline-lastframe.svg</file>
+    <file>icons/timeline-recycle.svg</file>
+    <file>icons/timeline-record.svg</file>
+    <file>icons/timeline-curvemap.svg</file>
+    <file>icons/timeline-pause.svg</file>
 </qresource>
 </RCC>

@@ -4,11 +4,9 @@
 
 ZSlider::ZSlider(QWidget* parent)
     : QWidget(parent)
-    , m_left(0)
-    , m_right(100)
     , m_value(0)
-    , m_from(m_left)
-    , m_to(m_right)
+    , m_from(0)
+    , m_to(100)
 {
     setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
 }
@@ -47,7 +45,7 @@ static void drawText(QPainter* painter, qreal x, qreal y, Qt::Alignment flags,
 
 void ZSlider::setSliderValue(int value)
 {
-    m_value = qMin(qMax(m_from, value), m_to - 1);
+    m_value = qMin(qMax(m_from, value), m_to);
     update();
     emit sliderValueChange(value);
 }
@@ -56,12 +54,12 @@ int ZSlider::_posToFrame(int x)
 {
     int W = width();
     qreal rate = (qreal)(x + 5 - m_sHMargin) / (W - 2 * m_sHMargin);
-    return rate * (m_right - m_left + 1) + m_left;
+    return rate * (m_to - m_from + 1) + m_from;
 }
 
 int ZSlider::_frameToPos(int frame)
 {
-    qreal distPerFrame = (qreal)(width() - 2 * m_sHMargin) / (m_right - m_left + 1);
+    qreal distPerFrame = (qreal)(width() - 2 * m_sHMargin) / (m_to - m_from + 1);
     return m_sHMargin + frame * distPerFrame;
 }
 
@@ -73,10 +71,16 @@ void ZSlider::setFromTo(int from, int to)
     update();
 }
 
+int ZSlider::value() const
+{
+    return m_value;
+}
+
 int ZSlider::_getframes()
 {
+    //todo
     int frames = 0;
-    int n = m_right - m_left + 1;
+    int n = m_to - m_from + 1;
     int W = width();
     if (W < 250)
     {
@@ -101,21 +105,21 @@ void ZSlider::paintEvent(QPaintEvent* event)
 {
     QPainter painter(this);
 
-    int n = m_right - m_left + 1;
+    int n = m_to - m_from + 1;
     int frames = _getframes();
 
     QFont font("HarmonyOS Sans", 10);
     QFontMetrics metrics(font);
     painter.setFont(font);
 
-    for (int i = m_left, j = 0; i <= m_right; i += (n / std::max(1, frames)), j++)
+    for (int i = m_from; i <= m_to; i++)
     {
         int h = 0;
         int x = _frameToPos(i);
         QString scaleValue = QString::number(i);
         painter.setPen(QPen(QColor(119, 119, 119), 2));
 
-        if (j % 5 == 0)
+        if (i % 5 == 0)
         {
             h = 16;
 
@@ -139,15 +143,15 @@ void ZSlider::paintEvent(QPaintEvent* event)
     }
 
     painter.setPen(QPen(QColor(58, 58, 58), 2));
-    painter.drawLine(QPointF(_frameToPos(m_left), height() - 2), QPointF(_frameToPos(m_right), height() - 2));
+    painter.drawLine(QPointF(_frameToPos(m_from), height() - 2), QPointF(_frameToPos(m_to), height() - 2));
     drawSlideHandle(&painter);
 }
 
 void ZSlider::drawSlideHandle(QPainter* painter)
 {
     //draw time slider
-    qreal xleftmost = _frameToPos(m_left);
-    qreal xrightmost = _frameToPos(m_right);
+    qreal xleftmost = _frameToPos(m_from);
+    qreal xrightmost = _frameToPos(m_to);
     qreal xarrow_pos = _frameToPos(m_value);
     qreal yarrow_pos = height() / 2 - 15. / 2;
 

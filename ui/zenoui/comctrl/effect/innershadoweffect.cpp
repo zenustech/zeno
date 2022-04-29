@@ -7,12 +7,10 @@
 InnerShadowEffect::InnerShadowEffect(QObject *parent)
     : QGraphicsEffect(parent)
 {
-
 }
 
 InnerShadowEffect::~InnerShadowEffect()
 {
-
 }
 
 QRectF InnerShadowEffect::boundingRectFor(const QRectF &sourceRect) const

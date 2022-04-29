@@ -27,6 +27,7 @@ signals:
 public slots:
     void onTimelineUpdate(int frameid);
     void onFrameEditted();
+    void setSliderValue(int frameid);
 
 private:
     void initStyleSheet();
