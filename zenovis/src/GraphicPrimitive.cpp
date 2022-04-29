@@ -271,7 +271,7 @@ static void parseTrianglesDrawBuffer(zeno::PrimitiveObject *prim, ZhxxDrawObject
     /* TOCK(bindebo); */
 }
 
-struct GraphicPrimitive final : IGraphicDraw {
+struct ZhxxGraphicPrimitive final : IGraphicDraw {
     Scene *scene;
     std::unique_ptr<Buffer> vbo;
     std::unique_ptr<Buffer> instvbo;
@@ -297,7 +297,7 @@ struct GraphicPrimitive final : IGraphicDraw {
     bool prim_has_inst = false;
     int prim_inst_amount = 0;
 
-    explicit GraphicPrimitive(Scene *scene_, zeno::PrimitiveObject *prim)
+    explicit ZhxxGraphicPrimitive(Scene *scene_, zeno::PrimitiveObject *prim)
         : scene(scene_) {
         zeno::log_trace("rendering primitive size {}", prim->size());
 
@@ -658,7 +658,7 @@ struct GraphicPrimitive final : IGraphicDraw {
 }
 
 void MakeGraphicVisitor::visit(zeno::PrimitiveObject *obj) {
-     this->out_result = std::make_unique<GraphicPrimitive>(this->in_scene, obj);
+     this->out_result = std::make_unique<ZhxxGraphicPrimitive>(this->in_scene, obj);
 }
 
 } // namespace zenovis

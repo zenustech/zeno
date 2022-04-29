@@ -18,6 +18,7 @@ out vec3 iColor;
 out vec3 iNormal;
 out vec3 iTexCoord;
 out vec3 iTangent;
+
 void main()
 {
   position = vPosition;

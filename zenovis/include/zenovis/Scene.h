@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <vector>
+#include <zeno/core/IObject.h>
 #include <zeno/utils/disable_copy.h>
 #include <zeno/utils/PolymorphicVector.h>
 
@@ -11,26 +12,26 @@ struct Camera;
 struct DrawOptions;
 struct ShaderManager;
 struct GraphicsManager;
+struct ObjectsManager;
 struct IGraphic;
 struct IGraphicDraw;
-
-namespace opengl {
-struct VAO;
-}
+struct RenderEngine;
 
 struct Scene : zeno::disable_copy {
     std::unique_ptr<Camera> camera;
     std::unique_ptr<DrawOptions> drawOptions;
     std::unique_ptr<ShaderManager> shaderMan;
-    std::unique_ptr<GraphicsManager> graphicsMan;
+    std::vector<std::shared_ptr<zeno::IObject>> objects;
     std::vector<std::unique_ptr<IGraphicDraw>> hudGraphics;
-    std::unique_ptr<opengl::VAO> vao;
+    std::unique_ptr<RenderEngine> renderEngine;
 
     Scene();
     ~Scene();
 
     void draw();
+    void setObjects(std::vector<std::shared_ptr<zeno::IObject>> const &objs);
     std::vector<char> record_frame_offline(int hdrSize = 1, int rgbComps = 3);
+    static void loadGLAPI(void *procaddr);
 };
 
 } // namespace zenovis

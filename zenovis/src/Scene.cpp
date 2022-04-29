@@ -2,6 +2,7 @@
 #include <zenovis/Camera.h>
 #include <zenovis/IGraphic.h>
 #include <zenovis/DrawOptions.h>
+#include <zenovis/RenderEngine.h>
 #include <zenovis/GraphicsManager.h>
 #include <zenovis/ShaderManager.h>
 #include <zenovis/opengl/buffer.h>
@@ -12,6 +13,12 @@
 
 namespace zenovis {
 
+void Scene::loadGLAPI(void *procaddr) {
+    int res = gladLoadGLLoader((GLADloadproc)procaddr);
+    if (res < 0)
+        zeno::log_error("failed to load OpenGL via GLAD: {}", res);
+}
+
 Scene::~Scene() = default;
 
 Scene::Scene()
@@ -19,40 +26,28 @@ Scene::Scene()
       drawOptions(std::make_unique<DrawOptions>()),
       shaderMan(std::make_unique<ShaderManager>()) {
 
-    CHECK_GL(glEnable(GL_BLEND));
-    CHECK_GL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
-    CHECK_GL(glEnable(GL_DEPTH_TEST));
-    CHECK_GL(glEnable(GL_PROGRAM_POINT_SIZE));
-    CHECK_GL(glEnable(GL_MULTISAMPLE));
-    CHECK_GL(glPixelStorei(GL_UNPACK_ALIGNMENT, 1));
-    CHECK_GL(glPixelStorei(GL_PACK_ALIGNMENT, 1));
-
-    vao = std::make_unique<opengl::VAO>();
-
     auto version = (const char *)glGetString(GL_VERSION);
     zeno::log_info("OpenGL version: {}", version ? version : "(null)");
 
-    graphicsMan = std::make_unique<GraphicsManager>(this);
-
     hudGraphics.push_back(makeGraphicGrid(this));
     hudGraphics.push_back(makeGraphicAxis(this));
+
+    renderEngine = makeRenderEngineZhxx(this);
+}
+
+void Scene::setObjects(std::vector<std::shared_ptr<zeno::IObject>> const &objs) {
+    this->objects = objs;
+    if (renderEngine)
+        renderEngine->update();
 }
 
 void Scene::draw() {
     CHECK_GL(glViewport(0, 0, camera->m_nx, camera->m_ny));
     CHECK_GL(glClearColor(drawOptions->bgcolor.r, drawOptions->bgcolor.g, drawOptions->bgcolor.b, 0.0f));
-    CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
+    CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0));
 
-    vao->bind();
-    for (auto const &gra : graphicsMan->graphics.values<IGraphicDraw>()) {
-        gra->draw();
-    }
-    if (drawOptions->show_grid) {
-        for (auto const &hudgra : hudGraphics) {
-            hudgra->draw();
-        }
-    }
-    vao->unbind();
+    if (renderEngine)
+        renderEngine->draw();
 }
 
 std::vector<char> Scene::record_frame_offline(int hdrSize, int rgbComps) {
