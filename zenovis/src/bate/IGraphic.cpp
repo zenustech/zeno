@@ -2,7 +2,7 @@
 #include <zeno/core/IObject.h>
 #include <zeno/utils/cppdemangle.h>
 #include <zeno/utils/log.h>
-#include <zenovis/IGraphic.h>
+#include <zenovis/bate/IGraphic.h>
 
 namespace zenovis {
 

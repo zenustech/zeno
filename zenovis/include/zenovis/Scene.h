@@ -13,8 +13,6 @@ struct DrawOptions;
 struct ShaderManager;
 struct GraphicsManager;
 struct ObjectsManager;
-struct IGraphic;
-struct IGraphicDraw;
 struct RenderEngine;
 
 struct Scene : zeno::disable_copy {
@@ -22,7 +20,6 @@ struct Scene : zeno::disable_copy {
     std::unique_ptr<DrawOptions> drawOptions;
     std::unique_ptr<ShaderManager> shaderMan;
     std::vector<std::shared_ptr<zeno::IObject>> objects;
-    std::vector<std::unique_ptr<IGraphicDraw>> hudGraphics;
     std::unique_ptr<RenderEngine> renderEngine;
 
     Scene();

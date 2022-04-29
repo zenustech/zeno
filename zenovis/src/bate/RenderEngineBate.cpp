@@ -1,17 +1,19 @@
 #include <zenovis/RenderEngine.h>
 #include <zenovis/DrawOptions.h>
-#include <zenovis/GraphicsManager.h>
+#include <zenovis/bate/GraphicsManager.h>
+#include <zenovis/bate/IGraphic.h>
 #include <zenovis/opengl/vao.h>
 
-namespace zenovis {
+namespace zenovis::bate {
 
-struct RenderEngineDefault : RenderEngine {
+struct RenderEngineBate : RenderEngine {
 
     std::unique_ptr<opengl::VAO> vao = std::make_unique<opengl::VAO>();
     std::unique_ptr<GraphicsManager> graphicsMan;
+    std::vector<std::unique_ptr<IGraphicDraw>> hudGraphics;
     Scene *scene;
 
-    RenderEngineDefault(Scene *scene_) : scene(scene_) {
+    RenderEngineBate(Scene *scene_) : scene(scene_) {
         CHECK_GL(glEnable(GL_BLEND));
         CHECK_GL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
         CHECK_GL(glEnable(GL_DEPTH_TEST));
@@ -21,6 +23,9 @@ struct RenderEngineDefault : RenderEngine {
         CHECK_GL(glPixelStorei(GL_PACK_ALIGNMENT, 1));
 
         graphicsMan = std::make_unique<GraphicsManager>(scene);
+
+        hudGraphics.push_back(makeGraphicGrid(scene));
+        hudGraphics.push_back(makeGraphicAxis(scene));
     }
 
     void update() override {
@@ -35,7 +40,7 @@ struct RenderEngineDefault : RenderEngine {
             gra->draw();
         }
         if (scene->drawOptions->show_grid) {
-            for (auto const &hudgra : scene->hudGraphics) {
+            for (auto const &hudgra : hudGraphics) {
                 hudgra->draw();
             }
         }
@@ -43,8 +48,12 @@ struct RenderEngineDefault : RenderEngine {
     }
 };
 
-std::unique_ptr<RenderEngine> makeRenderEngineDefault(Scene *scene) {
-    return std::make_unique<RenderEngineDefault>(scene);
+}
+
+namespace zenovis {
+
+std::unique_ptr<RenderEngine> makeRenderEngineBate(Scene *scene) {
+    return std::make_unique<bate::RenderEngineBate>(scene);
 }
 
 }

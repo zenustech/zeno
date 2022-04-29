@@ -1,8 +1,8 @@
 #include <zeno/utils/vec.h>
 #include <zeno/types/UserData.h>
 #include <zenovis/Camera.h>
-#include <zenovis/IGraphic.h>
 #include <zenovis/Scene.h>
+#include <zenovis/bate/IGraphic.h>
 #include <zenovis/ShaderManager.h>
 #include <zenovis/opengl/buffer.h>
 #include <zenovis/opengl/shader.h>

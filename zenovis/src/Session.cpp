@@ -1,10 +1,10 @@
 #include <zeno/utils/log.h>
 #include <zenovis/Camera.h>
-#include <zenovis/IGraphic.h>
 #include <zenovis/Scene.h>
 #include <zenovis/Session.h>
 #include <zenovis/DrawOptions.h>
-#include <zenovis/GraphicsManager.h>
+#include <zenovis/bate/GraphicsManager.h>
+#include <zenovis/bate/IGraphic.h>
 #include <zeno/utils/format.h>
 #include <stb_image_write.h>
 #ifdef ZENO_ENABLE_OPENEXR

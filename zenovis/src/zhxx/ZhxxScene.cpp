@@ -6,7 +6,6 @@
 #include <zenovis/zhxx/DepthPass.h>
 #include <zenovis/zhxx/EnvmapManager.h>
 #include <zenovis/zhxx/ZhxxGraphicsManager.h>
-#include <zenovis/IGraphic.h>
 #include <zenovis/zhxx/ReflectivePass.h>
 #include <zenovis/ShaderManager.h>
 #include <zenovis/opengl/buffer.h>

@@ -2,7 +2,7 @@
 
 #include <memory>
 #include <zeno/core/IObject.h>
-#include <zenovis/IGraphic.h>
+#include <zenovis/bate/IGraphic.h>
 
 namespace zenovis::zhxx {
 

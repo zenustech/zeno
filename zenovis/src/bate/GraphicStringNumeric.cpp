@@ -1,4 +1,4 @@
-#include <zenovis/IGraphic.h>
+#include <zenovis/bate/IGraphic.h>
 #include <zeno/types/StringObject.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/utils/log.h>

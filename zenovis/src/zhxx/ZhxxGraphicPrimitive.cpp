@@ -17,7 +17,6 @@
 #include <zenovis/DrawOptions.h>
 #include <zenovis/zhxx/DepthPass.h>
 #include <zenovis/zhxx/EnvmapManager.h>
-#include <zenovis/IGraphic.h>
 #include <zenovis/zhxx/ZhxxLight.h>
 #include <zenovis/zhxx/ReflectivePass.h>
 #include <zenovis/zhxx/ZhxxScene.h>

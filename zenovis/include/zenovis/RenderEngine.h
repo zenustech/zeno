@@ -12,7 +12,7 @@ struct RenderEngine {
     virtual ~RenderEngine() = default;
 };
 
-std::unique_ptr<RenderEngine> makeRenderEngineDefault(Scene *scene);
+std::unique_ptr<RenderEngine> makeRenderEngineBate(Scene *scene);
 std::unique_ptr<RenderEngine> makeRenderEngineZhxx(Scene *scene);
 
 }

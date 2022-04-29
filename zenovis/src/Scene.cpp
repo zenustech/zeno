@@ -1,9 +1,7 @@
 #include <zenovis/Scene.h>
 #include <zenovis/Camera.h>
-#include <zenovis/IGraphic.h>
 #include <zenovis/DrawOptions.h>
 #include <zenovis/RenderEngine.h>
-#include <zenovis/GraphicsManager.h>
 #include <zenovis/ShaderManager.h>
 #include <zenovis/opengl/buffer.h>
 #include <zenovis/opengl/common.h>
@@ -29,10 +27,7 @@ Scene::Scene()
     auto version = (const char *)glGetString(GL_VERSION);
     zeno::log_info("OpenGL version: {}", version ? version : "(null)");
 
-    hudGraphics.push_back(makeGraphicGrid(this));
-    hudGraphics.push_back(makeGraphicAxis(this));
-
-    renderEngine = makeRenderEngineZhxx(this);
+    renderEngine = makeRenderEngineBate(this);
 }
 
 void Scene::setObjects(std::vector<std::shared_ptr<zeno::IObject>> const &objs) {

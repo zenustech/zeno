@@ -3,10 +3,10 @@
 #include <zeno/utils/disable_copy.h>
 #include <zeno/utils/log.h>
 #include <zenovis/zhxx/ZhxxCamera.h>
-#include <zenovis/IGraphic.h>
+#include <zenovis/bate/IGraphic.h>
 #include <zenovis/zhxx/ZhxxIGraphic.h>
 #include <zenovis/zhxx/ZhxxLight.h>
-#include <zenovis/GraphicsManager.h>
+#include <zenovis/bate/GraphicsManager.h>
 #include <zenovis/zhxx/ReflectivePass.h>
 #include <zenovis/zhxx/ZhxxScene.h>
 #include <zenovis/ShaderManager.h>
