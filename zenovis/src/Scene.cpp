@@ -13,6 +13,12 @@
 
 namespace zenovis {
 
+void Scene::loadGLAPI(void *procaddr) {
+    int res = gladLoadGLLoader((GLADloadproc)procaddr);
+    if (res < 0)
+        zeno::log_error("failed to load OpenGL via GLAD: {}", res);
+}
+
 Scene::~Scene() = default;
 
 Scene::Scene()
@@ -26,7 +32,7 @@ Scene::Scene()
     hudGraphics.push_back(makeGraphicGrid(this));
     hudGraphics.push_back(makeGraphicAxis(this));
 
-    renderEngine = makeRenderEngineDefault(this);
+    renderEngine = makeRenderEngineZhxx(this);
 }
 
 void Scene::setObjects(std::vector<std::shared_ptr<zeno::IObject>> const &objs) {

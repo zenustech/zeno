@@ -31,10 +31,11 @@ struct RenderEngineZhxx : RenderEngine {
     }
 
     void draw() override {
-        CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
-
-        for (auto const &gra: zhxxScene->zxxGraphicsMan->graphics.values()) {
-        }
+        GLint currFbo = 0;
+        CHECK_GL(glGetIntegerv(GL_FRAMEBUFFER_BINDING, &currFbo));
+        zeno::log_trace("drawing on current frame buffer {}", currFbo);
+        /* CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)); */
+        zhxxScene->draw((GLuint)currFbo);
     }
 };
 

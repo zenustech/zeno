@@ -10,8 +10,6 @@
 
 namespace zenovis {
 
-void loadGLAPI(void *procaddr);
-
 struct Session : zeno::disable_copy {
     struct Impl;
 
@@ -37,6 +35,7 @@ struct Session : zeno::disable_copy {
     void set_smooth_shading(bool smooth);
     void set_normal_check(bool check);
     void set_render_wireframe(bool render_wireframe);
+    static void load_opengl_api(void *procaddr);
 };
 
 } // namespace zenovis

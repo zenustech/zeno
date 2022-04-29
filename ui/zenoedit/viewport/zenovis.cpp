@@ -26,7 +26,7 @@ Zenovis& Zenovis::GetInstance()
 
 void Zenovis::loadGLAPI(void *procaddr)
 {
-    zenovis::loadGLAPI(procaddr);
+    zenovis::Session::load_opengl_api(procaddr);
 }
 
 void Zenovis::initializeGL()

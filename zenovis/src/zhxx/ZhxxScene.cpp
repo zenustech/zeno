@@ -39,9 +39,7 @@ ZhxxScene::ZhxxScene(Scene *visScene_)
     lightCluster = std::make_unique<LightCluster>(this);
 
     vao = std::make_unique<opengl::VAO>();
-
-    auto version = (const char *)glGetString(GL_VERSION);
-    zeno::log_info("(zxx) OpenGL version: {}", version ? version : "(null)");
+    zxxDrawOptions = std::make_unique<ZhxxDrawOptions>();
 
     zxxGraphicsMan = std::make_unique<ZhxxGraphicsManager>(this);
     envmapMan = std::make_unique<EnvmapManager>(this);

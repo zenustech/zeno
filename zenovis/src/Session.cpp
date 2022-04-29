@@ -1,4 +1,3 @@
-#include <stb_image_write.h>
 #include <zeno/utils/log.h>
 #include <zenovis/Camera.h>
 #include <zenovis/IGraphic.h>
@@ -6,8 +5,8 @@
 #include <zenovis/Session.h>
 #include <zenovis/DrawOptions.h>
 #include <zenovis/GraphicsManager.h>
-#include <zenovis/opengl/common.h>
 #include <zeno/utils/format.h>
+#include <stb_image_write.h>
 #ifdef ZENO_ENABLE_OPENEXR
 #include <ImfPixelType.h>
 #include <ImfRgbaFile.h>
@@ -149,10 +148,8 @@ void Session::load_objects(std::vector<std::shared_ptr<zeno::IObject>> const &ob
     impl->scene->setObjects(objs);
 }
 
-void loadGLAPI(void *procaddr) {
-    int res = gladLoadGLLoader((GLADloadproc)procaddr);
-    if (res < 0)
-        zeno::log_error("failed to load OpenGL via GLAD: {}", res);
+void Session::load_opengl_api(void *procaddr) {
+    Scene::loadGLAPI(procaddr);
 }
 
 } // namespace zenovis
