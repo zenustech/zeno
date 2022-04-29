@@ -65,4 +65,18 @@ std::tuple<
   float,
   bool
 > getLight(int i);
+void setProbe(float x, float y, float z);
+void setProbeData(
+  int index,
+  std::tuple<float, float, float> pos,
+  int res
+);
+int getProbeCount();
+void addProbe();
+void removeProbe(int i);
+std::tuple<
+  std::tuple<float, float, float>,
+  int
+> getProbe(int i);
+void LightProbePass();
 }

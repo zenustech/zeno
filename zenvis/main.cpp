@@ -287,6 +287,63 @@ std::tuple<
   };
 }
 
+void setProbe(float x, float y, float z)
+{
+  auto &scene = Scene::getInstance();
+  auto &probe = scene.probes[0];
+  probe->pos = glm::vec3(x, y, z);
+}
+
+void setProbeData(
+  int index,
+  std::tuple<float, float, float> pos,
+  int res
+) {
+  auto &scene = Scene::getInstance();
+  auto count = scene.probes.size();
+  while (index >= count) {
+    scene.addProbe();
+    count = scene.probes.size();
+  }
+  auto &probe = scene.probes[index];
+  probe->pos = glm::vec3(
+    std::get<0>(pos),
+    std::get<1>(pos),
+    std::get<2>(pos)
+  );
+}
+
+int getProbeCount() {
+  auto &scene = Scene::getInstance();
+  auto count = scene.probes.size();
+  return count;
+}
+
+void addProbe() {
+  auto &scene = Scene::getInstance();
+  scene.addProbe();
+}
+
+void removeProbe(int i) {
+  auto &scene = Scene::getInstance();
+  scene.removeProbe(i);
+}
+
+std::tuple<
+  std::tuple<float, float, float>,
+  int
+> getProbe(int i) {
+  auto &scene = Scene::getInstance();
+  auto &p = scene.probes.at(i);
+  auto pos = p->pos;
+  auto res = p->resolution;
+
+  return {
+    {pos.x, pos.y, pos.z},
+    res
+  };
+}
+
 std::unique_ptr<IGraphic> makeGraphicGrid();
 std::unique_ptr<IGraphic> makeGraphicAxis();
 void initialize() {
@@ -294,6 +351,7 @@ void initialize() {
   glDepthRangef(0,30000);
   auto &scene = Scene::getInstance();
   scene.addLight();
+  scene.addProbe();
   initReflectiveMaps(nx, ny);
   auto version = (const char *)glGetString(GL_VERSION);
   printf("OpenGL version: %s\n", version ? version : "null");
@@ -566,9 +624,98 @@ static void ZPass()
   glBlitFramebuffer(0, 0, nx, ny, 0, 0, nx, ny, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
 }
+
+void LightProbePass()
+{
+  // Store initial camera state
+  float t_fov = g_fov, t_near = g_near, t_far = g_far;
+  glm::mat4 t_view = g_view, t_proj = g_proj;
+  glm::vec3 t_camPos= g_camPos, t_camView = g_camView, t_camUp = g_camUp;
+  int t_camSetFromNode = g_camSetFromNode;
+  
+  // For temporarily setting up camera 
+  glm::vec3 front;
+  glm::vec3 up;
+  GLuint cubeMap;
+  auto &scene = Scene::getInstance();
+  auto &probes = scene.probes;
+  for (auto &probe : probes)
+  {
+    // buffers created
+    cubeMap = probe->BeginEnvMap(probe->pos, bgcolor); 
+    // std::cout << "wtf" << cubeMap << std::endl;
+    // loop through 6 faces, each face of the cubeMap as the color_attachment0
+    for(int i = 0; i < 6; i++) 
+    {
+      glFramebufferTexture2D(
+          GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, 
+          GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, cubeMap, 0);
+
+      // move camera angle
+      // right, left, top, bottom, back, front
+      switch (i) {
+        case 0:
+          front = glm::vec3(1,0,0); 
+          up    = glm::vec3(0,-1,0);
+          break;
+        case 1:
+          front = glm::vec3(-1,0,0); 
+          up    = glm::vec3(0,-1,0);
+          break;
+        case 2:
+          front = glm::vec3(0,1,0); 
+          up    = glm::vec3(0,0,1);
+          break;
+        case 3:
+          front = glm::vec3(0,-1,0); 
+          up    = glm::vec3(0,0,-1);
+          break;
+        case 4:
+          front = glm::vec3(0,0,1); 
+          up    = glm::vec3(0,-1,0);
+          break;
+        case 5:
+          front = glm::vec3(0,0,-1); 
+          up    = glm::vec3(0,-1,0);
+          break;
+      }
+      // glm::vec3 pos, glm::vec3 front, glm::vec3 up, 
+      // double _fov, 
+      // double fnear, double ffar, double _dof, int set
+      // todo: render scenes according to the probe camera direction
+      // also consider other reflective objects presentation?
+      // ask vge hangge
+      vao->bind();
+      setCamera(
+        probe->pos, front, up,
+        90.0, 
+        0.1, 20000.0, -1, 0
+      );
+      glm::vec3 object = g_camPos + 1.0f * glm::normalize(g_camView);
+      glm::vec3 right = glm::normalize(glm::cross(object - g_camPos, g_camUp));
+      glm::vec3 p_up = glm::normalize(glm::cross(right, object - g_camPos));
+      view = glm::lookAt(g_camPos, object, p_up);
+      drawSceneDepthSafe(1.0, 1.0, true, 0.0);
+      vao->unbind();
+      // Wrong usage of draw?
+    }
+
+    // reset to initial state (camera, buffer, viewport size)
+    probe->EndEnvMap(nx, ny);
+  }
+  // Camera？ Wrong reset, must reset to initial state
+  // clearCameraControl(); 
+  // succeed 
+  g_fov = t_fov, g_near = t_near, g_far = t_far;
+  g_view = t_view, g_proj = t_proj;
+  g_camPos= t_camPos, g_camView = t_camView, g_camUp = t_camUp;
+  g_camSetFromNode = t_camSetFromNode;
+}
+
 static void paint_graphics(GLuint target_fbo = 0) {
   shadowPass();
   reflectivePass();
+  LightProbePass();
   if(enable_hdr && tmProg==nullptr)
   {
     std::cout<<"compiling zhxx hdr program"<<std::endl;

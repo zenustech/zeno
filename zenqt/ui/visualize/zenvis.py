@@ -17,6 +17,7 @@ status = {
     'playing': True,
     'target_frame': 0,
     'lights': {},
+    'probes': {},
     'prev_frame': -1,
     'camera_keyframes': {},
 }

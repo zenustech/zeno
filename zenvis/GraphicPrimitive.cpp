@@ -804,8 +804,16 @@ struct GraphicPrimitive : IGraphic {
                 CHECK_GL(glBindTexture(GL_TEXTURE_2D, brdfLUT));
             texOcp++;
 
-            
-
+            // probeEnvMap, according to probe index
+            // try hardcode first
+            auto &scene = Scene::getInstance();
+            auto &probes = scene.probes;
+            auto &probe = probes[0];
+            // std::cout << "wtf" << texOcp << std::endl;
+            triObj.prog->set_uniformi("prefilterMap",texOcp);
+            CHECK_GL(glActiveTexture(GL_TEXTURE0+texOcp));
+            CHECK_GL(glBindTexture(GL_TEXTURE_CUBE_MAP, probe->textureID));
+            texOcp++;
 
             
             triObj.prog->set_uniform("farPlane", getCamFar());

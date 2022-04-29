@@ -2,6 +2,7 @@
 #define __SCENE_HPP__
 
 #include <Light.hpp>
+#include <Probe.hpp>
 #include <vector>
 #include <memory>
 
@@ -46,6 +47,31 @@ namespace zenvis
                 return false;
             }
             lights.erase(lights.begin() + index);
+            return true;
+        }
+
+        static constexpr std::size_t maxProbesNum = 16;
+        std::vector<std::unique_ptr<Probe>> probes;
+    
+        Probe *addProbe()
+        {
+            if (probes.size() >= maxProbesNum)
+            {
+                return nullptr;
+            }
+            auto probe = std::make_unique<Probe>();
+            auto pProbe = probe.get();
+            probes.push_back(std::move(probe));
+            return pProbe;
+        }
+
+        bool removeProbe(std::size_t index)
+        {
+            if (index < 0 || index >= probes.size())
+            {
+                return false;
+            }
+            probes.erase(probes.begin() + index);
             return true;
         }
 

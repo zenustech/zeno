@@ -188,6 +188,9 @@ class QDMDisplayMenu(QMenu):
         action = QAction('Set Light', self)
         self.addAction(action)
 
+        action = QAction('Set Probe', self)
+        self.addAction(action)
+
         self.addSeparator()
 
         action = QAction('Smooth Shading', self)
@@ -559,6 +562,107 @@ class SetLightDialog(QWidget):
         }
         self.lights[len(self.lights)] = new_channel
 
+class SetProbeDialog(QWidget):
+    def __init__(self):
+        super().__init__()
+
+        self.setWindowTitle('ProbesWindow')
+        self.initUI()
+
+        self.probes = zenvis.status['probes']
+        self.new_probe_channel()
+
+    def initUI(self):
+        self.add_probe_btn = QPushButton('Add')
+        self.add_probe_btn.clicked.connect(self.add_probe)
+        self.remove_probe_btn = QPushButton('Remove')
+        self.remove_probe_btn.clicked.connect(self.remove_probe)
+        self.list = QListWidget()
+        self.list.currentRowChanged.connect(self.update_item)
+
+        self.x_spinbox = QDoubleSpinBox()
+        self.x_spinbox.valueChanged.connect(self.setProbe)
+        self.x_spinbox.setSingleStep(0.1)
+        self.y_spinbox = QDoubleSpinBox()
+        self.y_spinbox.valueChanged.connect(self.setProbe)
+        self.y_spinbox.setSingleStep(0.1)
+        self.z_spinbox = QDoubleSpinBox()
+        self.z_spinbox.valueChanged.connect(self.setProbe)
+        self.z_spinbox.setSingleStep(0.1)
+
+        self.resolution_spinbox = QLineEdit('128')
+        self.resolution_spinbox.textEdited.connect(self.setProbe)
+        
+        layout = QVBoxLayout()
+        layout.addWidget(self.add_probe_btn)
+        layout.addWidget(self.remove_probe_btn)
+        layout.addWidget(self.list)
+
+        layout.addWidget(QLabel('Position'))
+        layout.addWidget(self.x_spinbox)
+        layout.addWidget(self.y_spinbox)
+        layout.addWidget(self.z_spinbox)
+
+        layout.addWidget(QLabel('Resolution'))
+        layout.addWidget(self.resolution_spinbox)
+
+        self.setLayout(layout)
+
+    def paintEvent(self, e):
+        super().paintEvent(e)
+        count = zenvis.core.getProbeCount()
+        if self.list.count() != count:
+            self.list.clear()
+            self.list.addItems(map(str, range(count)))
+    
+    def add_probe(self):
+        zenvis.core.addProbe()
+        self.new_probe_channel()
+        self.update()
+
+    def remove_probe(self):
+        index = self.list.currentRow()
+        if index == -1:
+            return
+        zenvis.core.removeProbe(index)
+        self.update()
+    
+    def update_item(self):
+        index = self.list.currentRow()
+        if index == -1:
+            return
+        p = zenvis.core.getProbe(index)
+
+        x, y, z = p[0]
+        self.x_spinbox.setValue(x)
+        self.y_spinbox.setValue(y)
+        self.z_spinbox.setValue(z)
+
+        self.resolution_spinbox.setText(str(p[1]))
+
+    def setProbe(self):
+        index = self.list.currentRow()
+        if index == -1:
+            return
+        zenvis.core.setProbeData(
+            index,
+            (
+                self.x_spinbox.value(),
+                self.y_spinbox.value(),
+                self.z_spinbox.value(),
+            ),
+            int(self.resolution_spinbox.text()),
+        )
+
+    def new_probe_channel(self):
+        new_channel = {
+            'X': [ControlPoint(-100, 100)],
+            'Y': [ControlPoint(-100, 100)],
+            'Z': [ControlPoint(-100, 100)],
+            'Resolution': [ControlPoint(0, 1024)],
+        }
+        self.probes[len(self.probes)] = new_channel
+
 class DisplayWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -591,6 +695,8 @@ class DisplayWidget(QWidget):
         zenvis.camera_keyframe = self.camera_keyframe_widget
 
         self.set_light_dialog = SetLightDialog()
+
+        self.set_probe_dialog = SetProbeDialog()
 
     def on_update(self):
         self.view.on_update()
@@ -625,6 +731,9 @@ class DisplayWidget(QWidget):
 
         elif name == 'Set Light':
             self.set_light_dialog.show()
+        
+        elif name == 'Set Probe':
+            self.set_probe_dialog.show()
 
         elif name == 'Record Video':
             checked = act.isChecked()

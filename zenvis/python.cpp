@@ -42,6 +42,13 @@ PYBIND11_MODULE(pylib_zenvis, m) {
     m.def("getLight", zenvis::getLight);
     m.def("clearCameraControl", zenvis::clearCameraControl);
     m.def("getDepthTexture", zenvis::getDepthTexture);
+    m.def("LightProbePass", zenvis::LightProbePass);
+    m.def("setProbe", zenvis::setProbe);
+    m.def("setProbeData", zenvis::setProbeData);
+    m.def("getProbeCount", zenvis::getProbeCount);
+    m.def("addProbe", zenvis::addProbe);
+    m.def("removeProbe", zenvis::removeProbe);
+    m.def("getProbe", zenvis::getProbe);
 }
 
 
