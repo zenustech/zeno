@@ -255,7 +255,7 @@ struct ConstructBendingSprings : INode {
     cnt.setVal(0);
     Vector<VertPair> vertPairs{surfPars.get_allocator(), numRegisteredEdges};
     Vector<VertPair> elePairs{surfPars.get_allocator(), numRegisteredEdges};
-    VertTableT vertTable{};
+    VertTableT vertTable{surfPars.get_allocator(), numRegisteredEdges * 2};
     vertTable.reset(cudaPol, true);
     cudaPol(
         range(numE),
