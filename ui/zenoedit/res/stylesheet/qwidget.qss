@@ -7,3 +7,8 @@ QDialog[cssClass="F-Curve"]
 {
     background: rgb(43,43,43);
 }
+
+QWidget[cssClass="ZTimeline"]
+{
+    background: rgb(43,43,43);
+}

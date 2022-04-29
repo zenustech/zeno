@@ -6,6 +6,11 @@
 class ZSlider;
 class ZIconLabel;
 
+namespace Ui
+{
+    class Timeline;
+}
+
 class ZTimeline : public QWidget
 {
     Q_OBJECT
@@ -24,10 +29,14 @@ public slots:
     void onFrameEditted();
 
 private:
+    void initStyleSheet();
+
     int m_frames;
     ZSlider* m_slider;
     QLineEdit* m_pFrameFrom;
     QLineEdit* m_pFrameTo;
+
+    Ui::Timeline *m_ui;
 };
 
 #endif
