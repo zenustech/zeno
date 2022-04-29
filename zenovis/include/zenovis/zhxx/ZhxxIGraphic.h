@@ -2,13 +2,14 @@
 
 #include <memory>
 #include <zeno/core/IObject.h>
+#include <zenovis/IGraphic.h>
 
 namespace zenovis::zhxx {
 
 struct ZhxxLight;
 struct ZhxxScene;
 
-struct ZhxxIGraphic {
+struct ZhxxIGraphic : IGraphic {
     virtual ~ZhxxIGraphic() = default;
 };
 
@@ -26,10 +27,7 @@ struct ZhxxMakeGraphicVisitor : zeno::IObjectVisitor {
     ZhxxScene *in_scene{};
     std::unique_ptr<ZhxxIGraphic> out_result;
 
-#define _ZENO_PER_XMACRO(TypeName, ...) \
-    virtual void visit(zeno::TypeName *object) override;
-ZENO_XMACRO_IObject(_ZENO_PER_XMACRO)
-#undef _ZENO_PER_XMACRO
+    virtual void visit(zeno::PrimitiveObject *object) override;
 };
 
 std::unique_ptr<ZhxxIGraphic> makeGraphic(ZhxxScene *scene, zeno::IObject *obj);

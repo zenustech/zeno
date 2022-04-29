@@ -28,7 +28,7 @@ Scene::Scene()
     hudGraphics.push_back(makeGraphicGrid(this));
     hudGraphics.push_back(makeGraphicAxis(this));
 
-    renderEngine = makeRenderEngineBate(this);
+    renderEngine = makeRenderEngineDefault(this);
 }
 
 void Scene::draw() {

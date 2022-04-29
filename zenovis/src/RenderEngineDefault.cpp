@@ -5,12 +5,12 @@
 
 namespace zenovis {
 
-struct RenderEngineBate : RenderEngine {
+struct RenderEngineDefault : RenderEngine {
 
     std::unique_ptr<opengl::VAO> vao = std::make_unique<opengl::VAO>();
     Scene *scene;
 
-    RenderEngineBate(Scene *scene_) : scene(scene_) {
+    RenderEngineDefault(Scene *scene_) : scene(scene_) {
         CHECK_GL(glEnable(GL_BLEND));
         CHECK_GL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
         CHECK_GL(glEnable(GL_DEPTH_TEST));
@@ -36,8 +36,8 @@ struct RenderEngineBate : RenderEngine {
     }
 };
 
-std::unique_ptr<RenderEngine> makeRenderEngineBate(Scene *scene) {
-    return std::make_unique<RenderEngineBate>(scene);
+std::unique_ptr<RenderEngine> makeRenderEngineDefault(Scene *scene) {
+    return std::make_unique<RenderEngineDefault>(scene);
 }
 
 }
