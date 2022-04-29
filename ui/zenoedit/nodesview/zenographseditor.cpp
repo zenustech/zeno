@@ -246,7 +246,7 @@ void ZenoGraphsEditor::onSubnetOptionClicked()
     connect(pCreate, &QAction::triggered, this, [=]() {
         bool bOk = false;
         QString newSubgName = QInputDialog::getText(this, tr("create subnet"), tr("new subgraph name:")
-            , QLineEdit::Normal, "subgraph name", &bOk);
+            , QLineEdit::Normal, "SubgraphName", &bOk);
         if (bOk) {
             m_model->newSubgraph(newSubgName);
         }
