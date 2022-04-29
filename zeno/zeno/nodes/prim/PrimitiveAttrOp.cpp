@@ -8,9 +8,6 @@
 
 namespace zeno {
 
-template <class T, class S>
-inline constexpr bool is_decay_same_v = std::is_same_v<std::decay_t<T>, std::decay_t<S>>;
-
 struct PrimitiveFillAttr : INode {
   virtual void apply() override {
     auto prim = get_input<PrimitiveObject>("prim");
@@ -48,7 +45,7 @@ ZENDEFNODE(PrimitiveFillAttr,
     "prim",
     }, /* params: */ {
     {"string", "attrName", "pos"},
-    {"enum float float3", "attrType", ""},
+    {"enum float float3 none", "attrType", "none"},
     }, /* category: */ {
     "primitive",
     }});

@@ -21,6 +21,14 @@
 
 namespace zeno {
 
+struct ZpcInitializer {
+  ZpcInitializer() {
+    printf("Initializing Zpc resource\n");
+    (void)zs::Resource::instance();
+    printf("Initialized Zpc resource!\n");
+  }
+};
+
 using ElasticModel =
     zs::variant<zs::FixedCorotated<float>, zs::NeoHookean<float>,
                 zs::StvkWithHencky<float>>;
@@ -78,13 +86,13 @@ struct ZenoConstitutiveModel : IObject {
   PlasticModel plasticModel;
 };
 
-struct ZenoParticles : IObject {
+struct ZenoParticles : IObjectClone<ZenoParticles> {
   // (i  ) traditional mpm particle,
   // (ii ) lagrangian mesh vertex particle
   // (iii) lagrangian mesh element quadrature particle
-  enum category_e : int { mpm, curve, surface, tet };
-  using particles_t =
-      zs::TileVector<float, 32, unsigned char, zs::ZSPmrAllocator<false>>;
+  // tracker particle for
+  enum category_e : int { mpm, curve, surface, tet, tracker };
+  using particles_t = zs::TileVector<float, 32>;
   auto &getParticles() noexcept { return particles; }
   const auto &getParticles() const noexcept { return particles; }
   auto &getQuadraturePoints() {
@@ -97,37 +105,110 @@ struct ZenoParticles : IObject {
       throw std::runtime_error("quadrature points not binded.");
     return *elements;
   }
+  bool isMeshPrimitive() const noexcept {
+    return elements.has_value() && category != category_e::mpm;
+  }
   auto &getModel() noexcept { return model; }
   const auto &getModel() const noexcept { return model; }
+
+  int numDegree() const noexcept {
+    switch (category) {
+    case category_e::mpm:
+      return 1;
+    case category_e::curve:
+      return 2;
+    case category_e::surface:
+      return 3;
+    case category_e::tet:
+      return 4;
+    case category_e::tracker:
+      return 0;
+    default:
+      return -1;
+    }
+    return -1;
+  }
+  std::size_t numParticles() const noexcept { return particles.size(); }
+  std::size_t numElements() const noexcept { return (*elements).size(); }
+  bool hasSprayedParticles() const noexcept {
+    return sprayedOffset == numParticles();
+  }
 
   particles_t particles{};
   std::optional<particles_t> elements{};
   category_e category{category_e::mpm}; // 0: conventional mpm particle, 1:
                                         // curve, 2: surface, 3: tet
-  std::shared_ptr<PrimitiveObject> prim;
+  std::shared_ptr<PrimitiveObject> prim{};
   ZenoConstitutiveModel model{};
+  std::size_t sprayedOffset{};
+  bool asBoundary = false;
 };
 
-struct ZenoPartition : IObject {
-  using table_t = zs::HashTable<int, 3, int, zs::ZSPmrAllocator<false>>;
+struct ZenoPartition : IObjectClone<ZenoPartition> {
+  using Ti = int; // entry count
+  using table_t = zs::HashTable<int, 3, Ti, zs::ZSPmrAllocator<false>>;
+  using tag_t = zs::Vector<int>;
+  using indices_t = zs::Vector<Ti>;
+
   auto &get() noexcept { return table; }
   const auto &get() const noexcept { return table; }
+
+  auto numEntries() const noexcept { return table.size(); }
+  auto numBoundaryEntries() const noexcept { return (*boundaryIndices).size(); }
+
+  bool hasTags() const noexcept {
+    return tags.has_value() && boundaryIndices.has_value();
+  }
+  auto &getTags() { return *tags; }
+  const auto &getTags() const { return *tags; }
+  auto &getBoundaryIndices() { return *boundaryIndices; }
+  const auto &getBoundaryIndices() const { return *boundaryIndices; }
+
+  void reserveTags() {
+    auto numEntries = (std::size_t)table.size();
+    if (!hasTags()) {
+      tags = tag_t{numEntries, zs::memsrc_e::device, 0};
+      boundaryIndices = indices_t{numEntries, zs::memsrc_e::device, 0};
+    }
+  }
+  void clearTags() {
+    if (hasTags())
+      (*tags).reset(0);
+  }
+
   table_t table;
+  zs::optional<tag_t> tags;
+  zs::optional<indices_t> boundaryIndices;
+  bool requestRebuild{false};
+  bool rebuilt;
 };
 
-struct ZenoGrid : IObject {
+struct ZenoGrid : IObjectClone<ZenoGrid> {
   enum transfer_scheme_e { Empty, Apic, Flip, AsFlip };
   using grid_t =
       zs::Grid<float, 3, 4, zs::grid_e::collocated, zs::ZSPmrAllocator<false>>;
   auto &get() noexcept { return grid; }
   const auto &get() const noexcept { return grid; }
 
+  bool isPicStyle() const noexcept { return transferScheme == "apic"; }
+  bool hasPositionalAdjustment() const noexcept {
+    return transferScheme == "asflip";
+  }
+  bool isFlipStyle() const noexcept {
+    return transferScheme == "flip" || transferScheme == "aflip" ||
+           transferScheme == "sflip" || transferScheme == "asflip";
+  }
+  bool isAffineAugmented() const noexcept {
+    return transferScheme == "apic" || transferScheme == "aflip" ||
+           transferScheme == "asflip";
+  }
+
   grid_t grid;
   std::string transferScheme; //
   std::shared_ptr<ZenoPartition> partition;
 };
 
-struct ZenoIndexBuckets : IObject {
+struct ZenoIndexBuckets : IObjectClone<ZenoIndexBuckets> {
   using buckets_t = zs::IndexBuckets<3, int, int, zs::grid_e::collocated,
                                      zs::ZSPmrAllocator<false>>;
   auto &get() noexcept { return ibs; }
@@ -135,7 +216,7 @@ struct ZenoIndexBuckets : IObject {
   buckets_t ibs;
 };
 
-struct ZenoLevelSet : IObject {
+struct ZenoLevelSet : IObjectClone<ZenoLevelSet> {
   // this supports a wide range of grid types (not just collocated)
   // default channel contains "sdf"
   // default transfer scheme is "unknown"
@@ -150,6 +231,8 @@ struct ZenoLevelSet : IObject {
   using clspls_t = typename basic_ls_t::clspls_t;
   using ccspls_t = typename basic_ls_t::ccspls_t;
   using sgspls_t = typename basic_ls_t::sgspls_t;
+  using dummy_ls_t = typename basic_ls_t::dummy_ls_t;
+  using uniform_vel_ls_t = typename basic_ls_t::uniform_vel_ls_t;
 
   auto &getLevelSet() noexcept { return levelset; }
   const auto &getLevelSet() const noexcept { return levelset; }
@@ -172,6 +255,12 @@ struct ZenoLevelSet : IObject {
   decltype(auto) getBasicLevelSet() noexcept {
     return std::get<basic_ls_t>(levelset);
   }
+  decltype(auto) getSdfVelField() const noexcept {
+    return std::get<const_sdf_vel_ls_t>(levelset);
+  }
+  decltype(auto) getSdfVelField() noexcept {
+    return std::get<const_sdf_vel_ls_t>(levelset);
+  }
   decltype(auto) getLevelSetSequence() const noexcept {
     return std::get<const_transition_ls_t>(levelset);
   }
@@ -180,18 +269,20 @@ struct ZenoLevelSet : IObject {
   }
   template <zs::grid_e category = zs::grid_e::collocated>
   decltype(auto) getSparseLevelSet(zs::wrapv<category> = {}) const noexcept {
-    return std::get<basic_ls_t>(levelset).getLevelSet<spls_t<category>>();
+    return std::get<basic_ls_t>(levelset)
+        .template getLevelSet<spls_t<category>>();
   }
   template <zs::grid_e category = zs::grid_e::collocated>
   decltype(auto) getSparseLevelSet(zs::wrapv<category> = {}) noexcept {
-    return std::get<basic_ls_t>(levelset).getLevelSet<spls_t<category>>();
+    return std::get<basic_ls_t>(levelset)
+        .template getLevelSet<spls_t<category>>();
   }
 
   levelset_t levelset;
   std::string transferScheme;
 };
 
-struct ZenoBoundary : IObject {
+struct ZenoBoundary : IObjectClone<ZenoBoundary> {
   using levelset_t = typename ZenoLevelSet::levelset_t;
 
   template <typename LsView> auto getBoundary(LsView &&lsv) const noexcept {

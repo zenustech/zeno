@@ -7,8 +7,11 @@ import subprocess
 import json
 import sys
 import os
+import uuid
+import hashlib
 from multiprocessing import Process
 from ..utils import get_executable
+from ..ui.utils import asset_path
 
 
 g_proc = None
@@ -55,11 +58,21 @@ def launchProgram(prog, nframes, start_frame):
     global g_proc
     killProcess()
     cleanIOPath()
-    g_iopath = tempfile.mkdtemp(prefix='zenvis-')
+    cache_dir = ''
+    if os.path.exists(asset_path('cache_path.txt')):
+        with open(asset_path('cache_path.txt'), 'r') as f:
+            cache_dir = f.read()
+    if cache_dir == '':
+        g_iopath = tempfile.mkdtemp(prefix='zenvis-')
+    else:
+        uid = uuid.uuid4().bytes
+        uid = hashlib.md5(uid).hexdigest()[:8]
+        g_iopath = os.path.join(cache_dir, uid)
+        os.mkdir(g_iopath)
     print('IOPath:', g_iopath)
     if os.environ.get('ZEN_SPROC') or os.environ.get('ZEN_DOFORK'):
         from . import run
-        _launch_mproc(run.runScene, prog['graph'], nframes, g_iopath)
+        _launch_mproc(run.runScene, prog['graph'], nframes, g_iopath, start_frame)
     else:
         filepath = os.path.join(g_iopath, 'prog.zsg')
         with open(filepath, 'w') as f:

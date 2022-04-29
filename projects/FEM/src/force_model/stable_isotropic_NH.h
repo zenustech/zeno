@@ -174,6 +174,12 @@ public:
         // std::cout << "OUTPUT DDPSI : " << std::endl << Hessian << std::endl;
 
         ddpsi = dFactdF.transpose() * ddpsi * dFactdF; 
+
+        if(std::isnan(ddpsi.norm())){
+            std::cout << "ActInv" << std::endl << ActInv << std::endl;
+            std::cout << "dFactdF : " << std::endl << dFactdF << std::endl;
+            std::cout << "Act : \n" << attrs.emp.Act << std::endl;
+        }
     }
 
     void ComputePrincipalStress(const TetAttributes& attrs,const Vec3d& strain,Vec3d& stress) const override {

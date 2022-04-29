@@ -2,9 +2,11 @@
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/StringObject.h>
 #include <zeno/types/NumericObject.h>
+#include <zeno/extra/GlobalState.h>
 #include <sstream>
 #include <iostream>
 #include <cmath>
+#include <map>
 
 namespace zeno { // credits by zhouhang
     using zeno::vec2f;
@@ -307,4 +309,184 @@ ZENDEFNODE(PrimitiveCurvemap, {
     },
     {"primitive"},
 });
+
+    struct ControlPoint {
+        int f;
+        float v;
+        std::string cp_type;
+        zeno::vec2f left_handler;
+        zeno::vec2f right_handler;
+    };
+
+
+    static zeno::vec4f query_cur_value(
+        std::map<std::string, std::vector<ControlPoint>> keyframes_table,
+        int cur_frame
+    ) {
+        zeno::vec4f v;
+        std::array<std::string, 4> channel_names = {
+            "x",
+            "y",
+            "z",
+            "w",
+        };
+        for (size_t i = 0; i < 4; i++) {
+            auto& keyframes = keyframes_table[channel_names[i]];
+            std::vector<int> less;
+            std::vector<int> more;
+            for (auto it = keyframes.begin(); it != keyframes.end(); it++) {
+                if (it->f <= cur_frame) {
+                    less.push_back(it->f);
+                } else {
+                    more.push_back(it->f);
+                }
+            }
+            if (less.size() == 0) {
+                v[i] = 0;
+            } else if (more.size() == 0 || less.back() == cur_frame) {
+                v[i] = keyframes[less.size() -1].v;
+            } else {
+                ControlPoint p = keyframes[less.size() -1];
+                ControlPoint n = keyframes[less.size()];
+                float t = (float)(cur_frame - less.back()) / (more.front() - less.back());
+                if (p.cp_type == "constant") {
+                    v[i] = p.v;
+                } else if (p.cp_type == "straight") {
+                    v[i] = lerp(p.v, n.v, t);
+                } else {
+                    float x_scale = n.f - p.f;
+                    float y_scale = n.v - p.v;
+
+                    v[i] = eval_bezier_value(
+                        zeno::vec2f(p.f, p.v),
+                        zeno::vec2f(n.f, n.v),
+                        zeno::vec2f(p.f, p.v) + p.right_handler,
+                        zeno::vec2f(n.f, n.v) + n.left_handler,
+                        (float)cur_frame
+                    );
+
+                }
+            }
+        }
+        return v;
+
+    }
+#ifdef ZENO_GLOBALSTATE
+    struct DynamicNumber : zeno::INode {
+        virtual void apply() override {
+            std::map<std::string, std::vector<ControlPoint>> keyframes_table;
+            auto _tmp = get_param<std::string>("_TMP");
+            auto _points = get_param<std::string>("_CONTROL_POINTS");
+            zeno::vec4f v;
+            if (_tmp.size() > 0) {
+                std::stringstream ss(_tmp);
+                float x = 0;
+                float y = 0;
+                float z = 0;
+                float w = 0;
+                ss >> x >> y >> z >> w;
+                v = zeno::vec4f(x, y, z, w);
+
+            } else {
+                auto type = get_param<std::string>("type");
+                std::stringstream ss(_points);
+                int channel_count;
+                ss >> channel_count;
+                int max_frame = 0;
+                for (int i = 0; i < channel_count; i++) {
+                    std::string channel_name;
+                    ss >> channel_name;
+                    int frame_count = 0;
+                    ss >> frame_count;
+                    keyframes_table[channel_name] = std::vector<ControlPoint>();
+                    for (int j = 0; j < frame_count; j++) {
+                        ControlPoint cp;
+                        ss >> cp.f;
+                        ss >> cp.v;
+                        ss >> cp.cp_type;
+                        ss >> cp.left_handler[0];
+                        ss >> cp.left_handler[1];
+                        ss >> cp.right_handler[0];
+                        ss >> cp.right_handler[1];
+                        keyframes_table[channel_name].emplace_back(cp);
+                        max_frame = cp.f > max_frame? cp.f : max_frame;
+                    }
+                }
+                int cur_frame = has_input("frame") ? get_input<NumericObject>("frame")->get<int>() : zeno::state.frameid;
+                if (cur_frame > max_frame) {
+                    if (type == "zero") {
+                        v = zeno::vec4f(0, 0, 0, 0);
+                    } else if (type == "cycle") {
+                        cur_frame = cur_frame % max_frame;
+                        v = query_cur_value(keyframes_table, cur_frame);
+                    } else {
+                        v = query_cur_value(keyframes_table, cur_frame);
+                    }
+                } else {
+                    v = query_cur_value(keyframes_table, cur_frame);
+                }
+            }
+
+            set_output("x", std::make_shared<zeno::NumericObject>(v[0]));
+            set_output("y", std::make_shared<zeno::NumericObject>(v[1]));
+            set_output("z", std::make_shared<zeno::NumericObject>(v[2]));
+            set_output("w", std::make_shared<zeno::NumericObject>(v[3]));
+            set_output("vec3", std::make_shared<zeno::NumericObject>(zeno::vec3f(v[0], v[1], v[2])));
+        }
+    };
+    ZENDEFNODE(
+        DynamicNumber,
+        {
+            // inputs
+            {
+                "frame"
+            },
+            // outpus
+            {
+                "vec3",
+                "x",
+                "y",
+                "z",
+                "w",
+            },
+            // params
+            {
+                {
+                    "enum 100 10 1 0.1 0.01 0.001",
+                    "speed",
+                    "1",
+                },
+                {
+                    "floatslider",
+                    "x",
+                    "0",
+                },
+                {
+                    "floatslider",
+                    "y",
+                    "0",
+                },
+                {
+                    "floatslider",
+                    "z",
+                    "0",
+                },
+                {
+                    "floatslider",
+                    "w",
+                    "0",
+                },
+                {
+                    "enum clamp zero cycle",
+                    "type",
+                    "clamp",
+                },
+            },
+            // category
+            {
+                "numeric",
+            }
+        }
+    );
+#endif
 }

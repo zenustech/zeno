@@ -19,11 +19,15 @@ struct NumericObject : IObjectClone<NumericObject> {
   NumericObject(NumericValue value) : value(value) {}
 
   template <class T>
-  T get() {
-    if (!is<T>())
-        throw Exception((std::string)"NumericObject expect `" + typeid(T).name()
-                + "`, got index `" + "0123456789abcdefghijklmnopqrstuvwxyz"[value.index()] + "`");
-    return std::get<T>(value);
+  T get() const {
+    return std::visit([] (auto const &val) -> T {
+        using V = std::decay_t<decltype(val)>;
+        if constexpr (!std::is_constructible_v<T, V>) {
+            throw Exception((std::string)"NumericObject expect `" + typeid(T).name() + "`, got `" + typeid(V).name());
+        } else {
+            return T(val);
+        }
+    }, value);
   }
 
   template <class T>

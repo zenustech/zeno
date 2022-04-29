@@ -1,11 +1,12 @@
-#include "../ZensimMesh.h"
+#include "../Structures.hpp"
 #include "../ZensimGeometry.h"
+#include "../ZensimMesh.h"
 #include "zensim/omp/execution/ExecutionPolicy.hpp"
-#include <zeno/ListObject.h>
-#include <zeno/NumericObject.h>
-#include <zeno/PrimitiveObject.h>
-#include <zeno/StringObject.h>
 #include <zeno/logger.h>
+#include <zeno/types/ListObject.h>
+#include <zeno/types/NumericObject.h>
+#include <zeno/types/PrimitiveObject.h>
+#include <zeno/types/StringObject.h>
 #include <zeno/utils/UserData.h>
 #include <zeno/zeno.h>
 
@@ -37,27 +38,30 @@ struct MakeFEMMeshFromFile2 : zeno::INode {
       v = vec3::zeros();
     res->_v = res->_V;
 
-    res->LoadElementsFromFile(ele_file);  // _mesh->quads, _mesh->tris, _tets, _tris
+    res->LoadElementsFromFile(
+        ele_file); // _mesh->quads, _mesh->tris, _tets, _tris
 
     res->LoadBindingPoints(bou_file); // _closeBindPoints, _farBindPoints
-    res->_bouDoFs.resize((res->_closeBindPoints.size() + res->_farBindPoints.size()) * 3);
+    res->_bouDoFs.resize(
+        (res->_closeBindPoints.size() + res->_farBindPoints.size()) * 3);
     size_t base = 0;
-    for(size_t i = 0; i != res->_closeBindPoints.size(); ++i) {
-        auto vert_idx = res->_closeBindPoints[i];
-        res->_bouDoFs[base++] = vert_idx * 3 + 0;
-        res->_bouDoFs[base++] = vert_idx * 3 + 1;
-        res->_bouDoFs[base++] = vert_idx * 3 + 2;
+    for (size_t i = 0; i != res->_closeBindPoints.size(); ++i) {
+      auto vert_idx = res->_closeBindPoints[i];
+      res->_bouDoFs[base++] = vert_idx * 3 + 0;
+      res->_bouDoFs[base++] = vert_idx * 3 + 1;
+      res->_bouDoFs[base++] = vert_idx * 3 + 2;
     }
-    for(size_t i = 0; i != res->_farBindPoints.size(); ++i) {
-        auto vert_idx = res->_farBindPoints[i];
-        res->_bouDoFs[base++] = vert_idx * 3 + 0;
-        res->_bouDoFs[base++] = vert_idx * 3 + 1;
-        res->_bouDoFs[base++] = vert_idx * 3 + 2;
+    for (size_t i = 0; i != res->_farBindPoints.size(); ++i) {
+      auto vert_idx = res->_farBindPoints[i];
+      res->_bouDoFs[base++] = vert_idx * 3 + 0;
+      res->_bouDoFs[base++] = vert_idx * 3 + 1;
+      res->_bouDoFs[base++] = vert_idx * 3 + 2;
     }
 
     {
-      auto tmp= res->_bouDoFs;
-      zs::radix_sort(zs::omp_exec(), tmp.begin(), tmp.end(), res->_bouDoFs.begin());
+      auto tmp = res->_bouDoFs;
+      zs::radix_sort(zs::omp_exec(), tmp.begin(), tmp.end(),
+                     res->_bouDoFs.begin());
     }
     res->UpdateDoFsMapping(); // _freeDoFs, _DoF2FreeDoF
 
@@ -92,7 +96,7 @@ struct MakeFEMMeshFromFile2 : zeno::INode {
     res->_elmDmInv.resize(nm_elms);
     res->_elmdFdx.resize(nm_elms);
 
-    res->DoPreComputation();  // volume, mass, minv, dminv, dfdx
+    res->DoPreComputation(); // volume, mass, minv, dminv, dfdx
 
     // res->relocate(zs::memsrc_e::device, 0);
 
@@ -121,8 +125,6 @@ struct MakeIdentityMatrix2 : zeno::INode {
   }
 };
 
-ZENDEFNODE(MakeIdentityMatrix2, {
-  {}, {"eyeMat4"}, {}, {"FEM"}
-});
+ZENDEFNODE(MakeIdentityMatrix2, {{}, {"eyeMat4"}, {}, {"FEM"}});
 
 } // namespace zeno

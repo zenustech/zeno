@@ -9,6 +9,9 @@ int DiffSVD::SVD_Decomposition(const Mat3x3d& F,Mat3x3d& U, Vec3d& Sigma,Mat3x3d
     V = svd.matrixV();
     Sigma = svd.singularValues();
 
+    // Mat3x3d R,T;
+    // igl::polar_svd(F,R,T,U,Sigma,V);
+
     FEM_Scaler U_det = U.determinant();
     FEM_Scaler V_det = V.determinant();
     FEM_Scaler L_det = U_det * V_det;
@@ -18,11 +21,15 @@ int DiffSVD::SVD_Decomposition(const Mat3x3d& F,Mat3x3d& U, Vec3d& Sigma,Mat3x3d
     else if(U_det > 0 && V_det < 0)
         V.col(2) *= L_det;
     else if(U_det < 0 && V_det < 0){
+        // std::cout << "IMPOSSIBLE ARRIVING HERE" << std::endl;
         U.col(2) *= -1;
         V.col(2) *= -1;
     }
 
     Sigma(2) *= L_det;
+
+    // Mat3x3d R,T;
+    // igl::polar_svd(F,R,T,U,Sigma,V);
 
     return 0;
 }
@@ -50,7 +57,9 @@ int DiffSVD::Polar_Decomposition(const Mat3x3d& elm_F, Mat3x3d& elm_R, Mat3x3d& 
     int state = SVD_Decomposition(elm_F,U,sigma,V);
     elm_R = U * V.transpose();
     elm_S = V * sigma.asDiagonal() * V.transpose();
-    return state;
+
+    // igl::polar_svd(elm_F,elm_R,elm_S);
+    return 0;
 }
 
 void DiffSVD::Compute_dRdF(size_t k,size_t l,const Mat3x3d& U,const Mat3x3d& V,const Vec3d& sigma,Mat3x3d& dR) {

@@ -91,6 +91,12 @@ ZENO_API bool INode::requireInput(std::string const &ds) {
     inputs[ds] = ref;
     return true;
 }
+ZENO_API bool INode::requireInput2(std::string const &ds) {
+    auto it = inputBounds.find(ds);
+    if (it == inputBounds.end())
+        return false;
+    return true;
+}
 
 ZENO_API void INode::doApply() {
     if (checkApplyCondition()) {

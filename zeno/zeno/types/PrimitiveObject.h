@@ -13,6 +13,9 @@
 
 namespace zeno {
 
+struct MaterialObject;
+struct InstancingObject;
+
 struct PrimitiveObject : IObjectClone<PrimitiveObject> {
     AttrVector<vec3f> verts;
     AttrVector<int> points;
@@ -22,6 +25,9 @@ struct PrimitiveObject : IObjectClone<PrimitiveObject> {
 
     AttrVector<int> loops;
     AttrVector<std::pair<int, int>> polys;
+
+    std::shared_ptr<MaterialObject> mtl;
+    std::shared_ptr<InstancingObject> inst;
 
     // deprecated:
     template <class Accept = std::tuple<vec3f, float>, class F>

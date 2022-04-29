@@ -3,8 +3,11 @@
 #include <array>
 #include <cmath>
 #include <cstdint>
+#include <type_traits>
 
 namespace zeno {
+template <class T, class S>
+constexpr bool is_decay_same_v = std::is_same_v<std::decay_t<T>, std::decay_t<S>>;
 
 /* main class definition */
 
@@ -26,7 +29,7 @@ template <size_t N, class T> struct vec : std::array<T, N> {
     }
   }
 
-  operator std::array<T, N>() {
+  operator std::array<T, N>() const {
     std::array<T, N> res;
     for (size_t i = 0; i < N; i++) {
       res[i] = (*this)[i];
@@ -69,11 +72,13 @@ template <size_t N, class T> struct vec : std::array<T, N> {
 
 /* type traits */
 
-template <class T> struct is_vec : std::false_type {
+template <class T>
+struct is_vec : std::false_type {
   static constexpr size_t _N = 1;
 };
 
-template <size_t N, class T> struct is_vec<vec<N, T>> : std::true_type {
+template <size_t N, class T>
+struct is_vec<vec<N, T>> : std::true_type {
   static constexpr size_t _N = N;
 };
 
@@ -83,7 +88,8 @@ inline constexpr bool is_vec_v = is_vec<std::decay_t<T>>::value;
 template <class T>
 inline constexpr size_t is_vec_n = is_vec<std::decay_t<T>>::_N;
 
-template <class T, class S> struct is_vec_promotable : std::false_type {
+template <class T, class S>
+struct is_vec_promotable : std::false_type {
   using type = void;
 };
 
@@ -102,7 +108,8 @@ struct is_vec_promotable<T, vec<N, T>> : std::true_type {
   using type = vec<N, T>;
 };
 
-template <class T> struct is_vec_promotable<T, T> : std::true_type {
+template <class T>
+struct is_vec_promotable<T, T> : std::true_type {
   using type = T;
 };
 
@@ -114,49 +121,54 @@ template <class T, class S>
 using is_vec_promotable_t =
     typename is_vec_promotable<std::decay_t<T>, std::decay_t<S>>::type;
 
-template <class T, class S> struct is_vec_castable : std::false_type {};
+template <class T, class S>
+struct is_vec_castable : std::false_type {};
 template <class T, size_t N>
 struct is_vec_castable<vec<N, T>, T> : std::true_type {};
 
 template <class T, size_t N>
 struct is_vec_castable<T, vec<N, T>> : std::false_type {};
 
-template <class T> struct is_vec_castable<T, T> : std::true_type {};
+template <class T>
+struct is_vec_castable<T, T> : std::true_type {};
 
 template <class T, class S>
 inline constexpr bool is_vec_castable_v =
     is_vec_castable<std::decay_t<T>, std::decay_t<S>>::value;
 
-template <class T> struct decay_vec { using type = T; };
+template <class T>
+struct decay_vec { using type = T; };
 
-template <size_t N, class T> struct decay_vec<vec<N, T>> { using type = T; };
+template <size_t N, class T>
+struct decay_vec<vec<N, T>> { using type = T; };
 
-template <class T> using decay_vec_t = typename decay_vec<T>::type;
+template <class T>
+using decay_vec_t = typename decay_vec<T>::type;
 
 /* converter functions */
 
 template <class T, std::enable_if_t<!is_vec_v<T>, bool> = true>
-auto vec_to_other(T const &a) {
+inline auto vec_to_other(T const &a) {
   return a;
 }
 
 template <class OtherT, class T>
-auto vec_to_other(vec<2, T> const &a) {
+inline auto vec_to_other(vec<2, T> const &a) {
   return OtherT(a[0], a[1]);
 }
 
 template <class OtherT, class T>
-auto vec_to_other(vec<3, T> const &a) {
+inline auto vec_to_other(vec<3, T> const &a) {
   return OtherT(a[0], a[1], a[2]);
 }
 
 template <class OtherT, class T>
-auto vec_to_other(vec<4, T> const &a) {
+inline auto vec_to_other(vec<4, T> const &a) {
   return OtherT(a[0], a[1], a[2], a[3]);
 }
 
 template <class OtherT, size_t N, class T>
-auto vec_to_other(vec<N, T> const &a) {
+inline auto vec_to_other(vec<N, T> const &a) {
   OtherT res;
   for (size_t i = 0; i < N; i++) {
     res[i] = a[i];
@@ -164,7 +176,8 @@ auto vec_to_other(vec<N, T> const &a) {
   return res;
 }
 
-template <size_t N, class OtherT> auto other_to_vec(OtherT const &x) {
+template <size_t N, class OtherT>
+inline auto other_to_vec(OtherT const &x) {
   vec<N, std::decay_t<decltype(x[0])>> res;
   for (size_t i = 0; i < N; i++) {
     res[i] = x[i];
@@ -437,6 +450,11 @@ inline auto clamp(T const &x, S const &a, F const &b) {
   return min(max(x, a), b);
 }
 
+template <class T, class S>
+inline auto minmax(T const &a, S const &b) {
+  return std::make_pair(min(a, b), max(a, b));
+}
+
 template <size_t N, class T, std::enable_if_t<!is_vec_v<T>, bool> = true>
 inline auto tovec(T const &x) {
   return vec<N, T>(x);
@@ -483,5 +501,30 @@ using vec4L = vec<4, uintptr_t>;
 using vec4Q = vec<4, uint64_t>;
 using vec4H = vec<4, uint16_t>;
 using vec4C = vec<4, uint8_t>;
+
+}
+
+/* specialization for structual-binding */
+
+namespace std {
+
+template <size_t N, class T>
+struct tuple_size<::zeno::vec<N, T>> : integral_constant<size_t, N> {
+};
+
+template <size_t I, size_t N, class T>
+struct tuple_element<I, ::zeno::vec<N, T>> {
+    using type = enable_if_t<(I < N), T>;
+};
+
+template <size_t I, size_t N, class T>
+T const &get(::zeno::vec<N, T> const &t) {
+    return t[I];
+}
+
+template <size_t I, size_t N, class T>
+T &get(::zeno::vec<N, T> &t) {
+    return t[I];
+}
 
 }

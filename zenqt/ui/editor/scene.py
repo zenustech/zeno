@@ -118,15 +118,28 @@ class QDMFindBar(QWidget):
     def one_scene_search(self, text, scene):
         result = []
         for n in scene.nodes:
-            if n.name in ('PortalIn', 'PortalOut', 'SubInput', 'SubOutput'):
-                name = n.params['name'].getValue().lower()
-                if text in name:
-                    result.append((scene.name, n))
-                    continue
+            need_to_add = False
+            if type(n) == QDMGraphicsNode_Blackboard:
+                title = n.title.toPlainText().lower()
+                content = n.content.toPlainText().lower()
+                if text in title or text in content:
+                    need_to_add = True
+            else:
+                for _, s in n.inputs.items():
+                    v = s.getValue()
+                    if type(v) == str and text in v.lower():
+                        need_to_add = True
 
-            name = n.name.lower()
-            ident = n.ident.lower()
-            if text in name or text in ident:
+                for _, s in n.params.items():
+                    v = s.getValue()
+                    if type(v) == str and text in v.lower():
+                        need_to_add = True
+
+                name = n.name.lower()
+                ident = n.ident.lower()
+                if text in name or text in ident:
+                    need_to_add = True
+            if need_to_add:
                 result.append((scene.name, n))
 
         return result

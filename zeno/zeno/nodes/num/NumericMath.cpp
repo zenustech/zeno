@@ -2,6 +2,9 @@
 #include <zeno/types/NumericObject.h>
 #include <zeno/utils/orthonormal.h>
 //#include <zeno/utils/logger.h>
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
 
 namespace zeno {
 namespace {
@@ -58,6 +61,31 @@ struct OrthonormalBase : INode {
 };
 
 ZENDEFNODE(OrthonormalBase, {
+    {{"vec3f", "normal", "0,0,1"}, {"vec3f", "tangent", "0,1,0"}},
+    {{"vec3f", "normal"}, {"vec3f", "tangent"}, {"vec3f", "bitangent"}},
+    {},
+    {"math"},
+});
+
+
+struct PixarOrthonormalBase : INode {
+    virtual void apply() override {
+        auto normal = get_input<NumericObject>("normal")->get<vec3f>();
+        vec3f tangent{}, bitangent{};
+        if (has_input("tangent")) {
+            tangent = get_input<NumericObject>("tangent")->get<vec3f>();
+            guidedPixarONB(normal, tangent, bitangent);
+        } else {
+            pixarONB(normal, tangent, bitangent);
+        }
+
+        set_output("normal", std::make_shared<NumericObject>(normal));
+        set_output("tangent", std::make_shared<NumericObject>(tangent));
+        set_output("bitangent", std::make_shared<NumericObject>(bitangent));
+    }
+};
+
+ZENDEFNODE(PixarOrthonormalBase, {
     {{"vec3f", "normal", "0,0,1"}, {"vec3f", "tangent", "0,1,0"}},
     {{"vec3f", "normal"}, {"vec3f", "tangent"}, {"vec3f", "bitangent"}},
     {},
@@ -147,6 +175,52 @@ ZENDEFNODE(ProjectAndNormalize, {
     {"float", "length"},
     {"float", "height"},
     {"float", "phase"},
+    },
+    {},
+    {"math"},
+});
+
+struct CalcDirectionFromAngle : INode {
+    virtual void apply() override {
+        auto plane = get_input2<std::string>("plane");
+
+        std::array<vec3f, 2> orb;
+        vec3f X(1, 0, 0), Y(0, 1, 0), Z(0, 0, 1);
+        if (plane == "XY")
+            orb = {X, Y};
+        else if (plane == "YX")
+            orb = {Y, X};
+        else if (plane == "YZ")
+            orb = {Y, Z};
+        else if (plane == "ZY")
+            orb = {Z, Y};
+        else if (plane == "ZX")
+            orb = {Z, X};
+        else if (plane == "XZ")
+            orb = {X, Z};
+        else
+            throw Exception("bad plane enum: " + plane);
+
+        auto angle = get_input<NumericObject>("angle")->get<float>();
+        auto length = get_input<NumericObject>("length")->get<float>();
+        angle *= M_PI / 180;
+
+        auto orb0v = std::cos(angle) * length;
+        auto orb1v = std::sin(angle) * length;
+        auto direction = orb[0] * orb0v + orb[1] * orb1v;
+
+        set_output("direction", std::make_shared<NumericObject>(direction));
+    }
+};
+
+ZENDEFNODE(CalcDirectionFromAngle, {
+    {
+    {"float", "angle", "0"},
+    {"enum XY YX YZ ZY ZX XZ", "plane", "XY"},
+    {"float", "length", "1"},
+    },
+    {
+    {"vec3f", "direction"},
     },
     {},
     {"math"},

@@ -33,6 +33,13 @@ namespace hg::OpenGL {
       CHECK_GL(glVertexAttribPointer(index, count, type, GL_FALSE, stride, (void *)offset));
     }
 
+    void attribute_p(GLuint index, void *address, size_t stride, GLuint type, GLuint count) const {
+      CHECK_GL(glEnableVertexAttribArray(index));
+      CHECK_GL(glVertexAttribPointer(index, count, type, GL_FALSE, stride, address));
+    }
+
+    void attrib_divisor(GLuint index, GLuint divisor) const { CHECK_GL(glVertexAttribDivisorARB(index, divisor)); }
+
     void disable_attribute(GLuint index) const { CHECK_GL(glDisableVertexAttribArray(index)); }
 
     void bind() const { CHECK_GL(glBindBuffer(target, buf)); }

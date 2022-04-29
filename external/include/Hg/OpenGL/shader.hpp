@@ -2,6 +2,9 @@
 
 namespace hg::OpenGL {
 
+  struct ShaderCompileException {
+  };
+
   struct Shader {
     GLuint sha;
     GLuint target{GL_ARRAY_BUFFER};
@@ -23,7 +26,7 @@ namespace hg::OpenGL {
         CHECK_GL(glGetShaderInfoLog(sha, logLength, &logLength, log.data()));
         log[logLength] = 0;
         printf("Error compiling shader:\n%s\n%s\n", source.c_str(), log.data());
-        abort();
+        throw ShaderCompileException();
       }
     }
   };
@@ -48,7 +51,7 @@ namespace hg::OpenGL {
         CHECK_GL(glGetProgramInfoLog(pro, logLength, &logLength, log.data()));
         log[logLength] = 0;
         printf("Error linking program:\n%s\n", log.data());
-        abort();
+        throw ShaderCompileException();
       }
     }
 
