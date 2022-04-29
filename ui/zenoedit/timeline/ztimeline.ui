@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>875</width>
-    <height>95</height>
+    <width>854</width>
+    <height>69</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -48,14 +48,14 @@
      <item>
       <widget class="QPushButton" name="btnRun">
        <property name="text">
-        <string>Run</string>
+        <string>run</string>
        </property>
       </widget>
      </item>
      <item>
       <widget class="QPushButton" name="btnKill">
        <property name="text">
-        <string>Kill</string>
+        <string>kill</string>
        </property>
       </widget>
      </item>
@@ -99,10 +99,22 @@
      <item>
       <widget class="QLineEdit" name="lineEdit">
        <property name="sizePolicy">
-        <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+        <sizepolicy hsizetype="Fixed" vsizetype="Expanding">
          <horstretch>0</horstretch>
          <verstretch>0</verstretch>
         </sizepolicy>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>73</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>73</width>
+         <height>16777215</height>
+        </size>
        </property>
       </widget>
      </item>
@@ -136,7 +148,7 @@
      <item>
       <widget class="QPushButton" name="pushButton_8">
        <property name="text">
-        <string>PushButton</string>
+        <string/>
        </property>
       </widget>
      </item>
@@ -147,21 +159,21 @@
      <item>
       <widget class="QLineEdit" name="editFrom">
        <property name="sizePolicy">
-        <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+        <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
          <horstretch>0</horstretch>
          <verstretch>0</verstretch>
         </sizepolicy>
        </property>
        <property name="minimumSize">
         <size>
-         <width>73</width>
-         <height>28</height>
+         <width>56</width>
+         <height>0</height>
         </size>
        </property>
        <property name="maximumSize">
         <size>
-         <width>73</width>
-         <height>28</height>
+         <width>56</width>
+         <height>16777215</height>
         </size>
        </property>
       </widget>
@@ -172,21 +184,21 @@
      <item>
       <widget class="QLineEdit" name="editTo">
        <property name="sizePolicy">
-        <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+        <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
          <horstretch>0</horstretch>
          <verstretch>0</verstretch>
         </sizepolicy>
        </property>
        <property name="minimumSize">
         <size>
-         <width>73</width>
-         <height>28</height>
+         <width>56</width>
+         <height>0</height>
         </size>
        </property>
        <property name="maximumSize">
         <size>
-         <width>73</width>
-         <height>28</height>
+         <width>56</width>
+         <height>16777215</height>
         </size>
        </property>
       </widget>

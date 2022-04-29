@@ -30,11 +30,9 @@ public slots:
 
 private:
     void initStyleSheet();
+    void initSignals();
 
     int m_frames;
-    ZSlider* m_slider;
-    QLineEdit* m_pFrameFrom;
-    QLineEdit* m_pFrameTo;
 
     Ui::Timeline *m_ui;
 };

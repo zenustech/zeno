@@ -31,7 +31,7 @@ void InnerShadowEffect::draw(QPainter *painter)
     qreal w = sz.width(), h = sz.height();
     painter->drawPixmap(QPointF(0, 0), pixmap);
 
-    qreal left_padding = 2, vpadding = 1;
+    qreal left_padding = 4, vpadding = 1;
 
     QWidget* hostWid = const_cast<QWidget*>(this->source()->widget());
 
@@ -50,9 +50,9 @@ void InnerShadowEffect::draw(QPainter *painter)
     }
 
     painter->setPen(QPen(clrUpperShadow, 1));
-    painter->drawLine(left_padding, vpadding, sz.width() - 2 * left_padding, vpadding);
-    painter->drawArc(1, 1, 1, 1, 90 * 16, 180 * 16);
-    painter->drawArc(w - 3, 1, 1, 1, 0 * 16, 90 * 16);
+    painter->drawLine(left_padding, vpadding, sz.width() - 1 * left_padding, vpadding);
+    //painter->drawArc(1, 1, 1, 1, 90 * 16, 180 * 16);
+    //painter->drawArc(w - 3, 1, 1, 1, 0 * 16, 90 * 16);
 
     painter->setPen(QPen(clrDownShadow, 1));
     painter->drawLine(left_padding, sz.height() - vpadding - 1, sz.width(), sz.height() - vpadding - 1);

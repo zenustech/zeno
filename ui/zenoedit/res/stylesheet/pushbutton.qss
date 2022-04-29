@@ -143,3 +143,60 @@ QPushButton[cssClass="curve-preset"]:pressed
 	background-color: rgb(26, 26, 26);
 	color: #8A8A8C;
 }
+
+QPushButton[cssClass="timeline"]
+{
+	padding-top: 3px;
+	padding-left: 13px;
+	padding-right: 13px;
+	padding-bottom: 4px;
+	border: 1px solid rgba(0,0,0,1);
+    border-radius: 4px;
+	background-color: #2B2B2B;
+	font: bold 14px 'HarmonyOS Sans';
+	color: #8A8A8C;
+}
+
+QPushButton[cssClass="timeline"]:pressed
+{
+	background-color: rgb(26, 26, 26);
+	color: #8A8A8C;
+}
+
+QPushButton#btnRun
+{
+	padding-top: 3px;
+	padding-left: 13px;
+	padding-right: 13px;
+	padding-bottom: 4px;
+	border: 1px solid rgba(0,0,0,1);
+    border-radius: 4px;
+	background-color: #2B2B2B;
+	font: bold 14px 'HarmonyOS Sans';
+	color: #8A8A8C;
+}
+
+QPushButton#btnRun:pressed
+{
+	background-color: rgb(26, 26, 26);
+	color: #8A8A8C;
+}
+
+QPushButton#btnKill
+{
+	padding-top: 3px;
+	padding-left: 13px;
+	padding-right: 13px;
+	padding-bottom: 4px;
+	border: 0.5px solid rgba(0,0,0,1);
+    border-radius: 4px;
+	background-color: #2B2B2B;
+	font: bold 14px 'HarmonyOS Sans';
+	color: rgb(145,47,48);
+}
+
+QPushButton#btnKill:pressed
+{
+	background-color: rgb(26, 26, 26);
+	color: rgb(145,47,48);
+}
