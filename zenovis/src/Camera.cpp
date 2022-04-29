@@ -20,6 +20,8 @@ void Camera::setCamera(glm::vec3 pos, glm::vec3 front, glm::vec3 up, float fov, 
     }
     m_lodradius = radius;
     m_lodcenter = pos;
+    m_lodfront = front;
+    m_lodup = up;
     m_near = fnear;
     m_far = ffar;
     m_fov = fov;

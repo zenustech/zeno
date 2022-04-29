@@ -11,11 +11,15 @@ namespace zenovis {
 struct Camera {
     int m_nx{512}, m_ny{512};
     glm::mat4x4 m_view{1}, m_proj{1};
+
     float m_near = 0.1f;
     float m_far = 20000.0f;
     float m_fov = 45.f;
+
     float m_lodradius = 1.0f;
-    glm::vec3 m_lodcenter{0};
+    glm::vec3 m_lodcenter{0, 0, -1};
+    glm::vec3 m_lodfront{0, 0, 1};
+    glm::vec3 m_lodup{0, 1, 0};
 
     float getAspect() const {
         return (float)m_nx / (float)m_ny;

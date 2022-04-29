@@ -1,5 +1,6 @@
 #pragma once
 
+#include <zenovis/Camera.h>
 #include <array>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/mat4x4.hpp>
@@ -29,6 +30,33 @@ struct ZhxxCamera {
     glm::vec3 m_camPos{0, 0, 1};
     glm::vec3 m_camView{0, 0, -1};
     glm::vec3 m_camUp{0, 1, 0};
+
+    void copyFromSceneCamera(Camera const &src) {
+        view = src.m_view;
+        proj = src.m_proj;
+        m_nx = src.m_nx;
+        m_ny = src.m_ny;
+        m_near = src.m_near;
+        m_far = src.m_far;
+        m_fov = src.m_fov;
+        m_point_scale = 21.6f / std::tan(src.m_fov * 0.5f * 3.1415926f / 180.0f);
+        {
+            auto camera_radius = src.m_lodradius;
+            auto camera_center = src.m_lodcenter;  // actually camera pos
+            float level = std::max(std::log(camera_radius) / std::log(5.0f) - 1.0f, -1.0f);
+            m_grid_scale = std::pow(5.f, std::floor(level));
+            auto ratio_clamp = [](float value, float lower_bound, float upper_bound) {
+                float ratio = (value - lower_bound) / (upper_bound - lower_bound);
+                return std::min(std::max(ratio, 0.0f), 1.0f);
+            };
+            m_grid_blend = ratio_clamp(level - std::floor(level), 0.8f, 1.0f);
+            m_camRadius = camera_radius;
+            m_camPos = camera_center;
+            m_camCenter = camera_center - src.m_lodfront * m_camRadius;
+            m_camView = src.m_lodfront;
+            m_camUp = src.m_lodup;
+        }
+    }
 
     void setDOF(float _dof) {
         m_dof = _dof;

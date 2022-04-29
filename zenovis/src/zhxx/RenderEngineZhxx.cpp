@@ -1,6 +1,7 @@
 #include <zenovis/RenderEngine.h>
 #include <zenovis/Scene.h>
 #include <zenovis/DrawOptions.h>
+#include <zenovis/zhxx/ZhxxCamera.h>
 #include <zenovis/zhxx/ZhxxGraphicsManager.h>
 #include <zenovis/zhxx/ZhxxScene.h>
 #include <zenovis/opengl/vao.h>
@@ -27,14 +28,16 @@ struct RenderEngineZhxx : RenderEngine {
     }
 
     void update() override {
+        zeno::log_trace("(zxx) updating {} objects", this->scene->objects.size());
         this->zhxxScene->zxxGraphicsMan->load_objects(this->scene->objects);
     }
 
     void draw() override {
+        this->zhxxScene->camera->copyFromSceneCamera(*this->scene->camera);
         GLint currFbo = 0;
-        CHECK_GL(glGetIntegerv(GL_FRAMEBUFFER_BINDING, &currFbo));
-        zeno::log_trace("drawing on current frame buffer {}", currFbo);
-        /* CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)); */
+        CHECK_GL(glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &currFbo));
+        zeno::log_trace("(zxx) drawing on current frame buffer {}", currFbo);
+        CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
         zhxxScene->draw((GLuint)currFbo);
     }
 };
