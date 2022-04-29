@@ -248,7 +248,6 @@ struct ConstructBendingSprings : INode {
             vi = vj;
           }
         });
-    fmt::print("done edge registration\n");
     //
     using VertPair = zs::vec<int, 2>;
     Vector<int> cnt{surfPars.get_allocator(), 1};
@@ -295,7 +294,6 @@ struct ConstructBendingSprings : INode {
             vi = vj;
           }
         });
-    fmt::print("done neighbor pair generation\n");
     std::size_t numVertPairs = cnt.getVal();
     vertPairs.resize(numVertPairs);
     elePairs.resize(numVertPairs);
@@ -330,7 +328,6 @@ struct ConstructBendingSprings : INode {
               pars.tuple<3>("vel", pi) = vec3::zeros();
               pars.tuple<3 * 3>("C", pi) = mat3::zeros();
             });
-    fmt::print("done vert init\n");
 
     ret->elements = typename ZenoParticles::particles_t{
         surfPars.get_allocator(), eleTags, numVertPairs};
@@ -380,7 +377,6 @@ struct ConstructBendingSprings : INode {
 
           eles.tuple<2>("inds", ei) = inds.template reinterpret_bits<float>();
         });
-    fmt::print("done ele init\n");
     return ret;
   }
   void apply() override {
