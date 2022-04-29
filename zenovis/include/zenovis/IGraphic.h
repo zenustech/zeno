@@ -5,7 +5,6 @@
 
 namespace zenovis {
 
-struct Light;
 struct Scene;
 
 struct IGraphic {

@@ -13,7 +13,7 @@
 #include <zenovis/zhxx/ZhxxScene.h>
 #include <zenovis/opengl/shader.h>
 
-namespace zenovis {
+namespace zenovis::zhxx {
 
 struct ZhxxLight;
 

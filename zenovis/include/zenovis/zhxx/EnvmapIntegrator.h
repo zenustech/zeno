@@ -454,15 +454,15 @@ void preIntegrate(GLuint inEnvMap)
 
   if(preintIrradianceProg==nullptr)
   {
-    preintIrradianceProg = scene->shaderMan->compile_program(VS, IRFS);
+    preintIrradianceProg = scene->visScene->shaderMan->compile_program(VS, IRFS);
   }
   if(preIntSpecularProg==nullptr)
   {
-    preIntSpecularProg = scene->shaderMan->compile_program(VS, SPFS);
+    preIntSpecularProg = scene->visScene->shaderMan->compile_program(VS, SPFS);
   }
   if(preintBRDFProg==nullptr)
   {
-    preintBRDFProg = scene->shaderMan->compile_program(BRDFVS, BRDFFS);
+    preintBRDFProg = scene->visScene->shaderMan->compile_program(BRDFVS, BRDFFS);
   }
   if(captureFBO==0 && captureRBO==0){
     CHECK_GL(glGenFramebuffers(1, &captureFBO));

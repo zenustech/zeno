@@ -10,7 +10,7 @@
 #include <zenovis/zhxx/EnvmapIntegrator.h>
 #include <zenovis/opengl/common.h>
 
-namespace zenovis {
+namespace zenovis::zhxx {
 
 struct EnvmapManager {
     /* begin zhxx happy */

@@ -10,7 +10,7 @@
 #include <zenovis/opengl/common.h>
 #include <zenovis/opengl/vao.h>
 
-namespace zenovis {
+namespace zenovis::zhxx {
 
 struct ReflectivePass : zeno::disable_copy {
     ZhxxScene *scene;

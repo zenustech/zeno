@@ -4,6 +4,7 @@
 #include <zeno/utils/log.h>
 #include <zenovis/zhxx/ZhxxCamera.h>
 #include <zenovis/IGraphic.h>
+#include <zenovis/zhxx/ZhxxIGraphic.h>
 #include <zenovis/zhxx/ZhxxLight.h>
 #include <zenovis/GraphicsManager.h>
 #include <zenovis/zhxx/ReflectivePass.h>
@@ -167,7 +168,7 @@ void main(void)
             for (int i = 0; i < LightCluster::layerCount; i++) {
                 light->BeginShadowMap(camera()->m_near, camera()->m_far, camera()->proj, camera()->view, i);
                 scene->vao->bind();
-                for (auto const &gra : scene->graphicsMan->graphics.values<IGraphicDraw>()) {
+                for (auto const &gra : scene->getGraphics()) {
                     gra->drawShadow(light.get());
                 }
                 scene->vao->unbind();
@@ -178,7 +179,7 @@ void main(void)
 
     void paint_graphics(GLuint target_fbo = 0) {
         if (tmProg == nullptr) {
-            tmProg = scene->shaderMan->compile_program(qvert, qfrag);
+            tmProg = scene->visScene->shaderMan->compile_program(qvert, qfrag);
             if (!tmProg) {
                 throw zeno::makeError("failed to compile zhxx (c) HDR pass");
             }
@@ -312,7 +313,7 @@ void main(void)
                 CHECK_GL(glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, msfborgb));
                 CHECK_GL(glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, msfbod));
                 CHECK_GL(glDrawBuffer(GL_COLOR_ATTACHMENT0));
-                CHECK_GL(glClearColor(scene->drawOptions->bgcolor.r, scene->drawOptions->bgcolor.g, scene->drawOptions->bgcolor.b, 0.0f));
+                CHECK_GL(glClearColor(scene->visScene->drawOptions->bgcolor.r, scene->visScene->drawOptions->bgcolor.g, scene->visScene->drawOptions->bgcolor.b, 0.0f));
                 CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
                 scene->my_paint_graphics(1, false);
                 CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, tonemapfbo));
@@ -362,7 +363,7 @@ void main(void)
             CHECK_GL(glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, msfborgb));
             CHECK_GL(glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, msfbod));
             CHECK_GL(glDrawBuffer(GL_COLOR_ATTACHMENT0));
-            CHECK_GL(glClearColor(scene->drawOptions->bgcolor.r, scene->drawOptions->bgcolor.g, scene->drawOptions->bgcolor.b, 0.0f));
+            CHECK_GL(glClearColor(scene->visScene->drawOptions->bgcolor.r, scene->visScene->drawOptions->bgcolor.g, scene->visScene->drawOptions->bgcolor.b, 0.0f));
             CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
             scene->my_paint_graphics(1, false);
             CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, tonemapfbo));

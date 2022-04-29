@@ -1,10 +1,13 @@
-#include <zenovis/zhxx/Camera.h>
+#include <zenovis/zhxx/ZhxxScene.h>
+#include <zenovis/Camera.h>
+#include <zenovis/Scene.h>
+#include <zenovis/zhxx/ZhxxDrawOptions.h>
+#include <zenovis/zhxx/ZhxxCamera.h>
 #include <zenovis/zhxx/DepthPass.h>
-#include <zenovis/EnvmapManager.h>
-#include <zenovis/GraphicsManager.h>
+#include <zenovis/zhxx/EnvmapManager.h>
+#include <zenovis/zhxx/ZhxxGraphicsManager.h>
 #include <zenovis/IGraphic.h>
 #include <zenovis/zhxx/ReflectivePass.h>
-#include <zenovis/zhxx/ZhxxScene.h>
 #include <zenovis/ShaderManager.h>
 #include <zenovis/opengl/buffer.h>
 #include <zenovis/opengl/common.h>
@@ -16,10 +19,8 @@ namespace zenovis::zhxx {
 
 ZhxxScene::~ZhxxScene() = default;
 
-ZhxxScene::ZhxxScene()
-    : camera(std::make_unique<Camera>()),
-      drawOptions(std::make_unique<DrawOptions>()),
-      shaderMan(std::make_unique<ShaderManager>()) {
+ZhxxScene::ZhxxScene(Scene *visScene_)
+    : camera(std::make_unique<ZhxxCamera>()), visScene(visScene_) {
 
     CHECK_GL(glDepthRangef(0, 30000));
     CHECK_GL(glEnable(GL_BLEND));
@@ -40,10 +41,10 @@ ZhxxScene::ZhxxScene()
     vao = std::make_unique<opengl::VAO>();
 
     auto version = (const char *)glGetString(GL_VERSION);
-    zeno::log_info("OpenGL version: {}", version ? version : "(null)");
+    zeno::log_info("(zxx) OpenGL version: {}", version ? version : "(null)");
 
+    zxxGraphicsMan = std::make_unique<ZhxxGraphicsManager>(this);
     envmapMan = std::make_unique<EnvmapManager>(this);
-    graphicsMan = std::make_unique<GraphicsManager>(this);
     mDepthPass = std::make_unique<DepthPass>(this);
     mReflectivePass = std::make_unique<ReflectivePass>(this);
 
@@ -74,7 +75,7 @@ void ZhxxScene::drawSceneDepthSafe(bool reflect, bool isDepthPass) {
     // std::cout<<"camUp:"<<g_camUp.x<<","<<g_camUp.y<<","<<g_camUp.z<<std::endl;
     //CHECK_GL(glDisable(GL_MULTISAMPLE));
     // CHECK_GL(glClearColor(bgcolor.r, bgcolor.g, bgcolor.b, 0.0f));
-    CHECK_GL(glClearColor(drawOptions->bgcolor.r, drawOptions->bgcolor.g, drawOptions->bgcolor.b, 0.0f));
+    CHECK_GL(glClearColor(visScene->drawOptions->bgcolor.r, visScene->drawOptions->bgcolor.g, visScene->drawOptions->bgcolor.b, 0.0f));
     CHECK_GL(glClear(GL_COLOR_BUFFER_BIT));
 
     float range[] = {camera->m_near, 500, 1000, 2000, 8000, camera->m_far};
@@ -85,15 +86,15 @@ void ZhxxScene::drawSceneDepthSafe(bool reflect, bool isDepthPass) {
                                         range[i - 1], range[i]);
 
         {
-            zeno::scope_modify unused1{drawOptions->passReflect, reflect};
-            zeno::scope_modify unused2{drawOptions->passIsDepthPass, isDepthPass};
-            for (auto const &gra : graphicsMan->graphics.values<IGraphicDraw>()) {
+            zeno::scope_modify unused1{zxxDrawOptions->passReflect, reflect};
+            zeno::scope_modify unused2{zxxDrawOptions->passIsDepthPass, isDepthPass};
+            for (auto const &gra : getGraphics()) {
                 gra->draw();
             }
         }
-        if (!isDepthPass && drawOptions->show_grid) {
-            zeno::scope_modify unused3{drawOptions->passReflect, false};
-            zeno::scope_modify unused4{drawOptions->passIsDepthPass, false};
+        if (!isDepthPass && visScene->drawOptions->show_grid) {
+            zeno::scope_modify unused3{zxxDrawOptions->passReflect, false};
+            zeno::scope_modify unused4{zxxDrawOptions->passIsDepthPass, false};
             for (auto const &hudgra : hudGraphics) {
                 hudgra->draw();
             }
@@ -106,15 +107,15 @@ void ZhxxScene::fast_paint_graphics() {
     vao->bind();
     camera->m_sample_weight = 1.0f;
     /* CHECK_GL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)); */
-    CHECK_GL(glClearColor(drawOptions->bgcolor.r, drawOptions->bgcolor.g, drawOptions->bgcolor.b, 0.0f));
+    CHECK_GL(glClearColor(visScene->drawOptions->bgcolor.r, visScene->drawOptions->bgcolor.g, visScene->drawOptions->bgcolor.b, 0.0f));
     CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 
-    zeno::scope_modify unused1{drawOptions->passReflect, false};
-    zeno::scope_modify unused2{drawOptions->passIsDepthPass, false};
-    for (auto const &gra : graphicsMan->graphics.values<IGraphicDraw>()) {
+    zeno::scope_modify unused1{zxxDrawOptions->passReflect, false};
+    zeno::scope_modify unused2{zxxDrawOptions->passIsDepthPass, false};
+    for (auto const &gra : getGraphics()) {
         gra->draw();
     }
-    if (drawOptions->show_grid) {
+    if (visScene->drawOptions->show_grid) {
         for (auto const &hudgra : hudGraphics) {
             hudgra->draw();
         }
@@ -129,7 +130,7 @@ void ZhxxScene::my_paint_graphics(int samples, bool isDepthPass) {
     vao->bind();
     camera->m_sample_weight = 1.0f / (float)samples;
     drawSceneDepthSafe(false, isDepthPass);
-    if (!isDepthPass && drawOptions->show_grid) {
+    if (!isDepthPass && visScene->drawOptions->show_grid) {
         draw_small_axis();
     }
     vao->unbind();
@@ -138,8 +139,16 @@ void ZhxxScene::my_paint_graphics(int samples, bool isDepthPass) {
 void ZhxxScene::draw_small_axis() { /* TODO: implement this */
 }
 
+std::vector<ZhxxIGraphicDraw *> ZhxxScene::getGraphics() {
+    std::vector<ZhxxIGraphicDraw *> ret;
+    for (auto *gra: this->zxxGraphicsMan->graphics.values<ZhxxIGraphicDraw>()) {
+        ret.push_back(gra);
+    }
+    return ret;
+}
+
 bool ZhxxScene::anyGraphicHasMaterial() {
-    for (auto const &gra : graphicsMan->graphics.values<IGraphicDraw>()) {
+    for (auto const &gra : getGraphics()) {
         if (gra->hasMaterial())
             return true;
     }
@@ -156,7 +165,7 @@ void ZhxxScene::draw(unsigned int target_fbo) {
     //CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
     /* ZHXX DONT MODIFY ME */
     lightCluster->clearLights();
-    for (auto const &litgra: graphicsMan->graphics.values<IGraphicLight>()) {
+    for (auto const &litgra: zxxGraphicsMan->graphics.values<ZhxxIGraphicLight>()) {
         litgra->addToScene();  // inside this will call lightCluster->addLight()
     }
 
@@ -195,8 +204,8 @@ std::vector<char> ZhxxScene::record_frame_offline(int hdrSize, int rgbComps) {
     CHECK_GL(glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
                                        GL_RENDERBUFFER, rbo2));
     CHECK_GL(glDrawBuffer(GL_COLOR_ATTACHMENT0));
-    CHECK_GL(glClearColor(drawOptions->bgcolor.r, drawOptions->bgcolor.g,
-                          drawOptions->bgcolor.b, 0.0f));
+    CHECK_GL(glClearColor(visScene->drawOptions->bgcolor.r, visScene->drawOptions->bgcolor.g,
+                          visScene->drawOptions->bgcolor.b, 0.0f));
     CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 
     draw(fbo);

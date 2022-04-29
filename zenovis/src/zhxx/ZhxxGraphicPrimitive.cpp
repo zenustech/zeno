@@ -10,12 +10,15 @@
 #include <zeno/utils/orthonormal.h>
 #include <zeno/utils/ticktock.h>
 #include <zeno/utils/vec.h>
-#include <zenovis/zhxx/Camera.h>
+#include <zenovis/Camera.h>
+#include <zenovis/zhxx/ZhxxIGraphic.h>
+#include <zenovis/zhxx/ZhxxDrawOptions.h>
+#include <zenovis/zhxx/ZhxxCamera.h>
 #include <zenovis/DrawOptions.h>
 #include <zenovis/zhxx/DepthPass.h>
 #include <zenovis/zhxx/EnvmapManager.h>
 #include <zenovis/IGraphic.h>
-#include <zenovis/zhxx/Light.h>
+#include <zenovis/zhxx/ZhxxLight.h>
 #include <zenovis/zhxx/ReflectivePass.h>
 #include <zenovis/zhxx/ZhxxScene.h>
 #include <zenovis/ShaderManager.h>
@@ -287,7 +290,7 @@ static void parseTrianglesDrawBuffer(zeno::PrimitiveObject *prim, ZhxxDrawObject
     }
     /* TOCK(bindebo); */
 }
-struct GraphicPrimitive final : IGraphicDraw {
+struct ZhxxGraphicPrimitive final : ZhxxIGraphicDraw {
     ZhxxScene *scene;
     std::unique_ptr<Buffer> vbo;
     std::unique_ptr<Buffer> instvbo;
@@ -314,7 +317,7 @@ struct GraphicPrimitive final : IGraphicDraw {
     bool prim_has_inst = false;
     int prim_inst_amount = 0;
 
-    explicit GraphicPrimitive(ZhxxScene *scene_, zeno::PrimitiveObject *prim)
+    explicit ZhxxGraphicPrimitive(ZhxxScene *scene_, zeno::PrimitiveObject *prim)
         : scene(scene_) {
         zeno::log_trace("rendering primitive size {}", prim->size());
 
@@ -523,7 +526,7 @@ struct GraphicPrimitive final : IGraphicDraw {
         }
     }
 
-    virtual void drawShadow(Light *light) override {
+    virtual void drawShadow(ZhxxLight *light) override {
         if (!prim_has_mtl)
             return;
         int id = 0;
@@ -766,10 +769,10 @@ struct GraphicPrimitive final : IGraphicDraw {
             }
 
             triObj.prog->use();
-            scene->camera->set_program_uniforms(triObj.prog);
+            scene->visScene->camera->set_program_uniforms(triObj.prog);
 
-            triObj.prog->set_uniform("mSmoothShading", scene->drawOptions->smooth_shading);
-            triObj.prog->set_uniform("mNormalCheck", scene->drawOptions->normal_check);
+            triObj.prog->set_uniform("mSmoothShading", scene->visScene->drawOptions->smooth_shading);
+            triObj.prog->set_uniform("mNormalCheck", scene->visScene->drawOptions->normal_check);
 
             auto &lights = scene->lightCluster->lights;
             triObj.prog->set_uniformi("lightNum", lights.size());
@@ -890,7 +893,7 @@ struct GraphicPrimitive final : IGraphicDraw {
                     }
                 }
 
-                if (scene->drawOptions->passReflect) {
+                if (scene->zxxDrawOptions->passReflect) {
                     triObj.prog->set_uniform("reflectPass", 1.0f);
                 } else {
                     triObj.prog->set_uniform("reflectPass", 0.0f);
@@ -921,7 +924,7 @@ struct GraphicPrimitive final : IGraphicDraw {
                     texOcp++;
                 }
                 //TODO: depthPass seems unused in the shader? remove it?
-                triObj.prog->set_uniform("depthPass", scene->drawOptions->passIsDepthPass);
+                triObj.prog->set_uniform("depthPass", scene->zxxDrawOptions->passIsDepthPass);
                 triObj.prog->set_uniformi("depthBuffer", texOcp);
                 CHECK_GL(glActiveTexture(GL_TEXTURE0 + texOcp));
                 CHECK_GL(glBindTexture(GL_TEXTURE_RECTANGLE,
@@ -941,7 +944,7 @@ struct GraphicPrimitive final : IGraphicDraw {
                                         GL_UNSIGNED_INT, /*first=*/0));
             }
 
-            if (scene->drawOptions->render_wireframe) {
+            if (scene->visScene->drawOptions->render_wireframe) {
                 CHECK_GL(glEnable(GL_POLYGON_OFFSET_LINE));
                 CHECK_GL(glPolygonOffset(-1, -1));
                 CHECK_GL(glPolygonMode(GL_FRONT_AND_BACK, GL_LINE));
@@ -1167,7 +1170,7 @@ void main()
 	EndPrimitive();
 }  
 )";
-        return scene->shaderMan->compile_program(SMVS, SMFS);
+        return scene->visScene->shaderMan->compile_program(SMVS, SMFS);
     }
 
     Program *get_points_program() {
@@ -1240,7 +1243,7 @@ void main()
 }
 )";
 
-        return scene->shaderMan->compile_program(vert, frag);
+        return scene->visScene->shaderMan->compile_program(vert, frag);
     }
 
     Program *get_lines_program() {
@@ -1285,7 +1288,7 @@ void main()
 }
 )";
 
-        return scene->shaderMan->compile_program(vert, frag);
+        return scene->visScene->shaderMan->compile_program(vert, frag);
     }
 
     Program *get_tris_program(std::shared_ptr<zeno::MaterialObject> mtl,
@@ -2763,7 +2766,7 @@ void main()
 )";
 
         //printf("!!!!%s!!!!\n", frag.c_str());
-        return scene->shaderMan->compile_program(vert, frag);
+        return scene->visScene->shaderMan->compile_program(vert, frag);
     }
 
     virtual bool hasMaterial() const override {
@@ -2773,8 +2776,8 @@ void main()
 
 }
 
-void MakeGraphicVisitor::visit(zeno::PrimitiveObject *obj) {
-     this->out_result = std::make_unique<GraphicPrimitive>(this->in_scene, obj);
+void ZhxxMakeGraphicVisitor::visit(zeno::PrimitiveObject *obj) {
+     this->out_result = std::make_unique<ZhxxGraphicPrimitive>(this->in_scene, obj);
 }
 
 } // namespace zenovis
