@@ -23,12 +23,16 @@ Scene::Scene()
     auto version = (const char *)glGetString(GL_VERSION);
     zeno::log_info("OpenGL version: {}", version ? version : "(null)");
 
-    graphicsMan = std::make_unique<GraphicsManager>(this);
-
     hudGraphics.push_back(makeGraphicGrid(this));
     hudGraphics.push_back(makeGraphicAxis(this));
 
     renderEngine = makeRenderEngineDefault(this);
+}
+
+void Scene::setObjects(std::vector<std::shared_ptr<zeno::IObject>> const &objs) {
+    this->objects = objs;
+    if (renderEngine)
+        renderEngine->update();
 }
 
 void Scene::draw() {

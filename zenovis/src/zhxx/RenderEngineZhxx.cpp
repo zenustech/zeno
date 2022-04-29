@@ -1,7 +1,7 @@
 #include <zenovis/RenderEngine.h>
 #include <zenovis/Scene.h>
 #include <zenovis/DrawOptions.h>
-#include <zenovis/GraphicsManager.h>
+#include <zenovis/zhxx/ZhxxGraphicsManager.h>
 #include <zenovis/zhxx/ZhxxScene.h>
 #include <zenovis/opengl/vao.h>
 
@@ -26,8 +26,15 @@ struct RenderEngineZhxx : RenderEngine {
         zhxxScene = std::make_unique<ZhxxScene>(scene);
     }
 
+    void update() override {
+        this->zhxxScene->zxxGraphicsMan->load_objects(this->scene->objects);
+    }
+
     void draw() override {
         CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
+
+        for (auto const &gra: zhxxScene->zxxGraphicsMan->graphics.values()) {
+        }
     }
 };
 

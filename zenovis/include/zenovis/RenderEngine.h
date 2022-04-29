@@ -7,6 +7,7 @@ namespace zenovis {
 
 struct RenderEngine {
     virtual void draw() = 0;
+    virtual void update() = 0;
 
     virtual ~RenderEngine() = default;
 };

@@ -9,7 +9,7 @@ namespace zenovis::zhxx {
 struct ZhxxLight;
 struct ZhxxScene;
 
-struct ZhxxIGraphic : IGraphic {
+struct ZhxxIGraphic {
     virtual ~ZhxxIGraphic() = default;
 };
 

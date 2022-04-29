@@ -146,7 +146,7 @@ int Session::get_curr_frameid() {
 }
 
 void Session::load_objects(std::vector<std::shared_ptr<zeno::IObject>> const &objs) {
-    impl->scene->graphicsMan->load_objects(objs);
+    impl->scene->setObjects(objs);
 }
 
 void loadGLAPI(void *procaddr) {
