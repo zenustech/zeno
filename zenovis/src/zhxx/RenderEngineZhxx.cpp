@@ -37,7 +37,7 @@ struct RenderEngineZhxx : RenderEngine {
         GLint currFbo = 0;
         CHECK_GL(glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &currFbo));
         zeno::log_trace("(zxx) drawing on current frame buffer {}", currFbo);
-        CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
+        /* CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)); */
         zhxxScene->draw((GLuint)currFbo);
     }
 };

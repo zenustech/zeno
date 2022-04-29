@@ -781,6 +781,8 @@ struct ZhxxGraphicPrimitive final : ZhxxIGraphicDraw {
                 auto name = "light[" + std::to_string(lightNo) + "]";
                 triObj.prog->set_uniform(name.c_str(), light->getLightDir());
             }
+            triObj.prog->set_uniform("mSampleWeight", scene->camera->m_sample_weight);
+            // make zhxx happy weight ^^^^^^^^^^^^^ yeah, very happy ^^^^^^^^^^^^^^^
 
             triObj.prog->set_uniformi("mRenderWireframe", false);
 
