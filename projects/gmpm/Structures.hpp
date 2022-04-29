@@ -131,7 +131,7 @@ struct ZenoParticles : IObjectClone<ZenoParticles> {
   std::size_t numParticles() const noexcept { return particles.size(); }
   std::size_t numElements() const noexcept { return (*elements).size(); }
   bool hasSprayedParticles() const noexcept {
-    return sprayedOffset == numParticles();
+    return sprayedOffset != numParticles();
   }
 
   particles_t particles{};

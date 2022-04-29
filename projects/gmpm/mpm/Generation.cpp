@@ -328,6 +328,7 @@ struct ToZSParticles : INode {
 
     // particles
     auto &pars = outParticles->getParticles(); // tilevector
+    outParticles->sprayedOffset = pars.size();
 
     // attributes
     std::vector<zs::PropertyTag> tags{{"mass", 1}, {"pos", 3}, {"vel", 3},

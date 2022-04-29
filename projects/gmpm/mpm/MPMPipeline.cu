@@ -490,7 +490,7 @@ struct ZSReturnMapping : INode {
         auto rr = R(0, 2) * R(0, 2) + R(1, 2) * R(1, 2);
         auto r33_m_1 = R(2, 2) - 1;
         auto gamma_over_k = gamma / k;
-        auto zz = friction_coeff  * r33_m_1 * r33_m_1; // normal traction
+        auto zz = friction_coeff * r33_m_1 * r33_m_1; // normal traction
         if (gamma_over_k * gamma_over_k * rr - zz * zz > 0) {
           auto scale = zz / (gamma_over_k * zs::sqrt(rr));
           R(0, 2) *= scale;
