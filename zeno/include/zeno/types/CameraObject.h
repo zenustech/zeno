@@ -13,9 +13,18 @@ struct CameraData {
     float dof{-1.f};
     float fnear{0.1f};
     float ffar{20000.f};
+    float nx{1920};
+    float ny{1080};
 };
 
 struct CameraObject : IObjectClone<CameraObject>, CameraData {
+    void set(CameraData const &src) {
+        static_cast<CameraData &>(*this) = src;
+    }
+
+    CameraData const &get() const {
+        return static_cast<CameraData const &>(*this);
+    }
 };
 
 }

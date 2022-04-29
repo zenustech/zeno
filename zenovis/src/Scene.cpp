@@ -39,8 +39,7 @@ void Scene::switchRenderEngine(std::string const &name) {
 
 void Scene::setObjects(std::vector<std::shared_ptr<zeno::IObject>> const &objs) {
     this->objects = objs;
-    if (renderEngine)
-        renderEngine->update();
+    renderEngine->update();
 }
 
 void Scene::draw() {
@@ -48,8 +47,7 @@ void Scene::draw() {
     CHECK_GL(glClearColor(drawOptions->bgcolor.r, drawOptions->bgcolor.g, drawOptions->bgcolor.b, 0.0f));
     CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0));
 
-    if (renderEngine)
-        renderEngine->draw();
+    renderEngine->draw();
 }
 
 std::vector<char> Scene::record_frame_offline(int hdrSize, int rgbComps) {
