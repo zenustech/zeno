@@ -40,7 +40,7 @@ void Scene::switchRenderEngine(std::string const &name) {
     }.at(name)();
 }
 
-void Scene::cameraFocusOnNode(std::string const &nodeid) {
+bool Scene::cameraFocusOnNode(std::string const &nodeid) {
     for (auto const &obj: this->objects) {
         if (nodeid == zeno::objectToLiterial<std::string>(obj->userData().get("nodeid"))) {
             if (auto obj2 = dynamic_cast<zeno::PrimitiveObject *>(obj.get())) {
@@ -49,9 +49,12 @@ void Scene::cameraFocusOnNode(std::string const &nodeid) {
                 auto radius = std::max({delta[0], delta[1], delta[2]}) * 0.5f;
                 auto center = (bmin + bmax) * 0.5f;
                 this->camera->focusCamera(center[0], center[1], center[2], radius);
+                return true;
             }
         }
     }
+    zeno::log_debug("cannot focus: node with id {} not found, did you tagged VIEW on it?", nodeid);
+    return false;
 }
 
 void Scene::setObjects(std::vector<std::shared_ptr<zeno::IObject>> const &objs) {

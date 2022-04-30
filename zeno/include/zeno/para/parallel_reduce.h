@@ -18,6 +18,7 @@ Value parallel_reduce(ZENO_POL(Pol pol,) Index first, Index last, Value identity
 
 template <class It, class Transform = identity>
 auto parallel_reduce_min(It first, It last, Transform transformFn = {}) {
+    if (first == last) return std::decay_t<decltype(*first)>();
     return std::transform_reduce(ZENO_PAR_UNSEQ first, last, *first, [] (auto &&x, auto &&y) {
         return zeno::min(x, y);
     }, transformFn);
@@ -25,6 +26,7 @@ auto parallel_reduce_min(It first, It last, Transform transformFn = {}) {
 
 template <class It, class Transform = identity>
 auto parallel_reduce_max(It first, It last, Transform transformFn = {}) {
+    if (first == last) return std::decay_t<decltype(*first)>();
     return std::transform_reduce(ZENO_PAR_UNSEQ first, last, *first, [] (auto &&x, auto &&y) {
         return zeno::max(x, y);
     }, transformFn);
@@ -32,6 +34,7 @@ auto parallel_reduce_max(It first, It last, Transform transformFn = {}) {
 
 template <class It, class Transform = identity>
 auto parallel_reduce_minmax(It first, It last, Transform transformFn = {}) {
+    if (first == last) return std::make_pair(std::decay_t<decltype(*first)>(), std::decay_t<decltype(*first)>());
     return std::transform_reduce(ZENO_PAR_UNSEQ first, last, std::make_pair(*first, *first), [] (auto &&x, auto &&y) {
         return std::make_pair(zeno::min(x.first, y.first), zeno::max(x.second, y.second));
     }, [transformFn] (auto const &val) {

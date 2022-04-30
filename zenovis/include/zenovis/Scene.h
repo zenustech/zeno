@@ -29,7 +29,7 @@ struct Scene : zeno::disable_copy {
     void switchRenderEngine(std::string const &name);
     void setObjects(std::vector<std::shared_ptr<zeno::IObject>> const &objs);
     std::vector<char> record_frame_offline(int hdrSize = 1, int rgbComps = 3);
-    void cameraFocusOnNode(std::string const &nodeid);
+    bool cameraFocusOnNode(std::string const &nodeid);
     static void loadGLAPI(void *procaddr);
 };
 
