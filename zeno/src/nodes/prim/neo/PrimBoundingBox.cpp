@@ -12,18 +12,7 @@ namespace zeno {
 ZENO_API std::pair<vec3f, vec3f> primBoundingBox(PrimitiveObject *prim) {
     if (!prim->verts.size())
         return {{0, 0, 0}, {0, 0, 0}};
-    return {{0, 0, 0}, {0, 0, 0}};
-    std::transform_reduce(ZENO_PAR_UNSEQ prim->verts.begin(), prim->verts.end()
-            , /*identity=*/std::make_pair(*prim->verts.begin(), *prim->verts.begin())
-            , /*reduce=*/[] (auto const &l, auto const &r) {
-                return std::make_pair(zeno::min(l.first, r.first), zeno::max(l.second, r.second));
-            }
-            , /*transform=*/[] (auto const &l) {
-                return std::make_pair(l, l);
-            }
-            );
-    /* return {parallel_reduce_min(par_unseq, prim->verts.begin(), prim->verts.end()), */
-    /*         parallel_reduce_max(par_unseq, prim->verts.begin(), prim->verts.end())}; */
+    return parallel_reduce_minmax(prim->verts.begin(), prim->verts.end());
 }
 
 namespace {
