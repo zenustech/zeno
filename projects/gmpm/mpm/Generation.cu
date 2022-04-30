@@ -322,7 +322,7 @@ struct ConstructBendingSprings : INode {
               using mat3 = zs::vec<float, 3, 3>;
               auto opid = vertTable._activeKeys[pi][0];
               pars("mass", pi) = 0.f;
-              pars("vol", pi) = 0.f;
+              pars("vol", pi) = surfPars("vol", opid);
               pars("beta", pi) = 0.f;
               pars.tuple<3>("pos", pi) = surfPars.pack<3>("pos", opid);
               pars.tuple<3>("vel", pi) = vec3::zeros();
@@ -340,7 +340,6 @@ struct ConstructBendingSprings : INode {
          vertTable = proxy<space>(vertTable)] __device__(int ei) mutable {
           using mat3 = zs::vec<float, 3, 3>;
           eles("mass", ei) = 0.f;
-          eles("vol", ei) = 0.f;
 
           {
             auto eids = elePairs[ei];
@@ -354,12 +353,11 @@ struct ConstructBendingSprings : INode {
           auto inds = vertPairs[ei];
           inds[0] = vertTable.query(vec1i{inds[0]});
           inds[1] = vertTable.query(vec1i{inds[1]});
-          if (inds[0] == -1 || inds[1] == -1)
-            printf("FUCK!!!\n");
           vec3 xs[2];
           xs[0] = pars.pack<3>("pos", inds[0]);
           xs[1] = pars.pack<3>("pos", inds[1]);
           eles.tuple<3>("pos", ei) = (xs[0] + xs[1]) / 2;
+          eles("vol", ei) = (pars("vol", inds[0]) + pars("vol", inds[1])) / 2;
           eles.tuple<3>("vel", ei) = vec3::zeros();
 
           eles.tuple<3 * 3>("C", ei) = mat3::zeros();

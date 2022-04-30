@@ -108,6 +108,11 @@ struct ZenoParticles : IObjectClone<ZenoParticles> {
   bool isMeshPrimitive() const noexcept {
     return elements.has_value() && category != category_e::mpm;
   }
+  bool isLagrangianParticles() const noexcept {
+    return elements.has_value() &&
+           (category == category_e::curve || category == category_e::surface ||
+            category == category_e::tet);
+  }
   auto &getModel() noexcept { return model; }
   const auto &getModel() const noexcept { return model; }
 
