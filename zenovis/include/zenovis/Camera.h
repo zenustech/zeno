@@ -30,8 +30,9 @@ struct Camera {
     }
 
     void setCamera(zeno::CameraData const &cam);
-    void setCamera(glm::vec3 pos, glm::vec3 front, glm::vec3 up, float fov, float fnear, float ffar, float radius);
-    void setCamera(float cx, float cy, float cz, float theta, float phi, float radius, float fov);
+    void placeCamera(glm::vec3 pos, glm::vec3 front, glm::vec3 up, float fov, float fnear, float ffar, float radius);
+    void lookCamera(float cx, float cy, float cz, float theta, float phi, float radius, float fov);
+    void focusCamera(float cx, float cy, float cz, float radius);
     void set_program_uniforms(opengl::Program *pro);
 };
 

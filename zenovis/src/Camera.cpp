@@ -3,7 +3,7 @@
 namespace zenovis {
 
 void Camera::setCamera(zeno::CameraData const &cam) {
-    this->setCamera(
+    this->placeCamera(
             glm::vec3(cam.pos[0], cam.pos[1], cam.pos[2]),
             glm::vec3(cam.view[0], cam.view[1], cam.view[2]),
             glm::vec3(cam.up[0], cam.up[1], cam.up[2]),
@@ -14,7 +14,7 @@ void Camera::setCamera(zeno::CameraData const &cam) {
     this->m_aperature = cam.aperature;
 }
 
-void Camera::setCamera(glm::vec3 pos, glm::vec3 front, glm::vec3 up, float fov, float fnear, float ffar, float radius) {
+void Camera::placeCamera(glm::vec3 pos, glm::vec3 front, glm::vec3 up, float fov, float fnear, float ffar, float radius) {
     front = glm::normalize(front);
     up = glm::normalize(up);
     if (fov <= 0) {
@@ -39,7 +39,12 @@ void Camera::setCamera(glm::vec3 pos, glm::vec3 front, glm::vec3 up, float fov, 
     m_fov = fov;
 }
 
-void Camera::setCamera(float cx, float cy, float cz, float theta, float phi, float radius, float fov) {
+void Camera::focusCamera(float cx, float cy, float cz, float radius) {
+    auto center = glm::vec3(cx, cy, cz);
+    placeCamera(center - m_lodfront * radius, m_lodfront, m_lodup, m_fov, m_near, m_far, radius);
+}
+
+void Camera::lookCamera(float cx, float cy, float cz, float theta, float phi, float radius, float fov) {
     auto center = glm::vec3(cx, cy, cz);
 
     float cos_t = glm::cos(theta), sin_t = glm::sin(theta);
@@ -50,9 +55,9 @@ void Camera::setCamera(float cx, float cy, float cz, float theta, float phi, flo
     if (!(fov <= 0)) {
         auto fnear = 0.1f;
         auto ffar = 20000.0f * std::max(1.0f, (float)radius / 10000.f);
-        setCamera(center - front * radius, front, up, fov, fnear, ffar, radius);
+        placeCamera(center - front * radius, front, up, fov, fnear, ffar, radius);
     } else {
-        setCamera(center - front * radius, front, up, 0.f, -100.f, 100.f, radius);
+        placeCamera(center - front * radius, front, up, 0.f, -100.f, 100.f, radius);
     }
 }
 

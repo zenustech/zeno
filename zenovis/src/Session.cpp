@@ -124,7 +124,7 @@ void Session::do_screenshot(std::string path, std::string type) {
 void Session::look_perspective(float cx, float cy, float cz, float theta,
                                float phi, float radius, float fov,
                                bool ortho_mode) {
-    impl->scene->camera->setCamera(cx, cy, cz, theta, phi, radius, ortho_mode ? 0.f : fov);
+    impl->scene->camera->lookCamera(cx, cy, cz, theta, phi, radius, ortho_mode ? 0.f : fov);
 }
 
 void Session::set_background_color(float r, float g, float b) {
@@ -134,6 +134,10 @@ void Session::set_background_color(float r, float g, float b) {
 std::tuple<float, float, float> Session::get_background_color() {
     auto c = impl->scene->drawOptions->bgcolor;
     return {c[0], c[1], c[2]};
+}
+
+void Session::focus_on_node(std::string const &nodeid) {
+    impl->scene->cameraFocusOnNode(nodeid);
 }
 
 void Session::set_curr_frameid(int frameid) {

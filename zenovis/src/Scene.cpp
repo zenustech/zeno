@@ -1,5 +1,8 @@
 #include <zenovis/Scene.h>
 #include <zenovis/Camera.h>
+#include <zeno/types/UserData.h>
+#include <zeno/types/PrimitiveObject.h>
+#include <zeno/funcs/PrimitiveUtils.h>
 #include <zenovis/DrawOptions.h>
 #include <zenovis/RenderEngine.h>
 #include <zenovis/ShaderManager.h>
@@ -35,6 +38,20 @@ void Scene::switchRenderEngine(std::string const &name) {
     {"bate", [&] { renderEngine = makeRenderEngineBate(this); }},
     {"zhxx", [&] { renderEngine = makeRenderEngineZhxx(this); }},
     }.at(name)();
+}
+
+void Scene::cameraFocusOnNode(std::string const &nodeid) {
+    for (auto const &obj: this->objects) {
+        if (nodeid == zeno::objectToLiterial<std::string>(obj->userData().get("nodeid"))) {
+            if (auto obj2 = dynamic_cast<zeno::PrimitiveObject *>(obj.get())) {
+                auto [bmin, bmax] = primBoundingBox(obj2);
+                auto delta = bmax - bmin;
+                auto radius = std::max({delta[0], delta[1], delta[2]}) * 0.5f;
+                auto center = (bmin + bmax) * 0.5f;
+                this->camera->focusCamera(center[0], center[1], center[2], radius);
+            }
+        }
+    }
 }
 
 void Scene::setObjects(std::vector<std::shared_ptr<zeno::IObject>> const &objs) {

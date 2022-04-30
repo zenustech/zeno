@@ -229,4 +229,11 @@ inline constexpr T as_copy(T const &t) {
     return t;
 }
 
+struct identity {
+    template <class T>
+    constexpr T &&operator()(T &&t) const noexcept {
+        return std::forward<T>(t);
+    }
+};
+
 }

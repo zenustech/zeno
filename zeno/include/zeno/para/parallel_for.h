@@ -1,7 +1,7 @@
 #pragma once
 
-#include <zeno/parallel/execution.h>
-#include <zeno/parallel/counter_iterator.h>
+#include <zeno/para/execution.h>
+#include <zeno/para/counter_iterator.h>
 #include <algorithm>
 
 namespace zeno {
