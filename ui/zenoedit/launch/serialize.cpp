@@ -213,7 +213,6 @@ ZENO_DEFNODE()RAW");
             res.append(R"RAW(", ")RAW");
             res.append(entry.info.name);
             res.append(R"RAW(", ")RAW");
-            // FIXME: UiHelper::variantToString seems doesn't support vec3f
             res.append(UiHelper::variantToString(entry.info.defaultValue));
             res.append(R"RAW("}, )RAW");
         }
@@ -228,7 +227,7 @@ ZENO_DEFNODE()RAW");
             res.append(UiHelper::variantToString(entry.info.defaultValue));
             res.append(R"RAW("}, )RAW");
         }
-        res.append(R"RAW(}
+        res.append(R"RAW(},
     {)RAW");
         for (auto const &entry : desc.params) {
             res.append(R"RAW({")RAW");

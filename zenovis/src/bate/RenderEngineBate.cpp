@@ -1,7 +1,6 @@
 #include <zenovis/RenderEngine.h>
 #include <zenovis/DrawOptions.h>
 #include <zenovis/bate/GraphicsManager.h>
-#include <zenovis/bate/EngineData.h>
 #include <zenovis/bate/IGraphic.h>
 #include <zenovis/opengl/vao.h>
 
