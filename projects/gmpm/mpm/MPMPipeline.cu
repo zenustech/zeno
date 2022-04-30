@@ -500,6 +500,78 @@ struct ZSReturnMapping : INode {
       }
     });
   }
+  void return_mapping_curve(zs::CudaExecutionPolicy &cudaPol,
+                            const zs::StvkWithHencky<float> &stvkModel,
+                            typename ZenoParticles::particles_t &eles) const {
+    using namespace zs;
+    bool materialParamOverride =
+        eles.hasProperty("mu") && eles.hasProperty("lam");
+    auto nadp = NonAssociativeDruckerPrager<float>{0}; // friction angle
+    cudaPol(range(eles.size()),
+            [eles = proxy<execspace_e::cuda>({}, eles), stvkModel = stvkModel,
+             nadp, materialParamOverride] __device__(size_t pi) mutable {
+              // hard code ftm
+              constexpr auto gamma = 0.f;
+              // constexpr auto k = 40000.f;
+              // constexpr auto friction_coeff = 0.f;
+              constexpr auto alpha_tangent = 0.f;
+              constexpr auto cohesion = 0.f; // no cohesion ftm
+              bool projected = false;
+              if (materialParamOverride) {
+                stvkModel.mu = eles("mu", pi);
+                stvkModel.lam = eles("lam", pi);
+              }
+              auto d = eles.pack<3, 3>("d", pi);
+              auto [Q, R] = math::gram_schmidt(d);
+              auto apply = [&, &Q = Q, &R = R]() {};
+
+              using mat2 = zs::vec<float, 2, 2>;
+
+              mat2 R_hat{R(1, 1), R(1, 2), R(2, 1), R(2, 2)};
+              projected = nadp.project_strain(R_hat, stvkModel);
+              for (int r = 0; r != 2; ++r)
+                for (int c = 0; c != 2; ++c)
+                  R(r + 1, r + 1) = R_hat(r, c);
+
+              auto tau_hat = stvkModel.first_piola(R_hat) * R_hat.transpose();
+
+              auto p_cohesion =
+                  (stvkModel.mu * 2 + stvkModel.lam * 2) * cohesion;
+              // auto p = zs::min(trace(tau_hat) / 2, p_cohesion);
+              auto p = trace(tau_hat) / 2;
+
+              // Compute yield function
+              zs::vec<float, 2> r{R(0, 1), R(0, 2)};
+              auto gammaRr = gamma * (R_hat * r).norm();
+              auto f = gammaRr + alpha_tangent * p;
+
+              if (gamma == 0.f) { // CASE 1: no friction
+                R(0, 1) = 0;
+                R(0, 2) = 0;
+                projected = true;
+              }
+#if 0
+              else if (f <= p_cohesion) { // CASE 2: inside yield surface
+                apply();
+              }
+#endif
+              else { // CASE 3: need to scale R01 and R02 to satisfy yield
+                     // condition
+                // assert(gammaRr != 0, gammaRr);
+                auto scale = (p_cohesion - alpha_tangent * p) / gammaRr;
+                r *= scale;
+                R(0, 1) = r(0);
+                R(0, 2) = r(1);
+                projected = true;
+              }
+
+              if (projected) {
+                d = Q * R;
+                eles.tuple<9>("d", pi) = d;
+                eles.tuple<9>("F", pi) = d * eles.pack<3, 3>("DmInv", pi);
+              }
+            });
+  }
   void apply() override {
     fmt::print(fg(fmt::color::green), "begin executing ZSReturnMapping\n");
 
@@ -531,6 +603,16 @@ struct ZSReturnMapping : INode {
         auto &eles = parObjPtr->getQuadraturePoints();
         if (parObjPtr->category == ZenoParticles::surface)
           return_mapping_surface(cudaPol, eles);
+        else if (parObjPtr->category == ZenoParticles::curve) {
+          const auto &models = parObjPtr->getModel();
+          StvkWithHencky<float> stvkModel{};
+          match([&stvkModel](const auto &elasticModel) {
+            stvkModel.mu = elasticModel.mu;
+            stvkModel.lam = elasticModel.lam;
+          })(models.getElasticModel());
+          // use drucker prager plasticity for friction handling
+          return_mapping_curve(cudaPol, stvkModel, eles);
+        }
       }
     }
 

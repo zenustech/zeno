@@ -359,18 +359,26 @@ struct ConstructBendingSprings : INode {
       eles.tuple<3 * 3>("C", ei) = mat3::zeros();
 
       auto tangent = xs[1] - xs[0];
+      auto tn = tangent.norm();
       auto nrm = tangent.orthogonal().normalized();
       auto binrm = tangent.cross(nrm).normalized();
       auto d = mat3{tangent[0], nrm[0],     binrm[0], tangent[1], nrm[1],
                     binrm[1],   tangent[2], nrm[2],   binrm[2]};
       eles.tuple<3 * 3>("d", ei) = d;
       auto invDstar = mat3::identity();
-      invDstar(0, 0) = 1. / tangent.norm();
+      invDstar(0, 0) = 1. / tn;
+      if (tn <= 10 * limits<float>::epsilon()) {
+        eles("mu", ei) = 0.f;
+        eles("lam", ei) = 0.f;
+      }
       eles.tuple<3 * 3>("DmInv", ei) = invDstar;
       eles.tuple<3 * 3>("F", ei) = d * invDstar;
 
       eles.tuple<2>("inds", ei) = inds.template reinterpret_bits<float>();
     });
+
+    fmt::print("bending spring mesh: {} verts, {} tris.\n", numSpringVerts,
+               numVertPairs);
     return ret;
   }
   void apply() override {
