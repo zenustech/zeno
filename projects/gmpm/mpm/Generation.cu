@@ -192,8 +192,8 @@ ZENDEFNODE(ToTrackerParticles, {
 
 struct ConstructBendingSprings : INode {
   std::shared_ptr<ZenoParticles>
-  addBendingSprings(zs::CudaExecutionPolicy &cudaPol,
-                    const ZenoParticles &surf) {
+  addBendingSprings(zs::CudaExecutionPolicy &cudaPol, const ZenoParticles &surf,
+                    float stiffness) {
     if (surf.category != ZenoParticles::surface)
       return {};
     using namespace zs;
@@ -328,49 +328,49 @@ struct ConstructBendingSprings : INode {
     ret->elements = typename ZenoParticles::particles_t{
         surfPars.get_allocator(), eleTags, numVertPairs};
     auto &eles = ret->getQuadraturePoints();
-    cudaPol(
-        range(numVertPairs),
-        [pars = proxy<space>({}, pars), eles = proxy<space>({}, eles),
-         surfEles = proxy<space>({}, surfEles),
-         vertPairs = proxy<space>(vertPairs), elePairs = proxy<space>(elePairs),
-         vertTable = proxy<space>(vertTable)] __device__(int ei) mutable {
-          using mat3 = zs::vec<float, 3, 3>;
-          eles("mass", ei) = 0.f;
+    cudaPol(range(numVertPairs), [pars = proxy<space>({}, pars),
+                                  eles = proxy<space>({}, eles),
+                                  surfEles = proxy<space>({}, surfEles),
+                                  vertPairs = proxy<space>(vertPairs),
+                                  elePairs = proxy<space>(elePairs),
+                                  vertTable = proxy<space>(vertTable),
+                                  stiffness] __device__(int ei) mutable {
+      using mat3 = zs::vec<float, 3, 3>;
+      eles("mass", ei) = 0.f;
 
-          {
-            auto eids = elePairs[ei];
-            auto mu = zs::min(surfEles("mu", eids[0]), surfEles("mu", eids[1]));
-            auto lam =
-                zs::min(surfEles("lam", eids[0]), surfEles("lam", eids[1]));
-            eles("mu", ei) = mu;
-            eles("lam", ei) = lam;
-          }
+      {
+        auto eids = elePairs[ei];
+        auto mu = zs::min(surfEles("mu", eids[0]), surfEles("mu", eids[1]));
+        auto lam = zs::min(surfEles("lam", eids[0]), surfEles("lam", eids[1]));
+        eles("mu", ei) = mu * stiffness;
+        eles("lam", ei) = lam * stiffness;
+      }
 
-          auto inds = vertPairs[ei];
-          inds[0] = vertTable.query(vec1i{inds[0]});
-          inds[1] = vertTable.query(vec1i{inds[1]});
-          vec3 xs[2];
-          xs[0] = pars.pack<3>("pos", inds[0]);
-          xs[1] = pars.pack<3>("pos", inds[1]);
-          eles.tuple<3>("pos", ei) = (xs[0] + xs[1]) / 2;
-          eles("vol", ei) = (pars("vol", inds[0]) + pars("vol", inds[1])) / 2;
-          eles.tuple<3>("vel", ei) = vec3::zeros();
+      auto inds = vertPairs[ei];
+      inds[0] = vertTable.query(vec1i{inds[0]});
+      inds[1] = vertTable.query(vec1i{inds[1]});
+      vec3 xs[2];
+      xs[0] = pars.pack<3>("pos", inds[0]);
+      xs[1] = pars.pack<3>("pos", inds[1]);
+      eles.tuple<3>("pos", ei) = (xs[0] + xs[1]) / 2;
+      eles("vol", ei) = (pars("vol", inds[0]) + pars("vol", inds[1])) / 2;
+      eles.tuple<3>("vel", ei) = vec3::zeros();
 
-          eles.tuple<3 * 3>("C", ei) = mat3::zeros();
+      eles.tuple<3 * 3>("C", ei) = mat3::zeros();
 
-          auto tangent = xs[1] - xs[0];
-          auto nrm = tangent.orthogonal().normalized();
-          auto binrm = tangent.cross(nrm).normalized();
-          auto d = mat3{tangent[0], nrm[0],     binrm[0], tangent[1], nrm[1],
-                        binrm[1],   tangent[2], nrm[2],   binrm[2]};
-          eles.tuple<3 * 3>("d", ei) = d;
-          auto invDstar = mat3::identity();
-          invDstar(0, 0) = 1. / tangent.norm();
-          eles.tuple<3 * 3>("DmInv", ei) = invDstar;
-          eles.tuple<3 * 3>("F", ei) = d * invDstar;
+      auto tangent = xs[1] - xs[0];
+      auto nrm = tangent.orthogonal().normalized();
+      auto binrm = tangent.cross(nrm).normalized();
+      auto d = mat3{tangent[0], nrm[0],     binrm[0], tangent[1], nrm[1],
+                    binrm[1],   tangent[2], nrm[2],   binrm[2]};
+      eles.tuple<3 * 3>("d", ei) = d;
+      auto invDstar = mat3::identity();
+      invDstar(0, 0) = 1. / tangent.norm();
+      eles.tuple<3 * 3>("DmInv", ei) = invDstar;
+      eles.tuple<3 * 3>("F", ei) = d * invDstar;
 
-          eles.tuple<2>("inds", ei) = inds.template reinterpret_bits<float>();
-        });
+      eles.tuple<2>("inds", ei) = inds.template reinterpret_bits<float>();
+    });
     return ret;
   }
   void apply() override {
@@ -378,11 +378,13 @@ struct ConstructBendingSprings : INode {
     fmt::print(fg(fmt::color::green),
                "begin executing ConstructBendingSprings\n");
 
+    float stiffness = get_input2<float>("bending_stiffness");
     auto cudaPol = cuda_exec();
     if (has_input<ZenoParticles>("ZSSurfPrim")) {
-      set_output(
-          "ZSSpringPrim",
-          addBendingSprings(cudaPol, *get_input<ZenoParticles>("ZSSurfPrim")));
+      set_output("ZSSpringPrim",
+                 addBendingSprings(cudaPol,
+                                   *get_input<ZenoParticles>("ZSSurfPrim"),
+                                   stiffness));
     } else if (has_input<ListObject>("ZSSurfPrim")) {
       auto list = std::make_shared<ListObject>();
       auto &ret = list->arr;
@@ -390,7 +392,7 @@ struct ConstructBendingSprings : INode {
       for (auto &&objSharedPtr : objSharedPtrLists.get())
         if (auto ptr = dynamic_cast<ZenoParticles *>(objSharedPtr.get());
             ptr != nullptr)
-          ret.push_back(addBendingSprings(cudaPol, *ptr));
+          ret.push_back(addBendingSprings(cudaPol, *ptr, stiffness));
       set_output("ZSSpringPrim", list);
     }
 
@@ -399,12 +401,13 @@ struct ConstructBendingSprings : INode {
   }
 };
 
-ZENDEFNODE(ConstructBendingSprings, {
-                                        {"ZSSurfPrim"},
-                                        {"ZSSpringPrim"},
-                                        {},
-                                        {"MPM"},
-                                    });
+ZENDEFNODE(ConstructBendingSprings,
+           {
+               {"ZSSurfPrim", {"float", "bending_stiffness", "0.01"}},
+               {"ZSSpringPrim"},
+               {},
+               {"MPM"},
+           });
 
 struct BuildPrimitiveSequence : INode {
   void apply() override {
