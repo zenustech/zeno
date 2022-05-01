@@ -506,6 +506,7 @@ struct ToZSParticles : INode {
         auto Dmat = mat3{D[0][0], D[1][0], D[2][0], D[0][1], D[1][1],
                          D[2][1], D[0][2], D[1][2], D[2][2]};
         eles.tuple<9>("d", ei) = Dmat;
+
         // ref: CFF Jiang, 2017 Anisotropic MPM techdoc
         // ref: Yun Fei, libwetcloth;
         // This file is part of the libWetCloth open source project
@@ -516,39 +517,40 @@ struct ToZSParticles : INode {
         // This Source Code Form is subject to the terms of the Mozilla Public
         // License, v. 2.0. If a copy of the MPL was not distributed with this
         // file, You can obtain one at http://mozilla.org/MPL/2.0/.
-        auto t0 = col(Dmat, 0);
-        auto t1 = col(Dmat, 1);
-        auto normal = col(Dmat, 2);
-        // could qr decomp here first (tech doc)
+        if (category == ZenoParticles::surface) {
+          auto t0 = col(Dmat, 0);
+          auto t1 = col(Dmat, 1);
+          auto normal = col(Dmat, 2);
+          // could qr decomp here first (tech doc)
 
-        zs::Rotation<double, 3> rot0{normal.normalized(), vec3{0, 0, 1}};
-        auto u = rot0 * t0;
-        auto v = rot0 * t1;
-        zs::Rotation<double, 3> rot1{u.normalized(), vec3{1, 0, 0}};
-        auto ru = rot1 * u;
-        auto rv = rot1 * v;
-        auto Dstar = mat3::identity();
-        Dstar(0, 0) = ru(0);
-        Dstar(0, 1) = rv(0);
-        Dstar(1, 1) = rv(1);
+          zs::Rotation<double, 3> rot0{normal.normalized(), vec3{0, 0, 1}};
+          auto u = rot0 * t0;
+          auto v = rot0 * t1;
+          zs::Rotation<double, 3> rot1{u.normalized(), vec3{1, 0, 0}};
+          auto ru = rot1 * u;
+          auto rv = rot1 * v;
+          auto Dstar = mat3::identity();
+          Dstar(0, 0) = ru(0);
+          Dstar(0, 1) = rv(0);
+          Dstar(1, 1) = rv(1);
 
-        if (std::abs(rv(1)) <= 10 * limits<float>::epsilon() ||
-            std::abs(ru(0)) <= 10 * limits<float>::epsilon()) {
-          fmt::print(fg(fmt::color::red),
-                     "beware: encounters near-singular Dm element [{}] of: "
-                     "\n\tt0[{}, {}, {}], \n\tt1[{}, {}, {}], \n\tnormal[{}, "
-                     "{}, {}]\n",
-                     ei, t0[0], t0[1], t0[2], t1[0], t1[1], t1[2], normal[0],
-                     normal[1], normal[2]);
+          if (std::abs(rv(1)) <= 10 * limits<float>::epsilon() ||
+              std::abs(ru(0)) <= 10 * limits<float>::epsilon()) {
+            fmt::print(fg(fmt::color::red),
+                       "beware: encounters near-singular Dm element [{}] of: "
+                       "\n\tt0[{}, {}, {}], \n\tt1[{}, {}, {}], \n\tnormal[{}, "
+                       "{}, {}]\n",
+                       ei, t0[0], t0[1], t0[2], t1[0], t1[1], t1[2], normal[0],
+                       normal[1], normal[2]);
 #if 1
-          eles.tuple<9>("DmInv", ei) = mat3::identity();
-          eles.tuple<9>("F", ei) = Dmat;
-          // let this be a failed element
-          eles("mu", ei) = 0;
-          eles("lam", ei) = 0;
-          auto invDstar = zs::inverse(Dstar);
-          eles.tuple<9>("DmInv", ei) = invDstar;
-          eles.tuple<9>("F", ei) = Dmat * invDstar;
+            eles.tuple<9>("DmInv", ei) = mat3::identity();
+            eles.tuple<9>("F", ei) = Dmat;
+            // let this be a failed element
+            eles("mu", ei) = 0;
+            eles("lam", ei) = 0;
+            auto invDstar = zs::inverse(Dstar);
+            eles.tuple<9>("DmInv", ei) = invDstar;
+            eles.tuple<9>("F", ei) = Dmat * invDstar;
 #else
           
           throw std::runtime_error(
@@ -568,8 +570,28 @@ struct ToZSParticles : INode {
                      F(1, 1), F(1, 2), F(2, 0), F(2, 1), F(2, 2));
           getchar();
 #endif
-        } else {
-          auto invDstar = zs::inverse(Dstar);
+          } else {
+            auto invDstar = zs::inverse(Dstar);
+            eles.tuple<9>("DmInv", ei) = invDstar;
+            eles.tuple<9>("F", ei) = Dmat * invDstar;
+          }
+        } else if (category == ZenoParticles::curve) {
+          auto tangent = col(Dmat, 0);
+          auto Dstar = mat3::identity();
+          Dstar(0, 0) = tangent.norm();
+          auto invDstar = inverse(Dstar);
+          if (Dstar(0, 0) <= limits<float>::epsilon()) {
+            fmt::print(fg(fmt::color::red),
+                       "beware: encounters near-singular Dm element [{}] of: "
+                       "\n\ttangent[{}, {}, {}], \n\tnormal[{}, {}, {}], "
+                       "\n\tbinormal[{}, "
+                       "{}, {}]\n",
+                       ei, tangent[0], tangent[1], tangent[2], Dmat(0, 1),
+                       Dmat(1, 1), Dmat(2, 1), Dmat(0, 2), Dmat(1, 2),
+                       Dmat(2, 2));
+            eles("mu", ei) = 0.f;
+            eles("lam", ei) = 0.f;
+          }
           eles.tuple<9>("DmInv", ei) = invDstar;
           eles.tuple<9>("F", ei) = Dmat * invDstar;
         }
