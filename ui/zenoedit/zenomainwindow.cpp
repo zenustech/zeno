@@ -224,34 +224,6 @@ void ZenoMainWindow::initMenu() {
     pMenuBar->addMenu(pWindow);
     pMenuBar->addMenu(pHelp);
 
-    /* up-right-bottom-left */
-    const QString &qssTemplate = "\
-    QMenuBar {\
-        background-color: rgb(28, 28, 28);\
-        spacing: %1px; \
-        color: rgba(255,255,255,0.50);\
-    }\
-    \
-    QMenuBar::item {\
-        padding: %2px %3px %4px %5px;\
-        background: transparent;\
-    }\
-    \
-    QMenuBar::item:selected {\
-        background: #4B9EF4;\
-    }\
-    \
-    QMenuBar::item:pressed {\
-        background: #4B9EF4;\
-    }\
-    ";
-
-    qreal spacing = ZenoStyle::dpiScaled(3), padding_left = ZenoStyle::dpiScaled(8),
-          padding_right = ZenoStyle::dpiScaled(8), padding_top = ZenoStyle::dpiScaled(4),
-          padding_bottom = ZenoStyle::dpiScaled(4);
-    QString qss = qssTemplate.arg(spacing).arg(padding_top).arg(padding_right).arg(padding_bottom).arg(padding_left);
-    pMenuBar->setStyleSheet(qss);
-
     setMenuBar(pMenuBar);
 }
 

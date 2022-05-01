@@ -134,7 +134,9 @@ void ZenoEditorDockTitleWidget::initModel()
 
 void ZenoEditorDockTitleWidget::initTitleContent(QHBoxLayout* pHLayout)
 {
-	pHLayout->addWidget(initMenu());
+	QMenuBar* pMenuBar = initMenu();
+	pHLayout->addWidget(pMenuBar);
+	pHLayout->setAlignment(pMenuBar, Qt::AlignVCenter);
     pHLayout->addStretch();
 
     m_lblTitle = new QLabel;
@@ -159,7 +161,7 @@ QAction* ZenoEditorDockTitleWidget::createAction(const QString& text)
 QMenuBar* ZenoEditorDockTitleWidget::initMenu()
 {
 	QMenuBar* pMenuBar = new QMenuBar(this);
-    pMenuBar->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Preferred);
+    pMenuBar->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Expanding);
 
 	QMenu* pAdd = new QMenu(tr("Add"));
 	{
@@ -196,30 +198,6 @@ QMenuBar* ZenoEditorDockTitleWidget::initMenu()
 	pMenuBar->addMenu(pGo);
 	pMenuBar->addMenu(pView);
 	pMenuBar->addMenu(pHelp);
-
-	/* up-right-bottom-left */
-	pMenuBar->setStyleSheet(
-		"\
-    QMenuBar {\
-        background-color: transparent;\
-        spacing: 3px; \
-        color: rgba(255,255,255,0.50);\
-    }\
-    \
-    QMenuBar::item {\
-        padding: 10px 8px 7px 8px;\
-        background: transparent;\
-    }\
-    \
-    QMenuBar::item:selected {\
-        background: #4B9EF4;\
-    }\
-    \
-    QMenuBar::item:pressed {\
-        background: #4B9EF4;\
-    }\
-    "
-	);
 
 	return pMenuBar;
 }
