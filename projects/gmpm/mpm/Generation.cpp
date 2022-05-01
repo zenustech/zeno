@@ -543,8 +543,6 @@ struct ToZSParticles : INode {
                        ei, t0[0], t0[1], t0[2], t1[0], t1[1], t1[2], normal[0],
                        normal[1], normal[2]);
 #if 1
-            eles.tuple<9>("DmInv", ei) = mat3::identity();
-            eles.tuple<9>("F", ei) = Dmat;
             // let this be a failed element
             eles("mu", ei) = 0;
             eles("lam", ei) = 0;
