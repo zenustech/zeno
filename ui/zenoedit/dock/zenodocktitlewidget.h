@@ -16,9 +16,11 @@ public:
 signals:
 	void dockOptionsClicked();
 	void dockSwitchClicked(DOCK_TYPE);
+    void doubleClicked();
 
 protected:
 	void paintEvent(QPaintEvent* event) override;
+	void mouseDoubleClickEvent(QMouseEvent* event) override;
 	virtual void initTitleContent(QHBoxLayout* pHLayout);
 
 private slots:

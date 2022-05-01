@@ -451,7 +451,7 @@ void ZenoMainWindow::onDockSwitched(DOCK_TYPE type) {
     case DOCK_VIEW: {
         //complicated opengl framework.
         //DisplayWidget* view = new DisplayWidget;
-        //pDock->setWidget(view);
+        //pDock->setWidget(type, view);
         break;
     }
     case DOCK_NODE_PARAMS: {

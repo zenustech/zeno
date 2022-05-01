@@ -67,6 +67,12 @@ void ZenoDockTitleWidget::paintEvent(QPaintEvent* event)
 	painter.setPen(pen);
 }
 
+void ZenoDockTitleWidget::mouseDoubleClickEvent(QMouseEvent* event)
+{
+    QWidget::mouseDoubleClickEvent(event);
+    emit doubleClicked();
+}
+
 void ZenoDockTitleWidget::updateByType(DOCK_TYPE type)
 {
 

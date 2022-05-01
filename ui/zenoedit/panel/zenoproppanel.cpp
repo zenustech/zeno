@@ -22,7 +22,7 @@ ZenoPropPanel::ZenoPropPanel(QWidget* parent)
 	setFocusPolicy(Qt::ClickFocus);
 
 	QPalette palette = this->palette();
-	palette.setBrush(QPalette::Window, QColor(42, 42, 42));
+	palette.setBrush(QPalette::Window, QColor(37, 37, 38));
 	setPalette(palette);
 	setAutoFillBackground(true);
 

@@ -62,6 +62,7 @@ void ZenoDockWidget::setWidget(DOCK_TYPE type, QWidget* widget)
 
 	connect(pTitleWidget, SIGNAL(dockOptionsClicked()), this, SLOT(onDockOptionsClicked()));
 	connect(pTitleWidget, SIGNAL(dockSwitchClicked(DOCK_TYPE)), this, SIGNAL(dockSwitchClicked(DOCK_TYPE)));
+    connect(pTitleWidget, SIGNAL(doubleClicked()), this, SLOT(onFloatTriggered()));
 }
 
 void ZenoDockWidget::onNodesSelected(const QModelIndex& subgIdx, const QModelIndexList& nodes, bool select)
@@ -105,8 +106,9 @@ bool ZenoDockWidget::event(QEvent* event)
     {
         case QEvent::MouseButtonDblClick:
         {
-            onFloatTriggered();
-            return true;
+        //    onFloatTriggered();
+            if (m_type == DOCK_EDITOR || m_type == DOCK_VIEW)
+                return true;
         }
         case QEvent::NonClientAreaMouseButtonDblClick:
         {
@@ -189,7 +191,7 @@ void ZenoDockWidget::onFloatTriggered()
 {
     if (isFloating())
     {
-        if (qobject_cast<ZenoGraphsEditor *>(widget()))
+        if (m_type == DOCK_EDITOR || m_type == DOCK_VIEW)
         {
             setWindowFlags(m_oldFlags);
             ZenoMainWindow* pMainWin = zenoApp->getMainWindow();
@@ -207,7 +209,7 @@ void ZenoDockWidget::onFloatTriggered()
     {
         setFloating(true);
         m_oldFlags = windowFlags();
-        if (qobject_cast<ZenoGraphsEditor*>(widget()))
+        if (m_type == DOCK_EDITOR || m_type == DOCK_VIEW)
         {
             setParent(nullptr);
             m_newFlags = Qt::CustomizeWindowHint | Qt::Window |
