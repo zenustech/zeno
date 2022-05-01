@@ -506,14 +506,17 @@ struct ZSReturnMapping : INode {
     using namespace zs;
     bool materialParamOverride =
         eles.hasProperty("mu") && eles.hasProperty("lam");
-    auto nadp = NonAssociativeDruckerPrager<float>{0}; // friction angle
+    // drucker prager for stvk elastic model
+    // ref: libwetcloth, Jiang 2017
     cudaPol(range(eles.size()),
             [eles = proxy<execspace_e::cuda>({}, eles), stvkModel = stvkModel,
-             nadp, materialParamOverride] __device__(size_t pi) mutable {
+             materialParamOverride] __device__(size_t pi) mutable {
               // hard code ftm
               constexpr auto gamma = 0.f;
               // constexpr auto k = 40000.f;
               // constexpr auto friction_coeff = 0.f;
+              constexpr auto alpha = 0.f;
+              constexpr auto beta = 0.f;
               constexpr auto alpha_tangent = 0.f;
               constexpr auto cohesion = 0.f; // no cohesion ftm
               bool projected = false;
@@ -523,53 +526,52 @@ struct ZSReturnMapping : INode {
               }
               auto d = eles.pack<3, 3>("d", pi);
               auto [Q, R] = math::gram_schmidt(d);
-              auto apply = [&, &Q = Q, &R = R]() {};
 
               using mat2 = zs::vec<float, 2, 2>;
 
               mat2 R_hat{R(1, 1), R(1, 2), R(2, 1), R(2, 2)};
-              projected = nadp.project_strain(R_hat, stvkModel);
-              for (int r = 0; r != 2; ++r)
-                for (int c = 0; c != 2; ++c)
-                  R(r + 1, r + 1) = R_hat(r, c);
-
-              auto tau_hat = stvkModel.first_piola(R_hat) * R_hat.transpose();
-
-              auto p_cohesion =
-                  (stvkModel.mu * 2 + stvkModel.lam * 2) * cohesion;
-              // auto p = zs::min(trace(tau_hat) / 2, p_cohesion);
-              auto p = trace(tau_hat) / 2;
-
-              // Compute yield function
-              zs::vec<float, 2> r{R(0, 1), R(0, 2)};
-              auto gammaRr = gamma * (R_hat * r).norm();
-              auto f = gammaRr + alpha_tangent * p;
-
-              if (gamma == 0.f) { // CASE 1: no friction
-                R(0, 1) = 0;
-                R(0, 2) = 0;
-                projected = true;
+              auto [U, S, V] = math::qr_svd(R_hat);
+              auto eps = S.log();
+              auto eps_trace = eps.sum();
+              if (eps_trace < 0) {
+                auto eep = eps - 0.5f * eps_trace;
+                auto eep_norm = eep.norm();
+                auto dgp = eep_norm + (stvkModel.mu + stvkModel.lam) /
+                                          stvkModel.mu * eps_trace * alpha;
+                if (eep_norm < limits<float>::epsilon()) {
+                  eps = eps.zeros();
+                } else {
+                  eps = eps - dgp * eep / eep_norm;
+                }
+              } else {
+                eps = eps.zeros();
               }
-#if 0
-              else if (f <= p_cohesion) { // CASE 2: inside yield surface
-                apply();
-              }
-#endif
-              else { // CASE 3: need to scale R01 and R02 to satisfy yield
-                     // condition
-                // assert(gammaRr != 0, gammaRr);
-                auto scale = (p_cohesion - alpha_tangent * p) / gammaRr;
-                r *= scale;
-                R(0, 1) = r(0);
-                R(0, 2) = r(1);
-                projected = true;
+              S = eps.exp();
+
+              auto R2 = diag_mul(U, S) * V.transpose();
+              R(1, 1) = R2(0, 0);
+              R(1, 2) = R2(0, 1);
+              R(2, 1) = R2(1, 0);
+              R(2, 2) = R2(1, 1);
+
+              const auto ff =
+                  stvkModel.mu * zs::sqrt(sqr(R(0, 1)) + sqr(R(0, 2)));
+
+              auto tmp = eps / S;
+              const auto fn =
+                  (2.0f * stvkModel.mu * tmp + stvkModel.lam * eps.sum() / S)
+                      .norm() *
+                  0.5f;
+
+              if (ff > 0 && ff > fn * beta) {
+                const auto scale = zs::min(1.f, beta * fn / ff);
+                R(0, 1) *= scale;
+                R(0, 2) *= scale;
               }
 
-              if (projected) {
-                d = Q * R;
-                eles.tuple<9>("d", pi) = d;
-                eles.tuple<9>("F", pi) = d * eles.pack<3, 3>("DmInv", pi);
-              }
+              d = Q * R;
+              eles.tuple<9>("d", pi) = d;
+              eles.tuple<9>("F", pi) = d * eles.pack<3, 3>("DmInv", pi);
             });
   }
   void apply() override {
