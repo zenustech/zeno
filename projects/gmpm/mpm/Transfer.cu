@@ -92,8 +92,8 @@ struct ZSParticleToZSGrid : INode {
               auto d_ = eles.pack<3, 3>("d", pi);
 
               // hard coded P compute
-              constexpr auto gamma = 0.f;
-              constexpr auto k = 500.f;
+              constexpr auto gamma = 10.f;
+              constexpr auto k = 2000.f;
               auto [Q, R] = math::gram_schmidt(F);
               mat2 R2{R(1, 1), R(1, 2), 0, R(2, 2)};
               if (materialParamOverride) {
