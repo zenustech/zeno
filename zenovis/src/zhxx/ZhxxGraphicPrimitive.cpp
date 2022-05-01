@@ -289,6 +289,13 @@ static void parseTrianglesDrawBuffer(zeno::PrimitiveObject *prim, ZhxxDrawObject
     }
     /* TOCK(bindebo); */
 }
+
+struct InstVboData
+{
+    glm::mat4 modelMatrix;
+    float time;
+};
+
 struct ZhxxGraphicPrimitive final : ZhxxIGraphicDraw {
     ZhxxScene *scene;
     std::unique_ptr<Buffer> vbo;
@@ -315,6 +322,10 @@ struct ZhxxGraphicPrimitive final : ZhxxIGraphicDraw {
     bool prim_has_mtl = false;
     bool prim_has_inst = false;
     int prim_inst_amount = 0;
+    float prim_inst_delta_time = 0.0f;
+    int prim_inst_frame_amount = 0;
+    int prim_inst_vertex_amount = 0;
+    std::unique_ptr<Texture> prim_inst_vertex_frame_sampler;
 
     explicit ZhxxGraphicPrimitive(ZhxxScene *scene_, zeno::PrimitiveObject *prim)
         : scene(scene_) {
@@ -403,9 +414,19 @@ struct ZhxxGraphicPrimitive final : ZhxxIGraphicDraw {
 
         if (prim->inst != nullptr) {
             instvbo = std::make_unique<Buffer>(GL_ARRAY_BUFFER);
-            instvbo->bind_data(prim->inst->modelMatrices.data(),
-                               prim->inst->modelMatrices.size() *
-                                   sizeof(prim->inst->modelMatrices[0]));
+
+            auto amount = prim->inst->amount;
+            const auto &modelMatrices = prim->inst->modelMatrices;
+            const auto &timeList = prim->inst->timeList;
+
+            std::vector<InstVboData> data;
+            data.reserve(amount);
+            for (int i = 0; i < amount; ++i)
+            {
+                data.emplace_back(InstVboData{.modelMatrix = modelMatrices[i], .time = timeList[i]});
+            }
+
+            instvbo->bind_data(data.data(), amount * sizeof(InstVboData));
         }
 
         points_count = prim->points.size();
@@ -522,6 +543,20 @@ struct ZhxxGraphicPrimitive final : ZhxxIGraphicDraw {
         if (prim->inst != nullptr) {
             prim_has_inst = true;
             prim_inst_amount = prim->inst->amount;
+            prim_inst_delta_time = prim->inst->deltaTime;
+            prim_inst_frame_amount = prim->inst->frameAmount;
+            prim_inst_vertex_amount = prim->inst->vertexAmount;
+            prim_inst_vertex_frame_sampler = std::make_unique<Texture>();
+            prim_inst_vertex_frame_sampler->target = GL_TEXTURE_2D;
+            prim_inst_vertex_frame_sampler->wrap_s = GL_CLAMP_TO_EDGE;
+            prim_inst_vertex_frame_sampler->wrap_t = GL_CLAMP_TO_EDGE;
+            prim_inst_vertex_frame_sampler->min_filter = GL_LINEAR;
+            prim_inst_vertex_frame_sampler->mag_filter = GL_LINEAR;
+            prim_inst_vertex_frame_sampler->internal_fmt = GL_RGB32F;
+            prim_inst_vertex_frame_sampler->format = GL_RGB;
+            prim_inst_vertex_frame_sampler->dtype = GL_FLOAT;
+            prim_inst_vertex_frame_sampler->bind_image(prim->inst->vertexFrameBuffer.data(), prim_inst_vertex_amount,
+                                                       prim_inst_frame_amount);
         }
     }
 
@@ -566,24 +601,27 @@ struct ZhxxGraphicPrimitive final : ZhxxIGraphicDraw {
 
         auto instvbobind = [&](auto &instvbo) {
             instvbo->bind();
-            instvbo->attribute(5, sizeof(glm::vec4) * 0, sizeof(glm::vec4) * 4,
+            instvbo->attribute(5, offsetof(InstVboData, modelMatrix) + sizeof(glm::vec4) * 0, sizeof(InstVboData),
                                GL_FLOAT, 4);
-            instvbo->attribute(6, sizeof(glm::vec4) * 1, sizeof(glm::vec4) * 4,
+            instvbo->attribute(6, offsetof(InstVboData, modelMatrix) + sizeof(glm::vec4) * 1, sizeof(InstVboData),
                                GL_FLOAT, 4);
-            instvbo->attribute(7, sizeof(glm::vec4) * 2, sizeof(glm::vec4) * 4,
+            instvbo->attribute(7, offsetof(InstVboData, modelMatrix) + sizeof(glm::vec4) * 2, sizeof(InstVboData),
                                GL_FLOAT, 4);
-            instvbo->attribute(8, sizeof(glm::vec4) * 3, sizeof(glm::vec4) * 4,
+            instvbo->attribute(8, offsetof(InstVboData, modelMatrix) + sizeof(glm::vec4) * 3, sizeof(InstVboData),
                                GL_FLOAT, 4);
+            instvbo->attribute(9, offsetof(InstVboData, time), sizeof(InstVboData), GL_FLOAT, 1);
             instvbo->attrib_divisor(5, 1);
             instvbo->attrib_divisor(6, 1);
             instvbo->attrib_divisor(7, 1);
             instvbo->attrib_divisor(8, 1);
+            instvbo->attrib_divisor(9, 1);
         };
         auto instvbounbind = [&](auto &instvbo) {
             instvbo->disable_attribute(5);
             instvbo->disable_attribute(6);
             instvbo->disable_attribute(7);
             instvbo->disable_attribute(8);
+            instvbo->disable_attribute(9);
             instvbo->unbind();
         };
 
@@ -604,16 +642,28 @@ struct ZhxxGraphicPrimitive final : ZhxxIGraphicDraw {
             }
 
             triObj.shadowprog->use();
+            int texOcp = 0;
             //light->setShadowMV(triObj.shadowprog);
             triObj.shadowprog->set_uniform("mView", light->lightMV);
+
+            if (prim_has_inst) {
+                triObj.prog->set_uniform("fInstDeltaTime", prim_inst_delta_time);
+                triObj.prog->set_uniformi("iInstFrameAmount", prim_inst_frame_amount);
+                triObj.prog->set_uniformi("iInstVertexAmount", prim_inst_vertex_amount);
+                triObj.prog->set_uniformi("iInstVertexFrameSampler", texOcp);
+                prim_inst_vertex_frame_sampler->bind_to(texOcp);
+                texOcp++;
+            }
+
             if (prim_has_mtl) {
                 const int &texsSize = textures.size();
                 for (int texId = 0; texId < texsSize; ++texId) {
                     std::string texName = "zenotex" + std::to_string(texId);
-                    triObj.shadowprog->set_uniformi(texName.c_str(), texId);
-                    CHECK_GL(glActiveTexture(GL_TEXTURE0 + texId));
+                    triObj.shadowprog->set_uniformi(texName.c_str(), texOcp);
+                    CHECK_GL(glActiveTexture(GL_TEXTURE0 + texOcp));
                     CHECK_GL(glBindTexture(textures[texId]->target,
                                            textures[texId]->tex));
+                    texOcp++;
                 }
             }
             triObj.ebo->bind();
@@ -687,24 +737,27 @@ struct ZhxxGraphicPrimitive final : ZhxxIGraphicDraw {
 
         auto instvbobind = [&](auto &instvbo) {
             instvbo->bind();
-            instvbo->attribute(5, sizeof(glm::vec4) * 0, sizeof(glm::vec4) * 4,
+            instvbo->attribute(5, offsetof(InstVboData, modelMatrix) + sizeof(glm::vec4) * 0, sizeof(InstVboData),
                                GL_FLOAT, 4);
-            instvbo->attribute(6, sizeof(glm::vec4) * 1, sizeof(glm::vec4) * 4,
+            instvbo->attribute(6, offsetof(InstVboData, modelMatrix) + sizeof(glm::vec4) * 1, sizeof(InstVboData),
                                GL_FLOAT, 4);
-            instvbo->attribute(7, sizeof(glm::vec4) * 2, sizeof(glm::vec4) * 4,
+            instvbo->attribute(7, offsetof(InstVboData, modelMatrix) + sizeof(glm::vec4) * 2, sizeof(InstVboData),
                                GL_FLOAT, 4);
-            instvbo->attribute(8, sizeof(glm::vec4) * 3, sizeof(glm::vec4) * 4,
+            instvbo->attribute(8, offsetof(InstVboData, modelMatrix) + sizeof(glm::vec4) * 3, sizeof(InstVboData),
                                GL_FLOAT, 4);
+            instvbo->attribute(9, offsetof(InstVboData, time), sizeof(InstVboData), GL_FLOAT, 1);
             instvbo->attrib_divisor(5, 1);
             instvbo->attrib_divisor(6, 1);
             instvbo->attrib_divisor(7, 1);
             instvbo->attrib_divisor(8, 1);
+            instvbo->attrib_divisor(9, 1);
         };
         auto instvbounbind = [&](auto &instvbo) {
             instvbo->disable_attribute(5);
             instvbo->disable_attribute(6);
             instvbo->disable_attribute(7);
             instvbo->disable_attribute(8);
+            instvbo->disable_attribute(9);
             instvbo->unbind();
         };
 
@@ -768,7 +821,17 @@ struct ZhxxGraphicPrimitive final : ZhxxIGraphicDraw {
             }
 
             triObj.prog->use();
+            int texOcp = 0;
             scene->visScene->camera->set_program_uniforms(triObj.prog);
+
+            if (prim_has_inst) {
+                triObj.prog->set_uniform("fInstDeltaTime", prim_inst_delta_time);
+                triObj.prog->set_uniformi("iInstFrameAmount", prim_inst_frame_amount);
+                triObj.prog->set_uniformi("iInstVertexAmount", prim_inst_vertex_amount);
+                triObj.prog->set_uniformi("iInstVertexFrameSampler", texOcp);
+                prim_inst_vertex_frame_sampler->bind_to(texOcp);
+                texOcp++;
+            }
 
             triObj.prog->set_uniform("mSmoothShading", scene->visScene->drawOptions->smooth_shading);
             triObj.prog->set_uniform("mNormalCheck", scene->visScene->drawOptions->normal_check);
@@ -787,11 +850,10 @@ struct ZhxxGraphicPrimitive final : ZhxxIGraphicDraw {
 
             if (prim_has_mtl) {
                 const int &texsSize = textures.size();
-                int texOcp = 0;
                 for (int texId = 0; texId < texsSize; ++texId) {
                     std::string texName = "zenotex" + std::to_string(texId);
-                    triObj.prog->set_uniformi(texName.c_str(), texId);
-                    CHECK_GL(glActiveTexture(GL_TEXTURE0 + texId));
+                    triObj.prog->set_uniformi(texName.c_str(), texOcp);
+                    CHECK_GL(glActiveTexture(GL_TEXTURE0 + texOcp));
                     CHECK_GL(glBindTexture(textures[texId]->target,
                                            textures[texId]->tex));
                     texOcp++;
@@ -1055,6 +1117,10 @@ uniform mat4 mView;
 uniform mat4 mProj;
 uniform mat4 mInvView;
 uniform mat4 mInvProj;
+uniform float fInstDeltaTime;
+uniform int iInstFrameAmount;
+uniform int iInstVertexAmount;
+uniform sampler2D sInstVertexFrameSampler;
 
 in vec3 vPosition;
 in vec3 vColor;
@@ -1062,6 +1128,7 @@ in vec3 vNormal;
 in vec3 vTexCoord;
 in vec3 vTangent;
 in mat4 mInstModel;
+in float fInstTime;
 
 out vec3 position;
 out vec3 iColor;
@@ -1069,9 +1136,26 @@ out vec3 iNormal;
 out vec3 iTexCoord;
 out vec3 iTangent;
 
+vec3 computeFramePosition()
+{
+  if (fInstDeltaTime == 0.0 || iInstFrameAmount == 0 || iInstVertexAmount == 0)
+  {
+    return vPosition;
+  }
+  int prevFrameID = int(fInstTime / fInstDeltaTime); 
+  int nextFrameID = prevFrameID + 1;
+  float dt = fInstTime - fInstDeltaTime * prevFrameID;
+  prevFrameID = clamp(prevFrameID, 0, iInstFrameAmount - 1);  
+  nextFrameID = clamp(nextFrameID, 0, iInstFrameAmount - 1);  
+  vec3 prevPosition = texelFetch(sInstVertexFrameSampler, ivec2(gl_VertexID, prevFrameID), 0).rgb;
+  vec3 nextPosition = texelFetch(sInstVertexFrameSampler, ivec2(gl_VertexID, nextFrameID), 0).rgb;
+  return mix(prevPosition, nextPosition, dt);
+}
+
 void main()
 {
-  position = vec3(mInstModel * vec4(vPosition, 1.0));
+  vec3 framePosition = computeFramePosition();
+  position = vec3(mInstModel * vec4(framePosition, 1.0));
   iColor = vColor;
   iNormal = transpose(inverse(mat3(mInstModel))) * vNormal;
   iTexCoord = vTexCoord;
@@ -1302,6 +1386,10 @@ uniform mat4 mView;
 uniform mat4 mProj;
 uniform mat4 mInvView;
 uniform mat4 mInvProj;
+uniform float fInstDeltaTime;
+uniform int iInstFrameAmount;
+uniform int iInstVertexAmount;
+uniform sampler2D sInstVertexFrameSampler;
 
 in vec3 vPosition;
 in vec3 vColor;
@@ -1309,15 +1397,34 @@ in vec3 vNormal;
 in vec3 vTexCoord;
 in vec3 vTangent;
 in mat4 mInstModel;
+in float fInstTime;
 
 out vec3 position;
 out vec3 iColor;
 out vec3 iNormal;
 out vec3 iTexCoord;
 out vec3 iTangent;
+
+vec3 computeFramePosition()
+{
+  if (fInstDeltaTime == 0.0 || iInstFrameAmount == 0 || iInstVertexAmount == 0)
+  {
+    return vPosition;
+  }
+  int prevFrameID = int(fInstTime / fInstDeltaTime); 
+  int nextFrameID = prevFrameID + 1;
+  float dt = fInstTime - fInstDeltaTime * prevFrameID;
+  prevFrameID = clamp(prevFrameID, 0, iInstFrameAmount - 1);  
+  nextFrameID = clamp(nextFrameID, 0, iInstFrameAmount - 1);  
+  vec3 prevPosition = texelFetch(sInstVertexFrameSampler, ivec2(gl_VertexID, prevFrameID), 0).rgb;
+  vec3 nextPosition = texelFetch(sInstVertexFrameSampler, ivec2(gl_VertexID, nextFrameID), 0).rgb;
+  return mix(prevPosition, nextPosition, dt);
+}
+
 void main()
 {
-  position = vec3(mInstModel * vec4(vPosition, 1.0));
+  vec3 framePosition = computeFramePosition();
+  position = vec3(mInstModel * vec4(framePosition, 1.0));
   iColor = vColor;
   iNormal = transpose(inverse(mat3(mInstModel))) * vNormal;
   iTexCoord = vTexCoord;
