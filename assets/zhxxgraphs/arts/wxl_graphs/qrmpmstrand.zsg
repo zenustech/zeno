@@ -403,8 +403,8 @@
       "name": "dx"
      },
      "uipos": [
-      340.91175093632944,
-      1074.4967228464418
+      336.9666971283824,
+      1074.496722846442
      ],
      "options": []
     },
@@ -664,9 +664,9 @@
      "name": "ConfigConstitutiveModel",
      "inputs": {
       "dx": [
-       "9a57c70c-PortalOut",
-       "port",
-       0.1
+       null,
+       null,
+       0.05
       ],
       "ppc": [
        null,
@@ -1397,8 +1397,8 @@
        null
       ],
       "ZSBoundary(Grid)": [
-       "c317b279-ApplyBoundaryOnZSGrid",
-       "ZSGrid",
+       "5acc5137-PortalOut",
+       "port",
        null
       ],
       "dt": [
@@ -1414,8 +1414,8 @@
      },
      "params": {},
      "uipos": [
-      6344.8028528015675,
-      2336.363720167732
+      6370.445702553223,
+      2332.4186663597843
      ],
      "options": []
     },
@@ -1506,7 +1506,7 @@
        null
       ],
       "SRC": [
-       "c317b279-ApplyBoundaryOnZSGrid",
+       "7517c0fd-ComputeParticleBeta",
        "DST",
        null
       ]
@@ -1957,10 +1957,10 @@
     }
    },
    "view_rect": {
-    "x": -1395.0421796725655,
-    "y": 149.79114258555228,
-    "width": 5722.0458984375,
-    "height": 2908.7066650390607
+    "x": -1110.6665614701606,
+    "y": -266.6104909810126,
+    "width": 11175.870895385742,
+    "height": 5681.067705154415
    }
   }
  },
@@ -2019,77 +2019,6 @@
    "params": [],
    "categories": [
     "math"
-   ]
-  },
-  "AABBVoronoi": {
-   "inputs": [
-    [
-     "PrimitiveObject",
-     "particlesPrim",
-     ""
-    ],
-    [
-     "vec3f",
-     "bboxMin",
-     "-1,-1,-1"
-    ],
-    [
-     "vec3f",
-     "bboxMax",
-     "1,1,1"
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "ListObject",
-     "primList",
-     ""
-    ],
-    [
-     "ListObject",
-     "neighList",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "bool",
-     "triangulate",
-     "1"
-    ],
-    [
-     "int",
-     "numRandPoints",
-     "64"
-    ],
-    [
-     "bool",
-     "periodicX",
-     "0"
-    ],
-    [
-     "bool",
-     "periodicY",
-     "0"
-    ],
-    [
-     "bool",
-     "periodicZ",
-     "0"
-    ]
-   ],
-   "categories": [
-    "cgmesh"
    ]
   },
   "AddMuscleFibers2": {
@@ -2276,83 +2205,6 @@
    "params": [],
    "categories": [
     "alembic"
-   ]
-  },
-  "AppendLSysOP": {
-   "inputs": [
-    [
-     "LSysGenerator",
-     "generator",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "LSysGenerator",
-     "generator",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "enum rule turnLeft turnRight pitchDown pitchUp thicken rollLeft rollRight narrow setReduction setThickness turn180 drawLeaf drawBranch goForward saveState restoreState",
-     "command",
-     "turnLeft"
-    ],
-    [
-     "string",
-     "param",
-     ""
-    ]
-   ],
-   "categories": [
-    "LSystem"
-   ]
-  },
-  "AppendLSysRule": {
-   "inputs": [
-    [
-     "LSysGenerator",
-     "generator",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "LSysGenerator",
-     "generator",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "string",
-     "ruleName",
-     ""
-    ]
-   ],
-   "categories": [
-    "LSystem"
    ]
   },
   "AppendList": {
@@ -2645,46 +2497,6 @@
    "params": [],
    "categories": [
     "portal"
-   ]
-  },
-  "AssignUniformAffineToPrim": {
-   "inputs": [
-    [
-     "",
-     "quat",
-     ""
-    ],
-    [
-     "",
-     "trans",
-     ""
-    ],
-    [
-     "",
-     "prim",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "prim",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "FEM"
    ]
   },
   "BeginFor": {
@@ -4374,41 +4186,6 @@
     "numeric"
    ]
   },
-  "EmbedPrimitiveToVolumeMesh": {
-   "inputs": [
-    [
-     "",
-     "prim",
-     ""
-    ],
-    [
-     "",
-     "vmesh",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "prim",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "FEM"
-   ]
-  },
   "EmptyDict": {
    "inputs": [
     [
@@ -4583,41 +4360,6 @@
    "params": [],
    "categories": [
     "MPM"
-   ]
-  },
-  "EvalElmDeformationField": {
-   "inputs": [
-    [
-     "",
-     "shape",
-     ""
-    ],
-    [
-     "",
-     "shapeElmView",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "shapeElmView",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "FEM"
    ]
   },
   "ExitProcess": {
@@ -6305,36 +6047,6 @@
     "subgraph"
    ]
   },
-  "GetTetMeshElementView": {
-   "inputs": [
-    [
-     "",
-     "prim",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "elmView",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "FEM"
-   ]
-  },
   "GetTime": {
    "inputs": [
     [
@@ -6811,87 +6523,6 @@
    "params": [],
    "categories": [
     "primitive"
-   ]
-  },
-  "InterpolateElmAttrib": {
-   "inputs": [
-    [
-     "",
-     "prim",
-     ""
-    ],
-    [
-     "",
-     "elmView",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "elmView",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "string",
-     "attrName",
-     "RENAME ME"
-    ],
-    [
-     "enum float vec3f",
-     "attrType",
-     "float"
-    ]
-   ],
-   "categories": [
-    "FEM"
-   ]
-  },
-  "InterpolateEmbedPrimitive": {
-   "inputs": [
-    [
-     "",
-     "skin",
-     ""
-    ],
-    [
-     "",
-     "volume",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "res",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "FEM"
    ]
   },
   "KillParticlesInSDF": {
@@ -7505,31 +7136,6 @@
     "numeric"
    ]
   },
-  "MakeDampingForceModel": {
-   "inputs": [
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "DampForceModel",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "FEM"
-   ]
-  },
   "MakeDict": {
    "inputs": [
     [
@@ -7553,42 +7159,6 @@
    "params": [],
    "categories": [
     "dict"
-   ]
-  },
-  "MakeElasticForceModel": {
-   "inputs": [
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "ElasticModel",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "enum HyperElastic Fiberic BSplineModel Stvk",
-     "ForceModel",
-     "HyperElastic"
-    ],
-    [
-     "float",
-     "aniso_strength",
-     "20"
-    ]
-   ],
-   "categories": [
-    "FEM"
    ]
   },
   "MakeExplicitTimeIntegrator2": {
@@ -7617,57 +7187,6 @@
     ]
    ],
    "params": [],
-   "categories": [
-    "FEM"
-   ]
-  },
-  "MakeFEMIntegrator": {
-   "inputs": [
-    [
-     "",
-     "prim",
-     ""
-    ],
-    [
-     "",
-     "elasto",
-     ""
-    ],
-    [
-     "",
-     "visco",
-     ""
-    ],
-    [
-     "float",
-     "dt",
-     "1"
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "FEMIntegrator",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "enum BE QS EBQS SDQS",
-     "integType",
-     "QS"
-    ]
-   ],
    "categories": [
     "FEM"
    ]
@@ -7862,6 +7381,21 @@
      ""
     ],
     [
+     "float",
+     "deltaTime",
+     "0.0"
+    ],
+    [
+     "list",
+     "timeList",
+     ""
+    ],
+    [
+     "list",
+     "framePrims",
+     ""
+    ],
+    [
      "",
      "SRC",
      ""
@@ -7907,57 +7441,6 @@
    "params": [],
    "categories": [
     "Zentricle"
-   ]
-  },
-  "MakeLSysGenerator": {
-   "inputs": [
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "LSysGenerator",
-     "generator",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "int",
-     "isPlus",
-     "1"
-    ],
-    [
-     "int",
-     "iterations",
-     "0"
-    ],
-    [
-     "int",
-     "defaultCoefficient",
-     "0"
-    ],
-    [
-     "int",
-     "thickness",
-     "0"
-    ],
-    [
-     "string",
-     "axiom",
-     ""
-    ]
-   ],
-   "categories": [
-    "LSystem"
    ]
   },
   "MakeList": {
@@ -8023,61 +7506,6 @@
    "params": [],
    "categories": [
     "math"
-   ]
-  },
-  "MakeMPMMehser": {
-   "inputs": [
-    [
-     "",
-     "pathPreFix",
-     ""
-    ],
-    [
-     "",
-     "tet_path",
-     ""
-    ],
-    [
-     "",
-     "smooth_iter",
-     ""
-    ],
-    [
-     "",
-     "start",
-     ""
-    ],
-    [
-     "",
-     "end",
-     ""
-    ],
-    [
-     "",
-     "edge_stretch",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "MPMMehser",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "GPUMPM"
    ]
   },
   "MakeMultilineString": {
@@ -8972,41 +8400,6 @@
    ],
    "categories": [
     "openvdb"
-   ]
-  },
-  "MesherProcessFrame": {
-   "inputs": [
-    [
-     "",
-     "Mesher",
-     ""
-    ],
-    [
-     "",
-     "frameNumber",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "FramePrimitive",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "GPUMPM"
    ]
   },
   "MoveAssign": {
@@ -10379,47 +9772,6 @@
     "primitive"
    ]
   },
-  "ParticlesToSegments": {
-   "inputs": [
-    [
-     "",
-     "particles",
-     ""
-    ],
-    [
-     "float",
-     "dt",
-     "1.0"
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "seg",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "string",
-     "dir_chanel",
-     ""
-    ]
-   ],
-   "categories": [
-    "FEM"
-   ]
-  },
   "ParticlesWrangle": {
    "inputs": [
     [
@@ -11295,82 +10647,6 @@
    ],
    "categories": [
     "primitive"
-   ]
-  },
-  "PrimitiveBooleanOp": {
-   "inputs": [
-    [
-     "",
-     "primA",
-     ""
-    ],
-    [
-     "",
-     "primB",
-     ""
-    ],
-    [
-     "NumericObject",
-     "faceAttrA",
-     ""
-    ],
-    [
-     "NumericObject",
-     "faceAttrB",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "primC",
-     ""
-    ],
-    [
-     "bool",
-     "anyFromA",
-     ""
-    ],
-    [
-     "bool",
-     "anyFromB",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "enum Union Intersect Minus RevMinus XOR Resolve",
-     "op_type",
-     "Union"
-    ],
-    [
-     "string",
-     "faceAttrName",
-     ""
-    ],
-    [
-     "bool",
-     "calcAnyFrom",
-     "0"
-    ],
-    [
-     "bool",
-     "doMeshFix",
-     "1"
-    ]
-   ],
-   "categories": [
-    "cgmesh"
    ]
   },
   "PrimitiveBoundingBox": {
@@ -12304,82 +11580,6 @@
     "primitive"
    ]
   },
-  "PrimitiveListBoolOp": {
-   "inputs": [
-    [
-     "",
-     "primA",
-     ""
-    ],
-    [
-     "",
-     "primListB",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "primList",
-     ""
-    ],
-    [
-     "",
-     "lutList",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "enum Union Intersect Minus RevMinus XOR Resolve",
-     "op_type",
-     "Union"
-    ],
-    [
-     "string",
-     "faceAttrName",
-     ""
-    ],
-    [
-     "bool",
-     "assignAttrs",
-     "1"
-    ],
-    [
-     "bool",
-     "calcAnyFrom",
-     "0"
-    ],
-    [
-     "bool",
-     "doMeshFix",
-     "1"
-    ],
-    [
-     "bool",
-     "noNullMesh",
-     "1"
-    ],
-    [
-     "string",
-     "DEPRECATED",
-     ""
-    ]
-   ],
-   "categories": [
-    "cgmesh"
-   ]
-  },
   "PrimitiveMerge": {
    "inputs": [
     [
@@ -12413,36 +11613,6 @@
    "params": [],
    "categories": [
     "primitive"
-   ]
-  },
-  "PrimitiveMeshingFix": {
-   "inputs": [
-    [
-     "",
-     "prim",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "primFixed",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "cgmesh"
    ]
   },
   "PrimitiveMix": {
@@ -13488,57 +12658,6 @@
     "primitive"
    ]
   },
-  "PrimitiveVoronoi": {
-   "inputs": [
-    [
-     "",
-     "prim",
-     ""
-    ],
-    [
-     "",
-     "particlesPrim",
-     ""
-    ],
-    [
-     "int",
-     "numParticles",
-     "64"
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "primList",
-     ""
-    ],
-    [
-     "",
-     "neighList",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "string",
-     "DEPRECATED",
-     ""
-    ]
-   ],
-   "categories": [
-    "cgmesh"
-   ]
-  },
   "PrimitiveWireframe": {
    "inputs": [
     [
@@ -13660,36 +12779,6 @@
    "params": [],
    "categories": [
     "string"
-   ]
-  },
-  "ProceduralTree": {
-   "inputs": [
-    [
-     "LSysGenerator",
-     "generator",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "primitive",
-     "prim",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "LSystem"
    ]
   },
   "ProjectAndNormalize": {
@@ -14501,46 +13590,6 @@
    "params": [],
    "categories": [
     "list"
-   ]
-  },
-  "RetrieveRigidTransformQuat": {
-   "inputs": [
-    [
-     "",
-     "refObj",
-     ""
-    ],
-    [
-     "",
-     "newObj",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "quat",
-     ""
-    ],
-    [
-     "",
-     "trans",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "FEM"
    ]
   },
   "RigidGetForce": {
@@ -16700,36 +15749,6 @@
     "shader"
    ]
   },
-  "SimplifyVoroNeighborList": {
-   "inputs": [
-    [
-     "ListObject",
-     "neighList",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "ListObject",
-     "newNeighList",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "cgmesh"
-   ]
-  },
   "SlicePlaneForPrimitive": {
    "inputs": [
     [
@@ -16828,81 +15847,6 @@
    "params": [],
    "categories": [
     "FLIP"
-   ]
-  },
-  "SolveFEM": {
-   "inputs": [
-    [
-     "",
-     "integrator",
-     ""
-    ],
-    [
-     "",
-     "shape",
-     ""
-    ],
-    [
-     "",
-     "elmView",
-     ""
-    ],
-    [
-     "",
-     "skin",
-     ""
-    ],
-    [
-     "int",
-     "maxNRIters",
-     "10"
-    ],
-    [
-     "int",
-     "maxBTLs",
-     "10"
-    ],
-    [
-     "float",
-     "ArmijoCoeff",
-     "0.01"
-    ],
-    [
-     "float",
-     "CurvatureCoeff",
-     "0.9"
-    ],
-    [
-     "float",
-     "BTL_shrinkingRate",
-     "0.5"
-    ],
-    [
-     "float",
-     "epsilon",
-     "1e-8"
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "shape",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "FEM"
    ]
   },
   "SolveNonlinearProblem2": {
@@ -19556,77 +18500,6 @@
    "params": [],
    "categories": [
     "openvdb"
-   ]
-  },
-  "VoronoiFracture": {
-   "inputs": [
-    [
-     "PrimitiveObject",
-     "meshPrim",
-     ""
-    ],
-    [
-     "PrimitiveObject",
-     "particlesPrim",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "ListObject",
-     "primList",
-     ""
-    ],
-    [
-     "ListObject",
-     "neighList",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "bool",
-     "doMeshFix",
-     "1"
-    ],
-    [
-     "bool",
-     "doMeshFix2",
-     "1"
-    ],
-    [
-     "int",
-     "numRandPoints",
-     "256"
-    ],
-    [
-     "bool",
-     "periodicX",
-     "0"
-    ],
-    [
-     "bool",
-     "periodicY",
-     "0"
-    ],
-    [
-     "bool",
-     "periodicZ",
-     "0"
-    ]
-   ],
-   "categories": [
-    "cgmesh"
    ]
   },
   "WriteAlembic": {
