@@ -43,7 +43,7 @@ void Scene::switchRenderEngine(std::string const &name) {
 }
 
 bool Scene::cameraFocusOnNode(std::string const &nodeid) {
-    if (auto it = this->objects.find(nodeid); it != this->objects.end()) {
+    if (auto it = this->objects.find(nodeid); it != this->objects.end()) {  // FIXME: nono, use `:` to split `:TOVIEW` instead!
         if (auto obj = dynamic_cast<zeno::PrimitiveObject *>(it->second.get())) {
             auto [bmin, bmax] = primBoundingBox(obj);
             auto delta = bmax - bmin;

@@ -16,25 +16,20 @@ struct ToView : zeno::INode {
         graph->nodesToExec.insert(myname);
     }
 
-    bool hasStaticViewed = true;
-
     virtual void apply() override {
         auto p = get_input("object");
         if (!p) {
             log_error("ToView: given object is nullptr");
         } else {
-            std::shared_ptr<IObject> pp;
-            if (p->userData().has("static")) {
-                pp = p->clone();
-            } else {
-                pp = p->clone();
-            }
+            auto pp = p->clone();
             if (!pp) {
                 log_warn("ToView: given object doesn't support clone, giving up");
             } else {
                 log_debug("ToView: added view object of type {}", cppdemangle(typeid(*p)));
                 /* pp->userData().set("nodeid", objectFromLiterial(this->myname)); */
-                getThisSession()->globalComm->addViewObject(this->myname, std::move(pp));
+                auto key = this->myname + "@" + std::to_string(getThisSession()->globalState->frameid)
+                    + "@" + std::to_string(getThisSession()->globalState->sessionid);
+                getThisSession()->globalComm->addViewObject(key, std::move(pp));
             }
         }
         set_output("object", std::move(p));

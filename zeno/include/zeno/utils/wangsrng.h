@@ -89,11 +89,11 @@ struct wangsrng {
     }
 
     constexpr float next_float() {
-        return next_uint32() * (1.0f / UINT32_MAX);
+        return next_uint32() * (1.0f / (float)UINT32_MAX);
     }
 
     constexpr double next_double() {
-        return next_uint64() * (1.0 / UINT64_MAX);
+        return next_uint64() * (1.0 / (double)UINT64_MAX);
     }
 };
 

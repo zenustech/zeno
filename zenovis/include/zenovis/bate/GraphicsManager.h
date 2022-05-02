@@ -2,6 +2,7 @@
 
 #include <map>
 #include <vector>
+#include <zeno/types/UserData.h>
 #include <zeno/utils/MapStablizer.h>
 #include <zeno/utils/PolymorphicMap.h>
 #include <zeno/utils/log.h>
@@ -23,8 +24,9 @@ struct GraphicsManager {
         auto ins = graphics.insertPass();
         for (auto const &[key, obj] : objs) {
             if (ins.may_emplace(key)) {
+                zeno::log_debug("load_object: loading graphics [{}]", key);
                 auto ig = makeGraphic(scene, obj);
-                zeno::log_debug("load_object: load graphics {}", ig.get());
+                zeno::log_debug("load_object: loaded graphics to {}", ig.get());
                 ins.try_emplace(key, std::move(ig));
             }
         }
