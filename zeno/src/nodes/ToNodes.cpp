@@ -27,8 +27,14 @@ struct ToView : zeno::INode {
             } else {
                 log_debug("ToView: added view object of type {}", cppdemangle(typeid(*p)));
                 /* pp->userData().set("nodeid", objectFromLiterial(this->myname)); */
-                auto key = this->myname + "@" + std::to_string(getThisSession()->globalState->frameid)
-                    + "@" + std::to_string(getThisSession()->globalState->sessionid);
+                auto key = this->myname;
+                key.push_back('@');
+                if (get_input2<bool>("isStatic"))
+                    key.append("static");
+                else
+                    key.append(std::to_string(getThisSession()->globalState->frameid));
+                key.push_back('@');
+                key.append(std::to_string(getThisSession()->globalState->sessionid));
                 getThisSession()->globalComm->addViewObject(key, std::move(pp));
             }
         }
@@ -37,7 +43,7 @@ struct ToView : zeno::INode {
 };
 
 ZENDEFNODE(ToView, {
-    {"object"},
+    {"object", {"bool", "isStatic", "0"}},
     {"object"},
     {},
     {"graphtool"},

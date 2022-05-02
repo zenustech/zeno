@@ -123,8 +123,10 @@ static void serializeGraph(SubGraphModel* pModel, GraphsModel* pGraphsModel, QSt
                 auto viewerIdent = ident + ":TOVIEW";
                 AddStringList({"addNode", "ToView", viewerIdent}, writer);
                 AddStringList({"bindNodeInput", viewerIdent, "object", ident, output.info.name}, writer);
+                bool isStatic = opts & OPT_ONCE;
+                AddVariantList({"setNodeInput", viewerIdent, "isStatic", isStatic}, "int", writer);
                 AddStringList({"completeNode", viewerIdent}, writer);
-                break;  //???
+                break;  //??? should we view all outputs?
             }
         }
 
