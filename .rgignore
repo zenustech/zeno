@@ -1,3 +1,8 @@
+# third-party files
+projects/FastFLIP/partio
+projects/Rigid/bullet3
+projects/Rigid/HACD
+projects/mesher/mpmmeshing
 projects/Alembic/Alembic
 projects/cgmesh/libigl
 projects/cgmesh/meshfix
@@ -9,6 +14,10 @@ zenovis/glad
 zenovis/stbi
 zenovis/include
 zeno/tpls
+
+# our binary files
 ui/zenodesign
-misc
+projects/tools
+projects/oldzenbase
 assets
+misc
