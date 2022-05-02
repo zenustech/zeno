@@ -148,8 +148,8 @@ int Session::get_curr_frameid() {
     return impl->curr_frameid;
 }
 
-void Session::load_objects(std::vector<std::shared_ptr<zeno::IObject>> const &objs) {
-    impl->scene->setObjects(objs);
+void Session::load_objects() {
+    impl->scene->loadFrameObjects(impl->curr_frameid);
 }
 
 void Session::set_render_engine(std::string const &name) {

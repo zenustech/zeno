@@ -29,7 +29,7 @@ struct RenderEngineBate : RenderEngine {
     }
 
     void update() override {
-        graphicsMan->load_objects(scene->objects);
+        graphicsMan->load_objects(scene->objects.pairs());
     }
 
     void draw() override {

@@ -96,7 +96,7 @@ static void runner_start(std::string const &progJson) {
         send_packet("{\"action\":\"newFrame\"}", "", 0);
 
         for (auto const &obj: viewObjs) {
-            if (zeno::encodeObject(obj.get(), buffer))
+            if (zeno::encodeObject(obj, buffer))
                 send_packet("{\"action\":\"viewObject\"}", buffer.data(), buffer.size());
             buffer.clear();
         }

@@ -1,5 +1,7 @@
 #include <zenovis/Scene.h>
 #include <zenovis/Camera.h>
+#include <zeno/core/Session.h>
+#include <zeno/extra/GlobalComm.h>
 #include <zeno/types/UserData.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/funcs/PrimitiveUtils.h>
@@ -41,24 +43,24 @@ void Scene::switchRenderEngine(std::string const &name) {
 }
 
 bool Scene::cameraFocusOnNode(std::string const &nodeid) {
-    for (auto const &obj: this->objects) {
-        if (nodeid == zeno::objectToLiterial<std::string>(obj->userData().get("nodeid"))) {
-            if (auto obj2 = dynamic_cast<zeno::PrimitiveObject *>(obj.get())) {
-                auto [bmin, bmax] = primBoundingBox(obj2);
-                auto delta = bmax - bmin;
-                auto radius = std::max({delta[0], delta[1], delta[2]}) * 0.5f;
-                auto center = (bmin + bmax) * 0.5f;
-                this->camera->focusCamera(center[0], center[1], center[2], radius);
-                return true;
-            }
+    if (auto it = this->objects.find(nodeid); it != this->objects.end()) {
+        if (auto obj = dynamic_cast<zeno::PrimitiveObject *>(it->second.get())) {
+            auto [bmin, bmax] = primBoundingBox(obj);
+            auto delta = bmax - bmin;
+            auto radius = std::max({delta[0], delta[1], delta[2]}) * 0.5f;
+            auto center = (bmin + bmax) * 0.5f;
+            this->camera->focusCamera(center[0], center[1], center[2], radius);
+            return true;
         }
     }
     zeno::log_debug("cannot focus: node with id {} not found, did you tagged VIEW on it?", nodeid);
     return false;
 }
 
-void Scene::setObjects(std::vector<std::shared_ptr<zeno::IObject>> const &objs) {
-    this->objects = objs;
+void Scene::loadFrameObjects(int frameid) {
+    auto const &viewObjs = zeno::getSession().globalComm->getViewObjects(frameid);
+    zeno::log_trace("load_objects: {} objects at frame {}", viewObjs.size(), frameid);
+    this->objects = viewObjs;
     renderEngine->update();
 }
 
