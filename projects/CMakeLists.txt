@@ -18,7 +18,6 @@ set(ZENO_EXTENSIONS
     Functional
     TreeSketch
     )
-add_subdirectory(SharedExtension)
 
 if (ZENO_NO_WARNING)
     add_compile_options(-w)
