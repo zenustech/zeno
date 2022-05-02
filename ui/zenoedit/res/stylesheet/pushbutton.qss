@@ -212,3 +212,21 @@ QPushButton#btnKill:pressed
 	background-color: rgb(26, 26, 26);
 	color: rgb(145,47,48);
 }
+
+QPushButton#btnAlways
+{
+    padding-top: 3px;
+    padding-left: 13px;
+    padding-right: 13px;
+   	padding-bottom: 4px;
+   	border: 0.5px solid rgba(0,0,0,1);
+    border-radius: 4px;
+	   background-color: #2B2B2B;
+	   font: bold 14px 'HarmonyOS Sans';
+	   color: #8A8A8C;
+}
+
+QPushButton#btnAlways:pressed, QPushButton#btnAlways:checked
+{
+    color: rgb(247,74,6);
+}

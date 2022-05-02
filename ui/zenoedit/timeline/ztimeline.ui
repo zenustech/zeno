@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>854</width>
-    <height>87</height>
+    <height>90</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -28,7 +28,8 @@
         <string/>
        </property>
        <property name="icon">
-        <iconset theme=":/icons/timeline-curvemap.svg"/>
+        <iconset theme=":/icons/timeline-curvemap.svg">
+         <normaloff>.</normaloff>.</iconset>
        </property>
        <property name="iconSize">
         <size>
@@ -53,6 +54,16 @@
         </size>
        </property>
       </spacer>
+     </item>
+     <item>
+      <widget class="QPushButton" name="btnAlways">
+       <property name="text">
+        <string>ALWAYS</string>
+       </property>
+       <property name="checkable">
+        <bool>true</bool>
+       </property>
+      </widget>
      </item>
      <item>
       <widget class="QPushButton" name="btnRun">
@@ -90,7 +101,8 @@
         <string/>
        </property>
        <property name="icon">
-        <iconset theme=":/icons/timeline-lastframe.svg"/>
+        <iconset theme=":/icons/timeline-lastframe.svg">
+         <normaloff>.</normaloff>.</iconset>
        </property>
        <property name="iconSize">
         <size>
@@ -108,8 +120,7 @@
        <property name="icon">
         <iconset>
          <normaloff>:/icons/timeline-play.svg</normaloff>
-         <normalon>:/icons/timeline-pause.svg</normalon>
-        </iconset>
+         <normalon>:/icons/timeline-pause.svg</normalon>:/icons/timeline-play.svg</iconset>
        </property>
        <property name="iconSize">
         <size>
@@ -128,7 +139,8 @@
         <string/>
        </property>
        <property name="icon">
-        <iconset theme=":/icons/timeline-nextframe.svg"/>
+        <iconset theme=":/icons/timeline-nextframe.svg">
+         <normaloff>.</normaloff>.</iconset>
        </property>
        <property name="iconSize">
         <size>
@@ -166,7 +178,8 @@
         <string/>
        </property>
        <property name="icon">
-        <iconset theme=":/icons/timeline-recycle.svg"/>
+        <iconset theme=":/icons/timeline-recycle.svg">
+         <normaloff>.</normaloff>.</iconset>
        </property>
        <property name="iconSize">
         <size>
@@ -204,12 +217,13 @@
       </widget>
      </item>
      <item>
-      <widget class="QPushButton" name="pushButton_8">
+      <widget class="QPushButton" name="btnRecord">
        <property name="text">
         <string/>
        </property>
        <property name="icon">
-        <iconset theme=":/icons/timeline-record.svg"/>
+        <iconset theme=":/icons/timeline-record.svg">
+         <normaloff>.</normaloff>.</iconset>
        </property>
        <property name="iconSize">
         <size>

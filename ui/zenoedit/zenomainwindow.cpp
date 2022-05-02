@@ -19,12 +19,16 @@
 #include <zenoui/style/zenostyle.h>
 #include <zenoui/util/uihelper.h>
 
+
 ZenoMainWindow::ZenoMainWindow(QWidget *parent, Qt::WindowFlags flags)
-    : QMainWindow(parent, flags), m_pEditor(nullptr), m_viewDock(nullptr), m_timelineDock(nullptr),
-      m_bInDlgEventloop(false) {
+    : QMainWindow(parent, flags)
+    , m_pEditor(nullptr)
+    , m_viewDock(nullptr)
+    , m_timelineDock(nullptr)
+    , m_bInDlgEventloop(false)
+{
     init();
     setContextMenuPolicy(Qt::NoContextMenu);
-
     setWindowTitle("Zeno Editor (github.com/zenustech/zeno)");
 #ifdef __linux__
     if (char *p = std::getenv("ZENO_OPEN")) {

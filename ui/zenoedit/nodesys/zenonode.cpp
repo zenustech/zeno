@@ -173,8 +173,6 @@ void ZenoNode::initWangStyle(const QModelIndex& subGIdx, const QModelIndex& inde
 	setFlag(ItemSendsGeometryChanges);
 	setFlag(ItemSendsScenePositionChanges);
 
-    m_headerWidget->installSceneEventFilter(this);
-
     //todo:
 	//connect(this, SIGNAL(doubleClicked(const QString&)), pModel, SLOT(onDoubleClicked(const QString&)));
 }

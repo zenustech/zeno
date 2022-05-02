@@ -82,7 +82,8 @@ public:
 
 public slots:
     void updateFrame();
-    void onRunClicked(int beginFrame, int endFrame);
+    void onRun();
+    void onModelDataChanged();
 
 signals:
     void frameUpdated(int new_frame);
