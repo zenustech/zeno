@@ -1,0 +1,14 @@
+projects/Alembic/Alembic
+projects/cgmesh/libigl
+projects/cgmesh/meshfix
+projects/cgmesh/voro
+projects/gmpm/zecomp
+projects/zenvdb/openvdb
+zenovis/openexr
+zenovis/glad
+zenovis/stbi
+zenovis/include
+zeno/tpls
+ui/zenodesign
+misc
+assets
