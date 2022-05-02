@@ -12,7 +12,6 @@ projects/zenvdb/openvdb
 zenovis/openexr
 zenovis/glad
 zenovis/stbi
-zenovis/include
 zeno/tpls
 
 # our binary files
