@@ -625,13 +625,14 @@ struct ZSReturnMapping : INode {
           return_mapping_surface(cudaPol, eles);
         else if (parObjPtr->category == ZenoParticles::curve) {
           const auto &models = parObjPtr->getModel();
-          StvkWithHencky<float> stvkModel{};
-          match([&stvkModel](const auto &elasticModel) {
-            stvkModel.mu = elasticModel.mu;
-            stvkModel.lam = elasticModel.lam;
-          })(models.getElasticModel());
-          // use drucker prager plasticity for friction handling
-          return_mapping_curve(cudaPol, stvkModel, eles);
+          match(
+              [this, &eles, &cudaPol](const StvkWithHencky<float> &stvkModel) {
+                // use drucker prager plasticity for friction handling
+                return_mapping_curve(cudaPol, stvkModel, eles);
+              },
+              [](...) {
+                // do nothing
+              })(models.getElasticModel());
         }
       }
     }

@@ -223,6 +223,16 @@ struct ToZSParticles : INode {
     }
     outParticles->category = category;
 
+    if (category == ZenoParticles::curve) {
+      auto &elasticModel = outParticles->getModel().getElasticModel();
+      zs::match([&elasticModel](auto &model) {
+        StvkWithHencky<float> stvk{};
+        stvk.mu = model.mu;
+        stvk.lam = model.lam;
+        elasticModel = stvk;
+      })(elasticModel);
+    }
+
     // per vertex (node) vol, pos, vel
     auto ompExec = zs::omp_exec();
 

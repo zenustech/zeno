@@ -296,7 +296,13 @@ struct ConstructBendingSprings : INode {
     //
     auto ret = std::make_shared<ZenoParticles>();
     ret->sprayedOffset = cnt.getVal();
+    FixedCorotated<float> fcr{};
+    zs::match([&fcr](auto &model) {
+      fcr.mu = model.mu;
+      fcr.lam = model.lam;
+    })(surf.getModel().getElasticModel());
     ret->getModel() = surf.getModel();
+    ret->getModel().getElasticModel() = fcr;
     ret->category = ZenoParticles::curve;
 
     std::vector<zs::PropertyTag> tags{{"mass", 1}, {"pos", 3}, {"vel", 3},
