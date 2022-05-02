@@ -9,6 +9,8 @@ template <class Map>
 struct MapStablizer {
     using key_type = typename Map::key_type;
     using mapped_type = typename Map::mapped_type;
+    using iterator = typename Map::iterator;
+    using const_iterator = typename Map::const_iterator;
 
     Map m_curr, m_next;
 
@@ -69,10 +71,10 @@ struct MapStablizer {
         bool may_emplace(key_type const &key) {
             auto it = that.m_curr.find(key);
             if (it != that.m_curr.end()) {
-                that.m_next.try_emplace(key, std::move(it->second));
-                return true;
+                that.m_next.try_emplace(key, std::move(const_cast<mapped_type &>(it->second)));
+                return false;
             }
-            return false;
+            return true;
         }
 
         template <class ...Args>

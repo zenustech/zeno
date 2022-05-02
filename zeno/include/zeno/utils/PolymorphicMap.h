@@ -11,6 +11,8 @@ struct PolymorphicMap {
     using key_type = typename Map::key_type;
     using mapped_type = typename Map::mapped_type;
     using value_type = typename Map::value_type;
+    using iterator = typename Map::iterator;
+    using const_iterator = typename Map::const_iterator;
 
     using element_type = typename std::pointer_traits<mapped_type>::element_type;
     static_assert(std::is_polymorphic_v<element_type>);
