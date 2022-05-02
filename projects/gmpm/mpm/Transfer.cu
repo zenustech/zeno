@@ -215,12 +215,13 @@ struct ZSParticleToZSGrid : INode {
             [verts = proxy<execspace_e::cuda>({}, verts),
              eles = proxy<execspace_e::cuda>({}, eles),
              table = proxy<execspace_e::cuda>(partition),
-             grid = proxy<execspace_e::cuda>({}, grid), model = model,
-             materialParamOverride, dt, dxinv = 1.f / grid.dx, vtag,
+             grid = proxy<execspace_e::cuda>({}, grid), materialParamOverride,
+             dt, dxinv = 1.f / grid.dx, vtag,
              isAffineAugmented] __device__(size_t pi) mutable {
               using grid_t = RM_CVREF_T(grid);
               using mat2 = zs::vec<float, 2, 2>;
               using mat3 = zs::vec<float, 3, 3>;
+              using vec3 = zs::vec<float, 3>;
               const auto Dinv = 4.f * dxinv * dxinv;
               auto pos = eles.pack<3>("pos", pi);
               auto vel = eles.pack<3>("vel", pi);
@@ -235,16 +236,9 @@ struct ZSParticleToZSGrid : INode {
               constexpr auto gamma = 10.f;
               constexpr auto k = 2000.f;
               auto [Q, R] = math::gram_schmidt(F);
-              mat2 R2{R(1, 1), R(1, 2), 0, R(2, 2)};
-              if (materialParamOverride) {
-                model.mu = eles("mu", pi);
-                model.lam = eles("lam", pi);
-              }
-              auto P2 = model.first_piola(R2); // use as F
-              auto P = mat3::zeros();
+              auto f = vec3::zeros();
               if (R(0, 0) < 1) // bent (compressed)
-                P(0, 0) = 0.01f * zs::max(R(0, 0) - 1, -0.3f);
-              P = Q * P;
+                f = col(d_, 0).normalized() * (1 - R(0, 0));
 
               auto arena =
                   make_local_arena<grid_e::collocated, kernel_e::quadratic, 1>(
@@ -271,10 +265,9 @@ struct ZSParticleToZSGrid : INode {
               }
 
               // type (ii)
-              auto transfer = [P_c0 = col(P, 0), &grid, &table,
-                               &vtag](const auto &pos, auto D_beta_eps,
-                                      const auto coeff) {
-                auto vft = coeff * P_c0 * D_beta_eps;
+              auto transfer = [f, &grid, &table, &vtag](const auto &pos,
+                                                        const auto coeff) {
+                auto vft = coeff * f;
                 auto arena = make_local_arena(grid.dx, pos);
 
                 for (auto loc : arena.range()) {
@@ -284,7 +277,6 @@ struct ZSParticleToZSGrid : INode {
                   if (blockno < 0)
                     printf("THE HELL!");
                   auto block = grid.block(blockno);
-
                   auto W = arena.weight(loc);
                   const auto cellid = grid_t::coord_to_cellid(localIndex);
                   for (int d = 0; d != 3; ++d) {
@@ -293,11 +285,10 @@ struct ZSParticleToZSGrid : INode {
                   }
                 }
               };
-              auto Dminv00 = eles("DmInv", pi);
               auto inds =
                   eles.pack<2>("inds", pi).template reinterpret_bits<int>();
-              transfer(verts.pack<3>("pos", inds[0]), Dminv00, vol * dt);
-              transfer(verts.pack<3>("pos", inds[1]), Dminv00, -vol * dt);
+              transfer(verts.pack<3>("pos", inds[0]), vol * dt);
+              transfer(verts.pack<3>("pos", inds[1]), -vol * dt);
             });
   }
   template <typename Model>
