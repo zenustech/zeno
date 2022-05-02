@@ -324,7 +324,6 @@ struct ZhxxGraphicPrimitive final : ZhxxIGraphicDraw {
     int prim_inst_amount = 0;
     float prim_inst_delta_time = 0.0f;
     int prim_inst_frame_amount = 0;
-    int prim_inst_vertex_amount = 0;
     std::unique_ptr<Texture> prim_inst_vertex_frame_sampler;
 
     explicit ZhxxGraphicPrimitive(ZhxxScene *scene_, zeno::PrimitiveObject *prim)
@@ -545,7 +544,6 @@ struct ZhxxGraphicPrimitive final : ZhxxIGraphicDraw {
             prim_inst_amount = prim->inst->amount;
             prim_inst_delta_time = prim->inst->deltaTime;
             prim_inst_frame_amount = prim->inst->frameAmount;
-            prim_inst_vertex_amount = prim->inst->vertexAmount;
             prim_inst_vertex_frame_sampler = std::make_unique<Texture>();
             prim_inst_vertex_frame_sampler->target = GL_TEXTURE_2D;
             prim_inst_vertex_frame_sampler->wrap_s = GL_CLAMP_TO_EDGE;
@@ -555,7 +553,7 @@ struct ZhxxGraphicPrimitive final : ZhxxIGraphicDraw {
             prim_inst_vertex_frame_sampler->internal_fmt = GL_RGB32F;
             prim_inst_vertex_frame_sampler->format = GL_RGB;
             prim_inst_vertex_frame_sampler->dtype = GL_FLOAT;
-            prim_inst_vertex_frame_sampler->bind_image(prim->inst->vertexFrameBuffer.data(), prim_inst_vertex_amount,
+            prim_inst_vertex_frame_sampler->bind_image(prim->inst->vertexFrameBuffer.data(), prim->inst->vertexAmount,
                                                        prim_inst_frame_amount);
         }
     }
@@ -649,7 +647,6 @@ struct ZhxxGraphicPrimitive final : ZhxxIGraphicDraw {
             if (prim_has_inst) {
                 triObj.prog->set_uniform("fInstDeltaTime", prim_inst_delta_time);
                 triObj.prog->set_uniformi("iInstFrameAmount", prim_inst_frame_amount);
-                triObj.prog->set_uniformi("iInstVertexAmount", prim_inst_vertex_amount);
                 triObj.prog->set_uniformi("iInstVertexFrameSampler", texOcp);
                 prim_inst_vertex_frame_sampler->bind_to(texOcp);
                 texOcp++;
@@ -827,7 +824,6 @@ struct ZhxxGraphicPrimitive final : ZhxxIGraphicDraw {
             if (prim_has_inst) {
                 triObj.prog->set_uniform("fInstDeltaTime", prim_inst_delta_time);
                 triObj.prog->set_uniformi("iInstFrameAmount", prim_inst_frame_amount);
-                triObj.prog->set_uniformi("iInstVertexAmount", prim_inst_vertex_amount);
                 triObj.prog->set_uniformi("iInstVertexFrameSampler", texOcp);
                 prim_inst_vertex_frame_sampler->bind_to(texOcp);
                 texOcp++;
@@ -1119,7 +1115,6 @@ uniform mat4 mInvView;
 uniform mat4 mInvProj;
 uniform float fInstDeltaTime;
 uniform int iInstFrameAmount;
-uniform int iInstVertexAmount;
 uniform sampler2D sInstVertexFrameSampler;
 
 in vec3 vPosition;
@@ -1138,7 +1133,7 @@ out vec3 iTangent;
 
 vec3 computeFramePosition()
 {
-  if (fInstDeltaTime == 0.0 || iInstFrameAmount == 0 || iInstVertexAmount == 0)
+  if (fInstDeltaTime == 0.0 || iInstFrameAmount == 0)
   {
     return vPosition;
   }
@@ -1388,7 +1383,6 @@ uniform mat4 mInvView;
 uniform mat4 mInvProj;
 uniform float fInstDeltaTime;
 uniform int iInstFrameAmount;
-uniform int iInstVertexAmount;
 uniform sampler2D sInstVertexFrameSampler;
 
 in vec3 vPosition;
@@ -1407,7 +1401,7 @@ out vec3 iTangent;
 
 vec3 computeFramePosition()
 {
-  if (fInstDeltaTime == 0.0 || iInstFrameAmount == 0 || iInstVertexAmount == 0)
+  if (fInstDeltaTime == 0.0 || iInstFrameAmount == 0)
   {
     return vPosition;
   }
