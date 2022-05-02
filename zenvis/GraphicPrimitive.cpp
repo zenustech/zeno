@@ -328,7 +328,6 @@ struct GraphicPrimitive : IGraphic {
   int prim_inst_amount = 0;
   float prim_inst_delta_time = 0.0f;
   int prim_inst_frame_amount = 0;
-  int prim_inst_vertex_amount = 0;
   std::unique_ptr<Texture> prim_inst_vertex_frame_sampler;
   
   GraphicPrimitive
@@ -561,7 +560,6 @@ struct GraphicPrimitive : IGraphic {
         prim_inst_amount = prim->inst->amount;    
         prim_inst_delta_time = prim->inst->deltaTime;
         prim_inst_frame_amount = prim->inst->frameAmount;    
-        prim_inst_vertex_amount = prim->inst->vertexAmount;    
         prim_inst_vertex_frame_sampler = std::make_unique<Texture>();
         prim_inst_vertex_frame_sampler->target = GL_TEXTURE_2D;
         prim_inst_vertex_frame_sampler->wrap_s = GL_CLAMP_TO_EDGE;
@@ -571,7 +569,7 @@ struct GraphicPrimitive : IGraphic {
         prim_inst_vertex_frame_sampler->internal_fmt = GL_RGB32F;
         prim_inst_vertex_frame_sampler->format = GL_RGB;
         prim_inst_vertex_frame_sampler->dtype = GL_FLOAT;
-        prim_inst_vertex_frame_sampler->bind_image(prim->inst->vertexFrameBuffer.data(), prim_inst_vertex_amount, prim_inst_frame_amount);
+        prim_inst_vertex_frame_sampler->bind_image(prim->inst->vertexFrameBuffer.data(), prim->inst->vertexAmount, prim_inst_frame_amount);
     }
 
   }
@@ -657,7 +655,6 @@ struct GraphicPrimitive : IGraphic {
         {
             triObj.prog->set_uniform("fInstDeltaTime", prim_inst_delta_time);
             triObj.prog->set_uniformi("iInstFrameAmount", prim_inst_frame_amount);
-            triObj.prog->set_uniformi("iInstVertexAmount", prim_inst_vertex_amount);
             triObj.prog->set_uniformi("iInstVertexFrameSampler",texOcp);
             prim_inst_vertex_frame_sampler->bind_to(texOcp);
             texOcp++;
@@ -829,7 +826,6 @@ struct GraphicPrimitive : IGraphic {
         {
             triObj.prog->set_uniform("fInstDeltaTime", prim_inst_delta_time);
             triObj.prog->set_uniformi("iInstFrameAmount", prim_inst_frame_amount);
-            triObj.prog->set_uniformi("iInstVertexAmount", prim_inst_vertex_amount);
             triObj.prog->set_uniformi("iInstVertexFrameSampler",texOcp);
             prim_inst_vertex_frame_sampler->bind_to(texOcp);
             texOcp++;

@@ -36,7 +36,6 @@ uniform mat4 mInvView;
 uniform mat4 mInvProj;
 uniform float fInstDeltaTime;
 uniform int iInstFrameAmount;
-uniform int iInstVertexAmount;
 uniform sampler2D sInstVertexFrameSampler;
 
 in vec3 vPosition;
@@ -55,7 +54,7 @@ out vec3 iTangent;
 
 vec3 computeFramePosition()
 {
-  if (fInstDeltaTime == 0.0 || iInstFrameAmount == 0 || iInstVertexAmount == 0)
+  if (fInstDeltaTime == 0.0 || iInstFrameAmount == 0)
   {
     return vPosition;
   }
@@ -333,7 +332,6 @@ uniform mat4 mInvView;
 uniform mat4 mInvProj;
 uniform float fInstDeltaTime;
 uniform int iInstFrameAmount;
-uniform int iInstVertexAmount;
 uniform sampler2D sInstVertexFrameSampler;
 
 in vec3 vPosition;
@@ -352,7 +350,7 @@ out vec3 iTangent;
 
 vec3 computeFramePosition()
 {
-  if (fInstDeltaTime == 0.0 || iInstFrameAmount == 0 || iInstVertexAmount == 0)
+  if (fInstDeltaTime == 0.0 || iInstFrameAmount == 0)
   {
     return vPosition;
   }
