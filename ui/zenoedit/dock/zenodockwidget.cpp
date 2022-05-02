@@ -53,6 +53,12 @@ void ZenoDockWidget::setWidget(DOCK_TYPE type, QWidget* widget)
         pPropTitle->setupUi();
         pTitleWidget = pPropTitle;
     }
+    else if (m_type == DOCK_VIEW)
+    {
+        ZenoViewDockTitle* pViewTitle = new ZenoViewDockTitle;
+        pViewTitle->setupUi();
+        pTitleWidget = pViewTitle;
+    }
 	else
 	{
         pTitleWidget = new ZenoDockTitleWidget;

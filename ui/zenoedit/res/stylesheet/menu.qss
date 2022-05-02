@@ -44,7 +44,14 @@ QMenu::indicator {
 QMenuBar {
     background-color: rgb(60, 60, 60);
     spacing: 3px;
-    color: rgb(180,180,180);
+    color: rgb(190,190,190);
+}
+
+QMenuBar[cssClass="mainWin"] {
+    background-color: rgb(60, 60, 60);
+    spacing: 3px;
+    color: rgb(190,190,190);
+    border-bottom: 1px solid black;
 }
 
 QMenuBar::item {

@@ -58,6 +58,24 @@ private:
 	QLabel* m_lblTitle;
 };
 
+class ZenoViewDockTitle : public ZenoDockTitleWidget
+{
+	Q_OBJECT
+public:
+	ZenoViewDockTitle(QWidget* parent = nullptr);
+	~ZenoViewDockTitle();
+
+signals:
+	void actionTriggered(QAction* action);
+
+protected:
+	void initTitleContent(QHBoxLayout* pHLayout) override;
+
+private:
+	QMenuBar* initMenu();
+	QAction* createAction(const QString& text);
+};
+
 class ZenoPropDockTitleWidget : public ZenoDockTitleWidget
 {
 	Q_OBJECT
