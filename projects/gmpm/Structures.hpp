@@ -39,7 +39,7 @@ using PlasticModel =
                 zs::NonAssociativeVonMises<float>,
                 zs::NonAssociativeCamClay<float>>;
 
-struct ZenoConstitutiveModel : IObject {
+struct ZenoConstitutiveModel : IObjectClone<ZenoConstitutiveModel> {
   enum elastic_model_e { Fcr, Nhk, Stvk };
   enum aniso_plastic_model_e { None_, Arap };
   enum plastic_model_e { None, DruckerPrager, VonMises, CamClay };
