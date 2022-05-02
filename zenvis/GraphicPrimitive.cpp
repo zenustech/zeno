@@ -419,7 +419,7 @@ struct GraphicPrimitive : IGraphic {
 
     if (prim->inst != nullptr)
     {
-        triObj.instvbo = std::make_unique<Buffer>(GL_ARRAY_BUFFER);
+        instvbo = std::make_unique<Buffer>(GL_ARRAY_BUFFER);
 
         auto amount = prim->inst->amount;
         const auto &modelMatrices = prim->inst->modelMatrices;
