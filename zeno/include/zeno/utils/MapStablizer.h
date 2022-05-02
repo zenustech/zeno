@@ -66,6 +66,15 @@ struct MapStablizer {
 
         explicit InsertPass(MapStablizer &that_) : that(that_) {}
 
+        bool may_emplace(key_type const &key) {
+            auto it = that.m_curr.find(key);
+            if (it != that.m_curr.end()) {
+                that.m_next.try_emplace(key, std::move(it->second));
+                return true;
+            }
+            return false;
+        }
+
         template <class ...Args>
         auto try_emplace(key_type const &key, Args &&...args) {
             return that.m_next.try_emplace(key, std::forward<Args>(args)...);

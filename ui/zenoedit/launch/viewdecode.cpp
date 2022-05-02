@@ -57,7 +57,7 @@ struct PacketProc {
         }
     }
 
-    bool processPacket(std::string const &action, const char *buf, size_t len) {
+    bool processPacket(std::string const &action, std::string const &objKey, const char *buf, size_t len) {
 
         if (action == "viewObject") {
             zeno::log_debug("decoding object");
@@ -68,7 +68,7 @@ struct PacketProc {
                 return false;
             }
             clearGlobalIfNeeded();
-            zeno::getSession().globalComm->addViewObject(object);
+            zeno::getSession().globalComm->addViewObject(objKey, object);
 
         } else if (action == "newFrame") {
             globalCommNeedNewFrame = 1; // postpone `zeno::getSession().globalComm->newFrame();`
@@ -112,10 +112,15 @@ struct PacketProc {
             return false;
         }
 
+        std::string objKey;
+        if (auto it = root.FindMember("key"); it != root.MemberEnd() && it->value.IsString()) {
+            objKey.assign(it->value.GetString(), it->value.GetStringLength());
+        }
+
         const char *data = buf + header.info_size;
         size_t size = header.total_size - header.info_size;
 
-        return processPacket(action, data, size);
+        return processPacket(action, objKey, data, size);
     }
 
 } packetProc;

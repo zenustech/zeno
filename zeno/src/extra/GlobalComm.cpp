@@ -34,10 +34,11 @@ ZENO_API int GlobalComm::maxPlayFrames() {
     return m_maxPlayFrame; // m_frames.size();
 }
 
-ZENO_API GlobalComm::ViewObjects const &GlobalComm::getViewObjects(int frameid) {
+ZENO_API GlobalComm::ViewObjects const *GlobalComm::getViewObjects(int frameid) {
     std::lock_guard lck(m_mtx);
-    if (frameid < 0 || frameid >= m_frames.size()) throw makeError("no frame cache at {}", frameid);
-    return m_frames[frameid].view_objects;
+    if (frameid < 0 || frameid >= m_frames.size())
+        return nullptr;
+    return &m_frames[frameid].view_objects;
 }
 
 ZENO_API GlobalComm::ViewObjects const &GlobalComm::getViewObjects() {

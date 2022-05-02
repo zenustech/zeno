@@ -1,6 +1,6 @@
 #pragma once
 
-#include <unordered_map>
+#include <map>
 #include <vector>
 #include <zeno/utils/MapStablizer.h>
 #include <zeno/utils/PolymorphicMap.h>
@@ -13,7 +13,7 @@ namespace zenovis::zhxx {
 struct ZhxxGraphicsManager {
     ZhxxScene *scene;
 
-    zeno::MapStablizer<zeno::PolymorphicMap<std::unordered_map<
+    zeno::MapStablizer<zeno::PolymorphicMap<std::map<
         std::string, std::unique_ptr<ZhxxIGraphic>>>> graphics;
 
     explicit ZhxxGraphicsManager(ZhxxScene *scene) : scene(scene) {
@@ -22,9 +22,11 @@ struct ZhxxGraphicsManager {
     void load_objects(std::vector<std::pair<std::string, zeno::IObject *>> const &objs) {
         auto ins = graphics.insertPass();
         for (auto const &[key, obj] : objs) {
-            auto ig = makeGraphic(scene, obj);
-            zeno::log_trace("load_object: load graphics {}", ig.get());
-            ins.try_emplace(key, std::move(ig));
+            if (ins.may_emplace(key)) {
+                auto ig = makeGraphic(scene, obj);
+                zeno::log_debug("(zxx) load_object: load graphics {}", ig.get());
+                ins.try_emplace(key, std::move(ig));
+            }
         }
     }
 };

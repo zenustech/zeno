@@ -29,7 +29,7 @@ struct RenderEngineZhxx : RenderEngine {
 
     void update() override {
         zeno::log_trace("(zxx) updating {} objects", this->scene->objects.size());
-        this->zhxxScene->zxxGraphicsMan->load_objects(this->scene->objects.values());
+        this->zhxxScene->zxxGraphicsMan->load_objects(this->scene->objects.pairs());
     }
 
     void draw() override {

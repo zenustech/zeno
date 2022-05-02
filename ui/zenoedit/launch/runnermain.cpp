@@ -27,7 +27,7 @@ struct Header { // sync with viewdecode.cpp
     }
 };
 
-static void send_packet(std::string const &info, const char *buf, size_t len) {
+static void send_packet(std::string_view info, const char *buf, size_t len) {
     Header header;
     header.total_size = info.size() + len;
     header.info_size = info.size();
@@ -88,16 +88,16 @@ static void runner_start(std::string const &progJson) {
         }
         session->globalComm->finishFrame();
 
-        auto viewObjs = session->globalComm->getViewObjects();
+        auto const &viewObjs = session->globalComm->getViewObjects();
         zeno::log_debug("runner got {} view objects", viewObjs.size());
         session->globalState->frameEnd();
         zeno::log_debug("end frame {}", frame);
 
         send_packet("{\"action\":\"newFrame\"}", "", 0);
 
-        for (auto const &obj: viewObjs) {
-            if (zeno::encodeObject(obj, buffer))
-                send_packet("{\"action\":\"viewObject\"}", buffer.data(), buffer.size());
+        for (auto const &[key, obj]: viewObjs) {
+            if (zeno::encodeObject(obj.get(), buffer))
+                send_packet("{\"action\":\"viewObject\",\"key\":\"" + key + "\"}", buffer.data(), buffer.size());
             buffer.clear();
         }
 
