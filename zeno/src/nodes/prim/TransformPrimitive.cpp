@@ -9,8 +9,9 @@
 #include <cstring>
 
 namespace zeno {
+namespace {
 
-/*struct SetMatrix : zeno::INode{//ZHXX: use Assign instead!
+struct SetMatrix : zeno::INode{//ZHXX: use Assign instead!
     virtual void apply() override {
         auto &dst = std::get<glm::mat4>(get_input<zeno::MatrixObject>("dst")->m);
         auto &src = std::get<glm::mat4>(get_input<zeno::MatrixObject>("src")->m);
@@ -25,7 +26,7 @@ ZENDEFNODE(SetMatrix, {
     {},
     {},
     {"math"},
-});*/
+});
 
 struct MakeLocalSys : zeno::INode{
     virtual void apply() override {
@@ -154,4 +155,5 @@ ZENDEFNODE(TransformPrimitive, {
 });
 
 
+}
 }

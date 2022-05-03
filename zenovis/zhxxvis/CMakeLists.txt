@@ -1,0 +1,7 @@
+set(CMAKE_CXX_FLAGS "${ZENO_OLD_CXX_FLAGS} -w")
+file(GLOB ZENVIS_SOURCE "*.cpp" "*.hpp" "*.h")
+add_library(zhxxvis OBJECT ${ZENVIS_SOURCE})
+target_compile_definitions(zhxxvis PRIVATE -DZENO_APIFREE)
+target_include_directories(zhxxvis PRIVATE .)
+target_include_directories(zhxxvis PRIVATE ../glad/include ../stbi/include)
+target_link_libraries(zhxxvis PRIVATE zeno)

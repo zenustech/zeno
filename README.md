@@ -71,6 +71,8 @@ Go to the [release page](https://github.com/zenustech/zeno/releases/), and click
 
 Then, extract this archive, and simply run `000_start.bat` (`./000_start.sh` for Linux), then the node editor window will shows up if everything is working well.
 
+Apart from the GitHub release page, we also offer binary download from our official site for convinence of Chinese users: https://zenustech.com/d/
+
 ## How to play
 
 There are some example graphs in the `graphs/` folder, you may open them in the editor and have fun!

@@ -3,8 +3,8 @@ name: Integrated Test
 on:
   push:
     branches: [ master ]
-  pull_request:
-    branches: [ master ]
+  #pull_request:
+    #branches: [ master ]
 
 jobs:
   check:
@@ -91,7 +91,12 @@ jobs:
         key: ${{ matrix.os }}-${{ matrix.triplet }}-${{ matrix.cxx }}-${{ matrix.gpu }}-${{ needs.check.outputs.type }}-CMake-1
 
     - name: Clean CMake Cache
-      run: rm -rf ${{ github.workspace }}/build/CMakeCache.txt
+      shell: python
+      run: |
+        import os
+        import shutil
+        shutil.rmtree(os.path.join('build', 'CMakeCache.txt'), ignore_errors=True)
+        shutil.rmtree(os.path.join('build', 'CMakeFiles'), ignore_errors=True)
 
     - name: Run CMake
       uses: lukka/run-cmake@v10
@@ -121,7 +126,11 @@ jobs:
 
     - name: Versioning
       id: versioning
-      run: python misc/ci/get_version.py
+      shell: python
+      run: |
+        import datetime
+        d = datetime.datetime.now()
+        print('::set-output name=version::{}.{}.{}'.format(d.year, d.month, d.day))
 
     - name: Create Release
       id: create_release
@@ -155,10 +164,6 @@ jobs:
     steps:
     - name: Checkout Repo
       uses: actions/checkout@v2
-
-    - name: Versioning
-      id: versioning
-      run: python misc/ci/get_version.py
 
     - name: Download Release Artifact
       uses: actions/download-artifact@v2

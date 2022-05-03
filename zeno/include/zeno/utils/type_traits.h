@@ -127,6 +127,7 @@ using remove_cvref_t = typename remove_cvref<T>::type;
 #define ZENO_DECAY(...) std::decay_t<decltype(__VA_ARGS__)>
 #define ZENO_FWD(x) std::forward<decltype(x)>(x)
 #define ZENO_CRTP(Derived, Base, ...) Derived : Base<Derived __VA_ARGS__>
+#define ZENO_MKFUNC(x, ...) [__VA_ARGS__] (auto &&...x) -> decltype(auto) { return f(ZENO_FWD(x)...); }
 
 
 template <class T>
@@ -227,6 +228,11 @@ inline constexpr To cstyle_cast(T &&t) {
 template <class T>
 inline constexpr T as_copy(T const &t) {
     return t;
+}
+
+template <class T>
+inline constexpr T &as_non_const(T const volatile &t) {
+    return const_cast<T &>(t);
 }
 
 struct identity {

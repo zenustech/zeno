@@ -42,7 +42,7 @@ static void serializeGraph(SubGraphModel* pModel, GraphsModel* pGraphsModel, QSt
         QString noOnceIdent;
         if (opts & OPT_ONCE) {
             noOnceIdent = ident;
-            ident = ident + ".RUNONCE";
+            ident = ident + ":RUNONCE";
         }
 
         if (opts & OPT_MUTE) {
@@ -75,7 +75,7 @@ static void serializeGraph(SubGraphModel* pModel, GraphsModel* pGraphsModel, QSt
                     OUTPUT_SOCKET output = *outputIt++;
                     inputName = output.info.name; // HelperMute forward all inputs to outputs by socket name
                 } else {
-                    inputName += ".DUMMYDEP";
+                    inputName += ":DUMMYDEP";
                 }
             }
 
@@ -120,11 +120,13 @@ static void serializeGraph(SubGraphModel* pModel, GraphsModel* pGraphsModel, QSt
             for (OUTPUT_SOCKET output : outputs)
             {
                 //if (output.info.name == "DST") continue;//qmap wants to put DST/SRC as first socket, skip it
-                auto viewerIdent = ident + ".TOVIEW";
+                auto viewerIdent = ident + ":TOVIEW";
                 AddStringList({"addNode", "ToView", viewerIdent}, writer);
                 AddStringList({"bindNodeInput", viewerIdent, "object", ident, output.info.name}, writer);
+                bool isStatic = opts & OPT_ONCE;
+                AddVariantList({"setNodeInput", viewerIdent, "isStatic", isStatic}, "int", writer);
                 AddStringList({"completeNode", viewerIdent}, writer);
-                break;  //???
+                break;  //??? should we view all outputs?
             }
         }
 
@@ -213,7 +215,6 @@ ZENO_DEFNODE()RAW");
             res.append(R"RAW(", ")RAW");
             res.append(entry.info.name);
             res.append(R"RAW(", ")RAW");
-            // FIXME: UiHelper::variantToString seems doesn't support vec3f
             res.append(UiHelper::variantToString(entry.info.defaultValue));
             res.append(R"RAW("}, )RAW");
         }
@@ -228,7 +229,7 @@ ZENO_DEFNODE()RAW");
             res.append(UiHelper::variantToString(entry.info.defaultValue));
             res.append(R"RAW("}, )RAW");
         }
-        res.append(R"RAW(}
+        res.append(R"RAW(},
     {)RAW");
         for (auto const &entry : desc.params) {
             res.append(R"RAW({")RAW");

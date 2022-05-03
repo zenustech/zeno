@@ -780,7 +780,7 @@ QGraphicsLayout* ZenoNode::initSockets()
             const INPUT_SOCKET& inSocket = inputs[inSock];
             //dont need lineedit except "int£¬float£¬vec3f£¬string".
             const QString& sockType = inSocket.info.type;
-            if (sockType == "int" || sockType == "float" || sockType == "string")
+            if (sockType == "int" || sockType == "float" || sockType == "string" || sockType == "readpath" || sockType == "writepath")
             {
 				ZenoParamLineEdit* pSocketEditor = new ZenoParamLineEdit(UiHelper::variantToString(inSocket.info.defaultValue), inSocket.info.control, m_renderParams.lineEditParam);
                 pMiniLayout->addItem(pSocketEditor);

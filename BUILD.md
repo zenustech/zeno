@@ -98,10 +98,13 @@ cd zeno
 
 ## Build Zeno
 
-Quickly recall our CMake knowledge:
+Quickly recall our CMake knowledge in [my parallel course](github.com/parallel101/course):
 
 1. The first step `cmake -B build` called *configure*, it generates the `build/` directory containing `Makefile`.
 2. The second step `cmake --build build` called *build*, equivalant to `make -C build` on Linux and call MSBuild on Windows.
+
+> JOKE: Fun fact, 99% CMake errors could be solved by `rm -rf build` :)
+> So, if you meet CMake issues, try delete the `build` directory completely and re-run the above two steps. It may magically works again, hopefully.
 
 ### Windows
 
@@ -128,7 +131,7 @@ cmake --build build --parallel 4
 
 ## Run Zeno
 
-After build, you will find all the EXE and DLL files in `build/bin` directory.
+After build, you will find all the EXE and DLL files in `build/bin` directory. Now simply run the `zenoedit.exe` in it:
 
 ### Windows
 

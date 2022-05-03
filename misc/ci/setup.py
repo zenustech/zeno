@@ -13,7 +13,7 @@ if sys.platform == 'linux':
         'autoconf-archive', 'libcgal-dev',
     ])
 elif sys.platform == 'win32':
-    print('windows detected')
+    print('windows detected, nothing to do')
 else:
     assert False, sys.platform
 
