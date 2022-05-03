@@ -330,7 +330,7 @@ void ZenoPropPanel::onInputEditFinish()
 	{
 		IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
 		Q_ASSERT(pGraphsModel);
-		pGraphsModel->updateSocketDefl(nodeid, info, m_subgIdx);
+		pGraphsModel->updateSocketDefl(nodeid, info, m_subgIdx, true);
 	}
 }
 
