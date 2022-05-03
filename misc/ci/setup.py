@@ -19,3 +19,4 @@ else:
 
 shutil.move(os.path.join('misc', 'ci', 'vcpkg.json'), 'vcpkg.json')
 shutil.rmtree(os.path.join('build', 'CMakeCache.txt'), ignore_errors=True)
+shutil.rmtree(os.path.join('build', 'CMakeFiles'), ignore_errors=True)
