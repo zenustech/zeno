@@ -16,7 +16,12 @@ zeno/tpls
 
 # our binary files
 ui/zenodesign
+ui/zenoedit/res
 projects/tools
 projects/oldzenbase
 assets
 misc
+*.html
+*.xml
+*.svg
+*.jpg
