@@ -23,6 +23,7 @@ struct ZhxxGraphicsManager {
         auto ins = graphics.insertPass();
         for (auto const &[key, obj] : objs) {
             if (ins.may_emplace(key)) {
+                zeno::log_debug("(zxx) load_object: loading graphics [{}]", key);
                 auto ig = makeGraphic(scene, obj);
                 zeno::log_debug("(zxx) load_object: load graphics {}", ig.get());
                 ins.try_emplace(key, std::move(ig));

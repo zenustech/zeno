@@ -4,6 +4,7 @@
 #include <zenovis/zhxx/ZhxxCamera.h>
 #include <zenovis/zhxx/ZhxxGraphicsManager.h>
 #include <zenovis/zhxx/ZhxxScene.h>
+#include <zenovis/ObjectsManager.h>
 #include <zenovis/opengl/vao.h>
 
 namespace zenovis::zhxx {
@@ -28,8 +29,9 @@ struct RenderEngineZhxx : RenderEngine {
     }
 
     void update() override {
-        zeno::log_trace("(zxx) updating {} objects", this->scene->objects.size());
-        this->zhxxScene->zxxGraphicsMan->load_objects(this->scene->objects.pairs());
+        auto objs = this->scene->objectsMan->pairs();
+        zeno::log_trace("(zxx) updating {} objects", objs.size());
+        this->zhxxScene->zxxGraphicsMan->load_objects(objs);
     }
 
     void draw() override {

@@ -13,6 +13,6 @@ struct RenderEngine {
 };
 
 std::unique_ptr<RenderEngine> makeRenderEngineBate(Scene *scene);
-//std::unique_ptr<RenderEngine> makeRenderEngineZhxx(Scene *scene);
+std::unique_ptr<RenderEngine> makeRenderEngineZhxx(Scene *scene);
 
 }
