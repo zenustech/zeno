@@ -1,0 +1,6 @@
+file(GLOB ZENVIS_SOURCE "*.cpp" "*.hpp" "*.h")
+add_library(zhxxvis STATIC ${ZENVIS_SOURCE})
+target_compile_definitions(zhxxvis PRIVATE -DZENO_APIFREE)
+target_include_directories(zhxxvis PRIVATE .)
+target_include_directories(zhxxvis PRIVATE ${PROJECT_SOURCE_DIR}/zeno)
+target_link_libraries(zhxxvis PRIVATE glad zeno)
