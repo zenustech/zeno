@@ -20,6 +20,7 @@ set(ZENO_EXTENSIONS
     )
 
 if (ZENO_NO_WARNING)
+    set(CMAKE_CXX_FLAGS "${ZENO_OLD_CXX_FLAGS} -w")
     add_compile_options(-w)
 endif()
 
