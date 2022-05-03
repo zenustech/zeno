@@ -38,7 +38,7 @@ Scene::Scene()
 void Scene::switchRenderEngine(std::string const &name) {
     std::map<std::string, std::function<void()>>{
     {"bate", [&] { renderEngine = makeRenderEngineBate(this); }},
-    {"zhxx", [&] { renderEngine = makeRenderEngineZhxx(this); }},
+    //{"zhxx", [&] { renderEngine = makeRenderEngineZhxx(this); }},
     }.at(name)();
 }
 
