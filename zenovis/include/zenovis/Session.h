@@ -19,7 +19,7 @@ struct Session : zeno::disable_copy {
     ~Session();
 
     void new_frame();
-    void load_objects(std::vector<std::shared_ptr<zeno::IObject>> const &objs);
+    void load_objects();
     void set_window_size(int nx, int ny);
     void set_curr_frameid(int frameid);
     int get_curr_frameid();

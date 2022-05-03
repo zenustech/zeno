@@ -7,9 +7,9 @@
 int main(int argc, char *argv[]) 
 {
 #ifdef ZENO_MULTIPROCESS
-    if (argc == 2 && !strcmp(argv[1], "-runner")) {
-        extern int runner_main();
-        return runner_main();
+    if (argc == 3 && !strcmp(argv[1], "-runner")) {
+        extern int runner_main(int sessionid);
+        return runner_main(atoi(argv[2]));
     }
 #endif
 

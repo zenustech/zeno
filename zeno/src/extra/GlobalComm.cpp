@@ -16,11 +16,11 @@ ZENO_API void GlobalComm::finishFrame() {
     log_debug("GlobalComm::finishFrame {}", m_maxPlayFrame);
 }
 
-ZENO_API void GlobalComm::addViewObject(std::shared_ptr<IObject> const &object) {
+ZENO_API void GlobalComm::addViewObject(std::string const &key, std::shared_ptr<IObject> object) {
     std::lock_guard lck(m_mtx);
     log_debug("GlobalComm::addViewObject {}", m_frames.size());
     if (m_frames.empty()) throw makeError("empty frame cache");
-    m_frames.back().view_objects.push_back(object);
+    m_frames.back().view_objects.try_emplace(key, std::move(object));
 }
 
 ZENO_API void GlobalComm::clearState() {
@@ -34,13 +34,14 @@ ZENO_API int GlobalComm::maxPlayFrames() {
     return m_maxPlayFrame; // m_frames.size();
 }
 
-ZENO_API std::vector<std::shared_ptr<IObject>> GlobalComm::getViewObjects(int frameid) {
+ZENO_API GlobalComm::ViewObjects const *GlobalComm::getViewObjects(int frameid) {
     std::lock_guard lck(m_mtx);
-    if (frameid < 0 || frameid >= m_frames.size()) return {};
-    return m_frames[frameid].view_objects;
+    if (frameid < 0 || frameid >= m_frames.size())
+        return nullptr;
+    return &m_frames[frameid].view_objects;
 }
 
-ZENO_API std::vector<std::shared_ptr<IObject>> GlobalComm::getViewObjects() {
+ZENO_API GlobalComm::ViewObjects const &GlobalComm::getViewObjects() {
     std::lock_guard lck(m_mtx);
     return m_frames.back().view_objects;
 }

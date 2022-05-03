@@ -1,14 +1,14 @@
 #include <zenovis/RenderEngine.h>
 #include <zenovis/DrawOptions.h>
 #include <zenovis/bate/GraphicsManager.h>
+#include <zenovis/ObjectsManager.h>
 #include <zenovis/bate/IGraphic.h>
 #include <zenovis/opengl/vao.h>
 
 namespace zenovis::bate {
 
 struct RenderEngineBate : RenderEngine {
-
-    std::unique_ptr<opengl::VAO> vao = std::make_unique<opengl::VAO>();
+    std::unique_ptr<opengl::VAO> vao;
     std::unique_ptr<GraphicsManager> graphicsMan;
     std::vector<std::unique_ptr<IGraphicDraw>> hudGraphics;
     Scene *scene;
@@ -22,6 +22,7 @@ struct RenderEngineBate : RenderEngine {
         CHECK_GL(glPixelStorei(GL_UNPACK_ALIGNMENT, 1));
         CHECK_GL(glPixelStorei(GL_PACK_ALIGNMENT, 1));
 
+        vao = std::make_unique<opengl::VAO>();
         graphicsMan = std::make_unique<GraphicsManager>(scene);
 
         hudGraphics.push_back(makeGraphicGrid(scene));
@@ -29,7 +30,7 @@ struct RenderEngineBate : RenderEngine {
     }
 
     void update() override {
-        graphicsMan->load_objects(scene->objects);
+        graphicsMan->load_objects(scene->objectsMan->pairs());
     }
 
     void draw() override {

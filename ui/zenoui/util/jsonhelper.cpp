@@ -8,7 +8,7 @@ namespace JsonHelper
 		writer.StartArray();
 		for (auto item : list)
 		{
-			writer.String(item.toLatin1());
+			writer.String(item.toLatin1()); // TODO: luzh, can we support UFT-8 (chinese char) here?
 		}
 		writer.EndArray();
 	}

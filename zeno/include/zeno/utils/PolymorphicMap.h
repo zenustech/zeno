@@ -11,6 +11,8 @@ struct PolymorphicMap {
     using key_type = typename Map::key_type;
     using mapped_type = typename Map::mapped_type;
     using value_type = typename Map::value_type;
+    using iterator = typename Map::iterator;
+    using const_iterator = typename Map::const_iterator;
 
     using element_type = typename std::pointer_traits<mapped_type>::element_type;
     static_assert(std::is_polymorphic_v<element_type>);
@@ -45,8 +47,9 @@ struct PolymorphicMap {
         m_curr.clear();
     }
 
-    auto try_emplace(key_type const &key, mapped_type ptr) {
-        return m_curr.try_emplace(key, std::move(ptr));
+    template <class ...Args>
+    auto try_emplace(key_type const &key, Args &&...args) {
+        return m_curr.try_emplace(key, std::forward<Args>(args)...);
     }
 
     template <class Derived>
@@ -79,7 +82,7 @@ struct PolymorphicMap {
         for (auto const &[key, ptr]: m_curr) {
             auto p = std::addressof(*ptr);
             if (auto q = dynamic_cast<Derived *>(p)) {
-                ret.push_back(key, q);
+                ret.emplace_back(key, q);
             }
         }
         return ret;
@@ -90,7 +93,7 @@ struct PolymorphicMap {
         ret.reserve(m_curr.size());
         for (auto const &[key, ptr]: m_curr) {
             auto p = std::addressof(*ptr);
-            ret.push_back(key, p);
+            ret.emplace_back(key, p);
         }
         return ret;
     }

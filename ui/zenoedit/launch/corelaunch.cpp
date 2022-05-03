@@ -116,7 +116,8 @@ struct ProgramRunData {
         g_proc->setInputChannelMode(QProcess::InputChannelMode::ManagedInputChannel);
         g_proc->setReadChannel(QProcess::ProcessChannel::StandardOutput);
         g_proc->setProcessChannelMode(QProcess::ProcessChannelMode::ForwardedErrorChannel);
-        g_proc->start(QCoreApplication::applicationFilePath(), QStringList({"-runner"}));
+        int sessionid = zeno::getSession().globalState->sessionid;
+        g_proc->start(QCoreApplication::applicationFilePath(), QStringList({"-runner", QString::number(sessionid)}));
         if (!g_proc->waitForStarted(-1)) {
             zeno::log_warn("process failed to get started, giving up");
             return;

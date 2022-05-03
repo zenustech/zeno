@@ -9,6 +9,8 @@ namespace zeno {
 template <class Vector>
 struct PolymorphicVector {
     using value_type = typename Vector::value_type;
+    using iterator = typename Vector::iterator;
+    using const_iterator = typename Vector::const_iterator;
 
     using element_type = typename std::pointer_traits<value_type>::element_type;
     static_assert(std::is_polymorphic_v<element_type>);
