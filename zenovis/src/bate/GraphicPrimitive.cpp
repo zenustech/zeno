@@ -25,7 +25,6 @@ using namespace opengl;
 struct ZhxxDrawObject {
     std::unique_ptr<Buffer> vbo;
     std::unique_ptr<Buffer> ebo;
-    std::unique_ptr<Buffer> instvbo;
     size_t count = 0;
     Program *prog{};
 };
@@ -274,7 +273,6 @@ static void parseTrianglesDrawBuffer(zeno::PrimitiveObject *prim, ZhxxDrawObject
 struct ZhxxGraphicPrimitive final : IGraphicDraw {
     Scene *scene;
     std::unique_ptr<Buffer> vbo;
-    std::unique_ptr<Buffer> instvbo;
     size_t vertex_count;
     bool draw_all_points;
 
@@ -294,15 +292,10 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
     ZhxxDrawObject lineObj;
     ZhxxDrawObject triObj;
     std::vector<std::unique_ptr<Texture>> textures;
-    bool prim_has_inst = false;
-    int prim_inst_amount = 0;
 
     explicit ZhxxGraphicPrimitive(Scene *scene_, zeno::PrimitiveObject *prim)
         : scene(scene_) {
         zeno::log_trace("rendering primitive size {}", prim->size());
-
-        prim_has_inst = prim->inst != nullptr;
-        prim_inst_amount = prim->inst ? prim->inst->amount : 0;
 
         if (!prim->has_attr("pos")) {
             auto &pos = prim->add_attr<zeno::vec3f>("pos");
@@ -385,13 +378,6 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
         }
         vbo->bind_data(mem.data(), mem.size() * sizeof(mem[0]));
 
-        if (prim->inst != nullptr) {
-            instvbo = std::make_unique<Buffer>(GL_ARRAY_BUFFER);
-            instvbo->bind_data(prim->inst->modelMatrices.data(),
-                               prim->inst->modelMatrices.size() *
-                                   sizeof(prim->inst->modelMatrices[0]));
-        }
-
         points_count = prim->points.size();
         if (points_count) {
             pointObj.count = points_count;
@@ -430,14 +416,6 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
             } else {
                 computeTrianglesTangent(&*prim);
                 parseTrianglesDrawBuffer(&*prim, triObj);
-            }
-
-            if (prim->inst != nullptr) {
-                triObj.instvbo = std::make_unique<Buffer>(GL_ARRAY_BUFFER);
-                triObj.instvbo->bind_data(
-                    prim->inst->modelMatrices.data(),
-                    prim->inst->modelMatrices.size() *
-                        sizeof(prim->inst->modelMatrices[0]));
             }
 
             bool findCamera = false;
@@ -486,29 +464,6 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
             vbo->disable_attribute(3);
             vbo->disable_attribute(4);
             vbo->unbind();
-        };
-
-        auto instvbobind = [&](auto &instvbo) {
-            instvbo->bind();
-            instvbo->attribute(5, sizeof(glm::vec4) * 0, sizeof(glm::vec4) * 4,
-                               GL_FLOAT, 4);
-            instvbo->attribute(6, sizeof(glm::vec4) * 1, sizeof(glm::vec4) * 4,
-                               GL_FLOAT, 4);
-            instvbo->attribute(7, sizeof(glm::vec4) * 2, sizeof(glm::vec4) * 4,
-                               GL_FLOAT, 4);
-            instvbo->attribute(8, sizeof(glm::vec4) * 3, sizeof(glm::vec4) * 4,
-                               GL_FLOAT, 4);
-            instvbo->attrib_divisor(5, 1);
-            instvbo->attrib_divisor(6, 1);
-            instvbo->attrib_divisor(7, 1);
-            instvbo->attrib_divisor(8, 1);
-        };
-        auto instvbounbind = [&](auto &instvbo) {
-            instvbo->disable_attribute(5);
-            instvbo->disable_attribute(6);
-            instvbo->disable_attribute(7);
-            instvbo->disable_attribute(8);
-            instvbo->unbind();
         };
 
         if (draw_all_points || points_count)
@@ -564,14 +519,6 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
                 vbobind(vbo);
             }
 
-            if (prim_has_inst) {
-                if (triObj.instvbo) {
-                    instvbobind(triObj.instvbo);
-                } else {
-                    instvbobind(instvbo);
-                }
-            }
-
             triObj.prog->use();
             scene->camera->set_program_uniforms(triObj.prog);
 
@@ -582,30 +529,18 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
 
             triObj.ebo->bind();
 
-            if (prim_has_inst) {
-                CHECK_GL(glDrawElementsInstanced(
-                        GL_TRIANGLES, /*count=*/triObj.count * 3,
-                        GL_UNSIGNED_INT, /*first=*/0, prim_inst_amount));
-            } else {
-                CHECK_GL(glDrawElements(GL_TRIANGLES,
-                                        /*count=*/triObj.count * 3,
-                                        GL_UNSIGNED_INT, /*first=*/0));
-            }
+            CHECK_GL(glDrawElements(GL_TRIANGLES,
+                                    /*count=*/triObj.count * 3,
+                                    GL_UNSIGNED_INT, /*first=*/0));
 
             if (scene->drawOptions->render_wireframe) {
                 CHECK_GL(glEnable(GL_POLYGON_OFFSET_LINE));
                 CHECK_GL(glPolygonOffset(0, 0));
                 CHECK_GL(glPolygonMode(GL_FRONT_AND_BACK, GL_LINE));
                 triObj.prog->set_uniformi("mRenderWireframe", true);
-                if (prim_has_inst) {
-                    CHECK_GL(glDrawElementsInstanced(
-                        GL_TRIANGLES, /*count=*/triObj.count * 3,
-                        GL_UNSIGNED_INT, /*first=*/0, prim_inst_amount));
-                } else {
-                    CHECK_GL(glDrawElements(GL_TRIANGLES,
-                                            /*count=*/triObj.count * 3,
-                                            GL_UNSIGNED_INT, /*first=*/0));
-                }
+                CHECK_GL(glDrawElements(GL_TRIANGLES,
+                                        /*count=*/triObj.count * 3,
+                                        GL_UNSIGNED_INT, /*first=*/0));
                 CHECK_GL(glPolygonMode(GL_FRONT_AND_BACK, GL_FILL));
                 CHECK_GL(glDisable(GL_POLYGON_OFFSET_LINE));
             }
@@ -641,10 +576,8 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
     }
 
     Program *get_tris_program() {
-        auto vert = prim_has_inst ?
+        auto vert =
 #include "shader/tris.vert"
-        :
-#include "shader/tris_inst.vert"
         ;
 
         auto frag =
