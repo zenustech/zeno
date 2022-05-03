@@ -83,20 +83,20 @@ jobs:
         vcpkgJsonGlob: '**/vcpkg.json'
         runVcpkgInstall: true
 
-    - name: Cache CMake
+    #- name: Cache CMake
       #if: ${{ needs.check.outputs.type != 'release' }}
-      uses: actions/cache@v3
-      with:
-        path: ${{ github.workspace }}/build
-        key: ${{ matrix.os }}-${{ matrix.triplet }}-${{ matrix.cxx }}-${{ matrix.gpu }}-${{ needs.check.outputs.type }}-CMake-1
+      #uses: actions/cache@v3
+      #with:
+        #path: ${{ github.workspace }}/build
+        #key: ${{ matrix.os }}-${{ matrix.triplet }}-${{ matrix.cxx }}-${{ matrix.gpu }}-${{ needs.check.outputs.type }}-CMake-1
 
-    - name: Clean CMake Cache
-      shell: python
-      run: |
-        import os
-        import shutil
-        shutil.rmtree(os.path.join('build', 'CMakeCache.txt'), ignore_errors=True)
-        shutil.rmtree(os.path.join('build', 'CMakeFiles'), ignore_errors=True)
+    #- name: Clean CMake Cache
+      #shell: python
+      #run: |
+        #import os
+        #import shutil
+        #shutil.rmtree(os.path.join('build', 'CMakeCache.txt'), ignore_errors=True)
+        #shutil.rmtree(os.path.join('build', 'CMakeFiles'), ignore_errors=True)
 
     - name: Run CMake
       uses: lukka/run-cmake@v10
