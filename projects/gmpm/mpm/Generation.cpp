@@ -337,8 +337,7 @@ struct ToZSParticles : INode {
     }   // end bindmesh
 
     // particles
-    auto &pars = outParticles->getParticles(); // tilevector
-    outParticles->sprayedOffset = pars.size();
+    outParticles->sprayedOffset = obj.size();
 
     // attributes
     std::vector<zs::PropertyTag> tags{{"mass", 1}, {"pos", 3}, {"vel", 3},
@@ -415,8 +414,11 @@ struct ToZSParticles : INode {
     for (auto tag : tags)
       fmt::print("tag: [{}, {}]\n", tag.name, tag.numChannels);
 
+    outParticles->particles =
+        std::make_shared<typename ZenoParticles::particles_t>(tags, size,
+                                                              memsrc_e::host);
+    auto &pars = outParticles->getParticles(); // tilevector
     {
-      pars = typename ZenoParticles::particles_t{tags, size, memsrc_e::host};
       ompExec(zs::range(size), [pars = proxy<execspace_e::openmp>({}, pars),
                                 hasLogJp, hasOrientation, hasF, &model, &obj,
                                 velsPtr, nrmsPtr, bindMesh, &dofVol, category,
@@ -799,9 +801,6 @@ struct ToBoundaryParticles : INode {
               });
     }
 
-    // particles
-    auto &pars = outParticles->getParticles(); // tilevector
-
     // attributes
     std::vector<zs::PropertyTag> tags{
         {"mass", 1}, {"pos", 3}, {"vel", 3}, {"nrm", 3}};
@@ -821,7 +820,10 @@ struct ToBoundaryParticles : INode {
       fmt::print("boundary element tag: [{}, {}]\n", tag.name, tag.numChannels);
 
     // verts
-    pars = typename ZenoParticles::particles_t{tags, totalSize, memsrc_e::host};
+    outParticles->particles =
+        std::make_shared<typename ZenoParticles::particles_t>(tags, totalSize,
+                                                              memsrc_e::host);
+    auto &pars = outParticles->getParticles(); // tilevector
     ompExec(zs::range(size),
             [pars = proxy<execspace_e::host>({}, pars), &pos, velsPtr, &dofVol,
              category, &inParticles, sprayed](int pi) mutable {
