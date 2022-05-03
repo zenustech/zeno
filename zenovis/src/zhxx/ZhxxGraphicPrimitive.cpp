@@ -2345,15 +2345,17 @@ float sampleShadowArray(int lightNo, vec2 coord, int layer)
 float PCFLayer(int lightNo, float currentDepth, float bias, vec3 pos, int layer, int k, float softness, vec2 coord)
 {
     float shadow = 0.0;
-    
+    float near1, far1;
+    near1 = near[lightNo * 8 + layer];
+    far1 = far[lightNo   * 8 + layer];
     vec2 texelSize = 1.0 / vec2(textureSize(shadowMap, 0).xy);
     for(int x = -k; x <= k; ++x)
     {
         for(int y = -k; y <= k; ++y)
         {
             vec3 noise = random3(pos+vec3(x, y,0)*0.01*softness);
-            float pcfDepth = sampleShadowArray(lightNo, coord + (vec2(x, y) * softness + noise.xy) * texelSize, layer); 
-            shadow += (currentDepth - bias) > pcfDepth  ? 1.0 : 0.0;        
+            float pcfDepth = sampleShadowArray(lightNo, coord + (vec2(x, y) * softness + noise.xy) * texelSize, layer)  * (far1-near1) + near1 ; 
+            shadow += (currentDepth  * (far1-near1) + near1  - bias) > pcfDepth  ? 1.0 : 0.0;        
         }    
     }
     float size = 2.0*float(k)+1.0;
@@ -2362,19 +2364,22 @@ float PCFLayer(int lightNo, float currentDepth, float bias, vec3 pos, int layer,
 float PCFLayer2(int lightNo, float currentDepth1, float currentDepth2, float bias, vec3 pos, int layer, int k, float softness, vec2 coord1, vec2 coord2)
 {
     float shadow = 0.0;
-    
+    float near1, far1, near2, far2;
+    near1 = near[lightNo * 8 + layer];
+    far1 = far[lightNo   * 8 + layer];
+    near2 = near[lightNo * 8 + layer + 1];
+    far2 = far[lightNo   * 8 + layer + 1];
     vec2 texelSize = 1.0 / vec2(textureSize(shadowMap, 0).xy);
     for(int x = -k; x <= k; ++x)
     {
         for(int y = -k; y <= k; ++y)
         {
             vec3 noise = random3(pos+vec3(x, y,0)*0.01*softness);
-            float pcfDepth1 = sampleShadowArray(lightNo, coord1 + (vec2(x, y) * softness + noise.xy) * texelSize, layer);
+            float pcfDepth1 = sampleShadowArray(lightNo, coord1 + (vec2(x, y) * softness + noise.xy) * texelSize, layer) * (far1-near1) + near1;
             
-            float pcfDepth2 = sampleShadowArray(lightNo, coord2 + (vec2(x, y) * softness + noise.xy) * texelSize, layer+1); 
-            //shadow += ((currentDepth1 - bias) > pcfDepth1 || (currentDepth2 - bias) > pcfDepth2) ? 1.0 : 0.0;        
-            float s1 = ((currentDepth1 - bias) > pcfDepth1)?1.0 : 0.0;
-            float s2 = ((currentDepth2 - bias) > pcfDepth2)?1.0 : 0.0;
+            float pcfDepth2 = sampleShadowArray(lightNo, coord2 + (vec2(x, y) * softness + noise.xy) * texelSize, layer+1) * (far2-near2) + near2; 
+            float s1 = ((currentDepth1 * (far1-near1) + near1 - bias) > pcfDepth1)?1.0 : 0.0;
+            float s2 = ((currentDepth2 * (far2-near2) + near2 - bias) > pcfDepth2)?1.0 : 0.0;
             shadow += mix(s1, s2, 0.5);
         }    
     }
@@ -2473,17 +2478,10 @@ float ShadowCalculation(int lightNo, vec3 fragPosWorldSpace, float softness)
     }
     // calculate bias (based on depth map resolution and slope)
     vec3 normal = normalize(iNormal);
-    float bias = max(0.00001 * (1.0 - dot(normal, light[0])), 0.000001);
-    // float bm = bias;
-    // const float biasModifier = 0.5f;
-    // if (layer == cascadeCount)
-    // {
-    //     bm *= 1 / (farPlane * biasModifier);
-    // }
-    // else
-    // {
-    //     bm *= 1 / (cascadePlaneDistances[lightNo * cascadeCount + layer] * biasModifier);
-    // }
+    float bias = max(0.001 * (1.0 - dot(normal, light[0])), 0.0001);
+    //bias *= 1 / (far[lightNo * (cascadeCount + 1) + layer] * 0.5f);
+    
+   
 
     // PCF
     //float shadow1 = PCFLayer(lightNo, currentDepth, bias, fragPosWorldSpace, layer, 3, softness, projCoords.xy);
@@ -2717,6 +2715,8 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 old_tangent) {
     //pixarONB(new_normal, tangent, bitangent);
     color = vec3(0,0,0);
     vec3 realColor = vec3(0,0,0);
+    vec3 shadowAcc = vec3(0,0,0);
+    float lightsNo = 0;
     for(int lightId=0; lightId<lightNum; lightId++){
         //light_dir = mat3(mView[0].xyz, mView[1].xyz, mView[2].xyz)*lightDir[lightId];
         light_dir = eyemat*lightDir[lightId];
@@ -2783,10 +2783,11 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 old_tangent) {
         
         
         float shadow = ShadowCalculation(lightId, position, shadowSoftness[lightId]);
-        color += lcolor * clamp(vec3(1.0-shadow)+shadowTint[lightId],vec3(0),vec3(1));
-        realColor += photoReal * clamp(vec3(1.0-shadow)+shadowTint[lightId],vec3(0),vec3(1));
+        vec3 sclr = clamp(vec3(1.0-shadow) + shadowTint[lightId], vec3(0), vec3(1));
+        color += lcolor * sclr;
+        realColor += photoReal * sclr;
     }
-
+    
     
     vec3 iblPhotoReal =  CalculateLightingIBL(new_normal,view_dir,albedo2,roughness,mat_metallic);
     vec3 iblNPR = CalculateLightingIBLToon(new_normal,view_dir,albedo2,roughness,mat_metallic);

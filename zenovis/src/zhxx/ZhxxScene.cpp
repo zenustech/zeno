@@ -59,6 +59,16 @@ ZhxxScene::ZhxxScene(Scene *visScene_)
     //return gras;
 //}
 
+glm::mat4 MakeInfReversedZProjRH(float fovY_radians, float aspectWbyH, float zNear)
+{
+    float f = 1.0f / tan(fovY_radians / 2.0f);
+    return glm::mat4(
+        f / aspectWbyH, 0.0f,  0.0f,  0.0f,
+                  0.0f,    f,  0.0f,  0.0f,
+                  0.0f, 0.0f,  0.0f, -1.0f,
+                  0.0f, 0.0f, zNear,  0.0f);
+}
+
 void ZhxxScene::drawSceneDepthSafe(bool reflect, bool isDepthPass) {
     auto aspRatio = camera->getAspect();
 
@@ -73,13 +83,33 @@ void ZhxxScene::drawSceneDepthSafe(bool reflect, bool isDepthPass) {
     CHECK_GL(glClearColor(visScene->drawOptions->bgcolor.r, visScene->drawOptions->bgcolor.g, visScene->drawOptions->bgcolor.b, 0.0f));
     CHECK_GL(glClear(GL_COLOR_BUFFER_BIT));
 
-    float range[] = {camera->m_near, 500, 1000, 2000, 8000, camera->m_far};
-    for (int i = 5; i >= 1; i--) {
-        CHECK_GL(glClearDepth(1));
-        CHECK_GL(glClear(GL_DEPTH_BUFFER_BIT));
-        camera->proj = glm::perspective(glm::radians(camera->m_fov), aspRatio,
-                                        range[i - 1], range[i]);
+    // float range[] = {camera->m_near, 500, 1000, 2000, 8000, camera->m_far};
+    // for (int i = 5; i >= 1; i--) {
+    //     CHECK_GL(glClearDepth(1));
+    //     CHECK_GL(glClear(GL_DEPTH_BUFFER_BIT));
+    //     camera->proj = glm::perspective(glm::radians(camera->m_fov), aspRatio,
+    //                                     range[i - 1], range[i]);
 
+    //     {
+    //         zeno::scope_modify unused1{zxxDrawOptions->passReflect, reflect};
+    //         zeno::scope_modify unused2{zxxDrawOptions->passIsDepthPass, isDepthPass};
+    //         for (auto const &gra : getGraphics()) {
+    //             gra->draw();
+    //         }
+    //     }
+    //     if (!isDepthPass && visScene->drawOptions->show_grid) {
+    //         zeno::scope_modify unused3{zxxDrawOptions->passReflect, false};
+    //         zeno::scope_modify unused4{zxxDrawOptions->passIsDepthPass, false};
+    //         for (auto const &hudgra : hudGraphics) {
+    //             hudgra->draw();
+    //         }
+    //     }
+        CHECK_GL(glClearDepth(0));
+        CHECK_GL(glClear(GL_DEPTH_BUFFER_BIT));
+        glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE);
+        glEnable(GL_DEPTH_TEST);
+        glDepthFunc(GL_GEQUAL);
+        camera->proj = MakeInfReversedZProjRH(glm::radians(camera->m_fov), aspRatio, 0.01f);
         {
             zeno::scope_modify unused1{zxxDrawOptions->passReflect, reflect};
             zeno::scope_modify unused2{zxxDrawOptions->passIsDepthPass, isDepthPass};
@@ -94,7 +124,7 @@ void ZhxxScene::drawSceneDepthSafe(bool reflect, bool isDepthPass) {
                 hudgra->draw();
             }
         }
-    }
+    // }
 }
 
 void ZhxxScene::fast_paint_graphics() {
