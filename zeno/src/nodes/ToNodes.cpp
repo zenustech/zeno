@@ -2,7 +2,6 @@
 #include <zeno/utils/logger.h>
 #include <zeno/types/ListObject.h>
 #include <zeno/types/NumericObject.h>
-#include <zeno/types/ConditionObject.h>
 #include <zeno/extra/GlobalState.h>
 #include <zeno/extra/GlobalComm.h>
 #include <zeno/utils/cppdemangle.h>
@@ -27,9 +26,16 @@ struct ToView : zeno::INode {
                 log_warn("ToView: given object doesn't support clone, giving up");
             } else {
                 log_debug("ToView: added view object of type {}", cppdemangle(typeid(*p)));
-                pp->userData().set("ident", objectFromLiterial(this->myname));
-                //pp->nodeid = this->myname;
-                getThisSession()->globalComm->addViewObject(std::move(pp));
+                /* pp->userData().set("nodeid", objectFromLiterial(this->myname)); */
+                auto key = this->myname;
+                key.push_back('@');
+                if (get_input2<bool>("isStatic"))
+                    key.append("static");
+                else
+                    key.append(std::to_string(getThisSession()->globalState->frameid));
+                key.push_back('@');
+                key.append(std::to_string(getThisSession()->globalState->sessionid));
+                getThisSession()->globalComm->addViewObject(key, std::move(pp));
             }
         }
         set_output("object", std::move(p));
@@ -37,7 +43,7 @@ struct ToView : zeno::INode {
 };
 
 ZENDEFNODE(ToView, {
-    {"object"},
+    {"object", {"bool", "isStatic", "0"}},
     {"object"},
     {},
     {"graphtool"},

@@ -1,5 +1,5 @@
-#include "zeno/types/StringObject.h"
 #include <zeno/zeno.h>
+#include <zeno/types/StringObject.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/funcs/PrimitiveUtils.h>
 #include <zeno/types/NumericObject.h>
@@ -35,17 +35,16 @@ struct PrimTranslate : INode {
 };
 
 ZENDEFNODE(PrimTranslate, {
-    {
-    {"PrimitiveObject", "prim"},
-    {"vec3f", "offset", "0,0,0"},
-    },
-    {
-    {"PrimitiveObject", "prim"},
-    },
-    {
-    },
-    {"primitive"},
-});
+                              {
+                                  {"PrimitiveObject", "prim"},
+                                  {"vec3f", "offset", "0,0,0"},
+                              },
+                              {
+                                  {"PrimitiveObject", "prim"},
+                              },
+                              {},
+                              {"primitive"},
+                          });
 
 struct PrimScale : INode {
     virtual void apply() override {
@@ -57,17 +56,16 @@ struct PrimScale : INode {
 };
 
 ZENDEFNODE(PrimScale, {
-    {
-    {"PrimitiveObject", "prim"},
-    {"vec3f", "scale", "1,1,1"},
-    },
-    {
-    {"PrimitiveObject", "prim"},
-    },
-    {
-    },
-    {"primitive"},
-});
+                          {
+                              {"PrimitiveObject", "prim"},
+                              {"vec3f", "scale", "1,1,1"},
+                          },
+                          {
+                              {"PrimitiveObject", "prim"},
+                          },
+                          {},
+                          {"primitive"},
+                      });
 
-}
-}
+} // namespace
+} // namespace zeno

@@ -528,4 +528,9 @@ T &get(::zeno::vec<N, T> &t) {
     return t[I];
 }
 
+template <size_t I, size_t N, class T>
+T &&get(::zeno::vec<N, T> &&t) {
+    return std::move(t[I]);
+}
+
 }

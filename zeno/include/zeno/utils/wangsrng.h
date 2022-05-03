@@ -13,13 +13,16 @@ namespace zeno {
 struct wangsrng {
     uint32_t seed;
 
-    constexpr wangsrng(uint32_t seed = 0) : seed(seed) {}
+    constexpr explicit wangsrng(uint32_t seed = 0) : seed(seed) {}
 
-    constexpr wangsrng(uint32_t seedx, uint32_t seedy)
+    constexpr explicit wangsrng(uint32_t seedx, uint32_t seedy)
         : wangsrng(seedx ^ randomize(seedy)) {}
 
-    constexpr wangsrng(uint32_t seedx, uint32_t seedy, uint32_t seedz)
+    constexpr explicit wangsrng(uint32_t seedx, uint32_t seedy, uint32_t seedz)
         : wangsrng(seedx ^ randomize(seedy ^ randomize(seedz))) {}
+
+    constexpr explicit wangsrng(uint32_t seedx, uint32_t seedy, uint32_t seedz, uint32_t seedw)
+        : wangsrng(seedx ^ randomize(seedy ^ randomize(seedz ^ randomize(seedw)))) {}
 
     constexpr static uint32_t randomize(uint32_t i) {
         i = (i ^ 61) ^ (i >> 16);
@@ -86,11 +89,11 @@ struct wangsrng {
     }
 
     constexpr float next_float() {
-        return next_uint32() * (1.0f / UINT32_MAX);
+        return next_uint32() * (1.0f / (float)UINT32_MAX);
     }
 
     constexpr double next_double() {
-        return next_uint64() * (1.0 / UINT64_MAX);
+        return next_uint64() * (1.0 / (double)UINT64_MAX);
     }
 };
 

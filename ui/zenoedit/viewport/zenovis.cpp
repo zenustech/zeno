@@ -26,7 +26,7 @@ Zenovis& Zenovis::GetInstance()
 
 void Zenovis::loadGLAPI(void *procaddr)
 {
-    zenovis::loadGLAPI(procaddr);
+    zenovis::Session::load_opengl_api(procaddr);
 }
 
 void Zenovis::initializeGL()
@@ -108,10 +108,7 @@ void Zenovis::doFrameUpdate()
     frameid = setCurrentFrameId(frameid);
     //zenvis::auto_gc_frame_data(m_cache_frames);
 
-    auto viewObjs = zeno::getSession().globalComm->getViewObjects(frameid);
-
-    zeno::log_trace("_frameUpdate: {} objects at frame {}", viewObjs.size(), frameid);
-    session->load_objects(viewObjs);
+    session->load_objects();
 }
 
 /*

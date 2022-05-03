@@ -1,6 +1,20 @@
 # ZENO node system
 
-[![CMake](https://github.com/zenustech/zeno/actions/workflows/cmake.yml/badge.svg)](https://github.com/zenustech/zeno/actions/workflows/cmake.yml) [![License](https://img.shields.io/badge/license-MPLv2-blue)](LICENSE) [![Version](https://img.shields.io/github/v/release/zenustech/zeno)](https://github.com/zenustech/zeno/releases)
+[![CMake](https://github.com/zenustech/zeno/actions/workflows/cmake.yml/badge.svg)](https://github.com/zenustech/zeno/actions/workflows/cmake.yml)
+[![License](https://img.shields.io/badge/license-MPLv2-blue)](LICENSE)
+[![Version](https://img.shields.io/github/v/release/zenustech/zeno)](https://github.com/zenustech/zeno/releases)
+
+![Lines of code](https://img.shields.io/tokei/lines/github/zenustech/zeno)
+![Code size](https://img.shields.io/github/languages/code-size/zenustech/zeno)
+![Repo size](https://img.shields.io/github/repo-size/zenustech/zeno)
+
+![Commit activity](https://img.shields.io/github/commit-activity/m/zenustech/zeno)
+![Commits since latest release](https://img.shields.io/github/commits-since/zenustech/zeno/latest)
+![GitHub contributors](https://img.shields.io/github/contributors/zenustech/zeno)
+
+![GitHub release downloads](https://img.shields.io/github/downloads/zenustech/zeno/total)
+![GitHub latest release downloads](https://img.shields.io/github/downloads/zenustech/zeno/latest/total)
+![Repo stars](https://img.shields.io/github/stars/zenustech/zeno?style=social)
 
 [Download](https://github.com/zenustech/zeno/releases) | [Repo](https://github.com/zenustech/zeno) | [About us](https://zenustech.com) | [Tutorial](https://zenustech.com/tutorial) | [Videos](https://space.bilibili.com/263032155) | [Q&A Forum](https://github.com/zenustech/zeno/discussions) | [Build from source](https://github.com/zenustech/zeno/blob/master/BUILD.md) | [Contributor Guidelines](https://github.com/zenustech/zeno/blob/master/docs/CONTRIBUTING.md) | [Bug report](https://github.com/zenustech/zeno/issues)
 
