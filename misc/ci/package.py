@@ -52,7 +52,7 @@ elif sys.platform == 'linux':
         '+x',
         os.path.join(outpath, '000_start.sh'),
     ])
-    shutil.make_archive(outpath, 'gztar', outpath, verbose=1)
+    shutil.make_archive(outpath, 'gztar', outpath, verbose=True)
     print('finished with', outpath + '.tar.gz')
 else:
     assert False, sys.platform
