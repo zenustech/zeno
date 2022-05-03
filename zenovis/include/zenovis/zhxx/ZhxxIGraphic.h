@@ -16,6 +16,7 @@ struct ZhxxIGraphic {
 struct ZhxxIGraphicDraw : ZhxxIGraphic {
     virtual void draw() = 0;
     virtual void drawShadow(ZhxxLight *light) = 0;
+    virtual void drawVoxelize(){};
     virtual bool hasMaterial() const { return false; }
 };
 
