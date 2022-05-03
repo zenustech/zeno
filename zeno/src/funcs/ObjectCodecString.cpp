@@ -1,4 +1,5 @@
 #include <zeno/types/StringObject.h>
+#include <zeno/types/DummyObject.h>
 #include <zeno/funcs/ObjectCodec.h>
 #include <zeno/utils/log.h>
 #include <algorithm>
@@ -23,6 +24,16 @@ bool encodeStringObject(StringObject const *obj, std::back_insert_iterator<std::
     char const *data = obj->value.data();
     it = std::copy_n((char const *)&size, sizeof(size), it);
     it = std::copy_n(data, size, it);
+    return true;
+}
+
+std::shared_ptr<DummyObject> decodeDummyObject(const char *it);
+std::shared_ptr<DummyObject> decodeDummyObject(const char *it) {
+    return std::make_shared<DummyObject>();
+}
+
+bool encodeDummyObject(DummyObject const *obj, std::back_insert_iterator<std::vector<char>> it);
+bool encodeDummyObject(DummyObject const *obj, std::back_insert_iterator<std::vector<char>> it) {
     return true;
 }
 
