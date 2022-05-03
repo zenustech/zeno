@@ -4,7 +4,6 @@
 #include <vector>
 #include <zeno/core/IObject.h>
 #include <zeno/utils/disable_copy.h>
-#include <zeno/utils/PolymorphicMap.h>
 #include <map>
 
 namespace zenovis {
@@ -20,7 +19,7 @@ struct Scene : zeno::disable_copy {
     std::unique_ptr<Camera> camera;
     std::unique_ptr<DrawOptions> drawOptions;
     std::unique_ptr<ShaderManager> shaderMan;
-    zeno::PolymorphicMap<std::map<std::string, std::shared_ptr<zeno::IObject>>> objects;
+    std::unique_ptr<ObjectsManager> objectsMan;
     std::unique_ptr<RenderEngine> renderEngine;
 
     Scene();

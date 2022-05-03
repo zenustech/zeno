@@ -8,6 +8,7 @@
 #include <zenovis/DrawOptions.h>
 #include <zenovis/RenderEngine.h>
 #include <zenovis/ShaderManager.h>
+#include <zenovis/ObjectsManager.h>
 #include <zenovis/opengl/buffer.h>
 #include <zenovis/opengl/common.h>
 #include <zenovis/opengl/vao.h>
@@ -27,7 +28,8 @@ Scene::~Scene() = default;
 Scene::Scene()
     : camera(std::make_unique<Camera>()),
       drawOptions(std::make_unique<DrawOptions>()),
-      shaderMan(std::make_unique<ShaderManager>()) {
+      shaderMan(std::make_unique<ShaderManager>()),
+      objectsMan(std::make_unique<ObjectsManager>()) {
 
     auto version = (const char *)glGetString(GL_VERSION);
     zeno::log_info("OpenGL version: {}", version ? version : "(null)");
@@ -43,6 +45,7 @@ void Scene::switchRenderEngine(std::string const &name) {
 }
 
 bool Scene::cameraFocusOnNode(std::string const &nodeid) {
+#if 0
     if (auto it = this->objects.find(nodeid); it != this->objects.end()) {  // FIXME: nono, use `:` to split `:TOVIEW` instead!
         if (auto obj = dynamic_cast<zeno::PrimitiveObject *>(it->second.get())) {
             auto [bmin, bmax] = primBoundingBox(obj);
@@ -53,6 +56,7 @@ bool Scene::cameraFocusOnNode(std::string const &nodeid) {
             return true;
         }
     }
+#endif
     zeno::log_debug("cannot focus: node with id {} not found, did you tagged VIEW on it?", nodeid);
     return false;
 }
@@ -61,10 +65,10 @@ void Scene::loadFrameObjects(int frameid) {
     auto const *viewObjs = zeno::getSession().globalComm->getViewObjects(frameid);
     if (viewObjs) {
         zeno::log_trace("load_objects: {} objects at frame {}", viewObjs->size(), frameid);
-        this->objects = *viewObjs;
+        this->objectsMan->load_objects(viewObjs->m_curr);
     } else {
         zeno::log_trace("load_objects: no objects at frame {}", frameid);
-        this->objects.clear();
+        this->objectsMan->load_objects({});
     }
     renderEngine->update();
 }

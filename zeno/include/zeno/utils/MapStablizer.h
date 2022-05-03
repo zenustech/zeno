@@ -41,9 +41,9 @@ struct MapStablizer {
     template <class T = void>
     decltype(auto) pairs() const {
         if constexpr (std::is_void_v<T>)
-            return m_curr.values();
+            return m_curr.pairs();
         else
-            return m_curr.template values<T>();
+            return m_curr.template pairs<T>();
     }
 
     template <class T>
