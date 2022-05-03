@@ -2,6 +2,7 @@
 #include <zeno/utils/logger.h>
 #include <zeno/types/ListObject.h>
 #include <zeno/types/NumericObject.h>
+#include <zeno/types/DummyObject.h>
 #include <zeno/extra/GlobalState.h>
 #include <zeno/extra/GlobalComm.h>
 #include <zeno/utils/cppdemangle.h>
@@ -16,24 +17,29 @@ struct ToView : zeno::INode {
         graph->nodesToExec.insert(myname);
     }
 
+    bool hasViewed = false;
+
     virtual void apply() override {
         auto p = get_input("object");
+        bool isStatic = get_input2<bool>("isStatic");
         if (!p) {
             log_error("ToView: given object is nullptr");
         } else {
-            auto pp = p->clone();
+            auto pp = isStatic && hasViewed ? std::make_shared<DummyObject>() : p->clone();
+            hasViewed = true;
+            /* auto pp = p->clone(); */
             if (!pp) {
                 log_warn("ToView: given object doesn't support clone, giving up");
             } else {
                 log_debug("ToView: added view object of type {}", cppdemangle(typeid(*p)));
                 /* pp->userData().set("nodeid", objectFromLiterial(this->myname)); */
                 auto key = this->myname;
-                key.push_back('@');
-                if (get_input2<bool>("isStatic"))
+                key.push_back(':');
+                if (isStatic)
                     key.append("static");
                 else
                     key.append(std::to_string(getThisSession()->globalState->frameid));
-                key.push_back('@');
+                key.push_back(':');
                 key.append(std::to_string(getThisSession()->globalState->sessionid));
                 getThisSession()->globalComm->addViewObject(key, std::move(pp));
             }

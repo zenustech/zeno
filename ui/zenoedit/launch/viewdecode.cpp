@@ -120,6 +120,8 @@ struct PacketProc {
         const char *data = buf + header.info_size;
         size_t size = header.total_size - header.info_size;
 
+        zeno::log_debug("decoder got action=[{}] key=[{}] size={}", action, objKey, size);
+
         return processPacket(action, objKey, data, size);
     }
 
