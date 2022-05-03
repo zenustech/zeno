@@ -71,7 +71,7 @@ Go to the [release page](https://github.com/zenustech/zeno/releases/), and click
 
 Then, extract this archive, and simply run `000_start.bat` (`./000_start.sh` for Linux), then the node editor window will shows up if everything is working well.
 
-For the convinence of Chinese users, we also offer download from our official site: https://zenustech.com/d/
+Apart from the GitHub release page, we also offer binary download from our official site for convinence of Chinese users: https://zenustech.com/d/
 
 ## How to play
 
