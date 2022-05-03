@@ -59,7 +59,7 @@ ZhxxScene::ZhxxScene(Scene *visScene_)
     //return gras;
 //}
 
-glm::mat4 MakeInfReversedZProjRH(float fovY_radians, float aspectWbyH, float zNear)
+static glm::mat4 MakeInfReversedZProjRH(float fovY_radians, float aspectWbyH, float zNear)
 {
     float f = 1.0f / tan(fovY_radians / 2.0f);
     return glm::mat4(
