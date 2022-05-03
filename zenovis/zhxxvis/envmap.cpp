@@ -11,7 +11,7 @@
 #include <Hg/OpenGL/stdafx.hpp>
 #include <unordered_map>
 #include "zenvisapi.hpp"
-#include <spdlog/spdlog.h>
+#include <zeno/utils/log.h>
 
 namespace zenvis {
 /* begin zhxx happy */
@@ -60,12 +60,12 @@ unsigned int setup_env_map(std::string name)
   } else {
     std::vector<std::string> faces
     {
-      fmt::format("assets/sky_box/{}/right.jpg", name),
-      fmt::format("assets/sky_box/{}/left.jpg", name),
-      fmt::format("assets/sky_box/{}/top.jpg", name),
-      fmt::format("assets/sky_box/{}/bottom.jpg", name),
-      fmt::format("assets/sky_box/{}/front.jpg", name),
-      fmt::format("assets/sky_box/{}/back.jpg", name)
+      zeno::format("assets/sky_box/{}/right.jpg", name),
+      zeno::format("assets/sky_box/{}/left.jpg", name),
+      zeno::format("assets/sky_box/{}/top.jpg", name),
+      zeno::format("assets/sky_box/{}/bottom.jpg", name),
+      zeno::format("assets/sky_box/{}/front.jpg", name),
+      zeno::format("assets/sky_box/{}/back.jpg", name)
     };
     envTexture = loadCubemap(faces);
     envTextureCache[name] = envTexture;
