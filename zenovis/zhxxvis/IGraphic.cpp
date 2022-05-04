@@ -1,6 +1,8 @@
 #include "main.hpp"
 #include "IGraphic.hpp"
-#include <zeno/types/PrimitiveIO.h>
+#include "zenvisapi.hpp"
+#include <zeno/types/LightObject.h>
+#include <zeno/types/PrimitiveObject.h>
 
 
 namespace zenvis {
@@ -18,6 +20,39 @@ std::unique_ptr<IGraphic> makeGraphicVolume
 #endif
 
 
+static int lightCounter = 0;
+static std::vector<int> lightRevamp; // revamp[physical] = logical
+
+struct GraLight : IGraphic {
+    int lid;
+
+    GraLight(zeno::LightObject *l) {
+        lid = lightCounter++;
+        int plid(lightRevamp.size());
+        lightRevamp.push_back(lid);
+
+        zenvis::setLightData(plid,
+                {l->lightDir[0], l->lightDir[1], l->lightDir[2]},
+                l->lightHight, l->shadowSoftness,
+                {l->shadowTint[0], l->shadowTint[1], l->shadowTint[2]},
+                {l->lightColor[0], l->lightColor[1], l->lightColor[2]},
+                l->intensity, l->lightScale, l->isEnabled
+                );
+    }
+
+    GraLight(GraLight &&) = delete;
+
+  virtual void draw(bool reflect, float depthPass) override{};
+  virtual void drawShadow(Light *light) override{};
+
+    ~GraLight() {
+        int plid(std::find(lightRevamp.begin(), lightRevamp.end(), lid) - lightRevamp.begin());
+        zenvis::removeLight(plid);
+        lightRevamp.erase(lightRevamp.begin() + plid);
+    }
+};
+
+
 static std::unique_ptr<IGraphic> makeGraphic(zeno::IObject *obj) {
     std::string path = "/unused/param";  // never mind
     if (auto p = dynamic_cast<zeno::PrimitiveObject *>(obj)) {
@@ -27,6 +62,9 @@ static std::unique_ptr<IGraphic> makeGraphic(zeno::IObject *obj) {
     } else if (auto p = dynamic_cast<zeno::VDBGrid *>(obj)) {
         return makeGraphicVolume(path);
 #endif
+
+    } else if (auto p = dynamic_cast<zeno::LightObject *>(obj)) {
+        return std::make_unique<GraLight>(p);
 
     } else {
         //printf("%s\n", ext.c_str());
@@ -68,7 +106,8 @@ void clear_graphics() {
 }*/
 
 void zxx_load_object(std::string const &key, zeno::IObject *obj) {
-    current_frame_data()->graphics[key] = makeGraphic(obj);
+    auto p = makeGraphic(obj);
+    if (p) current_frame_data()->graphics[key] = std::move(p);
 }
 
 void zxx_delete_object(std::string const &key) {
