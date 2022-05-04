@@ -35,4 +35,12 @@ enum MODEL_ROLE
 	ROLE_INSOCK,
 };
 
+enum LOG_ROLE
+{
+    ROLE_LOGTYPE = Qt::UserRole + 1,
+	ROLE_TIME,
+	ROLE_FILENAME,
+	ROLE_LINENO,
+};
+
 #endif

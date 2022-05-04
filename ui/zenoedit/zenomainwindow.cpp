@@ -7,6 +7,7 @@
 #include "nodesview/zenographseditor.h"
 #include "panel/zenodatapanel.h"
 #include "panel/zenoproppanel.h"
+#include "panel/zlogpanel.h"
 #include "timeline/ztimeline.h"
 #include "tmpwidgets/ztoolbar.h"
 #include "viewport/viewportwidget.h"
@@ -26,6 +27,7 @@ ZenoMainWindow::ZenoMainWindow(QWidget *parent, Qt::WindowFlags flags)
     , m_viewDock(nullptr)
     , m_timelineDock(nullptr)
     , m_bInDlgEventloop(false)
+    , m_logger(nullptr)
 {
     init();
     setContextMenuPolicy(Qt::NoContextMenu);
@@ -202,6 +204,11 @@ void ZenoMainWindow::initDocks() {
     m_editor->setWidget(DOCK_EDITOR, m_pEditor);
     m_docks.insert(DOCK_EDITOR, m_editor);
 
+    m_logger = new ZenoDockWidget("logger", this);
+    m_logger->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetFloatable);
+    m_logger->setWidget(DOCK_LOG, new ZlogPanel);
+    m_docks.insert(DOCK_LOG, m_logger);
+
     for (QMap<DOCK_TYPE, ZenoDockWidget *>::iterator it = m_docks.begin(); it != m_docks.end(); it++) {
         ZenoDockWidget *pDock = it.value();
         connect(pDock, SIGNAL(maximizeTriggered()), this, SLOT(onMaximumTriggered()));
@@ -342,35 +349,42 @@ void ZenoMainWindow::onToggleDockWidget(DOCK_TYPE type, bool bShow) {
     }
 }
 
-void ZenoMainWindow::onDockSwitched(DOCK_TYPE type) {
+void ZenoMainWindow::onDockSwitched(DOCK_TYPE type)
+{
     ZenoDockWidget *pDock = qobject_cast<ZenoDockWidget *>(sender());
-    switch (type) {
-    case DOCK_EDITOR: {
-        ZenoGraphsEditor *pEditor2 = new ZenoGraphsEditor(this);
-        pEditor2->resetModel(zenoApp->graphsManagment()->currentModel());
-        pDock->setWidget(type, pEditor2);
-        break;
-    }
-    case DOCK_VIEW: {
-        //complicated opengl framework.
-        //DisplayWidget* view = new DisplayWidget;
-        //pDock->setWidget(type, view);
-        break;
-    }
-    case DOCK_NODE_PARAMS: {
-        ZenoPropPanel *pWidget = new ZenoPropPanel;
-        pDock->setWidget(type, pWidget);
-        break;
-    }
-    case DOCK_NODE_DATA: {
-        QWidget *pWidget = new QWidget;
-        QPalette pal = pWidget->palette();
-        pal.setColor(QPalette::Window, QColor(0, 0, 255));
-        pWidget->setAutoFillBackground(true);
-        pWidget->setPalette(pal);
-        pDock->setWidget(type, pWidget);
-        break;
-    }
+    switch (type)
+    {
+        case DOCK_EDITOR: {
+            ZenoGraphsEditor *pEditor2 = new ZenoGraphsEditor(this);
+            pEditor2->resetModel(zenoApp->graphsManagment()->currentModel());
+            pDock->setWidget(type, pEditor2);
+            break;
+        }
+        case DOCK_VIEW: {
+            //complicated opengl framework.
+            //DisplayWidget* view = new DisplayWidget;
+            //pDock->setWidget(type, view);
+            break;
+        }
+        case DOCK_NODE_PARAMS: {
+            ZenoPropPanel *pWidget = new ZenoPropPanel;
+            pDock->setWidget(type, pWidget);
+            break;
+        }
+        case DOCK_NODE_DATA: {
+            QWidget *pWidget = new QWidget;
+            QPalette pal = pWidget->palette();
+            pal.setColor(QPalette::Window, QColor(0, 0, 255));
+            pWidget->setAutoFillBackground(true);
+            pWidget->setPalette(pal);
+            pDock->setWidget(type, pWidget);
+            break;
+        }
+        case DOCK_LOG: {
+            ZlogPanel* pPanel = new ZlogPanel;
+            pDock->setWidget(type, pPanel);
+            break;
+        }
     }
 }
 
@@ -456,6 +470,7 @@ void ZenoMainWindow::verticalLayout() {
     addDockWidget(Qt::TopDockWidgetArea, m_viewDock);
     splitDockWidget(m_viewDock, m_editor, Qt::Vertical);
     splitDockWidget(m_editor, m_parameter, Qt::Horizontal);
+    splitDockWidget(m_viewDock, m_logger, Qt::Horizontal);
 }
 
 void ZenoMainWindow::onlyEditorLayout() {

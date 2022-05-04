@@ -60,6 +60,7 @@ private:
     ZenoDockWidget *m_toolbar;
     ZenoDockWidget *m_shapeBar;
     ZenoDockWidget *m_timelineDock;
+    ZenoDockWidget *m_logger;
 
     //QVector<ZenoDockWidget*> m_docks;
     QMultiMap<DOCK_TYPE, ZenoDockWidget*> m_docks;

@@ -126,5 +126,10 @@
     <file>icons/timeline-record.svg</file>
     <file>icons/timeline-curvemap.svg</file>
     <file>icons/timeline-pause.svg</file>
+    <file>icons/checkbox_unchecked.svg</file>
+    <file>icons/checkbox_checked_normal.svg</file>
+    <file>icons/checkbox_checked_green.svg</file>
+    <file>icons/checkbox_checked_red.svg</file>
+    <file>icons/checkbox_checked_yellow.svg</file>
 </qresource>
 </RCC>

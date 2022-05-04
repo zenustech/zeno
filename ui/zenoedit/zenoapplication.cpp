@@ -8,10 +8,12 @@
 ZenoApplication::ZenoApplication(int &argc, char **argv)
     : QApplication(argc, argv)
     , m_pGraphs(new GraphsManagment(this))
+    , m_logModel(new QStandardItemModel(this))
     , m_bIOProcessing(false)
 {
     initFonts();
     initStyleSheets();
+    steam.registerMsgHandler();
 }
 
 ZenoApplication::~ZenoApplication()
@@ -62,6 +64,11 @@ void ZenoApplication::initFonts()
 QSharedPointer<GraphsManagment> ZenoApplication::graphsManagment() const
 {
     return m_pGraphs;
+}
+
+QStandardItemModel* ZenoApplication::logModel() const
+{
+    return m_logModel;
 }
 
 void ZenoApplication::setIOProcessing(bool bIOProcessing)

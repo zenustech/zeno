@@ -1,102 +1,8 @@
 #include "zwidgetostream.h"
-
-myConsoleStream::myConsoleStream(std::ostream &stream, QTextEdit *text_edit)
-    : std::basic_streambuf<char>(), m_stream(stream)
-
-{
-    this->log_window = text_edit;
-    this->m_old_buf = stream.rdbuf();
-    stream.rdbuf(this);
-}
-
-myConsoleStream::~myConsoleStream()
-{
-    this->m_stream.rdbuf(this->m_old_buf);
-}
-
-void myConsoleStream::registerMyConsoleMessageHandler()
-{
-    qInstallMessageHandler(myConsoleMessageHandler);
-}
-
-void myConsoleStream::myConsoleMessageHandler(QtMsgType type, const QMessageLogContext &, const QString &msg)
-{
-    QByteArray localMsg = msg.toLocal8Bit();
-    switch (type)
-    {
-    case QtDebugMsg:
-        // fprintf(stderr, "Debug: %s (%s:%u, %s)\n", localMsg.constData(), context.file, context.line, context.function);
-        break;
-    case QtInfoMsg:
-        // fprintf(stderr, "Info: %s (%s:%u, %s)\n", localMsg.constData(), context.file, context.line, context.function);
-        break;
-    case QtWarningMsg:
-        // fprintf(stderr, "Warning: %s (%s:%u, %s)\n", localMsg.constData(), context.file, context.line, context.function);
-        break;
-    case QtCriticalMsg:
-        //fprintf(stderr, "Critical: %s (%s:%u, %s)\n", localMsg.constData(), context.file, context.line, context.function);
-        break;
-    case QtFatalMsg:
-        // fprintf(stderr, "Fatal: %s (%s:%u, %s)\n", localMsg.constData(), context.file, context.line, context.function);
-        break;
-    default:
-        std::cout << msg.toStdString().c_str();
-        break;
-    }
-}
+#include "zenoapplication.h"
+#include <zenoui/model/modelrole.h>
 
 
-ZWidgetOutStream::ZWidgetOutStream()
-    : std::basic_streambuf<char>()
-    , m_stream(std::cout)
-{
-    m_old_buf = m_stream.rdbuf();
-    m_stream.rdbuf(this);
-}
-
-ZWidgetOutStream::~ZWidgetOutStream()
-{
-    m_stream.rdbuf(m_old_buf);
-}
-
-std::streamsize ZWidgetOutStream::xsputn(const char* p, std::streamsize n)
-{
-    QString str(p);
-    qDebug() << str;
-    return n;
-}
-
-void ZWidgetOutStream::registerMsgHandler()
-{
-    qInstallMessageHandler(customMsgHandler);
-}
-
-void ZWidgetOutStream::customMsgHandler(QtMsgType type, const QMessageLogContext& context, const QString& msg)
-{
-    QByteArray localMsg = msg.toLocal8Bit();
-    switch (type)
-    {
-    case QtDebugMsg:
-        // fprintf(stderr, "Debug: %s (%s:%u, %s)\n", localMsg.constData(), context.file, context.line, context.function);
-        break;
-    case QtInfoMsg:
-        // fprintf(stderr, "Info: %s (%s:%u, %s)\n", localMsg.constData(), context.file, context.line, context.function);
-        break;
-    case QtWarningMsg:
-        // fprintf(stderr, "Warning: %s (%s:%u, %s)\n", localMsg.constData(), context.file, context.line, context.function);
-        break;
-    case QtCriticalMsg:
-        // fprintf(stderr, "Critical: %s (%s:%u, %s)\n", localMsg.constData(), context.file, context.line, context.function);
-        break;
-    case QtFatalMsg:
-        // fprintf(stderr, "Fatal: %s (%s:%u, %s)\n", localMsg.constData(), context.file, context.line, context.function);
-        break;
-    default:
-        std::cout << msg.toStdString().c_str(); break;
-    }
-}
-
-/////////////////////////////////////////////////////////////
 ZWidgetErrStream::ZWidgetErrStream()
     : std::basic_streambuf<char>()
     , m_stream(std::cerr)
@@ -140,27 +46,27 @@ std::streamsize ZWidgetErrStream::xsputn(const char* p, std::streamsize n)
         QMessageLogger logger(pwtf, line, 0);
         if (type == "T")
         {
-            logger.info() << content;
+            logger.info() << msg;
         }
         else if (type == "D")
         {
-            logger.debug() << content;
+            logger.debug() << msg;
         }
         else if (type == "I")
         {
-            logger.info() << content;
+            logger.info() << msg;
         }
         else if (type == "C")
         {
-            logger.critical() << content;
+            logger.critical() << msg;
         }
         else if (type == "W")
         {
-            logger.warning() << content;
+            logger.warning() << msg;
         }
         else if (type == "E")
         {
-            logger.fatal(content.toLatin1());
+            logger.fatal(msg.toLatin1());
         }
     }
     return n;
@@ -174,26 +80,50 @@ void ZWidgetErrStream::registerMsgHandler()
 void ZWidgetErrStream::customMsgHandler(QtMsgType type, const QMessageLogContext& context, const QString& msg)
 {
     QString fileName = QString::fromLatin1(context.file);
+    int ln = context.line;
     QByteArray localMsg = msg.toLocal8Bit();
-    switch (type) {
-    case QtDebugMsg:
-        // fprintf(stderr, "Debug: %s (%s:%u, %s)\n", localMsg.constData(), context.file, context.line, context.function);
-        break;
-    case QtInfoMsg:
-        // fprintf(stderr, "Info: %s (%s:%u, %s)\n", localMsg.constData(), context.file, context.line, context.function);
-        break;
-    case QtWarningMsg:
-        // fprintf(stderr, "Warning: %s (%s:%u, %s)\n", localMsg.constData(), context.file, context.line, context.function);
-        break;
-    case QtCriticalMsg:
-        // fprintf(stderr, "Critical: %s (%s:%u, %s)\n", localMsg.constData(), context.file, context.line, context.function);
-        break;
-    case QtFatalMsg:
-        // fprintf(stderr, "Fatal: %s (%s:%u, %s)\n", localMsg.constData(), context.file, context.line, context.function);
-        break;
+    
+    QStandardItemModel* model = zenoApp->logModel();
+
+    QStandardItem *item = new QStandardItem(msg);
+    item->setData(type, ROLE_LOGTYPE);
+    item->setData(fileName, ROLE_FILENAME);
+    item->setData(ln, ROLE_LINENO);
+    switch (type)
+    {
+        //todo: time
+        case QtDebugMsg:
+        {
+            item->setData(QBrush(QColor(255, 255, 255, 0.7*255)), Qt::ForegroundRole);
+            model->appendRow(item);
+            break;
+        }
+        case QtCriticalMsg:
+        {
+            item->setData(QBrush(QColor(255, 255, 255, 0.7*255)), Qt::ForegroundRole);
+            model->appendRow(item);
+            break;
+        }
+        case QtInfoMsg:
+        {
+            item->setData(QBrush(QColor(51, 148, 85)), Qt::ForegroundRole);
+            model->appendRow(item);
+            break;
+        }
+        case QtWarningMsg:
+        {
+            item->setData(QBrush(QColor(200, 154, 80)), Qt::ForegroundRole);
+            model->appendRow(item);
+            break;
+        }
+        case QtFatalMsg:
+        {
+            item->setData(QBrush(QColor(200, 84, 79)), Qt::ForegroundRole);
+            model->appendRow(item);
+            break;
+        }
     default:
-        std::cout << msg.toStdString().c_str();
+        delete item;
         break;
     }
-    std::cout << msg.toStdString().c_str();
 }
