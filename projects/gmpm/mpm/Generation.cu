@@ -626,12 +626,16 @@ struct ConstructBendingSprings : INode {
     Vector<int> cnt{surfPars.get_allocator(), 1};
     cnt.setVal(0);
     Vector<ElePair> elePairs{surfPars.get_allocator(), numRegisteredEdges};
+    Vector<float> kBends{surfPars.get_allocator(), numRegisteredEdges};
     cudaPol(
         range(numE),
         [table = proxy<space>(edgeTable), edgeToEles = proxy<space>(edgeToEles),
          cnt = proxy<space>(cnt), elePairs = proxy<space>(elePairs),
-         eles = proxy<space>({}, surfEles)] __device__(int ei) mutable {
+         eles = proxy<space>({}, surfEles), kBends = proxy<space>(kBends),
+         thickness] __device__(int ei) mutable {
           using table_t = RM_CVREF_T(table);
+          auto [E_self, nu_self] =
+              E_nu_from_lame_parameters(eles("mu", ei), eles("lam", ei));
           auto tri = eles.pack<3>("inds", ei).template reinterpret_bits<int>();
           // <vi, vj, vk>
           auto vi = tri[1];
@@ -642,6 +646,8 @@ struct ConstructBendingSprings : INode {
               if (auto edgeNo = table.query(key_t{vj, vi});
                   edgeNo != table_t::sentinel_v) {
                 auto neighborEleNo = edgeToEles[edgeNo];
+                auto [E_nei, nu_nei] = E_nu_from_lame_parameters(
+                    eles("mu", neighborEleNo), eles("lam", neighborEleNo));
                 auto neighborTri = eles.pack<3>("inds", neighborEleNo)
                                        .template reinterpret_bits<int>();
                 int neighborV = -1;
@@ -658,6 +664,10 @@ struct ConstructBendingSprings : INode {
                  *         nei --- vj
                  */
                 elePairs[no] = ElePair{vj, vi, neighborV, vk};
+                auto E = zs::min(E_self, E_nei);
+                auto nu = zs::min(nu_self, nu_nei);
+                kBends[no] = E / (24 * (1.0 - nu * nu)) * thickness *
+                             thickness * thickness;
               }
             }
             vi = vj;
@@ -666,6 +676,7 @@ struct ConstructBendingSprings : INode {
         });
     std::size_t numElePairs = cnt.getVal();
     elePairs.resize(numElePairs);
+    kBends.resize(numElePairs);
     //
     auto ret = std::make_shared<ZenoParticles>();
     ret->getModel() = surf.getModel();
@@ -684,12 +695,13 @@ struct ConstructBendingSprings : INode {
     auto &eles = ret->getQuadraturePoints();
     cudaPol(range(numElePairs), [eles = proxy<space>({}, eles),
                                  surfPars = proxy<space>({}, surfPars),
-                                 elePairs = proxy<space>(elePairs), stiffness,
-                                 thickness] __device__(int ei) mutable {
+                                 elePairs = proxy<space>(elePairs),
+                                 kBends = proxy<space>(kBends),
+                                 stiffness] __device__(int ei) mutable {
       using mat3 = zs::vec<float, 3, 3>;
       // bending_stiffness =
       // E / (24 * (1.0 - nu * nu)) * thickness^3
-      eles("k", ei) = stiffness * thickness * thickness * thickness;
+      eles("k", ei) = stiffness * kBends[ei];
 
       auto vinds = elePairs[ei];
       eles.tuple<4>("vinds", ei) = vinds.reinterpret_bits<float>();
@@ -710,7 +722,7 @@ struct ConstructBendingSprings : INode {
                                                            n2.l2NormSqr()))));
       if (n2.cross(n1).dot(v0 - v1) < 0) // towards "closing"
         DA = -DA;
-      eles("ra", ei) = DA;
+      eles("ra", ei) = 0;
     });
 
     fmt::print("bending spring mesh: {} verts, {} tris.\n", numSpringVerts,
