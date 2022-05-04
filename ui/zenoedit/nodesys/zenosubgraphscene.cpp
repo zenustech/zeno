@@ -189,6 +189,15 @@ void ZenoSubGraphScene::onDataChanged(const QModelIndex& subGpIdx, const QModelI
         SOCKET_UPDATE_INFO info = var.value<SOCKET_UPDATE_INFO>();
         m_nodes[id]->onSocketUpdated(info);
     }
+    if (role == ROLE_MODIFY_SOCKET_DEFL)
+    {
+        Q_ASSERT(m_nodes.find(id) != m_nodes.end());
+        QVariant var = idx.data(ROLE_MODIFY_SOCKET_DEFL);
+        if (var.isNull())
+            return;
+        PARAM_UPDATE_INFO info = idx.data(ROLE_MODIFY_SOCKET_DEFL).value<PARAM_UPDATE_INFO>();
+        m_nodes[id]->onSocketDeflUpdated(info);
+    }
     if (role == ROLE_OBJNAME)
     {
         Q_ASSERT(m_nodes.find(id) != m_nodes.end());

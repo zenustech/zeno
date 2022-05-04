@@ -5,6 +5,7 @@
 #include <zenoui/include/igraphsmodel.h>
 #include "zenoapplication.h"
 #include "graphsmanagment.h"
+#include "viewport/zenovis.h"
 
 
 ZenoDockTitleWidget::ZenoDockTitleWidget(QWidget* parent)
@@ -65,6 +66,12 @@ void ZenoDockTitleWidget::paintEvent(QPaintEvent* event)
 	painter.fillRect(rect(), QColor(58, 58, 58));
 	QPen pen(QColor(44, 50, 49), 2);
 	painter.setPen(pen);
+}
+
+void ZenoDockTitleWidget::mouseDoubleClickEvent(QMouseEvent* event)
+{
+    QWidget::mouseDoubleClickEvent(event);
+    emit doubleClicked();
 }
 
 void ZenoDockTitleWidget::updateByType(DOCK_TYPE type)
@@ -128,7 +135,9 @@ void ZenoEditorDockTitleWidget::initModel()
 
 void ZenoEditorDockTitleWidget::initTitleContent(QHBoxLayout* pHLayout)
 {
-	pHLayout->addWidget(initMenu());
+	QMenuBar* pMenuBar = initMenu();
+	pHLayout->addWidget(pMenuBar);
+	pHLayout->setAlignment(pMenuBar, Qt::AlignVCenter);
     pHLayout->addStretch();
 
     m_lblTitle = new QLabel;
@@ -153,7 +162,7 @@ QAction* ZenoEditorDockTitleWidget::createAction(const QString& text)
 QMenuBar* ZenoEditorDockTitleWidget::initMenu()
 {
 	QMenuBar* pMenuBar = new QMenuBar(this);
-    pMenuBar->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Preferred);
+    pMenuBar->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Expanding);
 
 	QMenu* pAdd = new QMenu(tr("Add"));
 	{
@@ -190,30 +199,6 @@ QMenuBar* ZenoEditorDockTitleWidget::initMenu()
 	pMenuBar->addMenu(pGo);
 	pMenuBar->addMenu(pView);
 	pMenuBar->addMenu(pHelp);
-
-	/* up-right-bottom-left */
-	pMenuBar->setStyleSheet(
-		"\
-    QMenuBar {\
-        background-color: transparent;\
-        spacing: 3px; \
-        color: rgba(255,255,255,0.50);\
-    }\
-    \
-    QMenuBar::item {\
-        padding: 10px 8px 7px 8px;\
-        background: transparent;\
-    }\
-    \
-    QMenuBar::item:selected {\
-        background: #4B9EF4;\
-    }\
-    \
-    QMenuBar::item:pressed {\
-        background: #4B9EF4;\
-    }\
-    "
-	);
 
 	return pMenuBar;
 }
@@ -282,6 +267,168 @@ void ZenoEditorDockTitleWidget::onPathChanged(const QString& newPath)
 void ZenoEditorDockTitleWidget::paintEvent(QPaintEvent* event)
 {
 	ZenoDockTitleWidget::paintEvent(event);
+}
+
+
+ZenoViewDockTitle::ZenoViewDockTitle(QWidget* parent)
+	: ZenoDockTitleWidget(parent)
+{
+
+}
+
+ZenoViewDockTitle::~ZenoViewDockTitle()
+{
+
+}
+
+void ZenoViewDockTitle::initTitleContent(QHBoxLayout* pHLayout)
+{
+    QMenuBar* pMenuBar = initMenu();
+    pHLayout->addWidget(pMenuBar);
+    pHLayout->setAlignment(pMenuBar, Qt::AlignVCenter);
+    pHLayout->addStretch();
+}
+
+QMenuBar* ZenoViewDockTitle::initMenu()
+{
+    QMenuBar* pMenuBar = new QMenuBar(this);
+    pMenuBar->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Expanding);
+
+    QMenu* pDisplay = new QMenu(tr("Display"));
+    {
+        QAction* pAction = new QAction(tr("Show Grid"), this);
+        pAction->setCheckable(true);
+        pAction->setChecked(true);
+        pDisplay->addAction(pAction);
+        connect(pAction, &QAction::triggered, this,
+            [=]() { Zenovis::GetInstance().getSession()->set_show_grid(pAction->isChecked()); });
+
+        pAction = new QAction(tr("Background Color"), this);
+        pDisplay->addAction(pAction);
+        connect(pAction, &QAction::triggered, this, [=]() {
+            auto [r, g, b] = Zenovis::GetInstance().getSession()->get_background_color();
+            auto c = QColor::fromRgbF(r, g, b);
+            c = QColorDialog::getColor(c);
+            if (c.isValid()) {
+                Zenovis::GetInstance().getSession()->set_background_color(c.redF(), c.greenF(), c.blueF());
+            }
+            });
+
+        pDisplay->addSeparator();
+
+        pAction = new QAction(tr("Smooth Shading"), this);
+        pAction->setCheckable(true);
+        pAction->setChecked(false);
+        pDisplay->addAction(pAction);
+        connect(pAction, &QAction::triggered, this,
+            [=]() { Zenovis::GetInstance().getSession()->set_smooth_shading(pAction->isChecked()); });
+
+        pAction = new QAction(tr("Normal Check"), this);
+        pAction->setCheckable(true);
+        pAction->setChecked(false);
+        pDisplay->addAction(pAction);
+        connect(pAction, &QAction::triggered, this,
+            [=]() { Zenovis::GetInstance().getSession()->set_normal_check(pAction->isChecked()); });
+
+        pAction = new QAction(tr("Wireframe"), this);
+        pAction->setCheckable(true);
+        pAction->setChecked(false);
+        pDisplay->addAction(pAction);
+        connect(pAction, &QAction::triggered, this,
+            [=]() { Zenovis::GetInstance().getSession()->set_render_wireframe(pAction->isChecked()); });
+
+        pDisplay->addSeparator();
+
+        pAction = new QAction(tr("Camera Keyframe"), this);
+        pDisplay->addAction(pAction);
+
+        pDisplay->addSeparator();
+
+        pAction = new QAction(tr("Use English"), this);
+        pAction->setCheckable(true);
+        pAction->setChecked(true);
+        pDisplay->addAction(pAction);
+    }
+
+    QMenu* pRecord = new QMenu(tr("Record"));
+    {
+        QAction* pAction = new QAction(tr("Screenshot"), this);
+        pAction->setShortcut(QKeySequence("F12"));
+        pRecord->addAction(pAction);
+        connect(pAction, &QAction::triggered, this, [=]() {
+            auto s = QDateTime::currentDateTime().toString(QString("yyyy-dd-MM_hh-mm-ss.png"));
+            Zenovis::GetInstance().getSession()->do_screenshot(s.toStdString());
+            });
+        pAction = new QAction(tr("Record Video"), this);
+        pAction->setShortcut(QKeySequence(tr("Shift+F12")));
+        pRecord->addAction(pAction);
+    }
+
+    QMenu* pEnvText = new QMenu(tr("EnvTex"));
+    {
+		QAction* pAction = new QAction(tr("BlackWhite"), this);
+		connect(pAction, &QAction::triggered, this, [=]() {
+			//todo
+		});
+		pEnvText->addAction(pAction);
+
+		pAction = new QAction(tr("Creek"), this);
+		connect(pAction, &QAction::triggered, this, [=]() {
+			//todo
+		});
+		pEnvText->addAction(pAction);
+
+		pAction = new QAction(tr("Daylight"), this);
+		connect(pAction, &QAction::triggered, this, [=]() {
+			//todo
+		});
+		pEnvText->addAction(pAction);
+
+        pAction = new QAction(tr("Default"), this);
+		connect(pAction, &QAction::triggered, this, [=]() {
+			//todo
+		});
+        pEnvText->addAction(pAction);
+
+        pAction = new QAction(tr("Footballfield"), this);
+        connect(pAction, &QAction::triggered, this, [=]() {
+            //todo
+        });
+        pEnvText->addAction(pAction);
+
+        pAction = new QAction(tr("Forest"), this);
+        connect(pAction, &QAction::triggered, this, [=]() {
+            //todo
+        });
+        pEnvText->addAction(pAction);
+
+        pAction = new QAction(tr("Lake"), this);
+        connect(pAction, &QAction::triggered, this, [=]() {
+            //todo
+        });
+        pEnvText->addAction(pAction);
+
+        pAction = new QAction(tr("Sea"), this);
+        connect(pAction, &QAction::triggered, this, [=]() {
+            //todo
+        });
+        pEnvText->addAction(pAction);
+    }
+
+    pMenuBar->addMenu(pDisplay);
+    pMenuBar->addMenu(pRecord);
+    pMenuBar->addMenu(pEnvText);
+
+    return pMenuBar;
+}
+
+QAction* ZenoViewDockTitle::createAction(const QString& text)
+{
+    QAction* pAction = new QAction(text);
+    connect(pAction, &QAction::triggered, this, [=]() {
+        emit actionTriggered(qobject_cast<QAction*>(sender()));
+        });
+    return pAction;
 }
 
 

@@ -35,6 +35,7 @@ namespace JsonHelper
 			{
 				writer.Bool(value.toBool());
 			}
+			//todo: qlineargradient.
 			else if (varType != QVariant::Invalid)
             {
 				if (varType == QVariant::UserType) {

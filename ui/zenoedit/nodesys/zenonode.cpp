@@ -173,8 +173,6 @@ void ZenoNode::initWangStyle(const QModelIndex& subGIdx, const QModelIndex& inde
 	setFlag(ItemSendsGeometryChanges);
 	setFlag(ItemSendsScenePositionChanges);
 
-    m_headerWidget->installSceneEventFilter(this);
-
     //todo:
 	//connect(this, SIGNAL(doubleClicked(const QString&)), pModel, SLOT(onDoubleClicked(const QString&)));
 }
@@ -501,7 +499,15 @@ void ZenoNode::initParam(PARAM_CONTROL ctrl, QGraphicsLinearLayout* pParamLayout
 
 		    connect(pFileWidget, &ZenoParamLineEdit::editingFinished, this, [=]() {
 			    onParamEditFinished(param.control, paramName, pFileWidget->text());
-			    });
+			});
+            connect(openBtn, &ZenoImageItem::clicked, this, [=]() {
+                QString path = QFileDialog::getOpenFileName(nullptr, "File to Open", "", "All Files(*);;");
+                if (path.isEmpty())
+                    return;
+                pFileWidget->setText(path);
+                onParamEditFinished(param.control, paramName, path);
+            });
+            m_paramControls[paramName] = pFileWidget;
 		    break;
 	    }
 	    case CONTROL_WRITEPATH:
@@ -521,7 +527,15 @@ void ZenoNode::initParam(PARAM_CONTROL ctrl, QGraphicsLinearLayout* pParamLayout
             pParamLayout->setItemSpacing(2, 0);
 		    connect(pFileWidget, &ZenoParamLineEdit::editingFinished, this, [=]() {
 			    onParamEditFinished(param.control, paramName, pFileWidget->text());
-			    });
+			});
+            connect(openBtn, &ZenoImageItem::clicked, this, [=]() {
+                QString path = QFileDialog::getSaveFileName(nullptr, "Path to Save", "", "All Files(*);;");
+                if (path.isEmpty())
+                    return;
+                pFileWidget->setText(path);
+                onParamEditFinished(param.control, paramName, path);
+            });
+            m_paramControls[paramName] = pFileWidget;
 		    break;
 	    }
 	    case CONTROL_MULTILINE_STRING:
@@ -558,9 +572,10 @@ void ZenoNode::onParamEditFinished(PARAM_CONTROL editCtrl, const QString& paramN
 
     PARAM_UPDATE_INFO info;
     info.oldValue = pGraphsModel->getParamValue(nodeid, paramName, m_subGpIndex);
-    info.newValue = UiHelper::parseTextValue(editCtrl, textValue);;
+    info.newValue = UiHelper::parseTextValue(editCtrl, textValue);
     info.name = paramName;
-    pGraphsModel->updateParamInfo(nodeid, info, m_subGpIndex, true);
+    if (info.oldValue != info.newValue)
+        pGraphsModel->updateParamInfo(nodeid, info, m_subGpIndex, true);
 }
 
 void ZenoNode::onParamUpdated(const QString &paramName, const QVariant &val)
@@ -579,6 +594,26 @@ void ZenoNode::onParamUpdated(const QString &paramName, const QVariant &val)
         else if (ZenoParamMultilineStr* pTextEdit = qobject_cast<ZenoParamMultilineStr*>(pWidget))
         {
             pTextEdit->setText(val.toString());
+        }
+        else if (ZenoVecEditWidget* pVecEdit = qobject_cast<ZenoVecEditWidget*>(pWidget))
+        {
+            pVecEdit->setVec(val.value<QVector<qreal>>());
+        }
+    }
+}
+
+void ZenoNode::onSocketDeflUpdated(const PARAM_UPDATE_INFO& info)
+{
+    if (m_inSockets.find(info.name) != m_inSockets.end())
+    {
+        ZenoParamWidget* pWidget = m_inSockets[info.name].socket_control;
+        if (ZenoParamLineEdit* plineEdit = qobject_cast<ZenoParamLineEdit*>(pWidget))
+        {
+            plineEdit->setText(info.newValue.toString());
+        }
+        else if (ZenoVecEditWidget* pVecEdit = qobject_cast<ZenoVecEditWidget*>(pWidget))
+        {
+            pVecEdit->setVec(info.newValue.value<QVector<qreal>>());
         }
     }
 }
@@ -728,30 +763,32 @@ void ZenoNode::onNameUpdated(const QString& newName)
 
 void ZenoNode::onSocketLinkChanged(const QString& sockName, bool bInput, bool bAdded)
 {
-    ZenoParamWidget* pParamControl = nullptr;
-
 	if (bInput)
 	{
 		Q_ASSERT(m_inSockets.find(sockName) != m_inSockets.end());
-        pParamControl = m_inSockets[sockName].socket_control;
         m_inSockets[sockName].socket->toggle(bAdded);
 	}
 	else
 	{
 		Q_ASSERT(m_outSockets.find(sockName) != m_outSockets.end());
-        pParamControl = m_outSockets[sockName].socket_control;
         m_outSockets[sockName].socket->toggle(bAdded);
 	}
+}
 
-    if (bAdded)
+void ZenoNode::updateSocketDeflValue(const QString& nodeid, const QString& inSock, const INPUT_SOCKET& inSocket, const QVariant& newValue)
+{
+    INPUT_SOCKETS inputs = m_index.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
+
+    PARAM_UPDATE_INFO info;
+    info.name = inSock;
+    info.oldValue = inputs[inSock].info.defaultValue;
+    info.newValue = newValue;
+
+    if (info.oldValue != info.newValue)
     {
-        if (pParamControl)
-            pParamControl->show();
-    }
-    else
-    {
-        if (pParamControl)
-            pParamControl->hide();
+        IGraphsModel *pGraphsModel = zenoApp->graphsManagment()->currentModel();
+        Q_ASSERT(pGraphsModel);
+        pGraphsModel->updateSocketDefl(nodeid, info, m_subGpIndex, true);
     }
 }
 
@@ -784,24 +821,42 @@ QGraphicsLayout* ZenoNode::initSockets()
             {
 				ZenoParamLineEdit* pSocketEditor = new ZenoParamLineEdit(UiHelper::variantToString(inSocket.info.defaultValue), inSocket.info.control, m_renderParams.lineEditParam);
                 pMiniLayout->addItem(pSocketEditor);
+                //todo: allow to edit path directly?
                 connect(pSocketEditor, &ZenoParamLineEdit::editingFinished, this, [=]()
                 {
-                    const QString& textValue = pSocketEditor->text();
-                    INPUT_SOCKETS inputs = m_index.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
-
-                    PARAM_UPDATE_INFO info;
-                    info.name = inSock;
-                    info.oldValue = inputs[inSock].info.defaultValue;
-                    info.newValue = UiHelper::_parseDefaultValue(textValue, inSocket.info.type);
-
-                    if (info.oldValue != info.newValue)
-                    {
-						IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
-						Q_ASSERT(pGraphsModel);
-						pGraphsModel->updateSocketDefl(nodeid, info, m_subGpIndex);
-                    }
+                    const QVariant &newValue = UiHelper::_parseDefaultValue(pSocketEditor->text(), inSocket.info.type);
+                    updateSocketDeflValue(nodeid, inSock, inSocket, newValue);
 				});
                 socket_ctrl.socket_control = pSocketEditor;
+
+                if (sockType == "readpath" || sockType == "writepath")
+                {
+                    ImageElement elem;
+                    elem.image = ":/icons/ic_openfile.svg";
+                    elem.imageHovered = ":/icons/ic_openfile-on.svg";
+                    elem.imageOn = ":/icons/ic_openfile-on.svg";
+
+                    bool isRead = sockType == "readpath";
+
+                    ZenoSvgLayoutItem *openBtn = new ZenoSvgLayoutItem(elem, QSizeF(30, 30));
+                    connect(openBtn, &ZenoImageItem::clicked, this, [=]() {
+                        QString path;
+                        if (isRead) {
+                            path = QFileDialog::getOpenFileName(nullptr, "File to Open", "", "All Files(*);;");
+                        }
+                        else {
+                            path = QFileDialog::getSaveFileName(nullptr, "Path to Save", "", "All Files(*);;");
+                        }
+                        if (path.isEmpty())
+                            return;
+                        pSocketEditor->setText(path);
+                        updateSocketDeflValue(nodeid, inSock, inSocket, path);
+                    });
+
+                    pMiniLayout->addItem(openBtn);
+                    pMiniLayout->setItemSpacing(1, 0);
+                    pMiniLayout->setItemSpacing(2, 0);
+                }
             }
             else if (sockType == "vec3f")
             {
@@ -811,19 +866,8 @@ QGraphicsLayout* ZenoNode::initSockets()
 				connect(pVecEditor, &ZenoVecEditWidget::editingFinished, this, [=]()
                 {
                     QVector<qreal> vec = pVecEditor->vec();
-					INPUT_SOCKETS inputs = m_index.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
-
-					PARAM_UPDATE_INFO info;
-					info.name = inSock;
-					info.oldValue = inputs[inSock].info.defaultValue;
-					info.newValue = QVariant::fromValue(vec);
-
-					if (info.oldValue != info.newValue)
-					{
-						IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
-						Q_ASSERT(pGraphsModel);
-						pGraphsModel->updateSocketDefl(nodeid, info, m_subGpIndex);
-					}
+                    const QVariant& newValue = QVariant::fromValue(vec);
+                    updateSocketDeflValue(nodeid, inSock, inSocket, newValue);
 				});
                 socket_ctrl.socket_control = pVecEditor;
             }

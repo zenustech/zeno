@@ -134,6 +134,30 @@ void UpdateDataCommand::undo()
 }
 
 
+UpdateSockDeflCommand::UpdateSockDeflCommand(const QString& nodeid, const PARAM_UPDATE_INFO& updateInfo, GraphsModel* pModel, QPersistentModelIndex subgIdx)
+    : QUndoCommand()
+    , m_nodeid(nodeid)
+    , m_updateInfo(updateInfo)
+    , m_subgIdx(subgIdx)
+    , m_model(pModel)
+{
+}
+
+void UpdateSockDeflCommand::redo()
+{
+    m_model->updateSocketDefl(m_nodeid, m_updateInfo, m_subgIdx);
+}
+
+void UpdateSockDeflCommand::undo()
+{
+    PARAM_UPDATE_INFO revertInfo;
+    revertInfo.name = m_updateInfo.name;
+    revertInfo.newValue = m_updateInfo.oldValue;
+    revertInfo.oldValue = m_updateInfo.newValue;
+    m_model->updateSocketDefl(m_nodeid, revertInfo, m_subgIdx);
+}
+
+
 UpdateStateCommand::UpdateStateCommand(const QString& nodeid, STATUS_UPDATE_INFO info, GraphsModel* pModel, QPersistentModelIndex subgIdx)
     : m_nodeid(nodeid)
     , m_info(info)

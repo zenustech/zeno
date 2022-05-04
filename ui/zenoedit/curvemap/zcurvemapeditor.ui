@@ -763,6 +763,12 @@ QTreeView::item:selected:!active {
    <header>curvemap/curvemapview.h</header>
    <container>1</container>
   </customwidget>
+  <customwidget>
+   <class>ZShadowButton</class>
+   <extends>QPushButton</extends>
+   <header>zenoui/comctrl/zshadowbutton.h</header>
+   <container>1</container>
+  </customwidget>
  </customwidgets>
  <resources/>
  <connections/>
