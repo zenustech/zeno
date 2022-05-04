@@ -43,6 +43,13 @@ void GraphsManagment::setCurrentModel(IGraphsModel* model)
     m_pTreeModel = new GraphsTreeModel(this);
     m_pTreeModel->init(model);
     emit modelInited(m_model);
+    connect(m_model, &IGraphsModel::_dataChanged, this, &GraphsManagment::onModelDataChanged);
+    connect(m_model, &IGraphsModel::_rowsInserted, this, [=]() {
+        emit modelDataChanged();
+    });
+    connect(m_model, &IGraphsModel::_rowsAboutToBeRemoved, this, [=]() {
+        emit modelDataChanged();
+    });
 }
 
 GraphsTreeModel* GraphsManagment::treeModel()
@@ -125,6 +132,19 @@ void GraphsManagment::clear()
 
         delete m_pTreeModel;
         m_pTreeModel = nullptr;
+    }
+}
+
+void GraphsManagment::onModelDataChanged(const QModelIndex& subGpIdx, const QModelIndex& idx, int role)
+{
+    switch (role)
+    {
+    case ROLE_OBJPOS:
+    case ROLE_COLLASPED:
+        break;
+    default:
+        emit modelDataChanged();
+        break;
     }
 }
 

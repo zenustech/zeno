@@ -18,6 +18,13 @@ struct LightData {
 };
 
 struct LightObject : IObjectClone<LightObject>, LightData {
+    LightData const &get() const {
+        return static_cast<LightData const &>(*this);
+    }
+
+    void set(LightData const &lit) {
+        static_cast<LightData &>(*this) = lit;
+    }
 };
 
 }

@@ -1,8 +1,8 @@
-#include "zeno/types/StringObject.h"
 #include <zeno/zeno.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/PrimitiveUtils.h>
 #include <zeno/types/NumericObject.h>
+#include <zeno/types/StringObject.h>
 #include <zeno/utils/vec.h>
 #include <cstring>
 #include <cstdlib>

@@ -1,5 +1,5 @@
 QMenu {
-    background-color: rgb(28, 28, 28);
+    background-color: rgb(37, 37, 38);
     color: #222222;
     margin: 0px;
 }
@@ -11,11 +11,12 @@ QMenu::item {
 }
 
 QMenu::item:disabled{
-	color: rgb(104, 104, 104);
+    color: rgb(104, 104, 104);
 }
 
 QMenu::item:selected {
-    background: #4B9EF4;
+    background: rgb(9,71,113);
+    color: rgb(255,255,255);
 }
 
 QMenu::icon:checked {
@@ -41,20 +42,27 @@ QMenu::indicator {
 }
 
 QMenuBar {
-    background-color: rgb(28, 28, 28);
+    background-color: rgb(60, 60, 60);
     spacing: 3px;
-    color: rgba(255,255,255,0.50);
+    color: rgb(190,190,190);
+}
+
+QMenuBar[cssClass="mainWin"] {
+    background-color: rgb(60, 60, 60);
+    spacing: 3px;
+    color: rgb(190,190,190);
+    border-bottom: 1px solid black;
 }
 
 QMenuBar::item {
-    padding: 4px 8px 4px 8px;
+    padding: 8px 8px 8px 8px;
     background: transparent;
 }
 
 QMenuBar::item:selected {
-    background: #4B9EF4;
+    background: rgb(80,80,80);
 }
 
 QMenuBar::item:pressed {
-    background: #4B9EF4;
+    background: rgb(80,80,80);
 }

@@ -74,6 +74,28 @@ ZENDEFNODE(NumericRandom, {
 });
 
 
+struct NumericRandomInt : INode {
+    virtual void apply() override {
+        auto value = std::make_shared<NumericObject>();
+        auto minVal = has_input("min") ?
+            get_input<NumericObject>("min")->get<int>()
+            : 0;
+        auto maxVal = has_input("max") ?
+            get_input<NumericObject>("max")->get<int>()
+            : 65536;
+        value->set(int(rand()) % (maxVal - minVal) + minVal);
+        set_output("value", std::move(value));
+    }
+};
+
+ZENDEFNODE(NumericRandomInt, {
+    {{"int", "min", "0"}, {"int", "max", "65536"}},
+    {{"int", "value"}},
+    {},
+    {"numeric"},
+});
+
+
 struct SetRandomSeed : INode {
     virtual void apply() override {
         auto seed = get_input<NumericObject>("seed")->get<int>();

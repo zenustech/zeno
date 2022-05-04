@@ -67,7 +67,7 @@ void ZExpandableSection::setContentLayout(QLayout* contentLayout)
     contentWidget->setAutoFillBackground(true);
 	contentWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     QPalette pal = this->palette();
-    pal.setColor(QPalette::Window, QColor(42, 42, 42));
+    pal.setColor(QPalette::Window, QColor(37, 37, 37));
     contentWidget->setPalette(pal);
 
     m_contentArea->setWidget(contentWidget);

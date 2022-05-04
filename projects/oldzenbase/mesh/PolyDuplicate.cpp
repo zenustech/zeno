@@ -28,7 +28,7 @@ struct PolyDuplicate : zeno::INode{
     auto inmesh = get_input("Mesh")->as<MeshObject>();
     auto posList = get_input("Particles")->as<ParticlesObject>();
     auto result = zeno::IObject::make<MeshObject>();
-    printf("%d\n",posList->pos.size());
+    //printf("%d\n",posList->pos.size());
     for(int i=0;i<posList->size();i++)
     {
         auto p = posList->pos[i];

@@ -19,12 +19,16 @@
 #include <zenoui/style/zenostyle.h>
 #include <zenoui/util/uihelper.h>
 
+
 ZenoMainWindow::ZenoMainWindow(QWidget *parent, Qt::WindowFlags flags)
-    : QMainWindow(parent, flags), m_pEditor(nullptr), m_viewDock(nullptr), m_timelineDock(nullptr),
-      m_bInDlgEventloop(false) {
+    : QMainWindow(parent, flags)
+    , m_pEditor(nullptr)
+    , m_viewDock(nullptr)
+    , m_timelineDock(nullptr)
+    , m_bInDlgEventloop(false)
+{
     init();
     setContextMenuPolicy(Qt::NoContextMenu);
-
     setWindowTitle("Zeno Editor (github.com/zenustech/zeno)");
 #ifdef __linux__
     if (char *p = std::getenv("ZENO_OPEN")) {
@@ -122,78 +126,6 @@ void ZenoMainWindow::initMenu() {
         pEdit->addAction(pAction);
     }
 
-    QMenu *pDisplay = new QMenu(tr("Display"));
-    {
-        QAction *pAction = new QAction(tr("Show Grid"), this);
-        pAction->setCheckable(true);
-        pAction->setChecked(true);
-        pDisplay->addAction(pAction);
-        connect(pAction, &QAction::triggered, this,
-                [=]() { Zenovis::GetInstance().getSession()->set_show_grid(pAction->isChecked()); });
-
-        pAction = new QAction(tr("Background Color"), this);
-        pDisplay->addAction(pAction);
-        connect(pAction, &QAction::triggered, this, [=]() {
-            auto [r, g, b] = Zenovis::GetInstance().getSession()->get_background_color();
-            auto c = QColor::fromRgbF(r, g, b);
-            c = QColorDialog::getColor(c);
-            if (c.isValid()) {
-                Zenovis::GetInstance().getSession()->set_background_color(c.redF(), c.greenF(), c.blueF());
-            }
-        });
-
-        pDisplay->addSeparator();
-
-        pAction = new QAction(tr("Smooth Shading"), this);
-        pAction->setCheckable(true);
-        pAction->setChecked(false);
-        pDisplay->addAction(pAction);
-        connect(pAction, &QAction::triggered, this,
-                [=]() { Zenovis::GetInstance().getSession()->set_smooth_shading(pAction->isChecked()); });
-
-        pAction = new QAction(tr("Normal Check"), this);
-        pAction->setCheckable(true);
-        pAction->setChecked(false);
-        pDisplay->addAction(pAction);
-        connect(pAction, &QAction::triggered, this,
-                [=]() { Zenovis::GetInstance().getSession()->set_normal_check(pAction->isChecked()); });
-
-        pAction = new QAction(tr("Wireframe"), this);
-        pAction->setCheckable(true);
-        pAction->setChecked(false);
-        pDisplay->addAction(pAction);
-        connect(pAction, &QAction::triggered, this,
-                [=]() { Zenovis::GetInstance().getSession()->set_render_wireframe(pAction->isChecked()); });
-
-        pDisplay->addSeparator();
-
-        pAction = new QAction(tr("Camera Keyframe"), this);
-        pDisplay->addAction(pAction);
-
-        pDisplay->addSeparator();
-
-        pAction = new QAction(tr("Use English"), this);
-        pAction->setCheckable(true);
-        pAction->setChecked(true);
-        pDisplay->addAction(pAction);
-    }
-
-    QMenu *pRecord = new QMenu(tr("Record"));
-    {
-        QAction *pAction = new QAction(tr("Screenshot"), this);
-        pAction->setShortcut(QKeySequence("F12"));
-        pRecord->addAction(pAction);
-        connect(pAction, &QAction::triggered, this, [=]() {
-            auto s = QDateTime::currentDateTime().toString(QString("yyyy-dd-MM_hh-mm-ss.png"));
-            //auto s = QString("/tmp/a.png");
-            Zenovis::GetInstance().getSession()->do_screenshot(s.toStdString());
-        });
-
-        pAction = new QAction(tr("Record Video"), this);
-        pAction->setShortcut(QKeySequence(tr("Shift+F12")));
-        pRecord->addAction(pAction);
-    }
-
     QMenu *pRender = new QMenu(tr("Render"));
 
     QMenu *pView = new QMenu(tr("View"));
@@ -219,38 +151,9 @@ void ZenoMainWindow::initMenu() {
     pMenuBar->addMenu(pEdit);
     pMenuBar->addMenu(pRender);
     pMenuBar->addMenu(pView);
-    pMenuBar->addMenu(pDisplay);
-    pMenuBar->addMenu(pRecord);
     pMenuBar->addMenu(pWindow);
     pMenuBar->addMenu(pHelp);
-
-    /* up-right-bottom-left */
-    const QString &qssTemplate = "\
-    QMenuBar {\
-        background-color: rgb(28, 28, 28);\
-        spacing: %1px; \
-        color: rgba(255,255,255,0.50);\
-    }\
-    \
-    QMenuBar::item {\
-        padding: %2px %3px %4px %5px;\
-        background: transparent;\
-    }\
-    \
-    QMenuBar::item:selected {\
-        background: #4B9EF4;\
-    }\
-    \
-    QMenuBar::item:pressed {\
-        background: #4B9EF4;\
-    }\
-    ";
-
-    qreal spacing = ZenoStyle::dpiScaled(3), padding_left = ZenoStyle::dpiScaled(8),
-          padding_right = ZenoStyle::dpiScaled(8), padding_top = ZenoStyle::dpiScaled(4),
-          padding_bottom = ZenoStyle::dpiScaled(4);
-    QString qss = qssTemplate.arg(spacing).arg(padding_top).arg(padding_right).arg(padding_bottom).arg(padding_left);
-    pMenuBar->setStyleSheet(qss);
+    pMenuBar->setProperty("cssClass", "mainWin");
 
     setMenuBar(pMenuBar);
 }
@@ -451,7 +354,7 @@ void ZenoMainWindow::onDockSwitched(DOCK_TYPE type) {
     case DOCK_VIEW: {
         //complicated opengl framework.
         //DisplayWidget* view = new DisplayWidget;
-        //pDock->setWidget(view);
+        //pDock->setWidget(type, view);
         break;
     }
     case DOCK_NODE_PARAMS: {

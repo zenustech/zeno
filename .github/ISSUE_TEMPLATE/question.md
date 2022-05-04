@@ -11,7 +11,7 @@ assignees: ''
 Thank for you question!
 If this is your first question to Zeno, make sure you've checked out the contributor guidelines:
 
-https://github.com/zenustech/zeno/blob/master/CONTRIBUTING.md
+https://github.com/zenustech/zeno/blob/master/docs/CONTRIBUTING.md
 -->
 
 > Describe your question here, we support both Chinese or English, e.g.:

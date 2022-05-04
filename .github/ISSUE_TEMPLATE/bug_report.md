@@ -11,7 +11,7 @@ assignees: ''
 Thank for you report!
 If this is your first issue to Zeno, make sure you've checked out the contributor guidelines:
 
-https://github.com/zenustech/zeno/blob/master/CONTRIBUTING.md
+https://github.com/zenustech/zeno/blob/master/docs/CONTRIBUTING.md
 
 Please take some time to fill the blanks completely, this help us understand your problem easier.
 Therefore *you get a better answer, faster*, thanks for your support!

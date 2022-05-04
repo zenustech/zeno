@@ -39,6 +39,6 @@ QGraphicsLinearLayout* DynamicNumberNode::initCustomParamWidgets()
 
 void DynamicNumberNode::onEditClicked()
 {
-    ZCurveMapEditor *pEditor = new ZCurveMapEditor;
+    ZCurveMapEditor *pEditor = new ZCurveMapEditor(true);
     pEditor->show();
 }

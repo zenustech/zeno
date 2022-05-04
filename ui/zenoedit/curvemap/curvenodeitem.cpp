@@ -9,12 +9,12 @@
 using namespace curve_util;
 
 
-CurvePathItem::CurvePathItem(QGraphicsItem *parent)
+CurvePathItem::CurvePathItem(QColor color, QGraphicsItem *parent)
     : QObject(nullptr)
 	, QGraphicsPathItem(parent)
 {
-    const int penWidth = 2;
-    QPen pen(QColor(77, 77, 77), penWidth);
+    const int penWidth = 3;
+    QPen pen(color, penWidth);
     pen.setStyle(Qt::SolidLine);
     setPen(pen);
     setZValue(9);
@@ -76,8 +76,11 @@ QVariant CurveHandlerItem::itemChange(GraphicsItemChange change, const QVariant&
             int i = m_node->curves()->indexOf(m_node);
             if (m_node->leftHandle() == this)
 			{
-                QPointF lastNodePos = m_node->mapFromScene(m_node->curves()->nodePos(i - 1));
-                newPos.setX(qMax(lastNodePos.x(), newPos.x()));
+                if (i > 0)
+				{
+                    QPointF lastNodePos = m_node->mapFromScene(m_node->curves()->nodePos(i - 1));
+                    newPos.setX(qMax(lastNodePos.x(), newPos.x()));
+				}
                 if (m_other)
 				{
                     QPointF rightHdlPos = m_other->pos();
@@ -86,8 +89,11 @@ QVariant CurveHandlerItem::itemChange(GraphicsItemChange change, const QVariant&
             }
 			else if (m_node->rightHandle() == this)
 			{
-                QPointF nextNodePos = m_node->mapFromScene(m_node->curves()->nodePos(i + 1));
-                newPos.setX(qMin(nextNodePos.x(), newPos.x()));
+                if (i + 1 < m_node->curves()->nodeCount())
+				{
+					QPointF nextNodePos = m_node->mapFromScene(m_node->curves()->nodePos(i + 1));
+					newPos.setX(qMin(nextNodePos.x(), newPos.x()));
+				}
                 if (m_other)
 				{
                     QPointF leftHdlPos = m_other->pos();
@@ -102,9 +108,20 @@ QVariant CurveHandlerItem::itemChange(GraphicsItemChange change, const QVariant&
 		QPointF hdlPosInGrid = m_node->grid()->mapFromScene(scenePos());
 		QPointF nodePosInGrid = m_node->pos();
 		m_line->setLine(QLineF(hdlPosInGrid, nodePosInGrid));
-
         if (m_bNotify)
-			m_node->onHandleUpdate(this);
+        {
+            CurveModel* pModel = m_node->curves()->model();
+            CurveGrid *pGrid = m_node->grid();
+            QPointF offset = pGrid->sceneToLogic(scenePos()) - pGrid->sceneToLogic(m_node->scenePos());
+            if (this == m_node->leftHandle())
+            {
+                pModel->setData(m_node->index(), offset, ROLE_LEFTPOS);
+            }
+            else
+            {
+                pModel->setData(m_node->index(), offset, ROLE_RIGHTPOS);
+            }
+        }
 	}
 	else if (change == QGraphicsItem::ItemScenePositionHasChanged)
 	{
@@ -149,6 +166,10 @@ bool CurveHandlerItem::isMouseEventTriggered()
 
 void CurveHandlerItem::toggle(bool bToggle)
 {
+    if (pos() == QPointF(0, 0))
+	{
+        bToggle = false;
+	}
     setVisible(bToggle);
     m_line->setVisible(bToggle);
 }
@@ -238,64 +259,14 @@ CurveNodeItem::CurveNodeItem(const QModelIndex& idx, CurveMapView* pView, const 
 
 void CurveNodeItem::initHandles(const QPointF& leftOffset, const QPointF& rightOffset)
 {
-	if (leftOffset != QPointF(0, 0))
-	{
-		m_left = new CurveHandlerItem(this, leftOffset, this);
-		m_left->hide();
-	}
+	m_left = new CurveHandlerItem(this, leftOffset, this);
+	m_left->hide();
 
-	if (rightOffset != QPointF(0, 0))
-	{
-		m_right = new CurveHandlerItem(this, rightOffset, this);
-		m_right->hide();
-	}
+	m_right = new CurveHandlerItem(this, rightOffset, this);
+	m_right->hide();
 
-	if (m_left && m_right)
-	{
-		m_left->setOtherHandle(m_right);
-        m_right->setOtherHandle(m_left);
-	}
-}
-
-void CurveNodeItem::onHandleUpdate(CurveHandlerItem* pItem)
-{
-    if (m_view->isSmoothCurve())
-	{
-		//update the pos of another handle.
-        CurveModel *const pModel = m_curve->model();
-        QVector2D roffset(rightHandlePos() - pos());
-        QVector2D loffset(leftHandlePos() - pos());
-        if (m_left == pItem && m_right)
-		{
-			qreal length = roffset.length();
-			roffset = -loffset.normalized() * length;
-			QPointF newPos = roffset.toPointF() + pos();
-			newPos = mapFromScene(newPos);
-
-			m_right->setUpdateNotify(false);
-			m_right->setPos(newPos);
-			m_right->setUpdateNotify(true);
-
-			//sync to model.
-            QPointF offset = m_grid->sceneToLogic(m_right->scenePos()) - m_grid->sceneToLogic(scenePos());
-			pModel->setData(m_index, offset, ROLE_LEFTPOS);
-		}
-		else if (m_right == pItem && m_left)
-		{
-			qreal length = loffset.length();
-			loffset = -roffset.normalized() * length;
-			QPointF newPos = loffset.toPointF() + pos();
-			newPos = mapFromScene(newPos);
-
-			m_left->setUpdateNotify(false);
-			m_left->setPos(newPos);
-			m_left->setUpdateNotify(true);
-
-			//sync to model.
-			QPointF offset = m_grid->sceneToLogic(m_left->scenePos()) - m_grid->sceneToLogic(scenePos());
-			pModel->setData(m_index, offset, ROLE_RIGHTPOS);
-		}
-    }
+    m_left->setOtherHandle(m_right);
+    m_right->setOtherHandle(m_left);
 }
 
 void CurveNodeItem::toggle(bool bChecked)
@@ -338,6 +309,11 @@ CurvesItem* CurveNodeItem::curves() const
     return m_curve;
 }
 
+QModelIndex CurveNodeItem::index() const
+{
+	return m_index;
+}
+
 int CurveNodeItem::type() const
 {
     return Type;
@@ -361,8 +337,17 @@ QVariant CurveNodeItem::itemChange(GraphicsItemChange change, const QVariant& va
 		if (selected)
 		{
             toggle(true);
-			if (m_left) m_left->toggle(true);
-			if (m_right) m_right->toggle(true);
+			if (m_index.data(ROLE_TYPE).toInt() != HDL_VECTOR)
+			{
+				if (m_left) m_left->toggle(true);
+				if (m_right) m_right->toggle(true);
+			}
+			else
+			{
+				//handler length is 0.
+				if (m_left) m_left->toggle(false);
+				if (m_right) m_right->toggle(false);
+			}
 		}
 		else
 		{
@@ -376,37 +361,15 @@ QVariant CurveNodeItem::itemChange(GraphicsItemChange change, const QVariant& va
 				m_right->toggle(false);
 			}
 		}
-	} 
+	}
 	else if (change == QGraphicsItem::ItemPositionChange)
 	{
-        int i = m_curve->indexOf(this);
-
-		QRectF rc = m_grid->boundingRect();
 		QPointF newPos = value.toPointF();
-        newPos.setX(qMin(qMax(newPos.x(), rc.left()), rc.right()));
-        newPos.setY(qMin(qMax(newPos.y(), rc.top()), rc.bottom()));
-
-        if (grid()->isFuncCurve())
-		{
-            if (i == 0)
-			{
-                newPos.setX(rc.left());
-			}
-			else if (i == curves()->nodeCount() - 1)
-			{
-                newPos.setX(rc.right());
-            }
-			else
-			{
-                CurveNodeItem *pLast = m_curve->nodeItem(i - 1);
-                CurveNodeItem *pNext = m_curve->nodeItem(i + 1);
-                CurveHandlerItem *pRightHdl = pLast->rightHandle();
-                CurveHandlerItem *pLeftHdl = pNext->leftHandle();
-                newPos.setX(qMin(qMax(newPos.x(), pRightHdl->scenePos().x()),
-                                 pLeftHdl->scenePos().x()));
-			}
-			return newPos;
-        }
+		QPointF newLogicPos = m_grid->sceneToLogic(newPos);
+		CurveModel* pModel = m_curve->model();
+		newLogicPos = pModel->clipNodePos(m_index, newLogicPos);
+		newPos = m_grid->logicToScene(newLogicPos);
+		return newPos;
 	}
 	else if (change == QGraphicsItem::ItemPositionHasChanged)
 	{

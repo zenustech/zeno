@@ -1,13 +1,12 @@
-#include <stb_image_write.h>
 #include <zeno/utils/log.h>
 #include <zenovis/Camera.h>
-#include <zenovis/IGraphic.h>
 #include <zenovis/Scene.h>
 #include <zenovis/Session.h>
 #include <zenovis/DrawOptions.h>
-#include <zenovis/GraphicsManager.h>
-#include <zenovis/opengl/common.h>
+#include <zenovis/bate/GraphicsManager.h>
+#include <zenovis/bate/IGraphic.h>
 #include <zeno/utils/format.h>
+#include <stb_image_write.h>
 #ifdef ZENO_ENABLE_OPENEXR
 #include <ImfPixelType.h>
 #include <ImfRgbaFile.h>
@@ -44,7 +43,7 @@ void Session::set_show_grid(bool show_grid) {
 }
 
 void Session::set_num_samples(int num_samples) {
-    impl->scene->camera->setNumSamples(num_samples);
+    // TODO
 }
 
 void Session::set_normal_check(bool check) {
@@ -125,12 +124,7 @@ void Session::do_screenshot(std::string path, std::string type) {
 void Session::look_perspective(float cx, float cy, float cz, float theta,
                                float phi, float radius, float fov,
                                bool ortho_mode) {
-    impl->scene->camera->setCamera(cx, cy, cz, theta, phi, radius, fov, ortho_mode);
-}
-
-void Session::set_perspective(std::array<float, 16> const &viewArr,
-                              std::array<float, 16> const &projArr) {
-    impl->scene->camera->setCamera(viewArr, projArr);
+    impl->scene->camera->lookCamera(cx, cy, cz, theta, phi, radius, ortho_mode ? 0.f : fov);
 }
 
 void Session::set_background_color(float r, float g, float b) {
@@ -142,6 +136,10 @@ std::tuple<float, float, float> Session::get_background_color() {
     return {c[0], c[1], c[2]};
 }
 
+void Session::focus_on_node(std::string const &nodeid) {
+    impl->scene->cameraFocusOnNode(nodeid);
+}
+
 void Session::set_curr_frameid(int frameid) {
     impl->curr_frameid = std::max(frameid, 0);
 }
@@ -150,14 +148,16 @@ int Session::get_curr_frameid() {
     return impl->curr_frameid;
 }
 
-void Session::load_objects(std::vector<std::shared_ptr<zeno::IObject>> const &objs) {
-    impl->scene->graphicsMan->load_objects(objs);
+void Session::load_objects() {
+    impl->scene->loadFrameObjects(impl->curr_frameid);
 }
 
-void loadGLAPI(void *procaddr) {
-    int res = gladLoadGLLoader((GLADloadproc)procaddr);
-    if (res < 0)
-        zeno::log_error("failed to load OpenGL via GLAD: {}", res);
+void Session::set_render_engine(std::string const &name) {
+    impl->scene->switchRenderEngine(name);
+}
+
+void Session::load_opengl_api(void *procaddr) {
+    Scene::loadGLAPI(procaddr);
 }
 
 } // namespace zenovis

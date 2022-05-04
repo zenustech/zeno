@@ -1,166 +1,97 @@
-#include <zenovis/Camera.h>
-#include <zenovis/DepthPass.h>
-#include <zenovis/EnvmapManager.h>
-#include <zenovis/GraphicsManager.h>
-#include <zenovis/IGraphic.h>
-#include <zenovis/ReflectivePass.h>
 #include <zenovis/Scene.h>
+#include <zenovis/Camera.h>
+#include <zeno/core/Session.h>
+#include <zeno/extra/GlobalComm.h>
+#include <zeno/types/UserData.h>
+#include <zeno/types/PrimitiveObject.h>
+#include <zeno/funcs/PrimitiveUtils.h>
+#include <zenovis/DrawOptions.h>
+#include <zenovis/RenderEngine.h>
 #include <zenovis/ShaderManager.h>
+#include <zenovis/ObjectsManager.h>
 #include <zenovis/opengl/buffer.h>
 #include <zenovis/opengl/common.h>
 #include <zenovis/opengl/vao.h>
 #include <zeno/utils/scope_exit.h>
+#include <cstdlib>
 #include <map>
 
 namespace zenovis {
+
+void Scene::loadGLAPI(void *procaddr) {
+    int res = gladLoadGLLoader((GLADloadproc)procaddr);
+    if (res < 0)
+        zeno::log_error("failed to load OpenGL via GLAD: {}", res);
+}
 
 Scene::~Scene() = default;
 
 Scene::Scene()
     : camera(std::make_unique<Camera>()),
       drawOptions(std::make_unique<DrawOptions>()),
-      shaderMan(std::make_unique<ShaderManager>()) {
-
-    CHECK_GL(glDepthRangef(0, 30000));
-    CHECK_GL(glEnable(GL_BLEND));
-    CHECK_GL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
-    CHECK_GL(glEnable(GL_DEPTH_TEST));
-    CHECK_GL(glEnable(GL_PROGRAM_POINT_SIZE));
-    //CHECK_GL(glEnable(GL_PROGRAM_POINT_SIZE));
-    //CHECK_GL(glEnable(GL_POINT_SPRITE));
-    //CHECK_GL(glEnable(GL_SAMPLE_COVERAGE));
-    //CHECK_GL(glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE));
-    //CHECK_GL(glEnable(GL_SAMPLE_ALPHA_TO_ONE));
-    CHECK_GL(glEnable(GL_MULTISAMPLE));
-    CHECK_GL(glPixelStorei(GL_UNPACK_ALIGNMENT, 1));
-    CHECK_GL(glPixelStorei(GL_PACK_ALIGNMENT, 1));
-
-    lightCluster = std::make_unique<LightCluster>(this);
-
-    vao = std::make_unique<opengl::VAO>();
+      shaderMan(std::make_unique<ShaderManager>()),
+      objectsMan(std::make_unique<ObjectsManager>()) {
 
     auto version = (const char *)glGetString(GL_VERSION);
     zeno::log_info("OpenGL version: {}", version ? version : "(null)");
 
-    envmapMan = std::make_unique<EnvmapManager>(this);
-    graphicsMan = std::make_unique<GraphicsManager>(this);
-    mDepthPass = std::make_unique<DepthPass>(this);
-    mReflectivePass = std::make_unique<ReflectivePass>(this);
-
-    mReflectivePass->initReflectiveMaps(camera->m_nx, camera->m_ny);
-
-    hudGraphics.push_back(makeGraphicGrid(this));
-    hudGraphics.push_back(makeGraphicAxis(this));
-    //setup_env_map("Default");
+    if (std::getenv("ZENO_ZHXX"))
+        switchRenderEngine("zhxx");
+    else
+        switchRenderEngine("bate");
 }
 
-//zeno::PolymorphicVector<std::vector<IGraphic *>> Scene::graphics() const {
-    //zeno::PolymorphicVector<std::vector<IGraphic *>> gras;
-    //gras.reserve(graphicsMan->graphics.size());
-    //for (auto const &[key, val] : graphicsMan->graphics) {
-        //gras.push_back(val.get());
-    //}
-    //return gras;
-//}
-
-void Scene::drawSceneDepthSafe(bool reflect, bool isDepthPass) {
-    auto aspRatio = camera->getAspect();
-
-    //glEnable(GL_BLEND);
-    //glBlendFunc(GL_ONE, GL_ONE);
-    /* CHECK_GL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)); */
-    // std::cout<<"camPos:"<<g_camPos.x<<","<<g_camPos.y<<","<<g_camPos.z<<std::endl;
-    // std::cout<<"camView:"<<g_camView.x<<","<<g_camView.y<<","<<g_camView.z<<std::endl;
-    // std::cout<<"camUp:"<<g_camUp.x<<","<<g_camUp.y<<","<<g_camUp.z<<std::endl;
-    //CHECK_GL(glDisable(GL_MULTISAMPLE));
-    // CHECK_GL(glClearColor(bgcolor.r, bgcolor.g, bgcolor.b, 0.0f));
-    CHECK_GL(glClearColor(drawOptions->bgcolor.r, drawOptions->bgcolor.g, drawOptions->bgcolor.b, 0.0f));
-    CHECK_GL(glClear(GL_COLOR_BUFFER_BIT));
-
-    float range[] = {camera->m_near, 500, 1000, 2000, 8000, camera->m_far};
-    for (int i = 5; i >= 1; i--) {
-        CHECK_GL(glClearDepth(1));
-        CHECK_GL(glClear(GL_DEPTH_BUFFER_BIT));
-        camera->proj = glm::perspective(glm::radians(camera->m_fov), aspRatio,
-                                        range[i - 1], range[i]);
-
-        {
-            zeno::scope_modify unused1{drawOptions->passReflect, reflect};
-            zeno::scope_modify unused2{drawOptions->passIsDepthPass, isDepthPass};
-            for (auto const &gra : graphicsMan->graphics.values<IGraphicDraw>()) {
-                gra->draw();
-            }
-        }
-        if (!isDepthPass && drawOptions->show_grid) {
-            zeno::scope_modify unused3{drawOptions->passReflect, false};
-            zeno::scope_modify unused4{drawOptions->passIsDepthPass, false};
-            for (auto const &hudgra : hudGraphics) {
-                hudgra->draw();
-            }
-        }
-    }
+void Scene::switchRenderEngine(std::string const &name) {
+    std::map<std::string, std::function<void()>>{
+    {"bate", [&] { renderEngine = makeRenderEngineBate(this); }},
+    {"zhxx", [&] { renderEngine = makeRenderEngineZhxx(this); }},
+    }.at(name)();
 }
 
-void Scene::fast_paint_graphics() {
-    CHECK_GL(glViewport(0, 0, camera->m_nx, camera->m_ny));
-    vao->bind();
-    camera->m_sample_weight = 1.0f;
-    /* CHECK_GL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)); */
-    CHECK_GL(glClearColor(drawOptions->bgcolor.r, drawOptions->bgcolor.g, drawOptions->bgcolor.b, 0.0f));
-    CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
-
-    zeno::scope_modify unused1{drawOptions->passReflect, false};
-    zeno::scope_modify unused2{drawOptions->passIsDepthPass, false};
-    for (auto const &gra : graphicsMan->graphics.values<IGraphicDraw>()) {
-        gra->draw();
-    }
-    if (drawOptions->show_grid) {
-        for (auto const &hudgra : hudGraphics) {
-            hudgra->draw();
-        }
-        draw_small_axis();
-    }
-    vao->unbind();
-}
-
-void Scene::my_paint_graphics(int samples, bool isDepthPass) {
-
-    CHECK_GL(glViewport(0, 0, camera->m_nx, camera->m_ny));
-    vao->bind();
-    camera->m_sample_weight = 1.0f / (float)samples;
-    drawSceneDepthSafe(false, isDepthPass);
-    if (!isDepthPass && drawOptions->show_grid) {
-        draw_small_axis();
-    }
-    vao->unbind();
-}
-
-void Scene::draw_small_axis() { /* TODO: implement this */
-}
-
-bool Scene::anyGraphicHasMaterial() {
-    for (auto const &gra : graphicsMan->graphics.values<IGraphicDraw>()) {
-        if (gra->hasMaterial())
-            return true;
+static bool calcObjectCenterRadius(zeno::IObject *ptr, zeno::vec3f &center, float &radius) {
+    if (auto obj = dynamic_cast<zeno::PrimitiveObject *>(ptr)) {
+        auto [bmin, bmax] = primBoundingBox(obj);
+        auto delta = bmax - bmin;
+        radius = std::max({delta[0], delta[1], delta[2]}) * 0.5f;
+        center = (bmin + bmax) * 0.5f;
+        return true;
     }
     return false;
 }
 
-void Scene::draw(unsigned int target_fbo) {
-    if (!anyGraphicHasMaterial()) {
-        CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, target_fbo));
-        fast_paint_graphics();
-        return;
+bool Scene::cameraFocusOnNode(std::string const &nodeid) {
+    for (auto const &[key, ptr]: this->objectsMan->pairs()) {
+        if (nodeid == key.substr(0, key.find_first_of(':'))) {
+            zeno::vec3f center;
+            float radius;
+            if (calcObjectCenterRadius(ptr, center, radius))
+                this->camera->focusCamera(center[0], center[1], center[2], radius);
+            else
+                return false;
+        }
     }
+    zeno::log_debug("cannot focus: node with id {} not found, did you tagged VIEW on it?", nodeid);
+    return false;
+}
 
-    //CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
-    /* ZHXX DONT MODIFY ME */
-    lightCluster->clearLights();
-    for (auto const &litgra: graphicsMan->graphics.values<IGraphicLight>()) {
-        litgra->addToScene();  // inside this will call lightCluster->addLight()
+void Scene::loadFrameObjects(int frameid) {
+    auto const *viewObjs = zeno::getSession().globalComm->getViewObjects(frameid);
+    if (viewObjs) {
+        zeno::log_trace("load_objects: {} objects at frame {}", viewObjs->size(), frameid);
+        this->objectsMan->load_objects(viewObjs->m_curr);
+    } else {
+        zeno::log_trace("load_objects: no objects at frame {}", frameid);
+        this->objectsMan->load_objects({});
     }
+    renderEngine->update();
+}
 
-    mDepthPass->paint_graphics(target_fbo);
+void Scene::draw() {
+    CHECK_GL(glViewport(0, 0, camera->m_nx, camera->m_ny));
+    CHECK_GL(glClearColor(drawOptions->bgcolor.r, drawOptions->bgcolor.g, drawOptions->bgcolor.b, 0.0f));
+    CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0));
+
+    renderEngine->draw();
 }
 
 std::vector<char> Scene::record_frame_offline(int hdrSize, int rgbComps) {
@@ -199,7 +130,8 @@ std::vector<char> Scene::record_frame_offline(int hdrSize, int rgbComps) {
                           drawOptions->bgcolor.b, 0.0f));
     CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 
-    draw(fbo);
+    CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo));
+    draw();
 
     if (glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE) {
         CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo));

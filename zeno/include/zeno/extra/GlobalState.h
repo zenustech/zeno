@@ -18,6 +18,7 @@ struct GlobalState {
     bool has_frame_completed = false;
     bool has_substep_executed = false;
     bool time_step_integrated = false;
+    int sessionid = 0;
 
     inline bool isAfterFrame() const {
         return has_frame_completed || !time_step_integrated;

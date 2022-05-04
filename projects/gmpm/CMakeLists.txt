@@ -179,6 +179,7 @@ target_include_directories(zeno_zsfft PRIVATE ../zenvdb/include)
 
 set(GMPM_LIBS zeno_zsfem zeno_zsfft zeno_zstest zeno_cutest zeno_zsfluid zeno_mpm)
 
+add_subdirectory(SharedExtension)
 target_link_libraries(zenoSharedExtension PRIVATE ${GMPM_LIBS})
 if (ZENO_INSTALL_TARGET)
     install(TARGETS ${GMPM_LIBS} EXPORT ZenoTargets)

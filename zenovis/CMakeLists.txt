@@ -10,8 +10,10 @@ target_link_libraries(zenovis PUBLIC zeno)
 target_include_directories(zenovis PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/glad/include>
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/stbi/include>
-    $<INSTALL_INTERFACE:include/Zeno/zenovis/include>)
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/stbi/include>)
+
+add_subdirectory(zhxxvis)
+target_link_libraries(zenovis PRIVATE zhxxvis)
 
 if (ZENO_ENABLE_OPENEXR)
     option(ZENO_SYSTEM_OPENEXR "Use OpenEXR found in system instead of submodule" OFF)
@@ -28,8 +30,7 @@ if (ZENO_ENABLE_OPENEXR)
                 AND NOT TARGET OpenEXR::IlmImfUtil
                 AND NOT TARGET OpenEXR::IlmImfConfig
                 )
-            message(FATAL_ERROR "OpenEXR or IlmBase not found! Please run:\n"
-                "apt uninstall -y libilmbase-dev && apt install -y libopenexr-dev")
+            message(FATAL_ERROR "OpenEXR or IlmBase not found! Please run: apt install -y libopenexr-dev")
         endif()
         target_link_libraries(zenovis PRIVATE
             $<TARGET_NAME_IF_EXISTS:IlmBase::Iex>
@@ -45,6 +46,7 @@ if (ZENO_ENABLE_OPENEXR)
         if (NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/openexr/CMakeLists.txt)
             message(FATAL_ERROR "openexr submodule not found! Please run: git submodule update --init --recursive")
         endif()
+        set(OPENEXR_FORCE_INTERNAL_IMATH OFF CACHE BOOL "FXXK YOU IMATH")
         add_subdirectory(openexr)
         target_link_libraries(zenovis PRIVATE OpenEXR)
         target_include_directories(zenovis PRIVATE openexr/src/lib/OpenEXR)
@@ -52,9 +54,9 @@ if (ZENO_ENABLE_OPENEXR)
     target_compile_definitions(zenovis PRIVATE -DZENO_ENABLE_OPENEXR)
 endif()
 
-if (ZENO_INSTALL_TARGET)
-    install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include DESTINATION include/Zeno/zenovis)
-    install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/glad/include DESTINATION include/Zeno/zenovis)
-    install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/stbi/include DESTINATION include/Zeno/zenovis)
-    install(TARGETS zenovis EXPORT ZenoTargets)
-endif()
+#if (ZENO_INSTALL_TARGET)
+    #install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include DESTINATION include/Zeno/zenovis)
+    #install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/glad/include DESTINATION include/Zeno/zenovis)
+    #install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/stbi/include DESTINATION include/Zeno/zenovis)
+    #install(TARGETS zenovis EXPORT ZenoTargets)
+#endif()

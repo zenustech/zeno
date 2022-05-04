@@ -26,4 +26,8 @@ ZENO_API void primFilterFaces(PrimitiveObject *prim, std::string tagAttr, int ta
 ZENO_API void primTranslate(PrimitiveObject *prim, vec3f const &offset);
 ZENO_API void primScale(PrimitiveObject *prim, vec3f const &scale);
 
+ZENO_API std::pair<vec3f, vec3f> primBoundingBox(PrimitiveObject *prim);
+
+ZENO_API void primRandomize(PrimitiveObject *prim, vec3f const &scale, int seed);
+
 }

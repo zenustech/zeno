@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.18)
 project(LSystem LANGUAGES CXX)
 
-add_library(LSystem)
+add_library(LSystem STATIC)
 
 aux_source_directory(. L_SYSTEM_SRCS)
 

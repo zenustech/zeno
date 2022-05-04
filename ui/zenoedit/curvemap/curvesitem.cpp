@@ -3,6 +3,7 @@
 #include "curvemapview.h"
 #include "curvesitem.h"
 #include "../model/curvemodel.h"
+#include <zenoui/util/uihelper.h>
 
 
 CurvesItem::CurvesItem(CurveMapView* pView, CurveGrid* grid, const QRectF& rc, QGraphicsItem* parent)
@@ -11,6 +12,7 @@ CurvesItem::CurvesItem(CurveMapView* pView, CurveGrid* grid, const QRectF& rc, Q
     , m_grid(grid)
     , m_model(nullptr)
 {
+    m_color = QColor(77, 77, 77);
 }
 
 CurvesItem::~CurvesItem()
@@ -46,7 +48,7 @@ void CurvesItem::initCurves(CurveModel* model)
 			continue;
 		}
 
-		CurvePathItem* pathItem = new CurvePathItem(this);
+		CurvePathItem* pathItem = new CurvePathItem(m_color, this);
         connect(pathItem, SIGNAL(clicked(const QPointF&)), this, SLOT(onPathClicked(const QPointF&)));
 
 		QPainterPath path;
@@ -67,18 +69,71 @@ void CurvesItem::initCurves(CurveModel* model)
     }
 
     connect(m_model, &CurveModel::dataChanged, this, &CurvesItem::onDataChanged);
+    connect(m_model, &CurveModel::rowsInserted, this, &CurvesItem::onNodesInserted);
+    connect(m_model, &CurveModel::rowsAboutToBeRemoved, this, &CurvesItem::onNodesAboutToBeRemoved);
 }
 
 void CurvesItem::onDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles)
 {
+    //model sync to view(items).
+
     int r = topLeft.row();
     Q_ASSERT(r >= 0 && r < m_vecNodes.size());
     CurveNodeItem *pNode = m_vecNodes[r];
 
+    Q_ASSERT(!roles.isEmpty());
+    int role = roles[0];
+    QPointF logicNodePos = topLeft.data(ROLE_NODEPOS).toPointF();
+    QPointF sceneNodePos = m_grid->logicToScene(logicNodePos);
+
+    QPointF leftLogicOffset = topLeft.data(ROLE_LEFTPOS).toPointF();
+    QPointF rightLogicOffset = topLeft.data(ROLE_RIGHTPOS).toPointF();
+
+    switch (role)
+    {
+        case ROLE_NODEPOS:
+        {
+            pNode->setPos(m_grid->logicToScene(logicNodePos));
+            break;
+        }
+        case ROLE_LEFTPOS:
+        {
+            CurveHandlerItem* pLeftHdl = pNode->leftHandle();
+            leftLogicOffset = pNode->mapFromScene(m_grid->logicToScene(leftLogicOffset + logicNodePos));
+            pLeftHdl->setPos(leftLogicOffset);
+            break;
+        }
+        case ROLE_RIGHTPOS:
+        {
+            CurveHandlerItem* pRightHdl = pNode->rightHandle();
+            rightLogicOffset = pNode->mapFromScene(m_grid->logicToScene(rightLogicOffset + logicNodePos));
+            pRightHdl->setPos(rightLogicOffset);
+            break;
+        }
+        case ROLE_TYPE:
+        {
+            HANDLE_TYPE type = (HANDLE_TYPE)topLeft.data(ROLE_TYPE).toInt();
+            CurveHandlerItem *pLeftHdl = pNode->leftHandle();
+            CurveHandlerItem *pRightHdl = pNode->rightHandle();
+            if (type == HDL_VECTOR)
+            {
+                if (pLeftHdl) pLeftHdl->toggle(false);
+                if (pRightHdl) pRightHdl->toggle(false);
+            }
+            else
+            {
+                if (pLeftHdl && r > 0) pLeftHdl->toggle(true);
+                if (pRightHdl && r < m_model->rowCount() - 1) pRightHdl->toggle(true);
+            }
+            break;
+        }
+    }
+
     QGraphicsPathItem* pLeftCurve = r > 0 ? m_vecCurves[r - 1] : nullptr;
     if (pLeftCurve)
 	{
-        CurveNodeItem *pLeftNode = m_vecNodes[r - 1];
+        int lType = topLeft.data(ROLE_TYPE).toInt();
+        CurveNodeItem* pLeftNode = m_vecNodes[r - 1];
         QPainterPath path;
         path.moveTo(pLeftNode->pos());
         path.cubicTo(pLeftNode->rightHandlePos(), pNode->leftHandlePos(), pNode->pos());
@@ -89,6 +144,7 @@ void CurvesItem::onDataChanged(const QModelIndex &topLeft, const QModelIndex &bo
 	QGraphicsPathItem* pRightCurve = (r < m_vecNodes.size() - 1) ? m_vecCurves[r] : nullptr;
     if (pRightCurve)
 	{
+        int rType = topLeft.data(ROLE_TYPE).toInt();
         CurveNodeItem* pRightNode = m_vecNodes[r + 1];
         QPainterPath path;
         path.moveTo(pNode->pos());
@@ -98,10 +154,112 @@ void CurvesItem::onDataChanged(const QModelIndex &topLeft, const QModelIndex &bo
 	}
 }
 
+void CurvesItem::onNodesInserted(const QModelIndex& parent, int first, int last)
+{
+    //update curve
+    for (int r = first; r <= last; r++)
+    {
+        const QModelIndex& idx = m_model->index(r, 0, parent);
+        //can only insert into [1,n-1]
+        Q_ASSERT(r > 0 && r < m_vecNodes.size());
+
+        QPointF pos = idx.data(ROLE_NODEPOS).toPointF();
+        QPointF nodeScenePos = m_grid->logicToScene(pos);
+        QPointF leftOffset = idx.data(ROLE_LEFTPOS).toPointF();
+        QPointF rightOffset = idx.data(ROLE_RIGHTPOS).toPointF();
+
+        //insert a new node.
+        CurveNodeItem *pNewNode = new CurveNodeItem(idx, m_view, nodeScenePos, m_grid, this);
+        connect(pNewNode, SIGNAL(geometryChanged()), this, SLOT(onNodeGeometryChanged()));
+        connect(pNewNode, SIGNAL(deleteTriggered()), this, SLOT(onNodeDeleted()));
+
+        QPointF leftScenePos = m_grid->logicToScene(pos + leftOffset);
+        QPointF rightScenePos = m_grid->logicToScene(pos + rightOffset);
+        QPointF leftSceneOffset = leftScenePos - nodeScenePos;
+        QPointF rightSceneOffset = rightScenePos - nodeScenePos;
+
+        pNewNode->initHandles(leftSceneOffset, rightSceneOffset);
+        m_vecNodes.insert(r, pNewNode);
+
+        // update curve
+        CurveNodeItem *pLeftNode = m_vecNodes[r - 1];
+        CurveNodeItem *pRightNode = m_vecNodes[r + 1];
+
+        QPointF leftNodePos = pLeftNode->pos(),
+                rightHdlPos = pLeftNode->rightHandlePos(),
+                leftHdlPos = pRightNode->leftHandlePos(),
+                rightNodePos = pRightNode->pos();
+
+        CurvePathItem *pLeftHalf = m_vecCurves[r - 1];
+        CurvePathItem *pRightHalf = new CurvePathItem(m_color, this);
+        connect(pRightHalf, SIGNAL(clicked(const QPointF&)), this, SLOT(onPathClicked(const QPointF &)));
+        m_vecCurves.insert(r, pRightHalf);
+
+        QPainterPath leftPath;
+        leftPath.moveTo(leftNodePos);
+        leftPath.cubicTo(rightHdlPos, pNewNode->leftHandlePos(), pNewNode->pos());
+        pLeftHalf->setPath(leftPath);
+        pLeftHalf->update();
+
+        QPainterPath rightPath;
+        rightPath.moveTo(pNewNode->pos());
+        rightPath.cubicTo(pNewNode->rightHandlePos(), leftHdlPos, rightNodePos);
+        pRightHalf->setPath(rightPath);
+        pRightHalf->update();
+    }
+}
+
+void CurvesItem::onNodesAboutToBeRemoved(const QModelIndex& parent, int first, int last)
+{
+    //sync to view.
+    for (int i = first; i <= last; i++)
+    {
+        CurveNodeItem *pLeftNode = m_vecNodes[i - 1];
+        CurveNodeItem *pRightNode = m_vecNodes[i + 1];
+
+        //curves[i-1] as a new curve from node i-1 to node i.
+        CurvePathItem *pathItem = m_vecCurves[i - 1];
+
+        m_vecCurves[i]->deleteLater();
+        m_vecNodes[i]->deleteLater();
+
+        CurvePathItem *pDeleleCurve = m_vecCurves[i];
+        m_vecCurves.remove(i);
+        m_vecNodes.remove(i);
+
+        QPainterPath path;
+        path.moveTo(pLeftNode->pos());
+        path.cubicTo(pLeftNode->rightHandlePos(), pRightNode->leftHandlePos(),
+                     pRightNode->pos());
+        pathItem->setPath(path);
+        pathItem->update();
+    }
+}
 
 int CurvesItem::indexOf(CurveNodeItem *pItem) const
 {
     return m_vecNodes.indexOf(pItem);
+}
+
+void CurvesItem::setColor(const QColor& color)
+{
+    m_color = color;
+    for (auto item : m_vecCurves)
+    {
+        const int penWidth = item->pen().width();
+        QPen pen(color, penWidth);
+        item->setPen(pen);
+    }
+}
+
+void CurvesItem::_setVisible(bool bVisible)
+{
+    for (auto item : m_vecNodes) {
+        item->setVisible(bVisible);
+    }
+    for (auto item : m_vecCurves) {
+        item->setVisible(bVisible);
+    }
 }
 
 int CurvesItem::nodeCount() const
@@ -162,8 +320,6 @@ void CurvesItem::onNodeGeometryChanged()
         pRightCurve->setPath(path);
         pRightCurve->update();
 	}
-
-    emit nodesDataChanged();
 }
 
 void CurvesItem::onNodeDeleted()
@@ -174,26 +330,7 @@ void CurvesItem::onNodeDeleted()
     if (i == 0 || i == m_vecNodes.size() - 1)
         return;
 
-	CurveNodeItem* pLeftNode = m_vecNodes[i - 1];
-    CurveNodeItem* pRightNode = m_vecNodes[i + 1];
-
-	//curves[i-1] as a new curve from node i-1 to node i.
-	CurvePathItem* pathItem = m_vecCurves[i - 1];
-
-    m_vecCurves[i]->deleteLater();
-	pItem->deleteLater();
-
-	CurvePathItem* pDeleleCurve = m_vecCurves[i];
-	m_vecCurves.remove(i);
-    m_vecNodes.remove(i);
-
-	QPainterPath path;
-    path.moveTo(pLeftNode->pos());
-	path.cubicTo(pLeftNode->rightHandlePos(), pRightNode->leftHandlePos(), pRightNode->pos());
-    pathItem->setPath(path);
-	pathItem->update();
-
-	emit nodesDataChanged();
+    m_model->removeRow(i);
 }
 
 void CurvesItem::onPathClicked(const QPointF& pos)
@@ -201,46 +338,18 @@ void CurvesItem::onPathClicked(const QPointF& pos)
     CurvePathItem* pItem = qobject_cast<CurvePathItem*>(sender());
     Q_ASSERT(pItem);
     int i = m_vecCurves.indexOf(pItem);
-    CurveNodeItem *pLeftNode = m_vecNodes[i];
-    CurveNodeItem *pRightNode = m_vecNodes[i + 1];
 
-	QPointF leftNodePos = pLeftNode->pos(), rightHdlPos = pLeftNode->rightHandlePos(),
-			leftHdlPos = pRightNode->leftHandlePos(), rightNodePos = pRightNode->pos();
+    CURVE_RANGE rg = m_model->range();
+    qreal xscale = (rg.xTo - rg.xFrom) / 10.;
 
-	/*
-	QBezier bezier = QBezier::fromPoints(leftNodePos, rightHdlPos, leftHdlPos, rightNodePos);
-	qreal t = (pos.x() - leftNodePos.x()) / (rightNodePos.x() - leftNodePos.x());
-	QPointF k = bezier.derivedAt(t);
-    QVector2D vec(k);
-    vec.normalize();
-	*/
+    QPointF logicPos = m_grid->sceneToLogic(pos);
+    QPointF leftOffset(-xscale, 0);
+    QPointF rightOffset(xscale, 0);
 
-	QPointF leftOffset(-50, 0);
-    QPointF rightOffset(50, 0);
-
-	//insert a new node.
-    CurveNodeItem* pNewNode = new CurveNodeItem(QModelIndex(), m_view, pos, m_grid, this);
-	connect(pNewNode, SIGNAL(geometryChanged()), this, SLOT(onNodeGeometryChanged()));
-    connect(pNewNode, SIGNAL(deleteTriggered()), this, SLOT(onNodeDeleted()));
-
-    pNewNode->initHandles(leftOffset, rightOffset);
-
-	CurvePathItem* pLeftHalf = pItem;
-    CurvePathItem* pRightHalf = new CurvePathItem(this);
-	connect(pRightHalf, SIGNAL(clicked(const QPointF &)), this, SLOT(onPathClicked(const QPointF&)));
-
-	QPainterPath leftPath;
-    leftPath.moveTo(leftNodePos);
-	leftPath.cubicTo(rightHdlPos, pNewNode->leftHandlePos(), pNewNode->pos());
-    pLeftHalf->setPath(leftPath);
-	pLeftHalf->update();
-
-	QPainterPath rightPath;
-    rightPath.moveTo(pNewNode->pos());
-	rightPath.cubicTo(pNewNode->rightHandlePos(), leftHdlPos, rightNodePos);
-    pRightHalf->setPath(rightPath);
-	pRightHalf->update();
-
-	m_vecNodes.insert(i + 1, pNewNode);
-    m_vecCurves.insert(i + 1, pRightHalf);
+    QStandardItem* pModelItem = new QStandardItem;
+    pModelItem->setData(logicPos, ROLE_NODEPOS);
+    pModelItem->setData(leftOffset, ROLE_LEFTPOS);
+    pModelItem->setData(rightOffset, ROLE_RIGHTPOS);
+    pModelItem->setData(HDL_ASYM, ROLE_TYPE);
+    m_model->insertRow(i + 1, pModelItem);
 }

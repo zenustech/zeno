@@ -6,9 +6,6 @@
 namespace zenovis {
 
 struct DrawOptions {
-    bool passReflect = false;
-    bool passIsDepthPass = false;
-
     bool show_grid = true;
     bool render_wireframe = false;
 

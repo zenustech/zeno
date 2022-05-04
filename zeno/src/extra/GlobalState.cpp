@@ -45,6 +45,8 @@ ZENO_API void GlobalState::clearState() {
     has_frame_completed = false;
     has_substep_executed = false;
     time_step_integrated = false;
+    sessionid++;
+    log_debug("entering session id={}", sessionid);
 }
 
 }

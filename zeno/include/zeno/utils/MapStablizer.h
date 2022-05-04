@@ -9,6 +9,8 @@ template <class Map>
 struct MapStablizer {
     using key_type = typename Map::key_type;
     using mapped_type = typename Map::mapped_type;
+    using iterator = typename Map::iterator;
+    using const_iterator = typename Map::const_iterator;
 
     Map m_curr, m_next;
 
@@ -39,9 +41,9 @@ struct MapStablizer {
     template <class T = void>
     decltype(auto) pairs() const {
         if constexpr (std::is_void_v<T>)
-            return m_curr.values();
+            return m_curr.pairs();
         else
-            return m_curr.template values<T>();
+            return m_curr.template pairs<T>();
     }
 
     template <class T>
@@ -65,6 +67,15 @@ struct MapStablizer {
         MapStablizer &that;
 
         explicit InsertPass(MapStablizer &that_) : that(that_) {}
+
+        bool may_emplace(key_type const &key) {
+            auto it = that.m_curr.find(key);
+            if (it != that.m_curr.end()) {
+                that.m_next.try_emplace(key, std::move(const_cast<mapped_type &>(it->second)));
+                return false;
+            }
+            return true;
+        }
 
         template <class ...Args>
         auto try_emplace(key_type const &key, Args &&...args) {

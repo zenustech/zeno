@@ -58,7 +58,7 @@ struct counter_iterator {
         return that;
     }
 
-    counter_iterator operator-(counter_iterator that) const {
+    difference_type operator-(counter_iterator that) const {
         return counter - that.counter;
     }
 

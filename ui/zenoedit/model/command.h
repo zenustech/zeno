@@ -81,6 +81,20 @@ private:
     GraphsModel* m_model;
 };
 
+class UpdateSockDeflCommand : public QUndoCommand
+{
+public:
+    UpdateSockDeflCommand(const QString& nodeid, const PARAM_UPDATE_INFO& updateInfo, GraphsModel* pModel, QPersistentModelIndex subgIdx);
+    void redo() override;
+    void undo() override;
+
+private:
+    PARAM_UPDATE_INFO m_updateInfo;
+    QString m_nodeid;
+    QPersistentModelIndex m_subgIdx;
+    GraphsModel* m_model;
+};
+
 class UpdateStateCommand : public QUndoCommand
 {
 public:

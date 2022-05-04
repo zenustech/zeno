@@ -93,11 +93,11 @@ struct DoARAPDeformation : zeno::INode {
 
 
         #pragma omp parallel for 
-        for(size_t i = 0;i < prim->size();++i)
+        for(intptr_t i = 0;i < prim->size();++i)
             U.row(i) << curPos[i][0],curPos[i][1],curPos[i][2];
 
         #pragma omp parallel for 
-        for(size_t i = 0;i < arap_data->data.b.size();++i)
+        for(intptr_t i = 0;i < arap_data->data.b.size();++i)
             bc.row(i) = U.row(arap_data->data.b[i]);
 
         igl::arap_solve(bc,arap_data->data,U);
@@ -171,7 +171,7 @@ struct TransformPrimitivePartsByTags : zeno::INode {
         const auto& tags = prim->attr<float>(tagName);
 
         #pragma omp parallel for 
-        for(size_t i = 0;i < prim->size();++i){
+        for(intptr_t i = 0;i < prim->size();++i){
             auto tag = tags[i];
             if(tag > -1e-6)
                 // std::cout << "V<" << i << ">\t: " << tag << std::endl;

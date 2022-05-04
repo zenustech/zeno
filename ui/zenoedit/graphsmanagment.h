@@ -27,6 +27,10 @@ public:
 
 signals:
     void modelInited(IGraphsModel*);
+    void modelDataChanged();
+
+private slots:
+    void onModelDataChanged(const QModelIndex& subGpIdx, const QModelIndex& idx, int role);
 
 private:
     IGraphsModel *m_model;

@@ -27,7 +27,7 @@ struct Header { // sync with viewdecode.cpp
     }
 };
 
-static void send_packet(std::string const &info, const char *buf, size_t len) {
+static void send_packet(std::string_view info, const char *buf, size_t len) {
     Header header;
     header.total_size = info.size() + len;
     header.info_size = info.size();
@@ -52,12 +52,13 @@ static void send_packet(std::string const &info, const char *buf, size_t len) {
     }
 }
 
-static void runner_start(std::string const &progJson) {
+static void runner_start(std::string const &progJson, int sessionid) {
     zeno::log_debug("runner got program JSON: {}", progJson);
 
     setvbuf(old_stdout, stdout_buf, _IOFBF, sizeof(stdout_buf));
 
     auto session = &zeno::getSession();
+    session->globalState->sessionid = sessionid;
     session->globalState->clearState();
     session->globalComm->clearState();
     session->globalStatus->clearState();
@@ -88,16 +89,17 @@ static void runner_start(std::string const &progJson) {
         }
         session->globalComm->finishFrame();
 
-        auto viewObjs = session->globalComm->getViewObjects();
+        auto const &viewObjs = session->globalComm->getViewObjects();
         zeno::log_debug("runner got {} view objects", viewObjs.size());
         session->globalState->frameEnd();
         zeno::log_debug("end frame {}", frame);
 
         send_packet("{\"action\":\"newFrame\"}", "", 0);
 
-        for (auto const &obj: viewObjs) {
+        for (auto const &[key, obj]: viewObjs) {
             if (zeno::encodeObject(obj.get(), buffer))
-                send_packet("{\"action\":\"viewObject\"}", buffer.data(), buffer.size());
+                send_packet("{\"action\":\"viewObject\",\"key\":\"" + key + "\"}",
+                        buffer.data(), buffer.size());
             buffer.clear();
         }
 
@@ -110,8 +112,8 @@ static void runner_start(std::string const &progJson) {
 
 }
 
-int runner_main();
-int runner_main() {
+int runner_main(int sessionid);
+int runner_main(int sessionid) {
     fprintf(stderr, "Zeno runner started...\n");
     fprintf(stdout, "(stdout ping test)\n");
 
@@ -128,7 +130,7 @@ int runner_main() {
     std::back_insert_iterator<std::string> sit(progJson);
     std::copy(iit, eiit, sit);
 
-    runner_start(progJson);
+    runner_start(progJson, sessionid);
     return 0;
 }
 #endif

@@ -23,7 +23,7 @@ struct Jiggle : zeno::INode {
             auto& ppjiggle =  prim->attr<zeno::vec3f>("prepreJiggle");
 
             #pragma omp parallel for
-            for(size_t i = 0;i < prim->size();++i){
+            for(intptr_t i = 0;i < prim->size();++i){
                 cjiggle[i] = ppos_vec[i];
                 pjiggle[i] = ppos_vec[i];
                 ppjiggle[i] = ppos_vec[i];
@@ -49,7 +49,7 @@ struct Jiggle : zeno::INode {
 
 //  try explicit integrator first
         #pragma omp parallel for
-        for(size_t i = 0;i < prim->size();++i){
+        for(intptr_t i = 0;i < prim->size();++i){
             const auto& cpos = cpos_vec[i];
             const auto& ppos = ppos_vec[i];
             const auto& pppos = pppos_vec[i];
