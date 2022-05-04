@@ -20,10 +20,11 @@ std::unique_ptr<IGraphic> makeGraphicVolume
 #endif
 
 
-static int lightCounter = 0;
-static std::vector<int> lightRevamp; // revamp[physical] = logical
 
+namespace {
 struct GraLight : IGraphic {
+    static inline int lightCounter = 0;
+    static inline std::vector<int> lightRevamp; // revamp[physical] = logical
     int lid;
 
     GraLight(zeno::LightObject *l) {
@@ -51,6 +52,7 @@ struct GraLight : IGraphic {
         lightRevamp.erase(lightRevamp.begin() + plid);
     }
 };
+}
 
 
 static std::unique_ptr<IGraphic> makeGraphic(zeno::IObject *obj) {

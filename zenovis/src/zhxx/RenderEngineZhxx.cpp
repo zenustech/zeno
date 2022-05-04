@@ -57,6 +57,7 @@ struct RenderEngineZhxx : RenderEngine, zeno::disable_copy {
         graphicsMan = std::make_unique<GraphicsManager>(scene);
 
         zenvis::initialize();
+        zenvis::setup_env_map("Default");
     }
 
     void update() override {
@@ -68,6 +69,7 @@ struct RenderEngineZhxx : RenderEngine, zeno::disable_copy {
         auto const &opt = *scene->drawOptions;
         auto const &zxx = c.m_zxx;
         zenvis::set_show_grid(opt.show_grid);
+        zenvis::set_normal_check(opt.normal_check);
         zenvis::set_smooth_shading(opt.smooth_shading);
         zenvis::set_render_wireframe(opt.render_wireframe);
         zenvis::set_background_color(opt.bgcolor.r, opt.bgcolor.g, opt.bgcolor.b);
