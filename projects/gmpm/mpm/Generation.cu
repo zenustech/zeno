@@ -650,9 +650,13 @@ struct ConstructBendingSprings : INode {
                     break;
                   }
                 auto no = atomic_add(exec_cuda, &cnt[0], 1);
-                // <vk, vi, vj>
-                // <nei, vj, vi>
-                elePairs[no] = ElePair{neighborV, vj, vi, vk};
+                /**
+                 *             vi --- vk
+                 *            /  \    /
+                 *           /    \  /
+                 *         nei --- vj
+                 */
+                elePairs[no] = ElePair{vj, vi, neighborV, vk};
               }
             }
             vi = vj;
@@ -685,17 +689,23 @@ struct ConstructBendingSprings : INode {
       eles("k", ei) = stiffness;
 
       auto vinds = elePairs[ei];
-      eles.tuple<4>("vinds", ei) = vinds;
+      eles.tuple<4>("vinds", ei) = vinds.reinterpret_bits<float>();
+      /**
+       *             v1 --- v3
+       *            /  \    /
+       *           /    \  /
+       *          v2 --- v0
+       */
       auto v0 = surfPars.pack<3>("pos", vinds[0]);
       auto v1 = surfPars.pack<3>("pos", vinds[1]);
       auto v2 = surfPars.pack<3>("pos", vinds[2]);
       auto v3 = surfPars.pack<3>("pos", vinds[3]);
-      auto n1 = (v1 - v0).cross(v2 - v0);
-      auto n2 = (v2 - v3).cross(v1 - v3); // <v2, v1, v3>
+      auto n1 = (v0 - v2).cross(v1 - v2);
+      auto n2 = (v1 - v3).cross(v0 - v3); // <v2, v1, v3>
       auto DA = zs::acos(
           zs::max(-1.f, zs::min(1.f, n1.dot(n2) / zs::sqrt(n1.l2NormSqr() *
                                                            n2.l2NormSqr()))));
-      if (n2.cross(n1).dot(v1 - v2) < 0) // towards "closing"
+      if (n2.cross(n1).dot(v0 - v1) < 0) // towards "closing"
         DA = -DA;
       eles("ra", ei) = DA;
     });

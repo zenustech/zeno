@@ -55,8 +55,9 @@ struct ZSPartitionForZSParticles : INode {
 
     std::size_t cnt = 0;
     for (auto &&parObjPtr : parObjPtrs) {
-      cnt += (std::size_t)std::ceil(parObjPtr->getParticles().size() /
-                                    get_input2<float>("ppb"));
+      if (parObjPtr->category != ZenoParticles::bending)
+        cnt += (std::size_t)std::ceil(parObjPtr->getParticles().size() /
+                                      get_input2<float>("ppb"));
       if (parObjPtr->isMeshPrimitive())
         cnt += (std::size_t)std::ceil(parObjPtr->numElements() /
                                       get_input2<float>("ppb"));
@@ -85,10 +86,7 @@ struct ZSPartitionForZSParticles : INode {
                   coord[d] = lower_trunc(c[d]);
                 table.insert(coord - (coord & (grid_t::side_length - 1)));
               });
-      if (parObjPtr->category != ZenoParticles::mpm) { // including tracker
-        if (!parObjPtr->isMeshPrimitive())
-          throw std::runtime_error(
-              "The zsprimitive is not of mpm category but has no elements.");
+      if (parObjPtr->isMeshPrimitive()) { // including tracker, but not bending
         auto &eles = parObjPtr->getQuadraturePoints();
         cudaPol(range(eles.size()),
                 [eles = proxy<execspace_e::cuda>({}, eles),
