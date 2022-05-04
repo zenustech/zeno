@@ -576,6 +576,7 @@ struct ConstructBendingSprings : INode {
     using vec1i = zs::vec<int, 1>;
     using vec3 = zs::vec<float, 3>;
     using mat3 = zs::vec<float, 3, 3>;
+    float thickness = surf.getModel().dx;
     auto &surfPars = surf.getParticles();
     auto numV = surfPars.size(); // i.e. sprayedOffset
     auto &surfEles = surf.getQuadraturePoints();
@@ -679,10 +680,12 @@ struct ConstructBendingSprings : INode {
     auto &eles = ret->getQuadraturePoints();
     cudaPol(range(numElePairs), [eles = proxy<space>({}, eles),
                                  surfPars = proxy<space>({}, surfPars),
-                                 elePairs = proxy<space>(elePairs),
-                                 stiffness] __device__(int ei) mutable {
+                                 elePairs = proxy<space>(elePairs), stiffness,
+                                 thickness] __device__(int ei) mutable {
       using mat3 = zs::vec<float, 3, 3>;
-      eles("k", ei) = stiffness;
+      // bending_stiffness =
+      // E / (24 * (1.0 - nu * nu)) * thickness^3
+      eles("k", ei) = stiffness * thickness * thickness * thickness;
 
       auto vinds = elePairs[ei];
       eles.tuple<4>("vinds", ei) = vinds.reinterpret_bits<float>();
