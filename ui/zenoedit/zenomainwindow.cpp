@@ -25,7 +25,6 @@ ZenoMainWindow::ZenoMainWindow(QWidget *parent, Qt::WindowFlags flags)
     : QMainWindow(parent, flags)
     , m_pEditor(nullptr)
     , m_viewDock(nullptr)
-    , m_timelineDock(nullptr)
     , m_bInDlgEventloop(false)
     , m_logger(nullptr)
 {
@@ -40,10 +39,12 @@ ZenoMainWindow::ZenoMainWindow(QWidget *parent, Qt::WindowFlags flags)
 #endif
 }
 
-ZenoMainWindow::~ZenoMainWindow() {
+ZenoMainWindow::~ZenoMainWindow()
+{
 }
 
-void ZenoMainWindow::init() {
+void ZenoMainWindow::init()
+{
     initMenu();
     initDocks();
     verticalLayout();
@@ -132,17 +133,44 @@ void ZenoMainWindow::initMenu() {
 
     QMenu *pView = new QMenu(tr("View"));
     {
-        QAction *pAction = new QAction(tr("view"));
-        pAction->setCheckable(true);
-        pAction->setChecked(true);
-        connect(pAction, &QAction::triggered, this, [=]() { onToggleDockWidget(DOCK_VIEW, pAction->isChecked()); });
-        pView->addAction(pAction);
+        QAction *pViewAct = new QAction(tr("view"));
+        pViewAct->setCheckable(true);
+        pViewAct->setChecked(true);
+        connect(pViewAct, &QAction::triggered, this, [=]() { onToggleDockWidget(DOCK_VIEW, pViewAct->isChecked()); });
+        pView->addAction(pViewAct);
 
-        pAction = new QAction(tr("editor"));
-        pAction->setCheckable(true);
-        pAction->setChecked(true);
-        connect(pAction, &QAction::triggered, this, [=]() { onToggleDockWidget(DOCK_EDITOR, pAction->isChecked()); });
-        pView->addAction(pAction);
+        QAction* pEditorAct = new QAction(tr("editor"));
+        pEditorAct->setCheckable(true);
+        pEditorAct->setChecked(true);
+        connect(pEditorAct, &QAction::triggered, this, [=]() { onToggleDockWidget(DOCK_EDITOR, pEditorAct->isChecked()); });
+        pView->addAction(pEditorAct);
+
+        QAction* pPropAct = new QAction(tr("property"));
+        pPropAct->setCheckable(true);
+        pPropAct->setChecked(true);
+        connect(pPropAct, &QAction::triggered, this, [=]() { onToggleDockWidget(DOCK_NODE_PARAMS, pPropAct->isChecked()); });
+        pView->addAction(pPropAct);
+
+        QAction* pLoggerAct = new QAction(tr("logger"));
+        pLoggerAct->setCheckable(true);
+        pLoggerAct->setChecked(true);
+        connect(pLoggerAct, &QAction::triggered, this, [=]() { onToggleDockWidget(DOCK_LOG, pLoggerAct->isChecked()); });
+        pView->addAction(pLoggerAct);
+
+        connect(pView, &QMenu::aboutToShow, this, [=]() {
+            auto docks = findChildren<ZenoDockWidget *>(QString(), Qt::FindDirectChildrenOnly);
+            for (ZenoDockWidget *dock : docks)
+            {
+                DOCK_TYPE type = dock->type();
+                switch (type)
+                {
+                    case DOCK_VIEW:     pViewAct->setChecked(dock->isVisible());    break;
+                    case DOCK_EDITOR:   pEditorAct->setChecked(dock->isVisible());  break;
+                    case DOCK_NODE_PARAMS: pPropAct->setChecked(dock->isVisible()); break;
+                    case DOCK_LOG:      pLoggerAct->setChecked(dock->isVisible()); break;
+                }
+            }
+        });
     }
 
     QMenu *pWindow = new QMenu(tr("Window"));
@@ -167,78 +195,64 @@ void ZenoMainWindow::initDocks() {
 
     setDockNestingEnabled(true);
 
-    //m_shapeBar = new ZenoDockWidget(this);
-    //m_shapeBar->setObjectName(QString::fromUtf8("dock_shape"));
-    //m_shapeBar->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetFloatable);
-    //m_shapeBar->setWidget(new ZShapeBar);
-
-    //m_toolbar = new ZenoDockWidget(this);
-    //m_toolbar->setObjectName(QString::fromUtf8("dock_toolbar"));
-    //m_toolbar->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetFloatable);
-    //m_toolbar->setWidget(new ZToolbar);
-
     m_viewDock = new ZenoDockWidget("view", this);
     m_viewDock->setObjectName(QString::fromUtf8("dock_view"));
     m_viewDock->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetFloatable);
     DisplayWidget *view = new DisplayWidget(this);
     m_viewDock->setWidget(DOCK_VIEW, view);
-    m_docks.insert(DOCK_VIEW, m_viewDock);
 
     m_parameter = new ZenoDockWidget("parameter", this);
     m_parameter->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetFloatable);
     m_parameter->setWidget(DOCK_NODE_PARAMS, new ZenoPropPanel);
-    //m_parameter->setWidget(new QWidget);
-
-    //m_pEditor = new ZenoGraphsEditor;
-    //pEditor->setGeometry(500, 500, 1000, 1000);
-    //ZNodesEditWidget* pOldEditor = new ZNodesEditWidget;
-
-    //m_data = new ZenoDockWidget("data", this);
-    //m_data->setObjectName(QString::fromUtf8("dock_data"));
-    //m_data->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetFloatable);
 
     m_editor = new ZenoDockWidget("", this);
     m_editor->setObjectName(QString::fromUtf8("dock_editor"));
     m_editor->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetFloatable);
     m_pEditor = new ZenoGraphsEditor(this);
     m_editor->setWidget(DOCK_EDITOR, m_pEditor);
-    m_docks.insert(DOCK_EDITOR, m_editor);
 
     m_logger = new ZenoDockWidget("logger", this);
     m_logger->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetFloatable);
     m_logger->setWidget(DOCK_LOG, new ZlogPanel);
-    m_docks.insert(DOCK_LOG, m_logger);
 
-    for (QMap<DOCK_TYPE, ZenoDockWidget *>::iterator it = m_docks.begin(); it != m_docks.end(); it++) {
-        ZenoDockWidget *pDock = it.value();
+    auto docks = findChildren<ZenoDockWidget *>(QString(), Qt::FindDirectChildrenOnly);
+    for (ZenoDockWidget *pDock : docks)
+    {
         connect(pDock, SIGNAL(maximizeTriggered()), this, SLOT(onMaximumTriggered()));
         connect(pDock, SIGNAL(splitRequest(bool)), this, SLOT(onSplitDock(bool)));
     }
 }
 
-void ZenoMainWindow::onMaximumTriggered() {
+void ZenoMainWindow::onMaximumTriggered()
+{
     ZenoDockWidget *pDockWidget = qobject_cast<ZenoDockWidget *>(sender());
-    for (QMap<DOCK_TYPE, ZenoDockWidget *>::iterator it = m_docks.begin(); it != m_docks.end(); it++) {
-        ZenoDockWidget *pDock = it.value();
-        if (pDock != pDockWidget) {
+
+    auto docks = findChildren<ZenoDockWidget *>(QString(), Qt::FindDirectChildrenOnly);
+    for (ZenoDockWidget *pDock : docks)
+    {
+        if (pDock != pDockWidget)
+        {
             pDock->close();
         }
     }
 }
 
-void ZenoMainWindow::onSplitDock(bool bHorzontal) {
+void ZenoMainWindow::onSplitDock(bool bHorzontal)
+{
     ZenoDockWidget *pDockWidget = qobject_cast<ZenoDockWidget *>(sender());
     ZenoDockWidget *pDock = new ZenoDockWidget("", this);
     pDock->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetFloatable);
 
-    if (ZenoGraphsEditor *pEditor = qobject_cast<ZenoGraphsEditor *>(pDockWidget->widget())) {
+    if (ZenoGraphsEditor *pEditor = qobject_cast<ZenoGraphsEditor *>(pDockWidget->widget()))
+    {
         ZenoGraphsEditor *pEditor2 = new ZenoGraphsEditor(this);
         pDock->setWidget(DOCK_EDITOR, pEditor2);
         //only one model.
         pEditor2->resetModel(zenoApp->graphsManagment()->currentModel());
-        m_docks.insert(DOCK_EDITOR, pDock);
         splitDockWidget(pDockWidget, pDock, bHorzontal ? Qt::Horizontal : Qt::Vertical);
-    } else {
+    }
+    else
+    {
         splitDockWidget(pDockWidget, pDock, bHorzontal ? Qt::Horizontal : Qt::Vertical);
     }
     connect(pDock, SIGNAL(maximizeTriggered()), this, SLOT(onMaximumTriggered()));
@@ -339,13 +353,14 @@ bool ZenoMainWindow::openFile(QString filePath) {
     return true;
 }
 
-void ZenoMainWindow::onToggleDockWidget(DOCK_TYPE type, bool bShow) {
-    QList<ZenoDockWidget *> list = m_docks.values(type);
-    for (auto dock : list) {
-        if (bShow)
-            dock->show();
-        else
-            dock->close();
+void ZenoMainWindow::onToggleDockWidget(DOCK_TYPE type, bool bShow)
+{
+    auto docks = findChildren<ZenoDockWidget *>(QString(), Qt::FindDirectChildrenOnly);
+    for (ZenoDockWidget *dock : docks)
+    {
+        DOCK_TYPE _type = dock->type();
+        if (_type == type)
+            dock->setVisible(bShow);
     }
 }
 
@@ -453,61 +468,25 @@ QString ZenoMainWindow::getOpenFileByDialog() {
     return filePath;
 }
 
-void ZenoMainWindow::houdiniStyleLayout() {
-    addDockWidget(Qt::TopDockWidgetArea, m_shapeBar);
-    splitDockWidget(m_shapeBar, m_toolbar, Qt::Vertical);
-    splitDockWidget(m_toolbar, m_timelineDock, Qt::Vertical);
-
-    splitDockWidget(m_toolbar, m_viewDock, Qt::Horizontal);
-    splitDockWidget(m_viewDock, m_editor, Qt::Horizontal);
-    splitDockWidget(m_viewDock, m_data, Qt::Vertical);
-    splitDockWidget(m_data, m_parameter, Qt::Horizontal);
-
-    writeHoudiniStyleLayout();
-}
-
-void ZenoMainWindow::verticalLayout() {
+void ZenoMainWindow::verticalLayout()
+{
     addDockWidget(Qt::TopDockWidgetArea, m_viewDock);
     splitDockWidget(m_viewDock, m_editor, Qt::Vertical);
     splitDockWidget(m_editor, m_parameter, Qt::Horizontal);
     splitDockWidget(m_viewDock, m_logger, Qt::Horizontal);
 }
 
-void ZenoMainWindow::onlyEditorLayout() {
+void ZenoMainWindow::onlyEditorLayout()
+{
     verticalLayout();
-    for (QMap<DOCK_TYPE, ZenoDockWidget *>::iterator it = m_docks.begin(); it != m_docks.end(); it++) {
-        ZenoDockWidget *pDock = it.value();
-        if (pDock != m_editor) {
-            pDock->close();
+    auto docks = findChildren<ZenoDockWidget *>(QString(), Qt::FindDirectChildrenOnly);
+    for (ZenoDockWidget *dock : docks)
+    {
+        if (dock->type() != DOCK_EDITOR)
+        {
+            dock->close();
         }
     }
-}
-
-void ZenoMainWindow::simpleLayout2() {
-    addDockWidget(Qt::TopDockWidgetArea, m_viewDock);
-    splitDockWidget(m_viewDock, m_timelineDock, Qt::Vertical);
-    splitDockWidget(m_timelineDock, m_editor, Qt::Vertical);
-}
-
-void ZenoMainWindow::arrangeDocks2() {
-    addDockWidget(Qt::LeftDockWidgetArea, m_toolbar);
-    splitDockWidget(m_toolbar, m_viewDock, Qt::Horizontal);
-    splitDockWidget(m_viewDock, m_parameter, Qt::Horizontal);
-
-    splitDockWidget(m_viewDock, m_timelineDock, Qt::Vertical);
-    splitDockWidget(m_parameter, m_data, Qt::Vertical);
-    splitDockWidget(m_data, m_editor, Qt::Vertical);
-    writeSettings2();
-}
-
-void ZenoMainWindow::arrangeDocks3() {
-    addDockWidget(Qt::TopDockWidgetArea, m_parameter);
-    addDockWidget(Qt::LeftDockWidgetArea, m_toolbar);
-    addDockWidget(Qt::BottomDockWidgetArea, m_timelineDock);
-    splitDockWidget(m_toolbar, m_viewDock, Qt::Horizontal);
-    splitDockWidget(m_viewDock, m_data, Qt::Vertical);
-    splitDockWidget(m_data, m_editor, Qt::Vertical);
-    writeHoudiniStyleLayout();
 }
 
 void ZenoMainWindow::writeHoudiniStyleLayout() {

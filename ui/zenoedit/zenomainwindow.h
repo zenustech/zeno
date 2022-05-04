@@ -40,12 +40,8 @@ private:
     void init();
     void initMenu();
     void initDocks();
-    void houdiniStyleLayout();
     void verticalLayout();
     void onlyEditorLayout();
-    void simpleLayout2();
-    void arrangeDocks2();
-    void arrangeDocks3();
     void writeHoudiniStyleLayout();
     void writeSettings2();
     void readHoudiniStyleLayout();
@@ -57,13 +53,7 @@ private:
     ZenoDockWidget *m_editor;
     ZenoDockWidget *m_data;
     ZenoDockWidget *m_parameter;
-    ZenoDockWidget *m_toolbar;
-    ZenoDockWidget *m_shapeBar;
-    ZenoDockWidget *m_timelineDock;
     ZenoDockWidget *m_logger;
-
-    //QVector<ZenoDockWidget*> m_docks;
-    QMultiMap<DOCK_TYPE, ZenoDockWidget*> m_docks;
 
     ZenoGraphsEditor* m_pEditor;
     bool m_bInDlgEventloop;
