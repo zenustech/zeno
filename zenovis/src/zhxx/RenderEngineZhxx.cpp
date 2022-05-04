@@ -65,20 +65,20 @@ struct RenderEngineZhxx : RenderEngine, zeno::disable_copy {
     }
 
     void draw() override {
-        auto const &c = *scene->camera;
+        auto const &cam = *scene->camera;
         auto const &opt = *scene->drawOptions;
-        auto const &zxx = c.m_zxx;
+        auto const &zxx = cam.m_zxx;
         zenvis::set_show_grid(opt.show_grid);
         zenvis::set_normal_check(opt.normal_check);
         zenvis::set_smooth_shading(opt.smooth_shading);
         zenvis::set_render_wireframe(opt.render_wireframe);
         zenvis::set_background_color(opt.bgcolor.r, opt.bgcolor.g, opt.bgcolor.b);
-        zenvis::setDOF(c.m_dof);
-        zenvis::setAperature(c.m_aperature);
-        zenvis::set_window_size(c.m_nx, c.m_ny);
+        zenvis::setDOF(cam.m_dof);
+        zenvis::setAperature(cam.m_aperature);
+        zenvis::set_window_size(cam.m_nx, cam.m_ny);
         zenvis::look_perspective(zxx.cx, zxx.cy, zxx.cz, zxx.theta,
                 zxx.phi, zxx.radius, zxx.fov, zxx.ortho_mode);
-        int targetFBO;
+        int targetFBO = 0;
         CHECK_GL(glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &targetFBO));
         zenvis::new_frame(targetFBO);
     }
