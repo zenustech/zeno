@@ -26,6 +26,6 @@ struct FrameData {
 
 FrameData *current_frame_data();
 
-extern std::vector<std::unique_ptr<FrameData>> frames;
+/* extern std::vector<std::unique_ptr<FrameData>> frames; */
 
 }

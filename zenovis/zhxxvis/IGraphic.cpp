@@ -5,7 +5,7 @@
 
 namespace zenvis {
 
-std::vector<std::unique_ptr<FrameData>> frames;
+/* std::vector<std::unique_ptr<FrameData>> frames; */
 
 std::unique_ptr<IGraphic> makeGraphicPrimitive
     ( zeno::PrimitiveObject *prim
@@ -18,14 +18,13 @@ std::unique_ptr<IGraphic> makeGraphicVolume
 #endif
 
 
-std::unique_ptr<IGraphic> makeGraphic(std::string path, std::string ext) {
-    if (ext == ".zpm") {
-        auto prim = std::make_unique<zeno::PrimitiveObject>();
-        zeno::readzpm(prim.get(), path.c_str());
-        return makeGraphicPrimitive(prim.get(), path);
+static std::unique_ptr<IGraphic> makeGraphic(zeno::IObject *obj) {
+    std::string path = "/unused/param";  // never mind
+    if (auto p = dynamic_cast<zeno::PrimitiveObject *>(obj)) {
+        return makeGraphicPrimitive(p, path);
 
 #ifdef ZENVIS_WITH_OPENVDB
-    if (ext == ".vdb") {
+    } else if (auto p = dynamic_cast<zeno::VDBGrid *>(obj)) {
         return makeGraphicVolume(path);
 #endif
 
@@ -37,41 +36,22 @@ std::unique_ptr<IGraphic> makeGraphic(std::string path, std::string ext) {
 }
 
 FrameData *current_frame_data() {
-    if (frames.size() < curr_frameid + 1)
-        frames.resize(curr_frameid + 1);
-    if (!frames[curr_frameid])
-        frames[curr_frameid] = std::make_unique<FrameData>();
-    return frames[curr_frameid].get();
+    static FrameData currFrameData;
+    return &currFrameData;
 }
 
 void auto_gc_frame_data(int nkeep) {
-    for (int i = 0; i < frames.size(); i++) {
-        auto const &frame = frames[i];
-        if (frame) {
-            auto endi = std::min(curr_frameid + nkeep / 2, (int)frames.size());
-            auto begi = std::max(endi - nkeep, 0);
-            if (i >= endi || i < begi) {
-                //printf("auto gc free %d\n", i);
-                frames[i] = nullptr;
-            }
-        }
-    }
 }
 
 std::vector<int> get_valid_frames_list() {
-    std::vector<int> res;
-    for (int i = 0; i < frames.size(); i++) {
-        if (frames[i])
-            res.push_back(i);
-    }
-    return res;
+    return {};
 }
 
 void clear_graphics() {
-    frames.clear();
+    current_frame_data()->graphics.clear();
 }
 
-void load_file(std::string name, std::string ext, std::string path, int frameid) {
+/*void load_file(std::string name, std::string ext, std::string path, int frameid) {
     if (ext == ".lock")
         return;
 
@@ -85,6 +65,15 @@ void load_file(std::string name, std::string ext, std::string path, int frameid)
     auto ig = makeGraphic(path, ext);
     if (!ig) return;
     graphics[name] = std::move(ig);
+}*/
+
+void zxx_load_object(std::string const &key, zeno::IObject *obj) {
+    current_frame_data()->graphics[key] = makeGraphic(obj);
 }
+
+void zxx_delete_object(std::string const &key) {
+    current_frame_data()->graphics.erase(key);
+}
+
 
 }

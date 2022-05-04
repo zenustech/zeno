@@ -1,5 +1,6 @@
 #pragma once
 
+#include "zeno/core/IObject.h"
 #include <string>
 #include <array>
 #include <vector>
@@ -8,6 +9,7 @@
 namespace zenvis {
   extern unsigned int getDepthTexture();
 extern void setDOF(float _dof);
+extern void setAperature(float _apt);
   void clearCameraControl();
 extern void clearReflectMask();
 void setLightHight(float h);
@@ -18,7 +20,9 @@ void new_frame();
 void clear_graphics();
 void auto_gc_frame_data(int nkeep);
 std::vector<int> get_valid_frames_list();
-void load_file(std::string name, std::string ext, std::string path, int frameid);
+/* void load_file(std::string name, std::string ext, std::string path, int frameid); */
+void zxx_load_object(std::string const &key, zeno::IObject *obj);  // zeno2 new
+void zxx_delete_object(std::string const &key);  // zeno2 new
 void set_window_size(int nx, int ny);
 void set_curr_frameid(int frameid);
 int get_curr_frameid();

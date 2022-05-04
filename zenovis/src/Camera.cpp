@@ -45,6 +45,15 @@ void Camera::focusCamera(float cx, float cy, float cz, float radius) {
 }
 
 void Camera::lookCamera(float cx, float cy, float cz, float theta, float phi, float radius, float fov) {
+    m_zxx.cx = cx;
+    m_zxx.cy = cy;
+    m_zxx.cz = cz;
+    m_zxx.theta = theta;
+    m_zxx.phi = phi;
+    m_zxx.radius = radius;
+    m_zxx.fov = fov;
+    m_zxx.ortho_mode = fov <= 0.0f;
+
     auto center = glm::vec3(cx, cy, cz);
 
     float cos_t = glm::cos(theta), sin_t = glm::sin(theta);
