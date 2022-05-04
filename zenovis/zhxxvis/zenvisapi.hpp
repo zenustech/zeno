@@ -16,7 +16,7 @@ void setLightHight(float h);
 void setLight(float x, float y, float z);
 void initialize();
 void finalize();
-void new_frame();
+void new_frame(int target_fbo = 0);
 void clear_graphics();
 void auto_gc_frame_data(int nkeep);
 std::vector<int> get_valid_frames_list();

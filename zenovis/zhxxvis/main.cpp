@@ -807,8 +807,8 @@ void finalize() {
   vao = nullptr;
 }
 
-void new_frame() {
-  paint_graphics();
+void new_frame(int target_fbo) {
+  paint_graphics(target_fbo);
   renderFPS.tick();
 }
 

@@ -13,6 +13,7 @@
 #include <zenovis/opengl/common.h>
 #include <zenovis/opengl/vao.h>
 #include <zeno/utils/scope_exit.h>
+#include <cstdlib>
 #include <map>
 
 namespace zenovis {
@@ -34,7 +35,10 @@ Scene::Scene()
     auto version = (const char *)glGetString(GL_VERSION);
     zeno::log_info("OpenGL version: {}", version ? version : "(null)");
 
-    switchRenderEngine("bate");
+    if (std::getenv("ZENO_ZHXX"))
+        switchRenderEngine("zhxx");
+    else
+        switchRenderEngine("bate");
 }
 
 void Scene::switchRenderEngine(std::string const &name) {
