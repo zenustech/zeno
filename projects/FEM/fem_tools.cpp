@@ -304,7 +304,7 @@ struct EmbedPrimitiveToVolumeMesh : zeno::INode {
         // std::cout << "CHECK:" << embed_id[10641] << std::endl;
 
         #pragma omp parallel for
-        for(size_t i = 0;i < prim->size();++i){
+        for(intptr_t i = 0;i < prim->size();++i){
             auto vp = Vec3d(prim->verts[i][0],prim->verts[i][1],prim->verts[i][2]);
             embed_id[i] = -1;
 
@@ -477,7 +477,7 @@ struct InterpolateEmbedPrimitive : zeno::INode {
         // const auto& v3s = res->attr<zeno::vec3f>("v3");
 
         // #pragma omp parallel for
-        for(size_t i = 0;i < skin->size();++i){
+        for(intptr_t i = 0;i < skin->size();++i){
             int elm_id = (int)embed_ids[i];
             // if(fabs(elm_id - embed_ids[i]) > 0.2){
             //     std::cout << "ERROR\t" << elm_id << "\t" << embed_ids[i] << std::endl;
@@ -579,7 +579,7 @@ struct InterpolateElmAttrib : zeno::INode {
             auto& elm_attr = elmView->add_attr<float>(attr_name);
 
             #pragma omp parallel for 
-            for(size_t elm_id = 0;elm_id < elmView->size();++elm_id){
+            for(intptr_t elm_id = 0;elm_id < elmView->size();++elm_id){
                 const auto& tet = prim->quads[elm_id];
                 elm_attr[elm_id] = 0;
                 for(size_t i = 0;i < 4;++i){
@@ -591,7 +591,7 @@ struct InterpolateElmAttrib : zeno::INode {
             auto& elm_attr = elmView->add_attr<zeno::vec3f>(attr_name);
 
             #pragma omp parallel for 
-            for(size_t elm_id = 0;elm_id < elmView->size();++elm_id){
+            for(intptr_t elm_id = 0;elm_id < elmView->size();++elm_id){
                 const auto& tet = prim->quads[elm_id];
                 elm_attr[elm_id] = zeno::vec3f(0);
                 for(size_t i = 0;i < 4;++i){
