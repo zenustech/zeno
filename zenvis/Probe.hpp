@@ -124,6 +124,6 @@ namespace zenvis
 
         }
     };
-};
+}
 
 #endif // #include __PROBE_HPP__

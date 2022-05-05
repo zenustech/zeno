@@ -311,6 +311,7 @@ void setProbeData(
     std::get<1>(pos),
     std::get<2>(pos)
   );
+  // probe->resolution = res;
 }
 
 int getProbeCount() {
