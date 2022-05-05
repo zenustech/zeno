@@ -39,7 +39,7 @@ using PlasticModel =
                 zs::NonAssociativeVonMises<float>,
                 zs::NonAssociativeCamClay<float>>;
 
-struct ZenoConstitutiveModel : IObject {
+struct ZenoConstitutiveModel : IObjectClone<ZenoConstitutiveModel> {
   enum elastic_model_e { Fcr, Nhk, Stvk };
   enum aniso_plastic_model_e { None_, Arap };
   enum plastic_model_e { None, DruckerPrager, VonMises, CamClay };
@@ -91,10 +91,36 @@ struct ZenoParticles : IObjectClone<ZenoParticles> {
   // (ii ) lagrangian mesh vertex particle
   // (iii) lagrangian mesh element quadrature particle
   // tracker particle for
-  enum category_e : int { mpm, curve, surface, tet, tracker };
+  enum category_e : int { mpm, curve, surface, tet, tracker, bending };
   using particles_t = zs::TileVector<float, 32>;
-  auto &getParticles() noexcept { return particles; }
-  const auto &getParticles() const noexcept { return particles; }
+
+  ZenoParticles() = default;
+  ~ZenoParticles() = default;
+  ZenoParticles(ZenoParticles &&o) noexcept = default;
+  ZenoParticles(const ZenoParticles &o)
+      : elements{o.elements}, category{o.category}, prim{o.prim},
+        model{o.model}, sprayedOffset{o.sprayedOffset}, asBoundary{
+                                                            o.asBoundary} {
+    if (o.particles)
+      particles = std::make_shared<particles_t>(*o.particles);
+  }
+  ZenoParticles &operator=(ZenoParticles &&o) noexcept = default;
+  ZenoParticles &operator=(const ZenoParticles &o) {
+    ZenoParticles tmp{o};
+    std::swap(*this, tmp);
+    return *this;
+  }
+
+  auto &getParticles() {
+    if (!particles)
+      throw std::runtime_error("particles (verts) not inited.");
+    return *particles;
+  }
+  const auto &getParticles() const {
+    if (!particles)
+      throw std::runtime_error("particles (verts) not inited.");
+    return *particles;
+  }
   auto &getQuadraturePoints() {
     if (!elements.has_value())
       throw std::runtime_error("quadrature points not binded.");
@@ -106,7 +132,14 @@ struct ZenoParticles : IObjectClone<ZenoParticles> {
     return *elements;
   }
   bool isMeshPrimitive() const noexcept {
-    return elements.has_value() && category != category_e::mpm;
+    return particles && elements.has_value() &&
+           (category == category_e::curve || category == category_e::surface ||
+            category == category_e::tet || category == category_e::tracker);
+  }
+  bool isLagrangianParticles() const noexcept {
+    return particles && elements.has_value() &&
+           (category == category_e::curve || category == category_e::surface ||
+            category == category_e::tet);
   }
   auto &getModel() noexcept { return model; }
   const auto &getModel() const noexcept { return model; }
@@ -128,13 +161,13 @@ struct ZenoParticles : IObjectClone<ZenoParticles> {
     }
     return -1;
   }
-  std::size_t numParticles() const noexcept { return particles.size(); }
+  std::size_t numParticles() const noexcept { return (*particles).size(); }
   std::size_t numElements() const noexcept { return (*elements).size(); }
   bool hasSprayedParticles() const noexcept {
-    return sprayedOffset == numParticles();
+    return sprayedOffset != numParticles();
   }
 
-  particles_t particles{};
+  std::shared_ptr<particles_t> particles{};
   std::optional<particles_t> elements{};
   category_e category{category_e::mpm}; // 0: conventional mpm particle, 1:
                                         // curve, 2: surface, 3: tet
