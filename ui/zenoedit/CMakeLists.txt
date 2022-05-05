@@ -9,7 +9,7 @@ add_executable(zenoedit ${source})
 set_property(TARGET zenoedit PROPERTY AUTOUIC ON)
 set_property(TARGET zenoedit PROPERTY AUTOMOC ON)
 set_property(TARGET zenoedit PROPERTY AUTORCC ON)
-set_property(TARGET zenoedit PROPERTY WIN32_EXECUTABLE OFF)
+set_property(TARGET zenoedit PROPERTY WIN32_EXECUTABLE ON)
 
 find_package(Threads REQUIRED)
 target_link_libraries(zenoedit PRIVATE Threads::Threads)
