@@ -428,7 +428,10 @@ struct GraphicPrimitive : IGraphic {
         data.reserve(amount);
         for (int i = 0; i < amount; ++i)
         {
-            data.emplace_back(InstVboData{.modelMatrix = modelMatrices[i], .time = timeList[i]});
+            auto instVboData = InstVboData();
+            instVboData.modelMatrix = modelMatrices[i];
+            instVboData.time = timeList[i];
+            data.emplace_back(instVboData);
         }
 
         instvbo->bind_data(data.data(), amount * sizeof(InstVboData));
@@ -488,7 +491,10 @@ struct GraphicPrimitive : IGraphic {
             data.reserve(amount);
             for (int i = 0; i < amount; ++i)
             {
-                data.emplace_back(InstVboData{.modelMatrix = modelMatrices[i], .time = timeList[i]});
+                auto instVboData = InstVboData();
+                instVboData.modelMatrix = modelMatrices[i];
+                instVboData.time = timeList[i];
+                data.emplace_back(instVboData);
             }
 
             instvbo->bind_data(data.data(), amount * sizeof(InstVboData));

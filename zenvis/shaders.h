@@ -1342,6 +1342,7 @@ float PCFLayer2(int lightNo, float currentDepth1, float currentDepth2, float bia
     float size = 2.0*float(k)+1.0;
     return shadow /= (size*size);
 }
+)" + R"(
 vec2 getLightCoord(int lightNo, vec3 fragPosWorldSpace)
 {
     
