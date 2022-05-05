@@ -75,6 +75,7 @@ static void runner_start(std::string const &progJson, int sessionid) {
 
     std::vector<char> buffer;
 
+    session->globalComm->frameRange(graph->beginFrameNumber, graph->endFrameNumber);
     send_packet("{\"action\":\"frameRange\",\"key\":\""
                 + std::to_string(graph->beginFrameNumber)
                 + ":" + std::to_string(graph->endFrameNumber)
