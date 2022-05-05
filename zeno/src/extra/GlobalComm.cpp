@@ -6,14 +6,14 @@ namespace zeno {
 
 ZENO_API void GlobalComm::newFrame() {
     std::lock_guard lck(m_mtx);
-    m_frames.emplace_back();
     log_debug("GlobalComm::newFrame {}", m_frames.size());
+    m_frames.emplace_back();
 }
 
 ZENO_API void GlobalComm::finishFrame() {
     std::lock_guard lck(m_mtx);
-    m_maxPlayFrame += 1;
     log_debug("GlobalComm::finishFrame {}", m_maxPlayFrame);
+    m_maxPlayFrame += 1;
 }
 
 ZENO_API void GlobalComm::addViewObject(std::string const &key, std::shared_ptr<IObject> object) {
@@ -29,12 +29,18 @@ ZENO_API void GlobalComm::clearState() {
     m_maxPlayFrame = 0;
 }
 
+ZENO_API void GlobalComm::frameRange(int beg, int end) {
+    beginFrameNumber = beg;
+    endFrameNumber = end;
+}
+
 ZENO_API int GlobalComm::maxPlayFrames() {
     std::lock_guard lck(m_mtx);
-    return m_maxPlayFrame; // m_frames.size();
+    return m_maxPlayFrame + beginFrameNumber; // m_frames.size();
 }
 
 ZENO_API GlobalComm::ViewObjects const *GlobalComm::getViewObjects(int frameid) {
+    frameid -= beginFrameNumber;
     std::lock_guard lck(m_mtx);
     if (frameid < 0 || frameid >= m_frames.size())
         return nullptr;

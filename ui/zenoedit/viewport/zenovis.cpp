@@ -55,7 +55,7 @@ void Zenovis::updatePerspective(QVector2D const &resolution, PerspectiveInfo con
     m_resolution = resolution;
     m_perspective = perspective;
     if (session) {
-        session->set_window_size(m_resolution.x(), resolution.y());
+        session->set_window_size(m_resolution.x(), m_resolution.y());
         session->look_perspective(m_perspective.cx, m_perspective.cy, m_perspective.cz,
                                   m_perspective.theta, m_perspective.phi, m_perspective.radius,
                                   m_perspective.fov, m_perspective.ortho_mode);
@@ -78,8 +78,8 @@ int Zenovis::setCurrentFrameId(int frameid)
     if (frameid < 0)
         frameid = 0;
     int nFrames = zeno::getSession().globalComm->maxPlayFrames();
-    if (frameid >= nFrames)
-        frameid = std::max(0, nFrames - 1);
+    if (frameid > nFrames)
+        frameid = std::max(0, nFrames);
     zeno::log_trace("now frame {}/{}", frameid, nFrames);
     int old_frameid = session->get_curr_frameid();
     session->set_curr_frameid(frameid);
