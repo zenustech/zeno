@@ -78,8 +78,8 @@ int Zenovis::setCurrentFrameId(int frameid)
     if (frameid < 0)
         frameid = 0;
     int nFrames = zeno::getSession().globalComm->maxPlayFrames();
-    if (frameid > nFrames)
-        frameid = std::max(0, nFrames);
+    if (frameid >= nFrames)
+        frameid = std::max(0, nFrames - 1);
     zeno::log_trace("now frame {}/{}", frameid, nFrames);
     int old_frameid = session->get_curr_frameid();
     session->set_curr_frameid(frameid);
