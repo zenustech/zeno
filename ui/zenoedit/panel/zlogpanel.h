@@ -19,16 +19,35 @@ private:
     QAbstractItemView *m_view;
 };
 
+class CustomFilterProxyModel : public QSortFilterProxyModel
+{
+    Q_OBJECT
+public:
+    explicit CustomFilterProxyModel(QObject* parnet = nullptr);
+    void setFilters(const QVector<QtMsgType>& filters);
+
+protected:
+    bool filterAcceptsRow(int source_row, const QModelIndex& source_parent) const override;
+
+private:
+    QVector<QtMsgType> m_filters;
+};
+
 class ZlogPanel : public QWidget
 {
     Q_OBJECT
 public:
     ZlogPanel(QWidget* parent = nullptr);
 
+private slots:
+    void onFilterChanged();
+
 private:
     void initSignals();
+    void initModel();
 
     Ui::LogPanel* m_ui;
+    CustomFilterProxyModel *m_pFilterModel;
 };
 
 

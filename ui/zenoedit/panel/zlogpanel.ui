@@ -50,6 +50,9 @@ QCheckBox::indicator:checked {
        <property name="text">
         <string>All</string>
        </property>
+       <property name="checked">
+        <bool>true</bool>
+       </property>
       </widget>
      </item>
      <item>
@@ -77,6 +80,9 @@ QCheckBox::indicator:checked {
        <property name="text">
         <string>Debug</string>
        </property>
+       <property name="checked">
+        <bool>true</bool>
+       </property>
       </widget>
      </item>
      <item>
@@ -103,6 +109,9 @@ QCheckBox::indicator:checked {
        </property>
        <property name="text">
         <string>Critical</string>
+       </property>
+       <property name="checked">
+        <bool>true</bool>
        </property>
       </widget>
      </item>
@@ -135,6 +144,9 @@ QCheckBox::indicator:checked {
        <property name="text">
         <string>Info</string>
        </property>
+       <property name="checked">
+        <bool>true</bool>
+       </property>
       </widget>
      </item>
      <item>
@@ -166,6 +178,9 @@ QCheckBox::indicator:checked {
        <property name="text">
         <string>Warning</string>
        </property>
+       <property name="checked">
+        <bool>true</bool>
+       </property>
       </widget>
      </item>
      <item>
@@ -196,6 +211,9 @@ QCheckBox::indicator:checked {
        </property>
        <property name="text">
         <string>Error</string>
+       </property>
+       <property name="checked">
+        <bool>true</bool>
        </property>
       </widget>
      </item>
