@@ -134,7 +134,7 @@ void _ZenoSubGraphView::cameraFocus()
 	QGraphicsItem* item = selItems[0];
 	if (ZenoNode *pNode = qgraphicsitem_cast<ZenoNode *>(item)) {
 		QString nodeId = pNode->nodeId();
-		Zenovis::GetInstance().getSession()->get_scene()->cameraFocusOnNode(nodeId.toStdString());
+		Zenovis::GetInstance().getSession()->focus_on_node(nodeId.toStdString());
 	}
 }
 

@@ -7,7 +7,6 @@
 #include <vector>
 #include <zeno/core/IObject.h>
 #include <zeno/utils/disable_copy.h>
-#include <zenovis/Scene.h>
 
 namespace zenovis {
 
@@ -38,7 +37,6 @@ struct Session : zeno::disable_copy {
     void set_render_wireframe(bool render_wireframe);
     void set_render_engine(std::string const &name);
     void focus_on_node(std::string const &nodeid);
-    Scene* get_scene() const;
     static void load_opengl_api(void *procaddr);
 };
 
