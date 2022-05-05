@@ -133,8 +133,10 @@ struct ToTrackerParticles : INode {
     // attributes
     std::vector<zs::PropertyTag> tags{{"pos", 3}, {"vel", 3}};
     {
+      outParticles->particles =
+          std::make_shared<typename ZenoParticles::particles_t>(tags, size,
+                                                                memsrc_e::host);
       auto &pars = outParticles->getParticles(); // tilevector
-      pars = typename ZenoParticles::particles_t{tags, size, memsrc_e::host};
       ompExec(zs::range(size), [pars = proxy<execspace_e::host>({}, pars),
                                 velsPtr, &obj](size_t pi) mutable {
         using vec3 = zs::vec<float, 3>;
