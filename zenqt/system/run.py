@@ -43,8 +43,9 @@ def runScene(graphs, nframes, iopath, start_frame):
             inputs = data['inputs']
             for name, value in inputs.items():
                 if type(value) is list and len(value) == 3 and type(value[2]) == str:
+                    value = value[2]
                     if nas_loc != None:
-                        value = value[2].replace('$NASLOC', nas_loc)
+                        value = value.replace('$NASLOC', nas_loc)
                     value = evaluateExpr(value, frameid)
                     core.setNodeInputString(ident, name, value)
             params = data['params']
