@@ -36,6 +36,7 @@ public slots:
     void paste();
     void find();
     void esc();
+    void cameraFocus();
     void onSearchResult(SEARCH_RECORD rec);
     void focusOn(const QString& nodeId, const QPointF& pos);
 

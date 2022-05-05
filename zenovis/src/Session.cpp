@@ -159,5 +159,7 @@ void Session::set_render_engine(std::string const &name) {
 void Session::load_opengl_api(void *procaddr) {
     Scene::loadGLAPI(procaddr);
 }
-
+Scene* Session::get_scene() const {
+    return impl->scene.get();
+}
 } // namespace zenovis
