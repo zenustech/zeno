@@ -171,39 +171,6 @@
      ],
      "options": []
     },
-    "e29634e9-ToZSParticles": {
-     "name": "ToZSParticles",
-     "inputs": {
-      "ZSModel": [
-       "2b9ef763-ConfigConstitutiveModel",
-       "ZSModel",
-       null
-      ],
-      "prim": [
-       "3c19dbd4-ZSPoissonDiskSample",
-       "prim",
-       null
-      ],
-      "category": [
-       null,
-       null,
-       0
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      972.9081256389168,
-      -97.76669949448836
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
     "247d5c2a-NumericFloat": {
      "name": "NumericFloat",
      "inputs": {
@@ -478,7 +445,7 @@
       ]
      },
      "params": {
-      "type": "separate"
+      "type": "slip"
      },
      "uipos": [
       1189.9517952127655,
@@ -528,7 +495,7 @@
       ]
      },
      "params": {
-      "type": "separate"
+      "type": "slip"
      },
      "uipos": [
       1203.3738601823704,
@@ -602,8 +569,8 @@
       "name": "zspars"
      },
      "uipos": [
-      2233.047481180143,
-      34.13741000088123
+      2062.993673233129,
+      -24.26490787991156
      ],
      "options": []
     },
@@ -621,12 +588,12 @@
        null
       ],
       "obj1": [
-       "766705c8-ToTrackerParticles",
+       "eb0c0f75-ToZSParticles",
        "ZSParticles",
        null
       ],
       "obj2": [
-       "eb0c0f75-ToZSParticles",
+       "766705c8-ToTrackerParticles",
        "ZSParticles",
        null
       ],
@@ -640,8 +607,8 @@
       "_KEYS": "obj0\nobj1\nobj2\nobj3"
      },
      "uipos": [
-      1444.702991952976,
-      -45.85170295389223
+      1444.7029919529757,
+      -50.14599103336231
      ],
      "options": [
       "ONCE"
@@ -880,8 +847,8 @@
      },
      "params": {},
      "uipos": [
-      4762.889052212775,
-      -61.7033845965795
+      4738.841038967743,
+      -58.26795413300346
      ],
      "options": []
     },
@@ -979,8 +946,8 @@
      },
      "params": {},
      "uipos": [
-      8460.0157888223,
-      -13.095898568784712
+      8465.168934517662,
+      -21.68447472772484
      ],
      "options": []
     },
@@ -1368,7 +1335,7 @@
       ]
      },
      "params": {
-      "value": 960
+      "value": 480
      },
      "uipos": [
       -1902.2920008984886,
@@ -1506,239 +1473,6 @@
       1248.3671399594316
      ],
      "options": []
-    },
-    "69d09203-ToZSParticles": {
-     "name": "ToZSParticles",
-     "inputs": {
-      "ZSModel": [
-       "a2dbb7e1-ConfigConstitutiveModel",
-       "ZSModel",
-       null
-      ],
-      "prim": [
-       "69116e31-ZSPoissonDiskSample",
-       "prim",
-       null
-      ],
-      "category": [
-       null,
-       null,
-       0
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      1027.8864673084602,
-      174.90845590683864
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
-    "4ff91564-PrimSprayParticles": {
-     "name": "PrimSprayParticles",
-     "inputs": {
-      "TrianglePrim": [
-       "2415c7de-TransformPrimitive",
-       "outPrim",
-       null
-      ],
-      "Dx": [
-       "ad4074b5-NumericOperator",
-       "ret",
-       0.04
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      -692.2497889634203,
-      1.3865732824375812
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
-    "a2dbb7e1-ConfigConstitutiveModel": {
-     "name": "ConfigConstitutiveModel",
-     "inputs": {
-      "dx": [
-       "247d5c2a-NumericFloat",
-       "value",
-       0.1
-      ],
-      "ppc": [
-       null,
-       null,
-       8.0
-      ],
-      "density": [
-       null,
-       null,
-       0.5
-      ],
-      "type": [
-       null,
-       null,
-       "fcr"
-      ],
-      "aniso": [
-       null,
-       null,
-       "none"
-      ],
-      "plasticity": [
-       null,
-       null,
-       "none"
-      ],
-      "E": [
-       null,
-       null,
-       600.0
-      ],
-      "nu": [
-       null,
-       null,
-       0.42
-      ],
-      "params": [
-       null,
-       null,
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      465.1809358841326,
-      214.19085551957394
-     ],
-     "options": []
-    },
-    "efdd9040-NumericFloat": {
-     "name": "NumericFloat",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "value": 5.0
-     },
-     "uipos": [
-      -45.039817593856924,
-      -217.51045722190116
-     ],
-     "options": []
-    },
-    "2b9ef763-ConfigConstitutiveModel": {
-     "name": "ConfigConstitutiveModel",
-     "inputs": {
-      "dx": [
-       "247d5c2a-NumericFloat",
-       "value",
-       0.1
-      ],
-      "ppc": [
-       null,
-       null,
-       8.0
-      ],
-      "density": [
-       null,
-       null,
-       10.0
-      ],
-      "type": [
-       null,
-       null,
-       "stvk"
-      ],
-      "aniso": [
-       null,
-       null,
-       "none"
-      ],
-      "plasticity": [
-       null,
-       null,
-       "nadp"
-      ],
-      "E": [
-       null,
-       null,
-       100.0
-      ],
-      "nu": [
-       null,
-       null,
-       0.4
-      ],
-      "params": [
-       "f65deed7-MakeDict",
-       "dict",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      508.25327826548187,
-      -137.99764060381
-     ],
-     "options": []
-    },
-    "f65deed7-MakeDict": {
-     "name": "MakeDict",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ],
-      "friction_angle": [
-       "efdd9040-NumericFloat",
-       "value",
-       null
-      ],
-      "obj1": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "_KEYS": "friction_angle\nobj1"
-     },
-     "uipos": [
-      235.4516232200569,
-      -27.615338640563664
-     ],
-     "options": [],
-     "socket_keys": [
-      "friction_angle",
-      "obj1"
-     ]
     },
     "ffb3eded-ComputeParticleVolume": {
      "name": "ComputeParticleVolume",
@@ -1968,81 +1702,6 @@
      "uipos": [
       216.30025409166973,
       -1260.3111067052866
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
-    "bff1a707-ZSParticlesToPrimitiveObject": {
-     "name": "ZSParticlesToPrimitiveObject",
-     "inputs": {
-      "ZSParticles": [
-       "69d09203-ToZSParticles",
-       "ZSParticles",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      3007.6911721234724,
-      1197.9143854920708
-     ],
-     "options": []
-    },
-    "310dfdb8-ParticlesWrangle": {
-     "name": "ParticlesWrangle",
-     "inputs": {
-      "prim": [
-       "bff1a707-ZSParticlesToPrimitiveObject",
-       "prim",
-       null
-      ],
-      "zfxCode": [
-       null,
-       null,
-       "@rad=0.25"
-      ],
-      "params": [
-       null,
-       null,
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      3268.9094162023425,
-      1161.5961619936065
-     ],
-     "options": []
-    },
-    "44608ee0-ToTrackerParticles": {
-     "name": "ToTrackerParticles",
-     "inputs": {
-      "prim": [
-       "2415c7de-TransformPrimitive",
-       "outPrim",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      1028.8122490266728,
-      501.1786612331503
      ],
      "options": [
       "ONCE"
@@ -2290,8 +1949,8 @@
      },
      "params": {},
      "uipos": [
-      869.8409278107856,
-      935.8406262869901
+      679.2818942843018,
+      707.7065720651433
      ],
      "options": []
     },
@@ -2312,103 +1971,6 @@
      "uipos": [
       8380.185591098194,
       -378.02588714342386
-     ],
-     "options": []
-    },
-    "3f26b98b-PrimitiveToZSLevelSet": {
-     "name": "PrimitiveToZSLevelSet",
-     "inputs": {
-      "prim": [
-       "4ff91564-PrimSprayParticles",
-       "particlesPrim",
-       null
-      ],
-      "dx": [
-       "ad4074b5-NumericOperator",
-       "ret",
-       0.1
-      ],
-      "thickness": [
-       "ad4074b5-NumericOperator",
-       "ret",
-       0.1
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      -304.3971122867114,
-      -429.248936104575
-     ],
-     "options": []
-    },
-    "69116e31-ZSPoissonDiskSample": {
-     "name": "ZSPoissonDiskSample",
-     "inputs": {
-      "ZSLevelSet": [
-       "3f26b98b-PrimitiveToZSLevelSet",
-       "ZSLevelSet",
-       null
-      ],
-      "dx": [
-       "247d5c2a-NumericFloat",
-       "value",
-       0.01
-      ],
-      "ppc": [
-       null,
-       null,
-       48.0
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "path": ""
-     },
-     "uipos": [
-      307.5457815370936,
-      -766.894181936369
-     ],
-     "options": []
-    },
-    "3c19dbd4-ZSPoissonDiskSample": {
-     "name": "ZSPoissonDiskSample",
-     "inputs": {
-      "ZSLevelSet": [
-       "3f26b98b-PrimitiveToZSLevelSet",
-       "ZSLevelSet",
-       null
-      ],
-      "dx": [
-       "247d5c2a-NumericFloat",
-       "value",
-       0.01
-      ],
-      "ppc": [
-       null,
-       null,
-       12.0
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "path": ""
-     },
-     "uipos": [
-      301.80279780524404,
-      -502.11227222730844
      ],
      "options": []
     },
@@ -2486,7 +2048,7 @@
       "nu": [
        null,
        null,
-       0.35
+       0.4
       ],
       "params": [
        null,
@@ -2501,8 +2063,8 @@
      },
      "params": {},
      "uipos": [
-      482.4229067011331,
-      -1851.7339883430811
+      667.0772941183457,
+      -1800.2025313894405
      ],
      "options": []
     },
@@ -4085,8 +3647,8 @@
      },
      "params": {},
      "uipos": [
-      659.126338212793,
-      604.1041894253784
+      479.30302488498444,
+      217.61826227307324
      ],
      "options": [
       "ONCE"
@@ -4128,7 +3690,7 @@
       "E": [
        null,
        null,
-       500.0
+       400.0
       ],
       "nu": [
        null,
@@ -4148,8 +3710,8 @@
      },
      "params": {},
      "uipos": [
-      236.37520380434393,
-      438.8568614130362
+      22.47242027786089,
+      -17.986681633306375
      ],
      "options": []
     },
@@ -4220,8 +3782,8 @@
      },
      "params": {},
      "uipos": [
-      6761.9837468592905,
-      161.9915986180904
+      6708.734574673861,
+      125.91957875054192
      ],
      "options": []
     },
@@ -4271,10 +3833,10 @@
     }
    },
    "view_rect": {
-    "x": -416.4413915807668,
-    "y": -567.3586491581835,
+    "x": -1015.0180762419659,
+    "y": -307.2218743245444,
     "width": 7152.55737304687,
-    "height": 3957.748413085811
+    "height": 3957.7484130858065
    }
   },
   "bark": {
@@ -6951,6 +6513,11 @@
        null,
        null
       ],
+      "preTransform": [
+       null,
+       null,
+       null
+      ],
       "local": [
        null,
        null,
@@ -7003,6 +6570,11 @@
        null
       ],
       "Matrix": [
+       null,
+       null,
+       null
+      ],
+      "preTransform": [
        null,
        null,
        null
@@ -7070,6 +6642,11 @@
        "31a5b4b9-ReadAlembic",
        "abctree",
        null
+      ],
+      "use_xform": [
+       null,
+       null,
+       0
       ],
       "SRC": [
        null,
@@ -7169,6 +6746,11 @@
        "d18eecca-ReadAlembic",
        "abctree",
        null
+      ],
+      "use_xform": [
+       null,
+       null,
+       0
       ],
       "SRC": [
        null,
@@ -7629,6 +7211,11 @@
        "abctree",
        null
       ],
+      "use_xform": [
+       null,
+       null,
+       0
+      ],
       "SRC": [
        null,
        null,
@@ -7976,6 +7563,11 @@
        "abctree",
        null
       ],
+      "use_xform": [
+       null,
+       null,
+       0
+      ],
       "SRC": [
        null,
        null,
@@ -8048,6 +7640,11 @@
        null
       ],
       "Matrix": [
+       null,
+       null,
+       null
+      ],
+      "preTransform": [
        null,
        null,
        null
@@ -8133,6 +7730,11 @@
        "85ce8c64-ReadAlembic",
        "abctree",
        null
+      ],
+      "use_xform": [
+       null,
+       null,
+       0
       ],
       "SRC": [
        null,
@@ -8524,6 +8126,11 @@
        null,
        null
       ],
+      "preTransform": [
+       null,
+       null,
+       null
+      ],
       "local": [
        null,
        null,
@@ -8608,6 +8215,11 @@
        null,
        null
       ],
+      "preTransform": [
+       null,
+       null,
+       null
+      ],
       "local": [
        null,
        null,
@@ -8664,6 +8276,11 @@
        null,
        null
       ],
+      "preTransform": [
+       null,
+       null,
+       null
+      ],
       "local": [
        null,
        null,
@@ -8714,6 +8331,11 @@
        "d949a06b-ReadAlembic",
        "abctree",
        null
+      ],
+      "use_xform": [
+       null,
+       null,
+       0
       ],
       "SRC": [
        null,
@@ -8852,6 +8474,11 @@
        null,
        null
       ],
+      "preTransform": [
+       null,
+       null,
+       null
+      ],
       "local": [
        null,
        null,
@@ -8983,6 +8610,11 @@
        "abctree",
        null
       ],
+      "use_xform": [
+       null,
+       null,
+       0
+      ],
       "SRC": [
        null,
        null,
@@ -9032,6 +8664,11 @@
        null
       ],
       "Matrix": [
+       null,
+       null,
+       null
+      ],
+      "preTransform": [
        null,
        null,
        null
@@ -9089,6 +8726,11 @@
        "568a60fd-ReadAlembic",
        "abctree",
        null
+      ],
+      "use_xform": [
+       null,
+       null,
+       0
       ],
       "SRC": [
        null,
@@ -9190,6 +8832,11 @@
        "e654e491-ReadAlembic",
        "abctree",
        null
+      ],
+      "use_xform": [
+       null,
+       null,
+       0
       ],
       "SRC": [
        null,
@@ -9336,6 +8983,11 @@
        null,
        null
       ],
+      "preTransform": [
+       null,
+       null,
+       null
+      ],
       "local": [
        null,
        null,
@@ -9362,6 +9014,11 @@
        "abctree",
        null
       ],
+      "use_xform": [
+       null,
+       null,
+       0
+      ],
       "SRC": [
        null,
        null,
@@ -9384,6 +9041,11 @@
        "73d909a1-ReadAlembic",
        "abctree",
        null
+      ],
+      "use_xform": [
+       null,
+       null,
+       0
       ],
       "SRC": [
        null,
@@ -9481,6 +9143,11 @@
        null,
        null
       ],
+      "preTransform": [
+       null,
+       null,
+       null
+      ],
       "local": [
        null,
        null,
@@ -9555,6 +9222,11 @@
        "290467e8-ReadAlembic",
        "abctree",
        null
+      ],
+      "use_xform": [
+       null,
+       null,
+       0
       ],
       "SRC": [
        null,
@@ -9923,6 +9595,11 @@
        null,
        8
       ],
+      "use_xform": [
+       null,
+       null,
+       0
+      ],
       "SRC": [
        null,
        null,
@@ -9950,6 +9627,11 @@
        null,
        null,
        2
+      ],
+      "use_xform": [
+       null,
+       null,
+       0
       ],
       "SRC": [
        null,
@@ -10330,6 +10012,11 @@
        null,
        null
       ],
+      "preTransform": [
+       null,
+       null,
+       null
+      ],
       "local": [
        null,
        null,
@@ -10360,6 +10047,11 @@
        null,
        null,
        9
+      ],
+      "use_xform": [
+       null,
+       null,
+       0
       ],
       "SRC": [
        null,
@@ -10410,6 +10102,11 @@
        null
       ],
       "Matrix": [
+       null,
+       null,
+       null
+      ],
+      "preTransform": [
        null,
        null,
        null
@@ -10543,6 +10240,11 @@
        null
       ],
       "index": [
+       null,
+       null,
+       0
+      ],
+      "use_xform": [
        null,
        null,
        0
@@ -10732,6 +10434,11 @@
        null,
        null
       ],
+      "preTransform": [
+       null,
+       null,
+       null
+      ],
       "local": [
        null,
        null,
@@ -10757,6 +10464,11 @@
        "192d5844-ReadAlembic",
        "abctree",
        null
+      ],
+      "use_xform": [
+       null,
+       null,
+       0
       ],
       "SRC": [
        null,
@@ -10807,6 +10519,11 @@
        null
       ],
       "Matrix": [
+       null,
+       null,
+       null
+      ],
+      "preTransform": [
        null,
        null,
        null
@@ -10890,6 +10607,11 @@
        null
       ],
       "Matrix": [
+       null,
+       null,
+       null
+      ],
+      "preTransform": [
        null,
        null,
        null
@@ -11000,6 +10722,11 @@
        null
       ],
       "Matrix": [
+       null,
+       null,
+       null
+      ],
+      "preTransform": [
        null,
        null,
        null
@@ -11150,6 +10877,11 @@
        null,
        null
       ],
+      "preTransform": [
+       null,
+       null,
+       null
+      ],
       "local": [
        null,
        null,
@@ -11234,6 +10966,11 @@
        null
       ],
       "Matrix": [
+       null,
+       null,
+       null
+      ],
+      "preTransform": [
        null,
        null,
        null
@@ -11378,6 +11115,11 @@
        null,
        null,
        6
+      ],
+      "use_xform": [
+       null,
+       null,
+       0
       ],
       "SRC": [
        null,
@@ -11651,6 +11393,11 @@
        null,
        7
       ],
+      "use_xform": [
+       null,
+       null,
+       0
+      ],
       "SRC": [
        null,
        null,
@@ -11701,6 +11448,11 @@
        "473892cf-ReadAlembic",
        "abctree",
        null
+      ],
+      "use_xform": [
+       null,
+       null,
+       0
       ],
       "SRC": [
        null,
@@ -11793,6 +11545,11 @@
        null,
        null,
        1
+      ],
+      "use_xform": [
+       null,
+       null,
+       0
       ],
       "SRC": [
        null,
@@ -12084,6 +11841,11 @@
        null,
        5
       ],
+      "use_xform": [
+       null,
+       null,
+       0
+      ],
       "SRC": [
        null,
        null,
@@ -12161,6 +11923,11 @@
        null
       ],
       "Matrix": [
+       null,
+       null,
+       null
+      ],
+      "preTransform": [
        null,
        null,
        null
@@ -12268,6 +12035,11 @@
        null
       ],
       "Matrix": [
+       null,
+       null,
+       null
+      ],
+      "preTransform": [
        null,
        null,
        null
@@ -12486,6 +12258,11 @@
        "abctree",
        null
       ],
+      "use_xform": [
+       null,
+       null,
+       0
+      ],
       "SRC": [
        null,
        null,
@@ -12559,6 +12336,11 @@
        null,
        null,
        4
+      ],
+      "use_xform": [
+       null,
+       null,
+       0
       ],
       "SRC": [
        null,
@@ -12718,6 +12500,11 @@
        null,
        null
       ],
+      "preTransform": [
+       null,
+       null,
+       null
+      ],
       "local": [
        null,
        null,
@@ -12824,6 +12611,11 @@
        "42b0cd11-ReadAlembic",
        "abctree",
        null
+      ],
+      "use_xform": [
+       null,
+       null,
+       0
       ],
       "SRC": [
        null,
@@ -13097,6 +12889,11 @@
        null,
        null
       ],
+      "preTransform": [
+       null,
+       null,
+       null
+      ],
       "local": [
        null,
        null,
@@ -13155,6 +12952,11 @@
        null,
        null,
        3
+      ],
+      "use_xform": [
+       null,
+       null,
+       0
       ],
       "SRC": [
        null,
@@ -13237,6 +13039,11 @@
        "3f853cde-ReadAlembic",
        "abctree",
        null
+      ],
+      "use_xform": [
+       null,
+       null,
+       0
       ],
       "SRC": [
        null,
@@ -13698,6 +13505,11 @@
       "index": [
        "8de515c7-BeginFor",
        "index",
+       0
+      ],
+      "use_xform": [
+       null,
+       null,
        0
       ],
       "SRC": [
@@ -14221,6 +14033,11 @@
        null,
        null
       ],
+      "preTransform": [
+       null,
+       null,
+       null
+      ],
       "local": [
        null,
        null,
@@ -14362,6 +14179,11 @@
        null
       ],
       "Matrix": [
+       null,
+       null,
+       null
+      ],
+      "preTransform": [
        null,
        null,
        null
@@ -14542,6 +14364,11 @@
        null,
        null
       ],
+      "preTransform": [
+       null,
+       null,
+       null
+      ],
       "local": [
        null,
        null,
@@ -14587,6 +14414,11 @@
        "cb7dc5fc-ReadAlembic",
        "abctree",
        null
+      ],
+      "use_xform": [
+       null,
+       null,
+       0
       ],
       "SRC": [
        null,
@@ -14667,6 +14499,11 @@
        null,
        null
       ],
+      "preTransform": [
+       null,
+       null,
+       null
+      ],
       "local": [
        null,
        null,
@@ -14719,6 +14556,11 @@
        null
       ],
       "Matrix": [
+       null,
+       null,
+       null
+      ],
+      "preTransform": [
        null,
        null,
        null
@@ -14846,6 +14688,11 @@
        null,
        0
       ],
+      "use_xform": [
+       null,
+       null,
+       0
+      ],
       "SRC": [
        null,
        null,
@@ -14893,6 +14740,11 @@
        null
       ],
       "Matrix": [
+       null,
+       null,
+       null
+      ],
+      "preTransform": [
        null,
        null,
        null
@@ -14998,6 +14850,11 @@
        null
       ],
       "Matrix": [
+       null,
+       null,
+       null
+      ],
+      "preTransform": [
        null,
        null,
        null
@@ -15289,6 +15146,11 @@
        null,
        null
       ],
+      "preTransform": [
+       null,
+       null,
+       null
+      ],
       "local": [
        null,
        null,
@@ -15386,6 +15248,11 @@
        null,
        null
       ],
+      "preTransform": [
+       null,
+       null,
+       null
+      ],
       "local": [
        null,
        null,
@@ -15438,6 +15305,11 @@
        null
       ],
       "Matrix": [
+       null,
+       null,
+       null
+      ],
+      "preTransform": [
        null,
        null,
        null
@@ -15717,6 +15589,11 @@
        null,
        null
       ],
+      "preTransform": [
+       null,
+       null,
+       null
+      ],
       "local": [
        null,
        null,
@@ -15911,6 +15788,11 @@
        null,
        null
       ],
+      "preTransform": [
+       null,
+       null,
+       null
+      ],
       "local": [
        null,
        null,
@@ -15969,6 +15851,11 @@
        null,
        null,
        7
+      ],
+      "use_xform": [
+       null,
+       null,
+       0
       ],
       "SRC": [
        null,
@@ -16252,6 +16139,11 @@
        null
       ],
       "Matrix": [
+       null,
+       null,
+       null
+      ],
+      "preTransform": [
        null,
        null,
        null
@@ -16754,6 +16646,11 @@
        null,
        null
       ],
+      "preTransform": [
+       null,
+       null,
+       null
+      ],
       "local": [
        null,
        null,
@@ -16908,6 +16805,11 @@
        "abctree",
        null
       ],
+      "use_xform": [
+       null,
+       null,
+       0
+      ],
       "SRC": [
        null,
        null,
@@ -16955,6 +16857,11 @@
        "abctree",
        null
       ],
+      "use_xform": [
+       null,
+       null,
+       0
+      ],
       "SRC": [
        null,
        null,
@@ -16975,6 +16882,11 @@
        "08811d98-ReadAlembic",
        "abctree",
        null
+      ],
+      "use_xform": [
+       null,
+       null,
+       0
       ],
       "SRC": [
        null,
@@ -17075,6 +16987,11 @@
        "abctree",
        null
       ],
+      "use_xform": [
+       null,
+       null,
+       0
+      ],
       "SRC": [
        null,
        null,
@@ -17121,6 +17038,11 @@
        "2167ee75-ReadAlembic",
        "abctree",
        null
+      ],
+      "use_xform": [
+       null,
+       null,
+       0
       ],
       "SRC": [
        null,
@@ -18931,6 +18853,11 @@
        null,
        null
       ],
+      "preTransform": [
+       null,
+       null,
+       null
+      ],
       "local": [
        null,
        null,
@@ -20559,6 +20486,11 @@
        null,
        null
       ],
+      "preTransform": [
+       null,
+       null,
+       null
+      ],
       "local": [
        null,
        null,
@@ -20929,6 +20861,11 @@
        null,
        null
       ],
+      "preTransform": [
+       null,
+       null,
+       null
+      ],
       "local": [
        null,
        null,
@@ -21048,6 +20985,11 @@
        null
       ],
       "Matrix": [
+       null,
+       null,
+       null
+      ],
+      "preTransform": [
        null,
        null,
        null
@@ -21186,6 +21128,11 @@
        null,
        null
       ],
+      "preTransform": [
+       null,
+       null,
+       null
+      ],
       "local": [
        null,
        null,
@@ -21259,6 +21206,11 @@
        null
       ],
       "Matrix": [
+       null,
+       null,
+       null
+      ],
+      "preTransform": [
        null,
        null,
        null
@@ -21864,6 +21816,11 @@
        null,
        null
       ],
+      "preTransform": [
+       null,
+       null,
+       null
+      ],
       "local": [
        null,
        null,
@@ -21916,6 +21873,11 @@
        null
       ],
       "Matrix": [
+       null,
+       null,
+       null
+      ],
+      "preTransform": [
        null,
        null,
        null
@@ -22148,6 +22110,11 @@
        null
       ],
       "Matrix": [
+       null,
+       null,
+       null
+      ],
+      "preTransform": [
        null,
        null,
        null
@@ -22427,6 +22394,11 @@
        null,
        null
       ],
+      "preTransform": [
+       null,
+       null,
+       null
+      ],
       "local": [
        null,
        null,
@@ -22532,6 +22504,11 @@
        null
       ],
       "Matrix": [
+       null,
+       null,
+       null
+      ],
+      "preTransform": [
        null,
        null,
        null
@@ -22678,6 +22655,11 @@
        null,
        null
       ],
+      "preTransform": [
+       null,
+       null,
+       null
+      ],
       "local": [
        null,
        null,
@@ -22730,6 +22712,11 @@
        null
       ],
       "Matrix": [
+       null,
+       null,
+       null
+      ],
+      "preTransform": [
        null,
        null,
        null
@@ -22828,6 +22815,11 @@
        null,
        null
       ],
+      "preTransform": [
+       null,
+       null,
+       null
+      ],
       "local": [
        null,
        null,
@@ -22873,6 +22865,36 @@
        null,
        null,
        0.6
+      ],
+      "thickness": [
+       null,
+       null,
+       0.0
+      ],
+      "sssParam": [
+       null,
+       null,
+       null
+      ],
+      "sssColor": [
+       null,
+       null,
+       null
+      ],
+      "foliage": [
+       null,
+       null,
+       0.0
+      ],
+      "skin": [
+       null,
+       null,
+       0.0
+      ],
+      "curvature": [
+       null,
+       null,
+       0.0
       ],
       "specularTint": [
        null,
@@ -23442,6 +23464,36 @@
        null,
        0.6
       ],
+      "thickness": [
+       null,
+       null,
+       0.0
+      ],
+      "sssParam": [
+       null,
+       null,
+       null
+      ],
+      "sssColor": [
+       null,
+       null,
+       null
+      ],
+      "foliage": [
+       null,
+       null,
+       0.0
+      ],
+      "skin": [
+       null,
+       null,
+       0.0
+      ],
+      "curvature": [
+       null,
+       null,
+       0.0
+      ],
       "specularTint": [
        null,
        null,
@@ -23760,6 +23812,11 @@
        null,
        null
       ],
+      "preTransform": [
+       null,
+       null,
+       null
+      ],
       "local": [
        null,
        null,
@@ -23945,6 +24002,11 @@
        null
       ],
       "Matrix": [
+       null,
+       null,
+       null
+      ],
+      "preTransform": [
        null,
        null,
        null
@@ -24176,6 +24238,11 @@
        null,
        null
       ],
+      "preTransform": [
+       null,
+       null,
+       null
+      ],
       "local": [
        null,
        null,
@@ -24259,6 +24326,11 @@
        null
       ],
       "Matrix": [
+       null,
+       null,
+       null
+      ],
+      "preTransform": [
        null,
        null,
        null
@@ -24478,6 +24550,36 @@
        null,
        null,
        0.6
+      ],
+      "thickness": [
+       null,
+       null,
+       0.0
+      ],
+      "sssParam": [
+       null,
+       null,
+       null
+      ],
+      "sssColor": [
+       null,
+       null,
+       null
+      ],
+      "foliage": [
+       null,
+       null,
+       0.0
+      ],
+      "skin": [
+       null,
+       null,
+       0.0
+      ],
+      "curvature": [
+       null,
+       null,
+       0.0
       ],
       "specularTint": [
        null,
@@ -25830,6 +25932,11 @@
        null,
        null
       ],
+      "preTransform": [
+       null,
+       null,
+       null
+      ],
       "local": [
        null,
        null,
@@ -25930,6 +26037,11 @@
        null
       ],
       "Matrix": [
+       null,
+       null,
+       null
+      ],
+      "preTransform": [
        null,
        null,
        null
@@ -26365,6 +26477,11 @@
        null,
        null
       ],
+      "preTransform": [
+       null,
+       null,
+       null
+      ],
       "local": [
        null,
        null,
@@ -26507,6 +26624,11 @@
        null
       ],
       "Matrix": [
+       null,
+       null,
+       null
+      ],
+      "preTransform": [
        null,
        null,
        null
@@ -26916,6 +27038,36 @@
        null,
        0.0
       ],
+      "thickness": [
+       null,
+       null,
+       0.0
+      ],
+      "sssParam": [
+       null,
+       null,
+       null
+      ],
+      "sssColor": [
+       null,
+       null,
+       null
+      ],
+      "foliage": [
+       null,
+       null,
+       0.0
+      ],
+      "skin": [
+       null,
+       null,
+       0.0
+      ],
+      "curvature": [
+       null,
+       null,
+       0.0
+      ],
       "specularTint": [
        null,
        null,
@@ -27117,6 +27269,11 @@
        null,
        null
       ],
+      "preTransform": [
+       null,
+       null,
+       null
+      ],
       "local": [
        null,
        null,
@@ -27169,6 +27326,11 @@
        null
       ],
       "Matrix": [
+       null,
+       null,
+       null
+      ],
+      "preTransform": [
        null,
        null,
        null
@@ -27353,6 +27515,11 @@
        null,
        null
       ],
+      "preTransform": [
+       null,
+       null,
+       null
+      ],
       "local": [
        null,
        null,
@@ -27487,6 +27654,11 @@
        null,
        null
       ],
+      "preTransform": [
+       null,
+       null,
+       null
+      ],
       "local": [
        null,
        null,
@@ -27543,6 +27715,11 @@
        null,
        null
       ],
+      "preTransform": [
+       null,
+       null,
+       null
+      ],
       "local": [
        null,
        null,
@@ -27595,6 +27772,11 @@
        null
       ],
       "Matrix": [
+       null,
+       null,
+       null
+      ],
+      "preTransform": [
        null,
        null,
        null
@@ -27721,6 +27903,11 @@
        null
       ],
       "Matrix": [
+       null,
+       null,
+       null
+      ],
+      "preTransform": [
        null,
        null,
        null
@@ -28060,6 +28247,11 @@
        null,
        null
       ],
+      "preTransform": [
+       null,
+       null,
+       null
+      ],
       "local": [
        null,
        null,
@@ -28116,6 +28308,11 @@
        null,
        null
       ],
+      "preTransform": [
+       null,
+       null,
+       null
+      ],
       "local": [
        null,
        null,
@@ -28168,6 +28365,11 @@
        null
       ],
       "Matrix": [
+       null,
+       null,
+       null
+      ],
+      "preTransform": [
        null,
        null,
        null
@@ -28549,77 +28751,6 @@
    "params": [],
    "categories": [
     "math"
-   ]
-  },
-  "AABBVoronoi": {
-   "inputs": [
-    [
-     "PrimitiveObject",
-     "particlesPrim",
-     ""
-    ],
-    [
-     "vec3f",
-     "bboxMin",
-     "-1,-1,-1"
-    ],
-    [
-     "vec3f",
-     "bboxMax",
-     "1,1,1"
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "ListObject",
-     "primList",
-     ""
-    ],
-    [
-     "ListObject",
-     "neighList",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "bool",
-     "triangulate",
-     "1"
-    ],
-    [
-     "int",
-     "numRandPoints",
-     "64"
-    ],
-    [
-     "bool",
-     "periodicX",
-     "0"
-    ],
-    [
-     "bool",
-     "periodicY",
-     "0"
-    ],
-    [
-     "bool",
-     "periodicZ",
-     "0"
-    ]
-   ],
-   "categories": [
-    "cgmesh"
    ]
   },
   "AddMuscleFibers2": {
@@ -29098,46 +29229,6 @@
    "params": [],
    "categories": [
     "portal"
-   ]
-  },
-  "AssignUniformAffineToPrim": {
-   "inputs": [
-    [
-     "",
-     "quat",
-     ""
-    ],
-    [
-     "",
-     "trans",
-     ""
-    ],
-    [
-     "",
-     "prim",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "prim",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "FEM"
    ]
   },
   "BeginFor": {
@@ -30135,6 +30226,47 @@
     "MPM"
    ]
   },
+  "ConstructBendingSprings": {
+   "inputs": [
+    [
+     "",
+     "ZSSurfPrim",
+     ""
+    ],
+    [
+     "float",
+     "bending_stiffness",
+     "0.01"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "ZSSpringPrim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "enum vertex element angle",
+     "type",
+     "element"
+    ]
+   ],
+   "categories": [
+    "MPM"
+   ]
+  },
   "CopyAllUserData": {
    "inputs": [
     [
@@ -30348,6 +30480,96 @@
    "params": [],
    "categories": [
     "create"
+   ]
+  },
+  "CreateTree": {
+   "inputs": [
+    [
+     "float",
+     "start_x",
+     "0.0"
+    ],
+    [
+     "float",
+     "start_y",
+     "0.0"
+    ],
+    [
+     "float",
+     "start_z",
+     "0.0"
+    ],
+    [
+     "float",
+     "offset_degree_min",
+     "0.0"
+    ],
+    [
+     "float",
+     "offset_degree_max",
+     "0.0"
+    ],
+    [
+     "float",
+     "length_min",
+     "0.0"
+    ],
+    [
+     "float",
+     "length_max",
+     "0.0"
+    ],
+    [
+     "float",
+     "radius_min",
+     "0.0"
+    ],
+    [
+     "float",
+     "radius_max",
+     "0.0"
+    ],
+    [
+     "int",
+     "turn_points_num_min",
+     "0"
+    ],
+    [
+     "int",
+     "turn_points_num_max",
+     "0"
+    ],
+    [
+     "float",
+     "turn_points_offset_min",
+     "0.0"
+    ],
+    [
+     "float",
+     "turn_points_offset_max",
+     "0.0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "treeObj",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "TreeSketch"
    ]
   },
   "Curvemap": {
@@ -30702,41 +30924,6 @@
     "numeric"
    ]
   },
-  "EmbedPrimitiveToVolumeMesh": {
-   "inputs": [
-    [
-     "",
-     "prim",
-     ""
-    ],
-    [
-     "",
-     "vmesh",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "prim",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "FEM"
-   ]
-  },
   "EmptyDict": {
    "inputs": [
     [
@@ -30911,41 +31098,6 @@
    "params": [],
    "categories": [
     "MPM"
-   ]
-  },
-  "EvalElmDeformationField": {
-   "inputs": [
-    [
-     "",
-     "shape",
-     ""
-    ],
-    [
-     "",
-     "shapeElmView",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "shapeElmView",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "FEM"
    ]
   },
   "ExitProcess": {
@@ -32633,36 +32785,6 @@
     "subgraph"
    ]
   },
-  "GetTetMeshElementView": {
-   "inputs": [
-    [
-     "",
-     "prim",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "elmView",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "FEM"
-   ]
-  },
   "GetTime": {
    "inputs": [
     [
@@ -33139,87 +33261,6 @@
    "params": [],
    "categories": [
     "primitive"
-   ]
-  },
-  "InterpolateElmAttrib": {
-   "inputs": [
-    [
-     "",
-     "prim",
-     ""
-    ],
-    [
-     "",
-     "elmView",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "elmView",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "string",
-     "attrName",
-     "RENAME ME"
-    ],
-    [
-     "enum float vec3f",
-     "attrType",
-     "float"
-    ]
-   ],
-   "categories": [
-    "FEM"
-   ]
-  },
-  "InterpolateEmbedPrimitive": {
-   "inputs": [
-    [
-     "",
-     "skin",
-     ""
-    ],
-    [
-     "",
-     "volume",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "res",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "FEM"
    ]
   },
   "KillParticlesInSDF": {
@@ -33833,31 +33874,6 @@
     "numeric"
    ]
   },
-  "MakeDampingForceModel": {
-   "inputs": [
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "DampForceModel",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "FEM"
-   ]
-  },
   "MakeDict": {
    "inputs": [
     [
@@ -33881,42 +33897,6 @@
    "params": [],
    "categories": [
     "dict"
-   ]
-  },
-  "MakeElasticForceModel": {
-   "inputs": [
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "ElasticModel",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "enum HyperElastic Fiberic BSplineModel Stvk",
-     "ForceModel",
-     "HyperElastic"
-    ],
-    [
-     "float",
-     "aniso_strength",
-     "20"
-    ]
-   ],
-   "categories": [
-    "FEM"
    ]
   },
   "MakeExplicitTimeIntegrator2": {
@@ -33945,57 +33925,6 @@
     ]
    ],
    "params": [],
-   "categories": [
-    "FEM"
-   ]
-  },
-  "MakeFEMIntegrator": {
-   "inputs": [
-    [
-     "",
-     "prim",
-     ""
-    ],
-    [
-     "",
-     "elasto",
-     ""
-    ],
-    [
-     "",
-     "visco",
-     ""
-    ],
-    [
-     "float",
-     "dt",
-     "1"
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "FEMIntegrator",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "enum BE QS EBQS SDQS",
-     "integType",
-     "QS"
-    ]
-   ],
    "categories": [
     "FEM"
    ]
@@ -34190,6 +34119,21 @@
      ""
     ],
     [
+     "float",
+     "deltaTime",
+     "0.0"
+    ],
+    [
+     "list",
+     "timeList",
+     ""
+    ],
+    [
+     "list",
+     "framePrims",
+     ""
+    ],
+    [
      "",
      "SRC",
      ""
@@ -34300,61 +34244,6 @@
    "params": [],
    "categories": [
     "math"
-   ]
-  },
-  "MakeMPMMehser": {
-   "inputs": [
-    [
-     "",
-     "pathPreFix",
-     ""
-    ],
-    [
-     "",
-     "tet_path",
-     ""
-    ],
-    [
-     "",
-     "smooth_iter",
-     ""
-    ],
-    [
-     "",
-     "start",
-     ""
-    ],
-    [
-     "",
-     "end",
-     ""
-    ],
-    [
-     "",
-     "edge_stretch",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "MPMMehser",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "GPUMPM"
    ]
   },
   "MakeMultilineString": {
@@ -35249,41 +35138,6 @@
    ],
    "categories": [
     "openvdb"
-   ]
-  },
-  "MesherProcessFrame": {
-   "inputs": [
-    [
-     "",
-     "Mesher",
-     ""
-    ],
-    [
-     "",
-     "frameNumber",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "FramePrimitive",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "GPUMPM"
    ]
   },
   "MoveAssign": {
@@ -36656,47 +36510,6 @@
     "primitive"
    ]
   },
-  "ParticlesToSegments": {
-   "inputs": [
-    [
-     "",
-     "particles",
-     ""
-    ],
-    [
-     "float",
-     "dt",
-     "1.0"
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "seg",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "string",
-     "dir_chanel",
-     ""
-    ]
-   ],
-   "categories": [
-    "FEM"
-   ]
-  },
   "ParticlesWrangle": {
    "inputs": [
     [
@@ -37572,82 +37385,6 @@
    ],
    "categories": [
     "primitive"
-   ]
-  },
-  "PrimitiveBooleanOp": {
-   "inputs": [
-    [
-     "",
-     "primA",
-     ""
-    ],
-    [
-     "",
-     "primB",
-     ""
-    ],
-    [
-     "NumericObject",
-     "faceAttrA",
-     ""
-    ],
-    [
-     "NumericObject",
-     "faceAttrB",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "primC",
-     ""
-    ],
-    [
-     "bool",
-     "anyFromA",
-     ""
-    ],
-    [
-     "bool",
-     "anyFromB",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "enum Union Intersect Minus RevMinus XOR Resolve",
-     "op_type",
-     "Union"
-    ],
-    [
-     "string",
-     "faceAttrName",
-     ""
-    ],
-    [
-     "bool",
-     "calcAnyFrom",
-     "0"
-    ],
-    [
-     "bool",
-     "doMeshFix",
-     "1"
-    ]
-   ],
-   "categories": [
-    "cgmesh"
    ]
   },
   "PrimitiveBoundingBox": {
@@ -38581,82 +38318,6 @@
     "primitive"
    ]
   },
-  "PrimitiveListBoolOp": {
-   "inputs": [
-    [
-     "",
-     "primA",
-     ""
-    ],
-    [
-     "",
-     "primListB",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "primList",
-     ""
-    ],
-    [
-     "",
-     "lutList",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "enum Union Intersect Minus RevMinus XOR Resolve",
-     "op_type",
-     "Union"
-    ],
-    [
-     "string",
-     "faceAttrName",
-     ""
-    ],
-    [
-     "bool",
-     "assignAttrs",
-     "1"
-    ],
-    [
-     "bool",
-     "calcAnyFrom",
-     "0"
-    ],
-    [
-     "bool",
-     "doMeshFix",
-     "1"
-    ],
-    [
-     "bool",
-     "noNullMesh",
-     "1"
-    ],
-    [
-     "string",
-     "DEPRECATED",
-     ""
-    ]
-   ],
-   "categories": [
-    "cgmesh"
-   ]
-  },
   "PrimitiveMerge": {
    "inputs": [
     [
@@ -38690,36 +38351,6 @@
    "params": [],
    "categories": [
     "primitive"
-   ]
-  },
-  "PrimitiveMeshingFix": {
-   "inputs": [
-    [
-     "",
-     "prim",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "primFixed",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "cgmesh"
    ]
   },
   "PrimitiveMix": {
@@ -39765,57 +39396,6 @@
     "primitive"
    ]
   },
-  "PrimitiveVoronoi": {
-   "inputs": [
-    [
-     "",
-     "prim",
-     ""
-    ],
-    [
-     "",
-     "particlesPrim",
-     ""
-    ],
-    [
-     "int",
-     "numParticles",
-     "64"
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "primList",
-     ""
-    ],
-    [
-     "",
-     "neighList",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "string",
-     "DEPRECATED",
-     ""
-    ]
-   ],
-   "categories": [
-    "cgmesh"
-   ]
-  },
   "PrimitiveWireframe": {
    "inputs": [
     [
@@ -40748,46 +40328,6 @@
    "params": [],
    "categories": [
     "list"
-   ]
-  },
-  "RetrieveRigidTransformQuat": {
-   "inputs": [
-    [
-     "",
-     "refObj",
-     ""
-    ],
-    [
-     "",
-     "newObj",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "quat",
-     ""
-    ],
-    [
-     "",
-     "trans",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "FEM"
    ]
   },
   "RigidGetForce": {
@@ -42947,36 +42487,6 @@
     "shader"
    ]
   },
-  "SimplifyVoroNeighborList": {
-   "inputs": [
-    [
-     "ListObject",
-     "neighList",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "ListObject",
-     "newNeighList",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "cgmesh"
-   ]
-  },
   "SlicePlaneForPrimitive": {
    "inputs": [
     [
@@ -43075,81 +42585,6 @@
    "params": [],
    "categories": [
     "FLIP"
-   ]
-  },
-  "SolveFEM": {
-   "inputs": [
-    [
-     "",
-     "integrator",
-     ""
-    ],
-    [
-     "",
-     "shape",
-     ""
-    ],
-    [
-     "",
-     "elmView",
-     ""
-    ],
-    [
-     "",
-     "skin",
-     ""
-    ],
-    [
-     "int",
-     "maxNRIters",
-     "10"
-    ],
-    [
-     "int",
-     "maxBTLs",
-     "10"
-    ],
-    [
-     "float",
-     "ArmijoCoeff",
-     "0.01"
-    ],
-    [
-     "float",
-     "CurvatureCoeff",
-     "0.9"
-    ],
-    [
-     "float",
-     "BTL_shrinkingRate",
-     "0.5"
-    ],
-    [
-     "float",
-     "epsilon",
-     "1e-8"
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "shape",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "FEM"
    ]
   },
   "SolveNonlinearProblem2": {
@@ -44403,6 +43838,166 @@
     "primitive"
    ]
   },
+  "TreeCreateBranchs": {
+   "inputs": [
+    [
+     "",
+     "treeObj",
+     ""
+    ],
+    [
+     "int",
+     "num_min",
+     "0"
+    ],
+    [
+     "int",
+     "num_max",
+     "0"
+    ],
+    [
+     "float",
+     "offset_start_min",
+     "0.0"
+    ],
+    [
+     "float",
+     "offset_start_max",
+     "0.0"
+    ],
+    [
+     "float",
+     "offset_degree_min",
+     "0.0"
+    ],
+    [
+     "float",
+     "offset_degree_max",
+     "0.0"
+    ],
+    [
+     "float",
+     "length_min",
+     "0.0"
+    ],
+    [
+     "float",
+     "length_max",
+     "0.0"
+    ],
+    [
+     "float",
+     "radius_min",
+     "0.0"
+    ],
+    [
+     "float",
+     "radius_max",
+     "0.0"
+    ],
+    [
+     "int",
+     "turn_points_num_min",
+     "0"
+    ],
+    [
+     "int",
+     "turn_points_num_max",
+     "0"
+    ],
+    [
+     "float",
+     "turn_points_offset_min",
+     "0.0"
+    ],
+    [
+     "float",
+     "turn_points_offset_max",
+     "0.0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "treeObj",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "TreeSketch"
+   ]
+  },
+  "TreeSetLeaves": {
+   "inputs": [
+    [
+     "",
+     "treeObj",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "treeObj",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "TreeSketch"
+   ]
+  },
+  "TreeToPrimitiveLines": {
+   "inputs": [
+    [
+     "",
+     "treeObj",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "primitive",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "TreeSketch"
+   ]
+  },
   "TriggerAbortSignal": {
    "inputs": [
     [
@@ -45643,77 +45238,6 @@
    "params": [],
    "categories": [
     "openvdb"
-   ]
-  },
-  "VoronoiFracture": {
-   "inputs": [
-    [
-     "PrimitiveObject",
-     "meshPrim",
-     ""
-    ],
-    [
-     "PrimitiveObject",
-     "particlesPrim",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "ListObject",
-     "primList",
-     ""
-    ],
-    [
-     "ListObject",
-     "neighList",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "bool",
-     "doMeshFix",
-     "1"
-    ],
-    [
-     "bool",
-     "doMeshFix2",
-     "1"
-    ],
-    [
-     "int",
-     "numRandPoints",
-     "256"
-    ],
-    [
-     "bool",
-     "periodicX",
-     "0"
-    ],
-    [
-     "bool",
-     "periodicY",
-     "0"
-    ],
-    [
-     "bool",
-     "periodicZ",
-     "0"
-    ]
-   ],
-   "categories": [
-    "cgmesh"
    ]
   },
   "WriteAlembic": {
@@ -47248,8 +46772,8 @@
  "viewport": {
   "camera_record": {},
   "lights": {
-   "0": "14 DirX 1 0 0.7071067811865476 align -5.0 0.0 5.0 0.0 DirY 1 0 0.7071067811865475 align -5.0 0.0 5.0 0.0 DirZ 1 0 0.0 align -5.0 0.0 5.0 0.0 Height 1 0 1000.0 align -5.0 0.0 5.0 0.0 Softness 1 0 1.0 align -5.0 0.0 5.0 0.0 ShadowR 1 0 0.2 align -5.0 0.0 5.0 0.0 ShadowG 1 0 0.4 align -5.0 0.0 5.0 0.0 ShadowB 1 0 0.4 align -5.0 0.0 5.0 0.0 ColorR 1 0 1.0 align -5.0 0.0 5.0 0.0 ColorG 1 0 1.0 align -5.0 0.0 5.0 0.0 ColorB 1 0 1.0 align -5.0 0.0 5.0 0.0 Intensity 1 0 10.0 align -5.0 0.0 5.0 0.0 Scale 1 0 1 align -5 0 5 0 Enable 1 0 1 constant -5 0 5 0",
-   "1": "14 DirX 1 0 -0.24819915448033586 align -5.0 0.0 5.0 0.0 DirY 1 0 -0.06279051952931353 align -5.0 0.0 5.0 0.0 DirZ 1 0 0.9666718835119212 align -5.0 0.0 5.0 0.0 Height 1 0 1000.0 align -5.0 0.0 5.0 0.0 Softness 1 0 1.0 align -5.0 0.0 5.0 0.0 ShadowR 1 0 0.2 align -5.0 0.0 5.0 0.0 ShadowG 1 0 0.2 align -5.0 0.0 5.0 0.0 ShadowB 1 0 0.2 align -5.0 0.0 5.0 0.0 ColorR 1 0 3.0 align -5.0 0.0 5.0 0.0 ColorG 1 0 0.8 align -5.0 0.0 5.0 0.0 ColorB 1 0 0.8 align -5.0 0.0 5.0 0.0 Intensity 1 0 10.0 align -5.0 0.0 5.0 0.0 Scale 1 0 1 align -5 0 5 0 Enable 1 0 1 constant -5 0 5 0"
+   "0": "14 DirX 1 0 0.7071067811865476 align -5.0 0.0 5.0 0.0 DirY 1 0 0.7071067811865475 align -5.0 0.0 5.0 0.0 DirZ 1 0 0.0 align -5.0 0.0 5.0 0.0 Height 1 0 1000.0 align -5.0 0.0 5.0 0.0 Softness 1 0 1.0 align -5.0 0.0 5.0 0.0 ShadowR 1 0 0.2 align -5.0 0.0 5.0 0.0 ShadowG 1 0 0.4 align -5.0 0.0 5.0 0.0 ShadowB 1 0 0.4 align -5.0 0.0 5.0 0.0 ColorR 1 0 1.0 align -5.0 0.0 5.0 0.0 ColorG 1 0 1.0 align -5.0 0.0 5.0 0.0 ColorB 1 0 1.0 align -5.0 0.0 5.0 0.0 Intensity 1 0 10.0 align -5.0 0.0 5.0 0.0 Scale 1 0 1.0 align -5.0 0.0 5.0 0.0 Enable 1 0 1.0 constant -5.0 0.0 5.0 0.0",
+   "1": "14 DirX 1 0 -0.24819915448033586 align -5.0 0.0 5.0 0.0 DirY 1 0 -0.06279051952931353 align -5.0 0.0 5.0 0.0 DirZ 1 0 0.9666718835119212 align -5.0 0.0 5.0 0.0 Height 1 0 1000.0 align -5.0 0.0 5.0 0.0 Softness 1 0 1.0 align -5.0 0.0 5.0 0.0 ShadowR 1 0 0.2 align -5.0 0.0 5.0 0.0 ShadowG 1 0 0.2 align -5.0 0.0 5.0 0.0 ShadowB 1 0 0.2 align -5.0 0.0 5.0 0.0 ColorR 1 0 3.0 align -5.0 0.0 5.0 0.0 ColorG 1 0 0.8 align -5.0 0.0 5.0 0.0 ColorB 1 0 0.8 align -5.0 0.0 5.0 0.0 Intensity 1 0 10.0 align -5.0 0.0 5.0 0.0 Scale 1 0 1.0 align -5.0 0.0 5.0 0.0 Enable 1 0 1.0 constant -5.0 0.0 5.0 0.0"
   }
  }
 }
