@@ -551,7 +551,7 @@ vec4 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 old_tangent) {
     vec3 tan = normalize(old_tangent - dot(normal, old_tangent)*normal);
     mat3 TBN = mat3(tan, cross(normal, tan), normal);
 
-    new_normal = TBN*mat_normal;
+    new_normal = TBN * normalize(mat_normal);
     
     color = vec3(0,0,0);
     vec3 realColor = vec3(0,0,0);
@@ -565,7 +565,7 @@ vec4 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 old_tangent) {
         color += lcolor * sclr;
     }
     vec3 iblPhotoReal =  CalculateLightingIBL(new_normal,new_normal,albedo2,roughness,mat_metallic);
-    return vec4(color + colorEmission + 0.1 * iblPhotoReal, mat_opacity);
+    return vec4(color + colorEmission + 0.1 * iblPhotoReal, 1.0 - mat_opacity);
 
 
 }
@@ -589,7 +589,7 @@ void main()
   }
 
   vec4 color = studioShading(albedo, viewdir, normal, tangent);
-
+  fColor = color;
 }
 )";
 
@@ -663,4 +663,8 @@ void main()
 )";
     return compile_program(VXVS, VXFS, VXGS);
   }
+
+  
+  
+
 }
