@@ -40,4 +40,61 @@ ZlogPanel::ZlogPanel(QWidget* parent)
 
     m_ui->listView->setModel(zenoApp->logModel());
     //m_ui->listView->setItemDelegate(new LogItemDelegate(m_ui->listView));
+
+    initSignals();
+}
+
+void ZlogPanel::initSignals()
+{
+    connect(m_ui->cbAll, &QCheckBox::stateChanged, this, [=](int state) {
+        if (Qt::Checked == state) {
+            m_ui->cbCritical->setChecked(true);
+            m_ui->cbDebug->setChecked(true);
+            m_ui->cbError->setChecked(true);
+            m_ui->cbInfo->setChecked(true);
+            m_ui->cbWarning->setChecked(true);
+        } else if (Qt::Unchecked == state) {
+        
+        }
+    });
+
+    connect(m_ui->cbCritical, &QCheckBox::stateChanged, this, [=](int state) {
+        if (Qt::Checked == state) {
+
+        } else if (Qt::Unchecked == state) {
+            m_ui->cbAll->setChecked(false);
+        }
+    });
+
+    connect(m_ui->cbDebug, &QCheckBox::stateChanged, this, [=](int state) {
+        if (Qt::Checked == state) {
+
+        } else if (Qt::Unchecked == state) {
+            m_ui->cbAll->setChecked(false);
+        }
+    });
+
+    connect(m_ui->cbError, &QCheckBox::stateChanged, this, [=](int state) {
+        if (Qt::Checked == state) {
+
+        } else if (Qt::Unchecked == state) {
+            m_ui->cbAll->setChecked(false);
+        }
+    });
+
+    connect(m_ui->cbInfo, &QCheckBox::stateChanged, this, [=](int state) {
+        if (Qt::Checked == state) {
+
+        } else if (Qt::Unchecked == state) {
+            m_ui->cbAll->setChecked(false);
+        }
+    });
+
+    connect(m_ui->cbWarning, &QCheckBox::stateChanged, this, [=](int state) {
+        if (Qt::Checked == state) {
+
+        } else if (Qt::Unchecked == state) {
+            m_ui->cbAll->setChecked(false);
+        }
+    });
 }

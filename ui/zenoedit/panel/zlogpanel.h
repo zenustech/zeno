@@ -26,6 +26,8 @@ public:
     ZlogPanel(QWidget* parent = nullptr);
 
 private:
+    void initSignals();
+
     Ui::LogPanel* m_ui;
 };
 
