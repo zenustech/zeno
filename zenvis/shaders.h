@@ -25,7 +25,7 @@ namespace zenvis {
 std::string SMVS;
     if (inst != nullptr)
     {
-SMVS = R"(
+        SMVS = R"(
 #version 330 core
 
 uniform mat4 mVP;
@@ -34,6 +34,9 @@ uniform mat4 mView;
 uniform mat4 mProj;
 uniform mat4 mInvView;
 uniform mat4 mInvProj;
+uniform float fInstDeltaTime;
+uniform int iInstFrameAmount;
+uniform sampler2D sInstVertexFrameSampler;
 
 in vec3 vPosition;
 in vec3 vColor;
@@ -41,6 +44,7 @@ in vec3 vNormal;
 in vec3 vTexCoord;
 in vec3 vTangent;
 in mat4 mInstModel;
+in float fInstTime;
 
 out vec3 position;
 out vec3 iColor;
@@ -48,9 +52,29 @@ out vec3 iNormal;
 out vec3 iTexCoord;
 out vec3 iTangent;
 
+vec3 computeFramePosition()
+{
+  if (fInstDeltaTime == 0.0 || iInstFrameAmount == 0)
+  {
+    return vPosition;
+  }
+
+  int prevFrameID = int(fInstTime / fInstDeltaTime); 
+  int nextFrameID = prevFrameID + 1;
+  float dt = fInstTime - fInstDeltaTime * prevFrameID;
+
+  prevFrameID = clamp(prevFrameID, 0, iInstFrameAmount - 1);  
+  nextFrameID = clamp(nextFrameID, 0, iInstFrameAmount - 1);  
+
+  vec3 prevPosition = texelFetch(sInstVertexFrameSampler, ivec2(gl_VertexID, prevFrameID), 0).rgb;
+  vec3 nextPosition = texelFetch(sInstVertexFrameSampler, ivec2(gl_VertexID, nextFrameID), 0).rgb;
+  return mix(prevPosition, nextPosition, dt);
+}
+
 void main()
 {
-  position = vec3(mInstModel * vec4(vPosition, 1.0));
+  vec3 framePosition = computeFramePosition();
+  position = vec3(mInstModel * vec4(framePosition, 1.0));
   iColor = vColor;
   iNormal = transpose(inverse(mat3(mInstModel))) * vNormal;
   iTexCoord = vTexCoord;
@@ -297,7 +321,7 @@ void main()
     if (vert.size() == 0) {
         if (inst != nullptr)
         {
-      vert = R"(
+            vert = R"(
 #version 330
 
 uniform mat4 mVP;
@@ -306,6 +330,9 @@ uniform mat4 mView;
 uniform mat4 mProj;
 uniform mat4 mInvView;
 uniform mat4 mInvProj;
+uniform float fInstDeltaTime;
+uniform int iInstFrameAmount;
+uniform sampler2D sInstVertexFrameSampler;
 
 in vec3 vPosition;
 in vec3 vColor;
@@ -313,15 +340,37 @@ in vec3 vNormal;
 in vec3 vTexCoord;
 in vec3 vTangent;
 in mat4 mInstModel;
+in float fInstTime;
 
 out vec3 position;
 out vec3 iColor;
 out vec3 iNormal;
 out vec3 iTexCoord;
 out vec3 iTangent;
+
+vec3 computeFramePosition()
+{
+  if (fInstDeltaTime == 0.0 || iInstFrameAmount == 0)
+  {
+    return vPosition;
+  }
+
+  int prevFrameID = int(fInstTime / fInstDeltaTime); 
+  int nextFrameID = prevFrameID + 1;
+  float dt = fInstTime - fInstDeltaTime * prevFrameID;
+
+  prevFrameID = clamp(prevFrameID, 0, iInstFrameAmount - 1);  
+  nextFrameID = clamp(nextFrameID, 0, iInstFrameAmount - 1);  
+
+  vec3 prevPosition = texelFetch(sInstVertexFrameSampler, ivec2(gl_VertexID, prevFrameID), 0).rgb;
+  vec3 nextPosition = texelFetch(sInstVertexFrameSampler, ivec2(gl_VertexID, nextFrameID), 0).rgb;
+  return mix(prevPosition, nextPosition, dt);
+}
+
 void main()
 {
-  position = vec3(mInstModel * vec4(vPosition, 1.0));
+  vec3 framePosition = computeFramePosition();
+  position = vec3(mInstModel * vec4(framePosition, 1.0));
   iColor = vColor;
   iNormal = transpose(inverse(mat3(mInstModel))) * vNormal;
   iTexCoord = vTexCoord;
