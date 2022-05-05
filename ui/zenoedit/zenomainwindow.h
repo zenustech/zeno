@@ -48,6 +48,7 @@ private:
     void readSettings2();
     void adjustDockSize();
     QString getOpenFileByDialog();
+    QString uniqueDockObjName(DOCK_TYPE type);
 
     ZenoDockWidget *m_viewDock;
     ZenoDockWidget *m_editor;

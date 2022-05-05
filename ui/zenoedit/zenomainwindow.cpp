@@ -171,6 +171,57 @@ void ZenoMainWindow::initMenu() {
                 }
             }
         });
+
+        pView->addSeparator();
+
+        QAction* pSaveLayout = new QAction(tr("Save Layout"));
+        connect(pSaveLayout, &QAction::triggered, this, [=]() {
+            bool bOk = false;
+            QString name = QInputDialog::getText(this, tr("Save Layout"), tr("layout name:"),
+                                                        QLineEdit::Normal, "layout_1", &bOk);
+            if (bOk) {
+                QSettings settings(QSettings::UserScope, "Zenus Inc.", "zeno2");
+                settings.beginGroup("layout");
+                if (settings.childGroups().indexOf(name) != -1) {
+                    QMessageBox msg(QMessageBox::Warning, "", tr("alreday has same layout"));
+                    msg.exec();
+                    settings.endGroup();
+                    return;
+                }
+
+                settings.beginGroup(name);
+                settings.setValue("geometry", saveGeometry());
+                settings.setValue("state", saveState());
+                settings.endGroup();
+                settings.endGroup();
+            }
+        });
+        pView->addAction(pSaveLayout);
+
+        //check user saved layout.
+        QSettings settings(QSettings::UserScope, "Zenus Inc.", "zeno2");
+        settings.beginGroup("layout");
+        QStringList lst = settings.childGroups();
+        if (!lst.isEmpty())
+        {
+            QMenu* pCustomLayout = new QMenu(tr("Custom Layout"));
+
+            for (QString name : lst)
+            {
+                QAction *pCustomLayout_ = new QAction(name);
+                connect(pCustomLayout_, &QAction::triggered, this, [=]() {
+                    QSettings settings(QSettings::UserScope, "Zenus Inc.", "zeno2");
+                    settings.beginGroup("layout");
+                    settings.beginGroup(name);
+                    restoreGeometry(settings.value("geometry").toByteArray());
+                    restoreState(settings.value("state").toByteArray());
+                    settings.endGroup();
+                    settings.endGroup();
+                });
+                pCustomLayout->addAction(pCustomLayout_);
+            }
+            pView->addMenu(pCustomLayout);
+        }
     }
 
     QMenu *pWindow = new QMenu(tr("Window"));
@@ -196,22 +247,24 @@ void ZenoMainWindow::initDocks() {
     setDockNestingEnabled(true);
 
     m_viewDock = new ZenoDockWidget("view", this);
-    m_viewDock->setObjectName(QString::fromUtf8("dock_view"));
+    m_viewDock->setObjectName(uniqueDockObjName(DOCK_VIEW));
     m_viewDock->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetFloatable);
     DisplayWidget *view = new DisplayWidget(this);
     m_viewDock->setWidget(DOCK_VIEW, view);
 
     m_parameter = new ZenoDockWidget("parameter", this);
+    m_parameter->setObjectName(uniqueDockObjName(DOCK_NODE_PARAMS));
     m_parameter->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetFloatable);
     m_parameter->setWidget(DOCK_NODE_PARAMS, new ZenoPropPanel);
 
     m_editor = new ZenoDockWidget("", this);
-    m_editor->setObjectName(QString::fromUtf8("dock_editor"));
+    m_editor->setObjectName(uniqueDockObjName(DOCK_EDITOR));
     m_editor->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetFloatable);
-    m_pEditor = new ZenoGraphsEditor(this);
-    m_editor->setWidget(DOCK_EDITOR, m_pEditor);
+    m_editor->setWidget(DOCK_EDITOR, new ZenoGraphsEditor(this));
 
     m_logger = new ZenoDockWidget("logger", this);
+    m_logger->setObjectName(uniqueDockObjName(DOCK_LOG));
+    m_logger->setObjectName(QString::fromUtf8("dock_logger"));
     m_logger->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetFloatable);
     m_logger->setWidget(DOCK_LOG, new ZlogPanel);
 
@@ -364,6 +417,20 @@ void ZenoMainWindow::onToggleDockWidget(DOCK_TYPE type, bool bShow)
     }
 }
 
+QString ZenoMainWindow::uniqueDockObjName(DOCK_TYPE type)
+{
+    switch (type)
+    {
+    case DOCK_EDITOR: return UiHelper::generateUuid("dock_editor_");
+    case DOCK_LOG: return UiHelper::generateUuid("dock_log_");
+    case DOCK_NODE_DATA: return UiHelper::generateUuid("dock_data_");
+    case DOCK_VIEW: return UiHelper::generateUuid("dock_view_");
+    case DOCK_NODE_PARAMS: return UiHelper::generateUuid("dock_parameter_");
+    default:
+        return UiHelper::generateUuid("dock_empty_");
+    }
+}
+
 void ZenoMainWindow::onDockSwitched(DOCK_TYPE type)
 {
     ZenoDockWidget *pDock = qobject_cast<ZenoDockWidget *>(sender());
@@ -401,6 +468,7 @@ void ZenoMainWindow::onDockSwitched(DOCK_TYPE type)
             break;
         }
     }
+    pDock->setObjectName(uniqueDockObjName(type));
 }
 
 void ZenoMainWindow::saveQuit() {
