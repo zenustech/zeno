@@ -626,6 +626,7 @@ static void ZPass()
 
 }
 
+extern void preIntegrate(GLuint inEnvMap);
 void LightProbePass()
 {
   // Store initial camera state
@@ -711,6 +712,9 @@ void LightProbePass()
   g_view = t_view, g_proj = t_proj;
   g_camPos= t_camPos, g_camView = t_camView, g_camUp = t_camUp;
   g_camSetFromNode = t_camSetFromNode;
+
+  // // blackbox? PRE!!!!integrate
+  // preIntegrate(cubeMap);
 }
 
 static void paint_graphics(GLuint target_fbo = 0) {

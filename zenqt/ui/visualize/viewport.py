@@ -570,7 +570,7 @@ class SetProbeDialog(QWidget):
         self.initUI()
 
         self.probes = zenvis.status['probes']
-        self.new_probe_channel()
+        # self.new_probe_channel()
 
     def initUI(self):
         self.add_probe_btn = QPushButton('Add')
@@ -583,15 +583,25 @@ class SetProbeDialog(QWidget):
         self.x_spinbox = QDoubleSpinBox()
         self.x_spinbox.valueChanged.connect(self.setProbe)
         self.x_spinbox.setSingleStep(0.1)
+        self.x_spinbox.setMinimum(-65535)
         self.y_spinbox = QDoubleSpinBox()
         self.y_spinbox.valueChanged.connect(self.setProbe)
         self.y_spinbox.setSingleStep(0.1)
+        self.y_spinbox.setMinimum(-65535)
         self.z_spinbox = QDoubleSpinBox()
         self.z_spinbox.valueChanged.connect(self.setProbe)
         self.z_spinbox.setSingleStep(0.1)
+        self.z_spinbox.setMinimum(-65535)
 
-        self.resolution_spinbox = QLineEdit('128')
-        self.resolution_spinbox.textEdited.connect(self.setProbe)
+        # self.resolution_slider = QLineEdit('512')
+        # self.resolution_slider.textEdited.connect(self.setProbe)
+        self.resolution_slider = QSlider()
+        self.resolution_slider.setOrientation(Qt.Horizontal)
+        self.resolution_slider.setMinimum(1)
+        self.resolution_slider.setMaximum(512)
+        self.resolution_slider.setSingleStep(50)
+        self.resolution_slider.setTickPosition(QSlider.TicksAbove)
+        self.resolution_slider.valueChanged.connect(self.setProbe)
         
         layout = QVBoxLayout()
         layout.addWidget(self.add_probe_btn)
@@ -604,7 +614,7 @@ class SetProbeDialog(QWidget):
         layout.addWidget(self.z_spinbox)
 
         layout.addWidget(QLabel('Resolution'))
-        layout.addWidget(self.resolution_spinbox)
+        layout.addWidget(self.resolution_slider)
 
         self.setLayout(layout)
 
@@ -617,7 +627,7 @@ class SetProbeDialog(QWidget):
     
     def add_probe(self):
         zenvis.core.addProbe()
-        self.new_probe_channel()
+        # self.new_probe_channel()
         self.update()
 
     def remove_probe(self):
@@ -638,7 +648,7 @@ class SetProbeDialog(QWidget):
         self.y_spinbox.setValue(y)
         self.z_spinbox.setValue(z)
 
-        self.resolution_spinbox.setText(str(p[1]))
+        self.resolution_slider.setValue(p[1])
 
     def setProbe(self):
         index = self.list.currentRow()
@@ -651,17 +661,17 @@ class SetProbeDialog(QWidget):
                 self.y_spinbox.value(),
                 self.z_spinbox.value(),
             ),
-            int(self.resolution_spinbox.text()),
+            int(self.resolution_slider.value()),
         )
 
-    def new_probe_channel(self):
-        new_channel = {
-            'X': [ControlPoint(-100, 100)],
-            'Y': [ControlPoint(-100, 100)],
-            'Z': [ControlPoint(-100, 100)],
-            'Resolution': [ControlPoint(0, 1024)],
-        }
-        self.probes[len(self.probes)] = new_channel
+    # def new_probe_channel(self):
+    #     new_channel = {
+    #         'X': [ControlPoint(-100, 100)],
+    #         'Y': [ControlPoint(-100, 100)],
+    #         'Z': [ControlPoint(-100, 100)],
+    #         'Resolution': [ControlPoint(0, 1024)],
+    #     }
+    #     self.probes[len(self.probes)] = new_channel
 
 class DisplayWidget(QWidget):
     def __init__(self, parent=None):

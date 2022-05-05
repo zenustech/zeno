@@ -35,7 +35,7 @@ namespace zenvis
     struct Probe
     {
         glm::vec3 pos = glm::vec3(0, 0, 0);
-        int resolution = 128;
+        int resolution = 512;
 
         unsigned int probeFBO = 0;
         unsigned int probeRBO = 0;
