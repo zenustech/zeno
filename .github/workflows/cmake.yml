@@ -19,6 +19,7 @@ jobs:
 
     outputs:
       deploy: ${{ steps.is-release-step.outputs.ci-skip == 'true' && 'true' || 'false' }}
+      vcpkg: ${{ steps.is-release-step.outputs.ci-skip == 'true' && 'true' || 'true' }}
       type: ${{ steps.is-release-step.outputs.ci-skip == 'true' && 'release' || 'release' }}
 
   build:
@@ -42,7 +43,7 @@ jobs:
 
     env:
       CXX: ${{ matrix.cxx }}
-      VCPKG_DEFAULT_TRIPLET: ${{ matrix.triplet }}
+      VCPKG_DEFAULT_TRIPLET: ${{ needs.check.outputs.vcpkg == 'true' && matrix.triplet || '' }}
 
     steps:
     - name: Checkout Repo
@@ -65,7 +66,7 @@ jobs:
         setup-python: true
 
     - name: Setup Dependencies
-      if: ${{ matrix.triplet != '' }}
+      if: ${{ needs.check.outputs.vcpkg == 'true' }}
       run: python misc/ci/setup.py
 
     - name: Install CUDA toolkit
@@ -77,7 +78,7 @@ jobs:
 
     - name: Setup Vcpkg
       uses: lukka/run-vcpkg@v10
-      if: ${{ matrix.triplet != '' }}
+      if: ${{ needs.check.outputs.vcpkg == 'true' }}
       with:
         vcpkgGitCommitId: 79afdf87b338e4ca0ac6dd781e4e755d6ec940a1
         vcpkgDirectory: ${{ github.workspace }}/vcpkg
@@ -89,7 +90,7 @@ jobs:
       #uses: actions/cache@v3
       #with:
         #path: ${{ github.workspace }}/build
-        #key: ${{ matrix.os }}-${{ matrix.triplet }}-${{ matrix.cxx }}-${{ matrix.gpu }}-${{ needs.check.outputs.type }}-CMake-1
+        #key: ${{ matrix.os }}-${{ needs.check.outputs.vcpkg == 'true' && matrix.triplet || 'none' }}-${{ matrix.cxx }}-${{ matrix.gpu }}-${{ needs.check.outputs.type }}-CMake-1
 
     #- name: Clean CMake Cache
       #shell: python
@@ -102,7 +103,7 @@ jobs:
     - name: Run CMake
       uses: lukka/run-cmake@v10
       with:
-        configurePreset: ${{ (matrix.triplet != '' && (matrix.gpu == 'cuda' && 'cuda' || 'default') || 'basic') }}${{ (needs.check.outputs.type == 'release' && '' || '-debug') }}
+        configurePreset: ${{ (needs.check.outputs.vcpkg == 'true' && (matrix.gpu == 'cuda' && 'cuda' || 'default') || 'basic') }}${{ (needs.check.outputs.type == 'release' && '' || '-debug') }}
         buildPreset: default${{ (needs.check.outputs.type == 'release' && '' || '-debug') }}
 
     - name: Packaging
