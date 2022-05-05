@@ -59,8 +59,9 @@ int ZSlider::_posToFrame(int x)
 
 int ZSlider::_frameToPos(int frame)
 {
+    qreal W = width() - 2 * m_sHMargin;
     qreal distPerFrame = (qreal)(width() - 2 * m_sHMargin) / (m_to - m_from + 1);
-    return m_sHMargin + frame * distPerFrame;
+    return m_sHMargin + (frame - m_from) * distPerFrame;
 }
 
 void ZSlider::setFromTo(int from, int to)
