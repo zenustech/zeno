@@ -33,6 +33,7 @@
 
 namespace zenvis
 {
+    static unsigned int LightMatrixUBO = 0;
     struct Light
     {
         glm::mat4 lightMV;
@@ -215,8 +216,8 @@ namespace zenvis
                 CHECK_GL(glBindTexture(GL_TEXTURE_2D, lightDepthMaps));
                 glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F, depthMapResolution, depthMapResolution,
                              0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP );
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP );
                 // float borderColor[] = {1.0, 1.0, 1.0, 1.0};
@@ -253,8 +254,8 @@ namespace zenvis
                         CHECK_GL(glBindTexture(GL_TEXTURE_2D, DepthMaps[i]));
                         glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F, depthMapResolution, depthMapResolution,
                                     0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
-                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
                         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
                         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
                         // float borderColor[] = {1.0, 1.0, 1.0, 1.0};
@@ -264,8 +265,8 @@ namespace zenvis
                         CHECK_GL(glBindTexture(GL_TEXTURE_2D, DepthMaps[i]));
                         glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F, depthMapResolution, depthMapResolution,
                                     0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
-                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
                         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
                         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
                         float borderColor[] = {1.0, 1.0, 1.0, 1.0};
@@ -282,14 +283,7 @@ namespace zenvis
 
                 CHECK_GL(glBindFramebuffer(GL_FRAMEBUFFER, 0));
             }
-            if (matricesUBO == 0)
-            {
-                CHECK_GL(glGenBuffers(1, &matricesUBO));
-                CHECK_GL(glBindBuffer(GL_UNIFORM_BUFFER, matricesUBO));
-                CHECK_GL(glBufferData(GL_UNIFORM_BUFFER, sizeof(glm::mat4x4) * 16, nullptr, GL_STATIC_DRAW));
-                CHECK_GL(glBindBufferBase(GL_UNIFORM_BUFFER, 0, matricesUBO));
-                CHECK_GL(glBindBuffer(GL_UNIFORM_BUFFER, 0));
-            }
+            
         }
 
         void BeginShadowMap(float near, float far, glm::vec3 lightdir, glm::mat4 &proj, glm::mat4 &view, int i)
@@ -305,12 +299,12 @@ namespace zenvis
 
             // 0. UBO setup
             const auto lightMatrices = getLightSpaceMatrices(near, far, proj, view);
-            glBindBuffer(GL_UNIFORM_BUFFER, matricesUBO);
-            for (size_t i = 0; i < lightMatrices.size(); ++i)
-            {
-                glBufferSubData(GL_UNIFORM_BUFFER, i * sizeof(glm::mat4x4), sizeof(glm::mat4x4), &lightMatrices[i]);
-            }
-            glBindBuffer(GL_UNIFORM_BUFFER, 0);
+            // glBindBuffer(GL_UNIFORM_BUFFER, matricesUBO);
+            // for (size_t i = 0; i < lightMatrices.size(); ++i)
+            // {
+            //     glBufferSubData(GL_UNIFORM_BUFFER, i * sizeof(glm::mat4x4), sizeof(glm::mat4x4), &lightMatrices[i]);
+            // }
+            // glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
             // //1 shadow map
             // auto lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, -1000.0f,1000.0f);
