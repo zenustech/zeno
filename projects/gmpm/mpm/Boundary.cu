@@ -38,13 +38,7 @@ struct ApplyGridBoundaryOnZSGrid : INode {
             ? collider_e::Sticky
             : (typeStr == "slip" ? collider_e::Slip : collider_e::Separate);
 
-    SmallString vtag = "v";
-    if (zsgrid->transferScheme == "apic")
-      ;
-    else if (zsgrid->transferScheme == "flip")
-      vtag = "vstar";
-    else if (zsgrid->transferScheme == "aflip")
-      vtag = "vstar";
+    const SmallString vtag = zsgrid->isFlipStyle() ? "vstar" : "v";
     cudaPol(Collapse{boundaryPartition.size(), boundaryGrid.block_size},
             [grid = proxy<execspace_e::cuda>({}, grid),
              boundaryGrid = proxy<execspace_e::cuda>({}, boundaryGrid),
@@ -100,27 +94,10 @@ struct ApplyBoundaryOnZSGrid : INode {
   projectBoundary(zs::CudaExecutionPolicy &cudaPol, LsView lsv,
                   const ZenoBoundary &boundary,
                   const typename ZenoPartition::table_t &partition,
-                  typename ZenoGrid::grid_t &grid,
-                  std::string_view transferScheme) {
+                  typename ZenoGrid::grid_t &grid, bool isFlipStyle) {
     using namespace zs;
     auto collider = boundary.getBoundary(lsv);
-    if (transferScheme == "apic")
-      cudaPol(Collapse{partition.size(), ZenoGrid::grid_t::block_space()},
-              [grid = proxy<execspace_e::cuda>({}, grid),
-               table = proxy<execspace_e::cuda>(partition),
-               boundary = collider] __device__(int bi, int ci) mutable {
-                auto block = grid.block(bi);
-                auto mass = block("m", ci);
-                if (mass != 0.f) {
-                  auto vel = block.pack<3>("v", ci);
-                  auto pos =
-                      (table._activeKeys[bi] + grid.cellid_to_coord(ci)) *
-                      grid.dx;
-                  boundary.resolveCollision(pos, vel);
-                  block.set("v", ci, vel);
-                }
-              });
-    else if (transferScheme == "aflip" || transferScheme == "flip")
+    if (isFlipStyle)
       cudaPol(Collapse{partition.size(), ZenoGrid::grid_t::block_space()},
               [grid = proxy<execspace_e::cuda>({}, grid),
                table = proxy<execspace_e::cuda>(partition),
@@ -135,6 +112,22 @@ struct ApplyBoundaryOnZSGrid : INode {
                   auto vstar = block.pack<3>("vstar", ci);
                   boundary.resolveCollision(pos, vstar);
                   block.set("vstar", ci, vstar);
+                }
+              });
+    else
+      cudaPol(Collapse{partition.size(), ZenoGrid::grid_t::block_space()},
+              [grid = proxy<execspace_e::cuda>({}, grid),
+               table = proxy<execspace_e::cuda>(partition),
+               boundary = collider] __device__(int bi, int ci) mutable {
+                auto block = grid.block(bi);
+                auto mass = block("m", ci);
+                if (mass != 0.f) {
+                  auto vel = block.pack<3>("v", ci);
+                  auto pos =
+                      (table._activeKeys[bi] + grid.cellid_to_coord(ci)) *
+                      grid.dx;
+                  boundary.resolveCollision(pos, vel);
+                  block.set("v", ci, vel);
                 }
               });
   }
@@ -163,12 +156,12 @@ struct ApplyBoundaryOnZSGrid : INode {
             match([&](const auto &lsPtr) {
               auto lsv = get_level_set_view<execspace_e::cuda>(lsPtr);
               projectBoundary(cudaPol, lsv, *boundary, partition, grid,
-                              zsgrid->transferScheme);
+                              zsgrid->isFlipStyle());
             })(ls._ls);
           } else if constexpr (is_same_v<RM_CVREF_T(ls), const_sdf_vel_ls_t>) {
             match([&](auto lsv) {
               projectBoundary(cudaPol, SdfVelFieldView{lsv}, *boundary,
-                              partition, grid, zsgrid->transferScheme);
+                              partition, grid, zsgrid->isFlipStyle());
             })(ls.template getView<execspace_e::cuda>());
           } else if constexpr (is_same_v<RM_CVREF_T(ls),
                                          const_transition_ls_t>) {
@@ -180,7 +173,7 @@ struct ApplyBoundaryOnZSGrid : INode {
                                                      SdfVelFieldView{fvDst},
                                                      ls._stepDt, ls._alpha},
                               *boundary, partition, grid,
-                              zsgrid->transferScheme);
+                              zsgrid->isFlipStyle());
             })(ls.template getView<zs::execspace_e::cuda>());
           }
         })(boundary->zsls->getLevelSet());
