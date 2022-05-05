@@ -14,7 +14,7 @@ namespace TimeIntegration {
 template <class DerivedV, class DerivedI>
 Vector<DerivedV, 3> TVDRK2(const DerivedI& substep)
 {
-    BOW_ASSERT((substep == 0 or substep == 1));
+    BOW_ASSERT((substep == 0 || substep == 1));
     using T = DerivedV;
     Vector<T, 3> res;
     if (substep == 1) {
@@ -29,7 +29,7 @@ Vector<DerivedV, 3> TVDRK2(const DerivedI& substep)
 template <class DerivedV, class DerivedI>
 Vector<DerivedV, 3> TVDRK3(const DerivedI& substep)
 {
-    assertm((substep == 0 or substep == 1 or substep == 2), "TVDRK3 only takes substep 0,1,2") using T = DerivedV;
+    assertm((substep == 0 || substep == 1 || substep == 2), "TVDRK3 only takes substep 0,1,2") using T = DerivedV;
     Vector<T, 3> res;
     if (substep == 1) {
         res << T(.75), T(.25), T(.25);
