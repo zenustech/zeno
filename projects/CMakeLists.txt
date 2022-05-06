@@ -6,17 +6,6 @@ if (ZENO_NO_WARNING)
     add_compile_options(-w)
 endif()
 
-if (MSVC)  # we must use this to cihou msvc error LNK2038
-    set(BUILD_SHARED_LIBS OFF)
-    add_compile_options(
-            $<$<CONFIG:>:/MD> #---------|
-            $<$<CONFIG:Debug>:/MDd> #---|-- to link .lib into .dll
-            $<$<CONFIG:Release>:/MD> #--|
-    )  # cl: 命令行 warning D9025 :正在重写“/MT”(用“/MD”)
-else()
-    set(BUILD_SHARED_LIBS ON)
-endif()
-
 set(ZENO_EXTENSIONS
     ZenoFX
     oldzenbase
