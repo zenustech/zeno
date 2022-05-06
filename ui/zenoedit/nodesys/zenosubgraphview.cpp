@@ -139,7 +139,7 @@ void _ZenoSubGraphView::cameraFocus()
 		float radius;
 		bool found = Zenovis::GetInstance().getSession()->focus_on_node(nodeId.toStdString(), center, radius);
 		if (found) {
-			Zenovis::GetInstance().m_camera_control->focus(QVector3D(center[0], center[1], center[2]), radius);
+			Zenovis::GetInstance().m_camera_control->focus(QVector3D(center[0], center[1], center[2]), radius * 3.0f);
 		}
 	}
 }
