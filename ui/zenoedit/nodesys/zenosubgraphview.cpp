@@ -9,6 +9,7 @@
 #include <zenoui/comctrl/ziconbutton.h>
 #include <zenoui/util/cihou.h>
 #include "viewport/zenovis.h"
+#include "viewport/viewportwidget.h"
 
 
 _ZenoSubGraphView::_ZenoSubGraphView(QWidget *parent)
@@ -134,7 +135,12 @@ void _ZenoSubGraphView::cameraFocus()
 	QGraphicsItem* item = selItems[0];
 	if (ZenoNode *pNode = qgraphicsitem_cast<ZenoNode *>(item)) {
 		QString nodeId = pNode->nodeId();
-		Zenovis::GetInstance().getSession()->focus_on_node(nodeId.toStdString());
+		zeno::vec3f center;
+		float radius;
+		bool found = Zenovis::GetInstance().getSession()->focus_on_node(nodeId.toStdString(), center, radius);
+		if (found) {
+			Zenovis::GetInstance().m_camera_control->focus(QVector3D(center[0], center[1], center[2]), radius);
+		}
 	}
 }
 

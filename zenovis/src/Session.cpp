@@ -136,8 +136,8 @@ std::tuple<float, float, float> Session::get_background_color() {
     return {c[0], c[1], c[2]};
 }
 
-void Session::focus_on_node(std::string const &nodeid) {
-    impl->scene->cameraFocusOnNode(nodeid);
+bool Session::focus_on_node(std::string const &nodeid, zeno::vec3f &center, float &radius) {
+    return impl->scene->cameraFocusOnNode(nodeid, center, radius);
 }
 
 void Session::set_curr_frameid(int frameid) {
