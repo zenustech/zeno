@@ -29,6 +29,7 @@ public:
     QModelIndex subGraphIndex() const;
     QModelIndexList selectNodesIndice() const;
     void select(const QString& id);
+    void markError(const QString& nodeid);
 
 protected:
     void mousePressEvent(QGraphicsSceneMouseEvent *event) override;

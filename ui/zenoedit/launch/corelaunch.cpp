@@ -9,6 +9,8 @@
 #include <zeno/utils/logger.h>
 #include <zeno/core/Graph.h>
 #include <zeno/zeno.h>
+#include "zenoapplication.h"
+#include "graphsmanagment.h"
 #include "serialize.h"
 #include <thread>
 #include <mutex>
@@ -56,6 +58,8 @@ struct ProgramRunData {
     void reportStatus(zeno::GlobalStatus const &stat) const {
         if (!stat.failed()) return;
         zeno::log_error("reportStatus: error in {}, message {}", stat.nodeName, stat.error->message);
+        zenoApp->graphsManagment()->appendErr(QString::fromStdString(stat.nodeName),
+                                              QString::fromStdString(stat.error->message));
     }
 
     bool chkfail() const {

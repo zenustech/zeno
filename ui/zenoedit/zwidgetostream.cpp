@@ -1,6 +1,7 @@
 #include "zwidgetostream.h"
 #include "zenoapplication.h"
 #include <zenoui/model/modelrole.h>
+#include "graphsmanagment.h"
 
 
 ZWidgetErrStream::ZWidgetErrStream()
@@ -46,27 +47,29 @@ std::streamsize ZWidgetErrStream::xsputn(const char* p, std::streamsize n)
         QMessageLogger logger(pwtf, line, 0);
         if (type == "T")
         {
-            logger.info() << msg;
+            logger.info().noquote() << msg;
         }
         else if (type == "D")
         {
-            logger.debug() << msg;
+            logger.debug().noquote() << msg;
         }
         else if (type == "I")
         {
-            logger.info() << msg;
+            logger.info().noquote() << msg;
         }
         else if (type == "C")
         {
-            logger.critical() << msg;
+            logger.critical().noquote() << msg;
         }
         else if (type == "W")
         {
-            logger.warning() << msg;
+            logger.warning().noquote() << msg;
         }
         else if (type == "E")
         {
-            logger.fatal(msg.toLatin1());
+            logger.info().noquote() << "[E]" << msg;
+            //crash when use logger.fatal.
+            //logger.fatal(msg.toLatin1());
         }
     }
     return n;
@@ -81,49 +84,10 @@ void ZWidgetErrStream::customMsgHandler(QtMsgType type, const QMessageLogContext
 {
     QString fileName = QString::fromLatin1(context.file);
     int ln = context.line;
-    QByteArray localMsg = msg.toLocal8Bit();
-    
-    QStandardItemModel* model = zenoApp->logModel();
-
-    QStandardItem *item = new QStandardItem(msg);
-    item->setData(type, ROLE_LOGTYPE);
-    item->setData(fileName, ROLE_FILENAME);
-    item->setData(ln, ROLE_LINENO);
-    switch (type)
+    if (msg.startsWith("[E]"))
     {
-        //todo: time
-        case QtDebugMsg:
-        {
-            item->setData(QBrush(QColor(255, 255, 255, 0.7*255)), Qt::ForegroundRole);
-            model->appendRow(item);
-            break;
-        }
-        case QtCriticalMsg:
-        {
-            item->setData(QBrush(QColor(255, 255, 255, 0.7*255)), Qt::ForegroundRole);
-            model->appendRow(item);
-            break;
-        }
-        case QtInfoMsg:
-        {
-            item->setData(QBrush(QColor(51, 148, 85)), Qt::ForegroundRole);
-            model->appendRow(item);
-            break;
-        }
-        case QtWarningMsg:
-        {
-            item->setData(QBrush(QColor(200, 154, 80)), Qt::ForegroundRole);
-            model->appendRow(item);
-            break;
-        }
-        case QtFatalMsg:
-        {
-            item->setData(QBrush(QColor(200, 84, 79)), Qt::ForegroundRole);
-            model->appendRow(item);
-            break;
-        }
-    default:
-        delete item;
-        break;
+        type = QtFatalMsg;
     }
+    auto gm = zenoApp->graphsManagment();
+    gm->appendLog(type, fileName, context.line, msg);
 }

@@ -27,7 +27,6 @@ private:
     QString readQss(const QString& qssPath);
 
     QSharedPointer<GraphsManagment> m_pGraphs;
-    QStandardItemModel* m_logModel;
     ZWidgetErrStream steam;
     bool m_bIOProcessing;
 };
