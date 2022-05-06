@@ -5,7 +5,7 @@ cwd=$(VIM_ROOT)
 save=2
 
 [project-run]
-command=ZEN_OPEN=/tmp/a.zsg python run.py
+command=ZENO_BATE=1 ZEN_OPEN=/tmp/a.zsg python run.py
 output=terminal
 cwd=$(VIM_ROOT)
 save=2
