@@ -42,6 +42,7 @@ class QDMEditMenu(QMenu):
                 ('Easy Subgraph', 'Alt+S'),
                 (None, None),
                 ('Set Cache Path', None),
+                ('Set NASLOC', None),
         ]
         
         for name, shortcut in acts:
@@ -520,6 +521,11 @@ class NodeEditor(QWidget):
             cache_dir = QFileDialog.getExistingDirectory(self, 'Set Cache Path', cache_dir)
             with open(asset_path('cache_path.txt'), 'w') as f:
                 f.write(cache_dir)
+        elif name == 'Set NASLOC':
+            text, ok = QInputDialog.getText(self, 'Set NASLOC', 'NASLOC')
+            if ok:
+                setting = QSettings('ZenusTech','Zeno')
+                setting.setValue('nas_loc', text)
 
     def do_export(self):
         path, kind = QFileDialog.getSaveFileName(self, 'Path to Export',

@@ -428,7 +428,10 @@ struct GraphicPrimitive : IGraphic {
         data.reserve(amount);
         for (int i = 0; i < amount; ++i)
         {
-            data.emplace_back(InstVboData{.modelMatrix = modelMatrices[i], .time = timeList[i]});
+            auto instVboData = InstVboData();
+            instVboData.modelMatrix = modelMatrices[i];
+            instVboData.time = timeList[i];
+            data.emplace_back(instVboData);
         }
 
         instvbo->bind_data(data.data(), amount * sizeof(InstVboData));
@@ -488,7 +491,10 @@ struct GraphicPrimitive : IGraphic {
             data.reserve(amount);
             for (int i = 0; i < amount; ++i)
             {
-                data.emplace_back(InstVboData{.modelMatrix = modelMatrices[i], .time = timeList[i]});
+                auto instVboData = InstVboData();
+                instVboData.modelMatrix = modelMatrices[i];
+                instVboData.time = timeList[i];
+                data.emplace_back(instVboData);
             }
 
             instvbo->bind_data(data.data(), amount * sizeof(InstVboData));
@@ -853,12 +859,12 @@ struct GraphicPrimitive : IGraphic {
                 name = "lview[" + std::to_string(lightNo) + "]";
                 triObj.voxelprog->set_uniform(name.c_str(), light->lightMV);
 
-                auto matrices = light->lightSpaceMatrices;
-                for (size_t i = 0; i < matrices.size(); i++)
-                {
-                    auto name = "lightSpaceMatrices[" + std::to_string(lightNo * (Light::cascadeCount + 1) + i) + "]";
-                    triObj.voxelprog->set_uniform(name.c_str(), matrices[i]);
-                }
+                // auto matrices = light->lightSpaceMatrices;
+                // for (size_t i = 0; i < matrices.size(); i++)
+                // {
+                //     auto name = "lightSpaceMatrices[" + std::to_string(lightNo * (Light::cascadeCount + 1) + i) + "]";
+                //     triObj.voxelprog->set_uniform(name.c_str(), matrices[i]);
+                // }
             }
 
             
@@ -1013,7 +1019,30 @@ struct GraphicPrimitive : IGraphic {
                 instvbobind(instvbo);
             }
         }
-
+        auto &scene = Scene::getInstance();
+        auto &lights = scene.lights;
+        if (LightMatrixUBO == 0)
+        {
+            CHECK_GL(glGenBuffers(1, &LightMatrixUBO));
+            CHECK_GL(glBindBuffer(GL_UNIFORM_BUFFER, LightMatrixUBO));
+            CHECK_GL(glBufferData(GL_UNIFORM_BUFFER, sizeof(glm::mat4x4) * 128, nullptr, GL_STATIC_DRAW));
+            CHECK_GL(glBindBufferBase(GL_UNIFORM_BUFFER, 0, LightMatrixUBO));
+            CHECK_GL(glBindBuffer(GL_UNIFORM_BUFFER, 0));
+        }
+        glBindBuffer(GL_UNIFORM_BUFFER, LightMatrixUBO);
+        //std::cout<<"                        "<<LightMatrixUBO<<std::endl;
+        for (int lightNo = 0; lightNo < lights.size(); ++lightNo)
+        {
+            auto &light = lights[lightNo];
+            
+            auto matrices = light->lightSpaceMatrices;
+            for (size_t i = 0; i < matrices.size(); ++i)
+            {
+                glBufferSubData(GL_UNIFORM_BUFFER, (lightNo * (Light::cascadeCount + 1) + i) * sizeof(glm::mat4x4), sizeof(glm::mat4x4), &matrices[i]);
+            }
+            
+        }
+        glBindBuffer(GL_UNIFORM_BUFFER, 0);
         triObj.prog->use();
         int texOcp=0;
         set_program_uniforms(triObj.prog);
@@ -1027,8 +1056,7 @@ struct GraphicPrimitive : IGraphic {
             texOcp++;
         }
 
-        auto &scene = Scene::getInstance();
-        auto &lights = scene.lights;
+        
         triObj.prog->set_uniformi("lightNum", lights.size());
         for (int lightNo = 0; lightNo < lights.size(); ++lightNo)
         {
@@ -1113,12 +1141,13 @@ struct GraphicPrimitive : IGraphic {
                 name = "lview[" + std::to_string(lightNo) + "]";
                 triObj.prog->set_uniform(name.c_str(), light->lightMV);
 
-                auto matrices = light->lightSpaceMatrices;
-                for (size_t i = 0; i < matrices.size(); i++)
-                {
-                    auto name = "lightSpaceMatrices[" + std::to_string(lightNo * (Light::cascadeCount + 1) + i) + "]";
-                    triObj.prog->set_uniform(name.c_str(), matrices[i]);
-                }
+                // auto matrices = light->lightSpaceMatrices;
+                // for (size_t i = 0; i < matrices.size(); i++)
+                // {
+                //     auto name = "lightSpaceMatrices[" + std::to_string(lightNo * (Light::cascadeCount + 1) + i) + "]";
+                //     triObj.prog->set_uniform(name.c_str(), matrices[i]);
+                // }
+                
             }
 
             if(reflect)

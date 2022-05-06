@@ -223,9 +223,10 @@ struct ZenoGrid : IObjectClone<ZenoGrid> {
   auto &get() noexcept { return grid; }
   const auto &get() const noexcept { return grid; }
 
+  bool isBoundaryGrid() const noexcept { return transferScheme == "boundary"; }
   bool isPicStyle() const noexcept { return transferScheme == "apic"; }
   bool hasPositionalAdjustment() const noexcept {
-    return transferScheme == "asflip";
+    return transferScheme == "sflip" || transferScheme == "asflip";
   }
   bool isFlipStyle() const noexcept {
     return transferScheme == "flip" || transferScheme == "aflip" ||
