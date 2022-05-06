@@ -1,6 +1,22 @@
 #set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} /usr/lib/cmake/OpenVDB /usr/local/lib/cmake/OpenVDB ${CMAKE_CURRENT_SOURCE_DIR}/cmake)  # cihou zhxx
 # ^^^NONO^^^ Please add `export OpenVDB_DIR=/usr/local/lib/cmake/OpenVDB` in your .bashrc to YI-LAO-YONG-YI!!!!!!
 
+if (ZENO_NO_WARNING)
+    set(CMAKE_CXX_FLAGS "${ZENO_OLD_CXX_FLAGS} -w")
+    add_compile_options(-w)
+endif()
+
+if (MSVC)  # we must use this to cihou msvc error LNK2038
+    set(BUILD_SHARED_LIBS OFF)
+    add_compile_options(
+            $<$<CONFIG:>:/MD> #---------|
+            $<$<CONFIG:Debug>:/MDd> #---|-- to link .lib into .dll
+            $<$<CONFIG:Release>:/MD> #--|
+    )  # cl: 命令行 warning D9025 :正在重写“/MT”(用“/MD”)
+else()
+    set(BUILD_SHARED_LIBS ON)
+endif()
+
 set(ZENO_EXTENSIONS
     ZenoFX
     oldzenbase
@@ -18,22 +34,6 @@ set(ZENO_EXTENSIONS
     Functional
     TreeSketch
     )
-
-if (ZENO_NO_WARNING)
-    set(CMAKE_CXX_FLAGS "${ZENO_OLD_CXX_FLAGS} -w")
-    add_compile_options(-w)
-endif()
-
-if (MSVC)  # we must use this to cihou msvc error LNK2038
-    set(BUILD_SHARED_LIBS OFF)
-    add_compile_options(
-            $<$<CONFIG:>:/MD> #---------|
-            $<$<CONFIG:Debug>:/MDd> #---|-- to link .lib into .dll
-            $<$<CONFIG:Release>:/MD> #--|
-    )  # cl: 命令行 warning D9025 :正在重写“/MT”(用“/MD”)
-else()
-    set(BUILD_SHARED_LIBS ON)
-endif()
 
 foreach (name IN ITEMS ${ZENO_EXTENSIONS})
     option(ZENO_WITH_${name} "Build ZENO with extension: ${name}" OFF)
