@@ -38,9 +38,14 @@ std::streamsize ZWidgetErrStream::xsputn(const char* p, std::streamsize n)
         QString fileName = list[6];
         int line = list[7].toInt();
         QString content = list[8];
-        QString msg = QString("[%1:%2:%3.%4] (%5:%6) %7").arg(
-            QString::number(nDays), QString::number(nHours), QString::number(nMins), 
-            QString::number(nSeconds), fileName, QString::number(line), content);
+        QString msg = QString("[%1:%2:%3.%4] (%5:%6) %7")
+            .arg(nDays, 2, 10, QLatin1Char('0'))
+            .arg(nHours, 2, 10, QLatin1Char('0'))
+            .arg(nMins, 2, 10, QLatin1Char('0'))
+            .arg(nSeconds, 3, 10, QLatin1Char('0'))
+            .arg(fileName)
+            .arg(line)
+            .arg(content);
 
         QByteArray arr = fileName.toUtf8();
         const char *pwtf = arr.constData();
