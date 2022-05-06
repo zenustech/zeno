@@ -15,11 +15,11 @@
 namespace zeno {
 
 struct ZSParticleToZSGrid : INode {
-  void p2g_apic_momentum(zs::CudaExecutionPolicy &cudaPol,
-                         const typename ZenoParticles::particles_t &pars,
-                         const typename ZenoPartition::table_t &partition,
-                         typename ZenoGrid::grid_t &grid,
-                         bool isAffineAugmented = true) {
+  void p2g_momentum(zs::CudaExecutionPolicy &cudaPol,
+                    const typename ZenoParticles::particles_t &pars,
+                    const typename ZenoPartition::table_t &partition,
+                    typename ZenoGrid::grid_t &grid,
+                    bool isAffineAugmented = true) {
     using namespace zs;
     cudaPol(range(pars.size()),
             [pars = proxy<execspace_e::cuda>({}, pars),
@@ -199,104 +199,113 @@ struct ZSParticleToZSGrid : INode {
               transfer(verts.pack<3>("x", inds[1]), Dminv00, -vol * dt);
             });
   }
-  template <typename Model>
-  void p2g_curve_force(zs::CudaExecutionPolicy &cudaPol, const Model &model,
-                       const typename ZenoParticles::particles_t &verts,
-                       const typename ZenoParticles::particles_t &eles,
-                       const typename ZenoPartition::table_t &partition,
-                       const float dt, typename ZenoGrid::grid_t &grid,
-                       bool isFlipStyle = false,
-                       bool isAffineAugmented = true) {
+  void p2g_vert_bending_force(zs::CudaExecutionPolicy &cudaPol,
+                              const typename ZenoParticles::particles_t &verts,
+                              const typename ZenoParticles::particles_t &eles,
+                              const typename ZenoPartition::table_t &partition,
+                              const float dt, typename ZenoGrid::grid_t &grid,
+                              float thickness, bool isFlipStyle = false) {
     using namespace zs;
-    bool materialParamOverride =
-        eles.hasProperty("mu") && eles.hasProperty("lam");
     SmallString vtag = isFlipStyle ? "vstar" : "v";
-    cudaPol(range(eles.size()),
-            [verts = proxy<execspace_e::cuda>({}, verts),
-             eles = proxy<execspace_e::cuda>({}, eles),
-             table = proxy<execspace_e::cuda>(partition),
-             grid = proxy<execspace_e::cuda>({}, grid), materialParamOverride,
-             dt, dxinv = 1.f / grid.dx, vtag,
-             isAffineAugmented] __device__(size_t pi) mutable {
-              using grid_t = RM_CVREF_T(grid);
-              using mat2 = zs::vec<float, 2, 2>;
-              using mat3 = zs::vec<float, 3, 3>;
-              using vec3 = zs::vec<float, 3>;
-              const auto Dinv = 4.f * dxinv * dxinv;
-              auto pos = eles.pack<3>("x", pi);
-              auto vel = eles.pack<3>("v", pi);
-              auto mass = eles("m", pi);
-              auto vol = eles("vol", pi);
-              auto C =
-                  isAffineAugmented ? eles.pack<3, 3>("C", pi) : mat3::zeros();
-              auto F = eles.pack<3, 3>("F", pi);
-              auto d_ = eles.pack<3, 3>("d", pi);
+    cudaPol(range(eles.size()), [verts = proxy<execspace_e::cuda>({}, verts),
+                                 eles = proxy<execspace_e::cuda>({}, eles),
+                                 table = proxy<execspace_e::cuda>(partition),
+                                 grid = proxy<execspace_e::cuda>({}, grid),
+                                 vtag, dxinv = 1.f / grid.dx, thickness,
+                                 dt] __device__(size_t ei) mutable {
+      using grid_t = RM_CVREF_T(grid);
+      using vec3 = zs::vec<float, 3>;
+      auto k = eles("k", ei);
+      auto restLength = eles("rl", ei);
+      auto vinds = eles.pack<2>("vinds", ei).reinterpret_bits<int>();
 
-              // hard coded P compute
-              constexpr auto gamma = 10.f;
-              constexpr auto k = 2000.f;
-              auto [Q, R] = math::gram_schmidt(F);
-              auto f = vec3::zeros();
-              if (R(0, 0) < 1) // bent (compressed)
-                f = col(d_, 0).normalized() * (1 - R(0, 0));
+      auto x0 = verts.pack<3>("x", vinds[0]);
+      auto x1 = verts.pack<3>("x", vinds[1]);
+      auto dir = x1 - x0;
+      auto len = dir.norm();
+      dir /= len;
+      auto vfdt = len < restLength ? (thickness * thickness * len) * k *
+                                         (1.f - len / restLength) * dt * dir
+                                   : vec3::zeros();
 
-              auto arena =
-                  make_local_arena<grid_e::collocated, kernel_e::quadratic, 1>(
-                      grid.dx, pos);
-              // compression
-              for (auto loc : arena.range()) {
-                auto coord = arena.coord(loc);
-                auto localIndex = coord & (grid_t::side_length - 1);
-                auto blockno = table.query(coord - localIndex);
-                if (blockno < 0)
-                  printf("THE HELL!");
-                auto block = grid.block(blockno);
+      auto transfer = [&grid, &table, &vtag](const auto &pos, const auto &vft) {
+        auto arena = make_local_arena(grid.dx, pos);
 
-                auto Wmass = arena.weight(loc) * mass;
-                auto xixp = arena.diff(loc);
-                auto Wgrad = arena.weightGradients(loc) * dxinv;
-                const auto cellid = grid_t::coord_to_cellid(localIndex);
-
-                atomic_add(exec_cuda, &block("m", cellid), Wmass);
-                auto Cxixp = C * xixp;
-                for (int d = 0; d != 3; ++d)
-                  atomic_add(exec_cuda, &block("v", d, cellid),
-                             Wmass * (vel[d] + Cxixp[d]));
-              }
-
-              // type (ii)
-              auto transfer = [f, &grid, &table, &vtag](const auto &pos,
-                                                        const auto coeff) {
-                auto vft = coeff * f;
-                auto arena = make_local_arena(grid.dx, pos);
-
-                for (auto loc : arena.range()) {
-                  auto coord = arena.coord(loc);
-                  auto localIndex = coord & (grid_t::side_length - 1);
-                  auto blockno = table.query(coord - localIndex);
-                  if (blockno < 0)
-                    printf("THE HELL!");
-                  auto block = grid.block(blockno);
-                  auto W = arena.weight(loc);
-                  const auto cellid = grid_t::coord_to_cellid(localIndex);
-                  for (int d = 0; d != 3; ++d) {
-                    atomic_add(exec_cuda, &block(vtag, d, cellid),
-                               (float)(W * vft[d]));
-                  }
-                }
-              };
-              auto inds =
-                  eles.pack<2>("inds", pi).template reinterpret_bits<int>();
-              transfer(verts.pack<3>("x", inds[0]), vol * dt);
-              transfer(verts.pack<3>("x", inds[1]), -vol * dt);
-            });
+        for (auto loc : arena.range()) {
+          auto coord = arena.coord(loc);
+          auto localIndex = coord & (grid_t::side_length - 1);
+          auto blockno = table.query(coord - localIndex);
+          if (blockno < 0)
+            printf("THE HELL!");
+          auto block = grid.block(blockno);
+          auto W = arena.weight(loc);
+          const auto cellid = grid_t::coord_to_cellid(localIndex);
+          for (int d = 0; d != 3; ++d) {
+            atomic_add(exec_cuda, &block(vtag, d, cellid), (float)(W * vft[d]));
+          }
+        }
+      };
+      transfer(x0, -vfdt);
+      transfer(x1, vfdt);
+    });
   }
-  void p2g_bending_force(zs::CudaExecutionPolicy &cudaPol,
-                         const typename ZenoParticles::particles_t &verts,
-                         const typename ZenoParticles::particles_t &eles,
-                         const typename ZenoPartition::table_t &partition,
-                         const float dt, typename ZenoGrid::grid_t &grid,
-                         bool isFlipStyle = false) {
+  void
+  p2g_element_bending_force(zs::CudaExecutionPolicy &cudaPol,
+                            const typename ZenoParticles::particles_t &tris,
+                            const typename ZenoParticles::particles_t &eles,
+                            const typename ZenoPartition::table_t &partition,
+                            const float dt, typename ZenoGrid::grid_t &grid,
+                            float thickness, bool isFlipStyle = false) {
+    using namespace zs;
+    SmallString vtag = isFlipStyle ? "vstar" : "v";
+    cudaPol(range(eles.size()), [tris = proxy<execspace_e::cuda>({}, tris),
+                                 eles = proxy<execspace_e::cuda>({}, eles),
+                                 table = proxy<execspace_e::cuda>(partition),
+                                 grid = proxy<execspace_e::cuda>({}, grid),
+                                 vtag, dxinv = 1.f / grid.dx, thickness,
+                                 dt] __device__(size_t ei) mutable {
+      using grid_t = RM_CVREF_T(grid);
+      using vec3 = zs::vec<float, 3>;
+      auto k = eles("k", ei);
+      auto restLength = eles("rl", ei);
+      auto einds = eles.pack<2>("einds", ei).reinterpret_bits<int>();
+
+      auto x0 = tris.pack<3>("x", einds[0]);
+      auto x1 = tris.pack<3>("x", einds[1]);
+      auto dir = x1 - x0;
+      auto len = dir.norm();
+      dir /= len;
+      auto vfdt = len < restLength ? (thickness * thickness * len) * k *
+                                         (1.f - len / restLength) * dt * dir
+                                   : vec3::zeros();
+
+      auto transfer = [&grid, &table, &vtag](const auto &pos, const auto &vft) {
+        auto arena = make_local_arena(grid.dx, pos);
+
+        for (auto loc : arena.range()) {
+          auto coord = arena.coord(loc);
+          auto localIndex = coord & (grid_t::side_length - 1);
+          auto blockno = table.query(coord - localIndex);
+          if (blockno < 0)
+            printf("THE HELL!");
+          auto block = grid.block(blockno);
+          auto W = arena.weight(loc);
+          const auto cellid = grid_t::coord_to_cellid(localIndex);
+          for (int d = 0; d != 3; ++d) {
+            atomic_add(exec_cuda, &block(vtag, d, cellid), (float)(W * vft[d]));
+          }
+        }
+      };
+      transfer(x0, -vfdt);
+      transfer(x1, vfdt);
+    });
+  }
+  void p2g_angle_bending_force(zs::CudaExecutionPolicy &cudaPol,
+                               const typename ZenoParticles::particles_t &verts,
+                               const typename ZenoParticles::particles_t &eles,
+                               const typename ZenoPartition::table_t &partition,
+                               const float dt, typename ZenoGrid::grid_t &grid,
+                               bool isFlipStyle = false) {
     using namespace zs;
     SmallString vtag = isFlipStyle ? "vstar" : "v";
     cudaPol(range(eles.size()), [verts = proxy<execspace_e::cuda>({}, verts),
@@ -720,6 +729,8 @@ struct ZSParticleToZSGrid : INode {
       std::size_t numE = 0;
       if (parObjPtr->isMeshPrimitive())
         numE = parObjPtr->getQuadraturePoints().size();
+      else if (parObjPtr->isBendingString())
+        numE = parObjPtr->getQuadraturePoints().size();
       fmt::print("[p2g] dx: {}, dt: {}, npars: {}, neles: {}\n", grid.dx,
                  stepDt, pars.size(), numE);
 
@@ -739,22 +750,40 @@ struct ZSParticleToZSGrid : INode {
         bool isAffineAugmented = zsgrid->isAffineAugmented();
         bool isFlipStyle = zsgrid->isFlipStyle();
         auto &eles = parObjPtr->getQuadraturePoints();
-        p2g_apic_momentum(cudaPol, pars, partition, grid, isAffineAugmented);
-        // p2g_apic_momentum(cudaPol, eles, partition, grid, isAffineAugmented);
+        p2g_momentum(cudaPol, pars, partition, grid, isAffineAugmented);
+        // p2g_momentum(cudaPol, eles, partition, grid, isAffineAugmented);
         match([&](auto &elasticModel) {
           if (parObjPtr->category == ZenoParticles::surface) {
             p2g_surface_force(cudaPol, elasticModel, pars, eles, partition,
                               stepDt, grid, isFlipStyle, isAffineAugmented);
           } else if (parObjPtr->category == ZenoParticles::curve) {
-            p2g_curve_force(cudaPol, elasticModel, pars, eles, partition,
-                            stepDt, grid, isFlipStyle, isAffineAugmented);
+            if constexpr (is_same_v<RM_CVREF_T(elasticModel),
+                                    StvkWithHencky<float>>)
+              p2g_curve_force(cudaPol, elasticModel, pars, eles, partition,
+                              stepDt, grid, isFlipStyle, isAffineAugmented);
+            else
+              throw std::runtime_error(
+                  "curve should use StvkWithHencky elastic constitutive model "
+                  "for friction handling!");
           }
         })(model.getElasticModel());
+      } else if (parObjPtr->category == ZenoParticles::vert_bending_spring) {
+        bool isFlipStyle = zsgrid->isFlipStyle();
+        auto &eles = parObjPtr->getQuadraturePoints();
+        p2g_vert_bending_force(
+            cudaPol, pars, eles, partition, stepDt, grid, model.dx,
+            isFlipStyle); // here pars refers to surface vertices
+      } else if (parObjPtr->category == ZenoParticles::tri_bending_spring) {
+        bool isFlipStyle = zsgrid->isFlipStyle();
+        auto &eles = parObjPtr->getQuadraturePoints();
+        p2g_element_bending_force(
+            cudaPol, pars, eles, partition, stepDt, grid, model.dx,
+            isFlipStyle); // here pars refers to surface elements
       } else if (parObjPtr->category == ZenoParticles::bending) {
         bool isFlipStyle = zsgrid->isFlipStyle();
         auto &eles = parObjPtr->getQuadraturePoints();
-        p2g_bending_force(cudaPol, pars, eles, partition, stepDt, grid,
-                          isFlipStyle);
+        p2g_angle_bending_force(cudaPol, pars, eles, partition, stepDt, grid,
+                                isFlipStyle);
       } else if (parObjPtr->category != ZenoParticles::tracker) {
         // not implemented yet
       }
