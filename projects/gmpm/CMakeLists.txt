@@ -102,7 +102,7 @@ target_compile_options(zeno_zsfft # MSVC, GNU, Clang, Intel
 
     target_compile_features(zeno_zsfft PRIVATE cuda_std_17)
     target_compile_options(zeno_zsfft 
-      PRIVATE        $<$<COMPILE_LANGUAGE:CUDA>:${CMAKE_CUDA_FLAGS} --expt-extended-lambda --expt-relaxed-constexpr --default-stream=per-thread --use_fast_math -lineinfo --ptxas-options=-allow-expensive-optimizations=true -Xcudafe --display_error_number,--diag_suppress=implicit_return_from_non_void_function,--diag_suppress=2642,--diag_suppress=554>
+      PRIVATE        $<$<COMPILE_LANGUAGE:CUDA>:${CMAKE_CUDA_FLAGS} --expt-extended-lambda --expt-relaxed-constexpr --default-stream=per-thread -lineinfo --ptxas-options=-allow-expensive-optimizations=true -Xcudafe --display_error_number,--diag_suppress=implicit_return_from_non_void_function,--diag_suppress=2642,--diag_suppress=554>
     )
     target_link_options(zeno_zsfft 
       PUBLIC       $<$<LINK_LANGUAGE:CUDA>:-dlto>
@@ -145,7 +145,7 @@ if (${ZS_ENABLE_CUDA})
 
     target_compile_features(zeno_zsfem PRIVATE cuda_std_17)
     target_compile_options(zeno_zsfem 
-      PRIVATE        $<$<COMPILE_LANGUAGE:CUDA>:${CMAKE_CUDA_FLAGS} --expt-extended-lambda --expt-relaxed-constexpr --default-stream=per-thread --use_fast_math -lineinfo --ptxas-options=-allow-expensive-optimizations=true -Xcudafe --display_error_number,--diag_suppress=implicit_return_from_non_void_function,--diag_suppress=2642,--diag_suppress=554>
+      PRIVATE        $<$<COMPILE_LANGUAGE:CUDA>:${CMAKE_CUDA_FLAGS} --expt-extended-lambda --expt-relaxed-constexpr --default-stream=per-thread -lineinfo --ptxas-options=-allow-expensive-optimizations=true -Xcudafe --display_error_number,--diag_suppress=implicit_return_from_non_void_function,--diag_suppress=2642,--diag_suppress=554>
     )
     target_link_options(zeno_zsfem 
       PUBLIC       $<$<LINK_LANGUAGE:CUDA>:-dlto>
