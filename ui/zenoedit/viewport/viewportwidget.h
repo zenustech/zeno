@@ -34,6 +34,7 @@ public:
     void fakeMousePressEvent(QMouseEvent* event);
     void fakeMouseMoveEvent(QMouseEvent* event);
     void fakeWheelEvent(QWheelEvent* event);
+    void focus(QVector3D center, float radius);
 
 private:
     bool m_mmb_pressed;

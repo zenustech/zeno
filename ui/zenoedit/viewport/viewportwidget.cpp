@@ -91,6 +91,13 @@ void CameraControl::setKeyFrame()
     //todo
 }
 
+void CameraControl::focus(QVector3D center, float radius)
+{
+    m_center = center;
+    m_radius = radius;
+    updatePerspective();
+}
+
 
 ViewportWidget::ViewportWidget(QWidget* parent)
     : QGLWidget(parent)

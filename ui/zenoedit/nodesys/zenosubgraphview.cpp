@@ -8,6 +8,8 @@
 #include <zenoui/comctrl/zlabel.h>
 #include <zenoui/comctrl/ziconbutton.h>
 #include <zenoui/util/cihou.h>
+#include "viewport/zenovis.h"
+#include "viewport/viewportwidget.h"
 
 
 _ZenoSubGraphView::_ZenoSubGraphView(QWidget *parent)
@@ -65,6 +67,12 @@ _ZenoSubGraphView::_ZenoSubGraphView(QWidget *parent)
 	connect(escape, SIGNAL(triggered()), this, SLOT(esc()));
 	addAction(escape);
 
+	QAction* cameraFocus = new QAction("CameraFocus", this);
+	cameraFocus->setShortcut(QKeySequence(Qt::ALT + Qt::Key_F));
+	cameraFocus->setShortcutContext(Qt::WidgetShortcut);
+	connect(cameraFocus, SIGNAL(triggered()), this, SLOT(cameraFocus()));
+	addAction(cameraFocus);
+
     QRectF rcView(-SCENE_INIT_WIDTH / 2, -SCENE_INIT_HEIGHT / 2, SCENE_INIT_WIDTH, SCENE_INIT_HEIGHT);
     setSceneRect(rcView);
 }
@@ -116,6 +124,24 @@ void _ZenoSubGraphView::esc()
 {
 	if (m_pSearcher)
 		m_pSearcher->hide();
+}
+
+void _ZenoSubGraphView::cameraFocus()
+{
+	QList<QGraphicsItem*> selItems = m_scene->selectedItems();
+	if (selItems.size() != 1) {
+		return;
+	}
+	QGraphicsItem* item = selItems[0];
+	if (ZenoNode *pNode = qgraphicsitem_cast<ZenoNode *>(item)) {
+		QString nodeId = pNode->nodeId();
+		zeno::vec3f center;
+		float radius;
+		bool found = Zenovis::GetInstance().getSession()->focus_on_node(nodeId.toStdString(), center, radius);
+		if (found) {
+			Zenovis::GetInstance().m_camera_control->focus(QVector3D(center[0], center[1], center[2]), radius * 3.0f);
+		}
+	}
 }
 
 void _ZenoSubGraphView::onSearchResult(SEARCH_RECORD rec)
