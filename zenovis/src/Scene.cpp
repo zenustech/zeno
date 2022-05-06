@@ -59,15 +59,10 @@ static bool calcObjectCenterRadius(zeno::IObject *ptr, zeno::vec3f &center, floa
     return false;
 }
 
-bool Scene::cameraFocusOnNode(std::string const &nodeid) {
+bool Scene::cameraFocusOnNode(std::string const &nodeid, zeno::vec3f &center, float &radius) {
     for (auto const &[key, ptr]: this->objectsMan->pairs()) {
         if (nodeid == key.substr(0, key.find_first_of(':'))) {
-            zeno::vec3f center;
-            float radius;
-            if (calcObjectCenterRadius(ptr, center, radius))
-                this->camera->focusCamera(center[0], center[1], center[2], radius);
-            else
-                return false;
+            return calcObjectCenterRadius(ptr, center, radius);
         }
     }
     zeno::log_debug("cannot focus: node with id {} not found, did you tagged VIEW on it?", nodeid);
