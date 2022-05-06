@@ -18,7 +18,8 @@ jobs:
         commit-filter: '[release]'
 
     outputs:
-      type: ${{ steps.is-release-step.outputs.ci-skip == 'true' && 'release' || 'debug' }}
+      deploy: ${{ steps.is-release-step.outputs.ci-skip == 'true' && 'true' || 'false' }}
+      type: ${{ steps.is-release-step.outputs.ci-skip == 'true' && 'release' || 'release' }}
 
   build:
     strategy:
@@ -105,18 +106,18 @@ jobs:
         buildPreset: default${{ (needs.check.outputs.type == 'release' && '' || '-debug') }}
 
     - name: Packaging
-      if: ${{ needs.check.outputs.type == 'release' }}
+      if: ${{ needs.check.outputs.deploy == 'true' }}
       run: python misc/ci/package.py
 
     - name: Upload Release Artifact
-      if: ${{ needs.check.outputs.type == 'release' }}
+      if: ${{ needs.check.outputs.deploy == 'true' }}
       uses: actions/upload-artifact@v2
       with:
         name: ${{ matrix.label }}-Package
         path: ${{github.workspace}}/build/out.${{ matrix.pkgext }}
 
   release:
-    if: ${{ needs.check.outputs.type == 'release' }}
+    if: ${{ needs.check.outputs.deploy == 'true' }}
     needs: [check, build]
     runs-on: ubuntu-latest
 
@@ -157,7 +158,7 @@ jobs:
         - label: x86_64-windows-cpu
           pkgext: zip
 
-    if: ${{ needs.check.outputs.type == 'true' }}
+    if: ${{ needs.check.outputs.deploy == 'true' }}
     needs: [check, build, release]
     runs-on: ubuntu-latest
 

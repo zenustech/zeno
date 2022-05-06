@@ -17,14 +17,14 @@ class myConsoleStream : public std::basic_streambuf<char>
 
   protected:
     //This is called when a std::endl has been inserted into the stream
-    virtual int_type overflow(int_type v) {
+    virtual int_type overflow(int_type v) override {
         if (v == '\n' && log_window) {
             log_window->append("");
         }
         return v;
     }
 
-    virtual std::streamsize xsputn(const char *p, std::streamsize n) {
+    virtual std::streamsize xsputn(const char *p, std::streamsize n) override {
         //can do something.
         return std::basic_streambuf<char>::xsputn(p, n);
     }
@@ -44,8 +44,8 @@ public:
     static void registerMsgHandler();
 
 protected:
-    virtual std::streamsize xsputn(const char* p, std::streamsize n);
-    virtual int_type overflow(int_type v)
+    virtual std::streamsize xsputn(const char* p, std::streamsize n) override;
+    virtual int_type overflow(int_type v) override
     {
         return v;
     }
@@ -67,9 +67,9 @@ public:
 
 protected:
     //virtual int_type overflow(int_type);
-    virtual std::streamsize xsputn(const char* p, std::streamsize n);
+    virtual std::streamsize xsputn(const char* p, std::streamsize n) override;
     //This is called when a std::endl has been inserted into the stream
-    virtual int_type overflow(int_type v)
+    virtual int_type overflow(int_type v) override
     {
         return v;
     }

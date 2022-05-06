@@ -40,20 +40,21 @@ ZENO_API void GlobalStatus::fromJson(std::string_view json) {
 
     auto obj = doc.GetObject();
 
-    auto it = obj.FindMember("nodeName");
-    if (it == obj.MemberEnd()) {
+    if (auto it = obj.FindMember("nodeName"); it == obj.MemberEnd()) {
         log_warn("document has no nodeName!");
         return;
+    } else {
+        this->nodeName.assign(it->value.GetString(), it->value.GetStringLength());
     }
-    nodeName.assign(it->value.GetString(), it->value.GetStringLength());
 
-    it = obj.FindMember("errorMessage");
-    if (it == obj.MemberEnd()) {
+    
+    if (auto it = obj.FindMember("errorMessage"); it == obj.MemberEnd()) {
         log_warn("document has no errorMessage!");
         return;
+    } else {
+        std::string errorMessage{it->value.GetString(), it->value.GetStringLength()};
+        this->error = std::make_shared<Error>(errorMessage);
     }
-    std::string errorMessage{it->value.GetString(), it->value.GetStringLength()};
-    error = std::make_shared<Error>(errorMessage);
 }
 
 }

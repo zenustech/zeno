@@ -19,6 +19,10 @@ struct GlobalComm {
     int m_maxPlayFrame = 0;
     mutable std::mutex m_mtx;
 
+    int beginFrameNumber = 0;
+    int endFrameNumber = 0;
+
+    ZENO_API void frameRange(int beg, int end);
     ZENO_API void newFrame();
     ZENO_API void finishFrame();
     ZENO_API void addViewObject(std::string const &key, std::shared_ptr<IObject> object);

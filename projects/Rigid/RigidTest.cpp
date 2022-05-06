@@ -557,7 +557,7 @@ struct RigidVelToPrimitive : zeno::INode {
         auto &pos = prim->attr<zeno::vec3f>("pos");
         auto &vel = prim->add_attr<zeno::vec3f>("vel");
         #pragma omp parallel for
-        for (size_t i = 0; i < prim->size(); i++) {
+        for (intptr_t i = 0; i < prim->size(); i++) {
             vel[i] = lin + zeno::cross(ang, pos[i] - com);
         }
 
