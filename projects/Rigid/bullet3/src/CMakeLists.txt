@@ -4,7 +4,7 @@ IF(BUILD_BULLET3)
 ENDIF(BUILD_BULLET3)
 
 
-SUBDIRS(   BulletInverseDynamics BulletSoftBody BulletCollision BulletDynamics LinearMath Bullet3Common)
+SUBDIRS(   BulletInverseDynamics BulletSoftBody BulletCollision BulletDynamics LinearMath Bullet3Common VHACD BussIK)
 
 
 IF(INSTALL_LIBS)
