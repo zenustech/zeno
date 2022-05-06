@@ -58,10 +58,11 @@ vec3 computeFramePosition()
   {
     return vPosition;
   }
-
-  int prevFrameID = int(fInstTime / fInstDeltaTime); 
+  float t = fInstTime;
+  t = clamp(t, 0, fInstDeltaTime * float(iInstFrameAmount - 1));
+  int prevFrameID = int(t / fInstDeltaTime); 
   int nextFrameID = prevFrameID + 1;
-  float dt = fInstTime - fInstDeltaTime * prevFrameID;
+  float dt = t - fInstDeltaTime * prevFrameID;
 
   prevFrameID = clamp(prevFrameID, 0, iInstFrameAmount - 1);  
   nextFrameID = clamp(nextFrameID, 0, iInstFrameAmount - 1);  
@@ -354,10 +355,11 @@ vec3 computeFramePosition()
   {
     return vPosition;
   }
-
-  int prevFrameID = int(fInstTime / fInstDeltaTime); 
+  float t = fInstTime;
+  t = clamp(t, 0, fInstDeltaTime * float(iInstFrameAmount - 1));
+  int prevFrameID = int(t / fInstDeltaTime); 
   int nextFrameID = prevFrameID + 1;
-  float dt = fInstTime - fInstDeltaTime * prevFrameID;
+  float dt = t - fInstDeltaTime * prevFrameID;
 
   prevFrameID = clamp(prevFrameID, 0, iInstFrameAmount - 1);  
   nextFrameID = clamp(nextFrameID, 0, iInstFrameAmount - 1);  

@@ -33,6 +33,9 @@ uniform mat4 mView;
 uniform mat4 mProj;
 uniform mat4 mInvView;
 uniform mat4 mInvProj;
+uniform float fInstDeltaTime;
+uniform int iInstFrameAmount;
+uniform sampler2D sInstVertexFrameSampler;
 uniform vec3 u_scene_voxel_scale;
 
 in vec3 vPosition;
@@ -41,6 +44,7 @@ in vec3 vNormal;
 in vec3 vTexCoord;
 in vec3 vTangent;
 in mat4 mInstModel;
+in float fInstTime;
 
 out vec3 g_world_pos;
 out vec3 g_normal;
@@ -48,9 +52,30 @@ out vec3 g_color;
 out vec3 g_tex_coords;
 out vec3 g_tangent;
 
+vec3 computeFramePosition()
+{
+  if (fInstDeltaTime == 0.0 || iInstFrameAmount == 0)
+  {
+    return vPosition;
+  }
+  float t = fInstTime;
+  t = clamp(t, 0, fInstDeltaTime * float(iInstFrameAmount - 1));
+  int prevFrameID = int(t / fInstDeltaTime); 
+  int nextFrameID = prevFrameID + 1;
+  float dt = t - fInstDeltaTime * prevFrameID;
+
+  prevFrameID = clamp(prevFrameID, 0, iInstFrameAmount - 1);  
+  nextFrameID = clamp(nextFrameID, 0, iInstFrameAmount - 1);  
+
+  vec3 prevPosition = texelFetch(sInstVertexFrameSampler, ivec2(gl_VertexID, prevFrameID), 0).rgb;
+  vec3 nextPosition = texelFetch(sInstVertexFrameSampler, ivec2(gl_VertexID, nextFrameID), 0).rgb;
+  return mix(prevPosition, nextPosition, dt);
+}
+
 void main()
 {
-  g_world_pos = vec3(mInstModel * vec4(vPosition, 1.0));
+  vec3 framePosition = computeFramePosition();
+  g_world_pos = vec3(mInstModel * vec4(framePosition, 1.0));
   g_color = vColor;
   g_normal = transpose(inverse(mat3(mInstModel))) * vNormal;
   g_tex_coords = vTexCoord;
@@ -321,7 +346,10 @@ uniform float farPlane;
 uniform mat4 lview[16];
 uniform float near[128];
 uniform float far[128];
+layout (std140, binding = 0) uniform LightSpaceMatrices
+{
 uniform mat4 lightSpaceMatrices[128];
+};
 uniform float cascadePlaneDistances[112];
 uniform int cascadeCount;   // number of frusta - 1
 vec3 random3(vec3 c) {

@@ -30,4 +30,7 @@ ZENO_API std::pair<vec3f, vec3f> primBoundingBox(PrimitiveObject *prim);
 
 ZENO_API void primRandomize(PrimitiveObject *prim, vec3f const &scale, int seed);
 
+ZENO_API void BarycentricInterpPrimitive(PrimitiveObject* _dst, const PrimitiveObject* _src, int i, int v0, int v1, int v2,
+zeno::vec3f &pdst, zeno::vec3f &pos0, zeno::vec3f &pos1, zeno::vec3f &pos2);
+
 }

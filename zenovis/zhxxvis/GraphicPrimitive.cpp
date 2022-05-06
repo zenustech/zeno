@@ -503,7 +503,7 @@ struct GraphicPrimitive : IGraphic {
         bool findCamera=false;
         triObj.prog = get_tris_program(path, prim->mtl, prim->inst);
         if(prim->mtl!=nullptr){
-            //triObj.voxelprog = get_voxelize_program(prim->mtl, prim->inst);
+            triObj.voxelprog = get_voxelize_program(prim->mtl, prim->inst);
             triObj.shadowprog = get_shadow_program(prim->mtl, prim->inst);
             auto code = prim->mtl->frag;
             if(code.find("mat_reflection = float(float(1))")!=std::string::npos)
@@ -773,12 +773,34 @@ struct GraphicPrimitive : IGraphic {
                 instvbobind(instvbo);
             }
         }
-
+        auto &scene = Scene::getInstance();
+        auto &lights = scene.lights;
+        if (LightMatrixUBO == 0)
+        {
+            CHECK_GL(glGenBuffers(1, &LightMatrixUBO));
+            CHECK_GL(glBindBuffer(GL_UNIFORM_BUFFER, LightMatrixUBO));
+            CHECK_GL(glBufferData(GL_UNIFORM_BUFFER, sizeof(glm::mat4x4) * 128, nullptr, GL_STATIC_DRAW));
+            CHECK_GL(glBindBufferBase(GL_UNIFORM_BUFFER, 0, LightMatrixUBO));
+            CHECK_GL(glBindBuffer(GL_UNIFORM_BUFFER, 0));
+        }
+        glBindBuffer(GL_UNIFORM_BUFFER, LightMatrixUBO);
+        //std::cout<<"                        "<<LightMatrixUBO<<std::endl;
+        for (int lightNo = 0; lightNo < lights.size(); ++lightNo)
+        {
+            auto &light = lights[lightNo];
+            
+            auto matrices = light->lightSpaceMatrices;
+            for (size_t i = 0; i < matrices.size(); ++i)
+            {
+                glBufferSubData(GL_UNIFORM_BUFFER, (lightNo * (Light::cascadeCount + 1) + i) * sizeof(glm::mat4x4), sizeof(glm::mat4x4), &matrices[i]);
+            }
+            
+        }
+        glBindBuffer(GL_UNIFORM_BUFFER, 0);
         triObj.voxelprog->use();
         set_program_uniforms(triObj.voxelprog);
 
-        auto &scene = Scene::getInstance();
-        auto &lights = scene.lights;
+        
         triObj.voxelprog->set_uniformi("lightNum", lights.size());
         for (int lightNo = 0; lightNo < lights.size(); ++lightNo)
         {
