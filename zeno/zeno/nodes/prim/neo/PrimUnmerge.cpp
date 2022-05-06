@@ -2,7 +2,9 @@
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/ListObject.h>
 #include <zeno/types/StringObject.h>
+#include <zeno/utils/variantswitch.h>
 #include <unordered_map>
+#include <cassert>
 
 namespace zeno {
 namespace {
@@ -28,9 +30,82 @@ struct PrimUnmerge : INode {
                     primList[tag] = std::make_shared<PrimitiveObject>();
                 }
 
-                for (size_t i = 0; i < prim->verts.size(); i++) {
-                    int tag = tagArr[i];
-                    primList[tag]->verts.push_back(prim->verts[i]);
+                bool hasTopo = prim->lines.size() || prim->tris.size() || prim->quads.size() || prim->polys.size();
+
+                std::vector<std::vector<int>> revamp(tagMax);
+                std::vector<int> unrevamp(hasTopo ? prim->verts.size() : 0);
+                boolean_switch(hasTopo, [&] (auto hasTopo) {
+                    for (size_t i = 0; i < prim->verts.size(); i++) {
+                        int tag = tagArr[i];
+                        if constexpr (hasTopo.value)
+                            unrevamp[i] = (int)revamp[tag].size();
+                        revamp[tag].push_back(i);
+                    }
+                });
+                prim->foreach_attr([&] (auto const &key, auto &arr) {
+                    for (size_t tag = 0; tag < tagMax; tag++) {
+                        for (size_t i = 0; i < revamp[tag].size(); i++) {
+                            primList[tag]->verts[i] = prim->verts[revamp[tag][i]];
+                        }
+                    }
+                });
+
+                if (hasTopo) {
+                    int accum = 0;
+                    std::vector<int> scanned(tagMax);
+                    for (size_t tag = 0; tag < tagMax; tag++) {
+                        accum += primList[tag]->verts.size();
+                        scanned[tag] = accum;
+                    }
+
+                    auto unrevampf = [&unrevamp] (auto v) {
+                        for (int i = 0; i < is_vec_n<decltype(v)>; i++) {
+                            v[i] = unrevamp[v[i]];
+                        }
+                        return v;
+                    };
+
+                    for (size_t i = 0; i < prim->lines.size(); i++) {
+                        auto line = prim->lines[i];
+                        int tag = tagArr[line[0]];
+                        if (tag == tagArr[line[1]])
+                            primList[tag]->lines.push_back(unrevampf(line));
+                    }
+
+                    for (size_t i = 0; i < prim->tris.size(); i++) {
+                        auto tri = prim->tris[i];
+                        int tag = tagArr[tri[0]];
+                        if (tag == tagArr[tri[1]] && tag == tagArr[tri[2]])
+                            primList[tag]->tris.push_back(unrevampf(tri));
+                    }
+
+                    for (size_t i = 0; i < prim->quads.size(); i++) {
+                        auto quad = prim->quads[i];
+                        int tag = tagArr[quad[0]];
+                        if (tag == tagArr[quad[1]] && tag == tagArr[quad[2]] && tag == tagArr[quad[3]])
+                            primList[tag]->quads.push_back(unrevampf(quad));
+                    }
+
+                    for (size_t i = 0; i < prim->polys.size(); i++) {
+                        auto [beg, len] = prim->polys[i];
+                        assert(len >= 1);
+                        int tag = tagArr[prim->loops[beg]];
+                        bool ok = true;
+                        for (int lo = beg + 1; lo < beg + len; lo++) {
+                            if (tag != tagArr[prim->loops[lo]]) {
+                                ok = false;
+                                break;
+                            }
+                        }
+                        if (ok) {
+                            auto primtagged = primList[tag].get();
+                            int base(primtagged->loops.size());
+                            for (int lo = beg; lo < beg + len; lo++) {
+                                primtagged->loops.push_back(unrevamp[prim->loops[lo]]);
+                            }
+                            primtagged->polys.emplace_back(base, len);
+                        }
+                    }
                 }
 
             } else if (method == "faces") {

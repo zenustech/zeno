@@ -12,8 +12,8 @@ namespace {
 static void primMarkIsland(PrimitiveObject *prim, std::string tagAttr) {
     auto const &tris = prim->tris;
     auto n = tris.size();
-    auto &tagarr = prim->add_attr<int>(tagAttr);
-    auto m = tagarr.size();
+    auto &tagVert = prim->add_attr<int>(tagAttr);
+    auto m = tagVert.size();
     static std::vector<int> found(m);
     for (int i = 0; i < m; i++) {
         found[i] = i;
@@ -32,7 +32,7 @@ static void primMarkIsland(PrimitiveObject *prim, std::string tagAttr) {
         found[e0] = e1;
     }
     for (int i = 0; i < m; i++) {
-        tagarr[i] = find(i);
+        tagVert[i] = find(i);
     }
 }
 
