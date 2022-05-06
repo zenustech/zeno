@@ -180,7 +180,7 @@ struct AlignPrimitive : zeno::INode {
 
         
         #pragma omp parallel for 
-        for(size_t i = 0;i < res->size();++i){
+        for(intptr_t i = 0;i < res->size();++i){
             res->verts[i] = ref_shape->verts[i];
         }
 

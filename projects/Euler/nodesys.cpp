@@ -80,7 +80,7 @@ struct DenseFieldToVDB : zeno::INode {
       auto writeTo = oField->m_grid->getAccessor();
 
 #pragma omp parallel for
-      for (size_t index = 0; index < inField->size(); index++) {
+      for (intptr_t index = 0; index < inField->size(); index++) {
         int i = index % (ni + 4);
         int j = index / (ni + 4) % (nj + 4);
         int k = index / ((ni + 4) * (nj + 4));
@@ -109,7 +109,7 @@ struct DenseFieldToVDB : zeno::INode {
       auto writeTo = oField->m_grid->getAccessor();
 
 #pragma omp parallel for
-      for (size_t index = 0; index < inField->size(); index++) {
+      for (intptr_t index = 0; index < inField->size(); index++) {
         int i = index % (ni + 4);
         int j = index / (ni + 4) % (nj + 4);
         int k = index / ((ni + 4) * (nj + 4));
@@ -137,7 +137,7 @@ struct DenseFieldToVDB : zeno::INode {
       auto writeTo = oField->m_grid->getAccessor();
 
 #pragma omp parallel for
-      for (size_t index = 0; index < inField->size(); index++) {
+      for (intptr_t index = 0; index < inField->size(); index++) {
         int i = index % (ni + 4);
         int j = index / (ni + 4) % (nj + 4);
         int k = index / ((ni + 4) * (nj + 4));

@@ -3,6 +3,7 @@
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/StringObject.h>
 #include <zeno/types/CameraObject.h>
+#include <zeno/types/DummyObject.h>
 #include <zeno/types/LightObject.h>
 #include <zeno/utils/cppdemangle.h>
 #include <zeno/types/UserData.h>

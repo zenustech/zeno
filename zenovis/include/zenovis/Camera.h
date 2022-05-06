@@ -25,6 +25,17 @@ struct Camera {
     glm::vec3 m_lodfront{0, 0, 1};
     glm::vec3 m_lodup{0, 1, 0};
 
+    struct ZxxHappyLookParam {
+        float cx = 0;
+        float cy = 0;
+        float cz = 0;
+        float theta = 0;
+        float phi = 0;
+        float radius = 0;
+        float fov = 0;
+        bool ortho_mode = false;
+    } m_zxx;
+
     float getAspect() const {
         return (float)m_nx / (float)m_ny;
     }

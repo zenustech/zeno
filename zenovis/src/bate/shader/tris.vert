@@ -12,7 +12,6 @@ in vec3 vColor;
 in vec3 vNormal;
 in vec3 vTexCoord;
 in vec3 vTangent;
-in mat4 mInstModel;
 
 out vec3 position;
 out vec3 iColor;
@@ -22,11 +21,11 @@ out vec3 iTangent;
 
 void main()
 {
-  position = vec3(mInstModel * vec4(vPosition, 1.0));
+  position = vPosition;
   iColor = vColor;
-  iNormal = transpose(inverse(mat3(mInstModel))) * vNormal;
+  iNormal = vNormal;
   iTexCoord = vTexCoord;
-  iTangent = mat3(mInstModel) * vTangent;
+  iTangent = vTangent;
   gl_Position = mVP * vec4(position, 1.0);
 }
 )"

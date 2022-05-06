@@ -13,8 +13,8 @@ public:
     static void registerMsgHandler();
 
 protected:
-    virtual std::streamsize xsputn(const char* p, std::streamsize n);
-    virtual int_type overflow(int_type v)
+    virtual std::streamsize xsputn(const char* p, std::streamsize n) override;
+    virtual int_type overflow(int_type v) override
     {
         return v;
     }

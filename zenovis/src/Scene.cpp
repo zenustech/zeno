@@ -13,6 +13,7 @@
 #include <zenovis/opengl/common.h>
 #include <zenovis/opengl/vao.h>
 #include <zeno/utils/scope_exit.h>
+#include <cstdlib>
 #include <map>
 
 namespace zenovis {
@@ -34,29 +35,41 @@ Scene::Scene()
     auto version = (const char *)glGetString(GL_VERSION);
     zeno::log_info("OpenGL version: {}", version ? version : "(null)");
 
-    switchRenderEngine("bate");
+    if (std::getenv("ZENO_ZHXX"))
+        switchRenderEngine("zhxx");
+    else
+        switchRenderEngine("bate");
 }
 
 void Scene::switchRenderEngine(std::string const &name) {
     std::map<std::string, std::function<void()>>{
     {"bate", [&] { renderEngine = makeRenderEngineBate(this); }},
-    //{"zhxx", [&] { renderEngine = makeRenderEngineZhxx(this); }},
+    {"zhxx", [&] { renderEngine = makeRenderEngineZhxx(this); }},
     }.at(name)();
 }
 
+static bool calcObjectCenterRadius(zeno::IObject *ptr, zeno::vec3f &center, float &radius) {
+    if (auto obj = dynamic_cast<zeno::PrimitiveObject *>(ptr)) {
+        auto [bmin, bmax] = primBoundingBox(obj);
+        auto delta = bmax - bmin;
+        radius = std::max({delta[0], delta[1], delta[2]}) * 0.5f;
+        center = (bmin + bmax) * 0.5f;
+        return true;
+    }
+    return false;
+}
+
 bool Scene::cameraFocusOnNode(std::string const &nodeid) {
-#if 0
-    if (auto it = this->objects.find(nodeid); it != this->objects.end()) {  // FIXME: nono, use `:` to split `:TOVIEW` instead!
-        if (auto obj = dynamic_cast<zeno::PrimitiveObject *>(it->second.get())) {
-            auto [bmin, bmax] = primBoundingBox(obj);
-            auto delta = bmax - bmin;
-            auto radius = std::max({delta[0], delta[1], delta[2]}) * 0.5f;
-            auto center = (bmin + bmax) * 0.5f;
-            this->camera->focusCamera(center[0], center[1], center[2], radius);
-            return true;
+    for (auto const &[key, ptr]: this->objectsMan->pairs()) {
+        if (nodeid == key.substr(0, key.find_first_of(':'))) {
+            zeno::vec3f center;
+            float radius;
+            if (calcObjectCenterRadius(ptr, center, radius))
+                this->camera->focusCamera(center[0], center[1], center[2], radius);
+            else
+                return false;
         }
     }
-#endif
     zeno::log_debug("cannot focus: node with id {} not found, did you tagged VIEW on it?", nodeid);
     return false;
 }

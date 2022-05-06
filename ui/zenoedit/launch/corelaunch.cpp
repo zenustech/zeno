@@ -83,7 +83,8 @@ struct ProgramRunData {
         if (chkfail()) return;
         if (g_state == KILLING) return;
 
-        for (int frame = graph->beginFrameNumber; frame < graph->endFrameNumber; frame++) {
+        session->globalComm->frameRange(graph->beginFrameNumber, graph->endFrameNumber);
+        for (int frame = graph->beginFrameNumber; frame <= graph->endFrameNumber; frame++) {
             zeno::log_info("begin frame {}", frame);
             session->globalComm->newFrame();
             session->globalState->frameBegin();

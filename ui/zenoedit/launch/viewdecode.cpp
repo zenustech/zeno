@@ -76,6 +76,14 @@ struct PacketProc {
         } else if (action == "finishFrame") {
             zeno::getSession().globalComm->finishFrame();
 
+        } else if (action == "frameRange") {
+            auto pos = objKey.find(':');
+            if (pos != std::string::npos) {
+                int beg = std::stoi(objKey.substr(0, pos));
+                int end = std::stoi(objKey.substr(pos + 1));
+                zeno::getSession().globalComm->frameRange(beg, end);
+            }
+
         } else if (action == "reportStatus") {
             std::string statJson{buf, len};
             zeno::getSession().globalStatus->fromJson(statJson);
@@ -119,6 +127,8 @@ struct PacketProc {
 
         const char *data = buf + header.info_size;
         size_t size = header.total_size - header.info_size;
+
+        zeno::log_debug("decoder got action=[{}] key=[{}] size={}", action, objKey, size);
 
         return processPacket(action, objKey, data, size);
     }

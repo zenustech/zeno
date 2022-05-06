@@ -24,7 +24,7 @@
         "ZENO_WITH_ZenoFX": "ON",
         "ZENOFX_ENABLE_OPENVDB": "ON",
         "ZENOFX_ENABLE_LBVH": "ON",
-        "ZENO_ENABLE_OPENEXR": "ON",
+        "ZENO_ENABLE_OPENEXR": "OFF",
         "ZENO_WITH_zenvdb": "ON",
         "ZENO_WITH_FastFLIP": "ON",
         "ZENO_WITH_Rigid": "ON",
@@ -46,6 +46,7 @@
         "ZENO_WITH_Euler": "ON",
         "ZENO_WITH_Functional": "ON",
         "ZENO_WITH_LSystem": "ON",
+        "ZENO_WITH_mesher": "ON",
         "ZENO_WITH_TOOL_cgmeshTools": "ON",
         "ZENO_WITH_TOOL_HerculesTools": "ON"
       }
@@ -56,8 +57,7 @@
       "displayName": "CUDA configuration",
       "description": "Additionally build with CUDA extension modules",
       "cacheVariables": {
-        "ZENO_WITH_gmpm": "ON",
-        "ZENO_WITH_mesher": "ON"
+        "ZENO_WITH_gmpm": "ON"
       }
     },
     {
