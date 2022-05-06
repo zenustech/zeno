@@ -67,7 +67,7 @@ inline void spatial_hashing(ExecPol &pol, const TileVectorT &tvs,
   pol(range(tvs.size()),
       [tvs = proxy<space>({}, tvs),
        ibs = proxy<space>(ibs)] ZS_LAMBDA(size_t pi) mutable {
-        auto x = tvs.template pack<3>("pos", pi);
+        auto x = tvs.template pack<3>("x", pi);
         auto coord = ibs.bucketCoord(x);
         ibs.table.insert(coord);
       });
@@ -94,7 +94,7 @@ inline void spatial_hashing(ExecPol &pol, const TileVectorT &tvs,
   pol(range(tvs.size()),
       [tvs = proxy<space>({}, tvs),
        ibs = proxy<space>(ibs)] ZS_LAMBDA(size_t pi) mutable {
-        auto pos = tvs.template pack<3>("pos", pi);
+        auto pos = tvs.template pack<3>("x", pi);
         auto coord = ibs.bucketCoord(pos);
         atomic_add(wrapv<space>{},
                    (index_type *)&ibs.counts[ibs.table.query(coord)],
@@ -117,7 +117,7 @@ inline void spatial_hashing(ExecPol &pol, const TileVectorT &tvs,
   pol(range(tvs.size()),
       [tvs = proxy<space>({}, tvs), counts = proxy<space>(tmp),
        ibs = proxy<space>(ibs)] ZS_LAMBDA(size_t pi) mutable {
-        auto pos = tvs.template pack<3>("pos", pi);
+        auto pos = tvs.template pack<3>("x", pi);
         auto coord = ibs.bucketCoord(pos);
         auto cellno = ibs.table.query(coord);
         auto localno = atomic_add(wrapv<space>{}, (index_type *)&counts[cellno],
@@ -236,7 +236,7 @@ inline void histogram_sort_primitives(ExecPol &pol, ZenoParticles &primitive,
                    prims = proxy<space>({}, pars), table = proxy<space>(table),
                    grid = proxy<space>(grid)] ZS_LAMBDA(Ti i) mutable {
     using grid_t = RM_CVREF_T(grid);
-    auto pos = prims.template pack<3>("pos", i);
+    auto pos = prims.template pack<3>("x", i);
     auto index = (pos * dxinv - 0.5f);
     typename table_t::key_t coord{};
     for (int d = 0; d != 3; ++d)
@@ -262,7 +262,7 @@ inline void histogram_sort_primitives(ExecPol &pol, ZenoParticles &primitive,
                    prims = proxy<space>({}, pars), table = proxy<space>(table),
                    grid = proxy<space>(grid)] ZS_LAMBDA(Ti i) mutable {
     using grid_t = RM_CVREF_T(grid);
-    auto pos = prims.template pack<3>("pos", i);
+    auto pos = prims.template pack<3>("x", i);
     auto index = (pos * dxinv - 0.5f);
     typename table_t::key_t coord{};
     for (int d = 0; d != 3; ++d)
@@ -307,7 +307,7 @@ inline void histogram_sort_primitives(ExecPol &pol, ZenoParticles &primitive,
           auto pos = table_t::key_t::zeros();
           for (int d = 0; d != degree; ++d) {
             auto ind = reinterpret_bits<int>(eles("inds", d, ei));
-            pos += pars.template pack<3>("pos", ind);
+            pos += pars.template pack<3>("x", ind);
           }
           pos /= degree;
           auto index = (pos * dxinv - 0.5f);
@@ -341,7 +341,7 @@ inline void histogram_sort_primitives(ExecPol &pol, ZenoParticles &primitive,
       auto pos = table_t::key_t::zeros();
       for (int d = 0; d != degree; ++d) {
         auto ind = reinterpret_bits<int>(eles("inds", d, ei));
-        pos += pars.template pack<3>("pos", ind);
+        pos += pars.template pack<3>("x", ind);
       }
       pos /= degree;
       auto index = (pos * dxinv - 0.5f);
