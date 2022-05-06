@@ -4,7 +4,7 @@
 #include <zeno/types/NumericObject.h>
 #include <random>
 #include <cmath>
-#include <zeno/types/PrimitiveUtils.h>
+#include <zeno/types/PrimitiveTools.h>
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
