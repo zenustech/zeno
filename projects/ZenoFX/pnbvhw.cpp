@@ -86,8 +86,27 @@ struct BuildPrimitiveBvh : zeno::INode {
         has_input("thickness")
             ? get_input<zeno::NumericObject>("thickness")->get<float>()
             : 0.f;
-    auto lbvh = std::make_shared<zeno::LBvh>(prim, thickness);
-    set_output("lbvh", std::move(lbvh));
+    auto primType = get_param<std::string>("prim_type");
+    if (primType == "auto") {
+      auto lbvh = std::make_shared<zeno::LBvh>(prim, thickness);
+      set_output("lbvh", std::move(lbvh));
+    } else if (primType == "point") {
+      auto lbvh = std::make_shared<zeno::LBvh>(
+          prim, thickness, zeno::LBvh::element_c<zeno::LBvh::element_e::point>);
+      set_output("lbvh", std::move(lbvh));
+    } else if (primType == "line") {
+      auto lbvh = std::make_shared<zeno::LBvh>(
+          prim, thickness, zeno::LBvh::element_c<zeno::LBvh::element_e::line>);
+      set_output("lbvh", std::move(lbvh));
+    } else if (primType == "tri") {
+      auto lbvh = std::make_shared<zeno::LBvh>(
+          prim, thickness, zeno::LBvh::element_c<zeno::LBvh::element_e::tri>);
+      set_output("lbvh", std::move(lbvh));
+    } else if (primType == "quad") {
+      auto lbvh = std::make_shared<zeno::LBvh>(
+          prim, thickness, zeno::LBvh::element_c<zeno::LBvh::element_e::tet>);
+      set_output("lbvh", std::move(lbvh));
+    }
   }
 };
 
@@ -95,7 +114,7 @@ ZENDEFNODE(BuildPrimitiveBvh,
            {
                {{"PrimitiveObject", "prim"}, {"numeric:float", "thickness"}},
                {{"LBvh", "lbvh"}},
-               {},
+               {{"enum auto point line tri quad", "prim_type", "auto"}},
                {"zenofx"},
            });
 
@@ -107,14 +126,12 @@ struct RefitPrimitiveBvh : zeno::INode {
   }
 };
 
-ZENDEFNODE(RefitPrimitiveBvh,
-           {
-               {{"LBvh", "lbvh"}},
-               {{"LBvh", "lbvh"}},
-               {},
-               {"zenofx"},
-           });
-
+ZENDEFNODE(RefitPrimitiveBvh, {
+                                  {{"LBvh", "lbvh"}},
+                                  {{"LBvh", "lbvh"}},
+                                  {},
+                                  {"zenofx"},
+                              });
 
 struct QueryNearestPrimitive : zeno::INode {
   struct KVPair {
@@ -181,20 +198,20 @@ struct QueryNearestPrimitive : zeno::INode {
     line->verts.push_back(lbvh->retrievePrimitiveCenter(id));
     line->lines.push_back({0, 1});
 
-    set_output("pid", std::make_shared<NumericObject>(pid));
-    set_output("id", std::make_shared<NumericObject>(id));
+    set_output("primid", std::make_shared<NumericObject>(pid));
+    set_output("bvh_primid", std::make_shared<NumericObject>(id));
     set_output("dist", std::make_shared<NumericObject>(dist));
-    set_output("prim", lbvh->retrievePrimitive(id));
+    set_output("bvh_prim", lbvh->retrievePrimitive(id));
     set_output("segment", std::move(line));
   }
 };
 
 ZENDEFNODE(QueryNearestPrimitive, {
                                       {{"prim"}, {"LBvh", "lbvh"}},
-                                      {{"NumericObject", "pid"},
-                                       {"NumericObject", "id"},
+                                      {{"NumericObject", "primid"},
+                                       {"NumericObject", "bvh_primid"},
                                        {"NumericObject", "dist"},
-                                       {"PrimitiveObject", "prim"},
+                                       {"PrimitiveObject", "bvh_prim"},
                                        {"PrimitiveObject", "segment"}},
                                       {},
                                       {"zenofx"},
