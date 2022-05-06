@@ -1,7 +1,7 @@
 #include "innershadoweffect.h"
 #include <QPainter>
 #include <QPushButton>
-#include <QtWidgets/private/qgraphicseffect_p.h>
+//#include <QtWidgets/private/qgraphicseffect_p.h>
 
 
 InnerShadowEffect::InnerShadowEffect(QObject *parent)
@@ -31,7 +31,7 @@ void InnerShadowEffect::draw(QPainter *painter)
 
     qreal left_padding = 4, vpadding = 1;
 
-    QWidget* hostWid = const_cast<QWidget*>(this->source()->widget());
+    QWidget* hostWid = nullptr;//const_cast<QWidget*>(this->source()->widget());
 
     QColor clrUpperShadow, clrDownShadow;
 
