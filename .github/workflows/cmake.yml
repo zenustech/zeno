@@ -20,7 +20,6 @@ jobs:
     outputs:
       deploy: ${{ steps.is-release-step.outputs.ci-skip == 'true' && 'true' || 'false' }}
       vcpkg: ${{ steps.is-release-step.outputs.ci-skip == 'true' && 'true' || 'true' }}
-      type: ${{ steps.is-release-step.outputs.ci-skip == 'true' && 'release' || 'release' }}
 
   build:
     strategy:
@@ -86,11 +85,11 @@ jobs:
         runVcpkgInstall: true
 
     #- name: Cache CMake
-      #if: ${{ needs.check.outputs.type != 'release' }}
+      #if: ${{ needs.check.outputs.deploy != 'true' }}
       #uses: actions/cache@v3
       #with:
         #path: ${{ github.workspace }}/build
-        #key: ${{ matrix.os }}-${{ needs.check.outputs.vcpkg == 'true' && matrix.triplet || 'none' }}-${{ matrix.cxx }}-${{ matrix.gpu }}-${{ needs.check.outputs.type }}-CMake-1
+        #key: ${{ matrix.os }}-${{ needs.check.outputs.vcpkg == 'true' && matrix.triplet || 'none' }}-${{ matrix.cxx }}-${{ matrix.gpu }}
 
     #- name: Clean CMake Cache
       #shell: python
@@ -103,8 +102,8 @@ jobs:
     - name: Run CMake
       uses: lukka/run-cmake@v10
       with:
-        configurePreset: ${{ (needs.check.outputs.vcpkg == 'true' && (matrix.gpu == 'cuda' && 'cuda' || 'default') || 'basic') }}${{ (needs.check.outputs.type == 'release' && '' || '-debug') }}
-        buildPreset: default${{ (needs.check.outputs.type == 'release' && '' || '-debug') }}
+        configurePreset: ${{ (needs.check.outputs.vcpkg == 'true' && (matrix.gpu == 'cuda' && 'cuda' || 'default') || 'basic') }}
+        buildPreset: default
 
     - name: Packaging
       if: ${{ needs.check.outputs.deploy == 'true' }}
