@@ -91,7 +91,7 @@ QCheckBox::indicator:checked {
         <string notr="true">QCheckBox {
     spacing: 8px;
 	font: 14px &quot;HarmonyOS Sans&quot;;
-	color: rgba(255, 255, 255, 0.7);
+	color: rgba(80, 154, 200, 0.7);
 }
 
 QCheckBox::indicator {
@@ -104,7 +104,7 @@ QCheckBox::indicator:unchecked {
 }
 
 QCheckBox::indicator:checked {
-    image: url(:/icons/checkbox_checked_normal.svg);
+    image: url(:/icons/checkbox_checked_cyan.svg);
 }</string>
        </property>
        <property name="text">
