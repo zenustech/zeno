@@ -4,9 +4,9 @@
 #include "graphsmanagment.h"
 
 
-ZWidgetErrStream::ZWidgetErrStream()
+ZWidgetErrStream::ZWidgetErrStream(std::ostream &stream)
     : std::basic_streambuf<char>()
-    , m_stream(std::cerr)
+    , m_stream(stream)
 {
     m_old_buf = m_stream.rdbuf();
     m_stream.rdbuf(this);
@@ -19,16 +19,26 @@ ZWidgetErrStream::~ZWidgetErrStream()
 
 std::streamsize ZWidgetErrStream::xsputn(const char* p, std::streamsize n)
 {
-    QString str(p);
+    if (auto it = std::find(p, p + n, '\n'); it == p + n) {
+        m_linebuffer.append(p, n);
+    } else {
+        luzhPutString(QString::fromStdString(m_linebuffer));
+        m_linebuffer.assign(it + 1, p + n - (it + 1));
+    }
+    return n;
+}
 
+void ZWidgetErrStream::luzhPutString(QString str) {
     //format like:
     //"[I 14:15:11.810] (unknown:0) begin frame 89"
 
     QRegExp rx("\\[(T|D|I|C|W|E)\\s+(\\d+):(\\d+):(\\d+)\\.(\\d+)\\]\\s+\\(([^\\)]+):(\\d+)\\)\\s+([^\\)]+)");
-    int pos = rx.indexIn(str);
-    QStringList list = rx.capturedTexts();
-    int sz = list.length();
-    if (sz == 9)
+    if (int pos = rx.indexIn(str); pos == -1)
+    {
+        QMessageLogger logger("<stderr>", 0, 0);
+        logger.critical().noquote() << "[C] <stderr>" << str;
+    }
+    else if (QStringList list = rx.capturedTexts(); list.length() == 9)
     {
         QString type = list[1];
         int nDays = list[2].toInt();
@@ -52,32 +62,31 @@ std::streamsize ZWidgetErrStream::xsputn(const char* p, std::streamsize n)
         QMessageLogger logger(pwtf, line, 0);
         if (type == "T")
         {
-            logger.info().noquote() << msg;
+            logger.debug().noquote() << "[T]" << msg;
         }
         else if (type == "D")
         {
-            logger.debug().noquote() << msg;
+            logger.debug().noquote() << "[D]" << msg;
         }
         else if (type == "I")
         {
-            logger.info().noquote() << msg;
+            logger.info().noquote() << "[I]" << msg;
         }
         else if (type == "C")
         {
-            logger.critical().noquote() << msg;
+            logger.critical().noquote() << "[C]" << msg;
         }
         else if (type == "W")
         {
-            logger.warning().noquote() << msg;
+            logger.warning().noquote() << "[W]" << msg;
         }
         else if (type == "E")
         {
-            logger.info().noquote() << "[E]" << msg;
+            logger.warning().noquote() << "[E]" << msg;
             //crash when use logger.fatal.
             //logger.fatal(msg.toLatin1());
         }
     }
-    return n;
 }
 
 void ZWidgetErrStream::registerMsgHandler()

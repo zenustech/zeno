@@ -9,10 +9,11 @@ ZenoApplication::ZenoApplication(int &argc, char **argv)
     : QApplication(argc, argv)
     , m_pGraphs(new GraphsManagment(this))
     , m_bIOProcessing(false)
+    , m_errSteam(std::cerr)
 {
     initFonts();
     initStyleSheets();
-    steam.registerMsgHandler();
+    m_errSteam.registerMsgHandler();
 }
 
 ZenoApplication::~ZenoApplication()

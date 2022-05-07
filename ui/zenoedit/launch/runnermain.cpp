@@ -12,8 +12,8 @@
 
 namespace {
 
-static FILE *old_stdout;
-static char stdout_buf[1<<20]; // 1MB
+static FILE *ourfp;
+static char ourbuf[1<<20]; // 1MB
 
 struct Header { // sync with viewdecode.cpp
     size_t total_size;
@@ -43,19 +43,19 @@ static void send_packet(std::string_view info, const char *buf, size_t len) {
 
     zeno::log_debug("runner tx head-buffer size {}", headbuffer.size());
     for (char c: headbuffer) {
-        fputc(c, old_stdout);
+        fputc(c, ourfp);
     }
 
     zeno::log_debug("runner tx data-buffer size {}", len);
     for (size_t i = 0; i < len; i++) {
-        fputc(buf[i], old_stdout);
+        fputc(buf[i], ourfp);
     }
 }
 
 static void runner_start(std::string const &progJson, int sessionid) {
     zeno::log_debug("runner got program JSON: {}", progJson);
 
-    setvbuf(old_stdout, stdout_buf, _IOFBF, sizeof(stdout_buf));
+    setvbuf(ourfp, ourbuf, _IOFBF, sizeof(ourbuf));
 
     auto session = &zeno::getSession();
     session->globalState->sessionid = sessionid;
@@ -120,16 +120,18 @@ static void runner_start(std::string const &progJson, int sessionid) {
 
 int runner_main(int sessionid);
 int runner_main(int sessionid) {
-    fprintf(stderr, "Zeno runner started...\n");
+    fprintf(stderr, "(stderr ping test)\n");
     fprintf(stdout, "(stdout ping test)\n");
 
-    old_stdout = stdout;
+    ourfp = stdout;
+    zeno::set_log_stream(std::cout);
+
+#if 0
 #ifdef __linux__
     stdout = stderr;
-#else
-    //(void)freopen("/dev/stderr", "w", stdout);//todo
 #endif
     std::cout.rdbuf(std::cerr.rdbuf());
+#endif
 
     std::string progJson;
     std::istreambuf_iterator<char> iit(std::cin.rdbuf()), eiit;

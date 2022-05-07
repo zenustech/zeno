@@ -9,6 +9,7 @@
 #include <zeno/funcs/ObjectCodec.h>
 #include <rapidjson/document.h>
 #include <type_traits>
+#include <iostream>
 #include <cassert>
 #include <vector>
 #include <string>
@@ -183,7 +184,9 @@ struct ViewDecodeData {
                 if (*p == '\a') {
                     phase = 1;
                 } else {
-                    putchar(*p);
+                    //putchar(*p);
+                    std::cerr << *p << std::endl;
+                    //zeno::log_critical("{}", *p);
                 }
             } else if (phase == 1) {
                 if (*p == '\b') {
