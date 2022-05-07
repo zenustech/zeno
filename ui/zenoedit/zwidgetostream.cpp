@@ -19,8 +19,8 @@ ZWidgetErrStream::~ZWidgetErrStream()
 
 std::streamsize ZWidgetErrStream::xsputn(const char* p, std::streamsize n)
 {
-    for (auto q = p; q != p + n; ++q)
-        putchar(*q);
+    //for (auto q = p; q != p + n; ++q)
+        //putchar(*q);
     if (auto it = std::find(p, p + n, '\n'); it == p + n) {
         m_linebuffer.append(p, n);
     } else {

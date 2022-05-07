@@ -41,15 +41,14 @@ static void send_packet(std::string_view info, const char *buf, size_t len) {
     std::memcpy(headbuffer.data() + 4, &header, sizeof(Header));
     std::memcpy(headbuffer.data() + 4 + sizeof(Header), info.data(), info.size());
 
-    zeno::log_debug("runner tx head-buffer size {}", headbuffer.size());
+    zeno::log_debug("runner tx head-buffer {} data-buffer {}", headbuffer.size(), len);
     for (char c: headbuffer) {
         fputc(c, ourfp);
     }
-
-    zeno::log_debug("runner tx data-buffer size {}", len);
     for (size_t i = 0; i < len; i++) {
         fputc(buf[i], ourfp);
     }
+    fflush(ourfp);
 }
 
 static void runner_start(std::string const &progJson, int sessionid) {
@@ -120,11 +119,12 @@ static void runner_start(std::string const &progJson, int sessionid) {
 
 int runner_main(int sessionid);
 int runner_main(int sessionid) {
-    fprintf(stderr, "(stderr ping test)\n");
-    fprintf(stdout, "(stdout ping test)\n");
+    //fprintf(stderr, "(stderr ping test)\n");
+    //fprintf(stdout, "(stdout ping test)\n");
 
     ourfp = stdout;
     zeno::set_log_stream(std::cout);
+    zeno::log_debug("runner started on sessionid={}", sessionid);
 
 #if 0
 #ifdef __linux__
