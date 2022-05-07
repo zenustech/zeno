@@ -55,6 +55,7 @@ struct SolveBiharmonicWeight : zeno::INode {
                 ++b_idx;
             }
         }
+
         std::cout << "BBW: size of bc " << bc.rows() << "\t" << bc.cols() << std::endl;
         // compute BBW weights matrix
         igl::BBWData bbw_data;
