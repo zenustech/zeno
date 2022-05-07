@@ -45,8 +45,8 @@ void ZWidgetErrStream::luzhPutString(QString str) {
     static QRegExp rx("\\[(T|D|I|C|W|E)\\s+(\\d+):(\\d+):(\\d+)\\.(\\d+)\\]\\s+\\(([^\\)]+):(\\d+)\\)\\s+([^\\)]+)");
     if (!str.startsWith('[') || rx.indexIn(str) == -1)
     {
-        QMessageLogger logger("<stderr>", 0, 0);
-        logger.critical().noquote() << "[C] <stderr>" << str;
+        QMessageLogger logger("<clog>", 0, 0);
+        logger.critical().noquote() << "[C] <clog>" << str;
     }
     else if (QStringList list = rx.capturedTexts(); list.length() == 9)
     {
