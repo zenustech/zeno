@@ -52,6 +52,9 @@ ZENO_API void read_obj_file(
 ZENO_API std::shared_ptr<PrimitiveObject>
 primitive_merge(std::shared_ptr<ListObject> list, std::string tagAttr = {});
 
+ZENO_API std::shared_ptr<PrimitiveObject>
+prim_merge(std::shared_ptr<ListObject> list, std::string tagAttr = {});
+
 static void addIndividualPrimitive(PrimitiveObject* dst, const PrimitiveObject* src, size_t index)
         {
             for(auto key:src->attr_keys())
