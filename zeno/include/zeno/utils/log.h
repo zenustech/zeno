@@ -18,38 +18,35 @@ public:
     __with_source_location(U &&u, source_location loc = source_location::current())
         : m_value(std::forward<U>(u)), m_loc(loc) {}
 
-    operator auto const &() const { return m_value; }
-    operator auto &() { return m_value; }
     auto const &value() const { return m_value; }
     auto &value() { return m_value; }
     auto const &location() const { return m_loc; }
     auto &location() { return m_loc; }
 };
 
-namespace log_level {
-enum level_enum { trace, debug, info, critical, warn, error };
+enum class log_level_t {
+    trace, debug, info, critical, warn, error,
 };
 
-ZENO_API void set_log_level(log_level::level_enum level);
+ZENO_API void set_log_level(log_level_t level);
 ZENO_API void set_log_stream(std::ostream &osin);
-ZENO_API bool __check_log_level(log_level::level_enum level);
-ZENO_API void __impl_log_print(log_level::level_enum level, source_location const &loc, std::string_view msg);
+ZENO_API bool __check_log_level(log_level_t level);
+ZENO_API void __impl_log_print(log_level_t level, source_location const &loc, std::string_view msg);
 
 template <class ...Args>
-void log_print(log_level::level_enum level, __with_source_location<std::string_view> const &msg, Args &&...args) {
+void log_print(log_level_t level, __with_source_location<std::string_view> const &msg, Args &&...args) {
     if (__check_log_level(level))
         __impl_log_print(level, msg.location(), format(msg.value(), std::forward<Args>(args)...));
 }
-#endif
 
 #define _ZENO_PER_LOG_LEVEL(x) \
 template <class ...Args> \
 void log_##x(__with_source_location<std::string_view> const &msg, Args &&...args) { \
-    log_print(log_level::x, msg, std::forward<Args>(args)...); \
+    log_print(log_level_t::x, msg, std::forward<Args>(args)...); \
 } \
 template <class ...Args> \
 void log_##x##f(__with_source_location<const char *> const &msg, Args &&...args) { \
-    log_print(log_level::x, "{}", cformat(msg, std::forward<Args>(args)...)); \
+    log_print(log_level_t::x, {"{}", msg.location()}, cformat(msg.value(), std::forward<Args>(args)...)); \
 }
 _ZENO_PER_LOG_LEVEL(trace)
 _ZENO_PER_LOG_LEVEL(debug)
