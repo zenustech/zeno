@@ -185,8 +185,7 @@ struct ViewDecodeData {
                     phase = 1;
                 } else {
                     //putchar(*p);
-                    std::cerr << *p << std::endl;
-                    //zeno::log_critical("{}", *p);
+                    std::cerr << *p;  // to be captured by luzh log panel
                 }
             } else if (phase == 1) {
                 if (*p == '\b') {

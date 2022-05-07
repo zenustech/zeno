@@ -38,15 +38,13 @@ ZENO_API void __impl_log_print(log_level::level_enum level, source_location cons
     auto mss = std::chrono::floor<std::chrono::milliseconds>(now - sod).count();
     int linlev = (int)level - (int)log_level::trace;
 
-    *os << ansiclr::fg[make_array(ansiclr::white, ansiclr::cyan, ansiclr::green,
-                                  ansiclr::cyan | ansiclr::light, ansiclr::yellow | ansiclr::light,
-                                  ansiclr::red | ansiclr::light)[linlev]]
-        << format("[{} {02d}:{02d}:{02d}.{03d}] ({}:{}) {}",
+    //auto fgclr = ansiclr::fg[make_array(ansiclr::white, ansiclr::cyan, ansiclr::green,
+                                        //ansiclr::cyan | ansiclr::light, ansiclr::yellow | ansiclr::light,
+                                        //ansiclr::red | ansiclr::light)[linlev]];
+    *os << format("[{} {02d}:{02d}:{02d}.{03d}] ({}:{}) {}\n",
                   "TDICWE"[linlev],
                   mss / 1000 / 60 / 60 % 24, mss / 1000 / 60 % 60, mss / 1000 % 60, mss % 1000,
-                  loc.file_name(), loc.line(), msg)
-        << ansiclr::reset
-        << std::endl;
+                  loc.file_name(), loc.line(), msg);
 }
 #endif
 
