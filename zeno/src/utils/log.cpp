@@ -2,23 +2,16 @@
 #include <cstring>
 #include <cassert>
 #include <cstdio>
-#ifdef ZENO_ENABLE_SPDLOG
-#include <spdlog/spdlog.h>
-#include <spdlog/sinks/stdout_color_sinks.h>
-#include <spdlog/sinks/basic_file_sink.h>
-#else
 #include <zeno/utils/format.h>
 #include <zeno/utils/ansiclr.h>
 #include <zeno/utils/arrayindex.h>
 #include <iostream>
 #include <chrono>
-#endif
 
 namespace zeno {
 
-#ifndef ZENO_ENABLE_SPDLOG
 static log_level::level_enum curr_level = log_level::info;
-static std::ostream *os = &std::cerr;
+static std::ostream *os = &std::clog;
 
 ZENO_API void set_log_level(log_level::level_enum level) {
     curr_level = level;
@@ -32,7 +25,7 @@ ZENO_API void set_log_stream(std::ostream &osin) {
     os = &osin;
 }
 
-ZENO_API void __impl_log_print(log_level::level_enum level, source_location const &loc, std::string_view msg) {
+ZENO_API void __impl_log_print(log_level level, source_location const &loc, std::string_view msg) {
     auto now = std::chrono::steady_clock::now();
     auto sod = std::chrono::floor<std::chrono::duration<int, std::ratio<24 * 60 * 60, 1>>>(now);
     auto mss = std::chrono::floor<std::chrono::milliseconds>(now - sod).count();
@@ -45,50 +38,29 @@ ZENO_API void __impl_log_print(log_level::level_enum level, source_location cons
                   "TDICWE"[linlev],
                   mss / 1000 / 60 / 60 % 24, mss / 1000 / 60 % 60, mss / 1000 % 60, mss % 1000,
                   loc.file_name(), loc.line(), msg);
+    if (level >= log_level::critical)
+        os.flush();
 }
 #endif
 
-namespace { struct LogInitializer {
-#ifdef ZENO_ENABLE_SPDLOG
-    std::shared_ptr<spdlog::logger> g_logger;
-#endif
-
+namespace {
+struct LogInitializer {
     LogInitializer() {
-#ifdef ZENO_ENABLE_SPDLOG
-        if (auto env = std::getenv("ZENO_LOGFILE"); env) {
-            g_logger = spdlog::basic_logger_mt("zeno", env);
-        } else {
-            g_logger = spdlog::stderr_color_mt("zeno");
-        }
-        g_logger->set_pattern("%^[%L %X.%e] (%g:%#) %v%$");
-#endif
-
         if (auto env = std::getenv("ZENO_LOGLEVEL"); env) {
             if (0) {
-#ifdef ZENO_ENABLE_SPDLOG
-#define _PER_LEVEL(x, y) } else if (!std::strcmp(env, #x)) { g_logger->set_level(log_level::y);
-#else
-#define _PER_LEVEL(x, y) } else if (!std::strcmp(env, #x)) { set_log_level(log_level::y);
-#endif
-            _PER_LEVEL(trace, trace)
-            _PER_LEVEL(debug, debug)
-            _PER_LEVEL(info, info)
-            _PER_LEVEL(critical, critical)
-            _PER_LEVEL(warn, warn)
-            _PER_LEVEL(error, err)
-#undef _PER_LEVEL
+#define _ZENO_PER_LOG_LEVEL(x, y) } else if (!std::strcmp(env, #x)) { set_log_level(log_level::y);
+_PER_LOG_LEVEL(trace)
+_PER_LOG_LEVEL(debug)
+_PER_LOG_LEVEL(info)
+_PER_LOG_LEVEL(critical)
+_PER_LOG_LEVEL(warn)
+_PER_LOG_LEVEL(error)
+#undef _ZENO_PER_LOG_LEVEL
             }
         }
     }
-}; }
-
-#ifdef ZENO_ENABLE_SPDLOG
-ZENO_API spdlog::logger *__get_spdlog_logger() {
-    static LogInitializer init;
-    return init.g_logger.get();
-}
-#else
+};
 static LogInitializer g_log_init;
-#endif
+}
 
 }
