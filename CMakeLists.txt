@@ -38,14 +38,15 @@ option(ZENO_INSTALL_TARGET "Enable installation targets" ON)
 if (ZENO_BUILD_SHARED)
     # Otherwise we can't link .so libs with .a libs
     set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-    if (MSVC)   # MSVC sucks /MD /MT /MDd /MTd options
+    if (MSVC AND NOT DEFINED CMAKE_MSVC_RUNTIME_LIBRARY)
+        # MSVC sucks /MD /MT /MDd /MTd options....
         # MultiThreadedDLL = /MD, MultiThreadedDebugDLL = /MDd
         set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
     endif()
 else()
-    if (MSVC)
+    if (MSVC AND NOT DEFINED CMAKE_MSVC_RUNTIME_LIBRARY)
         # MultiThreaded = /MT, MultiThreadedDebug = /MTd
-        set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+        set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
     endif()
 endif()
 
