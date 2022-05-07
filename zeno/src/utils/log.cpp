@@ -52,8 +52,8 @@ struct LogInitializer {
 #define _ZENO_PER_LOG_LEVEL(x) } else if (!std::strcmp(env, #x)) { set_log_level(log_level_t::x);
 _ZENO_PER_LOG_LEVEL(trace)
 _ZENO_PER_LOG_LEVEL(debug)
-_ZENO_PER_LOG_LEVEL(info)
 _ZENO_PER_LOG_LEVEL(critical)
+_ZENO_PER_LOG_LEVEL(info)
 _ZENO_PER_LOG_LEVEL(warn)
 _ZENO_PER_LOG_LEVEL(error)
 #undef _ZENO_PER_LOG_LEVEL
