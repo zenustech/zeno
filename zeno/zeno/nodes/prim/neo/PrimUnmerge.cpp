@@ -44,6 +44,7 @@ struct PrimUnmerge : INode {
                 });
                 prim->foreach_attr([&] (auto const &key, auto &arr) {
                     for (size_t tag = 0; tag < tagMax; tag++) {
+                        primList[tag]->verts.resize(revamp[tag].size());
                         for (size_t i = 0; i < revamp[tag].size(); i++) {
                             primList[tag]->verts[i] = prim->verts[revamp[tag][i]];
                         }

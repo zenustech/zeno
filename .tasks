@@ -1,5 +1,5 @@
 [project-build]
-command=python build.py
+command=python build.py --config Debug
 output=quickfix
 cwd=$(VIM_ROOT)
 save=2
