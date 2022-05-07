@@ -4,7 +4,112 @@
 #include <glm/gtx/transform.hpp>
 #include <glm/gtx/quaternion.hpp>
 
+#include "../ZenoFX/LinearBvh.h"
+
 namespace zeno {
+
+struct MatrixObject : zeno::IObject{
+    std::variant<glm::mat3, glm::mat4> m;
+};
+// compact all the CV's items into one single primitive object
+// mainly serves for matrix-free solver, and no storage for connectivity matrix is needed
+struct MakeFEMPrimitive : zeno::INode {
+    virtual void apply() override {
+        // input prim
+        auto prim = get_input<zeno::PrimitiveObject>("prim");
+        auto YoungModulus = get_input2<float>("Stiffness");
+        auto PossonRatio = get_input2<float>("VolumePreserve");
+        // the strength of position driven mechanics
+        auto ExamShapeCoeff = get_input2<float>("ExamShapeCoeff");
+        // the strength of barycentric interpolator-driven mechanics
+        // the interpolator can be driving bones or skin etc.
+        auto EmbedShapeCoeff = get_input2<float>("EmbedShapeCoeff");
+        
+        // Add nodal-wise channel
+        const auto& pos = prim->add_attr<zeno::vec3f>("pos");
+        auto& curPos = prim->verts.add_attr<zeno::vec3f>("curPos");
+        auto& curVel = prim->verts.add_attr<zeno::vec3f>("curVel");
+        auto& prePos = prim->verts.add_attr<zeno::vec3f>("prePos");
+        auto& preVel = prim->verts.add_attr<zeno::vec3f>("preVel");
+
+        std::copy(pos.begin(),pos.end(),curPos.begin());
+        std::copy(pos.begin(),pos.end(),prePos.begin());
+        std::fill(curVel.begin(),curVel.end(),zeno::vec3f(0,0,0));
+        std::fill(preVel.begin(),preVel.end(),zeno::vec3f(0,0,0));
+
+        auto& examW = prim->verts.add_attr<float>("examW",ExamShapeCoeff);
+        auto& examShape = prim->verts.add_attr<zeno::vec3f>("examShape");
+        std::copy(pos.begin(),pos.end(),examShape.begin());
+
+        // Add element-wise channel
+        auto& density = prim->quads.add_attr<float>("phi",1000);
+        auto& E = prim->quads.add_attr<float>("E",YoungModulus);
+        auto& nu = prim->quads.add_attr<float>("nu",PossonRatio);
+        auto& v = prim->quads.add_attr<float>("v",0);
+        auto& use_dynamic = prim->quads.add_attr<float>("dynamic_mark",0);
+
+        // characteristic norm for scalability 
+        auto& cnorm = prim->quads.add_attr<float>("cnorm",0);
+        // element-wise vol
+        auto& vol = prim->quads.add_attr<float>("vol",0);
+        // mapping of displacement to deformation gradient
+        auto& D0 = prim->quads.add_attr<zeno::vec3f>("D0");
+        auto& D1 = prim->quads.add_attr<zeno::vec3f>("D1");
+        auto& D2 = prim->quads.add_attr<zeno::vec3f>("D2");
+
+        size_t nm_elms = prim->quads.size();
+        for(size_t elm_id = 0;elm_id < nm_elms;++elm_id){
+            auto elm = prim->quads[elm_id];
+            Mat4x4d M;
+            for(size_t i = 0;i < 4;++i){
+                auto vert = prim->verts[elm[i]];
+                M.block(0,i,3,1) << vert[0],vert[1],vert[2];
+            }
+            M.bottomRows(1).setConstant(1.0);
+            // _elmVolume[elm_id] = fabs(M.determinant()) / 6;
+
+            Mat3x3d Dm;
+            for(size_t i = 1;i < 4;++i){
+                auto vert = prim->verts[elm[i]];
+                auto vert0 = prim->verts[elm[0]];
+                Dm.col(i - 1) << vert[0]-vert0[0],vert[1]-vert0[1],vert[2]-vert0[2];
+            }
+            vol[elm_id] = Dm.determinant() / 6;
+
+            Mat3x3d DmInv = Dm.inverse();
+
+            D0[elm_id] = zeno::vec3f(DmInv(0,0),DmInv(0,1),DmInv(0,2));
+            D1[elm_id] = zeno::vec3f(DmInv(1,0),DmInv(1,1),DmInv(1,2));
+            D2[elm_id] = zeno::vec3f(DmInv(2,0),DmInv(2,1),DmInv(2,2));
+
+            Vec3d v0;v0 << pos[elm[0]][0],pos[elm[0]][1],pos[elm[0]][2];
+            Vec3d v1;v1 << pos[elm[1]][0],pos[elm[1]][1],pos[elm[1]][2];
+            Vec3d v2;v2 << pos[elm[2]][0],pos[elm[2]][1],pos[elm[2]][2];
+            Vec3d v3;v3 << pos[elm[3]][0],pos[elm[3]][1],pos[elm[3]][2];
+
+            FEM_Scaler A012 = MatHelper::Area(v0,v1,v2);
+            FEM_Scaler A013 = MatHelper::Area(v0,v1,v3);
+            FEM_Scaler A123 = MatHelper::Area(v1,v2,v3);
+            FEM_Scaler A023 = MatHelper::Area(v0,v2,v3);
+
+            // we denote the average surface area of a tet as the characteristic norm
+            cnorm[elm_id] = (A012 + A013 + A123 + A023) / 4;
+        }   
+        set_output("femesh",prim);
+    } 
+};
+
+ZENDEFNODE(MakeFEMPrimitive, {
+    {"prim",
+        {"float","Stiffness","1000000"},
+        {"float","VolumePreserve","0.49"},
+        {"float","ExamShapeCoeff","0.0"},
+        {"float","EmbedShapeCoeff","0.0"}
+    },
+    {"femmesh"},
+    {},
+    {"FEM"},
+});
 
 struct ParticlesToSegments : zeno::INode {
     virtual void apply() override {
@@ -46,7 +151,7 @@ ZENDEFNODE(ParticlesToSegments, {
     {"FEM"},
 });
 
-struct RetrieveRigidTransformQuat : zeno::INode {
+struct RetrieveRigidTransform : zeno::INode {
     virtual void apply() override {
         auto objRef = get_input<zeno::PrimitiveObject>("refObj");
         auto objNew = get_input<zeno::PrimitiveObject>("newObj");
@@ -62,7 +167,7 @@ struct RetrieveRigidTransformQuat : zeno::INode {
         parallel_test.col(1) << objRef->verts[idx1][0],objRef->verts[idx1][1],objRef->verts[idx1][2];
         for(idx2 = idx1 + 1;idx2 < objRef->size();++idx2){
             parallel_test.col(2) << objRef->verts[idx2][0],objRef->verts[idx2][1],objRef->verts[idx2][2];
-            if(fabs(parallel_test.determinant()) > 1e-8)
+            if(fabs(parallel_test.determinant()) > 1e-3)
                 break;
         }
 
@@ -71,7 +176,7 @@ struct RetrieveRigidTransformQuat : zeno::INode {
         refTet.col(2) << parallel_test.col(2),1.0;
         for(idx3 = idx2 + 1;idx3 < objRef->size();++idx3){
             refTet.col(3) << objRef->verts[idx3][0],objRef->verts[idx3][1],objRef->verts[idx3][2],1.0;
-            if(fabs(refTet.determinant()) > 1e-8)
+            if(fabs(refTet.determinant()) > 1e-3)
                 break;
         }
 
@@ -92,14 +197,27 @@ struct RetrieveRigidTransformQuat : zeno::INode {
         auto retq = std::make_shared<zeno::NumericObject>();
         retq->set<zeno::vec4f>(zeno::vec4f(quat.x(),quat.y(),quat.z(),quat.w()));
 
+        auto retA = std::make_shared<MatrixObject>();
+        // T = T.transpose();
+        // std::cout << "T : " << std::endl << T << std::endl;
+        retA->m = glm::mat4(
+            T(0,0),T(0,1),T(0,2),T(3,0),
+            T(1,0),T(1,1),T(1,2),T(3,1),
+            T(2,0),T(2,1),T(2,2),T(3,2),
+            T(0,3),T(1,3),T(2,3),T(3,3)
+        );
+
+
         set_output("quat",std::move(retq));
         set_output("trans",std::move(retb));
+        set_output("mat",std::move(retA));
+
     }
 };
 
-ZENDEFNODE(RetrieveRigidTransformQuat,{
+ZENDEFNODE(RetrieveRigidTransform,{
     {{"refObj"},{"newObj"}},
-    {"quat","trans"},
+    {"quat","trans","mat"},
     {},
     {"FEM"},
 });
@@ -560,5 +678,211 @@ ZENDEFNODE(EvalElmDeformationField, {
     {},
     {"FEM"},
 });
+
+struct ExtractSurfaceMeshByTag : zeno::INode {
+    virtual void apply() override {
+        auto vprim = get_input<zeno::PrimitiveObject>("volume");
+        auto primSurf = std::make_shared<zeno::PrimitiveObject>(*vprim);
+        primSurf->tris.clear();
+        primSurf->quads.clear();
+
+        const auto& surf_tag = vprim->attr<float>("surface_tag");
+
+        for(size_t t = 0;t < vprim->tris.size();++t){
+            const auto tri = vprim->tris[t];
+            if( fabs(surf_tag[tri[0]] - 1.0) < 1e-6 && 
+                    fabs(surf_tag[tri[1]] - 1.0) < 1e-6 && 
+                    fabs(surf_tag[tri[2]] - 1.0) < 1e-6){
+                    primSurf->tris.push_back(tri);
+            }
+        }
+
+        set_output("primSurf",std::move(primSurf));
+    }
+};
+
+ZENDEFNODE(ExtractSurfaceMeshByTag, {
+    {"volume"},
+    {"primSurf"},
+    {},
+    {"FEM"},
+});
+
+struct AddVertID : zeno::INode {
+    virtual void apply() override {
+        auto prim = get_input<zeno::PrimitiveObject>("prim");
+        auto& IDs = prim->add_attr<float>("ID");
+        for(size_t i = 0;i < prim->size();++i)
+            IDs[i] = (float)(i);
+
+        set_output("primOut",prim);
+    }
+};
+
+ZENDEFNODE(AddVertID, {
+    {"prim"},
+    {"primOut"},
+    {},
+    {"FEM"},
+});
+
+struct ComputeNodalRotationCenter : zeno::INode {
+    double ComputeSimilarity(const std::vector<double>& ws1,const std::vector<double>& ws2,double sigma){
+        size_t dim = ws1.size();
+        assert(ws1.size() == ws2.size());
+
+        double w = 0;
+        for(size_t i = 0;i < dim;++i)
+            for(size_t j = 0;j < i;++j){
+                auto alpha = ws1[i]*ws1[j]*ws2[i]*ws2[j];
+                auto beta = ws1[i]*ws2[j] - ws1[j]*ws2[i];
+                beta = beta * beta;
+                w += alpha * exp(-beta/sigma/sigma);
+            }
+        return w;
+    }
+
+    virtual void apply() override {
+        auto prim = get_input<zeno::PrimitiveObject>("prim");
+        auto primNei = get_input<zeno::PrimitiveObject>("primNei");
+        auto lbvh = get_input<zeno::LBvh>("lbvh");
+
+        // auto nm_bones = get_input2<int>("nm_bones");
+        auto attr_prefix = get_param<std::string>("attr_prefix");
+
+        const auto& sigma = get_param<float>("sigma");
+
+        const auto& pos = prim->attr<zeno::vec3f>("pos");
+        const auto& npos = primNei->attr<zeno::vec3f>("pos");
+
+        auto& rcenter = prim->add_attr<zeno::vec3f>("rCenter");
+
+
+        const auto& Vs = primNei->attr<float>("V");
+
+        // std::vec
+
+        size_t nm_bones = 0;
+        while(true){
+            std::string attr_name = attr_prefix + "_" + std::to_string(nm_bones);
+            if(prim->has_attr(attr_name))
+                nm_bones++;
+            else
+                break;
+        }
+
+
+        // #pragma omp parallel for
+        for(size_t i = 0;i < prim->size();++i){
+            std::vector<double> wv(nm_bones);
+            for(size_t j = 0;j < nm_bones;++j){
+                std::string attr_name = attr_prefix + "_" + std::to_string(j);
+                wv[j] = prim->attr<float>(attr_name)[i];
+            }
+
+            rcenter[i] = zeno::vec3f(0);
+            float weight_sum = 0;
+
+
+            lbvh->iter_neighbors(pos[i],[&](int pid) {
+                    // std::cout << "GET CALLED" << std::endl;
+
+                    std::vector<double> wn(nm_bones);
+                    for(size_t j = 0;j < nm_bones;++j){
+                        std::string attr_name = attr_prefix + "_" + std::to_string(j);
+                        wn[j] = primNei->attr<float>(attr_name)[pid];
+                    }
+
+                    // remove the possibly points with same location
+                    float dist = zeno::length(pos[i] - npos[pid]);
+                    if(dist > 1e-6){
+                        auto w = Vs[pid] * ComputeSimilarity(wv,wn,sigma);
+                        weight_sum += w;
+                        rcenter[i] += npos[pid] * w;
+
+                        // if(i == 0)
+                        //     std::cout << "w : " << w << "\t" << "npos:" << npos[pid][0] << "\t" << npos[pid][1] << "\t" << npos[pid][2] << std::endl;
+                    }
+
+                }
+            );  
+            if(fabs(weight_sum) < 1e-10){
+                std::cout << "INVALID_NODE : " << i << "\t" << weight_sum << std::endl;
+                rcenter[i] = pos[i];
+            }
+            else       
+                rcenter[i] /= weight_sum;
+        }
+
+        // for(size_t i = 0;i < 100;++i)
+            // std::cout << "RCENTER<" << i  << ">:\t" << rcenter[i][0] << "\t" << rcenter[i][1]  << "\t" << rcenter[i][2] << std::endl; 
+
+        set_output("prim",prim);
+    }
+};
+
+
+ZENDEFNODE(ComputeNodalRotationCenter, {
+    {"prim","primNei","lbvh"},
+    {"prim"},
+    {{"string","attr_prefix","sw"},{"float","sigma","10"}},
+    {"FEM"},
+});
+
+
+struct ComputeNodalVolume : zeno::INode {
+    virtual void apply() override {
+        auto prim = get_input<zeno::PrimitiveObject>("prim");
+        auto& Vs = prim->add_attr<float>("V",0);
+        for(size_t elm_id = 0;elm_id < prim->quads.size();++elm_id){
+            const auto& tet = prim->quads[elm_id];
+
+            Mat4x4d M;
+            for(size_t i = 0;i < 4;++i){
+                auto vert = prim->verts[tet[i]];
+                M.block(0,i,3,1) << vert[0],vert[1],vert[2];
+            }
+            M.bottomRows(1).setConstant(1.0);
+            auto elmV = fabs(M.determinant()) / 6;
+            for(size_t i = 0;i < 4;++i)
+                Vs[tet[i]] += elmV / 4;
+        }
+
+        set_output("primOut",prim);
+    }
+};
+
+ZENDEFNODE(ComputeNodalVolume, {
+    {"prim"},
+    {"primOut"},
+    {},
+    {"FEM"},
+});
+
+// struct ComputeExponentialWeightSimilarity : zeno::INode {
+//     virtual void apply() override {
+//         auto prim = get_input<zeno::PrimitiveObject>("prim");
+//         auto attr_prefix = get_input2<std::string>("attrName");
+
+//         size_t dim = 0;
+//         while(true){
+//             std::string attrName = attr_prefix + std::string("_") + std::to_string(dim);
+//             if(has_input(attrName))
+//                 dim++;
+//         }
+
+//         if(dim == 0){
+//             throw std::runtime_error("NO SPECIFIED ATTRIBUTES FOUND");
+//         }
+
+
+//     }
+// };
+
+// ZENDEFNODE{ComputeExponentialWeightSimilarity,{
+//     {"prim"},
+//     {"prim"}
+// }};
+
 
 }

@@ -27,10 +27,10 @@ struct ZSParticleToZSLevelSet : INode {
               // static_assert(std::is_integral_v<RM_CVREF_T(pi)>, "haha
               // gotcha");
               using ls_t = RM_CVREF_T(lsv);
-              auto pos = pars.pack<3>("pos", pi); // this is required
-              auto vol = pars("vol", pi);         // as weight
+              auto pos = pars.pack<3>("x", pi); // this is required
+              auto vol = pars("vol", pi);       // as weight
 #if 0
-              auto vel = pars.pack<3>("vel", pi);
+              auto vel = pars.pack<3>("v", pi);
               auto vol = pars("vol", pi);
 
               auto arena = make_local_arena(grid.dx, pos);
@@ -176,13 +176,13 @@ struct PrimitiveToZSLevelSet : INode {
     Vector<TV> xs{pos.size(), memsrc_e::device, 0},
         elePos{numEles, memsrc_e::device, 0};
     copy(zs::mem_device, (void *)xs.data(), (void *)pos.data(),
-             sizeof(zeno::vec3f) * pos.size());
+         sizeof(zeno::vec3f) * pos.size());
     auto cudaPol = cuda_exec().device(0);
     {
       if (quads.size()) {
         Vector<zs::vec<int, 4>> inds{numEles, memsrc_e::device, 0};
         copy(zs::mem_device, (void *)inds.data(), (void *)quads.data(),
-                 sizeof(zeno::vec4i) * numEles);
+             sizeof(zeno::vec4i) * numEles);
         cudaPol(
             range(elePos.size()),
             [elePos = proxy<execspace_e::cuda>(elePos),
@@ -195,7 +195,7 @@ struct PrimitiveToZSLevelSet : INode {
       } else if (tris.size()) {
         Vector<zs::vec<int, 3>> inds{numEles, memsrc_e::device, 0};
         copy(zs::mem_device, (void *)inds.data(), (void *)tris.data(),
-                 sizeof(zeno::vec3i) * numEles);
+             sizeof(zeno::vec3i) * numEles);
         cudaPol(
             range(elePos.size()),
             [elePos = proxy<execspace_e::cuda>(elePos),
@@ -207,7 +207,7 @@ struct PrimitiveToZSLevelSet : INode {
       } else if (lines.size()) {
         Vector<zs::vec<int, 2>> inds{numEles, memsrc_e::device, 0};
         copy(zs::mem_device, (void *)inds.data(), (void *)lines.data(),
-                 sizeof(zeno::vec2i) * numEles);
+             sizeof(zeno::vec2i) * numEles);
         cudaPol(
             range(elePos.size()),
             [elePos = proxy<execspace_e::cuda>(elePos),

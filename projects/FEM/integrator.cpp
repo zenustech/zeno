@@ -11,15 +11,18 @@ struct MakeFEMIntegrator : zeno::INode {
         auto inttype = std::get<std::string>(get_param("integType"));
 
         auto res = std::make_shared<FEMIntegrator>();
-        if(inttype == "BE"){
-            std::cerr << "CURRENTLY ONLY QUASI_STATIC SOLVERS ARE SUPPORTED" << std::endl;
-            throw std::runtime_error("CURRENTLY ONLY QUASI_STATIC SOLVERS ARE SUPPORTED");
-            res->_intPtr = std::make_shared<BackEulerIntegrator>();
-        }
-        else if(inttype == "QS")
-            res->_intPtr = std::make_shared<QuasiStaticSolver>();
+        // if(inttype == "BE"){
+        //     std::cerr << "CURRENTLY ONLY QUASI_STATIC SOLVERS ARE SUPPORTED" << std::endl;
+        //     throw std::runtime_error("CURRENTLY ONLY QUASI_STATIC SOLVERS ARE SUPPORTED");
+        //     res->_intPtr = std::make_shared<BackEulerIntegrator>();
+        // }
+        // else if(inttype == "QS")
+        //     res->_intPtr = std::make_shared<QuasiStaticSolver>();
 
-        res->_intPtr->SetTimeStep(dt);
+
+        res->_staticPtr = std::make_shared<QuasiStaticSolver>();
+        res->_dynamicPtr = std::make_shared<BackEulerIntegrator>();
+        res->_dynamicPtr->SetTimeStep(dt);
 
         res->muscle = muscle;
         res->damp = damp;
@@ -38,5 +41,6 @@ ZENDEFNODE(MakeFEMIntegrator,{
     {{"enum BE QS EBQS SDQS", "integType", "QS"}},
     {"FEM"},
 });
+
 
 };

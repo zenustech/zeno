@@ -15,5 +15,6 @@ ZENO_API void primLineDistance(PrimitiveObject *prim, std::string resAttr, int s
 ZENO_API void primFilterVerts(PrimitiveObject *prim, std::string tagAttr, int tagValue, bool isInversed = false);
 ZENO_API void primRevampVerts(PrimitiveObject *prim, std::vector<int> const &revamp, std::vector<int> const *unrevamp_p = nullptr);
 ZENO_API void primFilterFaces(PrimitiveObject *prim, std::string tagAttr, int tagValue, bool isInversed = false);
-
+ZENO_API void BarycentricInterpPrimitive(PrimitiveObject* _dst, const PrimitiveObject* _src, int i, int v0, int v1, int v2,
+zeno::vec3f &pdst, zeno::vec3f &pos0, zeno::vec3f &pos1, zeno::vec3f &pos2);
 }
