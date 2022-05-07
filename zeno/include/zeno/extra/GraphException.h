@@ -16,13 +16,13 @@ struct GraphException {
         try {
             std::rethrow_exception(ep);
         } catch (ErrorException const &e) {
-            log_error("==> error during {}: {}", nodeName, e.what());
+            log_error("==> error during [{}]: {}", nodeName, e.what());
             return {nodeName, e.getError()};
         } catch (std::exception const &e) {
-            log_error("==> exception during {}: {}", nodeName, e.what());
+            log_error("==> exception during [{}]: {}", nodeName, e.what());
             return {nodeName, std::make_shared<StdError>(std::current_exception())};
         } catch (...) {
-            log_error("==> unknown exception during {}", nodeName);
+            log_error("==> exception during [{}]: <unknown>", nodeName);
             return {nodeName, std::make_shared<StdError>(std::current_exception())};
         }
         return {};
