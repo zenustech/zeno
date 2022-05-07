@@ -188,8 +188,9 @@ struct ViewDecodeData {
                 } else {
                     // cerr is captured by luzh log panel
                     if (*p == '\n' || cerrlen >= sizeof(cerrbuf) - 4) {
-                        std::ostreambuf_iterator<char> oit(std::cerr);
-                        std::copy_n(cerrbuf, cerrlen, oit);
+                        std::cerr << std::string_view(cerrbuf, cerrlen);
+                        //std::ostreambuf_iterator<char> oit(std::cerr);
+                        //std::copy_n(cerrbuf, cerrlen, oit);
                         cerrlen = 0;
                     }
                     cerrbuf[cerrlen++] = *p;
