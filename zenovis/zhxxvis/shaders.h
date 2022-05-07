@@ -453,6 +453,10 @@ in vec3 iNormal;
 in vec3 iTexCoord;
 in vec3 iTangent;
 out vec4 fColor;
+out vec4 mrt_position;
+out vec4 mrt_normal;
+out vec4 mrt_texcoord;
+out vec4 mrt_tangent;
 uniform samplerCube skybox;
 
 uniform samplerCube irradianceMap;
@@ -1842,6 +1846,11 @@ void main()
       }
   }
 }
+
+  mrt_position = vec4(position, 1);
+  mrt_normal = vec4((iNormal + 1) * 0.5, 1);
+  mrt_texcoord = vec4(iTexCoord, 1);
+  mrt_tangent = vec4((iTangent + 1) * 0.5, 1);
 )";
     }
 
