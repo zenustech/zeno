@@ -53,7 +53,7 @@ void GraphsManagment::setCurrentModel(IGraphsModel* model)
     connect(m_model, &IGraphsModel::_rowsInserted, this, [=]() {
         emit modelDataChanged();
     });
-    connect(m_model, &IGraphsModel::_rowsAboutToBeRemoved, this, [=]() {
+    connect(m_model, &IGraphsModel::_rowsRemoved, this, [=]() {
         emit modelDataChanged();
     });
 }

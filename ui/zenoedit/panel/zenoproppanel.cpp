@@ -45,7 +45,7 @@ QSize ZenoPropPanel::minimumSizeHint() const
     return sz;
 }
 
-void ZenoPropPanel::reset(IGraphsModel* pModel, const QModelIndex& subgIdx, const QModelIndexList& nodes, bool select)
+void ZenoPropPanel::clearLayout()
 {
     setUpdatesEnabled(false);
 	qDeleteAll(findChildren<QWidget*>(QString(), Qt::FindDirectChildrenOnly));
@@ -56,6 +56,13 @@ void ZenoPropPanel::reset(IGraphsModel* pModel, const QModelIndex& subgIdx, cons
 		pMainLayout->removeItem(pItem);
 	}
 	setUpdatesEnabled(true);
+	update();
+}
+
+void ZenoPropPanel::reset(IGraphsModel* pModel, const QModelIndex& subgIdx, const QModelIndexList& nodes, bool select)
+{
+    clearLayout();
+    QVBoxLayout *pMainLayout = qobject_cast<QVBoxLayout *>(this->layout());
 
 	if (!pModel || !select || nodes.isEmpty())
 	{
@@ -63,7 +70,13 @@ void ZenoPropPanel::reset(IGraphsModel* pModel, const QModelIndex& subgIdx, cons
 		return;
 	}
 
-	connect(pModel, &IGraphsModel::_dataChanged, this, &ZenoPropPanel::onDataChanged);
+    connect(pModel, &IGraphsModel::_dataChanged, this, &ZenoPropPanel::onDataChanged);
+    connect(pModel, &IGraphsModel::_rowsRemoved, this, [=]() {
+		clearLayout();
+    });
+    connect(pModel, &IGraphsModel::modelClear, this, [=]() {
+		clearLayout();
+    });
 
 	m_subgIdx = subgIdx;
 	m_idx = nodes[0];
