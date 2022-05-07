@@ -340,13 +340,13 @@ struct ToZSParticles : INode {
     outParticles->sprayedOffset = obj.size();
 
     // attributes
-    std::vector<zs::PropertyTag> tags{{"mass", 1}, {"pos", 3}, {"vel", 3},
+    std::vector<zs::PropertyTag> tags{{"m", 1}, {"x", 3}, {"v", 3},
                                       {"vol", 1},  {"C", 9},   {"vms", 1},
                                       {"beta", 1} /*asflip, for positional adjustment*/};
     std::vector<zs::PropertyTag> eleTags{
-        {"mass", 1}, {"pos", 3},   {"vel", 3},
-        {"vol", 1},  {"C", 9},     {"F", 9},
-        {"d", 9},    {"DmInv", 9}, {"inds", (int)category + 1}};
+        {"m", 1},   {"x", 3},     {"v", 3},
+        {"vol", 1}, {"C", 9},     {"F", 9},
+        {"d", 9},   {"DmInv", 9}, {"inds", (int)category + 1}};
 
     const bool hasLogJp = model->hasLogJp();
     const bool hasOrientation = model->hasOrientation();
@@ -389,7 +389,7 @@ struct ToZSParticles : INode {
             return true;
         return false;
       };
-      if (checkDuplication(key))
+      if (checkDuplication(key) || key == "pos" || key == "vel")
         continue;
       const auto &k{key};
       match(
@@ -429,16 +429,16 @@ struct ToZSParticles : INode {
         // volume, mass
         float vol = category == ZenoParticles::mpm ? model->volume : dofVol[pi];
         pars("vol", pi) = vol;
-        pars("mass", pi) = vol * model->density;
+        pars("m", pi) = vol * model->density;
 
         // pos
-        pars.tuple<3>("pos", pi) = obj[pi];
+        pars.tuple<3>("x", pi) = obj[pi];
 
         // vel
         if (velsPtr != nullptr)
-          pars.tuple<3>("vel", pi) = velsPtr[pi];
+          pars.tuple<3>("v", pi) = velsPtr[pi];
         else
-          pars.tuple<3>("vel", pi) = vec3::zeros();
+          pars.tuple<3>("v", pi) = vec3::zeros();
 
         // deformation
         if (!bindMesh) {
@@ -499,16 +499,16 @@ struct ToZSParticles : INode {
         using mat3 = zs::vec<double, 3, 3>;
         // vol, mass
         eles("vol", ei) = eleVol[ei];
-        eles("mass", ei) = eleVol[ei] * model->density;
+        eles("m", ei) = eleVol[ei] * model->density;
 
         // pos
-        eles.tuple<3>("pos", ei) = elePos[ei];
+        eles.tuple<3>("x", ei) = elePos[ei];
 
         // vel
         if (velsPtr != nullptr)
-          eles.tuple<3>("vel", ei) = eleVel[ei];
+          eles.tuple<3>("v", ei) = eleVel[ei];
         else
-          eles.tuple<3>("vel", ei) = vec3::zeros();
+          eles.tuple<3>("v", ei) = vec3::zeros();
 
         eles("mu", ei) = mu;
         eles("lam", ei) = lam;
@@ -800,13 +800,9 @@ struct ToBoundaryParticles : INode {
     }
 
     // attributes
-    std::vector<zs::PropertyTag> tags{
-        {"mass", 1}, {"pos", 3}, {"vel", 3}, {"nrm", 3}};
-    std::vector<zs::PropertyTag> eleTags{{"mass", 1},
-                                         {"pos", 3},
-                                         {"vel", 3},
-                                         {"nrm", 3},
-                                         {"inds", (int)category + 1}};
+    std::vector<zs::PropertyTag> tags{{"m", 1}, {"x", 3}, {"v", 3}, {"nrm", 3}};
+    std::vector<zs::PropertyTag> eleTags{
+        {"m", 1}, {"x", 3}, {"v", 3}, {"nrm", 3}, {"inds", (int)category + 1}};
     if (sprayed) {
       tags.push_back(zs::PropertyTag{"eid", 1});
       tags.push_back(zs::PropertyTag{"weights", 3});
@@ -822,32 +818,31 @@ struct ToBoundaryParticles : INode {
         std::make_shared<typename ZenoParticles::particles_t>(tags, totalSize,
                                                               memsrc_e::host);
     auto &pars = outParticles->getParticles(); // tilevector
-    ompExec(zs::range(size),
-            [pars = proxy<execspace_e::host>({}, pars), &pos, velsPtr, &dofVol,
-             category, &inParticles, sprayed](int pi) mutable {
-              using vec3 = zs::vec<float, 3>;
+    ompExec(zs::range(size), [pars = proxy<execspace_e::host>({}, pars), &pos,
+                              velsPtr, &dofVol, sprayed](int pi) mutable {
+      using vec3 = zs::vec<float, 3>;
 
-              // mass
-              float vol = dofVol[pi];
-              pars("mass", pi) = vol;
+      // mass
+      float vol = dofVol[pi];
+      pars("m", pi) = vol;
 
-              // pos
-              pars.tuple<3>("pos", pi) = pos[pi];
+      // pos
+      pars.tuple<3>("x", pi) = pos[pi];
 
-              // vel
-              if (velsPtr != nullptr)
-                pars.tuple<3>("vel", pi) = velsPtr[pi];
-              else
-                pars.tuple<3>("vel", pi) = vec3::zeros();
+      // vel
+      if (velsPtr != nullptr)
+        pars.tuple<3>("v", pi) = velsPtr[pi];
+      else
+        pars.tuple<3>("v", pi) = vec3::zeros();
 
-              // init nrm
-              pars.tuple<3>("nrm", pi) = vec3::zeros();
+      // init nrm
+      pars.tuple<3>("nrm", pi) = vec3::zeros();
 
-              if (sprayed) {
-                pars("eid", pi) = reinterpret_bits<float>(-1);
-                pars.tuple<3>("weights", pi) = vec3::zeros();
-              }
-            });
+      if (sprayed) {
+        pars("eid", pi) = reinterpret_bits<float>(-1);
+        pars.tuple<3>("weights", pi) = vec3::zeros();
+      }
+    });
     if (sprayed)
       ompExec(zs::range(sprayedSize),
               [pars = proxy<execspace_e::host>({}, pars), &sprayedVertToElement,
@@ -858,7 +853,7 @@ struct ToBoundaryParticles : INode {
 
                 // mass
                 float vol = dofVol[dst];
-                pars("mass", dst) = vol;
+                pars("m", dst) = vol;
 
                 int eid = sprayedVertToElement[pi];
                 zeno::vec3f tmp = trisPtr[pi];
@@ -869,14 +864,12 @@ struct ToBoundaryParticles : INode {
                   printf("damn! pids wrong!\n");
 
                 // pos, vel, nrm all updated on-the-fly from original mesh verts
-                pars.tuple<3>("pos", dst) =
-                    ws[0] * pars.pack<3>("pos", pids[0]) +
-                    ws[1] * pars.pack<3>("pos", pids[1]) +
-                    ws[2] * pars.pack<3>("pos", pids[2]);
-                pars.tuple<3>("vel", dst) =
-                    ws[0] * pars.pack<3>("vel", pids[0]) +
-                    ws[1] * pars.pack<3>("vel", pids[1]) +
-                    ws[2] * pars.pack<3>("vel", pids[2]);
+                pars.tuple<3>("x", dst) = ws[0] * pars.pack<3>("x", pids[0]) +
+                                          ws[1] * pars.pack<3>("x", pids[1]) +
+                                          ws[2] * pars.pack<3>("x", pids[2]);
+                pars.tuple<3>("v", dst) = ws[0] * pars.pack<3>("v", pids[0]) +
+                                          ws[1] * pars.pack<3>("v", pids[1]) +
+                                          ws[2] * pars.pack<3>("v", pids[2]);
                 // normals are set afterwards
                 pars.tuple<3>("nrm", dst) = vec3::zeros();
 
@@ -897,13 +890,13 @@ struct ToBoundaryParticles : INode {
               using vec3 = zs::vec<float, 3>;
               using mat3 = zs::vec<float, 3, 3>;
               // mass
-              eles("mass", ei) = eleVol[ei];
+              eles("m", ei) = eleVol[ei];
 
               // pos
-              eles.tuple<3>("pos", ei) = elePos[ei];
+              eles.tuple<3>("x", ei) = elePos[ei];
 
               // vel
-              eles.tuple<3>("vel", ei) = eleVel[ei];
+              eles.tuple<3>("v", ei) = eleVel[ei];
 
               // element-vertex indices
               // inds
@@ -913,9 +906,9 @@ struct ToBoundaryParticles : INode {
 
               // nrm
               {
-                zs::vec<float, 3> xs[3] = {pars.pack<3>("pos", tri[0]),
-                                           pars.pack<3>("pos", tri[1]),
-                                           pars.pack<3>("pos", tri[2])};
+                zs::vec<float, 3> xs[3] = {pars.pack<3>("x", tri[0]),
+                                           pars.pack<3>("x", tri[1]),
+                                           pars.pack<3>("x", tri[2])};
                 auto n = (xs[1] - xs[0])
                              .normalized()
                              .cross((xs[2] - xs[0]).normalized())
@@ -1250,5 +1243,21 @@ ZENDEFNODE(ZSLevelSetToVDBGrid, {
                                     {},
                                     {"MPM"},
                                 });
+
+struct AddVertID : zeno::INode {
+  virtual void apply() override {
+    auto prim = get_input<zeno::PrimitiveObject>("prim");
+    auto &IDs = prim->add_attr<float>("ID");
+    for (size_t i = 0; i < prim->size(); ++i)
+      IDs[i] = (float)(i);
+    set_output("primOut", prim);
+  }
+};
+ZENDEFNODE(AddVertID, {
+                          {"prim"},
+                          {"primOut"},
+                          {},
+                          {"FEM"},
+                      });
 
 } // namespace zeno

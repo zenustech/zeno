@@ -62,6 +62,8 @@ struct TetAttributes{
     std::vector<Vec3d> interpWs;
     std::vector<Vec3d> interpPs;
     FEM_Scaler interpPenaltyCoeff;
+
+    bool use_dynamic;
 };
 
 /**
