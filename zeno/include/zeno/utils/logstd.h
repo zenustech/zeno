@@ -53,7 +53,7 @@ static inline struct __logger_ostream {
 
 template <class ...Ts>
 void log_printf(__with_source_location<const char *> fmt, Ts &&...ts) {
-    auto s = cformat(fmt, std::forward<Ts>(ts)...);
+    auto s = cformat(fmt.value(), std::forward<Ts>(ts)...);
     if (s.size() && s[s.size() - 1] == '\n')
         s.resize(s.size() - 1);
     log_debug({"{}", fmt.location()}, s);
