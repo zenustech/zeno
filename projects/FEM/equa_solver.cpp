@@ -338,13 +338,22 @@ struct SolveFEMFast : zeno::INode {
 
         auto integrator = get_input<FEMIntegrator>("integrator");
         auto shape = get_input<PrimitiveObject>("shape");
+        auto laplace_op = get_input<LaplaceOperator>("laplaceOp");
+
+        // the initial guess should be given before the solver
         auto& cpos = shape->attr<zeno::vec3f>("curPos");
         auto& ppos = shape->attr<zeno::vec3f>("prePos");
         auto& pppos = shape->attr<zeno::vec3f>("preprePos");
-        auto laplace_op = get_input<LaplaceOperator>("laplaceOp");
+
+
         for(size_t i = 0;i < shape->size();++i){
             pppos[i] = ppos[i];
             ppos[i] = cpos[i];
+        }
+
+        if(shape->has_attr("init_guess")){
+            for(size_t i = 0;i < shape->size();++i)
+                cpos[i] = shape->attr<zeno::vec3f>("init_guess")[i];
         }
 
         auto elmView = get_input<PrimitiveObject>("elmView");

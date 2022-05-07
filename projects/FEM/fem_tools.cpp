@@ -4,6 +4,8 @@
 #include <glm/gtx/transform.hpp>
 #include <glm/gtx/quaternion.hpp>
 
+#include "../ZenoFX/LinearBvh.h"
+
 namespace zeno {
 
 struct MatrixObject : zeno::IObject{
@@ -706,6 +708,156 @@ ZENDEFNODE(ExtractSurfaceMeshByTag, {
     {"FEM"},
 });
 
+struct AddVertID : zeno::INode {
+    virtual void apply() override {
+        auto prim = get_input<zeno::PrimitiveObject>("prim");
+        auto& IDs = prim->add_attr<float>("ID");
+        for(size_t i = 0;i < prim->size();++i)
+            IDs[i] = (float)(i);
+
+        set_output("primOut",prim);
+    }
+};
+
+ZENDEFNODE(AddVertID, {
+    {"prim"},
+    {"primOut"},
+    {},
+    {"FEM"},
+});
+
+struct ComputeNodalRotationCenter : zeno::INode {
+    double ComputeSimilarity(const std::vector<double>& ws1,const std::vector<double>& ws2,double sigma){
+        size_t dim = ws1.size();
+        assert(ws1.size() == ws2.size());
+
+        double w = 0;
+        for(size_t i = 0;i < dim;++i)
+            for(size_t j = 0;j < i;++j){
+                auto alpha = ws1[i]*ws1[j]*ws2[i]*ws2[j];
+                auto beta = ws1[i]*ws2[j] - ws1[j]*ws2[i];
+                beta = beta * beta;
+                w += alpha * exp(-beta/sigma/sigma);
+            }
+        return w;
+    }
+
+    virtual void apply() override {
+        auto prim = get_input<zeno::PrimitiveObject>("prim");
+        auto primNei = get_input<zeno::PrimitiveObject>("primNei");
+        auto lbvh = get_input<zeno::LBvh>("lbvh");
+
+        // auto nm_bones = get_input2<int>("nm_bones");
+        auto attr_prefix = get_param<std::string>("attr_prefix");
+
+        const auto& sigma = get_param<float>("sigma");
+
+        const auto& pos = prim->attr<zeno::vec3f>("pos");
+        const auto& npos = primNei->attr<zeno::vec3f>("pos");
+
+        auto& rcenter = prim->add_attr<zeno::vec3f>("rCenter");
+
+
+        const auto& Vs = primNei->attr<float>("V");
+
+        // std::vec
+
+        size_t nm_bones = 0;
+        while(true){
+            std::string attr_name = attr_prefix + "_" + std::to_string(nm_bones);
+            if(prim->has_attr(attr_name))
+                nm_bones++;
+            else
+                break;
+        }
+
+
+        // #pragma omp parallel for
+        for(size_t i = 0;i < prim->size();++i){
+            std::vector<double> wv(nm_bones);
+            for(size_t j = 0;j < nm_bones;++j){
+                std::string attr_name = attr_prefix + "_" + std::to_string(j);
+                wv[j] = prim->attr<float>(attr_name)[i];
+            }
+
+            rcenter[i] = zeno::vec3f(0);
+            float weight_sum = 0;
+
+
+            lbvh->iter_neighbors(pos[i],[&](int pid) {
+                    // std::cout << "GET CALLED" << std::endl;
+
+                    std::vector<double> wn(nm_bones);
+                    for(size_t j = 0;j < nm_bones;++j){
+                        std::string attr_name = attr_prefix + "_" + std::to_string(j);
+                        wn[j] = primNei->attr<float>(attr_name)[pid];
+                    }
+
+                    // remove the possibly points with same location
+                    float dist = zeno::length(pos[i] - npos[pid]);
+                    if(dist > 1e-6){
+                        auto w = Vs[pid] * ComputeSimilarity(wv,wn,sigma);
+                        weight_sum += w;
+                        rcenter[i] += npos[pid] * w;
+
+                        // if(i == 0)
+                        //     std::cout << "w : " << w << "\t" << "npos:" << npos[pid][0] << "\t" << npos[pid][1] << "\t" << npos[pid][2] << std::endl;
+                    }
+
+                }
+            );  
+            if(fabs(weight_sum) < 1e-10){
+                std::cout << "INVALID_NODE : " << i << "\t" << weight_sum << std::endl;
+                rcenter[i] = pos[i];
+            }
+            else       
+                rcenter[i] /= weight_sum;
+        }
+
+        // for(size_t i = 0;i < 100;++i)
+            // std::cout << "RCENTER<" << i  << ">:\t" << rcenter[i][0] << "\t" << rcenter[i][1]  << "\t" << rcenter[i][2] << std::endl; 
+
+        set_output("prim",prim);
+    }
+};
+
+
+ZENDEFNODE(ComputeNodalRotationCenter, {
+    {"prim","primNei","lbvh"},
+    {"prim"},
+    {{"string","attr_prefix","sw"},{"float","sigma","10"}},
+    {"FEM"},
+});
+
+
+struct ComputeNodalVolume : zeno::INode {
+    virtual void apply() override {
+        auto prim = get_input<zeno::PrimitiveObject>("prim");
+        auto& Vs = prim->add_attr<float>("V",0);
+        for(size_t elm_id = 0;elm_id < prim->quads.size();++elm_id){
+            const auto& tet = prim->quads[elm_id];
+
+            Mat4x4d M;
+            for(size_t i = 0;i < 4;++i){
+                auto vert = prim->verts[tet[i]];
+                M.block(0,i,3,1) << vert[0],vert[1],vert[2];
+            }
+            M.bottomRows(1).setConstant(1.0);
+            auto elmV = fabs(M.determinant()) / 6;
+            for(size_t i = 0;i < 4;++i)
+                Vs[tet[i]] += elmV / 4;
+        }
+
+        set_output("primOut",prim);
+    }
+};
+
+ZENDEFNODE(ComputeNodalVolume, {
+    {"prim"},
+    {"primOut"},
+    {},
+    {"FEM"},
+});
 
 // struct ComputeExponentialWeightSimilarity : zeno::INode {
 //     virtual void apply() override {
