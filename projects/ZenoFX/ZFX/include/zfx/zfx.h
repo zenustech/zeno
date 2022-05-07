@@ -9,7 +9,7 @@
 #include <map>
 
 namespace zfx {
-
+//增加一个编译器选项，主要是一些默认的值
 struct Options {
     bool const_parametrize = true;
     bool global_localize = true;
@@ -21,6 +21,7 @@ struct Options {
     bool reassign_parameters = true;
     bool reassign_channels = true;
 
+    //开启编译优化选项
     bool merge_identical = true;
     bool kill_unreachable = true;
     bool constant_fold = true;
