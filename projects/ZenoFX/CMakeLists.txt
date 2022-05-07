@@ -12,7 +12,7 @@ if (EXTENSION_zenvdb)
 else()
     option(ZENOFX_ENABLE_OPENVDB "Enable OpenVDB wrangler in ZenoFX" OFF)
 endif()
-option(ZENOFX_ENABLE_LBVH "Enable Linear BVH wrangler in ZenoFX" OFF)
+option(ZENOFX_ENABLE_LBVH "Enable Linear BVH wrangler in ZenoFX" ON)
 
 if (ZENOFX_ENABLE_OPENVDB)
     find_package(OpenVDB REQUIRED)
