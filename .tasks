@@ -2,5 +2,7 @@
 build_type=Debug
 build_target=zenoedit
 run_environ=ZENO_LOGLEVEL=debug ZENO_OPEN=/tmp/b.zsg
+build_dir=/tmp/zeno-build
 run_target="$(VIM:build_dir)/bin/zenoedit"
 build_configs=-Wno-dev -DCMAKE_INSTALL_PREFIX=/tmp/zeno-dist -DZENO_NO_WARNING:BOOL=ON -DZENO_BUILD_SHARED:BOOL=OFF -DZENO_MULTIPROCESS:BOOL=ON -DZENO_WITH_Rigid:BOOL=ON
+pre_build_cmd=(test -d build || ln -sf "$(VIM:build_dir)" build) &&
