@@ -35,8 +35,10 @@ option(ZENO_USE_CCACHE "Use CCache if found in path" ON)
 option(ZENO_NO_WARNING "Use customized compiler warnings" ON)
 option(ZENO_INSTALL_TARGET "Enable installation targets" ON)
 
-# Otherwise we can't link SHARED libs with STATIC libs
-set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+if (ZENO_BUILD_SHARED)
+    # Otherwise we can't link SHARED libs with STATIC libs
+    set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+endif()
 
 if (NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release)
