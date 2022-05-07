@@ -11,7 +11,7 @@ public:
 	~ZenoDockTitleWidget();
 	QSize sizeHint() const override;
 	void updateByType(DOCK_TYPE type);
-	void setupUi();
+	virtual void setupUi();
 
 signals:
 	void dockOptionsClicked();
@@ -64,6 +64,7 @@ class ZenoViewDockTitle : public ZenoDockTitleWidget
 public:
 	ZenoViewDockTitle(QWidget* parent = nullptr);
 	~ZenoViewDockTitle();
+    void setupUi() override;
 
 signals:
 	void actionTriggered(QAction* action);

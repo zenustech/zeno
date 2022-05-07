@@ -85,6 +85,7 @@ void ZenoGraphsEditor::initSignals()
 {
 	auto graphsMgr = zenoApp->graphsManagment();
 	connect(graphsMgr.get(), SIGNAL(modelInited(IGraphsModel*)), this, SLOT(resetModel(IGraphsModel*)));
+    connect(graphsMgr->logModel(), &QStandardItemModel::rowsInserted, this, &ZenoGraphsEditor::onLogInserted);
 
     connect(m_ui->subnetBtn, &ZenoCheckButton::toggled, this, &ZenoGraphsEditor::sideButtonToggled);
     connect(m_ui->treeviewBtn, &ZenoCheckButton::toggled, this, &ZenoGraphsEditor::sideButtonToggled);
@@ -360,7 +361,7 @@ void ZenoGraphsEditor::onListItemActivated(const QModelIndex& index)
     activateTab(subgraphName);
 }
 
-void ZenoGraphsEditor::activateTab(const QString& subGraphName, const QString& path, const QString& objId)
+void ZenoGraphsEditor::activateTab(const QString& subGraphName, const QString& path, const QString& objId, bool isError)
 {
 	auto graphsMgm = zenoApp->graphsManagment();
 	IGraphsModel* pModel = graphsMgm->currentModel();
@@ -390,7 +391,7 @@ void ZenoGraphsEditor::activateTab(const QString& subGraphName, const QString& p
 
     ZenoSubGraphView* pView = qobject_cast<ZenoSubGraphView*>(m_ui->graphsViewTab->currentWidget());
     Q_ASSERT(pView);
-    pView->resetPath(path, subGraphName, objId);
+    pView->resetPath(path, subGraphName, objId, isError);
 }
 
 void ZenoGraphsEditor::onTreeItemActivated(const QModelIndex& index)
@@ -424,6 +425,38 @@ void ZenoGraphsEditor::onPageActivated(const QPersistentModelIndex& subgIdx, con
 {
     const QString& subgName = nodeIdx.data(ROLE_OBJNAME).toString();
     activateTab(subgName);
+}
+
+void ZenoGraphsEditor::onLogInserted(const QModelIndex& parent, int first, int last)
+{
+    QStandardItemModel* logModel = qobject_cast<QStandardItemModel*>(sender());
+    const QModelIndex& idx = logModel->index(first, 0, parent);
+    if (idx.isValid())
+    {
+        const QString& name = idx.data(ROLE_NODENAME).toString();
+        const QString& msg = idx.data(Qt::DisplayRole).toString();
+        if (!name.isEmpty())
+        {
+            QList<SEARCH_RESULT> results = m_model->search(name, SEARCH_NODE);
+            for (int i = 0; i < results.length(); i++)
+            {
+                const SEARCH_RESULT& res = results[i];
+                const QString &subgName = res.subgIdx.data(ROLE_OBJNAME).toString();
+                const QString &objId = res.targetIdx.data(ROLE_OBJID).toString();
+                activateTab(subgName, "", objId, true);
+
+                if (i == results.length() - 1)
+                    break;
+
+                QMessageBox msgbox(QMessageBox::Question, "", tr("next one?"), QMessageBox::Yes | QMessageBox::No);
+                int ret = msgbox.exec();
+                if (ret & QMessageBox::Yes) {
+                } else {
+                    break;
+                }
+            }
+        }
+    }
 }
 
 void ZenoGraphsEditor::onSearchEdited(const QString& content)

@@ -301,6 +301,13 @@ void ZenoSubGraphScene::select(const QString& id)
     m_nodes[id]->setSelected(true);
 }
 
+void ZenoSubGraphScene::markError(const QString& nodeid)
+{
+    Q_ASSERT(m_nodes.find(nodeid) != m_nodes.end());
+    m_nodes[nodeid]->markError(true);
+    m_nodes[nodeid]->setSelected(true);
+}
+
 void ZenoSubGraphScene::undo()
 {
     IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();

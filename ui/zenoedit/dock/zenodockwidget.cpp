@@ -215,13 +215,22 @@ void ZenoDockWidget::onFloatTriggered()
     {
         setFloating(true);
         m_oldFlags = windowFlags();
-        if (m_type == DOCK_EDITOR || m_type == DOCK_VIEW)
+        if (m_type == DOCK_EDITOR)
         {
             setParent(nullptr);
             m_newFlags = Qt::CustomizeWindowHint | Qt::Window |
                          Qt::WindowMinimizeButtonHint |
                          Qt::WindowMaximizeButtonHint |
                          Qt::WindowCloseButtonHint;
+            setWindowFlags(m_newFlags);
+            show();
+        }
+        else if (m_type == DOCK_VIEW)
+        {
+            //reinitialize glview is not allowed.
+            setParent(nullptr);
+            m_newFlags = Qt::CustomizeWindowHint | Qt::Window | Qt::WindowMinimizeButtonHint |
+                         Qt::WindowMaximizeButtonHint;
             setWindowFlags(m_newFlags);
             show();
         }

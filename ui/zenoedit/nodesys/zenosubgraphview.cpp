@@ -146,12 +146,16 @@ void _ZenoSubGraphView::cameraFocus()
 
 void _ZenoSubGraphView::onSearchResult(SEARCH_RECORD rec)
 {
-    focusOn(rec.id, rec.pos);
+    focusOn(rec.id, rec.pos, false);
 }
 
-void _ZenoSubGraphView::focusOn(const QString& nodeId, const QPointF& pos)
+void _ZenoSubGraphView::focusOn(const QString& nodeId, const QPointF& pos, bool isError)
 {
-	m_scene->select(nodeId);
+    if (isError)
+        m_scene->markError(nodeId);
+    else
+        m_scene->select(nodeId);
+
     auto items = m_scene->selectedItems();
     for (auto item : items)
     {
@@ -487,7 +491,7 @@ ZenoSubGraphScene* ZenoSubGraphView::scene()
 	return qobject_cast<ZenoSubGraphScene*>(m_view->scene());
 }
 
-void ZenoSubGraphView::resetPath(const QString& path, const QString& subGraphName, const QString& objId)
+void ZenoSubGraphView::resetPath(const QString& path, const QString& subGraphName, const QString& objId, bool isError)
 {
     if (path.isEmpty())
     {
@@ -504,6 +508,6 @@ void ZenoSubGraphView::resetPath(const QString& path, const QString& subGraphNam
 		QModelIndex subgIdx = pModel->index(subGraphName);
 		QModelIndex objIdx = pModel->index(objId, subgIdx);
 		QPointF pos = pModel->data2(subgIdx, objIdx, ROLE_OBJPOS).toPointF();
-		m_view->focusOn(objId, pos);
+		m_view->focusOn(objId, pos, isError);
 	}
 }

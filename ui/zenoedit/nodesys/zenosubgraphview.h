@@ -38,7 +38,7 @@ public slots:
     void esc();
     void cameraFocus();
     void onSearchResult(SEARCH_RECORD rec);
-    void focusOn(const QString& nodeId, const QPointF& pos);
+    void focusOn(const QString& nodeId, const QPointF& pos, bool isError);
 
 signals:
     void zoomed(qreal);
@@ -91,7 +91,7 @@ public:
 	ZenoSubGraphView(QWidget* parent = nullptr);
 	void initScene(ZenoSubGraphScene* pScene);
     ZenoSubGraphScene* scene();
-	void resetPath(const QString& path, const QString& subGraphName, const QString& objId);
+	void resetPath(const QString& path, const QString& subGraphName, const QString& objId, bool isError = false);
 
 signals:
 	void pathUpdated(QString);

@@ -89,10 +89,12 @@ void ZenoDockTitleWidget::onDockSwitchClicked()
 	QAction* pSwitchView = new QAction("View");
 	QAction* pSwitchNodeParam = new QAction("parameter");
 	QAction* pSwitchNodeData = new QAction("data");
+	QAction *pSwitchLog = new QAction(tr("logger"));
 	menu->addAction(pSwitchEditor);
 	menu->addAction(pSwitchView);
 	menu->addAction(pSwitchNodeParam);
 	menu->addAction(pSwitchNodeData);
+	menu->addAction(pSwitchLog);
 	connect(pSwitchEditor, &QAction::triggered, this, [=]() {
 		emit dockSwitchClicked(DOCK_EDITOR);
 		});
@@ -105,6 +107,9 @@ void ZenoDockTitleWidget::onDockSwitchClicked()
 	connect(pSwitchNodeData, &QAction::triggered, this, [=]() {
 		emit dockSwitchClicked(DOCK_NODE_DATA);
 		});
+	connect(pSwitchLog, &QAction::triggered, this, [=]() {
+		emit dockSwitchClicked(DOCK_LOG);
+	});
 
 	menu->exec(QCursor::pos());
 }
@@ -287,6 +292,32 @@ void ZenoViewDockTitle::initTitleContent(QHBoxLayout* pHLayout)
     pHLayout->addWidget(pMenuBar);
     pHLayout->setAlignment(pMenuBar, Qt::AlignVCenter);
     pHLayout->addStretch();
+}
+
+void ZenoViewDockTitle::setupUi()
+{
+    QVBoxLayout *pLayout = new QVBoxLayout;
+    pLayout->setSpacing(0);
+    pLayout->setContentsMargins(0, 0, 0, 0);
+
+    QHBoxLayout *pHLayout = new QHBoxLayout;
+
+    ZToolButton *pDockOptionsBtn = new ZToolButton(ZToolButton::Opt_HasIcon, QIcon(":/icons/dockOption.svg"),
+                                                   ZenoStyle::dpiScaledSize(QSize(16, 16)));
+    pDockOptionsBtn->setMargins(QMargins(10, 10, 10, 10));
+    pDockOptionsBtn->setBackgroundClr(QColor(51, 51, 51), QColor(51, 51, 51), QColor(51, 51, 51));
+
+    initTitleContent(pHLayout);
+
+    pHLayout->addWidget(pDockOptionsBtn);
+    pHLayout->setContentsMargins(0, 0, 0, 0);
+    pHLayout->setMargin(0);
+
+    pLayout->addLayout(pHLayout);
+
+    setLayout(pLayout);
+
+    connect(pDockOptionsBtn, SIGNAL(clicked()), this, SIGNAL(dockOptionsClicked()));
 }
 
 QMenuBar* ZenoViewDockTitle::initMenu()

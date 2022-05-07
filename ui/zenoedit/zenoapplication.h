@@ -2,6 +2,7 @@
 #define __ZENO_APPLICATION_H__
 
 #include <QtWidgets>
+#include "zwidgetostream.h"
 
 class GraphsManagment;
 class ZenoMainWindow;
@@ -20,11 +21,13 @@ public:
     void setIOProcessing(bool bIOProcessing);
     bool IsIOProcessing() const;
     ZenoMainWindow* getMainWindow();
+    QStandardItemModel* logModel() const;
 
 private:
     QString readQss(const QString& qssPath);
 
     QSharedPointer<GraphsManagment> m_pGraphs;
+    ZWidgetErrStream steam;
     bool m_bIOProcessing;
 };
 

@@ -28,13 +28,19 @@ GraphsManagment::GraphsManagment(QObject* parent)
     : QObject(parent)
     , m_model(nullptr)
     , m_pTreeModel(nullptr)
+    , m_logModel(nullptr)
 {
-
+     m_logModel = new QStandardItemModel(this);
 }
 
 IGraphsModel* GraphsManagment::currentModel()
 {
     return m_model;
+}
+
+QStandardItemModel* GraphsManagment::logModel() const
+{
+    return m_logModel;
 }
 
 void GraphsManagment::setCurrentModel(IGraphsModel* model)
@@ -152,5 +158,65 @@ void GraphsManagment::removeCurrent()
 {
     if (m_model) {
         
+    }
+}
+
+void GraphsManagment::appendErr(const QString& nodeName, const QString& msg)
+{
+    QMutexLocker lock(&m_mutex);
+
+    QStandardItem* item = new QStandardItem(msg);
+    item->setData(QtFatalMsg, ROLE_LOGTYPE);
+    item->setData(nodeName, ROLE_NODENAME);
+    item->setEditable(false);
+    item->setData(QBrush(QColor(200, 84, 79)), Qt::ForegroundRole);
+    m_logModel->appendRow(item);
+}
+
+void GraphsManagment::appendLog(QtMsgType type, QString fileName, int ln, const QString &msg)
+{
+    QMutexLocker lock(&m_mutex);
+
+    QStandardItem *item = new QStandardItem(msg);
+    item->setData(type, ROLE_LOGTYPE);
+    item->setData(fileName, ROLE_FILENAME);
+    item->setData(ln, ROLE_LINENO);
+    item->setEditable(false);
+    switch (type)
+    {
+        //todo: time
+        case QtDebugMsg:
+        {
+            item->setData(QBrush(QColor(255, 255, 255, 0.7 * 255)), Qt::ForegroundRole);
+            m_logModel->appendRow(item);
+            break;
+        }
+        case QtCriticalMsg:
+        {
+            item->setData(QBrush(QColor(255, 255, 255, 0.7 * 255)), Qt::ForegroundRole);
+            m_logModel->appendRow(item);
+            break;
+        }
+        case QtInfoMsg:
+        {
+            item->setData(QBrush(QColor(51, 148, 85)), Qt::ForegroundRole);
+            m_logModel->appendRow(item);
+            break;
+        }
+        case QtWarningMsg:
+        {
+            item->setData(QBrush(QColor(200, 154, 80)), Qt::ForegroundRole);
+            m_logModel->appendRow(item);
+            break;
+        }
+        case QtFatalMsg:
+        {
+            item->setData(QBrush(QColor(200, 84, 79)), Qt::ForegroundRole);
+            m_logModel->appendRow(item);
+            break;
+        }
+    default:
+        delete item;
+        break;
     }
 }
