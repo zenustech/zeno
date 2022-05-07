@@ -18,11 +18,8 @@
 #include <Scene.hpp>
 #include <thread>
 #include <chrono>
-<<<<<<< HEAD
 #include "MRT.hpp"
-=======
 #include "openglstuff.h"
->>>>>>> c1acce720d71142023ad16751f86b826e3f700f6
 namespace zenvis {
 int oldnx, oldny;
 extern glm::mat4 reflectView(glm::vec3 camPos, glm::vec3 viewDir, glm::vec3 up, glm::vec3 planeCenter, glm::vec3 planeNormal);
