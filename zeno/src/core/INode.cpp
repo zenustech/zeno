@@ -122,7 +122,7 @@ ZENO_API bool INode::has_input(std::string const &id) const {
 }
 
 ZENO_API zany INode::get_input(std::string const &id) const {
-    return safe_at(inputs, id, "input", myname);
+    return safe_at(inputs, id, "input socket name of node " + myname);
 }
 
 ZENO_API void INode::set_output(std::string const &id, zany obj) {

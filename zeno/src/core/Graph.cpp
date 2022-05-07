@@ -28,10 +28,10 @@ ZENO_API Graph::~Graph() = default;
 
 ZENO_API zany const &Graph::getNodeOutput(
     std::string const &sn, std::string const &ss) const {
-    auto node = safe_at(nodes, sn, "node");
+    auto node = safe_at(nodes, sn, "node name").get();
     if (node->muted_output)
         return node->muted_output;
-    return safe_at(node->outputs, ss, "output", node->myname);
+    return safe_at(node->outputs, ss, "output socket name of node " + node->myname);
 }
 
 ZENO_API void Graph::clearNodes() {
@@ -41,7 +41,7 @@ ZENO_API void Graph::clearNodes() {
 ZENO_API void Graph::addNode(std::string const &cls, std::string const &id) {
     if (nodes.find(id) != nodes.end())
         return;  // no add twice, to prevent output object invalid
-    auto cl = safe_at(session->nodeClasses, cls, "node class");
+    auto cl = safe_at(session->nodeClasses, cls, "node class name").get();
     auto node = cl->new_instance();
     node->graph = this;
     node->myname = id;
@@ -50,7 +50,7 @@ ZENO_API void Graph::addNode(std::string const &cls, std::string const &id) {
 }
 
 ZENO_API void Graph::completeNode(std::string const &id) {
-    safe_at(nodes, id, "node")->doComplete();
+    safe_at(nodes, id, "node name")->doComplete();
 }
 
 ZENO_API void Graph::applyNode(std::string const &id) {
@@ -58,7 +58,7 @@ ZENO_API void Graph::applyNode(std::string const &id) {
         return;
     }
     ctx->visited.insert(id);
-    auto node = safe_at(nodes, id, "node");
+    auto node = safe_at(nodes, id, "node name").get();
     GraphException::translated([&] {
         node->doApply();
     }, node->myname);
@@ -85,12 +85,12 @@ ZENO_API void Graph::applyNodesToExec() {
 
 ZENO_API void Graph::bindNodeInput(std::string const &dn, std::string const &ds,
         std::string const &sn, std::string const &ss) {
-    safe_at(nodes, dn, "node")->inputBounds[ds] = std::pair(sn, ss);
+    safe_at(nodes, dn, "node name")->inputBounds[ds] = std::pair(sn, ss);
 }
 
 ZENO_API void Graph::setNodeInput(std::string const &id, std::string const &par,
         zany const &val) {
-    safe_at(nodes, id, "node")->inputs[par] = val;
+    safe_at(nodes, id, "node name")->inputs[par] = val;
 }
 
 ZENO_API std::unique_ptr<INode> Graph::getOverloadNode(std::string const &id,

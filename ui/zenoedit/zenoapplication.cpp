@@ -10,7 +10,7 @@ ZenoApplication::ZenoApplication(int &argc, char **argv)
     : QApplication(argc, argv)
     , m_pGraphs(new GraphsManagment(this))
     , m_bIOProcessing(false)
-    , m_errSteam(std::cerr)
+    , m_errSteam(std::clog)
 {
     initFonts();
     initStyleSheets();

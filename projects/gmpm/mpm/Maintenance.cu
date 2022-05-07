@@ -44,14 +44,14 @@ struct ComputeParticleVolume : INode {
                density = parObjPtr->getModel().density,
                cellVol =
                    grid.dx * grid.dx * grid.dx] __device__(size_t pi) mutable {
-                auto pos = pars.template pack<3>("pos", pi);
+                auto pos = pars.template pack<3>("x", pi);
                 auto coord = ibs.bucketCoord(pos);
                 const auto bucketNo = ibs.table.query(coord);
                 // bucketNo should be > 0
                 const auto cnt = ibs.counts[bucketNo];
                 const auto vol = cellVol / cnt;
                 pars("vol", pi) = vol;
-                pars("mass", pi) = density * vol;
+                pars("m", pi) = density * vol;
               });
     }
     set_output("ZSParticles", get_input("ZSParticles"));
@@ -75,7 +75,7 @@ struct PushOutZSParticles : INode {
     cudaPol(range(pars.size()), [pars = proxy<execspace_e::cuda>({}, pars), lsv,
                                  eps = limits<float>::epsilon() * 128,
                                  dis] __device__(size_t pi) mutable {
-      auto x = pars.pack<3>("pos", pi);
+      auto x = pars.pack<3>("x", pi);
       bool updated = false;
       int cnt = 5;
 #if 0
@@ -114,7 +114,7 @@ struct PushOutZSParticles : INode {
         sd = newSd;
       }
       if (updated)
-        pars.tuple<3>("pos", pi) = x;
+        pars.tuple<3>("x", pi) = x;
     });
   }
   void apply() override {
@@ -216,9 +216,9 @@ struct RefineMeshParticles : INode {
                     int inds[3] = {reinterpret_bits<int>(eles("inds", 0, ei)),
                          reinterpret_bits<int>(eles("inds", 1, ei)),
                          reinterpret_bits<int>(eles("inds", 2, ei))};
-                    zs::vec<float, 3> xs[3]{pars.pack<3>("pos", inds[0]),
-                                            pars.pack<3>("pos", inds[1]),
-                                            pars.pack<3>("pos", inds[2])};
+                    zs::vec<float, 3> xs[3]{pars.pack<3>("x", inds[0]),
+                                            pars.pack<3>("x", inds[1]),
+                                            pars.pack<3>("x", inds[2])};
                     auto area =
                         (xs[1] - xs[0]).cross(xs[2] - xs[0]).norm() * 0.5f;
 
@@ -254,13 +254,13 @@ struct RefineMeshParticles : INode {
                       int inds[3] = {reinterpret_bits<int>(eles("inds", 0, ei)),
                          reinterpret_bits<int>(eles("inds", 1, ei)),
                          reinterpret_bits<int>(eles("inds", 2, ei))};
-                      zs::vec<float, 3> xs[3]{pars.pack<3>("pos", inds[0]),
-                                              pars.pack<3>("pos", inds[1]),
-                                              pars.pack<3>("pos", inds[2])};
+                      zs::vec<float, 3> xs[3]{pars.pack<3>("x", inds[0]),
+                                              pars.pack<3>("x", inds[1]),
+                                              pars.pack<3>("x", inds[2])};
                       auto c = (xs[0] + xs[1] + xs[2]) / 3.f;
                       /// vel, C, F, d
                       auto vole_div_3 = eles("vol", ei) / 3.f;
-                      auto vele = eles.pack<3>("vel", ei);
+                      auto vele = eles.pack<3>("v", ei);
                       auto Ce = eles.pack<3, 3>("C", ei);
                       auto Fe = eles.pack<3, 3>("F", ei);
                       auto d2 = col(eles.pack<3, 3>("d", ei), 2);
@@ -276,15 +276,15 @@ struct RefineMeshParticles : INode {
                       for (int i = 0; i != 3; ++i) {
                         atomic_add(exec_cuda, &pars("vol", inds[i]),
                                    -vole_div_3);
-                        atomic_add(exec_cuda, &pars("mass", inds[i]),
+                        atomic_add(exec_cuda, &pars("m", inds[i]),
                                    -vole_div_3 * rho);
                       }
 
                       /// spawn new vertex
                       pars("vol", vertId) = vole_div_3;
-                      pars("mass", vertId) = vole_div_3 * rho;
-                      pars.tuple<3>("pos", vertId) = c;
-                      pars.tuple<3>("vel", vertId) = vele;
+                      pars("m", vertId) = vole_div_3 * rho;
+                      pars.tuple<3>("x", vertId) = c;
+                      pars.tuple<3>("v", vertId) = vele;
                       pars.tuple<9>("F", vertId) = Fe;
                       pars.tuple<9>("C", vertId) = Ce;
 #if 0
@@ -308,10 +308,10 @@ struct RefineMeshParticles : INode {
       return (p1 - p0).cross(p2 - p0).norm() * 0.5f;                           \
     };                                                                         \
     auto vole = triArea(a, b, c) * dx;                                         \
-    eles("mass", e) = vole * rho;                                              \
+    eles("m", e) = vole * rho;                                                 \
     eles("vol", e) = vole;                                                     \
-    eles.tuple<3>("pos", e) = (a + b + c) / 3.f;                               \
-    eles.tuple<3>("vel", e) = vele;                                            \
+    eles.tuple<3>("x", e) = (a + b + c) / 3.f;                                 \
+    eles.tuple<3>("v", e) = vele;                                              \
     eles.tuple<9>("C", e) = Ce;                                                \
     eles.tuple<9>("F", e) = Fe;                                                \
     mat3 d{};                                                                  \
@@ -332,9 +332,9 @@ struct RefineMeshParticles : INode {
     eles("inds", 1, e) = reinterpret_bits<float>(ib);                          \
     eles("inds", 2, e) = reinterpret_bits<float>(vertId);                      \
     atomic_add(exec_cuda, &pars("vol", ia), vole / 3.f);                       \
-    atomic_add(exec_cuda, &pars("mass", ia), vole *rho / 3.f);                 \
+    atomic_add(exec_cuda, &pars("m", ia), vole *rho / 3.f);                    \
     atomic_add(exec_cuda, &pars("vol", ib), vole / 3.f);                       \
-    atomic_add(exec_cuda, &pars("mass", ib), vole *rho / 3.f);                 \
+    atomic_add(exec_cuda, &pars("m", ib), vole *rho / 3.f);                    \
   }
 
                       CONSTRUCT_ELEMENT(ei, inds[0], inds[1], xs[0], xs[1]);
@@ -471,8 +471,8 @@ struct RefineMeshParticles : INode {
                eleCnt = proxy<execspace_e::cuda>(eleCnt),
                dx] __device__(int ei) mutable {
                 auto edge = edges[ei];
-                float3 xs[2] = {pars.pack<3>("pos", edge[0]),
-                                pars.pack<3>("pos", edge[1])};
+                float3 xs[2] = {pars.pack<3>("x", edge[0]),
+                                pars.pack<3>("x", edge[1])};
                 if ((xs[1] - xs[0]).l2NormSqr() > dx * dx) {
                   // insert edge middle point
                   auto vi = atomic_add(exec_cuda, vertCnt.data(), 1);
@@ -511,8 +511,8 @@ struct RefineMeshParticles : INode {
                eles = proxy<execspace_e::cuda>({}, eles),
                dx] __device__(int ei) mutable {
                 auto edge = edges[ei];
-                float3 xs[2] = {pars.pack<3>("pos", edge[0]),
-                                pars.pack<3>("pos", edge[1])};
+                float3 xs[2] = {pars.pack<3>("x", edge[0]),
+                                pars.pack<3>("x", edge[1])};
                 auto eleNos = edgeEles[ei];
                 auto edgeLocalNos = edgeLocalNosInEle[ei];
                 int eleNo = -1;
@@ -529,13 +529,13 @@ struct RefineMeshParticles : INode {
                 if (vi == -1)
                   return; // this edge is refined enough
                 // mass, vol only zero initialized
-                pars("mass", vi) = 0.f;
+                pars("m", vi) = 0.f;
                 pars("vol", vi) = 0.f;
                 // pos, vel, F, C
-                pars.tuple<3>("pos", vi) = (xs[0] + xs[1]) * 0.5f;
-                pars.tuple<3>("vel", vi) = (pars.pack<3>("vel", edge[0]) +
-                                            pars.pack<3>("vel", edge[1])) *
-                                           0.5f;
+                pars.tuple<3>("x", vi) = (xs[0] + xs[1]) * 0.5f;
+                pars.tuple<3>("v", vi) =
+                    (pars.pack<3>("v", edge[0]) + pars.pack<3>("v", edge[1])) *
+                    0.5f;
                 // F, C
                 auto F = eles.pack<3, 3>("F", eleNo);
                 auto C = eles.pack<3, 3>("C", eleNo);
@@ -580,12 +580,12 @@ struct RefineMeshParticles : INode {
                 int inds[3] = {reinterpret_bits<int>(eles("inds", 0, ei)),
                                reinterpret_bits<int>(eles("inds", 1, ei)),
                                reinterpret_bits<int>(eles("inds", 2, ei))};
-                zs::vec<float, 3> xs[3]{pars.pack<3>("pos", inds[0]),
-                                        pars.pack<3>("pos", inds[1]),
-                                        pars.pack<3>("pos", inds[2])};
+                zs::vec<float, 3> xs[3]{pars.pack<3>("x", inds[0]),
+                                        pars.pack<3>("x", inds[1]),
+                                        pars.pack<3>("x", inds[2])};
                 // vol, vel, C, F, d
                 auto vol = eles("vol", ei);
-                auto vele = eles.pack<3>("vel", ei);
+                auto vele = eles.pack<3>("v", ei);
                 auto Ce = eles.pack<3, 3>("C", ei);
                 auto Fe = eles.pack<3, 3>("F", ei);
                 auto d2 = col(eles.pack<3, 3>("d", ei), 2);
@@ -606,7 +606,7 @@ struct RefineMeshParticles : INode {
                   const auto vole_div_3 = vol / 3.f;
                   for (int i = 0; i != 3; ++i) {
                     atomic_add(exec_cuda, &pars("vol", inds[i]), -vole_div_3);
-                    atomic_add(exec_cuda, &pars("mass", inds[i]),
+                    atomic_add(exec_cuda, &pars("m", inds[i]),
                                -vole_div_3 * rho);
                   }
                 }
@@ -615,10 +615,10 @@ struct RefineMeshParticles : INode {
                 auto constructElement = [&](int e, int3 is, const auto &p0,
                                             const auto &p1, const auto &p2,
                                             float vole) {
-                  eles("mass", e) = vole * rho;
+                  eles("m", e) = vole * rho;
                   eles("vol", e) = vole;
-                  eles.tuple<3>("pos", e) = (p0 + p1 + p2) / 3.f;
-                  eles.tuple<3>("vel", e) = vele;
+                  eles.tuple<3>("x", e) = (p0 + p1 + p2) / 3.f;
+                  eles.tuple<3>("v", e) = vele;
                   eles.tuple<9>("C", e) = Ce;
                   eles.tuple<9>("F", e) = Fe;
                   if (hasNormalProperty)
@@ -640,7 +640,7 @@ struct RefineMeshParticles : INode {
                   for (int i = 0; i != 3; ++i) {
                     eles("inds", i, e) = reinterpret_bits<float>(is[i]);
                     atomic_add(exec_cuda, &pars("vol", is[i]), vol_div3);
-                    atomic_add(exec_cuda, &pars("mass", is[i]), mass_div3);
+                    atomic_add(exec_cuda, &pars("m", is[i]), mass_div3);
                   }
                   if (hasNormalProperty)
                     for (int i = 0; i != 3; ++i)
@@ -653,19 +653,19 @@ struct RefineMeshParticles : INode {
                 // construct new elements
                 if (numSplits == 1) {
                   if (int d = splitVerts[0]; d != -1) { // [d, -1, -1]
-                    auto pd = pars.pack<3>("pos", d);
+                    auto pd = pars.pack<3>("x", d);
                     constructElement(ei, {inds[2], inds[0], d}, xs[2], xs[0],
                                      pd, vol * 0.5f);
                     constructElement(eleId, {inds[1], inds[2], d}, xs[1], xs[2],
                                      pd, vol * 0.5f);
                   } else if (int d = splitVerts[1]; d != -1) { // [-1, d, -1]
-                    auto pd = pars.pack<3>("pos", d);
+                    auto pd = pars.pack<3>("x", d);
                     constructElement(ei, {inds[0], inds[1], d}, xs[0], xs[1],
                                      pd, vol * 0.5f);
                     constructElement(eleId, {inds[2], inds[0], d}, xs[2], xs[0],
                                      pd, vol * 0.5f);
                   } else if (int d = splitVerts[2]; d != -1) { // [-1, -1, d]
-                    auto pd = pars.pack<3>("pos", d);
+                    auto pd = pars.pack<3>("x", d);
                     constructElement(ei, {inds[0], inds[1], d}, xs[0], xs[1],
                                      pd, vol * 0.5f);
                     constructElement(eleId, {inds[1], inds[2], d}, xs[1], xs[2],
@@ -675,8 +675,8 @@ struct RefineMeshParticles : INode {
                   if (splitVerts[0] == -1) { // [-1, d, e]
                     auto d = splitVerts[1];
                     auto e = splitVerts[2];
-                    auto pd = pars.pack<3>("pos", d);
-                    auto pe = pars.pack<3>("pos", e);
+                    auto pd = pars.pack<3>("x", d);
+                    auto pe = pars.pack<3>("x", e);
                     constructElement(ei, {inds[0], inds[1], d}, xs[0], xs[1],
                                      pd, vol * 0.5f);
                     constructElement(eleId, {inds[2], e, d}, xs[2], pe, pd,
@@ -686,8 +686,8 @@ struct RefineMeshParticles : INode {
                   } else if (splitVerts[1] == -1) { // [d, -1, e]
                     auto d = splitVerts[0];
                     auto e = splitVerts[2];
-                    auto pd = pars.pack<3>("pos", d);
-                    auto pe = pars.pack<3>("pos", e);
+                    auto pd = pars.pack<3>("x", d);
+                    auto pe = pars.pack<3>("x", e);
                     constructElement(ei, {inds[1], inds[2], d}, xs[1], xs[2],
                                      pd, vol * 0.5f);
                     constructElement(eleId, {inds[0], d, e}, xs[0], pd, pe,
@@ -697,8 +697,8 @@ struct RefineMeshParticles : INode {
                   } else if (splitVerts[2] == -1) { // [d, e, -1]
                     auto d = splitVerts[0];
                     auto e = splitVerts[1];
-                    auto pd = pars.pack<3>("pos", d);
-                    auto pe = pars.pack<3>("pos", e);
+                    auto pd = pars.pack<3>("x", d);
+                    auto pe = pars.pack<3>("x", e);
                     constructElement(ei, {inds[2], inds[0], d}, xs[2], xs[0],
                                      pd, vol * 0.5f);
                     constructElement(eleId, {inds[1], e, d}, xs[1], pe, pd,
@@ -710,9 +710,9 @@ struct RefineMeshParticles : INode {
                   auto d = splitVerts[0];
                   auto e = splitVerts[1];
                   auto f = splitVerts[2];
-                  auto pd = pars.pack<3>("pos", d);
-                  auto pe = pars.pack<3>("pos", e);
-                  auto pf = pars.pack<3>("pos", f);
+                  auto pd = pars.pack<3>("x", d);
+                  auto pe = pars.pack<3>("x", e);
+                  auto pf = pars.pack<3>("x", f);
                   constructElement(ei, {inds[0], d, f}, xs[0], pd, pf,
                                    vol * 0.25f);
                   constructElement(eleId, {inds[1], e, d}, xs[1], pe, pd,
@@ -772,14 +772,14 @@ struct UpdateZSPrimitiveSequence : INode {
             [pars = proxy<execspace_e::cuda>({}, zsprimseq->getParticles()),
              dt] __device__(int pi) mutable {
               pars.tuple<3>("nrm", pi) = zs::vec<float, 3>::zeros();
-              pars.tuple<3>("pos", pi) =
-                  pars.pack<3>("pos", pi) + pars.pack<3>("vel", pi) * dt;
+              pars.tuple<3>("x", pi) =
+                  pars.pack<3>("x", pi) + pars.pack<3>("v", pi) * dt;
             });
     cudaPol(Collapse{numE}, [eles = proxy<execspace_e::cuda>(
                                  {}, zsprimseq->getQuadraturePoints()),
                              dt] __device__(int ei) mutable {
-      eles.tuple<3>("pos", ei) =
-          eles.pack<3>("pos", ei) + eles.pack<3>("vel", ei) * dt;
+      eles.tuple<3>("x", ei) =
+          eles.pack<3>("x", ei) + eles.pack<3>("v", ei) * dt;
     });
     // normal
     cudaPol(
@@ -790,9 +790,9 @@ struct UpdateZSPrimitiveSequence : INode {
           int inds[3] = {reinterpret_bits<int>(eles("inds", 0, ei)),
                          reinterpret_bits<int>(eles("inds", 1, ei)),
                          reinterpret_bits<int>(eles("inds", 2, ei))};
-          zs::vec<float, 3> xs[3]{pars.pack<3>("pos", inds[0]),
-                                  pars.pack<3>("pos", inds[1]),
-                                  pars.pack<3>("pos", inds[2])};
+          zs::vec<float, 3> xs[3]{pars.pack<3>("x", inds[0]),
+                                  pars.pack<3>("x", inds[1]),
+                                  pars.pack<3>("x", inds[2])};
           auto n = (xs[1] - xs[0])
                        .normalized()
                        .cross((xs[2] - xs[0]).normalized())

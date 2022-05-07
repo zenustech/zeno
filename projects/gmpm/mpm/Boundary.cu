@@ -203,8 +203,8 @@ struct ComputeParticleBeta : INode {
                                  grid = proxy<execspace_e::cuda>({}, grid), dt,
                                  JpcDefault] __device__(size_t pi) mutable {
       using grid_t = RM_CVREF_T(grid);
-      auto pos = pars.pack<3>("pos", pi);
-      auto vp = pars.pack<3>("vel", pi);
+      auto pos = pars.pack<3>("x", pi);
+      auto vp = pars.pack<3>("v", pi);
       pos += dt * vp;
 
       float Jp_critical = JpcDefault;
@@ -258,8 +258,8 @@ struct ComputeParticleBeta : INode {
                                  grid = proxy<execspace_e::cuda>({}, grid), dt,
                                  JpcDefault] __device__(size_t ei) mutable {
       using grid_t = RM_CVREF_T(grid);
-      auto pos = eles.pack<3>("pos", ei);
-      auto vp = eles.pack<3>("vel", ei);
+      auto pos = eles.pack<3>("x", ei);
+      auto vp = eles.pack<3>("v", ei);
       pos += dt * vp;
       auto tri = eles.pack<3>("inds", ei).reinterpret_bits<int>();
 
@@ -323,8 +323,8 @@ struct ComputeParticleBeta : INode {
     cudaPol(range(pars.size()), [pars = proxy<execspace_e::cuda>({}, pars),
                                  boundary = collider, JpcDefault,
                                  dt] __device__(size_t pi) mutable {
-      auto pos = pars.pack<3>("pos", pi);
-      auto vp = pars.pack<3>("vel", pi);
+      auto pos = pars.pack<3>("x", pi);
+      auto vp = pars.pack<3>("v", pi);
       pos += dt * vp;
 
       float Jp_critical = JpcDefault;
@@ -360,8 +360,8 @@ struct ComputeParticleBeta : INode {
                                  eles = proxy<execspace_e::cuda>({}, eles),
                                  boundary = collider, JpcDefault,
                                  dt] __device__(size_t ei) mutable {
-      auto pos = eles.pack<3>("pos", ei);
-      auto vp = eles.pack<3>("vel", ei);
+      auto pos = eles.pack<3>("x", ei);
+      auto vp = eles.pack<3>("v", ei);
       pos += dt * vp;
       auto tri = eles.pack<3>("inds", ei).reinterpret_bits<int>();
 
@@ -598,20 +598,20 @@ struct ApplyWindImpulseOnZSGrid : INode {
           float area{};
           {
             auto p0 =
-                pars.pack<3>("pos", reinterpret_bits<int>(eles("inds", 0, ei)));
+                pars.pack<3>("x", reinterpret_bits<int>(eles("inds", 0, ei)));
             auto p1 =
-                pars.pack<3>("pos", reinterpret_bits<int>(eles("inds", 1, ei)));
+                pars.pack<3>("x", reinterpret_bits<int>(eles("inds", 1, ei)));
             auto p2 =
-                pars.pack<3>("pos", reinterpret_bits<int>(eles("inds", 2, ei)));
+                pars.pack<3>("x", reinterpret_bits<int>(eles("inds", 2, ei)));
             auto cp = (p1 - p0).cross(p2 - p0);
             area = cp.length();
             n = cp / area;
             area *= 0.5f;
           }
-          auto pos = eles.pack<3>("pos", ei);
+          auto pos = eles.pack<3>("x", ei);
           auto windVel = velLs.getMaterialVelocity(pos);
 
-          auto vel = eles.pack<3>("vel", ei);
+          auto vel = eles.pack<3>("v", ei);
           auto vrel = windVel - vel;
           float vnSignedLength = n.dot(vrel);
           auto vn = n * vnSignedLength;

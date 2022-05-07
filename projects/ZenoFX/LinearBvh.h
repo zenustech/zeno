@@ -27,12 +27,12 @@ struct LBvh : IObjectClone<LBvh> {
   element_e eleCategory{element_e::point}; // element category
 
   LBvh() noexcept = default;
-  LBvh(const std::shared_ptr<PrimitiveObject> &prim,
-                float thickness = 0.f) {
+  LBvh(const std::shared_ptr<PrimitiveObject> &prim, float thickness = 0.f) {
     build(prim, thickness);
   }
   template <element_e et>
-  LBvh(const std::shared_ptr<PrimitiveObject> &prim, float thickness, element_t<et> t) {
+  LBvh(const std::shared_ptr<PrimitiveObject> &prim, float thickness,
+       element_t<et> t) {
     build(prim, thickness, t);
   }
 
@@ -41,10 +41,9 @@ struct LBvh : IObjectClone<LBvh> {
   BvFunc getBvFunc(const std::shared_ptr<PrimitiveObject> &prim) const;
 
   template <element_e et>
-  void build(const std::shared_ptr<PrimitiveObject> &prim,
-                      float thickness, element_t<et>);
-  void build(const std::shared_ptr<PrimitiveObject> &prim,
-                      float thickness);
+  void build(const std::shared_ptr<PrimitiveObject> &prim, float thickness,
+             element_t<et>);
+  void build(const std::shared_ptr<PrimitiveObject> &prim, float thickness);
   void refit();
 
   static bool intersect(const Box &box, const TV &p) noexcept {
@@ -71,15 +70,13 @@ struct LBvh : IObjectClone<LBvh> {
 
   /// closest bounding box
   template <element_e et>
-  void find_nearest(TV const &pos, Ti &id, float &dist,
-                             element_t<et>) const;
+  void find_nearest(TV const &pos, Ti &id, float &dist, element_t<et>) const;
   void find_nearest(TV const &pos, Ti &id, float &dist) const;
 
   std::shared_ptr<PrimitiveObject> retrievePrimitive(Ti eid) const;
   vec3f retrievePrimitiveCenter(Ti eid) const;
 
-  template <class F>
-  void iter_neighbors(TV const &pos, F &&f) const {
+  template <class F> void iter_neighbors(TV const &pos, F &&f) const {
     if (auto numLeaves = getNumLeaves(); numLeaves <= 2) {
       for (Ti i = 0; i != numLeaves; ++i) {
         if (intersect(sortedBvs[i], pos))

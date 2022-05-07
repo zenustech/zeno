@@ -25,7 +25,11 @@ std::streamsize ZWidgetErrStream::xsputn(const char* p, std::streamsize n)
         m_linebuffer.append(p, n);
     } else {
         m_linebuffer.append(p, it);
-        //if (m_linebuffer.size() > 4 && std::equal(m_linebuffer.end() - 4, m_linebuffer.end(), "\033[0m")) {
+        //if (m_linebuffer.size() >= 4 && m_linebuffer.front() == '\033' && m_linebuffer[1] == '[') {
+            //if (auto it = std::find(m_linebuffer.begin(), m_linebuffer.end(), 'm'); it != m_linebuffer.end())
+                //m_linebuffer.erase(m_linebuffer.begin(), it + 1);
+        //}
+        //if (m_linebuffer.size() >= 4 && std::equal(m_linebuffer.end() - 4, m_linebuffer.end(), "\033[0m")) {
             //m_linebuffer.erase(m_linebuffer.size() - 4);
         //}
         luzhPutString(QString::fromStdString(m_linebuffer));
@@ -41,8 +45,8 @@ void ZWidgetErrStream::luzhPutString(QString str) {
     static QRegExp rx("\\[(T|D|I|C|W|E)\\s+(\\d+):(\\d+):(\\d+)\\.(\\d+)\\]\\s+\\(([^\\)]+):(\\d+)\\)\\s+([^\\)]+)");
     if (!str.startsWith('[') || rx.indexIn(str) == -1)
     {
-        QMessageLogger logger("<stderr>", 0, 0);
-        logger.critical().noquote() << "[C] <stderr>" << str;
+        QMessageLogger logger("unknown", 0, 0);
+        logger.critical().noquote() << "[clog]" << str;
     }
     else if (QStringList list = rx.capturedTexts(); list.length() == 9)
     {
@@ -54,7 +58,8 @@ void ZWidgetErrStream::luzhPutString(QString str) {
         QString fileName = list[6];
         int line = list[7].toInt();
         QString content = list[8];
-        QString msg = QString("[%1:%2:%3.%4] (%5:%6) %7")
+        QString msg = QString("[%1 %2:%3:%4.%5] (%6:%7) %8")
+            .arg(type)
             .arg(nDays, 2, 10, QLatin1Char('0'))
             .arg(nHours, 2, 10, QLatin1Char('0'))
             .arg(nMins, 2, 10, QLatin1Char('0'))
@@ -68,27 +73,27 @@ void ZWidgetErrStream::luzhPutString(QString str) {
         QMessageLogger logger(pwtf, line, 0);
         if (type == "T")
         {
-            logger.debug().noquote() << "[T]" << msg;
+            logger.debug().noquote() << msg;
         }
         else if (type == "D")
         {
-            logger.debug().noquote() << "[D]" << msg;
+            logger.debug().noquote() << msg;
         }
         else if (type == "I")
         {
-            logger.info().noquote() << "[I]" << msg;
+            logger.info().noquote() << msg;
         }
         else if (type == "C")
         {
-            logger.critical().noquote() << "[C]" << msg;
+            logger.critical().noquote() << msg;
         }
         else if (type == "W")
         {
-            logger.warning().noquote() << "[W]" << msg;
+            logger.warning().noquote() << msg;
         }
         else if (type == "E")
         {
-            logger.warning().noquote() << "[E]" << msg;
+            logger.warning().noquote() << msg;
             //crash when use logger.fatal.
             //logger.fatal(msg.toLatin1());
         }
@@ -104,7 +109,7 @@ void ZWidgetErrStream::customMsgHandler(QtMsgType type, const QMessageLogContext
 {
     QString fileName = QString::fromLatin1(context.file);
     int ln = context.line;
-    if (msg.startsWith("[E]"))
+    if (msg.startsWith("[E "))
     {
         type = QtFatalMsg;
     }

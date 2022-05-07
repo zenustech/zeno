@@ -144,8 +144,8 @@ struct ViewDecodeData {
     size_t buffercurr = 0;
     size_t headercurr = 0;
     char headerbuf[sizeof(Header)] = {};
-    size_t cerrlen = 0;
-    char cerrbuf[4100];
+    size_t cloglen = 0;
+    char clogbuf[4100];
 
     void clear()
     {
@@ -159,6 +159,11 @@ struct ViewDecodeData {
     auto const &header() const
     {
         return *(Header const *)headerbuf;
+    }
+
+    void finish()
+    {
+        std::clog.flush();
     }
 
     // encode rule: \a, \b, \r, \t, then 8-byte of SIZE, then the SIZE-byte of DATA
@@ -186,14 +191,14 @@ struct ViewDecodeData {
                 if (*p == '\a') {
                     phase = 1;
                 } else {
-                    // cerr is captured by luzh log panel
-                    if (*p == '\n' || cerrlen >= sizeof(cerrbuf) - 4) {
-                        std::cerr << std::string_view(cerrbuf, cerrlen);
-                        //std::ostreambuf_iterator<char> oit(std::cerr);
-                        //std::copy_n(cerrbuf, cerrlen, oit);
-                        cerrlen = 0;
+                    clogbuf[cloglen++] = *p;
+                    // clog is captured by luzh log panel
+                    if (*p == '\n' || cloglen >= sizeof(clogbuf) - 4) {
+                        std::clog << std::string_view(clogbuf, cloglen);
+                        //std::ostreambuf_iterator<char> oit(std::clog);
+                        //std::copy_n(clogbuf, cloglen, oit);
+                        cloglen = 0;
                     }
-                    cerrbuf[cerrlen++] = *p;
                 }
             } else if (phase == 1) {
                 if (*p == '\b') {
@@ -239,6 +244,7 @@ struct ViewDecodeData {
 
 void viewDecodeFinish()
 {
+    viewDecodeData.finish();
     packetProc.onFinish();
 }
 

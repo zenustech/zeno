@@ -161,7 +161,7 @@ struct ZenoFEMMesh : zeno::IObject {
                    0,  r, 0, 0, u, 0, 0, 0, t3, 0, 0, o, 0, 0,  r, 0, 0, u};
     }
   }
-  // load .node file -> _mesh->attr("pos")
+  // load .node file -> _mesh->attr("x")
   void LoadVerticesFromFile(const std::string &filename) {
     size_t num_vertices, space_dimension, d1, d2;
     std::ifstream node_fin;

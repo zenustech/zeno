@@ -187,13 +187,13 @@ void GraphsManagment::appendLog(QtMsgType type, QString fileName, int ln, const 
         //todo: time
         case QtDebugMsg:
         {
-            item->setData(QBrush(QColor(255, 255, 255, 0.7 * 255)), Qt::ForegroundRole);
+            item->setData(QBrush(QColor(200, 200, 200, 0.7 * 255)), Qt::ForegroundRole);
             m_logModel->appendRow(item);
             break;
         }
         case QtCriticalMsg:
         {
-            item->setData(QBrush(QColor(255, 255, 255, 0.7 * 255)), Qt::ForegroundRole);
+            item->setData(QBrush(QColor(80, 154, 200)), Qt::ForegroundRole);
             m_logModel->appendRow(item);
             break;
         }

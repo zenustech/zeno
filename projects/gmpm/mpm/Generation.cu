@@ -131,7 +131,7 @@ struct ToTrackerParticles : INode {
     auto ompExec = zs::omp_exec();
 
     // attributes
-    std::vector<zs::PropertyTag> tags{{"pos", 3}, {"vel", 3}};
+    std::vector<zs::PropertyTag> tags{{"x", 3}, {"v", 3}};
     {
       outParticles->particles =
           std::make_shared<typename ZenoParticles::particles_t>(tags, size,
@@ -143,20 +143,20 @@ struct ToTrackerParticles : INode {
         using mat3 = zs::vec<float, 3, 3>;
 
         // pos
-        pars.tuple<3>("pos", pi) = obj[pi];
+        pars.tuple<3>("x", pi) = obj[pi];
 
         // vel
         if (velsPtr != nullptr)
-          pars.tuple<3>("vel", pi) = velsPtr[pi];
+          pars.tuple<3>("v", pi) = velsPtr[pi];
         else
-          pars.tuple<3>("vel", pi) = vec3::zeros();
+          pars.tuple<3>("v", pi) = vec3::zeros();
       });
 
       pars = pars.clone({memsrc_e::um, 0});
     }
     if (inParticles->tris.size()) {
       const auto eleSize = inParticles->tris.size();
-      std::vector<zs::PropertyTag> tags{{"pos", 3}, {"vel", 3}, {"inds", 3}};
+      std::vector<zs::PropertyTag> tags{{"x", 3}, {"v", 3}, {"inds", 3}};
       outParticles->elements =
           typename ZenoParticles::particles_t{tags, eleSize, memsrc_e::host};
       auto &eles = outParticles->getQuadraturePoints();
@@ -170,15 +170,15 @@ struct ToTrackerParticles : INode {
         for (int d = 0; d != 3; ++d)
           eles("inds", d, ei) = reinterpret_bits<float>(inds[d]);
         // pos
-        eles.tuple<3>("pos", ei) =
+        eles.tuple<3>("x", ei) =
             (obj[inds[0]] + obj[inds[1]] + obj[inds[2]]) / 3.f;
 
         // vel
         if (velsPtr != nullptr) {
-          eles.tuple<3>("vel", ei) =
+          eles.tuple<3>("v", ei) =
               (velsPtr[inds[0]] + velsPtr[inds[1]] + velsPtr[inds[2]]) / 3.f;
         } else
-          eles.tuple<3>("vel", ei) = vec3::zeros();
+          eles.tuple<3>("v", ei) = vec3::zeros();
       });
 
       eles = eles.clone({memsrc_e::um, 0});
@@ -196,7 +196,7 @@ ZENDEFNODE(ToTrackerParticles, {
                                    {"MPM"},
                                });
 
-struct ConstructBendingSprings : INode {
+/*
   // vertex
   std::shared_ptr<ZenoParticles>
   addVertexBendingSprings(zs::CudaExecutionPolicy &cudaPol,
@@ -310,12 +310,12 @@ struct ConstructBendingSprings : INode {
     ret->getModel().getElasticModel() = fcr;
     ret->category = ZenoParticles::curve;
 
-    std::vector<zs::PropertyTag> tags{{"mass", 1}, {"pos", 3}, {"vel", 3},
-                                      {"vol", 1},  {"C", 9},   {"beta", 1}};
+    std::vector<zs::PropertyTag> tags{{"m", 1},   {"x", 3}, {"v", 3},
+                                      {"vol", 1}, {"C", 9}, {"beta", 1}};
     std::vector<zs::PropertyTag> eleTags{
-        {"mass", 1},      {"pos", 3}, {"vel", 3}, {"vol", 1},
-        {"C", 9},         {"F", 9},   {"d", 9},   {"DmInv", 9},
-        {"inds", (int)2}, {"mu", 1},  {"lam", 1}};
+        {"m", 1},         {"x", 3},  {"v", 3},  {"vol", 1},
+        {"C", 9},         {"F", 9},  {"d", 9},  {"DmInv", 9},
+        {"inds", (int)2}, {"mu", 1}, {"lam", 1}};
 
     std::size_t numSpringVerts = vertTable.size();
     ret->sprayedOffset = numSpringVerts;
@@ -329,11 +329,11 @@ struct ConstructBendingSprings : INode {
              vertTable = proxy<space>(vertTable)] __device__(int pi) mutable {
               using mat3 = zs::vec<float, 3, 3>;
               auto opid = vertTable._activeKeys[pi][0];
-              pars("mass", pi) = 0.f;
+              pars("m", pi) = 0.f;
               pars("vol", pi) = surfPars("vol", opid);
               pars("beta", pi) = 0.f;
-              pars.tuple<3>("pos", pi) = surfPars.pack<3>("pos", opid);
-              pars.tuple<3>("vel", pi) = vec3::zeros();
+              pars.tuple<3>("x", pi) = surfPars.pack<3>("x", opid);
+              pars.tuple<3>("v", pi) = vec3::zeros();
               pars.tuple<3 * 3>("C", pi) = mat3::zeros();
             });
 
@@ -348,7 +348,7 @@ struct ConstructBendingSprings : INode {
                                   vertTable = proxy<space>(vertTable),
                                   stiffness] __device__(int ei) mutable {
       using mat3 = zs::vec<float, 3, 3>;
-      eles("mass", ei) = 0.f;
+      eles("m", ei) = 0.f;
 
       {
         auto eids = elePairs[ei];
@@ -362,11 +362,11 @@ struct ConstructBendingSprings : INode {
       inds[0] = vertTable.query(vec1i{inds[0]});
       inds[1] = vertTable.query(vec1i{inds[1]});
       vec3 xs[2];
-      xs[0] = pars.pack<3>("pos", inds[0]);
-      xs[1] = pars.pack<3>("pos", inds[1]);
-      eles.tuple<3>("pos", ei) = (xs[0] + xs[1]) / 2;
+      xs[0] = pars.pack<3>("x", inds[0]);
+      xs[1] = pars.pack<3>("x", inds[1]);
+      eles.tuple<3>("x", ei) = (xs[0] + xs[1]) / 2;
       eles("vol", ei) = (pars("vol", inds[0]) + pars("vol", inds[1])) / 2;
-      eles.tuple<3>("vel", ei) = vec3::zeros();
+      eles.tuple<3>("v", ei) = vec3::zeros();
 
       eles.tuple<3 * 3>("C", ei) = mat3::zeros();
 
@@ -490,12 +490,12 @@ struct ConstructBendingSprings : INode {
     ret->getModel().getElasticModel() = fcr;
     ret->category = ZenoParticles::curve;
 
-    std::vector<zs::PropertyTag> tags{{"mass", 1}, {"pos", 3}, {"vel", 3},
-                                      {"vol", 1},  {"C", 9},   {"beta", 1}};
+    std::vector<zs::PropertyTag> tags{{"m", 1},   {"x", 3}, {"v", 3},
+                                      {"vol", 1}, {"C", 9}, {"beta", 1}};
     std::vector<zs::PropertyTag> eleTags{
-        {"mass", 1},      {"pos", 3}, {"vel", 3}, {"vol", 1},
-        {"C", 9},         {"F", 9},   {"d", 9},   {"DmInv", 9},
-        {"inds", (int)2}, {"mu", 1},  {"lam", 1}};
+        {"m", 1},         {"x", 3},  {"v", 3},  {"vol", 1},
+        {"C", 9},         {"F", 9},  {"d", 9},  {"DmInv", 9},
+        {"inds", (int)2}, {"mu", 1}, {"lam", 1}};
 
     std::size_t numSpringVerts = eleTable.size();
     ret->sprayedOffset = numSpringVerts;
@@ -509,11 +509,11 @@ struct ConstructBendingSprings : INode {
              eleTable = proxy<space>(eleTable)] __device__(int pi) mutable {
               using mat3 = zs::vec<float, 3, 3>;
               auto opid = eleTable._activeKeys[pi][0];
-              pars("mass", pi) = 0.f;
+              pars("m", pi) = 0.f;
               pars("vol", pi) = surfEles("vol", opid);
               pars("beta", pi) = 0.f;
-              pars.tuple<3>("pos", pi) = surfEles.pack<3>("pos", opid);
-              pars.tuple<3>("vel", pi) = vec3::zeros();
+              pars.tuple<3>("x", pi) = surfEles.pack<3>("x", opid);
+              pars.tuple<3>("v", pi) = vec3::zeros();
               pars.tuple<3 * 3>("C", pi) = mat3::zeros();
             });
 
@@ -527,7 +527,7 @@ struct ConstructBendingSprings : INode {
                                  eleTable = proxy<space>(eleTable),
                                  stiffness] __device__(int ei) mutable {
       using mat3 = zs::vec<float, 3, 3>;
-      eles("mass", ei) = 0.f;
+      eles("m", ei) = 0.f;
 
       auto eids = elePairs[ei];
       auto mu = zs::min(surfEles("mu", eids[0]), surfEles("mu", eids[1]));
@@ -538,11 +538,11 @@ struct ConstructBendingSprings : INode {
       eids[0] = eleTable.query(vec1i{eids[0]});
       eids[1] = eleTable.query(vec1i{eids[1]});
       vec3 xs[2];
-      xs[0] = pars.pack<3>("pos", eids[0]);
-      xs[1] = pars.pack<3>("pos", eids[1]);
-      eles.tuple<3>("pos", ei) = (xs[0] + xs[1]) / 2;
+      xs[0] = pars.pack<3>("x", eids[0]);
+      xs[1] = pars.pack<3>("x", eids[1]);
+      eles.tuple<3>("x", ei) = (xs[0] + xs[1]) / 2;
       eles("vol", ei) = (pars("vol", eids[0]) + pars("vol", eids[1])) / 2;
-      eles.tuple<3>("vel", ei) = vec3::zeros();
+      eles.tuple<3>("v", ei) = vec3::zeros();
 
       eles.tuple<3 * 3>("C", ei) = mat3::zeros();
 
@@ -567,6 +567,277 @@ struct ConstructBendingSprings : INode {
 
     fmt::print("bending spring mesh: {} verts, {} tris.\n", numSpringVerts,
                numElePairs);
+    return ret;
+  }
+*/
+struct ConstructBendingSprings : INode {
+  // vertex
+  std::shared_ptr<ZenoParticles>
+  addVertexBendingSprings(zs::CudaExecutionPolicy &cudaPol, ZenoParticles &surf,
+                          float stiffness) {
+    if (surf.category != ZenoParticles::surface)
+      return {};
+    using namespace zs;
+    using TableT = HashTable<int, 2, int>;     //
+    using VertTableT = HashTable<int, 1, int>; //
+    using key_t = typename TableT::key_t;
+    using vec1i = zs::vec<int, 1>;
+    using vec3 = zs::vec<float, 3>;
+    using mat3 = zs::vec<float, 3, 3>;
+    float thickness = surf.getModel().dx;
+    auto &surfPars = surf.getParticles();
+    auto numV = surfPars.size(); // i.e. sprayedOffset
+    auto &surfEles = surf.getQuadraturePoints();
+    auto numE = surfEles.size();
+
+    fmt::print("surface mesh: {} verts, {} tris.\n", numV, numE);
+    TableT edgeTable{surfPars.get_allocator(), numE * 3}; // edge -> eleid
+    edgeTable.reset(cudaPol, true);
+    //
+    constexpr auto space = execspace_e::cuda;
+    cudaPol(range(numE),
+            [table = proxy<space>(edgeTable),
+             eles = proxy<space>({}, surfEles)] __device__(int ei) mutable {
+              auto tri =
+                  eles.pack<3>("inds", ei).template reinterpret_bits<int>();
+              auto vi = tri[2];
+              for (int v = 0; v != 3; ++v) {
+                auto vj = tri[v];
+                if (vi < vj)
+                  table.insert(key_t{vi, vj});
+                vi = vj;
+              }
+            });
+    std::size_t numRegisteredEdges = edgeTable.size();
+    Vector<int> edgeToEles{surfPars.get_allocator(), numRegisteredEdges};
+    cudaPol(
+        range(numE),
+        [table = proxy<space>(edgeTable), edgeToEles = proxy<space>(edgeToEles),
+         eles = proxy<space>({}, surfEles)] __device__(int ei) mutable {
+          auto tri = eles.pack<3>("inds", ei).template reinterpret_bits<int>();
+          auto vi = tri[2];
+          for (int v = 0; v != 3; ++v) {
+            auto vj = tri[v];
+            if (vi < vj) {
+              auto no = table.query(key_t{vi, vj});
+              edgeToEles[no] = ei;
+            }
+            vi = vj;
+          }
+        });
+    //
+    using VertPair = zs::vec<int, 2>;
+    Vector<int> cnt{surfPars.get_allocator(), 1};
+    cnt.setVal(0);
+    Vector<VertPair> vertPairs{surfPars.get_allocator(), numRegisteredEdges};
+    Vector<float> kBends{surfPars.get_allocator(), numRegisteredEdges};
+    cudaPol(
+        range(numE),
+        [table = proxy<space>(edgeTable), edgeToEles = proxy<space>(edgeToEles),
+         cnt = proxy<space>(cnt), vertPairs = proxy<space>(vertPairs),
+         eles = proxy<space>({}, surfEles), kBends = proxy<space>(kBends),
+         thickness, stiffness] __device__(int ei) mutable {
+          using table_t = RM_CVREF_T(table);
+          auto [E_self, nu_self] =
+              E_nu_from_lame_parameters(eles("mu", ei), eles("lam", ei));
+          auto tri = eles.pack<3>("inds", ei).template reinterpret_bits<int>();
+          auto vi = tri[1];
+          auto vj = tri[2];
+          for (int v = 0; v != 3; ++v) {
+            auto vk = tri[v];
+            if (vi > vj) { // check opposite
+              if (auto edgeNo = table.query(key_t{vj, vi});
+                  edgeNo != table_t::sentinel_v) {
+                auto neighborEleNo = edgeToEles[edgeNo];
+                auto [E_nei, nu_nei] = E_nu_from_lame_parameters(
+                    eles("mu", neighborEleNo), eles("lam", neighborEleNo));
+                auto neighborTri = eles.pack<3>("inds", neighborEleNo)
+                                       .template reinterpret_bits<int>();
+                int neighborV = -1;
+                for (int d = 0; d != 3; ++d)
+                  if (neighborTri[d] != vi && neighborTri[d] != vj) {
+                    neighborV = neighborTri[d];
+                    break;
+                  }
+                auto no = atomic_add(exec_cuda, &cnt[0], 1);
+                vertPairs[no] = VertPair{neighborV, vk};
+                auto E = zs::min(E_self, E_nei);
+                auto nu = zs::min(nu_self, nu_nei);
+                // kBends[no] = E / (24 * (1.0 - nu * nu)) * thickness *
+                //             stiffness * thickness * thickness;
+                kBends[no] = E / (24 * (1.0 - nu * nu)) * stiffness;
+              }
+            }
+            vi = vj;
+            vj = vk;
+          }
+        });
+    std::size_t numVertPairs = cnt.getVal();
+    vertPairs.resize(numVertPairs);
+    kBends.resize(numVertPairs);
+    //
+    auto ret = std::make_shared<ZenoParticles>();
+    ret->getModel() = surf.getModel();
+    ret->category = ZenoParticles::vert_bending_spring;
+
+    std::vector<zs::PropertyTag> eleTags{{"k", 3}, {"rl", 1}, {"vinds", 2}};
+
+    ret->sprayedOffset = surfPars.size();
+    ret->particles = std::shared_ptr<typename ZenoParticles::particles_t>(
+        &surfPars, [](...) {}); // no deletion upon dtor
+
+    ret->elements = typename ZenoParticles::particles_t{
+        surfPars.get_allocator(), eleTags, numVertPairs};
+    auto &eles = ret->getQuadraturePoints();
+    cudaPol(range(numVertPairs),
+            [eles = proxy<space>({}, eles),
+             surfPars = proxy<space>({}, surfPars),
+             vertPairs = proxy<space>(vertPairs),
+             kBends = proxy<space>(kBends)] __device__(int ei) mutable {
+              using mat3 = zs::vec<float, 3, 3>;
+              eles("k", ei) = kBends[ei];
+
+              auto vinds = vertPairs[ei];
+              eles.tuple<2>("vinds", ei) = vinds.reinterpret_bits<float>();
+
+              vec3 xs[2];
+              xs[0] = surfPars.pack<3>("x", vinds[0]);
+              xs[1] = surfPars.pack<3>("x", vinds[1]);
+              eles("rl", ei) = (xs[1] - xs[0]).norm();
+            });
+
+    fmt::print("vert bending spring mesh: {} pairs.\n", numVertPairs);
+    return ret;
+  }
+  // element
+  std::shared_ptr<ZenoParticles>
+  addElementBendingSprings(zs::CudaExecutionPolicy &cudaPol,
+                           ZenoParticles &surf, float stiffness) {
+    if (surf.category != ZenoParticles::surface)
+      return {};
+    using namespace zs;
+    using TableT = HashTable<int, 2, int>;     //
+    using VertTableT = HashTable<int, 1, int>; //
+    using key_t = typename TableT::key_t;
+    using vec1i = zs::vec<int, 1>;
+    using vec3 = zs::vec<float, 3>;
+    using mat3 = zs::vec<float, 3, 3>;
+    float thickness = surf.getModel().dx;
+    auto &surfPars = surf.getParticles();
+    auto numV = surfPars.size(); // i.e. sprayedOffset
+    auto &surfEles = surf.getQuadraturePoints();
+    auto numE = surfEles.size();
+
+    fmt::print("surface mesh: {} verts, {} tris.\n", numV, numE);
+    TableT edgeTable{surfPars.get_allocator(), numE * 3}; // edge -> eleid
+    edgeTable.reset(cudaPol, true);
+    //
+    constexpr auto space = execspace_e::cuda;
+    cudaPol(range(numE),
+            [table = proxy<space>(edgeTable),
+             eles = proxy<space>({}, surfEles)] __device__(int ei) mutable {
+              auto tri =
+                  eles.pack<3>("inds", ei).template reinterpret_bits<int>();
+              auto vi = tri[2];
+              for (int v = 0; v != 3; ++v) {
+                auto vj = tri[v];
+                if (vi < vj)
+                  table.insert(key_t{vi, vj});
+                vi = vj;
+              }
+            });
+    std::size_t numRegisteredEdges = edgeTable.size();
+    Vector<int> edgeToEles{surfPars.get_allocator(), numRegisteredEdges};
+    cudaPol(
+        range(numE),
+        [table = proxy<space>(edgeTable), edgeToEles = proxy<space>(edgeToEles),
+         eles = proxy<space>({}, surfEles)] __device__(int ei) mutable {
+          auto tri = eles.pack<3>("inds", ei).template reinterpret_bits<int>();
+          auto vi = tri[2];
+          for (int v = 0; v != 3; ++v) {
+            auto vj = tri[v];
+            if (vi < vj) {
+              auto no = table.query(key_t{vi, vj});
+              edgeToEles[no] = ei;
+            }
+            vi = vj;
+          }
+        });
+    //
+    using ElePair = zs::vec<int, 2>;
+    Vector<int> cnt{surfPars.get_allocator(), 1};
+    cnt.setVal(0);
+    Vector<ElePair> elePairs{surfPars.get_allocator(), numRegisteredEdges};
+    Vector<float> kBends{surfPars.get_allocator(), numRegisteredEdges};
+    cudaPol(
+        range(numE),
+        [table = proxy<space>(edgeTable), edgeToEles = proxy<space>(edgeToEles),
+         cnt = proxy<space>(cnt), elePairs = proxy<space>(elePairs),
+         eles = proxy<space>({}, surfEles), kBends = proxy<space>(kBends),
+         thickness, stiffness] __device__(int ei) mutable {
+          using table_t = RM_CVREF_T(table);
+          auto [E_self, nu_self] =
+              E_nu_from_lame_parameters(eles("mu", ei), eles("lam", ei));
+          auto tri = eles.pack<3>("inds", ei).template reinterpret_bits<int>();
+          auto vi = tri[1];
+          auto vj = tri[2];
+          for (int v = 0; v != 3; ++v) {
+            auto vk = tri[v];
+            if (vi > vj) { // check opposite
+              if (auto edgeNo = table.query(key_t{vj, vi});
+                  edgeNo != table_t::sentinel_v) {
+                auto neighborEleNo = edgeToEles[edgeNo];
+                auto [E_nei, nu_nei] = E_nu_from_lame_parameters(
+                    eles("mu", neighborEleNo), eles("lam", neighborEleNo));
+                auto no = atomic_add(exec_cuda, &cnt[0], 1);
+                elePairs[no] = ElePair{neighborEleNo, ei};
+                auto E = zs::min(E_self, E_nei);
+                auto nu = zs::min(nu_self, nu_nei);
+                // kBends[no] = E / (24 * (1.0 - nu * nu)) * thickness *
+                //             stiffness * thickness * thickness;
+                kBends[no] = E / (24 * (1.0 - nu * nu)) * stiffness;
+              }
+            }
+            vi = vj;
+            vj = vk;
+          }
+        });
+    std::size_t numElePairs = cnt.getVal();
+    elePairs.resize(numElePairs);
+    kBends.resize(numElePairs);
+    //
+    auto ret = std::make_shared<ZenoParticles>();
+    ret->getModel() = surf.getModel();
+    ret->category = ZenoParticles::vert_bending_spring;
+
+    std::vector<zs::PropertyTag> eleTags{{"k", 3}, {"rl", 1}, {"einds", 2}};
+
+    ret->sprayedOffset = surfEles.size();
+    ret->particles = std::shared_ptr<typename ZenoParticles::particles_t>(
+        &surfEles, [](...) {}); // no deletion upon dtor
+
+    ret->elements = typename ZenoParticles::particles_t{
+        surfPars.get_allocator(), eleTags, numElePairs};
+    auto &eles = ret->getQuadraturePoints();
+    cudaPol(range(numElePairs),
+            [eles = proxy<space>({}, eles),
+             surfEles = proxy<space>({}, surfEles),
+             elePairs = proxy<space>(elePairs),
+             kBends = proxy<space>(kBends)] __device__(int ei) mutable {
+              using mat3 = zs::vec<float, 3, 3>;
+              eles("k", ei) = kBends[ei];
+
+              auto einds = elePairs[ei];
+
+              vec3 xs[2];
+              xs[0] = surfEles.pack<3>("x", einds[0]);
+              xs[1] = surfEles.pack<3>("x", einds[1]);
+              eles("rl", ei) = (xs[1] - xs[0]).norm();
+
+              eles.tuple<2>("einds", ei) = einds.reinterpret_bits<float>();
+            });
+
+    fmt::print("element bending spring mesh: {} pairs.\n", numElePairs);
     return ret;
   }
   // angle
@@ -634,7 +905,7 @@ struct ConstructBendingSprings : INode {
         [table = proxy<space>(edgeTable), edgeToEles = proxy<space>(edgeToEles),
          cnt = proxy<space>(cnt), elePairs = proxy<space>(elePairs),
          eles = proxy<space>({}, surfEles), kBends = proxy<space>(kBends),
-         thickness] __device__(int ei) mutable {
+         thickness, stiffness] __device__(int ei) mutable {
           using table_t = RM_CVREF_T(table);
           auto [E_self, nu_self] =
               E_nu_from_lame_parameters(eles("mu", ei), eles("lam", ei));
@@ -669,7 +940,7 @@ struct ConstructBendingSprings : INode {
                 auto E = zs::min(E_self, E_nei);
                 auto nu = zs::min(nu_self, nu_nei);
                 kBends[no] = E / (24 * (1.0 - nu * nu)) * thickness *
-                             thickness * thickness;
+                             stiffness * thickness * thickness;
               }
             }
             vi = vj;
@@ -689,43 +960,43 @@ struct ConstructBendingSprings : INode {
     std::vector<zs::PropertyTag> eleTags{{"vinds", 4}, {"k", 1}, {"ra", 1}};
 
     std::size_t numSpringVerts = numElePairs;
-    ret->sprayedOffset = numSpringVerts;
+    ret->sprayedOffset = surfPars.size();
     ret->particles = std::shared_ptr<typename ZenoParticles::particles_t>(
         &surfPars, [](...) {}); // no deletion upon dtor
     ret->elements = typename ZenoParticles::particles_t{
         surfPars.get_allocator(), eleTags, numElePairs};
     auto &eles = ret->getQuadraturePoints();
-    cudaPol(range(numElePairs), [eles = proxy<space>({}, eles),
-                                 surfPars = proxy<space>({}, surfPars),
-                                 elePairs = proxy<space>(elePairs),
-                                 kBends = proxy<space>(kBends),
-                                 stiffness] __device__(int ei) mutable {
-      using mat3 = zs::vec<float, 3, 3>;
-      // bending_stiffness =
-      // E / (24 * (1.0 - nu * nu)) * thickness^3
-      eles("k", ei) = stiffness * kBends[ei];
+    cudaPol(range(numElePairs),
+            [eles = proxy<space>({}, eles),
+             surfPars = proxy<space>({}, surfPars),
+             elePairs = proxy<space>(elePairs),
+             kBends = proxy<space>(kBends)] __device__(int ei) mutable {
+              using mat3 = zs::vec<float, 3, 3>;
+              // bending_stiffness =
+              // E / (24 * (1.0 - nu * nu)) * thickness^3
+              eles("k", ei) = kBends[ei];
 
-      auto vinds = elePairs[ei];
-      eles.tuple<4>("vinds", ei) = vinds.reinterpret_bits<float>();
-      /**
-       *             v1 --- v3
-       *            /  \    /
-       *           /    \  /
-       *          v2 --- v0
-       */
-      auto v0 = surfPars.pack<3>("pos", vinds[0]);
-      auto v1 = surfPars.pack<3>("pos", vinds[1]);
-      auto v2 = surfPars.pack<3>("pos", vinds[2]);
-      auto v3 = surfPars.pack<3>("pos", vinds[3]);
-      auto n1 = (v0 - v2).cross(v1 - v2);
-      auto n2 = (v1 - v3).cross(v0 - v3); // <v2, v1, v3>
-      auto DA = zs::acos(
-          zs::max(-1.f, zs::min(1.f, n1.dot(n2) / zs::sqrt(n1.l2NormSqr() *
+              auto vinds = elePairs[ei];
+              eles.tuple<4>("vinds", ei) = vinds.reinterpret_bits<float>();
+              /**
+               *             v1 --- v3
+               *            /  \    /
+               *           /    \  /
+               *          v2 --- v0
+               */
+              auto v0 = surfPars.pack<3>("x", vinds[0]);
+              auto v1 = surfPars.pack<3>("x", vinds[1]);
+              auto v2 = surfPars.pack<3>("x", vinds[2]);
+              auto v3 = surfPars.pack<3>("x", vinds[3]);
+              auto n1 = (v0 - v2).cross(v1 - v2);
+              auto n2 = (v1 - v3).cross(v0 - v3); // <v2, v1, v3>
+              auto DA = zs::acos(zs::max(
+                  -1.f, zs::min(1.f, n1.dot(n2) / zs::sqrt(n1.l2NormSqr() *
                                                            n2.l2NormSqr()))));
-      if (n2.cross(n1).dot(v0 - v1) < 0) // towards "closing"
-        DA = -DA;
-      eles("ra", ei) = 0;
-    });
+              if (n2.cross(n1).dot(v0 - v1) < 0) // towards "closing"
+                DA = -DA;
+              eles("ra", ei) = 0;
+            });
 
     fmt::print("bending spring mesh: {} verts, {} tris.\n", numSpringVerts,
                numElePairs);
@@ -837,8 +1108,8 @@ struct BuildPrimitiveSequence : INode {
               [prev = proxy<execspace_e::cuda>({}, zsprimseq->getParticles()),
                next = proxy<execspace_e::cuda>({}, next->getParticles()),
                dt] __device__(int pi) mutable {
-                prev.tuple<3>("vel", pi) =
-                    (next.pack<3>("pos", pi) - prev.pack<3>("pos", pi)) / dt;
+                prev.tuple<3>("v", pi) =
+                    (next.pack<3>("x", pi) - prev.pack<3>("x", pi)) / dt;
               });
       // update elements
       cudaPol(Collapse{numE},
@@ -846,8 +1117,8 @@ struct BuildPrimitiveSequence : INode {
                    {}, zsprimseq->getQuadraturePoints()),
                next = proxy<execspace_e::cuda>({}, next->getQuadraturePoints()),
                dt] __device__(int ei) mutable {
-                prev.tuple<3>("vel", ei) =
-                    (next.pack<3>("pos", ei) - prev.pack<3>("pos", ei)) / dt;
+                prev.tuple<3>("v", ei) =
+                    (next.pack<3>("x", ei) - prev.pack<3>("x", ei)) / dt;
               });
       if (size != numV) { // update sprayed mesh verts
         cudaPol(
@@ -862,20 +1133,18 @@ struct BuildPrimitiveSequence : INode {
               auto tri = eles.pack<3>("inds", eid).reinterpret_bits<int>();
               auto ws = verts.pack<3>("weights", dst);
               {
-                auto v0 = verts.pack<3>("vel", tri[0]);
-                auto v1 = verts.pack<3>("vel", tri[1]);
-                auto v2 = verts.pack<3>("vel", tri[2]);
+                auto v0 = verts.pack<3>("v", tri[0]);
+                auto v1 = verts.pack<3>("v", tri[1]);
+                auto v2 = verts.pack<3>("v", tri[2]);
 
-                verts.tuple<3>("vel", dst) =
-                    ws[0] * v0 + ws[1] * v1 + ws[2] * v2;
+                verts.tuple<3>("v", dst) = ws[0] * v0 + ws[1] * v1 + ws[2] * v2;
               }
               {
-                auto p0 = verts.pack<3>("pos", tri[0]);
-                auto p1 = verts.pack<3>("pos", tri[1]);
-                auto p2 = verts.pack<3>("pos", tri[2]);
+                auto p0 = verts.pack<3>("x", tri[0]);
+                auto p1 = verts.pack<3>("x", tri[1]);
+                auto p2 = verts.pack<3>("x", tri[2]);
 
-                verts.tuple<3>("pos", dst) =
-                    ws[0] * p0 + ws[1] * p1 + ws[2] * p2;
+                verts.tuple<3>("x", dst) = ws[0] * p0 + ws[1] * p1 + ws[2] * p2;
               }
             });
       }
@@ -917,7 +1186,7 @@ struct UpdatePrimitiveFromZSParticles : INode {
       auto &pos = prim.attr<vec3f>("pos");
       auto size = pos.size(); // in case zsparticle-mesh is refined
       vec3f *velsPtr{nullptr};
-      if (prim.has_attr("vel") && pars.hasProperty("vel"))
+      if (prim.has_attr("vel") && pars.hasProperty("v"))
         velsPtr = prim.attr<vec3f>("vel").data();
 
       if (pars.hasProperty("id")) {
@@ -926,17 +1195,17 @@ struct UpdatePrimitiveFromZSParticles : INode {
                   auto id = (int)pars("id", pi);
                   if (id >= size)
                     return;
-                  pos[id] = pars.array<3>("pos", pi);
+                  pos[id] = pars.array<3>("x", pi);
                   if (velsPtr != nullptr)
-                    velsPtr[id] = pars.array<3>("vel", pi);
+                    velsPtr[id] = pars.array<3>("v", pi);
                 });
       } else {
         // currently only write back pos and vel (if exists)
         ompExec(range(size),
                 [&, pars = proxy<execspace_e::host>({}, pars)](auto pi) {
-                  pos[pi] = pars.array<3>("pos", pi);
+                  pos[pi] = pars.array<3>("x", pi);
                   if (velsPtr != nullptr)
-                    velsPtr[pi] = pars.array<3>("vel", pi);
+                    velsPtr[pi] = pars.array<3>("v", pi);
                 });
       }
       const auto cnt = pars.size();
@@ -1022,7 +1291,7 @@ struct MakeZSLevelSet : INode {
 
     // default is "cellcentered"
     if (cateStr == "staggered")
-      tags.emplace_back(zs::PropertyTag{"vel", 3});
+      tags.emplace_back(zs::PropertyTag{"v", 3});
     // default is "unknown"
     if (ls->transferScheme == "unknown")
       ;
@@ -1216,8 +1485,12 @@ struct ZSParticlesToPrimitiveObject : INode {
                    // dst[pi] = zspars.pack<3>(name, pi);
                    dst[pi] = zspars.pack<3>(name, pi);
                  });
-        copy(zs::mem_device,
-             prim->add_attr<zeno::vec3f>(prop.name.asString()).data(),
+        std::string propName = prop.name.asString();
+        if (propName == "x")
+          propName = "pos";
+        else if (propName == "v")
+          propName = "vel";
+        copy(zs::mem_device, prim->add_attr<zeno::vec3f>(propName).data(),
              dst.data(), sizeof(zeno::vec3f) * size);
       } else if (prop.numChannels == 1) {
         zs::Vector<float> dst{size, memsrc_e::device, 0};
@@ -1311,7 +1584,7 @@ struct WriteZSParticles : zeno::INode {
               vms = zs::proxy<zs::execspace_e::cuda>(vms),
               pars = zs::proxy<zs::execspace_e::cuda>(
                   {}, pars)] __device__(size_t pi) mutable {
-               pos[pi] = pars.pack<3>("pos", pi);
+               pos[pi] = pars.pack<3>("x", pi);
                vms[pi] = pars("vms", pi);
              });
     std::vector<std::array<float, 3>> posOut(pars.size());

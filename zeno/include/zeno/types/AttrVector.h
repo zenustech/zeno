@@ -213,7 +213,7 @@ struct AttrVector {
         //_ensure_update();
         auto it = attrs.find(name);
         if (it == attrs.end())
-            throw makeError<KeyError>(name, "attribute", "PrimitiveObject::attr");
+            throw makeError<KeyError>(name, "attribute name of primitive");
         return it->second;
     }
 
@@ -221,7 +221,7 @@ struct AttrVector {
         //_ensure_update();
         auto it = attrs.find(name);
         if (it == attrs.end())
-            throw makeError<KeyError>(name, "attribute", "PrimitiveObject::attr");
+            throw makeError<KeyError>(name, "attribute name of primitive");
         return it->second;
     }
 

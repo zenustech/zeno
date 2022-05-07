@@ -91,7 +91,16 @@ struct ZenoParticles : IObjectClone<ZenoParticles> {
   // (ii ) lagrangian mesh vertex particle
   // (iii) lagrangian mesh element quadrature particle
   // tracker particle for
-  enum category_e : int { mpm, curve, surface, tet, tracker, bending };
+  enum category_e : int {
+    mpm,
+    curve,
+    surface,
+    tet,
+    tracker,
+    vert_bending_spring,
+    tri_bending_spring,
+    bending
+  };
   using particles_t = zs::TileVector<float, 32>;
 
   ZenoParticles() = default;
@@ -130,6 +139,12 @@ struct ZenoParticles : IObjectClone<ZenoParticles> {
     if (!elements.has_value())
       throw std::runtime_error("quadrature points not binded.");
     return *elements;
+  }
+  bool isBendingString() const noexcept {
+    return particles && elements.has_value() &&
+           (category == category_e::vert_bending_spring ||
+            category == category_e::tri_bending_spring ||
+            category == category_e::bending);
   }
   bool isMeshPrimitive() const noexcept {
     return particles && elements.has_value() &&

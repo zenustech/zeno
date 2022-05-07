@@ -130,6 +130,7 @@
     <file>icons/checkbox_checked_normal.svg</file>
     <file>icons/checkbox_checked_green.svg</file>
     <file>icons/checkbox_checked_red.svg</file>
+    <file>icons/checkbox_checked_cyan.svg</file>
     <file>icons/checkbox_checked_yellow.svg</file>
 </qresource>
 </RCC>
