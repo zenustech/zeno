@@ -49,7 +49,9 @@ struct PrimitiveScatter : INode {
                                 retprim->add_attr<T>(key);
                             }, prim->attr(key));
             }
+#if defined(__GNUC__) || defined(__clang__)
 #pragma omp simd
+#endif
             for (size_t i = 0; i < npoints; i++) {
                 auto val = unif(gen);
                 auto it = std::lower_bound(cdf.begin(), cdf.end(), val);
