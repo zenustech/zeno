@@ -3,16 +3,19 @@
 #include "zenoapplication.h"
 #include "graphsmanagment.h"
 #include "zenomainwindow.h"
+#include <zeno/utils/log.h>
 
 
 ZenoApplication::ZenoApplication(int &argc, char **argv)
     : QApplication(argc, argv)
     , m_pGraphs(new GraphsManagment(this))
     , m_bIOProcessing(false)
+    , m_errSteam(std::cerr)
 {
     initFonts();
     initStyleSheets();
-    steam.registerMsgHandler();
+    m_errSteam.registerMsgHandler();
+    zeno::log_info("build date: {} {}", __DATE__, __TIME__);
 }
 
 ZenoApplication::~ZenoApplication()

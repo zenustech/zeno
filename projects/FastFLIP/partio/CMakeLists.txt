@@ -76,11 +76,13 @@ SET (ZLIB_LIBRARY "")
 ####################################################
 if (MSVC)  # we must use this to fix bullet3 on win
     set(BUILD_SHARED_LIBS OFF)
-    add_compile_options(
-            $<$<CONFIG:>:/MD> #---------|
-            $<$<CONFIG:Debug>:/MDd> #---|-- Statically link the runtime libraries
-            $<$<CONFIG:Release>:/MD> #--|
-    )  # cl: 命令行 warning D9025 :正在重写“/MT”(用“/MD”)
+    if (ZENO_BUILD_SHARED)
+        add_compile_options(
+                $<$<CONFIG:>:/MD> #---------|
+                $<$<CONFIG:Debug>:/MDd> #---|-- Statically link the runtime libraries
+                $<$<CONFIG:Release>:/MD> #--|
+        )  # cl: 命令行 warning D9025 :正在重写“/MT”(用“/MD”)
+    endif()
 else()
     set(BUILD_SHARED_LIBS OFF)
     set(CMAKE_POSITION_INDEPENDENT_CODE ON)

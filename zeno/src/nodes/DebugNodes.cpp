@@ -42,7 +42,22 @@ struct PrintMessage : zeno::INode {
 ZENDEFNODE(PrintMessage, {
     {},
     {},
-    {{"string", "message", "hello"}},
+    {{"string", "message", "hello-stdout"}},
+    {"debug"},
+});
+
+
+struct PrintMessageStdErr : zeno::INode {
+    virtual void apply() override {
+        auto message = get_param<std::string>("message");
+        fprintf(stderr, "%s\n", message.c_str());
+    }
+};
+
+ZENDEFNODE(PrintMessageStdErr, {
+    {},
+    {},
+    {{"string", "message", "hello-stderr"}},
     {"debug"},
 });
 
