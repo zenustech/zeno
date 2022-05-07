@@ -1,5 +1,6 @@
 #include <zeno/utils/Error.h>
 #include <zeno/utils/cppdemangle.h>
+#include <zeno/utils/format.h>
 #ifdef ZENO_ENABLE_BACKWARD
 #include <backward.hpp>
 #endif
@@ -49,14 +50,14 @@ static const char *get_eptr_what(std::exception_ptr const &eptr) {
 }
 
 ZENO_API StdError::StdError(std::exception_ptr &&eptr) noexcept
-    : Error((std::string)"std::exception::what(): `" + get_eptr_what(eptr) + "`"), eptr(std::move(eptr))
+    : Error((std::string)"(StdError) exception occurred [" + get_eptr_what(eptr) + "]"), eptr(std::move(eptr))
 {
 }
 
 ZENO_API StdError::~StdError() = default;
 
-ZENO_API TypeError::TypeError(std::type_info const &expect, std::type_info const &got, std::string const &hint) noexcept
-    : Error((std::string)"expect `" + cppdemangle(expect) + "` got `" + cppdemangle(got) + "` (" + hint + ")")
+ZENO_API TypeError::TypeError(std::type_info const &expect, std::type_info const &got, std::string_view msg) noexcept
+    : Error(zeno::format("(TypeError) expect [{}] got [{}] in [{}]", cppdemangle(expect), cppdemangle(got), msg))
     , expect(expect)
     , got(got)
     , hint(hint)
@@ -65,8 +66,8 @@ ZENO_API TypeError::TypeError(std::type_info const &expect, std::type_info const
 
 ZENO_API TypeError::~TypeError() = default;
 
-ZENO_API KeyError::KeyError(std::string const &key, std::string const &type, std::string const &hint) noexcept
-    : Error((std::string)"invalid " + type + " name `" + key + "` (" + hint + ")")
+ZENO_API KeyError::KeyError(std::string_view key, std::string_view hint) noexcept
+    : Error(format("(KeyError) invalid key [{}] in [{}]", key, hint))
     , key(key)
     , type(type)
     , hint(hint)

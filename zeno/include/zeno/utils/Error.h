@@ -33,7 +33,7 @@ struct TypeError : Error {
     std::type_info const &got;
     std::string hint;
 
-    ZENO_API explicit TypeError(std::type_info const &expect, std::type_info const &got, std::string const &hint = "nohint") noexcept;
+    ZENO_API explicit TypeError(std::type_info const &expect, std::type_info const &got, std::string_view hint) noexcept;
     ZENO_API ~TypeError() noexcept override;
 };
 
@@ -42,7 +42,7 @@ struct KeyError : Error {
     std::string type;
     std::string hint;
 
-    ZENO_API explicit KeyError(std::string const &key, std::string const &type = "key", std::string const &hint = "nohint") noexcept;
+    ZENO_API explicit KeyError(std::string_view key, std::string_view hint) noexcept;
     ZENO_API ~KeyError() noexcept override;
 };
 

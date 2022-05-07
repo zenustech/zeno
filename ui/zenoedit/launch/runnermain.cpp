@@ -119,8 +119,7 @@ static void runner_start(std::string const &progJson, int sessionid) {
 
 int runner_main(int sessionid);
 int runner_main(int sessionid) {
-    //fprintf(stderr, "(stderr ping test)\n");
-    //fprintf(stdout, "(stdout ping test)\n");
+    printf("(stdout ping test)\n");
 
     ourfp = stdout;
     zeno::set_log_stream(std::cout);
