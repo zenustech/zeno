@@ -30,16 +30,15 @@ ZENO_API void __impl_log_print(log_level_t level, source_location const &loc, st
     auto sod = std::chrono::floor<std::chrono::duration<int, std::ratio<24 * 60 * 60, 1>>>(now);
     auto mss = std::chrono::floor<std::chrono::milliseconds>(now - sod).count();
     int linlev = (int)level - (int)log_level_t::trace;
-
-    //auto fgclr = ansiclr::fg[make_array(ansiclr::white, ansiclr::cyan, ansiclr::green,
-                                        //ansiclr::cyan | ansiclr::light, ansiclr::yellow | ansiclr::light,
-                                        //ansiclr::red | ansiclr::light)[linlev]];
-    *os << format("[{} {02d}:{02d}:{02d}.{03d}] ({}:{}) {}\n",
-                  "TDICWE"[linlev],
+    auto fgclr = ansiclr::fg[make_array(ansiclr::white, ansiclr::cyan, ansiclr::green,
+                                        ansiclr::cyan | ansiclr::light, ansiclr::yellow | ansiclr::light,
+                                        ansiclr::red | ansiclr::light)[linlev]];
+    *os << format("{}[{} {02d}:{02d}:{02d}.{03d}] ({}:{}) {}{}\n",
+                  fgclr, "TDICWE"[linlev],
                   mss / 1000 / 60 / 60 % 24, mss / 1000 / 60 % 60,
                   mss / 1000 % 60, mss % 1000,
                   loc.file_name(), loc.line(),
-                  msg);
+                  msg, ansiclr::reset);
     if (level >= log_level_t::critical)
         os->flush();
 }

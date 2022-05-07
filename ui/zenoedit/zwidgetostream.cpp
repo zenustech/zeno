@@ -25,9 +25,13 @@ std::streamsize ZWidgetErrStream::xsputn(const char* p, std::streamsize n)
         m_linebuffer.append(p, n);
     } else {
         m_linebuffer.append(p, it);
-        //if (m_linebuffer.size() > 4 && std::equal(m_linebuffer.end() - 4, m_linebuffer.end(), "\033[0m")) {
-            //m_linebuffer.erase(m_linebuffer.size() - 4);
-        //}
+        if (m_linebuffer.size() >= 4 && m_linebuffer.front() == '\033' && m_linebuffer[1] == '[') {
+            if (auto it = std::find(m_linebuffer.begin(), m_linebuffer.end(), 'm'); it != m_linebuffer.end())
+                m_linebuffer.erase(m_linebuffer.begin(), it + 1);
+        }
+        if (m_linebuffer.size() >= 4 && std::equal(m_linebuffer.end() - 4, m_linebuffer.end(), "\033[0m")) {
+            m_linebuffer.erase(m_linebuffer.size() - 4);
+        }
         luzhPutString(QString::fromStdString(m_linebuffer));
         m_linebuffer.assign(it + 1, p + n - (it + 1));
     }
