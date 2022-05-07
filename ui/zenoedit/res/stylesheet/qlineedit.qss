@@ -29,7 +29,7 @@ QLineEdit[cssClass="searchEdit"]:focus
 QLineEdit[cssClass="proppanel"]
 {
     padding: 0 4px;
-    background: rgb(36,37,36);
+    background: rgb(28, 28, 28);
     selection-background-color: #4B9EF4;
     font: 14px 'HarmonyOS Sans';
     color: rgba(255,255,255,0.40);
@@ -70,7 +70,7 @@ QTextEdit {
 }
 
 QTextEdit[cssClass="proppanel"] {
-    background-color: rgb(36, 37, 36);
+    background-color: rgb(28, 28, 28);
     color: rgb(111, 111, 111);
 }
 

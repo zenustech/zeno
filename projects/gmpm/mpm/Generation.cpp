@@ -223,10 +223,27 @@ struct ToZSParticles : INode {
     }
     outParticles->category = category;
 
+    if (category == ZenoParticles::curve) {
+      auto &elasticModel = outParticles->getModel().getElasticModel();
+      zs::match([&elasticModel](auto &model) {
+        StvkWithHencky<float> stvk{};
+        stvk.mu = model.mu;
+        stvk.lam = model.lam;
+        elasticModel = stvk;
+      })(elasticModel);
+    }
+
     // per vertex (node) vol, pos, vel
     auto ompExec = zs::omp_exec();
 
     if (bindMesh) {
+      using TV3 = zs::vec<double, 3>;
+      const auto toTV3 = [](const zeno::vec3f &x) {
+        return TV3{x[0], x[1], x[2]};
+      };
+      const auto fromTV3 = [](const TV3 &x) {
+        return zeno::vec3f{(float)x[0], (float)x[1], (float)x[2]};
+      };
       switch (category) {
       // tet
       case ZenoParticles::tet: {
@@ -255,19 +272,12 @@ struct ToZSParticles : INode {
       } break;
       // surface
       case ZenoParticles::surface: {
-        using TV3 = zs::vec<double, 3>;
-        const auto triArea = [&obj](vec3i tri) {
-          TV3 p0 = TV3{obj[tri[0]][0], obj[tri[0]][1], obj[tri[0]][2]};
-          TV3 p1 = TV3{obj[tri[1]][0], obj[tri[1]][1], obj[tri[1]][2]};
-          TV3 p2 = TV3{obj[tri[2]][0], obj[tri[2]][1], obj[tri[2]][2]};
+        const auto triArea = [&obj, &toTV3](vec3i tri) {
+          TV3 p0 = toTV3(obj[tri[0]]);
+          TV3 p1 = toTV3(obj[tri[1]]);
+          TV3 p2 = toTV3(obj[tri[2]]);
           return (p1 - p0).cross(p2 - p0).norm() * 0.5;
           // return length(cross(obj[tri[1]] - p0, obj[tri[2]] - p0)) * 0.5;
-        };
-        const auto toTV3 = [](const zeno::vec3f &x) {
-          return TV3{x[0], x[1], x[2]};
-        };
-        const auto fromTV3 = [](const TV3 &x) {
-          return zeno::vec3f{(float)x[0], (float)x[1], (float)x[2]};
         };
         for (std::size_t i = 0; i != eleSize; ++i) {
           auto tri = tris[i];
@@ -290,36 +300,36 @@ struct ToZSParticles : INode {
           eleD[i][0] = obj[tri[1]] - obj[tri[0]];
           eleD[i][1] = obj[tri[2]] - obj[tri[0]];
 
-          auto normal = cross(toTV3(eleD[i][1]).normalized(),
-                              toTV3(eleD[i][0]).normalized())
+          auto normal = cross(toTV3(eleD[i][0]).normalized(),
+                              toTV3(eleD[i][1]).normalized())
                             .normalized();
           eleD[i][2] = fromTV3(normal);
 
           for (auto pi : tri)
-            dofVol[pi] += std::max(v, limits<float>::epsilon() * 10.) / 3;
+            dofVol[pi] += eleVol[i] / 3;
         }
       } break;
       // curve
       case ZenoParticles::curve: {
-        const auto lineLength = [&obj](vec2i line) {
-          return length(obj[line[1]] - obj[line[0]]);
+        const auto lineLength = [&obj, &toTV3](vec2i line) {
+          TV3 p0 = toTV3(obj[line[0]]);
+          TV3 p1 = toTV3(obj[line[1]]);
+          return (p1 - p0).length();
         };
         for (std::size_t i = 0; i != eleSize; ++i) {
           auto line = lines[i];
           auto v = lineLength(line) * model->dx * model->dx;
-          eleVol[i] = v;
+          eleVol[i] = std::max(v, limits<float>::epsilon() * 10.);
           elePos[i] = (obj[line[0]] + obj[line[1]]) / 2;
           if (velsPtr)
             eleVel[i] = (velsPtr[line[0]] + velsPtr[line[1]]) / 2;
           eleD[i][0] = obj[line[1]] - obj[line[0]];
-          if (auto n = cross(vec3f{0, 1, 0}, eleD[i][0]);
-              lengthSquared(n) > zs::limits<float>::epsilon() * 128) {
-            eleD[i][1] = normalize(n);
-          } else
-            eleD[i][1] = normalize(cross(vec3f{1, 0, 0}, eleD[i][0]));
-          eleD[i][2] = normalize(cross(eleD[i][0], eleD[i][1]));
+          TV3 ln = toTV3(eleD[i][0]);
+          TV3 n1 = ln.orthogonal().normalized();
+          eleD[i][1] = fromTV3(n1);
+          eleD[i][2] = fromTV3(ln.cross(n1).normalized());
           for (auto pi : line)
-            dofVol[pi] += v / 2;
+            dofVol[pi] += eleVol[i] / 2;
         }
       } break;
       default:;
@@ -327,15 +337,16 @@ struct ToZSParticles : INode {
     }   // end bindmesh
 
     // particles
-    auto &pars = outParticles->getParticles(); // tilevector
+    outParticles->sprayedOffset = obj.size();
 
     // attributes
-    std::vector<zs::PropertyTag> tags{{"mass", 1}, {"pos", 3}, {"vel", 3},
-                                      {"vol", 1},  {"C", 9},   {"vms", 1}};
+    std::vector<zs::PropertyTag> tags{{"m", 1}, {"x", 3}, {"v", 3},
+                                      {"vol", 1},  {"C", 9},   {"vms", 1},
+                                      {"beta", 1} /*asflip, for positional adjustment*/};
     std::vector<zs::PropertyTag> eleTags{
-        {"mass", 1}, {"pos", 3},   {"vel", 3},
-        {"vol", 1},  {"C", 9},     {"F", 9},
-        {"d", 9},    {"DmInv", 9}, {"inds", (int)category + 1}};
+        {"m", 1},   {"x", 3},     {"v", 3},
+        {"vol", 1}, {"C", 9},     {"F", 9},
+        {"d", 9},   {"DmInv", 9}, {"inds", (int)category + 1}};
 
     const bool hasLogJp = model->hasLogJp();
     const bool hasOrientation = model->hasOrientation();
@@ -378,7 +389,7 @@ struct ToZSParticles : INode {
             return true;
         return false;
       };
-      if (checkDuplication(key))
+      if (checkDuplication(key) || key == "pos" || key == "vel")
         continue;
       const auto &k{key};
       match(
@@ -403,8 +414,11 @@ struct ToZSParticles : INode {
     for (auto tag : tags)
       fmt::print("tag: [{}, {}]\n", tag.name, tag.numChannels);
 
+    outParticles->particles =
+        std::make_shared<typename ZenoParticles::particles_t>(tags, size,
+                                                              memsrc_e::host);
+    auto &pars = outParticles->getParticles(); // tilevector
     {
-      pars = typename ZenoParticles::particles_t{tags, size, memsrc_e::host};
       ompExec(zs::range(size), [pars = proxy<execspace_e::openmp>({}, pars),
                                 hasLogJp, hasOrientation, hasF, &model, &obj,
                                 velsPtr, nrmsPtr, bindMesh, &dofVol, category,
@@ -415,16 +429,16 @@ struct ToZSParticles : INode {
         // volume, mass
         float vol = category == ZenoParticles::mpm ? model->volume : dofVol[pi];
         pars("vol", pi) = vol;
-        pars("mass", pi) = vol * model->density;
+        pars("m", pi) = vol * model->density;
 
         // pos
-        pars.tuple<3>("pos", pi) = obj[pi];
+        pars.tuple<3>("x", pi) = obj[pi];
 
         // vel
         if (velsPtr != nullptr)
-          pars.tuple<3>("vel", pi) = velsPtr[pi];
+          pars.tuple<3>("v", pi) = velsPtr[pi];
         else
-          pars.tuple<3>("vel", pi) = vec3::zeros();
+          pars.tuple<3>("v", pi) = vec3::zeros();
 
         // deformation
         if (!bindMesh) {
@@ -457,7 +471,8 @@ struct ToZSParticles : INode {
         // plasticity
         if (hasLogJp)
           pars("logJp", pi) = -0.04;
-        pars("vms", pi) = 0; // vms
+        pars("vms", pi) = 0;  // vms
+        pars("beta", pi) = 0; // for positional adjustment
 
         // additional attributes
         for (auto &prop : auxAttribs) {
@@ -484,16 +499,16 @@ struct ToZSParticles : INode {
         using mat3 = zs::vec<double, 3, 3>;
         // vol, mass
         eles("vol", ei) = eleVol[ei];
-        eles("mass", ei) = eleVol[ei] * model->density;
+        eles("m", ei) = eleVol[ei] * model->density;
 
         // pos
-        eles.tuple<3>("pos", ei) = elePos[ei];
+        eles.tuple<3>("x", ei) = elePos[ei];
 
         // vel
         if (velsPtr != nullptr)
-          eles.tuple<3>("vel", ei) = eleVel[ei];
+          eles.tuple<3>("v", ei) = eleVel[ei];
         else
-          eles.tuple<3>("vel", ei) = vec3::zeros();
+          eles.tuple<3>("v", ei) = vec3::zeros();
 
         eles("mu", ei) = mu;
         eles("lam", ei) = lam;
@@ -503,6 +518,7 @@ struct ToZSParticles : INode {
         auto Dmat = mat3{D[0][0], D[1][0], D[2][0], D[0][1], D[1][1],
                          D[2][1], D[0][2], D[1][2], D[2][2]};
         eles.tuple<9>("d", ei) = Dmat;
+
         // ref: CFF Jiang, 2017 Anisotropic MPM techdoc
         // ref: Yun Fei, libwetcloth;
         // This file is part of the libWetCloth open source project
@@ -513,43 +529,44 @@ struct ToZSParticles : INode {
         // This Source Code Form is subject to the terms of the Mozilla Public
         // License, v. 2.0. If a copy of the MPL was not distributed with this
         // file, You can obtain one at http://mozilla.org/MPL/2.0/.
-        auto t0 = col(Dmat, 0);
-        auto t1 = col(Dmat, 1);
-        auto normal = col(Dmat, 2);
-        // could qr decomp here first (tech doc)
+        if (category == ZenoParticles::surface) {
+          auto t0 = col(Dmat, 0);
+          auto t1 = col(Dmat, 1);
+          auto normal = col(Dmat, 2);
+          // could qr decomp here first (tech doc)
 
-        zs::Rotation<double, 3> rot0{normal.normalized(), vec3{0, 0, 1}};
-        auto u = rot0 * t0;
-        auto v = rot0 * t1;
-        zs::Rotation<double, 3> rot1{u.normalized(), vec3{1, 0, 0}};
-        auto ru = rot1 * u;
-        auto rv = rot1 * v;
-        auto Dstar = mat3::identity();
-        Dstar(0, 0) = ru(0);
-        Dstar(0, 1) = rv(0);
-        Dstar(1, 1) = rv(1);
+          zs::Rotation<double, 3> rot0{normal.normalized(), vec3{0, 0, 1}};
+          auto u = rot0 * t0;
+          auto v = rot0 * t1;
+          zs::Rotation<double, 3> rot1{u.normalized(), vec3{1, 0, 0}};
+          auto ru = rot1 * u;
+          auto rv = rot1 * v;
+          auto Dstar = mat3::identity();
+          Dstar(0, 0) = ru(0);
+          Dstar(0, 1) = rv(0);
+          Dstar(1, 1) = rv(1);
 
-        if (std::abs(rv(1)) <= 10 * limits<float>::epsilon() ||
-            std::abs(ru(0)) <= 10 * limits<float>::epsilon()) {
-          fmt::print(fg(fmt::color::red),
-                     "beware: encounters near-singular Dm element [{}] of: "
-                     "\n\tt0[{}, {}, {}], \n\tt1[{}, {}, {}], \n\tnormal[{}, "
-                     "{}, {}]\n",
-                     ei, t0[0], t0[1], t0[2], t1[0], t1[1], t1[2], normal[0],
-                     normal[1], normal[2]);
-
+          if (std::abs(rv(1)) <= 10 * limits<float>::epsilon() ||
+              std::abs(ru(0)) <= 10 * limits<float>::epsilon()) {
+            fmt::print(fg(fmt::color::red),
+                       "beware: encounters near-singular Dm element [{}] of: "
+                       "\n\tt0[{}, {}, {}], \n\tt1[{}, {}, {}], \n\tnormal[{}, "
+                       "{}, {}]\n",
+                       ei, t0[0], t0[1], t0[2], t1[0], t1[1], t1[2], normal[0],
+                       normal[1], normal[2]);
 #if 1
-          // let this be a failed element
-          eles("mu", ei) = 0;
-          eles("lam", ei) = 0;
-          auto invDstar = zs::inverse(Dstar);
-          eles.tuple<9>("DmInv", ei) = invDstar;
-          eles.tuple<9>("F", ei) = Dmat * invDstar;
+            eles.tuple<9>("DmInv", ei) = mat3::identity();
+            eles.tuple<9>("F", ei) = Dmat;
+            // let this be a failed element
+            eles("mu", ei) = 0;
+            eles("lam", ei) = 0;
+            auto invDstar = zs::inverse(Dstar);
+            eles.tuple<9>("DmInv", ei) = invDstar;
+            eles.tuple<9>("F", ei) = Dmat * invDstar;
 #else
           
           throw std::runtime_error(
               "there exists degenerated triangle surface element");
-
           using mat2 = zs::vec<double, 2, 2>;
           auto D2 = mat2{Dstar(0, 0), Dstar(0, 1), Dstar(1, 0), Dstar(1, 1)};
           auto [Q2, R2] = zs::math::qr(D2);
@@ -565,8 +582,28 @@ struct ToZSParticles : INode {
                      F(1, 1), F(1, 2), F(2, 0), F(2, 1), F(2, 2));
           getchar();
 #endif
-        } else {
-          auto invDstar = zs::inverse(Dstar);
+          } else {
+            auto invDstar = zs::inverse(Dstar);
+            eles.tuple<9>("DmInv", ei) = invDstar;
+            eles.tuple<9>("F", ei) = Dmat * invDstar;
+          }
+        } else if (category == ZenoParticles::curve) {
+          auto tangent = col(Dmat, 0);
+          auto Dstar = mat3::identity();
+          Dstar(0, 0) = tangent.norm();
+          auto invDstar = inverse(Dstar);
+          if (Dstar(0, 0) <= limits<float>::epsilon()) {
+            fmt::print(fg(fmt::color::red),
+                       "beware: encounters near-singular Dm element [{}] of: "
+                       "\n\ttangent[{}, {}, {}], \n\tnormal[{}, {}, {}], "
+                       "\n\tbinormal[{}, "
+                       "{}, {}]\n",
+                       ei, tangent[0], tangent[1], tangent[2], Dmat(0, 1),
+                       Dmat(1, 1), Dmat(2, 1), Dmat(0, 2), Dmat(1, 2),
+                       Dmat(2, 2));
+            eles("mu", ei) = 0.f;
+            eles("lam", ei) = 0.f;
+          }
           eles.tuple<9>("DmInv", ei) = invDstar;
           eles.tuple<9>("F", ei) = Dmat * invDstar;
         }
@@ -764,17 +801,10 @@ struct ToBoundaryParticles : INode {
               });
     }
 
-    // particles
-    auto &pars = outParticles->getParticles(); // tilevector
-
     // attributes
-    std::vector<zs::PropertyTag> tags{
-        {"mass", 1}, {"pos", 3}, {"vel", 3}, {"nrm", 3}};
-    std::vector<zs::PropertyTag> eleTags{{"mass", 1},
-                                         {"pos", 3},
-                                         {"vel", 3},
-                                         {"nrm", 3},
-                                         {"inds", (int)category + 1}};
+    std::vector<zs::PropertyTag> tags{{"m", 1}, {"x", 3}, {"v", 3}, {"nrm", 3}};
+    std::vector<zs::PropertyTag> eleTags{
+        {"m", 1}, {"x", 3}, {"v", 3}, {"nrm", 3}, {"inds", (int)category + 1}};
     if (sprayed) {
       tags.push_back(zs::PropertyTag{"eid", 1});
       tags.push_back(zs::PropertyTag{"weights", 3});
@@ -786,33 +816,35 @@ struct ToBoundaryParticles : INode {
       fmt::print("boundary element tag: [{}, {}]\n", tag.name, tag.numChannels);
 
     // verts
-    pars = typename ZenoParticles::particles_t{tags, totalSize, memsrc_e::host};
-    ompExec(zs::range(size),
-            [pars = proxy<execspace_e::host>({}, pars), &pos, velsPtr, &dofVol,
-             category, &inParticles, sprayed](int pi) mutable {
-              using vec3 = zs::vec<float, 3>;
+    outParticles->particles =
+        std::make_shared<typename ZenoParticles::particles_t>(tags, totalSize,
+                                                              memsrc_e::host);
+    auto &pars = outParticles->getParticles(); // tilevector
+    ompExec(zs::range(size), [pars = proxy<execspace_e::host>({}, pars), &pos,
+                              velsPtr, &dofVol, sprayed](int pi) mutable {
+      using vec3 = zs::vec<float, 3>;
 
-              // mass
-              float vol = dofVol[pi];
-              pars("mass", pi) = vol;
+      // mass
+      float vol = dofVol[pi];
+      pars("m", pi) = vol;
 
-              // pos
-              pars.tuple<3>("pos", pi) = pos[pi];
+      // pos
+      pars.tuple<3>("x", pi) = pos[pi];
 
-              // vel
-              if (velsPtr != nullptr)
-                pars.tuple<3>("vel", pi) = velsPtr[pi];
-              else
-                pars.tuple<3>("vel", pi) = vec3::zeros();
+      // vel
+      if (velsPtr != nullptr)
+        pars.tuple<3>("v", pi) = velsPtr[pi];
+      else
+        pars.tuple<3>("v", pi) = vec3::zeros();
 
-              // init nrm
-              pars.tuple<3>("nrm", pi) = vec3::zeros();
+      // init nrm
+      pars.tuple<3>("nrm", pi) = vec3::zeros();
 
-              if (sprayed) {
-                pars("eid", pi) = reinterpret_bits<float>(-1);
-                pars.tuple<3>("weights", pi) = vec3::zeros();
-              }
-            });
+      if (sprayed) {
+        pars("eid", pi) = reinterpret_bits<float>(-1);
+        pars.tuple<3>("weights", pi) = vec3::zeros();
+      }
+    });
     if (sprayed)
       ompExec(zs::range(sprayedSize),
               [pars = proxy<execspace_e::host>({}, pars), &sprayedVertToElement,
@@ -823,7 +855,7 @@ struct ToBoundaryParticles : INode {
 
                 // mass
                 float vol = dofVol[dst];
-                pars("mass", dst) = vol;
+                pars("m", dst) = vol;
 
                 int eid = sprayedVertToElement[pi];
                 zeno::vec3f tmp = trisPtr[pi];
@@ -834,14 +866,12 @@ struct ToBoundaryParticles : INode {
                   printf("damn! pids wrong!\n");
 
                 // pos, vel, nrm all updated on-the-fly from original mesh verts
-                pars.tuple<3>("pos", dst) =
-                    ws[0] * pars.pack<3>("pos", pids[0]) +
-                    ws[1] * pars.pack<3>("pos", pids[1]) +
-                    ws[2] * pars.pack<3>("pos", pids[2]);
-                pars.tuple<3>("vel", dst) =
-                    ws[0] * pars.pack<3>("vel", pids[0]) +
-                    ws[1] * pars.pack<3>("vel", pids[1]) +
-                    ws[2] * pars.pack<3>("vel", pids[2]);
+                pars.tuple<3>("x", dst) = ws[0] * pars.pack<3>("x", pids[0]) +
+                                          ws[1] * pars.pack<3>("x", pids[1]) +
+                                          ws[2] * pars.pack<3>("x", pids[2]);
+                pars.tuple<3>("v", dst) = ws[0] * pars.pack<3>("v", pids[0]) +
+                                          ws[1] * pars.pack<3>("v", pids[1]) +
+                                          ws[2] * pars.pack<3>("v", pids[2]);
                 // normals are set afterwards
                 pars.tuple<3>("nrm", dst) = vec3::zeros();
 
@@ -862,13 +892,13 @@ struct ToBoundaryParticles : INode {
               using vec3 = zs::vec<float, 3>;
               using mat3 = zs::vec<float, 3, 3>;
               // mass
-              eles("mass", ei) = eleVol[ei];
+              eles("m", ei) = eleVol[ei];
 
               // pos
-              eles.tuple<3>("pos", ei) = elePos[ei];
+              eles.tuple<3>("x", ei) = elePos[ei];
 
               // vel
-              eles.tuple<3>("vel", ei) = eleVel[ei];
+              eles.tuple<3>("v", ei) = eleVel[ei];
 
               // element-vertex indices
               // inds
@@ -878,9 +908,9 @@ struct ToBoundaryParticles : INode {
 
               // nrm
               {
-                zs::vec<float, 3> xs[3] = {pars.pack<3>("pos", tri[0]),
-                                           pars.pack<3>("pos", tri[1]),
-                                           pars.pack<3>("pos", tri[2])};
+                zs::vec<float, 3> xs[3] = {pars.pack<3>("x", tri[0]),
+                                           pars.pack<3>("x", tri[1]),
+                                           pars.pack<3>("x", tri[2])};
                 auto n = (xs[1] - xs[0])
                              .normalized()
                              .cross((xs[2] - xs[0]).normalized())
@@ -1215,5 +1245,21 @@ ZENDEFNODE(ZSLevelSetToVDBGrid, {
                                     {},
                                     {"MPM"},
                                 });
+
+struct AddVertID : zeno::INode {
+  virtual void apply() override {
+    auto prim = get_input<zeno::PrimitiveObject>("prim");
+    auto &IDs = prim->add_attr<float>("ID");
+    for (size_t i = 0; i < prim->size(); ++i)
+      IDs[i] = (float)(i);
+    set_output("primOut", prim);
+  }
+};
+ZENDEFNODE(AddVertID, {
+                          {"prim"},
+                          {"primOut"},
+                          {},
+                          {"FEM"},
+                      });
 
 } // namespace zeno

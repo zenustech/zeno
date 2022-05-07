@@ -4,6 +4,7 @@
 #include <vector>
 #include <zeno/core/IObject.h>
 #include <zeno/utils/disable_copy.h>
+#include <zeno/utils/vec.h>
 #include <map>
 
 namespace zenovis {
@@ -29,7 +30,7 @@ struct Scene : zeno::disable_copy {
     void loadFrameObjects(int frameid);
     void switchRenderEngine(std::string const &name);
     std::vector<char> record_frame_offline(int hdrSize = 1, int rgbComps = 3);
-    bool cameraFocusOnNode(std::string const &nodeid);
+    bool cameraFocusOnNode(std::string const &nodeid, zeno::vec3f &center, float &radius);
     static void loadGLAPI(void *procaddr);
 };
 

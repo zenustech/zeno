@@ -4,6 +4,7 @@
 #include <zeno/types/NumericObject.h>
 #include <random>
 #include <cmath>
+#include <zeno/types/PrimitiveTools.h>
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
@@ -40,6 +41,17 @@ struct PrimitiveScatter : INode {
             std::uniform_real_distribution<float> unif;
 
             retprim->verts.resize(npoints);
+            for(auto key:prim->attr_keys())
+            { 
+                if(key!="pos")
+                std::visit([&retprim, key](auto &&ref) {
+                                using T = std::remove_cv_t<std::remove_reference_t<decltype(ref[0])>>;
+                                retprim->add_attr<T>(key);
+                            }, prim->attr(key));
+            }
+#if defined(__GNUC__) || defined(__clang__)
+#pragma omp simd
+#endif
             for (size_t i = 0; i < npoints; i++) {
                 auto val = unif(gen);
                 auto it = std::lower_bound(cdf.begin(), cdf.end(), val);
@@ -54,6 +66,7 @@ struct PrimitiveScatter : INode {
                 auto r2 = unif(gen);
                 auto p = (1 - r1) * a + (r1 * (1 - r2)) * b + (r1 * r2) * c;
                 retprim->verts[i] = p;
+                BarycentricInterpPrimitive(retprim.get(), prim.get(), i, ind[0], ind[1], ind[2], p, a, b, c);
             }
 
         } else if (type == "lines" && prim->lines.size()) {
@@ -92,6 +105,7 @@ struct PrimitiveScatter : INode {
             }
 
         }
+        
 
         set_output("points", std::move(retprim));
     }

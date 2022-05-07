@@ -26,7 +26,7 @@ std::string SMVS;
     if (inst != nullptr)
     {
         SMVS = R"(
-#version 330 core
+#version 430 core
 
 uniform mat4 mVP;
 uniform mat4 mInvVP;
@@ -58,10 +58,11 @@ vec3 computeFramePosition()
   {
     return vPosition;
   }
-
-  int prevFrameID = int(fInstTime / fInstDeltaTime); 
+  float t = fInstTime;
+  t = clamp(t, 0, fInstDeltaTime * float(iInstFrameAmount - 1));
+  int prevFrameID = int(t / fInstDeltaTime); 
   int nextFrameID = prevFrameID + 1;
-  float dt = fInstTime - fInstDeltaTime * prevFrameID;
+  float dt = t - fInstDeltaTime * prevFrameID;
 
   prevFrameID = clamp(prevFrameID, 0, iInstFrameAmount - 1);  
   nextFrameID = clamp(nextFrameID, 0, iInstFrameAmount - 1);  
@@ -86,7 +87,7 @@ void main()
     else
   {
 SMVS = R"(
-#version 330 core
+#version 430 core
 
 uniform mat4 mVP;
 uniform mat4 mInvVP;
@@ -119,7 +120,7 @@ void main()
 )";
     }
 
-auto SMFS = "#version 330 core\n/* common_funcs_begin */\n" + mtl->common + "\n/* common_funcs_end */\n"+R"(
+auto SMFS = "#version 430 core\n/* common_funcs_begin */\n" + mtl->common + "\n/* common_funcs_end */\n"+R"(
 uniform mat4 mVP;
 uniform mat4 mInvVP;
 uniform mat4 mView;
@@ -154,7 +155,7 @@ void main()
 )";
 
 auto SMGS = R"(
-#version 330 core
+#version 430 core
 
 layout(triangles, invocations = 8) in;
 layout(triangle_strip, max_vertices = 3) out;
@@ -184,7 +185,7 @@ void main()
 
     if (vert.size() == 0) {
       vert = R"(
-#version 330
+#version 430 core
 
 uniform mat4 mVP;
 uniform mat4 mInvVP;
@@ -219,7 +220,7 @@ void main()
     }
     if (frag.size() == 0) {
       frag = R"(
-#version 330
+#version 430 core
 
 uniform mat4 mVP;
 uniform mat4 mInvVP;
@@ -266,7 +267,7 @@ void main()
 
     if (vert.size() == 0) {
       vert = R"(
-#version 330
+#version 430 core
 
 uniform mat4 mVP;
 uniform mat4 mInvVP;
@@ -322,7 +323,7 @@ void main()
         if (inst != nullptr)
         {
             vert = R"(
-#version 330
+#version 430 core
 
 uniform mat4 mVP;
 uniform mat4 mInvVP;
@@ -354,10 +355,11 @@ vec3 computeFramePosition()
   {
     return vPosition;
   }
-
-  int prevFrameID = int(fInstTime / fInstDeltaTime); 
+  float t = fInstTime;
+  t = clamp(t, 0, fInstDeltaTime * float(iInstFrameAmount - 1));
+  int prevFrameID = int(t / fInstDeltaTime); 
   int nextFrameID = prevFrameID + 1;
-  float dt = fInstTime - fInstDeltaTime * prevFrameID;
+  float dt = t - fInstDeltaTime * prevFrameID;
 
   prevFrameID = clamp(prevFrameID, 0, iInstFrameAmount - 1);  
   nextFrameID = clamp(nextFrameID, 0, iInstFrameAmount - 1);  
@@ -382,7 +384,7 @@ void main()
         else
         {
       vert = R"(
-#version 330
+#version 430 core
 
 uniform mat4 mVP;
 uniform mat4 mInvVP;
@@ -416,7 +418,7 @@ void main()
     }
     if (frag.size() == 0) {
         frag = R"(
-#version 330
+#version 430 core
 )" + (mtl ? mtl->extensions : "") +
                R"(
 const float minDot = 1e-5;
@@ -1274,10 +1276,10 @@ uniform float farPlane;
 uniform mat4 lview[16];
 uniform float near[128];
 uniform float far[128];
-//layout (std140, binding = 0) uniform LightSpaceMatrices
-//{
+layout (std140, binding = 0) uniform LightSpaceMatrices
+{
 uniform mat4 lightSpaceMatrices[128];
-//};
+};
 uniform float cascadePlaneDistances[112];
 uniform int cascadeCount;   // number of frusta - 1
 vec3 random3(vec3 c) {
@@ -1757,7 +1759,7 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 old_tangent) {
 
         
         
-        float shadow = ShadowCalculation(lightId, position, shadowSoftness[lightId], tan, TBN[1],3);
+        float shadow = ShadowCalculation(lightId, position + 0.001 * TBN[2], shadowSoftness[lightId], tan, TBN[1],3);
         vec3 sclr = clamp(vec3(1.0-shadow) + shadowTint[lightId], vec3(0), vec3(1));
         color += lcolor * sclr;
         realColor += photoReal * sclr;

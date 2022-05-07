@@ -40,6 +40,7 @@ public slots:
     void onSubnetOptionClicked();
     void onSearchOptionClicked();
     void onPageActivated(const QPersistentModelIndex& subgIdx, const QPersistentModelIndex& nodeIdx);
+    void onLogInserted(const QModelIndex& parent, int first, int last);
 
 private slots:
 	void onSubGraphsToRemove(const QModelIndex&, int, int);
@@ -54,7 +55,7 @@ private:
     void initSignals();
     void initModel();
     int tabIndexOfName(const QString& subGraphName);
-    void activateTab(const QString& subGraphName, const QString& path = "", const QString& objId = "");
+    void activateTab(const QString& subGraphName, const QString& path = "", const QString& objId = "", bool isError = false);
 
     ZenoMainWindow* m_mainWin;
     Ui::GraphsEditor* m_ui;

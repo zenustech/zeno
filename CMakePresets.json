@@ -59,38 +59,6 @@
       "cacheVariables": {
         "ZENO_WITH_gmpm": "ON"
       }
-    },
-    {
-      "name": "basic-debug",
-      "inherits": "basic",
-      "description": "Basic configuration (Debug)",
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Debug"
-      }
-    },
-    {
-      "name": "openvdb-debug",
-      "inherits": "openvdb",
-      "description": "OpenVDB configuration (Debug)",
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Debug"
-      }
-    },
-    {
-      "name": "default-debug",
-      "inherits": "default",
-      "description": "Default configuration (Debug)",
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Debug"
-      }
-    },
-    {
-      "name": "cuda-debug",
-      "inherits": "cuda",
-      "description": "CUDA configuration (Debug)",
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Debug"
-      }
     }
   ],
   "buildPresets": [
@@ -98,11 +66,6 @@
       "name": "default",
       "configurePreset": "basic",
       "configuration": "Release"
-    },
-    {
-      "name": "default-debug",
-      "configurePreset": "basic-debug",
-      "configuration": "Debug"
     }
   ]
 }

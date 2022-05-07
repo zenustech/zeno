@@ -9,6 +9,7 @@
 #include <zeno/funcs/ObjectCodec.h>
 #include <rapidjson/document.h>
 #include <type_traits>
+#include <iostream>
 #include <cassert>
 #include <vector>
 #include <string>
@@ -143,6 +144,8 @@ struct ViewDecodeData {
     size_t buffercurr = 0;
     size_t headercurr = 0;
     char headerbuf[sizeof(Header)] = {};
+    size_t cloglen = 0;
+    char clogbuf[4100];
 
     void clear()
     {
@@ -156,6 +159,11 @@ struct ViewDecodeData {
     auto const &header() const
     {
         return *(Header const *)headerbuf;
+    }
+
+    void finish()
+    {
+        std::clog.flush();
     }
 
     // encode rule: \a, \b, \r, \t, then 8-byte of SIZE, then the SIZE-byte of DATA
@@ -183,7 +191,14 @@ struct ViewDecodeData {
                 if (*p == '\a') {
                     phase = 1;
                 } else {
-                    putchar(*p);
+                    clogbuf[cloglen++] = *p;
+                    // clog is captured by luzh log panel
+                    if (*p == '\n' || cloglen >= sizeof(clogbuf) - 4) {
+                        std::clog << std::string_view(clogbuf, cloglen);
+                        //std::ostreambuf_iterator<char> oit(std::clog);
+                        //std::copy_n(clogbuf, cloglen, oit);
+                        cloglen = 0;
+                    }
                 }
             } else if (phase == 1) {
                 if (*p == '\b') {
@@ -229,6 +244,7 @@ struct ViewDecodeData {
 
 void viewDecodeFinish()
 {
+    viewDecodeData.finish();
     packetProc.onFinish();
 }
 

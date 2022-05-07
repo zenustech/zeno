@@ -30,13 +30,24 @@ option(ZENO_BUILD_EDITOR "Build ZENO editor" ON)
 option(ZENO_BUILD_DESIGNER "Build ZENO designer" OFF)
 option(ZENO_MULTIPROCESS "Enable multiprocessing for ZENO" ON)
 option(ZENO_OUT_TO_BIN "Output files to a fixed directory" ON)
-option(ZENO_BUILD_SHARED "Build shared library for ZENO" ON)
+option(ZENO_BUILD_SHARED "Build shared library for ZENO" OFF)
 option(ZENO_USE_CCACHE "Use CCache if found in path" ON)
 option(ZENO_NO_WARNING "Use customized compiler warnings" ON)
 option(ZENO_INSTALL_TARGET "Enable installation targets" ON)
 
-# Otherwise we can't link SHARED libs with STATIC libs
-set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+if (ZENO_BUILD_SHARED)
+    # Otherwise we can't link .so libs with .a libs
+    set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+    if (MSVC)   # MSVC sucks /MD /MT /MDd /MTd options
+        # MultiThreadedDLL = /MD, MultiThreadedDebugDLL = /MDd
+        set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
+    endif()
+else()
+    if (MSVC)
+        # MultiThreaded = /MT, MultiThreadedDebug = /MTd
+        set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+    endif()
+endif()
 
 if (NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release)

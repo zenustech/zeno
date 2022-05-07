@@ -30,6 +30,7 @@ ZenoNode::ZenoNode(const NodeUtilParam &params, QGraphicsItem *parent)
     , m_view(nullptr)
     , m_once(nullptr)
     , m_collaspe(nullptr)
+    , m_bError(false)
 {
     setFlags(ItemIsMovable | ItemIsSelectable);
     setAcceptHoverEvents(true);
@@ -92,7 +93,8 @@ void ZenoNode::_drawBorderWangStyle(QPainter* painter)
 {
 	//draw inner border
 	painter->setRenderHint(QPainter::Antialiasing, true);
-	QColor borderClr(250, 100, 0);
+    QColor baseColor = /*m_bError ? QColor(200, 84, 79) : */QColor(255, 100, 0);
+	QColor borderClr(baseColor);
 	borderClr.setAlphaF(0.2);
 	qreal innerBdrWidth = 6;
 	QPen pen(borderClr, 6);
@@ -107,7 +109,7 @@ void ZenoNode::_drawBorderWangStyle(QPainter* painter)
     //draw outter border
     qreal outterBdrWidth = 2;
     pen.setWidthF(outterBdrWidth);
-    pen.setColor(QColor(250, 100, 0));
+    pen.setColor(baseColor);
 	painter->setPen(pen);
     offset = outterBdrWidth;
     rc.adjust(-offset, -offset, offset, offset);
@@ -946,6 +948,16 @@ void ZenoNode::toggleSocket(bool bInput, const QString& sockName, bool bSelected
     }
 }
 
+void ZenoNode::markError(bool isError)
+{
+    m_bError = isError;
+    if (m_bError)
+        m_headerWidget->setColors(false, QColor(200, 84, 79), QColor(), QColor());
+    else
+        m_headerWidget->setColors(false, QColor(83, 96, 147), QColor(), QColor());
+    update();
+}
+
 QPointF ZenoNode::getPortPos(bool bInput, const QString &portName)
 {
     bool bCollasped = m_index.data(ROLE_COLLASPED).toBool();
@@ -1037,10 +1049,14 @@ void ZenoNode::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
 	QAction* pCopy = new QAction("Copy");
 	QAction* pPaste = new QAction("Paste");
 	QAction* pDelete = new QAction("Delete");
+    QAction* pResolve = new QAction("Resolve");
+
+    connect(pResolve, &QAction::triggered, this, [=]() { markError(false); });
 
 	nodeMenu->addAction(pCopy);
 	nodeMenu->addAction(pPaste);
 	nodeMenu->addAction(pDelete);
+    nodeMenu->addAction(pResolve);
 
     IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
     const QString& name = m_index.data(ROLE_OBJNAME).toString();

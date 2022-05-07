@@ -707,6 +707,224 @@ struct GraphicPrimitive : IGraphic {
     }
 
   }
+  virtual void drawVoxelize() override {
+    if (prim_has_mtl) ensureGlobalMapExist();
+    int id = 0;
+    for (id = 0; id < textures.size(); id++) {
+        textures[id]->bind_to(id);
+    }
+    auto vbobind = [&] (auto &vbo) {
+        vbo->bind();
+        vbo->attribute(/*index=*/0,
+            /*offset=*/sizeof(float) * 0, /*stride=*/sizeof(float) * 15,
+            GL_FLOAT, /*count=*/3);
+        vbo->attribute(/*index=*/1,
+            /*offset=*/sizeof(float) * 3, /*stride=*/sizeof(float) * 15,
+            GL_FLOAT, /*count=*/3);
+        vbo->attribute(/*index=*/2,
+            /*offset=*/sizeof(float) * 6, /*stride=*/sizeof(float) * 15,
+            GL_FLOAT, /*count=*/3);
+        vbo->attribute(/*index=*/3,
+            /*offset=*/sizeof(float) * 9, /*stride=*/sizeof(float) * 15,
+            GL_FLOAT, /*count=*/3);
+        vbo->attribute(/*index=*/4,
+            /*offset=*/sizeof(float) * 12, /*stride=*/sizeof(float) * 15,
+            GL_FLOAT, /*count=*/3);
+    };
+    auto vbounbind = [&] (auto &vbo) {
+        vbo->disable_attribute(0);
+        vbo->disable_attribute(1);
+        vbo->disable_attribute(2);
+        vbo->disable_attribute(3);
+        vbo->disable_attribute(4);
+        vbo->unbind();
+    };
+
+    auto instvbobind = [&] (auto &instvbo) {
+        instvbo->bind();
+        instvbo->attribute(5, sizeof(glm::vec4) * 0, sizeof(glm::vec4) * 4, GL_FLOAT, 4);
+        instvbo->attribute(6, sizeof(glm::vec4) * 1, sizeof(glm::vec4) * 4, GL_FLOAT, 4);
+        instvbo->attribute(7, sizeof(glm::vec4) * 2, sizeof(glm::vec4) * 4, GL_FLOAT, 4);
+        instvbo->attribute(8, sizeof(glm::vec4) * 3, sizeof(glm::vec4) * 4, GL_FLOAT, 4);
+        instvbo->attrib_divisor(5, 1);
+        instvbo->attrib_divisor(6, 1);
+        instvbo->attrib_divisor(7, 1);
+        instvbo->attrib_divisor(8, 1);
+    };
+    auto instvbounbind = [&] (auto &instvbo) {
+        instvbo->disable_attribute(5);
+        instvbo->disable_attribute(6);
+        instvbo->disable_attribute(7);
+        instvbo->disable_attribute(8);
+        instvbo->unbind();
+    };
+    if (tris_count) {
+        //printf("TRIS\n");
+        if (triObj.vbo) {
+            vbobind(triObj.vbo);
+        } else {
+            vbobind(vbo);
+        }
+
+        if (prim_has_inst) {
+            if (triObj.instvbo) {
+                instvbobind(triObj.instvbo);
+            } else {
+                instvbobind(instvbo);
+            }
+        }
+        auto &scene = Scene::getInstance();
+        auto &lights = scene.lights;
+        if (LightMatrixUBO == 0)
+        {
+            CHECK_GL(glGenBuffers(1, &LightMatrixUBO));
+            CHECK_GL(glBindBuffer(GL_UNIFORM_BUFFER, LightMatrixUBO));
+            CHECK_GL(glBufferData(GL_UNIFORM_BUFFER, sizeof(glm::mat4x4) * 128, nullptr, GL_STATIC_DRAW));
+            CHECK_GL(glBindBufferBase(GL_UNIFORM_BUFFER, 0, LightMatrixUBO));
+            CHECK_GL(glBindBuffer(GL_UNIFORM_BUFFER, 0));
+        }
+        glBindBuffer(GL_UNIFORM_BUFFER, LightMatrixUBO);
+        //std::cout<<"                        "<<LightMatrixUBO<<std::endl;
+        for (int lightNo = 0; lightNo < lights.size(); ++lightNo)
+        {
+            auto &light = lights[lightNo];
+            
+            auto matrices = light->lightSpaceMatrices;
+            for (size_t i = 0; i < matrices.size(); ++i)
+            {
+                glBufferSubData(GL_UNIFORM_BUFFER, (lightNo * (Light::cascadeCount + 1) + i) * sizeof(glm::mat4x4), sizeof(glm::mat4x4), &matrices[i]);
+            }
+            
+        }
+        glBindBuffer(GL_UNIFORM_BUFFER, 0);
+        triObj.voxelprog->use();
+        set_program_uniforms(triObj.voxelprog);
+
+        
+        triObj.voxelprog->set_uniformi("lightNum", lights.size());
+        for (int lightNo = 0; lightNo < lights.size(); ++lightNo)
+        {
+            auto &light = lights[lightNo];
+            auto name = "light[" + std::to_string(lightNo) + "]";
+            triObj.voxelprog->set_uniform(name.c_str(), light->lightDir);
+        }
+
+        
+
+        if (prim_has_mtl) {
+            const int &texsSize = textures.size();
+            int texOcp=0;
+            for (int texId=0; texId < texsSize; ++ texId)
+            {
+                std::string texName = "zenotex" + std::to_string(texId);
+                triObj.voxelprog->set_uniformi(texName.c_str(), texId);
+                CHECK_GL(glActiveTexture(GL_TEXTURE0+texId));
+                CHECK_GL(glBindTexture(textures[texId]->target, textures[texId]->tex));
+                texOcp++;
+            }
+
+            triObj.voxelprog->set_uniformi("irradianceMap",texOcp);
+            CHECK_GL(glActiveTexture(GL_TEXTURE0+texOcp));
+            if (auto irradianceMap = getIrradianceMap(); irradianceMap != (unsigned int)-1)
+                CHECK_GL(glBindTexture(GL_TEXTURE_CUBE_MAP, irradianceMap));
+            texOcp++;
+
+            triObj.voxelprog->set_uniformi("prefilterMap",texOcp);
+            CHECK_GL(glActiveTexture(GL_TEXTURE0+texOcp));
+            if (auto prefilterMap = getPrefilterMap(); prefilterMap != (unsigned int)-1)
+                CHECK_GL(glBindTexture(GL_TEXTURE_CUBE_MAP, prefilterMap));
+            texOcp++;
+
+            triObj.voxelprog->set_uniformi("brdfLUT",texOcp);
+            CHECK_GL(glActiveTexture(GL_TEXTURE0+texOcp));
+            if (auto brdfLUT = getBRDFLut(); brdfLUT != (unsigned int)-1)
+                CHECK_GL(glBindTexture(GL_TEXTURE_2D, brdfLUT));
+            texOcp++;
+
+            
+
+
+            
+            triObj.voxelprog->set_uniform("farPlane", getCamFar());
+            triObj.voxelprog->set_uniformi("cascadeCount", Light::cascadeCount);
+            for (int lightNo = 0; lightNo < lights.size(); ++lightNo)
+            {
+                auto &light = lights[lightNo];
+                auto name = "lightDir[" + std::to_string(lightNo) + "]";
+                triObj.voxelprog->set_uniform(name.c_str(), light->lightDir);
+                name = "shadowTint[" + std::to_string(lightNo) + "]";
+                triObj.voxelprog->set_uniform(name.c_str(), light->getShadowTint());
+                name = "shadowSoftness[" + std::to_string(lightNo) + "]";
+                triObj.voxelprog->set_uniform(name.c_str(), light->shadowSoftness);
+                name = "lightIntensity[" + std::to_string(lightNo) + "]";
+                triObj.voxelprog->set_uniform(name.c_str(), light->getIntensity());
+                for (size_t i = 0; i < Light::cascadeCount + 1; i++)
+                {
+                    auto name1 = "near[" + std::to_string(lightNo * (Light::cascadeCount + 1) + i) + "]";
+                    triObj.voxelprog->set_uniform(name1.c_str(), light->m_nearPlane[i]);
+
+                    auto name2 = "far[" + std::to_string(lightNo * (Light::cascadeCount + 1) + i) + "]";
+                    triObj.voxelprog->set_uniform(name2.c_str(), light->m_farPlane[i]);
+
+                    auto name = "shadowMap[" + std::to_string(lightNo * (Light::cascadeCount + 1) + i) + "]";
+                    triObj.voxelprog->set_uniformi(name.c_str(), texOcp);
+                    CHECK_GL(glActiveTexture(GL_TEXTURE0 + texOcp));
+                    if (auto shadowMap = light->DepthMaps[i]; shadowMap != (unsigned int)-1)
+                        CHECK_GL(glBindTexture(GL_TEXTURE_2D, shadowMap));
+                    texOcp++;
+                }
+                for (size_t i = 0; i < Light::cascadeCount; ++i)
+                {
+                    auto name = "cascadePlaneDistances[" + std::to_string(lightNo * Light::cascadeCount + i) + "]";
+                    triObj.voxelprog->set_uniform(name.c_str(), light->shadowCascadeLevels[i]);
+                }
+                name = "lview[" + std::to_string(lightNo) + "]";
+                triObj.voxelprog->set_uniform(name.c_str(), light->lightMV);
+
+                // auto matrices = light->lightSpaceMatrices;
+                // for (size_t i = 0; i < matrices.size(); i++)
+                // {
+                //     auto name = "lightSpaceMatrices[" + std::to_string(lightNo * (Light::cascadeCount + 1) + i) + "]";
+                //     triObj.voxelprog->set_uniform(name.c_str(), matrices[i]);
+                // }
+            }
+
+            
+            
+    
+        }
+        
+        
+        triObj.ebo->bind();
+
+        if (prim_has_inst)
+        {
+            CHECK_GL(glDrawElementsInstancedARB(GL_TRIANGLES, /*count=*/triObj.count * 3,
+                GL_UNSIGNED_INT, /*first=*/0, prim_inst_amount));
+        }
+        else
+        {
+            CHECK_GL(glDrawElements(GL_TRIANGLES, /*count=*/triObj.count * 3,
+                GL_UNSIGNED_INT, /*first=*/0));
+        }
+
+        triObj.ebo->unbind();
+        if (triObj.vbo) {
+            vbounbind(triObj.vbo);
+        } else {
+            vbounbind(vbo);
+        }
+
+        if (prim_has_inst) {
+            if (triObj.instvbo) {
+                instvbounbind(triObj.instvbo);
+            } else {
+                instvbounbind(instvbo);
+            }
+        }       
+
+    }
+  }
   virtual void draw(bool reflect, float depthPass) override {
       if (prim_has_mtl) ensureGlobalMapExist();
 
@@ -823,7 +1041,30 @@ struct GraphicPrimitive : IGraphic {
                 instvbobind(instvbo);
             }
         }
-
+        auto &scene = Scene::getInstance();
+        auto &lights = scene.lights;
+        if (LightMatrixUBO == 0)
+        {
+            CHECK_GL(glGenBuffers(1, &LightMatrixUBO));
+            CHECK_GL(glBindBuffer(GL_UNIFORM_BUFFER, LightMatrixUBO));
+            CHECK_GL(glBufferData(GL_UNIFORM_BUFFER, sizeof(glm::mat4x4) * 128, nullptr, GL_STATIC_DRAW));
+            CHECK_GL(glBindBufferBase(GL_UNIFORM_BUFFER, 0, LightMatrixUBO));
+            CHECK_GL(glBindBuffer(GL_UNIFORM_BUFFER, 0));
+        }
+        glBindBuffer(GL_UNIFORM_BUFFER, LightMatrixUBO);
+        //std::cout<<"                        "<<LightMatrixUBO<<std::endl;
+        for (int lightNo = 0; lightNo < lights.size(); ++lightNo)
+        {
+            auto &light = lights[lightNo];
+            
+            auto matrices = light->lightSpaceMatrices;
+            for (size_t i = 0; i < matrices.size(); ++i)
+            {
+                glBufferSubData(GL_UNIFORM_BUFFER, (lightNo * (Light::cascadeCount + 1) + i) * sizeof(glm::mat4x4), sizeof(glm::mat4x4), &matrices[i]);
+            }
+            
+        }
+        glBindBuffer(GL_UNIFORM_BUFFER, 0);
         triObj.prog->use();
         int texOcp=0;
         set_program_uniforms(triObj.prog);
@@ -837,8 +1078,7 @@ struct GraphicPrimitive : IGraphic {
             texOcp++;
         }
 
-        auto &scene = Scene::getInstance();
-        auto &lights = scene.lights;
+        
         triObj.prog->set_uniformi("lightNum", lights.size());
         for (int lightNo = 0; lightNo < lights.size(); ++lightNo)
         {
@@ -923,12 +1163,13 @@ struct GraphicPrimitive : IGraphic {
                 name = "lview[" + std::to_string(lightNo) + "]";
                 triObj.prog->set_uniform(name.c_str(), light->lightMV);
 
-                auto matrices = light->lightSpaceMatrices;
-                for (size_t i = 0; i < matrices.size(); i++)
-                {
-                    auto name = "lightSpaceMatrices[" + std::to_string(lightNo * (Light::cascadeCount + 1) + i) + "]";
-                    triObj.prog->set_uniform(name.c_str(), matrices[i]);
-                }
+                // auto matrices = light->lightSpaceMatrices;
+                // for (size_t i = 0; i < matrices.size(); i++)
+                // {
+                //     auto name = "lightSpaceMatrices[" + std::to_string(lightNo * (Light::cascadeCount + 1) + i) + "]";
+                //     triObj.prog->set_uniform(name.c_str(), matrices[i]);
+                // }
+                
             }
 
             if(reflect)

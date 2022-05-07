@@ -3,15 +3,19 @@
 #include "zenoapplication.h"
 #include "graphsmanagment.h"
 #include "zenomainwindow.h"
+#include <zeno/utils/log.h>
 
 
 ZenoApplication::ZenoApplication(int &argc, char **argv)
     : QApplication(argc, argv)
     , m_pGraphs(new GraphsManagment(this))
     , m_bIOProcessing(false)
+    , m_errSteam(std::clog)
 {
     initFonts();
     initStyleSheets();
+    m_errSteam.registerMsgHandler();
+    zeno::log_info("build date: {} {}", __DATE__, __TIME__);
 }
 
 ZenoApplication::~ZenoApplication()
@@ -62,6 +66,11 @@ void ZenoApplication::initFonts()
 QSharedPointer<GraphsManagment> ZenoApplication::graphsManagment() const
 {
     return m_pGraphs;
+}
+
+QStandardItemModel* ZenoApplication::logModel() const
+{
+    return m_pGraphs->logModel();
 }
 
 void ZenoApplication::setIOProcessing(bool bIOProcessing)

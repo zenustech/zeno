@@ -1,7 +1,6 @@
 option(ZENO_BENCHMARKING "Enable ZENO benchmarking timer" ON)
 option(ZENO_PARALLEL_STL "Enable parallel STL in ZENO" OFF)
 option(ZENO_ENABLE_OPENMP "Enable OpenMP in ZENO for parallelism" ON)
-option(ZENO_ENABLE_SPDLOG "Enable spdlog in ZENO for logging" OFF)
 option(ZENO_ENABLE_MAGICENUM "Enable magicenum in ZENO for enum reflection" ON)
 option(ZENO_ENABLE_BACKWARD "Enable ZENO fault handler for traceback" OFF)
 
@@ -59,16 +58,10 @@ target_include_directories(zeno PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/tpls/include>
     $<INSTALL_INTERFACE:include/Zeno/zeno/include>)
 
-if (ZENO_INSTALL_TARGET)
+if (ZENO_INSTALL_TARGET AND ZENO_BUILD_SHARED)
     install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include DESTINATION include/Zeno/zeno)
     install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/tpls/include DESTINATION include/Zeno/zeno)
     install(TARGETS zeno EXPORT ZenoTargets)
-endif()
-
-if (ZENO_ENABLE_SPDLOG)
-    find_package(spdlog REQUIRED)
-    target_link_libraries(zeno PUBLIC spdlog::spdlog)
-    target_compile_definitions(zeno PUBLIC -DZENO_ENABLE_SPDLOG)
 endif()
 
 if (ZENO_ENABLE_MAGICENUM)

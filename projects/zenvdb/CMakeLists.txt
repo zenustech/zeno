@@ -25,7 +25,7 @@ target_include_directories(zeno PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include/Zeno/zeno>)
 
-if (ZENO_INSTALL_TARGET)
+if (ZENO_INSTALL_TARGET AND ZENO_BUILD_SHARED)
     install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include DESTINATION include/Zeno/zeno)
 endif()
 
