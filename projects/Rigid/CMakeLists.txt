@@ -1,4 +1,5 @@
 add_definitions(-DBT_THREAD_SAFE)
+add_compile_options(-w)
 add_subdirectory(bullet3)
 add_subdirectory(HACD)
 
