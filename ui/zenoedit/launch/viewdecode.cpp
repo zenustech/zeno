@@ -144,6 +144,8 @@ struct ViewDecodeData {
     size_t buffercurr = 0;
     size_t headercurr = 0;
     char headerbuf[sizeof(Header)] = {};
+    size_t cerrlen = 0;
+    char cerrbuf[4100];
 
     void clear()
     {
@@ -184,8 +186,13 @@ struct ViewDecodeData {
                 if (*p == '\a') {
                     phase = 1;
                 } else {
-                    //putchar(*p);
-                    std::cerr << *p;  // to be captured by luzh log panel
+                    // cerr is captured by luzh log panel
+                    if (*p == '\n' || cerrlen >= sizeof(cerrbuf) - 4) {
+                        std::ostreambuf_iterator<char> oit(std::cerr);
+                        std::copy_n(cerrbuf, cerrlen, oit);
+                        cerrlen = 0;
+                    }
+                    cerrbuf[cerrlen++] = *p;
                 }
             } else if (phase == 1) {
                 if (*p == '\b') {

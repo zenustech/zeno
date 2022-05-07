@@ -19,8 +19,8 @@ ZWidgetErrStream::~ZWidgetErrStream()
 
 std::streamsize ZWidgetErrStream::xsputn(const char* p, std::streamsize n)
 {
-    //for (auto q = p; q != p + n; ++q)
-        //putchar(*q);
+    for (auto q = p; q != p + n; ++q) // make it visible to both real-console and luzh-log-panel
+        putchar(*q);
     if (auto it = std::find(p, p + n, '\n'); it == p + n) {
         m_linebuffer.append(p, n);
     } else {
@@ -39,8 +39,8 @@ void ZWidgetErrStream::luzhPutString(QString str) {
     //format like:
     //"[I 14:15:11.810] (unknown:0) begin frame 89"
 
-    QRegExp rx("\\[(T|D|I|C|W|E)\\s+(\\d+):(\\d+):(\\d+)\\.(\\d+)\\]\\s+\\(([^\\)]+):(\\d+)\\)\\s+([^\\)]+)");
-    if (int pos = rx.indexIn(str); pos == -1)
+    static QRegExp rx("\\[(T|D|I|C|W|E)\\s+(\\d+):(\\d+):(\\d+)\\.(\\d+)\\]\\s+\\(([^\\)]+):(\\d+)\\)\\s+([^\\)]+)");
+    if (!str.startsWith('[') || rx.indexIn(str) == -1)
     {
         QMessageLogger logger("<stderr>", 0, 0);
         logger.critical().noquote() << "[C] <stderr>" << str;

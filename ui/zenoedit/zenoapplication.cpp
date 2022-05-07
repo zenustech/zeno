@@ -3,6 +3,7 @@
 #include "zenoapplication.h"
 #include "graphsmanagment.h"
 #include "zenomainwindow.h"
+#include <zeno/utils/log.h>
 
 
 ZenoApplication::ZenoApplication(int &argc, char **argv)
@@ -14,6 +15,7 @@ ZenoApplication::ZenoApplication(int &argc, char **argv)
     initFonts();
     initStyleSheets();
     m_errSteam.registerMsgHandler();
+    zeno::log_info("build date: {} {}", __DATE__, __TIME__);
 }
 
 ZenoApplication::~ZenoApplication()
