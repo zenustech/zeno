@@ -154,24 +154,14 @@
      ],
      "options": []
     },
-    "c536ba40-PrimMarkClose": {
-     "name": "PrimMarkClose",
+    "fa94090f-IslandVoronoi": {
+     "name": "IslandVoronoi",
      "inputs": {
       "prim": [
        "06766ab2-PrimMerge",
        "prim",
        null
       ],
-      "distance": [
-       null,
-       null,
-       0.2
-      ],
-      "tagAttr": [
-       null,
-       null,
-       "tag"
-      ],
       "SRC": [
        null,
        null,
@@ -180,213 +170,19 @@
      },
      "params": {},
      "uipos": [
-      1564.4976984752325,
-      -271.4551656426914
-     ],
-     "options": []
-    },
-    "fa4d2ba8-PrimWeld": {
-     "name": "PrimWeld",
-     "inputs": {
-      "prim": [
-       "c536ba40-PrimMarkClose",
-       "prim",
-       null
-      ],
-      "tagAttr": [
-       null,
-       null,
-       "tag"
-      ],
-      "method": [
-       null,
-       null,
-       "oneof"
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      1849.3559432100333,
-      -244.02165212917777
-     ],
-     "options": []
-    },
-    "45832dcf-PrimColorByTag": {
-     "name": "PrimColorByTag",
-     "inputs": {
-      "prim": [
-       "dae89090-PrimMarkIsland",
-       "prim",
-       null
-      ],
-      "tagAttr": [
-       null,
-       null,
-       "tag"
-      ],
-      "clrAttr": [
-       null,
-       null,
-       "clr"
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      1837.4617627146483,
-      137.55081829886228
-     ],
-     "options": []
-    },
-    "dae89090-PrimMarkIsland": {
-     "name": "PrimMarkIsland",
-     "inputs": {
-      "prim": [
-       "06766ab2-PrimMerge",
-       "prim",
-       null
-      ],
-      "tagAttr": [
-       null,
-       null,
-       "tag"
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      1507.6776778917342,
-      128.80321191532994
-     ],
-     "options": []
-    },
-    "b666ef33-ReadObjPrim": {
-     "name": "ReadObjPrim",
-     "inputs": {
-      "path": [
-       null,
-       null,
-       "assets/monkey.obj"
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "triangulate": true
-     },
-     "uipos": [
-      440.95477386934647,
-      772.6130653266326
-     ],
-     "options": []
-    },
-    "4e7076c3-PrimMarkIsland": {
-     "name": "PrimMarkIsland",
-     "inputs": {
-      "prim": [
-       "06766ab2-PrimMerge",
-       "prim",
-       null
-      ],
-      "tagAttr": [
-       null,
-       null,
-       "tag"
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      1451.3567839195964,
-      441.3065326633165
-     ],
-     "options": []
-    },
-    "c0c45440-PrimUnmerge": {
-     "name": "PrimUnmerge",
-     "inputs": {
-      "prim": [
-       "87983b87-PrimSimplifyTag",
-       "prim",
-       null
-      ],
-      "tagAttr": [
-       null,
-       null,
-       "tag"
-      ],
-      "method": [
-       null,
-       null,
-       "verts"
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      1965.632067622882,
-      506.93467336683386
+      1413.14293059292,
+      285.2273903145691
      ],
      "options": [
       "VIEW"
      ]
-    },
-    "87983b87-PrimSimplifyTag": {
-     "name": "PrimSimplifyTag",
-     "inputs": {
-      "prim": [
-       "4e7076c3-PrimMarkIsland",
-       "prim",
-       null
-      ],
-      "tagAttr": [
-       null,
-       null,
-       "tag"
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      1699.6984924623102,
-      508.14070351758767
-     ],
-     "options": []
     }
    },
    "view_rect": {
-    "x": 1502.4690484454682,
-    "y": 304.11584742257173,
-    "width": 767.9999999999995,
-    "height": 390.3999999999994
+    "x": 805.1835818898047,
+    "y": 117.09720444151702,
+    "width": 959.9999999999994,
+    "height": 487.99999999999926
    }
   },
   "IslandVoronoi": {
@@ -771,7 +567,7 @@
       ]
      },
      "params": {
-      "doConcat": true
+      "doConcat": false
      },
      "uipos": [
       2184.4032663316584,
@@ -823,7 +619,7 @@
       "op_type": "add"
      },
      "uipos": [
-      1892.6633165829146,
+      1890.6434490332456,
       220.30150753768845
      ],
      "options": []
@@ -889,13 +685,15 @@
       ]
      },
      "params": {
-      "doConcat": true
+      "doConcat": false
      },
      "uipos": [
       3700.402010050251,
       312.4246231155779
      ],
-     "options": []
+     "options": [
+      "VIEW"
+     ]
     },
     "6730eafc-ListGetItem": {
      "name": "ListGetItem",
@@ -958,7 +756,7 @@
       ]
      },
      "params": {
-      "doConcat": true
+      "doConcat": false
      },
      "uipos": [
       3719.070351758794,
@@ -1043,24 +841,6 @@
      ],
      "options": []
     },
-    "75a827bf-NumericInt": {
-     "name": "NumericInt",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "value": 0
-     },
-     "uipos": [
-      4113.2894875907905,
-      1134.8107711645298
-     ],
-     "options": []
-    },
     "29c274ff-PrimSimplifyTag": {
      "name": "PrimSimplifyTag",
      "inputs": {
@@ -1089,10 +869,10 @@
     }
    },
    "view_rect": {
-    "x": 3640.257935774797,
-    "y": 530.1548171396728,
-    "width": 767.9999999999995,
-    "height": 390.3999999999994
+    "x": 1737.9359155790435,
+    "y": -98.15649673399787,
+    "width": 2343.7499999999986,
+    "height": 1191.4062499999982
    }
   }
  },
