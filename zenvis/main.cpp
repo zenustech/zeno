@@ -19,6 +19,7 @@
 #include <thread>
 #include <chrono>
 #include "openglstuff.h"
+#include "voxelizeProgram.h"
 namespace zenvis {
 int oldnx, oldny;
 extern glm::mat4 reflectView(glm::vec3 camPos, glm::vec3 viewDir, glm::vec3 up, glm::vec3 planeCenter, glm::vec3 planeNormal);
@@ -296,6 +297,7 @@ void initialize() {
   auto &scene = Scene::getInstance();
   scene.addLight();
   initReflectiveMaps(nx, ny);
+  voxelizer::initVoxelTexture();
   auto version = (const char *)glGetString(GL_VERSION);
   printf("OpenGL version: %s\n", version ? version : "null");
 
@@ -352,6 +354,25 @@ static void shadowPass()
       light->EndShadowMap();
     }
   }
+}
+static void VoxelizePass()
+{
+  glm::mat4x4 backup_view = view;
+  glm::mat4x4 backup_proj = proj;
+
+  view = voxelizer::getView();
+  proj = glm::ortho(-0.01f,1.01f,-0.01f,1.01f, -1.01f,1.01f);
+  voxelizer::BeginVoxelize();
+  vao->bind();
+  for(int i=0;i<5;i++)
+    for (auto const &[key, gra] : current_frame_data()->graphics)
+    {
+      gra->drawVoxelize(0.0);
+    }
+  vao->unbind();
+  voxelizer::EndVoxelize();
+  view = backup_view;
+  proj = backup_proj;
 }
 glm::mat4 MakeInfReversedZProjRH(float fovY_radians, float aspectWbyH, float zNear)
 {
@@ -570,6 +591,7 @@ static void ZPass()
 static void paint_graphics(GLuint target_fbo = 0) {
   shadowPass();
   reflectivePass();
+  VoxelizePass();
   if(enable_hdr && tmProg==nullptr)
   {
     std::cout<<"compiling zhxx hdr program"<<std::endl;
@@ -753,10 +775,12 @@ static void paint_graphics(GLuint target_fbo = 0) {
 
   } else {
     glEnable(GL_MULTISAMPLE);
+    glEnable(GL_BLEND);
+    CHECK_GL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
     glBindRenderbuffer(GL_RENDERBUFFER, msfborgb);              
-    glRenderbufferStorageMultisample(GL_RENDERBUFFER, 8, GL_RGBA32F, nx, ny);
+    glRenderbufferStorageMultisample(GL_RENDERBUFFER, 16, GL_RGBA32F, nx, ny);
     CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, msfbod));
-    CHECK_GL(glRenderbufferStorageMultisample(GL_RENDERBUFFER, 8, GL_DEPTH_COMPONENT32F, nx, ny));
+    CHECK_GL(glRenderbufferStorageMultisample(GL_RENDERBUFFER, 16, GL_DEPTH_COMPONENT32F, nx, ny));
     //ZPass();
     glm::vec3 object = g_camPos + 1.0f * glm::normalize(g_camView);
     glm::vec3 right = glm::normalize(glm::cross(object - g_camPos, g_camUp));
