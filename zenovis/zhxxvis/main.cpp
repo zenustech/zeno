@@ -297,7 +297,7 @@ void initialize() {
   auto &scene = Scene::getInstance();
   scene.addLight();
   initReflectiveMaps(nx, ny);
-  MRT::getInstance().isUse = false;
+  MRT::getInstance().is_use = true;
   auto version = (const char *)glGetString(GL_VERSION);
   printf("OpenGL version: %s\n", version ? version : "null");
 
@@ -693,7 +693,7 @@ static void paint_graphics(GLuint target_fbo = 0) {
     CHECK_GL(glBindFramebuffer(GL_FRAMEBUFFER, 0));
 
     auto &mrt = MRT::getInstance();
-    if (mrt.isUse)
+    if (mrt.is_use)
     {
       mrt.release();
       mrt.init(num_samples, nx, ny);
@@ -706,21 +706,21 @@ static void paint_graphics(GLuint target_fbo = 0) {
 
   // test code
   auto &mrt = MRT::getInstance();
-  if (mrt.isUse)
+  if (mrt.is_use)
   {
     glEnable(GL_MULTISAMPLE);
     glm::vec3 object = g_camPos + 1.0f * glm::normalize(g_camView);
     glm::vec3 right = glm::normalize(glm::cross(object - g_camPos, g_camUp));
     glm::vec3 p_up = glm::normalize(glm::cross(right, object - g_camPos));
     view = glm::lookAt(g_camPos, object, p_up);
-    mrt.beforeDraw();
+    mrt.before_draw();
     CHECK_GL(glClearColor(bgcolor.r, bgcolor.g, bgcolor.b, 0.0f));
     CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
     my_paint_graphics(1.0, 0.0);
-    mrt.afterDraw(nx, ny);
+    mrt.after_draw(nx, ny);
     CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, mrt.fbo));
     CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, target_fbo));
-    ScreenFillQuad(mrt.colorTex,1.0,0);
+    ScreenFillQuad(mrt.texs[4],1.0,0);
     glDisable(GL_MULTISAMPLE);
     CHECK_GL(glFlush());
     return;
