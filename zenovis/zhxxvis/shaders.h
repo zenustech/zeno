@@ -2031,7 +2031,7 @@ void main()
 )";
     }
 
-printf("!!!!%s!!!!\n", frag.c_str());
+//printf("!!!!%s!!!!\n", frag.c_str());
     return compile_program(vert, frag);
   }
 }

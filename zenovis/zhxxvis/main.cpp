@@ -297,7 +297,7 @@ void initialize() {
   auto &scene = Scene::getInstance();
   scene.addLight();
   initReflectiveMaps(nx, ny);
-  MRT::getInstance().is_use = true;
+  MRT::getInstance().is_use = false;
   auto version = (const char *)glGetString(GL_VERSION);
   printf("OpenGL version: %s\n", version ? version : "null");
 
