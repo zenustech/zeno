@@ -14,7 +14,7 @@ namespace zfx {
     };
 
     class UnaryNode {
-        
+
     };
 
 

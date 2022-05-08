@@ -26,7 +26,10 @@ enum class Seprator {
 
 };
 
-inline bool is_literial_atom(std::string const &s) {
+inline bool
+
+
+is_literial_atom(std::string const &s) {
     if (!s.size()) return false;
     if (isdigit(s[0]) || s.size() > 1 && s[0] == '-' && isdigit(s[1])) {
         return true;
