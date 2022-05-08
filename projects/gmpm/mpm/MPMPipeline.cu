@@ -79,7 +79,7 @@ struct ZSPartitionForZSParticles : INode {
               [pars = proxy<execspace_e::cuda>({}, pars),
                table = proxy<execspace_e::cuda>(partition),
                dxinv = 1.f / grid.dx] __device__(size_t pi) mutable {
-                auto x = pars.template pack<3>("pos", pi);
+                auto x = pars.template pack<3>("x", pi);
                 auto c = (x * dxinv - 0.5);
                 typename Partition::key_t coord{};
                 for (int d = 0; d != 3; ++d)
@@ -92,7 +92,7 @@ struct ZSPartitionForZSParticles : INode {
                 [eles = proxy<execspace_e::cuda>({}, eles),
                  table = proxy<execspace_e::cuda>(partition),
                  dxinv = 1.f / grid.dx] __device__(size_t ei) mutable {
-                  auto x = eles.template pack<3>("pos", ei);
+                  auto x = eles.template pack<3>("x", ei);
                   auto c = (x * dxinv - 0.5);
                   typename Partition::key_t coord{};
                   for (int d = 0; d != 3; ++d)

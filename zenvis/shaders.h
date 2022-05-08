@@ -58,10 +58,11 @@ vec3 computeFramePosition()
   {
     return vPosition;
   }
-
-  int prevFrameID = int(fInstTime / fInstDeltaTime); 
+  float t = fInstTime;
+  t = clamp(t, 0, fInstDeltaTime * float(iInstFrameAmount - 1));
+  int prevFrameID = int(t / fInstDeltaTime); 
   int nextFrameID = prevFrameID + 1;
-  float dt = fInstTime - fInstDeltaTime * prevFrameID;
+  float dt = t - fInstDeltaTime * prevFrameID;
 
   prevFrameID = clamp(prevFrameID, 0, iInstFrameAmount - 1);  
   nextFrameID = clamp(nextFrameID, 0, iInstFrameAmount - 1);  
@@ -354,10 +355,11 @@ vec3 computeFramePosition()
   {
     return vPosition;
   }
-
-  int prevFrameID = int(fInstTime / fInstDeltaTime); 
+  float t = fInstTime;
+  t = clamp(t, 0, fInstDeltaTime * float(iInstFrameAmount - 1));
+  int prevFrameID = int(t / fInstDeltaTime); 
   int nextFrameID = prevFrameID + 1;
-  float dt = fInstTime - fInstDeltaTime * prevFrameID;
+  float dt = t - fInstDeltaTime * prevFrameID;
 
   prevFrameID = clamp(prevFrameID, 0, iInstFrameAmount - 1);  
   nextFrameID = clamp(nextFrameID, 0, iInstFrameAmount - 1);  
@@ -451,6 +453,10 @@ in vec3 iNormal;
 in vec3 iTexCoord;
 in vec3 iTangent;
 out vec4 fColor;
+out vec4 mrt_position;
+out vec4 mrt_normal;
+out vec4 mrt_texcoord;
+out vec4 mrt_tangent;
 uniform samplerCube skybox;
 
 uniform samplerCube irradianceMap;
@@ -1839,6 +1845,11 @@ void main()
         fColor = vec4(0.87 * intensity*msweight, 0.22 * intensity*msweight, 0.22 * intensity*msweight, 1);
       }
   }
+
+  mrt_position = vec4(position, 1);
+  mrt_normal = vec4((iNormal + 1) * 0.5, 1);
+  mrt_texcoord = vec4(iTexCoord, 1);
+  mrt_tangent = vec4((iTangent + 1) * 0.5, 1);
 }
 )";
     }

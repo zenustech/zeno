@@ -657,8 +657,8 @@
      },
      "params": {},
      "uipos": [
-      6131.582419965521,
-      187.47815623363303
+      6130.006826390102,
+      137.0591618202252
      ],
      "options": []
     },
@@ -1565,10 +1565,10 @@
     }
    },
    "view_rect": {
-    "x": -1372.3599213509547,
-    "y": -1439.726676977657,
-    "width": 4577.636718749969,
-    "height": 2754.21142578125
+    "x": 5546.194940357205,
+    "y": 709.4843778510856,
+    "width": 1499.9999999999902,
+    "height": 902.5
    }
   },
   "AutoGenMuscleFibers": {
@@ -11818,6 +11818,42 @@
     "portal"
    ]
   },
+  "AssignActByMSTag": {
+   "inputs": [
+    [
+     "",
+     "CV",
+     ""
+    ],
+    [
+     "",
+     "ACT_LIST",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "CV",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Hercules"
+   ],
+   "is_subgraph": true
+  },
   "AssignUniformAffineToPrim": {
    "inputs": [
     [
@@ -11857,6 +11893,42 @@
    "categories": [
     "FEM"
    ]
+  },
+  "AutoGenMuscleFibers": {
+   "inputs": [
+    [
+     "",
+     "Orient",
+     ""
+    ],
+    [
+     "",
+     "Muscle",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "primOut",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Hercules"
+   ],
+   "is_subgraph": true
   },
   "BeginFor": {
    "inputs": [
@@ -11983,6 +12055,82 @@
     "control"
    ]
   },
+  "BindCV2BoneGeos": {
+   "inputs": [
+    [
+     "",
+     "BoneGeos",
+     ""
+    ],
+    [
+     "",
+     "CV",
+     ""
+    ],
+    [
+     "float",
+     "Dx",
+     "0.1"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "CV_OUT",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Hercules"
+   ]
+  },
+  "BindMSToCV": {
+   "inputs": [
+    [
+     "",
+     "MS_MESH",
+     ""
+    ],
+    [
+     "",
+     "CV",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "CV",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Hercules"
+   ],
+   "is_subgraph": true
+  },
   "BlendPoses": {
    "inputs": [
     [
@@ -12088,6 +12236,62 @@
    "categories": [
     "FLIPSolver"
    ]
+  },
+  "CVDoOneStep": {
+   "inputs": [
+    [
+     "",
+     "CV",
+     ""
+    ],
+    [
+     "",
+     "CUR_SKIN",
+     ""
+    ],
+    [
+     "",
+     "MS_SIGNAL",
+     ""
+    ],
+    [
+     "int",
+     "MaxNewtonIters",
+     "10"
+    ],
+    [
+     "int",
+     "MaxLineSearch",
+     "10"
+    ],
+    [
+     "float",
+     "accuracy",
+     "1e-6"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "CV",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Hercules"
+   ],
+   "is_subgraph": true
   },
   "CacheLastFrameBegin": {
    "inputs": [
@@ -12361,6 +12565,46 @@
     "control"
    ]
   },
+  "CalcDirectionFromAngle": {
+   "inputs": [
+    [
+     "float",
+     "angle",
+     "0"
+    ],
+    [
+     "enum XY YX YZ ZY ZX XZ",
+     "plane",
+     "XY"
+    ],
+    [
+     "float",
+     "length",
+     "1"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "vec3f",
+     "direction",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "math"
+   ]
+  },
   "Clone": {
    "inputs": [
     [
@@ -12512,6 +12756,156 @@
     "alembic"
    ]
   },
+  "CreateCone": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "create"
+   ]
+  },
+  "CreateCube": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "create"
+   ]
+  },
+  "CreateCylinder": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "create"
+   ]
+  },
+  "CreateDisk": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "create"
+   ]
+  },
+  "CreatePlane": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "create"
+   ]
+  },
+  "CreateSphere": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "create"
+   ]
+  },
   "Curvemap": {
    "inputs": [
     [
@@ -12581,6 +12975,161 @@
    "categories": [
     "FLIPSolver"
    ]
+  },
+  "DefaultBoneColor": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "color",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Hercules"
+   ],
+   "is_subgraph": true
+  },
+  "DefaultFleshColor": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "FleshColor",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Hercules"
+   ],
+   "is_subgraph": true
+  },
+  "DefaultSkinColor": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "SkinColor",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Hercules"
+   ],
+   "is_subgraph": true
+  },
+  "DefineMS": {
+   "inputs": [
+    [
+     "",
+     "SCALE",
+     ""
+    ],
+    [
+     "",
+     "TRANS",
+     ""
+    ],
+    [
+     "",
+     "MS_DICT",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "MS",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Hercules"
+   ],
+   "is_subgraph": true
+  },
+  "DeformCVByInterpolator": {
+   "inputs": [
+    [
+     "",
+     "CV",
+     ""
+    ],
+    [
+     "",
+     "CUR_SKIN",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "CV",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Hercules"
+   ],
+   "is_subgraph": true
   },
   "DelUserData": {
    "inputs": [
@@ -12781,6 +13330,41 @@
    "params": [],
    "categories": [
     "dict"
+   ]
+  },
+  "DoARAPDeformation": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "ARAP_data",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Skinning"
    ]
   },
   "DoSkinning": {
@@ -13468,6 +14052,36 @@
     "list"
    ]
   },
+  "ExtractSurfaceMeshByTag": {
+   "inputs": [
+    [
+     "",
+     "volume",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "primSurf",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
+   ]
+  },
   "FLIPApplyBoundary": {
    "inputs": [
     [
@@ -13944,6 +14558,66 @@
     "FLIPSolver"
    ]
   },
+  "FileReadString": {
+   "inputs": [
+    [
+     "readpath",
+     "path",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "string",
+     "str",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "string"
+   ]
+  },
+  "FileWriteString": {
+   "inputs": [
+    [
+     "string",
+     "str",
+     ""
+    ],
+    [
+     "writepath",
+     "path",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "string"
+   ]
+  },
   "FinalOutput": {
    "inputs": [
     [
@@ -14291,6 +14965,26 @@
      "string",
      "attr_prefix",
      "sw"
+    ],
+    [
+     "float",
+     "sp_radius",
+     "1e-6"
+    ],
+    [
+     "float",
+     "bone_radius",
+     "1e-6"
+    ],
+    [
+     "float",
+     "cage_radius",
+     "1e-6"
+    ],
+    [
+     "float",
+     "duplicate",
+     "1.0"
     ]
    ],
    "categories": [
@@ -14515,7 +15209,7 @@
    ],
    "params": [],
    "categories": [
-    "primitive"
+    "math"
    ]
   },
   "GetTetMeshElementView": {
@@ -15072,6 +15766,42 @@
     "FEM"
    ]
   },
+  "InterpolateEmbedPrimByCV": {
+   "inputs": [
+    [
+     "",
+     "CV",
+     ""
+    ],
+    [
+     "",
+     "embedPrim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "embedPrim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Hercules"
+   ],
+   "is_subgraph": true
+  },
   "InterpolateEmbedPrimitive": {
    "inputs": [
     [
@@ -15140,6 +15870,36 @@
    "params": [],
    "categories": [
     "FLIPSolver"
+   ]
+  },
+  "LineAddVert": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "vert",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
    ]
   },
   "ListGetItem": {
@@ -15496,6 +16256,42 @@
     "primitive"
    ]
   },
+  "MakeArapSolver": {
+   "inputs": [
+    [
+     "",
+     "primIn",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "ARAP_data",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "float",
+     "max_iter",
+     "100"
+    ]
+   ],
+   "categories": [
+    "Skinning"
+   ]
+  },
   "MakeBoxPrimitive": {
    "inputs": [
     [
@@ -15546,6 +16342,47 @@
    "categories": [
     "primitive"
    ]
+  },
+  "MakeCVInterpolator": {
+   "inputs": [
+    [
+     "",
+     "EmbedPrim",
+     ""
+    ],
+    [
+     "",
+     "CV",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "CV",
+     ""
+    ],
+    [
+     "",
+     "EmbedPrim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Hercules"
+   ],
+   "is_subgraph": true
   },
   "MakeCubePrimitive": {
    "inputs": [
@@ -15964,42 +16801,7 @@
    ],
    "params": [],
    "categories": [
-    "primitive"
-   ]
-  },
-  "MakeMaterial": {
-   "inputs": [
-    [
-     "string",
-     "vert",
-     ""
-    ],
-    [
-     "string",
-     "frag",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "material",
-     "mtl",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "material"
+    "math"
    ]
   },
   "MakeMultilineString": {
@@ -16106,6 +16908,36 @@
    "params": [],
    "categories": [
     "math"
+   ]
+  },
+  "MakePointPrimitive": {
+   "inputs": [
+    [
+     "",
+     "vec3",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
    ]
   },
   "MakePrimitive": {
@@ -16321,6 +17153,56 @@
     "string"
    ]
   },
+  "MakeTexture2D": {
+   "inputs": [
+    [
+     "readpath",
+     "path",
+     ""
+    ],
+    [
+     "enum REPEAT MIRRORED_REPEAT CLAMP_TO_EDGE CLAMP_TO_BORDER",
+     "wrapS",
+     "REPEAT"
+    ],
+    [
+     "enum REPEAT MIRRORED_REPEAT CLAMP_TO_EDGE CLAMP_TO_BORDER",
+     "wrapT",
+     "REPEAT"
+    ],
+    [
+     "enum NEAREST LINEAR NEAREST_MIPMAP_NEAREST LINEAR_MIPMAP_NEAREST NEAREST_MIPMAP_LINEAR LINEAR_MIPMAP_LINEAR",
+     "minFilter",
+     "LINEAR"
+    ],
+    [
+     "enum NEAREST LINEAR NEAREST_MIPMAP_NEAREST LINEAR_MIPMAP_NEAREST NEAREST_MIPMAP_LINEAR LINEAR_MIPMAP_LINEAR",
+     "magFilter",
+     "LINEAR"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "texture",
+     "tex",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "shader"
+   ]
+  },
   "MakeVDBGrid": {
    "inputs": [
     [
@@ -16449,6 +17331,41 @@
     "string"
    ]
   },
+  "MarkEmbeddedInterior": {
+   "inputs": [
+    [
+     "",
+     "Volume",
+     ""
+    ],
+    [
+     "float",
+     "Dx",
+     "0.1"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "primOut",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Hercules"
+   ]
+  },
   "MarkSurfacePoints": {
    "inputs": [
     [
@@ -16477,6 +17394,41 @@
    "params": [],
    "categories": [
     "Skinning"
+   ]
+  },
+  "MaterialTexture2D": {
+   "inputs": [
+    [
+     "material",
+     "mtl",
+     ""
+    ],
+    [
+     "texture",
+     "tex",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "material",
+     "mtl",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "shader"
    ]
   },
   "MeshCopy": {
@@ -17645,46 +18597,6 @@
     "openvdb"
    ]
   },
-  "ParticlesBuildBvh": {
-   "inputs": [
-    [
-     "PrimitiveObject",
-     "primNei",
-     ""
-    ],
-    [
-     "numeric:float",
-     "radius",
-     ""
-    ],
-    [
-     "numeric:float",
-     "radiusMin",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "LBvh",
-     "lbvh",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "zenofx"
-   ]
-  },
   "ParticlesBuildHashGrid": {
    "inputs": [
     [
@@ -17712,56 +18624,6 @@
     [
      "hashgrid",
      "hashGrid",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "zenofx"
-   ]
-  },
-  "ParticlesNeighborBvhWrangle": {
-   "inputs": [
-    [
-     "PrimitiveObject",
-     "prim",
-     ""
-    ],
-    [
-     "PrimitiveObject",
-     "primNei",
-     ""
-    ],
-    [
-     "LBvh",
-     "lbvh",
-     ""
-    ],
-    [
-     "string",
-     "zfxCode",
-     ""
-    ],
-    [
-     "DictObject:NumericObject",
-     "params",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "PrimitiveObject",
-     "prim",
      ""
     ],
     [
@@ -17934,6 +18796,51 @@
    "params": [],
    "categories": [
     "zenofx"
+   ]
+  },
+  "PixarOrthonormalBase": {
+   "inputs": [
+    [
+     "vec3f",
+     "normal",
+     "0,0,1"
+    ],
+    [
+     "vec3f",
+     "tangent",
+     "0,1,0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "vec3f",
+     "normal",
+     ""
+    ],
+    [
+     "vec3f",
+     "tangent",
+     ""
+    ],
+    [
+     "vec3f",
+     "bitangent",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "math"
    ]
   },
   "PlaneProjectPrimitive2DAABB": {
@@ -18123,6 +19030,41 @@
     "primitive"
    ]
   },
+  "PrimMerge": {
+   "inputs": [
+    [
+     "list",
+     "listPrim",
+     ""
+    ],
+    [
+     "string",
+     "tagAttr",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "primitive",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
   "PrimSprayParticles": {
    "inputs": [
     [
@@ -18198,6 +19140,46 @@
     "openvdb"
    ]
   },
+  "PrimUnmerge": {
+   "inputs": [
+    [
+     "primitive",
+     "prim",
+     ""
+    ],
+    [
+     "string",
+     "tagAttr",
+     "tag"
+    ],
+    [
+     "enum verts faces",
+     "method",
+     "verts"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "list",
+     "listPrim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
   "PrimitiveAddAttr": {
    "inputs": [
     [
@@ -18238,6 +19220,102 @@
      "enum float float3",
      "type",
      "float3"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveAttrFit": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "PrimitiveObject",
+     "refPrim",
+     ""
+    ],
+    [
+     "string",
+     "attrNameSrc",
+     "pos"
+    ],
+    [
+     "string",
+     "attrNameDst",
+     "pos"
+    ],
+    [
+     "string",
+     "refAttrNameSrc",
+     "pos"
+    ],
+    [
+     "string",
+     "refAttrNameDst",
+     "pos"
+    ],
+    [
+     "float",
+     "limitMin",
+     "0"
+    ],
+    [
+     "float",
+     "limitMax",
+     "1"
+    ],
+    [
+     "enum X Y Z",
+     "axisSrc",
+     "X"
+    ],
+    [
+     "enum X Y Z",
+     "axisDst",
+     "Y"
+    ],
+    [
+     "enum X Y Z",
+     "refAxisSrc",
+     "X"
+    ],
+    [
+     "enum X Y Z",
+     "refAxisDst",
+     "Y"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "bool",
+     "autoMinMax",
+     "1"
+    ],
+    [
+     "bool",
+     "autoSort",
+     "1"
     ]
    ],
    "categories": [
@@ -18465,6 +19543,11 @@
      ""
     ],
     [
+     "float",
+     "exWidth",
+     "0"
+    ],
+    [
      "",
      "SRC",
      ""
@@ -18487,13 +19570,7 @@
      ""
     ]
    ],
-   "params": [
-    [
-     "float",
-     "exWidth",
-     "0"
-    ]
-   ],
+   "params": [],
    "categories": [
     "primitive"
    ]
@@ -18545,6 +19622,11 @@
      "",
      "prim",
      ""
+    ],
+    [
+     "int",
+     "flip",
+     "0"
     ],
     [
      "",
@@ -18920,9 +20002,9 @@
      "pos"
     ],
     [
-     "enum float float3",
+     "enum float float3 none",
      "attrType",
-     ""
+     "none"
     ]
    ],
    "categories": [
@@ -18974,6 +20056,11 @@
      "enum any all",
      "vecSelType",
      "all"
+    ],
+    [
+     "bool",
+     "mockTopos",
+     "1"
     ]
    ],
    "categories": [
@@ -19207,6 +20294,46 @@
     "primitive"
    ]
   },
+  "PrimitiveLineDistance": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "string",
+     "resAttr",
+     "len"
+    ],
+    [
+     "int",
+     "start",
+     "0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
   "PrimitiveLineSimpleLink": {
    "inputs": [
     [
@@ -19327,102 +20454,6 @@
      "bool",
      "reversed",
      "0"
-    ]
-   ],
-   "categories": [
-    "primitive"
-   ]
-  },
-  "PrimitiveLinearMap": {
-   "inputs": [
-    [
-     "PrimitiveObject",
-     "prim",
-     ""
-    ],
-    [
-     "PrimitiveObject",
-     "refPrim",
-     ""
-    ],
-    [
-     "string",
-     "attrNameSrc",
-     "pos"
-    ],
-    [
-     "string",
-     "attrNameDst",
-     "pos"
-    ],
-    [
-     "string",
-     "refAttrNameSrc",
-     "pos"
-    ],
-    [
-     "string",
-     "refAttrNameDst",
-     "pos"
-    ],
-    [
-     "float",
-     "limitMin",
-     "0"
-    ],
-    [
-     "float",
-     "limitMax",
-     "1"
-    ],
-    [
-     "enum X Y Z",
-     "axisSrc",
-     "X"
-    ],
-    [
-     "enum X Y Z",
-     "axisDst",
-     "Y"
-    ],
-    [
-     "enum X Y Z",
-     "refAxisSrc",
-     "X"
-    ],
-    [
-     "enum X Y Z",
-     "refAxisDst",
-     "Y"
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "PrimitiveObject",
-     "prim",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "bool",
-     "autoMinMax",
-     "1"
-    ],
-    [
-     "bool",
-     "autoSort",
-     "1"
     ]
    ],
    "categories": [
@@ -19951,6 +20982,52 @@
     "primitive"
    ]
   },
+  "PrimitiveScatter": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "int",
+     "npoints",
+     "100"
+    ],
+    [
+     "int",
+     "seed",
+     "0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "PrimitiveObject",
+     "points",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "enum tris lines",
+     "type",
+     "tris"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
   "PrimitiveSetAttrValue": {
    "inputs": [
     [
@@ -20324,6 +21401,52 @@
     "primitive"
    ]
   },
+  "PrimitiveTriangulate": {
+   "inputs": [
+    [
+     "primitive",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "primitive",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "bool",
+     "from_poly",
+     "1"
+    ],
+    [
+     "bool",
+     "with_uv",
+     "1"
+    ],
+    [
+     "bool",
+     "from_quads",
+     "1"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
   "PrimitiveTwist": {
    "inputs": [
     [
@@ -20486,6 +21609,42 @@
     "cgmesh"
    ]
   },
+  "PrimitiveWireframe": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "bool",
+     "removeFaces",
+     "1"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
   "PrintMessage": {
    "inputs": [
     [
@@ -20553,36 +21712,6 @@
     [
      "string",
      "str",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "string"
-   ]
-  },
-  "PrintStringObject": {
-   "inputs": [
-    [
-     "string",
-     "strObj",
-     ""
-    ],
-    [
-     "string",
-     "header",
      ""
     ],
     [
@@ -20884,6 +22013,42 @@
    ],
    "categories": [
     "trimesh"
+   ]
+  },
+  "ReadObjPrim": {
+   "inputs": [
+    [
+     "readpath",
+     "path",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "primitive",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "bool",
+     "triangulate",
+     "1"
+    ]
+   ],
+   "categories": [
+    "primitive"
    ]
   },
   "ReadObjPrimitive": {
@@ -21213,7 +22378,7 @@
     "Skinning"
    ]
   },
-  "RetrieveRigidTransformQuat": {
+  "RetrieveRigidTransform": {
    "inputs": [
     [
      "",
@@ -21240,6 +22405,11 @@
     [
      "",
      "trans",
+     ""
+    ],
+    [
+     "",
+     "mat",
      ""
     ],
     [
@@ -21796,37 +22966,7 @@
    ],
    "params": [],
    "categories": [
-    "material"
-   ]
-  },
-  "SetMatrix": {
-   "inputs": [
-    [
-     "",
-     "dst",
-     ""
-    ],
-    [
-     "",
-     "src",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "primitive"
+    "shader"
    ]
   },
   "SetRandomSeed": {
@@ -21977,6 +23117,764 @@
     "particles"
    ]
   },
+  "ShaderBinaryMath": {
+   "inputs": [
+    [
+     "float",
+     "in1",
+     "0"
+    ],
+    [
+     "float",
+     "in2",
+     "0"
+    ],
+    [
+     "enum add sub mul div mod pow atan2 min max dot cross distance",
+     "op",
+     "add"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "float",
+     "out",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "shader"
+   ]
+  },
+  "ShaderBlendMode": {
+   "inputs": [
+    [
+     "float",
+     "base",
+     "0"
+    ],
+    [
+     "float",
+     "blend",
+     "0"
+    ],
+    [
+     "float",
+     "opacity",
+     "0"
+    ],
+    [
+     "enum add average colorBurn colorDodge darken difference exclusion glow hardLight hardMix lighten linearBurn linearDodge linearLight multiply negation normal overlay phoenix pinLight reflect screen softLight subtract vividLight",
+     "mode",
+     "normal"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "shader",
+     "out",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "shader"
+   ]
+  },
+  "ShaderCihouUnrealEngine": {
+   "inputs": [
+    [
+     "MaterialObject",
+     "mtl",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "string",
+     "code",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "shader"
+   ]
+  },
+  "ShaderCustomFunc": {
+   "inputs": [
+    [
+     "string",
+     "args",
+     "vec3 arg1, vec3 arg2"
+    ],
+    [
+     "enum float vec2 vec3 vec4",
+     "rettype",
+     "vec3"
+    ],
+    [
+     "string",
+     "code",
+     "return arg1 + arg2;"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "ShaderCustomFuncObject",
+     "func",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "shader"
+   ]
+  },
+  "ShaderExtractVec": {
+   "inputs": [
+    [
+     "vec3f",
+     "vec",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "float",
+     "x",
+     ""
+    ],
+    [
+     "float",
+     "y",
+     ""
+    ],
+    [
+     "float",
+     "z",
+     ""
+    ],
+    [
+     "float",
+     "w",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "shader"
+   ]
+  },
+  "ShaderFillVec": {
+   "inputs": [
+    [
+     "float",
+     "in",
+     "0"
+    ],
+    [
+     "enum float vec2 vec3 vec4",
+     "type",
+     "vec3"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "vec4f",
+     "out",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "shader"
+   ]
+  },
+  "ShaderFinalize": {
+   "inputs": [
+    [
+     "vec3f",
+     "basecolor",
+     "1,1,1"
+    ],
+    [
+     "float",
+     "metallic",
+     "0.0"
+    ],
+    [
+     "float",
+     "roughness",
+     "0.4"
+    ],
+    [
+     "float",
+     "specular",
+     "0.5"
+    ],
+    [
+     "float",
+     "subsurface",
+     "0.0"
+    ],
+    [
+     "float",
+     "specularTint",
+     "0.0"
+    ],
+    [
+     "float",
+     "anisotropic",
+     "0.0"
+    ],
+    [
+     "float",
+     "sheen",
+     "0.0"
+    ],
+    [
+     "float",
+     "sheenTint",
+     "0.0"
+    ],
+    [
+     "float",
+     "clearcoat",
+     "0.0"
+    ],
+    [
+     "float",
+     "clearcoatGloss",
+     "1.0"
+    ],
+    [
+     "vec3f",
+     "normal",
+     "0,0,1"
+    ],
+    [
+     "vec3f",
+     "emission",
+     "0,0,0"
+    ],
+    [
+     "float",
+     "exposure",
+     "1.0"
+    ],
+    [
+     "float",
+     "toon",
+     "0.0"
+    ],
+    [
+     "float",
+     "stroke",
+     "1.0"
+    ],
+    [
+     "vec3f",
+     "shape",
+     "-0.5,0.5,0"
+    ],
+    [
+     "float",
+     "style",
+     "1.0"
+    ],
+    [
+     "float",
+     "strokeNoise",
+     "1"
+    ],
+    [
+     "vec3f",
+     "shad",
+     "0,0,0"
+    ],
+    [
+     "vec3f",
+     "strokeTint",
+     "0,0,0"
+    ],
+    [
+     "float",
+     "opacity",
+     "0"
+    ],
+    [
+     "string",
+     "commonCode",
+     ""
+    ],
+    [
+     "string",
+     "extensionsCode",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "MaterialObject",
+     "mtl",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "enum GLSL HLSL",
+     "backend",
+     "GLSL"
+    ]
+   ],
+   "categories": [
+    "shader"
+   ]
+  },
+  "ShaderInputAttr": {
+   "inputs": [
+    [
+     "enum pos clr nrm uv tang bitang NoL",
+     "attr",
+     "pos"
+    ],
+    [
+     "enum float vec2 vec3 vec4",
+     "type",
+     "vec3"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "shader",
+     "out",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "shader"
+   ]
+  },
+  "ShaderInvokeFunc": {
+   "inputs": [
+    [
+     "ShaderCustomFuncObject",
+     "func",
+     ""
+    ],
+    [
+     "list",
+     "args",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "shader",
+     "out",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "shader"
+   ]
+  },
+  "ShaderLinearFit": {
+   "inputs": [
+    [
+     "float",
+     "in",
+     "0"
+    ],
+    [
+     "float",
+     "inMin",
+     "0"
+    ],
+    [
+     "float",
+     "inMax",
+     "1"
+    ],
+    [
+     "float",
+     "outMin",
+     "0"
+    ],
+    [
+     "float",
+     "outMax",
+     "1"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "float",
+     "out",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "bool",
+     "clamped",
+     "0"
+    ]
+   ],
+   "categories": [
+    "shader"
+   ]
+  },
+  "ShaderMakeVec": {
+   "inputs": [
+    [
+     "float",
+     "x",
+     ""
+    ],
+    [
+     "float",
+     "y",
+     ""
+    ],
+    [
+     "float",
+     "z",
+     ""
+    ],
+    [
+     "float",
+     "w",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "vec4f",
+     "out",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "shader"
+   ]
+  },
+  "ShaderPackVec": {
+   "inputs": [
+    [
+     "shader",
+     "x",
+     ""
+    ],
+    [
+     "shader",
+     "y",
+     ""
+    ],
+    [
+     "shader",
+     "z",
+     ""
+    ],
+    [
+     "shader",
+     "w",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "vec4f",
+     "out",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "shader"
+   ]
+  },
+  "ShaderReduceVec": {
+   "inputs": [
+    [
+     "vec3f",
+     "in",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "float",
+     "out",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "enum average sum",
+     "op",
+     "average"
+    ]
+   ],
+   "categories": [
+    "shader"
+   ]
+  },
+  "ShaderTernaryMath": {
+   "inputs": [
+    [
+     "float",
+     "in1",
+     "0"
+    ],
+    [
+     "float",
+     "in2",
+     "0"
+    ],
+    [
+     "float",
+     "in3",
+     "0"
+    ],
+    [
+     "enum mix clamp smoothstep add3",
+     "op",
+     "mix"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "float",
+     "out",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "shader"
+   ]
+  },
+  "ShaderTexture2D": {
+   "inputs": [
+    [
+     "int",
+     "texId",
+     "0"
+    ],
+    [
+     "vec2f",
+     "coord",
+     "0,0"
+    ],
+    [
+     "enum float vec2 vec3 vec4",
+     "type",
+     "vec3"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "shader",
+     "out",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "shader"
+   ]
+  },
+  "ShaderUnaryMath": {
+   "inputs": [
+    [
+     "float",
+     "in1",
+     "0"
+    ],
+    [
+     "enum copy neg abs sqrt inversesqrt exp log sin cos tan asin acos atan degrees radians sinh cosh tanh asinh acosh atanh round roundEven floor ceil trunc sign step length normalize",
+     "op",
+     "sqrt"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "float",
+     "out",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "shader"
+   ]
+  },
   "SimplifyVoroNeighborList": {
    "inputs": [
     [
@@ -22105,6 +24003,47 @@
    "params": [],
    "categories": [
     "FLIP"
+   ]
+  },
+  "SolveBiharmonicWeight": {
+   "inputs": [
+    [
+     "",
+     "skinMesh",
+     ""
+    ],
+    [
+     "float",
+     "nm_handles",
+     "2"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "mesh",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "attr_prefix",
+     "sw"
+    ]
+   ],
+   "categories": [
+    "Skinning"
    ]
   },
   "SolveFEM": {
@@ -23128,6 +25067,51 @@
     "primitive"
    ]
   },
+  "TransformPrimitivePartsByTags": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "Qs",
+     ""
+    ],
+    [
+     "",
+     "Ts",
+     ""
+    ],
+    [
+     "string",
+     "tagName",
+     "RENAME_ME"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "outPrim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Skinning"
+   ]
+  },
   "TranslatePrimitive": {
    "inputs": [
     [
@@ -23161,438 +25145,6 @@
    "params": [],
    "categories": [
     "primitive"
-   ]
-  },
-  "TreeBinaryMath": {
-   "inputs": [
-    [
-     "float",
-     "in1",
-     "0"
-    ],
-    [
-     "float",
-     "in2",
-     "0"
-    ],
-    [
-     "enum add sub mul div mod pow atan2 min max dot cross distance",
-     "op",
-     "add"
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "float",
-     "out",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "tree"
-   ]
-  },
-  "TreeExtractVec": {
-   "inputs": [
-    [
-     "vec3f",
-     "vec",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "float",
-     "x",
-     ""
-    ],
-    [
-     "float",
-     "y",
-     ""
-    ],
-    [
-     "float",
-     "z",
-     ""
-    ],
-    [
-     "float",
-     "w",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "tree"
-   ]
-  },
-  "TreeFillVec": {
-   "inputs": [
-    [
-     "float",
-     "in",
-     "0"
-    ],
-    [
-     "enum float vec2 vec3 vec4",
-     "type",
-     "vec3"
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "vec4f",
-     "out",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "tree"
-   ]
-  },
-  "TreeFinalize": {
-   "inputs": [
-    [
-     "vec3f",
-     "basecolor",
-     "1,1,1"
-    ],
-    [
-     "float",
-     "metallic",
-     "0.0"
-    ],
-    [
-     "float",
-     "roughness",
-     "0.4"
-    ],
-    [
-     "float",
-     "specular",
-     "0.5"
-    ],
-    [
-     "vec3f",
-     "normal",
-     "0,0,1"
-    ],
-    [
-     "vec3f",
-     "emission",
-     "0,0,0"
-    ],
-    [
-     "float",
-     "emitrate",
-     "0"
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "string",
-     "code",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "tree"
-   ]
-  },
-  "TreeInputAttr": {
-   "inputs": [
-    [
-     "enum pos clr nrm",
-     "attr",
-     "pos"
-    ],
-    [
-     "enum float vec2 vec3 vec4",
-     "type",
-     "vec3"
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "tree",
-     "out",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "tree"
-   ]
-  },
-  "TreeLinearFit": {
-   "inputs": [
-    [
-     "float",
-     "in",
-     "0"
-    ],
-    [
-     "float",
-     "inMin",
-     "0"
-    ],
-    [
-     "float",
-     "inMax",
-     "1"
-    ],
-    [
-     "float",
-     "outMin",
-     "0"
-    ],
-    [
-     "float",
-     "outMax",
-     "1"
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "float",
-     "out",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "bool",
-     "clamped",
-     "0"
-    ]
-   ],
-   "categories": [
-    "tree"
-   ]
-  },
-  "TreeMakeVec": {
-   "inputs": [
-    [
-     "float",
-     "x",
-     "0"
-    ],
-    [
-     "float",
-     "y",
-     "0"
-    ],
-    [
-     "float",
-     "z",
-     "0"
-    ],
-    [
-     "float",
-     "w",
-     "0"
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "vec4f",
-     "out",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "tree"
-   ]
-  },
-  "TreeReduceVec": {
-   "inputs": [
-    [
-     "vec3f",
-     "in",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "float",
-     "out",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "enum average sum",
-     "op",
-     "average"
-    ]
-   ],
-   "categories": [
-    "tree"
-   ]
-  },
-  "TreeTernaryMath": {
-   "inputs": [
-    [
-     "float",
-     "in1",
-     "0"
-    ],
-    [
-     "float",
-     "in2",
-     "0"
-    ],
-    [
-     "float",
-     "in3",
-     "0"
-    ],
-    [
-     "enum mix clamp smoothstep add3",
-     "op",
-     "mix"
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "float",
-     "out",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "tree"
-   ]
-  },
-  "TreeUnaryMath": {
-   "inputs": [
-    [
-     "float",
-     "in1",
-     "0"
-    ],
-    [
-     "enum copy neg abs sqrt inversesqrt exp log sin cos tan asin acos atan degrees radians sinh cosh tanh asinh acosh atanh round roundEven floor ceil trunc sign step length normalize",
-     "op",
-     "sqrt"
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "float",
-     "out",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "tree"
    ]
   },
   "TriggerAbortSignal": {
@@ -24572,6 +26124,170 @@
     "openvdb"
    ]
   },
+  "ViewCVFiber": {
+   "inputs": [
+    [
+     "",
+     "CV",
+     ""
+    ],
+    [
+     "float",
+     "dt",
+     "1.0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "fiber",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Hercules"
+   ],
+   "is_subgraph": true
+  },
+  "ViewCurrentMesh": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "vec3",
+     "trans",
+     ""
+    ],
+    [
+     "vec3",
+     "scale",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "mesh",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Hercules"
+   ],
+   "is_subgraph": true
+  },
+  "ViewCurrentParticles": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "float",
+     "radius",
+     ""
+    ],
+    [
+     "vec3",
+     "color",
+     ""
+    ],
+    [
+     "vec3",
+     "scale",
+     ""
+    ],
+    [
+     "vec3",
+     "trans",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "nodes",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Hercules"
+   ],
+   "is_subgraph": true
+  },
+  "ViewMuscleFiber": {
+   "inputs": [
+    [
+     "",
+     "Muscle",
+     ""
+    ],
+    [
+     "float",
+     "dt",
+     "1.0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "fiber",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Hercules"
+   ],
+   "is_subgraph": true
+  },
   "VolumeAdvect": {
    "inputs": [
     [
@@ -24626,6 +26342,67 @@
    "categories": [
     "openvdb"
    ]
+  },
+  "VolumeToFEMMesh": {
+   "inputs": [
+    [
+     "",
+     "CV_MESH",
+     ""
+    ],
+    [
+     "",
+     "MS_MESH",
+     ""
+    ],
+    [
+     "float",
+     "Stiffness",
+     ""
+    ],
+    [
+     "float",
+     "SkinDrivenCoeff",
+     ""
+    ],
+    [
+     "float",
+     "VolumePreserve",
+     ""
+    ],
+    [
+     "float",
+     "ExamShapeCoeff",
+     ""
+    ],
+    [
+     "",
+     "ElasticModel",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "CV",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Hercules"
+   ],
+   "is_subgraph": true
   },
   "VoronoiFracture": {
    "inputs": [
@@ -24881,627 +26658,6 @@
    "categories": [
     "openvdb"
    ]
-  },
-  "AutoGenMuscleFibers": {
-   "inputs": [
-    [
-     "",
-     "Orient",
-     ""
-    ],
-    [
-     "",
-     "Muscle",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "primOut",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "Hercules"
-   ],
-   "is_subgraph": true
-  },
-  "DeformCVByInterpolator": {
-   "inputs": [
-    [
-     "",
-     "CV",
-     ""
-    ],
-    [
-     "",
-     "CUR_SKIN",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "CV",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "Hercules"
-   ],
-   "is_subgraph": true
-  },
-  "MakeCVInterpolator": {
-   "inputs": [
-    [
-     "",
-     "EmbedPrim",
-     ""
-    ],
-    [
-     "",
-     "CV",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "CV",
-     ""
-    ],
-    [
-     "",
-     "EmbedPrim",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "Hercules"
-   ],
-   "is_subgraph": true
-  },
-  "InterpolateEmbedPrimByCV": {
-   "inputs": [
-    [
-     "",
-     "CV",
-     ""
-    ],
-    [
-     "",
-     "embedPrim",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "embedPrim",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "Hercules"
-   ],
-   "is_subgraph": true
-  },
-  "AssignActByMSTag": {
-   "inputs": [
-    [
-     "",
-     "CV",
-     ""
-    ],
-    [
-     "",
-     "ACT_LIST",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "CV",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "Hercules"
-   ],
-   "is_subgraph": true
-  },
-  "ViewCurrentParticles": {
-   "inputs": [
-    [
-     "",
-     "prim",
-     ""
-    ],
-    [
-     "float",
-     "radius",
-     ""
-    ],
-    [
-     "vec3",
-     "color",
-     ""
-    ],
-    [
-     "vec3",
-     "scale",
-     ""
-    ],
-    [
-     "vec3",
-     "trans",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "nodes",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "Hercules"
-   ],
-   "is_subgraph": true
-  },
-  "ViewCurrentMesh": {
-   "inputs": [
-    [
-     "",
-     "prim",
-     ""
-    ],
-    [
-     "vec3",
-     "trans",
-     ""
-    ],
-    [
-     "vec3",
-     "scale",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "mesh",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "Hercules"
-   ],
-   "is_subgraph": true
-  },
-  "DefineMS": {
-   "inputs": [
-    [
-     "",
-     "SCALE",
-     ""
-    ],
-    [
-     "",
-     "TRANS",
-     ""
-    ],
-    [
-     "",
-     "MS_DICT",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "MS",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "Hercules"
-   ],
-   "is_subgraph": true
-  },
-  "VolumeToFEMMesh": {
-   "inputs": [
-    [
-     "",
-     "CV_MESH",
-     ""
-    ],
-    [
-     "",
-     "MS_MESH",
-     ""
-    ],
-    [
-     "float",
-     "Stiffness",
-     ""
-    ],
-    [
-     "float",
-     "SkinDrivenCoeff",
-     ""
-    ],
-    [
-     "float",
-     "VolumePreserve",
-     ""
-    ],
-    [
-     "float",
-     "ExamShapeCoeff",
-     ""
-    ],
-    [
-     "",
-     "ElasticModel",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "CV",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "Hercules"
-   ],
-   "is_subgraph": true
-  },
-  "BindMSToCV": {
-   "inputs": [
-    [
-     "",
-     "MS_MESH",
-     ""
-    ],
-    [
-     "",
-     "CV",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "CV",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "Hercules"
-   ],
-   "is_subgraph": true
-  },
-  "CVDoOneStep": {
-   "inputs": [
-    [
-     "",
-     "CV",
-     ""
-    ],
-    [
-     "",
-     "CUR_SKIN",
-     ""
-    ],
-    [
-     "",
-     "MS_SIGNAL",
-     ""
-    ],
-    [
-     "int",
-     "MaxNewtonIters",
-     "10"
-    ],
-    [
-     "int",
-     "MaxLineSearch",
-     "10"
-    ],
-    [
-     "float",
-     "accuracy",
-     "1e-6"
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "CV",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "Hercules"
-   ],
-   "is_subgraph": true
-  },
-  "ViewMuscleFiber": {
-   "inputs": [
-    [
-     "",
-     "Muscle",
-     ""
-    ],
-    [
-     "float",
-     "dt",
-     "1.0"
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "fiber",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "Hercules"
-   ],
-   "is_subgraph": true
-  },
-  "DefaultBoneColor": {
-   "inputs": [
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "color",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "Hercules"
-   ],
-   "is_subgraph": true
-  },
-  "DefaultFleshColor": {
-   "inputs": [
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "FleshColor",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "Hercules"
-   ],
-   "is_subgraph": true
-  },
-  "DefaultSkinColor": {
-   "inputs": [
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "SkinColor",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "Hercules"
-   ],
-   "is_subgraph": true
-  },
-  "ViewCVFiber": {
-   "inputs": [
-    [
-     "",
-     "CV",
-     ""
-    ],
-    [
-     "float",
-     "dt",
-     "1.0"
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "fiber",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "Hercules"
-   ],
-   "is_subgraph": true
   },
   "Blackboard": {
    "inputs": [],

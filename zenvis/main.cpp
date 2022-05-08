@@ -18,6 +18,7 @@
 #include <Scene.hpp>
 #include <thread>
 #include <chrono>
+#include "MRT.hpp"
 #include "openglstuff.h"
 namespace zenvis {
 int oldnx, oldny;
@@ -296,6 +297,7 @@ void initialize() {
   auto &scene = Scene::getInstance();
   scene.addLight();
   initReflectiveMaps(nx, ny);
+  MRT::getInstance().isUse = false;
   auto version = (const char *)glGetString(GL_VERSION);
   printf("OpenGL version: %s\n", version ? version : "null");
 
@@ -690,13 +692,39 @@ static void paint_graphics(GLuint target_fbo = 0) {
                     GL_TEXTURE_RECTANGLE, texRect, 0));
     CHECK_GL(glBindFramebuffer(GL_FRAMEBUFFER, 0));
 
+    auto &mrt = MRT::getInstance();
+    if (mrt.isUse)
+    {
+      mrt.release();
+      mrt.init(num_samples, nx, ny);
+    }
+
     oldnx = nx;
     oldny = ny;
     
   }
 
-    
-  
+  // test code
+  auto &mrt = MRT::getInstance();
+  if (mrt.isUse)
+  {
+    glEnable(GL_MULTISAMPLE);
+    glm::vec3 object = g_camPos + 1.0f * glm::normalize(g_camView);
+    glm::vec3 right = glm::normalize(glm::cross(object - g_camPos, g_camUp));
+    glm::vec3 p_up = glm::normalize(glm::cross(right, object - g_camPos));
+    view = glm::lookAt(g_camPos, object, p_up);
+    mrt.beforeDraw();
+    CHECK_GL(glClearColor(bgcolor.r, bgcolor.g, bgcolor.b, 0.0f));
+    CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
+    my_paint_graphics(1.0, 0.0);
+    mrt.afterDraw(nx, ny);
+    CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, mrt.fbo));
+    CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, target_fbo));
+    ScreenFillQuad(mrt.colorTex,1.0,0);
+    glDisable(GL_MULTISAMPLE);
+    CHECK_GL(glFlush());
+    return;
+  }
   
   if(g_dof>0){
     glDisable(GL_MULTISAMPLE);

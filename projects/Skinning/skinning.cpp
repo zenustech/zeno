@@ -74,14 +74,19 @@ struct DoSkinning : zeno::INode {
         auto shape = get_input<PrimitiveObject>("shape");
         auto algorithm = std::get<std::string>(get_param("algorithm"));
         auto attr_prefix = get_param<std::string>("attr_prefix");
+        auto outputChannel = get_param<std::string>("out_channel");
 
         auto Qs_ = get_input<zeno::ListObject>("Qs")->get<std::shared_ptr<NumericObject>>();
         auto Ts_ = get_input<zeno::ListObject>("Ts")->get<std::shared_ptr<NumericObject>>();
 
         // std::cout << "GOT QS AND TS INPUT" << std::endl;
         size_t dim = 3;
-
         size_t nm_handles = 0;
+
+
+        auto& out_chan = shape->add_attr<zeno::vec3f>(outputChannel);
+        // std::cout << "CHECKOUT_1" << std::endl;
+
         while(true){
             std::string attr_name = attr_prefix + "_" + std::to_string(nm_handles);
             if(shape->has_attr(attr_name)){
@@ -115,6 +120,7 @@ struct DoSkinning : zeno::INode {
         auto do_FK = get_param<int>("FK");
         if(!do_FK){
             std::cout << "GLOBAL TRANSFORMATION BLENDING" << std::endl;
+            std::cout << "NM_HANDLES : " << nm_handles << std::endl;
             for(size_t i = 0;i < nm_handles;++i){
                 if(std::isnan(zeno::length(Ts_[i]->get<zeno::vec3f>())) || std::isnan(zeno::length(Qs_[i]->get<zeno::vec4f>()))){
                     std::cout << "NAN RIGGING AFFINE TRANSFORMATION DETECTED" << std::endl;
@@ -175,6 +181,9 @@ struct DoSkinning : zeno::INode {
         }
 
 
+
+        // std::cout << "CHECKOUT_3" << std::endl;
+
         Eigen::MatrixXd T(nm_handles*(dim+1),dim);
         for(int e = 0;e<nm_handles;e++){
             Eigen::Affine3d a = Eigen::Affine3d::Identity();
@@ -196,7 +205,7 @@ struct DoSkinning : zeno::INode {
         }
 
         if(algorithm == "DQS"){
-            std::cout << "DQS SKINNING " << std::endl;
+            // std::cout << "DQS SKINNING " << std::endl;
             igl::dqs(V,W,Qs,Ts,U);
         }else if(algorithm == "LBS"){
             Eigen::MatrixXd M;
@@ -223,9 +232,9 @@ struct DoSkinning : zeno::INode {
 
             throw std::runtime_error("NAN DEFORMED SHAPE DETECTED");
         }
-
+        // std::cout << "CHECKOUT_4" << std::endl;
         for(size_t i = 0;i < deformed_shape->size();++i)
-            deformed_shape->verts[i] = zeno::vec3f(U.row(i)[0],U.row(i)[1],U.row(i)[2]);
+            out_chan[i] = zeno::vec3f(U.row(i)[0],U.row(i)[1],U.row(i)[2]);
 
         set_output("dshape",std::move(deformed_shape));
     }
@@ -234,7 +243,7 @@ struct DoSkinning : zeno::INode {
 ZENDEFNODE(DoSkinning, {
     {"shape","Qs","Ts","restBones"},
     {"dshape"},
-    {{"enum LBS DQS","algorithm","DQS"},{"string","attr_prefix","sw"},{"int","FK","0"}},
+    {{"enum LBS DQS","algorithm","DQS"},{"string","attr_prefix","sw"},{"string","out_channel","curPos"},{"int","FK","0"}},
     {"Skinning"},
 });
 

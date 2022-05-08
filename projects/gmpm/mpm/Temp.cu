@@ -40,7 +40,7 @@ struct AdjustParticleMaterial : INode {
               [pars = zs::proxy<zs::execspace_e::cuda>({}, pars), Ehard, Esoft,
                nuhard, nusoft, endhard, endsoft, span = endhard - endsoft,
                d] __device__(auto pi) mutable {
-                auto ratio = (endhard - pars("pos", d, pi)) / span;
+                auto ratio = (endhard - pars("x", d, pi)) / span;
                 ratio = __saturatef(ratio);
                 auto E = Esoft * ratio + Ehard * (1.f - ratio);
                 auto nu = nusoft * ratio + nuhard * (1.f - ratio);
