@@ -572,6 +572,8 @@ static void ZPass()
 static void paint_graphics(GLuint target_fbo = 0) {
   shadowPass();
   reflectivePass();
+  static bool isBate = !std::getenv("ZENO_BATE");
+  if (isBate) enable_hdr = 0;
   if(enable_hdr && tmProg==nullptr)
   {
     std::cout<<"compiling zhxx hdr program"<<std::endl;
