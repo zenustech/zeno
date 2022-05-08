@@ -1836,7 +1836,6 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 old_tangent) {
 
 }
 )") + R"(
-/*
 void packMrtMatAttrs(
     vec3 basecolor,
     float metallic,
@@ -1854,7 +1853,7 @@ void packMrtMatAttrs(
     float sheen,
     vec3 normal,
     float sheenTint,
-    vec4 emission,
+    vec3 emission,
     float clearcoat,
     float clearcoatGloss,
     float zenxposure,
@@ -1910,7 +1909,7 @@ void unpackMrtMatAttrs(
     vec4 attr9,
     vec4 attr10,
     vec4 attr11,
-    vec3 basecolor,
+    out vec3 basecolor,
     out float metallic,
     out float roughness,
     out float specular,
@@ -1926,7 +1925,7 @@ void unpackMrtMatAttrs(
     out float sheen,
     out vec3 normal,
     out float sheenTint,
-    out vec4 emission,
+    out vec3 emission,
     out float clearcoat,
     out float clearcoatGloss,
     out float zenxposure,
@@ -1976,7 +1975,6 @@ void unpackMrtMatAttrs(
     reflectID = attr11.z;
     isCamera = attr11.w;
 }
-*/
 
 vec3 calcRayDir(vec3 pos)
 {
