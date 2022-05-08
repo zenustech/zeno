@@ -2,13 +2,15 @@
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/ListObject.h>
 #include <zeno/types/StringObject.h>
-#include <zeno/types/PrimitiveTools.h>
 
 namespace zeno {
-ZENO_API std::shared_ptr<PrimitiveObject>
-prim_merge(std::shared_ptr<ListObject> list, std::string tagAttr) {
+namespace {
 
+struct PrimMerge : INode {
+    virtual void apply() override {
+        auto list = get_input<ListObject>("listPrim");
         auto primList = list->get<std::shared_ptr<PrimitiveObject>>();
+        auto tagAttr = get_input<StringObject>("tagAttr")->get();
         auto outprim = std::make_shared<PrimitiveObject>();
 
         if (primList.size()) {
@@ -331,15 +333,7 @@ prim_merge(std::shared_ptr<ListObject> list, std::string tagAttr) {
                 }
             }
         }
-        return outprim;
-}
-namespace {
 
-struct PrimMerge : INode {
-    virtual void apply() override {
-        auto list = get_input<ListObject>("listPrim");
-        auto tagAttr = get_input<StringObject>("tagAttr")->get();
-        auto outprim = prim_merge(list, tagAttr);
         set_output("prim", std::move(outprim));
     }
 };
