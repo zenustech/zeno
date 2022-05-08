@@ -453,10 +453,11 @@ in vec3 iNormal;
 in vec3 iTexCoord;
 in vec3 iTangent;
 out vec4 fColor;
-out vec4 mrt_position;
-out vec4 mrt_normal;
-out vec4 mrt_texcoord;
-out vec4 mrt_tangent;
+out vec4 mrt_attr_pos;
+out vec4 mrt_attr_clr;
+out vec4 mrt_attr_nrm;
+out vec4 mrt_attr_uv;
+out vec4 mrt_attr_tang;
 uniform samplerCube skybox;
 
 uniform samplerCube irradianceMap;
@@ -491,6 +492,25 @@ vec3 pbr(vec3 albedo, float roughness, float metallic, float specular,
 )" + (!mtl ?
            R"(
 vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 tangent) {
+    // pack_attrs
+    {
+        mrt_attr_pos = vec4(position, 1);
+        mrt_attr_clr = vec4(iColor, 1);
+        mrt_attr_nrm = vec4(normal, 1);
+        mrt_attr_uv = vec4(iTexCoord, 1);
+        mrt_attr_tang = vec4(tangent, 1);
+    }
+    // unpack_attrs
+    /*
+    {
+        position = mrt_attr_pos.xyz;
+        iColor = mrt_attr_clr.xyz;
+        normal = mrt_attr_nrm.xyz;
+        iTexCoord = mrt_attr_uv.xyz;
+        tangent = mrt_attr_tang.xyz;
+    }
+    */
+
     vec3 color = vec3(0.0);
     vec3 light_dir;
 
@@ -1655,6 +1675,26 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 old_tangent) {
     vec3 att_uv = iTexCoord;
     vec3 att_tang = old_tangent;
     float att_NoL = dot(normal, L1);
+
+    // pack_attrs
+    {
+        mrt_attr_pos = vec4(att_pos, 1);
+        mrt_attr_clr = vec4(att_clr, 1);
+        mrt_attr_nrm = vec4(att_nrm, 1);
+        mrt_attr_uv = vec4(att_uv, 1);
+        mrt_attr_tang = vec4(att_tang, 1);
+    }
+    // unpack_attrs
+    /*
+    {
+        att_pos = mrt_attr_pos.xyz;
+        att_clr = mrt_attr_clr.xyz;
+        att_nrm = mrt_attr_nrm.xyz;
+        att_uv = mrt_attr_uv.xyz;
+        att_tang = mrt_attr_tang.xyz;
+    }
+    */
+
     //if(depthPass<=0.01)
     //{
     //    
@@ -1796,6 +1836,145 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 old_tangent) {
 
 }
 )") + R"(
+void packMrtMatAttrs(
+    vec3 basecolor,
+    float metallic,
+    float roughness,
+    float specular,
+    float subsurface,
+    float thickness,
+    vec3 sssParam,
+    float foliage,
+    vec3 sssColor,
+    float skin,
+    float curvature,
+    float specularTint,
+    float anisotropic,
+    float sheen,
+    vec3 normal,
+    float sheenTint,
+    vec3 emission,
+    float clearcoat,
+    float clearcoatGloss,
+    float zenxposure,
+    float ao,
+    float toon,
+    vec3 shape,
+    float stroke,
+    vec3 shad,
+    float style,
+    vec3 strokeTint,
+    float strokeNoise,
+    float opacity,
+    float reflection,
+    float reflectID,
+    float isCamera,
+    out vec4 attr0,
+    out vec4 attr1,
+    out vec4 attr2,
+    out vec4 attr3,
+    out vec4 attr4,
+    out vec4 attr5,
+    out vec4 attr6,
+    out vec4 attr7,
+    out vec4 attr8,
+    out vec4 attr9,
+    out vec4 attr10,
+    out vec4 attr11)
+{
+    attr0 = vec4(basecolor, metallic);
+    attr1 = vec4(roughness, specular, subsurface, thickness);
+    attr2 = vec4(sssParam, foliage);
+    attr3 = vec4(sssColor, skin);
+    attr4 = vec4(curvature, specularTint, anisotropic, sheen);
+    attr5 = vec4(normal, sheenTint);
+    attr6 = vec4(emission, clearcoat);
+    attr7 = vec4(clearcoatGloss, zenxposure, ao, toon);
+    attr8 = vec4(shape, stroke);
+    attr9 = vec4(shad, style);
+    attr10 = vec4(strokeTint, strokeNoise);
+    attr11 = vec4(opacity, reflection, reflectID, isCamera);
+}
+
+void unpackMrtMatAttrs(
+    vec4 attr0,
+    vec4 attr1,
+    vec4 attr2,
+    vec4 attr3,
+    vec4 attr4,
+    vec4 attr5,
+    vec4 attr6,
+    vec4 attr7,
+    vec4 attr8,
+    vec4 attr9,
+    vec4 attr10,
+    vec4 attr11,
+    out vec3 basecolor,
+    out float metallic,
+    out float roughness,
+    out float specular,
+    out float subsurface,
+    out float thickness,
+    out vec3 sssParam,
+    out float foliage,
+    out vec3 sssColor,
+    out float skin,
+    out float curvature,
+    out float specularTint,
+    out float anisotropic,
+    out float sheen,
+    out vec3 normal,
+    out float sheenTint,
+    out vec3 emission,
+    out float clearcoat,
+    out float clearcoatGloss,
+    out float zenxposure,
+    out float ao,
+    out float toon,
+    out vec3 shape,
+    out float stroke,
+    out vec3 shad,
+    out float style,
+    out vec3 strokeTint,
+    out float strokeNoise,
+    out float opacity,
+    out float reflection,
+    out float reflectID,
+    out float isCamera)
+{
+    basecolor = attr0.xyz;
+    metallic = attr0.w;
+    roughness = attr1.x;
+    specular = attr1.y;
+    subsurface = attr1.z;
+    thickness = attr1.w;
+    sssParam = attr2.xyz;
+    foliage = attr2.w;
+    sssColor = attr3.xyz;
+    skin = attr3.w;
+    curvature = attr4.x;
+    specularTint = attr4.y;
+    anisotropic = attr4.z;
+    sheen = attr4.w;
+    normal = attr5.xyz;
+    sheenTint = attr5.w;
+    emission = attr6.xyz;
+    clearcoat = attr6.w;
+    clearcoatGloss = attr7.x;
+    zenxposure = attr7.y;
+    ao = attr7.z;
+    toon = attr7.w;
+    shape = attr8.xyz;
+    stroke = attr8.w;
+    shad = attr9.xyz;
+    style = attr9.w;
+    strokeTint = attr10.xyz;
+    strokeNoise = attr10.w;
+    opacity = attr11.x;
+    reflection = attr11.y;
+    reflectID = attr11.z;
+    isCamera = attr11.w;
+}
 
 vec3 calcRayDir(vec3 pos)
 {
@@ -1847,10 +2026,6 @@ void main()
   }
 }
 
-  mrt_position = vec4(position, 1);
-  mrt_normal = vec4((iNormal + 1) * 0.5, 1);
-  mrt_texcoord = vec4(iTexCoord, 1);
-  mrt_tangent = vec4((iTangent + 1) * 0.5, 1);
 )";
     }
 
