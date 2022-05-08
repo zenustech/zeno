@@ -41,11 +41,11 @@ if (ZENO_BUILD_SHARED)
     if (MSVC AND NOT DEFINED CMAKE_MSVC_RUNTIME_LIBRARY)
         # MSVC sucks /MD /MT /MDd /MTd options....
         # MultiThreadedDLL = /MD, MultiThreadedDebugDLL = /MDd
+        # MultiThreaded = /MT, MultiThreadedDebug = /MTd
         set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
     endif()
 else()
     if (MSVC AND NOT DEFINED CMAKE_MSVC_RUNTIME_LIBRARY)
-        # MultiThreaded = /MT, MultiThreadedDebug = /MTd
         set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
     endif()
 endif()
