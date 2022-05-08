@@ -74,7 +74,7 @@ zeno::vec3f &pdst, zeno::vec3f &pos0, zeno::vec3f &pos1, zeno::vec3f &pos2);
 
 static std::shared_ptr<PrimitiveObject> prim_merge(std::shared_ptr<ListObject> list, std::string tagAttr) {
 
-        auto primList = list->get<std::shared_ptr<PrimitiveObject>>();
+        auto primList = list->get<PrimitiveObject>();
         auto outprim = std::make_shared<PrimitiveObject>();
 
         if (primList.size()) {

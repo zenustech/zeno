@@ -318,7 +318,7 @@ void DisplayWidget::onRun()
     QPair<int, int> fromTo = m_timeline->fromTo();
     int beginFrame = fromTo.first;
     int endFrame = fromTo.second;
-    if (endFrame > beginFrame && beginFrame >= 0)
+    if (endFrame >= beginFrame && beginFrame >= 0)
     {
         auto pGraphsMgr = zenoApp->graphsManagment();
         IGraphsModel* pModel = pGraphsMgr->currentModel();
