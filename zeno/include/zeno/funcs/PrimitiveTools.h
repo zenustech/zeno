@@ -72,7 +72,7 @@ static void addIndividualPrimitive(PrimitiveObject* dst, const PrimitiveObject* 
 ZENO_API void BarycentricInterpPrimitive(PrimitiveObject* _dst, const PrimitiveObject* _src, int i, int v0, int v1, int v2,
 zeno::vec3f &pdst, zeno::vec3f &pos0, zeno::vec3f &pos1, zeno::vec3f &pos2);
 
-static std::shared_ptr<PrimitiveObject> prim_merge(std::shared_ptr<ListObject> list, std::string tagAttr) {
+static std::shared_ptr<PrimitiveObject> prim_merge(std::shared_ptr<ListObject> list, std::string tagAttr = {}) {
 
         auto primList = list->get<PrimitiveObject>();
         auto outprim = std::make_shared<PrimitiveObject>();
