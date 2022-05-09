@@ -733,8 +733,8 @@ struct ComputeNodalRotationCenter : zeno::INode {
 
         double w = 0;
         for(size_t i = 0;i < dim;++i)
-            for(size_t j = 0;j < i;++j){
-                auto alpha = ws1[i]*ws1[j]*ws2[i]*ws2[j];
+            for(size_t j = i+1;j < dim;++j){
+                auto alpha = ws1[i] + ws1[j] + ws2[i] + ws2[j];
                 auto beta = ws1[i]*ws2[j] - ws1[j]*ws2[i];
                 beta = beta * beta;
                 w += alpha * exp(-beta/sigma/sigma);
@@ -772,7 +772,7 @@ struct ComputeNodalRotationCenter : zeno::INode {
         }
 
 
-        // #pragma omp parallel for
+        #pragma omp parallel for
         for(size_t i = 0;i < prim->size();++i){
             std::vector<double> wv(nm_bones);
             for(size_t j = 0;j < nm_bones;++j){
@@ -795,19 +795,21 @@ struct ComputeNodalRotationCenter : zeno::INode {
 
                     // remove the possibly points with same location
                     float dist = zeno::length(pos[i] - npos[pid]);
-                    if(dist > 1e-6){
+                    // if(dist > 1e-6){
                         auto w = Vs[pid] * ComputeSimilarity(wv,wn,sigma);
                         weight_sum += w;
                         rcenter[i] += npos[pid] * w;
 
-                        // if(i == 0)
-                        //     std::cout << "w : " << w << "\t" << "npos:" << npos[pid][0] << "\t" << npos[pid][1] << "\t" << npos[pid][2] << std::endl;
-                    }
+                        // if(i == 0){
+                        //     std::cout << "w : " << w << "\t" << "npos:" << npos[pid][0] << "\t" << npos[pid][1] << "\t" << npos[pid][2] << "\t" \
+                        //         << "wn:\t" <<  wn[0] << "\t" << wn[1] << "\t" << "wv:\t" << wv[0] << "\t" << wv[1] << std::endl;
+                        // }
+                    // }
 
                 }
             );  
-            if(fabs(weight_sum) < 1e-10){
-                std::cout << "INVALID_NODE : " << i << "\t" << weight_sum << std::endl;
+            if(fabs(weight_sum) == 0){
+                // std::cout << "INVALID_NODE : " << i << "\t" << weight_sum << std::endl;
                 rcenter[i] = pos[i];
             }
             else       
