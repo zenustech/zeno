@@ -18,8 +18,8 @@ jobs:
         commit-filter: '[release]'
 
     outputs:
-      deploy: ${{ steps.is-release-step.outputs.ci-skip == 'true' && 'true' || 'false' }}
-      vcpkg: ${{ steps.is-release-step.outputs.ci-skip == 'true' && 'true' || 'true' }}
+      deploy: ${{ steps.is-release-step.outputs.ci-skip }}
+      vcpkg: true
 
   build:
     strategy:
