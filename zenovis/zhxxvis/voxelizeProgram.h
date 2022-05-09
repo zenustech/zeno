@@ -691,8 +691,170 @@ void main()
 )";
     return compile_program(VXVS, VXFS, VXGS);
   }
+namespace voxelizer{
+inline std::string VXCS = R"(
+#version 430 core
+layout (local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
+layout(binding = 0, RGBA8) uniform image3D u_tex_voxelgrid1;
+layout(binding = 1, RGBA8) uniform image3D u_tex_voxelgrid2;
+uniform float coef;
+void main()
+{
+	if(gl_GlobalInvocationID.x >= 256 ||
+		gl_GlobalInvocationID.y >= 256 ||
+		gl_GlobalInvocationID.z >= 256) return;
 
-  
-  
+	ivec3 VoxelPos = ivec3(gl_GlobalInvocationID);
+    vec4 c1 = imageLoad(u_tex_voxelgrid1, VoxelPos);
+    vec4 c2 = imageLoad(u_tex_voxelgrid2, VoxelPos);
+	imageStore(u_tex_voxelgrid1, VoxelPos, c1 + coef * c2);
+
+}
+
+)";
+inline void checkCompileErrors(GLuint shader, std::string type)
+    {
+        GLint success;
+        GLchar infoLog[1024];
+        if (type != "PROGRAM")
+        {
+            glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
+            if (!success)
+            {
+                glGetShaderInfoLog(shader, 1024, NULL, infoLog);
+                std::cout << "ERROR::SHADER_COMPILATION_ERROR of type: " << type << "\n" << infoLog << "\n -- --------------------------------------------------- -- " << std::endl;
+            }
+        }
+        else
+        {
+            glGetProgramiv(shader, GL_LINK_STATUS, &success);
+            if (!success)
+            {
+                glGetProgramInfoLog(shader, 1024, NULL, infoLog);
+                std::cout << "ERROR::PROGRAM_LINKING_ERROR of type: " << type << "\n" << infoLog << "\n -- --------------------------------------------------- -- " << std::endl;
+            }
+        }
+    }
+    inline GLuint compProg = 0;
+    inline float domainL = 10.0;
+    inline glm::mat4x4 view = glm::mat4x4(1);
+    inline GLuint vxfbo=0;
+    inline GLuint vxrbo=0;
+    inline void compileVXCS()
+    {
+        if(compProg==0)
+        {
+            const char* cShaderCode = VXCS.c_str();
+            unsigned int compute = glCreateShader(GL_COMPUTE_SHADER);
+            glShaderSource(compute, 1, &cShaderCode, NULL);
+            glCompileShader(compute);
+            checkCompileErrors(compute, "COMPUTE");
+            compProg = glCreateProgram();
+            glAttachShader(compProg, compute);
+            glLinkProgram(compProg);
+            checkCompileErrors(compProg, "PROGRAM");
+            glDeleteShader(compute);
+        }
+    }
+    inline float getDomainLength()
+    {
+        return domainL;
+    }
+    inline void setVoxelizeView(glm::vec3 origin, glm::vec3 right, glm::vec3 up, glm::vec3 front)
+    {
+
+    }
+    inline glm::mat4x4 getView()
+    {
+        return view;
+    }
+    inline iTexture3D vxTexture;
+    inline iTexture3D vxTexture2;
+    inline iTexture3D vxTexture3;
+    inline int dimension = 256;
+    inline int getVoxelResolution()
+    {
+        return dimension;
+    }
+    
+    inline void initVoxelTexture()
+    {
+        compileVXCS();
+        if(vxTexture.is_loaded == false){
+            
+            GLfloat* data = new GLfloat[dimension * dimension * dimension * 4];  
+            itexture3D::fill_corners(data, dimension,dimension,dimension);
+            itexture3D::init(vxTexture, data, dimension);
+            delete[] data; 
+        }
+        if(vxTexture2.is_loaded == false){
+            
+            GLfloat* data = new GLfloat[dimension * dimension * dimension * 4];  
+            itexture3D::fill_corners(data, dimension,dimension,dimension);
+            itexture3D::init(vxTexture2, data, dimension);
+            delete[] data; 
+        }
+        if(vxTexture3.is_loaded == false){
+            
+            GLfloat* data = new GLfloat[dimension * dimension * dimension * 4];  
+            itexture3D::fill(data, 0.2, dimension,dimension,dimension);
+            itexture3D::init(vxTexture3, data, dimension);
+            delete[] data; 
+        }
+        if(vxfbo==0)
+            CHECK_GL(glGenFramebuffers(1, &vxfbo));
+        if(vxrbo==0)
+            CHECK_GL(glGenRenderbuffers(1, &vxrbo));
+
+        glBindFramebuffer(GL_FRAMEBUFFER, vxfbo);
+        glBindRenderbuffer(GL_RENDERBUFFER, vxrbo);
+        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, 2048, 2048);
+        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, vxrbo);
+    }
+    inline void ClearTexture()
+    {
+        itexture3D::clear(vxTexture, { 0.0f, 0.0f, 0.0f, 0.0f });
+    }
+    inline void BeginVoxelize()
+    {
+        itexture3D::clear(vxTexture2, { 0.0f, 0.0f, 0.0f, 0.0f });
+        
+        glBindFramebuffer(GL_FRAMEBUFFER, vxfbo);
+        glBindRenderbuffer(GL_RENDERBUFFER, vxrbo);
+        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, 4096, 4096);
+        glViewport(0, 0, 4096, 4096);
+        glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+        glDisable(GL_CULL_FACE);
+        glDisable(GL_DEPTH_TEST);
+        glDisable(GL_BLEND);
+        glDisable(GL_MULTISAMPLE);
+        glBindImageTexture(0, vxTexture2.id, 0, GL_TRUE, 0, GL_READ_WRITE, GL_RGBA8);
+    }
+    inline void AddVoxels(float value)
+    {
+        glUseProgram(compProg);
+        glUniform1f(glGetUniformLocation(compProg, "coef"), value);
+        glBindImageTexture(0, vxTexture.id, 0, GL_TRUE, 0, GL_READ_WRITE, GL_RGBA8);
+        glBindImageTexture(1, vxTexture2.id, 0, GL_TRUE, 0, GL_READ_WRITE, GL_RGBA8);
+        glDispatchCompute(32, 32, 32);
+	    glMemoryBarrier(GL_TEXTURE_FETCH_BARRIER_BIT | GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+    }
+    
+    inline void EndVoxelize()
+    {
+        itexture3D::generate_mipmaps(vxTexture);
+        glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+        CHECK_GL(glEnable(GL_BLEND));
+        CHECK_GL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
+        CHECK_GL(glEnable(GL_DEPTH_TEST));
+        CHECK_GL(glEnable(GL_PROGRAM_POINT_SIZE));
+        // CHECK_GL(glEnable(GL_PROGRAM_POINT_SIZE_ARB));
+        // CHECK_GL(glEnable(GL_POINT_SPRITE_ARB));
+        // CHECK_GL(glEnable(GL_SAMPLE_COVERAGE));
+        // CHECK_GL(glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE));
+        // CHECK_GL(glEnable(GL_SAMPLE_ALPHA_TO_ONE));
+        CHECK_GL(glEnable(GL_MULTISAMPLE));
+    }
+}
 
 }

@@ -355,6 +355,28 @@ static void shadowPass()
     }
   }
 }
+static void VoxelizePass()
+{
+  glm::mat4x4 backup_view = view;
+  glm::mat4x4 backup_proj = proj;
+
+  view = voxelizer::getView();
+  proj = glm::ortho(-0.01f,1.01f,-0.01f,1.01f, -1.01f,1.01f);
+  voxelizer::ClearTexture();
+  for(int i=0;i<10;i++){
+    voxelizer::BeginVoxelize();
+    vao->bind();
+      for (auto const &[key, gra] : current_frame_data()->graphics)
+      {
+        gra->drawVoxelize(0.0);
+      }
+    vao->unbind();
+    voxelizer::AddVoxels(0.1);
+  }
+  voxelizer::EndVoxelize();
+  view = backup_view;
+  proj = backup_proj;
+}
 glm::mat4 MakeInfReversedZProjRH(float fovY_radians, float aspectWbyH, float zNear)
 {
     float f = 1.0f / tan(fovY_radians / 2.0f);
@@ -572,8 +594,7 @@ static void ZPass()
 static void paint_graphics(GLuint target_fbo = 0) {
   shadowPass();
   reflectivePass();
-  static bool isBate = !std::getenv("ZENO_BATE");
-  if (isBate) enable_hdr = 0;
+  //VoxelizePass();
   if(enable_hdr && tmProg==nullptr)
   {
     std::cout<<"compiling zhxx hdr program"<<std::endl;

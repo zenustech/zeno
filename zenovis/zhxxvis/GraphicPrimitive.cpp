@@ -1204,6 +1204,15 @@ struct GraphicPrimitive : IGraphic {
     
         }
         
+        triObj.prog->set_uniformi("vxgibuffer", texOcp);
+        CHECK_GL(glActiveTexture(GL_TEXTURE0+texOcp));
+        CHECK_GL(glBindTexture(GL_TEXTURE_3D, voxelizer::vxTexture.id));
+        texOcp++;
+        triObj.prog->set_uniform("vxSize",voxelizer::getDomainLength());
+        triObj.prog->set_uniform("vxView", voxelizer::getView());
+        
+        
+        
         triObj.prog->set_uniform("msweight", m_weight);
         triObj.ebo->bind();
 
