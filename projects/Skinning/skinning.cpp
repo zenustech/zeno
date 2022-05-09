@@ -70,6 +70,36 @@ ZENDEFNODE(BlendPoses, {
 
 // input the forward kinematics result
 struct DoSkinning : zeno::INode {
+    template <
+    typename DerivedV,
+    typename DerivedW,
+    typename DerivedP,
+    typename Q,
+    typename QAlloc,
+    typename T,
+    typename DerivedU>    
+    void CoRs(
+        const Eigen::MatrixBase<DerivedV> & V,
+        const Eigen::MatrixBase<DerivedW> & W,
+        const Eigen::MatrixBase<DerivedP> & P,
+        const std::vector<Q,QAlloc> & vQ,
+        const std::vector<T> & vT,
+        Eigen::PlainObjectBase<DerivedU> & U)
+    {
+        using namespace std;
+        assert(V.rows() <= W.rows());
+        assert(W.cols() == (int)vQ.size());
+        assert(W.cols() == (int)vT.size());
+        // resize output
+        U.resizeLike(V);
+
+        const int nv = V.rows();
+    #pragma omp parallel for if (nv > 10000)
+        for(size_t i = 0;i < nv;++i){
+
+        }
+    }
+
     virtual void apply() override {
         auto shape = get_input<PrimitiveObject>("shape");
         auto algorithm = std::get<std::string>(get_param("algorithm"));
@@ -84,7 +114,7 @@ struct DoSkinning : zeno::INode {
         size_t nm_handles = 0;
 
 
-        auto& out_chan = shape->add_attr<zeno::vec3f>(outputChannel);
+
         // std::cout << "CHECKOUT_1" << std::endl;
 
         while(true){
@@ -180,10 +210,6 @@ struct DoSkinning : zeno::INode {
             igl::forward_kinematics(C,BE,P,LFQ,LFT,Qs,Ts);
         }
 
-
-
-        // std::cout << "CHECKOUT_3" << std::endl;
-
         Eigen::MatrixXd T(nm_handles*(dim+1),dim);
         for(int e = 0;e<nm_handles;e++){
             Eigen::Affine3d a = Eigen::Affine3d::Identity();
@@ -198,7 +224,6 @@ struct DoSkinning : zeno::INode {
         for(size_t i = 0;i < V.rows();++i)
             V.row(i) << shape->verts[i][0],shape->verts[i][1],shape->verts[i][2];
 
-
         if(std::isnan(V.norm()) || std::isnan(W.norm()) || std::isnan(T.norm())){
             std::cout << V.norm() << "\t" << W.norm() << std::endl;
             throw std::runtime_error("IN SKINNING NAN VW DETECTED");
@@ -211,9 +236,56 @@ struct DoSkinning : zeno::INode {
             Eigen::MatrixXd M;
             igl::lbs_matrix(V,W,M);
             U = M*T;
+        }else if(algorithm == "CoRs"){
+            Eigen::MatrixXd M;
+            Eigen::MatrixXd R = Eigen::MatrixXd(V.rows(),V.cols());
+            int nv = V.rows();
+            const auto& CoRs = shape->attr<zeno::vec3f>("rCenter");
+        #pragma omp parallel for if (nv > 10000)
+            for(int i = 0;i < nv;++i)
+                R.row(i) << CoRs[i][0],CoRs[i][1],CoRs[i][2];
+            igl::lbs_matrix(R,W,M);
+            Eigen::MatrixXd TP = M*T;
+
+        #pragma omp parallel for if (nv > 10000)
+            for(int i = 0;i < nv;++i){
+                // compute the blending quaternion
+                Eigen::Quaterniond b(0,0,0,0);
+                for(int c = 0;c < W.cols();++c)
+                    b.coeffs() += W(i,c) * Qs[c].coeffs();
+                Eigen::Quaterniond c = b;
+                c.coeffs() /= b.norm();
+
+                Eigen::Vector3d v = R.row(i);
+                Eigen::Vector3d d = c.vec();
+                double a = c.w();
+                TP.row(i) -= (v + 2 * d.cross(d.cross(v) + a*v));
+
+                // transform the quaternion and translation into dual parts
+                Eigen::Quaterniond q = c;
+                Eigen::Quaterniond dq = Eigen::Quaterniond(0,0,0,0);
+                const auto& t = TP.row(i);
+                dq.w() = -0.5*( t(0)*q.x() + t(1)*q.y() + t(2)*q.z());
+                dq.x() =  0.5*( t(0)*q.w() + t(1)*q.z() - t(2)*q.y());
+                dq.y() =  0.5*(-t(0)*q.z() + t(1)*q.w() + t(2)*q.x());
+                dq.z() =  0.5*( t(0)*q.y() - t(1)*q.x() + t(2)*q.w());
+
+                q.coeffs() /= q.norm();
+                dq.coeffs() /= dq.norm();
+
+                v = V.row(i);
+                Eigen::Vector3d d0 = q.vec();
+                Eigen::Vector3d de = dq.vec();
+                double a0 = q.w();
+                double ae = dq.w();
+                U.row(i) =  v + 2*d0.cross(d0.cross(v) + a0*v) + 2*(a0*de - ae*d0 + d0.cross(de));
+            } 
+        }else{
+            std::cerr << "INVALID ALGOROTHM SPECIFIED " << algorithm << std::endl;
+            throw std::runtime_error("DoSkinning : INVALID ALGORITHM SPECIFIED");
         }        
 
-        auto deformed_shape = std::make_shared<zeno::PrimitiveObject>(*shape);// automatic copy all the attributes
+        // auto deformed_shape = std::make_shared<zeno::PrimitiveObject>(*shape);// automatic copy all the attributes
         // deformed_shape->resize(shape->size());
         // deformed_shape->tris.resize(shape->tris.size());
         // deformed_shape->quads.resize(shape->quads.size());
@@ -233,16 +305,19 @@ struct DoSkinning : zeno::INode {
             throw std::runtime_error("NAN DEFORMED SHAPE DETECTED");
         }
         // std::cout << "CHECKOUT_4" << std::endl;
-        for(size_t i = 0;i < deformed_shape->size();++i)
+        auto& out_chan = shape->add_attr<zeno::vec3f>(outputChannel);
+        for(size_t i = 0;i < shape->size();++i)
             out_chan[i] = zeno::vec3f(U.row(i)[0],U.row(i)[1],U.row(i)[2]);
 
-        set_output("dshape",std::move(deformed_shape));
+        // std::cout << "U:" << U.row(2) << "\t" << deformed_shape->size() << std::endl;
+
+        set_output("shape",shape);
     }
 };
 
 ZENDEFNODE(DoSkinning, {
     {"shape","Qs","Ts","restBones"},
-    {"dshape"},
+    {"shape"},
     {{"enum LBS DQS","algorithm","DQS"},{"string","attr_prefix","sw"},{"string","out_channel","curPos"},{"int","FK","0"}},
     {"Skinning"},
 });
