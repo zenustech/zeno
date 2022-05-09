@@ -10,6 +10,7 @@
 #include <zenoui/util/cihou.h>
 #include "viewport/zenovis.h"
 #include "viewport/viewportwidget.h"
+#include "util/log.h"
 
 
 _ZenoSubGraphView::_ZenoSubGraphView(QWidget *parent)
@@ -405,7 +406,7 @@ void LayerPathWidget::setPath(const QString& path)
 	for (int i = 0; i < L.length(); i++)
 	{
 		const QString& item = L[i];
-		Q_ASSERT(!item.isEmpty());
+		ZASSERT_EXIT(!item.isEmpty());
 		QColor clrHovered, clrSelected;
 		clrHovered = QColor(67, 67, 67);
 		clrSelected = QColor(33, 33, 33);

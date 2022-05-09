@@ -10,6 +10,7 @@
 #include <zenoui/model/modelrole.h>
 #include <zenoui/include/igraphsmodel.h>
 #include <zeno/utils/logger.h>
+#include "util/log.h"
 
 
 ZSubnetListModel::ZSubnetListModel(IGraphsModel* pModel, QObject* parent)
@@ -39,7 +40,6 @@ QVariant ZSubnetListModel::data(const QModelIndex& index, int role) const
         else
         {
             zeno::log_error("not display role");
-            Q_ASSERT(false);
             return QVariant();
         }
     }
@@ -79,7 +79,7 @@ void ZenoSubnetListView::initModel(IGraphsModel* pModel)
 void ZenoSubnetListView::edittingNew()
 {
     GraphsModel* pModel = qobject_cast<GraphsModel*>(model());
-    Q_ASSERT(pModel);
+    ZASSERT_EXIT(pModel);
 
     SubGraphModel* pSubModel = new SubGraphModel(pModel);
     pModel->appendSubGraph(pSubModel);
@@ -95,7 +95,7 @@ void ZenoSubnetListView::closeEditor(QWidget* editor, QAbstractItemDelegate::End
     QListView::closeEditor(editor, hint);
     
     GraphsModel* pModel = qobject_cast<GraphsModel*>(model());
-	Q_ASSERT(pModel);
+    ZASSERT_EXIT(pModel);
     switch (hint)
     {
         case QAbstractItemDelegate::RevertModelCache:

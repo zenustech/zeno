@@ -5,6 +5,7 @@
 #include <zeno/utils/log.h>
 #include <zenoui/util/uihelper.h>
 #include "util/apphelper.h"
+#include "util/log.h"
 
 
 SubGraphModel::SubGraphModel(GraphsModel* pGraphsModel, QObject *parent)
@@ -42,7 +43,7 @@ void SubGraphModel::onModelInited()
 void SubGraphModel::setInputSocket(const QString& inNode, const QString& inSock, const QString& outId, const QString& outSock, const QVariant& defaultValue)
 {
 	QModelIndex idx = index(inNode);
-	Q_ASSERT(idx.isValid());
+    ZASSERT_EXIT(idx.isValid());
 	INPUT_SOCKETS inputs = data(idx, ROLE_INPUTS).value<INPUT_SOCKETS>();
 	if (inputs.find(inSock) != inputs.end())
 	{
@@ -118,10 +119,10 @@ QModelIndex SubGraphModel::index(int row, int column, const QModelIndex& parent)
         return QModelIndex();
 
     auto itRow = m_row2Key.find(row);
-    Q_ASSERT(itRow != m_row2Key.end());
+    ZASSERT_EXIT(itRow != m_row2Key.end(), QModelIndex());
 
     auto itItem = m_nodes.find(itRow.value());
-    Q_ASSERT(itItem != m_nodes.end());
+    ZASSERT_EXIT(itItem != m_nodes.end(), QModelIndex());
 
     return createIndex(row, 0, nullptr);
 }
@@ -185,7 +186,7 @@ void SubGraphModel::removeNode(int row, bool enableTransaction)
 
 void SubGraphModel::removeNode(const QString& nodeid, bool enableTransaction)
 {
-    Q_ASSERT(m_key2Row.find(nodeid) != m_key2Row.end());
+    ZASSERT_EXIT(m_key2Row.find(nodeid) != m_key2Row.end());
     int row = m_key2Row[nodeid];
     removeRows(row, 0);
 }
@@ -225,7 +226,7 @@ bool SubGraphModel::_removeRow(const QModelIndex& index)
 
     int row = index.row();
     QString id = m_row2Key[row];
-    Q_ASSERT(!id.isEmpty());
+    ZASSERT_EXIT(!id.isEmpty(), false);
     for (int r = row + 1; r < rowCount(); r++)
     {
         const QString &key = m_row2Key[r];
@@ -353,7 +354,7 @@ void SubGraphModel::updateSocket(const QString& nodeid, const SOCKET_UPDATE_INFO
             }
             case SOCKET_REMOVE:
             {
-                Q_ASSERT(inputs.find(oldName) != inputs.end());
+                ZASSERT_EXIT(inputs.find(oldName) != inputs.end());
                 INPUT_SOCKET inputSock = inputs[oldName];
 				//remove link connected to oldName.
 				for (QPersistentModelIndex linkIdx : inputSock.linkIndice)
@@ -368,7 +369,7 @@ void SubGraphModel::updateSocket(const QString& nodeid, const SOCKET_UPDATE_INFO
             }
             case SOCKET_UPDATE_NAME:
             {
-			    Q_ASSERT(inputs.find(oldName) != inputs.end());
+                ZASSERT_EXIT(inputs.find(oldName) != inputs.end());
 
 			    INPUT_SOCKET inputSock = inputs[oldName];
 			    inputSock.info.name = newName;
@@ -387,7 +388,7 @@ void SubGraphModel::updateSocket(const QString& nodeid, const SOCKET_UPDATE_INFO
 				    QString inNode = linkIdx.data(ROLE_INNODE).toString();
 				    QString inSock = linkIdx.data(ROLE_INSOCK).toString();
 
-				    Q_ASSERT(inSock == oldName);
+				    ZASSERT_EXIT(inSock == oldName);
 				    LINK_UPDATE_INFO updateInfo;
 				    updateInfo.oldEdge = EdgeInfo(outNode, inNode, outSock, inSock);
 				    updateInfo.newEdge = EdgeInfo(outNode, inNode, outSock, newName);
@@ -427,7 +428,7 @@ void SubGraphModel::updateSocket(const QString& nodeid, const SOCKET_UPDATE_INFO
             }
             case SOCKET_REMOVE:
             {
-				Q_ASSERT(outputs.find(oldName) != outputs.end());
+                ZASSERT_EXIT(outputs.find(oldName) != outputs.end());
 				OUTPUT_SOCKET outputSock = outputs[oldName];
 				//remove link connected to oldName.
 				for (QPersistentModelIndex linkIdx : outputSock.linkIndice)
@@ -442,7 +443,7 @@ void SubGraphModel::updateSocket(const QString& nodeid, const SOCKET_UPDATE_INFO
             }
             case SOCKET_UPDATE_NAME:
             {
-                Q_ASSERT(outputs.find(oldName) != outputs.end());
+                ZASSERT_EXIT(outputs.find(oldName) != outputs.end());
 				OUTPUT_SOCKET outputSock = outputs[oldName];
 				outputSock.info.name = newName;
 
@@ -459,7 +460,7 @@ void SubGraphModel::updateSocket(const QString& nodeid, const SOCKET_UPDATE_INFO
 					QString inNode = linkIdx.data(ROLE_INNODE).toString();
 					QString inSock = linkIdx.data(ROLE_INSOCK).toString();
 
-					Q_ASSERT(outSock == oldName);
+					ZASSERT_EXIT(outSock == oldName);
 					LINK_UPDATE_INFO updateInfo;
 					updateInfo.oldEdge = EdgeInfo(outNode, inNode, outSock, inSock);
 					updateInfo.newEdge = EdgeInfo(outNode, inNode, newName, inSock);
@@ -487,9 +488,9 @@ void SubGraphModel::updateSocket(const QString& nodeid, const SOCKET_UPDATE_INFO
 void SubGraphModel::updateSocketDefl(const QString& nodeid, const PARAM_UPDATE_INFO& info)
 {
 	QModelIndex idx = index(nodeid);
-    Q_ASSERT(idx.isValid());
+    ZASSERT_EXIT(idx.isValid());
 	INPUT_SOCKETS inputs = data(idx, ROLE_INPUTS).value<INPUT_SOCKETS>();
-    Q_ASSERT(inputs.find(info.name) != inputs.end());
+    ZASSERT_EXIT(inputs.find(info.name) != inputs.end());
     inputs[info.name].info.defaultValue = info.newValue;
     setData(idx, QVariant::fromValue(inputs), ROLE_INPUTS);
     setData(idx, QVariant::fromValue(info), ROLE_MODIFY_SOCKET_DEFL);
@@ -504,7 +505,7 @@ QVariant SubGraphModel::getParamValue(const QString& nodeid, const QString& para
 
 QVariant SubGraphModel::getNodeStatus(const QString& nodeid, int role)
 {
-    Q_ASSERT(m_nodes.find(nodeid) != m_nodes.end());
+    ZASSERT_EXIT(m_nodes.find(nodeid) != m_nodes.end(), QVariant());
     return m_nodes[nodeid][role];
 }
 
@@ -572,7 +573,7 @@ bool SubGraphModel::_insertRow(int row, const NODE_DATA& nodeData, const QModelI
     const QString& id = nodeData[ROLE_OBJID].toString();
     const QString& name = nodeData[ROLE_OBJNAME].toString();
 
-    Q_ASSERT(!id.isEmpty() && !name.isEmpty() && m_nodes.find(id) == m_nodes.end());
+    ZASSERT_EXIT(!id.isEmpty() && !name.isEmpty() && m_nodes.find(id) == m_nodes.end(), false);
     int nRows = m_nodes.size();
     if (row == nRows)
     {
@@ -586,7 +587,7 @@ bool SubGraphModel::_insertRow(int row, const NODE_DATA& nodeData, const QModelI
     else if (row < nRows)
     {
         auto itRow = m_row2Key.find(row);
-        Q_ASSERT(itRow != m_row2Key.end());
+        ZASSERT_EXIT(itRow != m_row2Key.end(), false);
         int nRows = rowCount();
         for (int r = nRows; r > row; r--)
         {

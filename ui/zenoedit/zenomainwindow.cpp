@@ -19,6 +19,7 @@
 #include <zenoui/model/modeldata.h>
 #include <zenoui/style/zenostyle.h>
 #include <zenoui/util/uihelper.h>
+#include "util/log.h"
 
 
 ZenoMainWindow::ZenoMainWindow(QWidget *parent, Qt::WindowFlags flags)
@@ -473,7 +474,7 @@ void ZenoMainWindow::onDockSwitched(DOCK_TYPE type)
 
 void ZenoMainWindow::saveQuit() {
     auto pGraphsMgm = zenoApp->graphsManagment();
-    Q_ASSERT(pGraphsMgm);
+    ZASSERT_EXIT(pGraphsMgm);
     IGraphsModel *pModel = pGraphsMgm->currentModel();
     if (pModel && pModel->isDirty()) {
         QMessageBox msgBox =
@@ -491,7 +492,7 @@ void ZenoMainWindow::saveQuit() {
 
 void ZenoMainWindow::save() {
     auto pGraphsMgm = zenoApp->graphsManagment();
-    Q_ASSERT(pGraphsMgm);
+    ZASSERT_EXIT(pGraphsMgm);
     IGraphsModel *pModel = pGraphsMgm->currentModel();
     if (pModel) {
         QString currFilePath = pModel->filePath();

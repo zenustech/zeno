@@ -3,6 +3,7 @@
 #include <zenoui/model/modelrole.h>
 #include "zenoapplication.h"
 #include "graphsmanagment.h"
+#include "util/log.h"
 
 
 GraphsPlainModel::GraphsPlainModel(QObject* parent)
@@ -21,7 +22,7 @@ void GraphsPlainModel::init(IGraphsModel* pModel)
 {
 	clear();
 	m_model = qobject_cast<GraphsModel*>(pModel);
-	Q_ASSERT(m_model);
+	ZASSERT_EXIT(m_model);
 	for (int r = 0; r < m_model->rowCount(); r++)
 	{
 		const QModelIndex& idx = m_model->index(r, 0);

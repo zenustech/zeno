@@ -6,6 +6,7 @@
 #include "zenoapplication.h"
 #include "graphsmanagment.h"
 #include "viewport/zenovis.h"
+#include "util/log.h"
 
 
 ZenoDockTitleWidget::ZenoDockTitleWidget(QWidget* parent)
@@ -241,7 +242,7 @@ void ZenoEditorDockTitleWidget::onModelClear()
 void ZenoEditorDockTitleWidget::onDirtyChanged()
 {
 	IGraphsModel* pModel = qobject_cast<IGraphsModel*>(sender());
-	Q_ASSERT(pModel);
+    ZASSERT_EXIT(pModel);
 	bool bDirty = pModel->isDirty();
 	QString name = pModel->fileName();
 	if (name.isEmpty())
