@@ -1210,6 +1210,7 @@ struct GraphicPrimitive : IGraphic {
             texOcp++;
     
         }
+        
         triObj.prog->set_uniformi("vxgibuffer", texOcp);
         CHECK_GL(glActiveTexture(GL_TEXTURE0+texOcp));
         CHECK_GL(glBindTexture(GL_TEXTURE_3D, voxelizer::vxTexture.id));

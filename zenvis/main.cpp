@@ -362,14 +362,17 @@ static void VoxelizePass()
 
   view = voxelizer::getView();
   proj = glm::ortho(-0.01f,1.01f,-0.01f,1.01f, -1.01f,1.01f);
-  voxelizer::BeginVoxelize();
-  vao->bind();
-  for(int i=0;i<5;i++)
-    for (auto const &[key, gra] : current_frame_data()->graphics)
-    {
-      gra->drawVoxelize(0.0);
-    }
-  vao->unbind();
+  voxelizer::ClearTexture();
+  for(int i=0;i<10;i++){
+    voxelizer::BeginVoxelize();
+    vao->bind();
+      for (auto const &[key, gra] : current_frame_data()->graphics)
+      {
+        gra->drawVoxelize(0.0);
+      }
+    vao->unbind();
+    voxelizer::AddVoxels(0.1);
+  }
   voxelizer::EndVoxelize();
   view = backup_view;
   proj = backup_proj;
@@ -591,7 +594,7 @@ static void ZPass()
 static void paint_graphics(GLuint target_fbo = 0) {
   shadowPass();
   reflectivePass();
-  VoxelizePass();
+  //VoxelizePass();
   if(enable_hdr && tmProg==nullptr)
   {
     std::cout<<"compiling zhxx hdr program"<<std::endl;

@@ -74,6 +74,19 @@ namespace itexture3D
 		glGenerateMipmap(GL_TEXTURE_3D);
 		glBindTexture(GL_TEXTURE_3D, 0);
 	}
+	inline void fill(GLfloat* data, float value, int w,int h,int d)
+	{
+		for(int k=0;k<d;k++)
+		for(int j=0;j<h;j++)
+		for(int i=0;i<w;i++)
+		{
+			int idx = 4*(i + j*w + k*w*h);
+			data[idx+0] = value;
+			data[idx+1] = value;
+			data[idx+2] = value;
+			data[idx+3] = value;
+		}
+	}
 	inline void fill_pixel(GLfloat* data, int x,int y,int z, int w,int h,int d)
 	{
 		int floats = 4; // r+g+b+a
