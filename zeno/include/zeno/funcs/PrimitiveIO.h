@@ -209,17 +209,17 @@ static void readzpm(PrimitiveObject *prim, const char *path) {
     FILE *fp = fopen(path, "rb");
 
     char signature[9] = "";
-    fread(signature, sizeof(char), 8, fp);
+    std::ignore = fread(signature, sizeof(char), 8, fp);
     signature[8] = 0;
     assert(!strcmp(signature, "\x7fZPMv001"));
 
     size_t size = 0;
-    fread(&size, sizeof(size), 1, fp);
+    std::ignore = fread(&size, sizeof(size), 1, fp);
     //printf("size = %zd\n", size);
     prim->resize(size);
 
     int count = 0;
-    fread(&count, sizeof(count), 1, fp);
+    std::ignore = fread(&count, sizeof(count), 1, fp);
     //printf("count = %d\n", count);
     assert(count < 1024);
 
@@ -227,15 +227,15 @@ static void readzpm(PrimitiveObject *prim, const char *path) {
         //printf("parsing attr %d\n", i);
 
         char type[5];
-        fread(type, 4, 1, fp);
+        std::ignore = fread(type, 4, 1, fp);
         type[4] = '\0';
 
         size_t namelen = 0;
-        fread(&namelen, sizeof(namelen), 1, fp);
+        std::ignore = fread(&namelen, sizeof(namelen), 1, fp);
         //printf("attr namelen = %zd\n", namelen);
         assert(namelen < 1024);
         char *namebuf = (char *)alloca(namelen + 1);
-        fread(namebuf, sizeof(namebuf[0]), namelen, fp);
+        std::ignore = fread(namebuf, sizeof(namebuf[0]), namelen, fp);
         namebuf[namelen] = '\0';
         std::string name(namebuf);
 
@@ -260,39 +260,39 @@ static void readzpm(PrimitiveObject *prim, const char *path) {
         //printf("reading array of attr `%s`\n", key.c_str());
 
         assert(attr.size() == size);
-        fread(attr.data(), sizeof(attr[0]), size, fp);
+        std::ignore = fread(attr.data(), sizeof(attr[0]), size, fp);
     });
 
-    fread(&size, sizeof(size_t), 1, fp);
+    std::ignore = fread(&size, sizeof(size_t), 1, fp);
     prim->points.resize(size);
-    fread(prim->points.data(), sizeof(prim->points[0]), prim->points.size(), fp);
+    std::ignore = fread(prim->points.data(), sizeof(prim->points[0]), prim->points.size(), fp);
 
-    fread(&size, sizeof(size_t), 1, fp);
+    std::ignore = fread(&size, sizeof(size_t), 1, fp);
     prim->lines.resize(size);
-    fread(prim->lines.data(), sizeof(prim->lines[0]), prim->lines.size(), fp);
+    std::ignore = fread(prim->lines.data(), sizeof(prim->lines[0]), prim->lines.size(), fp);
 
-    fread(&size, sizeof(size_t), 1, fp);
+    std::ignore = fread(&size, sizeof(size_t), 1, fp);
     if (size != 0) {
       std::vector<char> trisStr;
       trisStr.resize(size);
-      fread(trisStr.data(), sizeof(trisStr[0]), trisStr.size(), fp);
+      std::ignore = fread(trisStr.data(), sizeof(trisStr[0]), trisStr.size(), fp);
       deserialize(trisStr, prim->tris);
     }
 
-    fread(&size, sizeof(size_t), 1, fp);
+    std::ignore = fread(&size, sizeof(size_t), 1, fp);
     if (size != 0) {
       std::vector<char> quadsStr;
       quadsStr.resize(size);
-      fread(quadsStr.data(), sizeof(quadsStr[0]), quadsStr.size(), fp);
+      std::ignore = fread(quadsStr.data(), sizeof(quadsStr[0]), quadsStr.size(), fp);
       deserialize(quadsStr, prim->quads);
     }
 
-    fread(&size, sizeof(size_t), 1, fp);
+    std::ignore = fread(&size, sizeof(size_t), 1, fp);
     if (size != 0)
     {
         std::vector<char> mtlStr;
         mtlStr.resize(size);
-        fread(mtlStr.data(), sizeof(mtlStr[0]), mtlStr.size(), fp);
+        std::ignore = fread(mtlStr.data(), sizeof(mtlStr[0]), mtlStr.size(), fp);
         prim->mtl = std::make_shared<MaterialObject>(MaterialObject::deserialize(mtlStr));
     }
 
