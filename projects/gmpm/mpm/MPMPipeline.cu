@@ -1,7 +1,9 @@
 #include "../Structures.hpp"
 #include "../Utils.hpp"
 
+#include "zensim/container/Bvh.hpp"
 #include "zensim/cuda/execution/ExecutionPolicy.cuh"
+#include "zensim/geometry/SpatialQuery.hpp"
 #include "zensim/io/ParticleIO.hpp"
 #include "zensim/math/matrix/QRSVD.hpp"
 #include "zensim/omp/execution/ExecutionPolicy.hpp"
@@ -362,7 +364,7 @@ struct SpringSystemTimeStepping : INode {
                           const tiles_t &springs, tiles_t &vertData,
                           const zs::SmallString vtag,
                           const zs::SmallString ftag, float dt, float eps,
-                          bool clear = true) {
+                          bool clear = false) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
     if (clear)
@@ -399,11 +401,121 @@ struct SpringSystemTimeStepping : INode {
       }
     });
   }
+  void computeCollisionForce(zs::CudaExecutionPolicy &cudaPol,
+                             const tiles_t &springs, tiles_t &vertData,
+                             const zs::SmallString vtag,
+                             const zs::SmallString ftag, float dt, float eps,
+                             bool clear = false) {
+    using namespace zs;
+    constexpr auto space = execspace_e::cuda;
+    if (clear)
+      cudaPol(range(vertData.size()),
+              [data = proxy<space>({}, vertData), ftag] __device__(
+                  int pi) mutable { data.tuple<3>(ftag, pi) = vec3::zeros(); });
+    auto numSprings = springs.size();
+    using lbvh_t = zs::LBvh<3>;
+    using bv_t = typename lbvh_t::Box;
+    lbvh_t lbvh{};
+    zs::Vector<bv_t> bvs{vertData.get_allocator(), numSprings};
+    float thickness = 0.0002;
+    cudaPol(range(numSprings),
+            [eles = proxy<space>({}, springs), bvs = proxy<space>(bvs),
+             data = proxy<space>({}, vertData), vtag, eps, dt,
+             thickness] __device__(int ei) mutable {
+              auto inds = eles.pack<2>("inds", ei).reinterpret_bits<int>();
+              auto dv0 = data.pack<3>(vtag, inds[0]) * eps;
+              auto x0 = data.pack<3>("x0", inds[0]);
+              auto dv1 = data.pack<3>(vtag, inds[1]) * eps;
+              auto x1 = data.pack<3>("x0", inds[1]);
+              x0 += dv0 * dt;
+              x1 += dv1 * dt;
+              auto [mi, ma] = get_bounding_box(x0, x1);
+              bv_t bv{mi, ma};
+              // thicken the box
+              bv._min -= thickness * 3;
+              bv._max += thickness * 3;
+              bvs[ei] = bv;
+            });
+    lbvh.build(cudaPol, bvs);
+    cudaPol(range(numSprings), [eles = proxy<space>({}, springs),
+                                data = proxy<space>({}, vertData),
+                                bvh = proxy<space>(lbvh), vtag, ftag, eps, dt,
+                                thickness] __device__(int ei) mutable {
+      auto getMovedVerts = [&](const zs::vec<int, 2> &inds) {
+        auto dv0 = data.pack<3>(vtag, inds[0]) * dt;
+        auto x0 = data.pack<3>("x0", inds[0]) + dv0 * eps;
+        auto dv1 = data.pack<3>(vtag, inds[1]) * dt;
+        auto x1 = data.pack<3>("x0", inds[1]) + dv1 * eps;
+
+        x0 += dv0 * dt;
+        x1 += dv1 * dt;
+        return zs::make_tuple(x0.cast<double>(), x1.cast<double>());
+      };
+      auto inds = eles.pack<2>("inds", ei).reinterpret_bits<int>();
+      auto [x0, x1] = getMovedVerts(inds);
+      double areaWeight = (x1 - x0).norm() * thickness;
+
+      using bvh_t = RM_CVREF_T(bvh);
+      using bv_t = typename bvh_t::bv_t;
+      using Ti = typename bvh_t::index_t;
+      bv_t bv = get_bounding_box(x0, x1);
+
+      const Ti numNodes = bvh._numNodes;
+      Ti node = 0;
+      while (node != -1 && node != numNodes) {
+        Ti level = bvh._levels[node];
+        // level and node are always in sync
+        for (; level; --level, ++node)
+          if (!overlaps(bvh.getNodeBV(node), bv))
+            break;
+        // leaf node check
+        if (level == 0) {
+          if (overlaps(bvh.getNodeBV(node), bv)) {
+            auto oeid = bvh._auxIndices[node];
+            auto oe_inds = eles.pack<2>("inds", oeid).reinterpret_bits<int>();
+            if ((oe_inds[0] != inds[0] && oe_inds[0] != inds[1]) &&
+                (oe_inds[1] != inds[0] && oe_inds[1] != inds[1])) {
+              auto [o_x0, o_x1] = getMovedVerts(oe_inds);
+              auto dist2 = zs::dist2_ee(x0, x1, o_x0, o_x1);
+              //
+              constexpr double xi = 1e-4;
+              constexpr double xi2 = xi * xi;
+              if (dist2 < xi2)
+                printf("penetrated already...");
+              constexpr double dHat = 1e-2;
+              constexpr double activeGap2 = dHat * dHat;
+              constexpr double kappa = 1e3;
+              double o_areaWeight = (o_x1 - o_x0).norm() * thickness;
+              double aw = (areaWeight + o_areaWeight) / 4;
+              //
+              auto grad = zs::dist_grad_ee(x0, x1, o_x0, o_x1);
+              grad *= barrier_gradient(dist2 - xi2, activeGap2, kappa);
+              grad *= aw * dHat;
+              for (int vi = 0; vi != 2; ++vi) {
+                auto f = row(grad, vi);
+                for (int d = 0; d != 3; ++d)
+                  atomic_add(exec_cuda, &data(ftag, d, inds[vi]), (float)f[d]);
+              }
+              for (int vi = 0; vi != 2; ++vi) {
+                auto f = row(grad, vi + 2);
+                for (int d = 0; d != 3; ++d)
+                  atomic_add(exec_cuda, &data(ftag, d, oe_inds[vi]),
+                             (float)f[d]);
+              }
+            }
+          }
+          node++;
+        } else // separate at internal nodes
+          node = bvh._auxIndices[node];
+      }
+    });
+  }
   void SAp(zs::CudaExecutionPolicy &cudaPol, const tiles_t &verts,
            const tiles_t &springs, tiles_t &vertData, float dt, float eps) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
-    computeSpringForce(cudaPol, springs, vertData, "p", "f", dt, eps);
+    computeSpringForce(cudaPol, springs, vertData, "p", "f", dt, eps, true);
+    computeCollisionForce(cudaPol, springs, vertData, "p", "f", dt, eps);
     cudaPol(range(vertData.size()),
             [verts = proxy<space>({}, verts), data = proxy<space>({}, vertData),
              dt, eps] __device__(int pi) mutable {
@@ -460,12 +572,15 @@ struct SpringSystemTimeStepping : INode {
               data.tuple<3>("v", pi) = verts.pack<3>("v", pi);
             });
     float eps = evalEps(cudaPol, vertData, dt);
+    // float eps = 1e-4;
     fmt::print("initial eps: {}\n", eps);
 #if 1
-    computeSpringForce(cudaPol, springs, vertData, "v", "f0", 0, 0);
+    computeSpringForce(cudaPol, springs, vertData, "v", "f0", 0, 0, true);
+    computeCollisionForce(cudaPol, springs, vertData, "v", "f0", 0, 0);
 
     // f_forward(v0)
-    computeSpringForce(cudaPol, springs, vertData, "v", "f", dt, eps);
+    computeSpringForce(cudaPol, springs, vertData, "v", "f", dt, eps, true);
+    computeCollisionForce(cudaPol, springs, vertData, "v", "f", dt, eps);
 
     // compute b
     cudaPol(range(numVerts),
@@ -521,8 +636,9 @@ struct SpringSystemTimeStepping : INode {
               verts.tuple<3>("v", pi) = v;
               verts.tuple<3>("x", pi) = verts.pack<3>("x", pi) + v * dt;
             });
-#elif 1
-    computeSpringForce(cudaPol, springs, vertData, "v", "f", dt, 1.f);
+#elif 0
+    // explicit
+    computeSpringForce(cudaPol, springs, vertData, "v", "f", dt, 1.f, true);
     cudaPol(range(numVerts),
             [verts = proxy<space>({}, verts), data = proxy<space>({}, vertData),
              accel, dt] __device__(int pi) mutable {
