@@ -70,7 +70,7 @@ static void addIndividualPrimitive(PrimitiveObject* dst, const PrimitiveObject* 
             dst->resize(dst->attr<zeno::vec3f>("pos").size());
         }
 
-static std::shared_ptr<PrimitiveObject> prim_merge(std::shared_ptr<ListObject> list, std::string tagAttr) {
+static std::shared_ptr<PrimitiveObject> prim_merge(std::shared_ptr<ListObject> list, std::string tagAttr = {}) {
 
         auto primList = list->get<std::shared_ptr<PrimitiveObject>>();
         auto outprim = std::make_shared<PrimitiveObject>();
