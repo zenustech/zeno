@@ -21,11 +21,11 @@ struct SolveBiharmonicWeight : zeno::INode {
     virtual void apply() override {
         auto mesh = get_input<PrimitiveObject>("skinMesh");
         auto nm_handles = (int)get_input2<float>("nm_handles");
-        if(!mesh->has_attr("BoneID")){
-            throw std::runtime_error("SkinMesh should have BoneID indicating the binding vertices' to the handles");
+        if(!mesh->has_attr("btag")){
+            throw std::runtime_error("SkinMesh should have btag indicating the binding vertices' to the handles");
         }
         // btag == -1 means free vertices, and (int)indicating the index of binding handle
-        const auto& boneIDs = mesh->attr<float>("BoneID");
+        const auto& btags = mesh->attr<float>("btag");
         auto attr_prefix = get_param<std::string>("attr_prefix");
 
         Eigen::MatrixXd V(mesh->size(),3);
@@ -35,7 +35,7 @@ struct SolveBiharmonicWeight : zeno::INode {
         size_t nm_boundary_verts = 0;
         for(size_t i = 0;i < mesh->size();++i){
             V.row(i) << mesh->verts[i][0],mesh->verts[i][1],mesh->verts[i][2];
-            if(boneIDs[i] > -1e-6)
+            if(btags[i] > -1e-6)
                 nm_boundary_verts++;
         }
         for(size_t i = 0;i < mesh->quads.size();++i){
@@ -48,13 +48,14 @@ struct SolveBiharmonicWeight : zeno::INode {
 
         size_t b_idx = 0;
         for(size_t i = 0;i < mesh->size();++i){
-            if(boneIDs[i] > -1e-6){
-                int handle_idx = (int)boneIDs[i];
+            if(btags[i] > -1e-6){
+                int handle_idx = (int)btags[i];
                 b[b_idx] = i;
                 bc(b_idx,handle_idx) = 1.0;
                 ++b_idx;
             }
         }
+
         std::cout << "BBW: size of bc " << bc.rows() << "\t" << bc.cols() << std::endl;
         // compute BBW weights matrix
         igl::BBWData bbw_data;
@@ -67,7 +68,7 @@ struct SolveBiharmonicWeight : zeno::INode {
         {
             throw std::runtime_error("BBW GENERATION FAIL");
         }
-        //assert(W.rows() == V.rows() && W.cols() == C.rows());
+        assert(W.rows() == V.rows() && W.cols() == C.rows());
         igl::normalize_row_sums(W,W);
 
         for(size_t i = 0;i < W.cols();++i){
@@ -101,7 +102,7 @@ struct GenerateSkinningWeight : zeno::INode {
         auto bone_influence_radius = get_param<float>("bone_radius");
         auto cage_influence_radius = get_param<float>("cage_radius");
         // auto duplicate = (int)get_param<float>("duplicate");
-        // auto bone_type = get_param<std::string>(("boneType"));
+        // auto bone_type = std::get<std::string>(get_param("boneType"));
         auto duplicate = (int)get_param<float>("duplicate");
         Eigen::MatrixXd V;
         Eigen::MatrixXi T;

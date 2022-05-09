@@ -96,6 +96,12 @@ public:
         return M;
     }
 
+    static FEM_Scaler GetStiffness(const FEM_Scaler& E,const FEM_Scaler& nu,const FEM_Scaler& x_start,const FEM_Scaler& x_end){
+        auto mu = Enu2Mu(E,nu);
+        auto lambda = Enu2Lambda(E,nu);
+        return mu + lambda;    
+    }
+
     inline void EvalIsoInvarients(const Mat3x3d& F,Vec3d& Is) const{
         Mat3x3d U,V;
         Vec3d sigma;

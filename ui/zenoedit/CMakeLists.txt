@@ -1,9 +1,10 @@
 find_package(Qt5 COMPONENTS Widgets OpenGL REQUIRED)
 message(STATUS "Found Qt5 version ${Qt5_VERSION}: ${Qt5_DIR}")
 
-file(GLOB_RECURSE source CONFIGURE_DEPENDS *.h *.cpp *.ui *.qrc)
-#file(GLOB_RECURSE resource CONFIGURE_DEPENDS *.qrc)
-#qt5_add_big_resources(source ${resource})  # cihou msvc: fatal error C1060: compiler is out of heap space
+file(GLOB_RECURSE source CONFIGURE_DEPENDS *.h *.cpp *.ui)
+file(GLOB_RECURSE resource CONFIGURE_DEPENDS *.qrc)
+qt5_add_big_resources(source ${resource})  # cihou msvc: fatal error C1060: compiler is out of heap space
+
 add_executable(zenoedit ${source}) 
 
 set_property(TARGET zenoedit PROPERTY AUTOUIC ON)
@@ -16,10 +17,6 @@ target_link_libraries(zenoedit PRIVATE Threads::Threads)
 target_link_libraries(zenoedit PRIVATE Qt5::Widgets Qt5::OpenGL)
 target_link_libraries(zenoedit PRIVATE zenoui zenoio zenovis)
 target_link_libraries(zenoedit PRIVATE zeno)
-if (TARGET zenoSharedExtension)
-    message(STATUS "-- Linking against zenoSharedExtension")
-    target_link_libraries(zenoedit PRIVATE zenoSharedExtension)
-endif()
 target_include_directories(zenoedit PRIVATE . .. ../zenoui)
 target_include_directories(zenoedit PRIVATE ${Qt5Widgets_PRIVATE_INCLUDE_DIRS})
 if (ZENO_MULTIPROCESS)
