@@ -138,31 +138,44 @@ struct AlignPrimitive : zeno::INode {
         const auto& rquads = ref_shape->quads;
         const auto& aquads = aligned_shape->quads;
 
-        // if(ref_shape->size() != aligned_shape->size()){
-        //     throw std::runtime_error("AlignPrimitiveObject : INPUT SHAPES SIZE NOT MATCH");
-        // }
+        if(ref_shape->size() != aligned_shape->size()){
+            throw std::runtime_error("AlignPrimitiveObject : INPUT SHAPES SIZE NOT MATCH");
+        }
 
-        // if(rtris->size() != atris->size()){
-        //     throw std::runtime_error("AlignPrimitiveObject : INPUT TRIS SIZE NOT MATCH");
-        // }
+        if(rtris->size() != atris->size()){
+            throw std::runtime_error("AlignPrimitiveObject : INPUT TRIS SIZE NOT MATCH");
+        }
 
-        // if(rquads->size() != aquads->size()){
-        //     throw std::runtime_error("AlignPrimitiveObject : INPUT QUADS SIZE NOT MATCH");
-        // }
+        if(rquads->size() != aquads->size()){
+            throw std::runtime_error("AlignPrimitiveObject : INPUT QUADS SIZE NOT MATCH");
+        }
 
-        // for(size_t i = 0;i < rtris.size();++i){
-        //     auto tri_diff = rtris[i] - atris[i];
-        //     if(tri_diff[0] != 0 || tri_diff[1] != 0 || tri_diff[2] != 0){
-        //         throw std::runtime_error("AlignPrimitiveObject : INPUT TRIS TOPO NOT MATCH");
-        //     }
-        // }
+        bool conflict_tris = false;
+        int count = 0;
+        for(size_t i = 0;i < rtris.size();++i){
+            auto tri_diff = rtris[i] - atris[i];
+            if(tri_diff[0] != 0 || tri_diff[1] != 0 || tri_diff[2] != 0){
+                std::cout << "CONFLICT TRIS : " << i << std::endl;
+                std::cout << "rtris : " << rtris[i][0] << "\t" << rtris[i][1] << "\t" << rtris[i][2] << std::endl;
+                std::cout << "atris : " << atris[i][0] << "\t" << atris[i][1] << "\t" << atris[i][2] << std::endl;
+                conflict_tris = true;
+                count++;
 
-        // for(size_t i = 0;i < rquads.size();++i){
-        //     auto quad_diff = rquads[i] - aquads[i];
-        //     if(quad_diff[0] != 0 || quad_diff[1] != 0 || quad_diff[2] != 0 || quad_diff[3] != 0){
-        //         throw std::runtime_error("AlignPrimitiveObject : INPUT QUADS TOPO NOT MATCH");
-        //     }
-        // }
+                if(count > 20)
+                    break;
+                // throw std::runtime_error("AlignPrimitiveObject : INPUT TRIS TOPO NOT MATCH");
+            }
+        }
+
+        // if(conflict_tris)
+        //     throw std::runtime_error("AlignPrimitiveObject : INPUT TRIS TOPO NOT MATCH");
+
+        for(size_t i = 0;i < rquads.size();++i){
+            auto quad_diff = rquads[i] - aquads[i];
+            if(quad_diff[0] != 0 || quad_diff[1] != 0 || quad_diff[2] != 0 || quad_diff[3] != 0){
+                throw std::runtime_error("AlignPrimitiveObject : INPUT QUADS TOPO NOT MATCH");
+            }
+        }
 
 
         

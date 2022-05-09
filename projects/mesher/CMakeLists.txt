@@ -9,8 +9,6 @@ include (common)
 
 find_package(Eigen3 REQUIRED)
 
-
-add_subdirectory(mpmmeshing)
 find_package(OpenMP)
 if (OPENMP_FOUND)
     set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
@@ -19,11 +17,10 @@ if (OPENMP_FOUND)
 endif()
 
 file (GLOB ZEN_MESHER_SOURCE *.cpp)
-add_library(zeno_mesher SHARED ${ZEN_MESHER_SOURCE})
+add_library(zeno_mesher SHARED ${ZEN_MESHER_SOURCE} mpmmeshing/help.cpp mpmmeshing/Mesh3D.cpp mpmmeshing/Render.cpp)
 target_include_directories(zeno_mesher PRIVATE mpmmeshing/)
 
 
-target_link_libraries(zeno_mesher PRIVATE mpmmeshing )
 target_link_libraries(zeno_mesher PRIVATE Eigen3::Eigen)
 target_link_libraries(zeno_mesher PUBLIC zeno)
 target_link_libraries(zeno_mesher PRIVATE zeno_nodep)

@@ -18,6 +18,7 @@
 #include <Scene.hpp>
 #include <thread>
 #include <chrono>
+#include "MRT.hpp"
 #include "openglstuff.h"
 #include "voxelizeProgram.h"
 namespace zenvis {
@@ -298,6 +299,7 @@ void initialize() {
   scene.addLight();
   initReflectiveMaps(nx, ny);
   voxelizer::initVoxelTexture();
+  MRT::getInstance().is_use = false;
   auto version = (const char *)glGetString(GL_VERSION);
   printf("OpenGL version: %s\n", version ? version : "null");
 
@@ -595,6 +597,8 @@ static void paint_graphics(GLuint target_fbo = 0) {
   shadowPass();
   reflectivePass();
   //VoxelizePass();
+  static bool isBate = !std::getenv("ZENO_BATE");
+  if (isBate) enable_hdr = 0;
   if(enable_hdr && tmProg==nullptr)
   {
     std::cout<<"compiling zhxx hdr program"<<std::endl;
@@ -713,13 +717,39 @@ static void paint_graphics(GLuint target_fbo = 0) {
                     GL_TEXTURE_RECTANGLE, texRect, 0));
     CHECK_GL(glBindFramebuffer(GL_FRAMEBUFFER, 0));
 
+    auto &mrt = MRT::getInstance();
+    if (mrt.is_use)
+    {
+      mrt.release();
+      mrt.init(num_samples, nx, ny);
+    }
+
     oldnx = nx;
     oldny = ny;
     
   }
 
-    
-  
+  // test code
+  auto &mrt = MRT::getInstance();
+  if (mrt.is_use)
+  {
+    glEnable(GL_MULTISAMPLE);
+    glm::vec3 object = g_camPos + 1.0f * glm::normalize(g_camView);
+    glm::vec3 right = glm::normalize(glm::cross(object - g_camPos, g_camUp));
+    glm::vec3 p_up = glm::normalize(glm::cross(right, object - g_camPos));
+    view = glm::lookAt(g_camPos, object, p_up);
+    mrt.before_draw();
+    CHECK_GL(glClearColor(bgcolor.r, bgcolor.g, bgcolor.b, 0.0f));
+    CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
+    my_paint_graphics(1.0, 0.0);
+    mrt.after_draw(nx, ny);
+    CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, mrt.fbo));
+    CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, target_fbo));
+    ScreenFillQuad(mrt.texs[4],1.0,0);
+    glDisable(GL_MULTISAMPLE);
+    CHECK_GL(glFlush());
+    return;
+  }
   
   if(g_dof>0){
     glDisable(GL_MULTISAMPLE);

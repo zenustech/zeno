@@ -225,7 +225,13 @@ read_obj_file_dict(
     std::vector<zeno::vec3i> sub_indices;
 
 
+    std::shared_ptr<zeno::DictObject> prims = std::make_shared<zeno::DictObject>();
+
+    size_t vert_offset = 0;
+    size_t pre_vert_offset = 0;
     auto is = std::ifstream(path);
+    bool has_read_o_tag = false;
+
     while (!is.eof()) {
         std::string line;
         std::getline(is, line);
@@ -237,21 +243,26 @@ read_obj_file_dict(
         items.erase(items.begin());
 
         if (zeno::starts_with(line, "v ")) {
-            vertices.push_back(read_vec3f(items));
 
+            // std::cout << "PARSING V" << std::endl;
+            vertices.push_back(read_vec3f(items));
+            vert_offset += 1;
         /*
         } else if (zeno::starts_with(line, "vt ")) {
             uvs.push_back(read_vec3f(items));
         } else if (zeno::starts_with(line, "vn ")) {
             normals.push_back(read_vec3f(items));
         */
-
         } else if (zeno::starts_with(line, "f ")) {
+
+            // std::cout << "PARSING F" << std::endl;
+
             zeno::vec3i first_index = read_index(items[0]);
             zeno::vec3i last_index = read_index(items[1]);
 
             for (auto i = 2; i < items.size(); i++) {
                 zeno::vec3i index = read_index(items[i]);
+                // only work for .obj file with sub objects
                 zeno::vec3i face(first_index[0], last_index[0], index[0]);
                 //zeno::vec3i face_uv(first_index[1], last_index[1], index[1]);
                 //zeno::vec3i face_normal(first_index[2], last_index[2], index[2]);
@@ -262,25 +273,42 @@ read_obj_file_dict(
                 last_index = index;
             }
         } else if (zeno::starts_with(line, "o ")) {
-            if (sub_indices.size() > 0) {
-                dict[sub_name] = std::move(sub_indices);
+            // if we have already parse the o tag, the subname, vertices and faces data should have already been read
+            if(has_read_o_tag){
+                auto sub_prim = std::make_shared<zeno::PrimitiveObject>();
+                sub_prim->tris = sub_indices;
+                for(size_t i = 0;i < sub_prim->tris.size();++i){
+                    sub_prim->tris[i] -= zeno::vec3i(pre_vert_offset);
+                }
+                sub_prim->verts = std::vector(vertices.begin() + pre_vert_offset,vertices.end()- 0);
+                std::vector<zeno::vec3f>(&vertices[pre_vert_offset],&vertices[vert_offset]);
+                prims->lut[sub_name] = sub_prim;
             }
+            // Update the sub_obj name
             sub_name = items[0];
+            has_read_o_tag = true;
+            // update the vertex offset for seperating the current obj's vertices from the previous one's
+            pre_vert_offset = vert_offset;
+            sub_indices.clear();
 
             zeno::log_debug("sub_mesh: {}\n", sub_name);
 
         }
     }
-    if (sub_indices.size() > 0) {
-        dict[sub_name] = std::move(sub_indices);
-    }
-    std::shared_ptr<zeno::DictObject> prims = std::make_shared<zeno::DictObject>();
-    for(auto it : dict) {
-        auto sub_prim = std::make_shared<zeno::PrimitiveObject>();
+    // if there is no sub objects, output the mesh as a whole unameed subobject
+    auto sub_prim = std::make_shared<zeno::PrimitiveObject>();
+    if(!has_read_o_tag){
         sub_prim->verts = vertices;
-        sub_prim->tris = dict[it.first];
-        prims->lut[it.first] = sub_prim;
+        sub_prim->tris = indices;
+    }else{
+        zeno::log_debug("sub_mesh: {}\n", sub_name);
+        sub_prim->verts = std::vector(vertices.begin() + pre_vert_offset,vertices.end() - 0);
+        sub_prim->tris = sub_indices;
+        for(size_t i = 0;i < sub_prim->tris.size();++i){
+            sub_prim->tris[i] -= zeno::vec3i(pre_vert_offset);
+        }
     }
+    prims->lut[sub_name] = sub_prim;
     return prims;
 }
 struct ReadObjPrimitiveDict : zeno::INode {
