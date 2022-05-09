@@ -111,7 +111,7 @@ void ZTimeline::onFrameEditted()
         return;
     int frameFrom = m_ui->editFrom->text().toInt();
     int frameTo = m_ui->editTo->text().toInt();
-    if (frameTo > frameFrom)
+    if (frameTo >= frameFrom)
         m_ui->timeliner->setFromTo(frameFrom, frameTo);
 }
 

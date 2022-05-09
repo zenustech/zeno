@@ -1,4 +1,6 @@
 #include "declares.h"
+#include "LBFGS.h"
+#include "LBFGSB.h"
 
 namespace zeno{
 
@@ -379,6 +381,7 @@ struct SolveFEMFast : zeno::INode {
         param.check_param();
 
 
+        using namespace LBFGSpp;
         LBFGSSolver<FEM_Scaler> solver(param);
 
         Eigen::VectorXd _x(shape->size() * 3);

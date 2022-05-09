@@ -37,6 +37,7 @@ struct PrimitiveObject : IObjectClone<PrimitiveObject> {
         verts.foreach_attr<Accept>(std::move(f));
     }
 
+    // deprecated:
     template <class Accept = std::tuple<vec3f, float>, class F>
     void foreach_attr(F &&f) const {
         std::string const pos_name = "pos";
@@ -44,16 +45,19 @@ struct PrimitiveObject : IObjectClone<PrimitiveObject> {
         verts.foreach_attr<Accept>(std::move(f));
     }
 
+    // deprecated:
     size_t num_attrs() const {
         return 1 + verts.num_attrs();
     }
 
+    // deprecated:
     auto attr_keys() const {
         auto keys = verts.attr_keys();
         keys.insert(keys.begin(), "pos");
         return keys;
     }
 
+    // deprecated:
     template <class T>
     auto &add_attr(std::string const &name) {
         if constexpr (std::is_same_v<T, vec3f>) {
@@ -62,6 +66,7 @@ struct PrimitiveObject : IObjectClone<PrimitiveObject> {
         return verts.add_attr<T>(name);
     }
 
+    // deprecated:
     template <class T>
     auto &add_attr(std::string const &name, T const &value) {
         if constexpr (std::is_same_v<T, vec3f>) {
@@ -70,6 +75,7 @@ struct PrimitiveObject : IObjectClone<PrimitiveObject> {
         return verts.add_attr<T>(name, value);
     }
 
+    // deprecated:
     template <class T>
     auto const &attr(std::string const &name) const {
         if constexpr (std::is_same_v<T, vec3f>) {
@@ -78,6 +84,7 @@ struct PrimitiveObject : IObjectClone<PrimitiveObject> {
         return verts.attr<T>(name);
     }
 
+    // deprecated:
     template <class T>
     auto &attr(std::string const &name) {
         if constexpr (std::is_same_v<T, vec3f>) {
@@ -86,16 +93,19 @@ struct PrimitiveObject : IObjectClone<PrimitiveObject> {
         return verts.attr<T>(name);
     }
 
+    // deprecated:
     auto const &attr(std::string const &name) const {
         //if (name == "pos") return verts.values;
         return verts.attr(name);
     }
 
+    // deprecated:
     auto &attr(std::string const &name) {
         //if (name == "pos") return verts.values;
         return verts.attr(name);
     }
 
+    // deprecated:
     template <class Accept = std::tuple<vec3f, float>, class F>
     auto attr_visit(std::string const &name, F const &f) const {
         if (name == "pos") {
@@ -105,6 +115,7 @@ struct PrimitiveObject : IObjectClone<PrimitiveObject> {
         }
     }
 
+    // deprecated:
     template <class Accept = std::tuple<vec3f, float>, class F>
     auto attr_visit(std::string const &name, F const &f) {
         if (name == "pos") {
@@ -114,11 +125,13 @@ struct PrimitiveObject : IObjectClone<PrimitiveObject> {
         }
     }
 
+    // deprecated:
     bool has_attr(std::string const &name) const {
         if (name == "pos") return true;
         return verts.has_attr(name);
     }
 
+    // deprecated:
     template <class T>
     bool attr_is(std::string const &name) const {
         if constexpr (std::is_same_v<T, vec3f>) {

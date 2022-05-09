@@ -30,7 +30,7 @@ Git >= 2.0 && CMake >= 3.16 && Qt >= 5.12 && (MSVC >= 2019 || GCC >= 9 || Clang 
 
 > JOKE: Yes, we have to register a Qt account to install Qt... because the Qt company sucks :)
 
-5. If the install location is `C:\Qt\Qt5.14.2`, then add `C:\Qt\Qt5.14.2\msvc2017_64\bin` to the `PATH` environment variable.
+5. If the install location is `C:\Qt\Qt5.14.2`, then please add `C:\Qt\Qt5.14.2\msvc2017_64\bin` to the `PATH` environment variable.
 
 > This is to allow the `zeno.exe` being able to find `Qt5Widgets.dll` there. Otherwise you need to manually copy `C:\Qt\Qt5.14.2\bin\msvc2017_64\bin\Qt5Widgets.dll` and other DLLs to `build\bin`. After this step rebooting the computer (or at least restart Visual Studio) would be best.
 
@@ -46,6 +46,8 @@ sudo apt-get install -y qt5-default libqt5svg5-dev
 ```
 
 > NOTE: We highly recommend to use **Ubuntu 20.04 (or above)** whenever possible.
+
+> NOTE: Try `sudo apt-get update && sudo apt-get upgrade` if installation failed.
 
 #### If you want to use Ubuntu 18.04 anyway...
 
@@ -67,6 +69,10 @@ sudo pacman -Syu
 sudo pacman -S git cmake make gcc
 sudo pacman -S qt5-base qt5-svg
 ```
+
+> NOTE: We really recommend to use Arch Linux instead of Ubuntu if possible.
+
+> JOKE: We support Ubuntu and Windows because they are popular, not because they are good.
 
 ### WSL
 

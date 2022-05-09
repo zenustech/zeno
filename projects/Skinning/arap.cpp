@@ -126,8 +126,8 @@ struct TransformPrimitivePartsByTags : zeno::INode {
 
     virtual void apply() override {
         auto prim = get_input<zeno::PrimitiveObject>("prim");
-        const auto& Qs = get_input<zeno::ListObject>("Qs")->get<std::shared_ptr<zeno::NumericObject>>();
-        const auto& Ts = get_input<zeno::ListObject>("Ts")->get<std::shared_ptr<zeno::NumericObject>>();
+        const auto& Qs = get_input<zeno::ListObject>("Qs")->get<zeno::NumericObject>();
+        const auto& Ts = get_input<zeno::ListObject>("Ts")->get<zeno::NumericObject>();
         const auto& tagName = get_input2<std::string>("tagName");
 
         // std::cout << "HERE" << std::endl;
