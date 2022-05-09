@@ -163,7 +163,7 @@ struct AllAlembicPrim : INode {
                 prims->arr.push_back(np);
             });
         }
-        auto outprim = primitive_merge(prims);
+        auto outprim = prim_merge(prims);
         set_output("prim", std::move(outprim));
     }
 };
