@@ -679,7 +679,6 @@ void GraphsModel::removeNode(const QString& nodeid, const QModelIndex& subGpIdx,
     }
     else
     {
-        
         const QModelIndex &idx = pGraph->index(nodeid);
         const QString &objName = idx.data(ROLE_OBJNAME).toString();
         if (!bEnableIOProc)

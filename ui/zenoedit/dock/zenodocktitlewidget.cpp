@@ -295,32 +295,6 @@ void ZenoViewDockTitle::initTitleContent(QHBoxLayout* pHLayout)
     pHLayout->addStretch();
 }
 
-void ZenoViewDockTitle::setupUi()
-{
-    QVBoxLayout *pLayout = new QVBoxLayout;
-    pLayout->setSpacing(0);
-    pLayout->setContentsMargins(0, 0, 0, 0);
-
-    QHBoxLayout *pHLayout = new QHBoxLayout;
-
-    ZToolButton *pDockOptionsBtn = new ZToolButton(ZToolButton::Opt_HasIcon, QIcon(":/icons/dockOption.svg"),
-                                                   ZenoStyle::dpiScaledSize(QSize(16, 16)));
-    pDockOptionsBtn->setMargins(QMargins(10, 10, 10, 10));
-    pDockOptionsBtn->setBackgroundClr(QColor(51, 51, 51), QColor(51, 51, 51), QColor(51, 51, 51));
-
-    initTitleContent(pHLayout);
-
-    pHLayout->addWidget(pDockOptionsBtn);
-    pHLayout->setContentsMargins(0, 0, 0, 0);
-    pHLayout->setMargin(0);
-
-    pLayout->addLayout(pHLayout);
-
-    setLayout(pLayout);
-
-    connect(pDockOptionsBtn, SIGNAL(clicked()), this, SIGNAL(dockOptionsClicked()));
-}
-
 QMenuBar* ZenoViewDockTitle::initMenu()
 {
     QMenuBar* pMenuBar = new QMenuBar(this);

@@ -64,7 +64,6 @@ class ZenoViewDockTitle : public ZenoDockTitleWidget
 public:
 	ZenoViewDockTitle(QWidget* parent = nullptr);
 	~ZenoViewDockTitle();
-    void setupUi() override;
 
 signals:
 	void actionTriggered(QAction* action);
