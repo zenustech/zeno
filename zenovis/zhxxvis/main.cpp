@@ -865,8 +865,8 @@ void finalize() {
   vao = nullptr;
 }
 
-void new_frame() {
-  paint_graphics();
+void new_frame(int _new_frame_fbo) {
+  paint_graphics(_new_frame_fbo);
   renderFPS.tick();
 }
 
