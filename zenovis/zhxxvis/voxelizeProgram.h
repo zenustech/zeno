@@ -1,3 +1,4 @@
+#pragma once
 #include "glad/glad.h"
 #include "stdafx.hpp"
 #include "IGraphic.hpp"
@@ -18,9 +19,8 @@
 #include <Hg/IterUtils.h>
 #include <Scene.hpp>
 #include "openglstuff.h"
-
 namespace zenvis {
-    Program * get_voxelize_program(std::shared_ptr<zeno::MaterialObject> mtl, std::shared_ptr<zeno::InstancingObject> inst)
+    inline Program * get_voxelize_program(std::shared_ptr<zeno::MaterialObject> mtl, std::shared_ptr<zeno::InstancingObject> inst)
   {
 std::string VXVS;
     if (inst != nullptr)
@@ -81,7 +81,7 @@ void main()
   g_normal = transpose(inverse(mat3(mInstModel))) * vNormal;
   g_tex_coords = vTexCoord;
   g_tangent = mat3(mInstModel) * vTangent;
-  gl_Position = vec4(vec3(mView * vec4(g_world_pos, 1.0)) * u_scene_voxel_scale, 1.0);
+  gl_Position = mProj * vec4(vec3(mView * vec4(g_world_pos, 1.0)) * u_scene_voxel_scale, 1.0);
 }
 )";
     }
@@ -118,7 +118,7 @@ void main()
   g_normal = vNormal;
   g_tex_coords = vTexCoord;
   g_tangent = vTangent;
-  gl_Position = vec4(vec3(mView * vec4(g_world_pos, 1.0)) * u_scene_voxel_scale, 1.0);
+  gl_Position = mProj * vec4(vec3(mView * vec4(g_world_pos, 1.0)) * u_scene_voxel_scale, 1.0);
 }
 )";
     }
@@ -136,14 +136,17 @@ uniform mat4 mInvProj;
 uniform bool mSmoothShading;
 uniform bool mNormalCheck;
 uniform bool mRenderWireframe;
-
+uniform vec3 u_scene_voxel_scale;
+uniform float alphaPass;
+//layout(binding = 0, r32ui) uniform volatile coherent uimage3D u_tex_voxelgrid;
+layout(binding = 0, RGBA8) uniform image3D u_tex_voxelgrid;
 
 in vec3 position;
 in vec3 iColor;
 in vec3 iNormal;
 in vec3 iTexCoord;
 in vec3 iTangent;
-out vec4 fColor;
+//out vec4 fColor;
 const float minDot = 1e-5;
 
 // Clamped dot product
@@ -163,7 +166,7 @@ vec3 CalculateDiffuse(
     in vec3 albedo){                              
     return (albedo / 3.1415926);
 }
-layout(binding = 0, r32ui) uniform volatile coherent uimage3D u_tex_voxelgrid;
+
 vec4 convRGBA8ToVec4(uint val){
     return vec4(float((val & 0x000000FF)), float ((val & 0x0000FF00) >> 8U), float (( val & 0x00FF0000) >> 16U), float ((val & 0xFF000000) >> 24U));
 }
@@ -179,12 +182,27 @@ void imageAtomicRGBA8Avg(layout(r32ui) coherent volatile uimage3D img, ivec3 coo
     uint curStoredVal;
     uint numIterations = 0;
     while ((curStoredVal = imageAtomicCompSwap(img, coords, prevStoredVal, newVal)) != prevStoredVal 
-            && numIterations < 255) {
+            && numIterations < 1024) {
         prevStoredVal = curStoredVal;
         vec4 rval = convRGBA8ToVec4(curStoredVal);
         rval.xyz = (rval.xyz * rval.w);
         vec4 curValF = rval + val;
         curValF.xyz /= (curValF.w);
+        newVal = convVec4ToRGBA8(curValF);
+        ++numIterations;
+    }
+}
+void imageAtomicRGBA8Set(layout(r32ui) coherent volatile uimage3D img, ivec3 coords, vec4 val){
+    val.rgb *= 255.0f;
+    uint newVal = convVec4ToRGBA8(val);
+    uint prevStoredVal = 0;
+    uint curStoredVal;
+    uint numIterations = 0;
+    while ((curStoredVal = imageAtomicCompSwap(img, coords, prevStoredVal, newVal)) != prevStoredVal 
+            && numIterations < 1024) {
+        prevStoredVal = curStoredVal;
+        vec4 rval = convRGBA8ToVec4(curStoredVal);
+        vec4 curValF = vec4(rval.xyz, 1.0);
         newVal = convVec4ToRGBA8(curValF);
         ++numIterations;
     }
@@ -529,7 +547,7 @@ float ShadowHit(int lightNo, vec3 fragPosWorldSpace)
     float currentDepth = projCoords.z;
     vec3 normal = normalize(iNormal);
     float slop = abs(dot( normalize(normal), normalize(light[lightNo])));
-    float bias = (1-pow(slop,0.1)) * 0.1 + pow(slop,0.1) * 0.001;
+    float bias = 0.001;
     return (currentDepth  * (far1-near1) + near1 - bias) > (sampleShadowArray(lightNo, projCoords.xy, layer)  * (far1-near1) + near1)?1.0:0.0;
 }
 float ShadowCalculation(int lightNo, vec3 fragPosWorldSpace, float softness, vec3 tang, vec3 bitang, int k)
@@ -586,19 +604,22 @@ vec4 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 old_tangent) {
     vec3 realColor = vec3(0,0,0);
     float lightsNo = 0;
     for(int lightId=0; lightId<lightNum; lightId++){
+        light_dir = lightDir[lightId];
+        new_normal = dot(new_normal, light_dir)<0? -new_normal:new_normal;
         vec3 photoReal = BRDF(mat_basecolor, mat_metallic,mat_subsurface,mat_specular,mat_roughness,mat_specularTint,mat_anisotropic,mat_sheen,mat_sheenTint,mat_clearcoat,mat_clearcoatGloss,normalize(light_dir), normalize(light_dir), normalize(new_normal),normalize(tan), normalize(cross(normal, tan))
         ) * lightIntensity[lightId];
         vec3 lcolor = photoReal;
-        float shadow = ShadowCalculation(lightId, position, shadowSoftness[lightId], tan, TBN[1],3);
-        vec3 sclr = clamp(vec3(1.0-shadow) + shadowTint[lightId], vec3(0), vec3(1));
+        float shadow = ShadowCalculation(lightId, position + 0.001 * normalize(light_dir), shadowSoftness[lightId], tan, TBN[1],3);
+        vec3 sclr = vec3(1.0-shadow);
         color += lcolor * sclr;
     }
     vec3 iblPhotoReal =  CalculateLightingIBL(new_normal,new_normal,albedo2,roughness,mat_metallic);
-    return vec4(color + colorEmission + 0.1 * iblPhotoReal, 1.0 - mat_opacity);
+    return vec4(color + colorEmission + 0.1 * iblPhotoReal + 0.2 * albedo2, 1.0-mat_opacity);
 
 
 }
-
+in vec3 f_voxel_pos;
+uniform float voxelgrid_resolution;
 void main()
 {   
   vec3 normal;
@@ -606,9 +627,9 @@ void main()
   
   vec3 viewdir = -calcRayDir(position);
   vec3 albedo = iColor;
-  vec3 normalInView = transpose(inverse(mat3(mView[0].xyz, mView[1].xyz, mView[2].xyz)))*normal;
-  if(dot(-viewdir, normalInView)>0)
-    normal = - normal;
+  //vec3 normalInView = transpose(inverse(mat3(mView[0].xyz, mView[1].xyz, mView[2].xyz)))*normal;
+  //if(dot(-viewdir, normalInView)>0)
+    //normal = - normal;
 
   //normal = faceforward(normal, -viewdir, normal);
   vec3 tangent = iTangent;
@@ -618,7 +639,15 @@ void main()
   }
 
   vec4 color = studioShading(albedo, viewdir, normal, tangent);
-  fColor = color;
+  //fColor = color;
+  vec3 vpos = vec3(mView * vec4(position,1)) * u_scene_voxel_scale;
+  imageStore(u_tex_voxelgrid, ivec3(voxelgrid_resolution * vpos), color);
+//   if(alphaPass>0.99)
+//   {
+//       imageAtomicRGBA8Set(u_tex_voxelgrid, ivec3(voxelgrid_resolution * f_voxel_pos), color);
+//   }else{
+//     imageAtomicRGBA8Set(u_tex_voxelgrid, ivec3(voxelgrid_resolution * f_voxel_pos), color);
+//   }
 }
 )";
 

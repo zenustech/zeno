@@ -116,5 +116,7 @@ void zxx_delete_object(std::string const &key) {
     current_frame_data()->graphics.erase(key);
 }
 
+std::vector<std::unique_ptr<FrameData>> frames; // unused, keep this for bkwd-compat zeno1
+
 
 }

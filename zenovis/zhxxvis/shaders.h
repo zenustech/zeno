@@ -1659,6 +1659,15 @@ vec3 reflectionCalculation(vec3 worldPos, int id)
     }
     return vec3(0,0,0);
 }
+
+
+
+
+
+
+
+
+
 uniform float reflectPass;
 uniform float reflectionViewID;
 uniform float depthPass;
@@ -1839,46 +1848,13 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 old_tangent) {
         }
 
         vec3 lcolor = mix(photoReal, NPR, mat_toon) + mat_subsurface * sss;
-    //   color +=  
-    //       CalculateLightingAnalytical(
-    //           new_normal,
-    //           normalize(light_dir),
-    //           normalize(view_dir),
-    //           albedo2,
-    //           roughness,
-    //           mat_metallic) * vec3(1, 1, 1) * mat_zenxposure;
-    //    color += vec3(0.45, 0.47, 0.5) * pbr(mat_basecolor, mat_roughness,
-    //             mat_metallic, mat_specular, new_normal, light_dir, view_dir);
-
-    //    light_dir = vec3(0,1,-1);
-    //    color += vec3(0.3, 0.23, 0.18) * pbr(mat_basecolor, mat_roughness,
-    //             mat_metallic, mat_specular, new_normal, light_dir, view_dir);
-    //    color +=  
-    //        CalculateLightingAnalytical(
-    //            new_normal,
-    //            light_dir,
-    //            view_dir,
-    //            albedo2,
-    //            roughness,
-    //            mat_metallic) * vec3(0.3, 0.23, 0.18)*5;
-    //    light_dir = vec3(0,-0.2,-1);
-    //    color +=  
-    //        CalculateLightingAnalytical(
-    //            new_normal,
-    //            light_dir,
-    //            view_dir,
-    //            albedo2,
-    //            roughness,
-    //            mat_metallic) * vec3(0.15, 0.2, 0.22)*6;
-    //    color += vec3(0.15, 0.2, 0.22) * pbr(mat_basecolor, mat_roughness,
-    //             mat_metallic, mat_specular, new_normal, light_dir, view_dir);
-
-
-        
-        
+   
         float shadow = ShadowCalculation(lightId, position + 0.001 * TBN[2], shadowSoftness[lightId], tan, TBN[1],3);
         vec3 sclr = clamp(vec3(1.0-shadow) + shadowTint[lightId], vec3(0), vec3(1));
         color += lcolor * sclr;
+        
+
+        
         realColor += photoReal * sclr;
     }
     //vec4 gi = pbrGI(position, normalize(new_normal), normalize(view_dir), normalize(tangent), normalize(bitangent), mat_basecolor, mat_roughness, mat_metallic);
