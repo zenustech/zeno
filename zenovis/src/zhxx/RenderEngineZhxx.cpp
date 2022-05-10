@@ -45,8 +45,7 @@ struct RenderEngineZhxx : RenderEngine, zeno::disable_copy {
     std::unique_ptr<GraphicsManager> graphicsMan;
     Scene *scene;
 
-    RenderEngineZhxx(Scene *scene_) : scene(scene_) {
-        zeno::log_info("Zhxx Render Engine started...");
+    void setupState() {
         CHECK_GL(glEnable(GL_BLEND));
         CHECK_GL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
         CHECK_GL(glEnable(GL_DEPTH_TEST));
@@ -54,6 +53,11 @@ struct RenderEngineZhxx : RenderEngine, zeno::disable_copy {
         CHECK_GL(glEnable(GL_MULTISAMPLE));
         CHECK_GL(glPixelStorei(GL_UNPACK_ALIGNMENT, 1));
         CHECK_GL(glPixelStorei(GL_PACK_ALIGNMENT, 1));
+    }
+
+    RenderEngineZhxx(Scene *scene_) : scene(scene_) {
+        zeno::log_info("Zhxx Render Engine started...");
+        setupState();
 
         graphicsMan = std::make_unique<GraphicsManager>(scene);
 
@@ -66,6 +70,7 @@ struct RenderEngineZhxx : RenderEngine, zeno::disable_copy {
     }
 
     void draw() override {
+        setupState();
         auto const &cam = *scene->camera;
         auto const &opt = *scene->drawOptions;
         auto const &zxx = cam.m_zxx;

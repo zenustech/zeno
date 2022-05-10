@@ -88,7 +88,7 @@ void Session::do_screenshot(std::string path, std::string type) {
     auto nx = impl->scene->camera->m_nx;
     auto ny = impl->scene->camera->m_ny;
 
-    zeno::log_info("saving screenshot {}x{} to {}", nx, ny, newpath);
+    zeno::log_info("saving screenshot {}x{} to {}", nx, ny, path);
     std::vector<char> pixels = impl->scene->record_frame_offline(hdrSize, 3);
 
     stbi_flip_vertically_on_write(true);

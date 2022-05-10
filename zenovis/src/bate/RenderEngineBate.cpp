@@ -4,6 +4,7 @@
 #include <zenovis/ObjectsManager.h>
 #include <zenovis/bate/IGraphic.h>
 #include <zenovis/opengl/vao.h>
+#include <zenovis/opengl/scope.h>
 
 namespace zenovis::bate {
 
@@ -13,14 +14,16 @@ struct RenderEngineBate : RenderEngine {
     std::vector<std::unique_ptr<IGraphicDraw>> hudGraphics;
     Scene *scene;
 
+    auto setupState() {
+        return std::tuple{
+            opengl::scopeGLEnable(GL_BLEND), opengl::scopeGLEnable(GL_DEPTH_TEST),
+            opengl::scopeGLEnable(GL_DEPTH_TEST), opengl::scopeGLEnable(GL_PROGRAM_POINT_SIZE),
+            opengl::scopeGLBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA),
+        };
+    }
+
     RenderEngineBate(Scene *scene_) : scene(scene_) {
-        CHECK_GL(glEnable(GL_BLEND));
-        CHECK_GL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
-        CHECK_GL(glEnable(GL_DEPTH_TEST));
-        CHECK_GL(glEnable(GL_PROGRAM_POINT_SIZE));
-        CHECK_GL(glEnable(GL_MULTISAMPLE));
-        CHECK_GL(glPixelStorei(GL_UNPACK_ALIGNMENT, 1));
-        CHECK_GL(glPixelStorei(GL_PACK_ALIGNMENT, 1));
+        auto grd = setupState();
 
         vao = std::make_unique<opengl::VAO>();
         graphicsMan = std::make_unique<GraphicsManager>(scene);
@@ -34,6 +37,7 @@ struct RenderEngineBate : RenderEngine {
     }
 
     void draw() override {
+        auto grd = setupState();
         CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 
         vao->bind();

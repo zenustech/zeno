@@ -101,6 +101,26 @@ public:
 
 
 template <class T>
+class scope_restore : public scope_finalizer<scope_restore<T>> {
+    T &dst;
+    T old;
+
+public:
+    scope_restore(T &dst_)
+        : dst(dst_), old(std::as_const(dst_)) {
+    }
+
+    void _scope_finalize() {
+        dst = std::move(old);
+    }
+};
+
+
+template <class T, class U = T, class = std::enable_if_t<!std::is_const_v<T>>>
+scope_restore(T &, U &&) -> scope_restore<T>;
+
+
+template <class T>
 class scope_modify : public scope_finalizer<scope_modify<T>> {
     T &dst;
     T old;
