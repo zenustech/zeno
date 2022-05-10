@@ -71,8 +71,8 @@ void Session::new_frame() {
 void Session::new_frame_offline(std::string path) {
     //impl->render_tasks.push_back([this, path] {
     auto newpath = zeno::format("{}/{:06d}.png", path, impl->curr_frameid);
-    zeno::log_info("saving screen {}x{} to {}", impl->scene->camera->m_nx,
-                   impl->scene->camera->m_ny, newpath);
+    //zeno::log_info("saving screen {}x{} to {}", impl->scene->camera->m_nx,
+                   //impl->scene->camera->m_ny, newpath);
     do_screenshot(newpath, "png");
     //});
 }
@@ -87,6 +87,8 @@ void Session::do_screenshot(std::string path, std::string type) {
     }.at(type);
     auto nx = impl->scene->camera->m_nx;
     auto ny = impl->scene->camera->m_ny;
+
+    zeno::log_info("saving screenshot {}x{} to {}", nx, ny, newpath);
     std::vector<char> pixels = impl->scene->record_frame_offline(hdrSize, 3);
 
     stbi_flip_vertically_on_write(true);
