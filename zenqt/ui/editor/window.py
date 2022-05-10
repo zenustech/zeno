@@ -522,9 +522,12 @@ class NodeEditor(QWidget):
             with open(asset_path('cache_path.txt'), 'w') as f:
                 f.write(cache_dir)
         elif name == 'Set NASLOC':
-            text, ok = QInputDialog.getText(self, 'Set NASLOC', 'NASLOC')
+            setting = QSettings('ZenusTech','Zeno')
+            path = setting.value('nas_loc')
+            text = path if path else ''
+            text, ok = QInputDialog.getText(self, 'Set NASLOC', 'NASLOC', text=text)
             if ok:
-                setting = QSettings('ZenusTech','Zeno')
+                text = text.replace('\\', '/')
                 setting.setValue('nas_loc', text)
 
     def do_export(self):
