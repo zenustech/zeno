@@ -15,6 +15,10 @@ https://github.com/zenustech/zeno/blob/master/docs/CONTRIBUTING.md
 
 Please take some time to fill the blanks completely, this help us understand your problem easier.
 Therefore *you get a better answer, faster*, thanks for your support!
+
+See also this file for already known issues:
+
+https://github.com/zenustech/zeno/blob/master/docs/FAQ.md
 -->
 
 **Describe the bug (both Chinese and English are OK)**

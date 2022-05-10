@@ -4,7 +4,9 @@
 #include "zensim/geometry/VdbLevelSet.h"
 #include "zensim/geometry/VdbSampler.h"
 #include "zensim/omp/execution/ExecutionPolicy.hpp"
+#include <atomic>
 #include <zeno/VDBGrid.h>
+#include <zeno/types/ListObject.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/StringObject.h>
@@ -157,6 +159,315 @@ ZENDEFNODE(ZSPoissonDiskSample,
                {{"string", "path", ""}},
                {"MPM"},
            });
+
+struct SurfaceToSprings : INode {
+  // element
+  std::shared_ptr<PrimitiveObject> build_springs(zs::OmpExecutionPolicy &ompPol,
+                                                 const PrimitiveObject &surf) {
+    if (surf.tris.size() == 0)
+      return {};
+    using namespace zs;
+    auto &surfPars = surf.attr<vec3f>("pos");
+    auto numV = surfPars.size();
+    auto &surfEles = surf.tris;
+    auto numE = surfEles.size();
+
+    fmt::print("surface mesh: {} verts, {} tris.\n", numV, numE);
+
+    using vec1i = zs::vec<int, 1>;
+    using vec2i = zs::vec<int, 2>;
+    HashTable<int, 2, int> edgeTable{numE * 3, memsrc_e::host, -1};
+    edgeTable.reset(ompPol, true);
+    constexpr auto space = execspace_e::openmp;
+    //
+    ompPol(range(numE),
+           [table = proxy<space>(edgeTable), &tris = surfEles](int ei) mutable {
+             auto tri = tris[ei];
+             auto vi = tri[2];
+             for (int v = 0; v != 3; ++v) {
+               auto vj = tri[v];
+               if (vi < vj)
+                 table.insert(vec2i{vi, vj});
+               vi = vj;
+             }
+           });
+    std::size_t numRegisteredEdges = edgeTable.size();
+    std::vector<int> edgeToEles(numRegisteredEdges);
+    ompPol(range(numE), [table = proxy<space>(edgeTable),
+                         &edgeToEles = edgeToEles, &tris = surfEles](int ei) {
+      auto tri = tris[ei];
+      auto vi = tri[2];
+      for (int v = 0; v != 3; ++v) {
+        auto vj = tri[v];
+        if (vi < vj) {
+          auto no = table.query(vec2i{vi, vj});
+          edgeToEles[no] = ei;
+        }
+        vi = vj;
+      }
+    });
+    //
+    std::atomic_int cnt = 0;
+    std::vector<vec2i> elePairs(numRegisteredEdges);
+    HashTable<int, 1, int> eleTable{numRegisteredEdges * 2, memsrc_e::host, -1};
+    eleTable.reset(ompPol, true);
+    ompPol(range(numE),
+           [table = proxy<space>(edgeTable), eleTable = proxy<space>(eleTable),
+            &edgeToEles, &cnt, &elePairs, &tris = surfEles](int ei) mutable {
+             using table_t = RM_CVREF_T(table);
+             auto tri = tris[ei];
+             auto vi = tri[2];
+             for (int v = 0; v != 3; ++v) {
+               auto vj = tri[v];
+               if (vi > vj) { // check opposite
+                 if (auto edgeNo = table.query(vec2i{vj, vi});
+                     edgeNo != table_t::sentinel_v) {
+                   auto neighborEleNo = edgeToEles[edgeNo];
+                   eleTable.insert(vec1i{ei});
+                   eleTable.insert(vec1i{neighborEleNo});
+                   int no = cnt.fetch_add(1);
+                   elePairs[no] = vec2i{neighborEleNo, ei};
+                 }
+               }
+               vi = vj;
+             }
+           });
+    std::size_t numSpringVerts = eleTable.size();
+    std::size_t numElePairs = cnt.load();
+    fmt::print("spring mesh: {} verts, {} tris.\n", numSpringVerts,
+               numElePairs);
+    elePairs.resize(numElePairs);
+    //
+    auto ret = std::make_shared<PrimitiveObject>();
+
+    auto &springPos = ret->attr<zeno::vec3f>("pos");
+    springPos.resize(numSpringVerts);
+    auto &springLines = ret->lines;
+    springLines.resize(numElePairs);
+
+    ompPol(range(numSpringVerts), [&springPos, &surfPars, &surfEles,
+                                   eleTable = proxy<space>(eleTable)](int pi) {
+      using mat3 = zs::vec<float, 3, 3>;
+      auto opid = eleTable._activeKeys[pi][0];
+      auto tri = surfEles[opid];
+      const auto &p0 = surfPars[tri[0]];
+      const auto &p1 = surfPars[tri[1]];
+      const auto &p2 = surfPars[tri[2]];
+      springPos[pi] = (p0 + p1 + p2) / 3;
+    });
+    ompPol(range(numElePairs),
+           [&springPos, &springLines, &surfPars, &surfEles, &elePairs,
+            eleTable = proxy<space>(eleTable)](int ei) {
+             auto vinds = elePairs[ei];
+             springLines[ei] = zeno::vec2i{eleTable.query(vec1i{vinds[0]}),
+                                           eleTable.query(vec1i{vinds[1]})};
+           });
+
+    return ret;
+  }
+
+  void apply() override {
+    using namespace zs;
+    fmt::print(fg(fmt::color::green), "begin executing SurfaceToSprings\n");
+
+    auto ompPol = omp_exec();
+    if (has_input<PrimitiveObject>("prim")) {
+      set_output("prim",
+                 build_springs(ompPol, *get_input<PrimitiveObject>("prim")));
+    } else if (has_input<ListObject>("prim")) {
+      auto list = std::make_shared<ListObject>();
+      auto &ret = list->arr;
+      auto &objSharedPtrLists = *get_input<zeno::ListObject>("prim");
+      for (auto &&objSharedPtr : objSharedPtrLists.get()) {
+        if (auto ptr = dynamic_cast<PrimitiveObject *>(objSharedPtr.get());
+            ptr != nullptr)
+          ret.push_back(build_springs(ompPol, *ptr));
+      }
+      set_output("prim", list);
+    }
+
+    fmt::print(fg(fmt::color::cyan), "done executing SurfaceToSprings\n");
+  }
+};
+
+ZENDEFNODE(SurfaceToSprings, {
+                                 {"prim"},
+                                 {"prim"},
+                                 {},
+                                 {"MPM"},
+                             });
+
+struct ToZSSprings : INode {
+  void apply() override {
+    using namespace zs;
+    fmt::print(fg(fmt::color::green), "begin executing ToZSSprings\n");
+
+    // primitive
+    float rho = get_input2<float>("density");
+    float stiffness = get_input2<float>("stiffness");
+    float thickness = get_input2<float>("thickness");
+    auto prim = get_input<PrimitiveObject>("prim");
+    auto &obj = prim->attr<vec3f>("pos");
+    vec3f *velsPtr{nullptr};
+    if (prim->has_attr("vel"))
+      velsPtr = prim->attr<vec3f>("vel").data();
+    auto &lines = prim->lines;
+
+    auto springsPrim = std::make_shared<ZenoParticles>();
+
+    // primitive binding
+    springsPrim->prim = prim;
+
+    /// category, size
+    std::size_t size{obj.size()};
+    std::size_t eleSize{lines.size()};
+    std::vector<float> dofVol(size, 0.f);
+    std::vector<float> eleVol(eleSize);
+
+    ZenoParticles::category_e category{ZenoParticles::curve};
+    springsPrim->category = category;
+
+    // per vertex (node) vol, pos, vel
+    auto ompExec = zs::omp_exec();
+
+    using TV3 = zs::vec<double, 3>;
+    const auto toTV3 = [](const zeno::vec3f &x) {
+      return TV3{x[0], x[1], x[2]};
+    };
+    const auto fromTV3 = [](const TV3 &x) {
+      return zeno::vec3f{(float)x[0], (float)x[1], (float)x[2]};
+    };
+    {
+      const auto lineLength = [&obj, &toTV3](vec2i line) {
+        TV3 p0 = toTV3(obj[line[0]]);
+        TV3 p1 = toTV3(obj[line[1]]);
+        return (p1 - p0).length();
+      };
+      for (std::size_t i = 0; i != eleSize; ++i) {
+        auto line = lines[i];
+        auto v = lineLength(line) * thickness * thickness;
+        eleVol[i] = std::max(v, limits<float>::epsilon() * 10.);
+        for (auto pi : line)
+          dofVol[pi] += eleVol[i] / 2;
+      }
+    }
+
+    // particles
+    springsPrim->sprayedOffset = obj.size();
+
+    // attributes
+    std::vector<zs::PropertyTag> tags{{"m", 1}, {"x", 3}, {"v", 3}, {"vol", 1}};
+    std::vector<zs::PropertyTag> eleTags{{"k", 1}, {"rl", 1}, {"inds", 2}};
+
+    // prim attrib tags
+    std::vector<zs::PropertyTag> auxAttribs{};
+    for (auto &&[key, arr] : prim->verts.attrs) {
+      const auto checkDuplication = [&tags](const std::string &name) {
+        for (std::size_t i = 0; i != tags.size(); ++i)
+          if (tags[i].name == name.data())
+            return true;
+        return false;
+      };
+      if (checkDuplication(key) || key == "pos" || key == "vel")
+        continue;
+      const auto &k{key};
+      match(
+          [&k, &auxAttribs](const std::vector<vec3f> &vals) {
+            auxAttribs.push_back(PropertyTag{k, 3});
+          },
+          [&k, &auxAttribs](const std::vector<float> &vals) {
+            auxAttribs.push_back(PropertyTag{k, 1});
+          },
+          [&k, &auxAttribs](const std::vector<vec3i> &vals) {},
+          [&k, &auxAttribs](const std::vector<int> &vals) {},
+          [](...) {
+            throw std::runtime_error(
+                "what the heck is this type of attribute!");
+          })(arr);
+    }
+    tags.insert(std::end(tags), std::begin(auxAttribs), std::end(auxAttribs));
+
+    fmt::print(
+        "{} springs in process. pending {} particles with these attributes.\n",
+        eleSize, size);
+    for (auto tag : tags)
+      fmt::print("tag: [{}, {}]\n", tag.name, tag.numChannels);
+
+    springsPrim->particles =
+        std::make_shared<typename ZenoParticles::particles_t>(tags, size,
+                                                              memsrc_e::host);
+    auto &pars = springsPrim->getParticles(); // tilevector
+    {
+      ompExec(zs::range(size), [pars = proxy<execspace_e::openmp>({}, pars),
+                                &obj, velsPtr, category, &prim, &auxAttribs,
+                                &dofVol, rho](int pi) mutable {
+        using vec3 = zs::vec<float, 3>;
+        using mat3 = zs::vec<float, 3, 3>;
+
+        // volume, mass
+        float vol = dofVol[pi];
+        pars("vol", pi) = vol;
+        pars("m", pi) = vol * rho;
+
+        // pos
+        pars.tuple<3>("x", pi) = obj[pi];
+
+        // vel
+        if (velsPtr != nullptr)
+          pars.tuple<3>("v", pi) = velsPtr[pi];
+        else
+          pars.tuple<3>("v", pi) = vec3::zeros();
+
+        // additional attributes
+        for (auto &prop : auxAttribs) {
+          if (prop.numChannels == 3)
+            pars.tuple<3>(prop.name, pi) =
+                prim->attr<vec3f>(std::string{prop.name})[pi];
+          else
+            pars(prop.name, pi) = prim->attr<float>(std::string{prop.name})[pi];
+        }
+      });
+
+      pars = pars.clone({memsrc_e::um, 0});
+    }
+    {
+      springsPrim->elements =
+          typename ZenoParticles::particles_t{eleTags, eleSize, memsrc_e::host};
+      auto &eles = springsPrim->getQuadraturePoints(); // tilevector
+      ompExec(zs::range(eleSize),
+              [eles = proxy<execspace_e::openmp>({}, eles), velsPtr, &eleVol,
+               &obj, &lines, &toTV3, rho, stiffness](int ei) mutable {
+                using vec3 = zs::vec<double, 3>;
+                using mat3 = zs::vec<double, 3, 3>;
+
+                eles("k", ei) = stiffness;
+
+                const auto &line = lines[ei];
+                auto p0 = obj[line[0]];
+                auto p1 = obj[line[1]];
+                eles("rl", ei) = (toTV3(p1) - toTV3(p0)).norm();
+
+                for (int i = 0; i != 2; ++i) {
+                  eles("inds", i, ei) = reinterpret_bits<float>(line[i]);
+                }
+              });
+      eles = eles.clone({memsrc_e::um, 0});
+    }
+
+    fmt::print(fg(fmt::color::cyan), "done executing ToZSSprings\n");
+    set_output("ZSParticles", springsPrim);
+  }
+};
+
+ZENDEFNODE(ToZSSprings, {
+                            {"prim",
+                             {"float", "density", "1"},
+                             {"float", "thickness", "0.05"},
+                             {"float", "stiffness", "1"}},
+                            {"ZSParticles"},
+                            {},
+                            {"Mesh"},
+                        });
 
 struct ToZSParticles : INode {
   void apply() override {
@@ -1245,21 +1556,5 @@ ZENDEFNODE(ZSLevelSetToVDBGrid, {
                                     {},
                                     {"MPM"},
                                 });
-
-struct AddVertID : zeno::INode {
-  virtual void apply() override {
-    auto prim = get_input<zeno::PrimitiveObject>("prim");
-    auto &IDs = prim->add_attr<float>("ID");
-    for (size_t i = 0; i < prim->size(); ++i)
-      IDs[i] = (float)(i);
-    set_output("primOut", prim);
-  }
-};
-ZENDEFNODE(AddVertID, {
-                          {"prim"},
-                          {"primOut"},
-                          {},
-                          {"FEM"},
-                      });
 
 } // namespace zeno

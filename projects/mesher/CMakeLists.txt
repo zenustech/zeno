@@ -7,8 +7,6 @@ add_definitions(-D__TBB_CPP20_COMPARISONS_PRESENT=0)
 
 find_package(Eigen3 REQUIRED)
 
-
-add_subdirectory(mpmmeshing)
 find_package(OpenMP)
 if (OPENMP_FOUND)
     set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
@@ -21,5 +19,5 @@ target_sources(zeno PRIVATE ${ZEN_MESHER_SOURCE})
 target_include_directories(zeno PRIVATE mpmmeshing/)
 
 
-target_link_libraries(zeno PRIVATE mpmmeshing)
+target_sources(zeno PRIVATE  mpmmeshing/help.cpp mpmmeshing/Mesh3D.cpp mpmmeshing/Render.cpp)
 target_link_libraries(zeno PRIVATE Eigen3::Eigen)

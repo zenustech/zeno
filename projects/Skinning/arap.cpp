@@ -93,11 +93,11 @@ struct DoARAPDeformation : zeno::INode {
 
 
         #pragma omp parallel for 
-        for(intptr_t i = 0;i < prim->size();++i)
+        for(size_t i = 0;i < prim->size();++i)
             U.row(i) << curPos[i][0],curPos[i][1],curPos[i][2];
 
         #pragma omp parallel for 
-        for(intptr_t i = 0;i < arap_data->data.b.size();++i)
+        for(size_t i = 0;i < arap_data->data.b.size();++i)
             bc.row(i) = U.row(arap_data->data.b[i]);
 
         igl::arap_solve(bc,arap_data->data,U);
@@ -126,8 +126,8 @@ struct TransformPrimitivePartsByTags : zeno::INode {
 
     virtual void apply() override {
         auto prim = get_input<zeno::PrimitiveObject>("prim");
-        const auto& Qs = get_input<zeno::ListObject>("Qs")->get<std::shared_ptr<zeno::NumericObject>>();
-        const auto& Ts = get_input<zeno::ListObject>("Ts")->get<std::shared_ptr<zeno::NumericObject>>();
+        const auto& Qs = get_input<zeno::ListObject>("Qs")->get<zeno::NumericObject>();
+        const auto& Ts = get_input<zeno::ListObject>("Ts")->get<zeno::NumericObject>();
         const auto& tagName = get_input2<std::string>("tagName");
 
         // std::cout << "HERE" << std::endl;
@@ -147,22 +147,22 @@ struct TransformPrimitivePartsByTags : zeno::INode {
 
         // std::cout << "AS : " << std::endl;
 
-        // for(size_t i = 0;i < nm_tags;++i){
-        //     const auto& T = Ts[i]->get<zeno::vec3f>();
-        //     const auto& Q = Qs[i]->get<zeno::vec4f>();
-        //     glm::mat4 matTrans = glm::translate(glm::vec3(T[0],T[1],T[2]));
-        //     glm::quat matQuat(Q[3],Q[0],Q[1],Q[2]);
-        //     glm::mat4 matRot = glm::toMat4(matQuat);
+        for(size_t i = 0;i < nm_tags;++i){
+            const auto& T = Ts[i]->get<zeno::vec3f>();
+            const auto& Q = Qs[i]->get<zeno::vec4f>();
+            glm::mat4 matTrans = glm::translate(glm::vec3(T[0],T[1],T[2]));
+            glm::quat matQuat(Q[3],Q[0],Q[1],Q[2]);
+            glm::mat4 matRot = glm::toMat4(matQuat);
 
-        //     As[i] = matTrans * matRot;
+            As[i] = matTrans * matRot;
 
 
-        //     // std::cout   << As[i][0][0] << "\t" << As[i][0][1] << "\t" << As[i][0][2] << "\t" << As[i][0][3] << std::endl \
-        //     //             << As[i][1][0] << "\t" << As[i][1][1] << "\t" << As[i][1][2] << "\t" << As[i][1][3] << std::endl \
-        //     //             << As[i][2][0] << "\t" << As[i][2][1] << "\t" << As[i][2][2] << "\t" << As[i][2][3] << std::endl \
-        //     //             << As[i][3][0] << "\t" << As[i][3][1] << "\t" << As[i][3][2] << "\t" << As[i][3][3] << std::endl;
+            // std::cout   << As[i][0][0] << "\t" << As[i][0][1] << "\t" << As[i][0][2] << "\t" << As[i][0][3] << std::endl \
+            //             << As[i][1][0] << "\t" << As[i][1][1] << "\t" << As[i][1][2] << "\t" << As[i][1][3] << std::endl \
+            //             << As[i][2][0] << "\t" << As[i][2][1] << "\t" << As[i][2][2] << "\t" << As[i][2][3] << std::endl \
+            //             << As[i][3][0] << "\t" << As[i][3][1] << "\t" << As[i][3][2] << "\t" << As[i][3][3] << std::endl;
 
-        // }
+        }
 
         const auto& pos = prim->attr<zeno::vec3f>("pos");
         auto& curPos = prim->attr<zeno::vec3f>("curPos");
@@ -171,7 +171,7 @@ struct TransformPrimitivePartsByTags : zeno::INode {
         const auto& tags = prim->attr<float>(tagName);
 
         #pragma omp parallel for 
-        for(intptr_t i = 0;i < prim->size();++i){
+        for(size_t i = 0;i < prim->size();++i){
             auto tag = tags[i];
             if(tag > -1e-6)
                 // std::cout << "V<" << i << ">\t: " << tag << std::endl;

@@ -25,7 +25,7 @@ public:
 };
 
 enum class log_level_t {
-    trace, debug, critical, info, warn, error,
+    trace, debug, info, critical, warn, error,
 };
 
 ZENO_API void set_log_level(log_level_t level);
@@ -50,8 +50,8 @@ void log_##x##f(__with_source_location<const char *> const &msg, Args &&...args)
 }
 _ZENO_PER_LOG_LEVEL(trace)
 _ZENO_PER_LOG_LEVEL(debug)
-_ZENO_PER_LOG_LEVEL(critical)
 _ZENO_PER_LOG_LEVEL(info)
+_ZENO_PER_LOG_LEVEL(critical)
 _ZENO_PER_LOG_LEVEL(warn)
 _ZENO_PER_LOG_LEVEL(error)
 #undef _ZENO_PER_LOG_LEVEL

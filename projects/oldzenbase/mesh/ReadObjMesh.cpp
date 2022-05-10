@@ -33,19 +33,19 @@ static void readobj(
   {
     if (!strcmp(hdr, "v")) {
       glm::vec3 vertex;
-      fscanf(fp, "%f %f %f\n", &vertex.x, &vertex.y, &vertex.z);
+      std::ignore = fscanf(fp, "%f %f %f\n", &vertex.x, &vertex.y, &vertex.z);
       vertices.push_back(vertex);
 
     } else if (!strcmp(hdr, "vt")) {
       has_texcoord = true;
       glm::vec2 uv;
-      fscanf(fp, "%f %f\n", &uv.x, &uv.y);
+      std::ignore = fscanf(fp, "%f %f\n", &uv.x, &uv.y);
       uvs.push_back(uv);
 
     } else if (!strcmp(hdr, "vn")) {
       has_normal = true;
       glm::vec3 normal;
-      fscanf(fp, "%f %f %f\n", &normal.x, &normal.y, &normal.z);
+      std::ignore = fscanf(fp, "%f %f %f\n", &normal.x, &normal.y, &normal.z);
       normals.push_back(normal);
 
     } else if (!strcmp(hdr, "f")) {
@@ -53,10 +53,10 @@ static void readobj(
       {
         glm::uvec3 last_index, first_index, index;
 
-        fscanf(fp, "%d/%d/%d", &index.x, &index.y, &index.z);
+        std::ignore = fscanf(fp, "%d/%d/%d", &index.x, &index.y, &index.z);
         first_index = index;
 
-        fscanf(fp, "%d/%d/%d", &index.x, &index.y, &index.z);
+        std::ignore = fscanf(fp, "%d/%d/%d", &index.x, &index.y, &index.z);
         last_index = index;
 
         while (fscanf(fp, "%d/%d/%d", &index.x, &index.y, &index.z) > 0) {
@@ -75,10 +75,10 @@ static void readobj(
       {
         glm::uvec3 last_index, first_index, index;
 
-        fscanf(fp, "%d/%d", &index.x, &index.y);
+        std::ignore = fscanf(fp, "%d/%d", &index.x, &index.y);
         first_index = index;
 
-        fscanf(fp, "%d/%d", &index.x, &index.y);
+        std::ignore = fscanf(fp, "%d/%d", &index.x, &index.y);
         last_index = index;
 
         while (fscanf(fp, "%d/%d", &index.x, &index.y) > 0) {
@@ -94,10 +94,10 @@ static void readobj(
       {
         glm::uvec3 last_index, first_index, index;
 
-        fscanf(fp, "%d/%d", &index.x, &index.y);
+        std::ignore = fscanf(fp, "%d/%d", &index.x, &index.y);
         first_index = index;
 
-        fscanf(fp, "%d/%d", &index.x, &index.y);
+        std::ignore = fscanf(fp, "%d/%d", &index.x, &index.y);
         last_index = index;
 
         while (fscanf(fp, "%d/%d", &index.x, &index.y) > 0) {
@@ -113,10 +113,10 @@ static void readobj(
         //printf("face vert only\n");
         glm::uvec3 last_index, first_index, index;
 
-        fscanf(fp, "%d", &index.x);
+        std::ignore = fscanf(fp, "%d", &index.x);
         first_index = index;
 
-        fscanf(fp, "%d", &index.x);
+        std::ignore = fscanf(fp, "%d", &index.x);
         last_index = index;
 
         while (fscanf(fp, "%d", &index.x) > 0) {
