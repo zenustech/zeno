@@ -25,6 +25,8 @@ struct Session::Impl {
     //std::unordered_map<std::shared_ptr<zeno::IObject>, std::unique_ptr<IGraphic>>
         //graphics;
 
+    //std::vector<std::function<void()>> render_tasks;
+
     int curr_frameid = 0;
 };
 
@@ -60,14 +62,19 @@ void Session::set_smooth_shading(bool smooth) {
 
 void Session::new_frame() {
     impl->scene->draw();
+    //for (auto const &task: impl->render_tasks) {
+        //task();
+    //}
+    //impl->render_tasks.clear();
 }
 
 void Session::new_frame_offline(std::string path) {
-    char buf[1024];
+    //impl->render_tasks.push_back([this, path] {
     auto newpath = zeno::format("{}/{:06d}.png", path, impl->curr_frameid);
     zeno::log_info("saving screen {}x{} to {}", impl->scene->camera->m_nx,
-                    impl->scene->camera->m_ny, buf);
-    do_screenshot(buf);
+                   impl->scene->camera->m_ny, newpath);
+    do_screenshot(newpath, "png");
+    //});
 }
 
 void Session::do_screenshot(std::string path, std::string type) {

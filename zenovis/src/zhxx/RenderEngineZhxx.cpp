@@ -79,9 +79,11 @@ struct RenderEngineZhxx : RenderEngine, zeno::disable_copy {
         zenvis::set_window_size(cam.m_nx, cam.m_ny);
         zenvis::look_perspective(zxx.cx, zxx.cy, zxx.cz, zxx.theta,
                 zxx.phi, zxx.radius, zxx.fov, zxx.ortho_mode);
-        int targetFBO = 0;
+        int oldFBO = 0, targetFBO = 0;
+        CHECK_GL(glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &oldFBO));
         CHECK_GL(glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &targetFBO));
         zenvis::new_frame(targetFBO);
+        CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, oldFBO));
     }
 
     ~RenderEngineZhxx() override {
