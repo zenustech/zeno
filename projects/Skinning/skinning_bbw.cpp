@@ -12,6 +12,7 @@
 #include <igl/project_to_line.h>
 
 #include "skinning_iobject.h"
+#include "LBFGSB.h"
 
 
 namespace{
@@ -68,7 +69,7 @@ struct SolveBiharmonicWeight : zeno::INode {
         {
             throw std::runtime_error("BBW GENERATION FAIL");
         }
-        assert(W.rows() == V.rows() && W.cols() == C.rows());
+        //assert(W.rows() == V.rows() && W.cols() == C.rows());
         igl::normalize_row_sums(W,W);
 
         for(size_t i = 0;i < W.cols();++i){

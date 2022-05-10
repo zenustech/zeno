@@ -210,6 +210,13 @@ QDMDisplayMenu::QDMDisplayMenu()
 
     addSeparator();
 
+    pAction = new QAction(tr("Zhxx Renderer"), this);
+    pAction->setCheckable(true);
+    pAction->setChecked(false);
+    addAction(pAction);
+
+    addSeparator();
+
     pAction = new QAction(tr("Camera Keyframe"), this);
     addAction(pAction);
 
@@ -318,7 +325,7 @@ void DisplayWidget::onRun()
     QPair<int, int> fromTo = m_timeline->fromTo();
     int beginFrame = fromTo.first;
     int endFrame = fromTo.second;
-    if (endFrame > beginFrame && beginFrame >= 0)
+    if (endFrame >= beginFrame && beginFrame >= 0)
     {
         auto pGraphsMgr = zenoApp->graphsManagment();
         IGraphsModel* pModel = pGraphsMgr->currentModel();

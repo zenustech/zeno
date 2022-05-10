@@ -46,6 +46,7 @@ struct RenderEngineZhxx : RenderEngine, zeno::disable_copy {
     Scene *scene;
 
     RenderEngineZhxx(Scene *scene_) : scene(scene_) {
+        zeno::log_info("Zhxx Render Engine started...");
         CHECK_GL(glEnable(GL_BLEND));
         CHECK_GL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
         CHECK_GL(glEnable(GL_DEPTH_TEST));

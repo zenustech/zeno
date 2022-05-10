@@ -707,12 +707,14 @@ struct GraphicPrimitive : IGraphic {
     }
 
   }
-  virtual void drawVoxelize() override {
+  virtual void drawVoxelize(float alphaPass) override {
+    if (!prim_has_mtl) return;
     if (prim_has_mtl) ensureGlobalMapExist();
     int id = 0;
     for (id = 0; id < textures.size(); id++) {
         textures[id]->bind_to(id);
     }
+
     auto vbobind = [&] (auto &vbo) {
         vbo->bind();
         vbo->attribute(/*index=*/0,
@@ -742,22 +744,26 @@ struct GraphicPrimitive : IGraphic {
 
     auto instvbobind = [&] (auto &instvbo) {
         instvbo->bind();
-        instvbo->attribute(5, sizeof(glm::vec4) * 0, sizeof(glm::vec4) * 4, GL_FLOAT, 4);
-        instvbo->attribute(6, sizeof(glm::vec4) * 1, sizeof(glm::vec4) * 4, GL_FLOAT, 4);
-        instvbo->attribute(7, sizeof(glm::vec4) * 2, sizeof(glm::vec4) * 4, GL_FLOAT, 4);
-        instvbo->attribute(8, sizeof(glm::vec4) * 3, sizeof(glm::vec4) * 4, GL_FLOAT, 4);
+        instvbo->attribute(5, offsetof(InstVboData, modelMatrix) + sizeof(glm::vec4) * 0, sizeof(InstVboData), GL_FLOAT, 4);
+        instvbo->attribute(6, offsetof(InstVboData, modelMatrix) + sizeof(glm::vec4) * 1, sizeof(InstVboData), GL_FLOAT, 4);
+        instvbo->attribute(7, offsetof(InstVboData, modelMatrix) + sizeof(glm::vec4) * 2, sizeof(InstVboData), GL_FLOAT, 4);
+        instvbo->attribute(8, offsetof(InstVboData, modelMatrix) + sizeof(glm::vec4) * 3, sizeof(InstVboData), GL_FLOAT, 4);
+        instvbo->attribute(9, offsetof(InstVboData, time), sizeof(InstVboData), GL_FLOAT, 1);
         instvbo->attrib_divisor(5, 1);
         instvbo->attrib_divisor(6, 1);
         instvbo->attrib_divisor(7, 1);
         instvbo->attrib_divisor(8, 1);
+        instvbo->attrib_divisor(9, 1);
     };
     auto instvbounbind = [&] (auto &instvbo) {
         instvbo->disable_attribute(5);
         instvbo->disable_attribute(6);
         instvbo->disable_attribute(7);
         instvbo->disable_attribute(8);
+        instvbo->disable_attribute(9);
         instvbo->unbind();
     };
+    
     if (tris_count) {
         //printf("TRIS\n");
         if (triObj.vbo) {
@@ -799,9 +805,10 @@ struct GraphicPrimitive : IGraphic {
         glBindBuffer(GL_UNIFORM_BUFFER, 0);
         triObj.voxelprog->use();
         set_program_uniforms(triObj.voxelprog);
-
-        
+        triObj.voxelprog->set_uniform("u_scene_voxel_scale", glm::vec3(1.0/voxelizer::getDomainLength()));
+        triObj.voxelprog->set_uniform("voxelgrid_resolution", voxelizer::getVoxelResolution());
         triObj.voxelprog->set_uniformi("lightNum", lights.size());
+        triObj.voxelprog->set_uniform("alphaPass", alphaPass);
         for (int lightNo = 0; lightNo < lights.size(); ++lightNo)
         {
             auto &light = lights[lightNo];
@@ -1203,6 +1210,15 @@ struct GraphicPrimitive : IGraphic {
             texOcp++;
     
         }
+        
+        triObj.prog->set_uniformi("vxgibuffer", texOcp);
+        CHECK_GL(glActiveTexture(GL_TEXTURE0+texOcp));
+        CHECK_GL(glBindTexture(GL_TEXTURE_3D, voxelizer::vxTexture.id));
+        texOcp++;
+        triObj.prog->set_uniform("vxSize",voxelizer::getDomainLength());
+        triObj.prog->set_uniform("vxView", voxelizer::getView());
+        
+        
         
         triObj.prog->set_uniform("msweight", m_weight);
         triObj.ebo->bind();

@@ -16,7 +16,7 @@ struct IGraphic {
   }
   virtual void draw(bool reflect, float depthPass) = 0;
   virtual void drawShadow(Light *light) = 0;
-  virtual void drawVoxelize(){};
+  virtual void drawVoxelize(float alphaPass){};
   virtual ~IGraphic() = default;
 };
 
@@ -26,6 +26,6 @@ struct FrameData {
 
 FrameData *current_frame_data();
 
-/* extern std::vector<std::unique_ptr<FrameData>> frames; */
+extern std::vector<std::unique_ptr<FrameData>> frames;
 
 }
