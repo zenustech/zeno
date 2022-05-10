@@ -856,8 +856,6 @@ QModelIndex GraphsModel::extractSubGraph(const QModelIndexList& nodes, const QMo
         return QModelIndex();
     }
 
-    ZASSERT_EXIT(false, QModelIndex());
-
     enableTrans = true;    //dangerous to trans...
     if (enableTrans)
         beginTransaction("extract a new graph");
