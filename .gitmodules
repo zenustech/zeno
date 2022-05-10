@@ -13,3 +13,6 @@
 [submodule "zenovis/openexr"]
 	path = zenovis/openexr
 	url = https://github.com/zenustech/openexr.git
+[submodule "projects/FBX/assimp"]
+	path = projects/FBX/assimp
+	url = https://github.com/assimp/assimp.git
