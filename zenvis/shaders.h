@@ -1677,6 +1677,7 @@ uniform vec3 reflect_centers[16];
 uniform sampler3D vxgibuffer;
 uniform float vxSize;
 uniform mat4 vxView;
+uniform bool enable_gi_flag;
 
 
 vec3 convWorldPosToVoxelPos(vec3 pos){
@@ -1857,13 +1858,15 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 old_tangent) {
         
         realColor += photoReal * sclr;
     }
-    //vec4 gi = pbrGI(position, normalize(new_normal), normalize(view_dir), normalize(tangent), normalize(bitangent), mat_basecolor, mat_roughness, mat_metallic);
-    
     
     vec3 iblPhotoReal =  CalculateLightingIBL(new_normal,view_dir,albedo2,roughness,mat_metallic);
     vec3 iblNPR = CalculateLightingIBLToon(new_normal,view_dir,albedo2,roughness,mat_metallic);
     vec3 ibl = mat_ao * mix(iblPhotoReal, iblNPR,mat_toon);
-    color += ibl;// + gi.xyz;
+    color += ibl;
+    if (enable_gi_flag) {
+        vec4 gi = pbrGI(position, normalize(new_normal), normalize(view_dir), normalize(tangent), normalize(bitangent), mat_basecolor, mat_roughness, mat_metallic);
+        color += gi.xyz;
+    }
     realColor += iblPhotoReal;
     float brightness0 = brightness(realColor)/(brightness(mon2lin(mat_basecolor))+0.00001);
     float brightness1 = smoothstep(mat_shape.x, mat_shape.y, dot(new_normal, light_dir));
