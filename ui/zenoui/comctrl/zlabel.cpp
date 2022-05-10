@@ -94,14 +94,28 @@ void ZIconLabel::onToggled()
 
 ZTextLabel::ZTextLabel(QWidget* parent)
     : QLabel(parent)
+    , m_bUnderlineHover(false)
+    , m_bUnderline(false)
 {
     setMouseTracking(true);
 }
 
 ZTextLabel::ZTextLabel(const QString& text, QWidget* parent)
     : QLabel(text, parent)
+    , m_bUnderlineHover(false)
+    , m_bUnderline(false)
 {
     setMouseTracking(true);
+}
+
+void ZTextLabel::setUnderline(bool bUnderline)
+{
+    m_bUnderline = bUnderline;
+}
+
+void ZTextLabel::setUnderlineOnHover(bool bUnderline)
+{
+    m_bUnderlineHover = bUnderline;
 }
 
 void ZTextLabel::setTextColor(const QColor& clr)
@@ -125,6 +139,14 @@ void ZTextLabel::enterEvent(QEvent* event)
     QPalette pal = palette();
     pal.setColor(QPalette::WindowText, QColor(255, 255, 255));
     setPalette(pal);
+
+    if (m_bUnderlineHover || m_bUnderline)
+    {
+        QFont fnt = this->font();
+        fnt.setUnderline(true);
+        setFont(fnt);    
+    }
+
     setCursor(Qt::PointingHandCursor);
 }
 
@@ -133,11 +155,22 @@ void ZTextLabel::leaveEvent(QEvent* event)
     QPalette pal = palette();
     pal.setColor(QPalette::WindowText, m_normal);
     setPalette(pal);
+
+    if (m_bUnderlineHover)
+    {
+        QFont fnt = this->font();
+        fnt.setUnderline(false);
+        setFont(fnt);
+    }
+
     setCursor(Qt::ArrowCursor);
 }
 
 void ZTextLabel::mouseReleaseEvent(QMouseEvent* event)
 {
     QLabel::mouseReleaseEvent(event);
-    emit clicked();
+    if (event->button() == Qt::LeftButton)
+        emit clicked();
+    else if (event->button() == Qt::RightButton)
+        emit rightClicked();
 }

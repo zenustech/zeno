@@ -61,6 +61,8 @@ void ZenoGraphsEditor::initUI()
 
     m_ui->graphsViewTab->setFont(QFont("HarmonyOS Sans", 12));  //bug in qss font setting.
     m_ui->searchEdit->setProperty("cssClass", "searchEdit");
+
+    initRecentFiles();
 }
 
 void ZenoGraphsEditor::initModel()
@@ -110,6 +112,11 @@ void ZenoGraphsEditor::initSignals()
     connect(m_ui->searchResView, SIGNAL(clicked(const QModelIndex&)), this, SLOT(onSearchItemClicked(const QModelIndex&)));
 
     m_selection->setCurrentIndex(m_sideBarModel->index(0, 0), QItemSelectionModel::SelectCurrent);
+}
+
+void ZenoGraphsEditor::initRecentFiles()
+{
+    m_ui->welcomePage->initRecentFiles();
 }
 
 void ZenoGraphsEditor::resetModel(IGraphsModel* pModel)

@@ -17,6 +17,14 @@ ZenoApplication::ZenoApplication(int &argc, char **argv)
     initStyleSheets();
     m_errSteam.registerMsgHandler();
     zeno::log_info("build date: {} {}", __DATE__, __TIME__);
+
+    QStringList locations;
+    locations = QStandardPaths::standardLocations(QStandardPaths::AppDataLocation);
+#ifdef Q_OS_WIN
+    locations = locations.filter("ProgramData");
+    ZASSERT_EXIT(!locations.isEmpty());
+    m_appDataPath.setPath(locations[0]);
+#endif
 }
 
 ZenoApplication::~ZenoApplication()

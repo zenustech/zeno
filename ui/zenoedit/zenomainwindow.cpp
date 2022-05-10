@@ -399,12 +399,48 @@ void ZenoMainWindow::exportGraph() {
     saveContent(content, path);
 }
 
-bool ZenoMainWindow::openFile(QString filePath) {
+bool ZenoMainWindow::openFile(QString filePath)
+{
     auto pGraphs = zenoApp->graphsManagment();
     IGraphsModel *pModel = pGraphs->openZsgFile(filePath);
     if (!pModel)
         return false;
+    recordRecentFile(filePath);
     return true;
+}
+
+void ZenoMainWindow::recordRecentFile(const QString& filePath)
+{
+    QSettings settings(QSettings::UserScope, "Zenus Inc.", "zeno2");
+    settings.beginGroup("Recent File List");
+
+    QStringList keys = settings.childKeys();
+    QStringList paths;
+    for (QString key : keys) {
+        QString path = settings.value(key).toString();
+        paths.append(path);
+    }
+
+    if (paths.indexOf(filePath) != -1) {
+        return;
+    }
+
+    int idx = -1;
+    if (keys.isEmpty()) {
+        idx = 0;
+    } else {
+        QString fn = keys[keys.length() - 1];
+        static QRegExp rx("File (\\d+)");
+        if (rx.indexIn(fn) != -1) {
+            QStringList caps = rx.capturedTexts();
+            if (caps.length() == 2)
+                idx = caps[1].toInt();
+        } else {
+            //todo
+        }
+    }
+
+    settings.setValue(QString("File %1").arg(idx + 1), filePath);
 }
 
 void ZenoMainWindow::onToggleDockWidget(DOCK_TYPE type, bool bShow)
