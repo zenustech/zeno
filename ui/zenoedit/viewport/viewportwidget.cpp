@@ -210,6 +210,13 @@ QDMDisplayMenu::QDMDisplayMenu()
 
     addSeparator();
 
+    pAction = new QAction(tr("Zhxx Renderer"), this);
+    pAction->setCheckable(true);
+    pAction->setChecked(false);
+    addAction(pAction);
+
+    addSeparator();
+
     pAction = new QAction(tr("Camera Keyframe"), this);
     addAction(pAction);
 
