@@ -185,6 +185,8 @@ struct RetrieveRigidTransform : zeno::INode {
         newTet.col(2) << objNew->verts[idx2][0],objNew->verts[idx2][1],objNew->verts[idx2][2],1.0;
         newTet.col(3) << objNew->verts[idx3][0],objNew->verts[idx3][1],objNew->verts[idx3][2],1.0;
 
+        std::cout << "RETRIEVE IDX : " << idx0 << "\t" << idx1 << "\t" << idx2 << "\t" << idx3 << std::endl;
+
         Mat4x4d T = newTet * refTet.inverse();
 
         Mat3x3d R = T.block(0,0,3,3);
@@ -860,6 +862,80 @@ ZENDEFNODE(ComputeNodalVolume, {
     {},
     {"FEM"},
 });
+
+
+struct RigidTransformPrimitve : zeno::INode {
+    zeno::vec4f toDualQuat(const zeno::vec4f& q,const zeno::vec3f& t){
+        auto qd = zeno::vec4f(0);
+
+        auto qx = vec(q)[0];
+        auto qy = vec(q)[1];
+        auto qz = vec(q)[2];
+        auto qw = w(q);
+        auto tx = t[0];
+        auto ty = t[1];
+        auto tz = t[2];
+
+        qd[3] = -0.5*( tx*qx + ty*qy + tz*qz);          // qd.w
+        qd[0] =  0.5*( tx*qw + ty*qz - tz*qy);          // qd.x
+        qd[1] =  0.5*(-tx*qz + ty*qw + tz*qx);          // qd.y
+        qd[2] =  0.5*( tx*qy - ty*qx + tz*qw);          // qd.z
+
+        return qd;
+    }
+
+    zeno::vec3f vec(const zeno::vec4f& q){
+        auto v = zeno::vec3f(q[0],q[1],q[2]);
+        return v;
+    }
+
+    float w(const zeno::vec4f& q){
+        return q[3];
+    }
+
+    zeno::vec3f transform(const zeno::vec3f& v,const zeno::vec4f& q,const zeno::vec4f& dq){
+        auto vt = zeno::vec3f(0,0,0);
+
+        return vt;
+    }
+
+    virtual void apply() override {
+        auto prim = get_input<zeno::PrimitiveObject>("prim");
+        auto q = get_input<zeno::NumericObject>("quat")->get<zeno::vec4f>();
+        auto t = get_input<zeno::NumericObject>("trans")->get<zeno::vec3f>();
+
+        // assume here the input quaternion is already normalized
+        // turn the quaternion and translation into the dual parts
+        auto qd = toDualQuat(q,t);
+
+
+        int nv = prim->size();
+        auto primOut = std::make_shared<zeno::PrimitiveObject>(*prim);
+        auto& pos = primOut->attr<zeno::vec3f>("pos");
+
+        auto d0 = vec(q);
+        auto de = vec(qd);
+        auto a0 = w(q);
+        auto ae = w(qd);
+
+    #pragma omp parallel for
+        for(int i = 0;i < nv;++i){
+            auto v = pos[i];
+            pos[i] = v + 2*zeno::cross(d0,zeno::cross(d0,v) + a0*v) + 2*(a0*de - ae*d0 + zeno::cross(d0,de));
+        }
+
+        set_output("primOut",std::move(primOut));
+    }
+
+};
+
+ZENDEFNODE(RigidTransformPrimitve, {
+    {"prim","quat","trans"},
+    {"primOut"},
+    {},
+    {"FEM"},
+});
+
 
 // struct ComputeExponentialWeightSimilarity : zeno::INode {
 //     virtual void apply() override {
