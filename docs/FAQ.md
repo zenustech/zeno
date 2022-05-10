@@ -1,35 +1,63 @@
-# Troubleshooting Build
+# Troubleshooting / FAQs
 
 You may find solutions here for known issues.
 
 If you didn't find your problem in the following list, please consider submit a
 [GitHub issue](https://github.com/zenustech/zeno/issues) so that we can help you solve it.
 
-If you solved the problem yourself, you may create a pull Request to edit this file,
-adding your own solution (according to the existing format), so that later people with same
-problem can find solution easier.
+> If you solved the problem yourself, you may create a pull Request to edit this file,
+> adding your own solution (according to the existing format), so that later people with same
+> problem can find solution easier.
 
-# CMake problem
+## CMake problem
 
-## Q
+### Q
 
-Almost 99% of CMake problems.
+You ran CMake for multiple times, and CMake somehow failed with confusing error messages.
 
-## A
+### A
 
-CMake is a stupid state machine, the 'cached' configuration values from previous build may break the next build.
+CMake is a stupid state machine, the *cached* configuration variables from previous build may break the next build.
 
-Try remove the `build` directory completely, and re-run `cmake -B build` to re-build:
+Try remove the `build` directory completely:
 
 ```bash
 rm -rf build
 ```
 
-# Windows problem
+Then re-run CMake again:
 
-# WSL problem
+```
+cmake -B build
+cmake --build build --config Release
+```
 
-## Q
+> JOKE: Every time you meet a problem about CMake, try `rm -rf build` first :) This solve 99% problems.
+> If `rm -rf build` doesn't solve, this is the 1% real problems, ask us for help.
+
+> See also my [public course](https://github.com/parallel101/course) for learning CMake (and C++ parallel programming).
+
+## Windows problem
+
+### Q
+
+```
+Error: Could not find 'Qt5Core.dll'
+```
+
+when running `build\bin\zenoedit.exe`.
+
+### A
+
+Suppose you have installed `Qt5` in `C:\Qt\Qt5.14.2`.
+Then this file may be located in `C:\Qt\Qt5.14.2\bin\msvc2017_64\bin\Qt5Core.dll`.
+
+1. Manually copy the `Qt5Core.dll`, `Qt5Gui.dll`, and etc. to the `build\bin` directory (same directory as `zenoedit.exe` is).
+2. Add the path `C:\Qt\Qt5.14.2\bin\msvc2017_64\bin` (where `Qt5Core.dll` is located in) to the environment variable `PATH`.
+
+## WSL problem
+
+### Q
 
 ```
 qt.qpa.xcb: could not connect to display
@@ -43,7 +71,7 @@ Aborted (core dumped)
 
 when running `build/bin/zenoedit`.
 
-## A
+### A
 
 This means your Linux system don't have a graphic interface (GUI).
 You might be using WSL, **WSL don't have GUI by default**. They only have command line interface but no graphic interface.
@@ -71,11 +99,13 @@ xclock
 * If the `xclock` failed to start: your WSL still doesn't have GUI, **all GUI application won't work**, not just Zeno.
 * If the `xclock` starts successfully: configurations for a working GUI, go ahead and Zeno should work too.
 
+> Zeno still gives the same error even after `xclock` worked? Try `sudo apt-get install qt5-default`.
+
 > Not WSL but still meet this problem? You might be using Zeno on a headless-server, hint: `ssh -X root@yourserver.address`
 
-# Ubuntu problem
+## Ubuntu problem
 
-## Q
+### Q
 
 ```
 /usr/include/c++/9/exception:143:10: fatal error: /mnt/e/zeno/build/ui/zenoui/zenoui_autogen/include/bits/exception_ptr.h: Invalid argument
@@ -85,7 +115,7 @@ xclock
 
 during `cmake --build build`.
 
-## A
+### A
 
 This is because your Qt5 and GCC libs version mismatched, upgrade them:
 
@@ -95,7 +125,7 @@ sudo apt-get upgrade
 rm -rf build           # clean cmake build directory and re-run cmake
 ```
 
-## Q
+### Q
 
 ```
 /usr/lib/qt5/bin/uic: error while loading shared libraries: libQt5Core.so.5: cannot open shared object file: No such file or directory
@@ -103,7 +133,7 @@ rm -rf build           # clean cmake build directory and re-run cmake
 
 during `cmake --build build`.
 
-## A
+### A
 
 This is a silly bug from Ubuntu official team, you need manually run this command to fix the stupid `libQt5Core.so.5`:
 

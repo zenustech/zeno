@@ -1,0 +1,4 @@
+cuda-version need cuda driver 11.5:
+https://developer.download.nvidia.com/compute/cuda/11.5.1/local_installers/cuda_11.5.1_496.13_windows.exe
+
+if houdini cannot display, upgrade your nvidia-gpu driver >=511.79.

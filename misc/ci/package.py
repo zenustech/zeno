@@ -6,8 +6,10 @@ import shutil
 binpath = os.path.join('build', 'bin')
 outpath = os.path.join('build', 'out')
 
-os.mkdir(outpath)
+if os.path.exists(outpath):
+    shutil.rmtree(outpath, ignore_errors=True)
 if sys.platform == 'win32':
+    shutil.copytree(os.path.join('misc', 'ci', 'win'), outpath)
     shutil.move(os.path.join(binpath, 'zenoedit.exe'), os.path.join(outpath, 'zenoedit.exe'))
     for target in os.listdir(binpath):
         if target.endswith('.dll'):
@@ -16,10 +18,10 @@ if sys.platform == 'win32':
         '..\\Qt\\5.15.2\\msvc2019_64\\bin\\windeployqt.exe',
         os.path.join(outpath, 'zenoedit.exe'),
     ])
-    shutil.copyfile(os.path.join('misc', 'ci', 'win', '000_start.bat'), os.path.join(outpath, '000_start.bat'))
     shutil.make_archive(outpath, 'zip', outpath, verbose=1)
     print('finished with', outpath + '.zip')
 elif sys.platform == 'linux':
+    shutil.copytree(os.path.join('misc', 'ci', 'nix'), outpath)
     subprocess.check_call([
         'wget',
         'https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage',
@@ -46,7 +48,6 @@ elif sys.platform == 'linux':
         #'-executable=' + os.path.join(outpath, 'usr', 'bin', 'zenorunner'),
         '-bundle-non-qt-libs',
     ])
-    shutil.copyfile(os.path.join('misc', 'ci', 'nix', '000_start.sh'), os.path.join(outpath, '000_start.sh'))
     subprocess.check_call([
         'chmod',
         '+x',
