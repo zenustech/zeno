@@ -811,9 +811,9 @@ static void paint_graphics(GLuint target_fbo = 0) {
     glEnable(GL_BLEND);
     CHECK_GL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
     glBindRenderbuffer(GL_RENDERBUFFER, msfborgb);              
-    glRenderbufferStorageMultisample(GL_RENDERBUFFER, 16, GL_RGBA32F, nx, ny);
+    glRenderbufferStorageMultisample(GL_RENDERBUFFER, num_samples, GL_RGBA32F, nx, ny);
     CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, msfbod));
-    CHECK_GL(glRenderbufferStorageMultisample(GL_RENDERBUFFER, 16, GL_DEPTH_COMPONENT32F, nx, ny));
+    CHECK_GL(glRenderbufferStorageMultisample(GL_RENDERBUFFER, num_samples, GL_DEPTH_COMPONENT32F, nx, ny));
     //ZPass();
     glm::vec3 object = g_camPos + 1.0f * glm::normalize(g_camView);
     glm::vec3 right = glm::normalize(glm::cross(object - g_camPos, g_camUp));
