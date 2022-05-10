@@ -15,6 +15,7 @@
 #include <zeno/utils/scope_exit.h>
 #include <cstdlib>
 #include <map>
+#include <zeno/utils/vec.h>
 
 namespace zenovis {
 
@@ -61,7 +62,15 @@ static bool calcObjectCenterRadius(zeno::IObject *ptr, zeno::vec3f &center, floa
 bool Scene::cameraFocusOnNode(std::string const &nodeid, zeno::vec3f &center, float &radius) {
     for (auto const &[key, ptr]: this->objectsMan->pairs()) {
         if (nodeid == key.substr(0, key.find_first_of(':'))) {
-            return calcObjectCenterRadius(ptr, center, radius);
+            // return calcObjectCenterRadius(ptr, center, radius);
+            auto &ud = ptr->userData();
+            if (ud.has("_bboxCenter")) {
+                center = ud.getLiterial<zeno::vec3f>("_bboxCenter");
+                radius = ud.getLiterial<float>("_bboxRadius");
+                return true;
+            } else {
+                return false;
+            }
         }
     }
     zeno::log_debug("cannot focus: node with id {} not found, did you tagged VIEW on it?", nodeid);
