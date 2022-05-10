@@ -19,7 +19,12 @@ namespace zfx {
 
         Options(int a) {}
     };
+    class CompileError  {
 
+      private:
+        std::string message;
+
+    };
     struct Program {
         std::vector<std::pair<std::string, int>> symbols;
         std::vector<std::pair<std::string, int>> params;

@@ -27,5 +27,13 @@ namespace zfx ::x64{
     struct SimdBuilder {
         std::vector<uint8_t>
     };
+
+    class Inst {
+
+    };
+
+    class Oprand{
+
+    };
 }
 

@@ -4,3 +4,19 @@
 
 #pragma once
 
+#include "Ast.h"
+#include <iostream>
+#include <any>
+/*
+namespace zfx {
+    class AstVisitor {
+
+        virtual std::any visit() {
+
+        }
+        virtual ~AstVisitor() {
+
+        }
+    };
+}
+*/
