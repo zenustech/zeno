@@ -7,18 +7,20 @@ namespace zeno {
 
 template <class Func>
 class scope_exit {
+    static_assert(std::is_same_v<std::decay_t<Func>, Func>);
+
     Func func;
     bool enabled;
 
 public:
-    scope_exit(Func &&func) : func(std::move(func)), enabled(true) {
+    scope_exit(Func &&func) noexcept : func(std::move(func)), enabled(true) {
     }
 
-    bool has_value() const {
+    bool has_value() const noexcept {
         return enabled;
     }
 
-    void release() {
+    void release() noexcept {
         enabled = false;
     }
 
@@ -29,7 +31,7 @@ public:
         }
     }
 
-    ~scope_exit() {
+    ~scope_exit() noexcept {
         if (enabled)
             func();
     }
@@ -37,11 +39,11 @@ public:
     scope_exit(scope_exit const &) = delete;
     scope_exit &operator=(scope_exit const &) = delete;
 
-    scope_exit(scope_exit &&that) : func(std::move(func)), enabled(that.enabled) {
+    scope_exit(scope_exit &&that) noexcept : func(std::move(that.func)), enabled(that.enabled) {
         that.enabled = false;
     }
 
-    scope_exit &operator=(scope_exit &&that) {
+    scope_exit &operator=(scope_exit &&that) noexcept {
         if (this != &that) {
             enabled = that.enabled;
             that.enabled = false;
@@ -72,7 +74,7 @@ class scope_finalizer {
 
         Derived &that;
 
-        void operator()() const {
+        void operator()() const noexcept {
             that._scope_finalize();
         }
     };
@@ -80,21 +82,21 @@ class scope_finalizer {
     scope_exit<finalize_functor> guard;
 
 public:
-    explicit scope_finalizer() : guard(finalize_functor{static_cast<Derived &>(*this)}) {
+    explicit scope_finalizer() noexcept : guard(finalize_functor{static_cast<Derived &>(*this)}) {
     }
 
     scope_finalizer(scope_finalizer const &) = delete;
     scope_finalizer &operator=(scope_finalizer const &) = delete;
 
-    bool has_value() const {
+    bool has_value() const noexcept {
         return guard.has_value();
     }
 
-    void release() {
+    void release() noexcept {
         return guard.release();
     }
 
-    void reset() {
+    void reset() noexcept {
         return guard.reset();
     }
 };
@@ -110,7 +112,7 @@ public:
         : dst(dst_), old(std::as_const(dst_)) {
     }
 
-    void _scope_finalize() {
+    void _scope_finalize() noexcept {
         dst = std::move(old);
     }
 };
@@ -127,11 +129,11 @@ class scope_modify : public scope_finalizer<scope_modify<T>> {
 
 public:
     template <class U = T>
-    scope_modify(T &dst_, U &&val_)
+    scope_modify(T &dst_, U &&val_) noexcept
         : dst(dst_), old(std::exchange(dst_, std::forward<U>(val_))) {
     }
 
-    void _scope_finalize() {
+    void _scope_finalize() noexcept {
         dst = std::move(old);
     }
 };
