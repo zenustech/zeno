@@ -894,9 +894,12 @@ struct RigidTransformPrimitve : zeno::INode {
     }
 
     zeno::vec3f transform(const zeno::vec3f& v,const zeno::vec4f& q,const zeno::vec4f& dq){
-        auto vt = zeno::vec3f(0,0,0);
+        auto d0 = vec(q);
+        auto de = vec(dq);
+        auto a0 = w(q);
+        auto ae = w(dq);
 
-        return vt;
+        return v + 2*zeno::cross(d0,zeno::cross(d0,v) + a0*v) + 2*(a0*de - ae*d0 + zeno::cross(d0,de));
     }
 
     virtual void apply() override {
@@ -913,16 +916,9 @@ struct RigidTransformPrimitve : zeno::INode {
         auto primOut = std::make_shared<zeno::PrimitiveObject>(*prim);
         auto& pos = primOut->attr<zeno::vec3f>("pos");
 
-        auto d0 = vec(q);
-        auto de = vec(qd);
-        auto a0 = w(q);
-        auto ae = w(qd);
-
     #pragma omp parallel for
-        for(int i = 0;i < nv;++i){
-            auto v = pos[i];
-            pos[i] = v + 2*zeno::cross(d0,zeno::cross(d0,v) + a0*v) + 2*(a0*de - ae*d0 + zeno::cross(d0,de));
-        }
+        for(int i = 0;i < nv;++i)
+            pos[i] = transform(pos[i],q,qd);
 
         set_output("primOut",std::move(primOut));
     }
