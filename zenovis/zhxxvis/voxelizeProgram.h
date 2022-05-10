@@ -17,6 +17,7 @@
 #include <Hg/IOUtils.h>
 #include <Hg/IterUtils.h>
 #include <Scene.hpp>
+#include "openglstuff.h"
 
 namespace zenvis {
     Program * get_voxelize_program(std::shared_ptr<zeno::MaterialObject> mtl, std::shared_ptr<zeno::InstancingObject> inst)

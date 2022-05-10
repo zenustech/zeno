@@ -707,7 +707,7 @@ struct GraphicPrimitive : IGraphic {
     }
 
   }
-  virtual void drawVoxelize() override {
+  virtual void drawVoxelize(float voxparam) override {
     if (prim_has_mtl) ensureGlobalMapExist();
     int id = 0;
     for (id = 0; id < textures.size(); id++) {

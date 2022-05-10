@@ -19,6 +19,7 @@
 #include <thread>
 #include <chrono>
 #include "MRT.hpp"
+#include "voxelizeProgram.h"
 #include "openglstuff.h"
 namespace zenvis {
 int oldnx, oldny;
