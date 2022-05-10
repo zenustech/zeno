@@ -16,7 +16,7 @@ if sys.platform == 'win32':
         '..\\Qt\\5.15.2\\msvc2019_64\\bin\\windeployqt.exe',
         os.path.join(outpath, 'zenoedit.exe'),
     ])
-    shutil.copyfile(os.path.join('misc', 'ci', 'launch', 'win', '000_start.bat'), os.path.join(outpath, '000_start.bat'))
+    shutil.copyfile(os.path.join('misc', 'ci', 'win', '000_start.bat'), os.path.join(outpath, '000_start.bat'))
     shutil.make_archive(outpath, 'zip', outpath, verbose=1)
     print('finished with', outpath + '.zip')
 elif sys.platform == 'linux':
@@ -46,7 +46,7 @@ elif sys.platform == 'linux':
         #'-executable=' + os.path.join(outpath, 'usr', 'bin', 'zenorunner'),
         '-bundle-non-qt-libs',
     ])
-    shutil.copyfile(os.path.join('misc', 'ci', 'launch', 'nix', '000_start.sh'), os.path.join(outpath, '000_start.sh'))
+    shutil.copyfile(os.path.join('misc', 'ci', 'nix', '000_start.sh'), os.path.join(outpath, '000_start.sh'))
     subprocess.check_call([
         'chmod',
         '+x',
