@@ -354,13 +354,6 @@ QMenuBar* ZenoViewDockTitle::initMenu()
         connect(pAction, &QAction::triggered, this,
             [=]() { Zenovis::GetInstance().getSession()->set_smooth_shading(pAction->isChecked()); });
 
-        pAction = new QAction(tr("Zhxx Renderer"), this);
-        pAction->setCheckable(true);
-        pAction->setChecked(false);
-        pDisplay->addAction(pAction);
-        connect(pAction, &QAction::triggered, this,
-            [=]() { Zenovis::GetInstance().getSession()->set_render_engine(pAction->isChecked() ? "zhxx" : "bate"); });
-
         pAction = new QAction(tr("Normal Check"), this);
         pAction->setCheckable(true);
         pAction->setChecked(false);
@@ -374,6 +367,15 @@ QMenuBar* ZenoViewDockTitle::initMenu()
         pDisplay->addAction(pAction);
         connect(pAction, &QAction::triggered, this,
             [=]() { Zenovis::GetInstance().getSession()->set_render_wireframe(pAction->isChecked()); });
+
+        pDisplay->addSeparator();
+
+        pAction = new QAction(tr("Zhxx Renderer"), this);
+        pAction->setCheckable(true);
+        pAction->setChecked(false);
+        pDisplay->addAction(pAction);
+        connect(pAction, &QAction::triggered, this,
+            [=]() { Zenovis::GetInstance().getSession()->set_render_engine(pAction->isChecked() ? "zhxx" : "bate"); });
 
         pDisplay->addSeparator();
 
