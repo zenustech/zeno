@@ -11,6 +11,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    - name: Checkout Repo
+      uses: actions/checkout@v2
+
     - name: Check if is release commit
       id: is-release-step
       uses: mstachniuk/ci-skip@v1.2.0
@@ -18,8 +21,8 @@ jobs:
         commit-filter: '[release]'
 
     outputs:
-      deploy: ${{ steps.is-release-step.outputs.ci-skip == 'true' && 'true' || 'false' }}
-      vcpkg: ${{ steps.is-release-step.outputs.ci-skip == 'true' && 'true' || 'true' }}
+      deploy: ${{ steps.is-release-step.outputs.ci-skip }}
+      vcpkg: true
 
   build:
     strategy:
@@ -169,7 +172,7 @@ jobs:
     - name: Download Release Artifact
       uses: actions/download-artifact@v2
       with:
-        name: ${{ matrix.os }}-Package
+        name: ${{ matrix.label }}-Package
         path: ${{ github.workspace }}/release-artifact
 
     - name: Upload Release Asset

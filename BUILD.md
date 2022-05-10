@@ -167,6 +167,10 @@ hundreds of them. To build the full-featured version of Zeno, you need to build 
 
 If you are ready to challage, please go ahead to [`docs/BUILD_EXT.md`](docs/BUILD_EXT.md).
 
+## Troubleshooting
+
+Please see [`docs/FAQ.md`](docs/FAQ.md) for solution to known issues.
+
 ## References
 
 - [VCPKG user guide](https://github.com/microsoft/vcpkg/blob/master/README_zh_CN.md)
