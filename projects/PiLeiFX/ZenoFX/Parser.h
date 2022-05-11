@@ -1,6 +1,20 @@
 //
 // Created by admin on 2022/5/7.
 //
+/*
+ *Prog : statementList? EOF;
+ *statementList : statement+;
+ * statement : block | expressionStatement | ifStatement | forStatement
+ * emptyStatement | functionDecl | variableDecl
+ *
+ * ifStatement : 'if' '(' expression ') statement ('else' statement)?;
+ * forStatement :
+ * variableStatement:
+ * variableDecl : (Identifier|
+ * expression:assignment;
+ *Identifier : [a-zA-z][a-zA-Z0-9]*;
+ * IntegerLiteral : '0' | [1-9][0-9]*
+ * */
 #pragma once
 #include "Lexical.h"
 #include "Ast.h"
@@ -33,15 +47,38 @@ namespace zfx {
 
         }
 
-        std::shared_ptr<AstNode> parseVariable() {}
+        std::shared_ptr<AstNode> parseVariable() {
+
+        }
 
         std::shared_ptr<AstNode> parseAssignment() {
 
         }
-    };
 
+        std::shared_ptr<AstNode> parseIfStatement() {
+
+        };
+
+        std::shared_ptr<AstNode> parseBinary() {
+
+        }
+
+        std::shared_ptr<AstNode> parseUnary() {
+
+        }
+
+        std::shared_ptr<AstNode> parseTenary() {
+
+        }
+
+        std::shared_ptr<AstNode> parseFunctionCall() {
+            
+        }
+    };
+/*
     std::vector<std::string> parse(const std::string& code) {
 
     }
+    */
 }
 

@@ -32,6 +32,7 @@ struct GatherReachable : Visitor<GatherReachable> {
             auto stmtid = it->second;
             deps[stmt->id].insert(stmtid);
         }
+
         for (int r: dst) {
             regs[r] = stmt->id;
         }
