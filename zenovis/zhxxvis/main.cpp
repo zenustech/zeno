@@ -293,7 +293,7 @@ std::tuple<
 std::unique_ptr<IGraphic> makeGraphicGrid();
 std::unique_ptr<IGraphic> makeGraphicAxis();
 void initialize() {
-  gladLoadGL();
+    //gladLoadGL();
   glDepthRangef(0,30000);
   auto &scene = Scene::getInstance();
   scene.addLight();
