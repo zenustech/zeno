@@ -31,7 +31,7 @@ struct UserData {
     }
 
     template <class T>
-    T &getLiterial(std::string const &name) const {
+    T getLiterial(std::string const &name) const {
         return objectToLiterial<T>(get(name));
     }
 
