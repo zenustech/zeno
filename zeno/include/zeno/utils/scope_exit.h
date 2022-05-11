@@ -67,31 +67,6 @@ template <class Func>
 scope_enter(Func) -> scope_enter<Func>;
 
 
-template <class Func>
-class scope_handle : public scope_exit<std::tuple_element_t<1, std::invoke_result_t<Func>>> {
-    static_assert(std::tuple_size<std::invoke_result_t<Func>>::value == 2);
-    std::decay_t<std::tuple_element_t<0, std::invoke_result_t<Func>>> handle;
-
-    struct private_t {};
-
-    explicit scope_handle(private_t, std::invoke_result_t<Func> &&ret) noexcept
-        : scope_exit<std::tuple_element_t<1, std::invoke_result_t<Func>>>(std::move(std::get<1>(ret)))
-        , handle(std::get<0>(ret)) {
-    }
-
-public:
-    explicit scope_handle(Func &&func) noexcept : scope_handle(private_t{}, func()) {
-    }
-
-    auto const &get() const noexcept {
-        return handle;
-    }
-};
-
-template <class Func>
-scope_handle(Func) -> scope_handle<Func>;
-
-
 template <class Derived>
 class scope_finalizer {
     struct finalize_functor {
@@ -167,6 +142,7 @@ public:
 template <class T, class U = T, class = std::enable_if_t<!std::is_const_v<T>>>
 scope_modify(T &, U &&) -> scope_modify<T>;
 
+
 template <class T>
 class scope_bind : public scope_finalizer<scope_bind<T>> {
     T dst;
@@ -177,12 +153,39 @@ public:
         dst.bind(std::forward<Args>(args)...);
     }
 
-    void _scope_finalize() {
+    void _scope_finalize() noexcept {
         dst.unbind();
     }
 };
 
 template <class T>
 scope_bind(T &) -> scope_bind<T>;
+
+
+template <class Handle, class Func>
+class scope_handle : public scope_finalizer<scope_handle<Handle, Func>> {
+    Handle handle;
+    Func func;
+
+public:
+    explicit scope_handle(Handle handle, Func &&func) noexcept
+        : handle(std::move(handle)), func(std::move(func))
+    {}
+
+    void _scope_finalize() noexcept {
+        if constexpr (std::is_invocable_v<Func, Handle &&>) {
+            func(std::move(handle));
+        } else {
+            func();
+        }
+    }
+
+    operator Handle const &() const noexcept {
+        return handle;
+    }
+};
+
+template <class Handle, class Func>
+scope_handle(Handle, Func) -> scope_handle<Handle, Func>;
 
 }

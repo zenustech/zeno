@@ -109,10 +109,9 @@ std::vector<char> Scene::record_frame_offline(int hdrSize, int rgbComps) {
     //printf("%d\n", zerofbo);
     //printf("%d\n", zerorbo);
 
-    GLuint fbo, rbo1, rbo2;
-    CHECK_GL(glGenFramebuffers(1, &fbo));
-    CHECK_GL(glGenRenderbuffers(1, &rbo1));
-    CHECK_GL(glGenRenderbuffers(1, &rbo2));
+    auto fbo = opengl::scopeGLGenFramebuffer();
+    auto rbo1 = opengl::scopeGLGenRenderbuffer();
+    auto rbo2 = opengl::scopeGLGenRenderbuffer();
 
     {
         auto bindFbo = opengl::scopeGLBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
@@ -152,10 +151,6 @@ std::vector<char> Scene::record_frame_offline(int hdrSize, int rgbComps) {
             zeno::log_error("failed to complete framebuffer");
         }
     }
-
-    CHECK_GL(glDeleteRenderbuffers(1, &rbo1));
-    CHECK_GL(glDeleteRenderbuffers(1, &rbo2));
-    CHECK_GL(glDeleteFramebuffers(1, &fbo));
 
     return pixels;
 }
