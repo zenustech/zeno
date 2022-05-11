@@ -620,7 +620,7 @@ static void paint_graphics(GLuint target_fbo = 0) {
   shadowPass();
   reflectivePass();
   if (enable_gi_flag) {
-    VoxelizePass();
+    voxelizePass();
   }
   if(enable_hdr && tmProg==nullptr)
   {

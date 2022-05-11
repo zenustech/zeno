@@ -1865,8 +1865,7 @@ vec4 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 old_tangent) {
     vec3 ibl = mat_ao * mix(iblPhotoReal, iblNPR,mat_toon);
     color += ibl;
     if (enable_gi_flag) {
-        vec4 gi = pbrGI(position, normalize(new_normal), normalize(view_dir), normalize(tangent), normalize(bitangent), mat_basecolor, mat_roughness, mat_metallic);
-        color += gi.xyz;
+        color += pbrGI(position, normalize(new_normal), normalize(view_dir), normalize(tangent), normalize(bitangent), mat_basecolor, mat_roughness, mat_metallic);
     }
     realColor += iblPhotoReal;
     float brightness0 = brightness(realColor)/(brightness(mon2lin(mat_basecolor))+0.00001);
