@@ -2,7 +2,8 @@
 
 namespace hg::OpenGL {
 
-#define NOTHING_CHECK_GL(x) /* nothing */
+//#define NOTHING_CHECK_GL(x) /* nothing */
+#define NOTHING_CHECK_GL(x) CHECK_GL(x)
 
   struct VAO {
     GLuint vao;

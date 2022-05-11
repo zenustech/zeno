@@ -313,9 +313,9 @@ namespace zenvis
             lightSpaceMatrix = lightMatrices[i];
             lightMV = lightSpaceMatrix;
 
-            CHECK_GL(glViewport(0, 0, depthMapResolution, depthMapResolution));
-            CHECK_GL(glBindFramebuffer(GL_FRAMEBUFFER, lightFBO));
-            CHECK_GL(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, DepthMaps[i], 0));
+            glViewport(0, 0, depthMapResolution, depthMapResolution);
+            glBindFramebuffer(GL_FRAMEBUFFER, lightFBO);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, DepthMaps[i], 0);
 
             glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
             glClear(GL_DEPTH_BUFFER_BIT);
