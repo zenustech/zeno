@@ -35,6 +35,10 @@
 #include <cstdlib>
 #include <omp.h>
 
+#if defined(_WIN32)
+#  include <windows.h>
+#endif
+
 // #include <fmt>
 
 namespace zeno {
@@ -564,8 +568,12 @@ struct FEMIntegrator : zeno::IObject {
 
     void AssembleElmVectors(const std::vector<zeno::vec4i>& elms,const std::vector<Vec12d>& elm_vecs,VecXd& global_vec) const {
         auto atomicCas = [](int64_t* dest,int64_t expected,int64_t desired) {
+#if defined(_MSC_VER)
+            return InterlockedCompareExchange64(dest, desired, expected);   // (__int64 *)
+#else
             __atomic_compare_exchange_n(const_cast<int64_t volatile *>(dest),&expected,desired,false,__ATOMIC_ACQ_REL,__ATOMIC_RELAXED);
             return expected;
+#endif
         };
         auto atomicDoubleAdd = [&atomicCas](double*dst, double val) {
             static_assert(sizeof(double) == sizeof(int64_t), "sizeof float != sizeof int");

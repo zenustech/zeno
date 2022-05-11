@@ -1,3 +1,4 @@
+#pragma once
 #include "glad/glad.h"
 #include "stdafx.hpp"
 #include "IGraphic.hpp"
@@ -17,9 +18,9 @@
 #include <Hg/IOUtils.h>
 #include <Hg/IterUtils.h>
 #include <Scene.hpp>
-
+#include "openglstuff.h"
 namespace zenvis {
-    Program * get_voxelize_program(std::shared_ptr<zeno::MaterialObject> mtl, std::shared_ptr<zeno::InstancingObject> inst)
+    inline Program * get_voxelize_program(std::shared_ptr<zeno::MaterialObject> mtl, std::shared_ptr<zeno::InstancingObject> inst)
   {
 std::string VXVS;
     if (inst != nullptr)
@@ -80,7 +81,7 @@ void main()
   g_normal = transpose(inverse(mat3(mInstModel))) * vNormal;
   g_tex_coords = vTexCoord;
   g_tangent = mat3(mInstModel) * vTangent;
-  gl_Position = vec4(vec3(mView * vec4(g_world_pos, 1.0)) * u_scene_voxel_scale, 1.0);
+  gl_Position = mProj * vec4(vec3(mView * vec4(g_world_pos, 1.0)) * u_scene_voxel_scale, 1.0);
 }
 )";
     }
@@ -117,7 +118,7 @@ void main()
   g_normal = vNormal;
   g_tex_coords = vTexCoord;
   g_tangent = vTangent;
-  gl_Position = vec4(vec3(mView * vec4(g_world_pos, 1.0)) * u_scene_voxel_scale, 1.0);
+  gl_Position = mProj * vec4(vec3(mView * vec4(g_world_pos, 1.0)) * u_scene_voxel_scale, 1.0);
 }
 )";
     }
@@ -135,14 +136,17 @@ uniform mat4 mInvProj;
 uniform bool mSmoothShading;
 uniform bool mNormalCheck;
 uniform bool mRenderWireframe;
-
+uniform vec3 u_scene_voxel_scale;
+uniform float alphaPass;
+//layout(binding = 0, r32ui) uniform volatile coherent uimage3D u_tex_voxelgrid;
+layout(binding = 0, RGBA8) uniform image3D u_tex_voxelgrid;
 
 in vec3 position;
 in vec3 iColor;
 in vec3 iNormal;
 in vec3 iTexCoord;
 in vec3 iTangent;
-out vec4 fColor;
+//out vec4 fColor;
 const float minDot = 1e-5;
 
 // Clamped dot product
@@ -162,7 +166,7 @@ vec3 CalculateDiffuse(
     in vec3 albedo){                              
     return (albedo / 3.1415926);
 }
-layout(binding = 0, r32ui) uniform volatile coherent uimage3D u_tex_voxelgrid;
+
 vec4 convRGBA8ToVec4(uint val){
     return vec4(float((val & 0x000000FF)), float ((val & 0x0000FF00) >> 8U), float (( val & 0x00FF0000) >> 16U), float ((val & 0xFF000000) >> 24U));
 }
@@ -178,12 +182,27 @@ void imageAtomicRGBA8Avg(layout(r32ui) coherent volatile uimage3D img, ivec3 coo
     uint curStoredVal;
     uint numIterations = 0;
     while ((curStoredVal = imageAtomicCompSwap(img, coords, prevStoredVal, newVal)) != prevStoredVal 
-            && numIterations < 255) {
+            && numIterations < 1024) {
         prevStoredVal = curStoredVal;
         vec4 rval = convRGBA8ToVec4(curStoredVal);
         rval.xyz = (rval.xyz * rval.w);
         vec4 curValF = rval + val;
         curValF.xyz /= (curValF.w);
+        newVal = convVec4ToRGBA8(curValF);
+        ++numIterations;
+    }
+}
+void imageAtomicRGBA8Set(layout(r32ui) coherent volatile uimage3D img, ivec3 coords, vec4 val){
+    val.rgb *= 255.0f;
+    uint newVal = convVec4ToRGBA8(val);
+    uint prevStoredVal = 0;
+    uint curStoredVal;
+    uint numIterations = 0;
+    while ((curStoredVal = imageAtomicCompSwap(img, coords, prevStoredVal, newVal)) != prevStoredVal 
+            && numIterations < 1024) {
+        prevStoredVal = curStoredVal;
+        vec4 rval = convRGBA8ToVec4(curStoredVal);
+        vec4 curValF = vec4(rval.xyz, 1.0);
         newVal = convVec4ToRGBA8(curValF);
         ++numIterations;
     }
@@ -528,7 +547,7 @@ float ShadowHit(int lightNo, vec3 fragPosWorldSpace)
     float currentDepth = projCoords.z;
     vec3 normal = normalize(iNormal);
     float slop = abs(dot( normalize(normal), normalize(light[lightNo])));
-    float bias = (1-pow(slop,0.1)) * 0.1 + pow(slop,0.1) * 0.001;
+    float bias = 0.001;
     return (currentDepth  * (far1-near1) + near1 - bias) > (sampleShadowArray(lightNo, projCoords.xy, layer)  * (far1-near1) + near1)?1.0:0.0;
 }
 float ShadowCalculation(int lightNo, vec3 fragPosWorldSpace, float softness, vec3 tang, vec3 bitang, int k)
@@ -585,19 +604,22 @@ vec4 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 old_tangent) {
     vec3 realColor = vec3(0,0,0);
     float lightsNo = 0;
     for(int lightId=0; lightId<lightNum; lightId++){
+        light_dir = lightDir[lightId];
+        new_normal = dot(new_normal, light_dir)<0? -new_normal:new_normal;
         vec3 photoReal = BRDF(mat_basecolor, mat_metallic,mat_subsurface,mat_specular,mat_roughness,mat_specularTint,mat_anisotropic,mat_sheen,mat_sheenTint,mat_clearcoat,mat_clearcoatGloss,normalize(light_dir), normalize(light_dir), normalize(new_normal),normalize(tan), normalize(cross(normal, tan))
         ) * lightIntensity[lightId];
         vec3 lcolor = photoReal;
-        float shadow = ShadowCalculation(lightId, position, shadowSoftness[lightId], tan, TBN[1],3);
-        vec3 sclr = clamp(vec3(1.0-shadow) + shadowTint[lightId], vec3(0), vec3(1));
+        float shadow = ShadowCalculation(lightId, position + 0.001 * normalize(light_dir), shadowSoftness[lightId], tan, TBN[1],3);
+        vec3 sclr = vec3(1.0-shadow);
         color += lcolor * sclr;
     }
     vec3 iblPhotoReal =  CalculateLightingIBL(new_normal,new_normal,albedo2,roughness,mat_metallic);
-    return vec4(color + colorEmission + 0.1 * iblPhotoReal, 1.0 - mat_opacity);
+    return vec4(color + colorEmission + 0.1 * iblPhotoReal + 0.2 * albedo2, 1.0-mat_opacity);
 
 
 }
-
+in vec3 f_voxel_pos;
+uniform float voxelgrid_resolution;
 void main()
 {   
   vec3 normal;
@@ -605,9 +627,9 @@ void main()
   
   vec3 viewdir = -calcRayDir(position);
   vec3 albedo = iColor;
-  vec3 normalInView = transpose(inverse(mat3(mView[0].xyz, mView[1].xyz, mView[2].xyz)))*normal;
-  if(dot(-viewdir, normalInView)>0)
-    normal = - normal;
+  //vec3 normalInView = transpose(inverse(mat3(mView[0].xyz, mView[1].xyz, mView[2].xyz)))*normal;
+  //if(dot(-viewdir, normalInView)>0)
+    //normal = - normal;
 
   //normal = faceforward(normal, -viewdir, normal);
   vec3 tangent = iTangent;
@@ -617,7 +639,15 @@ void main()
   }
 
   vec4 color = studioShading(albedo, viewdir, normal, tangent);
-  fColor = color;
+  //fColor = color;
+  vec3 vpos = vec3(mView * vec4(position,1)) * u_scene_voxel_scale;
+  imageStore(u_tex_voxelgrid, ivec3(voxelgrid_resolution * vpos), color);
+//   if(alphaPass>0.99)
+//   {
+//       imageAtomicRGBA8Set(u_tex_voxelgrid, ivec3(voxelgrid_resolution * f_voxel_pos), color);
+//   }else{
+//     imageAtomicRGBA8Set(u_tex_voxelgrid, ivec3(voxelgrid_resolution * f_voxel_pos), color);
+//   }
 }
 )";
 
@@ -691,8 +721,170 @@ void main()
 )";
     return compile_program(VXVS, VXFS, VXGS);
   }
+namespace voxelizer{
+inline std::string VXCS = R"(
+#version 430 core
+layout (local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
+layout(binding = 0, RGBA8) uniform image3D u_tex_voxelgrid1;
+layout(binding = 1, RGBA8) uniform image3D u_tex_voxelgrid2;
+uniform float coef;
+void main()
+{
+	if(gl_GlobalInvocationID.x >= 256 ||
+		gl_GlobalInvocationID.y >= 256 ||
+		gl_GlobalInvocationID.z >= 256) return;
 
-  
-  
+	ivec3 VoxelPos = ivec3(gl_GlobalInvocationID);
+    vec4 c1 = imageLoad(u_tex_voxelgrid1, VoxelPos);
+    vec4 c2 = imageLoad(u_tex_voxelgrid2, VoxelPos);
+	imageStore(u_tex_voxelgrid1, VoxelPos, c1 + coef * c2);
+
+}
+
+)";
+inline void checkCompileErrors(GLuint shader, std::string type)
+    {
+        GLint success;
+        GLchar infoLog[1024];
+        if (type != "PROGRAM")
+        {
+            glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
+            if (!success)
+            {
+                glGetShaderInfoLog(shader, 1024, NULL, infoLog);
+                std::cout << "ERROR::SHADER_COMPILATION_ERROR of type: " << type << "\n" << infoLog << "\n -- --------------------------------------------------- -- " << std::endl;
+            }
+        }
+        else
+        {
+            glGetProgramiv(shader, GL_LINK_STATUS, &success);
+            if (!success)
+            {
+                glGetProgramInfoLog(shader, 1024, NULL, infoLog);
+                std::cout << "ERROR::PROGRAM_LINKING_ERROR of type: " << type << "\n" << infoLog << "\n -- --------------------------------------------------- -- " << std::endl;
+            }
+        }
+    }
+    inline GLuint compProg = 0;
+    inline float domainL = 10.0;
+    inline glm::mat4x4 view = glm::mat4x4(1);
+    inline GLuint vxfbo=0;
+    inline GLuint vxrbo=0;
+    inline void compileVXCS()
+    {
+        if(compProg==0)
+        {
+            const char* cShaderCode = VXCS.c_str();
+            unsigned int compute = glCreateShader(GL_COMPUTE_SHADER);
+            glShaderSource(compute, 1, &cShaderCode, NULL);
+            glCompileShader(compute);
+            checkCompileErrors(compute, "COMPUTE");
+            compProg = glCreateProgram();
+            glAttachShader(compProg, compute);
+            glLinkProgram(compProg);
+            checkCompileErrors(compProg, "PROGRAM");
+            glDeleteShader(compute);
+        }
+    }
+    inline float getDomainLength()
+    {
+        return domainL;
+    }
+    inline void setVoxelizeView(glm::vec3 origin, glm::vec3 right, glm::vec3 up, glm::vec3 front)
+    {
+
+    }
+    inline glm::mat4x4 getView()
+    {
+        return view;
+    }
+    inline iTexture3D vxTexture;
+    inline iTexture3D vxTexture2;
+    inline iTexture3D vxTexture3;
+    inline int dimension = 256;
+    inline int getVoxelResolution()
+    {
+        return dimension;
+    }
+    
+    inline void initVoxelTexture()
+    {
+        compileVXCS();
+        if(vxTexture.is_loaded == false){
+            
+            GLfloat* data = new GLfloat[dimension * dimension * dimension * 4];  
+            itexture3D::fill_corners(data, dimension,dimension,dimension);
+            itexture3D::init(vxTexture, data, dimension);
+            delete[] data; 
+        }
+        if(vxTexture2.is_loaded == false){
+            
+            GLfloat* data = new GLfloat[dimension * dimension * dimension * 4];  
+            itexture3D::fill_corners(data, dimension,dimension,dimension);
+            itexture3D::init(vxTexture2, data, dimension);
+            delete[] data; 
+        }
+        if(vxTexture3.is_loaded == false){
+            
+            GLfloat* data = new GLfloat[dimension * dimension * dimension * 4];  
+            itexture3D::fill(data, 0.2, dimension,dimension,dimension);
+            itexture3D::init(vxTexture3, data, dimension);
+            delete[] data; 
+        }
+        if(vxfbo==0)
+            CHECK_GL(glGenFramebuffers(1, &vxfbo));
+        if(vxrbo==0)
+            CHECK_GL(glGenRenderbuffers(1, &vxrbo));
+
+        glBindFramebuffer(GL_FRAMEBUFFER, vxfbo);
+        glBindRenderbuffer(GL_RENDERBUFFER, vxrbo);
+        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, 2048, 2048);
+        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, vxrbo);
+    }
+    inline void ClearTexture()
+    {
+        itexture3D::clear(vxTexture, { 0.0f, 0.0f, 0.0f, 0.0f });
+    }
+    inline void BeginVoxelize()
+    {
+        itexture3D::clear(vxTexture2, { 0.0f, 0.0f, 0.0f, 0.0f });
+        
+        glBindFramebuffer(GL_FRAMEBUFFER, vxfbo);
+        glBindRenderbuffer(GL_RENDERBUFFER, vxrbo);
+        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, 4096, 4096);
+        glViewport(0, 0, 4096, 4096);
+        glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+        glDisable(GL_CULL_FACE);
+        glDisable(GL_DEPTH_TEST);
+        glDisable(GL_BLEND);
+        glDisable(GL_MULTISAMPLE);
+        glBindImageTexture(0, vxTexture2.id, 0, GL_TRUE, 0, GL_READ_WRITE, GL_RGBA8);
+    }
+    inline void AddVoxels(float value)
+    {
+        glUseProgram(compProg);
+        glUniform1f(glGetUniformLocation(compProg, "coef"), value);
+        glBindImageTexture(0, vxTexture.id, 0, GL_TRUE, 0, GL_READ_WRITE, GL_RGBA8);
+        glBindImageTexture(1, vxTexture2.id, 0, GL_TRUE, 0, GL_READ_WRITE, GL_RGBA8);
+        glDispatchCompute(32, 32, 32);
+	    glMemoryBarrier(GL_TEXTURE_FETCH_BARRIER_BIT | GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+    }
+    
+    inline void EndVoxelize()
+    {
+        itexture3D::generate_mipmaps(vxTexture);
+        glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+        CHECK_GL(glEnable(GL_BLEND));
+        CHECK_GL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
+        CHECK_GL(glEnable(GL_DEPTH_TEST));
+        CHECK_GL(glEnable(GL_PROGRAM_POINT_SIZE));
+        // CHECK_GL(glEnable(GL_PROGRAM_POINT_SIZE_ARB));
+        // CHECK_GL(glEnable(GL_POINT_SPRITE_ARB));
+        // CHECK_GL(glEnable(GL_SAMPLE_COVERAGE));
+        // CHECK_GL(glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE));
+        // CHECK_GL(glEnable(GL_SAMPLE_ALPHA_TO_ONE));
+        CHECK_GL(glEnable(GL_MULTISAMPLE));
+    }
+}
 
 }
