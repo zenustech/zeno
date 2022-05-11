@@ -5,6 +5,7 @@
 #include "zensim/cuda/execution/ExecutionPolicy.cuh"
 #include "zensim/geometry/SpatialQuery.hpp"
 #include "zensim/io/ParticleIO.hpp"
+#include "zensim/math/MathUtils.h"
 #include "zensim/math/matrix/QRSVD.hpp"
 #include "zensim/omp/execution/ExecutionPolicy.hpp"
 #include "zensim/simulation/Utils.hpp"
@@ -360,6 +361,39 @@ struct SpringSystemTimeStepping : INode {
     auto xNorm = zs::sqrt(res.getVal());
     return zs::sqrt((1 + xNorm) * limits<float>::epsilon()) / yNorm;
   }
+  float computeSpringEnergy(zs::CudaExecutionPolicy &cudaPol,
+                            const tiles_t &springs, tiles_t &vertData,
+                            float alpha, float dt) {
+    using namespace zs;
+    constexpr auto space = execspace_e::cuda;
+    Vector<double> Esum{vertData.get_allocator(), 1};
+    Esum.setVal(0);
+    cudaPol(range(springs.size()), [Esum = proxy<space>(Esum),
+                                    eles = proxy<space>({}, springs),
+                                    data = proxy<space>({}, vertData), dt,
+                                    alpha] __device__(int ei) mutable {
+      auto inds = eles.pack<2>("inds", ei).reinterpret_bits<int>();
+      auto v0 = data.pack<3>("v", inds[0]);
+      auto dv0 =
+          data.pack<3>("dv", inds[0]) + data.pack<3>("p", inds[0]) * alpha;
+      v0 += dv0;
+      auto x0 = data.pack<3>("x0", inds[0]) + v0 * dt;
+
+      auto v1 = data.pack<3>("v", inds[1]);
+      auto dv1 =
+          data.pack<3>("dv", inds[1]) + data.pack<3>("p", inds[1]) * alpha;
+      v1 += dv1;
+      auto x1 = data.pack<3>("x0", inds[1]) + v1 * dt;
+
+      auto k = eles("k", ei);
+      auto rl = eles("rl", ei);
+
+      auto l = (x1 - x0).norm();
+      auto E = 0.5 * k * zs::sqr(l - rl);
+      atomic_add(exec_cuda, &Esum[0], E);
+    });
+    return Esum.getVal();
+  }
   void computeSpringForce(zs::CudaExecutionPolicy &cudaPol,
                           const tiles_t &springs, tiles_t &vertData,
                           const zs::SmallString vtag,
@@ -417,6 +451,7 @@ struct SpringSystemTimeStepping : INode {
     using bv_t = typename lbvh_t::Box;
     lbvh_t lbvh{};
     zs::Vector<bv_t> bvs{vertData.get_allocator(), numSprings};
+#if 0
     float thickness = 0.0002;
     cudaPol(range(numSprings),
             [eles = proxy<space>({}, springs), bvs = proxy<space>(bvs),
@@ -482,7 +517,7 @@ struct SpringSystemTimeStepping : INode {
               constexpr double xi2 = xi * xi;
               if (dist2 < xi2)
                 printf("penetrated already...");
-              constexpr double dHat = 1e-2;
+              constexpr double dHat = 1e-3;
               constexpr double activeGap2 = dHat * dHat;
               constexpr double kappa = 1e3;
               double o_areaWeight = (o_x1 - o_x0).norm() * thickness;
@@ -509,6 +544,7 @@ struct SpringSystemTimeStepping : INode {
           node = bvh._auxIndices[node];
       }
     });
+#endif
   }
   void SAp(zs::CudaExecutionPolicy &cudaPol, const tiles_t &verts,
            const tiles_t &springs, tiles_t &vertData, float dt, float eps) {
@@ -599,13 +635,22 @@ struct SpringSystemTimeStepping : INode {
     delta0 = dot(cudaPol, vertData, "r", "r");
     auto tol = 1e-2;
     int iter = 0;
+    // float Eprev = computeSpringEnergy(cudaPol, springs, vertData, 1, dt);
+    // fmt::print("initial energy: {}\n", Eprev);
     while (deltaNew > tol * delta0 * tol &&
            deltaNew > limits<float>::epsilon() * 8) {
       // s = S(Ap)
       SAp(cudaPol, verts, springs, vertData, dt, eps);
       // alpha
       alpha = deltaNew / dot(cudaPol, vertData, "p", "s");
-      // dv += alpha * p
+#if 0
+      float E = computeSpringEnergy(cudaPol, springs, vertData, alpha, dt);
+      for (; E > Eprev;) {
+        alpha /= 2;
+        E = computeSpringEnergy(cudaPol, springs, vertData, alpha, dt);
+      }
+#endif
+      // dv += alpha * p, r -= alpha * s
       cudaPol(range(numVerts), [data = proxy<space>({}, vertData),
                                 alpha] __device__(int pi) mutable {
         data.tuple<3>("dv", pi) =
@@ -616,7 +661,7 @@ struct SpringSystemTimeStepping : INode {
       deltaOld = deltaNew;
       deltaNew = dot(cudaPol, vertData, "r", "r");
       fmt::print("iteration [{}]: eps: {}; deltaOld {} -> deltaNew {}\n",
-                 iter++, eps, deltaOld, deltaNew);
+                 iter++, eps, deltaOld, deltaNew /*, E*/);
       //
       cudaPol(range(numVerts), [data = proxy<space>({}, vertData), deltaNew,
                                 deltaOld] __device__(int pi) mutable {
@@ -625,14 +670,13 @@ struct SpringSystemTimeStepping : INode {
       });
       filter(cudaPol, vertData, "p", "p");
       eps = evalEps(cudaPol, vertData, dt);
+      // Eprev = E;
     }
 
     cudaPol(range(numVerts),
             [verts = proxy<space>({}, verts), data = proxy<space>({}, vertData),
              dt] __device__(int pi) mutable {
-              auto v = verts.pack<3>("v", pi);
-              auto dv = data.pack<3>("dv", pi);
-              v += dv;
+              auto v = data.pack<3>("v", pi) + data.pack<3>("dv", pi);
               verts.tuple<3>("v", pi) = v;
               verts.tuple<3>("x", pi) = verts.pack<3>("x", pi) + v * dt;
             });
