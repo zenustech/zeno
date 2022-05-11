@@ -30,7 +30,8 @@ Scene::Scene()
     : camera(std::make_unique<Camera>()),
       drawOptions(std::make_unique<DrawOptions>()),
       shaderMan(std::make_unique<ShaderManager>()),
-      objectsMan(std::make_unique<ObjectsManager>()) {
+      objectsMan(std::make_unique<ObjectsManager>()),
+      renderMan(std::make_unique<RenderManager>(this)) {
 
     auto version = (const char *)glGetString(GL_VERSION);
     zeno::log_info("OpenGL version: {}", version ? version : "(null)");
@@ -42,12 +43,10 @@ Scene::Scene()
 }
 
 void Scene::switchRenderEngine(std::string const &name) {
-    std::map<std::string, std::function<void()>>{
-    {"bate", [&] { renderEngine = makeRenderEngineBate(this); }},
-    {"zhxx", [&] { renderEngine = makeRenderEngineZhxx(this); }},
-    }.at(name)();
+    renderMan->switchDefaultEngine(name);
 }
 
+/* TODO: move this to zeno::objectGetCenterRadius */
 static bool calcObjectCenterRadius(zeno::IObject *ptr, zeno::vec3f &center, float &radius) {
     if (auto obj = dynamic_cast<zeno::PrimitiveObject *>(ptr)) {
         auto [bmin, bmax] = primBoundingBox(obj);
@@ -78,7 +77,7 @@ void Scene::loadFrameObjects(int frameid) {
         zeno::log_trace("load_objects: no objects at frame {}", frameid);
         this->objectsMan->load_objects({});
     }
-    renderEngine->update();
+    renderMan->getEngine()->update();
 }
 
 void Scene::draw() {
@@ -86,7 +85,7 @@ void Scene::draw() {
     CHECK_GL(glViewport(0, 0, camera->m_nx, camera->m_ny));
     //CHECK_GL(glClearColor(drawOptions->bgcolor.r, drawOptions->bgcolor.g, drawOptions->bgcolor.b, 0.0f));
 
-    renderEngine->draw();
+    renderMan->getEngine()->draw();
 }
 
 std::vector<char> Scene::record_frame_offline(int hdrSize, int rgbComps) {

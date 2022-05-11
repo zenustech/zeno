@@ -56,12 +56,6 @@ struct RenderEngineBate : RenderEngine {
     }
 };
 
-}
-
-namespace zenovis {
-
-std::unique_ptr<RenderEngine> makeRenderEngineBate(Scene *scene) {
-    return std::make_unique<bate::RenderEngineBate>(scene);
-}
+static auto definer = RenderManager::registerRenderEngine<RenderEngineBate>("bate");
 
 }

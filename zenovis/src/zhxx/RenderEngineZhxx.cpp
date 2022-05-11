@@ -98,12 +98,6 @@ struct RenderEngineZhxx : RenderEngine, zeno::disable_copy {
     }
 };
 
-}
-
-namespace zenovis {
-
-std::unique_ptr<RenderEngine> makeRenderEngineZhxx(Scene *scene) {
-    return std::make_unique<zhxx::RenderEngineZhxx>(scene);
-}
+static auto definer = RenderManager::registerRenderEngine<RenderEngineZhxx>("zhxx");
 
 }
