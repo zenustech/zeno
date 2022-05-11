@@ -196,12 +196,8 @@ struct DoSkinning : zeno::INode {
                 w[j] = shape->attr<float>(attr_names[j])[i];
             if(algorithm == "DQS")
                 out[i] = dqs_blend(pos[i],qs,dqs,w);
-            else if(algorithm == "LBS"){
+            else if(algorithm == "LBS")
                 out[i] = lbs_blend(pos[i],qs,dqs,w);
-                if(i == 2){
-                    std::cout << "out:" << out[i][0] << "\t" << out[i][1] << "\t" << out[i][2] << std::endl;
-                }
-            }
             else if(algorithm == "CoRs")
                 out[i] = cors_blend(pos[i],qs,dqs,shape->attr<zeno::vec3f>("rCenter")[i],w);
         }
