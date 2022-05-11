@@ -12,7 +12,7 @@
 #include <zenovis/opengl/buffer.h>
 #include <zenovis/opengl/common.h>
 #include <zenovis/opengl/vao.h>
-#include <zeno/utils/scope_exit.h>
+#include <zenovis/opengl/scope.h>
 #include <cstdlib>
 #include <map>
 
@@ -111,47 +111,47 @@ std::vector<char> Scene::record_frame_offline(int hdrSize, int rgbComps) {
 
     GLuint fbo, rbo1, rbo2;
     CHECK_GL(glGenFramebuffers(1, &fbo));
-    CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo));
-
     CHECK_GL(glGenRenderbuffers(1, &rbo1));
     CHECK_GL(glGenRenderbuffers(1, &rbo2));
-    CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, rbo1));
-    CHECK_GL(glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA, camera->m_nx,
-                                   camera->m_ny));
-    CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, rbo2));
-    CHECK_GL(glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT32F,
-                                   camera->m_nx, camera->m_ny));
-    CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, 0));
 
+    {
+        auto bindFbo = opengl::scopeGLBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
 
-    CHECK_GL(glFramebufferRenderbuffer(
-        GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, rbo1));
-    CHECK_GL(glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
-                                       GL_RENDERBUFFER, rbo2));
-    CHECK_GL(glDrawBuffer(GL_COLOR_ATTACHMENT0));
-    CHECK_GL(glClearColor(drawOptions->bgcolor.r, drawOptions->bgcolor.g,
-                          drawOptions->bgcolor.b, 0.0f));
-    CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
+        CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, rbo1));
+        CHECK_GL(glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA, camera->m_nx,
+                                       camera->m_ny));
+        CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, rbo2));
+        CHECK_GL(glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT32F,
+                                       camera->m_nx, camera->m_ny));
+        CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, 0));
 
-    CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo));
-    draw();
+        CHECK_GL(glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, rbo1));
+        CHECK_GL(glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rbo2));
+        CHECK_GL(glClearColor(drawOptions->bgcolor.r, drawOptions->bgcolor.g,
+                              drawOptions->bgcolor.b, 0.0f));
+        CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 
-    if (glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE) {
-        CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo));
-        CHECK_GL(glBlitFramebuffer(0, 0, camera->m_nx, camera->m_ny, 0, 0,
-                                   camera->m_nx, camera->m_ny, GL_COLOR_BUFFER_BIT,
-                                   GL_NEAREST));
-        CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo));
-        CHECK_GL(glBindBuffer(GL_PIXEL_PACK_BUFFER, 0));
-        CHECK_GL(glPixelStorei(GL_UNPACK_ALIGNMENT, 1));
-        CHECK_GL(glPixelStorei(GL_PACK_ALIGNMENT, 1));
-        CHECK_GL(glReadBuffer(GL_COLOR_ATTACHMENT0));
+        {
+            auto bindDrawBuf = opengl::scopeGLDrawBuffer(GL_COLOR_ATTACHMENT0);
+            draw();
+        }
 
-        CHECK_GL(glReadPixels(0, 0, camera->m_nx, camera->m_ny, rgbType,
-                              hdrType, pixels.data()));
+        if (glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE) {
+            auto bindReadFbo = opengl::scopeGLBindFramebuffer(GL_READ_FRAMEBUFFER, fbo);
+            CHECK_GL(glBlitFramebuffer(0, 0, camera->m_nx, camera->m_ny, 0, 0,
+                                       camera->m_nx, camera->m_ny, GL_COLOR_BUFFER_BIT,
+                                       GL_NEAREST));
+
+            auto bindPackBuffer = opengl::scopeGLBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+            auto bindPackAlignment = opengl::scopeGLPixelStorei(GL_PACK_ALIGNMENT, 1);
+            auto bindRead = opengl::scopeGLReadBuffer(GL_COLOR_ATTACHMENT0);
+
+            CHECK_GL(glReadPixels(0, 0, camera->m_nx, camera->m_ny, rgbType,
+                                  hdrType, pixels.data()));
+        } else {
+            zeno::log_error("failed to complete framebuffer");
+        }
     }
-
-    CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0));
 
     CHECK_GL(glDeleteRenderbuffers(1, &rbo1));
     CHECK_GL(glDeleteRenderbuffers(1, &rbo2));

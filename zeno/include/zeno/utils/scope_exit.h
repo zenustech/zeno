@@ -67,6 +67,31 @@ template <class Func>
 scope_enter(Func) -> scope_enter<Func>;
 
 
+template <class Func>
+class scope_handle : public scope_exit<std::tuple_element_t<1, std::invoke_result_t<Func>>> {
+    static_assert(std::tuple_size<std::invoke_result_t<Func>>::value == 2);
+    std::decay_t<std::tuple_element_t<0, std::invoke_result_t<Func>>> handle;
+
+    struct private_t {};
+
+    explicit scope_handle(private_t, std::invoke_result_t<Func> &&ret) noexcept
+        : scope_exit<std::tuple_element_t<1, std::invoke_result_t<Func>>>(std::move(std::get<1>(ret)))
+        , handle(std::get<0>(ret)) {
+    }
+
+public:
+    explicit scope_handle(Func &&func) noexcept : scope_handle(private_t{}, func()) {
+    }
+
+    auto const &get() const noexcept {
+        return handle;
+    }
+};
+
+template <class Func>
+scope_handle(Func) -> scope_handle<Func>;
+
+
 template <class Derived>
 class scope_finalizer {
     struct finalize_functor {
