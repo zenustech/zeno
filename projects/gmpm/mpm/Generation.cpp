@@ -469,11 +469,293 @@ ZENDEFNODE(ToZSSprings, {
                             {"Mesh"},
                         });
 
+struct ToZSCloth : INode {
+  void apply() override {
+    using namespace zs;
+    fmt::print(fg(fmt::color::green), "begin executing ToZSCloth\n");
+    auto model = get_input<ZenoConstitutiveModel>("ZSModel");
+    {
+      float gamma = get_input2<float>("stiffness_shear");
+      float k = get_input2<float>("stiffness_normal");
+      float fa = get_input2<float>("friction_angle");
+      float dc = get_input2<float>("damping_coeff");
+      model->record("k", k);
+      model->record("gamma", gamma);
+      model->record("fa", fa);
+      model->record("dc", dc);
+    }
+
+    // primitive
+    auto prim = get_input<PrimitiveObject>("prim");
+    auto &obj = prim->attr<vec3f>("pos");
+    vec3f *velsPtr{nullptr};
+    if (prim->has_attr("vel"))
+      velsPtr = prim->attr<vec3f>("vel").data();
+    auto &tris = prim->tris;
+
+    auto zscloth = std::make_shared<ZenoParticles>();
+
+    // primitive binding
+    zscloth->prim = prim;
+    // model
+    zscloth->getModel() = *model;
+    float mu, lam;
+    zs::match([&mu, &lam](const auto &elasticModel) {
+      mu = elasticModel.mu;
+      lam = elasticModel.lam;
+    })(model->getElasticModel());
+
+    /// category, size
+    std::size_t size{obj.size()};
+    std::size_t eleSize{0};
+    std::vector<float> dofVol{};
+    std::vector<float> eleVol{};
+    std::vector<vec3f> elePos{};
+    std::vector<vec3f> eleVel{};
+    std::vector<std::array<vec3f, 3>> eleD{};
+
+    ZenoParticles::category_e category{ZenoParticles::surface};
+    eleSize = tris.size();
+
+    dofVol.resize(size, 0.f);
+
+    eleVol.resize(eleSize);
+    elePos.resize(eleSize);
+    eleVel.resize(eleSize);
+    eleD.resize(eleSize);
+    // category
+    zscloth->category = category;
+
+    // per vertex (node) vol, pos, vel
+    auto ompExec = zs::omp_exec();
+
+    {
+      using TV3 = zs::vec<double, 3>;
+      const auto toTV3 = [](const zeno::vec3f &x) {
+        return TV3{x[0], x[1], x[2]};
+      };
+      const auto fromTV3 = [](const TV3 &x) {
+        return zeno::vec3f{(float)x[0], (float)x[1], (float)x[2]};
+      };
+
+      // surface
+      {
+        const auto triArea = [&obj, &toTV3](vec3i tri) {
+          TV3 p0 = toTV3(obj[tri[0]]);
+          TV3 p1 = toTV3(obj[tri[1]]);
+          TV3 p2 = toTV3(obj[tri[2]]);
+          return (p1 - p0).cross(p2 - p0).norm() * 0.5;
+          // return length(cross(obj[tri[1]] - p0, obj[tri[2]] - p0)) * 0.5;
+        };
+        for (std::size_t i = 0; i != eleSize; ++i) {
+          auto tri = tris[i];
+          auto v = triArea(tri) * model->dx; // thickness
+          eleVol[i] = std::max(v, limits<float>::epsilon() * 10.);
+          elePos[i] = (obj[tri[0]] + obj[tri[1]] + obj[tri[2]]) / 3;
+          if (velsPtr)
+            eleVel[i] =
+                (velsPtr[tri[0]] + velsPtr[tri[1]] + velsPtr[tri[2]]) / 3;
+          eleD[i][0] = obj[tri[1]] - obj[tri[0]];
+          eleD[i][1] = obj[tri[2]] - obj[tri[0]];
+
+          auto normal = cross(toTV3(eleD[i][0]).normalized(),
+                              toTV3(eleD[i][1]).normalized())
+                            .normalized();
+          eleD[i][2] = fromTV3(normal);
+
+          for (auto pi : tri) {
+            // atomic_add(exec_omp, &dofVol[pi], eleVol[i] / 3);
+            dofVol[pi] += eleVol[i] / 3;
+          }
+        }
+      }
+    } // end bindmesh
+
+    // particles
+    zscloth->sprayedOffset = obj.size();
+
+    // attributes
+    std::vector<zs::PropertyTag> tags{{"m", 1},   {"x", 3}, {"v", 3},
+                                      {"vol", 1}, {"C", 9}, {"beta", 1}};
+    std::vector<zs::PropertyTag> eleTags{{"m", 1},   {"x", 3},     {"v", 3},
+                                         {"vol", 1}, {"C", 9},     {"F", 9},
+                                         {"d", 9},   {"DmInv", 9}, {"inds", 3}};
+
+    eleTags.emplace_back(zs::PropertyTag{"mu", 1});
+    eleTags.emplace_back(zs::PropertyTag{"lam", 1});
+
+    fmt::print(
+        "{} elements in process. pending {} particles with these attributes.\n",
+        eleSize, size);
+    for (auto tag : tags)
+      fmt::print("tag: [{}, {}]\n", tag.name, tag.numChannels);
+
+    zscloth->particles = std::make_shared<typename ZenoParticles::particles_t>(
+        tags, size, memsrc_e::host);
+    auto &pars = zscloth->getParticles(); // tilevector
+    {
+      ompExec(zs::range(size),
+              [pars = proxy<execspace_e::openmp>({}, pars), &model, &obj,
+               velsPtr, &dofVol, category](size_t pi) mutable {
+                using vec3 = zs::vec<float, 3>;
+                using mat3 = zs::vec<float, 3, 3>;
+
+                // volume, mass
+                float vol = dofVol[pi];
+                pars("vol", pi) = vol;
+                pars("m", pi) = vol * model->density;
+
+                // pos
+                pars.tuple<3>("x", pi) = obj[pi];
+
+                // vel
+                if (velsPtr != nullptr)
+                  pars.tuple<3>("v", pi) = velsPtr[pi];
+                else
+                  pars.tuple<3>("v", pi) = vec3::zeros();
+
+                // apic transfer
+                pars.tuple<9>("C", pi) = mat3::zeros();
+
+                pars("beta", pi) = 0; // for positional adjustment
+              });
+
+      pars = pars.clone({memsrc_e::device, 0});
+    }
+    zscloth->elements =
+        typename ZenoParticles::particles_t{eleTags, eleSize, memsrc_e::host};
+    auto &eles = zscloth->getQuadraturePoints(); // tilevector
+    ompExec(zs::range(eleSize), [eles = proxy<execspace_e::openmp>({}, eles),
+                                 &model, &mu, &lam, velsPtr, &eleVol, &elePos,
+                                 &obj, &eleVel, &eleD, category,
+                                 &tris](size_t ei) mutable {
+      using vec3 = zs::vec<double, 3>;
+      using mat3 = zs::vec<double, 3, 3>;
+      // vol, mass
+      eles("vol", ei) = eleVol[ei];
+      eles("m", ei) = eleVol[ei] * model->density;
+
+      // pos
+      eles.tuple<3>("x", ei) = elePos[ei];
+
+      // vel
+      if (velsPtr != nullptr)
+        eles.tuple<3>("v", ei) = eleVel[ei];
+      else
+        eles.tuple<3>("v", ei) = vec3::zeros();
+
+      eles("mu", ei) = mu;
+      eles("lam", ei) = lam;
+
+      // deformation
+      const auto &D = eleD[ei]; // [col]
+      auto Dmat = mat3{D[0][0], D[1][0], D[2][0], D[0][1], D[1][1],
+                       D[2][1], D[0][2], D[1][2], D[2][2]};
+      eles.tuple<9>("d", ei) = Dmat;
+
+      // ref: CFF Jiang, 2017 Anisotropic MPM techdoc
+      // ref: Yun Fei, libwetcloth;
+      // This file is part of the libWetCloth open source project
+      //
+      // Copyright 2018 Yun (Raymond) Fei, Christopher Batty, Eitan Grinspun,
+      // and Changxi Zheng
+      //
+      // This Source Code Form is subject to the terms of the Mozilla Public
+      // License, v. 2.0. If a copy of the MPL was not distributed with this
+      // file, You can obtain one at http://mozilla.org/MPL/2.0/.
+      {
+        auto t0 = col(Dmat, 0);
+        auto t1 = col(Dmat, 1);
+        auto normal = col(Dmat, 2);
+        // could qr decomp here first (tech doc)
+
+        zs::Rotation<double, 3> rot0{normal.normalized(), vec3{0, 0, 1}};
+        auto u = rot0 * t0;
+        auto v = rot0 * t1;
+        zs::Rotation<double, 3> rot1{u.normalized(), vec3{1, 0, 0}};
+        auto ru = rot1 * u;
+        auto rv = rot1 * v;
+        auto Dstar = mat3::identity();
+        Dstar(0, 0) = ru(0);
+        Dstar(0, 1) = rv(0);
+        Dstar(1, 1) = rv(1);
+
+        if (std::abs(rv(1)) <= 10 * limits<float>::epsilon() ||
+            std::abs(ru(0)) <= 10 * limits<float>::epsilon()) {
+          fmt::print(fg(fmt::color::red),
+                     "beware: encounters near-singular Dm element [{}] of: "
+                     "\n\tt0[{}, {}, {}], \n\tt1[{}, {}, {}], \n\tnormal[{}, "
+                     "{}, {}]\n",
+                     ei, t0[0], t0[1], t0[2], t1[0], t1[1], t1[2], normal[0],
+                     normal[1], normal[2]);
+#if 1
+          // let this be a failed element
+          eles("mu", ei) = 0;
+          eles("lam", ei) = 0;
+          auto invDstar = zs::inverse(Dstar);
+          eles.tuple<9>("DmInv", ei) = invDstar;
+          eles.tuple<9>("F", ei) = Dmat * invDstar;
+#else
+          
+          throw std::runtime_error(
+              "there exists degenerated triangle surface element");
+          using mat2 = zs::vec<double, 2, 2>;
+          auto D2 = mat2{Dstar(0, 0), Dstar(0, 1), Dstar(1, 0), Dstar(1, 1)};
+          auto [Q2, R2] = zs::math::qr(D2);
+          auto R2Inv = inverse(R2);
+          fmt::print("R2Inv: {}, {}; {}, {}\n", R2Inv(0, 0), R2Inv(0, 1),
+                     R2Inv(1, 0), R2Inv(1, 1));
+          auto invDstar = zs::inverse(Dstar);
+          fmt::print("invD2: {}, {}; {}, {}\n", invDstar(0, 0), invDstar(0, 1),
+                     invDstar(1, 0), invDstar(1, 1));
+          auto F = Dmat * invDstar;
+          fmt::print("F({}): {}, {}, {}; {}, {}, {}; {}, {}, {}\n",
+                     zs::determinant(F), F(0, 0), F(0, 1), F(0, 2), F(1, 0),
+                     F(1, 1), F(1, 2), F(2, 0), F(2, 1), F(2, 2));
+          getchar();
+#endif
+        } else {
+          auto invDstar = zs::inverse(Dstar);
+          eles.tuple<9>("DmInv", ei) = invDstar;
+          eles.tuple<9>("F", ei) = Dmat * invDstar;
+        }
+      }
+      eles.tuple<9>("C", ei) = mat3::zeros();
+
+      // element-vertex indices
+      const auto &tri = tris[ei];
+      for (int i = 0; i != 3; ++i)
+        eles("inds", i, ei) = reinterpret_bits<float>(tri[i]);
+    });
+    eles = eles.clone({memsrc_e::um, 0});
+
+    fmt::print(fg(fmt::color::cyan), "done executing ToZSCloth\n");
+    set_output("ZSParticles", zscloth);
+  }
+};
+
+ZENDEFNODE(ToZSCloth, {
+                          {"ZSModel", "prim",
+                           /*gamma*/ {"float", "stiffness_shear", "0."},
+                           /*k*/ {"float", "stiffness_normal", "800."},
+                           /*fa*/ {"float", "friction_angle", "0."},
+                           /*dc*/ {"float", "damping_coeff", "0."}},
+                          {"ZSParticles"},
+                          {},
+                          {"MPM"},
+                      });
+
 struct ToZSParticles : INode {
   void apply() override {
     using namespace zs;
     fmt::print(fg(fmt::color::green), "begin executing ToZensimParticles\n");
     auto model = get_input<ZenoConstitutiveModel>("ZSModel");
+    { // use default setup, not ideal for cloth/curve
+      model->record("k", 800.f);
+      model->record("gamma", 0.f);
+      model->record("fa", 0.f);
+      model->record("dc", 0.f);
+    }
 
     // primitive
     auto inParticles = get_input<PrimitiveObject>("prim");
