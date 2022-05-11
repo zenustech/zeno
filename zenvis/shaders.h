@@ -491,7 +491,7 @@ vec3 pbr(vec3 albedo, float roughness, float metallic, float specular,
 
 )" + (!mtl ?
            R"(
-vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 tangent) {
+vec4 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 tangent) {
     // pack_attrs
     {
         mrt_attr_pos = vec4(position, 1);
@@ -525,7 +525,7 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 tangent) {
 
     color *= 1.2;
     //color = pow(clamp(color, 0., 1.), vec3(1./2.2));
-    return color;
+    return vec4(color,1);
 }
 )"
            : "\n/* common_funcs_begin */\n" + mtl->common + "\n/* common_funcs_end */\n"
@@ -1682,7 +1682,7 @@ uniform bool enable_gi_flag;
 
 vec3 convWorldPosToVoxelPos(vec3 pos){
     vec3 vxPos = (vxView * vec4(pos,1)).xyz; 
-    return clamp(pos/vxSize, vec3(0,0,0), vec3(1,1,1));
+    return clamp(vxPos/vxSize, vec3(0,0,0), vec3(1,1,1));
 }
 
 vec4 sampleVoxel(vec3 pos, float diameter){
@@ -1694,14 +1694,14 @@ vec4 sampleVoxel(vec3 pos, float diameter){
 
 
 vec4 ConeTracing(vec3 origin, vec3 normal, vec3 direction, float aperture, float offset, float mt){
-    float stepSize = vxSize/256/2;
+    float stepSize = vxSize/256;
     float VoxelCellSize = vxSize/256;
     float t = offset * VoxelCellSize;
     vec3 acc = vec3(0.0);
     float occlusion = 0.0;
     float max_t = mt;
     float diameter = 2.0 * t * tan(aperture/ 2.0);
-    origin += 1.0 * normal * VoxelCellSize;
+    origin += 2.0 * normal * VoxelCellSize;
     vec3 currPos = origin + t * direction;
 
     while(occlusion < 1 && t < max_t){
@@ -1718,37 +1718,38 @@ vec4 ConeTracing(vec3 origin, vec3 normal, vec3 direction, float aperture, float
 
 
 vec4 IndirectSpecularLighting(vec3 pos, vec3 normal, vec3 traceDir, float aperture){
-   return ConeTracing(pos, normal, traceDir, aperture, 3, vxSize);
+   return ConeTracing(pos, normal, traceDir, aperture, 2, vxSize);
 }
 
 vec4 IndirectDiffuseLighting(vec3 pos, vec3 normal, vec3 tangent, vec3 bitangent){
-   vec4 color = 0.5 * ConeTracing(pos, normal, mix(normal, tangent, 0.666), 1.04, 7, vxSize);
-   color += 0.5 * ConeTracing(pos, normal, mix(normal, -tangent, 0.666), 1.04, 7, vxSize);
-   color += 0.5 * ConeTracing(pos, normal, mix(normal, bitangent, 0.666), 1.04, 7, vxSize);
-   color += 0.5 * ConeTracing(pos, normal, mix(normal, -bitangent, 0.666), 1.04, 7, vxSize);
-   color += ConeTracing(pos, normal, normal, 1.04, 1, vxSize);
+   vec4 color = 0.5 * ConeTracing(pos, normal, mix(normal, tangent, 0.666), 1.04, 6, vxSize);
+   color += 0.5 * ConeTracing(pos, normal, mix(normal, -tangent, 0.666), 1.04, 6, vxSize);
+   color += 0.5 * ConeTracing(pos, normal, mix(normal, bitangent, 0.666), 1.04, 6, vxSize);
+   color += 0.5 * ConeTracing(pos, normal, mix(normal, -bitangent, 0.666), 1.04, 6, vxSize);
+   color += ConeTracing(pos, normal, normal, 1.04, 6, vxSize);
    return vec4(color.xyz, 1.0);
 }
 
-vec4 pbrGI(vec3 pos, vec3 N, vec3 V, vec3 tangent, vec3 bitangent, vec3 albedo, float roughness, float metallic)
+vec3 pbrGI(in vec3 pos, in vec3 N, in vec3 V, in vec3 tangent, in vec3 bitangent, in vec3 albedo, in float roughness, in float metallic)
 {
     mat3 m = inverse(mat3(mView[0].xyz, mView[1].xyz, mView[2].xyz));
     vec3 F0 = mix(vec3(0.04), albedo, metallic);
     vec3 F = fresnelSchlickRoughness(dot_c(N, V), F0, roughness);
     vec3 kS = F;
-    vec4 kD = vec4(1.0 - kS,1.0);
+    vec3 kD = 1.0 - kS;
     kD *= 1.0 - metallic;
-    vec4 spRT1 = IndirectSpecularLighting(pos, m * N, m * reflect(-V, N), 0.1);
+    vec3 spRT1 = IndirectSpecularLighting(pos, m * N, m * reflect(-V, N), 0.1).xyz;
     
-    vec4 dfRT = IndirectDiffuseLighting(pos, m * N, m * tangent, m * bitangent);
+    vec3 dfRT = CalculateDiffuse(albedo) * IndirectDiffuseLighting(pos, m * N, m * tangent, m * bitangent).xyz;
+    
     vec2 brdf  = texture(brdfLUT, vec2(max(dot(N, V), 0.0), roughness)).rg;
-    vec4 spRT = mix(spRT1, dfRT, roughness) * (vec4(F,1) * brdf.x + brdf.y);
+    vec3 spRT = mix(spRT1, dfRT, roughness) * (F * brdf.r + brdf.g) ;
     return kD * dfRT + spRT;
 
 
 }
 
-vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 old_tangent) {
+vec4 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 old_tangent) {
     vec4 projPos = mView * vec4(position.xyz, 1.0);
     //normal = normalize(normal);
     vec3 L1 = light[0];
@@ -1851,7 +1852,7 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 old_tangent) {
         vec3 lcolor = mix(photoReal, NPR, mat_toon) + mat_subsurface * sss;
    
         float shadow = ShadowCalculation(lightId, position + 0.001 * TBN[2], shadowSoftness[lightId], tan, TBN[1],3);
-        vec3 sclr = clamp(vec3(1.0-shadow) + shadowTint[lightId], vec3(0), vec3(1));
+        vec3 sclr = vec3(1.0-shadow);
         color += lcolor * sclr;
         
 
@@ -1880,11 +1881,13 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 old_tangent) {
 
     //strokeColor = pow(strokeColor,vec3(2.0));
     color = mix(color, mix(color*strokeColor, color, strokeColor), mat_toon);
-
+    color +=  colorEmission;
     color = ACESFitted(color.rgb, 2.2);
     if(mat_reflection==1.0 && mat_reflectID>-1 && mat_reflectID<16)
         color = mix(color, reflectionCalculation(position, int(mat_reflectID)), mat_reflection);
-    return color + colorEmission;
+    float alpha = mat_foliage>0?1-mat_opacity:1;
+    if(alpha>0.5) alpha = 1;
+    return vec4(color, alpha);
 
 
 }
@@ -2065,9 +2068,9 @@ void main()
    pixarONB(normal, tangent, unusedbitan);
   }
 
-  vec3 color = studioShading(albedo, viewdir, normal, tangent);
+  vec4 color = studioShading(albedo, viewdir, normal, tangent);
   
-  fColor = vec4(color*msweight, 1);
+  fColor = color;
   
   if (mNormalCheck) {
       float intensity = clamp((mView * vec4(normal, 0)).z, 0, 1) * 0.4 + 0.6;

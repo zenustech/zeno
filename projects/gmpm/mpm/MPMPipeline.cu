@@ -5,6 +5,7 @@
 #include "zensim/cuda/execution/ExecutionPolicy.cuh"
 #include "zensim/geometry/SpatialQuery.hpp"
 #include "zensim/io/ParticleIO.hpp"
+#include "zensim/math/MathUtils.h"
 #include "zensim/math/matrix/QRSVD.hpp"
 #include "zensim/omp/execution/ExecutionPolicy.hpp"
 #include "zensim/simulation/Utils.hpp"
@@ -360,6 +361,39 @@ struct SpringSystemTimeStepping : INode {
     auto xNorm = zs::sqrt(res.getVal());
     return zs::sqrt((1 + xNorm) * limits<float>::epsilon()) / yNorm;
   }
+  float computeSpringEnergy(zs::CudaExecutionPolicy &cudaPol,
+                            const tiles_t &springs, tiles_t &vertData,
+                            float alpha, float dt) {
+    using namespace zs;
+    constexpr auto space = execspace_e::cuda;
+    Vector<double> Esum{vertData.get_allocator(), 1};
+    Esum.setVal(0);
+    cudaPol(range(springs.size()), [Esum = proxy<space>(Esum),
+                                    eles = proxy<space>({}, springs),
+                                    data = proxy<space>({}, vertData), dt,
+                                    alpha] __device__(int ei) mutable {
+      auto inds = eles.pack<2>("inds", ei).reinterpret_bits<int>();
+      auto v0 = data.pack<3>("v", inds[0]);
+      auto dv0 =
+          data.pack<3>("dv", inds[0]) + data.pack<3>("p", inds[0]) * alpha;
+      v0 += dv0;
+      auto x0 = data.pack<3>("x0", inds[0]) + v0 * dt;
+
+      auto v1 = data.pack<3>("v", inds[1]);
+      auto dv1 =
+          data.pack<3>("dv", inds[1]) + data.pack<3>("p", inds[1]) * alpha;
+      v1 += dv1;
+      auto x1 = data.pack<3>("x0", inds[1]) + v1 * dt;
+
+      auto k = eles("k", ei);
+      auto rl = eles("rl", ei);
+
+      auto l = (x1 - x0).norm();
+      auto E = 0.5 * k * zs::sqr(l - rl);
+      atomic_add(exec_cuda, &Esum[0], E);
+    });
+    return Esum.getVal();
+  }
   void computeSpringForce(zs::CudaExecutionPolicy &cudaPol,
                           const tiles_t &springs, tiles_t &vertData,
                           const zs::SmallString vtag,
@@ -417,6 +451,7 @@ struct SpringSystemTimeStepping : INode {
     using bv_t = typename lbvh_t::Box;
     lbvh_t lbvh{};
     zs::Vector<bv_t> bvs{vertData.get_allocator(), numSprings};
+#if 0
     float thickness = 0.0002;
     cudaPol(range(numSprings),
             [eles = proxy<space>({}, springs), bvs = proxy<space>(bvs),
@@ -482,7 +517,7 @@ struct SpringSystemTimeStepping : INode {
               constexpr double xi2 = xi * xi;
               if (dist2 < xi2)
                 printf("penetrated already...");
-              constexpr double dHat = 1e-2;
+              constexpr double dHat = 1e-3;
               constexpr double activeGap2 = dHat * dHat;
               constexpr double kappa = 1e3;
               double o_areaWeight = (o_x1 - o_x0).norm() * thickness;
@@ -509,6 +544,7 @@ struct SpringSystemTimeStepping : INode {
           node = bvh._auxIndices[node];
       }
     });
+#endif
   }
   void SAp(zs::CudaExecutionPolicy &cudaPol, const tiles_t &verts,
            const tiles_t &springs, tiles_t &vertData, float dt, float eps) {
@@ -599,13 +635,22 @@ struct SpringSystemTimeStepping : INode {
     delta0 = dot(cudaPol, vertData, "r", "r");
     auto tol = 1e-2;
     int iter = 0;
+    // float Eprev = computeSpringEnergy(cudaPol, springs, vertData, 1, dt);
+    // fmt::print("initial energy: {}\n", Eprev);
     while (deltaNew > tol * delta0 * tol &&
            deltaNew > limits<float>::epsilon() * 8) {
       // s = S(Ap)
       SAp(cudaPol, verts, springs, vertData, dt, eps);
       // alpha
       alpha = deltaNew / dot(cudaPol, vertData, "p", "s");
-      // dv += alpha * p
+#if 0
+      float E = computeSpringEnergy(cudaPol, springs, vertData, alpha, dt);
+      for (; E > Eprev;) {
+        alpha /= 2;
+        E = computeSpringEnergy(cudaPol, springs, vertData, alpha, dt);
+      }
+#endif
+      // dv += alpha * p, r -= alpha * s
       cudaPol(range(numVerts), [data = proxy<space>({}, vertData),
                                 alpha] __device__(int pi) mutable {
         data.tuple<3>("dv", pi) =
@@ -616,7 +661,7 @@ struct SpringSystemTimeStepping : INode {
       deltaOld = deltaNew;
       deltaNew = dot(cudaPol, vertData, "r", "r");
       fmt::print("iteration [{}]: eps: {}; deltaOld {} -> deltaNew {}\n",
-                 iter++, eps, deltaOld, deltaNew);
+                 iter++, eps, deltaOld, deltaNew /*, E*/);
       //
       cudaPol(range(numVerts), [data = proxy<space>({}, vertData), deltaNew,
                                 deltaOld] __device__(int pi) mutable {
@@ -625,14 +670,13 @@ struct SpringSystemTimeStepping : INode {
       });
       filter(cudaPol, vertData, "p", "p");
       eps = evalEps(cudaPol, vertData, dt);
+      // Eprev = E;
     }
 
     cudaPol(range(numVerts),
             [verts = proxy<space>({}, verts), data = proxy<space>({}, vertData),
              dt] __device__(int pi) mutable {
-              auto v = verts.pack<3>("v", pi);
-              auto dv = data.pack<3>("dv", pi);
-              v += dv;
+              auto v = data.pack<3>("v", pi) + data.pack<3>("dv", pi);
               verts.tuple<3>("v", pi) = v;
               verts.tuple<3>("x", pi) = verts.pack<3>("x", pi) + v * dt;
             });
@@ -823,16 +867,13 @@ struct ZSReturnMapping : INode {
             });
   }
   void return_mapping_surface(zs::CudaExecutionPolicy &cudaPol,
-                              typename ZenoParticles::particles_t &eles) const {
+                              typename ZenoParticles::particles_t &eles,
+                              const float gamma, const float k,
+                              const float fc) const {
     using namespace zs;
-    cudaPol(range(eles.size()), [eles = proxy<execspace_e::cuda>(
-                                     {}, eles)] __device__(size_t pi) mutable {
+    cudaPol(range(eles.size()), [eles = proxy<execspace_e::cuda>({}, eles),
+                                 gamma, k, fc] __device__(size_t pi) mutable {
       auto d = eles.pack<3, 3>("d", pi);
-      // hard code ftm
-      constexpr auto gamma = 0.f;
-      constexpr auto k = 40000.f;
-      constexpr auto friction_coeff = 0.f;
-      // constexpr auto friction_coeff = 0.17f;
       auto [Q, R] = math::gram_schmidt(d);
       auto apply = [&, &Q = Q, &R = R]() {
         d = Q * R;
@@ -855,7 +896,7 @@ struct ZSReturnMapping : INode {
         auto rr = R(0, 2) * R(0, 2) + R(1, 2) * R(1, 2);
         auto r33_m_1 = R(2, 2) - 1;
         auto gamma_over_k = gamma / k;
-        auto zz = friction_coeff * r33_m_1 * r33_m_1; // normal traction
+        auto zz = fc * r33_m_1 * r33_m_1; // normal traction
         if (gamma_over_k * gamma_over_k * rr - zz * zz > 0) {
           auto scale = zz / (gamma_over_k * zs::sqrt(rr));
           R(0, 2) *= scale;
@@ -867,75 +908,72 @@ struct ZSReturnMapping : INode {
   }
   void return_mapping_curve(zs::CudaExecutionPolicy &cudaPol,
                             const zs::StvkWithHencky<float> &stvkModel,
-                            typename ZenoParticles::particles_t &eles) const {
+                            typename ZenoParticles::particles_t &eles,
+                            const float gamma, const float fa) const {
     using namespace zs;
     bool materialParamOverride =
         eles.hasProperty("mu") && eles.hasProperty("lam");
     // drucker prager for stvk elastic model
     // ref: libwetcloth, Jiang 2017
-    cudaPol(range(eles.size()),
-            [eles = proxy<execspace_e::cuda>({}, eles), stvkModel = stvkModel,
-             materialParamOverride] __device__(size_t pi) mutable {
-              // hard code ftm
-              constexpr auto gamma = 10.f;
-              constexpr auto alpha = 0.f;
-              constexpr auto beta = 0.f;
-              constexpr auto alpha_tangent = 0.f;
-              constexpr auto cohesion = 0.f; // no cohesion ftm
-              bool projected = false;
-              if (materialParamOverride) {
-                stvkModel.mu = eles("mu", pi);
-                stvkModel.lam = eles("lam", pi);
-              }
-              auto d = eles.pack<3, 3>("d", pi);
-              auto [Q, R] = math::gram_schmidt(d);
+    cudaPol(range(eles.size()), [eles = proxy<execspace_e::cuda>({}, eles),
+                                 stvkModel = stvkModel, materialParamOverride,
+                                 gamma, fa] __device__(size_t pi) mutable {
+      // hard code ftm
+      constexpr auto alpha = 0.f;
+      constexpr auto alpha_tangent = 0.f;
+      constexpr auto cohesion = 0.f; // no cohesion ftm
+      bool projected = false;
+      if (materialParamOverride) {
+        stvkModel.mu = eles("mu", pi);
+        stvkModel.lam = eles("lam", pi);
+      }
+      auto d = eles.pack<3, 3>("d", pi);
+      auto [Q, R] = math::gram_schmidt(d);
 
-              using vec2 = zs::vec<float, 2>;
-              using mat2 = zs::vec<float, 2, 2>;
+      using vec2 = zs::vec<float, 2>;
+      using mat2 = zs::vec<float, 2, 2>;
 
-              mat2 R_hat{R(1, 1), R(1, 2), R(2, 1), R(2, 2)};
-              auto [U, S, V] = math::qr_svd(R_hat);
-              auto eps =
-                  S.abs().max(limits<float>::epsilon() * 128).log() - cohesion;
-              auto eps_trace = eps.sum() /*+ logJp*/;
-              if (eps_trace < 0) {
-                auto eps_hat = eps - 0.5f * eps_trace;
-                auto eps_hat_norm = eps_hat.norm();
-                auto dgp = eps_hat_norm + (stvkModel.mu + stvkModel.lam) /
-                                              stvkModel.mu * eps_trace * alpha;
-                if (eps_hat_norm < limits<float>::epsilon())
-                  eps = eps.zeros() + cohesion;
-                else
-                  eps = eps - dgp / eps_hat_norm * eps_hat + cohesion;
-              } else {
-                eps = eps.zeros() + cohesion;
-              }
-              S = eps.exp();
-              auto R2 = diag_mul(U, S) * V.transpose();
-              R(1, 1) = R2(0, 0);
-              R(1, 2) = R2(0, 1);
-              R(2, 1) = R2(1, 0);
-              R(2, 2) = R2(1, 1);
+      mat2 R_hat{R(1, 1), R(1, 2), R(2, 1), R(2, 2)};
+      auto [U, S, V] = math::qr_svd(R_hat);
+      auto eps = S.abs().max(limits<float>::epsilon() * 128).log() - cohesion;
+      auto eps_trace = eps.sum() /*+ logJp*/;
+      if (eps_trace < 0) {
+        auto eps_hat = eps - 0.5f * eps_trace;
+        auto eps_hat_norm = eps_hat.norm();
+        auto dgp = eps_hat_norm + (stvkModel.mu + stvkModel.lam) /
+                                      stvkModel.mu * eps_trace * alpha;
+        if (eps_hat_norm < limits<float>::epsilon())
+          eps = eps.zeros() + cohesion;
+        else
+          eps = eps - dgp / eps_hat_norm * eps_hat + cohesion;
+      } else {
+        eps = eps.zeros() + cohesion;
+      }
+      S = eps.exp();
+      auto R2 = diag_mul(U, S) * V.transpose();
+      R(1, 1) = R2(0, 0);
+      R(1, 2) = R2(0, 1);
+      R(2, 1) = R2(1, 0);
+      R(2, 2) = R2(1, 1);
 
-              auto tau_hat = stvkModel.first_piola(R2) * R2.transpose();
-              auto p_cohesion =
-                  (stvkModel.mu * 2 + stvkModel.lam * 2) * cohesion;
-              auto p = zs::min(trace(tau_hat) / 2, p_cohesion);
+      auto tau_hat = stvkModel.first_piola(R2) * R2.transpose();
+      auto p_cohesion = (stvkModel.mu * 2 + stvkModel.lam * 2) * cohesion;
+      auto p = zs::min(trace(tau_hat) / 2, p_cohesion);
 
-              auto r = vec2{R(0, 1), R(0, 2)};
-              auto gammaRr = gamma * (R2 * r).norm();
-              auto f = gammaRr + alpha_tangent * p;
+      auto r = vec2{R(0, 1), R(0, 2)};
+      auto gammaRr = gamma * (R2 * r).norm();
+      auto f = gammaRr + alpha_tangent * p;
 
 #if 1
-              // Jiang
-              if (gamma == 0.f) {
-                R(0, 1) = R(0, 2) = 0;
-              } else if (f > p_cohesion) {
-                auto scale = (p_cohesion - alpha_tangent * p) / gammaRr;
-                r *= scale;
-                R(0, 1) = r(0);
-                R(0, 2) = r(1);
-              }
+      // Jiang
+      if (gamma == 0.f) {
+        R(0, 1) = R(0, 2) = 0;
+      } else if (f > p_cohesion) {
+        auto scale = (p_cohesion - alpha_tangent * p) / gammaRr;
+        r *= scale;
+        R(0, 1) = r(0);
+        R(0, 2) = r(1);
+      }
 #else
               // Raymond
               const auto ff =
@@ -952,10 +990,10 @@ struct ZSReturnMapping : INode {
               }
 #endif
 
-              d = Q * R;
-              eles.tuple<9>("d", pi) = d;
-              eles.tuple<9>("F", pi) = d * eles.pack<3, 3>("DmInv", pi);
-            });
+      d = Q * R;
+      eles.tuple<9>("d", pi) = d;
+      eles.tuple<9>("F", pi) = d * eles.pack<3, 3>("DmInv", pi);
+    });
   }
   void apply() override {
     fmt::print(fg(fmt::color::green), "begin executing ZSReturnMapping\n");
@@ -986,14 +1024,19 @@ struct ZSReturnMapping : INode {
       } else if (parObjPtr->category == ZenoParticles::tracker) {
       } else {
         auto &eles = parObjPtr->getQuadraturePoints();
+        const auto &models = parObjPtr->getModel();
         if (parObjPtr->category == ZenoParticles::surface)
-          return_mapping_surface(cudaPol, eles);
+          return_mapping_surface(cudaPol, eles, models.retrieve("gamma"),
+                                 models.retrieve("k"),
+                                 std::tan(models.retrieve("fa") / g_pi));
         else if (parObjPtr->category == ZenoParticles::curve) {
-          const auto &models = parObjPtr->getModel();
           match(
-              [this, &eles, &cudaPol](const StvkWithHencky<float> &stvkModel) {
+              [this, &eles, &cudaPol,
+               &models](const StvkWithHencky<float> &stvkModel) {
                 // use drucker prager plasticity for friction handling
-                return_mapping_curve(cudaPol, stvkModel, eles);
+                return_mapping_curve(cudaPol, stvkModel, eles,
+                                     models.retrieve("gamma"),
+                                     models.retrieve("fa"));
               },
               [](...) {
                 // do nothing

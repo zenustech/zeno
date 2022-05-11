@@ -43,6 +43,7 @@ PYBIND11_MODULE(pylib_zenvis, m) {
     m.def("getLight", zenvis::getLight);
     m.def("clearCameraControl", zenvis::clearCameraControl);
     m.def("getDepthTexture", zenvis::getDepthTexture);
+    m.def("requireVoxelize", zenvis::requireVoxelize);
 }
 
 

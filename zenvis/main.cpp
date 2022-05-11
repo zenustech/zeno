@@ -290,6 +290,7 @@ std::tuple<
     l->m_isEnabled,
   };
 }
+extern void preIntegrate(GLuint inEnvMap);
 
 std::unique_ptr<IGraphic> makeGraphicGrid();
 std::unique_ptr<IGraphic> makeGraphicAxis();
@@ -300,6 +301,7 @@ void initialize() {
   scene.addLight();
   initReflectiveMaps(nx, ny);
   voxelizer::initVoxelTexture();
+  preIntegrate(0);
   MRT::getInstance().is_use = false;
   auto version = (const char *)glGetString(GL_VERSION);
   printf("OpenGL version: %s\n", version ? version : "null");
@@ -358,15 +360,34 @@ static void shadowPass()
     }
   }
 }
-static void VoxelizePass()
+bool b_requireVoxelize = false;
+void requireVoxelize()
 {
+  b_requireVoxelize = true;
+}
+std::vector<LightData> rcL(16);
+void voxelizePass()
+{
+  bool lightChanged = false;
+  auto &scene = Scene::getInstance();
+  auto &lights = scene.lights;
+  for(int i=0;i<lights.size();i++)
+  {
+    if(!lights[i]->isSame(rcL[i]))
+      lightChanged = true;
+    lights[i]->assignLightData(rcL[i]);
+  }
+  
+  if(lightChanged==false && b_requireVoxelize==false)
+    return;
+
   glm::mat4x4 backup_view = view;
   glm::mat4x4 backup_proj = proj;
 
-  view = voxelizer::getView();
+  view = glm::mat4(1);
   proj = glm::ortho(-0.01f,1.01f,-0.01f,1.01f, -1.01f,1.01f);
   voxelizer::ClearTexture();
-  for(int i=0;i<10;i++){
+  for(int i=0;i<20;i++){
     voxelizer::BeginVoxelize();
     vao->bind();
       for (auto const &[key, gra] : current_frame_data()->graphics)
@@ -374,11 +395,12 @@ static void VoxelizePass()
         gra->drawVoxelize(0.0);
       }
     vao->unbind();
-    voxelizer::AddVoxels(0.1);
+    voxelizer::AddVoxels(0.05);
   }
   voxelizer::EndVoxelize();
   view = backup_view;
   proj = backup_proj;
+  b_requireVoxelize = false;
 }
 glm::mat4 MakeInfReversedZProjRH(float fovY_radians, float aspectWbyH, float zNear)
 {
@@ -600,8 +622,6 @@ static void paint_graphics(GLuint target_fbo = 0) {
   if (enable_gi_flag) {
     VoxelizePass();
   }
-  //static bool isBate = !std::getenv("ZENO_BATE");
-  //if (isBate) enable_hdr = 0;
   if(enable_hdr && tmProg==nullptr)
   {
     std::cout<<"compiling zhxx hdr program"<<std::endl;
@@ -651,7 +671,7 @@ static void paint_graphics(GLuint target_fbo = 0) {
     }
     CHECK_GL(glGenRenderbuffers(1, &msfbod));
     CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, msfbod));
-    CHECK_GL(glRenderbufferStorageMultisample(GL_RENDERBUFFER, num_samples, GL_DEPTH_COMPONENT32F, nx, ny));
+    CHECK_GL(glRenderbufferStorageMultisample(GL_RENDERBUFFER, 16, GL_DEPTH_COMPONENT32F, nx, ny));
 
     if(ssfbod!=0)
     {
@@ -733,26 +753,26 @@ static void paint_graphics(GLuint target_fbo = 0) {
   }
 
   // test code
-  auto &mrt = MRT::getInstance();
-  if (mrt.is_use)
-  {
-    glEnable(GL_MULTISAMPLE);
-    glm::vec3 object = g_camPos + 1.0f * glm::normalize(g_camView);
-    glm::vec3 right = glm::normalize(glm::cross(object - g_camPos, g_camUp));
-    glm::vec3 p_up = glm::normalize(glm::cross(right, object - g_camPos));
-    view = glm::lookAt(g_camPos, object, p_up);
-    mrt.before_draw();
-    CHECK_GL(glClearColor(bgcolor.r, bgcolor.g, bgcolor.b, 0.0f));
-    CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
-    my_paint_graphics(1.0, 0.0);
-    mrt.after_draw(nx, ny);
-    CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, mrt.fbo));
-    CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, target_fbo));
-    ScreenFillQuad(mrt.texs[4],1.0,0);
-    glDisable(GL_MULTISAMPLE);
-    CHECK_GL(glFlush());
-    return;
-  }
+  // auto &mrt = MRT::getInstance();
+  // if (mrt.is_use)
+  // {
+  //   glEnable(GL_MULTISAMPLE);
+  //   glm::vec3 object = g_camPos + 1.0f * glm::normalize(g_camView);
+  //   glm::vec3 right = glm::normalize(glm::cross(object - g_camPos, g_camUp));
+  //   glm::vec3 p_up = glm::normalize(glm::cross(right, object - g_camPos));
+  //   view = glm::lookAt(g_camPos, object, p_up);
+  //   mrt.before_draw();
+  //   CHECK_GL(glClearColor(bgcolor.r, bgcolor.g, bgcolor.b, 0.0f));
+  //   CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
+  //   my_paint_graphics(1.0, 0.0);
+  //   mrt.after_draw(nx, ny);
+  //   CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, mrt.fbo));
+  //   CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, target_fbo));
+  //   ScreenFillQuad(mrt.texs[4],1.0,0);
+  //   glDisable(GL_MULTISAMPLE);
+  //   CHECK_GL(glFlush());
+  //   return;
+  // }
   
   if(g_dof>0){
     glDisable(GL_MULTISAMPLE);
@@ -811,12 +831,14 @@ static void paint_graphics(GLuint target_fbo = 0) {
 
   } else {
     glEnable(GL_MULTISAMPLE);
-    glEnable(GL_BLEND);
+    glDisable(GL_BLEND);
+    CHECK_GL(glEnable(GL_SAMPLE_COVERAGE));
+    CHECK_GL(glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE));
     CHECK_GL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
     glBindRenderbuffer(GL_RENDERBUFFER, msfborgb);              
-    glRenderbufferStorageMultisample(GL_RENDERBUFFER, 16, GL_RGBA32F, nx, ny);
+    glRenderbufferStorageMultisample(GL_RENDERBUFFER, 1, GL_RGBA32F, nx, ny);
     CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, msfbod));
-    CHECK_GL(glRenderbufferStorageMultisample(GL_RENDERBUFFER, 16, GL_DEPTH_COMPONENT32F, nx, ny));
+    CHECK_GL(glRenderbufferStorageMultisample(GL_RENDERBUFFER, 1, GL_DEPTH_COMPONENT32F, nx, ny));
     //ZPass();
     glm::vec3 object = g_camPos + 1.0f * glm::normalize(g_camView);
     glm::vec3 right = glm::normalize(glm::cross(object - g_camPos, g_camUp));
