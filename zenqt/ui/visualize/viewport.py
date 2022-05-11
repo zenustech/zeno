@@ -255,6 +255,9 @@ class QDMRecordMenu(QMenu):
         action.setShortcut(QKeySequence('Shift+F12'))
         self.addAction(action)
 
+        action = QAction('MSAASample', self)
+        self.addAction(action)
+
 light_channel_names = [
     'dir_x',
     'dir_y',
@@ -632,6 +635,11 @@ class DisplayWidget(QWidget):
 
         elif name == 'Screenshot':
             self.do_screenshot()
+
+        elif name == 'MSAASample':
+            nsamples, ok = QInputDialog.getInt(self, 'MSAASample', 'number: ', 1)
+            if ok:
+                zenvis.core.set_num_samples(nsamples)
 
         elif name == 'Camera Keyframe':
             self.camera_keyframe_widget.show()
