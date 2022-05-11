@@ -113,6 +113,7 @@ def _frameUpdate():
         core.clearReflectMask()
         for name, ext, path in frame_files:
             core.load_file(name, ext, path, frameid)
+        core.requireVoxelize()
     old_frame_files = frame_files
 
 
