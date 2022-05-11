@@ -4,6 +4,7 @@
 #include <zenovis/ObjectsManager.h>
 #include <zenovis/bate/IGraphic.h>
 #include <zenovis/opengl/vao.h>
+#include <zenovis/opengl/scope.h>
 #include "../../zhxxvis/zenvisapi.hpp"
 
 namespace zenovis::zhxx {
@@ -45,19 +46,18 @@ struct RenderEngineZhxx : RenderEngine, zeno::disable_copy {
     std::unique_ptr<GraphicsManager> graphicsMan;
     Scene *scene;
 
-    void setupState() {
-        CHECK_GL(glEnable(GL_BLEND));
-        CHECK_GL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
-        CHECK_GL(glEnable(GL_DEPTH_TEST));
-        CHECK_GL(glEnable(GL_PROGRAM_POINT_SIZE));
-        CHECK_GL(glEnable(GL_MULTISAMPLE));
-        CHECK_GL(glPixelStorei(GL_UNPACK_ALIGNMENT, 1));
-        CHECK_GL(glPixelStorei(GL_PACK_ALIGNMENT, 1));
+    auto setupState() {
+        return std::tuple{
+            opengl::scopeGLEnable(GL_BLEND), opengl::scopeGLEnable(GL_DEPTH_TEST),
+            opengl::scopeGLEnable(GL_DEPTH_TEST), opengl::scopeGLEnable(GL_PROGRAM_POINT_SIZE),
+            opengl::scopeGLBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA),
+            opengl::scopeGLEnable(GL_MULTISAMPLE),
+        };
     }
 
-    RenderEngineZhxx(Scene *scene_) : scene(scene_) {
+    explicit RenderEngineZhxx(Scene *scene_) : scene(scene_) {
         zeno::log_info("Zhxx Render Engine started...");
-        setupState();
+        auto guard = setupState();
 
         graphicsMan = std::make_unique<GraphicsManager>(scene);
 
@@ -70,7 +70,7 @@ struct RenderEngineZhxx : RenderEngine, zeno::disable_copy {
     }
 
     void draw() override {
-        setupState();
+        auto guard = setupState();
         auto const &cam = *scene->camera;
         auto const &opt = *scene->drawOptions;
         auto const &zxx = cam.m_zxx;
@@ -87,6 +87,8 @@ struct RenderEngineZhxx : RenderEngine, zeno::disable_copy {
         int oldFBO = 0, targetFBO = 0;
         CHECK_GL(glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &oldFBO));
         CHECK_GL(glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &targetFBO));
+        CHECK_GL(glClearColor(scene->drawOptions->bgcolor.r, scene->drawOptions->bgcolor.g,
+                              scene->drawOptions->bgcolor.b, 0.0f));
         zenvis::new_frame(targetFBO);
         CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, oldFBO));
     }

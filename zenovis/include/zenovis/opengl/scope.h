@@ -16,9 +16,7 @@ inline auto scopeGLEnable(GLenum mode, bool enable = true) {
             CHECK_GL(glEnable(mode));
         else
             CHECK_GL(glDisable(mode));
-        printf("outer %d\n", mode);
         return [=] {
-            printf("inner %d\n", mode);
             if (wasEnable)
                 CHECK_GL(glEnable(mode));
             else

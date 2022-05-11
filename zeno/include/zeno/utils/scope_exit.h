@@ -13,7 +13,7 @@ class scope_exit {
     bool enabled;
 
 public:
-    scope_exit(Func &&func) noexcept : func(std::move(func)), enabled(true) {
+    explicit scope_exit(Func &&func) noexcept : func(std::move(func)), enabled(true) {
     }
 
     bool has_value() const noexcept {
@@ -59,7 +59,7 @@ scope_exit(Func) -> scope_exit<Func>;
 template <class Func>
 class scope_enter : public scope_exit<std::invoke_result_t<Func>> {
 public:
-    scope_enter(Func &&func) : scope_exit<std::invoke_result_t<Func>>(std::move(func)()) {
+    explicit scope_enter(Func &&func) noexcept : scope_exit<std::invoke_result_t<Func>>(std::move(func)()) {
     }
 };
 
@@ -129,7 +129,7 @@ class scope_modify : public scope_finalizer<scope_modify<T>> {
 
 public:
     template <class U = T>
-    scope_modify(T &dst_, U &&val_) noexcept
+    explicit scope_modify(T &dst_, U &&val_) noexcept
         : dst(dst_), old(std::exchange(dst_, std::forward<U>(val_))) {
     }
 
@@ -148,7 +148,7 @@ class scope_bind : public scope_finalizer<scope_bind<T>> {
 
 public:
     template <class ...Args>
-    scope_bind(T &dst_, Args &&...args) : dst(dst_) {
+    explicit scope_bind(T &dst_, Args &&...args) : dst(dst_) {
         dst.bind(std::forward<Args>(args)...);
     }
 

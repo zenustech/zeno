@@ -84,7 +84,7 @@ void Scene::loadFrameObjects(int frameid) {
 void Scene::draw() {
     //CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0));
     CHECK_GL(glViewport(0, 0, camera->m_nx, camera->m_ny));
-    CHECK_GL(glClearColor(drawOptions->bgcolor.r, drawOptions->bgcolor.g, drawOptions->bgcolor.b, 0.0f));
+    //CHECK_GL(glClearColor(drawOptions->bgcolor.r, drawOptions->bgcolor.g, drawOptions->bgcolor.b, 0.0f));
 
     renderEngine->draw();
 }

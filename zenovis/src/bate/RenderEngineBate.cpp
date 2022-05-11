@@ -2,6 +2,7 @@
 #include <zenovis/DrawOptions.h>
 #include <zenovis/bate/GraphicsManager.h>
 #include <zenovis/ObjectsManager.h>
+#include <zenovis/DrawOptions.h>
 #include <zenovis/bate/IGraphic.h>
 #include <zenovis/opengl/vao.h>
 #include <zenovis/opengl/scope.h>
@@ -22,8 +23,8 @@ struct RenderEngineBate : RenderEngine {
         };
     }
 
-    RenderEngineBate(Scene *scene_) : scene(scene_) {
-        auto grd = setupState();
+    explicit RenderEngineBate(Scene *scene_) : scene(scene_) {
+        auto guard = setupState();
 
         vao = std::make_unique<opengl::VAO>();
         graphicsMan = std::make_unique<GraphicsManager>(scene);
@@ -37,7 +38,9 @@ struct RenderEngineBate : RenderEngine {
     }
 
     void draw() override {
-        auto grd = setupState();
+        auto guard = setupState();
+        CHECK_GL(glClearColor(scene->drawOptions->bgcolor.r, scene->drawOptions->bgcolor.g,
+                              scene->drawOptions->bgcolor.b, 0.0f));
         CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 
         vao->bind();
