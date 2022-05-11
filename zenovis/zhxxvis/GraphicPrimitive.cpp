@@ -821,8 +821,6 @@ struct GraphicPrimitive : IGraphic {
         triObj.voxelprog->set_uniformi("lightNum", lights.size());
         triObj.voxelprog->set_uniform("alphaPass", alphaPass);
         triObj.voxelprog->set_uniform("vxView", voxelizer::getView());
-        triObj.voxelprog->set_uniform("vxMaterialPass", voxelizer::isMaterialPass);
-        
         for (int lightNo = 0; lightNo < lights.size(); ++lightNo)
         {
             auto &light = lights[lightNo];
@@ -1235,7 +1233,8 @@ struct GraphicPrimitive : IGraphic {
         texOcp++;
         triObj.prog->set_uniform("vxSize",voxelizer::getDomainLength());
         triObj.prog->set_uniform("vxView", voxelizer::getView());
-        triObj.prog->set_uniformi("enable_gi_flag", zenvis::get_enable_gi());
+        //triObj.prog->set("is_GI", voxelizer::isGI());
+        
         
         
         triObj.prog->set_uniform("msweight", m_weight);

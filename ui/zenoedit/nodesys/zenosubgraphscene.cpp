@@ -143,8 +143,6 @@ void ZenoSubGraphScene::onDataChanged(const QModelIndex& subGpIdx, const QModelI
 
 	QString id = idx.data(ROLE_OBJID).toString();
 
-	if (role == ROLE_OBJPOS)
-	{
     if (role == ROLE_OBJPOS)
     {
         ZASSERT_EXIT(m_nodes.find(id) != m_nodes.end());

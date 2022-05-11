@@ -1694,7 +1694,7 @@ vec4 sampleVoxel(vec3 pos, float diameter){
 }
 
 
-vec4 ConeTracing(vec3 origin, vec3 normal, vec3 direction, float aperture, float offset, float mt, float dr){
+vec4 ConeTracing(vec3 origin, vec3 normal, vec3 direction, float aperture, float offset, float mt){
     float stepSize = vxSize/256;
     float VoxelCellSize = vxSize/256;
     float t = offset * VoxelCellSize;
@@ -1719,15 +1719,15 @@ vec4 ConeTracing(vec3 origin, vec3 normal, vec3 direction, float aperture, float
 
 
 vec4 IndirectSpecularLighting(vec3 pos, vec3 normal, vec3 traceDir, float aperture){
-   return ConeTracing(pos, normal, traceDir, aperture, 2, vxSize, 0.3);
+   return ConeTracing(pos, normal, traceDir, aperture, 2, vxSize);
 }
 
 vec4 IndirectDiffuseLighting(vec3 pos, vec3 normal, vec3 tangent, vec3 bitangent){
-   vec4 color = 0.5 * ConeTracing(pos, normal, mix(normal, tangent, 0.666), 1.04, 6, vxSize, 1.0);
-   color += 0.5 * ConeTracing(pos, normal, mix(normal, -tangent, 0.666), 1.04, 6, vxSize, 1.0);
-   color += 0.5 * ConeTracing(pos, normal, mix(normal, bitangent, 0.666), 1.04, 6, vxSize, 1.0);
-   color += 0.5 * ConeTracing(pos, normal, mix(normal, -bitangent, 0.666), 1.04, 6, vxSize, 1.0);
-   color += ConeTracing(pos, normal, normal, 1.04, 6, vxSize, 1.0);
+   vec4 color = 0.5 * ConeTracing(pos, normal, mix(normal, tangent, 0.666), 1.04, 6, vxSize);
+   color += 0.5 * ConeTracing(pos, normal, mix(normal, -tangent, 0.666), 1.04, 6, vxSize);
+   color += 0.5 * ConeTracing(pos, normal, mix(normal, bitangent, 0.666), 1.04, 6, vxSize);
+   color += 0.5 * ConeTracing(pos, normal, mix(normal, -bitangent, 0.666), 1.04, 6, vxSize);
+   color += ConeTracing(pos, normal, normal, 1.04, 6, vxSize);
    return vec4(color.xyz, 1.0);
 }
 
@@ -1851,26 +1851,22 @@ vec4 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 old_tangent) {
         }
 
         vec3 lcolor = mix(photoReal, NPR, mat_toon) + mat_subsurface * sss;
-        float slop = abs(dot( normalize(normal), normalize(light[lightId])));
-        float bias = (1-pow(slop,0.1)) * 0.1 + pow(slop,0.1) * 0.001;
-        vec3 disp;
-        disp = 0.005 * normalize(lightDir[lightId]) + bias * normalize(TBN[2]);
-        float shadow = ShadowCalculation(lightId, position + disp, shadowSoftness[lightId], tan, TBN[1],3);
-        vec3 sclr = clamp(vec3(1.0-shadow) + shadowTint[lightId], vec3(0.0), vec3(1.0));
+   
+        float shadow = ShadowCalculation(lightId, position + 0.001 * TBN[2], shadowSoftness[lightId], tan, TBN[1],3);
+        vec3 sclr = vec3(1.0-shadow);
         color += lcolor * sclr;
         
 
         
         realColor += photoReal * sclr;
     }
+    vec3 gi = pbrGI(position, normalize(new_normal), normalize(view_dir), normalize(tangent), normalize(bitangent), albedo2, roughness, mat_metallic);
+    
     
     vec3 iblPhotoReal =  CalculateLightingIBL(new_normal,view_dir,albedo2,roughness,mat_metallic);
     vec3 iblNPR = CalculateLightingIBLToon(new_normal,view_dir,albedo2,roughness,mat_metallic);
     vec3 ibl = mat_ao * mix(iblPhotoReal, iblNPR,mat_toon);
-    color += ibl;
-    if (enable_gi_flag) {
-        color += pbrGI(position, normalize(new_normal), normalize(view_dir), normalize(tangent), normalize(bitangent), mat_basecolor, mat_roughness, mat_metallic);
-    }
+    color += ibl + gi.xyz;
     realColor += iblPhotoReal;
     float brightness0 = brightness(realColor)/(brightness(mon2lin(mat_basecolor))+0.00001);
     float brightness1 = smoothstep(mat_shape.x, mat_shape.y, dot(new_normal, light_dir));

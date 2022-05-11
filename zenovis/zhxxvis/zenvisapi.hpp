@@ -7,6 +7,7 @@
 #include <tuple>
 
 namespace zenvis {
+  void requireVoxelize();
   extern unsigned int getDepthTexture();
 extern void setDOF(float _dof);
 extern void setAperature(float _apt);
