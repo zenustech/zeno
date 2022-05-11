@@ -190,6 +190,11 @@ class QDMDisplayMenu(QMenu):
 
         self.addSeparator()
 
+        action = QAction('Enable GI', self)
+        action.setCheckable(True)
+        action.setChecked(False)
+        self.addAction(action)
+
         action = QAction('Smooth Shading', self)
         action.setCheckable(True)
         action.setChecked(False)
@@ -603,6 +608,10 @@ class DisplayWidget(QWidget):
         if name == 'Show Grid':
             checked = act.isChecked()
             zenvis.status['show_grid'] = checked
+
+        elif name == 'Enable GI':
+            checked = act.isChecked()
+            zenvis.core.set_enable_gi(checked)
 
         elif name == 'Smooth Shading':
             checked = act.isChecked()

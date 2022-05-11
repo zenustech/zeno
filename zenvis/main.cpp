@@ -39,6 +39,7 @@ int curr_frameid = -1;
 static int num_samples = 16;
 static bool show_grid = true;
 static bool smooth_shading = false;
+static bool enable_gi_flag = false;
 static bool normal_check = false;
 bool render_wireframe = false;
 
@@ -618,8 +619,9 @@ static void ZPass()
 static void paint_graphics(GLuint target_fbo = 0) {
   shadowPass();
   reflectivePass();
-  voxelizePass();
-
+  if (enable_gi_flag) {
+    voxelizePass();
+  }
   if(enable_hdr && tmProg==nullptr)
   {
     std::cout<<"compiling zhxx hdr program"<<std::endl;
@@ -986,6 +988,15 @@ std::tuple<float, float, float> get_background_color() {
 void set_smooth_shading(bool smooth) {
     smooth_shading = smooth;
 }
+
+void set_enable_gi(bool flag) {
+    enable_gi_flag = flag;
+}
+
+bool get_enable_gi() {
+    return enable_gi_flag;
+}
+
 void set_normal_check(bool check) {
     normal_check = check;
 }

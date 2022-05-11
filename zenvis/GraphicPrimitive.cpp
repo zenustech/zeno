@@ -1229,8 +1229,7 @@ struct GraphicPrimitive : IGraphic {
         texOcp++;
         triObj.prog->set_uniform("vxSize",voxelizer::getDomainLength());
         triObj.prog->set_uniform("vxView", voxelizer::getView());
-        //triObj.prog->set("is_GI", voxelizer::isGI());
-        
+        triObj.prog->set_uniform("enable_gi_flag", zenvis::get_enable_gi());
         
         
         triObj.prog->set_uniform("msweight", m_weight);
