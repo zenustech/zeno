@@ -34,6 +34,16 @@ inline auto scopeGLBlendFunc(GLenum src, GLenum dst) {
 }
 
 
+inline auto scopeGLBindVertexArray(GLuint vao) {
+    GLint oldVao;
+    CHECK_GL(glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &oldVao));
+    CHECK_GL(glBindVertexArray(vao));
+    return zeno::scope_exit{[=] {
+        CHECK_GL(glBindVertexArray(oldVao));
+    }};
+}
+
+
 inline auto scopeGLPixelStorei(GLenum type, GLuint val) {
     GLint oldVal;
     CHECK_GL(glGetIntegerv(type, &oldVal));

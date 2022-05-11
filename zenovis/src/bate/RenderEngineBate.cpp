@@ -43,7 +43,7 @@ struct RenderEngineBate : RenderEngine {
                               scene->drawOptions->bgcolor.b, 0.0f));
         CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 
-        vao->bind();
+        auto bindVao = opengl::scopeGLBindVertexArray(vao->vao);
         for (auto const &gra : graphicsMan->graphics.values<IGraphicDraw>()) {
             gra->draw();
         }
@@ -52,7 +52,6 @@ struct RenderEngineBate : RenderEngine {
                 hudgra->draw();
             }
         }
-        vao->unbind();
     }
 };
 

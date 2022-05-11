@@ -44,12 +44,13 @@ struct GraphicsManager {
 
 struct RenderEngineZhxx : RenderEngine, zeno::disable_copy {
     std::unique_ptr<GraphicsManager> graphicsMan;
+    std::unique_ptr<opengl::VAO> vao;
     Scene *scene;
 
     auto setupState() {
         return std::tuple{
             opengl::scopeGLEnable(GL_BLEND), opengl::scopeGLEnable(GL_DEPTH_TEST),
-            opengl::scopeGLEnable(GL_DEPTH_TEST), opengl::scopeGLEnable(GL_PROGRAM_POINT_SIZE),
+            opengl::scopeGLEnable(GL_PROGRAM_POINT_SIZE),
             opengl::scopeGLBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA),
             opengl::scopeGLEnable(GL_MULTISAMPLE),
         };
@@ -60,6 +61,9 @@ struct RenderEngineZhxx : RenderEngine, zeno::disable_copy {
         auto guard = setupState();
 
         graphicsMan = std::make_unique<GraphicsManager>(scene);
+
+        vao = std::make_unique<opengl::VAO>();
+        auto bindVao = opengl::scopeGLBindVertexArray(vao->vao);
 
         zenvis::initialize();
         zenvis::setup_env_map("Default");
@@ -84,13 +88,15 @@ struct RenderEngineZhxx : RenderEngine, zeno::disable_copy {
         zenvis::set_window_size(cam.m_nx, cam.m_ny);
         zenvis::look_perspective(zxx.cx, zxx.cy, zxx.cz, zxx.theta,
                 zxx.phi, zxx.radius, zxx.fov, zxx.ortho_mode);
-        int oldFBO = 0, targetFBO = 0;
-        CHECK_GL(glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &oldFBO));
+        int targetFBO = 0;
         CHECK_GL(glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &targetFBO));
         CHECK_GL(glClearColor(scene->drawOptions->bgcolor.r, scene->drawOptions->bgcolor.g,
                               scene->drawOptions->bgcolor.b, 0.0f));
-        zenvis::new_frame(targetFBO);
-        CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, oldFBO));
+        {
+            auto bindVao = opengl::scopeGLBindVertexArray(vao->vao);
+            zenvis::new_frame(targetFBO);
+        }
+        CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, targetFBO));
     }
 
     ~RenderEngineZhxx() override {

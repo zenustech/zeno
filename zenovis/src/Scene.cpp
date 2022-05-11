@@ -11,7 +11,6 @@
 #include <zenovis/ObjectsManager.h>
 #include <zenovis/opengl/buffer.h>
 #include <zenovis/opengl/common.h>
-#include <zenovis/opengl/vao.h>
 #include <zenovis/opengl/scope.h>
 #include <cstdlib>
 #include <map>
