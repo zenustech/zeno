@@ -1177,7 +1177,12 @@ struct UpdatePrimitiveFromZSParticles : INode {
     auto ompExec = zs::omp_exec();
 
     for (auto &&parObjPtr : parObjPtrs) {
-      auto &pars = parObjPtr->getParticles();
+      bool requireClone =
+          !(parObjPtr->getParticles().memspace() == memsrc_e::host ||
+            parObjPtr->getParticles().memspace() == memsrc_e::um);
+      const auto &pars = requireClone
+                             ? parObjPtr->getParticles().clone({memsrc_e::host})
+                             : parObjPtr->getParticles();
       if (parObjPtr->prim.get() == nullptr)
         continue;
 
