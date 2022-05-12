@@ -163,8 +163,10 @@ void GraphsManagment::removeCurrent()
 
 void GraphsManagment::appendErr(const QString& nodeName, const QString& msg)
 {
-    QMutexLocker lock(&m_mutex);
+    if (msg.trimmed().isEmpty())
+        return;
 
+    QMutexLocker lock(&m_mutex);
     QStandardItem* item = new QStandardItem(msg);
     item->setData(QtFatalMsg, ROLE_LOGTYPE);
     item->setData(nodeName, ROLE_NODENAME);
@@ -175,8 +177,10 @@ void GraphsManagment::appendErr(const QString& nodeName, const QString& msg)
 
 void GraphsManagment::appendLog(QtMsgType type, QString fileName, int ln, const QString &msg)
 {
-    QMutexLocker lock(&m_mutex);
+    if (msg.trimmed().isEmpty())
+        return;
 
+    QMutexLocker lock(&m_mutex);
     QStandardItem *item = new QStandardItem(msg);
     item->setData(type, ROLE_LOGTYPE);
     item->setData(fileName, ROLE_FILENAME);
