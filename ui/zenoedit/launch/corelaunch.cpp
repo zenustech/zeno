@@ -85,7 +85,7 @@ struct ProgramRunData {
         graph->loadGraph(progJson.c_str());
 
         if (chkfail()) return;
-        if (g_state == kTerminate) return;
+        if (g_state == kQuiting) return;
 
         session->globalComm->frameRange(graph->beginFrameNumber, graph->endFrameNumber);
         for (int frame = graph->beginFrameNumber; frame <= graph->endFrameNumber; frame++) {
@@ -94,13 +94,13 @@ struct ProgramRunData {
             session->globalState->frameBegin();
             while (session->globalState->substepBegin())
             {
-                if (g_state == kTerminate)
+                if (g_state == kQuiting)
                     return;
                 graph->applyNodesToExec();
                 session->globalState->substepEnd();
                 if (chkfail()) return;
             }
-            if (g_state == kTerminate) return;
+            if (g_state == kQuiting) return;
             session->globalState->frameEnd();
             session->globalComm->finishFrame();
             zeno::log_debug("end frame {}", frame);

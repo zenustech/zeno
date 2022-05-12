@@ -49,7 +49,7 @@ bool Scene::cameraFocusOnNode(std::string const &nodeid, zeno::vec3f &center, fl
             return zeno::objectGetFocusCenterRadius(ptr, center, radius);
         }
     }
-    zeno::log_info("cannot focus: node with id {} not found, did you tagged VIEW on it?", nodeid);
+    zeno::log_warn("cannot focus: node with id {} not found, did you tagged VIEW on it?", nodeid);
     return false;
 }
 

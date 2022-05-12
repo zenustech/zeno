@@ -94,6 +94,8 @@ void CameraControl::setKeyFrame()
 void CameraControl::focus(QVector3D center, float radius)
 {
     m_center = center;
+    if (m_fov >= 1e-6)
+        radius /= (m_fov / 45.0f);
     m_radius = radius;
     updatePerspective();
 }

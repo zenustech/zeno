@@ -8,6 +8,7 @@
 #include <zenoui/comctrl/zlabel.h>
 #include <zenoui/comctrl/ziconbutton.h>
 #include <zenoui/util/cihou.h>
+#include <zeno/utils/cppdemangle.h>
 #include "viewport/zenovis.h"
 #include "viewport/viewportwidget.h"
 #include "util/log.h"
