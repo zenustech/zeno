@@ -45,29 +45,6 @@ void Scene::switchRenderEngine(std::string const &name) {
     renderMan->switchDefaultEngine(name);
 }
 
-/* TODO: move this to zeno::objectGetCenterRadius */
-static bool calcObjectCenterRadius(zeno::IObject *ptr, zeno::vec3f &center, float &radius) {
-    auto &ud = ptr->userData();
-    if (ud.has("_bboxCenter") && ud.has("_bboxRadius")) {
-        center = ud.getLiterial<zeno::vec3f>("_bboxCenter");
-        radius = ud.getLiterial<float>("_bboxRadius");
-        return true;
-    } else {
-        if (auto obj = dynamic_cast<zeno::PrimitiveObject *>(ptr)) {
-            auto [bmin, bmax] = primBoundingBox(obj);
-            auto delta = bmax - bmin;
-            radius = std::max({delta[0], delta[1], delta[2]}) * 0.5f;
-            center = (bmin + bmax) * 0.5f;
-            ud.setLiterial("_bboxMin", bmin);
-            ud.setLiterial("_bboxMax", bmax);
-            ud.setLiterial("_bboxRadius", radius);
-            ud.setLiterial("_bboxCenter", center);
-        }
-        return true;
-    }
-    return false;
-}
-
 bool Scene::cameraFocusOnNode(std::string const &nodeid, zeno::vec3f &center, float &radius) {
     for (auto const &[key, ptr]: this->objectsMan->pairs()) {
         if (nodeid == key.substr(0, key.find_first_of(':'))) {
