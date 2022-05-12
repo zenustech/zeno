@@ -47,6 +47,7 @@ private:
     void readHoudiniStyleLayout();
     void readSettings2();
     void adjustDockSize();
+    void recordRecentFile(const QString& filePath);
     QString getOpenFileByDialog();
     QString uniqueDockObjName(DOCK_TYPE type);
 

@@ -4,6 +4,7 @@
 #include "curvesitem.h"
 #include "../model/curvemodel.h"
 #include <zenoui/util/uihelper.h>
+#include "util/log.h"
 
 
 CurvesItem::CurvesItem(CurveMapView* pView, CurveGrid* grid, const QRectF& rc, QGraphicsItem* parent)
@@ -78,10 +79,10 @@ void CurvesItem::onDataChanged(const QModelIndex &topLeft, const QModelIndex &bo
     //model sync to view(items).
 
     int r = topLeft.row();
-    Q_ASSERT(r >= 0 && r < m_vecNodes.size());
+    ZASSERT_EXIT(r >= 0 && r < m_vecNodes.size());
     CurveNodeItem *pNode = m_vecNodes[r];
 
-    Q_ASSERT(!roles.isEmpty());
+    ZASSERT_EXIT(!roles.isEmpty());
     int role = roles[0];
     QPointF logicNodePos = topLeft.data(ROLE_NODEPOS).toPointF();
     QPointF sceneNodePos = m_grid->logicToScene(logicNodePos);
@@ -161,7 +162,7 @@ void CurvesItem::onNodesInserted(const QModelIndex& parent, int first, int last)
     {
         const QModelIndex& idx = m_model->index(r, 0, parent);
         //can only insert into [1,n-1]
-        Q_ASSERT(r > 0 && r < m_vecNodes.size());
+        ZASSERT_EXIT(r > 0 && r < m_vecNodes.size());
 
         QPointF pos = idx.data(ROLE_NODEPOS).toPointF();
         QPointF nodeScenePos = m_grid->logicToScene(pos);
@@ -269,13 +270,13 @@ int CurvesItem::nodeCount() const
 
 QPointF CurvesItem::nodePos(int i) const
 {
-    Q_ASSERT(i >= 0 && i < m_vecNodes.size());
+    ZASSERT_EXIT(i >= 0 && i < m_vecNodes.size(), QPointF());
     return m_vecNodes[i]->pos();
 }
 
 CurveNodeItem* CurvesItem::nodeItem(int i) const
 {
-    Q_ASSERT(i >= 0 && i < m_vecNodes.size());
+    ZASSERT_EXIT(i >= 0 && i < m_vecNodes.size(), nullptr);
     return m_vecNodes[i];
 }
 
@@ -297,7 +298,7 @@ void CurvesItem::onNodeGeometryChanged()
 {
     CurveNodeItem* pNode = qobject_cast<CurveNodeItem*>(sender());
     int i = m_vecNodes.indexOf(pNode);
-    Q_ASSERT(i >= 0);
+    ZASSERT_EXIT(i >= 0);
 
     QGraphicsPathItem* pLeftCurve = i > 0 ? m_vecCurves[i-1] : nullptr;
     if (pLeftCurve)
@@ -325,7 +326,7 @@ void CurvesItem::onNodeGeometryChanged()
 void CurvesItem::onNodeDeleted()
 {
     CurveNodeItem* pItem = qobject_cast<CurveNodeItem*>(sender());
-    Q_ASSERT(pItem);
+    ZASSERT_EXIT(pItem);
     int i = m_vecNodes.indexOf(pItem);
     if (i == 0 || i == m_vecNodes.size() - 1)
         return;
@@ -336,7 +337,7 @@ void CurvesItem::onNodeDeleted()
 void CurvesItem::onPathClicked(const QPointF& pos)
 {
     CurvePathItem* pItem = qobject_cast<CurvePathItem*>(sender());
-    Q_ASSERT(pItem);
+    ZASSERT_EXIT(pItem);
     int i = m_vecCurves.indexOf(pItem);
 
     CURVE_RANGE rg = m_model->range();

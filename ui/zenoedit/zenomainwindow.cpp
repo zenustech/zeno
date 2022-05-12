@@ -19,6 +19,7 @@
 #include <zenoui/model/modeldata.h>
 #include <zenoui/style/zenostyle.h>
 #include <zenoui/util/uihelper.h>
+#include "util/log.h"
 
 
 ZenoMainWindow::ZenoMainWindow(QWidget *parent, Qt::WindowFlags flags)
@@ -398,12 +399,48 @@ void ZenoMainWindow::exportGraph() {
     saveContent(content, path);
 }
 
-bool ZenoMainWindow::openFile(QString filePath) {
+bool ZenoMainWindow::openFile(QString filePath)
+{
     auto pGraphs = zenoApp->graphsManagment();
     IGraphsModel *pModel = pGraphs->openZsgFile(filePath);
     if (!pModel)
         return false;
+    recordRecentFile(filePath);
     return true;
+}
+
+void ZenoMainWindow::recordRecentFile(const QString& filePath)
+{
+    QSettings settings(QSettings::UserScope, "Zenus Inc.", "zeno2");
+    settings.beginGroup("Recent File List");
+
+    QStringList keys = settings.childKeys();
+    QStringList paths;
+    for (QString key : keys) {
+        QString path = settings.value(key).toString();
+        paths.append(path);
+    }
+
+    if (paths.indexOf(filePath) != -1) {
+        return;
+    }
+
+    int idx = -1;
+    if (keys.isEmpty()) {
+        idx = 0;
+    } else {
+        QString fn = keys[keys.length() - 1];
+        static QRegExp rx("File (\\d+)");
+        if (rx.indexIn(fn) != -1) {
+            QStringList caps = rx.capturedTexts();
+            if (caps.length() == 2)
+                idx = caps[1].toInt();
+        } else {
+            //todo
+        }
+    }
+
+    settings.setValue(QString("File %1").arg(idx + 1), filePath);
 }
 
 void ZenoMainWindow::onToggleDockWidget(DOCK_TYPE type, bool bShow)
@@ -444,8 +481,8 @@ void ZenoMainWindow::onDockSwitched(DOCK_TYPE type)
         }
         case DOCK_VIEW: {
             //complicated opengl framework.
-            //DisplayWidget* view = new DisplayWidget;
-            //pDock->setWidget(type, view);
+            DisplayWidget* view = new DisplayWidget;
+            pDock->setWidget(type, view);
             break;
         }
         case DOCK_NODE_PARAMS: {
@@ -473,7 +510,7 @@ void ZenoMainWindow::onDockSwitched(DOCK_TYPE type)
 
 void ZenoMainWindow::saveQuit() {
     auto pGraphsMgm = zenoApp->graphsManagment();
-    Q_ASSERT(pGraphsMgm);
+    ZASSERT_EXIT(pGraphsMgm);
     IGraphsModel *pModel = pGraphsMgm->currentModel();
     if (pModel && pModel->isDirty()) {
         QMessageBox msgBox =
@@ -491,7 +528,7 @@ void ZenoMainWindow::saveQuit() {
 
 void ZenoMainWindow::save() {
     auto pGraphsMgm = zenoApp->graphsManagment();
-    Q_ASSERT(pGraphsMgm);
+    ZASSERT_EXIT(pGraphsMgm);
     IGraphsModel *pModel = pGraphsMgm->currentModel();
     if (pModel) {
         QString currFilePath = pModel->filePath();

@@ -1,4 +1,5 @@
 #include "curvemodel.h"
+#include "util/log.h"
 
 
 CurveModel::CurveModel(const QString& id, const CURVE_RANGE& rg, QObject* parent)
@@ -23,7 +24,7 @@ void CurveModel::initItems(CURVE_RANGE rg, const QVector<QPointF>& pts, const QV
 {
     m_range = rg;
     int N = pts.size();
-    Q_ASSERT(N * 2 == handlers.size());
+    ZASSERT_EXIT(N * 2 == handlers.size());
     for (int i = 0; i < N; i++)
     {
         QPointF logicPos = pts[i];

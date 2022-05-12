@@ -1,6 +1,7 @@
 #include "zsgreader.h"
 #include "../../zenoui/util/uihelper.h"
 #include <zeno/utils/logger.h>
+#include "zenoedit/util/log.h"
 
 
 ZsgReader::ZsgReader()
@@ -82,7 +83,7 @@ void ZsgReader::_parseSubGraph(const QString& name, const rapidjson::Value& subg
     else if (subgraph.HasMember("view"))
     {
         const auto& obj = subgraph["view"];
-        Q_ASSERT(obj.HasMember("scale") && obj.HasMember("trans_x") && obj.HasMember("trans_y"));
+        ZASSERT_EXIT(obj.HasMember("scale") && obj.HasMember("trans_x") && obj.HasMember("trans_y"));
         qreal scale = obj["scale"].GetFloat();
         qreal trans_x = obj["trans_x"].GetFloat();
         qreal trans_y = obj["trans_y"].GetFloat();
@@ -139,7 +140,7 @@ void ZsgReader::_parseNode(const QString& nodeid, const rapidjson::Value& nodeOb
         QStringList options;
         for (int i = 0; i < optionsArr.Size(); i++)
         {
-            Q_ASSERT(optionsArr[i].IsString());
+            ZASSERT_EXIT(optionsArr[i].IsString());
             const QString& optName = optionsArr[i].GetString();
             options.append(optName);
         }
@@ -272,9 +273,7 @@ void ZsgReader::_parseInputs(const QString& id, const NODE_DESCS& descriptors, c
         if (inputObj.IsArray())
         {
             const auto& arr = inputObj.GetArray();
-            Q_ASSERT(arr.Size() >= 2);
-            if (arr.Size() < 2 || arr.Size() > 3)
-                return;
+            ZASSERT_EXIT(arr.Size() >= 2 && arr.Size() <= 3);
 
             QString outId, outSock;
             QVariant defaultValue;

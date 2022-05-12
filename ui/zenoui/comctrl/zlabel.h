@@ -1,8 +1,7 @@
 #ifndef __ZLABEL_H__
 #define __ZLABEL_H__
 
-#include <QLabel>
-#include <QIcon>
+#include <QtWidgets>
 
 class ZIconLabel : public QLabel
 {
@@ -43,6 +42,8 @@ public:
     ZTextLabel(const QString& text, QWidget* parent = nullptr);
     void setTextColor(const QColor& clr);
     void setBackgroundColor(const QColor& clr);
+    void setUnderline(bool bUnderline);
+    void setUnderlineOnHover(bool bUnderline);
 
 protected:
     void enterEvent(QEvent* event) override;
@@ -51,9 +52,12 @@ protected:
 
 signals:
     void clicked();
+    void rightClicked();
 
 private:
     QColor m_normal;
+    bool m_bUnderlineHover;
+    bool m_bUnderline;
 };
 
 #endif

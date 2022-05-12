@@ -11,6 +11,7 @@
 #include <zenoui/util/uihelper.h>
 #include <zenoui/comctrl/zexpandablesection.h>
 #include <zenoui/comctrl/zlinewidget.h>
+#include "util/log.h"
 
 
 ZenoPropPanel::ZenoPropPanel(QWidget* parent)
@@ -45,7 +46,7 @@ QSize ZenoPropPanel::minimumSizeHint() const
     return sz;
 }
 
-void ZenoPropPanel::reset(IGraphsModel* pModel, const QModelIndex& subgIdx, const QModelIndexList& nodes, bool select)
+void ZenoPropPanel::clearLayout()
 {
     setUpdatesEnabled(false);
 	qDeleteAll(findChildren<QWidget*>(QString(), Qt::FindDirectChildrenOnly));
@@ -56,6 +57,13 @@ void ZenoPropPanel::reset(IGraphsModel* pModel, const QModelIndex& subgIdx, cons
 		pMainLayout->removeItem(pItem);
 	}
 	setUpdatesEnabled(true);
+	update();
+}
+
+void ZenoPropPanel::reset(IGraphsModel* pModel, const QModelIndex& subgIdx, const QModelIndexList& nodes, bool select)
+{
+    clearLayout();
+    QVBoxLayout *pMainLayout = qobject_cast<QVBoxLayout *>(this->layout());
 
 	if (!pModel || !select || nodes.isEmpty())
 	{
@@ -63,7 +71,13 @@ void ZenoPropPanel::reset(IGraphsModel* pModel, const QModelIndex& subgIdx, cons
 		return;
 	}
 
-	connect(pModel, &IGraphsModel::_dataChanged, this, &ZenoPropPanel::onDataChanged);
+    connect(pModel, &IGraphsModel::_dataChanged, this, &ZenoPropPanel::onDataChanged);
+    connect(pModel, &IGraphsModel::_rowsRemoved, this, [=]() {
+		clearLayout();
+    });
+    connect(pModel, &IGraphsModel::modelClear, this, [=]() {
+		clearLayout();
+    });
 
 	m_subgIdx = subgIdx;
 	m_idx = nodes[0];
@@ -244,7 +258,7 @@ ZExpandableSection* ZenoPropPanel::inputsBox(IGraphsModel* pModel, const QModelI
 	int r = 0;
 	for (QString inputSock : inputs.keys())
 	{
-		Q_ASSERT(inputs.find(inputSock) != inputs.end());
+		ZASSERT_EXIT(inputs.find(inputSock) != inputs.end(), nullptr);
 		INPUT_SOCKET input = inputs[inputSock];
 
 		switch (input.info.control)
@@ -329,7 +343,7 @@ void ZenoPropPanel::onInputEditFinish()
 	if (info.oldValue != info.newValue)
 	{
 		IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
-		Q_ASSERT(pGraphsModel);
+		ZASSERT_EXIT(pGraphsModel);
 		pGraphsModel->updateSocketDefl(nodeid, info, m_subgIdx, true);
 	}
 }

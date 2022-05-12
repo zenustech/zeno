@@ -16,6 +16,7 @@
 #include "nodesview/zsubnetlistitemdelegate.h"
 #include "searchitemdelegate.h"
 #include <zenoui/util/cihou.h>
+#include "util/log.h"
 
 
 ZenoGraphsEditor::ZenoGraphsEditor(ZenoMainWindow* pMainWin)
@@ -60,6 +61,8 @@ void ZenoGraphsEditor::initUI()
 
     m_ui->graphsViewTab->setFont(QFont("HarmonyOS Sans", 12));  //bug in qss font setting.
     m_ui->searchEdit->setProperty("cssClass", "searchEdit");
+
+    initRecentFiles();
 }
 
 void ZenoGraphsEditor::initModel()
@@ -111,6 +114,11 @@ void ZenoGraphsEditor::initSignals()
     m_selection->setCurrentIndex(m_sideBarModel->index(0, 0), QItemSelectionModel::SelectCurrent);
 }
 
+void ZenoGraphsEditor::initRecentFiles()
+{
+    m_ui->welcomePage->initRecentFiles();
+}
+
 void ZenoGraphsEditor::resetModel(IGraphsModel* pModel)
 {
     if (!pModel)
@@ -121,7 +129,7 @@ void ZenoGraphsEditor::resetModel(IGraphsModel* pModel)
 
     auto mgr = zenoApp->graphsManagment();
     m_model = pModel;
-    Q_ASSERT(m_model);
+    ZASSERT_EXIT(m_model);
 
     GraphsTreeModel* pTreeModel = mgr->treeModel();
     m_ui->subnetTree->setModel(pTreeModel);
@@ -283,10 +291,6 @@ void ZenoGraphsEditor::sideButtonToggled(bool bToggled)
     {
         idx = m_sideBarModel->match(m_sideBarModel->index(0, 0), Qt::UserRole + 1, Side_Search)[0];
     }
-    else
-    {
-        Q_ASSERT(false);
-    }
 
     if (bToggled)
         m_selection->setCurrentIndex(idx, QItemSelectionModel::SelectCurrent);
@@ -374,7 +378,7 @@ void ZenoGraphsEditor::activateTab(const QString& subGraphName, const QString& p
 	{
 		const QModelIndex& subgIdx = pModel->index(subGraphName);
 		ZenoSubGraphScene* pScene = qobject_cast<ZenoSubGraphScene*>(pModel->scene(subgIdx));
-		Q_ASSERT(pScene);
+		ZASSERT_EXIT(pScene);
 
         ZenoSubGraphView* pView = new ZenoSubGraphView;
 		pView->initScene(pScene);
@@ -390,7 +394,7 @@ void ZenoGraphsEditor::activateTab(const QString& subGraphName, const QString& p
 	m_ui->graphsViewTab->setCurrentIndex(idx);
 
     ZenoSubGraphView* pView = qobject_cast<ZenoSubGraphView*>(m_ui->graphsViewTab->currentWidget());
-    Q_ASSERT(pView);
+    ZASSERT_EXIT(pView);
     pView->resetPath(path, subGraphName, objId, isError);
 }
 
@@ -495,7 +499,7 @@ void ZenoGraphsEditor::onSearchEdited(const QString& content)
             }
             else
             {
-                Q_ASSERT(lst.size() == 1);
+                ZASSERT_EXIT(lst.size() == 1);
                 parentItem = pModel->itemFromIndex(lst[0]);
             }
 
@@ -534,14 +538,14 @@ void ZenoGraphsEditor::onMenuActionTriggered(QAction* pAction)
     if (text == tr("Collaspe"))
     {
         ZenoSubGraphView* pView = qobject_cast<ZenoSubGraphView*>(m_ui->graphsViewTab->currentWidget());
-        Q_ASSERT(pView);
+        ZASSERT_EXIT(pView);
         QModelIndex subgIdx = pView->scene()->subGraphIndex();
         m_model->collaspe(subgIdx);
     }
     else if (text == tr("Expand"))
 	{
 		ZenoSubGraphView* pView = qobject_cast<ZenoSubGraphView*>(m_ui->graphsViewTab->currentWidget());
-		Q_ASSERT(pView);
+        ZASSERT_EXIT(pView);
 		QModelIndex subgIdx = pView->scene()->subGraphIndex();
 		m_model->expand(subgIdx);
     }

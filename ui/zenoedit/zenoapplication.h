@@ -29,6 +29,7 @@ private:
     QSharedPointer<GraphsManagment> m_pGraphs;
     ZWidgetErrStream m_errSteam;
     bool m_bIOProcessing;
+    QDir m_appDataPath;
 };
 
 #define zenoApp (qobject_cast<ZenoApplication*>(QApplication::instance()))
