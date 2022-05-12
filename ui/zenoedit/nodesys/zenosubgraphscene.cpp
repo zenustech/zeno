@@ -641,28 +641,23 @@ void ZenoSubGraphScene::keyPressEvent(QKeyEvent* event)
     if (event->key() == Qt::Key_Delete)
     {
         QList<QGraphicsItem*> selItems = this->selectedItems();
-        QList<ZenoNode*> nodes;
-        QList<ZenoFullLink*> links;
+        QList<QPersistentModelIndex> nodes;
+        QList<QPersistentModelIndex> links;
         for (auto item : selItems)
         {
-            if (ZenoNode *pNode = qgraphicsitem_cast<ZenoNode *>(item)) {
-                nodes.append(pNode);
-            } else if (ZenoFullLink *pLink = qgraphicsitem_cast<ZenoFullLink *>(item)) {
-                links.append(pLink);
+            if (ZenoNode *pNode = qgraphicsitem_cast<ZenoNode *>(item))
+            {
+                nodes.append(pNode->index());
+            }
+            else if (ZenoFullLink *pLink = qgraphicsitem_cast<ZenoFullLink *>(item))
+            {
+                links.append(pLink->linkInfo());
             }
         }
         IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
-        pGraphsModel->beginTransaction("remove nodes and links");
-        for (auto item : links)
-        {
-            pGraphsModel->removeLink(item->linkInfo(), m_subgIdx, true);
-        }
-        for (auto item : nodes)
-        {
-            const QPersistentModelIndex &index = item->index();
-            pGraphsModel->removeNode(index.data(ROLE_OBJID).toString(), m_subgIdx, true);
-        }
-        pGraphsModel->endTransaction();
+        ZASSERT_EXIT(pGraphsModel);
+        pGraphsModel->removeNodeLinks(nodes, links, m_subgIdx);
+
     }
     QGraphicsScene::keyPressEvent(event);
 }

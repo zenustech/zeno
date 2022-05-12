@@ -9,12 +9,29 @@
 #include "zenoapplication.h"
 
 
+class ApiLevelScope
+{
+public:
+    ApiLevelScope(GraphsModel* pModel) : m_model(pModel)
+    {
+        m_model->beginApiLevel();
+    }
+    ~ApiLevelScope()
+    {
+        m_model->endApiLevel();
+    }
+private:
+    GraphsModel* m_model;
+};
+
+
 GraphsModel::GraphsModel(QObject *parent)
     : IGraphsModel(parent)
     , m_selection(nullptr)
     , m_dirty(false)
     , m_linkModel(new QStandardItemModel(this))
     , m_stack(new QUndoStack(this))
+    , m_apiLevel(0)
 {
     m_selection = new QItemSelectionModel(this);
 
@@ -576,11 +593,51 @@ void GraphsModel::onRemoveCurrentItem()
 void GraphsModel::beginTransaction(const QString& name)
 {
     m_stack->beginMacro(name);
+    beginApiLevel();
 }
 
 void GraphsModel::endTransaction()
 {
     m_stack->endMacro();
+    endApiLevel();
+}
+
+void GraphsModel::beginApiLevel()
+{
+    if (zenoApp->IsIOProcessing())
+        return;
+
+    //todo: Thread safety
+    m_apiLevel++;
+}
+
+void GraphsModel::endApiLevel()
+{
+    if (zenoApp->IsIOProcessing())
+        return;
+
+    m_apiLevel--;
+    if (m_apiLevel == 0)
+    {
+        onApiBatchFinished();
+    }
+}
+
+void GraphsModel::undo()
+{
+    ApiLevelScope batch(this);
+    m_stack->undo();
+}
+
+void GraphsModel::redo()
+{
+    ApiLevelScope batch(this);
+    m_stack->redo();
+}
+
+void GraphsModel::onApiBatchFinished()
+{
+    emit apiBatchFinished();
 }
 
 QModelIndex GraphsModel::index(const QString& id, const QModelIndex& subGpIdx)
@@ -628,6 +685,8 @@ void GraphsModel::addNode(const NODE_DATA& nodeData, const QModelIndex& subGpIdx
     }
     else
     {
+        ApiLevelScope batch(this);
+
         SubGraphModel* pGraph = subGraph(subGpIdx.row());
         ZASSERT_EXIT(pGraph);
 
@@ -679,6 +738,8 @@ void GraphsModel::removeNode(const QString& nodeid, const QModelIndex& subGpIdx,
     }
     else
     {
+        ApiLevelScope batch(this);
+
         const QModelIndex &idx = pGraph->index(nodeid);
         const QString &objName = idx.data(ROLE_OBJNAME).toString();
         if (!bEnableIOProc)
@@ -696,14 +757,6 @@ void GraphsModel::removeNode(const QString& nodeid, const QModelIndex& subGpIdx,
         }
         pGraph->removeNode(nodeid, false);
     }
-}
-
-void GraphsModel::insertRow(int row, const NODE_DATA& nodeData, const QModelIndex& subGpIdx)
-{
-    //only implementation, no transaction.
-	SubGraphModel* pGraph = subGraph(subGpIdx.row());
-    ZASSERT_EXIT(pGraph);
-    pGraph->insertRow(row, nodeData);
 }
 
 void GraphsModel::appendNodes(const QList<NODE_DATA>& nodes, const QModelIndex& subGpIdx, bool enableTransaction)
@@ -899,6 +952,21 @@ void GraphsModel::removeLinks(const QList<QPersistentModelIndex>& info, const QM
     }
 }
 
+void GraphsModel::removeNodeLinks(const QList<QPersistentModelIndex> &nodes, const QList<QPersistentModelIndex> &links, const QModelIndex &subGpIdx)
+{
+    beginTransaction("remove nodes and links");
+    for (const QModelIndex& linkIdx : links)
+    {
+        removeLink(linkIdx, subGpIdx, true);
+    }
+    for (const QModelIndex& nodeIdx : nodes)
+    {
+        QString id = nodeIdx.data(ROLE_OBJID).toString();
+        removeNode(id, subGpIdx, true);
+    }
+    endTransaction();
+}
+
 void GraphsModel::removeLink(const QPersistentModelIndex& linkIdx, const QModelIndex& subGpIdx, bool enableTransaction)
 {
     if (!linkIdx.isValid())
@@ -911,6 +979,8 @@ void GraphsModel::removeLink(const QPersistentModelIndex& linkIdx, const QModelI
     }
     else
     {
+        ApiLevelScope batch(this);
+
 		SubGraphModel* pGraph = subGraph(subGpIdx.row());
         ZASSERT_EXIT(pGraph && linkIdx.isValid());
 		if (pGraph)
@@ -951,6 +1021,8 @@ QModelIndex GraphsModel::addLink(const EdgeInfo& info, const QModelIndex& subGpI
     }
     else
     {
+        ApiLevelScope batch(this);
+
 		SubGraphModel* pGraph = subGraph(subGpIdx.row());
         ZASSERT_EXIT(pGraph, QModelIndex());
 
@@ -1023,6 +1095,8 @@ void GraphsModel::updateParamInfo(const QString& id, PARAM_UPDATE_INFO info, con
     }
     else
     {
+        ApiLevelScope batch(this);
+
 		SubGraphModel* pGraph = subGraph(subGpIdx.row());
         ZASSERT_EXIT(pGraph);
 		pGraph->updateParam(id, info.name, info.newValue);
@@ -1050,6 +1124,8 @@ void GraphsModel::updateSocket(const QString& nodeid, SOCKET_UPDATE_INFO info, c
     }
     else
     {
+        ApiLevelScope batch(this);
+
 		SubGraphModel* pSubg = subGraph(subGpIdx.row());
         ZASSERT_EXIT(pSubg);
 		pSubg->updateSocket(nodeid, info);
@@ -1065,6 +1141,8 @@ void GraphsModel::updateSocketDefl(const QString& id, PARAM_UPDATE_INFO info, co
     }
     else
     {
+        ApiLevelScope batch(this);
+
         SubGraphModel *pSubg = subGraph(subGpIdx.row());
         ZASSERT_EXIT(pSubg);
         pSubg->updateSocketDefl(id, info);
@@ -1080,9 +1158,17 @@ void GraphsModel::updateNodeStatus(const QString& nodeid, STATUS_UPDATE_INFO inf
     }
     else
     {
-		SubGraphModel* pSubg = subGraph(subgIdx.row());
+        SubGraphModel *pSubg = subGraph(subgIdx.row());
         ZASSERT_EXIT(pSubg);
-        pSubg->updateNodeStatus(nodeid, info);
+        if (info.role != ROLE_OBJPOS && info.role != ROLE_COLLASPED)
+        {
+            ApiLevelScope batch(this);
+            pSubg->updateNodeStatus(nodeid, info);
+        }
+        else
+        {
+            pSubg->updateNodeStatus(nodeid, info);
+        }
     }
 }
 
@@ -1246,16 +1332,6 @@ void GraphsModel::reload(const QModelIndex& subGpIdx)
 void GraphsModel::onModelInited()
 {
 
-}
-
-void GraphsModel::undo()
-{
-    m_stack->undo();
-}
-
-void GraphsModel::redo()
-{
-    m_stack->redo();
 }
 
 QModelIndexList GraphsModel::searchInSubgraph(const QString& objName, const QModelIndex& subgIdx)

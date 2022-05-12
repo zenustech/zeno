@@ -145,40 +145,6 @@ void SubGraphModel::appendItem(const NODE_DATA& nodeData, bool enableTransaction
     insertRow(nRow, nodeData);
 }
 
-void SubGraphModel::appendNodes(const QList<NODE_DATA>& nodes, bool enableTransaction)
-{
-    m_stack->beginMacro("add nodes");
-    //add nodes.
-    for (auto node : nodes)
-    {
-        // never called
-        appendItem(node, true);
-    }
-
-    for (const NODE_DATA& node : nodes)
-    {
-        INPUT_SOCKETS inputs = node[ROLE_INPUTS].value<INPUT_SOCKETS>();
-        QString inNode = node[ROLE_OBJID].toString();
-        for (INPUT_SOCKET inSock : inputs)
-        {
-            for (const QPersistentModelIndex& linkIdx : inSock.linkIndice)
-            {
-                //todo
-               // addLink(EdgeInfo(), true);
-            }
-
-            //for (QString outNode : inSock.outNodes.keys())
-            //{
-            //    for (SOCKET_INFO outSock : inSock.outNodes[outNode])
-            //    {
-            //        addLink(EdgeInfo(outNode, inNode, outSock.name, inSock.info.name), true);
-            //    }
-            //}
-        }
-    }
-    m_stack->endMacro();
-}
-
 void SubGraphModel::removeNode(int row, bool enableTransaction)
 {
 	removeNode(m_row2Key[row], enableTransaction);
@@ -634,26 +600,6 @@ void SubGraphModel::setViewRect(const QRectF& rc)
 QString SubGraphModel::name() const
 {
     return m_name;
-}
-
-void SubGraphModel::undo()
-{
-    m_stack->undo();
-}
-
-void SubGraphModel::redo()
-{
-    m_stack->redo();
-}
-
-void SubGraphModel::beginMacro(const QString& name)
-{
-    m_stack->beginMacro(name);
-}
-
-void SubGraphModel::endMacro()
-{
-    m_stack->endMacro();
 }
 
 void SubGraphModel::replaceSubGraphNode(const QString& oldName, const QString& newName)

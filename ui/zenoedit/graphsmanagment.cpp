@@ -49,13 +49,7 @@ void GraphsManagment::setCurrentModel(IGraphsModel* model)
     m_pTreeModel = new GraphsTreeModel(this);
     m_pTreeModel->init(model);
     emit modelInited(m_model);
-    connect(m_model, &IGraphsModel::_dataChanged, this, &GraphsManagment::onModelDataChanged);
-    connect(m_model, &IGraphsModel::_rowsInserted, this, [=]() {
-        emit modelDataChanged();
-    });
-    connect(m_model, &IGraphsModel::_rowsRemoved, this, [=]() {
-        emit modelDataChanged();
-    });
+    connect(m_model, SIGNAL(apiBatchFinished()), this, SIGNAL(modelDataChanged()));
 }
 
 GraphsTreeModel* GraphsManagment::treeModel()
