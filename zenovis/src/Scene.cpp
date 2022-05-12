@@ -48,10 +48,20 @@ void Scene::switchRenderEngine(std::string const &name) {
 /* TODO: move this to zeno::objectGetCenterRadius */
 static bool calcObjectCenterRadius(zeno::IObject *ptr, zeno::vec3f &center, float &radius) {
     if (auto obj = dynamic_cast<zeno::PrimitiveObject *>(ptr)) {
-        auto [bmin, bmax] = primBoundingBox(obj);
-        auto delta = bmax - bmin;
-        radius = std::max({delta[0], delta[1], delta[2]}) * 0.5f;
-        center = (bmin + bmax) * 0.5f;
+        auto &ud = ptr->userData();
+        if (ud.has("_bboxCenter") && ud.has("_bboxRadius")) {
+            center = ud.getLiterial<zeno::vec3f>("_bboxCenter");
+            radius = ud.getLiterial<float>("_bboxRadius");
+        } else {
+            auto [bmin, bmax] = primBoundingBox(obj);
+            auto delta = bmax - bmin;
+            radius = std::max({delta[0], delta[1], delta[2]}) * 0.5f;
+            center = (bmin + bmax) * 0.5f;
+            ud.set("_bboxMin", std::make_shared<zeno::NumericObject>(bmin));
+            ud.set("_bboxMax", std::make_shared<zeno::NumericObject>(bmax));
+            ud.set("_bboxRadius", std::make_shared<zeno::NumericObject>(radius));
+            ud.set("_bboxCenter", std::make_shared<zeno::NumericObject>(center));
+        }
         return true;
     }
     return false;
