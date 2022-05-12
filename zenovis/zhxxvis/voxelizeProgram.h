@@ -149,8 +149,10 @@ uniform vec3 u_scene_voxel_scale;
 uniform mat4 vxView;
 
 uniform float alphaPass;
-//layout(binding = 0, r32ui) uniform volatile coherent uimage3D u_tex_voxelgrid;
-layout(binding = 0, RGBA8) uniform image3D u_tex_voxelgrid;
+layout(binding = 1, r32ui) uniform volatile coherent uimage3D vxNormalGrid;
+
+
+layout(binding = 0, rgba16) uniform image3D u_tex_voxelgrid;
 
 in vec3 position;
 in vec3 iColor;
@@ -584,7 +586,21 @@ float ShadowCalculation(int lightNo, vec3 fragPosWorldSpace, float softness, vec
     float size = 2.0*float(k)+1.0;
     return shadow /= (size*size); 
 }
+vec3 DecodeNormal(vec3 normal)
+{
+    return normalize(normal * 2.0f - vec3(1.0f));
+}
+vec3 convWorldPosToVoxelPos(vec3 pos){
+    vec3 vxPos = (vxView * vec4(pos,1)).xyz; 
+    return clamp(vxPos * u_scene_voxel_scale, vec3(0,0,0), vec3(1,1,1));
+}
 
+uniform float vxMaterialPass;
+uniform sampler3D vxNormal;
+vec3 sampleNormal(vec3 pos)
+{
+    return DecodeNormal(texture(vxNormal, convWorldPosToVoxelPos(pos)).xyz);
+}
 vec4 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 old_tangent) {
     vec4 projPos = mView * vec4(position.xyz, 1.0);
     //normal = normalize(normal);
@@ -600,6 +616,8 @@ vec4 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 old_tangent) {
     if(mat_opacity>=0.99)
         discard; 
     vec3 colorEmission = mat_emission;
+    
+    float vxH = 1.0/u_scene_voxel_scale.x/256.0;
     mat_metallic = clamp(mat_metallic, 0, 1);
     vec3 new_normal = normal; /* TODO: use mat_normal to transform this */
     vec3 color = vec3(0,0,0);
@@ -610,7 +628,13 @@ vec4 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 old_tangent) {
     mat3 TBN = mat3(tan, cross(normal, tan), normal);
 
     new_normal = TBN * normalize(mat_normal);
-    
+    if(vxMaterialPass==1.0){
+        
+        return vec4(new_normal, 1.0);
+    }
+    new_normal = sampleNormal(position);
+    tan = normalize(old_tangent - dot(new_normal, old_tangent)*new_normal);
+    TBN = mat3(tan, cross(new_normal, tan), new_normal);
     color = vec3(0,0,0);
     vec3 realColor = vec3(0,0,0);
     float lightsNo = 0;
@@ -620,7 +644,7 @@ vec4 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 old_tangent) {
         vec3 photoReal = BRDF(mat_basecolor, mat_metallic,mat_subsurface,mat_specular,mat_roughness,mat_specularTint,mat_anisotropic,mat_sheen,mat_sheenTint,mat_clearcoat,mat_clearcoatGloss,normalize(light_dir), normalize(light_dir), normalize(new_normal),normalize(tan), normalize(cross(normal, tan))
         ) * lightIntensity[lightId];
         vec3 lcolor = photoReal;
-        float shadow = ShadowCalculation(lightId, position + 0.001 * normalize(light_dir), shadowSoftness[lightId], tan, TBN[1],3);
+        float shadow = ShadowCalculation(lightId, position + vxH * new_normal, shadowSoftness[lightId], tan, TBN[1],3);
         vec3 sclr = vec3(1.0-shadow);
         color += lcolor * sclr;
     }
@@ -630,6 +654,10 @@ vec4 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 old_tangent) {
 }
 in vec3 f_voxel_pos;
 uniform float voxelgrid_resolution;
+vec3 EncodeNormal(vec3 normal)
+{
+    return normal * 0.5f + vec3(0.5f);
+}
 void main()
 {   
   vec3 normal;
@@ -648,16 +676,18 @@ void main()
    pixarONB(normal, tangent, unusedbitan);
   }
 
+  vec3 oN;
   vec4 color = studioShading(albedo, viewdir, normal, tangent);
   //fColor = color;
+  
   vec3 vpos = vec3(vxView * vec4(position,1)) * u_scene_voxel_scale;
-  imageStore(u_tex_voxelgrid, ivec3(voxelgrid_resolution * vpos), color);
-//   if(alphaPass>0.99)
-//   {
-//       imageAtomicRGBA8Set(u_tex_voxelgrid, ivec3(voxelgrid_resolution * f_voxel_pos), color);
-//   }else{
-//     imageAtomicRGBA8Set(u_tex_voxelgrid, ivec3(voxelgrid_resolution * f_voxel_pos), color);
-//   }
+  color.xyz = color.xyz/1000;
+if(vxMaterialPass==1.0)
+    imageAtomicRGBA8Avg(vxNormalGrid, ivec3(voxelgrid_resolution * vpos), vec4(EncodeNormal(oN),1));
+else
+    imageStore(u_tex_voxelgrid, ivec3(voxelgrid_resolution * vpos), color);
+
+  
 }
 )";
 
@@ -732,11 +762,12 @@ void main()
     return compile_program(VXVS, VXFS, VXGS);
   }
 namespace voxelizer{
+
 inline std::string VXCS = R"(
 #version 430 core
 layout (local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
-layout(binding = 0, RGBA8) uniform image3D u_tex_voxelgrid1;
-layout(binding = 1, RGBA8) uniform image3D u_tex_voxelgrid2;
+layout(binding = 0, rgba16) uniform image3D u_tex_voxelgrid1;
+layout(binding = 1, rgba16) uniform image3D u_tex_voxelgrid2;
 uniform float coef;
 void main()
 {
@@ -756,8 +787,8 @@ inline std::string VXMipMap = R"(
 #version 430 core
 
 layout (local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
-layout(binding = 0, rgba8) uniform writeonly image3D Radiance3D;
-layout(binding = 1, rgba8) uniform readonly image3D LastRadiance3D;
+layout(binding = 0, rgba16) uniform writeonly image3D Radiance3D;
+layout(binding = 1, rgba16) uniform readonly image3D LastRadiance3D;
 
 const ivec3 offsets[] = ivec3[8]
 (
@@ -887,6 +918,8 @@ inline void checkCompileErrors(GLuint shader, std::string type)
     inline iTexture3D vxTexture;
     inline iTexture3D vxTexture2;
     inline iTexture3D vxTexture3;
+    inline iTexture3D vxNormal;
+    inline float isMaterialPass = 1.0;
     inline int dimension = 256;
     inline int getVoxelResolution()
     {
@@ -899,22 +932,29 @@ inline void checkCompileErrors(GLuint shader, std::string type)
         if(vxTexture.is_loaded == false){
             
             GLfloat* data = new GLfloat[dimension * dimension * dimension * 4];  
-            itexture3D::fill_corners(data, dimension,dimension,dimension);
+            itexture3D::fill(data, 0.0, dimension,dimension,dimension);
             itexture3D::init(vxTexture, data, dimension);
             delete[] data; 
         }
         if(vxTexture2.is_loaded == false){
             
             GLfloat* data = new GLfloat[dimension * dimension * dimension * 4];  
-            itexture3D::fill_corners(data, dimension,dimension,dimension);
+            itexture3D::fill(data, 0.0, dimension,dimension,dimension);
             itexture3D::init(vxTexture2, data, dimension);
             delete[] data; 
         }
         if(vxTexture3.is_loaded == false){
             
             GLfloat* data = new GLfloat[dimension * dimension * dimension * 4];  
-            itexture3D::fill(data, 0.2, dimension,dimension,dimension);
+            itexture3D::fill(data, 0.0, dimension,dimension,dimension);
             itexture3D::init(vxTexture3, data, dimension);
+            delete[] data; 
+        }
+        if(vxNormal.is_loaded == false){
+            
+            GLfloat* data = new GLfloat[dimension * dimension * dimension * 4];  
+            itexture3D::fill(data, 0.0, dimension,dimension,dimension);
+            itexture3D::init(vxNormal, data, dimension,GL_RGBA8);
             delete[] data; 
         }
         if(vxfbo==0)
@@ -924,13 +964,28 @@ inline void checkCompileErrors(GLuint shader, std::string type)
 
         glBindFramebuffer(GL_FRAMEBUFFER, vxfbo);
         glBindRenderbuffer(GL_RENDERBUFFER, vxrbo);
-        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, 2048, 2048);
+        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, 4096, 4096);
         glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, vxrbo);
     }
     inline void ClearTexture()
     {
         itexture3D::clear(vxTexture, { 0.0f, 0.0f, 0.0f, 0.0f });
     }
+    inline void BeginVxMaterial()
+    {
+        itexture3D::clear(vxNormal, { 0.0f, 0.0f, 0.0f, 0.0f });
+        glBindFramebuffer(GL_FRAMEBUFFER, vxfbo);
+        glBindRenderbuffer(GL_RENDERBUFFER, vxrbo);
+        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, 4096, 4096);
+        glViewport(0, 0, 4096, 4096);
+        glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+        glDisable(GL_CULL_FACE);
+        glDisable(GL_DEPTH_TEST);
+        glDisable(GL_BLEND);
+        glDisable(GL_MULTISAMPLE);
+        glBindImageTexture(1, vxNormal.id, 0, GL_TRUE, 0, GL_READ_WRITE, GL_RGBA8);
+    }
+    
     inline void BeginVoxelize()
     {
         itexture3D::clear(vxTexture2, { 0.0f, 0.0f, 0.0f, 0.0f });
@@ -944,14 +999,14 @@ inline void checkCompileErrors(GLuint shader, std::string type)
         glDisable(GL_DEPTH_TEST);
         glDisable(GL_BLEND);
         glDisable(GL_MULTISAMPLE);
-        glBindImageTexture(0, vxTexture2.id, 0, GL_TRUE, 0, GL_READ_WRITE, GL_RGBA8);
+        glBindImageTexture(0, vxTexture2.id, 0, GL_TRUE, 0, GL_READ_WRITE, GL_RGBA16);
     }
     inline void AddVoxels(float value)
     {
         glUseProgram(compProg);
         glUniform1f(glGetUniformLocation(compProg, "coef"), value);
-        glBindImageTexture(0, vxTexture.id, 0, GL_TRUE, 0, GL_READ_WRITE, GL_RGBA8);
-        glBindImageTexture(1, vxTexture2.id, 0, GL_TRUE, 0, GL_READ_WRITE, GL_RGBA8);
+        glBindImageTexture(0, vxTexture.id, 0, GL_TRUE, 0, GL_READ_WRITE, GL_RGBA16);
+        glBindImageTexture(1, vxTexture2.id, 0, GL_TRUE, 0, GL_READ_WRITE, GL_RGBA16);
         glDispatchCompute(32, 32, 32);
 	    glMemoryBarrier(GL_TEXTURE_FETCH_BARRIER_BIT | GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
     }
@@ -961,8 +1016,8 @@ inline void checkCompileErrors(GLuint shader, std::string type)
         //itexture3D::generate_mipmaps(vxTexture);
         glUseProgram(mipMapProg);
         for (int mipLevel = 1; mipLevel < 6; mipLevel++) {
-            glBindImageTexture(0, vxTexture.id, mipLevel, GL_TRUE, 0, GL_WRITE_ONLY, GL_RGBA8);
-            glBindImageTexture(1, vxTexture.id, mipLevel - 1, GL_TRUE, 0, GL_READ_ONLY, GL_RGBA8);
+            glBindImageTexture(0, vxTexture.id, mipLevel, GL_TRUE, 0, GL_WRITE_ONLY, GL_RGBA16);
+            glBindImageTexture(1, vxTexture.id, mipLevel - 1, GL_TRUE, 0, GL_READ_ONLY, GL_RGBA16);
             int div = pow(2, mipLevel);
             glDispatchCompute(32 / div, 32 / div, 32 / div);
             glMemoryBarrier(GL_TEXTURE_FETCH_BARRIER_BIT | GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
