@@ -585,6 +585,8 @@ float ShadowCalculation(int lightNo, vec3 fragPosWorldSpace, float softness, vec
     return shadow /= (size*size); 
 }
 
+uniform float m_gi_emission_base;
+
 vec4 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 old_tangent) {
     vec4 projPos = mView * vec4(position.xyz, 1.0);
     //normal = normalize(normal);
@@ -624,7 +626,7 @@ vec4 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 old_tangent) {
         vec3 sclr = vec3(1.0-shadow);
         color += lcolor * sclr;
     }
-    return vec4(color + colorEmission + 0.05 * mat_basecolor, 1.0-mat_opacity);
+    return vec4(color + colorEmission + m_gi_emission_base * mat_basecolor, 1.0-mat_opacity);
 
 
 }
