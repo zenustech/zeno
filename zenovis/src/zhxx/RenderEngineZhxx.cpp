@@ -80,6 +80,7 @@ struct RenderEngineZhxx : RenderEngine, zeno::disable_copy {
         auto const &zxx = cam.m_zxx;
         zenvis::set_show_grid(opt.show_grid);
         zenvis::set_normal_check(opt.normal_check);
+        zenvis::set_enable_gi(opt.enable_gi);
         zenvis::set_smooth_shading(opt.smooth_shading);
         zenvis::set_render_wireframe(opt.render_wireframe);
         zenvis::set_background_color(opt.bgcolor.r, opt.bgcolor.g, opt.bgcolor.b);

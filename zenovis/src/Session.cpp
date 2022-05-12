@@ -56,6 +56,10 @@ void Session::set_render_wireframe(bool render_wireframe) {
     impl->scene->drawOptions->render_wireframe = render_wireframe;
 }
 
+void Session::set_enable_gi(bool enable_gi) {
+    impl->scene->drawOptions->enable_gi = enable_gi;
+}
+
 void Session::set_smooth_shading(bool smooth) {
     impl->scene->drawOptions->smooth_shading = smooth;
 }
