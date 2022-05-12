@@ -64,4 +64,8 @@ namespace zfx {
     class Function_Call : Value {
 
     };
+
+    struct IRVisitor : public AstVisitor {
+
+    };
 }

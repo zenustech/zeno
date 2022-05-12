@@ -27,6 +27,7 @@ namespace zfx {
     class Unary;
 
     class AstVisitor {
+      public:
         virtual ~visitor() {
 
         }
@@ -47,16 +48,24 @@ namespace zfx {
 
         virtual std::any visitIfStmt(ExprIfStmt& exprIfStmt, std::string additional = "");
 
-        virtual std::any visitForStmt()
     };
 
+    class AsmVisitor {
+      public:
+        virtual ~AsmVisitor() {
+
+        }
+
+        virtual std::any visitAsm
+
+    };
 
     class AstNode {
       public:
         Position beginPos;//
         Position endPos;
-        bool isErrorNode {false};
 
+        AstNode(const Position& beginPos, const Position& endPos) : beginPos(beginPos), endPos(endPos) {};
         virtual std::any accept(AstVisitor& visitor, std::string additional = "") = 0;
     };
 
@@ -64,8 +73,8 @@ namespace zfx {
       public:
         int id;
         int dim = 0;
-        Statement(const Position& beginPos, const Position& endPos, bool isErrorNode, int id, int dim)
-            : AstNode(beginPos, endPos, isErrorNode),id(id), dim(dim) {
+        Statement(const Position& beginPos, const Position& endPos, int id, int dim)
+            : AstNode(beginPos, endPos),id(id), dim(dim) {
 
         }
     };
@@ -76,7 +85,7 @@ namespace zfx {
     };
 
     class Expression : public AstNode{
-
+        Expression(const Position& beginPos, const Position& endPos)
     };
 
     class Variable : public Expression {
@@ -91,8 +100,9 @@ namespace zfx {
 
     class FunctionCall : public Expression {
       public:
-        std::string name;
+        std::string name;//function name
         std::vector<std::shared_ptr<AstNode>> arguments;
+
         FunctionCall() {
 
         }
@@ -142,8 +152,66 @@ namespace zfx {
     };
 
 
-    class Literal {
+    class IntegerLiteral : public Expression {
+        int32_t value;
 
     };
+
+    class FloatLiteral : public Expression {
+
+    };
+
+    class AsmStatement {
+
+    };
+
+    class AsmAssignStmt : public AsmStatement{
+
+    };
+
+    class AsmLoadConstStmt : public AsmStatement {
+
+    };
+
+    class AsmTernaryOpStmt : public AsmStatement {
+
+    };
+
+    class AsmBinaryOpStmt : public AsmStatement {
+
+    };
+
+    class AsmUnaryOpStmt : public AsmStatement {
+
+    };
+
+    class AsmFuncCallStmt : public AsmStatement {
+
+    };
+
+    class AsmLocalLoadStmt : public AsmStatement {
+
+    };
+
+    class AsmLocalStoreStmt : public AsmStatement {
+
+    };
+
+    class AsmGlobalLoadStmt : public AsmStatement {
+
+    };
+
+    class AsmGlobalStoreStmt : public AsmStatement {
+
+    };
+
+    class AsmParamLoadStmt : public AsmStatement {
+
+    };
+
+    class AsmIfStmt : public AsmStatement {
+
+    };
+
 }
 

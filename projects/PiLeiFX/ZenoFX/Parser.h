@@ -18,6 +18,7 @@
 #pragma once
 #include "Lexical.h"
 #include "Ast.h"
+#include "Location.h"
 #include <memory>
 #include <vector>
 #include <string>
@@ -34,6 +35,14 @@ namespace zfx {
         //begin Parser and Generate Ast
         std::vector<std::string> Error;
         std::vector<std::string> Warnings;
+
+        void addError(const std::string msg, Position pos) {
+
+        }
+
+        void addWarnings(const std::string msg, Position pos) {
+
+        }
 /*
         auto parse() {
             std::vector<std::string> asts;
@@ -47,11 +56,16 @@ namespace zfx {
 
         }
 
+
         std::shared_ptr<AstNode> parseVariable() {
 
         }
 
         std::shared_ptr<AstNode> parseAssignment() {
+
+        }
+
+        std::shared_ptr<AstNode> parseExpression() {
 
         }
 
@@ -64,7 +78,16 @@ namespace zfx {
         }
 
         std::shared_ptr<AstNode> parseUnary() {
+            auto t = this->scanner.peek();
+            //前缀一元表达式
+            if (t.kind == TokenKind::Op) {
+                this->scanner.next();
+                auto exp = this->parseUnary();
+                return std::make_shared<Unary>();
+            } else {
+                //后缀只能是++ --
 
+            }
         }
 
         std::shared_ptr<AstNode> parseTenary() {
@@ -72,13 +95,11 @@ namespace zfx {
         }
 
         std::shared_ptr<AstNode> parseFunctionCall() {
-            
+
+            auto name = this->scanner.next().text;
+            return std::make_shared<FunctionCall>();
         }
     };
-/*
-    std::vector<std::string> parse(const std::string& code) {
 
-    }
-    */
 }
 

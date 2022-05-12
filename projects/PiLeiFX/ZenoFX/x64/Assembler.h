@@ -24,6 +24,9 @@ namespace zfx ::x64{
 
     };
 
+    enum class OprandKind {
+
+    };
     struct SimdBuilder {
         std::vector<uint8_t>
     };
@@ -32,7 +35,23 @@ namespace zfx ::x64{
 
     };
 
+    class Inst_0 {
+        //
+    };
+
+    class Inst_1 {
+
+    };
+
+    class Inst_2 {
+
+    };
+
     class Oprand{
+
+    };
+
+    class MemAddress {
 
     };
 }
