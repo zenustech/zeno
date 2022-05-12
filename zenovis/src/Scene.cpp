@@ -2,9 +2,7 @@
 #include <zenovis/Camera.h>
 #include <zeno/core/Session.h>
 #include <zeno/extra/GlobalComm.h>
-#include <zeno/types/UserData.h>
-#include <zeno/types/PrimitiveObject.h>
-#include <zeno/funcs/PrimitiveUtils.h>
+#include <zeno/funcs/ObjectGeometryInfo.h>
 #include <zenovis/DrawOptions.h>
 #include <zenovis/RenderEngine.h>
 #include <zenovis/ShaderManager.h>
@@ -48,10 +46,10 @@ void Scene::switchRenderEngine(std::string const &name) {
 bool Scene::cameraFocusOnNode(std::string const &nodeid, zeno::vec3f &center, float &radius) {
     for (auto const &[key, ptr]: this->objectsMan->pairs()) {
         if (nodeid == key.substr(0, key.find_first_of(':'))) {
-            return calcObjectCenterRadius(ptr, center, radius);
+            return zeno::objectGetFocusCenterRadius(ptr, center, radius);
         }
     }
-    zeno::log_debug("cannot focus: node with id {} not found, did you tagged VIEW on it?", nodeid);
+    zeno::log_info("cannot focus: node with id {} not found, did you tagged VIEW on it?", nodeid);
     return false;
 }
 
