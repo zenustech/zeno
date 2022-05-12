@@ -428,6 +428,7 @@ static void renderQuad()
 }
 void preIntegrate(GLuint inEnvMap)
 {
+
     if (inEnvMap == (GLuint)-1) {
         irradianceMap=(GLuint)-1;
  prefilterMap=(GLuint)-1;    
@@ -505,6 +506,7 @@ void preIntegrate(GLuint inEnvMap)
 
   // pbr: solve diffuse integral by convolution to create an irradiance (cube)map.
   // -----------------------------------------------------------------------------
+if(inEnvMap!=0){
   preintIrradianceProg->use();
   preintIrradianceProg->set_uniformi("environmentMap", 0);
   preintIrradianceProg->set_uniform("projection", captureProjection);
@@ -525,6 +527,7 @@ void preIntegrate(GLuint inEnvMap)
       renderCube();
   }
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
 ////////////////////////////////////////////////////////////////////////////////////////////
   if(prefilterMap==0){
     glGenTextures(1, &prefilterMap);
@@ -541,6 +544,7 @@ void preIntegrate(GLuint inEnvMap)
     // generate mipmaps for the cubemap so OpenGL automatically allocates the required memory.
     glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
   }
+if(inEnvMap!=0){
 
   // pbr: run a quasi monte-carlo simulation on the environment lighting to create a prefilter (cube)map.
   // ----------------------------------------------------------------------------------------------------
@@ -575,6 +579,7 @@ void preIntegrate(GLuint inEnvMap)
       }
   }
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   if(brdfLUTTexture==0)
   {

@@ -540,6 +540,17 @@ struct GraphicPrimitive : IGraphic {
                           fov, 0.1,ffar, dof, 1);
                 
             }
+            if(code.find("mat_isVoxelDomain = float(float(1))")!=std::string::npos)
+            {
+                auto origin = prim->attr<zeno::vec3f>("pos")[0];
+                auto right = prim->attr<zeno::vec3f>("pos")[1] - prim->attr<zeno::vec3f>("pos")[0];
+                auto up = prim->attr<zeno::vec3f>("pos")[3] - prim->attr<zeno::vec3f>("pos")[0];
+
+                voxelizer::setVoxelizeView(glm::vec3(origin[0],origin[1],origin[2]), 
+                                           glm::vec3(right[0], right[1], right[2]), 
+                                           glm::vec3(up[0], up[1], up[2]));
+                
+            }
             
         }
         if(!triObj.prog){
@@ -809,6 +820,7 @@ struct GraphicPrimitive : IGraphic {
         triObj.voxelprog->set_uniform("voxelgrid_resolution", voxelizer::getVoxelResolution());
         triObj.voxelprog->set_uniformi("lightNum", lights.size());
         triObj.voxelprog->set_uniform("alphaPass", alphaPass);
+        triObj.voxelprog->set_uniform("vxView", voxelizer::getView());
         for (int lightNo = 0; lightNo < lights.size(); ++lightNo)
         {
             auto &light = lights[lightNo];
@@ -1217,7 +1229,7 @@ struct GraphicPrimitive : IGraphic {
         texOcp++;
         triObj.prog->set_uniform("vxSize",voxelizer::getDomainLength());
         triObj.prog->set_uniform("vxView", voxelizer::getView());
-        
+        triObj.prog->set_uniform("enable_gi_flag", zenvis::get_enable_gi());
         
         
         triObj.prog->set_uniform("msweight", m_weight);
