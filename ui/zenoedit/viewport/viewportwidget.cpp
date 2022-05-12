@@ -188,6 +188,7 @@ void ViewportWidget::wheelEvent(QWheelEvent* event)
 }
 
 
+#if 0
 QDMDisplayMenu::QDMDisplayMenu()
 {
     setTitle(tr("Display"));
@@ -217,6 +218,11 @@ QDMDisplayMenu::QDMDisplayMenu()
     pAction->setChecked(false);
     addAction(pAction);
 
+    pAction = new QAction(tr("Enable GI"), this);
+    pAction->setCheckable(true);
+    pAction->setChecked(false);
+    addAction(pAction);
+
     addSeparator();
 
     pAction = new QAction(tr("Camera Keyframe"), this);
@@ -224,7 +230,7 @@ QDMDisplayMenu::QDMDisplayMenu()
 
     addSeparator();
 
-    pAction = new QAction(tr("Use English"), this);
+    pAction = new QAction(tr("English / Chinese"), this);
     pAction->setCheckable(true);
     pAction->setChecked(true);
     addAction(pAction);
@@ -242,6 +248,7 @@ QDMRecordMenu::QDMRecordMenu()
     pAction->setShortcut(QKeySequence(tr("Shift+F12")));
     addAction(pAction);
 }
+#endif
 
 
 DisplayWidget::DisplayWidget(ZenoMainWindow* pMainWin)
