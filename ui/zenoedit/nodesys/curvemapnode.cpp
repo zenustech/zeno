@@ -2,6 +2,7 @@
 #include "../curvemap/zcurvemapeditor.h"
 #include "../model/curvemodel.h"
 #include <zenoui/util/cihou.h>
+#include "util/log.h"
 
 
 MakeCurvemapNode::MakeCurvemapNode(const NodeUtilParam& params, QGraphicsItem* parent)
@@ -67,33 +68,22 @@ void MakeCurvemapNode::onEditClicked()
 			int n = 0;
 			bool bOK = false;
 			n = L[0].toInt(&bOK);
-			if (!bOK)
-			{
-				Q_ASSERT(false);
-				return;
-			}
+            ZASSERT_EXIT(bOK);
 
 			if (L.length() != (1 + 2 * n))
 			{
-				Q_ASSERT(false);
-				return;
+				ZASSERT_EXIT(false);
 			}
 			
 			for (int i = 1; i < L.length(); i += 2)
 			{
 				QPointF pt;
 				pt.setX(L[i].toFloat(&bOK));
-				if (!bOK)
-				{
-					Q_ASSERT(false);
-					return;
-				}
+				ZASSERT_EXIT(bOK);
+
 				pt.setY(L[i + 1].toFloat(&bOK));
-				if (!bOK)
-				{
-					Q_ASSERT(false);
-					return;
-				}
+				ZASSERT_EXIT(bOK);
+
 				points.append(pt);
 			}
 
@@ -103,17 +93,11 @@ void MakeCurvemapNode::onEditClicked()
 				QPointF pt;
 
 				pt.setX(L[i].toFloat(&bOK));
-				if (!bOK)
-				{
-					Q_ASSERT(false);
-					return;
-				}
+				ZASSERT_EXIT(bOK);
+
 				pt.setY(L[i + 1].toFloat(&bOK));
-				if (!bOK)
-				{
-					Q_ASSERT(false);
-					return;
-				}
+				ZASSERT_EXIT(bOK);
+
 				handlers.append(pt);
 			}
         }

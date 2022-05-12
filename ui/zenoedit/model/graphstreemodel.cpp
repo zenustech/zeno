@@ -1,6 +1,7 @@
 #include "graphstreemodel.h"
 #include "graphsmodel.h"
 #include <zenoui/model/modelrole.h>
+#include "util/log.h"
 
 
 GraphsTreeModel::GraphsTreeModel(QObject* parent)
@@ -19,7 +20,7 @@ void GraphsTreeModel::init(IGraphsModel* pModel)
 {
     clear();
 	m_model = qobject_cast<GraphsModel*>(pModel);
-	Q_ASSERT(m_model);
+    ZASSERT_EXIT(m_model);
     SubGraphModel* pSubModel = m_model->subGraph("main");
     QStandardItem* pItem = appendSubModel(pSubModel);
     appendRow(pItem);
@@ -68,7 +69,7 @@ void GraphsTreeModel::on_subg_dataChanged(const QModelIndex& topLeft, const QMod
 		const QString& nodeId = topLeft.data(ROLE_OBJID).toString();
 		const QModelIndex& modelIdx = pModel->index(nodeId);
 		QModelIndexList lst = match(index(0, 0), ROLE_OBJID, nodeId, 1, Qt::MatchRecursive);
-		Q_ASSERT(lst.size() == 1);
+		ZASSERT_EXIT(lst.size() == 1);
 		QModelIndex treeIdx = lst[0];
 
 		const QString& oldName = treeIdx.data(ROLE_OBJNAME).toString();
@@ -89,7 +90,7 @@ void GraphsTreeModel::on_subg_rowsInserted(const QModelIndex& parent, int first,
 {
 	SubGraphModel* pModel = qobject_cast<SubGraphModel*>(sender());
 	QModelIndex itemIdx = pModel->index(first, 0, parent);
-	Q_ASSERT(itemIdx.isValid());
+	ZASSERT_EXIT(itemIdx.isValid());
 
 	const QString& subName = pModel->name();
 	QModelIndexList lst = match(index(0, 0), ROLE_OBJNAME, subName, -1, Qt::MatchRecursive);
@@ -120,7 +121,7 @@ void GraphsTreeModel::on_subg_rowsAboutToBeRemoved(const QModelIndex& parent, in
 {
 	SubGraphModel* pModel = qobject_cast<SubGraphModel*>(sender());
 	QModelIndex itemIdx = pModel->index(first, 0, parent);
-	Q_ASSERT(itemIdx.isValid());
+	ZASSERT_EXIT(itemIdx.isValid());
 
 	const QString& subName = pModel->name();
 	QModelIndexList lst = match(index(0, 0), ROLE_OBJNAME, subName, -1, Qt::MatchRecursive);
@@ -139,7 +140,7 @@ void GraphsTreeModel::on_subg_rowsRemoved(const QModelIndex& parent, int first, 
 void GraphsTreeModel::on_graphs_rowsAboutToBeRemoved(const QModelIndex& parent, int first, int last)
 {
 	QModelIndex subgIdx = m_model->index(first, 0, parent);
-	Q_ASSERT(subgIdx.isValid());
+	ZASSERT_EXIT(subgIdx.isValid());
 
 	const QString& subgName = m_model->name(subgIdx);
 	QModelIndexList lst = match(index(0, 0), ROLE_OBJNAME, subgName, -1, Qt::MatchRecursive);

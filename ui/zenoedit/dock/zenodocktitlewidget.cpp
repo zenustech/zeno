@@ -6,6 +6,7 @@
 #include "zenoapplication.h"
 #include "graphsmanagment.h"
 #include "viewport/zenovis.h"
+#include "util/log.h"
 
 
 ZenoDockTitleWidget::ZenoDockTitleWidget(QWidget* parent)
@@ -241,7 +242,7 @@ void ZenoEditorDockTitleWidget::onModelClear()
 void ZenoEditorDockTitleWidget::onDirtyChanged()
 {
 	IGraphsModel* pModel = qobject_cast<IGraphsModel*>(sender());
-	Q_ASSERT(pModel);
+    ZASSERT_EXIT(pModel);
 	bool bDirty = pModel->isDirty();
 	QString name = pModel->fileName();
 	if (name.isEmpty())
@@ -292,32 +293,6 @@ void ZenoViewDockTitle::initTitleContent(QHBoxLayout* pHLayout)
     pHLayout->addWidget(pMenuBar);
     pHLayout->setAlignment(pMenuBar, Qt::AlignVCenter);
     pHLayout->addStretch();
-}
-
-void ZenoViewDockTitle::setupUi()
-{
-    QVBoxLayout *pLayout = new QVBoxLayout;
-    pLayout->setSpacing(0);
-    pLayout->setContentsMargins(0, 0, 0, 0);
-
-    QHBoxLayout *pHLayout = new QHBoxLayout;
-
-    ZToolButton *pDockOptionsBtn = new ZToolButton(ZToolButton::Opt_HasIcon, QIcon(":/icons/dockOption.svg"),
-                                                   ZenoStyle::dpiScaledSize(QSize(16, 16)));
-    pDockOptionsBtn->setMargins(QMargins(10, 10, 10, 10));
-    pDockOptionsBtn->setBackgroundClr(QColor(51, 51, 51), QColor(51, 51, 51), QColor(51, 51, 51));
-
-    initTitleContent(pHLayout);
-
-    pHLayout->addWidget(pDockOptionsBtn);
-    pHLayout->setContentsMargins(0, 0, 0, 0);
-    pHLayout->setMargin(0);
-
-    pLayout->addLayout(pHLayout);
-
-    setLayout(pLayout);
-
-    connect(pDockOptionsBtn, SIGNAL(clicked()), this, SIGNAL(dockOptionsClicked()));
 }
 
 QMenuBar* ZenoViewDockTitle::initMenu()

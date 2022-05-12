@@ -3,6 +3,7 @@
 #include "zenoapplication.h"
 #include "graphsmanagment.h"
 #include <zenoui/util/uihelper.h>
+#include "util/log.h"
 
 
 SubnetNode::SubnetNode(bool bInput, const NodeUtilParam& params, QGraphicsItem* parent)
@@ -21,7 +22,7 @@ void SubnetNode::onParamEditFinished(PARAM_CONTROL editCtrl, const QString& para
 {
 	//get old name first.
 	IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
-	Q_ASSERT(pModel);
+	ZASSERT_EXIT(pModel);
 	const QString& nodeid = nodeId();
 	QModelIndex subgIdx = this->subGraphIndex();
 	const PARAMS_INFO& params = pModel->data2(subgIdx, index(), ROLE_PARAMETERS).value<PARAMS_INFO>();

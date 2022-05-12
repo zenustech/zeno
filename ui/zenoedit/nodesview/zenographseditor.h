@@ -53,6 +53,7 @@ private slots:
 private:
     void initUI();
     void initSignals();
+    void initRecentFiles();
     void initModel();
     int tabIndexOfName(const QString& subGraphName);
     void activateTab(const QString& subGraphName, const QString& path = "", const QString& objId = "", bool isError = false);

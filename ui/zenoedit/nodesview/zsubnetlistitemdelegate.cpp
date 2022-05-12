@@ -6,6 +6,7 @@
 #include "graphsmanagment.h"
 #include "zenoapplication.h"
 #include <zenoui/model/modelrole.h>
+#include "util/log.h"
 
 
 SubgEditValidator::SubgEditValidator(QObject* parent)
@@ -161,7 +162,7 @@ void ZSubnetListItemDelegate::onDelete(const QModelIndex& index)
 QWidget* ZSubnetListItemDelegate::createEditor(QWidget* parent, const QStyleOptionViewItem& option, const QModelIndex& index) const
 {
     QLineEdit* pLineEdit = qobject_cast<QLineEdit*>(QStyledItemDelegate::createEditor(parent, option, index));
-    Q_ASSERT(pLineEdit);
+    ZASSERT_EXIT(pLineEdit, nullptr);
     SubgEditValidator* pValidator = new SubgEditValidator;
     pLineEdit->setValidator(pValidator);
     return pLineEdit;
