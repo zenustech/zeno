@@ -210,7 +210,7 @@ QDMDisplayMenu::QDMDisplayMenu()
 
     addSeparator();
 
-    pAction = new QAction(tr("Zhxx Renderer"), this);
+    pAction = new QAction(tr("Enable PBR"), this);
     pAction->setCheckable(true);
     pAction->setChecked(false);
     addAction(pAction);
