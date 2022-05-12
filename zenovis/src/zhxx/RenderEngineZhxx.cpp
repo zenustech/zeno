@@ -4,6 +4,7 @@
 #include <zenovis/ObjectsManager.h>
 #include <zenovis/bate/IGraphic.h>
 #include <zenovis/opengl/vao.h>
+#include <zenovis/opengl/scope.h>
 #include "../../zhxxvis/zenvisapi.hpp"
 
 namespace zenovis::zhxx {
@@ -45,15 +46,18 @@ struct RenderEngineZhxx : RenderEngine, zeno::disable_copy {
     std::unique_ptr<GraphicsManager> graphicsMan;
     Scene *scene;
 
-    RenderEngineZhxx(Scene *scene_) : scene(scene_) {
+    auto setupState() {
+        return std::tuple{
+            opengl::scopeGLEnable(GL_BLEND), opengl::scopeGLEnable(GL_DEPTH_TEST),
+            opengl::scopeGLEnable(GL_DEPTH_TEST), opengl::scopeGLEnable(GL_PROGRAM_POINT_SIZE),
+            opengl::scopeGLBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA),
+            opengl::scopeGLEnable(GL_MULTISAMPLE),
+        };
+    }
+
+    explicit RenderEngineZhxx(Scene *scene_) : scene(scene_) {
         zeno::log_info("Zhxx Render Engine started...");
-        CHECK_GL(glEnable(GL_BLEND));
-        CHECK_GL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
-        CHECK_GL(glEnable(GL_DEPTH_TEST));
-        CHECK_GL(glEnable(GL_PROGRAM_POINT_SIZE));
-        CHECK_GL(glEnable(GL_MULTISAMPLE));
-        CHECK_GL(glPixelStorei(GL_UNPACK_ALIGNMENT, 1));
-        CHECK_GL(glPixelStorei(GL_PACK_ALIGNMENT, 1));
+        auto guard = setupState();
 
         graphicsMan = std::make_unique<GraphicsManager>(scene);
 
@@ -66,6 +70,7 @@ struct RenderEngineZhxx : RenderEngine, zeno::disable_copy {
     }
 
     void draw() override {
+        auto guard = setupState();
         auto const &cam = *scene->camera;
         auto const &opt = *scene->drawOptions;
         auto const &zxx = cam.m_zxx;
@@ -79,9 +84,13 @@ struct RenderEngineZhxx : RenderEngine, zeno::disable_copy {
         zenvis::set_window_size(cam.m_nx, cam.m_ny);
         zenvis::look_perspective(zxx.cx, zxx.cy, zxx.cz, zxx.theta,
                 zxx.phi, zxx.radius, zxx.fov, zxx.ortho_mode);
-        int targetFBO = 0;
+        int oldFBO = 0, targetFBO = 0;
+        CHECK_GL(glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &oldFBO));
         CHECK_GL(glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &targetFBO));
+        CHECK_GL(glClearColor(scene->drawOptions->bgcolor.r, scene->drawOptions->bgcolor.g,
+                              scene->drawOptions->bgcolor.b, 0.0f));
         zenvis::new_frame(targetFBO);
+        CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, oldFBO));
     }
 
     ~RenderEngineZhxx() override {
@@ -89,12 +98,6 @@ struct RenderEngineZhxx : RenderEngine, zeno::disable_copy {
     }
 };
 
-}
-
-namespace zenovis {
-
-std::unique_ptr<RenderEngine> makeRenderEngineZhxx(Scene *scene) {
-    return std::make_unique<zhxx::RenderEngineZhxx>(scene);
-}
+static auto definer = RenderManager::registerRenderEngine<RenderEngineZhxx>("zhxx");
 
 }

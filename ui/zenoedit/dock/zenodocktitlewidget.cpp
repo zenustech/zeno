@@ -372,8 +372,8 @@ QMenuBar* ZenoViewDockTitle::initMenu()
         pRecord->addAction(pAction);
         connect(pAction, &QAction::triggered, this, [=]() {
             auto s = QDateTime::currentDateTime().toString(QString("yyyy-dd-MM_hh-mm-ss.png"));
-            Zenovis::GetInstance().getSession()->do_screenshot(s.toStdString());
-            });
+            Zenovis::GetInstance().getSession()->do_screenshot(s.toStdString(), "png");
+        });
         pAction = new QAction(tr("Record Video"), this);
         pAction->setShortcut(QKeySequence(tr("Shift+F12")));
         pRecord->addAction(pAction);

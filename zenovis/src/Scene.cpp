@@ -30,7 +30,8 @@ Scene::Scene()
     : camera(std::make_unique<Camera>()),
       drawOptions(std::make_unique<DrawOptions>()),
       shaderMan(std::make_unique<ShaderManager>()),
-      objectsMan(std::make_unique<ObjectsManager>()) {
+      objectsMan(std::make_unique<ObjectsManager>()),
+      renderMan(std::make_unique<RenderManager>(this)) {
 
     auto version = (const char *)glGetString(GL_VERSION);
     zeno::log_info("OpenGL version: {}", version ? version : "(null)");
@@ -42,18 +43,26 @@ Scene::Scene()
 }
 
 void Scene::switchRenderEngine(std::string const &name) {
-    std::map<std::string, std::function<void()>>{
-    {"bate", [&] { renderEngine = makeRenderEngineBate(this); }},
-    {"zhxx", [&] { renderEngine = makeRenderEngineZhxx(this); }},
-    }.at(name)();
+    renderMan->switchDefaultEngine(name);
 }
 
+/* TODO: move this to zeno::objectGetCenterRadius */
 static bool calcObjectCenterRadius(zeno::IObject *ptr, zeno::vec3f &center, float &radius) {
     if (auto obj = dynamic_cast<zeno::PrimitiveObject *>(ptr)) {
-        auto [bmin, bmax] = primBoundingBox(obj);
-        auto delta = bmax - bmin;
-        radius = std::max({delta[0], delta[1], delta[2]}) * 0.5f;
-        center = (bmin + bmax) * 0.5f;
+        auto &ud = ptr->userData();
+        if (ud.has("_bboxCenter") && ud.has("_bboxRadius")) {
+            center = ud.getLiterial<zeno::vec3f>("_bboxCenter");
+            radius = ud.getLiterial<float>("_bboxRadius");
+        } else {
+            auto [bmin, bmax] = primBoundingBox(obj);
+            auto delta = bmax - bmin;
+            radius = std::max({delta[0], delta[1], delta[2]}) * 0.5f;
+            center = (bmin + bmax) * 0.5f;
+            ud.set("_bboxMin", std::make_shared<zeno::NumericObject>(bmin));
+            ud.set("_bboxMax", std::make_shared<zeno::NumericObject>(bmax));
+            ud.set("_bboxRadius", std::make_shared<zeno::NumericObject>(radius));
+            ud.set("_bboxCenter", std::make_shared<zeno::NumericObject>(center));
+        }
         return true;
     }
     return false;
@@ -78,15 +87,15 @@ void Scene::loadFrameObjects(int frameid) {
         zeno::log_trace("load_objects: no objects at frame {}", frameid);
         this->objectsMan->load_objects({});
     }
-    renderEngine->update();
+    renderMan->getEngine()->update();
 }
 
 void Scene::draw() {
+    //CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0));
     CHECK_GL(glViewport(0, 0, camera->m_nx, camera->m_ny));
-    CHECK_GL(glClearColor(drawOptions->bgcolor.r, drawOptions->bgcolor.g, drawOptions->bgcolor.b, 0.0f));
-    CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0));
+    //CHECK_GL(glClearColor(drawOptions->bgcolor.r, drawOptions->bgcolor.g, drawOptions->bgcolor.b, 0.0f));
 
-    renderEngine->draw();
+    renderMan->getEngine()->draw();
 }
 
 std::vector<char> Scene::record_frame_offline(int hdrSize, int rgbComps) {
@@ -104,7 +113,16 @@ std::vector<char> Scene::record_frame_offline(int hdrSize, int rgbComps) {
 
     std::vector<char> pixels(camera->m_nx * camera->m_ny * rgbComps * hdrSize);
 
+    //GLint zerofbo = 0, zerorbo = 0;
+    //CHECK_GL(glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &zerofbo));
+    //CHECK_GL(glGetIntegerv(GL_RENDERBUFFER_BINDING, &zerorbo));
+    //printf("%d\n", zerofbo);
+    //printf("%d\n", zerorbo);
+
     GLuint fbo, rbo1, rbo2;
+    CHECK_GL(glGenFramebuffers(1, &fbo));
+    CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo));
+
     CHECK_GL(glGenRenderbuffers(1, &rbo1));
     CHECK_GL(glGenRenderbuffers(1, &rbo2));
     CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, rbo1));
@@ -113,9 +131,9 @@ std::vector<char> Scene::record_frame_offline(int hdrSize, int rgbComps) {
     CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, rbo2));
     CHECK_GL(glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT32F,
                                    camera->m_nx, camera->m_ny));
+    CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, 0));
 
-    CHECK_GL(glGenFramebuffers(1, &fbo));
-    CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo));
+
     CHECK_GL(glFramebufferRenderbuffer(
         GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, rbo1));
     CHECK_GL(glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
@@ -135,6 +153,8 @@ std::vector<char> Scene::record_frame_offline(int hdrSize, int rgbComps) {
                                    GL_NEAREST));
         CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo));
         CHECK_GL(glBindBuffer(GL_PIXEL_PACK_BUFFER, 0));
+        CHECK_GL(glPixelStorei(GL_UNPACK_ALIGNMENT, 1));
+        CHECK_GL(glPixelStorei(GL_PACK_ALIGNMENT, 1));
         CHECK_GL(glReadBuffer(GL_COLOR_ATTACHMENT0));
 
         CHECK_GL(glReadPixels(0, 0, camera->m_nx, camera->m_ny, rgbType,
@@ -142,7 +162,6 @@ std::vector<char> Scene::record_frame_offline(int hdrSize, int rgbComps) {
     }
 
     CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0));
-    CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, 0));
 
     CHECK_GL(glDeleteRenderbuffers(1, &rbo1));
     CHECK_GL(glDeleteRenderbuffers(1, &rbo2));

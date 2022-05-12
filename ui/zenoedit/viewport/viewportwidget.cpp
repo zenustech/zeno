@@ -100,14 +100,14 @@ void CameraControl::focus(QVector3D center, float radius)
 
 
 ViewportWidget::ViewportWidget(QWidget* parent)
-    : QGLWidget(parent)
+    : QOpenGLWidget(parent)
     , m_camera(nullptr)
 {
-    QGLFormat fmt;
+    QSurfaceFormat fmt;
     int nsamples = 16;  // TODO: adjust in a zhouhang-panel
     fmt.setSamples(nsamples);
     fmt.setVersion(3, 2);
-    fmt.setProfile(QGLFormat::CoreProfile);
+    fmt.setProfile(QSurfaceFormat::CoreProfile);
     setFormat(fmt);
 
     m_camera = std::make_shared<CameraControl>();
@@ -120,7 +120,7 @@ ViewportWidget::~ViewportWidget()
 
 namespace {
 struct OpenGLProcAddressHelper {
-    inline static QGLContext *ctx;
+    inline static QOpenGLContext *ctx;
 
     static void *getProcAddress(const char *name) {
         return (void *)ctx->getProcAddress(name);
