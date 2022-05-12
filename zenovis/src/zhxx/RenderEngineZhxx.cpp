@@ -63,7 +63,7 @@ struct RenderEngineZhxx : RenderEngine, zeno::disable_copy {
         graphicsMan = std::make_unique<GraphicsManager>(scene);
 
         vao = std::make_unique<opengl::VAO>();
-        auto bindVao = opengl::scopeGLBindVertexArray(vao->vao);
+        //auto bindVao = opengl::scopeGLBindVertexArray(vao->vao);
 
         zenvis::initialize();
         zenvis::setup_env_map("Default");
