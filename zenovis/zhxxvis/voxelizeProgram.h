@@ -367,6 +367,7 @@ vec3 L, vec3 V, vec3 N, vec3 X, vec3 Y)
         * (1-metallic)
         + Gs*Fs*Ds + .25*clearcoat*Gr*Fr*Dr)*angle;
 }
+)" + R"(
 uniform int lightNum; 
 uniform vec3 light[16];
 uniform sampler2D shadowMap[128];
