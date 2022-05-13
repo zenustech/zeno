@@ -143,42 +143,49 @@ void ZenoSubGraphScene::onDataChanged(const QModelIndex& subGpIdx, const QModelI
 
 	QString id = idx.data(ROLE_OBJID).toString();
 
-    if (m_nodes.find(id) == m_nodes.end()) return;
-    //ZASSERT_EXIT(m_nodes.find(id) != m_nodes.end());
-
 	if (role == ROLE_OBJPOS)
 	{
+    if (role == ROLE_OBJPOS)
+    {
+        ZASSERT_EXIT(m_nodes.find(id) != m_nodes.end());
 	    QPointF pos = idx.data(ROLE_OBJPOS).toPointF();
         m_nodes[id]->setPos(pos);
 		updateLinkPos(m_nodes[id], pos);
 	}
-	if (role == ROLE_INPUTS || role == ROLE_OUTPUTS)
-	{
+    if (role == ROLE_INPUTS || role == ROLE_OUTPUTS)
+    {
 	    //it's diffcult to detect which input/output socket has changed on this method.
         //unless:
         //1. add a member to INPUT_SOCKS/OUTPUT_SOCKS, to specify which key had changed.
         //2. update all control value associated with input socket anyway.
         //
         //now we choose the second.
-        m_nodes[id]->onInOutSocketChanged(role == ROLE_INPUTS);
+        if (m_nodes.find(id) != m_nodes.end())
+        {
+            m_nodes[id]->onInOutSocketChanged(role == ROLE_INPUTS);
+        }
 	}
-	if (role == ROLE_OPTIONS)
-	{
-		int options = idx.data(ROLE_OPTIONS).toInt();
-		m_nodes[id]->onOptionsUpdated(options);
+    if (role == ROLE_OPTIONS)
+    {
+        ZASSERT_EXIT(m_nodes.find(id) != m_nodes.end());
+        int options = idx.data(ROLE_OPTIONS).toInt();
+        m_nodes[id]->onOptionsUpdated(options);
 	}
 	if (role == ROLE_COLLASPED)
 	{
+        ZASSERT_EXIT(m_nodes.find(id) != m_nodes.end());
 		bool bCollasped = idx.data(ROLE_COLLASPED).toBool();
 		m_nodes[id]->onCollaspeUpdated(bCollasped);
 	}
     if (role == ROLE_MODIFY_PARAM)
     {
+        ZASSERT_EXIT(m_nodes.find(id) != m_nodes.end());
         PARAM_INFO info = idx.data(ROLE_MODIFY_PARAM).value<PARAM_INFO>();
         m_nodes[id]->onParamUpdated(info.name, info.value);
     }
     if (role == ROLE_MODIFY_SOCKET)
     {
+        ZASSERT_EXIT(m_nodes.find(id) != m_nodes.end());
         QVariant var = idx.data(ROLE_MODIFY_SOCKET);
         if (var.isNull())
             return;
@@ -187,6 +194,7 @@ void ZenoSubGraphScene::onDataChanged(const QModelIndex& subGpIdx, const QModelI
     }
     if (role == ROLE_MODIFY_SOCKET_DEFL)
     {
+        ZASSERT_EXIT(m_nodes.find(id) != m_nodes.end());
         QVariant var = idx.data(ROLE_MODIFY_SOCKET_DEFL);
         if (var.isNull())
             return;
@@ -195,6 +203,7 @@ void ZenoSubGraphScene::onDataChanged(const QModelIndex& subGpIdx, const QModelI
     }
     if (role == ROLE_OBJNAME)
     {
+        ZASSERT_EXIT(m_nodes.find(id) != m_nodes.end());
         m_nodes[id]->onNameUpdated(idx.data(ROLE_OBJNAME).toString());
     }
 }
@@ -634,28 +643,23 @@ void ZenoSubGraphScene::keyPressEvent(QKeyEvent* event)
     if (event->key() == Qt::Key_Delete)
     {
         QList<QGraphicsItem*> selItems = this->selectedItems();
-        QList<ZenoNode*> nodes;
-        QList<ZenoFullLink*> links;
+        QList<QPersistentModelIndex> nodes;
+        QList<QPersistentModelIndex> links;
         for (auto item : selItems)
         {
-            if (ZenoNode *pNode = qgraphicsitem_cast<ZenoNode *>(item)) {
-                nodes.append(pNode);
-            } else if (ZenoFullLink *pLink = qgraphicsitem_cast<ZenoFullLink *>(item)) {
-                links.append(pLink);
+            if (ZenoNode *pNode = qgraphicsitem_cast<ZenoNode *>(item))
+            {
+                nodes.append(pNode->index());
+            }
+            else if (ZenoFullLink *pLink = qgraphicsitem_cast<ZenoFullLink *>(item))
+            {
+                links.append(pLink->linkInfo());
             }
         }
         IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
-        pGraphsModel->beginTransaction("remove nodes and links");
-        for (auto item : links)
-        {
-            pGraphsModel->removeLink(item->linkInfo(), m_subgIdx, true);
-        }
-        for (auto item : nodes)
-        {
-            const QPersistentModelIndex &index = item->index();
-            pGraphsModel->removeNode(index.data(ROLE_OBJID).toString(), m_subgIdx, true);
-        }
-        pGraphsModel->endTransaction();
+        ZASSERT_EXIT(pGraphsModel);
+        pGraphsModel->removeNodeLinks(nodes, links, m_subgIdx);
+
     }
     QGraphicsScene::keyPressEvent(event);
 }
