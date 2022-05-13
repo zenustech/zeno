@@ -19,6 +19,17 @@ private:
     QAbstractItemView *m_view;
 };
 
+class LogListView : public QListView
+{
+    Q_OBJECT
+    typedef QListView _base;
+public:
+    LogListView(QWidget *parent = nullptr);
+
+protected:
+    void rowsInserted(const QModelIndex &parent, int start, int end) override;
+};
+
 class CustomFilterProxyModel : public QSortFilterProxyModel
 {
     Q_OBJECT

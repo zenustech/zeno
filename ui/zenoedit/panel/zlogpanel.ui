@@ -233,7 +233,7 @@ QCheckBox::indicator:checked {
     </layout>
    </item>
    <item>
-    <widget class="QListView" name="listView">
+    <widget class="LogListView" name="listView">
      <property name="styleSheet">
       <string notr="true">QListView
 {
@@ -252,6 +252,14 @@ QCheckBox::indicator:checked {
    </item>
   </layout>
  </widget>
+    <customwidgets>
+        <customwidget>
+            <class>LogListView</class>
+            <extends>QListView</extends>
+            <header>panel/zlogpanel.h</header>
+            <container>1</container>   
+        </customwidget>
+    </customwidgets>
  <resources/>
  <connections/>
 </ui>
