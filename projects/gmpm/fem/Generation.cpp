@@ -205,9 +205,8 @@ struct ToZSTetrahedra : INode {
     zstets->category = ZenoParticles::tet;
     zstets->sprayedOffset = pos.size();
 
-    std::vector<zs::PropertyTag> tags{{"m", 1}, {"X", 3}, {"x", 3}, {"v", 3}};
-    std::vector<zs::PropertyTag> eleTags{
-        {"vol", 1}, {"F", 9}, {"IB", 9}, {"inds", 4}};
+    std::vector<zs::PropertyTag> tags{{"m", 1}, {"x", 3}, {"v", 3}};
+    std::vector<zs::PropertyTag> eleTags{{"vol", 1}, {"IB", 9}, {"inds", 4}};
 
     constexpr auto space = zs::execspace_e::openmp;
     zstets->particles = std::make_shared<typename ZenoParticles::particles_t>(
@@ -218,7 +217,6 @@ struct ToZSTetrahedra : INode {
               using vec3 = zs::vec<float, 3>;
               auto p = vec3{pos[vi][0], pos[vi][1], pos[vi][2]};
               pars.tuple<3>("x", vi) = p;
-              pars.tuple<3>("X", vi) = p;
               if (prim->has_attr("vel")) {
                 auto vel = prim->attr<zeno::vec3f>("vel")[vi];
                 pars.tuple<3>("v", vi) = vec3{vel[0], vel[1], vel[2]};
@@ -249,7 +247,6 @@ struct ToZSTetrahedra : INode {
                 for (int i = 0; i != 3; ++i)
                   D(d, i) = ds[i][d];
               eles.tuple<9>("IB", ei) = zs::inverse(D);
-              eles.tuple<9>("F", ei) = mat3::identity();
               auto vol = zs::abs(zs::determinant(D)) / 6;
               eles("vol", ei) = vol;
               // vert masses
