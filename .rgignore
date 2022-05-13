@@ -9,6 +9,7 @@ projects/cgmesh/meshfix
 projects/cgmesh/voro
 projects/gmpm/zecomp
 projects/zenvdb/openvdb
+projects/FBX/assimp
 zenovis/openexr
 zenovis/glad
 zenovis/stbi
