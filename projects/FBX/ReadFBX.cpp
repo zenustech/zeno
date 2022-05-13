@@ -3,6 +3,7 @@
 #include "assimp/postprocess.h"
 
 #include <zeno/zeno.h>
+#include <zeno/core/IObject.h>
 #include <zeno/types/StringObject.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/NumericObject.h>
@@ -19,7 +20,7 @@
 
 #include <stb_image.h>
 
-#define MAX_BONE_INFLUENCE 16
+#include "Bone.h"
 
 struct Texture {
     unsigned int id;
@@ -32,183 +33,18 @@ struct VertexInfo{
     aiVector3D texCoord;
     aiVector3D normal;
     std::unordered_map<std::string, float> boneWeights;
-//    std::vector<std::string> boneIds;
-//    std::vector<float> boneWeights;
 };
 
 struct BoneInfo {
-    int id;
     std::string name;
     aiMatrix4x4 offset;
 };
 
-struct NodeInfo{
+struct NodeTree : zeno::IObjectClone<NodeTree>{
     aiMatrix4x4 transformation;
     std::string name;
     int childrenCount;
-    std::vector<NodeInfo> children;
-};
-
-struct KeyPosition {
-    aiVector3D position;
-    float timeStamp;
-};
-
-struct KeyRotation {
-    aiQuaternion orientation;
-    float timeStamp;
-};
-
-struct KeyScale {
-    aiVector3D scale;
-    float timeStamp;
-};
-
-struct Bone {
-    Bone(std::string& name, int BoneID, const aiNodeAnim* channel){
-        m_Name = name;
-        m_BoneID = BoneID;
-        m_NumPositions = channel->mNumPositionKeys;
-        for (int positionIndex = 0; positionIndex < m_NumPositions; ++positionIndex) {
-            aiVector3D aiPosition = channel->mPositionKeys[positionIndex].mValue;
-            float timeStamp = channel->mPositionKeys[positionIndex].mTime;
-
-            KeyPosition data;
-            data.position = aiPosition;
-            data.timeStamp = timeStamp;
-            m_Positions.push_back(data);
-        }
-
-        m_NumRotations = channel->mNumRotationKeys;
-        for (int rotationIndex = 0; rotationIndex < m_NumRotations; ++rotationIndex) {
-            aiQuaternion aiOrientation = channel->mRotationKeys[rotationIndex].mValue;
-            float timeStamp = channel->mRotationKeys[rotationIndex].mTime;
-
-            KeyRotation data;
-            data.orientation = aiOrientation;
-            data.timeStamp = timeStamp;
-            m_Rotations.push_back(data);
-        }
-
-        m_NumScalings = channel->mNumScalingKeys;
-        for (int keyIndex = 0; keyIndex < m_NumScalings; ++keyIndex) {
-            aiVector3D scale = channel->mScalingKeys[keyIndex].mValue;
-            float timeStamp = channel->mScalingKeys[keyIndex].mTime;
-
-            KeyScale data;
-            data.scale = scale;
-            data.timeStamp = timeStamp;
-            m_Scales.push_back(data);
-        }
-    }
-
-    void update(float animationTime) {
-        aiMatrix4x4 translation = interpolatePosition(animationTime);
-        aiMatrix4x4 rotation = interpolateRotation(animationTime);
-        aiMatrix4x4 scale = interpolateScaling(animationTime);
-
-        m_LocalTransform = translation * rotation * scale;
-    }
-
-    int getPositionIndex(float animationTime) {
-        for (int index = 0; index < m_NumPositions - 1; ++index) {
-            if (animationTime < m_Positions[index + 1].timeStamp)
-                return index;
-        }
-    }
-    int getRotationIndex(float animationTime) {
-        for (int index = 0; index < m_NumRotations - 1; ++index) {
-            if (animationTime < m_Rotations[index + 1].timeStamp)
-                return index;
-        }
-    }
-    int getScaleIndex(float animationTime) {
-        for (int index = 0; index < m_NumScalings - 1; ++index) {
-            if (animationTime < m_Scales[index + 1].timeStamp)
-                return index;
-        }
-    }
-
-    aiMatrix4x4 interpolatePosition(float animationTime) {
-        aiMatrix4x4 result;
-
-        if (1 == m_NumPositions) {
-            aiMatrix4x4::Translation(m_Positions[0].position, result);
-            return result;
-        }
-
-        int p0Index = getPositionIndex(animationTime);
-        int p1Index = p0Index + 1;
-        float scaleFactor = getScaleFactor(
-                m_Positions[p0Index].timeStamp,
-                m_Positions[p1Index].timeStamp,
-                animationTime);
-        aiVector3D finalPosition = m_Positions[p0Index].position * (1.0f - scaleFactor) + m_Positions[p1Index].position * scaleFactor;
-        aiMatrix4x4::Translation(finalPosition, result);
-
-        return result;
-    }
-
-    aiMatrix4x4 interpolateRotation(float animationTime) {
-        aiMatrix4x4 result;
-
-        if (1 == m_NumRotations) {
-            result = result * aiMatrix4x4(m_Rotations[0].orientation.GetMatrix());
-            return result;
-        }
-
-        int p0Index = getRotationIndex(animationTime);
-        int p1Index = p0Index + 1;
-        float scaleFactor = getScaleFactor(
-                m_Rotations[p0Index].timeStamp,
-                m_Rotations[p1Index].timeStamp,
-                animationTime);
-        aiQuaternion finalRotation;
-        aiQuaternion::Interpolate(finalRotation, m_Rotations[p0Index].orientation, m_Rotations[p1Index].orientation, scaleFactor);
-        result = result * aiMatrix4x4(finalRotation.GetMatrix());
-
-        return result;
-    }
-
-    aiMatrix4x4 interpolateScaling(float animationTime) {
-        aiMatrix4x4 result;
-        if (1 == m_NumScalings) {
-            aiMatrix4x4::Scaling(m_Scales[0].scale, result);
-            return result;
-        }
-
-        int p0Index = getScaleIndex(animationTime);
-        int p1Index = p0Index + 1;
-        float scaleFactor = getScaleFactor(
-                m_Scales[p0Index].timeStamp,
-                m_Scales[p1Index].timeStamp,
-                animationTime);
-        aiVector3D finalScale = m_Scales[p0Index].scale *  (1.0f - scaleFactor) + m_Scales[p1Index].scale * scaleFactor;
-        aiMatrix4x4::Scaling(finalScale, result);
-
-        return result;
-    }
-
-    float getScaleFactor(float lastTimeStamp, float nextTimeStamp, float animationTime) {
-        float scaleFactor = 0.0f;
-        float midWayLength = animationTime - lastTimeStamp;
-        float framesDiff = nextTimeStamp - lastTimeStamp;
-        scaleFactor = midWayLength / framesDiff;
-
-        return scaleFactor;
-    }
-
-    std::vector<KeyPosition> m_Positions;
-    std::vector<KeyRotation> m_Rotations;
-    std::vector<KeyScale> m_Scales;
-
-    int m_NumPositions;
-    int m_NumRotations;
-    int m_NumScalings;
-
-    aiMatrix4x4 m_LocalTransform;
-    std::string m_Name;
-    int m_BoneID;
+    std::vector<NodeTree> children;
 };
 
 struct Mesh{
@@ -266,10 +102,6 @@ struct Mesh{
 
             VertexInfo vertexInfo;
             vertexInfo.position = vec;
-//            vertexInfo.boneIds.resize(MAX_BONE_INFLUENCE);
-//            vertexInfo.boneWeights.resize(MAX_BONE_INFLUENCE);
-//            std::fill(vertexInfo.boneIds.begin(), vertexInfo.boneIds.end(), -1);
-//            std::fill(vertexInfo.boneWeights.begin(), vertexInfo.boneWeights.end(), 0.0f);
 
             vertices.push_back(vertexInfo);
         }
@@ -310,6 +142,8 @@ struct Mesh{
     }
 
     void processNode(aiNode *node, const aiScene *scene){
+
+        //zeno::log_info("Node: Name {}", node->mName.data);
         for(unsigned int i = 0; i < node->mNumMeshes; i++)
             processMesh(scene->mMeshes[node->mMeshes[i]], scene);
         for(unsigned int i = 0; i < node->mNumChildren; i++)
@@ -351,25 +185,17 @@ struct Mesh{
     void extractBone(aiMesh* mesh){
         for (int boneIndex = 0; boneIndex < mesh->mNumBones; ++boneIndex)
         {
-            int boneID = -1;
             std::string boneName(mesh->mBones[boneIndex]->mName.C_Str());
 
-            if (m_BoneOffset.find(boneName) == m_BoneOffset.end()) { // notfound
+            // Not Found, Create one
+            if (m_BoneOffset.find(boneName) == m_BoneOffset.end()) {
                 BoneInfo newBoneInfo;
 
-                newBoneInfo.id = m_BoneCount;
                 newBoneInfo.name = boneName;
                 newBoneInfo.offset = mesh->mBones[boneIndex]->mOffsetMatrix;
 
                 m_BoneOffset[boneName] = newBoneInfo;
-                boneID = m_BoneCount;
-                m_BoneCount++;
             }
-            else {
-                boneID = m_BoneOffset[boneName].id;
-            }
-
-            //assert(boneID != -1);
 
             auto weights = mesh->mBones[boneIndex]->mWeights;
             unsigned int numWeights = mesh->mBones[boneIndex]->mNumWeights;
@@ -379,16 +205,7 @@ struct Mesh{
                 float weight = weights[weightIndex].mWeight;
 
                 auto& vertex = vertices[vertexId];
-//                for(int i=0;i<MAX_BONE_INFLUENCE; i++){
-//                    if(vertex.boneIds[i] < 0){
-//                        vertex.boneIds[i] = boneID;
-//                        vertex.boneWeights[i] = weight;
-//                        break;
-//                    }
-//                }
                 vertex.boneWeights[boneName] = weight;
-//                vertex.boneIds.push_back(boneName);
-//                vertex.boneWeights.push_back(weight);
             }
         }
     }
@@ -457,22 +274,6 @@ struct Mesh{
 
             bool infd = false;
 
-//            for(unsigned int j=0; j<MAX_BONE_INFLUENCE; j++){
-//                if(bid[j] == -1) {
-//                    continue;
-//                }
-//                infd = true;
-//                auto& tr = transforms[bid[j]];
-//                glm::mat4 trans = glm::mat4(tr.a1,tr.b1,tr.c1,tr.d1,
-//                                            tr.a2,tr.b2,tr.c2,tr.d2,
-//                                            tr.a3,tr.b3,tr.c3,tr.d3,
-//                                            tr.a4,tr.b4,tr.c4,tr.d4);
-//                glm::vec4 lpos = trans * glm::vec4(pos.x, pos.y, pos.z, 1.0f);
-//                tpos += lpos * bwe[j];
-//            }
-//            if(! infd)
-//                tpos = glm::vec4(pos.x, pos.y, pos.z, 1.0f);
-
             for(auto& b: bwe){
 
                 infd = true;
@@ -504,9 +305,9 @@ struct Anim{
     int frame;
     float m_CurrentFrame;
     float m_DeltaTime;
-    NodeInfo m_RootNode;
+    NodeTree m_RootNode;
     std::vector<Bone> m_Bones;
-    //std::vector<aiMatrix4x4> m_Transforms;
+
     std::unordered_map<std::string, aiMatrix4x4> m_Transforms;
     std::unordered_map<std::string, BoneInfo> m_BoneInfoMap;
 
@@ -516,7 +317,7 @@ struct Anim{
         zeno::log_info("Anim: Convert AssimpNode.");
 
         if(scene->mNumAnimations){
-            // TODO handle more animation
+            // TODO handle more animation if have
             auto animation = scene->mAnimations[0];
             m_Duration = animation->mDuration;
             m_TicksPerSecond = animation->mTicksPerSecond;
@@ -530,17 +331,23 @@ struct Anim{
         }
         zeno::log_info("\n");
 
+        zeno::log_info("********** ********** **********");
+        for(auto& ab: m_Bones){
+            zeno::log_info("Anim: Bone Name - Include TRS {}", ab.m_Name);
+        }
+
         m_CurrentFrame = 0.0;
-        //m_Transforms.resize(model->m_BoneCount);
     }
 
-    void readHierarchyData(NodeInfo &dest, const aiNode *src) {
+    void readHierarchyData(NodeTree &dest, const aiNode *src) {
         dest.name = std::string(src->mName.data);
         dest.transformation = src->mTransformation;
         dest.childrenCount = src->mNumChildren;
 
+        //zeno::log_info("Tree: Name {}", dest.name);
+
         for (int i = 0; i < src->mNumChildren; i++) {
-            NodeInfo newData;
+            NodeTree newData;
             readHierarchyData(newData, src->mChildren[i]);
             dest.children.push_back(newData);
         }
@@ -559,10 +366,11 @@ struct Anim{
 
             if (boneOffset.find(boneName) == boneOffset.end())
             {
-                boneOffset[boneName].id = boneCount;
-                boneCount++;
+                // TODO Assimp $AssimpFbx$_Translation
+                boneOffset[boneName].name = boneName;
             }
-            m_Bones.push_back(Bone(boneName, boneOffset[channel->mNodeName.data].id, channel));
+
+            m_Bones.push_back(Bone(boneName, channel));
         }
 
         m_BoneInfoMap = boneOffset;
@@ -589,7 +397,7 @@ struct Anim{
         calculateBoneTransform(&m_RootNode, aiMatrix4x4());
     }
 
-    void calculateBoneTransform(const NodeInfo *node, aiMatrix4x4 parentTransform) {
+    void calculateBoneTransform(const NodeTree *node, aiMatrix4x4 parentTransform) {
         std::string nodeName = node->name;
         aiMatrix4x4 nodeTransform = node->transformation;
 
@@ -603,7 +411,6 @@ struct Anim{
         aiMatrix4x4 globalTransformation = parentTransform * nodeTransform;
 
         if (m_BoneInfoMap.find(nodeName) != m_BoneInfoMap.end()) {  // found
-            int index = m_BoneInfoMap[nodeName].id;
             std::string boneName = m_BoneInfoMap[nodeName].name;
             aiMatrix4x4 boneOffset = m_BoneInfoMap[nodeName].offset;
 
@@ -618,6 +425,7 @@ void readFBXFile(
         std::vector<zeno::vec3f> &vertices,
         std::vector<zeno::vec3i> &indices,
         std::shared_ptr<zeno::DictObject>& prims,
+        std::shared_ptr<NodeTree>& nodeTree,
         const char *fbx_path,
         int frame
 )
@@ -643,6 +451,8 @@ void readFBXFile(
 
     mesh.finalProcess(vertices, indices, anim.m_Transforms);
 
+    *nodeTree = anim.m_RootNode;
+
     zeno::log_info("ReadFBXPrim: Num Animation {}", scene->mNumAnimations);
     zeno::log_info("ReadFBXPrim: Vertices count {}", mesh.vertices.size());
     zeno::log_info("ReadFBXPrim: Indices count {}", mesh.indices.size());
@@ -663,16 +473,18 @@ struct ReadFBXPrim : zeno::INode {
         auto path = get_input<zeno::StringObject>("path")->get();
         auto prim = std::make_shared<zeno::PrimitiveObject>();
         std::shared_ptr<zeno::DictObject> prims = std::make_shared<zeno::DictObject>();
+        auto nodeTree = std::make_shared<NodeTree>();
         auto &pos = prim->verts;
         auto &tris = prim->tris;
 
         zeno::log_info("ReadFBXPrim: path {}", path);
         zeno::log_info("ReadFBXPrim: frameid {}", frameid);
 
-        readFBXFile(pos, tris, prims, path.c_str(), frameid);
+        readFBXFile(pos, tris, prims, nodeTree, path.c_str(), frameid);
 
         set_output("prim", std::move(prim));
         set_output("dict", std::move(prims));
+        set_output("nodetree", std::move(nodeTree));
     }
 };
 
@@ -683,7 +495,7 @@ ZENDEFNODE(ReadFBXPrim,
                    {"frameid"}
                },  /* outputs: */
                {
-                   "prim", "dict",
+                   "prim", "dict", {"NodeTree", "nodetree"}
                },  /* params: */
                {
 
