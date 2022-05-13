@@ -26,6 +26,7 @@ signals:
     void playForwardLastFrame();
     int sliderValueChanged(int);
     void run();
+    void kill();
 
 public slots:
     void onTimelineUpdate(int frameid);

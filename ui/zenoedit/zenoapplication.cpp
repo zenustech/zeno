@@ -5,6 +5,8 @@
 #include "zenomainwindow.h"
 #include <zeno/utils/log.h>
 #include "util/log.h"
+#include "launch/ztcpserver.h"
+#include "launch/corelaunch.h"
 
 
 ZenoApplication::ZenoApplication(int &argc, char **argv)
@@ -12,11 +14,17 @@ ZenoApplication::ZenoApplication(int &argc, char **argv)
     , m_pGraphs(new GraphsManagment(this))
     , m_bIOProcessing(false)
     , m_errSteam(std::clog)
+    , m_server(nullptr)
 {
     initFonts();
     initStyleSheets();
     m_errSteam.registerMsgHandler();
     zeno::log_info("build date: {} {}", __DATE__, __TIME__);
+
+#ifdef ZENO_MULTIPROCESS
+    m_server = new ZTcpServer(this);
+    m_server->init(QHostAddress::LocalHost, TCP_PORT);
+#endif
 
     QStringList locations;
     locations = QStandardPaths::standardLocations(QStandardPaths::AppDataLocation);
@@ -92,9 +100,14 @@ bool ZenoApplication::IsIOProcessing() const
     return m_bIOProcessing;
 }
 
+ZTcpServer* ZenoApplication::getServer()
+{
+    return m_server;
+}
+
 ZenoMainWindow* ZenoApplication::getMainWindow()
 {
-	foreach(QWidget * widget, topLevelWidgets())
+	foreach(QWidget* widget, topLevelWidgets())
 		if (ZenoMainWindow* mainWindow = qobject_cast<ZenoMainWindow*>(widget))
 			return mainWindow;
 	return nullptr;

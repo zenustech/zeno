@@ -84,6 +84,7 @@ public:
 public slots:
     void updateFrame();
     void onRun();
+    void onKill();
     void onModelDataChanged();
 
 signals:

@@ -1,4 +1,4 @@
-find_package(Qt5 COMPONENTS Widgets OpenGL REQUIRED)
+find_package(Qt5 COMPONENTS Widgets OpenGL Network REQUIRED)
 message(STATUS "Found Qt5 version ${Qt5_VERSION}: ${Qt5_DIR}")
 
 file(GLOB_RECURSE source CONFIGURE_DEPENDS *.h *.cpp *.ui)
@@ -14,7 +14,7 @@ set_property(TARGET zenoedit PROPERTY WIN32_EXECUTABLE ON)
 
 find_package(Threads REQUIRED)
 target_link_libraries(zenoedit PRIVATE Threads::Threads)
-target_link_libraries(zenoedit PRIVATE Qt5::Widgets Qt5::OpenGL)
+target_link_libraries(zenoedit PRIVATE Qt5::Widgets Qt5::OpenGL Qt5::Network)
 target_link_libraries(zenoedit PRIVATE zenoui zenoio zenovis)
 target_link_libraries(zenoedit PRIVATE zeno)
 target_include_directories(zenoedit PRIVATE . .. ../zenoui)

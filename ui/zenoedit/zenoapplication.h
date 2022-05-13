@@ -6,7 +6,7 @@
 
 class GraphsManagment;
 class ZenoMainWindow;
-
+class ZTcpServer;
 class GraphsModel;
 
 class ZenoApplication : public QApplication
@@ -21,6 +21,7 @@ public:
     void setIOProcessing(bool bIOProcessing);
     bool IsIOProcessing() const;
     ZenoMainWindow* getMainWindow();
+    ZTcpServer* getServer();
     QStandardItemModel* logModel() const;
 
 private:
@@ -28,6 +29,7 @@ private:
 
     QSharedPointer<GraphsManagment> m_pGraphs;
     ZWidgetErrStream m_errSteam;
+    ZTcpServer* m_server;
     bool m_bIOProcessing;
     QDir m_appDataPath;
 };
