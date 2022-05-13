@@ -4,6 +4,3 @@
 [submodule "projects/cgmesh/libigl"]
 	path = projects/cgmesh/libigl
 	url = https://github.com/zenustech/libigl.git
-[submodule "projects/FBX/assimp"]
-	path = projects/FBX/assimp
-	url = https://github.com/assimp/assimp.git

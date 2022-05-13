@@ -8,7 +8,9 @@ add_library(zeno_FBX SHARED ${FBX_SOURCE})
 
 target_include_directories(zeno_FBX PRIVATE .)
 
-add_subdirectory(assimp)
+find_package(assimp CONFIG REQUIRED)
+find_package(glm CONFIG REQUIRED)
 
-target_link_libraries(zeno_FBX PRIVATE assimp)
+target_link_libraries(zeno_FBX PRIVATE assimp::assimp)
 target_link_libraries(zeno_FBX PRIVATE zeno)
+target_link_libraries(zeno_FBX PRIVATE glm::glm)
