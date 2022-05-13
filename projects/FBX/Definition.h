@@ -1,5 +1,5 @@
-#ifndef ZENO_BONE_H
-#define ZENO_BONE_H
+#ifndef ZENO_DEFINITION_H
+#define ZENO_DEFINITION_H
 
 struct KeyPosition {
     aiVector3D position;
@@ -17,7 +17,19 @@ struct KeyScale {
 };
 
 struct Bone {
-    Bone(std::string& name, const aiNodeAnim* channel){
+    std::vector<KeyPosition> m_Positions;
+    std::vector<KeyRotation> m_Rotations;
+    std::vector<KeyScale> m_Scales;
+
+    int m_NumPositions = 0;
+    int m_NumRotations = 0;
+    int m_NumScalings = 0;
+
+    aiMatrix4x4 m_LocalTransform;
+    std::string m_Name;
+
+
+    void initBone(std::string name, const aiNodeAnim* channel){
         m_Name = name;
         m_NumPositions = channel->mNumPositionKeys;
         for (int positionIndex = 0; positionIndex < m_NumPositions; ++positionIndex) {
@@ -148,18 +160,43 @@ struct Bone {
 
         return scaleFactor;
     }
-
-    std::vector<KeyPosition> m_Positions;
-    std::vector<KeyRotation> m_Rotations;
-    std::vector<KeyScale> m_Scales;
-
-    int m_NumPositions;
-    int m_NumRotations;
-    int m_NumScalings;
-
-    aiMatrix4x4 m_LocalTransform;
-    std::string m_Name;
 };
 
+struct Texture {
+    unsigned int id;
+    std::string type;
+    std::string path;
+};
 
-#endif //ZENO_BONE_H
+struct VertexInfo{
+    aiVector3D position;
+    aiVector3D texCoord;
+    aiVector3D normal;
+    std::unordered_map<std::string, float> boneWeights;
+};
+
+struct BoneInfo {
+    std::string name;
+    aiMatrix4x4 offset;
+};
+
+struct NodeTree : zeno::IObjectClone<NodeTree>{
+    aiMatrix4x4 transformation;
+    std::string name;
+    int childrenCount;
+    std::vector<NodeTree> children;
+};
+
+struct BoneTree : zeno::IObjectClone<BoneTree>{
+    std::unordered_map<std::string, Bone> boneMap;
+    std::unordered_map<std::string, BoneInfo> BoneInfoMap;
+};
+
+struct FBXData : zeno::IObjectClone<FBXData>{
+    float duration;
+    float tick;
+    std::vector<VertexInfo> vertices;
+    std::vector<unsigned int> indices;
+};
+
+#endif //ZENO_DEFINITION_H
