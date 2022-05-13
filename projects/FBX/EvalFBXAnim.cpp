@@ -1,6 +1,9 @@
 #include <zeno/zeno.h>
 #include <zeno/utils/logger.h>
 
+struct EvalAnim{
+
+};
 
 struct EvalFBXAnim : zeno::INode {
 
@@ -11,8 +14,7 @@ struct EvalFBXAnim : zeno::INode {
 ZENDEFNODE(EvalFBXAnim,
            {       /* inputs: */
                {
-                   {"prim"},
-                   {"bone"}
+                   {"frameid"}
                },  /* outputs: */
                {
                    "prim",
