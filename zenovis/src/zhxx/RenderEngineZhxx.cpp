@@ -29,7 +29,7 @@ struct GraphicsManager {
     explicit GraphicsManager(Scene *scene) : scene(scene) {
     }
 
-    void load_objects(std::vector<std::pair<std::string, zeno::IObject *>> const &objs) {
+    bool load_objects(std::vector<std::pair<std::string, zeno::IObject *>> const &objs) {
         auto ins = graphics.insertPass();
         for (auto const &[key, obj] : objs) {
             if (ins.may_emplace(key)) {
@@ -39,6 +39,7 @@ struct GraphicsManager {
                 ins.try_emplace(key, std::move(ig));
             }
         }
+        return ins.has_changed();
     }
 };
 
@@ -46,6 +47,9 @@ struct RenderEngineZhxx : RenderEngine, zeno::disable_copy {
     std::unique_ptr<GraphicsManager> graphicsMan;
     std::unique_ptr<opengl::VAO> vao;
     Scene *scene;
+
+    bool giWasEnable = false;
+    bool giNeedUpdate = false;
 
     auto setupState() {
         return std::tuple{
@@ -70,7 +74,8 @@ struct RenderEngineZhxx : RenderEngine, zeno::disable_copy {
     }
 
     void update() override {
-        graphicsMan->load_objects(scene->objectsMan->pairs());
+        if (graphicsMan->load_objects(scene->objectsMan->pairs()))
+            giNeedUpdate = true;
     }
 
     void draw() override {
@@ -78,6 +83,17 @@ struct RenderEngineZhxx : RenderEngine, zeno::disable_copy {
         auto const &cam = *scene->camera;
         auto const &opt = *scene->drawOptions;
         auto const &zxx = cam.m_zxx;
+
+        if (!giWasEnable && opt.enable_gi) {
+            giNeedUpdate = true;
+        }
+        giWasEnable = opt.enable_gi;
+        if (giNeedUpdate && opt.enable_gi) {
+            zeno::log_debug("scene updated, voxelizing...");
+            zenvis::requireVoxelize();
+        }
+        giNeedUpdate = false;
+
         zenvis::set_show_grid(opt.show_grid);
         zenvis::set_normal_check(opt.normal_check);
         zenvis::set_enable_gi(opt.enable_gi);
