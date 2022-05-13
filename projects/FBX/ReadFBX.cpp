@@ -17,7 +17,15 @@
 #include <glm/vec4.hpp>
 #include <glm/mat4x4.hpp>
 
+#include <stb_image.h>
+
 #define MAX_BONE_INFLUENCE 16
+
+struct Texture {
+    unsigned int id;
+    std::string type;
+    std::string path;
+};
 
 struct VertexInfo{
     aiVector3D position;
@@ -204,14 +212,16 @@ struct Bone {
 struct Mesh{
     std::vector<VertexInfo> vertices;
     std::vector<unsigned int> indices;
+    std::vector<Texture> textures_loaded;
     std::unordered_map<std::string, BoneInfo> m_BoneOffset;
     std::unordered_map<std::string, std::vector<unsigned int>> m_VerticesSlice;
     std::unordered_map<std::string, aiMatrix4x4> m_TransMatrix;
-    unsigned int m_IndexIncrease = 0;
+    unsigned int m_VerticesIncrease = 0;
+    unsigned int m_IndicesIncrease = 0;
     int m_BoneCount = 0;
 
     void initMesh(const aiScene *scene){
-        m_IndexIncrease = 0;
+        m_VerticesIncrease = 0;
 
         readTrans(scene->mRootNode, aiMatrix4x4());
         processNode(scene->mRootNode, scene);
@@ -237,8 +247,11 @@ struct Mesh{
         }
     }
 
-    void processMesh(aiMesh *mesh) {
+    void processMesh(aiMesh *mesh, const aiScene *scene) {
         std::string meshName(mesh->mName.data);
+        std::vector<Texture> textures;
+
+        // Vertices
         for(unsigned int j = 0; j < mesh->mNumVertices; j++){
             aiVector3D vec(mesh->mVertices[j].x, mesh->mVertices[j].y, mesh->mVertices[j].z);
 
@@ -253,28 +266,72 @@ struct Mesh{
             vertices.push_back(vertexInfo);
         }
 
+        // Indices
         for(unsigned int j = 0; j < mesh->mNumFaces; j++)
         {
             aiFace face = mesh->mFaces[j];
             for(unsigned int j = 0; j < face.mNumIndices; j++)
-                indices.push_back(face.mIndices[j] + m_IndexIncrease);
+                indices.push_back(face.mIndices[j] + m_VerticesIncrease);
         }
 
+        // Material
+        aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
+        zeno::log_info("MatTex: Material Name {}", material->GetName().data);
+        std::vector<Texture> diffuseMaps = loadMaterialTextures(material, aiTextureType_DIFFUSE, "texture_diffuse");
+        textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end());
+
+        // Bone
         extractBone(mesh);
 
         m_VerticesSlice[meshName] = std::vector<unsigned int>
-                {static_cast<unsigned int>(m_IndexIncrease),
-                 m_IndexIncrease + mesh->mNumVertices,
-                 mesh->mNumBones};
+                {static_cast<unsigned int>(m_VerticesIncrease),  // Vert Start
+                 m_VerticesIncrease + mesh->mNumVertices,  // Vert End
+                 mesh->mNumBones,
+                 m_IndicesIncrease,  // Indices Start
+                 static_cast<unsigned int>(m_IndicesIncrease + (indices.size() - m_IndicesIncrease))  // Indices End
+                 };
 
-        m_IndexIncrease += mesh->mNumVertices;
+        m_IndicesIncrease += (indices.size() - m_IndicesIncrease);
+        m_VerticesIncrease += mesh->mNumVertices;
     }
 
     void processNode(aiNode *node, const aiScene *scene){
         for(unsigned int i = 0; i < node->mNumMeshes; i++)
-            processMesh(scene->mMeshes[node->mMeshes[i]]);
+            processMesh(scene->mMeshes[node->mMeshes[i]], scene);
         for(unsigned int i = 0; i < node->mNumChildren; i++)
             processNode(node->mChildren[i], scene);
+    }
+
+    std::vector<Texture> loadMaterialTextures(aiMaterial *mat, aiTextureType type, std::string typeName)
+    {
+        std::vector<Texture> textures;
+        for(unsigned int i = 0; i < mat->GetTextureCount(type); i++)
+        {
+            aiString str;
+            mat->GetTexture(type, i, &str);
+            zeno::log_info("MatTex: Texture Name {}", str.data);
+
+            bool skip = false;
+            for(unsigned int j = 0; j < textures_loaded.size(); j++)
+            {
+                if(std::strcmp(textures_loaded[j].path.data(), str.C_Str()) == 0)  // Compare two strings
+                {
+                    textures.push_back(textures_loaded[j]);
+                    skip = true;
+                    break;
+                }
+            }
+            if(! skip)
+            {
+                Texture texture;
+                texture.id;
+                texture.type = typeName;
+                texture.path = str.C_Str();
+                textures.push_back(texture);
+                textures_loaded.push_back(texture);
+            }
+        }
+        return textures;
     }
 
     void extractBone(aiMesh* mesh){
@@ -302,7 +359,7 @@ struct Mesh{
             unsigned int numWeights = mesh->mBones[boneIndex]->mNumWeights;
             for (int weightIndex = 0; weightIndex < numWeights; ++weightIndex)
             {
-                int vertexId = weights[weightIndex].mVertexId + m_IndexIncrease;
+                int vertexId = weights[weightIndex].mVertexId + m_VerticesIncrease;
                 float weight = weights[weightIndex].mWeight;
 
                 auto& vertex = vertices[vertexId];
@@ -317,13 +374,16 @@ struct Mesh{
         }
     }
 
-    void processTrans(std::unordered_map<std::string , BoneInfo>& boneInfo) {
+    void processTrans(std::unordered_map<std::string , BoneInfo>& boneInfo,
+                      std::shared_ptr<zeno::DictObject>& prims) {
         for(auto& iter: m_VerticesSlice) {
             std::string meshName = iter.first;
             std::vector<unsigned int> verSlice = iter.second;
             unsigned int verStart = verSlice[0];
             unsigned int verEnd = verSlice[1];
             unsigned int verBoneNum = verSlice[2];
+            unsigned int indicesStart = verSlice[3];
+            unsigned int indicesEnd = verSlice[4];
             bool foundMeshBone = boneInfo.find(meshName) != boneInfo.end();
 
             int meshBoneId = -1;
@@ -332,9 +392,11 @@ struct Mesh{
                 meshBoneId = boneInfo[meshName].id;
                 meshBoneWeight = 1.0f;
             }
-            zeno::log_info("SetupTrans: {} {} {} : {} {} {}", iter.first, foundMeshBone, verBoneNum, iter.second[0], iter.second[1], iter.second[2]);
+            zeno::log_info("SetupTrans: {} {} : {} {} {} {} {}",
+                           iter.first, foundMeshBone,
+                           iter.second[0], iter.second[1], iter.second[2], iter.second[3], iter.second[4]);
 
-            for(unsigned int i=verStart;i<verEnd;i++){
+            for(unsigned int i=verStart; i<verEnd; i++){
                 if(verBoneNum == 0){
                     auto & vertex = vertices[i];
 
@@ -347,6 +409,16 @@ struct Mesh{
                     }
                 }
             }
+
+            auto sub_prim = std::make_shared<zeno::PrimitiveObject>();
+            for(unsigned int i=indicesStart; i<indicesEnd; i+=3){
+                zeno::vec3i incs(indices[i]-verStart,indices[i+1]-verStart,indices[i+2]-verStart);
+                sub_prim->tris.push_back(incs);
+            }
+            for(unsigned int i=verStart; i< verEnd; i++){
+                sub_prim->verts.emplace_back(vertices[i].position.x, vertices[i].position.y, vertices[i].position.z);
+            }
+            prims->lut[meshName] = sub_prim;
         }
     }
 
@@ -499,6 +571,7 @@ struct Anim{
 void readFBXFile(
         std::vector<zeno::vec3f> &vertices,
         std::vector<zeno::vec3i> &indices,
+        std::shared_ptr<zeno::DictObject>& prims,
         const char *fbx_path,
         int frame
 )
@@ -518,7 +591,8 @@ void readFBXFile(
 
     mesh.initMesh(scene);
     anim.initAnim(scene, &mesh);
-    mesh.processTrans(anim.m_BoneInfoMap);
+    mesh.processTrans(anim.m_BoneInfoMap, prims);
+
     anim.updateAnimation(frame/24.0f);
 
     mesh.finalProcess(vertices, indices, anim.m_Transforms);
@@ -549,7 +623,7 @@ struct ReadFBXPrim : zeno::INode {
         zeno::log_info("ReadFBXPrim: path {}", path);
         zeno::log_info("ReadFBXPrim: frameid {}", frameid);
 
-        readFBXFile(pos, tris, path.c_str(), frameid);
+        readFBXFile(pos, tris, prims, path.c_str(), frameid);
 
         set_output("prim", std::move(prim));
         set_output("dict", std::move(prims));
