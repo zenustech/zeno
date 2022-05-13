@@ -31,12 +31,14 @@ struct VertexInfo{
     aiVector3D position;
     aiVector3D texCoord;
     aiVector3D normal;
-    std::vector<int> boneIds;
-    std::vector<float> boneWeights;
+    std::unordered_map<std::string, float> boneWeights;
+//    std::vector<std::string> boneIds;
+//    std::vector<float> boneWeights;
 };
 
 struct BoneInfo {
     int id;
+    std::string name;
     aiMatrix4x4 offset;
 };
 
@@ -224,6 +226,13 @@ struct Mesh{
         m_VerticesIncrease = 0;
 
         readTrans(scene->mRootNode, aiMatrix4x4());
+
+        zeno::log_info("Mesh: Read Trans Done.");
+        for(auto& t:m_TransMatrix){
+            zeno::log_info(">>>>> Trans Name {}", t.first);
+        }
+        zeno::log_info("\n");
+
         processNode(scene->mRootNode, scene);
     }
 
@@ -257,11 +266,10 @@ struct Mesh{
 
             VertexInfo vertexInfo;
             vertexInfo.position = vec;
-            vertexInfo.boneIds.resize(MAX_BONE_INFLUENCE);
-            vertexInfo.boneWeights.resize(MAX_BONE_INFLUENCE);
-
-            std::fill(vertexInfo.boneIds.begin(), vertexInfo.boneIds.end(), -1);
-            std::fill(vertexInfo.boneWeights.begin(), vertexInfo.boneWeights.end(), 0.0f);
+//            vertexInfo.boneIds.resize(MAX_BONE_INFLUENCE);
+//            vertexInfo.boneWeights.resize(MAX_BONE_INFLUENCE);
+//            std::fill(vertexInfo.boneIds.begin(), vertexInfo.boneIds.end(), -1);
+//            std::fill(vertexInfo.boneWeights.begin(), vertexInfo.boneWeights.end(), 0.0f);
 
             vertices.push_back(vertexInfo);
         }
@@ -282,6 +290,12 @@ struct Mesh{
 
         // Bone
         extractBone(mesh);
+
+        zeno::log_info("Mesh: Bone extract with offset Matrix. Size {}", m_BoneOffset.size());
+        for(auto&b: m_BoneOffset){
+            zeno::log_info(">>>>> Bone Name {}", b.first);
+        }
+        zeno::log_info("\n");
 
         m_VerticesSlice[meshName] = std::vector<unsigned int>
                 {static_cast<unsigned int>(m_VerticesIncrease),  // Vert Start
@@ -344,6 +358,7 @@ struct Mesh{
                 BoneInfo newBoneInfo;
 
                 newBoneInfo.id = m_BoneCount;
+                newBoneInfo.name = boneName;
                 newBoneInfo.offset = mesh->mBones[boneIndex]->mOffsetMatrix;
 
                 m_BoneOffset[boneName] = newBoneInfo;
@@ -354,7 +369,8 @@ struct Mesh{
                 boneID = m_BoneOffset[boneName].id;
             }
 
-            assert(boneID != -1);
+            //assert(boneID != -1);
+
             auto weights = mesh->mBones[boneIndex]->mWeights;
             unsigned int numWeights = mesh->mBones[boneIndex]->mNumWeights;
             for (int weightIndex = 0; weightIndex < numWeights; ++weightIndex)
@@ -363,13 +379,16 @@ struct Mesh{
                 float weight = weights[weightIndex].mWeight;
 
                 auto& vertex = vertices[vertexId];
-                for(int i=0;i<MAX_BONE_INFLUENCE; i++){
-                    if(vertex.boneIds[i] < 0){
-                        vertex.boneIds[i] = boneID;
-                        vertex.boneWeights[i] = weight;
-                        break;
-                    }
-                }
+//                for(int i=0;i<MAX_BONE_INFLUENCE; i++){
+//                    if(vertex.boneIds[i] < 0){
+//                        vertex.boneIds[i] = boneID;
+//                        vertex.boneWeights[i] = weight;
+//                        break;
+//                    }
+//                }
+                vertex.boneWeights[boneName] = weight;
+//                vertex.boneIds.push_back(boneName);
+//                vertex.boneWeights.push_back(weight);
             }
         }
     }
@@ -384,14 +403,17 @@ struct Mesh{
             unsigned int verBoneNum = verSlice[2];
             unsigned int indicesStart = verSlice[3];
             unsigned int indicesEnd = verSlice[4];
-            bool foundMeshBone = boneInfo.find(meshName) != boneInfo.end();
 
+            // TODO full support blend bone-animation and mesh-animation, See SimTrans.fbx
+            bool foundMeshBone = boneInfo.find(meshName) != boneInfo.end();
+            /*
             int meshBoneId = -1;
             float meshBoneWeight = 0.0f;
             if(foundMeshBone){
                 meshBoneId = boneInfo[meshName].id;
                 meshBoneWeight = 1.0f;
             }
+             */
             zeno::log_info("SetupTrans: {} {} : {} {} {} {} {}",
                            iter.first, foundMeshBone,
                            iter.second[0], iter.second[1], iter.second[2], iter.second[3], iter.second[4]);
@@ -401,8 +423,8 @@ struct Mesh{
                     auto & vertex = vertices[i];
 
                     if(foundMeshBone){
-                        vertex.boneIds[0] = meshBoneId;
-                        vertex.boneWeights[0] = meshBoneWeight;
+                        //vertex.boneIds[0] = meshBoneId;
+                        //vertex.boneWeights[0] = meshBoneWeight;
                     }else
                     {
                         vertex.position = m_TransMatrix[meshName] * vertices[i].position;
@@ -424,29 +446,43 @@ struct Mesh{
 
     void finalProcess(std::vector<zeno::vec3f> &ver,
                       std::vector<zeno::vec3i> &ind,
-                      std::vector<aiMatrix4x4>& transforms
+                      std::unordered_map<std::string, aiMatrix4x4>& transforms
     ){
 
         for(unsigned int i=0; i<vertices.size(); i++){
-            auto& bid = vertices[i].boneIds;
             auto& bwe = vertices[i].boneWeights;
             auto& pos = vertices[i].position;
 
             glm::vec4 tpos(0.0f, 0.0f, 0.0f, 0.0f);
 
             bool infd = false;
-            for(unsigned int j=0; j<MAX_BONE_INFLUENCE; j++){
-                if(bid[j] == -1) {
-                    continue;
-                }
+
+//            for(unsigned int j=0; j<MAX_BONE_INFLUENCE; j++){
+//                if(bid[j] == -1) {
+//                    continue;
+//                }
+//                infd = true;
+//                auto& tr = transforms[bid[j]];
+//                glm::mat4 trans = glm::mat4(tr.a1,tr.b1,tr.c1,tr.d1,
+//                                            tr.a2,tr.b2,tr.c2,tr.d2,
+//                                            tr.a3,tr.b3,tr.c3,tr.d3,
+//                                            tr.a4,tr.b4,tr.c4,tr.d4);
+//                glm::vec4 lpos = trans * glm::vec4(pos.x, pos.y, pos.z, 1.0f);
+//                tpos += lpos * bwe[j];
+//            }
+//            if(! infd)
+//                tpos = glm::vec4(pos.x, pos.y, pos.z, 1.0f);
+
+            for(auto& b: bwe){
+
                 infd = true;
-                auto& tr = transforms[bid[j]];
+                auto& tr = transforms[b.first];
                 glm::mat4 trans = glm::mat4(tr.a1,tr.b1,tr.c1,tr.d1,
                                             tr.a2,tr.b2,tr.c2,tr.d2,
                                             tr.a3,tr.b3,tr.c3,tr.d3,
                                             tr.a4,tr.b4,tr.c4,tr.d4);
                 glm::vec4 lpos = trans * glm::vec4(pos.x, pos.y, pos.z, 1.0f);
-                tpos += lpos * bwe[j];
+                tpos += lpos * b.second;
             }
             if(! infd)
                 tpos = glm::vec4(pos.x, pos.y, pos.z, 1.0f);
@@ -470,23 +506,32 @@ struct Anim{
     float m_DeltaTime;
     NodeInfo m_RootNode;
     std::vector<Bone> m_Bones;
-    std::vector<aiMatrix4x4> m_Transforms;
+    //std::vector<aiMatrix4x4> m_Transforms;
+    std::unordered_map<std::string, aiMatrix4x4> m_Transforms;
     std::unordered_map<std::string, BoneInfo> m_BoneInfoMap;
 
     void initAnim(aiScene const*scene, Mesh* model){
 
         readHierarchyData(m_RootNode, scene->mRootNode);
+        zeno::log_info("Anim: Convert AssimpNode.");
 
         if(scene->mNumAnimations){
+            // TODO handle more animation
             auto animation = scene->mAnimations[0];
             m_Duration = animation->mDuration;
-
             m_TicksPerSecond = animation->mTicksPerSecond;
+
             setupBones(animation, model);
         }
 
+        zeno::log_info("Anim: Bone Setup. BoneOffsetMatrix -> BoneInfoMap, Size {}", m_BoneInfoMap.size());
+        for(auto&b: m_BoneInfoMap){
+            zeno::log_info(">>>>> Bone Name {}", b.first);  // <BoneName>_$AssimpFbx$_Translation
+        }
+        zeno::log_info("\n");
+
         m_CurrentFrame = 0.0;
-        m_Transforms.resize(model->m_BoneCount);
+        //m_Transforms.resize(model->m_BoneCount);
     }
 
     void readHierarchyData(NodeInfo &dest, const aiNode *src) {
@@ -505,22 +550,22 @@ struct Anim{
         int size = animation->mNumChannels;
         zeno::log_info("SetupBones: Num Channels {}", size);
 
-        auto& boneInfoMap = model->m_BoneOffset;
+        auto& boneOffset = model->m_BoneOffset;
         int& boneCount = model->m_BoneCount;
 
         for (int i = 0; i < size; i++) {
             auto channel = animation->mChannels[i];
             std::string boneName(channel->mNodeName.data);
 
-            if (boneInfoMap.find(boneName) == boneInfoMap.end())
+            if (boneOffset.find(boneName) == boneOffset.end())
             {
-                boneInfoMap[boneName].id = boneCount;
+                boneOffset[boneName].id = boneCount;
                 boneCount++;
             }
-            m_Bones.push_back(Bone(boneName, boneInfoMap[channel->mNodeName.data].id, channel));
+            m_Bones.push_back(Bone(boneName, boneOffset[channel->mNodeName.data].id, channel));
         }
 
-        m_BoneInfoMap = boneInfoMap;
+        m_BoneInfoMap = boneOffset;
     }
 
     Bone *findBone(std::string const& name) {
@@ -538,7 +583,6 @@ struct Anim{
 
     void updateAnimation(float dt) {
         m_DeltaTime = dt;
-
         m_CurrentFrame += m_TicksPerSecond * dt;
         m_CurrentFrame = fmod(m_CurrentFrame, m_Duration);
 
@@ -560,8 +604,10 @@ struct Anim{
 
         if (m_BoneInfoMap.find(nodeName) != m_BoneInfoMap.end()) {  // found
             int index = m_BoneInfoMap[nodeName].id;
-            aiMatrix4x4 offset = m_BoneInfoMap[nodeName].offset;
-            m_Transforms[index] = globalTransformation * offset;
+            std::string boneName = m_BoneInfoMap[nodeName].name;
+            aiMatrix4x4 boneOffset = m_BoneInfoMap[nodeName].offset;
+
+            m_Transforms[boneName] = globalTransformation * boneOffset;
         }
         for (int i = 0; i < node->childrenCount; i++)
             calculateBoneTransform(&node->children[i], globalTransformation);
