@@ -3,7 +3,11 @@ cmake_minimum_required(VERSION 3.10)
 set(CMAKE_MODULE_PATH /usr/lib/cmake/OpenVDB ${CMAKE_CURRENT_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
 
 set(EXTENSIONS_LIST ZenoFX oldzenbase zenvdb FastFLIP FLIPtools Rigid BulletTools cgmesh gmpm mesher Euler OldZMS OldZFX EasyGL FEM Alembic FBX LSystem Skinning Functional TreeSketch HerculesTools)
-set(EXTENSIONS_ENABLE_LIST ZenoFX oldzenbase)
+if (ZENO_DIST_MODE)
+    set(EXTENSIONS_ENABLE_LIST ZenoFX oldzenbase zenvdb FastFLIP FLIPtools Rigid BulletTools cgmesh gmpm mesher Euler FEM Alembic LSystem Skinning Functional TreeSketch HerculesTools)
+else()
+    set(EXTENSIONS_ENABLE_LIST ZenoFX oldzenbase)
+endif()
 
 add_library(zeno_nodep INTERFACE)
 if (ZENO_HIDE_SYMBOLS AND UNIX)
