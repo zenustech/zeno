@@ -4,6 +4,7 @@
 #include "zensim/geometry/VdbLevelSet.h"
 #include "zensim/geometry/VdbSampler.h"
 #include "zensim/io/MeshIO.hpp"
+#include "zensim/math/bit/Bits.h"
 #include "zensim/omp/execution/ExecutionPolicy.hpp"
 #include "zensim/types/Property.h"
 #include <atomic>
@@ -184,5 +185,121 @@ ZENDEFNODE(ExtractMeshSurface, {{{"quad (tet) mesh", "prim"}},
                                 {{"mesh with surface topos", "prim"}},
                                 {{"enum all point edge surface", "op", "all"}},
                                 {"primitive"}});
+
+struct ToZSTetrahedra : INode {
+  void apply() override {
+    using namespace zs;
+    auto zsmodel = get_input<ZenoConstitutiveModel>("ZSModel");
+    auto prim = get_input<PrimitiveObject>("prim");
+    auto &pos = prim->attr<vec3f>("pos");
+    auto &points = prim->points;
+    auto &lines = prim->lines;
+    auto &tris = prim->tris;
+    auto &quads = prim->quads;
+
+    auto ompExec = zs::omp_exec();
+    const auto numVerts = pos.size();
+    const auto numEles = quads.size();
+
+    auto zstets = std::make_shared<ZenoParticles>();
+    zstets->prim = prim;
+    zstets->getModel() = *zsmodel;
+    zstets->category = ZenoParticles::tet;
+    zstets->sprayedOffset = pos.size();
+
+    std::vector<zs::PropertyTag> tags{{"m", 1}, {"x", 3}, {"v", 3}};
+    std::vector<zs::PropertyTag> eleTags{
+        {"vol", 1}, {"F", 9}, {"IB", 9}, {"inds", 4}};
+
+    constexpr auto space = zs::execspace_e::openmp;
+    zstets->particles = std::make_shared<typename ZenoParticles::particles_t>(
+        tags, pos.size(), zs::memsrc_e::host);
+    auto &pars = zstets->getParticles();
+    ompExec(zs::range(pos.size()),
+            [&, pars = proxy<space>({}, pars)](int vi) mutable {
+              using vec3 = zs::vec<float, 3>;
+              pars.tuple<3>("x", vi) = vec3{pos[vi][0], pos[vi][1], pos[vi][2]};
+              if (prim->has_attr("vel")) {
+                auto vel = prim->attr<zeno::vec3f>("vel")[vi];
+                pars.tuple<3>("v", vi) = vec3{vel[0], vel[1], vel[2]};
+              }
+              pars.tuple<3>("v", vi) = vec3::zeros();
+              // computed later
+              pars("m", vi) = 0.f;
+            });
+    zstets->elements = typename ZenoParticles::particles_t(
+        eleTags, quads.size(), zs::memsrc_e::host);
+    auto &eles = zstets->getQuadraturePoints();
+    ompExec(zs::range(eles.size()),
+            [&, pars = proxy<space>({}, pars),
+             eles = proxy<space>({}, eles)](int ei) mutable {
+              using vec3 = zs::vec<float, 3>;
+              using mat3 = zs::vec<float, 3, 3>;
+              using vec4 = zs::vec<float, 4>;
+              auto quad = quads[ei];
+              vec3 xs[4];
+              for (int d = 0; d != 4; ++d) {
+                eles("inds", d, ei) = zs::reinterpret_bits<float>(quad[d]);
+                xs[d] = pars.pack<3>("x", quad[d]);
+              }
+
+              vec3 ds[3] = {xs[1] - xs[0], xs[2] - xs[0], xs[3] - xs[0]};
+              mat3 D{};
+              for (int d = 0; d != 3; ++d)
+                for (int i = 0; i != 3; ++i)
+                  D(d, i) = ds[i][d];
+              eles.tuple<9>("IB", ei) = zs::inverse(D);
+              eles.tuple<9>("F", ei) = mat3::identity();
+              auto vol = zs::abs(zs::determinant(D)) / 6;
+              eles("vol", ei) = vol;
+              // vert masses
+              auto mass = vol * zsmodel->density;
+              for (int d = 0; d != 4; ++d)
+                atomic_add(zs::exec_omp, &pars("m", quad[d]), mass / 4);
+            });
+    // surface info
+    auto &surfaces = (*zstets)["surfaces"];
+    surfaces = typename ZenoParticles::particles_t({{"inds", 3}}, tris.size(),
+                                                   zs::memsrc_e::host);
+    ompExec(zs::range(tris.size()),
+            [&, surfaces = proxy<space>({}, surfaces)](int triNo) mutable {
+              auto tri = tris[triNo];
+              for (int i = 0; i != 3; ++i)
+                surfaces("inds", i, triNo) =
+                    zs::reinterpret_bits<float>(tri[i]);
+            });
+    auto &surfEdges = (*zstets)["surfEdges"];
+    surfEdges = typename ZenoParticles::particles_t({{"inds", 2}}, lines.size(),
+                                                    zs::memsrc_e::host);
+    ompExec(zs::range(lines.size()),
+            [&, surfEdges = proxy<space>({}, surfEdges)](int lineNo) mutable {
+              auto line = lines[lineNo];
+              for (int i = 0; i != 2; ++i)
+                surfEdges("inds", i, lineNo) =
+                    zs::reinterpret_bits<float>(line[i]);
+            });
+    auto &surfVerts = (*zstets)["surfVerts"];
+    surfVerts = typename ZenoParticles::particles_t(
+        {{"inds", 1}}, points.size(), zs::memsrc_e::host);
+    ompExec(zs::range(points.size()),
+            [&, surfVerts = proxy<space>({}, surfVerts)](int pointNo) mutable {
+              auto point = points[pointNo];
+              surfVerts("inds", pointNo) = zs::reinterpret_bits<float>(point);
+            });
+
+    pars = pars.clone({zs::memsrc_e::device, 0});
+    eles = eles.clone({zs::memsrc_e::device, 0});
+    surfaces = surfaces.clone({zs::memsrc_e::device, 0});
+    surfEdges = surfEdges.clone({zs::memsrc_e::device, 0});
+    surfVerts = surfVerts.clone({zs::memsrc_e::device, 0});
+
+    set_output("ZSParticles", std::move(zstets));
+  }
+};
+
+ZENDEFNODE(ToZSTetrahedra, {{{"ZSModel"}, {"quad (tet) mesh", "prim"}},
+                            {{"tetmesh on gpu", "ZSParticles"}},
+                            {},
+                            {"FEM"}});
 
 } // namespace zeno
