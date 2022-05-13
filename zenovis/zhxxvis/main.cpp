@@ -628,9 +628,9 @@ static void ZPass()
 static void paint_graphics(GLuint target_fbo = 0) {
   shadowPass();
   reflectivePass();
-  voxelizePass();
-  // static bool isBate = !std::getenv("ZENO_BATE");
-  // if (isBate) enable_hdr = 0;
+  if (enable_gi_flag) {
+    voxelizePass();
+  }
   if(enable_hdr && tmProg==nullptr)
   {
     std::cout<<"compiling zhxx hdr program"<<std::endl;
@@ -845,9 +845,9 @@ static void paint_graphics(GLuint target_fbo = 0) {
     CHECK_GL(glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE));
     CHECK_GL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
     glBindRenderbuffer(GL_RENDERBUFFER, msfborgb);              
-    glRenderbufferStorageMultisample(GL_RENDERBUFFER, 1, GL_RGBA32F, nx, ny);
+    glRenderbufferStorageMultisample(GL_RENDERBUFFER, num_samples, GL_RGBA32F, nx, ny);
     CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, msfbod));
-    CHECK_GL(glRenderbufferStorageMultisample(GL_RENDERBUFFER, 1, GL_DEPTH_COMPONENT32F, nx, ny));
+    CHECK_GL(glRenderbufferStorageMultisample(GL_RENDERBUFFER, num_samples, GL_DEPTH_COMPONENT32F, nx, ny));
     //ZPass();
     glm::vec3 object = g_camPos + 1.0f * glm::normalize(g_camView);
     glm::vec3 right = glm::normalize(glm::cross(object - g_camPos, g_camUp));

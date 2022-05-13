@@ -679,14 +679,15 @@ void main()
   vec3 oN;
   vec4 color = studioShading(albedo, viewdir, normal, tangent);
   //fColor = color;
+  
   vec3 vpos = vec3(vxView * vec4(position,1)) * u_scene_voxel_scale;
-  imageStore(u_tex_voxelgrid, ivec3(voxelgrid_resolution * vpos), color);
-//   if(alphaPass>0.99)
-//   {
-//       imageAtomicRGBA8Set(u_tex_voxelgrid, ivec3(voxelgrid_resolution * f_voxel_pos), color);
-//   }else{
-//     imageAtomicRGBA8Set(u_tex_voxelgrid, ivec3(voxelgrid_resolution * f_voxel_pos), color);
-//   }
+  color.xyz = color.xyz/1000;
+if(vxMaterialPass==1.0)
+    imageAtomicRGBA8Avg(vxNormalGrid, ivec3(voxelgrid_resolution * vpos), vec4(EncodeNormal(oN),1));
+else
+    imageStore(u_tex_voxelgrid, ivec3(voxelgrid_resolution * vpos), color);
+
+  
 }
 )";
 
@@ -786,8 +787,8 @@ inline std::string VXMipMap = R"(
 #version 430 core
 
 layout (local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
-layout(binding = 0, rgba8) uniform writeonly image3D Radiance3D;
-layout(binding = 1, rgba8) uniform readonly image3D LastRadiance3D;
+layout(binding = 0, rgba16) uniform writeonly image3D Radiance3D;
+layout(binding = 1, rgba16) uniform readonly image3D LastRadiance3D;
 
 const ivec3 offsets[] = ivec3[8]
 (
@@ -1015,8 +1016,8 @@ inline void checkCompileErrors(GLuint shader, std::string type)
         //itexture3D::generate_mipmaps(vxTexture);
         glUseProgram(mipMapProg);
         for (int mipLevel = 1; mipLevel < 6; mipLevel++) {
-            glBindImageTexture(0, vxTexture.id, mipLevel, GL_TRUE, 0, GL_WRITE_ONLY, GL_RGBA8);
-            glBindImageTexture(1, vxTexture.id, mipLevel - 1, GL_TRUE, 0, GL_READ_ONLY, GL_RGBA8);
+            glBindImageTexture(0, vxTexture.id, mipLevel, GL_TRUE, 0, GL_WRITE_ONLY, GL_RGBA16);
+            glBindImageTexture(1, vxTexture.id, mipLevel - 1, GL_TRUE, 0, GL_READ_ONLY, GL_RGBA16);
             int div = pow(2, mipLevel);
             glDispatchCompute(32 / div, 32 / div, 32 / div);
             glMemoryBarrier(GL_TEXTURE_FETCH_BARRIER_BIT | GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
