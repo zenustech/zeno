@@ -6,6 +6,7 @@
 #include <zeno/utils/wangsrng.h>
 #include <zeno/utils/variantswitch.h>
 #include <zeno/utils/arrayindex.h>
+#include <zeno/utils/orthonormal.h>
 #include <zeno/para/parallel_for.h>
 #include <zeno/utils/vec.h>
 #include <zeno/utils/log.h>
@@ -165,18 +166,27 @@ static std::string_view lutRandTypes[] = {
 ZENO_API void primRandomize(PrimitiveObject *prim, std::string attr, std::string dirAttr, std::string randType, std::string combType, float scale, int seed) {
     auto randty = enum_variant<RandTypes>(array_index_safe(lutRandTypes, randType, "randType"));
     auto combIsAdd = boolean_variant(combType == "add");
-    std::visit([&] (auto &&randty, auto &&combIsAdd) {
+    auto hasDirArr = boolean_variant(!dirAttr.empty());
+    std::visit([&] (auto &&randty, auto combIsAdd, auto hasDirArr) {
         using T = std::invoke_result_t<decltype(randty), wangsrng &>;
         auto &arr = prim->add_attr<T>(attr);
+        auto const &dirArr = hasDirArr ? prim->attr<vec3f>(dirAttr) : std::vector<vec3f>();
         parallel_for((size_t)0, arr.size(), [&] (size_t i) {
             wangsrng rng(seed, i);
             T offs = randty(rng) * scale;
-            if (combIsAdd.value)
+
+            if constexpr (hasDirArr.value && std::is_same_v<T, vec3f>) {
+                vec3f dir = dirArr[i], b1, b2;
+                pixarONB(dir, b1, b2);
+                offs = offs[0] * b1 + offs[1] * b2 + offs[2] * dir;
+            }
+
+            if constexpr (combIsAdd.value)
                 arr[i] += offs;
             else
                 arr[i] = offs;
         });
-    }, randty, combIsAdd);
+    }, randty, combIsAdd, hasDirArr);
 }
 
 namespace {
@@ -199,7 +209,7 @@ ZENDEFNODE(PrimRandomize, {
     {
     {"PrimitiveObject", "prim"},
     {"string", "attr", "pos"},
-    {"string", "dirAttr", "nrm"},
+    {"string", "dirAttr", ""},
     {"float", "scale", "1"},
     {"int", "seed", "0"},
     {"enum scalar01 scalar11 cube01 cube11 plane01 plane11 disk cylinder ball semiball sphere semisphere", "randType", "scalar01"},
