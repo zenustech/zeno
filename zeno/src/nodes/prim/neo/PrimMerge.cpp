@@ -35,6 +35,7 @@ ZENO_API std::shared_ptr<zeno::PrimitiveObject> primMerge(
             looptotal += prim->loops.size();
             polytotal += prim->polys.size();
             bases[primIdx + 1] = total;
+            pointbases[primIdx + 1] = pointtotal;
             linebases[primIdx + 1] = linetotal;
             tribases[primIdx + 1] = tritotal;
             quadbases[primIdx + 1] = quadtotal;
@@ -42,6 +43,7 @@ ZENO_API std::shared_ptr<zeno::PrimitiveObject> primMerge(
             polybases[primIdx + 1] = polytotal;
         }
         outprim->verts.resize(total);
+        outprim->points.resize(pointtotal);
         outprim->lines.resize(linetotal);
         outprim->tris.resize(tritotal);
         outprim->quads.resize(quadtotal);
@@ -86,6 +88,54 @@ ZENO_API std::shared_ptr<zeno::PrimitiveObject> primMerge(
             if (tagAttr.size()) {
                 auto &outarr = outprim->verts.add_attr<int>(tagAttr);
                 for (size_t i = 0; i < prim->verts.size(); i++) {
+                    outarr[base + i] = primIdx;
+                }
+            }
+        }
+
+        for (size_t primIdx = 0; primIdx < primList.size(); primIdx++) {
+            auto prim = primList[primIdx];
+            auto vbase = bases[primIdx];
+            auto base = linebases[primIdx];
+            auto core = [&] (auto key, auto const &arr) {
+                using T = std::decay_t<decltype(arr[0])>;
+#if 0
+                auto &outarr = [&] () -> auto & {
+                    if constexpr (std::is_same_v<decltype(key), std::true_type>) {
+                        return outprim->points.values;
+                    } else {
+                        return outprim->points.add_attr<T>(key);
+                    }
+                }();
+                size_t n = std::min(arr.size(), prim->points.size());
+                for (size_t i = 0; i < n; i++) {
+                    if constexpr (std::is_same_v<decltype(key), std::true_type>) {
+                        outarr[base + i] = vbase + arr[i];
+                    } else {
+                        outarr[base + i] = arr[i];
+                    }
+                }
+#else
+                if constexpr (std::is_same_v<decltype(key), std::true_type>) {
+                    auto &outarr = outprim->points.values;
+                    size_t n = std::min(arr.size(), prim->points.size());
+                    for (size_t i = 0; i < n; i++) {
+                        outarr[base + i] = vbase + arr[i];
+                    }
+                } else {
+                    auto &outarr = outprim->points.add_attr<T>(key);
+                    size_t n = std::min(arr.size(), prim->points.size());
+                    for (size_t i = 0; i < n; i++) {
+                        outarr[base + i] = arr[i];
+                    }
+                }
+#endif
+            };
+            core(std::true_type{}, prim->points.values);
+            prim->points.foreach_attr(core);
+            if (tagAttr.size()) {
+                auto &outarr = outprim->points.add_attr<int>(tagAttr);
+                for (size_t i = 0; i < prim->points.size(); i++) {
                     outarr[base + i] = primIdx;
                 }
             }
