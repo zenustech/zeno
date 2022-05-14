@@ -30,7 +30,6 @@ struct Mesh{
     std::unordered_map<std::string, aiMatrix4x4> m_TransMatrix;
     unsigned int m_VerticesIncrease = 0;
     unsigned int m_IndicesIncrease = 0;
-    int m_BoneCount = 0;
 
     void initMesh(const aiScene *scene){
         m_VerticesIncrease = 0;
@@ -172,7 +171,8 @@ struct Mesh{
     }
 
     void processTrans(std::unordered_map<std::string, Bone>& bones,
-                      std::shared_ptr<zeno::DictObject>& prims) {
+                      std::shared_ptr<zeno::DictObject>& prims,
+                      std::shared_ptr<zeno::DictObject>& datas) {
         for(auto& iter: m_VerticesSlice) {
             std::string meshName = iter.first;
             std::vector<unsigned int> verSlice = iter.second;
@@ -207,26 +207,40 @@ struct Mesh{
                 }
             }
 
-            // Sub-prims (apply node transform)
+            // Sub-prims (applied node transform)
             auto sub_prim = std::make_shared<zeno::PrimitiveObject>();
+            auto sub_data = std::make_shared<FBXData>();
+            std::vector<VertexInfo> sub_vertices;
+            std::vector<unsigned int> sub_indices;
+
             for(unsigned int i=indicesStart; i<indicesEnd; i+=3){
-                zeno::vec3i incs(fbxData.indices[i]-verStart,
-                                 fbxData.indices[i+1]-verStart,
-                                 fbxData.indices[i+2]-verStart);
+                auto i1 = fbxData.indices[i]-verStart;
+                auto i2 = fbxData.indices[i+1]-verStart;
+                auto i3 = fbxData.indices[i+2]-verStart;
+                zeno::vec3i incs(i1, i2, i3);
                 sub_prim->tris.push_back(incs);
+                sub_indices.push_back(i1);
+                sub_indices.push_back(i2);
+                sub_indices.push_back(i3);
             }
             for(unsigned int i=verStart; i< verEnd; i++){
                 sub_prim->verts.emplace_back(fbxData.vertices[i].position.x,
                                              fbxData.vertices[i].position.y,
                                              fbxData.vertices[i].position.z);
+                sub_vertices.push_back(fbxData.vertices[i]);
             }
+            sub_data->indices = sub_indices;
+            sub_data->vertices = sub_vertices;
+            sub_data->BoneOffsetMap = fbxData.BoneOffsetMap;
+
             prims->lut[meshName] = sub_prim;
+            datas->lut[meshName] = sub_data;
         }
     }
 
-    void processPrim(std::vector<zeno::vec3f> &ver,
-                      std::vector<zeno::vec3i> &ind
-    ){
+    void processPrim(std::shared_ptr<zeno::PrimitiveObject>& prim){
+        auto &ver = prim->verts;
+        auto &ind = prim->tris;
 
         for(unsigned int i=0; i<fbxData.vertices.size(); i++){
             auto& vpos = fbxData.vertices[i].position;
@@ -298,12 +312,13 @@ struct Anim{
 };
 
 void readFBXFile(
-        std::vector<zeno::vec3f> &vertices,
-        std::vector<zeno::vec3i> &indices,
+        std::shared_ptr<zeno::PrimitiveObject>& prim,
         std::shared_ptr<zeno::DictObject>& prims,
+        std::shared_ptr<zeno::DictObject>& datas,
         std::shared_ptr<NodeTree>& nodeTree,
         std::shared_ptr<FBXData>& fbxData,
         std::shared_ptr<BoneTree>& boneTree,
+        std::shared_ptr<AnimInfo>& animInfo,
         const char *fbx_path)
 {
     Assimp::Importer importer;
@@ -321,14 +336,15 @@ void readFBXFile(
 
     mesh.initMesh(scene);
     anim.initAnim(scene, &mesh);
-    mesh.processTrans(anim.m_Bones.BoneMap, prims);
-    mesh.processPrim(vertices, indices);
+    mesh.processTrans(anim.m_Bones.BoneMap, prims, datas);
+    mesh.processPrim(prim);
 
     *fbxData = mesh.fbxData;
     *nodeTree = anim.m_RootNode;
     *boneTree = anim.m_Bones;
-    fbxData->duration = anim.duration;
-    fbxData->tick = anim.tick;
+
+    animInfo->duration = anim.duration;
+    animInfo->tick = anim.tick;
 
 //    zeno::log_info("ReadFBXPrim: Num Animation {}", scene->mNumAnimations);
 //    zeno::log_info("ReadFBXPrim: Vertices count {}", mesh.fbxData.vertices.size());
@@ -349,7 +365,9 @@ struct ReadFBXPrim : zeno::INode {
         auto path = get_input<zeno::StringObject>("path")->get();
         auto prim = std::make_shared<zeno::PrimitiveObject>();
         std::shared_ptr<zeno::DictObject> prims = std::make_shared<zeno::DictObject>();
+        std::shared_ptr<zeno::DictObject> datas = std::make_shared<zeno::DictObject>();
         auto nodeTree = std::make_shared<NodeTree>();
+        auto animInfo = std::make_shared<AnimInfo>();
         auto fbxData = std::make_shared<FBXData>();
         auto boneTree = std::make_shared<BoneTree>();
         auto &pos = prim->verts;
@@ -358,13 +376,14 @@ struct ReadFBXPrim : zeno::INode {
         zeno::log_info("ReadFBXPrim: File Path {}", path);
 //        zeno::log_info("ReadFBXPrim: frameid {}", frameid);
 
-        readFBXFile(pos, tris,
-                    prims,
-                    nodeTree, fbxData, boneTree,
+        readFBXFile(prim,prims, datas,
+                    nodeTree, fbxData, boneTree, animInfo,
                     path.c_str());
 
         set_output("prim", std::move(prim));
-        set_output("dict", std::move(prims));
+        set_output("primdict", std::move(prims));
+        set_output("datadict", std::move(datas));
+        set_output("animinfo", std::move(animInfo));
         set_output("nodetree", std::move(nodeTree));
         set_output("fbxdata", std::move(fbxData));
         set_output("bonetree", std::move(boneTree));
@@ -378,7 +397,8 @@ ZENDEFNODE(ReadFBXPrim,
                    {"frameid"}
                },  /* outputs: */
                {
-                   "prim", "dict",
+                   "prim", "primdict", "datadict",
+                   {"AnimInfo", "animinfo"},
                    {"FBXData", "fbxdata"},
                    {"NodeTree", "nodetree"},
                    {"BoneTree", "bonetree"},
