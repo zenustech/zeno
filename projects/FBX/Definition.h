@@ -189,11 +189,6 @@ struct NodeTree : zeno::IObjectClone<NodeTree>{
 
 struct BoneTree : zeno::IObjectClone<BoneTree>{
     std::unordered_map<std::string, Bone> BoneMap;
-    std::unordered_map<std::string, BoneInfo> BoneInfoMap;
-};
-
-struct BoneOffset : zeno::IObjectClone<BoneOffset>{
-    std::unordered_map<std::string, BoneInfo> BoneOffsetMap;
 };
 
 struct FBXData : zeno::IObjectClone<FBXData>{
@@ -201,6 +196,7 @@ struct FBXData : zeno::IObjectClone<FBXData>{
     float tick;
     std::vector<VertexInfo> vertices;
     std::vector<unsigned int> indices;
+    std::unordered_map<std::string, BoneInfo> BoneOffsetMap;
 };
 
 #endif //ZENO_DEFINITION_H
