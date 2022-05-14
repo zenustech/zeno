@@ -655,6 +655,15 @@ void ZenoNode::onInOutSocketChanged(bool bInput)
                     }
                     break;
                 }
+                case CONTROL_ENUM:
+                {
+                    ZenoParamComboBox* pComboBox = qobject_cast<ZenoParamComboBox*>(m_inSockets[inSocket.info.name].socket_control);
+                    if (pComboBox)
+                    {
+                        pComboBox->setText(inSocket.info.defaultValue.toString());
+                    }
+                    break;
+                }
             }
         }
     }
@@ -820,6 +829,8 @@ QGraphicsLayout* ZenoNode::initSockets()
             const INPUT_SOCKET& inSocket = inputs[inSock];
             //dont need lineedit except "int£¬float£¬vec3f£¬string".
             const QString& sockType = inSocket.info.type;
+            PARAM_CONTROL ctrl = inSocket.info.control;
+
             if (sockType == "int" || sockType == "float" || sockType == "string" || sockType == "readpath" || sockType == "writepath")
             {
 				ZenoParamLineEdit* pSocketEditor = new ZenoParamLineEdit(UiHelper::variantToString(inSocket.info.defaultValue), inSocket.info.control, m_renderParams.lineEditParam);
@@ -873,6 +884,24 @@ QGraphicsLayout* ZenoNode::initSockets()
                     updateSocketDeflValue(nodeid, inSock, inSocket, newValue);
 				});
                 socket_ctrl.socket_control = pVecEditor;
+            }
+            else if (ctrl == CONTROL_ENUM)
+            {
+                QStringList items = sockType.mid(QString("enum ").length()).split(QRegExp("\\s+"));
+                ZenoParamComboBox *pComboBox = new ZenoParamComboBox(items, m_renderParams.comboboxParam);
+                pMiniLayout->addItem(pComboBox);
+                QString val = inSocket.info.defaultValue.toString();
+                if (items.indexOf(val) != -1) {
+                    pComboBox->setText(val);
+                }
+
+                connect(pComboBox, &ZenoParamComboBox::textActivated, this,
+                        [=](const QString &textValue)
+                {
+                    QString oldValue = pComboBox->text();
+                    updateSocketDeflValue(nodeid, inSock, inSocket, textValue);
+                });
+                socket_ctrl.socket_control = pComboBox;
             }
 
             socket_ctrl.socket = socket;

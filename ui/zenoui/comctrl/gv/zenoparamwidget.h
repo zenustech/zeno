@@ -128,6 +128,7 @@ class ZenoParamComboBox : public ZenoParamWidget
 public:
     ZenoParamComboBox(const QStringList& items, ComboBoxParam param, QGraphicsItem *parent = nullptr);
     void setText(const QString& text);
+    QString text();
 
 signals:
     void textActivated(const QString& text);

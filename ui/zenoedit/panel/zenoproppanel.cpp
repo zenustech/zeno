@@ -294,6 +294,30 @@ ZExpandableSection* ZenoPropPanel::inputsBox(IGraphsModel* pModel, const QModelI
 				pLayout->addWidget(pVecEdit, r++, 1);
 				break;
 			}
+			case CONTROL_ENUM:
+			{
+				QLabel* pNameItem = new QLabel(inputSock);
+				pNameItem->setProperty("cssClass", "proppanel");
+				pLayout->addWidget(pNameItem, r, 0, Qt::AlignLeft);
+
+				QString descStr = input.info.type;
+				QStringList items = descStr.mid(QString("enum ").length()).split(QRegExp("\\s+"));
+
+				ZComboBox *pComboBox = new ZComboBox;
+				pComboBox->addItems(items);
+				pComboBox->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+				pComboBox->setItemDelegate(new ZComboBoxItemDelegate(pComboBox));
+				pComboBox->setObjectName(inputSock);
+                connect(pComboBox, &QComboBox::currentTextChanged, this, &ZenoPropPanel::onInputEditFinish);
+
+				QString val = input.info.defaultValue.toString();
+				if (items.indexOf(val) != -1)
+				{
+					pComboBox->setCurrentText(val);
+				}
+				pLayout->addWidget(pComboBox, r++, 1);
+				break;
+			}
 		}
 	}
 
@@ -338,6 +362,10 @@ void ZenoPropPanel::onInputEditFinish()
 	{
 		QVector<qreal> vec = pVecEdit->vec();
 		info.newValue = QVariant::fromValue(vec);
+	}
+	else if (QComboBox* pComboBox = qobject_cast<QComboBox*>(pSender))
+	{
+		info.newValue = pComboBox->currentText();
 	}
 
 	if (info.oldValue != info.newValue)
