@@ -595,12 +595,15 @@ vec3 convWorldPosToVoxelPos(vec3 pos){
     return clamp(vxPos * u_scene_voxel_scale, vec3(0,0,0), vec3(1,1,1));
 }
 
+uniform float m_gi_emission_base;
+
 uniform float vxMaterialPass;
 uniform sampler3D vxNormal;
 vec3 sampleNormal(vec3 pos)
 {
     return DecodeNormal(texture(vxNormal, convWorldPosToVoxelPos(pos)).xyz);
 }
+
 vec4 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 old_tangent) {
     vec4 projPos = mView * vec4(position.xyz, 1.0);
     //normal = normalize(normal);
@@ -648,7 +651,7 @@ vec4 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 old_tangent) {
         vec3 sclr = vec3(1.0-shadow);
         color += lcolor * sclr;
     }
-    return vec4(color + colorEmission + 0.05 * mat_basecolor, 1.0-mat_opacity);
+    return vec4(color + colorEmission + m_gi_emission_base * mat_basecolor, 1.0-mat_opacity);
 
 
 }

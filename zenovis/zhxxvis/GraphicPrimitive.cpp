@@ -817,6 +817,7 @@ struct GraphicPrimitive : IGraphic {
         triObj.voxelprog->use();
         set_program_uniforms(triObj.voxelprog);
         triObj.voxelprog->set_uniform("u_scene_voxel_scale", glm::vec3(1.0/voxelizer::getDomainLength()));
+        triObj.voxelprog->set_uniform("m_gi_emission_base", get_gi_emission_base());
         triObj.voxelprog->set_uniform("voxelgrid_resolution", voxelizer::getVoxelResolution());
         triObj.voxelprog->set_uniformi("lightNum", lights.size());
         triObj.voxelprog->set_uniform("alphaPass", alphaPass);
@@ -1236,6 +1237,7 @@ struct GraphicPrimitive : IGraphic {
         triObj.prog->set_uniform("vxSize",voxelizer::getDomainLength());
         triObj.prog->set_uniform("vxView", voxelizer::getView());
         triObj.prog->set_uniformi("enable_gi_flag", zenvis::get_enable_gi());
+        triObj.prog->set_uniform("m_gi_base", zenvis::get_gi_base());
         
         
         triObj.prog->set_uniform("msweight", m_weight);
