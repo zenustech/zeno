@@ -21,21 +21,26 @@ struct EvalAnim{
 
 //    std::vector<Bone> m_Bones;
     std::unordered_map<std::string, aiMatrix4x4> m_Transforms;
-    std::unordered_map<std::string, BoneInfo> m_BoneInfoMap;
+//    std::unordered_map<std::string, BoneInfo> m_BoneInfoMap;
+    std::unordered_map<std::string, BoneInfo> m_BoneOffset;
     std::unordered_map<std::string, Bone> m_Bones;
     std::vector<VertexInfo> m_Vertices;
     std::vector<unsigned int> m_Indices;
 
     void initAnim(std::shared_ptr<NodeTree>& nodeTree,
                   std::shared_ptr<BoneTree>& boneTree,
-                  std::shared_ptr<FBXData>& fbxData){
+                  std::shared_ptr<FBXData>& fbxData,
+                  std::shared_ptr<BoneOffset>& boneOffset){
         m_Duration = fbxData->duration;
         m_TicksPerSecond = fbxData->tick;
-        m_RootNode = *nodeTree;
-        m_Bones = boneTree->boneMap;
-        m_BoneInfoMap = boneTree->BoneInfoMap;
         m_Vertices = fbxData->vertices;
         m_Indices = fbxData->indices;
+
+        m_RootNode = *nodeTree;
+        m_Bones = boneTree->BoneMap;
+//        m_BoneInfoMap = boneTree->BoneInfoMap;
+        m_BoneOffset = boneOffset->BoneOffsetMap;
+
         m_CurrentFrame = 0.0f;
 
         // DEBUG
@@ -49,7 +54,7 @@ struct EvalAnim{
         m_CurrentFrame += m_TicksPerSecond * dt;
         m_CurrentFrame = fmod(m_CurrentFrame, m_Duration);
 
-        zeno::log_info("Update: Frame {}", m_CurrentFrame);
+//        zeno::log_info("Update: Frame {}", m_CurrentFrame);
 
         calculateBoneTransform(&m_RootNode, aiMatrix4x4());
         calculateFinal(prim);
@@ -61,16 +66,19 @@ struct EvalAnim{
 
         //zeno::log_info("Calculating: Node Name {}", nodeName);
 
-        Bone* bone = findBone(nodeName);
-        if (bone != nullptr) {
-            bone->update(m_CurrentFrame);
-            nodeTransform = bone->m_LocalTransform;
+//        Bone* bone = findBone(nodeName);
+
+        if (m_Bones.find(nodeName) != m_Bones.end()) {
+            auto& bone = m_Bones[nodeName];
+
+            bone.update(m_CurrentFrame);
+            nodeTransform = bone.m_LocalTransform;
         }
         aiMatrix4x4 globalTransformation = parentTransform * nodeTransform;
 
-        if (m_BoneInfoMap.find(nodeName) != m_BoneInfoMap.end()) {  // found
-            std::string boneName = m_BoneInfoMap[nodeName].name;
-            aiMatrix4x4 boneOffset = m_BoneInfoMap[nodeName].offset;
+        if (m_BoneOffset.find(nodeName) != m_BoneOffset.end()) {  // found
+            std::string boneName = m_BoneOffset[nodeName].name;
+            aiMatrix4x4 boneOffset = m_BoneOffset[nodeName].offset;
 
             m_Transforms[boneName] = globalTransformation * boneOffset;
         }
@@ -90,10 +98,10 @@ struct EvalAnim{
 //        else
 //            return &(*iter);
 
-        if (m_Bones.find(name) == m_Bones.end())
-            return nullptr;
-        else
-            return &m_Bones[name];
+//        if (m_Bones.find(name) == m_Bones.end())
+//            return nullptr;
+//        else
+//            return &m_Bones[name];
     }
 
     void calculateFinal(std::shared_ptr<zeno::PrimitiveObject>& prim){
@@ -147,15 +155,16 @@ struct EvalFBXAnim : zeno::INode {
         auto fbxData = get_input<FBXData>("fbxdata");
         auto nodeTree = get_input<NodeTree>("nodetree");
         auto boneTree = get_input<BoneTree>("bonetree");
+        auto boneOffset = get_input<BoneOffset>("boneoffset");
 
         EvalAnim anim;
-        anim.initAnim(nodeTree, boneTree, fbxData);
+        anim.initAnim(nodeTree, boneTree, fbxData, boneOffset);
         anim.updateAnimation(frameid/24.0f, prim);
 
         set_output("prim", std::move(prim));
 
-        zeno::log_info("EvalFBXAnim: Duration {} Tick {} Frame {}", fbxData->duration, fbxData->tick,
-                       frameid);
+//        zeno::log_info("EvalFBXAnim: Duration {} Tick {} Frame {}", fbxData->duration, fbxData->tick,
+//                       frameid);
     }
 };
 ZENDEFNODE(EvalFBXAnim,
@@ -164,7 +173,8 @@ ZENDEFNODE(EvalFBXAnim,
                    {"prim"}, {"frameid"},
                    {"FBXData", "fbxdata"},
                    {"NodeTree", "nodetree"},
-                   {"BoneTree", "bonetree"}
+                   {"BoneTree", "bonetree"},
+                   {"BoneOffset", "boneoffset"}
                },  /* outputs: */
                {
                    "prim",
