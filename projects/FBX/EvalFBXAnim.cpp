@@ -27,9 +27,11 @@ struct EvalAnim{
 
     void initAnim(std::shared_ptr<NodeTree>& nodeTree,
                   std::shared_ptr<BoneTree>& boneTree,
-                  std::shared_ptr<FBXData>& fbxData){
-        m_Duration = fbxData->duration;
-        m_TicksPerSecond = fbxData->tick;
+                  std::shared_ptr<FBXData>& fbxData,
+                  std::shared_ptr<AnimInfo>& animInfo){
+        m_Duration = animInfo->duration;
+        m_TicksPerSecond = animInfo->tick;
+
         m_Vertices = fbxData->vertices;
         m_Indices = fbxData->indices;
 
@@ -124,9 +126,10 @@ struct EvalFBXAnim : zeno::INode {
         auto fbxData = get_input<FBXData>("fbxdata");
         auto nodeTree = get_input<NodeTree>("nodetree");
         auto boneTree = get_input<BoneTree>("bonetree");
+        auto animInfo = get_input<AnimInfo>("animinfo");
 
         EvalAnim anim;
-        anim.initAnim(nodeTree, boneTree, fbxData);
+        anim.initAnim(nodeTree, boneTree, fbxData, animInfo);
         anim.updateAnimation(frameid/24.0f, prim);
 
         set_output("prim", std::move(prim));
@@ -136,6 +139,7 @@ ZENDEFNODE(EvalFBXAnim,
            {       /* inputs: */
                {
                    {"prim"}, {"frameid"},
+                   {"AnimInfo", "animinfo"},
                    {"FBXData", "fbxdata"},
                    {"NodeTree", "nodetree"},
                    {"BoneTree", "bonetree"},
