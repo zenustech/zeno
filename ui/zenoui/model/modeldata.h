@@ -16,6 +16,7 @@ enum PARAM_CONTROL {
     CONTROL_READPATH,
     CONTROL_MULTILINE_STRING,
     CONTROL_HEATMAP,
+    CONTROL_CURVE,
 };
 
 enum NODE_TYPE {
@@ -221,6 +222,20 @@ struct CURVE_RANGE {
     qreal xTo;
     qreal yFrom;
     qreal yTo;
+};
+
+struct CURVE_POINT {
+    QPointF point;
+    QPointF leftHandler;
+    QPointF rightHandler;
+    int controlType;
+};
+
+struct CURVE_DATA {
+    QString key;
+    QVector<CURVE_POINT> points;
+    int cycleType;
+    CURVE_RANGE rg;
 };
 
 #endif

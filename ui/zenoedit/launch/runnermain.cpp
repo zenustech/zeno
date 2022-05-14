@@ -73,13 +73,14 @@ static void runner_start(std::string const &progJson, int sessionid) {
 
     std::vector<char> buffer;
 
+    int &frame = session->globalState->frameid;
     session->globalComm->frameRange(graph->beginFrameNumber, graph->endFrameNumber);
     send_packet("{\"action\":\"frameRange\",\"key\":\""
                 + std::to_string(graph->beginFrameNumber)
                 + ":" + std::to_string(graph->endFrameNumber)
                 + "\"}", "", 0);
 
-    for (int frame = graph->beginFrameNumber; frame <= graph->endFrameNumber; frame++) {
+    for (frame = graph->beginFrameNumber; frame <= graph->endFrameNumber; frame++) {
         zeno::log_info("begin frame {}", frame);
 
         session->globalComm->newFrame();

@@ -2,7 +2,7 @@
 #include "zenonode.h"
 #include "subnetnode.h"
 #include "heatmapnode.h"
-#include "curvemapnode.h"
+#include "curvenode.h"
 #include "dynamicnumbernode.h"
 #include "zenolink.h"
 #include <zenoui/model/modelrole.h>
@@ -122,9 +122,9 @@ ZenoNode* ZenoSubGraphScene::createNode(const QModelIndex& idx, const NodeUtilPa
     {
         return new MakeHeatMapNode(params);
     }
-    else if (descName == "MakeCurvemap")
+    else if (descName == "MakeCurve")
     {
-        return new MakeCurvemapNode(params);
+        return new MakeCurveNode(params);
     }
     else if (descName == "DynamicNumber")
     {

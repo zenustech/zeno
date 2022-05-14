@@ -1,3 +1,4 @@
+#if 0
 #include "curvemapnode.h"
 #include "../curvemap/zcurvemapeditor.h"
 #include "../model/curvemodel.h"
@@ -118,13 +119,14 @@ void MakeCurvemapNode::onEditClicked()
 		pEditor->addCurve(pModel);
 
 		CurveModel *pModel2 = new CurveModel("Channel-Y", rg, this);
-        pModel2->initItems(rg, {{rg.xFrom, rg.yTo}, {rg.xTo, rg.yFrom}}, {{0,0}, {0,0}, {0,0}, {0,0}});
+        pModel2->initItems({{rg.xFrom, rg.yTo}, {rg.xTo, rg.yFrom}}, {{0,0}, {0,0}, {0,0}, {0,0}});
 		pEditor->addCurve(pModel2);
 
 		CurveModel *pModel3 = new CurveModel("Channel-Z", rg, this);
-        pModel3->initItems(rg, {{rg.xFrom, rg.yTo / 2}, {rg.xTo, rg.yTo / 2}}, {{0,0}, {0,0}, {0,0}, {0,0}});
+        pModel3->initItems({{rg.xFrom, rg.yTo / 2}, {rg.xTo, rg.yTo / 2}}, {{0,0}, {0,0}, {0,0}, {0,0}});
 		pEditor->addCurve(pModel3);
 
 		pEditor->show();
 	}
 }
+#endif

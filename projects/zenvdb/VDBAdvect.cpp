@@ -175,7 +175,7 @@ struct VolumeAdvect : zeno::INode {
             f->m_grid = res->deepCopy();
             //set_output("outField", get_input("InField"));
         }
-        else if(get_input("InField")->as<VDBGrid>()->getType()=="Vec3Grid")
+        else if(get_input("InField")->as<VDBGrid>()->getType()=="Vec3fGrid")
         {
             auto f = get_input("InField")->as<VDBFloat3Grid>();
             auto f2 = f->m_grid->deepCopy();

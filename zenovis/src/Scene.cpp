@@ -2,17 +2,14 @@
 #include <zenovis/Camera.h>
 #include <zeno/core/Session.h>
 #include <zeno/extra/GlobalComm.h>
-#include <zeno/types/UserData.h>
-#include <zeno/types/PrimitiveObject.h>
-#include <zeno/funcs/PrimitiveUtils.h>
+#include <zeno/funcs/ObjectGeometryInfo.h>
 #include <zenovis/DrawOptions.h>
 #include <zenovis/RenderEngine.h>
 #include <zenovis/ShaderManager.h>
 #include <zenovis/ObjectsManager.h>
 #include <zenovis/opengl/buffer.h>
 #include <zenovis/opengl/common.h>
-#include <zenovis/opengl/vao.h>
-#include <zeno/utils/scope_exit.h>
+#include <zenovis/opengl/scope.h>
 #include <cstdlib>
 #include <map>
 
@@ -46,35 +43,13 @@ void Scene::switchRenderEngine(std::string const &name) {
     renderMan->switchDefaultEngine(name);
 }
 
-/* TODO: move this to zeno::objectGetCenterRadius */
-static bool calcObjectCenterRadius(zeno::IObject *ptr, zeno::vec3f &center, float &radius) {
-    if (auto obj = dynamic_cast<zeno::PrimitiveObject *>(ptr)) {
-        auto &ud = ptr->userData();
-        if (ud.has("_bboxCenter") && ud.has("_bboxRadius")) {
-            center = ud.getLiterial<zeno::vec3f>("_bboxCenter");
-            radius = ud.getLiterial<float>("_bboxRadius");
-        } else {
-            auto [bmin, bmax] = primBoundingBox(obj);
-            auto delta = bmax - bmin;
-            radius = std::max({delta[0], delta[1], delta[2]}) * 0.5f;
-            center = (bmin + bmax) * 0.5f;
-            ud.set("_bboxMin", std::make_shared<zeno::NumericObject>(bmin));
-            ud.set("_bboxMax", std::make_shared<zeno::NumericObject>(bmax));
-            ud.set("_bboxRadius", std::make_shared<zeno::NumericObject>(radius));
-            ud.set("_bboxCenter", std::make_shared<zeno::NumericObject>(center));
-        }
-        return true;
-    }
-    return false;
-}
-
 bool Scene::cameraFocusOnNode(std::string const &nodeid, zeno::vec3f &center, float &radius) {
     for (auto const &[key, ptr]: this->objectsMan->pairs()) {
         if (nodeid == key.substr(0, key.find_first_of(':'))) {
-            return calcObjectCenterRadius(ptr, center, radius);
+            return zeno::objectGetFocusCenterRadius(ptr, center, radius);
         }
     }
-    zeno::log_debug("cannot focus: node with id {} not found, did you tagged VIEW on it?", nodeid);
+    zeno::log_warn("cannot focus: node with id {} not found, did you tagged VIEW on it?", nodeid);
     return false;
 }
 
@@ -119,53 +94,48 @@ std::vector<char> Scene::record_frame_offline(int hdrSize, int rgbComps) {
     //printf("%d\n", zerofbo);
     //printf("%d\n", zerorbo);
 
-    GLuint fbo, rbo1, rbo2;
-    CHECK_GL(glGenFramebuffers(1, &fbo));
-    CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo));
+    auto fbo = opengl::scopeGLGenFramebuffer();
+    auto rbo1 = opengl::scopeGLGenRenderbuffer();
+    auto rbo2 = opengl::scopeGLGenRenderbuffer();
 
-    CHECK_GL(glGenRenderbuffers(1, &rbo1));
-    CHECK_GL(glGenRenderbuffers(1, &rbo2));
-    CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, rbo1));
-    CHECK_GL(glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA, camera->m_nx,
-                                   camera->m_ny));
-    CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, rbo2));
-    CHECK_GL(glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT32F,
-                                   camera->m_nx, camera->m_ny));
-    CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, 0));
+    {
+        auto bindFbo = opengl::scopeGLBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
 
+        CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, rbo1));
+        CHECK_GL(glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA, camera->m_nx,
+                                       camera->m_ny));
+        CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, rbo2));
+        CHECK_GL(glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT32F,
+                                       camera->m_nx, camera->m_ny));
+        CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, 0));
 
-    CHECK_GL(glFramebufferRenderbuffer(
-        GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, rbo1));
-    CHECK_GL(glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
-                                       GL_RENDERBUFFER, rbo2));
-    CHECK_GL(glDrawBuffer(GL_COLOR_ATTACHMENT0));
-    CHECK_GL(glClearColor(drawOptions->bgcolor.r, drawOptions->bgcolor.g,
-                          drawOptions->bgcolor.b, 0.0f));
-    CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
+        CHECK_GL(glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, rbo1));
+        CHECK_GL(glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rbo2));
+        CHECK_GL(glClearColor(drawOptions->bgcolor.r, drawOptions->bgcolor.g,
+                              drawOptions->bgcolor.b, 0.0f));
+        CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 
-    CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo));
-    draw();
+        {
+            auto bindDrawBuf = opengl::scopeGLDrawBuffer(GL_COLOR_ATTACHMENT0);
+            draw();
+        }
 
-    if (glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE) {
-        CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo));
-        CHECK_GL(glBlitFramebuffer(0, 0, camera->m_nx, camera->m_ny, 0, 0,
-                                   camera->m_nx, camera->m_ny, GL_COLOR_BUFFER_BIT,
-                                   GL_NEAREST));
-        CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo));
-        CHECK_GL(glBindBuffer(GL_PIXEL_PACK_BUFFER, 0));
-        CHECK_GL(glPixelStorei(GL_UNPACK_ALIGNMENT, 1));
-        CHECK_GL(glPixelStorei(GL_PACK_ALIGNMENT, 1));
-        CHECK_GL(glReadBuffer(GL_COLOR_ATTACHMENT0));
+        if (glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE) {
+            auto bindReadFbo = opengl::scopeGLBindFramebuffer(GL_READ_FRAMEBUFFER, fbo);
+            CHECK_GL(glBlitFramebuffer(0, 0, camera->m_nx, camera->m_ny, 0, 0,
+                                       camera->m_nx, camera->m_ny, GL_COLOR_BUFFER_BIT,
+                                       GL_NEAREST));
 
-        CHECK_GL(glReadPixels(0, 0, camera->m_nx, camera->m_ny, rgbType,
-                              hdrType, pixels.data()));
+            auto bindPackBuffer = opengl::scopeGLBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+            auto bindPackAlignment = opengl::scopeGLPixelStorei(GL_PACK_ALIGNMENT, 1);
+            auto bindRead = opengl::scopeGLReadBuffer(GL_COLOR_ATTACHMENT0);
+
+            CHECK_GL(glReadPixels(0, 0, camera->m_nx, camera->m_ny, rgbType,
+                                  hdrType, pixels.data()));
+        } else {
+            zeno::log_error("failed to complete framebuffer");
+        }
     }
-
-    CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0));
-
-    CHECK_GL(glDeleteRenderbuffers(1, &rbo1));
-    CHECK_GL(glDeleteRenderbuffers(1, &rbo2));
-    CHECK_GL(glDeleteFramebuffers(1, &fbo));
 
     return pixels;
 }

@@ -59,6 +59,7 @@ endif()
 target_include_directories(zeno PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/tpls/include>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/tpls/deprecated>
     $<INSTALL_INTERFACE:include/Zeno/zeno/include>)
 
 if (ZENO_INSTALL_TARGET AND ZENO_BUILD_SHARED)

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <utility>
+#include <algorithm>
 #include <zeno/utils/scope_exit.h>
 
 namespace zeno {
@@ -80,6 +81,14 @@ struct MapStablizer {
         template <class ...Args>
         auto try_emplace(key_type const &key, Args &&...args) {
             return that.m_next.try_emplace(key, std::forward<Args>(args)...);
+        }
+
+        bool has_changed() const {
+            if (that.m_curr.size() != that.m_next.size()) return true;
+            if (that.m_curr.size() == 0) return false;
+            return !std::equal(that.m_curr.begin(), that.m_curr.end(), that.m_next.begin(), [] (auto const &x, auto const &y) {
+                return x.first == y.first;
+            });
         }
 
         void _scope_finalize() {

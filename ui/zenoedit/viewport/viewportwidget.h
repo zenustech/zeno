@@ -9,6 +9,7 @@
 class ZTimeline;
 class ZenoMainWindow;
 
+#if 0
 class QDMDisplayMenu : public ZMenu
 {
 public:
@@ -20,6 +21,7 @@ class QDMRecordMenu : public ZMenu
 public:
     QDMRecordMenu();
 };
+#endif
 
 class CameraControl : public QWidget
 {

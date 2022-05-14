@@ -142,6 +142,7 @@ public:
 template <class T, class U = T, class = std::enable_if_t<!std::is_const_v<T>>>
 scope_modify(T &, U &&) -> scope_modify<T>;
 
+
 template <class T>
 class scope_bind : public scope_finalizer<scope_bind<T>> {
     T dst;
@@ -152,12 +153,39 @@ public:
         dst.bind(std::forward<Args>(args)...);
     }
 
-    void _scope_finalize() {
+    void _scope_finalize() noexcept {
         dst.unbind();
     }
 };
 
 template <class T>
 scope_bind(T &) -> scope_bind<T>;
+
+
+template <class Handle, class Func>
+class scope_handle : public scope_finalizer<scope_handle<Handle, Func>> {
+    Handle handle;
+    Func func;
+
+public:
+    explicit scope_handle(Handle handle, Func &&func) noexcept
+        : handle(std::move(handle)), func(std::move(func))
+    {}
+
+    void _scope_finalize() noexcept {
+        if constexpr (std::is_invocable_v<Func, Handle &&>) {
+            func(std::move(handle));
+        } else {
+            func();
+        }
+    }
+
+    operator Handle const &() const noexcept {
+        return handle;
+    }
+};
+
+template <class Handle, class Func>
+scope_handle(Handle, Func) -> scope_handle<Handle, Func>;
 
 }

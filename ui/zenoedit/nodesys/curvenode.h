@@ -1,15 +1,14 @@
-#if 0
-#ifndef __CURVEMAP_NODE_H__
-#define __CURVEMAP_NODE_H__
+#ifndef __CURVE_NODE_H__
+#define __CURVE_NODE_H__
 
 #include "zenonode.h"
 
-class MakeCurvemapNode : public ZenoNode
+class MakeCurveNode : public ZenoNode
 {
 	Q_OBJECT
 public:
-	MakeCurvemapNode(const NodeUtilParam& params, QGraphicsItem* parent = nullptr);
-	~MakeCurvemapNode();
+	MakeCurveNode(const NodeUtilParam& params, QGraphicsItem* parent = nullptr);
+	~MakeCurveNode();
 
 protected:
 	QGraphicsLayout* initParams() override;
@@ -23,5 +22,4 @@ private:
 
 };
 
-#endif
 #endif

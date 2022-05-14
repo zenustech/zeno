@@ -551,6 +551,17 @@ void ZenoNode::initParam(PARAM_CONTROL ctrl, QGraphicsLinearLayout* pParamLayout
 		    m_paramControls[paramName] = pMultiStrEdit;
 		    break;
 	    }
+	    case CONTROL_HEATMAP:
+	    case CONTROL_CURVE:
+	    {
+		    ZenoParamLineEdit* pLineEdit = new ZenoParamLineEdit(value, param.control,  m_renderParams.lineEditParam);
+		    pParamLayout->addItem(pLineEdit);
+		    connect(pLineEdit, &ZenoParamLineEdit::editingFinished, this, [=]() {
+			    onParamEditFinished(param.control, paramName, pLineEdit->text());
+			    });
+		    m_paramControls[paramName] = pLineEdit;
+		    break;
+	    }
 	    default:
 	    {
 		    zeno::log_warn("got undefined control type {}", param.control);

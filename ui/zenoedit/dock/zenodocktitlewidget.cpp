@@ -345,12 +345,19 @@ QMenuBar* ZenoViewDockTitle::initMenu()
 
         pDisplay->addSeparator();
 
-        pAction = new QAction(tr("Zhxx Renderer"), this);
+        pAction = new QAction(tr("Enable PBR"), this);
         pAction->setCheckable(true);
         pAction->setChecked(false);
         pDisplay->addAction(pAction);
         connect(pAction, &QAction::triggered, this,
             [=]() { Zenovis::GetInstance().getSession()->set_render_engine(pAction->isChecked() ? "zhxx" : "bate"); });
+
+        pAction = new QAction(tr("Enable GI"), this);
+        pAction->setCheckable(true);
+        pAction->setChecked(false);
+        pDisplay->addAction(pAction);
+        connect(pAction, &QAction::triggered, this,
+            [=]() { Zenovis::GetInstance().getSession()->set_enable_gi(pAction->isChecked()); });
 
         pDisplay->addSeparator();
 
@@ -359,7 +366,7 @@ QMenuBar* ZenoViewDockTitle::initMenu()
 
         pDisplay->addSeparator();
 
-        pAction = new QAction(tr("Use English"), this);
+        pAction = new QAction(tr("English / Chinese"), this);
         pAction->setCheckable(true);
         pAction->setChecked(true);
         pDisplay->addAction(pAction);

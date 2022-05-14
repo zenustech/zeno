@@ -19,7 +19,7 @@ ZTimeline::ZTimeline(QWidget* parent)
     setAutoFillBackground(true);
     setPalette(pal);
 
-    int deflFrom = 0, deflTo = 100;
+    int deflFrom = 0, deflTo = 0;
     m_ui->editFrom->setText(QString::number(deflFrom));
     m_ui->editTo->setText(QString::number(deflTo));
     m_ui->timeliner->setFromTo(deflFrom, deflTo);

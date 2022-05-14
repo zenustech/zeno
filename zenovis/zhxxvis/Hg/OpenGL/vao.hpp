@@ -2,11 +2,11 @@
 
 namespace hg::OpenGL {
 
-//#define NOTHING_CHECK_GL(x) /* nothing */
-#define NOTHING_CHECK_GL(x) CHECK_GL(x)
+#define NOTHING_CHECK_GL(x) /* nothing */
+//#define NOTHING_CHECK_GL(x) CHECK_GL(x)
 
   struct VAO {
-    GLuint vao;
+    GLuint vao{};
 
     VAO() { NOTHING_CHECK_GL(glGenVertexArrays(1, &vao)); }
 
