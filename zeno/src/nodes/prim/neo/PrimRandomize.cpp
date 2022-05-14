@@ -162,12 +162,12 @@ static std::string_view lutRandTypes[] = {
 
 }
 
-ZENO_API void primRandomize(PrimitiveObject *prim, std::string attrName, std::string randType, std::string combType, float scale, int seed) {
-    auto randty = enum_variant<RandTypes>(array_index(lutRandTypes, randType));
+ZENO_API void primRandomize(PrimitiveObject *prim, std::string attr, std::string dirAttr, std::string randType, std::string combType, float scale, int seed) {
+    auto randty = enum_variant<RandTypes>(array_index_safe(lutRandTypes, randType, "randType"));
     auto combIsAdd = boolean_variant(combType == "add");
     std::visit([&] (auto &&randty, auto &&combIsAdd) {
         using T = std::invoke_result_t<decltype(randty), wangsrng &>;
-        auto &arr = prim->add_attr<T>(attrName);
+        auto &arr = prim->add_attr<T>(attr);
         parallel_for((size_t)0, arr.size(), [&] (size_t i) {
             wangsrng rng(seed, i);
             T offs = randty(rng) * scale;
@@ -186,10 +186,11 @@ struct PrimRandomize : INode {
         auto prim = get_input<PrimitiveObject>("prim");
         auto scale = get_input2<float>("scale");
         auto seed = get_input2<int>("seed");
-        auto attrName = get_input2<std::string>("attr");
+        auto attr = get_input2<std::string>("attr");
+        auto dirAttr = get_input2<std::string>("dirAttr");
         auto randType = get_input2<std::string>("randType");
         auto combType = get_input2<std::string>("combType");
-        primRandomize(prim.get(), attrName, randType, combType, scale, seed);
+        primRandomize(prim.get(), attr, dirAttr, randType, combType, scale, seed);
         set_output("prim", get_input("prim"));
     }
 };
@@ -198,6 +199,7 @@ ZENDEFNODE(PrimRandomize, {
     {
     {"PrimitiveObject", "prim"},
     {"string", "attr", "pos"},
+    {"string", "dirAttr", "nrm"},
     {"float", "scale", "1"},
     {"int", "seed", "0"},
     {"enum scalar01 scalar11 cube01 cube11 plane01 plane11 disk cylinder ball semiball sphere semisphere", "randType", "scalar01"},

@@ -2,7 +2,9 @@
 
 #include <array>
 #include <algorithm>
+#include <initializer_list>
 #include <zeno/utils/Error.h>
+#include <zeno/utils/to_string.h>
 
 namespace zeno {
 
@@ -23,10 +25,24 @@ std::size_t array_index(T const &arr, V const &val) {
 }
 
 template <class T, class V>
-std::size_t array_index_safe(T const &arr, V const &val, std::string const &type, std::string const &hint = "arrayindex") {
+std::size_t array_index_safe(T const &arr, V const &val, std::string const &type) {
     auto it = std::find(std::begin(arr), std::end(arr), val);
     if (it == std::end(arr))
-        throw makeError<KeyError>(std::to_string(val), type, hint);
+        throw makeError<KeyError>(to_string(val), type);
+    return it - std::begin(arr);
+}
+
+template <class T, class V>
+std::size_t array_index(std::initializer_list<T> arr, V const &val) {
+    auto it = std::find(std::begin(arr), std::end(arr), val);
+    return it - std::begin(arr);
+}
+
+template <class T, class V>
+std::size_t array_index_safe(std::initializer_list<T> arr, V const &val, std::string const &type) {
+    auto it = std::find(std::begin(arr), std::end(arr), val);
+    if (it == std::end(arr))
+        throw makeError<KeyError>(to_string(val), type);
     return it - std::begin(arr);
 }
 

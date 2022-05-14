@@ -18,21 +18,38 @@
 
 namespace zeno {
 
-ZENO_API void primPerlinNoise(PrimitiveObject *prim, std::string inAttrName, std::string attrName, std::string randType, std::string combType, float scale, int seed) {
-    auto randty = enum_variant<RandTypes>(array_index(lutRandTypes, randType));
-    auto combIsAdd = boolean_variant(combType == "add");
-    std::visit([&] (auto &&randty, auto &&combIsAdd) {
-        using T = std::invoke_result_t<decltype(randty), wangsrng &>;
-        auto &arr = prim->add_attr<T>(attrName);
-        parallel_for((size_t)0, arr.size(), [&] (size_t i) {
-            wangsrng rng(seed, i);
-            T offs = randty(rng) * scale;
-            if (combIsAdd.value)
-                arr[i] += offs;
-            else
-                arr[i] = offs;
-        });
-    }, randty, combIsAdd);
+ZENO_API void primPerlinNoise(PrimitiveObject *prim, std::string inAttr, std::string outAttr, std::string outType, float scale, float detail, float rouhgness, float disortion, vec3f offset) {
+    prim->attr_visit(inAttr, [&] (auto const &inArr) {
+        std::visit([&] (auto outTypeId) {
+            using InT = std::decay_t<decltype(inArr[0])>;
+            using OutT = decltype(outTypeId);
+            auto &outArr = prim->add_attr<OutT>(outAttr);
+            parallel_for((size_t)0, inArr.size(), [&] (size_t i) {
+                vec3f p;
+                auto inp = inArr[i];
+                if constexpr (std::is_same_v<InT, float>) {
+                    p = {inp, 0, 0};
+                } else if constexpr (std::is_same_v<InT, vec2f>) {
+                    p = {inp[0], inp[1], 0};
+                } else if constexpr (std::is_same_v<InT, vec3f>) {
+                    p = inp;
+                } else {
+                    throw makeError<TypeError>(typeid(vec3f), typeid(InT), "input type");
+                }
+                if constexpr (std::is_same_v<OutT, float>) {
+                    outArr[i] = PerlinNoise::perlin(p[0], p[1], p[2]);
+                } else if constexpr (std::is_same_v<OutT, vec3f>) {
+                    outArr[i] = {
+                        PerlinNoise::perlin(p[0], p[1], p[2]),
+                        PerlinNoise::perlin(p[1], p[2], p[0]),
+                        PerlinNoise::perlin(p[2], p[0], p[1]),
+                    };
+                } else {
+                    throw makeError<TypeError>(typeid(vec3f), typeid(OutT), "outType");
+                }
+            });
+        }, enum_variant<std::variant<float, vec3f>>(array_index_safe({1, 2, 3}, outType, "outType")));
+    });
 }
 
 namespace {
@@ -41,12 +58,15 @@ struct PrimPerlinNoise : INode {
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
         auto scale = get_input2<float>("scale");
-        auto seed = get_input2<int>("seed");
-        auto attrName = get_input2<std::string>("attr");
-        auto inAttrName = get_input2<std::string>("inAttr");
+        auto detail = get_input2<float>("detail");
+        auto roughness = get_input2<float>("roughness");
+        auto disortion = get_input2<float>("disortion");
+        auto offset = get_input2<vec3f>("offset");
+        auto outAttr = get_input2<std::string>("outAttr");
+        auto inAttr = get_input2<std::string>("inAttr");
         auto randType = get_input2<std::string>("randType");
         auto combType = get_input2<std::string>("combType");
-        primPerlinNoise(prim.get(), attrName, randType, combType, scale, seed);
+        primPerlinNoise(prim.get(), inAttr, outAttr, randType, combType, scale, detail, roughness, disortion, offset);
         set_output("prim", get_input("prim"));
     }
 };
@@ -55,13 +75,13 @@ ZENDEFNODE(PrimPerlinNoise, {
     {
     {"PrimitiveObject", "prim"},
     {"string", "inAttr", "pos"},
-    {"string", "attr", "clr"},
-    {"float", "scale", "1"},
-    {"float", "detail", "1"},
-    {"float", "roughness", "1"},
-    {"float", "disortion", "1"},
-    {"int", "seed", "0"},
-    {"enum set add", "combType", "add"},
+    {"string", "outAttr", "clr"},
+    {"float", "scale", "5"},
+    {"float", "detail", "2"},
+    {"float", "roughness", "0.5"},
+    {"float", "disortion", "0"},
+    {"vec3f", "offset", "0,0,0"},
+    {"enum float vec3f", "outType", "float"},
     },
     {
     {"PrimitiveObject", "prim"},

@@ -28,7 +28,8 @@ ZENO_API void primScale(PrimitiveObject *prim, vec3f const &scale);
 
 ZENO_API std::pair<vec3f, vec3f> primBoundingBox(PrimitiveObject *prim);
 
-ZENO_API void primRandomize(PrimitiveObject *prim, std::string attrName, std::string randType, std::string combType, float scale, int seed);
+ZENO_API void primRandomize(PrimitiveObject *prim, std::string attr, std::string dirAttr, std::string randType, std::string combType, float scale, int seed);
+ZENO_API void primPerlinNoise(PrimitiveObject *prim, std::string inAttr, std::string outAttr, std::string randType, std::string combType, float scale, float detail, float rouhgness, float disortion, vec3f offset);
 
 // WARNING: zhxx should add to PrimitiveTools.h instead!
 
