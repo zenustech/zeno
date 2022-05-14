@@ -122,7 +122,7 @@ ZenoNode* ZenoSubGraphScene::createNode(const QModelIndex& idx, const NodeUtilPa
     {
         return new MakeHeatMapNode(params);
     }
-    else if (descName == "MakeCurvemap")
+    else if (descName == "MakeCurvemap" || descName == "MakeCurve")
     {
         return new MakeCurvemapNode(params);
     }

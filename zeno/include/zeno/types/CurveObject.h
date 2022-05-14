@@ -3,14 +3,17 @@
 
 #include <zeno/core/IObject.h>
 #include <zeno/utils/vec.h>
+#include <algorithm>
+#include <cassert>
 #include <vector>
 #include <tuple>
 #include <cmath>
+#include <map>
 
 
 namespace zeno {
 
-struct CurveObject : zeno::IObject {
+struct _CurveDataDetails {
     static float ratio(float from, float to, float t) {
         return (t - from) / (to - from);
     }
@@ -51,63 +54,111 @@ struct CurveObject : zeno::IObject {
         }
         return np[1];
     }
+};
 
-    float eval_value(float x) const {
-        if (x <= 0) {
-            return 0;
-        } else if (x >= 1) {
-            return 1;
-        }
-        int i = -1;
-        for (vec2f const &p: points) {
-            if (p[0] < x) {
-                i += 1;
-            }
-        }
-        vec2f p1 = points[i];
-        vec2f p2 = points[i + 1];
-        vec2f h1 = std::get<1>(handlers[i]) + p1;
-        vec2f h2 = std::get<0>(handlers[i+1]) + p2;
-        return eval_bezier_value(p1, p2, h1, h2, x);
+struct CurveData : private _CurveDataDetails {
+    enum PointType {
+        kConstant,
+        kLinear,
+        kBezier,
+    };
+
+    enum CycleType {
+        kClamp,
+        kCycle,
+        kMirror,
+    };
+
+    struct ControlPoint {
+        float v{0};
+        PointType cp_type{PointType::kConstant};
+        vec2f left_handler{0, 0};
+        vec2f right_handler{0, 0};
+    };
+
+    std::vector<float> cpbases;
+    std::vector<ControlPoint> cpoints;
+    CycleType cycleType{CycleType::kClamp};
+
+    void addPoint(float f, float v, PointType cp_type, vec2f left_handler, vec2f right_handler) {
+        cpbases.push_back(f);
+        cpoints.push_back({v, cp_type, left_handler, right_handler});
     }
 
-    std::vector<zeno::vec2f> points;
-    std::vector<std::tuple<zeno::vec2f, zeno::vec2f>> handlers;
-    float input_min;
-    float input_max;
-    float output_min;
-    float output_max;
-
-    // correctness modify: make bezier to be function
-    std::vector<std::tuple<vec2f, vec2f>> correct_handlers() {
-        std::vector<std::tuple<vec2f, vec2f>> handlers = this->handlers;
-        for (int i = 0; i < points.size(); i++) {
-            vec2f cur_p = points[i];
-            if (i != 0) {
-                vec2f hp = std::get<0>(handlers[i]);
-                vec2f prev_p = points[i-1];
-                if (std::abs(hp[0]) > std::abs(cur_p[0] - prev_p[0])) {
-                    float s = std::abs(cur_p[0] - prev_p[0]) / std::abs(hp[0]);
-                    handlers[i] = {hp * s, std::get<1>(handlers[i])};
-                }
-
-            }
-            if (i != points.size() - 1) {
-                vec2f hn = std::get<1>(handlers[i]);
-                vec2f next_p = points[i+1];
-                if (std::abs(hn[0]) > std::abs(cur_p[0] - next_p[0])) {
-                    float s = std::abs(cur_p[0] - next_p[0]) / std::abs(hn[0]);
-                    handlers[i] = {std::get<0>(handlers[i]), hn * s};
-                }
-            }
+    float eval(float cf) const {
+        assert(!cpoints.empty());
+        assert(cpbases.size() == cpoints.size());
+        auto lessit = std::lower_bound(cpbases.begin(), cpbases.end(), cf);
+        if (cycleType != CycleType::kClamp) {
+            cf -= cpbases.front();
+            cf = std::fmod(cf - cpbases.front(), cpbases.back() - cpbases.front());
+            if (cycleType == CycleType::kCycle)
+                cf = cpbases.front() + cf;
+            else  // CycleType::kMirror
+                cf = cpbases.back() - cf;
         }
-        return handlers;
+        if (lessit == cpbases.end())
+            return cpbases.back();
+        else if (lessit == cpbases.begin())
+            return cpbases.front();
+        auto moreit = lessit + 1;
+        ControlPoint p = cpoints[lessit - cpbases.begin()];
+        ControlPoint n = cpoints[moreit - cpbases.begin()];
+        float pf = *lessit;
+        float nf = *moreit;
+        float t = (cf - pf) / (nf - pf);
+        if (p.cp_type == PointType::kBezier) {
+            float x_scale = nf - pf;
+            float y_scale = n.v - p.v;
+            return eval_bezier_value(
+                vec2f(pf, p.v),
+                vec2f(nf, n.v),
+                vec2f(pf, p.v) + p.right_handler,
+                vec2f(nf, n.v) + n.left_handler,
+                cf);
+        } else if (p.cp_type == PointType::kLinear) {
+            return lerp(p.v, n.v, t);
+        } else {  // PointType::kConstant
+            return p.v;
+        }
+    }
+};
+
+struct CurveObject : IObjectClone<CurveObject> {
+    std::map<std::string, CurveData> keys;
+
+    auto getEvaluator(std::string const &key) const {
+        return [&data = keys.at(key)] (float x) {
+            return data.eval(x);
+        };
+    }
+
+    template <class ...Ts>
+    void addPoint(std::string const &key, Ts ...ts) {
+        return keys[key].addPoint(ts...);
+    }
+
+    float eval(std::string const &key, float x) const {
+        return getEvaluator(key)(x);
     }
 
     float eval(float x) const {
-        x = ratio(input_min, input_max, x);
-        float y = eval_value(x);
-        return lerp(output_min, output_max, y);
+        return eval("x", x);
+    }
+
+    vec2f eval(vec2f v) const {
+        auto &[x, y] = v;
+        return {eval("x", x), eval("y", y)};
+    }
+
+    vec3f eval(vec3f v) const {
+        auto &[x, y, z] = v;
+        return {eval("x", x), eval("y", y), eval("z", z)};
+    }
+
+    vec4f eval(vec4f v) const {
+        auto &[x, y, z, w] = v;
+        return {eval("x", x), eval("y", y), eval("z", z), eval("w", w)};
     }
 };
 
