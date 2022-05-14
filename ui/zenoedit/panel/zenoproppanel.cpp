@@ -236,7 +236,6 @@ ZExpandableSection* ZenoPropPanel::paramsBox(IGraphsModel* pModel, const QModelI
 			}
 			case CONTROL_CURVE:
             {
-                zeno::log_critical("!!!!\n");
 				QPushButton* pBtn = new QPushButton("Edit Curve");
 				pBtn->setObjectName("grayButton");
                 pBtn->setProperty("cssClass", "grayButton");

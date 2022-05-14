@@ -257,7 +257,6 @@ PARAM_CONTROL UiHelper::_getControlType(const QString &type)
     } else if (type == "heatmap") {
         return CONTROL_HEATMAP;
     } else if (type == "curve") {
-        zeno::log_critical("!!curve");
         return CONTROL_CURVE;
     } else if (type.startsWith("enum ")) {
         return CONTROL_ENUM;
