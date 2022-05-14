@@ -822,6 +822,8 @@ struct GraphicPrimitive : IGraphic {
         triObj.voxelprog->set_uniformi("lightNum", lights.size());
         triObj.voxelprog->set_uniform("alphaPass", alphaPass);
         triObj.voxelprog->set_uniform("vxView", voxelizer::getView());
+        triObj.voxelprog->set_uniform("vxMaterialPass", voxelizer::isMaterialPass);
+        
         for (int lightNo = 0; lightNo < lights.size(); ++lightNo)
         {
             auto &light = lights[lightNo];
@@ -860,7 +862,11 @@ struct GraphicPrimitive : IGraphic {
             if (auto brdfLUT = getBRDFLut(); brdfLUT != (unsigned int)-1)
                 CHECK_GL(glBindTexture(GL_TEXTURE_2D, brdfLUT));
             texOcp++;
-
+            
+            triObj.voxelprog->set_uniformi("vxNormal", texOcp);
+            CHECK_GL(glActiveTexture(GL_TEXTURE0+texOcp));
+            CHECK_GL(glBindTexture(GL_TEXTURE_3D, voxelizer::vxNormal.id));
+            texOcp++;
             
 
 

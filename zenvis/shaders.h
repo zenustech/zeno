@@ -1413,9 +1413,8 @@ float ShadowHit(int lightNo, vec3 fragPosWorldSpace)
     // get depth of current fragment from light's perspective
     float currentDepth = projCoords.z;
     vec3 normal = normalize(iNormal);
-    float slop = abs(dot( normalize(normal), normalize(light[lightNo])));
-    float bias = (1-pow(slop,0.1)) * 0.1 + pow(slop,0.1) * 0.001;
-    return (currentDepth  * (far1-near1) + near1 - bias) > (sampleShadowArray(lightNo, projCoords.xy, layer)  * (far1-near1) + near1)?1.0:0.0;
+    
+    return (currentDepth  * (far1-near1) + near1) > (sampleShadowArray(lightNo, projCoords.xy, layer)  * (far1-near1) + near1)?1.0:0.0;
 }
 float ShadowCalculation(int lightNo, vec3 fragPosWorldSpace, float softness, vec3 tang, vec3 bitang, int k)
 {
@@ -1690,11 +1689,13 @@ vec4 sampleVoxel(vec3 pos, float diameter){
     float VoxelCellSize = vxSize/256;
     float MipLevel = log2(max(diameter, VoxelCellSize) / VoxelCellSize);
     vec3 VoxelPos = convWorldPosToVoxelPos(pos);
-    return textureLod(vxgibuffer, VoxelPos, min(MipLevel, 7));
+    vec4 ret = textureLod(vxgibuffer, VoxelPos, min(MipLevel, 7));
+    ret.xyz = ret.xyz * 1000;
+    return ret;
 }
 
 
-vec4 ConeTracing(vec3 origin, vec3 normal, vec3 direction, float aperture, float offset, float mt){
+vec4 ConeTracing(vec3 origin, vec3 normal, vec3 direction, float aperture, float offset, float mt, float dr){
     float stepSize = vxSize/256;
     float VoxelCellSize = vxSize/256;
     float t = offset * VoxelCellSize;
@@ -1707,9 +1708,9 @@ vec4 ConeTracing(vec3 origin, vec3 normal, vec3 direction, float aperture, float
 
     while(occlusion < 1 && t < max_t){
         vec4 s = sampleVoxel(currPos, diameter);
-        s.a = 1.0 - pow((1.0 - s.a), diameter / VoxelCellSize);
+        s.a = 1.0 - pow((1.0 - s.a), diameter / VoxelCellSize) ;
         acc = occlusion * acc + (1.0 - occlusion) * s.a * s.xyz;
-        occlusion += (1.0 - occlusion) * s.a;
+        occlusion += (1.0 - occlusion) * s.a* dr;
         t += stepSize * diameter;
         diameter = 2 * t * tan(aperture/ 2.0);
         currPos = origin + t * direction;
@@ -1719,15 +1720,15 @@ vec4 ConeTracing(vec3 origin, vec3 normal, vec3 direction, float aperture, float
 
 
 vec4 IndirectSpecularLighting(vec3 pos, vec3 normal, vec3 traceDir, float aperture){
-   return ConeTracing(pos, normal, traceDir, aperture, 2, vxSize);
+   return ConeTracing(pos, normal, traceDir, aperture, 2, vxSize, 0.3);
 }
 
 vec4 IndirectDiffuseLighting(vec3 pos, vec3 normal, vec3 tangent, vec3 bitangent){
-   vec4 color = 0.5 * ConeTracing(pos, normal, mix(normal, tangent, 0.666), 1.04, 6, vxSize);
-   color += 0.5 * ConeTracing(pos, normal, mix(normal, -tangent, 0.666), 1.04, 6, vxSize);
-   color += 0.5 * ConeTracing(pos, normal, mix(normal, bitangent, 0.666), 1.04, 6, vxSize);
-   color += 0.5 * ConeTracing(pos, normal, mix(normal, -bitangent, 0.666), 1.04, 6, vxSize);
-   color += ConeTracing(pos, normal, normal, 1.04, 6, vxSize);
+   vec4 color = 0.5 * ConeTracing(pos, normal, mix(normal, tangent, 0.666), 1.04, 6, vxSize, 1.0);
+   color += 0.5 * ConeTracing(pos, normal, mix(normal, -tangent, 0.666), 1.04, 6, vxSize, 1.0);
+   color += 0.5 * ConeTracing(pos, normal, mix(normal, bitangent, 0.666), 1.04, 6, vxSize, 1.0);
+   color += 0.5 * ConeTracing(pos, normal, mix(normal, -bitangent, 0.666), 1.04, 6, vxSize, 1.0);
+   color += ConeTracing(pos, normal, normal, 1.04, 6, vxSize, 1.0);
    return vec4(color.xyz, 1.0);
 }
 
@@ -1851,9 +1852,12 @@ vec4 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 old_tangent) {
         }
 
         vec3 lcolor = mix(photoReal, NPR, mat_toon) + mat_subsurface * sss;
-   
-        float shadow = ShadowCalculation(lightId, position + 0.001 * TBN[2], shadowSoftness[lightId], tan, TBN[1],3);
-        vec3 sclr = vec3(1.0-shadow);
+        float slop = abs(dot( normalize(normal), normalize(light[lightId])));
+        float bias = (1-pow(slop,0.1)) * 0.1 + pow(slop,0.1) * 0.001;
+        vec3 disp;
+        disp = 0.005 * normalize(lightDir[lightId]) + bias * normalize(TBN[2]);
+        float shadow = ShadowCalculation(lightId, position + disp, shadowSoftness[lightId], tan, TBN[1],3);
+        vec3 sclr = clamp(vec3(1.0-shadow) + shadowTint[lightId], vec3(0.0), vec3(1.0));
         color += lcolor * sclr;
         
 

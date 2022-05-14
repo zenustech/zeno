@@ -192,6 +192,209 @@ struct ZSParticleToZSGrid : INode {
               transfer(verts.pack<3>("x", inds[1]), Dminv00, -vol * dt);
             });
   }
+  void p2g_curve(zs::CudaExecutionPolicy &cudaPol,
+                 const zs::StvkWithHencky<float> &model,
+                 typename ZenoParticles::particles_t &verts,
+                 const typename ZenoParticles::particles_t &eles,
+                 const typename ZenoPartition::table_t &partition,
+                 const float dt, typename ZenoGrid::grid_t &grid,
+                 const float gamma, const float k, bool isFlipStyle = false,
+                 bool isAffineAugmented = true) {
+    using namespace zs;
+    verts.append_channels(cudaPol, {{"imp", 3}}); // impulse
+    cudaPol(range(verts.size()), [verts = proxy<execspace_e::cuda>(
+                                      {}, verts)] __device__(int pi) mutable {
+      verts.tuple<3>("imp", pi) = zs::vec<float, 3>::zeros();
+    });
+
+    bool materialParamOverride =
+        eles.hasProperty("mu") && eles.hasProperty("lam");
+    SmallString vtag = isFlipStyle ? "vstar" : "v";
+    cudaPol(
+        range(eles.size()),
+        [verts = proxy<execspace_e::cuda>({}, verts),
+         eles = proxy<execspace_e::cuda>({}, eles),
+         table = proxy<execspace_e::cuda>(partition),
+         grid = proxy<execspace_e::cuda>({}, grid), model = model,
+         materialParamOverride, dt, gamma, k, dxinv = 1.f / grid.dx, vtag,
+         isAffineAugmented] __device__(size_t pi) mutable {
+          using grid_t = RM_CVREF_T(grid);
+          using mat2 = zs::vec<float, 2, 2>;
+          using mat3 = zs::vec<float, 3, 3>;
+          auto pos = eles.pack<3>("x", pi);
+          auto vel = eles.pack<3>("v", pi);
+          auto mass = eles("m", pi);
+          auto vol = eles("vol", pi);
+          auto C = isAffineAugmented ? eles.pack<3, 3>("C", pi) : mat3::zeros();
+          auto F = eles.pack<3, 3>("F", pi);
+          auto d_ = eles.pack<3, 3>("d", pi);
+
+          // hard coded P compute
+          auto [Q, R] = math::gram_schmidt(F);
+          mat2 R2{R(1, 1), R(1, 2), 0, R(2, 2)};
+          if (materialParamOverride) {
+            model.mu = eles("mu", pi);
+            model.lam = eles("lam", pi);
+          }
+          auto P2 = model.first_piola(R2); // use as F
+          auto P = mat3::zeros();
+          P(0, 0) = k * (R(0, 0) - 1);
+          P(1, 1) = P2(0, 0);
+          P(1, 2) = P2(0, 1);
+          P(2, 1) = P2(1, 0);
+          P(2, 2) = P2(1, 1);
+          P = Q * P;
+
+          float rr = R(0, 1) * R(0, 1) + R(0, 2) * R(0, 2); // shearing
+          float gp = gamma;
+
+          auto A = mat3::zeros();
+          A(0, 0) = rr * gp;
+          A(0, 1) = (R(1, 1) * R(0, 1) + R(1, 2) * R(0, 2)) * gp;
+          A(0, 2) = R(2, 2) * R(0, 2) * gp;
+          A(1, 0) = A(0, 1);
+          A(2, 0) = A(0, 2);
+          // P += Q * A * inverse(R).transpose();
+          auto invJ = R(0, 0) * R(1, 1) * R(2, 2);
+          if (invJ != 0.f)
+            invJ = 1.f / invJ;
+          mat3 Rit{};
+          Rit(0, 0) = R(1, 1) * R(2, 2);
+          Rit(0, 1) = -R(1, 0) * R(2, 2);
+          Rit(0, 2) = R(1, 0) * R(2, 1) - R(1, 1) * R(2, 0);
+          Rit(1, 0) = 0;
+          Rit(1, 1) = R(0, 0) * R(2, 2);
+          Rit(1, 2) = -R(0, 0) * R(2, 1);
+          Rit(2, 0) = Rit(2, 1) = 0;
+          Rit(2, 2) = R(0, 0) * R(1, 1);
+          P += Q * A * invJ * Rit;
+
+          //
+          zs::vec<float, 3, 2> P_c23{P(0, 1), P(0, 2), P(1, 1),
+                                     P(1, 2), P(2, 1), P(2, 2)};
+          zs::vec<float, 2, 3> d_c23T{d_(0, 1), d_(1, 1), d_(2, 1),
+                                      d_(0, 2), d_(1, 2), d_(2, 2)};
+
+          auto arena =
+              make_local_arena<grid_e::collocated, kernel_e::quadratic, 1>(
+                  grid.dx, pos);
+          if (vtag == "v")
+            for (auto loc : arena.range()) {
+              auto coord = arena.coord(loc);
+              auto localIndex = coord & (grid_t::side_length - 1);
+              auto blockno = table.query(coord - localIndex);
+              if (blockno < 0)
+                printf("THE HELL!");
+              auto block = grid.block(blockno);
+
+              auto Wmass = arena.weight(loc) * mass;
+              auto xixp = arena.diff(loc);
+              auto Wgrad = arena.weightGradients(loc) * dxinv;
+              const auto cellid = grid_t::coord_to_cellid(localIndex);
+
+              auto vft = P_c23 * (d_c23T * Wgrad) * (-vol * dt);
+
+              atomic_add(exec_cuda, &block("m", cellid), Wmass);
+              auto Cxixp = C * xixp;
+              for (int d = 0; d != 3; ++d) {
+                atomic_add(exec_cuda, &block("v", d, cellid),
+                           Wmass * (vel[d] + Cxixp[d]) + vft(d));
+              }
+            }
+          else
+            for (auto loc : arena.range()) {
+              auto coord = arena.coord(loc);
+              auto localIndex = coord & (grid_t::side_length - 1);
+              auto blockno = table.query(coord - localIndex);
+              if (blockno < 0)
+                printf("THE HELL!");
+              auto block = grid.block(blockno);
+
+              auto Wmass = arena.weight(loc) * mass;
+              auto xixp = arena.diff(loc);
+              auto Wgrad = arena.weightGradients(loc) * dxinv;
+              const auto cellid = grid_t::coord_to_cellid(localIndex);
+
+              auto vft = P_c23 * (d_c23T * Wgrad) * (-vol * dt);
+              for (int d = 0; d != 3; ++d)
+                atomic_add(exec_cuda, &block(vtag, d, cellid), (float)vft(d));
+
+              atomic_add(exec_cuda, &block("m", cellid), Wmass);
+              auto Cxixp = C * xixp;
+              for (int d = 0; d != 3; ++d)
+                atomic_add(exec_cuda, &block("v", d, cellid),
+                           Wmass * (vel[d] + Cxixp[d]));
+            }
+
+          // type (ii)
+          auto transfer = [P_c0 = col(P, 0), &grid, &table, &vtag,
+                           &verts](auto D_beta_eps, const auto coeff, int pi) {
+            auto vft = coeff * P_c0 * D_beta_eps;
+            for (int d = 0; d != 3; ++d)
+              atomic_add(exec_cuda, &verts("imp", d, pi), (float)vft[d]);
+          };
+          auto Dminv00 = eles("DmInv", pi);
+          auto inds = eles.pack<2>("inds", pi).template reinterpret_bits<int>();
+          transfer(Dminv00, vol * dt, inds[0]);
+          transfer(Dminv00, -vol * dt, inds[1]);
+        });
+    cudaPol(range(verts.size()),
+            [verts = proxy<execspace_e::cuda>({}, verts),
+             table = proxy<execspace_e::cuda>(partition),
+             grid = proxy<execspace_e::cuda>({}, grid), dxinv = 1.f / grid.dx,
+             vtag, isAffineAugmented] __device__(size_t pi) mutable {
+              using grid_t = RM_CVREF_T(grid);
+              using mat3 = zs::vec<float, 3, 3>;
+              auto pos = verts.pack<3>("x", pi);
+              auto vel = verts.pack<3>("v", pi);
+              auto impulse = verts.pack<3>("imp", pi);
+              auto mass = verts("m", pi);
+              auto C =
+                  isAffineAugmented ? verts.pack<3, 3>("C", pi) : mat3::zeros();
+
+              auto arena = make_local_arena(grid.dx, pos);
+
+              if (vtag == "v")
+                for (auto loc : arena.range()) {
+                  auto coord = arena.coord(loc);
+                  auto localIndex = coord & (grid_t::side_length - 1);
+                  auto blockno = table.query(coord - localIndex);
+                  if (blockno < 0)
+                    printf("THE HELL!");
+                  auto block = grid.block(blockno);
+
+                  auto xixp = arena.diff(loc);
+                  auto W = arena.weight(loc);
+                  const auto cellid = grid_t::coord_to_cellid(localIndex);
+                  atomic_add(exec_cuda, &block("m", cellid), mass * W);
+                  auto Cxixp = C * xixp;
+                  for (int d = 0; d != 3; ++d)
+                    atomic_add(exec_cuda, &block("v", d, cellid),
+                               W * (mass * (vel[d] + Cxixp[d]) + impulse[d]));
+                }
+              else
+                for (auto loc : arena.range()) {
+                  auto coord = arena.coord(loc);
+                  auto localIndex = coord & (grid_t::side_length - 1);
+                  auto blockno = table.query(coord - localIndex);
+                  if (blockno < 0)
+                    printf("THE HELL!");
+                  auto block = grid.block(blockno);
+
+                  auto xixp = arena.diff(loc);
+                  auto W = arena.weight(loc);
+                  const auto cellid = grid_t::coord_to_cellid(localIndex);
+                  atomic_add(exec_cuda, &block("m", cellid), mass * W);
+                  auto Cxixp = C * xixp;
+                  for (int d = 0; d != 3; ++d) {
+                    atomic_add(exec_cuda, &block("v", d, cellid),
+                               W * mass * (vel[d] + Cxixp[d]));
+                    atomic_add(exec_cuda, &block(vtag, d, cellid),
+                               W * impulse[d]);
+                  }
+                }
+            });
+  }
   void p2g_vert_bending_force(zs::CudaExecutionPolicy &cudaPol,
                               const typename ZenoParticles::particles_t &verts,
                               const typename ZenoParticles::particles_t &eles,
@@ -605,29 +808,52 @@ struct ZSParticleToZSGrid : INode {
               make_local_arena<grid_e::collocated, kernel_e::quadratic, 1>(
                   grid.dx, pos);
           // compression
-          for (auto loc : arena.range()) {
-            auto coord = arena.coord(loc);
-            auto localIndex = coord & (grid_t::side_length - 1);
-            auto blockno = table.query(coord - localIndex);
-            if (blockno < 0)
-              printf("THE HELL!");
-            auto block = grid.block(blockno);
+          if (vtag == "v")
+            for (auto loc : arena.range()) {
+              auto coord = arena.coord(loc);
+              auto localIndex = coord & (grid_t::side_length - 1);
+              auto blockno = table.query(coord - localIndex);
+              if (blockno < 0)
+                printf("THE HELL!");
+              auto block = grid.block(blockno);
 
-            auto Wmass = arena.weight(loc) * mass;
-            auto xixp = arena.diff(loc);
-            auto Wgrad = arena.weightGradients(loc) * dxinv;
-            const auto cellid = grid_t::coord_to_cellid(localIndex);
+              auto Wmass = arena.weight(loc) * mass;
+              auto xixp = arena.diff(loc);
+              auto Wgrad = arena.weightGradients(loc) * dxinv;
+              const auto cellid = grid_t::coord_to_cellid(localIndex);
 
-            auto vft = P_c3 * Wgrad.dot(d_c3) * (-vol * dt);
-            for (int d = 0; d != 3; ++d)
-              atomic_add(exec_cuda, &block(vtag, d, cellid), (float)vft(d));
+              auto vft = P_c3 * Wgrad.dot(d_c3) * (-vol * dt);
 
-            atomic_add(exec_cuda, &block("m", cellid), Wmass);
-            auto Cxixp = C * xixp;
-            for (int d = 0; d != 3; ++d)
-              atomic_add(exec_cuda, &block("v", d, cellid),
-                         Wmass * (vel[d] + Cxixp[d]));
-          }
+              atomic_add(exec_cuda, &block("m", cellid), Wmass);
+              auto Cxixp = C * xixp;
+              for (int d = 0; d != 3; ++d)
+                atomic_add(exec_cuda, &block("v", d, cellid),
+                           Wmass * (vel[d] + Cxixp[d]) + vft(d));
+            }
+          else
+            for (auto loc : arena.range()) {
+              auto coord = arena.coord(loc);
+              auto localIndex = coord & (grid_t::side_length - 1);
+              auto blockno = table.query(coord - localIndex);
+              if (blockno < 0)
+                printf("THE HELL!");
+              auto block = grid.block(blockno);
+
+              auto Wmass = arena.weight(loc) * mass;
+              auto xixp = arena.diff(loc);
+              auto Wgrad = arena.weightGradients(loc) * dxinv;
+              const auto cellid = grid_t::coord_to_cellid(localIndex);
+
+              auto vft = P_c3 * Wgrad.dot(d_c3) * (-vol * dt);
+              for (int d = 0; d != 3; ++d)
+                atomic_add(exec_cuda, &block(vtag, d, cellid), vft(d));
+
+              atomic_add(exec_cuda, &block("m", cellid), Wmass);
+              auto Cxixp = C * xixp;
+              for (int d = 0; d != 3; ++d)
+                atomic_add(exec_cuda, &block("v", d, cellid),
+                           Wmass * (vel[d] + Cxixp[d]));
+            }
 
           // type (ii)
           auto transfer = [&P, &vtag, &verts](const auto &pos,
@@ -918,11 +1144,11 @@ struct ZSParticleToZSGrid : INode {
           } else if (parObjPtr->category == ZenoParticles::curve) {
             if constexpr (is_same_v<RM_CVREF_T(elasticModel),
                                     StvkWithHencky<float>>) {
-              p2g_momentum(cudaPol, pars, partition, grid, isAffineAugmented);
-              p2g_curve_force(cudaPol, elasticModel, pars, eles, partition,
-                              stepDt, grid, model.retrieve("gamma"),
-                              model.retrieve("k"), isFlipStyle,
-                              isAffineAugmented);
+              // p2g_momentum(cudaPol, pars, partition, grid,
+              // isAffineAugmented);
+              p2g_curve(cudaPol, elasticModel, pars, eles, partition, stepDt,
+                        grid, model.retrieve("gamma"), model.retrieve("k"),
+                        isFlipStyle, isAffineAugmented);
             } else
               throw std::runtime_error(
                   "curve should use StvkWithHencky elastic constitutive model "

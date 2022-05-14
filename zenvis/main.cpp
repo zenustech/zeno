@@ -388,6 +388,15 @@ void voxelizePass()
 
   view = glm::mat4(1);
   proj = glm::ortho(-0.01f,1.01f,-0.01f,1.01f, -1.01f,1.01f);
+  voxelizer::isMaterialPass = 1.0;
+  voxelizer::BeginVxMaterial();
+    vao->bind();
+      for (auto const &[key, gra] : current_frame_data()->graphics)
+      {
+        gra->drawVoxelize(0.0);
+      }
+    vao->unbind();
+  voxelizer::isMaterialPass = 0.0; 
   voxelizer::ClearTexture();
   for(int i=0;i<20;i++){
     voxelizer::BeginVoxelize();

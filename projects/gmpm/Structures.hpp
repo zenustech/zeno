@@ -199,8 +199,14 @@ struct ZenoParticles : IObjectClone<ZenoParticles> {
     return sprayedOffset != numParticles();
   }
 
+  decltype(auto) operator[](const std::string &tag) { return auxData[tag]; }
+  decltype(auto) operator[](const std::string &tag) const {
+    return auxData.at(tag);
+  }
+
   std::shared_ptr<particles_t> particles{};
   std::optional<particles_t> elements{};
+  std::map<std::string, particles_t> auxData;
   category_e category{category_e::mpm}; // 0: conventional mpm particle, 1:
                                         // curve, 2: surface, 3: tet
   std::shared_ptr<PrimitiveObject> prim{};
