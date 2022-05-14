@@ -25,8 +25,8 @@
 
 struct Mesh{
     FBXData fbxData;
+    BoneOffset boneOffset;
     std::vector<Texture> textures_loaded;
-    std::unordered_map<std::string, BoneInfo> m_BoneOffset;
     std::unordered_map<std::string, std::vector<unsigned int>> m_VerticesSlice;
     std::unordered_map<std::string, aiMatrix4x4> m_TransMatrix;
     unsigned int m_VerticesIncrease = 0;
@@ -92,7 +92,7 @@ struct Mesh{
 
         // Material
         aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
-        zeno::log_info("MatTex: Mesh {} Material {}", meshName, material->GetName().data);
+//        zeno::log_info("MatTex: Mesh {} Material {}", meshName, material->GetName().data);
         std::vector<Texture> diffuseMaps = loadMaterialTextures(material, aiTextureType_DIFFUSE, "texture_diffuse");
         textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end());
 
@@ -134,7 +134,7 @@ struct Mesh{
         {
             aiString str;
             mat->GetTexture(type, i, &str);
-            zeno::log_info("MatTex: Texture Name {}", str.data);
+//            zeno::log_info("MatTex: Texture Name {}", str.data);
 
             bool skip = false;
             for(unsigned int j = 0; j < textures_loaded.size(); j++)
@@ -163,15 +163,15 @@ struct Mesh{
         for (int boneIndex = 0; boneIndex < mesh->mNumBones; ++boneIndex)
         {
             std::string boneName(mesh->mBones[boneIndex]->mName.C_Str());
-
-            // Not Found, Create one
-            if (m_BoneOffset.find(boneName) == m_BoneOffset.end()) {
+            //zeno::log_info("Extracting {}", boneName);
+            // Not Found, Create one, If Found, will have same offset-matrix
+            if (boneOffset.BoneOffsetMap.find(boneName) == boneOffset.BoneOffsetMap.end()) {
                 BoneInfo newBoneInfo;
 
                 newBoneInfo.name = boneName;
                 newBoneInfo.offset = mesh->mBones[boneIndex]->mOffsetMatrix;
 
-                m_BoneOffset[boneName] = newBoneInfo;
+                boneOffset.BoneOffsetMap[boneName] = newBoneInfo;
             }
 
             auto weights = mesh->mBones[boneIndex]->mWeights;
@@ -208,9 +208,11 @@ struct Mesh{
                 meshBoneWeight = 1.0f;
             }
              */
-            zeno::log_info("SetupTrans: {} {} : {} {} {} {} {}",
-                           iter.first, foundMeshBone,
-                           iter.second[0], iter.second[1], iter.second[2], iter.second[3], iter.second[4]);
+
+            // DEBUG
+//            zeno::log_info("SetupTrans: {} {} : {} {} {} {} {}",
+//                           iter.first, foundMeshBone,
+//                           iter.second[0], iter.second[1], iter.second[2], iter.second[3], iter.second[4]);
 
             for(unsigned int i=verStart; i<verEnd; i++){
                 if(verBoneNum == 0){
@@ -226,6 +228,7 @@ struct Mesh{
                 }
             }
 
+            // Sub-prims (apply node transform)
             auto sub_prim = std::make_shared<zeno::PrimitiveObject>();
             for(unsigned int i=indicesStart; i<indicesEnd; i+=3){
                 zeno::vec3i incs(fbxData.indices[i]-verStart,
@@ -264,7 +267,9 @@ struct Anim{
     NodeTree m_RootNode;
     BoneTree m_Bones;
 
-    void initAnim(aiScene const*scene, Mesh* model, std::shared_ptr<FBXData>& fbxData){
+    float duration;
+    float tick;
+    void initAnim(aiScene const*scene, Mesh* model){
 
         readHierarchyData(m_RootNode, scene->mRootNode);
         //zeno::log_info("----- Anim: Convert AssimpNode.");
@@ -272,15 +277,15 @@ struct Anim{
         if(scene->mNumAnimations){
             // TODO handle more animation if have
             auto animation = scene->mAnimations[0];
-            fbxData->duration = animation->mDuration;
-            fbxData->tick = animation->mTicksPerSecond;
+            duration = animation->mDuration;
+            tick = animation->mTicksPerSecond;
 
             setupBones(animation, model);
         }
 
         // DEBUG
-//        zeno::log_info("Anim: Bone Setup, Size {}", m_Bones.boneMap.size());
-//        for(auto&b: m_Bones.boneMap){
+//        zeno::log_info("Anim: Bone Setup, Size {}", m_Bones.BoneMap.size());
+//        for(auto&b: m_Bones.BoneMap){
 //            zeno::log_info(">>>>> Bone Name {}", b.first);  // <BoneName>_$AssimpFbx$_Translation
 //        }
 //        zeno::log_info("\n");
@@ -304,24 +309,27 @@ struct Anim{
         int size = animation->mNumChannels;
         zeno::log_info("SetupBones: Num Channels {}", size);
 
-        auto& boneOffset = model->m_BoneOffset;
-        int& boneCount = model->m_BoneCount;
+//        auto& boneOffset = model->m_BoneOffset;
+//        auto& boneOffset = m_Bones.BoneInfoMap;
+//        int& boneCount = model->m_BoneCount;
 
         for (int i = 0; i < size; i++) {
             auto channel = animation->mChannels[i];
             std::string boneName(channel->mNodeName.data);
-
-            if (boneOffset.find(boneName) == boneOffset.end())
-            {
-                // TODO Assimp $AssimpFbx$_Translation
-                boneOffset[boneName].name = boneName;
-            }
+//            zeno::log_info("----- Name {}", boneName);
+//            if (boneOffset.find(boneName) == boneOffset.end())
+//            {
+//                // TODO Assimp $AssimpFbx$_Translation
+//                boneOffset[boneName].name = boneName;
+//            }
             Bone bone;
             bone.initBone(boneName, channel);
-            m_Bones.boneMap[boneName] = bone;
+
+//            zeno::log_info("Anim Bone {}", boneName);
+            m_Bones.BoneMap[boneName] = bone;
         }
 
-//        for(auto& b:m_Bones.boneMap){
+//        for(auto& b:m_Bones.BoneMap){
 //            zeno::log_info("----- ----- Bone Name {} : {} {} {}", b.first,
 //                           b.second.m_NumPositions,
 //                           b.second.m_NumRotations,
@@ -329,10 +337,14 @@ struct Anim{
 //        }
 //        zeno::log_warn("------------------------------------");
 
-        // m_Bones: Anims
-        // boneOffset: Joints
+        // BoneMap: Anims
+        // BoneOffset: Joints
         // BoneInfoMap: Joints and Anims
-        m_Bones.BoneInfoMap = boneOffset;
+//        m_Bones.BoneInfoMap = boneOffset;
+
+        zeno::log_info("SetupBones: Num BoneMap: {} Num BoneInfoMap {}",
+                       m_Bones.BoneMap.size(),
+                       m_Bones.BoneInfoMap.size());
     }
 
 };
@@ -344,6 +356,7 @@ void readFBXFile(
         std::shared_ptr<NodeTree>& nodeTree,
         std::shared_ptr<FBXData>& fbxData,
         std::shared_ptr<BoneTree>& boneTree,
+        std::shared_ptr<BoneOffset>& boneOffset,
         const char *fbx_path)
 {
     Assimp::Importer importer;
@@ -360,21 +373,22 @@ void readFBXFile(
     Anim anim;
 
     mesh.initMesh(scene);
-
-    *fbxData = mesh.fbxData;
-
-    anim.initAnim(scene, &mesh, fbxData);
-    mesh.processTrans(anim.m_Bones.boneMap, prims);
+    anim.initAnim(scene, &mesh);
+    mesh.processTrans(anim.m_Bones.BoneMap, prims);
     mesh.processPrim(vertices, indices);
 
+    *fbxData = mesh.fbxData;
     *nodeTree = anim.m_RootNode;
     *boneTree = anim.m_Bones;
+    *boneOffset = mesh.boneOffset;
+    fbxData->duration = anim.duration;
+    fbxData->tick = anim.tick;
 
-    zeno::log_info("ReadFBXPrim: Num Animation {}", scene->mNumAnimations);
-    zeno::log_info("ReadFBXPrim: Vertices count {}", mesh.fbxData.vertices.size());
-    zeno::log_info("ReadFBXPrim: Indices count {}", mesh.fbxData.indices.size());
-    zeno::log_info("ReadFBXPrim: Bone count {}", mesh.m_BoneCount);
-    zeno::log_info("ReadFBXPrim: readFBXFile done.");
+//    zeno::log_info("ReadFBXPrim: Num Animation {}", scene->mNumAnimations);
+//    zeno::log_info("ReadFBXPrim: Vertices count {}", mesh.fbxData.vertices.size());
+//    zeno::log_info("ReadFBXPrim: Indices count {}", mesh.fbxData.indices.size());
+//    zeno::log_info("ReadFBXPrim: Bone count {}", mesh.m_BoneCount);
+//    zeno::log_info("ReadFBXPrim: readFBXFile done.");
 }
 
 struct ReadFBXPrim : zeno::INode {
@@ -393,15 +407,16 @@ struct ReadFBXPrim : zeno::INode {
         auto nodeTree = std::make_shared<NodeTree>();
         auto fbxData = std::make_shared<FBXData>();
         auto boneTree = std::make_shared<BoneTree>();
+        auto boneOffset = std::make_shared<BoneOffset>();
         auto &pos = prim->verts;
         auto &tris = prim->tris;
 
-        zeno::log_info("ReadFBXPrim: path {}", path);
-        zeno::log_info("ReadFBXPrim: frameid {}", frameid);
+        zeno::log_info("ReadFBXPrim: File Path {}", path);
+//        zeno::log_info("ReadFBXPrim: frameid {}", frameid);
 
         readFBXFile(pos, tris,
                     prims,
-                    nodeTree, fbxData, boneTree,
+                    nodeTree, fbxData, boneTree, boneOffset,
                     path.c_str());
 
         set_output("prim", std::move(prim));
@@ -409,6 +424,7 @@ struct ReadFBXPrim : zeno::INode {
         set_output("nodetree", std::move(nodeTree));
         set_output("fbxdata", std::move(fbxData));
         set_output("bonetree", std::move(boneTree));
+        set_output("boneoffset", std::move(boneOffset));
     }
 };
 
@@ -422,7 +438,8 @@ ZENDEFNODE(ReadFBXPrim,
                    "prim", "dict",
                    {"FBXData", "fbxdata"},
                    {"NodeTree", "nodetree"},
-                   {"BoneTree", "bonetree"}
+                   {"BoneTree", "bonetree"},
+                   {"BoneOffset", "boneoffset"}
                },  /* params: */
                {
 
