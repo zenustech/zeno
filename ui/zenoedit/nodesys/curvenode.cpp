@@ -47,48 +47,57 @@ void MakeCurveNode::onEditClicked()
 
     CURVE_RANGE rg;
 
-    QString pointsStr = params2["_POINTS"].value.toString();
-    QString handlersStr = params2["_HANDLERS"].value.toString();
+    QString parstr = params2["UI_MakeCurve"].value.toString();
 
     QVector<QPointF> points, handlers;
 
-    QStringList L = pointsStr.split(" ", QtSkipEmptyParts);
+    QStringList L = parstr.split(" ", QtSkipEmptyParts);
     if (!L.isEmpty())
     {
-        int n = 0;
         bool bOK = false;
-        n = L[0].toInt(&bOK);
+        int keycount = L[0].toInt(&bOK);
         ZASSERT_EXIT(bOK);
 
-        if (L.length() != (1 + 2 * n))
+        int i = 1;
+        for (int k = 0; k < keycount; k++)
         {
-            ZASSERT_EXIT(false);
-        }
+            QString key = L[i++];
+            int cyctype = L[i++].toInt(&bOK);
+            ZASSERT_EXIT(bOK);
+            int count = L[i++].toInt(&bOK);
+            ZASSERT_EXIT(bOK);
+            float input_min = L[i++].toFloat(&bOK);
+            ZASSERT_EXIT(bOK);
+            float input_max = L[i++].toFloat(&bOK);
+            ZASSERT_EXIT(bOK);
+            float output_min = L[i++].toFloat(&bOK);
+            ZASSERT_EXIT(bOK);
+            float output_max = L[i++].toFloat(&bOK);
+            ZASSERT_EXIT(bOK);
 
-        for (int i = 1; i < L.length(); i += 2)
-        {
             QPointF pt;
-            pt.setX(L[i].toFloat(&bOK));
+            pt.setX(L[i++].toFloat(&bOK));
             ZASSERT_EXIT(bOK);
-
-            pt.setY(L[i + 1].toFloat(&bOK));
+            pt.setY(L[i++].toFloat(&bOK));
             ZASSERT_EXIT(bOK);
-
             points.append(pt);
-        }
 
-        L = handlersStr.split(" ");
-        for (int i = 0; i < L.length(); i += 2)
-        {
-            QPointF pt;
-
-            pt.setX(L[i].toFloat(&bOK));
+            int cptype = L[i++].toInt(&bOK);
             ZASSERT_EXIT(bOK);
 
-            pt.setY(L[i + 1].toFloat(&bOK));
+            QPointF pt1;
+            pt1.setX(L[i++].toFloat(&bOK));
             ZASSERT_EXIT(bOK);
+            pt1.setY(L[i++].toFloat(&bOK));
+            ZASSERT_EXIT(bOK);
+            handlers.append(pt1);
 
-            handlers.append(pt);
+            QPointF pt2;
+            pt1.setX(L[i++].toFloat(&bOK));
+            ZASSERT_EXIT(bOK);
+            pt1.setY(L[i++].toFloat(&bOK));
+            ZASSERT_EXIT(bOK);
+            handlers.append(pt1);
         }
     }
     else

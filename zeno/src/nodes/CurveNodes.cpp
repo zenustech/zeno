@@ -12,7 +12,7 @@ struct MakeCurve : zeno::INode {
         size_t keycount = 0;
         ss >> keycount;
         for (size_t kid = 0; kid < keycount; kid++) {
-            std::string key = "(uninitialized)";
+            std::string key = "(uninit)";
             ss >> key;
             CurveData &cdat = curve->keys[key];
             int cyctype = 0;
@@ -40,7 +40,7 @@ ZENO_DEFNODE(MakeCurve)({
     {
     },
     {
-        "curve",
+        {"curve", "curve"},
     },
     {
     },
@@ -60,11 +60,11 @@ struct EvalCurve : zeno::INode {
 
 ZENO_DEFNODE(EvalCurve)({
     {
-        "value",
-        "curve",
+        {"float", "value"},
+        {"curve", "curve"},
     },
     {
-        "value",
+        {"float", "value"},
     },
     {},
     {"curve"},

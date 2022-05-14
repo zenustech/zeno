@@ -228,12 +228,21 @@ ZExpandableSection* ZenoPropPanel::paramsBox(IGraphsModel* pModel, const QModelI
 			}
 			case CONTROL_HEATMAP:
 			{
-				QPushButton* pBtn = new QPushButton("Edit");
+				QPushButton* pBtn = new QPushButton("Edit Heatmap");
 				pBtn->setObjectName("grayButton");
                 pBtn->setProperty("cssClass", "grayButton");
 				pLayout->addWidget(pBtn, r++, 1);
 				break;
 			}
+			case CONTROL_CURVE:
+            {
+                zeno::log_critical("!!!!\n");
+				QPushButton* pBtn = new QPushButton("Edit Curve");
+				pBtn->setObjectName("grayButton");
+                pBtn->setProperty("cssClass", "grayButton");
+				pLayout->addWidget(pBtn, r++, 1);
+                break;
+            }
 			default:
 			{
 				break;
@@ -434,6 +443,18 @@ void ZenoPropPanel::onDataChanged(const QModelIndex& subGpIdx, const QModelIndex
 					{
 						QTextEdit* pTextEdit = lst[0];
 						pTextEdit->setText(param.value.toString());
+					}
+					break;
+				}
+				case CONTROL_HEATMAP:
+                case CONTROL_CURVE:  //TODO(bate): find the QPushButton
+				{
+					//update lineedit
+					auto lst = findChildren<QLineEdit*>(param.name, Qt::FindChildrenRecursively);
+					if (lst.size() == 1)
+					{
+						QLineEdit* pEdit = lst[0];
+						pEdit->setText(param.value.toString());
 					}
 					break;
 				}
