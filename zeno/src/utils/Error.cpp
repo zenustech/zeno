@@ -64,15 +64,6 @@ ZENO_API TypeError::TypeError(std::type_info const &expect, std::type_info const
 {
 }
 
-static std::vector<std::string> cppdemangle_list(std::initializer_list<std::reference_wrapper<std::type_info const>> const &expects) {
-    std::vector<std::string> ret;
-    ret.reserve(expects.size());
-    for (auto const &exp: expects) {
-        ret.push_back(cppdemangle(exp));
-    }
-    return ret;
-}
-
 ZENO_API TypeError::~TypeError() noexcept = default;
 
 ZENO_API KeyError::KeyError(std::string_view key, std::string_view hint) noexcept
