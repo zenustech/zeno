@@ -28,6 +28,10 @@ PYBIND11_MODULE(pylib_zenvis, m) {
     m.def("get_background_color", zenvis::get_background_color);
     m.def("set_num_samples", zenvis::set_num_samples);
     m.def("set_enable_gi", zenvis::set_enable_gi);
+    m.def("set_gi_base", zenvis::set_gi_base);
+    m.def("get_gi_base", zenvis::get_gi_base);
+    m.def("set_gi_emission_base", zenvis::set_gi_emission_base);
+    m.def("get_gi_emission_base", zenvis::get_gi_emission_base);
     m.def("set_smooth_shading", zenvis::set_smooth_shading);
     m.def("set_normal_check", zenvis::set_normal_check);
     m.def("set_render_wireframe", zenvis::set_render_wireframe);

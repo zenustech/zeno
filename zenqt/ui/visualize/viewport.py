@@ -195,6 +195,14 @@ class QDMDisplayMenu(QMenu):
         action.setChecked(False)
         self.addAction(action)
 
+        action = QAction('GI Emission Base', self)
+        self.addAction(action)
+
+        action = QAction('GI Base', self)
+        self.addAction(action)
+
+        self.addSeparator()
+
         action = QAction('Smooth Shading', self)
         action.setCheckable(True)
         action.setChecked(False)
@@ -612,6 +620,19 @@ class DisplayWidget(QWidget):
         elif name == 'Enable GI':
             checked = act.isChecked()
             zenvis.core.set_enable_gi(checked)
+
+        elif name == 'GI Emission Base':
+            v = zenvis.core.get_gi_emission_base()
+            v, ok = QInputDialog.getDouble(self, 'GI Emission Base', 'GI Emission Base: ', v, max=10000, decimals=2)
+            if ok:
+                zenvis.core.set_gi_emission_base(v)
+                self.timeline.editor.try_run_this_frame()
+
+        elif name == 'GI Base':
+            v = zenvis.core.get_gi_base()
+            v, ok = QInputDialog.getDouble(self, 'GI Base', 'GI Base: ', v)
+            if ok:
+                zenvis.core.set_gi_base(v)
 
         elif name == 'Smooth Shading':
             checked = act.isChecked()

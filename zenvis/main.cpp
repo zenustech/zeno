@@ -40,6 +40,8 @@ static int num_samples = 16;
 static bool show_grid = true;
 static bool smooth_shading = false;
 static bool enable_gi_flag = false;
+static float gi_emission_base = 0.05;
+static float gi_base = 1.0;
 static bool normal_check = false;
 bool render_wireframe = false;
 
@@ -1004,6 +1006,22 @@ void set_enable_gi(bool flag) {
 
 bool get_enable_gi() {
     return enable_gi_flag;
+}
+
+void set_gi_emission_base(float v) {
+  gi_emission_base = v;
+}
+
+float get_gi_emission_base() {
+  return gi_emission_base;
+}
+
+void set_gi_base(float v) {
+  gi_base = v;
+}
+
+float get_gi_base() {
+  return gi_base;
 }
 
 void set_normal_check(bool check) {
