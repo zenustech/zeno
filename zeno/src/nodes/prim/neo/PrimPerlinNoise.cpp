@@ -18,7 +18,7 @@
 
 namespace zeno {
 
-ZENO_API void primPerlinNoise(PrimitiveObject *prim, std::string inAttr, std::string outAttr, std::string outType, float scale, float detail, float rouhgness, float disortion, vec3f offset) {
+ZENO_API void primPerlinNoise(PrimitiveObject *prim, std::string inAttr, std::string outAttr, std::string outType, float scale, float detail, float roughness, float disortion, vec3f offset) {
     prim->attr_visit(inAttr, [&] (auto const &inArr) {
         std::visit([&] (auto outTypeId) {
             using InT = std::decay_t<decltype(inArr[0])>;
@@ -26,7 +26,7 @@ ZENO_API void primPerlinNoise(PrimitiveObject *prim, std::string inAttr, std::st
             auto &outArr = prim->add_attr<OutT>(outAttr);
             parallel_for((size_t)0, inArr.size(), [&] (size_t i) {
                 vec3f p;
-                auto inp = inArr[i];
+                InT inp = inArr[i];
                 if constexpr (std::is_same_v<InT, float>) {
                     p = {inp, 0, 0};
                 } else if constexpr (std::is_same_v<InT, vec2f>) {
@@ -48,7 +48,7 @@ ZENO_API void primPerlinNoise(PrimitiveObject *prim, std::string inAttr, std::st
                     throw makeError<TypeError>(typeid(vec3f), typeid(OutT), "outType");
                 }
             });
-        }, enum_variant<std::variant<float, vec3f>>(array_index_safe({1, 2, 3}, outType, "outType")));
+        }, enum_variant<std::variant<float, vec3f>>(array_index_safe({"float", "vec3f"}, outType, "outType")));
     });
 }
 
@@ -64,9 +64,8 @@ struct PrimPerlinNoise : INode {
         auto offset = get_input2<vec3f>("offset");
         auto outAttr = get_input2<std::string>("outAttr");
         auto inAttr = get_input2<std::string>("inAttr");
-        auto randType = get_input2<std::string>("randType");
-        auto combType = get_input2<std::string>("combType");
-        primPerlinNoise(prim.get(), inAttr, outAttr, randType, combType, scale, detail, roughness, disortion, offset);
+        auto outType = get_input2<std::string>("outType");
+        primPerlinNoise(prim.get(), inAttr, outAttr, outType, scale, detail, roughness, disortion, offset);
         set_output("prim", get_input("prim"));
     }
 };

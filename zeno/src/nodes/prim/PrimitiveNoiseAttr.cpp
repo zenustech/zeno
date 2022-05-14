@@ -132,7 +132,7 @@ struct PrimitivePerlinNoiseAttr : INode {
         for (int i = 0; i < arr.size(); i++) {
             if constexpr (is_decay_same_v<decltype(arr[i]), vec3f>) {
                 vec3f p = pos[i] * f + offset;
-                float x = perlin(p[0], p[1],p[2]);
+                float x = perlin(p[0], p[1], p[2]);
                 float y = perlin(p[1], p[2], p[0]);
                 float z = perlin(p[2], p[0], p[1]);
                 arr[i] = vec3f(x,y,z);
