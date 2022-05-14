@@ -20,16 +20,16 @@ CurveModel::~CurveModel()
 {
 }
 
-void CurveModel::initItems(CURVE_RANGE rg, const QVector<QPointF>& pts, const QVector<QPointF>& handlers)
+void CurveModel::initItems(CURVE_DATA const &curvedat)
 {
-    m_range = rg;
+    m_range = curvedat.rg;
+    auto &pts = curvedat.points;
     int N = pts.size();
-    ZASSERT_EXIT(N * 2 == handlers.size());
     for (int i = 0; i < N; i++)
     {
-        QPointF logicPos = pts[i];
-        QPointF leftOffset = handlers[i * 2];
-        QPointF rightOffset = handlers[i * 2 + 1];
+        QPointF logicPos = pts[i].point;
+        QPointF leftOffset = pts[i].leftHandler;
+        QPointF rightOffset = pts[i].rightHandler;
 
         QStandardItem* pItem = new QStandardItem;
         pItem->setData(logicPos, ROLE_NODEPOS);

@@ -58,13 +58,13 @@ struct _CurveDataDetails {
 
 struct CurveData : private _CurveDataDetails {
     enum PointType {
-        kConstant,
+        kBezier = 0,
         kLinear,
-        kBezier,
+        kConstant,
     };
 
     enum CycleType {
-        kClamp,
+        kClamp = 0,
         kCycle,
         kMirror,
     };

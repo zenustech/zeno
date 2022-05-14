@@ -224,4 +224,18 @@ struct CURVE_RANGE {
     qreal yTo;
 };
 
+struct CURVE_POINT {
+    QPointF point;
+    QPointF leftHandler;
+    QPointF rightHandler;
+    int controlType;
+};
+
+struct CURVE_DATA {
+    QString key;
+    QVector<CURVE_POINT> points;
+    int cycleType;
+    CURVE_RANGE rg;
+};
+
 #endif

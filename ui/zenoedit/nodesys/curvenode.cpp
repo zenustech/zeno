@@ -8,7 +8,6 @@
 MakeCurveNode::MakeCurveNode(const NodeUtilParam& params, QGraphicsItem* parent)
     : ZenoNode(params, parent)
 {
-
 }
 
 MakeCurveNode::~MakeCurveNode()
@@ -37,6 +36,8 @@ QGraphicsLinearLayout* MakeCurveNode::initCustomParamWidgets()
     pHLayout->addItem(pEditBtn);
     connect(pEditBtn, SIGNAL(clicked()), this, SLOT(onEditClicked()));
 
+    //zeno::log_critical("MakeCurveNode add editbtn {}", pEditBtn);
+
     return pHLayout;
 }
 
@@ -45,11 +46,9 @@ void MakeCurveNode::onEditClicked()
     PARAMS_INFO params = index().data(ROLE_PARAMETERS).value<PARAMS_INFO>();
     PARAMS_INFO params2 = index().data(ROLE_PARAMETERS_NOT_DESC).value<PARAMS_INFO>();
 
-    CURVE_RANGE rg;
-
     QString parstr = params2["UI_MakeCurve"].value.toString();
 
-    QVector<QPointF> points, handlers;
+    QVector<CURVE_DATA> curves;
 
     QStringList L = parstr.split(" ", QtSkipEmptyParts);
     if (!L.isEmpty())
@@ -66,63 +65,90 @@ void MakeCurveNode::onEditClicked()
             ZASSERT_EXIT(bOK);
             int count = L[i++].toInt(&bOK);
             ZASSERT_EXIT(bOK);
-            float input_min = L[i++].toFloat(&bOK);
+
+            curves.push_back({});
+            auto &curve = curves.back();
+            curve.key = key;
+            curve.cycleType = cyctype;
+
+            curve.rg.xFrom = L[i++].toFloat(&bOK);
             ZASSERT_EXIT(bOK);
-            float input_max = L[i++].toFloat(&bOK);
+            curve.rg.xTo = L[i++].toFloat(&bOK);
             ZASSERT_EXIT(bOK);
-            float output_min = L[i++].toFloat(&bOK);
+            curve.rg.yFrom = L[i++].toFloat(&bOK);
             ZASSERT_EXIT(bOK);
-            float output_max = L[i++].toFloat(&bOK);
+            curve.rg.yTo = L[i++].toFloat(&bOK);
             ZASSERT_EXIT(bOK);
 
-            QPointF pt;
-            pt.setX(L[i++].toFloat(&bOK));
-            ZASSERT_EXIT(bOK);
-            pt.setY(L[i++].toFloat(&bOK));
-            ZASSERT_EXIT(bOK);
-            points.append(pt);
+            for (int j = 0; j < count; j++) {
 
-            int cptype = L[i++].toInt(&bOK);
-            ZASSERT_EXIT(bOK);
+                QPointF pt;
+                pt.setX(L[i++].toFloat(&bOK));
+                ZASSERT_EXIT(bOK);
+                pt.setY(L[i++].toFloat(&bOK));
+                ZASSERT_EXIT(bOK);
 
-            QPointF pt1;
-            pt1.setX(L[i++].toFloat(&bOK));
-            ZASSERT_EXIT(bOK);
-            pt1.setY(L[i++].toFloat(&bOK));
-            ZASSERT_EXIT(bOK);
-            handlers.append(pt1);
+                int cptype = L[i++].toInt(&bOK);
+                ZASSERT_EXIT(bOK);
 
-            QPointF pt2;
-            pt1.setX(L[i++].toFloat(&bOK));
-            ZASSERT_EXIT(bOK);
-            pt1.setY(L[i++].toFloat(&bOK));
-            ZASSERT_EXIT(bOK);
-            handlers.append(pt1);
+                QPointF pt1;
+                pt1.setX(L[i++].toFloat(&bOK));
+                ZASSERT_EXIT(bOK);
+                pt1.setY(L[i++].toFloat(&bOK));
+                ZASSERT_EXIT(bOK);
+
+                QPointF pt2;
+                pt1.setX(L[i++].toFloat(&bOK));
+                ZASSERT_EXIT(bOK);
+                pt1.setY(L[i++].toFloat(&bOK));
+                ZASSERT_EXIT(bOK);
+
+                curve.points.push_back({
+                    pt, pt1, pt2, cptype,
+                });
+            }
         }
     }
     else
     {
-        points.append(QPointF(rg.xFrom, rg.yFrom));
-        points.append(QPointF(rg.xTo, rg.yTo));
-        handlers.append(QPointF(0, 0));
-        handlers.append(QPointF(0, 0));
-        handlers.append(QPointF(0, 0));
-        handlers.append(QPointF(0, 0));
+        CURVE_RANGE rg;
+        rg.xFrom = 0;
+        rg.xTo = 1;
+        rg.yFrom = 0;
+        rg.yTo = 1;
+        {
+            curves.push_back({});
+            auto &curve = curves.back();
+            curve.key = "x";
+            curve.cycleType = 0;
+            curve.points.append({QPointF(rg.xFrom, rg.yTo), QPointF(0, 0), QPointF(0, 0), 0});
+            curve.points.append({QPointF(rg.xTo, rg.yFrom), QPointF(0, 0), QPointF(0, 0), 0});
+        }
+        {
+            curves.push_back({});
+            auto &curve = curves.back();
+            curve.key = "y";
+            curve.cycleType = 0;
+            curve.points.append({QPointF(rg.xFrom, rg.yFrom), QPointF(0, 0), QPointF(0, 0), 0});
+            curve.points.append({QPointF(rg.xTo, rg.yTo), QPointF(0, 0), QPointF(0, 0), 0});
+        }
+        {
+            curves.push_back({});
+            auto &curve = curves.back();
+            curve.key = "z";
+            curve.cycleType = 0;
+            curve.points.append({QPointF(rg.xFrom, rg.yTo / 2), QPointF(0, 0), QPointF(0, 0), 0});
+            curve.points.append({QPointF(rg.xTo, rg.yTo / 2), QPointF(0, 0), QPointF(0, 0), 0});
+        }
     }
 
     ZCurveMapEditor *pEditor = new ZCurveMapEditor(true);
 
-    CurveModel *pModel = new CurveModel("x", rg, this);
-    pModel->initItems(rg, points, handlers);
-    pEditor->addCurve(pModel);
-
-    CurveModel *pModel2 = new CurveModel("y", rg, this);
-    pModel2->initItems(rg, {{rg.xFrom, rg.yTo}, {rg.xTo, rg.yFrom}}, {{0,0}, {0,0}, {0,0}, {0,0}});
-    pEditor->addCurve(pModel2);
-
-    CurveModel *pModel3 = new CurveModel("z", rg, this);
-    pModel3->initItems(rg, {{rg.xFrom, rg.yTo / 2}, {rg.xTo, rg.yTo / 2}}, {{0,0}, {0,0}, {0,0}, {0,0}});
-    pEditor->addCurve(pModel3);
+    for (auto const &curve: curves) {
+        CurveModel *pModel = new CurveModel(curve.key, curve.rg, this);
+        pModel->initItems(curve);
+        pEditor->addCurve(pModel);
+    }
 
     pEditor->show();
 }
