@@ -22,7 +22,7 @@ CurveModel::~CurveModel()
 
 void CurveModel::initItems(CURVE_DATA const &curvedat)
 {
-    m_range = curvedat.rg;
+    resetRange(curvedat.rg);
     auto &pts = curvedat.points;
     int N = pts.size();
     for (int i = 0; i < N; i++)
