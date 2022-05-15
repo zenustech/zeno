@@ -20,6 +20,24 @@ CurveModel::~CurveModel()
 {
 }
 
+CURVE_DATA CurveModel::getItems() const {
+    CURVE_DATA dat;
+    dat.rg = m_range;
+    int count = rowCount();
+    dat.points.resize(count);
+    for (int i = 0; i < count; i++) {
+        auto pItem = item(i);
+        auto &pt = dat.points[i];
+        pt.point = pItem->data(ROLE_NODEPOS).value<QPointF>();
+        pt.leftHandler = pItem->data(ROLE_LEFTPOS).value<QPointF>();
+        pt.rightHandler = pItem->data(ROLE_RIGHTPOS).value<QPointF>();
+        pt.controlType = 0; // pItem->data(ROLE_TYPE);
+    }
+    dat.cycleType = 0;
+    dat.key = m_id;
+    return dat;
+}
+
 void CurveModel::initItems(CURVE_DATA const &curvedat)
 {
     resetRange(curvedat.rg);

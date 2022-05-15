@@ -163,11 +163,20 @@ void ZCurveMapEditor::addCurve(CurveModel* model)
     }
 
     pRootItem->appendRow(pItem);
+    m_bate_rows.push_back(model);
     CurveGrid *pGrid = m_ui->gridview->gridItem();
     pGrid->setCurvesColor(id, curveClr);
 
     connect(model, &CurveModel::dataChanged, this, &ZCurveMapEditor::onNodesDataChanged);
     connect(m_channelModel, &QStandardItemModel::dataChanged, this, &ZCurveMapEditor::onChannelModelDataChanged);
+}
+
+int ZCurveMapEditor::curveCount() const {
+    return (int)m_bate_rows.size();
+}
+
+CurveModel *ZCurveMapEditor::getCurve(int i) const {
+    return m_bate_rows.at(i);
 }
 
 void ZCurveMapEditor::onButtonToggled(QAbstractButton* btn, bool bToggled)
