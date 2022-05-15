@@ -140,7 +140,7 @@ void ZCurveMapEditor::initSignals()
 
 void ZCurveMapEditor::addCurve(CurveModel* model)
 {
-    static const QColor preset[] = {"#CE2F2F", "#307BCD", "#2FCD5F"};
+    static const QColor preset[] = {"#CE2F2F", "#2FCD5F", "#307BCD"};
 
     QString id = model->id();
     m_models.insert(id, model);

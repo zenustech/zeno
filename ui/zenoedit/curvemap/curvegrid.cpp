@@ -41,7 +41,10 @@ void CurveGrid::resetTransform(QRectF rc, CURVE_RANGE rg)
     ZASSERT_EXIT(isOk);
 
 	m_invTrans = m_transform.inverted(&isOk);
-    ZASSERT_EXIT(isOk);
+    if (!isOk) {
+        zeno::log_warn("cannot invert transform (divide by zero)");
+        return;
+    }
 
 	//example:
     /*

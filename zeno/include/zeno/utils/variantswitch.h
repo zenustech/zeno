@@ -4,7 +4,6 @@
 #include <type_traits>
 #include <typeinfo>
 #include <algorithm>
-#include <string>
 
 namespace zeno {
 inline namespace variantswitch_h {
@@ -109,16 +108,18 @@ template <class Enum, class Variant, class T>
 struct variant_enum : std::integral_constant<Enum, Enum{std::underlying_type_t<Enum>(variant_index<Variant, T>::value)}> {
 };
 
-template <class Variant, bool HasMono = false, class Name, class Table, std::size_t N>
-Variant string_variant(std::string name, Table (&table)[N]) {
+#if 0
+template <class Variant, bool HasMono = false, class Table, std::size_t N>
+Variant string_variant(std::string name, Table const (&table)[N]) {
+    static_assert(N == std::variant_size_v<Variant>);
     std::size_t index{std::find(std::begin(table), std::end(table), name) - std::begin(table)};
     return index_switch<std::variant_size_v<Variant>, HasMono>(index, [] (auto index) {
         return Variant{std::in_place_index<index.value>};
     });
 }
 
-template <class Enum = std::size_t, bool HasMono = false, class Name, class Table, std::size_t N>
-Enum string_enum(std::string name, Table (&table)[N]) {
+template <class Enum = std::size_t, bool HasMono = false, class Table, std::size_t N>
+Enum string_enum(std::string name, Table const (&table)[N]) {
     std::size_t index{std::find(std::begin(table), std::end(table), name) - std::begin(table)};
     if constexpr (HasMono)
         if (index == std::size(table))
@@ -128,6 +129,7 @@ Enum string_enum(std::string name, Table (&table)[N]) {
     else
         return index;
 }
+#endif
 
 }
 }

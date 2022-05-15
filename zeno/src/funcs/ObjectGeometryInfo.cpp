@@ -28,7 +28,7 @@ ZENO_API bool objectGetFocusCenterRadius(IObject *ptr, vec3f &center, float &rad
     if (!objectGetBoundingBox(ptr, bmin, bmax))
         return false;
     auto delta = bmax - bmin;
-    radius = std::max({delta[0], delta[1], delta[2]}) * 0.5f;
+    radius = std::max(std::max(delta[0], delta[1]), delta[2]) * 0.5f;
     center = (bmin + bmax) * 0.5f;
     return true;
 }

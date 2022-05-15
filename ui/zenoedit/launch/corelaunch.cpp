@@ -59,7 +59,8 @@ struct ProgramRunData {
     void reportStatus(zeno::GlobalStatus const &stat) const {
         if (!stat.failed()) return;
         zeno::log_error("reportStatus: error in {}, message {}", stat.nodeName, stat.error->message);
-        zenoApp->graphsManagment()->appendErr(QString::fromStdString(stat.nodeName),
+        auto nodeName = stat.nodeName.substr(0, stat.nodeName.find(':'));
+        zenoApp->graphsManagment()->appendErr(QString::fromStdString(nodeName),
                                               QString::fromStdString(stat.error->message));
     }
 

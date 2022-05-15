@@ -2,6 +2,7 @@
 #define __ZENOEDIT_LOG_H__
 
 #include <zeno/utils/log.h> 
+#include <zeno/utils/zeno_p.h> 
 
 #if !defined(QT_NO_DEBUG)
 #define ZASSERT_EXIT(cond, ...) \
