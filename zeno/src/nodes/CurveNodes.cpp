@@ -43,11 +43,8 @@ ZENO_DEFNODE(MakeCurve)({
         {"curve", "curve"},
     },
     {
-        {
-            "string",
-            "type",
-            "DONT_USE_THIS_PARAM",
-        },
+        // FIXME: need have at least one param to prevent luzh bug!
+        {"", "madebypengsensei", ""},
     },
     {"curve"},
 });

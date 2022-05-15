@@ -43,10 +43,11 @@ QGraphicsLinearLayout* MakeCurveNode::initCustomParamWidgets()
 
 void MakeCurveNode::onEditClicked()
 {
-    PARAMS_INFO params = index().data(ROLE_PARAMETERS).value<PARAMS_INFO>();
-    PARAMS_INFO params2 = index().data(ROLE_PARAMETERS_NOT_DESC).value<PARAMS_INFO>();
+    PARAMS_INFO &params = index().data(ROLE_PARAMETERS).value<PARAMS_INFO>();
+    PARAMS_INFO &params2 = index().data(ROLE_PARAMETERS_NOT_DESC).value<PARAMS_INFO>();
 
-    QString parstr = params2["UI_MakeCurve"].value.toString();
+    QVariant &parval = params2["UI_MakeCurve"].value;
+    QString parstr = parval.toString();
 
     QVector<CURVE_DATA> curves;
 
@@ -161,4 +162,53 @@ void MakeCurveNode::onEditClicked()
     }
 
     pEditor->show();
+    connect(pEditor, &ZCurveMapEditor::finished, this, [&parval, pEditor] (int result) {
+        ZENO_P(result);
+        QString parstr = "";
+
+#if 0  // TODO: LUZH please complete the following pEditor->getXXX()
+        int keycount = pEditor->getCurvesCount();
+        parstr.append(QString::number(keycount));
+        for (int k = 0; k < keycount; k++) {
+            QString key = pEditor->getCurveKey(k);
+            parstr.append(' ');
+            parstr.append(key);
+            int cyctype = 0;
+            parstr.append(' ');
+            parstr.append(QString::number(cyctype));
+            int count = pEditor->getCurvePointCount(k);
+            parstr.append(' ');
+            parstr.append(QString::number(count));
+            CURVE_RANGE rg = pEditor->getCurveRange(k);
+            parstr.append(' ');
+            parstr.append(QString::number(rg.xFrom));
+            parstr.append(' ');
+            parstr.append(QString::number(rg.xTo));
+            parstr.append(' ');
+            parstr.append(QString::number(rg.yFrom));
+            parstr.append(' ');
+            parstr.append(QString::number(rg.yTo));
+            for (int i = 0; i < count; i++) {
+                QVector2D pt = pEditor->getCurvePointPosition(k, i);
+                parstr.append(' ');
+                parstr.append(QString::number(pt.x()));
+                parstr.append(' ');
+                parstr.append(QString::number(pt.y()));
+                QVector2D lh = pEditor->getCurvePointLeftHandler(k, i);
+                parstr.append(' ');
+                parstr.append(QString::number(lh.x()));
+                parstr.append(' ');
+                parstr.append(QString::number(lh.y()));
+                QVector2D rh = pEditor->getCurvePointRightHandler(k, i);
+                parstr.append(' ');
+                parstr.append(QString::number(rh.x()));
+                parstr.append(' ');
+                parstr.append(QString::number(rh.y()));
+            }
+        }
+        zeno::log_debug("{}", parstr.toStdString());
+#endif
+
+        parval.setValue(parstr);
+    });
 }
