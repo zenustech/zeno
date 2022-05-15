@@ -138,7 +138,7 @@ struct ImplicitTimeStepping : INode {
             auto m = verts("m", vi);
             auto x = vtemp.pack<3>(tag, vi);
             atomic_add(exec_cuda, &res[0],
-                       0.5 * m * (x - vtemp.pack<3>("xtilde", vi)).l2NormSqr());
+                       0.5 * m * (x - verts.pack<3>("x", vi)).l2NormSqr());
             // gravity
             atomic_add(exec_cuda, &res[0],
                        -m * vec3{0, -9, 0}.dot(x - verts.pack<3>("x", vi)) *
@@ -223,12 +223,11 @@ struct ImplicitTimeStepping : INode {
         zs::vec<double, dimp1 * dim> temp{};
         for (int vi = 0; vi != dimp1; ++vi)
           for (int d = 0; d != dim; ++d) {
-            temp[vi * dim + d] = vtemp(dxTag, inds[vi], d);
+            temp[vi * dim + d] = vtemp(dxTag, d, inds[vi]);
           }
         auto He = etemp.pack<dim * dimp1, dim * dimp1>("He", ei);
 
-        auto vol = eles("vol", ei);
-        temp = -He * temp * dt * dt * vol;
+        temp = He * temp;
 
         for (int vi = 0; vi != dimp1; ++vi)
           for (int d = 0; d != dim; ++d) {
@@ -247,11 +246,6 @@ struct ImplicitTimeStepping : INode {
     dtiles_t &etemp;
     double dt;
   };
-
-  double energy(zs::CudaExecutionPolicy &cudaPol, const tiles_t &verts,
-                const tiles_t &eles, dtiles_t &vtemp, float dt) {
-    return 0.;
-  }
 
   template <typename Model>
   void computeElasticGradientAndHessian(zs::CudaExecutionPolicy &cudaPol,
@@ -284,7 +278,7 @@ struct ImplicitTimeStepping : INode {
       auto vole = eles("vol", ei);
       auto vecP = flatten(P);
       auto dFdXT = dFdX.transpose();
-      auto vfdt2 = vole * (dFdXT * vecP) * dt * dt;
+      auto vfdt2 = -vole * (dFdXT * vecP) * dt * dt;
 
       for (int i = 0; i != 4; ++i) {
         auto vi = inds[i];
@@ -371,23 +365,18 @@ struct ImplicitTimeStepping : INode {
               [vtemp = proxy<space>({}, vtemp), verts = proxy<space>({}, verts),
                dt] __device__(int i) mutable {
                 auto m = verts("m", i);
-                vtemp.tuple<3>("grad", i) = -m * vec3{0, -9, 0} * dt * dt;
+                auto v = verts.pack<3>("v", i);
+                vtemp.tuple<3>("grad", i) =
+                    m * vec3{0, -9, 0} * dt * dt -
+                    m * (vtemp.pack<3>("xn", i) - vtemp.pack<3>("xtilde", i));
               });
       match([&](auto &elasticModel) {
         computeElasticGradientAndHessian(cudaPol, elasticModel, verts, eles,
                                          vtemp, etemp, dt);
       })(models.getElasticModel());
-      cudaPol(zs::range(vtemp.size()),
-              [vtemp = proxy<space>({}, vtemp), verts = proxy<space>({}, verts),
-               dt] __device__(int i) mutable {
-                auto m = verts("m", i);
-                auto v = verts.pack<3>("v", i);
-                vtemp.tuple<3>("grad", i) =
-                    vtemp.pack<3>("grad", i) +
-                    m * (vtemp.pack<3>("xn", i) - vtemp.pack<3>("xtilde", i));
-              });
 
       // modify initial x so that it satisfied the constraint.
+
       // A dir = grad
       {
         // solve for A dir = grad;
@@ -445,6 +434,7 @@ struct ImplicitTimeStepping : INode {
           residualPreconditionedNorm = std::sqrt(zTrk);
         } // end cg step
       }
+#if 0
       // check "dir" inf norm
       double res = infNorm(cudaPol, vtemp, "dir");
       if (res < 1e-6) {
@@ -452,12 +442,15 @@ struct ImplicitTimeStepping : INode {
                    res);
         break;
       }
+#endif
 
       fmt::print("newton iter {}: direction residual {}, grad residual {}\n",
-                 newtonIter, res, infNorm(cudaPol, vtemp, "grad"));
+                 newtonIter, infNorm(cudaPol, vtemp, "dir"),
+                 infNorm(cudaPol, vtemp, "grad"));
 
       // line search
       double alpha = 1.;
+#if 0
       cudaPol(zs::range(vtemp.size()),
               [vtemp = proxy<space>({}, vtemp)] __device__(int i) mutable {
                 vtemp.tuple<3>("xn0", i) = vtemp.pack<3>("xn", i);
@@ -471,7 +464,7 @@ struct ImplicitTimeStepping : INode {
         cudaPol(zs::range(vtemp.size()), [vtemp = proxy<space>({}, vtemp),
                                           alpha] __device__(int i) mutable {
           vtemp.tuple<3>("xn", i) =
-              vtemp.pack<3>("xn0", i) - alpha * vtemp.pack<3>("dir", i);
+              vtemp.pack<3>("xn0", i) + alpha * vtemp.pack<3>("dir", i);
         });
         match([&](auto &elasticModel) {
           E = A.energy(cudaPol, elasticModel, "xn");
@@ -484,15 +477,22 @@ struct ImplicitTimeStepping : INode {
       cudaPol(zs::range(vtemp.size()), [vtemp = proxy<space>({}, vtemp),
                                         alpha] __device__(int i) mutable {
         vtemp.tuple<3>("xn", i) =
-            vtemp.pack<3>("xn0", i) - alpha * vtemp.pack<3>("dir", i);
+            vtemp.pack<3>("xn0", i) + alpha * vtemp.pack<3>("dir", i);
       });
+#else
+      cudaPol(zs::range(vtemp.size()), [vtemp = proxy<space>({}, vtemp),
+                                        alpha] __device__(int i) mutable {
+        vtemp.tuple<3>("xn", i) =
+            vtemp.pack<3>("xn", i) + alpha * vtemp.pack<3>("dir", i);
+      });
+      break;
+#endif
     } // end newton step
 
     // update velocity and positions
     cudaPol(zs::range(verts.size()),
             [vtemp = proxy<space>({}, vtemp), verts = proxy<space>({}, verts),
              dt] __device__(int vi) mutable {
-              constexpr auto alpha = 1.;
               auto newX = vtemp.pack<3>("xn", vi);
               verts.tuple<3>("x", vi) = newX;
               auto dv = (newX - vtemp.pack<3>("xtilde", vi)) / dt;
