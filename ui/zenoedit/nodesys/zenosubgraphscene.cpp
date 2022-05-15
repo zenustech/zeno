@@ -124,7 +124,7 @@ ZenoNode* ZenoSubGraphScene::createNode(const QModelIndex& idx, const NodeUtilPa
     }
     else if (descName == "MakeCurve")
     {
-        return new DynamicNumberNode(params);
+        return new MakeCurveNode(params);
     }
     else if (descName == "DynamicNumber")
     {

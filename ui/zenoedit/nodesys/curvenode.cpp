@@ -51,6 +51,7 @@ void MakeCurveNode::onEditClicked()
     QVector<CURVE_DATA> curves;
 
     QStringList L = parstr.split(" ", QtSkipEmptyParts);
+    ZENO_P(L.size());
     if (!L.isEmpty())
     {
         bool bOK = false;
