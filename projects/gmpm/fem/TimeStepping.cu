@@ -118,32 +118,33 @@ ZENDEFNODE(ExplicitTimeStepping, {{"ZSParticles", {"float", "dt", "0.01"}},
                                   {"FEM"}});
 
 struct ImplicitTimeStepping : INode {
-  using dtiles_t = zs::TileVector<double, 32>;
+  using T = float;
+  using dtiles_t = zs::TileVector<T, 32>;
   using tiles_t = typename ZenoParticles::particles_t;
-  using vec3 = zs::vec<double, 3>;
-  using mat3 = zs::vec<double, 3, 3>;
+  using vec3 = zs::vec<T, 3>;
+  using mat3 = zs::vec<T, 3, 3>;
 
   struct FEMSystem {
     template <typename Pol, typename Model>
-    double energy(Pol &pol, const Model &model, const zs::SmallString tag) {
+    T energy(Pol &pol, const Model &model, const zs::SmallString tag) {
       using namespace zs;
       constexpr auto space = execspace_e::cuda;
-      Vector<double> res{verts.get_allocator(), 1};
+      Vector<T> res{verts.get_allocator(), 1};
       res.setVal(0);
-      pol(range(vtemp.size()),
-          [verts = proxy<space>({}, verts), vtemp = proxy<space>({}, vtemp),
-           res = proxy<space>(res), tag,
-           dt = this->dt] __device__(int vi) mutable {
-            // inertia
-            auto m = verts("m", vi);
-            auto x = vtemp.pack<3>(tag, vi);
-            atomic_add(exec_cuda, &res[0],
-                       0.5 * m * (x - vtemp.pack<3>("xtilde", vi)).l2NormSqr());
-            // gravity
-            atomic_add(exec_cuda, &res[0],
-                       -m * vec3{0, -9, 0}.dot(x - verts.pack<3>("x", vi)) *
-                           dt * dt);
-          });
+      pol(range(vtemp.size()), [verts = proxy<space>({}, verts),
+                                vtemp = proxy<space>({}, vtemp),
+                                res = proxy<space>(res), tag,
+                                dt = this->dt] __device__(int vi) mutable {
+        // inertia
+        auto m = verts("m", vi);
+        auto x = vtemp.pack<3>(tag, vi);
+        atomic_add(exec_cuda, &res[0],
+                   (T)0.5 * m * (x - vtemp.pack<3>("xtilde", vi)).l2NormSqr());
+        // gravity
+        atomic_add(exec_cuda, &res[0],
+                   -m * vec3{0, -9, 0}.dot(x - verts.pack<3>("x", vi)) * dt *
+                       dt);
+      });
       pol(range(eles.size()), [verts = proxy<space>({}, verts),
                                eles = proxy<space>({}, eles),
                                vtemp = proxy<space>({}, vtemp),
@@ -220,7 +221,7 @@ struct ImplicitTimeStepping : INode {
         constexpr int dim = 3;
         constexpr auto dimp1 = dim + 1;
         auto inds = eles.pack<dimp1>("inds", ei).reinterpret_bits<int>();
-        zs::vec<double, dimp1 * dim> temp{};
+        zs::vec<T, dimp1 * dim> temp{};
         for (int vi = 0; vi != dimp1; ++vi)
           for (int d = 0; d != dim; ++d) {
             temp[vi * dim + d] = vtemp(dxTag, d, inds[vi]);
@@ -237,14 +238,14 @@ struct ImplicitTimeStepping : INode {
     }
 
     FEMSystem(const tiles_t &verts, const tiles_t &eles, dtiles_t &vtemp,
-              dtiles_t &etemp, double dt)
+              dtiles_t &etemp, T dt)
         : verts{verts}, eles{eles}, vtemp{vtemp}, etemp{etemp}, dt{dt} {}
 
     const tiles_t &verts;
     const tiles_t &eles;
     dtiles_t &vtemp;
     dtiles_t &etemp;
-    double dt;
+    T dt;
   };
 
   template <typename Model>
@@ -292,11 +293,11 @@ struct ImplicitTimeStepping : INode {
     });
   }
 
-  double dot(zs::CudaExecutionPolicy &cudaPol, dtiles_t &vertData,
-             const zs::SmallString tag0, const zs::SmallString tag1) {
+  T dot(zs::CudaExecutionPolicy &cudaPol, dtiles_t &vertData,
+        const zs::SmallString tag0, const zs::SmallString tag1) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
-    Vector<double> res{vertData.get_allocator(), 1};
+    Vector<T> res{vertData.get_allocator(), 1};
     res.setVal(0);
     cudaPol(range(vertData.size()),
             [data = proxy<space>({}, vertData), res = proxy<space>(res), tag0,
@@ -307,11 +308,11 @@ struct ImplicitTimeStepping : INode {
             });
     return res.getVal();
   }
-  double infNorm(zs::CudaExecutionPolicy &cudaPol, dtiles_t &vertData,
-                 const zs::SmallString tag = "dir") {
+  T infNorm(zs::CudaExecutionPolicy &cudaPol, dtiles_t &vertData,
+            const zs::SmallString tag = "dir") {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
-    Vector<double> res{vertData.get_allocator(), 1};
+    Vector<T> res{vertData.get_allocator(), 1};
     res.setVal(0);
     cudaPol(range(vertData.size()),
             [data = proxy<space>({}, vertData), res = proxy<space>(res),
@@ -330,18 +331,21 @@ struct ImplicitTimeStepping : INode {
     auto &verts = zstets->getParticles();
     auto &eles = zstets->getQuadraturePoints();
 
-    dtiles_t vtemp{verts.get_allocator(),
-                   {{"grad", 3},
-                    {"dir", 3},
-                    {"xn", 3},
-                    {"xn0", 3},
-                    {"xtilde", 3},
-                    {"temp", 3},
-                    {"r", 3},
-                    {"p", 3},
-                    {"q", 3}},
-                   verts.size()};
-    dtiles_t etemp{eles.get_allocator(), {{"He", 12 * 12}}, eles.size()};
+    static dtiles_t vtemp{verts.get_allocator(),
+                          {{"grad", 3},
+                           {"dir", 3},
+                           {"xn", 3},
+                           {"xn0", 3},
+                           {"xtilde", 3},
+                           {"temp", 3},
+                           {"r", 3},
+                           {"p", 3},
+                           {"q", 3}},
+                          verts.size()};
+    static dtiles_t etemp{eles.get_allocator(), {{"He", 12 * 12}}, eles.size()};
+    vtemp.resize(verts.size());
+    etemp.resize(eles.size());
+
     FEMSystem A{verts, eles, vtemp, etemp, dt};
 
     constexpr auto space = execspace_e::cuda;
@@ -398,7 +402,7 @@ struct ImplicitTimeStepping : INode {
                 [vtemp = proxy<space>({}, vtemp)] __device__(int i) mutable {
                   vtemp.tuple<3>("p", i) = vtemp.pack<3>("q", i);
                 });
-        double zTrk = dot(cudaPol, vtemp, "r", "q");
+        T zTrk = dot(cudaPol, vtemp, "r", "q");
         auto residualPreconditionedNorm = std::sqrt(zTrk);
         auto localTol = std::min(0.01 * residualPreconditionedNorm, 1e-7);
         int iter = 0;
@@ -411,7 +415,7 @@ struct ImplicitTimeStepping : INode {
           A.multiply(cudaPol, "p", "temp");
           A.project(cudaPol, "temp");
 
-          double alpha = zTrk / dot(cudaPol, vtemp, "temp", "p");
+          T alpha = zTrk / dot(cudaPol, vtemp, "temp", "p");
           cudaPol(range(verts.size()), [verts = proxy<space>({}, verts),
                                         vtemp = proxy<space>({}, vtemp),
                                         alpha] ZS_LAMBDA(int vi) mutable {
@@ -435,7 +439,7 @@ struct ImplicitTimeStepping : INode {
         } // end cg step
       }
       // check "dir" inf norm
-      double res = infNorm(cudaPol, vtemp, "dir");
+      T res = infNorm(cudaPol, vtemp, "dir");
       if (res < 1e-6) {
         fmt::print("\t# newton optimizer ends in {} iters with residual {}\n",
                    newtonIter, res);
@@ -446,16 +450,16 @@ struct ImplicitTimeStepping : INode {
                  newtonIter, res, infNorm(cudaPol, vtemp, "grad"));
 
       // line search
-      double alpha = 1.;
+      T alpha = 1.;
       cudaPol(zs::range(vtemp.size()),
               [vtemp = proxy<space>({}, vtemp)] __device__(int i) mutable {
                 vtemp.tuple<3>("xn0", i) = vtemp.pack<3>("xn", i);
               });
-      double E0;
+      T E0;
       match([&](auto &elasticModel) {
         E0 = A.energy(cudaPol, elasticModel, "xn0");
       })(models.getElasticModel());
-      double E{E0};
+      T E{E0};
       do {
         cudaPol(zs::range(vtemp.size()), [vtemp = proxy<space>({}, vtemp),
                                           alpha] __device__(int i) mutable {
