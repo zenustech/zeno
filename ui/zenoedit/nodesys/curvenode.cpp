@@ -43,11 +43,9 @@ QGraphicsLinearLayout* MakeCurveNode::initCustomParamWidgets()
 
 void MakeCurveNode::onEditClicked()
 {
-    PARAMS_INFO &params = index().data(ROLE_PARAMETERS).value<PARAMS_INFO>();
-    PARAMS_INFO &params2 = index().data(ROLE_PARAMETERS_NOT_DESC).value<PARAMS_INFO>();
-
-    QVariant &parval = params2["UI_MakeCurve"].value;
-    QString parstr = parval.toString();
+    //PARAMS_INFO params = index().data(ROLE_PARAMETERS).value<PARAMS_INFO>();
+    PARAMS_INFO params2 = index().data(ROLE_PARAMETERS_NOT_DESC).value<PARAMS_INFO>();
+    QString parstr = params2["UI_MakeCurve"].value.toString();
 
     QVector<CURVE_DATA> curves;
 
@@ -162,8 +160,8 @@ void MakeCurveNode::onEditClicked()
     }
 
     pEditor->show();
-    connect(pEditor, &ZCurveMapEditor::finished, this, [&parval, pEditor] (int result) {
-        ZENO_P(result);
+    connect(pEditor, &ZCurveMapEditor::finished, this, [this, pEditor] (int result) {
+        //ZENO_P(result);
         QString parstr = "";
 
 #if 0  // TODO: LUZH please complete the following pEditor->getXXX()
@@ -209,6 +207,8 @@ void MakeCurveNode::onEditClicked()
         zeno::log_debug("{}", parstr.toStdString());
 #endif
 
-        parval.setValue(parstr);
+        PARAMS_INFO params2 = index().data(ROLE_PARAMETERS_NOT_DESC).value<PARAMS_INFO>();
+        params2["UI_MakeCurve"].value.setValue(parstr);
+        index().data(ROLE_PARAMETERS_NOT_DESC).setValue(params2);
     });
 }
