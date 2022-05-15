@@ -138,7 +138,7 @@ struct ImplicitTimeStepping : INode {
             auto m = verts("m", vi);
             auto x = vtemp.pack<3>(tag, vi);
             atomic_add(exec_cuda, &res[0],
-                       0.5 * m * (x - verts.pack<3>("x", vi)).l2NormSqr());
+                       0.5 * m * (x - vtemp.pack<3>("xtilde", vi)).l2NormSqr());
             // gravity
             atomic_add(exec_cuda, &res[0],
                        -m * vec3{0, -9, 0}.dot(x - verts.pack<3>("x", vi)) *
@@ -404,7 +404,7 @@ struct ImplicitTimeStepping : INode {
         int iter = 0;
         for (; iter != 1000; ++iter) {
           if (iter % 10 == 0)
-            fmt::print("iter: {}, norm: {}\n", iter,
+            fmt::print("cg iter: {}, norm: {}\n", iter,
                        residualPreconditionedNorm);
           if (residualPreconditionedNorm <= localTol)
             break;
@@ -434,23 +434,19 @@ struct ImplicitTimeStepping : INode {
           residualPreconditionedNorm = std::sqrt(zTrk);
         } // end cg step
       }
-#if 0
       // check "dir" inf norm
       double res = infNorm(cudaPol, vtemp, "dir");
       if (res < 1e-6) {
-        fmt::print("\t# ends at newton iter {} with residual {}\n", newtonIter,
-                   res);
+        fmt::print("\t# newton optimizer ends in {} iters with residual {}\n",
+                   newtonIter, res);
         break;
       }
-#endif
 
       fmt::print("newton iter {}: direction residual {}, grad residual {}\n",
-                 newtonIter, infNorm(cudaPol, vtemp, "dir"),
-                 infNorm(cudaPol, vtemp, "grad"));
+                 newtonIter, res, infNorm(cudaPol, vtemp, "grad"));
 
       // line search
       double alpha = 1.;
-#if 0
       cudaPol(zs::range(vtemp.size()),
               [vtemp = proxy<space>({}, vtemp)] __device__(int i) mutable {
                 vtemp.tuple<3>("xn0", i) = vtemp.pack<3>("xn", i);
@@ -479,14 +475,6 @@ struct ImplicitTimeStepping : INode {
         vtemp.tuple<3>("xn", i) =
             vtemp.pack<3>("xn0", i) + alpha * vtemp.pack<3>("dir", i);
       });
-#else
-      cudaPol(zs::range(vtemp.size()), [vtemp = proxy<space>({}, vtemp),
-                                        alpha] __device__(int i) mutable {
-        vtemp.tuple<3>("xn", i) =
-            vtemp.pack<3>("xn", i) + alpha * vtemp.pack<3>("dir", i);
-      });
-      break;
-#endif
     } // end newton step
 
     // update velocity and positions
