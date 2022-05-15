@@ -189,8 +189,8 @@ struct ImplicitTimeStepping : INode {
       pol(zs::range(verts.size()),
           [vtemp = proxy<space>({}, vtemp), verts = proxy<space>({}, verts),
            srcTag, dstTag] ZS_LAMBDA(int vi) mutable {
-            auto m = verts("m", vi);
-            vtemp.tuple<3>(dstTag, vi) = vtemp.pack<3>(srcTag, vi) / m;
+            vtemp.tuple<3>(dstTag, vi) =
+                vtemp.pack<3, 3>("P", vi) * vtemp.pack<3>(srcTag, vi);
           });
     }
     template <typename Pol>
@@ -333,6 +333,7 @@ struct ImplicitTimeStepping : INode {
 
     static dtiles_t vtemp{verts.get_allocator(),
                           {{"grad", 3},
+                           {"P", 9},
                            {"dir", 3},
                            {"xn", 3},
                            {"xn0", 3},
@@ -378,6 +379,36 @@ struct ImplicitTimeStepping : INode {
         computeElasticGradientAndHessian(cudaPol, elasticModel, verts, eles,
                                          vtemp, etemp, dt);
       })(models.getElasticModel());
+      // prepare preconditioner
+      cudaPol(zs::range(vtemp.size()),
+              [vtemp = proxy<space>({}, vtemp),
+               verts = proxy<space>({}, verts)] __device__(int i) mutable {
+                auto m = verts("m", i);
+                vtemp.tuple<9>("P", i) = mat3::zeros();
+                vtemp("P", 0, i) = m;
+                vtemp("P", 4, i) = m;
+                vtemp("P", 8, i) = m;
+              });
+      cudaPol(zs::range(eles.size()),
+              [vtemp = proxy<space>({}, vtemp), etemp = proxy<space>({}, etemp),
+               eles = proxy<space>({}, eles)] __device__(int ei) mutable {
+                constexpr int dim = 3;
+                constexpr auto dimp1 = dim + 1;
+                auto inds =
+                    eles.pack<dimp1>("inds", ei).reinterpret_bits<int>();
+                auto He = etemp.pack<dim * dimp1, dim * dimp1>("He", ei);
+                for (int vi = 0; vi != dimp1; ++vi) {
+                  for (int i = 3; i != dim; ++i)
+                    for (int j = 3; j != dim; ++j) {
+                      atomic_add(exec_cuda, &vtemp("P", i * dim + j, inds[vi]),
+                                 He(vi * dim + i, vi * dim + j));
+                    }
+                }
+              });
+      cudaPol(zs::range(vtemp.size()),
+              [vtemp = proxy<space>({}, vtemp)] __device__(int i) mutable {
+                vtemp.tuple<9>("P", i) = inverse(vtemp.pack<3, 3>("P", i));
+              });
 
       // modify initial x so that it satisfied the constraint.
 
