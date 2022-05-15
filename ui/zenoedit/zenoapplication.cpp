@@ -14,7 +14,6 @@ ZenoApplication::ZenoApplication(int &argc, char **argv)
     , m_pGraphs(new GraphsManagment(this))
     , m_bIOProcessing(false)
     , m_errSteam(std::clog)
-    , m_server(nullptr)
 {
     initFonts();
     initStyleSheets();
@@ -100,10 +99,12 @@ bool ZenoApplication::IsIOProcessing() const
     return m_bIOProcessing;
 }
 
+#ifdef ZENO_MULTIPROCESS
 ZTcpServer* ZenoApplication::getServer()
 {
     return m_server;
 }
+#endif
 
 ZenoMainWindow* ZenoApplication::getMainWindow()
 {

@@ -1,6 +1,8 @@
 #ifndef __ZCORE_TCPSERVER_H__
 #define __ZCORE_TCPSERVER_H__
 
+#ifdef ZENO_MULTIPROCESS
+
 #include <QObject>
 #include <QtNetwork>
 
@@ -23,5 +25,7 @@ private:
     QTcpSocket* m_tcpSocket;
     std::unique_ptr<QProcess> m_proc;
 };
+
+#endif
 
 #endif

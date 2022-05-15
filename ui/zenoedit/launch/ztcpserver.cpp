@@ -1,3 +1,4 @@
+#ifdef ZENO_MULTIPROCESS
 #include "ztcpserver.h"
 #include <zeno/extra/GlobalState.h>
 #include <zeno/utils/log.h>
@@ -79,9 +80,7 @@ void ZTcpServer::onNewConnection()
     }
     connect(m_tcpSocket, SIGNAL(readyRead()), this, SLOT(onReadyRead()));
     connect(m_tcpSocket, SIGNAL(disconnected()), this, SLOT(onDisconnect()));
-#ifdef ZENO_MULTIPROCESS
     viewDecodeClear();
-#endif
 }
 
 void ZTcpServer::onReadyRead()
@@ -91,9 +90,7 @@ void ZTcpServer::onReadyRead()
     qint64 redSize = arr.size();
     zeno::log_debug("qtcpsocket got {} bytes (ping test has 19)", redSize);
     if (redSize > 0) {
-#ifdef ZENO_MULTIPROCESS
         viewDecodeAppend(arr.data(), redSize);
-#endif
     }
 }
 
@@ -101,12 +98,11 @@ void ZTcpServer::onDisconnect()
 {
     if (m_proc)
     {
-#ifdef ZENO_MULTIPROCESS
         viewDecodeFinish();
-#endif
         m_proc->terminate();
         int code = m_proc->exitCode();
         m_proc = nullptr;
         zeno::log_info("runner process exited with {}", code);
     }
 }
+#endif
