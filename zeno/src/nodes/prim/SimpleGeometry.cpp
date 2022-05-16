@@ -15,16 +15,19 @@ namespace zeno {
 struct CreateCube : zeno::INode {
     virtual void apply() override {
         auto prim = std::make_shared<zeno::PrimitiveObject>();
+        auto size = get_input2<float>("size");
+        auto position = get_input2<zeno::vec3f>("position");
+        auto scaleSize = get_input2<zeno::vec3f>("scaleSize");
 
         auto &pos = prim->verts;
-        pos.push_back(vec3f( 1,  1,  1));
-        pos.push_back(vec3f( 1,  1, -1));
-        pos.push_back(vec3f(-1,  1, -1));
-        pos.push_back(vec3f(-1,  1,  1));
-        pos.push_back(vec3f( 1, -1,  1));
-        pos.push_back(vec3f( 1, -1, -1));
-        pos.push_back(vec3f(-1, -1, -1));
-        pos.push_back(vec3f(-1, -1,  1));
+        pos.push_back(vec3f( 1,  1,  1) * size * scaleSize + position);
+        pos.push_back(vec3f( 1,  1, -1) * size * scaleSize + position);
+        pos.push_back(vec3f(-1,  1, -1) * size * scaleSize + position);
+        pos.push_back(vec3f(-1,  1,  1) * size * scaleSize + position);
+        pos.push_back(vec3f( 1, -1,  1) * size * scaleSize + position);
+        pos.push_back(vec3f( 1, -1, -1) * size * scaleSize + position);
+        pos.push_back(vec3f(-1, -1, -1) * size * scaleSize + position);
+        pos.push_back(vec3f(-1, -1,  1) * size * scaleSize + position);
 
         auto &tris = prim->tris;
         // Top 0, 1, 2, 3
@@ -50,7 +53,11 @@ struct CreateCube : zeno::INode {
 };
 
 ZENDEFNODE(CreateCube, {
-    {},
+    {
+        {"vec3f", "position", "0, 0, 0"},
+        {"vec3f", "scaleSize", "1, 1, 1"},
+        {"float", "size", "1"},
+    },
     {"prim"},
     {},
     {"create"},
