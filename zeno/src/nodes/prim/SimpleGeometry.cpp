@@ -177,34 +177,39 @@ struct CreateCylinder : zeno::INode {
     virtual void apply() override {
         auto prim = std::make_shared<zeno::PrimitiveObject>();
 
+        auto position = get_input2<zeno::vec3f>("position");
+        auto scaleSize = get_input2<zeno::vec3f>("scaleSize");
+        auto radius = get_input2<float>("radius");
+        auto height = get_input2<float>("height");
+        auto lons = get_input2<int>("lons");
+
         auto &pos = prim->verts;
-        size_t seg = 32;
-        for (size_t i = 0; i < seg; i++) {
-            float rad = 2 * M_PI * i / 32;
-            pos.push_back(vec3f(cos(rad), 1, -sin(rad)));
+        for (size_t i = 0; i < lons; i++) {
+            float rad = 2 * M_PI * i / lons;
+            pos.push_back(vec3f(cos(rad) * radius, 0.5 * height, -sin(rad) * radius) * scaleSize + position);
         }
-        for (size_t i = 0; i < seg; i++) {
-            float rad = 2 * M_PI * i / 32;
-            pos.push_back(vec3f(cos(rad), -1, -sin(rad)));
+        for (size_t i = 0; i < lons; i++) {
+            float rad = 2 * M_PI * i / lons;
+            pos.push_back(vec3f(cos(rad) * radius, -0.5 * height, -sin(rad) * radius) * scaleSize + position);
         }
-        pos.push_back(vec3i(0, 1, 0));
-        pos.push_back(vec3i(0, -1, 0));
+        pos.push_back(vec3f(0, 0.5 * height, 0) * scaleSize + position);
+        pos.push_back(vec3f(0, -0.5 * height, 0) * scaleSize + position);
 
         auto &tris = prim->tris;
         // Top
-        for (size_t i = 0; i < seg; i++) {
-            tris.push_back(vec3i(seg * 2, i, (i + 1) % seg));
+        for (size_t i = 0; i < lons; i++) {
+            tris.push_back(vec3i(lons * 2, i, (i + 1) % lons));
         }
         // Bottom
-        for (size_t i = 0; i < seg; i++) {
-            tris.push_back(vec3i(i + seg, seg * 2 + 1, (i + 1) % seg + seg));
+        for (size_t i = 0; i < lons; i++) {
+            tris.push_back(vec3i(i + lons, lons * 2 + 1, (i + 1) % lons + lons));
         }
         // Side
-        for (size_t i = 0; i < seg; i++) {
+        for (size_t i = 0; i < lons; i++) {
             size_t _0 = i;
-            size_t _1 = (i + 1) % seg;
-            size_t _2 = (i + 1) % seg + seg;
-            size_t _3 = i + seg;
+            size_t _1 = (i + 1) % lons;
+            size_t _2 = (i + 1) % lons + lons;
+            size_t _3 = i + lons;
             tris.push_back(vec3i(_1, _0, _2));
             tris.push_back(vec3i(_2, _0, _3));
         }
@@ -213,7 +218,13 @@ struct CreateCylinder : zeno::INode {
 };
 
 ZENDEFNODE(CreateCylinder, {
-    {},
+    {
+        {"vec3f", "position", "0, 0, 0"},
+        {"vec3f", "scaleSize", "1, 1, 1"},
+        {"float", "radius", "1"},
+        {"float", "height", "2"},
+        {"int", "lons", "32"},
+    },
     {"prim"},
     {},
     {"create"},
