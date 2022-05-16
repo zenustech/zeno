@@ -172,6 +172,8 @@ struct VertexInfo{
     aiVector3D position;
     aiVector3D texCoord;
     aiVector3D normal;
+    aiVector3D tangent;
+    aiVector3D bitangent;
     std::unordered_map<std::string, float> boneWeights;
 };
 
@@ -188,7 +190,7 @@ struct NodeTree : zeno::IObjectClone<NodeTree>{
 };
 
 struct BoneTree : zeno::IObjectClone<BoneTree>{
-    std::unordered_map<std::string, Bone> BoneMap;
+    std::unordered_map<std::string, Bone> AnimBoneMap;
 };
 
 struct AnimInfo : zeno::IObjectClone<AnimInfo>{
