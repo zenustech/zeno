@@ -7,6 +7,7 @@
 #include "curvesitem.h"
 #include <zenoui/util/uihelper.h>
 #include <zenoui/comctrl/effect/innershadoweffect.h>
+#include "util/log.h"
 
 
 ZCurveMapEditor::ZCurveMapEditor(bool bTimeline, QWidget* parent)
@@ -139,7 +140,7 @@ void ZCurveMapEditor::initSignals()
 
 void ZCurveMapEditor::addCurve(CurveModel* model)
 {
-    static const QColor preset[] = {"#CE2F2F", "#307BCD", "#2FCD5F"};
+    static const QColor preset[] = {"#CE2F2F", "#2FCD5F", "#307BCD"};
 
     QString id = model->id();
     m_models.insert(id, model);
@@ -162,11 +163,20 @@ void ZCurveMapEditor::addCurve(CurveModel* model)
     }
 
     pRootItem->appendRow(pItem);
+    m_bate_rows.push_back(model);
     CurveGrid *pGrid = m_ui->gridview->gridItem();
     pGrid->setCurvesColor(id, curveClr);
 
     connect(model, &CurveModel::dataChanged, this, &ZCurveMapEditor::onNodesDataChanged);
     connect(m_channelModel, &QStandardItemModel::dataChanged, this, &ZCurveMapEditor::onChannelModelDataChanged);
+}
+
+int ZCurveMapEditor::curveCount() const {
+    return (int)m_bate_rows.size();
+}
+
+CurveModel *ZCurveMapEditor::getCurve(int i) const {
+    return m_bate_rows.at(i);
 }
 
 void ZCurveMapEditor::onButtonToggled(QAbstractButton* btn, bool bToggled)
@@ -180,7 +190,7 @@ void ZCurveMapEditor::onButtonToggled(QAbstractButton* btn, bool bToggled)
     {
         CurveNodeItem* node = lst[0];
         QModelIndex idx = node->index();
-        Q_ASSERT(idx.isValid());
+        ZASSERT_EXIT(idx.isValid());
 
         if (btn == m_ui->btnVector)
         {
@@ -264,7 +274,7 @@ void ZCurveMapEditor::onNodesDataChanged()
    
     if (lst.size() == 1)
     {
-        Q_ASSERT(pGrid);
+        ZASSERT_EXIT(pGrid);
         CurveNodeItem *node = lst[0];
         const QModelIndex& idx = node->index();
         QPointF logicPos = idx.data(ROLE_NODEPOS).toPointF();
@@ -329,7 +339,7 @@ void ZCurveMapEditor::onLockBtnToggled(bool bToggle)
     {
         CurveNodeItem *node = lst[0];
         QModelIndex idx = node->index();
-        Q_ASSERT(idx.isValid());
+        ZASSERT_EXIT(idx.isValid());
         CurveModel *pModel = currentModel();
         if (pModel)
         {
@@ -351,10 +361,10 @@ void ZCurveMapEditor::onChannelModelDataChanged(const QModelIndex &topLeft, cons
     QString id = topLeft.data(Qt::DisplayRole).toString();
     if (roles[0] == Qt::CheckStateRole)
     {
-        Q_ASSERT(m_models.find(id) != m_models.end());
+        ZASSERT_EXIT(m_models.find(id) != m_models.end());
 
         CurveGrid* pGrid = m_ui->gridview->gridItem();
-        Q_ASSERT(pGrid);
+        ZASSERT_EXIT(pGrid);
 
         Qt::CheckState state = topLeft.data(Qt::CheckStateRole).value<Qt::CheckState>();
         if (state == Qt::Checked)

@@ -11,6 +11,7 @@ class ZenoWelcomePage : public QWidget
 	Q_OBJECT
 public:
 	ZenoWelcomePage(QWidget* parent = nullptr);
+	void initRecentFiles();
 
 signals:
 	void newRequest();

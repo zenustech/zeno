@@ -39,7 +39,6 @@ struct TypeError : Error {
 
 struct KeyError : Error {
     std::string key;
-    std::string type;
     std::string hint;
 
     ZENO_API explicit KeyError(std::string_view key, std::string_view hint) noexcept;

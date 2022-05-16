@@ -5,6 +5,7 @@
 #include <zeno/utils/logger.h>
 #include "nodesys/zenosubgraphscene.h"
 #include "magic_enum.hpp"
+#include "util/log.h"
 
 
 ModelAcceptor::ModelAcceptor(GraphsModel* pModel, bool bImport)
@@ -31,7 +32,7 @@ void ModelAcceptor::BeginSubgraph(const QString& name)
 	if (m_bImport)
 		zeno::log_info("Importing subgraph {}", name.toStdString());
 
-	Q_ASSERT(m_pModel && !m_currentGraph);
+	ZASSERT_EXIT(m_pModel && !m_currentGraph);
 	SubGraphModel* pSubModel = new SubGraphModel(m_pModel);
 	pSubModel->setName(name);
 	m_pModel->appendSubGraph(pSubModel);
@@ -227,7 +228,7 @@ void ModelAcceptor::setInputSocket(const QString& id, const QString& inSock, con
 	if (!m_currentGraph)
 		return;
 	QModelIndex idx = m_currentGraph->index(id);
-	Q_ASSERT(idx.isValid());
+	ZASSERT_EXIT(idx.isValid());
 	INPUT_SOCKETS inputs = m_currentGraph->data(idx, ROLE_INPUTS).value<INPUT_SOCKETS>();
 	if (inputs.find(inSock) != inputs.end())
 	{
@@ -250,7 +251,7 @@ void ModelAcceptor::setParamValue(const QString& id, const QString& name, const 
 	if (!m_currentGraph)
 		return;
 	QModelIndex idx = m_currentGraph->index(id);
-	Q_ASSERT(idx.isValid());
+	ZASSERT_EXIT(idx.isValid());
 	PARAMS_INFO params = m_currentGraph->data(idx, ROLE_PARAMETERS).value<PARAMS_INFO>();
 
 	if (params.find(name) != params.end())
@@ -274,7 +275,7 @@ void ModelAcceptor::setPos(const QString& id, const QPointF& pos)
 		return;
 
 	QModelIndex idx = m_currentGraph->index(id);
-	Q_ASSERT(idx.isValid());
+	ZASSERT_EXIT(idx.isValid());
 	m_currentGraph->setData(idx, pos, ROLE_OBJPOS);
 }
 
@@ -284,7 +285,7 @@ void ModelAcceptor::setOptions(const QString& id, const QStringList& options)
 		return;
 
 	QModelIndex idx = m_currentGraph->index(id);
-	Q_ASSERT(idx.isValid());
+	ZASSERT_EXIT(idx.isValid());
 	int opts = 0;
 	for (int i = 0; i < options.size(); i++)
 	{
@@ -309,10 +310,6 @@ void ModelAcceptor::setOptions(const QString& id, const QStringList& options)
 		{
 			m_currentGraph->setData(idx, true, ROLE_COLLASPED);
 		}
-		else
-		{
-			Q_ASSERT(false);
-		}
 	}
 	m_currentGraph->setData(idx, opts, ROLE_OPTIONS);
 }
@@ -329,7 +326,7 @@ void ModelAcceptor::setColorRamps(const QString& id, const COLOR_RAMPS& colorRam
 	}
 
 	QModelIndex idx = m_currentGraph->index(id);
-	Q_ASSERT(idx.isValid());
+	ZASSERT_EXIT(idx.isValid());
 
 	PARAMS_INFO params = m_currentGraph->data(idx, ROLE_PARAMETERS).value<PARAMS_INFO>();
 
@@ -348,6 +345,6 @@ void ModelAcceptor::setBlackboard(const QString& id, const BLACKBOARD_INFO& blac
 		return;
 
 	QModelIndex idx = m_currentGraph->index(id);
-	Q_ASSERT(idx.isValid());
+	ZASSERT_EXIT(idx.isValid());
 	m_currentGraph->setData(idx, QVariant::fromValue(blackboard), ROLE_BLACKBOARD);
 }

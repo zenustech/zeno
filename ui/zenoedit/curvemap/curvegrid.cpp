@@ -4,6 +4,7 @@
 #include "curveutil.h"
 #include <zenoui/util/uihelper.h>
 #include "curvesitem.h"
+#include "util/log.h"
 
 using namespace curve_util;
 
@@ -37,18 +38,13 @@ void CurveGrid::resetTransform(QRectF rc, CURVE_RANGE rg)
 		<< QPointF(rg.xFrom, rg.yFrom);
 
 	bool isOk = QTransform::quadToQuad(polygonIn, polygonOut, m_transform);
-	if (!isOk)
-	{
-		Q_ASSERT(false);
-		return;
-	}
+    ZASSERT_EXIT(isOk);
 
 	m_invTrans = m_transform.inverted(&isOk);
-	if (!isOk)
-	{
-		Q_ASSERT(false);
-		return;
-	}
+    if (!isOk) {
+        zeno::log_warn("cannot invert transform (divide by zero)");
+        return;
+    }
 
 	//example:
     /*
@@ -63,7 +59,7 @@ void CurveGrid::addCurve(CurveModel* model)
     CurvesItem* pCurves = new CurvesItem(m_view, this, m_initRc, this);
 	pCurves->initCurves(model);
     QString id = model->id();
-    Q_ASSERT(!id.isEmpty());
+    ZASSERT_EXIT(!id.isEmpty());
     m_curves[id] = pCurves;
 }
 

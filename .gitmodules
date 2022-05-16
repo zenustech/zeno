@@ -1,6 +1,3 @@
-[submodule "projects/gmpm/zecomp"]
-	path = projects/gmpm/zecomp
-	url = https://github.com/zensim-dev/zpc.git
 [submodule "projects/cgmesh/libigl"]
 	path = projects/cgmesh/libigl
 	url = https://github.com/zenustech/libigl.git
@@ -13,3 +10,6 @@
 [submodule "zenovis/openexr"]
 	path = zenovis/openexr
 	url = https://github.com/zenustech/openexr.git
+[submodule "projects/FBX/assimp"]
+	path = projects/FBX/assimp
+	url = https://github.com/assimp/assimp.git

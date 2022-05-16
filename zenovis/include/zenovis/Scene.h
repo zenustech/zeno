@@ -14,14 +14,14 @@ struct DrawOptions;
 struct ShaderManager;
 struct GraphicsManager;
 struct ObjectsManager;
-struct RenderEngine;
+struct RenderManager;
 
 struct Scene : zeno::disable_copy {
     std::unique_ptr<Camera> camera;
     std::unique_ptr<DrawOptions> drawOptions;
     std::unique_ptr<ShaderManager> shaderMan;
     std::unique_ptr<ObjectsManager> objectsMan;
-    std::unique_ptr<RenderEngine> renderEngine;
+    std::unique_ptr<RenderManager> renderMan;
 
     Scene();
     ~Scene();

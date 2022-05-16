@@ -8,6 +8,7 @@
 #include "graphsmanagment.h"
 #include "../panel/zenoproppanel.h"
 #include <zenoui/model/modelrole.h>
+#include "util/log.h"
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -44,7 +45,7 @@ void ZenoDockWidget::setWidget(DOCK_TYPE type, QWidget* widget)
         setTitleBarWidget(pEditorTitle);
         pTitleWidget = pEditorTitle;
         ZenoGraphsEditor* pEditor = qobject_cast<ZenoGraphsEditor*>(widget);
-        Q_ASSERT(pEditor);
+        ZASSERT_EXIT(pEditor);
         connect(pEditorTitle, SIGNAL(actionTriggered(QAction*)), pEditor, SLOT(onMenuActionTriggered(QAction*)));
 	}
     else if (m_type == DOCK_NODE_PARAMS)
@@ -77,7 +78,7 @@ void ZenoDockWidget::onNodesSelected(const QModelIndex& subgIdx, const QModelInd
         return;
 
     ZenoPropPanel* panel = qobject_cast<ZenoPropPanel*>(widget());
-    Q_ASSERT(panel);
+    ZASSERT_EXIT(panel);
 
     IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
     ZenoPropDockTitleWidget* pPropTitle = qobject_cast<ZenoPropDockTitleWidget*>(titleBarWidget());

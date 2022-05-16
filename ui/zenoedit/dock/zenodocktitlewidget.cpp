@@ -6,6 +6,7 @@
 #include "zenoapplication.h"
 #include "graphsmanagment.h"
 #include "viewport/zenovis.h"
+#include "util/log.h"
 
 
 ZenoDockTitleWidget::ZenoDockTitleWidget(QWidget* parent)
@@ -241,7 +242,7 @@ void ZenoEditorDockTitleWidget::onModelClear()
 void ZenoEditorDockTitleWidget::onDirtyChanged()
 {
 	IGraphsModel* pModel = qobject_cast<IGraphsModel*>(sender());
-	Q_ASSERT(pModel);
+    ZASSERT_EXIT(pModel);
 	bool bDirty = pModel->isDirty();
 	QString name = pModel->fileName();
 	if (name.isEmpty())
@@ -294,32 +295,6 @@ void ZenoViewDockTitle::initTitleContent(QHBoxLayout* pHLayout)
     pHLayout->addStretch();
 }
 
-void ZenoViewDockTitle::setupUi()
-{
-    QVBoxLayout *pLayout = new QVBoxLayout;
-    pLayout->setSpacing(0);
-    pLayout->setContentsMargins(0, 0, 0, 0);
-
-    QHBoxLayout *pHLayout = new QHBoxLayout;
-
-    ZToolButton *pDockOptionsBtn = new ZToolButton(ZToolButton::Opt_HasIcon, QIcon(":/icons/dockOption.svg"),
-                                                   ZenoStyle::dpiScaledSize(QSize(16, 16)));
-    pDockOptionsBtn->setMargins(QMargins(10, 10, 10, 10));
-    pDockOptionsBtn->setBackgroundClr(QColor(51, 51, 51), QColor(51, 51, 51), QColor(51, 51, 51));
-
-    initTitleContent(pHLayout);
-
-    pHLayout->addWidget(pDockOptionsBtn);
-    pHLayout->setContentsMargins(0, 0, 0, 0);
-    pHLayout->setMargin(0);
-
-    pLayout->addLayout(pHLayout);
-
-    setLayout(pLayout);
-
-    connect(pDockOptionsBtn, SIGNAL(clicked()), this, SIGNAL(dockOptionsClicked()));
-}
-
 QMenuBar* ZenoViewDockTitle::initMenu()
 {
     QMenuBar* pMenuBar = new QMenuBar(this);
@@ -370,12 +345,19 @@ QMenuBar* ZenoViewDockTitle::initMenu()
 
         pDisplay->addSeparator();
 
-        pAction = new QAction(tr("Zhxx Renderer"), this);
+        pAction = new QAction(tr("Enable PBR"), this);
         pAction->setCheckable(true);
         pAction->setChecked(false);
         pDisplay->addAction(pAction);
         connect(pAction, &QAction::triggered, this,
             [=]() { Zenovis::GetInstance().getSession()->set_render_engine(pAction->isChecked() ? "zhxx" : "bate"); });
+
+        pAction = new QAction(tr("Enable GI"), this);
+        pAction->setCheckable(true);
+        pAction->setChecked(false);
+        pDisplay->addAction(pAction);
+        connect(pAction, &QAction::triggered, this,
+            [=]() { Zenovis::GetInstance().getSession()->set_enable_gi(pAction->isChecked()); });
 
         pDisplay->addSeparator();
 
@@ -384,7 +366,7 @@ QMenuBar* ZenoViewDockTitle::initMenu()
 
         pDisplay->addSeparator();
 
-        pAction = new QAction(tr("Use English"), this);
+        pAction = new QAction(tr("English / Chinese"), this);
         pAction->setCheckable(true);
         pAction->setChecked(true);
         pDisplay->addAction(pAction);
@@ -397,8 +379,8 @@ QMenuBar* ZenoViewDockTitle::initMenu()
         pRecord->addAction(pAction);
         connect(pAction, &QAction::triggered, this, [=]() {
             auto s = QDateTime::currentDateTime().toString(QString("yyyy-dd-MM_hh-mm-ss.png"));
-            Zenovis::GetInstance().getSession()->do_screenshot(s.toStdString());
-            });
+            Zenovis::GetInstance().getSession()->do_screenshot(s.toStdString(), "png");
+        });
         pAction = new QAction(tr("Record Video"), this);
         pAction->setShortcut(QKeySequence(tr("Shift+F12")));
         pRecord->addAction(pAction);

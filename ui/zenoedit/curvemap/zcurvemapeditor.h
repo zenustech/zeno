@@ -24,6 +24,8 @@ public:
 	ZCurveMapEditor(bool bTimeline, QWidget* parent = nullptr);
 	~ZCurveMapEditor();
     void addCurve(CurveModel* model);
+    int curveCount() const;
+    CurveModel *getCurve(int i) const;
 
 public slots:
 	void onButtonToggled(QAbstractButton* btn, bool bToggled);
@@ -51,6 +53,8 @@ private:
 	QStandardItemModel* m_channelModel;
 	QItemSelectionModel* m_selection;
 	bool m_bTimeline;
+
+    std::vector<CurveModel *> m_bate_rows;
 };
 
 

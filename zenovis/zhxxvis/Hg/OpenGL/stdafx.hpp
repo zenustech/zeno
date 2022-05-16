@@ -1,6 +1,7 @@
 #pragma once
 
-#include <glad/glad.h>
+//#include <glad/glad.h>
+#include "../../../include/zenovis/opengl/common.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -45,7 +46,7 @@ namespace hg::OpenGL {
     }
   }
 
-#define CHECK_GL(x)                                          \
+#define HG_CHECK_GL(x)                                       \
   do {                                                       \
     (x);                                                     \
     hg::OpenGL::_check_opengl_error(__FILE__, __LINE__, #x); \

@@ -17,6 +17,7 @@ set(ZENO_EXTENSIONS
     mesher
     Euler
     FEM
+    FBX
     Alembic
     LSystem
     Skinning

@@ -27,7 +27,7 @@ struct iTexture3D
 namespace itexture3D
 {
 	
-	inline void init(zenvis::iTexture3D& t, GLfloat* data, int dimensions)
+	inline void init(zenvis::iTexture3D& t, GLfloat* data, int dimensions, GLuint format = GL_RGBA16)
 	{
 		t.dimensions = dimensions;
 
@@ -39,8 +39,16 @@ namespace itexture3D
 		glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_BORDER);
 		glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 		glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-		glTexStorage3D(GL_TEXTURE_3D, log2(dimensions), GL_RGBA8, dimensions,dimensions,dimensions);
+		
+		glTexStorage3D(GL_TEXTURE_3D, log2(dimensions), format, dimensions,dimensions,dimensions);
+		
+		// int width = dimensions, height = dimensions, depth = dimensions;
+		// for (int i = 0; i < log2(dimensions); i++) {
+		// 	glTexImage3D(GL_TEXTURE_3D, i, GL_RGBA32F, width, height, depth, 0, GL_RGBA, GL_FLOAT, NULL);
+		// 	width = std::max(1, (width / 2));
+		// 	height = std::max(1, (height / 2));
+		// 	depth = std::max(1, (depth / 2));
+    	// }
 		glTexSubImage3D(GL_TEXTURE_3D, 0, 0,0,0, dimensions,dimensions,dimensions, GL_RGBA, GL_FLOAT, data);
 		glGenerateMipmap(GL_TEXTURE_3D);
 		glBindTexture(GL_TEXTURE_3D, 0); 

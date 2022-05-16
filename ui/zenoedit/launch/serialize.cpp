@@ -4,6 +4,7 @@
 #include <model/modeldata.h>
 #include <model/modelrole.h>
 #include <zenoui/util/uihelper.h>
+#include "util/log.h"
 
 using namespace JsonHelper;
 
@@ -91,7 +92,7 @@ static void serializeGraph(SubGraphModel* pModel, GraphsModel* pGraphsModel, QSt
             {
                 for (QPersistentModelIndex linkIdx : input.linkIndice)
                 {
-                    Q_ASSERT(linkIdx.isValid());
+                    ZASSERT_EXIT(linkIdx.isValid());
                     const QString& outSock = linkIdx.data(ROLE_OUTSOCK).toString();
                     const QString& outId = linkIdx.data(ROLE_OUTNODE).toString();
                     AddStringList({ "bindNodeInput", ident, inputName, outId, outSock }, writer);

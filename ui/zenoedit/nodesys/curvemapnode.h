@@ -1,3 +1,4 @@
+#if 0
 #ifndef __CURVEMAP_NODE_H__
 #define __CURVEMAP_NODE_H__
 
@@ -22,4 +23,5 @@ private:
 
 };
 
+#endif
 #endif

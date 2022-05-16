@@ -13,6 +13,7 @@
 #include "zenomainwindow.h"
 #include "graphsmanagment.h"
 #include "../nodesview/zenographseditor.h"
+#include "util/log.h"
 
 
 ZenoNode::ZenoNode(const NodeUtilParam &params, QGraphicsItem *parent)
@@ -145,7 +146,7 @@ void ZenoNode::initWangStyle(const QModelIndex& subGIdx, const QModelIndex& inde
     NODE_TYPE type = static_cast<NODE_TYPE>(m_index.data(ROLE_NODETYPE).toInt());
 
 	IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
-	Q_ASSERT(pGraphsModel);
+    ZASSERT_EXIT(pGraphsModel);
 
     m_headerWidget = initHeaderWangStyle(type);
 	m_bodyWidget = initBodyWidget(type);
@@ -550,6 +551,17 @@ void ZenoNode::initParam(PARAM_CONTROL ctrl, QGraphicsLinearLayout* pParamLayout
 		    m_paramControls[paramName] = pMultiStrEdit;
 		    break;
 	    }
+	    case CONTROL_HEATMAP:
+	    case CONTROL_CURVE:
+	    {
+		    ZenoParamLineEdit* pLineEdit = new ZenoParamLineEdit(value, param.control,  m_renderParams.lineEditParam);
+		    pParamLayout->addItem(pLineEdit);
+		    connect(pLineEdit, &ZenoParamLineEdit::editingFinished, this, [=]() {
+			    onParamEditFinished(param.control, paramName, pLineEdit->text());
+			    });
+		    m_paramControls[paramName] = pLineEdit;
+		    break;
+	    }
 	    default:
 	    {
 		    zeno::log_warn("got undefined control type {}", param.control);
@@ -676,7 +688,7 @@ void ZenoNode::onSocketUpdated(const SOCKET_UPDATE_INFO& info)
             const QString& newName = info.newInfo.name;
 			if (info.bInput)
 			{
-				Q_ASSERT(m_inSockets.find(newName) == m_inSockets.end());
+                ZASSERT_EXIT(m_inSockets.find(newName) == m_inSockets.end());
 
                 _socket_ctrl sock;
                 sock.socket = new ZenoSocketItem(m_renderParams.socket, m_renderParams.szSocket, this);
@@ -689,7 +701,7 @@ void ZenoNode::onSocketUpdated(const SOCKET_UPDATE_INFO& info)
 			}
 			else
 			{
-				Q_ASSERT(m_outSockets.find(newName) == m_outSockets.end());
+				ZASSERT_EXIT(m_outSockets.find(newName) == m_outSockets.end());
 
                 _socket_ctrl sock;
 				sock.socket = new ZenoSocketItem(m_renderParams.socket, m_renderParams.szSocket, this);
@@ -708,7 +720,7 @@ void ZenoNode::onSocketUpdated(const SOCKET_UPDATE_INFO& info)
             const QString& name = info.oldInfo.name;
             if (info.bInput)
             {
-                Q_ASSERT(m_inSockets.find(name) != m_inSockets.end());
+                ZASSERT_EXIT(m_inSockets.find(name) != m_inSockets.end());
                 const _socket_ctrl& sock = m_inSockets[name];
                 m_pSocketsLayout->removeItem(sock.socket_text);
                 delete sock.socket;
@@ -718,7 +730,7 @@ void ZenoNode::onSocketUpdated(const SOCKET_UPDATE_INFO& info)
             }
             else
             {
-				Q_ASSERT(m_outSockets.find(name) != m_outSockets.end());
+                ZASSERT_EXIT(m_outSockets.find(name) != m_outSockets.end());
 				const _socket_ctrl& sock = m_outSockets[name];
 				m_pSocketsLayout->removeItem(sock.socket_text);
 				delete sock.socket;
@@ -734,14 +746,14 @@ void ZenoNode::onSocketUpdated(const SOCKET_UPDATE_INFO& info)
 		    const QString& newName = info.newInfo.name;
 		    if (info.bInput)
 		    {
-			    Q_ASSERT(m_inSockets.find(oldName) != m_inSockets.end());
+			    ZASSERT_EXIT(m_inSockets.find(oldName) != m_inSockets.end());
 			    m_inSockets[newName] = m_inSockets[oldName];
 			    m_inSockets[newName].socket_text->setPlainText(newName);
 			    m_inSockets.remove(oldName);
 		    }
 		    else
 		    {
-			    Q_ASSERT(m_outSockets.find(oldName) != m_outSockets.end());
+			    ZASSERT_EXIT(m_outSockets.find(oldName) != m_outSockets.end());
 			    m_outSockets[newName] = m_outSockets[oldName];
 			    m_outSockets[newName].socket_text->setPlainText(info.newInfo.name);
 			    m_outSockets.remove(oldName);
@@ -753,7 +765,7 @@ void ZenoNode::onSocketUpdated(const SOCKET_UPDATE_INFO& info)
 
 void ZenoNode::onNameUpdated(const QString& newName)
 {
-    Q_ASSERT(m_NameItem);
+    ZASSERT_EXIT(m_NameItem);
     if (m_NameItem)
     {
 		m_NameItem->setPlainText(newName);
@@ -767,12 +779,12 @@ void ZenoNode::onSocketLinkChanged(const QString& sockName, bool bInput, bool bA
 {
 	if (bInput)
 	{
-		Q_ASSERT(m_inSockets.find(sockName) != m_inSockets.end());
+        ZASSERT_EXIT(m_inSockets.find(sockName) != m_inSockets.end());
         m_inSockets[sockName].socket->toggle(bAdded);
 	}
 	else
 	{
-		Q_ASSERT(m_outSockets.find(sockName) != m_outSockets.end());
+		ZASSERT_EXIT(m_outSockets.find(sockName) != m_outSockets.end());
         m_outSockets[sockName].socket->toggle(bAdded);
 	}
 }
@@ -789,7 +801,7 @@ void ZenoNode::updateSocketDeflValue(const QString& nodeid, const QString& inSoc
     if (info.oldValue != info.newValue)
     {
         IGraphsModel *pGraphsModel = zenoApp->graphsManagment()->currentModel();
-        Q_ASSERT(pGraphsModel);
+        ZASSERT_EXIT(pGraphsModel);
         pGraphsModel->updateSocketDefl(nodeid, info, m_subGpIndex, true);
     }
 }
@@ -940,10 +952,10 @@ void ZenoNode::getSocketInfoByItem(ZenoSocketItem* pSocketItem, QString& sockNam
 void ZenoNode::toggleSocket(bool bInput, const QString& sockName, bool bSelected)
 {
     if (bInput) {
-        Q_ASSERT(m_inSockets.find(sockName) != m_inSockets.end());
+        ZASSERT_EXIT(m_inSockets.find(sockName) != m_inSockets.end());
         m_inSockets[sockName].socket->toggle(bSelected);
     } else {
-        Q_ASSERT(m_outSockets.find(sockName) != m_outSockets.end());
+        ZASSERT_EXIT(m_outSockets.find(sockName) != m_outSockets.end());
         m_outSockets[sockName].socket->toggle(bSelected);
     }
 }
@@ -977,11 +989,11 @@ QPointF ZenoNode::getPortPos(bool bInput, const QString &portName)
     {
         QString id = nodeId();
         if (bInput) {
-            Q_ASSERT(m_inSockets.find(portName) != m_inSockets.end());
+            ZASSERT_EXIT(m_inSockets.find(portName) != m_inSockets.end(), QPointF());
             QPointF pos = m_inSockets[portName].socket->sceneBoundingRect().center();
             return pos;
         } else {
-            Q_ASSERT(m_outSockets.find(portName) != m_outSockets.end());
+            ZASSERT_EXIT(m_outSockets.find(portName) != m_outSockets.end(), QPointF());
             QPointF pos = m_outSockets[portName].socket->sceneBoundingRect().center();
             return pos;
         }
@@ -990,31 +1002,31 @@ QPointF ZenoNode::getPortPos(bool bInput, const QString &portName)
 
 QString ZenoNode::nodeId() const
 {
-    Q_ASSERT(m_index.isValid());
+    ZASSERT_EXIT(m_index.isValid(), "");
     return m_index.data(ROLE_OBJID).toString();
 }
 
 QString ZenoNode::nodeName() const
 {
-    Q_ASSERT(m_index.isValid());
+    ZASSERT_EXIT(m_index.isValid(), "");
     return m_index.data(ROLE_OBJNAME).toString();
 }
 
 QPointF ZenoNode::nodePos() const
 {
-    Q_ASSERT(m_index.isValid());
+    ZASSERT_EXIT(m_index.isValid(), QPointF());
     return m_index.data(ROLE_OBJPOS).toPointF();
 }
 
 INPUT_SOCKETS ZenoNode::inputParams() const
 {
-    Q_ASSERT(m_index.isValid());
+    ZASSERT_EXIT(m_index.isValid(), INPUT_SOCKETS());
     return m_index.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
 }
 
 OUTPUT_SOCKETS ZenoNode::outputParams() const
 {
-    Q_ASSERT(m_index.isValid());
+    ZASSERT_EXIT(m_index.isValid(), OUTPUT_SOCKETS());
     return m_index.data(ROLE_OUTPUTS).value<OUTPUT_SOCKETS>();
 }
 
@@ -1133,7 +1145,7 @@ void ZenoNode::hoverLeaveEvent(QGraphicsSceneHoverEvent* event)
 void ZenoNode::onCollaspeBtnClicked()
 {
 	IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
-	Q_ASSERT(pGraphsModel);
+    ZASSERT_EXIT(pGraphsModel);
     bool bCollasped = pGraphsModel->data2(m_subGpIndex, m_index, ROLE_COLLASPED).toBool();
 
     STATUS_UPDATE_INFO info;
@@ -1148,7 +1160,7 @@ void ZenoNode::onOptionsBtnToggled(STATUS_BTN btn, bool toggled)
 	QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(m_index.model());
 
 	IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
-	Q_ASSERT(pGraphsModel);
+	ZASSERT_EXIT(pGraphsModel);
 
     int options = pGraphsModel->data2(m_subGpIndex, m_index, ROLE_OPTIONS).toInt();
     int oldOpts = options;
