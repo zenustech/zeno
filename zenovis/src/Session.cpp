@@ -104,7 +104,8 @@ void Session::do_screenshot(std::string path, std::string type) {
     }},
     {"exr", [&] {
         const char *err = nullptr;
-        if (SaveEXR((float *)pixels.data(), nx, ny, 3, 1, path.c_str(), &err) != TINYEXR_SUCCESS) {
+        int ret = SaveEXR((float *)pixels.data(), nx, ny, 3, 1, path.c_str(), &err);
+        if (ret != TINYEXR_SUCCESS) {
             if (err) {
                 zeno::log_error("failed to perform SaveEXR to {}: {}", path, err);
                 FreeEXRErrorMessage(err);
