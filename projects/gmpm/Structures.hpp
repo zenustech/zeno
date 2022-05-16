@@ -44,6 +44,11 @@ struct ZenoConstitutiveModel : IObjectClone<ZenoConstitutiveModel> {
   enum aniso_plastic_model_e { None_, Arap };
   enum plastic_model_e { None, DruckerPrager, VonMises, CamClay };
 
+  enum config_value_type_e { Scalar, Vec3 };
+  static constexpr auto scalar_c = zs::wrapv<config_value_type_e::Scalar>{};
+  static constexpr auto vec3_c = zs::wrapv<config_value_type_e::Vec3>{};
+  using config_value_type = zs::variant<float, zs::vec<float, 3>>;
+
   auto &getElasticModel() noexcept { return elasticModel; }
   const auto &getElasticModel() const noexcept { return elasticModel; }
   auto &getAnisoElasticModel() noexcept { return anisoElasticModel; }
@@ -66,6 +71,17 @@ struct ZenoConstitutiveModel : IObjectClone<ZenoConstitutiveModel> {
     return std::get<I>(plasticModel);
   }
 
+  template <typename T> void record(const std::string &tag, T &&val) {
+    configs[tag] = val;
+  }
+  template <auto e = config_value_type_e::Scalar>
+  auto retrieve(const std::string &tag, zs::wrapv<e> = {}) const {
+    if constexpr (e == Scalar)
+      return std::get<float>(configs.at(tag));
+    else if constexpr (e == Vec3)
+      return std::get<zs::vec<float, 3>>(configs.at(tag));
+  }
+
   bool hasAnisoModel() const noexcept {
     return !std::holds_alternative<std::monostate>(anisoElasticModel);
   }
@@ -84,6 +100,7 @@ struct ZenoConstitutiveModel : IObjectClone<ZenoConstitutiveModel> {
   ElasticModel elasticModel;
   AnisoElasticModel anisoElasticModel;
   PlasticModel plasticModel;
+  std::map<std::string, config_value_type> configs;
 };
 
 struct ZenoParticles : IObjectClone<ZenoParticles> {
@@ -182,8 +199,14 @@ struct ZenoParticles : IObjectClone<ZenoParticles> {
     return sprayedOffset != numParticles();
   }
 
+  decltype(auto) operator[](const std::string &tag) { return auxData[tag]; }
+  decltype(auto) operator[](const std::string &tag) const {
+    return auxData.at(tag);
+  }
+
   std::shared_ptr<particles_t> particles{};
   std::optional<particles_t> elements{};
+  std::map<std::string, particles_t> auxData;
   category_e category{category_e::mpm}; // 0: conventional mpm particle, 1:
                                         // curve, 2: surface, 3: tet
   std::shared_ptr<PrimitiveObject> prim{};

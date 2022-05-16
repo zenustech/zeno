@@ -540,6 +540,17 @@ struct GraphicPrimitive : IGraphic {
                           fov, 0.1,ffar, dof, 1);
                 
             }
+            if(code.find("mat_isVoxelDomain = float(float(1))")!=std::string::npos)
+            {
+                auto origin = prim->attr<zeno::vec3f>("pos")[0];
+                auto right = prim->attr<zeno::vec3f>("pos")[1] - prim->attr<zeno::vec3f>("pos")[0];
+                auto up = prim->attr<zeno::vec3f>("pos")[3] - prim->attr<zeno::vec3f>("pos")[0];
+
+                voxelizer::setVoxelizeView(glm::vec3(origin[0],origin[1],origin[2]), 
+                                           glm::vec3(right[0], right[1], right[2]), 
+                                           glm::vec3(up[0], up[1], up[2]));
+                
+            }
             
         }
         if(!triObj.prog){
@@ -806,9 +817,13 @@ struct GraphicPrimitive : IGraphic {
         triObj.voxelprog->use();
         set_program_uniforms(triObj.voxelprog);
         triObj.voxelprog->set_uniform("u_scene_voxel_scale", glm::vec3(1.0/voxelizer::getDomainLength()));
+        triObj.voxelprog->set_uniform("m_gi_emission_base", get_gi_emission_base());
         triObj.voxelprog->set_uniform("voxelgrid_resolution", voxelizer::getVoxelResolution());
         triObj.voxelprog->set_uniformi("lightNum", lights.size());
         triObj.voxelprog->set_uniform("alphaPass", alphaPass);
+        triObj.voxelprog->set_uniform("vxView", voxelizer::getView());
+        triObj.voxelprog->set_uniform("vxMaterialPass", voxelizer::isMaterialPass);
+        
         for (int lightNo = 0; lightNo < lights.size(); ++lightNo)
         {
             auto &light = lights[lightNo];
@@ -847,7 +862,11 @@ struct GraphicPrimitive : IGraphic {
             if (auto brdfLUT = getBRDFLut(); brdfLUT != (unsigned int)-1)
                 CHECK_GL(glBindTexture(GL_TEXTURE_2D, brdfLUT));
             texOcp++;
-
+            
+            triObj.voxelprog->set_uniformi("vxNormal", texOcp);
+            CHECK_GL(glActiveTexture(GL_TEXTURE0+texOcp));
+            CHECK_GL(glBindTexture(GL_TEXTURE_3D, voxelizer::vxNormal.id));
+            texOcp++;
             
 
 
@@ -1217,7 +1236,8 @@ struct GraphicPrimitive : IGraphic {
         texOcp++;
         triObj.prog->set_uniform("vxSize",voxelizer::getDomainLength());
         triObj.prog->set_uniform("vxView", voxelizer::getView());
-        
+        triObj.prog->set_uniform("enable_gi_flag", zenvis::get_enable_gi());
+        triObj.prog->set_uniform("m_gi_base", zenvis::get_gi_base());
         
         
         triObj.prog->set_uniform("msweight", m_weight);
