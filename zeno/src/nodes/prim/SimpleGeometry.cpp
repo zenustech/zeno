@@ -144,12 +144,15 @@ ZENDEFNODE(CreateDisk, {
 struct CreatePlane : zeno::INode {
     virtual void apply() override {
         auto prim = std::make_shared<zeno::PrimitiveObject>();
+        auto position = get_input2<zeno::vec3f>("position");
+        auto scaleSize = get_input2<zeno::vec3f>("scaleSize");
+        auto size = get_input2<float>("size");
 
         auto &pos = prim->verts;
-        pos.push_back(vec3f( 1, 0,  1));
-        pos.push_back(vec3f( 1, 0, -1));
-        pos.push_back(vec3f(-1, 0, -1));
-        pos.push_back(vec3f(-1, 0,  1));
+        pos.push_back(vec3f( 1, 0,  1) * size * scaleSize + position);
+        pos.push_back(vec3f( 1, 0, -1) * size * scaleSize + position);
+        pos.push_back(vec3f(-1, 0, -1) * size * scaleSize + position);
+        pos.push_back(vec3f(-1, 0,  1) * size * scaleSize + position);
 
         auto &tris = prim->tris;
         tris.push_back(vec3i(0, 1, 2));
@@ -160,7 +163,11 @@ struct CreatePlane : zeno::INode {
 };
 
 ZENDEFNODE(CreatePlane, {
-    {},
+    {
+        {"vec3f", "position", "0, 0, 0"},
+        {"vec3f", "scaleSize", "1, 1, 1"},
+        {"float", "size", "1"},
+    },
     {"prim"},
     {},
     {"create"},
