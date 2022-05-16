@@ -31,7 +31,8 @@ public:
     CurveModel(const QString& id, const CURVE_RANGE& rg, int rows, int columns, QObject *parent = nullptr);
     ~CurveModel();
     //method for temporary node like MakeCurvemap, DynamicNumber¡£
-    void initItems(CURVE_RANGE rg, const QVector<QPointF>& points, const QVector<QPointF>& handlers);
+    void initItems(CURVE_DATA const &curvedat);
+    CURVE_DATA getItems() const;
     bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::EditRole) override;
     void resetRange(const CURVE_RANGE& rg);
     CURVE_RANGE range() const;

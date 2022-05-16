@@ -10,6 +10,8 @@
 #include <zenoui/model/modeldata.h>
 
 class SubGraphModel;
+class GraphsModel;
+class ApiLevelScope;
 
 /*
 GraphsModel is a "plain" model, which contains subgraphModel for each subgraph.
@@ -34,7 +36,6 @@ public:
     ~GraphsModel();
     SubGraphModel* subGraph(const QString& name) const;
     SubGraphModel *subGraph(int idx) const;
-    SUBMODEL_SCENE subGraphScene(int idx) const;
     SubGraphModel *currentGraph();
     void switchSubGraph(const QString& graphName) override;
     void newSubgraph(const QString& graphName) override;
@@ -68,32 +69,28 @@ public:
     void revert(const QModelIndex& idx);
 
     //IGraphsModel
-	void beginTransaction(const QString& name) override;
-	void endTransaction() override;
+
 	QModelIndex index(const QString& id, const QModelIndex& subGpIdx) override;
     QModelIndex index(int r, const QModelIndex& subGpIdx) override;
 	QVariant data2(const QModelIndex& subGpIdx, const QModelIndex& index, int role) override;
     int itemCount(const QModelIndex& subGpIdx) const override;
 	void addNode(const NODE_DATA& nodeData, const QModelIndex& subGpIdx, bool enableTransaction = false) override;
-    void insertRow(int row, const NODE_DATA& nodeData, const QModelIndex& subGpIdx) override;
-	void appendNodes(const QList<NODE_DATA>& nodes, const QModelIndex& subGpIdx, bool enableTransaction = false) override;
-    void importNodeLinks(const QList<NODE_DATA>& nodes, const QModelIndex& subGpIdx) override;
+	void appendNodes(const QList<NODE_DATA>& nodes, const QModelIndex& subGpIdx, bool enableTransaction = false);
 	void removeNode(const QString& nodeid, const QModelIndex& subGpIdx, bool enableTransaction = false) override;
-	void removeNode(int row, const QModelIndex& subGpIdx) override;
-    void removeLinks(const QList<QPersistentModelIndex>& info, const QModelIndex& subGpIdx, bool enableTransaction = false) override;
+	void removeNode(int row, const QModelIndex& subGpIdx);
     void removeLink(const QPersistentModelIndex& linkIdx, const QModelIndex& subGpIdx, bool enableTransaction = false) override;
+    void removeNodeLinks(const QList<QPersistentModelIndex>& nodes, const QList<QPersistentModelIndex>& links, const QModelIndex& subGpIdx) override;
 	void removeSubGraph(const QString& name) override;
     QModelIndex addLink(const EdgeInfo& info, const QModelIndex& subGpIdx, bool enableTransaction = false) override;
-    void updateLinkInfo(const QPersistentModelIndex& linkIdx, const LINK_UPDATE_INFO& info, bool enableTransaction = false) override;
+    //
+
     QVariant getParamValue(const QString& id, const QString& name, const QModelIndex& subGpIdx) override;
 	void updateParamInfo(const QString& id, PARAM_UPDATE_INFO info, const QModelIndex& subGpIdx, bool enableTransaction = false) override;
-	void updateSocket(const QString& id, SOCKET_UPDATE_INFO info, const QModelIndex& subGpIdx, bool enableTransaction = false) override;
     void updateSocketDefl(const QString& id, PARAM_UPDATE_INFO info, const QModelIndex& subGpIdx, bool enableTransaction = false) override;
     QVariant getNodeStatus(const QString& id, int role, const QModelIndex& subGpIdx) override;
     void updateNodeStatus(const QString& nodeid, STATUS_UPDATE_INFO info, const QModelIndex& subgIdx, bool enableTransaction = false) override;
     void copyPaste(const QModelIndex& fromSubg, const QModelIndexList& srcNodes, const QModelIndex& toSubg, QPointF pos, bool enableTrans = false) override;
     QModelIndex extractSubGraph(const QModelIndexList& nodes, const QModelIndex& fromSubg, const QString& toSubg, bool enableTrans = false) override;
-
 
 	NODE_DATA itemData(const QModelIndex& index, const QModelIndex& subGpIdx) const override;
 	QString name(const QModelIndex& subGpIdx) const override;
@@ -114,6 +111,12 @@ public:
     QList<SEARCH_RESULT> search(const QString& content, int searchOpts) override;
 	void collaspe(const QModelIndex& subgIdx) override;
 	void expand(const QModelIndex& subgIdx) override;
+
+    void beginTransaction(const QString& name);
+	void endTransaction();
+    void removeLinks(const QList<QPersistentModelIndex>& info, const QModelIndex& subGpIdx, bool enableTransaction = false);
+    void updateSocket(const QString& id, SOCKET_UPDATE_INFO info, const QModelIndex& subGpIdx, bool enableTransaction = false);
+    void updateLinkInfo(const QPersistentModelIndex& linkIdx, const LINK_UPDATE_INFO& info, bool enableTransaction = false);
 
 signals:
     void graphRenamed(const QString& oldName, const QString& newName);
@@ -139,6 +142,11 @@ private:
     NODE_DESCS getCoreDescs();
     void onSubInfoChanged(SubGraphModel* pSubModel, const QModelIndex& idx, bool bInput, bool bInsert);
     void updateDescInfo(const QString& descName, const SOCKET_UPDATE_INFO& updateInfo);
+    void importNodeLinks(const QList<NODE_DATA> &nodes, const QModelIndex &subGpIdx);
+
+    void beginApiLevel();
+    void endApiLevel();
+    void onApiBatchFinished();
 
     QVector<SUBMODEL_SCENE> m_subGraphs;
     QItemSelectionModel* m_selection;
@@ -146,8 +154,12 @@ private:
     NODE_DESCS m_nodesDesc;
     NODE_CATES m_nodesCate;
     QString m_filePath;
+    QMutex m_mutex;
     QUndoStack* m_stack;
+    int m_apiLevel;
     bool m_dirty;
+
+    friend class ApiLevelScope;
 };
 
 #endif

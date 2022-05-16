@@ -3,6 +3,7 @@
 #include <zenoui/style/zenostyle.h>
 #include <zenoui/nodesys/zenosvgitem.h>
 #include <zenoui/util/uihelper.h>
+#include "util/log.h"
 
 
 ZenoRampSelector::ZenoRampSelector(ZenoRampBar* pRampBar, QGraphicsItem* parent)
@@ -131,13 +132,13 @@ void ZenoRampBar::onSelectionChanged()
 	if (m_currSelector == nullptr)
 	{
 		m_currSelector = m_ramps.firstKey();
-		Q_ASSERT(m_currSelector);
+		ZASSERT_EXIT(m_currSelector);
 	}
 	if (noSelection)
 		m_currSelector->setSelected(true);
 	m_currSelector->update();
 
-	Q_ASSERT(m_ramps.find(m_currSelector) != m_ramps.end());
+	ZASSERT_EXIT(m_ramps.find(m_currSelector) != m_ramps.end());
 	emit rampSelected(m_ramps[m_currSelector]);
 }
 
@@ -267,7 +268,7 @@ void ZenoRampBar::newRamp()
 
 QGradientStop ZenoRampBar::colorRamp() const
 {
-	Q_ASSERT(m_ramps.find(m_currSelector) != m_ramps.end());
+    ZASSERT_EXIT(m_ramps.find(m_currSelector) != m_ramps.end(), QGradientStop());
 	return m_ramps[m_currSelector];
 }
 
@@ -290,7 +291,7 @@ QLinearGradient ZenoRampBar::colorRamps() const
 
 void ZenoRampBar::updateRampPos(ZenoRampSelector* pSelector)
 {
-	Q_ASSERT(m_ramps.find(pSelector) != m_ramps.end());
+    ZASSERT_EXIT(m_ramps.find(pSelector) != m_ramps.end());
 	QGradientStop& ramp = m_ramps[pSelector];
 	m_grad.stops();
 	ramp.first = pSelector->x() / width();
@@ -299,7 +300,7 @@ void ZenoRampBar::updateRampPos(ZenoRampSelector* pSelector)
 
 void ZenoRampBar::updateRampColor(const QColor& clr)
 {
-	Q_ASSERT(m_ramps.find(m_currSelector) != m_ramps.end());
+    ZASSERT_EXIT(m_ramps.find(m_currSelector) != m_ramps.end());
 	QGradientStop& ramp = m_ramps[m_currSelector];
 	if (clr == ramp.second)
 		return;

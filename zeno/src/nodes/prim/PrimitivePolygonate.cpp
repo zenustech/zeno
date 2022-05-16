@@ -96,6 +96,8 @@ ZENO_API void primPolygonate(PrimitiveObject *prim, bool with_uv) {
 
     prim->tris.clear();
     prim->quads.clear();
+    prim->lines.clear();
+    prim->points.clear();
 }
 
 namespace {

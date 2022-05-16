@@ -4,6 +4,7 @@
 #include "graphsmanagment.h"
 #include "zenomainwindow.h"
 #include <zeno/utils/log.h>
+#include "util/log.h"
 
 
 ZenoApplication::ZenoApplication(int &argc, char **argv)
@@ -16,6 +17,14 @@ ZenoApplication::ZenoApplication(int &argc, char **argv)
     initStyleSheets();
     m_errSteam.registerMsgHandler();
     zeno::log_info("build date: {} {}", __DATE__, __TIME__);
+
+    QStringList locations;
+    locations = QStandardPaths::standardLocations(QStandardPaths::AppDataLocation);
+#ifdef Q_OS_WIN
+    locations = locations.filter("ProgramData");
+    ZASSERT_EXIT(!locations.isEmpty());
+    m_appDataPath.setPath(locations[0]);
+#endif
 }
 
 ZenoApplication::~ZenoApplication()
@@ -28,7 +37,7 @@ QString ZenoApplication::readQss(const QString& qssPath)
     QFile file;
     file.setFileName(qssPath);
     ret = file.open(QIODevice::ReadOnly | QIODevice::Text);
-    Q_ASSERT(ret);
+    ZASSERT_EXIT(ret, "");
     return file.readAll();
 }
 

@@ -94,20 +94,22 @@ void CameraControl::setKeyFrame()
 void CameraControl::focus(QVector3D center, float radius)
 {
     m_center = center;
+    if (m_fov >= 1e-6)
+        radius /= (m_fov / 45.0f);
     m_radius = radius;
     updatePerspective();
 }
 
 
 ViewportWidget::ViewportWidget(QWidget* parent)
-    : QGLWidget(parent)
+    : QOpenGLWidget(parent)
     , m_camera(nullptr)
 {
-    QGLFormat fmt;
+    QSurfaceFormat fmt;
     int nsamples = 16;  // TODO: adjust in a zhouhang-panel
     fmt.setSamples(nsamples);
     fmt.setVersion(3, 2);
-    fmt.setProfile(QGLFormat::CoreProfile);
+    fmt.setProfile(QSurfaceFormat::CoreProfile);
     setFormat(fmt);
 
     m_camera = std::make_shared<CameraControl>();
@@ -120,7 +122,7 @@ ViewportWidget::~ViewportWidget()
 
 namespace {
 struct OpenGLProcAddressHelper {
-    inline static QGLContext *ctx;
+    inline static QOpenGLContext *ctx;
 
     static void *getProcAddress(const char *name) {
         return (void *)ctx->getProcAddress(name);
@@ -186,6 +188,7 @@ void ViewportWidget::wheelEvent(QWheelEvent* event)
 }
 
 
+#if 0
 QDMDisplayMenu::QDMDisplayMenu()
 {
     setTitle(tr("Display"));
@@ -210,7 +213,12 @@ QDMDisplayMenu::QDMDisplayMenu()
 
     addSeparator();
 
-    pAction = new QAction(tr("Zhxx Renderer"), this);
+    pAction = new QAction(tr("Enable PBR"), this);
+    pAction->setCheckable(true);
+    pAction->setChecked(false);
+    addAction(pAction);
+
+    pAction = new QAction(tr("Enable GI"), this);
     pAction->setCheckable(true);
     pAction->setChecked(false);
     addAction(pAction);
@@ -222,7 +230,7 @@ QDMDisplayMenu::QDMDisplayMenu()
 
     addSeparator();
 
-    pAction = new QAction(tr("Use English"), this);
+    pAction = new QAction(tr("English / Chinese"), this);
     pAction->setCheckable(true);
     pAction->setChecked(true);
     addAction(pAction);
@@ -240,6 +248,7 @@ QDMRecordMenu::QDMRecordMenu()
     pAction->setShortcut(QKeySequence(tr("Shift+F12")));
     addAction(pAction);
 }
+#endif
 
 
 DisplayWidget::DisplayWidget(ZenoMainWindow* pMainWin)

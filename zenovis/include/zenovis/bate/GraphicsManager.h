@@ -20,7 +20,7 @@ struct GraphicsManager {
     explicit GraphicsManager(Scene *scene) : scene(scene) {
     }
 
-    void load_objects(std::vector<std::pair<std::string, zeno::IObject *>> const &objs) {
+    bool load_objects(std::vector<std::pair<std::string, zeno::IObject *>> const &objs) {
         auto ins = graphics.insertPass();
         for (auto const &[key, obj] : objs) {
             if (ins.may_emplace(key)) {
@@ -30,6 +30,7 @@ struct GraphicsManager {
                 ins.try_emplace(key, std::move(ig));
             }
         }
+        return ins.has_changed();
     }
 };
 

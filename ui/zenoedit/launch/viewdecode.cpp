@@ -83,6 +83,7 @@ struct PacketProc {
                 int beg = std::stoi(objKey.substr(0, pos));
                 int end = std::stoi(objKey.substr(pos + 1));
                 zeno::getSession().globalComm->frameRange(beg, end);
+                zeno::getSession().globalState->frameid = beg;
             }
 
         } else if (action == "reportStatus") {

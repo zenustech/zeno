@@ -28,6 +28,7 @@ public slots:
 private:
     ZExpandableSection* paramsBox(IGraphsModel* pModel, const QModelIndex& subgIdx, const QModelIndexList& nodes);
     ZExpandableSection* inputsBox(IGraphsModel* pModel, const QModelIndex& subgIdx, const QModelIndexList& nodes);
+    void clearLayout();
 
     QPersistentModelIndex m_subgIdx;
     QPersistentModelIndex m_idx;

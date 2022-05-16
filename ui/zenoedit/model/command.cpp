@@ -2,6 +2,7 @@
 #include "subgraphmodel.h"
 #include "graphsmodel.h"
 #include <zenoui/model/modelrole.h>
+#include "util/log.h"
 
 
 AddNodeCommand::AddNodeCommand(const QString& id, const NODE_DATA& data, GraphsModel* pModel, QPersistentModelIndex subgIdx)
@@ -75,7 +76,7 @@ AddLinkCommand::AddLinkCommand(EdgeInfo info, GraphsModel* pModel, QPersistentMo
 void AddLinkCommand::redo()
 {
     QModelIndex idx = m_model->addLink(m_info, m_subgIdx);
-	Q_ASSERT(idx.isValid());
+    ZASSERT_EXIT(idx.isValid());
 	m_linkIdx = QPersistentModelIndex(idx);
 }
 
@@ -105,7 +106,7 @@ void RemoveLinkCommand::redo()
 void RemoveLinkCommand::undo()
 {
 	QModelIndex idx = m_model->addLink(m_info, m_subgIdx);
-	Q_ASSERT(idx.isValid());
+    ZASSERT_EXIT(idx.isValid());
 	m_linkIdx = QPersistentModelIndex(idx);
 }
 

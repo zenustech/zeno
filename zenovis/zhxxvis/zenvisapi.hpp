@@ -7,6 +7,7 @@
 #include <tuple>
 
 namespace zenvis {
+  void requireVoxelize();
   extern unsigned int getDepthTexture();
 extern void setDOF(float _dof);
 extern void setAperature(float _apt);
@@ -41,6 +42,12 @@ void new_frame_offline(std::string path);
 void set_background_color(float r, float g, float b);
 std::tuple<float, float, float> get_background_color();
 void set_num_samples(int num_samples);
+void set_enable_gi(bool flag);
+bool get_enable_gi();
+void set_gi_emission_base(float v);
+float get_gi_emission_base();
+void set_gi_base(float v);
+float get_gi_base();
 void set_smooth_shading(bool smooth);
 void set_normal_check(bool check);
 void set_render_wireframe(bool render_wireframe);

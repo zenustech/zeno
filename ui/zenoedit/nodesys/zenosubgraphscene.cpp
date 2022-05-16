@@ -2,7 +2,7 @@
 #include "zenonode.h"
 #include "subnetnode.h"
 #include "heatmapnode.h"
-#include "curvemapnode.h"
+#include "curvenode.h"
 #include "dynamicnumbernode.h"
 #include "zenolink.h"
 #include <zenoui/model/modelrole.h>
@@ -14,6 +14,7 @@
 #include "zenoapplication.h"
 #include "graphsmanagment.h"
 #include <zeno/utils/log.h>
+#include "util/log.h"
 
 
 ZenoSubGraphScene::ZenoSubGraphScene(QObject *parent)
@@ -39,7 +40,7 @@ void ZenoSubGraphScene::initModel(const QModelIndex& index)
 {
     m_subgIdx = index;
     IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
-    Q_ASSERT(pGraphsModel);
+    ZASSERT_EXIT(pGraphsModel);
 
     disconnect(pGraphsModel, SIGNAL(reloaded(const QModelIndex&)), this, SLOT(reload(const QModelIndex&)));
     disconnect(pGraphsModel, SIGNAL(clearLayout(const QModelIndex&)), this, SLOT(clearLayout(const QModelIndex&)));
@@ -121,9 +122,9 @@ ZenoNode* ZenoSubGraphScene::createNode(const QModelIndex& idx, const NodeUtilPa
     {
         return new MakeHeatMapNode(params);
     }
-    else if (descName == "MakeCurvemap")
+    else if (descName == "MakeCurve")
     {
-        return new MakeCurvemapNode(params);
+        return new MakeCurveNode(params);
     }
     else if (descName == "DynamicNumber")
     {
@@ -142,47 +143,47 @@ void ZenoSubGraphScene::onDataChanged(const QModelIndex& subGpIdx, const QModelI
 
 	QString id = idx.data(ROLE_OBJID).toString();
 
-    if (m_nodes.find(id) == m_nodes.end()) return;
-
-	if (role == ROLE_OBJPOS)
-	{
-        Q_ASSERT(m_nodes.find(id) != m_nodes.end());
+    if (role == ROLE_OBJPOS)
+    {
+        ZASSERT_EXIT(m_nodes.find(id) != m_nodes.end());
 	    QPointF pos = idx.data(ROLE_OBJPOS).toPointF();
         m_nodes[id]->setPos(pos);
 		updateLinkPos(m_nodes[id], pos);
 	}
-	if (role == ROLE_INPUTS || role == ROLE_OUTPUTS)
-	{
+    if (role == ROLE_INPUTS || role == ROLE_OUTPUTS)
+    {
 	    //it's diffcult to detect which input/output socket has changed on this method.
         //unless:
         //1. add a member to INPUT_SOCKS/OUTPUT_SOCKS, to specify which key had changed.
         //2. update all control value associated with input socket anyway.
-
-        Q_ASSERT(m_nodes.find(id) != m_nodes.end());
+        //
         //now we choose the second.
-        m_nodes[id]->onInOutSocketChanged(role == ROLE_INPUTS);
+        if (m_nodes.find(id) != m_nodes.end())
+        {
+            m_nodes[id]->onInOutSocketChanged(role == ROLE_INPUTS);
+        }
 	}
-	if (role == ROLE_OPTIONS)
-	{
-        Q_ASSERT(m_nodes.find(id) != m_nodes.end());
-		int options = idx.data(ROLE_OPTIONS).toInt();
-		m_nodes[id]->onOptionsUpdated(options);
+    if (role == ROLE_OPTIONS)
+    {
+        ZASSERT_EXIT(m_nodes.find(id) != m_nodes.end());
+        int options = idx.data(ROLE_OPTIONS).toInt();
+        m_nodes[id]->onOptionsUpdated(options);
 	}
 	if (role == ROLE_COLLASPED)
 	{
-        Q_ASSERT(m_nodes.find(id) != m_nodes.end());
+        ZASSERT_EXIT(m_nodes.find(id) != m_nodes.end());
 		bool bCollasped = idx.data(ROLE_COLLASPED).toBool();
 		m_nodes[id]->onCollaspeUpdated(bCollasped);
 	}
     if (role == ROLE_MODIFY_PARAM)
     {
-        Q_ASSERT(m_nodes.find(id) != m_nodes.end());
+        ZASSERT_EXIT(m_nodes.find(id) != m_nodes.end());
         PARAM_INFO info = idx.data(ROLE_MODIFY_PARAM).value<PARAM_INFO>();
         m_nodes[id]->onParamUpdated(info.name, info.value);
     }
     if (role == ROLE_MODIFY_SOCKET)
     {
-        Q_ASSERT(m_nodes.find(id) != m_nodes.end());
+        ZASSERT_EXIT(m_nodes.find(id) != m_nodes.end());
         QVariant var = idx.data(ROLE_MODIFY_SOCKET);
         if (var.isNull())
             return;
@@ -191,7 +192,7 @@ void ZenoSubGraphScene::onDataChanged(const QModelIndex& subGpIdx, const QModelI
     }
     if (role == ROLE_MODIFY_SOCKET_DEFL)
     {
-        Q_ASSERT(m_nodes.find(id) != m_nodes.end());
+        ZASSERT_EXIT(m_nodes.find(id) != m_nodes.end());
         QVariant var = idx.data(ROLE_MODIFY_SOCKET_DEFL);
         if (var.isNull())
             return;
@@ -200,7 +201,7 @@ void ZenoSubGraphScene::onDataChanged(const QModelIndex& subGpIdx, const QModelI
     }
     if (role == ROLE_OBJNAME)
     {
-        Q_ASSERT(m_nodes.find(id) != m_nodes.end());
+        ZASSERT_EXIT(m_nodes.find(id) != m_nodes.end());
         m_nodes[id]->onNameUpdated(idx.data(ROLE_OBJNAME).toString());
     }
 }
@@ -254,10 +255,10 @@ void ZenoSubGraphScene::onLinkAboutToBeRemoved(const QModelIndex& subGpIdx, cons
 
 	IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
 	QModelIndex linkIdx = pGraphsModel->linkIndex(first);
-	Q_ASSERT(linkIdx.isValid());
+	ZASSERT_EXIT(linkIdx.isValid());
 
     const QString& linkId = linkIdx.data(ROLE_OBJID).toString();
-    Q_ASSERT(m_links.find(linkId) != m_links.end());
+    ZASSERT_EXIT(m_links.find(linkId) != m_links.end());
 
     delete m_links[linkId];
 	m_links.remove(linkId);
@@ -297,13 +298,13 @@ QModelIndex ZenoSubGraphScene::subGraphIndex() const
 void ZenoSubGraphScene::select(const QString& id)
 {
     clearSelection();
-    Q_ASSERT(m_nodes.find(id) != m_nodes.end());
+    ZASSERT_EXIT(m_nodes.find(id) != m_nodes.end());
     m_nodes[id]->setSelected(true);
 }
 
 void ZenoSubGraphScene::markError(const QString& nodeid)
 {
-    Q_ASSERT(m_nodes.find(nodeid) != m_nodes.end());
+    ZASSERT_EXIT(m_nodes.find(nodeid) != m_nodes.end());
     m_nodes[nodeid]->markError(true);
     m_nodes[nodeid]->setSelected(true);
 }
@@ -386,7 +387,7 @@ void ZenoSubGraphScene::paste(QPointF pos)
 QPointF ZenoSubGraphScene::getSocketPos(bool bInput, const QString &nodeid, const QString &portName)
 {
     auto it = m_nodes.find(nodeid);
-    Q_ASSERT(it != m_nodes.end());
+    ZASSERT_EXIT(it != m_nodes.end(), QPointF());
     QPointF pos = it->second->getPortPos(bInput, portName);
     return pos;
 }
@@ -541,7 +542,7 @@ void ZenoSubGraphScene::onRowsAboutToBeRemoved(const QModelIndex& subgIdx, const
     {
         QModelIndex idx = pGraphsModel->index(r, m_subgIdx);
         QString id = idx.data(ROLE_OBJID).toString();
-        Q_ASSERT(m_nodes.find(id) != m_nodes.end());
+        ZASSERT_EXIT(m_nodes.find(id) != m_nodes.end());
         ZenoNode* pNode = m_nodes[id];
         removeItem(pNode);
         delete pNode;
@@ -566,7 +567,7 @@ void ZenoSubGraphScene::onRowsInserted(const QModelIndex& subgIdx, const QModelI
 
 void ZenoSubGraphScene::onSocketPosInited(const QString& nodeid, const QString& sockName, bool bInput)
 {
-    Q_ASSERT(m_nodes.find(nodeid) != m_nodes.end());
+    ZASSERT_EXIT(m_nodes.find(nodeid) != m_nodes.end());
     if (bInput)
     {
         ZenoNode* pInputNode = m_nodes[nodeid];
@@ -574,7 +575,7 @@ void ZenoSubGraphScene::onSocketPosInited(const QString& nodeid, const QString& 
         const INPUT_SOCKET inputSocket = pInputNode->inputParams()[sockName];
         for (QPersistentModelIndex index : inputSocket.linkIndice)
         {
-            Q_ASSERT(index.isValid());
+            ZASSERT_EXIT(index.isValid());
             const QString& linkId = index.data(ROLE_OBJID).toString();
             m_links[linkId]->initDstPos(pos);
         }
@@ -586,7 +587,7 @@ void ZenoSubGraphScene::onSocketPosInited(const QString& nodeid, const QString& 
         const OUTPUT_SOCKET outputSocket = pOutputNode->outputParams()[sockName];
         for (QPersistentModelIndex index : outputSocket.linkIndice)
         {
-            Q_ASSERT(index.isValid());
+            ZASSERT_EXIT(index.isValid());
 			const QString& linkId = index.data(ROLE_OBJID).toString();
 			m_links[linkId]->initSrcPos(pos);
         }
@@ -612,7 +613,7 @@ void ZenoSubGraphScene::updateLinkPos(ZenoNode* pNode, QPointF newPos)
             const QPointF& outputPos = m_nodes[outNode]->getPortPos(false, outSock);
 
             ZenoFullLink* pLink = m_links[linkId];
-			Q_ASSERT(pLink);
+            ZASSERT_EXIT(pLink);
 			pLink->updatePos(outputPos, inputPos);
         }
     }
@@ -640,28 +641,23 @@ void ZenoSubGraphScene::keyPressEvent(QKeyEvent* event)
     if (event->key() == Qt::Key_Delete)
     {
         QList<QGraphicsItem*> selItems = this->selectedItems();
-        QList<ZenoNode*> nodes;
-        QList<ZenoFullLink*> links;
+        QList<QPersistentModelIndex> nodes;
+        QList<QPersistentModelIndex> links;
         for (auto item : selItems)
         {
-            if (ZenoNode *pNode = qgraphicsitem_cast<ZenoNode *>(item)) {
-                nodes.append(pNode);
-            } else if (ZenoFullLink *pLink = qgraphicsitem_cast<ZenoFullLink *>(item)) {
-                links.append(pLink);
+            if (ZenoNode *pNode = qgraphicsitem_cast<ZenoNode *>(item))
+            {
+                nodes.append(pNode->index());
+            }
+            else if (ZenoFullLink *pLink = qgraphicsitem_cast<ZenoFullLink *>(item))
+            {
+                links.append(pLink->linkInfo());
             }
         }
         IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
-        pGraphsModel->beginTransaction("remove nodes and links");
-        for (auto item : links)
-        {
-            pGraphsModel->removeLink(item->linkInfo(), m_subgIdx, true);
-        }
-        for (auto item : nodes)
-        {
-            const QPersistentModelIndex &index = item->index();
-            pGraphsModel->removeNode(index.data(ROLE_OBJID).toString(), m_subgIdx, true);
-        }
-        pGraphsModel->endTransaction();
+        ZASSERT_EXIT(pGraphsModel);
+        pGraphsModel->removeNodeLinks(nodes, links, m_subgIdx);
+
     }
     QGraphicsScene::keyPressEvent(event);
 }

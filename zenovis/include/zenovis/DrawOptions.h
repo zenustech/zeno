@@ -9,6 +9,7 @@ struct DrawOptions {
     bool show_grid = true;
     bool render_wireframe = false;
 
+    bool enable_gi = false;
     bool smooth_shading = false;
     bool normal_check = false;
 

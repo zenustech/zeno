@@ -1,7 +1,9 @@
+#if 0
 #include "curvemapnode.h"
 #include "../curvemap/zcurvemapeditor.h"
 #include "../model/curvemodel.h"
 #include <zenoui/util/cihou.h>
+#include "util/log.h"
 
 
 MakeCurvemapNode::MakeCurvemapNode(const NodeUtilParam& params, QGraphicsItem* parent)
@@ -67,33 +69,22 @@ void MakeCurvemapNode::onEditClicked()
 			int n = 0;
 			bool bOK = false;
 			n = L[0].toInt(&bOK);
-			if (!bOK)
-			{
-				Q_ASSERT(false);
-				return;
-			}
+            ZASSERT_EXIT(bOK);
 
 			if (L.length() != (1 + 2 * n))
 			{
-				Q_ASSERT(false);
-				return;
+				ZASSERT_EXIT(false);
 			}
 			
 			for (int i = 1; i < L.length(); i += 2)
 			{
 				QPointF pt;
 				pt.setX(L[i].toFloat(&bOK));
-				if (!bOK)
-				{
-					Q_ASSERT(false);
-					return;
-				}
+				ZASSERT_EXIT(bOK);
+
 				pt.setY(L[i + 1].toFloat(&bOK));
-				if (!bOK)
-				{
-					Q_ASSERT(false);
-					return;
-				}
+				ZASSERT_EXIT(bOK);
+
 				points.append(pt);
 			}
 
@@ -103,17 +94,11 @@ void MakeCurvemapNode::onEditClicked()
 				QPointF pt;
 
 				pt.setX(L[i].toFloat(&bOK));
-				if (!bOK)
-				{
-					Q_ASSERT(false);
-					return;
-				}
+				ZASSERT_EXIT(bOK);
+
 				pt.setY(L[i + 1].toFloat(&bOK));
-				if (!bOK)
-				{
-					Q_ASSERT(false);
-					return;
-				}
+				ZASSERT_EXIT(bOK);
+
 				handlers.append(pt);
 			}
         }
@@ -134,13 +119,14 @@ void MakeCurvemapNode::onEditClicked()
 		pEditor->addCurve(pModel);
 
 		CurveModel *pModel2 = new CurveModel("Channel-Y", rg, this);
-        pModel2->initItems(rg, {{rg.xFrom, rg.yTo}, {rg.xTo, rg.yFrom}}, {{0,0}, {0,0}, {0,0}, {0,0}});
+        pModel2->initItems({{rg.xFrom, rg.yTo}, {rg.xTo, rg.yFrom}}, {{0,0}, {0,0}, {0,0}, {0,0}});
 		pEditor->addCurve(pModel2);
 
 		CurveModel *pModel3 = new CurveModel("Channel-Z", rg, this);
-        pModel3->initItems(rg, {{rg.xFrom, rg.yTo / 2}, {rg.xTo, rg.yTo / 2}}, {{0,0}, {0,0}, {0,0}, {0,0}});
+        pModel3->initItems({{rg.xFrom, rg.yTo / 2}, {rg.xTo, rg.yTo / 2}}, {{0,0}, {0,0}, {0,0}, {0,0}});
 		pEditor->addCurve(pModel3);
 
 		pEditor->show();
 	}
 }
+#endif

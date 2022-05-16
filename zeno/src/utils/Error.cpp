@@ -50,30 +50,29 @@ static const char *get_eptr_what(std::exception_ptr const &eptr) {
 }
 
 ZENO_API StdError::StdError(std::exception_ptr &&eptr) noexcept
-    : Error((std::string)"[StdError] exception occurred [" + get_eptr_what(eptr) + "]"), eptr(std::move(eptr))
+    : Error(format("[StdError] exception occurred [{}]", get_eptr_what(eptr))), eptr(std::move(eptr))
 {
 }
 
-ZENO_API StdError::~StdError() = default;
+ZENO_API StdError::~StdError() noexcept = default;
 
-ZENO_API TypeError::TypeError(std::type_info const &expect, std::type_info const &got, std::string_view msg) noexcept
-    : Error(zeno::format("[TypeError] expect [{}] got [{}] in [{}]", cppdemangle(expect), cppdemangle(got), msg))
+ZENO_API TypeError::TypeError(std::type_info const &expect, std::type_info const &got, std::string_view hint) noexcept
+    : Error(format("[TypeError] expect [{}] got [{}] in [{}]", cppdemangle(expect), cppdemangle(got), hint))
     , expect(expect)
     , got(got)
     , hint(hint)
 {
 }
 
-ZENO_API TypeError::~TypeError() = default;
+ZENO_API TypeError::~TypeError() noexcept = default;
 
 ZENO_API KeyError::KeyError(std::string_view key, std::string_view hint) noexcept
     : Error(format("[KeyError] invalid key [{}] in [{}]", key, hint))
     , key(key)
-    , type(type)
     , hint(hint)
 {
 }
 
-ZENO_API KeyError::~KeyError() = default;
+ZENO_API KeyError::~KeyError() noexcept = default;
 
 }

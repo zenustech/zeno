@@ -62,7 +62,6 @@ public:
     bool insertRow(int row, const NODE_DATA &nodeData, const QModelIndex &parent = QModelIndex());
     QModelIndex index(QString id, const QModelIndex &parent = QModelIndex()) const;
     void appendItem(const NODE_DATA& nodeData, bool enableTransaction = false);
-    void appendNodes(const QList<NODE_DATA>& nodes, bool enableTransaction = false);
     void removeNode(const QString& nodeid, bool enableTransaction = false);
     void removeNode(int row, bool enableTransaction = false);
     void removeNodeByDescName(const QString& descName);
@@ -79,9 +78,6 @@ public:
     void updateNodeStatus(const QString& nodeid, STATUS_UPDATE_INFO info);
     SubGraphModel* clone(GraphsModel* parent);
     GraphsModel* getGraphsModel() const { return m_pGraphsModel; }
-
-    void beginMacro(const QString& name);
-    void endMacro();
 
     QString name() const;
     void setName(const QString& name);
@@ -100,8 +96,6 @@ public:
 
 public slots:
     void onDoubleClicked(const QString &nodename);
-    void undo();
-    void redo();
 
 private:
     SubGraphModel(const SubGraphModel& rhs);

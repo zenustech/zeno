@@ -24,13 +24,13 @@ namespace {
 
 struct ProgramRunData {
     enum ProgramState {
-        STOPPED = 0,
-        RUNNING,
-        KILLING,
+        kStopped = 0,
+        kRunning,
+        kQuiting,
     };
 
     inline static std::mutex g_mtx;
-    inline static std::atomic<ProgramState> g_state{STOPPED};
+    inline static std::atomic<ProgramState> g_state{kStopped};
 
     std::string progJson;
 
@@ -52,13 +52,14 @@ struct ProgramRunData {
         }
 #endif
         zeno::log_debug("program finished");
-        g_state = STOPPED;
+        g_state = kStopped;
     }
 
     void reportStatus(zeno::GlobalStatus const &stat) const {
         if (!stat.failed()) return;
         zeno::log_error("reportStatus: error in {}, message {}", stat.nodeName, stat.error->message);
-        zenoApp->graphsManagment()->appendErr(QString::fromStdString(stat.nodeName),
+        auto nodeName = stat.nodeName.substr(0, stat.nodeName.find(':'));
+        zenoApp->graphsManagment()->appendErr(QString::fromStdString(nodeName),
                                               QString::fromStdString(stat.error->message));
     }
 
@@ -85,7 +86,7 @@ struct ProgramRunData {
         graph->loadGraph(progJson.c_str());
 
         if (chkfail()) return;
-        if (g_state == KILLING) return;
+        if (g_state == kQuiting) return;
 
         session->globalComm->frameRange(graph->beginFrameNumber, graph->endFrameNumber);
         for (int frame = graph->beginFrameNumber; frame <= graph->endFrameNumber; frame++) {
@@ -94,13 +95,13 @@ struct ProgramRunData {
             session->globalState->frameBegin();
             while (session->globalState->substepBegin())
             {
-                if (g_state == KILLING)
+                if (g_state == kQuiting)
                     return;
                 graph->applyNodesToExec();
                 session->globalState->substepEnd();
                 if (chkfail()) return;
             }
-            if (g_state == KILLING) return;
+            if (g_state == kQuiting) return;
             session->globalState->frameEnd();
             session->globalComm->finishFrame();
             zeno::log_debug("end frame {}", frame);
@@ -139,7 +140,7 @@ struct ProgramRunData {
 
         while (g_proc->waitForReadyRead(-1)) {
             while (!g_proc->atEnd()) {
-                if (g_state == KILLING) return;
+                if (g_state == kQuiting) return;
                 qint64 redSize = g_proc->read(buf.data(), buf.size());
                 zeno::log_debug("g_proc->read got {} bytes (ping test has 19)", redSize);
                 if (redSize > 0) {
@@ -147,7 +148,7 @@ struct ProgramRunData {
                 }
             }
             if (chkfail()) break;
-            if (g_state == KILLING) return;
+            if (g_state == kQuiting) return;
         }
         zeno::log_debug("still not ready-read, assume exited");
         decodeFin.reset();
@@ -169,7 +170,7 @@ void launchProgramJSON(std::string progJson)
         return;
     }
 
-    ProgramRunData::g_state = ProgramRunData::RUNNING;
+    ProgramRunData::g_state = ProgramRunData::kRunning;
     std::thread thr(ProgramRunData{std::move(progJson)});
     thr.detach();
 }
@@ -178,7 +179,7 @@ void launchProgramJSON(std::string progJson)
 void killProgramJSON()
 {
     zeno::log_info("killing current program");
-    ProgramRunData::g_state = ProgramRunData::KILLING;
+    ProgramRunData::g_state = ProgramRunData::kQuiting;
 }
 
 }

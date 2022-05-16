@@ -4,6 +4,7 @@
 #include "curvenodeitem.h"
 #include "curveutil.h"
 #include "../model/curvemodel.h"
+#include "../util/log.h"
 
 
 CurveMapView::CurveMapView(QWidget* parent)
@@ -66,7 +67,7 @@ void CurveMapView::init(bool timeFrame)
 
 void CurveMapView::addCurve(CurveModel* model)
 {
-    Q_ASSERT(m_grid && model);
+    ZASSERT_EXIT(m_grid && model);
 
 	//todo: union range.
     m_range = model->range();

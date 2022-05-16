@@ -9,6 +9,7 @@
 class ZTimeline;
 class ZenoMainWindow;
 
+#if 0
 class QDMDisplayMenu : public ZMenu
 {
 public:
@@ -20,6 +21,7 @@ class QDMRecordMenu : public ZMenu
 public:
     QDMRecordMenu();
 };
+#endif
 
 class CameraControl : public QWidget
 {
@@ -48,9 +50,9 @@ private:
     QVector2D m_res;
 };
 
-class ViewportWidget : public QGLWidget
+class ViewportWidget : public QOpenGLWidget
 {
-    typedef QGLWidget _base;
+    typedef QOpenGLWidget _base;
 public:
     ViewportWidget(QWidget* parent = nullptr);
     ~ViewportWidget();

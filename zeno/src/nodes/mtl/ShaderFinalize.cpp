@@ -54,7 +54,8 @@ struct ShaderFinalize : INode {
             {1,"mat_opacity"},
             {1,"mat_reflection"},
             {1,"mat_reflectID"},
-            {1,"mat_isCamera"}
+            {1,"mat_isCamera"},
+            {1,"mat_isVoxelDomain"}
         }, {
             get_input<IObject>("basecolor", std::make_shared<NumericObject>(vec3f(1.0f))),
             get_input<IObject>("metallic", std::make_shared<NumericObject>(float(0.0f))),
@@ -88,6 +89,7 @@ struct ShaderFinalize : INode {
             get_input<IObject>("reflection", std::make_shared<NumericObject>(float(0.0))),
             get_input<IObject>("reflectID", std::make_shared<NumericObject>(float(-1))),
             get_input<IObject>("isCamera", std::make_shared<NumericObject>(float(0))),
+            get_input<IObject>("isVoxelDomain", std::make_shared<NumericObject>(float(0))),
 
             
         });
@@ -149,6 +151,7 @@ ZENDEFNODE(ShaderFinalize, {
         {"float", "reflection", "0"},
         {"float", "reflectID", "-1"},
         {"float", "isCamera", "0"},
+        {"float", "isVoxelDomain", "0"},
         {"string", "commonCode"},
         {"string", "extensionsCode"},
         {"list", "tex2dList"},

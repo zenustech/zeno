@@ -4,6 +4,7 @@
 #include <zenovis/ObjectsManager.h>
 #include <zenovis/bate/IGraphic.h>
 #include <zenovis/opengl/vao.h>
+#include <zenovis/opengl/scope.h>
 #include "../../zhxxvis/zenvisapi.hpp"
 
 namespace zenovis::zhxx {
@@ -28,7 +29,7 @@ struct GraphicsManager {
     explicit GraphicsManager(Scene *scene) : scene(scene) {
     }
 
-    void load_objects(std::vector<std::pair<std::string, zeno::IObject *>> const &objs) {
+    bool load_objects(std::vector<std::pair<std::string, zeno::IObject *>> const &objs) {
         auto ins = graphics.insertPass();
         for (auto const &[key, obj] : objs) {
             if (ins.may_emplace(key)) {
@@ -38,39 +39,64 @@ struct GraphicsManager {
                 ins.try_emplace(key, std::move(ig));
             }
         }
+        return ins.has_changed();
     }
 };
 
 struct RenderEngineZhxx : RenderEngine, zeno::disable_copy {
     std::unique_ptr<GraphicsManager> graphicsMan;
+    std::unique_ptr<opengl::VAO> vao;
     Scene *scene;
 
-    RenderEngineZhxx(Scene *scene_) : scene(scene_) {
+    bool giWasEnable = false;
+    bool giNeedUpdate = false;
+
+    auto setupState() {
+        return std::tuple{
+            opengl::scopeGLEnable(GL_BLEND), opengl::scopeGLEnable(GL_DEPTH_TEST),
+            opengl::scopeGLEnable(GL_PROGRAM_POINT_SIZE),
+            opengl::scopeGLBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA),
+            opengl::scopeGLEnable(GL_MULTISAMPLE),
+        };
+    }
+
+    explicit RenderEngineZhxx(Scene *scene_) : scene(scene_) {
         zeno::log_info("Zhxx Render Engine started...");
-        CHECK_GL(glEnable(GL_BLEND));
-        CHECK_GL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
-        CHECK_GL(glEnable(GL_DEPTH_TEST));
-        CHECK_GL(glEnable(GL_PROGRAM_POINT_SIZE));
-        CHECK_GL(glEnable(GL_MULTISAMPLE));
-        CHECK_GL(glPixelStorei(GL_UNPACK_ALIGNMENT, 1));
-        CHECK_GL(glPixelStorei(GL_PACK_ALIGNMENT, 1));
+        auto guard = setupState();
 
         graphicsMan = std::make_unique<GraphicsManager>(scene);
+
+        vao = std::make_unique<opengl::VAO>();
+        //auto bindVao = opengl::scopeGLBindVertexArray(vao->vao);
 
         zenvis::initialize();
         zenvis::setup_env_map("Default");
     }
 
     void update() override {
-        graphicsMan->load_objects(scene->objectsMan->pairs());
+        if (graphicsMan->load_objects(scene->objectsMan->pairs()))
+            giNeedUpdate = true;
     }
 
     void draw() override {
+        auto guard = setupState();
         auto const &cam = *scene->camera;
         auto const &opt = *scene->drawOptions;
         auto const &zxx = cam.m_zxx;
+
+        if (!giWasEnable && opt.enable_gi) {
+            giNeedUpdate = true;
+        }
+        giWasEnable = opt.enable_gi;
+        if (giNeedUpdate && opt.enable_gi) {
+            zeno::log_debug("scene updated, voxelizing...");
+            zenvis::requireVoxelize();
+        }
+        giNeedUpdate = false;
+
         zenvis::set_show_grid(opt.show_grid);
         zenvis::set_normal_check(opt.normal_check);
+        zenvis::set_enable_gi(opt.enable_gi);
         zenvis::set_smooth_shading(opt.smooth_shading);
         zenvis::set_render_wireframe(opt.render_wireframe);
         zenvis::set_background_color(opt.bgcolor.r, opt.bgcolor.g, opt.bgcolor.b);
@@ -81,7 +107,13 @@ struct RenderEngineZhxx : RenderEngine, zeno::disable_copy {
                 zxx.phi, zxx.radius, zxx.fov, zxx.ortho_mode);
         int targetFBO = 0;
         CHECK_GL(glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &targetFBO));
-        zenvis::new_frame(targetFBO);
+        CHECK_GL(glClearColor(scene->drawOptions->bgcolor.r, scene->drawOptions->bgcolor.g,
+                              scene->drawOptions->bgcolor.b, 0.0f));
+        {
+            auto bindVao = opengl::scopeGLBindVertexArray(vao->vao);
+            zenvis::new_frame(targetFBO);
+        }
+        CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, targetFBO));
     }
 
     ~RenderEngineZhxx() override {
@@ -89,12 +121,6 @@ struct RenderEngineZhxx : RenderEngine, zeno::disable_copy {
     }
 };
 
-}
-
-namespace zenovis {
-
-std::unique_ptr<RenderEngine> makeRenderEngineZhxx(Scene *scene) {
-    return std::make_unique<zhxx::RenderEngineZhxx>(scene);
-}
+static auto definer = RenderManager::registerRenderEngine<RenderEngineZhxx>("zhxx");
 
 }

@@ -33,6 +33,22 @@ void LogItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem& optio
 }
 
 
+LogListView::LogListView(QWidget* parent)
+    : _base(parent)
+{
+}
+
+void LogListView::rowsInserted(const QModelIndex& parent, int start, int end)
+{
+    _base::rowsInserted(parent, start, end);
+    int n = model()->rowCount();
+    //if (n > 0) {
+    //    scrollTo(this->model()->index(n - 1, 0));
+    //}
+    //scrollToBottom();
+}
+
+
 ZlogPanel::ZlogPanel(QWidget* parent)
     : QWidget(parent)
     , m_pFilterModel(nullptr)

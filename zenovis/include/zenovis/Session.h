@@ -33,6 +33,7 @@ struct Session : zeno::disable_copy {
     void set_background_color(float r, float g, float b);
     std::tuple<float, float, float> get_background_color();
     void set_num_samples(int num_samples);
+    void set_enable_gi(bool enable_gi);
     void set_smooth_shading(bool smooth);
     void set_normal_check(bool check);
     void set_render_wireframe(bool render_wireframe);
