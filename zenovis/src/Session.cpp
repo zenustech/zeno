@@ -7,13 +7,9 @@
 #include <zenovis/bate/IGraphic.h>
 #include <zeno/utils/format.h>
 #include <stb_image_write.h>
-#ifdef ZENO_ENABLE_OPENEXR
-#include <ImfPixelType.h>
-#include <ImfRgbaFile.h>
-#include <ImfArray.h>
-#endif
-#include <map>
+#include <tinyexr.h>
 #include <functional>
+#include <map>
 
 namespace zenovis {
 
@@ -86,7 +82,7 @@ void Session::do_screenshot(std::string path, std::string type) {
         {"png", 1},
         {"jpg", 1},
         {"bmp", 1},
-        {"exr", 2},
+        {"exr", 4},
         {"hdr", 4},
     }.at(type);
     auto nx = impl->scene->camera->m_nx;
@@ -106,27 +102,15 @@ void Session::do_screenshot(std::string path, std::string type) {
     {"bmp", [&] {
         stbi_write_bmp(path.c_str(), nx, ny, 3, pixels.data());
     }},
-#ifdef ZENO_ENABLE_OPENEXR
     {"exr", [&] {
-        Imf::RgbaOutputFile file(path.c_str(), nx, ny, Imf::WRITE_RGBA);
-        Imf::Array2D<Imf::Rgba> px(ny, nx);
-        auto pix = reinterpret_cast<decltype(px[0][0].r) *>(pixels.data());
-        int i = 0;
-        for (int y = 0; y < ny; ++y) {
-          for (int x = 0; x < nx; ++x) {
-            Imf::Rgba &p = px[ny - 1 - y][x];
-            // Imf::Rgba &p = px[ny][nx];
-            p.r = pix[i];
-            p.g = pix[i + 1];
-            p.b = pix[i + 2];
-            p.a = 0;
-            i += 3;
-          }
+        const char *err = nullptr;
+        if (SaveEXR((float *)pixels.data(), nx, ny, 3, 1, path.c_str(), &err) != TINYEXR_SUCCESS) {
+            if (err) {
+                zeno::log_error("failed to perform SaveEXR to {}: {}", path, err);
+                FreeEXRErrorMessage(err);
+            }
         }
-        file.setFrameBuffer(&px[0][0], 1, nx);
-        file.writePixels(ny);
     }},
-#endif
     {"hdr", [&] {
         stbi_write_hdr(path.c_str(), impl->scene->camera->m_nx,
                        impl->scene->camera->m_ny, 3, (float *)pixels.data());

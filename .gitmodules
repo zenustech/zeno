@@ -7,9 +7,6 @@
 [submodule "projects/zenvdb/openvdb"]
 	path = projects/zenvdb/openvdb
 	url = https://github.com/zenustech/openvdb.git
-[submodule "zenovis/openexr"]
-	path = zenovis/openexr
-	url = https://github.com/zenustech/openexr.git
 [submodule "projects/FBX/assimp"]
 	path = projects/FBX/assimp
 	url = https://github.com/assimp/assimp.git
