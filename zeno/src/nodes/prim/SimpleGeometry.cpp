@@ -233,6 +233,9 @@ ZENDEFNODE(CreateCylinder, {
 struct CreateSphere : zeno::INode {
     virtual void apply() override {
         auto prim = std::make_shared<zeno::PrimitiveObject>();
+        auto position = get_input2<zeno::vec3f>("position");
+        auto scaleSize = get_input2<zeno::vec3f>("scaleSize");
+        auto radius = get_input2<float>("radius");
 
         size_t seg = 32;
 
@@ -245,7 +248,7 @@ struct CreateSphere : zeno::INode {
             float h = sin(i / 180.0 * M_PI);
             for (size_t j = 0; j <= seg; j++) {
                 float rad = 2 * M_PI * j / 32;
-                pos.push_back(vec3f(cos(rad) * r, h, -sin(rad) * r));
+                pos.push_back(vec3f(cos(rad) * r, h, -sin(rad) * r) * radius * scaleSize + position);
                 uvs.push_back(vec3f(j / 32.0, i / 90.0 * 0.5 + 0.5, 0));
                 nrm.push_back(zeno::normalize(pos[pos.size()-1]));
             }
@@ -280,7 +283,11 @@ struct CreateSphere : zeno::INode {
 };
 
 ZENDEFNODE(CreateSphere, {
-    {},
+    {
+        {"vec3f", "position", "0, 0, 0"},
+        {"vec3f", "scaleSize", "1, 1, 1"},
+        {"float", "radius", "1"},
+    },
     {"prim"},
     {},
     {"create"},
