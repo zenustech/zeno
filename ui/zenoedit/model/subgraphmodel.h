@@ -66,7 +66,8 @@ public:
     void removeNode(int row, bool enableTransaction = false);
     void removeNodeByDescName(const QString& descName);
 
-    void updateParam(const QString& nodeid, const QString& paramName, const QVariant& var, bool enableTransaction = false);
+    void updateParam(const QString& nodeid, const QString& paramName, const QVariant& var);
+    void updateParamNotDesc(const QString& nodeid, const QString& paramName, const QVariant& var);
     QVariant getParamValue(const QString& nodeid, const QString& paramName);
 
     void updateSocket(const QString& nodeid, const SOCKET_UPDATE_INFO& info);

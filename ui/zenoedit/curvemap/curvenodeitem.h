@@ -5,7 +5,7 @@
 #include <QtSvg/QGraphicsSvgItem>
 #include "curvegrid.h"
 #include "curveutil.h"
-#include "../model/curvemodel.h"
+#include <zenoui/model/curvemodel.h>
 
 class CurveNodeItem;
 class CurveMapView;

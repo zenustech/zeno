@@ -1,4 +1,5 @@
 #include "curveutil.h"
+#include <zenoui/model/curvemodel.h>
 
 namespace curve_util
 {
@@ -59,5 +60,24 @@ namespace curve_util
             nY = 40;
 		}
 		return {nX, nY};
+	}
+
+	CurveModel* deflModel(QObject* parent)
+	{
+		CURVE_DATA curve;
+		curve.key = "x";
+        curve.cycleType = 0;
+        CURVE_RANGE rg;
+        rg.xFrom = 0;
+        rg.yFrom = 0;
+        rg.xTo = 1;
+        rg.yTo = 1;
+        curve.rg = rg;
+        curve.points.append({QPointF(rg.xFrom, rg.yFrom), QPointF(0, 0), QPointF(0, 0), 0});
+        curve.points.append({QPointF(rg.xTo, rg.yTo), QPointF(0, 0), QPointF(0, 0), 0});
+
+		CurveModel *pModel = new CurveModel(curve.key, curve.rg, parent);
+        pModel->initItems(curve);
+		return pModel;
 	}
 }

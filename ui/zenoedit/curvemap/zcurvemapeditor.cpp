@@ -3,7 +3,7 @@
 #include "ui_zcurvemapeditor.h"
 #include <zenoui/style/zenostyle.h>
 #include "curvenodeitem.h"
-#include "../model/curvemodel.h"
+#include <zenoui/model/curvemodel.h>
 #include "curvesitem.h"
 #include <zenoui/util/uihelper.h>
 #include <zenoui/comctrl/effect/innershadoweffect.h>

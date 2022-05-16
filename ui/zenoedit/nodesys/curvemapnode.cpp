@@ -1,7 +1,7 @@
 #if 0
 #include "curvemapnode.h"
 #include "../curvemap/zcurvemapeditor.h"
-#include "../model/curvemodel.h"
+#include <zenoui/model/curvemodel.h>
 #include <zenoui/util/cihou.h>
 #include "util/log.h"
 

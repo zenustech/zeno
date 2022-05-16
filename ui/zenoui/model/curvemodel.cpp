@@ -1,5 +1,4 @@
 #include "curvemodel.h"
-#include "util/log.h"
 
 
 CurveModel::CurveModel(const QString& id, const CURVE_RANGE& rg, QObject* parent)

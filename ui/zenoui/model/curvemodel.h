@@ -2,8 +2,7 @@
 #define __CURVE_MODEL_H__
 
 #include <QStandardItemModel>
-#include "../curvemap/curveutil.h"
-#include <zenoui/model/modeldata.h>
+#include "modeldata.h"
 
 enum CURVE_ROLE
 {

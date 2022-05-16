@@ -4,7 +4,7 @@
 #include <zenoui/util/uihelper.h>
 #include "curveutil.h"
 #include "curvesitem.h"
-#include "../model/curvemodel.h"
+#include <zenoui/model/curvemodel.h>
 
 using namespace curve_util;
 
@@ -58,7 +58,6 @@ CurveHandlerItem::CurveHandlerItem(CurveNodeItem* pNode, const QPointF& offset, 
 
 CurveHandlerItem::~CurveHandlerItem()
 {
-    delete m_line;
 }
 
 void CurveHandlerItem::setOtherHandle(CurveHandlerItem *other)
