@@ -4,19 +4,16 @@
 
 #pragma once
 
-#include "Ast.h"
+#include "Module.h"
 #include <iostream>
 #include <any>
-/*
+
 namespace zfx {
-    class AstVisitor {
+    void apply_check(Module* m);
+    /*
+     *
+     *
+     * */
 
-        virtual std::any visit() {
-
-        }
-        virtual ~AstVisitor() {
-
-        }
-    };
+    std::string apply_emit_assembly(Module* m);
 }
-*/

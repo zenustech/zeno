@@ -3,7 +3,7 @@
 //
 /*
  * this is Symbol table
- * save variable name , variable kind and some other information
+ * save variable name , variable kind and variable dimensional
  * if there are other needs in the future , we will add
  * */
 #pragma once
@@ -17,13 +17,21 @@
 namespace zfx {
 
     enum class SymKind{Variable, Function};
+    enum class SymDim{
+        zero = 0,
+        OneDimensional = 1,
+        TwoDimensional = 2,
+        ThreeDimensional = 3,
+        FourDimensional = 4
+    };
     class VarSymbol;
     class FunctionSymbol;
     class Symbol {
       public:
         std::string name;
-
-        Symbol(const std::string& name, SymKind kind) {}
+        SymKind kind;
+        SymDim dim;
+        Symbol(const std::string& name, SymKind kind, SymDim dim) {}
 
         virtual std::any accept(SymbolVisitor& visitor, std::string additional) = 0;
     };
@@ -37,7 +45,7 @@ namespace zfx {
 
     class VarSymbol : public Symbol {
       public:
-        VarSymbol(const std::string& name, SymKind kind) : Symbol(name, kind){
+        VarSymbol(const std::string& name, SymKind kind, SymDim dim) : Symbol(name, kind, dim){
 
         }
 
@@ -48,7 +56,7 @@ namespace zfx {
 
     class FunctionSymbol : public Symbol {
       public:
-        FunctionSymbol(const std::string name, SymKind kind) : Symbol(name, kind) : Symbol(name, kind){
+        FunctionSymbol(const std::string name, SymKind kind, SymDim dim) : Symbol(name, kind, kind) {
 
         }
 

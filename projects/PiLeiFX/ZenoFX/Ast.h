@@ -87,10 +87,13 @@ namespace zfx {
     class Expression : public AstNode{
         Expression(const Position& beginPos, const Position& endPos)
     };
-
-    class Variable : public Expression {
+/*
+ * when we declare a variable , we will create a Ast Node : VariableDecl, if this Ast node has initialization
+ * we will create a single node represent initialization, but if only to declare we will only create one node;
+ * */
+    class VariableDecl : public Expression {
         std::string name;
-        //if we
+
         //std::shared_ptr<>;
 
         std::string toString() {
@@ -139,7 +142,10 @@ namespace zfx {
         std::shared_ptr<AstNode> lhs;
         std::shared_ptr<AstNode> rhs;
     };
-
+/*
+ * Notice assignStmt is right associative
+ *
+ * */
     class AssignStmt {
       public:
         std::shared_ptr<Expression> lhs;
