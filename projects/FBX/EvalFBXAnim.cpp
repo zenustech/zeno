@@ -21,7 +21,7 @@ struct EvalAnim{
 
     std::unordered_map<std::string, aiMatrix4x4> m_Transforms;
     std::unordered_map<std::string, BoneInfo> m_BoneOffset;
-    std::unordered_map<std::string, Bone> m_Bones;
+    std::unordered_map<std::string, Bone> m_AnimBones;
     std::vector<VertexInfo> m_Vertices;
     std::vector<unsigned int> m_Indices;
 
@@ -36,7 +36,7 @@ struct EvalAnim{
         m_Indices = fbxData->indices;
 
         m_RootNode = *nodeTree;
-        m_Bones = boneTree->BoneMap;
+        m_AnimBones = boneTree->AnimBoneMap;
         m_BoneOffset = fbxData->BoneOffsetMap;
 
         m_CurrentFrame = 0.0f;
@@ -57,8 +57,8 @@ struct EvalAnim{
         std::string nodeName = node->name;
         aiMatrix4x4 nodeTransform = node->transformation;
 
-        if (m_Bones.find(nodeName) != m_Bones.end()) {
-            auto& bone = m_Bones[nodeName];
+        if (m_AnimBones.find(nodeName) != m_AnimBones.end()) {
+            auto& bone = m_AnimBones[nodeName];
 
             bone.update(m_CurrentFrame);
             nodeTransform = bone.m_LocalTransform;
@@ -138,7 +138,7 @@ struct EvalFBXAnim : zeno::INode {
 ZENDEFNODE(EvalFBXAnim,
            {       /* inputs: */
                {
-                   {"prim"}, {"frameid"},
+                   {"frameid"},
                    {"AnimInfo", "animinfo"},
                    {"FBXData", "fbxdata"},
                    {"NodeTree", "nodetree"},

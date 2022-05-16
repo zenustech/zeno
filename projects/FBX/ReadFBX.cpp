@@ -22,7 +22,6 @@
 
 #include "Definition.h"
 
-
 struct Mesh{
     FBXData fbxData;
     std::vector<Texture> textures_loaded;
@@ -64,10 +63,27 @@ struct Mesh{
 
         // Vertices
         for(unsigned int j = 0; j < mesh->mNumVertices; j++){
-            aiVector3D vec(mesh->mVertices[j].x, mesh->mVertices[j].y, mesh->mVertices[j].z);
-
             VertexInfo vertexInfo;
+
+            aiVector3D vec(mesh->mVertices[j].x, mesh->mVertices[j].y, mesh->mVertices[j].z);
             vertexInfo.position = vec;
+
+            if (mesh->mTextureCoords[0]){
+                aiVector3D uvw(mesh->mTextureCoords[0][j].x, mesh->mTextureCoords[0][j].y, 0.0f);
+                vertexInfo.texCoord = uvw;
+            }
+            if (mesh->mNormals) {
+                aiVector3D normal(mesh->mNormals[j].x, mesh->mNormals[j].y, mesh->mNormals[j].z);
+                vertexInfo.normal = normal;
+            }
+            if(mesh->mTangents){
+                aiVector3D tangent(mesh->mTangents[j].x, mesh->mTangents[j].y, mesh->mTangents[j].z);
+                vertexInfo.tangent = tangent;
+            }
+            if(mesh->mBitangents){
+                aiVector3D bitangent(mesh->mBitangents[j].x, mesh->mBitangents[j].y, mesh->mBitangents[j].z);
+                vertexInfo.bitangent = bitangent;
+            }
 
             fbxData.vertices.push_back(vertexInfo);
         }
@@ -146,7 +162,7 @@ struct Mesh{
         for (int boneIndex = 0; boneIndex < mesh->mNumBones; ++boneIndex)
         {
             std::string boneName(mesh->mBones[boneIndex]->mName.C_Str());
-            //zeno::log_info("Extracting {}", boneName);
+
             // Not Found, Create one, If Found, will have same offset-matrix
             if (fbxData.BoneOffsetMap.find(boneName) == fbxData.BoneOffsetMap.end()) {
                 BoneInfo newBoneInfo;
@@ -241,10 +257,16 @@ struct Mesh{
     void processPrim(std::shared_ptr<zeno::PrimitiveObject>& prim){
         auto &ver = prim->verts;
         auto &ind = prim->tris;
+        auto &uv = prim->verts.add_attr<zeno::vec3f>("uv");
+        auto &norm = prim->verts.add_attr<zeno::vec3f>("nrm");
 
         for(unsigned int i=0; i<fbxData.vertices.size(); i++){
             auto& vpos = fbxData.vertices[i].position;
+            auto& vnor = fbxData.vertices[i].normal;
+            auto& vuv = fbxData.vertices[i].texCoord;
             ver.emplace_back(vpos.x, vpos.y, vpos.z);
+            uv.emplace_back(vuv.x, vuv.y, vuv.z);
+            norm.emplace_back(vnor.x, vnor.y, vnor.z);
         }
 
         for(unsigned int i=0; i<fbxData.indices.size(); i+=3){
@@ -303,10 +325,10 @@ struct Anim{
             Bone bone;
             bone.initBone(boneName, channel);
 
-            m_Bones.BoneMap[boneName] = bone;
+            m_Bones.AnimBoneMap[boneName] = bone;
         }
 
-        zeno::log_info("SetupBones: Num BoneMap: {}", m_Bones.BoneMap.size());
+        zeno::log_info("SetupBones: Num AnimBoneMap: {}", m_Bones.AnimBoneMap.size());
     }
 
 };
@@ -336,7 +358,7 @@ void readFBXFile(
 
     mesh.initMesh(scene);
     anim.initAnim(scene, &mesh);
-    mesh.processTrans(anim.m_Bones.BoneMap, prims, datas);
+    mesh.processTrans(anim.m_Bones.AnimBoneMap, prims, datas);
     mesh.processPrim(prim);
 
     *fbxData = mesh.fbxData;
@@ -355,13 +377,6 @@ void readFBXFile(
 struct ReadFBXPrim : zeno::INode {
 
     virtual void apply() override {
-        int frameid;
-        if (has_input("frameid")) {
-            frameid = get_input<zeno::NumericObject>("frameid")->get<int>();
-        } else {
-            frameid = zeno::state.frameid;
-        }
-
         auto path = get_input<zeno::StringObject>("path")->get();
         auto prim = std::make_shared<zeno::PrimitiveObject>();
         std::shared_ptr<zeno::DictObject> prims = std::make_shared<zeno::DictObject>();
@@ -370,11 +385,8 @@ struct ReadFBXPrim : zeno::INode {
         auto animInfo = std::make_shared<AnimInfo>();
         auto fbxData = std::make_shared<FBXData>();
         auto boneTree = std::make_shared<BoneTree>();
-        auto &pos = prim->verts;
-        auto &tris = prim->tris;
 
         zeno::log_info("ReadFBXPrim: File Path {}", path);
-//        zeno::log_info("ReadFBXPrim: frameid {}", frameid);
 
         readFBXFile(prim,prims, datas,
                     nodeTree, fbxData, boneTree, animInfo,
