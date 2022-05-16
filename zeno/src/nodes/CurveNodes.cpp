@@ -44,7 +44,7 @@ ZENO_DEFNODE(MakeCurve)({
     },
     {
         // FIXME: need have at least one param to prevent luzh bug!
-        {"", "madebypengsensei", ""},
+        {"string", "madebypengsensei", "pybyes"},
     },
     {"curve"},
 });

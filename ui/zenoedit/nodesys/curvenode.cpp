@@ -161,23 +161,22 @@ void MakeCurveNode::onEditClicked()
 
     pEditor->show();
     connect(pEditor, &ZCurveMapEditor::finished, this, [this, pEditor] (int result) {
-        //ZENO_P(result);
-        QString parstr = "";
 
-#if 0  // TODO: LUZH please complete the following pEditor->getXXX()
-        int keycount = pEditor->getCurvesCount();
-        parstr.append(QString::number(keycount));
+        int keycount = pEditor->curveCount();
+        QString parstr = QString::number(keycount);
         for (int k = 0; k < keycount; k++) {
-            QString key = pEditor->getCurveKey(k);
+            CurveModel *pModel = pEditor->getCurve(k);
+            CURVE_DATA curve = pModel->getItems();
+            QString key = curve.key;
             parstr.append(' ');
             parstr.append(key);
-            int cyctype = 0;
+            int cyctype = curve.cycleType;
             parstr.append(' ');
             parstr.append(QString::number(cyctype));
-            int count = pEditor->getCurvePointCount(k);
+            int count = curve.points.size();
             parstr.append(' ');
             parstr.append(QString::number(count));
-            CURVE_RANGE rg = pEditor->getCurveRange(k);
+            CURVE_RANGE rg = curve.rg;
             parstr.append(' ');
             parstr.append(QString::number(rg.xFrom));
             parstr.append(' ');
@@ -187,17 +186,20 @@ void MakeCurveNode::onEditClicked()
             parstr.append(' ');
             parstr.append(QString::number(rg.yTo));
             for (int i = 0; i < count; i++) {
-                QVector2D pt = pEditor->getCurvePointPosition(k, i);
+                QPointF pt = curve.points[i].point;
                 parstr.append(' ');
                 parstr.append(QString::number(pt.x()));
                 parstr.append(' ');
                 parstr.append(QString::number(pt.y()));
-                QVector2D lh = pEditor->getCurvePointLeftHandler(k, i);
+                int cptype = curve.points[i].controlType;
+                parstr.append(' ');
+                parstr.append(QString::number(cptype));
+                QPointF lh = curve.points[i].leftHandler;
                 parstr.append(' ');
                 parstr.append(QString::number(lh.x()));
                 parstr.append(' ');
                 parstr.append(QString::number(lh.y()));
-                QVector2D rh = pEditor->getCurvePointRightHandler(k, i);
+                QPointF rh = curve.points[i].rightHandler;
                 parstr.append(' ');
                 parstr.append(QString::number(rh.x()));
                 parstr.append(' ');
@@ -205,7 +207,6 @@ void MakeCurveNode::onEditClicked()
             }
         }
         zeno::log_debug("{}", parstr.toStdString());
-#endif
 
         PARAMS_INFO params2 = index().data(ROLE_PARAMETERS_NOT_DESC).value<PARAMS_INFO>();
         params2["UI_MakeCurve"].value.setValue(parstr);
