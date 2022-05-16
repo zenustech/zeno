@@ -33,7 +33,9 @@ Scene::Scene()
     auto version = (const char *)glGetString(GL_VERSION);
     zeno::log_info("OpenGL version: {}", version ? version : "(null)");
 
-    if (std::getenv("ZENO_ZHXX"))
+    if (std::getenv("ZENO_OPTX"))
+        switchRenderEngine("optx");
+    else if (std::getenv("ZENO_ZHXX"))
         switchRenderEngine("zhxx");
     else
         switchRenderEngine("bate");
