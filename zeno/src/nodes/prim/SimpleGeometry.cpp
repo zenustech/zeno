@@ -108,18 +108,21 @@ ZENDEFNODE(CreateCone, {
 struct CreateDisk : zeno::INode {
     virtual void apply() override {
         auto prim = std::make_shared<zeno::PrimitiveObject>();
+        auto position = get_input2<zeno::vec3f>("position");
+        auto scaleSize = get_input2<zeno::vec3f>("scaleSize");
+        auto radius = get_input2<float>("radius");
+        auto lons = get_input2<int>("lons");
 
         auto &pos = prim->verts;
-        size_t seg = 32;
-        for (size_t i = 0; i < seg; i++) {
-            float rad = 2 * M_PI * i / 32;
-            pos.push_back(vec3f(cos(rad), 0, -sin(rad)));
+        for (size_t i = 0; i < lons; i++) {
+            float rad = 2 * M_PI * i / lons;
+            pos.push_back(vec3f(cos(rad) * radius, 0, -sin(rad) * radius) * scaleSize + position);
         }
-        pos.push_back(vec3i(0, 0, 0));
+        pos.push_back(vec3f(0, 0, 0) * scaleSize + position);
 
         auto &tris = prim->tris;
-        for (size_t i = 0; i < seg; i++) {
-            tris.push_back(vec3i(seg, i, (i + 1) % seg));
+        for (size_t i = 0; i < lons; i++) {
+            tris.push_back(vec3i(lons, i, (i + 1) % lons));
         }
 
         set_output("prim", std::move(prim));
@@ -127,7 +130,12 @@ struct CreateDisk : zeno::INode {
 };
 
 ZENDEFNODE(CreateDisk, {
-    {},
+    {
+        {"vec3f", "position", "0, 0, 0"},
+        {"vec3f", "scaleSize", "1, 1, 1"},
+        {"float", "radius", "1"},
+        {"int", "lons", "32"},
+    },
     {"prim"},
     {},
     {"create"},
