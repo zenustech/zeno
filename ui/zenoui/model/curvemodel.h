@@ -3,7 +3,6 @@
 
 #include <QStandardItemModel>
 #include "modeldata.h"
-#include "zserializable.h"
 
 enum CURVE_ROLE
 {
@@ -23,7 +22,7 @@ enum HANDLE_TYPE
     HDL_ASYM
 };
 
-class CurveModel : public QStandardItemModel, ZSerializable
+class CurveModel : public QStandardItemModel
 {
     Q_OBJECT
 public:
@@ -37,8 +36,8 @@ public:
     void resetRange(const CURVE_RANGE& rg);
     CURVE_RANGE range() const;
     QString id() const;
-    std::string z_serialize() const override;
-    void z_deserialize(std::string const &s) override;
+    std::string z_serialize() const;
+    void z_deserialize(std::string const &s);
     QPointF clipNodePos(const QModelIndex& idx, const QPointF& currPos);
 
     QPointF adjustLastRightHdl(const QModelIndex& currIdx);

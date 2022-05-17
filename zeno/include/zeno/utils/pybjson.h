@@ -7,6 +7,8 @@
 #include <rapidjson/document.h>
 #include <stack>
 
+namespace zeno {
+
 class pybjsonparser {
     rapidjson::Document root;
     std::stack<rapidjson::Value *> stk;
@@ -170,21 +172,4 @@ public:
     }
 };
 
-int main() {
-    pybjsonwriter w;
-    w.obj()
-     .key("a")
-     .val("b")
-     .eobj();
-    auto r = w.str();
-    std::cout << r << std::endl;
-    pybjsonparser p;
-    std::string b;
-    p.str(r)
-     .obj()
-     .key("a")
-     .val(b)
-     .eobj();
-    std::cout << b << std::endl;
-    return 0;
 }

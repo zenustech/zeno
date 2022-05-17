@@ -414,13 +414,15 @@ bool CurveModel::setData(const QModelIndex& index, const QVariant& value, int ro
         .val(m_range.yFrom) \
         .key("yTo") \
         .val(m_range.yTo) \
-        .key("id") \
         .eobj() \
-        .val_f([&] { return m_id.toStdString(); }, [&] (auto &&x) { m_id = QString::fromStdString(x); })
+        .key("id") \
+        .val_f([&] { return m_id.toStdString(); }, [&] (auto &&x) { m_id = QString::fromStdString(x); }) \
+        .eobj() \
+        /**/
 
 std::string CurveModel::z_serialize() const {
     auto dat = getItems();
-    return pybjsonwriter()
+    return zeno::pybjsonwriter()
         CURVE_MODEL_SERIALIZER
         .str();
 }
@@ -428,7 +430,7 @@ std::string CurveModel::z_serialize() const {
 
 void CurveModel::z_deserialize(std::string const &s) {
     auto dat = getItems();
-    pybjsonparser().str(s)
+    zeno::pybjsonparser().str(s)
         CURVE_MODEL_SERIALIZER
         ;
 }

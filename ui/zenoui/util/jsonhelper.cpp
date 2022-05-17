@@ -1,6 +1,6 @@
 #include "jsonhelper.h"
 #include <zenoui/model/variantptr.h>
-#include <zenoui/model/zserializable.h>
+#include <zenoui/model/curvemodel.h>
 #include <zeno/utils/logger.h>
 
 namespace JsonHelper
@@ -41,7 +41,7 @@ namespace JsonHelper
 			}
 			else if (varType == QMetaType::VoidStar)
 			{
-                auto pModel = QVariantPtr<ZSerializable>::asPtr(value);
+                auto pModel = QVariantPtr<CurveModel>::asPtr(value);
                 auto s = pModel->z_serialize();
 				writer.String(s.data(), s.size());
             }
