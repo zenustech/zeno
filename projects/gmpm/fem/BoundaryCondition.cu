@@ -118,10 +118,28 @@ struct ApplyBoundaryOnVertices : INode {
                 [verts = proxy<execspace_e::cuda>({}, verts)] __device__(
                     int vi) mutable {
                   using mat3 = zs::vec<float, 3, 3>;
-                  if (reinterpret_bits<int>(verts("BCorder", vi)) != 0)
+                  auto BCbasis = verts.pack<3, 3>("BCbasis", vi);
+                  auto BCorder = reinterpret_bits<int>(verts("BCorder", vi));
+                  if (BCorder != 0) {
+                    if (BCorder == 1) {
+                      auto n0 = col(BCbasis, 0);
+                      auto n1 = n0.orthogonal().normalized();
+                      auto n2 = n0.cross(n1).normalized();
+                      for (int d = 0; d != 3; ++d) {
+                        BCbasis(d, 1) = n1(d);
+                        BCbasis(d, 2) = n2(d);
+                      }
+                    } else if (BCorder == 2) {
+                      auto n0 = col(BCbasis, 0);
+                      auto n1 = col(BCbasis, 1);
+                      auto n2 = n0.cross(n1).normalized();
+                      for (int d = 0; d != 3; ++d)
+                        BCbasis(d, 2) = n2(d);
+                    }
+                    verts.tuple<9>("BCbasis", vi) = BCbasis;
                     verts.tuple<3>("BCtarget", vi) =
-                        verts.pack<3, 3>("BCbasis", vi).transpose() *
-                        verts.pack<3>("BCtarget", vi);
+                        BCbasis.transpose() * verts.pack<3>("BCtarget", vi);
+                  }
                 });
       }
     }
