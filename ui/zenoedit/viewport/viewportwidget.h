@@ -34,6 +34,7 @@ public:
     void setKeyFrame();
 
     void fakeMousePressEvent(QMouseEvent* event);
+    void fakeMouseReleaseEvent(QMouseEvent* event);
     void fakeMouseMoveEvent(QMouseEvent* event);
     void fakeWheelEvent(QWheelEvent* event);
     void focus(QVector3D center, float radius);
@@ -46,6 +47,7 @@ private:
     float m_theta;
     float m_phi;
     QPointF m_lastPos;
+    QPoint m_boundRectStartPos;
     QVector3D  m_center;
     bool m_ortho_mode;
     float m_fov;
@@ -66,6 +68,7 @@ public:
 
 protected:
     void mousePressEvent(QMouseEvent* event) override;
+    void mouseReleaseEvent(QMouseEvent* event) override;
     void mouseMoveEvent(QMouseEvent* event) override;
     void wheelEvent(QWheelEvent* event) override;
 

@@ -14,6 +14,7 @@
 #include <zeno/types/UserData.h>
 
 #include <cmath>
+#include <algorithm>
 #include <optional>
 
 std::optional<float> ray_sphere_intersect(
@@ -41,6 +42,23 @@ std::optional<float> ray_sphere_intersect(
 }
 
 
+static bool test_in_selected_bounding(
+    QVector3D centerWS,
+    QVector3D cam_posWS,
+    QVector3D left_normWS,
+    QVector3D right_normWS,
+    QVector3D up_normWS,
+    QVector3D down_normWS
+) {
+    QVector3D dir =  centerWS - cam_posWS;
+    dir.normalize();
+    bool left_test = QVector3D::dotProduct(dir, left_normWS) > 0;
+    bool right_test = QVector3D::dotProduct(dir, right_normWS) > 0;
+    bool up_test = QVector3D::dotProduct(dir, up_normWS) > 0;
+    bool down_test = QVector3D::dotProduct(dir, down_normWS) > 0;
+    return left_test && right_test && up_test && down_test;
+}
+
 CameraControl::CameraControl(QWidget* parent)
     : m_mmb_pressed(false)
     , m_theta(0.)
@@ -64,43 +82,7 @@ void CameraControl::fakeMousePressEvent(QMouseEvent* event)
         m_lastPos = event->pos();
     }
     else if (event->buttons() & Qt::LeftButton) {
-        float x = (float)event->x() / m_res.x();
-        float y = (float)event->y() / m_res.y();
-        auto rdir = screenToWorldRay(x, y);
-        auto pos = realPos();
-        auto scene = Zenovis::GetInstance().getSession()->get_scene();
-        float min_t = std::numeric_limits<float>::max();
-        std::string name("");
-        for (auto const &[key, ptr]: scene->objectsMan->pairs()) {
-            zeno::vec3f center;
-            float radius;
-            if (zeno::objectGetFocusCenterRadius(ptr, center, radius)) {
-                auto ret = ray_sphere_intersect(
-                    zeno::vec3f(pos[0], pos[1], pos[2]),
-                    zeno::vec3f(rdir[0], rdir[1], rdir[2]),
-                    center,
-                    radius
-                );
-                if (ret.has_value()) {
-                    float t = ret.value();
-                    if (t < min_t) {
-                        min_t = t;
-                        name = key;
-                    }
-                }
-            }
-        }
-        bool shift_pressed = event->modifiers() & Qt::ShiftModifier;
-        if (!shift_pressed) {
-            scene->selected.clear();
-        }
-        if (!name.empty()) {
-            if (scene->selected.count(name) > 0) {
-                scene->selected.erase(name);
-            } else {
-                scene->selected.insert(name);
-            }
-        }
+        m_boundRectStartPos = event->pos();
     }
 }
 
@@ -215,7 +197,86 @@ QVariant CameraControl::hitOnFloor(float x, float y) const {
         return {};
     }
 }
+void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
+    if (event->button() == Qt::LeftButton) {
+        auto cam_pos = realPos();
+        auto scene = Zenovis::GetInstance().getSession()->get_scene();
+        bool shift_pressed = event->modifiers() & Qt::ShiftModifier;
+        if (!shift_pressed) {
+            scene->selected.clear();
+        }
 
+        QPoint releasePos = event->pos();
+        if (m_boundRectStartPos == releasePos) {
+            float x = (float)event->x() / m_res.x();
+            float y = (float)event->y() / m_res.y();
+            auto rdir = screenToWorldRay(x, y);
+            float min_t = std::numeric_limits<float>::max();
+            std::string name("");
+            for (auto const &[key, ptr]: scene->objectsMan->pairs()) {
+                zeno::vec3f center;
+                float radius;
+                if (zeno::objectGetFocusCenterRadius(ptr, center, radius)) {
+                    auto ret = ray_sphere_intersect(
+                        zeno::vec3f(cam_pos[0], cam_pos[1], cam_pos[2]),
+                        zeno::vec3f(rdir[0], rdir[1], rdir[2]),
+                        center,
+                        radius
+                    );
+                    if (ret.has_value()) {
+                        float t = ret.value();
+                        if (t < min_t) {
+                            min_t = t;
+                            name = key;
+                        }
+                    }
+                }
+            }
+            if (!name.empty()) {
+                if (scene->selected.count(name) > 0) {
+                    scene->selected.erase(name);
+                } else {
+                    scene->selected.insert(name);
+                }
+            }
+        }
+        else {
+            float min_x = std::min((float)m_boundRectStartPos.x(), (float)releasePos.x());
+            float max_x = std::max((float)m_boundRectStartPos.x(), (float)releasePos.x());
+            float min_y = std::min((float)m_boundRectStartPos.y(), (float)releasePos.y());
+            float max_y = std::max((float)m_boundRectStartPos.y(), (float)releasePos.y());
+            auto left_up    = screenToWorldRay(min_x / m_res.x(), min_y / m_res.y());
+            auto left_down  = screenToWorldRay(min_x / m_res.x(), max_y / m_res.y());
+            auto right_up   = screenToWorldRay(max_x / m_res.x(), min_y / m_res.y());
+            auto right_down = screenToWorldRay(max_x / m_res.x(), max_y / m_res.y());
+            auto cam_posWS = realPos();
+            auto left_normWS  = QVector3D::crossProduct(left_down, left_up);
+            auto right_normWS = QVector3D::crossProduct(right_up, right_down);
+            auto up_normWS    = QVector3D::crossProduct(left_up, right_up);
+            auto down_normWS  = QVector3D::crossProduct(right_down, left_down);
+
+            std::vector<std::string> passed_prim;
+            for (auto const &[key, ptr]: scene->objectsMan->pairs()) {
+                zeno::vec3f c;
+                float radius;
+                if (zeno::objectGetFocusCenterRadius(ptr, c, radius)) {
+                    bool passed = test_in_selected_bounding(
+                        QVector3D(c[0], c[1], c[2]),
+                        cam_pos,
+                        left_normWS,
+                        right_normWS,
+                        up_normWS,
+                        down_normWS
+                    );
+                    if (passed) {
+                        passed_prim.push_back(key);
+                    }
+                }
+            }
+            scene->selected.insert(passed_prim.begin(), passed_prim.end());
+        }
+    }
+}
 
 ViewportWidget::ViewportWidget(QWidget* parent)
     : QOpenGLWidget(parent)
@@ -302,7 +363,11 @@ void ViewportWidget::wheelEvent(QWheelEvent* event)
     m_camera->fakeWheelEvent(event);
     update();
 }
-
+void ViewportWidget::mouseReleaseEvent(QMouseEvent *event) {
+    _base::mouseReleaseEvent(event);
+    m_camera->fakeMouseReleaseEvent(event);
+    update();
+}
 
 #if 0
 QDMDisplayMenu::QDMDisplayMenu()
