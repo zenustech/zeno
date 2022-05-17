@@ -39,24 +39,11 @@ namespace JsonHelper
 			{
 				writer.Bool(value.toBool());
 			}
-			else if (varType == QMetaType::VoidStar)
-			{
-                //throw "DIDNTWORKLUZH";
-                // TODO: use dynamic_cast<CurveModel *>(QVariantPtr<IModel>::asPtr(value))
-                // also btw luzh, will this have a memory leakage?
-                auto pModel = QVariantPtr<CurveModel>::asPtr(value);
-                auto s = pModel->z_serialize();
-				writer.StartObject();
-                writer.Key("type");
-                writer.String("CurveModel");
-                writer.Key("data");
-                writer.String(s.data(), s.size());
-                writer.EndObject();
-            }
 			//todo: qlineargradient.
 			else if (varType != QVariant::Invalid)
             {
-				if (varType == QVariant::UserType) {
+				if (varType == QVariant::UserType)
+                {
 					//todo: declare a custom metatype
 					QVector<qreal> vec = value.value<QVector<qreal>>();
                     if (!vec.isEmpty()) {
@@ -71,10 +58,26 @@ namespace JsonHelper
 						continue;
 					}
 				}
-
-                writer.Null();
-                zeno::log_warn("bad qt variant type {}", value.typeName() ? value.typeName() : "(null)");
-                //Q_ASSERT(false);
+                else if (value.typeName() == std::string("void*"))
+                {
+                    // TODO: use dynamic_cast<CurveModel *>(QVariantPtr<IModel>::asPtr(value))
+                    // also btw luzh, will this have a memory leakage?
+                    auto pModel = QVariantPtr<CurveModel>::asPtr(value);
+                    auto s = pModel->z_serialize();
+                    writer.StartObject();
+                    writer.Key("type");
+                    writer.String("CurveModel");
+                    writer.Key("data");
+                    writer.String(s.data(), s.size());
+                    writer.EndObject();
+                    continue;
+                }
+                else
+                {
+                    writer.Null();
+                    zeno::log_warn("bad qt variant type {}", value.typeName() ? value.typeName() : "(null)");
+                    //Q_ASSERT(false);
+                }
 			}
 		}
 		writer.EndArray();
@@ -82,6 +85,8 @@ namespace JsonHelper
 
 	void AddVariantListWithNull(const QVariantList& list, const QString& type, RAPIDJSON_WRITER& writer)
 	{
+        return AddVariantList(list, type, writer);
+#if 0
 		writer.StartArray();
 		for (const QVariant& value : list)
 		{
@@ -127,6 +132,7 @@ namespace JsonHelper
 			}
 		}
 		writer.EndArray();
+#endif
 	}
 
 	void AddVariantToStringList(const QVariantList& list, RAPIDJSON_WRITER& writer)
