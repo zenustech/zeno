@@ -25,7 +25,7 @@ static bool file_exists(std::string const &path) {
   return (bool)fin;
 }
 
-template <class Arr = std::vector<char>>
+template <class Arr>
 static Arr file_get_binary(std::string const &path) {
   char const *filename = path.c_str();
   FILE *fp = fopen(filename, "rb");
