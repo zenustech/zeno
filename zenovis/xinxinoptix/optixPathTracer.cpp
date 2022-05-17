@@ -3,6 +3,7 @@
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
+#include <zeno/utils/fileio.h>
 // are met:
 //  * Redistributions of source code must retain the above copyright
 //    notice, this list of conditions and the following disclaimer.
@@ -786,8 +787,9 @@ void cleanupState( PathTracerState& state )
     //OPTIX_CHECK( optixProgramGroupDestroy( state.radiance_hit_group2 ) );
     //OPTIX_CHECK( optixProgramGroupDestroy( state.occlusion_hit_group2 ) );
     //OPTIX_CHECK( optixProgramGroupDestroy( state.occlusion_miss_group ) );
-    OPTIX_CHECK( optixModuleDestroy( state.ptx_module ) );
+    //OPTIX_CHECK( optixModuleDestroy( state.ptx_module ) );
     OPTIX_CHECK( optixDeviceContextDestroy( state.context ) );
+    OPTIX_CHECK( optixModuleDestroy( OptixUtil::ray_module));
 
 
     CUDA_CHECK( cudaFree( reinterpret_cast<void*>( state.sbt.raygenRecord ) ) );
@@ -878,45 +880,49 @@ void optixinit( int argc, char* argv[] )
             output_buffer_o->setStream( state.stream );
         }
         if (!gl_display_o) {
-            gl_display_o.emplace();
+            gl_display_o.emplace(sutil::BufferImageFormat::UNSIGNED_BYTE4);
         }
 }
 
 
-static std::string get_content(std::string const &path) {
-    std::ifstream ifs("/home/bate/zeno/zenovis/xinxinoptix/" + path);
-    if (!ifs) throw std::runtime_error("cannot open file: " + path);
-    std::string res;
-    std::copy(std::istreambuf_iterator<char>(ifs),
-              std::istreambuf_iterator<char>(),
-              std::back_inserter(res));
-    return res;
-}
+//static std::string get_content(std::string const &path) {
+    //std::ifstream ifs("/home/bate/zeno/zenovis/xinxinoptix/" + path);
+    //if (!ifs) throw std::runtime_error("cannot open file: " + path);
+    //std::string res;
+    //std::copy(std::istreambuf_iterator<char>(ifs),
+              //std::istreambuf_iterator<char>(),
+              //std::back_inserter(res));
+    //return res;
+//}
 
 static void updatedrawobjects();
 void optixupdatemesh() {
     updatedrawobjects();
-            buildMeshAccel( state );
+    buildMeshAccel( state );
     camera_changed = true;
 }
 
-void optixupdatematerial() {
+void optixupdatematerial(std::vector<const char *> const &shaders) {
     camera_changed = true;
-            OptixUtil::ray_module = OptixUtil::createModule(state.context, get_content("optixPathTracer.cu"));
-            OptixUtil::createRenderGroups(state.context, OptixUtil::ray_module);
-            OptixUtil::rtMaterialShaders.resize(0);
-            OptixUtil::rtMaterialShaders.push_back(OptixUtil::rtMatShader(get_content("optixPathTracer2.cu"),"__closesthit__radiance", "__anyhit__shadow_cutout"));
-            OptixUtil::rtMaterialShaders.push_back(OptixUtil::rtMatShader(get_content("optixPathTracer2.cu"),"__closesthit__radiance", "__anyhit__shadow_cutout"));
-            OptixUtil::rtMaterialShaders.push_back(OptixUtil::rtMatShader(get_content("optixPathTracer2.cu"),"__closesthit__radiance", "__anyhit__shadow_cutout"));
-            OptixUtil::rtMaterialShaders.push_back(OptixUtil::rtMatShader(get_content("optixPathTracer2.cu"),"__closesthit__radiance", "__anyhit__shadow_cutout"));
-            OptixUtil::rtMaterialShaders.push_back(OptixUtil::rtMatShader(get_content("optixPathTracer.cu"), "__closesthit__radiance", "__anyhit__shadow_cutout"));
-            for(int i=0;i<OptixUtil::rtMaterialShaders.size();i++)
-            {
-                OptixUtil::rtMaterialShaders[i].loadProgram();
-            }
+
+        static bool hadOnce = false;
+        if (!hadOnce) {
+            //OPTIX_CHECK( optixModuleDestroy( OptixUtil::ray_module ) );
+        auto rtmodsrc = zeno::file_get_content("/home/bate/zeno/zenovis/xinxinoptix/optixPathTracer.cu");
+    OptixUtil::ray_module = OptixUtil::createModule(state.context, rtmodsrc.c_str());
+        } hadOnce = true;
+    OptixUtil::createRenderGroups(state.context, OptixUtil::ray_module);
+    OptixUtil::rtMaterialShaders.resize(0);
+    for (int i = 0; i < shaders.size(); i++)
+        OptixUtil::rtMaterialShaders.push_back(OptixUtil::rtMatShader(shaders[i],"__closesthit__radiance", "__anyhit__shadow_cutout"));
+    for(int i=0;i<OptixUtil::rtMaterialShaders.size();i++)
+    {
+        OptixUtil::rtMaterialShaders[i].loadProgram();
+    }
 }
 
 void optixupdateend() {
+    resize_dirty = true;
         OptixUtil::createPipeline();
         static bool hadOnce = false;
         if (hadOnce) {
@@ -937,6 +943,10 @@ void optixupdateend() {
         state.raygen_prog_group = OptixUtil::raygen_prog_group;
         state.radiance_miss_group = OptixUtil::radiance_miss_group;
         state.occlusion_miss_group = OptixUtil::occlusion_miss_group;
+        //state.radiance_hit_group = OptixUtil::radiance_hit_group;
+        //state.occlusion_hit_group = OptixUtil::occlusion_hit_group;
+        //state.radiance_hit_group2 = OptixUtil::radiance_hit_group2;
+        //state.occlusion_hit_group2 = OptixUtil::occlusion_hit_group2;
         //state.ptx_module2 = createModule(state.context, "optixPathTracer.cu");
         //createModule( state );
         //createProgramGroups( state );
@@ -1039,6 +1049,7 @@ void *optixgetimg(int &w, int &h) {
 //}
 
 void optixcleanup() {
+    return;             // other wise will crasu
     CUDA_SYNC_CHECK();
     cleanupState( state );
 }

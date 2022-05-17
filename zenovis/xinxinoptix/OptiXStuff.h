@@ -65,7 +65,7 @@ inline void createContext()
     pipeline_compile_options.pipelineLaunchParamsVariableName = "params";
 
 }
-inline OptixModule createModule(OptixDeviceContext &context, std::string filename)
+inline OptixModule createModule(OptixDeviceContext &context, const char *filename)
 {
     OptixModule m;
     OptixModuleCompileOptions module_compile_options = {};
@@ -81,7 +81,7 @@ inline OptixModule createModule(OptixDeviceContext &context, std::string filenam
 
     size_t      inputSize = 0;
     //TODO: the file path problem
-    const char* input     = sutil::getInputData( nullptr, nullptr, filename.c_str(), inputSize );
+    const char* input     = sutil::getInputData( nullptr, nullptr, filename, inputSize );
     
     OPTIX_CHECK_LOG( optixModuleCreateFromPTX(
         context,
@@ -198,17 +198,17 @@ struct rtMatShader
     std::string                    m_shadingEntry              ;
     std::string                    m_occlusionEntry            ;
     rtMatShader() {}
-    rtMatShader(std::string shaderFile, std::string shadingEntry, std::string occlusionEntry)
+    rtMatShader(const char *shaderFile, std::string shadingEntry, std::string occlusionEntry)
     {
-        m_shaderFile = shaderFile;
-        m_shadingEntry = shadingEntry;
-        m_occlusionEntry = occlusionEntry;
+        m_shaderFile = std::move(shaderFile);
+        m_shadingEntry = std::move(shadingEntry);
+        m_occlusionEntry = std::move(occlusionEntry);
     }
 
 
     void loadProgram()
     {
-        m_ptx_module = createModule(context, m_shaderFile);
+        m_ptx_module = createModule(context, m_shaderFile.c_str());
         createRTProgramGroups(context, m_ptx_module, 
         "OPTIX_PROGRAM_GROUP_KIND_CLOSEHITGROUP", 
         m_shadingEntry, m_radiance_hit_group);

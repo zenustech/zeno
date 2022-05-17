@@ -2,6 +2,7 @@
 #include <zeno/types/PrimitiveObject.h>
 #include <zenovis/DrawOptions.h>
 #include <zenovis/ObjectsManager.h>
+#include <zeno/utils/fileio.h>
 #include <zenovis/RenderEngine.h>
 #include <zenovis/bate/GraphicsManager.h>
 #include <zenovis/bate/IGraphic.h>
@@ -103,9 +104,18 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         xinxinoptix::set_window_size(cam.m_nx, cam.m_ny);
         xinxinoptix::set_view_matrix(glm::value_ptr(cam.m_view));
         //xinxinoptix::set_projection(glm::value_ptr(cam.m_proj));
+
         xinxinoptix::optixupdatemesh();
-        xinxinoptix::optixupdatematerial();
+        std::vector<const char *> shaders;
+        auto s = zeno::file_get_content("/home/bate/zeno/zenovis/xinxinoptix/optixPathTracer.cu");
+        shaders.push_back(s.c_str());
+        shaders.push_back(s.c_str());
+        shaders.push_back(s.c_str());
+        shaders.push_back(s.c_str());
+        shaders.push_back(s.c_str());
+        xinxinoptix::optixupdatematerial(shaders);
         xinxinoptix::optixupdateend();
+
         int targetFBO = 0;
         CHECK_GL(glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &targetFBO));
         {

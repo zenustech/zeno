@@ -223,7 +223,7 @@ void GLDisplay::display(
     GLint oldfbo = 0;
     GL_CHECK( glGetIntegerv( GL_FRAMEBUFFER_BINDING, &oldfbo ) );
     GL_CHECK( glBindFramebuffer( GL_FRAMEBUFFER, fbo ) );
-    GL_CHECK( glViewport( 0, 0, framebuf_res_x, framebuf_res_y ) );
+    //GL_CHECK( glViewport( 0, 0, framebuf_res_x, framebuf_res_y ) );
 
     GL_CHECK( glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT ) );
 
@@ -235,7 +235,7 @@ void GLDisplay::display(
     GL_CHECK( glBindTexture( GL_TEXTURE_2D, m_render_tex ) );
     GL_CHECK( glBindBuffer( GL_PIXEL_UNPACK_BUFFER, pbo ) );
 
-    //GL_CHECK( glPixelStorei(GL_UNPACK_ALIGNMENT, 4) ); // TODO!!!!!!
+    GL_CHECK( glPixelStorei(GL_UNPACK_ALIGNMENT, 4) ); // TODO!!!!!!
 
     //size_t elmt_size = pixelFormatSize( m_image_format );
     //if      ( elmt_size % 8 == 0) glPixelStorei(GL_UNPACK_ALIGNMENT, 8);
@@ -277,17 +277,17 @@ void GLDisplay::display(
             )
         );
 
-    if( convertToSrgb )
-        GL_CHECK( glEnable( GL_FRAMEBUFFER_SRGB ) );
-    else 
-        GL_CHECK( glDisable( GL_FRAMEBUFFER_SRGB ) );
+    //if( convertToSrgb )
+        //GL_CHECK( glEnable( GL_FRAMEBUFFER_SRGB ) );
+    //else 
+        //GL_CHECK( glDisable( GL_FRAMEBUFFER_SRGB ) );
 
     // Draw the triangles !
     GL_CHECK( glDrawArrays(GL_TRIANGLES, 0, 6) ); // 2*3 indices starting at 0 -> 2 triangles
 
     GL_CHECK( glDisableVertexAttribArray(0) );
 
-    GL_CHECK( glDisable( GL_FRAMEBUFFER_SRGB ) );
+    //GL_CHECK( glDisable( GL_FRAMEBUFFER_SRGB ) );
 
     GL_CHECK( glBindFramebuffer( GL_FRAMEBUFFER, oldfbo ) );
     GL_CHECK_ERRORS();

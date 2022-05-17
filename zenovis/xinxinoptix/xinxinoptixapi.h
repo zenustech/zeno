@@ -12,7 +12,7 @@ void *optixgetimg(int &w, int &h);
 void optixinit(int argc, char* argv[]);
 void optixupdateend();
 void optixupdatemesh();
-void optixupdatematerial();
+void optixupdatematerial(std::vector<const char *> const &shaders);
 
 void set_window_size(int nx, int ny);
 void set_view_matrix(float const *view);
