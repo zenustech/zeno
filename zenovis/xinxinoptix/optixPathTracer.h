@@ -52,10 +52,7 @@ struct Params
     unsigned int height;
     unsigned int samples_per_launch;
 
-    float3       eye;
-    float3       U;
-    float3       V;
-    float3       W;
+    float4 vp1, vp2, vp3, vp4;
 
     ParallelogramLight     light; // TODO: make light list
     OptixTraversableHandle handle;

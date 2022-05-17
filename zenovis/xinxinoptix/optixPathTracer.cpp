@@ -76,6 +76,7 @@ bool minimized    = false;
 bool             camera_changed = true;
 sutil::Camera    camera;
 sutil::Trackball trackball;
+float4 cam_vp1, cam_vp2, cam_vp3, cam_vp4;
 
 // Mouse state
 int32_t mouse_button = -1;
@@ -462,9 +463,13 @@ void handleCameraUpdate( Params& params )
         return;
     camera_changed = false;
 
+    params.vp1 = cam_vp1;
+    params.vp2 = cam_vp2;
+    params.vp3 = cam_vp3;
+    params.vp4 = cam_vp4;
     camera.setAspectRatio( static_cast<float>( params.width ) / static_cast<float>( params.height ) );
-    params.eye = camera.eye();
-    camera.UVWFrame( params.U, params.V, params.W );
+    //params.eye = camera.eye();
+    //camera.UVWFrame( params.U, params.V, params.W );
 }
 
 
@@ -1017,20 +1022,27 @@ void set_window_size(int nx, int ny) {
     state.params.height = ny;
 }
 
-void set_view_matrix(float const *view, float aspect, float fov) {
-    auto U = make_float3(view[0 +4* 0], view[1 +4* 0], view[2 +4* 0]);
-    auto V = make_float3(view[0 +4* 1], view[1 +4* 1], view[2 +4* 1]);
-    auto W = make_float3(view[0 +4* 2], view[1 +4* 2], view[2 +4* 2]);
-    auto E = make_float3(view[0 +4* 3], view[1 +4* 3], view[2 +4* 3]);
-    camera.setZxxViewMatrix(U, V, W);
-    camera.setAspectRatio(aspect);
+void set_perspective(float const *view, float aspect, float fov) {
+    // zhxx, how to fuck this silly matrix correct?
+#define MaT *4+
+//#define MaT +4*
+    auto U = make_float4(view[0 MaT 0], view[1 MaT 0], view[2 MaT 0], view[3 MaT 0]);
+    auto V = make_float4(view[0 MaT 1], view[1 MaT 1], view[2 MaT 1], view[3 MaT 0]);
+    auto W = make_float4(view[0 MaT 2], view[1 MaT 2], view[2 MaT 2], view[3 MaT 0]);
+    auto E = make_float4(view[0 MaT 3], view[1 MaT 3], view[2 MaT 3], view[3 MaT 0]);
+    cam_vp1 = U;
+    cam_vp2 = V;
+    cam_vp3 = W;
+    cam_vp4 = E;
+    //camera.setZxxViewMatrix(U, V, W);
+    //camera.setAspectRatio(aspect);
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
-    camera.setFovY(fov * aspect * (float)M_PI / 180.0f);
+    //camera.setFovY(fov * aspect * (float)M_PI / 180.0f);
     //zeno::log_debug("{} {} {}", E.x, E.y, E.z);
     //E = make_float3(0, 0, 1);
-    camera.setEye(E);
+    //camera.setEye(E);
 }
 
 void optixrender(int fbo) {

@@ -26,10 +26,7 @@ struct Params
     unsigned int height;
     unsigned int samples_per_launch;
 
-    float3       eye;
-    float3       U;
-    float3       V;
-    float3       W;
+    float4 vp1, vp2, vp3, vp4;
 
     ParallelogramLight     light; // TODO: make light list
     OptixTraversableHandle handle;
@@ -221,7 +218,7 @@ static __forceinline__ __device__ bool traceOcclusion(
             RAY_TYPE_COUNT,          // SBT stride
             RAY_TYPE_OCCLUSION       // missSBTIndex
             );
-
+        return occluded;//???
 }
 
 
@@ -235,10 +232,11 @@ extern "C" __global__ void __raygen__rg()
 {
     const int    w   = params.width;
     const int    h   = params.height;
-    const float3 eye = params.eye;
-    const float3 U   = params.U;
-    const float3 V   = params.V;
-    const float3 W   = params.W;
+    //const float3 eye = params.eye;
+    const float4 vp1  = params.vp1;
+    const float4 vp2  = params.vp2;
+    const float4 vp3  = params.vp3;
+    const float4 vp4  = params.vp4;
     const uint3  idx = optixGetLaunchIndex();
     const int    subframe_index = params.subframe_index;
 
@@ -255,8 +253,12 @@ extern "C" __global__ void __raygen__rg()
                 ( static_cast<float>( idx.x ) + subpixel_jitter.x ) / static_cast<float>( w ),
                 ( static_cast<float>( idx.y ) + subpixel_jitter.y ) / static_cast<float>( h )
                 ) - 1.0f;
-        float3 ray_direction = normalize(d.x*U + d.y*V + W);
-        float3 ray_origin    = eye;
+        float4 dvp = d.x*vp1 + d.y*vp2 + vp3 + vp4;
+        float4 dvf = d.x*vp1 + d.y*vp2 - vp3 + vp4;
+        float3 rvp = make_float3(dvp.x, dvp.y, dvp.z) / dvp.w;
+        float3 rvf = make_float3(dvf.x, dvf.y, dvf.z) / dvf.w;
+        float3 ray_direction = normalize(rvf - rvp);
+        float3 ray_origin    = rvp;
 
         RadiancePRD prd;
         prd.emitted      = make_float3(0.f);
