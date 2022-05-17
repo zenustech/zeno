@@ -203,6 +203,9 @@ struct ZenoParticles : IObjectClone<ZenoParticles> {
   decltype(auto) operator[](const std::string &tag) const {
     return auxData.at(tag);
   }
+  bool hasAuxData(const std::string &tag) const {
+    return auxData.find(tag) != auxData.end();
+  }
 
   std::shared_ptr<particles_t> particles{};
   std::optional<particles_t> elements{};
