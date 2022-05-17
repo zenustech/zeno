@@ -10,6 +10,7 @@
 #include <zeno/core/Graph.h>
 #include <zeno/zeno.h>
 #include "zenoapplication.h"
+#include "ztcpserver.h"
 #include "graphsmanagment.h"
 #include "serialize.h"
 #include <thread>
@@ -164,6 +165,13 @@ struct ProgramRunData {
 
 void launchProgramJSON(std::string progJson)
 {
+#ifdef ZENO_MULTIPROCESS
+    ZTcpServer *pServer = zenoApp->getServer();
+    if (pServer)
+    {
+        pServer->startProc(std::move(progJson));
+    }
+#else
     std::unique_lock lck(ProgramRunData::g_mtx, std::try_to_lock);
     if (!lck.owns_lock()) {
         zeno::log_warn("A program is already running! Please kill first");
@@ -173,13 +181,22 @@ void launchProgramJSON(std::string progJson)
     ProgramRunData::g_state = ProgramRunData::kRunning;
     std::thread thr(ProgramRunData{std::move(progJson)});
     thr.detach();
+#endif
 }
 
 
 void killProgramJSON()
 {
     zeno::log_info("killing current program");
+#ifdef ZENO_MULTIPROCESS
+    ZTcpServer *pServer = zenoApp->getServer();
+    if (pServer)
+    {
+        pServer->killProc();
+    }
+#else
     ProgramRunData::g_state = ProgramRunData::kQuiting;
+#endif
 }
 
 }

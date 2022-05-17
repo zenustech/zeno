@@ -3,7 +3,7 @@
 #include "curvegrid.h"
 #include "curvenodeitem.h"
 #include "curveutil.h"
-#include "../model/curvemodel.h"
+#include <zenoui/model/curvemodel.h>
 #include "../util/log.h"
 
 
@@ -36,7 +36,7 @@ CurveMapView::~CurveMapView()
 
 void CurveMapView::init(bool timeFrame)
 {
-	QGraphicsScene* pScene = new QGraphicsScene;
+    QGraphicsScene *pScene = new QGraphicsScene(this);
 	setScene(pScene);
 
 	m_gridMargins.setLeft(64);

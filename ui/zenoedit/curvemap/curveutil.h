@@ -2,6 +2,7 @@
 #define __CURVE_UTIL_H__
 
 #include <zenoui/model/modeldata.h>
+#include <zenoui/model/curvemodel.h>
 
 namespace curve_util
 {
@@ -42,6 +43,7 @@ namespace curve_util
 	QRectF initGridSize(const QSize& sz, const QMargins& margins);
 	QModelIndex findUniqueItem(QAbstractItemModel* pModel, int role, QVariant value);
 	QPair<int, int> numframes(qreal scaleX, qreal scaleY);
+	CurveModel* deflModel(QObject* parent);
 }
 
 #endif

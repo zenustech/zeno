@@ -290,6 +290,7 @@ DisplayWidget::DisplayWidget(ZenoMainWindow* pMainWin)
 	connect(m_timeline, SIGNAL(playForward(bool)), &Zenovis::GetInstance(), SLOT(startPlay(bool)));
 	connect(m_timeline, SIGNAL(sliderValueChanged(int)), &Zenovis::GetInstance(), SLOT(setCurrentFrameId(int)));
 	connect(m_timeline, SIGNAL(run()), this, SLOT(onRun()));
+    connect(m_timeline, SIGNAL(kill()), this, SLOT(onKill()));
     
     auto graphs = zenoApp->graphsManagment();
     connect(graphs.get(), SIGNAL(modelDataChanged()), this, SLOT(onModelDataChanged()));
@@ -347,4 +348,9 @@ void DisplayWidget::onRun()
     {
 
     }
+}
+
+void DisplayWidget::onKill()
+{
+    killProgram();
 }

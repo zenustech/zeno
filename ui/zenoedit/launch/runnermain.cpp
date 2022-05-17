@@ -9,11 +9,14 @@
 #include <zeno/funcs/ObjectCodec.h>
 #include <zeno/zeno.h>
 #include <string>
+#include <QTcpServer>
+#include <QtWidgets>
+#include <QTcpSocket>
+#include "corelaunch.h"
 
 namespace {
 
-static FILE *ourfp;
-static char ourbuf[1<<20]; // 1MB
+static std::unique_ptr<QTcpSocket> clientSocket;
 
 struct Header { // sync with viewdecode.cpp
     size_t total_size;
@@ -43,18 +46,14 @@ static void send_packet(std::string_view info, const char *buf, size_t len) {
 
     zeno::log_debug("runner tx head-buffer {} data-buffer {}", headbuffer.size(), len);
     for (char c: headbuffer) {
-        fputc(c, ourfp);
+        clientSocket->write(&c, 1);
     }
-    for (size_t i = 0; i < len; i++) {
-        fputc(buf[i], ourfp);
-    }
-    fflush(ourfp);
+    clientSocket->write(buf, len);
+    clientSocket->waitForBytesWritten();
 }
 
 static void runner_start(std::string const &progJson, int sessionid) {
     zeno::log_debug("runner got program JSON: {}", progJson);
-
-    setvbuf(ourfp, ourbuf, _IOFBF, sizeof(ourbuf));
 
     auto session = &zeno::getSession();
     session->globalState->sessionid = sessionid;
@@ -122,7 +121,15 @@ int runner_main(int sessionid);
 int runner_main(int sessionid) {
     printf("(stdout ping test)\n");
 
-    ourfp = stdout;
+    clientSocket = std::make_unique<QTcpSocket>();
+    clientSocket->connectToHost(QHostAddress::LocalHost, TCP_PORT);
+    if (!clientSocket->waitForConnected(10000)) {
+        zeno::log_error("tcp client connection fail.");
+        return 0;
+    } else {
+        zeno::log_info("connect succeed!");
+    }
+
     zeno::set_log_stream(std::cout);
     zeno::log_debug("runner started on sessionid={}", sessionid);
 

@@ -277,7 +277,7 @@ SubGraphModel* SubGraphModel::clone(GraphsModel* parent)
     return pClone;
 }
 
-void SubGraphModel::updateParam(const QString& nodeid, const QString& paramName, const QVariant& var, bool enableTransaction)
+void SubGraphModel::updateParam(const QString& nodeid, const QString& paramName, const QVariant& var)
 {
     auto it = m_nodes.find(nodeid);
     if (it == m_nodes.end())
@@ -297,6 +297,22 @@ void SubGraphModel::updateParam(const QString& nodeid, const QString& paramName,
     setData(idx, QVariant::fromValue(params), ROLE_PARAMETERS);
     //emit dataChanged signal, notify ui view to sync.
     setData(idx, QVariant::fromValue(params[paramName]), ROLE_MODIFY_PARAM);  
+}
+
+void SubGraphModel::updateParamNotDesc(const QString& nodeid, const QString& paramName, const QVariant& var)
+{
+    auto it = m_nodes.find(nodeid);
+    if (it == m_nodes.end())
+        return;
+
+    PARAMS_INFO params = m_nodes[nodeid][ROLE_PARAMETERS_NOT_DESC].value<PARAMS_INFO>();
+    const QVariant oldValue = params[paramName].value;
+    QVariant newValue = var;
+    params[paramName].value = newValue;
+
+    const QModelIndex& idx = index(nodeid);
+    const QModelIndex& subgIdx = m_pGraphsModel->indexBySubModel(this);
+    setData(idx, QVariant::fromValue(params), ROLE_PARAMETERS_NOT_DESC);
 }
 
 void SubGraphModel::updateSocket(const QString& nodeid, const SOCKET_UPDATE_INFO& info)

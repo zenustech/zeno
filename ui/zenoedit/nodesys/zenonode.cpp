@@ -9,6 +9,8 @@
 #include <zeno/utils/logger.h>
 #include <zenoui/style/zenostyle.h>
 #include <zenoui/comctrl/zveceditor.h>
+#include <zenoui/model/variantptr.h>
+#include "curvemap/zcurvemapeditor.h"
 #include "zenoapplication.h"
 #include "zenomainwindow.h"
 #include "graphsmanagment.h"
@@ -666,6 +668,15 @@ void ZenoNode::onInOutSocketChanged(bool bInput)
                     }
                     break;
                 }
+                case CONTROL_ENUM:
+                {
+                    ZenoParamComboBox* pComboBox = qobject_cast<ZenoParamComboBox*>(m_inSockets[inSocket.info.name].socket_control);
+                    if (pComboBox)
+                    {
+                        pComboBox->setText(inSocket.info.defaultValue.toString());
+                    }
+                    break;
+                }
             }
         }
     }
@@ -798,10 +809,17 @@ void ZenoNode::updateSocketDeflValue(const QString& nodeid, const QString& inSoc
     info.oldValue = inputs[inSock].info.defaultValue;
     info.newValue = newValue;
 
-    if (info.oldValue != info.newValue)
+    IGraphsModel *pGraphsModel = zenoApp->graphsManagment()->currentModel();
+    ZASSERT_EXIT(pGraphsModel);
+
+    if (newValue.type() == QMetaType::VoidStar)
     {
-        IGraphsModel *pGraphsModel = zenoApp->graphsManagment()->currentModel();
-        ZASSERT_EXIT(pGraphsModel);
+        //curvemodel: 
+        //todo: only store as a void ptr£¬have to develope a undo/redo mechasim for "submodel".
+        pGraphsModel->updateSocketDefl(nodeid, info, m_subGpIndex, false);
+    }
+    else if (info.oldValue != info.newValue)
+    {
         pGraphsModel->updateSocketDefl(nodeid, info, m_subGpIndex, true);
     }
 }
@@ -831,6 +849,8 @@ QGraphicsLayout* ZenoNode::initSockets()
             const INPUT_SOCKET& inSocket = inputs[inSock];
             //dont need lineedit except "int£¬float£¬vec3f£¬string".
             const QString& sockType = inSocket.info.type;
+            PARAM_CONTROL ctrl = inSocket.info.control;
+
             if (sockType == "int" || sockType == "float" || sockType == "string" || sockType == "readpath" || sockType == "writepath")
             {
 				ZenoParamLineEdit* pSocketEditor = new ZenoParamLineEdit(UiHelper::variantToString(inSocket.info.defaultValue), inSocket.info.control, m_renderParams.lineEditParam);
@@ -884,6 +904,54 @@ QGraphicsLayout* ZenoNode::initSockets()
                     updateSocketDeflValue(nodeid, inSock, inSocket, newValue);
 				});
                 socket_ctrl.socket_control = pVecEditor;
+            }
+            else if (ctrl == CONTROL_ENUM)
+            {
+                QStringList items = sockType.mid(QString("enum ").length()).split(QRegExp("\\s+"));
+                ZenoParamComboBox *pComboBox = new ZenoParamComboBox(items, m_renderParams.comboboxParam);
+                pMiniLayout->addItem(pComboBox);
+                QString val = inSocket.info.defaultValue.toString();
+                if (items.indexOf(val) != -1) {
+                    pComboBox->setText(val);
+                }
+
+                connect(pComboBox, &ZenoParamComboBox::textActivated, this,
+                        [=](const QString &textValue)
+                {
+                    QString oldValue = pComboBox->text();
+                    updateSocketDeflValue(nodeid, inSock, inSocket, textValue);
+                });
+                socket_ctrl.socket_control = pComboBox;
+            }
+            else if (ctrl == CONTROL_CURVE)
+            {
+                ZenoParamPushButton* pEditBtn = new ZenoParamPushButton("Edit", -1, QSizePolicy::Expanding);
+                pMiniLayout->addItem(pEditBtn);
+                connect(pEditBtn, &ZenoParamPushButton::clicked, this, [=]()
+                {
+                    INPUT_SOCKETS _inputs = m_index.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
+                    const QVariant& oldValue = _inputs[inSock].info.defaultValue;
+                    ZCurveMapEditor *pEditor = new ZCurveMapEditor(true);
+                    pEditor->setAttribute(Qt::WA_DeleteOnClose);
+                    CurveModel* pModel = QVariantPtr<CurveModel>::asPtr(oldValue);
+                    if (!pModel)
+                    {
+                        IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
+                        ZASSERT_EXIT(pGraphsModel);
+                        pModel = curve_util::deflModel(pGraphsModel);
+                    }
+                    ZASSERT_EXIT(pModel);
+                    pEditor->addCurve(pModel);
+                    pEditor->show();
+
+                    connect(pEditor, &ZCurveMapEditor::finished, this, [=](int result) {
+                        ZASSERT_EXIT(pEditor->curveCount() == 1);
+                        CurveModel* pCurveModel = pEditor->getCurve(0);
+                        const QVariant &newValue = QVariantPtr<CurveModel>::asVariant(pCurveModel);
+                        updateSocketDeflValue(nodeid, inSock, inSocket, newValue);
+                    });
+                });
+                socket_ctrl.socket_control = pEditBtn;
             }
 
             socket_ctrl.socket = socket;
