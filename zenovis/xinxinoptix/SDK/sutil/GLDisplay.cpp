@@ -81,41 +81,41 @@ GLuint createGLProgram(
 {
     GLuint vert_shader = createGLShader( vert_source, GL_VERTEX_SHADER );
     if( vert_shader == 0 )
-        return 0;
+        throw Exception("Compile vert failure");
 
     GLuint frag_shader = createGLShader( frag_source, GL_FRAGMENT_SHADER );
     if( frag_shader == 0 )
     {
-        glDeleteShader( vert_shader );
-        return 0;
+        GL_CHECK(glDeleteShader( vert_shader ));
+        throw Exception("Compile frag failure");
     }
 
     GLuint program = glCreateProgram();
-    glAttachShader( program, vert_shader );
-    glAttachShader( program, frag_shader );
-    glLinkProgram( program );
+    GL_CHECK(glAttachShader( program, vert_shader ));
+    GL_CHECK(glAttachShader( program, frag_shader ));
+    GL_CHECK(glLinkProgram( program ));
 
     GLint is_linked = 0;
-    glGetProgramiv( program, GL_LINK_STATUS, &is_linked );
+    GL_CHECK(glGetProgramiv( program, GL_LINK_STATUS, &is_linked ));
     if (is_linked == GL_FALSE)
     {
         GLint max_length = 0;
-        glGetProgramiv( program, GL_INFO_LOG_LENGTH, &max_length );
+        GL_CHECK(glGetProgramiv( program, GL_INFO_LOG_LENGTH, &max_length ));
 
         std::string info_log( max_length, '\0' );
         GLchar* info_log_data= reinterpret_cast<GLchar*>( &info_log[0]);
-        glGetProgramInfoLog( program, max_length, nullptr, info_log_data );
+        GL_CHECK(glGetProgramInfoLog( program, max_length, nullptr, info_log_data ));
         std::cerr << "Linking of program failed: " << info_log << std::endl;
 
-        glDeleteProgram( program );
-        glDeleteShader( vert_shader );
-        glDeleteShader( frag_shader );
+        GL_CHECK(glDeleteProgram( program ));
+        GL_CHECK(glDeleteShader( vert_shader ));
+        GL_CHECK(glDeleteShader( frag_shader ));
 
-        return 0;
+        throw Exception("Link failure");
     }
 
-    glDetachShader( program, vert_shader );
-    glDetachShader( program, frag_shader );
+    GL_CHECK(glDetachShader( program, vert_shader ));
+    GL_CHECK(glDetachShader( program, frag_shader ));
 
     GL_CHECK_ERRORS();
 
@@ -178,6 +178,7 @@ GLDisplay::GLDisplay( BufferImageFormat image_format )
 
 	m_program = createGLProgram( s_vert_source, s_frag_source );
 	m_render_tex_uniform_loc = getGLUniformLocation( m_program, "render_tex");
+    if (!m_program) throw Exception("program is null");
 
     GL_CHECK( glGenTextures( 1, &m_render_tex ) );
     GL_CHECK( glBindTexture( GL_TEXTURE_2D, m_render_tex ) );
@@ -226,6 +227,7 @@ void GLDisplay::display(
 
     GL_CHECK( glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT ) );
 
+    if (!m_program) throw Exception("program is null");
     GL_CHECK( glUseProgram( m_program ) );
 
     // Bind our texture in Texture Unit 0
@@ -259,6 +261,7 @@ void GLDisplay::display(
         throw Exception( "Unknown buffer format" );
 
     GL_CHECK( glBindBuffer( GL_PIXEL_UNPACK_BUFFER, 0 ) );
+    if (!m_program) throw Exception("program is null");
     GL_CHECK( glUniform1i( m_render_tex_uniform_loc , 0 ) );
 
     // 1st attribute buffer : vertices

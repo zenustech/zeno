@@ -781,11 +781,11 @@ void cleanupState( PathTracerState& state )
     OPTIX_CHECK( optixPipelineDestroy( state.pipeline ) );
     OPTIX_CHECK( optixProgramGroupDestroy( state.raygen_prog_group ) );
     OPTIX_CHECK( optixProgramGroupDestroy( state.radiance_miss_group ) );
-    OPTIX_CHECK( optixProgramGroupDestroy( state.radiance_hit_group ) );
-    OPTIX_CHECK( optixProgramGroupDestroy( state.occlusion_hit_group ) );
-    OPTIX_CHECK( optixProgramGroupDestroy( state.radiance_hit_group2 ) );
-    OPTIX_CHECK( optixProgramGroupDestroy( state.occlusion_hit_group2 ) );
-    OPTIX_CHECK( optixProgramGroupDestroy( state.occlusion_miss_group ) );
+    //OPTIX_CHECK( optixProgramGroupDestroy( state.radiance_hit_group ) );
+    //OPTIX_CHECK( optixProgramGroupDestroy( state.occlusion_hit_group ) );
+    //OPTIX_CHECK( optixProgramGroupDestroy( state.radiance_hit_group2 ) );
+    //OPTIX_CHECK( optixProgramGroupDestroy( state.occlusion_hit_group2 ) );
+    //OPTIX_CHECK( optixProgramGroupDestroy( state.occlusion_miss_group ) );
     OPTIX_CHECK( optixModuleDestroy( state.ptx_module ) );
     OPTIX_CHECK( optixDeviceContextDestroy( state.context ) );
 
@@ -877,6 +877,9 @@ void optixinit( int argc, char* argv[] )
                     );
             output_buffer_o->setStream( state.stream );
         }
+        if (!gl_display_o) {
+            gl_display_o.emplace();
+        }
 }
 
 
@@ -921,10 +924,10 @@ void optixupdateend() {
     OPTIX_CHECK( optixProgramGroupDestroy( state.raygen_prog_group ) );
     OPTIX_CHECK( optixProgramGroupDestroy( state.radiance_miss_group ) );
     OPTIX_CHECK( optixProgramGroupDestroy( state.occlusion_miss_group ) );
-    OPTIX_CHECK( optixProgramGroupDestroy( state.radiance_hit_group ) );
-    OPTIX_CHECK( optixProgramGroupDestroy( state.occlusion_hit_group ) );
-    OPTIX_CHECK( optixProgramGroupDestroy( state.radiance_hit_group2 ) );
-    OPTIX_CHECK( optixProgramGroupDestroy( state.occlusion_hit_group2 ) );
+    //OPTIX_CHECK( optixProgramGroupDestroy( state.radiance_hit_group ) );
+    //OPTIX_CHECK( optixProgramGroupDestroy( state.occlusion_hit_group ) );
+    //OPTIX_CHECK( optixProgramGroupDestroy( state.radiance_hit_group2 ) );
+    //OPTIX_CHECK( optixProgramGroupDestroy( state.occlusion_hit_group2 ) );
     //OPTIX_CHECK( optixModuleDestroy( state.ptx_module ) );
     //OPTIX_CHECK( optixDeviceContextDestroy( state.context ) );
         } hadOnce = true;
@@ -1011,6 +1014,8 @@ void set_view_matrix(float const *view) {
 }
 
 void optixrender(int fbo) {
+    if (!output_buffer_o) throw sutil::Exception("no output_buffer_o");
+    if (!gl_display_o) throw sutil::Exception("no gl_display_o");
     updateState( *output_buffer_o, state.params );
                     launchSubframe( *output_buffer_o, state );
                     displaySubframe( *output_buffer_o, *gl_display_o, state, fbo );
