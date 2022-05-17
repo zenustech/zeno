@@ -1,3 +1,4 @@
+#ifdef ZENO_ENABLE_OPTIX
 #include "../../xinxinoptix/xinxinoptixapi.h"
 #include <zeno/types/PrimitiveObject.h>
 #include <zenovis/DrawOptions.h>
@@ -134,3 +135,4 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
 static auto definer = RenderManager::registerRenderEngine<RenderEngineOptx>("optx");
 
 } // namespace zenovis::optx
+#endif
