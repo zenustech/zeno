@@ -4,6 +4,7 @@
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
 #include <zeno/utils/fileio.h>
+#include <zeno/utils/log.h>
 // are met:
 //  * Redistributions of source code must retain the above copyright
 //    notice, this list of conditions and the following disclaimer.
@@ -156,7 +157,7 @@ struct PathTracerState
 //const int32_t TRIANGLE_COUNT = 32;
 //const int32_t MAT_COUNT      = 5;
 
-static std::vector<Vertex> g_vertices =  // TRIANGLE_COUNT
+static std::vector<Vertex> g_vertices =  // TRIANGLE_COUNT*3
 {  {
     // Floor  -- white lambert
     {    0.0f,    0.0f,    0.0f, 0.0f },
@@ -589,7 +590,7 @@ void buildMeshAccel( PathTracerState& state )
                 ) );
 
     // // Build triangle GAS // // One per SBT record for this build input
-    std::vector<uint32_t> triangle_input_flags(
+    std::vector<uint32_t> triangle_input_flags(//MAT_COUNT
         g_emission_colors.size(),
         OPTIX_GEOMETRY_FLAG_REQUIRE_SINGLE_ANYHIT_CALL);
 
@@ -598,9 +599,9 @@ void buildMeshAccel( PathTracerState& state )
     triangle_input.triangleArray.vertexFormat                = OPTIX_VERTEX_FORMAT_FLOAT3;
     triangle_input.triangleArray.vertexStrideInBytes         = sizeof( Vertex );
     triangle_input.triangleArray.numVertices                 = static_cast<uint32_t>( g_vertices.size() );
-    triangle_input.triangleArray.vertexBuffers               = &state.d_vertices;
+    triangle_input.triangleArray.vertexBuffers               = g_vertices.empty() ? nullptr : &state.d_vertices;
     triangle_input.triangleArray.flags                       = triangle_input_flags.data();
-    triangle_input.triangleArray.numSbtRecords               = g_emission_colors.size();
+    triangle_input.triangleArray.numSbtRecords               = g_vertices.empty() ? 1 : g_emission_colors.size();
     triangle_input.triangleArray.sbtIndexOffsetBuffer        = d_mat_indices;
     triangle_input.triangleArray.sbtIndexOffsetSizeInBytes   = sizeof( uint32_t );
     triangle_input.triangleArray.sbtIndexOffsetStrideInBytes = sizeof( uint32_t );
@@ -963,36 +964,38 @@ struct DrawDat {
 static std::map<std::string, DrawDat> drawdats;
 
 static void updatedrawobjects() {
-    return;
     g_vertices.clear();
+    g_mat_indices.clear();
     size_t n = 0;
     for (auto const &[key, dat]: drawdats) {
         n += dat.tris.size();
     }
     g_vertices.resize(n * 3);
+    g_mat_indices.resize(n);
     n = 0;
     for (auto const &[key, dat]: drawdats) {
         for (size_t i = 0; i < dat.tris.size() / 3; i++) {
-            g_vertices[n + i * 3 + 0] = {
+            g_mat_indices[n + i] = 0;
+            g_vertices[(n + i) * 3 + 0] = {
                 dat.verts[dat.tris[i * 3 + 0] * 3 + 0],
                 dat.verts[dat.tris[i * 3 + 0] * 3 + 1],
                 dat.verts[dat.tris[i * 3 + 0] * 3 + 2],
                 0,
             };
-            g_vertices[n + i * 3 + 1] = {
+            g_vertices[(n + i) * 3 + 1] = {
                 dat.verts[dat.tris[i * 3 + 1] * 3 + 0],
                 dat.verts[dat.tris[i * 3 + 1] * 3 + 1],
                 dat.verts[dat.tris[i * 3 + 1] * 3 + 2],
                 0,
             };
-            g_vertices[n + i * 3 + 2] = {
+            g_vertices[(n + i) * 3 + 2] = {
                 dat.verts[dat.tris[i * 3 + 2] * 3 + 0],
                 dat.verts[dat.tris[i * 3 + 2] * 3 + 1],
                 dat.verts[dat.tris[i * 3 + 2] * 3 + 2],
                 0,
             };
         }
-        n += dat.tris.size();
+        n += dat.tris.size() / 3;
     }
 }
 
@@ -1014,12 +1017,19 @@ void set_window_size(int nx, int ny) {
     state.params.height = ny;
 }
 
-void set_view_matrix(float const *view) {
-    auto U = make_float3(view[0 *4+ 0], view[1 *4+ 0], view[2 *4+ 0]);
-    auto V = make_float3(view[0 *4+ 1], view[1 *4+ 1], view[2 *4+ 1]);
-    auto W = make_float3(view[0 *4+ 2], view[1 *4+ 2], view[2 *4+ 2]);
-    auto E = make_float3(view[0 *4+ 3], view[1 *4+ 3], view[2 *4+ 3]);
+void set_view_matrix(float const *view, float aspect, float fov) {
+    auto U = make_float3(view[0 +4* 0], view[1 +4* 0], view[2 +4* 0]);
+    auto V = make_float3(view[0 +4* 1], view[1 +4* 1], view[2 +4* 1]);
+    auto W = make_float3(view[0 +4* 2], view[1 +4* 2], view[2 +4* 2]);
+    auto E = make_float3(view[0 +4* 3], view[1 +4* 3], view[2 +4* 3]);
     camera.setZxxViewMatrix(U, V, W);
+    camera.setAspectRatio(aspect);
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
+    camera.setFovY(fov * aspect * (float)M_PI / 180.0f);
+    //zeno::log_debug("{} {} {}", E.x, E.y, E.z);
+    //E = make_float3(0, 0, 1);
     camera.setEye(E);
 }
 

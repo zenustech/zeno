@@ -102,7 +102,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         //xinxinoptix::setDOF(cam.m_dof);
         //xinxinoptix::setAperature(cam.m_aperature);
         xinxinoptix::set_window_size(cam.m_nx, cam.m_ny);
-        xinxinoptix::set_view_matrix(glm::value_ptr(cam.m_view));
+        xinxinoptix::set_view_matrix(glm::value_ptr(cam.m_view), cam.getAspect(), cam.m_fov);
         //xinxinoptix::set_projection(glm::value_ptr(cam.m_proj));
 
         xinxinoptix::optixupdatemesh();
