@@ -451,10 +451,6 @@ void initLaunchParams( PathTracerState& state )
     state.params.light.v2       = make_float3( -130.0f, 0.0f, 0.0f );
     state.params.light.normal   = normalize( cross( state.params.light.v1, state.params.light.v2 ) );
     state.params.handle         = state.gas_handle;
-
-    CUDA_CHECK( cudaStreamCreate( &state.stream ) );
-    CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.d_params ), sizeof( Params ) ) );
-
 }
 
 
@@ -573,6 +569,7 @@ void buildMeshAccel( PathTracerState& state )
     // copy mesh data to device
     //
     const size_t vertices_size_in_bytes = g_vertices.size() * sizeof( Vertex );
+    //CUDA_CHECK( cudaFree( reinterpret_cast<void*>( state.d_vertices ) ) );
     CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.d_vertices ), vertices_size_in_bytes ) );
     CUDA_CHECK( cudaMemcpy(
                 reinterpret_cast<void*>( state.d_vertices ),
@@ -681,10 +678,8 @@ void createSBT( PathTracerState& state )
         CUDA_CHECK( cudaFree( reinterpret_cast<void*>( state.sbt.raygenRecord ) ) );
         CUDA_CHECK( cudaFree( reinterpret_cast<void*>( state.sbt.missRecordBase ) ) );
         CUDA_CHECK( cudaFree( reinterpret_cast<void*>( state.sbt.hitgroupRecordBase ) ) );
-        CUDA_CHECK( cudaFree( reinterpret_cast<void*>( state.d_vertices ) ) );
         CUDA_CHECK( cudaFree( reinterpret_cast<void*>( state.d_gas_output_buffer ) ) );
         CUDA_CHECK( cudaFree( reinterpret_cast<void*>( state.params.accum_buffer ) ) );
-        CUDA_CHECK( cudaFree( reinterpret_cast<void*>( state.d_params ) ) );
     }
     hadOnceSbt = true;
 
@@ -810,7 +805,8 @@ void cleanupState( PathTracerState& state )
 // Main
 //
 //------------------------------------------------------------------------------
-
+std::optional<sutil::CUDAOutputBuffer<uchar4>> output_buffer_o;
+std::optional<sutil::GLDisplay> gl_display_o;
 PathTracerState state;
 sutil::CUDAOutputBufferType output_buffer_type = sutil::CUDAOutputBufferType::GL_INTEROP;
 void optixinit( int argc, char* argv[] )
@@ -869,10 +865,20 @@ void optixinit( int argc, char* argv[] )
         //createContext( state );
         OptixUtil::createContext();
         state.context = OptixUtil::context;
+
+    CUDA_CHECK( cudaStreamCreate( &state.stream ) );
+    CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.d_params ), sizeof( Params ) ) );
+
+        if (!output_buffer_o) {
+            output_buffer_o.emplace(
+                    output_buffer_type,
+                    state.params.width,
+                    state.params.height
+                    );
+            output_buffer_o->setStream( state.stream );
+        }
 }
 
-std::optional<sutil::CUDAOutputBuffer<uchar4>> output_buffer_o;
-std::optional<sutil::GLDisplay> gl_display_o;
 
 static std::string get_content(std::string const &path) {
     std::ifstream ifs("/home/bate/zeno/zenovis/xinxinoptix/" + path);
@@ -934,15 +940,6 @@ void optixupdateend() {
         //createPipeline( state );
         createSBT( state );
         initLaunchParams( state );
-
-        if (!output_buffer_o) {
-            output_buffer_o.emplace(
-                    output_buffer_type,
-                    state.params.width,
-                    state.params.height
-                    );
-            output_buffer_o->setStream( state.stream );
-        }
 }
 
 struct DrawDat {
