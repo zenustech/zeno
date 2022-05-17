@@ -36,6 +36,8 @@ public:
     void resetRange(const CURVE_RANGE& rg);
     CURVE_RANGE range() const;
     QString id() const;
+    std::string serializeCurve() const;
+    void deserializeCurve(std::string const &s);
     QPointF clipNodePos(const QModelIndex& idx, const QPointF& currPos);
 
     QPointF adjustLastRightHdl(const QModelIndex& currIdx);

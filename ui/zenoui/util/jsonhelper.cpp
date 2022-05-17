@@ -1,4 +1,6 @@
 #include "jsonhelper.h"
+#include <zenoui/model/variantptr.h>
+#include <zenoui/model/curvemodel.h>
 #include <zeno/utils/logger.h>
 
 namespace JsonHelper
@@ -7,8 +9,9 @@ namespace JsonHelper
 	{
 		writer.StartArray();
 		for (auto item : list)
-		{
-			writer.String(item.toLatin1()); // TODO: luzh, can we support UFT-8 (chinese char) here?
+		{       // TODO: luzh, can we support UFT-8 (chinese char) here?
+            auto s = item.toStdString();
+			writer.String(s.data(), s.size());
 		}
 		writer.EndArray();
 	}
@@ -29,12 +32,19 @@ namespace JsonHelper
 			}
 			else if (varType == QVariant::String)
 			{
-				writer.String(value.toString().toLatin1());
+                auto s = value.toString().toStdString();
+				writer.String(s.data(), s.size());
 			}
 			else if (varType == QVariant::Bool)
 			{
 				writer.Bool(value.toBool());
 			}
+			else if (varType == QMetaType::VoidStar)
+			{
+                auto pModel = QVariantPtr<CurveModel>::asPtr(value);
+                auto s = pModel->serializeCurve();
+				writer.String(s.data(), s.size());
+            }
 			//todo: qlineargradient.
 			else if (varType != QVariant::Invalid)
             {
