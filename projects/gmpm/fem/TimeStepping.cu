@@ -170,6 +170,7 @@ struct ImplicitTimeStepping : INode {
       return res.getVal();
     }
     template <typename Pol> void project(Pol &pol, const zs::SmallString tag) {
+#if 0
       using namespace zs;
       constexpr execspace_e space = execspace_e::cuda;
       // projection
@@ -179,6 +180,7 @@ struct ImplicitTimeStepping : INode {
             if (verts("x", 1, vi) > 0.5)
               vtemp.tuple<3>(tag, vi) = vec3::zeros();
           });
+#endif
     }
     template <typename Pol>
     void precondition(Pol &pol, const zs::SmallString srcTag,
@@ -201,6 +203,9 @@ struct ImplicitTimeStepping : INode {
       constexpr auto execTag = wrapv<space>{};
       const auto numVerts = verts.size();
       const auto numEles = eles.size();
+      // hessian rotation: trans^T hess * trans
+      // left trans^T: multiplied on rows
+      // right trans: multiplied on cols
       // dx -> b
       pol(range(numVerts),
           [execTag, vtemp = proxy<space>({}, vtemp), bTag] ZS_LAMBDA(
@@ -210,8 +215,11 @@ struct ImplicitTimeStepping : INode {
                             vtemp = proxy<space>({}, vtemp), dxTag, bTag,
                             dt = this->dt] ZS_LAMBDA(int vi) mutable {
         auto m = verts("m", vi);
+        auto dx = vtemp.pack<3>(dxTag, vi);
+        auto BCbasis = verts.pack<3, 3>("BCbasis", vi);
+        dx = BCbasis.transpose() * m * BCbasis * dx;
         for (int d = 0; d != 3; ++d)
-          atomic_add(execTag, &vtemp(bTag, d, vi), vtemp(dxTag, d, vi) * m);
+          atomic_add(execTag, &vtemp(bTag, d, vi), dx(d));
       });
       // elastic energy
       pol(range(numEles), [execTag, etemp = proxy<space>({}, etemp),
@@ -287,8 +295,45 @@ struct ImplicitTimeStepping : INode {
           atomic_add(exec_cuda, &vtemp("grad", d, vi), vfdt2(i * 3 + d));
       }
 
+      // hessian rotation: trans^T hess * trans
+      // left trans^T: multiplied on rows
+      // right trans: multiplied on cols
+      mat3 BCbasis[4];
+      int BCorder[4];
+      for (int i = 0; i != 4; ++i) {
+        BCbasis[i] = verts.pack<3, 3>("BCbasis", inds[i]);
+        BCorder[i] = reinterpret_bits<int>(verts("BCorder", inds[i]));
+      }
       auto Hq = model.first_piola_derivative(F, true_c);
       auto H = dFdXT * Hq * dFdX * vole * dt * dt;
+      // rotate and project
+      for (int vi = 0; vi != 4; ++vi) {
+        int offsetI = vi * 3;
+        for (int vj = 0; vj != 4; ++vj) {
+          int offsetJ = vj * 3;
+          mat3 tmp{};
+          for (int i = 0; i != 3; ++i)
+            for (int j = 0; j != 3; ++j)
+              tmp(i, j) = H(offsetI + i, offsetJ + j);
+          // rotate
+          tmp = BCbasis[vi].transpose() * tmp * BCbasis[vj];
+          // project
+          if (BCorder[vi] > 0 || BCorder[vj] > 0) {
+            if (vi == vj) {
+              for (int i = 0; i != BCorder[vi]; ++i)
+                for (int j = 0; j != BCorder[vj]; ++j)
+                  tmp(i, j) = (i == j ? 1 : 0);
+            } else {
+              for (int i = 0; i != BCorder[vi]; ++i)
+                for (int j = 0; j != BCorder[vj]; ++j)
+                  tmp(i, j) = 0;
+            }
+          }
+          for (int i = 0; i != 3; ++i)
+            for (int j = 0; j != 3; ++j)
+              H(offsetI + i, offsetJ + j) = tmp(i, j);
+        }
+      }
       etemp.tuple<12 * 12>("He", ei) = H;
     });
   }
@@ -359,8 +404,24 @@ struct ImplicitTimeStepping : INode {
              dt] __device__(int i) mutable {
               auto x = verts.pack<3>("x", i);
               auto v = verts.pack<3>("v", i);
-              vtemp.tuple<3>("xn", i) = x;
               vtemp.tuple<3>("xtilde", i) = x + v * dt;
+            });
+    // fix initial x for all bcs if not feasible
+    cudaPol(zs::range(verts.size()),
+            [vtemp = proxy<space>({}, vtemp),
+             verts = proxy<space>({}, verts)] __device__(int vi) mutable {
+              auto x = verts.pack<3>("x", vi);
+              if (auto BCorder = reinterpret_bits<int>(verts("BCorder", vi));
+                  BCorder > 0) {
+                auto BCbasis = verts.pack<3, 3>("BCbasis", vi);
+                auto BCtarget = verts.pack<3>("BCtarget", vi);
+                x = BCbasis.transpose() * x;
+                for (int d = 0; d != BCorder; ++d)
+                  x[d] = BCtarget[d];
+                x = BCbasis * x;
+                verts.tuple<3>("x", vi) = x;
+              }
+              vtemp.tuple<3>("xn", vi) = x;
             });
 
     /// optimizer
@@ -379,6 +440,19 @@ struct ImplicitTimeStepping : INode {
         computeElasticGradientAndHessian(cudaPol, elasticModel, verts, eles,
                                          vtemp, etemp, dt);
       })(models.getElasticModel());
+      // rotate gradient and project
+      cudaPol(zs::range(vtemp.size()),
+              [vtemp = proxy<space>({}, vtemp), verts = proxy<space>({}, verts),
+               dt] __device__(int i) mutable {
+                auto grad = verts.pack<3, 3>("BCbasis", i).transpose() *
+                            vtemp.pack<3>("grad", i);
+                if (auto BCorder = reinterpret_bits<int>(verts("BCorder", i));
+                    BCorder > 0)
+                  for (int d = 0; d != BCorder; ++d)
+                    grad(d) = 0;
+                vtemp.tuple<3>("grad", i) = grad;
+              });
+
       // prepare preconditioner
       cudaPol(zs::range(vtemp.size()),
               [vtemp = proxy<space>({}, vtemp),
@@ -469,6 +543,14 @@ struct ImplicitTimeStepping : INode {
           residualPreconditionedNorm = std::sqrt(zTrk);
         } // end cg step
       }
+      puts("3");
+      // recover rotated solution
+      cudaPol(Collapse{vtemp.size()},
+              [vtemp = proxy<space>({}, vtemp),
+               verts = proxy<space>({}, verts)] __device__(int vi) mutable {
+                vtemp.tuple<3>("dir", vi) =
+                    verts.pack<3, 3>("BCbasis", vi) * vtemp.pack<3>("dir", vi);
+              });
       // check "dir" inf norm
       T res = infNorm(cudaPol, vtemp, "dir");
       if (res < 1e-6) {
