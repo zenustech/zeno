@@ -243,8 +243,8 @@
      },
      "params": {},
      "uipos": [
-      1685.3269867549666,
-      269.8416804635762
+      1896.387365480132,
+      261.95157284768214
      ],
      "options": [
       "VIEW"
@@ -280,7 +280,7 @@
      "name": "ImplicitTimeStepping",
      "inputs": {
       "ZSParticles": [
-       "1862be08-ToZSTetrahedra",
+       "95851270-ApplyBoundaryOnVertices",
        "ZSParticles",
        null
       ],
@@ -297,17 +297,262 @@
      },
      "params": {},
      "uipos": [
-      1379.190811258278,
-      386.6152731788078
+      1590.2511899834437,
+      378.7251655629138
      ],
      "options": []
+    },
+    "95851270-ApplyBoundaryOnVertices": {
+     "name": "ApplyBoundaryOnVertices",
+     "inputs": {
+      "ZSParticles": [
+       "1862be08-ToZSTetrahedra",
+       "ZSParticles",
+       null
+      ],
+      "ZSBoundary": [
+       "43cb44cd-ToZSBoundary",
+       "ZSBoundary",
+       null
+      ],
+      "dt": [
+       null,
+       null,
+       0.01
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1327.5106063741714,
+      378.72516556291373
+     ],
+     "options": []
+    },
+    "0eaef46f-ReadObjPrim": {
+     "name": "ReadObjPrim",
+     "inputs": {
+      "path": [
+       null,
+       null,
+       "assets/torus-tri-10k.obj"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "triangulate": true
+     },
+     "uipos": [
+      -13.314556601821323,
+      673.7954651283108
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "c94a8c4a-TransformPrimitive": {
+     "name": "TransformPrimitive",
+     "inputs": {
+      "prim": [
+       "0eaef46f-ReadObjPrim",
+       "prim",
+       null
+      ],
+      "translation": [
+       "b6507039-NumericVec3",
+       "vec3",
+       null
+      ],
+      "offset": [
+       null,
+       null,
+       null
+      ],
+      "eulerXYZ": [
+       null,
+       null,
+       null
+      ],
+      "quatRotation": [
+       null,
+       null,
+       null
+      ],
+      "scaling": [
+       null,
+       null,
+       null
+      ],
+      "Matrix": [
+       null,
+       null,
+       null
+      ],
+      "preTransform": [
+       null,
+       null,
+       null
+      ],
+      "local": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      315.06225424254967,
+      642.3612763865888
+     ],
+     "options": [
+      "ONCE",
+      "VIEW"
+     ]
+    },
+    "b6507039-NumericVec3": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": 0.0,
+      "y": -0.4,
+      "z": 0.0
+     },
+     "uipos": [
+      57.93311516970175,
+      902.9241902938734
+     ],
+     "options": []
+    },
+    "bfa018eb-PrimitiveToSDF": {
+     "name": "PrimitiveToSDF",
+     "inputs": {
+      "PrimitiveMesh": [
+       "c94a8c4a-TransformPrimitive",
+       "outPrim",
+       null
+      ],
+      "Dx": [
+       null,
+       null,
+       0.08
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "type": "vertex"
+     },
+     "uipos": [
+      584.3610953021523,
+      782.9945545322842
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "04747fa4-ToZSLevelSet": {
+     "name": "ToZSLevelSet",
+     "inputs": {
+      "VDBGrid": [
+       "bfa018eb-PrimitiveToSDF",
+       "sdf",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "path": ""
+     },
+     "uipos": [
+      833.0572873551316,
+      819.6046538700325
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "43cb44cd-ToZSBoundary": {
+     "name": "ToZSBoundary",
+     "inputs": {
+      "ZSLevelSet": [
+       "04747fa4-ToZSLevelSet",
+       "ZSLevelSet",
+       null
+      ],
+      "translation": [
+       null,
+       null,
+       null
+      ],
+      "translation_rate": [
+       null,
+       null,
+       null
+      ],
+      "scale": [
+       null,
+       null,
+       null
+      ],
+      "scale_rate": [
+       null,
+       null,
+       null
+      ],
+      "ypr_angles": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "type": "slip"
+     },
+     "uipos": [
+      1095.9556731167208,
+      803.1932300289727
+     ],
+     "options": [
+      "ONCE"
+     ]
     }
    },
    "view_rect": {
-    "x": 62.174048013241645,
-    "y": -327.12386175496664,
-    "width": 1874.9999999999989,
-    "height": 953.1249999999997
+    "x": -473.9339549001627,
+    "y": -127.79549871506049,
+    "width": 2343.7499999999986,
+    "height": 1191.4062499999993
    }
   }
  },
@@ -587,6 +832,46 @@
    "params": [],
    "categories": [
     "list"
+   ]
+  },
+  "ApplyBoundaryOnVertices": {
+   "inputs": [
+    [
+     "",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "",
+     "ZSBoundary",
+     ""
+    ],
+    [
+     "float",
+     "dt",
+     "0.01"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
    ]
   },
   "ApplyBoundaryOnZSGrid": {
@@ -18137,7 +18422,7 @@
  "viewport": {
   "camera_record": {},
   "lights": {
-   "0": "14 DirX 1 0 1 align -5 0 5 0 DirY 1 0 1 align -5 0 5 0 DirZ 1 0 0 align -5 0 5 0 Height 1 0 1000.0 align -5 0 5 0 Softness 1 0 1.0 align -5 0 5 0 ShadowR 1 0 0.2 align -5 0 5 0 ShadowG 1 0 0.2 align -5 0 5 0 ShadowB 1 0 0.2 align -5 0 5 0 ColorR 1 0 1 align -5 0 5 0 ColorG 1 0 1 align -5 0 5 0 ColorB 1 0 1 align -5 0 5 0 Intensity 1 0 10.0 align -5 0 5 0 Scale 1 0 1.0 align -5 0 5 0 Enable 1 0 1.0 constant -5 0 5 0"
+   "0": "14 DirX 1 0 1.0 align -5.0 0.0 5.0 0.0 DirY 1 0 1.0 align -5.0 0.0 5.0 0.0 DirZ 1 0 0.0 align -5.0 0.0 5.0 0.0 Height 1 0 1000.0 align -5.0 0.0 5.0 0.0 Softness 1 0 1.0 align -5.0 0.0 5.0 0.0 ShadowR 1 0 0.2 align -5.0 0.0 5.0 0.0 ShadowG 1 0 0.2 align -5.0 0.0 5.0 0.0 ShadowB 1 0 0.2 align -5.0 0.0 5.0 0.0 ColorR 1 0 1.0 align -5.0 0.0 5.0 0.0 ColorG 1 0 1.0 align -5.0 0.0 5.0 0.0 ColorB 1 0 1.0 align -5.0 0.0 5.0 0.0 Intensity 1 0 10.0 align -5.0 0.0 5.0 0.0 Scale 1 0 1.0 align -5.0 0.0 5.0 0.0 Enable 1 0 1.0 constant -5.0 0.0 5.0 0.0"
   }
  }
 }
