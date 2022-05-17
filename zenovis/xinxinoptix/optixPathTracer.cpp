@@ -1024,8 +1024,8 @@ void set_window_size(int nx, int ny) {
 
 void set_perspective(float const *view, float aspect, float fov) {
     // zhxx, how to fuck this silly matrix correct?
-#define MaT *4+
-//#define MaT +4*
+//#define MaT *4+
+#define MaT +4*
     auto U = make_float4(view[0 MaT 0], view[1 MaT 0], view[2 MaT 0], view[3 MaT 0]);
     auto V = make_float4(view[0 MaT 1], view[1 MaT 1], view[2 MaT 1], view[3 MaT 0]);
     auto W = make_float4(view[0 MaT 2], view[1 MaT 2], view[2 MaT 2], view[3 MaT 0]);

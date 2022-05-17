@@ -253,8 +253,8 @@ extern "C" __global__ void __raygen__rg()
                 ( static_cast<float>( idx.x ) + subpixel_jitter.x ) / static_cast<float>( w ),
                 ( static_cast<float>( idx.y ) + subpixel_jitter.y ) / static_cast<float>( h )
                 ) - 1.0f;
-        float4 dvp = d.x*vp1 + d.y*vp2 + vp3 + vp4;
-        float4 dvf = d.x*vp1 + d.y*vp2 - vp3 + vp4;
+        float4 dvp = d.x*vp1 + d.y*vp2 - vp3 + vp4;
+        float4 dvf = d.x*vp1 + d.y*vp2 + vp3 + vp4;
         float3 rvp = make_float3(dvp.x, dvp.y, dvp.z) / dvp.w;
         float3 rvf = make_float3(dvf.x, dvf.y, dvf.z) / dvf.w;
         float3 ray_direction = normalize(rvf - rvp);
