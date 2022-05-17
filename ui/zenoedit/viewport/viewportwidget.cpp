@@ -7,6 +7,38 @@
 #include "launch/corelaunch.h"
 #include "zenoapplication.h"
 #include "zenomainwindow.h"
+#include <zeno/utils/log.h>
+#include <zenovis/ObjectsManager.h>
+#include <zenovis/Scene.h>
+#include <zeno/funcs/ObjectGeometryInfo.h>
+#include <zeno/types/UserData.h>
+
+#include <cmath>
+#include <optional>
+
+std::optional<float> ray_sphere_intersect(
+    zeno::vec3f &ray_pos,
+    zeno::vec3f &ray_dir,
+    zeno::vec3f &sphere_center,
+    float sphere_radius
+) {
+    zeno::vec3f &p = ray_pos;
+    zeno::vec3f &d = ray_dir;
+    zeno::vec3f &c = sphere_center;
+    float &r = sphere_radius;
+    float t = zeno::dot(c - p, d);
+    if (t < 0) {
+        return {};
+    }
+    zeno::vec3f dist = t * d + p - c;
+    float l = zeno::length(dist);
+    if (l > r) {
+        return {};
+    }
+    float t_diff = std::sqrt(r * r - l * l);
+    float final_t = t - t_diff;
+    return final_t;
+}
 
 
 CameraControl::CameraControl(QWidget* parent)
@@ -28,10 +60,48 @@ void CameraControl::setRes(QVector2D res)
 
 void CameraControl::fakeMousePressEvent(QMouseEvent* event)
 {
-    if (!(event->buttons() & Qt::MiddleButton))
-        return;
-
-    m_lastPos = event->pos();
+    if (event->buttons() & Qt::MiddleButton) {
+        m_lastPos = event->pos();
+    }
+    else if (event->buttons() & Qt::LeftButton) {
+        float x = (float)event->x() / m_res.x();
+        float y = (float)event->y() / m_res.y();
+        auto rdir = screenToWorldRay(x, y);
+        auto pos = realPos();
+        auto scene = Zenovis::GetInstance().getSession()->get_scene();
+        float min_t = std::numeric_limits<float>::max();
+        std::string name("");
+        for (auto const &[key, ptr]: scene->objectsMan->pairs()) {
+            zeno::vec3f center;
+            float radius;
+            if (zeno::objectGetFocusCenterRadius(ptr, center, radius)) {
+                auto ret = ray_sphere_intersect(
+                    zeno::vec3f(pos[0], pos[1], pos[2]),
+                    zeno::vec3f(rdir[0], rdir[1], rdir[2]),
+                    center,
+                    radius
+                );
+                if (ret.has_value()) {
+                    float t = ret.value();
+                    if (t < min_t) {
+                        min_t = t;
+                        name = key;
+                    }
+                }
+            }
+        }
+        bool shift_pressed = event->modifiers() & Qt::ShiftModifier;
+        if (!shift_pressed) {
+            scene->selected.clear();
+        }
+        if (!name.empty()) {
+            if (scene->selected.count(name) > 0) {
+                scene->selected.erase(name);
+            } else {
+                scene->selected.insert(name);
+            }
+        }
+    }
 }
 
 void CameraControl::fakeMouseMoveEvent(QMouseEvent* event)
@@ -98,6 +168,52 @@ void CameraControl::focus(QVector3D center, float radius)
         radius /= (m_fov / 45.0f);
     m_radius = radius;
     updatePerspective();
+}
+
+QVector3D CameraControl::realPos() const {
+    float cos_t = std::cos(m_theta);
+    float sin_t = std::sin(m_theta);
+    float cos_p = std::cos(m_phi);
+    float sin_p = std::sin(m_phi);
+    QVector3D back(cos_t * sin_p, sin_t, -cos_t * cos_p);
+    return m_center - back * m_radius;
+}
+
+// x, y from [0, 1]
+QVector3D CameraControl::screenToWorldRay(float x, float y) const {
+    float cos_t = cos(m_theta);
+    float sin_t = sin(m_theta);
+    float cos_p = cos(m_phi);
+    float sin_p = sin(m_phi);
+    QVector3D back(cos_t * sin_p, sin_t, -cos_t * cos_p);
+    QVector3D up(-sin_t * sin_p, cos_t, sin_t * cos_p);
+    QVector3D right = QVector3D::crossProduct(up, back);
+    up = QVector3D::crossProduct(back, right);
+    right.normalize();
+    up.normalize();
+    QMatrix4x4 view;
+    view.setToIdentity();
+    view.lookAt(realPos(), m_center, up);
+    x = (x - 0.5) * 2;
+    y = (y - 0.5) * (-2);
+    float v = std::tan(m_fov * M_PI / 180.f * 0.5f);
+    float aspect = res().x() / res().y();
+    auto dir = QVector3D(v * x * aspect, v * y, -1);
+    dir = dir.normalized();
+    dir = view.inverted().mapVector(dir);
+    return dir;
+}
+
+QVariant CameraControl::hitOnFloor(float x, float y) const {
+    auto dir = screenToWorldRay(x, y);
+    auto pos = realPos();
+    float t = (0 - pos.y()) / dir.y();
+    if (t > 0) {
+        auto p = pos + dir * t;
+        return p;
+    } else {
+        return {};
+    }
 }
 
 

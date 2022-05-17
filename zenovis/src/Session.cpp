@@ -35,6 +35,9 @@ Session::Session() : impl(std::make_unique<Impl>()) {
 
 Session::~Session() = default;
 
+Scene* Session::get_scene() const {
+    return impl->scene.get();
+}
 void Session::set_window_size(int nx, int ny) {
     impl->scene->camera->m_nx = nx;
     impl->scene->camera->m_ny = ny;

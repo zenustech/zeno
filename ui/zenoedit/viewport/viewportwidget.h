@@ -37,6 +37,9 @@ public:
     void fakeMouseMoveEvent(QMouseEvent* event);
     void fakeWheelEvent(QWheelEvent* event);
     void focus(QVector3D center, float radius);
+    QVector3D realPos() const;
+    QVector3D screenToWorldRay(float x, float y) const;
+    QVariant hitOnFloor(float x, float y) const;
 
 private:
     bool m_mmb_pressed;
