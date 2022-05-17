@@ -1,4 +1,5 @@
 #include "curvemodel.h"
+#include <zeno/utils/pybjson.h>
 
 
 CurveModel::CurveModel(const QString& id, const CURVE_RANGE& rg, QObject* parent)
@@ -399,4 +400,35 @@ bool CurveModel::setData(const QModelIndex& index, const QVariant& value, int ro
         }
     }
     return QStandardItemModel::setData(index, value, role);
+}
+
+#define CURVE_MODEL_SERIALIZER \
+        .obj() \
+        .key("range") \
+        .obj() \
+        .key("xFrom") \
+        .val(m_range.xFrom) \
+        .key("xTo") \
+        .val(m_range.xTo) \
+        .key("yFrom") \
+        .val(m_range.yFrom) \
+        .key("yTo") \
+        .val(m_range.yTo) \
+        .key("id") \
+        .eobj() \
+        .val_f([&] { return m_id.toStdString(); }, [&] (auto &&x) { m_id = QString::fromStdString(x); })
+
+std::string CurveModel::z_serialize() const {
+    auto dat = getItems();
+    return pybjsonwriter()
+        CURVE_MODEL_SERIALIZER
+        .str();
+}
+
+
+void CurveModel::z_deserialize(std::string const &s) {
+    auto dat = getItems();
+    pybjsonparser().str(s)
+        CURVE_MODEL_SERIALIZER
+        ;
 }
