@@ -15,16 +15,19 @@ namespace zeno {
 struct CreateCube : zeno::INode {
     virtual void apply() override {
         auto prim = std::make_shared<zeno::PrimitiveObject>();
+        auto size = get_input2<float>("size");
+        auto position = get_input2<zeno::vec3f>("position");
+        auto scaleSize = get_input2<zeno::vec3f>("scaleSize");
 
         auto &pos = prim->verts;
-        pos.push_back(vec3f( 1,  1,  1));
-        pos.push_back(vec3f( 1,  1, -1));
-        pos.push_back(vec3f(-1,  1, -1));
-        pos.push_back(vec3f(-1,  1,  1));
-        pos.push_back(vec3f( 1, -1,  1));
-        pos.push_back(vec3f( 1, -1, -1));
-        pos.push_back(vec3f(-1, -1, -1));
-        pos.push_back(vec3f(-1, -1,  1));
+        pos.push_back(vec3f( 1,  1,  1) * size * scaleSize + position);
+        pos.push_back(vec3f( 1,  1, -1) * size * scaleSize + position);
+        pos.push_back(vec3f(-1,  1, -1) * size * scaleSize + position);
+        pos.push_back(vec3f(-1,  1,  1) * size * scaleSize + position);
+        pos.push_back(vec3f( 1, -1,  1) * size * scaleSize + position);
+        pos.push_back(vec3f( 1, -1, -1) * size * scaleSize + position);
+        pos.push_back(vec3f(-1, -1, -1) * size * scaleSize + position);
+        pos.push_back(vec3f(-1, -1,  1) * size * scaleSize + position);
 
         auto &tris = prim->tris;
         // Top 0, 1, 2, 3
@@ -50,7 +53,11 @@ struct CreateCube : zeno::INode {
 };
 
 ZENDEFNODE(CreateCube, {
-    {},
+    {
+        {"vec3f", "position", "0, 0, 0"},
+        {"vec3f", "scaleSize", "1, 1, 1"},
+        {"float", "size", "1"},
+    },
     {"prim"},
     {},
     {"create"},
@@ -59,22 +66,26 @@ ZENDEFNODE(CreateCube, {
 struct CreateCone : zeno::INode {
     virtual void apply() override {
         auto prim = std::make_shared<zeno::PrimitiveObject>();
+        auto position = get_input2<zeno::vec3f>("position");
+        auto scaleSize = get_input2<zeno::vec3f>("scaleSize");
+        auto radius = get_input2<float>("radius");
+        auto height = get_input2<float>("height");
+        auto lons = get_input2<int>("lons");
 
         auto &pos = prim->verts;
-        size_t seg = 32;
-        for (size_t i = 0; i < seg; i++) {
-            float rad = 2 * M_PI * i / 32;
-            pos.push_back(vec3f(cos(rad), -1, -sin(rad)));
+        for (size_t i = 0; i < lons; i++) {
+            float rad = 2 * M_PI * i / lons;
+            pos.push_back(vec3f(cos(rad) * radius, -0.5 * height, -sin(rad) * radius) * scaleSize + position);
         }
         // top
-        pos.push_back(vec3i(0, 1, 0));
+        pos.push_back(vec3f(0, 0.5 * height, 0) * scaleSize + position);
         // bottom
-        pos.push_back(vec3i(0, -1, 0));
+        pos.push_back(vec3f(0, -0.5 * height, 0) * scaleSize + position);
 
         auto &tris = prim->tris;
-        for (size_t i = 0; i < seg; i++) {
-            tris.push_back(vec3i(seg, i, (i + 1) % seg));
-            tris.push_back(vec3i(i, seg + 1, (i + 1) % seg));
+        for (size_t i = 0; i < lons; i++) {
+            tris.push_back(vec3i(lons, i, (i + 1) % lons));
+            tris.push_back(vec3i(i, lons + 1, (i + 1) % lons));
         }
 
         set_output("prim", std::move(prim));
@@ -82,7 +93,13 @@ struct CreateCone : zeno::INode {
 };
 
 ZENDEFNODE(CreateCone, {
-    {},
+    {
+        {"vec3f", "position", "0, 0, 0"},
+        {"vec3f", "scaleSize", "1, 1, 1"},
+        {"float", "radius", "1"},
+        {"float", "height", "2"},
+        {"int", "lons", "32"},
+    },
     {"prim"},
     {},
     {"create"},
@@ -91,18 +108,21 @@ ZENDEFNODE(CreateCone, {
 struct CreateDisk : zeno::INode {
     virtual void apply() override {
         auto prim = std::make_shared<zeno::PrimitiveObject>();
+        auto position = get_input2<zeno::vec3f>("position");
+        auto scaleSize = get_input2<zeno::vec3f>("scaleSize");
+        auto radius = get_input2<float>("radius");
+        auto lons = get_input2<int>("lons");
 
         auto &pos = prim->verts;
-        size_t seg = 32;
-        for (size_t i = 0; i < seg; i++) {
-            float rad = 2 * M_PI * i / 32;
-            pos.push_back(vec3f(cos(rad), 0, -sin(rad)));
+        for (size_t i = 0; i < lons; i++) {
+            float rad = 2 * M_PI * i / lons;
+            pos.push_back(vec3f(cos(rad) * radius, 0, -sin(rad) * radius) * scaleSize + position);
         }
-        pos.push_back(vec3i(0, 0, 0));
+        pos.push_back(vec3f(0, 0, 0) * scaleSize + position);
 
         auto &tris = prim->tris;
-        for (size_t i = 0; i < seg; i++) {
-            tris.push_back(vec3i(seg, i, (i + 1) % seg));
+        for (size_t i = 0; i < lons; i++) {
+            tris.push_back(vec3i(lons, i, (i + 1) % lons));
         }
 
         set_output("prim", std::move(prim));
@@ -110,7 +130,12 @@ struct CreateDisk : zeno::INode {
 };
 
 ZENDEFNODE(CreateDisk, {
-    {},
+    {
+        {"vec3f", "position", "0, 0, 0"},
+        {"vec3f", "scaleSize", "1, 1, 1"},
+        {"float", "radius", "1"},
+        {"int", "lons", "32"},
+    },
     {"prim"},
     {},
     {"create"},
@@ -119,12 +144,15 @@ ZENDEFNODE(CreateDisk, {
 struct CreatePlane : zeno::INode {
     virtual void apply() override {
         auto prim = std::make_shared<zeno::PrimitiveObject>();
+        auto position = get_input2<zeno::vec3f>("position");
+        auto scaleSize = get_input2<zeno::vec3f>("scaleSize");
+        auto size = get_input2<float>("size");
 
         auto &pos = prim->verts;
-        pos.push_back(vec3f( 1, 0,  1));
-        pos.push_back(vec3f( 1, 0, -1));
-        pos.push_back(vec3f(-1, 0, -1));
-        pos.push_back(vec3f(-1, 0,  1));
+        pos.push_back(vec3f( 1, 0,  1) * size * scaleSize + position);
+        pos.push_back(vec3f( 1, 0, -1) * size * scaleSize + position);
+        pos.push_back(vec3f(-1, 0, -1) * size * scaleSize + position);
+        pos.push_back(vec3f(-1, 0,  1) * size * scaleSize + position);
 
         auto &tris = prim->tris;
         tris.push_back(vec3i(0, 1, 2));
@@ -135,7 +163,11 @@ struct CreatePlane : zeno::INode {
 };
 
 ZENDEFNODE(CreatePlane, {
-    {},
+    {
+        {"vec3f", "position", "0, 0, 0"},
+        {"vec3f", "scaleSize", "1, 1, 1"},
+        {"float", "size", "1"},
+    },
     {"prim"},
     {},
     {"create"},
@@ -145,34 +177,39 @@ struct CreateCylinder : zeno::INode {
     virtual void apply() override {
         auto prim = std::make_shared<zeno::PrimitiveObject>();
 
+        auto position = get_input2<zeno::vec3f>("position");
+        auto scaleSize = get_input2<zeno::vec3f>("scaleSize");
+        auto radius = get_input2<float>("radius");
+        auto height = get_input2<float>("height");
+        auto lons = get_input2<int>("lons");
+
         auto &pos = prim->verts;
-        size_t seg = 32;
-        for (size_t i = 0; i < seg; i++) {
-            float rad = 2 * M_PI * i / 32;
-            pos.push_back(vec3f(cos(rad), 1, -sin(rad)));
+        for (size_t i = 0; i < lons; i++) {
+            float rad = 2 * M_PI * i / lons;
+            pos.push_back(vec3f(cos(rad) * radius, 0.5 * height, -sin(rad) * radius) * scaleSize + position);
         }
-        for (size_t i = 0; i < seg; i++) {
-            float rad = 2 * M_PI * i / 32;
-            pos.push_back(vec3f(cos(rad), -1, -sin(rad)));
+        for (size_t i = 0; i < lons; i++) {
+            float rad = 2 * M_PI * i / lons;
+            pos.push_back(vec3f(cos(rad) * radius, -0.5 * height, -sin(rad) * radius) * scaleSize + position);
         }
-        pos.push_back(vec3i(0, 1, 0));
-        pos.push_back(vec3i(0, -1, 0));
+        pos.push_back(vec3f(0, 0.5 * height, 0) * scaleSize + position);
+        pos.push_back(vec3f(0, -0.5 * height, 0) * scaleSize + position);
 
         auto &tris = prim->tris;
         // Top
-        for (size_t i = 0; i < seg; i++) {
-            tris.push_back(vec3i(seg * 2, i, (i + 1) % seg));
+        for (size_t i = 0; i < lons; i++) {
+            tris.push_back(vec3i(lons * 2, i, (i + 1) % lons));
         }
         // Bottom
-        for (size_t i = 0; i < seg; i++) {
-            tris.push_back(vec3i(i + seg, seg * 2 + 1, (i + 1) % seg + seg));
+        for (size_t i = 0; i < lons; i++) {
+            tris.push_back(vec3i(i + lons, lons * 2 + 1, (i + 1) % lons + lons));
         }
         // Side
-        for (size_t i = 0; i < seg; i++) {
+        for (size_t i = 0; i < lons; i++) {
             size_t _0 = i;
-            size_t _1 = (i + 1) % seg;
-            size_t _2 = (i + 1) % seg + seg;
-            size_t _3 = i + seg;
+            size_t _1 = (i + 1) % lons;
+            size_t _2 = (i + 1) % lons + lons;
+            size_t _3 = i + lons;
             tris.push_back(vec3i(_1, _0, _2));
             tris.push_back(vec3i(_2, _0, _3));
         }
@@ -181,7 +218,13 @@ struct CreateCylinder : zeno::INode {
 };
 
 ZENDEFNODE(CreateCylinder, {
-    {},
+    {
+        {"vec3f", "position", "0, 0, 0"},
+        {"vec3f", "scaleSize", "1, 1, 1"},
+        {"float", "radius", "1"},
+        {"float", "height", "2"},
+        {"int", "lons", "32"},
+    },
     {"prim"},
     {},
     {"create"},
@@ -190,6 +233,9 @@ ZENDEFNODE(CreateCylinder, {
 struct CreateSphere : zeno::INode {
     virtual void apply() override {
         auto prim = std::make_shared<zeno::PrimitiveObject>();
+        auto position = get_input2<zeno::vec3f>("position");
+        auto scaleSize = get_input2<zeno::vec3f>("scaleSize");
+        auto radius = get_input2<float>("radius");
 
         size_t seg = 32;
 
@@ -202,7 +248,7 @@ struct CreateSphere : zeno::INode {
             float h = sin(i / 180.0 * M_PI);
             for (size_t j = 0; j <= seg; j++) {
                 float rad = 2 * M_PI * j / 32;
-                pos.push_back(vec3f(cos(rad) * r, h, -sin(rad) * r));
+                pos.push_back(vec3f(cos(rad) * r, h, -sin(rad) * r) * radius * scaleSize + position);
                 uvs.push_back(vec3f(j / 32.0, i / 90.0 * 0.5 + 0.5, 0));
                 nrm.push_back(zeno::normalize(pos[pos.size()-1]));
             }
@@ -237,7 +283,11 @@ struct CreateSphere : zeno::INode {
 };
 
 ZENDEFNODE(CreateSphere, {
-    {},
+    {
+        {"vec3f", "position", "0, 0, 0"},
+        {"vec3f", "scaleSize", "1, 1, 1"},
+        {"float", "radius", "1"},
+    },
     {"prim"},
     {},
     {"create"},
