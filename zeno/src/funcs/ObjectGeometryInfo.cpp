@@ -16,10 +16,12 @@ ZENO_API bool objectGetBoundingBox(IObject *ptr, vec3f &bmin, vec3f &bmax) {
             std::tie(bmin, bmax) = primBoundingBox(obj);
             ud.setLiterial("_bboxMin", bmin);
             ud.setLiterial("_bboxMax", bmax);
+            return true;
         }
-        return true;
+        else {
+            return false;
+        }
     }
-    return false;
 }
 
 
