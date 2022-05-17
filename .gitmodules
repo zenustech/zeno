@@ -13,6 +13,3 @@
 [submodule "projects/FBX/assimp"]
 	path = projects/FBX/assimp
 	url = https://github.com/assimp/assimp.git
-[submodule "zenovis/xinxinoptix"]
-	path = zenovis/xinxinoptix
-	url = https://github.com/zenustech/xinxinoptix.git
