@@ -428,7 +428,7 @@ std::string CurveModel::z_serialize() const {
 }
 
 
-void CurveModel::z_deserialize(std::string const &s) {
+void CurveModel::z_deserialize(std::string_view s) {
     auto dat = getItems();
     zeno::pybjsonparser().str(s)
         CURVE_MODEL_SERIALIZER

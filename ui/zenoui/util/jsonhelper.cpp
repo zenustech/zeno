@@ -41,9 +41,17 @@ namespace JsonHelper
 			}
 			else if (varType == QMetaType::VoidStar)
 			{
+                //throw "DIDNTWORKLUZH";
+                // TODO: use dynamic_cast<CurveModel *>(QVariantPtr<IModel>::asPtr(value))
+                // also btw luzh, will this have a memory leakage?
                 auto pModel = QVariantPtr<CurveModel>::asPtr(value);
                 auto s = pModel->z_serialize();
-				writer.String(s.data(), s.size());
+				writer.StartObject();
+                writer.Key("type");
+                writer.String("CurveModel");
+                writer.Key("data");
+                writer.String(s.data(), s.size());
+                writer.EndObject();
             }
 			//todo: qlineargradient.
 			else if (varType != QVariant::Invalid)

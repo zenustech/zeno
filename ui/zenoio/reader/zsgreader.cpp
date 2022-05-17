@@ -2,6 +2,8 @@
 #include "../../zenoui/util/uihelper.h"
 #include <zeno/utils/logger.h>
 #include "zenoedit/util/log.h"
+#include <zenoui/model/variantptr.h>
+#include <zenoui/model/curvemodel.h>
 
 
 ZsgReader::ZsgReader()
@@ -244,6 +246,23 @@ QVariant ZsgReader::_parseToVariant(const rapidjson::Value& val)
             vec.append(values[i].GetFloat());
         }
         return QVariant::fromValue(vec);
+    }
+    else if (val.GetType() == rapidjson::kObjectType)
+    {
+        auto obj = val.GetObject();
+        auto it = obj.FindMember("type");
+        ZASSERT_EXIT(it != obj.MemberEnd(), QVariant());
+        std::string_view type{it->value.GetString(), it->value.GetStringLength()};
+        it = obj.FindMember("data");
+        ZASSERT_EXIT(it != obj.MemberEnd(), QVariant());
+        std::string_view data{it->value.GetString(), it->value.GetStringLength()};
+        if (type == "CurveModel") {
+            auto pModel = new CurveModel("", {});
+            pModel->z_deserialize(data);
+            return QVariantPtr<CurveModel>::asVariant(pModel);
+        }
+        zeno::log_warn("bad rapidjson model value type {}", type);
+        return QVariant();
     }
 	else
     {

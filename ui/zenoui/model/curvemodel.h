@@ -37,7 +37,7 @@ public:
     CURVE_RANGE range() const;
     QString id() const;
     std::string z_serialize() const;
-    void z_deserialize(std::string const &s);
+    void z_deserialize(std::string_view s);
     QPointF clipNodePos(const QModelIndex& idx, const QPointF& currPos);
 
     QPointF adjustLastRightHdl(const QModelIndex& currIdx);
