@@ -205,7 +205,10 @@ struct ToZSTetrahedra : INode {
     zstets->category = ZenoParticles::tet;
     zstets->sprayedOffset = pos.size();
 
-    std::vector<zs::PropertyTag> tags{{"m", 1}, {"x", 3}, {"v", 3}};
+    std::vector<zs::PropertyTag> tags{
+        {"m", 1},       {"x", 3},
+        {"v", 3},       {"BCbasis", 9} /* normals for slip boundary*/,
+        {"BCorder", 1}, {"BCtarget", 3}};
     std::vector<zs::PropertyTag> eleTags{{"vol", 1}, {"IB", 9}, {"inds", 4}};
 
     constexpr auto space = zs::execspace_e::openmp;
@@ -215,6 +218,7 @@ struct ToZSTetrahedra : INode {
     ompExec(zs::range(pos.size()),
             [&, pars = proxy<space>({}, pars)](int vi) mutable {
               using vec3 = zs::vec<float, 3>;
+              using mat3 = zs::vec<float, 3, 3>;
               auto p = vec3{pos[vi][0], pos[vi][1], pos[vi][2]};
               pars.tuple<3>("x", vi) = p;
               if (prim->has_attr("vel")) {
@@ -222,6 +226,10 @@ struct ToZSTetrahedra : INode {
                 pars.tuple<3>("v", vi) = vec3{vel[0], vel[1], vel[2]};
               }
               pars.tuple<3>("v", vi) = vec3::zeros();
+              // default boundary handling setup
+              pars.tuple<9>("BCbasis", vi) = mat3::identity();
+              pars("BCorder", vi) = reinterpret_bits<float>(0);
+              pars.tuple<3>("BCtarget", vi) = vec3::zeros();
               // computed later
               pars("m", vi) = 0.f;
             });
@@ -289,6 +297,11 @@ struct ToZSTetrahedra : INode {
     surfaces = surfaces.clone({zs::memsrc_e::device, 0});
     surfEdges = surfEdges.clone({zs::memsrc_e::device, 0});
     surfVerts = surfVerts.clone({zs::memsrc_e::device, 0});
+
+    // all  vert indices that require boundary projection
+    auto &vertBcs = (*zstets)["vertBCs"];
+    vertBcs = typename ZenoParticles::particles_t({{"inds", 1}}, 0,
+                                                  zs::memsrc_e::host);
 
     set_output("ZSParticles", std::move(zstets));
   }

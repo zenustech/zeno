@@ -980,8 +980,8 @@ inline void checkCompileErrors(GLuint shader, std::string type)
         itexture3D::clear(vxNormal, { 0.0f, 0.0f, 0.0f, 0.0f });
         glBindFramebuffer(GL_FRAMEBUFFER, vxfbo);
         glBindRenderbuffer(GL_RENDERBUFFER, vxrbo);
-        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, 4096, 4096);
-        glViewport(0, 0, 4096, 4096);
+        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, 1024, 1024);
+        glViewport(0, 0, 1024, 1024);
         glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
         glDisable(GL_CULL_FACE);
         glDisable(GL_DEPTH_TEST);
@@ -996,8 +996,8 @@ inline void checkCompileErrors(GLuint shader, std::string type)
         
         glBindFramebuffer(GL_FRAMEBUFFER, vxfbo);
         glBindRenderbuffer(GL_RENDERBUFFER, vxrbo);
-        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, 4096, 4096);
-        glViewport(0, 0, 4096, 4096);
+        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, 1024, 1024);
+        glViewport(0, 0, 1024, 1024);
         glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
         glDisable(GL_CULL_FACE);
         glDisable(GL_DEPTH_TEST);
