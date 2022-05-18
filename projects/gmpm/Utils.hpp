@@ -145,7 +145,6 @@ inline void identify_boundary_indices(ExecPol &pol, ZenoPartition &partition,
   auto &table = partition.table;
 
   auto allocator = table.get_allocator();
-  auto mloc = allocator.location;
 
   using Ti = typename ZenoPartition::Ti;
   using indices_t = typename ZenoPartition::indices_t;

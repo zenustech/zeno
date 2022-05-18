@@ -1,14 +1,7 @@
 #include "../Structures.hpp"
 #include "zensim/Logger.hpp"
 #include "zensim/cuda/execution/ExecutionPolicy.cuh"
-#include "zensim/geometry/PoissonDisk.hpp"
-#include "zensim/geometry/VdbLevelSet.h"
-#include "zensim/geometry/VdbSampler.h"
-#include "zensim/io/MeshIO.hpp"
-#include "zensim/math/bit/Bits.h"
 #include "zensim/types/Property.h"
-#include <atomic>
-#include <zeno/VDBGrid.h>
 #include <zeno/types/ListObject.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/PrimitiveObject.h>
@@ -46,7 +39,8 @@ struct ApplyBoundaryOnVertices : INode {
                     return;
                   for (int d = 0; d != BCorder; ++d) {
                     auto nd = col(BCbasis, d);
-                    n -= n.dot(nd) * nd; // remove previous normal
+                    // remove components in previous normal directions
+                    n -= n.dot(nd) * nd;
                   }
                   if (n.l2NormSqr() > limits<float>::epsilon()) {
                     n = n.normalized();

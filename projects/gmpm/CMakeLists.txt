@@ -134,6 +134,7 @@ target_include_directories(zeno_zsfft PRIVATE ../zenvdb/include)
 add_library(zeno_zsfem SHARED)
 target_sources(zeno_zsfem PRIVATE
   fem/BoundaryCondition.cu
+  fem/Collisions.cu
   fem/TimeStepping.cu
   fem/Generation.cpp
   fem/test.cpp

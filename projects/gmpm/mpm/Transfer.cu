@@ -1768,7 +1768,6 @@ struct ZSBoundaryPrimitiveToZSGrid : INode {
             "boundary primitive does not have normal channel!");
       auto sprayedOffset = parObjPtr->sprayedOffset;
       auto sprayedSize = pars.size() - sprayedOffset;
-      auto size = sprayedOffset;
       if (sprayedSize == 0) {
         p2g_momentum(cudaPol, 0, pars.size(), pars, *zspartition, grid,
                      parObjPtr->asBoundary, false);

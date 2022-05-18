@@ -1,4 +1,5 @@
 #pragma once
+#include "zensim/container/Bvh.hpp"
 #include "zensim/container/HashTable.hpp"
 #include "zensim/container/IndexBuckets.hpp"
 #include "zensim/geometry/AnalyticLevelSet.h"
@@ -119,6 +120,7 @@ struct ZenoParticles : IObjectClone<ZenoParticles> {
     bending
   };
   using particles_t = zs::TileVector<float, 32>;
+  using lbvh_t = zs::LBvh<3>;
 
   ZenoParticles() = default;
   ~ZenoParticles() = default;
@@ -206,10 +208,18 @@ struct ZenoParticles : IObjectClone<ZenoParticles> {
   bool hasAuxData(const std::string &tag) const {
     return auxData.find(tag) != auxData.end();
   }
+  decltype(auto) bvh(const std::string &tag) { return auxSpatialData[tag]; }
+  decltype(auto) bvh(const std::string &tag) const {
+    return auxSpatialData.at(tag);
+  }
+  bool hasBvh(const std::string &tag) const {
+    return auxSpatialData.find(tag) != auxSpatialData.end();
+  }
 
   std::shared_ptr<particles_t> particles{};
   std::optional<particles_t> elements{};
   std::map<std::string, particles_t> auxData;
+  std::map<std::string, lbvh_t> auxSpatialData;
   category_e category{category_e::mpm}; // 0: conventional mpm particle, 1:
                                         // curve, 2: surface, 3: tet
   std::shared_ptr<PrimitiveObject> prim{};
