@@ -1,4 +1,5 @@
 #include "../Structures.hpp"
+#include "../Utils.hpp"
 #include "zensim/Logger.hpp"
 #include "zensim/cuda/execution/ExecutionPolicy.cuh"
 #include "zensim/types/Property.h"
@@ -12,43 +13,59 @@ namespace zeno {
 struct BuildSpatialAccelerator : INode {
   void apply() override {
     auto zstets = get_input<ZenoParticles>("ZSParticles");
-    auto &verts = zstets->getParticles();
     auto thickness = get_input2<float>("thickness");
 
     using namespace zs;
+    using bv_t = typename ZenoParticles::lbvh_t::Box;
     constexpr auto space = execspace_e::cuda;
 
     auto cudaPol = cuda_exec().device(0);
 
-    if (zstets->hasAuxData("surfaces")) {
-      const auto &surfaces = (*zstets)["surfaces"];
+    const auto &verts = zstets->getParticles();
+    if (zstets->hasAuxData(ZenoParticles::s_surfTriTag)) {
+      const auto &surfaces = (*zstets)[ZenoParticles::s_surfTriTag];
       const auto numSurfs = surfaces.size();
-      auto &surfBvh = zstets->bvh("surfaces");
+      auto &surfBvh = zstets->bvh(ZenoParticles::s_surfTriTag);
 
-      using bv_t = typename ZenoParticles::lbvh_t::Box;
-      zs::Vector<bv_t> bvs{surfaces.get_allocator(), surfaces.size()};
-#if 0
-      cudaPol(range(numSurfs),
-              [eles = proxy<space>({}, springs), bvs = proxy<space>(bvs),
-               data = proxy<space>({}, vertData), vtag, eps, dt,
-               thickness] __device__(int ei) mutable {
-                auto inds = eles.pack<2>("inds", ei).reinterpret_bits<int>();
-                auto dv0 = data.pack<3>(vtag, inds[0]) * eps;
-                auto x0 = data.pack<3>("x0", inds[0]);
-                auto dv1 = data.pack<3>(vtag, inds[1]) * eps;
-                auto x1 = data.pack<3>("x0", inds[1]);
-                x0 += dv0 * dt;
-                x1 += dv1 * dt;
-                auto [mi, ma] = get_bounding_box(x0, x1);
-                bv_t bv{mi, ma};
-                // thicken the box
-                bv._min -= thickness * 2;
-                bv._max += thickness * 2;
-                bvs[ei] = bv;
-              });
+      auto bvs = retrieve_bounding_volumes(cudaPol, verts, surfaces, wrapv<3>{},
+                                           thickness);
       surfBvh.build(cudaPol, bvs);
-#endif
     }
+    if (zstets->hasAuxData(ZenoParticles::s_surfEdgeTag)) {
+      const auto &boundaryEdges = (*zstets)[ZenoParticles::s_surfEdgeTag];
+      const auto numBoundaryEdges = boundaryEdges.size();
+      auto &beBvh = zstets->bvh(ZenoParticles::s_surfEdgeTag);
+
+      auto bvs = retrieve_bounding_volumes(cudaPol, verts, boundaryEdges,
+                                           wrapv<2>{}, thickness);
+      beBvh.build(cudaPol, bvs);
+    }
+    if (zstets->hasAuxData(ZenoParticles::s_surfVertTag)) {
+      const auto &boundaryVerts = (*zstets)[ZenoParticles::s_surfVertTag];
+      const auto numBoundaryVerts = boundaryVerts.size();
+      auto &bvBvh = zstets->bvh(ZenoParticles::s_surfVertTag);
+
+      auto bvs = retrieve_bounding_volumes(cudaPol, verts, boundaryVerts,
+                                           wrapv<1>{}, thickness);
+      bvBvh.build(cudaPol, bvs);
+    }
+#if 0
+    {
+      auto &bvBvh = zstets->bvh(ZenoParticles::s_surfVertTag);
+      const auto &boundaryVerts = (*zstets)[ZenoParticles::s_surfVertTag];
+      cudaPol(range(1), [verts = proxy<space>({}, verts),
+                         be = proxy<space>({}, boundaryVerts),
+                         bvh = proxy<space>(bvBvh)] __device__(int) mutable {
+        zs::vec<float, 3> p{0., 0.5f, 0.};
+        bvh.iter_neighbors(p, [&](int svI) {
+          auto vi = reinterpret_bits<int>(be("inds", svI));
+          auto x = verts.pack<3>("x", vi);
+          printf("(0, 0.5, 0) finds %d-th boundary vert [%d] (%f, %f, %f)\n",
+                 svI, vi, x[0], x[1], x[2]);
+        });
+      });
+    }
+#endif
 
     set_output("ZSParticles", zstets);
   }
