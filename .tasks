@@ -4,5 +4,5 @@ build_target=zenoedit
 run_environ=ZENO_LOGLEVEL=debug ZENO_OPEN=/tmp/a.zsg
 build_dir=/tmp/zeno-build
 run_target="$(VIM:build_dir)/bin/zenoedit"
-build_configs=-Wno-dev -DCMAKE_INSTALL_PREFIX=/tmp/zeno-dist -DOPTIX_PATH=/home/bate/Downloads/NVIDIA-OptiX-SDK-7.4.0-linux64-x86_64 -DZENO_NO_WARNING:BOOL=ON -DZENO_BUILD_SHARED:BOOL=ON -DZENO_MULTIPROCESS:BOOL=OFF -DZENO_ENABLE_BACKWARD=ON
+build_configs=-Wno-dev -DCMAKE_INSTALL_PREFIX=/tmp/zeno-dist -DOPTIX_PATH=/home/bate/Downloads/NVIDIA-OptiX-SDK-7.4.0-linux64-x86_64 -DZENO_NO_WARNING:BOOL=ON -DZENO_BUILD_SHARED:BOOL=ON -DZENO_MULTIPROCESS:BOOL=OFF -DZENO_ENABLE_BACKWARD:BOOL=ON -DZENO_ENABLE_OPTIX:BOOL=ON
 pre_build_cmd=(test -d build || ln -sf "$(VIM:build_dir)" build) &&
