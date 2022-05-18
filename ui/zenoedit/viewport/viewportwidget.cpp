@@ -88,36 +88,43 @@ void CameraControl::fakeMousePressEvent(QMouseEvent* event)
 
 void CameraControl::fakeMouseMoveEvent(QMouseEvent* event)
 {
-    if (!(event->buttons() & Qt::MiddleButton))
-        return;
-
-    float ratio = QApplication::desktop()->devicePixelRatio();
-    float xpos = event->x(), ypos = event->y();
-    float dx = xpos - m_lastPos.x(), dy = ypos - m_lastPos.y();
-    dx *= ratio / m_res[0];
-    dy *= ratio / m_res[1];
-    bool shift_pressed = event->modifiers() & Qt::ShiftModifier;
-    if (shift_pressed)
-    {
-        float cos_t = cos(m_theta);
-        float sin_t = sin(m_theta);
-        float cos_p = cos(m_phi);
-        float sin_p = sin(m_phi);
-        QVector3D back(cos_t * sin_p, sin_t, -cos_t * cos_p);
-        QVector3D up(-sin_t * sin_p, cos_t, sin_t * cos_p);
-        QVector3D right = QVector3D::crossProduct(up, back);
-        up = QVector3D::crossProduct(back, right);
-        right.normalize();
-        up.normalize();
-        QVector3D delta = right * dx + up * dy;
-        m_center += delta * m_radius;
+    if (event->buttons() & Qt::MiddleButton) {
+        float ratio = QApplication::desktop()->devicePixelRatio();
+        float xpos = event->x(), ypos = event->y();
+        float dx = xpos - m_lastPos.x(), dy = ypos - m_lastPos.y();
+        dx *= ratio / m_res[0];
+        dy *= ratio / m_res[1];
+        bool shift_pressed = event->modifiers() & Qt::ShiftModifier;
+        if (shift_pressed)
+        {
+            float cos_t = cos(m_theta);
+            float sin_t = sin(m_theta);
+            float cos_p = cos(m_phi);
+            float sin_p = sin(m_phi);
+            QVector3D back(cos_t * sin_p, sin_t, -cos_t * cos_p);
+            QVector3D up(-sin_t * sin_p, cos_t, sin_t * cos_p);
+            QVector3D right = QVector3D::crossProduct(up, back);
+            up = QVector3D::crossProduct(back, right);
+            right.normalize();
+            up.normalize();
+            QVector3D delta = right * dx + up * dy;
+            m_center += delta * m_radius;
+        }
+        else
+        {
+            m_theta -= dy * M_PI;
+            m_phi += dx * M_PI;
+        }
+        m_lastPos = QPointF(xpos, ypos);
     }
-    else
-    {
-        m_theta -= dy * M_PI;
-        m_phi += dx * M_PI;
+    else if (event->buttons() & Qt::LeftButton) {
+        auto scene = Zenovis::GetInstance().getSession()->get_scene();
+        float min_x = std::min((float)m_boundRectStartPos.x(), (float)event->x()) / m_res.x();
+        float max_x = std::max((float)m_boundRectStartPos.x(), (float)event->x()) / m_res.x();
+        float min_y = std::min((float)m_boundRectStartPos.y(), (float)event->y()) / m_res.y();
+        float max_y = std::max((float)m_boundRectStartPos.y(), (float)event->y()) / m_res.y();
+        scene->select_box = zeno::vec4f(min_x, min_y, max_x, max_y);
     }
-    m_lastPos = QPointF(xpos, ypos);
     updatePerspective();
 }
 
@@ -201,6 +208,7 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
     if (event->button() == Qt::LeftButton) {
         auto cam_pos = realPos();
         auto scene = Zenovis::GetInstance().getSession()->get_scene();
+        scene->select_box = {};
         bool shift_pressed = event->modifiers() & Qt::ShiftModifier;
         if (!shift_pressed) {
             scene->selected.clear();
