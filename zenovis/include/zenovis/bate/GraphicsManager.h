@@ -24,6 +24,7 @@ struct GraphicsManager {
         auto ins = graphics.insertPass();
         for (auto const &[key, obj] : objs) {
             if (ins.may_emplace(key)) {
+                obj->userData().set("nameid", std::make_shared<zeno::StringObject>(key));
                 zeno::log_debug("load_object: loading graphics [{}]", key);
                 auto ig = makeGraphic(scene, obj);
                 zeno::log_debug("load_object: loaded graphics to {}", ig.get());

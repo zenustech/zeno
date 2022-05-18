@@ -6,6 +6,8 @@
 #include <zeno/utils/disable_copy.h>
 #include <zeno/utils/vec.h>
 #include <map>
+#include <optional>
+#include <unordered_set>
 
 namespace zenovis {
 
@@ -17,6 +19,8 @@ struct ObjectsManager;
 struct RenderManager;
 
 struct Scene : zeno::disable_copy {
+    std::optional<zeno::vec4f> select_box = {};
+    std::unordered_set<std::string> selected = {};
     std::unique_ptr<Camera> camera;
     std::unique_ptr<DrawOptions> drawOptions;
     std::unique_ptr<ShaderManager> shaderMan;
