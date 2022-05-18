@@ -8,6 +8,7 @@
 #include <zeno/core/IObject.h>
 #include <zeno/utils/disable_copy.h>
 #include <zeno/utils/vec.h>
+#include <zenovis/Scene.h>
 
 namespace zenovis {
 
@@ -40,6 +41,7 @@ struct Session : zeno::disable_copy {
     void set_render_engine(std::string const &name);
     bool focus_on_node(std::string const &nodeid, zeno::vec3f &center, float &radius);
     static void load_opengl_api(void *procaddr);
+    Scene* get_scene() const;
 };
 
 } // namespace zenovis
