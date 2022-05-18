@@ -140,6 +140,8 @@ target_sources(zeno_zsfem PRIVATE
   fem/MeshIO.cpp
   fem/Fiber.cpp
   fem/Integrator.cpp
+  fem/QuasiStaticStepping.cu
+  fem/BaryCentricInterpolator.cu
 )
 
 
