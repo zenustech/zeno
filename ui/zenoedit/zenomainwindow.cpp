@@ -32,7 +32,7 @@ ZenoMainWindow::ZenoMainWindow(QWidget *parent, Qt::WindowFlags flags)
 {
     init();
     setContextMenuPolicy(Qt::NoContextMenu);
-    setWindowTitle("Zeno Editor (github.com/zenustech/zeno)");
+    setWindowTitle("Zeno Editor (" __DATE__ ")");
 //#ifdef __linux__
     if (char *p = zeno::envconfig::get("OPEN")) {
         zeno::log_info("ZENO_OPEN: %s", p);

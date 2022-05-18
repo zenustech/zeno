@@ -43,6 +43,15 @@ struct ParallelogramLight
 };
 
 
+struct CameraInfo
+{
+    float3 eye;
+    float3 right, up, front;
+    float aspect;
+    float fov;
+};
+
+
 struct Params
 {
     unsigned int subframe_index;
@@ -52,7 +61,7 @@ struct Params
     unsigned int height;
     unsigned int samples_per_launch;
 
-    float4 vp1, vp2, vp3, vp4;
+    CameraInfo cam;
 
     ParallelogramLight     light; // TODO: make light list
     OptixTraversableHandle handle;

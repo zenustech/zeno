@@ -17,6 +17,15 @@ struct ParallelogramLight
 };
 
 
+struct CameraInfo
+{
+    float3 eye;
+    float3 right, up, front;
+    float aspect;
+    float fov;
+};
+
+
 struct Params
 {
     unsigned int subframe_index;
@@ -26,7 +35,7 @@ struct Params
     unsigned int height;
     unsigned int samples_per_launch;
 
-    float4 vp1, vp2, vp3, vp4;
+    CameraInfo cam;
 
     ParallelogramLight     light; // TODO: make light list
     OptixTraversableHandle handle;
@@ -233,12 +242,9 @@ extern "C" __global__ void __raygen__rg()
     const int    w   = params.width;
     const int    h   = params.height;
     //const float3 eye = params.eye;
-    const float4 vp1  = params.vp1;
-    const float4 vp2  = params.vp2;
-    const float4 vp3  = params.vp3;
-    const float4 vp4  = params.vp4;
     const uint3  idx = optixGetLaunchIndex();
     const int    subframe_index = params.subframe_index;
+    const CameraInfo cam = params.cam;
 
     unsigned int seed = tea<4>( idx.y*w + idx.x, subframe_index );
 
@@ -253,12 +259,8 @@ extern "C" __global__ void __raygen__rg()
                 ( static_cast<float>( idx.x ) + subpixel_jitter.x ) / static_cast<float>( w ),
                 ( static_cast<float>( idx.y ) + subpixel_jitter.y ) / static_cast<float>( h )
                 ) - 1.0f;
-        float4 dvp = d.x*vp1 + d.y*vp2 - vp3 + vp4;
-        float4 dvf = d.x*vp1 + d.y*vp2 + vp3 + vp4;
-        float3 rvp = make_float3(dvp.x, dvp.y, dvp.z) / dvp.w;
-        float3 rvf = make_float3(dvf.x, dvf.y, dvf.z) / dvf.w;
-        float3 ray_direction = normalize(rvf - rvp);
-        float3 ray_origin    = rvp;
+        float3 ray_direction = normalize(cam.right * d.x + cam.up * d.y + cam.front);
+        float3 ray_origin    = cam.eye;
 
         RadiancePRD prd;
         prd.emitted      = make_float3(0.f);

@@ -64,11 +64,11 @@ public:
     // UVW forms an orthogonal, but not orthonormal basis!
     SUTILAPI void UVWFrame(float3& U, float3& V, float3& W) const;
 
-    void setZxxViewMatrix(float3 U, float3 V, float3 W) {
+    void setZxxViewMatrix(float const *U, float const *V, float const *W) {
         m_isZxx = true;
-        m_zxxU = U;
-        m_zxxV = V;
-        m_zxxW = W;
+        m_zxxU = make_float3(U[0], U[1], U[2]);
+        m_zxxV = make_float3(V[0], V[1], V[2]);
+        m_zxxW = make_float3(W[0], W[1], W[2]);
     }
 
 private:
