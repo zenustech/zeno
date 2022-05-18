@@ -24,7 +24,6 @@
 
 struct Mesh{
     FBXData fbxData;
-    std::vector<Texture> textures_loaded;
     std::unordered_map<std::string, std::vector<unsigned int>> m_VerticesSlice;
     std::unordered_map<std::string, aiMatrix4x4> m_TransMatrix;
     unsigned int m_VerticesIncrease = 0;
@@ -59,11 +58,10 @@ struct Mesh{
 
     void processMesh(aiMesh *mesh, const aiScene *scene) {
         std::string meshName(mesh->mName.data);
-        std::vector<Texture> textures;
 
         // Vertices
         for(unsigned int j = 0; j < mesh->mNumVertices; j++){
-            VertexInfo vertexInfo;
+            SVertex vertexInfo;
 
             aiVector3D vec(mesh->mVertices[j].x, mesh->mVertices[j].y, mesh->mVertices[j].z);
             vertexInfo.position = vec;
@@ -85,7 +83,7 @@ struct Mesh{
                 vertexInfo.bitangent = bitangent;
             }
 
-            fbxData.vertices.push_back(vertexInfo);
+            fbxData.iVertices.value.push_back(vertexInfo);
         }
 
         // Indices
@@ -93,16 +91,14 @@ struct Mesh{
         {
             aiFace face = mesh->mFaces[j];
             for(unsigned int j = 0; j < face.mNumIndices; j++)
-                fbxData.indices.push_back(face.mIndices[j] + m_VerticesIncrease);
+                fbxData.iIndices.value.push_back(face.mIndices[j] + m_VerticesIncrease);
         }
 
         // Material
-        aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
-//        zeno::log_info("MatTex: Mesh {} Material {}", meshName, material->GetName().data);
-        std::vector<Texture> diffuseMaps = loadMaterialTextures(material, aiTextureType_DIFFUSE, "texture_diffuse");
-        textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end());
+        if(mesh->mNumVertices)
+            readMaterial(mesh, scene);
 
-        // Bone
+        // FBXBone
         extractBone(mesh);
 
         m_VerticesSlice[meshName] = std::vector<unsigned int>
@@ -110,10 +106,10 @@ struct Mesh{
                  m_VerticesIncrease + mesh->mNumVertices,  // Vert End
                  mesh->mNumBones,
                  m_IndicesIncrease,  // Indices Start
-                 static_cast<unsigned int>(m_IndicesIncrease + (fbxData.indices.size() - m_IndicesIncrease))  // Indices End
+                 static_cast<unsigned int>(m_IndicesIncrease + (fbxData.iIndices.value.size() - m_IndicesIncrease))  // Indices End
                  };
 
-        m_IndicesIncrease += (fbxData.indices.size() - m_IndicesIncrease);
+        m_IndicesIncrease += (fbxData.iIndices.value.size() - m_IndicesIncrease);
         m_VerticesIncrease += mesh->mNumVertices;
     }
 
@@ -126,36 +122,49 @@ struct Mesh{
             processNode(node->mChildren[i], scene);
     }
 
-    std::vector<Texture> loadMaterialTextures(aiMaterial *mat, aiTextureType type, std::string typeName)
-    {
-        std::vector<Texture> textures;
-        for(unsigned int i = 0; i < mat->GetTextureCount(type); i++)
-        {
-            aiString str;
-            mat->GetTexture(type, i, &str);
-//            zeno::log_info("MatTex: Texture Name {}", str.data);
+    void readMaterial(aiMesh* mesh, aiScene const* scene){
+        SMaterial mat;
+        aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
 
-            bool skip = false;
-            for(unsigned int j = 0; j < textures_loaded.size(); j++)
+        GET_MAT_COLOR(mat.base, "$ai.base",0,0, aiColor4D(0.0f, 0.0f, 0.0f, 0.0f))
+        GET_MAT_COLOR(mat.specular, "$ai.specular",0,0, aiColor4D(0.0f, 0.0f, 0.0f, 0.0f))
+        GET_MAT_COLOR(mat.transmission, "$ai.transmission",0,0, aiColor4D(0.0f, 0.0f, 0.0f, 0.0f))
+        GET_MAT_COLOR(mat.subsurface, "$ai.subsurface",0,0, aiColor4D(0.0f, 0.0f, 0.0f, 0.0f))
+        GET_MAT_COLOR(mat.sheen, "$ai.sheen",0,0, aiColor4D(0.0f, 0.0f, 0.0f, 0.0f))
+        GET_MAT_COLOR(mat.coat, "$ai.coat",0,0, aiColor4D(0.0f, 0.0f, 0.0f, 0.0f))
+        GET_MAT_COLOR(mat.emission, "$ai.emission",0,0, aiColor4D(0.0f, 0.0f, 0.0f, 0.0f))
+
+        // TODO read material-float properties
+//        if(AI_SUCCESS != aiGetMaterialFloat(material, "$ai.normalCameraFactor", 0, 0, &mat.testFloat))
+//            mat.testFloat = 0.5f;
+//        zeno::log_info("----- TestFloat {}", mat.testFloat);
+
+        zeno::log_info("MatTex: Mesh {} Material {} NumTex {}",
+                       mesh->mName.data, material->GetName().data, scene->mNumTextures);
+
+        for(int texTypeIndex=0; texTypeIndex<=AI_TEXTURE_TYPE_MAX; texTypeIndex++)
+        {
+            std::vector<STexture> textures;
+            aiTextureType texType = (aiTextureType)texTypeIndex;
+
+            for(unsigned int i = 0; i < material->GetTextureCount(texType); i++)
             {
-                if(std::strcmp(textures_loaded[j].path.data(), str.C_Str()) == 0)  // Compare two strings
-                {
-                    textures.push_back(textures_loaded[j]);
-                    skip = true;
-                    break;
-                }
+                aiString str;
+                material->GetTexture(texType, i, &str);
+                zeno::log_info(">>>>> MatTex: TexName {} TexType {}", str.data, texType);
+
+                    STexture texture;
+                    texture.type = texTypeIndex;
+                    texture.path = str.C_Str();
+                    textures.push_back(texture);
             }
-            if(! skip)
-            {
-                Texture texture;
-                texture.id;
-                texture.type = typeName;
-                texture.path = str.C_Str();
-                textures.push_back(texture);
-                textures_loaded.push_back(texture);
-            }
+
+            mat.tex[texTypeIndex] = textures;
         }
-        return textures;
+
+        mat.matName = material->GetName().data;
+
+        fbxData.iMaterial.value[mesh->mName.data] = mat;
     }
 
     void extractBone(aiMesh* mesh){
@@ -164,13 +173,13 @@ struct Mesh{
             std::string boneName(mesh->mBones[boneIndex]->mName.C_Str());
 
             // Not Found, Create one, If Found, will have same offset-matrix
-            if (fbxData.BoneOffsetMap.find(boneName) == fbxData.BoneOffsetMap.end()) {
-                BoneInfo newBoneInfo;
+            if (fbxData.iBoneOffset.value.find(boneName) == fbxData.iBoneOffset.value.end()) {
+                SBoneOffset newBoneInfo;
 
                 newBoneInfo.name = boneName;
                 newBoneInfo.offset = mesh->mBones[boneIndex]->mOffsetMatrix;
 
-                fbxData.BoneOffsetMap[boneName] = newBoneInfo;
+                fbxData.iBoneOffset.value[boneName] = newBoneInfo;
             }
 
             auto weights = mesh->mBones[boneIndex]->mWeights;
@@ -180,13 +189,13 @@ struct Mesh{
                 int vertexId = weights[weightIndex].mVertexId + m_VerticesIncrease;
                 float weight = weights[weightIndex].mWeight;
 
-                auto& vertex = fbxData.vertices[vertexId];
+                auto& vertex = fbxData.iVertices.value[vertexId];
                 vertex.boneWeights[boneName] = weight;
             }
         }
     }
 
-    void processTrans(std::unordered_map<std::string, Bone>& bones,
+    void processTrans(std::unordered_map<std::string, SAnimBone>& bones,
                       std::shared_ptr<zeno::DictObject>& prims,
                       std::shared_ptr<zeno::DictObject>& datas) {
         for(auto& iter: m_VerticesSlice) {
@@ -211,14 +220,14 @@ struct Mesh{
 
             for(unsigned int i=verStart; i<verEnd; i++){
                 if(verBoneNum == 0){
-                    auto & vertex = fbxData.vertices[i];
+                    auto & vertex = fbxData.iVertices.value[i];
 
                     if(foundMeshBone){
                         //vertex.boneIds[0] = meshBoneId;
                         //vertex.boneWeights[0] = meshBoneWeight;
                     }else
                     {
-                        vertex.position = m_TransMatrix[meshName] * fbxData.vertices[i].position;
+                        vertex.position = m_TransMatrix[meshName] * fbxData.iVertices.value[i].position;
                     }
                 }
             }
@@ -226,13 +235,13 @@ struct Mesh{
             // Sub-prims (applied node transform)
             auto sub_prim = std::make_shared<zeno::PrimitiveObject>();
             auto sub_data = std::make_shared<FBXData>();
-            std::vector<VertexInfo> sub_vertices;
+            std::vector<SVertex> sub_vertices;
             std::vector<unsigned int> sub_indices;
 
             for(unsigned int i=indicesStart; i<indicesEnd; i+=3){
-                auto i1 = fbxData.indices[i]-verStart;
-                auto i2 = fbxData.indices[i+1]-verStart;
-                auto i3 = fbxData.indices[i+2]-verStart;
+                auto i1 = fbxData.iIndices.value[i]-verStart;
+                auto i2 = fbxData.iIndices.value[i+1]-verStart;
+                auto i3 = fbxData.iIndices.value[i+2]-verStart;
                 zeno::vec3i incs(i1, i2, i3);
                 sub_prim->tris.push_back(incs);
                 sub_indices.push_back(i1);
@@ -240,14 +249,14 @@ struct Mesh{
                 sub_indices.push_back(i3);
             }
             for(unsigned int i=verStart; i< verEnd; i++){
-                sub_prim->verts.emplace_back(fbxData.vertices[i].position.x,
-                                             fbxData.vertices[i].position.y,
-                                             fbxData.vertices[i].position.z);
-                sub_vertices.push_back(fbxData.vertices[i]);
+                sub_prim->verts.emplace_back(fbxData.iVertices.value[i].position.x,
+                                             fbxData.iVertices.value[i].position.y,
+                                             fbxData.iVertices.value[i].position.z);
+                sub_vertices.push_back(fbxData.iVertices.value[i]);
             }
-            sub_data->indices = sub_indices;
-            sub_data->vertices = sub_vertices;
-            sub_data->BoneOffsetMap = fbxData.BoneOffsetMap;
+            sub_data->iIndices.value = sub_indices;
+            sub_data->iVertices.value = sub_vertices;
+            sub_data->iBoneOffset = fbxData.iBoneOffset;
 
             prims->lut[meshName] = sub_prim;
             datas->lut[meshName] = sub_data;
@@ -260,19 +269,19 @@ struct Mesh{
         auto &uv = prim->verts.add_attr<zeno::vec3f>("uv");
         auto &norm = prim->verts.add_attr<zeno::vec3f>("nrm");
 
-        for(unsigned int i=0; i<fbxData.vertices.size(); i++){
-            auto& vpos = fbxData.vertices[i].position;
-            auto& vnor = fbxData.vertices[i].normal;
-            auto& vuv = fbxData.vertices[i].texCoord;
+        for(unsigned int i=0; i<fbxData.iVertices.value.size(); i++){
+            auto& vpos = fbxData.iVertices.value[i].position;
+            auto& vnor = fbxData.iVertices.value[i].normal;
+            auto& vuv = fbxData.iVertices.value[i].texCoord;
             ver.emplace_back(vpos.x, vpos.y, vpos.z);
             uv.emplace_back(vuv.x, vuv.y, vuv.z);
             norm.emplace_back(vnor.x, vnor.y, vnor.z);
         }
 
-        for(unsigned int i=0; i<fbxData.indices.size(); i+=3){
-            zeno::vec3i incs(fbxData.indices[i],
-                             fbxData.indices[i+1],
-                             fbxData.indices[i+2]);
+        for(unsigned int i=0; i<fbxData.iIndices.value.size(); i+=3){
+            zeno::vec3i incs(fbxData.iIndices.value[i],
+                             fbxData.iIndices.value[i+1],
+                             fbxData.iIndices.value[i+2]);
             ind.push_back(incs);
         }
     }
@@ -322,7 +331,7 @@ struct Anim{
             std::string boneName(channel->mNodeName.data);
             //zeno::log_info("----- Name {}", boneName);
 
-            Bone bone;
+            SAnimBone bone;
             bone.initBone(boneName, channel);
 
             m_Bones.AnimBoneMap[boneName] = bone;
@@ -349,7 +358,8 @@ void readFBXFile(
                                              aiProcess_Triangulate
                                              | aiProcess_FlipUVs
                                              | aiProcess_CalcTangentSpace
-                                             | aiProcess_JoinIdenticalVertices);
+                                             | aiProcess_JoinIdenticalVertices
+                                             );
     if(! scene)
         zeno::log_error("ReadFBXPrim: Invalid assimp scene");
 
@@ -368,10 +378,9 @@ void readFBXFile(
     animInfo->duration = anim.duration;
     animInfo->tick = anim.tick;
 
-//    zeno::log_info("ReadFBXPrim: Num Animation {}", scene->mNumAnimations);
-//    zeno::log_info("ReadFBXPrim: Vertices count {}", mesh.fbxData.vertices.size());
-//    zeno::log_info("ReadFBXPrim: Indices count {}", mesh.fbxData.indices.size());
-//    zeno::log_info("ReadFBXPrim: readFBXFile done.");
+    zeno::log_info("ReadFBXPrim: Num Animation {}", scene->mNumAnimations);
+    zeno::log_info("ReadFBXPrim: Vertices count {}", mesh.fbxData.iVertices.value.size());
+    zeno::log_info("ReadFBXPrim: Indices count {}", mesh.fbxData.iIndices.value.size());
 }
 
 struct ReadFBXPrim : zeno::INode {
@@ -393,11 +402,11 @@ struct ReadFBXPrim : zeno::INode {
                     path.c_str());
 
         set_output("prim", std::move(prim));
-        set_output("primdict", std::move(prims));
-        set_output("datadict", std::move(datas));
+        set_output("prims", std::move(prims));
+        set_output("data", std::move(fbxData));
+        set_output("datas", std::move(datas));
         set_output("animinfo", std::move(animInfo));
         set_output("nodetree", std::move(nodeTree));
-        set_output("fbxdata", std::move(fbxData));
         set_output("bonetree", std::move(boneTree));
     }
 };
@@ -409,9 +418,8 @@ ZENDEFNODE(ReadFBXPrim,
                    {"frameid"}
                },  /* outputs: */
                {
-                   "prim", "primdict", "datadict",
+                   "prim", "prims", "data", "datas",
                    {"AnimInfo", "animinfo"},
-                   {"FBXData", "fbxdata"},
                    {"NodeTree", "nodetree"},
                    {"BoneTree", "bonetree"},
                },  /* params: */

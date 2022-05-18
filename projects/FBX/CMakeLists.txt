@@ -20,10 +20,11 @@ add_library(zeno_FBX SHARED ${FBX_SOURCE})
 
 target_include_directories(zeno_FBX PRIVATE .)
 
-find_package(assimp CONFIG REQUIRED)
+add_subdirectory(assimp)
+
 find_package(glm CONFIG REQUIRED)
 
-target_link_libraries(zeno_FBX PRIVATE assimp::assimp)
+target_link_libraries(zeno_FBX PRIVATE assimp)
 target_link_libraries(zeno_FBX PRIVATE zeno)
 <<<<<<< HEAD
 >>>>>>> 630499906 (FBX Extension # Indices and Vertices Read)

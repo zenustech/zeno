@@ -1,25 +1,30 @@
 #ifndef ZENO_DEFINITION_H
 #define ZENO_DEFINITION_H
 
-struct KeyPosition {
+#define GET_MAT_COLOR(VAR, KEY, TYPE, INDEX, DEFAULT) \
+    if(AI_SUCCESS != aiGetMaterialColor(material, KEY, TYPE, INDEX, &VAR)) \
+        VAR = DEFAULT;                                \
+    zeno::log_info(">>>>> Material `{}` Result {} {} {} {}", KEY, VAR.r, VAR.g, VAR.b, VAR.a);
+
+struct SKeyPosition {
     aiVector3D position;
     float timeStamp;
 };
 
-struct KeyRotation {
+struct SKeyRotation {
     aiQuaternion orientation;
     float timeStamp;
 };
 
-struct KeyScale {
+struct SKeyScale {
     aiVector3D scale;
     float timeStamp;
 };
 
-struct Bone {
-    std::vector<KeyPosition> m_Positions;
-    std::vector<KeyRotation> m_Rotations;
-    std::vector<KeyScale> m_Scales;
+struct SAnimBone {
+    std::vector<SKeyPosition> m_Positions;
+    std::vector<SKeyRotation> m_Rotations;
+    std::vector<SKeyScale> m_Scales;
 
     int m_NumPositions = 0;
     int m_NumRotations = 0;
@@ -36,7 +41,7 @@ struct Bone {
             aiVector3D aiPosition = channel->mPositionKeys[positionIndex].mValue;
             float timeStamp = channel->mPositionKeys[positionIndex].mTime;
 
-            KeyPosition data;
+            SKeyPosition data;
             data.position = aiPosition;
             data.timeStamp = timeStamp;
             m_Positions.push_back(data);
@@ -47,7 +52,7 @@ struct Bone {
             aiQuaternion aiOrientation = channel->mRotationKeys[rotationIndex].mValue;
             float timeStamp = channel->mRotationKeys[rotationIndex].mTime;
 
-            KeyRotation data;
+            SKeyRotation data;
             data.orientation = aiOrientation;
             data.timeStamp = timeStamp;
             m_Rotations.push_back(data);
@@ -58,7 +63,7 @@ struct Bone {
             aiVector3D scale = channel->mScalingKeys[keyIndex].mValue;
             float timeStamp = channel->mScalingKeys[keyIndex].mTime;
 
-            KeyScale data;
+            SKeyScale data;
             data.scale = scale;
             data.timeStamp = timeStamp;
             m_Scales.push_back(data);
@@ -162,13 +167,12 @@ struct Bone {
     }
 };
 
-struct Texture {
-    unsigned int id;
-    std::string type;
+struct STexture {
+    int type;
     std::string path;
 };
 
-struct VertexInfo{
+struct SVertex{
     aiVector3D position;
     aiVector3D texCoord;
     aiVector3D normal;
@@ -177,7 +181,24 @@ struct VertexInfo{
     std::unordered_map<std::string, float> boneWeights;
 };
 
-struct BoneInfo {
+struct SMaterial{
+    std::string matName;
+
+    std::unordered_map<int, std::vector<STexture>> tex;
+
+    aiColor4D base;
+    aiColor4D specular;
+    aiColor4D transmission;
+    aiColor4D subsurface;
+    aiColor4D sheen;
+    aiColor4D coat;
+    aiColor4D emission;
+
+    aiColor4D testColor;
+    float testFloat;
+};
+
+struct SBoneOffset {
     std::string name;
     aiMatrix4x4 offset;
 };
@@ -190,7 +211,7 @@ struct NodeTree : zeno::IObjectClone<NodeTree>{
 };
 
 struct BoneTree : zeno::IObjectClone<BoneTree>{
-    std::unordered_map<std::string, Bone> AnimBoneMap;
+    std::unordered_map<std::string, SAnimBone> AnimBoneMap;
 };
 
 struct AnimInfo : zeno::IObjectClone<AnimInfo>{
@@ -198,10 +219,27 @@ struct AnimInfo : zeno::IObjectClone<AnimInfo>{
     float tick;
 };
 
+struct IMaterial : zeno::IObjectClone<IMaterial>{
+    std::unordered_map<std::string, SMaterial> value;
+};
+
+struct IBoneOffset : zeno::IObjectClone<IBoneOffset>{
+    std::unordered_map<std::string, SBoneOffset> value;
+};
+
+struct IVertices : zeno::IObjectClone<IVertices>{
+    std::vector<SVertex> value;
+};
+
+struct IIndices : zeno::IObjectClone<IIndices>{
+    std::vector<unsigned int> value;
+};
+
 struct FBXData : zeno::IObjectClone<FBXData>{
-    std::vector<VertexInfo> vertices;
-    std::vector<unsigned int> indices;
-    std::unordered_map<std::string, BoneInfo> BoneOffsetMap;
+    IVertices iVertices;
+    IIndices iIndices;
+    IMaterial iMaterial;
+    IBoneOffset iBoneOffset;
 };
 
 #endif //ZENO_DEFINITION_H
