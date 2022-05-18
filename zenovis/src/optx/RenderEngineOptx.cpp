@@ -109,7 +109,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
 
         xinxinoptix::optixupdatemesh();
         std::vector<const char *> shaders;
-        auto s = zeno::file_get_content("/home/zxx/Codes/zeno/zenovis/xinxinoptix/zxxMaterial.cu");
+        auto s = zeno::file_get_content("/home/bate/zeno/zenovis/xinxinoptix/zxxMaterial.cu");
         shaders.push_back(s.c_str());
         shaders.push_back(s.c_str());
         shaders.push_back(s.c_str());

@@ -48,19 +48,6 @@ struct CameraInfo
 {
     float3 eye;
     float3 right, up, front;
-    void print()
-    {
-        printf("%f, %f, %f, %f, %f, %f, %f, %f, %f,%f, %f, %f\n",
-        eye.x, eye.y, eye.z, right.x, right.y, right.z, 
-        up.x, up.y, up.z, front.x, front.y, front.z);
-    }
-    bool isSame(CameraInfo &c)
-    {
-        return (eye.x==c.eye.x && eye.y==c.eye.y && eye.z == c.eye.z 
-               && right.x == c.right.x && right.y == c.right.y && right.z == c.right.z
-               && up.x == c.up.x && up.y == c.up.y && up.z == c.up.z
-               && front.x == c.front.x && front.y == c.front.y && front.z == c.front.z);
-    }
     //float aspect;
     //float fov;
 };
