@@ -20,9 +20,9 @@ struct EvalAnim{
     NodeTree m_RootNode;
 
     std::unordered_map<std::string, aiMatrix4x4> m_Transforms;
-    std::unordered_map<std::string, BoneInfo> m_BoneOffset;
-    std::unordered_map<std::string, Bone> m_AnimBones;
-    std::vector<VertexInfo> m_Vertices;
+    std::unordered_map<std::string, SBoneOffset> m_BoneOffset;
+    std::unordered_map<std::string, SAnimBone> m_AnimBones;
+    std::vector<SVertex> m_Vertices;
     std::vector<unsigned int> m_Indices;
 
     void initAnim(std::shared_ptr<NodeTree>& nodeTree,
@@ -32,12 +32,12 @@ struct EvalAnim{
         m_Duration = animInfo->duration;
         m_TicksPerSecond = animInfo->tick;
 
-        m_Vertices = fbxData->vertices;
-        m_Indices = fbxData->indices;
+        m_Vertices = fbxData->iVertices.value;
+        m_Indices = fbxData->iIndices.value;
 
         m_RootNode = *nodeTree;
         m_AnimBones = boneTree->AnimBoneMap;
-        m_BoneOffset = fbxData->BoneOffsetMap;
+        m_BoneOffset = fbxData->iBoneOffset.value;
 
         m_CurrentFrame = 0.0f;
     }
@@ -123,7 +123,7 @@ struct EvalFBXAnim : zeno::INode {
         }
 
         auto prim = std::make_shared<zeno::PrimitiveObject>();
-        auto fbxData = get_input<FBXData>("fbxdata");
+        auto fbxData = get_input<FBXData>("data");
         auto nodeTree = get_input<NodeTree>("nodetree");
         auto boneTree = get_input<BoneTree>("bonetree");
         auto animInfo = get_input<AnimInfo>("animinfo");
@@ -139,8 +139,8 @@ ZENDEFNODE(EvalFBXAnim,
            {       /* inputs: */
                {
                    {"frameid"},
+                   {"FBXData", "data"},
                    {"AnimInfo", "animinfo"},
-                   {"FBXData", "fbxdata"},
                    {"NodeTree", "nodetree"},
                    {"BoneTree", "bonetree"},
                },  /* outputs: */
