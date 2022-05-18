@@ -3,6 +3,7 @@
 
 #include <QtWidgets>
 #include "zwidgetostream.h"
+#include <zeno/utils/scope_exit.h>
 
 class GraphsManagment;
 class ZenoMainWindow;
@@ -41,5 +42,10 @@ private:
 };
 
 #define zenoApp (qobject_cast<ZenoApplication*>(QApplication::instance()))
+
+#define DlgInEventLoopScope  \
+    zeno::scope_exit sp([=]() {zenoApp->getMainWindow()->setInDlgEventLoop(false);});\
+    zenoApp->getMainWindow()->setInDlgEventLoop(true);    
+
 
 #endif

@@ -27,6 +27,7 @@ public:
 	void setOptions(const QString& id, const QStringList& options) override;
 	void setColorRamps(const QString& id, const COLOR_RAMPS& colorRamps) override;
 	void setBlackboard(const QString& id, const BLACKBOARD_INFO& blackboard) override;
+	QObject* currGraphObj() override;
 
 private:
 	void _initSockets(const QString& id, const QString& name, INPUT_SOCKETS& inputs, PARAMS_INFO& params, OUTPUT_SOCKETS& outputs);
