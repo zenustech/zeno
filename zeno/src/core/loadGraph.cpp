@@ -5,6 +5,7 @@
 #include <zeno/extra/GraphException.h>
 #include <zeno/utils/logger.h>
 #include <zeno/utils/vec.h>
+#include <zeno/utils/rapidobject_parse.h>
 #include <zeno/zeno.h>
 
 namespace zeno {
@@ -76,7 +77,11 @@ ZENO_API void Graph::loadGraph(const char *json) {
                 } else if (cmd == "completeNode") {
                     completeNode(di[1].GetString());
                 } else if (cmd == "setNodeInput") {
-                    setNodeInput(di[1].GetString(), di[2].GetString(), generic_get<zany>(di[3]));
+                    if (di[3].IsObject()) {
+                        setNodeInput(di[1].GetString(), di[2].GetString(), zeno::parseObject(di[3]));
+                    } else {
+                        setNodeInput(di[1].GetString(), di[2].GetString(), generic_get<zany>(di[3]));       
+                    }
                 } else if (cmd == "setNodeParam") {
                     setNodeParam(di[1].GetString(), di[2].GetString(), generic_get<std::variant<int, float, std::string>, false>(di[3]));
                 /*} else if (cmd == "setNodeOption") {
