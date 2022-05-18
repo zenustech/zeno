@@ -14,6 +14,7 @@
 #include "viewport/zenovis.h"
 #include "zenoapplication.h"
 #include <zeno/utils/log.h>
+#include <zeno/utils/envconfig.h>
 #include <zenoio/reader/zsgreader.h>
 #include <zenoio/writer/zsgwriter.h>
 #include <zenoui/model/modeldata.h>
@@ -31,13 +32,13 @@ ZenoMainWindow::ZenoMainWindow(QWidget *parent, Qt::WindowFlags flags)
 {
     init();
     setContextMenuPolicy(Qt::NoContextMenu);
-    setWindowTitle("Zeno Editor (github.com/zenustech/zeno)");
-#ifdef __linux__
-    if (char *p = std::getenv("ZENO_OPEN")) {
-        printf("ZENO_OPEN: %s\n", p);
+    setWindowTitle("Zeno Editor (" __DATE__ ")");
+//#ifdef __linux__
+    if (char *p = zeno::envconfig::get("OPEN")) {
+        zeno::log_info("ZENO_OPEN: %s", p);
         openFile(p);
     }
-#endif
+//#endif
 }
 
 ZenoMainWindow::~ZenoMainWindow()

@@ -65,6 +65,9 @@
 #include <map>
 #include "xinxinoptixapi.h"
 #include "OptiXStuff.h"
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
 
 namespace xinxinoptix {
 
@@ -76,7 +79,6 @@ bool minimized    = false;
 bool             camera_changed = true;
 sutil::Camera    camera;
 sutil::Trackball trackball;
-float4 cam_vp1, cam_vp2, cam_vp3, cam_vp4;
 
 // Mouse state
 int32_t mouse_button = -1;
@@ -463,10 +465,10 @@ void handleCameraUpdate( Params& params )
         return;
     camera_changed = false;
 
-    params.vp1 = cam_vp1;
-    params.vp2 = cam_vp2;
-    params.vp3 = cam_vp3;
-    params.vp4 = cam_vp4;
+    //params.vp1 = cam_vp1;
+    //params.vp2 = cam_vp2;
+    //params.vp3 = cam_vp3;
+    //params.vp4 = cam_vp4;
     camera.setAspectRatio( static_cast<float>( params.width ) / static_cast<float>( params.height ) );
     //params.eye = camera.eye();
     //camera.UVWFrame( params.U, params.V, params.W );
@@ -917,7 +919,6 @@ void optixupdatematerial(std::vector<const char *> const &shaders) {
         auto rtmodsrc = zeno::file_get_content("/home/bate/zeno/zenovis/xinxinoptix/optixPathTracer.cu");
     OptixUtil::ray_module = OptixUtil::createModule(state.context, rtmodsrc.c_str());
         } hadOnce = true;
-    OptixUtil::createRenderGroups(state.context, OptixUtil::ray_module);
     OptixUtil::rtMaterialShaders.resize(0);
     for (int i = 0; i < shaders.size(); i++)
         OptixUtil::rtMaterialShaders.push_back(OptixUtil::rtMatShader(shaders[i],"__closesthit__radiance", "__anyhit__shadow_cutout"));
@@ -925,6 +926,7 @@ void optixupdatematerial(std::vector<const char *> const &shaders) {
     {
         OptixUtil::rtMaterialShaders[i].loadProgram();
     }
+    OptixUtil::createRenderGroups(state.context, OptixUtil::ray_module);
 }
 
 void optixupdateend() {
@@ -1022,27 +1024,25 @@ void set_window_size(int nx, int ny) {
     state.params.height = ny;
 }
 
-void set_perspective(float const *view, float aspect, float fov) {
-    // zhxx, how to fuck this silly matrix correct?
-//#define MaT *4+
-#define MaT +4*
-    auto U = make_float4(view[0 MaT 0], view[1 MaT 0], view[2 MaT 0], view[3 MaT 0]);
-    auto V = make_float4(view[0 MaT 1], view[1 MaT 1], view[2 MaT 1], view[3 MaT 0]);
-    auto W = make_float4(view[0 MaT 2], view[1 MaT 2], view[2 MaT 2], view[3 MaT 0]);
-    auto E = make_float4(view[0 MaT 3], view[1 MaT 3], view[2 MaT 3], view[3 MaT 0]);
-    cam_vp1 = U;
-    cam_vp2 = V;
-    cam_vp3 = W;
-    cam_vp4 = E;
+void set_perspective(float const *U, float const *V, float const *W, float const *E, float aspect, float fov) {
+    auto &cam = state.params.cam;
+    cam.eye = make_float3(E[0], E[1], E[2]);
+    cam.right = make_float3(U[0], U[1], U[2]);
+    cam.right *= aspect;
+    cam.up = make_float3(V[0], V[1], V[2]);
+    cam.front = make_float3(W[0], W[1], W[2]);
+    if (fov > 0) {
+        float radfov = fov * float(M_PI) / 180;
+        float tanfov = std::tan(radfov / 2);
+        cam.front /= tanfov;
+        float focallen = 0.018f / tanfov;
+        cam.eye -= focallen * cam.front;
+    }
+    //cam.aspect = aspect;
+    //cam.fov = fov;
     //camera.setZxxViewMatrix(U, V, W);
     //camera.setAspectRatio(aspect);
-#ifndef M_PI
-#define M_PI 3.14159265358979323846
-#endif
     //camera.setFovY(fov * aspect * (float)M_PI / 180.0f);
-    //zeno::log_debug("{} {} {}", E.x, E.y, E.z);
-    //E = make_float3(0, 0, 1);
-    //camera.setEye(E);
 }
 
 void optixrender(int fbo) {

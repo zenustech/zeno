@@ -3,6 +3,7 @@
 #include <cassert>
 #include <cstdio>
 #include <zeno/utils/format.h>
+#include <zeno/utils/envconfig.h>
 //#include <zeno/utils/ansiclr.h>
 #include <zeno/utils/arrayindex.h>
 #include <iostream>
@@ -47,7 +48,7 @@ ZENO_API void __impl_log_print(log_level_t level, source_location const &loc, st
 namespace {
 struct LogInitializer {
     LogInitializer() {
-        if (auto env = std::getenv("ZENO_LOGLEVEL"); env) {
+        if (auto env = zeno::envconfig::get("LOGLEVEL"); env) {
             if (0) {
 #define _ZENO_PER_LOG_LEVEL(x) } else if (!std::strcmp(env, #x)) { set_log_level(log_level_t::x);
 _ZENO_PER_LOG_LEVEL(trace)

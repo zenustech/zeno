@@ -103,13 +103,13 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         //xinxinoptix::setDOF(cam.m_dof);
         //xinxinoptix::setAperature(cam.m_aperature);
         xinxinoptix::set_window_size(cam.m_nx, cam.m_ny);
-        auto pers = cam.m_proj * cam.m_view;
-        xinxinoptix::set_perspective(glm::value_ptr(pers), cam.getAspect(), cam.m_fov);
+        auto lodright = glm::normalize(glm::cross(cam.m_lodup, cam.m_lodfront));
+        xinxinoptix::set_perspective(glm::value_ptr(lodright), glm::value_ptr(cam.m_lodup), glm::value_ptr(cam.m_lodfront), glm::value_ptr(cam.m_lodcenter), cam.getAspect(), cam.m_fov);
         //xinxinoptix::set_projection(glm::value_ptr(cam.m_proj));
 
         xinxinoptix::optixupdatemesh();
         std::vector<const char *> shaders;
-        auto s = zeno::file_get_content("/home/bate/zeno/zenovis/xinxinoptix/optixPathTracer.cu");
+        auto s = zeno::file_get_content("/home/bate/zeno/zenovis/xinxinoptix/zxxMaterial.cu");
         shaders.push_back(s.c_str());
         shaders.push_back(s.c_str());
         shaders.push_back(s.c_str());

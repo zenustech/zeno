@@ -3,6 +3,7 @@
 #include <comctrl/zlabel.h>
 #include <zenoui/style/zenostyle.h>
 #include <zenoui/comctrl/effect/innershadoweffect.h>
+#include <zeno/utils/envconfig.h>
 #include "ui_ztimeline.h"
 
 
@@ -27,6 +28,9 @@ ZTimeline::ZTimeline(QWidget* parent)
     initStyleSheet();
     initSignals();
     initBtnIcons();
+
+    if (zeno::envconfig::get("ALWAYS"))
+        m_ui->btnAlways->setChecked(true);
 }
 
 void ZTimeline::initSignals()
