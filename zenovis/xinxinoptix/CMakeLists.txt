@@ -34,6 +34,9 @@ target_include_directories(zenovis PRIVATE .)
 configure_file(sampleConfig.h.in ${CMAKE_CURRENT_BINARY_DIR}/sampleConfig.h @ONLY)
 target_include_directories(zenovis PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
+if (NOT DEFINED CUDAToolkit_BIN_DIR)
+    message(FATAL_ERROR "CUDAToolkit_BIN_DIR not defined")
+endif()
 set(CUDA_PATH ${CUDAToolkit_BIN_DIR}/..)
 
 set(FILE_LIST
@@ -46,10 +49,11 @@ set(FILE_LIST
     ${OPTIX_PATH}/include/@internal/optix_7_device_impl_transformations.h
     ${CUDA_PATH}/include/@vector_types.h
     ${CUDA_PATH}/include/@vector_functions.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/SDK/cuda/@random.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/SDK/@cuda/random.h
     ${CMAKE_CURRENT_SOURCE_DIR}/SDK/@sutil/vec_math.h
     ${CMAKE_CURRENT_SOURCE_DIR}/SDK/@cuda/helpers.h
     ${CMAKE_CURRENT_SOURCE_DIR}/SDK/@sutil/Preprocessor.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/@optixPathTracer.h
     )
 foreach (FILE_INFO IN ITEMS ${FILE_LIST})
     #string(REPLACE "/" "_" ESCAPED_FILE_NAME "${FILE_NAME}")
@@ -61,7 +65,7 @@ foreach (FILE_INFO IN ITEMS ${FILE_LIST})
     set(DUMMY_SOURCE_FILE ${CMAKE_CURRENT_BINARY_DIR}/${ENCODED_FILE}_bundle.cpp)
     if (NOT EXISTS ${DUMMY_SOURCE_FILE} OR ${FILE_PATH} IS_NEWER_THAN ${DUMMY_SOURCE_FILE})
 
-        message(STATUS "Processing NVRTC header: ${FILE_PATH}")
+        message(STATUS "Encoding NVRTC header: ${FILE_PATH}")
         file(READ ${FILE_PATH} HEX_CONTENTS HEX)
         string(REGEX MATCHALL "([A-Za-z0-9][A-Za-z0-9])" SEPARATED_HEX "${HEX_CONTENTS}")
         list(JOIN SEPARATED_HEX ",\n0x" FORMATTED_HEX)
