@@ -427,7 +427,7 @@ const std::vector<float3> g_diffuse_colors = // MAT_COUNT
 //
 //------------------------------------------------------------------------------
 
-void printUsageAndExit( const char* argv0 )
+static void printUsageAndExit( const char* argv0 )
 {
     std::cerr << "Usage  : " << argv0 << " [options]\n";
     std::cerr << "Options: --file | -f <filename>      File for image output\n";
@@ -439,7 +439,7 @@ void printUsageAndExit( const char* argv0 )
 }
 
 
-void initLaunchParams( PathTracerState& state )
+static void initLaunchParams( PathTracerState& state )
 {
     CUDA_CHECK( cudaMalloc(
                 reinterpret_cast<void**>( &state.params.accum_buffer ),
@@ -459,7 +459,7 @@ void initLaunchParams( PathTracerState& state )
 }
 
 
-void handleCameraUpdate( Params& params )
+static void handleCameraUpdate( Params& params )
 {
     if( !camera_changed )
         return;
@@ -475,7 +475,7 @@ void handleCameraUpdate( Params& params )
 }
 
 
-void handleResize( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Params& params )
+static void handleResize( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Params& params )
 {
     if( !resize_dirty )
         return;
@@ -492,7 +492,7 @@ void handleResize( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Params& param
 }
 
 
-void updateState( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Params& params )
+static void updateState( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Params& params )
 {
     // Update params on device
     if( camera_changed || resize_dirty )
@@ -503,7 +503,7 @@ void updateState( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Params& params
 }
 
 
-void launchSubframe( sutil::CUDAOutputBuffer<uchar4>& output_buffer, PathTracerState& state )
+static void launchSubframe( sutil::CUDAOutputBuffer<uchar4>& output_buffer, PathTracerState& state )
 {
     // Launch
     uchar4* result_buffer_data = output_buffer.map();
@@ -529,7 +529,7 @@ void launchSubframe( sutil::CUDAOutputBuffer<uchar4>& output_buffer, PathTracerS
 }
 
 
-void displaySubframe( sutil::CUDAOutputBuffer<uchar4>& output_buffer, sutil::GLDisplay& gl_display, PathTracerState& state , int fbo = 0 )
+static void displaySubframe( sutil::CUDAOutputBuffer<uchar4>& output_buffer, sutil::GLDisplay& gl_display, PathTracerState& state , int fbo = 0 )
 {
     // Display
     int framebuf_res_x = 0;  // The display's resolution (could be HDPI res)
@@ -550,7 +550,7 @@ void displaySubframe( sutil::CUDAOutputBuffer<uchar4>& output_buffer, sutil::GLD
 
 
 
-void initCameraState()
+static void initCameraState()
 {
     camera.setEye( make_float3( 278.0f, 273.0f, -900.0f ) );
     camera.setLookat( make_float3( 278.0f, 273.0f, 330.0f ) );
@@ -572,7 +572,7 @@ void initCameraState()
 
 
 
-void buildMeshAccel( PathTracerState& state )
+static void buildMeshAccel( PathTracerState& state )
 {
     //
     // copy mesh data to device
@@ -680,7 +680,7 @@ void buildMeshAccel( PathTracerState& state )
 
 
 
-void createSBT( PathTracerState& state )
+static void createSBT( PathTracerState& state )
 {
     static bool hadOnceSbt = false;
     if (hadOnceSbt) {
@@ -785,7 +785,7 @@ void createSBT( PathTracerState& state )
 }
 
 
-void cleanupState( PathTracerState& state )
+static void cleanupState( PathTracerState& state )
 {
     OPTIX_CHECK( optixPipelineDestroy( state.pipeline ) );
     OPTIX_CHECK( optixProgramGroupDestroy( state.raygen_prog_group ) );
