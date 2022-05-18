@@ -132,6 +132,14 @@ NVIDIA users may additionally specify `-DZENO_WITH_gmpm:BOOL=ON` in arguments fo
 > NOTE: `gmpm` is work in progress, may not work.
 > NOTE: ZenoFX must be enabled when gmpm is enabled, because gmpm depends on ZenoFX.
 
+### Enabling OptiX extensions
+
+NVIDIA users may also additionally specify `-DZENO_ENABLE_OPTIX:BOOL=ON` in argument for building OptiX real-time ray-tracing for the Zeno renderer.
+
+You can download and install OptiX from this site: https://developer.nvidia.com/designworks/optix/download
+
+Then, please define the path to your OptiX installation, for example: `-DOPTIX_PATH=/home/bate/Downloads/NVIDIA-OptiX-SDK-7.4.0-linux64-x86_64`
+
 ### Enabling subgraph extensions
 
 Some of the extensions are purely made with Zeno subgraphs, they lays in the directory
