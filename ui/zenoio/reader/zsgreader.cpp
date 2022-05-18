@@ -350,8 +350,11 @@ void ZsgReader::_parseInputs(const QString& id, const QString& nodeName, const N
             const auto& arr = inputObj.GetArray();
             //ZASSERT_EXIT(arr.Size() >= 2 && arr.Size() <= 3);
 
-            ZASSERT_EXIT(desc.inputs.find(inSock) != desc.inputs.end());
-            const SOCKET_INFO& descInfo = desc.inputs[inSock].info;
+            SOCKET_INFO descInfo;
+            if (desc.inputs.find(inSock) != desc.inputs.end())
+            {
+                descInfo = desc.inputs[inSock].info;
+            }
 
             QString outId, outSock;
             QVariant defaultValue;
