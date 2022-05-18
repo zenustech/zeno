@@ -21,8 +21,8 @@ struct CameraInfo
 {
     float3 eye;
     float3 right, up, front;
-    float aspect;
-    float fov;
+    //float aspect;
+    //float fov;
 };
 
 
@@ -259,7 +259,7 @@ extern "C" __global__ void __raygen__rg()
                 ( static_cast<float>( idx.x ) + subpixel_jitter.x ) / static_cast<float>( w ),
                 ( static_cast<float>( idx.y ) + subpixel_jitter.y ) / static_cast<float>( h )
                 ) - 1.0f;
-        float3 ray_direction = normalize(cam.right * d.x + cam.up * d.y + cam.front);
+        float3 ray_direction = normalize(cam.right * -d.x + cam.up * d.y + cam.front);
         float3 ray_origin    = cam.eye;
 
         RadiancePRD prd;

@@ -47,8 +47,8 @@ struct CameraInfo
 {
     float3 eye;
     float3 right, up, front;
-    float aspect;
-    float fov;
+    //float aspect;
+    //float fov;
 };
 
 

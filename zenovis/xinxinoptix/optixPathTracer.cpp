@@ -1026,12 +1026,17 @@ void set_window_size(int nx, int ny) {
 
 void set_perspective(float const *U, float const *V, float const *W, float const *E, float aspect, float fov) {
     auto &cam = state.params.cam;
+    fov *= float(M_PI / 180);
     cam.eye = make_float3(E[0], E[1], E[2]);
     cam.right = make_float3(U[0], U[1], U[2]);
+    cam.right *= aspect;
     cam.up = make_float3(V[0], V[1], V[2]);
     cam.front = make_float3(W[0], W[1], W[2]);
-    cam.aspect = aspect;
-    cam.fov = fov;
+    if (fov > 0)
+        cam.front /= std::tan(fov / 2);
+    cam.eye -= cam.front;
+    //cam.aspect = aspect;
+    //cam.fov = fov;
     //camera.setZxxViewMatrix(U, V, W);
     //camera.setAspectRatio(aspect);
     //camera.setFovY(fov * aspect * (float)M_PI / 180.0f);
