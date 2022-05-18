@@ -10,23 +10,19 @@ struct Translator {
     std::map<std::string, std::string> lut;
 
     void load(std::string_view tab) {
-        std::size_t p = 0, q;
+        std::size_t p = 0;
         while (1) {
-            q = tab.find('\n', p);
+            auto q = tab.find('\n', p);
             auto line = tab.substr(q, p);
             if (auto mid = line.find('='); mid != std::string::npos) {
                 auto lhs = line.substr(0, mid);
                 auto rhs = line.substr(mid + 1);
-                add(lhs, rhs);
+                lut.emplace(lhs, rhs);
             }
             if (q == std::string::npos)
                 break;
             p = q + 1;
         }
-    }
-
-    void add(std::string src, std::string dst) {
-        lut.emplace(std::move(src), std::move(dst));
     }
 
     std::string const &t(std::string const &s) const {
