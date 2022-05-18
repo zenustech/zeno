@@ -341,7 +341,7 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     const float3 P    = optixGetWorldRayOrigin() + optixGetRayTmax()*ray_dir;
 
     RadiancePRD* prd = getPRD();
-    float opacity = sin(P.y)>0?1.0:0.0;
+    float opacity = 0.0;//sin(P.y)>0?1.0:0.0;
     prd->opacity = opacity;
     // Stochastic alpha test to get an alpha blend effect.
     if (opacity >0.99 ) // No need to calculate an expensive random number if the test is going to fail anyway.
@@ -380,7 +380,7 @@ extern "C" __global__ void __closesthit__radiance()
         prd->emitted = make_float3( 0.0f );
 
     
-    float opacity = sin(P.y)>0?1.0:0.0;
+    float opacity = 0.0;//sin(P.y)>0?1.0:0.0;
     prd->opacity = opacity;
     if(opacity>0.99)
     {
