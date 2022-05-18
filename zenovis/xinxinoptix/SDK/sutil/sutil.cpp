@@ -865,7 +865,7 @@ static void getCuStringFromFile( std::string& cu, std::string& location, const c
 
 static std::string g_nvrtcLog;
 
-std::vector<const char *> &getIncPathTab();
+std::vector<const char *> &getIncFileTab();
 std::vector<const char *> &getIncFileTab() {
     static std::vector<const char *> ret;
     return ret;

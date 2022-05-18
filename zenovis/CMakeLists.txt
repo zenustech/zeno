@@ -1,6 +1,6 @@
 file(GLOB_RECURSE source CONFIGURE_DEPENDS include/*.h src/*.cpp)
 file(GLOB_RECURSE glad_source CONFIGURE_DEPENDS glad/include/*.h glad/src/*.c)
-file(GLOB_RECURSE stbi_source CONFIGURE_DEPENDS stbi/include/*.h stbi/src/*.cpp)
+file(GLOB_RECURSE stbi_source CONFIGURE_DEPENDS stbi/include/*.h stbi/src/*.cpp stbi/src/*.c)
 
 add_library(zenovis OBJECT ${source} ${glad_source} ${stbi_source})
 target_link_libraries(zenovis PRIVATE ${CMAKE_DL_LIBS})
