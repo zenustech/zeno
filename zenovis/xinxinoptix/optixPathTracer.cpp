@@ -981,6 +981,7 @@ static void updatedrawobjects() {
     g_mat_indices.resize(n);
     n = 0;
     for (auto const &[key, dat]: drawdats) {
+//#pragma omp parallel for
         for (size_t i = 0; i < dat.tris.size() / 3; i++) {
             g_mat_indices[n + i] = 0;
             g_vertices[(n + i) * 3 + 0] = {
