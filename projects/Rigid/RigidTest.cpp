@@ -60,8 +60,8 @@ struct BulletMakeTransform : zeno::INode {
     virtual void apply() override {
         auto trans = std::make_unique<BulletTransform>();
         trans->trans.setIdentity();
-        if (has_input("origin")) {
-            auto origin = get_input<zeno::NumericObject>("origin")->get<zeno::vec3f>();
+        if (has_input("translate")) {
+            auto origin = get_input<zeno::NumericObject>("translate")->get<zeno::vec3f>();
             trans->trans.setOrigin(zeno::vec_to_other<btVector3>(origin));
         }
         if (has_input("rotation")) {
@@ -78,7 +78,7 @@ struct BulletMakeTransform : zeno::INode {
 };
 
 ZENDEFNODE(BulletMakeTransform, {
-    {{"vec3f", "origin"},  "rotation"},
+    {{"vec3f", "translate"},  "rotation"},
     {"trans"},
     {},
     {"Bullet"},
@@ -99,7 +99,7 @@ ZENDEFNODE(BulletSetTransformBasisEuler, {
 	{"Bullet"}
 });
 
-struct BulletMakeTransformFromPivotAxis : zeno::INode {
+struct BulletMakeFrameFromPivotAxis : zeno::INode {
 	virtual void apply() override {
 		auto pivot = zeno::vec_to_other<btVector3>(get_input<zeno::NumericObject>("pivot")->get<zeno::vec3f>());
 		auto axis = zeno::vec_to_other<btVector3>(get_input<zeno::NumericObject>("axis")->get<zeno::vec3f>());
@@ -109,13 +109,13 @@ struct BulletMakeTransformFromPivotAxis : zeno::INode {
 		trans->trans.setOrigin(pivot);
 		trans->trans.getBasis().setValue(axis.getX(),axis.getX(),axis.getX(),axis.getY(),axis.getY(),axis.getY(),axis.getZ(),axis.getZ(),axis.getZ());
 
-		set_output("trans", std::move(trans));
+		set_output("frame", std::move(trans));
 	}
 };
 
-ZENDEFNODE(BulletMakeTransformFromPivotAxis, {
+ZENDEFNODE(BulletMakeFrameFromPivotAxis, {
 	{"pivot", "axis"},
-	{"trans"},
+	{"frame"},
 	{},
 	{"Bullet"}
 });
@@ -748,7 +748,7 @@ ZENDEFNODE(BulletInverseTransform, {
 	{"Bullet"}
 });
 
-struct BulletGetObjMotion : zeno::INode {
+struct BulletGetObjVel : zeno::INode {
     virtual void apply() override {
         auto obj = get_input<BulletObject>("object");
         auto body = obj->body.get();
@@ -770,7 +770,7 @@ struct BulletGetObjMotion : zeno::INode {
     }
 };
 
-ZENDEFNODE(BulletGetObjMotion, {
+ZENDEFNODE(BulletGetObjVel, {
     {"object"},
     {"linearVel", "angularVel"},
     {},
@@ -3121,4 +3121,99 @@ ZENDEFNODE(BulletSetContactParameters, {
 	{"Bullet"}
 });
 
+
+struct BulletMultiBodyGetJointTorque : zeno::INode {
+    virtual void apply() override {
+        auto object = get_input<BulletMultiBodyObject>("object");
+        auto link_id = get_input2<int>("linkIndex");
+        btScalar torque;
+
+        torque = object->multibody->getJointTorque(link_id);
+        // out_torque = vec1f(other_to_vec<1>(torque));
+        
+        auto out_torque = std::make_shared<zeno::NumericObject>(torque);
+        set_output("joint_torque", std::move(out_torque));
+    }
+};
+
+ZENDEFNODE(BulletMultiBodyGetJointTorque, {
+    {"object", "linkIndex"},
+    {"torque"},
+    {},
+    {"Bullet"}
+});
+
+struct BulletMultiBodyGetJointState : zeno::INode {
+    virtual void apply() override {
+        auto object = get_input<BulletMultiBodyObject>("object");
+        auto link_id = get_input2<int>("linkIndex");
+        btScalar vel;
+        btScalar pos;
+
+        vel = object->multibody->getJointVel(link_id);
+        pos = object -> multibody ->getJointPos(link_id);
+        // out_torque = vec1f(other_to_vec<1>(torque));
+
+        auto vel_ = std::make_shared<zeno::NumericObject>(vel);
+        auto pos_ = std::make_shared<zeno::NumericObject>(pos);
+        set_output("vel", std::move(vel_));
+        set_output("pos", std::move(pos_));
+    }
+};
+
+ZENDEFNODE(BulletMultiBodyGetJointState, {
+                                              {"object", "linkIndex"},
+                                              {"vel", "pos"},
+                                              {},
+                                              {"Bullet"}
+                                          });
+
+struct BulletMultiBodyGetBaseTransform : zeno::INode {
+    virtual void apply() {
+        auto object = get_input<BulletMultiBodyObject>("object");
+        auto trans = std::make_unique<BulletTransform>();
+        trans->trans = object->multibody->getBaseWorldTransform();
+        set_output("trans", std::move(trans));
+    }
+};
+
+ ZENDEFNODE(BulletMultiBodyGetBaseTransform, {
+     {"object"},
+     {"trans"},
+     {},
+     {"Bullet"},
+ });
+
+ struct BulletMultiBodyGetBaseVelocity : zeno::INode {
+     virtual void apply() {
+         auto object = get_input<BulletMultiBodyObject>("object");
+         auto vel = zeno::IObject::make<zeno::NumericObject>();
+         btVector3 vel_;
+         vel_ = object->multibody->getBaseVel();
+         vel->set<zeno::vec3f>(zeno::vec3f(vel_.x(), vel_.y(), vel_.z()));
+         set_output("vel", std::move(vel));
+     }
+ };
+
+ ZENDEFNODE(BulletMultiBodyGetBaseVelocity, {
+                                                 {"object"},
+                                                 {"vel"},
+                                                 {},
+                                                 {"Bullet"},
+                                             });
+
+// struct BulletCalculateEEForce : zeno::INode {
+//     virtual void apply() {
+//         auto object = get_input<BulletMultiBodyObject>("object");
+//         auto endEffectorLinkIndices = get_input<zeno::ListObject>("endEffectorLinkIndices")->get<int>();
+//         auto numEndEffectorLinkIndices = endEffectorLinkIndices.size();
+//
+//     }
+// };
+// ZENDEFNODE(BulletCalculateEEForce, {
+//                                                {"object"},
+//                                                {"EEForce"},
+//                                                {},
+//                                                {"Bullet"},
+//                                            });
 };
