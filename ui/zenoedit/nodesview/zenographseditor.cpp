@@ -242,9 +242,9 @@ void ZenoGraphsEditor::onSubnetOptionClicked()
     QMenu* pOptionsMenu = new QMenu;
 
 	QAction* pCreate = new QAction(tr("create subnet"));
-	QAction* pSubnetMap = new QAction("subnet map");
-	QAction* pImpFromFile = new QAction("import from local file");
-	QAction* pImpFromSys = new QAction("import system subnet");
+	QAction* pSubnetMap = new QAction(tr("subnet map"));
+	QAction* pImpFromFile = new QAction(tr("import from local file"));
+	QAction* pImpFromSys = new QAction(tr("import system subnet"));
 
     pOptionsMenu->addAction(pCreate);
     pOptionsMenu->addAction(pSubnetMap);

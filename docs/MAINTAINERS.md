@@ -2,6 +2,27 @@
 
 This section of documentation is for Zeno maintainers.
 
+## Translating Zeno editor UI
+
+First update the translation file `zh.ts` using the following command:
+```bash
+lupdate -recursive ui/zenoedit/ -ts ui/zenoedit/res/languages/zh.ts
+```
+
+Then open that `zh.ts` file with Qt Linguist:
+```bash
+linguist ui/zenoedit/res/languages/zh.ts
+```
+
+You can now edit the translations.
+Now select an entry, type the correct Chinese translation.
+Then press `Ctrl-Enter` to submit your translation.
+
+After finish, press the `Release` in Qt Linguist, you will get `ui/zenoedit/res/languages/zh.qm`.
+Now rebuild Zeno, and you will see your updated translations in UI.
+
+This process can be ran for multiple times, `lupdate` won't override the old translations, no worry.
+
 ## Install Zeno from source (not recommended)
 
 For the Linux traditional `make install` style installation, please specify this argument:
@@ -35,8 +56,3 @@ git push
 Push it, then GitHub CI will do the depolyment automatically for you.
 
 It will create a release with tag, for example, `v2022.4.19` (today's date).
-
-## Other notes
-
-Despite vcpkg supports Linux and MacOS too (by using `x64-linux` suffix), it's way too unstable than the
-system package manager. So we still recommended to use `apt` or `pacman` on Linux for stable experience.

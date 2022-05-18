@@ -169,7 +169,7 @@ static std::string existingFilePath( const char* directory, const char* relative
     return fileExists( path ) ? path : "";
 }
 
-std::string getSampleDir()
+static std::string getSampleDir()
 {
     static const char* directories[] =
     {
@@ -865,10 +865,12 @@ static void getCuStringFromFile( std::string& cu, std::string& location, const c
 
 static std::string g_nvrtcLog;
 
+std::vector<const char *> &getIncFileTab();
 std::vector<const char *> &getIncFileTab() {
     static std::vector<const char *> ret;
     return ret;
 }
+std::vector<const char *> &getIncPathTab();
 std::vector<const char *> &getIncPathTab() {
     static std::vector<const char *> ret;
     return ret;

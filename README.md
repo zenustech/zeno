@@ -133,9 +133,7 @@ You may find Zeno 1.0 in the [`legacy`](https://github.com/zenustech/tree/legacy
 
 ZENO is licensed under the Mozilla Public License Version 2.0, see [LICENSE](LICENSE) for more information.
 
-## Code of Conduct
-
-See [Code of Conduct](docs/code_of_conduct.md).
+ZENO have also used many third-party libraries, some of which has little modifications. Their licenses could be found at [docs/licenses](docs/licenses).
 
 ## Contact us
 

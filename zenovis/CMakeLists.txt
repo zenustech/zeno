@@ -1,6 +1,6 @@
 file(GLOB_RECURSE source CONFIGURE_DEPENDS include/*.h src/*.cpp)
 file(GLOB_RECURSE glad_source CONFIGURE_DEPENDS glad/include/*.h glad/src/*.c)
-file(GLOB_RECURSE stbi_source CONFIGURE_DEPENDS stbi/include/*.h stbi/src/*.cpp)
+file(GLOB_RECURSE stbi_source CONFIGURE_DEPENDS stbi/include/*.h stbi/src/*.cpp stbi/src/*.c)
 
 add_library(zenovis OBJECT ${source} ${glad_source} ${stbi_source})
 target_link_libraries(zenovis PRIVATE ${CMAKE_DL_LIBS})
@@ -20,6 +20,19 @@ if (ZENO_ENABLE_OPTIX)
     endif()
     add_subdirectory(xinxinoptix)  # this in-place modify zenovis
     target_compile_definitions(zenovis PRIVATE -DZENO_ENABLE_OPTIX)
+endif()
+
+if (ZENO_ENABLE_OPENMP)
+    find_package(OpenMP)
+    if (TARGET OpenMP::OpenMP_CXX)
+        message(STATUS "Found OpenMP::OpenMP_CXX")
+        target_link_libraries(zenovis PRIVATE OpenMP::OpenMP_CXX)
+        if (MSVC)
+            target_compile_options(zenovis PRIVATE /openmp:experimental /openmp:llvm)
+        endif()
+    else()
+        message(WARNING "Not found OpenMP")
+    endif()
 endif()
 
 #if (ZENO_INSTALL_TARGET)

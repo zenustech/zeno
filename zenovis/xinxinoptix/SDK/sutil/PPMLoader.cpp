@@ -195,7 +195,7 @@ void PPMLoader::getLine( std::ifstream& file_in, std::string& s )
 //  Utility functions
 //
 //-----------------------------------------------------------------------------
-float clamp( float f, float a, float b )
+static float clamp( float f, float a, float b )
 {
     return std::max( a, std::min( f, b ) );
 }
