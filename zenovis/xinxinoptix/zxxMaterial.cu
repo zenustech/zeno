@@ -1,5 +1,13 @@
 #include <optix.h>
+#include <cuda/random.h>
+#include <sutil/vec_math.h>
+#include <cuda/helpers.h>
 #include "optixPathTracer.h"
+#include "TraceStuff.h"
+
+extern "C" {
+extern __constant__ Params params;
+}
 
 struct Onb
 {
@@ -34,13 +42,6 @@ struct Onb
   float3 m_normal;
 };
 
-static __forceinline__ __device__ RadiancePRD* getPRD()
-{
-    const unsigned int u0 = optixGetPayload_0();
-    const unsigned int u1 = optixGetPayload_1();
-    return reinterpret_cast<RadiancePRD*>( unpackPointer( u0, u1 ) );
-}
-
 
 static __forceinline__ __device__ void setPayloadOcclusion( bool occluded )
 {
@@ -58,16 +59,6 @@ static __forceinline__ __device__ void cosine_sample_hemisphere(const float u1, 
 
   // Project up to hemisphere.
   p.z = sqrtf( fmaxf( 0.0f, 1.0f - p.x*p.x - p.y*p.y ) );
-}
-
-
-extern "C" __global__ void __miss__radiance()
-{
-    MissData* rt_data  = reinterpret_cast<MissData*>( optixGetSbtDataPointer() );
-    RadiancePRD* prd = getPRD();
-
-    prd->radiance = make_float3( rt_data->bg_color );
-    prd->done      = true;
 }
 
 

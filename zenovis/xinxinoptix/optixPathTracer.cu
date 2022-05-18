@@ -3,98 +3,11 @@
 #include <sutil/vec_math.h>
 #include <cuda/helpers.h>
 #include "optixPathTracer.h"
+#include "TraceStuff.h"
 
 extern "C" {
 __constant__ Params params;
 }
-
-
-
-//------------------------------------------------------------------------------
-//
-//
-//
-//------------------------------------------------------------------------------
-
-struct RadiancePRD
-{
-    // TODO: move some state directly into payload registers?
-    float3       emitted;
-    float3       radiance;
-    float3       attenuation;
-    float3       origin;
-    float3       direction;
-    float        opacity;
-    unsigned int seed;
-    unsigned int flags = 0;
-    int          countEmitted;
-    int          done;
-    int          pad;
-};
-
-
-//------------------------------------------------------------------------------
-//
-//
-//
-//------------------------------------------------------------------------------
-
-
-static __forceinline__ __device__ void traceRadiance(
-        OptixTraversableHandle handle,
-        float3                 ray_origin,
-        float3                 ray_direction,
-        float                  tmin,
-        float                  tmax,
-        RadiancePRD*           prd
-        )
-{
-    // TODO: deduce stride from num ray-types passed in params
-
-    unsigned int u0, u1;
-    packPointer( prd, u0, u1 );
-    optixTrace(
-            handle,
-            ray_origin,
-            ray_direction,
-            tmin,
-            tmax,
-            0.0f,                // rayTime
-            OptixVisibilityMask( 1 ),
-            OPTIX_RAY_FLAG_NONE,
-            RAY_TYPE_RADIANCE,        // SBT offset
-            RAY_TYPE_COUNT,           // SBT stride
-            RAY_TYPE_RADIANCE,        // missSBTIndex
-            u0, u1 );
-}
-
-
-static __forceinline__ __device__ bool traceOcclusion(
-        OptixTraversableHandle handle,
-        float3                 ray_origin,
-        float3                 ray_direction,
-        float                  tmin,
-        float                  tmax
-        )
-{
-    unsigned int occluded = 0u;
-    optixTrace(
-            handle,
-            ray_origin,
-            ray_direction,
-            tmin,
-            tmax,
-            0.0f,                    // rayTime
-            OptixVisibilityMask( 1 ),
-            OPTIX_RAY_FLAG_NONE,
-            RAY_TYPE_OCCLUSION,      // SBT offset
-            RAY_TYPE_COUNT,          // SBT stride
-            RAY_TYPE_OCCLUSION       // missSBTIndex
-            );
-        return occluded;//???
-}
-
-
 //------------------------------------------------------------------------------
 //
 //
@@ -171,4 +84,14 @@ extern "C" __global__ void __raygen__rg()
     }
     params.accum_buffer[ image_index ] = make_float4( accum_color, 1.0f);
     params.frame_buffer[ image_index ] = make_color ( accum_color );
+}
+
+
+extern "C" __global__ void __miss__radiance()
+{
+    MissData* rt_data  = reinterpret_cast<MissData*>( optixGetSbtDataPointer() );
+    RadiancePRD* prd = getPRD();
+
+    prd->radiance = make_float3( rt_data->bg_color );
+    prd->done      = true;
 }

@@ -919,7 +919,6 @@ void optixupdatematerial(std::vector<const char *> const &shaders) {
         auto rtmodsrc = zeno::file_get_content("/home/bate/zeno/zenovis/xinxinoptix/optixPathTracer.cu");
     OptixUtil::ray_module = OptixUtil::createModule(state.context, rtmodsrc.c_str());
         } hadOnce = true;
-    OptixUtil::createRenderGroups(state.context, OptixUtil::ray_module);
     OptixUtil::rtMaterialShaders.resize(0);
     for (int i = 0; i < shaders.size(); i++)
         OptixUtil::rtMaterialShaders.push_back(OptixUtil::rtMatShader(shaders[i],"__closesthit__radiance", "__anyhit__shadow_cutout"));
@@ -927,6 +926,7 @@ void optixupdatematerial(std::vector<const char *> const &shaders) {
     {
         OptixUtil::rtMaterialShaders[i].loadProgram();
     }
+    OptixUtil::createRenderGroups(state.context, OptixUtil::ray_module);
 }
 
 void optixupdateend() {

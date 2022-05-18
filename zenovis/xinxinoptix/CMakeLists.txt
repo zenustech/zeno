@@ -54,6 +54,7 @@ set(FILE_LIST
     ${CMAKE_CURRENT_SOURCE_DIR}/SDK/@cuda/helpers.h
     ${CMAKE_CURRENT_SOURCE_DIR}/SDK/@sutil/Preprocessor.h
     ${CMAKE_CURRENT_SOURCE_DIR}/@optixPathTracer.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/@TraceStuff.h
     )
 foreach (FILE_INFO IN ITEMS ${FILE_LIST})
     #string(REPLACE "/" "_" ESCAPED_FILE_NAME "${FILE_NAME}")
