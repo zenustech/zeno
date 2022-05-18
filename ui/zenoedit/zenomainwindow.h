@@ -15,6 +15,7 @@ public:
     ~ZenoMainWindow();
     ZenoGraphsEditor* editor() const { return m_pEditor; };
     bool inDlgEventLoop() const;
+    void setInDlgEventLoop(bool bOn);
 
 public slots:
     void onRunClicked(int beginFrame, int endFrame);

@@ -348,3 +348,8 @@ void ModelAcceptor::setBlackboard(const QString& id, const BLACKBOARD_INFO& blac
 	ZASSERT_EXIT(idx.isValid());
 	m_currentGraph->setData(idx, QVariant::fromValue(blackboard), ROLE_BLACKBOARD);
 }
+
+QObject* ModelAcceptor::currGraphObj()
+{
+    return m_currentGraph;
+}

@@ -123,7 +123,7 @@ void ZsgReader::_parseNode(const QString& nodeid, const rapidjson::Value& nodeOb
 
     if (objValue.HasMember("inputs"))
     {
-        _parseInputs(nodeid, descriptors, objValue["inputs"], pAcceptor);
+        _parseInputs(nodeid, name, descriptors, objValue["inputs"], pAcceptor);
     }
 
     if (objValue.HasMember("params"))
@@ -206,7 +206,7 @@ QVariant ZsgReader::_parseDefaultValue(const QString& defaultValue, const QStrin
     //return var;
 }
 
-QVariant ZsgReader::_parseToVariant(const rapidjson::Value& val)
+QVariant ZsgReader::_parseToVariant(const QString& type, const rapidjson::Value& val, QObject* parentRef)
 {
     if (val.GetType() == rapidjson::kStringType)
     {
@@ -249,26 +249,80 @@ QVariant ZsgReader::_parseToVariant(const rapidjson::Value& val)
     }
     else if (val.GetType() == rapidjson::kObjectType)
     {
-        auto obj = val.GetObject();
-        auto it = obj.FindMember("type");
-        ZASSERT_EXIT(it != obj.MemberEnd(), QVariant());
-        std::string_view type{it->value.GetString(), it->value.GetStringLength()};
-        it = obj.FindMember("data");
-        ZASSERT_EXIT(it != obj.MemberEnd(), QVariant());
-        std::string_view data{it->value.GetString(), it->value.GetStringLength()};
-        if (type == "CurveModel") {
-            auto pModel = new CurveModel("", {});
-            pModel->z_deserialize(data);
+	    if (type == "curve")
+        {
+            CurveModel *pModel = _parseCurveModel(val, parentRef);
             return QVariantPtr<CurveModel>::asVariant(pModel);
         }
-        zeno::log_warn("bad rapidjson model value type {}", type);
-        return QVariant();
     }
-	else
+
+    zeno::log_warn("bad rapidjson value type {}", val.GetType());
+    return QVariant();
+}
+
+CurveModel* ZsgReader::_parseCurveModel(const rapidjson::Value& jsonCurve, QObject* parentRef)
+{
+    ZASSERT_EXIT(jsonCurve.HasMember("range"), nullptr);
+    const rapidjson::Value& rgObj = jsonCurve["range"];
+    ZASSERT_EXIT(rgObj.HasMember("xFrom") && rgObj.HasMember("xTo") && rgObj.HasMember("yFrom") && rgObj.HasMember("yTo"), nullptr);
+
+    CURVE_RANGE rg;
+    ZASSERT_EXIT(rgObj["xFrom"].IsDouble() && rgObj["xTo"].IsDouble() && rgObj["yFrom"].IsDouble() && rgObj["yTo"].IsDouble(), nullptr);
+    rg.xFrom = rgObj["xFrom"].GetDouble();
+    rg.xTo = rgObj["xTo"].GetDouble();
+    rg.yFrom = rgObj["yFrom"].GetDouble();
+    rg.yTo = rgObj["yTo"].GetDouble();
+
+    //todo: id
+    CurveModel* pModel = new CurveModel("x", rg, parentRef); 
+
+    ZASSERT_EXIT(jsonCurve.HasMember("nodes"), nullptr);
+    for (const rapidjson::Value &nodeObj : jsonCurve["nodes"].GetArray())
     {
-        zeno::log_warn("bad rapidjson value type {}", val.GetType());
-		return QVariant();
-	}
+        ZASSERT_EXIT(nodeObj.HasMember("x") && nodeObj["x"].IsDouble(), nullptr);
+        ZASSERT_EXIT(nodeObj.HasMember("y") && nodeObj["y"].IsDouble(), nullptr);
+        QPointF pos(nodeObj["x"].GetDouble(), nodeObj["y"].GetDouble());
+
+        ZASSERT_EXIT(nodeObj.HasMember("left-handle") && nodeObj["left-handle"].IsObject(), nullptr);
+        auto leftHdlObj = nodeObj["left-handle"].GetObject();
+        ZASSERT_EXIT(leftHdlObj.HasMember("x") && leftHdlObj.HasMember("y"), nullptr);
+        qreal leftX = leftHdlObj["x"].GetDouble();
+        qreal leftY = leftHdlObj["y"].GetDouble();
+        QPointF leftOffset(leftX, leftY);
+
+        ZASSERT_EXIT(nodeObj.HasMember("right-handle") && nodeObj["right-handle"].IsObject(), nullptr);
+        auto rightHdlObj = nodeObj["right-handle"].GetObject();
+        ZASSERT_EXIT(rightHdlObj.HasMember("x") && rightHdlObj.HasMember("y"), nullptr);
+        qreal rightX = rightHdlObj["x"].GetDouble();
+        qreal rightY = rightHdlObj["y"].GetDouble();
+        QPointF rightOffset(rightX, rightY);
+
+        HANDLE_TYPE hdlType = HDL_ASYM;
+        if (nodeObj.HasMember("type") && nodeObj["type"].IsString())
+        {
+            QString type = nodeObj["type"].GetString();
+            if (type == "aligned") {
+                hdlType = HDL_ALIGNED;
+            } else if (type == "asym") {
+                hdlType = HDL_ASYM;
+            } else if (type == "free") {
+                hdlType = HDL_FREE;
+            } else if (type == "vector") {
+                hdlType = HDL_VECTOR;
+            }
+        }
+
+        bool bLockX = (nodeObj.HasMember("lockX") && nodeObj["lockX"].IsBool());
+        bool bLockY = (nodeObj.HasMember("lockY") && nodeObj["lockY"].IsBool());
+
+        QStandardItem *pItem = new QStandardItem;
+        pItem->setData(pos, ROLE_NODEPOS);
+        pItem->setData(leftOffset, ROLE_LEFTPOS);
+        pItem->setData(rightOffset, ROLE_RIGHTPOS);
+        pItem->setData(hdlType, ROLE_TYPE);
+        pModel->appendRow(pItem);
+    }
+    return pModel;
 }
 
 void ZsgReader::_parseBySocketKeys(const QString& id, const rapidjson::Value& objValue, IAcceptor* pAcceptor)
@@ -283,8 +337,10 @@ void ZsgReader::_parseBySocketKeys(const QString& id, const rapidjson::Value& ob
     pAcceptor->setSocketKeys(id, socketKeys);
 }
 
-void ZsgReader::_parseInputs(const QString& id, const NODE_DESCS& descriptors, const rapidjson::Value& inputs, IAcceptor* pAcceptor)
+void ZsgReader::_parseInputs(const QString& id, const QString& nodeName, const NODE_DESCS& descriptors, const rapidjson::Value& inputs, IAcceptor* pAcceptor)
 {
+    ZASSERT_EXIT(descriptors.find(nodeName) != descriptors.end());
+    const NODE_DESC &desc = descriptors[nodeName];
     for (const auto& inObj : inputs.GetObject())
     {
         const QString& inSock = inObj.name.GetString();
@@ -294,6 +350,12 @@ void ZsgReader::_parseInputs(const QString& id, const NODE_DESCS& descriptors, c
             const auto& arr = inputObj.GetArray();
             //ZASSERT_EXIT(arr.Size() >= 2 && arr.Size() <= 3);
 
+            SOCKET_INFO descInfo;
+            if (desc.inputs.find(inSock) != desc.inputs.end())
+            {
+                descInfo = desc.inputs[inSock].info;
+            }
+
             QString outId, outSock;
             QVariant defaultValue;
             if (arr.Size() > 0 && arr[0].IsString())
@@ -301,7 +363,7 @@ void ZsgReader::_parseInputs(const QString& id, const NODE_DESCS& descriptors, c
             if (arr.Size() > 1 && arr[1].IsString())
                 outSock = arr[1].GetString();
             if (arr.Size() > 2)
-                defaultValue = _parseToVariant(arr[2]);
+                defaultValue = _parseToVariant(descInfo.type, arr[2], pAcceptor->currGraphObj());
             
             pAcceptor->setInputSocket(id, inSock, outId, outSock, defaultValue);
         }
@@ -324,7 +386,7 @@ void ZsgReader::_parseParams(const QString& id, const rapidjson::Value& jsonPara
         {
             const QString& name = paramObj.name.GetString();
             const rapidjson::Value& val = paramObj.value;
-            QVariant var = _parseToVariant(val);
+            QVariant var = _parseToVariant("", val, pAcceptor->currGraphObj()); //todo: fill type.
             pAcceptor->setParamValue(id, name, var);
         }
     } else {
