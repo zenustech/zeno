@@ -373,7 +373,7 @@ void ViewportWidget::mouseReleaseEvent(QMouseEvent *event) {
     update();
 }
 
-#if 0
+/*
 QDMDisplayMenu::QDMDisplayMenu()
 {
     setTitle(tr("Display"));
@@ -433,7 +433,7 @@ QDMRecordMenu::QDMRecordMenu()
     pAction->setShortcut(QKeySequence(tr("Shift+F12")));
     addAction(pAction);
 }
-#endif
+*/
 
 
 DisplayWidget::DisplayWidget(ZenoMainWindow* pMainWin)

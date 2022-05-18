@@ -12,9 +12,13 @@ int main(int argc, char *argv[])
         return runner_main(atoi(argv[2]));
     }
 #endif
-
     ZenoApplication a(argc, argv);
     a.setStyle(new ZenoStyle);
+
+    QTranslator t;
+    if (t.load(":languages/zh.qm")) {
+        a.installTranslator(&t);
+    }
 
 	ZenoMainWindow mainWindow;
 	mainWindow.showMaximized();
