@@ -43,6 +43,7 @@ public:
     CURVE_RANGE range() const;
 	void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget = nullptr) override;
     int nFrames() const;
+	void setFrame(bool bFrame);
 
 signals:
 	void frameChanged(qreal);

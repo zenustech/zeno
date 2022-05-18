@@ -60,8 +60,9 @@ void CurveModel::initItems(CURVE_DATA const &curvedat)
 
 void CurveModel::resetRange(const CURVE_RANGE& rg)
 {
+    //todo: map every pos from m_range to rg;
+
     m_range = rg;
-    emit rangeChanged(m_range);
 }
 
 CURVE_RANGE CurveModel::range() const

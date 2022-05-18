@@ -744,6 +744,13 @@ QTreeView::item:selected:!active {
          </property>
         </spacer>
        </item>
+       <item row="2" column="0">
+        <widget class="QCheckBox" name="cbIsTimeline">
+         <property name="text">
+          <string>timeline</string>
+         </property>
+        </widget>
+       </item>
       </layout>
      </item>
     </layout>
@@ -761,12 +768,6 @@ QTreeView::item:selected:!active {
    <class>CurveMapView</class>
    <extends>QGraphicsView</extends>
    <header>curvemap/curvemapview.h</header>
-   <container>1</container>
-  </customwidget>
-  <customwidget>
-   <class>ZShadowButton</class>
-   <extends>QPushButton</extends>
-   <header>zenoui/comctrl/zshadowbutton.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>
