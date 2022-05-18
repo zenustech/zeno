@@ -17,24 +17,24 @@
 #include <algorithm>
 #include <optional>
 
-std::optional<float> ray_sphere_intersect(
-    zeno::vec3f &ray_pos,
-    zeno::vec3f &ray_dir,
-    zeno::vec3f &sphere_center,
+static std::optional<float> ray_sphere_intersect(
+    zeno::vec3f const &ray_pos,
+    zeno::vec3f const &ray_dir,
+    zeno::vec3f const &sphere_center,
     float sphere_radius
 ) {
-    zeno::vec3f &p = ray_pos;
-    zeno::vec3f &d = ray_dir;
-    zeno::vec3f &c = sphere_center;
-    float &r = sphere_radius;
+    auto &p = ray_pos;
+    auto &d = ray_dir;
+    auto &c = sphere_center;
+    auto &r = sphere_radius;
     float t = zeno::dot(c - p, d);
     if (t < 0) {
-        return {};
+        return std::nullopt;
     }
     zeno::vec3f dist = t * d + p - c;
     float l = zeno::length(dist);
     if (l > r) {
-        return {};
+        return std::nullopt;
     }
     float t_diff = std::sqrt(r * r - l * l);
     float final_t = t - t_diff;
@@ -208,7 +208,7 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
     if (event->button() == Qt::LeftButton) {
         auto cam_pos = realPos();
         auto scene = Zenovis::GetInstance().getSession()->get_scene();
-        scene->select_box = {};
+        scene->select_box = std::nullopt;
         bool shift_pressed = event->modifiers() & Qt::ShiftModifier;
         if (!shift_pressed) {
             scene->selected.clear();
@@ -224,15 +224,11 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
             for (auto const &[key, ptr]: scene->objectsMan->pairs()) {
                 zeno::vec3f center;
                 float radius;
+                zeno::vec3f ro(cam_pos[0], cam_pos[1], cam_pos[2]);
+                zeno::vec3f rd(rdir[0], rdir[1], rdir[2]);
                 if (zeno::objectGetFocusCenterRadius(ptr, center, radius)) {
-                    auto ret = ray_sphere_intersect(
-                        zeno::vec3f(cam_pos[0], cam_pos[1], cam_pos[2]),
-                        zeno::vec3f(rdir[0], rdir[1], rdir[2]),
-                        center,
-                        radius
-                    );
-                    if (ret.has_value()) {
-                        float t = ret.value();
+                    if (auto ret = ray_sphere_intersect(ro, rd, center, radius)) {
+                        float t = *ret;
                         if (t < min_t) {
                             min_t = t;
                             name = key;
