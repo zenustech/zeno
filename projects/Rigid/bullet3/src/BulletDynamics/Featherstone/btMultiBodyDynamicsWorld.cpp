@@ -22,7 +22,7 @@ subject to the following restrictions:
 #include "btMultiBodyConstraint.h"
 #include "LinearMath/btIDebugDraw.h"
 #include "LinearMath/btSerializer.h"
-
+#include <iostream>
 void btMultiBodyDynamicsWorld::addMultiBody(btMultiBody* body, int group, int mask)
 {
 	m_multiBodies.push_back(body);
@@ -220,8 +220,7 @@ void btMultiBodyDynamicsWorld::forwardKinematics()
 		bod->forwardKinematics(m_scratch_world_to_local, m_scratch_local_origin);
 	}
 }
-void btMultiBodyDynamicsWorld::solveConstraints(btContactSolverInfo& solverInfo)
-{
+void btMultiBodyDynamicsWorld::solveConstraints(btContactSolverInfo& solverInfo) {
     solveExternalForces(solverInfo);
     buildIslands();
     solveInternalConstraints(solverInfo);
@@ -234,9 +233,9 @@ void btMultiBodyDynamicsWorld::buildIslands()
 
 void btMultiBodyDynamicsWorld::solveInternalConstraints(btContactSolverInfo& solverInfo)
 {
-	/// solve all the constraints for this island
+    /// solve all the constraints for this island
 	m_solverMultiBodyIslandCallback->processConstraints();
-	m_constraintSolver->allSolved(solverInfo, m_debugDrawer);
+    m_constraintSolver->allSolved(solverInfo, m_debugDrawer);
     {
         BT_PROFILE("btMultiBody stepVelocities");
         for (int i = 0; i < this->m_multiBodies.size(); i++)
@@ -254,7 +253,6 @@ void btMultiBodyDynamicsWorld::solveInternalConstraints(btContactSolverInfo& sol
                 if (bod->getLink(b).m_collider && bod->getLink(b).m_collider->getActivationState() == ISLAND_SLEEPING)
                     isSleeping = true;
             }
-            
             if (!isSleeping)
             {
                 //useless? they get resized in stepVelocities once again (AND DIFFERENTLY)

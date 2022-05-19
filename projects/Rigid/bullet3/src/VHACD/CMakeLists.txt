@@ -1,3 +1,6 @@
+INCLUDE_DIRECTORIES(
+        ${BULLET_PHYSICS_SOURCE_DIR}/src
+)
 
 SET(VHACD_SRCS
         src/VHACD.cpp
