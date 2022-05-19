@@ -588,20 +588,20 @@ static void buildMeshAccel( PathTracerState& state )
     const size_t vertices_size_in_bytes = g_vertices.size() * sizeof( Vertex );
     //CUDA_CHECK( cudaFree( reinterpret_cast<void*>( state.d_vertices ) ) );
     CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.d_vertices.reset() ), vertices_size_in_bytes ) );
-    CUDA_CHECK( cudaMemcpy(
+    CUDA_CHECK( cudaMemcpyAsync(
                 reinterpret_cast<void*>( (CUdeviceptr&)state.d_vertices ),
                 g_vertices.data(), vertices_size_in_bytes,
-                cudaMemcpyHostToDevice
+                cudaMemcpyHostToDevice, state.stream
                 ) );
 
     raii<CUdeviceptr>  d_mat_indices             ;
     const size_t mat_indices_size_in_bytes = g_mat_indices.size() * sizeof( uint32_t );
     CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &d_mat_indices.reset() ), mat_indices_size_in_bytes ) );
-    CUDA_CHECK( cudaMemcpy(
+    CUDA_CHECK( cudaMemcpyAsync(
                 reinterpret_cast<void*>( (CUdeviceptr)d_mat_indices ),
                 g_mat_indices.data(),
                 mat_indices_size_in_bytes,
-                cudaMemcpyHostToDevice
+                cudaMemcpyHostToDevice, state.stream
                 ) );
 
     // // Build triangle GAS // // One per SBT record for this build input
@@ -665,7 +665,7 @@ static void buildMeshAccel( PathTracerState& state )
     d_mat_indices.reset();
 
     size_t compacted_gas_size;
-    CUDA_CHECK( cudaMemcpy( &compacted_gas_size, (void*)emitProperty.result, sizeof(size_t), cudaMemcpyDeviceToHost ) );
+    CUDA_CHECK( cudaMemcpyAsync( &compacted_gas_size, (void*)emitProperty.result, sizeof(size_t), cudaMemcpyDeviceToHost, state.stream ) );
 
     if( compacted_gas_size < gas_buffer_sizes.outputSizeInBytes )
     {
@@ -700,11 +700,11 @@ static void createSBT( PathTracerState& state )
     RayGenRecord rg_sbt = {};
     OPTIX_CHECK( optixSbtRecordPackHeader( state.raygen_prog_group, &rg_sbt ) );
 
-    CUDA_CHECK( cudaMemcpy(
+    CUDA_CHECK( cudaMemcpyAsync(
                 reinterpret_cast<void*>( (CUdeviceptr)d_raygen_record ),
                 &rg_sbt,
                 raygen_record_size,
-                cudaMemcpyHostToDevice
+                cudaMemcpyHostToDevice, state.stream
                 ) );
 
 
@@ -718,11 +718,11 @@ static void createSBT( PathTracerState& state )
     OPTIX_CHECK( optixSbtRecordPackHeader( state.occlusion_miss_group, &ms_sbt[1] ) );
     ms_sbt[1].data.bg_color = make_float4( 0.0f );
 
-    CUDA_CHECK( cudaMemcpy(
+    CUDA_CHECK( cudaMemcpyAsync(
                 reinterpret_cast<void*>( (CUdeviceptr&)d_miss_records ),
                 ms_sbt,
                 miss_record_size*RAY_TYPE_COUNT,
-                cudaMemcpyHostToDevice
+                cudaMemcpyHostToDevice, state.stream
                 ) );
 
     raii<CUdeviceptr>  &d_hitgroup_records = state.d_hitgroup_records;
@@ -768,11 +768,11 @@ static void createSBT( PathTracerState& state )
     //         OPTIX_CHECK( optixSbtRecordPackHeader( state.occlusion_hit_group2, &hitgroup_records[sbt_idx] ) );
     //     }
     // }
-    CUDA_CHECK( cudaMemcpy(
+    CUDA_CHECK( cudaMemcpyAsync(
                 reinterpret_cast<void*>( (CUdeviceptr)d_hitgroup_records ),
                 hitgroup_records,
                 hitgroup_record_size*RAY_TYPE_COUNT*g_emission_colors.size(),
-                cudaMemcpyHostToDevice
+                cudaMemcpyHostToDevice, state.stream
                 ) );
 
     state.sbt.raygenRecord                = d_raygen_record;
@@ -932,7 +932,7 @@ void optixupdatematerial(std::vector<const char *> const &shaders) {
 }
 
 void optixupdateend() {
-    resize_dirty = true;
+    camera_changed = true;
         OptixUtil::createPipeline();
         static bool hadOnce = false;
         if (hadOnce) {
@@ -1050,6 +1050,7 @@ void set_perspective(float const *U, float const *V, float const *W, float const
     //camera.setAspectRatio(aspect);
     //camera.setFovY(fov * aspect * (float)M_PI / 180.0f);
 }
+
 
 void optixrender(int fbo) {
     if (!output_buffer_o) throw sutil::Exception("no output_buffer_o");
