@@ -298,11 +298,6 @@ struct ToZSTetrahedra : INode {
     surfEdges = surfEdges.clone({zs::memsrc_e::device, 0});
     surfVerts = surfVerts.clone({zs::memsrc_e::device, 0});
 
-    // all  vert indices that require boundary projection
-    auto &vertBcs = (*zstets)["vertBCs"];
-    vertBcs = typename ZenoParticles::particles_t({{"inds", 1}}, 0,
-                                                  zs::memsrc_e::host);
-
     set_output("ZSParticles", std::move(zstets));
   }
 };

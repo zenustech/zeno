@@ -7,6 +7,7 @@
 
 #include "Structures.hpp"
 #include "zensim/container/HashTable.hpp"
+#include "zensim/geometry/BoundingVolumeInterface.hpp"
 
 // only use this macro within a zeno::INode::apply()
 #define RETRIEVE_OBJECT_PTRS(T, STR)                                           \
@@ -24,6 +25,76 @@
   })(STR);
 
 namespace zeno {
+
+template <typename Pol, int codim = 3>
+zs::Vector<typename ZenoParticles::lbvh_t::Box>
+retrieve_bounding_volumes(Pol &pol,
+                          const typename ZenoParticles::particles_t &verts,
+                          const typename ZenoParticles::particles_t &eles,
+                          zs::wrapv<codim> = {}, float thickness = 0.f) {
+  using namespace zs;
+  using bv_t = typename ZenoParticles::lbvh_t::Box;
+  Vector<bv_t> ret{eles.get_allocator(), eles.size()};
+  static_assert(codim >= 1 && codim <= 4, "invalid co-dimension!\n");
+  constexpr auto space = Pol::exec_tag::value;
+  pol(zs::range(eles.size()), [eles = proxy<space>({}, eles),
+                               bvs = proxy<space>(ret),
+                               verts = proxy<space>({}, verts),
+                               codim_v = wrapv<codim>{},
+                               thickness] ZS_LAMBDA(int ei) mutable {
+    constexpr int dim = RM_CVREF_T(codim_v)::value;
+    auto inds =
+        eles.template pack<dim>("inds", ei).template reinterpret_bits<int>();
+    auto x0 = verts.pack<3>("x", inds[0]);
+    bv_t bv{x0};
+    for (int d = 1; d != dim; ++d)
+      merge(bv, verts.pack<3>("x", inds[d]));
+    bv._min -= thickness / 2;
+    bv._max += thickness / 2;
+    bvs[ei] = bv;
+  });
+  return ret;
+}
+
+// for ccd
+template <typename Pol, int codim = 3>
+zs::Vector<typename ZenoParticles::lbvh_t::Box> retrieve_bounding_volumes(
+    Pol &pol, const typename ZenoParticles::particles_t &verts,
+    const typename ZenoParticles::particles_t &eles,
+    const typename ZenoParticles::particles_t &searchDir, zs::wrapv<codim> = {},
+    float stepSize = 1.f, float thickness = 0.f,
+    const zs::SmallString &dirTag = "dir") {
+  using namespace zs;
+  using bv_t = typename ZenoParticles::lbvh_t::Box;
+  Vector<bv_t> ret{eles.get_allocator(), eles.size()};
+  static_assert(codim >= 1 && codim <= 4, "invalid co-dimension!\n");
+  constexpr auto space = Pol::exec_tag::value;
+  pol(zs::range(eles.size()), [eles = proxy<space>({}, eles),
+                               bvs = proxy<space>(ret),
+                               verts = proxy<space>({}, verts),
+                               searchDir = proxy<space>({}, searchDir),
+                               codim_v = wrapv<codim>{}, dirTag, stepSize,
+                               thickness] ZS_LAMBDA(int ei) mutable {
+    constexpr int dim = RM_CVREF_T(codim_v)::value;
+    auto inds =
+        eles.template pack<dim>("inds", ei).template reinterpret_bits<int>();
+    auto x0 = verts.pack<3>("x", inds[0]);
+    auto dir0 = searchDir.pack<3>(dirTag, inds[0]);
+    auto [mi, ma] = get_bounding_box(x0, x0 + stepSize * dir0);
+    bv_t bv{mi, ma};
+    for (int d = 1; d != dim; ++d) {
+      auto x = verts.pack<3>("x", inds[d]);
+      auto dir = searchDir.pack<3>(dirTag, inds[d]);
+      auto [mi, ma] = get_bounding_box(x, x + stepSize * dir);
+      merge(bv, mi);
+      merge(bv, ma);
+    }
+    bv._min -= thickness / 2;
+    bv._max += thickness / 2;
+    bvs[ei] = bv;
+  });
+  return ret;
+}
 
 template <typename ExecPol, typename TileVectorT, typename IndexBucketsT>
 inline void spatial_hashing(ExecPol &pol, const TileVectorT &tvs,
@@ -145,7 +216,6 @@ inline void identify_boundary_indices(ExecPol &pol, ZenoPartition &partition,
   auto &table = partition.table;
 
   auto allocator = table.get_allocator();
-  auto mloc = allocator.location;
 
   using Ti = typename ZenoPartition::Ti;
   using indices_t = typename ZenoPartition::indices_t;
