@@ -3,8 +3,6 @@
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
-#include <zeno/utils/fileio.h>
-#include <zeno/utils/log.h>
 // are met:
 //  * Redistributions of source code must retain the above copyright
 //    notice, this list of conditions and the following disclaimer.
@@ -53,6 +51,7 @@
 
 #include "optixPathTracer.h"
 
+#include <zeno/utils/log.h>
 #include <array>
 #include <optional>
 #include <cstring>
@@ -918,8 +917,10 @@ void optixupdatematerial(std::vector<const char *> const &shaders) {
         static bool hadOnce = false;
         if (!hadOnce) {
             //OPTIX_CHECK( optixModuleDestroy( OptixUtil::ray_module ) );
-        auto rtmodsrc = zeno::file_get_content("/home/bate/zeno/zenovis/xinxinoptix/optixPathTracer.cu");
-    OptixUtil::ray_module = OptixUtil::createModule(state.context, rtmodsrc.c_str());
+    OptixUtil::ray_module = OptixUtil::createModule(
+        state.context,
+        sutil::lookupIncFile("PTKernel.cu"),
+        "PTKernel.cu");
         } hadOnce = true;
     OptixUtil::rtMaterialShaders.resize(0);
     for (int i = 0; i < shaders.size(); i++)
@@ -934,9 +935,9 @@ void optixupdatematerial(std::vector<const char *> const &shaders) {
 void optixupdateend() {
     camera_changed = true;
         OptixUtil::createPipeline();
-        static bool hadOnce = false;
-        if (hadOnce) {
-    OPTIX_CHECK( optixPipelineDestroy( state.pipeline ) );
+        //static bool hadOnce = false;
+        //if (hadOnce) {
+    //OPTIX_CHECK( optixPipelineDestroy( state.pipeline ) );
     //state.raygen_prog_group ) );
     //state.radiance_miss_group ) );
     //state.occlusion_miss_group ) );
@@ -946,7 +947,7 @@ void optixupdateend() {
     //OPTIX_CHECK( optixProgramGroupDestroy( state.occlusion_hit_group2 ) );
     //OPTIX_CHECK( optixModuleDestroy( state.ptx_module ) );
     //OPTIX_CHECK( optixDeviceContextDestroy( state.context ) );
-        } hadOnce = true;
+        //} hadOnce = true;
 
         state.pipeline_compile_options = OptixUtil::pipeline_compile_options;
         state.pipeline = OptixUtil::pipeline;
