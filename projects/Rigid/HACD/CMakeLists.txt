@@ -39,9 +39,9 @@ IF (NOT MSVC)
                                         LIBRARY DESTINATION lib${LIB_SUFFIX}
                                         ARCHIVE DESTINATION lib${LIB_SUFFIX})
 
-#                INSTALL(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-#                    DESTINATION ${INCLUDE_INSTALL_DIR} FILES_MATCHING PATTERN "*.h" PATTERN "*.inl" PATTERN
-#                    ".svn" EXCLUDE PATTERN "CMakeFiles" EXCLUDE)
+                #INSTALL(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+                #    DESTINATION ${INCLUDE_INSTALL_DIR} FILES_MATCHING PATTERN "*.h" PATTERN "*.inl" PATTERN
+                #    ".svn" EXCLUDE PATTERN "CMakeFiles" EXCLUDE)
             ENDIF (APPLE AND BUILD_SHARED_LIBS AND FRAMEWORK)
         ENDIF (${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION} GREATER 2.5)
 

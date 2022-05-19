@@ -13,6 +13,7 @@ subject to the following restrictions:
 3. This notice may not be removed or altered from any source distribution.
 */
 
+#include <iostream>
 #include "btDiscreteDynamicsWorld.h"
 
 //collision detection
@@ -422,17 +423,17 @@ int btDiscreteDynamicsWorld::stepSimulation(btScalar timeStep, int maxSubSteps, 
 	}
 	if (numSimulationSubSteps)
 	{
+
 		//clamp the number of substeps, to prevent simulation grinding spiralling down to a halt
 		int clampedSimulationSteps = (numSimulationSubSteps > maxSubSteps) ? maxSubSteps : numSimulationSubSteps;
 
 		saveKinematicState(fixedTimeStep * clampedSimulationSteps);
 
 		applyGravity();
-
 		for (int i = 0; i < clampedSimulationSteps; i++)
 		{
 			internalSingleStepSimulation(fixedTimeStep);
-			synchronizeMotionStates();
+         	synchronizeMotionStates();
 		}
 	}
 	else
@@ -452,7 +453,6 @@ int btDiscreteDynamicsWorld::stepSimulation(btScalar timeStep, int maxSubSteps, 
 void btDiscreteDynamicsWorld::internalSingleStepSimulation(btScalar timeStep)
 {
 	BT_PROFILE("internalSingleStepSimulation");
-
 	if (0 != m_internalPreTickCallback)
 	{
 		(*m_internalPreTickCallback)(this, timeStep);
@@ -460,30 +460,24 @@ void btDiscreteDynamicsWorld::internalSingleStepSimulation(btScalar timeStep)
 
 	///apply gravity, predict motion
 	predictUnconstraintMotion(timeStep);
-
 	btDispatcherInfo& dispatchInfo = getDispatchInfo();
 
 	dispatchInfo.m_timeStep = timeStep;
 	dispatchInfo.m_stepCount = 0;
 	dispatchInfo.m_debugDraw = getDebugDrawer();
-
 	createPredictiveContacts(timeStep);
 
 	///perform collision detection
 	performDiscreteCollisionDetection();
-
 	calculateSimulationIslands();
-
 	getSolverInfo().m_timeStep = timeStep;
 
 	///solve contact and other joint constraints
 	solveConstraints(getSolverInfo());
-
-	///CallbackTriggers();
+    ///CallbackTriggers();
 
 	///integrate transforms
-
-	integrateTransforms(timeStep);
+    integrateTransforms(timeStep);
 
 	///update vehicle simulation
 	updateActions(timeStep);
