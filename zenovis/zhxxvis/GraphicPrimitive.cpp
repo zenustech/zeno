@@ -670,9 +670,9 @@ struct GraphicPrimitive : IGraphic {
 
         if (prim_has_inst)
         {
-            triObj.prog->set_uniform("fInstDeltaTime", prim_inst_delta_time);
-            triObj.prog->set_uniformi("iInstFrameAmount", prim_inst_frame_amount);
-            triObj.prog->set_uniformi("iInstVertexFrameSampler",texOcp);
+            triObj.shadowprog->set_uniform("fInstDeltaTime", prim_inst_delta_time);
+            triObj.shadowprog->set_uniformi("iInstFrameAmount", prim_inst_frame_amount);
+            triObj.shadowprog->set_uniformi("iInstVertexFrameSampler",texOcp);
             prim_inst_vertex_frame_sampler->bind_to(texOcp);
             texOcp++;
         }
