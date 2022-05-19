@@ -72,3 +72,8 @@ assets/character
 # temp path setting
 zenqt/assets/cache_path.txt
 
+# maya project
+*.mayaSwatches
+/assets/fbx/valueTex/
+*.fbm
+*.tx

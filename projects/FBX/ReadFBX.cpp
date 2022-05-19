@@ -453,7 +453,7 @@ void readFBXFile(
                                              aiProcess_Triangulate
 //                                             | aiProcess_FlipUVs
                                              | aiProcess_CalcTangentSpace
-//                                             | aiProcess_JoinIdenticalVertices
+                                             | aiProcess_JoinIdenticalVertices
                                              );
     if(! scene)
         zeno::log_error("ReadFBXPrim: Invalid assimp scene");
