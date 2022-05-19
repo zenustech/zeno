@@ -62,8 +62,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
     std::unique_ptr<opengl::VAO> vao;
     Scene *scene;
 
-    bool giWasEnable = false;
-    bool giNeedUpdate = false;
+    bool giNeedUpdate = true;
 
     auto setupState() {
         return std::tuple{
@@ -107,6 +106,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         }
 
         if (camNeedUpdate) {
+        zeno::log_debug("[zeno-optix] updating camera");
         //xinxinoptix::set_show_grid(opt.show_grid);
         //xinxinoptix::set_normal_check(opt.normal_check);
         //xinxinoptix::set_enable_gi(opt.enable_gi);
@@ -122,6 +122,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         }
 
         if (giNeedUpdate) {
+        zeno::log_debug("[zeno-optix] updating scene");
             xinxinoptix::optixupdatemesh();
             std::vector<const char *> shaders;
             auto s = zeno::file_get_content("/home/bate/zeno/zenovis/xinxinoptix/zxxMaterial.cu");
@@ -132,6 +133,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
             shaders.push_back(s.c_str());
             xinxinoptix::optixupdatematerial(shaders);
             xinxinoptix::optixupdateend();
+            giNeedUpdate = false;
         }
 
         int targetFBO = 0;
