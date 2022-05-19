@@ -1,10 +1,10 @@
 #ifndef ZENO_DEFINITION_H
 #define ZENO_DEFINITION_H
 
-#define GET_MAT_COLOR(VAR, KEY, TYPE, INDEX, DEFAULT) \
-    if(AI_SUCCESS != aiGetMaterialColor(material, KEY, TYPE, INDEX, &VAR)) \
-        VAR = DEFAULT;                                \
-    zeno::log_info(">>>>> Material `{}` Result {} {} {} {}", KEY, VAR.r, VAR.g, VAR.b, VAR.a);
+#include <iostream>
+#include <algorithm>
+
+#define COMMON_DEFAULT_NORMAL aiColor4D(0.0f, 0.0f, 1.0f, 1.0f)
 
 struct SKeyPosition {
     aiVector3D position;
@@ -167,11 +167,6 @@ struct SAnimBone {
     }
 };
 
-struct STexture {
-    int type;
-    std::string path;
-};
-
 struct SVertex{
     aiVector3D position;
     aiVector3D texCoord;
@@ -181,18 +176,122 @@ struct SVertex{
     std::unordered_map<std::string, float> boneWeights;
 };
 
-struct SMaterial{
+struct SMaterialProp{
+    int order;
+    std::any value;
+    aiTextureType type;
+    std::string aiName;
+    std::string texPath;
+};
+
+struct SDefaultMatProp{
+    std::map<std::string, aiColor4D> getUnknownProp(){
+        std::map<std::string, aiColor4D> val;
+
+        val.emplace("basecolor", aiColor4D());
+        val.emplace("metallic", aiColor4D());
+        val.emplace("roughness", aiColor4D());
+        val.emplace("specular", aiColor4D());
+        val.emplace("subsurface", aiColor4D());
+        val.emplace("thinkness", aiColor4D());
+        val.emplace("sssParam", aiColor4D());
+        val.emplace("sssColor", aiColor4D());
+        val.emplace("foliage", aiColor4D());
+        val.emplace("skin", aiColor4D());
+        val.emplace("curvature", aiColor4D());
+        val.emplace("specularTint", aiColor4D());
+        val.emplace("anisotropic", aiColor4D());
+        val.emplace("sheen", aiColor4D());
+        val.emplace("sheenTint", aiColor4D());
+        val.emplace("clearcoat", aiColor4D());
+        val.emplace("clearcoatGloss", aiColor4D());
+        val.emplace("normal", COMMON_DEFAULT_NORMAL);
+        val.emplace("emission", aiColor4D());
+        val.emplace("exposure", aiColor4D());
+        val.emplace("ao", aiColor4D());
+        val.emplace("toon", aiColor4D());
+        val.emplace("stroke", aiColor4D());
+        val.emplace("shape", aiColor4D());
+        val.emplace("style", aiColor4D());
+        val.emplace("strokeNoise", aiColor4D());
+        val.emplace("shad", aiColor4D());
+        val.emplace("strokeTint", aiColor4D());
+        val.emplace("opacity", aiColor4D());
+        return val;
+    }
+};
+
+struct SMaterial : zeno::IObjectClone<SMaterial>{
+    using pair = std::pair<std::string, SMaterialProp>;
+
     std::string matName;
+    std::map<std::string, SMaterialProp> val;
+    std::vector<pair> val_vec;
 
-    std::unordered_map<int, std::vector<STexture>> tex;
+    void setDefaultValue(std::map<std::string, aiColor4D> dValueMap){
+        for(auto&v: val){
+            v.second.value = dValueMap.at(v.first);
+        }
+    }
 
-    aiColor4D base;
-    aiColor4D specular;
-    aiColor4D transmission;
-    aiColor4D subsurface;
-    aiColor4D sheen;
-    aiColor4D coat;
-    aiColor4D emission;
+    SMaterial(){
+        // FIXME (aiTextureType_BASE_COLOR 12 basecolor `aiStandardSurface`)
+        //      or (aiTextureType_DIFFUSE 1 diffuse `lambert`)
+        // aiTextureType_NORMALS or aiTextureType_NORMAL_CAMERA
+        val.emplace("basecolor", SMaterialProp{0, aiColor4D(), aiTextureType_BASE_COLOR, "$ai.base"});
+        val.emplace("metallic", SMaterialProp{1, aiColor4D(), aiTextureType_METALNESS, ""});
+        val.emplace("roughness", SMaterialProp{2, aiColor4D(), aiTextureType_DIFFUSE_ROUGHNESS, ""});
+        val.emplace("specular", SMaterialProp{3, aiColor4D(), aiTextureType_SPECULAR, "$ai.specular"});
+        val.emplace("subsurface", SMaterialProp{4, aiColor4D(), aiTextureType_NONE, "$ai.subsurface"});
+        val.emplace("thinkness", SMaterialProp{5, aiColor4D(), aiTextureType_NONE, ""});
+        val.emplace("sssParam", SMaterialProp{6, aiColor4D(), aiTextureType_NONE, ""});
+        val.emplace("sssColor", SMaterialProp{7, aiColor4D(), aiTextureType_NONE, ""});
+        val.emplace("foliage", SMaterialProp{8, aiColor4D(), aiTextureType_NONE, ""});
+        val.emplace("skin", SMaterialProp{9, aiColor4D(), aiTextureType_NONE, ""});
+        val.emplace("curvature", SMaterialProp{10, aiColor4D(), aiTextureType_NONE, ""});
+        val.emplace("specularTint", SMaterialProp{11, aiColor4D(), aiTextureType_NONE, ""});
+        val.emplace("anisotropic", SMaterialProp{12, aiColor4D(), aiTextureType_NONE, ""});
+        val.emplace("sheen", SMaterialProp{13, aiColor4D(), aiTextureType_SHININESS, "$ai.sheen"});
+        val.emplace("sheenTint", SMaterialProp{14, aiColor4D(), aiTextureType_NONE, ""});
+        val.emplace("clearcoat", SMaterialProp{15, aiColor4D(), aiTextureType_NONE, "$ai.coat"});
+        val.emplace("clearcoatGloss", SMaterialProp{16, aiColor4D(), aiTextureType_NONE, ""});
+        val.emplace("normal", SMaterialProp{17, aiColor4D(), aiTextureType_NORMAL_CAMERA, ""});
+        val.emplace("emission", SMaterialProp{18, aiColor4D(), aiTextureType_EMISSIVE, "$ai.emission"}); // aiTextureType_EMISSION_COLOR
+        val.emplace("exposure", SMaterialProp{19, aiColor4D(), aiTextureType_NONE, ""});
+        val.emplace("ao", SMaterialProp{20, aiColor4D(), aiTextureType_AMBIENT_OCCLUSION, ""});
+        val.emplace("toon", SMaterialProp{21, aiColor4D(), aiTextureType_NONE, ""});
+        val.emplace("stroke", SMaterialProp{22, aiColor4D(), aiTextureType_NONE, ""});
+        val.emplace("shape", SMaterialProp{23, aiColor4D(), aiTextureType_NONE, ""});
+        val.emplace("style", SMaterialProp{24, aiColor4D(), aiTextureType_NONE, ""});
+        val.emplace("strokeNoise", SMaterialProp{25, aiColor4D(), aiTextureType_NONE, ""});
+        val.emplace("shad", SMaterialProp{26, aiColor4D(), aiTextureType_NONE, ""});
+        val.emplace("strokeTint", SMaterialProp{27, aiColor4D(), aiTextureType_NONE, ""});
+        val.emplace("opacity", SMaterialProp{28, aiColor4D(), aiTextureType_OPACITY, "$ai.transmission"});
+    }
+
+    std::vector<zeno::Any> getTexList(){
+        std::vector<zeno::Any> tl;
+
+        std::copy(val.begin(),
+                  val.end(),
+                  std::back_inserter<std::vector<pair>>(val_vec));
+
+        std::sort(val_vec.begin(), val_vec.end(),
+                  [](const pair &l, const pair &r)
+                  {
+                      if (l.second.order != r.second.order) {
+                          return l.second.order < r.second.order;
+                      }
+
+                      return l.first < r.first;
+                  });
+        for (auto const &p: val_vec) {
+            //zeno::log_info("Pair {} {}", p.first, p.second.order);
+            tl.emplace_back(p.second.texPath);
+        }
+
+        return tl;
+    }
 
     aiColor4D testColor;
     float testFloat;
@@ -220,7 +319,7 @@ struct AnimInfo : zeno::IObjectClone<AnimInfo>{
 };
 
 struct IMaterial : zeno::IObjectClone<IMaterial>{
-    std::unordered_map<std::string, SMaterial> value;
+    std::unordered_map<std::string, SMaterial> value;  // key: meshName
 };
 
 struct IBoneOffset : zeno::IObjectClone<IBoneOffset>{

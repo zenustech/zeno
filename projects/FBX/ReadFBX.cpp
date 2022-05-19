@@ -14,24 +14,40 @@
 #include <stack>
 #include <string>
 #include <unordered_map>
+#include <filesystem>
 
 #include <glm/vec4.hpp>
 #include <glm/mat4x4.hpp>
 
 #include <stb_image.h>
+#define STBI_MSC_SECURE_CRT
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include <stb_image_write.h>
 
 #include "Definition.h"
 
 struct Mesh{
     FBXData fbxData;
+    std::filesystem::path fbxPath;
     std::unordered_map<std::string, std::vector<unsigned int>> m_VerticesSlice;
     std::unordered_map<std::string, aiMatrix4x4> m_TransMatrix;
     unsigned int m_VerticesIncrease = 0;
     unsigned int m_IndicesIncrease = 0;
 
+    std::string createTexDir(std::string subPath){
+        auto p = fbxPath;
+        p += subPath;
+
+        if(! std::filesystem::exists(p)){
+            std::filesystem::create_directory(p);
+        }
+
+        return p.string();
+    }
+
     void initMesh(const aiScene *scene){
         m_VerticesIncrease = 0;
-
+        createTexDir("valueTex");
         readTrans(scene->mRootNode, aiMatrix4x4());
         processNode(scene->mRootNode, scene);
     }
@@ -122,49 +138,109 @@ struct Mesh{
             processNode(node->mChildren[i], scene);
     }
 
+    size_t findCaseInsensitive(std::string data, std::string toSearch, size_t pos = 0)
+    {
+        std::transform(data.begin(), data.end(), data.begin(), ::tolower);
+        std::transform(toSearch.begin(), toSearch.end(), toSearch.begin(), ::tolower);
+        return data.find(toSearch, pos);
+    }
+
     void readMaterial(aiMesh* mesh, aiScene const* scene){
+        /*  assimp - v5.0.1
+
+            aiTextureType_NONE = 0,
+            aiTextureType_DIFFUSE = 1,
+            aiTextureType_SPECULAR = 2,
+            aiTextureType_AMBIENT = 3,
+            aiTextureType_EMISSIVE = 4,
+            aiTextureType_HEIGHT = 5,
+            aiTextureType_NORMALS = 6,
+            aiTextureType_SHININESS = 7,
+            aiTextureType_OPACITY = 8,
+            aiTextureType_DISPLACEMENT = 9,
+            aiTextureType_LIGHTMAP = 10,
+            aiTextureType_REFLECTION = 11,
+            aiTextureType_BASE_COLOR = 12,
+            aiTextureType_NORMAL_CAMERA = 13,
+            aiTextureType_EMISSION_COLOR = 14,
+            aiTextureType_METALNESS = 15,
+            aiTextureType_DIFFUSE_ROUGHNESS = 16,
+            aiTextureType_AMBIENT_OCCLUSION = 17,
+            aiTextureType_UNKNOWN = 18,
+         */
+
         SMaterial mat;
+        SDefaultMatProp dMatProp;
         aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
 
-        GET_MAT_COLOR(mat.base, "$ai.base",0,0, aiColor4D(0.0f, 0.0f, 0.0f, 0.0f))
-        GET_MAT_COLOR(mat.specular, "$ai.specular",0,0, aiColor4D(0.0f, 0.0f, 0.0f, 0.0f))
-        GET_MAT_COLOR(mat.transmission, "$ai.transmission",0,0, aiColor4D(0.0f, 0.0f, 0.0f, 0.0f))
-        GET_MAT_COLOR(mat.subsurface, "$ai.subsurface",0,0, aiColor4D(0.0f, 0.0f, 0.0f, 0.0f))
-        GET_MAT_COLOR(mat.sheen, "$ai.sheen",0,0, aiColor4D(0.0f, 0.0f, 0.0f, 0.0f))
-        GET_MAT_COLOR(mat.coat, "$ai.coat",0,0, aiColor4D(0.0f, 0.0f, 0.0f, 0.0f))
-        GET_MAT_COLOR(mat.emission, "$ai.emission",0,0, aiColor4D(0.0f, 0.0f, 0.0f, 0.0f))
+        std::string meshName = mesh->mName.data;
+        std::string matName = material->GetName().data;
+        std::string vmPath = createTexDir("valueTex/" + matName);
 
-        // TODO read material-float properties
-//        if(AI_SUCCESS != aiGetMaterialFloat(material, "$ai.normalCameraFactor", 0, 0, &mat.testFloat))
-//            mat.testFloat = 0.5f;
-//        zeno::log_info("----- TestFloat {}", mat.testFloat);
+        zeno::log_info("***** MatTex: Mesh {} Material {} NumTex {}", meshName, matName, scene->mNumTextures);
 
-        zeno::log_info("MatTex: Mesh {} Material {} NumTex {}",
-                       mesh->mName.data, material->GetName().data, scene->mNumTextures);
-
-        for(int texTypeIndex=0; texTypeIndex<=AI_TEXTURE_TYPE_MAX; texTypeIndex++)
-        {
-            std::vector<STexture> textures;
-            aiTextureType texType = (aiTextureType)texTypeIndex;
-
-            for(unsigned int i = 0; i < material->GetTextureCount(texType); i++)
-            {
-                aiString str;
-                material->GetTexture(texType, i, &str);
-                zeno::log_info(">>>>> MatTex: TexName {} TexType {}", str.data, texType);
-
-                    STexture texture;
-                    texture.type = texTypeIndex;
-                    texture.path = str.C_Str();
-                    textures.push_back(texture);
-            }
-
-            mat.tex[texTypeIndex] = textures;
+        if( findCaseInsensitive(matName, "SKIN") != std::string::npos ){
+            mat.setDefaultValue(dMatProp.getUnknownProp());
+        }else if( findCaseInsensitive(matName, "CLOTH") != std::string::npos ){
+            mat.setDefaultValue(dMatProp.getUnknownProp());
+        }else if( findCaseInsensitive(matName, "HAIR") != std::string::npos ){
+            mat.setDefaultValue(dMatProp.getUnknownProp());
+        }else{
+            mat.setDefaultValue(dMatProp.getUnknownProp());
         }
 
-        mat.matName = material->GetName().data;
+        for(auto&com: mat.val){
 
-        fbxData.iMaterial.value[mesh->mName.data] = mat;
+            aiTextureType texType = com.second.type;
+
+            // TODO Support material multi-tex
+            // The first step - to find the texture
+            if(material->GetTextureCount(texType)){
+                aiString str;
+                material->GetTexture(texType, 0, &str);
+                auto p = fbxPath;
+                auto s = std::string(str.C_Str());
+                auto c = (p += s).string();
+                std::replace(c.begin(), c.end(), '\\', '/');
+                zeno::log_info("----- Name {} TexName {} TexType {} ContactPath {}", com.first, str.data, texType, c);
+
+                mat.val.at(com.first).texPath = c;
+            }
+            // The second step - to find the material-prop and to generate a value-based texture
+            else
+            {
+                aiColor4D tmp;
+                bool found = false;
+                auto key = com.second.aiName.c_str();
+                if(com.second.aiName != ""){
+                    if(AI_SUCCESS == aiGetMaterialColor(material,
+                                                        key,0,0,
+                                                        &tmp)){ // Found or use default value
+                        found = true;
+                        com.second.value = tmp;
+                    }
+                }
+
+                // TODO read material-float properties
+                //if(AI_SUCCESS != aiGetMaterialFloat(material, "$ai.normalCameraFactor", 0, 0, &mat.testFloat))
+                //    mat.testFloat = 0.5f;
+                //zeno::log_info("----- TestFloat {}", mat.testFloat);
+
+                auto v = std::any_cast<aiColor4D>(com.second.value);
+                int channel_num = 4;
+                int pixel[4] = {int(v.r*255.999), int(v.g*255.999), int(v.b*255.999), int(v.a*255.999)};
+                std::string img_path = vmPath+"/"+com.first+".png";
+
+                stbi_write_png(img_path.c_str(), 1, 1, channel_num, pixel, 1*channel_num);
+
+                mat.val.at(com.first).texPath = img_path;
+                zeno::log_info("----- Name {} Prop `{}` found {} value `{} {} {} {}`", com.first, key, found, v.r, v.g, v.b, v.a);
+            }
+        }
+
+        mat.matName = matName;
+
+        fbxData.iMaterial.value[meshName] = mat;
     }
 
     void extractBone(aiMesh* mesh){
@@ -256,6 +332,7 @@ struct Mesh{
             }
             sub_data->iIndices.value = sub_indices;
             sub_data->iVertices.value = sub_vertices;
+            // TODO Currently it is the sub-mesh that has all the bone offset information
             sub_data->iBoneOffset = fbxData.iBoneOffset;
 
             prims->lut[meshName] = sub_prim;
@@ -337,7 +414,7 @@ struct Anim{
             m_Bones.AnimBoneMap[boneName] = bone;
         }
 
-        zeno::log_info("SetupBones: Num AnimBoneMap: {}", m_Bones.AnimBoneMap.size());
+        //zeno::log_info("SetupBones: Num AnimBoneMap: {}", m_Bones.AnimBoneMap.size());
     }
 
 };
@@ -366,6 +443,10 @@ void readFBXFile(
     Mesh mesh;
     Anim anim;
 
+    std::filesystem::path p(fbx_path);
+    mesh.fbxPath = p.remove_filename();
+    //zeno::log_info("ReadFBXPrim: FBXPath {}", mesh.fbxPath.string());
+
     mesh.initMesh(scene);
     anim.initAnim(scene, &mesh);
     mesh.processTrans(anim.m_Bones.AnimBoneMap, prims, datas);
@@ -378,9 +459,9 @@ void readFBXFile(
     animInfo->duration = anim.duration;
     animInfo->tick = anim.tick;
 
-    zeno::log_info("ReadFBXPrim: Num Animation {}", scene->mNumAnimations);
-    zeno::log_info("ReadFBXPrim: Vertices count {}", mesh.fbxData.iVertices.value.size());
-    zeno::log_info("ReadFBXPrim: Indices count {}", mesh.fbxData.iIndices.value.size());
+    //zeno::log_info("ReadFBXPrim: Num Animation {}", scene->mNumAnimations);
+    //zeno::log_info("ReadFBXPrim: Vertices count {}", mesh.fbxData.iVertices.value.size());
+    //zeno::log_info("ReadFBXPrim: Indices count {}", mesh.fbxData.iIndices.value.size());
 }
 
 struct ReadFBXPrim : zeno::INode {
@@ -395,7 +476,7 @@ struct ReadFBXPrim : zeno::INode {
         auto fbxData = std::make_shared<FBXData>();
         auto boneTree = std::make_shared<BoneTree>();
 
-        zeno::log_info("ReadFBXPrim: File Path {}", path);
+        //zeno::log_info("ReadFBXPrim: File Path {}", path);
 
         readFBXFile(prim,prims, datas,
                     nodeTree, fbxData, boneTree, animInfo,
