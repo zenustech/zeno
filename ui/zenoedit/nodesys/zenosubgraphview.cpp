@@ -75,6 +75,15 @@ _ZenoSubGraphView::_ZenoSubGraphView(QWidget *parent)
 	connect(cameraFocus, SIGNAL(triggered()), this, SLOT(cameraFocus()));
 	addAction(cameraFocus);
 
+    QAction* mActZenoNewnode = new QAction;
+    mActZenoNewnode->setShortcut(QKeySequence(Qt::Key_Tab));
+    mActZenoNewnode->setShortcutContext(Qt::WidgetShortcut);
+    connect(mActZenoNewnode, &QAction::triggered, [=](){
+        QContextMenuEvent* event = new QContextMenuEvent(QContextMenuEvent::Reason::Mouse, QCursor::pos(),QCursor::pos());
+        contextMenuEvent(event);
+    });
+    addAction(mActZenoNewnode);
+
     QRectF rcView(-SCENE_INIT_WIDTH / 2, -SCENE_INIT_HEIGHT / 2, SCENE_INIT_WIDTH, SCENE_INIT_HEIGHT);
     setSceneRect(rcView);
 }
