@@ -34,9 +34,17 @@ retrieve_bounding_volumes(Pol &pol,
                           zs::wrapv<codim> = {}, float thickness = 0.f) {
   using namespace zs;
   using bv_t = typename ZenoParticles::lbvh_t::Box;
-  Vector<bv_t> ret{eles.get_allocator(), eles.size()};
   static_assert(codim >= 1 && codim <= 4, "invalid co-dimension!\n");
   constexpr auto space = Pol::exec_tag::value;
+#if ZS_ENABLE_CUDA && defined(__CUDACC__)
+  // ZS_LAMBDA -> __device__
+  static_assert(space == execspace_e::cuda,
+                "specialized policy and compiler not match");
+#else
+  static_assert(space != execspace_e::cuda,
+                "specialized policy and compiler not match");
+#endif
+  Vector<bv_t> ret{eles.get_allocator(), eles.size()};
   pol(zs::range(eles.size()), [eles = proxy<space>({}, eles),
                                bvs = proxy<space>(ret),
                                verts = proxy<space>({}, verts),
@@ -66,9 +74,17 @@ zs::Vector<typename ZenoParticles::lbvh_t::Box> retrieve_bounding_volumes(
     const zs::SmallString &dirTag = "dir") {
   using namespace zs;
   using bv_t = typename ZenoParticles::lbvh_t::Box;
-  Vector<bv_t> ret{eles.get_allocator(), eles.size()};
   static_assert(codim >= 1 && codim <= 4, "invalid co-dimension!\n");
   constexpr auto space = Pol::exec_tag::value;
+#if ZS_ENABLE_CUDA && defined(__CUDACC__)
+  // ZS_LAMBDA -> __device__
+  static_assert(space == execspace_e::cuda,
+                "specialized policy and compiler not match");
+#else
+  static_assert(space != execspace_e::cuda,
+                "specialized policy and compiler not match");
+#endif
+  Vector<bv_t> ret{eles.get_allocator(), eles.size()};
   pol(zs::range(eles.size()), [eles = proxy<space>({}, eles),
                                bvs = proxy<space>(ret),
                                verts = proxy<space>({}, verts),
@@ -94,6 +110,103 @@ zs::Vector<typename ZenoParticles::lbvh_t::Box> retrieve_bounding_volumes(
     bvs[ei] = bv;
   });
   return ret;
+}
+
+// for ccd
+template <typename Pol, typename T>
+void find_intersection_free_stepsize(
+    Pol &pol, ZenoParticles &zstets,
+    const typename ZenoParticles::particles_t &vtemp, T &stepSize, T xi) {
+  using namespace zs;
+  using bv_t = typename ZenoParticles::lbvh_t::Box;
+  constexpr auto space = Pol::exec_tag::value;
+#if ZS_ENABLE_CUDA && defined(__CUDACC__)
+  // ZS_LAMBDA -> __device__
+  static_assert(space == execspace_e::cuda,
+                "specialized policy and compiler not match");
+#else
+  static_assert(space != execspace_e::cuda,
+                "specialized policy and compiler not match");
+#endif
+  const auto &verts = zstets.getParticles();
+  const auto &eles = zstets.getQuadraturePoints();
+
+  const auto &surfaces = zstets[ZenoParticles::s_surfTriTag];
+  if (!zstets.hasBvh(ZenoParticles::s_surfTriTag)) // build if bvh not exist
+    zstets.bvh(ZenoParticles::s_surfTriTag)
+        .build(pol,
+               retrieve_bounding_volumes(pol, verts, surfaces, wrapv<3>{}, xi));
+  const auto &stBvh = zstets.bvh(ZenoParticles::s_surfTriTag);
+
+  const auto &surfEdges = zstets[ZenoParticles::s_surfEdgeTag];
+  if (!zstets.hasBvh(ZenoParticles::s_surfEdgeTag))
+    zstets.bvh(ZenoParticles::s_surfEdgeTag)
+        .build(pol, retrieve_bounding_volumes(pol, verts, surfEdges, wrapv<2>{},
+                                              xi));
+  const auto &seBvh = zstets.bvh(ZenoParticles::s_surfEdgeTag);
+
+  const auto &surfVerts = zstets[ZenoParticles::s_surfVertTag];
+#if 0
+  if (!zstets.hasBvh(ZenoParticles::s_surfVertTag))
+    zstets.bvh(ZenoParticles::s_surfVertTag)
+        .build(pol, retrieve_bounding_volumes(pol, verts, surfVerts, wrapv<1>{},
+                                              xi));
+  const auto &svBvh = zstets.bvh(ZenoParticles::s_surfVertTag);
+#endif
+  // query pt
+  pol(Collapse{surfVerts.size()}, [svs = proxy<space>({}, surfVerts),
+                                   sts = proxy<space>({}, surfaces),
+                                   verts = proxy<space>({}, verts),
+                                   vtemp = proxy<space>({}, vtemp),
+                                   bvh = proxy<space>(stBvh),
+                                   thickness = xi] ZS_LAMBDA(int svi) mutable {
+    auto vi = reinterpret_bits<int>(svs("inds", svi));
+    auto p = vtemp.pack<3>("xn", vi);
+    auto [mi, ma] = get_bounding_box(p - thickness / 2, p + thickness / 2);
+    auto bv = bv_t{mi, ma};
+    bvh.iter_neighbors(bv, [&](int stI) {
+      auto tri =
+          sts.template pack<3>("inds", stI).template reinterpret_bits<int>();
+      if (vi == tri[0] || vi == tri[1] || vi == tri[2])
+        return;
+      // all affected by sticky boundary conditions
+      if (reinterpret_bits<int>(verts("BCorder", vi)) == 3 &&
+          reinterpret_bits<int>(verts("BCorder", tri[0])) == 3 &&
+          reinterpret_bits<int>(verts("BCorder", tri[1])) == 3 &&
+          reinterpret_bits<int>(verts("BCorder", tri[2])) == 3)
+        return;
+      // ccd
+    });
+  });
+  // query ee
+  pol(Collapse{surfEdges.size()}, [ses = proxy<space>({}, surfEdges),
+                                   verts = proxy<space>({}, verts),
+                                   vtemp = proxy<space>({}, vtemp),
+                                   bvh = proxy<space>(seBvh),
+                                   thickness = xi] ZS_LAMBDA(int sei) mutable {
+    auto edgeInds =
+        ses.template pack<2>("inds", sei).template reinterpret_bits<int>();
+    auto x0 = vtemp.pack<3>("xn", edgeInds[0]);
+    auto x1 = vtemp.pack<3>("xn", edgeInds[1]);
+    auto [mi, ma] = get_bounding_box(x0, x1);
+    auto bv = bv_t{mi - thickness / 2, ma + thickness / 2};
+    bvh.iter_neighbors(bv, [&](int seI) {
+      if (sei > seI)
+        return;
+      auto oEdgeInds =
+          ses.template pack<2>("inds", seI).template reinterpret_bits<int>();
+      if (edgeInds[0] == oEdgeInds[0] || edgeInds[0] == oEdgeInds[1] ||
+          edgeInds[1] == oEdgeInds[0] || edgeInds[1] == oEdgeInds[1])
+        return;
+      // all affected by sticky boundary conditions
+      if (reinterpret_bits<int>(verts("BCorder", edgeInds[0])) == 3 &&
+          reinterpret_bits<int>(verts("BCorder", edgeInds[1])) == 3 &&
+          reinterpret_bits<int>(verts("BCorder", oEdgeInds[0])) == 3 &&
+          reinterpret_bits<int>(verts("BCorder", oEdgeInds[1])) == 3)
+        return;
+      // ccd
+    });
+  });
 }
 
 template <typename ExecPol, typename TileVectorT, typename IndexBucketsT>
