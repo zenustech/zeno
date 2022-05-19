@@ -3125,7 +3125,7 @@ ZENDEFNODE(BulletSetContactParameters, {
 struct BulletMultiBodyGetJointTorque : zeno::INode {
     virtual void apply() override {
         auto object = get_input<BulletMultiBodyObject>("object");
-        auto link_id = get_input2<int>("linkIndex");
+        auto link_id = get_input2<int>("jointIndex");
         btScalar torque;
 
         torque = object->multibody->getJointTorque(link_id);
@@ -3137,13 +3137,51 @@ struct BulletMultiBodyGetJointTorque : zeno::INode {
 };
 
 ZENDEFNODE(BulletMultiBodyGetJointTorque, {
-    {"object", "linkIndex"},
+    {"object", "jointIndex"},
     {"torque"},
     {},
     {"Bullet"}
 });
 
-struct BulletMultiBodyGetJointState : zeno::INode {
+struct BulletMultiBodyGetLinkForce : zeno::INode {
+    virtual void apply() override {
+        auto object = get_input<BulletMultiBodyObject>("object");
+        auto link_id = get_input2<int>("linkIndex");
+        btVector3 force;
+        auto force_out = zeno::IObject::make<zeno::NumericObject>();
+        force = object->multibody->getLinkForce(link_id);
+        force_out ->set<zeno::vec3f>(zeno::vec3f(force.x(), force.y(), force.z()));
+        set_output("force", std::move(force_out));
+    }
+};
+
+ZENDEFNODE(BulletMultiBodyGetLinkForce, {
+                                              {"object", "linkIndex"},
+                                              {"force"},
+                                              {},
+                                              {"Bullet"}
+                                          });
+
+struct BulletMultiBodyGetLinkTorque : zeno::INode {
+    virtual void apply() override {
+        auto object = get_input<BulletMultiBodyObject>("object");
+        auto link_id = get_input2<int>("linkIndex");
+        btVector3 torque;
+        auto torque_out = zeno::IObject::make<zeno::NumericObject>();
+        torque = object->multibody->getLinkTorque(link_id);
+        torque_out ->set<zeno::vec3f>(zeno::vec3f(torque.x(), torque.y(), torque.z()));
+        set_output("torque", std::move(torque_out));
+    }
+};
+
+ZENDEFNODE(BulletMultiBodyGetLinkTorque, {
+                                            {"object", "linkIndex"},
+                                            {"torque"},
+                                            {},
+                                            {"Bullet"}
+                                        });
+
+struct BulletMultiBodyGetJointVel : zeno::INode {
     virtual void apply() override {
         auto object = get_input<BulletMultiBodyObject>("object");
         auto link_id = get_input2<int>("linkIndex");
@@ -3161,7 +3199,7 @@ struct BulletMultiBodyGetJointState : zeno::INode {
     }
 };
 
-ZENDEFNODE(BulletMultiBodyGetJointState, {
+ZENDEFNODE(BulletMultiBodyGetJointVel, {
                                               {"object", "linkIndex"},
                                               {"vel", "pos"},
                                               {},
@@ -3202,18 +3240,21 @@ struct BulletMultiBodyGetBaseTransform : zeno::INode {
                                                  {"Bullet"},
                                              });
 
-// struct BulletCalculateEEForce : zeno::INode {
-//     virtual void apply() {
-//         auto object = get_input<BulletMultiBodyObject>("object");
-//         auto endEffectorLinkIndices = get_input<zeno::ListObject>("endEffectorLinkIndices")->get<int>();
-//         auto numEndEffectorLinkIndices = endEffectorLinkIndices.size();
-//
-//     }
-// };
-// ZENDEFNODE(BulletCalculateEEForce, {
-//                                                {"object"},
-//                                                {"EEForce"},
-//                                                {},
-//                                                {"Bullet"},
-//                                            });
+struct BulletMultiBodyClearJointStates : zeno::INode {
+    virtual void apply() {
+        auto object = get_input<BulletMultiBodyObject>("object");
+        object -> multibody -> clearVelocities();
+        object -> multibody -> clearForcesAndTorques();
+//        object -> multibody -> clearConstraintForces();
+//        Not sure if clear constraint forces is necessary
+    }
+};
+
+ZENDEFNODE(BulletMultiBodyClearJointStates, {
+                                               {"object"},
+                                               {},
+                                               {},
+                                               {"Bullet"},
+                                           });
+
 };
