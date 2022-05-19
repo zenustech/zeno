@@ -1025,6 +1025,8 @@ void unload_object(std::string const &key) {
 void set_window_size(int nx, int ny) {
     state.params.width = nx;
     state.params.height = ny;
+    camera_changed = true;
+    resize_dirty = true;
 }
 
 void set_perspective(float const *U, float const *V, float const *W, float const *E, float aspect, float fov) {
@@ -1041,6 +1043,7 @@ void set_perspective(float const *U, float const *V, float const *W, float const
         float focallen = 0.018f / tanfov;
         cam.eye -= focallen * cam.front;
     }
+    camera_changed = true;
     //cam.aspect = aspect;
     //cam.fov = fov;
     //camera.setZxxViewMatrix(U, V, W);
