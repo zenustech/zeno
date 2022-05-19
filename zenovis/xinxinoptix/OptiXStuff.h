@@ -146,7 +146,7 @@ inline void createRenderGroups(OptixDeviceContext &context, OptixModule &_module
                     ) );
     }     
 }
-inline void createRTProgramGroups(OptixDeviceContext &context, OptixModule &_module, std::string kind, std::string entry, OptixProgramGroup& oGroup)
+inline void createRTProgramGroups(OptixDeviceContext &context, OptixModule &_module, std::string kind, std::string entry, raii<OptixProgramGroup>& oGroup)
 {
     OptixProgramGroupOptions  program_group_options = {};
     char   log[2048];
@@ -165,7 +165,7 @@ inline void createRTProgramGroups(OptixDeviceContext &context, OptixModule &_mod
                     &program_group_options,
                     log,
                     &sizeof_log,
-                    &oGroup
+                    &oGroup.reset()
                     ) );
     } else if(kind == "OPTIX_PROGRAM_GROUP_KIND_ANYHITGROUP")
     {
@@ -189,13 +189,13 @@ inline void createRTProgramGroups(OptixDeviceContext &context, OptixModule &_mod
 }
 struct rtMatShader
 {
-    OptixModule                    m_ptx_module             = 0;
+    raii<OptixModule>                    m_ptx_module             ;
     
     //the below two things are just like vertex shader and frag shader in real time rendering
     //the two are linked to codes modeling the rayHit and occlusion test of an particular "Material"
     //of an Object.
-    OptixProgramGroup              m_radiance_hit_group     = 0;
-    OptixProgramGroup              m_occlusion_hit_group    = 0;
+    raii<OptixProgramGroup>              m_radiance_hit_group     ;
+    raii<OptixProgramGroup>              m_occlusion_hit_group    ;
     std::string                    m_shaderFile                ;
     std::string                    m_shadingEntry              ;
     std::string                    m_occlusionEntry            ;
