@@ -125,6 +125,114 @@ struct ImplicitTimeStepping : INode {
   using vec3 = zs::vec<T, 3>;
   using mat3 = zs::vec<T, 3, 3>;
 
+/// ref: codim-ipc
+#if 0
+  template <class T, int dim>
+  void computeInversionFreeStepSize(zs::CudaExecutionPolicy &pol,
+                                    const tiles_t &verts, const tiles_t &eles,
+                                    const dtiles_t &searchDir, T &stepSize) {
+    using namespace zs;
+    constexpr auto space = execspace_e::cuda;
+    zs::Vector<T> stepSizes{eles.get_allocator(), eles.size()};
+    pol(zs::Collapse{eles.size()},
+        [verts = proxy<space>({}, verts), eles = proxy<space>({}, eles),
+         stepSizes = proxy<space>(stepSizes),
+         searchDir = proxy<space>({}, searchDir)](int ei) {
+          auto inds = eles.pack<4>("inds", ei).reinterpret_bits<int>();
+          T x1 = verts("x", 0, inds[0]);
+          T x2 = verts("x", 0, inds[1]);
+          T x3 = verts("x", 0, inds[2]);
+          T x4 = verts("x", 0, inds[3]);
+
+          T y1 = verts("x", 1, inds[0]);
+          T y2 = verts("x", 1, inds[1]);
+          T y3 = verts("x", 1, inds[2]);
+          T y4 = verts("x", 1, inds[3]);
+
+          T z1 = verts("x", 2, inds[0]);
+          T z2 = verts("x", 2, inds[1]);
+          T z3 = verts("x", 2, inds[2]);
+          T z4 = verts("x", 2, inds[3]);
+
+          T p1 = searchDir("dir", 0, inds[0]);
+          T p2 = searchDir("dir", 0, inds[1]);
+          T p3 = searchDir("dir", 0, inds[2]);
+          T p4 = searchDir("dir", 0, inds[3]);
+
+          T q1 = searchDir("dir", 1, inds[0]);
+          T q2 = searchDir("dir", 1, inds[1]);
+          T q3 = searchDir("dir", 1, inds[2]);
+          T q4 = searchDir("dir", 1, inds[3]);
+
+          T r1 = searchDir("dir", 2, inds[0]);
+          T r2 = searchDir("dir", 2, inds[1]);
+          T r3 = searchDir("dir", 2, inds[2]);
+          T r4 = searchDir("dir", 2, inds[3]);
+
+          T a = -p1 * q2 * r3 + p1 * r2 * q3 + q1 * p2 * r3 - q1 * r2 * p3 -
+                r1 * p2 * q3 + r1 * q2 * p3 + p1 * q2 * r4 - p1 * r2 * q4 -
+                q1 * p2 * r4 + q1 * r2 * p4 + r1 * p2 * q4 - r1 * q2 * p4 -
+                p1 * q3 * r4 + p1 * r3 * q4 + q1 * p3 * r4 - q1 * r3 * p4 -
+                r1 * p3 * q4 + r1 * q3 * p4 + p2 * q3 * r4 - p2 * r3 * q4 -
+                q2 * p3 * r4 + q2 * r3 * p4 + r2 * p3 * q4 - r2 * q3 * p4;
+          T b = -x1 * q2 * r3 + x1 * r2 * q3 + y1 * p2 * r3 - y1 * r2 * p3 -
+                z1 * p2 * q3 + z1 * q2 * p3 + x2 * q1 * r3 - x2 * r1 * q3 -
+                y2 * p1 * r3 + y2 * r1 * p3 + z2 * p1 * q3 - z2 * q1 * p3 -
+                x3 * q1 * r2 + x3 * r1 * q2 + y3 * p1 * r2 - y3 * r1 * p2 -
+                z3 * p1 * q2 + z3 * q1 * p2 + x1 * q2 * r4 - x1 * r2 * q4 -
+                y1 * p2 * r4 + y1 * r2 * p4 + z1 * p2 * q4 - z1 * q2 * p4 -
+                x2 * q1 * r4 + x2 * r1 * q4 + y2 * p1 * r4 - y2 * r1 * p4 -
+                z2 * p1 * q4 + z2 * q1 * p4 + x4 * q1 * r2 - x4 * r1 * q2 -
+                y4 * p1 * r2 + y4 * r1 * p2 + z4 * p1 * q2 - z4 * q1 * p2 -
+                x1 * q3 * r4 + x1 * r3 * q4 + y1 * p3 * r4 - y1 * r3 * p4 -
+                z1 * p3 * q4 + z1 * q3 * p4 + x3 * q1 * r4 - x3 * r1 * q4 -
+                y3 * p1 * r4 + y3 * r1 * p4 + z3 * p1 * q4 - z3 * q1 * p4 -
+                x4 * q1 * r3 + x4 * r1 * q3 + y4 * p1 * r3 - y4 * r1 * p3 -
+                z4 * p1 * q3 + z4 * q1 * p3 + x2 * q3 * r4 - x2 * r3 * q4 -
+                y2 * p3 * r4 + y2 * r3 * p4 + z2 * p3 * q4 - z2 * q3 * p4 -
+                x3 * q2 * r4 + x3 * r2 * q4 + y3 * p2 * r4 - y3 * r2 * p4 -
+                z3 * p2 * q4 + z3 * q2 * p4 + x4 * q2 * r3 - x4 * r2 * q3 -
+                y4 * p2 * r3 + y4 * r2 * p3 + z4 * p2 * q3 - z4 * q2 * p3;
+          T c = -x1 * y2 * r3 + x1 * z2 * q3 + x1 * y3 * r2 - x1 * z3 * q2 +
+                y1 * x2 * r3 - y1 * z2 * p3 - y1 * x3 * r2 + y1 * z3 * p2 -
+                z1 * x2 * q3 + z1 * y2 * p3 + z1 * x3 * q2 - z1 * y3 * p2 -
+                x2 * y3 * r1 + x2 * z3 * q1 + y2 * x3 * r1 - y2 * z3 * p1 -
+                z2 * x3 * q1 + z2 * y3 * p1 + x1 * y2 * r4 - x1 * z2 * q4 -
+                x1 * y4 * r2 + x1 * z4 * q2 - y1 * x2 * r4 + y1 * z2 * p4 +
+                y1 * x4 * r2 - y1 * z4 * p2 + z1 * x2 * q4 - z1 * y2 * p4 -
+                z1 * x4 * q2 + z1 * y4 * p2 + x2 * y4 * r1 - x2 * z4 * q1 -
+                y2 * x4 * r1 + y2 * z4 * p1 + z2 * x4 * q1 - z2 * y4 * p1 -
+                x1 * y3 * r4 + x1 * z3 * q4 + x1 * y4 * r3 - x1 * z4 * q3 +
+                y1 * x3 * r4 - y1 * z3 * p4 - y1 * x4 * r3 + y1 * z4 * p3 -
+                z1 * x3 * q4 + z1 * y3 * p4 + z1 * x4 * q3 - z1 * y4 * p3 -
+                x3 * y4 * r1 + x3 * z4 * q1 + y3 * x4 * r1 - y3 * z4 * p1 -
+                z3 * x4 * q1 + z3 * y4 * p1 + x2 * y3 * r4 - x2 * z3 * q4 -
+                x2 * y4 * r3 + x2 * z4 * q3 - y2 * x3 * r4 + y2 * z3 * p4 +
+                y2 * x4 * r3 - y2 * z4 * p3 + z2 * x3 * q4 - z2 * y3 * p4 -
+                z2 * x4 * q3 + z2 * y4 * p3 + x3 * y4 * r2 - x3 * z4 * q2 -
+                y3 * x4 * r2 + y3 * z4 * p2 + z3 * x4 * q2 - z3 * y4 * p2;
+          T d = ((T)1.0 - (T)0.2) *
+                (x1 * z2 * y3 - x1 * y2 * z3 + y1 * x2 * z3 - y1 * z2 * x3 -
+                 z1 * x2 * y3 + z1 * y2 * x3 + x1 * y2 * z4 - x1 * z2 * y4 -
+                 y1 * x2 * z4 + y1 * z2 * x4 + z1 * x2 * y4 - z1 * y2 * x4 -
+                 x1 * y3 * z4 + x1 * z3 * y4 + y1 * x3 * z4 - y1 * z3 * x4 -
+                 z1 * x3 * y4 + z1 * y3 * x4 + x2 * y3 * z4 - x2 * z3 * y4 -
+                 y2 * x3 * z4 + y2 * z3 * x4 + z2 * x3 * y4 - z2 * y3 * x4);
+
+          T t = getSmallestPositiveRealCubicRoot(a, b, c, d, (T)1.e-6);
+          if (t >= 0)
+            stepSizes[ei] = t;
+          else
+            stepSizes[ei] = limits<T>::max();
+        });
+
+    zs::Vector<T> res{eles.get_allocator(), 1};
+    zs::reduce(pol, std::begin(stepSizes), std::end(stepSizes), std::begin(res),
+               stepSize, zs::getmin<T>{});
+    stepSize = res.getVal();
+  }
+#endif
+
   struct FEMSystem {
     template <typename Pol, typename Model>
     T energy(Pol &pol, const Model &model, const zs::SmallString tag) {
@@ -343,30 +451,33 @@ struct ImplicitTimeStepping : INode {
         const zs::SmallString tag0, const zs::SmallString tag1) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
-    Vector<T> res{vertData.get_allocator(), 1};
-    res.setVal(0);
+    Vector<T> res{vertData.get_allocator(), vertData.size()},
+        ret{vertData.get_allocator(), 1};
     cudaPol(range(vertData.size()),
             [data = proxy<space>({}, vertData), res = proxy<space>(res), tag0,
              tag1] __device__(int pi) mutable {
               auto v0 = data.pack<3>(tag0, pi);
               auto v1 = data.pack<3>(tag1, pi);
-              atomic_add(exec_cuda, res.data(), v0.dot(v1));
+              res[pi] = v0.dot(v1);
             });
-    return res.getVal();
+    zs::reduce(cudaPol, std::begin(res), std::end(res), std::begin(ret), (T)0);
+    return ret.getVal();
   }
   T infNorm(zs::CudaExecutionPolicy &cudaPol, dtiles_t &vertData,
             const zs::SmallString tag = "dir") {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
-    Vector<T> res{vertData.get_allocator(), 1};
-    res.setVal(0);
+    Vector<T> res{vertData.get_allocator(), vertData.size()},
+        ret{vertData.get_allocator(), 1};
     cudaPol(range(vertData.size()),
             [data = proxy<space>({}, vertData), res = proxy<space>(res),
              tag] __device__(int pi) mutable {
               auto v = data.pack<3>(tag, pi);
-              atomic_max(exec_cuda, res.data(), v.abs().max());
+              res[pi] = v.abs().max();
             });
-    return res.getVal();
+    zs::reduce(cudaPol, std::begin(res), std::end(res), std::begin(ret), (T)0,
+               getmax<T>{});
+    return ret.getVal();
   }
 
   void apply() override {
