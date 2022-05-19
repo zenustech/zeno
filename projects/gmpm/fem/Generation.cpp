@@ -263,7 +263,7 @@ struct ToZSTetrahedra : INode {
                 atomic_add(zs::exec_omp, &pars("m", quad[d]), vmass);
             });
     // surface info
-    auto &surfaces = (*zstets)["surfaces"];
+    auto &surfaces = (*zstets)[ZenoParticles::s_surfTriTag];
     surfaces = typename ZenoParticles::particles_t({{"inds", 3}}, tris.size(),
                                                    zs::memsrc_e::host);
     ompExec(zs::range(tris.size()),
@@ -273,7 +273,7 @@ struct ToZSTetrahedra : INode {
                 surfaces("inds", i, triNo) =
                     zs::reinterpret_bits<float>(tri[i]);
             });
-    auto &surfEdges = (*zstets)["surfEdges"];
+    auto &surfEdges = (*zstets)[ZenoParticles::s_surfEdgeTag];
     surfEdges = typename ZenoParticles::particles_t({{"inds", 2}}, lines.size(),
                                                     zs::memsrc_e::host);
     ompExec(zs::range(lines.size()),
@@ -283,7 +283,7 @@ struct ToZSTetrahedra : INode {
                 surfEdges("inds", i, lineNo) =
                     zs::reinterpret_bits<float>(line[i]);
             });
-    auto &surfVerts = (*zstets)["surfVerts"];
+    auto &surfVerts = (*zstets)[ZenoParticles::s_surfVertTag];
     surfVerts = typename ZenoParticles::particles_t(
         {{"inds", 1}}, points.size(), zs::memsrc_e::host);
     ompExec(zs::range(points.size()),

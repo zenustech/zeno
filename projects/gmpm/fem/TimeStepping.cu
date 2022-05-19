@@ -1,4 +1,5 @@
 #include "../Structures.hpp"
+#include "../Utils.hpp"
 #include "zensim/Logger.hpp"
 #include "zensim/cuda/execution/ExecutionPolicy.cuh"
 #include "zensim/geometry/PoissonDisk.hpp"
@@ -543,7 +544,6 @@ struct ImplicitTimeStepping : INode {
           residualPreconditionedNorm = std::sqrt(zTrk);
         } // end cg step
       }
-      puts("3");
       // recover rotated solution
       cudaPol(Collapse{vtemp.size()},
               [vtemp = proxy<space>({}, vtemp),
@@ -564,11 +564,14 @@ struct ImplicitTimeStepping : INode {
 
       // line search
       T alpha = 1.;
+
+      find_intersection_free_stepsize(cudaPol, *zstets, vtemp, alpha, 2e-3f);
+
       cudaPol(zs::range(vtemp.size()),
               [vtemp = proxy<space>({}, vtemp)] __device__(int i) mutable {
                 vtemp.tuple<3>("xn0", i) = vtemp.pack<3>("xn", i);
               });
-      T E0;
+      T E0{};
       match([&](auto &elasticModel) {
         E0 = A.energy(cudaPol, elasticModel, "xn0");
       })(models.getElasticModel());
