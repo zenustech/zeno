@@ -201,6 +201,9 @@ namespace JsonHelper
             writer.Double(rg.yTo);
         }
 
+        writer.Key("timeline");
+        writer.Bool(pModel->isTimeline());
+
         writer.Key("nodes");
         {
             JsonArrayBatch arrBatch(writer);

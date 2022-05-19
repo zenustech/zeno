@@ -746,6 +746,26 @@ QTreeView::item:selected:!active {
        </item>
        <item row="2" column="0">
         <widget class="QCheckBox" name="cbIsTimeline">
+         <property name="styleSheet">
+          <string notr="true">QCheckBox {
+    spacing: 8px;
+	font: 14px &quot;HarmonyOS Sans&quot;;
+	color: rgba(255, 255, 255, 0.7);
+}
+
+QCheckBox::indicator {
+    width: 15px;
+    height: 15px;
+}
+
+QCheckBox::indicator:unchecked {
+    image: url(:/icons/checkbox_unchecked.svg);
+}
+
+QCheckBox::indicator:checked {
+    image: url(:/icons/checkbox_checked_normal.svg);
+}</string>
+         </property>
          <property name="text">
           <string>timeline</string>
          </property>

@@ -71,7 +71,7 @@ void CurveMapView::addCurve(CurveModel* model)
 
 	//todo: union range.
     m_range = model->range();
-    m_grid->resetTransform(m_fixedSceneRect.marginsRemoved(m_gridMargins), m_range);
+    m_grid->resetTransform(m_fixedSceneRect.marginsRemoved(m_gridMargins), m_range, true);
     m_grid->addCurve(model);
     m_pHScalar->update();
     m_pVScalar->update();

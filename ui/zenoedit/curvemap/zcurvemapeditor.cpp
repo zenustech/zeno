@@ -155,6 +155,14 @@ void ZCurveMapEditor::addCurve(CurveModel* model)
     m_models.insert(id, model);
     m_ui->gridview->addCurve(model);
 
+    m_ui->cbIsTimeline->setChecked(model->isTimeline());
+
+    CURVE_RANGE range = m_ui->gridview->range();
+    m_ui->editXFrom->setText(QString::number(range.xFrom));
+    m_ui->editXTo->setText(QString::number(range.xTo));
+    m_ui->editYFrom->setText(QString::number(range.yFrom));
+    m_ui->editYTo->setText(QString::number(range.yTo));
+
     QStandardItem *pItem = new QStandardItem(model->id());
     pItem->setCheckable(true);
     pItem->setCheckState(Qt::Checked);
@@ -197,6 +205,10 @@ void ZCurveMapEditor::onCbTimelineChanged(int state)
         m_ui->gridview->setChartType(true);
     } else if (state == Qt::Unchecked) {
         m_ui->gridview->setChartType(false);
+    }
+    for (CurveModel* model : m_models)
+    {
+        model->setTimeline(state == Qt::Checked);
     }
 }
 

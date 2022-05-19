@@ -276,6 +276,12 @@ CurveModel* ZsgReader::_parseCurveModel(const rapidjson::Value& jsonCurve, QObje
     //todo: id
     CurveModel* pModel = new CurveModel("x", rg, parentRef); 
 
+    if (jsonCurve.HasMember("timeline") && jsonCurve["timeline"].IsBool())
+    {
+        bool bTimeline = jsonCurve["timeline"].GetBool();
+        pModel->setTimeline(bTimeline);
+    }
+
     ZASSERT_EXIT(jsonCurve.HasMember("nodes"), nullptr);
     for (const rapidjson::Value &nodeObj : jsonCurve["nodes"].GetArray())
     {
