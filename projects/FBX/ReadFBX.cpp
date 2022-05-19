@@ -177,7 +177,7 @@ struct Mesh{
         std::string matName = material->GetName().data;
         std::string vmPath = createTexDir("valueTex/" + matName);
 
-        zeno::log_info("***** MatTex: Mesh {} Material {} NumTex {}", meshName, matName, scene->mNumTextures);
+        zeno::log_info("1M {} M {} NT {}", meshName, matName, scene->mNumTextures);
 
         if( findCaseInsensitive(matName, "SKIN") != std::string::npos ){
             mat.setDefaultValue(dMatProp.getUnknownProp());
@@ -192,6 +192,7 @@ struct Mesh{
         for(auto&com: mat.val){
 
             aiTextureType texType = com.second.type;
+            bool forceD = com.second.forceDefault;
 
             // TODO Support material multi-tex
             // The first step - to find the texture
@@ -202,7 +203,7 @@ struct Mesh{
                 auto s = std::string(str.C_Str());
                 auto c = (p += s).string();
                 std::replace(c.begin(), c.end(), '\\', '/');
-                zeno::log_info("----- Name {} TexName {} TexType {} ContactPath {}", com.first, str.data, texType, c);
+                zeno::log_info("2N {} TN {} TT {} CP {}", com.first, str.data, texType, c);
 
                 mat.val.at(com.first).texPath = c;
             }
@@ -212,7 +213,7 @@ struct Mesh{
                 aiColor4D tmp;
                 bool found = false;
                 auto key = com.second.aiName.c_str();
-                if(com.second.aiName != ""){
+                if(!forceD && com.second.aiName != ""){
                     if(AI_SUCCESS == aiGetMaterialColor(material,
                                                         key,0,0,
                                                         &tmp)){ // Found or use default value
@@ -227,14 +228,31 @@ struct Mesh{
                 //zeno::log_info("----- TestFloat {}", mat.testFloat);
 
                 auto v = std::any_cast<aiColor4D>(com.second.value);
-                int channel_num = 4;
-                int pixel[4] = {int(v.r*255.999), int(v.g*255.999), int(v.b*255.999), int(v.a*255.999)};
+                int channel_num = 3;
+                int width = 2, height = 2;
+                uint8_t* pixels = new uint8_t[width * height * channel_num];
+
+                int index = 0;
+                for (int j = height - 1; j >= 0; --j)
+                {
+                    for (int i = 0; i < width; ++i)
+                    {
+                        int ir = int(255.99 * v.r);
+                        int ig = int(255.99 * v.g);
+                        int ib = int(255.99 * v.b);
+
+                        pixels[index++] = ir;
+                        pixels[index++] = ig;
+                        pixels[index++] = ib;
+                    }
+                }
+
                 std::string img_path = vmPath+"/"+com.first+".png";
 
-                stbi_write_png(img_path.c_str(), 1, 1, channel_num, pixel, 1*channel_num);
+                stbi_write_png(img_path.c_str(), width, height, channel_num, pixels, width*channel_num);
 
                 mat.val.at(com.first).texPath = img_path;
-                zeno::log_info("----- Name {} Prop `{}` found {} value `{} {} {} {}`", com.first, key, found, v.r, v.g, v.b, v.a);
+                zeno::log_info("3N {} P `{}` F {} V `{} {} {} {}`", com.first, key, found, v.r, v.g, v.b, v.a);
             }
         }
 
@@ -433,9 +451,9 @@ void readFBXFile(
     importer.SetPropertyInteger(AI_CONFIG_PP_PTV_NORMALIZE, true);
     aiScene const* scene = importer.ReadFile(fbx_path,
                                              aiProcess_Triangulate
-                                             | aiProcess_FlipUVs
+//                                             | aiProcess_FlipUVs
                                              | aiProcess_CalcTangentSpace
-                                             | aiProcess_JoinIdenticalVertices
+//                                             | aiProcess_JoinIdenticalVertices
                                              );
     if(! scene)
         zeno::log_error("ReadFBXPrim: Invalid assimp scene");
@@ -459,9 +477,9 @@ void readFBXFile(
     animInfo->duration = anim.duration;
     animInfo->tick = anim.tick;
 
-    //zeno::log_info("ReadFBXPrim: Num Animation {}", scene->mNumAnimations);
-    //zeno::log_info("ReadFBXPrim: Vertices count {}", mesh.fbxData.iVertices.value.size());
-    //zeno::log_info("ReadFBXPrim: Indices count {}", mesh.fbxData.iIndices.value.size());
+    zeno::log_info("ReadFBXPrim: Num Animation {}", scene->mNumAnimations);
+    zeno::log_info("ReadFBXPrim: Vertices count {}", mesh.fbxData.iVertices.value.size());
+    zeno::log_info("ReadFBXPrim: Indices count {}", mesh.fbxData.iIndices.value.size());
 }
 
 struct ReadFBXPrim : zeno::INode {

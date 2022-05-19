@@ -4,7 +4,35 @@
 #include <iostream>
 #include <algorithm>
 
-#define COMMON_DEFAULT_NORMAL aiColor4D(0.0f, 0.0f, 1.0f, 1.0f)
+#define COMMON_DEFAULT_basecolor aiColor4D(0.0f, 0.0f, 0.0f, 1.0f)
+#define COMMON_DEFAULT_metallic aiColor4D(0.0f, 0.0f, 0.0f, 1.0f)
+#define COMMON_DEFAULT_roughness aiColor4D(0.4f, 0.4f, 0.4f, 1.0f)
+#define COMMON_DEFAULT_specular aiColor4D(0.5f, 0.5f, 0.5f, 1.0f)
+#define COMMON_DEFAULT_subsurface aiColor4D(0.0f, 0.0f, 0.0f, 1.0f)
+#define COMMON_DEFAULT_thinkness aiColor4D(0.0f, 0.0f, 0.0f, 1.0f)
+#define COMMON_DEFAULT_sssParam aiColor4D(0.0f, 0.0f, 0.0f, 1.0f)
+#define COMMON_DEFAULT_sssColor aiColor4D(0.0f, 0.0f, 0.0f, 1.0f)
+#define COMMON_DEFAULT_foliage aiColor4D(0.0f, 0.0f, 0.0f, 1.0f)
+#define COMMON_DEFAULT_skin aiColor4D(0.0f, 0.0f, 0.0f, 1.0f)
+#define COMMON_DEFAULT_curvature aiColor4D(0.0f, 0.0f, 0.0f, 1.0f)
+#define COMMON_DEFAULT_specularTint aiColor4D(0.0f, 0.0f, 0.0f, 1.0f)
+#define COMMON_DEFAULT_anisotropic aiColor4D(0.0f, 0.0f, 0.0f, 1.0f)
+#define COMMON_DEFAULT_sheen aiColor4D(0.0f, 0.0f, 0.0f, 1.0f)
+#define COMMON_DEFAULT_sheenTint aiColor4D(0.0f, 0.0f, 0.0f, 1.0f)
+#define COMMON_DEFAULT_clearcoat aiColor4D(0.0f, 0.0f, 0.0f, 1.0f)
+#define COMMON_DEFAULT_clearcoatGloss aiColor4D(1.0f, 1.0f, 1.0f, 1.0f)
+#define COMMON_DEFAULT_normal aiColor4D(0.0f, 0.0f, 1.0f, 1.0f)
+#define COMMON_DEFAULT_emission aiColor4D(0.0f, 0.0f, 0.0f, 1.0f)
+#define COMMON_DEFAULT_exposure aiColor4D(1.0f, 1.0f, 1.0f, 1.0f)
+#define COMMON_DEFAULT_ao aiColor4D(1.0f, 1.0f, 1.0f, 1.0f)
+#define COMMON_DEFAULT_toon aiColor4D(0.0f, 0.0f, 0.0f, 1.0f)
+#define COMMON_DEFAULT_stroke aiColor4D(1.0f, 1.0f, 1.0f, 1.0f)
+#define COMMON_DEFAULT_shape aiColor4D(0.0f, 0.0f, 0.0f, 1.0f)
+#define COMMON_DEFAULT_style aiColor4D(1.0f, 1.0f, 1.0f, 1.0f)
+#define COMMON_DEFAULT_strokeNoise aiColor4D(1.0f, 1.0f, 1.0f, 1.0f)
+#define COMMON_DEFAULT_shad aiColor4D(0.0f, 0.0f, 0.0f, 1.0f)
+#define COMMON_DEFAULT_strokeTint aiColor4D(0.0f, 0.0f, 0.0f, 1.0f)
+#define COMMON_DEFAULT_opacity aiColor4D(0.0f, 0.0f, 0.0f, 1.0f)
 
 struct SKeyPosition {
     aiVector3D position;
@@ -178,6 +206,7 @@ struct SVertex{
 
 struct SMaterialProp{
     int order;
+    bool forceDefault;
     std::any value;
     aiTextureType type;
     std::string aiName;
@@ -188,35 +217,35 @@ struct SDefaultMatProp{
     std::map<std::string, aiColor4D> getUnknownProp(){
         std::map<std::string, aiColor4D> val;
 
-        val.emplace("basecolor", aiColor4D());
-        val.emplace("metallic", aiColor4D());
-        val.emplace("roughness", aiColor4D());
-        val.emplace("specular", aiColor4D());
-        val.emplace("subsurface", aiColor4D());
-        val.emplace("thinkness", aiColor4D());
-        val.emplace("sssParam", aiColor4D());
-        val.emplace("sssColor", aiColor4D());
-        val.emplace("foliage", aiColor4D());
-        val.emplace("skin", aiColor4D());
-        val.emplace("curvature", aiColor4D());
-        val.emplace("specularTint", aiColor4D());
-        val.emplace("anisotropic", aiColor4D());
-        val.emplace("sheen", aiColor4D());
-        val.emplace("sheenTint", aiColor4D());
-        val.emplace("clearcoat", aiColor4D());
-        val.emplace("clearcoatGloss", aiColor4D());
-        val.emplace("normal", COMMON_DEFAULT_NORMAL);
-        val.emplace("emission", aiColor4D());
-        val.emplace("exposure", aiColor4D());
-        val.emplace("ao", aiColor4D());
-        val.emplace("toon", aiColor4D());
-        val.emplace("stroke", aiColor4D());
-        val.emplace("shape", aiColor4D());
-        val.emplace("style", aiColor4D());
-        val.emplace("strokeNoise", aiColor4D());
-        val.emplace("shad", aiColor4D());
-        val.emplace("strokeTint", aiColor4D());
-        val.emplace("opacity", aiColor4D());
+        val.emplace("basecolor", COMMON_DEFAULT_basecolor);
+        val.emplace("metallic", COMMON_DEFAULT_metallic);
+        val.emplace("roughness", COMMON_DEFAULT_roughness);
+        val.emplace("specular", COMMON_DEFAULT_specular);
+        val.emplace("subsurface", COMMON_DEFAULT_subsurface);
+        val.emplace("thinkness", COMMON_DEFAULT_thinkness);
+        val.emplace("sssParam", COMMON_DEFAULT_sssParam);
+        val.emplace("sssColor", COMMON_DEFAULT_sssColor);
+        val.emplace("foliage", COMMON_DEFAULT_foliage);
+        val.emplace("skin", COMMON_DEFAULT_skin);
+        val.emplace("curvature", COMMON_DEFAULT_curvature);
+        val.emplace("specularTint", COMMON_DEFAULT_specularTint);
+        val.emplace("anisotropic", COMMON_DEFAULT_anisotropic);
+        val.emplace("sheen", COMMON_DEFAULT_sheen);
+        val.emplace("sheenTint", COMMON_DEFAULT_sheenTint);
+        val.emplace("clearcoat", COMMON_DEFAULT_clearcoat);
+        val.emplace("clearcoatGloss", COMMON_DEFAULT_clearcoatGloss);
+        val.emplace("normal", COMMON_DEFAULT_normal);
+        val.emplace("emission", COMMON_DEFAULT_emission);
+        val.emplace("exposure", COMMON_DEFAULT_exposure);
+        val.emplace("ao", COMMON_DEFAULT_ao);
+        val.emplace("toon", COMMON_DEFAULT_toon);
+        val.emplace("stroke", COMMON_DEFAULT_stroke);
+        val.emplace("shape", COMMON_DEFAULT_shape);
+        val.emplace("style", COMMON_DEFAULT_style);
+        val.emplace("strokeNoise", COMMON_DEFAULT_strokeNoise);
+        val.emplace("shad", COMMON_DEFAULT_shad);
+        val.emplace("strokeTint", COMMON_DEFAULT_strokeTint);
+        val.emplace("opacity", COMMON_DEFAULT_opacity);
         return val;
     }
 };
@@ -238,35 +267,35 @@ struct SMaterial : zeno::IObjectClone<SMaterial>{
         // FIXME (aiTextureType_BASE_COLOR 12 basecolor `aiStandardSurface`)
         //      or (aiTextureType_DIFFUSE 1 diffuse `lambert`)
         // aiTextureType_NORMALS or aiTextureType_NORMAL_CAMERA
-        val.emplace("basecolor", SMaterialProp{0, aiColor4D(), aiTextureType_BASE_COLOR, "$ai.base"});
-        val.emplace("metallic", SMaterialProp{1, aiColor4D(), aiTextureType_METALNESS, ""});
-        val.emplace("roughness", SMaterialProp{2, aiColor4D(), aiTextureType_DIFFUSE_ROUGHNESS, ""});
-        val.emplace("specular", SMaterialProp{3, aiColor4D(), aiTextureType_SPECULAR, "$ai.specular"});
-        val.emplace("subsurface", SMaterialProp{4, aiColor4D(), aiTextureType_NONE, "$ai.subsurface"});
-        val.emplace("thinkness", SMaterialProp{5, aiColor4D(), aiTextureType_NONE, ""});
-        val.emplace("sssParam", SMaterialProp{6, aiColor4D(), aiTextureType_NONE, ""});
-        val.emplace("sssColor", SMaterialProp{7, aiColor4D(), aiTextureType_NONE, ""});
-        val.emplace("foliage", SMaterialProp{8, aiColor4D(), aiTextureType_NONE, ""});
-        val.emplace("skin", SMaterialProp{9, aiColor4D(), aiTextureType_NONE, ""});
-        val.emplace("curvature", SMaterialProp{10, aiColor4D(), aiTextureType_NONE, ""});
-        val.emplace("specularTint", SMaterialProp{11, aiColor4D(), aiTextureType_NONE, ""});
-        val.emplace("anisotropic", SMaterialProp{12, aiColor4D(), aiTextureType_NONE, ""});
-        val.emplace("sheen", SMaterialProp{13, aiColor4D(), aiTextureType_SHININESS, "$ai.sheen"});
-        val.emplace("sheenTint", SMaterialProp{14, aiColor4D(), aiTextureType_NONE, ""});
-        val.emplace("clearcoat", SMaterialProp{15, aiColor4D(), aiTextureType_NONE, "$ai.coat"});
-        val.emplace("clearcoatGloss", SMaterialProp{16, aiColor4D(), aiTextureType_NONE, ""});
-        val.emplace("normal", SMaterialProp{17, aiColor4D(), aiTextureType_NORMAL_CAMERA, ""});
-        val.emplace("emission", SMaterialProp{18, aiColor4D(), aiTextureType_EMISSIVE, "$ai.emission"}); // aiTextureType_EMISSION_COLOR
-        val.emplace("exposure", SMaterialProp{19, aiColor4D(), aiTextureType_NONE, ""});
-        val.emplace("ao", SMaterialProp{20, aiColor4D(), aiTextureType_AMBIENT_OCCLUSION, ""});
-        val.emplace("toon", SMaterialProp{21, aiColor4D(), aiTextureType_NONE, ""});
-        val.emplace("stroke", SMaterialProp{22, aiColor4D(), aiTextureType_NONE, ""});
-        val.emplace("shape", SMaterialProp{23, aiColor4D(), aiTextureType_NONE, ""});
-        val.emplace("style", SMaterialProp{24, aiColor4D(), aiTextureType_NONE, ""});
-        val.emplace("strokeNoise", SMaterialProp{25, aiColor4D(), aiTextureType_NONE, ""});
-        val.emplace("shad", SMaterialProp{26, aiColor4D(), aiTextureType_NONE, ""});
-        val.emplace("strokeTint", SMaterialProp{27, aiColor4D(), aiTextureType_NONE, ""});
-        val.emplace("opacity", SMaterialProp{28, aiColor4D(), aiTextureType_OPACITY, "$ai.transmission"});
+        val.emplace("basecolor", SMaterialProp{0, false, aiColor4D(), aiTextureType_BASE_COLOR, "$ai.base"});
+        val.emplace("metallic", SMaterialProp{1, true, aiColor4D(), aiTextureType_METALNESS, ""});
+        val.emplace("roughness", SMaterialProp{2, true, aiColor4D(), aiTextureType_DIFFUSE_ROUGHNESS, ""});
+        val.emplace("specular", SMaterialProp{3, true, aiColor4D(), aiTextureType_SPECULAR, "$ai.specular"});
+        val.emplace("subsurface", SMaterialProp{4, true, aiColor4D(), aiTextureType_NONE, "$ai.subsurface"});
+        val.emplace("thinkness", SMaterialProp{5, true, aiColor4D(), aiTextureType_NONE, ""});
+        val.emplace("sssParam", SMaterialProp{6, true, aiColor4D(), aiTextureType_NONE, ""});
+        val.emplace("sssColor", SMaterialProp{7, true, aiColor4D(), aiTextureType_NONE, ""});
+        val.emplace("foliage", SMaterialProp{8, true, aiColor4D(), aiTextureType_NONE, ""});
+        val.emplace("skin", SMaterialProp{9, true, aiColor4D(), aiTextureType_NONE, ""});
+        val.emplace("curvature", SMaterialProp{10, true, aiColor4D(), aiTextureType_NONE, ""});
+        val.emplace("specularTint", SMaterialProp{11, true, aiColor4D(), aiTextureType_NONE, ""});
+        val.emplace("anisotropic", SMaterialProp{12, true, aiColor4D(), aiTextureType_NONE, ""});
+        val.emplace("sheen", SMaterialProp{13, true, aiColor4D(), aiTextureType_SHININESS, "$ai.sheen"});
+        val.emplace("sheenTint", SMaterialProp{14, true, aiColor4D(), aiTextureType_NONE, ""});
+        val.emplace("clearcoat", SMaterialProp{15, true, aiColor4D(), aiTextureType_NONE, "$ai.coat"});
+        val.emplace("clearcoatGloss", SMaterialProp{16, true, aiColor4D(), aiTextureType_NONE, ""});
+        val.emplace("normal", SMaterialProp{17, true, aiColor4D(), aiTextureType_NORMAL_CAMERA, ""});
+        val.emplace("emission", SMaterialProp{18, true, aiColor4D(), aiTextureType_EMISSIVE, "$ai.emission"}); // aiTextureType_EMISSION_COLOR
+        val.emplace("exposure", SMaterialProp{19, true, aiColor4D(), aiTextureType_NONE, ""});
+        val.emplace("ao", SMaterialProp{20, true, aiColor4D(), aiTextureType_AMBIENT_OCCLUSION, ""});
+        val.emplace("toon", SMaterialProp{21, true, aiColor4D(), aiTextureType_NONE, ""});
+        val.emplace("stroke", SMaterialProp{22, true, aiColor4D(), aiTextureType_NONE, ""});
+        val.emplace("shape", SMaterialProp{23, true, aiColor4D(), aiTextureType_NONE, ""});
+        val.emplace("style", SMaterialProp{24, true, aiColor4D(), aiTextureType_NONE, ""});
+        val.emplace("strokeNoise", SMaterialProp{25, true, aiColor4D(), aiTextureType_NONE, ""});
+        val.emplace("shad", SMaterialProp{26, true, aiColor4D(), aiTextureType_NONE, ""});
+        val.emplace("strokeTint", SMaterialProp{27, true, aiColor4D(), aiTextureType_NONE, ""});
+        val.emplace("opacity", SMaterialProp{28, true, aiColor4D(), aiTextureType_OPACITY, "$ai.transmission"});
     }
 
     std::vector<zeno::Any> getTexList(){
