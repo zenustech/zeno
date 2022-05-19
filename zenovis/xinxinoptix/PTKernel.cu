@@ -176,15 +176,15 @@ __forceinline__ __device__ vec4 operator+(vec4 b, vec4 a)
     return vec4(a.x+b.x, a.y+b.y, a.z+b.z, a.w+b.w);
 }
 
-__forceinline__ __device__ vec2 operator-(vec2 b, vec2 a)
+__forceinline__ __device__ vec2 operator-(vec2 a, vec2 b)
 {
     return vec2(a.x-b.x, a.y-b.y);
 }
-__forceinline__ __device__ vec3 operator-(vec3 b, vec3 a)
+__forceinline__ __device__ vec3 operator-(vec3 a, vec3 b)
 {
     return vec3(a.x-b.x, a.y-b.y, a.z-b.z);
 }
-__forceinline__ __device__ vec4 operator-(vec4 b, vec4 a)
+__forceinline__ __device__ vec4 operator-(vec4 a, vec4 b)
 {
     return vec4(a.x-b.x, a.y-b.y, a.z-b.z, a.w-b.w);
 }
