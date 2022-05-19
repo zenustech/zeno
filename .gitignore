@@ -13,3 +13,22 @@ Release/
 CMakeSettings.json
 CMakeUserPresets.json
 .vim_localrc
+<<<<<<< HEAD
+=======
+
+# zhxx files
+assets/smoke
+projects/Euler
+
+# xinlei files
+assets/upper_slate_v01
+assets/character
+
+# temp path setting
+zenqt/assets/cache_path.txt
+
+# maya project
+*.mayaSwatches
+/assets/fbx/valueTex/
+*.tx
+>>>>>>> 33d6b8018 (FBX Extension # Material Optimize)
