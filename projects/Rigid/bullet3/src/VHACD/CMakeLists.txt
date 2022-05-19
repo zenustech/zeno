@@ -1,26 +1,26 @@
 
 SET(VHACD_SRCS
-	src/VHACD.cpp
-	src/vhacdICHull.cpp
-	src/vhacdManifoldMesh.cpp
-	src/vhacdMesh.cpp
-    src/vhacdVolume.cpp
+        src/VHACD.cpp
+        src/vhacdICHull.cpp
+        src/vhacdManifoldMesh.cpp
+        src/vhacdMesh.cpp
+        src/vhacdVolume.cpp
 )
 
 SET(VHACD_INC_HDRS
-    inc/VHACD.h
-    inc/vhacdCircularList.h
-	inc/vhacdICHull.h
-	inc/vhacdManifoldMesh.h
-	inc/vhacdMesh.h
-	inc/vhacdMutex.h
-	inc/vhacdSArray.h
-	inc/vhacdTimer.h
-    inc/vhacdVector.h
-    inc/vhacdVHACD.h
-    inc/vhacdVolume.h
-    inc/vhacdCircularList.inl
-	inc/vhacdVector.inl
+        inc/VHACD.h
+        inc/vhacdCircularList.h
+        inc/vhacdICHull.h
+        inc/vhacdManifoldMesh.h
+        inc/vhacdMesh.h
+        inc/vhacdMutex.h
+        inc/vhacdSArray.h
+        inc/vhacdTimer.h
+        inc/vhacdVector.h
+        inc/vhacdVHACD.h
+        inc/vhacdVolume.h
+        inc/vhacdCircularList.inl
+        inc/vhacdVector.inl
 )
 
 ADD_LIBRARY(VHACD ${VHACD_SRCS} ${VHACD_INC_HDRS})
@@ -52,7 +52,7 @@ IF (NOT MSVC)
 
         IF (APPLE AND BUILD_SHARED_LIBS AND FRAMEWORK)
             SET_TARGET_PROPERTIES(VHACD PROPERTIES FRAMEWORK true)
-            SET_TARGET_PROPERTIES(VHACD PROPERTIES PUBLIC_HEADER "${HACD_INC_HDRS}")
+            SET_TARGET_PROPERTIES(VHACD PROPERTIES PUBLIC_HEADER "${VHACD_INC_HDRS}")
         ENDIF (APPLE AND BUILD_SHARED_LIBS AND FRAMEWORK)
     ENDIF (NOT INTERNAL_CREATE_DISTRIBUTABLE_MSVC_PROJECTFILES)
 ENDIF()
