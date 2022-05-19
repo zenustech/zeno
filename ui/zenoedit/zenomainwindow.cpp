@@ -39,6 +39,11 @@ ZenoMainWindow::ZenoMainWindow(QWidget *parent, Qt::WindowFlags flags)
         openFile(p);
     }
 //#endif
+
+//    QTimer* tmpTimer = new QTimer;
+//    connect(tmpTimer,&QTimer::timeout,[](){zeno::log_info("test scroll to bottom ");});
+//    tmpTimer->setInterval(1);
+//    tmpTimer->start();
 }
 
 ZenoMainWindow::~ZenoMainWindow()

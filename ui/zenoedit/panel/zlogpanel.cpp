@@ -45,7 +45,7 @@ void LogListView::rowsInserted(const QModelIndex& parent, int start, int end)
     //if (n > 0) {
     //    scrollTo(this->model()->index(n - 1, 0));
     //}
-    //scrollToBottom();
+    scrollToBottom();
 }
 
 
@@ -154,8 +154,8 @@ void ZlogPanel::onFilterChanged()
     if (m_ui->cbInfo->isChecked())
         filters.append(QtInfoMsg);
     m_pFilterModel->setFilters(filters);
+    m_ui->listView->scrollToBottom();
 }
-
 
 //////////////////////////////////////////////////////////////////////////
 CustomFilterProxyModel::CustomFilterProxyModel(QObject *parent)

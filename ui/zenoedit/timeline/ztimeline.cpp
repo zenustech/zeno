@@ -67,6 +67,12 @@ void ZTimeline::initSignals()
         QString numText = QString::number(m_ui->timeliner->value());
         m_ui->editFrame->setText(numText);
     });
+
+    connect(m_ui->btnAlways,&QCheckBox::clicked,[=](){
+        if(m_ui->btnAlways->isChecked()){
+           emit run();
+        }
+    });
 }
 
 void ZTimeline::initStyleSheet()

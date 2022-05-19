@@ -134,7 +134,7 @@
            <string notr="true">background: rgb(37,37,38);</string>
           </property>
           <property name="currentIndex">
-           <number>1</number>
+           <number>5</number>
           </property>
           <widget class="QWidget" name="subnetPage">
            <layout class="QVBoxLayout" name="verticalLayout_2">
@@ -520,15 +520,15 @@ QTabBar::close-button:hover {
  </widget>
  <customwidgets>
   <customwidget>
-   <class>ZenoCheckButton</class>
-   <extends>QWidget</extends>
-   <header>zenoui/comctrl/zenocheckbutton.h</header>
-   <container>1</container>
-  </customwidget>
-  <customwidget>
    <class>ZIconLabel</class>
    <extends>QLabel</extends>
    <header>zenoui/comctrl/zlabel.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>ZenoCheckButton</class>
+   <extends>QWidget</extends>
+   <header>zenoui/comctrl/zenocheckbutton.h</header>
    <container>1</container>
   </customwidget>
   <customwidget>

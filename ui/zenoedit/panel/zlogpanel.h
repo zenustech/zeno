@@ -50,6 +50,8 @@ class ZlogPanel : public QWidget
 public:
     ZlogPanel(QWidget* parent = nullptr);
 
+
+
 private slots:
     void onFilterChanged();
 
