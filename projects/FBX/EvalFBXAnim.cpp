@@ -78,10 +78,14 @@ struct EvalAnim{
     void calculateFinal(std::shared_ptr<zeno::PrimitiveObject>& prim){
         auto &ver = prim->verts;
         auto &ind = prim->tris;
+        auto &uv = prim->verts.add_attr<zeno::vec3f>("uv");
+        auto &norm = prim->verts.add_attr<zeno::vec3f>("nrm");
 
         for(unsigned int i=0; i<m_Vertices.size(); i++){
             auto& bwe = m_Vertices[i].boneWeights;
             auto& pos = m_Vertices[i].position;
+            auto& uvw = m_Vertices[i].texCoord;
+            auto& nor = m_Vertices[i].normal;
 
             glm::vec4 tpos(0.0f, 0.0f, 0.0f, 0.0f);
 
@@ -102,7 +106,10 @@ struct EvalAnim{
                 tpos = glm::vec4(pos.x, pos.y, pos.z, 1.0f);
 
             glm::vec3 fpos = glm::vec3(tpos.x/tpos.w, tpos.y/tpos.w, tpos.z/tpos.w);
+
             ver.emplace_back(fpos.x, fpos.y, fpos.z);
+            uv.emplace_back(uvw.x, uvw.y, uvw.z);
+            norm.emplace_back(nor.x, nor.y, nor.z);
         }
 
         for(unsigned int i=0; i<m_Indices.size(); i+=3){
