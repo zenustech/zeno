@@ -49,8 +49,8 @@ struct BulletMakeTransform : zeno::INode {
     virtual void apply() override {
         auto trans = std::make_unique<BulletTransform>();
         trans->trans.setIdentity();
-        if (has_input("origin")) {
-            auto origin = get_input<zeno::NumericObject>("origin")->get<zeno::vec3f>();
+        if (has_input("translate")) {
+            auto origin = get_input<zeno::NumericObject>("translate")->get<zeno::vec3f>();
             trans->trans.setOrigin(zeno::vec_to_other<btVector3>(origin));
         }
         if (has_input("rotation")) {
@@ -67,7 +67,7 @@ struct BulletMakeTransform : zeno::INode {
 };
 
 ZENDEFNODE(BulletMakeTransform, {
-    {{"vec3f", "origin"},  "rotation"},
+    {{"vec3f", "translate"},  "rotation"},
     {"trans"},
     {},
     {"Bullet"},
@@ -88,23 +88,23 @@ ZENDEFNODE(BulletTransformSetBasisEuler, {
     {"Bullet"}
 });
 
-struct BulletMakeTransformFromPivotAxis : zeno::INode {
-    virtual void apply() override {
-        auto pivot = zeno::vec_to_other<btVector3>(get_input<zeno::NumericObject>("pivot")->get<zeno::vec3f>());
-        auto axis = zeno::vec_to_other<btVector3>(get_input<zeno::NumericObject>("axis")->get<zeno::vec3f>());
+struct BulletMakeFrameFromPivotAxis : zeno::INode {
+	virtual void apply() override {
+		auto pivot = zeno::vec_to_other<btVector3>(get_input<zeno::NumericObject>("pivot")->get<zeno::vec3f>());
+		auto axis = zeno::vec_to_other<btVector3>(get_input<zeno::NumericObject>("axis")->get<zeno::vec3f>());
 
         auto trans = std::make_shared<BulletTransform>();
 
         trans->trans.setOrigin(pivot);
         trans->trans.getBasis().setValue(axis.getX(),axis.getX(),axis.getX(),axis.getY(),axis.getY(),axis.getY(),axis.getZ(),axis.getZ(),axis.getZ());
 
-        set_output("trans", std::move(trans));
-    }
+		set_output("frame", std::move(trans));
+	}
 };
 
-ZENDEFNODE(BulletMakeTransformFromPivotAxis, {
+ZENDEFNODE(BulletMakeFrameFromPivotAxis, {
 	{"pivot", "axis"},
-	{"trans"},
+	{"frame"},
 	{},
 	{"Bullet"}
 });
@@ -722,7 +722,7 @@ ZENDEFNODE(BulletInverseTransform, {
 	{"Bullet"}
 });
 
-struct BulletObjectGetMotion : zeno::INode {
+struct BulletObjectGetVel : zeno::INode {
     virtual void apply() override {
         auto obj = get_input<BulletObject>("object");
         auto body = obj->body.get();
@@ -744,7 +744,7 @@ struct BulletObjectGetMotion : zeno::INode {
     }
 };
 
-ZENDEFNODE(BulletObjectGetMotion, {
+ZENDEFNODE(BulletObjectGetVel, {
     {"object"},
     {"linearVel", "angularVel"},
     {},
@@ -1541,8 +1541,7 @@ ZENDEFNODE(BulletWorldRemoveConstraint, {
 struct BulletWorldSetConsList : zeno::INode {
     virtual void apply() override {
         auto world = get_input<BulletWorld>("world");
-        auto consList = get_input<ListObject>("consList")
-                            ->get<std::shared_ptr<BulletConstraint>>();
+        auto consList = get_input<ListObject>("consList")->get<std::shared_ptr<BulletConstraint>>();
         world->setConstraintList(std::move(consList));
         set_output("world", get_input("world"));
     }
@@ -2692,5 +2691,142 @@ ZENDEFNODE(BulletMultiBodyMakeJointMotor, {
     {},
     {"Bullet"}
 });
+
+
+struct BulletMultiBodyGetJointTorque : zeno::INode {
+    virtual void apply() override {
+        auto object = get_input<BulletMultiBodyObject>("object");
+        auto link_id = get_input2<int>("jointIndex");
+        btScalar torque;
+
+        torque = object->multibody->getJointTorque(link_id);
+        // out_torque = vec1f(other_to_vec<1>(torque));
+
+        auto out_torque = std::make_shared<zeno::NumericObject>(torque);
+        set_output("joint_torque", std::move(out_torque));
+    }
+};
+
+ZENDEFNODE(BulletMultiBodyGetJointTorque, {
+    {"object", "jointIndex"},
+    {"torque"},
+    {},
+    {"Bullet"}
+});
+
+struct BulletMultiBodyGetLinkForce : zeno::INode {
+    virtual void apply() override {
+        auto object = get_input<BulletMultiBodyObject>("object");
+        auto link_id = get_input2<int>("linkIndex");
+        btVector3 force;
+        auto force_out = zeno::IObject::make<zeno::NumericObject>();
+        force = object->multibody->getLinkForce(link_id);
+        force_out->set<zeno::vec3f>(zeno::vec3f(force.x(), force.y(), force.z()));
+        set_output("force", std::move(force_out));
+    }
+};
+
+ZENDEFNODE(BulletMultiBodyGetLinkForce, {
+                                              {"object", "linkIndex"},
+                                              {"force"},
+                                              {},
+                                              {"Bullet"}
+                                          });
+
+struct BulletMultiBodyGetLinkTorque : zeno::INode {
+    virtual void apply() override {
+        auto object = get_input<BulletMultiBodyObject>("object");
+        auto link_id = get_input2<int>("linkIndex");
+        btVector3 torque;
+        auto torque_out = zeno::IObject::make<zeno::NumericObject>();
+        torque = object->multibody->getLinkTorque(link_id);
+        torque_out->set<zeno::vec3f>(zeno::vec3f(torque.x(), torque.y(), torque.z()));
+        set_output("torque", std::move(torque_out));
+    }
+};
+
+ZENDEFNODE(BulletMultiBodyGetLinkTorque, {
+                                            {"object", "linkIndex"},
+                                            {"torque"},
+                                            {},
+                                            {"Bullet"}
+                                        });
+
+struct BulletMultiBodyGetJointVelPos : zeno::INode {
+    virtual void apply() override {
+        auto object = get_input<BulletMultiBodyObject>("object");
+        auto link_id = get_input2<int>("linkIndex");
+        btScalar vel;
+        btScalar pos;
+
+        vel = object->multibody->getJointVel(link_id);
+        pos = object->multibody->getJointPos(link_id);
+        // out_torque = vec1f(other_to_vec<1>(torque));
+
+        auto vel_ = std::make_shared<zeno::NumericObject>(vel);
+        auto pos_ = std::make_shared<zeno::NumericObject>(pos);
+        set_output("vel", std::move(vel_));
+        set_output("pos", std::move(pos_));
+    }
+};
+
+ZENDEFNODE(BulletMultiBodyGetJointVelPos, {
+                                              {"object", "linkIndex"},
+                                              {"vel", "pos"},
+                                              {},
+                                              {"Bullet"}
+                                          });
+
+struct BulletMultiBodyGetBaseTransform : zeno::INode {
+    virtual void apply() {
+        auto object = get_input<BulletMultiBodyObject>("object");
+        auto trans = std::make_unique<BulletTransform>();
+        trans->trans = object->multibody->getBaseWorldTransform();
+        set_output("trans", std::move(trans));
+    }
+};
+
+ ZENDEFNODE(BulletMultiBodyGetBaseTransform, {
+     {"object"},
+     {"trans"},
+     {},
+     {"Bullet"},
+ });
+
+ struct BulletMultiBodyGetBaseVelocity : zeno::INode {
+     virtual void apply() {
+         auto object = get_input<BulletMultiBodyObject>("object");
+         auto vel = zeno::IObject::make<zeno::NumericObject>();
+         btVector3 vel_;
+         vel_ = object->multibody->getBaseVel();
+         vel->set<zeno::vec3f>(zeno::vec3f(vel_.x(), vel_.y(), vel_.z()));
+         set_output("vel", std::move(vel));
+     }
+ };
+
+ ZENDEFNODE(BulletMultiBodyGetBaseVelocity, {
+                                                 {"object"},
+                                                 {"vel"},
+                                                 {},
+                                                 {"Bullet"},
+                                             });
+
+struct BulletMultiBodyClearJointStates : zeno::INode {
+    virtual void apply() {
+        auto object = get_input<BulletMultiBodyObject>("object");
+        object->multibody->clearVelocities();
+        object->multibody->clearForcesAndTorques();
+//        object->multibody->clearConstraintForces();
+//        Not sure if clear constraint forces is necessary
+    }
+};
+
+ZENDEFNODE(BulletMultiBodyClearJointStates, {
+                                               {"object"},
+                                               {},
+                                               {},
+                                               {"Bullet"},
+                                           });
+
 
 };
