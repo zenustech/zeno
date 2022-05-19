@@ -63,7 +63,7 @@ namespace JsonHelper
                 }
                 else if (varType == QMetaType::VoidStar)
                 {
-                    // TODO: use dynamic_cast<CurveModel *>(QVariantPtr<IModel>::asPtr(value))
+                    // TODO: use qobject_cast<CurveModel *>(QVariantPtr<IModel>::asPtr(value))
                     // also btw luzh, will this have a memory leakage? no, we make sure that curvemodel is child of subgraphmodel.
                     if (type == "curve")
                     {
@@ -85,66 +85,6 @@ namespace JsonHelper
             }
 		}
         writer.EndArray();
-    }
-
-    void AddVariantListWithNull(const QVariantList& list, const QString& type, RAPIDJSON_WRITER& writer)
-    {
-        return AddVariantList(list, type, writer);
-#if 0
-        writer.StartArray();
-        for (const QVariant& value : list)
-        {
-            QVariant::Type varType = value.type();
-            if (varType == QVariant::Double)
-            {
-                writer.Double(value.toDouble());
-            }
-            else if (varType == QVariant::Int)
-            {
-                writer.Int(value.toInt());
-            }
-            else if (varType == QVariant::String)
-            {
-                writer.String(value.toString().toLatin1());
-            }
-            else if (varType == QVariant::Bool)
-            {
-                writer.Bool(value.toBool());
-            }
-            else if (varType == QMetaType::VoidStar)
-            {
-                if (type == "curve")
-                {
-                    CurveModel *pModel = QVariantPtr<CurveModel>::asPtr(value);
-                    dumpCurveModel(pModel, writer);
-                }
-            }
-            else
-            {
-                if (varType == QVariant::UserType) {
-                    //todo: declare a custom metatype
-                    QVector<qreal> vec = value.value<QVector<qreal>>();
-                    //for vec:
-                    if (!vec.isEmpty()) {
-                        writer.StartArray();
-                        for (int i = 0; i < vec.size(); i++) {
-                            //todo: more type.
-                            if (type == "vec3i")
-                                writer.Int(vec[i]);
-                            else
-                                writer.Double(vec[i]);
-                        }
-                        writer.EndArray();
-                        continue;
-                    }
-                }
-                if (varType != QVariant::Invalid)
-                    zeno::log_warn("bad param info qvariant type {}", value.typeName() ? value.typeName() : "(null)");
-                writer.Null();
-            }
-        }
-        writer.EndArray();
-#endif
     }
 
     void AddVariantToStringList(const QVariantList& list, RAPIDJSON_WRITER& writer)
@@ -171,7 +111,7 @@ namespace JsonHelper
             }
             else 
             {
-                if (varType != QVariant::Invalid)  // FIXME: so many QVector<qreal>???
+                if (varType != QVariant::Invalid)  // FIXME: so many QVector<qreal>??? i will give a typedef later, and declare a qt meta type.
                     zeno::log_trace("bad param info qvariant type {}", value.typeName() ? value.typeName() : "(null)");
                 writer.String("");
             }
@@ -182,7 +122,7 @@ namespace JsonHelper
     void dumpCurveModel(const CurveModel* pModel, RAPIDJSON_WRITER& writer)
     {
         if (!pModel) {
-            return;        
+            return;
         }
 
         CURVE_RANGE rg = pModel->range();
