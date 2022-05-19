@@ -473,8 +473,8 @@ struct ImplicitTimeStepping : INode {
                     eles.pack<dimp1>("inds", ei).reinterpret_bits<int>();
                 auto He = etemp.pack<dim * dimp1, dim * dimp1>("He", ei);
                 for (int vi = 0; vi != dimp1; ++vi) {
-                  for (int i = 3; i != dim; ++i)
-                    for (int j = 3; j != dim; ++j) {
+                  for (int i = 0; i != dim; ++i)
+                    for (int j = 0; j != dim; ++j) {
                       atomic_add(exec_cuda, &vtemp("P", i * dim + j, inds[vi]),
                                  He(vi * dim + i, vi * dim + j));
                     }
