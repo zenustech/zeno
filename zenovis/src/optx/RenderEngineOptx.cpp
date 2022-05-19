@@ -9,6 +9,7 @@
 #include <zenovis/bate/IGraphic.h>
 #include <zenovis/opengl/scope.h>
 #include <zenovis/opengl/vao.h>
+#include <optional>
 
 namespace zenovis::optx {
 
@@ -61,8 +62,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
     std::unique_ptr<opengl::VAO> vao;
     Scene *scene;
 
-    bool giWasEnable = false;
-    bool giNeedUpdate = false;
+    bool giNeedUpdate = true;
 
     auto setupState() {
         return std::tuple{
@@ -89,11 +89,39 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
             giNeedUpdate = true;
     }
 
+#define MY_CAM_ID(cam) cam.m_nx, cam.m_ny, cam.m_lodup, cam.m_lodfront, cam.m_lodcenter, cam.m_fov
+#define MY_SIZE_ID(cam) cam.m_nx, cam.m_ny
+    std::optional<decltype(std::tuple{MY_CAM_ID(std::declval<Camera>())})> oldcamid;
+    std::optional<decltype(std::tuple{MY_SIZE_ID(std::declval<Camera>())})> oldsizeid;
+
     void draw() override {
         auto guard = setupState();
         auto const &cam = *scene->camera;
         auto const &opt = *scene->drawOptions;
 
+        bool sizeNeedUpdate = false;
+        {
+            std::tuple newsizeid{MY_SIZE_ID(cam)};
+            if (!oldsizeid || *oldsizeid != newsizeid)
+                sizeNeedUpdate = true;
+            oldsizeid = newsizeid;
+        }
+
+        bool camNeedUpdate = false;
+        {
+            std::tuple newcamid{MY_CAM_ID(cam)};
+            if (!oldcamid || *oldcamid != newcamid)
+                camNeedUpdate = true;
+            oldcamid = newcamid;
+        }
+
+        if (sizeNeedUpdate) {
+            zeno::log_debug("[zeno-optix] updating resolution");
+        xinxinoptix::set_window_size(cam.m_nx, cam.m_ny);
+        }
+
+        if (sizeNeedUpdate || camNeedUpdate) {
+        zeno::log_debug("[zeno-optix] updating camera");
         //xinxinoptix::set_show_grid(opt.show_grid);
         //xinxinoptix::set_normal_check(opt.normal_check);
         //xinxinoptix::set_enable_gi(opt.enable_gi);
@@ -102,21 +130,21 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         //xinxinoptix::set_background_color(opt.bgcolor.r, opt.bgcolor.g, opt.bgcolor.b);
         //xinxinoptix::setDOF(cam.m_dof);
         //xinxinoptix::setAperature(cam.m_aperature);
-        xinxinoptix::set_window_size(cam.m_nx, cam.m_ny);
         auto lodright = glm::normalize(glm::cross(cam.m_lodup, cam.m_lodfront));
         xinxinoptix::set_perspective(glm::value_ptr(lodright), glm::value_ptr(cam.m_lodup), glm::value_ptr(cam.m_lodfront), glm::value_ptr(cam.m_lodcenter), cam.getAspect(), cam.m_fov);
         //xinxinoptix::set_projection(glm::value_ptr(cam.m_proj));
+        }
 
-        xinxinoptix::optixupdatemesh();
-        std::vector<const char *> shaders;
-        auto s = zeno::file_get_content("/home/bate/zeno/zenovis/xinxinoptix/zxxMaterial.cu");
-        shaders.push_back(s.c_str());
-        shaders.push_back(s.c_str());
-        shaders.push_back(s.c_str());
-        shaders.push_back(s.c_str());
-        shaders.push_back(s.c_str());
-        xinxinoptix::optixupdatematerial(shaders);
-        xinxinoptix::optixupdateend();
+        if (giNeedUpdate) {
+        zeno::log_debug("[zeno-optix] updating scene");
+            std::vector<const char *> shaders;
+            auto s = zeno::file_get_content("/home/bate/zeno/zenovis/xinxinoptix/DeflMatShader.cu");
+            shaders.push_back(s.c_str());
+            xinxinoptix::optixupdatematerial(shaders);
+            xinxinoptix::optixupdatemesh();
+            xinxinoptix::optixupdateend();
+            giNeedUpdate = false;
+        }
 
         int targetFBO = 0;
         CHECK_GL(glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &targetFBO));

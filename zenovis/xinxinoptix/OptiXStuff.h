@@ -19,6 +19,7 @@
 #include <sutil/sutil.h>
 #include <sutil/vec_math.h>
 #include <optix_stack_size.h>
+#include "raiicuda.h"
 
 //#include <GLFW/glfw3.h>
 
@@ -36,14 +37,15 @@ static void context_log_cb( unsigned int level, const char* tag, const char* mes
 }
 namespace OptixUtil
 {
+    using namespace xinxinoptix;
 ////these are all material independent stuffs;
-inline OptixDeviceContext             context                  = 0;
+inline raii<OptixDeviceContext>             context                  ;
 inline OptixPipelineCompileOptions    pipeline_compile_options = {};
-inline OptixPipeline                  pipeline                 = 0;
-inline OptixModule                    ray_module               = 0;
-inline OptixProgramGroup              raygen_prog_group        = 0;
-inline OptixProgramGroup              radiance_miss_group      = 0;
-inline OptixProgramGroup              occlusion_miss_group     = 0;
+inline raii<OptixPipeline>                  pipeline                 ;
+inline raii<OptixModule>                    ray_module               ;
+inline raii<OptixProgramGroup>              raygen_prog_group        ;
+inline raii<OptixProgramGroup>              radiance_miss_group      ;
+inline raii<OptixProgramGroup>              occlusion_miss_group     ;
 ////end material independent stuffs
 inline void createContext()
 {
@@ -65,9 +67,9 @@ inline void createContext()
     pipeline_compile_options.pipelineLaunchParamsVariableName = "params";
 
 }
-inline OptixModule createModule(OptixDeviceContext &context, const char *filename)
+inline raii<OptixModule> createModule(OptixDeviceContext &context, const char *source, const char *location)
 {
-    OptixModule m;
+    raii<OptixModule> m;
     OptixModuleCompileOptions module_compile_options = {};
     module_compile_options.maxRegisterCount  = OPTIX_COMPILE_DEFAULT_MAX_REGISTER_COUNT;
     module_compile_options.optLevel          = OPTIX_COMPILE_OPTIMIZATION_DEFAULT;
@@ -81,7 +83,7 @@ inline OptixModule createModule(OptixDeviceContext &context, const char *filenam
 
     size_t      inputSize = 0;
     //TODO: the file path problem
-    const char* input     = sutil::getInputData( nullptr, nullptr, filename, inputSize );
+    const char* input     = sutil::getInputData( nullptr, nullptr, source, location, inputSize );
     
     OPTIX_CHECK_LOG( optixModuleCreateFromPTX(
         context,
@@ -144,7 +146,7 @@ inline void createRenderGroups(OptixDeviceContext &context, OptixModule &_module
                     ) );
     }     
 }
-inline void createRTProgramGroups(OptixDeviceContext &context, OptixModule &_module, std::string kind, std::string entry, OptixProgramGroup& oGroup)
+inline void createRTProgramGroups(OptixDeviceContext &context, OptixModule &_module, std::string kind, std::string entry, raii<OptixProgramGroup>& oGroup)
 {
     OptixProgramGroupOptions  program_group_options = {};
     char   log[2048];
@@ -163,7 +165,7 @@ inline void createRTProgramGroups(OptixDeviceContext &context, OptixModule &_mod
                     &program_group_options,
                     log,
                     &sizeof_log,
-                    &oGroup
+                    &oGroup.reset()
                     ) );
     } else if(kind == "OPTIX_PROGRAM_GROUP_KIND_ANYHITGROUP")
     {
@@ -187,13 +189,13 @@ inline void createRTProgramGroups(OptixDeviceContext &context, OptixModule &_mod
 }
 struct rtMatShader
 {
-    OptixModule                    m_ptx_module             = 0;
+    raii<OptixModule>                    m_ptx_module             ;
     
     //the below two things are just like vertex shader and frag shader in real time rendering
     //the two are linked to codes modeling the rayHit and occlusion test of an particular "Material"
     //of an Object.
-    OptixProgramGroup              m_radiance_hit_group     = 0;
-    OptixProgramGroup              m_occlusion_hit_group    = 0;
+    raii<OptixProgramGroup>              m_radiance_hit_group     ;
+    raii<OptixProgramGroup>              m_occlusion_hit_group    ;
     std::string                    m_shaderFile                ;
     std::string                    m_shadingEntry              ;
     std::string                    m_occlusionEntry            ;
@@ -208,7 +210,7 @@ struct rtMatShader
 
     void loadProgram()
     {
-        m_ptx_module = createModule(context, m_shaderFile.c_str());
+        m_ptx_module = createModule(context, m_shaderFile.c_str(), "tmpshader.cu");
         createRTProgramGroups(context, m_ptx_module, 
         "OPTIX_PROGRAM_GROUP_KIND_CLOSEHITGROUP", 
         m_shadingEntry, m_radiance_hit_group);

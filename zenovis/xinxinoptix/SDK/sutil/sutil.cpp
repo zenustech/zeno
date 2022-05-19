@@ -169,7 +169,7 @@ static std::string existingFilePath( const char* directory, const char* relative
     return fileExists( path ) ? path : "";
 }
 
-std::string getSampleDir()
+static std::string getSampleDir()
 {
     static const char* directories[] =
     {
@@ -873,6 +873,11 @@ std::vector<const char *> &getIncPathTab() {
     static std::vector<const char *> ret;
     return ret;
 }
+const char *lookupIncFile(const char *name) {
+    auto const &pathtab = getIncPathTab();
+    auto it = std::find(pathtab.begin(), pathtab.end(), std::string_view(name));
+    return getIncFileTab().at(it - pathtab.begin());
+}
 
 static void getPtxFromCuString( std::string&                    ptx,
                                 const char*                     sample_directory,
@@ -1081,6 +1086,7 @@ static const char* getOptixHeader() {
 const char* getInputData( const char*                     sample,
                           const char*                     sampleDir,
                           const char*                     filename,
+                          const char*                     location,
                           size_t&                         dataSize,
                           const char**                    log,
                           const std::vector<const char*>& compilerOptions )
@@ -1096,11 +1102,9 @@ const char* getInputData( const char*                     sample,
     {
         ptx = new std::string();
 #if CUDA_NVRTC_ENABLED
-        std::string location;
-        cu = filename;
         //getCuStringFromFile( cu, location, sampleDir, filename );
         //cu.replace(cu.find("#include <optix.h>\n"), strlen("#include <optix.h>\n"), getOptixHeader());
-        getPtxFromCuString( *ptx, sampleDir, cu.c_str(), location.c_str(), log, compilerOptions );
+        getPtxFromCuString( *ptx, sampleDir, filename, location, log, compilerOptions );
 #else
         getInputDataFromFile( *ptx, sample, filename );
 #endif

@@ -56,6 +56,7 @@ set(FILE_LIST
     ${CMAKE_CURRENT_SOURCE_DIR}/@optixPathTracer.h
     ${CMAKE_CURRENT_SOURCE_DIR}/@TraceStuff.h
     ${CMAKE_CURRENT_SOURCE_DIR}/@MaterialStuff.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/@PTKernel.cu
     )
 foreach (FILE_INFO IN ITEMS ${FILE_LIST})
     #string(REPLACE "/" "_" ESCAPED_FILE_NAME "${FILE_NAME}")
@@ -73,7 +74,7 @@ foreach (FILE_INFO IN ITEMS ${FILE_LIST})
         list(JOIN SEPARATED_HEX ",\n0x" FORMATTED_HEX)
         string(PREPEND FORMATTED_HEX "0x")
 
-        file(WRITE ${DUMMY_SOURCE_FILE} "/* generated from: ${FILE_PATH} */\n#include <vector>\nnamespace sutil {\nstd::vector<const char *> &getIncFileTab();\nstd::vector<const char *> &getIncPathTab();\nstatic const unsigned char mydata[] = {\n${FORMATTED_HEX},\n0};\nstatic int helper = (getIncPathTab().push_back(\"${FILE_NAME}\"), getIncFileTab().push_back((const char *)mydata), 0);\n}")
+        file(WRITE ${DUMMY_SOURCE_FILE} "/* generated from: ${FILE_PATH} */\n#include <vector>\n#include <sutil/sutil.h>\n\nnamespace sutil {\nstatic const unsigned char mydata[] = {\n${FORMATTED_HEX},\n0};\nstatic int helper = (getIncPathTab().push_back(\"${FILE_NAME}\"), getIncFileTab().push_back((const char *)mydata), 0);\n}")
 
     endif()
     target_sources(zenovis PRIVATE ${DUMMY_SOURCE_FILE})

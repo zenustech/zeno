@@ -147,6 +147,7 @@ double SUTILAPI currentTime();
 SUTILAPI const char* getInputData( const char* sampleName,  // Name of the sample, used to locate the input file. NULL = only search the common /cuda dir
                                    const char* sampleDir,  // Directory name for the sample (typically the same as the sample name).
                                    const char* filename,      // Cuda C input file name
+                          const char*                     location,
                                    size_t&     dataSize, 
                                    const char** log = NULL,    // (Optional) pointer to compiler log string. If *log == NULL there is no output. Only valid until the next getInputData call
                                    const std::vector<const char*>& compilerOptions = {CUDA_NVRTC_OPTIONS} );  // Optional vector of compiler options.
@@ -164,6 +165,10 @@ SUTILAPI void ensureMinimumSize(
     unsigned& height);                      // Will be assigned the minimum suitable height if too small.
 
 SUTILAPI void reportErrorMessage( const char* message );
+
+SUTILAPI std::vector<const char *> &getIncFileTab();
+SUTILAPI std::vector<const char *> &getIncPathTab();
+SUTILAPI const char *lookupIncFile(const char *name);
 
 } // end namespace sutil
 
