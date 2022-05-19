@@ -103,22 +103,25 @@ typedef Record<MissData>     MissRecord;
 typedef Record<HitGroupData> HitGroupRecord;
 
 
-struct Vertex
-{
-    float x, y, z, pad;
-};
+//struct Vertex
+//{
+    //float x, y, z, pad;
+//};
 
 
-struct IndexedTriangle
-{
-    uint32_t v1, v2, v3, pad;
-};
+//struct IndexedTriangle
+//{
+    //uint32_t v1, v2, v3, pad;
+//};
 
 
-struct Instance
-{
-    float transform[12];
-};
+//struct Instance
+//{
+    //float transform[12];
+//};
+
+
+using Vertex = float4;
 
 
 struct PathTracerState
@@ -166,176 +169,24 @@ PathTracerState state;
 //const int32_t TRIANGLE_COUNT = 32;
 //const int32_t MAT_COUNT      = 5;
 
-static std::vector<Vertex> g_vertices =  // TRIANGLE_COUNT*3
-{  {
-    // Floor  -- white lambert
-    {    0.0f,    0.0f,    0.0f, 0.0f },
-    {    0.0f,    0.0f,  559.2f, 0.0f },
-    {  556.0f,    0.0f,  559.2f, 0.0f },
-    {    0.0f,    0.0f,    0.0f, 0.0f },
-    {  556.0f,    0.0f,  559.2f, 0.0f },
-    {  556.0f,    0.0f,    0.0f, 0.0f },
-
-    // Ceiling -- white lambert
-    {    0.0f,  548.8f,    0.0f, 0.0f },
-    {  556.0f,  548.8f,    0.0f, 0.0f },
-    {  556.0f,  548.8f,  559.2f, 0.0f },
-
-    {    0.0f,  548.8f,    0.0f, 0.0f },
-    {  556.0f,  548.8f,  559.2f, 0.0f },
-    {    0.0f,  548.8f,  559.2f, 0.0f },
-
-    // Back wall -- white lambert
-    {    0.0f,    0.0f,  559.2f, 0.0f },
-    {    0.0f,  548.8f,  559.2f, 0.0f },
-    {  556.0f,  548.8f,  559.2f, 0.0f },
-
-    {    0.0f,    0.0f,  559.2f, 0.0f },
-    {  556.0f,  548.8f,  559.2f, 0.0f },
-    {  556.0f,    0.0f,  559.2f, 0.0f },
-
-    // Right wall -- green lambert
-    {    0.0f,    0.0f,    0.0f, 0.0f },
-    {    0.0f,  548.8f,    0.0f, 0.0f },
-    {    0.0f,  548.8f,  559.2f, 0.0f },
-
-    {    0.0f,    0.0f,    0.0f, 0.0f },
-    {    0.0f,  548.8f,  559.2f, 0.0f },
-    {    0.0f,    0.0f,  559.2f, 0.0f },
-
-    // Left wall -- red lambert
-    {  556.0f,    0.0f,    0.0f, 0.0f },
-    {  556.0f,    0.0f,  559.2f, 0.0f },
-    {  556.0f,  548.8f,  559.2f, 0.0f },
-
-    {  556.0f,    0.0f,    0.0f, 0.0f },
-    {  556.0f,  548.8f,  559.2f, 0.0f },
-    {  556.0f,  548.8f,    0.0f, 0.0f },
-
-    // Short block -- white lambert
-    {  130.0f,  165.0f,   65.0f, 0.0f },
-    {   82.0f,  165.0f,  225.0f, 0.0f },
-    {  242.0f,  165.0f,  274.0f, 0.0f },
-
-    {  130.0f,  165.0f,   65.0f, 0.0f },
-    {  242.0f,  165.0f,  274.0f, 0.0f },
-    {  290.0f,  165.0f,  114.0f, 0.0f },
-
-    {  290.0f,    0.0f,  114.0f, 0.0f },
-    {  290.0f,  165.0f,  114.0f, 0.0f },
-    {  240.0f,  165.0f,  272.0f, 0.0f },
-
-    {  290.0f,    0.0f,  114.0f, 0.0f },
-    {  240.0f,  165.0f,  272.0f, 0.0f },
-    {  240.0f,    0.0f,  272.0f, 0.0f },
-
-    {  130.0f,    0.0f,   65.0f, 0.0f },
-    {  130.0f,  165.0f,   65.0f, 0.0f },
-    {  290.0f,  165.0f,  114.0f, 0.0f },
-
-    {  130.0f,    0.0f,   65.0f, 0.0f },
-    {  290.0f,  165.0f,  114.0f, 0.0f },
-    {  290.0f,    0.0f,  114.0f, 0.0f },
-
-    {   82.0f,    0.0f,  225.0f, 0.0f },
-    {   82.0f,  165.0f,  225.0f, 0.0f },
-    {  130.0f,  165.0f,   65.0f, 0.0f },
-
-    {   82.0f,    0.0f,  225.0f, 0.0f },
-    {  130.0f,  165.0f,   65.0f, 0.0f },
-    {  130.0f,    0.0f,   65.0f, 0.0f },
-
-    {  240.0f,    0.0f,  272.0f, 0.0f },
-    {  240.0f,  165.0f,  272.0f, 0.0f },
-    {   82.0f,  165.0f,  225.0f, 0.0f },
-
-    {  240.0f,    0.0f,  272.0f, 0.0f },
-    {   82.0f,  165.0f,  225.0f, 0.0f },
-    {   82.0f,    0.0f,  225.0f, 0.0f },
-
-    // Tall block -- white lambert
-    {  423.0f,  330.0f,  247.0f, 0.0f },
-    {  265.0f,  330.0f,  296.0f, 0.0f },
-    {  314.0f,  330.0f,  455.0f, 0.0f },
-
-    {  423.0f,  330.0f,  247.0f, 0.0f },
-    {  314.0f,  330.0f,  455.0f, 0.0f },
-    {  472.0f,  330.0f,  406.0f, 0.0f },
-
-    {  423.0f,    0.0f,  247.0f, 0.0f },
-    {  423.0f,  330.0f,  247.0f, 0.0f },
-    {  472.0f,  330.0f,  406.0f, 0.0f },
-
-    {  423.0f,    0.0f,  247.0f, 0.0f },
-    {  472.0f,  330.0f,  406.0f, 0.0f },
-    {  472.0f,    0.0f,  406.0f, 0.0f },
-
-    {  472.0f,    0.0f,  406.0f, 0.0f },
-    {  472.0f,  330.0f,  406.0f, 0.0f },
-    {  314.0f,  330.0f,  456.0f, 0.0f },
-
-    {  472.0f,    0.0f,  406.0f, 0.0f },
-    {  314.0f,  330.0f,  456.0f, 0.0f },
-    {  314.0f,    0.0f,  456.0f, 0.0f },
-
-    {  314.0f,    0.0f,  456.0f, 0.0f },
-    {  314.0f,  330.0f,  456.0f, 0.0f },
-    {  265.0f,  330.0f,  296.0f, 0.0f },
-
-    {  314.0f,    0.0f,  456.0f, 0.0f },
-    {  265.0f,  330.0f,  296.0f, 0.0f },
-    {  265.0f,    0.0f,  296.0f, 0.0f },
-
-    {  265.0f,    0.0f,  296.0f, 0.0f },
-    {  265.0f,  330.0f,  296.0f, 0.0f },
-    {  423.0f,  330.0f,  247.0f, 0.0f },
-
-    {  265.0f,    0.0f,  296.0f, 0.0f },
-    {  423.0f,  330.0f,  247.0f, 0.0f },
-    {  423.0f,    0.0f,  247.0f, 0.0f },
-
-    // Ceiling light -- emmissive
-    {  343.0f,  548.6f,  227.0f, 0.0f },
-    {  213.0f,  548.6f,  227.0f, 0.0f },
-    {  213.0f,  548.6f,  332.0f, 0.0f },
-
-    {  343.0f,  548.6f,  227.0f, 0.0f },
-    {  213.0f,  548.6f,  332.0f, 0.0f },
-    {  343.0f,  548.6f,  332.0f, 0.0f }
-} };
-
-static std::vector<uint32_t> g_mat_indices = {{ // TRIANGLE_COUNT
-    0, 0,                          // Floor         -- white lambert
-    0, 0,                          // Ceiling       -- white lambert
-    0, 0,                          // Back wall     -- white lambert
-    1, 1,                          // Right wall    -- green lambert
-    2, 2,                          // Left wall     -- red lambert
-    4, 4, 4, 4, 4, 4, 4, 4, 4, 4,  // Short block   -- white lambert with opacity
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  // Tall block    -- white lambert
-    3, 3                           // Ceiling light -- emmissive
-}};
-
-
-
-const std::vector<float3> g_emission_colors = // MAT_COUNT
-{ {
-    {  0.0f,  0.0f,  0.0f },
-    {  0.0f,  0.0f,  0.0f },
-    {  0.0f,  0.0f,  0.0f },
-    { 15.0f, 15.0f,  5.0f },
-    {  0.0f,  0.0f,  0.0f }
-
-} };
-
-
-const std::vector<float3> g_diffuse_colors = // MAT_COUNT
-{ {
-    { 0.80f, 0.80f, 0.80f },
-    { 0.05f, 0.80f, 0.05f },
-    { 0.80f, 0.05f, 0.05f },
-    { 0.50f, 0.00f, 0.00f },
-    { 0.80f, 0.80f, 0.80f }
-} };
+static std::vector<Vertex> g_vertices= // TRIANGLE_COUNT*3
+{
+    {0,0,0},
+    {0,0,0},
+    {0,0,0},
+};
+static std::vector<uint32_t> g_mat_indices= // TRIANGLE_COUNT
+{
+    0,0,0,
+};
+static std::vector<float3> g_emission_colors= // MAT_COUNT
+{
+    {0,0,0},
+};
+static std::vector<float3> g_diffuse_colors= // MAT_COUNT
+{
+    {0.8f,0.8f,0.8f},
+};
 
 
 //------------------------------------------------------------------------------
@@ -625,6 +476,7 @@ static void buildMeshAccel( PathTracerState& state )
     accel_options.operation              = OPTIX_BUILD_OPERATION_BUILD;
 
     OptixAccelBufferSizes gas_buffer_sizes;
+    //char   log[2048]; size_t sizeof_log = sizeof( log );
     OPTIX_CHECK( optixAccelComputeMemoryUsage(
                 state.context,
                 &accel_options,
@@ -923,8 +775,10 @@ void optixupdatematerial(std::vector<const char *> const &shaders) {
         "PTKernel.cu");
         } hadOnce = true;
     OptixUtil::rtMaterialShaders.resize(0);
-    for (int i = 0; i < shaders.size(); i++)
+    for (int i = 0; i < shaders.size(); i++) {
+        if (!*shaders[i]) zeno::log_warn("shader {} is empty", i);
         OptixUtil::rtMaterialShaders.push_back(OptixUtil::rtMatShader(shaders[i],"__closesthit__radiance", "__anyhit__shadow_cutout"));
+    }
     for(int i=0;i<OptixUtil::rtMaterialShaders.size();i++)
     {
         OptixUtil::rtMaterialShaders[i].loadProgram();

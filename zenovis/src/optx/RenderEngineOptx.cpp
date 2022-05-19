@@ -137,15 +137,11 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
 
         if (giNeedUpdate) {
         zeno::log_debug("[zeno-optix] updating scene");
-            xinxinoptix::optixupdatemesh();
             std::vector<const char *> shaders;
-            auto s = zeno::file_get_content("/home/bate/zeno/zenovis/xinxinoptix/zxxMaterial.cu");
-            shaders.push_back(s.c_str());
-            shaders.push_back(s.c_str());
-            shaders.push_back(s.c_str());
-            shaders.push_back(s.c_str());
+            auto s = zeno::file_get_content("/home/bate/zeno/zenovis/xinxinoptix/DeflMatShader.cu");
             shaders.push_back(s.c_str());
             xinxinoptix::optixupdatematerial(shaders);
+            xinxinoptix::optixupdatemesh();
             xinxinoptix::optixupdateend();
             giNeedUpdate = false;
         }
