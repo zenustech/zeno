@@ -1,4 +1,5 @@
 #include "../Structures.hpp"
+#include "../Utils.hpp"
 #include "zensim/Logger.hpp"
 #include "zensim/cuda/execution/ExecutionPolicy.cuh"
 // #include "zensim/omp/execution/ExecutionPolicy.hpp"
@@ -26,7 +27,7 @@ using mat3 = zs::vec<T,3,3>;
 using mat4 = zs::vec<T,4,4>;
 
 struct ZSComputeBaryCentricWeights : INode {
-    T ComputeVolume(
+    constexpr T ComputeVolume(
         const vec3& p0,
         const vec3& p1,
         const vec3& p2,
@@ -37,12 +38,12 @@ struct ZSComputeBaryCentricWeights : INode {
             m(i,0) = p0[i];
             m(i,1) = p1[i];
             m(i,2) = p2[i];
-            m(i,4) = p3[i];
+            m(i,3) = p3[i];
         }
-        m(4,0) = m(4,1) = m(4,2) = m(4,3) = 1;
+        m(3,0) = m(3,1) = m(3,2) = m(3,3) = 1;
         return zs::determinant(m);
     }
-    vec4 ComputeBaryCentricCoordinate(const vec3& p,
+    constexpr vec4 ComputeBaryCentricCoordinate(const vec3& p,
         const vec3& p0,
         const vec3& p1,
         const vec3& p2,
@@ -60,7 +61,9 @@ struct ZSComputeBaryCentricWeights : INode {
         auto zsvolume = get_input<ZenoParticles>("zsvolume");
         auto zssurf = get_input<ZenoParticles>("zssurf");
         // the bvh of zstets
-        auto lbvh = get_input<zeno::LBvh>("lbvh");
+        // auto lbvh = get_input<zeno::LBvh>("lbvh");
+        auto thickness = get_param<float>("bvh_thickness");
+
 
         const auto& verts = zsvolume->getParticles();
         const auto& eles = zsvolume->getQuadraturePoints();
@@ -68,30 +71,63 @@ struct ZSComputeBaryCentricWeights : INode {
         const auto& everts = zssurf->getParticles();
 
         auto &bcw = (*zsvolume)["bcws"];
-        bcw = typename ZenoParticles::particles_t({{"inds",1},{"w",4}},everts.size(),zs::memsrc_e::device);
+        bcw = typename ZenoParticles::particles_t({{"inds",1},{"w",4}},everts.size(),zs::memsrc_e::device,0);
 
         auto cudaExec = zs::cuda_exec();
         const auto numFEMVerts = verts.size();
         const auto numFEMEles = eles.size();
         const auto numEmbedVerts = bcw.size();
         
+
+        auto bvs = retrieve_bounding_volumes(cudaExec,verts,eles,wrapv<4>{},thickness);
+        auto tetsBvh = zsvolume->bvh(ZenoParticles::s_elementTag);
+
+        tetsBvh.build(cudaExec,bvs);
+
         constexpr auto space = zs::execspace_e::cuda;
         cudaExec(zs::range(numEmbedVerts),
-            [verts = proxy<space>({},verts),eles = proxy<space>({},eles),bcw = proxy<space>({},bcw),everts = proxy<space>({},everts)] ZS_LAMBDA (int vi) mutable {
+            [this, verts = proxy<space>({},verts),eles = proxy<space>({},eles),bcw = proxy<space>({},bcw),everts = proxy<space>({},everts),tetsBvh = proxy<space>(tetsBvh)] ZS_LAMBDA (int vi) mutable {
                 const auto& p = everts.pack<3>("x",vi);
-                // lbvh->iter_neighbors(p,[&](int ei){
-                //     const auto& p0 = verts.pack<3>("x",zs::reinterpret_bits<int>(eles("inds",0,ei)));
-                //     const auto& p1 = verts.pack<3>("x",zs::reinterpret_bits<int>(eles("inds",1,ei)));
-                //     const auto& p2 = verts.pack<3>("x",zs::reinterpret_bits<int>(eles("inds",2,ei)));
-                //     const auto& p3 = verts.pack<3>("x",zs::reinterpret_bits<int>(eles("inds",3,ei)));
+                tetsBvh.iter_neighbors(p,[&](int ei){
+                    auto inds = eles.pack<4>("inds", ei).reinterpret_bits<int>();
+                    const auto& p0 = verts.pack<3>("x",inds[0]);
+                    const auto& p1 = verts.pack<3>("x",inds[1]);
+                    const auto& p2 = verts.pack<3>("x",inds[2]);
+                    const auto& p3 = verts.pack<3>("x",inds[3]);
 
-                //     auto ws = ComputeBaryCentricCoordinate(p,p0,p1,p2,p3);
-                //     float epsilon = 1e-6;
-                //     if(ws[0] > -epsilon && ws[1] > -epsilon && ws[2] > -epsilon && ws[3] > -epsilon){
-                //         bcw("inds",vi) = reinterpret_bits<float>(ei);
-                //         bcw.tuple<4>("w",vi) = ws;
-                //     }
-                // });
+                    auto ws = ComputeBaryCentricCoordinate(p,p0,p1,p2,p3);
+
+                    float epsilon = 1e-6;
+                    if(ws[0] > -epsilon && ws[1] > -epsilon && ws[2] > -epsilon && ws[3] > -epsilon){
+                        bcw("inds",vi) = reinterpret_bits<float>(ei);
+                        bcw.tuple<4>("w",vi) = ws;
+                    }
+#if 0
+                    if(vi == 0){
+                        auto vol = ComputeVolume(p0,p1,p2,p3);
+                        auto vol0 = ComputeVolume(p,p1,p2,p3);
+                        auto vol1 = ComputeVolume(p0,p,p2,p3);      
+                        auto vol2 = ComputeVolume(p0,p1,p,p3);
+                        auto vol3 = ComputeVolume(p0,p1,p2,p);
+
+                        mat4 m{};
+                        for(size_t i = 0;i < 3;++i){
+                            m(i,0) = p0[i];
+                            m(i,1) = p1[i];
+                            m(i,2) = p2[i];
+                            m(i,3) = p3[i];
+                        }
+                        m(3,0) = m(3,1) = m(3,2) = m(3,3) = 1;
+
+
+                        printf("TEST V<%d> And TET<%d> : W(%f,%f,%f,%f)\n",vi,ei,ws[0],ws[1],ws[2],ws[3]);
+                        printf("WITH VOL : (%f,%f,%f,%f,%f)\n",vol,vol0,vol1,vol2,vol3);
+                        printf("M:\n%f\t%f\t%f\t%f\n%f\t%f\t%f\t%f\n%f\t%f\t%f\t%f\n%f\t%f\t%f\t%f\n",
+                            m(0,0),m(0,1),m(0,2),m(0,3),m(1,0),m(1,1),m(1,2),m(1,3),m(2,0),m(2,1),m(2,2),m(2,3),m(3,0),m(3,1),m(3,2),m(3,3)
+                        );
+                    }
+#endif
+                });
             }
         );
         set_output("zsvolume", std::move(zsvolume));
@@ -100,7 +136,7 @@ struct ZSComputeBaryCentricWeights : INode {
 
 ZENDEFNODE(ZSComputeBaryCentricWeights, {{{"interpolator","zsvolume"}, {"embed surf", "zssurf"}},
                             {{"interpolator on gpu", "zsvolume"}},
-                            {},
+                            {{"float","bvh_thickness","0"}},
                             {"FEM"}});
 
 
@@ -115,7 +151,7 @@ struct ZSInterpolateEmbedPrim : zeno::INode {
         auto cudaExec = zs::cuda_exec();
 
         auto &everts = zssurf->getParticles();
-        everts.append_channels(cudaExec, {{outAttr, 3}});
+        // everts.append_channels(cudaExec, {{outAttr, 3}});
         
         const auto& verts = zstets->getParticles();
         const auto& eles = zstets->getQuadraturePoints();
@@ -141,15 +177,20 @@ struct ZSInterpolateEmbedPrim : zeno::INode {
                     const auto idx = reinterpret_bits<int>(eles("inds", i, ei));
                     everts.tuple<3>(outAttr,vi) = everts.pack<3>(outAttr,vi) + w[i] * verts.pack<3>("x", idx);
                 }
+#if 0
+                if(vi == 100){
+                    auto vert = everts.pack<3>(outAttr,vi);
+                    printf("V<%d>->E<%d>(%f,%f,%f,%f) :\t%f\t%f\t%f\n",vi,ei,w[0],w[1],w[2],w[3],vert[0],vert[1],vert[2]);
+                }
+#endif
         });
-
         set_output("zssurf",zssurf);
     }
 };
 
 ZENDEFNODE(ZSInterpolateEmbedPrim, {{{"zsvolume"}, {"embed primitive", "zssurf"}},
                             {{"embed primitive", "zssurf"}},
-                            {{}},
+                            {{"string","outAttr","x"}},
                             {"FEM"}});
 
 
