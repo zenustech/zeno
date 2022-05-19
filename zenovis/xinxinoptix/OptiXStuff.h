@@ -19,6 +19,7 @@
 #include <sutil/sutil.h>
 #include <sutil/vec_math.h>
 #include <optix_stack_size.h>
+#include "raiicuda.h"
 
 //#include <GLFW/glfw3.h>
 
@@ -36,14 +37,15 @@ static void context_log_cb( unsigned int level, const char* tag, const char* mes
 }
 namespace OptixUtil
 {
+    using namespace xinxinoptix;
 ////these are all material independent stuffs;
-inline OptixDeviceContext             context                  = 0;
+inline raii<OptixDeviceContext>             context                  ;
 inline OptixPipelineCompileOptions    pipeline_compile_options = {};
-inline OptixPipeline                  pipeline                 = 0;
-inline OptixModule                    ray_module               = 0;
-inline OptixProgramGroup              raygen_prog_group        = 0;
-inline OptixProgramGroup              radiance_miss_group      = 0;
-inline OptixProgramGroup              occlusion_miss_group     = 0;
+inline raii<OptixPipeline>                  pipeline                 ;
+inline raii<OptixModule>                    ray_module               ;
+inline raii<OptixProgramGroup>              raygen_prog_group        ;
+inline raii<OptixProgramGroup>              radiance_miss_group      ;
+inline raii<OptixProgramGroup>              occlusion_miss_group     ;
 ////end material independent stuffs
 inline void createContext()
 {
@@ -65,9 +67,9 @@ inline void createContext()
     pipeline_compile_options.pipelineLaunchParamsVariableName = "params";
 
 }
-inline OptixModule createModule(OptixDeviceContext &context, const char *filename)
+inline raii<OptixModule> createModule(OptixDeviceContext &context, const char *filename)
 {
-    OptixModule m;
+    raii<OptixModule> m;
     OptixModuleCompileOptions module_compile_options = {};
     module_compile_options.maxRegisterCount  = OPTIX_COMPILE_DEFAULT_MAX_REGISTER_COUNT;
     module_compile_options.optLevel          = OPTIX_COMPILE_OPTIMIZATION_DEFAULT;
