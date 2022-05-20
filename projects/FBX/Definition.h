@@ -34,6 +34,15 @@
 #define COMMON_DEFAULT_strokeTint aiColor4D(0.0f, 0.0f, 0.0f, 1.0f)
 #define COMMON_DEFAULT_opacity aiColor4D(0.0f, 0.0f, 0.0f, 1.0f)
 
+struct Helper{
+    static void printAiMatrix(aiMatrix4x4 m){
+        zeno::log_info("    {: f} {: f} {: f} {: f}", m.a1, m.a2, m.a3, m.a4);
+        zeno::log_info("    {: f} {: f} {: f} {: f}", m.b1, m.b2, m.b3, m.b4);
+        zeno::log_info("    {: f} {: f} {: f} {: f}", m.c1, m.c2, m.c3, m.c4);
+        zeno::log_info("    {: f} {: f} {: f} {: f}", m.d1, m.d2, m.d3, m.d4);
+    }
+};
+
 struct SKeyPosition {
     aiVector3D position;
     float timeStamp;
