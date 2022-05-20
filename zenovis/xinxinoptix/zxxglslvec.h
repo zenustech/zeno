@@ -815,16 +815,16 @@ __forceinline__ __device__ float length(vec4 a)
 }
 __forceinline__ __device__ vec2 normalize(vec2 a)
 {
-    return a/(length(a)+0.0000001);
+    return a/(length(a));
 }
 
 __forceinline__ __device__ vec3 normalize(vec3 a)
 {
-    return a/(length(a)+0.0000001);
+    return a/(length(a));
 }
 __forceinline__ __device__ vec4 normalize(vec4 a)
 {
-    return a/(length(a)+0.0000001);
+    return a/(length(a));
 }
 
 __forceinline__ __device__ float distance(vec2 a, vec2 b)

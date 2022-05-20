@@ -116,8 +116,8 @@ extern "C" __global__ void __closesthit__radiance()
             params.handle,
             P,
             L,
-            0.01f,         // tmin
-            Ldist - 0.01f  // tmax
+            1e-5f,         // tmin
+            Ldist - 1e-5f  // tmax
             );
         unsigned int occluded = prd->flags;
         if( !occluded )

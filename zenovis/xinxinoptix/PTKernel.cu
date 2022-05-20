@@ -54,7 +54,7 @@ extern "C" __global__ void __raygen__rg()
                     params.handle,
                     ray_origin,
                     ray_direction,
-                    0.01f,  // tmin       // TODO: smarter offset
+                    1e-5f,  // tmin       // TODO: smarter offset
                     1e16f,  // tmax
                     &prd );
 
