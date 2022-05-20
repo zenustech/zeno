@@ -31,9 +31,12 @@ static T generic_get(Value const &x) {
         return cast((float)x.GetDouble());
     } else if (x.IsBool()) {
         return cast(x.GetBool());
-    } else if (x.IsObject()) {
-        pparseObjectFromUi(di[3]);
     } else {
+        if constexpr (std::is_same_v<T, zany>) {
+            if (x.IsObject()) {
+                return parseObjectFromUi(x.GetObject());
+            }
+        }
         if constexpr (HasVec) {
             if (x.IsArray()) {
                 auto a = x.GetArray();
