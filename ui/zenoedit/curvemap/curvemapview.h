@@ -18,6 +18,8 @@ public:
 	void init(bool timeFrame);
 	void addCurve(CurveModel* model);
 	CURVE_RANGE range() const;
+	void resetRange(const CURVE_RANGE& rg);
+	void setChartType(bool bFrame);
     bool isSmoothCurve() const;
 	QMargins margins() const { return m_gridMargins; }
 	qreal factor() const { return m_factor; }

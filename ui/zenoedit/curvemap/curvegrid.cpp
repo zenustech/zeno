@@ -16,10 +16,10 @@ CurveGrid::CurveGrid(CurveMapView* pView, const QRectF& rc, QGraphicsItem* paren
 {
     QMargins margins = m_view->margins();
     m_initRc = m_initRc.marginsRemoved(margins);
-	resetTransform(m_initRc, m_view->range());
+	resetTransform(m_initRc, m_view->range(), true);
 }
 
-void CurveGrid::resetTransform(QRectF rc, CURVE_RANGE rg)
+void CurveGrid::resetTransform(QRectF rc, CURVE_RANGE rg, bool bInit)
 {
     QMargins margins = m_view->margins();
     m_initRc = rc;
@@ -45,6 +45,13 @@ void CurveGrid::resetTransform(QRectF rc, CURVE_RANGE rg)
         zeno::log_warn("cannot invert transform (divide by zero)");
         return;
     }
+
+	if (!bInit) {
+        for (CurvesItem *curves : m_curves) {
+            CurveModel *pModel = curves->model();
+            pModel->resetRange(rg);
+        }
+	}
 
 	//example:
     /*
