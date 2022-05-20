@@ -1,29 +1,29 @@
 #pragma once
 
 #include "zxxglslvec.h"
-#include "MaterialStuff.h"
+#include "TraceStuff.h"
 
 namespace BRDFBasics{
-static __device__  float fresnel(float cosT){
+static __inline__ __device__  float fresnel(float cosT){
     float v = clamp(1-cosT,0.0f,1.0f);
     float v2 = v *v;
     return v2 * v2 * v;
 }
-static __device__  float GTR1(float cosT,float a){
+static __inline__ __device__  float GTR1(float cosT,float a){
     if(a >= 1.0f) return 1/M_PIf;
     float t = (1+(a*a-1)*cosT*cosT);
     return (a*a-1.0f) / (M_PIf*logf(a*a)*t);
 }
-static __device__  float GTR2(float cosT,float a){
+static __inline__ __device__  float GTR2(float cosT,float a){
     float t = (1+(a*a-1)*cosT*cosT);
     return (a*a) / (M_PIf*t*t);
 }
-static __device__  float GGX(float cosT, float a){
+static __inline__ __device__  float GGX(float cosT, float a){
     float a2 = a*a;
     float b = cosT*cosT;
     return 1.0f/ (cosT + sqrtf(a2 + b - a2*b));
 }
-static __device__  vec3 sampleOnHemisphere(unsigned int &seed, float roughness)
+static __inline__ __device__  vec3 sampleOnHemisphere(unsigned int &seed, float roughness)
 {
     float x = rnd(seed);
     float y = rnd(seed);
@@ -37,10 +37,10 @@ static __device__  vec3 sampleOnHemisphere(unsigned int &seed, float roughness)
 
     return vec3(cos(phi) * sinTheta,  sin(phi) * sinTheta, cosTheta);
 }
-};
+}
 namespace DisneyBRDF
 {   
-static __device__ float pdf(
+static __inline__ __device__ float pdf(
         vec3 baseColor,
         float metallic,
         float subsurface,
@@ -77,7 +77,7 @@ static __device__ float pdf(
         return diffRatio * pdfDiff + spRatio * pdfSpec;
     }
 
-static __device__ vec3 sample_f(
+static __inline__ __device__ vec3 sample_f(
         unsigned int &seed, 
         vec3 baseColor,
         float metallic,
@@ -126,7 +126,7 @@ static __device__ vec3 sample_f(
         
         return wi;
     }
-static __device__ vec3 eval(
+static __inline__ __device__ vec3 eval(
         vec3 baseColor,
         float metallic,
         float subsurface,
@@ -189,11 +189,11 @@ static __device__ vec3 eval(
         return ((1/M_PIf) * mix(Fd, ss, subsurface) * Cdlin + Fsheen) * (1.0f - metallic)
         + Gs*Fs*Ds + 0.25f*clearcoat*Gc*Fc*Dc;
     }
-};
+}
 
 //////////////////////////////////////////
 ///here inject common code in glsl style
-static __device__ vec3 perlin_hash22(vec3 p)
+static __inline__ __device__ vec3 perlin_hash22(vec3 p)
 {
     p = vec3( dot(p,vec3(127.1f,311.7f,284.4f)),
               dot(p,vec3(269.5f,183.3f,162.2f)),
@@ -201,7 +201,7 @@ static __device__ vec3 perlin_hash22(vec3 p)
     return -1.0f + 2.0f * fract(sin(p)*43758.5453123f);
 }
 
-static __device__ float perlin_lev1(vec3 p)
+static __inline__ __device__ float perlin_lev1(vec3 p)
 {
     vec3 pi = vec3(floor(p));
     vec3 pf = p - pi;
@@ -230,7 +230,7 @@ static __device__ float perlin_lev1(vec3 p)
 			          w.z));
 }
 
-static __device__ float perlin(float p,int n,vec3 a)
+static __inline__ __device__ float perlin(float p,int n,vec3 a)
 {
     float total = 0;
     for(int i=0; i<n; i++)

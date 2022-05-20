@@ -4,7 +4,9 @@
 #include <cuda/helpers.h>
 #include "optixPathTracer.h"
 #include "TraceStuff.h"
-#include "MaterialStuff.h"
+#include "zxxglslvec.h"
+#include "DisneyBRDF.h"
+#include "IOMat.h"
 
 
 
@@ -133,7 +135,7 @@ extern "C" __global__ void __closesthit__radiance()
 */
 
 
-static __device__ MatOutput evalMaterial(MatInput const &attrs) {
+static __inline__ __device__ MatOutput evalMaterial(MatInput const &attrs) {
     /* MODMA */
     auto attr_pos = attrs.pos;
     auto attr_clr = attrs.clr;
@@ -180,13 +182,7 @@ static __device__ MatOutput evalMaterial(MatInput const &attrs) {
     return mats;
 }
 
-
-extern "C" __global__ void __closesthit__occlusion()
-{
-    setPayloadOcclusion( true );
-}
-extern "C" __global__ void __anyhit__shadow_cutout()
-{
+static __device__ MatOutput getMatOutputFromHit() {
     HitGroupData* rt_data = (HitGroupData*)optixGetSbtDataPointer();
 
     const int    prim_idx        = optixGetPrimitiveIndex();
@@ -210,7 +206,14 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     attrs.uv = vec3(0,0,0);//todo later
     attrs.clr = vec3(rt_data->diffuse_color.x, rt_data->diffuse_color.y, rt_data->diffuse_color.z);
     attrs.tang = vec3(0,0,0);
-    MatOutput mats = evalMaterial(attrs);
+    return evalMaterial(attrs);
+}
+
+
+
+extern "C" __global__ void __anyhit__shadow_cutout()
+{
+    MatOutput mats = getMatOutputFromHit();
     /* MODME */
     auto baseColor = mats.baseColor;
     auto metallic = mats.metallic;
@@ -240,36 +243,7 @@ extern "C" __global__ void __anyhit__shadow_cutout()
 
 extern "C" __global__ void __closesthit__radiance()
 {
-    HitGroupData* rt_data = (HitGroupData*)optixGetSbtDataPointer();
-
-    const int    prim_idx        = optixGetPrimitiveIndex();
-    const float3 ray_dir         = optixGetWorldRayDirection();
-    const int    vert_idx_offset = prim_idx*3;
-
-    const float3 v0   = make_float3( rt_data->vertices[ vert_idx_offset+0 ] );
-    const float3 v1   = make_float3( rt_data->vertices[ vert_idx_offset+1 ] );
-    const float3 v2   = make_float3( rt_data->vertices[ vert_idx_offset+2 ] );
-    const float3 N_0  = normalize( cross( v1-v0, v2-v0 ) );
-
-    const float3 N    = faceforward( N_0, -ray_dir, N_0 );
-    const float3 P    = optixGetWorldRayOrigin() + optixGetRayTmax()*ray_dir;
-
-    RadiancePRD* prd = getPRD();
-
-    if( prd->countEmitted )
-        prd->emitted = rt_data->emission_color;
-    else
-        prd->emitted = make_float3( 0.0f );
-
-
-    MatInput attrs;
-    /* MODMA */
-    attrs.pos = vec3(P.x, P.y, P.z);
-    attrs.nrm = vec3(0,0,1);
-    attrs.uv = vec3(0,0,0);//todo later
-    attrs.clr = vec3(rt_data->diffuse_color.x, rt_data->diffuse_color.y, rt_data->diffuse_color.z);
-    attrs.tang = vec3(0,0,0);
-    MatOutput mats = evalMaterial(attrs);
+    MatOutput mats = getMatOutputFromHit();
     /* MODME */
     auto baseColor = mats.baseColor;
     auto metallic = mats.metallic;
@@ -412,4 +386,9 @@ extern "C" __global__ void __closesthit__radiance()
     }
 
     prd->radiance += light.emission * weight;
+}
+
+extern "C" __global__ void __closesthit__occlusion()
+{
+    setPayloadOcclusion( true );
 }
