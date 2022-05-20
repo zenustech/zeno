@@ -83,6 +83,7 @@ sutil::Trackball trackball;
 int32_t mouse_button = -1;
 
 int32_t samples_per_launch = 16;
+//int32_t samples_per_launch = 1;
 
 //------------------------------------------------------------------------------
 //

@@ -144,8 +144,8 @@ static __inline__ __device__ MatOutput evalMaterial(MatInput const &attrs) {
     auto attr_tang = attrs.tang;
     /* MODME */
     vec3 mat_baseColor = vec3(0.8);
-    float mat_metallic = 0.0;
-    float mat_roughness = 0.5;
+    float mat_metallic = 1.0;
+    float mat_roughness = 0.2;
     float mat_subsurface = 0.0;
     float mat_specular = 0;
     float mat_specularTint = 0.0;
@@ -261,6 +261,7 @@ extern "C" __global__ void __closesthit__radiance()
     //end of material computation
     mats.metallic = clamp(mats.metallic,0.01, 0.99);
     mats.roughness = clamp(mats.roughness, 0.01,0.99);
+
     /* MODME */
     auto baseColor = mats.baseColor;
     auto metallic = mats.metallic;
