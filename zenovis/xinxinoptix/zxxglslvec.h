@@ -2,6 +2,7 @@
 
 #include <cuda/helpers.h>
 
+#if 1
 struct vec2{
     float x, y;
     vec2(const vec2 &_v)
@@ -17,6 +18,7 @@ struct vec2{
     {
         x = _x; y = _x;
     }
+    vec2() = default;
 };
 struct vec3{
     float x, y, z;
@@ -34,6 +36,7 @@ struct vec3{
     {
         x = _x; y = _x; z = _x;
     }
+    vec3() = default;
 };
 
 struct vec4{
@@ -51,6 +54,7 @@ struct vec4{
     {
         x = _x; y = _x; z = _x; w = _x;
     }
+    vec4() = default;
 };
 //////////////// + - * /////////////////////////////////////////////
 __forceinline__ __device__ vec2 operator+(vec2 a, float b)
@@ -190,6 +194,30 @@ __forceinline__ __device__ vec3 operator/(vec3 a, vec3 b)
 __forceinline__ __device__ vec4 operator/(vec4 a, vec4 b)
 {
     return vec4(a.x/b.x, a.y/b.y, a.z/b.z, a.w/b.w);
+}
+__forceinline__ __device__ vec2 operator+(vec2 a)
+{
+    return vec2(+a.x, +a.y);
+}
+__forceinline__ __device__ vec3 operator+(vec3 a)
+{
+    return vec3(+a.x, +a.y, +a.z);
+}
+__forceinline__ __device__ vec4 operator+(vec4 a)
+{
+    return vec4(+a.x, +a.y, +a.z, +a.w);
+}
+__forceinline__ __device__ vec2 operator-(vec2 a)
+{
+    return vec2(-a.x, -a.y);
+}
+__forceinline__ __device__ vec3 operator-(vec3 a)
+{
+    return vec3(-a.x, -a.y, -a.z);
+}
+__forceinline__ __device__ vec4 operator-(vec4 a)
+{
+    return vec4(-a.x, -a.y, -a.z, -a.w);
 }
 ////////////////end of + - * /////////////////////////////////////////////
 
@@ -410,8 +438,8 @@ __forceinline__ __device__ vec4 abs(vec4 a)
 __forceinline__ __device__ float m_sign(float a)
 {
     if(a<0) return -1;
-    if(a==0) return 0;
-    if(a>0)  return 1;
+    else if(a==0) return 0;
+    else  return 1;
 }
 __forceinline__ __device__ vec2 sign(vec2 a)
 {
@@ -752,6 +780,18 @@ __forceinline__ __device__ float dot(vec4 a, vec4 b)
 {
     return a.x*b.x + a.y*b.y + a.z*b.z + a.w*b.w;
 }
+__forceinline__ __device__ vec2 faceforward(vec2 n, vec2 i, vec2 nref)
+{
+    return dot(nref, i) < 0 ? n : -n;
+}
+__forceinline__ __device__ vec3 faceforward(vec3 n, vec3 i, vec3 nref)
+{
+    return dot(nref, i) < 0 ? n : -n;
+}
+__forceinline__ __device__ vec4 faceforward(vec4 n, vec4 i, vec4 nref)
+{
+    return dot(nref, i) < 0 ? n : -n;
+}
 __forceinline__ __device__ float length(vec2 a)
 {
     return sqrtf(dot(a,a));
@@ -796,3 +836,49 @@ __forceinline__ __device__ vec3 cross(vec3 a, vec3 b)
     return vec3(res.x, res.y, res.z);
 }
 /////////////end of geometry math/////////////////////////////////////////////////
+
+__forceinline__ __device__ float cudatoglsl(float a) {
+    return a;
+}
+
+__forceinline__ __device__ vec2 cudatoglsl(float2 a) {
+    return vec2(a.x, a.y);
+}
+
+__forceinline__ __device__ vec3 cudatoglsl(float3 a) {
+    return vec3(a.x, a.y, a.z);
+}
+
+__forceinline__ __device__ vec4 cudatoglsl(float4 a) {
+    return vec4(a.x, a.y, a.z, a.w);
+}
+
+__forceinline__ __device__ float glsltocuda(float a) {
+    return a;
+}
+
+__forceinline__ __device__ float2 glsltocuda(vec2 a) {
+    return make_float2(a.x, a.y);
+}
+
+__forceinline__ __device__ float3 glsltocuda(vec3 a) {
+    return make_float3(a.x, a.y, a.z);
+}
+
+__forceinline__ __device__ float4 glsltocuda(vec4 a) {
+    return make_float4(a.x, a.y, a.z, a.w);
+}
+#else
+#define glsltocuda(x) (x)
+#define cudatoglsl(x) (x)
+#define vec2(...) make_float2(__VA_ARGS__)
+#define vec3(...) make_float3(__VA_ARGS__)
+#define vec4(...) make_float4(__VA_ARGS__)
+typedef float2 vec2;
+typedef float3 vec3;
+typedef float4 vec4;
+template <class T1, class T2, class T3>
+auto mix(T1 t1, T2 t2, T3 t3) -> decltype(lerp(t1, t2, t3)) {
+    return lerp(t1, t2, t3);
+}
+#endif

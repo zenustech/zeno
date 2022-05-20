@@ -1,6 +1,7 @@
 #pragma once
 
 #include "zxxglslvec.h"
+#include "MaterialStuff.h"
 
 namespace BRDFBasics{
 static __device__  float fresnel(float cosT){
@@ -22,7 +23,7 @@ static __device__  float GGX(float cosT, float a){
     float b = cosT*cosT;
     return 1.0f/ (cosT + sqrtf(a2 + b - a2*b));
 }
-static __device__  float3 sampleOnHemisphere(unsigned int &seed, float roughness)
+static __device__  vec3 sampleOnHemisphere(unsigned int &seed, float roughness)
 {
     float x = rnd(seed);
     float y = rnd(seed);
@@ -34,7 +35,7 @@ static __device__  float3 sampleOnHemisphere(unsigned int &seed, float roughness
 	float sinTheta = sqrtf(1.0f - cosTheta*cosTheta);
 
 
-    return make_float3(cos(phi) * sinTheta,  sin(phi) * sinTheta, cosTheta);
+    return vec3(cos(phi) * sinTheta,  sin(phi) * sinTheta, cosTheta);
 }
 };
 namespace DisneyBRDF
@@ -70,7 +71,7 @@ static __device__ float pdf(
         float pdfGTR1 = BRDFBasics::GTR1(cosTheta, ccAlpha) * cosTheta;
 
         float ratio = 1.0f/(1.0f + clearcoat);
-        float pdfSpec = glsl::mix(pdfGTR1, pdfGTR2, ratio)/(4.0f * abs(dot(wi, half)));
+        float pdfSpec = mix(pdfGTR1, pdfGTR2, ratio)/(4.0f * abs(dot(wi, half)));
         float pdfDiff = abs(dot(wi, n)) * (1.0f/M_PIf);
 
         return diffRatio * pdfDiff + spRatio * pdfSpec;
@@ -150,14 +151,14 @@ static __device__ vec3 eval(
         float widoth = dot(wi, wh);
 
         if(ndotwi <=0 || ndotwo <=0 )
-            return make_vec3(0,0,0);
+            return vec3(0,0,0);
 
         vec3 Cdlin = baseColor;
         float Cdlum = 0.3f*Cdlin.x + 0.6f*Cdlin.y + 0.1f*Cdlin.z;
 
-        vec3 Ctint = Cdlum > 0.0f ? Cdlin / Cdlum : make_vec3(1.0f,1.0f,1.0f);
-        vec3 Cspec0 = mix(specular*0.08f*mix(make_vec3(1,1,1), Ctint, specularTint), Cdlin, metallic);
-        vec3 Csheen = mix(make_vec3(1.0f,1.0f,1.0f), Ctint, sheenTint);
+        vec3 Ctint = Cdlum > 0.0f ? Cdlin / Cdlum : vec3(1.0f,1.0f,1.0f);
+        vec3 Cspec0 = mix(specular*0.08f*mix(vec3(1,1,1), Ctint, specularTint), Cdlin, metallic);
+        vec3 Csheen = mix(vec3(1.0f,1.0f,1.0f), Ctint, sheenTint);
 
         //diffuse
         float Fd90 = 0.5f + 2.0f * ndoth * ndoth * roughness;
@@ -180,7 +181,7 @@ static __device__ vec3 eval(
         float Gc = BRDFBasics::GGX(ndotwo, 0.25) * BRDFBasics::GGX(ndotwi, 0.25f);
 
         float Fh = BRDFBasics::fresnel(widoth);
-        vec3 Fs = mix(Cspec0, make_vec3(1.0f,1.0f,1.0f), Fh);
+        vec3 Fs = mix(Cspec0, vec3(1.0f,1.0f,1.0f), Fh);
         float Fc = mix(0.04f, 1.0f, Fh);
 
         vec3 Fsheen = Fh * sheen * Csheen;

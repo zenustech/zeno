@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cuda/helpers.h>
+#include "zxxglslvec.h"
 
 extern "C" {
 extern __constant__ Params params;
@@ -9,7 +10,7 @@ extern __constant__ Params params;
 
 struct Onb
 {
-  __forceinline__ __device__ Onb(const float3& normal)
+  __forceinline__ __device__ Onb(const vec3& normal)
   {
     m_normal = normal;
 
@@ -30,14 +31,14 @@ struct Onb
     m_tangent = cross( m_binormal, m_normal );
   }
 
-  __forceinline__ __device__ void inverse_transform(float3& p) const
+  __forceinline__ __device__ void inverse_transform(vec3& p) const
   {
     p = p.x*m_tangent + p.y*m_binormal + p.z*m_normal;
   }
 
-  float3 m_tangent;
-  float3 m_binormal;
-  float3 m_normal;
+  vec3 m_tangent;
+  vec3 m_binormal;
+  vec3 m_normal;
 };
 
 
