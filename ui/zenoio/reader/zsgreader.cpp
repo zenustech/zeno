@@ -1,9 +1,12 @@
 #include "zsgreader.h"
 #include "../../zenoui/util/uihelper.h"
 #include <zeno/utils/logger.h>
+#include <zeno/utils/iotag.h>
 #include "zenoedit/util/log.h"
 #include <zenoui/model/variantptr.h>
 #include <zenoui/model/curvemodel.h>
+
+using namespace zeno::curve;
 
 
 ZsgReader::ZsgReader()
@@ -262,51 +265,57 @@ QVariant ZsgReader::_parseToVariant(const QString& type, const rapidjson::Value&
 
 CurveModel* ZsgReader::_parseCurveModel(const rapidjson::Value& jsonCurve, QObject* parentRef)
 {
-    ZASSERT_EXIT(jsonCurve.HasMember("range"), nullptr);
-    const rapidjson::Value& rgObj = jsonCurve["range"];
-    ZASSERT_EXIT(rgObj.HasMember("xFrom") && rgObj.HasMember("xTo") && rgObj.HasMember("yFrom") && rgObj.HasMember("yTo"), nullptr);
+    ZASSERT_EXIT(jsonCurve.HasMember(zeno::key_objectType), nullptr);
+    QString type = jsonCurve[zeno::key_objectType].GetString();
+    if (type != "curve") {
+        return nullptr;
+    }
+
+    ZASSERT_EXIT(jsonCurve.HasMember(key_range), nullptr);
+    const rapidjson::Value &rgObj = jsonCurve[key_range];
+    ZASSERT_EXIT(rgObj.HasMember(key_xFrom) && rgObj.HasMember(key_xTo) && rgObj.HasMember(key_yFrom) && rgObj.HasMember(key_yTo), nullptr);
 
     CURVE_RANGE rg;
-    ZASSERT_EXIT(rgObj["xFrom"].IsDouble() && rgObj["xTo"].IsDouble() && rgObj["yFrom"].IsDouble() && rgObj["yTo"].IsDouble(), nullptr);
-    rg.xFrom = rgObj["xFrom"].GetDouble();
-    rg.xTo = rgObj["xTo"].GetDouble();
-    rg.yFrom = rgObj["yFrom"].GetDouble();
-    rg.yTo = rgObj["yTo"].GetDouble();
+    ZASSERT_EXIT(rgObj[key_xFrom].IsDouble() && rgObj[key_xTo].IsDouble() && rgObj[key_yFrom].IsDouble() && rgObj[key_yTo].IsDouble(), nullptr);
+    rg.xFrom = rgObj[key_xFrom].GetDouble();
+    rg.xTo = rgObj[key_xTo].GetDouble();
+    rg.yFrom = rgObj[key_yFrom].GetDouble();
+    rg.yTo = rgObj[key_yTo].GetDouble();
 
     //todo: id
     CurveModel* pModel = new CurveModel("x", rg, parentRef); 
 
-    if (jsonCurve.HasMember("timeline") && jsonCurve["timeline"].IsBool())
+    if (jsonCurve.HasMember(key_timeline) && jsonCurve[key_timeline].IsBool())
     {
-        bool bTimeline = jsonCurve["timeline"].GetBool();
+        bool bTimeline = jsonCurve[key_timeline].GetBool();
         pModel->setTimeline(bTimeline);
     }
 
-    ZASSERT_EXIT(jsonCurve.HasMember("nodes"), nullptr);
-    for (const rapidjson::Value &nodeObj : jsonCurve["nodes"].GetArray())
+    ZASSERT_EXIT(jsonCurve.HasMember(key_nodes), nullptr);
+    for (const rapidjson::Value &nodeObj : jsonCurve[key_nodes].GetArray())
     {
         ZASSERT_EXIT(nodeObj.HasMember("x") && nodeObj["x"].IsDouble(), nullptr);
         ZASSERT_EXIT(nodeObj.HasMember("y") && nodeObj["y"].IsDouble(), nullptr);
         QPointF pos(nodeObj["x"].GetDouble(), nodeObj["y"].GetDouble());
 
-        ZASSERT_EXIT(nodeObj.HasMember("left-handle") && nodeObj["left-handle"].IsObject(), nullptr);
-        auto leftHdlObj = nodeObj["left-handle"].GetObject();
+        ZASSERT_EXIT(nodeObj.HasMember(key_left_handle) && nodeObj[key_left_handle].IsObject(), nullptr);
+        auto leftHdlObj = nodeObj[key_left_handle].GetObject();
         ZASSERT_EXIT(leftHdlObj.HasMember("x") && leftHdlObj.HasMember("y"), nullptr);
         qreal leftX = leftHdlObj["x"].GetDouble();
         qreal leftY = leftHdlObj["y"].GetDouble();
         QPointF leftOffset(leftX, leftY);
 
-        ZASSERT_EXIT(nodeObj.HasMember("right-handle") && nodeObj["right-handle"].IsObject(), nullptr);
-        auto rightHdlObj = nodeObj["right-handle"].GetObject();
+        ZASSERT_EXIT(nodeObj.HasMember(key_right_handle) && nodeObj[key_right_handle].IsObject(), nullptr);
+        auto rightHdlObj = nodeObj[key_right_handle].GetObject();
         ZASSERT_EXIT(rightHdlObj.HasMember("x") && rightHdlObj.HasMember("y"), nullptr);
         qreal rightX = rightHdlObj["x"].GetDouble();
         qreal rightY = rightHdlObj["y"].GetDouble();
         QPointF rightOffset(rightX, rightY);
 
         HANDLE_TYPE hdlType = HDL_ASYM;
-        if (nodeObj.HasMember("type") && nodeObj["type"].IsString())
+        if (nodeObj.HasMember(key_type) && nodeObj[key_type].IsString())
         {
-            QString type = nodeObj["type"].GetString();
+            QString type = nodeObj[key_type].GetString();
             if (type == "aligned") {
                 hdlType = HDL_ALIGNED;
             } else if (type == "asym") {
@@ -318,8 +327,8 @@ CurveModel* ZsgReader::_parseCurveModel(const rapidjson::Value& jsonCurve, QObje
             }
         }
 
-        bool bLockX = (nodeObj.HasMember("lockX") && nodeObj["lockX"].IsBool());
-        bool bLockY = (nodeObj.HasMember("lockY") && nodeObj["lockY"].IsBool());
+        bool bLockX = (nodeObj.HasMember(key_lockX) && nodeObj[key_lockX].IsBool());
+        bool bLockY = (nodeObj.HasMember(key_lockY) && nodeObj[key_lockY].IsBool());
 
         QStandardItem *pItem = new QStandardItem;
         pItem->setData(pos, ROLE_NODEPOS);
@@ -431,10 +440,6 @@ NODE_DESCS ZsgReader::_parseDescs(const rapidjson::Value& jsonDescs)
     for (const auto& node : jsonDescs.GetObject())
     {
         const QString& name = node.name.GetString();
-        if (name == "MakeHeatmap") {
-            int j;
-            j = 0;
-        }
         const auto& objValue = node.value;
         auto inputs = objValue["inputs"].GetArray();
         auto outputs = objValue["outputs"].GetArray();

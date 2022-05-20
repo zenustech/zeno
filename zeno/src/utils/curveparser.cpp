@@ -1,36 +1,39 @@
 #include <zeno/utils/curveparser.h>
+#include <zeno/utils/iotag.h>
 
 namespace zeno {
+
+    using namespace curve;
 
     CurveData parseCurve(Value const& jsonCurve, bool& bSucceed)
     {
         CurveData dat;
-        if (!jsonCurve.HasMember("range"))
+        if (!jsonCurve.HasMember(key_range))
         {
             bSucceed = false;
             return dat;
         }
 
-        const Value& rgObj = jsonCurve["range"];
-        if (!rgObj.HasMember("xFrom") || !rgObj.HasMember("xTo") ||
-            !rgObj.HasMember("yFrom") || !rgObj.HasMember("yTo"))
+        const Value &rgObj = jsonCurve[key_range];
+        if (!rgObj.HasMember(key_xFrom) || !rgObj.HasMember(key_xTo) ||
+            !rgObj.HasMember(key_yFrom) || !rgObj.HasMember(key_yTo))
         {
             bSucceed = false;
             return dat;
         }
 
-        if (!rgObj["xFrom"].IsDouble() || !rgObj["xTo"].IsDouble() ||
-            !rgObj["yFrom"].IsDouble() || !rgObj["yTo"].IsDouble())
+        if (!rgObj[key_xFrom].IsDouble() || !rgObj[key_xTo].IsDouble() ||
+            !rgObj[key_yFrom].IsDouble() || !rgObj[key_yTo].IsDouble())
         {
             bSucceed = false;
             return dat;
         }
 
         //CURVE_RANGE rg;
-        dat.rg.xFrom = rgObj["xFrom"].GetDouble();
-        dat.rg.xTo = rgObj["xTo"].GetDouble();
-        dat.rg.yFrom = rgObj["yFrom"].GetDouble();
-        dat.rg.yTo = rgObj["yTo"].GetDouble();
+        dat.rg.xFrom = rgObj[key_xFrom].GetDouble();
+        dat.rg.xTo = rgObj[key_xTo].GetDouble();
+        dat.rg.yFrom = rgObj[key_yFrom].GetDouble();
+        dat.rg.yTo = rgObj[key_yTo].GetDouble();
 
         //todo: id
 
@@ -43,8 +46,8 @@ namespace zeno {
         {
             if (!nodeObj.HasMember("x") || !nodeObj["x"].IsDouble() ||
                 !nodeObj.HasMember("y") || !nodeObj["y"].IsDouble() ||
-                !nodeObj.HasMember("left-handle") || !nodeObj["left-handle"].IsObject() ||
-                !nodeObj.HasMember("right-handle") || !nodeObj["right-handle"].IsObject())
+                !nodeObj.HasMember(key_left_handle) || !nodeObj[key_left_handle].IsObject() ||
+                !nodeObj.HasMember(key_right_handle) || !nodeObj[key_right_handle].IsObject())
             {
                 bSucceed = false;
                 return dat;
@@ -53,7 +56,7 @@ namespace zeno {
             float x = nodeObj["x"].GetDouble();
             float y = nodeObj["y"].GetDouble();
 
-            auto leftHdlObj = nodeObj["left-handle"].GetObject();
+            auto leftHdlObj = nodeObj[key_left_handle].GetObject();
             if (!leftHdlObj.HasMember("x") || !leftHdlObj.HasMember("y"))
             {
                 bSucceed = false;
@@ -62,7 +65,7 @@ namespace zeno {
             float leftX = leftHdlObj["x"].GetDouble();
             float leftY = leftHdlObj["y"].GetDouble();
 
-            auto rightHdlObj = nodeObj["right-handle"].GetObject();
+            auto rightHdlObj = nodeObj[key_right_handle].GetObject();
             if (!rightHdlObj.HasMember("x") || !rightHdlObj.HasMember("y"))
             {
                 bSucceed = false;

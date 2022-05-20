@@ -4,6 +4,9 @@
 #include <zeno/utils/logger.h>
 #include <zenoui/model/curvemodel.h>
 #include <zenoui/model/variantptr.h>
+#include <zeno/utils/iotag.h>
+
+using namespace zeno::curve;
 
 namespace JsonHelper
 {
@@ -128,23 +131,26 @@ namespace JsonHelper
         CURVE_RANGE rg = pModel->range();
 
         JsonObjBatch scope(writer);
-        writer.Key("range");
+        writer.Key(key_range);
         {
             JsonObjBatch scope2(writer);
-            writer.Key("xFrom");
+            writer.Key(key_xFrom);
             writer.Double(rg.xFrom);
-            writer.Key("xTo");
+            writer.Key(key_xTo);
             writer.Double(rg.xTo);
-            writer.Key("yFrom");
+            writer.Key(key_yFrom);
             writer.Double(rg.yFrom);
-            writer.Key("yTo");
+            writer.Key(key_yTo);
             writer.Double(rg.yTo);
         }
 
-        writer.Key("timeline");
+        writer.Key(zeno::key_objectType);
+        writer.String("curve");
+
+        writer.Key(key_timeline);
         writer.Bool(pModel->isTimeline());
 
-        writer.Key("nodes");
+        writer.Key(key_nodes);
         {
             JsonArrayBatch arrBatch(writer);
             for (int i = 0; i < pModel->rowCount(); i++)
@@ -162,8 +168,8 @@ namespace JsonHelper
                 writer.Double(pos.x());
                 writer.Key("y");
                 writer.Double(pos.y());
-                
-                writer.Key("left-handle");
+
+                writer.Key(key_left_handle);
                 {
                     JsonObjBatch scope3(writer);
                     writer.Key("x");
@@ -171,7 +177,7 @@ namespace JsonHelper
                     writer.Key("y");
                     writer.Double(leftPos.y());
                 }
-                writer.Key("right-handle");
+                writer.Key(key_right_handle);
                 {
                     JsonObjBatch scope3(writer);
                     writer.Key("x");
@@ -180,7 +186,7 @@ namespace JsonHelper
                     writer.Double(rightPos.y());
                 }
 
-                writer.Key("type");
+                writer.Key(key_type);
                 switch (hdlType)
                 {
                 case HDL_ALIGNED: writer.String("aligned"); break;
@@ -193,11 +199,11 @@ namespace JsonHelper
                     break;
                 }
 
-                writer.Key("lockX");
+                writer.Key(key_lockX);
                 writer.Bool(bLockX);
-                writer.Key("lockY");
+                writer.Key(key_lockY);
                 writer.Bool(bLockY);
-            }        
+            }
         }
     }
 }
