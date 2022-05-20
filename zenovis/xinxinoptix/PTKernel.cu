@@ -43,6 +43,8 @@ extern "C" __global__ void __raygen__rg()
         prd.emitted      = make_float3(0.f);
         prd.radiance     = make_float3(0.f);
         prd.attenuation  = make_float3(1.f);
+        prd.prob         = 1.0f;
+        prd.prob2        = 1.0f;
         prd.countEmitted = true;
         prd.done         = false;
         prd.seed         = seed;

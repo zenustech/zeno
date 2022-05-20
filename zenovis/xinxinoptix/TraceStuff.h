@@ -28,6 +28,8 @@ struct RadiancePRD
     float3       origin;
     float3       direction;
     float        opacity;
+    float        prob;
+    float        prob2;
     unsigned int seed;
     unsigned int flags = 0;
     int          countEmitted;
