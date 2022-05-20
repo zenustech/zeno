@@ -1,12 +1,13 @@
 #include "zsgreader.h"
 #include "../../zenoui/util/uihelper.h"
 #include <zeno/utils/logger.h>
-#include <zeno/utils/iotag.h>
+#include <zeno/funcs/ParseObjectFromUi.h>
 #include "zenoedit/util/log.h"
 #include <zenoui/model/variantptr.h>
 #include <zenoui/model/curvemodel.h>
 
-using namespace zeno::curve;
+using namespace zeno::iotags;
+using namespace zeno::iotags::curve;
 
 
 ZsgReader::ZsgReader()
@@ -265,8 +266,8 @@ QVariant ZsgReader::_parseToVariant(const QString& type, const rapidjson::Value&
 
 CurveModel* ZsgReader::_parseCurveModel(const rapidjson::Value& jsonCurve, QObject* parentRef)
 {
-    ZASSERT_EXIT(jsonCurve.HasMember(zeno::key_objectType), nullptr);
-    QString type = jsonCurve[zeno::key_objectType].GetString();
+    ZASSERT_EXIT(jsonCurve.HasMember(key_objectType), nullptr);
+    QString type = jsonCurve[key_objectType].GetString();
     if (type != "curve") {
         return nullptr;
     }

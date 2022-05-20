@@ -4,9 +4,10 @@
 #include <zeno/utils/logger.h>
 #include <zenoui/model/curvemodel.h>
 #include <zenoui/model/variantptr.h>
-#include <zeno/utils/iotag.h>
+#include <zeno/funcs/ParseObjectFromUi.h>
 
-using namespace zeno::curve;
+using namespace zeno::iotags;
+using namespace zeno::iotags::curve;
 
 namespace JsonHelper
 {
@@ -144,7 +145,7 @@ namespace JsonHelper
             writer.Double(rg.yTo);
         }
 
-        writer.Key(zeno::key_objectType);
+        writer.Key(key_objectType);
         writer.String("curve");
 
         writer.Key(key_timeline);
