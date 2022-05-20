@@ -61,3 +61,26 @@ static __forceinline__ __device__ void cosine_sample_hemisphere(const float u1, 
 }
 
 #include "DisneyBRDF.h"
+
+struct MatOutput {
+    vec3  baseColor;
+    float metallic;
+    float roughness;
+    float subsurface;
+    float specular;
+    float specularTint;
+    float anisotropic;
+    float sheen;
+    float sheenTint;
+    float clearCoat;
+    float clearCoatGloss;
+    float opacity;
+};
+
+struct MatInput {
+    vec3 pos;
+    vec3 nrm;
+    vec3 uv;
+    vec3 clr;
+    vec3 tang;
+};

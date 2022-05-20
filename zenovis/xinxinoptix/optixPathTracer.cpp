@@ -308,7 +308,7 @@ static void initLaunchParams( PathTracerState& state )
     state.params.samples_per_launch = samples_per_launch;
     state.params.subframe_index     = 0u;
 
-    state.params.light.emission = make_float3( 15.0f, 15.0f, 5.0f );
+    state.params.light.emission = make_float3( 100.f );
     state.params.light.corner   = make_float3( 343.0f, 548.5f, 227.0f );
     state.params.light.v1       = make_float3( 0.0f, 0.0f, 105.0f );
     state.params.light.v2       = make_float3( -130.0f, 0.0f, 0.0f );

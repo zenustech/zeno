@@ -133,31 +133,17 @@ extern "C" __global__ void __closesthit__radiance()
 */
 
 
-extern "C" __global__ void __closesthit__occlusion()
-{
-    setPayloadOcclusion( true );
-}
-extern "C" __global__ void __anyhit__shadow_cutout()
-{
-    HitGroupData* rt_data = (HitGroupData*)optixGetSbtDataPointer();
-
-    const int    prim_idx        = optixGetPrimitiveIndex();
-    const vec3 ray_dir         = optixGetWorldRayDirection();
-    const int    vert_idx_offset = prim_idx*3;
-
-    const vec3 v0   = make_float3( rt_data->vertices[ vert_idx_offset+0 ] );
-    const vec3 v1   = make_float3( rt_data->vertices[ vert_idx_offset+1 ] );
-    const vec3 v2   = make_float3( rt_data->vertices[ vert_idx_offset+2 ] );
-    const vec3 N_0  = normalize( cross( v1-v0, v2-v0 ) );
-
-    const vec3 N    = faceforward( N_0, -ray_dir, N_0 );
-    const vec3 P    = vec3(optixGetWorldRayOrigin()) + optixGetRayTmax()*ray_dir;
-
-    RadiancePRD* prd = getPRD();
-
-    vec3  mat_baseColor = vec3(1.0,0.766,0.336);
-    float mat_metallic = 1;
-    float mat_roughness = 0.1;
+static __device__ MatOutput evalMaterial(MatInput const &attrs) {
+    /* MODMA */
+    auto attr_pos = attrs.pos;
+    auto attr_clr = attrs.clr;
+    auto attr_uv = attrs.uv;
+    auto attr_nrm = attrs.nrm;
+    auto attr_tang = attrs.tang;
+    /* MODME */
+    vec3 mat_baseColor = vec3(0.8);
+    float mat_metallic = 0.0;
+    float mat_roughness = 0.5;
     float mat_subsurface = 0.0;
     float mat_specular = 0;
     float mat_specularTint = 0.0;
@@ -167,39 +153,78 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     float mat_clearCoat = 0.0;
     float mat_clearCoatGloss = 0.0;
     float mat_opacity = 0.0;
-    vec3 attr_pos = vec3(P.x, P.y, P.z);
-    vec3 attr_norm = vec3(0,0,1);
-    vec3 attr_uv = vec3(0,0,0);//todo later
-    vec3 attr_clr = vec3(rt_data->diffuse_color.x, rt_data->diffuse_color.y, rt_data->diffuse_color.z);
-    vec3 attr_tang = vec3(0,0,0);
-///////here injecting of material code in GLSL style///////////////////////////////
-
-
-    float pnoise = perlin(1, 3, attr_pos*0.02);
+    /** generated code here beg **/
+    /*float pnoise = perlin(1, 3, attr_pos*0.02);
     pnoise = clamp(pnoise, 0.0f, 1.0f);
-
     float pnoise2 = perlin(1, 4, attr_pos*0.02);
     mat_metallic = pnoise;
-
     mat_roughness = pnoise2;
     mat_roughness = clamp(mat_roughness, 0.01f,0.99f)*0.5f;
-
     float pnoise3 = perlin(10.0, 5, attr_pos*0.005);
-    mat_opacity = clamp(pnoise3, 0.0f,1.0f);
+    mat_opacity = clamp(pnoise3, 0.0f,1.0f);*/
+    /** generated code here end **/
+    MatOutput mats;
+    /* MODME */
+    mats.baseColor = mat_baseColor;
+    mats.metallic = mat_metallic;
+    mats.roughness = mat_roughness;
+    mats.subsurface = mat_subsurface;
+    mats.specular = mat_specular;
+    mats.specularTint = mat_specularTint;
+    mats.anisotropic = mat_anisotropic;
+    mats.sheen = mat_sheen;
+    mats.sheenTint = mat_sheenTint;
+    mats.clearCoat = mat_clearCoat;
+    mats.clearCoatGloss = mat_clearCoatGloss;
+    mats.opacity = mat_opacity;
+    return mats;
+}
 
-////////////end of GLSL material code injection///////////////////////////////////////////////
-    vec3 baseColor = mat_baseColor;
-    float metallic = mat_metallic;;
-    float roughness = mat_roughness;
-    float subsurface = mat_subsurface;
-    float specular = mat_specular;
-    float specularTint = mat_specularTint;
-    float anisotropic = mat_anisotropic;
-    float sheen = mat_sheen;
-    float sheenTint = mat_sheenTint;
-    float clearCoat = mat_clearCoat;
-    float clearCoatGloss = mat_clearCoatGloss;
-    float opacity = mat_opacity;
+
+extern "C" __global__ void __closesthit__occlusion()
+{
+    setPayloadOcclusion( true );
+}
+extern "C" __global__ void __anyhit__shadow_cutout()
+{
+    HitGroupData* rt_data = (HitGroupData*)optixGetSbtDataPointer();
+
+    const int    prim_idx        = optixGetPrimitiveIndex();
+    const float3 ray_dir         = optixGetWorldRayDirection();
+    const int    vert_idx_offset = prim_idx*3;
+
+    const float3 v0   = make_float3( rt_data->vertices[ vert_idx_offset+0 ] );
+    const float3 v1   = make_float3( rt_data->vertices[ vert_idx_offset+1 ] );
+    const float3 v2   = make_float3( rt_data->vertices[ vert_idx_offset+2 ] );
+    const float3 N_0  = normalize( cross( v1-v0, v2-v0 ) );
+
+    const float3 N    = faceforward( N_0, -ray_dir, N_0 );
+    const float3 P    = optixGetWorldRayOrigin() + optixGetRayTmax()*ray_dir;
+
+    RadiancePRD* prd = getPRD();
+
+    MatInput attrs;
+    /* MODMA */
+    attrs.pos = vec3(P.x, P.y, P.z);
+    attrs.nrm = vec3(0,0,1);
+    attrs.uv = vec3(0,0,0);//todo later
+    attrs.clr = vec3(rt_data->diffuse_color.x, rt_data->diffuse_color.y, rt_data->diffuse_color.z);
+    attrs.tang = vec3(0,0,0);
+    MatOutput mats = evalMaterial(attrs);
+    /* MODME */
+    auto baseColor = mats.baseColor;
+    auto metallic = mats.metallic;
+    auto roughness = mats.roughness;
+    auto subsurface = mats.subsurface;
+    auto specular = mats.specular;
+    auto specularTint = mats.specularTint;
+    auto anisotropic = mats.anisotropic;
+    auto sheen = mats.sheen;
+    auto sheenTint = mats.sheenTint;
+    auto clearCoat = mats.clearCoat;
+    auto clearCoatGloss = mats.clearCoatGloss;
+    auto opacity = mats.opacity;
+
     // Stochastic alpha test to get an alpha blend effect.
     if (opacity >0.99 ) // No need to calculate an expensive random number if the test is going to fail anyway.
     {
@@ -237,54 +262,27 @@ extern "C" __global__ void __closesthit__radiance()
         prd->emitted = make_float3( 0.0f );
 
 
-    vec3  mat_baseColor = vec3(1.0,0.766,0.336);
-    float mat_metallic = 1;
-    float mat_roughness = 0.1;
-    float mat_subsurface = 0.0;
-    float mat_specular = 0;
-    float mat_specularTint = 0.0;
-    float mat_anisotropic = 0.0;
-    float mat_sheen = 0.0;
-    float mat_sheenTint = 0.0;
-    float mat_clearCoat = 0.0;
-    float mat_clearCoatGloss = 0.0;
-    float mat_opacity = 0.0;
-    vec3 attr_pos = vec3(P.x, P.y, P.z);
-    vec3 attr_norm = vec3(0,0,1);
-    vec3 attr_uv = vec3(0,0,0);//todo later
-    vec3 attr_clr = vec3(rt_data->diffuse_color.x, rt_data->diffuse_color.y, rt_data->diffuse_color.z);
-    vec3 attr_tang = vec3(0,0,0);
-///////here injecting of material code in GLSL style///////////////////////////////
-
-
-    float pnoise = perlin(1, 3, attr_pos*0.02);
-    pnoise = clamp(pnoise, 0.0f, 1.0f);
-
-    float pnoise2 = perlin(1, 4, attr_pos*0.02);
-    mat_metallic = pnoise;
-
-    mat_roughness = pnoise2;
-    mat_roughness = clamp(mat_roughness, 0.01f,0.99f)*0.5f;
-
-    float pnoise3 = perlin(10.0, 5, attr_pos*0.005);
-    mat_opacity = clamp(pnoise3, 0.0f,1.0f);
-
-////////////end of GLSL code injection///////////////////////////////////////////////
-    vec3 baseColor = mat_baseColor;
-    float metallic = mat_metallic;;
-    float roughness = mat_roughness;
-    float subsurface = mat_subsurface;
-    float specular = mat_specular;
-    float specularTint = mat_specularTint;
-    float anisotropic = mat_anisotropic;
-    float sheen = mat_sheen;
-    float sheenTint = mat_sheenTint;
-    float clearCoat = mat_clearCoat;
-    float clearCoatGloss = mat_clearCoatGloss;
-    float opacity = mat_opacity;
-    //todo normal mapping TBN*N;
-
-
+    MatInput attrs;
+    /* MODMA */
+    attrs.pos = vec3(P.x, P.y, P.z);
+    attrs.nrm = vec3(0,0,1);
+    attrs.uv = vec3(0,0,0);//todo later
+    attrs.clr = vec3(rt_data->diffuse_color.x, rt_data->diffuse_color.y, rt_data->diffuse_color.z);
+    attrs.tang = vec3(0,0,0);
+    MatOutput mats = evalMaterial(attrs);
+    /* MODME */
+    auto baseColor = mats.baseColor;
+    auto metallic = mats.metallic;
+    auto roughness = mats.roughness;
+    auto subsurface = mats.subsurface;
+    auto specular = mats.specular;
+    auto specularTint = mats.specularTint;
+    auto anisotropic = mats.anisotropic;
+    auto sheen = mats.sheen;
+    auto sheenTint = mats.sheenTint;
+    auto clearCoat = mats.clearCoat;
+    auto clearCoatGloss = mats.clearCoatGloss;
+    auto opacity = mats.opacity;
 
     //end of material computation
     metallic = clamp(metallic,0.01, 0.99);
@@ -402,8 +400,8 @@ extern "C" __global__ void __closesthit__radiance()
             params.handle,
             P,
             L,
-            0.01f,         // tmin
-            Ldist - 0.01f  // tmax
+            1e-5f,         // tmin
+            Ldist - 1e-5f  // tmax
             );
         unsigned int occluded = prd->flags;
         if( !occluded )
