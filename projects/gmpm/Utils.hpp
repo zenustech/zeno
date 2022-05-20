@@ -255,12 +255,20 @@ void find_intersection_free_stepsize(
     zstets.bvh(ZenoParticles::s_surfTriTag)
         .build(pol,
                retrieve_bounding_volumes(pol, verts, surfaces, wrapv<3>{}, xi));
+  else
+    zstets.bvh(ZenoParticles::s_surfTriTag)
+        .refit(pol,
+               retrieve_bounding_volumes(pol, verts, surfaces, wrapv<3>{}, xi));
   const auto &stBvh = zstets.bvh(ZenoParticles::s_surfTriTag);
 
   const auto &surfEdges = zstets[ZenoParticles::s_surfEdgeTag];
   if (!zstets.hasBvh(ZenoParticles::s_surfEdgeTag))
     zstets.bvh(ZenoParticles::s_surfEdgeTag)
         .build(pol, retrieve_bounding_volumes(pol, verts, surfEdges, wrapv<2>{},
+                                              xi));
+  else
+    zstets.bvh(ZenoParticles::s_surfEdgeTag)
+        .refit(pol, retrieve_bounding_volumes(pol, verts, surfEdges, wrapv<2>{},
                                               xi));
   const auto &seBvh = zstets.bvh(ZenoParticles::s_surfEdgeTag);
 
