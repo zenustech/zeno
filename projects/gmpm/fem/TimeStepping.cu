@@ -675,8 +675,13 @@ struct ImplicitTimeStepping : INode {
 
       // line search
       T alpha = 1.;
-
       find_intersection_free_stepsize(cudaPol, *zstets, vtemp, alpha, 2e-3f);
+#if 0
+      if (alpha < 0.9) {
+        fmt::print("initial stepsize [{}]\n", alpha);
+        getchar();
+      }
+#endif
 
       cudaPol(zs::range(vtemp.size()),
               [vtemp = proxy<space>({}, vtemp)] __device__(int i) mutable {

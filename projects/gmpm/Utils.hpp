@@ -8,6 +8,7 @@
 #include "Structures.hpp"
 #include "zensim/container/HashTable.hpp"
 #include "zensim/geometry/BoundingVolumeInterface.hpp"
+#include "zensim/geometry/Distance.hpp"
 
 // only use this macro within a zeno::INode::apply()
 #define RETRIEVE_OBJECT_PTRS(T, STR)                                           \
@@ -113,6 +114,124 @@ zs::Vector<typename ZenoParticles::lbvh_t::Box> retrieve_bounding_volumes(
 }
 
 // for ccd
+template <typename VecT>
+constexpr bool pt_ccd(VecT p, VecT t0, VecT t1, VecT t2, VecT dp, VecT dt0,
+                      VecT dt1, VecT dt2, typename VecT::value_type eta,
+                      typename VecT::value_type thickness,
+                      typename VecT::value_type &toc) {
+  using T = typename VecT::value_type;
+  auto mov = (dt0 + dt1 + dt2 + dp) / 4;
+  dt0 -= mov;
+  dt1 -= mov;
+  dt2 -= mov;
+  dp -= mov;
+  T dispMag2Vec[3] = {dt0.l2NormSqr(), dt1.l2NormSqr(), dt2.l2NormSqr()};
+  T tmp = zs::limits<T>::lowest();
+  for (int i = 0; i != 3; ++i)
+    if (dispMag2Vec[i] > tmp)
+      tmp = dispMag2Vec[i];
+  T maxDispMag = dp.norm() + zs::sqrt(tmp);
+  if (maxDispMag == 0)
+    return false;
+
+  T dist2_cur = dist2_pt_unclassified(p, t0, t1, t2);
+  T dist_cur = zs::sqrt(dist2_cur);
+  T gap = eta * (dist2_cur - thickness * thickness) / (dist_cur + thickness);
+  T toc_prev = toc;
+  toc = 0;
+  while (true) {
+    T tocLowerBound = (1 - eta) * (dist2_cur - thickness * thickness) /
+                      ((dist_cur + thickness) * maxDispMag);
+    if (tocLowerBound < 0)
+      printf("damn pt!\n");
+
+    p += tocLowerBound * dp;
+    t0 += tocLowerBound * dt0;
+    t1 += tocLowerBound * dt1;
+    t2 += tocLowerBound * dt2;
+    dist2_cur = dist2_pt_unclassified(p, t0, t1, t2);
+    dist_cur = zs::sqrt(dist2_cur);
+    if (toc &&
+        ((dist2_cur - thickness * thickness) / (dist_cur + thickness) < gap))
+      break;
+
+    toc += tocLowerBound;
+    if (toc > toc_prev)
+      return false;
+  }
+  return true;
+}
+template <typename VecT>
+constexpr bool
+ee_ccd(VecT ea0, VecT ea1, VecT eb0, VecT eb1, VecT dea0, VecT dea1, VecT deb0,
+       VecT deb1, typename VecT::value_type eta,
+       typename VecT::value_type thickness, typename VecT::value_type &toc) {
+  using T = typename VecT::value_type;
+  auto mov = (dea0 + dea1 + deb0 + deb1) / 4;
+  dea0 -= mov;
+  dea1 -= mov;
+  deb0 -= mov;
+  deb1 -= mov;
+  T maxDispMag = zs::sqrt(zs::max(dea0.l2NormSqr(), dea1.l2NormSqr())) +
+                 zs::sqrt(zs::max(deb0.l2NormSqr(), deb1.l2NormSqr()));
+  if (maxDispMag == 0)
+    return false;
+
+  T dist2_cur = dist2_ee_unclassified(ea0, ea1, eb0, eb1);
+  T dFunc = dist2_cur - thickness * thickness;
+  if (dFunc <= 0) {
+    // since we ensured other place that all dist smaller than dHat are
+    // positive, this must be some far away nearly parallel edges
+    T dists[] = {(ea0 - eb0).l2NormSqr(), (ea0 - eb1).l2NormSqr(),
+                 (ea1 - eb0).l2NormSqr(), (ea1 - eb1).l2NormSqr()};
+    {
+      dist2_cur = zs::limits<T>::max();
+      for (const auto &dist : dists)
+        if (dist < dist2_cur)
+          dist2_cur = dist;
+      // dist2_cur = *std::min_element(dists.begin(), dists.end());
+    }
+    dFunc = dist2_cur - thickness * thickness;
+  }
+  T dist_cur = zs::sqrt(dist2_cur);
+  T gap = eta * dFunc / (dist_cur + thickness);
+  T toc_prev = toc;
+  toc = 0;
+  while (true) {
+    T tocLowerBound = (1 - eta) * dFunc / ((dist_cur + thickness) * maxDispMag);
+    if (tocLowerBound < 0)
+      printf("damn ee!\n");
+
+    ea0 += tocLowerBound * dea0;
+    ea1 += tocLowerBound * dea1;
+    eb0 += tocLowerBound * deb0;
+    eb1 += tocLowerBound * deb1;
+    dist2_cur = dist2_ee_unclassified(ea0, ea1, eb0, eb1);
+    dFunc = dist2_cur - thickness * thickness;
+    if (dFunc <= 0) {
+      // since we ensured other place that all dist smaller than dHat are
+      // positive, this must be some far away nearly parallel edges
+      T dists[] = {(ea0 - eb0).l2NormSqr(), (ea0 - eb1).l2NormSqr(),
+                   (ea1 - eb0).l2NormSqr(), (ea1 - eb1).l2NormSqr()};
+      {
+        dist2_cur = zs::limits<T>::max();
+        for (const auto &dist : dists)
+          if (dist < dist2_cur)
+            dist2_cur = dist;
+      }
+      dFunc = dist2_cur - thickness * thickness;
+    }
+    dist_cur = zs::sqrt(dist2_cur);
+    if (toc && (dFunc / (dist_cur + thickness) < gap))
+      break;
+
+    toc += tocLowerBound;
+    if (toc > toc_prev)
+      return false;
+  }
+  return true;
+}
+
 template <typename Pol, typename T>
 void find_intersection_free_stepsize(
     Pol &pol, ZenoParticles &zstets,
@@ -154,11 +273,16 @@ void find_intersection_free_stepsize(
   const auto &svBvh = zstets.bvh(ZenoParticles::s_surfVertTag);
 #endif
   // query pt
+  zs::Vector<T> surfAlphas{surfVerts.get_allocator(), surfVerts.size()},
+      finalAlpha{surfVerts.get_allocator(), 1};
+  finalAlpha.setVal(stepSize);
   pol(Collapse{surfVerts.size()}, [svs = proxy<space>({}, surfVerts),
                                    sts = proxy<space>({}, surfaces),
                                    verts = proxy<space>({}, verts),
                                    vtemp = proxy<space>({}, vtemp),
-                                   bvh = proxy<space>(stBvh),
+                                   surfAlphas = proxy<space>(surfAlphas),
+                                   finalAlpha = proxy<space>(finalAlpha),
+                                   bvh = proxy<space>(stBvh), stepSize,
                                    thickness = xi] ZS_LAMBDA(int svi) mutable {
     auto vi = reinterpret_bits<int>(svs("inds", svi));
     auto p = vtemp.pack<3>("xn", vi);
@@ -176,13 +300,31 @@ void find_intersection_free_stepsize(
           reinterpret_bits<int>(verts("BCorder", tri[2])) == 3)
         return;
       // ccd
+      auto alpha = stepSize;
+      // surfAlphas[svi] = alpha;
+      if (pt_ccd(p, verts.pack<3>("xn", tri[0]), verts.pack<3>("xn", tri[1]),
+                 verts.pack<3>("xn", tri[2]), vtemp.pack<3>("dir", vi),
+                 vtemp.pack<3>("dir", tri[0]), vtemp.pack<3>("dir", tri[1]),
+                 vtemp.pack<3>("dir", tri[2]), (T)0.1, thickness, alpha))
+        if (alpha < stepSize)
+          // surfAlphas[svi] = alpha;
+          atomic_min(exec_cuda, &finalAlpha[0], alpha);
     });
   });
+  // zs::reduce(pol, std::begin(surfAlphas), std::end(surfAlphas),
+  // std::begin(finalAlpha), limits<T>::max(), getmin<T>{});
+  auto surfAlpha = finalAlpha.getVal();
+  stepSize = surfAlpha;
+  fmt::print("surf alpha: {}, default stepsize: {}\n", surfAlpha, stepSize);
   // query ee
+  zs::Vector<T> surfEdgeAlphas{surfEdges.get_allocator(), surfEdges.size()};
   pol(Collapse{surfEdges.size()}, [ses = proxy<space>({}, surfEdges),
                                    verts = proxy<space>({}, verts),
                                    vtemp = proxy<space>({}, vtemp),
-                                   bvh = proxy<space>(seBvh),
+                                   surfEdgeAlphas =
+                                       proxy<space>(surfEdgeAlphas),
+                                   finalAlpha = proxy<space>(finalAlpha),
+                                   bvh = proxy<space>(seBvh), stepSize,
                                    thickness = xi] ZS_LAMBDA(int sei) mutable {
     auto edgeInds =
         ses.template pack<2>("inds", sei).template reinterpret_bits<int>();
@@ -205,8 +347,27 @@ void find_intersection_free_stepsize(
           reinterpret_bits<int>(verts("BCorder", oEdgeInds[1])) == 3)
         return;
       // ccd
+      auto alpha = stepSize;
+      // surfEdgeAlphas[sei] = alpha;
+      if (ee_ccd(x0, x1, verts.pack<3>("xn", oEdgeInds[0]),
+                 verts.pack<3>("xn", oEdgeInds[1]),
+                 vtemp.pack<3>("dir", edgeInds[0]),
+                 vtemp.pack<3>("dir", edgeInds[1]),
+                 vtemp.pack<3>("dir", oEdgeInds[0]),
+                 vtemp.pack<3>("dir", oEdgeInds[1]), (T)0.1, thickness, alpha))
+        if (alpha < stepSize)
+          // surfEdgeAlphas[sei] = alpha;
+          atomic_min(exec_cuda, &finalAlpha[0], alpha);
     });
   });
+#if 0
+  zs::reduce(pol, std::begin(surfEdgeAlphas), std::end(surfEdgeAlphas),
+             std::begin(finalAlpha), limits<T>::max(), getmin<T>{});
+  stepSize = std::min(surfAlpha, finalAlpha.getVal());
+#else
+  stepSize = finalAlpha.getVal();
+  fmt::print("surf edge alpha: {}\n", surfAlpha);
+#endif
 }
 
 template <typename ExecPol, typename TileVectorT, typename IndexBucketsT>
