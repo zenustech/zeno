@@ -3,6 +3,7 @@
 #include <zeno/extra/GlobalState.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/PrimitiveObject.h>
+#include <zeno/types/DictObject.h>
 
 #include "assimp/scene.h"
 
@@ -20,6 +21,7 @@ struct EvalAnim{
     NodeTree m_RootNode;
 
     std::unordered_map<std::string, aiMatrix4x4> m_Transforms;
+
     std::unordered_map<std::string, SBoneOffset> m_BoneOffset;
     std::unordered_map<std::string, SAnimBone> m_AnimBones;
     std::vector<SVertex> m_Vertices;
@@ -53,6 +55,26 @@ struct EvalAnim{
         calculateFinal(prim);
     }
 
+    void decomposeAnimation(std::shared_ptr<zeno::DictObject> &t,
+                            std::shared_ptr<zeno::DictObject> &r,
+                            std::shared_ptr<zeno::DictObject> &s){
+
+        for(auto& m:m_Transforms){
+            zeno::log_info("A {}", m.first);
+            aiVector3t<float> trans;
+            aiQuaterniont<float> rotate;
+            aiVector3t<float> scale;
+            m.second.Decompose(scale, rotate, trans);
+//            zeno::log_info("    T {: f} {: f} {: f}", trans.x, trans.y, trans.z);
+//            zeno::log_info("    R {: f} {: f} {: f} {: f}", rotate.x, rotate.y, rotate.z, rotate.w);
+//            zeno::log_info("    S {: f} {: f} {: f}", scale.x, scale.y, scale.z);
+
+            t->lut[m.first] = zeno::vec3f(trans.x, trans.y, trans.z);
+            r->lut[m.first] = zeno::vec4f(rotate.x, rotate.y, rotate.z, rotate.w);
+            s->lut[m.first] = zeno::vec3f(scale.x, scale.y, scale.z);
+        }
+    }
+
     void calculateBoneTransform(const NodeTree *node, aiMatrix4x4 parentTransform) {
         std::string nodeName = node->name;
         aiMatrix4x4 nodeTransform = node->transformation;
@@ -62,12 +84,17 @@ struct EvalAnim{
 
             bone.update(m_CurrentFrame);
             nodeTransform = bone.m_LocalTransform;
+
+//            zeno::log_info("+++++ {}", nodeName);
+//            Helper::printAiMatrix(nodeTransform);
         }
         aiMatrix4x4 globalTransformation = parentTransform * nodeTransform;
 
         if (m_BoneOffset.find(nodeName) != m_BoneOffset.end()) {  // found
             std::string boneName = m_BoneOffset[nodeName].name;
             aiMatrix4x4 boneOffset = m_BoneOffset[nodeName].offset;
+//            zeno::log_info("----- {}", boneName);
+//            Helper::printAiMatrix(boneOffset);
 
             m_Transforms[boneName] = globalTransformation * boneOffset;
         }
@@ -135,11 +162,20 @@ struct EvalFBXAnim : zeno::INode {
         auto boneTree = get_input<BoneTree>("bonetree");
         auto animInfo = get_input<AnimInfo>("animinfo");
 
+        auto transDict = std::make_shared<zeno::DictObject>();
+        auto quatDict = std::make_shared<zeno::DictObject>();
+        auto scaleDict = std::make_shared<zeno::DictObject>();
+
         EvalAnim anim;
         anim.initAnim(nodeTree, boneTree, fbxData, animInfo);
         anim.updateAnimation(frameid/24.0f, prim);
 
+        anim.decomposeAnimation(transDict, quatDict, scaleDict);
+
         set_output("prim", std::move(prim));
+        set_output("transDict", std::move(transDict));
+        set_output("quatDict", std::move(quatDict));
+        set_output("scaleDict", std::move(scaleDict));
     }
 };
 ZENDEFNODE(EvalFBXAnim,
@@ -152,7 +188,7 @@ ZENDEFNODE(EvalFBXAnim,
                    {"BoneTree", "bonetree"},
                },  /* outputs: */
                {
-                   "prim",
+                   "prim", "transDict", "quatDict", "scaleDict"
                },  /* params: */
                {
 
