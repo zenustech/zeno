@@ -219,7 +219,7 @@ struct ImplicitTimeStepping : INode {
                  z1 * x3 * y4 + z1 * y3 * x4 + x2 * y3 * z4 - x2 * z3 * y4 -
                  y2 * x3 * z4 + y2 * z3 * x4 + z2 * x3 * y4 - z2 * y3 * x4);
 
-          T t = getSmallestPositiveRealCubicRoot(a, b, c, d, (T)1.e-6);
+          T t = get_smallest_positive_real_cubic_root(a, b, c, d, (T)1.e-6);
           if (t >= 0)
             stepSizes[ei] = t;
           else
@@ -675,8 +675,13 @@ struct ImplicitTimeStepping : INode {
 
       // line search
       T alpha = 1.;
-
       find_intersection_free_stepsize(cudaPol, *zstets, vtemp, alpha, 2e-3f);
+#if 0
+      if (alpha < 0.9) {
+        fmt::print("initial stepsize [{}]\n", alpha);
+        getchar();
+      }
+#endif
 
       cudaPol(zs::range(vtemp.size()),
               [vtemp = proxy<space>({}, vtemp)] __device__(int i) mutable {

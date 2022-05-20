@@ -261,6 +261,10 @@ class QDMGraphicsParam_readpath(QDMGraphicsParam_writepath):
             '', 'All Files(*);;')
         if not path:
             return
+        setting = QSettings('ZenusTech','Zeno')
+        nas_loc = setting.value('nas_loc')
+        if nas_loc:
+            path = path.replace(nas_loc, '$NASLOC')
         self.edit.setText(path)
 
 
