@@ -41,11 +41,12 @@ LogListView::LogListView(QWidget* parent)
 void LogListView::rowsInserted(const QModelIndex& parent, int start, int end)
 {
     _base::rowsInserted(parent, start, end);
-    int n = model()->rowCount();
-    //if (n > 0) {
-    //    scrollTo(this->model()->index(n - 1, 0));
-    //}
-    //scrollToBottom();
+
+    connect(&m_timer, &QTimer::timeout, this, [=]() {
+        scrollToBottom();
+        m_timer.stop();
+    });
+    m_timer.start(50);
 }
 
 

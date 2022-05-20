@@ -2,6 +2,7 @@
 #include <rapidjson/document.h>
 #include <rapidjson/stringbuffer.h>
 #include <zeno/funcs/LiterialConverter.h>
+#include <zeno/funcs/ParseObjectFromUi.h>
 #include <zeno/extra/GraphException.h>
 #include <zeno/utils/logger.h>
 #include <zeno/utils/vec.h>
@@ -31,6 +32,11 @@ static T generic_get(Value const &x) {
     } else if (x.IsBool()) {
         return cast(x.GetBool());
     } else {
+        if constexpr (std::is_same_v<T, zany>) {
+            if (x.IsObject()) {
+                return parseObjectFromUi(x.GetObject());
+            }
+        }
         if constexpr (HasVec) {
             if (x.IsArray()) {
                 auto a = x.GetArray();
@@ -76,7 +82,7 @@ ZENO_API void Graph::loadGraph(const char *json) {
                 } else if (cmd == "completeNode") {
                     completeNode(di[1].GetString());
                 } else if (cmd == "setNodeInput") {
-                    setNodeInput(di[1].GetString(), di[2].GetString(), generic_get<zany>(di[3]));
+                    setNodeInput(di[1].GetString(), di[2].GetString(), generic_get<zany>(di[3]));       
                 } else if (cmd == "setNodeParam") {
                     setNodeParam(di[1].GetString(), di[2].GetString(), generic_get<std::variant<int, float, std::string>, false>(di[3]));
                 /*} else if (cmd == "setNodeOption") {

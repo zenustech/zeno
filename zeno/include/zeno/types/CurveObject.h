@@ -76,8 +76,16 @@ struct CurveData : private _CurveDataDetails {
         vec2f right_handler{0, 0};
     };
 
+    struct Range {
+        float xFrom{0};
+        float xTo{0};
+        float yFrom{0};
+        float yTo{0};
+    };
+
     std::vector<float> cpbases;
     std::vector<ControlPoint> cpoints;
+    Range rg;
     CycleType cycleType{CycleType::kClamp};
 
     void addPoint(float f, float v, PointType cp_type, vec2f left_handler, vec2f right_handler) {

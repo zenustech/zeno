@@ -4,6 +4,10 @@
 #include <zeno/utils/logger.h>
 #include <zenoui/model/curvemodel.h>
 #include <zenoui/model/variantptr.h>
+#include <zeno/funcs/ParseObjectFromUi.h>
+
+using namespace zeno::iotags;
+using namespace zeno::iotags::curve;
 
 namespace JsonHelper
 {
@@ -63,7 +67,7 @@ namespace JsonHelper
                 }
                 else if (varType == QMetaType::VoidStar)
                 {
-                    // TODO: use dynamic_cast<CurveModel *>(QVariantPtr<IModel>::asPtr(value))
+                    // TODO: use qobject_cast<CurveModel *>(QVariantPtr<IModel>::asPtr(value))
                     // also btw luzh, will this have a memory leakage? no, we make sure that curvemodel is child of subgraphmodel.
                     if (type == "curve")
                     {
@@ -85,66 +89,6 @@ namespace JsonHelper
             }
 		}
         writer.EndArray();
-    }
-
-    void AddVariantListWithNull(const QVariantList& list, const QString& type, RAPIDJSON_WRITER& writer)
-    {
-        return AddVariantList(list, type, writer);
-#if 0
-        writer.StartArray();
-        for (const QVariant& value : list)
-        {
-            QVariant::Type varType = value.type();
-            if (varType == QVariant::Double)
-            {
-                writer.Double(value.toDouble());
-            }
-            else if (varType == QVariant::Int)
-            {
-                writer.Int(value.toInt());
-            }
-            else if (varType == QVariant::String)
-            {
-                writer.String(value.toString().toLatin1());
-            }
-            else if (varType == QVariant::Bool)
-            {
-                writer.Bool(value.toBool());
-            }
-            else if (varType == QMetaType::VoidStar)
-            {
-                if (type == "curve")
-                {
-                    CurveModel *pModel = QVariantPtr<CurveModel>::asPtr(value);
-                    dumpCurveModel(pModel, writer);
-                }
-            }
-            else
-            {
-                if (varType == QVariant::UserType) {
-                    //todo: declare a custom metatype
-                    QVector<qreal> vec = value.value<QVector<qreal>>();
-                    //for vec:
-                    if (!vec.isEmpty()) {
-                        writer.StartArray();
-                        for (int i = 0; i < vec.size(); i++) {
-                            //todo: more type.
-                            if (type == "vec3i")
-                                writer.Int(vec[i]);
-                            else
-                                writer.Double(vec[i]);
-                        }
-                        writer.EndArray();
-                        continue;
-                    }
-                }
-                if (varType != QVariant::Invalid)
-                    zeno::log_warn("bad param info qvariant type {}", value.typeName() ? value.typeName() : "(null)");
-                writer.Null();
-            }
-        }
-        writer.EndArray();
-#endif
     }
 
     void AddVariantToStringList(const QVariantList& list, RAPIDJSON_WRITER& writer)
@@ -171,7 +115,7 @@ namespace JsonHelper
             }
             else 
             {
-                if (varType != QVariant::Invalid)  // FIXME: so many QVector<qreal>???
+                if (varType != QVariant::Invalid)  // FIXME: so many QVector<qreal>??? i will give a typedef later, and declare a qt meta type.
                     zeno::log_trace("bad param info qvariant type {}", value.typeName() ? value.typeName() : "(null)");
                 writer.String("");
             }
@@ -182,26 +126,32 @@ namespace JsonHelper
     void dumpCurveModel(const CurveModel* pModel, RAPIDJSON_WRITER& writer)
     {
         if (!pModel) {
-            return;        
+            return;
         }
 
         CURVE_RANGE rg = pModel->range();
 
         JsonObjBatch scope(writer);
-        writer.Key("range");
+        writer.Key(key_range);
         {
             JsonObjBatch scope2(writer);
-            writer.Key("xFrom");
+            writer.Key(key_xFrom);
             writer.Double(rg.xFrom);
-            writer.Key("xTo");
+            writer.Key(key_xTo);
             writer.Double(rg.xTo);
-            writer.Key("yFrom");
+            writer.Key(key_yFrom);
             writer.Double(rg.yFrom);
-            writer.Key("yTo");
+            writer.Key(key_yTo);
             writer.Double(rg.yTo);
         }
 
-        writer.Key("nodes");
+        writer.Key(key_objectType);
+        writer.String("curve");
+
+        writer.Key(key_timeline);
+        writer.Bool(pModel->isTimeline());
+
+        writer.Key(key_nodes);
         {
             JsonArrayBatch arrBatch(writer);
             for (int i = 0; i < pModel->rowCount(); i++)
@@ -219,8 +169,8 @@ namespace JsonHelper
                 writer.Double(pos.x());
                 writer.Key("y");
                 writer.Double(pos.y());
-                
-                writer.Key("left-handle");
+
+                writer.Key(key_left_handle);
                 {
                     JsonObjBatch scope3(writer);
                     writer.Key("x");
@@ -228,7 +178,7 @@ namespace JsonHelper
                     writer.Key("y");
                     writer.Double(leftPos.y());
                 }
-                writer.Key("right-handle");
+                writer.Key(key_right_handle);
                 {
                     JsonObjBatch scope3(writer);
                     writer.Key("x");
@@ -237,7 +187,7 @@ namespace JsonHelper
                     writer.Double(rightPos.y());
                 }
 
-                writer.Key("type");
+                writer.Key(key_type);
                 switch (hdlType)
                 {
                 case HDL_ALIGNED: writer.String("aligned"); break;
@@ -250,11 +200,11 @@ namespace JsonHelper
                     break;
                 }
 
-                writer.Key("lockX");
+                writer.Key(key_lockX);
                 writer.Bool(bLockX);
-                writer.Key("lockY");
+                writer.Key(key_lockY);
                 writer.Bool(bLockY);
-            }        
+            }
         }
     }
 }
