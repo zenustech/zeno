@@ -32,7 +32,7 @@ struct RadiancePRD
     float        prob;
     float        prob2;
     unsigned int seed;
-    unsigned int flags = 0;
+    unsigned int flags;
     int          countEmitted;
     int          done;
     int          pad;

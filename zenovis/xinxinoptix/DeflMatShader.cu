@@ -182,22 +182,20 @@ static __inline__ __device__ MatOutput evalMaterial(MatInput const &attrs) {
     return mats;
 }
 
-static __device__ MatOutput getMatOutputFromHit() {
-    HitGroupData* rt_data = (HitGroupData*)optixGetSbtDataPointer();
 
+extern "C" __global__ void __anyhit__shadow_cutout()
+{
+    RadiancePRD* prd = getPRD();
+    HitGroupData* rt_data = (HitGroupData*)optixGetSbtDataPointer();
     const int    prim_idx        = optixGetPrimitiveIndex();
     const float3 ray_dir         = optixGetWorldRayDirection();
     const int    vert_idx_offset = prim_idx*3;
-
     const float3 v0   = make_float3( rt_data->vertices[ vert_idx_offset+0 ] );
     const float3 v1   = make_float3( rt_data->vertices[ vert_idx_offset+1 ] );
     const float3 v2   = make_float3( rt_data->vertices[ vert_idx_offset+2 ] );
     const float3 N_0  = normalize( cross( v1-v0, v2-v0 ) );
-
     const float3 N    = faceforward( N_0, -ray_dir, N_0 );
     const float3 P    = optixGetWorldRayOrigin() + optixGetRayTmax()*ray_dir;
-
-    RadiancePRD* prd = getPRD();
 
     MatInput attrs;
     /* MODMA */
@@ -206,14 +204,11 @@ static __device__ MatOutput getMatOutputFromHit() {
     attrs.uv = vec3(0,0,0);//todo later
     attrs.clr = vec3(rt_data->diffuse_color.x, rt_data->diffuse_color.y, rt_data->diffuse_color.z);
     attrs.tang = vec3(0,0,0);
-    return evalMaterial(attrs);
-}
+    MatOutput mats = evalMaterial(attrs);
+    //end of material computation
+    mats.metallic = clamp(mats.metallic,0.01, 0.99);
+    mats.roughness = clamp(mats.roughness, 0.01,0.99);
 
-
-
-extern "C" __global__ void __anyhit__shadow_cutout()
-{
-    MatOutput mats = getMatOutputFromHit();
     /* MODME */
     auto baseColor = mats.baseColor;
     auto metallic = mats.metallic;
@@ -243,7 +238,29 @@ extern "C" __global__ void __anyhit__shadow_cutout()
 
 extern "C" __global__ void __closesthit__radiance()
 {
-    MatOutput mats = getMatOutputFromHit();
+    RadiancePRD* prd = getPRD();
+    HitGroupData* rt_data = (HitGroupData*)optixGetSbtDataPointer();
+    const int    prim_idx        = optixGetPrimitiveIndex();
+    const float3 ray_dir         = optixGetWorldRayDirection();
+    const int    vert_idx_offset = prim_idx*3;
+    const float3 v0   = make_float3( rt_data->vertices[ vert_idx_offset+0 ] );
+    const float3 v1   = make_float3( rt_data->vertices[ vert_idx_offset+1 ] );
+    const float3 v2   = make_float3( rt_data->vertices[ vert_idx_offset+2 ] );
+    const float3 N_0  = normalize( cross( v1-v0, v2-v0 ) );
+    const float3 N    = faceforward( N_0, -ray_dir, N_0 );
+    const float3 P    = optixGetWorldRayOrigin() + optixGetRayTmax()*ray_dir;
+
+    MatInput attrs;
+    /* MODMA */
+    attrs.pos = vec3(P.x, P.y, P.z);
+    attrs.nrm = vec3(0,0,1);
+    attrs.uv = vec3(0,0,0);//todo later
+    attrs.clr = vec3(rt_data->diffuse_color.x, rt_data->diffuse_color.y, rt_data->diffuse_color.z);
+    attrs.tang = vec3(0,0,0);
+    MatOutput mats = evalMaterial(attrs);
+    //end of material computation
+    mats.metallic = clamp(mats.metallic,0.01, 0.99);
+    mats.roughness = clamp(mats.roughness, 0.01,0.99);
     /* MODME */
     auto baseColor = mats.baseColor;
     auto metallic = mats.metallic;
@@ -258,9 +275,6 @@ extern "C" __global__ void __closesthit__radiance()
     auto clearCoatGloss = mats.clearCoatGloss;
     auto opacity = mats.opacity;
 
-    //end of material computation
-    metallic = clamp(metallic,0.01, 0.99);
-    roughness = clamp(roughness, 0.01,0.99);
     //discard fully opacity pixels
     prd->opacity = opacity;
     if(opacity>0.99)

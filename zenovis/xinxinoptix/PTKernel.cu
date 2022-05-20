@@ -49,6 +49,7 @@ extern "C" __global__ void __raygen__rg()
         prd.done         = false;
         prd.seed         = seed;
         prd.opacity      = 0;
+        prd.flags        = 0;
         int depth = 0;
         for( ;; )
         {
