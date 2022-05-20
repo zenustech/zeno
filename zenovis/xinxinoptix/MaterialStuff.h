@@ -48,7 +48,7 @@ static __forceinline__ __device__ void setPayloadOcclusion( bool occluded )
 }
 
 
-static __forceinline__ __device__ void cosine_sample_hemisphere(const float u1, const float u2, float3& p)
+static __forceinline__ __device__ void cosine_sample_hemisphere(const float u1, const float u2, vec3& p)
 {
   // Uniformly sample disk.
   const float r   = sqrtf( u1 );

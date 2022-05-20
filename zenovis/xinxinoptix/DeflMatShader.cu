@@ -26,7 +26,7 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     const vec3 N_0  = normalize( cross( v1-v0, v2-v0 ) );
 
     const vec3 N    = faceforward( N_0, -ray_dir, N_0 );
-    const vec3 P    = (optixGetWorldRayOrigin()) + optixGetRayTmax()*ray_dir;
+    const vec3 P    = vec3(optixGetWorldRayOrigin()) + optixGetRayTmax()*ray_dir;
 
     RadiancePRD* prd = getPRD();
     float opacity = 0.0;//sin(P.y)>0?1.0:0.0;
@@ -58,7 +58,7 @@ extern "C" __global__ void __closesthit__radiance()
     const vec3 N_0  = normalize( cross( v1-v0, v2-v0 ) );
 
     const vec3 N    = faceforward( N_0, -ray_dir, N_0 );
-    const vec3 P    = optixGetWorldRayOrigin() + optixGetRayTmax()*ray_dir;
+    const vec3 P    = vec3(optixGetWorldRayOrigin()) + optixGetRayTmax()*ray_dir;
 
     RadiancePRD* prd = getPRD();
 
@@ -106,7 +106,7 @@ extern "C" __global__ void __closesthit__radiance()
     const float  Ldist = length(light_pos - P );
     const vec3 L     = normalize(light_pos - P );
     const float  nDl   = dot( N, L );
-    const float  LnDl  = -dot( light.normal, L );
+    const float  LnDl  = -dot( vec3(light.normal), L );
 
     float weight = 0.0f;
     if( nDl > 0.0f && LnDl > 0.0f )
