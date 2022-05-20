@@ -20,9 +20,9 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     const vec3 ray_dir         = (optixGetWorldRayDirection());
     const int    vert_idx_offset = prim_idx*3;
 
-    const vec3 v0   = ( *(float3*)&rt_data->vertices[ vert_idx_offset+0 ] );
-    const vec3 v1   = ( *(float3*)&rt_data->vertices[ vert_idx_offset+1 ] );
-    const vec3 v2   = ( *(float3*)&rt_data->vertices[ vert_idx_offset+2 ] );
+    const vec3 v0   = make_float3( rt_data->vertices[ vert_idx_offset+0 ] );
+    const vec3 v1   = make_float3( rt_data->vertices[ vert_idx_offset+1 ] );
+    const vec3 v2   = make_float3( rt_data->vertices[ vert_idx_offset+2 ] );
     const vec3 N_0  = normalize( cross( v1-v0, v2-v0 ) );
 
     const vec3 N    = faceforward( N_0, -ray_dir, N_0 );
@@ -52,9 +52,9 @@ extern "C" __global__ void __closesthit__radiance()
     const vec3 ray_dir         = (optixGetWorldRayDirection());
     const int    vert_idx_offset = prim_idx*3;
 
-    const vec3 v0   = ( *(float3*)&rt_data->vertices[ vert_idx_offset+0 ] );
-    const vec3 v1   = ( *(float3*)&rt_data->vertices[ vert_idx_offset+1 ] );
-    const vec3 v2   = ( *(float3*)&rt_data->vertices[ vert_idx_offset+2 ] );
+    const vec3 v0   = make_float3( rt_data->vertices[ vert_idx_offset+0 ] );
+    const vec3 v1   = make_float3( rt_data->vertices[ vert_idx_offset+1 ] );
+    const vec3 v2   = make_float3( rt_data->vertices[ vert_idx_offset+2 ] );
     const vec3 N_0  = normalize( cross( v1-v0, v2-v0 ) );
 
     const vec3 N    = faceforward( N_0, -ray_dir, N_0 );
