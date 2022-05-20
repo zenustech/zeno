@@ -57,6 +57,8 @@ set(FILE_LIST
     ${CMAKE_CURRENT_SOURCE_DIR}/@TraceStuff.h
     ${CMAKE_CURRENT_SOURCE_DIR}/@MaterialStuff.h
     ${CMAKE_CURRENT_SOURCE_DIR}/@PTKernel.cu
+    ${CMAKE_CURRENT_SOURCE_DIR}/@DisneyBRDF.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/@zxxglslvec.h
     )
 foreach (FILE_INFO IN ITEMS ${FILE_LIST})
     #string(REPLACE "/" "_" ESCAPED_FILE_NAME "${FILE_NAME}")
