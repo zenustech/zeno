@@ -121,16 +121,15 @@ namespace {
 } // namespace
 
 
-    zany parseObject(Value const& x)
-    {
-        bool bSucceed = false;
-        CurveData dat = curve::parseCurve(x, bSucceed);
-        if (bSucceed) {
-            auto curve = std::make_shared<zeno::CurveObject>();
-            curve->keys.insert(std::make_pair("x", dat));
-            return curve;
-        }
-        return zany();
+zany parseObjectFromUi(Value const& x)
+{
+    bool bSucceed = false;
+    if (CurveData dat = curve::parseCurve(x, bSucceed); bSucceed) {
+        auto curve = std::make_shared<zeno::CurveObject>();
+        curve->keys.insert({"x", dat});
+        return curve;
     }
+    return nullptr;
+}
 
 }
