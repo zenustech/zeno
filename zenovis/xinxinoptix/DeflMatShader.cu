@@ -156,14 +156,7 @@ static __inline__ __device__ MatOutput evalMaterial(MatInput const &attrs) {
     float mat_clearCoatGloss = 0.0;
     float mat_opacity = 0.0;
     /** generated code here beg **/
-    /*float pnoise = perlin(1, 3, attr_pos*0.02);
-    pnoise = clamp(pnoise, 0.0f, 1.0f);
-    float pnoise2 = perlin(1, 4, attr_pos*0.02);
-    mat_metallic = pnoise;
-    mat_roughness = pnoise2;
-    mat_roughness = clamp(mat_roughness, 0.01f,0.99f)*0.5f;
-    float pnoise3 = perlin(10.0, 5, attr_pos*0.005);
-    mat_opacity = clamp(pnoise3, 0.0f,1.0f);*/
+    "GENERATED_CODE_HERE";
     /** generated code here end **/
     MatOutput mats;
     /* MODME */

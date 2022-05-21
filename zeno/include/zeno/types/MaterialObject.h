@@ -18,7 +18,7 @@ namespace zeno
         std::string common;
         std::string extensions;
         std::vector<std::shared_ptr<Texture2DObject>> tex2Ds;
-        int mtlid;
+        int mtlid{};  // unused for now
 
         size_t serializeSize()
         {

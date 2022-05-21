@@ -758,14 +758,14 @@ void optixinit( int argc, char* argv[] )
     //return res;
 //}
 
-static void updatedrawobjects();
-void optixupdatemesh() {
-    updatedrawobjects();
+static void updatedrawobjects(std::map<std::string, int> const &mtlidlut);
+void optixupdatemesh(std::map<std::string, int> const &mtlidlut) {
+    updatedrawobjects(mtlidlut);
     buildMeshAccel( state );
     camera_changed = true;
 }
 
-void optixupdatematerial(std::vector<const char *> const &shaders) {
+void optixupdatematerial(std::vector<std::string> const &shaders) {
     camera_changed = true;
 
         static bool hadOnce = false;
@@ -778,8 +778,8 @@ void optixupdatematerial(std::vector<const char *> const &shaders) {
         } hadOnce = true;
     OptixUtil::rtMaterialShaders.resize(0);
     for (int i = 0; i < shaders.size(); i++) {
-        if (!*shaders[i]) zeno::log_warn("shader {} is empty", i);
-        OptixUtil::rtMaterialShaders.push_back(OptixUtil::rtMatShader(shaders[i],"__closesthit__radiance", "__anyhit__shadow_cutout"));
+        if (shaders[i].empty()) zeno::log_warn("shader {} is empty", i);
+        OptixUtil::rtMaterialShaders.push_back(OptixUtil::rtMatShader(shaders[i].c_str(),"__closesthit__radiance", "__anyhit__shadow_cutout"));
     }
     for(int i=0;i<OptixUtil::rtMaterialShaders.size();i++)
     {
@@ -823,13 +823,14 @@ void optixupdateend() {
 }
 
 struct DrawDat {
+    std::string mtlid;
     std::vector<float> verts;
     std::vector<float> tris;
     std::map<std::string, std::vector<float>> vertattrs;
 };
 static std::map<std::string, DrawDat> drawdats;
 
-static void updatedrawobjects() {
+static void updatedrawobjects(std::map<std::string, int> const &mtlidlut) {
     g_vertices.clear();
     g_mat_indices.clear();
     size_t n = 0;
@@ -840,9 +841,10 @@ static void updatedrawobjects() {
     g_mat_indices.resize(n);
     n = 0;
     for (auto const &[key, dat]: drawdats) {
+        int mtlidx = mtlidlut.at(dat.mtlid);
 //#pragma omp parallel for
         for (size_t i = 0; i < dat.tris.size() / 3; i++) {
-            g_mat_indices[n + i] = 0;
+            g_mat_indices[n + i] = mtlidx;
             g_vertices[(n + i) * 3 + 0] = {
                 dat.verts[dat.tris[i * 3 + 0] * 3 + 0],
                 dat.verts[dat.tris[i * 3 + 0] * 3 + 1],
@@ -866,8 +868,9 @@ static void updatedrawobjects() {
     }
 }
 
-void load_object(std::string const &key, int mtlid, float const *verts, size_t numverts, int const *tris, size_t numtris, std::map<std::string, std::pair<float const *, size_t>> const &vtab) {
+void load_object(std::string const &key, std::string const &mtlid, float const *verts, size_t numverts, int const *tris, size_t numtris, std::map<std::string, std::pair<float const *, size_t>> const &vtab) {
     DrawDat &dat = drawdats[key];
+    dat.mtlid = mtlid;
     dat.verts.assign(verts, verts + numverts * 3);
     dat.tris.assign(tris, tris + numtris * 3);
     for (auto const &[key, fptr]: vtab) {
