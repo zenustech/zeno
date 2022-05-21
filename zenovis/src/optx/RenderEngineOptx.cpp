@@ -108,6 +108,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
             if (std::exchange(graphicsMan->hasMeshObject, false)) {
                 meshNeedUpdate = true;
             }
+            meshNeedUpdate = true;
         }
     }
 
