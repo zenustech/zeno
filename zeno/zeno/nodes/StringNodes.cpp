@@ -1,10 +1,12 @@
 #include <zeno/zeno.h>
 #include <zeno/types/StringObject.h>
+#include <zeno/types/NumericObject.h>
 #ifdef ZENO_GLOBALSTATE
 #include <zeno/extra/GlobalState.h>
 #endif
 #include <iostream>
 #include <fstream>
+#include <spdlog/spdlog.h>
 
 namespace {
 
@@ -168,6 +170,38 @@ ZENDEFNODE(StringFormat, {
     {"string"},
 });
 #endif
+
+struct StringFormatNumber : zeno::INode {
+    virtual void apply() override {
+        auto str = get_input2<std::string>("str");
+        auto num = get_input<zeno::NumericObject>("number");
+
+        std::string output;
+        std::visit([&](const auto &v) {
+            using T = std::decay_t<decltype(v)>;
+            if constexpr (std::is_same_v<T, int>) {
+                output = fmt::format(str, T(v));
+            }
+            else if constexpr (std::is_same_v<T, float>) {
+                output = fmt::format(str, T(v));
+            }
+            else {
+                output = str;
+            }
+        }, num->value);
+        set_output2("str", output);
+    }
+};
+
+ZENDEFNODE(StringFormatNumber, {
+    {
+        {"string", "str"},
+        {"number"},
+    },
+    {{"string", "str"}},
+    {},
+    {"string"},
+});
 
 /*static int objid = 0;
 
