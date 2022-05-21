@@ -42,7 +42,7 @@ void ZWidgetErrStream::luzhPutString(QString str) {
     //format like:
     //"[I 14:15:11.810] (unknown:0) begin frame 89"
 
-    static QRegExp rx("\\[(T|D|I|C|W|E)\\s+(\\d+):(\\d+):(\\d+)\\.(\\d+)\\]\\s+\\(([^\\)]+):(\\d+)\\)\\s+([^\\)]+)");
+    QRegExp rx("\\[(T|D|I|C|W|E)\\s+(\\d+):(\\d+):(\\d+)\\.(\\d+)\\]\\s+\\(([^\\)]+):(\\d+)\\)\\s+([^\\)]+)");
     if (!str.startsWith('[') || rx.indexIn(str) == -1)
     {
         QMessageLogger logger("unknown", 0, 0);

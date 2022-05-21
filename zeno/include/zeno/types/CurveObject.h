@@ -96,7 +96,7 @@ struct CurveData : private _CurveDataDetails {
     float eval(float cf) const {
         assert(!cpoints.empty());
         assert(cpbases.size() == cpoints.size());
-        auto lessit = std::lower_bound(cpbases.begin(), cpbases.end(), cf);
+        auto moreit = std::lower_bound(cpbases.begin(), cpbases.end(), cf);
         if (cycleType != CycleType::kClamp) {
             cf -= cpbases.front();
             cf = std::fmod(cf - cpbases.front(), cpbases.back() - cpbases.front());
@@ -105,11 +105,11 @@ struct CurveData : private _CurveDataDetails {
             else  // CycleType::kMirror
                 cf = cpbases.back() - cf;
         }
-        if (lessit == cpbases.end())
+        if (moreit == cpbases.end())
             return cpbases.back();
-        else if (lessit == cpbases.begin())
+        else if (moreit == cpbases.begin())
             return cpbases.front();
-        auto moreit = lessit + 1;
+        auto lessit = std::prev(moreit);
         ControlPoint p = cpoints[lessit - cpbases.begin()];
         ControlPoint n = cpoints[moreit - cpbases.begin()];
         float pf = *lessit;
