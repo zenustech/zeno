@@ -30,9 +30,18 @@ struct UserData {
         return safe_at(m_data, name, "user data");
     }
 
+    std::shared_ptr<IObject> get(std::string const &name, std::shared_ptr<IObject> defl) const {
+        return has(name) ? get(name) : defl;
+    }
+
     template <class T>
     T getLiterial(std::string const &name) const {
         return objectToLiterial<T>(get(name));
+    }
+
+    template <class T>
+    T getLiterial(std::string const &name, T defl) const {
+        return has(name) ? getLiterial<T>(name) : defl;
     }
 
     void set(std::string const &name, std::shared_ptr<IObject> value) {

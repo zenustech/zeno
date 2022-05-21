@@ -8,6 +8,8 @@ namespace zenovis {
 struct Scene;
 
 struct IGraphic {
+    std::string nameid;
+
     virtual ~IGraphic() = default;
 };
 

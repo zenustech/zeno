@@ -18,10 +18,13 @@ namespace zeno
         std::string common;
         std::string extensions;
         std::vector<std::shared_ptr<Texture2DObject>> tex2Ds;
+        int mtlid;
 
         size_t serializeSize()
         {
             size_t size{0};
+
+            size += sizeof(mtlid);
 
             auto vertLen{vert.size()};
             size += sizeof(vertLen);
@@ -54,6 +57,9 @@ namespace zeno
         void serialize(char *str)
         {
             size_t i{0};
+
+            memcpy(str + i, &mtlid, sizeof(mtlid));
+            i += mtlid;
 
             auto vertLen{vert.size()};
             memcpy(str + i, &vertLen, sizeof(vertLen));
@@ -109,6 +115,9 @@ namespace zeno
         void deserialize(const char *str)
         {
             size_t i{0};
+
+            memcpy(&mtlid, str + i, sizeof(mtlid));
+            i += mtlid;
 
             size_t vertLen;
             memcpy(&vertLen, str + i, sizeof(vertLen));

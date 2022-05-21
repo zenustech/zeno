@@ -1,7 +1,7 @@
 [+]
 build_type=Debug
 build_target=zenoedit
-run_environ=ZENO_LOGLEVEL=debug ZENO_OPEN=/tmp/a.zsg
+run_environ=ZENO_LOGLEVEL=debug ZENO_OPEN=/tmp/a.zsg ZENO_OPTX=1
 x=ZENO_ALWAYS=1 ZENO_OPTX=1
 build_dir=/tmp/zeno-build
 run_target="$(VIM:build_dir)/bin/zenoedit"

@@ -2,7 +2,9 @@
 #include "../../xinxinoptix/xinxinoptixapi.h"
 #include <zeno/types/PrimitiveObject.h>
 #include <zenovis/DrawOptions.h>
+#include <zeno/types/MaterialObject.h>
 #include <zenovis/ObjectsManager.h>
+#include <zeno/utils/UserData.h>
 #include <zeno/utils/fileio.h>
 #include <zenovis/RenderEngine.h>
 #include <zenovis/bate/GraphicsManager.h>
@@ -16,11 +18,16 @@ namespace zenovis::optx {
 struct GraphicsManager {
     Scene *scene;
 
+    std::vector<std::string> mtlshaders;
+
     struct ZxxGraphic : zeno::disable_copy {
         std::string key;
 
-        explicit ZxxGraphic(std::string key_, zeno::IObject *obj) : key(std::move(key_)) {
-            if (auto prim = dynamic_cast<zeno::PrimitiveObject *>(obj)) {
+        explicit ZxxGraphic(GraphicsManager *man, std::string key_, zeno::IObject *obj)
+        : key(std::move(key_))
+        {
+            if (auto prim = dynamic_cast<zeno::PrimitiveObject *>(obj))
+            {
                 auto vs = (float const *)prim->verts.data();
                 std::map<std::string, std::pair<float const *, size_t>> vtab;
                 prim->verts.foreach_attr([&] (auto const &key, auto const &arr) {
@@ -29,7 +36,12 @@ struct GraphicsManager {
                 auto ts = (int const *)prim->tris.data();
                 auto nvs = prim->verts.size();
                 auto nts = prim->tris.size();
-                xinxinoptix::load_object(key, vs, nvs, ts, nts, vtab);
+                int mtlid = prim->userData().getLiterial<int>("mtlid", 0);
+                xinxinoptix::load_object(key, mtlid, vs, nvs, ts, nts, vtab);
+            }
+            else if (auto mtl = dynamic_cast<zeno::MaterialObject *>(obj))
+            {
+                man->mtlshaders.push_back(mtl->frag);
             }
         }
 
@@ -48,7 +60,7 @@ struct GraphicsManager {
         for (auto const &[key, obj] : objs) {
             if (ins.may_emplace(key)) {
                 zeno::log_debug("zxx_load_object: loading graphics [{}]", key);
-                auto ig = std::make_unique<ZxxGraphic>(key, obj);
+                auto ig = std::make_unique<ZxxGraphic>(this, key, obj);
                 zeno::log_debug("zxx_load_object: loaded graphics to {}", ig.get());
                 ins.try_emplace(key, std::move(ig));
             }
@@ -73,7 +85,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
     }
 
     explicit RenderEngineOptx(Scene *scene_) : scene(scene_) {
-        zeno::log_info("Optx Render Engine started...");
+        zeno::log_info("OptiX Render Engine started...");
         auto guard = setupState();
 
         graphicsMan = std::make_unique<GraphicsManager>(scene);

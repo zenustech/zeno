@@ -52,6 +52,7 @@
 #include "optixPathTracer.h"
 
 #include <zeno/utils/log.h>
+#include <zeno/types/MaterialObject.h>
 #include <array>
 #include <optional>
 #include <cstring>
@@ -865,7 +866,7 @@ static void updatedrawobjects() {
     }
 }
 
-void load_object(std::string const &key, float const *verts, size_t numverts, int const *tris, size_t numtris, std::map<std::string, std::pair<float const *, size_t>> const &vtab) {
+void load_object(std::string const &key, int mtlid, float const *verts, size_t numverts, int const *tris, size_t numtris, std::map<std::string, std::pair<float const *, size_t>> const &vtab) {
     DrawDat &dat = drawdats[key];
     dat.verts.assign(verts, verts + numverts * 3);
     dat.tris.assign(tris, tris + numtris * 3);
