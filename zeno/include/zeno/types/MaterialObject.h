@@ -20,7 +20,7 @@ namespace zeno
         std::vector<std::shared_ptr<Texture2DObject>> tex2Ds;
         int mtlid{};  // unused for now
 
-        size_t serializeSize()
+        size_t serializeSize() const
         {
             size_t size{0};
 
@@ -54,7 +54,7 @@ namespace zeno
             return size;
         }
 
-        void serialize(char *str)
+        void serialize(char *str) const
         {
             size_t i{0};
 
@@ -105,7 +105,7 @@ namespace zeno
             }
         }
 
-        std::vector<char> serialize()
+        std::vector<char> serialize() const
         {
             std::vector<char> str(serializeSize());
             serialize(str.data());

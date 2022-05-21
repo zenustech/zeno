@@ -21,18 +21,16 @@ struct ToView : zeno::INode {
 
     virtual void apply() override {
         auto p = get_input("object");
-        bool isStatic = get_input2<bool>("isStatic");
+        bool isStatic = has_input("isStatic") ? get_input2<bool>("isStatic") : false;
         if (!p) {
             log_error("ToView: given object is nullptr");
         } else {
             auto pp = isStatic && hasViewed ? std::make_shared<DummyObject>() : p->clone();
             hasViewed = true;
-            /* auto pp = p->clone(); */
             if (!pp) {
-                log_warn("ToView: given object doesn't support clone, giving up");
+                log_error("ToView: given object doesn't support clone, giving up");
             } else {
                 log_debug("ToView: added view object of type {}", cppdemangle(typeid(*p)));
-                /* pp->userData().set("nodeid", objectFromLiterial(this->myname)); */
                 auto key = this->myname;
                 key.push_back(':');
                 if (isStatic)
@@ -42,6 +40,7 @@ struct ToView : zeno::INode {
                 key.push_back(':');
                 key.append(std::to_string(getThisSession()->globalState->sessionid));
                 getThisSession()->globalComm->addViewObject(key, std::move(pp));
+                set_output2("viewid", std::move(key));
             }
         }
         set_output("object", std::move(p));
@@ -50,7 +49,7 @@ struct ToView : zeno::INode {
 
 ZENDEFNODE(ToView, {
     {"object", {"bool", "isStatic", "0"}},
-    {"object"},
+    {"object", {"string", "viewid"}},
     {},
     {"graphtool"},
 });
@@ -93,6 +92,19 @@ ZENDEFNODE(HelperOnce, {
     {},
     {},
     {{"string", "NOTE", "Dont-use-this-node-directly"}},
+    {"graphtool"},
+});
+
+struct MakeDummy : zeno::INode {
+    virtual void apply() override {
+        set_output("dummy", std::make_shared<DummyObject>());
+    }
+};
+
+ZENDEFNODE(MakeDummy, {
+    {},
+    {"dummy"},
+    {},
     {"graphtool"},
 });
 

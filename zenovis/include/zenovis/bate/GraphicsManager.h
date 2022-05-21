@@ -27,9 +27,8 @@ struct GraphicsManager {
                 zeno::log_debug("load_object: loading graphics [{}]", key);
                 auto ig = makeGraphic(scene, obj);
                 zeno::log_debug("load_object: loaded graphics to {}", ig.get());
-                auto ig_raw = ig.get();
+                ig->nameid = key;
                 ins.try_emplace(key, std::move(ig));
-                ig_raw->nameid = std::move(key);
             }
         }
         return ins.has_changed();
