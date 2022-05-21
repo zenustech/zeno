@@ -210,14 +210,18 @@ struct rtMatShader
 
     void loadProgram()
     {
-        m_ptx_module = createModule(context, m_shaderFile.c_str(), "tmpshader.cu");
-        createRTProgramGroups(context, m_ptx_module, 
-        "OPTIX_PROGRAM_GROUP_KIND_CLOSEHITGROUP", 
-        m_shadingEntry, m_radiance_hit_group);
+        try {
+            m_ptx_module = createModule(context, m_shaderFile.c_str(), "tmpshader.cu");
+            createRTProgramGroups(context, m_ptx_module, 
+            "OPTIX_PROGRAM_GROUP_KIND_CLOSEHITGROUP", 
+            m_shadingEntry, m_radiance_hit_group);
 
-        createRTProgramGroups(context, m_ptx_module, 
-        "OPTIX_PROGRAM_GROUP_KIND_ANYHITGROUP", 
-        m_occlusionEntry, m_occlusion_hit_group);
+            createRTProgramGroups(context, m_ptx_module, 
+            "OPTIX_PROGRAM_GROUP_KIND_ANYHITGROUP", 
+            m_occlusionEntry, m_occlusion_hit_group);
+        } catch (sutil::Exception const &e) {
+            throw std::runtime_error((std::string)"cannot create program group. Log:\n" + e.what() + "\n===BEG===\n" + m_shaderFile + "\n===END===\n");
+        }
 
     }
 

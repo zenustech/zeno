@@ -42,7 +42,6 @@ namespace {
 
 struct GraphicDummy final : IGraphic {
     Scene *scene;
-    zeno::LightData lightData;
 
     explicit GraphicDummy(Scene *scene_, zeno::DummyObject *lit) : scene(scene_) {
     }
