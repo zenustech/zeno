@@ -2,6 +2,8 @@
 #include "../../xinxinoptix/xinxinoptixapi.h"
 #include "../../xinxinoptix/SDK/sutil/sutil.h"
 #include <zeno/types/PrimitiveObject.h>
+#include <zeno/types/ListObject.h>
+#include <zeno/types/UserData.h>
 #include <zenovis/DrawOptions.h>
 #include <zeno/types/MaterialObject.h>
 #include <zenovis/ObjectsManager.h>
@@ -45,8 +47,14 @@ struct GraphicsManager {
                 auto ts = (int const *)prim->tris.data();
                 auto nvs = prim->verts.size();
                 auto nts = prim->tris.size();
-                auto mtlid = prim->userData().getLiterial<std::string>("mtlid", "Default");
-                xinxinoptix::load_object(key, mtlid, vs, nvs, ts, nts, vtab);
+                auto mtlids = prim->userData().has("mtlids")
+                    ? prim->userData().get<zeno::ListObject>("mtlids")
+                    : std::make_shared<zeno::ListObject>(std::vector
+                             <std::shared_ptr<zeno::IObject>>{
+                        std::make_shared<zeno::StringObject>("Default")})
+                    ;
+                auto mtlidsl = mtlids->getLiterial<std::string>();
+                xinxinoptix::load_object(key, mtlidsl, vs, nvs, ts, nts, vtab);
             }
             else if (auto mtl = dynamic_cast<zeno::MaterialObject *>(obj))
             {

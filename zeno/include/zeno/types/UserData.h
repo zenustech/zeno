@@ -1,6 +1,7 @@
 #pragma once
 
 #include <zeno/utils/safe_at.h>
+#include <zeno/utils/safe_dynamic_cast.h>
 #include <zeno/utils/memory.h>
 #include <zeno/core/IObject.h>
 #include <zeno/funcs/LiterialConverter.h>
@@ -30,8 +31,23 @@ struct UserData {
         return safe_at(m_data, name, "user data");
     }
 
+    template <class T>
+    bool isa(std::string const &name) const {
+        return !!dynamic_cast<T *>(get(name).get());
+    }
+
     std::shared_ptr<IObject> get(std::string const &name, std::shared_ptr<IObject> defl) const {
         return has(name) ? get(name) : defl;
+    }
+
+    template <class T>
+    std::shared_ptr<T> get(std::string const &name) const {
+        return safe_dynamic_cast<T>(get(name));
+    }
+
+    template <class T>
+    std::shared_ptr<T> get(std::string const &name, std::decay_t<std::shared_ptr<T>> defl) const {
+        return has(name) ? get<T>(name) : defl;
     }
 
     template <class T>

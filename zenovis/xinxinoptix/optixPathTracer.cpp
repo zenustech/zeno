@@ -828,7 +828,8 @@ void optixupdateend() {
 }
 
 struct DrawDat {
-    std::string mtlid;
+    std::vector<std::string> mtlids;
+    std::vector<int> mtls;
     std::vector<float> verts;
     std::vector<float> tris;
     std::map<std::string, std::vector<float>> vertattrs;
@@ -846,11 +847,16 @@ static void updatedrawobjects() {
     g_mat_indices.resize(n);
     n = 0;
     for (auto const &[key, dat]: drawdats) {
-        auto it = g_mtlidlut.find(dat.mtlid);
-        int mtlidx = it != g_mtlidlut.end() ? it->second : 0;
+        std::vector<int> l2glut;
+        l2glut.reserve(dat.mtlids.size());
+        for (auto const &mtlid: dat.mtlids) {
+            auto it = g_mtlidlut.find(mtlid);
+            int mtlglbid = it != g_mtlidlut.end() ? it->second : 0;
+            l2glut.push_back(mtlglbid);
+        }
 //#pragma omp parallel for
         for (size_t i = 0; i < dat.tris.size() / 3; i++) {
-            g_mat_indices[n + i] = mtlidx;
+            g_mat_indices[n + i] = l2glut[dat.mtls[i]];
             g_vertices[(n + i) * 3 + 0] = {
                 dat.verts[dat.tris[i * 3 + 0] * 3 + 0],
                 dat.verts[dat.tris[i * 3 + 0] * 3 + 1],
@@ -874,11 +880,13 @@ static void updatedrawobjects() {
     }
 }
 
-void load_object(std::string const &key, std::string const &mtlid, float const *verts, size_t numverts, int const *tris, size_t numtris, std::map<std::string, std::pair<float const *, size_t>> const &vtab) {
+void load_object(std::string const &key, std::vector<std::string> const &mtlids, float const *verts, size_t numverts, int const *tris, size_t numtris, std::map<std::string, std::pair<float const *, size_t>> const &vtab) {
     DrawDat &dat = drawdats[key];
-    dat.mtlid = mtlid;
+    dat.mtlids = mtlids;
+    dat.mtls.assign(numtris, 0);//TODO: from tris.attr("mtl")
     dat.verts.assign(verts, verts + numverts * 3);
     dat.tris.assign(tris, tris + numtris * 3);
+    //TODO: flatten just here... or in renderengineoptx.cpp
     for (auto const &[key, fptr]: vtab) {
         dat.vertattrs[key].assign(fptr.first, fptr.first + numverts * fptr.second);
     }

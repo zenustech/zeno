@@ -10,6 +10,11 @@ namespace zeno {
 struct ListObject : IObjectClone<ListObject> {
   std::vector<zany> arr;
 
+  ListObject() = default;
+
+  explicit ListObject(std::vector<zany> arrin) : arr(std::move(arrin)) {
+  }
+
   template <class T = IObject>
   std::vector<std::shared_ptr<T>> get() {
       std::vector<std::shared_ptr<T>> res;

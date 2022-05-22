@@ -1,6 +1,7 @@
 #include "zeno/zeno.h"
 #include "zeno/types/MaterialObject.h"
 #include "zeno/types/PrimitiveObject.h"
+#include "zeno/types/ListObject.h"
 #include "zeno/types/StringObject.h"
 #include <zeno/types/UserData.h>
 
@@ -139,8 +140,13 @@ struct ExtractMaterialShader : zeno::INode
     virtual void apply() override
     {
       auto obj = get_input<zeno::IObject>("object");
-      auto mtlid = get_input2<std::string>("mtlid");
-      obj->userData().setLiterial("mtlid", mtlid);
+      auto mtlids = std::make_shared<zeno::ListObject>();
+      if (has_input<zeno::ListObject>("mtlid")) {
+          mtlids = get_input<zeno::ListObject>("mtlid");//may need deep copy?
+      } else {
+          mtlids->arr.push_back(objectFromLiterial(get_input2<std::string>("mtlid")));
+      }
+      obj->userData().set("mtlids", std::move(mtlids));
       set_output("object", std::move(obj));
     }
   };
@@ -150,7 +156,7 @@ struct ExtractMaterialShader : zeno::INode
       {
           {
               {"object"},
-              {"string", "mtlid"},
+              {"string", "mtlid"},// actually string or list
           },
           {
               {"object"},
