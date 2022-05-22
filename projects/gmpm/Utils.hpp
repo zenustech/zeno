@@ -113,6 +113,57 @@ zs::Vector<typename ZenoParticles::lbvh_t::Box> retrieve_bounding_volumes(
   return ret;
 }
 
+// for broad cd
+template <typename VecT>
+constexpr bool pt_cd_broadphase(VecT p, VecT t0, VecT t1, VecT t2,
+                                const typename VecT::value_type dist) noexcept {
+  using T = typename VecT::value_type;
+  auto mi = VecT::uniform(t0[0]);
+  auto ma = VecT::uniform(t0[0]);
+  for (int d = 0; d != 3; ++d) {
+    if (t0[d] < mi[d])
+      mi[d] = t0[d];
+    if (t0[d] > ma[d])
+      ma[d] = t0[d];
+
+    if (t1[d] < mi[d])
+      mi[d] = t1[d];
+    if (t1[d] > ma[d])
+      ma[d] = t1[d];
+
+    if (t2[d] < mi[d])
+      mi[d] = t2[d];
+    if (t2[d] > ma[d])
+      ma[d] = t2[d];
+  }
+  for (int d = 0; d != 3; ++d) {
+    if (p[d] - ma[d] > dist || mi[d] - p[d] > dist)
+      return false;
+  }
+  return true;
+}
+
+template <typename VecT>
+constexpr bool ee_cd_broadphase(VecT ea0, VecT ea1, VecT eb0, VecT eb1,
+                                const typename VecT::value_type dist) noexcept {
+  using T = typename VecT::value_type;
+  auto mi_a =
+      VecT::init([&ea0, &ea1](int d) { return zs::min(ea0[d], ea1[d]); });
+  auto ma_a =
+      VecT::init([&ea0, &ea1](int d) { return zs::max(ea0[d], ea1[d]); });
+
+  auto mi_b =
+      VecT::init([&eb0, &eb1](int d) { return zs::min(eb0[d], eb1[d]); });
+  auto ma_b =
+      VecT::init([&eb0, &eb1](int d) { return zs::max(eb0[d], eb1[d]); });
+
+  for (int d = 0; d != 3; ++d) {
+    if (mi_a[d] - ma_b[d] > dist || mi_b[d] - ma_a[d] > dist)
+      return false;
+  }
+  return true;
+}
+
 // for ccd
 template <typename VecT>
 constexpr bool pt_ccd(VecT p, VecT t0, VecT t1, VecT t2, VecT dp, VecT dt0,
@@ -313,8 +364,8 @@ void find_intersection_free_stepsize(
       // ccd
       auto alpha = stepSize;
       // surfAlphas[svi] = alpha;
-      if (pt_ccd(p, verts.pack<3>("xn", tri[0]), verts.pack<3>("xn", tri[1]),
-                 verts.pack<3>("xn", tri[2]), vtemp.pack<3>("dir", vi),
+      if (pt_ccd(p, vtemp.pack<3>("xn", tri[0]), vtemp.pack<3>("xn", tri[1]),
+                 vtemp.pack<3>("xn", tri[2]), vtemp.pack<3>("dir", vi),
                  vtemp.pack<3>("dir", tri[0]), vtemp.pack<3>("dir", tri[1]),
                  vtemp.pack<3>("dir", tri[2]), (T)0.1, thickness, alpha))
         if (alpha < stepSize)
@@ -360,8 +411,8 @@ void find_intersection_free_stepsize(
       // ccd
       auto alpha = stepSize;
       // surfEdgeAlphas[sei] = alpha;
-      if (ee_ccd(x0, x1, verts.pack<3>("xn", oEdgeInds[0]),
-                 verts.pack<3>("xn", oEdgeInds[1]),
+      if (ee_ccd(x0, x1, vtemp.pack<3>("xn", oEdgeInds[0]),
+                 vtemp.pack<3>("xn", oEdgeInds[1]),
                  vtemp.pack<3>("dir", edgeInds[0]),
                  vtemp.pack<3>("dir", edgeInds[1]),
                  vtemp.pack<3>("dir", oEdgeInds[0]),

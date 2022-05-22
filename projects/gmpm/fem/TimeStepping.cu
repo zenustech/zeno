@@ -124,8 +124,272 @@ struct ImplicitTimeStepping : INode {
   using tiles_t = typename ZenoParticles::particles_t;
   using vec3 = zs::vec<T, 3>;
   using mat3 = zs::vec<T, 3, 3>;
+  using pair_t = zs::vec<int, 2>;
+  using pair3_t = zs::vec<int, 3>;
+  using pair4_t = zs::vec<int, 4>;
 
   /// ref: codim-ipc
+  void precompute_constraints(
+      zs::CudaExecutionPolicy &pol, ZenoParticles &zstets,
+      const typename ZenoParticles::particles_t &vtemp, T dHat, T xi,
+      zs::Vector<pair_t> &PP, zs::Vector<T> &wPP, zs::Vector<int> &nPP,
+      zs::Vector<pair3_t> &PE, zs::Vector<T> &wPE, zs::Vector<int> &nPE,
+      zs::Vector<pair4_t> &PT, zs::Vector<T> &wPT, zs::Vector<int> &nPT,
+      zs::Vector<pair4_t> &EE, zs::Vector<T> &wEE, zs::Vector<int> &nEE) {
+    using namespace zs;
+    using bv_t = typename ZenoParticles::lbvh_t::Box;
+    T activeGap2 = dHat * dHat + (T)2.0 * xi * dHat;
+    T xi2 = xi * xi;
+    constexpr auto space = execspace_e::cuda;
+    const auto &verts = zstets.getParticles();
+    const auto &eles = zstets.getQuadraturePoints();
+
+    nPP.setVal(0);
+    nPE.setVal(0);
+    nPT.setVal(0);
+    nEE.setVal(0);
+
+    /// tri
+    const auto &surfaces = zstets[ZenoParticles::s_surfTriTag];
+    {
+      auto bvs = retrieve_bounding_volumes(pol, verts, surfaces, wrapv<3>{},
+                                           dHat + xi);
+      if (!zstets.hasBvh(ZenoParticles::s_surfTriTag)) // build if bvh not exist
+        zstets.bvh(ZenoParticles::s_surfTriTag).build(pol, bvs);
+      else
+        zstets.bvh(ZenoParticles::s_surfTriTag).refit(pol, bvs);
+    }
+    const auto &stBvh = zstets.bvh(ZenoParticles::s_surfTriTag);
+
+    /// edges
+    const auto &surfEdges = zstets[ZenoParticles::s_surfEdgeTag];
+    {
+      auto bvs = retrieve_bounding_volumes(pol, verts, surfEdges, wrapv<2>{},
+                                           dHat + xi);
+      if (!zstets.hasBvh(ZenoParticles::s_surfEdgeTag))
+        zstets.bvh(ZenoParticles::s_surfEdgeTag).build(pol, bvs);
+      else
+        zstets.bvh(ZenoParticles::s_surfEdgeTag).refit(pol, bvs);
+    }
+    const auto &seBvh = zstets.bvh(ZenoParticles::s_surfEdgeTag);
+
+    /// points
+    const auto &surfVerts = zstets[ZenoParticles::s_surfVertTag];
+
+    // query pt
+    pol(Collapse{surfVerts.size()},
+        [svs = proxy<space>({}, surfVerts), sts = proxy<space>({}, surfaces),
+         verts = proxy<space>({}, verts), vtemp = proxy<space>({}, vtemp),
+         bvh = proxy<space>(stBvh), PP = proxy<space>(PP),
+         wPP = proxy<space>(wPP), nPP = proxy<space>(nPP),
+         PE = proxy<space>(PE), wPE = proxy<space>(wPE),
+         nPE = proxy<space>(nPE), PT = proxy<space>(PT),
+         wPT = proxy<space>(wPT), nPT = proxy<space>(nPT),
+         thickness = dHat + xi, xi2, activeGap2] ZS_LAMBDA(int svi) mutable {
+          auto vi = reinterpret_bits<int>(svs("inds", svi));
+          auto p = vtemp.pack<3>("xn", vi);
+          // auto wp = verts("w", vi);
+          auto wp = (T)0.25;
+          auto [mi, ma] =
+              get_bounding_box(p - thickness / 2, p + thickness / 2);
+          auto bv = bv_t{mi, ma};
+          bvh.iter_neighbors(bv, [&](int stI) {
+            auto tri = sts.template pack<3>("inds", stI)
+                           .template reinterpret_bits<int>();
+            if (vi == tri[0] || vi == tri[1] || vi == tri[2])
+              return;
+            // all affected by sticky boundary conditions
+            if (reinterpret_bits<int>(verts("BCorder", vi)) == 3 &&
+                reinterpret_bits<int>(verts("BCorder", tri[0])) == 3 &&
+                reinterpret_bits<int>(verts("BCorder", tri[1])) == 3 &&
+                reinterpret_bits<int>(verts("BCorder", tri[2])) == 3)
+              return;
+            // ccd
+            auto t0 = vtemp.pack<3>("xn", tri[0]);
+            auto t1 = vtemp.pack<3>("xn", tri[1]);
+            auto t2 = vtemp.pack<3>("xn", tri[2]);
+            if (!pt_cd_broadphase(p, t0, t1, t2, thickness))
+              return;
+            switch (pt_distance_type(p, t0, t1, t2)) {
+            case 0: {
+              if (dist2_pp(p, t0) - xi2 < activeGap2) {
+                auto no = atomic_add(exec_cuda, &nPP[0], 1);
+                PP[no] = pair_t{vi, tri[0]};
+                wPP[no] = wp;
+              }
+              break;
+            }
+            case 1: {
+              if (dist2_pp(p, t1) - xi2 < activeGap2) {
+                auto no = atomic_add(exec_cuda, &nPP[0], 1);
+                PP[no] = pair_t{vi, tri[1]};
+                wPP[no] = wp;
+              }
+              break;
+            }
+            case 2: {
+              if (dist2_pp(p, t2) - xi2 < activeGap2) {
+                auto no = atomic_add(exec_cuda, &nPP[0], 1);
+                PP[no] = pair_t{vi, tri[2]};
+                wPP[no] = wp;
+              }
+              break;
+            }
+            case 3: {
+              if (dist2_pe(p, t0, t1) - xi2 < activeGap2) {
+                auto no = atomic_add(exec_cuda, &nPE[0], 1);
+                PE[no] = pair3_t{vi, tri[0], tri[1]};
+                wPE[no] = wp;
+              }
+              break;
+            }
+            case 4: {
+              if (dist2_pe(p, t1, t2) - xi2 < activeGap2) {
+                auto no = atomic_add(exec_cuda, &nPE[0], 1);
+                PE[no] = pair3_t{vi, tri[1], tri[2]};
+                wPE[no] = wp;
+              }
+              break;
+            }
+            case 5: {
+              if (dist2_pe(p, t2, t0) - xi2 < activeGap2) {
+                auto no = atomic_add(exec_cuda, &nPE[0], 1);
+                PE[no] = pair3_t{vi, tri[2], tri[0]};
+                wPE[no] = wp;
+              }
+              break;
+            }
+            case 6: {
+              if (dist2_pt(p, t0, t1, t2) - xi2 < activeGap2) {
+                auto no = atomic_add(exec_cuda, &nPT[0], 1);
+                PT[no] = pair4_t{vi, tri[0], tri[1], tri[2]};
+                wPT[no] = wp;
+              }
+              break;
+            }
+            default:
+              break;
+            }
+          });
+        });
+
+    // query ee
+    zs::Vector<T> surfEdgeAlphas{surfEdges.get_allocator(), surfEdges.size()};
+    pol(Collapse{surfEdges.size()},
+        [ses = proxy<space>({}, surfEdges), verts = proxy<space>({}, verts),
+         vtemp = proxy<space>({}, vtemp), bvh = proxy<space>(seBvh),
+         PP = proxy<space>(PP), wPP = proxy<space>(wPP),
+         nPP = proxy<space>(nPP), PE = proxy<space>(PE),
+         wPE = proxy<space>(wPE), nPE = proxy<space>(nPE),
+         EE = proxy<space>(EE), wEE = proxy<space>(wEE),
+         nEE = proxy<space>(nEE), thickness = dHat + xi, xi2,
+         activeGap2] ZS_LAMBDA(int sei) mutable {
+          auto edgeInds = ses.template pack<2>("inds", sei)
+                              .template reinterpret_bits<int>();
+          auto x0 = vtemp.pack<3>("xn", edgeInds[0]);
+          auto x1 = vtemp.pack<3>("xn", edgeInds[1]);
+          auto [mi, ma] = get_bounding_box(x0, x1);
+          auto bv = bv_t{mi - thickness / 2, ma + thickness / 2};
+          bvh.iter_neighbors(bv, [&](int seI) {
+            if (sei > seI)
+              return;
+            auto oEdgeInds = ses.template pack<2>("inds", seI)
+                                 .template reinterpret_bits<int>();
+            if (edgeInds[0] == oEdgeInds[0] || edgeInds[0] == oEdgeInds[1] ||
+                edgeInds[1] == oEdgeInds[0] || edgeInds[1] == oEdgeInds[1])
+              return;
+            // all affected by sticky boundary conditions
+            if (reinterpret_bits<int>(verts("BCorder", edgeInds[0])) == 3 &&
+                reinterpret_bits<int>(verts("BCorder", edgeInds[1])) == 3 &&
+                reinterpret_bits<int>(verts("BCorder", oEdgeInds[0])) == 3 &&
+                reinterpret_bits<int>(verts("BCorder", oEdgeInds[1])) == 3)
+              return;
+            // ccd
+            auto eb0 = vtemp.pack<3>("xn", oEdgeInds[0]);
+            auto eb1 = vtemp.pack<3>("xn", oEdgeInds[1]);
+            if (!ee_cd_broadphase(x0, x1, eb0, eb1, thickness))
+              return;
+            auto we = (verts("w", sei) + verts("w", seI)) / 4;
+            switch (ee_distance_type(x0, x1, eb0, eb1)) {
+            case 0: {
+              if (dist2_pp(x0, eb0) - xi2 < activeGap2) {
+                auto no = atomic_add(exec_cuda, &nPP[0], 1);
+                PP[no] = pair_t{edgeInds[0], oEdgeInds[0]};
+                wPP[no] = we;
+              }
+              break;
+            }
+            case 1: {
+              if (dist2_pp(x0, eb1) - xi2 < activeGap2) {
+                auto no = atomic_add(exec_cuda, &nPP[0], 1);
+                PP[no] = pair_t{edgeInds[0], oEdgeInds[1]};
+                wPP[no] = we;
+              }
+              break;
+            }
+            case 2: {
+              if (dist2_pe(x0, eb0, eb1) - xi2 < activeGap2) {
+                auto no = atomic_add(exec_cuda, &nPE[0], 1);
+                PE[no] = pair3_t{edgeInds[0], oEdgeInds[0], oEdgeInds[1]};
+                wPE[no] = we;
+              }
+              break;
+            }
+            case 3: {
+              if (dist2_pp(x1, eb0) - xi2 < activeGap2) {
+                auto no = atomic_add(exec_cuda, &nPP[0], 1);
+                PP[no] = pair_t{edgeInds[1], oEdgeInds[0]};
+                wPP[no] = we;
+              }
+              break;
+            }
+            case 4: {
+              if (dist2_pp(x1, eb1) - xi2 < activeGap2) {
+                auto no = atomic_add(exec_cuda, &nPP[0], 1);
+                PP[no] = pair_t{edgeInds[1], oEdgeInds[1]};
+                wPP[no] = we;
+              }
+              break;
+            }
+            case 5: {
+              if (dist2_pe(x1, eb0, eb1) - xi2 < activeGap2) {
+                auto no = atomic_add(exec_cuda, &nPE[0], 1);
+                PE[no] = pair3_t{edgeInds[1], oEdgeInds[0], oEdgeInds[1]};
+                wPE[no] = we;
+              }
+              break;
+            }
+            case 6: {
+              if (dist2_pe(eb0, x0, x1) - xi2 < activeGap2) {
+                auto no = atomic_add(exec_cuda, &nPE[0], 1);
+                PE[no] = pair3_t{oEdgeInds[0], edgeInds[0], edgeInds[1]};
+                wPE[no] = we;
+              }
+              break;
+            }
+            case 7: {
+              if (dist2_pe(eb1, x0, x1) - xi2 < activeGap2) {
+                auto no = atomic_add(exec_cuda, &nPE[0], 1);
+                PE[no] = pair3_t{oEdgeInds[1], edgeInds[0], edgeInds[1]};
+                wPE[no] = we;
+              }
+              break;
+            }
+            case 8: {
+              if (dist2_ee(x0, x1, eb0, eb1) - xi2 < activeGap2) {
+                auto no = atomic_add(exec_cuda, &nEE[0], 1);
+                EE[no] = pair4_t{edgeInds[0], edgeInds[1], oEdgeInds[0],
+                                 oEdgeInds[1]};
+                wEE[no] = we;
+              }
+              break;
+            }
+            default:
+              break;
+            }
+          });
+        });
+  }
   void computeInversionFreeStepSize(zs::CudaExecutionPolicy &pol,
                                     const tiles_t &verts, const tiles_t &eles,
                                     const dtiles_t &searchDir, T &stepSize) {
@@ -514,6 +778,19 @@ struct ImplicitTimeStepping : INode {
                            {"q", 3}},
                           verts.size()};
     static dtiles_t etemp{eles.get_allocator(), {{"He", 12 * 12}}, eles.size()};
+    static Vector<pair_t> PP{verts.get_allocator(), 100000};
+    static Vector<T> wPP{verts.get_allocator(), 100000};
+    static Vector<int> nPP{verts.get_allocator(), 1};
+    static Vector<pair3_t> PE{verts.get_allocator(), 100000};
+    static Vector<T> wPE{verts.get_allocator(), 100000};
+    static Vector<int> nPE{verts.get_allocator(), 1};
+    static Vector<pair4_t> PT{verts.get_allocator(), 100000};
+    static Vector<T> wPT{verts.get_allocator(), 100000};
+    static Vector<int> nPT{verts.get_allocator(), 1};
+    static Vector<pair4_t> EE{verts.get_allocator(), 100000};
+    static Vector<T> wEE{verts.get_allocator(), 100000};
+    static Vector<int> nEE{verts.get_allocator(), 1};
+
     vtemp.resize(verts.size());
     etemp.resize(eles.size());
 
@@ -689,11 +966,11 @@ struct ImplicitTimeStepping : INode {
       // line search
       T alpha = 1.;
       computeInversionFreeStepSize(cudaPol, verts, eles, vtemp, alpha);
-      find_intersection_free_stepsize(cudaPol, *zstets, vtemp, alpha, 2e-3f);
+      find_intersection_free_stepsize(cudaPol, *zstets, vtemp, alpha, (T)2e-3f);
       //
       if (zsboundary)
-        find_boundary_intersection_free_stepsize(cudaPol, *zstets, vtemp,
-                                                 *zsboundary, dt, alpha, 2e-3f);
+        find_boundary_intersection_free_stepsize(
+            cudaPol, *zstets, vtemp, *zsboundary, dt, alpha, (T)2e-3f);
 #if 0
       if (alpha < 0.9) {
         fmt::print("initial stepsize [{}]\n", alpha);
