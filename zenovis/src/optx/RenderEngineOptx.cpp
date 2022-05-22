@@ -1,5 +1,6 @@
 #ifdef ZENO_ENABLE_OPTIX
 #include "../../xinxinoptix/xinxinoptixapi.h"
+#include "../../xinxinoptix/SDK/sutil/sutil.h"
 #include <zeno/types/PrimitiveObject.h>
 #include <zenovis/DrawOptions.h>
 #include <zeno/types/MaterialObject.h>
@@ -123,7 +124,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
     void ensure_shadtmpl() {
         if (ensuredshadtmpl) return;
         ensuredshadtmpl = true;
-        shadtmpl = zeno::file_get_content("/home/bate/zeno/zenovis/xinxinoptix/DeflMatShader.cu");
+        shadtmpl = sutil::lookupIncFile("DeflMatShader.cu");
         std::string tplsv = shadtmpl;
         std::string_view tmplstub = R"("GENERATED_CODE_HERE";)";
         if (auto p = tplsv.find(tmplstub); p != std::string::npos) {
