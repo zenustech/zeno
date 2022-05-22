@@ -17,18 +17,24 @@ namespace zenovis::optx {
 
 struct GraphicsManager {
     Scene *scene;
-    bool hasMeshObject = false;
-    bool hasMatObject = false;
+
+    enum GraphicType {
+        kUnknown,
+        kPrimitive,
+        kMaterial,
+    };
 
     struct ZxxGraphic : zeno::disable_copy {
         std::string key;
         std::optional<std::string> mtlshader;
+        GraphicType gratype{kUnknown};
 
-        explicit ZxxGraphic(GraphicsManager *man, std::string key_, zeno::IObject *obj)
+        explicit ZxxGraphic(std::string key_, zeno::IObject *obj)
         : key(std::move(key_))
         {
             if (auto prim = dynamic_cast<zeno::PrimitiveObject *>(obj))
             {
+                gratype = kPrimitive;
                 auto vs = (float const *)prim->verts.data();
                 std::map<std::string, std::pair<float const *, size_t>> vtab;
                 prim->verts.foreach_attr([&] (auto const &key, auto const &arr) {
@@ -39,11 +45,10 @@ struct GraphicsManager {
                 auto nts = prim->tris.size();
                 auto mtlid = prim->userData().getLiterial<std::string>("mtlid", "Default");
                 xinxinoptix::load_object(key, mtlid, vs, nvs, ts, nts, vtab);
-                man->hasMeshObject = true;
             }
             else if (auto mtl = dynamic_cast<zeno::MaterialObject *>(obj))
             {
-                man->hasMatObject = true;
+                gratype = kMaterial;
                 this->mtlshader = mtl->frag;
             }
         }
@@ -63,7 +68,7 @@ struct GraphicsManager {
         for (auto const &[key, obj] : objs) {
             if (ins.may_emplace(key)) {
                 zeno::log_debug("zxx_load_object: loading graphics [{}]", key);
-                auto ig = std::make_unique<ZxxGraphic>(this, key, obj);
+                auto ig = std::make_unique<ZxxGraphic>(key, obj);
                 zeno::log_debug("zxx_load_object: loaded graphics to {}", ig.get());
                 ins.try_emplace(key, std::move(ig));
             }
@@ -102,13 +107,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
 
     void update() override {
         if (graphicsMan->load_objects(scene->objectsMan->pairs())) {
-            if (std::exchange(graphicsMan->hasMatObject, false)) {
-                matNeedUpdate = true;
-            }
-            if (std::exchange(graphicsMan->hasMeshObject, false)) {
-                meshNeedUpdate = true;
-            }
-            meshNeedUpdate = true;
+            meshNeedUpdate = matNeedUpdate = true;
         }
     }
 
