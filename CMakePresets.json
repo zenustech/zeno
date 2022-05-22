@@ -47,6 +47,7 @@
         "ZENO_WITH_LSystem": "ON",
         "ZENO_WITH_mesher": "ON",
         "ZENO_WITH_Alembic": "ON",
+        "ZENO_WITH_FBX": "ON",
         "ZENO_WITH_TOOL_cgmeshTools": "ON",
         "ZENO_WITH_TOOL_HerculesTools": "ON"
       }
