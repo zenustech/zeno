@@ -47,14 +47,8 @@ struct GraphicsManager {
                 auto ts = (int const *)prim->tris.data();
                 auto nvs = prim->verts.size();
                 auto nts = prim->tris.size();
-                auto mtlids = prim->userData().has("mtlids")
-                    ? prim->userData().get<zeno::ListObject>("mtlids")
-                    : std::make_shared<zeno::ListObject>(std::vector
-                             <std::shared_ptr<zeno::IObject>>{
-                        std::make_shared<zeno::StringObject>("Default")})
-                    ;
-                auto mtlidsl = mtlids->getLiterial<std::string>();
-                xinxinoptix::load_object(key, mtlidsl, vs, nvs, ts, nts, vtab);
+                auto mtlids = prim->userData().getLiterial<std::string>("mtlid", "Default");
+                xinxinoptix::load_object(key, mtlids, vs, nvs, ts, nts, vtab);
             }
             else if (auto mtl = dynamic_cast<zeno::MaterialObject *>(obj))
             {
