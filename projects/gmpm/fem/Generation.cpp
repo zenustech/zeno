@@ -184,6 +184,138 @@ ZENDEFNODE(ExtractMeshSurface, {{{"quad (tet) mesh", "prim"}},
                                 {{"enum all point edge surface", "op", "all"}},
                                 {"primitive"}});
 
+struct ToBoundaryPrimitive : INode {
+  void apply() override {
+    using namespace zs;
+
+    // base primitive
+    auto inParticles = get_input<PrimitiveObject>("prim");
+    auto &pos = inParticles->attr<vec3f>("pos");
+    vec3f *velsPtr{nullptr};
+    if (inParticles->has_attr("vel"))
+      velsPtr = inParticles->attr<vec3f>("vel").data();
+    auto &tris = inParticles->tris;
+    std::size_t sprayedOffset = pos.size();
+
+    //
+    auto zsbou = std::make_shared<ZenoParticles>();
+
+    // primitive binding
+    zsbou->prim = inParticles;
+    // set boundary flag
+    zsbou->asBoundary = true;
+    // sprayed offset
+    zsbou->sprayedOffset = sprayedOffset;
+
+    /// category, size
+    std::size_t numVerts{pos.size()};
+    std::size_t numEles{tris.size()};
+    if (numEles == 0)
+      throw std::runtime_error("boundary primitive is not a surface mesh!");
+
+    ZenoParticles::category_e category{ZenoParticles::surface};
+
+    // category
+    zsbou->category = category;
+
+    auto ompExec = zs::omp_exec();
+
+    // attributes
+    std::vector<zs::PropertyTag> tags{{"x", 3}, {"v", 3}};
+    std::vector<zs::PropertyTag> eleTags{{"inds", (int)3}};
+
+    // verts
+    zsbou->particles = std::make_shared<typename ZenoParticles::particles_t>(
+        tags, numVerts, memsrc_e::host);
+    auto &pars = zsbou->getParticles(); // tilevector
+    ompExec(zs::range(numVerts), [pars = proxy<execspace_e::openmp>({}, pars),
+                                  &pos, velsPtr](int pi) mutable {
+      using vec3 = zs::vec<float, 3>;
+      // pos
+      pars.tuple<3>("x", pi) = pos[pi];
+      // vel
+      if (velsPtr != nullptr)
+        pars.tuple<3>("v", pi) = velsPtr[pi];
+      else
+        pars.tuple<3>("v", pi) = vec3::zeros();
+    });
+
+    // elements
+    zsbou->elements =
+        typename ZenoParticles::particles_t{eleTags, numEles, memsrc_e::host};
+    auto &eles = zsbou->getQuadraturePoints(); // tilevector
+    ompExec(zs::range(numEles), [pars = proxy<execspace_e::openmp>({}, pars),
+                                 eles = proxy<execspace_e::openmp>({}, eles),
+                                 &tris](size_t ei) mutable {
+      // element-vertex indices
+      // inds
+      const auto &tri = tris[ei];
+      for (int i = 0; i != 3; ++i)
+        eles("inds", i, ei) = reinterpret_bits<float>(tri[i]);
+    });
+
+    /// surface edges
+    zs::HashTable<int, 2, int> edgeTable{0};
+    constexpr auto space = zs::execspace_e::openmp;
+
+    edgeTable.resize(ompExec, numEles);
+    edgeTable.reset(ompExec, true);
+    ompExec(range(numEles), [table = proxy<space>(edgeTable),
+                             &tris](int ei) mutable {
+      using table_t = RM_CVREF_T(table);
+      using vec2i = zs::vec<int, 2>;
+      auto record = [&table, ei](const vec2i &edgeInds) mutable {
+        if (auto sno = table.insert(edgeInds); sno != table_t::sentinel_v)
+          ;
+        else
+          printf("ridiculous, more than one surf tri share the same edge!");
+      };
+      auto inds = tris[ei];
+      record(vec2i{inds[0], inds[1]});
+      record(vec2i{inds[1], inds[2]});
+      record(vec2i{inds[2], inds[0]});
+    });
+    //
+    Vector<int> edgeCnt{1, memsrc_e::host};
+    edgeCnt.setVal(0);
+
+    // Vector<zs::vec<int, 2>> surfEdges{(std::size_t)edgeTable.size()};
+    auto &surfEdges = (*zsbou)[ZenoParticles::s_surfEdgeTag];
+    surfEdges = typename ZenoParticles::particles_t(
+        {{"inds", 2}}, edgeTable.size(), zs::memsrc_e::host);
+
+    ompExec(range(edgeTable.size()), [table = proxy<space>(edgeTable),
+                                      edgeCnt = edgeCnt.data(),
+                                      surfEdges = proxy<space>({}, surfEdges)](
+                                         int ei) mutable {
+      using vec2i = zs::vec<int, 2>;
+      auto edgeInds = table._activeKeys[ei];
+      using table_t = RM_CVREF_T(table);
+      if (table.query(vec2i{edgeInds[1], edgeInds[0]}) == table_t::sentinel_v) {
+        auto no = atomic_add(exec_omp, edgeCnt, 1);
+        surfEdges.tuple<2>("inds", no) =
+            edgeInds.template reinterpret_bits<float>();
+      }
+    });
+    auto secnt = edgeCnt.getVal();
+    surfEdges.resize(secnt);
+    fmt::print("{} surface edges\n", secnt);
+
+    eles = eles.clone({memsrc_e::device, 0});
+    pars = pars.clone({memsrc_e::device, 0});
+    surfEdges = surfEdges.clone({memsrc_e::device, 0});
+
+    set_output("ZSParticles", zsbou);
+  }
+};
+
+ZENDEFNODE(ToBoundaryPrimitive, {
+                                    {"prim"},
+                                    {"ZSParticles"},
+                                    {},
+                                    {"FEM"},
+                                });
+
 struct ToZSTetrahedra : INode {
   void apply() override {
     using namespace zs;
