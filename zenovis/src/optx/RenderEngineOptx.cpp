@@ -200,6 +200,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
 
                 for (auto const &[key, obj]: graphicsMan->graphics) {
                     if (obj->mtlshader) {
+                        zeno::log_debug("got material shader:\n{}", *obj->mtlshader);
                         std::string shader;
                         shader.reserve(shadtpl2.first.size()
                                        + obj->mtlshader->size()

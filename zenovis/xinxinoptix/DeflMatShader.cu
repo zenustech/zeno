@@ -146,16 +146,16 @@ static __inline__ __device__ MatOutput evalMaterial(MatInput const &attrs) {
     //GENERATED_BEGIN_MARK
     /* MODME */
     vec3 mat_basecolor = vec3(0.8);
-    float mat_metallic = 0.5;
-    float mat_roughness = 0.6;
+    float mat_metallic = 0.0;
+    float mat_roughness = 0.5;
     float mat_subsurface = 0.0;
     float mat_specular = 0;
     float mat_specularTint = 0.0;
     float mat_anisotropic = 0.0;
     float mat_sheen = 0.0;
     float mat_sheenTint = 0.0;
-    float mat_clearCoat = 0.0;
-    float mat_clearCoatGloss = 0.0;
+    float mat_clearcoat = 0.0;
+    float mat_clearcoatGloss = 0.0;
     float mat_opacity = 0.0;
     //GENERATED_END_MARK
     /** generated code here end **/
@@ -170,8 +170,8 @@ static __inline__ __device__ MatOutput evalMaterial(MatInput const &attrs) {
     mats.anisotropic = mat_anisotropic;
     mats.sheen = mat_sheen;
     mats.sheenTint = mat_sheenTint;
-    mats.clearCoat = mat_clearCoat;
-    mats.clearCoatGloss = mat_clearCoatGloss;
+    mats.clearcoat = mat_clearcoat;
+    mats.clearcoatGloss = mat_clearcoatGloss;
     mats.opacity = mat_opacity;
     return mats;
 }
@@ -213,8 +213,8 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     auto anisotropic = mats.anisotropic;
     auto sheen = mats.sheen;
     auto sheenTint = mats.sheenTint;
-    auto clearCoat = mats.clearCoat;
-    auto clearCoatGloss = mats.clearCoatGloss;
+    auto clearcoat = mats.clearcoat;
+    auto clearcoatGloss = mats.clearcoatGloss;
     auto opacity = mats.opacity;
 
     // Stochastic alpha test to get an alpha blend effect.
@@ -266,8 +266,8 @@ extern "C" __global__ void __closesthit__radiance()
     auto anisotropic = mats.anisotropic;
     auto sheen = mats.sheen;
     auto sheenTint = mats.sheenTint;
-    auto clearCoat = mats.clearCoat;
-    auto clearCoatGloss = mats.clearCoatGloss;
+    auto clearcoat = mats.clearcoat;
+    auto clearcoatGloss = mats.clearcoatGloss;
     auto opacity = mats.opacity;
 
     //discard fully opacity pixels
@@ -294,8 +294,8 @@ extern "C" __global__ void __closesthit__radiance()
                                 anisotropic,
                                 sheen,
                                 sheenTint,
-                                clearCoat,
-                                clearCoatGloss,
+                                clearcoat,
+                                clearcoatGloss,
                                 N,
                                 make_float3(0,0,0),
                                 make_float3(0,0,0),
@@ -311,8 +311,8 @@ extern "C" __global__ void __closesthit__radiance()
                                 anisotropic,
                                 sheen,
                                 sheenTint,
-                                clearCoat,
-                                clearCoatGloss,
+                                clearcoat,
+                                clearcoatGloss,
                                 N,
                                 make_float3(0,0,0),
                                 make_float3(0,0,0),
@@ -328,8 +328,8 @@ extern "C" __global__ void __closesthit__radiance()
                                 anisotropic,
                                 sheen,
                                 sheenTint,
-                                clearCoat,
-                                clearCoatGloss,
+                                clearcoat,
+                                clearcoatGloss,
                                 N,
                                 make_float3(0,0,0),
                                 make_float3(0,0,0),
