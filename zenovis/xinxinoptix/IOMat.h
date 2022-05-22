@@ -3,7 +3,7 @@
 #include "zxxglslvec.h"
 
 struct MatOutput {
-    vec3  baseColor;
+    vec3  basecolor;
     float metallic;
     float roughness;
     float subsurface;

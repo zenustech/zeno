@@ -67,9 +67,9 @@ inline void createContext()
     pipeline_compile_options.pipelineLaunchParamsVariableName = "params";
 
 }
-inline raii<OptixModule> createModule(OptixDeviceContext &context, const char *source, const char *location)
+inline void createModule(OptixModule &m, OptixDeviceContext &context, const char *source, const char *location)
 {
-    raii<OptixModule> m;
+    //OptixModule m;
     OptixModuleCompileOptions module_compile_options = {};
     module_compile_options.maxRegisterCount  = OPTIX_COMPILE_DEFAULT_MAX_REGISTER_COUNT;
     module_compile_options.optLevel          = OPTIX_COMPILE_OPTIMIZATION_DEFAULT;
@@ -95,7 +95,7 @@ inline raii<OptixModule> createModule(OptixDeviceContext &context, const char *s
         &sizeof_log,
         &m
     ) );
-    return m;
+    //return m;
 }
 inline void createRenderGroups(OptixDeviceContext &context, OptixModule &_module)
 {
@@ -211,7 +211,7 @@ struct rtMatShader
     void loadProgram()
     {
         try {
-            m_ptx_module = createModule(context, m_shaderFile.c_str(), "tmpshader.cu");
+            createModule(m_ptx_module.reset(), context, m_shaderFile.c_str(), "MatShader.cu");
             createRTProgramGroups(context, m_ptx_module, 
             "OPTIX_PROGRAM_GROUP_KIND_CLOSEHITGROUP", 
             m_shadingEntry, m_radiance_hit_group);

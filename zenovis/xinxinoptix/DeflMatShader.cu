@@ -142,8 +142,10 @@ static __inline__ __device__ MatOutput evalMaterial(MatInput const &attrs) {
     auto attr_uv = attrs.uv;
     auto attr_nrm = attrs.nrm;
     auto attr_tang = attrs.tang;
+    /** generated code here beg **/
+    //GENERATED_BEGIN_MARK
     /* MODME */
-    vec3 mat_baseColor = vec3(0.8);
+    vec3 mat_basecolor = vec3(0.8);
     float mat_metallic = 0.5;
     float mat_roughness = 0.6;
     float mat_subsurface = 0.0;
@@ -155,12 +157,11 @@ static __inline__ __device__ MatOutput evalMaterial(MatInput const &attrs) {
     float mat_clearCoat = 0.0;
     float mat_clearCoatGloss = 0.0;
     float mat_opacity = 0.0;
-    /** generated code here beg **/
-    "GENERATED_CODE_HERE";
+    //GENERATED_END_MARK
     /** generated code here end **/
     MatOutput mats;
     /* MODME */
-    mats.baseColor = mat_baseColor;
+    mats.basecolor = mat_basecolor;
     mats.metallic = mat_metallic;
     mats.roughness = mat_roughness;
     mats.subsurface = mat_subsurface;
@@ -203,7 +204,7 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     mats.roughness = clamp(mats.roughness, 0.01,0.99);
 
     /* MODME */
-    auto baseColor = mats.baseColor;
+    auto basecolor = mats.basecolor;
     auto metallic = mats.metallic;
     auto roughness = mats.roughness;
     auto subsurface = mats.subsurface;
@@ -256,7 +257,7 @@ extern "C" __global__ void __closesthit__radiance()
     mats.roughness = clamp(mats.roughness, 0.01,0.99);
 
     /* MODME */
-    auto baseColor = mats.baseColor;
+    auto basecolor = mats.basecolor;
     auto metallic = mats.metallic;
     auto roughness = mats.roughness;
     auto subsurface = mats.subsurface;
@@ -284,7 +285,7 @@ extern "C" __global__ void __closesthit__radiance()
     float is_refl;
     float3 wi = DisneyBRDF::sample_f(
                                 seed,
-                                baseColor,
+                                basecolor,
                                 metallic,
                                 subsurface,
                                 specular,
@@ -301,7 +302,7 @@ extern "C" __global__ void __closesthit__radiance()
                                 -normalize(ray_dir),
                                 is_refl);
 
-    float pdf = DisneyBRDF::pdf(baseColor,
+    float pdf = DisneyBRDF::pdf(basecolor,
                                 metallic,
                                 subsurface,
                                 specular,
@@ -318,7 +319,7 @@ extern "C" __global__ void __closesthit__radiance()
                                 wi,
                                 -normalize(ray_dir)
                                 );
-    float3 f = DisneyBRDF::eval(baseColor,
+    float3 f = DisneyBRDF::eval(basecolor,
                                 metallic,
                                 subsurface,
                                 specular,

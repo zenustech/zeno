@@ -125,13 +125,19 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         if (ensuredshadtmpl) return;
         ensuredshadtmpl = true;
         shadtmpl = sutil::lookupIncFile("DeflMatShader.cu");
-        std::string tplsv = shadtmpl;
-        std::string_view tmplstub = R"("GENERATED_CODE_HERE";)";
-        if (auto p = tplsv.find(tmplstub); p != std::string::npos) {
-            auto q = p + tmplstub.size();
-            shadtpl2 = {tplsv.substr(0, p), tplsv.substr(q)};
+        std::string_view tplsv = shadtmpl;
+        std::string_view tmplstub0 = "//GENERATED_BEGIN_MARK";
+        std::string_view tmplstub1 = "//GENERATED_END_MARK";
+        if (auto p0 = tplsv.find(tmplstub0); p0 != std::string::npos) {
+            auto q0 = p0 + tmplstub0.size();
+            if (auto p1 = tplsv.find(tmplstub1, q0); p1 != std::string::npos) {
+                auto q1 = p1 + tmplstub1.size();
+                shadtpl2 = {tplsv.substr(0, p0), tplsv.substr(q1)};
+            } else {
+                throw std::runtime_error("cannot find stub GENERATED_END_MARK in shader template");
+            }
         } else {
-            throw std::runtime_error("cannot find stub GENERATED_CODE_HERE in shader template");
+            throw std::runtime_error("cannot find stub GENERATED_BEGIN_MARK in shader template");
         }
     }
 

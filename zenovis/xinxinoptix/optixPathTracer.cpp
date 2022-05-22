@@ -771,14 +771,15 @@ void optixupdatematerial(std::vector<std::string> const &shaders) {
         static bool hadOnce = false;
         if (!hadOnce) {
             //OPTIX_CHECK( optixModuleDestroy( OptixUtil::ray_module ) );
-    OptixUtil::ray_module = OptixUtil::createModule(
+    OptixUtil::createModule(
+        OptixUtil::ray_module,
         state.context,
         sutil::lookupIncFile("PTKernel.cu"),
         "PTKernel.cu");
         } hadOnce = true;
     OptixUtil::rtMaterialShaders.resize(0);
     for (int i = 0; i < shaders.size(); i++) {
-        if (shaders[i].empty()) zeno::log_warn("shader {} is empty", i);
+        if (shaders[i].empty()) zeno::log_error("shader {} is empty", i);
         OptixUtil::rtMaterialShaders.push_back(OptixUtil::rtMatShader(shaders[i].c_str(),"__closesthit__radiance", "__anyhit__shadow_cutout"));
     }
     for(int i=0;i<OptixUtil::rtMaterialShaders.size();i++)
