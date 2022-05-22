@@ -145,7 +145,7 @@ static __inline__ __device__ MatOutput evalMaterial(MatInput const &attrs) {
     /** generated code here beg **/
     //GENERATED_BEGIN_MARK
     /* MODME */
-    vec3 mat_basecolor = vec3(0.8);
+    vec3 mat_basecolor = vec3(1.0, 0.0, 1.0);
     float mat_metallic = 0.0;
     float mat_roughness = 0.5;
     float mat_subsurface = 0.0;
@@ -196,7 +196,8 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     attrs.pos = vec3(P.x, P.y, P.z);
     attrs.nrm = vec3(0,0,1);
     attrs.uv = vec3(0,0,0);//todo later
-    attrs.clr = vec3(rt_data->diffuse_color.x, rt_data->diffuse_color.y, rt_data->diffuse_color.z);
+    //attrs.clr = rt_data->face_attrib_clr[vert_idx_offset];
+    attrs.clr = vec3(1,1,1);
     attrs.tang = vec3(0,0,0);
     MatOutput mats = evalMaterial(attrs);
     //end of material computation
@@ -249,8 +250,8 @@ extern "C" __global__ void __closesthit__radiance()
     attrs.pos = vec3(P.x, P.y, P.z);
     attrs.nrm = vec3(0,0,1);
     attrs.uv = vec3(0,0,0);//todo later
-    attrs.clr = vec3(rt_data->diffuse_color.x, rt_data->diffuse_color.y, rt_data->diffuse_color.z);
-    attrs.tang = vec3(0,0,0);
+    //attrs.clr = rt_data->face_attrib_clr[vert_idx_offset];
+    attrs.clr = vec3(1,1,1);
     MatOutput mats = evalMaterial(attrs);
     //end of material computation
     mats.metallic = clamp(mats.metallic,0.01, 0.99);
