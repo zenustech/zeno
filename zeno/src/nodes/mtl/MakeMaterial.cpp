@@ -2,6 +2,7 @@
 #include "zeno/types/MaterialObject.h"
 #include "zeno/types/PrimitiveObject.h"
 #include "zeno/types/StringObject.h"
+#include <zeno/types/UserData.h>
 
 namespace zeno
 {
@@ -125,6 +126,34 @@ struct ExtractMaterialShader : zeno::INode
           },
           {
               {"primitive", "prim"},
+          },
+          {},
+          {
+              "shader",
+          },
+      });
+
+  struct BindMaterial
+      : zeno::INode
+  {
+    virtual void apply() override
+    {
+      auto obj = get_input<zeno::IObject>("object");
+      auto mtlid = get_input2<std::string>("mtlid");
+      obj->userData().setLiterial("mtlid", mtlid);
+      set_output("object", std::move(obj));
+    }
+  };
+
+  ZENDEFNODE(
+      BindMaterial,
+      {
+          {
+              {"object"},
+              {"string", "mtlid"},
+          },
+          {
+              {"object"},
           },
           {},
           {

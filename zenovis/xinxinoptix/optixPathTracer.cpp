@@ -846,7 +846,8 @@ static void updatedrawobjects() {
     g_mat_indices.resize(n);
     n = 0;
     for (auto const &[key, dat]: drawdats) {
-        int mtlidx = g_mtlidlut.at(dat.mtlid);
+        auto it = g_mtlidlut.find(dat.mtlid);
+        int mtlidx = it != g_mtlidlut.end() ? it->second : 0;
 //#pragma omp parallel for
         for (size_t i = 0; i < dat.tris.size() / 3; i++) {
             g_mat_indices[n + i] = mtlidx;
