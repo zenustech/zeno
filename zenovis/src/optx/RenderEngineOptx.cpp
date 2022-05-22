@@ -12,30 +12,31 @@
 #include <zenovis/bate/IGraphic.h>
 #include <zenovis/opengl/scope.h>
 #include <zenovis/opengl/vao.h>
-#include <optional>
+#include <variant>
 
 namespace zenovis::optx {
 
 struct GraphicsManager {
     Scene *scene;
 
-    enum GraphicType {
-        kUnknown,
-        kPrimitive,
-        kMaterial,
-    };
+        struct DetMaterial {
+            std::string shader;
+            std::string mtlidkey;
+        };
+        struct DetPrimitive {
+        };
 
     struct ZxxGraphic : zeno::disable_copy {
         std::string key;
-        std::optional<std::string> mtlshader;
-        GraphicType gratype{kUnknown};
+
+        std::variant<DetPrimitive, DetMaterial> det;
 
         explicit ZxxGraphic(std::string key_, zeno::IObject *obj)
         : key(std::move(key_))
         {
             if (auto prim = dynamic_cast<zeno::PrimitiveObject *>(obj))
             {
-                gratype = kPrimitive;
+                det = DetPrimitive{};
                 auto vs = (float const *)prim->verts.data();
                 std::map<std::string, std::pair<float const *, size_t>> vtab;
                 prim->verts.foreach_attr([&] (auto const &key, auto const &arr) {
@@ -49,8 +50,7 @@ struct GraphicsManager {
             }
             else if (auto mtl = dynamic_cast<zeno::MaterialObject *>(obj))
             {
-                gratype = kMaterial;
-                this->mtlshader = mtl->frag;
+                det = DetMaterial{mtl->frag, mtl->mtlidkey};
             }
         }
 
@@ -199,16 +199,16 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                 mtlidlut.insert({"Default", 0});
 
                 for (auto const &[key, obj]: graphicsMan->graphics) {
-                    if (obj->mtlshader) {
-                        //zeno::log_debug("got material shader:\n{}", *obj->mtlshader);
+                    if (auto mtldet = std::get_if<GraphicsManager::DetMaterial>(&obj->det)) {
+                        //zeno::log_debug("got material shader:\n{}", mtldet->shader);
                         std::string shader;
                         shader.reserve(shadtpl2.first.size()
-                                       + obj->mtlshader->size()
+                                       + mtldet->shader.size()
                                        + shadtpl2.second.size());
                         shader.append(shadtpl2.first);
-                        shader.append(*obj->mtlshader);
+                        shader.append(mtldet->shader);
                         shader.append(shadtpl2.second);
-                        mtlidlut.insert({key, (int)shaders.size()});
+                        mtlidlut.insert({mtldet->mtlidkey, (int)shaders.size()});
                         shaders.push_back(std::move(shader));
                     }
                 }

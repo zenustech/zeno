@@ -113,6 +113,11 @@ struct ShaderFinalize : INode {
             }
         }
 
+        if (has_input("mtlid"))
+        {
+            mtl->mtlidkey = get_input2<std::string>("mtlid");
+        }
+
         set_output("mtl", std::move(mtl));
     }
 };
@@ -154,7 +159,8 @@ ZENDEFNODE(ShaderFinalize, {
         {"float", "isVoxelDomain", "0"},
         {"string", "commonCode"},
         {"string", "extensionsCode"},
-        {"list", "tex2dList"},
+        {"string", "mtlid", "Mat1"},
+        {"list", "tex2dList"},//TODO: bate's asset manager
     },
     {
         {"MaterialObject", "mtl"},

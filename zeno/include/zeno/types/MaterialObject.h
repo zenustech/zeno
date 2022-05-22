@@ -18,13 +18,15 @@ namespace zeno
         std::string common;
         std::string extensions;
         std::vector<std::shared_ptr<Texture2DObject>> tex2Ds;
-        int mtlid{};  // unused for now
+        std::string mtlidkey;  // unused for now
 
         size_t serializeSize() const
         {
             size_t size{0};
 
-            size += sizeof(mtlid);
+            auto mtlidkeyLen{mtlidkey.size()};
+            size += sizeof(mtlidkeyLen);
+            size += mtlidkeyLen;
 
             auto vertLen{vert.size()};
             size += sizeof(vertLen);
@@ -58,8 +60,12 @@ namespace zeno
         {
             size_t i{0};
 
-            memcpy(str + i, &mtlid, sizeof(mtlid));
-            i += mtlid;
+            auto mtlidkeyLen{mtlidkey.size()};
+            memcpy(str + i, &mtlidkeyLen, sizeof(mtlidkeyLen));
+            i += sizeof(mtlidkeyLen);
+
+            mtlidkey.copy(str + i, mtlidkeyLen);
+            i += mtlidkeyLen;
 
             auto vertLen{vert.size()};
             memcpy(str + i, &vertLen, sizeof(vertLen));
@@ -116,8 +122,12 @@ namespace zeno
         {
             size_t i{0};
 
-            memcpy(&mtlid, str + i, sizeof(mtlid));
-            i += mtlid;
+            size_t mtlidkeyLen;
+            memcpy(&mtlidkeyLen, str + i, sizeof(mtlidkeyLen));
+            i += sizeof(mtlidkeyLen);
+
+            this->mtlidkey = std::string{str + i, mtlidkeyLen};
+            i += mtlidkeyLen;
 
             size_t vertLen;
             memcpy(&vertLen, str + i, sizeof(vertLen));
