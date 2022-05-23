@@ -284,6 +284,7 @@ extern "C" __global__ void __closesthit__radiance()
     //{
     unsigned int seed = prd->seed;
     float is_refl;
+    float3 inDir = ray_dir;
     float3 wi = DisneyBRDF::sample_f(
                                 seed,
                                 basecolor,
@@ -338,14 +339,14 @@ extern "C" __global__ void __closesthit__radiance()
                                 -normalize(ray_dir)
                                 );
     prd->prob2 = prd->prob;
-    prd->prob *= pdf;
+    prd->prob *= pdf/clamp(dot(wi, N),0.0f,1.0f);
     prd->origin = P;
     prd->direction = wi;
     prd->countEmitted = false;
     if(is_refl)
-        prd->attenuation *= f * clamp(dot(wi, N),0.0f,1.0f);
+        prd->attenuation *= f;
     else
-        prd->attenuation *= f * clamp(dot(wi, N),0.0f,1.0f);
+        prd->attenuation *= f;
     //}
 
     // {
@@ -373,8 +374,8 @@ extern "C" __global__ void __closesthit__radiance()
     // Calculate properties of light sample (for area based pdf)
     const float  Ldist = length(light_pos - P );
     const float3 L     = normalize(light_pos - P );
-    const float  nDl   = dot( N, L );
-    const float  LnDl  = -dot( light.normal, L );
+    const float  nDl   = clamp(dot( N, L ),0.0f,1.0f);
+    const float  LnDl  = clamp(-dot( light.normal, L ),0.0f,1.0f);
 
     float weight = 0.0f;
     if( nDl > 0.0f && LnDl > 0.0f )
@@ -395,7 +396,7 @@ extern "C" __global__ void __closesthit__radiance()
         }
     }
 
-    prd->radiance += light.emission * weight;
+    prd->radiance = light.emission * weight;
 }
 
 extern "C" __global__ void __closesthit__occlusion()
