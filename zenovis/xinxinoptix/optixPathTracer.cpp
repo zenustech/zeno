@@ -151,6 +151,7 @@ struct PathTracerState
 
     raii<CUstream>                       stream;
     raii<CUdeviceptr> accum_buffer_p;
+    raii<CUdeviceptr> lightsbuf_p;
     Params                         params;
     raii<CUdeviceptr>                        d_params;
 
@@ -309,16 +310,21 @@ static void initLaunchParams( PathTracerState& state )
                 reinterpret_cast<void**>( &state.accum_buffer_p.reset() ),
                 state.params.width * state.params.height * sizeof( float4 )
                 ) );
+    CUDA_CHECK( cudaMalloc(
+                reinterpret_cast<void**>( &state.lightsbuf_p.reset() ),
+                state.params.width * state.params.height * sizeof( ParallelogramLight )
+                ) );
     state.params.accum_buffer = (float4*)(CUdeviceptr)state.accum_buffer_p;
+    state.params.lights = (ParallelogramLight*)(CUdeviceptr)state.lightsbuf_p;
     state.params.frame_buffer = nullptr;  // Will be set when output buffer is mapped
 
     state.params.samples_per_launch = samples_per_launch;
     state.params.subframe_index     = 0u;
 
-    state.params.light.emission = make_float3( 100.f );
+    state.params.light.emission = make_float3( 10000.f );
     state.params.light.corner   = make_float3( 343.0f, 548.5f, 227.0f );
-    state.params.light.v1       = make_float3( 0.0f, 0.0f, 105.0f );
-    state.params.light.v2       = make_float3( -130.0f, 0.0f, 0.0f );
+    state.params.light.v1       = make_float3( 0.0f, 0.0f, 10.0f );
+    state.params.light.v2       = make_float3( -10.0f, 0.0f, 0.0f );
     state.params.light.normal   = normalize( cross( state.params.light.v1, state.params.light.v2 ) );
     state.params.handle         = state.gas_handle;
 }
@@ -849,7 +855,7 @@ static void updatedrawobjects() {
     for (auto const &[key, dat]: drawdats) {
         auto it = g_mtlidlut.find(dat.mtlid);
         int mtlindex = it != g_mtlidlut.end() ? it->second : 0;
-        zeno::log_error("{} {}", dat.mtlid, mtlindex);
+        //zeno::log_error("{} {}", dat.mtlid, mtlindex);
 //#pragma omp parallel for
         for (size_t i = 0; i < dat.tris.size() / 3; i++) {
             g_mat_indices[n + i] = mtlindex;
@@ -878,7 +884,7 @@ static void updatedrawobjects() {
 
 void load_object(std::string const &key, std::string const &mtlid, float const *verts, size_t numverts, int const *tris, size_t numtris, std::map<std::string, std::pair<float const *, size_t>> const &vtab) {
     DrawDat &dat = drawdats[key];
-    ZENO_P(mtlid);
+    //ZENO_P(mtlid);
     dat.mtlid = mtlid;
     dat.verts.assign(verts, verts + numverts * 3);
     dat.tris.assign(tris, tris + numtris * 3);
