@@ -18,8 +18,8 @@
      },
      "params": {},
      "uipos": [
-      216.12582781456953,
-      149.47019867549668
+      483.46576683895955,
+      145.59570680557806
      ],
      "options": [
       "ONCE"
@@ -29,7 +29,7 @@
      "name": "ExtractMeshSurface",
      "inputs": {
       "prim": [
-       "d7a72afa-ReadVtkMesh",
+       "c26d0d5b-PrimMerge",
        "prim",
        null
       ],
@@ -43,8 +43,8 @@
       "op": "all"
      },
      "uipos": [
-      514.0562913907283,
-      152.49999999999997
+      1911.9729580573937,
+      610.4649390243899
      ],
      "options": [
       "ONCE"
@@ -54,7 +54,7 @@
      "name": "TransformPrimitive",
      "inputs": {
       "prim": [
-       "09e158a4-ExtractMeshSurface",
+       "d7a72afa-ReadVtkMesh",
        "prim",
        null
       ],
@@ -106,12 +106,11 @@
      },
      "params": {},
      "uipos": [
-      804.9172185430463,
-      195.92715231788077
+      1072.2571575674365,
+      192.05266044796213
      ],
      "options": [
-      "ONCE",
-      "VIEW"
+      "ONCE"
      ]
     },
     "614ea834-NumericVec3": {
@@ -124,13 +123,13 @@
       ]
      },
      "params": {
-      "x": 0.0,
+      "x": 0.8,
       "y": 0.2,
       "z": 0.0
      },
      "uipos": [
-      474.6688741721854,
-      365.59602649006615
+      742.0088131965754,
+      361.7215346201474
      ],
      "options": [
       "ONCE"
@@ -192,8 +191,8 @@
      },
      "params": {},
      "uipos": [
-      806.3689983443711,
-      -198.83071192052984
+      2166.0734889439636,
+      199.87871706829097
      ],
      "options": [
       "ONCE"
@@ -208,8 +207,8 @@
        null
       ],
       "prim": [
-       "5e13aa62-TransformPrimitive",
-       "outPrim",
+       "f14c85fd-ParticlesWrangle",
+       "prim",
        null
       ],
       "SRC": [
@@ -220,8 +219,8 @@
      },
      "params": {},
      "uipos": [
-      1110.6115480132453,
-      164.74544701986756
+      2524.4717487246276,
+      595.3903752464934
      ],
      "options": [
       "ONCE"
@@ -243,44 +242,18 @@
      },
      "params": {},
      "uipos": [
-      1896.387365480132,
-      261.95157284768214
+      3103.175348203708,
+      556.7761885743079
      ],
      "options": [
       "VIEW"
      ]
     },
-    "c097c257-ExplicitTimeStepping": {
-     "name": "ExplicitTimeStepping",
-     "inputs": {
-      "ZSParticles": [
-       "1862be08-ToZSTetrahedra",
-       "ZSParticles",
-       null
-      ],
-      "dt": [
-       null,
-       null,
-       0.01
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      1391.814983443709,
-      66.27690397351
-     ],
-     "options": []
-    },
     "d79cf034-ImplicitTimeStepping": {
      "name": "ImplicitTimeStepping",
      "inputs": {
       "ZSParticles": [
-       "95851270-ApplyBoundaryOnVertices",
+       "1862be08-ToZSTetrahedra",
        "ZSParticles",
        null
       ],
@@ -302,77 +275,21 @@
      },
      "params": {},
      "uipos": [
-      1590.2511899834437,
-      378.7251655629138
+      2800.91366457694,
+      565.0640089318164
      ],
      "options": []
     },
-    "95851270-ApplyBoundaryOnVertices": {
-     "name": "ApplyBoundaryOnVertices",
-     "inputs": {
-      "ZSParticles": [
-       "1862be08-ToZSTetrahedra",
-       "ZSParticles",
-       null
-      ],
-      "ZSBoundary": [
-       "43cb44cd-ToZSBoundary",
-       "ZSBoundary",
-       null
-      ],
-      "dt": [
-       null,
-       null,
-       0.01
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      1327.5106063741714,
-      378.72516556291373
-     ],
-     "options": []
-    },
-    "0eaef46f-ReadObjPrim": {
-     "name": "ReadObjPrim",
-     "inputs": {
-      "path": [
-       null,
-       null,
-       "assets/torus-tri-10k.obj"
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "triangulate": true
-     },
-     "uipos": [
-      -13.314556601821323,
-      673.7954651283108
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
-    "c94a8c4a-TransformPrimitive": {
+    "bb9d0e3b-TransformPrimitive": {
      "name": "TransformPrimitive",
      "inputs": {
       "prim": [
-       "0eaef46f-ReadObjPrim",
+       "d7a72afa-ReadVtkMesh",
        "prim",
        null
       ],
       "translation": [
-       "b6507039-NumericVec3",
+       "2968af11-NumericVec3",
        "vec3",
        null
       ],
@@ -419,15 +336,14 @@
      },
      "params": {},
      "uipos": [
-      315.06225424254967,
-      642.3612763865888
+      1076.9537601626012,
+      584.7383130081298
      ],
      "options": [
-      "ONCE",
-      "VIEW"
+      "ONCE"
      ]
     },
-    "b6507039-NumericVec3": {
+    "2968af11-NumericVec3": {
      "name": "NumericVec3",
      "inputs": {
       "SRC": [
@@ -437,127 +353,34 @@
       ]
      },
      "params": {
-      "x": 0.0,
-      "y": -0.4,
+      "x": -0.8,
+      "y": 0.2,
       "z": 0.0
      },
      "uipos": [
-      57.93311516970175,
-      902.9241902938734
-     ],
-     "options": []
-    },
-    "bfa018eb-PrimitiveToSDF": {
-     "name": "PrimitiveToSDF",
-     "inputs": {
-      "PrimitiveMesh": [
-       "c94a8c4a-TransformPrimitive",
-       "outPrim",
-       null
-      ],
-      "Dx": [
-       null,
-       null,
-       0.08
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "type": "vertex"
-     },
-     "uipos": [
-      584.3610953021523,
-      782.9945545322842
+      738.4781504065038,
+      674.31656504065
      ],
      "options": [
       "ONCE"
      ]
     },
-    "04747fa4-ToZSLevelSet": {
-     "name": "ToZSLevelSet",
-     "inputs": {
-      "VDBGrid": [
-       "bfa018eb-PrimitiveToSDF",
-       "sdf",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "path": ""
-     },
-     "uipos": [
-      833.0572873551316,
-      819.6046538700325
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
-    "43cb44cd-ToZSBoundary": {
-     "name": "ToZSBoundary",
-     "inputs": {
-      "ZSLevelSet": [
-       "04747fa4-ToZSLevelSet",
-       "ZSLevelSet",
-       null
-      ],
-      "translation": [
-       null,
-       null,
-       null
-      ],
-      "translation_rate": [
-       null,
-       null,
-       null
-      ],
-      "scale": [
-       null,
-       null,
-       null
-      ],
-      "scale_rate": [
-       null,
-       null,
-       null
-      ],
-      "ypr_angles": [
-       null,
-       null,
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "type": "slip"
-     },
-     "uipos": [
-      1095.9556731167208,
-      803.1932300289727
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
-    "8ba5d926-ToBoundaryPrimitive": {
-     "name": "ToBoundaryPrimitive",
+    "f14c85fd-ParticlesWrangle": {
+     "name": "ParticlesWrangle",
      "inputs": {
       "prim": [
-       "c94a8c4a-TransformPrimitive",
-       "outPrim",
+       "09e158a4-ExtractMeshSurface",
+       "prim",
+       null
+      ],
+      "zfxCode": [
+       null,
+       null,
+       "@vel = @pos.x > 0 ? vec3(-2, 0, 0) : vec3(2, 0, 0)"
+      ],
+      "params": [
+       null,
+       null,
        null
       ],
       "SRC": [
@@ -568,17 +391,86 @@
      },
      "params": {},
      "uipos": [
-      737.2516556291384,
-      590.8112582781454
+      2189.2428861788603,
+      620.1511686991865
+     ],
+     "options": [
+      "ONCE",
+      "VIEW"
+     ]
+    },
+    "c26d0d5b-PrimMerge": {
+     "name": "PrimMerge",
+     "inputs": {
+      "listPrim": [
+       "4d6cbefc-MakeList",
+       "list",
+       null
+      ],
+      "tagAttr": [
+       null,
+       null,
+       ""
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1654.408028455283,
+      606.3579776422761
      ],
      "options": [
       "ONCE"
      ]
+    },
+    "4d6cbefc-MakeList": {
+     "name": "MakeList",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ],
+      "obj0": [
+       "5e13aa62-TransformPrimitive",
+       "outPrim",
+       null
+      ],
+      "obj1": [
+       "bb9d0e3b-TransformPrimitive",
+       "outPrim",
+       null
+      ],
+      "obj2": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "_KEYS": "obj0\nobj1\nobj2"
+     },
+     "uipos": [
+      1377.3818597560971,
+      540.4916158536582
+     ],
+     "options": [
+      "ONCE"
+     ],
+     "socket_keys": [
+      "obj0",
+      "obj1",
+      "obj2"
+     ]
     }
    },
    "view_rect": {
-    "x": -172.53184397300947,
-    "y": -24.04058356605219,
+    "x": 1056.790221954348,
+    "y": -111.71507451056766,
     "width": 2343.7499999999986,
     "height": 1191.4062499999993
    }
