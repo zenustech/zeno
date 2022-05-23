@@ -76,7 +76,9 @@ struct ExtractMeshSurface : INode {
       includeTris = true;
 
     std::vector<int> points;
+    std::vector<float> pointAreas;
     std::vector<vec2i> lines;
+    std::vector<float> lineAreas;
     std::vector<vec3i> tris;
     {
       using namespace zs;
@@ -143,6 +145,7 @@ struct ExtractMeshSurface : INode {
               });
       auto svcnt = vertTable.size();
       points.resize(svcnt);
+      pointAreas.resize(svcnt, 0.f);
       copy(mem_host, points.data(), vertTable._activeKeys.data(),
            sizeof(int) * svcnt);
       fmt::print("{} surface verts\n", svcnt);
@@ -151,30 +154,74 @@ struct ExtractMeshSurface : INode {
       Vector<int> surfEdgeCnt{1};
       surfEdgeCnt.setVal(0);
       auto dupEdgeCnt = edgeTable.size();
+      std::vector<int> dupEdgeToSurfEdge(dupEdgeCnt, -1);
       lines.resize(dupEdgeCnt);
-      ompExec(range(dupEdgeCnt),
-              [edgeTable = proxy<space>(edgeTable), &lines,
-               surfEdgeCnt = surfEdgeCnt.data()](int edgeNo) mutable {
-                using vec2i = zs::vec<int, 2>;
-                vec2i edge = edgeTable._activeKeys[edgeNo];
-                using table_t = RM_CVREF_T(edgeTable);
-                if (auto eno = edgeTable.query(vec2i{edge[1], edge[0]});
-                    eno == table_t::sentinel_v || // opposite edge not exists
-                    (eno != table_t::sentinel_v &&
-                     edge[0] < edge[1])) // opposite edge does exist
-                  lines[atomic_add(exec_omp, surfEdgeCnt, 1)] =
-                      zeno::vec2i{edge[0], edge[1]};
-              });
+      ompExec(range(dupEdgeCnt), [edgeTable = proxy<space>(edgeTable), &lines,
+                                  surfEdgeCnt = surfEdgeCnt.data(),
+                                  &dupEdgeToSurfEdge](int edgeNo) mutable {
+        using vec2i = zs::vec<int, 2>;
+        vec2i edge = edgeTable._activeKeys[edgeNo];
+        using table_t = RM_CVREF_T(edgeTable);
+        if (auto eno = edgeTable.query(vec2i{edge[1], edge[0]});
+            eno == table_t::sentinel_v || // opposite edge not exists
+            (eno != table_t::sentinel_v &&
+             edge[0] < edge[1])) { // opposite edge does exist
+          auto no = atomic_add(exec_omp, surfEdgeCnt, 1);
+          lines[no] = zeno::vec2i{edge[0], edge[1]};
+          dupEdgeToSurfEdge[edgeNo] = no;
+        }
+      });
       auto secnt = surfEdgeCnt.getVal();
       lines.resize(secnt);
+      lineAreas.resize(secnt, 0.f);
       fmt::print("{} surface edges\n", secnt);
+
+      ompExec(tris,
+              [&, vertTable = proxy<space>(vertTable),
+               edgeTable = proxy<space>(edgeTable)](vec3i triInds) mutable {
+                using vec3 = zs::vec<float, 3>;
+                using vec1i = zs::vec<int, 1>;
+                using vec2i = zs::vec<int, 2>;
+                for (int d = 0; d != 3; ++d) {
+                  auto p0 = vec3::from_array(pos[triInds[0]]);
+                  auto p1 = vec3::from_array(pos[triInds[1]]);
+                  auto p2 = vec3::from_array(pos[triInds[2]]);
+                  float area = (p1 - p0).cross(p2 - p0).norm() / 2;
+                  // surface vert
+                  using vtable_t = RM_CVREF_T(vertTable);
+                  auto vno = vertTable.query(vec1i{triInds[d]});
+                  atomic_add(exec_omp, &pointAreas[vno], area / 3);
+                  // surface edge
+                  using etable_t = RM_CVREF_T(edgeTable);
+#if 0
+          auto eno = edgeTable.query(vec2i{triInds[d], triInds[(d + 1) % 3]});
+          if (eno == etable_t::sentinel_v)
+            continue;
+          auto edge = edgeTable._activeKeys[eno];
+          auto oEno = edgeTable.query(vec2i{triInds[(d + 1) % 3], triInds[d]});
+          if ((edge[0] < edge[1] && oEno != etable_t::sentinel_v) ||
+              oEno == etable_t::sentinel_v) {
+            auto seNo = dupEdgeToSurfEdge[eno];
+            atomic_add(exec_omp, &lineAreas[seNo], area / 3);
+          }
+#else
+          auto eno = edgeTable.query(vec2i{triInds[(d + 1) % 3], triInds[d]});
+          if (auto seNo = dupEdgeToSurfEdge[eno]; seNo != etable_t::sentinel_v)
+            atomic_add(exec_omp, &lineAreas[seNo], area / 3);
+#endif
+                }
+              });
     }
     if (includeTris)
       prim->tris.values = tris; // surfaces
-    if (includeLines)
+    if (includeLines) {
       prim->lines.values = lines; // surfaces edges
-    if (includePoints)
+      prim->lines.add_attr<float>("area") = lineAreas;
+    }
+    if (includePoints) {
       prim->points.values = points; // surfaces points
+      prim->points.add_attr<float>("area") = pointAreas;
+    }
     set_output("prim", std::move(prim));
   }
 };
@@ -406,22 +453,27 @@ struct ToZSTetrahedra : INode {
                     zs::reinterpret_bits<float>(tri[i]);
             });
     auto &surfEdges = (*zstets)[ZenoParticles::s_surfEdgeTag];
-    surfEdges = typename ZenoParticles::particles_t({{"inds", 2}}, lines.size(),
-                                                    zs::memsrc_e::host);
+    surfEdges = typename ZenoParticles::particles_t(
+        {{"inds", 2}, {"w", 1}}, lines.size(), zs::memsrc_e::host);
+    const auto &lineAreas = lines.attr<float>("area");
     ompExec(zs::range(lines.size()),
             [&, surfEdges = proxy<space>({}, surfEdges)](int lineNo) mutable {
               auto line = lines[lineNo];
               for (int i = 0; i != 2; ++i)
                 surfEdges("inds", i, lineNo) =
                     zs::reinterpret_bits<float>(line[i]);
+              surfEdges("w", lineNo) = lineAreas[lineNo]; // line area (weight)
             });
     auto &surfVerts = (*zstets)[ZenoParticles::s_surfVertTag];
     surfVerts = typename ZenoParticles::particles_t(
-        {{"inds", 1}}, points.size(), zs::memsrc_e::host);
+        {{"inds", 1}, {"w", 1}}, points.size(), zs::memsrc_e::host);
+    const auto &pointAreas = points.attr<float>("area");
     ompExec(zs::range(points.size()),
             [&, surfVerts = proxy<space>({}, surfVerts)](int pointNo) mutable {
               auto point = points[pointNo];
               surfVerts("inds", pointNo) = zs::reinterpret_bits<float>(point);
+              surfVerts("w", pointNo) =
+                  pointAreas[pointNo]; // point area (weight)
             });
 
     pars = pars.clone({zs::memsrc_e::device, 0});
