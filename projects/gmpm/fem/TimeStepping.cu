@@ -2,7 +2,9 @@
 #include "../Utils.hpp"
 #include "zensim/Logger.hpp"
 #include "zensim/cuda/execution/ExecutionPolicy.cuh"
+#include "zensim/execution/ExecutionPolicy.hpp"
 #include "zensim/geometry/PoissonDisk.hpp"
+#include "zensim/geometry/SpatialQuery.hpp"
 #include "zensim/geometry/VdbLevelSet.h"
 #include "zensim/geometry/VdbSampler.h"
 #include "zensim/io/MeshIO.hpp"
@@ -508,6 +510,116 @@ struct ImplicitTimeStepping : INode {
   }
 
   struct FEMSystem {
+    void computeBarrierGradientAndHessian(zs::CudaExecutionPolicy &pol) {
+      using namespace zs;
+      constexpr auto space = execspace_e::cuda;
+      auto numPP = nPP.getVal();
+      pol(range(numPP),
+          [vtemp = proxy<space>({}, vtemp), tempPP = proxy<space>({}, tempPP),
+           PP = proxy<space>(PP), wPP = proxy<space>(wPP), xi2 = xi * xi,
+           dHat = dHat, activeGap2 = zs::sqr(xi + dHat),
+           dt = dt] __device__(int ppi) mutable {
+            static constexpr T kappa = 1e5;
+            auto pp = PP[ppi];
+            auto x0 = vtemp.pack<3>("xn", pp[0]);
+            auto x1 = vtemp.pack<3>("xn", pp[1]);
+            auto ppGrad = dist_grad_pp(x0, x1);
+            auto dist2 = dist2_pp(x0, x1);
+            if (dist2 < xi2)
+              printf("dist already smaller than xi!\n");
+            ppGrad *= dt * dt * wPP[ppi] * dHat *
+                      zs::barrier_gradient(dist2 - xi2, activeGap2, kappa);
+            // gradient
+            for (int d = 0; d != 3; ++d) {
+              atomic_add(exec_cuda, &vtemp("grad", d, pp[0]), ppGrad(pp[0], d));
+              atomic_add(exec_cuda, &vtemp("grad", d, pp[1]), ppGrad(pp[1], d));
+            }
+            // hessian
+          });
+      auto numPE = nPE.getVal();
+      pol(range(numPE),
+          [vtemp = proxy<space>({}, vtemp), tempPE = proxy<space>({}, tempPE),
+           PE = proxy<space>(PE), wPE = proxy<space>(wPE), xi2 = xi * xi,
+           dHat = dHat, activeGap2 = zs::sqr(xi + dHat),
+           dt2 = dt * dt] __device__(int pei) mutable {
+            static constexpr T kappa = 1e5;
+            auto pe = PE[pei];
+            auto p = vtemp.pack<3>("xn", pe[0]);
+            auto e0 = vtemp.pack<3>("xn", pe[1]);
+            auto e1 = vtemp.pack<3>("xn", pe[2]);
+
+            auto peGrad = dist_grad_pe(p, e0, e1);
+            auto dist2 = dist2_pe(p, e0, e1);
+            if (dist2 < xi2)
+              printf("dist already smaller than xi!\n");
+            peGrad *= dt2 * wPE[pei] * dHat *
+                      zs::barrier_gradient(dist2 - xi2, activeGap2, kappa);
+            // gradient
+            for (int d = 0; d != 3; ++d) {
+              atomic_add(exec_cuda, &vtemp("grad", d, pe[0]), peGrad(pe[0], d));
+              atomic_add(exec_cuda, &vtemp("grad", d, pe[1]), peGrad(pe[1], d));
+              atomic_add(exec_cuda, &vtemp("grad", d, pe[2]), peGrad(pe[2], d));
+            }
+            // hessian
+          });
+      auto numPT = nPT.getVal();
+      pol(range(numPT),
+          [vtemp = proxy<space>({}, vtemp), tempPT = proxy<space>({}, tempPT),
+           PT = proxy<space>(PT), wPT = proxy<space>(wPT), xi2 = xi * xi,
+           dHat = dHat, activeGap2 = zs::sqr(xi + dHat),
+           dt2 = dt * dt] __device__(int pti) mutable {
+            static constexpr T kappa = 1e5;
+            auto pt = PT[pti];
+            auto p = vtemp.pack<3>("xn", pt[0]);
+            auto t0 = vtemp.pack<3>("xn", pt[1]);
+            auto t1 = vtemp.pack<3>("xn", pt[2]);
+            auto t2 = vtemp.pack<3>("xn", pt[3]);
+
+            auto ptGrad = dist_grad_pt(p, t0, t1, t2);
+            auto dist2 = dist2_pt(p, t0, t1, t2);
+            if (dist2 < xi2)
+              printf("dist already smaller than xi!\n");
+            ptGrad *= dt2 * wPT[pti] * dHat *
+                      zs::barrier_gradient(dist2 - xi2, activeGap2, kappa);
+            // gradient
+            for (int d = 0; d != 3; ++d) {
+              atomic_add(exec_cuda, &vtemp("grad", d, pt[0]), ptGrad(pt[0], d));
+              atomic_add(exec_cuda, &vtemp("grad", d, pt[1]), ptGrad(pt[1], d));
+              atomic_add(exec_cuda, &vtemp("grad", d, pt[2]), ptGrad(pt[2], d));
+              atomic_add(exec_cuda, &vtemp("grad", d, pt[3]), ptGrad(pt[3], d));
+            }
+            // hessian
+          });
+      auto numEE = nEE.getVal();
+      pol(range(numEE),
+          [vtemp = proxy<space>({}, vtemp), tempEE = proxy<space>({}, tempEE),
+           EE = proxy<space>(EE), wEE = proxy<space>(wEE), xi2 = xi * xi,
+           dHat = dHat, activeGap2 = zs::sqr(xi + dHat),
+           dt2 = dt * dt] __device__(int eei) mutable {
+            static constexpr T kappa = 1e5;
+            auto ee = EE[eei];
+            auto ea0 = vtemp.pack<3>("xn", ee[0]);
+            auto ea1 = vtemp.pack<3>("xn", ee[1]);
+            auto eb0 = vtemp.pack<3>("xn", ee[2]);
+            auto eb1 = vtemp.pack<3>("xn", ee[3]);
+
+            auto eeGrad = dist_grad_ee(ea0, ea1, eb0, eb1);
+            auto dist2 = dist2_ee(ea0, ea1, eb0, eb1);
+            if (dist2 < xi2)
+              printf("dist already smaller than xi!\n");
+            eeGrad *= dt2 * wEE[eei] * dHat *
+                      zs::barrier_gradient(dist2 - xi2, activeGap2, kappa);
+            // gradient
+            for (int d = 0; d != 3; ++d) {
+              atomic_add(exec_cuda, &vtemp("grad", d, ee[0]), eeGrad(ee[0], d));
+              atomic_add(exec_cuda, &vtemp("grad", d, ee[1]), eeGrad(ee[1], d));
+              atomic_add(exec_cuda, &vtemp("grad", d, ee[2]), eeGrad(ee[2], d));
+              atomic_add(exec_cuda, &vtemp("grad", d, ee[3]), eeGrad(ee[3], d));
+            }
+            // hessian
+          });
+      return;
+    }
     template <typename Pol, typename Model>
     T energy(Pol &pol, const Model &model, const zs::SmallString tag) {
       using namespace zs;
