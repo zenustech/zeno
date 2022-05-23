@@ -190,7 +190,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         //xinxinoptix::set_projection(glm::value_ptr(cam.m_proj));
         }
 
-        if (meshNeedUpdate || matNeedUpdate) {
+        if (meshNeedUpdate || matNeedUpdate || lightNeedUpdate) {
         zeno::log_debug("[zeno-optix] updating scene");
             if (matNeedUpdate) {
             zeno::log_debug("[zeno-optix] updating material");
@@ -221,11 +221,11 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
             zeno::log_debug("[zeno-optix] updating mesh");
                 xinxinoptix::optixupdatemesh(mtlidlut);
             }
+            xinxinoptix::optixupdateend();
             if (lightNeedUpdate) {
             zeno::log_debug("[zeno-optix] updating light");
                 xinxinoptix::optixupdatelight();
             }
-            xinxinoptix::optixupdateend();
             meshNeedUpdate = false;
             matNeedUpdate = false;
             lightNeedUpdate = false;

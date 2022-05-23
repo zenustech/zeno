@@ -322,7 +322,7 @@ static void initLaunchParams( PathTracerState& state )
                 ) );
     CUDA_CHECK( cudaMalloc(
                 reinterpret_cast<void**>( &state.lightsbuf_p.reset() ),
-                state.params.width * state.params.height * sizeof( ParallelogramLight )
+                sizeof( ParallelogramLight ) * g_lights.size()
                 ) );
     state.params.accum_buffer = (float4*)(CUdeviceptr)state.accum_buffer_p;
     state.params.lights = (ParallelogramLight*)(CUdeviceptr)state.lightsbuf_p;
@@ -382,6 +382,7 @@ static void launchSubframe( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Path
     // Launch
     uchar4* result_buffer_data = output_buffer.map();
     state.params.frame_buffer  = result_buffer_data;
+    state.params.num_lights = g_lights.size();
     CUDA_CHECK( cudaMemcpyAsync(
                 reinterpret_cast<void*>( (CUdeviceptr)state.d_params ),
                 &state.params, sizeof( Params ),
@@ -789,8 +790,9 @@ void optixupdatelight() {
         light.normal   = make_float3( 0.0f, -10.0f, 0.0f );
         light.v1       = normalize( cross( light.v2, light.normal ) );
     }
-    CUDA_CHECK( cudaMemcpyAsync(
-                reinterpret_cast<void*>( state.params.lights ),
+    if (g_lights.size())
+        CUDA_CHECK( cudaMemcpyAsync(
+                reinterpret_cast<void*>( (CUdeviceptr)state.lightsbuf_p ),
                 g_lights.data(), sizeof( ParallelogramLight ) * g_lights.size(),
                 cudaMemcpyHostToDevice, state.stream
                 ) );
