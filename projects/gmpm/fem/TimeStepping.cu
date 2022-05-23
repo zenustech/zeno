@@ -188,8 +188,7 @@ struct ImplicitTimeStepping : INode {
          thickness = dHat + xi, xi2, activeGap2] ZS_LAMBDA(int svi) mutable {
           auto vi = reinterpret_bits<int>(svs("inds", svi));
           auto p = vtemp.pack<3>("xn", vi);
-          // auto wp = verts("w", vi);
-          auto wp = (T)0.25;
+          auto wp = svs("w", vi) / 4;
           auto [mi, ma] =
               get_bounding_box(p - thickness / 2, p + thickness / 2);
           auto bv = bv_t{mi, ma};
@@ -286,6 +285,7 @@ struct ImplicitTimeStepping : INode {
          activeGap2] ZS_LAMBDA(int sei) mutable {
           auto edgeInds = ses.template pack<2>("inds", sei)
                               .template reinterpret_bits<int>();
+          auto selfWe = ses("w", sei);
           auto x0 = vtemp.pack<3>("xn", edgeInds[0]);
           auto x1 = vtemp.pack<3>("xn", edgeInds[1]);
           auto [mi, ma] = get_bounding_box(x0, x1);
@@ -309,7 +309,7 @@ struct ImplicitTimeStepping : INode {
             auto eb1 = vtemp.pack<3>("xn", oEdgeInds[1]);
             if (!ee_cd_broadphase(x0, x1, eb0, eb1, thickness))
               return;
-            auto we = (verts("w", sei) + verts("w", seI)) / 4;
+            auto we = (selfWe + ses("w", seI)) / 4;
             switch (ee_distance_type(x0, x1, eb0, eb1)) {
             case 0: {
               if (dist2_pp(x0, eb0) - xi2 < activeGap2) {
@@ -528,6 +528,7 @@ struct ImplicitTimeStepping : INode {
                    -m * vec3{0, -9, 0}.dot(x - verts.pack<3>("x", vi)) * dt *
                        dt);
       });
+      // elasticity
       pol(range(eles.size()), [verts = proxy<space>({}, verts),
                                eles = proxy<space>({}, eles),
                                vtemp = proxy<space>({}, vtemp),
@@ -550,6 +551,7 @@ struct ImplicitTimeStepping : INode {
         auto vole = eles("vol", ei);
         atomic_add(exec_cuda, &res[0], vole * psi * dt * dt);
       });
+      // contacts
       return res.getVal();
     }
     template <typename Pol> void project(Pol &pol, const zs::SmallString tag) {
@@ -604,7 +606,7 @@ struct ImplicitTimeStepping : INode {
         for (int d = 0; d != 3; ++d)
           atomic_add(execTag, &vtemp(bTag, d, vi), dx(d));
       });
-      // elastic energy
+      // elasticity
       pol(range(numEles), [execTag, etemp = proxy<space>({}, etemp),
                            vtemp = proxy<space>({}, vtemp),
                            eles = proxy<space>({}, eles), dxTag, bTag,
@@ -626,17 +628,49 @@ struct ImplicitTimeStepping : INode {
             atomic_add(execTag, &vtemp(bTag, d, inds[vi]), temp[vi * dim + d]);
           }
       });
+      // contacts
     }
 
     FEMSystem(const tiles_t &verts, const tiles_t &eles, dtiles_t &vtemp,
-              dtiles_t &etemp, T dt)
-        : verts{verts}, eles{eles}, vtemp{vtemp}, etemp{etemp}, dt{dt} {}
+              dtiles_t &etemp, const zs::Vector<pair_t> &PP,
+              const zs::Vector<T> &wPP, const zs::Vector<int> &nPP,
+              const zs::Vector<pair3_t> &PE, const zs::Vector<T> &wPE,
+              const zs::Vector<int> &nPE, const zs::Vector<pair4_t> &PT,
+              const zs::Vector<T> &wPT, const zs::Vector<int> &nPT,
+              const zs::Vector<pair4_t> &EE, const zs::Vector<T> &wEE,
+              const zs::Vector<int> &nEE, T dHat, T xi, T dt)
+        : verts{verts}, eles{eles}, vtemp{vtemp}, etemp{etemp}, PP{PP},
+          wPP{wPP}, nPP{nPP},
+          tempPP{PP.get_allocator(), {{"H", 36}}, PP.size()}, PE{PE}, wPE{wPE},
+          nPE{nPE}, tempPE{PE.get_allocator(), {{"H", 81}}, PE.size()}, PT{PT},
+          wPT{wPT}, nPT{nPT},
+          tempPT{PT.get_allocator(), {{"H", 144}}, PT.size()}, EE{EE}, wEE{wEE},
+          nEE{nEE}, tempEE{EE.get_allocator(), {{"H", 144}}, EE.size()},
+          dHat{dHat}, xi{xi}, dt{dt} {}
 
     const tiles_t &verts;
     const tiles_t &eles;
     dtiles_t &vtemp;
     dtiles_t &etemp;
-    T dt;
+    // contacts
+    const zs::Vector<pair_t> &PP;
+    const zs::Vector<T> &wPP;
+    const zs::Vector<int> &nPP;
+    dtiles_t tempPP;
+    const zs::Vector<pair3_t> &PE;
+    const zs::Vector<T> &wPE;
+    const zs::Vector<int> &nPE;
+    dtiles_t tempPE;
+    const zs::Vector<pair4_t> &PT;
+    const zs::Vector<T> &wPT;
+    const zs::Vector<int> &nPT;
+    dtiles_t tempPT;
+    const zs::Vector<pair4_t> &EE;
+    const zs::Vector<T> &wEE;
+    const zs::Vector<int> &nEE;
+    dtiles_t tempEE;
+    //
+    T dHat, xi, dt;
   };
 
   template <typename Model>
@@ -790,11 +824,14 @@ struct ImplicitTimeStepping : INode {
     static Vector<pair4_t> EE{verts.get_allocator(), 100000};
     static Vector<T> wEE{verts.get_allocator(), 100000};
     static Vector<int> nEE{verts.get_allocator(), 1};
+    constexpr T xi = 2e-3;
+    constexpr T dHat = 1e-3;
 
     vtemp.resize(verts.size());
     etemp.resize(eles.size());
 
-    FEMSystem A{verts, eles, vtemp, etemp, dt};
+    FEMSystem A{verts, eles, vtemp, etemp, PP,  wPP, nPP,  PE, wPE, nPE,
+                PT,    wPT,  nPT,   EE,    wEE, nEE, dHat, xi, dt};
 
     constexpr auto space = execspace_e::cuda;
     auto cudaPol = cuda_exec();
@@ -825,6 +862,9 @@ struct ImplicitTimeStepping : INode {
               }
               vtemp.tuple<3>("xn", vi) = x;
             });
+
+    precompute_constraints(cudaPol, *zstets, vtemp, dHat, xi, PP, wPP, nPP, PE,
+                           wPE, nPE, PT, wPT, nPT, EE, wEE, nEE);
 
     /// optimizer
     for (int newtonIter = 0; newtonIter != 100; ++newtonIter) {
