@@ -1249,11 +1249,11 @@ struct ImplicitTimeStepping : INode {
       // line search
       T alpha = 1.;
       computeInversionFreeStepSize(cudaPol, verts, eles, vtemp, alpha);
-      find_intersection_free_stepsize(cudaPol, *zstets, vtemp, alpha, (T)2e-3f);
+      find_intersection_free_stepsize(cudaPol, *zstets, vtemp, alpha, xi);
       //
       if (zsboundary)
-        find_boundary_intersection_free_stepsize(
-            cudaPol, *zstets, vtemp, *zsboundary, dt, alpha, (T)2e-3f);
+        find_boundary_intersection_free_stepsize(cudaPol, *zstets, vtemp,
+                                                 *zsboundary, dt, alpha, xi);
 #if 0
       if (alpha < 0.9) {
         fmt::print("initial stepsize [{}]\n", alpha);
