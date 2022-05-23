@@ -140,13 +140,8 @@ struct ExtractMaterialShader : zeno::INode
     virtual void apply() override
     {
       auto obj = get_input<zeno::IObject>("object");
-      auto mtlids = std::make_shared<zeno::ListObject>();
-      if (has_input<zeno::ListObject>("mtlid")) {
-          mtlids = get_input<zeno::ListObject>("mtlid");//may need deep copy?
-      } else {
-          mtlids->arr.push_back(objectFromLiterial(get_input2<std::string>("mtlid")));
-      }
-      obj->userData().set("mtlids", std::move(mtlids));
+      auto mtlid = get_input2<std::string>("mtlid");
+      obj->userData().setLiterial("mtlid", std::move(mtlid));
       set_output("object", std::move(obj));
     }
   };

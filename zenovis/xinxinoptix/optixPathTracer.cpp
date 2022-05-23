@@ -52,6 +52,7 @@
 #include "optixPathTracer.h"
 
 #include <zeno/utils/log.h>
+#include <zeno/utils/zeno_p.h>
 #include <zeno/types/MaterialObject.h>
 #include <array>
 #include <optional>
@@ -848,6 +849,7 @@ static void updatedrawobjects() {
     for (auto const &[key, dat]: drawdats) {
         auto it = g_mtlidlut.find(dat.mtlid);
         int mtlindex = it != g_mtlidlut.end() ? it->second : 0;
+        zeno::log_error("{} {}", dat.mtlid, mtlindex);
 //#pragma omp parallel for
         for (size_t i = 0; i < dat.tris.size() / 3; i++) {
             g_mat_indices[n + i] = mtlindex;
@@ -876,6 +878,7 @@ static void updatedrawobjects() {
 
 void load_object(std::string const &key, std::string const &mtlid, float const *verts, size_t numverts, int const *tris, size_t numtris, std::map<std::string, std::pair<float const *, size_t>> const &vtab) {
     DrawDat &dat = drawdats[key];
+    ZENO_P(mtlid);
     dat.mtlid = mtlid;
     dat.verts.assign(verts, verts + numverts * 3);
     dat.tris.assign(tris, tris + numtris * 3);

@@ -113,10 +113,10 @@ struct ShaderFinalize : INode {
             }
         }
 
-        if (has_input("mtlid"))
-        {
+        //if (has_input("mtlid"))
+        //{
             mtl->mtlidkey = get_input2<std::string>("mtlid");
-        }
+        //}
 
         set_output("mtl", std::move(mtl));
     }
