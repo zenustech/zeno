@@ -9,21 +9,7 @@ namespace zeno {
 struct Translator {
     std::map<std::string, std::string> lut;
 
-    void load(std::string_view tab) {
-        std::size_t p = 0;
-        while (1) {
-            auto q = tab.find('\n', p);
-            auto line = tab.substr(q, p);
-            if (auto mid = line.find('='); mid != std::string::npos) {
-                auto lhs = line.substr(0, mid);
-                auto rhs = line.substr(mid + 1);
-                lut.emplace(lhs, rhs);
-            }
-            if (q == std::string::npos)
-                break;
-            p = q + 1;
-        }
-    }
+    void load(std::string_view tab);
 
     std::string const &t(std::string const &s) const {
         if (auto it = lut.find(s); it != lut.end()) {
