@@ -1,26 +1,44 @@
 #ifdef ZENO_ENABLE_OPTIX
 #include "../../xinxinoptix/xinxinoptixapi.h"
+#include "../../xinxinoptix/SDK/sutil/sutil.h"
 #include <zeno/types/PrimitiveObject.h>
+#include <zeno/types/ListObject.h>
+#include <zeno/types/UserData.h>
 #include <zenovis/DrawOptions.h>
+#include <zeno/types/MaterialObject.h>
 #include <zenovis/ObjectsManager.h>
+#include <zeno/utils/UserData.h>
 #include <zeno/utils/fileio.h>
 #include <zenovis/RenderEngine.h>
 #include <zenovis/bate/GraphicsManager.h>
 #include <zenovis/bate/IGraphic.h>
 #include <zenovis/opengl/scope.h>
 #include <zenovis/opengl/vao.h>
-#include <optional>
+#include <variant>
 
 namespace zenovis::optx {
 
 struct GraphicsManager {
     Scene *scene;
 
+        struct DetMaterial {
+            std::string shader;
+            std::string mtlidkey;
+        };
+        struct DetPrimitive {
+        };
+
     struct ZxxGraphic : zeno::disable_copy {
         std::string key;
 
-        explicit ZxxGraphic(std::string key_, zeno::IObject *obj) : key(std::move(key_)) {
-            if (auto prim = dynamic_cast<zeno::PrimitiveObject *>(obj)) {
+        std::variant<DetPrimitive, DetMaterial> det;
+
+        explicit ZxxGraphic(std::string key_, zeno::IObject *obj)
+        : key(std::move(key_))
+        {
+            if (auto prim = dynamic_cast<zeno::PrimitiveObject *>(obj))
+            {
+                det = DetPrimitive{};
                 auto vs = (float const *)prim->verts.data();
                 std::map<std::string, std::pair<float const *, size_t>> vtab;
                 prim->verts.foreach_attr([&] (auto const &key, auto const &arr) {
@@ -29,7 +47,12 @@ struct GraphicsManager {
                 auto ts = (int const *)prim->tris.data();
                 auto nvs = prim->verts.size();
                 auto nts = prim->tris.size();
-                xinxinoptix::load_object(key, vs, nvs, ts, nts, vtab);
+                auto mtlid = prim->userData().getLiterial<std::string>("mtlid", "Default");
+                xinxinoptix::load_object(key, mtlid, vs, nvs, ts, nts, vtab);
+            }
+            else if (auto mtl = dynamic_cast<zeno::MaterialObject *>(obj))
+            {
+                det = DetMaterial{mtl->frag, mtl->mtlidkey};
             }
         }
 
@@ -62,7 +85,9 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
     std::unique_ptr<opengl::VAO> vao;
     Scene *scene;
 
-    bool giNeedUpdate = true;
+    bool lightNeedUpdate = true;
+    bool meshNeedUpdate = true;
+    bool matNeedUpdate = true;
 
     auto setupState() {
         return std::tuple{
@@ -73,7 +98,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
     }
 
     explicit RenderEngineOptx(Scene *scene_) : scene(scene_) {
-        zeno::log_info("Optx Render Engine started...");
+        zeno::log_info("OptiX Render Engine started...");
         auto guard = setupState();
 
         graphicsMan = std::make_unique<GraphicsManager>(scene);
@@ -85,14 +110,41 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
     }
 
     void update() override {
-        if (graphicsMan->load_objects(scene->objectsMan->pairs()))
-            giNeedUpdate = true;
+        if (graphicsMan->load_objects(scene->objectsMan->pairs())) {
+            lightNeedUpdate = meshNeedUpdate = matNeedUpdate = true;
+        }
     }
 
 #define MY_CAM_ID(cam) cam.m_nx, cam.m_ny, cam.m_lodup, cam.m_lodfront, cam.m_lodcenter, cam.m_fov
 #define MY_SIZE_ID(cam) cam.m_nx, cam.m_ny
     std::optional<decltype(std::tuple{MY_CAM_ID(std::declval<Camera>())})> oldcamid;
     std::optional<decltype(std::tuple{MY_SIZE_ID(std::declval<Camera>())})> oldsizeid;
+
+    bool ensuredshadtmpl = false;
+    std::string shadtmpl;
+    std::pair<std::string_view, std::string_view> shadtpl2;
+
+    void ensure_shadtmpl() {
+        if (ensuredshadtmpl) return;
+        ensuredshadtmpl = true;
+        shadtmpl = sutil::lookupIncFile("DeflMatShader.cu");
+        std::string_view tplsv = shadtmpl;
+        std::string_view tmplstub0 = "//GENERATED_BEGIN_MARK";
+        std::string_view tmplstub1 = "//GENERATED_END_MARK";
+        if (auto p0 = tplsv.find(tmplstub0); p0 != std::string::npos) {
+            auto q0 = p0 + tmplstub0.size();
+            if (auto p1 = tplsv.find(tmplstub1, q0); p1 != std::string::npos) {
+                auto q1 = p1 + tmplstub1.size();
+                shadtpl2 = {tplsv.substr(0, p0), tplsv.substr(q1)};
+            } else {
+                throw std::runtime_error("cannot find stub GENERATED_END_MARK in shader template");
+            }
+        } else {
+            throw std::runtime_error("cannot find stub GENERATED_BEGIN_MARK in shader template");
+        }
+    }
+
+    std::map<std::string, int> mtlidlut;
 
     void draw() override {
         auto guard = setupState();
@@ -138,15 +190,45 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         //xinxinoptix::set_projection(glm::value_ptr(cam.m_proj));
         }
 
-        if (giNeedUpdate) {
+        if (meshNeedUpdate || matNeedUpdate || lightNeedUpdate) {
         zeno::log_debug("[zeno-optix] updating scene");
-            std::vector<const char *> shaders;
-            auto s = zeno::file_get_content("/home/bate/zeno/zenovis/xinxinoptix/DeflMatShader.cu");
-            shaders.push_back(s.c_str());
-            xinxinoptix::optixupdatematerial(shaders);
-            xinxinoptix::optixupdatemesh();
+            if (matNeedUpdate) {
+            zeno::log_debug("[zeno-optix] updating material");
+                std::vector<std::string> shaders;
+                mtlidlut.clear();
+
+                ensure_shadtmpl();
+                shaders.push_back(shadtmpl);
+                mtlidlut.insert({"Default", 0});
+
+                for (auto const &[key, obj]: graphicsMan->graphics) {
+                    if (auto mtldet = std::get_if<GraphicsManager::DetMaterial>(&obj->det)) {
+                        //zeno::log_debug("got material shader:\n{}", mtldet->shader);
+                        std::string shader;
+                        shader.reserve(shadtpl2.first.size()
+                                       + mtldet->shader.size()
+                                       + shadtpl2.second.size());
+                        shader.append(shadtpl2.first);
+                        shader.append(mtldet->shader);
+                        shader.append(shadtpl2.second);
+                        mtlidlut.insert({mtldet->mtlidkey, (int)shaders.size()});
+                        shaders.push_back(std::move(shader));
+                    }
+                }
+                xinxinoptix::optixupdatematerial(shaders);
+            }
+            if (meshNeedUpdate || matNeedUpdate) {
+            zeno::log_debug("[zeno-optix] updating mesh");
+                xinxinoptix::optixupdatemesh(mtlidlut);
+            }
             xinxinoptix::optixupdateend();
-            giNeedUpdate = false;
+            if (lightNeedUpdate) {
+            zeno::log_debug("[zeno-optix] updating light");
+                xinxinoptix::optixupdatelight();
+            }
+            meshNeedUpdate = false;
+            matNeedUpdate = false;
+            lightNeedUpdate = false;
         }
 
         int targetFBO = 0;

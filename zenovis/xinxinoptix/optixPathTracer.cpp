@@ -52,6 +52,8 @@
 #include "optixPathTracer.h"
 
 #include <zeno/utils/log.h>
+#include <zeno/utils/zeno_p.h>
+#include <zeno/types/MaterialObject.h>
 #include <array>
 #include <optional>
 #include <cstring>
@@ -132,6 +134,7 @@ struct PathTracerState
     OptixTraversableHandle         gas_handle               = {};  // Traversable handle for triangle AS
     raii<CUdeviceptr>                    d_gas_output_buffer;  // Triangle AS memory
     raii<CUdeviceptr>                    d_vertices;
+    raii<CUdeviceptr>  d_mat_indices             ;
 
     raii<OptixModule>                    ptx_module;
     raii<OptixModule>                    ptx_module2;
@@ -148,6 +151,7 @@ struct PathTracerState
 
     raii<CUstream>                       stream;
     raii<CUdeviceptr> accum_buffer_p;
+    raii<CUdeviceptr> lightsbuf_p;
     Params                         params;
     raii<CUdeviceptr>                        d_params;
 
@@ -180,6 +184,16 @@ static std::vector<uint32_t> g_mat_indices= // TRIANGLE_COUNT
 {
     0,0,0,
 };
+static std::vector<ParallelogramLight> g_lights={
+    ParallelogramLight{
+        /*corner=*/
+        /*v1=*/
+        /*v2=*/
+        /*normal=*/
+        /*emission=*/
+    },
+};
+/*
 static std::vector<float3> g_emission_colors= // MAT_COUNT
 {
     {0,0,0},
@@ -188,6 +202,8 @@ static std::vector<float3> g_diffuse_colors= // MAT_COUNT
 {
     {0.8f,0.8f,0.8f},
 };
+*/
+std::map<std::string, int> g_mtlidlut; // MAT_COUNT
 
 
 //------------------------------------------------------------------------------
@@ -299,22 +315,21 @@ static void printUsageAndExit( const char* argv0 )
 
 static void initLaunchParams( PathTracerState& state )
 {
+    state.params.handle         = state.gas_handle;
     CUDA_CHECK( cudaMalloc(
                 reinterpret_cast<void**>( &state.accum_buffer_p.reset() ),
                 state.params.width * state.params.height * sizeof( float4 )
                 ) );
+    CUDA_CHECK( cudaMalloc(
+                reinterpret_cast<void**>( &state.lightsbuf_p.reset() ),
+                sizeof( ParallelogramLight ) * g_lights.size()
+                ) );
     state.params.accum_buffer = (float4*)(CUdeviceptr)state.accum_buffer_p;
+    state.params.lights = (ParallelogramLight*)(CUdeviceptr)state.lightsbuf_p;
     state.params.frame_buffer = nullptr;  // Will be set when output buffer is mapped
 
     state.params.samples_per_launch = samples_per_launch;
     state.params.subframe_index     = 0u;
-
-    state.params.light.emission = make_float3( 100.f );
-    state.params.light.corner   = make_float3( 343.0f, 548.5f, 227.0f );
-    state.params.light.v1       = make_float3( 0.0f, 0.0f, 105.0f );
-    state.params.light.v2       = make_float3( -130.0f, 0.0f, 0.0f );
-    state.params.light.normal   = normalize( cross( state.params.light.v1, state.params.light.v2 ) );
-    state.params.handle         = state.gas_handle;
 }
 
 
@@ -367,6 +382,7 @@ static void launchSubframe( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Path
     // Launch
     uchar4* result_buffer_data = output_buffer.map();
     state.params.frame_buffer  = result_buffer_data;
+    state.params.num_lights = g_lights.size();
     CUDA_CHECK( cudaMemcpyAsync(
                 reinterpret_cast<void*>( (CUdeviceptr)state.d_params ),
                 &state.params, sizeof( Params ),
@@ -445,11 +461,10 @@ static void buildMeshAccel( PathTracerState& state )
                 cudaMemcpyHostToDevice, state.stream
                 ) );
 
-    raii<CUdeviceptr>  d_mat_indices             ;
     const size_t mat_indices_size_in_bytes = g_mat_indices.size() * sizeof( uint32_t );
-    CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &d_mat_indices.reset() ), mat_indices_size_in_bytes ) );
+    CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.d_mat_indices.reset() ), mat_indices_size_in_bytes ) );
     CUDA_CHECK( cudaMemcpyAsync(
-                reinterpret_cast<void*>( (CUdeviceptr)d_mat_indices ),
+                reinterpret_cast<void*>( (CUdeviceptr)state.d_mat_indices ),
                 g_mat_indices.data(),
                 mat_indices_size_in_bytes,
                 cudaMemcpyHostToDevice, state.stream
@@ -457,7 +472,7 @@ static void buildMeshAccel( PathTracerState& state )
 
     // // Build triangle GAS // // One per SBT record for this build input
     std::vector<uint32_t> triangle_input_flags(//MAT_COUNT
-        g_emission_colors.size(),
+        g_mtlidlut.size(),
         OPTIX_GEOMETRY_FLAG_REQUIRE_SINGLE_ANYHIT_CALL);
 
     OptixBuildInput triangle_input                           = {};
@@ -467,8 +482,8 @@ static void buildMeshAccel( PathTracerState& state )
     triangle_input.triangleArray.numVertices                 = static_cast<uint32_t>( g_vertices.size() );
     triangle_input.triangleArray.vertexBuffers               = g_vertices.empty() ? nullptr : &state.d_vertices;
     triangle_input.triangleArray.flags                       = triangle_input_flags.data();
-    triangle_input.triangleArray.numSbtRecords               = g_vertices.empty() ? 1 : g_emission_colors.size();
-    triangle_input.triangleArray.sbtIndexOffsetBuffer        = d_mat_indices;
+    triangle_input.triangleArray.numSbtRecords               = g_vertices.empty() ? 1 : g_mtlidlut.size();
+    triangle_input.triangleArray.sbtIndexOffsetBuffer        = state.d_mat_indices;
     triangle_input.triangleArray.sbtIndexOffsetSizeInBytes   = sizeof( uint32_t );
     triangle_input.triangleArray.sbtIndexOffsetStrideInBytes = sizeof( uint32_t );
 
@@ -514,7 +529,7 @@ static void buildMeshAccel( PathTracerState& state )
                 ) );
 
     d_temp_buffer.reset();
-    d_mat_indices.reset();
+    //d_mat_indices.reset();
 
     size_t compacted_gas_size;
     CUDA_CHECK( cudaMemcpyAsync( &compacted_gas_size, (void*)emitProperty.result, sizeof(size_t), cudaMemcpyDeviceToHost, state.stream ) );
@@ -580,18 +595,17 @@ static void createSBT( PathTracerState& state )
     raii<CUdeviceptr>  &d_hitgroup_records = state.d_hitgroup_records;
     const size_t hitgroup_record_size = sizeof( HitGroupRecord );
     CUDA_CHECK(cudaMalloc((void**)&d_hitgroup_records.reset(),
-                hitgroup_record_size * RAY_TYPE_COUNT * g_emission_colors.size()
+                hitgroup_record_size * RAY_TYPE_COUNT * g_mtlidlut.size()
                 ));
 
-    HitGroupRecord hitgroup_records[RAY_TYPE_COUNT * g_emission_colors.size()];
-    for( int i = 0; i < g_emission_colors.size(); ++i )
+    HitGroupRecord hitgroup_records[RAY_TYPE_COUNT * g_mtlidlut.size()];
+    for( int i = 0; i < g_mtlidlut.size(); ++i )
     {
         {
             const int sbt_idx = i * RAY_TYPE_COUNT + 0;  // SBT for radiance ray-type for ith material
 
             OPTIX_CHECK( optixSbtRecordPackHeader( OptixUtil::rtMaterialShaders[i].m_radiance_hit_group, &hitgroup_records[sbt_idx] ) );
-            hitgroup_records[sbt_idx].data.emission_color = g_emission_colors[i];
-            hitgroup_records[sbt_idx].data.diffuse_color  = g_diffuse_colors[i];
+            hitgroup_records[sbt_idx].data.uniforms     = nullptr; //TODO uniforms like iTime, iFrame, etc.
             hitgroup_records[sbt_idx].data.vertices       = reinterpret_cast<float4*>( (CUdeviceptr)state.d_vertices );
         }
 
@@ -623,7 +637,7 @@ static void createSBT( PathTracerState& state )
     CUDA_CHECK( cudaMemcpyAsync(
                 reinterpret_cast<void*>( (CUdeviceptr)d_hitgroup_records ),
                 hitgroup_records,
-                hitgroup_record_size*RAY_TYPE_COUNT*g_emission_colors.size(),
+                hitgroup_record_size*RAY_TYPE_COUNT*g_mtlidlut.size(),
                 cudaMemcpyHostToDevice, state.stream
                 ) );
 
@@ -633,7 +647,7 @@ static void createSBT( PathTracerState& state )
     state.sbt.missRecordCount             = RAY_TYPE_COUNT;
     state.sbt.hitgroupRecordBase          = d_hitgroup_records;
     state.sbt.hitgroupRecordStrideInBytes = static_cast<uint32_t>( hitgroup_record_size );
-    state.sbt.hitgroupRecordCount         = RAY_TYPE_COUNT * g_emission_colors.size();
+    state.sbt.hitgroupRecordCount         = RAY_TYPE_COUNT * g_mtlidlut.size();
 }
 
 
@@ -758,27 +772,49 @@ void optixinit( int argc, char* argv[] )
 //}
 
 static void updatedrawobjects();
-void optixupdatemesh() {
+void optixupdatemesh(std::map<std::string, int> const &mtlidlut) {
+    camera_changed = true;
+    g_mtlidlut = mtlidlut;
     updatedrawobjects();
     buildMeshAccel( state );
+}
+void optixupdatelight() {
     camera_changed = true;
+
+    g_lights.clear();
+    for (int i = 0; i < 1; i++) {
+        auto &light = g_lights.emplace_back();
+        light.emission = make_float3( 10000.f );
+        light.corner   = make_float3( 343.0f, 548.5f, 227.0f );
+        light.v2       = make_float3( -10.0f, 0.0f, 0.0f );
+        light.normal   = make_float3( 0.0f, -10.0f, 0.0f );
+        light.v1       = normalize( cross( light.v2, light.normal ) );
+    }
+    if (g_lights.size())
+        CUDA_CHECK( cudaMemcpyAsync(
+                reinterpret_cast<void*>( (CUdeviceptr)state.lightsbuf_p ),
+                g_lights.data(), sizeof( ParallelogramLight ) * g_lights.size(),
+                cudaMemcpyHostToDevice, state.stream
+                ) );
 }
 
-void optixupdatematerial(std::vector<const char *> const &shaders) {
+void optixupdatematerial(std::vector<std::string> const &shaders) {
     camera_changed = true;
 
         static bool hadOnce = false;
         if (!hadOnce) {
             //OPTIX_CHECK( optixModuleDestroy( OptixUtil::ray_module ) );
-    OptixUtil::ray_module = OptixUtil::createModule(
+    OptixUtil::createModule(
+        OptixUtil::ray_module,
         state.context,
         sutil::lookupIncFile("PTKernel.cu"),
         "PTKernel.cu");
         } hadOnce = true;
     OptixUtil::rtMaterialShaders.resize(0);
     for (int i = 0; i < shaders.size(); i++) {
-        if (!*shaders[i]) zeno::log_warn("shader {} is empty", i);
-        OptixUtil::rtMaterialShaders.push_back(OptixUtil::rtMatShader(shaders[i],"__closesthit__radiance", "__anyhit__shadow_cutout"));
+        if (shaders[i].empty()) zeno::log_error("shader {} is empty", i);
+        //OptixUtil::rtMaterialShaders.push_back(OptixUtil::rtMatShader(shaders[i].c_str(),"__closesthit__radiance", "__anyhit__shadow_cutout"));
+        OptixUtil::rtMaterialShaders.emplace_back(shaders[i].c_str(),"__closesthit__radiance", "__anyhit__shadow_cutout");
     }
     for(int i=0;i<OptixUtil::rtMaterialShaders.size();i++)
     {
@@ -822,6 +858,7 @@ void optixupdateend() {
 }
 
 struct DrawDat {
+    std::string mtlid;
     std::vector<float> verts;
     std::vector<float> tris;
     std::map<std::string, std::vector<float>> vertattrs;
@@ -839,9 +876,12 @@ static void updatedrawobjects() {
     g_mat_indices.resize(n);
     n = 0;
     for (auto const &[key, dat]: drawdats) {
+        auto it = g_mtlidlut.find(dat.mtlid);
+        int mtlindex = it != g_mtlidlut.end() ? it->second : 0;
+        //zeno::log_error("{} {}", dat.mtlid, mtlindex);
 //#pragma omp parallel for
         for (size_t i = 0; i < dat.tris.size() / 3; i++) {
-            g_mat_indices[n + i] = 0;
+            g_mat_indices[n + i] = mtlindex;
             g_vertices[(n + i) * 3 + 0] = {
                 dat.verts[dat.tris[i * 3 + 0] * 3 + 0],
                 dat.verts[dat.tris[i * 3 + 0] * 3 + 1],
@@ -865,10 +905,13 @@ static void updatedrawobjects() {
     }
 }
 
-void load_object(std::string const &key, float const *verts, size_t numverts, int const *tris, size_t numtris, std::map<std::string, std::pair<float const *, size_t>> const &vtab) {
+void load_object(std::string const &key, std::string const &mtlid, float const *verts, size_t numverts, int const *tris, size_t numtris, std::map<std::string, std::pair<float const *, size_t>> const &vtab) {
     DrawDat &dat = drawdats[key];
+    //ZENO_P(mtlid);
+    dat.mtlid = mtlid;
     dat.verts.assign(verts, verts + numverts * 3);
     dat.tris.assign(tris, tris + numtris * 3);
+    //TODO: flatten just here... or in renderengineoptx.cpp
     for (auto const &[key, fptr]: vtab) {
         dat.vertattrs[key].assign(fptr.first, fptr.first + numverts * fptr.second);
     }

@@ -64,7 +64,8 @@ struct Params
 
     CameraInfo cam;
 
-    ParallelogramLight     light; // TODO: make light list
+    unsigned int num_lights;
+    ParallelogramLight     *lights;
     OptixTraversableHandle handle;
 };
 
@@ -82,7 +83,6 @@ struct MissData
 
 struct HitGroupData
 {
-    float3  emission_color;
-    float3  diffuse_color;
     float4* vertices;
+    float* uniforms;//TODO
 };

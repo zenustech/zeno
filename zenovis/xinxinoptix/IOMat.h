@@ -3,7 +3,7 @@
 #include "zxxglslvec.h"
 
 struct MatOutput {
-    vec3  baseColor;
+    vec3  basecolor;
     float metallic;
     float roughness;
     float subsurface;
@@ -12,8 +12,8 @@ struct MatOutput {
     float anisotropic;
     float sheen;
     float sheenTint;
-    float clearCoat;
-    float clearCoatGloss;
+    float clearcoat;
+    float clearcoatGloss;
     float opacity;
 };
 

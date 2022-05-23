@@ -142,32 +142,26 @@ static __inline__ __device__ MatOutput evalMaterial(MatInput const &attrs) {
     auto attr_uv = attrs.uv;
     auto attr_nrm = attrs.nrm;
     auto attr_tang = attrs.tang;
+    /** generated code here beg **/
+    //GENERATED_BEGIN_MARK
     /* MODME */
-    vec3 mat_baseColor = vec3(0.8);
-    float mat_metallic = 1.0;
-    float mat_roughness = 0.2;
+    vec3 mat_basecolor = vec3(1.0, 0.0, 1.0);
+    float mat_metallic = 0.0;
+    float mat_roughness = 0.5;
     float mat_subsurface = 0.0;
     float mat_specular = 0;
     float mat_specularTint = 0.0;
     float mat_anisotropic = 0.0;
     float mat_sheen = 0.0;
     float mat_sheenTint = 0.0;
-    float mat_clearCoat = 0.0;
-    float mat_clearCoatGloss = 0.0;
+    float mat_clearcoat = 0.0;
+    float mat_clearcoatGloss = 0.0;
     float mat_opacity = 0.0;
-    /** generated code here beg **/
-    /*float pnoise = perlin(1, 3, attr_pos*0.02);
-    pnoise = clamp(pnoise, 0.0f, 1.0f);
-    float pnoise2 = perlin(1, 4, attr_pos*0.02);
-    mat_metallic = pnoise;
-    mat_roughness = pnoise2;
-    mat_roughness = clamp(mat_roughness, 0.01f,0.99f)*0.5f;
-    float pnoise3 = perlin(10.0, 5, attr_pos*0.005);
-    mat_opacity = clamp(pnoise3, 0.0f,1.0f);*/
+    //GENERATED_END_MARK
     /** generated code here end **/
     MatOutput mats;
     /* MODME */
-    mats.baseColor = mat_baseColor;
+    mats.basecolor = mat_basecolor;
     mats.metallic = mat_metallic;
     mats.roughness = mat_roughness;
     mats.subsurface = mat_subsurface;
@@ -176,8 +170,8 @@ static __inline__ __device__ MatOutput evalMaterial(MatInput const &attrs) {
     mats.anisotropic = mat_anisotropic;
     mats.sheen = mat_sheen;
     mats.sheenTint = mat_sheenTint;
-    mats.clearCoat = mat_clearCoat;
-    mats.clearCoatGloss = mat_clearCoatGloss;
+    mats.clearcoat = mat_clearcoat;
+    mats.clearcoatGloss = mat_clearcoatGloss;
     mats.opacity = mat_opacity;
     return mats;
 }
@@ -202,7 +196,8 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     attrs.pos = vec3(P.x, P.y, P.z);
     attrs.nrm = vec3(0,0,1);
     attrs.uv = vec3(0,0,0);//todo later
-    attrs.clr = vec3(rt_data->diffuse_color.x, rt_data->diffuse_color.y, rt_data->diffuse_color.z);
+    //attrs.clr = rt_data->face_attrib_clr[vert_idx_offset];
+    attrs.clr = vec3(1,1,1);
     attrs.tang = vec3(0,0,0);
     MatOutput mats = evalMaterial(attrs);
     //end of material computation
@@ -210,7 +205,7 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     mats.roughness = clamp(mats.roughness, 0.01,0.99);
 
     /* MODME */
-    auto baseColor = mats.baseColor;
+    auto basecolor = mats.basecolor;
     auto metallic = mats.metallic;
     auto roughness = mats.roughness;
     auto subsurface = mats.subsurface;
@@ -219,8 +214,8 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     auto anisotropic = mats.anisotropic;
     auto sheen = mats.sheen;
     auto sheenTint = mats.sheenTint;
-    auto clearCoat = mats.clearCoat;
-    auto clearCoatGloss = mats.clearCoatGloss;
+    auto clearcoat = mats.clearcoat;
+    auto clearcoatGloss = mats.clearcoatGloss;
     auto opacity = mats.opacity;
 
     // Stochastic alpha test to get an alpha blend effect.
@@ -255,15 +250,15 @@ extern "C" __global__ void __closesthit__radiance()
     attrs.pos = vec3(P.x, P.y, P.z);
     attrs.nrm = vec3(0,0,1);
     attrs.uv = vec3(0,0,0);//todo later
-    attrs.clr = vec3(rt_data->diffuse_color.x, rt_data->diffuse_color.y, rt_data->diffuse_color.z);
-    attrs.tang = vec3(0,0,0);
+    //attrs.clr = rt_data->face_attrib_clr[vert_idx_offset];
+    attrs.clr = vec3(1,1,1);
     MatOutput mats = evalMaterial(attrs);
     //end of material computation
     mats.metallic = clamp(mats.metallic,0.01, 0.99);
     mats.roughness = clamp(mats.roughness, 0.01,0.99);
 
     /* MODME */
-    auto baseColor = mats.baseColor;
+    auto basecolor = mats.basecolor;
     auto metallic = mats.metallic;
     auto roughness = mats.roughness;
     auto subsurface = mats.subsurface;
@@ -272,8 +267,8 @@ extern "C" __global__ void __closesthit__radiance()
     auto anisotropic = mats.anisotropic;
     auto sheen = mats.sheen;
     auto sheenTint = mats.sheenTint;
-    auto clearCoat = mats.clearCoat;
-    auto clearCoatGloss = mats.clearCoatGloss;
+    auto clearcoat = mats.clearcoat;
+    auto clearcoatGloss = mats.clearcoatGloss;
     auto opacity = mats.opacity;
 
     //discard fully opacity pixels
@@ -289,9 +284,10 @@ extern "C" __global__ void __closesthit__radiance()
     //{
     unsigned int seed = prd->seed;
     float is_refl;
+    float3 inDir = ray_dir;
     float3 wi = DisneyBRDF::sample_f(
                                 seed,
-                                baseColor,
+                                basecolor,
                                 metallic,
                                 subsurface,
                                 specular,
@@ -300,15 +296,15 @@ extern "C" __global__ void __closesthit__radiance()
                                 anisotropic,
                                 sheen,
                                 sheenTint,
-                                clearCoat,
-                                clearCoatGloss,
+                                clearcoat,
+                                clearcoatGloss,
                                 N,
                                 make_float3(0,0,0),
                                 make_float3(0,0,0),
                                 -normalize(ray_dir),
                                 is_refl);
 
-    float pdf = DisneyBRDF::pdf(baseColor,
+    float pdf = DisneyBRDF::pdf(basecolor,
                                 metallic,
                                 subsurface,
                                 specular,
@@ -317,15 +313,15 @@ extern "C" __global__ void __closesthit__radiance()
                                 anisotropic,
                                 sheen,
                                 sheenTint,
-                                clearCoat,
-                                clearCoatGloss,
+                                clearcoat,
+                                clearcoatGloss,
                                 N,
                                 make_float3(0,0,0),
                                 make_float3(0,0,0),
                                 wi,
                                 -normalize(ray_dir)
                                 );
-    float3 f = DisneyBRDF::eval(baseColor,
+    float3 f = DisneyBRDF::eval(basecolor,
                                 metallic,
                                 subsurface,
                                 specular,
@@ -334,8 +330,8 @@ extern "C" __global__ void __closesthit__radiance()
                                 anisotropic,
                                 sheen,
                                 sheenTint,
-                                clearCoat,
-                                clearCoatGloss,
+                                clearcoat,
+                                clearcoatGloss,
                                 N,
                                 make_float3(0,0,0),
                                 make_float3(0,0,0),
@@ -343,14 +339,14 @@ extern "C" __global__ void __closesthit__radiance()
                                 -normalize(ray_dir)
                                 );
     prd->prob2 = prd->prob;
-    prd->prob *= pdf;
+    prd->prob *= pdf/clamp(dot(wi, N),0.0f,1.0f);
     prd->origin = P;
     prd->direction = wi;
     prd->countEmitted = false;
     if(is_refl)
-        prd->attenuation *= f * clamp(dot(wi, N),0.0f,1.0f);
+        prd->attenuation *= f;
     else
-        prd->attenuation *= f * clamp(dot(wi, N),0.0f,1.0f);
+        prd->attenuation *= f;
     //}
 
     // {
@@ -372,14 +368,14 @@ extern "C" __global__ void __closesthit__radiance()
     const float z2 = rnd(seed);
     prd->seed = seed;
 
-    ParallelogramLight light = params.light;
+    ParallelogramLight light = params.lights[0];
     const float3 light_pos = light.corner + light.v1 * z1 + light.v2 * z2;
 
     // Calculate properties of light sample (for area based pdf)
     const float  Ldist = length(light_pos - P );
     const float3 L     = normalize(light_pos - P );
-    const float  nDl   = dot( N, L );
-    const float  LnDl  = -dot( light.normal, L );
+    const float  nDl   = clamp(dot( N, L ),0.0f,1.0f);
+    const float  LnDl  = clamp(-dot( light.normal, L ),0.0f,1.0f);
 
     float weight = 0.0f;
     if( nDl > 0.0f && LnDl > 0.0f )
@@ -400,7 +396,7 @@ extern "C" __global__ void __closesthit__radiance()
         }
     }
 
-    prd->radiance += light.emission * weight;
+    prd->radiance = light.emission * weight;
 }
 
 extern "C" __global__ void __closesthit__occlusion()

@@ -62,9 +62,9 @@ extern "C" __global__ void __raygen__rg()
                     &prd );
 
             result += prd.emitted;
-            result += prd.radiance * prd.attenuation;
+            result += prd.radiance * prd.attenuation/prd.prob;
 
-            if( prd.done  || depth >= 3 ) // TODO RR, variable for depth
+            if( prd.done  || depth >= 5 ) // TODO RR, variable for depth
                 break;
 
             ray_origin    = prd.origin;
