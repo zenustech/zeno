@@ -707,6 +707,95 @@ struct ImplicitTimeStepping : INode {
         atomic_add(exec_cuda, &res[0], vole * psi * dt * dt);
       });
       // contacts
+      if (false) {
+        auto numPP = nPP.getVal();
+        pol(range(numPP),
+            [vtemp = proxy<space>({}, vtemp), tempPP = proxy<space>({}, tempPP),
+             PP = proxy<space>(PP), wPP = proxy<space>(wPP),
+             res = proxy<space>(res), xi2 = xi * xi, dHat = dHat,
+             activeGap2 = zs::sqr(dHat) + 2 * xi * dHat,
+             // minDist2 = zs::sqr(xi + dHat),
+             dt2 = dt * dt] __device__(int ppi) mutable {
+              static constexpr T kappa = 1e5;
+              auto pp = PP[ppi];
+              auto x0 = vtemp.pack<3>("xn", pp[0]);
+              auto x1 = vtemp.pack<3>("xn", pp[1]);
+              auto dist2 = dist2_pp(x0, x1);
+              // if (dist2 < minDist2)
+              //  minDist2 = dist2;
+              if (dist2 < xi2)
+                printf("dist already smaller than xi!\n");
+              atomic_add(exec_cuda, &res[0],
+                         dt2 * wPP[ppi] * dHat *
+                             zs::barrier(dist2 - xi2, activeGap2, kappa));
+            });
+        auto numPE = nPE.getVal();
+        pol(range(numPE),
+            [vtemp = proxy<space>({}, vtemp), tempPE = proxy<space>({}, tempPE),
+             PE = proxy<space>(PE), wPE = proxy<space>(wPE),
+             res = proxy<space>(res), xi2 = xi * xi, dHat = dHat,
+             activeGap2 = zs::sqr(dHat) + 2 * xi * dHat,
+             dt2 = dt * dt] __device__(int pei) mutable {
+              static constexpr T kappa = 1e5;
+              auto pe = PE[pei];
+              auto p = vtemp.pack<3>("xn", pe[0]);
+              auto e0 = vtemp.pack<3>("xn", pe[1]);
+              auto e1 = vtemp.pack<3>("xn", pe[2]);
+
+              auto dist2 = dist2_pe(p, e0, e1);
+              if (dist2 < xi2)
+                printf("dist already smaller than xi!\n");
+              atomic_add(exec_cuda, &res[0],
+                         dt2 * wPE[pei] * dHat *
+                             zs::barrier(dist2 - xi2, activeGap2, kappa));
+            });
+        auto numPT = nPT.getVal();
+        pol(range(numPT),
+            [vtemp = proxy<space>({}, vtemp), tempPT = proxy<space>({}, tempPT),
+             PT = proxy<space>(PT), wPT = proxy<space>(wPT),
+             res = proxy<space>(res), xi2 = xi * xi, dHat = dHat,
+             activeGap2 = zs::sqr(dHat) + 2 * xi * dHat,
+             dt2 = dt * dt] __device__(int pti) mutable {
+              static constexpr T kappa = 1e5;
+              auto pt = PT[pti];
+              auto p = vtemp.pack<3>("xn", pt[0]);
+              auto t0 = vtemp.pack<3>("xn", pt[1]);
+              auto t1 = vtemp.pack<3>("xn", pt[2]);
+              auto t2 = vtemp.pack<3>("xn", pt[3]);
+
+              auto dist2 = dist2_pt(p, t0, t1, t2);
+              if (dist2 < xi2)
+                printf("dist already smaller than xi!\n");
+              atomic_add(exec_cuda, &res[0],
+                         dt2 * wPT[pti] * dHat *
+                             zs::barrier(dist2 - xi2, activeGap2, kappa));
+            });
+        auto numEE = nEE.getVal();
+        pol(range(numEE),
+            [vtemp = proxy<space>({}, vtemp), tempEE = proxy<space>({}, tempEE),
+             EE = proxy<space>(EE), wEE = proxy<space>(wEE),
+             res = proxy<space>(res), xi2 = xi * xi, dHat = dHat,
+             activeGap2 = zs::sqr(dHat) + 2 * xi * dHat,
+             dt2 = dt * dt] __device__(int eei) mutable {
+              static constexpr T kappa = 1e5;
+              auto ee = EE[eei];
+              auto ea0 = vtemp.pack<3>("xn", ee[0]);
+              auto ea1 = vtemp.pack<3>("xn", ee[1]);
+              auto eb0 = vtemp.pack<3>("xn", ee[2]);
+              auto eb1 = vtemp.pack<3>("xn", ee[3]);
+
+              auto dist2 = dist2_ee(ea0, ea1, eb0, eb1);
+              if (dist2 < xi2)
+                printf("dist already smaller than xi!\n");
+              atomic_add(exec_cuda, &res[0],
+                         dt2 * wEE[eei] * dHat *
+                             zs::barrier(dist2 - xi2, activeGap2, kappa));
+            });
+        if (numPP || numPE || numPT || numEE) {
+          fmt::print("contact indeed detected\n");
+          getchar();
+        }
+      }
       return res.getVal();
     }
     template <typename Pol> void project(Pol &pol, const zs::SmallString tag) {
@@ -1276,6 +1365,9 @@ struct ImplicitTimeStepping : INode {
           vtemp.tuple<3>("xn", i) =
               vtemp.pack<3>("xn0", i) + alpha * vtemp.pack<3>("dir", i);
         });
+        //
+        precompute_constraints(cudaPol, *zstets, vtemp, dHat, xi, PP, wPP, nPP,
+                               PE, wPE, nPE, PT, wPT, nPT, EE, wEE, nEE);
         match([&](auto &elasticModel) {
           E = A.energy(cudaPol, elasticModel, "xn");
         })(models.getElasticModel());
