@@ -122,6 +122,7 @@ struct ZenoParticles : IObjectClone<ZenoParticles> {
   using particles_t = zs::TileVector<float, 32>;
   using lbvh_t = zs::LBvh<3>;
 
+  static constexpr auto s_elementTag = "elements";
   static constexpr auto s_surfTriTag = "surfaces";
   static constexpr auto s_surfEdgeTag = "surfEdges";
   static constexpr auto s_surfVertTag = "surfVerts";

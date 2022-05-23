@@ -124,114 +124,388 @@ struct ImplicitTimeStepping : INode {
   using tiles_t = typename ZenoParticles::particles_t;
   using vec3 = zs::vec<T, 3>;
   using mat3 = zs::vec<T, 3, 3>;
+  using pair_t = zs::vec<int, 2>;
+  using pair3_t = zs::vec<int, 3>;
+  using pair4_t = zs::vec<int, 4>;
 
-/// ref: codim-ipc
-#if 0
-  template <class T, int dim>
+  /// ref: codim-ipc
+  void precompute_constraints(
+      zs::CudaExecutionPolicy &pol, ZenoParticles &zstets,
+      const typename ZenoParticles::particles_t &vtemp, T dHat, T xi,
+      zs::Vector<pair_t> &PP, zs::Vector<T> &wPP, zs::Vector<int> &nPP,
+      zs::Vector<pair3_t> &PE, zs::Vector<T> &wPE, zs::Vector<int> &nPE,
+      zs::Vector<pair4_t> &PT, zs::Vector<T> &wPT, zs::Vector<int> &nPT,
+      zs::Vector<pair4_t> &EE, zs::Vector<T> &wEE, zs::Vector<int> &nEE) {
+    using namespace zs;
+    using bv_t = typename ZenoParticles::lbvh_t::Box;
+    T activeGap2 = dHat * dHat + (T)2.0 * xi * dHat;
+    T xi2 = xi * xi;
+    constexpr auto space = execspace_e::cuda;
+    const auto &verts = zstets.getParticles();
+    const auto &eles = zstets.getQuadraturePoints();
+
+    nPP.setVal(0);
+    nPE.setVal(0);
+    nPT.setVal(0);
+    nEE.setVal(0);
+
+    /// tri
+    const auto &surfaces = zstets[ZenoParticles::s_surfTriTag];
+    {
+      auto bvs = retrieve_bounding_volumes(pol, verts, surfaces, wrapv<3>{},
+                                           dHat + xi);
+      if (!zstets.hasBvh(ZenoParticles::s_surfTriTag)) // build if bvh not exist
+        zstets.bvh(ZenoParticles::s_surfTriTag).build(pol, bvs);
+      else
+        zstets.bvh(ZenoParticles::s_surfTriTag).refit(pol, bvs);
+    }
+    const auto &stBvh = zstets.bvh(ZenoParticles::s_surfTriTag);
+
+    /// edges
+    const auto &surfEdges = zstets[ZenoParticles::s_surfEdgeTag];
+    {
+      auto bvs = retrieve_bounding_volumes(pol, verts, surfEdges, wrapv<2>{},
+                                           dHat + xi);
+      if (!zstets.hasBvh(ZenoParticles::s_surfEdgeTag))
+        zstets.bvh(ZenoParticles::s_surfEdgeTag).build(pol, bvs);
+      else
+        zstets.bvh(ZenoParticles::s_surfEdgeTag).refit(pol, bvs);
+    }
+    const auto &seBvh = zstets.bvh(ZenoParticles::s_surfEdgeTag);
+
+    /// points
+    const auto &surfVerts = zstets[ZenoParticles::s_surfVertTag];
+
+    // query pt
+    pol(Collapse{surfVerts.size()},
+        [svs = proxy<space>({}, surfVerts), sts = proxy<space>({}, surfaces),
+         verts = proxy<space>({}, verts), vtemp = proxy<space>({}, vtemp),
+         bvh = proxy<space>(stBvh), PP = proxy<space>(PP),
+         wPP = proxy<space>(wPP), nPP = proxy<space>(nPP),
+         PE = proxy<space>(PE), wPE = proxy<space>(wPE),
+         nPE = proxy<space>(nPE), PT = proxy<space>(PT),
+         wPT = proxy<space>(wPT), nPT = proxy<space>(nPT),
+         thickness = dHat + xi, xi2, activeGap2] ZS_LAMBDA(int svi) mutable {
+          auto vi = reinterpret_bits<int>(svs("inds", svi));
+          auto p = vtemp.pack<3>("xn", vi);
+          // auto wp = verts("w", vi);
+          auto wp = (T)0.25;
+          auto [mi, ma] =
+              get_bounding_box(p - thickness / 2, p + thickness / 2);
+          auto bv = bv_t{mi, ma};
+          bvh.iter_neighbors(bv, [&](int stI) {
+            auto tri = sts.template pack<3>("inds", stI)
+                           .template reinterpret_bits<int>();
+            if (vi == tri[0] || vi == tri[1] || vi == tri[2])
+              return;
+            // all affected by sticky boundary conditions
+            if (reinterpret_bits<int>(verts("BCorder", vi)) == 3 &&
+                reinterpret_bits<int>(verts("BCorder", tri[0])) == 3 &&
+                reinterpret_bits<int>(verts("BCorder", tri[1])) == 3 &&
+                reinterpret_bits<int>(verts("BCorder", tri[2])) == 3)
+              return;
+            // ccd
+            auto t0 = vtemp.pack<3>("xn", tri[0]);
+            auto t1 = vtemp.pack<3>("xn", tri[1]);
+            auto t2 = vtemp.pack<3>("xn", tri[2]);
+            if (!pt_cd_broadphase(p, t0, t1, t2, thickness))
+              return;
+            switch (pt_distance_type(p, t0, t1, t2)) {
+            case 0: {
+              if (dist2_pp(p, t0) - xi2 < activeGap2) {
+                auto no = atomic_add(exec_cuda, &nPP[0], 1);
+                PP[no] = pair_t{vi, tri[0]};
+                wPP[no] = wp;
+              }
+              break;
+            }
+            case 1: {
+              if (dist2_pp(p, t1) - xi2 < activeGap2) {
+                auto no = atomic_add(exec_cuda, &nPP[0], 1);
+                PP[no] = pair_t{vi, tri[1]};
+                wPP[no] = wp;
+              }
+              break;
+            }
+            case 2: {
+              if (dist2_pp(p, t2) - xi2 < activeGap2) {
+                auto no = atomic_add(exec_cuda, &nPP[0], 1);
+                PP[no] = pair_t{vi, tri[2]};
+                wPP[no] = wp;
+              }
+              break;
+            }
+            case 3: {
+              if (dist2_pe(p, t0, t1) - xi2 < activeGap2) {
+                auto no = atomic_add(exec_cuda, &nPE[0], 1);
+                PE[no] = pair3_t{vi, tri[0], tri[1]};
+                wPE[no] = wp;
+              }
+              break;
+            }
+            case 4: {
+              if (dist2_pe(p, t1, t2) - xi2 < activeGap2) {
+                auto no = atomic_add(exec_cuda, &nPE[0], 1);
+                PE[no] = pair3_t{vi, tri[1], tri[2]};
+                wPE[no] = wp;
+              }
+              break;
+            }
+            case 5: {
+              if (dist2_pe(p, t2, t0) - xi2 < activeGap2) {
+                auto no = atomic_add(exec_cuda, &nPE[0], 1);
+                PE[no] = pair3_t{vi, tri[2], tri[0]};
+                wPE[no] = wp;
+              }
+              break;
+            }
+            case 6: {
+              if (dist2_pt(p, t0, t1, t2) - xi2 < activeGap2) {
+                auto no = atomic_add(exec_cuda, &nPT[0], 1);
+                PT[no] = pair4_t{vi, tri[0], tri[1], tri[2]};
+                wPT[no] = wp;
+              }
+              break;
+            }
+            default:
+              break;
+            }
+          });
+        });
+
+    // query ee
+    zs::Vector<T> surfEdgeAlphas{surfEdges.get_allocator(), surfEdges.size()};
+    pol(Collapse{surfEdges.size()},
+        [ses = proxy<space>({}, surfEdges), verts = proxy<space>({}, verts),
+         vtemp = proxy<space>({}, vtemp), bvh = proxy<space>(seBvh),
+         PP = proxy<space>(PP), wPP = proxy<space>(wPP),
+         nPP = proxy<space>(nPP), PE = proxy<space>(PE),
+         wPE = proxy<space>(wPE), nPE = proxy<space>(nPE),
+         EE = proxy<space>(EE), wEE = proxy<space>(wEE),
+         nEE = proxy<space>(nEE), thickness = dHat + xi, xi2,
+         activeGap2] ZS_LAMBDA(int sei) mutable {
+          auto edgeInds = ses.template pack<2>("inds", sei)
+                              .template reinterpret_bits<int>();
+          auto x0 = vtemp.pack<3>("xn", edgeInds[0]);
+          auto x1 = vtemp.pack<3>("xn", edgeInds[1]);
+          auto [mi, ma] = get_bounding_box(x0, x1);
+          auto bv = bv_t{mi - thickness / 2, ma + thickness / 2};
+          bvh.iter_neighbors(bv, [&](int seI) {
+            if (sei > seI)
+              return;
+            auto oEdgeInds = ses.template pack<2>("inds", seI)
+                                 .template reinterpret_bits<int>();
+            if (edgeInds[0] == oEdgeInds[0] || edgeInds[0] == oEdgeInds[1] ||
+                edgeInds[1] == oEdgeInds[0] || edgeInds[1] == oEdgeInds[1])
+              return;
+            // all affected by sticky boundary conditions
+            if (reinterpret_bits<int>(verts("BCorder", edgeInds[0])) == 3 &&
+                reinterpret_bits<int>(verts("BCorder", edgeInds[1])) == 3 &&
+                reinterpret_bits<int>(verts("BCorder", oEdgeInds[0])) == 3 &&
+                reinterpret_bits<int>(verts("BCorder", oEdgeInds[1])) == 3)
+              return;
+            // ccd
+            auto eb0 = vtemp.pack<3>("xn", oEdgeInds[0]);
+            auto eb1 = vtemp.pack<3>("xn", oEdgeInds[1]);
+            if (!ee_cd_broadphase(x0, x1, eb0, eb1, thickness))
+              return;
+            auto we = (verts("w", sei) + verts("w", seI)) / 4;
+            switch (ee_distance_type(x0, x1, eb0, eb1)) {
+            case 0: {
+              if (dist2_pp(x0, eb0) - xi2 < activeGap2) {
+                auto no = atomic_add(exec_cuda, &nPP[0], 1);
+                PP[no] = pair_t{edgeInds[0], oEdgeInds[0]};
+                wPP[no] = we;
+              }
+              break;
+            }
+            case 1: {
+              if (dist2_pp(x0, eb1) - xi2 < activeGap2) {
+                auto no = atomic_add(exec_cuda, &nPP[0], 1);
+                PP[no] = pair_t{edgeInds[0], oEdgeInds[1]};
+                wPP[no] = we;
+              }
+              break;
+            }
+            case 2: {
+              if (dist2_pe(x0, eb0, eb1) - xi2 < activeGap2) {
+                auto no = atomic_add(exec_cuda, &nPE[0], 1);
+                PE[no] = pair3_t{edgeInds[0], oEdgeInds[0], oEdgeInds[1]};
+                wPE[no] = we;
+              }
+              break;
+            }
+            case 3: {
+              if (dist2_pp(x1, eb0) - xi2 < activeGap2) {
+                auto no = atomic_add(exec_cuda, &nPP[0], 1);
+                PP[no] = pair_t{edgeInds[1], oEdgeInds[0]};
+                wPP[no] = we;
+              }
+              break;
+            }
+            case 4: {
+              if (dist2_pp(x1, eb1) - xi2 < activeGap2) {
+                auto no = atomic_add(exec_cuda, &nPP[0], 1);
+                PP[no] = pair_t{edgeInds[1], oEdgeInds[1]};
+                wPP[no] = we;
+              }
+              break;
+            }
+            case 5: {
+              if (dist2_pe(x1, eb0, eb1) - xi2 < activeGap2) {
+                auto no = atomic_add(exec_cuda, &nPE[0], 1);
+                PE[no] = pair3_t{edgeInds[1], oEdgeInds[0], oEdgeInds[1]};
+                wPE[no] = we;
+              }
+              break;
+            }
+            case 6: {
+              if (dist2_pe(eb0, x0, x1) - xi2 < activeGap2) {
+                auto no = atomic_add(exec_cuda, &nPE[0], 1);
+                PE[no] = pair3_t{oEdgeInds[0], edgeInds[0], edgeInds[1]};
+                wPE[no] = we;
+              }
+              break;
+            }
+            case 7: {
+              if (dist2_pe(eb1, x0, x1) - xi2 < activeGap2) {
+                auto no = atomic_add(exec_cuda, &nPE[0], 1);
+                PE[no] = pair3_t{oEdgeInds[1], edgeInds[0], edgeInds[1]};
+                wPE[no] = we;
+              }
+              break;
+            }
+            case 8: {
+              if (dist2_ee(x0, x1, eb0, eb1) - xi2 < activeGap2) {
+                auto no = atomic_add(exec_cuda, &nEE[0], 1);
+                EE[no] = pair4_t{edgeInds[0], edgeInds[1], oEdgeInds[0],
+                                 oEdgeInds[1]};
+                wEE[no] = we;
+              }
+              break;
+            }
+            default:
+              break;
+            }
+          });
+        });
+  }
   void computeInversionFreeStepSize(zs::CudaExecutionPolicy &pol,
                                     const tiles_t &verts, const tiles_t &eles,
                                     const dtiles_t &searchDir, T &stepSize) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
-    zs::Vector<T> stepSizes{eles.get_allocator(), eles.size()};
-    pol(zs::Collapse{eles.size()},
-        [verts = proxy<space>({}, verts), eles = proxy<space>({}, eles),
-         stepSizes = proxy<space>(stepSizes),
-         searchDir = proxy<space>({}, searchDir)](int ei) {
-          auto inds = eles.pack<4>("inds", ei).reinterpret_bits<int>();
-          T x1 = verts("x", 0, inds[0]);
-          T x2 = verts("x", 0, inds[1]);
-          T x3 = verts("x", 0, inds[2]);
-          T x4 = verts("x", 0, inds[3]);
+    zs::Vector<T> stepSizes{eles.get_allocator(), eles.size()},
+        minSize{eles.get_allocator(), 1};
+    minSize.setVal(stepSize);
+    pol(zs::Collapse{eles.size()}, [verts = proxy<space>({}, verts),
+                                    eles = proxy<space>({}, eles),
+                                    minSize = proxy<space>(minSize),
+                                    searchDir = proxy<space>({}, searchDir),
+                                    stepSize] __device__(int ei) mutable {
+      auto inds = eles.pack<4>("inds", ei).reinterpret_bits<int>();
+      T x1 = searchDir("xn", 0, inds[0]);
+      T x2 = searchDir("xn", 0, inds[1]);
+      T x3 = searchDir("xn", 0, inds[2]);
+      T x4 = searchDir("xn", 0, inds[3]);
 
-          T y1 = verts("x", 1, inds[0]);
-          T y2 = verts("x", 1, inds[1]);
-          T y3 = verts("x", 1, inds[2]);
-          T y4 = verts("x", 1, inds[3]);
+      T y1 = searchDir("xn", 1, inds[0]);
+      T y2 = searchDir("xn", 1, inds[1]);
+      T y3 = searchDir("xn", 1, inds[2]);
+      T y4 = searchDir("xn", 1, inds[3]);
 
-          T z1 = verts("x", 2, inds[0]);
-          T z2 = verts("x", 2, inds[1]);
-          T z3 = verts("x", 2, inds[2]);
-          T z4 = verts("x", 2, inds[3]);
+      T z1 = searchDir("xn", 2, inds[0]);
+      T z2 = searchDir("xn", 2, inds[1]);
+      T z3 = searchDir("xn", 2, inds[2]);
+      T z4 = searchDir("xn", 2, inds[3]);
 
-          T p1 = searchDir("dir", 0, inds[0]);
-          T p2 = searchDir("dir", 0, inds[1]);
-          T p3 = searchDir("dir", 0, inds[2]);
-          T p4 = searchDir("dir", 0, inds[3]);
+      T p1 = searchDir("dir", 0, inds[0]);
+      T p2 = searchDir("dir", 0, inds[1]);
+      T p3 = searchDir("dir", 0, inds[2]);
+      T p4 = searchDir("dir", 0, inds[3]);
 
-          T q1 = searchDir("dir", 1, inds[0]);
-          T q2 = searchDir("dir", 1, inds[1]);
-          T q3 = searchDir("dir", 1, inds[2]);
-          T q4 = searchDir("dir", 1, inds[3]);
+      T q1 = searchDir("dir", 1, inds[0]);
+      T q2 = searchDir("dir", 1, inds[1]);
+      T q3 = searchDir("dir", 1, inds[2]);
+      T q4 = searchDir("dir", 1, inds[3]);
 
-          T r1 = searchDir("dir", 2, inds[0]);
-          T r2 = searchDir("dir", 2, inds[1]);
-          T r3 = searchDir("dir", 2, inds[2]);
-          T r4 = searchDir("dir", 2, inds[3]);
+      T r1 = searchDir("dir", 2, inds[0]);
+      T r2 = searchDir("dir", 2, inds[1]);
+      T r3 = searchDir("dir", 2, inds[2]);
+      T r4 = searchDir("dir", 2, inds[3]);
 
-          T a = -p1 * q2 * r3 + p1 * r2 * q3 + q1 * p2 * r3 - q1 * r2 * p3 -
-                r1 * p2 * q3 + r1 * q2 * p3 + p1 * q2 * r4 - p1 * r2 * q4 -
-                q1 * p2 * r4 + q1 * r2 * p4 + r1 * p2 * q4 - r1 * q2 * p4 -
-                p1 * q3 * r4 + p1 * r3 * q4 + q1 * p3 * r4 - q1 * r3 * p4 -
-                r1 * p3 * q4 + r1 * q3 * p4 + p2 * q3 * r4 - p2 * r3 * q4 -
-                q2 * p3 * r4 + q2 * r3 * p4 + r2 * p3 * q4 - r2 * q3 * p4;
-          T b = -x1 * q2 * r3 + x1 * r2 * q3 + y1 * p2 * r3 - y1 * r2 * p3 -
-                z1 * p2 * q3 + z1 * q2 * p3 + x2 * q1 * r3 - x2 * r1 * q3 -
-                y2 * p1 * r3 + y2 * r1 * p3 + z2 * p1 * q3 - z2 * q1 * p3 -
-                x3 * q1 * r2 + x3 * r1 * q2 + y3 * p1 * r2 - y3 * r1 * p2 -
-                z3 * p1 * q2 + z3 * q1 * p2 + x1 * q2 * r4 - x1 * r2 * q4 -
-                y1 * p2 * r4 + y1 * r2 * p4 + z1 * p2 * q4 - z1 * q2 * p4 -
-                x2 * q1 * r4 + x2 * r1 * q4 + y2 * p1 * r4 - y2 * r1 * p4 -
-                z2 * p1 * q4 + z2 * q1 * p4 + x4 * q1 * r2 - x4 * r1 * q2 -
-                y4 * p1 * r2 + y4 * r1 * p2 + z4 * p1 * q2 - z4 * q1 * p2 -
-                x1 * q3 * r4 + x1 * r3 * q4 + y1 * p3 * r4 - y1 * r3 * p4 -
-                z1 * p3 * q4 + z1 * q3 * p4 + x3 * q1 * r4 - x3 * r1 * q4 -
-                y3 * p1 * r4 + y3 * r1 * p4 + z3 * p1 * q4 - z3 * q1 * p4 -
-                x4 * q1 * r3 + x4 * r1 * q3 + y4 * p1 * r3 - y4 * r1 * p3 -
-                z4 * p1 * q3 + z4 * q1 * p3 + x2 * q3 * r4 - x2 * r3 * q4 -
-                y2 * p3 * r4 + y2 * r3 * p4 + z2 * p3 * q4 - z2 * q3 * p4 -
-                x3 * q2 * r4 + x3 * r2 * q4 + y3 * p2 * r4 - y3 * r2 * p4 -
-                z3 * p2 * q4 + z3 * q2 * p4 + x4 * q2 * r3 - x4 * r2 * q3 -
-                y4 * p2 * r3 + y4 * r2 * p3 + z4 * p2 * q3 - z4 * q2 * p3;
-          T c = -x1 * y2 * r3 + x1 * z2 * q3 + x1 * y3 * r2 - x1 * z3 * q2 +
-                y1 * x2 * r3 - y1 * z2 * p3 - y1 * x3 * r2 + y1 * z3 * p2 -
-                z1 * x2 * q3 + z1 * y2 * p3 + z1 * x3 * q2 - z1 * y3 * p2 -
-                x2 * y3 * r1 + x2 * z3 * q1 + y2 * x3 * r1 - y2 * z3 * p1 -
-                z2 * x3 * q1 + z2 * y3 * p1 + x1 * y2 * r4 - x1 * z2 * q4 -
-                x1 * y4 * r2 + x1 * z4 * q2 - y1 * x2 * r4 + y1 * z2 * p4 +
-                y1 * x4 * r2 - y1 * z4 * p2 + z1 * x2 * q4 - z1 * y2 * p4 -
-                z1 * x4 * q2 + z1 * y4 * p2 + x2 * y4 * r1 - x2 * z4 * q1 -
-                y2 * x4 * r1 + y2 * z4 * p1 + z2 * x4 * q1 - z2 * y4 * p1 -
-                x1 * y3 * r4 + x1 * z3 * q4 + x1 * y4 * r3 - x1 * z4 * q3 +
-                y1 * x3 * r4 - y1 * z3 * p4 - y1 * x4 * r3 + y1 * z4 * p3 -
-                z1 * x3 * q4 + z1 * y3 * p4 + z1 * x4 * q3 - z1 * y4 * p3 -
-                x3 * y4 * r1 + x3 * z4 * q1 + y3 * x4 * r1 - y3 * z4 * p1 -
-                z3 * x4 * q1 + z3 * y4 * p1 + x2 * y3 * r4 - x2 * z3 * q4 -
-                x2 * y4 * r3 + x2 * z4 * q3 - y2 * x3 * r4 + y2 * z3 * p4 +
-                y2 * x4 * r3 - y2 * z4 * p3 + z2 * x3 * q4 - z2 * y3 * p4 -
-                z2 * x4 * q3 + z2 * y4 * p3 + x3 * y4 * r2 - x3 * z4 * q2 -
-                y3 * x4 * r2 + y3 * z4 * p2 + z3 * x4 * q2 - z3 * y4 * p2;
-          T d = ((T)1.0 - (T)0.2) *
-                (x1 * z2 * y3 - x1 * y2 * z3 + y1 * x2 * z3 - y1 * z2 * x3 -
-                 z1 * x2 * y3 + z1 * y2 * x3 + x1 * y2 * z4 - x1 * z2 * y4 -
-                 y1 * x2 * z4 + y1 * z2 * x4 + z1 * x2 * y4 - z1 * y2 * x4 -
-                 x1 * y3 * z4 + x1 * z3 * y4 + y1 * x3 * z4 - y1 * z3 * x4 -
-                 z1 * x3 * y4 + z1 * y3 * x4 + x2 * y3 * z4 - x2 * z3 * y4 -
-                 y2 * x3 * z4 + y2 * z3 * x4 + z2 * x3 * y4 - z2 * y3 * x4);
+      T a = -p1 * q2 * r3 + p1 * r2 * q3 + q1 * p2 * r3 - q1 * r2 * p3 -
+            r1 * p2 * q3 + r1 * q2 * p3 + p1 * q2 * r4 - p1 * r2 * q4 -
+            q1 * p2 * r4 + q1 * r2 * p4 + r1 * p2 * q4 - r1 * q2 * p4 -
+            p1 * q3 * r4 + p1 * r3 * q4 + q1 * p3 * r4 - q1 * r3 * p4 -
+            r1 * p3 * q4 + r1 * q3 * p4 + p2 * q3 * r4 - p2 * r3 * q4 -
+            q2 * p3 * r4 + q2 * r3 * p4 + r2 * p3 * q4 - r2 * q3 * p4;
+      T b = -x1 * q2 * r3 + x1 * r2 * q3 + y1 * p2 * r3 - y1 * r2 * p3 -
+            z1 * p2 * q3 + z1 * q2 * p3 + x2 * q1 * r3 - x2 * r1 * q3 -
+            y2 * p1 * r3 + y2 * r1 * p3 + z2 * p1 * q3 - z2 * q1 * p3 -
+            x3 * q1 * r2 + x3 * r1 * q2 + y3 * p1 * r2 - y3 * r1 * p2 -
+            z3 * p1 * q2 + z3 * q1 * p2 + x1 * q2 * r4 - x1 * r2 * q4 -
+            y1 * p2 * r4 + y1 * r2 * p4 + z1 * p2 * q4 - z1 * q2 * p4 -
+            x2 * q1 * r4 + x2 * r1 * q4 + y2 * p1 * r4 - y2 * r1 * p4 -
+            z2 * p1 * q4 + z2 * q1 * p4 + x4 * q1 * r2 - x4 * r1 * q2 -
+            y4 * p1 * r2 + y4 * r1 * p2 + z4 * p1 * q2 - z4 * q1 * p2 -
+            x1 * q3 * r4 + x1 * r3 * q4 + y1 * p3 * r4 - y1 * r3 * p4 -
+            z1 * p3 * q4 + z1 * q3 * p4 + x3 * q1 * r4 - x3 * r1 * q4 -
+            y3 * p1 * r4 + y3 * r1 * p4 + z3 * p1 * q4 - z3 * q1 * p4 -
+            x4 * q1 * r3 + x4 * r1 * q3 + y4 * p1 * r3 - y4 * r1 * p3 -
+            z4 * p1 * q3 + z4 * q1 * p3 + x2 * q3 * r4 - x2 * r3 * q4 -
+            y2 * p3 * r4 + y2 * r3 * p4 + z2 * p3 * q4 - z2 * q3 * p4 -
+            x3 * q2 * r4 + x3 * r2 * q4 + y3 * p2 * r4 - y3 * r2 * p4 -
+            z3 * p2 * q4 + z3 * q2 * p4 + x4 * q2 * r3 - x4 * r2 * q3 -
+            y4 * p2 * r3 + y4 * r2 * p3 + z4 * p2 * q3 - z4 * q2 * p3;
+      T c = -x1 * y2 * r3 + x1 * z2 * q3 + x1 * y3 * r2 - x1 * z3 * q2 +
+            y1 * x2 * r3 - y1 * z2 * p3 - y1 * x3 * r2 + y1 * z3 * p2 -
+            z1 * x2 * q3 + z1 * y2 * p3 + z1 * x3 * q2 - z1 * y3 * p2 -
+            x2 * y3 * r1 + x2 * z3 * q1 + y2 * x3 * r1 - y2 * z3 * p1 -
+            z2 * x3 * q1 + z2 * y3 * p1 + x1 * y2 * r4 - x1 * z2 * q4 -
+            x1 * y4 * r2 + x1 * z4 * q2 - y1 * x2 * r4 + y1 * z2 * p4 +
+            y1 * x4 * r2 - y1 * z4 * p2 + z1 * x2 * q4 - z1 * y2 * p4 -
+            z1 * x4 * q2 + z1 * y4 * p2 + x2 * y4 * r1 - x2 * z4 * q1 -
+            y2 * x4 * r1 + y2 * z4 * p1 + z2 * x4 * q1 - z2 * y4 * p1 -
+            x1 * y3 * r4 + x1 * z3 * q4 + x1 * y4 * r3 - x1 * z4 * q3 +
+            y1 * x3 * r4 - y1 * z3 * p4 - y1 * x4 * r3 + y1 * z4 * p3 -
+            z1 * x3 * q4 + z1 * y3 * p4 + z1 * x4 * q3 - z1 * y4 * p3 -
+            x3 * y4 * r1 + x3 * z4 * q1 + y3 * x4 * r1 - y3 * z4 * p1 -
+            z3 * x4 * q1 + z3 * y4 * p1 + x2 * y3 * r4 - x2 * z3 * q4 -
+            x2 * y4 * r3 + x2 * z4 * q3 - y2 * x3 * r4 + y2 * z3 * p4 +
+            y2 * x4 * r3 - y2 * z4 * p3 + z2 * x3 * q4 - z2 * y3 * p4 -
+            z2 * x4 * q3 + z2 * y4 * p3 + x3 * y4 * r2 - x3 * z4 * q2 -
+            y3 * x4 * r2 + y3 * z4 * p2 + z3 * x4 * q2 - z3 * y4 * p2;
+      T d = ((T)1.0 - (T)0.2) *
+            (x1 * z2 * y3 - x1 * y2 * z3 + y1 * x2 * z3 - y1 * z2 * x3 -
+             z1 * x2 * y3 + z1 * y2 * x3 + x1 * y2 * z4 - x1 * z2 * y4 -
+             y1 * x2 * z4 + y1 * z2 * x4 + z1 * x2 * y4 - z1 * y2 * x4 -
+             x1 * y3 * z4 + x1 * z3 * y4 + y1 * x3 * z4 - y1 * z3 * x4 -
+             z1 * x3 * y4 + z1 * y3 * x4 + x2 * y3 * z4 - x2 * z3 * y4 -
+             y2 * x3 * z4 + y2 * z3 * x4 + z2 * x3 * y4 - z2 * y3 * x4);
 
-          T t = get_smallest_positive_real_cubic_root(a, b, c, d, (T)1.e-6);
-          if (t >= 0)
-            stepSizes[ei] = t;
-          else
-            stepSizes[ei] = limits<T>::max();
-        });
+      T t =
+          zs::math::get_smallest_positive_real_cubic_root(a, b, c, d, (T)1.e-6);
+#if 0
+      if (t >= 0)
+        stepSizes[ei] = t;
+      else
+        stepSizes[ei] = limits<T>::max();
+#else
+      if (t < stepSize && t >= 0)
+        atomic_min(exec_cuda, &minSize[0], t);
+#endif
+    });
 
+#if 0
     zs::Vector<T> res{eles.get_allocator(), 1};
     zs::reduce(pol, std::begin(stepSizes), std::end(stepSizes), std::begin(res),
                stepSize, zs::getmin<T>{});
     stepSize = res.getVal();
-  }
+#else
+    stepSize = minSize.getVal();
 #endif
+  }
 
   struct FEMSystem {
     template <typename Pol, typename Model>
@@ -483,6 +757,9 @@ struct ImplicitTimeStepping : INode {
   void apply() override {
     using namespace zs;
     auto zstets = get_input<ZenoParticles>("ZSParticles");
+    std::shared_ptr<ZenoParticles> zsboundary;
+    if (has_input<ZenoParticles>("ZSBoundaryPrimitives"))
+      zsboundary = get_input<ZenoParticles>("ZSBoundaryPrimitives");
     auto models = zstets->getModel();
     auto dt = get_input2<float>("dt");
     auto &verts = zstets->getParticles();
@@ -501,6 +778,19 @@ struct ImplicitTimeStepping : INode {
                            {"q", 3}},
                           verts.size()};
     static dtiles_t etemp{eles.get_allocator(), {{"He", 12 * 12}}, eles.size()};
+    static Vector<pair_t> PP{verts.get_allocator(), 100000};
+    static Vector<T> wPP{verts.get_allocator(), 100000};
+    static Vector<int> nPP{verts.get_allocator(), 1};
+    static Vector<pair3_t> PE{verts.get_allocator(), 100000};
+    static Vector<T> wPE{verts.get_allocator(), 100000};
+    static Vector<int> nPE{verts.get_allocator(), 1};
+    static Vector<pair4_t> PT{verts.get_allocator(), 100000};
+    static Vector<T> wPT{verts.get_allocator(), 100000};
+    static Vector<int> nPT{verts.get_allocator(), 1};
+    static Vector<pair4_t> EE{verts.get_allocator(), 100000};
+    static Vector<T> wEE{verts.get_allocator(), 100000};
+    static Vector<int> nEE{verts.get_allocator(), 1};
+
     vtemp.resize(verts.size());
     etemp.resize(eles.size());
 
@@ -675,7 +965,12 @@ struct ImplicitTimeStepping : INode {
 
       // line search
       T alpha = 1.;
-      find_intersection_free_stepsize(cudaPol, *zstets, vtemp, alpha, 2e-3f);
+      computeInversionFreeStepSize(cudaPol, verts, eles, vtemp, alpha);
+      find_intersection_free_stepsize(cudaPol, *zstets, vtemp, alpha, (T)2e-3f);
+      //
+      if (zsboundary)
+        find_boundary_intersection_free_stepsize(
+            cudaPol, *zstets, vtemp, *zsboundary, dt, alpha, (T)2e-3f);
 #if 0
       if (alpha < 0.9) {
         fmt::print("initial stepsize [{}]\n", alpha);
@@ -730,9 +1025,10 @@ struct ImplicitTimeStepping : INode {
   }
 };
 
-ZENDEFNODE(ImplicitTimeStepping, {{"ZSParticles", {"float", "dt", "0.01"}},
-                                  {"ZSParticles"},
-                                  {},
-                                  {"FEM"}});
+ZENDEFNODE(ImplicitTimeStepping,
+           {{"ZSParticles", "ZSBoundaryPrimitives", {"float", "dt", "0.01"}},
+            {"ZSParticles"},
+            {},
+            {"FEM"}});
 
 } // namespace zeno
