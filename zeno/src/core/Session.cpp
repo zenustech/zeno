@@ -3,6 +3,7 @@
 #include <zeno/extra/GlobalState.h>
 #include <zeno/extra/GlobalComm.h>
 #include <zeno/extra/GlobalStatus.h>
+#include <zeno/utils/Translator.h>
 #include <zeno/core/Graph.h>
 #include <zeno/core/INode.h>
 #include <zeno/utils/safe_at.h>
@@ -75,12 +76,40 @@ ZENO_API std::unique_ptr<Graph> Session::createGraph() {
 }
 
 ZENO_API std::string Session::dumpDescriptors() const {
-  std::string res = "";
-  for (auto const &[key, cls] : nodeClasses) {
-    if (key.size() && key[0] == '^') continue;  // skip internal overload nodes..
-    res += "DESC@" + key + "@" + cls->desc->serialize() + "\n";
-  }
-  return res;
+    std::string res = "";
+    std::vector<std::string> strs;
+
+    auto tno = [&] (auto const &s) -> decltype(auto) {
+        return translatorNodeName->t(s);
+    };
+    auto tso = [&] (auto const &s) -> decltype(auto) {
+        return translatorSocketName->t(s);
+    };
+
+    for (auto const &[key, cls] : nodeClasses) {
+        if (!key.empty() && key.front() == '^') continue; //overload nodes...
+        res += "DESC@" + tno(key) + "@";
+
+        strs.clear();
+        for (auto const &[type, name, defl] : inputs) {
+            strs.push_back(type + "@" + tso(name) + "@" + defl);
+        }
+        res += "{" + join_str(strs, "%") + "}";
+        strs.clear();
+        for (auto const &[type, name, defl] : outputs) {
+            strs.push_back(type + "@" + tso(name) + "@" + defl);
+        }
+        res += "{" + join_str(strs, "%") + "}";
+        strs.clear();
+        for (auto const &[type, name, defl] : params) {
+            strs.push_back(type + "@" + tso(name) + "@" + defl);
+        }
+        res += "{" + join_str(strs, "%") + "}";
+        res += "{" + join_str(categories, "%") + "}";
+
+        res += "\n";
+    }
+    return res;
 }
 
 ZENO_API Session &getSession() {
