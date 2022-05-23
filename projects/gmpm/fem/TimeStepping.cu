@@ -764,8 +764,8 @@ struct ImplicitTimeStepping : INode {
       // elasticity
       pol(range(numEles), [execTag, etemp = proxy<space>({}, etemp),
                            vtemp = proxy<space>({}, vtemp),
-                           eles = proxy<space>({}, eles), dxTag, bTag,
-                           dt = this->dt] ZS_LAMBDA(int ei) mutable {
+                           eles = proxy<space>({}, eles), dxTag,
+                           bTag] ZS_LAMBDA(int ei) mutable {
         constexpr int dim = 3;
         constexpr auto dimp1 = dim + 1;
         auto inds = eles.pack<dimp1>("inds", ei).reinterpret_bits<int>();
@@ -784,6 +784,92 @@ struct ImplicitTimeStepping : INode {
           }
       });
       // contacts
+      if (false) {
+        auto numPP = nPP.getVal();
+        pol(range(numPP), [execTag, tempPP = proxy<space>({}, tempPP),
+                           vtemp = proxy<space>({}, vtemp), dxTag, bTag,
+                           PP = proxy<space>(PP)] ZS_LAMBDA(int ppi) mutable {
+          constexpr int dim = 3;
+          auto pp = PP[ppi];
+          zs::vec<T, dim * 2> temp{};
+          for (int vi = 0; vi != 2; ++vi)
+            for (int d = 0; d != dim; ++d) {
+              temp[vi * dim + d] = vtemp(dxTag, d, pp[vi]);
+            }
+          auto ppHess = tempPP.pack<6, 6>("H", ppi);
+
+          temp = ppHess * temp;
+
+          for (int vi = 0; vi != 2; ++vi)
+            for (int d = 0; d != dim; ++d) {
+              atomic_add(execTag, &vtemp(bTag, d, pp[vi]), temp[vi * dim + d]);
+            }
+        });
+        auto numPE = nPE.getVal();
+        pol(range(numPE), [execTag, tempPE = proxy<space>({}, tempPE),
+                           vtemp = proxy<space>({}, vtemp), dxTag, bTag,
+                           PE = proxy<space>(PE)] ZS_LAMBDA(int pei) mutable {
+          constexpr int dim = 3;
+          auto pe = PE[pei];
+          zs::vec<T, dim * 3> temp{};
+          for (int vi = 0; vi != 3; ++vi)
+            for (int d = 0; d != dim; ++d) {
+              temp[vi * dim + d] = vtemp(dxTag, d, pe[vi]);
+            }
+          auto peHess = tempPE.pack<9, 9>("H", pei);
+
+          temp = peHess * temp;
+
+          for (int vi = 0; vi != 3; ++vi)
+            for (int d = 0; d != dim; ++d) {
+              atomic_add(execTag, &vtemp(bTag, d, pe[vi]), temp[vi * dim + d]);
+            }
+        });
+        auto numPT = nPT.getVal();
+        pol(range(numPT), [execTag, tempPT = proxy<space>({}, tempPT),
+                           vtemp = proxy<space>({}, vtemp), dxTag, bTag,
+                           PT = proxy<space>(PT)] ZS_LAMBDA(int pti) mutable {
+          constexpr int dim = 3;
+          auto pt = PT[pti];
+          zs::vec<T, dim * 4> temp{};
+          for (int vi = 0; vi != 4; ++vi)
+            for (int d = 0; d != dim; ++d) {
+              temp[vi * dim + d] = vtemp(dxTag, d, pt[vi]);
+            }
+          auto ptHess = tempPT.pack<12, 12>("H", pti);
+
+          temp = ptHess * temp;
+
+          for (int vi = 0; vi != 4; ++vi)
+            for (int d = 0; d != dim; ++d) {
+              atomic_add(execTag, &vtemp(bTag, d, pt[vi]), temp[vi * dim + d]);
+            }
+        });
+        auto numEE = nEE.getVal();
+        pol(range(numEE), [execTag, tempEE = proxy<space>({}, tempEE),
+                           vtemp = proxy<space>({}, vtemp), dxTag, bTag,
+                           EE = proxy<space>(EE)] ZS_LAMBDA(int eei) mutable {
+          constexpr int dim = 3;
+          auto ee = EE[eei];
+          zs::vec<T, dim * 4> temp{};
+          for (int vi = 0; vi != 4; ++vi)
+            for (int d = 0; d != dim; ++d) {
+              temp[vi * dim + d] = vtemp(dxTag, d, ee[vi]);
+            }
+          auto eeHess = tempEE.pack<12, 12>("H", eei);
+
+          temp = eeHess * temp;
+
+          for (int vi = 0; vi != 4; ++vi)
+            for (int d = 0; d != dim; ++d) {
+              atomic_add(execTag, &vtemp(bTag, d, ee[vi]), temp[vi * dim + d]);
+            }
+        });
+        if (numPP || numPE || numPT || numEE) {
+          fmt::print("contact indeed detected\n");
+          getchar();
+        }
+      } // end contacts
     }
 
     FEMSystem(const tiles_t &verts, const tiles_t &eles, dtiles_t &vtemp,
@@ -1037,6 +1123,8 @@ struct ImplicitTimeStepping : INode {
         computeElasticGradientAndHessian(cudaPol, elasticModel, verts, eles,
                                          vtemp, etemp, dt);
       })(models.getElasticModel());
+      // A.computeBarrierGradientAndHessian(cudaPol);
+
       // rotate gradient and project
       cudaPol(zs::range(vtemp.size()),
               [vtemp = proxy<space>({}, vtemp), verts = proxy<space>({}, verts),
