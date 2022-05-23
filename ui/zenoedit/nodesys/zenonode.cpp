@@ -18,7 +18,7 @@
 #include "../nodesview/zenographseditor.h"
 #include "util/log.h"
 
-QString getOpenFileName(
+static QString getOpenFileName(
     const QString &caption,
     const QString &dir,
     const QString &filter
@@ -32,7 +32,7 @@ QString getOpenFileName(
     return path;
 }
 
-QString getSaveFileName(
+static QString getSaveFileName(
     const QString &caption,
     const QString &dir,
     const QString &filter
