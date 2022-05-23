@@ -163,7 +163,7 @@ void GraphsManagment::appendErr(const QString& nodeName, const QString& msg)
     QMutexLocker lock(&m_mutex);
     QStandardItem* item = new QStandardItem(msg);
     item->setData(QtFatalMsg, ROLE_LOGTYPE);
-    item->setData(nodeName, ROLE_NODENAME);
+    item->setData(nodeName, ROLE_NODE_IDENT);
     item->setEditable(false);
     item->setData(QBrush(QColor(200, 84, 79)), Qt::ForegroundRole);
     m_logModel->appendRow(item);
