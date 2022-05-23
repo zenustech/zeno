@@ -1,24 +1,27 @@
 #include <zeno/utils/Translator.h>
+//#include <zeno/utils/zeno_p.h>
 
 namespace zeno {
 
-// the load format like:
-// prim=图元
-// size=尺寸
-
 void Translator::load(std::string_view tab) {
-    std::size_t p = 0;
     while (1) {
-        auto q = tab.find('\n', p);
-        auto line = tab.substr(p, q);
+        auto q = tab.find('\n');
+        auto line = tab.substr(0, q);
+        //ZENO_P(line);
         if (auto mid = line.find('='); mid != std::string::npos) {
             auto lhs = line.substr(0, mid);
             auto rhs = line.substr(mid + 1);
+            while (!rhs.empty() && rhs.back() == '\n')
+                rhs.remove_suffix(1);
             lut.emplace(lhs, rhs);
         }
-        if (q == std::string::npos)
+        if (q != std::string::npos)
+            tab.remove_prefix(q + 1);
+        else
             break;
-        p = q + 1;
+    }
+    for (auto const &[k, v]: lut) {
+        m_untrans.lut.emplace(v, k);
     }
 }
 

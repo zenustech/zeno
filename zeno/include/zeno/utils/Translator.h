@@ -6,10 +6,8 @@
 
 namespace zeno {
 
-struct Translator {
+struct TranslatorFwd {
     std::map<std::string, std::string> lut;
-
-    void load(std::string_view tab);
 
     std::string const &t(std::string const &s) const {
         if (auto it = lut.find(s); it != lut.end()) {
@@ -36,6 +34,19 @@ struct Translator {
         } else {
             return s;
         }
+    }
+};
+
+struct Translator : TranslatorFwd {
+    TranslatorFwd m_untrans;
+
+    void load(std::string_view tab);
+
+    using TranslatorFwd::t;
+
+    template <class Arg>
+    auto ut(Arg &&arg) const {
+        return m_untrans.t(std::forward<Arg>(arg));
     }
 };
 

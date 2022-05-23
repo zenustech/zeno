@@ -73,10 +73,10 @@ ZENO_API void Graph::loadGraph(const char *json) {
         d.Parse(json);
 
         auto tno = [&] (auto const &s) -> decltype(auto) {
-            return session->translatorNodeName->t(s);
+            return session->translatorNodeName->ut(s);
         };
         auto tso = [&] (auto const &s) -> decltype(auto) {
-            return session->translatorSocketName->t(s);
+            return session->translatorSocketName->ut(s);
         };
 
         for (int i = 0; i < d.Size(); i++) {
@@ -90,7 +90,7 @@ ZENO_API void Graph::loadGraph(const char *json) {
                 } else if (cmd == "completeNode") {
                     completeNode(di[1].GetString());
                 } else if (cmd == "setNodeInput") {
-                    setNodeInput(di[1].GetString(), tso(di[2].GetString()), generic_get<zany>(di[3]));       
+                    setNodeInput(di[1].GetString(), tso(di[2].GetString()), generic_get<zany>(di[3]));
                 } else if (cmd == "setNodeParam") {
                     setNodeParam(di[1].GetString(), tso(di[2].GetString()), generic_get<std::variant<int, float, std::string>, false>(di[3]));
                 /*} else if (cmd == "setNodeOption") {

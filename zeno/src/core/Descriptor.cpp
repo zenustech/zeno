@@ -1,6 +1,5 @@
 #include <zeno/core/Descriptor.h>
 #include <zeno/utils/Translator.h>
-#include <zeno/utils/string.h>
 
 namespace zeno {
 

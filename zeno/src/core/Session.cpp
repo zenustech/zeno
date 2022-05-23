@@ -8,7 +8,7 @@
 #include <zeno/core/INode.h>
 #include <zeno/utils/safe_at.h>
 #include <zeno/utils/logger.h>
-#include <sstream>
+#include <zeno/utils/string.h>
 
 namespace zeno {
 
@@ -16,6 +16,8 @@ ZENO_API Session::Session()
     : globalState(std::make_unique<GlobalState>())
     , globalComm(std::make_unique<GlobalComm>())
     , globalStatus(std::make_unique<GlobalStatus>())
+    , translatorNodeName(std::make_unique<Translator>())
+    , translatorSocketName(std::make_unique<Translator>())
     {
 }
 
@@ -89,23 +91,24 @@ ZENO_API std::string Session::dumpDescriptors() const {
     for (auto const &[key, cls] : nodeClasses) {
         if (!key.empty() && key.front() == '^') continue; //overload nodes...
         res += "DESC@" + tno(key) + "@";
+        Descriptor &desc = *cls->desc;
 
         strs.clear();
-        for (auto const &[type, name, defl] : inputs) {
+        for (auto const &[type, name, defl] : desc.inputs) {
             strs.push_back(type + "@" + tso(name) + "@" + defl);
         }
         res += "{" + join_str(strs, "%") + "}";
         strs.clear();
-        for (auto const &[type, name, defl] : outputs) {
+        for (auto const &[type, name, defl] : desc.outputs) {
             strs.push_back(type + "@" + tso(name) + "@" + defl);
         }
         res += "{" + join_str(strs, "%") + "}";
         strs.clear();
-        for (auto const &[type, name, defl] : params) {
+        for (auto const &[type, name, defl] : desc.params) {
             strs.push_back(type + "@" + tso(name) + "@" + defl);
         }
         res += "{" + join_str(strs, "%") + "}";
-        res += "{" + join_str(categories, "%") + "}";
+        res += "{" + join_str(desc.categories, "%") + "}";
 
         res += "\n";
     }
