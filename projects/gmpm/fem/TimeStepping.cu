@@ -514,11 +514,14 @@ struct ImplicitTimeStepping : INode {
       using namespace zs;
       constexpr auto space = execspace_e::cuda;
       auto numPP = nPP.getVal();
+      using Vec12View = zs::vec_view<T, zs::integer_seq<int, 12>>;
+      using Vec9View = zs::vec_view<T, zs::integer_seq<int, 9>>;
+      using Vec6View = zs::vec_view<T, zs::integer_seq<int, 6>>;
       pol(range(numPP),
           [vtemp = proxy<space>({}, vtemp), tempPP = proxy<space>({}, tempPP),
            PP = proxy<space>(PP), wPP = proxy<space>(wPP), xi2 = xi * xi,
            dHat = dHat, activeGap2 = zs::sqr(xi + dHat),
-           dt = dt] __device__(int ppi) mutable {
+           dt2 = dt * dt] __device__(int ppi) mutable {
             static constexpr T kappa = 1e5;
             auto pp = PP[ppi];
             auto x0 = vtemp.pack<3>("xn", pp[0]);
@@ -527,7 +530,7 @@ struct ImplicitTimeStepping : INode {
             auto dist2 = dist2_pp(x0, x1);
             if (dist2 < xi2)
               printf("dist already smaller than xi!\n");
-            ppGrad *= dt * dt * wPP[ppi] * dHat *
+            ppGrad *= -dt2 * wPP[ppi] * dHat *
                       zs::barrier_gradient(dist2 - xi2, activeGap2, kappa);
             // gradient
             for (int d = 0; d != 3; ++d) {
@@ -535,6 +538,16 @@ struct ImplicitTimeStepping : INode {
               atomic_add(exec_cuda, &vtemp("grad", d, pp[1]), ppGrad(pp[1], d));
             }
             // hessian
+            auto ppHess = dist_hess_pp(x0, x1);
+            auto ppGrad_ = Vec6View{ppGrad.data()};
+            ppHess =
+                dt2 * wPP[ppi] * dHat *
+                (zs::barrier_hessian(dist2 - xi2, activeGap2, kappa) *
+                     dyadic_prod(ppGrad_, ppGrad_) +
+                 zs::barrier_gradient(dist2 - xi2, activeGap2, kappa) * ppHess);
+            // make pd
+            // pp[0], pp[1]
+            tempPP.tuple<36>("H", ppi) = ppHess;
           });
       auto numPE = nPE.getVal();
       pol(range(numPE),
@@ -552,7 +565,7 @@ struct ImplicitTimeStepping : INode {
             auto dist2 = dist2_pe(p, e0, e1);
             if (dist2 < xi2)
               printf("dist already smaller than xi!\n");
-            peGrad *= dt2 * wPE[pei] * dHat *
+            peGrad *= -dt2 * wPE[pei] * dHat *
                       zs::barrier_gradient(dist2 - xi2, activeGap2, kappa);
             // gradient
             for (int d = 0; d != 3; ++d) {
@@ -561,6 +574,16 @@ struct ImplicitTimeStepping : INode {
               atomic_add(exec_cuda, &vtemp("grad", d, pe[2]), peGrad(pe[2], d));
             }
             // hessian
+            auto peHess = dist_hess_pe(p, e0, e1);
+            auto peGrad_ = Vec9View{peGrad.data()};
+            peHess =
+                dt2 * wPE[pei] * dHat *
+                (zs::barrier_hessian(dist2 - xi2, activeGap2, kappa) *
+                     dyadic_prod(peGrad_, peGrad_) +
+                 zs::barrier_gradient(dist2 - xi2, activeGap2, kappa) * peHess);
+            // make pd
+            // pe[0], pe[1], pe[2]
+            tempPE.tuple<81>("H", pei) = peHess;
           });
       auto numPT = nPT.getVal();
       pol(range(numPT),
@@ -579,7 +602,7 @@ struct ImplicitTimeStepping : INode {
             auto dist2 = dist2_pt(p, t0, t1, t2);
             if (dist2 < xi2)
               printf("dist already smaller than xi!\n");
-            ptGrad *= dt2 * wPT[pti] * dHat *
+            ptGrad *= -dt2 * wPT[pti] * dHat *
                       zs::barrier_gradient(dist2 - xi2, activeGap2, kappa);
             // gradient
             for (int d = 0; d != 3; ++d) {
@@ -589,6 +612,16 @@ struct ImplicitTimeStepping : INode {
               atomic_add(exec_cuda, &vtemp("grad", d, pt[3]), ptGrad(pt[3], d));
             }
             // hessian
+            auto ptHess = dist_hess_pt(p, t0, t1, t2);
+            auto ptGrad_ = Vec12View{ptGrad.data()};
+            ptHess =
+                dt2 * wPT[pti] * dHat *
+                (zs::barrier_hessian(dist2 - xi2, activeGap2, kappa) *
+                     dyadic_prod(ptGrad_, ptGrad_) +
+                 zs::barrier_gradient(dist2 - xi2, activeGap2, kappa) * ptHess);
+            // make pd
+            // pt[0], pt[1], pt[2], pt[3]
+            tempPT.tuple<144>("H", pti) = ptHess;
           });
       auto numEE = nEE.getVal();
       pol(range(numEE),
@@ -607,7 +640,7 @@ struct ImplicitTimeStepping : INode {
             auto dist2 = dist2_ee(ea0, ea1, eb0, eb1);
             if (dist2 < xi2)
               printf("dist already smaller than xi!\n");
-            eeGrad *= dt2 * wEE[eei] * dHat *
+            eeGrad *= -dt2 * wEE[eei] * dHat *
                       zs::barrier_gradient(dist2 - xi2, activeGap2, kappa);
             // gradient
             for (int d = 0; d != 3; ++d) {
@@ -617,6 +650,16 @@ struct ImplicitTimeStepping : INode {
               atomic_add(exec_cuda, &vtemp("grad", d, ee[3]), eeGrad(ee[3], d));
             }
             // hessian
+            auto eeHess = dist_hess_ee(ea0, ea1, eb0, eb1);
+            auto eeGrad_ = Vec12View{eeGrad.data()};
+            eeHess =
+                dt2 * wEE[eei] * dHat *
+                (zs::barrier_hessian(dist2 - xi2, activeGap2, kappa) *
+                     dyadic_prod(eeGrad_, eeGrad_) +
+                 zs::barrier_gradient(dist2 - xi2, activeGap2, kappa) * eeHess);
+            // make pd
+            // ee[0], ee[1], ee[2], ee[3]
+            tempEE.tuple<144>("H", eei) = eeHess;
           });
       return;
     }
