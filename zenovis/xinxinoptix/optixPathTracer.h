@@ -64,7 +64,8 @@ struct Params
 
     CameraInfo cam;
 
-    ParallelogramLight     light; // TODO: make light list
+    unsigned int num_lights;
+    ParallelogramLight     *lights;
     OptixTraversableHandle handle;
 };
 

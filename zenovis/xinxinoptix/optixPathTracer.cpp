@@ -184,6 +184,15 @@ static std::vector<uint32_t> g_mat_indices= // TRIANGLE_COUNT
 {
     0,0,0,
 };
+static std::vector<ParallelogramLight> g_lights={
+    ParallelogramLight{
+        /*corner=*/
+        /*v1=*/
+        /*v2=*/
+        /*normal=*/
+        /*emission=*/
+    },
+};
 /*
 static std::vector<float3> g_emission_colors= // MAT_COUNT
 {
@@ -306,6 +315,7 @@ static void printUsageAndExit( const char* argv0 )
 
 static void initLaunchParams( PathTracerState& state )
 {
+    state.params.handle         = state.gas_handle;
     CUDA_CHECK( cudaMalloc(
                 reinterpret_cast<void**>( &state.accum_buffer_p.reset() ),
                 state.params.width * state.params.height * sizeof( float4 )
@@ -320,13 +330,6 @@ static void initLaunchParams( PathTracerState& state )
 
     state.params.samples_per_launch = samples_per_launch;
     state.params.subframe_index     = 0u;
-
-    state.params.light.emission = make_float3( 10000.f );
-    state.params.light.corner   = make_float3( 343.0f, 548.5f, 227.0f );
-    state.params.light.v1       = make_float3( 0.0f, 0.0f, 10.0f );
-    state.params.light.v2       = make_float3( -10.0f, 0.0f, 0.0f );
-    state.params.light.normal   = normalize( cross( state.params.light.v1, state.params.light.v2 ) );
-    state.params.handle         = state.gas_handle;
 }
 
 
@@ -769,10 +772,28 @@ void optixinit( int argc, char* argv[] )
 
 static void updatedrawobjects();
 void optixupdatemesh(std::map<std::string, int> const &mtlidlut) {
+    camera_changed = true;
     g_mtlidlut = mtlidlut;
     updatedrawobjects();
     buildMeshAccel( state );
+}
+void optixupdatelight() {
     camera_changed = true;
+
+    g_lights.clear();
+    for (int i = 0; i < 1; i++) {
+        auto &light = g_lights.emplace_back();
+        light.emission = make_float3( 10000.f );
+        light.corner   = make_float3( 343.0f, 548.5f, 227.0f );
+        light.v2       = make_float3( -10.0f, 0.0f, 0.0f );
+        light.normal   = make_float3( 0.0f, -10.0f, 0.0f );
+        light.v1       = normalize( cross( light.v2, light.normal ) );
+    }
+    CUDA_CHECK( cudaMemcpyAsync(
+                reinterpret_cast<void*>( state.params.lights ),
+                g_lights.data(), sizeof( ParallelogramLight ) * g_lights.size(),
+                cudaMemcpyHostToDevice, state.stream
+                ) );
 }
 
 void optixupdatematerial(std::vector<std::string> const &shaders) {
