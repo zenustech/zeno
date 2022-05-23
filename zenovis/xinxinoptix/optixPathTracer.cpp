@@ -84,8 +84,8 @@ sutil::Trackball trackball;
 // Mouse state
 int32_t mouse_button = -1;
 
-//int32_t samples_per_launch = 16;
-int32_t samples_per_launch = 1;
+int32_t samples_per_launch = 16;
+//int32_t samples_per_launch = 1;
 
 //------------------------------------------------------------------------------
 //
@@ -151,6 +151,7 @@ struct PathTracerState
 
     raii<CUstream>                       stream;
     raii<CUdeviceptr> accum_buffer_p;
+    raii<CUdeviceptr> lightsbuf_p;
     Params                         params;
     raii<CUdeviceptr>                        d_params;
 
@@ -182,6 +183,15 @@ static std::vector<Vertex> g_vertices= // TRIANGLE_COUNT*3
 static std::vector<uint32_t> g_mat_indices= // TRIANGLE_COUNT
 {
     0,0,0,
+};
+static std::vector<ParallelogramLight> g_lights={
+    ParallelogramLight{
+        /*corner=*/
+        /*v1=*/
+        /*v2=*/
+        /*normal=*/
+        /*emission=*/
+    },
 };
 /*
 static std::vector<float3> g_emission_colors= // MAT_COUNT
@@ -305,22 +315,21 @@ static void printUsageAndExit( const char* argv0 )
 
 static void initLaunchParams( PathTracerState& state )
 {
+    state.params.handle         = state.gas_handle;
     CUDA_CHECK( cudaMalloc(
                 reinterpret_cast<void**>( &state.accum_buffer_p.reset() ),
                 state.params.width * state.params.height * sizeof( float4 )
                 ) );
+    CUDA_CHECK( cudaMalloc(
+                reinterpret_cast<void**>( &state.lightsbuf_p.reset() ),
+                sizeof( ParallelogramLight ) * g_lights.size()
+                ) );
     state.params.accum_buffer = (float4*)(CUdeviceptr)state.accum_buffer_p;
+    state.params.lights = (ParallelogramLight*)(CUdeviceptr)state.lightsbuf_p;
     state.params.frame_buffer = nullptr;  // Will be set when output buffer is mapped
 
     state.params.samples_per_launch = samples_per_launch;
     state.params.subframe_index     = 0u;
-
-    state.params.light.emission = make_float3( 100.f );
-    state.params.light.corner   = make_float3( 343.0f, 548.5f, 227.0f );
-    state.params.light.v1       = make_float3( 0.0f, 0.0f, 105.0f );
-    state.params.light.v2       = make_float3( -130.0f, 0.0f, 0.0f );
-    state.params.light.normal   = normalize( cross( state.params.light.v1, state.params.light.v2 ) );
-    state.params.handle         = state.gas_handle;
 }
 
 
@@ -373,6 +382,7 @@ static void launchSubframe( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Path
     // Launch
     uchar4* result_buffer_data = output_buffer.map();
     state.params.frame_buffer  = result_buffer_data;
+    state.params.num_lights = g_lights.size();
     CUDA_CHECK( cudaMemcpyAsync(
                 reinterpret_cast<void*>( (CUdeviceptr)state.d_params ),
                 &state.params, sizeof( Params ),
@@ -763,10 +773,29 @@ void optixinit( int argc, char* argv[] )
 
 static void updatedrawobjects();
 void optixupdatemesh(std::map<std::string, int> const &mtlidlut) {
+    camera_changed = true;
     g_mtlidlut = mtlidlut;
     updatedrawobjects();
     buildMeshAccel( state );
+}
+void optixupdatelight() {
     camera_changed = true;
+
+    g_lights.clear();
+    for (int i = 0; i < 1; i++) {
+        auto &light = g_lights.emplace_back();
+        light.emission = make_float3( 10000.f );
+        light.corner   = make_float3( 343.0f, 548.5f, 227.0f );
+        light.v2       = make_float3( -10.0f, 0.0f, 0.0f );
+        light.normal   = make_float3( 0.0f, -10.0f, 0.0f );
+        light.v1       = normalize( cross( light.v2, light.normal ) );
+    }
+    if (g_lights.size())
+        CUDA_CHECK( cudaMemcpyAsync(
+                reinterpret_cast<void*>( (CUdeviceptr)state.lightsbuf_p ),
+                g_lights.data(), sizeof( ParallelogramLight ) * g_lights.size(),
+                cudaMemcpyHostToDevice, state.stream
+                ) );
 }
 
 void optixupdatematerial(std::vector<std::string> const &shaders) {
@@ -849,7 +878,7 @@ static void updatedrawobjects() {
     for (auto const &[key, dat]: drawdats) {
         auto it = g_mtlidlut.find(dat.mtlid);
         int mtlindex = it != g_mtlidlut.end() ? it->second : 0;
-        zeno::log_error("{} {}", dat.mtlid, mtlindex);
+        //zeno::log_error("{} {}", dat.mtlid, mtlindex);
 //#pragma omp parallel for
         for (size_t i = 0; i < dat.tris.size() / 3; i++) {
             g_mat_indices[n + i] = mtlindex;
@@ -878,7 +907,7 @@ static void updatedrawobjects() {
 
 void load_object(std::string const &key, std::string const &mtlid, float const *verts, size_t numverts, int const *tris, size_t numtris, std::map<std::string, std::pair<float const *, size_t>> const &vtab) {
     DrawDat &dat = drawdats[key];
-    ZENO_P(mtlid);
+    //ZENO_P(mtlid);
     dat.mtlid = mtlid;
     dat.verts.assign(verts, verts + numverts * 3);
     dat.tris.assign(tris, tris + numtris * 3);
