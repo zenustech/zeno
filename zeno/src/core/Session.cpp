@@ -16,8 +16,7 @@ ZENO_API Session::Session()
     : globalState(std::make_unique<GlobalState>())
     , globalComm(std::make_unique<GlobalComm>())
     , globalStatus(std::make_unique<GlobalStatus>())
-    , translatorNodeName(std::make_unique<Translator>())
-    , translatorSocketName(std::make_unique<Translator>())
+    , translator(std::make_unique<Translator>())
     {
 }
 
@@ -82,10 +81,7 @@ ZENO_API std::string Session::dumpDescriptors() const {
     std::vector<std::string> strs;
 
     auto tno = [&] (auto const &s) -> decltype(auto) {
-        return translatorNodeName->t(s);
-    };
-    auto tso = [&] (auto const &s) -> decltype(auto) {
-        return translatorSocketName->t(s);
+        return translator->t(s);
     };
 
     for (auto const &[key, cls] : nodeClasses) {
@@ -95,17 +91,17 @@ ZENO_API std::string Session::dumpDescriptors() const {
 
         strs.clear();
         for (auto const &[type, name, defl] : desc.inputs) {
-            strs.push_back(type + "@" + tso(name) + "@" + defl);
+            strs.push_back(type + "@" + tno(name) + "@" + defl);
         }
         res += "{" + join_str(strs, "%") + "}";
         strs.clear();
         for (auto const &[type, name, defl] : desc.outputs) {
-            strs.push_back(type + "@" + tso(name) + "@" + defl);
+            strs.push_back(type + "@" + tno(name) + "@" + defl);
         }
         res += "{" + join_str(strs, "%") + "}";
         strs.clear();
         for (auto const &[type, name, defl] : desc.params) {
-            strs.push_back(type + "@" + tso(name) + "@" + defl);
+            strs.push_back(type + "@" + tno(name) + "@" + defl);
         }
         res += "{" + join_str(strs, "%") + "}";
         res += "{" + join_str(desc.categories, "%") + "}";

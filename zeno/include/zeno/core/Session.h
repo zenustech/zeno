@@ -45,8 +45,7 @@ struct Session {
     std::unique_ptr<GlobalState> const globalState;
     std::unique_ptr<GlobalComm> const globalComm;
     std::unique_ptr<GlobalStatus> const globalStatus;
-    std::unique_ptr<Translator> const translatorNodeName;
-    std::unique_ptr<Translator> const translatorSocketName;
+    std::unique_ptr<Translator> const translator;
 
     ZENO_API Session();
     ZENO_API ~Session();

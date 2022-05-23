@@ -6,13 +6,11 @@ namespace {
 
 static int helper = ([]{
 
-    getSession().translatorNodeName->load(R"(
+    getSession().translator->load(R"(
+# node names
 ToView=ToView
 BindMaterial=绑定材质
-)" R"(
-)");
-
-    getSession().translatorSocketName->load(R"(
+# socket names
 object=对象
 prim=图元
 size=尺寸
