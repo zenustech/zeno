@@ -400,11 +400,11 @@ struct ToZSTetrahedra : INode {
               using mat3 = zs::vec<float, 3, 3>;
               auto p = vec3{pos[vi][0], pos[vi][1], pos[vi][2]};
               pars.tuple<3>("x", vi) = p;
+              pars.tuple<3>("v", vi) = vec3::zeros();
               if (prim->has_attr("vel")) {
                 auto vel = prim->attr<zeno::vec3f>("vel")[vi];
                 pars.tuple<3>("v", vi) = vec3{vel[0], vel[1], vel[2]};
               }
-              pars.tuple<3>("v", vi) = vec3::zeros();
               // default boundary handling setup
               pars.tuple<9>("BCbasis", vi) = mat3::identity();
               pars("BCorder", vi) = reinterpret_bits<float>(0);
