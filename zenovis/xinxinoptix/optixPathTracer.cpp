@@ -84,8 +84,8 @@ sutil::Trackball trackball;
 // Mouse state
 int32_t mouse_button = -1;
 
-int32_t samples_per_launch = 16;
-//int32_t samples_per_launch = 1;
+//int32_t samples_per_launch = 16;
+int32_t samples_per_launch = 1;
 
 //------------------------------------------------------------------------------
 //
@@ -955,9 +955,12 @@ void optixrender(int fbo) {
     if (!output_buffer_o) throw sutil::Exception("no output_buffer_o");
     if (!gl_display_o) throw sutil::Exception("no gl_display_o");
     updateState( *output_buffer_o, state.params );
-                    launchSubframe( *output_buffer_o, state );
-                    displaySubframe( *output_buffer_o, *gl_display_o, state, fbo );
-                    ++state.params.subframe_index;
+    for(int f=0;f<16;f++) {
+        launchSubframe( *output_buffer_o, state );
+        ++state.params.subframe_index;
+    }
+    displaySubframe( *output_buffer_o, *gl_display_o, state, fbo );
+                    
 }
 
 void *optixgetimg(int &w, int &h) {
