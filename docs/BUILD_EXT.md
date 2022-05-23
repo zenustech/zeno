@@ -119,7 +119,7 @@ cmake -B build -DCMAKE_TOOLCHAIN_FILE="C:/vcpkg/scripts/buildsystems/vcpkg.cmake
 The full-featured version of Zeno can be built as follows:
 
 ```bash
-cmake -B build -DCMAKE_BUILD_TYPE=Release -DZENO_WITH_ZenoFX:BOOL=ON -DZENOFX_ENABLE_OPENVDB:BOOL=ON -DZENOFX_ENABLE_LBVH:BOOL=ON -DZENO_ENABLE_OPENEXR:BOOL=ON -DZENO_WITH_zenvdb:BOOL=ON -DZENO_WITH_FastFLIP:BOOL=ON -DZENO_WITH_FEM:BOOL=ON -DZENO_WITH_Rigid:BOOL=ON -DZENO_WITH_cgmesh:BOOL=ON -DZENO_WITH_oldzenbase:BOOL=ON -DZENO_WITH_TreeSketch:BOOL=ON -DZENO_WITH_Skinning:BOOL=ON -DZENO_WITH_Euler:BOOL=ON -DZENO_WITH_Functional:BOOL=ON -DZENO_WITH_LSystem:BOOL=ON -DZENO_WITH_mesher:BOOL=ON -DZENO_WITH_Alembic:BOOL=ON
+cmake -B build -DCMAKE_BUILD_TYPE=Release -DZENO_WITH_ZenoFX:BOOL=ON -DZENOFX_ENABLE_OPENVDB:BOOL=ON -DZENOFX_ENABLE_LBVH:BOOL=ON -DZENO_WITH_zenvdb:BOOL=ON -DZENO_WITH_FastFLIP:BOOL=ON -DZENO_WITH_FEM:BOOL=ON -DZENO_WITH_Rigid:BOOL=ON -DZENO_WITH_cgmesh:BOOL=ON -DZENO_WITH_oldzenbase:BOOL=ON -DZENO_WITH_TreeSketch:BOOL=ON -DZENO_WITH_Skinning:BOOL=ON -DZENO_WITH_Euler:BOOL=ON -DZENO_WITH_Functional:BOOL=ON -DZENO_WITH_LSystem:BOOL=ON -DZENO_WITH_mesher:BOOL=ON -DZENO_WITH_Alembic:BOOL=ON -DZENO_WITH_FBX:BOOL=ON
 ```
 
 > See also `misc/run.sh` (you can use this script instead for the full-featured build).
@@ -131,6 +131,14 @@ NVIDIA users may additionally specify `-DZENO_WITH_gmpm:BOOL=ON` in arguments fo
 > NOTE: **CUDA 11.x requried**.
 > NOTE: `gmpm` is work in progress, may not work.
 > NOTE: ZenoFX must be enabled when gmpm is enabled, because gmpm depends on ZenoFX.
+
+### Enabling OptiX extensions
+
+NVIDIA users may also additionally specify `-DZENO_ENABLE_OPTIX:BOOL=ON` in argument for building OptiX real-time ray-tracing for the Zeno renderer.
+
+You can download and install OptiX from this site: https://developer.nvidia.com/designworks/optix/download
+
+Then, please define the path to your OptiX installation, for example: `-DOPTIX_PATH=/home/bate/Downloads/NVIDIA-OptiX-SDK-7.4.0-linux64-x86_64`
 
 ### Enabling subgraph extensions
 

@@ -7,7 +7,57 @@
 #include "launch/corelaunch.h"
 #include "zenoapplication.h"
 #include "zenomainwindow.h"
+#include <zeno/utils/log.h>
+#include <zenovis/ObjectsManager.h>
+#include <zenovis/Scene.h>
+#include <zeno/funcs/ObjectGeometryInfo.h>
+#include <zeno/types/UserData.h>
 
+#include <cmath>
+#include <algorithm>
+#include <optional>
+
+static std::optional<float> ray_sphere_intersect(
+    zeno::vec3f const &ray_pos,
+    zeno::vec3f const &ray_dir,
+    zeno::vec3f const &sphere_center,
+    float sphere_radius
+) {
+    auto &p = ray_pos;
+    auto &d = ray_dir;
+    auto &c = sphere_center;
+    auto &r = sphere_radius;
+    float t = zeno::dot(c - p, d);
+    if (t < 0) {
+        return std::nullopt;
+    }
+    zeno::vec3f dist = t * d + p - c;
+    float l = zeno::length(dist);
+    if (l > r) {
+        return std::nullopt;
+    }
+    float t_diff = std::sqrt(r * r - l * l);
+    float final_t = t - t_diff;
+    return final_t;
+}
+
+
+static bool test_in_selected_bounding(
+    QVector3D centerWS,
+    QVector3D cam_posWS,
+    QVector3D left_normWS,
+    QVector3D right_normWS,
+    QVector3D up_normWS,
+    QVector3D down_normWS
+) {
+    QVector3D dir =  centerWS - cam_posWS;
+    dir.normalize();
+    bool left_test = QVector3D::dotProduct(dir, left_normWS) > 0;
+    bool right_test = QVector3D::dotProduct(dir, right_normWS) > 0;
+    bool up_test = QVector3D::dotProduct(dir, up_normWS) > 0;
+    bool down_test = QVector3D::dotProduct(dir, down_normWS) > 0;
+    return left_test && right_test && up_test && down_test;
+}
 
 CameraControl::CameraControl(QWidget* parent)
     : m_mmb_pressed(false)
@@ -28,44 +78,53 @@ void CameraControl::setRes(QVector2D res)
 
 void CameraControl::fakeMousePressEvent(QMouseEvent* event)
 {
-    if (!(event->buttons() & Qt::MiddleButton))
-        return;
-
-    m_lastPos = event->pos();
+    if (event->buttons() & Qt::MiddleButton) {
+        m_lastPos = event->pos();
+    }
+    else if (event->buttons() & Qt::LeftButton) {
+        m_boundRectStartPos = event->pos();
+    }
 }
 
 void CameraControl::fakeMouseMoveEvent(QMouseEvent* event)
 {
-    if (!(event->buttons() & Qt::MiddleButton))
-        return;
-
-    float ratio = QApplication::desktop()->devicePixelRatio();
-    float xpos = event->x(), ypos = event->y();
-    float dx = xpos - m_lastPos.x(), dy = ypos - m_lastPos.y();
-    dx *= ratio / m_res[0];
-    dy *= ratio / m_res[1];
-    bool shift_pressed = event->modifiers() & Qt::ShiftModifier;
-    if (shift_pressed)
-    {
-        float cos_t = cos(m_theta);
-        float sin_t = sin(m_theta);
-        float cos_p = cos(m_phi);
-        float sin_p = sin(m_phi);
-        QVector3D back(cos_t * sin_p, sin_t, -cos_t * cos_p);
-        QVector3D up(-sin_t * sin_p, cos_t, sin_t * cos_p);
-        QVector3D right = QVector3D::crossProduct(up, back);
-        up = QVector3D::crossProduct(back, right);
-        right.normalize();
-        up.normalize();
-        QVector3D delta = right * dx + up * dy;
-        m_center += delta * m_radius;
+    if (event->buttons() & Qt::MiddleButton) {
+        float ratio = QApplication::desktop()->devicePixelRatio();
+        float xpos = event->x(), ypos = event->y();
+        float dx = xpos - m_lastPos.x(), dy = ypos - m_lastPos.y();
+        dx *= ratio / m_res[0];
+        dy *= ratio / m_res[1];
+        bool shift_pressed = event->modifiers() & Qt::ShiftModifier;
+        if (shift_pressed)
+        {
+            float cos_t = cos(m_theta);
+            float sin_t = sin(m_theta);
+            float cos_p = cos(m_phi);
+            float sin_p = sin(m_phi);
+            QVector3D back(cos_t * sin_p, sin_t, -cos_t * cos_p);
+            QVector3D up(-sin_t * sin_p, cos_t, sin_t * cos_p);
+            QVector3D right = QVector3D::crossProduct(up, back);
+            up = QVector3D::crossProduct(back, right);
+            right.normalize();
+            up.normalize();
+            QVector3D delta = right * dx + up * dy;
+            m_center += delta * m_radius;
+        }
+        else
+        {
+            m_theta -= dy * M_PI;
+            m_phi += dx * M_PI;
+        }
+        m_lastPos = QPointF(xpos, ypos);
     }
-    else
-    {
-        m_theta -= dy * M_PI;
-        m_phi += dx * M_PI;
+    else if (event->buttons() & Qt::LeftButton) {
+        auto scene = Zenovis::GetInstance().getSession()->get_scene();
+        float min_x = std::min((float)m_boundRectStartPos.x(), (float)event->x()) / m_res.x();
+        float max_x = std::max((float)m_boundRectStartPos.x(), (float)event->x()) / m_res.x();
+        float min_y = std::min((float)m_boundRectStartPos.y(), (float)event->y()) / m_res.y();
+        float max_y = std::max((float)m_boundRectStartPos.y(), (float)event->y()) / m_res.y();
+        scene->select_box = zeno::vec4f(min_x, min_y, max_x, max_y);
     }
-    m_lastPos = QPointF(xpos, ypos);
     updatePerspective();
 }
 
@@ -100,6 +159,128 @@ void CameraControl::focus(QVector3D center, float radius)
     updatePerspective();
 }
 
+QVector3D CameraControl::realPos() const {
+    float cos_t = std::cos(m_theta);
+    float sin_t = std::sin(m_theta);
+    float cos_p = std::cos(m_phi);
+    float sin_p = std::sin(m_phi);
+    QVector3D back(cos_t * sin_p, sin_t, -cos_t * cos_p);
+    return m_center - back * m_radius;
+}
+
+// x, y from [0, 1]
+QVector3D CameraControl::screenToWorldRay(float x, float y) const {
+    float cos_t = cos(m_theta);
+    float sin_t = sin(m_theta);
+    float cos_p = cos(m_phi);
+    float sin_p = sin(m_phi);
+    QVector3D back(cos_t * sin_p, sin_t, -cos_t * cos_p);
+    QVector3D up(-sin_t * sin_p, cos_t, sin_t * cos_p);
+    QVector3D right = QVector3D::crossProduct(up, back);
+    up = QVector3D::crossProduct(back, right);
+    right.normalize();
+    up.normalize();
+    QMatrix4x4 view;
+    view.setToIdentity();
+    view.lookAt(realPos(), m_center, up);
+    x = (x - 0.5) * 2;
+    y = (y - 0.5) * (-2);
+    float v = std::tan(m_fov * M_PI / 180.f * 0.5f);
+    float aspect = res().x() / res().y();
+    auto dir = QVector3D(v * x * aspect, v * y, -1);
+    dir = dir.normalized();
+    dir = view.inverted().mapVector(dir);
+    return dir;
+}
+
+QVariant CameraControl::hitOnFloor(float x, float y) const {
+    auto dir = screenToWorldRay(x, y);
+    auto pos = realPos();
+    float t = (0 - pos.y()) / dir.y();
+    if (t > 0) {
+        auto p = pos + dir * t;
+        return p;
+    } else {
+        return {};
+    }
+}
+void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
+    if (event->button() == Qt::LeftButton) {
+        auto cam_pos = realPos();
+        auto scene = Zenovis::GetInstance().getSession()->get_scene();
+        scene->select_box = std::nullopt;
+        bool shift_pressed = event->modifiers() & Qt::ShiftModifier;
+        if (!shift_pressed) {
+            scene->selected.clear();
+        }
+
+        QPoint releasePos = event->pos();
+        if (m_boundRectStartPos == releasePos) {
+            float x = (float)event->x() / m_res.x();
+            float y = (float)event->y() / m_res.y();
+            auto rdir = screenToWorldRay(x, y);
+            float min_t = std::numeric_limits<float>::max();
+            std::string name("");
+            for (auto const &[key, ptr]: scene->objectsMan->pairs()) {
+                zeno::vec3f center;
+                float radius;
+                zeno::vec3f ro(cam_pos[0], cam_pos[1], cam_pos[2]);
+                zeno::vec3f rd(rdir[0], rdir[1], rdir[2]);
+                if (zeno::objectGetFocusCenterRadius(ptr, center, radius)) {
+                    if (auto ret = ray_sphere_intersect(ro, rd, center, radius)) {
+                        float t = *ret;
+                        if (t < min_t) {
+                            min_t = t;
+                            name = key;
+                        }
+                    }
+                }
+            }
+            if (!name.empty()) {
+                if (scene->selected.count(name) > 0) {
+                    scene->selected.erase(name);
+                } else {
+                    scene->selected.insert(name);
+                }
+            }
+        }
+        else {
+            float min_x = std::min((float)m_boundRectStartPos.x(), (float)releasePos.x());
+            float max_x = std::max((float)m_boundRectStartPos.x(), (float)releasePos.x());
+            float min_y = std::min((float)m_boundRectStartPos.y(), (float)releasePos.y());
+            float max_y = std::max((float)m_boundRectStartPos.y(), (float)releasePos.y());
+            auto left_up    = screenToWorldRay(min_x / m_res.x(), min_y / m_res.y());
+            auto left_down  = screenToWorldRay(min_x / m_res.x(), max_y / m_res.y());
+            auto right_up   = screenToWorldRay(max_x / m_res.x(), min_y / m_res.y());
+            auto right_down = screenToWorldRay(max_x / m_res.x(), max_y / m_res.y());
+            auto cam_posWS = realPos();
+            auto left_normWS  = QVector3D::crossProduct(left_down, left_up);
+            auto right_normWS = QVector3D::crossProduct(right_up, right_down);
+            auto up_normWS    = QVector3D::crossProduct(left_up, right_up);
+            auto down_normWS  = QVector3D::crossProduct(right_down, left_down);
+
+            std::vector<std::string> passed_prim;
+            for (auto const &[key, ptr]: scene->objectsMan->pairs()) {
+                zeno::vec3f c;
+                float radius;
+                if (zeno::objectGetFocusCenterRadius(ptr, c, radius)) {
+                    bool passed = test_in_selected_bounding(
+                        QVector3D(c[0], c[1], c[2]),
+                        cam_pos,
+                        left_normWS,
+                        right_normWS,
+                        up_normWS,
+                        down_normWS
+                    );
+                    if (passed) {
+                        passed_prim.push_back(key);
+                    }
+                }
+            }
+            scene->selected.insert(passed_prim.begin(), passed_prim.end());
+        }
+    }
+}
 
 ViewportWidget::ViewportWidget(QWidget* parent)
     : QOpenGLWidget(parent)
@@ -186,9 +367,13 @@ void ViewportWidget::wheelEvent(QWheelEvent* event)
     m_camera->fakeWheelEvent(event);
     update();
 }
+void ViewportWidget::mouseReleaseEvent(QMouseEvent *event) {
+    _base::mouseReleaseEvent(event);
+    m_camera->fakeMouseReleaseEvent(event);
+    update();
+}
 
-
-#if 0
+/*
 QDMDisplayMenu::QDMDisplayMenu()
 {
     setTitle(tr("Display"));
@@ -248,7 +433,7 @@ QDMRecordMenu::QDMRecordMenu()
     pAction->setShortcut(QKeySequence(tr("Shift+F12")));
     addAction(pAction);
 }
-#endif
+*/
 
 
 DisplayWidget::DisplayWidget(ZenoMainWindow* pMainWin)
@@ -290,6 +475,7 @@ DisplayWidget::DisplayWidget(ZenoMainWindow* pMainWin)
 	connect(m_timeline, SIGNAL(playForward(bool)), &Zenovis::GetInstance(), SLOT(startPlay(bool)));
 	connect(m_timeline, SIGNAL(sliderValueChanged(int)), &Zenovis::GetInstance(), SLOT(setCurrentFrameId(int)));
 	connect(m_timeline, SIGNAL(run()), this, SLOT(onRun()));
+    connect(m_timeline, SIGNAL(kill()), this, SLOT(onKill()));
     
     auto graphs = zenoApp->graphsManagment();
     connect(graphs.get(), SIGNAL(modelDataChanged()), this, SLOT(onModelDataChanged()));
@@ -347,4 +533,9 @@ void DisplayWidget::onRun()
     {
 
     }
+}
+
+void DisplayWidget::onKill()
+{
+    killProgram();
 }

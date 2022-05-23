@@ -3,7 +3,7 @@
 #include "ui_zcurvemapeditor.h"
 #include <zenoui/style/zenostyle.h>
 #include "curvenodeitem.h"
-#include "../model/curvemodel.h"
+#include <zenoui/model/curvemodel.h>
 #include "curvesitem.h"
 #include <zenoui/util/uihelper.h>
 #include <zenoui/comctrl/effect/innershadoweffect.h>
@@ -14,7 +14,7 @@ ZCurveMapEditor::ZCurveMapEditor(bool bTimeline, QWidget* parent)
 	: QDialog(parent)
     , m_pGroupHdlType(nullptr)
     , m_channelModel(nullptr)
-    , m_bTimeline(bTimeline)
+    , m_bTimeline(false)
 {
     initUI();
     initChannelModel();
@@ -100,7 +100,7 @@ void ZCurveMapEditor::initChannelModel()
     m_ui->channelView->expandAll();
 
     m_selection = new QItemSelectionModel(m_channelModel);
-    m_ui->channelView->setVisible(m_bTimeline);
+    m_ui->channelView->setVisible(m_ui->cbIsTimeline->isChecked());
 }
 
 CurveModel* ZCurveMapEditor::currentModel()
@@ -113,13 +113,17 @@ CurveModel* ZCurveMapEditor::currentModel()
 
 void ZCurveMapEditor::init()
 {
-    m_ui->gridview->init(m_bTimeline);
+    m_ui->gridview->init(m_ui->cbIsTimeline->isChecked());
 
     CURVE_RANGE range = m_ui->gridview->range();
     m_ui->editXFrom->setText(QString::number(range.xFrom));
+    m_ui->editXFrom->setValidator(new QDoubleValidator);
     m_ui->editXTo->setText(QString::number(range.xTo));
+    m_ui->editXTo->setValidator(new QDoubleValidator);
     m_ui->editYFrom->setText(QString::number(range.yFrom));
+    m_ui->editYFrom->setValidator(new QDoubleValidator);
     m_ui->editYTo->setText(QString::number(range.yTo));
+    m_ui->editYTo->setValidator(new QDoubleValidator);
 
     connect(m_ui->editPtX, SIGNAL(editingFinished()), this, SLOT(onLineEditFinished()));
     connect(m_ui->editPtY, SIGNAL(editingFinished()), this, SLOT(onLineEditFinished()));
@@ -136,6 +140,11 @@ void ZCurveMapEditor::initSignals()
     connect(m_ui->gridview, &CurveMapView::frameChanged, this, &ZCurveMapEditor::onFrameChanged);
     connect(m_ui->btnLockX, SIGNAL(toggled(bool)), this, SLOT(onLockBtnToggled(bool)));
     connect(m_ui->btnLockY, SIGNAL(toggled(bool)), this, SLOT(onLockBtnToggled(bool)));
+    connect(m_ui->editXFrom, SIGNAL(editingFinished()), this, SLOT(onRangeEdited()));
+    connect(m_ui->editXTo, SIGNAL(editingFinished()), this, SLOT(onRangeEdited()));
+    connect(m_ui->editYFrom, SIGNAL(editingFinished()), this, SLOT(onRangeEdited()));
+    connect(m_ui->editYTo, SIGNAL(editingFinished()), this, SLOT(onRangeEdited()));
+    connect(m_ui->cbIsTimeline, SIGNAL(stateChanged(int)), this, SLOT(onCbTimelineChanged(int)));
 }
 
 void ZCurveMapEditor::addCurve(CurveModel* model)
@@ -145,6 +154,14 @@ void ZCurveMapEditor::addCurve(CurveModel* model)
     QString id = model->id();
     m_models.insert(id, model);
     m_ui->gridview->addCurve(model);
+
+    m_ui->cbIsTimeline->setChecked(model->isTimeline());
+
+    CURVE_RANGE range = m_ui->gridview->range();
+    m_ui->editXFrom->setText(QString::number(range.xFrom));
+    m_ui->editXTo->setText(QString::number(range.xTo));
+    m_ui->editYFrom->setText(QString::number(range.yFrom));
+    m_ui->editYTo->setText(QString::number(range.yTo));
 
     QStandardItem *pItem = new QStandardItem(model->id());
     pItem->setCheckable(true);
@@ -169,6 +186,30 @@ void ZCurveMapEditor::addCurve(CurveModel* model)
 
     connect(model, &CurveModel::dataChanged, this, &ZCurveMapEditor::onNodesDataChanged);
     connect(m_channelModel, &QStandardItemModel::dataChanged, this, &ZCurveMapEditor::onChannelModelDataChanged);
+}
+
+void ZCurveMapEditor::onRangeEdited()
+{
+    CURVE_RANGE newRg = {m_ui->editXFrom->text().toDouble(), m_ui->editXTo->text().toDouble(),
+                         m_ui->editYFrom->text().toDouble(), m_ui->editYTo->text().toDouble()};
+    CURVE_RANGE rg = m_ui->gridview->range();
+    if (rg.xFrom != newRg.xFrom || rg.xTo != newRg.xTo || rg.yFrom != newRg.yFrom || rg.yTo != newRg.yTo)
+    {
+        m_ui->gridview->resetRange(newRg);
+    }
+}
+
+void ZCurveMapEditor::onCbTimelineChanged(int state)
+{
+    if (state == Qt::Checked) {
+        m_ui->gridview->setChartType(true);
+    } else if (state == Qt::Unchecked) {
+        m_ui->gridview->setChartType(false);
+    }
+    for (CurveModel* model : m_models)
+    {
+        model->setTimeline(state == Qt::Checked);
+    }
 }
 
 int ZCurveMapEditor::curveCount() const {

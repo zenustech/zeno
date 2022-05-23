@@ -1,6 +1,7 @@
 #include <zeno/funcs/ObjectCodec.h>
 #include <zeno/types/IObjectXMacro.h>
 #include <zeno/types/PrimitiveObject.h>
+#include <zeno/types/MaterialObject.h>
 #include <zeno/types/StringObject.h>
 #include <zeno/types/CameraObject.h>
 #include <zeno/types/DummyObject.h>

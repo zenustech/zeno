@@ -90,7 +90,8 @@ struct SOCKET_INFO {
     QString name;
     PARAM_CONTROL control;
     QString type;
-    QVariant defaultValue;
+
+    QVariant defaultValue;  // a native value or a curvemodel.
 
     SOCKET_INFO() : control(CONTROL_NONE) {}
     SOCKET_INFO(const QString& id, const QString& name)

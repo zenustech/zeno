@@ -1115,6 +1115,15 @@ void GraphsModel::updateParamInfo(const QString& id, PARAM_UPDATE_INFO info, con
     }
 }
 
+void GraphsModel::updateParamNotDesc(const QString &id, PARAM_UPDATE_INFO info, const QModelIndex &subGpIdx,
+    bool enableTransaction)
+{
+    ApiLevelScope batch(this);
+    SubGraphModel *pGraph = subGraph(subGpIdx.row());
+    ZASSERT_EXIT(pGraph);
+    pGraph->updateParamNotDesc(id, info.name, info.newValue);
+}
+
 void GraphsModel::updateSocket(const QString& nodeid, SOCKET_UPDATE_INFO info, const QModelIndex& subGpIdx, bool enableTransaction)
 {
     if (enableTransaction)

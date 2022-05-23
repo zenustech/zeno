@@ -350,7 +350,14 @@ QMenuBar* ZenoViewDockTitle::initMenu()
         pAction->setChecked(false);
         pDisplay->addAction(pAction);
         connect(pAction, &QAction::triggered, this,
-            [=]() { Zenovis::GetInstance().getSession()->set_render_engine(pAction->isChecked() ? "zhxx" : "bate"); });
+            [=]() {
+#ifdef ZENO_ENABLE_OPTIX
+                const char *e = pAction->isChecked() ? "zhxx" : "bate";
+#else
+                const char *e = pAction->isChecked() ? "optx" : "bate";
+#endif
+                Zenovis::GetInstance().getSession()->set_render_engine(e);
+            });
 
         pAction = new QAction(tr("Enable GI"), this);
         pAction->setCheckable(true);
@@ -380,6 +387,12 @@ QMenuBar* ZenoViewDockTitle::initMenu()
         connect(pAction, &QAction::triggered, this, [=]() {
             auto s = QDateTime::currentDateTime().toString(QString("yyyy-dd-MM_hh-mm-ss.png"));
             Zenovis::GetInstance().getSession()->do_screenshot(s.toStdString(), "png");
+        });
+        pAction = new QAction(tr("Screenshot EXR"), this);
+        pRecord->addAction(pAction);
+        connect(pAction, &QAction::triggered, this, [=]() {
+            auto s = QDateTime::currentDateTime().toString(QString("yyyy-dd-MM_hh-mm-ss.exr"));
+            Zenovis::GetInstance().getSession()->do_screenshot(s.toStdString(), "exr");
         });
         pAction = new QAction(tr("Record Video"), this);
         pAction->setShortcut(QKeySequence(tr("Shift+F12")));

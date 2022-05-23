@@ -3,6 +3,7 @@
 #include <comctrl/zlabel.h>
 #include <zenoui/style/zenostyle.h>
 #include <zenoui/comctrl/effect/innershadoweffect.h>
+#include <zeno/utils/envconfig.h>
 #include "ui_ztimeline.h"
 
 
@@ -27,6 +28,9 @@ ZTimeline::ZTimeline(QWidget* parent)
     initStyleSheet();
     initSignals();
     initBtnIcons();
+
+    if (zeno::envconfig::get("ALWAYS"))
+        m_ui->btnAlways->setChecked(true);
 }
 
 void ZTimeline::initSignals()
@@ -36,6 +40,7 @@ void ZTimeline::initSignals()
     connect(m_ui->editTo, SIGNAL(editingFinished()), this, SLOT(onFrameEditted()));
     connect(m_ui->timeliner, SIGNAL(sliderValueChange(int)), this, SIGNAL(sliderValueChanged(int)));
     connect(m_ui->btnRun, SIGNAL(clicked()), this, SIGNAL(run()));
+    connect(m_ui->btnKill, SIGNAL(clicked()), this, SIGNAL(kill()));
     connect(m_ui->btnBackward, &QPushButton::clicked, this, [=]() {
         int frame = m_ui->timeliner->value();
         auto ft = fromTo();

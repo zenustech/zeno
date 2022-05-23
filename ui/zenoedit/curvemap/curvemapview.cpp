@@ -3,7 +3,7 @@
 #include "curvegrid.h"
 #include "curvenodeitem.h"
 #include "curveutil.h"
-#include "../model/curvemodel.h"
+#include <zenoui/model/curvemodel.h>
 #include "../util/log.h"
 
 
@@ -36,7 +36,7 @@ CurveMapView::~CurveMapView()
 
 void CurveMapView::init(bool timeFrame)
 {
-	QGraphicsScene* pScene = new QGraphicsScene;
+    QGraphicsScene *pScene = new QGraphicsScene(this);
 	setScene(pScene);
 
 	m_gridMargins.setLeft(64);
@@ -71,7 +71,7 @@ void CurveMapView::addCurve(CurveModel* model)
 
 	//todo: union range.
     m_range = model->range();
-    m_grid->resetTransform(m_fixedSceneRect.marginsRemoved(m_gridMargins), m_range);
+    m_grid->resetTransform(m_fixedSceneRect.marginsRemoved(m_gridMargins), m_range, true);
     m_grid->addCurve(model);
     m_pHScalar->update();
     m_pVScalar->update();
@@ -80,6 +80,20 @@ void CurveMapView::addCurve(CurveModel* model)
 CURVE_RANGE CurveMapView::range() const
 {
     return m_range;
+}
+
+void CurveMapView::resetRange(const CURVE_RANGE& rg)
+{
+	//support only one range for all curves, but maybe we don't need to lock start/end point at the boundary.
+    m_range = rg;
+    m_grid->resetTransform(m_fixedSceneRect.marginsRemoved(m_gridMargins), rg, false);
+    m_pHScalar->update();
+    m_pVScalar->update();
+}
+
+void CurveMapView::setChartType(bool bFrame)
+{
+    m_pHScalar->setFrame(bFrame);
 }
 
 QPointF CurveMapView::mapLogicToScene(const QPointF& logicPos)

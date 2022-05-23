@@ -4,6 +4,7 @@
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/InstancingObject.h>
 #include <zeno/types/PrimitiveTools.h>
+#include <zeno/types/UserData.h>
 #include <zeno/utils/logger.h>
 #include <zeno/utils/orthonormal.h>
 #include <zeno/utils/ticktock.h>
@@ -532,8 +533,9 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
             CHECK_GL(glDrawElements(GL_TRIANGLES,
                                     /*count=*/triObj.count * 3,
                                     GL_UNSIGNED_INT, /*first=*/0));
+            bool selected = scene->selected.count(nameid) > 0;
 
-            if (scene->drawOptions->render_wireframe) {
+            if (scene->drawOptions->render_wireframe || selected) {
                 CHECK_GL(glEnable(GL_POLYGON_OFFSET_LINE));
                 CHECK_GL(glPolygonOffset(0, 0));
                 CHECK_GL(glPolygonMode(GL_FRONT_AND_BACK, GL_LINE));

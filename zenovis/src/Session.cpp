@@ -7,13 +7,9 @@
 #include <zenovis/bate/IGraphic.h>
 #include <zeno/utils/format.h>
 #include <stb_image_write.h>
-#ifdef ZENO_ENABLE_OPENEXR
-#include <ImfPixelType.h>
-#include <ImfRgbaFile.h>
-#include <ImfArray.h>
-#endif
-#include <map>
+#include <tinyexr.h>
 #include <functional>
+#include <map>
 
 namespace zenovis {
 
@@ -35,6 +31,9 @@ Session::Session() : impl(std::make_unique<Impl>()) {
 
 Session::~Session() = default;
 
+Scene* Session::get_scene() const {
+    return impl->scene.get();
+}
 void Session::set_window_size(int nx, int ny) {
     impl->scene->camera->m_nx = nx;
     impl->scene->camera->m_ny = ny;
@@ -86,7 +85,7 @@ void Session::do_screenshot(std::string path, std::string type) {
         {"png", 1},
         {"jpg", 1},
         {"bmp", 1},
-        {"exr", 2},
+        {"exr", 4},
         {"hdr", 4},
     }.at(type);
     auto nx = impl->scene->camera->m_nx;
@@ -95,39 +94,36 @@ void Session::do_screenshot(std::string path, std::string type) {
     zeno::log_info("saving screenshot {}x{} to {}", nx, ny, path);
     std::vector<char> pixels = impl->scene->record_frame_offline(hdrSize, 3);
 
-    stbi_flip_vertically_on_write(true);
     std::map<std::string, std::function<void()>>{
     {"png", [&] {
+        stbi_flip_vertically_on_write(true);
         stbi_write_png(path.c_str(), nx, ny, 3, pixels.data(), 0);
     }},
     {"jpg", [&] {
+        stbi_flip_vertically_on_write(true);
         stbi_write_jpg(path.c_str(), nx, ny, 3, pixels.data(), 80);
     }},
     {"bmp", [&] {
+        stbi_flip_vertically_on_write(true);
         stbi_write_bmp(path.c_str(), nx, ny, 3, pixels.data());
     }},
-#ifdef ZENO_ENABLE_OPENEXR
     {"exr", [&] {
-        Imf::RgbaOutputFile file(path.c_str(), nx, ny, Imf::WRITE_RGBA);
-        Imf::Array2D<Imf::Rgba> px(ny, nx);
-        auto pix = reinterpret_cast<decltype(px[0][0].r) *>(pixels.data());
-        int i = 0;
-        for (int y = 0; y < ny; ++y) {
-          for (int x = 0; x < nx; ++x) {
-            Imf::Rgba &p = px[ny - 1 - y][x];
-            // Imf::Rgba &p = px[ny][nx];
-            p.r = pix[i];
-            p.g = pix[i + 1];
-            p.b = pix[i + 2];
-            p.a = 0;
-            i += 3;
-          }
+        for (int line = 0; line != ny / 2; ++line) {
+            std::swap_ranges(pixels.begin() + 3 * nx * line,
+                             pixels.begin() + 3 * nx * (line + 1),
+                             pixels.begin() + 3 * nx * (ny - line - 1));
         }
-        file.setFrameBuffer(&px[0][0], 1, nx);
-        file.writePixels(ny);
+        const char *err = nullptr;
+        int ret = SaveEXR((float *)pixels.data(), nx, ny, 3, 1, path.c_str(), &err);
+        if (ret != TINYEXR_SUCCESS) {
+            if (err) {
+                zeno::log_error("failed to perform SaveEXR to {}: {}", path, err);
+                FreeEXRErrorMessage(err);
+            }
+        }
     }},
-#endif
     {"hdr", [&] {
+        stbi_flip_vertically_on_write(true);
         stbi_write_hdr(path.c_str(), impl->scene->camera->m_nx,
                        impl->scene->camera->m_ny, 3, (float *)pixels.data());
     }},

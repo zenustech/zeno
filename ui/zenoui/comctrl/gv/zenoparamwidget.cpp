@@ -236,6 +236,11 @@ void ZenoParamComboBox::setText(const QString& text)
     m_combobox->setCurrentText(text);
 }
 
+QString ZenoParamComboBox::text()
+{
+    return m_combobox->currentText();
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////////
 ZenoParamPushButton::ZenoParamPushButton(const QString &name, int width, QSizePolicy::Policy hor, QGraphicsItem *parent)

@@ -3,10 +3,13 @@
 
 #include <QtWidgets>
 #include "zwidgetostream.h"
+#include <zeno/utils/scope_exit.h>
 
 class GraphsManagment;
 class ZenoMainWindow;
-
+#ifdef ZENO_MULTIPROCESS
+class ZTcpServer;
+#endif
 class GraphsModel;
 
 class ZenoApplication : public QApplication
@@ -21,6 +24,9 @@ public:
     void setIOProcessing(bool bIOProcessing);
     bool IsIOProcessing() const;
     ZenoMainWindow* getMainWindow();
+#ifdef ZENO_MULTIPROCESS
+    ZTcpServer* getServer();
+#endif
     QStandardItemModel* logModel() const;
 
 private:
@@ -28,10 +34,18 @@ private:
 
     QSharedPointer<GraphsManagment> m_pGraphs;
     ZWidgetErrStream m_errSteam;
+#ifdef ZENO_MULTIPROCESS
+    ZTcpServer* m_server;
+#endif
     bool m_bIOProcessing;
     QDir m_appDataPath;
 };
 
 #define zenoApp (qobject_cast<ZenoApplication*>(QApplication::instance()))
+
+#define DlgInEventLoopScope  \
+    zeno::scope_exit sp([=]() {zenoApp->getMainWindow()->setInDlgEventLoop(false);});\
+    zenoApp->getMainWindow()->setInDlgEventLoop(true);    
+
 
 #endif

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <zeno/utils/safe_at.h>
+#include <zeno/utils/safe_dynamic_cast.h>
 #include <zeno/utils/memory.h>
 #include <zeno/core/IObject.h>
 #include <zeno/funcs/LiterialConverter.h>
@@ -31,8 +32,32 @@ struct UserData {
     }
 
     template <class T>
+    bool isa(std::string const &name) const {
+        return !!dynamic_cast<T *>(get(name).get());
+    }
+
+    std::shared_ptr<IObject> get(std::string const &name, std::shared_ptr<IObject> defl) const {
+        return has(name) ? get(name) : defl;
+    }
+
+    template <class T>
+    std::shared_ptr<T> get(std::string const &name) const {
+        return safe_dynamic_cast<T>(get(name));
+    }
+
+    template <class T>
+    std::shared_ptr<T> get(std::string const &name, std::decay_t<std::shared_ptr<T>> defl) const {
+        return has(name) ? get<T>(name) : defl;
+    }
+
+    template <class T>
     T getLiterial(std::string const &name) const {
         return objectToLiterial<T>(get(name));
+    }
+
+    template <class T>
+    T getLiterial(std::string const &name, T defl) const {
+        return has(name) ? getLiterial<T>(name) : defl;
     }
 
     void set(std::string const &name, std::shared_ptr<IObject> value) {

@@ -117,7 +117,7 @@ std::shared_ptr<PrimitiveObject> parse_obj(std::vector<char> &&bin) {
 struct ReadObjPrim : INode {
     virtual void apply() override {
         auto path = get_input<StringObject>("path")->get();
-        auto binary = file_get_binary(path);
+        auto binary = file_get_binary<std::vector<char>>(path);
         auto prim = parse_obj(std::move(binary));
         if (get_param<bool>("triangulate")) {
             primTriangulate(prim.get());

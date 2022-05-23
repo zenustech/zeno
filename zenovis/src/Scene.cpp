@@ -3,6 +3,7 @@
 #include <zeno/core/Session.h>
 #include <zeno/extra/GlobalComm.h>
 #include <zeno/funcs/ObjectGeometryInfo.h>
+#include <zeno/utils/envconfig.h>
 #include <zenovis/DrawOptions.h>
 #include <zenovis/RenderEngine.h>
 #include <zenovis/ShaderManager.h>
@@ -33,7 +34,9 @@ Scene::Scene()
     auto version = (const char *)glGetString(GL_VERSION);
     zeno::log_info("OpenGL version: {}", version ? version : "(null)");
 
-    if (std::getenv("ZENO_ZHXX"))
+    if (zeno::envconfig::get("OPTX"))
+        switchRenderEngine("optx");
+    else if (zeno::envconfig::get("ZHXX"))
         switchRenderEngine("zhxx");
     else
         switchRenderEngine("bate");

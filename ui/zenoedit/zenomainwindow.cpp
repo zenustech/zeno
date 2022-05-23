@@ -14,6 +14,7 @@
 #include "viewport/zenovis.h"
 #include "zenoapplication.h"
 #include <zeno/utils/log.h>
+#include <zeno/utils/envconfig.h>
 #include <zenoio/reader/zsgreader.h>
 #include <zenoio/writer/zsgwriter.h>
 #include <zenoui/model/modeldata.h>
@@ -31,13 +32,13 @@ ZenoMainWindow::ZenoMainWindow(QWidget *parent, Qt::WindowFlags flags)
 {
     init();
     setContextMenuPolicy(Qt::NoContextMenu);
-    setWindowTitle("Zeno Editor (github.com/zenustech/zeno)");
-#ifdef __linux__
-    if (char *p = std::getenv("ZENO_OPEN")) {
-        printf("ZENO_OPEN: %s\n", p);
+    setWindowTitle("Zeno Editor (" __DATE__ ")");
+//#ifdef __linux__
+    if (char *p = zeno::envconfig::get("OPEN")) {
+        zeno::log_info("ZENO_OPEN: {}", p);
         openFile(p);
     }
-#endif
+//#endif
 }
 
 ZenoMainWindow::~ZenoMainWindow()
@@ -371,6 +372,7 @@ static bool saveContent(const QString &strContent, QString filePath) {
 }
 
 void ZenoMainWindow::exportGraph() {
+    DlgInEventLoopScope;
     QString path = QFileDialog::getSaveFileName(this, "Path to Save", "",
                                                 "C++ Source File(*.cpp);; JSON file(*.json);; All Files(*);;");
     if (path.isEmpty()) {
@@ -551,8 +553,12 @@ bool ZenoMainWindow::inDlgEventLoop() const {
     return m_bInDlgEventloop;
 }
 
+void ZenoMainWindow::setInDlgEventLoop(bool bOn) {
+    m_bInDlgEventloop = bOn;
+}
+
 void ZenoMainWindow::saveAs() {
-    VarToggleScope scope(&m_bInDlgEventloop);
+    DlgInEventLoopScope;
     QString path = QFileDialog::getSaveFileName(this, "Path to Save", "", "Zensim Graph File(*.zsg);; All Files(*);;");
     if (!path.isEmpty()) {
         saveFile(path);
@@ -560,7 +566,7 @@ void ZenoMainWindow::saveAs() {
 }
 
 QString ZenoMainWindow::getOpenFileByDialog() {
-    VarToggleScope scope(&m_bInDlgEventloop);
+    DlgInEventLoopScope;
     const QString &initialPath = ".";
     QFileDialog fileDialog(this, tr("Open"), initialPath, "Zensim Graph File (*.zsg)\nAll Files (*)");
     fileDialog.setAcceptMode(QFileDialog::AcceptOpen);

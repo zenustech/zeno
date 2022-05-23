@@ -35,6 +35,8 @@ public slots:
 	void onFrameChanged(qreal frame);
 	void onLineEditFinished();
     void onLockBtnToggled(bool bToggle);
+    void onRangeEdited();
+    void onCbTimelineChanged(int);
 
 private:
 	void init();

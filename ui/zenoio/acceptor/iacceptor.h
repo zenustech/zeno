@@ -21,6 +21,7 @@ public:
     virtual void setOptions(const QString& id, const QStringList& options) = 0;
     virtual void setColorRamps(const QString& id, const COLOR_RAMPS& colorRamps) = 0;
     virtual void setBlackboard(const QString& id, const BLACKBOARD_INFO& blackboard) = 0;
+    virtual QObject* currGraphObj() = 0;
     virtual ~IAcceptor() = default;
 };
 

@@ -1,5 +1,6 @@
 #ifdef ZENO_BENCHMARKING
 #include <zeno/utils/Timer.h>
+#include <zeno/utils/envconfig.h>
 #include <zeno/utils/cformat.h>
 #include <algorithm>
 #include <cstdlib>
@@ -71,7 +72,7 @@ namespace {
     static struct TimerAtexitHelper {
         ~TimerAtexitHelper() {
             auto log = Timer::getLog();
-            if (auto env = getenv("ZENO_TIMER"); env) {
+            if (auto env = zeno::envconfig::get("TIMER")) {
                 FILE *fp = fopen(env, "w");
                 fprintf(fp, "%s", log.c_str());
                 fclose(fp);

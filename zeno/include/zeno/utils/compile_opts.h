@@ -25,3 +25,32 @@
 #define ZENO_ASSUME_ALIGNED(x) (x)
 
 #endif
+
+#if defined __INTEL_COMPILER
+#define ZENO_NOWARN_BEGIN \
+    _Pragma("warning (push)")
+#define ZENO_NOWARN_END \
+    _Pragma("warning (pop)")
+#elif defined __clang__
+#define ZENO_NOWARN_BEGIN \
+    _Pragma("clang diagnostic push") \
+    _Pragma("clang diagnostic ignored \"-Wall\"") \
+    _Pragma("GCC diagnostic ignored \"-Wextra\"")
+#define ZENO_NOWARN_END \
+    _Pragma("clang diagnostic pop")
+#elif defined __GNUC__
+#define ZENO_NOWARN_BEGIN \
+    _Pragma("GCC diagnostic push") \
+    _Pragma("GCC diagnostic ignored \"-Wall\"") \
+    _Pragma("GCC diagnostic ignored \"-Wextra\"")
+#define ZENO_NOWARN_END \
+    _Pragma("GCC diagnostic pop")
+#elif defined _MSC_VER
+#define ZENO_NOWARN_BEGIN \
+    __pragma(warning(push))
+#define ZENO_NOWARN_END \
+    __pragma(warning(pop))
+#else
+#define ZENO_NOWARN_BEGIN
+#define ZENO_NOWARN_END
+#endif
