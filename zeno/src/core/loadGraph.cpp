@@ -73,7 +73,11 @@ ZENO_API void Graph::loadGraph(const char *json) {
         d.Parse(json);
 
         auto tno = [&] (auto const &s) -> decltype(auto) {
+#if 0
             return session->translator->ut(s);
+#else
+            return s;
+#endif
         };
 
         for (int i = 0; i < d.Size(); i++) {

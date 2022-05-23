@@ -913,7 +913,7 @@ void load_object(std::string const &key, std::string const &mtlid, float const *
     dat.tris.assign(tris, tris + numtris * 3);
     //TODO: flatten just here... or in renderengineoptx.cpp
     for (auto const &[key, fptr]: vtab) {
-        dat.vertattrs[key].assign(fptr.first, fptr.first + numverts * fptr.second);
+        //dat.vertattrs[key].assign(fptr.first, fptr.first + numverts * fptr.second);
     }
 }
 

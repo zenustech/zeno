@@ -81,7 +81,11 @@ ZENO_API std::string Session::dumpDescriptors() const {
     std::vector<std::string> strs;
 
     auto tno = [&] (auto const &s) -> decltype(auto) {
+#if 0
         return translator->t(s);
+#else
+        return s;
+#endif
     };
 
     for (auto const &[key, cls] : nodeClasses) {
