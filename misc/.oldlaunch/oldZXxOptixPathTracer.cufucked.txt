@@ -31,7 +31,7 @@ struct Params
     float3       V;
     float3       W;
 
-    ParallelogramLight     light; // TODO: make light list
+    ParallelogramLight     *light; // TODO: make light list
     OptixTraversableHandle handle;
 };
 

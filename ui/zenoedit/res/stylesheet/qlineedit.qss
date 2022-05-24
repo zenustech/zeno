@@ -12,7 +12,7 @@ QLineEdit:focus
     color: rgba(255,255,255,1.0);
 }
 
-QLineEdit[cssClass="searchEdit"]
+QLineEdit[cssClass="searchEditor"]
 {
     border: 1px solid #252525;
     padding: 0 4px;

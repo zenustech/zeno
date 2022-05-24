@@ -43,6 +43,7 @@ extern "C" __global__ void __raygen__rg()
         prd.emitted      = make_float3(0.f);
         prd.radiance     = make_float3(0.f);
         prd.attenuation  = make_float3(1.f);
+        prd.attenuation2 = make_float3(1.f);
         prd.prob         = 1.0f;
         prd.prob2        = 1.0f;
         prd.countEmitted = true;
@@ -62,7 +63,7 @@ extern "C" __global__ void __raygen__rg()
                     &prd );
 
             result += prd.emitted;
-            result += prd.radiance * prd.attenuation/prd.prob;
+            result += prd.radiance * prd.attenuation2/prd.prob2;
 
             if( prd.done  || depth >= 5 ) // TODO RR, variable for depth
                 break;
@@ -85,6 +86,10 @@ extern "C" __global__ void __raygen__rg()
         const float3 accum_color_prev = make_float3( params.accum_buffer[ image_index ]);
         accum_color = lerp( accum_color_prev, accum_color, a );
     }
+    /*if (launch_index.x == 0) {*/
+        /*printf("%p\n", params.accum_buffer);*/
+        /*printf("%p\n", params.frame_buffer);*/
+    /*}*/
     params.accum_buffer[ image_index ] = make_float4( accum_color, 1.0f);
     params.frame_buffer[ image_index ] = make_color ( accum_color );
 }

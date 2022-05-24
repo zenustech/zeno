@@ -42,7 +42,7 @@ struct GraphicsManager {
                 auto vs = (float const *)prim->verts.data();
                 std::map<std::string, std::pair<float const *, size_t>> vtab;
                 prim->verts.foreach_attr([&] (auto const &key, auto const &arr) {
-                    vtab[key] = {(float const *)arr.data(), sizeof(arr[0])};
+                    vtab[key] = {(float const *)arr.data(), sizeof(arr[0]) / sizeof(float)};
                 });
                 auto ts = (int const *)prim->tris.data();
                 auto nvs = prim->verts.size();
@@ -85,6 +85,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
     std::unique_ptr<opengl::VAO> vao;
     Scene *scene;
 
+    bool lightNeedUpdate = true;
     bool meshNeedUpdate = true;
     bool matNeedUpdate = true;
 
@@ -110,7 +111,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
 
     void update() override {
         if (graphicsMan->load_objects(scene->objectsMan->pairs())) {
-            meshNeedUpdate = matNeedUpdate = true;
+            lightNeedUpdate = meshNeedUpdate = matNeedUpdate = true;
         }
     }
 
@@ -189,7 +190,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         //xinxinoptix::set_projection(glm::value_ptr(cam.m_proj));
         }
 
-        if (meshNeedUpdate || matNeedUpdate) {
+        if (meshNeedUpdate || matNeedUpdate || lightNeedUpdate) {
         zeno::log_debug("[zeno-optix] updating scene");
             if (matNeedUpdate) {
             zeno::log_debug("[zeno-optix] updating material");
@@ -199,6 +200,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                 ensure_shadtmpl();
                 shaders.push_back(shadtmpl);
                 mtlidlut.insert({"Default", 0});
+                xinxinoptix::optixupdatebegin();
 
                 for (auto const &[key, obj]: graphicsMan->graphics) {
                     if (auto mtldet = std::get_if<GraphicsManager::DetMaterial>(&obj->det)) {
@@ -221,8 +223,13 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                 xinxinoptix::optixupdatemesh(mtlidlut);
             }
             xinxinoptix::optixupdateend();
+            if (lightNeedUpdate) {
+            zeno::log_debug("[zeno-optix] updating light");
+                xinxinoptix::optixupdatelight();
+            }
             meshNeedUpdate = false;
             matNeedUpdate = false;
+            lightNeedUpdate = false;
         }
 
         int targetFBO = 0;

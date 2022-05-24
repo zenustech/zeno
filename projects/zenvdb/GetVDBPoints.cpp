@@ -13,7 +13,7 @@ struct GetVDBPoints : zeno::INode {
 
     std::vector<openvdb::points::PointDataTree::LeafNodeType*> leafs;
     grid->tree().getNodes(leafs);
-    printf("GetVDBPoints: particle leaf nodes: %d\n", leafs.size());
+    printf("GetVDBPoints: particle leaf nodes: %ld\n", leafs.size());
 
     auto transform = grid->transformPtr();
 
@@ -80,7 +80,7 @@ struct VDBPointsToPrimitive : zeno::INode {
 
     std::vector<openvdb::points::PointDataTree::LeafNodeType*> leafs;
     grid->tree().getNodes(leafs);
-    printf("GetVDBPoints: particle leaf nodes: %d\n", leafs.size());
+    printf("GetVDBPoints: particle leaf nodes: %ld\n", leafs.size());
 
     auto transform = grid->transformPtr();
 
@@ -170,7 +170,7 @@ struct GetVDBPointsDroplets : zeno::INode {
     auto dx = sdf->voxelSize()[0];
     std::vector<openvdb::points::PointDataTree::LeafNodeType*> leafs;
     grid->tree().getNodes(leafs);
-    printf("GetVDBPoints: particle leaf nodes: %d\n", leafs.size());
+    printf("GetVDBPoints: particle leaf nodes: %ld\n", leafs.size());
 
     auto transform = grid->transformPtr();
 

@@ -26,6 +26,7 @@ struct RadiancePRD
     float3       emitted;
     float3       radiance;
     float3       attenuation;
+    float3       attenuation2;
     float3       origin;
     float3       direction;
     float        opacity;

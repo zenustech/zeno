@@ -38,14 +38,19 @@ static void context_log_cb( unsigned int level, const char* tag, const char* mes
 namespace OptixUtil
 {
     using namespace xinxinoptix;
+    inline OptixPipelineCompileOptions    pipeline_compile_options = {};
 ////these are all material independent stuffs;
 inline raii<OptixDeviceContext>             context                  ;
-inline OptixPipelineCompileOptions    pipeline_compile_options = {};
-inline raii<OptixPipeline>                  pipeline                 ;
-inline raii<OptixModule>                    ray_module               ;
-inline raii<OptixProgramGroup>              raygen_prog_group        ;
-inline raii<OptixProgramGroup>              radiance_miss_group      ;
-inline raii<OptixProgramGroup>              occlusion_miss_group     ;
+inline struct Archibate {
+    raii<OptixPipeline>                  pipeline                 ;
+    raii<OptixModule>                    ray_module               ;
+    raii<OptixProgramGroup>              raygen_prog_group        ;
+    raii<OptixProgramGroup>              radiance_miss_group      ;
+    raii<OptixProgramGroup>              occlusion_miss_group     ;
+} bate1, bate2;
+inline void swapTwoBates() {
+    std::swap(bate1, bate2);
+}
 ////end material independent stuffs
 inline void createContext()
 {
@@ -57,7 +62,7 @@ inline void createContext()
     OptixDeviceContextOptions options = {};
     options.logCallbackFunction       = &context_log_cb;
     options.logCallbackLevel          = 4;
-    OPTIX_CHECK( optixDeviceContextCreate( cu_ctx, &options, &context ) );
+    OPTIX_CHECK( optixDeviceContextCreate( cu_ctx, &options, &context.reset() ) );
     pipeline_compile_options = {};
     pipeline_compile_options.usesMotionBlur        = false;
     pipeline_compile_options.traversableGraphFlags = OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_GAS;
@@ -67,7 +72,7 @@ inline void createContext()
     pipeline_compile_options.pipelineLaunchParamsVariableName = "params";
 
 }
-inline void createModule(OptixModule &m, OptixDeviceContext &context, const char *source, const char *location)
+inline void createModule(raii<OptixModule> &m, OptixDeviceContext &context, const char *source, const char *location)
 {
     //OptixModule m;
     OptixModuleCompileOptions module_compile_options = {};
@@ -93,11 +98,11 @@ inline void createModule(OptixModule &m, OptixDeviceContext &context, const char
         inputSize,
         log,
         &sizeof_log,
-        &m
+        &m.reset()
     ) );
     //return m;
 }
-inline void createRenderGroups(OptixDeviceContext &context, OptixModule &_module)
+inline void createRenderGroups(OptixDeviceContext &context, OptixModule &_module, Archibate &bate1)
 {
     OptixProgramGroupOptions  program_group_options = {};
     char   log[2048];
@@ -108,13 +113,14 @@ inline void createRenderGroups(OptixDeviceContext &context, OptixModule &_module
         desc.raygen.module            = _module;
         desc.raygen.entryFunctionName = "__raygen__rg";
 
+        bate2.raygen_prog_group = std::move(bate1.raygen_prog_group);
         OPTIX_CHECK_LOG( optixProgramGroupCreate(
                     context, &desc,
                     1,  // num program groups
                     &program_group_options,
                     log,
                     &sizeof_log,
-                    &raygen_prog_group
+                    &bate1.raygen_prog_group.reset()
                     ) );
     }
 
@@ -124,25 +130,27 @@ inline void createRenderGroups(OptixDeviceContext &context, OptixModule &_module
         desc.miss.module            = _module;
         desc.miss.entryFunctionName = "__miss__radiance";
         sizeof_log                  = sizeof( log );
+        bate2.radiance_miss_group = std::move(bate1.radiance_miss_group);
         OPTIX_CHECK_LOG( optixProgramGroupCreate(
                     context, &desc,
                     1,  // num program groups
                     &program_group_options,
                     log, &sizeof_log,
-                    &radiance_miss_group
+                    &bate1.radiance_miss_group.reset()
                     ) );
         memset( &desc, 0, sizeof( OptixProgramGroupDesc ) );
         desc.kind                   = OPTIX_PROGRAM_GROUP_KIND_MISS;
         desc.miss.module            = nullptr;  // NULL miss program for occlusion rays
         desc.miss.entryFunctionName = nullptr;
         sizeof_log                  = sizeof( log );
+        bate2.occlusion_miss_group = std::move(bate1.occlusion_miss_group);
         OPTIX_CHECK_LOG( optixProgramGroupCreate(
                     context, &desc,
                     1,  // num program groups
                     &program_group_options,
                     log,
                     &sizeof_log,
-                    &occlusion_miss_group
+                    &bate1.occlusion_miss_group.reset()
                     ) );
     }     
 }
@@ -183,7 +191,7 @@ inline void createRTProgramGroups(OptixDeviceContext &context, OptixModule &_mod
                     &program_group_options,
                     log,
                     &sizeof_log,
-                    &oGroup
+                    &oGroup.reset()
                     ) );
     }
 }
@@ -211,8 +219,8 @@ struct rtMatShader
     void loadProgram()
     {
         try {
-            createModule(m_ptx_module.reset(), context, m_shaderFile.c_str(), "MatShader.cu");
-            createRTProgramGroups(context, m_ptx_module, 
+            createModule(m_ptx_module, context, m_shaderFile.c_str(), "MatShader.cu");
+            createRTProgramGroups(context, m_ptx_module,
             "OPTIX_PROGRAM_GROUP_KIND_CLOSEHITGROUP", 
             m_shadingEntry, m_radiance_hit_group);
 
@@ -234,10 +242,10 @@ inline void createPipeline()
     pipeline_link_options.debugLevel               = OPTIX_COMPILE_DEBUG_LEVEL_FULL;
 
     int num_progs = 3 + rtMaterialShaders.size() * 2;
-    OptixProgramGroup* program_groups = new OptixProgramGroup[num_progs];
-    program_groups[0] = raygen_prog_group;
-    program_groups[1] = radiance_miss_group;
-    program_groups[2] = occlusion_miss_group;
+    std::vector<OptixProgramGroup> program_groups(num_progs);
+    program_groups[0] = bate1.raygen_prog_group;
+    program_groups[1] = bate1.radiance_miss_group;
+    program_groups[2] = bate1.occlusion_miss_group;
     for(int i=0;i<rtMaterialShaders.size();i++)
     {
         program_groups[3 + i*2] = rtMaterialShaders[i].m_radiance_hit_group;
@@ -249,16 +257,16 @@ inline void createPipeline()
                 context,
                 &pipeline_compile_options,
                 &pipeline_link_options,
-                program_groups,
+                program_groups.data(),
                 num_progs,
                 log,
                 &sizeof_log,
-                &pipeline
+                &bate1.pipeline.reset()
                 ) );
     OptixStackSizes stack_sizes = {};
-    OPTIX_CHECK( optixUtilAccumulateStackSizes( raygen_prog_group,    &stack_sizes ) );
-    OPTIX_CHECK( optixUtilAccumulateStackSizes( radiance_miss_group,  &stack_sizes ) );
-    OPTIX_CHECK( optixUtilAccumulateStackSizes( occlusion_miss_group, &stack_sizes ) );
+    OPTIX_CHECK( optixUtilAccumulateStackSizes( bate1.raygen_prog_group,    &stack_sizes ) );
+    OPTIX_CHECK( optixUtilAccumulateStackSizes( bate1.radiance_miss_group,  &stack_sizes ) );
+    OPTIX_CHECK( optixUtilAccumulateStackSizes( bate1.occlusion_miss_group, &stack_sizes ) );
     for(int i=0;i<rtMaterialShaders.size();i++)
     {
         OPTIX_CHECK( optixUtilAccumulateStackSizes( rtMaterialShaders[i].m_radiance_hit_group, &stack_sizes ) );
@@ -282,13 +290,12 @@ inline void createPipeline()
 
     const uint32_t max_traversal_depth = 1;
     OPTIX_CHECK( optixPipelineSetStackSize(
-                pipeline,
+                bate1.pipeline,
                 direct_callable_stack_size_from_traversal,
                 direct_callable_stack_size_from_state,
                 continuation_stack_size,
                 max_traversal_depth
                 ) );
-    delete[]program_groups;
 
 }
 
