@@ -60,8 +60,9 @@ BulletURDFInternalData
 	mutable btAlignedObjectArray<btTriangleMesh*> m_allocatedMeshInterfaces;
 	btHashMap<btHashPtr, UrdfCollision> m_bulletCollisionShape2UrdfCollision;
 	int m_flags;
+    std::map<int, std::shared_ptr<zeno::PrimitiveObject>> graphics2VisualMap;
     std::vector<std::shared_ptr<zeno::PrimitiveObject>> visualList;
-    std::vector<std::shared_ptr<zeno::PrimitiveObject>> mbVisualList;
+    int graphicsCounter = 0;
 
 	void setSourceFile(const std::string& fileName)
 	{
@@ -124,18 +125,9 @@ struct BulletErrorLogger : public ErrorLogger
 	}
 };
 
-std::vector<std::shared_ptr<zeno::PrimitiveObject>> BulletURDFImporter::getVisualShapes() const
+std::map<int, std::shared_ptr<zeno::PrimitiveObject>> BulletURDFImporter::getVisualMap() const
 {
-    return m_data->mbVisualList;
-}
-
-
-void BulletURDFImporter::setMultiBodyInfo(std::vector<int> mb2graphics, int numLinks) const
-{
-    for (size_t i=0;i<numLinks;i++){
-        m_data->mbVisualList.push_back(m_data->visualList[mb2graphics[i]]);
-    }
-    std::cout << "sync visual 2 mb DONE!\n";
+    return m_data->graphics2VisualMap;
 }
 
 bool BulletURDFImporter::loadURDF(const char* fileName, bool forceFixedBase)
@@ -955,7 +947,7 @@ bool BulletURDFImporter::convertURDFToVisualShapeInternal(const UrdfVisual* visu
 	{
 		BT_PROFILE("zenoMesh");
         //zenoMesh = mapplypos(visualTransform, zenoMesh);
-        //zenoMesh = transformShapeInternal(visualTransform, zenoMesh);
+        zenoMesh = transformShapeInternal(visualTransform, zenoMesh);
         m_data->visualList.push_back(zenoMesh);
         graphicsFlag = 1;
 	}
@@ -1045,6 +1037,9 @@ int BulletURDFImporter::convertLinkVisualShapes(int linkIndex, const btTransform
 			{
 				B3_PROFILE("registerGraphicsShape");
                 graphicsIndex = m_data->visualList.size();
+                if(graphicsIndex > 0) {
+                    m_data->graphics2VisualMap[graphicsIndex-1] = m_data->visualList[graphicsIndex - 1];
+                }
 			}
 		}
 	}

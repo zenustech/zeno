@@ -4,6 +4,7 @@
 
 // zeno basics
 #include <zeno/ListObject.h>
+#include <zeno/DictObject.h>
 #include <zeno/NumericObject.h>
 #include <zeno/PrimitiveObject.h>
 #include <zeno/logger.h>
@@ -12,6 +13,7 @@
 
 #include "RigidTest.h"
 #include "zeno/types/StringObject.h"
+#include "zeno/types/DictObject.h"
 
 #include <BulletCollision/CollisionDispatch/btCollisionDispatcherMt.h>
 #include <BulletCollision/CollisionShapes/btShapeHull.h>
@@ -111,13 +113,13 @@ struct RobotLoadURDF : zeno::INode {
             }
             std::cout<< "\nload URDF done! We have " << object->multibody->getNumLinks() << " links in this Robot!\n";
 
-            auto visualList = u2b.getVisualShapes();
-            std::cout<< "\nload URDF done! We have " << visualList.size() << " links in this Robot!\n";
-            auto finalVisualList = std::make_shared<zeno::ListObject>();
-            finalVisualList->arr.clear();
+            auto visualMap = u2b.getVisualMap();
+            std::cout<< "\nload URDF done! We have " << visualMap.size() << " links in this Robot!\n";
+            auto finalVisualMap = std::make_shared<zeno::DictObject>();
 
-            for (size_t i = 0; i< visualList.size();i++){
-                finalVisualList->arr.push_back(visualList[i]);
+            for (auto &kv : visualMap){
+                finalVisualMap->lut[std::to_string(kv.first)] = kv.second;
+                std::cout << "graphicsId: "<< kv.first << std::endl;
             }
 
             int numLinks = mb->getNumLinks();
@@ -152,16 +154,29 @@ struct RobotLoadURDF : zeno::INode {
                 }
             }
 
+            int numCollisionObjects = world->dynamicsWorld->getNumCollisionObjects();
+            std::cout << "now the transform for colobject:\n";
+            for (size_t i = 0; i < numCollisionObjects; i++) {
+                btCollisionObject* colObj = world->dynamicsWorld->getCollisionObjectArray()[i];
+                btCollisionShape* collisionShape = colObj->getCollisionShape();
+
+                btTransform trans = colObj->getWorldTransform();
+                int graphicsIndex = colObj->getUserIndex();
+                std::cout << "graphicsId: " << graphicsIndex << " -- " << trans.getOrigin()[0] << "," << trans.getOrigin()[1] << "," << trans.getOrigin()[2] << "\n";
+                std::cout << trans.getRotation()[0] << "," << trans.getRotation()[1] << "," << trans.getRotation()[2] << "," << trans.getRotation()[3] << "\n";
+
+            }
+
             set_output("world", std::move(world));
             set_output("object", std::move(object));
-            set_output("visualList", std::move(finalVisualList));
+            set_output("visualMap", std::move(finalVisualMap));
         }
     }
 };
 
 ZENDEFNODE(RobotLoadURDF, {
     {"path", {"float", "globalScaling", "1"}, "world"},
-    {"world", "object", "visualList"},
+    {"world", "object", "visualMap"},
     {{"enum true false", "fixedBase", "true"}},
     {"Robot"},
 });

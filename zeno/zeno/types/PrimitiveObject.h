@@ -17,10 +17,10 @@ struct MaterialObject;
 struct InstancingObject;
 
 struct PrimitiveObject : IObjectClone<PrimitiveObject> {
-    AttrVector<vec3f> verts;
+    AttrVector<vec3f> verts; // point coords
     AttrVector<int> points;
     AttrVector<vec2i> lines;
-    AttrVector<vec3i> tris;
+    AttrVector<vec3i> tris; // face id
     AttrVector<vec4i> quads;
 
     AttrVector<int> loops;

@@ -3,6 +3,7 @@
 
 // zeno basics
 #include <zeno/ListObject.h>
+#include <zeno/DictObject.h>
 #include <zeno/NumericObject.h>
 #include <zeno/PrimitiveObject.h>
 #include <zeno/logger.h>
@@ -199,14 +200,12 @@ struct PrimitiveConvexDecompositionV : zeno::INode {
         std::vector<int> triangles;
 
         for (size_t i = 0; i < pos.size(); i++){
-            //std::cout << "pos: " << pos[i][0] << "," << pos[i][1] << "," << pos[i][2] <<std::endl;
             points.push_back(pos[i][0]);
             points.push_back(pos[i][1]);
             points.push_back(pos[i][2]);
         }
 
         for (size_t i = 0; i < prim->tris.size(); i++){
-            //std::cout << "tri: " << prim->tris[i][0] << "," << prim->tris[i][1] << "," << prim->tris[i][2] <<std::endl;
             triangles.push_back(prim->tris[i][0]);
             triangles.push_back(prim->tris[i][1]);
             triangles.push_back(prim->tris[i][2]);
@@ -1462,6 +1461,7 @@ struct BulletWorldAddObject : zeno::INode {
     virtual void apply() override {
         auto world = get_input<BulletWorld>("world");
         auto object = get_input<BulletObject>("object");
+
         world->addObject(std::move(object));
         set_output("world", get_input("world"));
     }
@@ -1761,25 +1761,10 @@ struct BulletMultiBodyGetTransform : zeno::INode {
         for (size_t i = 0; i < object->multibody->getNumLinks(); i++) {
             auto trans = std::make_shared<BulletTransform>();
             trans->trans = object->multibody->getLink(i).m_collider->getWorldTransform();
-            std::cout<< "\nlink #" << i << ": " << trans->trans.getOrigin()[0] << "," << trans->trans.getOrigin()[1] << "," << trans->trans.getOrigin()[2];
+            std::cout<< "\nlink #" << i << ": " << trans->trans.getOrigin()[0] << "," << trans->trans.getOrigin()[1] << "," << trans->trans.getOrigin()[2] << "\n";
+            std::cout << trans->trans.getRotation()[0] << "," << trans->trans.getRotation()[1] << "," << trans->trans.getRotation()[2] << "," << trans->trans.getRotation()[3] << std::endl;
             transList->arr.push_back(trans);
         }
-
-//        std::cout<<"current Transform: ";
-//		for (size_t i = 0; i< object->multibody->getNumLinks(); i++) {
-//			btVector3 tmpTrans;
-//			btVector3 tmpOri;
-//
-//			object->multibody->localPosToWorld(i, tmpTrans);
-//			object->multibody->localDirToWorld(i, tmpOri);
-//            std::cout<< "link #" << i << ": " << tmpTrans[0] << "," << tmpTrans[1] << "," << tmpTrans[2];
-//			auto tmpFrame = std::make_shared<BulletTransform>();
-//            tmpFrame->trans.setOrigin(tmpTrans);
-//            btQuaternion q(tmpOri[0], tmpOri[1], tmpOri[2]);
-//            tmpFrame->trans.setRotation(q);
-//            transList->arr.push_back(tmpFrame);
-//		}
-//        std::cout<<std::endl;
         set_output("transList", std::move(transList));
     }
 };
@@ -1791,34 +1776,42 @@ ZENDEFNODE(BulletMultiBodyGetTransform, {
     {"Bullet"}
 });
 
-struct BulletMultiBodyWorldGetTransform : zeno::INode {
-    // TODO: this part should be more adaptive later!!
+struct BulletMultiBodyWorldGetTransformShapes : zeno::INode {
 	virtual void apply() override {
 		auto world = get_input<BulletMultiBodyWorld>("world");
+        auto graphicsVisualMap = get_input<zeno::DictObject>("visualMap");
+
         auto transList = std::make_shared<zeno::ListObject>();
         transList->arr.clear();
+
+        auto visualList = std::make_shared<zeno::ListObject>();
+        visualList->arr.clear();
 
         int numCollisionObjects = world->dynamicsWorld->getNumCollisionObjects();
         for (size_t i = 0; i < numCollisionObjects; i++) {
             auto linkTrans = std::make_shared<BulletTransform>();
             btCollisionObject* colObj = world->dynamicsWorld->getCollisionObjectArray()[i];
             btCollisionShape* collisionShape = colObj->getCollisionShape();
-
             linkTrans->trans = colObj->getWorldTransform();
+            //linkTrans->trans = btTransform::getIdentity();
             int graphicsIndex = colObj->getUserIndex();
             std::cout << "graphicsId #" << graphicsIndex << ":" << linkTrans->trans.getOrigin()[0] << "," << linkTrans->trans.getOrigin()[1] << "," << linkTrans->trans.getOrigin()[2] << "\n";
+            std::cout << linkTrans->trans.getRotation()[0] << "," << linkTrans->trans.getRotation()[1] << "," << linkTrans->trans.getRotation()[2] << "," << linkTrans->trans.getRotation()[3] << std::endl;
+
             if (graphicsIndex >= 0) {
                 transList->arr.push_back(linkTrans);
+                visualList->arr.push_back(graphicsVisualMap->lut.at(std::to_string(graphicsIndex)));
             }
         }
 
         set_output("transList", std::move(transList));
+        set_output("visualList", std::move(visualList));
 	}
 };
 
-ZENDEFNODE(BulletMultiBodyWorldGetTransform, {
-	{"world"},
-	{"transList"},
+ZENDEFNODE(BulletMultiBodyWorldGetTransformShapes, {
+	{"world", "visualMap"},
+	{"transList", "visualList"},
 	{},
 	{"Bullet"}
 });
@@ -2044,11 +2037,7 @@ struct BulletMultiBodyPDControl : zeno::INode {
         else{
             qDesiredArray.resize(object->multibody->getNumLinks(), 0);
         }
-        std::cout << "check target pose: ";
-        for (size_t i = 0; i< qDesiredArray.size(); i++) {
-            std::cout << qDesiredArray[i] << "," ;
-        }
-        std::cout << std::endl;
+
 		if (has_input("dqDesiredList")) {
             {
                 auto numericObjs = get_input<zeno::ListObject>(
@@ -2060,12 +2049,6 @@ struct BulletMultiBodyPDControl : zeno::INode {
         else {
             qdDesiredArray.resize(object->multibody->getNumLinks(), 0);
         }
-
-        std::cout << std::endl;
-        for (size_t i = 0; i< qDesiredArray.size(); i++){
-            std::cout << qDesiredArray[i] << ", ";
-        }
-        std::cout << std::endl;
 
 		for (int joint = 0; joint < object->multibody->getNumLinks(); joint++)
 		{
@@ -2437,7 +2420,6 @@ struct BulletCalcInverseKinematics : zeno::INode {
 		// IK iteration
 	    for (int i = 0; i < numIterations && currentDiff > residualThreshold; i++)
 	    {
-            std::cout << "currentDiff: " << currentDiff << std::endl;
 		    if (ikHelperPtr && validEndEffectorLinkIndices)
 		    {
 			    jacobian_linear.resize(numEndEffectorLinkIndices * 3 * numDofs);
@@ -2818,15 +2800,17 @@ struct BulletMultiBodyClearJointStates : zeno::INode {
         object->multibody->clearForcesAndTorques();
 //        object->multibody->clearConstraintForces();
 //        Not sure if clear constraint forces is necessary
+        set_output("object", std::move(object));
     }
 };
 
 ZENDEFNODE(BulletMultiBodyClearJointStates, {
                                                {"object"},
-                                               {},
+                                               {"object"},
                                                {},
                                                {"Bullet"},
                                            });
+
 
 
 };

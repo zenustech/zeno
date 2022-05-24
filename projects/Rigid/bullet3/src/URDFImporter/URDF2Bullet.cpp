@@ -25,6 +25,19 @@
 #include "../BulletCollision/BroadphaseCollision/btBroadphaseProxy.h"
 #include "MyMultiBodyCreator.h"
 
+void printTransform(btTransform trans) {
+    std::cout << "trans: " << trans.getOrigin()[0] << "," << trans.getOrigin()[1] << "," << trans.getOrigin()[2] << "\n";
+    std::cout << "ori:   " << trans.getRotation()[0] << "," << trans.getRotation()[1] << "," << trans.getRotation()[2] << "," << trans.getRotation()[3] << "\n";
+}
+
+void printVec3(btVector3 vec3) {
+    std::cout << vec3[0] << "," << vec3[1] << "," << vec3[2] << "\n";
+}
+
+void printQuat(btQuaternion quat) {
+    std::cout << quat[0] << "," << quat[1] << "," << quat[2] << "," << quat[3] << "\n";
+}
+
 //static int bodyCollisionFilterGroup=btBroadphaseProxy::CharacterFilter;
 //static int bodyCollisionFilterMask=btBroadphaseProxy::AllFilter&(~btBroadphaseProxy::CharacterFilter);
 static bool enableConstraints = true;
@@ -67,9 +80,6 @@ struct URDF2BulletCachedData
 	btAlignedObjectArray<int> m_urdfLinkIndices2BulletLinkIndices;
 	btAlignedObjectArray<class btRigidBody*> m_urdfLink2rigidBodies;
 	btAlignedObjectArray<btTransform> m_urdfLinkLocalInertialFrames;
-
-    std::map<int, int> urdf2graphics;
-    std::vector<int> mb2graphics;
 
 	int m_currentMultiBodyLinkIndex;
 
@@ -259,6 +269,7 @@ btTransform ConvertURDF2BulletInternal(
 	btTransform parent2joint;
 	parent2joint.setIdentity();
 
+
 	int jointType;
 	btVector3 jointAxisInJointSpace;
 	btScalar jointLowerLimit;
@@ -374,8 +385,6 @@ btTransform ConvertURDF2BulletInternal(
 				cache.m_bulletMultiBody->getLink(mbLinkIndex).m_jointMaxForce = jointMaxForce;
 				cache.m_bulletMultiBody->getLink(mbLinkIndex).m_jointMaxVelocity = jointMaxVelocity;
 			}
-            std::cout << "current link index: " << urdfLinkIndex << "; mbLinkIndex: "<< mbLinkIndex << "; jointType: " << jointType << std::endl;
-            std::cout << "parentRotToThis: " << parentRotToThis[0] << "," << parentRotToThis[1] << "," << parentRotToThis[2] << "," << parentRotToThis[3] << "\n";
 
             switch (jointType)
 			{
@@ -431,7 +440,6 @@ btTransform ConvertURDF2BulletInternal(
 
 					if (createMultiBody)
 					{
-                        std::cout << "in fix 1\n";
 						//todo: adjust the center of mass transform and pivot axis properly
 						cache.m_bulletMultiBody->setupFixed(mbLinkIndex, mass, localInertiaDiagonal, mbParentIndex,
 															parentRotToThis, offsetInA.getOrigin(), -offsetInB.getOrigin());
@@ -451,7 +459,6 @@ btTransform ConvertURDF2BulletInternal(
 						{
 							dof6 = creation.createFixedJoint(urdfLinkIndex, *linkRigidBody, *parentRigidBody, offsetInB, offsetInA);
 						}
-                        std::cout << "in fix 2\n";
 						if (enableConstraints)
 							world1->addConstraint(dof6, true);
 					}
@@ -476,7 +483,6 @@ btTransform ConvertURDF2BulletInternal(
 							//std::string name = u2b.getLinkName(urdfLinkIndex);
 							//printf("create btMultiBodyJointLimitConstraint for revolute link name=%s urdf link index=%d (low=%f, up=%f)\n", name.c_str(), urdfLinkIndex, jointLowerLimit, jointUpperLimit);
 							btMultiBodyConstraint* con = new btMultiBodyJointLimitConstraint(cache.m_bulletMultiBody, mbLinkIndex, jointLowerLimit, jointUpperLimit);
-                            std::cout << "in rev 1\n";
                             world1->addMultiBodyConstraint(con);
 						}
 #endif
@@ -509,7 +515,6 @@ btTransform ConvertURDF2BulletInternal(
 								dof6 = creation.createRevoluteJoint(urdfLinkIndex, *linkRigidBody, *parentRigidBody, offsetInB, offsetInA, jointAxisInJointSpace, 1, -1);
 							}
 						}
-                        std::cout << "in rev 2\n";
 
 						if (enableConstraints)
 							world1->addConstraint(dof6, true);
@@ -524,7 +529,8 @@ btTransform ConvertURDF2BulletInternal(
 					if (createMultiBody)
 					{
 #ifndef USE_DISCRETE_DYNAMICS_WORLD
-						cache.m_bulletMultiBody->setupPrismatic(mbLinkIndex, mass, localInertiaDiagonal, mbParentIndex,
+                        btVector3 tmp = quatRotate(offsetInB.getRotation(), jointAxisInJointSpace);
+                        cache.m_bulletMultiBody->setupPrismatic(mbLinkIndex, mass, localInertiaDiagonal, mbParentIndex,
 																parentRotToThis, quatRotate(offsetInB.getRotation(), jointAxisInJointSpace), offsetInA.getOrigin(),  //parent2joint.getOrigin(),
 																-offsetInB.getOrigin(),
 																disableParentCollision);
@@ -535,7 +541,6 @@ btTransform ConvertURDF2BulletInternal(
 							//printf("create btMultiBodyJointLimitConstraint for prismatic link name=%s urdf link index=%d (low=%f, up=%f)\n", name.c_str(), urdfLinkIndex, jointLowerLimit,jointUpperLimit);
 
 							btMultiBodyConstraint* con = new btMultiBodyJointLimitConstraint(cache.m_bulletMultiBody, mbLinkIndex, jointLowerLimit, jointUpperLimit);
-                            std::cout << "in pris 1\n";
                             world1->addMultiBodyConstraint(con);
 						}
 						//printf("joint lower limit=%d, upper limit = %f\n", jointLowerLimit, jointUpperLimit);
@@ -544,8 +549,7 @@ btTransform ConvertURDF2BulletInternal(
 					else
 					{
 						btGeneric6DofSpring2Constraint* dof6 = creation.createPrismaticJoint(urdfLinkIndex, *parentRigidBody, *linkRigidBody, offsetInA, offsetInB, jointAxisInJointSpace, jointLowerLimit, jointUpperLimit);
-                        std::cout << "in pris 2\n";
-						if (enableConstraints)
+                        if (enableConstraints)
 							world1->addConstraint(dof6, true);
 
 						//b3Printf("Prismatic\n");
@@ -590,8 +594,10 @@ btTransform ConvertURDF2BulletInternal(
 				//if we don't set the initial pose of the btCollisionObject, the simulator will do this
 				//when syncing the btMultiBody link transforms to the btMultiBodyLinkCollider
                 col->setWorldTransform(tr);
+                std::cout<< "col I set here for graphics link:" << graphicsIndex << ", mbLink: " << mbLinkIndex <<std::endl;
+                printTransform(tr);
 
-				//base and fixed? -> static, otherwise flag as dynamic
+                //base and fixed? -> static, otherwise flag as dynamic
 				bool isDynamic = (mbLinkIndex < 0 && cache.m_bulletMultiBody->hasFixedBase()) ? false : true;
 				int collisionFilterGroup = isDynamic ? int(btBroadphaseProxy::DefaultFilter) : int(btBroadphaseProxy::StaticFilter);
 				int collisionFilterMask = isDynamic ? int(btBroadphaseProxy::AllFilter) : int(btBroadphaseProxy::AllFilter ^ btBroadphaseProxy::StaticFilter);
@@ -623,10 +629,6 @@ btTransform ConvertURDF2BulletInternal(
                 }
 				{
 					B3_PROFILE("convertLinkVisualShapes2");
-                    if (graphicsIndex > 0){
-                        cache.urdf2graphics[urdfLinkIndex] = graphicsIndex-1;
-                    }
-
 					u2b.convertLinkVisualShapes2( urdfLinkIndex,  localInertialFrame, col);
 				}
 				URDFLinkContactInfo contactInfo;
@@ -744,15 +746,6 @@ bool MyIntCompareFunc(childParentIndex a, childParentIndex b)
 	return (a.m_index < b.m_index);
 }
 
-URDF2BulletCachedData syncVisual(URDF2BulletCachedData& cache) {
-    for (auto &kv : cache.urdf2graphics) {
-        int urdflink = kv.first;
-        int mbIndex = cache.getMbIndexFromUrdfIndex(urdflink);
-        cache.mb2graphics.push_back(kv.second);
-        std::cout<<"urdfId: " << urdflink << "; mbId: " << mbIndex << "; graphicsIndex: " << kv.second << std::endl;
-    }
-    return cache;
-}
 
 btMultiBody* ConvertURDF2Bullet(
 	const URDFImporterInterface& u2b,
@@ -822,11 +815,8 @@ btMultiBody* ConvertURDF2Bullet(
 		B3_PROFILE("Post process");
 
         // sync graphics visual shape list to mb visual shape list
-        syncVisual(cache);
-
 		btMultiBody* mb = cache.m_bulletMultiBody;
-        std::cout<<"I think this will hit\n";
-        u2b.setMultiBodyInfo(cache.mb2graphics, mb->getNumLinks());
+
 
 		mb->setHasSelfCollision((flags & CUF_USE_SELF_COLLISION) != 0);
 

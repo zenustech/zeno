@@ -28,6 +28,8 @@
 #include <BulletDynamics/Featherstone/btMultiBodyDynamicsWorld.h>
 #include <BulletDynamics/Featherstone/btMultiBodyJointFeedback.h>
 
+#include <iostream>
+
 #ifndef ZENO_RIGIDTEST_H
 #define ZENO_RIGIDTEST_H
 

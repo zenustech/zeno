@@ -15,46 +15,12 @@
       "solverType": "ProjectedGaussSeidel"
      },
      "uipos": [
-      469.8618784530389,
-      89.73756906077348
+      -827.7630659295749,
+      -1122.461362054896
      ],
      "options": [
       "ONCE"
      ]
-    },
-    "170d4459-BulletStartMultiBodyObject": {
-     "name": "BulletStartMultiBodyObject",
-     "inputs": {
-      "n_links": [
-       "e841537e-NumericInt",
-       "value",
-       null
-      ],
-      "mass": [
-       null,
-       null,
-       0.0
-      ],
-      "inertia": [
-       null,
-       null,
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "fixedBase": "true",
-      "canSleep": "true"
-     },
-     "uipos": [
-      3.0248618784529526,
-      477.92817679558004
-     ],
-     "options": []
     },
     "e841537e-NumericInt": {
      "name": "NumericInt",
@@ -66,45 +32,21 @@
       ]
      },
      "params": {
-      "value": 12
+      "value": 2
      },
      "uipos": [
-      -380.12430939226505,
-      506.1602209944752
+      -1611.4470653757503,
+      -91.34683665041857
      ],
-     "options": []
+     "options": [
+      "collapsed"
+     ]
     },
     "1b6a6374-BulletEndMultiBodyObject": {
      "name": "BulletEndMultiBodyObject",
      "inputs": {
       "object": [
-       null,
-       null,
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      863.0939226519342,
-      545.4834254143647
-     ],
-     "options": []
-    },
-    "e372bba7-BulletWorldAddMultiBodyObject": {
-     "name": "BulletWorldAddMultiBodyObject",
-     "inputs": {
-      "world": [
-       "ba7772c2-BulletMakeMultiBodyWorld",
-       "world",
-       null
-      ],
-      "object": [
-       "1b6a6374-BulletEndMultiBodyObject",
+       "f5198f5e-BulletMultiBodySetupJoint",
        "object",
        null
       ],
@@ -116,30 +58,168 @@
      },
      "params": {},
      "uipos": [
-      912.4999999999998,
-      100.82872928176798
+      272.8701159574297,
+      193.21431008899367
      ],
-     "options": [
-      "ONCE"
-     ]
+     "options": []
     },
     "1e596f09-BulletStepMultiBodyWorld": {
      "name": "BulletStepMultiBodyWorld",
      "inputs": {
       "world": [
-       "e372bba7-BulletWorldAddMultiBodyObject",
+       "6cf86c47-BulletMultiBodyWorldAddCollisionObject",
        "world",
        null
       ],
       "dt": [
-       "6e063e1d-GetFrameTime",
-       "time",
-       0.04
+       null,
+       null,
+       0.0167
       ],
-      "steps": [
+      "maxSubSteps": [
        null,
        null,
        1
+      ],
+      "fixedTimeStep": [
+       null,
+       null,
+       0.0042
+      ],
+      "SRC": [
+       "35d1f35c-BulletMultiBodyPDControl",
+       "DST",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      3981.8116287829093,
+      59.40721469669849
+     ],
+     "options": []
+    },
+    "cfccd070-NumericInt": {
+     "name": "NumericInt",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 0
+     },
+     "uipos": [
+      -1288.4907573973196,
+      -402.81009571173405
+     ],
+     "options": []
+    },
+    "9c7329d6-NumericOperator": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "cfccd070-NumericInt",
+       "value",
+       null
+      ],
+      "rhs": [
+       "9bbed98d-NumericInt",
+       "value",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "op_type": "sub"
+     },
+     "uipos": [
+      -960.3726098483593,
+      -336.2574196978452
+     ],
+     "options": [
+      "collapsed"
+     ]
+    },
+    "9bbed98d-NumericInt": {
+     "name": "NumericInt",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 1
+     },
+     "uipos": [
+      -964.5353822954728,
+      -289.7455529060814
+     ],
+     "options": [
+      "collapsed"
+     ]
+    },
+    "fcf0904c-NumericInt": {
+     "name": "NumericInt",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 10
+     },
+     "uipos": [
+      -1267.4301130223832,
+      919.5024281088913
+     ],
+     "options": []
+    },
+    "ac172be5-BulletCalculateLocalInertia": {
+     "name": "BulletCalculateLocalInertia",
+     "inputs": {
+      "colObject": [
+       "e7f50056-BulletMakeSphereShape",
+       "shape",
+       null
+      ],
+      "mass": [
+       "fcf0904c-NumericInt",
+       "value",
+       10.0
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "isCompound": "false"
+     },
+     "uipos": [
+      -493.34907074317965,
+      758.2374528228113
+     ],
+     "options": []
+    },
+    "e7f50056-BulletMakeSphereShape": {
+     "name": "BulletMakeSphereShape",
+     "inputs": {
+      "radius": [
+       null,
+       null,
+       0.05
       ],
       "SRC": [
        null,
@@ -149,13 +229,164 @@
      },
      "params": {},
      "uipos": [
-      1488.2320441988945,
-      138.13535911602213
+      -937.4166662677019,
+      917.3994549345539
      ],
      "options": []
     },
-    "6e063e1d-GetFrameTime": {
-     "name": "GetFrameTime",
+    "b580c6b8-NumericVec4": {
+     "name": "NumericVec4",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.0,
+      "w": 1.0
+     },
+     "uipos": [
+      -876.104432482594,
+      189.66726550789815
+     ],
+     "options": [
+      "collapsed"
+     ]
+    },
+    "206173e8-NumericVec3": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": 1.0,
+      "y": 0.0,
+      "z": 0.0
+     },
+     "uipos": [
+      -858.0141128033167,
+      174.34909943130873
+     ],
+     "options": [
+      "collapsed"
+     ]
+    },
+    "9b981e61-NumericVec3": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": 0.0,
+      "y": -0.37,
+      "z": 0.0
+     },
+     "uipos": [
+      -922.3878935964036,
+      408.10911133419194
+     ],
+     "options": []
+    },
+    "dd20cd98-BulletSetMultiBodyProperty": {
+     "name": "BulletSetMultiBodyProperty",
+     "inputs": {
+      "object": [
+       "1b6a6374-BulletEndMultiBodyObject",
+       "object",
+       null
+      ],
+      "linearDamp": [
+       null,
+       null,
+       0.0
+      ],
+      "angularDamp": [
+       null,
+       null,
+       0.0
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "canSleep": "false",
+      "selfCollide": "false",
+      "useGyro": "false"
+     },
+     "uipos": [
+      513.624786924216,
+      171.29229456182537
+     ],
+     "options": []
+    },
+    "2912ed0e-BulletMultiBodyWorldAddCollisionObject": {
+     "name": "BulletMultiBodyWorldAddCollisionObject",
+     "inputs": {
+      "world": [
+       "ba7772c2-BulletMakeMultiBodyWorld",
+       "world",
+       null
+      ],
+      "collider": [
+       "4ce34f85-BulletSetLinkColliderTransform",
+       "collider",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "isDynamic": "false"
+     },
+     "uipos": [
+      2074.668461817587,
+      -12.598530460494558
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "4f1740fb-CachedOnce": {
+     "name": "CachedOnce",
+     "inputs": {
+      "input": [
+       "5ceb072f-BulletMultiBodySetJointPosMultiDof",
+       "object",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1004.4775639118218,
+      518.2125249576595
+     ],
+     "options": []
+    },
+    "d25ae7ce-CreateSphere": {
+     "name": "CreateSphere",
      "inputs": {
       "SRC": [
        null,
@@ -165,17 +396,875 @@
      },
      "params": {},
      "uipos": [
-      1230.1104972375692,
-      53.439226519337005
+      5033.925587271106,
+      914.1974850636252
+     ],
+     "options": []
+    },
+    "64ccc52b-TransformPrimitive": {
+     "name": "TransformPrimitive",
+     "inputs": {
+      "prim": [
+       "d25ae7ce-CreateSphere",
+       "prim",
+       null
+      ],
+      "translation": [
+       "2226ff4c-BulletExtractTransform",
+       "origin",
+       null
+      ],
+      "offset": [
+       null,
+       null,
+       null
+      ],
+      "eulerXYZ": [
+       null,
+       null,
+       null
+      ],
+      "quatRotation": [
+       "2226ff4c-BulletExtractTransform",
+       "rotation",
+       null
+      ],
+      "scaling": [
+       "ffbb1b73-NumericVec3",
+       "vec3",
+       null
+      ],
+      "Matrix": [
+       null,
+       null,
+       null
+      ],
+      "preTransform": [
+       null,
+       null,
+       null
+      ],
+      "local": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      5685.204570825564,
+      601.0847216222522
+     ],
+     "options": [
+      "VIEW"
+     ]
+    },
+    "9d67613d-BulletStartMultiBodyObject": {
+     "name": "BulletStartMultiBodyObject",
+     "inputs": {
+      "nLinks": [
+       "e841537e-NumericInt",
+       "value",
+       null
+      ],
+      "mass": [
+       null,
+       null,
+       0.0
+      ],
+      "inertia": [
+       "cea800cc-NumericVec3",
+       "vec3",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "fixedBase": "true",
+      "canSleep": "false"
+     },
+     "uipos": [
+      -1307.92047213673,
+      -77.46146131865848
+     ],
+     "options": []
+    },
+    "3afe0958-BulletMultiBodySetupJoint": {
+     "name": "BulletMultiBodySetupJoint",
+     "inputs": {
+      "object": [
+       "9d67613d-BulletStartMultiBodyObject",
+       "object",
+       null
+      ],
+      "linkIndex": [
+       "cfccd070-NumericInt",
+       "value",
+       null
+      ],
+      "parentIndex": [
+       "9c7329d6-NumericOperator",
+       "ret",
+       null
+      ],
+      "mass": [
+       "5801deb7-NumericFloat",
+       "value",
+       null
+      ],
+      "inertia": [
+       "eedaa7a5-BulletCalculateLocalInertia",
+       "localInertia",
+       null
+      ],
+      "jointAxis": [
+       "206173e8-NumericVec3",
+       "vec3",
+       null
+      ],
+      "rotParentToThis": [
+       "b580c6b8-NumericVec4",
+       "vec4",
+       null
+      ],
+      "parentComToThisPivotOffset": [
+       "9b981e61-NumericVec3",
+       "vec3",
+       null
+      ],
+      "thisPivotToThisComOffset": [
+       "9b981e61-NumericVec3",
+       "vec3",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "jointType": "Revolute",
+      "disableParentCollision": "false"
+     },
+     "uipos": [
+      -421.73696184892344,
+      -98.36012278107653
+     ],
+     "options": []
+    },
+    "777fe351-BulletSetCollisionShapeForLink": {
+     "name": "BulletSetCollisionShapeForLink",
+     "inputs": {
+      "object": [
+       "4f1740fb-CachedOnce",
+       "output",
+       null
+      ],
+      "linkIndex": [
+       "ce340ba2-NumericInt",
+       "value",
+       null
+      ],
+      "colShape": [
+       "b8a69d70-BulletMakeBoxShape",
+       "shape",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1429.2385282639043,
+      582.3341087161712
+     ],
+     "options": []
+    },
+    "7d0a4171-BulletExtractMultiBodyLinkTransform": {
+     "name": "BulletExtractMultiBodyLinkTransform",
+     "inputs": {
+      "object": [
+       "aae89c1d-BulletSetMultiBodyJointFeedback",
+       "object",
+       null
+      ],
+      "linkIndex": [
+       "cfccd070-NumericInt",
+       "value",
+       null
+      ],
+      "SRC": [
+       "1e596f09-BulletStepMultiBodyWorld",
+       "DST",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      4759.254986275726,
+      521.6901473564426
+     ],
+     "options": []
+    },
+    "2226ff4c-BulletExtractTransform": {
+     "name": "BulletExtractTransform",
+     "inputs": {
+      "trans": [
+       "7d0a4171-BulletExtractMultiBodyLinkTransform",
+       "trans",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      5175.660847112266,
+      567.0630755332381
+     ],
+     "options": []
+    },
+    "ffbb1b73-NumericVec3": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": 0.2,
+      "y": 0.2,
+      "z": 0.2
+     },
+     "uipos": [
+      5208.430184128839,
+      321.2930479089289
+     ],
+     "options": []
+    },
+    "cea800cc-NumericVec3": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.0
+     },
+     "uipos": [
+      -1662.0839152700191,
+      31.861033519553132
+     ],
+     "options": [
+      "collapsed"
+     ]
+    },
+    "5801deb7-NumericFloat": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 1.0
+     },
+     "uipos": [
+      -1076.1949099937926,
+      -123.01899053382996
+     ],
+     "options": []
+    },
+    "b8a69d70-BulletMakeBoxShape": {
+     "name": "BulletMakeBoxShape",
+     "inputs": {
+      "semiSize": [
+       "968419ea-NumericVec3",
+       "vec3",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -1048.316505664184,
+      632.5742696694599
+     ],
+     "options": []
+    },
+    "eedaa7a5-BulletCalculateLocalInertia": {
+     "name": "BulletCalculateLocalInertia",
+     "inputs": {
+      "colObject": [
+       "b8a69d70-BulletMakeBoxShape",
+       "shape",
+       null
+      ],
+      "mass": [
+       "5801deb7-NumericFloat",
+       "value",
+       1.0
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "isCompound": "false"
+     },
+     "uipos": [
+      -863.7880198634389,
+      132.75430633147118
+     ],
+     "options": [
+      "collapsed"
+     ]
+    },
+    "968419ea-NumericVec3": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": 0.05,
+      "y": 0.37,
+      "z": 0.1
+     },
+     "uipos": [
+      -1388.6100442271877,
+      234.53260785226576
+     ],
+     "options": []
+    },
+    "f5198f5e-BulletMultiBodySetupJoint": {
+     "name": "BulletMultiBodySetupJoint",
+     "inputs": {
+      "object": [
+       "3afe0958-BulletMultiBodySetupJoint",
+       "object",
+       null
+      ],
+      "linkIndex": [
+       "9d26cfe7-NumericInt",
+       "value",
+       null
+      ],
+      "parentIndex": [
+       "cfccd070-NumericInt",
+       "value",
+       null
+      ],
+      "mass": [
+       "5801deb7-NumericFloat",
+       "value",
+       null
+      ],
+      "inertia": [
+       "93246a6c-BulletCalculateLocalInertia",
+       "localInertia",
+       null
+      ],
+      "jointAxis": [
+       null,
+       null,
+       null
+      ],
+      "rotParentToThis": [
+       "b580c6b8-NumericVec4",
+       "vec4",
+       null
+      ],
+      "parentComToThisPivotOffset": [
+       "0f041f79-NumericVec3",
+       "vec3",
+       null
+      ],
+      "thisPivotToThisComOffset": [
+       "0f041f79-NumericVec3",
+       "vec3",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "jointType": "Fixed",
+      "disableParentCollision": "false"
+     },
+     "uipos": [
+      -22.125717721911837,
+      -98.23818668528862
+     ],
+     "options": []
+    },
+    "9d26cfe7-NumericInt": {
+     "name": "NumericInt",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 1
+     },
+     "uipos": [
+      -317.5562404702434,
+      -380.6463788816825
+     ],
+     "options": []
+    },
+    "feb68a6e-BulletMakeSphereShape": {
+     "name": "BulletMakeSphereShape",
+     "inputs": {
+      "radius": [
+       null,
+       null,
+       0.2
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -592.0842062383613,
+      347.8162825884544
+     ],
+     "options": [
+      "collapsed"
+     ]
+    },
+    "93246a6c-BulletCalculateLocalInertia": {
+     "name": "BulletCalculateLocalInertia",
+     "inputs": {
+      "colObject": [
+       "feb68a6e-BulletMakeSphereShape",
+       "shape",
+       null
+      ],
+      "mass": [
+       "5801deb7-NumericFloat",
+       "value",
+       1.0
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "isCompound": "false"
+     },
+     "uipos": [
+      -389.4126319056487,
+      290.2894165114837
+     ],
+     "options": [
+      "collapsed"
+     ]
+    },
+    "0f041f79-NumericVec3": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": 0.0,
+      "y": -0.2,
+      "z": 0.0
+     },
+     "uipos": [
+      -393.837775450031,
+      392.9527467411546
+     ],
+     "options": [
+      "collapsed"
+     ]
+    },
+    "5ceb072f-BulletMultiBodySetJointPosMultiDof": {
+     "name": "BulletMultiBodySetJointPosMultiDof",
+     "inputs": {
+      "object": [
+       "dd20cd98-BulletSetMultiBodyProperty",
+       "object",
+       null
+      ],
+      "startIndex": [
+       null,
+       null,
+       0
+      ],
+      "pos": [
+       "383d7deb-NumericFloat",
+       "value",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "isSpherical": "false"
+     },
+     "uipos": [
+      782.641950118327,
+      260.6409547641217
+     ],
+     "options": []
+    },
+    "383d7deb-NumericFloat": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 3.141592653
+     },
+     "uipos": [
+      489.42087600869024,
+      476.14544537554315
+     ],
+     "options": []
+    },
+    "ce340ba2-NumericInt": {
+     "name": "NumericInt",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": -1
+     },
+     "uipos": [
+      789.6115512007293,
+      732.9143995383303
+     ],
+     "options": []
+    },
+    "4ce34f85-BulletSetLinkColliderTransform": {
+     "name": "BulletSetLinkColliderTransform",
+     "inputs": {
+      "collider": [
+       "777fe351-BulletSetCollisionShapeForLink",
+       "collider",
+       null
+      ],
+      "trans": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1511.1865204065798,
+      961.3624350170701
+     ],
+     "options": []
+    },
+    "0961a69c-BulletSetCollisionShapeForLink": {
+     "name": "BulletSetCollisionShapeForLink",
+     "inputs": {
+      "object": [
+       "777fe351-BulletSetCollisionShapeForLink",
+       "object",
+       null
+      ],
+      "linkIndex": [
+       "cfccd070-NumericInt",
+       "value",
+       null
+      ],
+      "colShape": [
+       "22ae2860-Clone",
+       "newObject",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      2004.5900256052141,
+      722.4046836204222
+     ],
+     "options": []
+    },
+    "22ae2860-Clone": {
+     "name": "Clone",
+     "inputs": {
+      "object": [
+       "b8a69d70-BulletMakeBoxShape",
+       "shape",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -43.145149557728125,
+      834.1395581160771
+     ],
+     "options": []
+    },
+    "35aace20-BulletSetLinkColliderTransform": {
+     "name": "BulletSetLinkColliderTransform",
+     "inputs": {
+      "collider": [
+       "0961a69c-BulletSetCollisionShapeForLink",
+       "collider",
+       null
+      ],
+      "trans": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      2365.2392244723774,
+      865.1155629267537
+     ],
+     "options": []
+    },
+    "e5294017-BulletMultiBodyWorldAddCollisionObject": {
+     "name": "BulletMultiBodyWorldAddCollisionObject",
+     "inputs": {
+      "world": [
+       "2912ed0e-BulletMultiBodyWorldAddCollisionObject",
+       "world",
+       null
+      ],
+      "collider": [
+       "35aace20-BulletSetLinkColliderTransform",
+       "collider",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "isDynamic": "true"
+     },
+     "uipos": [
+      2593.1341170080696,
+      310.86633399286166
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "14481a75-BulletSetCollisionShapeForLink": {
+     "name": "BulletSetCollisionShapeForLink",
+     "inputs": {
+      "object": [
+       "0961a69c-BulletSetCollisionShapeForLink",
+       "object",
+       null
+      ],
+      "linkIndex": [
+       "5801deb7-NumericFloat",
+       "value",
+       null
+      ],
+      "colShape": [
+       "e7f50056-BulletMakeSphereShape",
+       "shape",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      2804.434721252328,
+      814.2264121663565
+     ],
+     "options": []
+    },
+    "6cf86c47-BulletMultiBodyWorldAddCollisionObject": {
+     "name": "BulletMultiBodyWorldAddCollisionObject",
+     "inputs": {
+      "world": [
+       "e5294017-BulletMultiBodyWorldAddCollisionObject",
+       "world",
+       null
+      ],
+      "collider": [
+       "14481a75-BulletSetCollisionShapeForLink",
+       "collider",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "isDynamic": "true"
+     },
+     "uipos": [
+      3145.1707741697705,
+      537.6549406424581
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "aae89c1d-BulletSetMultiBodyJointFeedback": {
+     "name": "BulletSetMultiBodyJointFeedback",
+     "inputs": {
+      "object": [
+       "14481a75-BulletSetCollisionShapeForLink",
+       "object",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      3342.089661894786,
+      879.4972794459964
+     ],
+     "options": []
+    },
+    "35d1f35c-BulletMultiBodyPDControl": {
+     "name": "BulletMultiBodyPDControl",
+     "inputs": {
+      "object": [
+       "aae89c1d-BulletSetMultiBodyJointFeedback",
+       "object",
+       null
+      ],
+      "kp": [
+       null,
+       null,
+       100.0
+      ],
+      "kd": [
+       null,
+       null,
+       20.0
+      ],
+      "maxForce": [
+       null,
+       null,
+       100.0
+      ],
+      "qDesiredList": [
+       null,
+       null,
+       null
+      ],
+      "dqDesiredList": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      3742.510359116022,
+      603.4599447513813
      ],
      "options": []
     }
    },
    "view_rect": {
-    "x": -25.994906767955626,
-    "y": -254.90763121547099,
-    "width": 1878.125,
-    "height": 1140.625
+    "x": -628.8437664287485,
+    "y": -1001.0782260326104,
+    "width": 3668.2128906249977,
+    "height": 2227.783203125
    }
   }
  },
@@ -597,7 +1686,7 @@
    "inputs": [
     [
      "",
-     "compound",
+     "colObject",
      ""
     ],
     [
@@ -623,7 +1712,13 @@
      ""
     ]
    ],
-   "params": [],
+   "params": [
+    [
+     "enum true false",
+     "isCompound",
+     "false"
+    ]
+   ],
    "categories": [
     "Bullet"
    ]
@@ -733,6 +1828,41 @@
     "Bullet"
    ]
   },
+  "BulletExtractMultiBodyLinkTransform": {
+   "inputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "linkIndex",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "trans",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Bullet"
+   ]
+  },
   "BulletExtractMultiBodyTransform": {
    "inputs": [
     [
@@ -747,11 +1877,6 @@
     ]
    ],
    "outputs": [
-    [
-     "",
-     "listPrim",
-     ""
-    ],
     [
      "",
      "listTrans",
@@ -961,41 +2086,6 @@
     [
      "",
      "trans_inv",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "Bullet"
-   ]
-  },
-  "BulletLoadPrimitiveCompound": {
-   "inputs": [
-    [
-     "",
-     "prim",
-     ""
-    ],
-    [
-     "float",
-     "margin",
-     "0"
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "compound",
      ""
     ],
     [
@@ -1551,7 +2641,7 @@
     ],
     [
      "",
-     "link_id",
+     "linkIndex",
      ""
     ],
     [
@@ -1606,6 +2696,16 @@
     ],
     [
      "",
+     "qDesiredList",
+     ""
+    ],
+    [
+     "",
+     "dqDesiredList",
+     ""
+    ],
+    [
+     "",
      "SRC",
      ""
     ]
@@ -1631,7 +2731,7 @@
     ],
     [
      "",
-     "link_id",
+     "linkIndex",
      ""
     ],
     [
@@ -1670,9 +2770,9 @@
      ""
     ],
     [
-     "",
-     "start",
-     ""
+     "int",
+     "startIndex",
+     "0"
     ],
     [
      "",
@@ -1716,9 +2816,9 @@
      ""
     ],
     [
-     "",
-     "start",
-     ""
+     "int",
+     "startIndex",
+     "0"
     ],
     [
      "",
@@ -1763,11 +2863,56 @@
     ],
     [
      "",
+     "linkIndex",
+     ""
+    ],
+    [
+     "",
+     "parentIndex",
+     ""
+    ],
+    [
+     "",
+     "mass",
+     ""
+    ],
+    [
+     "",
+     "inertia",
+     ""
+    ],
+    [
+     "",
+     "jointAxis",
+     ""
+    ],
+    [
+     "",
+     "rotParentToThis",
+     ""
+    ],
+    [
+     "",
+     "parentComToThisPivotOffset",
+     ""
+    ],
+    [
+     "",
+     "thisPivotToThisComOffset",
+     ""
+    ],
+    [
+     "",
      "SRC",
      ""
     ]
    ],
    "outputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
     [
      "",
      "DST",
@@ -1779,6 +2924,11 @@
      "enum Fixed Prismatic Revolute Spherical Planar",
      "jointType",
      "Revolute"
+    ],
+    [
+     "enum true false",
+     "disableParentCollision",
+     "false"
     ]
    ],
    "categories": [
@@ -1891,6 +3041,47 @@
     "Bullet"
    ]
   },
+  "BulletMultiBodyWorldAddObject": {
+   "inputs": [
+    [
+     "",
+     "world",
+     ""
+    ],
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "world",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "enum rigid multi",
+     "objType",
+     "multi"
+    ]
+   ],
+   "categories": [
+    "Bullet"
+   ]
+  },
   "BulletMultiBodyWorldRemoveConstraint": {
    "inputs": [
     [
@@ -1922,6 +3113,47 @@
     ]
    ],
    "params": [],
+   "categories": [
+    "Bullet"
+   ]
+  },
+  "BulletMultiBodyWorldRemoveObject": {
+   "inputs": [
+    [
+     "",
+     "world",
+     ""
+    ],
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "world",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "enum rigid multi",
+     "objType",
+     "multi"
+    ]
+   ],
    "categories": [
     "Bullet"
    ]
@@ -1970,7 +3202,7 @@
     ],
     [
      "",
-     "link_id",
+     "linkIndex",
      ""
     ],
     [
@@ -2643,7 +3875,7 @@
     ],
     [
      "int",
-     "link_id",
+     "linkIndex",
      "0"
     ],
     [
@@ -3129,7 +4361,7 @@
    "inputs": [
     [
      "",
-     "n_links",
+     "nLinks",
      ""
     ],
     [
@@ -3190,8 +4422,13 @@
     ],
     [
      "int",
-     "steps",
+     "maxSubSteps",
      "1"
+    ],
+    [
+     "float",
+     "fixedTimeStep",
+     "0.0042"
     ],
     [
      "",
@@ -3291,41 +4528,6 @@
     "Bullet"
    ]
   },
-  "BulletWorldAddMultiBodyObject": {
-   "inputs": [
-    [
-     "",
-     "world",
-     ""
-    ],
-    [
-     "",
-     "object",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "world",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "Bullet"
-   ]
-  },
   "BulletWorldAddObject": {
    "inputs": [
     [
@@ -3371,41 +4573,6 @@
     [
      "",
      "constraint",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "world",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "Bullet"
-   ]
-  },
-  "BulletWorldRemoveMultiBodyObject": {
-   "inputs": [
-    [
-     "",
-     "world",
-     ""
-    ],
-    [
-     "",
-     "object",
      ""
     ],
     [
@@ -6696,6 +7863,56 @@
    ],
    "categories": [
     "visualize"
+   ]
+  },
+  "MakeInstancing": {
+   "inputs": [
+    [
+     "int",
+     "amount",
+     "1"
+    ],
+    [
+     "list",
+     "modelMatrices",
+     ""
+    ],
+    [
+     "float",
+     "deltaTime",
+     "0.0"
+    ],
+    [
+     "list",
+     "timeList",
+     ""
+    ],
+    [
+     "list",
+     "framePrims",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "instancing",
+     "inst",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "shader"
    ]
   },
   "MakeList": {
@@ -11715,36 +12932,6 @@
     "FLIPSolver"
    ]
   },
-  "RPYToBulletQuaternion": {
-   "inputs": [
-    [
-     "",
-     "RPY",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "quatXYZW",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "Bullet"
-   ]
-  },
   "RandomParticles": {
    "inputs": [
     [
@@ -12671,6 +13858,41 @@
     "frame"
    ]
   },
+  "SetInstancing": {
+   "inputs": [
+    [
+     "primitive",
+     "prim",
+     ""
+    ],
+    [
+     "instancing",
+     "inst",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "primitive",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "shader"
+   ]
+  },
   "SetMaterial": {
    "inputs": [
     [
@@ -13115,6 +14337,36 @@
      "float",
      "subsurface",
      "0.0"
+    ],
+    [
+     "float",
+     "thickness",
+     "0.0"
+    ],
+    [
+     "vec3f",
+     "sssParam",
+     "0,0,0"
+    ],
+    [
+     "vec3f",
+     "sssColor",
+     "0,0,0"
+    ],
+    [
+     "float",
+     "foliage",
+     "0"
+    ],
+    [
+     "float",
+     "skin",
+     "0"
+    ],
+    [
+     "float",
+     "curvature",
+     "0"
     ],
     [
      "float",
@@ -14355,6 +15607,11 @@
     ],
     [
      "",
+     "preTransform",
+     ""
+    ],
+    [
+     "",
      "local",
      ""
     ],
@@ -15570,7 +16827,7 @@
  "viewport": {
   "camera_record": {},
   "lights": {
-   "0": "12 DirX 1 0 1.0 align -5.0 0.0 5.0 0.0 DirY 1 0 1.0 align -5.0 0.0 5.0 0.0 DirZ 1 0 0.0 align -5.0 0.0 5.0 0.0 Height 1 0 1000.0 align -5.0 0.0 5.0 0.0 Softness 1 0 1.0 align -5.0 0.0 5.0 0.0 ShadowR 1 0 0.2 align -5.0 0.0 5.0 0.0 ShadowG 1 0 0.2 align -5.0 0.0 5.0 0.0 ShadowB 1 0 0.2 align -5.0 0.0 5.0 0.0 ColorR 1 0 1.0 align -5.0 0.0 5.0 0.0 ColorG 1 0 1.0 align -5.0 0.0 5.0 0.0 ColorB 1 0 1.0 align -5.0 0.0 5.0 0.0 Intensity 1 0 10.0 align -5.0 0.0 5.0 0.0"
+   "0": "14 DirX 1 0 1.0 align -5.0 0.0 5.0 0.0 DirY 1 0 1.0 align -5.0 0.0 5.0 0.0 DirZ 1 0 0.0 align -5.0 0.0 5.0 0.0 Height 1 0 1000.0 align -5.0 0.0 5.0 0.0 Softness 1 0 1.0 align -5.0 0.0 5.0 0.0 ShadowR 1 0 0.2 align -5.0 0.0 5.0 0.0 ShadowG 1 0 0.2 align -5.0 0.0 5.0 0.0 ShadowB 1 0 0.2 align -5.0 0.0 5.0 0.0 ColorR 1 0 1.0 align -5.0 0.0 5.0 0.0 ColorG 1 0 1.0 align -5.0 0.0 5.0 0.0 ColorB 1 0 1.0 align -5.0 0.0 5.0 0.0 Intensity 1 0 10.0 align -5.0 0.0 5.0 0.0 Scale 1 0 1.0 align -5.0 0.0 5.0 0.0 Enable 1 0 1.0 constant -5.0 0.0 5.0 0.0"
   }
  }
 }
