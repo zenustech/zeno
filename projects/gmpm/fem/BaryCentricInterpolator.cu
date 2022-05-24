@@ -27,12 +27,12 @@ using mat3 = zs::vec<T,3,3>;
 using mat4 = zs::vec<T,4,4>;
 
 struct ZSComputeBaryCentricWeights : INode {
-    constexpr T ComputeVolume(
+    static constexpr T ComputeVolume(
         const vec3& p0,
         const vec3& p1,
         const vec3& p2,
         const vec3& p3
-    ) const {
+    ) {
         mat4 m{};
         for(size_t i = 0;i < 3;++i){
             m(i,0) = p0[i];
@@ -43,6 +43,22 @@ struct ZSComputeBaryCentricWeights : INode {
         m(3,0) = m(3,1) = m(3,2) = m(3,3) = 1;
         return zs::determinant(m);
     }
+
+    static constexpr T ComputeArea(
+        const vec3& p0,
+        const vec3& p1,
+        const vec3& p2
+    ) {
+        auto p01 = p0 - p1;
+        auto p02 = p0 - p2;
+        auto p12 = p1 - p2;
+        T a = p01.length();
+        T b = p02.length();
+        T c = p12.length();
+        T s = (a + b + c)/3;
+        return zs::sqrt(s*(s-a)*(s-b)*(s-c));
+    }
+
     constexpr vec4 ComputeBaryCentricCoordinate(const vec3& p,
         const vec3& p0,
         const vec3& p1,
@@ -64,20 +80,20 @@ struct ZSComputeBaryCentricWeights : INode {
         // auto lbvh = get_input<zeno::LBvh>("lbvh");
         auto thickness = get_param<float>("bvh_thickness");
 
-
         const auto& verts = zsvolume->getParticles();
         const auto& eles = zsvolume->getQuadraturePoints();
 
         const auto& everts = zssurf->getParticles();
+        const auto& etris = zssurf->getQuadraturePoints();
 
         auto &bcw = (*zsvolume)["bcws"];
-        bcw = typename ZenoParticles::particles_t({{"inds",1},{"w",4}},everts.size(),zs::memsrc_e::device,0);
+        bcw = typename ZenoParticles::particles_t({{"inds",1},{"w",4},{"area",1}},everts.size(),zs::memsrc_e::device,0);
 
         auto cudaExec = zs::cuda_exec();
         const auto numFEMVerts = verts.size();
         const auto numFEMEles = eles.size();
         const auto numEmbedVerts = bcw.size();
-        
+        const auto numEmbedTris = etris.size();
 
         auto bvs = retrieve_bounding_volumes(cudaExec,verts,eles,wrapv<4>{},thickness);
         auto tetsBvh = zsvolume->bvh(ZenoParticles::s_elementTag);
@@ -102,34 +118,30 @@ struct ZSComputeBaryCentricWeights : INode {
                         bcw("inds",vi) = reinterpret_bits<float>(ei);
                         bcw.tuple<4>("w",vi) = ws;
                     }
-#if 0
-                    if(vi == 0){
-                        auto vol = ComputeVolume(p0,p1,p2,p3);
-                        auto vol0 = ComputeVolume(p,p1,p2,p3);
-                        auto vol1 = ComputeVolume(p0,p,p2,p3);      
-                        auto vol2 = ComputeVolume(p0,p1,p,p3);
-                        auto vol3 = ComputeVolume(p0,p1,p2,p);
-
-                        mat4 m{};
-                        for(size_t i = 0;i < 3;++i){
-                            m(i,0) = p0[i];
-                            m(i,1) = p1[i];
-                            m(i,2) = p2[i];
-                            m(i,3) = p3[i];
-                        }
-                        m(3,0) = m(3,1) = m(3,2) = m(3,3) = 1;
-
-
-                        printf("TEST V<%d> And TET<%d> : W(%f,%f,%f,%f)\n",vi,ei,ws[0],ws[1],ws[2],ws[3]);
-                        printf("WITH VOL : (%f,%f,%f,%f,%f)\n",vol,vol0,vol1,vol2,vol3);
-                        printf("M:\n%f\t%f\t%f\t%f\n%f\t%f\t%f\t%f\n%f\t%f\t%f\t%f\n%f\t%f\t%f\t%f\n",
-                            m(0,0),m(0,1),m(0,2),m(0,3),m(1,0),m(1,1),m(1,2),m(1,3),m(2,0),m(2,1),m(2,2),m(2,3),m(3,0),m(3,1),m(3,2),m(3,3)
-                        );
-                    }
-#endif
                 });
             }
         );
+
+        cudaExec(zs::range(numEmbedVerts),
+            [bcw = proxy<space>({},bcw)] ZS_LAMBDA (int vi) mutable {
+                bcw("area",vi) = 0.;
+        });
+
+        cudaExec(zs::range(numEmbedTris),
+            [everts = proxy<space>({},everts),etris = proxy<space>({},etris),bcw = proxy<space>({},bcw)]
+                ZS_LAMBDA (int ti) mutable {
+                    auto inds = etris.pack<3>("inds",ti).reinterpret_bits<int>(); 
+                    auto p0 = everts.pack<3>("x",inds[0]);
+                    auto p1 = everts.pack<3>("x",inds[1]);
+                    auto p2 = everts.pack<3>("x",inds[2]);
+
+                    auto aA = ComputeArea(p0,p1,p2)/3;
+
+                    bcw.tuple<1>("area",inds[0]) = bcw.pack<1>("area",inds[0]) + aA;
+                    bcw.tuple<1>("area",inds[1]) = bcw.pack<1>("area",inds[1]) + aA;
+                    bcw.tuple<1>("area",inds[2]) = bcw.pack<1>("area",inds[2]) + aA;
+        });
+
         set_output("zsvolume", std::move(zsvolume));
     }
 };
