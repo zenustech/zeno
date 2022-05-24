@@ -362,8 +362,12 @@ void find_intersection_free_stepsize(Pol &pol, ZenoParticles &zstets,
       // ccd
       auto alpha = stepSize;
       // surfAlphas[svi] = alpha;
-      if (pt_accd(p, vtemp.pack<3>("xn", tri[0]), vtemp.pack<3>("xn", tri[1]),
-                  vtemp.pack<3>("xn", tri[2]), vtemp.pack<3>("dir", vi),
+      auto t0 = vtemp.pack<3>("xn", tri[0]);
+      auto t1 = vtemp.pack<3>("xn", tri[1]);
+      auto t2 = vtemp.pack<3>("xn", tri[2]);
+      // if (!pt_ccd_broadphase(p, t0, t1, t2, thickness))
+      //  return;
+      if (pt_accd(p, t0, t1, t2, vtemp.pack<3>("dir", vi),
                   vtemp.pack<3>("dir", tri[0]), vtemp.pack<3>("dir", tri[1]),
                   vtemp.pack<3>("dir", tri[2]), (T)0.1, thickness, alpha))
         if (alpha < stepSize)
@@ -409,6 +413,8 @@ void find_intersection_free_stepsize(Pol &pol, ZenoParticles &zstets,
       // ccd
       auto alpha = stepSize;
       // surfEdgeAlphas[sei] = alpha;
+      // if (!ee_ccd_broadphase(p, x0, eb0, eb1, thickness))
+      //  return;
       if (ee_accd(x0, x1, vtemp.pack<3>("xn", oEdgeInds[0]),
                   vtemp.pack<3>("xn", oEdgeInds[1]),
                   vtemp.pack<3>("dir", edgeInds[0]),

@@ -557,6 +557,7 @@ struct ImplicitTimeStepping : INode {
                      dyadic_prod(ppGrad_, ppGrad_) +
                  zs::barrier_gradient(dist2 - xi2, activeGap2, kappa) * ppHess);
             // make pd
+            make_pd(ppHess);
             // pp[0], pp[1]
             tempPP.tuple<36>("H", ppi) = ppHess;
           });
@@ -591,6 +592,7 @@ struct ImplicitTimeStepping : INode {
                      dyadic_prod(peGrad_, peGrad_) +
                  zs::barrier_gradient(dist2 - xi2, activeGap2, kappa) * peHess);
             // make pd
+            make_pd(peHess);
             // pe[0], pe[1], pe[2]
             tempPE.tuple<81>("H", pei) = peHess;
           });
@@ -627,6 +629,7 @@ struct ImplicitTimeStepping : INode {
                      dyadic_prod(ptGrad_, ptGrad_) +
                  zs::barrier_gradient(dist2 - xi2, activeGap2, kappa) * ptHess);
             // make pd
+            make_pd(ptHess);
             // pt[0], pt[1], pt[2], pt[3]
             tempPT.tuple<144>("H", pti) = ptHess;
           });
@@ -663,6 +666,7 @@ struct ImplicitTimeStepping : INode {
                      dyadic_prod(eeGrad_, eeGrad_) +
                  zs::barrier_gradient(dist2 - xi2, activeGap2, kappa) * eeHess);
             // make pd
+            make_pd(eeHess);
             // ee[0], ee[1], ee[2], ee[3]
             tempEE.tuple<144>("H", eei) = eeHess;
           });
@@ -1361,11 +1365,6 @@ struct ImplicitTimeStepping : INode {
           break;
         alpha /= 2;
       } while (true);
-      cudaPol(zs::range(vtemp.size()), [vtemp = proxy<space>({}, vtemp),
-                                        alpha] __device__(int i) mutable {
-        vtemp.tuple<3>("xn", i) =
-            vtemp.pack<3>("xn0", i) + alpha * vtemp.pack<3>("dir", i);
-      });
     } // end newton step
 
     // update velocity and positions
