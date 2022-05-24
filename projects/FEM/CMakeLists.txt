@@ -54,6 +54,7 @@ target_include_directories(zeno_FEM PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src/force_model
     ${CMAKE_CURRENT_SOURCE_DIR}/src/integrator
     ${CMAKE_CURRENT_SOURCE_DIR}/src/bspline   
+    ${CMAKE_CURRENT_SOURCE_DIR}/LBFGSpp/include
 )
 
 target_link_libraries(zeno_FEM PUBLIC zeno)

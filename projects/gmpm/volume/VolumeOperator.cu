@@ -311,7 +311,7 @@ struct AdvectZSLevelSet : INode {
                   auto xn = x - vi * dt;
                   auto Xn = ls.worldToIndex(xn);
 
-                  lsOut._grid("vel", d, bi, ci) = ls.isample("vel", d, Xn, 0);
+                  lsOut._grid("v", d, bi, ci) = ls.isample("v", d, Xn, 0);
                 }
               } else {
                 auto x = lsOut.indexToWorld(coord);
@@ -373,63 +373,64 @@ struct ClampZSLevelSet : INode {
     auto cudaPol = cuda_exec().device(0);
 
     /// ls & refLs better be of same category
-    cudaPol(
-        Collapse{ls.numBlocks(), ls.block_size},
-        [ls = proxy<execspace_e::cuda>(ls),
-         refLs = proxy<execspace_e::cuda>(refLs),
-         velLs = proxy<execspace_e::cuda>(velLs),
-         dt] __device__(auto bi, auto ci) mutable {
-          using ls_t = RM_CVREF_T(ls);
-          using ref_ls_t = RM_CVREF_T(refLs);
-          auto coord = ls._table._activeKeys[bi] +
-                       ls_t::grid_view_t::cellid_to_coord(ci);
-          if constexpr (ls_t::category == grid_e::staggered) {
-            for (int d = 0; d != 3; ++d) {
-              auto x = ls.indexToWorld(coord, d);
-              auto vi = velLs.getMaterialVelocity(x);
-              auto xn = x - vi * dt;
-              if constexpr (ref_ls_t::category == grid_e::staggered) {
-                auto pad =
-                    refLs.arena(xn, d, kernel_linear_c, wrapv<0>{}, true_c);
-                auto mi = pad.minimum("vel", d);
-                auto ma = pad.maximum("vel", d);
-                auto v = ls._grid("vel", d, bi, ci);
-                ls._grid("vel", d, bi, ci) = v < mi ? mi : (v > ma ? ma : v);
+    cudaPol(Collapse{ls.numBlocks(), ls.block_size},
+            [ls = proxy<execspace_e::cuda>(ls),
+             refLs = proxy<execspace_e::cuda>(refLs),
+             velLs = proxy<execspace_e::cuda>(velLs),
+             dt] __device__(auto bi, auto ci) mutable {
+              using ls_t = RM_CVREF_T(ls);
+              using ref_ls_t = RM_CVREF_T(refLs);
+              auto coord = ls._table._activeKeys[bi] +
+                           ls_t::grid_view_t::cellid_to_coord(ci);
+              if constexpr (ls_t::category == grid_e::staggered) {
+                for (int d = 0; d != 3; ++d) {
+                  auto x = ls.indexToWorld(coord, d);
+                  auto vi = velLs.getMaterialVelocity(x);
+                  auto xn = x - vi * dt;
+                  if constexpr (ref_ls_t::category == grid_e::staggered) {
+                    auto pad =
+                        refLs.arena(xn, d, kernel_linear_c, wrapv<0>{}, true_c);
+                    auto mi = pad.minimum("v", d);
+                    auto ma = pad.maximum("v", d);
+                    auto v = ls._grid("v", d, bi, ci);
+                    ls._grid("v", d, bi, ci) = v < mi ? mi : (v > ma ? ma : v);
+                  } else {
+                    auto pad =
+                        refLs.arena(xn, kernel_linear_c, wrapv<0>{}, true_c);
+                    auto mi = pad.minimum("v", d);
+                    auto ma = pad.maximum("v", d);
+                    auto v = ls._grid("v", d, bi, ci);
+                    ls._grid("v", d, bi, ci) = v < mi ? mi : (v > ma ? ma : v);
+                  }
+                }
               } else {
-                auto pad = refLs.arena(xn, kernel_linear_c, wrapv<0>{}, true_c);
-                auto mi = pad.minimum("vel", d);
-                auto ma = pad.maximum("vel", d);
-                auto v = ls._grid("vel", d, bi, ci);
-                ls._grid("vel", d, bi, ci) = v < mi ? mi : (v > ma ? ma : v);
+                auto x = ls.indexToWorld(coord);
+                auto vi = velLs.getMaterialVelocity(x);
+                auto xn = x - vi * dt;
+                if constexpr (ref_ls_t::category == grid_e::staggered) {
+                  for (typename ls_t::channel_counter_type chn = 0;
+                       chn != ls.numChannels(); ++chn) {
+                    int f = chn % 3;
+                    auto pad =
+                        refLs.arena(xn, f, kernel_linear_c, wrapv<0>{}, true_c);
+                    auto mi = pad.minimum(chn);
+                    auto ma = pad.maximum(chn);
+                    auto v = ls._grid(chn, bi, ci);
+                    ls._grid(chn, bi, ci) = v < mi ? mi : (v > ma ? ma : v);
+                  }
+                } else {
+                  auto pad =
+                      refLs.arena(xn, kernel_linear_c, wrapv<0>{}, true_c);
+                  for (typename ls_t::channel_counter_type chn = 0;
+                       chn != ls.numChannels(); ++chn) {
+                    auto mi = pad.minimum(chn);
+                    auto ma = pad.maximum(chn);
+                    auto v = ls._grid(chn, bi, ci);
+                    ls._grid(chn, bi, ci) = v < mi ? mi : (v > ma ? ma : v);
+                  }
+                }
               }
-            }
-          } else {
-            auto x = ls.indexToWorld(coord);
-            auto vi = velLs.getMaterialVelocity(x);
-            auto xn = x - vi * dt;
-            if constexpr (ref_ls_t::category == grid_e::staggered) {
-              for (typename ls_t::channel_counter_type chn = 0;
-                   chn != ls.numChannels(); ++chn) {
-                int f = chn % 3;
-                auto pad =
-                    refLs.arena(xn, f, kernel_linear_c, wrapv<0>{}, true_c);
-                auto mi = pad.minimum(chn);
-                auto ma = pad.maximum(chn);
-                auto v = ls._grid(chn, bi, ci);
-                ls._grid(chn, bi, ci) = v < mi ? mi : (v > ma ? ma : v);
-              }
-            } else {
-              auto pad = refLs.arena(xn, kernel_linear_c, wrapv<0>{}, true_c);
-              for (typename ls_t::channel_counter_type chn = 0;
-                   chn != ls.numChannels(); ++chn) {
-                auto mi = pad.minimum(chn);
-                auto ma = pad.maximum(chn);
-                auto v = ls._grid(chn, bi, ci);
-                ls._grid(chn, bi, ci) = v < mi ? mi : (v > ma ? ma : v);
-              }
-            }
-          }
-        });
+            });
   }
   void apply() override {
     fmt::print(fg(fmt::color::green), "begin executing ClampZSLevelSet\n");

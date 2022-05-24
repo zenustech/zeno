@@ -9,10 +9,11 @@ target_sources(zeno_ZenoFX PRIVATE nw.cpp pw.cpp pnw.cpp ppw.cpp pew.cpp dbg_pri
 
 if (EXTENSION_zenvdb)
     option(ZENOFX_ENABLE_OPENVDB "Enable OpenVDB wrangler in ZenoFX" ON)
+    option(ZENOFX_ENABLE_LBVH "Enable Linear BVH wrangler in ZenoFX" ON)
 else()
     option(ZENOFX_ENABLE_OPENVDB "Enable OpenVDB wrangler in ZenoFX" OFF)
+    option(ZENOFX_ENABLE_LBVH "Enable Linear BVH wrangler in ZenoFX" OFF)
 endif()
-option(ZENOFX_ENABLE_LBVH "Enable Linear BVH wrangler in ZenoFX" OFF)
 
 if (ZENOFX_ENABLE_OPENVDB)
     find_package(OpenVDB REQUIRED)

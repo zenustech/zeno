@@ -190,6 +190,19 @@ class QDMDisplayMenu(QMenu):
 
         self.addSeparator()
 
+        action = QAction('Enable GI', self)
+        action.setCheckable(True)
+        action.setChecked(False)
+        self.addAction(action)
+
+        action = QAction('GI Emission Base', self)
+        self.addAction(action)
+
+        action = QAction('GI Base', self)
+        self.addAction(action)
+
+        self.addSeparator()
+
         action = QAction('Smooth Shading', self)
         action.setCheckable(True)
         action.setChecked(False)
@@ -253,6 +266,9 @@ class QDMRecordMenu(QMenu):
 
         action = QAction('Record Video', self)
         action.setShortcut(QKeySequence('Shift+F12'))
+        self.addAction(action)
+
+        action = QAction('MSAASample', self)
         self.addAction(action)
 
 light_channel_names = [
@@ -601,6 +617,23 @@ class DisplayWidget(QWidget):
             checked = act.isChecked()
             zenvis.status['show_grid'] = checked
 
+        elif name == 'Enable GI':
+            checked = act.isChecked()
+            zenvis.core.set_enable_gi(checked)
+
+        elif name == 'GI Emission Base':
+            v = zenvis.core.get_gi_emission_base()
+            v, ok = QInputDialog.getDouble(self, 'GI Emission Base', 'GI Emission Base: ', v, max=10000, decimals=2)
+            if ok:
+                zenvis.core.set_gi_emission_base(v)
+                self.timeline.editor.try_run_this_frame()
+
+        elif name == 'GI Base':
+            v = zenvis.core.get_gi_base()
+            v, ok = QInputDialog.getDouble(self, 'GI Base', 'GI Base: ', v)
+            if ok:
+                zenvis.core.set_gi_base(v)
+
         elif name == 'Smooth Shading':
             checked = act.isChecked()
             zenvis.core.set_smooth_shading(checked)
@@ -632,6 +665,11 @@ class DisplayWidget(QWidget):
 
         elif name == 'Screenshot':
             self.do_screenshot()
+
+        elif name == 'MSAASample':
+            nsamples, ok = QInputDialog.getInt(self, 'MSAASample', 'number: ', 1)
+            if ok:
+                zenvis.core.set_num_samples(nsamples)
 
         elif name == 'Camera Keyframe':
             self.camera_keyframe_widget.show()

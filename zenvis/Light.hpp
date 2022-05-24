@@ -34,6 +34,32 @@
 namespace zenvis
 {
     static unsigned int LightMatrixUBO = 0;
+    struct LightData{
+        glm::mat4 lightMV;
+        glm::mat4 lightSpaceMatrix;
+        std::vector<glm::mat4> lightSpaceMatrices;
+        std::vector<float> shadowCascadeLevels;
+        std::vector<unsigned int> DepthMaps;
+        std::vector<float> m_nearPlane;
+        std::vector<float> m_farPlane;
+        glm::vec3 lightDir = glm::normalize(glm::vec3(1, 1, 0));
+        glm::vec3 shadowTint = glm::vec3(0.2f);
+        float lightHight = 1000.0;
+        float gfov;
+        float gaspect;
+        float shadowSoftness = 1.0;
+        unsigned int lightFBO = 0;
+        unsigned int lightDepthMaps = 0;
+        unsigned int depthMapResolution = 4096;
+        unsigned int matricesUBO = 0;
+        static constexpr int cascadeCount = 7;
+        glm::vec3 lightColor = glm::vec3(1.0);
+        float intensity = 10.0;
+        float lightScale = 1.0;
+        bool m_isEnabled = true;
+        LightData()
+        {}
+    };
     struct Light
     {
         glm::mat4 lightMV;
@@ -58,6 +84,23 @@ namespace zenvis
         float intensity = 10.0;
         float lightScale = 1.0;
         bool m_isEnabled = true;
+        void assignLightData(LightData &l2)
+        {
+            l2.lightDir = lightDir;
+            l2.shadowTint = shadowTint;
+            l2.lightHight = lightHight;
+            l2.shadowSoftness = shadowSoftness;
+            l2.lightColor = lightColor;
+            l2.intensity = intensity;
+            l2.lightScale = lightScale;
+            l2.m_isEnabled = m_isEnabled;
+        }
+        bool isSame(LightData& l2)
+        {
+            return (lightDir==l2.lightDir && shadowTint==l2.shadowTint && lightHight == l2.lightHight && 
+                shadowSoftness==l2.shadowSoftness && lightColor==l2.lightColor && intensity==l2.intensity && 
+                lightScale==l2.lightScale && m_isEnabled==l2.m_isEnabled);
+        }
         glm::vec3 getShadowTint()
         {
             return m_isEnabled?shadowTint:glm::vec3(1.0);

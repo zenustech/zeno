@@ -14,6 +14,7 @@
 
 namespace zeno {
 
+#if 0
 struct ExplicitTimeStepping : zeno::INode {
   void apply() override {
     auto mesh = get_input<ZenoFEMMesh>("mesh");
@@ -129,6 +130,7 @@ ZENDEFNODE(ExplicitTimeStepping, {
                                      {},
                                      {"FEM"},
                                  });
+#endif
 
 struct MakeExplicitTimeIntegrator2 : zeno::INode {
   void apply() override {

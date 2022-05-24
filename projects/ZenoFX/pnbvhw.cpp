@@ -152,6 +152,9 @@ struct QueryNearestPrimitive : zeno::INode {
     if (has_input<PrimitiveObject>("prim")) {
       auto prim = get_input<PrimitiveObject>("prim");
 
+      auto &bvhids = prim->add_attr<float>("bvh_id");
+      auto &dists = prim->add_attr<float>("bvh_dist");
+
       std::vector<KVPair> kvs(prim->size());
       std::vector<Ti> ids(prim->size(), -1);
 #if defined(_OPENMP)
@@ -161,6 +164,9 @@ struct QueryNearestPrimitive : zeno::INode {
         kvs[i].dist = std::numeric_limits<float>::max();
         kvs[i].pid = i;
         lbvh->find_nearest(prim->verts[i], ids[i], kvs[i].dist);
+        // record info as attribs
+        bvhids[i] = ids[i];
+        dists[i] = kvs[i].dist;
       }
 
       KVPair mi{std::numeric_limits<float>::max(), -1};

@@ -540,6 +540,17 @@ struct GraphicPrimitive : IGraphic {
                           fov, 0.1,ffar, dof, 1);
                 
             }
+            if(code.find("mat_isVoxelDomain = float(float(1))")!=std::string::npos)
+            {
+                auto origin = prim->attr<zeno::vec3f>("pos")[0];
+                auto right = prim->attr<zeno::vec3f>("pos")[1] - prim->attr<zeno::vec3f>("pos")[0];
+                auto up = prim->attr<zeno::vec3f>("pos")[3] - prim->attr<zeno::vec3f>("pos")[0];
+
+                voxelizer::setVoxelizeView(glm::vec3(origin[0],origin[1],origin[2]), 
+                                           glm::vec3(right[0], right[1], right[2]), 
+                                           glm::vec3(up[0], up[1], up[2]));
+                
+            }
             
         }
         if(!triObj.prog){
@@ -659,9 +670,9 @@ struct GraphicPrimitive : IGraphic {
 
         if (prim_has_inst)
         {
-            triObj.prog->set_uniform("fInstDeltaTime", prim_inst_delta_time);
-            triObj.prog->set_uniformi("iInstFrameAmount", prim_inst_frame_amount);
-            triObj.prog->set_uniformi("iInstVertexFrameSampler",texOcp);
+            triObj.shadowprog->set_uniform("fInstDeltaTime", prim_inst_delta_time);
+            triObj.shadowprog->set_uniformi("iInstFrameAmount", prim_inst_frame_amount);
+            triObj.shadowprog->set_uniformi("iInstVertexFrameSampler",texOcp);
             prim_inst_vertex_frame_sampler->bind_to(texOcp);
             texOcp++;
         }
@@ -707,12 +718,14 @@ struct GraphicPrimitive : IGraphic {
     }
 
   }
-  virtual void drawVoxelize() override {
+  virtual void drawVoxelize(float alphaPass) override {
+    if (!prim_has_mtl) return;
     if (prim_has_mtl) ensureGlobalMapExist();
     int id = 0;
     for (id = 0; id < textures.size(); id++) {
         textures[id]->bind_to(id);
     }
+
     auto vbobind = [&] (auto &vbo) {
         vbo->bind();
         vbo->attribute(/*index=*/0,
@@ -742,22 +755,26 @@ struct GraphicPrimitive : IGraphic {
 
     auto instvbobind = [&] (auto &instvbo) {
         instvbo->bind();
-        instvbo->attribute(5, sizeof(glm::vec4) * 0, sizeof(glm::vec4) * 4, GL_FLOAT, 4);
-        instvbo->attribute(6, sizeof(glm::vec4) * 1, sizeof(glm::vec4) * 4, GL_FLOAT, 4);
-        instvbo->attribute(7, sizeof(glm::vec4) * 2, sizeof(glm::vec4) * 4, GL_FLOAT, 4);
-        instvbo->attribute(8, sizeof(glm::vec4) * 3, sizeof(glm::vec4) * 4, GL_FLOAT, 4);
+        instvbo->attribute(5, offsetof(InstVboData, modelMatrix) + sizeof(glm::vec4) * 0, sizeof(InstVboData), GL_FLOAT, 4);
+        instvbo->attribute(6, offsetof(InstVboData, modelMatrix) + sizeof(glm::vec4) * 1, sizeof(InstVboData), GL_FLOAT, 4);
+        instvbo->attribute(7, offsetof(InstVboData, modelMatrix) + sizeof(glm::vec4) * 2, sizeof(InstVboData), GL_FLOAT, 4);
+        instvbo->attribute(8, offsetof(InstVboData, modelMatrix) + sizeof(glm::vec4) * 3, sizeof(InstVboData), GL_FLOAT, 4);
+        instvbo->attribute(9, offsetof(InstVboData, time), sizeof(InstVboData), GL_FLOAT, 1);
         instvbo->attrib_divisor(5, 1);
         instvbo->attrib_divisor(6, 1);
         instvbo->attrib_divisor(7, 1);
         instvbo->attrib_divisor(8, 1);
+        instvbo->attrib_divisor(9, 1);
     };
     auto instvbounbind = [&] (auto &instvbo) {
         instvbo->disable_attribute(5);
         instvbo->disable_attribute(6);
         instvbo->disable_attribute(7);
         instvbo->disable_attribute(8);
+        instvbo->disable_attribute(9);
         instvbo->unbind();
     };
+    
     if (tris_count) {
         //printf("TRIS\n");
         if (triObj.vbo) {
@@ -799,9 +816,14 @@ struct GraphicPrimitive : IGraphic {
         glBindBuffer(GL_UNIFORM_BUFFER, 0);
         triObj.voxelprog->use();
         set_program_uniforms(triObj.voxelprog);
-
-        
+        triObj.voxelprog->set_uniform("u_scene_voxel_scale", glm::vec3(1.0/voxelizer::getDomainLength()));
+        triObj.voxelprog->set_uniform("m_gi_emission_base", get_gi_emission_base());
+        triObj.voxelprog->set_uniform("voxelgrid_resolution", voxelizer::getVoxelResolution());
         triObj.voxelprog->set_uniformi("lightNum", lights.size());
+        triObj.voxelprog->set_uniform("alphaPass", alphaPass);
+        triObj.voxelprog->set_uniform("vxView", voxelizer::getView());
+        triObj.voxelprog->set_uniform("vxMaterialPass", voxelizer::isMaterialPass);
+        
         for (int lightNo = 0; lightNo < lights.size(); ++lightNo)
         {
             auto &light = lights[lightNo];
@@ -840,7 +862,11 @@ struct GraphicPrimitive : IGraphic {
             if (auto brdfLUT = getBRDFLut(); brdfLUT != (unsigned int)-1)
                 CHECK_GL(glBindTexture(GL_TEXTURE_2D, brdfLUT));
             texOcp++;
-
+            
+            triObj.voxelprog->set_uniformi("vxNormal", texOcp);
+            CHECK_GL(glActiveTexture(GL_TEXTURE0+texOcp));
+            CHECK_GL(glBindTexture(GL_TEXTURE_3D, voxelizer::vxNormal.id));
+            texOcp++;
             
 
 
@@ -1203,6 +1229,16 @@ struct GraphicPrimitive : IGraphic {
             texOcp++;
     
         }
+        
+        triObj.prog->set_uniformi("vxgibuffer", texOcp);
+        CHECK_GL(glActiveTexture(GL_TEXTURE0+texOcp));
+        CHECK_GL(glBindTexture(GL_TEXTURE_3D, voxelizer::vxTexture.id));
+        texOcp++;
+        triObj.prog->set_uniform("vxSize",voxelizer::getDomainLength());
+        triObj.prog->set_uniform("vxView", voxelizer::getView());
+        triObj.prog->set_uniform("enable_gi_flag", zenvis::get_enable_gi());
+        triObj.prog->set_uniform("m_gi_base", zenvis::get_gi_base());
+        
         
         triObj.prog->set_uniform("msweight", m_weight);
         triObj.ebo->bind();
