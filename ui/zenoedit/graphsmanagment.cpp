@@ -174,6 +174,12 @@ void GraphsManagment::appendLog(QtMsgType type, QString fileName, int ln, const 
     if (msg.trimmed().isEmpty())
         return;
 
+    if (type == QtDebugMsg)
+    {
+        //todo: Performance issues and crash on qt, need to analyse later...
+        return;
+    }
+
     QMutexLocker lock(&m_mutex);
     QStandardItem *item = new QStandardItem(msg);
     item->setData(type, ROLE_LOGTYPE);
