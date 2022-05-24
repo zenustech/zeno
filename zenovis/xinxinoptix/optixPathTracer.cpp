@@ -45,6 +45,7 @@
 #include <sutil/Trackball.h>
 #include <sutil/sutil.h>
 #include <sutil/vec_math.h>
+#include <sutil/Scene.h>
 #include <optix_stack_size.h>
 
 //#include <GLFW/glfw3.h>
@@ -130,15 +131,16 @@ using Vertex = float4;
 struct PathTracerState
 {
     OptixDeviceContext context = 0;
-
+    OptixTraversableHandle         m_ias_handle;
     OptixTraversableHandle         gas_handle               = {};  // Traversable handle for triangle AS
-    raii<CUdeviceptr>                    d_gas_output_buffer;  // Triangle AS memory
-    raii<CUdeviceptr>                    d_vertices;
-    raii<CUdeviceptr>  d_mat_indices             ;
+    raii<CUdeviceptr>              d_gas_output_buffer;  // Triangle AS memory
+    raii<CUdeviceptr>              m_d_ias_output_buffer;
+    raii<CUdeviceptr>              d_vertices;
+    raii<CUdeviceptr>              d_mat_indices             ;
 
-    raii<OptixModule>                    ptx_module;
-    raii<OptixModule>                    ptx_module2;
-    OptixPipelineCompileOptions          pipeline_compile_options;
+    raii<OptixModule>              ptx_module;
+    raii<OptixModule>              ptx_module2;
+    OptixPipelineCompileOptions    pipeline_compile_options;
     OptixPipeline                  pipeline;
 
     OptixProgramGroup              raygen_prog_group;
@@ -164,6 +166,18 @@ struct PathTracerState
 
 PathTracerState state;
 
+struct smallMesh{
+    std::vector<Vertex> verts;
+    std::vector<uint32_t> mat_idx;
+    std::vector<uint3>     idx;
+    OptixTraversableHandle            gas_handle = 0;
+    raii<CUdeviceptr>        d_gas_output_buffer;
+    raii<CUdeviceptr>                     dverts;
+    raii<CUdeviceptr>                      dmats;
+    raii<CUdeviceptr>                       didx;
+    smallMesh(){idx.resize(0);verts.resize(0);mat_idx.resize(0);}
+    ~smallMesh(){d_gas_output_buffer.reset(); dverts.reset(); dmats.reset();}
+};
 
 //------------------------------------------------------------------------------
 //
@@ -315,7 +329,7 @@ static void printUsageAndExit( const char* argv0 )
 
 static void initLaunchParams( PathTracerState& state )
 {
-    state.params.handle         = state.gas_handle;
+    state.params.handle         = state.m_ias_handle;
     CUDA_CHECK( cudaMalloc(
                 reinterpret_cast<void**>( &state.accum_buffer_p.reset() ),
                 state.params.width * state.params.height * sizeof( float4 )
@@ -383,24 +397,23 @@ static void launchSubframe( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Path
     uchar4* result_buffer_data = output_buffer.map();
     state.params.frame_buffer  = result_buffer_data;
     state.params.num_lights = g_lights.size();
-    CUDA_CHECK( cudaMemcpyAsync(
+    CUDA_CHECK( cudaMemcpy(
                 reinterpret_cast<void*>( (CUdeviceptr)state.d_params ),
                 &state.params, sizeof( Params ),
-                cudaMemcpyHostToDevice, state.stream
+                cudaMemcpyHostToDevice
                 ) );
-
     OPTIX_CHECK( optixLaunch(
                 state.pipeline,
-                state.stream,
+                0,
                 reinterpret_cast<CUdeviceptr>( (CUdeviceptr)state.d_params ),
                 sizeof( Params ),
                 &state.sbt,
                 state.params.width,   // launch width
                 state.params.height,  // launch height
                 1                     // launch depth
-                ) );
+                ) );   
     output_buffer.unmap();
-    CUDA_SYNC_CHECK();
+    //CUDA_SYNC_CHECK();
 }
 
 
@@ -443,10 +456,199 @@ static void initCameraState()
     trackball.setGimbalLock( true );
 }
 
+void buildMeshAccelSplitMesh( PathTracerState& state, std::shared_ptr<smallMesh> mesh)
+{
+    //
+    // copy mesh data to device
+    //
+    const size_t vertices_size_in_bytes = mesh->verts.size() * sizeof( Vertex );
+    //CUDA_CHECK( cudaFree( reinterpret_cast<void*>( state.d_vertices ) ) );
+    CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &mesh->dverts.reset() ), vertices_size_in_bytes ) );
+    CUDA_CHECK( cudaMemcpy(
+                reinterpret_cast<void*>( (CUdeviceptr&)mesh->dverts ),
+                mesh->verts.data(), vertices_size_in_bytes,
+                cudaMemcpyHostToDevice
+                ) );
+
+    const size_t mat_indices_size_in_bytes = mesh->mat_idx.size() * sizeof( uint32_t );
+    CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &mesh->dmats.reset() ), mat_indices_size_in_bytes ) );
+    CUDA_CHECK( cudaMemcpy(
+                reinterpret_cast<void*>( (CUdeviceptr)mesh->dmats ),
+                mesh->mat_idx.data(),
+                mat_indices_size_in_bytes,
+                cudaMemcpyHostToDevice
+                ) );
+
+    const size_t idx_indices_size_in_bytes = mesh->idx.size() * sizeof(uint3);
+    CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &mesh->didx.reset() ), idx_indices_size_in_bytes ) );
+    CUDA_CHECK( cudaMemcpy(
+                reinterpret_cast<void*>( (CUdeviceptr)mesh->didx ),
+                mesh->idx.data(),
+                idx_indices_size_in_bytes,
+                cudaMemcpyHostToDevice
+                ) );
+
+    // // Build triangle GAS // // One per SBT record for this build input
+    std::vector<uint32_t> triangle_input_flags(//MAT_COUNT
+        g_mtlidlut.size(),
+        OPTIX_GEOMETRY_FLAG_REQUIRE_SINGLE_ANYHIT_CALL);
+
+    OptixBuildInput triangle_input                           = {};
+    triangle_input.type                                      = OPTIX_BUILD_INPUT_TYPE_TRIANGLES;
+    triangle_input.triangleArray.vertexFormat                = OPTIX_VERTEX_FORMAT_FLOAT3;
+    triangle_input.triangleArray.vertexStrideInBytes         = sizeof( Vertex );
+    triangle_input.triangleArray.numVertices                 = static_cast<uint32_t>( mesh->verts.size() );
+    triangle_input.triangleArray.vertexBuffers               = g_vertices.empty() ? nullptr : & state.d_vertices;
+    triangle_input.triangleArray.flags                       = triangle_input_flags.data();
+    triangle_input.triangleArray.numSbtRecords               = g_vertices.empty() ? 1 : g_mtlidlut.size();
+    triangle_input.triangleArray.sbtIndexOffsetBuffer        = mesh->dmats;
+    triangle_input.triangleArray.indexFormat                 = OPTIX_INDICES_FORMAT_UNSIGNED_INT3;
+    triangle_input.triangleArray.indexStrideInBytes          = sizeof(unsigned int)*3;
+    triangle_input.triangleArray.numIndexTriplets            = mesh->idx.size();
+    triangle_input.triangleArray.indexBuffer                 = mesh->didx;
+
+    triangle_input.triangleArray.sbtIndexOffsetSizeInBytes   = sizeof( uint32_t );
+    triangle_input.triangleArray.sbtIndexOffsetStrideInBytes = sizeof( uint32_t );
+
+    OptixAccelBuildOptions accel_options = {};
+    accel_options.buildFlags             = OPTIX_BUILD_FLAG_ALLOW_COMPACTION;
+    accel_options.operation              = OPTIX_BUILD_OPERATION_BUILD;
+
+    OptixAccelBufferSizes gas_buffer_sizes;
+    //char   log[2048]; size_t sizeof_log = sizeof( log );
+    OPTIX_CHECK( optixAccelComputeMemoryUsage(
+                state.context,
+                &accel_options,
+                &triangle_input,
+                1,  // num_build_inputs
+                &gas_buffer_sizes
+                ) );
+
+    raii<CUdeviceptr> d_temp_buffer;
+    CUDA_CHECK(cudaMalloc((void**)&d_temp_buffer.reset(), gas_buffer_sizes.tempSizeInBytes));
+
+    // non-compacted output
+    raii<CUdeviceptr> d_buffer_temp_output_gas_and_compacted_size;
+    size_t      compactedSizeOffset = roundUp<size_t>( gas_buffer_sizes.outputSizeInBytes, 8ull );
+    CUDA_CHECK(cudaMalloc((void**)&d_buffer_temp_output_gas_and_compacted_size.reset(), compactedSizeOffset + 8));
+
+    OptixAccelEmitDesc emitProperty = {};
+    emitProperty.type               = OPTIX_PROPERTY_TYPE_COMPACTED_SIZE;
+    emitProperty.result             = ( CUdeviceptr )( (char*)(CUdeviceptr)d_buffer_temp_output_gas_and_compacted_size + compactedSizeOffset );
+
+    OPTIX_CHECK( optixAccelBuild(
+                state.context,
+                0,                                  // CUDA stream
+                &accel_options,
+                &triangle_input,
+                1,                                  // num build inputs
+                d_temp_buffer,
+                gas_buffer_sizes.tempSizeInBytes,
+                d_buffer_temp_output_gas_and_compacted_size,
+                gas_buffer_sizes.outputSizeInBytes,
+                &mesh->gas_handle,
+                &emitProperty,                      // emitted property list
+                1                                   // num emitted properties
+                ) );
+
+    d_temp_buffer.reset();
+    //d_mat_indices.reset();
+
+    size_t compacted_gas_size;
+    CUDA_CHECK( cudaMemcpy( &compacted_gas_size, (void*)emitProperty.result, sizeof(size_t), cudaMemcpyDeviceToHost) );
+
+    if( compacted_gas_size < gas_buffer_sizes.outputSizeInBytes )
+    {
+        CUDA_CHECK(cudaMalloc((void**)&mesh->d_gas_output_buffer.reset(), compacted_gas_size));
+
+        // use handle as input and output
+        OPTIX_CHECK( optixAccelCompact( state.context, 0, 
+        mesh->gas_handle, mesh->d_gas_output_buffer, compacted_gas_size, &mesh->gas_handle ) );
+
+        d_buffer_temp_output_gas_and_compacted_size.reset();
+    }
+    else
+    {
+        mesh->d_gas_output_buffer = std::move(d_buffer_temp_output_gas_and_compacted_size);
+    }
+    state.gas_handle = mesh->gas_handle;
+}
+void buildInstanceAccel(PathTracerState& state, int rayTypeCount, std::vector<std::shared_ptr<smallMesh>> m_meshes)
+{
+    float mat4x4[12] = {1,0,0,0,0,1,0,0,0,0,1,0};
+    const size_t num_instances = m_meshes.size();
+    std::vector<OptixInstance> optix_instances( num_instances );
+    unsigned int sbt_offset = 0;
+    for( size_t i = 0; i < m_meshes.size(); ++i )
+    {
+        auto  mesh = m_meshes[i];
+        auto& optix_instance = optix_instances[i];
+        memset( &optix_instance, 0, sizeof( OptixInstance ) );
+
+        optix_instance.flags             = OPTIX_INSTANCE_FLAG_NONE;
+        optix_instance.instanceId        = static_cast<unsigned int>( i );
+        //optix_instance.sbtOffset         = sbt_offset;
+        optix_instance.visibilityMask    = 1;
+        optix_instance.traversableHandle = mesh->gas_handle;
+        memcpy( optix_instance.transform, mat4x4, sizeof( float ) * 12 );
+
+        //sbt_offset += static_cast<unsigned int>( mesh->verts.size() ) * rayTypeCount;  // one sbt record per GAS build input per RAY_TYPE
+    }
+    const size_t instances_size_in_bytes = sizeof( OptixInstance ) * num_instances;
+    raii<CUdeviceptr>  d_instances;
+    CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &d_instances.reset() ), instances_size_in_bytes ) );
+    CUDA_CHECK( cudaMemcpy(
+                reinterpret_cast<void*>( (CUdeviceptr)d_instances ),
+                optix_instances.data(),
+                instances_size_in_bytes,
+                cudaMemcpyHostToDevice
+                ) );
+
+    OptixBuildInput instance_input = {};
+    instance_input.type                       = OPTIX_BUILD_INPUT_TYPE_INSTANCES;
+    instance_input.instanceArray.instances    = d_instances;
+    instance_input.instanceArray.numInstances = static_cast<unsigned int>( num_instances );
+
+    OptixAccelBuildOptions accel_options = {};
+    accel_options.buildFlags                  = OPTIX_BUILD_FLAG_NONE;
+    accel_options.operation                   = OPTIX_BUILD_OPERATION_BUILD;
+
+    OptixAccelBufferSizes ias_buffer_sizes;
+    OPTIX_CHECK( optixAccelComputeMemoryUsage(
+                state.context,
+                &accel_options,
+                &instance_input,
+                1, // num build inputs
+                &ias_buffer_sizes
+                ) );
+
+    raii<CUdeviceptr> d_temp_buffer;
+    CUDA_CHECK( cudaMalloc(
+                reinterpret_cast<void**>( &d_temp_buffer.reset() ),
+                ias_buffer_sizes.tempSizeInBytes
+                ) );
+    CUDA_CHECK( cudaMalloc(
+                reinterpret_cast<void**>( &state.m_d_ias_output_buffer.reset() ),
+                ias_buffer_sizes.outputSizeInBytes
+                ) );
+
+    OPTIX_CHECK( optixAccelBuild(
+                state.context,
+                nullptr,                  // CUDA stream
+                &accel_options,
+                &instance_input,
+                1,                  // num build inputs
+                d_temp_buffer,
+                ias_buffer_sizes.tempSizeInBytes,
+                state.m_d_ias_output_buffer,
+                ias_buffer_sizes.outputSizeInBytes,
+                &state.m_ias_handle,
+                nullptr,            // emitted property list
+                0                   // num emitted properties
+                ) );
 
 
-
-
+}
 static void buildMeshAccel( PathTracerState& state )
 {
     //
@@ -455,19 +657,19 @@ static void buildMeshAccel( PathTracerState& state )
     const size_t vertices_size_in_bytes = g_vertices.size() * sizeof( Vertex );
     //CUDA_CHECK( cudaFree( reinterpret_cast<void*>( state.d_vertices ) ) );
     CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.d_vertices.reset() ), vertices_size_in_bytes ) );
-    CUDA_CHECK( cudaMemcpyAsync(
+    CUDA_CHECK( cudaMemcpy(
                 reinterpret_cast<void*>( (CUdeviceptr&)state.d_vertices ),
                 g_vertices.data(), vertices_size_in_bytes,
-                cudaMemcpyHostToDevice, state.stream
+                cudaMemcpyHostToDevice
                 ) );
 
     const size_t mat_indices_size_in_bytes = g_mat_indices.size() * sizeof( uint32_t );
     CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.d_mat_indices.reset() ), mat_indices_size_in_bytes ) );
-    CUDA_CHECK( cudaMemcpyAsync(
+    CUDA_CHECK( cudaMemcpy(
                 reinterpret_cast<void*>( (CUdeviceptr)state.d_mat_indices ),
                 g_mat_indices.data(),
                 mat_indices_size_in_bytes,
-                cudaMemcpyHostToDevice, state.stream
+                cudaMemcpyHostToDevice
                 ) );
 
     // // Build triangle GAS // // One per SBT record for this build input
@@ -480,7 +682,7 @@ static void buildMeshAccel( PathTracerState& state )
     triangle_input.triangleArray.vertexFormat                = OPTIX_VERTEX_FORMAT_FLOAT3;
     triangle_input.triangleArray.vertexStrideInBytes         = sizeof( Vertex );
     triangle_input.triangleArray.numVertices                 = static_cast<uint32_t>( g_vertices.size() );
-    triangle_input.triangleArray.vertexBuffers               = g_vertices.empty() ? nullptr : &state.d_vertices;
+    triangle_input.triangleArray.vertexBuffers               = g_vertices.empty() ? nullptr : & state.d_vertices;
     triangle_input.triangleArray.flags                       = triangle_input_flags.data();
     triangle_input.triangleArray.numSbtRecords               = g_vertices.empty() ? 1 : g_mtlidlut.size();
     triangle_input.triangleArray.sbtIndexOffsetBuffer        = state.d_mat_indices;
@@ -532,14 +734,15 @@ static void buildMeshAccel( PathTracerState& state )
     //d_mat_indices.reset();
 
     size_t compacted_gas_size;
-    CUDA_CHECK( cudaMemcpyAsync( &compacted_gas_size, (void*)emitProperty.result, sizeof(size_t), cudaMemcpyDeviceToHost, state.stream ) );
+    CUDA_CHECK( cudaMemcpy( &compacted_gas_size, (void*)emitProperty.result, sizeof(size_t), cudaMemcpyDeviceToHost) );
 
     if( compacted_gas_size < gas_buffer_sizes.outputSizeInBytes )
     {
         CUDA_CHECK(cudaMalloc((void**)&state.d_gas_output_buffer.reset(), compacted_gas_size));
 
         // use handle as input and output
-        OPTIX_CHECK( optixAccelCompact( state.context, 0, state.gas_handle, state.d_gas_output_buffer, compacted_gas_size, &state.gas_handle ) );
+        OPTIX_CHECK( optixAccelCompact( state.context, 0, 
+        state.gas_handle, state.d_gas_output_buffer, compacted_gas_size, &state.gas_handle ) );
 
         d_buffer_temp_output_gas_and_compacted_size.reset();
     }
@@ -567,11 +770,11 @@ static void createSBT( PathTracerState& state )
     RayGenRecord rg_sbt = {};
     OPTIX_CHECK( optixSbtRecordPackHeader( state.raygen_prog_group, &rg_sbt ) );
 
-    CUDA_CHECK( cudaMemcpyAsync(
+    CUDA_CHECK( cudaMemcpy(
                 reinterpret_cast<void*>( (CUdeviceptr)d_raygen_record ),
                 &rg_sbt,
                 raygen_record_size,
-                cudaMemcpyHostToDevice, state.stream
+                cudaMemcpyHostToDevice
                 ) );
 
 
@@ -585,11 +788,11 @@ static void createSBT( PathTracerState& state )
     OPTIX_CHECK( optixSbtRecordPackHeader( state.occlusion_miss_group, &ms_sbt[1] ) );
     ms_sbt[1].data.bg_color = make_float4( 0.0f );
 
-    CUDA_CHECK( cudaMemcpyAsync(
+    CUDA_CHECK( cudaMemcpy(
                 reinterpret_cast<void*>( (CUdeviceptr&)d_miss_records ),
                 ms_sbt,
                 miss_record_size*RAY_TYPE_COUNT,
-                cudaMemcpyHostToDevice, state.stream
+                cudaMemcpyHostToDevice
                 ) );
 
     raii<CUdeviceptr>  &d_hitgroup_records = state.d_hitgroup_records;
@@ -634,11 +837,11 @@ static void createSBT( PathTracerState& state )
     //         OPTIX_CHECK( optixSbtRecordPackHeader( state.occlusion_hit_group2, &hitgroup_records[sbt_idx] ) );
     //     }
     // }
-    CUDA_CHECK( cudaMemcpyAsync(
+    CUDA_CHECK( cudaMemcpy(
                 reinterpret_cast<void*>( (CUdeviceptr)d_hitgroup_records ),
                 hitgroup_records,
                 hitgroup_record_size*RAY_TYPE_COUNT*g_mtlidlut.size(),
-                cudaMemcpyHostToDevice, state.stream
+                cudaMemcpyHostToDevice
                 ) );
 
     state.sbt.raygenRecord                = d_raygen_record;
@@ -744,7 +947,7 @@ void optixinit( int argc, char* argv[] )
         OptixUtil::createContext();
         state.context = OptixUtil::context;
 
-    CUDA_CHECK( cudaStreamCreate( &state.stream.reset() ) );
+    //CUDA_CHECK( cudaStreamCreate( &state.stream.reset() ) );
     CUDA_CHECK(cudaMalloc((void**)&state.d_params.reset(), sizeof( Params )));
 
         if (!output_buffer_o) {
@@ -753,7 +956,7 @@ void optixinit( int argc, char* argv[] )
                     state.params.width,
                     state.params.height
                     );
-            output_buffer_o->setStream( state.stream );
+            output_buffer_o->setStream( 0 );
         }
         if (!gl_display_o) {
             gl_display_o.emplace(sutil::BufferImageFormat::UNSIGNED_BYTE4);
@@ -770,13 +973,39 @@ void optixinit( int argc, char* argv[] )
               //std::back_inserter(res));
     //return res;
 //}
+void splitMesh(std::vector<Vertex> & verts, 
+std::vector<uint32_t> &mat_idx, 
+std::vector<std::shared_ptr<smallMesh>> &oMeshes);
 
+std::vector<std::shared_ptr<smallMesh>> g_meshPieces;
 static void updatedrawobjects();
 void optixupdatemesh(std::map<std::string, int> const &mtlidlut) {
     camera_changed = true;
     g_mtlidlut = mtlidlut;
     updatedrawobjects();
-    buildMeshAccel( state );
+    //buildMeshAccel( state );
+    const size_t vertices_size_in_bytes = g_vertices.size() * sizeof( Vertex );
+    CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.d_vertices.reset() ), vertices_size_in_bytes ) );
+    CUDA_CHECK( cudaMemcpy(
+                reinterpret_cast<void*>( (CUdeviceptr&)state.d_vertices ),
+                g_vertices.data(), vertices_size_in_bytes,
+                cudaMemcpyHostToDevice
+                ) );
+    const size_t mat_indices_size_in_bytes = g_mat_indices.size() * sizeof( uint32_t );
+    CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.d_mat_indices.reset() ), mat_indices_size_in_bytes ) );
+    CUDA_CHECK( cudaMemcpy(
+                reinterpret_cast<void*>( (CUdeviceptr)state.d_mat_indices ),
+                g_mat_indices.data(),
+                mat_indices_size_in_bytes,
+                cudaMemcpyHostToDevice
+                ) );
+    splitMesh(g_vertices, g_mat_indices, g_meshPieces);
+    std::cout<<"mesh pieces:"<<g_meshPieces.size()<<std::endl;
+    for(int i=0;i<g_meshPieces.size();i++)
+    {
+        buildMeshAccelSplitMesh(state, g_meshPieces[i]);
+    }
+    buildInstanceAccel(state, 2, g_meshPieces);
 }
 void optixupdatelight() {
     camera_changed = true;
@@ -791,10 +1020,10 @@ void optixupdatelight() {
         light.v1       = normalize( cross( light.v2, light.normal ) );
     }
     if (g_lights.size())
-        CUDA_CHECK( cudaMemcpyAsync(
+        CUDA_CHECK( cudaMemcpy(
                 reinterpret_cast<void*>( (CUdeviceptr)state.lightsbuf_p ),
                 g_lights.data(), sizeof( ParallelogramLight ) * g_lights.size(),
-                cudaMemcpyHostToDevice, state.stream
+                cudaMemcpyHostToDevice
                 ) );
 }
 
@@ -865,12 +1094,37 @@ struct DrawDat {
 };
 static std::map<std::string, DrawDat> drawdats;
 
+void splitMesh(std::vector<Vertex> & verts, std::vector<uint32_t> &mat_idx, 
+std::vector<std::shared_ptr<smallMesh>> &oMeshes)
+{
+    size_t num_tri = verts.size()/3;
+    oMeshes.resize(0);
+    size_t tris_per_mesh = 1024;
+    size_t num_iter = num_tri/tris_per_mesh + 1;
+    for(int i=0; i<num_iter;i++)
+    {
+        auto m = std::make_shared<smallMesh>();
+        for(int j=0;j<tris_per_mesh;j++)
+        {
+            size_t idx = i*tris_per_mesh + j;
+            if(idx<num_tri){
+                m->verts.emplace_back(verts[idx*3+0]);
+                m->verts.emplace_back(verts[idx*3+1]);
+                m->verts.emplace_back(verts[idx*3+2]);
+                m->mat_idx.emplace_back(mat_idx[idx]);
+                m->idx.emplace_back(make_uint3(idx*3+0,idx*3+1,idx*3+2));
+            }
+        }
+        if(m->verts.size()>0)
+            oMeshes.push_back(std::move(m));
+    }
+}
 static void updatedrawobjects() {
     g_vertices.clear();
     g_mat_indices.clear();
     size_t n = 0;
     for (auto const &[key, dat]: drawdats) {
-        n += dat.tris.size();
+        n += dat.tris.size()/3;
     }
     g_vertices.resize(n * 3);
     g_mat_indices.resize(n);
@@ -955,9 +1209,9 @@ void optixrender(int fbo) {
     if (!output_buffer_o) throw sutil::Exception("no output_buffer_o");
     if (!gl_display_o) throw sutil::Exception("no gl_display_o");
     updateState( *output_buffer_o, state.params );
-    for(int f=0;f<16;f++) {
+    for(int f=0;f<16;f++){
         launchSubframe( *output_buffer_o, state );
-        ++state.params.subframe_index;
+        state.params.subframe_index++;
     }
     displaySubframe( *output_buffer_o, *gl_display_o, state, fbo );
                     

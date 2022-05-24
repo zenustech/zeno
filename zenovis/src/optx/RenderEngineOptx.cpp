@@ -191,41 +191,43 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         }
 
         if (meshNeedUpdate || matNeedUpdate || lightNeedUpdate) {
-        zeno::log_debug("[zeno-optix] updating scene");
-            if (matNeedUpdate) {
-            zeno::log_debug("[zeno-optix] updating material");
-                std::vector<std::string> shaders;
-                mtlidlut.clear();
+        //zeno::log_debug("[zeno-optix] updating scene");
+            
+            
+            
+            //zeno::log_debug("[zeno-optix] updating material");
+            std::vector<std::string> shaders;
+            mtlidlut.clear();
 
-                ensure_shadtmpl();
-                shaders.push_back(shadtmpl);
-                mtlidlut.insert({"Default", 0});
+            ensure_shadtmpl();
+            shaders.push_back(shadtmpl);
+            mtlidlut.insert({"Default", 0});
 
-                for (auto const &[key, obj]: graphicsMan->graphics) {
-                    if (auto mtldet = std::get_if<GraphicsManager::DetMaterial>(&obj->det)) {
-                        //zeno::log_debug("got material shader:\n{}", mtldet->shader);
-                        std::string shader;
-                        shader.reserve(shadtpl2.first.size()
-                                       + mtldet->shader.size()
-                                       + shadtpl2.second.size());
-                        shader.append(shadtpl2.first);
-                        shader.append(mtldet->shader);
-                        shader.append(shadtpl2.second);
-                        mtlidlut.insert({mtldet->mtlidkey, (int)shaders.size()});
-                        shaders.push_back(std::move(shader));
-                    }
+            for (auto const &[key, obj]: graphicsMan->graphics) {
+                if (auto mtldet = std::get_if<GraphicsManager::DetMaterial>(&obj->det)) {
+                    //zeno::log_debug("got material shader:\n{}", mtldet->shader);
+                    std::string shader;
+                    shader.reserve(shadtpl2.first.size()
+                                    + mtldet->shader.size()
+                                    + shadtpl2.second.size());
+                    shader.append(shadtpl2.first);
+                    shader.append(mtldet->shader);
+                    shader.append(shadtpl2.second);
+                    mtlidlut.insert({mtldet->mtlidkey, (int)shaders.size()});
+                    shaders.push_back(std::move(shader));
                 }
-                xinxinoptix::optixupdatematerial(shaders);
             }
-            if (meshNeedUpdate || matNeedUpdate) {
-            zeno::log_debug("[zeno-optix] updating mesh");
-                xinxinoptix::optixupdatemesh(mtlidlut);
-            }
+            xinxinoptix::optixupdatematerial(shaders);
+            
+            //zeno::log_debug("[zeno-optix] updating mesh");
+            xinxinoptix::optixupdatemesh(mtlidlut);
+            
+
             xinxinoptix::optixupdateend();
-            if (lightNeedUpdate) {
-            zeno::log_debug("[zeno-optix] updating light");
-                xinxinoptix::optixupdatelight();
-            }
+            
+            //zeno::log_debug("[zeno-optix] updating light");
+            xinxinoptix::optixupdatelight();
+            
             meshNeedUpdate = false;
             matNeedUpdate = false;
             lightNeedUpdate = false;
