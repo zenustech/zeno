@@ -838,6 +838,7 @@ void optixupdatematerial(std::vector<std::string> const &shaders) {
     //if (!hadonce++) {
 
     if (bate.ray_module == 0)
+        OptixUtil::bate2.ray_module = std::move(bate.ray_module);
         OptixUtil::createModule(
             bate.ray_module,
             state.context,

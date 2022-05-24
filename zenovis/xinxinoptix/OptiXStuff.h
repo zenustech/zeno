@@ -113,6 +113,7 @@ inline void createRenderGroups(OptixDeviceContext &context, OptixModule &_module
         desc.raygen.module            = _module;
         desc.raygen.entryFunctionName = "__raygen__rg";
 
+        bate2.raygen_prog_group = std::move(bate1.raygen_prog_group);
         OPTIX_CHECK_LOG( optixProgramGroupCreate(
                     context, &desc,
                     1,  // num program groups
@@ -129,6 +130,7 @@ inline void createRenderGroups(OptixDeviceContext &context, OptixModule &_module
         desc.miss.module            = _module;
         desc.miss.entryFunctionName = "__miss__radiance";
         sizeof_log                  = sizeof( log );
+        bate2.radiance_miss_group = std::move(bate1.radiance_miss_group);
         OPTIX_CHECK_LOG( optixProgramGroupCreate(
                     context, &desc,
                     1,  // num program groups
@@ -141,6 +143,7 @@ inline void createRenderGroups(OptixDeviceContext &context, OptixModule &_module
         desc.miss.module            = nullptr;  // NULL miss program for occlusion rays
         desc.miss.entryFunctionName = nullptr;
         sizeof_log                  = sizeof( log );
+        bate2.occlusion_miss_group = std::move(bate1.occlusion_miss_group);
         OPTIX_CHECK_LOG( optixProgramGroupCreate(
                     context, &desc,
                     1,  // num program groups
