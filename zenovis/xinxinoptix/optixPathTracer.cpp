@@ -148,6 +148,7 @@ struct PathTracerState
         raii<CUdeviceptr>  d_raygen_record;
         raii<CUdeviceptr>d_miss_records;
         raii<CUdeviceptr>  d_hitgroup_records;
+        int oldwhp, oldlightssize;
     } bate1, bate2;
 
     //raii<OptixModule>                    ptx_module;
@@ -323,15 +324,13 @@ static void printUsageAndExit( const char* argv0 )
 static void initLaunchParams( PathTracerState& state )
 {
     state.params.handle         = state.gas_handle;
-    static int oldwhp = -1;
     auto whp = state.params.width * state.params.height;
-    if (whp != std::exchange(oldwhp, whp))
+    if (whp != std::exchange(state.bate1.oldwhp, whp))
         CUDA_CHECK( cudaMalloc(
                     reinterpret_cast<void**>( &state.bate1.accum_buffer_p.reset() ),
                     whp * sizeof( float4 )
                     ) );
-    static int oldlightssize = -1;
-    if (g_lights.size() != std::exchange(oldlightssize, g_lights.size()))
+    if (g_lights.size() != std::exchange(state.bate1.oldlightssize, g_lights.size()))
         CUDA_CHECK( cudaMalloc(
                     reinterpret_cast<void**>( &state.bate1.lightsbuf_p.reset() ),
                     sizeof( ParallelogramLight ) * g_lights.size()
@@ -401,16 +400,16 @@ static void launchSubframe( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Path
                 cudaMemcpyHostToDevice, state.stream
                 ) );
 
-    OPTIX_CHECK( optixLaunch(
-                state.pipeline,
-                state.stream,
-                reinterpret_cast<CUdeviceptr>( (CUdeviceptr)state.d_params ),
-                sizeof( Params ),
-                &state.sbt,
-                state.params.width,   // launch width
-                state.params.height,  // launch height
-                1                     // launch depth
-                ) );
+    //OPTIX_CHECK( optixLaunch(
+                //state.pipeline,
+                //state.stream,
+                //reinterpret_cast<CUdeviceptr>( (CUdeviceptr)state.d_params ),
+                //sizeof( Params ),
+                //&state.sbt,
+                //state.params.width,   // launch width
+                //state.params.height,  // launch height
+                //1                     // launch depth
+                //) );
     output_buffer.unmap();
     CUDA_SYNC_CHECK();
 }
