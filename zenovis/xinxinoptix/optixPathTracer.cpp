@@ -400,16 +400,16 @@ static void launchSubframe( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Path
                 cudaMemcpyHostToDevice, state.stream
                 ) );
 
-    //OPTIX_CHECK( optixLaunch(
-                //state.pipeline,
-                //state.stream,
-                //reinterpret_cast<CUdeviceptr>( (CUdeviceptr)state.d_params ),
-                //sizeof( Params ),
-                //&state.sbt,
-                //state.params.width,   // launch width
-                //state.params.height,  // launch height
-                //1                     // launch depth
-                //) );
+    OPTIX_CHECK( optixLaunch(
+                state.pipeline,
+                state.stream,
+                reinterpret_cast<CUdeviceptr>( (CUdeviceptr)state.d_params ),
+                sizeof( Params ),
+                &state.sbt,
+                state.params.width,   // launch width
+                state.params.height,  // launch height
+                1                     // launch depth
+                ) );
     output_buffer.unmap();
     CUDA_SYNC_CHECK();
 }
@@ -846,8 +846,8 @@ void optixupdatebegin() {
     //usleep(1'000'000);
 //#endif
     CUDA_SYNC_CHECK();
-    OptixUtil::swapTwoBates();
-    std::swap(state.bate1, state.bate2);
+    //OptixUtil::swapTwoBates();
+    //std::swap(state.bate1, state.bate2);
 }
 void optixupdateend() {
     camera_changed = true;
