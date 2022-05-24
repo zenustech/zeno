@@ -81,7 +81,7 @@ QCheckBox::indicator:checked {
         <string>Debug</string>
        </property>
        <property name="checked">
-        <bool>true</bool>
+        <bool>false</bool>
        </property>
       </widget>
      </item>
@@ -252,14 +252,14 @@ QCheckBox::indicator:checked {
    </item>
   </layout>
  </widget>
-    <customwidgets>
-        <customwidget>
-            <class>LogListView</class>
-            <extends>QListView</extends>
-            <header>panel/zlogpanel.h</header>
-            <container>1</container>   
-        </customwidget>
-    </customwidgets>
+ <customwidgets>
+  <customwidget>
+   <class>LogListView</class>
+   <extends>QListView</extends>
+   <header>panel/zlogpanel.h</header>
+   <container>1</container>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
 </ui>

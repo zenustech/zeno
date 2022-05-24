@@ -3,8 +3,8 @@
 
 enum MODEL_ROLE
 {
-	ROLE_OBJID = Qt::UserRole + 1,
-	ROLE_OBJNAME,
+	ROLE_OBJID = Qt::UserRole + 1,	// like "0xgrwe-MakeCurveMap", which is a ident.
+	ROLE_OBJNAME,	// like "MakeCurveMap", which is a node "class" name.
 	ROLE_NODETYPE,
 	ROLE_OBJPOS,
 	ROLE_OBJRECT,
@@ -41,7 +41,7 @@ enum LOG_ROLE
 	ROLE_TIME,
 	ROLE_FILENAME,
 	ROLE_LINENO,
-	ROLE_NODENAME,
+	ROLE_NODE_IDENT,
 };
 
 #endif

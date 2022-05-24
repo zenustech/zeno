@@ -1,5 +1,5 @@
 #include <zeno/core/Descriptor.h>
-#include <zeno/utils/string.h>
+#include <zeno/utils/Translator.h>
 
 namespace zeno {
 
@@ -24,27 +24,6 @@ ZENO_API Descriptor::Descriptor(
     this->inputs.push_back("SRC");
     //this->inputs.push_back("COND");  // deprecated
     this->outputs.push_back("DST");
-}
-
-ZENO_API std::string Descriptor::serialize() const {
-  std::string res = "";
-  std::vector<std::string> strs;
-  for (auto const &[type, name, defl] : inputs) {
-      strs.push_back(type + "@" + name + "@" + defl);
-  }
-  res += "{" + join_str(strs, "%") + "}";
-  strs.clear();
-  for (auto const &[type, name, defl] : outputs) {
-      strs.push_back(type + "@" + name + "@" + defl);
-  }
-  res += "{" + join_str(strs, "%") + "}";
-  strs.clear();
-  for (auto const &[type, name, defl] : params) {
-      strs.push_back(type + "@" + name + "@" + defl);
-  }
-  res += "{" + join_str(strs, "%") + "}";
-  res += "{" + join_str(categories, "%") + "}";
-  return res;
 }
 
 }

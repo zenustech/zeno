@@ -4,6 +4,7 @@
 #include <zeno/funcs/LiterialConverter.h>
 #include <zeno/funcs/ParseObjectFromUi.h>
 #include <zeno/extra/GraphException.h>
+#include <zeno/utils/Translator.h>
 #include <zeno/utils/logger.h>
 #include <zeno/utils/vec.h>
 #include <zeno/zeno.h>
@@ -71,6 +72,14 @@ ZENO_API void Graph::loadGraph(const char *json) {
         Document d;
         d.Parse(json);
 
+        auto tno = [&] (auto const &s) -> decltype(auto) {
+#if 0
+            return session->translator->ut(s);
+#else
+            return s;
+#endif
+        };
+
         for (int i = 0; i < d.Size(); i++) {
             Value const &di = d[i];
             std::string cmd = di[0].GetString();
@@ -78,17 +87,17 @@ ZENO_API void Graph::loadGraph(const char *json) {
             GraphException::translated([&] {
                 if (0) {
                 } else if (cmd == "addNode") {
-                    addNode(di[1].GetString(), di[2].GetString());
+                    addNode(tno(di[1].GetString()), di[2].GetString());
                 } else if (cmd == "completeNode") {
                     completeNode(di[1].GetString());
                 } else if (cmd == "setNodeInput") {
-                    setNodeInput(di[1].GetString(), di[2].GetString(), generic_get<zany>(di[3]));       
+                    setNodeInput(di[1].GetString(), tno(di[2].GetString()), generic_get<zany>(di[3]));
                 } else if (cmd == "setNodeParam") {
-                    setNodeParam(di[1].GetString(), di[2].GetString(), generic_get<std::variant<int, float, std::string>, false>(di[3]));
+                    setNodeParam(di[1].GetString(), tno(di[2].GetString()), generic_get<std::variant<int, float, std::string>, false>(di[3]));
                 /*} else if (cmd == "setNodeOption") {
                     setNodeOption(di[1].GetString(), di[2].GetString());*/
                 } else if (cmd == "bindNodeInput") {
-                    bindNodeInput(di[1].GetString(), di[2].GetString(), di[3].GetString(), di[4].GetString());
+                    bindNodeInput(di[1].GetString(), tno(di[2].GetString()), di[3].GetString(), tno(di[4].GetString()));
                 } else if (cmd == "setBeginFrameNumber") {
                     this->beginFrameNumber = di[1].GetInt();
                 } else if (cmd == "setEndFrameNumber") {
