@@ -623,8 +623,8 @@ static void createSBT( PathTracerState& state )
 
     raii<CUdeviceptr>  &d_hitgroup_records = state.bate1.d_hitgroup_records;
     const size_t hitgroup_record_size = sizeof( HitGroupRecord );
-    state.bate2.d_hitgroup_records = std::move(state.bate1.d_hitgroup_records);
-    CUDA_CHECK(cudaMalloc((void**)&d_hitgroup_records.reset(),
+    //state.bate2.d_hitgroup_records = std::move(state.bate1.d_hitgroup_records);
+    CUDA_CHECK(cudaMalloc((void**)&d_hitgroup_records/*.reset()*/,
                 hitgroup_record_size * RAY_TYPE_COUNT * g_mtlidlut.size()
                 ));
 
