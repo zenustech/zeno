@@ -581,11 +581,11 @@ static void buildMeshAccel( PathTracerState& state )
 
 static void createSBT( PathTracerState& state )
 {
-        state.bate1.d_raygen_record.reset();
-        state.bate1.d_miss_records.reset();
-        state.bate1.d_hitgroup_records.reset();
-        state.bate1.d_gas_output_buffer.reset();
-        state.bate1.accum_buffer_p.reset();
+        //state.bate1.d_raygen_record.reset();
+        //state.bate1.d_miss_records.reset();
+        //state.bate1.d_hitgroup_records.reset();
+        //state.bate1.d_gas_output_buffer.reset();
+        //state.bate1.accum_buffer_p.reset();
 
     raii<CUdeviceptr>  &d_raygen_record = state.bate1.d_raygen_record;
     state.bate2.d_raygen_record = std::move(state.bate1.d_raygen_record);
