@@ -24,6 +24,9 @@
 // OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+//#ifdef __linux__
+//#include <unistd.h>
+//#endif
 //
 
 #include <glad/glad.h>  // Needs to be included before gl_interop
@@ -812,7 +815,8 @@ void optixupdatematerial(std::vector<std::string> const &shaders) {
     camera_changed = true;
 
     static int hadonce = 0;
-    auto &bate = 1 ? OptixUtil::bate2 : OptixUtil::bate1;
+    auto &bate = OptixUtil::bate1;
+    //if (!hadonce++) {
 
     if (bate.ray_module == 0)
         OptixUtil::createModule(
@@ -834,13 +838,17 @@ void optixupdatematerial(std::vector<std::string> const &shaders) {
     }
     OptixUtil::createRenderGroups(state.context, bate.ray_module, bate);
         //CUDA_SYNC_CHECK();
+    //}
 }
 
 void optixupdatebegin() {
     camera_changed = true;
+//#ifdef __linux__
+    //usleep(1'000'000);
+//#endif
     CUDA_SYNC_CHECK();
-    //OptixUtil::swapTwoBates();
-    //std::swap(state.bate1, state.bate2);
+    OptixUtil::swapTwoBates();
+    std::swap(state.bate1, state.bate2);
 }
 void optixupdateend() {
     camera_changed = true;
