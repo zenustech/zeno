@@ -343,10 +343,8 @@ extern "C" __global__ void __closesthit__radiance()
     prd->origin = P;
     prd->direction = wi;
     prd->countEmitted = false;
-    if(is_refl)
-        prd->attenuation *= f;
-    else
-        prd->attenuation *= f;
+    prd->attenuation2 = prd->attenuation;
+    prd->attenuation *= f;
     //}
 
     // {
@@ -391,12 +389,45 @@ extern "C" __global__ void __closesthit__radiance()
         unsigned int occluded = prd->flags;
         if( !occluded )
         {
+            float wpdf = DisneyBRDF::pdf(basecolor,
+                                metallic,
+                                subsurface,
+                                specular,
+                                roughness,
+                                specularTint,
+                                anisotropic,
+                                sheen,
+                                sheenTint,
+                                clearcoat,
+                                clearcoatGloss,
+                                N,
+                                make_float3(0,0,0),
+                                make_float3(0,0,0),
+                                L,
+                                -normalize(inDir)
+                                );
             const float A = length(cross(light.v1, light.v2));
-            weight = nDl * LnDl * A / (M_PIf * Ldist * Ldist);
+            weight = nDl * LnDl * A / (M_PIf*Ldist * Ldist) / wpdf;
         }
     }
-
-    prd->radiance = light.emission * weight;
+    float3 lbrdf = DisneyBRDF::eval(basecolor,
+                                metallic,
+                                subsurface,
+                                specular,
+                                roughness,
+                                specularTint,
+                                anisotropic,
+                                sheen,
+                                sheenTint,
+                                clearcoat,
+                                clearcoatGloss,
+                                N,
+                                make_float3(0,0,0),
+                                make_float3(0,0,0),
+                                L,
+                                -normalize(inDir)
+                                );
+    prd->radiance = light.emission * weight * lbrdf;
 }
 
 extern "C" __global__ void __closesthit__occlusion()

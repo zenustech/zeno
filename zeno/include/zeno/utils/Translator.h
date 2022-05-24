@@ -6,24 +6,8 @@
 
 namespace zeno {
 
-struct Translator {
+struct TranslatorFwd {
     std::map<std::string, std::string> lut;
-
-    void load(std::string_view tab) {
-        std::size_t p = 0;
-        while (1) {
-            auto q = tab.find('\n', p);
-            auto line = tab.substr(q, p);
-            if (auto mid = line.find('='); mid != std::string::npos) {
-                auto lhs = line.substr(0, mid);
-                auto rhs = line.substr(mid + 1);
-                lut.emplace(lhs, rhs);
-            }
-            if (q == std::string::npos)
-                break;
-            p = q + 1;
-        }
-    }
 
     std::string const &t(std::string const &s) const {
         if (auto it = lut.find(s); it != lut.end()) {
@@ -50,6 +34,19 @@ struct Translator {
         } else {
             return s;
         }
+    }
+};
+
+struct Translator : TranslatorFwd {
+    TranslatorFwd m_untrans;
+
+    void load(std::string_view tab);
+
+    using TranslatorFwd::t;
+
+    template <class Arg>
+    auto ut(Arg &&arg) const {
+        return m_untrans.t(std::forward<Arg>(arg));
     }
 };
 

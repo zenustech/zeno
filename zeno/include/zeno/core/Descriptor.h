@@ -38,8 +38,6 @@ struct Descriptor {
 	  std::vector<SocketDescriptor> const &outputs,
 	  std::vector<ParamDescriptor> const &params,
 	  std::vector<std::string> const &categories);
-
-  ZENO_API std::string serialize() const;
 };
 
 }

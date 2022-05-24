@@ -259,6 +259,8 @@ NODE_DESCS GraphsModel::getCoreDescs()
 {
 	NODE_DESCS descs;
 	QString strDescs = QString::fromStdString(zeno::getSession().dumpDescriptors());
+    //zeno::log_critical("EEEE {}", strDescs.toStdString());
+    //ZENO_P(strDescs.toStdString());
 	QStringList L = strDescs.split("\n");
 	for (int i = 0; i < L.size(); i++)
 	{
