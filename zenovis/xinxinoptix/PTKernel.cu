@@ -16,6 +16,7 @@ __constant__ Params params;
 
 extern "C" __global__ void __raygen__rg()
 {
+    return;
     const int    w   = params.width;
     const int    h   = params.height;
     //const float3 eye = params.eye;
@@ -93,6 +94,7 @@ extern "C" __global__ void __raygen__rg()
 
 extern "C" __global__ void __miss__radiance()
 {
+    return;
     MissData* rt_data  = reinterpret_cast<MissData*>( optixGetSbtDataPointer() );
     RadiancePRD* prd = getPRD();
 
