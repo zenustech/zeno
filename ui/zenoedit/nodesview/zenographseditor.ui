@@ -131,10 +131,10 @@
          </property>
          <widget class="QStackedWidget" name="stackedWidget">
           <property name="styleSheet">
-           <string notr="true">background: rgb(37,37,38);</string>
+           <string notr="true"/>
           </property>
           <property name="currentIndex">
-           <number>1</number>
+           <number>0</number>
           </property>
           <widget class="QWidget" name="subnetPage">
            <layout class="QVBoxLayout" name="verticalLayout_2">
@@ -198,6 +198,14 @@ font: 12pt 'HarmonyOS Sans';</string>
             </item>
             <item>
              <widget class="QListView" name="subnetList">
+              <property name="styleSheet">
+               <string notr="true">QListView
+{
+	background-color: rgb(37,37,38);
+	show-decoration-selected: 1;
+	font: 12pt 'HarmonyOS Sans';
+}</string>
+              </property>
               <property name="frameShape">
                <enum>QFrame::NoFrame</enum>
               </property>
@@ -313,22 +321,6 @@ font: 12pt 'HarmonyOS Sans';</string>
              <widget class="QLineEdit" name="searchEdit">
               <property name="focusPolicy">
                <enum>Qt::ClickFocus</enum>
-              </property>
-              <property name="styleSheet">
-               <string notr="true">QLineEdit {
-    border: 1px solid #252525;
-    padding: 0 8px;
-    background: rgb(36,36,36);
-    selection-background-color: #4B9EF4;
-    color: rgba(255,255,255,0.40);
-	font: 16px 'HarmonyOS Sans';
-}
-
-QLineEdit:focus
-{
-    border: 1px solid #4B9EF4;
-    color: rgba(255,255,255,1.0);
-}</string>
               </property>
              </widget>
             </item>

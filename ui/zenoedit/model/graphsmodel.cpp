@@ -1512,20 +1512,42 @@ QList<SEARCH_RESULT> GraphsModel::search(const QString& content, int searchOpts)
             results.append(result);
         }
     }
-    if (searchOpts & SEARCH_NODE)
+    if (searchOpts & SEARCH_NODECLS)
     {
         for (auto subgInfo : m_subGraphs)
         {
             SubGraphModel* pModel = subgInfo.pModel;
             QModelIndex subgIdx = indexBySubModel(pModel);
+            //todo: searching by key.
             QModelIndexList lst = pModel->match(pModel->index(0, 0), ROLE_OBJNAME, content, -1, Qt::MatchContains);
             for (QModelIndex nodeIdx : lst)
             {
                 SEARCH_RESULT result;
                 result.targetIdx = nodeIdx;
                 result.subgIdx = subgIdx;
-                result.type = SEARCH_NODE;
+                result.type = SEARCH_NODECLS;
                 results.append(result);
+            }
+        }
+    }
+    if (searchOpts & SEARCH_NODEID)
+    {
+        for (auto subgInfo : m_subGraphs)
+        {
+            SubGraphModel* pModel = subgInfo.pModel;
+            QModelIndex subgIdx = indexBySubModel(pModel);
+            QModelIndexList lst = pModel->match(pModel->index(0, 0), ROLE_OBJID, content, -1, Qt::MatchContains);
+            if (!lst.isEmpty())
+            {
+                ZASSERT_EXIT(lst.size() == 1, results);
+                const QModelIndex &nodeIdx = lst[0];
+
+                SEARCH_RESULT result;
+                result.targetIdx = nodeIdx;
+                result.subgIdx = subgIdx;
+                result.type = SEARCH_NODEID;
+                results.append(result);
+                break;
             }
         }
     }
