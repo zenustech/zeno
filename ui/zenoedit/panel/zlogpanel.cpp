@@ -59,15 +59,15 @@ ZlogPanel::ZlogPanel(QWidget* parent)
 
     initSignals();
     initModel();
-    onFilterChanged();
+    //onFilterChanged();
 }
 
 void ZlogPanel::initModel()
 {
-    m_pFilterModel = new CustomFilterProxyModel(this);
-    m_pFilterModel->setSourceModel(zenoApp->logModel());
-    m_pFilterModel->setFilterRole(ROLE_LOGTYPE);
-    m_ui->listView->setModel(m_pFilterModel);
+    //m_pFilterModel = new CustomFilterProxyModel(this);
+    //m_pFilterModel->setSourceModel(zenoApp->logModel());
+    //m_pFilterModel->setFilterRole(ROLE_LOGTYPE);
+    m_ui->listView->setModel(zenoApp->logModel());
 }
 
 void ZlogPanel::initSignals()
@@ -154,7 +154,7 @@ void ZlogPanel::onFilterChanged()
         filters.append(QtFatalMsg);
     if (m_ui->cbInfo->isChecked())
         filters.append(QtInfoMsg);
-    m_pFilterModel->setFilters(filters);
+    //m_pFilterModel->setFilters(filters);
 }
 
 

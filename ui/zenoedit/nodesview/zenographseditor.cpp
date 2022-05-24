@@ -60,7 +60,7 @@ void ZenoGraphsEditor::initUI()
     m_ui->mainStackedWidget->setCurrentWidget(m_ui->welcomePage);
 
     m_ui->graphsViewTab->setFont(QFont("HarmonyOS Sans", 12));  //bug in qss font setting.
-    m_ui->searchEdit->setProperty("cssClass", "searchEdit");
+    m_ui->searchEdit->setProperty("cssClass", "searchEditor");
 
     initRecentFiles();
 }
@@ -186,7 +186,7 @@ void ZenoGraphsEditor::onSearchOptionClicked()
 
 	QAction* pNode = new QAction(tr("Node"));
     pNode->setCheckable(true);
-    pNode->setChecked(m_searchOpts & SEARCH_NODE);
+    pNode->setChecked(m_searchOpts & SEARCH_NODECLS);
 
 	QAction* pSubnet = new QAction(tr("Subnet"));
     pSubnet->setCheckable(true);
@@ -207,9 +207,9 @@ void ZenoGraphsEditor::onSearchOptionClicked()
 
 	connect(pNode, &QAction::triggered, this, [=](bool bChecked) {
         if (bChecked)
-            m_searchOpts |= SEARCH_NODE;
+            m_searchOpts |= SEARCH_NODECLS;
         else
-            m_searchOpts &= (~(int)SEARCH_NODE);
+            m_searchOpts &= (~(int)SEARCH_NODECLS);
 	});
 
 	connect(pSubnet, &QAction::triggered, this, [=](bool bChecked) {
@@ -437,11 +437,12 @@ void ZenoGraphsEditor::onLogInserted(const QModelIndex& parent, int first, int l
     const QModelIndex& idx = logModel->index(first, 0, parent);
     if (idx.isValid())
     {
-        const QString& name = idx.data(ROLE_NODENAME).toString();
+        const QString& objId = idx.data(ROLE_NODE_IDENT).toString();
         const QString& msg = idx.data(Qt::DisplayRole).toString();
-        if (!name.isEmpty())
+        QtMsgType type = (QtMsgType)idx.data(ROLE_LOGTYPE).toInt();
+        if (!objId.isEmpty() && type == QtFatalMsg)
         {
-            QList<SEARCH_RESULT> results = m_model->search(name, SEARCH_NODE);
+            QList<SEARCH_RESULT> results = m_model->search(objId, SEARCH_NODEID);
             for (int i = 0; i < results.length(); i++)
             {
                 const SEARCH_RESULT& res = results[i];
@@ -484,7 +485,7 @@ void ZenoGraphsEditor::onSearchEdited(const QString& content)
 				pModel->appendRow(pItem);
             }
         }
-        else if (res.type == SEARCH_NODE)
+        else if (res.type == SEARCH_NODECLS)
         {
             QString subgName = res.subgIdx.data(ROLE_OBJNAME).toString();
 			QModelIndexList lst = pModel->match(pModel->index(0, 0), ROLE_OBJNAME, subgName, 1, Qt::MatchExactly);

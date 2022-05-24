@@ -36,32 +36,40 @@ bool ZsgReader::openFile(const QString& fn, IAcceptor* pAcceptor)
     QByteArray bytes = file.readAll();
     doc.Parse(bytes);
 
+    if (!doc.IsObject() || !doc.HasMember("graph"))
+        return false;
+
     const rapidjson::Value& graph = doc["graph"];
     if (graph.IsNull()) {
         zeno::log_error("json format incorrect in zsg file: {}", fn.toStdString());
         return false;
     }
 
+    ZASSERT_EXIT(doc.HasMember("descs"), false);
     NODE_DESCS nodesDescs = _parseDescs(doc["descs"]);
     pAcceptor->setDescriptors(nodesDescs);
 
     for (const auto& subgraph : graph.GetObject())
     {
         const QString& graphName = subgraph.name.GetString();
-        _parseSubGraph(graphName, subgraph.value, nodesDescs, pAcceptor);
+        if (!_parseSubGraph(graphName, subgraph.value, nodesDescs, pAcceptor))
+            return false;
     }
     pAcceptor->switchSubGraph("main");
     return true;
 }
 
-void ZsgReader::_parseSubGraph(const QString& name, const rapidjson::Value& subgraph, const NODE_DESCS& descriptors, IAcceptor* pAcceptor)
+bool ZsgReader::_parseSubGraph(const QString& name, const rapidjson::Value& subgraph, const NODE_DESCS& descriptors, IAcceptor* pAcceptor)
 {
+    if (!subgraph.IsObject() || !subgraph.HasMember("nodes"))
+        return false;
+
     //todo: should consider descript info. some info of outsock without connection show in descript info.
     pAcceptor->BeginSubgraph(name);
 
     const auto& nodes = subgraph["nodes"];
     if (nodes.IsNull())
-        return;
+        return false;
 
     QMap<QString, QString> objIdToName;
     for (const auto &node : nodes.GetObject())
@@ -89,19 +97,22 @@ void ZsgReader::_parseSubGraph(const QString& name, const rapidjson::Value& subg
     else if (subgraph.HasMember("view"))
     {
         const auto& obj = subgraph["view"];
-        ZASSERT_EXIT(obj.HasMember("scale") && obj.HasMember("trans_x") && obj.HasMember("trans_y"));
-        qreal scale = obj["scale"].GetFloat();
-        qreal trans_x = obj["trans_x"].GetFloat();
-        qreal trans_y = obj["trans_y"].GetFloat();
-        qreal x = trans_x;
-        qreal y = trans_y;
-        qreal width = 1200. / scale;
-        qreal height = 1000. / scale;
-        viewRect = QRectF(x, y, width, height);
+        if (obj.HasMember("scale") && obj.HasMember("trans_x") && obj.HasMember("trans_y"))
+        {
+            qreal scale = obj["scale"].GetFloat();
+            qreal trans_x = obj["trans_x"].GetFloat();
+            qreal trans_y = obj["trans_y"].GetFloat();
+            qreal x = trans_x;
+            qreal y = trans_y;
+            qreal width = 1200. / scale;
+            qreal height = 1000. / scale;
+            viewRect = QRectF(x, y, width, height);
+        }
     }
-    pAcceptor->setViewRect(viewRect);
 
+    pAcceptor->setViewRect(viewRect);
     pAcceptor->EndSubgraph();
+    return true;
 }
 
 void ZsgReader::_parseNode(const QString& nodeid, const rapidjson::Value& nodeObj, const NODE_DESCS& descriptors, IAcceptor* pAcceptor)
@@ -442,73 +453,110 @@ NODE_DESCS ZsgReader::_parseDescs(const rapidjson::Value& jsonDescs)
     {
         const QString& name = node.name.GetString();
         const auto& objValue = node.value;
-        auto inputs = objValue["inputs"].GetArray();
-        auto outputs = objValue["outputs"].GetArray();
-        auto params = objValue["params"].GetArray();
-        auto categories = objValue["categories"].GetArray();
 
         NODE_DESC desc;
-
-        for (int i = 0; i < inputs.Size(); i++) {
-            if (inputs[i].IsArray()) {
-                auto input_triple = inputs[i].GetArray();
-                const QString& socketType = input_triple[0].GetString();
-                const QString& socketName = input_triple[1].GetString();
-                //zeno::log_info("input_triple[2] = {}", input_triple[2].GetType());
-                const QString& socketDefl = input_triple[2].GetString();
-                PARAM_CONTROL ctrlType = UiHelper::_getControlType(socketType);
-                INPUT_SOCKET inputSocket;
-                inputSocket.info = SOCKET_INFO("", socketName);
-                inputSocket.info.type = socketType;
-                inputSocket.info.control = ctrlType;
-                inputSocket.info.defaultValue = _parseDefaultValue(socketDefl, socketType);
-                desc.inputs.insert(socketName, inputSocket);
-            }
-            else {
-            }
-        }
-
-        for (int i = 0; i < params.Size(); i++) {
-            if (params[i].IsArray()) {
-                auto param_triple = params[i].GetArray();
-                const QString& socketType = param_triple[0].GetString();
-                const QString& socketName = param_triple[1].GetString();
-                //zeno::log_info("param_triple[2] = {}", param_triple[2].GetType());
-                const QString& socketDefl = param_triple[2].GetString();
-                PARAM_CONTROL ctrlType = UiHelper::_getControlType(socketType);
-                PARAM_INFO paramInfo;
-                paramInfo.bEnableConnect = false;
-                paramInfo.control = ctrlType;
-                paramInfo.name = socketName;
-                paramInfo.typeDesc = socketType;
-                paramInfo.defaultValue = _parseDefaultValue(socketDefl, socketType);
-
-                desc.params.insert(socketName, paramInfo);
-            }
-        }
-
-        for (int i = 0; i < outputs.Size(); i++) {
-            if (outputs[i].IsArray()) {
-                auto output_triple = outputs[i].GetArray();
-                const QString& socketType = output_triple[0].GetString();
-                const QString& socketName = output_triple[1].GetString();
-                const QString& socketDefl = output_triple[2].GetString();
-                PARAM_CONTROL ctrlType = UiHelper::_getControlType(socketType);
-                OUTPUT_SOCKET outputSocket;
-                outputSocket.info = SOCKET_INFO("", socketName);
-                outputSocket.info.type = socketType;
-                outputSocket.info.control = ctrlType;
-                outputSocket.info.defaultValue = _parseDefaultValue(socketDefl, socketType);
-
-                desc.outputs.insert(socketName, outputSocket);
-            }
-            else {
-            }
-        }
-
-        for (int i = 0; i < categories.Size(); i++)
+        if (objValue.HasMember("inputs") && objValue["inputs"].IsArray())
         {
-            desc.categories.push_back(categories[i].GetString());
+            auto inputs = objValue["inputs"].GetArray();
+            for (int i = 0; i < inputs.Size(); i++)
+            {
+                if (inputs[i].IsArray())
+                {
+                    auto input_triple = inputs[i].GetArray();
+                    QString socketType, socketName, socketDefl;
+                    if (input_triple.Size() > 0 && input_triple[0].IsString())
+                        socketType = input_triple[0].GetString();
+                    if (input_triple.Size() > 1 && input_triple[1].IsString())
+                        socketName = input_triple[1].GetString();
+                    if (input_triple.Size() > 2 && input_triple[2].IsString())
+                        socketDefl = input_triple[2].GetString();
+
+                    //zeno::log_info("input_triple[2] = {}", input_triple[2].GetType());
+                    //Q_ASSERT(!socketName.isEmpty());
+                    if (!socketName.isEmpty())
+                    {
+                        PARAM_CONTROL ctrlType = UiHelper::_getControlType(socketType);
+                        INPUT_SOCKET inputSocket;
+                        inputSocket.info = SOCKET_INFO("", socketName);
+                        inputSocket.info.type = socketType;
+                        inputSocket.info.control = ctrlType;
+                        inputSocket.info.defaultValue = _parseDefaultValue(socketDefl, socketType);
+                        desc.inputs.insert(socketName, inputSocket);
+                    }
+                }
+            }
+        }
+        if (objValue.HasMember("params") && objValue["params"].IsArray())
+        {
+            auto params = objValue["params"].GetArray();
+            for (int i = 0; i < params.Size(); i++)
+            {
+                if (params[i].IsArray())
+                {
+                    auto param_triple = params[i].GetArray();
+                    QString socketType, socketName, socketDefl;
+
+                    if (param_triple.Size() > 0 && param_triple[0].IsString())
+                        socketType = param_triple[0].GetString();
+                    if (param_triple.Size() > 1 && param_triple[1].IsString())
+                        socketName = param_triple[1].GetString();
+                    if (param_triple.Size() > 2 && param_triple[2].IsString())
+                        socketDefl = param_triple[2].GetString();
+
+                    //zeno::log_info("param_triple[2] = {}", param_triple[2].GetType());
+                    //Q_ASSERT(!socketName.isEmpty());
+                    if (!socketName.isEmpty())
+                    {
+                        PARAM_CONTROL ctrlType = UiHelper::_getControlType(socketType);
+                        PARAM_INFO paramInfo;
+                        paramInfo.bEnableConnect = false;
+                        paramInfo.control = ctrlType;
+                        paramInfo.name = socketName;
+                        paramInfo.typeDesc = socketType;
+                        paramInfo.defaultValue = _parseDefaultValue(socketDefl, socketType);
+                        desc.params.insert(socketName, paramInfo);
+                    }
+                }
+            }
+        }
+        if (objValue.HasMember("outputs") && objValue["outputs"].IsArray())
+        {
+            auto outputs = objValue["outputs"].GetArray();
+            for (int i = 0; i < outputs.Size(); i++)
+            {
+                if (outputs[i].IsArray())
+                {
+                    auto output_triple = outputs[i].GetArray();
+                    QString socketType, socketName, socketDefl;
+
+                    if (output_triple.Size() > 0 && output_triple[0].IsString())
+                        socketType = output_triple[0].GetString();
+                    if (output_triple.Size() > 1 && output_triple[1].IsString())
+                        socketName = output_triple[1].GetString();
+                    if (output_triple.Size() > 2 && output_triple[2].IsString())
+                        socketDefl = output_triple[2].GetString();
+
+                    //Q_ASSERT(!socketName.isEmpty());
+                    if (!socketName.isEmpty())
+                    {
+                        PARAM_CONTROL ctrlType = UiHelper::_getControlType(socketType);
+                        OUTPUT_SOCKET outputSocket;
+                        outputSocket.info = SOCKET_INFO("", socketName);
+                        outputSocket.info.type = socketType;
+                        outputSocket.info.control = ctrlType;
+                        outputSocket.info.defaultValue = _parseDefaultValue(socketDefl, socketType);
+                        desc.outputs.insert(socketName, outputSocket);
+                    }
+                }
+            }
+        }
+        if (objValue.HasMember("categories") && objValue["categories"].IsArray())
+        {
+            auto categories = objValue["categories"].GetArray();
+            for (int i = 0; i < categories.Size(); i++)
+            {
+                desc.categories.push_back(categories[i].GetString());
+            }
         }
 
         _descs.insert(name, desc);
