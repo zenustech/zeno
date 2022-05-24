@@ -811,7 +811,7 @@ void optixupdatematerial(std::vector<std::string> const &shaders) {
         if (!hadOnce) {
             //OPTIX_CHECK( optixModuleDestroy( OptixUtil::ray_module ) );
     OptixUtil::createModule(
-        OptixUtil::ray_module.reset(),
+        OptixUtil::ray_module,
         state.context,
         sutil::lookupIncFile("PTKernel.cu"),
         "PTKernel.cu");

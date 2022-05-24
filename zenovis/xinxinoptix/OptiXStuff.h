@@ -67,7 +67,7 @@ inline void createContext()
     pipeline_compile_options.pipelineLaunchParamsVariableName = "params";
 
 }
-inline void createModule(OptixModule &m, OptixDeviceContext &context, const char *source, const char *location)
+inline void createModule(raii<OptixModule> &m, OptixDeviceContext &context, const char *source, const char *location)
 {
     //OptixModule m;
     OptixModuleCompileOptions module_compile_options = {};
@@ -93,7 +93,7 @@ inline void createModule(OptixModule &m, OptixDeviceContext &context, const char
         inputSize,
         log,
         &sizeof_log,
-        &m
+        &m.reset()
     ) );
     //return m;
 }
@@ -183,7 +183,7 @@ inline void createRTProgramGroups(OptixDeviceContext &context, OptixModule &_mod
                     &program_group_options,
                     log,
                     &sizeof_log,
-                    &oGroup
+                    &oGroup.reset()
                     ) );
     }
 }
@@ -211,8 +211,8 @@ struct rtMatShader
     void loadProgram()
     {
         try {
-            createModule(m_ptx_module.reset(), context, m_shaderFile.c_str(), "MatShader.cu");
-            createRTProgramGroups(context, m_ptx_module, 
+            createModule(m_ptx_module, context, m_shaderFile.c_str(), "MatShader.cu");
+            createRTProgramGroups(context, m_ptx_module,
             "OPTIX_PROGRAM_GROUP_KIND_CLOSEHITGROUP", 
             m_shadingEntry, m_radiance_hit_group);
 
