@@ -326,18 +326,25 @@ static void initLaunchParams( PathTracerState& state )
     state.params.handle         = state.gas_handle;
     auto whp = state.params.width * state.params.height;
     //printf("asdfjhk %d\n", whp);
-    if (whp != std::exchange(state.bate1.oldwhp, whp))
+    if (whp != std::exchange(state.bate1.oldwhp, whp) || state.bate1.accum_buffer_p == 0)
+    {
+        state.bate2.accum_buffer_p = std::move(state.bate1.accum_buffer_p);
         CUDA_CHECK( cudaMalloc(
-                    reinterpret_cast<void**>( &state.bate1.accum_buffer_p.reset() ),
-                    whp * sizeof( float4 )
-                    ) );
-    if (g_lights.size() != std::exchange(state.bate1.oldlightssize, g_lights.size()))
+                reinterpret_cast<void**>( &state.bate1.accum_buffer_p.reset() ),
+                whp * sizeof( float4 )
+                ) );
+        state.params.subframe_index = 0;
+    }
+    if (g_lights.size() != std::exchange(state.bate1.oldlightssize, g_lights.size()) || state.bate1.lightsbuf_p == 0)
+    {
+        state.bate2.lightsbuf_p = std::move(state.bate1.lightsbuf_p);
         CUDA_CHECK( cudaMalloc(
-                    reinterpret_cast<void**>( &state.bate1.lightsbuf_p.reset() ),
-                    sizeof( ParallelogramLight ) * g_lights.size()
-                    ) );
+                reinterpret_cast<void**>( &state.bate1.lightsbuf_p.reset() ),
+                sizeof( ParallelogramLight ) * g_lights.size()
+                ) );
+    }
     state.params.accum_buffer = (float4*)(CUdeviceptr)state.bate1.accum_buffer_p;
-    if (!state.params.accum_buffer) throw std::runtime_error("nullptr accum_buffer1");
+    //if (!state.params.accum_buffer) throw std::runtime_error("nullptr accum_buffer1");
     state.params.lights = (ParallelogramLight*)(CUdeviceptr)state.bate1.lightsbuf_p;
     state.params.frame_buffer = nullptr;  // Will be set when output buffer is mapped
 
@@ -985,12 +992,14 @@ void set_perspective(float const *U, float const *V, float const *W, float const
 
 
 void optixrender(int fbo) {
+                    CUDA_SYNC_CHECK();
     if (!output_buffer_o) throw sutil::Exception("no output_buffer_o");
     if (!gl_display_o) throw sutil::Exception("no gl_display_o");
     updateState( *output_buffer_o, state.params );
                     launchSubframe( *output_buffer_o, state );
                     displaySubframe( *output_buffer_o, *gl_display_o, state, fbo );
                     ++state.params.subframe_index;
+                    CUDA_SYNC_CHECK();
 }
 
 void *optixgetimg(int &w, int &h) {
