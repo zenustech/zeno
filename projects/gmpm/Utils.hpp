@@ -166,10 +166,10 @@ constexpr bool ee_cd_broadphase(VecT ea0, VecT ea1, VecT eb0, VecT eb1,
 
 // for ccd
 template <typename VecT>
-constexpr bool pt_ccd(VecT p, VecT t0, VecT t1, VecT t2, VecT dp, VecT dt0,
-                      VecT dt1, VecT dt2, typename VecT::value_type eta,
-                      typename VecT::value_type thickness,
-                      typename VecT::value_type &toc) {
+constexpr bool pt_accd(VecT p, VecT t0, VecT t1, VecT t2, VecT dp, VecT dt0,
+                       VecT dt1, VecT dt2, typename VecT::value_type eta,
+                       typename VecT::value_type thickness,
+                       typename VecT::value_type &toc) {
   using T = typename VecT::value_type;
   auto mov = (dt0 + dt1 + dt2 + dp) / 4;
   dt0 -= mov;
@@ -214,9 +214,9 @@ constexpr bool pt_ccd(VecT p, VecT t0, VecT t1, VecT t2, VecT dp, VecT dt0,
 }
 template <typename VecT>
 constexpr bool
-ee_ccd(VecT ea0, VecT ea1, VecT eb0, VecT eb1, VecT dea0, VecT dea1, VecT deb0,
-       VecT deb1, typename VecT::value_type eta,
-       typename VecT::value_type thickness, typename VecT::value_type &toc) {
+ee_accd(VecT ea0, VecT ea1, VecT eb0, VecT eb1, VecT dea0, VecT dea1, VecT deb0,
+        VecT deb1, typename VecT::value_type eta,
+        typename VecT::value_type thickness, typename VecT::value_type &toc) {
   using T = typename VecT::value_type;
   auto mov = (dea0 + dea1 + deb0 + deb1) / 4;
   dea0 -= mov;
@@ -364,10 +364,10 @@ void find_intersection_free_stepsize(
       // ccd
       auto alpha = stepSize;
       // surfAlphas[svi] = alpha;
-      if (pt_ccd(p, vtemp.pack<3>("xn", tri[0]), vtemp.pack<3>("xn", tri[1]),
-                 vtemp.pack<3>("xn", tri[2]), vtemp.pack<3>("dir", vi),
-                 vtemp.pack<3>("dir", tri[0]), vtemp.pack<3>("dir", tri[1]),
-                 vtemp.pack<3>("dir", tri[2]), (T)0.1, thickness, alpha))
+      if (pt_accd(p, vtemp.pack<3>("xn", tri[0]), vtemp.pack<3>("xn", tri[1]),
+                  vtemp.pack<3>("xn", tri[2]), vtemp.pack<3>("dir", vi),
+                  vtemp.pack<3>("dir", tri[0]), vtemp.pack<3>("dir", tri[1]),
+                  vtemp.pack<3>("dir", tri[2]), (T)0.1, thickness, alpha))
         if (alpha < stepSize)
           // surfAlphas[svi] = alpha;
           atomic_min(exec_cuda, &finalAlpha[0], alpha);
@@ -411,12 +411,12 @@ void find_intersection_free_stepsize(
       // ccd
       auto alpha = stepSize;
       // surfEdgeAlphas[sei] = alpha;
-      if (ee_ccd(x0, x1, vtemp.pack<3>("xn", oEdgeInds[0]),
-                 vtemp.pack<3>("xn", oEdgeInds[1]),
-                 vtemp.pack<3>("dir", edgeInds[0]),
-                 vtemp.pack<3>("dir", edgeInds[1]),
-                 vtemp.pack<3>("dir", oEdgeInds[0]),
-                 vtemp.pack<3>("dir", oEdgeInds[1]), (T)0.1, thickness, alpha))
+      if (ee_accd(x0, x1, vtemp.pack<3>("xn", oEdgeInds[0]),
+                  vtemp.pack<3>("xn", oEdgeInds[1]),
+                  vtemp.pack<3>("dir", edgeInds[0]),
+                  vtemp.pack<3>("dir", edgeInds[1]),
+                  vtemp.pack<3>("dir", oEdgeInds[0]),
+                  vtemp.pack<3>("dir", oEdgeInds[1]), (T)0.1, thickness, alpha))
         if (alpha < stepSize)
           // surfEdgeAlphas[sei] = alpha;
           atomic_min(exec_cuda, &finalAlpha[0], alpha);
@@ -507,13 +507,12 @@ void find_boundary_intersection_free_stepsize(
           // ccd
           auto alpha = stepSize;
           // surfAlphas[svi] = alpha;
-          if (pt_ccd(p, bouVerts.pack<3>("xn", tri[0]),
-                     bouVerts.pack<3>("xn", tri[1]),
-                     bouVerts.pack<3>("xn", tri[2]), vtemp.pack<3>("dir", vi),
-                     bouVerts.pack<3>("v", tri[0]) * dt,
-                     bouVerts.pack<3>("v", tri[1]) * dt,
-                     bouVerts.pack<3>("v", tri[2]) * dt, (T)0.1, thickness,
-                     alpha))
+          if (pt_accd(
+                  p, bouVerts.pack<3>("x", tri[0]),
+                  bouVerts.pack<3>("x", tri[1]), bouVerts.pack<3>("x", tri[2]),
+                  vtemp.pack<3>("dir", vi), bouVerts.pack<3>("v", tri[0]) * dt,
+                  bouVerts.pack<3>("v", tri[1]) * dt,
+                  bouVerts.pack<3>("v", tri[2]) * dt, (T)0.1, thickness, alpha))
             if (alpha < stepSize)
               // surfAlphas[svi] = alpha;
               atomic_min(exec_cuda, &finalAlpha[0], alpha);
@@ -553,13 +552,13 @@ void find_boundary_intersection_free_stepsize(
           // ccd
           auto alpha = stepSize;
           // surfEdgeAlphas[sei] = alpha;
-          if (ee_ccd(x0, x1, bouVerts.pack<3>("xn", oEdgeInds[0]),
-                     bouVerts.pack<3>("xn", oEdgeInds[1]),
-                     vtemp.pack<3>("dir", edgeInds[0]),
-                     vtemp.pack<3>("dir", edgeInds[1]),
-                     bouVerts.pack<3>("dir", oEdgeInds[0]) * dt,
-                     bouVerts.pack<3>("dir", oEdgeInds[1]) * dt, (T)0.1,
-                     thickness, alpha))
+          if (ee_accd(x0, x1, bouVerts.pack<3>("x", oEdgeInds[0]),
+                      bouVerts.pack<3>("x", oEdgeInds[1]),
+                      vtemp.pack<3>("dir", edgeInds[0]),
+                      vtemp.pack<3>("dir", edgeInds[1]),
+                      bouVerts.pack<3>("v", oEdgeInds[0]) * dt,
+                      bouVerts.pack<3>("v", oEdgeInds[1]) * dt, (T)0.1,
+                      thickness, alpha))
             if (alpha < stepSize)
               // surfEdgeAlphas[sei] = alpha;
               atomic_min(exec_cuda, &finalAlpha[0], alpha);
