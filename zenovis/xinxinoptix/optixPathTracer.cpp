@@ -477,6 +477,7 @@ static void buildMeshAccel( PathTracerState& state )
     // copy mesh data to device
     //
     const size_t vertices_size_in_bytes = g_vertices.size() * sizeof( Vertex );
+    state.bate2.d_vertices = std::move(state.bate1.d_vertices);
     CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.bate1.d_vertices.reset() ), vertices_size_in_bytes ) );
     CUDA_CHECK( cudaMemcpyAsync(
                 reinterpret_cast<void*>( (CUdeviceptr&)state.bate1.d_vertices ),
@@ -485,6 +486,7 @@ static void buildMeshAccel( PathTracerState& state )
                 ) );
 
     const size_t mat_indices_size_in_bytes = g_mat_indices.size() * sizeof( uint32_t );
+    state.bate2.d_mat_indices = std::move(state.bate1.d_mat_indices);
     CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.bate1.d_mat_indices.reset() ), mat_indices_size_in_bytes ) );
     CUDA_CHECK( cudaMemcpyAsync(
                 reinterpret_cast<void*>( (CUdeviceptr)state.bate1.d_mat_indices ),
@@ -559,6 +561,7 @@ static void buildMeshAccel( PathTracerState& state )
 
     if( compacted_gas_size < gas_buffer_sizes.outputSizeInBytes )
     {
+        state.bate2.d_gas_output_buffer = std::move(state.bate1.d_gas_output_buffer);
         CUDA_CHECK(cudaMalloc((void**)&state.bate1.d_gas_output_buffer.reset(), compacted_gas_size));
 
         // use handle as input and output
@@ -568,6 +571,7 @@ static void buildMeshAccel( PathTracerState& state )
     }
     else
     {
+        state.bate2.d_gas_output_buffer = std::move(state.bate1.d_gas_output_buffer);
         state.bate1.d_gas_output_buffer = std::move(d_buffer_temp_output_gas_and_compacted_size);
     }
 }
@@ -584,6 +588,7 @@ static void createSBT( PathTracerState& state )
         state.bate1.accum_buffer_p.reset();
 
     raii<CUdeviceptr>  &d_raygen_record = state.bate1.d_raygen_record;
+    state.bate2.d_raygen_record = std::move(state.bate1.d_raygen_record);
     const size_t raygen_record_size = sizeof( RayGenRecord );
         CUDA_CHECK(cudaMalloc((void**)&d_raygen_record.reset(), raygen_record_size));
 
@@ -600,6 +605,7 @@ static void createSBT( PathTracerState& state )
 
     raii<CUdeviceptr>  &d_miss_records = state.bate1.d_miss_records;
     const size_t miss_record_size = sizeof( MissRecord );
+    state.bate2.d_miss_records = std::move(state.bate1.d_miss_records);
     CUDA_CHECK(cudaMalloc((void**)&d_miss_records.reset(), miss_record_size * RAY_TYPE_COUNT )) ;
 
     MissRecord ms_sbt[2];
@@ -617,6 +623,7 @@ static void createSBT( PathTracerState& state )
 
     raii<CUdeviceptr>  &d_hitgroup_records = state.bate1.d_hitgroup_records;
     const size_t hitgroup_record_size = sizeof( HitGroupRecord );
+    state.bate2.d_hitgroup_records = std::move(state.bate1.d_hitgroup_records);
     CUDA_CHECK(cudaMalloc((void**)&d_hitgroup_records.reset(),
                 hitgroup_record_size * RAY_TYPE_COUNT * g_mtlidlut.size()
                 ));

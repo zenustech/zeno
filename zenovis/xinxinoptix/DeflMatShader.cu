@@ -53,7 +53,6 @@ static __inline__ __device__ MatOutput evalMaterial(MatInput const &attrs) {
 
 extern "C" __global__ void __anyhit__shadow_cutout()
 {
-    return;
     RadiancePRD* prd = getPRD();
     HitGroupData* rt_data = (HitGroupData*)optixGetSbtDataPointer();
     const int    prim_idx        = optixGetPrimitiveIndex();
@@ -108,13 +107,14 @@ extern "C" __global__ void __anyhit__shadow_cutout()
 
 extern "C" __global__ void __closesthit__radiance()
 {
-    return;
     RadiancePRD* prd = getPRD();
     HitGroupData* rt_data = (HitGroupData*)optixGetSbtDataPointer();
     const int    prim_idx        = optixGetPrimitiveIndex();
     const float3 ray_dir         = optixGetWorldRayDirection();
     const int    vert_idx_offset = prim_idx*3;
-    const float3 v0   = make_float3( rt_data->vertices[ vert_idx_offset+0 ] );
+    float3 v0   = make_float3( rt_data->vertices[ vert_idx_offset+0 ] );
+    //volatile float tt = v0.x;
+    //return;
     const float3 v1   = make_float3( rt_data->vertices[ vert_idx_offset+1 ] );
     const float3 v2   = make_float3( rt_data->vertices[ vert_idx_offset+2 ] );
     const float3 N_0  = normalize( cross( v1-v0, v2-v0 ) );
@@ -308,6 +308,5 @@ extern "C" __global__ void __closesthit__radiance()
 
 extern "C" __global__ void __closesthit__occlusion()
 {
-    return;
     setPayloadOcclusion( true );
 }
