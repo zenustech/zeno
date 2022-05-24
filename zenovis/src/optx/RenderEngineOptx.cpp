@@ -200,6 +200,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                 ensure_shadtmpl();
                 shaders.push_back(shadtmpl);
                 mtlidlut.insert({"Default", 0});
+                xinxinoptix::optixupdatebegin();
 
                 for (auto const &[key, obj]: graphicsMan->graphics) {
                     if (auto mtldet = std::get_if<GraphicsManager::DetMaterial>(&obj->det)) {
