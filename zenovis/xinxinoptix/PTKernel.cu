@@ -16,7 +16,6 @@ __constant__ Params params;
 
 extern "C" __global__ void __raygen__rg()
 {
-    return;
     const int    w   = params.width;
     const int    h   = params.height;
     //const float3 eye = params.eye;
@@ -87,6 +86,11 @@ extern "C" __global__ void __raygen__rg()
         const float3 accum_color_prev = make_float3( params.accum_buffer[ image_index ]);
         accum_color = lerp( accum_color_prev, accum_color, a );
     }
+    if (launch_index.x == 0) {
+        printf("%p\n", params.accum_buffer);
+        printf("%p\n", params.frame_buffer);
+    }
+    return;
     params.accum_buffer[ image_index ] = make_float4( accum_color, 1.0f);
     params.frame_buffer[ image_index ] = make_color ( accum_color );
 }
@@ -94,7 +98,6 @@ extern "C" __global__ void __raygen__rg()
 
 extern "C" __global__ void __miss__radiance()
 {
-    return;
     MissData* rt_data  = reinterpret_cast<MissData*>( optixGetSbtDataPointer() );
     RadiancePRD* prd = getPRD();
 

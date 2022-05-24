@@ -325,6 +325,7 @@ static void initLaunchParams( PathTracerState& state )
 {
     state.params.handle         = state.gas_handle;
     auto whp = state.params.width * state.params.height;
+    //printf("asdfjhk %d\n", whp);
     if (whp != std::exchange(state.bate1.oldwhp, whp))
         CUDA_CHECK( cudaMalloc(
                     reinterpret_cast<void**>( &state.bate1.accum_buffer_p.reset() ),
@@ -336,6 +337,7 @@ static void initLaunchParams( PathTracerState& state )
                     sizeof( ParallelogramLight ) * g_lights.size()
                     ) );
     state.params.accum_buffer = (float4*)(CUdeviceptr)state.bate1.accum_buffer_p;
+    if (!state.params.accum_buffer) throw std::runtime_error("nullptr accum_buffer1");
     state.params.lights = (ParallelogramLight*)(CUdeviceptr)state.bate1.lightsbuf_p;
     state.params.frame_buffer = nullptr;  // Will be set when output buffer is mapped
 
@@ -369,11 +371,12 @@ static void handleResize( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Params
     output_buffer.resize( params.width, params.height );
 
     // Realloc accumulation buffer
-    CUDA_CHECK( cudaMalloc(
-                reinterpret_cast<void**>( &state.bate1.accum_buffer_p .reset()),
-                params.width * params.height * sizeof( float4 )
-                ) );
-    state.params.accum_buffer = (float4*)(CUdeviceptr)state.bate1.accum_buffer_p;
+    //CUDA_CHECK( cudaMalloc(
+                //reinterpret_cast<void**>( &state.bate1.accum_buffer_p .reset()),
+                //params.width * params.height * sizeof( float4 )
+                //) );
+    //state.params.accum_buffer = (float4*)(CUdeviceptr)state.bate1.accum_buffer_p;
+    //if (!    state.params.accum_buffer) throw std::runtime_error("nullptr accumbuffer");
 }
 
 
@@ -393,6 +396,9 @@ static void launchSubframe( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Path
     // Launch
     uchar4* result_buffer_data = output_buffer.map();
     state.params.frame_buffer  = result_buffer_data;
+    state.params.accum_buffer = (float4*)(CUdeviceptr)state.bate1.accum_buffer_p;
+    if (!    state.params.accum_buffer) throw std::runtime_error("nullptr accumbuffer2");
+    if (!    state.params.frame_buffer) throw std::runtime_error("nullptr framebuffer");
     state.params.num_lights = g_lights.size();
     CUDA_CHECK( cudaMemcpyAsync(
                 reinterpret_cast<void*>( (CUdeviceptr)state.d_params ),
