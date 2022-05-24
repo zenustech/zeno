@@ -750,7 +750,7 @@ void optixinit( int argc, char* argv[] )
         OptixUtil::createContext();
         state.context = OptixUtil::context;
 
-    CUDA_CHECK( cudaStreamCreate( &state.stream.reset() ) );
+    //CUDA_CHECK( cudaStreamCreate( &state.stream.reset() ) );
     CUDA_CHECK(cudaMalloc((void**)&state.d_params.reset(), sizeof( Params )));
 
         if (!output_buffer_o) {
