@@ -870,7 +870,7 @@ static void updatedrawobjects() {
     g_mat_indices.clear();
     size_t n = 0;
     for (auto const &[key, dat]: drawdats) {
-        n += dat.tris.size();
+        n += dat.tris.size() / 3;
     }
     g_vertices.resize(n * 3);
     g_mat_indices.resize(n);
@@ -913,7 +913,7 @@ void load_object(std::string const &key, std::string const &mtlid, float const *
     dat.tris.assign(tris, tris + numtris * 3);
     //TODO: flatten just here... or in renderengineoptx.cpp
     for (auto const &[key, fptr]: vtab) {
-        //dat.vertattrs[key].assign(fptr.first, fptr.first + numverts * fptr.second);
+        dat.vertattrs[key].assign(fptr.first, fptr.first + numverts * fptr.second);
     }
 }
 
