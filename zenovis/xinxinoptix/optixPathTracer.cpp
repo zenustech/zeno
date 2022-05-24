@@ -750,7 +750,14 @@ void optixinit( int argc, char* argv[] )
         OptixUtil::createContext();
         state.context = OptixUtil::context;
 
-    //CUDA_CHECK( cudaStreamCreate( &state.stream.reset() ) );
+    CUDA_CHECK( cudaStreamCreate( &state.stream.reset() ) );
+
+    OptixUtil::createModule(
+        OptixUtil::ray_module,
+        state.context,
+        sutil::lookupIncFile("PTKernel.cu"),
+        "PTKernel.cu");
+
     CUDA_CHECK(cudaMalloc((void**)&state.d_params.reset(), sizeof( Params )));
 
         if (!output_buffer_o) {
@@ -807,16 +814,8 @@ void optixupdatelight() {
 void optixupdatematerial(std::vector<std::string> const &shaders) {
     camera_changed = true;
 
-        static bool hadOnce = false;
-        if (!hadOnce) {
+        //CUDA_SYNC_CHECK();
             //OPTIX_CHECK( optixModuleDestroy( OptixUtil::ray_module ) );
-    OptixUtil::createModule(
-        OptixUtil::ray_module,
-        state.context,
-        sutil::lookupIncFile("PTKernel.cu"),
-        "PTKernel.cu");
-        } hadOnce = true;
-    OptixUtil::rtMaterialShaders.resize(0);
     for (int i = 0; i < shaders.size(); i++) {
         if (shaders[i].empty()) zeno::log_error("shader {} is empty", i);
         //OptixUtil::rtMaterialShaders.push_back(OptixUtil::rtMatShader(shaders[i].c_str(),"__closesthit__radiance", "__anyhit__shadow_cutout"));
@@ -827,6 +826,7 @@ void optixupdatematerial(std::vector<std::string> const &shaders) {
         OptixUtil::rtMaterialShaders[i].loadProgram();
     }
     OptixUtil::createRenderGroups(state.context, OptixUtil::ray_module);
+        //CUDA_SYNC_CHECK();
 }
 
 void optixupdateend() {
