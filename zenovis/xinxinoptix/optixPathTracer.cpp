@@ -992,14 +992,14 @@ void set_perspective(float const *U, float const *V, float const *W, float const
 
 
 void optixrender(int fbo) {
-                    CUDA_SYNC_CHECK();
+                    //CUDA_SYNC_CHECK();
     if (!output_buffer_o) throw sutil::Exception("no output_buffer_o");
     if (!gl_display_o) throw sutil::Exception("no gl_display_o");
     updateState( *output_buffer_o, state.params );
                     launchSubframe( *output_buffer_o, state );
                     displaySubframe( *output_buffer_o, *gl_display_o, state, fbo );
                     ++state.params.subframe_index;
-                    CUDA_SYNC_CHECK();
+                    //CUDA_SYNC_CHECK();
 }
 
 void *optixgetimg(int &w, int &h) {
