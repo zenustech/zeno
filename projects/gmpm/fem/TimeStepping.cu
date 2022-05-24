@@ -129,6 +129,7 @@ struct ImplicitTimeStepping : INode {
   using pair_t = zs::vec<int, 2>;
   using pair3_t = zs::vec<int, 3>;
   using pair4_t = zs::vec<int, 4>;
+  static constexpr bool enable_contact = true;
 
   /// ref: codim-ipc
   void precompute_constraints(
@@ -391,6 +392,13 @@ struct ImplicitTimeStepping : INode {
             }
           });
         });
+    if (nPP.getVal() > 0 || nPE.getVal() > 0 || nPT.getVal() > 0 ||
+        nEE.getVal() > 0) {
+      fmt::print(
+          "contact indeed detected. nPP: {}, nPE: {}, nPT: {}, nEE: {}\n",
+          nPP.getVal(), nPE.getVal(), nPT.getVal(), nEE.getVal());
+      getchar();
+    }
   }
   void computeInversionFreeStepSize(zs::CudaExecutionPolicy &pol,
                                     const tiles_t &verts, const tiles_t &eles,
@@ -513,6 +521,7 @@ struct ImplicitTimeStepping : INode {
     void computeBarrierGradientAndHessian(zs::CudaExecutionPolicy &pol) {
       using namespace zs;
       constexpr auto space = execspace_e::cuda;
+      T activeGap2 = dHat * dHat + (T)2.0 * xi * dHat;
       auto numPP = nPP.getVal();
       using Vec12View = zs::vec_view<T, zs::integer_seq<int, 12>>;
       using Vec9View = zs::vec_view<T, zs::integer_seq<int, 9>>;
@@ -520,8 +529,7 @@ struct ImplicitTimeStepping : INode {
       pol(range(numPP),
           [vtemp = proxy<space>({}, vtemp), tempPP = proxy<space>({}, tempPP),
            PP = proxy<space>(PP), wPP = proxy<space>(wPP), xi2 = xi * xi,
-           dHat = dHat, activeGap2 = zs::sqr(xi + dHat),
-           dt2 = dt * dt] __device__(int ppi) mutable {
+           dHat = dHat, activeGap2, dt2 = dt * dt] __device__(int ppi) mutable {
             static constexpr T kappa = 1e5;
             auto pp = PP[ppi];
             auto x0 = vtemp.pack<3>("xn", pp[0]);
@@ -553,8 +561,7 @@ struct ImplicitTimeStepping : INode {
       pol(range(numPE),
           [vtemp = proxy<space>({}, vtemp), tempPE = proxy<space>({}, tempPE),
            PE = proxy<space>(PE), wPE = proxy<space>(wPE), xi2 = xi * xi,
-           dHat = dHat, activeGap2 = zs::sqr(xi + dHat),
-           dt2 = dt * dt] __device__(int pei) mutable {
+           dHat = dHat, activeGap2, dt2 = dt * dt] __device__(int pei) mutable {
             static constexpr T kappa = 1e5;
             auto pe = PE[pei];
             auto p = vtemp.pack<3>("xn", pe[0]);
@@ -589,8 +596,7 @@ struct ImplicitTimeStepping : INode {
       pol(range(numPT),
           [vtemp = proxy<space>({}, vtemp), tempPT = proxy<space>({}, tempPT),
            PT = proxy<space>(PT), wPT = proxy<space>(wPT), xi2 = xi * xi,
-           dHat = dHat, activeGap2 = zs::sqr(xi + dHat),
-           dt2 = dt * dt] __device__(int pti) mutable {
+           dHat = dHat, activeGap2, dt2 = dt * dt] __device__(int pti) mutable {
             static constexpr T kappa = 1e5;
             auto pt = PT[pti];
             auto p = vtemp.pack<3>("xn", pt[0]);
@@ -627,8 +633,7 @@ struct ImplicitTimeStepping : INode {
       pol(range(numEE),
           [vtemp = proxy<space>({}, vtemp), tempEE = proxy<space>({}, tempEE),
            EE = proxy<space>(EE), wEE = proxy<space>(wEE), xi2 = xi * xi,
-           dHat = dHat, activeGap2 = zs::sqr(xi + dHat),
-           dt2 = dt * dt] __device__(int eei) mutable {
+           dHat = dHat, activeGap2, dt2 = dt * dt] __device__(int eei) mutable {
             static constexpr T kappa = 1e5;
             auto ee = EE[eei];
             auto ea0 = vtemp.pack<3>("xn", ee[0]);
@@ -707,22 +712,19 @@ struct ImplicitTimeStepping : INode {
         atomic_add(exec_cuda, &res[0], vole * psi * dt * dt);
       });
       // contacts
-      if (false) {
+      if constexpr (enable_contact) {
+        auto activeGap2 = dHat * dHat + 2 * xi * dHat;
         auto numPP = nPP.getVal();
         pol(range(numPP),
             [vtemp = proxy<space>({}, vtemp), tempPP = proxy<space>({}, tempPP),
              PP = proxy<space>(PP), wPP = proxy<space>(wPP),
-             res = proxy<space>(res), xi2 = xi * xi, dHat = dHat,
-             activeGap2 = zs::sqr(dHat) + 2 * xi * dHat,
-             // minDist2 = zs::sqr(xi + dHat),
+             res = proxy<space>(res), xi2 = xi * xi, dHat = dHat, activeGap2,
              dt2 = dt * dt] __device__(int ppi) mutable {
               static constexpr T kappa = 1e5;
               auto pp = PP[ppi];
               auto x0 = vtemp.pack<3>("xn", pp[0]);
               auto x1 = vtemp.pack<3>("xn", pp[1]);
               auto dist2 = dist2_pp(x0, x1);
-              // if (dist2 < minDist2)
-              //  minDist2 = dist2;
               if (dist2 < xi2)
                 printf("dist already smaller than xi!\n");
               atomic_add(exec_cuda, &res[0],
@@ -733,8 +735,7 @@ struct ImplicitTimeStepping : INode {
         pol(range(numPE),
             [vtemp = proxy<space>({}, vtemp), tempPE = proxy<space>({}, tempPE),
              PE = proxy<space>(PE), wPE = proxy<space>(wPE),
-             res = proxy<space>(res), xi2 = xi * xi, dHat = dHat,
-             activeGap2 = zs::sqr(dHat) + 2 * xi * dHat,
+             res = proxy<space>(res), xi2 = xi * xi, dHat = dHat, activeGap2,
              dt2 = dt * dt] __device__(int pei) mutable {
               static constexpr T kappa = 1e5;
               auto pe = PE[pei];
@@ -753,8 +754,7 @@ struct ImplicitTimeStepping : INode {
         pol(range(numPT),
             [vtemp = proxy<space>({}, vtemp), tempPT = proxy<space>({}, tempPT),
              PT = proxy<space>(PT), wPT = proxy<space>(wPT),
-             res = proxy<space>(res), xi2 = xi * xi, dHat = dHat,
-             activeGap2 = zs::sqr(dHat) + 2 * xi * dHat,
+             res = proxy<space>(res), xi2 = xi * xi, dHat = dHat, activeGap2,
              dt2 = dt * dt] __device__(int pti) mutable {
               static constexpr T kappa = 1e5;
               auto pt = PT[pti];
@@ -774,8 +774,7 @@ struct ImplicitTimeStepping : INode {
         pol(range(numEE),
             [vtemp = proxy<space>({}, vtemp), tempEE = proxy<space>({}, tempEE),
              EE = proxy<space>(EE), wEE = proxy<space>(wEE),
-             res = proxy<space>(res), xi2 = xi * xi, dHat = dHat,
-             activeGap2 = zs::sqr(dHat) + 2 * xi * dHat,
+             res = proxy<space>(res), xi2 = xi * xi, dHat = dHat, activeGap2,
              dt2 = dt * dt] __device__(int eei) mutable {
               static constexpr T kappa = 1e5;
               auto ee = EE[eei];
@@ -791,10 +790,6 @@ struct ImplicitTimeStepping : INode {
                          dt2 * wEE[eei] * dHat *
                              zs::barrier(dist2 - xi2, activeGap2, kappa));
             });
-        if (numPP || numPE || numPT || numEE) {
-          fmt::print("contact indeed detected\n");
-          getchar();
-        }
       }
       return res.getVal();
     }
@@ -873,7 +868,7 @@ struct ImplicitTimeStepping : INode {
           }
       });
       // contacts
-      if (false) {
+      if constexpr (enable_contact) {
         auto numPP = nPP.getVal();
         pol(range(numPP), [execTag, tempPP = proxy<space>({}, tempPP),
                            vtemp = proxy<space>({}, vtemp), dxTag, bTag,
@@ -954,10 +949,6 @@ struct ImplicitTimeStepping : INode {
               atomic_add(execTag, &vtemp(bTag, d, ee[vi]), temp[vi * dim + d]);
             }
         });
-        if (numPP || numPE || numPT || numEE) {
-          fmt::print("contact indeed detected\n");
-          getchar();
-        }
       } // end contacts
     }
 
@@ -1155,7 +1146,7 @@ struct ImplicitTimeStepping : INode {
     static Vector<T> wEE{verts.get_allocator(), 100000};
     static Vector<int> nEE{verts.get_allocator(), 1};
     constexpr T xi = 2e-3;
-    constexpr T dHat = 1e-3;
+    constexpr T dHat = 0.008;
 
     vtemp.resize(verts.size());
     etemp.resize(eles.size());
