@@ -316,14 +316,19 @@ static void printUsageAndExit( const char* argv0 )
 static void initLaunchParams( PathTracerState& state )
 {
     state.params.handle         = state.gas_handle;
-    CUDA_CHECK( cudaMalloc(
-                reinterpret_cast<void**>( &state.accum_buffer_p.reset() ),
-                state.params.width * state.params.height * sizeof( float4 )
-                ) );
-    CUDA_CHECK( cudaMalloc(
-                reinterpret_cast<void**>( &state.lightsbuf_p.reset() ),
-                sizeof( ParallelogramLight ) * g_lights.size()
-                ) );
+    static int oldwhp = -1;
+    auto whp = state.params.width * state.params.height;
+    if (whp != std::exchange(oldwhp, whp))
+        CUDA_CHECK( cudaMalloc(
+                    reinterpret_cast<void**>( &state.accum_buffer_p.reset() ),
+                    whp * sizeof( float4 )
+                    ) );
+    static int oldlightssize = -1;
+    if (g_lights.size() != std::exchange(oldlightssize, g_lights.size()))
+        CUDA_CHECK( cudaMalloc(
+                    reinterpret_cast<void**>( &state.lightsbuf_p.reset() ),
+                    sizeof( ParallelogramLight ) * g_lights.size()
+                    ) );
     state.params.accum_buffer = (float4*)(CUdeviceptr)state.accum_buffer_p;
     state.params.lights = (ParallelogramLight*)(CUdeviceptr)state.lightsbuf_p;
     state.params.frame_buffer = nullptr;  // Will be set when output buffer is mapped
@@ -873,6 +878,7 @@ static void updatedrawobjects() {
         n += dat.tris.size() / 3;
     }
     g_vertices.resize(n * 3);
+    //printf("EEEE %ld\n", n);
     g_mat_indices.resize(n);
     n = 0;
     for (auto const &[key, dat]: drawdats) {
