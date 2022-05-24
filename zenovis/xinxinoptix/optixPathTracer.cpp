@@ -811,9 +811,12 @@ void optixupdatelight() {
 void optixupdatematerial(std::vector<std::string> const &shaders) {
     camera_changed = true;
 
-    if (OptixUtil::bate1.ray_module == 0)
+    static int hadonce = 0;
+    auto &bate = 1 ? OptixUtil::bate2 : OptixUtil::bate1;
+
+    if (bate.ray_module == 0)
         OptixUtil::createModule(
-            OptixUtil::bate1.ray_module,
+            bate.ray_module,
             state.context,
             sutil::lookupIncFile("PTKernel.cu"),
             "PTKernel.cu");
@@ -829,7 +832,7 @@ void optixupdatematerial(std::vector<std::string> const &shaders) {
     {
         OptixUtil::rtMaterialShaders[i].loadProgram();
     }
-    OptixUtil::createRenderGroups(state.context, OptixUtil::bate1.ray_module);
+    OptixUtil::createRenderGroups(state.context, bate.ray_module, bate);
         //CUDA_SYNC_CHECK();
 }
 
@@ -870,6 +873,7 @@ void optixupdateend() {
         //createPipeline( state );
         createSBT( state );
         initLaunchParams( state );
+    CUDA_SYNC_CHECK();
 }
 
 struct DrawDat {

@@ -102,7 +102,7 @@ inline void createModule(raii<OptixModule> &m, OptixDeviceContext &context, cons
     ) );
     //return m;
 }
-inline void createRenderGroups(OptixDeviceContext &context, OptixModule &_module)
+inline void createRenderGroups(OptixDeviceContext &context, OptixModule &_module, Archibate &bate1)
 {
     OptixProgramGroupOptions  program_group_options = {};
     char   log[2048];
