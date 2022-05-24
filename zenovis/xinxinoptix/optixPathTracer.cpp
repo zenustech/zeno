@@ -658,29 +658,30 @@ static void createSBT( PathTracerState& state )
 
 static void cleanupState( PathTracerState& state )
 {
-    OPTIX_CHECK( optixPipelineDestroy( state.pipeline ) );
-    OPTIX_CHECK( optixProgramGroupDestroy( state.raygen_prog_group ) );
-    OPTIX_CHECK( optixProgramGroupDestroy( state.radiance_miss_group ) );
+    //OPTIX_CHECK( optixPipelineDestroy( state.pipeline ) );
+    //OPTIX_CHECK( optixProgramGroupDestroy( state.raygen_prog_group ) );
+    //OPTIX_CHECK( optixProgramGroupDestroy( state.radiance_miss_group ) );
     //OPTIX_CHECK( optixProgramGroupDestroy( state.radiance_hit_group ) );
     //OPTIX_CHECK( optixProgramGroupDestroy( state.occlusion_hit_group ) );
     //OPTIX_CHECK( optixProgramGroupDestroy( state.radiance_hit_group2 ) );
     //OPTIX_CHECK( optixProgramGroupDestroy( state.occlusion_hit_group2 ) );
     //OPTIX_CHECK( optixProgramGroupDestroy( state.occlusion_miss_group ) );
     //OPTIX_CHECK( optixModuleDestroy( state.ptx_module ) );
-    OPTIX_CHECK( optixDeviceContextDestroy( state.context ) );
-    OPTIX_CHECK( optixModuleDestroy( OptixUtil::ray_module));
+    //OPTIX_CHECK( optixDeviceContextDestroy( state.context ) );
+    //OPTIX_CHECK( optixModuleDestroy( OptixUtil::ray_module));
+    //state.context;
 
 
     //CUDA_CHECK( cudaFree( reinterpret_cast<void*>( state.sbt.raygenRecord ) ) );
     //CUDA_CHECK( cudaFree( reinterpret_cast<void*>( state.sbt.missRecordBase ) ) );
     //CUDA_CHECK( cudaFree( reinterpret_cast<void*>( state.sbt.hitgroupRecordBase ) ) );
-        state.d_raygen_record.reset();
-        state.d_miss_records.reset();
-        state.d_hitgroup_records.reset();
-        state.d_vertices.reset();
-        state.d_gas_output_buffer.reset();
-        state.accum_buffer_p.reset();
-        state.d_params.reset();
+        //state.d_raygen_record.reset();
+        //state.d_miss_records.reset();
+        //state.d_hitgroup_records.reset();
+        //state.d_vertices.reset();
+        //state.d_gas_output_buffer.reset();
+        //state.accum_buffer_p.reset();
+        //state.d_params.reset();
 }
 
 
@@ -810,7 +811,7 @@ void optixupdatematerial(std::vector<std::string> const &shaders) {
         if (!hadOnce) {
             //OPTIX_CHECK( optixModuleDestroy( OptixUtil::ray_module ) );
     OptixUtil::createModule(
-        OptixUtil::ray_module,
+        OptixUtil::ray_module.reset(),
         state.context,
         sutil::lookupIncFile("PTKernel.cu"),
         "PTKernel.cu");

@@ -57,7 +57,7 @@ inline void createContext()
     OptixDeviceContextOptions options = {};
     options.logCallbackFunction       = &context_log_cb;
     options.logCallbackLevel          = 4;
-    OPTIX_CHECK( optixDeviceContextCreate( cu_ctx, &options, &context ) );
+    OPTIX_CHECK( optixDeviceContextCreate( cu_ctx, &options, &context.reset() ) );
     pipeline_compile_options = {};
     pipeline_compile_options.usesMotionBlur        = false;
     pipeline_compile_options.traversableGraphFlags = OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_GAS;
@@ -114,7 +114,7 @@ inline void createRenderGroups(OptixDeviceContext &context, OptixModule &_module
                     &program_group_options,
                     log,
                     &sizeof_log,
-                    &raygen_prog_group
+                    &raygen_prog_group.reset()
                     ) );
     }
 
@@ -129,7 +129,7 @@ inline void createRenderGroups(OptixDeviceContext &context, OptixModule &_module
                     1,  // num program groups
                     &program_group_options,
                     log, &sizeof_log,
-                    &radiance_miss_group
+                    &radiance_miss_group.reset()
                     ) );
         memset( &desc, 0, sizeof( OptixProgramGroupDesc ) );
         desc.kind                   = OPTIX_PROGRAM_GROUP_KIND_MISS;
@@ -142,7 +142,7 @@ inline void createRenderGroups(OptixDeviceContext &context, OptixModule &_module
                     &program_group_options,
                     log,
                     &sizeof_log,
-                    &occlusion_miss_group
+                    &occlusion_miss_group.reset()
                     ) );
     }     
 }
@@ -234,7 +234,7 @@ inline void createPipeline()
     pipeline_link_options.debugLevel               = OPTIX_COMPILE_DEBUG_LEVEL_FULL;
 
     int num_progs = 3 + rtMaterialShaders.size() * 2;
-    OptixProgramGroup* program_groups = new OptixProgramGroup[num_progs];
+    std::vector<OptixProgramGroup> program_groups(num_progs);
     program_groups[0] = raygen_prog_group;
     program_groups[1] = radiance_miss_group;
     program_groups[2] = occlusion_miss_group;
@@ -249,11 +249,11 @@ inline void createPipeline()
                 context,
                 &pipeline_compile_options,
                 &pipeline_link_options,
-                program_groups,
+                program_groups.data(),
                 num_progs,
                 log,
                 &sizeof_log,
-                &pipeline
+                &pipeline.reset()
                 ) );
     OptixStackSizes stack_sizes = {};
     OPTIX_CHECK( optixUtilAccumulateStackSizes( raygen_prog_group,    &stack_sizes ) );
@@ -288,7 +288,6 @@ inline void createPipeline()
                 continuation_stack_size,
                 max_traversal_depth
                 ) );
-    delete[]program_groups;
 
 }
 
