@@ -64,7 +64,8 @@ struct QuasiStaticStepping : INode {
                 bverts = proxy<space>({},bverts),
                 bcws = proxy<space>({},bcws),lambda,tag,res = proxy<space>(res)]
                 ZS_LAMBDA (int vi) mutable {
-                    auto inds = bcws.pack<4>("inds",vi).reinterpret_bits<int>();
+                    auto ei = reinterpret_bits<int>(bcws("inds",vi));
+                    auto inds = eles.pack<4>("inds",vi).reinterpret_bits<int>();
                     auto w = bcws.pack<4>("w",vi);
                     auto tpos = vec3::zeros();
                     for(size_t i = 0;i < 4;++i)
