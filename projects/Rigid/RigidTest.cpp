@@ -2829,4 +2829,146 @@ ZENDEFNODE(BulletMultiBodyClearJointStates, {
                                            });
 
 
+struct BulletPerformCollisionDetection : zeno::INode {
+    virtual void apply() {
+        auto worldType = std::get<std::string>(get_param("worldType"));
+        if (worldType == "multi")
+        {
+            auto world = get_input<BulletMultiBodyWorld>("world");
+            world->dynamicsWorld->performDiscreteCollisionDetection();
+//            world->dynamicsWorld->contac
+            set_output("world", std::move(world));
+        }
+        else{
+            auto world = get_input<BulletWorld>("world");
+            world->dynamicsWorld->performDiscreteCollisionDetection();
+            set_output("world", std::move(world));
+        }
+    }
 };
+
+ZENDEFNODE(BulletPerformCollisionDetection,{
+                                                {"world"},
+                                                {},
+                                                {{"enum multi rigid", "worldType", "multi"}},
+                                                {"Bullet"},
+                                            });
+
+struct BulletMultiBodyAddLinkForce : zeno::INode {
+    virtual void apply() {
+        auto object = get_input<BulletMultiBodyObject>("object");
+//        auto linkIndex = zeno::IObject::make<zeno::NumericObject>();
+        auto linkIndex = get_input2<int>("linkIndex");
+        auto force = zeno::vec_to_other<btVector3>(get_input<zeno::NumericObject>("force")->get<zeno::vec3f>());
+        object->multibody->addLinkForce(linkIndex, force);
+        set_output("object", std::move(object));
+    }
+};
+
+ZENDEFNODE(BulletMultiBodyAddLinkForce, {
+                                              {"object", "linkIndex", "force"},
+                                              {"object"},
+                                              {},
+                                              {"Bullet"},
+                                          });
+
+struct BulletMultiBodyApplyExternalTorque : zeno::INode {
+    virtual void apply() {
+        auto object = get_input<BulletMultiBodyObject>("object");
+        //        auto linkIndex = zeno::IObject::make<zeno::NumericObject>();
+        auto linkIndex = get_input2<int>("linkIndex");
+        auto torque = zeno::vec_to_other<btVector3>(get_input<zeno::NumericObject>("torque")->get<zeno::vec3f>());
+        auto pos = zeno::vec_to_other<btVector3>(get_input<zeno::NumericObject>("pos")->get<zeno::vec3f>());
+        auto isLinkFrame = get_input2<bool>("isLinkFrame");
+
+        // LinkIndex = -1 for applying force to the base link
+        if(linkIndex==-1){
+            auto torqueWorld = isLinkFrame? object->multibody->getBaseWorldTransform().getBasis()*torque:torque;
+            object->multibody->addBaseTorque(torque);
+        }
+        else
+        {
+            auto torqueWorld = isLinkFrame?object->multibody->getLink(linkIndex).m_cachedWorldTransform.getBasis()*torque:torque;
+            object->multibody->addLinkTorque(linkIndex,torque);
+        }
+
+        set_output("object", std::move(object));
+    }
+};
+
+ZENDEFNODE(BulletMultiBodyApplyExternalTorque, {
+                                            {"object", "linkIndex", "torque"},
+                                            {"object"},
+                                            {},
+                                            {"Bullet"},
+                                        });
+
+struct BulletMultiBodyApplyExternalForce : zeno::INode {
+    virtual void apply() {
+        auto object = get_input<BulletMultiBodyObject>("object");
+        //        auto linkIndex = zeno::IObject::make<zeno::NumericObject>();
+        auto linkIndex = get_input2<int>("linkIndex");
+        auto force = zeno::vec_to_other<btVector3>(get_input<zeno::NumericObject>("force")->get<zeno::vec3f>());
+        auto pos = zeno::vec_to_other<btVector3>(get_input<zeno::NumericObject>("pos")->get<zeno::vec3f>());
+        auto isLinkFrame = get_input2<bool>("isLinkFrame");
+
+        // LinkIndex = -1 for applying force to the base link
+        if(linkIndex==-1){
+            auto forceWorld = isLinkFrame?object->multibody->getBaseWorldTransform().getBasis()*force:force;
+            auto relPosWorld = isLinkFrame?object->multibody->getBaseWorldTransform().getBasis()*pos:pos-object->multibody->getBaseWorldTransform().getOrigin();
+            object->multibody->addBaseForce(forceWorld);
+            object->multibody->addBaseTorque((relPosWorld.cross(forceWorld)));
+        }
+        else
+        {
+            auto forceWorld = isLinkFrame?object->multibody->getLink(linkIndex).m_cachedWorldTransform.getBasis()*force:force;
+            auto relPosWorld = isLinkFrame?object->multibody->getLink(linkIndex).m_cachedWorldTransform.getBasis()*pos:pos-object->multibody->getLink(linkIndex).m_cachedWorldTransform.getOrigin();
+            object->multibody->addLinkForce(linkIndex, forceWorld);
+            object->multibody->addLinkTorque(linkIndex, relPosWorld.cross(forceWorld));
+        }
+
+        set_output("object", std::move(object));
+    }
+};
+
+ZENDEFNODE(BulletMultiBodyApplyExternalForce, {
+                                                  {"object", "linkIndex", "force"},
+                                                  {"object"},
+                                                  {},
+                                                  {"Bullet"},
+                                              });
+struct BulletResetSimulation : zeno::INode {
+    virtual void apply(){
+        auto world = get_input<BulletWorld>("world");
+        world->collisionWorld.reset();
+        set_output("world", std::move(world));
+    }
+};
+
+ZENDEFNODE(BulletResetSimulation, {
+                                            {"world"},
+                                            {"world"},
+                                            {},
+                                            {"Bullet"},
+                                        });
+
+struct BulletMultiBodyResetSimulation : zeno::INode {
+    virtual void apply(){
+        auto world = get_input<BulletMultiBodyWorld>("world");
+        world->dynamicsWorld.reset();
+        set_output("world", std::move(world));
+    }
+};
+
+ZENDEFNODE(BulletMultiBodyResetSimulation, {
+                                      {"world"},
+                                      {"world"},
+                                      {},
+                                      {"Bullet"},
+                                  });
+
+
+
+};
+
+
