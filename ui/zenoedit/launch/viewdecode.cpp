@@ -1,5 +1,7 @@
 #ifdef ZENO_MULTIPROCESS
 #include "viewdecode.h"
+#include "zenoapplication.h"
+#include "zenomainwindow.h"
 #include <zeno/utils/log.h>
 #include <zeno/types/UserData.h>
 #include <zeno/core/Session.h>
@@ -70,6 +72,9 @@ struct PacketProc {
             }
             clearGlobalIfNeeded();
             zeno::getSession().globalComm->addViewObject(objKey, object);
+
+            //need to notify the GL to update.
+            zenoApp->getMainWindow()->updateViewport();
 
         } else if (action == "newFrame") {
             globalCommNeedNewFrame = 1; // postpone `zeno::getSession().globalComm->newFrame();`

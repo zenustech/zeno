@@ -292,6 +292,14 @@ void ZenoMainWindow::onMaximumTriggered()
     }
 }
 
+void ZenoMainWindow::updateViewport()
+{
+    //todo: temp code for single view.
+    DisplayWidget* view = qobject_cast<DisplayWidget*>(m_viewDock->widget());
+    if (view)
+        view->updateFrame();
+}
+
 void ZenoMainWindow::onSplitDock(bool bHorzontal)
 {
     ZenoDockWidget *pDockWidget = qobject_cast<ZenoDockWidget *>(sender());

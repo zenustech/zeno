@@ -33,6 +33,7 @@ public slots:
     void importGraph();
     void exportGraph();
     void onNodesSelected(const QModelIndex& subgIdx, const QModelIndexList& nodes, bool select);
+    void updateViewport();
 
 protected:
     void resizeEvent(QResizeEvent* event) override;
