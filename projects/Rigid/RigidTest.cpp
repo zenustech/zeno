@@ -2937,6 +2937,7 @@ ZENDEFNODE(BulletMultiBodyApplyExternalForce, {
                                                   {},
                                                   {"Bullet"},
                                               });
+
 struct BulletResetSimulation : zeno::INode {
     virtual void apply(){
         auto world = get_input<BulletWorld>("world");
@@ -2967,7 +2968,12 @@ ZENDEFNODE(BulletMultiBodyResetSimulation, {
                                       {"Bullet"},
                                   });
 
+struct BulletMultiBodyGetBodyInfo : zeno::INode {
+    virtual void apply(){
+        auto object = get_input<BulletMultiBodyObject>("object");
 
+    }
+}
 
 };
 
