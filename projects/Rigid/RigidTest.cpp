@@ -3544,4 +3544,50 @@ ZENDEFNODE(BulletMultiBodyCalculateMassMatrix, {
                                                  {"Bullet"},
                                              });
 
+struct BulletMultiBodyGetNumBodies : zeno::INode {
+    virtual void apply() {
+        auto world = get_input<BulletMultiBodyWorld>("world");
+        int num_ = world->dynamicsWorld->getNumMultibodies();
+        auto num = std::make_shared<zeno::NumericObject>(num_);
+        set_output("numBodies", std::move(num));
+    }
+};
+
+ZENDEFNODE(BulletMultiBodyGetNumBodies, {
+                                                   {"world"},
+                                                   {"numBodies"},
+                                                   {},
+                                                   {"Bullet"},
+                                               });
+
+struct BulletMultiBodyGetBodyId : zeno::INode {
+    virtual void apply() {
+        auto obj = get_input<BulletMultiBodyObject>("object");
+        auto id_ = obj->multibody->getUserIndex();
+        auto id = std::make_shared<zeno::NumericObject>(id_);
+        set_output("id", std::move(id));
+    }
+};
+ZENDEFNODE(BulletMultiBodyGetBodyId, {
+                                            {"object"},
+                                            {"id"},
+                                            {},
+                                            {"Bullet"},
+                                        });
+
+struct BulletMultiBodyRemoveBody : zeno::INode {
+    virtual void apply() {
+        auto world = get_input<BulletMultiBodyWorld>("world");
+        auto id = get_input2<int>("id");
+        auto body = world->dynamicsWorld->getMultiBody(id);
+        world->dynamicsWorld->removeMultiBody(body);
+        set_output("id", std::move(world));
+    }
+};
+ZENDEFNODE(BulletMultiBodyRemoveBody, {
+                                         {"world", "id"},
+                                         {"world"},
+                                         {},
+                                         {"Bullet"},
+                                     });
 }; // namespace
