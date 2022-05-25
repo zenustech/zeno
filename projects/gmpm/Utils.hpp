@@ -66,12 +66,11 @@ retrieve_bounding_volumes(Pol &pol,
 }
 
 // for ccd
-template <typename Pol, int codim = 3>
+template <typename Pol, typename TileVecT, int codim = 3>
 zs::Vector<typename ZenoParticles::lbvh_t::Box> retrieve_bounding_volumes(
     Pol &pol, const typename ZenoParticles::particles_t &verts,
-    const typename ZenoParticles::particles_t &eles,
-    const typename ZenoParticles::particles_t &searchDir, zs::wrapv<codim> = {},
-    float stepSize = 1.f, float thickness = 0.f,
+    const typename ZenoParticles::particles_t &eles, const TileVecT &searchDir,
+    zs::wrapv<codim> = {}, float stepSize = 1.f, float thickness = 0.f,
     const zs::SmallString &dirTag = "dir") {
   using namespace zs;
   using bv_t = typename ZenoParticles::lbvh_t::Box;
@@ -283,11 +282,10 @@ ee_accd(VecT ea0, VecT ea1, VecT eb0, VecT eb1, VecT dea0, VecT dea1, VecT deb0,
   return true;
 }
 
-template <typename Pol, typename T>
-void find_intersection_free_stepsize(
-    Pol &pol, ZenoParticles &zstets,
-    const typename ZenoParticles::particles_t &vtemp, T &stepSize, T xi,
-    bool updateTets = true) {
+template <typename Pol, typename TileVecT, typename T>
+void find_intersection_free_stepsize(Pol &pol, ZenoParticles &zstets,
+                                     const TileVecT &vtemp, T &stepSize, T xi,
+                                     bool updateTets = true) {
   using namespace zs;
   using bv_t = typename ZenoParticles::lbvh_t::Box;
   constexpr auto space = Pol::exec_tag::value;
@@ -364,8 +362,12 @@ void find_intersection_free_stepsize(
       // ccd
       auto alpha = stepSize;
       // surfAlphas[svi] = alpha;
-      if (pt_accd(p, vtemp.pack<3>("xn", tri[0]), vtemp.pack<3>("xn", tri[1]),
-                  vtemp.pack<3>("xn", tri[2]), vtemp.pack<3>("dir", vi),
+      auto t0 = vtemp.pack<3>("xn", tri[0]);
+      auto t1 = vtemp.pack<3>("xn", tri[1]);
+      auto t2 = vtemp.pack<3>("xn", tri[2]);
+      // if (!pt_ccd_broadphase(p, t0, t1, t2, thickness))
+      //  return;
+      if (pt_accd(p, t0, t1, t2, vtemp.pack<3>("dir", vi),
                   vtemp.pack<3>("dir", tri[0]), vtemp.pack<3>("dir", tri[1]),
                   vtemp.pack<3>("dir", tri[2]), (T)0.1, thickness, alpha))
         if (alpha < stepSize)
@@ -411,6 +413,8 @@ void find_intersection_free_stepsize(
       // ccd
       auto alpha = stepSize;
       // surfEdgeAlphas[sei] = alpha;
+      // if (!ee_ccd_broadphase(p, x0, eb0, eb1, thickness))
+      //  return;
       if (ee_accd(x0, x1, vtemp.pack<3>("xn", oEdgeInds[0]),
                   vtemp.pack<3>("xn", oEdgeInds[1]),
                   vtemp.pack<3>("dir", edgeInds[0]),
@@ -432,11 +436,11 @@ void find_intersection_free_stepsize(
 #endif
 }
 
-template <typename Pol, typename T>
-void find_boundary_intersection_free_stepsize(
-    Pol &pol, ZenoParticles &zstets,
-    const typename ZenoParticles::particles_t &vtemp, ZenoParticles &zsboundary,
-    T dt, T &stepSize, T xi) {
+template <typename Pol, typename TileVecT, typename T>
+void find_boundary_intersection_free_stepsize(Pol &pol, ZenoParticles &zstets,
+                                              const TileVecT &vtemp,
+                                              ZenoParticles &zsboundary, T dt,
+                                              T &stepSize, T xi) {
   using namespace zs;
   constexpr T slackness = 0.8;
   using bv_t = typename ZenoParticles::lbvh_t::Box;
@@ -507,12 +511,14 @@ void find_boundary_intersection_free_stepsize(
           // ccd
           auto alpha = stepSize;
           // surfAlphas[svi] = alpha;
-          if (pt_accd(
-                  p, bouVerts.pack<3>("x", tri[0]),
-                  bouVerts.pack<3>("x", tri[1]), bouVerts.pack<3>("x", tri[2]),
-                  vtemp.pack<3>("dir", vi), bouVerts.pack<3>("v", tri[0]) * dt,
-                  bouVerts.pack<3>("v", tri[1]) * dt,
-                  bouVerts.pack<3>("v", tri[2]) * dt, (T)0.1, thickness, alpha))
+          if (pt_accd(p, bouVerts.pack<3>("x", tri[0]).template cast<T>(),
+                      bouVerts.pack<3>("x", tri[1]).template cast<T>(),
+                      bouVerts.pack<3>("x", tri[2]).template cast<T>(),
+                      vtemp.pack<3>("dir", vi),
+                      bouVerts.pack<3>("v", tri[0]).template cast<T>() * dt,
+                      bouVerts.pack<3>("v", tri[1]).template cast<T>() * dt,
+                      bouVerts.pack<3>("v", tri[2]).template cast<T>() * dt,
+                      (T)0.1, thickness, alpha))
             if (alpha < stepSize)
               // surfAlphas[svi] = alpha;
               atomic_min(exec_cuda, &finalAlpha[0], alpha);
@@ -552,13 +558,15 @@ void find_boundary_intersection_free_stepsize(
           // ccd
           auto alpha = stepSize;
           // surfEdgeAlphas[sei] = alpha;
-          if (ee_accd(x0, x1, bouVerts.pack<3>("x", oEdgeInds[0]),
-                      bouVerts.pack<3>("x", oEdgeInds[1]),
-                      vtemp.pack<3>("dir", edgeInds[0]),
-                      vtemp.pack<3>("dir", edgeInds[1]),
-                      bouVerts.pack<3>("v", oEdgeInds[0]) * dt,
-                      bouVerts.pack<3>("v", oEdgeInds[1]) * dt, (T)0.1,
-                      thickness, alpha))
+          if (ee_accd(
+                  x0, x1,
+                  bouVerts.pack<3>("x", oEdgeInds[0]).template cast<T>(),
+                  bouVerts.pack<3>("x", oEdgeInds[1]).template cast<T>(),
+                  vtemp.pack<3>("dir", edgeInds[0]),
+                  vtemp.pack<3>("dir", edgeInds[1]),
+                  bouVerts.pack<3>("v", oEdgeInds[0]).template cast<T>() * dt,
+                  bouVerts.pack<3>("v", oEdgeInds[1]).template cast<T>() * dt,
+                  (T)0.1, thickness, alpha))
             if (alpha < stepSize)
               // surfEdgeAlphas[sei] = alpha;
               atomic_min(exec_cuda, &finalAlpha[0], alpha);
