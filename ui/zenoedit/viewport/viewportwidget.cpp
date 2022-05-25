@@ -502,8 +502,6 @@ QSize DisplayWidget::sizeHint() const
 
 void DisplayWidget::updateFrame()
 {
-    if (m_mainWin && m_mainWin->inDlgEventLoop())
-        return;
     m_view->update();
 }
 
