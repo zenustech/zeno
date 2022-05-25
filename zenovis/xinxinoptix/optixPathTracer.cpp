@@ -148,7 +148,7 @@ struct PathTracerState
         raii<CUdeviceptr>  d_raygen_record;
         raii<CUdeviceptr>d_miss_records;
         raii<CUdeviceptr>  d_hitgroup_records;
-        int oldwhp, oldlightssize;
+        int oldwhp, oldlightssize, oldhgsize;
     } bate1, bate2;
 
     //raii<OptixModule>                    ptx_module;
@@ -588,8 +588,8 @@ static void createSBT( PathTracerState& state )
         //state.bate1.accum_buffer_p.reset();
 
     raii<CUdeviceptr>  &d_raygen_record = state.bate1.d_raygen_record;
-    state.bate2.d_raygen_record = std::move(state.bate1.d_raygen_record);
     const size_t raygen_record_size = sizeof( RayGenRecord );
+    if (d_raygen_record == 0)
         CUDA_CHECK(cudaMalloc((void**)&d_raygen_record.reset(), raygen_record_size));
 
     RayGenRecord rg_sbt = {};
@@ -605,7 +605,7 @@ static void createSBT( PathTracerState& state )
 
     raii<CUdeviceptr>  &d_miss_records = state.bate1.d_miss_records;
     const size_t miss_record_size = sizeof( MissRecord );
-    state.bate2.d_miss_records = std::move(state.bate1.d_miss_records);
+    if (d_miss_records == 0)
     CUDA_CHECK(cudaMalloc((void**)&d_miss_records.reset(), miss_record_size * RAY_TYPE_COUNT )) ;
 
     MissRecord ms_sbt[2];
@@ -623,10 +623,11 @@ static void createSBT( PathTracerState& state )
 
     raii<CUdeviceptr>  &d_hitgroup_records = state.bate1.d_hitgroup_records;
     const size_t hitgroup_record_size = sizeof( HitGroupRecord );
-    //state.bate2.d_hitgroup_records = std::move(state.bate1.d_hitgroup_records);
-    CUDA_CHECK(cudaMalloc((void**)&d_hitgroup_records/*.reset()*/,
-                hitgroup_record_size * RAY_TYPE_COUNT * g_mtlidlut.size()
-                ));
+    if (d_hitgroup_records == 0 || std::exchange(state.bate1.oldhgsize,
+                                                 g_mtlidlut.size()) != g_mtlidlut.size())
+        CUDA_CHECK(cudaMalloc((void**)&d_hitgroup_records.reset(),
+                              hitgroup_record_size * RAY_TYPE_COUNT * g_mtlidlut.size()
+                             ));
 
     HitGroupRecord hitgroup_records[RAY_TYPE_COUNT * g_mtlidlut.size()];
     for( int i = 0; i < g_mtlidlut.size(); ++i )
