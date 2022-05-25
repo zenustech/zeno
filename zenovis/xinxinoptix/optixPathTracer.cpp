@@ -629,7 +629,7 @@ static void createSBT( PathTracerState& state )
                               hitgroup_record_size * RAY_TYPE_COUNT * g_mtlidlut.size()
                              ));
 
-    HitGroupRecord hitgroup_records[RAY_TYPE_COUNT * g_mtlidlut.size()];
+    std::vector<HitGroupRecord> hitgroup_records(RAY_TYPE_COUNT * g_mtlidlut.size());
     for( int i = 0; i < g_mtlidlut.size(); ++i )
     {
         {
@@ -667,7 +667,7 @@ static void createSBT( PathTracerState& state )
     // }
     CUDA_CHECK( cudaMemcpyAsync(
                 reinterpret_cast<void*>( (CUdeviceptr)d_hitgroup_records ),
-                hitgroup_records,
+                hitgroup_records.data(),
                 hitgroup_record_size*RAY_TYPE_COUNT*g_mtlidlut.size(),
                 cudaMemcpyHostToDevice, state.stream
                 ) );
