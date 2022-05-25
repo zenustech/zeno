@@ -3487,6 +3487,61 @@ ZENDEFNODE(BulletMultiBodyCalculateJacobian, {
 //    }
 //};
 
+struct BulletMultiBodyCalculateMassMatrix : zeno::INode {
+    virtual void apply() {
+        auto object = get_input<BulletMultiBodyObject>("object");
+        std::vector<float> jointPositionsQ;
+        {
+            auto numericObjs = get_input<zeno::ListObject>("jointPositionsQ")
+                                   ->get<std::shared_ptr<NumericObject>>();
+            for (auto &&no : numericObjs)
+                jointPositionsQ.push_back(no->get<float>());
+        }
 
+        btInverseDynamics::MultiBodyTree *tree = 0;
+        btInverseDynamics::btMultiBodyTreeCreator id_creator;
+        if (-1 ==
+            id_creator.createFromBtMultiBody(object->multibody.get(), false)) {
+        } else {
+            tree = btInverseDynamics::CreateMultiBodyTree(id_creator);
+        }
+
+        if (tree) {
+            int baseDofs = object->multibody->hasFixedBase() ? 0 : 6;
+            const int numDofs = object->multibody->getNumDofs();
+            const int totDofs = numDofs + baseDofs;
+            btInverseDynamics::vecx q(totDofs);
+            btInverseDynamics::matxx massMatrix(totDofs, totDofs);
+            for (int i = 0; i < numDofs; i++) {
+                q[i + baseDofs] = jointPositionsQ[i];
+            }
+            auto output_mass_matrix = std::make_shared<ListObject>();
+            if (-1 != tree->calculateMassMatrix(q, &massMatrix)) {
+                //                serverCmd.m_massMatrixResultArgs.m_dofCount = totDofs;
+                // Fill in the result into the shared memory.
+                //                double* sharedBuf = (double*)bufferServerToClient;
+                int sizeInBytes = totDofs * totDofs * sizeof(double);
+
+                for (int i = 0; i < (totDofs); ++i) {
+                    for (int j = 0; j < (totDofs); ++j) {
+                        int element = (totDofs)*i + j;
+                        auto p = std::make_shared<zeno::NumericObject>(
+                            float(massMatrix(i, j)));
+                        output_mass_matrix->arr.push_back(p);
+                    }
+                }
+            }
+            set_output("mass_matrix", std::move(output_mass_matrix));
+            set_output("object", std::move(object));
+        }
+    }
+};
+
+ZENDEFNODE(BulletMultiBodyCalculateMassMatrix, {
+                                                 {"world", "jointPositionsQ"},
+                                                 {"object", "mass_matrix"},
+                                                 {},
+                                                 {"Bullet"},
+                                             });
 
 }; // namespace
