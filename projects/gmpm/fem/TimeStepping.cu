@@ -157,6 +157,7 @@ struct ImplicitTimeStepping : INode {
     nPE.setVal(0);
     nPT.setVal(0);
     nEE.setVal(0);
+    return;
 
     /// tri
     const auto &surfaces = zstets[ZenoParticles::s_surfTriTag];
@@ -672,6 +673,35 @@ struct ImplicitTimeStepping : INode {
           });
       return;
     }
+    static constexpr vec3 s_groundNormal{0, 1, 0};
+    void
+    computeBoundaryBarrierGradientAndHessian(zs::CudaExecutionPolicy &pol) {
+      using namespace zs;
+      constexpr auto space = execspace_e::cuda;
+      pol(range(vtemp.size()),
+          [vtemp = proxy<space>({}, vtemp), tempPB = proxy<space>({}, tempPB),
+           gn = s_groundNormal, dHat2 = dHat * dHat] ZS_LAMBDA(int vi) mutable {
+            auto x = vtemp.pack<3>("xn", vi);
+            auto dist = gn.dot(x);
+            auto dist2 = dist * dist;
+            auto t = dist2 - dHat2;
+            auto g_b = t * zs::log(dist2 / dHat2) * -2 - (t * t) / dist2;
+            auto H_b = (zs::log(dist2 / dHat2) * -2.0 - t * 4.0 / dist2) +
+                       1.0 / (dist2 * dist2) * (t * t);
+            auto grad = gn * (-kappa * g_b * 2 * dist);
+            for (int d = 0; d != 3; ++d)
+              atomic_add(exec_cuda, &vtemp("grad", d, vi), grad(d));
+
+            auto param = 4 * H_b * dist2 + 2 * g_b;
+            auto hess = mat3::zeros();
+            if (param > 0) {
+              auto nn = dyadic_prod(gn, gn);
+              hess = (kappa * param) * nn;
+            }
+            tempPB.tuple<9>("H", vi) = hess;
+          });
+      return;
+    }
     template <typename Pol, typename Model>
     T energy(Pol &pol, const Model &model, const zs::SmallString tag) {
       using namespace zs;
@@ -967,7 +997,8 @@ struct ImplicitTimeStepping : INode {
           wPT{wPT}, nPT{nPT},
           tempPT{PT.get_allocator(), {{"H", 144}}, PT.size()}, EE{EE}, wEE{wEE},
           nEE{nEE}, tempEE{EE.get_allocator(), {{"H", 144}}, EE.size()},
-          dHat{dHat}, xi{xi}, dt{dt} {}
+          tempPB{verts.get_allocator(), {{"H", 9}}, verts.size()}, dHat{dHat},
+          xi{xi}, dt{dt} {}
 
     const tiles_t &verts;
     const tiles_t &eles;
@@ -990,7 +1021,9 @@ struct ImplicitTimeStepping : INode {
     const zs::Vector<T> &wEE;
     const zs::Vector<int> &nEE;
     dtiles_t tempEE;
-    //
+    // boundary contacts
+    dtiles_t tempPB;
+    // end contacts
     T dHat, xi, dt;
   };
 
@@ -1202,6 +1235,7 @@ struct ImplicitTimeStepping : INode {
                                          vtemp, etemp, dt);
       })(models.getElasticModel());
       A.computeBarrierGradientAndHessian(cudaPol);
+      // A.computeBoundaryBarrierGradientAndHessian(cudaPol);
 
       // rotate gradient and project
       cudaPol(zs::range(vtemp.size()),
@@ -1327,11 +1361,13 @@ struct ImplicitTimeStepping : INode {
       // line search
       T alpha = 1.;
       computeInversionFreeStepSize(cudaPol, verts, eles, vtemp, alpha);
+#if 0
       find_intersection_free_stepsize(cudaPol, *zstets, vtemp, alpha, xi);
       //
       if (zsboundary)
         find_boundary_intersection_free_stepsize(cudaPol, *zstets, vtemp,
                                                  *zsboundary, (T)dt, alpha, xi);
+#endif
 #if 0
       if (alpha < 0.9) {
         fmt::print("initial stepsize [{}]\n", alpha);
