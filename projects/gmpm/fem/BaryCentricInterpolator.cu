@@ -27,6 +27,32 @@ using mat3 = zs::vec<T,3,3>;
 using mat4 = zs::vec<T,4,4>;
 
 struct ZSComputeBaryCentricWeights : INode {
+    static constexpr T ComputeDistToTriangle(const vec3& vp,const vec3& v0,const vec3& v1,const vec3& v2){
+        auto v012 = (v0 + v1 + v2) / 3;
+        auto v01 = (v0 + v1) / 2;
+        auto v02 = (v0 + v2) / 2;
+        auto v12 = (v1 + v2) / 2;
+
+        T dist = 1e6;
+        T tdist = (v012 - vp).norm();
+        dist = tdist < dist ? tdist : dist;
+        tdist = (v01 - vp).norm();
+        dist = tdist < dist ? tdist : dist;
+        tdist = (v02 - vp).norm();
+        dist = tdist < dist ? tdist : dist;
+        tdist = (v12 - vp).norm();
+        dist = tdist < dist ? tdist : dist;
+
+        tdist = (v0 - vp).norm();
+        dist = tdist < dist ? tdist : dist;
+        tdist = (v1 - vp).norm();
+        dist = tdist < dist ? tdist : dist;
+        tdist = (v2 - vp).norm();
+        dist = tdist < dist ? tdist : dist;
+
+        return dist;
+    }
+
     static constexpr T ComputeVolume(
         const vec3& p0,
         const vec3& p1,
@@ -59,12 +85,12 @@ struct ZSComputeBaryCentricWeights : INode {
         return zs::sqrt(s*(s-a)*(s-b)*(s-c));
     }
 
-    constexpr vec4 ComputeBaryCentricCoordinate(const vec3& p,
+    static constexpr vec4 ComputeBaryCentricCoordinate(const vec3& p,
         const vec3& p0,
         const vec3& p1,
         const vec3& p2,
         const vec3& p3
-    ) const {
+    ) {
         auto vol = ComputeVolume(p0,p1,p2,p3);
         auto vol0 = ComputeVolume(p,p1,p2,p3);
         auto vol1 = ComputeVolume(p0,p,p2,p3);      
@@ -79,6 +105,7 @@ struct ZSComputeBaryCentricWeights : INode {
         // the bvh of zstets
         // auto lbvh = get_input<zeno::LBvh>("lbvh");
         auto thickness = get_param<float>("bvh_thickness");
+        auto fitting_in = get_param<int>("fitting_in");
 
         const auto& verts = zsvolume->getParticles();
         const auto& eles = zsvolume->getQuadraturePoints();
@@ -102,21 +129,69 @@ struct ZSComputeBaryCentricWeights : INode {
 
         constexpr auto space = zs::execspace_e::cuda;
         cudaExec(zs::range(numEmbedVerts),
-            [this, verts = proxy<space>({},verts),eles = proxy<space>({},eles),bcw = proxy<space>({},bcw),everts = proxy<space>({},everts),tetsBvh = proxy<space>(tetsBvh)] ZS_LAMBDA (int vi) mutable {
+            [bcw = proxy<space>({},bcw)] ZS_LAMBDA(int vi) mutable{
+                bcw("inds",vi) = reinterpret_bits<float>(int(-1));
+            });
+
+        cudaExec(zs::range(numEmbedVerts),
+            [verts = proxy<space>({},verts),eles = proxy<space>({},eles),bcw = proxy<space>({},bcw),everts = proxy<space>({},everts),tetsBvh = proxy<space>(tetsBvh),fitting_in] ZS_LAMBDA (int vi) mutable {
                 const auto& p = everts.pack<3>("x",vi);
+                T closest_dist = 1e6;
+                bool found = false;
                 tetsBvh.iter_neighbors(p,[&](int ei){
+                    if(found)
+                        return;
+
                     auto inds = eles.pack<4>("inds", ei).reinterpret_bits<int>();
-                    const auto& p0 = verts.pack<3>("x",inds[0]);
-                    const auto& p1 = verts.pack<3>("x",inds[1]);
-                    const auto& p2 = verts.pack<3>("x",inds[2]);
-                    const auto& p3 = verts.pack<3>("x",inds[3]);
+                    auto p0 = verts.pack<3>("x",inds[0]);
+                    auto p1 = verts.pack<3>("x",inds[1]);
+                    auto p2 = verts.pack<3>("x",inds[2]);
+                    auto p3 = verts.pack<3>("x",inds[3]);
 
                     auto ws = ComputeBaryCentricCoordinate(p,p0,p1,p2,p3);
 
-                    float epsilon = 1e-6;
+                    T epsilon = 1e-6;
                     if(ws[0] > -epsilon && ws[1] > -epsilon && ws[2] > -epsilon && ws[3] > -epsilon){
                         bcw("inds",vi) = reinterpret_bits<float>(ei);
                         bcw.tuple<4>("w",vi) = ws;
+                        found = true;
+                        return;
+                    }
+                    
+                    if(!fitting_in)
+                        return;
+
+                    if(ws[0] < 0){
+                        T dist = ComputeDistToTriangle(p,p1,p2,p3);
+                        if(dist < closest_dist){
+                            closest_dist = dist;
+                            bcw("inds",vi) = reinterpret_bits<float>(ei);
+                            bcw.tuple<4>("w",vi) = ws;
+                        }
+                    }
+                    if(ws[1] < 0){
+                        T dist = ComputeDistToTriangle(p,p0,p2,p3);
+                        if(dist < closest_dist){
+                            closest_dist = dist;
+                            bcw("inds",vi) = reinterpret_bits<float>(ei);
+                            bcw.tuple<4>("w",vi) = ws;
+                        }
+                    }
+                    if(ws[2] < 0){
+                        T dist = ComputeDistToTriangle(p,p0,p1,p3);
+                        if(dist < closest_dist){
+                            closest_dist = dist;
+                            bcw("inds",vi) = reinterpret_bits<float>(ei);
+                            bcw.tuple<4>("w",vi) = ws;
+                        }
+                    }
+                    if(ws[3] < 0){
+                        T dist = ComputeDistToTriangle(p,p0,p1,p2);
+                        if(dist < closest_dist){
+                            closest_dist = dist;
+                            bcw("inds",vi) = reinterpret_bits<float>(ei);
+                            bcw.tuple<4>("w",vi) = ws;
+                        }
                     }
                 });
             }
@@ -137,9 +212,9 @@ struct ZSComputeBaryCentricWeights : INode {
 
                     auto aA = ComputeArea(p0,p1,p2)/3;
 
-                    bcw.tuple<1>("area",inds[0]) = bcw.pack<1>("area",inds[0]) + aA;
-                    bcw.tuple<1>("area",inds[1]) = bcw.pack<1>("area",inds[1]) + aA;
-                    bcw.tuple<1>("area",inds[2]) = bcw.pack<1>("area",inds[2]) + aA;
+                    bcw("area",inds[0]) += aA;
+                    bcw("area",inds[1]) += aA;
+                    bcw("area",inds[2]) += aA;
         });
 
         set_output("zsvolume", std::move(zsvolume));
@@ -148,7 +223,7 @@ struct ZSComputeBaryCentricWeights : INode {
 
 ZENDEFNODE(ZSComputeBaryCentricWeights, {{{"interpolator","zsvolume"}, {"embed surf", "zssurf"}},
                             {{"interpolator on gpu", "zsvolume"}},
-                            {{"float","bvh_thickness","0"}},
+                            {{"float","bvh_thickness","0"},{"int","fitting_in","1"}},
                             {"FEM"}});
 
 
@@ -180,6 +255,8 @@ struct ZSInterpolateEmbedPrim : zeno::INode {
         cudaExec(zs::range(nmEmbedVerts),
             [outAttr = zs::SmallString{outAttr},verts = proxy<space>({},verts),eles = proxy<space>({},eles),bcw = proxy<space>({},bcw),everts = proxy<space>({},everts)] ZS_LAMBDA (int vi) mutable {
                 const auto& ei = bcw.pack<1>("inds",vi).reinterpret_bits<int>()[0];
+                if(ei < 0)
+                    return;
                 const auto& w = bcw.pack<4>("w",vi);
 
                 everts.tuple<3>(outAttr,vi) = vec3::zeros();
