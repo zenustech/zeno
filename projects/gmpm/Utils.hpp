@@ -27,10 +27,9 @@
 
 namespace zeno {
 
-template <typename Pol, int codim = 3>
+template <typename Pol, typename TileVecT, int codim = 3>
 zs::Vector<typename ZenoParticles::lbvh_t::Box>
-retrieve_bounding_volumes(Pol &pol,
-                          const typename ZenoParticles::particles_t &verts,
+retrieve_bounding_volumes(Pol &pol, const TileVecT &vtemp,
                           const typename ZenoParticles::particles_t &eles,
                           zs::wrapv<codim> = {}, float thickness = 0.f) {
   using namespace zs;
@@ -48,16 +47,16 @@ retrieve_bounding_volumes(Pol &pol,
   Vector<bv_t> ret{eles.get_allocator(), eles.size()};
   pol(zs::range(eles.size()), [eles = proxy<space>({}, eles),
                                bvs = proxy<space>(ret),
-                               verts = proxy<space>({}, verts),
+                               vtemp = proxy<space>({}, vtemp),
                                codim_v = wrapv<codim>{},
                                thickness] ZS_LAMBDA(int ei) mutable {
     constexpr int dim = RM_CVREF_T(codim_v)::value;
     auto inds =
         eles.template pack<dim>("inds", ei).template reinterpret_bits<int>();
-    auto x0 = verts.pack<3>("x", inds[0]);
+    auto x0 = vtemp.pack<3>("xn", inds[0]);
     bv_t bv{x0};
     for (int d = 1; d != dim; ++d)
-      merge(bv, verts.pack<3>("x", inds[d]));
+      merge(bv, vtemp.pack<3>("xn", inds[d]));
     bv._min -= thickness / 2;
     bv._max += thickness / 2;
     bvs[ei] = bv;
@@ -66,12 +65,12 @@ retrieve_bounding_volumes(Pol &pol,
 }
 
 // for ccd
-template <typename Pol, typename TileVecT, int codim = 3>
+template <typename Pol, typename TileVecT0, typename TileVecT1, int codim = 3>
 zs::Vector<typename ZenoParticles::lbvh_t::Box> retrieve_bounding_volumes(
-    Pol &pol, const typename ZenoParticles::particles_t &verts,
-    const typename ZenoParticles::particles_t &eles, const TileVecT &searchDir,
+    Pol &pol, const TileVecT0 &verts,
+    const typename ZenoParticles::particles_t &eles, const TileVecT1 &vtemp,
     zs::wrapv<codim> = {}, float stepSize = 1.f, float thickness = 0.f,
-    const zs::SmallString &dirTag = "dir") {
+    const zs::SmallString &xTag = "xn", const zs::SmallString &dirTag = "dir") {
   using namespace zs;
   using bv_t = typename ZenoParticles::lbvh_t::Box;
   static_assert(codim >= 1 && codim <= 4, "invalid co-dimension!\n");
@@ -88,19 +87,19 @@ zs::Vector<typename ZenoParticles::lbvh_t::Box> retrieve_bounding_volumes(
   pol(zs::range(eles.size()), [eles = proxy<space>({}, eles),
                                bvs = proxy<space>(ret),
                                verts = proxy<space>({}, verts),
-                               searchDir = proxy<space>({}, searchDir),
-                               codim_v = wrapv<codim>{}, dirTag, stepSize,
+                               vtemp = proxy<space>({}, vtemp),
+                               codim_v = wrapv<codim>{}, xTag, dirTag, stepSize,
                                thickness] ZS_LAMBDA(int ei) mutable {
     constexpr int dim = RM_CVREF_T(codim_v)::value;
     auto inds =
         eles.template pack<dim>("inds", ei).template reinterpret_bits<int>();
-    auto x0 = verts.pack<3>("x", inds[0]);
-    auto dir0 = searchDir.pack<3>(dirTag, inds[0]);
+    auto x0 = verts.pack<3>(xTag, inds[0]);
+    auto dir0 = vtemp.pack<3>(dirTag, inds[0]);
     auto [mi, ma] = get_bounding_box(x0, x0 + stepSize * dir0);
     bv_t bv{mi, ma};
     for (int d = 1; d != dim; ++d) {
-      auto x = verts.pack<3>("x", inds[d]);
-      auto dir = searchDir.pack<3>(dirTag, inds[d]);
+      auto x = verts.pack<3>(xTag, inds[d]);
+      auto dir = vtemp.pack<3>(dirTag, inds[d]);
       auto [mi, ma] = get_bounding_box(x, x + stepSize * dir);
       merge(bv, mi);
       merge(bv, ma);
@@ -284,7 +283,7 @@ ee_accd(VecT ea0, VecT ea1, VecT eb0, VecT eb1, VecT dea0, VecT dea1, VecT deb0,
 
 template <typename Pol, typename TileVecT, typename T>
 void find_intersection_free_stepsize(Pol &pol, ZenoParticles &zstets,
-                                     const TileVecT &vtemp, T &stepSize, T xi,
+                                     const TileVecT &vtemp, T &stepSize, T dHat,
                                      bool updateTets = true) {
   using namespace zs;
   using bv_t = typename ZenoParticles::lbvh_t::Box;
@@ -304,14 +303,14 @@ void find_intersection_free_stepsize(Pol &pol, ZenoParticles &zstets,
   if (updateTets) {
     if (!zstets.hasBvh(ZenoParticles::s_surfTriTag)) // build if bvh not exist
       zstets.bvh(ZenoParticles::s_surfTriTag)
-          .build(pol,
-                 retrieve_bounding_volumes(pol, verts, surfaces, vtemp,
-                                           wrapv<3>{}, stepSize, xi, "dir"));
+          .build(pol, retrieve_bounding_volumes(pol, vtemp, surfaces, vtemp,
+                                                wrapv<3>{}, stepSize, 0, "xn",
+                                                "dir"));
     else
       zstets.bvh(ZenoParticles::s_surfTriTag)
-          .refit(pol,
-                 retrieve_bounding_volumes(pol, verts, surfaces, vtemp,
-                                           wrapv<3>{}, stepSize, xi, "dir"));
+          .refit(pol, retrieve_bounding_volumes(pol, vtemp, surfaces, vtemp,
+                                                wrapv<3>{}, stepSize, 0, "xn",
+                                                "dir"));
   }
   const auto &stBvh = zstets.bvh(ZenoParticles::s_surfTriTag);
 
@@ -319,14 +318,14 @@ void find_intersection_free_stepsize(Pol &pol, ZenoParticles &zstets,
   if (updateTets) {
     if (!zstets.hasBvh(ZenoParticles::s_surfEdgeTag))
       zstets.bvh(ZenoParticles::s_surfEdgeTag)
-          .build(pol,
-                 retrieve_bounding_volumes(pol, verts, surfEdges, vtemp,
-                                           wrapv<2>{}, stepSize, xi, "dir"));
+          .build(pol, retrieve_bounding_volumes(pol, vtemp, surfEdges, vtemp,
+                                                wrapv<2>{}, stepSize, 0, "xn",
+                                                "dir"));
     else
       zstets.bvh(ZenoParticles::s_surfEdgeTag)
-          .refit(pol,
-                 retrieve_bounding_volumes(pol, verts, surfEdges, vtemp,
-                                           wrapv<2>{}, stepSize, xi, "dir"));
+          .refit(pol, retrieve_bounding_volumes(pol, vtemp, surfEdges, vtemp,
+                                                wrapv<2>{}, stepSize, 0, "xn",
+                                                "dir"));
   }
   const auto &seBvh = zstets.bvh(ZenoParticles::s_surfEdgeTag);
 
@@ -343,10 +342,11 @@ void find_intersection_free_stepsize(Pol &pol, ZenoParticles &zstets,
                                    surfAlphas = proxy<space>(surfAlphas),
                                    finalAlpha = proxy<space>(finalAlpha),
                                    bvh = proxy<space>(stBvh), stepSize,
-                                   thickness = xi] ZS_LAMBDA(int svi) mutable {
+                                   thickness =
+                                       dHat] ZS_LAMBDA(int svi) mutable {
     auto vi = reinterpret_bits<int>(svs("inds", svi));
     auto p = vtemp.pack<3>("xn", vi);
-    auto [mi, ma] = get_bounding_box(p - thickness / 2, p + thickness / 2);
+    auto [mi, ma] = get_bounding_box(p - thickness, p + thickness);
     auto bv = bv_t{mi, ma};
     bvh.iter_neighbors(bv, [&](int stI) {
       auto tri =
@@ -382,50 +382,49 @@ void find_intersection_free_stepsize(Pol &pol, ZenoParticles &zstets,
   fmt::print("surf alpha: {}, default stepsize: {}\n", surfAlpha, stepSize);
   // query ee
   zs::Vector<T> surfEdgeAlphas{surfEdges.get_allocator(), surfEdges.size()};
-  pol(Collapse{surfEdges.size()}, [ses = proxy<space>({}, surfEdges),
-                                   verts = proxy<space>({}, verts),
-                                   vtemp = proxy<space>({}, vtemp),
-                                   surfEdgeAlphas =
-                                       proxy<space>(surfEdgeAlphas),
-                                   finalAlpha = proxy<space>(finalAlpha),
-                                   bvh = proxy<space>(seBvh), stepSize,
-                                   thickness = xi] ZS_LAMBDA(int sei) mutable {
-    auto edgeInds =
-        ses.template pack<2>("inds", sei).template reinterpret_bits<int>();
-    auto x0 = vtemp.pack<3>("xn", edgeInds[0]);
-    auto x1 = vtemp.pack<3>("xn", edgeInds[1]);
-    auto [mi, ma] = get_bounding_box(x0, x1);
-    auto bv = bv_t{mi - thickness / 2, ma + thickness / 2};
-    bvh.iter_neighbors(bv, [&](int seI) {
-      if (sei > seI)
-        return;
-      auto oEdgeInds =
-          ses.template pack<2>("inds", seI).template reinterpret_bits<int>();
-      if (edgeInds[0] == oEdgeInds[0] || edgeInds[0] == oEdgeInds[1] ||
-          edgeInds[1] == oEdgeInds[0] || edgeInds[1] == oEdgeInds[1])
-        return;
-      // all affected by sticky boundary conditions
-      if (reinterpret_bits<int>(verts("BCorder", edgeInds[0])) == 3 &&
-          reinterpret_bits<int>(verts("BCorder", edgeInds[1])) == 3 &&
-          reinterpret_bits<int>(verts("BCorder", oEdgeInds[0])) == 3 &&
-          reinterpret_bits<int>(verts("BCorder", oEdgeInds[1])) == 3)
-        return;
-      // ccd
-      auto alpha = stepSize;
-      // surfEdgeAlphas[sei] = alpha;
-      // if (!ee_ccd_broadphase(p, x0, eb0, eb1, thickness))
-      //  return;
-      if (ee_accd(x0, x1, vtemp.pack<3>("xn", oEdgeInds[0]),
-                  vtemp.pack<3>("xn", oEdgeInds[1]),
-                  vtemp.pack<3>("dir", edgeInds[0]),
-                  vtemp.pack<3>("dir", edgeInds[1]),
-                  vtemp.pack<3>("dir", oEdgeInds[0]),
-                  vtemp.pack<3>("dir", oEdgeInds[1]), (T)0.1, thickness, alpha))
-        if (alpha < stepSize)
+  pol(Collapse{surfEdges.size()},
+      [ses = proxy<space>({}, surfEdges), verts = proxy<space>({}, verts),
+       vtemp = proxy<space>({}, vtemp),
+       surfEdgeAlphas = proxy<space>(surfEdgeAlphas),
+       finalAlpha = proxy<space>(finalAlpha), bvh = proxy<space>(seBvh),
+       stepSize, thickness = dHat] ZS_LAMBDA(int sei) mutable {
+        auto edgeInds =
+            ses.template pack<2>("inds", sei).template reinterpret_bits<int>();
+        auto x0 = vtemp.pack<3>("xn", edgeInds[0]);
+        auto x1 = vtemp.pack<3>("xn", edgeInds[1]);
+        auto [mi, ma] = get_bounding_box(x0, x1);
+        auto bv = bv_t{mi - thickness, ma + thickness};
+        bvh.iter_neighbors(bv, [&](int seI) {
+          if (sei > seI)
+            return;
+          auto oEdgeInds = ses.template pack<2>("inds", seI)
+                               .template reinterpret_bits<int>();
+          if (edgeInds[0] == oEdgeInds[0] || edgeInds[0] == oEdgeInds[1] ||
+              edgeInds[1] == oEdgeInds[0] || edgeInds[1] == oEdgeInds[1])
+            return;
+          // all affected by sticky boundary conditions
+          if (reinterpret_bits<int>(verts("BCorder", edgeInds[0])) == 3 &&
+              reinterpret_bits<int>(verts("BCorder", edgeInds[1])) == 3 &&
+              reinterpret_bits<int>(verts("BCorder", oEdgeInds[0])) == 3 &&
+              reinterpret_bits<int>(verts("BCorder", oEdgeInds[1])) == 3)
+            return;
+          // ccd
+          auto alpha = stepSize;
           // surfEdgeAlphas[sei] = alpha;
-          atomic_min(exec_cuda, &finalAlpha[0], alpha);
-    });
-  });
+          // if (!ee_ccd_broadphase(p, x0, eb0, eb1, thickness))
+          //  return;
+          if (ee_accd(x0, x1, vtemp.pack<3>("xn", oEdgeInds[0]),
+                      vtemp.pack<3>("xn", oEdgeInds[1]),
+                      vtemp.pack<3>("dir", edgeInds[0]),
+                      vtemp.pack<3>("dir", edgeInds[1]),
+                      vtemp.pack<3>("dir", oEdgeInds[0]),
+                      vtemp.pack<3>("dir", oEdgeInds[1]), (T)0.1, thickness,
+                      alpha))
+            if (alpha < stepSize)
+              // surfEdgeAlphas[sei] = alpha;
+              atomic_min(exec_cuda, &finalAlpha[0], alpha);
+        });
+      });
 #if 0
   zs::reduce(pol, std::begin(surfEdgeAlphas), std::end(surfEdgeAlphas),
              std::begin(finalAlpha), limits<T>::max(), getmin<T>{});
@@ -465,7 +464,7 @@ void find_boundary_intersection_free_stepsize(Pol &pol, ZenoParticles &zstets,
   {
     auto bvs = retrieve_bounding_volumes(
         pol, zsboundary.getParticles(), zsboundary.getQuadraturePoints(),
-        zsboundary.getParticles(), wrapv<3>{}, dt, xi, "v");
+        zsboundary.getParticles(), wrapv<3>{}, dt, xi, "x", "v");
     if (!zsboundary.hasBvh(ZenoParticles::s_elementTag))
       zsboundary.bvh(ZenoParticles::s_elementTag).build(pol, bvs);
     else
@@ -477,7 +476,7 @@ void find_boundary_intersection_free_stepsize(Pol &pol, ZenoParticles &zstets,
     auto bvs = retrieve_bounding_volumes(
         pol, zsboundary.getParticles(),
         zsboundary[ZenoParticles::s_surfEdgeTag], zsboundary.getParticles(),
-        wrapv<3>{}, dt, xi, "v");
+        wrapv<2>{}, dt, xi, "x", "v");
     if (!zsboundary.hasBvh(ZenoParticles::s_surfEdgeTag))
       zsboundary.bvh(ZenoParticles::s_surfEdgeTag).build(pol, bvs);
     else
