@@ -149,6 +149,7 @@ struct ImplicitTimeStepping : INode {
                               zs::Vector<int> &nEE) {
     using namespace zs;
     using bv_t = typename ZenoParticles::lbvh_t::Box;
+    // dHat = dHat + xi
     T activeGap2 = dHat * dHat + (T)2.0 * xi * dHat;
     T xi2 = xi * xi;
     constexpr auto space = execspace_e::cuda;
@@ -163,7 +164,8 @@ struct ImplicitTimeStepping : INode {
     /// tri
     const auto &surfaces = zstets[ZenoParticles::s_surfTriTag];
     {
-      auto bvs = retrieve_bounding_volumes(pol, vtemp, surfaces, wrapv<3>{});
+      auto bvs = retrieve_bounding_volumes(pol, vtemp, surfaces, wrapv<3>{},
+                                           0.f, "xn");
       if (!zstets.hasBvh(ZenoParticles::s_surfTriTag)) // build if bvh not exist
         zstets.bvh(ZenoParticles::s_surfTriTag).build(pol, bvs);
       else
@@ -174,7 +176,8 @@ struct ImplicitTimeStepping : INode {
     /// edges
     const auto &surfEdges = zstets[ZenoParticles::s_surfEdgeTag];
     {
-      auto bvs = retrieve_bounding_volumes(pol, vtemp, surfEdges, wrapv<2>{});
+      auto bvs = retrieve_bounding_volumes(pol, vtemp, surfEdges, wrapv<2>{},
+                                           0.f, "xn");
       if (!zstets.hasBvh(ZenoParticles::s_surfEdgeTag))
         zstets.bvh(ZenoParticles::s_surfEdgeTag).build(pol, bvs);
       else
@@ -196,7 +199,7 @@ struct ImplicitTimeStepping : INode {
          wPT = proxy<space>(wPT), nPT = proxy<space>(nPT),
          thickness = dHat + xi, xi2, activeGap2] ZS_LAMBDA(int svi) mutable {
           auto vi = reinterpret_bits<int>(svs("inds", svi));
-          auto p = vtemp.pack<3>("xn", vi);
+          auto p = vtemp.template pack<3>("xn", vi);
           auto wp = svs("w", vi) / 4;
           auto [mi, ma] = get_bounding_box(p - thickness, p + thickness);
           auto bv = bv_t{mi, ma};
@@ -212,11 +215,11 @@ struct ImplicitTimeStepping : INode {
                 reinterpret_bits<int>(verts("BCorder", tri[2])) == 3)
               return;
             // ccd
-            auto t0 = vtemp.pack<3>("xn", tri[0]);
-            auto t1 = vtemp.pack<3>("xn", tri[1]);
-            auto t2 = vtemp.pack<3>("xn", tri[2]);
-            // if (!pt_cd_broadphase(p, t0, t1, t2, thickness))
-            //  return;
+            auto t0 = vtemp.template pack<3>("xn", tri[0]);
+            auto t1 = vtemp.template pack<3>("xn", tri[1]);
+            auto t2 = vtemp.template pack<3>("xn", tri[2]);
+            if (!pt_cd_broadphase(p, t0, t1, t2, thickness))
+              return;
             switch (pt_distance_type(p, t0, t1, t2)) {
             case 0: {
               if (dist2_pp(p, t0) - xi2 < activeGap2) {
@@ -297,13 +300,12 @@ struct ImplicitTimeStepping : INode {
           bool selfFixed =
               reinterpret_bits<int>(verts("BCorder", eiInds[0])) == 3 &&
               reinterpret_bits<int>(verts("BCorder", eiInds[1])) == 3;
-          auto x0 = vtemp.pack<3>("xn", eiInds[0]);
-          auto x1 = vtemp.pack<3>("xn", eiInds[1]);
+          auto x0 = vtemp.template pack<3>("xn", eiInds[0]);
+          auto x1 = vtemp.template pack<3>("xn", eiInds[1]);
           auto [mi, ma] = get_bounding_box(x0, x1);
           auto bv = bv_t{mi - thickness, ma + thickness};
           bvh.iter_neighbors(bv, [&](int sej) {
-            if (sei > sej)
-              return;
+            // if (sei > sej) return;
             auto ejInds = ses.template pack<2>("inds", sej)
                               .template reinterpret_bits<int>();
             if (eiInds[0] == ejInds[0] || eiInds[0] == ejInds[1] ||
@@ -315,10 +317,10 @@ struct ImplicitTimeStepping : INode {
                 reinterpret_bits<int>(verts("BCorder", ejInds[1])) == 3)
               return;
             // ccd
-            auto eb0 = vtemp.pack<3>("xn", ejInds[0]);
-            auto eb1 = vtemp.pack<3>("xn", ejInds[1]);
-            // if (!ee_cd_broadphase(x0, x1, eb0, eb1, thickness))
-            //   return;
+            auto eb0 = vtemp.template pack<3>("xn", ejInds[0]);
+            auto eb1 = vtemp.template pack<3>("xn", ejInds[1]);
+            if (!ee_cd_broadphase(x0, x1, eb0, eb1, thickness))
+              return;
             auto we = (selfWe + ses("w", sej)) / 4;
             switch (ee_distance_type(x0, x1, eb0, eb1)) {
             case 0: {
@@ -402,7 +404,7 @@ struct ImplicitTimeStepping : INode {
                nPP.getVal(), nPE.getVal(), nPT.getVal(), nEE.getVal());
     if (nPP.getVal() > 0 || nPE.getVal() > 0 || nPT.getVal() > 0 ||
         nEE.getVal() > 0) {
-      getchar();
+      // getchar();
     }
   }
   void computeInversionFreeStepSize(zs::CudaExecutionPolicy &pol,
@@ -1441,29 +1443,11 @@ struct ImplicitTimeStepping : INode {
       T alpha = 1.;
       // computeInversionFreeStepSize(cudaPol, eles, vtemp, alpha);
       find_ground_intersection_free_stepsize(cudaPol, *zstets, vtemp, alpha);
-#if 1
-      while (find_self_intersection_free_stepsize(cudaPol, *zstets, vtemp,
-                                                  alpha, dHat)) {
-        alpha /= 2;
-        cudaPol(zs::range(vtemp.size()), [vtemp = proxy<space>({}, vtemp),
-                                          alpha] __device__(int i) mutable {
-          vtemp.tuple<3>("xn", i) =
-              vtemp.pack<3>("xn0", i) + alpha * vtemp.pack<3>("dir", i);
-        });
-      }
-#else
-      find_intersection_free_stepsize(cudaPol, *zstets, vtemp, alpha, dHat);
-#endif
+      find_intersection_free_stepsize(cudaPol, *zstets, vtemp, alpha, xi);
       //
       if (zsboundary)
         find_boundary_intersection_free_stepsize(cudaPol, *zstets, vtemp,
                                                  *zsboundary, (T)dt, alpha, xi);
-#if 0
-      if (alpha < 0.9) {
-        fmt::print("initial stepsize [{}]\n", alpha);
-        getchar();
-      }
-#endif
 
       T E0{};
       match([&](auto &elasticModel) {
@@ -1500,7 +1484,6 @@ struct ImplicitTimeStepping : INode {
               vn += dv;
               verts.tuple<3>("v", vi) = vn;
             });
-    // getchar();
 
     set_output("ZSParticles", std::move(zstets));
   }
