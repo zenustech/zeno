@@ -45,7 +45,7 @@ template <size_t N, class T> struct vec : std::array<T, N> {
   }
 
   vec(std::initializer_list<T> const &x) {
-    T val;
+    T val{};
     auto it = x.begin();
     for (size_t i = 0; i < N; i++) {
       if (it != x.end())

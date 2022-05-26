@@ -2,23 +2,22 @@
 #include <zeno/utils/vec.h>
 #include <zeno/types/UserData.h>
 #include <zenovis/bate/IGraphic.h>
-#include <zeno/types/LightObject.h>
+#include <zeno/types/MaterialObject.h>
 
 namespace zenovis {
 namespace {
 
-struct GraphicDummy final : IGraphic {
+struct GraphicMaterial final : IGraphic {
     Scene *scene;
-    zeno::LightData lightData;
 
-    explicit GraphicDummy(Scene *scene_, zeno::DummyObject *lit) : scene(scene_) {
+    explicit GraphicMaterial(Scene *scene_, zeno::MaterialObject *mtl) : scene(scene_) {
     }
 };
 
 }
 
-void MakeGraphicVisitor::visit(zeno::DummyObject *obj) {
-     this->out_result = std::make_unique<GraphicDummy>(this->in_scene, obj);
+void MakeGraphicVisitor::visit(zeno::MaterialObject *obj) {
+     this->out_result = std::make_unique<GraphicMaterial>(this->in_scene, obj);
 }
 
 }

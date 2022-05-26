@@ -1,5 +1,6 @@
 #include "curvemodel.h"
 #include <zeno/utils/pybjson.h>
+#include <zeno/utils/log.h>
 
 
 CurveModel::CurveModel(const QString& id, const CURVE_RANGE& rg, QObject* parent)
@@ -40,7 +41,7 @@ CURVE_DATA CurveModel::getItems() const {
 
 void CurveModel::initItems(CURVE_DATA const &curvedat)
 {
-    resetRange(curvedat.rg);
+    m_range = curvedat.rg;
     auto &pts = curvedat.points;
     int N = pts.size();
     for (int i = 0; i < N; i++)
@@ -60,8 +61,44 @@ void CurveModel::initItems(CURVE_DATA const &curvedat)
 
 void CurveModel::resetRange(const CURVE_RANGE& rg)
 {
+    //todo: map every pos from m_range to rg;
+    QPolygonF polygonIn;
+    polygonIn << QPointF(m_range.xFrom, m_range.yFrom) << QPointF(m_range.xTo, m_range.yFrom)
+              << QPointF(m_range.xTo, m_range.yTo) << QPointF(m_range.xFrom, m_range.yTo);
+
+    QPolygonF polygonOut;
+    polygonOut << QPointF(rg.xFrom, rg.yFrom) << QPointF(rg.xTo, rg.yFrom)
+              << QPointF(rg.xTo, rg.yTo) << QPointF(rg.xFrom, rg.yTo);
+
+    QTransform trans, inv_trans;
+    bool isOk = QTransform::quadToQuad(polygonIn, polygonOut, trans);
+    Q_ASSERT(isOk);
+    if (!isOk)
+        return;
+
+    inv_trans = trans.inverted(&isOk);
+    if (!isOk) {
+        zeno::log_warn("cannot invert transform (divide by zero)");
+        return;
+    }
+
     m_range = rg;
-    emit rangeChanged(m_range);
+
+    for (int r = 0; r < rowCount(); r++)
+    {
+        const QModelIndex &idx = index(r, 0);
+        QPointF nodePos = idx.data(ROLE_NODEPOS).toPointF();
+        QPointF leftPos = idx.data(ROLE_LEFTPOS).toPointF();
+        QPointF rightPos = idx.data(ROLE_RIGHTPOS).toPointF();
+        QPointF nodePos_ = trans.map(nodePos);
+        QPointF leftPos_ = trans.map(nodePos + leftPos) - nodePos_;
+        QPointF rightPos_ = trans.map(nodePos + rightPos) - nodePos_;
+
+        // no need to adjust anything because position of all nodes scaled equally.
+        QStandardItemModel::setData(idx, nodePos_, ROLE_NODEPOS);
+        QStandardItemModel::setData(idx, leftPos_, ROLE_LEFTPOS);
+        QStandardItemModel::setData(idx, rightPos_, ROLE_RIGHTPOS);
+    }
 }
 
 CURVE_RANGE CurveModel::range() const
@@ -72,6 +109,16 @@ CURVE_RANGE CurveModel::range() const
 QString CurveModel::id() const
 {
     return m_id;
+}
+
+bool CurveModel::isTimeline() const
+{
+    return m_bTimeline;
+}
+
+void CurveModel::setTimeline(bool bTimeline)
+{
+    m_bTimeline = bTimeline;
 }
 
 QPointF CurveModel::clipNodePos(const QModelIndex& index, const QPointF& currPos)

@@ -29,6 +29,7 @@
 #ifndef __samples_util_sutilapi_h__
 #define __samples_util_sutilapi_h__
 
+#define SUTILAPI /* nothing, since we are using static libs */
 #ifndef SUTILAPI
 #  if sutil_7_sdk_EXPORTS /* Set by CMAKE */
 #    if defined( _WIN32 ) || defined( _WIN64 )

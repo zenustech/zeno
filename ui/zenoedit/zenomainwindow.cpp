@@ -35,7 +35,7 @@ ZenoMainWindow::ZenoMainWindow(QWidget *parent, Qt::WindowFlags flags)
     setWindowTitle("Zeno Editor (" __DATE__ ")");
 //#ifdef __linux__
     if (char *p = zeno::envconfig::get("OPEN")) {
-        zeno::log_info("ZENO_OPEN: %s", p);
+        zeno::log_info("ZENO_OPEN: {}", p);
         openFile(p);
     }
 //#endif

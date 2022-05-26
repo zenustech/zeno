@@ -28,6 +28,9 @@ public:
 
 protected:
     void rowsInserted(const QModelIndex &parent, int start, int end) override;
+
+private:
+    QTimer m_timer;
 };
 
 class CustomFilterProxyModel : public QSortFilterProxyModel

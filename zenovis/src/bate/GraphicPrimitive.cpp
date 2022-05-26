@@ -294,11 +294,8 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
     ZhxxDrawObject triObj;
     std::vector<std::unique_ptr<Texture>> textures;
 
-    std::string nameid;
-
     explicit ZhxxGraphicPrimitive(Scene *scene_, zeno::PrimitiveObject *prim)
         : scene(scene_) {
-        nameid = prim->userData().getLiterial<std::string>("nameid");
         zeno::log_trace("rendering primitive size {}", prim->size());
 
         if (!prim->has_attr("pos")) {

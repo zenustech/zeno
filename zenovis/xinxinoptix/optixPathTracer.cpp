@@ -3,8 +3,6 @@
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
-#include <zeno/utils/fileio.h>
-#include <zeno/utils/log.h>
 // are met:
 //  * Redistributions of source code must retain the above copyright
 //    notice, this list of conditions and the following disclaimer.
@@ -26,6 +24,9 @@
 // OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+//#ifdef __linux__
+//#include <unistd.h>
+//#endif
 //
 
 #include <glad/glad.h>  // Needs to be included before gl_interop
@@ -53,6 +54,9 @@
 
 #include "optixPathTracer.h"
 
+#include <zeno/utils/log.h>
+#include <zeno/utils/zeno_p.h>
+#include <zeno/types/MaterialObject.h>
 #include <array>
 #include <optional>
 #include <cstring>
@@ -84,6 +88,7 @@ sutil::Trackball trackball;
 int32_t mouse_button = -1;
 
 int32_t samples_per_launch = 16;
+//int32_t samples_per_launch = 1;
 
 //------------------------------------------------------------------------------
 //
@@ -104,35 +109,50 @@ typedef Record<MissData>     MissRecord;
 typedef Record<HitGroupData> HitGroupRecord;
 
 
-struct Vertex
-{
-    float x, y, z, pad;
-};
+//struct Vertex
+//{
+    //float x, y, z, pad;
+//};
 
 
-struct IndexedTriangle
-{
-    uint32_t v1, v2, v3, pad;
-};
+//struct IndexedTriangle
+//{
+    //uint32_t v1, v2, v3, pad;
+//};
 
 
-struct Instance
-{
-    float transform[12];
-};
+//struct Instance
+//{
+    //float transform[12];
+//};
+
+
+using Vertex = float4;
 
 
 struct PathTracerState
 {
     OptixDeviceContext context = 0;
 
-    OptixTraversableHandle         gas_handle               = {};  // Traversable handle for triangle AS
-    raii<CUdeviceptr>                    d_gas_output_buffer;  // Triangle AS memory
-    raii<CUdeviceptr>                    d_vertices;
 
-    raii<OptixModule>                    ptx_module;
-    raii<OptixModule>                    ptx_module2;
-    OptixPipelineCompileOptions          pipeline_compile_options;
+    OptixTraversableHandle         gas_handle               = {};  // Traversable handle for triangle AS
+
+    struct BateHappiness {  // make raii-chuanjiaoshi archibate very happy
+        raii<CUdeviceptr>                    d_gas_output_buffer;  // Triangle AS memory
+        raii<CUdeviceptr>                    d_vertices;
+        raii<CUdeviceptr>  d_mat_indices             ;
+
+        raii<CUdeviceptr> accum_buffer_p;
+        raii<CUdeviceptr> lightsbuf_p;
+
+        raii<CUdeviceptr>  d_raygen_record;
+        raii<CUdeviceptr>d_miss_records;
+        raii<CUdeviceptr>  d_hitgroup_records;
+        int oldwhp, oldlightssize, oldhgsize;
+    } bate1, bate2;
+
+    //raii<OptixModule>                    ptx_module;
+    //raii<OptixModule>                    ptx_module2;
     OptixPipeline                  pipeline;
 
     OptixProgramGroup              raygen_prog_group;
@@ -144,15 +164,10 @@ struct PathTracerState
     OptixProgramGroup              occlusion_hit_group2;
 
     raii<CUstream>                       stream;
-    raii<CUdeviceptr> accum_buffer_p;
+        raii<CUdeviceptr>                        d_params;
     Params                         params;
-    raii<CUdeviceptr>                        d_params;
-
-    raii<CUdeviceptr>  d_raygen_record;
-    raii<CUdeviceptr>d_miss_records;
-    raii<CUdeviceptr>  d_hitgroup_records;
-
     OptixShaderBindingTable        sbt                      = {};
+
 };
 
 PathTracerState state;
@@ -167,176 +182,36 @@ PathTracerState state;
 //const int32_t TRIANGLE_COUNT = 32;
 //const int32_t MAT_COUNT      = 5;
 
-static std::vector<Vertex> g_vertices =  // TRIANGLE_COUNT*3
-{  {
-    // Floor  -- white lambert
-    {    0.0f,    0.0f,    0.0f, 0.0f },
-    {    0.0f,    0.0f,  559.2f, 0.0f },
-    {  556.0f,    0.0f,  559.2f, 0.0f },
-    {    0.0f,    0.0f,    0.0f, 0.0f },
-    {  556.0f,    0.0f,  559.2f, 0.0f },
-    {  556.0f,    0.0f,    0.0f, 0.0f },
-
-    // Ceiling -- white lambert
-    {    0.0f,  548.8f,    0.0f, 0.0f },
-    {  556.0f,  548.8f,    0.0f, 0.0f },
-    {  556.0f,  548.8f,  559.2f, 0.0f },
-
-    {    0.0f,  548.8f,    0.0f, 0.0f },
-    {  556.0f,  548.8f,  559.2f, 0.0f },
-    {    0.0f,  548.8f,  559.2f, 0.0f },
-
-    // Back wall -- white lambert
-    {    0.0f,    0.0f,  559.2f, 0.0f },
-    {    0.0f,  548.8f,  559.2f, 0.0f },
-    {  556.0f,  548.8f,  559.2f, 0.0f },
-
-    {    0.0f,    0.0f,  559.2f, 0.0f },
-    {  556.0f,  548.8f,  559.2f, 0.0f },
-    {  556.0f,    0.0f,  559.2f, 0.0f },
-
-    // Right wall -- green lambert
-    {    0.0f,    0.0f,    0.0f, 0.0f },
-    {    0.0f,  548.8f,    0.0f, 0.0f },
-    {    0.0f,  548.8f,  559.2f, 0.0f },
-
-    {    0.0f,    0.0f,    0.0f, 0.0f },
-    {    0.0f,  548.8f,  559.2f, 0.0f },
-    {    0.0f,    0.0f,  559.2f, 0.0f },
-
-    // Left wall -- red lambert
-    {  556.0f,    0.0f,    0.0f, 0.0f },
-    {  556.0f,    0.0f,  559.2f, 0.0f },
-    {  556.0f,  548.8f,  559.2f, 0.0f },
-
-    {  556.0f,    0.0f,    0.0f, 0.0f },
-    {  556.0f,  548.8f,  559.2f, 0.0f },
-    {  556.0f,  548.8f,    0.0f, 0.0f },
-
-    // Short block -- white lambert
-    {  130.0f,  165.0f,   65.0f, 0.0f },
-    {   82.0f,  165.0f,  225.0f, 0.0f },
-    {  242.0f,  165.0f,  274.0f, 0.0f },
-
-    {  130.0f,  165.0f,   65.0f, 0.0f },
-    {  242.0f,  165.0f,  274.0f, 0.0f },
-    {  290.0f,  165.0f,  114.0f, 0.0f },
-
-    {  290.0f,    0.0f,  114.0f, 0.0f },
-    {  290.0f,  165.0f,  114.0f, 0.0f },
-    {  240.0f,  165.0f,  272.0f, 0.0f },
-
-    {  290.0f,    0.0f,  114.0f, 0.0f },
-    {  240.0f,  165.0f,  272.0f, 0.0f },
-    {  240.0f,    0.0f,  272.0f, 0.0f },
-
-    {  130.0f,    0.0f,   65.0f, 0.0f },
-    {  130.0f,  165.0f,   65.0f, 0.0f },
-    {  290.0f,  165.0f,  114.0f, 0.0f },
-
-    {  130.0f,    0.0f,   65.0f, 0.0f },
-    {  290.0f,  165.0f,  114.0f, 0.0f },
-    {  290.0f,    0.0f,  114.0f, 0.0f },
-
-    {   82.0f,    0.0f,  225.0f, 0.0f },
-    {   82.0f,  165.0f,  225.0f, 0.0f },
-    {  130.0f,  165.0f,   65.0f, 0.0f },
-
-    {   82.0f,    0.0f,  225.0f, 0.0f },
-    {  130.0f,  165.0f,   65.0f, 0.0f },
-    {  130.0f,    0.0f,   65.0f, 0.0f },
-
-    {  240.0f,    0.0f,  272.0f, 0.0f },
-    {  240.0f,  165.0f,  272.0f, 0.0f },
-    {   82.0f,  165.0f,  225.0f, 0.0f },
-
-    {  240.0f,    0.0f,  272.0f, 0.0f },
-    {   82.0f,  165.0f,  225.0f, 0.0f },
-    {   82.0f,    0.0f,  225.0f, 0.0f },
-
-    // Tall block -- white lambert
-    {  423.0f,  330.0f,  247.0f, 0.0f },
-    {  265.0f,  330.0f,  296.0f, 0.0f },
-    {  314.0f,  330.0f,  455.0f, 0.0f },
-
-    {  423.0f,  330.0f,  247.0f, 0.0f },
-    {  314.0f,  330.0f,  455.0f, 0.0f },
-    {  472.0f,  330.0f,  406.0f, 0.0f },
-
-    {  423.0f,    0.0f,  247.0f, 0.0f },
-    {  423.0f,  330.0f,  247.0f, 0.0f },
-    {  472.0f,  330.0f,  406.0f, 0.0f },
-
-    {  423.0f,    0.0f,  247.0f, 0.0f },
-    {  472.0f,  330.0f,  406.0f, 0.0f },
-    {  472.0f,    0.0f,  406.0f, 0.0f },
-
-    {  472.0f,    0.0f,  406.0f, 0.0f },
-    {  472.0f,  330.0f,  406.0f, 0.0f },
-    {  314.0f,  330.0f,  456.0f, 0.0f },
-
-    {  472.0f,    0.0f,  406.0f, 0.0f },
-    {  314.0f,  330.0f,  456.0f, 0.0f },
-    {  314.0f,    0.0f,  456.0f, 0.0f },
-
-    {  314.0f,    0.0f,  456.0f, 0.0f },
-    {  314.0f,  330.0f,  456.0f, 0.0f },
-    {  265.0f,  330.0f,  296.0f, 0.0f },
-
-    {  314.0f,    0.0f,  456.0f, 0.0f },
-    {  265.0f,  330.0f,  296.0f, 0.0f },
-    {  265.0f,    0.0f,  296.0f, 0.0f },
-
-    {  265.0f,    0.0f,  296.0f, 0.0f },
-    {  265.0f,  330.0f,  296.0f, 0.0f },
-    {  423.0f,  330.0f,  247.0f, 0.0f },
-
-    {  265.0f,    0.0f,  296.0f, 0.0f },
-    {  423.0f,  330.0f,  247.0f, 0.0f },
-    {  423.0f,    0.0f,  247.0f, 0.0f },
-
-    // Ceiling light -- emmissive
-    {  343.0f,  548.6f,  227.0f, 0.0f },
-    {  213.0f,  548.6f,  227.0f, 0.0f },
-    {  213.0f,  548.6f,  332.0f, 0.0f },
-
-    {  343.0f,  548.6f,  227.0f, 0.0f },
-    {  213.0f,  548.6f,  332.0f, 0.0f },
-    {  343.0f,  548.6f,  332.0f, 0.0f }
-} };
-
-static std::vector<uint32_t> g_mat_indices = {{ // TRIANGLE_COUNT
-    0, 0,                          // Floor         -- white lambert
-    0, 0,                          // Ceiling       -- white lambert
-    0, 0,                          // Back wall     -- white lambert
-    1, 1,                          // Right wall    -- green lambert
-    2, 2,                          // Left wall     -- red lambert
-    4, 4, 4, 4, 4, 4, 4, 4, 4, 4,  // Short block   -- white lambert with opacity
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  // Tall block    -- white lambert
-    3, 3                           // Ceiling light -- emmissive
-}};
-
-
-
-const std::vector<float3> g_emission_colors = // MAT_COUNT
-{ {
-    {  0.0f,  0.0f,  0.0f },
-    {  0.0f,  0.0f,  0.0f },
-    {  0.0f,  0.0f,  0.0f },
-    { 15.0f, 15.0f,  5.0f },
-    {  0.0f,  0.0f,  0.0f }
-
-} };
-
-
-const std::vector<float3> g_diffuse_colors = // MAT_COUNT
-{ {
-    { 0.80f, 0.80f, 0.80f },
-    { 0.05f, 0.80f, 0.05f },
-    { 0.80f, 0.05f, 0.05f },
-    { 0.50f, 0.00f, 0.00f },
-    { 0.80f, 0.80f, 0.80f }
-} };
+static std::vector<Vertex> g_vertices= // TRIANGLE_COUNT*3
+{
+    {0,0,0},
+    {0,0,0},
+    {0,0,0},
+};
+static std::vector<uint32_t> g_mat_indices= // TRIANGLE_COUNT
+{
+    0,0,0,
+};
+static std::vector<ParallelogramLight> g_lights={
+    ParallelogramLight{
+        /*corner=*/
+        /*v1=*/
+        /*v2=*/
+        /*normal=*/
+        /*emission=*/
+    },
+};
+/*
+static std::vector<float3> g_emission_colors= // MAT_COUNT
+{
+    {0,0,0},
+};
+static std::vector<float3> g_diffuse_colors= // MAT_COUNT
+{
+    {0.8f,0.8f,0.8f},
+};
+*/
+std::map<std::string, int> g_mtlidlut; // MAT_COUNT
 
 
 //------------------------------------------------------------------------------
@@ -448,22 +323,33 @@ static void printUsageAndExit( const char* argv0 )
 
 static void initLaunchParams( PathTracerState& state )
 {
-    CUDA_CHECK( cudaMalloc(
-                reinterpret_cast<void**>( &state.accum_buffer_p.reset() ),
-                state.params.width * state.params.height * sizeof( float4 )
+    state.params.handle         = state.gas_handle;
+    auto whp = state.params.width * state.params.height;
+    //printf("asdfjhk %d\n", whp);
+    if (whp != std::exchange(state.bate1.oldwhp, whp) || state.bate1.accum_buffer_p == 0)
+    {
+        state.bate2.accum_buffer_p = std::move(state.bate1.accum_buffer_p);
+        CUDA_CHECK( cudaMalloc(
+                reinterpret_cast<void**>( &state.bate1.accum_buffer_p.reset() ),
+                whp * sizeof( float4 )
                 ) );
-    state.params.accum_buffer = (float4*)(CUdeviceptr)state.accum_buffer_p;
+        state.params.subframe_index = 0;
+    }
+    if (g_lights.size() != std::exchange(state.bate1.oldlightssize, g_lights.size()) || state.bate1.lightsbuf_p == 0)
+    {
+        state.bate2.lightsbuf_p = std::move(state.bate1.lightsbuf_p);
+        CUDA_CHECK( cudaMalloc(
+                reinterpret_cast<void**>( &state.bate1.lightsbuf_p.reset() ),
+                sizeof( ParallelogramLight ) * g_lights.size()
+                ) );
+    }
+    state.params.accum_buffer = (float4*)(CUdeviceptr)state.bate1.accum_buffer_p;
+    //if (!state.params.accum_buffer) throw std::runtime_error("nullptr accum_buffer1");
+    state.params.lights = (ParallelogramLight*)(CUdeviceptr)state.bate1.lightsbuf_p;
     state.params.frame_buffer = nullptr;  // Will be set when output buffer is mapped
 
     state.params.samples_per_launch = samples_per_launch;
     state.params.subframe_index     = 0u;
-
-    state.params.light.emission = make_float3( 15.0f, 15.0f, 5.0f );
-    state.params.light.corner   = make_float3( 343.0f, 548.5f, 227.0f );
-    state.params.light.v1       = make_float3( 0.0f, 0.0f, 105.0f );
-    state.params.light.v2       = make_float3( -130.0f, 0.0f, 0.0f );
-    state.params.light.normal   = normalize( cross( state.params.light.v1, state.params.light.v2 ) );
-    state.params.handle         = state.gas_handle;
 }
 
 
@@ -492,11 +378,12 @@ static void handleResize( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Params
     output_buffer.resize( params.width, params.height );
 
     // Realloc accumulation buffer
-    CUDA_CHECK( cudaMalloc(
-                reinterpret_cast<void**>( &state.accum_buffer_p .reset()),
-                params.width * params.height * sizeof( float4 )
-                ) );
-    state.params.accum_buffer = (float4*)(CUdeviceptr)state.accum_buffer_p;
+    //CUDA_CHECK( cudaMalloc(
+                //reinterpret_cast<void**>( &state.bate1.accum_buffer_p .reset()),
+                //params.width * params.height * sizeof( float4 )
+                //) );
+    //state.params.accum_buffer = (float4*)(CUdeviceptr)state.bate1.accum_buffer_p;
+    //if (!    state.params.accum_buffer) throw std::runtime_error("nullptr accumbuffer");
 }
 
 
@@ -516,6 +403,10 @@ static void launchSubframe( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Path
     // Launch
     uchar4* result_buffer_data = output_buffer.map();
     state.params.frame_buffer  = result_buffer_data;
+    state.params.accum_buffer = (float4*)(CUdeviceptr)state.bate1.accum_buffer_p;
+    if (!    state.params.accum_buffer) throw std::runtime_error("nullptr accumbuffer2");
+    if (!    state.params.frame_buffer) throw std::runtime_error("nullptr framebuffer");
+    state.params.num_lights = g_lights.size();
     CUDA_CHECK( cudaMemcpyAsync(
                 reinterpret_cast<void*>( (CUdeviceptr)state.d_params ),
                 &state.params, sizeof( Params ),
@@ -586,19 +477,19 @@ static void buildMeshAccel( PathTracerState& state )
     // copy mesh data to device
     //
     const size_t vertices_size_in_bytes = g_vertices.size() * sizeof( Vertex );
-    //CUDA_CHECK( cudaFree( reinterpret_cast<void*>( state.d_vertices ) ) );
-    CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.d_vertices.reset() ), vertices_size_in_bytes ) );
+    state.bate2.d_vertices = std::move(state.bate1.d_vertices);
+    CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.bate1.d_vertices.reset() ), vertices_size_in_bytes ) );
     CUDA_CHECK( cudaMemcpyAsync(
-                reinterpret_cast<void*>( (CUdeviceptr&)state.d_vertices ),
+                reinterpret_cast<void*>( (CUdeviceptr&)state.bate1.d_vertices ),
                 g_vertices.data(), vertices_size_in_bytes,
                 cudaMemcpyHostToDevice, state.stream
                 ) );
 
-    raii<CUdeviceptr>  d_mat_indices             ;
     const size_t mat_indices_size_in_bytes = g_mat_indices.size() * sizeof( uint32_t );
-    CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &d_mat_indices.reset() ), mat_indices_size_in_bytes ) );
+    state.bate2.d_mat_indices = std::move(state.bate1.d_mat_indices);
+    CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.bate1.d_mat_indices.reset() ), mat_indices_size_in_bytes ) );
     CUDA_CHECK( cudaMemcpyAsync(
-                reinterpret_cast<void*>( (CUdeviceptr)d_mat_indices ),
+                reinterpret_cast<void*>( (CUdeviceptr)state.bate1.d_mat_indices ),
                 g_mat_indices.data(),
                 mat_indices_size_in_bytes,
                 cudaMemcpyHostToDevice, state.stream
@@ -606,7 +497,7 @@ static void buildMeshAccel( PathTracerState& state )
 
     // // Build triangle GAS // // One per SBT record for this build input
     std::vector<uint32_t> triangle_input_flags(//MAT_COUNT
-        g_emission_colors.size(),
+        g_mtlidlut.size(),
         OPTIX_GEOMETRY_FLAG_REQUIRE_SINGLE_ANYHIT_CALL);
 
     OptixBuildInput triangle_input                           = {};
@@ -614,10 +505,10 @@ static void buildMeshAccel( PathTracerState& state )
     triangle_input.triangleArray.vertexFormat                = OPTIX_VERTEX_FORMAT_FLOAT3;
     triangle_input.triangleArray.vertexStrideInBytes         = sizeof( Vertex );
     triangle_input.triangleArray.numVertices                 = static_cast<uint32_t>( g_vertices.size() );
-    triangle_input.triangleArray.vertexBuffers               = g_vertices.empty() ? nullptr : &state.d_vertices;
+    triangle_input.triangleArray.vertexBuffers               = g_vertices.empty() ? nullptr : &state.bate1.d_vertices;
     triangle_input.triangleArray.flags                       = triangle_input_flags.data();
-    triangle_input.triangleArray.numSbtRecords               = g_vertices.empty() ? 1 : g_emission_colors.size();
-    triangle_input.triangleArray.sbtIndexOffsetBuffer        = d_mat_indices;
+    triangle_input.triangleArray.numSbtRecords               = g_vertices.empty() ? 1 : g_mtlidlut.size();
+    triangle_input.triangleArray.sbtIndexOffsetBuffer        = state.bate1.d_mat_indices;
     triangle_input.triangleArray.sbtIndexOffsetSizeInBytes   = sizeof( uint32_t );
     triangle_input.triangleArray.sbtIndexOffsetStrideInBytes = sizeof( uint32_t );
 
@@ -626,6 +517,7 @@ static void buildMeshAccel( PathTracerState& state )
     accel_options.operation              = OPTIX_BUILD_OPERATION_BUILD;
 
     OptixAccelBufferSizes gas_buffer_sizes;
+    //char   log[2048]; size_t sizeof_log = sizeof( log );
     OPTIX_CHECK( optixAccelComputeMemoryUsage(
                 state.context,
                 &accel_options,
@@ -662,23 +554,25 @@ static void buildMeshAccel( PathTracerState& state )
                 ) );
 
     d_temp_buffer.reset();
-    d_mat_indices.reset();
+    //d_mat_indices.reset();
 
     size_t compacted_gas_size;
     CUDA_CHECK( cudaMemcpyAsync( &compacted_gas_size, (void*)emitProperty.result, sizeof(size_t), cudaMemcpyDeviceToHost, state.stream ) );
 
     if( compacted_gas_size < gas_buffer_sizes.outputSizeInBytes )
     {
-        CUDA_CHECK(cudaMalloc((void**)&state.d_gas_output_buffer.reset(), compacted_gas_size));
+        state.bate2.d_gas_output_buffer = std::move(state.bate1.d_gas_output_buffer);
+        CUDA_CHECK(cudaMalloc((void**)&state.bate1.d_gas_output_buffer.reset(), compacted_gas_size));
 
         // use handle as input and output
-        OPTIX_CHECK( optixAccelCompact( state.context, 0, state.gas_handle, state.d_gas_output_buffer, compacted_gas_size, &state.gas_handle ) );
+        OPTIX_CHECK( optixAccelCompact( state.context, 0, state.gas_handle, state.bate1.d_gas_output_buffer, compacted_gas_size, &state.gas_handle ) );
 
         d_buffer_temp_output_gas_and_compacted_size.reset();
     }
     else
     {
-        state.d_gas_output_buffer = std::move(d_buffer_temp_output_gas_and_compacted_size);
+        state.bate2.d_gas_output_buffer = std::move(state.bate1.d_gas_output_buffer);
+        state.bate1.d_gas_output_buffer = std::move(d_buffer_temp_output_gas_and_compacted_size);
     }
 }
 
@@ -687,14 +581,15 @@ static void buildMeshAccel( PathTracerState& state )
 
 static void createSBT( PathTracerState& state )
 {
-        state.d_raygen_record.reset();
-        state.d_miss_records.reset();
-        state.d_hitgroup_records.reset();
-        state.d_gas_output_buffer.reset();
-        state.accum_buffer_p.reset();
+        //state.bate1.d_raygen_record.reset();
+        //state.bate1.d_miss_records.reset();
+        //state.bate1.d_hitgroup_records.reset();
+        //state.bate1.d_gas_output_buffer.reset();
+        //state.bate1.accum_buffer_p.reset();
 
-    raii<CUdeviceptr>  &d_raygen_record = state.d_raygen_record;
+    raii<CUdeviceptr>  &d_raygen_record = state.bate1.d_raygen_record;
     const size_t raygen_record_size = sizeof( RayGenRecord );
+    if (d_raygen_record == 0)
         CUDA_CHECK(cudaMalloc((void**)&d_raygen_record.reset(), raygen_record_size));
 
     RayGenRecord rg_sbt = {};
@@ -708,8 +603,9 @@ static void createSBT( PathTracerState& state )
                 ) );
 
 
-    raii<CUdeviceptr>  &d_miss_records = state.d_miss_records;
+    raii<CUdeviceptr>  &d_miss_records = state.bate1.d_miss_records;
     const size_t miss_record_size = sizeof( MissRecord );
+    if (d_miss_records == 0)
     CUDA_CHECK(cudaMalloc((void**)&d_miss_records.reset(), miss_record_size * RAY_TYPE_COUNT )) ;
 
     MissRecord ms_sbt[2];
@@ -725,22 +621,23 @@ static void createSBT( PathTracerState& state )
                 cudaMemcpyHostToDevice, state.stream
                 ) );
 
-    raii<CUdeviceptr>  &d_hitgroup_records = state.d_hitgroup_records;
+    raii<CUdeviceptr>  &d_hitgroup_records = state.bate1.d_hitgroup_records;
     const size_t hitgroup_record_size = sizeof( HitGroupRecord );
-    CUDA_CHECK(cudaMalloc((void**)&d_hitgroup_records.reset(),
-                hitgroup_record_size * RAY_TYPE_COUNT * g_emission_colors.size()
-                ));
+    if (d_hitgroup_records == 0 || std::exchange(state.bate1.oldhgsize,
+                                                 g_mtlidlut.size()) != g_mtlidlut.size())
+        CUDA_CHECK(cudaMalloc((void**)&d_hitgroup_records.reset(),
+                              hitgroup_record_size * RAY_TYPE_COUNT * g_mtlidlut.size()
+                             ));
 
-    HitGroupRecord hitgroup_records[RAY_TYPE_COUNT * g_emission_colors.size()];
-    for( int i = 0; i < g_emission_colors.size(); ++i )
+    HitGroupRecord hitgroup_records[RAY_TYPE_COUNT * g_mtlidlut.size()];
+    for( int i = 0; i < g_mtlidlut.size(); ++i )
     {
         {
             const int sbt_idx = i * RAY_TYPE_COUNT + 0;  // SBT for radiance ray-type for ith material
 
             OPTIX_CHECK( optixSbtRecordPackHeader( OptixUtil::rtMaterialShaders[i].m_radiance_hit_group, &hitgroup_records[sbt_idx] ) );
-            hitgroup_records[sbt_idx].data.emission_color = g_emission_colors[i];
-            hitgroup_records[sbt_idx].data.diffuse_color  = g_diffuse_colors[i];
-            hitgroup_records[sbt_idx].data.vertices       = reinterpret_cast<float4*>( (CUdeviceptr)state.d_vertices );
+            hitgroup_records[sbt_idx].data.uniforms     = nullptr; //TODO uniforms like iTime, iFrame, etc.
+            hitgroup_records[sbt_idx].data.vertices       = reinterpret_cast<float4*>( (CUdeviceptr)state.bate1.d_vertices );
         }
 
         {
@@ -771,7 +668,7 @@ static void createSBT( PathTracerState& state )
     CUDA_CHECK( cudaMemcpyAsync(
                 reinterpret_cast<void*>( (CUdeviceptr)d_hitgroup_records ),
                 hitgroup_records,
-                hitgroup_record_size*RAY_TYPE_COUNT*g_emission_colors.size(),
+                hitgroup_record_size*RAY_TYPE_COUNT*g_mtlidlut.size(),
                 cudaMemcpyHostToDevice, state.stream
                 ) );
 
@@ -781,35 +678,36 @@ static void createSBT( PathTracerState& state )
     state.sbt.missRecordCount             = RAY_TYPE_COUNT;
     state.sbt.hitgroupRecordBase          = d_hitgroup_records;
     state.sbt.hitgroupRecordStrideInBytes = static_cast<uint32_t>( hitgroup_record_size );
-    state.sbt.hitgroupRecordCount         = RAY_TYPE_COUNT * g_emission_colors.size();
+    state.sbt.hitgroupRecordCount         = RAY_TYPE_COUNT * g_mtlidlut.size();
 }
 
 
 static void cleanupState( PathTracerState& state )
 {
-    OPTIX_CHECK( optixPipelineDestroy( state.pipeline ) );
-    OPTIX_CHECK( optixProgramGroupDestroy( state.raygen_prog_group ) );
-    OPTIX_CHECK( optixProgramGroupDestroy( state.radiance_miss_group ) );
+    //OPTIX_CHECK( optixPipelineDestroy( state.pipeline ) );
+    //OPTIX_CHECK( optixProgramGroupDestroy( state.raygen_prog_group ) );
+    //OPTIX_CHECK( optixProgramGroupDestroy( state.radiance_miss_group ) );
     //OPTIX_CHECK( optixProgramGroupDestroy( state.radiance_hit_group ) );
     //OPTIX_CHECK( optixProgramGroupDestroy( state.occlusion_hit_group ) );
     //OPTIX_CHECK( optixProgramGroupDestroy( state.radiance_hit_group2 ) );
     //OPTIX_CHECK( optixProgramGroupDestroy( state.occlusion_hit_group2 ) );
     //OPTIX_CHECK( optixProgramGroupDestroy( state.occlusion_miss_group ) );
     //OPTIX_CHECK( optixModuleDestroy( state.ptx_module ) );
-    OPTIX_CHECK( optixDeviceContextDestroy( state.context ) );
-    OPTIX_CHECK( optixModuleDestroy( OptixUtil::ray_module));
+    //OPTIX_CHECK( optixDeviceContextDestroy( state.context ) );
+    //OPTIX_CHECK( optixModuleDestroy( OptixUtil::ray_module));
+    //state.context;
 
 
     //CUDA_CHECK( cudaFree( reinterpret_cast<void*>( state.sbt.raygenRecord ) ) );
     //CUDA_CHECK( cudaFree( reinterpret_cast<void*>( state.sbt.missRecordBase ) ) );
     //CUDA_CHECK( cudaFree( reinterpret_cast<void*>( state.sbt.hitgroupRecordBase ) ) );
-        state.d_raygen_record.reset();
-        state.d_miss_records.reset();
-        state.d_hitgroup_records.reset();
-        state.d_vertices.reset();
-        state.d_gas_output_buffer.reset();
-        state.accum_buffer_p.reset();
-        state.d_params.reset();
+        //state.d_raygen_record.reset();
+        //state.d_miss_records.reset();
+        //state.d_hitgroup_records.reset();
+        //state.d_vertices.reset();
+        //state.d_gas_output_buffer.reset();
+        //state.accum_buffer_p.reset();
+        //state.d_params.reset();
 }
 
 
@@ -879,6 +777,7 @@ void optixinit( int argc, char* argv[] )
         state.context = OptixUtil::context;
 
     CUDA_CHECK( cudaStreamCreate( &state.stream.reset() ) );
+
     CUDA_CHECK(cudaMalloc((void**)&state.d_params.reset(), sizeof( Params )));
 
         if (!output_buffer_o) {
@@ -906,37 +805,78 @@ void optixinit( int argc, char* argv[] )
 //}
 
 static void updatedrawobjects();
-void optixupdatemesh() {
+void optixupdatemesh(std::map<std::string, int> const &mtlidlut) {
+    camera_changed = true;
+    g_mtlidlut = mtlidlut;
     updatedrawobjects();
     buildMeshAccel( state );
+}
+void optixupdatelight() {
     camera_changed = true;
+
+    g_lights.clear();
+    for (int i = 0; i < 1; i++) {
+        auto &light = g_lights.emplace_back();
+        light.emission = make_float3( 10000.f );
+        light.corner   = make_float3( 343.0f, 548.5f, 227.0f );
+        light.v2       = make_float3( -10.0f, 0.0f, 0.0f );
+        light.normal   = make_float3( 0.0f, -10.0f, 0.0f );
+        light.v1       = normalize( cross( light.v2, light.normal ) );
+    }
+    if (g_lights.size())
+        CUDA_CHECK( cudaMemcpyAsync(
+                reinterpret_cast<void*>( (CUdeviceptr)state.bate1.lightsbuf_p ),
+                g_lights.data(), sizeof( ParallelogramLight ) * g_lights.size(),
+                cudaMemcpyHostToDevice, state.stream
+                ) );
 }
 
-void optixupdatematerial(std::vector<const char *> const &shaders) {
+void optixupdatematerial(std::vector<std::string> const &shaders) {
     camera_changed = true;
 
-        static bool hadOnce = false;
-        if (!hadOnce) {
+    static int hadonce = 0;
+    auto &bate = OptixUtil::bate1;
+    //if (!hadonce++) {
+
+    if (bate.ray_module == 0)
+        OptixUtil::bate2.ray_module = std::move(bate.ray_module);
+        OptixUtil::createModule(
+            bate.ray_module,
+            state.context,
+            sutil::lookupIncFile("PTKernel.cu"),
+            "PTKernel.cu");
+
+        //CUDA_SYNC_CHECK();
             //OPTIX_CHECK( optixModuleDestroy( OptixUtil::ray_module ) );
-        auto rtmodsrc = zeno::file_get_content("/home/bate/zeno/zenovis/xinxinoptix/optixPathTracer.cu");
-    OptixUtil::ray_module = OptixUtil::createModule(state.context, rtmodsrc.c_str());
-        } hadOnce = true;
-    OptixUtil::rtMaterialShaders.resize(0);
-    for (int i = 0; i < shaders.size(); i++)
-        OptixUtil::rtMaterialShaders.push_back(OptixUtil::rtMatShader(shaders[i],"__closesthit__radiance", "__anyhit__shadow_cutout"));
+    for (int i = 0; i < shaders.size(); i++) {
+        if (shaders[i].empty()) zeno::log_error("shader {} is empty", i);
+        //OptixUtil::rtMaterialShaders.push_back(OptixUtil::rtMatShader(shaders[i].c_str(),"__closesthit__radiance", "__anyhit__shadow_cutout"));
+        OptixUtil::rtMaterialShaders.emplace_back(shaders[i].c_str(),"__closesthit__radiance", "__anyhit__shadow_cutout");
+    }
     for(int i=0;i<OptixUtil::rtMaterialShaders.size();i++)
     {
         OptixUtil::rtMaterialShaders[i].loadProgram();
     }
-    OptixUtil::createRenderGroups(state.context, OptixUtil::ray_module);
+    OptixUtil::createRenderGroups(state.context, bate.ray_module, bate);
+        //CUDA_SYNC_CHECK();
+    //}
 }
 
+void optixupdatebegin() {
+    camera_changed = true;
+//#ifdef __linux__
+    //usleep(1'000'000);
+//#endif
+    CUDA_SYNC_CHECK();
+    //OptixUtil::swapTwoBates();
+    //std::swap(state.bate1, state.bate2);
+}
 void optixupdateend() {
     camera_changed = true;
         OptixUtil::createPipeline();
-        static bool hadOnce = false;
-        if (hadOnce) {
-    OPTIX_CHECK( optixPipelineDestroy( state.pipeline ) );
+        //static bool hadOnce = false;
+        //if (hadOnce) {
+    //OPTIX_CHECK( optixPipelineDestroy( state.pipeline ) );
     //state.raygen_prog_group ) );
     //state.radiance_miss_group ) );
     //state.occlusion_miss_group ) );
@@ -946,13 +886,12 @@ void optixupdateend() {
     //OPTIX_CHECK( optixProgramGroupDestroy( state.occlusion_hit_group2 ) );
     //OPTIX_CHECK( optixModuleDestroy( state.ptx_module ) );
     //OPTIX_CHECK( optixDeviceContextDestroy( state.context ) );
-        } hadOnce = true;
+        //} hadOnce = true;
 
-        state.pipeline_compile_options = OptixUtil::pipeline_compile_options;
-        state.pipeline = OptixUtil::pipeline;
-        state.raygen_prog_group = OptixUtil::raygen_prog_group;
-        state.radiance_miss_group = OptixUtil::radiance_miss_group;
-        state.occlusion_miss_group = OptixUtil::occlusion_miss_group;
+        state.pipeline = OptixUtil::bate1.pipeline;
+        state.raygen_prog_group = OptixUtil::bate1.raygen_prog_group;
+        state.radiance_miss_group = OptixUtil::bate1.radiance_miss_group;
+        state.occlusion_miss_group = OptixUtil::bate1.occlusion_miss_group;
         //state.radiance_hit_group = OptixUtil::radiance_hit_group;
         //state.occlusion_hit_group = OptixUtil::occlusion_hit_group;
         //state.radiance_hit_group2 = OptixUtil::radiance_hit_group2;
@@ -963,9 +902,11 @@ void optixupdateend() {
         //createPipeline( state );
         createSBT( state );
         initLaunchParams( state );
+    CUDA_SYNC_CHECK();
 }
 
 struct DrawDat {
+    std::string mtlid;
     std::vector<float> verts;
     std::vector<float> tris;
     std::map<std::string, std::vector<float>> vertattrs;
@@ -977,15 +918,19 @@ static void updatedrawobjects() {
     g_mat_indices.clear();
     size_t n = 0;
     for (auto const &[key, dat]: drawdats) {
-        n += dat.tris.size();
+        n += dat.tris.size() / 3;
     }
     g_vertices.resize(n * 3);
+    //printf("EEEE %ld\n", n);
     g_mat_indices.resize(n);
     n = 0;
     for (auto const &[key, dat]: drawdats) {
+        auto it = g_mtlidlut.find(dat.mtlid);
+        int mtlindex = it != g_mtlidlut.end() ? it->second : 0;
+        //zeno::log_error("{} {}", dat.mtlid, mtlindex);
 //#pragma omp parallel for
         for (size_t i = 0; i < dat.tris.size() / 3; i++) {
-            g_mat_indices[n + i] = 0;
+            g_mat_indices[n + i] = mtlindex;
             g_vertices[(n + i) * 3 + 0] = {
                 dat.verts[dat.tris[i * 3 + 0] * 3 + 0],
                 dat.verts[dat.tris[i * 3 + 0] * 3 + 1],
@@ -1009,10 +954,13 @@ static void updatedrawobjects() {
     }
 }
 
-void load_object(std::string const &key, float const *verts, size_t numverts, int const *tris, size_t numtris, std::map<std::string, std::pair<float const *, size_t>> const &vtab) {
+void load_object(std::string const &key, std::string const &mtlid, float const *verts, size_t numverts, int const *tris, size_t numtris, std::map<std::string, std::pair<float const *, size_t>> const &vtab) {
     DrawDat &dat = drawdats[key];
+    //ZENO_P(mtlid);
+    dat.mtlid = mtlid;
     dat.verts.assign(verts, verts + numverts * 3);
     dat.tris.assign(tris, tris + numtris * 3);
+    //TODO: flatten just here... or in renderengineoptx.cpp
     for (auto const &[key, fptr]: vtab) {
         dat.vertattrs[key].assign(fptr.first, fptr.first + numverts * fptr.second);
     }
@@ -1053,12 +1001,14 @@ void set_perspective(float const *U, float const *V, float const *W, float const
 
 
 void optixrender(int fbo) {
+                    //CUDA_SYNC_CHECK();
     if (!output_buffer_o) throw sutil::Exception("no output_buffer_o");
     if (!gl_display_o) throw sutil::Exception("no gl_display_o");
     updateState( *output_buffer_o, state.params );
                     launchSubframe( *output_buffer_o, state );
                     displaySubframe( *output_buffer_o, *gl_display_o, state, fbo );
                     ++state.params.subframe_index;
+                    //CUDA_SYNC_CHECK();
 }
 
 void *optixgetimg(int &w, int &h) {

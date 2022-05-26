@@ -11,7 +11,7 @@ enum CURVE_ROLE
     ROLE_RIGHTPOS,  //right handle pos
     ROLE_TYPE,
     ROLE_LOCKX,
-    ROLE_LOCKY
+    ROLE_LOCKY,
 };
 
 enum HANDLE_TYPE
@@ -35,6 +35,8 @@ public:
     bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::EditRole) override;
     void resetRange(const CURVE_RANGE& rg);
     CURVE_RANGE range() const;
+    bool isTimeline() const;
+    void setTimeline(bool bTimeline);
     QString id() const;
     std::string z_serialize() const;
     void z_deserialize(std::string_view s);
@@ -53,6 +55,7 @@ signals:
 private:
     CURVE_RANGE m_range;
     QString m_id;
+    bool m_bTimeline;
 };
 
 #endif

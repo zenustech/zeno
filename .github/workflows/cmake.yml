@@ -3,8 +3,8 @@ name: Integrated Test
 on:
   push:
     branches: [ master ]
-  #pull_request:
-    #branches: [ master ]
+  pull_request:
+    branches: [ master ]
 
 jobs:
   check:
@@ -51,7 +51,7 @@ jobs:
     - name: Checkout Repo
       uses: actions/checkout@v2
       with:
-        submodules: true
+        submodules: recursive
 
     - name: Cache Qt
       id: cache-qt

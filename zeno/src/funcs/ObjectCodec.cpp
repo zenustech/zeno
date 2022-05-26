@@ -1,6 +1,7 @@
 #include <zeno/funcs/ObjectCodec.h>
 #include <zeno/types/IObjectXMacro.h>
 #include <zeno/types/PrimitiveObject.h>
+#include <zeno/types/MaterialObject.h>
 #include <zeno/types/StringObject.h>
 #include <zeno/types/CameraObject.h>
 #include <zeno/types/DummyObject.h>
@@ -70,7 +71,7 @@ ZENO_XMACRO_IObject(_PER_OBJECT_TYPE)
 std::shared_ptr<IObject> decodeObject(const char *buf, size_t len) {
     auto &header = *(ObjectHeader *)buf;
     if (header.magicNumber != ObjectHeader::kMagicNumber) {
-        zeno::log_error("object header magic number mismatch");
+        log_error("object header magic number mismatch");
         return nullptr;
     }
 
@@ -114,7 +115,7 @@ ZENO_XMACRO_IObject(_PER_OBJECT_TYPE)
 #undef _PER_OBJECT_TYPE
 
     } else {
-        log_error("invalid object type `{}`", cppdemangle(typeid(*object)));
+        log_error("invalid object type to encode `{}`", cppdemangle(typeid(*object)));
         return false;
     }
 }

@@ -41,11 +41,12 @@ LogListView::LogListView(QWidget* parent)
 void LogListView::rowsInserted(const QModelIndex& parent, int start, int end)
 {
     _base::rowsInserted(parent, start, end);
-    int n = model()->rowCount();
-    //if (n > 0) {
-    //    scrollTo(this->model()->index(n - 1, 0));
-    //}
-    scrollToBottom();
+
+    connect(&m_timer, &QTimer::timeout, this, [=]() {
+        scrollToBottom();
+        m_timer.stop();
+    });
+    m_timer.start(50);
 }
 
 
@@ -58,15 +59,15 @@ ZlogPanel::ZlogPanel(QWidget* parent)
 
     initSignals();
     initModel();
-    onFilterChanged();
+    //onFilterChanged();
 }
 
 void ZlogPanel::initModel()
 {
-    m_pFilterModel = new CustomFilterProxyModel(this);
-    m_pFilterModel->setSourceModel(zenoApp->logModel());
-    m_pFilterModel->setFilterRole(ROLE_LOGTYPE);
-    m_ui->listView->setModel(m_pFilterModel);
+    //m_pFilterModel = new CustomFilterProxyModel(this);
+    //m_pFilterModel->setSourceModel(zenoApp->logModel());
+    //m_pFilterModel->setFilterRole(ROLE_LOGTYPE);
+    m_ui->listView->setModel(zenoApp->logModel());
 }
 
 void ZlogPanel::initSignals()
@@ -153,8 +154,7 @@ void ZlogPanel::onFilterChanged()
         filters.append(QtFatalMsg);
     if (m_ui->cbInfo->isChecked())
         filters.append(QtInfoMsg);
-    m_pFilterModel->setFilters(filters);
-    m_ui->listView->scrollToBottom();
+    //m_pFilterModel->setFilters(filters);
 }
 
 //////////////////////////////////////////////////////////////////////////
