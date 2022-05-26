@@ -73,14 +73,13 @@ struct PacketProc {
             clearGlobalIfNeeded();
             zeno::getSession().globalComm->addViewObject(objKey, object);
 
-            //need to notify the GL to update.
-            zenoApp->getMainWindow()->updateViewport();
-
         } else if (action == "newFrame") {
             globalCommNeedNewFrame = 1; // postpone `zeno::getSession().globalComm->newFrame();`
 
         } else if (action == "finishFrame") {
             zeno::getSession().globalComm->finishFrame();
+            //need to notify the GL to update.
+            zenoApp->getMainWindow()->updateViewport();
 
         } else if (action == "frameRange") {
             auto pos = objKey.find(':');
