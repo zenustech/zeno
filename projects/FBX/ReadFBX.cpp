@@ -50,6 +50,7 @@ struct Mesh{
         createTexDir("valueTex");
         readTrans(scene->mRootNode, aiMatrix4x4());
         processNode(scene->mRootNode, scene);
+        processCamera(scene);
     }
 
     void readTrans(const aiNode * parentNode, aiMatrix4x4 parentTransform){
@@ -83,7 +84,9 @@ struct Mesh{
             vertexInfo.position = vec;
 
             if (mesh->mTextureCoords[0]){
-                aiVector3D uvw(mesh->mTextureCoords[0][j].x, mesh->mTextureCoords[0][j].y, 0.0f);
+                aiVector3D uvw(fmodf(mesh->mTextureCoords[0][j].x, 1.0f),
+                               fmodf(mesh->mTextureCoords[0][j].y, 1.0f), 0.0f);
+                //zeno::log_info(">>>>> {} {} ", uvw.x, uvw.y);
                 vertexInfo.texCoord = uvw;
             }
             if (mesh->mNormals) {
@@ -138,6 +141,40 @@ struct Mesh{
             processNode(node->mChildren[i], scene);
     }
 
+    void processCamera(const aiScene *scene){
+        // If Maya's camera does not have `LookAt`, it will use A `InterestPosition`
+
+        zeno::log_info(">>>>> Num Camera {}", scene->mNumCameras);
+        for(unsigned int i=0;i<scene->mNumCameras; i++){
+            auto& cam = scene->mCameras[i];
+            std::string camName = cam->mName.data;
+            aiMatrix4x4 camMatrix;
+            cam->GetCameraMatrix(camMatrix);
+
+            SCamera sCam{cam->mHorizontalFOV,
+                         cam->mFocalLength,
+                         cam->mAspect,
+                         cam->mClipPlaneNear,
+                         cam->mClipPlaneFar,
+                         zeno::vec3f(cam->mInterestPosition.x, cam->mInterestPosition.y, cam->mInterestPosition.z),
+                         // TODO The following data that is all default, we use Cam-Anim TRS instead of them
+                         /*zeno::vec3f(cam->mLookAt.x, cam->mLookAt.y, cam->mLookAt.z),*/
+                         /*zeno::vec3f(cam->mPosition.x, cam->mPosition.y, cam->mPosition.z),*/
+                         /*zeno::vec3f(cam->mUp.x, cam->mUp.y, cam->mUp.z),*/
+                         /*camMatrix*/
+            };
+            zeno::log_info(">>>>> {} {} {} {} {} {}\n {} {} {}",
+                           camName, sCam.hFov, sCam.focL, sCam.aspect, sCam.pNear, sCam.pFar,
+                           /*sCam.lookAt[0], sCam.lookAt[1], sCam.lookAt[2],  // default is 1,0,0*/
+                           /*sCam.pos[0], sCam.pos[1], sCam.pos[2], // default is 0,0,0*/
+                           /*sCam.up[0], sCam.up[1], sCam.up[2],  // default is 0,1,0*/
+                           sCam.interestPos[0], sCam.interestPos[1], sCam.interestPos[2]
+                           );
+
+            fbxData.iCamera.value[camName] = sCam;
+        }
+    }
+
     size_t findCaseInsensitive(std::string data, std::string toSearch, size_t pos = 0)
     {
         std::transform(data.begin(), data.end(), data.begin(), ::tolower);
@@ -177,7 +214,7 @@ struct Mesh{
         std::string matName = material->GetName().data;
         std::string vmPath = createTexDir("valueTex/" + matName);
 
-        zeno::log_info("1M {} M {} NT {}", meshName, matName, scene->mNumTextures);
+        //zeno::log_info("1M {} M {} NT {}", meshName, matName, scene->mNumTextures);
 
         if( findCaseInsensitive(matName, "SKIN") != std::string::npos ){
             mat.setDefaultValue(dMatProp.getUnknownProp());
@@ -203,7 +240,7 @@ struct Mesh{
                 auto s = std::string(str.C_Str());
                 auto c = (p += s).string();
                 std::replace(c.begin(), c.end(), '\\', '/');
-                zeno::log_info("2N {} TN {} TT {} CP {}", com.first, str.data, texType, c);
+                //zeno::log_info("2N {} TN {} TT {} CP {}", com.first, str.data, texType, c);
 
                 mat.val.at(com.first).texPath = c;
             }
@@ -252,7 +289,7 @@ struct Mesh{
                 stbi_write_png(img_path.c_str(), width, height, channel_num, pixels, width*channel_num);
 
                 mat.val.at(com.first).texPath = img_path;
-                zeno::log_info("3N {} P `{}` F {} V `{} {} {} {}`", com.first, key, found, v.r, v.g, v.b, v.a);
+                //zeno::log_info("3N {} P `{}` F {} V `{} {} {} {}`", com.first, key, found, v.r, v.g, v.b, v.a);
             }
         }
 
@@ -393,11 +430,19 @@ struct Anim{
         readHierarchyData(m_RootNode, scene->mRootNode);
         //zeno::log_info("----- Anim: Convert AssimpNode.");
 
+        Helper::printNodeTree(&m_RootNode, 0);
+
         if(scene->mNumAnimations){
             // TODO handle more animation if have
             auto animation = scene->mAnimations[0];
             duration = animation->mDuration;
             tick = animation->mTicksPerSecond;
+            zeno::log_info("Animation Name: {} NC {} NMC {} NMMC {}",
+                           animation->mName.data,
+                           animation->mNumChannels,
+                           animation->mNumMeshChannels,
+                           animation->mNumMorphMeshChannels
+                           );
 
             setupBones(animation, model);
         }
