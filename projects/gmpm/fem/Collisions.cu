@@ -158,7 +158,7 @@ struct VisualizeBvh : INode {
                   ++level;
                 }
                 // is valid and the right child of its parent
-                if (node != -1 && node > bvh._parents[node] + 1) {
+                if (node != -1) {
                   auto no = atomic_add(execTag, &bvCnt[0], 1);
                   extractedBvs[no] = bvh.getNodeBV(node);
                 }
@@ -195,7 +195,7 @@ struct VisualizeBvh : INode {
                   ++level;
                 }
                 // is valid and the right child of its parent
-                if (node != -1 && node > bvh._parents[node] + 1) {
+                if (node != -1) {
                   auto no = atomic_add(execTag, &bvCnt[0], 1);
                   extractedBvs[no] = bvh.getNodeBV(node);
                 }
@@ -232,7 +232,7 @@ struct VisualizeBvh : INode {
                   ++level;
                 }
                 // is valid and the right child of its parent
-                if (node != -1 && node > bvh._parents[node] + 1) {
+                if (node != -1) {
                   auto no = atomic_add(execTag, &bvCnt[0], 1);
                   extractedBvs[no] = bvh.getNodeBV(node);
                 }
@@ -240,6 +240,7 @@ struct VisualizeBvh : INode {
     }
     {
       const std::size_t numExtractedBvs = bvCnt.getVal();
+      fmt::print("extracted {} bvs\n", numExtractedBvs);
       extractedBvs.resize(numExtractedBvs);
       Vector<zs::vec<int, 2>> dLines{extractedBvs.get_allocator(),
                                      12 * numExtractedBvs};
@@ -252,6 +253,15 @@ struct VisualizeBvh : INode {
                 auto offset = i * 8;
                 for (auto [x, y, z] : ndrange<3>(2))
                   dVerts[offset++] = bv.getVert(x, y, z);
+#if 0
+                auto mi = bv._min;
+                auto len = bv._max - bv._min;
+                for (auto [x, y, z] : ndrange<3>(2))
+                  dVerts[offset++] =
+                      zs::vec<float, 3>{x ? len[0] : 0, y ? len[1] : 0,
+                                        z ? len[2] : 0} +
+                      mi;
+#endif
               });
       cudaPol(range(numExtractedBvs),
               [dLines = proxy<space>(dLines)] ZS_LAMBDA(int i) mutable {
@@ -273,8 +283,22 @@ struct VisualizeBvh : INode {
                 dLines[toffset++] = ivec{6, 7} + voffset;
               });
 
+#if 0
+      cudaPol(range(numExtractedBvs),
+              [extractedBvs = proxy<space>(extractedBvs),
+               surfaces = proxy<space>({}, surfaces),
+               dVerts = proxy<space>(dVerts)] ZS_LAMBDA(int i) mutable {
+                auto bv = extractedBvs[i];
+                auto tri = surfaces.template pack<3>("inds", i)
+                               .template reinterpret_bits<int>();
+                printf("%d-th bv (%d, %d, %d): [%f, %f, %f] - [%f, %f, %f]\n",
+                       i, tri[0], tri[1], tri[2], bv._min[0], bv._min[1],
+                       bv._min[2], bv._max[0], bv._max[1], bv._max[2]);
+              });
+#endif
+
       prim->resize(8 * numExtractedBvs);
-      auto &pos = prim->attr<zeno::vec3f>("pos");
+      auto &pos = prim->verts.values;
       prim->lines.resize(12 * numExtractedBvs);
       auto &lines = prim->lines.values;
 

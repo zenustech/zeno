@@ -55,7 +55,7 @@ retrieve_bounding_volumes(Pol &pol, const TileVecT &vtemp,
     auto inds =
         eles.template pack<dim>("inds", ei).template reinterpret_bits<int>();
     auto x0 = vtemp.template pack<3>(xTag, inds[0]);
-    bv_t bv{x0};
+    bv_t bv{x0, x0};
     for (int d = 1; d != dim; ++d)
       merge(bv, vtemp.template pack<3>(xTag, inds[d]));
     bv._min -= thickness / 2;
