@@ -49,7 +49,9 @@ static void send_packet(std::string_view info, const char *buf, size_t len) {
         clientSocket->write(&c, 1);
     }
     clientSocket->write(buf, len);
-    clientSocket->waitForBytesWritten();
+    while (clientSocket->bytesToWrite() > 0) {
+        clientSocket->waitForBytesWritten();
+    }
 }
 
 static void runner_start(std::string const &progJson, int sessionid) {
