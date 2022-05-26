@@ -43,63 +43,52 @@ namespace zfx {
         void addWarnings(const std::string msg, Position pos) {
 
         }
-/*
-        auto parse() {
-            std::vector<std::string> asts;
 
-            return asts;
-        }
-
-*/
-
-        std::vector<std::shared_ptr<AstNode>> parseStatement() {
+        AstNode parse_atom() {
 
         }
 
-
-        std::shared_ptr<AstNode> parseVariable() {
-
-        }
-
-        std::shared_ptr<AstNode> parseAssignment() {
+        AstNode parse_operator() {
 
         }
 
-        std::shared_ptr<AstNode> parseExpression() {
+        AstNode parse_compound() {
 
         }
 
-        std::shared_ptr<AstNode> parseIfStatement() {
-
-        };
-
-        std::shared_ptr<AstNode> parseBinary() {
+        AstNode parse_factor() {
 
         }
 
-        std::shared_ptr<AstNode> parseUnary() {
-            auto t = this->scanner.peek();
-            //前缀一元表达式
-            if (t.kind == TokenKind::Op) {
-                this->scanner.next();
-                auto exp = this->parseUnary();
-                return std::make_shared<Unary>();
-            } else {
-                //后缀只能是++ --
-
-            }
-        }
-
-        std::shared_ptr<AstNode> parseTenary() {
+        AstNode parse_term() {
 
         }
 
-        std::shared_ptr<AstNode> parseFunctionCall() {
+        AstNode parse_side() {
 
-            auto name = this->scanner.next().text;
-            return std::make_shared<FunctionCall>();
+        }
+
+        AstNode parse_cond() {
+
+        }
+
+        AstNode parse_andexpr() {
+
+        }
+
+        AstNode parse_orexpr() {
+
+        }
+
+        AstNode parse_expr() {
+
+        }
+
+        AstNode parse_stmt() {
+
         }
     };
+
 
 }
 

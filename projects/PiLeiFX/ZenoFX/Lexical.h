@@ -117,7 +117,7 @@ namespace zfx {
             }
     };
 
-
+/*
     class Scanner {
       private:
         std::vector<Token> tokens;
@@ -205,12 +205,32 @@ namespace zfx {
             return (ch == ' ' || ch == '\n' || ch == '\t');
         }
 
-        bool isDigit(char ch) {
+        inline bool isDigit(char ch) {
             return (ch >= '0' && ch <= '9');
         }
 
-        bool isLetter() {}
+        inline bool is_symbolic_atom(char ch) {
+            if () return false;
+            if (isspace(ch) ||) {
+                return true;
+            }
+            return false;
+        }
 
+        inline int swizzle_from_char(char ch) {
+            if ('x' <= c && c <= 'z') {
+                return c - 'z';
+            } else if (c == 'w') {
+                return 3;
+            } else if('0' <= c && c <= '9') {
+                return c - '0';
+            } else if () {
+
+            } else {
+                return -1;
+            }
+
+        }
         Token parseIdentifer() {
             Token token;
             if (this->KeywordMap.find(token.text)) {
@@ -219,6 +239,61 @@ namespace zfx {
             return token;
         }
     };
+*/
 
+    class Scanner {
+      private:
+        std::list<Token> tokens;
+        std::string data;
+        Position lastPos{0, 0, 0, 0};
+      public:
+        Scanner(const std::string &data) : data(data) {
+
+        }
+        Token next() {
+            if (this->tokens.empty()) {
+                auto t = this->getAToken();
+                //set pos
+                this->lastPos = t.pos;
+                return t;
+            } else {
+                auto t = this->tokens.front();
+                this->lastPos = t.pos;
+                this->tokens.pop_front();
+                return t;
+            }
+        }
+
+        Token peek() {
+            if (this->tokens.empty()) {
+                auto t = this->getAToken();
+                this->tokens->push_back(t);
+                return t;
+            } else {
+                auto t = this->tokens.front();
+                return t;
+            }
+        }
+
+        Token peek2() {
+            while (this->tokens.size() < 2) {
+                auto t = this->getAToken();
+                this->tokens.push_back(t);
+            }
+
+            if (this->tokens.size() < 2) {
+                return Token{};//EofToken
+            }
+
+            auto it = this->tokens.begin();
+            std::advance(it, 1);
+            return *it1;
+        }
+
+      private:
+        Token getAToken() {
+
+        }
+    };
 }
 
