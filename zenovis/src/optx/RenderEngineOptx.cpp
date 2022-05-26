@@ -218,15 +218,15 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                 }
             }
             xinxinoptix::optixupdatematerial(shaders);
-            
+            //zeno::log_debug("[zeno-optix] updating light");
+            xinxinoptix::optixupdatelight();
             //zeno::log_debug("[zeno-optix] updating mesh");
             xinxinoptix::optixupdatemesh(mtlidlut);
             
 
             xinxinoptix::optixupdateend();
             
-            //zeno::log_debug("[zeno-optix] updating light");
-            xinxinoptix::optixupdatelight();
+            
             
             meshNeedUpdate = false;
             matNeedUpdate = false;

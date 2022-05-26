@@ -21,7 +21,7 @@ static __inline__ __device__  float GTR2(float cosT,float a){
 static __inline__ __device__  float GGX(float cosT, float a){
     float a2 = a*a;
     float b = cosT*cosT;
-    return 1.0f/ (cosT + sqrtf(a2 + b - a2*b));
+    return 1.0f/ (abs(cosT) + max(sqrtf(a2 + b - a2*b),0.000001));
 }
 static __inline__ __device__  vec3 sampleOnHemisphere(unsigned int &seed, float roughness)
 {
@@ -36,6 +36,25 @@ static __inline__ __device__  vec3 sampleOnHemisphere(unsigned int &seed, float 
 
 
     return vec3(cos(phi) * sinTheta,  sin(phi) * sinTheta, cosTheta);
+}
+static __inline__ __device__ float pdfDiffuse(vec3 wi, vec3 n)
+{
+    return abs(dot(n, wi)/M_PIf);
+}
+static __inline__ __device__ float pdfMicrofacet(float NoH, float roughness)
+{
+    float a2 = roughness * roughness;
+    a2 *= a2;
+    float cos2Theta = NoH * NoH;
+    float denom = cos2Theta * (a2 - 1.) + 1;
+    if(denom == 0 ) return 0;
+    float pdfDistrib = a2 / (M_PIf * denom * denom);
+    return pdfDistrib;
+}
+static __inline__ __device__ float pdfClearCoat(float NoH, float ccAlpha)
+{
+    float Dr = GTR1(NoH, ccAlpha);
+    return Dr;
 }
 }
 namespace DisneyBRDF
@@ -71,7 +90,7 @@ static __inline__ __device__ float pdf(
         float pdfGTR1 = BRDFBasics::GTR1(cosTheta, ccAlpha) * cosTheta;
 
         float ratio = 1.0f/(1.0f + clearcoat);
-        float pdfSpec = mix(pdfGTR1, pdfGTR2, ratio)/(4.0f * abs(dot(wi, half)));
+        float pdfSpec = mix(pdfGTR1, pdfGTR2, ratio)/(4.0f * abs(dot(wo, half)));
         float pdfDiff = abs(dot(wi, n)) * (1.0f/M_PIf);
 
         return diffRatio * pdfDiff + spRatio * pdfSpec;
@@ -176,7 +195,7 @@ static __inline__ __device__ vec3 eval(
         float Dc = BRDFBasics::GTR1(ndoth, mix(0.1f, 0.001f, clearcoatGloss));
 
         float roughg = sqrtf(roughness*0.5f + 0.5f);
-        float Gs = BRDFBasics::GGX(ndotwo, roughg) * BRDFBasics::GGX(ndotwi, roughg);
+        float Gs = BRDFBasics::GGX(ndotwo, roughness) * BRDFBasics::GGX(ndotwi, roughness);
 
         float Gc = BRDFBasics::GGX(ndotwo, 0.25) * BRDFBasics::GGX(ndotwi, 0.25f);
 

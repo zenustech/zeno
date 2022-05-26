@@ -84,5 +84,6 @@ struct MissData
 struct HitGroupData
 {
     float4* vertices;
+    unsigned short* lightMark;
     float* uniforms;//TODO
 };

@@ -126,7 +126,7 @@ typedef Record<HitGroupData> HitGroupRecord;
 
 
 using Vertex = float4;
-
+std::vector<Vertex> g_lightMesh;
 
 struct PathTracerState
 {
@@ -136,6 +136,7 @@ struct PathTracerState
     raii<CUdeviceptr>              d_gas_output_buffer;  // Triangle AS memory
     raii<CUdeviceptr>              m_d_ias_output_buffer;
     raii<CUdeviceptr>              d_vertices;
+    raii<CUdeviceptr>              d_lightMark;
     raii<CUdeviceptr>              d_mat_indices             ;
 
     raii<OptixModule>              ptx_module;
@@ -197,6 +198,10 @@ static std::vector<Vertex> g_vertices= // TRIANGLE_COUNT*3
 static std::vector<uint32_t> g_mat_indices= // TRIANGLE_COUNT
 {
     0,0,0,
+};
+static std::vector<u_short> g_lightMark = //TRIANGLE_COUNT
+{
+    0
 };
 static std::vector<ParallelogramLight> g_lights={
     ParallelogramLight{
@@ -334,12 +339,9 @@ static void initLaunchParams( PathTracerState& state )
                 reinterpret_cast<void**>( &state.accum_buffer_p.reset() ),
                 state.params.width * state.params.height * sizeof( float4 )
                 ) );
-    CUDA_CHECK( cudaMalloc(
-                reinterpret_cast<void**>( &state.lightsbuf_p.reset() ),
-                sizeof( ParallelogramLight ) * g_lights.size()
-                ) );
+    
     state.params.accum_buffer = (float4*)(CUdeviceptr)state.accum_buffer_p;
-    state.params.lights = (ParallelogramLight*)(CUdeviceptr)state.lightsbuf_p;
+    
     state.params.frame_buffer = nullptr;  // Will be set when output buffer is mapped
 
     state.params.samples_per_launch = samples_per_launch;
@@ -810,6 +812,7 @@ static void createSBT( PathTracerState& state )
             OPTIX_CHECK( optixSbtRecordPackHeader( OptixUtil::rtMaterialShaders[i].m_radiance_hit_group, &hitgroup_records[sbt_idx] ) );
             hitgroup_records[sbt_idx].data.uniforms     = nullptr; //TODO uniforms like iTime, iFrame, etc.
             hitgroup_records[sbt_idx].data.vertices       = reinterpret_cast<float4*>( (CUdeviceptr)state.d_vertices );
+            hitgroup_records[sbt_idx].data.lightMark       = reinterpret_cast<unsigned short*>( (CUdeviceptr)state.d_lightMark );
         }
 
         {
@@ -999,6 +1002,15 @@ void optixupdatemesh(std::map<std::string, int> const &mtlidlut) {
                 mat_indices_size_in_bytes,
                 cudaMemcpyHostToDevice
                 ) );
+    const size_t light_mark_size_in_bytes = g_lightMark.size() * sizeof( unsigned short );
+    CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.d_lightMark.reset() ), light_mark_size_in_bytes ) );
+    CUDA_CHECK( cudaMemcpy(
+                reinterpret_cast<void*>( (CUdeviceptr)state.d_lightMark ),
+                g_lightMark.data(),
+                light_mark_size_in_bytes,
+                cudaMemcpyHostToDevice
+                ) );
+
     splitMesh(g_vertices, g_mat_indices, g_meshPieces);
     std::cout<<"mesh pieces:"<<g_meshPieces.size()<<std::endl;
     for(int i=0;i<g_meshPieces.size();i++)
@@ -1007,18 +1019,37 @@ void optixupdatemesh(std::map<std::string, int> const &mtlidlut) {
     }
     buildInstanceAccel(state, 2, g_meshPieces);
 }
+void addLightMesh(float3 corner, float3 v2, float3 v1, float3 normal, float emission)
+{
+    float3 lc = corner - normal * 0.001;
+    float3 vert0 = lc, vert1 = lc + v1, vert2 = lc + v2, vert3 = lc + v1 + v2;
+    g_lightMesh.push_back(make_float4(vert0.x, vert0.y, vert0.z, emission));
+    g_lightMesh.push_back(make_float4(vert1.x, vert1.y, vert1.z, emission));
+    g_lightMesh.push_back(make_float4(vert2.x, vert2.y, vert2.z, emission));
+
+    g_lightMesh.push_back(make_float4(vert3.x, vert3.y, vert3.z, emission));
+    g_lightMesh.push_back(make_float4(vert2.x, vert2.y, vert2.z, emission));
+    g_lightMesh.push_back(make_float4(vert1.x, vert1.y, vert1.z, emission));
+}
 void optixupdatelight() {
     camera_changed = true;
-
+    
     g_lights.clear();
+    g_lightMesh.clear();
     for (int i = 0; i < 1; i++) {
         auto &light = g_lights.emplace_back();
-        light.emission = make_float3( 10000.f );
+        light.emission = make_float3( 30000.f );
         light.corner   = make_float3( 343.0f, 548.5f, 227.0f );
         light.v2       = make_float3( -10.0f, 0.0f, 0.0f );
         light.normal   = make_float3( 0.0f, -10.0f, 0.0f );
         light.v1       = normalize( cross( light.v2, light.normal ) );
+        addLightMesh(light.corner, light.v2, light.v1, light.normal, 30000.f);
     }
+    CUDA_CHECK( cudaMalloc(
+                reinterpret_cast<void**>( &state.lightsbuf_p.reset() ),
+                sizeof( ParallelogramLight ) * g_lights.size()
+                ) );
+    state.params.lights = (ParallelogramLight*)(CUdeviceptr)state.lightsbuf_p;
     if (g_lights.size())
         CUDA_CHECK( cudaMemcpy(
                 reinterpret_cast<void*>( (CUdeviceptr)state.lightsbuf_p ),
@@ -1122,12 +1153,14 @@ std::vector<std::shared_ptr<smallMesh>> &oMeshes)
 static void updatedrawobjects() {
     g_vertices.clear();
     g_mat_indices.clear();
+    g_lightMark.clear();
     size_t n = 0;
     for (auto const &[key, dat]: drawdats) {
         n += dat.tris.size()/3;
     }
     g_vertices.resize(n * 3);
     g_mat_indices.resize(n);
+    g_lightMark.resize(n);
     n = 0;
     for (auto const &[key, dat]: drawdats) {
         auto it = g_mtlidlut.find(dat.mtlid);
@@ -1136,6 +1169,7 @@ static void updatedrawobjects() {
 //#pragma omp parallel for
         for (size_t i = 0; i < dat.tris.size() / 3; i++) {
             g_mat_indices[n + i] = mtlindex;
+            g_lightMark[n+i] = 0;
             g_vertices[(n + i) * 3 + 0] = {
                 dat.verts[dat.tris[i * 3 + 0] * 3 + 0],
                 dat.verts[dat.tris[i * 3 + 0] * 3 + 1],
@@ -1156,6 +1190,15 @@ static void updatedrawobjects() {
             };
         }
         n += dat.tris.size() / 3;
+    }
+    size_t ltris = g_lightMesh.size()/3;
+    for(int l=0;l<ltris;l++)
+    {
+        g_vertices.push_back(g_lightMesh[l*3+0]);
+        g_vertices.push_back(g_lightMesh[l*3+1]);
+        g_vertices.push_back(g_lightMesh[l*3+2]);
+        g_mat_indices.push_back(0);
+        g_lightMark.push_back(1);
     }
 }
 
