@@ -3590,4 +3590,45 @@ ZENDEFNODE(BulletMultiBodyRemoveBody, {
                                          {},
                                          {"Bullet"},
                                      });
+
+
+struct BulletMultiBodyGetContactPoints : zeno::INode {
+    virtual void apply() {
+        auto world = get_input<BulletMultiBodyWorld>("world");
+        int numManifolds = world->dispatcher->getNumManifolds();
+        auto contactList = std::make_shared<ListObject>();
+        for(int i=0; i<numManifolds; ++i){
+            btPersistentManifold* contactManifold = world->dispatcher->getManifoldByIndexInternal(i);
+            int numContacts = contactManifold->getNumContacts();
+            auto contactPairsList = std::make_shared<ListObject>();
+            for (int j=0; j<numContacts; j++){
+                btManifoldPoint& pt = contactManifold->getContactPoint(j);
+
+                btVector3 ptA = pt.getPositionWorldOnA();
+                btVector3 ptB = pt.getPositionWorldOnB();
+
+                auto pA = std::make_shared<zeno::NumericObject>();
+                auto pB = std::make_shared<zeno::NumericObject>();
+
+                pA->set<zeno::vec3f>(zeno::vec3f(ptA.x(), ptA.y(), ptA.z()));
+                pB->set<zeno::vec3f>(zeno::vec3f(ptB.x(), ptB.y(), ptB.z()));
+
+                contactPairsList->arr.push_back(pA);
+                contactPairsList->arr.push_back(pB);
+            }
+            contactList->arr.push_back(contactPairsList);
+        }
+        set_output("world", std::move(world));
+        set_output("contactPointsList", std::move(contactList));
+    }
+};
+
+ZENDEFNODE(BulletMultiBodyGetContactPoints, {
+                                                {"world"},
+                                                {"contactPointsList"},
+                                                {},
+                                                {"Bullet"},
+                                            });
+
+
 }; // namespace
