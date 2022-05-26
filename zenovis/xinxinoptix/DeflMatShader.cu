@@ -9,6 +9,132 @@
 #include "IOMat.h"
 
 
+
+/*
+extern "C" __global__ void __closesthit__occlusion()
+{
+    setPayloadOcclusion( true );
+}
+extern "C" __global__ void __anyhit__shadow_cutout()
+{
+    HitGroupData* rt_data = (HitGroupData*)optixGetSbtDataPointer();
+
+    const int    prim_idx        = optixGetPrimitiveIndex();
+    const vec3 ray_dir         = (optixGetWorldRayDirection());
+    const int    vert_idx_offset = prim_idx*3;
+
+    const vec3 v0   = make_float3( rt_data->vertices[ vert_idx_offset+0 ] );
+    const vec3 v1   = make_float3( rt_data->vertices[ vert_idx_offset+1 ] );
+    const vec3 v2   = make_float3( rt_data->vertices[ vert_idx_offset+2 ] );
+    const vec3 N_0  = normalize( cross( v1-v0, v2-v0 ) );
+
+    const vec3 N    = faceforward( N_0, -ray_dir, N_0 );
+    const vec3 P    = vec3(optixGetWorldRayOrigin()) + optixGetRayTmax()*ray_dir;
+
+    RadiancePRD* prd = getPRD();
+    float opacity = 0.0;//sin(P.y)>0?1.0:0.0;
+    prd->opacity = opacity;
+    // Stochastic alpha test to get an alpha blend effect.
+    if (opacity >0.99 ) // No need to calculate an expensive random number if the test is going to fail anyway.
+    {
+        optixIgnoreIntersection();
+    }
+    else
+    {
+        prd->flags |= 1;
+        optixTerminateRay();
+    }
+}
+
+
+extern "C" __global__ void __closesthit__radiance()
+{
+    HitGroupData* rt_data = (HitGroupData*)optixGetSbtDataPointer();
+
+    const int    prim_idx        = optixGetPrimitiveIndex();
+    const vec3 ray_dir         = (optixGetWorldRayDirection());
+    const int    vert_idx_offset = prim_idx*3;
+
+    const vec3 v0   = make_float3( rt_data->vertices[ vert_idx_offset+0 ] );
+    const vec3 v1   = make_float3( rt_data->vertices[ vert_idx_offset+1 ] );
+    const vec3 v2   = make_float3( rt_data->vertices[ vert_idx_offset+2 ] );
+    const vec3 N_0  = normalize( cross( v1-v0, v2-v0 ) );
+
+    const vec3 N    = faceforward( N_0, -ray_dir, N_0 );
+    const vec3 P    = vec3(optixGetWorldRayOrigin()) + optixGetRayTmax()*ray_dir;
+
+    RadiancePRD* prd = getPRD();
+
+    if( prd->countEmitted )
+        prd->emitted = rt_data->emission_color;
+    else
+        prd->emitted = vec3( 0.0f );
+
+    
+    float opacity = 0.0;//sin(P.y)>0?1.0:0.0;
+    prd->opacity = opacity;
+    if(opacity>0.99)
+    {
+        prd->radiance += vec3(0.0f);
+        prd->origin = P;
+        prd->direction = ray_dir;
+        return;
+    }
+
+    unsigned int seed = prd->seed;
+
+    {
+        const float z1 = rnd(seed);
+        const float z2 = rnd(seed);
+
+        vec3 w_in;
+        cosine_sample_hemisphere( z1, z2, w_in );
+        Onb onb( N );
+        onb.inverse_transform( w_in );
+        prd->direction = w_in;
+        prd->origin    = P;
+
+        prd->attenuation *= rt_data->diffuse_color;
+        prd->countEmitted = false;
+    }
+
+    const float z1 = rnd(seed);
+    const float z2 = rnd(seed);
+    prd->seed = seed;
+
+    ParallelogramLight light = params.light;
+    const vec3 light_pos = light.corner + light.v1 * z1 + light.v2 * z2;
+
+    // Calculate properties of light sample (for area based pdf)
+    const float  Ldist = length(light_pos - P );
+    const vec3 L     = normalize(light_pos - P );
+    const float  nDl   = dot( N, L );
+    const float  LnDl  = -dot( vec3(light.normal), L );
+
+    float weight = 0.0f;
+    if( nDl > 0.0f && LnDl > 0.0f )
+    {
+        prd->flags = 0;
+        traceOcclusion(
+            params.handle,
+            P,
+            L,
+            1e-5f,         // tmin
+            Ldist - 1e-5f  // tmax
+            );
+        unsigned int occluded = prd->flags;
+        if( !occluded )
+        {
+            const float A = length(cross(light.v1, light.v2));
+            weight = nDl * LnDl * A / (M_PIf * Ldist * Ldist);
+        }
+    }
+
+    prd->radiance += light.emission * weight;
+}
+*/
+
+
 static __inline__ __device__ MatOutput evalMaterial(MatInput const &attrs) {
     /* MODMA */
     auto attr_pos = attrs.pos;
@@ -62,9 +188,12 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     const float3 v0   = make_float3( rt_data->vertices[ vert_idx_offset+0 ] );
     const float3 v1   = make_float3( rt_data->vertices[ vert_idx_offset+1 ] );
     const float3 v2   = make_float3( rt_data->vertices[ vert_idx_offset+2 ] );
+
     const float3 N_0  = normalize( cross( v1-v0, v2-v0 ) );
     const float3 N    = faceforward( N_0, -ray_dir, N_0 );
     const float3 P    = optixGetWorldRayOrigin() + optixGetRayTmax()*ray_dir;
+    unsigned short isLight = rt_data->lightMark[inst_idx * 1024 + prim_idx];
+    float w = rt_data->vertices[ vert_idx_offset+0 ].w;
 
     MatInput attrs;
     /* MODMA */
@@ -94,7 +223,7 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     auto opacity = mats.opacity;
 
     // Stochastic alpha test to get an alpha blend effect.
-    if (opacity >0.99 ) // No need to calculate an expensive random number if the test is going to fail anyway.
+    if (opacity >0.99) // No need to calculate an expensive random number if the test is going to fail anyway.
     {
         optixIgnoreIntersection();
     }
@@ -120,7 +249,8 @@ extern "C" __global__ void __closesthit__radiance()
     const float3 N_0  = normalize( cross( v1-v0, v2-v0 ) );
     const float3 N    = faceforward( N_0, -ray_dir, N_0 );
     const float3 P    = optixGetWorldRayOrigin() + optixGetRayTmax()*ray_dir;
-
+    unsigned short isLight = rt_data->lightMark[inst_idx * 1024 + prim_idx];
+    float w = rt_data->vertices[ vert_idx_offset+0 ].w;
     MatInput attrs;
     /* MODMA */
     attrs.pos = vec3(P.x, P.y, P.z);
@@ -149,14 +279,33 @@ extern "C" __global__ void __closesthit__radiance()
 
     //discard fully opacity pixels
     prd->opacity = opacity;
-    if(opacity>0.99)
+    prd->prob2 = prd->prob;
+    prd->attenuation2 = prd->attenuation;
+    prd->countEmitted = false;
+    if(isLight==1)
     {
-        prd->radiance += make_float3(0.0f);
+        prd->countEmitted = true;
+        //hit light, emit
+        float dist = length(P - optixGetWorldRayOrigin());
+        float3 lv1 = v1-v0, lv2 = v2-v0;
+        float3 lnrm = normalize(cross(normalize(lv1), normalize(lv2)));
+        float3 L     = normalize(P - optixGetWorldRayOrigin());
+        float  LnDl  = clamp(-dot( lnrm, L ),0.0f,1.0f);
+        float A = length(cross(lv1, lv2))/2;
+        float weight = LnDl * A / (M_PIf*dist * dist);
+        prd->radiance = make_float3(1.0f,1.0f,1.0f) * w * weight;
         prd->origin = P;
         prd->direction = ray_dir;
         return;
     }
-
+    if(opacity>0.99)
+    {
+        prd->radiance = make_float3(0.0f);
+        prd->origin = P;
+        prd->direction = ray_dir;
+        return;
+    }
+    
     //{
     unsigned int seed = prd->seed;
     float is_refl;
@@ -214,12 +363,11 @@ extern "C" __global__ void __closesthit__radiance()
                                 wi,
                                 -normalize(ray_dir)
                                 );
-    prd->prob2 = prd->prob;
+    
     prd->prob *= pdf/clamp(dot(wi, N),0.0f,1.0f);
     prd->origin = P;
     prd->direction = wi;
     prd->countEmitted = false;
-    prd->attenuation2 = prd->attenuation;
     prd->attenuation *= f;
     //}
 
@@ -283,7 +431,7 @@ extern "C" __global__ void __closesthit__radiance()
                                 -normalize(inDir)
                                 );
             const float A = length(cross(light.v1, light.v2));
-            weight = nDl * LnDl * A / (M_PIf*Ldist * Ldist) / wpdf;
+            weight = nDl * LnDl * A / (Ldist * Ldist);
         }
     }
     float3 lbrdf = DisneyBRDF::eval(basecolor,
@@ -303,7 +451,7 @@ extern "C" __global__ void __closesthit__radiance()
                                 L,
                                 -normalize(inDir)
                                 );
-    prd->radiance = light.emission * weight * lbrdf;
+    prd->radiance = light.emission * weight * lbrdf ;
 }
 
 extern "C" __global__ void __closesthit__occlusion()

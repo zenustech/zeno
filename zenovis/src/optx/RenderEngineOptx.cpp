@@ -42,7 +42,7 @@ struct GraphicsManager {
                 auto vs = (float const *)prim->verts.data();
                 std::map<std::string, std::pair<float const *, size_t>> vtab;
                 prim->verts.foreach_attr([&] (auto const &key, auto const &arr) {
-                    vtab[key] = {(float const *)arr.data(), sizeof(arr[0]) / sizeof(float)};
+                    vtab[key] = {(float const *)arr.data(), sizeof(arr[0])};
                 });
                 auto ts = (int const *)prim->tris.data();
                 auto nvs = prim->verts.size();
@@ -215,19 +215,18 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                     shader.append(shadtpl2.second);
                     mtlidlut.insert({mtldet->mtlidkey, (int)shaders.size()});
                     shaders.push_back(std::move(shader));
-
                 }
             }
             xinxinoptix::optixupdatematerial(shaders);
-            
+            //zeno::log_debug("[zeno-optix] updating light");
+            xinxinoptix::optixupdatelight();
             //zeno::log_debug("[zeno-optix] updating mesh");
             xinxinoptix::optixupdatemesh(mtlidlut);
             
 
             xinxinoptix::optixupdateend();
             
-            //zeno::log_debug("[zeno-optix] updating light");
-            xinxinoptix::optixupdatelight();
+            
             
             meshNeedUpdate = false;
             matNeedUpdate = false;
