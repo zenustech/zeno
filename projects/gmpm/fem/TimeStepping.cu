@@ -771,10 +771,13 @@ struct ImplicitTimeStepping : INode {
                                vtemp = proxy<space>({}, vtemp),
                                res = proxy<space>(res), tag, model = model,
                                dt = this->dt] __device__(int ei) mutable {
-        auto DmInv = eles.pack<3, 3>("IB", ei);
-        auto inds = eles.pack<4>("inds", ei).reinterpret_bits<int>();
-        vec3 xs[4] = {vtemp.pack<3>(tag, inds[0]), vtemp.pack<3>(tag, inds[1]),
-                      vtemp.pack<3>(tag, inds[2]), vtemp.pack<3>(tag, inds[3])};
+        auto DmInv = eles.template pack<3, 3>("IB", ei);
+        auto inds =
+            eles.template pack<4>("inds", ei).template reinterpret_bits<int>();
+        vec3 xs[4] = {vtemp.template pack<3>(tag, inds[0]),
+                      vtemp.template pack<3>(tag, inds[1]),
+                      vtemp.template pack<3>(tag, inds[2]),
+                      vtemp.template pack<3>(tag, inds[3])};
         mat3 F{};
         {
           auto x1x0 = xs[1] - xs[0];
@@ -789,7 +792,7 @@ struct ImplicitTimeStepping : INode {
         atomic_add(exec_cuda, &res[0], vole * psi * dt * dt);
       });
       // contacts
-      if constexpr (enable_contact) {
+      {
         auto activeGap2 = dHat * dHat + 2 * xi * dHat;
         auto numPP = nPP.getVal();
         pol(range(numPP),
@@ -902,8 +905,9 @@ struct ImplicitTimeStepping : INode {
       pol(zs::range(verts.size()),
           [vtemp = proxy<space>({}, vtemp), verts = proxy<space>({}, verts),
            srcTag, dstTag] ZS_LAMBDA(int vi) mutable {
-            vtemp.tuple<3>(dstTag, vi) =
-                vtemp.pack<3, 3>("P", vi) * vtemp.pack<3>(srcTag, vi);
+            vtemp.template tuple<3>(dstTag, vi) =
+                vtemp.template pack<3, 3>("P", vi) *
+                vtemp.template pack<3>(srcTag, vi);
           });
     }
     template <typename Pol>
@@ -918,16 +922,17 @@ struct ImplicitTimeStepping : INode {
       // left trans^T: multiplied on rows
       // right trans: multiplied on cols
       // dx -> b
-      pol(range(numVerts),
-          [execTag, vtemp = proxy<space>({}, vtemp), bTag] ZS_LAMBDA(
-              int vi) mutable { vtemp.tuple<3>(bTag, vi) = vec3::zeros(); });
+      pol(range(numVerts), [execTag, vtemp = proxy<space>({}, vtemp),
+                            bTag] ZS_LAMBDA(int vi) mutable {
+        vtemp.template tuple<3>(bTag, vi) = vec3::zeros();
+      });
       // inertial
       pol(range(numVerts), [execTag, verts = proxy<space>({}, verts),
                             vtemp = proxy<space>({}, vtemp), dxTag,
                             bTag] ZS_LAMBDA(int vi) mutable {
         auto m = verts("m", vi);
-        auto dx = vtemp.pack<3>(dxTag, vi);
-        auto BCbasis = verts.pack<3, 3>("BCbasis", vi);
+        auto dx = vtemp.template pack<3>(dxTag, vi);
+        auto BCbasis = verts.template pack<3, 3>("BCbasis", vi);
         dx = BCbasis.transpose() * m * BCbasis * dx;
         for (int d = 0; d != 3; ++d)
           atomic_add(execTag, &vtemp(bTag, d, vi), dx(d));
@@ -939,13 +944,14 @@ struct ImplicitTimeStepping : INode {
                            bTag] ZS_LAMBDA(int ei) mutable {
         constexpr int dim = 3;
         constexpr auto dimp1 = dim + 1;
-        auto inds = eles.pack<dimp1>("inds", ei).reinterpret_bits<int>();
+        auto inds = eles.template pack<dimp1>("inds", ei)
+                        .template reinterpret_bits<int>();
         zs::vec<T, dimp1 * dim> temp{};
         for (int vi = 0; vi != dimp1; ++vi)
           for (int d = 0; d != dim; ++d) {
             temp[vi * dim + d] = vtemp(dxTag, d, inds[vi]);
           }
-        auto He = etemp.pack<dim * dimp1, dim * dimp1>("He", ei);
+        auto He = etemp.template pack<dim * dimp1, dim * dimp1>("He", ei);
 
         temp = He * temp;
 
@@ -955,7 +961,7 @@ struct ImplicitTimeStepping : INode {
           }
       });
       // contacts
-      if constexpr (enable_contact) {
+      {
         auto numPP = nPP.getVal();
         pol(range(numPP), [execTag, tempPP = proxy<space>({}, tempPP),
                            vtemp = proxy<space>({}, vtemp), dxTag, bTag,
@@ -967,7 +973,7 @@ struct ImplicitTimeStepping : INode {
             for (int d = 0; d != dim; ++d) {
               temp[vi * dim + d] = vtemp(dxTag, d, pp[vi]);
             }
-          auto ppHess = tempPP.pack<6, 6>("H", ppi);
+          auto ppHess = tempPP.template pack<6, 6>("H", ppi);
 
           temp = ppHess * temp;
 
@@ -987,7 +993,7 @@ struct ImplicitTimeStepping : INode {
             for (int d = 0; d != dim; ++d) {
               temp[vi * dim + d] = vtemp(dxTag, d, pe[vi]);
             }
-          auto peHess = tempPE.pack<9, 9>("H", pei);
+          auto peHess = tempPE.template pack<9, 9>("H", pei);
 
           temp = peHess * temp;
 
@@ -1007,7 +1013,7 @@ struct ImplicitTimeStepping : INode {
             for (int d = 0; d != dim; ++d) {
               temp[vi * dim + d] = vtemp(dxTag, d, pt[vi]);
             }
-          auto ptHess = tempPT.pack<12, 12>("H", pti);
+          auto ptHess = tempPT.template pack<12, 12>("H", pti);
 
           temp = ptHess * temp;
 
@@ -1027,7 +1033,7 @@ struct ImplicitTimeStepping : INode {
             for (int d = 0; d != dim; ++d) {
               temp[vi * dim + d] = vtemp(dxTag, d, ee[vi]);
             }
-          auto eeHess = tempEE.pack<12, 12>("H", eei);
+          auto eeHess = tempEE.template pack<12, 12>("H", eei);
 
           temp = eeHess * temp;
 
@@ -1040,8 +1046,8 @@ struct ImplicitTimeStepping : INode {
         pol(range(verts.size()), [execTag, vtemp = proxy<space>({}, vtemp),
                                   tempPB = proxy<space>({}, tempPB), dxTag,
                                   bTag] ZS_LAMBDA(int vi) mutable {
-          auto dx = vtemp.pack<3>(dxTag, vi);
-          auto pbHess = tempPB.pack<3, 3>("H", vi);
+          auto dx = vtemp.template pack<3>(dxTag, vi);
+          auto pbHess = tempPB.template pack<3, 3>("H", vi);
           dx = pbHess * dx;
           for (int d = 0; d != 3; ++d)
             atomic_add(execTag, &vtemp(bTag, d, vi), dx(d));

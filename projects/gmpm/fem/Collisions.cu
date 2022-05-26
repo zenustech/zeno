@@ -106,4 +106,205 @@ ZENDEFNODE(MaintainSpatialAccelerator,
                {"FEM"},
            });
 
+struct VisualizeBvh : INode {
+  void apply() override {
+    auto zstets = get_input<ZenoParticles>("ZSParticles");
+    auto thickness = get_input2<float>("thickness");
+    auto level = get_input2<int>("level");
+    auto target = get_param<std::string>("target");
+
+    using namespace zs;
+    using bv_t = typename ZenoParticles::lbvh_t::Box;
+    constexpr auto space = execspace_e::cuda;
+
+    auto cudaPol = cuda_exec().device(0);
+
+    auto prim = std::make_shared<PrimitiveObject>();
+
+    const auto &verts = zstets->getParticles();
+
+    Vector<bv_t> extractedBvs{verts.get_allocator(), 1};
+    Vector<int> bvCnt{verts.get_allocator(), 1};
+    bvCnt.setVal(0);
+
+    const auto &surfaces = (*zstets)[ZenoParticles::s_surfTriTag];
+    if (target == "surface") {
+      auto bvs = retrieve_bounding_volumes(cudaPol, verts, surfaces, wrapv<3>{},
+                                           thickness, "x");
+      if (!zstets->hasBvh(ZenoParticles::s_surfTriTag)) {
+        auto &surfBvh = zstets->bvh(ZenoParticles::s_surfTriTag);
+        surfBvh.build(cudaPol, bvs);
+      } else {
+        auto &surfBvh = zstets->bvh(ZenoParticles::s_surfTriTag);
+        surfBvh.refit(cudaPol, bvs);
+      }
+      auto &surfBvh = zstets->bvh(ZenoParticles::s_surfTriTag);
+
+      extractedBvs.resize(surfaces.size());
+      cudaPol(range(surfaces.size()),
+              [bvh = proxy<space>(surfBvh),
+               extractedBvs = proxy<space>(extractedBvs),
+               bvCnt = proxy<space>(bvCnt), expLevel = level,
+               execTag = wrapv<space>{}] ZS_LAMBDA(int i) mutable {
+                auto node = bvh._leafIndices[i];
+                using bvh_t = RM_CVREF_T(bvh);
+                using Ti = typename bvh_t::index_t;
+                Ti level = 0;
+                while (node != -1 && level != expLevel) {
+                  if (auto par = bvh._parents[node]; node != par + 1)
+                    node = par;
+                  else
+                    return;
+                  ++level;
+                }
+                // is valid and the right child of its parent
+                if (node != -1 && node > bvh._parents[node] + 1) {
+                  auto no = atomic_add(execTag, &bvCnt[0], 1);
+                  extractedBvs[no] = bvh.getNodeBV(node);
+                }
+              });
+    } else if (target == "edge") {
+      const auto &boundaryEdges = (*zstets)[ZenoParticles::s_surfEdgeTag];
+      auto bvs = retrieve_bounding_volumes(cudaPol, verts, boundaryEdges,
+                                           wrapv<2>{}, thickness, "x");
+
+      if (!zstets->hasBvh(ZenoParticles::s_surfEdgeTag)) {
+        auto &beBvh = zstets->bvh(ZenoParticles::s_surfEdgeTag);
+        beBvh.build(cudaPol, bvs);
+      } else {
+        auto &beBvh = zstets->bvh(ZenoParticles::s_surfEdgeTag);
+        beBvh.refit(cudaPol, bvs);
+      }
+      auto &beBvh = zstets->bvh(ZenoParticles::s_surfEdgeTag);
+
+      extractedBvs.resize(boundaryEdges.size());
+      cudaPol(range(boundaryEdges.size()),
+              [bvh = proxy<space>(beBvh),
+               extractedBvs = proxy<space>(extractedBvs),
+               bvCnt = proxy<space>(bvCnt), expLevel = level,
+               execTag = wrapv<space>{}] ZS_LAMBDA(int i) mutable {
+                using bvh_t = RM_CVREF_T(bvh);
+                using Ti = typename bvh_t::index_t;
+                auto node = bvh._leafIndices[i];
+                Ti level = 0;
+                while (node != -1 && level != expLevel) {
+                  if (auto par = bvh._parents[node]; node != par + 1)
+                    node = par;
+                  else
+                    return;
+                  ++level;
+                }
+                // is valid and the right child of its parent
+                if (node != -1 && node > bvh._parents[node] + 1) {
+                  auto no = atomic_add(execTag, &bvCnt[0], 1);
+                  extractedBvs[no] = bvh.getNodeBV(node);
+                }
+              });
+    } else if (target == "point") {
+      const auto &boundaryVerts = (*zstets)[ZenoParticles::s_surfVertTag];
+      auto bvs = retrieve_bounding_volumes(cudaPol, verts, boundaryVerts,
+                                           wrapv<1>{}, thickness, "x");
+
+      if (!zstets->hasBvh(ZenoParticles::s_surfVertTag)) {
+        auto &bvBvh = zstets->bvh(ZenoParticles::s_surfVertTag);
+        bvBvh.build(cudaPol, bvs);
+      } else {
+        auto &bvBvh = zstets->bvh(ZenoParticles::s_surfVertTag);
+        bvBvh.refit(cudaPol, bvs);
+      }
+      auto &bvBvh = zstets->bvh(ZenoParticles::s_surfVertTag);
+
+      extractedBvs.resize(boundaryVerts.size());
+      cudaPol(range(boundaryVerts.size()),
+              [bvh = proxy<space>(bvBvh),
+               extractedBvs = proxy<space>(extractedBvs),
+               bvCnt = proxy<space>(bvCnt), expLevel = level,
+               execTag = wrapv<space>{}] ZS_LAMBDA(int i) mutable {
+                using bvh_t = RM_CVREF_T(bvh);
+                using Ti = typename bvh_t::index_t;
+                auto node = bvh._leafIndices[i];
+                Ti level = 0;
+                while (node != -1 && level != expLevel) {
+                  if (auto par = bvh._parents[node]; node != par + 1)
+                    node = par;
+                  else
+                    return;
+                  ++level;
+                }
+                // is valid and the right child of its parent
+                if (node != -1 && node > bvh._parents[node] + 1) {
+                  auto no = atomic_add(execTag, &bvCnt[0], 1);
+                  extractedBvs[no] = bvh.getNodeBV(node);
+                }
+              });
+    }
+    {
+      const std::size_t numExtractedBvs = bvCnt.getVal();
+      extractedBvs.resize(numExtractedBvs);
+      Vector<zs::vec<int, 2>> dLines{extractedBvs.get_allocator(),
+                                     12 * numExtractedBvs};
+      Vector<zs::vec<float, 3>> dVerts{extractedBvs.get_allocator(),
+                                       8 * numExtractedBvs};
+      cudaPol(range(numExtractedBvs),
+              [extractedBvs = proxy<space>(extractedBvs),
+               dVerts = proxy<space>(dVerts)] ZS_LAMBDA(int i) mutable {
+                auto bv = extractedBvs[i];
+                auto offset = i * 8;
+                for (auto [x, y, z] : ndrange<3>(2))
+                  dVerts[offset++] = bv.getVert(x, y, z);
+              });
+      cudaPol(range(numExtractedBvs),
+              [dLines = proxy<space>(dLines)] ZS_LAMBDA(int i) mutable {
+                using ivec = zs::vec<int, 2>;
+                auto voffset = i * 8;
+                auto toffset = i * 12;
+                dLines[toffset++] = ivec{0, 4} + voffset;
+                dLines[toffset++] = ivec{1, 5} + voffset;
+                dLines[toffset++] = ivec{2, 6} + voffset;
+                dLines[toffset++] = ivec{3, 7} + voffset;
+                dLines[toffset++] = ivec{0, 2} + voffset;
+                dLines[toffset++] = ivec{1, 3} + voffset;
+
+                dLines[toffset++] = ivec{4, 6} + voffset;
+                dLines[toffset++] = ivec{5, 7} + voffset;
+                dLines[toffset++] = ivec{0, 1} + voffset;
+                dLines[toffset++] = ivec{2, 3} + voffset;
+                dLines[toffset++] = ivec{4, 5} + voffset;
+                dLines[toffset++] = ivec{6, 7} + voffset;
+              });
+
+      auto &pos = prim->attr<zeno::vec3f>("pos");
+      auto &lines = prim->lines.values;
+      prim->resize(8 * numExtractedBvs);
+      lines.resize(12 * numExtractedBvs);
+
+      static_assert(sizeof(zeno::vec3f) == sizeof(zs::vec<float, 3>) &&
+                        sizeof(zeno::vec2i) == sizeof(zs::vec<int, 2>),
+                    "vec3f size assumption broken");
+      Resource::copy(zs::MemoryEntity{MemoryLocation{memsrc_e::host, -1},
+                                      (void *)pos.data()},
+                     zs::MemoryEntity{MemoryLocation{memsrc_e::device, 0},
+                                      (void *)dVerts.data()},
+                     sizeof(zeno::vec3f) * pos.size());
+      Resource::copy(zs::MemoryEntity{MemoryLocation{memsrc_e::host, -1},
+                                      (void *)lines.data()},
+                     zs::MemoryEntity{MemoryLocation{memsrc_e::device, 0},
+                                      (void *)dLines.data()},
+                     sizeof(zeno::vec2i) * lines.size());
+    }
+
+    set_output("prim", prim);
+  }
+};
+
+/// for discrete collision detections etc.
+ZENDEFNODE(VisualizeBvh, {
+                             {"ZSParticles",
+                              {"float", "thickness", "0.0"},
+                              {"int", "level", "0"}},
+                             {"prim"},
+                             {{"enum point edge surface", "target", "surface"}},
+                             {"FEM"},
+                         });
+
 } // namespace zeno

@@ -31,7 +31,8 @@ template <typename Pol, typename TileVecT, int codim = 3>
 zs::Vector<typename ZenoParticles::lbvh_t::Box>
 retrieve_bounding_volumes(Pol &pol, const TileVecT &vtemp,
                           const typename ZenoParticles::particles_t &eles,
-                          zs::wrapv<codim> = {}, float thickness = 0.f) {
+                          zs::wrapv<codim> = {}, float thickness = 0.f,
+                          const zs::SmallString &xTag = "xn") {
   using namespace zs;
   using bv_t = typename ZenoParticles::lbvh_t::Box;
   static_assert(codim >= 1 && codim <= 4, "invalid co-dimension!\n");
@@ -48,15 +49,15 @@ retrieve_bounding_volumes(Pol &pol, const TileVecT &vtemp,
   pol(zs::range(eles.size()), [eles = proxy<space>({}, eles),
                                bvs = proxy<space>(ret),
                                vtemp = proxy<space>({}, vtemp),
-                               codim_v = wrapv<codim>{},
+                               codim_v = wrapv<codim>{}, xTag,
                                thickness] ZS_LAMBDA(int ei) mutable {
     constexpr int dim = RM_CVREF_T(codim_v)::value;
     auto inds =
         eles.template pack<dim>("inds", ei).template reinterpret_bits<int>();
-    auto x0 = vtemp.pack<3>("xn", inds[0]);
+    auto x0 = vtemp.template pack<3>(xTag, inds[0]);
     bv_t bv{x0};
     for (int d = 1; d != dim; ++d)
-      merge(bv, vtemp.pack<3>("xn", inds[d]));
+      merge(bv, vtemp.template pack<3>(xTag, inds[d]));
     bv._min -= thickness / 2;
     bv._max += thickness / 2;
     bvs[ei] = bv;
@@ -93,13 +94,13 @@ zs::Vector<typename ZenoParticles::lbvh_t::Box> retrieve_bounding_volumes(
     constexpr int dim = RM_CVREF_T(codim_v)::value;
     auto inds =
         eles.template pack<dim>("inds", ei).template reinterpret_bits<int>();
-    auto x0 = verts.pack<3>(xTag, inds[0]);
-    auto dir0 = vtemp.pack<3>(dirTag, inds[0]);
+    auto x0 = verts.template pack<3>(xTag, inds[0]);
+    auto dir0 = vtemp.template pack<3>(dirTag, inds[0]);
     auto [mi, ma] = get_bounding_box(x0, x0 + stepSize * dir0);
     bv_t bv{mi, ma};
     for (int d = 1; d != dim; ++d) {
-      auto x = verts.pack<3>(xTag, inds[d]);
-      auto dir = vtemp.pack<3>(dirTag, inds[d]);
+      auto x = verts.template pack<3>(xTag, inds[d]);
+      auto dir = vtemp.template pack<3>(dirTag, inds[d]);
       auto [mi, ma] = get_bounding_box(x, x + stepSize * dir);
       merge(bv, mi);
       merge(bv, ma);
