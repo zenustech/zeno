@@ -1425,11 +1425,29 @@ struct ImplicitTimeStepping : INode {
       fmt::print("newton iter {}: direction residual {}, grad residual {}\n",
                  newtonIter, res, infNorm(cudaPol, vtemp, "grad"));
 
+      // xn0 <- xn for line search
+      cudaPol(zs::range(vtemp.size()),
+              [vtemp = proxy<space>({}, vtemp)] __device__(int i) mutable {
+                vtemp.tuple<3>("xn0", i) = vtemp.pack<3>("xn", i);
+              });
+
       // line search
       T alpha = 1.;
       // computeInversionFreeStepSize(cudaPol, eles, vtemp, alpha);
       find_ground_intersection_free_stepsize(cudaPol, *zstets, vtemp, alpha);
+#if 1
+      while (find_self_intersection_free_stepsize(cudaPol, *zstets, vtemp,
+                                                  alpha, dHat)) {
+        alpha /= 2;
+        cudaPol(zs::range(vtemp.size()), [vtemp = proxy<space>({}, vtemp),
+                                          alpha] __device__(int i) mutable {
+          vtemp.tuple<3>("xn", i) =
+              vtemp.pack<3>("xn0", i) + alpha * vtemp.pack<3>("dir", i);
+        });
+      }
+#else
       find_intersection_free_stepsize(cudaPol, *zstets, vtemp, alpha, dHat);
+#endif
       //
       if (zsboundary)
         find_boundary_intersection_free_stepsize(cudaPol, *zstets, vtemp,
@@ -1441,10 +1459,6 @@ struct ImplicitTimeStepping : INode {
       }
 #endif
 
-      cudaPol(zs::range(vtemp.size()),
-              [vtemp = proxy<space>({}, vtemp)] __device__(int i) mutable {
-                vtemp.tuple<3>("xn0", i) = vtemp.pack<3>("xn", i);
-              });
       T E0{};
       match([&](auto &elasticModel) {
         E0 = A.energy(cudaPol, elasticModel, "xn0");

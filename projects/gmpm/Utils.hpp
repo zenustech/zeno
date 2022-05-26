@@ -282,6 +282,82 @@ ee_accd(VecT ea0, VecT ea1, VecT eb0, VecT eb1, VecT dea0, VecT dea1, VecT deb0,
 }
 
 template <typename Pol, typename TileVecT, typename T>
+bool find_self_intersection_free_stepsize(Pol &pol, ZenoParticles &zstets,
+                                          const TileVecT &vtemp, T &stepSize,
+                                          T dHat) {
+  using namespace zs;
+  using bv_t = typename ZenoParticles::lbvh_t::Box;
+  constexpr auto space = Pol::exec_tag::value;
+#if ZS_ENABLE_CUDA && defined(__CUDACC__)
+  // ZS_LAMBDA -> __device__
+  static_assert(space == execspace_e::cuda,
+                "specialized policy and compiler not match");
+#else
+  static_assert(space != execspace_e::cuda,
+                "specialized policy and compiler not match");
+#endif
+  const auto &verts = zstets.getParticles();
+
+  const auto &surfaces = zstets[ZenoParticles::s_surfTriTag];
+
+  const auto &surfEdges = zstets[ZenoParticles::s_surfEdgeTag];
+  {
+    if (!zstets.hasBvh(ZenoParticles::s_surfEdgeTag))
+      zstets.bvh(ZenoParticles::s_surfEdgeTag)
+          .build(pol, retrieve_bounding_volumes(pol, vtemp, surfEdges, vtemp,
+                                                wrapv<2>{}, stepSize, 0, "xn",
+                                                "dir"));
+    else
+      zstets.bvh(ZenoParticles::s_surfEdgeTag)
+          .refit(pol, retrieve_bounding_volumes(pol, vtemp, surfEdges, vtemp,
+                                                wrapv<2>{}, stepSize, 0, "xn",
+                                                "dir"));
+  }
+  const auto &seBvh = zstets.bvh(ZenoParticles::s_surfEdgeTag);
+
+  // query tri - edge intersection
+  zs::Vector<int> intersected{vtemp.get_allocator(), 1};
+  intersected.setVal(0);
+  pol(Collapse{surfaces.size()}, [ses = proxy<space>({}, surfEdges),
+                                  sts = proxy<space>({}, surfaces),
+                                  verts = proxy<space>({}, verts),
+                                  vtemp = proxy<space>({}, vtemp),
+                                  intersected = proxy<space>(intersected),
+                                  bvh = proxy<space>(seBvh), stepSize,
+                                  thickness = dHat] ZS_LAMBDA(int sti) mutable {
+    auto tri =
+        sts.template pack<3>("inds", sti).template reinterpret_bits<int>();
+    auto t0 = vtemp.pack<3>("xn", tri[0]);
+    auto t1 = vtemp.pack<3>("xn", tri[1]);
+    auto t2 = vtemp.pack<3>("xn", tri[2]);
+    auto [mi, ma] = get_bounding_box(t0, t1);
+    auto bv = bv_t{mi, ma};
+    merge(bv, t2);
+    bv._min = bv._min - thickness;
+    bv._max = bv._max + thickness;
+    bvh.iter_neighbors(bv, [&](int sei) {
+      auto line =
+          ses.template pack<2>("inds", sei).template reinterpret_bits<int>();
+      if (tri[0] == line[0] || tri[0] == line[1] || tri[1] == line[0] ||
+          tri[1] == line[1] || tri[2] == line[0] || tri[2] == line[1])
+        return;
+      // all affected by sticky boundary conditions
+      if (reinterpret_bits<int>(verts("BCorder", tri[0])) == 3 &&
+          reinterpret_bits<int>(verts("BCorder", tri[1])) == 3 &&
+          reinterpret_bits<int>(verts("BCorder", tri[2])) == 3 &&
+          reinterpret_bits<int>(verts("BCorder", line[0])) == 3 &&
+          reinterpret_bits<int>(verts("BCorder", line[1])) == 3)
+        return;
+      // ccd
+      if (et_intersected(vtemp.pack<3>("xn", line[0]),
+                         vtemp.pack<3>("xn", line[1]), t0, t1, t2))
+        atomic_cas(exec_cuda, &intersected[0], 0, 1);
+    });
+  });
+  return intersected.getVal();
+}
+
+template <typename Pol, typename TileVecT, typename T>
 void find_intersection_free_stepsize(Pol &pol, ZenoParticles &zstets,
                                      const TileVecT &vtemp, T &stepSize, T dHat,
                                      bool updateTets = true) {
