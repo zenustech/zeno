@@ -367,6 +367,7 @@ static void handleCameraUpdate( Params& params )
 
 static void handleResize( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Params& params )
 {
+    
     if( !resize_dirty )
         return;
     resize_dirty = false;
@@ -379,6 +380,7 @@ static void handleResize( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Params
                 params.width * params.height * sizeof( float4 )
                 ) );
     state.params.accum_buffer = (float4*)(CUdeviceptr)state.accum_buffer_p;
+    state.params.subframe_index = 0;
 }
 
 
