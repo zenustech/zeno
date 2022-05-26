@@ -127,8 +127,8 @@ struct VisualizeBvh : INode {
     Vector<int> bvCnt{verts.get_allocator(), 1};
     bvCnt.setVal(0);
 
-    const auto &surfaces = (*zstets)[ZenoParticles::s_surfTriTag];
     if (target == "surface") {
+      const auto &surfaces = (*zstets)[ZenoParticles::s_surfTriTag];
       auto bvs = retrieve_bounding_volumes(cudaPol, verts, surfaces, wrapv<3>{},
                                            thickness, "x");
       if (!zstets->hasBvh(ZenoParticles::s_surfTriTag)) {
@@ -273,10 +273,10 @@ struct VisualizeBvh : INode {
                 dLines[toffset++] = ivec{6, 7} + voffset;
               });
 
-      auto &pos = prim->attr<zeno::vec3f>("pos");
-      auto &lines = prim->lines.values;
       prim->resize(8 * numExtractedBvs);
-      lines.resize(12 * numExtractedBvs);
+      auto &pos = prim->attr<zeno::vec3f>("pos");
+      prim->lines.resize(12 * numExtractedBvs);
+      auto &lines = prim->lines.values;
 
       static_assert(sizeof(zeno::vec3f) == sizeof(zs::vec<float, 3>) &&
                         sizeof(zeno::vec2i) == sizeof(zs::vec<int, 2>),
