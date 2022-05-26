@@ -107,29 +107,28 @@ struct ReadObjPrimitive : zeno::INode {
     }
 };
 
-ZENDEFNODE(ReadObjPrimitive,
-        { /* inputs: */ {
-        {"readpath", "path"},
-        }, /* outputs: */ {
-        "prim",
-        }, /* params: */ {
-        }, /* category: */ {
-        "primitive",
-        }});
+//ZENDEFNODE(ReadObjPrimitive,
+//        { /* inputs: */ {
+//        {"readpath", "path"},
+//        }, /* outputs: */ {
+//        "prim",
+//        }, /* params: */ {
+//        }, /* category: */ {
+//        "primitive",
+//        }});
 
 struct ImportObjPrimitive : ReadObjPrimitive {
 };
 
-ZENDEFNODE(ImportObjPrimitive,
-        { /* inputs: */ {
-        {"readpath", "path"},
-        }, /* outputs: */ {
-        "prim",
-        }, /* params: */ {
-        }, /* category: */ {
-        "primitive",
-        }});
-
+//ZENDEFNODE(ImportObjPrimitive,
+//        { /* inputs: */ {
+//        {"readpath", "path"},
+//        }, /* outputs: */ {
+//        "prim",
+//        }, /* params: */ {
+//        }, /* category: */ {
+//        "primitive",
+//        }});
 
 
 static void writeobj(
@@ -199,15 +198,15 @@ struct ExportObjPrimitive : WriteObjPrimitive {
     }
 };
 
-ZENDEFNODE(ExportObjPrimitive,
-        { /* inputs: */ {
-        {"writepath", "path"},
-        "prim",
-        }, /* outputs: */ {
-        }, /* params: */ {
-        }, /* category: */ {
-        "primitive",
-        }});
+//ZENDEFNODE(ExportObjPrimitive,
+//        { /* inputs: */ {
+//        {"writepath", "path"},
+//        "prim",
+//        }, /* outputs: */ {
+//        }, /* params: */ {
+//        }, /* category: */ {
+//        "primitive",
+//        }});
 
 //--------------------- dict--------------------------//
 static std::shared_ptr<zeno::DictObject>

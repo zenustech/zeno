@@ -162,13 +162,13 @@ struct PrimitiveMerge : zeno::INode {
     }
   }
 };
-
-ZENDEFNODE(PrimitiveMerge, {
-    {"listPrim", "dst"},
-    {"prim"},
-    {},
-    {"primitive"},
-});
+//
+//ZENDEFNODE(PrimitiveMerge, {
+//    {"listPrim", "dst"},
+//    {"prim"},
+//    {},
+//    {"primitive"},
+//});
 
 
 }
