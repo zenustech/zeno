@@ -129,11 +129,13 @@ struct ImplicitTimeStepping : INode {
   using pair_t = zs::vec<int, 2>;
   using pair3_t = zs::vec<int, 3>;
   using pair4_t = zs::vec<int, 4>;
-  static constexpr bool enable_contact = true;
 
-  static constexpr T kappa = 1e4;
-  static constexpr T xi = 2e-3;
-  static constexpr T dHat = 0.003;
+  static constexpr bool enable_contact = true;
+  static constexpr vec3 s_groundNormal{0, 1, 0};
+
+  inline static T kappa = 1e4;
+  inline static T xi = 0; // 2e-3;
+  inline static T dHat = 0.003;
 
   /// ref: codim-ipc
   void precompute_constraints(zs::CudaExecutionPolicy &pol,
@@ -161,7 +163,7 @@ struct ImplicitTimeStepping : INode {
     /// tri
     const auto &surfaces = zstets[ZenoParticles::s_surfTriTag];
     {
-      auto bvs = retrieve_bounding_volumes(pol, verts, surfaces, wrapv<3>{});
+      auto bvs = retrieve_bounding_volumes(pol, vtemp, surfaces, wrapv<3>{});
       if (!zstets.hasBvh(ZenoParticles::s_surfTriTag)) // build if bvh not exist
         zstets.bvh(ZenoParticles::s_surfTriTag).build(pol, bvs);
       else
@@ -172,7 +174,7 @@ struct ImplicitTimeStepping : INode {
     /// edges
     const auto &surfEdges = zstets[ZenoParticles::s_surfEdgeTag];
     {
-      auto bvs = retrieve_bounding_volumes(pol, verts, surfEdges, wrapv<2>{});
+      auto bvs = retrieve_bounding_volumes(pol, vtemp, surfEdges, wrapv<2>{});
       if (!zstets.hasBvh(ZenoParticles::s_surfEdgeTag))
         zstets.bvh(ZenoParticles::s_surfEdgeTag).build(pol, bvs);
       else
@@ -213,8 +215,8 @@ struct ImplicitTimeStepping : INode {
             auto t0 = vtemp.pack<3>("xn", tri[0]);
             auto t1 = vtemp.pack<3>("xn", tri[1]);
             auto t2 = vtemp.pack<3>("xn", tri[2]);
-            if (!pt_cd_broadphase(p, t0, t1, t2, thickness))
-              return;
+            // if (!pt_cd_broadphase(p, t0, t1, t2, thickness))
+            //  return;
             switch (pt_distance_type(p, t0, t1, t2)) {
             case 0: {
               if (dist2_pp(p, t0) - xi2 < activeGap2) {
@@ -315,8 +317,8 @@ struct ImplicitTimeStepping : INode {
             // ccd
             auto eb0 = vtemp.pack<3>("xn", ejInds[0]);
             auto eb1 = vtemp.pack<3>("xn", ejInds[1]);
-            if (!ee_cd_broadphase(x0, x1, eb0, eb1, thickness))
-              return;
+            // if (!ee_cd_broadphase(x0, x1, eb0, eb1, thickness))
+            //   return;
             auto we = (selfWe + ses("w", sej)) / 4;
             switch (ee_distance_type(x0, x1, eb0, eb1)) {
             case 0: {
@@ -396,110 +398,107 @@ struct ImplicitTimeStepping : INode {
             }
           });
         });
+    fmt::print("contact indeed detected. nPP: {}, nPE: {}, nPT: {}, nEE: {}\n",
+               nPP.getVal(), nPE.getVal(), nPT.getVal(), nEE.getVal());
     if (nPP.getVal() > 0 || nPE.getVal() > 0 || nPT.getVal() > 0 ||
         nEE.getVal() > 0) {
-      fmt::print(
-          "contact indeed detected. nPP: {}, nPE: {}, nPT: {}, nEE: {}\n",
-          nPP.getVal(), nPE.getVal(), nPT.getVal(), nEE.getVal());
       getchar();
     }
   }
   void computeInversionFreeStepSize(zs::CudaExecutionPolicy &pol,
-                                    const tiles_t &verts, const tiles_t &eles,
-                                    const dtiles_t &searchDir, T &stepSize) {
+                                    const tiles_t &eles, const dtiles_t &vtemp,
+                                    T &stepSize) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
     zs::Vector<T> stepSizes{eles.get_allocator(), eles.size()},
         minSize{eles.get_allocator(), 1};
     minSize.setVal(stepSize);
-    pol(zs::Collapse{eles.size()}, [verts = proxy<space>({}, verts),
-                                    eles = proxy<space>({}, eles),
-                                    minSize = proxy<space>(minSize),
-                                    searchDir = proxy<space>({}, searchDir),
-                                    stepSize] __device__(int ei) mutable {
-      auto inds = eles.pack<4>("inds", ei).reinterpret_bits<int>();
-      T x1 = searchDir("xn", 0, inds[0]);
-      T x2 = searchDir("xn", 0, inds[1]);
-      T x3 = searchDir("xn", 0, inds[2]);
-      T x4 = searchDir("xn", 0, inds[3]);
+    pol(zs::Collapse{eles.size()},
+        [eles = proxy<space>({}, eles), minSize = proxy<space>(minSize),
+         vtemp = proxy<space>({}, vtemp), stepSize] __device__(int ei) mutable {
+          auto inds = eles.pack<4>("inds", ei).reinterpret_bits<int>();
+          T x1 = vtemp("xn", 0, inds[0]);
+          T x2 = vtemp("xn", 0, inds[1]);
+          T x3 = vtemp("xn", 0, inds[2]);
+          T x4 = vtemp("xn", 0, inds[3]);
 
-      T y1 = searchDir("xn", 1, inds[0]);
-      T y2 = searchDir("xn", 1, inds[1]);
-      T y3 = searchDir("xn", 1, inds[2]);
-      T y4 = searchDir("xn", 1, inds[3]);
+          T y1 = vtemp("xn", 1, inds[0]);
+          T y2 = vtemp("xn", 1, inds[1]);
+          T y3 = vtemp("xn", 1, inds[2]);
+          T y4 = vtemp("xn", 1, inds[3]);
 
-      T z1 = searchDir("xn", 2, inds[0]);
-      T z2 = searchDir("xn", 2, inds[1]);
-      T z3 = searchDir("xn", 2, inds[2]);
-      T z4 = searchDir("xn", 2, inds[3]);
+          T z1 = vtemp("xn", 2, inds[0]);
+          T z2 = vtemp("xn", 2, inds[1]);
+          T z3 = vtemp("xn", 2, inds[2]);
+          T z4 = vtemp("xn", 2, inds[3]);
 
-      T p1 = searchDir("dir", 0, inds[0]);
-      T p2 = searchDir("dir", 0, inds[1]);
-      T p3 = searchDir("dir", 0, inds[2]);
-      T p4 = searchDir("dir", 0, inds[3]);
+          T p1 = vtemp("dir", 0, inds[0]);
+          T p2 = vtemp("dir", 0, inds[1]);
+          T p3 = vtemp("dir", 0, inds[2]);
+          T p4 = vtemp("dir", 0, inds[3]);
 
-      T q1 = searchDir("dir", 1, inds[0]);
-      T q2 = searchDir("dir", 1, inds[1]);
-      T q3 = searchDir("dir", 1, inds[2]);
-      T q4 = searchDir("dir", 1, inds[3]);
+          T q1 = vtemp("dir", 1, inds[0]);
+          T q2 = vtemp("dir", 1, inds[1]);
+          T q3 = vtemp("dir", 1, inds[2]);
+          T q4 = vtemp("dir", 1, inds[3]);
 
-      T r1 = searchDir("dir", 2, inds[0]);
-      T r2 = searchDir("dir", 2, inds[1]);
-      T r3 = searchDir("dir", 2, inds[2]);
-      T r4 = searchDir("dir", 2, inds[3]);
+          T r1 = vtemp("dir", 2, inds[0]);
+          T r2 = vtemp("dir", 2, inds[1]);
+          T r3 = vtemp("dir", 2, inds[2]);
+          T r4 = vtemp("dir", 2, inds[3]);
 
-      T a = -p1 * q2 * r3 + p1 * r2 * q3 + q1 * p2 * r3 - q1 * r2 * p3 -
-            r1 * p2 * q3 + r1 * q2 * p3 + p1 * q2 * r4 - p1 * r2 * q4 -
-            q1 * p2 * r4 + q1 * r2 * p4 + r1 * p2 * q4 - r1 * q2 * p4 -
-            p1 * q3 * r4 + p1 * r3 * q4 + q1 * p3 * r4 - q1 * r3 * p4 -
-            r1 * p3 * q4 + r1 * q3 * p4 + p2 * q3 * r4 - p2 * r3 * q4 -
-            q2 * p3 * r4 + q2 * r3 * p4 + r2 * p3 * q4 - r2 * q3 * p4;
-      T b = -x1 * q2 * r3 + x1 * r2 * q3 + y1 * p2 * r3 - y1 * r2 * p3 -
-            z1 * p2 * q3 + z1 * q2 * p3 + x2 * q1 * r3 - x2 * r1 * q3 -
-            y2 * p1 * r3 + y2 * r1 * p3 + z2 * p1 * q3 - z2 * q1 * p3 -
-            x3 * q1 * r2 + x3 * r1 * q2 + y3 * p1 * r2 - y3 * r1 * p2 -
-            z3 * p1 * q2 + z3 * q1 * p2 + x1 * q2 * r4 - x1 * r2 * q4 -
-            y1 * p2 * r4 + y1 * r2 * p4 + z1 * p2 * q4 - z1 * q2 * p4 -
-            x2 * q1 * r4 + x2 * r1 * q4 + y2 * p1 * r4 - y2 * r1 * p4 -
-            z2 * p1 * q4 + z2 * q1 * p4 + x4 * q1 * r2 - x4 * r1 * q2 -
-            y4 * p1 * r2 + y4 * r1 * p2 + z4 * p1 * q2 - z4 * q1 * p2 -
-            x1 * q3 * r4 + x1 * r3 * q4 + y1 * p3 * r4 - y1 * r3 * p4 -
-            z1 * p3 * q4 + z1 * q3 * p4 + x3 * q1 * r4 - x3 * r1 * q4 -
-            y3 * p1 * r4 + y3 * r1 * p4 + z3 * p1 * q4 - z3 * q1 * p4 -
-            x4 * q1 * r3 + x4 * r1 * q3 + y4 * p1 * r3 - y4 * r1 * p3 -
-            z4 * p1 * q3 + z4 * q1 * p3 + x2 * q3 * r4 - x2 * r3 * q4 -
-            y2 * p3 * r4 + y2 * r3 * p4 + z2 * p3 * q4 - z2 * q3 * p4 -
-            x3 * q2 * r4 + x3 * r2 * q4 + y3 * p2 * r4 - y3 * r2 * p4 -
-            z3 * p2 * q4 + z3 * q2 * p4 + x4 * q2 * r3 - x4 * r2 * q3 -
-            y4 * p2 * r3 + y4 * r2 * p3 + z4 * p2 * q3 - z4 * q2 * p3;
-      T c = -x1 * y2 * r3 + x1 * z2 * q3 + x1 * y3 * r2 - x1 * z3 * q2 +
-            y1 * x2 * r3 - y1 * z2 * p3 - y1 * x3 * r2 + y1 * z3 * p2 -
-            z1 * x2 * q3 + z1 * y2 * p3 + z1 * x3 * q2 - z1 * y3 * p2 -
-            x2 * y3 * r1 + x2 * z3 * q1 + y2 * x3 * r1 - y2 * z3 * p1 -
-            z2 * x3 * q1 + z2 * y3 * p1 + x1 * y2 * r4 - x1 * z2 * q4 -
-            x1 * y4 * r2 + x1 * z4 * q2 - y1 * x2 * r4 + y1 * z2 * p4 +
-            y1 * x4 * r2 - y1 * z4 * p2 + z1 * x2 * q4 - z1 * y2 * p4 -
-            z1 * x4 * q2 + z1 * y4 * p2 + x2 * y4 * r1 - x2 * z4 * q1 -
-            y2 * x4 * r1 + y2 * z4 * p1 + z2 * x4 * q1 - z2 * y4 * p1 -
-            x1 * y3 * r4 + x1 * z3 * q4 + x1 * y4 * r3 - x1 * z4 * q3 +
-            y1 * x3 * r4 - y1 * z3 * p4 - y1 * x4 * r3 + y1 * z4 * p3 -
-            z1 * x3 * q4 + z1 * y3 * p4 + z1 * x4 * q3 - z1 * y4 * p3 -
-            x3 * y4 * r1 + x3 * z4 * q1 + y3 * x4 * r1 - y3 * z4 * p1 -
-            z3 * x4 * q1 + z3 * y4 * p1 + x2 * y3 * r4 - x2 * z3 * q4 -
-            x2 * y4 * r3 + x2 * z4 * q3 - y2 * x3 * r4 + y2 * z3 * p4 +
-            y2 * x4 * r3 - y2 * z4 * p3 + z2 * x3 * q4 - z2 * y3 * p4 -
-            z2 * x4 * q3 + z2 * y4 * p3 + x3 * y4 * r2 - x3 * z4 * q2 -
-            y3 * x4 * r2 + y3 * z4 * p2 + z3 * x4 * q2 - z3 * y4 * p2;
-      T d = ((T)1.0 - (T)0.2) *
-            (x1 * z2 * y3 - x1 * y2 * z3 + y1 * x2 * z3 - y1 * z2 * x3 -
-             z1 * x2 * y3 + z1 * y2 * x3 + x1 * y2 * z4 - x1 * z2 * y4 -
-             y1 * x2 * z4 + y1 * z2 * x4 + z1 * x2 * y4 - z1 * y2 * x4 -
-             x1 * y3 * z4 + x1 * z3 * y4 + y1 * x3 * z4 - y1 * z3 * x4 -
-             z1 * x3 * y4 + z1 * y3 * x4 + x2 * y3 * z4 - x2 * z3 * y4 -
-             y2 * x3 * z4 + y2 * z3 * x4 + z2 * x3 * y4 - z2 * y3 * x4);
+          T a = -p1 * q2 * r3 + p1 * r2 * q3 + q1 * p2 * r3 - q1 * r2 * p3 -
+                r1 * p2 * q3 + r1 * q2 * p3 + p1 * q2 * r4 - p1 * r2 * q4 -
+                q1 * p2 * r4 + q1 * r2 * p4 + r1 * p2 * q4 - r1 * q2 * p4 -
+                p1 * q3 * r4 + p1 * r3 * q4 + q1 * p3 * r4 - q1 * r3 * p4 -
+                r1 * p3 * q4 + r1 * q3 * p4 + p2 * q3 * r4 - p2 * r3 * q4 -
+                q2 * p3 * r4 + q2 * r3 * p4 + r2 * p3 * q4 - r2 * q3 * p4;
+          T b = -x1 * q2 * r3 + x1 * r2 * q3 + y1 * p2 * r3 - y1 * r2 * p3 -
+                z1 * p2 * q3 + z1 * q2 * p3 + x2 * q1 * r3 - x2 * r1 * q3 -
+                y2 * p1 * r3 + y2 * r1 * p3 + z2 * p1 * q3 - z2 * q1 * p3 -
+                x3 * q1 * r2 + x3 * r1 * q2 + y3 * p1 * r2 - y3 * r1 * p2 -
+                z3 * p1 * q2 + z3 * q1 * p2 + x1 * q2 * r4 - x1 * r2 * q4 -
+                y1 * p2 * r4 + y1 * r2 * p4 + z1 * p2 * q4 - z1 * q2 * p4 -
+                x2 * q1 * r4 + x2 * r1 * q4 + y2 * p1 * r4 - y2 * r1 * p4 -
+                z2 * p1 * q4 + z2 * q1 * p4 + x4 * q1 * r2 - x4 * r1 * q2 -
+                y4 * p1 * r2 + y4 * r1 * p2 + z4 * p1 * q2 - z4 * q1 * p2 -
+                x1 * q3 * r4 + x1 * r3 * q4 + y1 * p3 * r4 - y1 * r3 * p4 -
+                z1 * p3 * q4 + z1 * q3 * p4 + x3 * q1 * r4 - x3 * r1 * q4 -
+                y3 * p1 * r4 + y3 * r1 * p4 + z3 * p1 * q4 - z3 * q1 * p4 -
+                x4 * q1 * r3 + x4 * r1 * q3 + y4 * p1 * r3 - y4 * r1 * p3 -
+                z4 * p1 * q3 + z4 * q1 * p3 + x2 * q3 * r4 - x2 * r3 * q4 -
+                y2 * p3 * r4 + y2 * r3 * p4 + z2 * p3 * q4 - z2 * q3 * p4 -
+                x3 * q2 * r4 + x3 * r2 * q4 + y3 * p2 * r4 - y3 * r2 * p4 -
+                z3 * p2 * q4 + z3 * q2 * p4 + x4 * q2 * r3 - x4 * r2 * q3 -
+                y4 * p2 * r3 + y4 * r2 * p3 + z4 * p2 * q3 - z4 * q2 * p3;
+          T c = -x1 * y2 * r3 + x1 * z2 * q3 + x1 * y3 * r2 - x1 * z3 * q2 +
+                y1 * x2 * r3 - y1 * z2 * p3 - y1 * x3 * r2 + y1 * z3 * p2 -
+                z1 * x2 * q3 + z1 * y2 * p3 + z1 * x3 * q2 - z1 * y3 * p2 -
+                x2 * y3 * r1 + x2 * z3 * q1 + y2 * x3 * r1 - y2 * z3 * p1 -
+                z2 * x3 * q1 + z2 * y3 * p1 + x1 * y2 * r4 - x1 * z2 * q4 -
+                x1 * y4 * r2 + x1 * z4 * q2 - y1 * x2 * r4 + y1 * z2 * p4 +
+                y1 * x4 * r2 - y1 * z4 * p2 + z1 * x2 * q4 - z1 * y2 * p4 -
+                z1 * x4 * q2 + z1 * y4 * p2 + x2 * y4 * r1 - x2 * z4 * q1 -
+                y2 * x4 * r1 + y2 * z4 * p1 + z2 * x4 * q1 - z2 * y4 * p1 -
+                x1 * y3 * r4 + x1 * z3 * q4 + x1 * y4 * r3 - x1 * z4 * q3 +
+                y1 * x3 * r4 - y1 * z3 * p4 - y1 * x4 * r3 + y1 * z4 * p3 -
+                z1 * x3 * q4 + z1 * y3 * p4 + z1 * x4 * q3 - z1 * y4 * p3 -
+                x3 * y4 * r1 + x3 * z4 * q1 + y3 * x4 * r1 - y3 * z4 * p1 -
+                z3 * x4 * q1 + z3 * y4 * p1 + x2 * y3 * r4 - x2 * z3 * q4 -
+                x2 * y4 * r3 + x2 * z4 * q3 - y2 * x3 * r4 + y2 * z3 * p4 +
+                y2 * x4 * r3 - y2 * z4 * p3 + z2 * x3 * q4 - z2 * y3 * p4 -
+                z2 * x4 * q3 + z2 * y4 * p3 + x3 * y4 * r2 - x3 * z4 * q2 -
+                y3 * x4 * r2 + y3 * z4 * p2 + z3 * x4 * q2 - z3 * y4 * p2;
+          T d = ((T)1.0 - (T)0.2) *
+                (x1 * z2 * y3 - x1 * y2 * z3 + y1 * x2 * z3 - y1 * z2 * x3 -
+                 z1 * x2 * y3 + z1 * y2 * x3 + x1 * y2 * z4 - x1 * z2 * y4 -
+                 y1 * x2 * z4 + y1 * z2 * x4 + z1 * x2 * y4 - z1 * y2 * x4 -
+                 x1 * y3 * z4 + x1 * z3 * y4 + y1 * x3 * z4 - y1 * z3 * x4 -
+                 z1 * x3 * y4 + z1 * y3 * x4 + x2 * y3 * z4 - x2 * z3 * y4 -
+                 y2 * x3 * z4 + y2 * z3 * x4 + z2 * x3 * y4 - z2 * y3 * x4);
 
-      T t =
-          zs::math::get_smallest_positive_real_cubic_root(a, b, c, d, (T)1.e-6);
+          T t = zs::math::get_smallest_positive_real_cubic_root(a, b, c, d,
+                                                                (T)1.e-6);
 #if 0
       if (t >= 0)
         stepSizes[ei] = t;
@@ -509,7 +508,7 @@ struct ImplicitTimeStepping : INode {
       if (t < stepSize && t >= 0)
         atomic_min(exec_cuda, &minSize[0], t);
 #endif
-    });
+        });
 
 #if 0
     zs::Vector<T> res{eles.get_allocator(), 1};
@@ -519,6 +518,45 @@ struct ImplicitTimeStepping : INode {
 #else
     stepSize = minSize.getVal();
 #endif
+    fmt::print("inversion free alpha: {}\n", stepSize);
+  }
+  void find_ground_intersection_free_stepsize(zs::CudaExecutionPolicy &pol,
+                                              const ZenoParticles &zstets,
+                                              const dtiles_t &vtemp,
+                                              T &stepSize) {
+    using namespace zs;
+    constexpr T slackness = 0.8;
+    constexpr auto space = execspace_e::cuda;
+
+    const auto &verts = zstets.getParticles();
+    const auto &surfVerts = zstets[ZenoParticles::s_surfVertTag];
+
+    ///
+    // query pt
+    zs::Vector<T> finalAlpha{surfVerts.get_allocator(), 1};
+    finalAlpha.setVal(stepSize);
+    pol(Collapse{surfVerts.size()},
+        [svs = proxy<space>({}, surfVerts), vtemp = proxy<space>({}, vtemp),
+         verts = proxy<space>({}, verts),
+         // boundary
+         gn = s_groundNormal, finalAlpha = proxy<space>(finalAlpha),
+         stepSize] ZS_LAMBDA(int svi) mutable {
+          auto vi = reinterpret_bits<int>(svs("inds", svi));
+          // this vert affected by sticky boundary conditions
+          if (reinterpret_bits<int>(verts("BCorder", vi)) == 3)
+            return;
+          auto dir = vtemp.pack<3>("dir", vi);
+          auto coef = gn.dot(dir);
+          if (coef < 0) { // impacting direction
+            auto x = vtemp.pack<3>("xn", vi);
+            auto dist = gn.dot(x);
+            auto maxAlpha = (dist * 0.8) / (-coef);
+            if (maxAlpha < stepSize)
+              atomic_min(exec_cuda, &finalAlpha[0], maxAlpha);
+          }
+        });
+    stepSize = finalAlpha.getVal();
+    fmt::print("ground alpha: {}\n", stepSize);
   }
 
   struct FEMSystem {
@@ -526,14 +564,14 @@ struct ImplicitTimeStepping : INode {
       using namespace zs;
       constexpr auto space = execspace_e::cuda;
       T activeGap2 = dHat * dHat + (T)2.0 * xi * dHat;
-      auto numPP = nPP.getVal();
       using Vec12View = zs::vec_view<T, zs::integer_seq<int, 12>>;
       using Vec9View = zs::vec_view<T, zs::integer_seq<int, 9>>;
       using Vec6View = zs::vec_view<T, zs::integer_seq<int, 6>>;
+      auto numPP = nPP.getVal();
       pol(range(numPP),
           [vtemp = proxy<space>({}, vtemp), tempPP = proxy<space>({}, tempPP),
            PP = proxy<space>(PP), wPP = proxy<space>(wPP), xi2 = xi * xi,
-           dHat = dHat, activeGap2, dt2 = dt * dt] __device__(int ppi) mutable {
+           dHat = dHat, activeGap2, kappa = kappa] __device__(int ppi) mutable {
             auto pp = PP[ppi];
             auto x0 = vtemp.pack<3>("xn", pp[0]);
             auto x1 = vtemp.pack<3>("xn", pp[1]);
@@ -541,18 +579,19 @@ struct ImplicitTimeStepping : INode {
             auto dist2 = dist2_pp(x0, x1);
             if (dist2 < xi2)
               printf("dist already smaller than xi!\n");
-            ppGrad *= -dt2 * wPP[ppi] * dHat *
-                      zs::barrier_gradient(dist2 - xi2, activeGap2, kappa);
+            auto grad =
+                ppGrad * (-wPP[ppi] * dHat *
+                          zs::barrier_gradient(dist2 - xi2, activeGap2, kappa));
             // gradient
             for (int d = 0; d != 3; ++d) {
-              atomic_add(exec_cuda, &vtemp("grad", d, pp[0]), ppGrad(0, d));
-              atomic_add(exec_cuda, &vtemp("grad", d, pp[1]), ppGrad(1, d));
+              atomic_add(exec_cuda, &vtemp("grad", d, pp[0]), grad(0, d));
+              atomic_add(exec_cuda, &vtemp("grad", d, pp[1]), grad(1, d));
             }
             // hessian
             auto ppHess = dist_hess_pp(x0, x1);
             auto ppGrad_ = Vec6View{ppGrad.data()};
             ppHess =
-                dt2 * wPP[ppi] * dHat *
+                wPP[ppi] * dHat *
                 (zs::barrier_hessian(dist2 - xi2, activeGap2, kappa) *
                      dyadic_prod(ppGrad_, ppGrad_) +
                  zs::barrier_gradient(dist2 - xi2, activeGap2, kappa) * ppHess);
@@ -565,7 +604,7 @@ struct ImplicitTimeStepping : INode {
       pol(range(numPE),
           [vtemp = proxy<space>({}, vtemp), tempPE = proxy<space>({}, tempPE),
            PE = proxy<space>(PE), wPE = proxy<space>(wPE), xi2 = xi * xi,
-           dHat = dHat, activeGap2, dt2 = dt * dt] __device__(int pei) mutable {
+           dHat = dHat, activeGap2, kappa = kappa] __device__(int pei) mutable {
             auto pe = PE[pei];
             auto p = vtemp.pack<3>("xn", pe[0]);
             auto e0 = vtemp.pack<3>("xn", pe[1]);
@@ -575,19 +614,20 @@ struct ImplicitTimeStepping : INode {
             auto dist2 = dist2_pe(p, e0, e1);
             if (dist2 < xi2)
               printf("dist already smaller than xi!\n");
-            peGrad *= -dt2 * wPE[pei] * dHat *
-                      zs::barrier_gradient(dist2 - xi2, activeGap2, kappa);
+            auto grad =
+                peGrad * (-wPE[pei] * dHat *
+                          zs::barrier_gradient(dist2 - xi2, activeGap2, kappa));
             // gradient
             for (int d = 0; d != 3; ++d) {
-              atomic_add(exec_cuda, &vtemp("grad", d, pe[0]), peGrad(0, d));
-              atomic_add(exec_cuda, &vtemp("grad", d, pe[1]), peGrad(1, d));
-              atomic_add(exec_cuda, &vtemp("grad", d, pe[2]), peGrad(2, d));
+              atomic_add(exec_cuda, &vtemp("grad", d, pe[0]), grad(0, d));
+              atomic_add(exec_cuda, &vtemp("grad", d, pe[1]), grad(1, d));
+              atomic_add(exec_cuda, &vtemp("grad", d, pe[2]), grad(2, d));
             }
             // hessian
             auto peHess = dist_hess_pe(p, e0, e1);
             auto peGrad_ = Vec9View{peGrad.data()};
             peHess =
-                dt2 * wPE[pei] * dHat *
+                wPE[pei] * dHat *
                 (zs::barrier_hessian(dist2 - xi2, activeGap2, kappa) *
                      dyadic_prod(peGrad_, peGrad_) +
                  zs::barrier_gradient(dist2 - xi2, activeGap2, kappa) * peHess);
@@ -600,7 +640,7 @@ struct ImplicitTimeStepping : INode {
       pol(range(numPT),
           [vtemp = proxy<space>({}, vtemp), tempPT = proxy<space>({}, tempPT),
            PT = proxy<space>(PT), wPT = proxy<space>(wPT), xi2 = xi * xi,
-           dHat = dHat, activeGap2, dt2 = dt * dt] __device__(int pti) mutable {
+           dHat = dHat, activeGap2, kappa = kappa] __device__(int pti) mutable {
             auto pt = PT[pti];
             auto p = vtemp.pack<3>("xn", pt[0]);
             auto t0 = vtemp.pack<3>("xn", pt[1]);
@@ -611,20 +651,21 @@ struct ImplicitTimeStepping : INode {
             auto dist2 = dist2_pt(p, t0, t1, t2);
             if (dist2 < xi2)
               printf("dist already smaller than xi!\n");
-            ptGrad *= -dt2 * wPT[pti] * dHat *
-                      zs::barrier_gradient(dist2 - xi2, activeGap2, kappa);
+            auto grad =
+                ptGrad * (-wPT[pti] * dHat *
+                          zs::barrier_gradient(dist2 - xi2, activeGap2, kappa));
             // gradient
             for (int d = 0; d != 3; ++d) {
-              atomic_add(exec_cuda, &vtemp("grad", d, pt[0]), ptGrad(0, d));
-              atomic_add(exec_cuda, &vtemp("grad", d, pt[1]), ptGrad(1, d));
-              atomic_add(exec_cuda, &vtemp("grad", d, pt[2]), ptGrad(2, d));
-              atomic_add(exec_cuda, &vtemp("grad", d, pt[3]), ptGrad(3, d));
+              atomic_add(exec_cuda, &vtemp("grad", d, pt[0]), grad(0, d));
+              atomic_add(exec_cuda, &vtemp("grad", d, pt[1]), grad(1, d));
+              atomic_add(exec_cuda, &vtemp("grad", d, pt[2]), grad(2, d));
+              atomic_add(exec_cuda, &vtemp("grad", d, pt[3]), grad(3, d));
             }
             // hessian
             auto ptHess = dist_hess_pt(p, t0, t1, t2);
             auto ptGrad_ = Vec12View{ptGrad.data()};
             ptHess =
-                dt2 * wPT[pti] * dHat *
+                wPT[pti] * dHat *
                 (zs::barrier_hessian(dist2 - xi2, activeGap2, kappa) *
                      dyadic_prod(ptGrad_, ptGrad_) +
                  zs::barrier_gradient(dist2 - xi2, activeGap2, kappa) * ptHess);
@@ -637,7 +678,7 @@ struct ImplicitTimeStepping : INode {
       pol(range(numEE),
           [vtemp = proxy<space>({}, vtemp), tempEE = proxy<space>({}, tempEE),
            EE = proxy<space>(EE), wEE = proxy<space>(wEE), xi2 = xi * xi,
-           dHat = dHat, activeGap2, dt2 = dt * dt] __device__(int eei) mutable {
+           dHat = dHat, activeGap2, kappa = kappa] __device__(int eei) mutable {
             auto ee = EE[eei];
             auto ea0 = vtemp.pack<3>("xn", ee[0]);
             auto ea1 = vtemp.pack<3>("xn", ee[1]);
@@ -648,20 +689,21 @@ struct ImplicitTimeStepping : INode {
             auto dist2 = dist2_ee(ea0, ea1, eb0, eb1);
             if (dist2 < xi2)
               printf("dist already smaller than xi!\n");
-            eeGrad *= -dt2 * wEE[eei] * dHat *
-                      zs::barrier_gradient(dist2 - xi2, activeGap2, kappa);
+            auto grad =
+                eeGrad * (-wEE[eei] * dHat *
+                          zs::barrier_gradient(dist2 - xi2, activeGap2, kappa));
             // gradient
             for (int d = 0; d != 3; ++d) {
-              atomic_add(exec_cuda, &vtemp("grad", d, ee[0]), eeGrad(0, d));
-              atomic_add(exec_cuda, &vtemp("grad", d, ee[1]), eeGrad(1, d));
-              atomic_add(exec_cuda, &vtemp("grad", d, ee[2]), eeGrad(2, d));
-              atomic_add(exec_cuda, &vtemp("grad", d, ee[3]), eeGrad(3, d));
+              atomic_add(exec_cuda, &vtemp("grad", d, ee[0]), grad(0, d));
+              atomic_add(exec_cuda, &vtemp("grad", d, ee[1]), grad(1, d));
+              atomic_add(exec_cuda, &vtemp("grad", d, ee[2]), grad(2, d));
+              atomic_add(exec_cuda, &vtemp("grad", d, ee[3]), grad(3, d));
             }
             // hessian
             auto eeHess = dist_hess_ee(ea0, ea1, eb0, eb1);
             auto eeGrad_ = Vec12View{eeGrad.data()};
             eeHess =
-                dt2 * wEE[eei] * dHat *
+                wEE[eei] * dHat *
                 (zs::barrier_hessian(dist2 - xi2, activeGap2, kappa) *
                      dyadic_prod(eeGrad_, eeGrad_) +
                  zs::barrier_gradient(dist2 - xi2, activeGap2, kappa) * eeHess);
@@ -669,6 +711,37 @@ struct ImplicitTimeStepping : INode {
             make_pd(eeHess);
             // ee[0], ee[1], ee[2], ee[3]
             tempEE.tuple<144>("H", eei) = eeHess;
+          });
+      return;
+    }
+    void
+    computeBoundaryBarrierGradientAndHessian(zs::CudaExecutionPolicy &pol) {
+      using namespace zs;
+      constexpr auto space = execspace_e::cuda;
+      pol(range(vtemp.size()),
+          [vtemp = proxy<space>({}, vtemp), tempPB = proxy<space>({}, tempPB),
+           gn = s_groundNormal, dHat2 = dHat * dHat,
+           kappa = kappa] ZS_LAMBDA(int vi) mutable {
+            auto x = vtemp.pack<3>("xn", vi);
+            auto dist = gn.dot(x);
+            auto dist2 = dist * dist;
+            auto t = dist2 - dHat2;
+            auto g_b = t * zs::log(dist2 / dHat2) * -2 - (t * t) / dist2;
+            auto H_b = (zs::log(dist2 / dHat2) * -2.0 - t * 4.0 / dist2) +
+                       1.0 / (dist2 * dist2) * (t * t);
+            if (dist2 < dHat2) {
+              auto grad = -gn * (kappa * g_b * 2 * dist);
+              for (int d = 0; d != 3; ++d)
+                atomic_add(exec_cuda, &vtemp("grad", d, vi), grad(d));
+            }
+
+            auto param = 4 * H_b * dist2 + 2 * g_b;
+            auto hess = mat3::zeros();
+            if (dist2 < dHat2 && param > 0) {
+              auto nn = dyadic_prod(gn, gn);
+              hess = (kappa * param) * nn;
+            }
+            tempPB.tuple<9>("H", vi) = hess;
           });
       return;
     }
@@ -723,7 +796,7 @@ struct ImplicitTimeStepping : INode {
             [vtemp = proxy<space>({}, vtemp), tempPP = proxy<space>({}, tempPP),
              PP = proxy<space>(PP), wPP = proxy<space>(wPP),
              res = proxy<space>(res), xi2 = xi * xi, dHat = dHat, activeGap2,
-             dt2 = dt * dt] __device__(int ppi) mutable {
+             kappa = kappa] __device__(int ppi) mutable {
               auto pp = PP[ppi];
               auto x0 = vtemp.pack<3>("xn", pp[0]);
               auto x1 = vtemp.pack<3>("xn", pp[1]);
@@ -731,7 +804,7 @@ struct ImplicitTimeStepping : INode {
               if (dist2 < xi2)
                 printf("dist already smaller than xi!\n");
               atomic_add(exec_cuda, &res[0],
-                         dt2 * wPP[ppi] * dHat *
+                         wPP[ppi] * dHat *
                              zs::barrier(dist2 - xi2, activeGap2, kappa));
             });
         auto numPE = nPE.getVal();
@@ -739,7 +812,7 @@ struct ImplicitTimeStepping : INode {
             [vtemp = proxy<space>({}, vtemp), tempPE = proxy<space>({}, tempPE),
              PE = proxy<space>(PE), wPE = proxy<space>(wPE),
              res = proxy<space>(res), xi2 = xi * xi, dHat = dHat, activeGap2,
-             dt2 = dt * dt] __device__(int pei) mutable {
+             kappa = kappa] __device__(int pei) mutable {
               auto pe = PE[pei];
               auto p = vtemp.pack<3>("xn", pe[0]);
               auto e0 = vtemp.pack<3>("xn", pe[1]);
@@ -749,7 +822,7 @@ struct ImplicitTimeStepping : INode {
               if (dist2 < xi2)
                 printf("dist already smaller than xi!\n");
               atomic_add(exec_cuda, &res[0],
-                         dt2 * wPE[pei] * dHat *
+                         wPE[pei] * dHat *
                              zs::barrier(dist2 - xi2, activeGap2, kappa));
             });
         auto numPT = nPT.getVal();
@@ -757,7 +830,7 @@ struct ImplicitTimeStepping : INode {
             [vtemp = proxy<space>({}, vtemp), tempPT = proxy<space>({}, tempPT),
              PT = proxy<space>(PT), wPT = proxy<space>(wPT),
              res = proxy<space>(res), xi2 = xi * xi, dHat = dHat, activeGap2,
-             dt2 = dt * dt] __device__(int pti) mutable {
+             kappa = kappa] __device__(int pti) mutable {
               auto pt = PT[pti];
               auto p = vtemp.pack<3>("xn", pt[0]);
               auto t0 = vtemp.pack<3>("xn", pt[1]);
@@ -768,7 +841,7 @@ struct ImplicitTimeStepping : INode {
               if (dist2 < xi2)
                 printf("dist already smaller than xi!\n");
               atomic_add(exec_cuda, &res[0],
-                         dt2 * wPT[pti] * dHat *
+                         wPT[pti] * dHat *
                              zs::barrier(dist2 - xi2, activeGap2, kappa));
             });
         auto numEE = nEE.getVal();
@@ -776,7 +849,7 @@ struct ImplicitTimeStepping : INode {
             [vtemp = proxy<space>({}, vtemp), tempEE = proxy<space>({}, tempEE),
              EE = proxy<space>(EE), wEE = proxy<space>(wEE),
              res = proxy<space>(res), xi2 = xi * xi, dHat = dHat, activeGap2,
-             dt2 = dt * dt] __device__(int eei) mutable {
+             kappa = kappa] __device__(int eei) mutable {
               auto ee = EE[eei];
               auto ea0 = vtemp.pack<3>("xn", ee[0]);
               auto ea1 = vtemp.pack<3>("xn", ee[1]);
@@ -787,8 +860,22 @@ struct ImplicitTimeStepping : INode {
               if (dist2 < xi2)
                 printf("dist already smaller than xi!\n");
               atomic_add(exec_cuda, &res[0],
-                         dt2 * wEE[eei] * dHat *
+                         wEE[eei] * dHat *
                              zs::barrier(dist2 - xi2, activeGap2, kappa));
+            });
+        // boundary
+        pol(range(verts.size()),
+            [vtemp = proxy<space>({}, vtemp), res = proxy<space>(res),
+             gn = s_groundNormal, dHat2 = dHat * dHat,
+             kappa = kappa] ZS_LAMBDA(int vi) mutable {
+              auto x = vtemp.pack<3>("xn", vi);
+              auto dist = gn.dot(x);
+              auto dist2 = dist * dist;
+              if (dist2 < dHat2) {
+                auto temp = -(dist2 - dHat2) * (dist2 - dHat2) *
+                            zs::log(dist2 / dHat2) * kappa;
+                atomic_add(exec_cuda, &res[0], temp);
+              }
             });
       }
       return res.getVal();
@@ -836,8 +923,8 @@ struct ImplicitTimeStepping : INode {
               int vi) mutable { vtemp.tuple<3>(bTag, vi) = vec3::zeros(); });
       // inertial
       pol(range(numVerts), [execTag, verts = proxy<space>({}, verts),
-                            vtemp = proxy<space>({}, vtemp), dxTag, bTag,
-                            dt = this->dt] ZS_LAMBDA(int vi) mutable {
+                            vtemp = proxy<space>({}, vtemp), dxTag,
+                            bTag] ZS_LAMBDA(int vi) mutable {
         auto m = verts("m", vi);
         auto dx = vtemp.pack<3>(dxTag, vi);
         auto BCbasis = verts.pack<3, 3>("BCbasis", vi);
@@ -949,6 +1036,16 @@ struct ImplicitTimeStepping : INode {
               atomic_add(execTag, &vtemp(bTag, d, ee[vi]), temp[vi * dim + d]);
             }
         });
+        // boundary
+        pol(range(verts.size()), [execTag, vtemp = proxy<space>({}, vtemp),
+                                  tempPB = proxy<space>({}, tempPB), dxTag,
+                                  bTag] ZS_LAMBDA(int vi) mutable {
+          auto dx = vtemp.pack<3>(dxTag, vi);
+          auto pbHess = tempPB.pack<3, 3>("H", vi);
+          dx = pbHess * dx;
+          for (int d = 0; d != 3; ++d)
+            atomic_add(execTag, &vtemp(bTag, d, vi), dx(d));
+        });
       } // end contacts
     }
 
@@ -967,7 +1064,8 @@ struct ImplicitTimeStepping : INode {
           wPT{wPT}, nPT{nPT},
           tempPT{PT.get_allocator(), {{"H", 144}}, PT.size()}, EE{EE}, wEE{wEE},
           nEE{nEE}, tempEE{EE.get_allocator(), {{"H", 144}}, EE.size()},
-          dHat{dHat}, xi{xi}, dt{dt} {}
+          tempPB{verts.get_allocator(), {{"H", 9}}, verts.size()}, dHat{dHat},
+          xi{xi}, dt{dt} {}
 
     const tiles_t &verts;
     const tiles_t &eles;
@@ -990,7 +1088,9 @@ struct ImplicitTimeStepping : INode {
     const zs::Vector<T> &wEE;
     const zs::Vector<int> &nEE;
     dtiles_t tempEE;
-    //
+    // boundary contacts
+    dtiles_t tempPB;
+    // end contacts
     T dHat, xi, dt;
   };
 
@@ -1202,6 +1302,7 @@ struct ImplicitTimeStepping : INode {
                                          vtemp, etemp, dt);
       })(models.getElasticModel());
       A.computeBarrierGradientAndHessian(cudaPol);
+      A.computeBoundaryBarrierGradientAndHessian(cudaPol);
 
       // rotate gradient and project
       cudaPol(zs::range(vtemp.size()),
@@ -1324,10 +1425,29 @@ struct ImplicitTimeStepping : INode {
       fmt::print("newton iter {}: direction residual {}, grad residual {}\n",
                  newtonIter, res, infNorm(cudaPol, vtemp, "grad"));
 
+      // xn0 <- xn for line search
+      cudaPol(zs::range(vtemp.size()),
+              [vtemp = proxy<space>({}, vtemp)] __device__(int i) mutable {
+                vtemp.tuple<3>("xn0", i) = vtemp.pack<3>("xn", i);
+              });
+
       // line search
       T alpha = 1.;
-      computeInversionFreeStepSize(cudaPol, verts, eles, vtemp, alpha);
-      find_intersection_free_stepsize(cudaPol, *zstets, vtemp, alpha, xi);
+      // computeInversionFreeStepSize(cudaPol, eles, vtemp, alpha);
+      find_ground_intersection_free_stepsize(cudaPol, *zstets, vtemp, alpha);
+#if 1
+      while (find_self_intersection_free_stepsize(cudaPol, *zstets, vtemp,
+                                                  alpha, dHat)) {
+        alpha /= 2;
+        cudaPol(zs::range(vtemp.size()), [vtemp = proxy<space>({}, vtemp),
+                                          alpha] __device__(int i) mutable {
+          vtemp.tuple<3>("xn", i) =
+              vtemp.pack<3>("xn0", i) + alpha * vtemp.pack<3>("dir", i);
+        });
+      }
+#else
+      find_intersection_free_stepsize(cudaPol, *zstets, vtemp, alpha, dHat);
+#endif
       //
       if (zsboundary)
         find_boundary_intersection_free_stepsize(cudaPol, *zstets, vtemp,
@@ -1339,10 +1459,6 @@ struct ImplicitTimeStepping : INode {
       }
 #endif
 
-      cudaPol(zs::range(vtemp.size()),
-              [vtemp = proxy<space>({}, vtemp)] __device__(int i) mutable {
-                vtemp.tuple<3>("xn0", i) = vtemp.pack<3>("xn", i);
-              });
       T E0{};
       match([&](auto &elasticModel) {
         E0 = A.energy(cudaPol, elasticModel, "xn0");

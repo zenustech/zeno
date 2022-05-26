@@ -69,10 +69,13 @@ ZENO_API void primCalcNormal(zeno::PrimitiveObject* prim, float flip)
 #endif
     }
 
+    constexpr auto eps = std::numeric_limits<float>::epsilon();
 #if defined(_OPENMP) && defined(__GNUG__)
 #pragma omp parallel for
 #endif
     for (size_t i = 0; i < nrm.size(); i++) {
+        auto n = nrm[i];
+        if (std::abs(n[0]) < eps || std::abs(n[1]) < eps || std::abs(n[2]) < eps) continue;
         nrm[i] = flip * normalize(nrm[i]);
     }
 }
