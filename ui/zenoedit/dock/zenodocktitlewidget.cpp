@@ -373,7 +373,7 @@ QMenuBar* ZenoViewDockTitle::initMenu()
                 const char *e = pAction->isChecked() ? "optx" : "bate";
 #endif
                 Zenovis::GetInstance().getSession()->set_render_engine(e);
-                zenoApp->getMainWindow()->updateViewport();
+                zenoApp->getMainWindow()->updateViewport(QString::fromLatin1(e));
             });
 
         pAction = new QAction(tr("Enable GI"), this);

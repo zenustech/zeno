@@ -501,8 +501,13 @@ QSize DisplayWidget::sizeHint() const
     return QSize(12, 400);
 }
 
-void DisplayWidget::updateFrame()
+void DisplayWidget::updateFrame(const QString& switch2newEng)
 {
+    if (switch2newEng.isEmpty() && switch2newEng == "optx") {
+        m_pTimer->start();
+    } else {
+        m_pTimer->stop();
+    }
     m_view->update();
 }
 

@@ -292,12 +292,12 @@ void ZenoMainWindow::onMaximumTriggered()
     }
 }
 
-void ZenoMainWindow::updateViewport()
+void ZenoMainWindow::updateViewport(const QString& switch2newEng)
 {
     //todo: temp code for single view.
     DisplayWidget* view = qobject_cast<DisplayWidget*>(m_viewDock->widget());
     if (view)
-        view->updateFrame();
+        view->updateFrame(switch2newEng);
 }
 
 void ZenoMainWindow::onSplitDock(bool bHorzontal)
