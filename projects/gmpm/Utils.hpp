@@ -475,7 +475,7 @@ void find_intersection_free_stepsize(Pol &pol, ZenoParticles &zstets,
     auto bv = bv_t{mi, ma};
     auto alpha = stepSize;
     bvh.iter_neighbors(bv, [&](int seI) {
-      // if (sei > seI) return;
+      if (sei > seI) return;
       auto oEdgeInds =
           ses.template pack<2>("inds", seI).template reinterpret_bits<int>();
       if (edgeInds[0] == oEdgeInds[0] || edgeInds[0] == oEdgeInds[1] ||
