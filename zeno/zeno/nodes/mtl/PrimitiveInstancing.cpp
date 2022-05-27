@@ -64,33 +64,26 @@ namespace zeno
             if (has_input("framePrims"))
             {
                 auto framePrims = get_input<zeno::ListObject>("framePrims")->get<std::shared_ptr<zeno::PrimitiveObject>>();
-                int vertexAmount = 0;
-                int frameAmount = framePrims.size();  
+                auto frameAmount = framePrims.size();  
+                auto &vertexFrameBuffer = inst->vertexFrameBuffer;
+                vertexFrameBuffer.resize(frameAmount);
+
+                std::size_t vertexAmount = 0;
                 if (frameAmount > 0)
                 {
-                    const auto &framePrim = framePrims[0];
-                    const auto &pos = framePrim->attr<zeno::vec3f>("pos");
+                    const auto &pos = framePrims[0]->attr<zeno::vec3f>("pos");
                     vertexAmount = pos.size();
                 }
-                inst->frameAmount = frameAmount; 
-                inst->vertexAmount = vertexAmount; 
-                inst->vertexFrameBuffer.reserve(vertexAmount * frameAmount * 3);    
 
-                for (const auto &framePrim : framePrims)
+                for (int i = 0; i < frameAmount; ++i)
                 {
-                    const auto &pos = framePrim->attr<zeno::vec3f>("pos");
+                    const auto &pos = framePrims[i]->attr<zeno::vec3f>("pos");
                     if (vertexAmount != pos.size())
                     {
                         throw zeno::Exception("vertex amount is not a same!");
                     }
-
-                    for (int i = 0; i < vertexAmount; ++i)
-                    {
-                        inst->vertexFrameBuffer.push_back(pos[i][0]);
-                        inst->vertexFrameBuffer.push_back(pos[i][1]);
-                        inst->vertexFrameBuffer.push_back(pos[i][2]);
-                    }
-                } 
+                    vertexFrameBuffer[i] = pos;
+                }
             }
 
             set_output("inst", std::move(inst));
