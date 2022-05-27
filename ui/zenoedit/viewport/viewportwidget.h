@@ -94,6 +94,8 @@ public slots:
     void onRun();
     void onKill();
     void onModelDataChanged();
+    void onPlayClicked(bool);
+    void onSliderValueChanged(int);
 
 signals:
     void frameUpdated(int new_frame);
@@ -103,6 +105,7 @@ private:
     ZTimeline* m_timeline;
     ZenoMainWindow* m_mainWin;
     CameraKeyframeWidget* m_camera_keyframe;
+    QTimer* m_pTimer;
 };
 
 #endif
