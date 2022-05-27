@@ -289,7 +289,7 @@ ee_accd(VecT ea0, VecT ea1, VecT eb0, VecT eb1, VecT dea0, VecT dea1, VecT deb0,
 template <typename Pol, typename TileVecT, typename T>
 bool find_self_intersection_free_stepsize(Pol &pol, ZenoParticles &zstets,
                                           const TileVecT &vtemp, T &stepSize,
-                                          T dHat) {
+                                          T xi) {
   using namespace zs;
   using bv_t = typename ZenoParticles::lbvh_t::Box;
   constexpr auto space = Pol::exec_tag::value;
@@ -310,13 +310,13 @@ bool find_self_intersection_free_stepsize(Pol &pol, ZenoParticles &zstets,
     if (!zstets.hasBvh(ZenoParticles::s_surfEdgeTag))
       zstets.bvh(ZenoParticles::s_surfEdgeTag)
           .build(pol, retrieve_bounding_volumes(pol, vtemp, surfEdges, vtemp,
-                                                wrapv<2>{}, stepSize, 0, "xn",
-                                                "dir"));
+                                                wrapv<2>{}, stepSize, xi * 2,
+                                                "xn", "dir"));
     else
       zstets.bvh(ZenoParticles::s_surfEdgeTag)
           .refit(pol, retrieve_bounding_volumes(pol, vtemp, surfEdges, vtemp,
-                                                wrapv<2>{}, stepSize, 0, "xn",
-                                                "dir"));
+                                                wrapv<2>{}, stepSize, xi * 2,
+                                                "xn", "dir"));
   }
   const auto &seBvh = zstets.bvh(ZenoParticles::s_surfEdgeTag);
 
@@ -328,8 +328,8 @@ bool find_self_intersection_free_stepsize(Pol &pol, ZenoParticles &zstets,
                                   verts = proxy<space>({}, verts),
                                   vtemp = proxy<space>({}, vtemp),
                                   intersected = proxy<space>(intersected),
-                                  bvh = proxy<space>(seBvh), stepSize,
-                                  thickness = dHat] ZS_LAMBDA(int sti) mutable {
+                                  bvh = proxy<space>(seBvh),
+                                  stepSize] ZS_LAMBDA(int sti) mutable {
     auto tri =
         sts.template pack<3>("inds", sti).template reinterpret_bits<int>();
     auto t0 = vtemp.pack<3>("xn", tri[0]);
@@ -338,8 +338,8 @@ bool find_self_intersection_free_stepsize(Pol &pol, ZenoParticles &zstets,
     auto [mi, ma] = get_bounding_box(t0, t1);
     auto bv = bv_t{mi, ma};
     merge(bv, t2);
-    bv._min = bv._min - thickness;
-    bv._max = bv._max + thickness;
+    bv._min = bv._min;
+    bv._max = bv._max;
     bvh.iter_neighbors(bv, [&](int sei) {
       auto line =
           ses.template pack<2>("inds", sei).template reinterpret_bits<int>();
@@ -458,7 +458,8 @@ void find_intersection_free_stepsize(Pol &pol, ZenoParticles &zstets,
   // zs::reduce(pol, std::begin(surfAlphas), std::end(surfAlphas),
   // std::begin(finalAlpha), limits<T>::max(), getmin<T>{});
   auto surfAlpha = finalAlpha.getVal();
-  fmt::print("surface alpha: {}, default stepsize: {}\n", surfAlpha, stepSize);
+  fmt::print(fg(fmt::color::dark_cyan),
+             "surface alpha: {}, default stepsize: {}\n", surfAlpha, stepSize);
   stepSize = surfAlpha;
   // query ee
   pol(Collapse{surfEdges.size()}, [ses = proxy<space>({}, surfEdges),
@@ -475,7 +476,7 @@ void find_intersection_free_stepsize(Pol &pol, ZenoParticles &zstets,
     auto bv = bv_t{mi, ma};
     auto alpha = stepSize;
     bvh.iter_neighbors(bv, [&](int seI) {
-      if (sei > seI) return;
+      // if (sei > seI) return;
       auto oEdgeInds =
           ses.template pack<2>("inds", seI).template reinterpret_bits<int>();
       if (edgeInds[0] == oEdgeInds[0] || edgeInds[0] == oEdgeInds[1] ||
@@ -504,7 +505,7 @@ void find_intersection_free_stepsize(Pol &pol, ZenoParticles &zstets,
       atomic_min(exec_cuda, &finalAlpha[0], alpha);
   });
   stepSize = finalAlpha.getVal();
-  fmt::print("surf edge alpha: {}\n", stepSize);
+  fmt::print(fg(fmt::color::dark_cyan), "surf edge alpha: {}\n", stepSize);
 }
 
 template <typename Pol, typename TileVecT, typename T>
@@ -600,7 +601,8 @@ void find_boundary_intersection_free_stepsize(Pol &pol, ZenoParticles &zstets,
   // std::begin(finalAlpha), limits<T>::max(), getmin<T>{});
   auto surfAlpha = finalAlpha.getVal();
   stepSize = surfAlpha;
-  fmt::print("surf alpha: {}, default stepsize: {}\n", surfAlpha, stepSize);
+  fmt::print(fg(fmt::color::dark_cyan),
+             "surf alpha: {}, default stepsize: {}\n", surfAlpha, stepSize);
   // query ee
   zs::Vector<T> surfEdgeAlphas{surfEdges.get_allocator(), surfEdges.size()};
   pol(Collapse{surfEdges.size()},
@@ -650,7 +652,7 @@ void find_boundary_intersection_free_stepsize(Pol &pol, ZenoParticles &zstets,
   stepSize = std::min(surfAlpha, finalAlpha.getVal());
 #else
   stepSize = finalAlpha.getVal();
-  fmt::print("surf edge alpha: {}\n", surfAlpha);
+  fmt::print(fg(fmt::color::dark_cyan), "surf edge alpha: {}\n", surfAlpha);
 #endif
 }
 
