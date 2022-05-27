@@ -149,6 +149,7 @@ struct ImplicitTimeStepping : INode {
                               zs::Vector<int> &nEE) {
     using namespace zs;
     using bv_t = typename ZenoParticles::lbvh_t::Box;
+    // dHat = dHat + xi
     T activeGap2 = dHat * dHat + (T)2.0 * xi * dHat;
     T xi2 = xi * xi;
     constexpr auto space = execspace_e::cuda;
@@ -163,7 +164,8 @@ struct ImplicitTimeStepping : INode {
     /// tri
     const auto &surfaces = zstets[ZenoParticles::s_surfTriTag];
     {
-      auto bvs = retrieve_bounding_volumes(pol, vtemp, surfaces, wrapv<3>{});
+      auto bvs = retrieve_bounding_volumes(pol, vtemp, surfaces, wrapv<3>{},
+                                           0.f, "xn");
       if (!zstets.hasBvh(ZenoParticles::s_surfTriTag)) // build if bvh not exist
         zstets.bvh(ZenoParticles::s_surfTriTag).build(pol, bvs);
       else
@@ -174,7 +176,8 @@ struct ImplicitTimeStepping : INode {
     /// edges
     const auto &surfEdges = zstets[ZenoParticles::s_surfEdgeTag];
     {
-      auto bvs = retrieve_bounding_volumes(pol, vtemp, surfEdges, wrapv<2>{});
+      auto bvs = retrieve_bounding_volumes(pol, vtemp, surfEdges, wrapv<2>{},
+                                           0.f, "xn");
       if (!zstets.hasBvh(ZenoParticles::s_surfEdgeTag))
         zstets.bvh(ZenoParticles::s_surfEdgeTag).build(pol, bvs);
       else
@@ -196,7 +199,7 @@ struct ImplicitTimeStepping : INode {
          wPT = proxy<space>(wPT), nPT = proxy<space>(nPT),
          thickness = dHat + xi, xi2, activeGap2] ZS_LAMBDA(int svi) mutable {
           auto vi = reinterpret_bits<int>(svs("inds", svi));
-          auto p = vtemp.pack<3>("xn", vi);
+          auto p = vtemp.template pack<3>("xn", vi);
           auto wp = svs("w", vi) / 4;
           auto [mi, ma] = get_bounding_box(p - thickness, p + thickness);
           auto bv = bv_t{mi, ma};
@@ -212,11 +215,11 @@ struct ImplicitTimeStepping : INode {
                 reinterpret_bits<int>(verts("BCorder", tri[2])) == 3)
               return;
             // ccd
-            auto t0 = vtemp.pack<3>("xn", tri[0]);
-            auto t1 = vtemp.pack<3>("xn", tri[1]);
-            auto t2 = vtemp.pack<3>("xn", tri[2]);
-            // if (!pt_cd_broadphase(p, t0, t1, t2, thickness))
-            //  return;
+            auto t0 = vtemp.template pack<3>("xn", tri[0]);
+            auto t1 = vtemp.template pack<3>("xn", tri[1]);
+            auto t2 = vtemp.template pack<3>("xn", tri[2]);
+            if (!pt_cd_broadphase(p, t0, t1, t2, thickness))
+              return;
             switch (pt_distance_type(p, t0, t1, t2)) {
             case 0: {
               if (dist2_pp(p, t0) - xi2 < activeGap2) {
@@ -297,13 +300,12 @@ struct ImplicitTimeStepping : INode {
           bool selfFixed =
               reinterpret_bits<int>(verts("BCorder", eiInds[0])) == 3 &&
               reinterpret_bits<int>(verts("BCorder", eiInds[1])) == 3;
-          auto x0 = vtemp.pack<3>("xn", eiInds[0]);
-          auto x1 = vtemp.pack<3>("xn", eiInds[1]);
+          auto x0 = vtemp.template pack<3>("xn", eiInds[0]);
+          auto x1 = vtemp.template pack<3>("xn", eiInds[1]);
           auto [mi, ma] = get_bounding_box(x0, x1);
           auto bv = bv_t{mi - thickness, ma + thickness};
           bvh.iter_neighbors(bv, [&](int sej) {
-            if (sei > sej)
-              return;
+            // if (sei > sej) return;
             auto ejInds = ses.template pack<2>("inds", sej)
                               .template reinterpret_bits<int>();
             if (eiInds[0] == ejInds[0] || eiInds[0] == ejInds[1] ||
@@ -315,10 +317,10 @@ struct ImplicitTimeStepping : INode {
                 reinterpret_bits<int>(verts("BCorder", ejInds[1])) == 3)
               return;
             // ccd
-            auto eb0 = vtemp.pack<3>("xn", ejInds[0]);
-            auto eb1 = vtemp.pack<3>("xn", ejInds[1]);
-            // if (!ee_cd_broadphase(x0, x1, eb0, eb1, thickness))
-            //   return;
+            auto eb0 = vtemp.template pack<3>("xn", ejInds[0]);
+            auto eb1 = vtemp.template pack<3>("xn", ejInds[1]);
+            if (!ee_cd_broadphase(x0, x1, eb0, eb1, thickness))
+              return;
             auto we = (selfWe + ses("w", sej)) / 4;
             switch (ee_distance_type(x0, x1, eb0, eb1)) {
             case 0: {
@@ -402,7 +404,7 @@ struct ImplicitTimeStepping : INode {
                nPP.getVal(), nPE.getVal(), nPT.getVal(), nEE.getVal());
     if (nPP.getVal() > 0 || nPE.getVal() > 0 || nPT.getVal() > 0 ||
         nEE.getVal() > 0) {
-      getchar();
+      // getchar();
     }
   }
   void computeInversionFreeStepSize(zs::CudaExecutionPolicy &pol,
@@ -771,10 +773,13 @@ struct ImplicitTimeStepping : INode {
                                vtemp = proxy<space>({}, vtemp),
                                res = proxy<space>(res), tag, model = model,
                                dt = this->dt] __device__(int ei) mutable {
-        auto DmInv = eles.pack<3, 3>("IB", ei);
-        auto inds = eles.pack<4>("inds", ei).reinterpret_bits<int>();
-        vec3 xs[4] = {vtemp.pack<3>(tag, inds[0]), vtemp.pack<3>(tag, inds[1]),
-                      vtemp.pack<3>(tag, inds[2]), vtemp.pack<3>(tag, inds[3])};
+        auto DmInv = eles.template pack<3, 3>("IB", ei);
+        auto inds =
+            eles.template pack<4>("inds", ei).template reinterpret_bits<int>();
+        vec3 xs[4] = {vtemp.template pack<3>(tag, inds[0]),
+                      vtemp.template pack<3>(tag, inds[1]),
+                      vtemp.template pack<3>(tag, inds[2]),
+                      vtemp.template pack<3>(tag, inds[3])};
         mat3 F{};
         {
           auto x1x0 = xs[1] - xs[0];
@@ -789,7 +794,7 @@ struct ImplicitTimeStepping : INode {
         atomic_add(exec_cuda, &res[0], vole * psi * dt * dt);
       });
       // contacts
-      if constexpr (enable_contact) {
+      {
         auto activeGap2 = dHat * dHat + 2 * xi * dHat;
         auto numPP = nPP.getVal();
         pol(range(numPP),
@@ -902,8 +907,9 @@ struct ImplicitTimeStepping : INode {
       pol(zs::range(verts.size()),
           [vtemp = proxy<space>({}, vtemp), verts = proxy<space>({}, verts),
            srcTag, dstTag] ZS_LAMBDA(int vi) mutable {
-            vtemp.tuple<3>(dstTag, vi) =
-                vtemp.pack<3, 3>("P", vi) * vtemp.pack<3>(srcTag, vi);
+            vtemp.template tuple<3>(dstTag, vi) =
+                vtemp.template pack<3, 3>("P", vi) *
+                vtemp.template pack<3>(srcTag, vi);
           });
     }
     template <typename Pol>
@@ -918,16 +924,17 @@ struct ImplicitTimeStepping : INode {
       // left trans^T: multiplied on rows
       // right trans: multiplied on cols
       // dx -> b
-      pol(range(numVerts),
-          [execTag, vtemp = proxy<space>({}, vtemp), bTag] ZS_LAMBDA(
-              int vi) mutable { vtemp.tuple<3>(bTag, vi) = vec3::zeros(); });
+      pol(range(numVerts), [execTag, vtemp = proxy<space>({}, vtemp),
+                            bTag] ZS_LAMBDA(int vi) mutable {
+        vtemp.template tuple<3>(bTag, vi) = vec3::zeros();
+      });
       // inertial
       pol(range(numVerts), [execTag, verts = proxy<space>({}, verts),
                             vtemp = proxy<space>({}, vtemp), dxTag,
                             bTag] ZS_LAMBDA(int vi) mutable {
         auto m = verts("m", vi);
-        auto dx = vtemp.pack<3>(dxTag, vi);
-        auto BCbasis = verts.pack<3, 3>("BCbasis", vi);
+        auto dx = vtemp.template pack<3>(dxTag, vi);
+        auto BCbasis = verts.template pack<3, 3>("BCbasis", vi);
         dx = BCbasis.transpose() * m * BCbasis * dx;
         for (int d = 0; d != 3; ++d)
           atomic_add(execTag, &vtemp(bTag, d, vi), dx(d));
@@ -939,13 +946,14 @@ struct ImplicitTimeStepping : INode {
                            bTag] ZS_LAMBDA(int ei) mutable {
         constexpr int dim = 3;
         constexpr auto dimp1 = dim + 1;
-        auto inds = eles.pack<dimp1>("inds", ei).reinterpret_bits<int>();
+        auto inds = eles.template pack<dimp1>("inds", ei)
+                        .template reinterpret_bits<int>();
         zs::vec<T, dimp1 * dim> temp{};
         for (int vi = 0; vi != dimp1; ++vi)
           for (int d = 0; d != dim; ++d) {
             temp[vi * dim + d] = vtemp(dxTag, d, inds[vi]);
           }
-        auto He = etemp.pack<dim * dimp1, dim * dimp1>("He", ei);
+        auto He = etemp.template pack<dim * dimp1, dim * dimp1>("He", ei);
 
         temp = He * temp;
 
@@ -955,7 +963,7 @@ struct ImplicitTimeStepping : INode {
           }
       });
       // contacts
-      if constexpr (enable_contact) {
+      {
         auto numPP = nPP.getVal();
         pol(range(numPP), [execTag, tempPP = proxy<space>({}, tempPP),
                            vtemp = proxy<space>({}, vtemp), dxTag, bTag,
@@ -967,7 +975,7 @@ struct ImplicitTimeStepping : INode {
             for (int d = 0; d != dim; ++d) {
               temp[vi * dim + d] = vtemp(dxTag, d, pp[vi]);
             }
-          auto ppHess = tempPP.pack<6, 6>("H", ppi);
+          auto ppHess = tempPP.template pack<6, 6>("H", ppi);
 
           temp = ppHess * temp;
 
@@ -987,7 +995,7 @@ struct ImplicitTimeStepping : INode {
             for (int d = 0; d != dim; ++d) {
               temp[vi * dim + d] = vtemp(dxTag, d, pe[vi]);
             }
-          auto peHess = tempPE.pack<9, 9>("H", pei);
+          auto peHess = tempPE.template pack<9, 9>("H", pei);
 
           temp = peHess * temp;
 
@@ -1007,7 +1015,7 @@ struct ImplicitTimeStepping : INode {
             for (int d = 0; d != dim; ++d) {
               temp[vi * dim + d] = vtemp(dxTag, d, pt[vi]);
             }
-          auto ptHess = tempPT.pack<12, 12>("H", pti);
+          auto ptHess = tempPT.template pack<12, 12>("H", pti);
 
           temp = ptHess * temp;
 
@@ -1027,7 +1035,7 @@ struct ImplicitTimeStepping : INode {
             for (int d = 0; d != dim; ++d) {
               temp[vi * dim + d] = vtemp(dxTag, d, ee[vi]);
             }
-          auto eeHess = tempEE.pack<12, 12>("H", eei);
+          auto eeHess = tempEE.template pack<12, 12>("H", eei);
 
           temp = eeHess * temp;
 
@@ -1040,8 +1048,8 @@ struct ImplicitTimeStepping : INode {
         pol(range(verts.size()), [execTag, vtemp = proxy<space>({}, vtemp),
                                   tempPB = proxy<space>({}, tempPB), dxTag,
                                   bTag] ZS_LAMBDA(int vi) mutable {
-          auto dx = vtemp.pack<3>(dxTag, vi);
-          auto pbHess = tempPB.pack<3, 3>("H", vi);
+          auto dx = vtemp.template pack<3>(dxTag, vi);
+          auto pbHess = tempPB.template pack<3, 3>("H", vi);
           dx = pbHess * dx;
           for (int d = 0; d != 3; ++d)
             atomic_add(execTag, &vtemp(bTag, d, vi), dx(d));
@@ -1435,29 +1443,11 @@ struct ImplicitTimeStepping : INode {
       T alpha = 1.;
       // computeInversionFreeStepSize(cudaPol, eles, vtemp, alpha);
       find_ground_intersection_free_stepsize(cudaPol, *zstets, vtemp, alpha);
-#if 1
-      while (find_self_intersection_free_stepsize(cudaPol, *zstets, vtemp,
-                                                  alpha, dHat)) {
-        alpha /= 2;
-        cudaPol(zs::range(vtemp.size()), [vtemp = proxy<space>({}, vtemp),
-                                          alpha] __device__(int i) mutable {
-          vtemp.tuple<3>("xn", i) =
-              vtemp.pack<3>("xn0", i) + alpha * vtemp.pack<3>("dir", i);
-        });
-      }
-#else
-      find_intersection_free_stepsize(cudaPol, *zstets, vtemp, alpha, dHat);
-#endif
+      find_intersection_free_stepsize(cudaPol, *zstets, vtemp, alpha, xi);
       //
       if (zsboundary)
         find_boundary_intersection_free_stepsize(cudaPol, *zstets, vtemp,
                                                  *zsboundary, (T)dt, alpha, xi);
-#if 0
-      if (alpha < 0.9) {
-        fmt::print("initial stepsize [{}]\n", alpha);
-        getchar();
-      }
-#endif
 
       T E0{};
       match([&](auto &elasticModel) {
@@ -1494,7 +1484,6 @@ struct ImplicitTimeStepping : INode {
               vn += dv;
               verts.tuple<3>("v", vi) = vn;
             });
-    // getchar();
 
     set_output("ZSParticles", std::move(zstets));
   }

@@ -418,23 +418,61 @@ struct GraphicPrimitive : IGraphic {
 
     if (prim->inst != nullptr)
     {
+        prim_has_inst = true;
+
+        const auto &inst = prim->inst;
+
+        const auto amount = inst->amount;    
+        prim_inst_amount = amount;    
+
+        prim_inst_delta_time = inst->deltaTime;
+
+        const auto &vertexFrameBuffer = inst->vertexFrameBuffer;    
+        const auto frameAmount = vertexFrameBuffer.size();    
+        prim_inst_frame_amount = frameAmount;
+
+        std::size_t vertexAmount = 0;
+        if (frameAmount > 0)
+        {
+            vertexAmount = vertexFrameBuffer[0].size();            
+        }
+        std::vector<float> samplerData(3 * vertexAmount * frameAmount);
+#pragma omp parallel for
+        for (int i = 0; i < frameAmount; ++i)
+        {
+#pragma omp parallel for
+            for (int j = 0; j < vertexAmount; ++j)
+            {
+                int k = (i * vertexAmount + j) * 3;
+                const auto &data = vertexFrameBuffer[i][j];
+                samplerData[k + 0] = data[0];
+                samplerData[k + 1] = data[1];
+                samplerData[k + 2] = data[2];
+            }
+        }
+        prim_inst_vertex_frame_sampler = std::make_unique<Texture>();
+        prim_inst_vertex_frame_sampler->target = GL_TEXTURE_2D;
+        prim_inst_vertex_frame_sampler->wrap_s = GL_CLAMP_TO_EDGE;
+        prim_inst_vertex_frame_sampler->wrap_t = GL_CLAMP_TO_EDGE;
+        prim_inst_vertex_frame_sampler->min_filter = GL_LINEAR;
+        prim_inst_vertex_frame_sampler->mag_filter = GL_LINEAR;
+        prim_inst_vertex_frame_sampler->internal_fmt = GL_RGB32F;
+        prim_inst_vertex_frame_sampler->format = GL_RGB;
+        prim_inst_vertex_frame_sampler->dtype = GL_FLOAT;
+        prim_inst_vertex_frame_sampler->bind_image(samplerData.data(), vertexAmount, frameAmount);
+
         instvbo = std::make_unique<Buffer>(GL_ARRAY_BUFFER);
-
-        auto amount = prim->inst->amount;
-        const auto &modelMatrices = prim->inst->modelMatrices;
-        const auto &timeList = prim->inst->timeList;
-
-        std::vector<InstVboData> data;
-        data.reserve(amount);
+        std::vector<InstVboData> vboData(amount);
+        const auto &modelMatrices = inst->modelMatrices;
+        const auto &timeList = inst->timeList;
+#pragma omp parallel for
         for (int i = 0; i < amount; ++i)
         {
-            auto instVboData = InstVboData();
+            auto &instVboData = vboData[i];
             instVboData.modelMatrix = modelMatrices[i];
             instVboData.time = timeList[i];
-            data.emplace_back(instVboData);
         }
-
-        instvbo->bind_data(data.data(), amount * sizeof(InstVboData));
+        instvbo->bind_data(vboData.data(), amount * sizeof(InstVboData));
     }
 
     points_count = prim->points.size();
@@ -474,30 +512,64 @@ struct GraphicPrimitive : IGraphic {
             triObj.ebo = std::make_unique<Buffer>(GL_ELEMENT_ARRAY_BUFFER);
             triObj.ebo->bind_data(prim->tris.data(), tris_count * sizeof(prim->tris[0]));
             triObj.vbo = nullptr;
+            triObj.instvbo = nullptr;
         } else {
             computeTrianglesTangent(prim);
             parseTrianglesDrawBuffer(prim, triObj);
-        }
 
-        if (prim->inst != nullptr)
-        {
-            instvbo = std::make_unique<Buffer>(GL_ARRAY_BUFFER);
-
-            auto amount = prim->inst->amount;
-            const auto &modelMatrices = prim->inst->modelMatrices;
-            const auto &timeList = prim->inst->timeList;
-
-            std::vector<InstVboData> data;
-            data.reserve(amount);
-            for (int i = 0; i < amount; ++i)
+            if (prim->inst != nullptr)
             {
-                auto instVboData = InstVboData();
-                instVboData.modelMatrix = modelMatrices[i];
-                instVboData.time = timeList[i];
-                data.emplace_back(instVboData);
-            }
+                const auto &inst = prim->inst;
 
-            instvbo->bind_data(data.data(), amount * sizeof(InstVboData));
+                const auto amount = inst->amount;    
+
+                const auto &vertexFrameBuffer = inst->vertexFrameBuffer;    
+                const auto frameAmount = vertexFrameBuffer.size();    
+
+                const auto &tris = prim->tris;
+                const auto trisAmount = tris.size();
+                std::vector<float> samplerData(3 * 3 * trisAmount * frameAmount);
+#pragma omp parallel for
+                for (int i = 0; i < frameAmount; ++i)
+                {
+#pragma omp parallel for
+                    for (int j = 0; j < trisAmount; ++j)
+                    {
+                        for (int k = 0; k < 3; ++k)
+                        {
+                            int l = ((i * trisAmount + j) * 3 + k) * 3;
+                            const auto &data = vertexFrameBuffer[i][tris[j][k]];
+                            samplerData[l + 0] = data[0];
+                            samplerData[l + 1] = data[1];
+                            samplerData[l + 2] = data[2];
+                        }
+                    }
+                }
+
+                prim_inst_vertex_frame_sampler = std::make_unique<Texture>();
+                prim_inst_vertex_frame_sampler->target = GL_TEXTURE_2D;
+                prim_inst_vertex_frame_sampler->wrap_s = GL_CLAMP_TO_EDGE;
+                prim_inst_vertex_frame_sampler->wrap_t = GL_CLAMP_TO_EDGE;
+                prim_inst_vertex_frame_sampler->min_filter = GL_LINEAR;
+                prim_inst_vertex_frame_sampler->mag_filter = GL_LINEAR;
+                prim_inst_vertex_frame_sampler->internal_fmt = GL_RGB32F;
+                prim_inst_vertex_frame_sampler->format = GL_RGB;
+                prim_inst_vertex_frame_sampler->dtype = GL_FLOAT;
+                prim_inst_vertex_frame_sampler->bind_image(samplerData.data(), 3 * trisAmount, frameAmount);
+
+                triObj.instvbo = std::make_unique<Buffer>(GL_ARRAY_BUFFER);
+                std::vector<InstVboData> vboData(amount);
+                const auto &modelMatrices = inst->modelMatrices;
+                const auto &timeList = inst->timeList;
+#pragma omp parallel for
+                for (int i = 0; i < amount; ++i)
+                {
+                    auto &instVboData = vboData[i];
+                    instVboData.modelMatrix = modelMatrices[i];
+                    instVboData.time = timeList[i];
+                }
+                triObj.instvbo->bind_data(vboData.data(), amount * sizeof(InstVboData));
+            }
         }
 
         bool findCamera=false;
@@ -570,25 +642,6 @@ struct GraphicPrimitive : IGraphic {
     }
     //load_textures(path);
     prim_has_mtl = (prim->mtl != nullptr) && triObj.prog && triObj.shadowprog;
-
-    if (prim->inst != nullptr)
-    {
-        prim_has_inst = true;
-        prim_inst_amount = prim->inst->amount;    
-        prim_inst_delta_time = prim->inst->deltaTime;
-        prim_inst_frame_amount = prim->inst->frameAmount;    
-        prim_inst_vertex_frame_sampler = std::make_unique<Texture>();
-        prim_inst_vertex_frame_sampler->target = GL_TEXTURE_2D;
-        prim_inst_vertex_frame_sampler->wrap_s = GL_CLAMP_TO_EDGE;
-        prim_inst_vertex_frame_sampler->wrap_t = GL_CLAMP_TO_EDGE;
-        prim_inst_vertex_frame_sampler->min_filter = GL_LINEAR;
-        prim_inst_vertex_frame_sampler->mag_filter = GL_LINEAR;
-        prim_inst_vertex_frame_sampler->internal_fmt = GL_RGB32F;
-        prim_inst_vertex_frame_sampler->format = GL_RGB;
-        prim_inst_vertex_frame_sampler->dtype = GL_FLOAT;
-        prim_inst_vertex_frame_sampler->bind_image(prim->inst->vertexFrameBuffer.data(), prim->inst->vertexAmount, prim_inst_frame_amount);
-    }
-
   }
   
   virtual void drawShadow(Light *light) override 

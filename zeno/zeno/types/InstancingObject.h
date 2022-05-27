@@ -18,9 +18,7 @@ namespace zeno
 
         std::vector<float> timeList;
         float deltaTime{0.0f};
-        int frameAmount{0};
-        int vertexAmount{0};
-        std::vector<float> vertexFrameBuffer;
+        std::vector<std::vector<zeno::vec3f>> vertexFrameBuffer;
 
         std::size_t serializeSize()
         {
@@ -40,14 +38,13 @@ namespace zeno
 
             size += sizeof(deltaTime);
 
+            auto frameAmount{vertexFrameBuffer.size()};
             size += sizeof(frameAmount);
 
+            auto vertexAmount{vertexFrameBuffer[0].size()};
             size += sizeof(vertexAmount);
 
-            auto vertexFrameBufferSize{vertexFrameBuffer.size()};
-            size += sizeof(vertexFrameBufferSize);
-
-            size += sizeof(vertexFrameBuffer[0]) * vertexFrameBufferSize;
+            size += sizeof(zeno::vec3f) * vertexAmount * frameAmount;
 
             return size;
         }
@@ -79,18 +76,19 @@ namespace zeno
             memcpy(str.data() + i, &deltaTime, sizeof(deltaTime));
             i += sizeof(deltaTime);
 
+            auto frameAmount{vertexFrameBuffer.size()};
             memcpy(str.data() + i, &frameAmount, sizeof(frameAmount));
             i += sizeof(frameAmount);
 
+            auto vertexAmount{vertexFrameBuffer[0].size()};
             memcpy(str.data() + i, &vertexAmount, sizeof(vertexAmount));
             i += sizeof(vertexAmount);
 
-            auto vertexFrameBufferSize{vertexFrameBuffer.size()};
-            memcpy(str.data() + i, &vertexFrameBufferSize, sizeof(vertexFrameBufferSize));
-            i += sizeof(vertexFrameBufferSize);
-
-            memcpy(str.data() + i, vertexFrameBuffer.data(), sizeof(vertexFrameBuffer[0]) * vertexFrameBufferSize);
-            i += sizeof(vertexFrameBuffer[0]) * vertexFrameBufferSize;
+            for (int j = 0; j < frameAmount; ++j)
+            {
+                memcpy(str.data() + i, vertexFrameBuffer[j].data(), sizeof(zeno::vec3f) * vertexAmount);
+                i += sizeof(zeno::vec3f) * vertexAmount;
+            }
 
             return str;
         }
@@ -123,19 +121,21 @@ namespace zeno
             memcpy(&inst.deltaTime, str.data() + i, sizeof(inst.deltaTime));
             i += sizeof(inst.deltaTime);
 
-            memcpy(&inst.frameAmount, str.data() + i, sizeof(inst.frameAmount));
-            i += sizeof(inst.frameAmount);
+            size_t frameAmount;
+            memcpy(&frameAmount, str.data() + i, sizeof(frameAmount));
+            i += sizeof(frameAmount);
 
-            memcpy(&inst.vertexAmount, str.data() + i, sizeof(inst.vertexAmount));
-            i += sizeof(inst.vertexAmount);
+            size_t vertexAmount;
+            memcpy(&vertexAmount, str.data() + i, sizeof(vertexAmount));
+            i += sizeof(vertexAmount);
 
-            size_t vertexFrameBufferSize;
-            memcpy(&vertexFrameBufferSize, str.data() + i, sizeof(vertexFrameBufferSize));
-            i += sizeof(vertexFrameBufferSize);
-            inst.vertexFrameBuffer.reserve(vertexFrameBufferSize);
-
-            std::copy_n((float *)(str.data() + i), vertexFrameBufferSize, std::back_inserter(inst.vertexFrameBuffer));
-            i += sizeof(inst.vertexFrameBuffer[0]) * vertexFrameBufferSize;
+            auto &vertexFrameBuffer = inst.vertexFrameBuffer;
+            vertexFrameBuffer.resize(frameAmount);
+            for (int j = 0; j < frameAmount; ++j)
+            {
+                std::copy_n((zeno::vec3f *)(str.data() + i), vertexAmount, std::back_inserter(vertexFrameBuffer[j]));
+                i += sizeof(zeno::vec3f) * vertexAmount;
+            }
 
             return inst;
         }

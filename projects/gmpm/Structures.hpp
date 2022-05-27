@@ -211,14 +211,22 @@ struct ZenoParticles : IObjectClone<ZenoParticles> {
     return auxData.at(tag);
   }
   bool hasAuxData(const std::string &tag) const {
-    return auxData.find(tag) != auxData.end();
+    // return auxData.find(tag) != auxData.end();
+    if (auto it = auxData.find(tag); it != auxData.end())
+      if (it->second.size() != 0)
+        return true;
+    return false;
   }
   decltype(auto) bvh(const std::string &tag) { return auxSpatialData[tag]; }
   decltype(auto) bvh(const std::string &tag) const {
     return auxSpatialData.at(tag);
   }
   bool hasBvh(const std::string &tag) const {
-    return auxSpatialData.find(tag) != auxSpatialData.end();
+    // return auxSpatialData.find(tag) != auxSpatialData.end();
+    if (auto it = auxSpatialData.find(tag); it != auxSpatialData.end())
+      if (it->second.getNumLeaves() != 0)
+        return true;
+    return false;
   }
 
   std::shared_ptr<particles_t> particles{};
