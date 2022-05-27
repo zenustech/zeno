@@ -506,6 +506,9 @@ QSize DisplayWidget::sizeHint() const
 
 void DisplayWidget::updateFrame(const QString &action)
 {
+    if (m_mainWin && m_mainWin->inDlgEventLoop())
+        return;
+
     if (action == "newFrame") {
         m_pTimer->stop();
     } else if (action == "finishFrame") {
@@ -518,12 +521,12 @@ void DisplayWidget::updateFrame(const QString &action)
         {
             std::string name = scene->renderMan->getDefaultName();
             if (name == "optx") {
-                m_pTimer->start();
+                m_pTimer->start(m_updateFeq);
             }
         }
     } else if (!action.isEmpty()) {
         if (action == "optx") {
-            m_pTimer->start();
+            m_pTimer->start(m_updateFeq);
         } else {
             m_pTimer->stop();
         }
@@ -542,7 +545,7 @@ void DisplayWidget::onModelDataChanged()
 void DisplayWidget::onPlayClicked(bool bChecked)
 {
     if (bChecked)
-        m_pTimer->start(16);
+        m_pTimer->start(m_sliderFeq);
     else
         m_pTimer->stop();
     Zenovis::GetInstance().startPlay(bChecked);
