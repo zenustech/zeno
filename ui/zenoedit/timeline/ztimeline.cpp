@@ -41,6 +41,10 @@ void ZTimeline::initSignals()
     connect(m_ui->timeliner, SIGNAL(sliderValueChange(int)), this, SIGNAL(sliderValueChanged(int)));
     connect(m_ui->btnRun, SIGNAL(clicked()), this, SIGNAL(run()));
     connect(m_ui->btnKill, SIGNAL(clicked()), this, SIGNAL(kill()));
+    connect(m_ui->btnAlways, &QPushButton::clicked, this, [=](bool bChecked) {
+        if (bChecked)
+            emit alwaysChecked();
+    });
     connect(m_ui->btnBackward, &QPushButton::clicked, this, [=]() {
         int frame = m_ui->timeliner->value();
         auto ft = fromTo();

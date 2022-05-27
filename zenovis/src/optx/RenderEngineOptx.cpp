@@ -151,6 +151,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         auto guard = setupState();
         auto const &cam = *scene->camera;
         auto const &opt = *scene->drawOptions;
+        //zeno::log_info("test Optx::draw()");
 
         bool sizeNeedUpdate = false;
         {

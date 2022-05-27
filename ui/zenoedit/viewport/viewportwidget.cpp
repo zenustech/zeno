@@ -1,3 +1,4 @@
+#include <zenovis/RenderEngine.h>
 #include "viewportwidget.h"
 #include "zenovis.h"
 #include "camerakeyframe.h"
@@ -12,6 +13,8 @@
 #include <zenovis/Scene.h>
 #include <zeno/funcs/ObjectGeometryInfo.h>
 #include <zeno/types/UserData.h>
+#include <viewport/zenovis.h>
+#include <util/log.h>
 
 #include <cmath>
 #include <algorithm>
@@ -476,6 +479,7 @@ DisplayWidget::DisplayWidget(ZenoMainWindow* pMainWin)
     connect(m_timeline, SIGNAL(playForward(bool)), this, SLOT(onPlayClicked(bool)));
 	connect(m_timeline, SIGNAL(sliderValueChanged(int)), this, SLOT(onSliderValueChanged(int)));
 	connect(m_timeline, SIGNAL(run()), this, SLOT(onRun()));
+    connect(m_timeline, SIGNAL(alwaysChecked()), this, SLOT(onRun()));
     connect(m_timeline, SIGNAL(kill()), this, SLOT(onKill()));
 
     auto graphs = zenoApp->graphsManagment();
@@ -500,8 +504,30 @@ QSize DisplayWidget::sizeHint() const
     return QSize(12, 400);
 }
 
-void DisplayWidget::updateFrame()
+void DisplayWidget::updateFrame(const QString &action)
 {
+    if (action == "newFrame") {
+        m_pTimer->stop();
+    } else if (action == "finishFrame") {
+        auto& inst = Zenovis::GetInstance();
+        auto sess = inst.getSession();
+        ZASSERT_EXIT(sess);
+        auto scene = sess->get_scene();
+        ZASSERT_EXIT(scene);
+        if (scene->renderMan)
+        {
+            std::string name = scene->renderMan->getDefaultName();
+            if (name == "optx") {
+                m_pTimer->start();
+            }
+        }
+    } else if (!action.isEmpty()) {
+        if (action == "optx") {
+            m_pTimer->start();
+        } else {
+            m_pTimer->stop();
+        }
+    }
     m_view->update();
 }
 
