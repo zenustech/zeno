@@ -147,6 +147,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
     std::map<std::string, int> mtlidlut;
 
     void draw() override {
+        std::cout<<"aaaaaaa"<<std::endl;
         auto guard = setupState();
         auto const &cam = *scene->camera;
         auto const &opt = *scene->drawOptions;
