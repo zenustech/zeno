@@ -441,6 +441,7 @@ DisplayWidget::DisplayWidget(ZenoMainWindow* pMainWin)
     , m_view(nullptr)
     , m_timeline(nullptr)
     , m_mainWin(pMainWin)
+    , m_pTimer(nullptr)
 {
     QVBoxLayout* pLayout = new QVBoxLayout;
     pLayout->setContentsMargins(0, 0, 0, 0);
@@ -472,17 +473,16 @@ DisplayWidget::DisplayWidget(ZenoMainWindow* pMainWin)
     Zenovis::GetInstance().m_camera_keyframe = m_camera_keyframe;
 
 	connect(&Zenovis::GetInstance(), SIGNAL(frameUpdated(int)), m_timeline, SLOT(onTimelineUpdate(int)));
-	connect(m_timeline, SIGNAL(playForward(bool)), &Zenovis::GetInstance(), SLOT(startPlay(bool)));
-	connect(m_timeline, SIGNAL(sliderValueChanged(int)), &Zenovis::GetInstance(), SLOT(setCurrentFrameId(int)));
+    connect(m_timeline, SIGNAL(playForward(bool)), this, SLOT(onPlayClicked(bool)));
+	connect(m_timeline, SIGNAL(sliderValueChanged(int)), this, SLOT(onSliderValueChanged(int)));
 	connect(m_timeline, SIGNAL(run()), this, SLOT(onRun()));
     connect(m_timeline, SIGNAL(kill()), this, SLOT(onKill()));
-    
+
     auto graphs = zenoApp->graphsManagment();
     connect(graphs.get(), SIGNAL(modelDataChanged()), this, SLOT(onModelDataChanged()));
 
-	QTimer* pTimer = new QTimer;
-	connect(pTimer, SIGNAL(timeout()), this, SLOT(updateFrame()));
-	pTimer->start(16);
+	m_pTimer = new QTimer(this);
+    connect(m_pTimer, SIGNAL(timeout()), this, SLOT(updateFrame()));
 }
 
 DisplayWidget::~DisplayWidget()
@@ -502,8 +502,6 @@ QSize DisplayWidget::sizeHint() const
 
 void DisplayWidget::updateFrame()
 {
-    if (m_mainWin && m_mainWin->inDlgEventLoop())
-        return;
     m_view->update();
 }
 
@@ -513,6 +511,21 @@ void DisplayWidget::onModelDataChanged()
     {
         onRun();
     }
+}
+
+void DisplayWidget::onPlayClicked(bool bChecked)
+{
+    if (bChecked)
+        m_pTimer->start(16);
+    else
+        m_pTimer->stop();
+    Zenovis::GetInstance().startPlay(bChecked);
+}
+
+void DisplayWidget::onSliderValueChanged(int value)
+{
+    Zenovis::GetInstance().setCurrentFrameId(value);
+    updateFrame();
 }
 
 void DisplayWidget::onRun()

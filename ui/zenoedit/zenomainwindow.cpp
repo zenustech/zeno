@@ -292,6 +292,14 @@ void ZenoMainWindow::onMaximumTriggered()
     }
 }
 
+void ZenoMainWindow::updateViewport()
+{
+    //todo: temp code for single view.
+    DisplayWidget* view = qobject_cast<DisplayWidget*>(m_viewDock->widget());
+    if (view)
+        view->updateFrame();
+}
+
 void ZenoMainWindow::onSplitDock(bool bHorzontal)
 {
     ZenoDockWidget *pDockWidget = qobject_cast<ZenoDockWidget *>(sender());
@@ -372,7 +380,6 @@ static bool saveContent(const QString &strContent, QString filePath) {
 }
 
 void ZenoMainWindow::exportGraph() {
-    DlgInEventLoopScope;
     QString path = QFileDialog::getSaveFileName(this, "Path to Save", "",
                                                 "C++ Source File(*.cpp);; JSON file(*.json);; All Files(*);;");
     if (path.isEmpty()) {
@@ -549,16 +556,7 @@ bool ZenoMainWindow::saveFile(QString filePath) {
     return true;
 }
 
-bool ZenoMainWindow::inDlgEventLoop() const {
-    return m_bInDlgEventloop;
-}
-
-void ZenoMainWindow::setInDlgEventLoop(bool bOn) {
-    m_bInDlgEventloop = bOn;
-}
-
 void ZenoMainWindow::saveAs() {
-    DlgInEventLoopScope;
     QString path = QFileDialog::getSaveFileName(this, "Path to Save", "", "Zensim Graph File(*.zsg);; All Files(*);;");
     if (!path.isEmpty()) {
         saveFile(path);
@@ -566,7 +564,6 @@ void ZenoMainWindow::saveAs() {
 }
 
 QString ZenoMainWindow::getOpenFileByDialog() {
-    DlgInEventLoopScope;
     const QString &initialPath = ".";
     QFileDialog fileDialog(this, tr("Open"), initialPath, "Zensim Graph File (*.zsg)\nAll Files (*)");
     fileDialog.setAcceptMode(QFileDialog::AcceptOpen);

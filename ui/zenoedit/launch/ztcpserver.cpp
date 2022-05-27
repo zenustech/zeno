@@ -86,7 +86,6 @@ void ZTcpServer::onNewConnection()
 void ZTcpServer::onReadyRead()
 {
     QByteArray arr = m_tcpSocket->readAll();
-    QString wtf(arr.constData());
     qint64 redSize = arr.size();
     zeno::log_debug("qtcpsocket got {} bytes (ping test has 19)", redSize);
     if (redSize > 0) {
