@@ -31,7 +31,7 @@ public slots:
     void importGraph();
     void exportGraph();
     void onNodesSelected(const QModelIndex& subgIdx, const QModelIndexList& nodes, bool select);
-    void updateViewport(const QString& switch2newEng = "");
+    void updateViewport(const QString& action = "");
 
 protected:
     void resizeEvent(QResizeEvent* event) override;

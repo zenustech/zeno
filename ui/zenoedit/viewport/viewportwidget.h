@@ -90,7 +90,7 @@ public:
     QSize sizeHint() const override;
 
 public slots:
-    void updateFrame(const QString &switch2newEng = "");
+    void updateFrame(const QString& action = "");
     void onRun();
     void onKill();
     void onModelDataChanged();
