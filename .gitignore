@@ -5,12 +5,10 @@ Debug/
 Release/
 
 # ide files
-.vs
-.idea
-.vscode
-.cache
-.run
+/.vs
+/.idea
+/.vscode
+/.cache
 CMakeSettings.json
 CMakeUserPresets.json
 .vim_localrc
-a.diff

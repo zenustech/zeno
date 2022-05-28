@@ -1,13 +1,14 @@
 #pragma once
 
 #include <cstdint>
+#include <utility>
 
 namespace zeno {
 
 template <class To, class From>
-constexpr To bit_cast(From const &from) {
+constexpr To const &bit_cast(From const &from) {
     static_assert(sizeof(To) == sizeof(From));
-    return *reinterpret_cast<To const *>(&from);
+    return *reinterpret_cast<To const *>(std::addressof(from));
 }
 
 static constexpr std::uint8_t ceil_log2(std::size_t x) {
