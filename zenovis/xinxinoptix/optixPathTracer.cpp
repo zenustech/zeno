@@ -988,7 +988,9 @@ void optixupdatemesh(std::map<std::string, int> const &mtlidlut) {
     camera_changed = true;
     g_mtlidlut = mtlidlut;
     updatedrawobjects();
-    //buildMeshAccel( state );
+#if 0
+    buildMeshAccel( state );
+#else
     const size_t vertices_size_in_bytes = g_vertices.size() * sizeof( Vertex );
     CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.d_vertices.reset() ), vertices_size_in_bytes ) );
     CUDA_CHECK( cudaMemcpy(
@@ -1020,6 +1022,7 @@ void optixupdatemesh(std::map<std::string, int> const &mtlidlut) {
         buildMeshAccelSplitMesh(state, g_meshPieces[i]);
     }
     buildInstanceAccel(state, 2, g_meshPieces);
+#endif
 }
 void addLightMesh(float3 corner, float3 v2, float3 v1, float3 normal, float emission)
 {
