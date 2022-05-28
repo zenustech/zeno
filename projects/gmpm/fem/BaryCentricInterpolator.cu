@@ -107,13 +107,15 @@ struct ZSComputeBaryCentricWeights : INode {
         auto thickness = get_param<float>("bvh_thickness");
         auto fitting_in = get_param<int>("fitting_in");
 
+        auto tag = get_param<std::string>("tag");
+
         const auto& verts = zsvolume->getParticles();
         const auto& eles = zsvolume->getQuadraturePoints();
 
         const auto& everts = zssurf->getParticles();
         const auto& etris = zssurf->getQuadraturePoints();
 
-        auto &bcw = (*zsvolume)["bcws"];
+        auto &bcw = (*zsvolume)[tag];
         bcw = typename ZenoParticles::particles_t({{"inds",1},{"w",4},{"area",1}},everts.size(),zs::memsrc_e::device,0);
 
         auto cudaExec = zs::cuda_exec();
@@ -223,7 +225,7 @@ struct ZSComputeBaryCentricWeights : INode {
 
 ZENDEFNODE(ZSComputeBaryCentricWeights, {{{"interpolator","zsvolume"}, {"embed surf", "zssurf"}},
                             {{"interpolator on gpu", "zsvolume"}},
-                            {{"float","bvh_thickness","0"},{"int","fitting_in","1"}},
+                            {{"float","bvh_thickness","0"},{"int","fitting_in","1"},{"string","tag","skin_bw"}},
                             {"FEM"}});
 
 
@@ -233,6 +235,7 @@ struct ZSInterpolateEmbedPrim : zeno::INode {
         auto zstets = get_input<ZenoParticles>("zsvolume");
         auto zssurf = get_input<ZenoParticles>("zssurf");
 
+        auto tag = get_param<std::string>("tag");
         auto outAttr = get_param<std::string>("outAttr");
 
         auto cudaExec = zs::cuda_exec();
@@ -242,7 +245,7 @@ struct ZSInterpolateEmbedPrim : zeno::INode {
         
         const auto& verts = zstets->getParticles();
         const auto& eles = zstets->getQuadraturePoints();
-        const auto& bcw = (*zstets)["bcws"];
+        const auto& bcw = (*zstets)[tag];
 
         const auto nmEmbedVerts = bcw.size();
 
@@ -279,7 +282,7 @@ struct ZSInterpolateEmbedPrim : zeno::INode {
 
 ZENDEFNODE(ZSInterpolateEmbedPrim, {{{"zsvolume"}, {"embed primitive", "zssurf"}},
                             {{"embed primitive", "zssurf"}},
-                            {{"string","outAttr","x"}},
+                            {{"string","outAttr","x"},{"string","tag","skin_bw"}},
                             {"FEM"}});
 
 

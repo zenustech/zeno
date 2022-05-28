@@ -135,7 +135,7 @@ struct QuasiStaticStepping : INode {
     
   };
 
-
+  template<int pack_dim = 3>
   T dot(zs::CudaExecutionPolicy &cudaPol, dtiles_t &vertData,
         const zs::SmallString tag0, const zs::SmallString tag1) {
     using namespace zs;
@@ -145,8 +145,8 @@ struct QuasiStaticStepping : INode {
     cudaPol(range(vertData.size()),
             [data = proxy<space>({}, vertData), res = proxy<space>(res), tag0,
              tag1] __device__(int pi) mutable {
-              auto v0 = data.pack<3>(tag0, pi);
-              auto v1 = data.pack<3>(tag1, pi);
+              auto v0 = data.pack<pack_dim>(tag0, pi);
+              auto v1 = data.pack<pack_dim>(tag1, pi);
               atomic_add(exec_cuda, res.data(), v0.dot(v1));
             });
     return res.getVal();
@@ -208,6 +208,16 @@ struct QuasiStaticStepping : INode {
 
       auto Hq = model.first_piola_derivative(F, true_c);
       auto H = dFdXT * Hq * dFdX * vole;
+
+      T Hn = H.norm();
+      if(ei == 27743){
+          T Fn = F.norm();
+          T Dsn = Ds.norm();
+          T Dmn = DmInv.norm();
+          T Hqn = Hq.norm();
+          printf("H<%d>:%f Fn:%f Dsn:%f Dmn:%f Hqn:%f\n",ei,(float)Hn,(float)Fn,(float)Dsn,(float)Dmn,(float)Hqn);
+      }
+
       etemp.tuple<12 * 12>("He", ei) = H;
     });
 
@@ -268,45 +278,28 @@ struct QuasiStaticStepping : INode {
             });
 
 
-    for(int newtonIter = 0;newtonIter != 5;++newtonIter){
+    for(int newtonIter = 0;newtonIter != 100;++newtonIter){
       cudaPol(zs::range(vtemp.size()),
             [vtemp = proxy<space>({},vtemp),verts = proxy<space>({},verts)]
               __device__(int i) mutable {
                 vtemp.tuple<3>("grad",i) = vec3{0,0,0};
       });
-
+      fmt::print("COMPUTE GRADIENT AND HESSIAN\n",newtonIter);
+    //   fmt::print("gravity_n:{}\n",gravity)
       match([&](auto &elasticModel) {
         computeGradientAndHessian(cudaPol, elasticModel, gravity, verts, eles,
                                          vtemp, etemp);
       })(models.getElasticModel());
 
+      T Hn = dot<144>(cudaPol,etemp,"He","He");
+      fmt::print("Hn:{}\n",Hn);
 
-    //   cudaPol(zs::range(vtemp.size()),
-    //     [vtemp = proxy<space>({},vtemp),verts = proxy<space>({},verts), gravity = vec3::from_array(gravity)] ZS_LAMBDA (int vi) mutable {
-    //         auto m = verts("m",vi);
-    //         vtemp.tuple<3>("grad",vi) = vtemp.pack<3>("grad",vi) + m * gravity;
-
-    //         // if(vi == 0){
-    //         //     auto grad = vtemp.pack<3>("grad",vi);
-    //         //     printf("GRAD : (%f,%f,%f) wit h m = %f\n",grad[0],grad[1],grad[2],m);
-    //         // }
-    //     });
-
-
+      fmt::print("prepare Preconditioner \n",newtonIter);
   //  Prepare Preconditioning
       cudaPol(zs::range(vtemp.size()),
           [vtemp = proxy<space>({}, vtemp),
             verts = proxy<space>({}, verts)] ZS_LAMBDA (int vi) mutable {
-                // auto m = verts("m", i);
                 vtemp.tuple<9>("P", vi) = mat3::zeros();
-                // vtemp("P", 0, i) = m;
-                // vtemp("P", 4, i) = m;
-                // vtemp("P", 8, i) = m;
-
-                // if(vi == 1){
-                //     auto gradNorm = verts.pack<3>("grad",vi).norm();
-                //     printf("gradNorm[0] = (%f)\n",gradNorm);
-                // }
       });
 
     
@@ -335,13 +328,47 @@ struct QuasiStaticStepping : INode {
                     }
       });
 
+
+    // fmt::print("FOUND NON_SPD P\n");
+    cudaPol(zs::range(vtemp.size()),
+        [vtemp = proxy<space>({},vtemp)] ZS_LAMBDA(int vi){
+            auto P = vtemp.pack<3,3>("P",vi);
+            if(vi == 4966){
+                // if(P(0,0) < 0 || P(1,1) < 0 || P(2,2) < 0) {
+                    printf("NON_SPD_P<%d> : \n%f\t%f\t%f\n%f\t%f\t%f\n%f\t%f\t%f\n",vi,
+                        (float)P(0,0),(float)P(0,1),(float)P(0,2),(float)P(1,0),(float)P(1,1),(float)P(1,2),(float)P(2,0),(float)P(2,1),(float)P(2,2)
+                    );
+                // }
+            }
+        });
+
+      T Pn = dot<9>(cudaPol,vtemp,"P","P");
+      fmt::print("P_n:{}\n",Pn);
+
       cudaPol(zs::range(vtemp.size()),
               [vtemp = proxy<space>({},vtemp)] __device__(int i) mutable {
                 vtemp.tuple<9>("P",i) = inverse(vtemp.pack<3,3>("P",i));
       });
 
-      // if the grad is too small, return the result
+        // fmt::print("FOUND NON_SPD PINV\n");
+        // cudaPol(zs::range(vtemp.size()),
+        //     [vtemp = proxy<space>({},vtemp)] ZS_LAMBDA(int vi){
+        //         auto P = vtemp.pack<3,3>("P",vi);
+        //         // if(vi == 4966){
+        //             if(P(0,0) < 0 || P(1,1) < 0 || P(2,2) < 0) {
+        //                 printf("NON_SPD_PINV<%d> : \n%f\t%f\t%f\n%f\t%f\t%f\n%f\t%f\t%f\n",vi,
+        //                     (float)P(0,0),(float)P(0,1),(float)P(0,2),(float)P(1,0),(float)P(1,1),(float)P(1,2),(float)P(2,0),(float)P(2,1),(float)P(2,2)
+        //                 );
+        //             }
+        //         // }
+        //     });
 
+      Pn = dot<9>(cudaPol,vtemp,"P","P");
+      fmt::print("Piv_n:{}\n",Pn);
+
+      fmt::print("Solve Ax = b using PCG \n",newtonIter);
+
+      // if the grad is too small, return the result
       // Solve equation using PCG
       {
         // solve for A dir = grad;
@@ -371,21 +398,76 @@ struct QuasiStaticStepping : INode {
             [vtemp = proxy<space>({}, vtemp)] __device__(int i) mutable {
                 vtemp.tuple<3>("p", i) = vtemp.pack<3>("q", i);
         });
+
+
+
         T zTrk = dot(cudaPol,vtemp,"r","q");
-        if(zTrk < 1e-12)
-            fmt::print("zTrk < 0 : {}\n",zTrk);
+
+        if(std::isnan(zTrk)){
+            T rn = std::sqrt(dot(cudaPol,vtemp,"r","r"));
+            T qn = std::sqrt(dot(cudaPol,vtemp,"q","q"));
+            T gn = std::sqrt(dot(cudaPol,vtemp,"grad","grad"));
+            T Pn = std::sqrt(dot<9>(cudaPol,vtemp,"P","P"));
+
+            fmt::print("NAN zTrk Detected r: {} q: {}, gn:{} Pn:{}\n",rn,qn,gn,Pn);
+            throw std::runtime_error("NAN zTrk");
+        }
+
+        // if(zTrk < 1e-12){
+        //     T rn = std::sqrt(dot(cudaPol,vtemp,"r","r"));
+        //     T qn = std::sqrt(dot(cudaPol,vtemp,"q","q"));
+        //     fmt::print("\t# newton optimizer ends in {} iters with zTrk {} and grad {}\n",
+        //     newtonIter, zTrk, infNorm(cudaPol, vtemp, "grad"));
+        //     break;
+        // }
+        if(zTrk < 0){
+            T rn = std::sqrt(dot(cudaPol,vtemp,"r","r"));
+            T qn = std::sqrt(dot(cudaPol,vtemp,"q","q"));
+            fmt::print("\t# invalid zTrk found in {} iters with zTrk {} and r {} and q {}\n",
+                newtonIter, zTrk, infNorm(cudaPol, vtemp, "grad"),rn,qn);
+
+            fmt::print("FOUND NON_SPD P\n");
+            cudaPol(zs::range(vtemp.size()),
+                [vtemp = proxy<space>({},vtemp)] ZS_LAMBDA(int vi){
+                    auto P = vtemp.pack<3,3>("P",vi);
+                    if(P(0,0) < 0 || P(1,1) < 0 || P(2,2) < 0) {
+                        printf("NON_SPD_P<%d> : \n%f\t%f\t%f\n%f\t%f\t%f\n%f\t%f\t%f\n",
+                            P(0,0),P(0,1),P(0,2),P(1,0),P(1,1),P(1,2),P(2,0),P(2,1),P(2,2)
+                        );
+                    }
+                });
+
+            
+
+            throw std::runtime_error("INVALID zTrk");
+        }
         auto residualPreconditionedNorm = std::sqrt(zTrk);
         // auto localTol = std::min(0.5 * residualPreconditionedNorm, 1.0);
         auto localTol = 0.1 * residualPreconditionedNorm;
+        // if(newtonIter < 10)
+        //     localTol = 0.5 * residualPreconditionedNorm;
         int iter = 0;
         for (; iter != 1000; ++iter) {
-          if (iter % 100 == 0)
-            fmt::print("cg iter: {}, norm: {} zTrk: {}\n", iter,
-                        residualPreconditionedNorm,zTrk);
+          if (iter % 200 == 0)
+            fmt::print("cg iter: {}, norm: {} zTrk: {} localTol: {}\n", iter,
+                        residualPreconditionedNorm,zTrk,localTol);
           
+            if(zTrk < 0){
+                T rn = std::sqrt(dot(cudaPol,vtemp,"r","r"));
+                T qn = std::sqrt(dot(cudaPol,vtemp,"q","q"));
+                fmt::print("\t# invalid zTrk found in {} iters with zTrk {} and r {} and q {}\n",
+                    iter, zTrk,rn,qn);
+
+
+                throw std::runtime_error("INVALID zTrk");
+            }
+
           if (residualPreconditionedNorm <= localTol){
             // T dg = dot(cudaPol,vtemp,"grad","dir");
             // if(dg > 0)
+                fmt::print("finish with cg iter: {}, norm: {} zTrk: {}\n", iter,
+                            residualPreconditionedNorm,zTrk);
+          
                 break;
           }
           A.multiply(cudaPol, "p", "temp");
@@ -413,18 +495,39 @@ struct QuasiStaticStepping : INode {
 
           residualPreconditionedNorm = std::sqrt(zTrk);
         } // end cg step
+        fmt::print("FINISH SOLVING PCG with cg_iter = {}\n",iter);  
       }
+
+
     
+    // in case
+      A.project(cudaPol,"dir");
+      A.project(cudaPol,"grad");
       T res = infNorm(cudaPol, vtemp, "dir");
-      if (res < 1e-4) {
-        fmt::print("\t# newton optimizer ends in {} iters with residual {}\n",
-                   newtonIter, res);
+      T gradn = std::sqrt(dot(cudaPol, vtemp, "grad","grad"))/verts.size();
+      fmt::print("NEWTON_ITER<{}> with gradn: {} and dirn: {}\n",newtonIter,gradn,res);
+
+      if (res < 1e-2) {
+        fmt::print("\t# newton optimizer ends in {} iters with residual {} and grad {}\n",
+                   newtonIter, res, infNorm(cudaPol, vtemp, "grad"));
         break;
       }
 
-      fmt::print("newton iter {}: direction residual {}, grad residual {}\n",
-                 newtonIter, res, infNorm(cudaPol, vtemp, "grad"));
 
+      T dg = dot(cudaPol,vtemp,"grad","dir");
+      if(fabs(dg) < btl_res){
+        fmt::print("\t# newton optimizer ends in {} iters with residual {} and grad {}\n",
+        newtonIter, res, infNorm(cudaPol, vtemp, "grad"));
+        break;
+      }
+      if(dg < 0){
+          T gradn = std::sqrt(dot(cudaPol,vtemp,"grad","grad"));
+          T dirn = std::sqrt(dot(cudaPol,vtemp,"dir","dir"));
+          fmt::print("invalid dg = {} grad = {} dir = {}\n",dg);
+          throw std::runtime_error("INVALID DESCENT DIRECTION");
+      }
+
+      fmt::print("DO LINE SEARCH\n");
       // line search
       T alpha = 1.;
       cudaPol(zs::range(vtemp.size()),
@@ -436,36 +539,41 @@ struct QuasiStaticStepping : INode {
         E0 = A.energy(cudaPol, elasticModel,gravity, "xn0");
       })(models.getElasticModel());
 
-      T dg = dot(cudaPol,vtemp,"grad","dir");
-      if(fabs(dg) < btl_res)
-        break;
-    //   if(dg < 0){
-    //       throw std::runtime_error("INVALID DESCENT DIRECTION");
-    //   }
 
-    //   dg = -dg;
+      dg = -dg;
 
-    //   T E{E0};
+      T E{E0};
     //   Backtracking Linesearch
-    //   int max_line_search = 20;
-    //   int line_search = 0;
-    //   do {
-    //     cudaPol(zs::range(vtemp.size()), [vtemp = proxy<space>({}, vtemp),
-    //                                       alpha] __device__(int i) mutable {
-    //       vtemp.tuple<3>("xn", i) =
-    //           vtemp.pack<3>("xn0", i) + alpha * vtemp.pack<3>("dir", i);
-    //     });
-    //     match([&](auto &elasticModel) {
-    //       E = A.energy(cudaPol, elasticModel,gravity, "xn");
-    //     })(models.getElasticModel());
-    //     // fmt::print("E: {} at alpha {}. E0 {}\n", E, alpha, E0);
-    //     fmt::print("Armijo : {} < {}\n",(E - E0)/alpha,dg);
-    //     // test Armojo condition
-    //     if (E - E0 < armijo * dg * alpha)
-    //       break;
-    //     alpha /= 2;
-    //     ++line_search;
-    //   } while (line_search < max_line_search);
+      int max_line_search = 10;
+      int line_search = 0;
+      std::vector<T> armijo_buffer(max_line_search);
+      do {
+        cudaPol(zs::range(vtemp.size()), [vtemp = proxy<space>({}, vtemp),
+                                          alpha] __device__(int i) mutable {
+          vtemp.tuple<3>("xn", i) =
+              vtemp.pack<3>("xn0", i) + alpha * vtemp.pack<3>("dir", i);
+        });
+        match([&](auto &elasticModel) {
+          E = A.energy(cudaPol, elasticModel,gravity, "xn");
+        })(models.getElasticModel());
+        // fmt::print("E: {} at alpha {}. E0 {}\n", E, alpha, E0);
+        // fmt::print("Armijo : {} < {}\n",(E - E0)/alpha,dg);
+        armijo_buffer[line_search] = (E - E0)/alpha;
+        // test Armojo condition
+        if (E - E0 < armijo * dg * alpha)
+          break;
+        alpha /= 2;
+        ++line_search;
+      } while (line_search < max_line_search);
+
+      fmt::print("FINISH LINE SEARCH WITH LINE_SEARCH = {}\n",line_search);
+
+      if(line_search == max_line_search){
+          fmt::print("LINE_SEARCH_EXCEED:\n");
+          for(size_t i = 0;i != max_line_search;++i)
+            fmt::print("AB[{}]\t = {} dg = {}\n",i,armijo_buffer[i],dg);
+      }
+
       cudaPol(zs::range(vtemp.size()), [vtemp = proxy<space>({}, vtemp),
                                         alpha] __device__(int i) mutable {
         vtemp.tuple<3>("xn", i) =
