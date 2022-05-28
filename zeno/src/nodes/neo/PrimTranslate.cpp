@@ -17,9 +17,9 @@ ZENO_API void primTranslate(PrimitiveObject *prim, vec3f const &offset) {
 }
 
 ZENO_API void primScale(PrimitiveObject *prim, vec3f const &scale) {
-    parallel_for((size_t)0, arr.size(), [&] (size_t i) {
+    parallel_for((size_t)0, prim->verts.size(), [&] (size_t i) {
         prim->verts[i] = prim->verts[i] * scale;
-    }):
+    });
 }
 
 namespace {
