@@ -507,6 +507,7 @@ void ZenoNode::initParam(PARAM_CONTROL ctrl, QGraphicsLinearLayout* pParamLayout
 			    onParamEditFinished(param.control, paramName, pFileWidget->text());
 			});
             connect(openBtn, &ZenoImageItem::clicked, this, [=]() {
+                DlgInEventLoopScope;
                 QString path = QFileDialog::getOpenFileName(nullptr, "File to Open", "", "All Files(*);;");
                 if (path.isEmpty())
                     return;
@@ -535,6 +536,7 @@ void ZenoNode::initParam(PARAM_CONTROL ctrl, QGraphicsLinearLayout* pParamLayout
 			    onParamEditFinished(param.control, paramName, pFileWidget->text());
 			});
             connect(openBtn, &ZenoImageItem::clicked, this, [=]() {
+                DlgInEventLoopScope;
                 QString path = QFileDialog::getSaveFileName(nullptr, "Path to Save", "", "All Files(*);;");
                 if (path.isEmpty())
                     return;
@@ -875,6 +877,7 @@ QGraphicsLayout* ZenoNode::initSockets()
 
                     ZenoSvgLayoutItem *openBtn = new ZenoSvgLayoutItem(elem, QSizeF(30, 30));
                     connect(openBtn, &ZenoImageItem::clicked, this, [=]() {
+                        DlgInEventLoopScope;
                         QString path;
                         if (isRead) {
                             path = QFileDialog::getOpenFileName(nullptr, "File to Open", "", "All Files(*);;");

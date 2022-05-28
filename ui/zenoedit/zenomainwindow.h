@@ -14,6 +14,8 @@ public:
     ZenoMainWindow(QWidget* parent = nullptr, Qt::WindowFlags flags = Qt::WindowFlags());
     ~ZenoMainWindow();
     ZenoGraphsEditor* editor() const { return m_pEditor; }
+    bool inDlgEventLoop() const;
+    void setInDlgEventLoop(bool bOn);
 
 public slots:
     void onRunClicked(int beginFrame, int endFrame);
@@ -31,7 +33,7 @@ public slots:
     void importGraph();
     void exportGraph();
     void onNodesSelected(const QModelIndex& subgIdx, const QModelIndexList& nodes, bool select);
-    void updateViewport();
+    void updateViewport(const QString& action = "");
 
 protected:
     void resizeEvent(QResizeEvent* event) override;
