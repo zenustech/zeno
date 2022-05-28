@@ -194,7 +194,7 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     const float3 P    = optixGetWorldRayOrigin() + optixGetRayTmax()*ray_dir;
     unsigned short isLight = rt_data->lightMark[inst_idx * 1024 + prim_idx];
     float w = rt_data->vertices[ vert_idx_offset+0 ].w;
-
+    
     MatInput attrs;
     /* MODMA */
     attrs.pos = vec3(P.x, P.y, P.z);
@@ -221,7 +221,8 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     auto clearcoat = mats.clearcoat;
     auto clearcoatGloss = mats.clearcoatGloss;
     auto opacity = mats.opacity;
-
+    if(isLight==1)
+        mats.opacity = 1;
     // Stochastic alpha test to get an alpha blend effect.
     if (opacity >0.99) // No need to calculate an expensive random number if the test is going to fail anyway.
     {
@@ -229,6 +230,10 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     }
     else
     {
+        //roll a dice
+        float p = rnd(prd->seed);
+        if(p<opacity)
+            optixIgnoreIntersection();
         prd->flags |= 1;
         optixTerminateRay();
     }
@@ -363,6 +368,26 @@ extern "C" __global__ void __closesthit__radiance()
                                 wi,
                                 -normalize(ray_dir)
                                 );
+
+    if(opacity<0.99)
+    {
+        //we have some simple transparent thing
+        //roll a dice to see if just pass
+        float ratioTrans = 0.5 * opacity;
+        float p = rnd(seed);
+        pdf = (1-ratioTrans) * pdf + ratioTrans * 1;
+        if(p<ratioTrans)
+        {
+            //you shall pass!
+            prd->radiance = make_float3(0.0f);
+            prd->origin = P;
+            prd->direction = ray_dir;
+            prd->prob *= pdf;
+            return;
+
+        }
+
+    }
     
     prd->prob *= pdf/clamp(dot(wi, N),0.0f,1.0f);
     prd->origin = P;
@@ -431,7 +456,7 @@ extern "C" __global__ void __closesthit__radiance()
                                 -normalize(inDir)
                                 );
             const float A = length(cross(light.v1, light.v2));
-            weight = nDl * LnDl * A / (Ldist * Ldist);
+            weight = nDl * LnDl * A / (M_PIf * Ldist * Ldist);
         }
     }
     float3 lbrdf = DisneyBRDF::eval(basecolor,
