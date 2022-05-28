@@ -334,7 +334,7 @@ static void printUsageAndExit( const char* argv0 )
 
 static void initLaunchParams( PathTracerState& state )
 {
-    state.params.handle         = state.m_ias_handle;
+    state.params.handle         = state.gas_handle;
     CUDA_CHECK( cudaMalloc(
                 reinterpret_cast<void**>( &state.accum_buffer_p.reset() ),
                 state.params.width * state.params.height * sizeof( float4 )
@@ -675,7 +675,14 @@ static void buildMeshAccel( PathTracerState& state )
                 mat_indices_size_in_bytes,
                 cudaMemcpyHostToDevice
                 ) );
-
+    const size_t light_mark_size_in_bytes = g_lightMark.size() * sizeof( unsigned short );
+    CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.d_lightMark.reset() ), light_mark_size_in_bytes ) );
+    CUDA_CHECK( cudaMemcpy(
+                reinterpret_cast<void*>( (CUdeviceptr)state.d_lightMark ),
+                g_lightMark.data(),
+                light_mark_size_in_bytes,
+                cudaMemcpyHostToDevice
+                ) );
     // // Build triangle GAS // // One per SBT record for this build input
     std::vector<uint32_t> triangle_input_flags(//MAT_COUNT
         g_mtlidlut.size(),
@@ -988,7 +995,7 @@ void optixupdatemesh(std::map<std::string, int> const &mtlidlut) {
     camera_changed = true;
     g_mtlidlut = mtlidlut;
     updatedrawobjects();
-#if 0
+#if 1
     buildMeshAccel( state );
 #else
     const size_t vertices_size_in_bytes = g_vertices.size() * sizeof( Vertex );

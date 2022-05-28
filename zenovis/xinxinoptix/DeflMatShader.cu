@@ -183,7 +183,7 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     HitGroupData* rt_data = (HitGroupData*)optixGetSbtDataPointer();
     const int    prim_idx        = optixGetPrimitiveIndex();
     const float3 ray_dir         = optixGetWorldRayDirection();
-    const int    inst_idx        = optixGetInstanceIndex();
+    const int    inst_idx        = 0;//optixGetInstanceIndex();
     const int    vert_idx_offset = (inst_idx * 1024 + prim_idx)*3;
     const float3 v0   = make_float3( rt_data->vertices[ vert_idx_offset+0 ] );
     const float3 v1   = make_float3( rt_data->vertices[ vert_idx_offset+1 ] );
@@ -246,7 +246,7 @@ extern "C" __global__ void __closesthit__radiance()
     HitGroupData* rt_data = (HitGroupData*)optixGetSbtDataPointer();
     const int    prim_idx        = optixGetPrimitiveIndex();
     const float3 ray_dir         = optixGetWorldRayDirection();
-    const int    inst_idx        = optixGetInstanceIndex();
+    const int    inst_idx        = 0;//optixGetInstanceIndex();
     const int    vert_idx_offset = (inst_idx * 1024 + prim_idx)*3;
     const float3 v0   = make_float3( rt_data->vertices[ vert_idx_offset+0 ] );
     const float3 v1   = make_float3( rt_data->vertices[ vert_idx_offset+1 ] );
