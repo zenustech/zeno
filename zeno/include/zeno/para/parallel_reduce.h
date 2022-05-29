@@ -11,7 +11,7 @@
 namespace zeno {
 
 template <class Index, class Value, class Reduce, class Transform>
-Value parallel_reduce(ZENO_PAR Index first, Index last, Value identity, Reduce reduceFn, Transform transformFn) {
+Value parallel_reduce(Index first, Index last, Value identity, Reduce reduceFn, Transform transformFn) {
     return std::transform_reduce(ZENO_PAR counter_iterator<Index>(first), counter_iterator<Index>(last),
             identity, reduceFn, transformFn);
 }
