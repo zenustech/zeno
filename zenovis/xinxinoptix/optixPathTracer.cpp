@@ -1059,7 +1059,16 @@ void optixupdatematerial(std::vector<std::string> const &shaders) {
     }
     for(int i=0;i<OptixUtil::rtMaterialShaders.size();i++)
     {
-        OptixUtil::rtMaterialShaders[i].loadProgram();
+        if(OptixUtil::rtMaterialShaders[i].loadProgram()==false)
+        {
+            std::cout<<"program compile failed, using default"<<std::endl;
+            
+            OptixUtil::rtMaterialShaders[i].m_shaderFile     = shaders[0];
+            std::cout<<OptixUtil::rtMaterialShaders[i].m_shaderFile<<std::endl;
+            OptixUtil::rtMaterialShaders[i].m_shadingEntry   = "__closesthit__radiance";
+            OptixUtil::rtMaterialShaders[i].m_occlusionEntry = "__anyhit__shadow_cutout";
+            std::cout<<OptixUtil::rtMaterialShaders[i].loadProgram()<<std::endl;
+        }
     }
     OptixUtil::createRenderGroups(state.context, OptixUtil::ray_module);
 }

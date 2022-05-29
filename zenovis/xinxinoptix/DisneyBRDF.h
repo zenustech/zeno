@@ -219,61 +219,6 @@ static __inline__ __device__ vec3 eval(
     }
 }
 
-//////////////////////////////////////////
-///here inject common code in glsl style
-static __inline__ __device__ vec3 perlin_hash22(vec3 p)
-{
-    p = vec3( dot(p,vec3(127.1f,311.7f,284.4f)),
-              dot(p,vec3(269.5f,183.3f,162.2f)),
-	      	  dot(p,vec3(228.3f,164.9f,126.0f)));
-    return -1.0f + 2.0f * fract(sin(p)*43758.5453123f);
-}
-
-static __inline__ __device__ float perlin_lev1(vec3 p)
-{
-    vec3 pi = vec3(floor(p));
-    vec3 pf = p - pi;
-    vec3 w = pf * pf * (3.0f - 2.0f * pf);
-    return .08f + .8f * (mix(
-			            mix(
-                            mix(
-                            dot(perlin_hash22(pi + 0), pf - 0),
-                            dot(perlin_hash22(pi + 0), pf - 0),
-                            w.x),
-                            mix(
-                            dot(perlin_hash22(pi + vec3(0, 1, 0)), pf - vec3(0, 1, 0)),
-                            dot(perlin_hash22(pi + vec3(1, 1, 0)), pf - vec3(1, 1, 0)),
-                            w.x),
-				        w.y),
-			            mix(
-				            mix(
-                            dot(perlin_hash22(pi + vec3(0, 0, 1)), pf - vec3(0, 0, 1)),
-                            dot(perlin_hash22(pi + vec3(1, 0, 1)), pf - vec3(1, 0, 1)),
-                            w.x),
-				            mix(
-                            dot(perlin_hash22(pi + vec3(0, 1, 1)), pf - vec3(0, 1, 1)),
-                            dot(perlin_hash22(pi + vec3(1, 1, 1)), pf - vec3(1, 1, 1)),
-                            w.x),
-				        w.y),
-			          w.z));
-}
-
-static __inline__ __device__ float perlin(float p,int n,vec3 a)
-{
-    float total = 0;
-    for(int i=0; i<n; i++)
-    {
-        float frequency = pow(2.0f,i*1.0f);
-        float amplitude = pow(p,i*1.0f);
-        total = total + perlin_lev1(a * frequency) * amplitude;
-    }
-
-    return total;
-}
-
-///end example of common code injection in glsl style
-
-
 
 
 

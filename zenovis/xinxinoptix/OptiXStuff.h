@@ -67,7 +67,7 @@ inline void createContext()
     pipeline_compile_options.pipelineLaunchParamsVariableName = "params";
 
 }
-inline void createModule(OptixModule &m, OptixDeviceContext &context, const char *source, const char *location)
+inline bool createModule(OptixModule &m, OptixDeviceContext &context, const char *source, const char *location)
 {
     //OptixModule m;
     OptixModuleCompileOptions module_compile_options = {};
@@ -83,9 +83,13 @@ inline void createModule(OptixModule &m, OptixDeviceContext &context, const char
 
     size_t      inputSize = 0;
     //TODO: the file path problem
-    const char* input     = sutil::getInputData( nullptr, nullptr, source, location, inputSize );
-    
-    OPTIX_CHECK_LOG( optixModuleCreateFromPTX(
+    bool is_success;
+    const char* input     = sutil::getInputData( nullptr, nullptr, source, location, inputSize, is_success);
+    if(is_success==false)
+    {
+        return false;
+    }
+    optixModuleCreateFromPTX(
         context,
         &module_compile_options,
         &pipeline_compile_options,
@@ -94,7 +98,8 @@ inline void createModule(OptixModule &m, OptixDeviceContext &context, const char
         log,
         &sizeof_log,
         &m
-    ) );
+    );
+    return true;
     //return m;
 }
 inline void createRenderGroups(OptixDeviceContext &context, OptixModule &_module)
@@ -202,16 +207,30 @@ struct rtMatShader
     rtMatShader() {}
     rtMatShader(const char *shaderFile, std::string shadingEntry, std::string occlusionEntry)
     {
-        m_shaderFile = std::move(shaderFile);
-        m_shadingEntry = std::move(shadingEntry);
-        m_occlusionEntry = std::move(occlusionEntry);
+        m_shaderFile = shaderFile;
+        m_shadingEntry = shadingEntry;
+        m_occlusionEntry = occlusionEntry;
     }
 
 
-    void loadProgram()
+    bool loadProgram()
     {
-        try {
-            createModule(m_ptx_module.reset(), context, m_shaderFile.c_str(), "MatShader.cu");
+        // try {
+        //     createModule(m_ptx_module.reset(), context, m_shaderFile.c_str(), "MatShader.cu");
+        //     createRTProgramGroups(context, m_ptx_module, 
+        //     "OPTIX_PROGRAM_GROUP_KIND_CLOSEHITGROUP", 
+        //     m_shadingEntry, m_radiance_hit_group);
+
+        //     createRTProgramGroups(context, m_ptx_module, 
+        //     "OPTIX_PROGRAM_GROUP_KIND_ANYHITGROUP", 
+        //     m_occlusionEntry, m_occlusion_hit_group);
+        // } catch (sutil::Exception const &e) {
+        //     throw std::runtime_error((std::string)"cannot create program group. Log:\n" + e.what() + "\n===BEG===\n" + m_shaderFile + "\n===END===\n");
+        // }
+        
+        if(createModule(m_ptx_module.reset(), context, m_shaderFile.c_str(), "MatShader.cu"))
+        {
+            std::cout<<"module created"<<std::endl;
             createRTProgramGroups(context, m_ptx_module, 
             "OPTIX_PROGRAM_GROUP_KIND_CLOSEHITGROUP", 
             m_shadingEntry, m_radiance_hit_group);
@@ -219,9 +238,9 @@ struct rtMatShader
             createRTProgramGroups(context, m_ptx_module, 
             "OPTIX_PROGRAM_GROUP_KIND_ANYHITGROUP", 
             m_occlusionEntry, m_occlusion_hit_group);
-        } catch (sutil::Exception const &e) {
-            throw std::runtime_error((std::string)"cannot create program group. Log:\n" + e.what() + "\n===BEG===\n" + m_shaderFile + "\n===END===\n");
+            return true;
         }
+        return false;
 
     }
 

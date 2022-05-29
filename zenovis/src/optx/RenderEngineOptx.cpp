@@ -22,6 +22,7 @@ struct GraphicsManager {
     Scene *scene;
 
         struct DetMaterial {
+            std::string common;
             std::string shader;
             std::string mtlidkey;
         };
@@ -52,7 +53,7 @@ struct GraphicsManager {
             }
             else if (auto mtl = dynamic_cast<zeno::MaterialObject *>(obj))
             {
-                det = DetMaterial{mtl->frag, mtl->mtlidkey};
+                det = DetMaterial{mtl->common, mtl->frag, mtl->mtlidkey};
             }
         }
 
@@ -122,6 +123,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
 
     bool ensuredshadtmpl = false;
     std::string shadtmpl;
+    std::string_view commontpl;
     std::pair<std::string_view, std::string_view> shadtpl2;
 
     void ensure_shadtmpl() {
@@ -129,19 +131,31 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         ensuredshadtmpl = true;
         shadtmpl = sutil::lookupIncFile("DeflMatShader.cu");
         std::string_view tplsv = shadtmpl;
+        std::string_view tmpcommon = "//COMMON_CODE";
+        auto pcommon = tplsv.find(tmpcommon);
+        auto pcomend = pcommon;
+        if(pcommon != std::string::npos)
+        {
+            pcomend = pcommon + tmpcommon.size();
+            commontpl = tplsv.substr(0, pcommon);
+        }
+        else{
+            throw std::runtime_error("cannot find stub COMMON_CODE in shader template");
+        }
         std::string_view tmplstub0 = "//GENERATED_BEGIN_MARK";
         std::string_view tmplstub1 = "//GENERATED_END_MARK";
         if (auto p0 = tplsv.find(tmplstub0); p0 != std::string::npos) {
             auto q0 = p0 + tmplstub0.size();
             if (auto p1 = tplsv.find(tmplstub1, q0); p1 != std::string::npos) {
                 auto q1 = p1 + tmplstub1.size();
-                shadtpl2 = {tplsv.substr(0, p0), tplsv.substr(q1)};
+                shadtpl2 = {tplsv.substr(pcomend, p0-pcomend), tplsv.substr(q1)};
             } else {
                 throw std::runtime_error("cannot find stub GENERATED_END_MARK in shader template");
             }
         } else {
             throw std::runtime_error("cannot find stub GENERATED_BEGIN_MARK in shader template");
         }
+        
     }
 
     std::map<std::string, int> mtlidlut;
@@ -208,12 +222,17 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                 if (auto mtldet = std::get_if<GraphicsManager::DetMaterial>(&obj->det)) {
                     //zeno::log_debug("got material shader:\n{}", mtldet->shader);
                     std::string shader;
-                    shader.reserve(shadtpl2.first.size()
+                    shader.reserve(commontpl.size()
+                                    + mtldet->common.size()
+                                    + shadtpl2.first.size()
                                     + mtldet->shader.size()
                                     + shadtpl2.second.size());
+                    shader.append(commontpl);
+                    shader.append(mtldet->common);
                     shader.append(shadtpl2.first);
                     shader.append(mtldet->shader);
                     shader.append(shadtpl2.second);
+                    //std::cout<<shader<<std::endl;
                     mtlidlut.insert({mtldet->mtlidkey, (int)shaders.size()});
                     shaders.push_back(std::move(shader));
                 }

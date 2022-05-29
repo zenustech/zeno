@@ -879,12 +879,12 @@ const char *lookupIncFile(const char *name) {
     return getIncFileTab().at(it - pathtab.begin());
 }
 
-static void getPtxFromCuString( std::string&                    ptx,
+static bool getPtxFromCuString( std::string&                    ptx,
                                 const char*                     sample_directory,
                                 const char*                     cu_source,
                                 const char*                     name,
                                 const char**                    log_string,
-                                const std::vector<const char*>& compiler_options )
+                                const std::vector<const char*>& compiler_options)
 {
     // Create program
     nvrtcProgram prog = 0;
@@ -927,7 +927,7 @@ static void getPtxFromCuString( std::string&                    ptx,
         //fuckcpp.push_back(std::string( "-I" ) + dir);
         //options.push_back( fuckcpp.back().c_str() );
     //}
-
+    
     // Collect NVRTC options
     std::copy( std::begin( compiler_options ), std::end( compiler_options ), std::back_inserter( options ) );
 
@@ -946,6 +946,7 @@ static void getPtxFromCuString( std::string&                    ptx,
     }
     if( compileRes != NVRTC_SUCCESS ) {
 #if 1
+        
         //const char mymark[] = "/*BEGIN_PENGSENSEI*/\n";
         //auto lencus = strlen(cu_source);
         //const char *cu_source_beg = strchr(cu_source, '\xfd');
@@ -963,8 +964,11 @@ static void getPtxFromCuString( std::string&                    ptx,
 #else
         const char *mod_cu_source = cu_source;
 #endif
-        throw std::runtime_error( "NVRTC Compilation failed.\n====BEGIN====\n"
-                                 + mod_cu_source + "\n=====END=====\n" + g_nvrtcLog );
+        // throw std::runtime_error( "NVRTC Compilation failed.\n====BEGIN====\n"
+        //                          + mod_cu_source + "\n=====END=====\n" + g_nvrtcLog );
+        NVRTC_CHECK_ERROR( nvrtcDestroyProgram( &prog ) );
+        std::cout<<"not compiled!!!!!"<<std::endl;
+        return false;
     }
 
     // Retrieve PTX code
@@ -975,6 +979,7 @@ static void getPtxFromCuString( std::string&                    ptx,
 
     // Cleanup
     NVRTC_CHECK_ERROR( nvrtcDestroyProgram( &prog ) );
+    return true;
 }
 
 #else  // CUDA_NVRTC_ENABLED
@@ -1088,8 +1093,9 @@ const char* getInputData( const char*                     sample,
                           const char*                     filename,
                           const char*                     location,
                           size_t&                         dataSize,
+                          bool &                          is_success,
                           const char**                    log,
-                          const std::vector<const char*>& compilerOptions )
+                          const std::vector<const char*>& compilerOptions)
 {
     if( log )
         *log = NULL;
@@ -1104,7 +1110,7 @@ const char* getInputData( const char*                     sample,
 #if CUDA_NVRTC_ENABLED
         //getCuStringFromFile( cu, location, sampleDir, filename );
         //cu.replace(cu.find("#include <optix.h>\n"), strlen("#include <optix.h>\n"), getOptixHeader());
-        getPtxFromCuString( *ptx, sampleDir, filename, location, log, compilerOptions );
+        is_success = getPtxFromCuString( *ptx, sampleDir, filename, location, log, compilerOptions );
 #else
         getInputDataFromFile( *ptx, sample, filename );
 #endif
@@ -1113,6 +1119,7 @@ const char* getInputData( const char*                     sample,
     else
     {
         ptx = elem->second;
+        is_success = true;
     }
     dataSize = ptx->size();
     return ptx->c_str();
