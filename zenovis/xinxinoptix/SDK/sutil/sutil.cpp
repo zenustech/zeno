@@ -966,6 +966,9 @@ static bool getPtxFromCuString( std::string&                    ptx,
 #endif
         // throw std::runtime_error( "NVRTC Compilation failed.\n====BEGIN====\n"
         //                          + mod_cu_source + "\n=====END=====\n" + g_nvrtcLog );
+        std::cout<<"NVRTC Compilation failed.\n===================BEGIN============\n";
+        std::cout<<mod_cu_source<<"\n=============END==============\n";
+        std::cout<<g_nvrtcLog<<std::endl;
         NVRTC_CHECK_ERROR( nvrtcDestroyProgram( &prog ) );
         std::cout<<"not compiled!!!!!"<<std::endl;
         return false;
