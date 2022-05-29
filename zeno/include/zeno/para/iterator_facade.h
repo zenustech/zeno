@@ -28,6 +28,7 @@ template
 < class Derived
 , class Value
 , class Reference
+, class Pointer
 , class Difference
 >
 class iterator_facade_base {
@@ -45,6 +46,7 @@ protected:
 public:
     using value_type = Value;
     using reference = Reference;
+    using pointer = Pointer;
     using difference_type = Difference;
 };
 
@@ -52,12 +54,14 @@ template
 < class Derived
 , class Value
 , class Reference
+, class Pointer
 , class Difference
 >
 class iterator_facade_forward : public iterator_facade_base
 < Derived
 , Value
 , Reference
+, Pointer
 , Difference
 > {
     using self_type = Derived;
@@ -99,12 +103,14 @@ template
 < class Derived
 , class Value
 , class Reference
+, class Pointer
 , class Difference
 >
 class iterator_facade_bidirectional : public iterator_facade_forward
 < Derived
 , Value
 , Reference
+, Pointer
 , Difference
 > {
 
@@ -126,12 +132,14 @@ template
 < class Derived
 , class Value
 , class Reference
+, class Pointer
 , class Difference
 >
 class iterator_facade_random_access : public iterator_facade_bidirectional
 < Derived
 , Value
 , Reference
+, Pointer
 , Difference
 > {
     using self_type = Derived;
@@ -190,6 +198,16 @@ struct try_get_reference_type<Derived, Value, std::void_t<typename Derived::refe
     using type = typename Derived::reference;
 };
 
+template <class Derived, class Value, class = void>
+struct try_get_pointer_type {
+    using type = std::add_pointer_t<Value>;
+};
+
+template <class Derived, class Value>
+struct try_get_pointer_type<Derived, Value, std::void_t<typename Derived::pointer>> {
+    using type = typename Derived::pointer;
+};
+
 template <class Derived, class = void>
 struct try_get_difference_type {
     using type = std::ptrdiff_t;
@@ -207,6 +225,7 @@ template
 , class Value = typename Derived::value_type
 , class Category = typename Derived::iterator_category
 , class Reference = typename iterator_facade_details::try_get_reference_type<Derived, Value>::type
+, class Pointer = typename iterator_facade_details::try_get_pointer_type<Derived, Value>::type
 , class Difference = typename iterator_facade_details::try_get_difference_type<Derived>::type
 >
 struct iterator_facade {
@@ -216,6 +235,7 @@ template
 < class Derived
 , class Value
 , class Reference
+, class Pointer
 , class Difference
 >
 struct iterator_facade
@@ -223,11 +243,13 @@ struct iterator_facade
 , Value
 , std::input_iterator_tag
 , Reference
+, Pointer
 , Difference
 > : iterator_facade_details::iterator_facade_forward
 < Derived
 , Value
 , Reference
+, Pointer
 , Difference
 > {
     using iterator_category = std::input_iterator_tag;
@@ -237,6 +259,7 @@ template
 < class Derived
 , class Value
 , class Reference
+, class Pointer
 , class Difference
 >
 struct iterator_facade
@@ -244,11 +267,13 @@ struct iterator_facade
 , Value
 , std::output_iterator_tag
 , Reference
+, Pointer
 , Difference
 > : iterator_facade_details::iterator_facade_forward
 < Derived
 , Value
 , Reference
+, Pointer
 , Difference
 > {
     using iterator_category = std::output_iterator_tag;
@@ -258,6 +283,7 @@ template
 < class Derived
 , class Value
 , class Reference
+, class Pointer
 , class Difference
 >
 struct iterator_facade
@@ -265,11 +291,13 @@ struct iterator_facade
 , Value
 , std::forward_iterator_tag
 , Reference
+, Pointer
 , Difference
 > : iterator_facade_details::iterator_facade_forward
 < Derived
 , Value
 , Reference
+, Pointer
 , Difference
 > {
     using iterator_category = std::forward_iterator_tag;
@@ -279,6 +307,7 @@ template
 < class Derived
 , class Value
 , class Reference
+, class Pointer
 , class Difference
 >
 struct iterator_facade
@@ -286,11 +315,13 @@ struct iterator_facade
 , Value
 , std::bidirectional_iterator_tag
 , Reference
+, Pointer
 , Difference
 > : iterator_facade_details::iterator_facade_bidirectional
 < Derived
 , Value
 , Reference
+, Pointer
 , Difference
 > {
     using iterator_category = std::bidirectional_iterator_tag;
@@ -300,6 +331,7 @@ template
 < class Derived
 , class Value
 , class Reference
+, class Pointer
 , class Difference
 >
 struct iterator_facade
@@ -307,14 +339,39 @@ struct iterator_facade
 , Value
 , std::random_access_iterator_tag
 , Reference
+, Pointer
 , Difference
 > : iterator_facade_details::iterator_facade_random_access
 < Derived
 , Value
 , Reference
+, Pointer
 , Difference
 > {
     using iterator_category = std::random_access_iterator_tag;
 };
 
 }
+
+/*template
+< class Derived
+, class Value
+, class Category
+, class Reference
+, class Pointer
+, class Difference
+>
+struct allocator_traits<::zeno::iterator_facade
+< Derived
+, Value
+, Category
+, Reference
+, Pointer
+, Difference
+>> {
+    using value_type = Value;
+    using iterator_category = Category;
+    using reference = Reference;
+    using pointer = Pointer;
+    using difference_type = Difference;
+};*/

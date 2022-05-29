@@ -6,12 +6,12 @@
 
 namespace zeno {
 
-#if 1
 template <class T>
 struct counter_iterator : iterator_facade<counter_iterator<T>
 , T
 , std::random_access_iterator_tag
 , T const &
+, T const *
 , std::ptrdiff_t
 > {
     T counter;
@@ -45,6 +45,7 @@ struct counter_iterator : iterator_facade<counter_iterator<T>
 
 template <class T>
 counter_iterator(T) -> counter_iterator<T>;
-#endif
+
+static_assert(std::is_same_v<typename std::iterator_traits<counter_iterator<int>>::iterator_category, std::random_access_iterator_tag>);
 
 }

@@ -11,6 +11,7 @@ struct zip_iterator : iterator_facade<zip_iterator<T0, Ts...>
 , std::tuple<decltype(*std::declval<T0 const &>()), decltype(*std::declval<Ts const &>())...>
 , typename std::iterator_traits<T0>::iterator_category
 , typename std::iterator_traits<T0>::reference
+, typename std::iterator_traits<T0>::pointer
 , typename std::iterator_traits<T0>::difference_type
 > {
 public:
