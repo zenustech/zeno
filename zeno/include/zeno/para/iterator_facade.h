@@ -68,9 +68,9 @@ public:
     }
 
     self_type operator++(int) {
-        self_type old = this->self();
+        self_type tmp = this->self();
         ++*this;
-        return old;
+        return tmp;
     }
 
     friend bool operator==(self_type const &lhs, self_type const &rhs) {
@@ -116,9 +116,9 @@ public:
     }
 
     self_type operator--(int) {
-        self_type old = this->self();
+        self_type tmp = this->self();
         --*this;
-        return old;
+        return tmp;
     }
 };
 
@@ -139,56 +139,75 @@ class iterator_facade_random_access : public iterator_facade_bidirectional
 public:
     self_type &operator+=(Difference n) {
         this->self().advance(n);
+        return this->self();
     }
 
     self_type &operator-=(Difference n) {
         this->self().advance(-n);
+        return this->self();
     }
 
-    self_type operator-(Difference n) {
-        this->self();
+    self_type operator+(Difference n) const {
+        auto tmp = this->self();
+        tmp += n;
+        return tmp;
+    }
+
+    self_type operator-(Difference n) const {
+        auto tmp = this->self();
+        tmp -= n;
+        return tmp;
+    }
+
+    friend Difference operator-(self_type const &lhs, self_type const &rhs) {
+        return rhs.distance_to(lhs);
+    }
+
+    friend bool operator<(self_type const &lhs, self_type const &rhs) {
+        return (lhs - rhs) < 0;
+    }
+
+    friend bool operator>(self_type const &lhs, self_type const &rhs) {
+        return (lhs - rhs) > 0;
+    }
+
+    friend bool operator<=(self_type const &lhs, self_type const &rhs) {
+        return (lhs - rhs) <= 0;
+    }
+
+    friend bool operator>=(self_type const &lhs, self_type const &rhs) {
+        return (lhs - rhs) >= 0;
     }
 };
 
-/* template <class Iterator, class = void>
-struct has_increment : std::false_type {
+template <class Derived, class Value, class = void>
+struct try_get_reference_type {
+    using type = std::add_lvalue_reference_t<Value>;
 };
 
-template <class Iterator>
-struct has_increment<Iterator, std::void_t<decltype(
-    std::declval<Iterator>().increment(),
-    0)>> : std::true_type {
+template <class Derived, class Value>
+struct try_get_reference_type<Derived, Value, std::void_t<typename Derived::reference>> {
+    using type = typename Derived::reference;
 };
 
-template <class Iterator, class = void>
-struct has_dereference : std::false_type {
+template <class Derived, class = void>
+struct try_get_difference_type {
+    using type = std::ptrdiff_t;
 };
 
-template <class Iterator>
-struct has_dereference<Iterator, std::void_t<decltype(
-    std::declval<Iterator>().dereference(),
-    0)>> : std::true_type {
+template <class Derived>
+struct try_get_difference_type<Derived, std::void_t<typename Derived::difference_type>> {
+    using type = typename Derived::difference_type;
 };
-
-template <class Iterator, class = void>
-struct detect_category {
-};
-
-template <class Iterator>
-struct detect_category<Iterator, std::enable_if_t<
-    has_increment<Iterator>
-    >> {
-    using type = std::forward_iterator_tag;
-}; */
 
 }
 
 template
 < class Derived
-, class Value //= decltype(std::declval<Derived>().dereference())
-, class Category //= typename iterator_facade_details::detect_category<Derived>::type
-, class Reference = std::add_lvalue_reference_t<Value>
-, class Difference = std::ptrdiff_t
+, class Value = typename Derived::value_type
+, class Category = typename Derived::iterator_category
+, class Reference = typename iterator_facade_details::try_get_reference_type<Derived, Value>::type
+, class Difference = typename iterator_facade_details::try_get_difference_type<Derived>::type
 >
 struct iterator_facade {
 };
