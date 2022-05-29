@@ -137,11 +137,11 @@ extern "C" __global__ void __closesthit__radiance()
 
 static __inline__ __device__ MatOutput evalMaterial(MatInput const &attrs) {
     /* MODMA */
-    auto attr_pos = attrs.pos;
-    auto attr_clr = attrs.clr;
-    auto attr_uv = attrs.uv;
-    auto attr_nrm = attrs.nrm;
-    auto attr_tang = attrs.tang;
+    auto att_pos = attrs.pos;
+    auto att_clr = attrs.clr;
+    auto att_uv = attrs.uv;
+    auto att_nrm = attrs.nrm;
+    auto att_tang = attrs.tang;
     /** generated code here beg **/
     //GENERATED_BEGIN_MARK
     /* MODME */

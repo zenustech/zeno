@@ -9,6 +9,15 @@ static __inline__ __device__  float fresnel(float cosT){
     float v2 = v *v;
     return v2 * v2 * v;
 }
+static __inline__ __device__ vec3 fresnelSchlick(vec3 r0, float radians)
+{
+    float exponential = powf( 1.0f - radians, 5.0f);
+    return r0 + (vec3(1.0f) - r0) * exponential;
+}
+static __inline__ __device__ float fresnelSchlick(float r0, float radians)
+{
+    return mix(1.0f, fresnel(radians), r0);
+}
 static __inline__ __device__  float GTR1(float cosT,float a){
     if(a >= 1.0f) return 1/M_PIf;
     float t = (1+(a*a-1)*cosT*cosT);
@@ -21,7 +30,7 @@ static __inline__ __device__  float GTR2(float cosT,float a){
 static __inline__ __device__  float GGX(float cosT, float a){
     float a2 = a*a;
     float b = cosT*cosT;
-    return 1.0f/ (abs(cosT) + max(sqrtf(a2 + b - a2*b),0.000001));
+    return 2.0f/ (1.0f + sqrtf(a2 + b - a2*b));
 }
 static __inline__ __device__  vec3 sampleOnHemisphere(unsigned int &seed, float roughness)
 {
