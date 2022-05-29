@@ -10,9 +10,9 @@
 
 namespace zeno {
 
-template <ZENO_POL(class Pol,) class Index, class Value, class Reduce, class Transform>
-Value parallel_reduce(ZENO_POL(Pol pol,) Index first, Index last, Value identity, Reduce reduceFn, Transform transformFn) {
-    return std::transform_reduce(ZENO_POL(pol,) counter_iterator<Index>(first), counter_iterator<Index>(last),
+template <class Index, class Value, class Reduce, class Transform>
+Value parallel_reduce(ZENO_PAR Index first, Index last, Value identity, Reduce reduceFn, Transform transformFn) {
+    return std::transform_reduce(ZENO_PAR counter_iterator<Index>(first), counter_iterator<Index>(last),
             identity, reduceFn, transformFn);
 }
 
