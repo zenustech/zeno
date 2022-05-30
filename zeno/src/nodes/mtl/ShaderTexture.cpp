@@ -41,7 +41,7 @@ struct ShaderTexture2D : ShaderNodeClone<ShaderTexture2D>
         if(isCuda==1)
             xy = ".xy()).";
         std::string vec = bat[ty];
-        if(isCuda==1)
+        if(isCuda==1&&ty>0)
             vec = vec + "()";
         em->emitCode("texture2D(zenotex" + std::to_string(texId) + ", " + coord + xy + vec);
     }

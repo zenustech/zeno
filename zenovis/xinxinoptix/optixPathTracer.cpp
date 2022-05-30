@@ -43,6 +43,8 @@
 #include <map>
 #include "xinxinoptixapi.h"
 #include "OptiXStuff.h"
+#include <zeno/utils/vec.h>
+
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
@@ -112,6 +114,10 @@ struct PathTracerState
     raii<CUdeviceptr>              d_gas_output_buffer;  // Triangle AS memory
     raii<CUdeviceptr>              m_d_ias_output_buffer;
     raii<CUdeviceptr>              d_vertices;
+    raii<CUdeviceptr>              d_clr;
+    raii<CUdeviceptr>              d_nrm;
+    raii<CUdeviceptr>              d_uv;
+    raii<CUdeviceptr>              d_tan;
     raii<CUdeviceptr>              d_lightMark;
     raii<CUdeviceptr>              d_mat_indices             ;
 
@@ -166,6 +172,30 @@ struct smallMesh{
 //const int32_t MAT_COUNT      = 5;
 
 static std::vector<Vertex> g_vertices= // TRIANGLE_COUNT*3
+{
+    {0,0,0},
+    {0,0,0},
+    {0,0,0},
+};
+static std::vector<Vertex> g_clr= // TRIANGLE_COUNT*3
+{
+    {0,0,0},
+    {0,0,0},
+    {0,0,0},
+};
+static std::vector<Vertex> g_nrm= // TRIANGLE_COUNT*3
+{
+    {0,0,0},
+    {0,0,0},
+    {0,0,0},
+};
+static std::vector<Vertex> g_uv= // TRIANGLE_COUNT*3
+{
+    {0,0,0},
+    {0,0,0},
+    {0,0,0},
+};
+static std::vector<Vertex> g_tan= // TRIANGLE_COUNT*3
 {
     {0,0,0},
     {0,0,0},
@@ -790,6 +820,10 @@ static void createSBT( PathTracerState& state )
             OPTIX_CHECK( optixSbtRecordPackHeader( OptixUtil::rtMaterialShaders[i].m_radiance_hit_group, &hitgroup_records[sbt_idx] ) );
             hitgroup_records[sbt_idx].data.uniforms        = nullptr; //TODO uniforms like iTime, iFrame, etc.
             hitgroup_records[sbt_idx].data.vertices        = reinterpret_cast<float4*>( (CUdeviceptr)state.d_vertices );
+            hitgroup_records[sbt_idx].data.uv              = reinterpret_cast<float4*>( (CUdeviceptr)state.d_uv );
+            hitgroup_records[sbt_idx].data.nrm             = reinterpret_cast<float4*>( (CUdeviceptr)state.d_nrm );
+            hitgroup_records[sbt_idx].data.clr             = reinterpret_cast<float4*>( (CUdeviceptr)state.d_clr );
+            hitgroup_records[sbt_idx].data.tan             = reinterpret_cast<float4*>( (CUdeviceptr)state.d_tan );
             hitgroup_records[sbt_idx].data.lightMark       = reinterpret_cast<unsigned short*>( (CUdeviceptr)state.d_lightMark );
             for(int t=0;t<32;t++)
             {
@@ -978,6 +1012,30 @@ void optixupdatemesh(std::map<std::string, int> const &mtlidlut) {
                 g_vertices.data(), vertices_size_in_bytes,
                 cudaMemcpyHostToDevice
                 ) );
+    CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.d_clr.reset() ), vertices_size_in_bytes ) );
+    CUDA_CHECK( cudaMemcpy(
+                reinterpret_cast<void*>( (CUdeviceptr&)state.d_clr ),
+                g_clr.data(), vertices_size_in_bytes,
+                cudaMemcpyHostToDevice
+                ) );
+    CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.d_uv.reset() ), vertices_size_in_bytes ) );
+    CUDA_CHECK( cudaMemcpy(
+                reinterpret_cast<void*>( (CUdeviceptr&)state.d_uv ),
+                g_uv.data(), vertices_size_in_bytes,
+                cudaMemcpyHostToDevice
+                ) );
+    CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.d_nrm.reset() ), vertices_size_in_bytes ) );
+    CUDA_CHECK( cudaMemcpy(
+                reinterpret_cast<void*>( (CUdeviceptr&)state.d_nrm ),
+                g_nrm.data(), vertices_size_in_bytes,
+                cudaMemcpyHostToDevice
+                ) );
+    CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.d_tan.reset() ), vertices_size_in_bytes ) );
+    CUDA_CHECK( cudaMemcpy(
+                reinterpret_cast<void*>( (CUdeviceptr&)state.d_tan ),
+                g_tan.data(), vertices_size_in_bytes,
+                cudaMemcpyHostToDevice
+                ) );
     const size_t mat_indices_size_in_bytes = g_mat_indices.size() * sizeof( uint32_t );
     CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.d_mat_indices.reset() ), mat_indices_size_in_bytes ) );
     CUDA_CHECK( cudaMemcpy(
@@ -1125,6 +1183,14 @@ struct DrawDat {
     std::vector<float> verts;
     std::vector<float> tris;
     std::map<std::string, std::vector<float>> vertattrs;
+    auto const &getAttr(std::string const &s) const
+    {
+        if(vertattrs.find(s)!=vertattrs.end())
+        {
+            return vertattrs.find(s)->second;
+        }
+        
+    }
 };
 static std::map<std::string, DrawDat> drawdats;
 
@@ -1155,6 +1221,10 @@ std::vector<std::shared_ptr<smallMesh>> &oMeshes)
 }
 static void updatedrawobjects() {
     g_vertices.clear();
+    g_clr.clear();
+    g_nrm.clear();
+    g_uv.clear();
+    g_tan.clear();
     g_mat_indices.clear();
     g_lightMark.clear();
     size_t n = 0;
@@ -1162,6 +1232,10 @@ static void updatedrawobjects() {
         n += dat.tris.size()/3;
     }
     g_vertices.resize(n * 3);
+    g_clr.resize(n*3);
+    g_nrm.resize(n*3);
+    g_uv.resize(n*3);
+    g_tan.resize(n*3);
     g_mat_indices.resize(n);
     g_lightMark.resize(n);
     n = 0;
@@ -1191,6 +1265,82 @@ static void updatedrawobjects() {
                 dat.verts[dat.tris[i * 3 + 2] * 3 + 2],
                 0,
             };
+
+            g_clr[(n + i) * 3 + 0] = {
+                dat.getAttr("clr")[dat.tris[i * 3 + 0] * 3 + 0],
+                dat.getAttr("clr")[dat.tris[i * 3 + 0] * 3 + 1],
+                dat.getAttr("clr")[dat.tris[i * 3 + 0] * 3 + 2],
+                0,
+            };
+            g_clr[(n + i) * 3 + 1] = {
+                dat.getAttr("clr")[dat.tris[i * 3 + 1] * 3 + 0],
+                dat.getAttr("clr")[dat.tris[i * 3 + 1] * 3 + 1],
+                dat.getAttr("clr")[dat.tris[i * 3 + 1] * 3 + 2],
+                0,
+            };
+            g_clr[(n + i) * 3 + 2] = {
+                dat.getAttr("clr")[dat.tris[i * 3 + 2] * 3 + 0],
+                dat.getAttr("clr")[dat.tris[i * 3 + 2] * 3 + 1],
+                dat.getAttr("clr")[dat.tris[i * 3 + 2] * 3 + 2],
+                0,
+            };
+
+            g_nrm[(n + i) * 3 + 0] = {
+                dat.getAttr("nrm")[dat.tris[i * 3 + 0] * 3 + 0],
+                dat.getAttr("nrm")[dat.tris[i * 3 + 0] * 3 + 1],
+                dat.getAttr("nrm")[dat.tris[i * 3 + 0] * 3 + 2],
+                0,
+            };
+            g_nrm[(n + i) * 3 + 1] = {
+                dat.getAttr("nrm")[dat.tris[i * 3 + 1] * 3 + 0],
+                dat.getAttr("nrm")[dat.tris[i * 3 + 1] * 3 + 1],
+                dat.getAttr("nrm")[dat.tris[i * 3 + 1] * 3 + 2],
+                0,
+            };
+            g_nrm[(n + i) * 3 + 2] = {
+                dat.getAttr("nrm")[dat.tris[i * 3 + 2] * 3 + 0],
+                dat.getAttr("nrm")[dat.tris[i * 3 + 2] * 3 + 1],
+                dat.getAttr("nrm")[dat.tris[i * 3 + 2] * 3 + 2],
+                0,
+            };
+
+            g_uv[(n + i) * 3 + 0] = {
+                dat.getAttr("uv")[dat.tris[i * 3 + 0] * 3 + 0],
+                dat.getAttr("uv")[dat.tris[i * 3 + 0] * 3 + 1],
+                dat.getAttr("uv")[dat.tris[i * 3 + 0] * 3 + 2],
+                0,
+            };
+            g_uv[(n + i) * 3 + 1] = {
+                dat.getAttr("uv")[dat.tris[i * 3 + 1] * 3 + 0],
+                dat.getAttr("uv")[dat.tris[i * 3 + 1] * 3 + 1],
+                dat.getAttr("uv")[dat.tris[i * 3 + 1] * 3 + 2],
+                0,
+            };
+            g_uv[(n + i) * 3 + 2] = {
+                dat.getAttr("uv")[dat.tris[i * 3 + 2] * 3 + 0],
+                dat.getAttr("uv")[dat.tris[i * 3 + 2] * 3 + 1],
+                dat.getAttr("uv")[dat.tris[i * 3 + 2] * 3 + 2],
+                0,
+            };
+
+            g_tan[(n + i) * 3 + 0] = {
+                dat.getAttr("tang")[dat.tris[i * 3 + 0] * 3 + 0],
+                dat.getAttr("tang")[dat.tris[i * 3 + 0] * 3 + 1],
+                dat.getAttr("tang")[dat.tris[i * 3 + 0] * 3 + 2],
+                0,
+            };
+            g_tan[(n + i) * 3 + 1] = {
+                dat.getAttr("tang")[dat.tris[i * 3 + 1] * 3 + 0],
+                dat.getAttr("tang")[dat.tris[i * 3 + 1] * 3 + 1],
+                dat.getAttr("tang")[dat.tris[i * 3 + 1] * 3 + 2],
+                0,
+            };
+            g_tan[(n + i) * 3 + 2] = {
+                dat.getAttr("tang")[dat.tris[i * 3 + 2] * 3 + 0],
+                dat.getAttr("tang")[dat.tris[i * 3 + 2] * 3 + 1],
+                dat.getAttr("tang")[dat.tris[i * 3 + 2] * 3 + 2],
+                0,
+            };
         }
         n += dat.tris.size() / 3;
     }
@@ -1200,6 +1350,23 @@ static void updatedrawobjects() {
         g_vertices.push_back(g_lightMesh[l*3+0]);
         g_vertices.push_back(g_lightMesh[l*3+1]);
         g_vertices.push_back(g_lightMesh[l*3+2]);
+        auto l1 = g_lightMesh[l*3+1] - g_lightMesh[l*3+0];
+        auto l2 = g_lightMesh[l*3+2] - g_lightMesh[l*3+0];
+        auto zl1= zeno::vec3f(l1.x, l1.y, l1.z);
+        auto zl2= zeno::vec3f(l2.x, l2.y, l2.z);
+        auto normal = zeno::normalize(zeno::cross(zl1,zl2));
+        g_nrm.push_back(make_float4(normal[0], normal[1], normal[2],0));
+        g_nrm.push_back(make_float4(normal[0], normal[1], normal[2],0));
+        g_nrm.push_back(make_float4(normal[0], normal[1], normal[2],0));
+        g_clr.push_back(make_float4(0));
+        g_clr.push_back(make_float4(0));
+        g_clr.push_back(make_float4(0));
+        g_tan.push_back(make_float4(0));
+        g_tan.push_back(make_float4(0));
+        g_tan.push_back(make_float4(0));
+        g_uv.push_back( make_float4(0));
+        g_uv.push_back( make_float4(0));
+        g_uv.push_back( make_float4(0));
         g_mat_indices.push_back(0);
         g_lightMark.push_back(1);
     }

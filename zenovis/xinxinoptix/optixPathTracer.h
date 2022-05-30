@@ -58,6 +58,10 @@ struct MissData
 struct HitGroupData
 {
     float4* vertices;
+    float4* uv;
+    float4* nrm;
+    float4* clr;
+    float4* tan;
     unsigned short* lightMark;
     float* uniforms;//TODO
     cudaTextureObject_t textures[32];

@@ -84,7 +84,13 @@ MatInput const &attrs) {
     mats.opacity = mat_opacity;
     return mats;
 }
-
+__forceinline__ __device__ float3 interp(float2 barys, float3 a, float3 b, float3 c)
+{
+    float w0 = 1 - barys.x - barys.y;
+    float w1 = barys.x;
+    float w2 = barys.y;
+    return w0*a + w1*b + w2*c;
+}
 
 extern "C" __global__ void __anyhit__shadow_cutout()
 {
@@ -98,8 +104,8 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     const float3 v1   = make_float3( rt_data->vertices[ vert_idx_offset+1 ] );
     const float3 v2   = make_float3( rt_data->vertices[ vert_idx_offset+2 ] );
 
-    const float3 N_0  = normalize( cross( v1-v0, v2-v0 ) );
-    const float3 N    = faceforward( N_0, -ray_dir, N_0 );
+    float3 N_0  = normalize( cross( v1-v0, v2-v0 ) );
+    
     const float3 P    = optixGetWorldRayOrigin() + optixGetRayTmax()*ray_dir;
     unsigned short isLight = rt_data->lightMark[inst_idx * 1024 + prim_idx];
     float w = rt_data->vertices[ vert_idx_offset+0 ].w;
@@ -137,12 +143,30 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     cudaTextureObject_t zenotex31 = rt_data->textures[31];
     MatInput attrs;
     /* MODMA */
+    float2       barys    = optixGetTriangleBarycentrics();
+    
+    float3 n0 = make_float3(rt_data->nrm[ vert_idx_offset+0 ] );
+    float3 n1 = make_float3(rt_data->nrm[ vert_idx_offset+1 ] );
+    float3 n2 = make_float3(rt_data->nrm[ vert_idx_offset+2 ] );
+    float3 uv0 = make_float3(rt_data->uv[ vert_idx_offset+0 ] );
+    float3 uv1 = make_float3(rt_data->uv[ vert_idx_offset+1 ] );
+    float3 uv2 = make_float3(rt_data->uv[ vert_idx_offset+2 ] );
+    float3 clr0 = make_float3(rt_data->clr[ vert_idx_offset+0 ] );
+    float3 clr1 = make_float3(rt_data->clr[ vert_idx_offset+1 ] );
+    float3 clr2 = make_float3(rt_data->clr[ vert_idx_offset+2 ] );
+    float3 tan0 = make_float3(rt_data->tan[ vert_idx_offset+0 ] );
+    float3 tan1 = make_float3(rt_data->tan[ vert_idx_offset+1 ] );
+    float3 tan2 = make_float3(rt_data->tan[ vert_idx_offset+2 ] );
+    
+    N_0 = interp(barys, n0, n1, n2);
+    float3 N    = faceforward( N_0, -ray_dir, N_0 );
+
     attrs.pos = vec3(P.x, P.y, P.z);
-    attrs.nrm = vec3(0,0,1);
-    attrs.uv = vec3(0,0,0);//todo later
+    attrs.nrm = N;
+    attrs.uv = interp(barys, uv0, uv1, uv2);//todo later
     //attrs.clr = rt_data->face_attrib_clr[vert_idx_offset];
-    attrs.clr = vec3(1,1,1);
-    attrs.tang = vec3(0,0,0);
+    attrs.clr = interp(barys, clr0, clr1, clr2);
+    attrs.tang = interp(barys, tan0, tan1, tan2);
     MatOutput mats = evalMaterial(
                                 zenotex0 , 
                                 zenotex1 , 
@@ -223,8 +247,7 @@ extern "C" __global__ void __closesthit__radiance()
     const float3 v0   = make_float3( rt_data->vertices[ vert_idx_offset+0 ] );
     const float3 v1   = make_float3( rt_data->vertices[ vert_idx_offset+1 ] );
     const float3 v2   = make_float3( rt_data->vertices[ vert_idx_offset+2 ] );
-    const float3 N_0  = normalize( cross( v1-v0, v2-v0 ) );
-    const float3 N    = faceforward( N_0, -ray_dir, N_0 );
+    float3 N_0  = normalize( cross( v1-v0, v2-v0 ) );
     const float3 P    = optixGetWorldRayOrigin() + optixGetRayTmax()*ray_dir;
     unsigned short isLight = rt_data->lightMark[inst_idx * 1024 + prim_idx];
     float w = rt_data->vertices[ vert_idx_offset+0 ].w;
@@ -262,11 +285,30 @@ extern "C" __global__ void __closesthit__radiance()
     cudaTextureObject_t zenotex31 = rt_data->textures[31];
     MatInput attrs;
     /* MODMA */
+    float2       barys    = optixGetTriangleBarycentrics();
+    
+    float3 n0 = make_float3(rt_data->nrm[ vert_idx_offset+0 ] );
+    float3 n1 = make_float3(rt_data->nrm[ vert_idx_offset+1 ] );
+    float3 n2 = make_float3(rt_data->nrm[ vert_idx_offset+2 ] );
+    float3 uv0 = make_float3(rt_data->uv[ vert_idx_offset+0 ] );
+    float3 uv1 = make_float3(rt_data->uv[ vert_idx_offset+1 ] );
+    float3 uv2 = make_float3(rt_data->uv[ vert_idx_offset+2 ] );
+    float3 clr0 = make_float3(rt_data->clr[ vert_idx_offset+0 ] );
+    float3 clr1 = make_float3(rt_data->clr[ vert_idx_offset+1 ] );
+    float3 clr2 = make_float3(rt_data->clr[ vert_idx_offset+2 ] );
+    float3 tan0 = make_float3(rt_data->tan[ vert_idx_offset+0 ] );
+    float3 tan1 = make_float3(rt_data->tan[ vert_idx_offset+1 ] );
+    float3 tan2 = make_float3(rt_data->tan[ vert_idx_offset+2 ] );
+    
+    N_0 = interp(barys, n0, n1, n2);
+    float3 N    = faceforward( N_0, -ray_dir, N_0 );
+
     attrs.pos = vec3(P.x, P.y, P.z);
-    attrs.nrm = vec3(0,0,1);
-    attrs.uv = vec3(0,0,0);//todo later
+    attrs.nrm = N;
+    attrs.uv = interp(barys, uv0, uv1, uv2);//todo later
     //attrs.clr = rt_data->face_attrib_clr[vert_idx_offset];
-    attrs.clr = vec3(1,1,1);
+    attrs.clr = interp(barys, clr0, clr1, clr2);
+    attrs.tang = interp(barys, tan0, tan1, tan2);
     MatOutput mats = evalMaterial(
                                 zenotex0 , 
                                 zenotex1 , 
