@@ -385,9 +385,13 @@ struct ToZSTetrahedra : INode {
     zstets->sprayedOffset = pos.size();
 
     std::vector<zs::PropertyTag> tags{
-        {"m", 1},       {"x", 3},
-        {"v", 3},       {"BCbasis", 9} /* normals for slip boundary*/,
-        {"BCorder", 1}, {"BCtarget", 3}};
+        {"m", 1},
+        {"x", 3},
+        {"x0", 3},
+        {"v", 3},
+        {"BCbasis", 9} /* normals for slip boundary*/,
+        {"BCorder", 1},
+        {"BCtarget", 3}};
     std::vector<zs::PropertyTag> eleTags{{"vol", 1}, {"IB", 9}, {"inds", 4}};
 
     constexpr auto space = zs::execspace_e::openmp;
@@ -400,6 +404,7 @@ struct ToZSTetrahedra : INode {
               using mat3 = zs::vec<float, 3, 3>;
               auto p = vec3{pos[vi][0], pos[vi][1], pos[vi][2]};
               pars.tuple<3>("x", vi) = p;
+              pars.tuple<3>("x0", vi) = p;
               pars.tuple<3>("v", vi) = vec3::zeros();
               if (prim->has_attr("vel")) {
                 auto vel = prim->attr<zeno::vec3f>("vel")[vi];

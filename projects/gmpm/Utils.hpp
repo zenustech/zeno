@@ -450,7 +450,7 @@ void find_intersection_free_stepsize(Pol &pol, ZenoParticles &zstets,
       if (!pt_ccd_broadphase(p, t0, t1, t2, dp, dt0, dt1, dt2, thickness,
                              alpha))
         return;
-      pt_accd(p, t0, t1, t2, dp, dt0, dt1, dt2, (T)0.1, thickness, alpha);
+      pt_accd(p, t0, t1, t2, dp, dt0, dt1, dt2, (T)0.2, thickness, alpha);
     });
     if (alpha < stepSize)
       atomic_min(exec_cuda, &finalAlpha[0], alpha);
@@ -498,7 +498,7 @@ void find_intersection_free_stepsize(Pol &pol, ZenoParticles &zstets,
       if (!ee_ccd_broadphase(x0, x1, eb0, eb1, dea0, dea1, deb0, deb1,
                              thickness, alpha))
         return;
-      ee_accd(x0, x1, eb0, eb1, dea0, dea1, deb0, deb1, (T)0.1, thickness,
+      ee_accd(x0, x1, eb0, eb1, dea0, dea1, deb0, deb1, (T)0.2, thickness,
               alpha);
     });
     if (alpha < stepSize)
