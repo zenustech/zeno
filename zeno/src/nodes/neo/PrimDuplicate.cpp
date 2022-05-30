@@ -8,7 +8,7 @@
 #include <zeno/utils/arrayindex.h>
 #include <zeno/utils/orthonormal.h>
 #include <zeno/para/parallel_for.h>
-#include <zeno/para/parallel_invoke.h>
+#include <zeno/para/task_group.h>
 #include <zeno/utils/vec.h>
 #include <zeno/utils/log.h>
 #include <cstring>
@@ -25,82 +25,91 @@ ZENO_API std::shared_ptr<PrimitiveObject> primDuplicate(PrimitiveObject *parsPri
     auto hasRadAttr = boolean_variant(!radAttr.empty());
     auto hasRadius = boolean_variant(radius != 1);
 
+    task_group tg;
     prim->verts.resize(parsPrim->verts.size() * meshPrim->verts.size());
-    std::visit([&] (auto hasDirAttr, auto hasRadius, auto hasRadAttr) {
-        auto func = [&] (auto const &accRad) {
-            auto func = [&] (auto const &accDir, auto hasTanAttr, auto const &accTan) {
-                parallel_for((size_t)0, parsPrim->verts.size(), [&] (size_t i) {
-                    auto basePos = parsPrim->verts[i];
-                    for (size_t j = 0; j < meshPrim->verts.size(); j++) {
-                        auto pos = meshPrim->verts[j];
-                        if constexpr (hasRadAttr) {
-                            pos *= accRad[i];
-                        }
-                        if constexpr (hasRadius) {
-                            pos *= radius;
-                        }
-                        if constexpr (hasDirAttr) {
-                            auto t0 = accDir[i];
-                            vec3f t1, t2;
-                            if constexpr (hasTanAttr) {
-                                t1 = accTan[i];
-                                t2 = cross(t0, t1);
-                            } else {
-                                pixarONB(t0, t1, t2);
+    tg.add([&] {
+        std::visit([&] (auto hasDirAttr, auto hasRadius, auto hasRadAttr) {
+            auto func = [&] (auto const &accRad) {
+                auto func = [&] (auto const &accDir, auto hasTanAttr, auto const &accTan) {
+                    parallel_for((size_t)0, parsPrim->verts.size(), [&] (size_t i) {
+                        auto basePos = parsPrim->verts[i];
+                        for (size_t j = 0; j < meshPrim->verts.size(); j++) {
+                            auto pos = meshPrim->verts[j];
+                            if constexpr (hasRadAttr) {
+                                pos *= accRad[i];
                             }
-                            pos = pos[0] * t0 + pos[1] * t1 + pos[2] * t2;
+                            if constexpr (hasRadius) {
+                                pos *= radius;
+                            }
+                            if constexpr (hasDirAttr) {
+                                auto t0 = accDir[i];
+                                vec3f t1, t2;
+                                if constexpr (hasTanAttr) {
+                                    t1 = accTan[i];
+                                    t2 = cross(t0, t1);
+                                } else {
+                                    pixarONB(t0, t1, t2);
+                                }
+                                pos = pos[0] * t0 + pos[1] * t1 + pos[2] * t2;
+                            }
+                            prim->verts[i * meshPrim->verts.size() + j] = basePos + pos;
                         }
-                        prim->verts[i * meshPrim->verts.size() + j] = basePos + pos;
-                    }
-                });
+                    });
+                };
+                if constexpr (hasDirAttr) {
+                    auto const &accDir = meshPrim->attr<vec3f>(dirAttr);
+                    if (!tanAttr.empty())
+                        func(accDir, std::true_type{}, meshPrim->attr<vec3f>(tanAttr));
+                    else
+                        func(accDir, std::false_type{}, std::array<int, 0>{});
+                } else {
+                    func(std::array<int, 0>{}, std::false_type{}, std::array<int, 0>{});
+                }
             };
-            if constexpr (hasDirAttr) {
-                auto const &accDir = meshPrim->attr<vec3f>(dirAttr);
-                if (!tanAttr.empty())
-                    func(accDir, std::true_type{}, meshPrim->attr<vec3f>(tanAttr));
-                else
-                    func(accDir, std::false_type{}, std::array<int, 0>{});
-            } else {
-                func(std::array<int, 0>{}, std::false_type{}, std::array<int, 0>{});
-            }
-        };
-        if constexpr (hasRadAttr)
-            meshPrim->verts.attr_visit(radAttr, func);
-        else
-            func(std::array<int, 0>{});
-    }, hasDirAttr, hasRadius, hasRadAttr);
+            if constexpr (hasRadAttr)
+                meshPrim->verts.attr_visit(radAttr, func);
+            else
+                func(std::array<int, 0>{});
+        }, hasDirAttr, hasRadius, hasRadAttr);
+    });
 
-    auto func = [&] (auto &meshAttrs, auto &parsAttrs) {
+    auto func = [&] (auto &primAttrs, auto &meshAttrs, auto &parsAttrs) {
         meshAttrs.foreach_attr([&] (auto const &key, auto const &arrMesh) {
             using T = std::decay_t<decltype(arrMesh[0])>;
-            auto &arrOut = prim->add_attr<T>(key);
-            parallel_for((size_t)0, parsAttrs.size(), [&] (size_t i) {
-                for (size_t j = 0; j < meshAttrs.size(); j++) {
-                    arrOut[i * meshAttrs.size() + j] = arrMesh[j];
-                }
+            primAttrs.template add_attr<T>(key);
+            tg.add([&] {
+                auto &arrOut = primAttrs.template attr<T>(key);
+                parallel_for((size_t)0, parsAttrs.size(), [&] (size_t i) {
+                    for (size_t j = 0; j < meshAttrs.size(); j++) {
+                        arrOut[i * meshAttrs.size() + j] = arrMesh[j];
+                    }
+                });
             });
         });
         parsAttrs.foreach_attr([&] (auto const &key, auto const &arrPars) {
-            if (prim->has_attr(key)) return; // already added from mesh attr
+            if (meshAttrs.has_attr(key)) return;
             using T = std::decay_t<decltype(arrPars[0])>;
-            auto &arrOut = prim->add_attr<T>(key);
-            parallel_for((size_t)0, arrPars.size(), [&] (size_t i) {
-                auto value = arrPars[i];
-                for (size_t j = 0; j < meshAttrs.size(); j++) {
-                    arrOut[i * meshAttrs.size() + j] = value;
-                }
+            primAttrs.template add_attr<T>(key);
+            tg.add([&] {
+                auto &arrOut = primAttrs.template attr<T>(key);
+                parallel_for((size_t)0, arrPars.size(), [&] (size_t i) {
+                    auto value = arrPars[i];
+                    for (size_t j = 0; j < meshAttrs.size(); j++) {
+                        arrOut[i * meshAttrs.size() + j] = value;
+                    }
+                });
             });
         });
     };
-    parallel_invoke
-    ( [&] { func(meshPrim->verts, parsPrim->verts); }
-    , [&] { func(meshPrim->points, parsPrim->points); }
-    , [&] { func(meshPrim->lines, parsPrim->lines); }
-    , [&] { func(meshPrim->tris, parsPrim->tris); }
-    , [&] { func(meshPrim->quads, parsPrim->quads); }
-    , [&] { func(meshPrim->polys, parsPrim->polys); }
-    , [&] { func(meshPrim->loops, parsPrim->loops); }
-    );
+    func(prim->verts, meshPrim->verts, parsPrim->verts);
+    func(prim->points, meshPrim->points, parsPrim->points);
+    func(prim->lines, meshPrim->lines, parsPrim->lines);
+    func(prim->tris, meshPrim->tris, parsPrim->tris);
+    func(prim->quads, meshPrim->quads, parsPrim->quads);
+    func(prim->polys, meshPrim->polys, parsPrim->polys);
+    func(prim->loops, meshPrim->loops, parsPrim->loops);
+
+    tg.run();
 
     return prim;
 }
