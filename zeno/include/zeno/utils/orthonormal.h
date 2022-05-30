@@ -38,7 +38,8 @@ struct orthonormal {
 // Get orthonormal basis from surface normal
 // https://graphics.pixar.com/library/OrthonormalB/paper.pdf
 static void pixarONB(vec3f const &n, vec3f /*out*/ &b1, vec3f /*out*/ &b2) {
-	vec3f up = std::abs(n[2]) < 0.999f ? vec3f(0.0f, 0.0f, 1.0f) : vec3f(1.0f, 0.0f, 0.0f);
+    bool leq = std::abs(n[2]) < 0.999f;
+	vec3f up(leq ? 0.0f : 1.0f, 0.0f, leq ? 1.0f : 0.0f);
     b1 = normalize(cross(up, n));
     b2 = cross(n, b1);
 }
