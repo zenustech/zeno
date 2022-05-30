@@ -23,7 +23,7 @@ struct QuasiStaticStepping : INode {
   using mat3 = zs::vec<T, 3, 3>;
   struct FEMSystem {
     template <typename Pol, typename Model>
-    T energy(Pol &pol, const Model &model,const zeno::vec<3,T>& g, const zs::SmallString tag, dtiles_t& vtemp) {
+    T energy(Pol &pol, const Model &model,const zeno::vec<3,T>& volf, const zs::SmallString tag, dtiles_t& vtemp) {
       using namespace zs;
       constexpr auto space = execspace_e::cuda;
       Vector<T> res{verts.get_allocator(), 1};
@@ -32,7 +32,7 @@ struct QuasiStaticStepping : INode {
       pol(range(eles.size()), [verts = proxy<space>({}, verts),
                                eles = proxy<space>({}, eles),
                                vtemp = proxy<space>({}, vtemp),
-                               res = proxy<space>(res), tag, model = model] 
+                               res = proxy<space>(res), tag, model = model,volf = vec3::from_array(volf)] 
                                ZS_LAMBDA (int ei) mutable {
         auto DmInv = eles.pack<3, 3>("IB", ei);
         auto inds = eles.pack<4>("inds", ei).reinterpret_bits<int>();
@@ -50,17 +50,21 @@ struct QuasiStaticStepping : INode {
         auto psi = model.psi(F);
         auto vole = eles("vol", ei);
 
-        atomic_add(exec_cuda, &res[0], vole * psi);
+        T gpsi = 0;
+        for(int i = 0;i != 4;++i)
+            gpsi += (-volf.dot(xs[i])/4); 
+
+        atomic_add(exec_cuda, &res[0], vole * (psi + gpsi));
       });
     // gravity potential (TO DO, using per-element computation to speed up)
-      pol(range(verts.size()),
-            [verts = proxy<space>({},verts),vtemp = proxy<space>({},vtemp),res = proxy<space>(res),tag,g = vec3::from_array(g)]
-            ZS_LAMBDA (int vi) mutable {
-                auto m = verts("m",vi);
-                auto v0 = vtemp.pack<3>(tag,vi);
-                auto gpsi = -m * v0.dot(g); 
-                atomic_add(exec_cuda, &res[0], gpsi);
-      });
+    //   pol(range(verts.size()),
+    //         [verts = proxy<space>({},verts),vtemp = proxy<space>({},vtemp),res = proxy<space>(res),tag,volf = vec3::from_array(volf)]
+    //         ZS_LAMBDA (int vi) mutable {
+    //             auto m = verts("m",vi);
+    //             auto v0 = vtemp.pack<3>(tag,vi);
+    //             auto gpsi = -m * v0.dot(volf); 
+    //             atomic_add(exec_cuda, &res[0], gpsi);
+    //   });
       return res.getVal();
     }
 
@@ -80,7 +84,7 @@ struct QuasiStaticStepping : INode {
     template <typename Model>
     void computeGradientAndHessian(zs::CudaExecutionPolicy& cudaPol,
                                             const Model& model,
-                                            const zeno::vec<3,T>& g,
+                                            const zeno::vec<3,T>& volf,
                                             dtiles_t& vtemp,
                                             dtiles_t& etemp) {
         using namespace zs;
@@ -88,7 +92,7 @@ struct QuasiStaticStepping : INode {
         cudaPol(zs::range(eles.size()), [vtemp = proxy<space>({}, vtemp),
                                         etemp = proxy<space>({}, etemp),
                                         verts = proxy<space>({}, verts),
-                                        eles = proxy<space>({}, eles), model] ZS_LAMBDA (int ei) mutable {
+                                        eles = proxy<space>({}, eles), model,volf = vec3::from_array(volf)] ZS_LAMBDA (int ei) mutable {
             auto DmInv = eles.pack<3, 3>("IB", ei);
             auto dFdX = dFdXMatrix(DmInv);
             auto inds = eles.pack<4>("inds", ei).reinterpret_bits<int>();
@@ -107,12 +111,13 @@ struct QuasiStaticStepping : INode {
             auto vole = eles("vol", ei);
             auto vecP = flatten(P);
             auto dFdXT = dFdX.transpose();
-            auto vfdt = -vole * (dFdXT * vecP);
+            auto vf = -vole * (dFdXT * vecP);
 
+            auto mg = volf * vole / 4;
             for (int i = 0; i != 4; ++i) {
                 auto vi = inds[i];
                 for (int d = 0; d != 3; ++d)
-                atomic_add(exec_cuda, &vtemp("grad", d, vi), vfdt(i * 3 + d));
+                    atomic_add(exec_cuda, &vtemp("grad", d, vi), vf(i * 3 + d) + mg(d));
             }
 
             auto Hq = model.first_piola_derivative(F, true_c);
@@ -121,12 +126,12 @@ struct QuasiStaticStepping : INode {
             etemp.tuple<12 * 12>("He", ei) = H;
         });
 
-        cudaPol(zs::range(verts.size()),[   vtemp = proxy<space>({},vtemp),
-                                            verts = proxy<space>({},verts),
-                                            g = vec3::from_array(g)] ZS_LAMBDA (int vi) mutable {
-            auto m = verts("m",vi);
-            vtemp.tuple<3>("grad",vi) = vtemp.pack<3>("grad",vi) + m * g;
-        });
+        // cudaPol(zs::range(verts.size()),[   vtemp = proxy<space>({},vtemp),
+        //                                     verts = proxy<space>({},verts),
+        //                                     g = vec3::from_array(g)] ZS_LAMBDA (int vi) mutable {
+        //     auto m = verts("m",vi);
+        //     vtemp.tuple<3>("grad",vi) = vtemp.pack<3>("grad",vi) + m * g;
+        // });
     }
     template <typename Pol>
     void precondition(Pol &pol, const zs::SmallString srcTag,
@@ -244,6 +249,8 @@ struct QuasiStaticStepping : INode {
     auto& verts = zstets->getParticles();
     auto& eles = zstets->getQuadraturePoints();
 
+    auto volf_density = gravity * models.density;
+
     static dtiles_t vtemp{verts.get_allocator(),
                           {{"grad", 3},
                            {"P", 9},
@@ -288,9 +295,9 @@ struct QuasiStaticStepping : INode {
                 vtemp.tuple<3>("grad",i) = vec3{0,0,0};
       });
     //   fmt::print("COMPUTE GRADIENT AND HESSIAN\n",newtonIter);
-    //   fmt::print("gravity_n:{}\n",gravity)
+    //   fmt::print("volf_density:{}\n",volf_density)
       match([&](auto &elasticModel) {
-        A.computeGradientAndHessian(cudaPol, elasticModel, gravity,vtemp,etemp);
+        A.computeGradientAndHessian(cudaPol, elasticModel, volf_density,vtemp,etemp);
       })(models.getElasticModel());
 
     //   T Hn = dot<144>(cudaPol,etemp,"He","He");
@@ -537,7 +544,7 @@ struct QuasiStaticStepping : INode {
               });
       T E0;
       match([&](auto &elasticModel) {
-        E0 = A.energy(cudaPol, elasticModel,gravity, "xn0",vtemp);
+        E0 = A.energy(cudaPol, elasticModel,volf_density, "xn0",vtemp);
       })(models.getElasticModel());
 
 
@@ -555,7 +562,7 @@ struct QuasiStaticStepping : INode {
               vtemp.pack<3>("xn0", i) + alpha * vtemp.pack<3>("dir", i);
         });
         match([&](auto &elasticModel) {
-          E = A.energy(cudaPol, elasticModel,gravity, "xn",vtemp);
+          E = A.energy(cudaPol, elasticModel,volf_density, "xn",vtemp);
         })(models.getElasticModel());
         // fmt::print("E: {} at alpha {}. E0 {}\n", E, alpha, E0);
         // fmt::print("Armijo : {} < {}\n",(E - E0)/alpha,dg);
