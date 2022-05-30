@@ -280,6 +280,7 @@ struct BulletWorld : zeno::IObject {
     std::unique_ptr<btSequentialImpulseConstraintSolver> solver;
 
     std::unique_ptr<btDiscreteDynamicsWorld> dynamicsWorld;
+    std::unique_ptr<btCollisionWorld> collisionWorld;
 
     std::set<std::shared_ptr<BulletObject>> objects;
     std::set<std::shared_ptr<BulletConstraint>> constraints;
@@ -298,7 +299,6 @@ struct BulletWorld : zeno::IObject {
             dispatcher.get(), broadphase.get(), solver.get(),
             collisionConfiguration.get());
         dynamicsWorld->setGravity(btVector3(0, -10, 0));
-
         zeno::log_debug("creating bullet world {}", (void *)this);
     }
 #endif

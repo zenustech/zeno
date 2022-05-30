@@ -45,7 +45,6 @@ using namespace zeno;
  *  Bullet Position & Rotation
  */
 
-
 struct BulletMakeTransform : zeno::INode {
     virtual void apply() override {
         auto trans = std::make_unique<BulletTransform>();
@@ -750,30 +749,30 @@ ZENDEFNODE(BulletObjectGetVel, {
     {"Bullet"},
 });
 
-struct RigidVelToPrimitive : zeno::INode {
-    virtual void apply() override {
-        auto prim = get_input<zeno::PrimitiveObject>("prim");
-        auto com = get_input<zeno::NumericObject>("centroid")->get<zeno::vec3f>();
-        auto lin = get_input<zeno::NumericObject>("linearVel")->get<zeno::vec3f>();
-        auto ang = get_input<zeno::NumericObject>("angularVel")->get<zeno::vec3f>();
-
-        auto &pos = prim->attr<zeno::vec3f>("pos");
-        auto &vel = prim->add_attr<zeno::vec3f>("vel");
-        #pragma omp parallel for
-        for (size_t i = 0; i < prim->size(); i++) {
-            vel[i] = lin + zeno::cross(ang, pos[i] - com);
-        }
-
-        set_output("prim", get_input("prim"));
-    }
-};
-
-ZENDEFNODE(RigidVelToPrimitive, {
-    {"prim", "centroid", "linearVel", "angularVel"},
-    {"prim"},
-    {},
-    {"Bullet"},
-});
+//struct RigidVelToPrimitive : zeno::INode {
+//    virtual void apply() override {
+//        auto prim = get_input<zeno::PrimitiveObject>("prim");
+//        auto com = get_input<zeno::NumericObject>("centroid")->get<zeno::vec3f>();
+//        auto lin = get_input<zeno::NumericObject>("linearVel")->get<zeno::vec3f>();
+//        auto ang = get_input<zeno::NumericObject>("angularVel")->get<zeno::vec3f>();
+//
+//        auto &pos = prim->attr<zeno::vec3f>("pos");
+//        auto &vel = prim->add_attr<zeno::vec3f>("vel");
+//        #pragma omp parallel for
+//        for (size_t i = 0; i < prim->size(); i++) {
+//            vel[i] = lin + zeno::cross(ang, pos[i] - com);
+//        }
+//
+//        set_output("prim", get_input("prim"));
+//    }
+//};
+//
+//ZENDEFNODE(RigidVelToPrimitive, {
+//    {"prim", "centroid", "linearVel", "angularVel"},
+//    {"prim"},
+//    {},
+//    {"Bullet"},
+//});
 
 struct BulletExtractTransform : zeno::INode {
     virtual void apply() override {
@@ -793,7 +792,6 @@ ZENDEFNODE(BulletExtractTransform, {
     {},
     {"Bullet"},
 });
-
 
 /*static class btTaskSchedulerManager {
 	btAlignedObjectArray<btITaskScheduler*> m_taskSchedulers;
@@ -1461,7 +1459,6 @@ struct BulletWorldAddObject : zeno::INode {
     virtual void apply() override {
         auto world = get_input<BulletWorld>("world");
         auto object = get_input<BulletObject>("object");
-
         world->addObject(std::move(object));
         set_output("world", get_input("world"));
     }
@@ -2811,6 +2808,563 @@ ZENDEFNODE(BulletMultiBodyClearJointStates, {
                                                {"Bullet"},
                                            });
 
+struct BulletMultiBodyApplyExternalTorque : zeno::INode {
+    virtual void apply() {
+        auto object = get_input<BulletMultiBodyObject>("object");
+        //        auto linkIndex = zeno::IObject::make<zeno::NumericObject>();
+        auto linkIndex = get_input2<int>("linkIndex");
+        auto torque = zeno::vec_to_other<btVector3>(
+            get_input<zeno::NumericObject>("torque")->get<zeno::vec3f>());
+        auto pos = zeno::vec_to_other<btVector3>(
+            get_input<zeno::NumericObject>("pos")->get<zeno::vec3f>());
+        auto isLinkFrame = get_input2<bool>("isLinkFrame");
 
+        // LinkIndex = -1 for applying force to the base link
+        if (linkIndex == -1) {
+            auto torqueWorld =
+                isLinkFrame
+                    ? object->multibody->getBaseWorldTransform().getBasis() *
+                          torque
+                    : torque;
+            object->multibody->addBaseTorque(torque);
+        } else {
+            auto torqueWorld =
+                isLinkFrame ? object->multibody->getLink(linkIndex)
+                                      .m_cachedWorldTransform.getBasis() *
+                                  torque
+                            : torque;
+            object->multibody->addLinkTorque(linkIndex, torque);
+        }
 
+        set_output("object", std::move(object));
+    }
 };
+
+ZENDEFNODE(BulletMultiBodyApplyExternalTorque,
+           {
+               {"object", "linkIndex", "torque"},
+               {"object"},
+               {},
+               {"Bullet"},
+           });
+
+struct BulletMultiBodyApplyExternalForce : zeno::INode {
+    virtual void apply() {
+        auto object = get_input<BulletMultiBodyObject>("object");
+        //        auto linkIndex = zeno::IObject::make<zeno::NumericObject>();
+        auto linkIndex = get_input2<int>("linkIndex");
+        auto force = zeno::vec_to_other<btVector3>(
+            get_input<zeno::NumericObject>("force")->get<zeno::vec3f>());
+        auto pos = zeno::vec_to_other<btVector3>(
+            get_input<zeno::NumericObject>("pos")->get<zeno::vec3f>());
+        auto isLinkFrame = get_input2<bool>("isLinkFrame");
+
+        // LinkIndex = -1 for applying force to the base link
+        if (linkIndex == -1) {
+            auto forceWorld =
+                isLinkFrame
+                    ? object->multibody->getBaseWorldTransform().getBasis() *
+                          force
+                    : force;
+            auto relPosWorld =
+                isLinkFrame
+                    ? object->multibody->getBaseWorldTransform().getBasis() *
+                          pos
+                    : pos - object->multibody->getBaseWorldTransform()
+                                .getOrigin();
+            object->multibody->addBaseForce(forceWorld);
+            object->multibody->addBaseTorque((relPosWorld.cross(forceWorld)));
+        } else {
+            auto forceWorld = isLinkFrame
+                                  ? object->multibody->getLink(linkIndex)
+                                            .m_cachedWorldTransform.getBasis() *
+                                        force
+                                  : force;
+            auto relPosWorld =
+                isLinkFrame ? object->multibody->getLink(linkIndex)
+                                      .m_cachedWorldTransform.getBasis() *
+                                  pos
+                            : pos - object->multibody->getLink(linkIndex)
+                                        .m_cachedWorldTransform.getOrigin();
+            object->multibody->addLinkForce(linkIndex, forceWorld);
+            object->multibody->addLinkTorque(linkIndex,
+                                             relPosWorld.cross(forceWorld));
+        }
+
+        set_output("object", std::move(object));
+    }
+};
+
+ZENDEFNODE(BulletMultiBodyApplyExternalForce,
+           {
+               {"object", "linkIndex", "force"},
+               {"object"},
+               {},
+               {"Bullet"},
+           });
+
+struct BulletResetSimulation : zeno::INode {
+    virtual void apply() {
+        auto world = get_input<BulletWorld>("world");
+        world->collisionWorld.reset();
+        set_output("world", std::move(world));
+    }
+};
+
+ZENDEFNODE(BulletResetSimulation, {
+                                      {"world"},
+                                      {"world"},
+                                      {},
+                                      {"Bullet"},
+                                  });
+
+struct BulletMultiBodyResetSimulation : zeno::INode {
+    virtual void apply() {
+        auto world = get_input<BulletMultiBodyWorld>("world");
+        world->dynamicsWorld.reset();
+        set_output("world", std::move(world));
+    }
+};
+
+ZENDEFNODE(BulletMultiBodyResetSimulation, {
+                                               {"world"},
+                                               {"world"},
+                                               {},
+                                               {"Bullet"},
+                                           });
+
+struct BulletMultiBodyCalculateJacobian : zeno::INode {
+    virtual void apply() {
+        auto object = get_input<BulletMultiBodyObject>("object");
+        auto linkIndex = get_input2<int>("linkIndex");
+        auto localPosition = get_input2<vec3f>("localPos");
+
+        std::vector<float> jointPositionsQ;
+        {
+            auto numericObjs = get_input<zeno::ListObject>("jointPositionsQ")
+                                   ->get<std::shared_ptr<NumericObject>>();
+            for (auto &&no : numericObjs)
+                jointPositionsQ.push_back(no->get<float>());
+        }
+
+        std::vector<float> jointVelocitiesQd;
+        {
+            auto numericObjs = get_input<zeno::ListObject>("jointVelocitiesQd")
+                                   ->get<std::shared_ptr<NumericObject>>();
+            for (auto &&no : numericObjs)
+                jointVelocitiesQd.push_back(no->get<float>());
+        }
+
+        std::vector<float> jointAccelerations;
+        {
+            auto numericObjs = get_input<zeno::ListObject>("jointAccelerations")
+                                   ->get<std::shared_ptr<NumericObject>>();
+            for (auto &&no : numericObjs)
+                jointAccelerations.push_back(no->get<float>());
+        }
+
+        btVector3 id_grav(0, -9.81, 0);
+        if (has_input("gravity")) {
+            id_grav = zeno::vec_to_other<btVector3>(
+                get_input<zeno::NumericObject>("gravity")->get<zeno::vec3f>());
+        }
+
+        b3AlignedObjectArray<double> jacobian_linear;
+        b3AlignedObjectArray<double> jacobian_angular;
+
+        btInverseDynamics::MultiBodyTree *tree = 0;
+        btInverseDynamics::btMultiBodyTreeCreator id_creator;
+        if (-1 == id_creator.createFromBtMultiBody(
+                      object->multibody.get(), false)) {
+        } else {
+            tree = btInverseDynamics::CreateMultiBodyTree(id_creator);
+        }
+
+        if(tree){
+            int baseDofs = object->multibody->hasFixedBase() ? 0 : 6;
+            const int numDofs = object->multibody->getNumDofs();
+
+            btInverseDynamics::vecx q(numDofs + baseDofs);
+            btInverseDynamics::vecx qdot(numDofs + baseDofs);
+            btInverseDynamics::vecx nu(numDofs + baseDofs);
+            btInverseDynamics::vecx joint_force(numDofs + baseDofs);
+
+            for (int i = 0; i < numDofs; i++) {
+                q[i + baseDofs] = jointPositionsQ[i]; //jointPositionsQ?
+                qdot[i + baseDofs] = jointVelocitiesQd[i];
+                nu[i + baseDofs] = jointAccelerations[i];
+            }
+
+            // Set the gravity to correspond to the world gravity
+//            btInverseDynamics::vec3 id_grav(m_data->m_dynamicsWorld->getGravity());
+            if (-1 != tree->setGravityInWorldFrame(id_grav) &&
+                -1 != tree->calculateInverseDynamics(q, qdot, nu, &joint_force))
+            {
+                auto m_dofCount = numDofs + baseDofs;
+                // Set jacobian value
+                tree->calculateJacobians(q);
+                btInverseDynamics::mat3x jac_t(3, numDofs + baseDofs);
+                btInverseDynamics::mat3x jac_r(3, numDofs + baseDofs);
+
+                // Note that inverse dynamics uses zero-based indexing of bodies, not starting from -1 for the base link.
+                tree->getBodyJacobianTrans(linkIndex + 1, &jac_t);
+                tree->getBodyJacobianRot(linkIndex + 1, &jac_r);
+                // Update the translational jacobian based on the desired local point.
+                // v_pt = v_frame + w x pt
+                // v_pt = J_t * qd + (J_r * qd) x pt
+                // v_pt = J_t * qd - pt x (J_r * qd)
+                // v_pt = J_t * qd - pt_x * J_r * qd)
+                // v_pt = (J_t - pt_x * J_r) * qd
+                // J_t_new = J_t - pt_x * J_r
+                btInverseDynamics::vec3 localPosition;
+                for (int i = 0; i < 3; ++i)
+                {
+                    localPosition(i) = localPosition[i];
+                }
+                // Only calculate if the localPosition is non-zero.
+                if (btInverseDynamics::maxAbs(localPosition) > 0.0)
+                {
+                    // Write the localPosition into world coordinates.
+                    btInverseDynamics::mat33 world_rotation_body;
+                    tree->getBodyTransform(linkIndex + 1, &world_rotation_body);
+                    localPosition = world_rotation_body * localPosition;
+                    // Correct the translational jacobian.
+                    btInverseDynamics::mat33 skewCrossProduct;
+                    btInverseDynamics::skew(localPosition, &skewCrossProduct);
+                    btInverseDynamics::mat3x jac_l(3, numDofs + baseDofs);
+                    btInverseDynamics::mul(skewCrossProduct, jac_r, &jac_l);
+                    btInverseDynamics::mat3x jac_t_new(3, numDofs + baseDofs);
+                    btInverseDynamics::sub(jac_t, jac_l, &jac_t_new);
+                    jac_t = jac_t_new;
+                }
+                // Fill in the result into the shared memory.
+                for (int i = 0; i < 3; ++i)
+                {
+                    for (int j = 0; j < (numDofs + baseDofs); ++j)
+                    {
+                        int element = (numDofs + baseDofs) * i + j;
+                        jacobian_linear[element] = jac_t(i, j);
+                        jacobian_angular[element] = jac_r(i, j);
+                    }
+                }
+;
+            }
+        }
+struct BulletPerformCollisionDetection : zeno::INode {
+    virtual void apply() {
+        auto worldType = std::get<std::string>(get_param("worldType"));
+        if (worldType == "multi") {
+            auto world = get_input<BulletMultiBodyWorld>("world");
+            world->dynamicsWorld->performDiscreteCollisionDetection();
+            //            world->dynamicsWorld->contac
+            set_output("world", std::move(world));
+        } else {
+            auto world = get_input<BulletWorld>("world");
+            world->dynamicsWorld->performDiscreteCollisionDetection();
+            set_output("world", std::move(world));
+        }
+    }
+};
+
+ZENDEFNODE(BulletPerformCollisionDetection,
+           {
+               {"world"},
+               {},
+               {{"enum multi rigid", "worldType", "multi"}},
+               {"Bullet"},
+           });
+
+struct BulletMultiBodyAddLinkForce : zeno::INode {
+    virtual void apply() {
+        auto object = get_input<BulletMultiBodyObject>("object");
+        //        auto linkIndex = zeno::IObject::make<zeno::NumericObject>();
+        auto linkIndex = get_input2<int>("linkIndex");
+        auto force = zeno::vec_to_other<btVector3>(
+            get_input<zeno::NumericObject>("force")->get<zeno::vec3f>());
+        object->multibody->addLinkForce(linkIndex, force);
+        set_output("object", std::move(object));
+    }
+};
+
+ZENDEFNODE(BulletMultiBodyAddLinkForce, {
+                                            {"object", "linkIndex", "force"},
+                                            {"object"},
+                                            {},
+                                            {"Bullet"},
+                                        });
+
+
+
+        auto output_jac_linear = std::make_shared<ListObject>();
+        output_jac_linear->arr.clear();
+        for (size_t i = 0; i < jacobian_linear.size(); i++) {
+            auto p = std::make_shared<zeno::NumericObject>(
+                float(jacobian_linear[i]));
+            output_jac_linear->arr.push_back(p);
+        }
+        auto output_jac_angular = std::make_shared<ListObject>();
+        output_jac_angular->arr.clear();
+        for (size_t i = 0; i < jacobian_angular.size(); i++) {
+            auto p = std::make_shared<zeno::NumericObject>(
+                float(jacobian_angular[i]));
+            output_jac_angular->arr.push_back(p);
+        }
+        set_output("object", std::move(object));
+        set_output("jacobian_linear", std::move(output_jac_linear));
+        set_output("jacobian_angular", std::move(output_jac_angular));
+    }
+};
+
+ZENDEFNODE(BulletMultiBodyCalculateJacobian, {
+                                               {"object", "linkIndex", "localPos", "jointPositionsQ", "jointVelocitiesQd", "jointAccelerations", "gravity"},
+                                               {"object", "jacobian_linear", "jacobian_angular"},
+                                               {},
+                                               {"Bullet"},
+                                           });
+
+
+
+//struct BulletMultiBodyWorldChangeDynamics : zeno::INode {
+//    virtual void apply() override {
+//        auto world = get_input<BulletMultiBodyWorld>("world");
+//        auto
+//
+//            world->dynamicsWorld->set
+//
+//                set_output("world", std::move(world));
+//    }
+//};
+
+struct BulletMultiBodyCalculateMassMatrix : zeno::INode {
+    virtual void apply() {
+        auto object = get_input<BulletMultiBodyObject>("object");
+        std::vector<float> jointPositionsQ;
+        {
+            auto numericObjs = get_input<zeno::ListObject>("jointPositionsQ")
+                                   ->get<std::shared_ptr<NumericObject>>();
+            for (auto &&no : numericObjs)
+                jointPositionsQ.push_back(no->get<float>());
+        }
+
+        btInverseDynamics::MultiBodyTree *tree = 0;
+        btInverseDynamics::btMultiBodyTreeCreator id_creator;
+        if (-1 ==
+            id_creator.createFromBtMultiBody(object->multibody.get(), false)) {
+        } else {
+            tree = btInverseDynamics::CreateMultiBodyTree(id_creator);
+        }
+
+        if (tree) {
+            int baseDofs = object->multibody->hasFixedBase() ? 0 : 6;
+            const int numDofs = object->multibody->getNumDofs();
+            const int totDofs = numDofs + baseDofs;
+            btInverseDynamics::vecx q(totDofs);
+            btInverseDynamics::matxx massMatrix(totDofs, totDofs);
+            for (int i = 0; i < numDofs; i++) {
+                q[i + baseDofs] = jointPositionsQ[i];
+            }
+            auto output_mass_matrix = std::make_shared<ListObject>();
+            if (-1 != tree->calculateMassMatrix(q, &massMatrix)) {
+                //                serverCmd.m_massMatrixResultArgs.m_dofCount = totDofs;
+                // Fill in the result into the shared memory.
+                //                double* sharedBuf = (double*)bufferServerToClient;
+                int sizeInBytes = totDofs * totDofs * sizeof(double);
+
+                for (int i = 0; i < (totDofs); ++i) {
+                    for (int j = 0; j < (totDofs); ++j) {
+                        int element = (totDofs)*i + j;
+                        auto p = std::make_shared<zeno::NumericObject>(
+                            float(massMatrix(i, j)));
+                        output_mass_matrix->arr.push_back(p);
+                    }
+                }
+            }
+            set_output("mass_matrix", std::move(output_mass_matrix));
+            set_output("object", std::move(object));
+        }
+    }
+};
+
+ZENDEFNODE(BulletMultiBodyCalculateMassMatrix, {
+                                                 {"object", "jointPositionsQ"},
+                                                 {"object", "mass_matrix"},
+                                                 {},
+                                                 {"Bullet"},
+                                             });
+
+struct BulletMultiBodyGetNumBodies : zeno::INode {
+    virtual void apply() {
+        auto world = get_input<BulletMultiBodyWorld>("world");
+        int num_ = world->dynamicsWorld->getNumMultibodies();
+        auto num = std::make_shared<zeno::NumericObject>(num_);
+        set_output("numBodies", std::move(num));
+    }
+};
+
+ZENDEFNODE(BulletMultiBodyGetNumBodies, {
+                                                   {"world"},
+                                                   {"numBodies"},
+                                                   {},
+                                                   {"Bullet"},
+                                               });
+
+struct BulletMultiBodyGetBodyId : zeno::INode {
+    virtual void apply() {
+        auto obj = get_input<BulletMultiBodyObject>("object");
+        auto id_ = obj->multibody->getUserIndex();
+        auto id = std::make_shared<zeno::NumericObject>(id_);
+        set_output("id", std::move(id));
+    }
+};
+ZENDEFNODE(BulletMultiBodyGetBodyId, {
+                                            {"object"},
+                                            {"id"},
+                                            {},
+                                            {"Bullet"},
+                                        });
+
+struct BulletMultiBodyRemoveBody : zeno::INode {
+    virtual void apply() {
+        auto world = get_input<BulletMultiBodyWorld>("world");
+        auto id = get_input2<int>("id");
+        auto body = world->dynamicsWorld->getMultiBody(id);
+        world->dynamicsWorld->removeMultiBody(body);
+        set_output("id", std::move(world));
+    }
+};
+ZENDEFNODE(BulletMultiBodyRemoveBody, {
+                                         {"world", "id"},
+                                         {"world"},
+                                         {},
+                                         {"Bullet"},
+                                     });
+
+
+struct BulletMultiBodyGetContactPoints : zeno::INode {
+    virtual void apply() {
+        auto world = get_input<BulletMultiBodyWorld>("world");
+        int numManifolds = world->dispatcher->getNumManifolds();
+        auto contactList = std::make_shared<ListObject>();
+        for(int i=0; i<numManifolds; ++i){
+            btPersistentManifold* contactManifold = world->dispatcher->getManifoldByIndexInternal(i);
+            int numContacts = contactManifold->getNumContacts();
+            auto contactPairsList = std::make_shared<ListObject>();
+            for (int j=0; j<numContacts; j++){
+                btManifoldPoint& pt = contactManifold->getContactPoint(j);
+
+                btVector3 ptA = pt.getPositionWorldOnA();
+                btVector3 ptB = pt.getPositionWorldOnB();
+
+                auto pA = std::make_shared<zeno::NumericObject>();
+                auto pB = std::make_shared<zeno::NumericObject>();
+
+                pA->set<zeno::vec3f>(zeno::vec3f(ptA.x(), ptA.y(), ptA.z()));
+                pB->set<zeno::vec3f>(zeno::vec3f(ptB.x(), ptB.y(), ptB.z()));
+
+                contactPairsList->arr.push_back(pA);
+                contactPairsList->arr.push_back(pB);
+            }
+            contactList->arr.push_back(contactPairsList);
+        }
+        set_output("world", std::move(world));
+        set_output("contactPointsList", std::move(contactList));
+    }
+};
+
+ZENDEFNODE(BulletMultiBodyGetContactPoints, {
+                                                {"world"},
+                                                {"contactPointsList"},
+                                                {},
+                                                {"Bullet"},
+                                            });
+
+struct BulletGetAABB : zeno::INode {
+    virtual void apply() {
+        auto object= get_input<BulletObject>("object");
+        auto transform = object->body->getWorldTransform();
+        btVector3 *aabbMin;
+        btVector3 *aabbMax;
+        object->colShape->shape->getAabb(transform, *aabbMin, *aabbMax);
+
+        auto aabbMin_out = std::make_shared<zeno::NumericObject>();
+        aabbMin_out->set<zeno::vec3f>(zeno::vec3f(aabbMin->x(), aabbMin->y(), aabbMin->z()));
+
+        auto aabbMax_out = std::make_shared<zeno::NumericObject>();
+        aabbMax_out->set<zeno::vec3f>(zeno::vec3f(aabbMax->x(), aabbMax->y(), aabbMax->z()));
+
+        set_output("aabbMin", std::move(aabbMin_out));
+        set_output("aabbMax", std::move(aabbMax_out));
+    }
+};
+
+ZENDEFNODE(BulletGetAABB, {
+                                                {"object"},
+                                                {"aabbMin", "aabbMax"},
+                                                {},
+                                                {"Bullet"},
+                                            });
+
+struct MyBroadphaseCallback : public btBroadphaseAabbCallback
+{
+    b3AlignedObjectArray<int> m_bodyUniqueIds;
+    b3AlignedObjectArray<int> m_links;
+
+    MyBroadphaseCallback()
+    {
+    }
+    virtual ~MyBroadphaseCallback()
+    {
+    }
+    void clear()
+    {
+        m_bodyUniqueIds.clear();
+        m_links.clear();
+    }
+    virtual bool process(const btBroadphaseProxy* proxy)
+    {
+        btCollisionObject* colObj = (btCollisionObject*)proxy->m_clientObject;
+        btMultiBodyLinkCollider* mbl = btMultiBodyLinkCollider::upcast(colObj);
+        if (mbl)
+        {
+            int bodyUniqueId = mbl->m_multiBody->getUserIndex2();
+            m_bodyUniqueIds.push_back(bodyUniqueId);
+            m_links.push_back(mbl->m_link);
+            return true;
+        }
+        int bodyUniqueId = colObj->getUserIndex2();
+        if (bodyUniqueId >= 0)
+        {
+            m_bodyUniqueIds.push_back(bodyUniqueId);
+            //it is not a multibody, so use -1 otherwise
+            m_links.push_back(-1);
+        }
+        return true;
+    }
+};
+
+//struct BulletMultiBodyGetAABB : zeno::INode {
+//    virtual void apply(){
+//        auto world = get_input<BulletMultiBodyWorld>("world");
+//        auto id = get_input<zeno::NumericObject>("id");
+//
+//        btVector3 *aabbMin;
+//        btVector3 *aabbMax;
+//        btBroadphaseProxy* proxy = world->dynamicsWorld->getBroadphase()->createProxy(*aabbMin, *aabbMax);
+//        world->dynamicsWorld->getBroadphase()->getAabb(proxy, );
+//    }
+//};
+//
+//struct BulletMultiBodyGetOverLappingObjects : zeno::INode {
+//  virtual void apply(){
+//      auto world = get_input<BulletMultiBodyWorld>("world");
+//      auto aabbMin = get_input2<btVector3>("aabbMin");
+//      auto aabbMax = get_input2<btVector3>("aabbMax");
+//
+//      world->dynamicsWorld->getBroadphase()->aabbTest(aabbMin, aabbMax, world->dynamicsWorld->getBroadphase()->);
+//  }
+//};
+//
+//struct BulletMultiBodyChangeDynamics : zeno::INode {
+//
+//};
+}; // namespace
