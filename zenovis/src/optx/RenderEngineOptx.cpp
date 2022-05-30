@@ -15,13 +15,14 @@
 #include <zenovis/opengl/scope.h>
 #include <zenovis/opengl/vao.h>
 #include <variant>
-
+#include "../../xinxinoptix/OptiXStuff.h"
 namespace zenovis::optx {
 
 struct GraphicsManager {
     Scene *scene;
 
         struct DetMaterial {
+            std::vector<std::shared_ptr<zeno::Texture2DObject>> tex2Ds;
             std::string common;
             std::string shader;
             std::string mtlidkey;
@@ -53,7 +54,7 @@ struct GraphicsManager {
             }
             else if (auto mtl = dynamic_cast<zeno::MaterialObject *>(obj))
             {
-                det = DetMaterial{mtl->common, mtl->frag, mtl->mtlidkey};
+                det = DetMaterial{mtl->tex2Ds, mtl->common, mtl->frag, mtl->mtlidkey};
             }
         }
 
@@ -212,32 +213,61 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
             
             //zeno::log_debug("[zeno-optix] updating material");
             std::vector<std::string> shaders;
+            std::vector<std::vector<std::string>> shader_tex_names;
             mtlidlut.clear();
 
             ensure_shadtmpl();
             shaders.push_back(shadtmpl);
             mtlidlut.insert({"Default", 0});
-
+            shader_tex_names.clear();
+            shader_tex_names.push_back(std::vector<std::string>());
             for (auto const &[key, obj]: graphicsMan->graphics) {
                 if (auto mtldet = std::get_if<GraphicsManager::DetMaterial>(&obj->det)) {
                     //zeno::log_debug("got material shader:\n{}", mtldet->shader);
                     std::string shader;
+                    auto common_code = mtldet->common;
+                    std::string tar = "uniform sampler2D";
+                    size_t index = 0;
+                    while (true) {
+                        /* Locate the substring to replace. */
+                        index = common_code.find(tar, index);
+                        if (index == std::string::npos) break;
+
+                        /* Make the replacement. */
+                        common_code.replace(index, tar.length(), "//////////");
+
+                        /* Advance index forward so the next iteration doesn't pick it up as well. */
+                        index += tar.length();
+                    }
+
                     shader.reserve(commontpl.size()
-                                    + mtldet->common.size()
+                                    + common_code.size()
                                     + shadtpl2.first.size()
                                     + mtldet->shader.size()
                                     + shadtpl2.second.size());
                     shader.append(commontpl);
-                    shader.append(mtldet->common);
+                    shader.append(common_code);
                     shader.append(shadtpl2.first);
                     shader.append(mtldet->shader);
                     shader.append(shadtpl2.second);
                     //std::cout<<shader<<std::endl;
                     mtlidlut.insert({mtldet->mtlidkey, (int)shaders.size()});
+                    shader_tex_names.push_back(std::vector<std::string>());
+                    auto &shaderTex = shader_tex_names.back();
+                    shaderTex.resize(0);
+                    int texid=0;
+                    for(auto tex:mtldet->tex2Ds)
+                    {
+                        OptixUtil::addTexture(tex->path.c_str());
+                        shaderTex.emplace_back(tex->path);
+                        texid++;
+                    }
                     shaders.push_back(std::move(shader));
+                    
                 }
             }
-            xinxinoptix::optixupdatematerial(shaders);
+            std::cout<<"shaders size "<<shaders.size()<<" shader tex name size "<<shader_tex_names.size()<<std::endl;
+            xinxinoptix::optixupdatematerial(shaders, shader_tex_names);
             //zeno::log_debug("[zeno-optix] updating light");
             xinxinoptix::optixupdatelight();
             //zeno::log_debug("[zeno-optix] updating mesh");

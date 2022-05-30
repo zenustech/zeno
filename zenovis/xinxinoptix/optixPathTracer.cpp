@@ -788,9 +788,13 @@ static void createSBT( PathTracerState& state )
             const int sbt_idx = i * RAY_TYPE_COUNT + 0;  // SBT for radiance ray-type for ith material
 
             OPTIX_CHECK( optixSbtRecordPackHeader( OptixUtil::rtMaterialShaders[i].m_radiance_hit_group, &hitgroup_records[sbt_idx] ) );
-            hitgroup_records[sbt_idx].data.uniforms     = nullptr; //TODO uniforms like iTime, iFrame, etc.
-            hitgroup_records[sbt_idx].data.vertices       = reinterpret_cast<float4*>( (CUdeviceptr)state.d_vertices );
+            hitgroup_records[sbt_idx].data.uniforms        = nullptr; //TODO uniforms like iTime, iFrame, etc.
+            hitgroup_records[sbt_idx].data.vertices        = reinterpret_cast<float4*>( (CUdeviceptr)state.d_vertices );
             hitgroup_records[sbt_idx].data.lightMark       = reinterpret_cast<unsigned short*>( (CUdeviceptr)state.d_lightMark );
+            for(int t=0;t<32;t++)
+            {
+                hitgroup_records[sbt_idx].data.textures[t] = OptixUtil::rtMaterialShaders[i].getTexture(t);
+            }
         }
 
         {
@@ -1039,7 +1043,8 @@ void optixupdatelight() {
                 ) );
 }
 
-void optixupdatematerial(std::vector<std::string> const &shaders) {
+void optixupdatematerial(std::vector<std::string> const &shaders, 
+std::vector<std::vector<std::string>> &texs) {
     camera_changed = true;
 
         static bool hadOnce = false;
@@ -1056,6 +1061,14 @@ void optixupdatematerial(std::vector<std::string> const &shaders) {
         if (shaders[i].empty()) zeno::log_error("shader {} is empty", i);
         //OptixUtil::rtMaterialShaders.push_back(OptixUtil::rtMatShader(shaders[i].c_str(),"__closesthit__radiance", "__anyhit__shadow_cutout"));
         OptixUtil::rtMaterialShaders.emplace_back(shaders[i].c_str(),"__closesthit__radiance", "__anyhit__shadow_cutout");
+        if(texs.size()>0){
+            std::cout<<"texSize:"<<texs[i].size()<<std::endl;
+            for(int j=0;j<texs[i].size();j++)
+            {
+                std::cout<<"texName:"<<texs[i][j]<<std::endl;
+                OptixUtil::rtMaterialShaders[i].addTexture(j, texs[i][j]);
+            }
+        }
     }
     for(int i=0;i<OptixUtil::rtMaterialShaders.size();i++)
     {
