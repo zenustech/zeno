@@ -6,9 +6,7 @@
 
 namespace zeno {
 
-ZENO_API std::shared_ptr<zeno::PrimitiveObject> primMerge(
-        std::vector<zeno::PrimitiveObject *> const &primList,
-        std::string const &tagAttr) {
+ZENO_API std::shared_ptr<zeno::PrimitiveObject> primMerge(std::vector<zeno::PrimitiveObject *> const &primList, std::string const &tagAttr) {
     auto outprim = std::make_shared<PrimitiveObject>();
 
     if (!primList.size()) {
