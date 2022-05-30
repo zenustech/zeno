@@ -496,4 +496,65 @@ ZENDEFNODE(ToZSTetrahedra, {{{"ZSModel"}, {"quad (tet) mesh", "prim"}},
                             {},
                             {"FEM"}});
 
+struct ToZSTriMesh : INode {
+  using T = float;
+  using dtiles_t = zs::TileVector<T,32>;
+  using tiles_t = typename ZenoParticles::particles_t;
+  using vec3 = zs::vec<T, 3>;  
+
+  void apply() override {
+    using namespace zs;
+    // auto zsmodel = get_input<ZenoConstitutiveModel>("ZSModel");
+    auto prim = get_input<PrimitiveObject>("prim");
+    const auto &pos = prim->attr<zeno::vec3f>("pos");
+    const auto &points = prim->points;
+    const auto &lines = prim->lines;
+    const auto &tris = prim->tris;
+    
+    auto ompExec = zs::omp_exec();
+    const auto numVerts = pos.size();
+    const auto numTris = tris.size();
+
+    auto zstris = std::make_shared<ZenoParticles>();
+    zstris->prim = prim;
+    // zstris->getModel() = *zsmodel;
+    zstris->category = ZenoParticles::surface;
+    zstris->sprayedOffset = pos.size();
+
+    std::vector<zs::PropertyTag> tags{
+      {"x",3} 
+    };
+    std::vector<zs::PropertyTag> eleTags{{"inds",3}};
+
+    constexpr auto space = zs::execspace_e::openmp;
+    zstris->particles = std::make_shared<tiles_t>(tags,pos.size(),zs::memsrc_e::host);
+    auto& pars = zstris->getParticles();
+    ompExec(Collapse{pars.size()},
+      [pars = proxy<space>({},pars), &pos](int vi) mutable {
+        pars.tuple<3>("x",vi) = vec3{pos[vi][0],pos[vi][1],pos[vi][2]};
+      });
+
+    zstris->elements = typename ZenoParticles::particles_t(eleTags,tris.size(),zs::memsrc_e::host);
+    auto& eles = zstris->getQuadraturePoints();
+    ompExec(Collapse{tris.size()},
+      [eles = proxy<space>({},eles), &tris](int ei) mutable {
+        for(size_t i = 0;i < 3;++i)
+          eles("inds",i,ei) = zs::reinterpret_bits<float>(tris[ei][i]);
+      });
+
+    pars = pars.clone({zs::memsrc_e::device,0});
+    eles = eles.clone({zs::memsrc_e::device,0});
+
+
+
+    set_output("ZSParticles",std::move(zstris));
+  }
+};
+
+ZENDEFNODE(ToZSTriMesh, {{{"surf (tri) mesh", "prim"}},
+                            {{"trimesh on gpu", "ZSParticles"}},
+                            {},
+                            {"FEM"}});
+
+
 } // namespace zeno

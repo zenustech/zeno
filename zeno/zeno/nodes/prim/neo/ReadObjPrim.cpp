@@ -13,6 +13,7 @@
 #include <cassert>
 #include <cstdio>
 #include <fstream>
+#include <iostream>
 
 namespace zeno {
 namespace {
@@ -57,6 +58,9 @@ std::shared_ptr<PrimitiveObject> parse_obj(std::vector<char> &&bin) {
     std::vector<vec2f> uvs;
     std::vector<int> loop_uvs;
 
+    auto& vtags = prim->add_attr<int>("tag");
+    int tag_id = -1;
+
     while (it < eit) {
         auto nit = std::find(it, eit, '\n');
 
@@ -65,6 +69,7 @@ std::shared_ptr<PrimitiveObject> parse_obj(std::vector<char> &&bin) {
             float y = takef(it);
             float z = takef(it);
             prim->verts.emplace_back(x, y, z);
+            vtags.emplace_back(tag_id);
 
         } else if (match(it, "vt ")) {
             float x = takef(it);
@@ -93,9 +98,10 @@ std::shared_ptr<PrimitiveObject> parse_obj(std::vector<char> &&bin) {
             int y = takeu(it) - 1;
             prim->lines.emplace_back(x, y);
 
-        //} else if (match(it, "o ")) {
+        } else if (match(it, "o ")) {
             // todo: support tag verts to be multi components of primitive
-            //std::string_view o_name(it, nit - it);
+            // std::string_view o_name(it, nit - it);
+            tag_id += 1;
 
         }
         it = nit + 1;
@@ -111,6 +117,7 @@ std::shared_ptr<PrimitiveObject> parse_obj(std::vector<char> &&bin) {
         }
     }
 
+
     return prim;
 }
 
@@ -121,6 +128,13 @@ struct ReadObjPrim : INode {
         auto prim = parse_obj(std::move(binary));
         if (get_param<bool>("triangulate")) {
             primTriangulate(prim.get());
+            auto& ttags = prim->tris.add_attr<int>("tag");
+            ttags.resize(prim->tris.size());
+            const auto& vtags = prim->attr<int>("tag");
+            for(size_t i = 0;i < prim->tris.size();++i){
+                ttags[i] = vtags[prim->tris[i][0]];
+                // std::cout << "ttags<" << i << ">:\t" << ttags[i] << std::endl;
+            }
         }
         set_output("prim", std::move(prim));
     }

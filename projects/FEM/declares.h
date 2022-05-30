@@ -321,6 +321,8 @@ struct FEMIntegrator : zeno::IObject {
                 // #pragma omp parallel for 
                 for(size_t i = 0;i < interpShape->size();++i){
                     auto elm_id = elm_ids[i];
+                    if(elm_id < 0)
+                        continue;
                     const auto& pos = interpShape->verts[i];
                     const auto& w = elm_ws[i];
                     interpPs[elm_id].emplace_back(pos[0],pos[1],pos[2]);
