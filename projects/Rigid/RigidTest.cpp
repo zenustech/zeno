@@ -648,17 +648,17 @@ struct BulletObjectSetDamping : zeno::INode {
     virtual void apply() override {
         auto object = get_input<BulletObject>("object");
         auto dampLin = get_input2<float>("dampLin");
-        auto dampAug = get_input2<float>("dampAug");
-        log_debug("set object {} with dampLin={}, dampAug={}",
-                  (void *)object.get(), dampLin, dampAug);
-        object->body->setDamping(dampLin, dampAug);
+        auto dampAng = get_input2<float>("dampAng");
+        log_debug("set object {} with dampLin={}, dampAng={}",
+                  (void *)object.get(), dampLin, dampAng);
+        object->body->setDamping(dampLin, dampAng);
         set_output("object", std::move(object));
     }
 };
 
 ZENDEFNODE(BulletObjectSetDamping,
            {
-               {"object", {"float", "dampLin", "0"}, {"float", "dampAug", "0"}},
+               {"object", {"float", "dampLin", "0"}, {"float", "dampAng", "0"}},
                {"object"},
                {},
                {"Bullet"},
@@ -765,34 +765,34 @@ ZENDEFNODE(BulletObjectGetVel, {
                                    {"Bullet"},
                                });
 
-struct RigidVelToPrimitive : zeno::INode {
-    virtual void apply() override {
-        auto prim = get_input<zeno::PrimitiveObject>("prim");
-        auto com =
-            get_input<zeno::NumericObject>("centroid")->get<zeno::vec3f>();
-        auto lin =
-            get_input<zeno::NumericObject>("linearVel")->get<zeno::vec3f>();
-        auto ang =
-            get_input<zeno::NumericObject>("angularVel")->get<zeno::vec3f>();
-
-        auto &pos = prim->attr<zeno::vec3f>("pos");
-        auto &vel = prim->add_attr<zeno::vec3f>("vel");
-#pragma omp parallel for
-        for (size_t i = 0; i < prim->size(); i++) {
-            vel[i] = lin + zeno::cross(ang, pos[i] - com);
-        }
-
-        set_output("prim", get_input("prim"));
-    }
-};
-
-ZENDEFNODE(RigidVelToPrimitive,
-           {
-               {"prim", "centroid", "linearVel", "angularVel"},
-               {"prim"},
-               {},
-               {"Bullet"},
-           });
+//struct RigidVelToPrimitive : zeno::INode {
+//    virtual void apply() override {
+//        auto prim = get_input<zeno::PrimitiveObject>("prim");
+//        auto com =
+//            get_input<zeno::NumericObject>("centroid")->get<zeno::vec3f>();
+//        auto lin =
+//            get_input<zeno::NumericObject>("linearVel")->get<zeno::vec3f>();
+//        auto ang =
+//            get_input<zeno::NumericObject>("angularVel")->get<zeno::vec3f>();
+//
+//        auto &pos = prim->attr<zeno::vec3f>("pos");
+//        auto &vel = prim->add_attr<zeno::vec3f>("vel");
+//#pragma omp parallel for
+//        for (size_t i = 0; i < prim->size(); i++) {
+//            vel[i] = lin + zeno::cross(ang, pos[i] - com);
+//        }
+//
+//        set_output("prim", get_input("prim"));
+//    }
+//};
+//
+//ZENDEFNODE(RigidVelToPrimitive,
+//           {
+//               {"prim", "centroid", "linearVel", "angularVel"},
+//               {"prim"},
+//               {},
+//               {"Bullet"},
+//           });
 
 struct BulletExtractTransform : zeno::INode {
     virtual void apply() override {
@@ -3468,7 +3468,7 @@ struct BulletMultiBodyCalculateJacobian : zeno::INode {
 };
 
 ZENDEFNODE(BulletMultiBodyCalculateJacobian, {
-                                               {"world", "linkIndex", "localPos", "jointPositionsQ", "jointVelocitiesQd", "jointAccelerations", "gravity"},
+                                               {"object", "linkIndex", "localPos", "jointPositionsQ", "jointVelocitiesQd", "jointAccelerations", "gravity"},
                                                {"object", "jacobian_linear", "jacobian_angular"},
                                                {},
                                                {"Bullet"},
@@ -3538,7 +3538,7 @@ struct BulletMultiBodyCalculateMassMatrix : zeno::INode {
 };
 
 ZENDEFNODE(BulletMultiBodyCalculateMassMatrix, {
-                                                 {"world", "jointPositionsQ"},
+                                                 {"object", "jointPositionsQ"},
                                                  {"object", "mass_matrix"},
                                                  {},
                                                  {"Bullet"},
@@ -3630,5 +3630,93 @@ ZENDEFNODE(BulletMultiBodyGetContactPoints, {
                                                 {"Bullet"},
                                             });
 
+struct BulletGetAABB : zeno::INode {
+    virtual void apply() {
+        auto object= get_input<BulletObject>("object");
+        auto transform = object->body->getWorldTransform();
+        btVector3 *aabbMin;
+        btVector3 *aabbMax;
+        object->colShape->shape->getAabb(transform, *aabbMin, *aabbMax);
 
+        auto aabbMin_out = std::make_shared<zeno::NumericObject>();
+        aabbMin_out->set<zeno::vec3f>(zeno::vec3f(aabbMin->x(), aabbMin->y(), aabbMin->z()));
+
+        auto aabbMax_out = std::make_shared<zeno::NumericObject>();
+        aabbMax_out->set<zeno::vec3f>(zeno::vec3f(aabbMax->x(), aabbMax->y(), aabbMax->z()));
+
+        set_output("aabbMin", std::move(aabbMin_out));
+        set_output("aabbMax", std::move(aabbMax_out));
+    }
+};
+
+ZENDEFNODE(BulletGetAABB, {
+                                                {"object"},
+                                                {"aabbMin", "aabbMax"},
+                                                {},
+                                                {"Bullet"},
+                                            });
+
+struct MyBroadphaseCallback : public btBroadphaseAabbCallback
+{
+    b3AlignedObjectArray<int> m_bodyUniqueIds;
+    b3AlignedObjectArray<int> m_links;
+
+    MyBroadphaseCallback()
+    {
+    }
+    virtual ~MyBroadphaseCallback()
+    {
+    }
+    void clear()
+    {
+        m_bodyUniqueIds.clear();
+        m_links.clear();
+    }
+    virtual bool process(const btBroadphaseProxy* proxy)
+    {
+        btCollisionObject* colObj = (btCollisionObject*)proxy->m_clientObject;
+        btMultiBodyLinkCollider* mbl = btMultiBodyLinkCollider::upcast(colObj);
+        if (mbl)
+        {
+            int bodyUniqueId = mbl->m_multiBody->getUserIndex2();
+            m_bodyUniqueIds.push_back(bodyUniqueId);
+            m_links.push_back(mbl->m_link);
+            return true;
+        }
+        int bodyUniqueId = colObj->getUserIndex2();
+        if (bodyUniqueId >= 0)
+        {
+            m_bodyUniqueIds.push_back(bodyUniqueId);
+            //it is not a multibody, so use -1 otherwise
+            m_links.push_back(-1);
+        }
+        return true;
+    }
+};
+
+//struct BulletMultiBodyGetAABB : zeno::INode {
+//    virtual void apply(){
+//        auto world = get_input<BulletMultiBodyWorld>("world");
+//        auto id = get_input<zeno::NumericObject>("id");
+//
+//        btVector3 *aabbMin;
+//        btVector3 *aabbMax;
+//        btBroadphaseProxy* proxy = world->dynamicsWorld->getBroadphase()->createProxy(*aabbMin, *aabbMax);
+//        world->dynamicsWorld->getBroadphase()->getAabb(proxy, );
+//    }
+//};
+//
+//struct BulletMultiBodyGetOverLappingObjects : zeno::INode {
+//  virtual void apply(){
+//      auto world = get_input<BulletMultiBodyWorld>("world");
+//      auto aabbMin = get_input2<btVector3>("aabbMin");
+//      auto aabbMax = get_input2<btVector3>("aabbMax");
+//
+//      world->dynamicsWorld->getBroadphase()->aabbTest(aabbMin, aabbMax, world->dynamicsWorld->getBroadphase()->);
+//  }
+//};
+//
+//struct BulletMultiBodyChangeDynamics : zeno::INode {
+//
+//};
 }; // namespace

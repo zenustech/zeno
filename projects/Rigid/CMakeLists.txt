@@ -2,8 +2,8 @@ add_definitions(-DBT_THREAD_SAFE)
 add_subdirectory(bullet3)
 add_subdirectory(HACD)
 
-file (GLOB ZEN_RIGID_SOURCE *.cpp)
-add_library(zeno_Rigid SHARED ${ZEN_RIGID_SOURCE} RigidTest.h RobotTest.cpp)
+file (GLOB ZEN_RIGID_SOURCE *.cpp *.h)
+add_library(zeno_Rigid SHARED ${ZEN_RIGID_SOURCE})
 target_include_directories(zeno_Rigid PRIVATE .)
 target_include_directories(zeno_Rigid PRIVATE bullet3/src)
 
