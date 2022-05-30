@@ -8,6 +8,7 @@
 #include <zeno/utils/arrayindex.h>
 #include <zeno/utils/orthonormal.h>
 #include <zeno/para/parallel_for.h>
+#include <zeno/para/parallel_invoke.h>
 #include <zeno/utils/vec.h>
 #include <zeno/utils/log.h>
 #include <cstring>
@@ -23,12 +24,13 @@ ZENO_API std::shared_ptr<PrimitiveObject> primDuplicate(PrimitiveObject *parsPri
     auto hasDirAttr = boolean_variant(!dirAttr.empty());
     auto hasRadAttr = boolean_variant(!radAttr.empty());
     auto hasRadius = boolean_variant(radius != 1);
+
     prim->verts.resize(parsPrim->verts.size() * meshPrim->verts.size());
     std::visit([&] (auto hasDirAttr, auto hasRadius, auto hasRadAttr) {
         auto func = [&] (auto const &accRad) {
             auto func = [&] (auto const &accDir, auto hasTanAttr, auto const &accTan) {
                 parallel_for((size_t)0, parsPrim->verts.size(), [&] (size_t i) {
-                    i *= meshPrim->verts.size();
+                    auto basePos = parsPrim->verts[i];
                     for (size_t j = 0; j < meshPrim->verts.size(); j++) {
                         auto pos = meshPrim->verts[j];
                         if constexpr (hasRadAttr) {
@@ -48,7 +50,7 @@ ZENO_API std::shared_ptr<PrimitiveObject> primDuplicate(PrimitiveObject *parsPri
                             }
                             pos = pos[0] * t0 + pos[1] * t1 + pos[2] * t2;
                         }
-                        prim->verts[i + j] = pos;
+                        prim->verts[i * meshPrim->verts.size() + j] = basePos + pos;
                     }
                 });
             };
@@ -67,6 +69,39 @@ ZENO_API std::shared_ptr<PrimitiveObject> primDuplicate(PrimitiveObject *parsPri
         else
             func(std::array<int, 0>{});
     }, hasDirAttr, hasRadius, hasRadAttr);
+
+    auto func = [&] (auto &meshAttrs, auto &parsAttrs) {
+        meshAttrs.foreach_attr([&] (auto const &key, auto const &arrMesh) {
+            using T = std::decay_t<decltype(arrMesh[0])>;
+            auto &arrOut = prim->add_attr<T>(key);
+            parallel_for((size_t)0, parsAttrs.size(), [&] (size_t i) {
+                for (size_t j = 0; j < meshAttrs.size(); j++) {
+                    arrOut[i * meshAttrs.size() + j] = arrMesh[j];
+                }
+            });
+        });
+        parsAttrs.foreach_attr([&] (auto const &key, auto const &arrPars) {
+            if (prim->has_attr(key)) return; // already added from mesh attr
+            using T = std::decay_t<decltype(arrPars[0])>;
+            auto &arrOut = prim->add_attr<T>(key);
+            parallel_for((size_t)0, arrPars.size(), [&] (size_t i) {
+                auto value = arrPars[i];
+                for (size_t j = 0; j < meshAttrs.size(); j++) {
+                    arrOut[i * meshAttrs.size() + j] = value;
+                }
+            });
+        });
+    };
+    parallel_invoke
+    ( [&] { func(meshPrim->verts, parsPrim->verts); }
+    , [&] { func(meshPrim->points, parsPrim->points); }
+    , [&] { func(meshPrim->lines, parsPrim->lines); }
+    , [&] { func(meshPrim->tris, parsPrim->tris); }
+    , [&] { func(meshPrim->quads, parsPrim->quads); }
+    , [&] { func(meshPrim->polys, parsPrim->polys); }
+    , [&] { func(meshPrim->loops, parsPrim->loops); }
+    );
+
     return prim;
 }
 
@@ -89,13 +124,13 @@ struct PrimDuplicate : INode {
 
 ZENDEFNODE(PrimDuplicate, {
     {
-    {"PrimitiveObject", "prim"},
-    {"string", "attr", "pos"},
+    {"PrimitiveObject", "parsPrim"},
+    {"PrimitiveObject", "meshPrim"},
     {"string", "dirAttr", ""},
-    {"float", "scale", "1"},
+    {"string", "tanAttr", ""},
+    {"string", "radAttr", ""},
+    {"float", "radius", "1"},
     {"int", "seed", "0"},
-    {"enum scalar01 scalar11 cube01 cube11 plane01 plane11 disk cylinder ball semiball sphere semisphere", "randType", "scalar01"},
-    {"enum set add", "combType", "add"},
     },
     {
     {"PrimitiveObject", "prim"},
