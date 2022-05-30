@@ -14,15 +14,20 @@ struct task_group {
         m_tasks.push_back(std::move(task));
     }
 
-    void clear() {
-        m_tasks.clear();
-    }
-
     void run() {
         std::for_each(ZENO_PAR m_tasks.begin(), m_tasks.end(), [&] (auto &&f) {
             std::move(f)();
         });
     }
+};
+
+struct _immediate_task_group {
+    template <class Func>
+    void add(Func &&f) {
+        std::forward<Func>(f);
+    }
+
+    void run() {}
 };
 
 }

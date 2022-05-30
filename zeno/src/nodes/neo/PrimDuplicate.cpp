@@ -9,6 +9,7 @@
 #include <zeno/utils/orthonormal.h>
 #include <zeno/para/parallel_for.h>
 #include <zeno/para/task_group.h>
+#include <zeno/utils/overloaded.h>
 #include <zeno/utils/vec.h>
 #include <zeno/utils/log.h>
 #include <cstring>
@@ -26,7 +27,15 @@ ZENO_API std::shared_ptr<PrimitiveObject> primDuplicate(PrimitiveObject *parsPri
     auto hasRadius = boolean_variant(radius != 1);
 
     task_group tg;
+
     prim->verts.resize(parsPrim->verts.size() * meshPrim->verts.size());
+    prim->points.resize(parsPrim->verts.size() * meshPrim->points.size());
+    prim->lines.resize(parsPrim->verts.size() * meshPrim->lines.size());
+    prim->tris.resize(parsPrim->verts.size() * meshPrim->tris.size());
+    prim->quads.resize(parsPrim->verts.size() * meshPrim->quads.size());
+    prim->loops.resize(parsPrim->verts.size() * meshPrim->loops.size());
+    prim->polys.resize(parsPrim->verts.size() * meshPrim->polys.size());
+
     tg.add([&] {
         std::visit([&] (auto hasDirAttr, auto hasRadius, auto hasRadAttr) {
             auto func = [&] (auto const &accRad) {
@@ -73,7 +82,7 @@ ZENO_API std::shared_ptr<PrimitiveObject> primDuplicate(PrimitiveObject *parsPri
         }, hasDirAttr, hasRadius, hasRadAttr);
     });
 
-    auto func = [&] (auto &primAttrs, auto &meshAttrs, auto &parsAttrs) {
+    auto copyattr = [&] (auto &primAttrs, auto &meshAttrs, auto &parsAttrs) {
         meshAttrs.foreach_attr([&] (auto const &key, auto const &arrMesh) {
             using T = std::decay_t<decltype(arrMesh[0])>;
             primAttrs.template add_attr<T>(key);
@@ -101,13 +110,34 @@ ZENO_API std::shared_ptr<PrimitiveObject> primDuplicate(PrimitiveObject *parsPri
             });
         });
     };
-    func(prim->verts, meshPrim->verts, parsPrim->verts);
-    func(prim->points, meshPrim->points, parsPrim->points);
-    func(prim->lines, meshPrim->lines, parsPrim->lines);
-    func(prim->tris, meshPrim->tris, parsPrim->tris);
-    func(prim->quads, meshPrim->quads, parsPrim->quads);
-    func(prim->polys, meshPrim->polys, parsPrim->polys);
-    func(prim->loops, meshPrim->loops, parsPrim->loops);
+    copyattr(prim->verts, meshPrim->verts, parsPrim->verts);
+    auto advanceinds = [&] (auto &primAttrs, auto &meshAttrs, auto &parsAttrs, size_t meshVertsSize) {
+        copyattr(primAttrs, meshAttrs, parsAttrs);
+        tg.add([&] {
+            parallel_for((size_t)0, parsAttrs.size(), [&] (size_t i) {
+                overloaded fixpairadd{
+                    [] (auto &x, size_t y) {
+                        x += y;
+                    },
+                    [] (std::pair<int, int> &x, size_t y) {
+                        x.first += y;
+                        x.second += y;
+                    },
+                };
+                //for (size_t j = 0; j < meshAttrs.size(); j++) {
+                    //auto index = meshAttrs[j];
+                    //fixpairadd(index, i * meshVertsSize);
+                    //primAttrs[i * meshAttrs.size() + j] = index;
+                //}
+            });
+        });
+    };
+    advanceinds(prim->points, meshPrim->points, parsPrim->points, meshPrim->verts.size());
+    advanceinds(prim->lines, meshPrim->lines, parsPrim->lines, meshPrim->verts.size());
+    advanceinds(prim->tris, meshPrim->tris, parsPrim->tris, meshPrim->verts.size());
+    advanceinds(prim->quads, meshPrim->quads, parsPrim->quads, meshPrim->verts.size());
+    advanceinds(prim->polys, meshPrim->polys, parsPrim->polys, meshPrim->loops.size());
+    advanceinds(prim->loops, meshPrim->loops, parsPrim->loops, meshPrim->verts.size());
 
     tg.run();
 
