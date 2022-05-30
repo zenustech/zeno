@@ -49,6 +49,13 @@ struct SKeyScale {
     float timeStamp;
 };
 
+struct SKeyMorph {
+    double m_Time;
+    double *m_Weights;
+    unsigned int *m_Values;
+    unsigned int m_NumValuesAndWeights;
+};
+
 struct SAnimBone {
     std::vector<SKeyPosition> m_Positions;
     std::vector<SKeyRotation> m_Rotations;
@@ -202,7 +209,17 @@ struct SVertex{
     aiVector3D tangent;
     aiVector3D bitangent;
     std::unordered_map<std::string, float> boneWeights;
+    float numAnimMesh;
 };
+
+struct SBSVertex{
+    aiVector3D position;
+    aiVector3D deltaPosition;
+    aiVector3D normal;
+    aiVector3D deltaNormal;
+    float weight;
+};
+
 
 struct SMaterialProp{
     int order;
@@ -381,9 +398,25 @@ struct IIndices : zeno::IObjectClone<IIndices>{
     std::vector<unsigned int> value;
 };
 
+struct IBlendSData : zeno::IObjectClone<IBlendSData>{
+    // value: one-dimensional: Anim Mesh, two-dimensional: Mesh Vertices
+    std::unordered_map<std::string, std::vector<std::vector<SBSVertex>>> value;
+};
+
+struct IKeyMorph : zeno::IObjectClone<IKeyMorph>{
+    std::unordered_map<std::string, std::vector<SKeyMorph>> value;
+};
+
+struct IMeshName : zeno::IObjectClone<IMeshName>{
+    std::string value;
+};
+
 struct FBXData : zeno::IObjectClone<FBXData>{
+    IMeshName iMeshName;
     IVertices iVertices;
     IIndices iIndices;
+    IBlendSData iBlendSData;
+    IKeyMorph iKeyMorph;
     IMaterial iMaterial;
     IBoneOffset iBoneOffset;
     ICamera iCamera;

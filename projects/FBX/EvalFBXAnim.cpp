@@ -3,6 +3,7 @@
 #include <zeno/extra/GlobalState.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/PrimitiveObject.h>
+#include <zeno/types/ListObject.h>
 #include <zeno/types/DictObject.h>
 
 #include "assimp/scene.h"
@@ -19,7 +20,7 @@ struct EvalAnim{
     float m_DeltaTime;
 
     NodeTree m_RootNode;
-    ICamera m_Camera;
+
     std::unordered_map<std::string, aiMatrix4x4> m_Transforms;
     std::unordered_map<std::string, aiMatrix4x4> m_LazyTransforms;
     std::unordered_map<std::string, SBoneOffset> m_BoneOffset;
@@ -133,6 +134,7 @@ struct EvalAnim{
         auto &ind = prim->tris;
         auto &uv = prim->verts.add_attr<zeno::vec3f>("uv");
         auto &norm = prim->verts.add_attr<zeno::vec3f>("nrm");
+        auto &posb = prim->verts.add_attr<zeno::vec3f>("posb");
 
         for(unsigned int i=0; i<m_Vertices.size(); i++){
             auto& bwe = m_Vertices[i].boneWeights;
@@ -161,6 +163,7 @@ struct EvalAnim{
             glm::vec3 fpos = glm::vec3(tpos.x/tpos.w, tpos.y/tpos.w, tpos.z/tpos.w);
 
             ver.emplace_back(fpos.x, fpos.y, fpos.z);
+            posb.emplace_back(0.0f, 0.0f, 0.0f);
             uv.emplace_back(uvw.x, uvw.y, uvw.z);
             norm.emplace_back(nor.x, nor.y, nor.z);
         }
@@ -195,11 +198,52 @@ struct EvalFBXAnim : zeno::INode {
 
         EvalAnim anim;
         anim.initAnim(nodeTree, boneTree, fbxData, animInfo);
+        // TODO Use the actual frame number
         anim.updateAnimation(frameid/24.0f, prim);
         anim.updateCamera(fbxData, iCamera);
         anim.decomposeAnimation(transDict, quatDict, scaleDict);
 
+        auto prims = std::make_shared<zeno::ListObject>();
+        auto& meshName = fbxData->iMeshName.value;
+        auto& kmValue = fbxData->iKeyMorph.value;
+        auto& bsValue = fbxData->iBlendSData.value;
+
+        if(bsValue.find(meshName) != bsValue.end()){
+            auto& b = bsValue[meshName];
+
+            if(kmValue.find(meshName) != kmValue.end()){
+                auto& k = kmValue[meshName];
+                auto& kd = k[int(anim.m_CurrentFrame)];
+
+                for(unsigned int i=0; i<b.size(); i++){ // Anim Mesh & Same as BlendShape WeightsAndValues
+                    auto bsprim = std::make_shared<zeno::PrimitiveObject>();
+                    auto &ver = bsprim->verts;
+                    auto &ind = bsprim->tris;
+                    auto &norm = bsprim->verts.add_attr<zeno::vec3f>("nrm");
+                    auto &posb = bsprim->verts.add_attr<zeno::vec3f>("posb");
+                    auto &bsw = bsprim->verts.add_attr<float>("bsw");
+                    double w = kd.m_Weights[i];
+                    auto& v = b[i];
+                    for(unsigned int j=0; j<v.size(); j++){ // Mesh Vert
+                        auto& vpos = v[j].deltaPosition;
+                        auto& vnor = v[j].deltaNormal;
+                        ver.emplace_back(vpos.x, vpos.y, vpos.z);
+                        posb.emplace_back(0.0f, 0.0f, 0.0f);
+                        bsw.emplace_back((float)w);
+                        norm.emplace_back(vnor.x, vnor.y, vnor.z);
+                    }
+
+                    prims->arr.emplace_back(bsprim);
+                }
+            }else{
+                zeno::log_info("BlendShape NotFound MorphKey {}", meshName);
+            }
+        }
+
+        zeno::log_info("Frame {} Prims Num {} Mesh Name {}", anim.m_CurrentFrame, prims->arr.size(), meshName);
+
         set_output("prim", std::move(prim));
+        set_output("bsPrims", std::move(prims));
         set_output("icamera", std::move(iCamera));
         set_output("transDict", std::move(transDict));
         set_output("quatDict", std::move(quatDict));
@@ -216,7 +260,7 @@ ZENDEFNODE(EvalFBXAnim,
                    {"BoneTree", "bonetree"},
                },  /* outputs: */
                {
-                   "prim", "icamera", "transDict", "quatDict", "scaleDict"
+                   "prim", "icamera", "bsPrims", "transDict", "quatDict", "scaleDict"
                },  /* params: */
                {
 

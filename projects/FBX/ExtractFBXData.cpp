@@ -17,7 +17,6 @@ struct ExtractFBXData : zeno::INode {
 
     virtual void apply() override {
 
-        auto prim = std::make_shared<zeno::PrimitiveObject>();
         auto fbxData = get_input<FBXData>("data");
 
         set_output("vertices", std::move(fbxData->iVertices.clone()));
