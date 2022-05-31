@@ -215,10 +215,10 @@ inline std::shared_ptr<cuTexture> makeCudaTexture(unsigned char* img, int nx, in
     {
         size_t idx = j*nx + i;
         data[idx] = {
-            nc>=1?(float)(img[idx*nc + 0])/255.0:0,
-            nc>=2?(float)(img[idx*nc + 1])/255.0:0,
-            nc>=3?(float)(img[idx*nc + 2])/255.0:0,
-            nc>=4?(float)(img[idx*nc + 3])/255.0:0,
+            nc>=1?(float)(img[idx*nc + 0])/255.0f:0,
+            nc>=2?(float)(img[idx*nc + 1])/255.0f:0,
+            nc>=3?(float)(img[idx*nc + 2])/255.0f:0,
+            nc>=4?(float)(img[idx*nc + 3])/255.0f:0,
         };
     }
     
