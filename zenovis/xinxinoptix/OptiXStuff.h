@@ -192,6 +192,100 @@ inline void createRTProgramGroups(OptixDeviceContext &context, OptixModule &_mod
                     ) );
     }
 }
+struct cuTexture{
+    cudaArray_t gpuImageArray;
+    cudaTextureObject_t texture;
+    cuTexture(){gpuImageArray = nullptr;texture=0;}
+    ~cuTexture()
+    {
+        if(gpuImageArray!=nullptr)
+        {
+            cudaFreeArray(gpuImageArray);
+            texture = 0;
+        }
+    }
+};
+inline std::shared_ptr<cuTexture> makeCudaTexture(unsigned char* img, int nx, int ny, int nc)
+{
+    auto texture = std::make_shared<cuTexture>();
+    std::vector<float4> data;
+    data.resize(nx*ny);
+    for(int j=0;j<ny;j++)
+    for(int i=0;i<nx;i++)
+    {
+        size_t idx = j*nx + i;
+        data[idx] = {
+            nc>=1?(float)(img[idx*nc + 0])/255.0f:0,
+            nc>=2?(float)(img[idx*nc + 1])/255.0f:0,
+            nc>=3?(float)(img[idx*nc + 2])/255.0f:0,
+            nc>=4?(float)(img[idx*nc + 3])/255.0f:0,
+        };
+    }
+    
+    cudaChannelFormatDesc channelDescriptor = cudaCreateChannelDesc(32, 32, 32, 32, cudaChannelFormatKindFloat);
+    cudaError_t rc = cudaMallocArray(&texture->gpuImageArray, &channelDescriptor, nx, ny);
+    if (rc != cudaSuccess) {
+        std::cout<<"texture space alloc failed\n";
+        return 0;
+    }
+    rc = cudaMemcpy2DToArray(texture->gpuImageArray, 0, 0, data.data(), 
+                             nx * sizeof(float) * 4, 
+                             nx * sizeof(float) * 4, 
+                             ny, 
+                             cudaMemcpyHostToDevice);
+    if (rc != cudaSuccess) {
+        std::cout<<"texture data copy failed\n";
+        cudaFreeArray(texture->gpuImageArray);
+        texture->gpuImageArray = nullptr;
+        return 0;
+    }
+    cudaResourceDesc resourceDescriptor = { };
+    resourceDescriptor.resType = cudaResourceTypeArray;
+    resourceDescriptor.res.array.array = texture->gpuImageArray;
+    cudaTextureDesc textureDescriptor = { };
+    textureDescriptor.addressMode[0] = cudaAddressModeWrap;
+    textureDescriptor.addressMode[1] = cudaAddressModeWrap;
+    textureDescriptor.borderColor[0] = 0.0f;
+    textureDescriptor.borderColor[1] = 0.0f;
+    textureDescriptor.disableTrilinearOptimization = 1;
+    textureDescriptor.filterMode = cudaFilterModeLinear;
+    textureDescriptor.normalizedCoords = true;
+    textureDescriptor.readMode = cudaReadModeElementType;
+    textureDescriptor.sRGB = 0;
+    rc = cudaCreateTextureObject(&texture->texture, &resourceDescriptor, &textureDescriptor, nullptr);
+    if (rc != cudaSuccess) {
+        std::cout<<"texture creation failed\n";
+        texture->texture = 0;
+        cudaFreeArray(texture->gpuImageArray);
+        texture->gpuImageArray = nullptr;
+        return 0;
+    }
+    return texture;
+
+}
+#include <stb_image.h>
+inline std::map<std::string, std::shared_ptr<cuTexture>> g_tex;
+inline void addTexture(std::string path)
+{
+    std::cout<<"loading texture "<<path<<std::endl;
+    if(g_tex.find(path)!=g_tex.end())
+    {
+        return;
+    }
+    int nx, ny, nc;
+    stbi_set_flip_vertically_on_load(true);
+    unsigned char *img = stbi_load(path.c_str(), &nx, &ny, &nc, 0);
+    if(!img){
+        std::cout<<"load texture "<<path.c_str()<<" failed\n";
+        g_tex[path] = std::make_shared<cuTexture>();
+        return;
+    }
+    nx = std::max(nx, 1);
+    ny = std::max(ny, 1);
+    assert(img);
+    g_tex[path] = makeCudaTexture(img, nx, ny, nc);
+    stbi_image_free(img);
+}
 struct rtMatShader
 {
     raii<OptixModule>                    m_ptx_module             ;
