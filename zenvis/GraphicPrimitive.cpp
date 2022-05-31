@@ -1316,6 +1316,7 @@ struct GraphicPrimitive : IGraphic {
         triObj.prog->set_uniform("vxView", voxelizer::getView());
         triObj.prog->set_uniform("enable_gi_flag", zenvis::get_enable_gi());
         triObj.prog->set_uniform("m_gi_base", zenvis::get_gi_base());
+        triObj.prog->set_uniform("m_shadow_bias", zenvis::get_shadow_bias());
         
         
         triObj.prog->set_uniform("msweight", m_weight);

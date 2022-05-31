@@ -368,7 +368,12 @@ class SetLightDialog(QWidget):
         self.light_intensity = QDoubleSpinBox()
         self.light_intensity.valueChanged.connect(self.setLight)
         self.light_intensity.setSingleStep(0.05)
-        
+
+        self.shadow_bais = QDoubleSpinBox()
+        self.shadow_bais.valueChanged.connect(self.set_shadow_bais)
+        self.shadow_bais.setSingleStep(0.001)
+        self.shadow_bais.setDecimals(3)
+
         layout = QVBoxLayout()
         layout.addWidget(self.keyframe_btn)
         layout.addWidget(self.edit_btn)
@@ -407,7 +412,14 @@ class SetLightDialog(QWidget):
         layout.addWidget(QLabel('LightIntensity'))
         layout.addWidget(self.light_intensity)
 
+        layout.addWidget(QLabel('ShadowBias'))
+        layout.addWidget(self.shadow_bais)
+
         self.setLayout(layout)
+
+    def set_shadow_bais(self):
+        v = self.shadow_bais.value()
+        zenvis.core.set_shadow_bias(v)
 
     def paintEvent(self, e):
         super().paintEvent(e)
@@ -415,6 +427,9 @@ class SetLightDialog(QWidget):
         if self.list.count() != count:
             self.list.clear()
             self.list.addItems(map(str, range(count)))
+
+        v = zenvis.core.get_shadow_bias()
+        self.shadow_bais.setValue(v)
     
     def add_light(self):
         zenvis.core.addLight()
