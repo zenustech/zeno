@@ -36,10 +36,10 @@ ZENO_API std::shared_ptr<PrimitiveObject> primDuplicate(PrimitiveObject *parsPri
     prim->loops.resize(parsPrim->verts.size() * meshPrim->loops.size());
     prim->polys.resize(parsPrim->verts.size() * meshPrim->polys.size());
 
-    tg.add([&] {
-        std::visit([&] (auto hasDirAttr, auto hasRadius, auto hasRadAttr) {
-            auto func = [&] (auto const &accRad) {
-                auto func = [&] (auto const &accDir, auto hasTanAttr, auto const &accTan) {
+    std::visit([&] (auto hasDirAttr, auto hasRadius, auto hasRadAttr) {
+        auto func = [&] (auto const &accRad) {
+            auto func = [&] (auto const &accDir, auto hasTanAttr, auto const &accTan) {
+                tg.add([&] {
                     parallel_for((size_t)0, parsPrim->verts.size(), [&] (size_t i) {
                         auto basePos = parsPrim->verts[i];
                         for (size_t j = 0; j < meshPrim->verts.size(); j++) {
@@ -64,23 +64,23 @@ ZENO_API std::shared_ptr<PrimitiveObject> primDuplicate(PrimitiveObject *parsPri
                             prim->verts[i * meshPrim->verts.size() + j] = basePos + pos;
                         }
                     });
-                };
-                if constexpr (hasDirAttr) {
-                    auto const &accDir = meshPrim->attr<vec3f>(dirAttr);
-                    if (!tanAttr.empty())
-                        func(accDir, std::true_type{}, meshPrim->attr<vec3f>(tanAttr));
-                    else
-                        func(accDir, std::false_type{}, std::array<int, 0>{});
-                } else {
-                    func(std::array<int, 0>{}, std::false_type{}, std::array<int, 0>{});
-                }
+                });
             };
-            if constexpr (hasRadAttr)
-                meshPrim->verts.attr_visit(radAttr, func);
-            else
-                func(std::array<int, 0>{});
-        }, hasDirAttr, hasRadius, hasRadAttr);
-    });
+            if constexpr (hasDirAttr) {
+                auto const &accDir = meshPrim->attr<vec3f>(dirAttr);
+                if (!tanAttr.empty())
+                    func(accDir, std::true_type{}, meshPrim->attr<vec3f>(tanAttr));
+                else
+                    func(accDir, std::false_type{}, std::array<int, 0>{});
+            } else {
+                func(std::array<int, 0>{}, std::false_type{}, std::array<int, 0>{});
+            }
+        };
+        if constexpr (hasRadAttr)
+            meshPrim->verts.attr_visit(radAttr, func);
+        else
+            func(std::array<int, 0>{});
+    }, hasDirAttr, hasRadius, hasRadAttr);
 
     auto copyattr = [&] (auto &primAttrs, auto &meshAttrs, auto &parsAttrs) {
         meshAttrs.foreach_attr([&] (auto const &key, auto const &arrMesh) {
@@ -124,11 +124,11 @@ ZENO_API std::shared_ptr<PrimitiveObject> primDuplicate(PrimitiveObject *parsPri
                         x.second += y;
                     },
                 };
-                //for (size_t j = 0; j < meshAttrs.size(); j++) {
-                    //auto index = meshAttrs[j];
-                    //fixpairadd(index, i * meshVertsSize);
-                    //primAttrs[i * meshAttrs.size() + j] = index;
-                //}
+                for (size_t j = 0; j < meshAttrs.size(); j++) {
+                    auto index = meshAttrs[j];
+                    fixpairadd(index, i * meshVertsSize);
+                    primAttrs[i * meshAttrs.size() + j] = index;
+                }
             });
         });
     };
