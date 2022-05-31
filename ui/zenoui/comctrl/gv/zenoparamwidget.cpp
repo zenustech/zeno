@@ -228,7 +228,7 @@ ZenoParamComboBox::ZenoParamComboBox(const QStringList &items, ComboBoxParam par
     setWidget(m_combobox);
 
     setZValue(ZVALUE_POPUPWIDGET);
-    connect(m_combobox, SIGNAL(textActivated(const QString&)), this, SIGNAL(textActivated(const QString&)));
+    connect(m_combobox, SIGNAL(activated(int)), this, SLOT(onComboItemActivated(int)));
 }
 
 void ZenoParamComboBox::setText(const QString& text)
@@ -239,6 +239,13 @@ void ZenoParamComboBox::setText(const QString& text)
 QString ZenoParamComboBox::text()
 {
     return m_combobox->currentText();
+}
+
+void ZenoParamComboBox::onComboItemActivated(int index)
+{
+    // pay attention to the compatiblity of qt!!!
+    QString text = m_combobox->itemText(index);
+    emit textActivated(text);
 }
 
 
