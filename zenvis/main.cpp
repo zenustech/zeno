@@ -43,6 +43,7 @@ static bool enable_gi_flag = false;
 static float gi_emission_base = 0.05;
 static float gi_base = 1.0;
 static bool normal_check = false;
+static float shadow_bias = 0.005f;
 bool render_wireframe = false;
 
 static int nx = 960, ny = 800;
@@ -1034,5 +1035,13 @@ void set_render_wireframe(bool render_wireframe_) {
 
 void set_num_samples(int num_samples_) {
     num_samples = num_samples_;
+}
+
+void set_shadow_bias(float _shadow_bias) {
+  shadow_bias = _shadow_bias;
+}
+
+float get_shadow_bias() {
+  return shadow_bias;
 }
 }

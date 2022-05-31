@@ -1678,7 +1678,7 @@ uniform float vxSize;
 uniform mat4 vxView;
 uniform bool enable_gi_flag;
 uniform float m_gi_base;
-
+uniform float m_shadow_bias;
 
 vec3 convWorldPosToVoxelPos(vec3 pos){
     vec3 vxPos = (vxView * vec4(pos,1)).xyz; 
@@ -1855,7 +1855,7 @@ vec4 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 old_tangent) {
         float slop = abs(dot( normalize(normal), normalize(light[lightId])));
         float bias = (1-pow(slop,0.1)) * 0.1 + pow(slop,0.1) * 0.001;
         vec3 disp;
-        disp = 0.005 * normalize(lightDir[lightId]) + bias * normalize(TBN[2]);
+        disp = m_shadow_bias * normalize(lightDir[lightId]) + bias * normalize(TBN[2]);
         float shadow = ShadowCalculation(lightId, position + disp, shadowSoftness[lightId], tan, TBN[1],3);
         vec3 sclr = clamp(vec3(1.0-shadow) + shadowTint[lightId], vec3(0.0), vec3(1.0));
         color += lcolor * sclr;
