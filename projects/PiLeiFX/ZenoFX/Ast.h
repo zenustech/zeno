@@ -13,7 +13,8 @@
 #include <memory>
 #include <vector>
 namespace zfx {
-    enum class Ast_Node_Type {
+/*
+enum class Ast_Node_Type {
         Ast_Type_Statement,
         Ast_Type_Declaration,
         Ast_Type_Identifier,
@@ -21,10 +22,22 @@ namespace zfx {
         Ast_Type_Binary_Op,
         Ast_Type_Unary_Op
     };
-    class AstNode;
-    class Variable;
-    class Binary;
-    class Unary;
+    */
+/*
+    class UnaryOpStmt;
+    class BinaryOpStmt;
+    class TernaryOpStmt;
+    class FunctionCallStmt;
+    class AssignStmt;
+    class SymbolStmt;
+    class SymbolStmt;
+    class ParamSymbolStmt;
+    class TempSymbolStmt;
+    class LiterialStnt;
+    class FrontedIfStmt;
+    class FrontedElseStmt;
+    class FrontedElseIfStmt;
+    class FrontedEndIfStmt;
 
     class AstVisitor {
       public:
@@ -79,6 +92,9 @@ namespace zfx {
         }
     };
 
+    class UnaryOpStmt : public Statement {
+
+    };
 
     class Ast_Identifier {
 
@@ -87,10 +103,12 @@ namespace zfx {
     class Expression : public AstNode{
         Expression(const Position& beginPos, const Position& endPos)
     };
+    */
 /*
  * when we declare a variable , we will create a Ast Node : VariableDecl, if this Ast node has initialization
  * we will create a single node represent initialization, but if only to declare we will only create one node;
  * */
+/*
     class VariableDecl : public Expression {
         std::string name;
 
@@ -142,10 +160,12 @@ namespace zfx {
         std::shared_ptr<AstNode> lhs;
         std::shared_ptr<AstNode> rhs;
     };
+    */
 /*
  * Notice assignStmt is right associative
  *
  * */
+/*
     class AssignStmt {
       public:
         std::shared_ptr<Expression> lhs;
@@ -218,6 +238,44 @@ namespace zfx {
     class AsmIfStmt : public AsmStatement {
 
     };
+    */
+/*
+    class Ast {
+      public:
+        using Iter = std::vector<zfx::Token> ::iterator
+        Ast() {
 
+        }
+      private:
+        Token token;
+    };
+
+    inline std::unique_ptr<Ast> make_ast() {
+
+    }
+    */
+
+    class AstVisitor {
+
+    };
+
+    class AstNode {
+      public:
+        Position beginPos;
+        Position endPos;
+
+        virtual std::any accept(AstNode &visitor, std::string additional = "") = 0;
+
+    };
+//语句
+    class Statement: AstNode {
+
+    };
+    //声明，子类为$ @
+    class Decl {
+
+    };
+
+    class
 }
 

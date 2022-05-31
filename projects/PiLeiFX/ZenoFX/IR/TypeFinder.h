@@ -3,7 +3,7 @@
 //
 #pragma once
 
-#include "Ast.h"
+#include "../Ast.h"
 #include "Module.h"
 #include <tuple>
 #include <unordered_map>

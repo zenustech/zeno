@@ -4,9 +4,9 @@
 
 #pragma once
 
-#include "Module.h"
-#include <iostream>
+#include "IR/Module.h"
 #include <any>
+#include <iostream>
 /*
  * This is a semantic analysis module
  * */

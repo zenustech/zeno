@@ -5,7 +5,10 @@
 #include <tuple>
 #include "parser.h"
 namespace zfx {
-
+/*
+ * zfx
+ *
+ * */
 std::tuple<> compile_to_assembly (const std::string& code, const Options& options) {
 #ifdef ZFX_PRINT_IR
     std::cout << "start zfx" << std::endl;

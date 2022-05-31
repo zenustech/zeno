@@ -8,11 +8,13 @@
 #include <iostream>
 #include <list
 #include <string>
-
+/*Value zfx中所有的数据类型都是继承于value的*/
 namespace zfx {
 
     class Use {
+        friend bool operator==() {
 
+        }
     };
     class Value {
       public:
@@ -26,14 +28,18 @@ namespace zfx {
         void add_use(Value *value);
 
         bool set_name(std::string name) {
+                if (name == "") {
 
+                }
         }
 
         std::string get_name() const;
 
         void remove_use(Value *val);
 
-        virtual std::string print() = 0;
+        virtual std::string print() {
+            return  "";
+        }
       private:
         std::string name;
         Type *type;

@@ -4,10 +4,10 @@
 //
 #pragma once
 #include "Ast.h"
+#include "IR/IR.h"
 #include "Stmt.h"
-#include "IR.h"
-#include <sstream>
 #include <map>
+#include <sstream>
 /*
  * convent ast to statement
  * */
