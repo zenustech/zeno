@@ -67,7 +67,7 @@ struct ZSComputeBaryCentricWeights : INode {
             m(i,3) = p3[i];
         }
         m(3,0) = m(3,1) = m(3,2) = m(3,3) = 1;
-        return zs::determinant(m);
+        return zs::determinant(m)/6;
     }
 
     static constexpr T ComputeArea(
@@ -81,7 +81,7 @@ struct ZSComputeBaryCentricWeights : INode {
         T a = p01.length();
         T b = p02.length();
         T c = p12.length();
-        T s = (a + b + c)/3;
+        T s = (a + b + c)/2;
         return zs::sqrt(s*(s-a)*(s-b)*(s-c));
     }
 
@@ -114,16 +114,17 @@ struct ZSComputeBaryCentricWeights : INode {
         const auto& eles = zsvolume->getQuadraturePoints();
 
         const auto& everts = zssurf->getParticles();
-        const auto& etris = zssurf->getQuadraturePoints();
+        const auto& e_eles = zssurf->getQuadraturePoints();
 
         auto &bcw = (*zsvolume)[tag];
-        bcw = typename ZenoParticles::particles_t({{"inds",1},{"w",4}},everts.size(),zs::memsrc_e::device,0);
+        bcw = typename ZenoParticles::particles_t({{"inds",1},{"w",4},{"cnorm",1}},everts.size(),zs::memsrc_e::device,0);
+
 
         auto cudaExec = zs::cuda_exec();
         const auto numFEMVerts = verts.size();
         const auto numFEMEles = eles.size();
         const auto numEmbedVerts = bcw.size();
-        const auto numEmbedTris = etris.size();
+        const auto numEmbedEles = e_eles.size();
 
         constexpr auto space = zs::execspace_e::cuda;
 
@@ -231,25 +232,80 @@ struct ZSComputeBaryCentricWeights : INode {
         //             printf("INVALID INTERPOLATED VERTS<%d> : %d\n",vi,idx);
         // });
 
-        // cudaExec(zs::range(numEmbedVerts),
-        //     [bcw = proxy<space>({},bcw)] ZS_LAMBDA (int vi) mutable {
-        //         bcw("area",vi) = 0.;
-        // });
+        auto e_dim = e_eles.getChannelSize("inds");
 
-        // cudaExec(zs::range(numEmbedTris),
-        //     [everts = proxy<space>({},everts),etris = proxy<space>({},etris),bcw = proxy<space>({},bcw)]
-        //         ZS_LAMBDA (int ti) mutable {
-        //             auto inds = etris.pack<3>("inds",ti).reinterpret_bits<int>(); 
-        //             auto p0 = everts.pack<3>("x",inds[0]);
-        //             auto p1 = everts.pack<3>("x",inds[1]);
-        //             auto p2 = everts.pack<3>("x",inds[2]);
+        cudaExec(zs::range(numEmbedVerts),
+            [bcw = proxy<space>({},bcw)] ZS_LAMBDA (int vi) mutable {
+                using T = typename RM_CVREF_T(bcw)::value_type;
+                bcw("cnorm",vi) = (T)0.;
+        });
 
-        //             auto aA = ComputeArea(p0,p1,p2)/3;
+        zs::Vector<T> edgeCount(bcw.get_allocator(),bcw.size());
+        cudaExec(zs::range(bcw.size()),[edgeCount = proxy<space>(edgeCount)]
+            ZS_LAMBDA(int vi) mutable{
+                using T = typename RM_CVREF_T(bcw)::value_type;
+                edgeCount[vi] = (T)0.;
+        });
 
-        //             bcw("area",inds[0]) += aA;
-        //             bcw("area",inds[1]) += aA;
-        //             bcw("area",inds[2]) += aA;
-        // });
+        if(e_dim !=3 && e_dim !=4){
+            throw std::runtime_error("INVALID EMBEDDED PRIM TOPO");
+        }
+        cudaExec(zs::range(numEmbedEles),
+            [everts = proxy<space>({},everts),e_eles = proxy<space>({},e_eles),bcw = proxy<space>({},bcw),e_dim,execTag = wrapv<space>{},edgeCount = proxy<space>(edgeCount)]
+                ZS_LAMBDA (int ti) mutable {
+                    using T = typename RM_CVREF_T(bcw)::value_type;
+                    if(e_dim == 3){// for triangle mesh
+                        auto inds = e_eles.pack<3>("inds",ti).reinterpret_bits<int>(); 
+                        auto p0 = everts.pack<3>("x",inds[0]);
+                        auto p1 = everts.pack<3>("x",inds[1]);
+                        auto p2 = everts.pack<3>("x",inds[2]);
+
+                        auto A = ComputeArea(p0,p1,p2)/3;
+                        auto l01 = (p0 - p1).norm();
+                        auto l02 = (p0 - p2).norm();
+                        auto l12 = (p1 - p2).norm();
+
+ 
+                        atomic_add(execTag,&bcw("cnorm",inds[0]),(T)(2*A/l12));
+                        atomic_add(execTag,&edgeCount[inds[0]],(T)1.0);
+                        atomic_add(execTag,&bcw("cnorm",inds[1]),(T)(2*A/l02));
+                        atomic_add(execTag,&edgeCount[inds[1]],(T)1.0);
+                        atomic_add(execTag,&bcw("cnorm",inds[2]),(T)(2*A/l01));
+                        atomic_add(execTag,&edgeCount[inds[2]],(T)1.0);
+
+                        // bcw("area",inds[0]) += aA;
+                        // bcw("area",inds[1]) += aA;
+                        // bcw("area",inds[2]) += aA;
+                    }else if(e_dim == 4){// for tet mesh
+                        auto inds = e_eles.pack<4>("inds",ti).reinterpret_bits<int>();
+                        auto p0 = everts.pack<3>("x",inds[0]);
+                        auto p1 = everts.pack<3>("x",inds[1]);
+                        auto p2 = everts.pack<3>("x",inds[2]);
+                        auto p3 = everts.pack<3>("x",inds[3]);
+
+                        auto V = zs::abs(ComputeVolume(p0,p1,p2,p3));
+                        auto A012 = ComputeArea(p0,p1,p2);
+                        auto A023 = ComputeArea(p0,p2,p3);
+                        auto A013 = ComputeArea(p0,p1,p3);
+                        auto A123 = ComputeArea(p1,p2,p3); 
+
+                        atomic_add(execTag,&bcw("cnorm",inds[0]),(T)(3*V/A123));
+                        atomic_add(execTag,&edgeCount[inds[0]],(T)1.0);
+                        atomic_add(execTag,&bcw("cnorm",inds[1]),(T)(3*V/A023));
+                        atomic_add(execTag,&edgeCount[inds[1]],(T)1.0);
+                        atomic_add(execTag,&bcw("cnorm",inds[2]),(T)(3*V/A013));
+                        atomic_add(execTag,&edgeCount[inds[2]],(T)1.0);
+                        atomic_add(execTag,&bcw("cnorm",inds[3]),(T)(3*V/A012));
+                        atomic_add(execTag,&edgeCount[inds[3]],(T)1.0);
+                    }
+        });
+
+        cudaExec(zs::range(numEmbedVerts),
+            [bcw = proxy<space>({},bcw),edgeCount = proxy<space>(edgeCount)] 
+                ZS_LAMBDA(int vi) mutable{
+                    bcw("cnorm",vi) /= edgeCount[vi];
+        });
+
 
         set_output("zsvolume", zsvolume);
     }
