@@ -2,7 +2,6 @@
 #define __ZFEEDBACK_DLG_H__
 
 #include <QtWidgets>
-#include <QTcpSocket>
 
 namespace Ui {
     class FeedBackDlg;

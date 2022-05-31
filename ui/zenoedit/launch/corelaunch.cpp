@@ -10,6 +10,7 @@
 #include <zeno/core/Graph.h>
 #include <zeno/zeno.h>
 #include "zenoapplication.h"
+#include "zenomainwindow.h"
 #include "ztcpserver.h"
 #include "graphsmanagment.h"
 #include "serialize.h"
@@ -93,6 +94,8 @@ struct ProgramRunData {
         for (int frame = graph->beginFrameNumber; frame <= graph->endFrameNumber; frame++) {
             zeno::log_debug("begin frame {}", frame);
             session->globalComm->newFrame();
+            //corresponding to processPacket in viewdecode.cpp
+            zenoApp->getMainWindow()->updateViewport(QString::fromStdString("newFrame"));
             session->globalState->frameBegin();
             while (session->globalState->substepBegin())
             {
@@ -105,6 +108,7 @@ struct ProgramRunData {
             if (g_state == kQuiting) return;
             session->globalState->frameEnd();
             session->globalComm->finishFrame();
+            zenoApp->getMainWindow()->updateViewport(QString::fromStdString("finishFrame"));
             zeno::log_debug("end frame {}", frame);
             if (chkfail()) return;
         }
