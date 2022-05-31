@@ -134,7 +134,7 @@ struct ImplicitTimeStepping : INode {
   static constexpr vec3 s_groundNormal{0, 1, 0};
 
   inline static T kappa = 1e5;
-  inline static T xi = 1e-2; // 2e-3;
+  inline static T xi = 1e-2; // 1e-2; // 2e-3;
   inline static T dHat = 0.01;
 
   /// ref: codim-ipc
@@ -169,7 +169,7 @@ struct ImplicitTimeStepping : INode {
     const auto &surfaces = zstets[ZenoParticles::s_surfTriTag];
     {
       auto bvs = retrieve_bounding_volumes(pol, vtemp, surfaces, wrapv<3>{},
-                                           xi + dHat, "xn");
+                                           2 * (xi + dHat), "xn");
       if (!zstets.hasBvh(ZenoParticles::s_surfTriTag)) // build if bvh not exist
         zstets.bvh(ZenoParticles::s_surfTriTag).build(pol, bvs);
       else
@@ -181,7 +181,7 @@ struct ImplicitTimeStepping : INode {
     const auto &surfEdges = zstets[ZenoParticles::s_surfEdgeTag];
     {
       auto bvs = retrieve_bounding_volumes(pol, vtemp, surfEdges, wrapv<2>{},
-                                           xi + dHat, "xn");
+                                           2 * (xi + dHat), "xn");
       if (!zstets.hasBvh(ZenoParticles::s_surfEdgeTag))
         zstets.bvh(ZenoParticles::s_surfEdgeTag).build(pol, bvs);
       else
@@ -205,8 +205,7 @@ struct ImplicitTimeStepping : INode {
           auto vi = reinterpret_bits<int>(svs("inds", svi));
           auto p = vtemp.template pack<3>("xn", vi);
           auto wp = svs("w", vi) / 4;
-          auto [mi, ma] =
-              get_bounding_box(p - thickness / 2, p + thickness / 2);
+          auto [mi, ma] = get_bounding_box(p - thickness, p + thickness);
           auto bv = bv_t{mi, ma};
           bvh.iter_neighbors(bv, [&](int stI) {
             auto tri = sts.template pack<3>("inds", stI)
@@ -223,6 +222,8 @@ struct ImplicitTimeStepping : INode {
             auto t0 = vtemp.template pack<3>("xn", tri[0]);
             auto t1 = vtemp.template pack<3>("xn", tri[1]);
             auto t2 = vtemp.template pack<3>("xn", tri[2]);
+            // auto we = wp + (svs("w", tri[0])+ svs("w", tri[1])+ svs("w",
+            // tri[2])) / 4;
             switch (pt_distance_type(p, t0, t1, t2)) {
             case 0: {
               if (dist2_pp(p, t0) - xi2 < activeGap2) {
@@ -314,7 +315,7 @@ struct ImplicitTimeStepping : INode {
           auto ea0Rest = verts.template pack<3>("x0", eiInds[0]);
           auto ea1Rest = verts.template pack<3>("x0", eiInds[1]);
           auto [mi, ma] = get_bounding_box(x0, x1);
-          auto bv = bv_t{mi - thickness / 2, ma + thickness / 2};
+          auto bv = bv_t{mi - thickness, ma + thickness};
           bvh.iter_neighbors(bv, [&](int sej) {
             // if (sei > sej) return;
             auto ejInds = ses.template pack<2>("inds", sej)
@@ -340,6 +341,7 @@ struct ImplicitTimeStepping : INode {
             auto cDivEpsX = c / epsX;
             T eem = (2 - cDivEpsX) * cDivEpsX;
             bool mollify = c < epsX;
+            // bool mollify = false; // turn off mollify for now
 
             switch (ee_distance_type(x0, x1, eb0, eb1)) {
             case 0: {
@@ -644,174 +646,150 @@ struct ImplicitTimeStepping : INode {
       using Vec9View = zs::vec_view<T, zs::integer_seq<int, 9>>;
       using Vec6View = zs::vec_view<T, zs::integer_seq<int, 6>>;
       auto numPP = nPP.getVal();
-      pol(range(numPP), [vtemp = proxy<space>({}, vtemp),
-                         tempPP = proxy<space>({}, tempPP),
-                         PP = proxy<space>(PP), wPP = proxy<space>(wPP),
-                         xi2 = xi * xi, dHat = dHat, activeGap2,
-                         kappa = kappa] __device__(int ppi) mutable {
-        auto pp = PP[ppi];
-        auto x0 = vtemp.pack<3>("xn", pp[0]);
-        auto x1 = vtemp.pack<3>("xn", pp[1]);
-        auto ppGrad = dist_grad_pp(x0, x1);
-        auto dist2 = dist2_pp(x0, x1);
-        if (dist2 < xi2)
-          printf("dist already smaller than xi!\n");
-        if (dist2 - xi2 < activeGap2) {
-          auto grad =
-              ppGrad * (-wPP[ppi] * dHat *
-                        zs::barrier_gradient(dist2 - xi2, activeGap2, kappa));
-          // gradient
-          for (int d = 0; d != 3; ++d) {
-            atomic_add(exec_cuda, &vtemp("grad", d, pp[0]), grad(0, d));
-            atomic_add(exec_cuda, &vtemp("grad", d, pp[1]), grad(1, d));
-          }
-          // hessian
-          auto ppHess = dist_hess_pp(x0, x1);
-          auto ppGrad_ = Vec6View{ppGrad.data()};
-          ppHess =
-              wPP[ppi] * dHat *
-              (zs::barrier_hessian(dist2 - xi2, activeGap2, kappa) *
-                   dyadic_prod(ppGrad_, ppGrad_) +
-               zs::barrier_gradient(dist2 - xi2, activeGap2, kappa) * ppHess);
-          // make pd
-          make_pd(ppHess);
-          // pp[0], pp[1]
-          tempPP.tuple<36>("H", ppi) = ppHess;
-        } else {
-          using Mat6x6 = zs::vec<T, 6, 6>;
-          tempPP.tuple<36>("H", ppi) = Mat6x6::zeros();
-        }
-      });
+      pol(range(numPP),
+          [vtemp = proxy<space>({}, vtemp), tempPP = proxy<space>({}, tempPP),
+           PP = proxy<space>(PP), wPP = proxy<space>(wPP), xi2 = xi * xi,
+           dHat = dHat, activeGap2, kappa = kappa] __device__(int ppi) mutable {
+            auto pp = PP[ppi];
+            auto x0 = vtemp.pack<3>("xn", pp[0]);
+            auto x1 = vtemp.pack<3>("xn", pp[1]);
+            auto ppGrad = dist_grad_pp(x0, x1);
+            auto dist2 = dist2_pp(x0, x1);
+            if (dist2 < xi2)
+              printf("dist already smaller than xi!\n");
+            auto grad =
+                ppGrad * (-wPP[ppi] * dHat *
+                          zs::barrier_gradient(dist2 - xi2, activeGap2, kappa));
+            // gradient
+            for (int d = 0; d != 3; ++d) {
+              atomic_add(exec_cuda, &vtemp("grad", d, pp[0]), grad(0, d));
+              atomic_add(exec_cuda, &vtemp("grad", d, pp[1]), grad(1, d));
+            }
+            // hessian
+            auto ppHess = dist_hess_pp(x0, x1);
+            auto ppGrad_ = Vec6View{ppGrad.data()};
+            ppHess =
+                wPP[ppi] * dHat *
+                (zs::barrier_hessian(dist2 - xi2, activeGap2, kappa) *
+                     dyadic_prod(ppGrad_, ppGrad_) +
+                 zs::barrier_gradient(dist2 - xi2, activeGap2, kappa) * ppHess);
+            // make pd
+            make_pd(ppHess);
+            // pp[0], pp[1]
+            tempPP.tuple<36>("H", ppi) = ppHess;
+          });
       auto numPE = nPE.getVal();
-      pol(range(numPE), [vtemp = proxy<space>({}, vtemp),
-                         tempPE = proxy<space>({}, tempPE),
-                         PE = proxy<space>(PE), wPE = proxy<space>(wPE),
-                         xi2 = xi * xi, dHat = dHat, activeGap2,
-                         kappa = kappa] __device__(int pei) mutable {
-        auto pe = PE[pei];
-        auto p = vtemp.pack<3>("xn", pe[0]);
-        auto e0 = vtemp.pack<3>("xn", pe[1]);
-        auto e1 = vtemp.pack<3>("xn", pe[2]);
+      pol(range(numPE),
+          [vtemp = proxy<space>({}, vtemp), tempPE = proxy<space>({}, tempPE),
+           PE = proxy<space>(PE), wPE = proxy<space>(wPE), xi2 = xi * xi,
+           dHat = dHat, activeGap2, kappa = kappa] __device__(int pei) mutable {
+            auto pe = PE[pei];
+            auto p = vtemp.pack<3>("xn", pe[0]);
+            auto e0 = vtemp.pack<3>("xn", pe[1]);
+            auto e1 = vtemp.pack<3>("xn", pe[2]);
 
-        auto peGrad = dist_grad_pe(p, e0, e1);
-        auto dist2 = dist2_pe(p, e0, e1);
-        if (dist2 < xi2)
-          printf("dist already smaller than xi!\n");
-        if (dist2 - xi2 < activeGap2) {
-          auto grad =
-              peGrad * (-wPE[pei] * dHat *
-                        zs::barrier_gradient(dist2 - xi2, activeGap2, kappa));
-          // gradient
-          for (int d = 0; d != 3; ++d) {
-            atomic_add(exec_cuda, &vtemp("grad", d, pe[0]), grad(0, d));
-            atomic_add(exec_cuda, &vtemp("grad", d, pe[1]), grad(1, d));
-            atomic_add(exec_cuda, &vtemp("grad", d, pe[2]), grad(2, d));
-          }
-          // hessian
-          auto peHess = dist_hess_pe(p, e0, e1);
-          auto peGrad_ = Vec9View{peGrad.data()};
-          peHess =
-              wPE[pei] * dHat *
-              (zs::barrier_hessian(dist2 - xi2, activeGap2, kappa) *
-                   dyadic_prod(peGrad_, peGrad_) +
-               zs::barrier_gradient(dist2 - xi2, activeGap2, kappa) * peHess);
-          // make pd
-          make_pd(peHess);
-          // pe[0], pe[1], pe[2]
-          tempPE.tuple<81>("H", pei) = peHess;
-        } else {
-          using Mat9x9 = zs::vec<T, 9, 9>;
-          tempPE.tuple<81>("H", pei) = Mat9x9::zeros();
-        }
-      });
+            auto peGrad = dist_grad_pe(p, e0, e1);
+            auto dist2 = dist2_pe(p, e0, e1);
+            if (dist2 < xi2)
+              printf("dist already smaller than xi!\n");
+            auto grad =
+                peGrad * (-wPE[pei] * dHat *
+                          zs::barrier_gradient(dist2 - xi2, activeGap2, kappa));
+            // gradient
+            for (int d = 0; d != 3; ++d) {
+              atomic_add(exec_cuda, &vtemp("grad", d, pe[0]), grad(0, d));
+              atomic_add(exec_cuda, &vtemp("grad", d, pe[1]), grad(1, d));
+              atomic_add(exec_cuda, &vtemp("grad", d, pe[2]), grad(2, d));
+            }
+            // hessian
+            auto peHess = dist_hess_pe(p, e0, e1);
+            auto peGrad_ = Vec9View{peGrad.data()};
+            peHess =
+                wPE[pei] * dHat *
+                (zs::barrier_hessian(dist2 - xi2, activeGap2, kappa) *
+                     dyadic_prod(peGrad_, peGrad_) +
+                 zs::barrier_gradient(dist2 - xi2, activeGap2, kappa) * peHess);
+            // make pd
+            make_pd(peHess);
+            // pe[0], pe[1], pe[2]
+            tempPE.tuple<81>("H", pei) = peHess;
+          });
       auto numPT = nPT.getVal();
-      pol(range(numPT), [vtemp = proxy<space>({}, vtemp),
-                         tempPT = proxy<space>({}, tempPT),
-                         PT = proxy<space>(PT), wPT = proxy<space>(wPT),
-                         xi2 = xi * xi, dHat = dHat, activeGap2,
-                         kappa = kappa] __device__(int pti) mutable {
-        auto pt = PT[pti];
-        auto p = vtemp.pack<3>("xn", pt[0]);
-        auto t0 = vtemp.pack<3>("xn", pt[1]);
-        auto t1 = vtemp.pack<3>("xn", pt[2]);
-        auto t2 = vtemp.pack<3>("xn", pt[3]);
+      pol(range(numPT),
+          [vtemp = proxy<space>({}, vtemp), tempPT = proxy<space>({}, tempPT),
+           PT = proxy<space>(PT), wPT = proxy<space>(wPT), xi2 = xi * xi,
+           dHat = dHat, activeGap2, kappa = kappa] __device__(int pti) mutable {
+            auto pt = PT[pti];
+            auto p = vtemp.pack<3>("xn", pt[0]);
+            auto t0 = vtemp.pack<3>("xn", pt[1]);
+            auto t1 = vtemp.pack<3>("xn", pt[2]);
+            auto t2 = vtemp.pack<3>("xn", pt[3]);
 
-        auto ptGrad = dist_grad_pt(p, t0, t1, t2);
-        auto dist2 = dist2_pt(p, t0, t1, t2);
-        if (dist2 < xi2)
-          printf("dist already smaller than xi!\n");
-        if (dist2 - xi2 < activeGap2) {
-          auto grad =
-              ptGrad * (-wPT[pti] * dHat *
-                        zs::barrier_gradient(dist2 - xi2, activeGap2, kappa));
-          // gradient
-          for (int d = 0; d != 3; ++d) {
-            atomic_add(exec_cuda, &vtemp("grad", d, pt[0]), grad(0, d));
-            atomic_add(exec_cuda, &vtemp("grad", d, pt[1]), grad(1, d));
-            atomic_add(exec_cuda, &vtemp("grad", d, pt[2]), grad(2, d));
-            atomic_add(exec_cuda, &vtemp("grad", d, pt[3]), grad(3, d));
-          }
-          // hessian
-          auto ptHess = dist_hess_pt(p, t0, t1, t2);
-          auto ptGrad_ = Vec12View{ptGrad.data()};
-          ptHess =
-              wPT[pti] * dHat *
-              (zs::barrier_hessian(dist2 - xi2, activeGap2, kappa) *
-                   dyadic_prod(ptGrad_, ptGrad_) +
-               zs::barrier_gradient(dist2 - xi2, activeGap2, kappa) * ptHess);
-          // make pd
-          make_pd(ptHess);
-          // pt[0], pt[1], pt[2], pt[3]
-          tempPT.tuple<144>("H", pti) = ptHess;
-        } else {
-          using Mat12x12 = zs::vec<T, 12, 12>;
-          tempPT.tuple<144>("H", pti) = Mat12x12::zeros();
-        }
-      });
+            auto ptGrad = dist_grad_pt(p, t0, t1, t2);
+            auto dist2 = dist2_pt(p, t0, t1, t2);
+            if (dist2 < xi2)
+              printf("dist already smaller than xi!\n");
+            auto grad =
+                ptGrad * (-wPT[pti] * dHat *
+                          zs::barrier_gradient(dist2 - xi2, activeGap2, kappa));
+            // gradient
+            for (int d = 0; d != 3; ++d) {
+              atomic_add(exec_cuda, &vtemp("grad", d, pt[0]), grad(0, d));
+              atomic_add(exec_cuda, &vtemp("grad", d, pt[1]), grad(1, d));
+              atomic_add(exec_cuda, &vtemp("grad", d, pt[2]), grad(2, d));
+              atomic_add(exec_cuda, &vtemp("grad", d, pt[3]), grad(3, d));
+            }
+            // hessian
+            auto ptHess = dist_hess_pt(p, t0, t1, t2);
+            auto ptGrad_ = Vec12View{ptGrad.data()};
+            ptHess =
+                wPT[pti] * dHat *
+                (zs::barrier_hessian(dist2 - xi2, activeGap2, kappa) *
+                     dyadic_prod(ptGrad_, ptGrad_) +
+                 zs::barrier_gradient(dist2 - xi2, activeGap2, kappa) * ptHess);
+            // make pd
+            make_pd(ptHess);
+            // pt[0], pt[1], pt[2], pt[3]
+            tempPT.tuple<144>("H", pti) = ptHess;
+          });
       auto numEE = nEE.getVal();
-      pol(range(numEE), [vtemp = proxy<space>({}, vtemp),
-                         tempEE = proxy<space>({}, tempEE),
-                         EE = proxy<space>(EE), wEE = proxy<space>(wEE),
-                         xi2 = xi * xi, dHat = dHat, activeGap2,
-                         kappa = kappa] __device__(int eei) mutable {
-        auto ee = EE[eei];
-        auto ea0 = vtemp.pack<3>("xn", ee[0]);
-        auto ea1 = vtemp.pack<3>("xn", ee[1]);
-        auto eb0 = vtemp.pack<3>("xn", ee[2]);
-        auto eb1 = vtemp.pack<3>("xn", ee[3]);
+      pol(range(numEE),
+          [vtemp = proxy<space>({}, vtemp), tempEE = proxy<space>({}, tempEE),
+           EE = proxy<space>(EE), wEE = proxy<space>(wEE), xi2 = xi * xi,
+           dHat = dHat, activeGap2, kappa = kappa] __device__(int eei) mutable {
+            auto ee = EE[eei];
+            auto ea0 = vtemp.pack<3>("xn", ee[0]);
+            auto ea1 = vtemp.pack<3>("xn", ee[1]);
+            auto eb0 = vtemp.pack<3>("xn", ee[2]);
+            auto eb1 = vtemp.pack<3>("xn", ee[3]);
 
-        auto eeGrad = dist_grad_ee(ea0, ea1, eb0, eb1);
-        auto dist2 = dist2_ee(ea0, ea1, eb0, eb1);
-        if (dist2 < xi2)
-          printf("dist already smaller than xi!\n");
-        if (dist2 - xi2 < activeGap2) {
-          auto grad =
-              eeGrad * (-wEE[eei] * dHat *
-                        zs::barrier_gradient(dist2 - xi2, activeGap2, kappa));
-          // gradient
-          for (int d = 0; d != 3; ++d) {
-            atomic_add(exec_cuda, &vtemp("grad", d, ee[0]), grad(0, d));
-            atomic_add(exec_cuda, &vtemp("grad", d, ee[1]), grad(1, d));
-            atomic_add(exec_cuda, &vtemp("grad", d, ee[2]), grad(2, d));
-            atomic_add(exec_cuda, &vtemp("grad", d, ee[3]), grad(3, d));
-          }
-          // hessian
-          auto eeHess = dist_hess_ee(ea0, ea1, eb0, eb1);
-          auto eeGrad_ = Vec12View{eeGrad.data()};
-          eeHess =
-              wEE[eei] * dHat *
-              (zs::barrier_hessian(dist2 - xi2, activeGap2, kappa) *
-                   dyadic_prod(eeGrad_, eeGrad_) +
-               zs::barrier_gradient(dist2 - xi2, activeGap2, kappa) * eeHess);
-          // make pd
-          make_pd(eeHess);
-          // ee[0], ee[1], ee[2], ee[3]
-          tempEE.tuple<144>("H", eei) = eeHess;
-        } else {
-          using Mat12x12 = zs::vec<T, 12, 12>;
-          tempEE.tuple<144>("H", eei) = Mat12x12::zeros();
-        }
-      });
+            auto eeGrad = dist_grad_ee(ea0, ea1, eb0, eb1);
+            auto dist2 = dist2_ee(ea0, ea1, eb0, eb1);
+            if (dist2 < xi2)
+              printf("dist already smaller than xi!\n");
+            auto grad =
+                eeGrad * (-wEE[eei] * dHat *
+                          zs::barrier_gradient(dist2 - xi2, activeGap2, kappa));
+            // gradient
+            for (int d = 0; d != 3; ++d) {
+              atomic_add(exec_cuda, &vtemp("grad", d, ee[0]), grad(0, d));
+              atomic_add(exec_cuda, &vtemp("grad", d, ee[1]), grad(1, d));
+              atomic_add(exec_cuda, &vtemp("grad", d, ee[2]), grad(2, d));
+              atomic_add(exec_cuda, &vtemp("grad", d, ee[3]), grad(3, d));
+            }
+            // hessian
+            auto eeHess = dist_hess_ee(ea0, ea1, eb0, eb1);
+            auto eeGrad_ = Vec12View{eeGrad.data()};
+            eeHess =
+                wEE[eei] * dHat *
+                (zs::barrier_hessian(dist2 - xi2, activeGap2, kappa) *
+                     dyadic_prod(eeGrad_, eeGrad_) +
+                 zs::barrier_gradient(dist2 - xi2, activeGap2, kappa) * eeHess);
+            // make pd
+            make_pd(eeHess);
+            // ee[0], ee[1], ee[2], ee[3]
+            tempEE.tuple<144>("H", eei) = eeHess;
+          });
       /// mollified
       auto get_mollifier =
           [verts = proxy<space>({}, verts),
@@ -821,10 +799,10 @@ struct ImplicitTimeStepping : INode {
             auto eb0Rest = verts.template pack<3>("x0", pair[2]);
             auto eb1Rest = verts.template pack<3>("x0", pair[3]);
             T epsX = mollifier_threshold_ee(ea0Rest, ea1Rest, eb0Rest, eb1Rest);
-            auto ea0 = vtemp.template pack<3>("x0", pair[0]);
-            auto ea1 = vtemp.template pack<3>("x0", pair[1]);
-            auto eb0 = vtemp.template pack<3>("x0", pair[2]);
-            auto eb1 = vtemp.template pack<3>("x0", pair[3]);
+            auto ea0 = vtemp.template pack<3>("xn", pair[0]);
+            auto ea1 = vtemp.template pack<3>("xn", pair[1]);
+            auto eb0 = vtemp.template pack<3>("xn", pair[2]);
+            auto eb1 = vtemp.template pack<3>("xn", pair[3]);
             return zs::make_tuple(mollifier_ee(ea0, ea1, eb0, eb1, epsX),
                                   mollifier_grad_ee(ea0, ea1, eb0, eb1, epsX),
                                   mollifier_hess_ee(ea0, ea1, eb0, eb1, epsX));
@@ -845,66 +823,59 @@ struct ImplicitTimeStepping : INode {
         auto dist2 = dist2_pp(ea0, eb0);
         if (dist2 < xi2)
           printf("dist already smaller than xi!\n");
-        if (dist2 - xi2 < activeGap2) {
-          auto barrierDist2 = barrier(dist2 - xi2, activeGap2, kappa);
-          auto barrierDistGrad =
-              barrier_gradient(dist2 - xi2, activeGap2, kappa);
-          auto barrierDistHess =
-              barrier_hessian(dist2 - xi2, activeGap2, kappa);
-          auto [mollifierEE, mollifierGradEE, mollifierHessEE] =
-              get_mollifier(ppm);
-          using HessT = RM_CVREF_T(mollifierHessEE);
-          using GradT = zs::vec<T, 12>;
+        auto barrierDist2 = barrier(dist2 - xi2, activeGap2, kappa);
+        auto barrierDistGrad = barrier_gradient(dist2 - xi2, activeGap2, kappa);
+        auto barrierDistHess = barrier_hessian(dist2 - xi2, activeGap2, kappa);
+        auto [mollifierEE, mollifierGradEE, mollifierHessEE] =
+            get_mollifier(ppm);
+        using HessT = RM_CVREF_T(mollifierHessEE);
+        using GradT = zs::vec<T, 12>;
 
-          {
-            auto scale = -wPPM[ppmi] * dHat;
-            auto scaledMollifierGrad = scale * barrierDist2 * mollifierGradEE;
-            auto scaledPPGrad = scale * mollifierEE * barrierDistGrad * ppGrad;
-            // gradient
-            for (int d = 0; d != 3; ++d) {
-              atomic_add(exec_cuda, &vtemp("grad", d, ppm[0]),
-                         scaledMollifierGrad(0, d) + scaledPPGrad(0, d));
-              atomic_add(exec_cuda, &vtemp("grad", d, ppm[1]),
-                         scaledMollifierGrad(1, d));
-              atomic_add(exec_cuda, &vtemp("grad", d, ppm[2]),
-                         scaledMollifierGrad(2, d) + scaledPPGrad(1, d));
-              atomic_add(exec_cuda, &vtemp("grad", d, ppm[3]),
-                         scaledMollifierGrad(3, d));
-            }
-          }
-          // hessian
-          auto extendedPPGrad = GradT::zeros();
+        {
+          auto scale = -wPPM[ppmi] * dHat;
+          auto scaledMollifierGrad = scale * barrierDist2 * mollifierGradEE;
+          auto scaledPPGrad = scale * mollifierEE * barrierDistGrad * ppGrad;
+          // gradient
           for (int d = 0; d != 3; ++d) {
-            extendedPPGrad(d) = barrierDistGrad * ppGrad(0, d);
-            extendedPPGrad(6 + d) = barrierDistGrad * ppGrad(1, d);
+            atomic_add(exec_cuda, &vtemp("grad", d, ppm[0]),
+                       scaledMollifierGrad(0, d) + scaledPPGrad(0, d));
+            atomic_add(exec_cuda, &vtemp("grad", d, ppm[1]),
+                       scaledMollifierGrad(1, d));
+            atomic_add(exec_cuda, &vtemp("grad", d, ppm[2]),
+                       scaledMollifierGrad(2, d) + scaledPPGrad(1, d));
+            atomic_add(exec_cuda, &vtemp("grad", d, ppm[3]),
+                       scaledMollifierGrad(3, d));
           }
-          auto ppmHess =
-              barrierDist2 * mollifierHessEE +
-              dyadic_prod(Vec12View{mollifierGradEE.data()}, extendedPPGrad) +
-              dyadic_prod(extendedPPGrad, Vec12View{mollifierGradEE.data()});
-
-          auto ppHess = dist_hess_pp(ea0, eb0);
-          auto ppGrad_ = Vec6View{ppGrad.data()};
-
-          ppHess = (barrierDistHess * dyadic_prod(ppGrad_, ppGrad_) +
-                    barrierDistGrad * ppHess);
-          for (int i = 0; i != 3; ++i)
-            for (int j = 0; j != 3; ++j) {
-              ppmHess(0 + i, 0 + j) += mollifierEE * ppHess(0 + i, 0 + j);
-              ppmHess(0 + i, 6 + j) += mollifierEE * ppHess(0 + i, 3 + j);
-              ppmHess(6 + i, 0 + j) += mollifierEE * ppHess(3 + i, 0 + j);
-              ppmHess(6 + i, 6 + j) += mollifierEE * ppHess(3 + i, 3 + j);
-            }
-
-          ppmHess *= wPPM[ppmi] * dHat;
-          // make pd
-          make_pd(ppmHess);
-          // ee[0], ee[1], ee[2], ee[3]
-          tempPPM.tuple<144>("H", ppmi) = ppmHess;
-        } else {
-          using Mat12x12 = zs::vec<T, 12, 12>;
-          tempPPM.tuple<144>("H", ppmi) = Mat12x12::zeros();
         }
+        // hessian
+        auto extendedPPGrad = GradT::zeros();
+        for (int d = 0; d != 3; ++d) {
+          extendedPPGrad(d) = barrierDistGrad * ppGrad(0, d);
+          extendedPPGrad(6 + d) = barrierDistGrad * ppGrad(1, d);
+        }
+        auto ppmHess =
+            barrierDist2 * mollifierHessEE +
+            dyadic_prod(Vec12View{mollifierGradEE.data()}, extendedPPGrad) +
+            dyadic_prod(extendedPPGrad, Vec12View{mollifierGradEE.data()});
+
+        auto ppHess = dist_hess_pp(ea0, eb0);
+        auto ppGrad_ = Vec6View{ppGrad.data()};
+
+        ppHess = (barrierDistHess * dyadic_prod(ppGrad_, ppGrad_) +
+                  barrierDistGrad * ppHess);
+        for (int i = 0; i != 3; ++i)
+          for (int j = 0; j != 3; ++j) {
+            ppmHess(0 + i, 0 + j) += mollifierEE * ppHess(0 + i, 0 + j);
+            ppmHess(0 + i, 6 + j) += mollifierEE * ppHess(0 + i, 3 + j);
+            ppmHess(6 + i, 0 + j) += mollifierEE * ppHess(3 + i, 0 + j);
+            ppmHess(6 + i, 6 + j) += mollifierEE * ppHess(3 + i, 3 + j);
+          }
+
+        ppmHess *= wPPM[ppmi] * dHat;
+        // make pd
+        make_pd(ppmHess);
+        // ee[0], ee[1], ee[2], ee[3]
+        tempPPM.tuple<144>("H", ppmi) = ppmHess;
       });
       auto numPEM = nPEM.getVal();
       pol(range(numPEM), [vtemp = proxy<space>({}, vtemp),
@@ -922,75 +893,68 @@ struct ImplicitTimeStepping : INode {
         auto dist2 = dist2_pe(ea0, eb0, eb1);
         if (dist2 < xi2)
           printf("dist already smaller than xi!\n");
-        if (dist2 - xi2 < activeGap2) {
-          auto barrierDist2 = barrier(dist2 - xi2, activeGap2, kappa);
-          auto barrierDistGrad =
-              barrier_gradient(dist2 - xi2, activeGap2, kappa);
-          auto barrierDistHess =
-              barrier_hessian(dist2 - xi2, activeGap2, kappa);
-          auto [mollifierEE, mollifierGradEE, mollifierHessEE] =
-              get_mollifier(pem);
-          using HessT = RM_CVREF_T(mollifierHessEE);
-          using GradT = zs::vec<T, 12>;
+        auto barrierDist2 = barrier(dist2 - xi2, activeGap2, kappa);
+        auto barrierDistGrad = barrier_gradient(dist2 - xi2, activeGap2, kappa);
+        auto barrierDistHess = barrier_hessian(dist2 - xi2, activeGap2, kappa);
+        auto [mollifierEE, mollifierGradEE, mollifierHessEE] =
+            get_mollifier(pem);
+        using HessT = RM_CVREF_T(mollifierHessEE);
+        using GradT = zs::vec<T, 12>;
 
-          {
-            auto scale = -wPEM[pemi] * dHat;
-            auto scaledMollifierGrad = scale * barrierDist2 * mollifierGradEE;
-            auto scaledPEGrad = scale * mollifierEE * barrierDistGrad * peGrad;
-            // gradient
-            for (int d = 0; d != 3; ++d) {
-              atomic_add(exec_cuda, &vtemp("grad", d, pem[0]),
-                         scaledMollifierGrad(0, d) + scaledPEGrad(0, d));
-              atomic_add(exec_cuda, &vtemp("grad", d, pem[1]),
-                         scaledMollifierGrad(1, d));
-              atomic_add(exec_cuda, &vtemp("grad", d, pem[2]),
-                         scaledMollifierGrad(2, d) + scaledPEGrad(1, d));
-              atomic_add(exec_cuda, &vtemp("grad", d, pem[3]),
-                         scaledMollifierGrad(3, d) + scaledPEGrad(2, d));
-            }
-          }
-          // hessian
-          auto extendedPEGrad = GradT::zeros();
+        {
+          auto scale = -wPEM[pemi] * dHat;
+          auto scaledMollifierGrad = scale * barrierDist2 * mollifierGradEE;
+          auto scaledPEGrad = scale * mollifierEE * barrierDistGrad * peGrad;
+          // gradient
           for (int d = 0; d != 3; ++d) {
-            extendedPEGrad(d) = barrierDistGrad * peGrad(0, d);
-            extendedPEGrad(6 + d) = barrierDistGrad * peGrad(1, d);
-            extendedPEGrad(9 + d) = barrierDistGrad * peGrad(2, d);
+            atomic_add(exec_cuda, &vtemp("grad", d, pem[0]),
+                       scaledMollifierGrad(0, d) + scaledPEGrad(0, d));
+            atomic_add(exec_cuda, &vtemp("grad", d, pem[1]),
+                       scaledMollifierGrad(1, d));
+            atomic_add(exec_cuda, &vtemp("grad", d, pem[2]),
+                       scaledMollifierGrad(2, d) + scaledPEGrad(1, d));
+            atomic_add(exec_cuda, &vtemp("grad", d, pem[3]),
+                       scaledMollifierGrad(3, d) + scaledPEGrad(2, d));
           }
-          auto pemHess =
-              barrierDist2 * mollifierHessEE +
-              dyadic_prod(Vec12View{mollifierGradEE.data()}, extendedPEGrad) +
-              dyadic_prod(extendedPEGrad, Vec12View{mollifierGradEE.data()});
-
-          auto peHess = dist_hess_pe(ea0, eb0, eb1);
-          auto peGrad_ = Vec9View{peGrad.data()};
-
-          peHess = (barrierDistHess * dyadic_prod(peGrad_, peGrad_) +
-                    barrierDistGrad * peHess);
-          for (int i = 0; i != 3; ++i)
-            for (int j = 0; j != 3; ++j) {
-              pemHess(0 + i, 0 + j) += mollifierEE * peHess(0 + i, 0 + j);
-              //
-              pemHess(0 + i, 6 + j) += mollifierEE * peHess(0 + i, 3 + j);
-              pemHess(0 + i, 9 + j) += mollifierEE * peHess(0 + i, 6 + j);
-              //
-              pemHess(6 + i, 0 + j) += mollifierEE * peHess(3 + i, 0 + j);
-              pemHess(9 + i, 0 + j) += mollifierEE * peHess(6 + i, 0 + j);
-              //
-              pemHess(6 + i, 6 + j) += mollifierEE * peHess(3 + i, 3 + j);
-              pemHess(6 + i, 9 + j) += mollifierEE * peHess(3 + i, 6 + j);
-              pemHess(9 + i, 6 + j) += mollifierEE * peHess(6 + i, 3 + j);
-              pemHess(9 + i, 9 + j) += mollifierEE * peHess(6 + i, 6 + j);
-            }
-
-          pemHess *= wPEM[pemi] * dHat;
-          // make pd
-          make_pd(pemHess);
-          // ee[0], ee[1], ee[2], ee[3]
-          tempPEM.tuple<144>("H", pemi) = pemHess;
-        } else {
-          using Mat12x12 = zs::vec<T, 12, 12>;
-          tempPEM.tuple<144>("H", pemi) = Mat12x12::zeros();
         }
+        // hessian
+        auto extendedPEGrad = GradT::zeros();
+        for (int d = 0; d != 3; ++d) {
+          extendedPEGrad(d) = barrierDistGrad * peGrad(0, d);
+          extendedPEGrad(6 + d) = barrierDistGrad * peGrad(1, d);
+          extendedPEGrad(9 + d) = barrierDistGrad * peGrad(2, d);
+        }
+        auto pemHess =
+            barrierDist2 * mollifierHessEE +
+            dyadic_prod(Vec12View{mollifierGradEE.data()}, extendedPEGrad) +
+            dyadic_prod(extendedPEGrad, Vec12View{mollifierGradEE.data()});
+
+        auto peHess = dist_hess_pe(ea0, eb0, eb1);
+        auto peGrad_ = Vec9View{peGrad.data()};
+
+        peHess = (barrierDistHess * dyadic_prod(peGrad_, peGrad_) +
+                  barrierDistGrad * peHess);
+        for (int i = 0; i != 3; ++i)
+          for (int j = 0; j != 3; ++j) {
+            pemHess(0 + i, 0 + j) += mollifierEE * peHess(0 + i, 0 + j);
+            //
+            pemHess(0 + i, 6 + j) += mollifierEE * peHess(0 + i, 3 + j);
+            pemHess(0 + i, 9 + j) += mollifierEE * peHess(0 + i, 6 + j);
+            //
+            pemHess(6 + i, 0 + j) += mollifierEE * peHess(3 + i, 0 + j);
+            pemHess(9 + i, 0 + j) += mollifierEE * peHess(6 + i, 0 + j);
+            //
+            pemHess(6 + i, 6 + j) += mollifierEE * peHess(3 + i, 3 + j);
+            pemHess(6 + i, 9 + j) += mollifierEE * peHess(3 + i, 6 + j);
+            pemHess(9 + i, 6 + j) += mollifierEE * peHess(6 + i, 3 + j);
+            pemHess(9 + i, 9 + j) += mollifierEE * peHess(6 + i, 6 + j);
+          }
+
+        pemHess *= wPEM[pemi] * dHat;
+        // make pd
+        make_pd(pemHess);
+        // ee[0], ee[1], ee[2], ee[3]
+        tempPEM.tuple<144>("H", pemi) = pemHess;
       });
       auto numEEM = nEEM.getVal();
       pol(range(numEEM), [vtemp = proxy<space>({}, vtemp),
@@ -1008,54 +972,46 @@ struct ImplicitTimeStepping : INode {
         auto dist2 = dist2_ee(ea0, ea1, eb0, eb1);
         if (dist2 < xi2)
           printf("dist already smaller than xi!\n");
-        if (dist2 - xi2 < activeGap2) {
-          auto barrierDist2 = barrier(dist2 - xi2, activeGap2, kappa);
-          auto barrierDistGrad =
-              barrier_gradient(dist2 - xi2, activeGap2, kappa);
-          auto barrierDistHess =
-              barrier_hessian(dist2 - xi2, activeGap2, kappa);
-          auto [mollifierEE, mollifierGradEE, mollifierHessEE] =
-              get_mollifier(eem);
-          using HessT = RM_CVREF_T(mollifierHessEE);
-          using GradT = zs::vec<T, 12>;
+        auto barrierDist2 = barrier(dist2 - xi2, activeGap2, kappa);
+        auto barrierDistGrad = barrier_gradient(dist2 - xi2, activeGap2, kappa);
+        auto barrierDistHess = barrier_hessian(dist2 - xi2, activeGap2, kappa);
+        auto [mollifierEE, mollifierGradEE, mollifierHessEE] =
+            get_mollifier(eem);
+        using HessT = RM_CVREF_T(mollifierHessEE);
+        using GradT = zs::vec<T, 12>;
 
-          {
-            auto scale = -wEEM[eemi] * dHat;
-            auto scaledMollifierGrad = scale * barrierDist2 * mollifierGradEE;
-            auto scaledEEGrad = scale * mollifierEE * barrierDistGrad * eeGrad;
-            // gradient
-            for (int d = 0; d != 3; ++d) {
-              atomic_add(exec_cuda, &vtemp("grad", d, eem[0]),
-                         scaledMollifierGrad(0, d) + scaledEEGrad(0, d));
-              atomic_add(exec_cuda, &vtemp("grad", d, eem[1]),
-                         scaledMollifierGrad(1, d) + scaledEEGrad(1, d));
-              atomic_add(exec_cuda, &vtemp("grad", d, eem[2]),
-                         scaledMollifierGrad(2, d) + scaledEEGrad(2, d));
-              atomic_add(exec_cuda, &vtemp("grad", d, eem[3]),
-                         scaledMollifierGrad(3, d) + scaledEEGrad(3, d));
-            }
+        {
+          auto scale = -wEEM[eemi] * dHat;
+          auto scaledMollifierGrad = scale * barrierDist2 * mollifierGradEE;
+          auto scaledEEGrad = scale * mollifierEE * barrierDistGrad * eeGrad;
+          // gradient
+          for (int d = 0; d != 3; ++d) {
+            atomic_add(exec_cuda, &vtemp("grad", d, eem[0]),
+                       scaledMollifierGrad(0, d) + scaledEEGrad(0, d));
+            atomic_add(exec_cuda, &vtemp("grad", d, eem[1]),
+                       scaledMollifierGrad(1, d) + scaledEEGrad(1, d));
+            atomic_add(exec_cuda, &vtemp("grad", d, eem[2]),
+                       scaledMollifierGrad(2, d) + scaledEEGrad(2, d));
+            atomic_add(exec_cuda, &vtemp("grad", d, eem[3]),
+                       scaledMollifierGrad(3, d) + scaledEEGrad(3, d));
           }
-          // hessian
-          auto eeGrad_ = Vec12View{eeGrad.data()};
-          auto eemHess =
-              barrierDist2 * mollifierHessEE +
-              dyadic_prod(Vec12View{mollifierGradEE.data()}, eeGrad_) +
-              dyadic_prod(eeGrad_, Vec12View{mollifierGradEE.data()});
-
-          auto eeHess = dist_hess_ee(ea0, ea1, eb0, eb1);
-          eeHess = (barrierDistHess * dyadic_prod(eeGrad_, eeGrad_) +
-                    barrierDistGrad * eeHess);
-          eemHess += mollifierEE * eeHess;
-
-          eemHess *= wEEM[eemi] * dHat;
-          // make pd
-          make_pd(eemHess);
-          // ee[0], ee[1], ee[2], ee[3]
-          tempEEM.tuple<144>("H", eemi) = eemHess;
-        } else {
-          using Mat12x12 = zs::vec<T, 12, 12>;
-          tempEEM.tuple<144>("H", eemi) = Mat12x12::zeros();
         }
+        // hessian
+        auto eeGrad_ = Vec12View{eeGrad.data()};
+        auto eemHess = barrierDist2 * mollifierHessEE +
+                       dyadic_prod(Vec12View{mollifierGradEE.data()}, eeGrad_) +
+                       dyadic_prod(eeGrad_, Vec12View{mollifierGradEE.data()});
+
+        auto eeHess = dist_hess_ee(ea0, ea1, eb0, eb1);
+        eeHess = (barrierDistHess * dyadic_prod(eeGrad_, eeGrad_) +
+                  barrierDistGrad * eeHess);
+        eemHess += mollifierEE * eeHess;
+
+        eemHess *= wEEM[eemi] * dHat;
+        // make pd
+        make_pd(eemHess);
+        // ee[0], ee[1], ee[2], ee[3]
+        tempEEM.tuple<144>("H", eemi) = eemHess;
       });
       return;
     }
@@ -1151,10 +1107,9 @@ struct ImplicitTimeStepping : INode {
               auto dist2 = dist2_pp(x0, x1);
               if (dist2 < xi2)
                 printf("dist already smaller than xi!\n");
-              if (dist2 - xi2 < activeGap2)
-                atomic_add(exec_cuda, &res[0],
-                           wPP[ppi] * dHat *
-                               zs::barrier(dist2 - xi2, activeGap2, kappa));
+              atomic_add(exec_cuda, &res[0],
+                         wPP[ppi] * dHat *
+                             zs::barrier(dist2 - xi2, activeGap2, kappa));
             });
         auto numPE = nPE.getVal();
         pol(range(numPE),
@@ -1170,10 +1125,9 @@ struct ImplicitTimeStepping : INode {
               auto dist2 = dist2_pe(p, e0, e1);
               if (dist2 < xi2)
                 printf("dist already smaller than xi!\n");
-              if (dist2 - xi2 < activeGap2)
-                atomic_add(exec_cuda, &res[0],
-                           wPE[pei] * dHat *
-                               zs::barrier(dist2 - xi2, activeGap2, kappa));
+              atomic_add(exec_cuda, &res[0],
+                         wPE[pei] * dHat *
+                             zs::barrier(dist2 - xi2, activeGap2, kappa));
             });
         auto numPT = nPT.getVal();
         pol(range(numPT),
@@ -1190,10 +1144,9 @@ struct ImplicitTimeStepping : INode {
               auto dist2 = dist2_pt(p, t0, t1, t2);
               if (dist2 < xi2)
                 printf("dist already smaller than xi!\n");
-              if (dist2 - xi2 < activeGap2)
-                atomic_add(exec_cuda, &res[0],
-                           wPT[pti] * dHat *
-                               zs::barrier(dist2 - xi2, activeGap2, kappa));
+              atomic_add(exec_cuda, &res[0],
+                         wPT[pti] * dHat *
+                             zs::barrier(dist2 - xi2, activeGap2, kappa));
             });
         auto numEE = nEE.getVal();
         pol(range(numEE),
@@ -1210,10 +1163,9 @@ struct ImplicitTimeStepping : INode {
               auto dist2 = dist2_ee(ea0, ea1, eb0, eb1);
               if (dist2 < xi2)
                 printf("dist already smaller than xi!\n");
-              if (dist2 - xi2 < activeGap2)
-                atomic_add(exec_cuda, &res[0],
-                           wEE[eei] * dHat *
-                               zs::barrier(dist2 - xi2, activeGap2, kappa));
+              atomic_add(exec_cuda, &res[0],
+                         wEE[eei] * dHat *
+                             zs::barrier(dist2 - xi2, activeGap2, kappa));
             });
 
         /// mollified
@@ -1246,10 +1198,9 @@ struct ImplicitTimeStepping : INode {
               auto dist2 = dist2_ee(ea0, ea1, eb0, eb1);
               if (dist2 < xi2)
                 printf("dist already smaller than xi!\n");
-              if (dist2 - xi2 < activeGap2)
-                atomic_add(exec_cuda, &res[0],
-                           wPPM[ppmi] * dHat * get_mollifier(ppm) *
-                               zs::barrier(dist2 - xi2, activeGap2, kappa));
+              atomic_add(exec_cuda, &res[0],
+                         wPPM[ppmi] * dHat * get_mollifier(ppm) *
+                             zs::barrier(dist2 - xi2, activeGap2, kappa));
             });
         auto numPEM = nPEM.getVal();
         pol(range(numPEM),
@@ -1266,10 +1217,9 @@ struct ImplicitTimeStepping : INode {
               auto dist2 = dist2_ee(ea0, ea1, eb0, eb1);
               if (dist2 < xi2)
                 printf("dist already smaller than xi!\n");
-              if (dist2 - xi2 < activeGap2)
-                atomic_add(exec_cuda, &res[0],
-                           wPEM[pemi] * dHat * get_mollifier(pem) *
-                               zs::barrier(dist2 - xi2, activeGap2, kappa));
+              atomic_add(exec_cuda, &res[0],
+                         wPEM[pemi] * dHat * get_mollifier(pem) *
+                             zs::barrier(dist2 - xi2, activeGap2, kappa));
             });
         auto numEEM = nEEM.getVal();
         pol(range(numEEM),
@@ -1286,10 +1236,9 @@ struct ImplicitTimeStepping : INode {
               auto dist2 = dist2_ee(ea0, ea1, eb0, eb1);
               if (dist2 < xi2)
                 printf("dist already smaller than xi!\n");
-              if (dist2 - xi2 < activeGap2)
-                atomic_add(exec_cuda, &res[0],
-                           wEEM[eemi] * dHat * get_mollifier(eem) *
-                               zs::barrier(dist2 - xi2, activeGap2, kappa));
+              atomic_add(exec_cuda, &res[0],
+                         wEEM[eemi] * dHat * get_mollifier(eem) *
+                             zs::barrier(dist2 - xi2, activeGap2, kappa));
             });
 
         // boundary
@@ -1913,7 +1862,7 @@ struct ImplicitTimeStepping : INode {
         auto residualPreconditionedNorm = std::sqrt(zTrk);
         auto localTol = std::min(0.01 * residualPreconditionedNorm, 1e-7);
         int iter = 0;
-        for (; iter != 1000; ++iter) {
+        for (; iter != 10000; ++iter) {
           if (iter % 10 == 0)
             fmt::print("cg iter: {}, norm: {}\n", iter,
                        residualPreconditionedNorm);
@@ -1975,9 +1924,9 @@ struct ImplicitTimeStepping : INode {
 
       // line search
       T alpha = 1.;
-      computeInversionFreeStepSize(cudaPol, eles, vtemp, alpha);
+      // computeInversionFreeStepSize(cudaPol, eles, vtemp, alpha);
       find_ground_intersection_free_stepsize(cudaPol, *zstets, vtemp, alpha);
-#if 1
+#if 0
       while (find_self_intersection_free_stepsize(cudaPol, *zstets, vtemp,
                                                   alpha, xi)) {
         alpha /= 2;
@@ -1990,7 +1939,7 @@ struct ImplicitTimeStepping : INode {
       fmt::print(fg(fmt::color::dark_cyan),
                  "discrete intersection-free alpha: {}\n", alpha);
 #endif
-#if 1
+#if 0
       do {
         find_intersection_free_stepsize(cudaPol, *zstets, vtemp, alpha, xi);
         if (!find_self_intersection_free_stepsize(cudaPol, *zstets, vtemp,

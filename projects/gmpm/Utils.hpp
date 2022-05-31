@@ -385,13 +385,13 @@ void find_intersection_free_stepsize(Pol &pol, ZenoParticles &zstets,
     if (!zstets.hasBvh(ZenoParticles::s_surfTriTag)) // build if bvh not exist
       zstets.bvh(ZenoParticles::s_surfTriTag)
           .build(pol, retrieve_bounding_volumes(pol, vtemp, surfaces, vtemp,
-                                                wrapv<3>{}, stepSize, xi, "xn",
-                                                "dir"));
+                                                wrapv<3>{}, stepSize, 2 * xi,
+                                                "xn", "dir"));
     else
       zstets.bvh(ZenoParticles::s_surfTriTag)
           .refit(pol, retrieve_bounding_volumes(pol, vtemp, surfaces, vtemp,
-                                                wrapv<3>{}, stepSize, xi, "xn",
-                                                "dir"));
+                                                wrapv<3>{}, stepSize, 2 * xi,
+                                                "xn", "dir"));
   }
   const auto &stBvh = zstets.bvh(ZenoParticles::s_surfTriTag);
 
@@ -400,13 +400,13 @@ void find_intersection_free_stepsize(Pol &pol, ZenoParticles &zstets,
     if (!zstets.hasBvh(ZenoParticles::s_surfEdgeTag))
       zstets.bvh(ZenoParticles::s_surfEdgeTag)
           .build(pol, retrieve_bounding_volumes(pol, vtemp, surfEdges, vtemp,
-                                                wrapv<2>{}, stepSize, xi, "xn",
-                                                "dir"));
+                                                wrapv<2>{}, stepSize, 2 * xi,
+                                                "xn", "dir"));
     else
       zstets.bvh(ZenoParticles::s_surfEdgeTag)
           .refit(pol, retrieve_bounding_volumes(pol, vtemp, surfEdges, vtemp,
-                                                wrapv<2>{}, stepSize, xi, "xn",
-                                                "dir"));
+                                                wrapv<2>{}, stepSize, 2 * xi,
+                                                "xn", "dir"));
   }
   const auto &seBvh = zstets.bvh(ZenoParticles::s_surfEdgeTag);
 
@@ -428,8 +428,8 @@ void find_intersection_free_stepsize(Pol &pol, ZenoParticles &zstets,
     auto p = vtemp.pack<3>("xn", vi);
     auto dp = vtemp.pack<3>("dir", vi);
     auto bv = bv_t{get_bounding_box(p, p + stepSize * dp)};
-    bv._min -= thickness / 2;
-    bv._max += thickness / 2;
+    bv._min -= thickness;
+    bv._max += thickness;
     auto alpha = stepSize;
     bvh.iter_neighbors(bv, [&](int stI) {
       auto tri =
@@ -485,8 +485,8 @@ void find_intersection_free_stepsize(Pol &pol, ZenoParticles &zstets,
     auto bv = bv_t{get_bounding_box(x0, x0 + stepSize * dea0)};
     merge(bv, x1);
     merge(bv, x1 + stepSize * dea1);
-    bv._min -= thickness / 2;
-    bv._max += thickness / 2;
+    bv._min -= thickness;
+    bv._max += thickness;
 #endif
     auto alpha = stepSize;
     bvh.iter_neighbors(bv, [&](int seI) {
