@@ -340,7 +340,11 @@ static void printUsageAndExit( const char* argv0 )
 
 static void initLaunchParams( PathTracerState& state )
 {
+#ifdef USING_20XX
+    state.params.handle         = state.gas_handle;
+#else
     state.params.handle         = state.m_ias_handle;
+#endif
     CUDA_CHECK( cudaMalloc(
                 reinterpret_cast<void**>( &state.accum_buffer_p.reset() ),
                 state.params.width * state.params.height * sizeof( float4 )
@@ -1002,7 +1006,54 @@ void optixupdatemesh(std::map<std::string, int> const &mtlidlut) {
     camera_changed = true;
     g_mtlidlut = mtlidlut;
     updatedrawobjects();
-#if 0
+#ifdef USING_20XX
+    const size_t vertices_size_in_bytes = g_vertices.size() * sizeof( Vertex );
+    CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.d_vertices.reset() ), vertices_size_in_bytes ) );
+    CUDA_CHECK( cudaMemcpy(
+                reinterpret_cast<void*>( (CUdeviceptr&)state.d_vertices ),
+                g_vertices.data(), vertices_size_in_bytes,
+                cudaMemcpyHostToDevice
+                ) );
+    CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.d_clr.reset() ), vertices_size_in_bytes ) );
+    CUDA_CHECK( cudaMemcpy(
+                reinterpret_cast<void*>( (CUdeviceptr&)state.d_clr ),
+                g_clr.data(), vertices_size_in_bytes,
+                cudaMemcpyHostToDevice
+                ) );
+    CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.d_uv.reset() ), vertices_size_in_bytes ) );
+    CUDA_CHECK( cudaMemcpy(
+                reinterpret_cast<void*>( (CUdeviceptr&)state.d_uv ),
+                g_uv.data(), vertices_size_in_bytes,
+                cudaMemcpyHostToDevice
+                ) );
+    CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.d_nrm.reset() ), vertices_size_in_bytes ) );
+    CUDA_CHECK( cudaMemcpy(
+                reinterpret_cast<void*>( (CUdeviceptr&)state.d_nrm ),
+                g_nrm.data(), vertices_size_in_bytes,
+                cudaMemcpyHostToDevice
+                ) );
+    CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.d_tan.reset() ), vertices_size_in_bytes ) );
+    CUDA_CHECK( cudaMemcpy(
+                reinterpret_cast<void*>( (CUdeviceptr&)state.d_tan ),
+                g_tan.data(), vertices_size_in_bytes,
+                cudaMemcpyHostToDevice
+                ) );
+    const size_t mat_indices_size_in_bytes = g_mat_indices.size() * sizeof( uint32_t );
+    CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.d_mat_indices.reset() ), mat_indices_size_in_bytes ) );
+    CUDA_CHECK( cudaMemcpy(
+                reinterpret_cast<void*>( (CUdeviceptr)state.d_mat_indices ),
+                g_mat_indices.data(),
+                mat_indices_size_in_bytes,
+                cudaMemcpyHostToDevice
+                ) );
+    const size_t light_mark_size_in_bytes = g_lightMark.size() * sizeof( unsigned short );
+    CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.d_lightMark.reset() ), light_mark_size_in_bytes ) );
+    CUDA_CHECK( cudaMemcpy(
+                reinterpret_cast<void*>( (CUdeviceptr)state.d_lightMark ),
+                g_lightMark.data(),
+                light_mark_size_in_bytes,
+                cudaMemcpyHostToDevice
+                ) );
     buildMeshAccel( state );
 #else
     const size_t vertices_size_in_bytes = g_vertices.size() * sizeof( Vertex );
