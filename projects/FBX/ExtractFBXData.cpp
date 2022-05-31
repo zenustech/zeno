@@ -54,7 +54,10 @@ struct ExtractMatTexList : zeno::INode {
         //zeno::log_info(">>>>> Get Mat Name {}", mat->value.at(key).matName);
 
         auto lo = std::make_shared<zeno::ListObject>();
-        lo->arr = mat->value.at(key).getTexList();
+        auto tl = mat->value.at(key).getTexList();
+        for(auto&p: tl){
+            lo->arr.emplace_back(p);
+        }
 
         //for(auto&l: lo->arr){
         //    zeno::log_info("Tex: {}", std::any_cast<std::string>(l));

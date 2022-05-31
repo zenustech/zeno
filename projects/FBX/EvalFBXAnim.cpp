@@ -70,9 +70,18 @@ struct EvalAnim{
             //zeno::log_info("    R {: f} {: f} {: f} {: f}", rotate.x, rotate.y, rotate.z, rotate.w);
             //zeno::log_info("    S {: f} {: f} {: f}", scale.x, scale.y, scale.z);
 
-            t->lut[m.first] = zeno::vec3f(trans.x, trans.y, trans.z);
-            r->lut[m.first] = zeno::vec4f(rotate.x, rotate.y, rotate.z, rotate.w);
-            s->lut[m.first] = zeno::vec3f(scale.x, scale.y, scale.z);
+            auto nt = std::make_shared<zeno::NumericObject>();
+            nt->value = zeno::vec3f(trans.x, trans.y, trans.z);
+
+            auto nr = std::make_shared<zeno::NumericObject>();
+            nr->value = zeno::vec4f(rotate.x, rotate.y, rotate.z, rotate.w);
+
+            auto ns = std::make_shared<zeno::NumericObject>();
+            ns->value = zeno::vec3f(scale.x, scale.y, scale.z);
+
+            t->lut[m.first] = nt;
+            r->lut[m.first] = nr;
+            s->lut[m.first] = ns;
         }
     }
 
@@ -110,7 +119,7 @@ struct EvalAnim{
     void updateCamera(std::shared_ptr<FBXData>& fbxData, std::shared_ptr<ICamera>& iCamera){;
         for(auto& m: m_LazyTransforms){
             if(fbxData->iCamera.value.find(m.first) != fbxData->iCamera.value.end()){
-                zeno::log_info("----- {}", m.first);
+                //zeno::log_info("----- {}", m.first);
                 Helper::printAiMatrix(m.second, true);
 
                 SCamera cam = fbxData->iCamera.value.at(m.first);
@@ -213,7 +222,18 @@ struct EvalFBXAnim : zeno::INode {
 
             if(kmValue.find(meshName) != kmValue.end()){
                 auto& k = kmValue[meshName];
-                auto& kd = k[int(anim.m_CurrentFrame)];
+                unsigned int ki = 0;
+                unsigned int kin;
+                for(unsigned int i=0; i<k.size()-1; i++){  // Find keyMorph index
+                    if(anim.m_CurrentFrame < k[i+1].m_Time){ // Animation must occur between at least two frames
+                        ki = i;
+                    }
+                }
+                kin = ki+1;
+
+                auto& kd = k[ki];
+                auto& kdn = k[kin];
+                float factor = (anim.m_CurrentFrame - kd.m_Time) / (kdn.m_Time - kd.m_Time);
 
                 for(unsigned int i=0; i<b.size(); i++){ // Anim Mesh & Same as BlendShape WeightsAndValues
                     auto bsprim = std::make_shared<zeno::PrimitiveObject>();
@@ -222,7 +242,7 @@ struct EvalFBXAnim : zeno::INode {
                     auto &norm = bsprim->verts.add_attr<zeno::vec3f>("nrm");
                     auto &posb = bsprim->verts.add_attr<zeno::vec3f>("posb");
                     auto &bsw = bsprim->verts.add_attr<float>("bsw");
-                    double w = kd.m_Weights[i];
+                    double w = kd.m_Weights[i] * (1.0f - factor) + kdn.m_Weights[i] * factor;
                     auto& v = b[i];
                     for(unsigned int j=0; j<v.size(); j++){ // Mesh Vert
                         auto& vpos = v[j].deltaPosition;
@@ -240,7 +260,7 @@ struct EvalFBXAnim : zeno::INode {
             }
         }
 
-        zeno::log_info("Frame {} Prims Num {} Mesh Name {}", anim.m_CurrentFrame, prims->arr.size(), meshName);
+        //zeno::log_info("Frame {} Prims Num {} Mesh Name {}", anim.m_CurrentFrame, prims->arr.size(), meshName);
 
         set_output("prim", std::move(prim));
         set_output("bsPrims", std::move(prims));

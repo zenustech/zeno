@@ -113,23 +113,30 @@ struct SAnimBone {
         m_LocalTransform = translation * rotation * scale;
     }
 
+    void _getIndexWarn(float animationTime){
+        zeno::log_warn("Failed to get index, time {}", animationTime);
+    }
+
     int getPositionIndex(float animationTime) {
         for (int index = 0; index < m_NumPositions - 1; ++index) {
             if (animationTime < m_Positions[index + 1].timeStamp)
                 return index;
         }
+        _getIndexWarn(animationTime);
     }
     int getRotationIndex(float animationTime) {
         for (int index = 0; index < m_NumRotations - 1; ++index) {
             if (animationTime < m_Rotations[index + 1].timeStamp)
                 return index;
         }
+        _getIndexWarn(animationTime);
     }
     int getScaleIndex(float animationTime) {
         for (int index = 0; index < m_NumScalings - 1; ++index) {
             if (animationTime < m_Scales[index + 1].timeStamp)
                 return index;
         }
+        _getIndexWarn(animationTime);
     }
 
     aiMatrix4x4 interpolatePosition(float animationTime) {
@@ -193,12 +200,11 @@ struct SAnimBone {
     }
 
     float getScaleFactor(float lastTimeStamp, float nextTimeStamp, float animationTime) {
-        float scaleFactor = 0.0f;
+        // e.g. last: 1, next: 2, time: 1.5  -> (1.5-1)/(2-1)=0.5
         float midWayLength = animationTime - lastTimeStamp;
         float framesDiff = nextTimeStamp - lastTimeStamp;
-        scaleFactor = midWayLength / framesDiff;
 
-        return scaleFactor;
+        return midWayLength / framesDiff;
     }
 };
 
@@ -219,7 +225,6 @@ struct SBSVertex{
     aiVector3D deltaNormal;
     float weight;
 };
-
 
 struct SMaterialProp{
     int order;
@@ -315,8 +320,8 @@ struct SMaterial : zeno::IObjectClone<SMaterial>{
         val.emplace("opacity", SMaterialProp{28, true, aiColor4D(), aiTextureType_OPACITY, "$ai.transmission"});
     }
 
-    std::vector<zeno::Any> getTexList(){
-        std::vector<zeno::Any> tl;
+    std::vector<std::string> getTexList(){
+        std::vector<std::string> tl;
 
         std::copy(val.begin(),
                   val.end(),

@@ -489,11 +489,13 @@ struct Anim{
             auto animation = scene->mAnimations[0];
             duration = animation->mDuration;
             tick = animation->mTicksPerSecond;
-            zeno::log_info("Animation Name: {} NC {} NMC {} NMMC {}",
+            zeno::log_info("AniName: {} NC {} NMC {} NMMC {} D {} T {}",
                            animation->mName.data,
                            animation->mNumChannels,
                            animation->mNumMeshChannels,
-                           animation->mNumMorphMeshChannels
+                           animation->mNumMorphMeshChannels,
+                           animation->mDuration,
+                           animation->mTicksPerSecond
                            );
 
             setupBones(animation);
