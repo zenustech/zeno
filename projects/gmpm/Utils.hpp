@@ -426,7 +426,10 @@ void find_intersection_free_stepsize(Pol &pol, ZenoParticles &zstets,
                                    thickness = xi] ZS_LAMBDA(int svi) mutable {
     auto vi = reinterpret_bits<int>(svs("inds", svi));
     auto p = vtemp.pack<3>("xn", vi);
-    auto bv = bv_t{p, p};
+    auto dp = vtemp.pack<3>("dir", vi);
+    auto bv = bv_t{get_bounding_box(p, p + stepSize * dp)};
+    bv._min -= thickness / 2;
+    bv._max += thickness / 2;
     auto alpha = stepSize;
     bvh.iter_neighbors(bv, [&](int stI) {
       auto tri =
@@ -443,13 +446,14 @@ void find_intersection_free_stepsize(Pol &pol, ZenoParticles &zstets,
       auto t0 = vtemp.pack<3>("xn", tri[0]);
       auto t1 = vtemp.pack<3>("xn", tri[1]);
       auto t2 = vtemp.pack<3>("xn", tri[2]);
-      auto dp = vtemp.pack<3>("dir", vi);
       auto dt0 = vtemp.pack<3>("dir", tri[0]);
       auto dt1 = vtemp.pack<3>("dir", tri[1]);
       auto dt2 = vtemp.pack<3>("dir", tri[2]);
+#if 0
       if (!pt_ccd_broadphase(p, t0, t1, t2, dp, dt0, dt1, dt2, thickness,
                              alpha))
         return;
+#endif
       pt_accd(p, t0, t1, t2, dp, dt0, dt1, dt2, (T)0.2, thickness, alpha);
     });
     if (alpha < stepSize)
@@ -472,8 +476,18 @@ void find_intersection_free_stepsize(Pol &pol, ZenoParticles &zstets,
         ses.template pack<2>("inds", sei).template reinterpret_bits<int>();
     auto x0 = vtemp.pack<3>("xn", edgeInds[0]);
     auto x1 = vtemp.pack<3>("xn", edgeInds[1]);
+    auto dea0 = vtemp.pack<3>("dir", edgeInds[0]);
+    auto dea1 = vtemp.pack<3>("dir", edgeInds[1]);
+#if 0
     auto [mi, ma] = get_bounding_box(x0, x1);
-    auto bv = bv_t{mi, ma};
+    auto bv = bv_t{mi - thickness, ma + thickness};
+#else
+    auto bv = bv_t{get_bounding_box(x0, x0 + stepSize * dea0)};
+    merge(bv, x1);
+    merge(bv, x1 + stepSize * dea1);
+    bv._min -= thickness / 2;
+    bv._max += thickness / 2;
+#endif
     auto alpha = stepSize;
     bvh.iter_neighbors(bv, [&](int seI) {
       // if (sei > seI) return;
@@ -491,13 +505,13 @@ void find_intersection_free_stepsize(Pol &pol, ZenoParticles &zstets,
       // ccd
       auto eb0 = vtemp.pack<3>("xn", oEdgeInds[0]);
       auto eb1 = vtemp.pack<3>("xn", oEdgeInds[1]);
-      auto dea0 = vtemp.pack<3>("dir", edgeInds[0]);
-      auto dea1 = vtemp.pack<3>("dir", edgeInds[1]);
       auto deb0 = vtemp.pack<3>("dir", oEdgeInds[0]);
       auto deb1 = vtemp.pack<3>("dir", oEdgeInds[1]);
+#if 0
       if (!ee_ccd_broadphase(x0, x1, eb0, eb1, dea0, dea1, deb0, deb1,
                              thickness, alpha))
         return;
+#endif
       ee_accd(x0, x1, eb0, eb1, dea0, dea1, deb0, deb1, (T)0.2, thickness,
               alpha);
     });
