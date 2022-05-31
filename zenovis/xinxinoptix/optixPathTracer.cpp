@@ -175,7 +175,7 @@ static std::vector<uint32_t> g_mat_indices= // TRIANGLE_COUNT
 {
     0,0,0,
 };
-static std::vector<u_short> g_lightMark = //TRIANGLE_COUNT
+static std::vector<uint16_t> g_lightMark = //TRIANGLE_COUNT
 {
     0
 };
@@ -385,7 +385,7 @@ static void launchSubframe( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Path
     OPTIX_CHECK( optixLaunch(
                 state.pipeline,
                 0,
-                reinterpret_cast<CUdeviceptr>( (CUdeviceptr)state.d_params ),
+                (CUdeviceptr)state.d_params,
                 sizeof( Params ),
                 &state.sbt,
                 state.params.width,   // launch width
