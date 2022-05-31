@@ -375,7 +375,7 @@ struct QuasiStaticStepping : INode {
                         eles.template pack<dimp1>("inds",ei).template reinterpret_bits<int>();
                     auto He = etemp.pack<dim * dimp1,dim * dimp1>("He",ei);
                     for (int vi = 0; vi != dimp1; ++vi) {
-                    #if 0
+                    #if 1
                       for (int i = 0; i != dim; ++i)
                         for (int j = 0; j != dim; ++j) {
                           atomic_add(exec_cuda, &vtemp("P", i * dim + j, inds[vi]),
@@ -485,7 +485,7 @@ struct QuasiStaticStepping : INode {
         if(zTrk < 0){
             T rn = std::sqrt(dot(cudaPol,vtemp,"r","r"));
             T qn = std::sqrt(dot(cudaPol,vtemp,"q","q"));
-            fmt::print("\t# invalid zTrk found in {} iters with zTrk {} and r {} and q {}\n",
+            fmt::print("\t#Begin invalid zTrk found in {} iters with zTrk {} and r {} and q {}\n",
                 newtonIter, zTrk, infNorm(cudaPol, vtemp, "grad"),rn,qn);
 
             fmt::print("FOUND NON_SPD P\n");
@@ -603,7 +603,7 @@ struct QuasiStaticStepping : INode {
           throw std::runtime_error("INVALID DESCENT DIRECTION");
       }
 
-      fmt::print("DO LINE SEARCH\n");
+    //   fmt::print("DO LINE SEARCH\n");
       // line search
       T alpha = 1.;
 
