@@ -221,6 +221,14 @@ struct ZenoParticles : IObjectClone<ZenoParticles> {
   decltype(auto) bvh(const std::string &tag) const {
     return auxSpatialData.at(tag);
   }
+  template <typename T>
+  decltype(auto) setMeta(const std::string &tag, T &&val) {
+    return metas[tag] = FWD(val);
+  }
+  template <typename T = float>
+  decltype(auto) readMeta(const std::string &tag, zs::wrapt<T> = {}) const {
+    return std::any_cast<T>(metas.at(tag));
+  }
   bool hasBvh(const std::string &tag) const {
     // return auxSpatialData.find(tag) != auxSpatialData.end();
     if (auto it = auxSpatialData.find(tag); it != auxSpatialData.end())
@@ -233,6 +241,7 @@ struct ZenoParticles : IObjectClone<ZenoParticles> {
   std::optional<particles_t> elements{};
   std::map<std::string, particles_t> auxData;
   std::map<std::string, lbvh_t> auxSpatialData;
+  std::map<std::string, std::any> metas;
   category_e category{category_e::mpm}; // 0: conventional mpm particle, 1:
                                         // curve, 2: surface, 3: tet
   std::shared_ptr<PrimitiveObject> prim{};

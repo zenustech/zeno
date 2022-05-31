@@ -447,16 +447,27 @@ struct ToZSTetrahedra : INode {
                 atomic_add(zs::exec_omp, &pars("m", quad[d]), vmass);
             });
     // surface info
+    double areaSum{0.0};
     auto &surfaces = (*zstets)[ZenoParticles::s_surfTriTag];
     surfaces = typename ZenoParticles::particles_t({{"inds", 3}}, tris.size(),
                                                    zs::memsrc_e::host);
     ompExec(zs::range(tris.size()),
-            [&, surfaces = proxy<space>({}, surfaces)](int triNo) mutable {
+            [&, surfaces = proxy<space>({}, surfaces),
+             pars = proxy<space>({}, pars)](int triNo) mutable {
               auto tri = tris[triNo];
+              auto X0 = pars.pack<3>("x0", tri[0]);
+              auto X1 = pars.pack<3>("x0", tri[1]);
+              auto X2 = pars.pack<3>("x0", tri[2]);
+              atomic_add(exec_omp, &areaSum,
+                         (double)(X1 - X0).cross(X2 - X0).norm() / 2);
               for (int i = 0; i != 3; ++i)
                 surfaces("inds", i, triNo) =
                     zs::reinterpret_bits<float>(tri[i]);
             });
+
+    // record total surface area
+    zstets->setMeta("surfArea", (float)areaSum);
+
     auto &surfEdges = (*zstets)[ZenoParticles::s_surfEdgeTag];
     surfEdges = typename ZenoParticles::particles_t(
         {{"inds", 2}, {"w", 1}}, lines.size(), zs::memsrc_e::host);
@@ -498,9 +509,9 @@ ZENDEFNODE(ToZSTetrahedra, {{{"ZSModel"}, {"quad (tet) mesh", "prim"}},
 
 struct ToZSTriMesh : INode {
   using T = float;
-  using dtiles_t = zs::TileVector<T,32>;
+  using dtiles_t = zs::TileVector<T, 32>;
   using tiles_t = typename ZenoParticles::particles_t;
-  using vec3 = zs::vec<T, 3>;  
+  using vec3 = zs::vec<T, 3>;
 
   void apply() override {
     using namespace zs;
@@ -510,7 +521,7 @@ struct ToZSTriMesh : INode {
     const auto &points = prim->points;
     const auto &lines = prim->lines;
     const auto &tris = prim->tris;
-    
+
     auto ompExec = zs::omp_exec();
     const auto numVerts = pos.size();
     const auto numTris = tris.size();
@@ -521,40 +532,37 @@ struct ToZSTriMesh : INode {
     zstris->category = ZenoParticles::surface;
     zstris->sprayedOffset = pos.size();
 
-    std::vector<zs::PropertyTag> tags{
-      {"x",3} 
-    };
-    std::vector<zs::PropertyTag> eleTags{{"inds",3}};
+    std::vector<zs::PropertyTag> tags{{"x", 3}};
+    std::vector<zs::PropertyTag> eleTags{{"inds", 3}};
 
     constexpr auto space = zs::execspace_e::openmp;
-    zstris->particles = std::make_shared<tiles_t>(tags,pos.size(),zs::memsrc_e::host);
-    auto& pars = zstris->getParticles();
+    zstris->particles =
+        std::make_shared<tiles_t>(tags, pos.size(), zs::memsrc_e::host);
+    auto &pars = zstris->getParticles();
     ompExec(Collapse{pars.size()},
-      [pars = proxy<space>({},pars), &pos](int vi) mutable {
-        pars.tuple<3>("x",vi) = vec3{pos[vi][0],pos[vi][1],pos[vi][2]};
-      });
+            [pars = proxy<space>({}, pars), &pos](int vi) mutable {
+              pars.tuple<3>("x", vi) = vec3{pos[vi][0], pos[vi][1], pos[vi][2]};
+            });
 
-    zstris->elements = typename ZenoParticles::particles_t(eleTags,tris.size(),zs::memsrc_e::host);
-    auto& eles = zstris->getQuadraturePoints();
+    zstris->elements = typename ZenoParticles::particles_t(eleTags, tris.size(),
+                                                           zs::memsrc_e::host);
+    auto &eles = zstris->getQuadraturePoints();
     ompExec(Collapse{tris.size()},
-      [eles = proxy<space>({},eles), &tris](int ei) mutable {
-        for(size_t i = 0;i < 3;++i)
-          eles("inds",i,ei) = zs::reinterpret_bits<float>(tris[ei][i]);
-      });
+            [eles = proxy<space>({}, eles), &tris](int ei) mutable {
+              for (size_t i = 0; i < 3; ++i)
+                eles("inds", i, ei) = zs::reinterpret_bits<float>(tris[ei][i]);
+            });
 
-    pars = pars.clone({zs::memsrc_e::device,0});
-    eles = eles.clone({zs::memsrc_e::device,0});
+    pars = pars.clone({zs::memsrc_e::device, 0});
+    eles = eles.clone({zs::memsrc_e::device, 0});
 
-
-
-    set_output("ZSParticles",std::move(zstris));
+    set_output("ZSParticles", std::move(zstris));
   }
 };
 
 ZENDEFNODE(ToZSTriMesh, {{{"surf (tri) mesh", "prim"}},
-                            {{"trimesh on gpu", "ZSParticles"}},
-                            {},
-                            {"FEM"}});
-
+                         {{"trimesh on gpu", "ZSParticles"}},
+                         {},
+                         {"FEM"}});
 
 } // namespace zeno
