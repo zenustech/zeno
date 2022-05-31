@@ -67,7 +67,7 @@ struct ZSComputeBaryCentricWeights : INode {
             m(i,3) = p3[i];
         }
         m(3,0) = m(3,1) = m(3,2) = m(3,3) = 1;
-        return zs::determinant(m);
+        return zs::determinant(m)/6;
     }
 
     static constexpr T ComputeArea(
@@ -81,7 +81,7 @@ struct ZSComputeBaryCentricWeights : INode {
         T a = p01.length();
         T b = p02.length();
         T c = p12.length();
-        T s = (a + b + c)/3;
+        T s = (a + b + c)/2;
         return zs::sqrt(s*(s-a)*(s-b)*(s-c));
     }
 
@@ -107,33 +107,48 @@ struct ZSComputeBaryCentricWeights : INode {
         auto thickness = get_param<float>("bvh_thickness");
         auto fitting_in = get_param<int>("fitting_in");
 
+        auto bvh_channel = get_param<std::string>("bvh_channel");
         auto tag = get_param<std::string>("tag");
 
         const auto& verts = zsvolume->getParticles();
         const auto& eles = zsvolume->getQuadraturePoints();
 
         const auto& everts = zssurf->getParticles();
-        const auto& etris = zssurf->getQuadraturePoints();
+        const auto& e_eles = zssurf->getQuadraturePoints();
 
         auto &bcw = (*zsvolume)[tag];
-        bcw = typename ZenoParticles::particles_t({{"inds",1},{"w",4},{"area",1}},everts.size(),zs::memsrc_e::device,0);
+        bcw = typename ZenoParticles::particles_t({{"inds",1},{"w",4},{"cnorm",1}},everts.size(),zs::memsrc_e::device,0);
+
 
         auto cudaExec = zs::cuda_exec();
         const auto numFEMVerts = verts.size();
         const auto numFEMEles = eles.size();
         const auto numEmbedVerts = bcw.size();
-        const auto numEmbedTris = etris.size();
+        const auto numEmbedEles = e_eles.size();
 
-        auto bvs = retrieve_bounding_volumes(cudaExec,verts,eles,wrapv<4>{},thickness);
+        constexpr auto space = zs::execspace_e::cuda;
+
+        // fmt::print("NM_ELES : {}\n",numFEMEles);
+        // cudaExec(zs::range(numFEMEles),
+        //     [eles = proxy<space>({},eles)] ZS_LAMBDA(int ei) mutable {
+        //         auto inds = eles.pack<4>("inds",ei).reinterpret_bits<int>();
+        //         printf("ELE<%d> : %d\t%d\t%d\t%d\n",ei,inds[0],inds[1],inds[2],inds[3]);
+        //     });
+
+
+        auto bvs = retrieve_bounding_volumes(cudaExec,verts,eles,wrapv<4>{},thickness,bvh_channel);
         auto tetsBvh = zsvolume->bvh(ZenoParticles::s_elementTag);
 
         tetsBvh.build(cudaExec,bvs);
 
-        constexpr auto space = zs::execspace_e::cuda;
+
+
+
         cudaExec(zs::range(numEmbedVerts),
             [bcw = proxy<space>({},bcw)] ZS_LAMBDA(int vi) mutable{
                 bcw("inds",vi) = reinterpret_bits<float>(int(-1));
             });
+
 
         cudaExec(zs::range(numEmbedVerts),
             [verts = proxy<space>({},verts),eles = proxy<space>({},eles),bcw = proxy<space>({},bcw),everts = proxy<space>({},everts),tetsBvh = proxy<space>(tetsBvh),fitting_in] ZS_LAMBDA (int vi) mutable {
@@ -144,6 +159,7 @@ struct ZSComputeBaryCentricWeights : INode {
                     if(found)
                         return;
 
+
                     auto inds = eles.pack<4>("inds", ei).reinterpret_bits<int>();
                     auto p0 = verts.pack<3>("x",inds[0]);
                     auto p1 = verts.pack<3>("x",inds[1]);
@@ -152,7 +168,13 @@ struct ZSComputeBaryCentricWeights : INode {
 
                     auto ws = ComputeBaryCentricCoordinate(p,p0,p1,p2,p3);
 
-                    T epsilon = 1e-6;
+                    // if(vi == 0){
+                    //     printf("ITER_V<%d> ON E<%d> : W[%f %f %f %f]\n",
+                    //         vi,ei,(float)ws[0],(float)ws[1],(float)ws[2],(float)ws[3]
+                    //     );
+                    // }
+
+                    T epsilon = limits<T>::epsilon();
                     if(ws[0] > -epsilon && ws[1] > -epsilon && ws[2] > -epsilon && ws[3] > -epsilon){
                         bcw("inds",vi) = reinterpret_bits<float>(ei);
                         bcw.tuple<4>("w",vi) = ws;
@@ -196,36 +218,102 @@ struct ZSComputeBaryCentricWeights : INode {
                         }
                     }
                 });
+
+                // if(!found && !fitting_in){
+                //     if(vi == 0)
+                // }
             }
         );
 
+        // cudaExec(zs::range(numEmbedVerts),
+        //     [bcw = proxy<space>({},bcw),fitting_in] ZS_LAMBDA (int vi) mutable {
+        //         auto idx = reinterpret_bits<int>(bcw("inds",vi));
+        //         if(idx < 0 && !fitting_in)
+        //             printf("INVALID INTERPOLATED VERTS<%d> : %d\n",vi,idx);
+        // });
+
+        auto e_dim = e_eles.getChannelSize("inds");
+
         cudaExec(zs::range(numEmbedVerts),
             [bcw = proxy<space>({},bcw)] ZS_LAMBDA (int vi) mutable {
-                bcw("area",vi) = 0.;
+                using T = typename RM_CVREF_T(bcw)::value_type;
+                bcw("cnorm",vi) = (T)0.;
         });
 
-        cudaExec(zs::range(numEmbedTris),
-            [everts = proxy<space>({},everts),etris = proxy<space>({},etris),bcw = proxy<space>({},bcw)]
+        zs::Vector<T> edgeCount(bcw.get_allocator(),bcw.size());
+        cudaExec(zs::range(bcw.size()),[edgeCount = proxy<space>(edgeCount)]
+            ZS_LAMBDA(int vi) mutable{
+                using T = typename RM_CVREF_T(bcw)::value_type;
+                edgeCount[vi] = (T)0.;
+        });
+
+        if(e_dim !=3 && e_dim !=4){
+            throw std::runtime_error("INVALID EMBEDDED PRIM TOPO");
+        }
+        cudaExec(zs::range(numEmbedEles),
+            [everts = proxy<space>({},everts),e_eles = proxy<space>({},e_eles),bcw = proxy<space>({},bcw),e_dim,execTag = wrapv<space>{},edgeCount = proxy<space>(edgeCount)]
                 ZS_LAMBDA (int ti) mutable {
-                    auto inds = etris.pack<3>("inds",ti).reinterpret_bits<int>(); 
-                    auto p0 = everts.pack<3>("x",inds[0]);
-                    auto p1 = everts.pack<3>("x",inds[1]);
-                    auto p2 = everts.pack<3>("x",inds[2]);
+                    using T = typename RM_CVREF_T(bcw)::value_type;
+                    if(e_dim == 3){// for triangle mesh
+                        auto inds = e_eles.pack<3>("inds",ti).reinterpret_bits<int>(); 
+                        auto p0 = everts.pack<3>("x",inds[0]);
+                        auto p1 = everts.pack<3>("x",inds[1]);
+                        auto p2 = everts.pack<3>("x",inds[2]);
 
-                    auto aA = ComputeArea(p0,p1,p2)/3;
+                        auto A = ComputeArea(p0,p1,p2)/3;
+                        auto l01 = (p0 - p1).norm();
+                        auto l02 = (p0 - p2).norm();
+                        auto l12 = (p1 - p2).norm();
 
-                    bcw("area",inds[0]) += aA;
-                    bcw("area",inds[1]) += aA;
-                    bcw("area",inds[2]) += aA;
+ 
+                        atomic_add(execTag,&bcw("cnorm",inds[0]),(T)(2*A/l12));
+                        atomic_add(execTag,&edgeCount[inds[0]],(T)1.0);
+                        atomic_add(execTag,&bcw("cnorm",inds[1]),(T)(2*A/l02));
+                        atomic_add(execTag,&edgeCount[inds[1]],(T)1.0);
+                        atomic_add(execTag,&bcw("cnorm",inds[2]),(T)(2*A/l01));
+                        atomic_add(execTag,&edgeCount[inds[2]],(T)1.0);
+
+                        // bcw("area",inds[0]) += aA;
+                        // bcw("area",inds[1]) += aA;
+                        // bcw("area",inds[2]) += aA;
+                    }else if(e_dim == 4){// for tet mesh
+                        auto inds = e_eles.pack<4>("inds",ti).reinterpret_bits<int>();
+                        auto p0 = everts.pack<3>("x",inds[0]);
+                        auto p1 = everts.pack<3>("x",inds[1]);
+                        auto p2 = everts.pack<3>("x",inds[2]);
+                        auto p3 = everts.pack<3>("x",inds[3]);
+
+                        auto V = zs::abs(ComputeVolume(p0,p1,p2,p3));
+                        auto A012 = ComputeArea(p0,p1,p2);
+                        auto A023 = ComputeArea(p0,p2,p3);
+                        auto A013 = ComputeArea(p0,p1,p3);
+                        auto A123 = ComputeArea(p1,p2,p3); 
+
+                        atomic_add(execTag,&bcw("cnorm",inds[0]),(T)(3*V/A123));
+                        atomic_add(execTag,&edgeCount[inds[0]],(T)1.0);
+                        atomic_add(execTag,&bcw("cnorm",inds[1]),(T)(3*V/A023));
+                        atomic_add(execTag,&edgeCount[inds[1]],(T)1.0);
+                        atomic_add(execTag,&bcw("cnorm",inds[2]),(T)(3*V/A013));
+                        atomic_add(execTag,&edgeCount[inds[2]],(T)1.0);
+                        atomic_add(execTag,&bcw("cnorm",inds[3]),(T)(3*V/A012));
+                        atomic_add(execTag,&edgeCount[inds[3]],(T)1.0);
+                    }
         });
 
-        set_output("zsvolume", std::move(zsvolume));
+        cudaExec(zs::range(numEmbedVerts),
+            [bcw = proxy<space>({},bcw),edgeCount = proxy<space>(edgeCount)] 
+                ZS_LAMBDA(int vi) mutable{
+                    bcw("cnorm",vi) /= edgeCount[vi];
+        });
+
+
+        set_output("zsvolume", zsvolume);
     }
 };
 
 ZENDEFNODE(ZSComputeBaryCentricWeights, {{{"interpolator","zsvolume"}, {"embed surf", "zssurf"}},
                             {{"interpolator on gpu", "zsvolume"}},
-                            {{"float","bvh_thickness","0"},{"int","fitting_in","1"},{"string","tag","skin_bw"}},
+                            {{"float","bvh_thickness","0"},{"int","fitting_in","1"},{"string","tag","skin_bw"},{"string","bvh_channel","x"}},
                             {"FEM"}});
 
 
