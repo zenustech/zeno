@@ -818,7 +818,7 @@ void ZenoNode::updateSocketDeflValue(const QString& nodeid, const QString& inSoc
     if (newValue.type() == QMetaType::VoidStar)
     {
         //curvemodel: 
-        //todo: only store as a void ptr£¬have to develope a undo/redo mechasim for "submodel".
+        //todo: only store as a void ptr, have to develope a undo/redo mechasim for "submodel".
         pGraphsModel->updateSocketDefl(nodeid, info, m_subGpIndex, false);
     }
     else if (info.oldValue != info.newValue)
@@ -850,7 +850,6 @@ QGraphicsLayout* ZenoNode::initSockets()
             _socket_ctrl socket_ctrl;
 
             const INPUT_SOCKET& inSocket = inputs[inSock];
-            //dont need lineedit except "int£¬float£¬vec3f£¬string".
             const QString& sockType = inSocket.info.type;
             PARAM_CONTROL ctrl = inSocket.info.control;
 
