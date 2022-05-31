@@ -19,6 +19,7 @@
 #include <Scene.hpp>
 #include "voxelizeProgram.h"
 #include "shaders.h"
+#include <map>
 namespace zenvis {
 extern float getCamFar();
 extern void ensureGlobalMapExist();
@@ -299,7 +300,7 @@ struct InstVboData
     glm::mat4 modelMatrix;
     float time;
 };
-
+std::map<std::string, std::shared_ptr<Texture>> g_Textures;
 struct GraphicPrimitive : IGraphic {
   std::unique_ptr<Buffer> vbo;
   std::unique_ptr<Buffer> instvbo;
@@ -321,7 +322,7 @@ struct GraphicPrimitive : IGraphic {
   drawObject pointObj;
   drawObject lineObj;
   drawObject triObj;
-  std::vector<std::unique_ptr<Texture>> textures;
+  std::map<int, std::string> textures;
 
   bool prim_has_mtl = false;
   bool prim_has_inst = false;
@@ -649,8 +650,16 @@ struct GraphicPrimitive : IGraphic {
     if(!prim_has_mtl)
         return;
     int id = 0;
-    for (id = 0; id < textures.size(); id++) {
-        textures[id]->bind_to(id);
+    int idx = 0;
+    for (id = 0; id < 64; id++) {
+        if(textures.find(id)!=textures.end())
+        {
+            if(g_Textures.find(textures[id])!=g_Textures.end())
+            {
+                g_Textures[textures[id]]->bind_to(idx);
+                idx++;
+            }
+        }
     }
     auto vbobind = [&] (auto &vbo) {
         vbo->bind();
@@ -737,7 +746,7 @@ struct GraphicPrimitive : IGraphic {
                 std::string texName = "zenotex" + std::to_string(texId);
                 triObj.shadowprog->set_uniformi(texName.c_str(), texOcp);
                 CHECK_GL(glActiveTexture(GL_TEXTURE0+texOcp));
-                CHECK_GL(glBindTexture(textures[texId]->target, textures[texId]->tex));
+                CHECK_GL(glBindTexture(g_Textures[textures[texId]]->target, g_Textures[textures[texId]]->tex));
                 texOcp++;
             }
         }
@@ -775,8 +784,16 @@ struct GraphicPrimitive : IGraphic {
     if (!prim_has_mtl) return;
     if (prim_has_mtl) ensureGlobalMapExist();
     int id = 0;
-    for (id = 0; id < textures.size(); id++) {
-        textures[id]->bind_to(id);
+    int idx = 0;
+    for (id = 0; id < 64; id++) {
+        if(textures.find(id)!=textures.end())
+        {
+            if(g_Textures.find(textures[id])!=g_Textures.end())
+            {
+                g_Textures[textures[id]]->bind_to(idx);
+                idx++;
+            }
+        }
     }
 
     auto vbobind = [&] (auto &vbo) {
@@ -894,7 +911,7 @@ struct GraphicPrimitive : IGraphic {
                 std::string texName = "zenotex" + std::to_string(texId);
                 triObj.voxelprog->set_uniformi(texName.c_str(), texId);
                 CHECK_GL(glActiveTexture(GL_TEXTURE0+texId));
-                CHECK_GL(glBindTexture(textures[texId]->target, textures[texId]->tex));
+                CHECK_GL(glBindTexture(g_Textures[textures[texId]]->target, g_Textures[textures[texId]]->tex));
                 texOcp++;
             }
 
@@ -1008,8 +1025,16 @@ struct GraphicPrimitive : IGraphic {
       if (prim_has_mtl) ensureGlobalMapExist();
 
     int id = 0;
-    for (id = 0; id < textures.size(); id++) {
-        textures[id]->bind_to(id);
+    int idx = 0;
+    for (id = 0; id < 64; id++) {
+        if(textures.find(id)!=textures.end())
+        {
+            if(g_Textures.find(textures[id])!=g_Textures.end())
+            {
+                g_Textures[textures[id]]->bind_to(idx);
+                idx++;
+            }
+        }
     }
 
     auto vbobind = [&] (auto &vbo) {
@@ -1175,7 +1200,7 @@ struct GraphicPrimitive : IGraphic {
                 std::string texName = "zenotex" + std::to_string(texId);
                 triObj.prog->set_uniformi(texName.c_str(), texOcp);
                 CHECK_GL(glActiveTexture(GL_TEXTURE0+texOcp));
-                CHECK_GL(glBindTexture(textures[texId]->target, textures[texId]->tex));
+                CHECK_GL(glBindTexture(g_Textures[textures[texId]]->target, g_Textures[textures[texId]]->tex));
                 texOcp++;
             }
             triObj.prog->set_uniformi("skybox",texOcp);
@@ -1357,9 +1382,16 @@ struct GraphicPrimitive : IGraphic {
 
   void load_texture2Ds(const std::vector<std::shared_ptr<zeno::Texture2DObject>> &tex2Ds)
   {
+      int t_idx = 0;
     for (const auto &tex2D : tex2Ds)
     {
-      auto tex = std::make_unique<Texture>();
+        if(g_Textures.find(tex2D->path)!=g_Textures.end()){
+            textures[t_idx] = tex2D->path;
+            t_idx++;
+            continue;
+        }
+
+      auto tex = std::make_shared<Texture>();
 
 #define SET_TEX_WRAP(TEX_WRAP, TEX_2D_WRAP)                                    \
   if (TEX_2D_WRAP == zeno::Texture2DObject::TexWrapEnum::REPEAT)               \
@@ -1396,7 +1428,9 @@ struct GraphicPrimitive : IGraphic {
 #undef SET_TEX_FILTER
 
       tex->load(tex2D->path.c_str());
-      textures.push_back(std::move(tex));
+      g_Textures[tex2D->path] = tex;
+      textures[t_idx] = tex2D->path;
+      t_idx++;
     }
   }
 
