@@ -5,6 +5,9 @@ SET(BulletInverseDynamics_SRCS
 	MultiBodyTree.cpp
 	details/MultiBodyTreeInitCache.cpp
 	details/MultiBodyTreeImpl.cpp
+	btMultiBodyTreeCreator.cpp
+	MultiBodyTreeCreator.cpp
+	MultiBodyNameMap.hpp
 )
 
 SET(BulletInverseDynamicsRoot_HDRS
@@ -14,6 +17,9 @@ SET(BulletInverseDynamicsRoot_HDRS
 	IDConfigBuiltin.hpp
 	IDErrorMessages.hpp
 	MultiBodyTree.hpp
+	btMultiBodyTreeCreator.hpp
+	MultiBodyTreeCreator.hpp
+	MultiBodyNameMap.hpp
 )
 SET(BulletInverseDynamicsDetails_HDRS
 	details/IDEigenInterface.hpp
@@ -22,6 +28,7 @@ SET(BulletInverseDynamicsDetails_HDRS
 	details/MultiBodyTreeImpl.hpp
 	details/MultiBodyTreeInitCache.hpp
 )
+
 
 SET(BulletInverseDynamics_HDRS
 	${BulletInverseDynamicsRoot_HDRS}

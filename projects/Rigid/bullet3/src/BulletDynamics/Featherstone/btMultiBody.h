@@ -225,7 +225,7 @@ public:
 		setWorldToBaseRot(tr.getRotation().inverse());
 	}
 
-	btTransform getBaseWorldTransform() const
+	const btTransform getBaseWorldTransform() const
 	{
 		btTransform tr;
 		tr.setOrigin(getBasePos());
