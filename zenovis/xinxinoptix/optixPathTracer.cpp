@@ -340,11 +340,14 @@ static void printUsageAndExit( const char* argv0 )
 
 static void initLaunchParams( PathTracerState& state )
 {
-#ifdef USING_20XX
+//#ifdef USING_20XX
+    if (using20xx) {
     state.params.handle         = state.gas_handle;
-#else
+//#else
+    } else {
     state.params.handle         = state.m_ias_handle;
-#endif
+    }
+//#endif
     CUDA_CHECK( cudaMalloc(
                 reinterpret_cast<void**>( &state.accum_buffer_p.reset() ),
                 state.params.width * state.params.height * sizeof( float4 )
@@ -904,6 +907,29 @@ static void cleanupState( PathTracerState& state )
         state.d_params.reset();
 }
 
+void detectHuangrenxunHappiness() {
+    int dev;
+    CUDA_CHECK(cudaGetDevice(&dev));
+    cudaGetDeviceProperties prop;
+    CUDA_CHECK(cudaGetDeviceProperties(&prop, dev));
+    zeno::log_info("CUDA graphic card name: {}", prop.name);
+    zeno::log_info("CUDA compute capability: {}.{}", prop.major, prop.minor);
+    zeno::log_info("CUDA total global memory: {} MB", static_cast<float>(prop.totalGlobalMem / 1048576.0f));
+
+    int driverVersion, runtimeVersion;
+    CUDA_CHECK(cudaDriverGetVersion(&driverVersion));
+    CUDA_CHECK(cudaRuntimeGetVersion(&runtimeVersion));
+    zeno::log_info("CUDA driver version: {}.{}",
+           driverVersion / 1000, (driverVersion % 100) / 10);
+    zeno::log_info("CUDA runtime version: {}.{}",
+           runtimeVersion / 1000, (runtimeVersion % 100) / 10);
+
+    if ((using20xx = (prop.major <= 7))) {
+        // let's buy the stupid bitcoin card to cihou huangrenxun's wallet-happiness
+        zeno::log_warn("graphic card <= RTX20** detected, disabling instancing. consider upgrade to RTX30** for full performance.");
+    }
+}
+
 
 //------------------------------------------------------------------------------
 //
@@ -961,6 +987,7 @@ void optixinit( int argc, char* argv[] )
         }
     }
 
+    detectHuangrenxunHappiness();
         initCameraState();
 
         //
@@ -1002,11 +1029,13 @@ std::vector<std::shared_ptr<smallMesh>> &oMeshes);
 
 std::vector<std::shared_ptr<smallMesh>> g_meshPieces;
 static void updatedrawobjects();
+static bool using20xx = false;
 void optixupdatemesh(std::map<std::string, int> const &mtlidlut) {
     camera_changed = true;
     g_mtlidlut = mtlidlut;
     updatedrawobjects();
-#ifdef USING_20XX
+//#ifdef USING_20XX
+    if (using20xx) {
     const size_t vertices_size_in_bytes = g_vertices.size() * sizeof( Vertex );
     CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.d_vertices.reset() ), vertices_size_in_bytes ) );
     CUDA_CHECK( cudaMemcpy(
@@ -1055,7 +1084,8 @@ void optixupdatemesh(std::map<std::string, int> const &mtlidlut) {
                 cudaMemcpyHostToDevice
                 ) );
     buildMeshAccel( state );
-#else
+//#else
+    } else {
     const size_t vertices_size_in_bytes = g_vertices.size() * sizeof( Vertex );
     CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.d_vertices.reset() ), vertices_size_in_bytes ) );
     CUDA_CHECK( cudaMemcpy(
@@ -1111,7 +1141,8 @@ void optixupdatemesh(std::map<std::string, int> const &mtlidlut) {
         buildMeshAccelSplitMesh(state, g_meshPieces[i]);
     }
     buildInstanceAccel(state, 2, g_meshPieces);
-#endif
+    }
+//#endif
 }
 void addLightMesh(float3 corner, float3 v2, float3 v1, float3 normal, float emission)
 {

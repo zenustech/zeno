@@ -21,9 +21,9 @@ target_sources(zenovis PRIVATE
   SDK/sutil/Preprocessor.h      SDK/sutil/WorkDistribution.h
   )
 
-if (OPTIX_USE_20XX)
-    target_compile_definitions(zenovis PRIVATE -DUSING_20XX)
-endif()
+#if (OPTIX_USE_20XX)
+    #target_compile_definitions(zenovis PRIVATE -DUSING_20XX)
+#endif()
 
 find_package(CUDAToolkit REQUIRED COMPONENTS cudart nvrtc REQUIRED)
 target_link_libraries(zenovis PRIVATE CUDA::cudart CUDA::nvrtc)
