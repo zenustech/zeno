@@ -30,6 +30,7 @@ struct Mesh{
     FBXData fbxData;
     std::filesystem::path fbxPath;
     std::unordered_map<std::string, std::vector<unsigned int>> m_VerticesSlice;
+    std::unordered_map<std::string, std::vector<unsigned int>> m_BlendShapeSlice;
     std::unordered_map<std::string, aiMatrix4x4> m_TransMatrix;
     unsigned int m_VerticesIncrease = 0;
     unsigned int m_IndicesIncrease = 0;
@@ -47,6 +48,8 @@ struct Mesh{
 
     void initMesh(const aiScene *scene){
         m_VerticesIncrease = 0;
+        fbxData.iMeshName.value = "__root__";
+
         createTexDir("valueTex");
         readTrans(scene->mRootNode, aiMatrix4x4());
         processNode(scene->mRootNode, scene);
@@ -75,8 +78,9 @@ struct Mesh{
 
     void processMesh(aiMesh *mesh, const aiScene *scene) {
         std::string meshName(mesh->mName.data);
+        auto numAnimMesh = mesh->mNumAnimMeshes;
 
-        // Vertices
+        // Vertices & BlendShape
         for(unsigned int j = 0; j < mesh->mNumVertices; j++){
             SVertex vertexInfo;
 
@@ -105,6 +109,45 @@ struct Mesh{
             fbxData.iVertices.value.push_back(vertexInfo);
         }
 
+        // BlendShape
+        if(numAnimMesh){
+            // The number of vertices should be the same no matter how many anim-meshes there are
+            // So let's take the first one
+            unsigned int bsNumVert = mesh->mAnimMeshes[0]->mNumVertices;
+
+            zeno::log_info("BS MeshName {} NumAnim {}", meshName, numAnimMesh);
+
+            m_BlendShapeSlice[meshName] =
+                    std::vector<unsigned int>
+                            {
+                            };
+
+            std::vector<std::vector<SBSVertex>> blendShapeData;
+            blendShapeData.resize(numAnimMesh);
+
+            for(unsigned int a=0; a<numAnimMesh; a++){
+                auto& animMesh = mesh->mAnimMeshes[a];
+                unsigned int aNumV = animMesh->mNumVertices;
+
+                blendShapeData[a].resize(aNumV);
+
+                for(unsigned int i=0; i<aNumV; i++){
+                    SBSVertex sbsVertex;
+
+                    sbsVertex.position = animMesh->mVertices[i];
+                    sbsVertex.normal = animMesh->mNormals[i];
+                    sbsVertex.deltaPosition = sbsVertex.position
+                            - fbxData.iVertices.value[i+m_VerticesIncrease].position;
+                    sbsVertex.deltaNormal = sbsVertex.normal
+                            - fbxData.iVertices.value[i+m_VerticesIncrease].normal;
+                    sbsVertex.weight = animMesh->mWeight;
+
+                    blendShapeData[a][i] = sbsVertex;
+                }
+            }
+            fbxData.iBlendSData.value[meshName] = blendShapeData;
+        }
+
         // Indices
         for(unsigned int j = 0; j < mesh->mNumFaces; j++)
         {
@@ -120,15 +163,16 @@ struct Mesh{
         // FBXBone
         extractBone(mesh);
 
+        unsigned int offsetIndices = fbxData.iIndices.value.size() - m_IndicesIncrease;
         m_VerticesSlice[meshName] = std::vector<unsigned int>
                 {static_cast<unsigned int>(m_VerticesIncrease),  // Vert Start
                  m_VerticesIncrease + mesh->mNumVertices,  // Vert End
                  mesh->mNumBones,
                  m_IndicesIncrease,  // Indices Start
-                 static_cast<unsigned int>(m_IndicesIncrease + (fbxData.iIndices.value.size() - m_IndicesIncrease))  // Indices End
+                 static_cast<unsigned int>(m_IndicesIncrease + offsetIndices)  // Indices End
                  };
 
-        m_IndicesIncrease += (fbxData.iIndices.value.size() - m_IndicesIncrease);
+        m_IndicesIncrease += offsetIndices;
         m_VerticesIncrease += mesh->mNumVertices;
     }
 
@@ -144,7 +188,7 @@ struct Mesh{
     void processCamera(const aiScene *scene){
         // If Maya's camera does not have `LookAt`, it will use A `InterestPosition`
 
-        zeno::log_info(">>>>> Num Camera {}", scene->mNumCameras);
+        zeno::log_info("Num Camera {}", scene->mNumCameras);
         for(unsigned int i=0;i<scene->mNumCameras; i++){
             auto& cam = scene->mCameras[i];
             std::string camName = cam->mName.data;
@@ -265,7 +309,7 @@ struct Mesh{
                 //zeno::log_info("----- TestFloat {}", mat.testFloat);
 
                 auto v = std::any_cast<aiColor4D>(com.second.value);
-                int channel_num = 3;
+                int channel_num = 4;
                 int width = 2, height = 2;
                 uint8_t* pixels = new uint8_t[width * height * channel_num];
 
@@ -277,10 +321,12 @@ struct Mesh{
                         int ir = int(255.99 * v.r);
                         int ig = int(255.99 * v.g);
                         int ib = int(255.99 * v.b);
+                        int ia = int(255.99 * 1.0f);
 
                         pixels[index++] = ir;
                         pixels[index++] = ig;
                         pixels[index++] = ib;
+                        pixels[index++] = ia;
                     }
                 }
 
@@ -326,7 +372,8 @@ struct Mesh{
         }
     }
 
-    void processTrans(std::unordered_map<std::string, SAnimBone>& bones,
+    void processTrans(std::unordered_map<std::string, std::vector<SKeyMorph>>& morph,
+                      std::unordered_map<std::string, SAnimBone>& bones,
                       std::shared_ptr<zeno::DictObject>& prims,
                       std::shared_ptr<zeno::DictObject>& datas) {
         for(auto& iter: m_VerticesSlice) {
@@ -387,8 +434,11 @@ struct Mesh{
             }
             sub_data->iIndices.value = sub_indices;
             sub_data->iVertices.value = sub_vertices;
-            // TODO Currently it is the sub-mesh that has all the bone offset information
+            sub_data->iMeshName.value = meshName;
+            // TODO Currently it is the sub-data that has all the data
             sub_data->iBoneOffset = fbxData.iBoneOffset;
+            sub_data->iBlendSData = fbxData.iBlendSData;
+            sub_data->iKeyMorph.value = morph;
 
             prims->lut[meshName] = sub_prim;
             datas->lut[meshName] = sub_data;
@@ -423,6 +473,8 @@ struct Anim{
     NodeTree m_RootNode;
     BoneTree m_Bones;
 
+    std::unordered_map<std::string, std::vector<SKeyMorph>> m_Morph;  // Value: NumKeys
+
     float duration;
     float tick;
     void initAnim(aiScene const*scene, Mesh* model){
@@ -437,14 +489,17 @@ struct Anim{
             auto animation = scene->mAnimations[0];
             duration = animation->mDuration;
             tick = animation->mTicksPerSecond;
-            zeno::log_info("Animation Name: {} NC {} NMC {} NMMC {}",
+            zeno::log_info("AniName: {} NC {} NMC {} NMMC {} D {} T {}",
                            animation->mName.data,
                            animation->mNumChannels,
                            animation->mNumMeshChannels,
-                           animation->mNumMorphMeshChannels
+                           animation->mNumMorphMeshChannels,
+                           animation->mDuration,
+                           animation->mTicksPerSecond
                            );
 
-            setupBones(animation, model);
+            setupBones(animation);
+            setupBlendShape(animation);
         }
     }
 
@@ -462,7 +517,7 @@ struct Anim{
         }
     }
 
-    void setupBones(const aiAnimation *animation, Mesh* model) {
+    void setupBones(const aiAnimation *animation) {
         int size = animation->mNumChannels;
         //zeno::log_info("SetupBones: Num Channels {}", size);
 
@@ -480,6 +535,39 @@ struct Anim{
         //zeno::log_info("SetupBones: Num AnimBoneMap: {}", m_Bones.AnimBoneMap.size());
     }
 
+    void setupBlendShape(const aiAnimation *animation){
+        auto NumMorphChannel = animation->mNumMorphMeshChannels;
+        if(NumMorphChannel){
+            for(int j=0; j<NumMorphChannel; j++){
+                aiMeshMorphAnim* channel = animation->mMorphMeshChannels[j];
+                std::string channelName(channel->mName.data);  // pPlane1*0 with *0
+                channelName = channelName.substr(0, channelName.find_last_of('*'));
+                zeno::log_info("BlendShape Channel Name {}", channelName);
+
+                if(channel->mNumKeys) {
+                    std::vector<SKeyMorph> keyMorph;
+
+                    zeno::log_info("BlendShape NumKeys {} NumVAW {}", channel->mNumKeys,
+                                   channel->mKeys[0].mNumValuesAndWeights);
+
+                    for (int i = 0; i < channel->mNumKeys; ++i) {
+                        SKeyMorph morph{};
+                        auto &key = channel->mKeys[i];
+                        morph.m_NumValuesAndWeights = key.mNumValuesAndWeights; // e.g. pPlane2 pPlane3...
+                        morph.m_Time = key.mTime;  // Frame
+                        morph.m_Weights = new double[key.mNumValuesAndWeights];
+                        morph.m_Values = new unsigned int[key.mNumValuesAndWeights]; // Which one is that
+                        // Deep copy
+                        std::copy(key.mWeights, key.mWeights + key.mNumValuesAndWeights, morph.m_Weights);
+                        std::copy(key.mValues, key.mValues + key.mNumValuesAndWeights, morph.m_Values);
+                        keyMorph.push_back(morph);
+                    }
+
+                    m_Morph[channelName] = keyMorph;
+                }
+            }
+        }
+    }
 };
 
 void readFBXFile(
@@ -512,8 +600,10 @@ void readFBXFile(
 
     mesh.initMesh(scene);
     anim.initAnim(scene, &mesh);
-    mesh.processTrans(anim.m_Bones.AnimBoneMap, prims, datas);
+    mesh.processTrans(anim.m_Morph, anim.m_Bones.AnimBoneMap, prims, datas);
     mesh.processPrim(prim);
+
+    mesh.fbxData.iKeyMorph.value = anim.m_Morph;
 
     *fbxData = mesh.fbxData;
     *nodeTree = anim.m_RootNode;
