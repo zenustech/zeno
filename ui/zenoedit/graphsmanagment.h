@@ -27,6 +27,7 @@ public:
     void removeCurrent();
     void appendLog(QtMsgType type, QString fileName, int ln, const QString &msg);
     void appendErr(const QString& nodeName, const QString& msg);
+    void appendMsgStream(const QByteArray& arr);
 
 signals:
     void modelInited(IGraphsModel*);

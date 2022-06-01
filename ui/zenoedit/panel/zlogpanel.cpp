@@ -3,6 +3,7 @@
 #include "zenoapplication.h"
 #include <zenoui/model/modelrole.h>
 #include <zenoui/util/uihelper.h>
+#include <zenoui/style/zenostyle.h>
 
 
 LogItemDelegate::LogItemDelegate(QObject* parent)
@@ -56,6 +57,10 @@ ZlogPanel::ZlogPanel(QWidget* parent)
 {
     m_ui = new Ui::LogPanel;
     m_ui->setupUi(this);
+
+    m_ui->btnClearAll->setIcons(ZenoStyle::dpiScaledSize(QSize(16, 16))
+        , ":/icons/trash.svg"
+        , ":/icons/trashnote-on.svg");
 
     initSignals();
     initModel();
@@ -138,6 +143,10 @@ void ZlogPanel::initSignals()
             m_ui->cbAll->setChecked(false);
         }
         onFilterChanged();
+    });
+
+    connect(m_ui->btnClearAll, &ZIconLabel::clicked, this, [=]() {
+        zenoApp->logModel()->clear();
     });
 }
 

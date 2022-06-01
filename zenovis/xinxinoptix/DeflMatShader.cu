@@ -66,6 +66,8 @@ MatInput const &attrs) {
     float mat_clearcoat = 0.0;
     float mat_clearcoatGloss = 0.0;
     float mat_opacity = 0.0;
+    vec3  mat_normal = vec3(0.0f, 0.0f, 1.0f);
+    vec3 mat_emission = vec3(0.0f, 0.0f,0.0f);
     //GENERATED_END_MARK
     /** generated code here end **/
     MatOutput mats;
@@ -82,6 +84,8 @@ MatInput const &attrs) {
     mats.clearcoat = mat_clearcoat;
     mats.clearcoatGloss = mat_clearcoatGloss;
     mats.opacity = mat_opacity;
+    mats.nrm = mat_normal;
+    mats.emission = mat_emission;
     return mats;
 }
 __forceinline__ __device__ float3 interp(float2 barys, float3 a, float3 b, float3 c)
@@ -145,9 +149,14 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     /* MODMA */
     float2       barys    = optixGetTriangleBarycentrics();
     
-    float3 n0 = make_float3(rt_data->nrm[ vert_idx_offset+0 ] );
-    float3 n1 = make_float3(rt_data->nrm[ vert_idx_offset+1 ] );
-    float3 n2 = make_float3(rt_data->nrm[ vert_idx_offset+2 ] );
+    float3 n0 = normalize(make_float3(rt_data->nrm[ vert_idx_offset+0 ] ));
+    n0 = dot(n0, N_0)>0.6?n0:N_0;
+
+    float3 n1 = normalize(make_float3(rt_data->nrm[ vert_idx_offset+1 ] ));
+    n1 = dot(n1, N_0)>0.6?n1:N_0;
+
+    float3 n2 = normalize(make_float3(rt_data->nrm[ vert_idx_offset+2 ] ));
+    n2 = dot(n2, N_0)>0.6?n2:N_0;
     float3 uv0 = make_float3(rt_data->uv[ vert_idx_offset+0 ] );
     float3 uv1 = make_float3(rt_data->uv[ vert_idx_offset+1 ] );
     float3 uv2 = make_float3(rt_data->uv[ vert_idx_offset+2 ] );
@@ -158,7 +167,7 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     float3 tan1 = make_float3(rt_data->tan[ vert_idx_offset+1 ] );
     float3 tan2 = make_float3(rt_data->tan[ vert_idx_offset+2 ] );
     
-    N_0 = interp(barys, n0, n1, n2);
+    N_0 = normalize(interp(barys, n0, n1, n2));
     float3 N    = faceforward( N_0, -ray_dir, N_0 );
 
     attrs.pos = vec3(P.x, P.y, P.z);
@@ -200,6 +209,12 @@ extern "C" __global__ void __anyhit__shadow_cutout()
                                 zenotex29, 
                                 zenotex30, 
                                 zenotex31,attrs);
+    if(length(attrs.tang)>0)
+    {
+        vec3 b = cross(attrs.tang, attrs.nrm);
+        attrs.tang = cross(attrs.nrm, b);
+        N = mats.nrm.x * attrs.tang + mats.nrm.y * b + mats.nrm.z * attrs.nrm;
+    }
     //end of material computation
     mats.metallic = clamp(mats.metallic,0.01, 0.99);
     mats.roughness = clamp(mats.roughness, 0.01,0.99);
@@ -287,9 +302,15 @@ extern "C" __global__ void __closesthit__radiance()
     /* MODMA */
     float2       barys    = optixGetTriangleBarycentrics();
     
-    float3 n0 = make_float3(rt_data->nrm[ vert_idx_offset+0 ] );
-    float3 n1 = make_float3(rt_data->nrm[ vert_idx_offset+1 ] );
-    float3 n2 = make_float3(rt_data->nrm[ vert_idx_offset+2 ] );
+    float3 n0 = normalize(make_float3(rt_data->nrm[ vert_idx_offset+0 ] ));
+    n0 = dot(n0, N_0)>0.6?n0:N_0;
+
+    float3 n1 = normalize(make_float3(rt_data->nrm[ vert_idx_offset+1 ] ));
+    n1 = dot(n1, N_0)>0.6?n1:N_0;
+
+    float3 n2 = normalize(make_float3(rt_data->nrm[ vert_idx_offset+2 ] ));
+    n2 = dot(n2, N_0)>0.6?n2:N_0;
+
     float3 uv0 = make_float3(rt_data->uv[ vert_idx_offset+0 ] );
     float3 uv1 = make_float3(rt_data->uv[ vert_idx_offset+1 ] );
     float3 uv2 = make_float3(rt_data->uv[ vert_idx_offset+2 ] );
@@ -300,7 +321,7 @@ extern "C" __global__ void __closesthit__radiance()
     float3 tan1 = make_float3(rt_data->tan[ vert_idx_offset+1 ] );
     float3 tan2 = make_float3(rt_data->tan[ vert_idx_offset+2 ] );
     
-    N_0 = interp(barys, n0, n1, n2);
+    N_0 = normalize(interp(barys, n0, n1, n2));
     float3 N    = faceforward( N_0, -ray_dir, N_0 );
 
     attrs.pos = vec3(P.x, P.y, P.z);
@@ -308,7 +329,7 @@ extern "C" __global__ void __closesthit__radiance()
     attrs.uv = interp(barys, uv0, uv1, uv2);//todo later
     //attrs.clr = rt_data->face_attrib_clr[vert_idx_offset];
     attrs.clr = interp(barys, clr0, clr1, clr2);
-    attrs.tang = interp(barys, tan0, tan1, tan2);
+    attrs.tang = normalize(interp(barys, tan0, tan1, tan2));
     MatOutput mats = evalMaterial(
                                 zenotex0 , 
                                 zenotex1 , 
@@ -345,6 +366,13 @@ extern "C" __global__ void __closesthit__radiance()
     //end of material computation
     mats.metallic = clamp(mats.metallic,0.01, 0.99);
     mats.roughness = clamp(mats.roughness, 0.01,0.99);
+    if(length(attrs.tang)>0)
+    {
+        vec3 b = cross(attrs.tang, attrs.nrm);
+        attrs.tang = cross(attrs.nrm, b);
+        N = mats.nrm.x * attrs.tang + mats.nrm.y * b + mats.nrm.z * attrs.nrm;
+    }
+
 
     /* MODME */
     auto basecolor = mats.basecolor;
@@ -554,7 +582,7 @@ extern "C" __global__ void __closesthit__radiance()
                                 L,
                                 -normalize(inDir)
                                 );
-    prd->radiance = light.emission * weight * lbrdf ;
+    prd->radiance = light.emission * weight * lbrdf + float3(mats.emission);
 }
 
 extern "C" __global__ void __closesthit__occlusion()

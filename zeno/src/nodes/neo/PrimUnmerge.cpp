@@ -2,6 +2,8 @@
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/ListObject.h>
 #include <zeno/types/StringObject.h>
+#include <zeno/para/parallel_reduce.h>
+#include <zeno/para/parallel_for.h>
 #include <unordered_map>
 
 namespace zeno {
@@ -35,14 +37,7 @@ struct PrimUnmerge : INode {
 
             } else if (method == "faces") {
                 auto const &tagArr = prim->tris.attr<int>(tagAttr);
-                int tagMax = -1;
-#if defined(__GNUC__) || defined(__clang__)
-#pragma omp parallel for reduction(max:tagMax)
-#endif
-                for (size_t i = 0; i < prim->tris.size(); i++) {
-                    tagMax = std::max(tagMax, tagArr[i]);
-                }
-                tagMax++;
+                int tagMax = parallel_reduce_max(tagArr.begin(), tagArr.end());
 
                 primList.resize(tagMax);
                 for (int tag = 0; tag < tagMax; tag++) {
@@ -103,24 +98,21 @@ struct PrimUnmerge : INode {
                     primList[tag]->polys.push_back({loopbegin, poly.second});
                 }
 
-#pragma omp parallel for
-                for (int tag = 0; tag < tagMax; tag++) {
+                parallel_for((int)0, tagMax, [&] (int tag) {
                     auto &revamp = vert_revamp[tag];
                     auto primOut = primList[tag].get();
                     primOut->verts.resize(revamp.size());
-#pragma omp parallel for
-                    for (intptr_t i = 0; i < revamp.size(); i++) {
+                    parallel_for((size_t)0, revamp.size(), [&] (size_t i) {
                         primOut->verts[i] = prim->verts[revamp[i]];
-                    }
+                    });
                     prim->verts.foreach_attr([&] (auto const &key, auto &arr) {
                         using T = std::decay_t<decltype(arr[0])>;
                         auto &outarr = primOut->verts.add_attr<T>(key);
-#pragma omp parallel for
-                        for (intptr_t i = 0; i < revamp.size(); i++) {
+                        parallel_for((size_t)0, revamp.size(), [&] (size_t i) {
                             outarr[i] = arr[revamp[i]];
-                        }
+                        });
                     });
-                }
+                });
             }
         }
 
