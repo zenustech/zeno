@@ -420,6 +420,8 @@ struct ToZSTetrahedra : INode {
     zstets->elements = typename ZenoParticles::particles_t(
         eleTags, quads.size(), zs::memsrc_e::host);
     auto &eles = zstets->getQuadraturePoints();
+
+    double volumeSum{0.0};
     ompExec(zs::range(eles.size()),
             [&, pars = proxy<space>({}, pars),
              eles = proxy<space>({}, eles)](int ei) mutable {
@@ -440,12 +442,16 @@ struct ToZSTetrahedra : INode {
                   D(d, i) = ds[i][d];
               eles.tuple<9>("IB", ei) = zs::inverse(D);
               auto vol = zs::abs(zs::determinant(D)) / 6;
+              atomic_add(exec_omp, &volumeSum, (double)vol);
               eles("vol", ei) = vol;
               // vert masses
               auto vmass = vol * zsmodel->density / 4;
               for (int d = 0; d != 4; ++d)
                 atomic_add(zs::exec_omp, &pars("m", quad[d]), vmass);
             });
+    zstets->setMeta("meanMass",
+                    (float)(volumeSum * zsmodel->density / pars.size()));
+
     // surface info
     double areaSum{0.0};
     auto &surfaces = (*zstets)[ZenoParticles::s_surfTriTag];
