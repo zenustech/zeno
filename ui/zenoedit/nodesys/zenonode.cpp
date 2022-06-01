@@ -18,6 +18,33 @@
 #include "../nodesview/zenographseditor.h"
 #include "util/log.h"
 
+static QString getOpenFileName(
+    const QString &caption,
+    const QString &dir,
+    const QString &filter
+) {
+    QString path = QFileDialog::getOpenFileName(nullptr, caption, dir, filter);
+    QSettings settings("ZenusTech", "Zeno");
+    QVariant nas_loc_v = settings.value("nas_loc");
+    if (!nas_loc_v.isNull()) {
+        path.replace(nas_loc_v.toString(), "$NASLOC");
+    }
+    return path;
+}
+
+static QString getSaveFileName(
+    const QString &caption,
+    const QString &dir,
+    const QString &filter
+) {
+    QString path = QFileDialog::getSaveFileName(nullptr, caption, dir, filter);
+    QSettings settings("ZenusTech", "Zeno");
+    QVariant nas_loc_v = settings.value("nas_loc");
+    if (!nas_loc_v.isNull()) {
+        path.replace(nas_loc_v.toString(), "$NASLOC");
+    }
+    return path;
+}
 
 ZenoNode::ZenoNode(const NodeUtilParam &params, QGraphicsItem *parent)
     : _base(parent)
@@ -508,7 +535,7 @@ void ZenoNode::initParam(PARAM_CONTROL ctrl, QGraphicsLinearLayout* pParamLayout
 			});
             connect(openBtn, &ZenoImageItem::clicked, this, [=]() {
                 DlgInEventLoopScope;
-                QString path = QFileDialog::getOpenFileName(nullptr, "File to Open", "", "All Files(*);;");
+                QString path = getOpenFileName("File to Open", "", "All Files(*);;");
                 if (path.isEmpty())
                     return;
                 pFileWidget->setText(path);
@@ -537,7 +564,7 @@ void ZenoNode::initParam(PARAM_CONTROL ctrl, QGraphicsLinearLayout* pParamLayout
 			});
             connect(openBtn, &ZenoImageItem::clicked, this, [=]() {
                 DlgInEventLoopScope;
-                QString path = QFileDialog::getSaveFileName(nullptr, "Path to Save", "", "All Files(*);;");
+                QString path = getSaveFileName("Path to Save", "", "All Files(*);;");
                 if (path.isEmpty())
                     return;
                 pFileWidget->setText(path);
@@ -879,10 +906,10 @@ QGraphicsLayout* ZenoNode::initSockets()
                         DlgInEventLoopScope;
                         QString path;
                         if (isRead) {
-                            path = QFileDialog::getOpenFileName(nullptr, "File to Open", "", "All Files(*);;");
+                            path = getOpenFileName("File to Open", "", "All Files(*);;");
                         }
                         else {
-                            path = QFileDialog::getSaveFileName(nullptr, "Path to Save", "", "All Files(*);;");
+                            path = getSaveFileName("Path to Save", "", "All Files(*);;");
                         }
                         if (path.isEmpty())
                             return;

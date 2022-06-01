@@ -293,11 +293,32 @@ struct rtMatShader
     //the below two things are just like vertex shader and frag shader in real time rendering
     //the two are linked to codes modeling the rayHit and occlusion test of an particular "Material"
     //of an Object.
-    raii<OptixProgramGroup>              m_radiance_hit_group     ;
-    raii<OptixProgramGroup>              m_occlusion_hit_group    ;
-    std::string                    m_shaderFile                ;
-    std::string                    m_shadingEntry              ;
-    std::string                    m_occlusionEntry            ;
+    raii<OptixProgramGroup>              m_radiance_hit_group        ;
+    raii<OptixProgramGroup>              m_occlusion_hit_group       ;
+    std::string                          m_shaderFile                ;
+    std::string                          m_shadingEntry              ;
+    std::string                          m_occlusionEntry            ;
+    std::map<int, std::string>           m_texs;
+    void clearTextureRecords()
+    {
+        m_texs.clear();
+    }
+    void addTexture(int i, std::string name)
+    {
+        m_texs[i] = name;
+    }
+    cudaTextureObject_t getTexture(int i)
+    {
+        if(m_texs.find(i)!=m_texs.end())
+        {
+            if(g_tex.find(m_texs[i])!=g_tex.end())
+            {
+                return g_tex[m_texs[i]]->texture;
+            }
+            return 0;
+        }
+        return 0;
+    }
     rtMatShader() {}
     rtMatShader(const char *shaderFile, std::string shadingEntry, std::string occlusionEntry)
     {

@@ -15,13 +15,15 @@
 #include <zenovis/opengl/scope.h>
 #include <zenovis/opengl/vao.h>
 #include <variant>
-
+#include "../../xinxinoptix/OptiXStuff.h"
+#include <zeno/types/PrimitiveTools.h>
 namespace zenovis::optx {
 
 struct GraphicsManager {
     Scene *scene;
 
         struct DetMaterial {
+            std::vector<std::shared_ptr<zeno::Texture2DObject>> tex2Ds;
             std::string common;
             std::string shader;
             std::string mtlidkey;
@@ -30,6 +32,53 @@ struct GraphicsManager {
         };
 
     struct ZxxGraphic : zeno::disable_copy {
+        void computeTrianglesTangent(zeno::PrimitiveObject *prim)
+        {
+            const auto &tris = prim->tris;
+            const auto &pos = prim->attr<zeno::vec3f>("pos");
+            auto const &nrm = prim->attr<zeno::vec3f>("nrm");
+            auto &tang = prim->tris.add_attr<zeno::vec3f>("tang");
+            bool has_uv = tris.has_attr("uv0")&&tris.has_attr("uv1")&&tris.has_attr("uv2");
+            //printf("!!has_uv = %d\n", has_uv);
+            #pragma omp parallel for
+            for (size_t i = 0; i < prim->tris.size(); ++i)
+            {
+                if(has_uv) {
+                    const auto &pos0 = pos[tris[i][0]];
+                    const auto &pos1 = pos[tris[i][1]];
+                    const auto &pos2 = pos[tris[i][2]];
+                    auto uv0 = tris.attr<zeno::vec3f>("uv0")[i];
+                    auto uv1 = tris.attr<zeno::vec3f>("uv1")[i];
+                    auto uv2 = tris.attr<zeno::vec3f>("uv2")[i];
+
+                    auto edge0 = pos1 - pos0;
+                    auto edge1 = pos2 - pos0;
+                    auto deltaUV0 = uv1 - uv0;
+                    auto deltaUV1 = uv2 - uv0;
+
+                    auto f = 1.0f / (deltaUV0[0] * deltaUV1[1] - deltaUV1[0] * deltaUV0[1] + 1e-5);
+
+                    zeno::vec3f tangent;
+                    tangent[0] = f * (deltaUV1[1] * edge0[0] - deltaUV0[1] * edge1[0]);
+                    tangent[1] = f * (deltaUV1[1] * edge0[1] - deltaUV0[1] * edge1[1]);
+                    tangent[2] = f * (deltaUV1[1] * edge0[2] - deltaUV0[1] * edge1[2]);
+                    //printf("%f %f %f\n", tangent[0], tangent[1], tangent[3]);
+                    auto tanlen = zeno::length(tangent);
+                    tangent * (1.f / (tanlen + 1e-8));
+                    /*if (std::abs(tanlen) < 1e-8) {//fix by BATE
+                        zeno::vec3f n = nrm[tris[i][0]], unused;
+                        zeno::pixarONB(n, tang[i], unused);//TODO calc this in shader?
+                    } else {
+                        tang[i] = tangent * (1.f / tanlen);
+                    }*/
+                    tang[i] = tangent;
+                } else {
+                    tang[i] = zeno::vec3f(0);
+                    //zeno::vec3f n = nrm[tris[i][0]], unused;
+                    //zeno::pixarONB(n, tang[i], unused);
+                }
+            }
+        }
         std::string key;
 
         std::variant<DetPrimitive, DetMaterial> det;
@@ -37,8 +86,51 @@ struct GraphicsManager {
         explicit ZxxGraphic(std::string key_, zeno::IObject *obj)
         : key(std::move(key_))
         {
-            if (auto prim = dynamic_cast<zeno::PrimitiveObject *>(obj))
+            if (auto prim_in = dynamic_cast<zeno::PrimitiveObject *>(obj))
             {
+                bool primNormalCorrect = prim_in->has_attr("nrm") && length(prim_in->attr<zeno::vec3f>("nrm")[0])>1e-5;
+                bool need_computeNormal = !primNormalCorrect || !(prim_in->has_attr("nrm"));
+                if(prim_in->tris.size() && need_computeNormal)
+                {
+                    std::cout<<"computing normal\n";
+                    zeno::primCalcNormal(prim_in,1);
+                }
+                computeTrianglesTangent(prim_in);
+                auto prim = std::make_shared<zeno::PrimitiveObject>();
+                prim->verts.resize(prim_in->tris.size()*3);
+                prim->tris.resize(prim_in->tris.size());
+                auto &att_clr = prim->add_attr<zeno::vec3f>("clr");
+                auto &att_nrm = prim->add_attr<zeno::vec3f>("nrm");
+                auto &att_uv  = prim->add_attr<zeno::vec3f>("uv");
+                auto &att_tan = prim->add_attr<zeno::vec3f>("tang");
+                bool has_uv =   prim_in->tris.has_attr("uv0")&&prim_in->tris.has_attr("uv1")&&prim_in->tris.has_attr("uv2");
+                auto &in_pos   = prim_in->verts;
+                auto &in_clr   = prim_in->add_attr<zeno::vec3f>("clr");
+                auto &in_nrm   = prim_in->add_attr<zeno::vec3f>("nrm");
+                
+                for(size_t tid=0;tid<prim_in->tris.size();tid++)
+                {
+                    size_t vid = tid*3;
+                      prim->verts[vid]         = in_pos[prim_in->tris[tid][0]];
+                      prim->verts[vid+1]       = in_pos[prim_in->tris[tid][1]];
+                      prim->verts[vid+2]       = in_pos[prim_in->tris[tid][2]];
+                          att_clr[vid]         = in_clr[prim_in->tris[tid][0]];
+                          att_clr[vid+1]       = in_clr[prim_in->tris[tid][1]];
+                          att_clr[vid+2]       = in_clr[prim_in->tris[tid][2]];
+                          att_nrm[vid]         = in_nrm[prim_in->tris[tid][0]];
+                          att_nrm[vid+1]       = in_nrm[prim_in->tris[tid][1]];
+                          att_nrm[vid+2]       = in_nrm[prim_in->tris[tid][2]];
+                          att_uv[vid]          = has_uv?prim_in->tris.attr<zeno::vec3f>("uv0")[tid]:zeno::vec3f(0);
+                          att_uv[vid+1]        = has_uv?prim_in->tris.attr<zeno::vec3f>("uv1")[tid]:zeno::vec3f(0);
+                          att_uv[vid+2]        = has_uv?prim_in->tris.attr<zeno::vec3f>("uv2")[tid]:zeno::vec3f(0);
+                          att_tan[vid]         = prim_in->tris.attr<zeno::vec3f>("tang")[tid];
+                          att_tan[vid+1]       = prim_in->tris.attr<zeno::vec3f>("tang")[tid];
+                          att_tan[vid+2]       = prim_in->tris.attr<zeno::vec3f>("tang")[tid];
+                         prim->tris[tid]       = zeno::vec3i(vid, vid+1, vid+2);
+
+                }
+                //flatten here, keep the rest of codes unchanged.
+
                 det = DetPrimitive{};
                 auto vs = (float const *)prim->verts.data();
                 std::map<std::string, std::pair<float const *, size_t>> vtab;
@@ -48,12 +140,12 @@ struct GraphicsManager {
                 auto ts = (int const *)prim->tris.data();
                 auto nvs = prim->verts.size();
                 auto nts = prim->tris.size();
-                auto mtlid = prim->userData().getLiterial<std::string>("mtlid", "Default");
+                auto mtlid = prim_in->userData().getLiterial<std::string>("mtlid", "Default");
                 xinxinoptix::load_object(key, mtlid, vs, nvs, ts, nts, vtab);
             }
             else if (auto mtl = dynamic_cast<zeno::MaterialObject *>(obj))
             {
-                det = DetMaterial{mtl->common, mtl->frag, mtl->mtlidkey};
+                det = DetMaterial{mtl->tex2Ds, mtl->common, mtl->frag, mtl->mtlidkey};
             }
         }
 
@@ -212,32 +304,61 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
             
             //zeno::log_debug("[zeno-optix] updating material");
             std::vector<std::string> shaders;
+            std::vector<std::vector<std::string>> shader_tex_names;
             mtlidlut.clear();
 
             ensure_shadtmpl();
             shaders.push_back(shadtmpl);
             mtlidlut.insert({"Default", 0});
-
+            shader_tex_names.clear();
+            shader_tex_names.push_back(std::vector<std::string>());
             for (auto const &[key, obj]: graphicsMan->graphics) {
                 if (auto mtldet = std::get_if<GraphicsManager::DetMaterial>(&obj->det)) {
                     //zeno::log_debug("got material shader:\n{}", mtldet->shader);
                     std::string shader;
+                    auto common_code = mtldet->common;
+                    std::string tar = "uniform sampler2D";
+                    size_t index = 0;
+                    while (true) {
+                        /* Locate the substring to replace. */
+                        index = common_code.find(tar, index);
+                        if (index == std::string::npos) break;
+
+                        /* Make the replacement. */
+                        common_code.replace(index, tar.length(), "//////////");
+
+                        /* Advance index forward so the next iteration doesn't pick it up as well. */
+                        index += tar.length();
+                    }
+
                     shader.reserve(commontpl.size()
-                                    + mtldet->common.size()
+                                    + common_code.size()
                                     + shadtpl2.first.size()
                                     + mtldet->shader.size()
                                     + shadtpl2.second.size());
                     shader.append(commontpl);
-                    shader.append(mtldet->common);
+                    shader.append(common_code);
                     shader.append(shadtpl2.first);
                     shader.append(mtldet->shader);
                     shader.append(shadtpl2.second);
                     //std::cout<<shader<<std::endl;
                     mtlidlut.insert({mtldet->mtlidkey, (int)shaders.size()});
+                    shader_tex_names.push_back(std::vector<std::string>());
+                    auto &shaderTex = shader_tex_names.back();
+                    shaderTex.resize(0);
+                    int texid=0;
+                    for(auto tex:mtldet->tex2Ds)
+                    {
+                        OptixUtil::addTexture(tex->path.c_str());
+                        shaderTex.emplace_back(tex->path);
+                        texid++;
+                    }
                     shaders.push_back(std::move(shader));
+                    
                 }
             }
-            xinxinoptix::optixupdatematerial(shaders);
+            std::cout<<"shaders size "<<shaders.size()<<" shader tex name size "<<shader_tex_names.size()<<std::endl;
+            xinxinoptix::optixupdatematerial(shaders, shader_tex_names);
             //zeno::log_debug("[zeno-optix] updating light");
             xinxinoptix::optixupdatelight();
             //zeno::log_debug("[zeno-optix] updating mesh");
