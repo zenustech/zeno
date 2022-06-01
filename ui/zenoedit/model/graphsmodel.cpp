@@ -703,7 +703,14 @@ void GraphsModel::addNode(const NODE_DATA& nodeData, const QModelIndex& subGpIdx
         }
         else
         {
-            pGraph->appendItem(nodeData);
+            if (descName == "MakeList") {
+                INPUT_SOCKETS inputs = nodeData2[ROLE_INPUTS].value<INPUT_SOCKETS>();
+                INPUT_SOCKET inSocket;
+                inSocket.info.name = "obj0";
+                inputs.insert(inSocket.info.name, inSocket);
+                nodeData2[ROLE_INPUTS] = QVariant::fromValue(inputs);
+            }
+            pGraph->appendItem(nodeData2);
         }
 
         //update desc if meet subinput/suboutput node.
@@ -1028,26 +1035,44 @@ QModelIndex GraphsModel::addLink(const EdgeInfo& info, const QModelIndex& subGpI
 		SubGraphModel* pGraph = subGraph(subGpIdx.row());
         ZASSERT_EXIT(pGraph, QModelIndex());
 
-			QStandardItem* pItem = new QStandardItem;
-			pItem->setData(UiHelper::generateUuid(), ROLE_OBJID);
-			pItem->setData(info.inputNode, ROLE_INNODE);
-			pItem->setData(info.inputSock, ROLE_INSOCK);
-			pItem->setData(info.outputNode, ROLE_OUTNODE);
-			pItem->setData(info.outputSock, ROLE_OUTSOCK);
+        QStandardItem* pItem = new QStandardItem;
+        pItem->setData(UiHelper::generateUuid(), ROLE_OBJID);
+        pItem->setData(info.inputNode, ROLE_INNODE);
+        pItem->setData(info.inputSock, ROLE_INSOCK);
+        pItem->setData(info.outputNode, ROLE_OUTNODE);
+        pItem->setData(info.outputSock, ROLE_OUTSOCK);
 
-			m_linkModel->appendRow(pItem);
-			QModelIndex linkIdx = m_linkModel->indexFromItem(pItem);
+        m_linkModel->appendRow(pItem);
+        QModelIndex linkIdx = m_linkModel->indexFromItem(pItem);
 
-			const QModelIndex& inIdx = pGraph->index(info.inputNode);
-			const QModelIndex& outIdx = pGraph->index(info.outputNode);
+        const QModelIndex& inIdx = pGraph->index(info.inputNode);
+        const QModelIndex& outIdx = pGraph->index(info.outputNode);
 
-			INPUT_SOCKETS inputs = inIdx.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
-			OUTPUT_SOCKETS outputs = outIdx.data(ROLE_OUTPUTS).value<OUTPUT_SOCKETS>();
-			inputs[info.inputSock].linkIndice.append(QPersistentModelIndex(linkIdx));
-			outputs[info.outputSock].linkIndice.append(QPersistentModelIndex(linkIdx));
-			pGraph->setData(inIdx, QVariant::fromValue(inputs), ROLE_INPUTS);
-			pGraph->setData(outIdx, QVariant::fromValue(outputs), ROLE_OUTPUTS);
-            return linkIdx;
+        INPUT_SOCKETS inputs = inIdx.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
+        OUTPUT_SOCKETS outputs = outIdx.data(ROLE_OUTPUTS).value<OUTPUT_SOCKETS>();
+        inputs[info.inputSock].linkIndice.append(QPersistentModelIndex(linkIdx));
+        outputs[info.outputSock].linkIndice.append(QPersistentModelIndex(linkIdx));
+        pGraph->setData(inIdx, QVariant::fromValue(inputs), ROLE_INPUTS);
+        pGraph->setData(outIdx, QVariant::fromValue(outputs), ROLE_OUTPUTS);
+
+        //todo: encapsulation when case grows.
+        if (inIdx.data(ROLE_OBJNAME).toString() == "MakeList")
+        {
+            QList<QString> lst = inputs.keys();
+            lst.sort(Qt::CaseSensitive);
+            const QString &lastObj = lst.last();
+            if (info.inputSock == lst.last())
+            {
+                //add a new
+                const QString& newObjName = QString("obj%1").arg(lst.size());
+                INPUT_SOCKET inSockObj;
+                inSockObj.info.name = newObjName;
+                inputs[newObjName] = inSockObj;
+                pGraph->setData(inIdx, QVariant::fromValue(inputs), ROLE_INPUTS);
+            }
+        }
+
+        return linkIdx;
     }
 }
 

@@ -305,14 +305,14 @@ void SubGraphModel::updateParamNotDesc(const QString& nodeid, const QString& par
     if (it == m_nodes.end())
         return;
 
-    PARAMS_INFO params = m_nodes[nodeid][ROLE_PARAMETERS_NOT_DESC].value<PARAMS_INFO>();
+    PARAMS_INFO params = m_nodes[nodeid][ROLE_PARAMS_NO_DESC].value<PARAMS_INFO>();
     const QVariant oldValue = params[paramName].value;
     QVariant newValue = var;
     params[paramName].value = newValue;
 
     const QModelIndex& idx = index(nodeid);
     const QModelIndex& subgIdx = m_pGraphsModel->indexBySubModel(this);
-    setData(idx, QVariant::fromValue(params), ROLE_PARAMETERS_NOT_DESC);
+    setData(idx, QVariant::fromValue(params), ROLE_PARAMS_NO_DESC);
 }
 
 void SubGraphModel::updateSocket(const QString& nodeid, const SOCKET_UPDATE_INFO& info)

@@ -242,7 +242,12 @@ void ModelAcceptor::setInputSocket(const QString& id, const QString& inSock, con
 		}
 		m_currentGraph->setData(idx, QVariant::fromValue(inputs), ROLE_INPUTS);
 	} else {
-        zeno::log_warn("no such input socket {}", inSock.toStdString());
+		//TODO: support some dynamic socket, "like" objx in MakeList.
+        INPUT_SOCKET inSocket;
+		inSocket.info.name = inSock;
+		inputs[inSock] = inSocket;
+        m_currentGraph->setData(idx, QVariant::fromValue(inputs), ROLE_INPUTS);
+        //zeno::log_warn("no such input socket {}", inSock.toStdString());
     }
 }
 
@@ -262,9 +267,9 @@ void ModelAcceptor::setParamValue(const QString& id, const QString& name, const 
 	}
 	else
 	{
-		PARAMS_INFO _params = m_currentGraph->data(idx, ROLE_PARAMETERS_NOT_DESC).value<PARAMS_INFO>();
+		PARAMS_INFO _params = m_currentGraph->data(idx, ROLE_PARAMS_NO_DESC).value<PARAMS_INFO>();
 		_params[name].value = var;
-		m_currentGraph->setData(idx, QVariant::fromValue(_params), ROLE_PARAMETERS_NOT_DESC);
+		m_currentGraph->setData(idx, QVariant::fromValue(_params), ROLE_PARAMS_NO_DESC);
         zeno::log_warn("not found param name {}", name.toStdString());
     }
 }
