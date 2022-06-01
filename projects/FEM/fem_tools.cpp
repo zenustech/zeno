@@ -167,7 +167,7 @@ struct RetrieveRigidTransform : zeno::INode {
         parallel_test.col(1) << objRef->verts[idx1][0],objRef->verts[idx1][1],objRef->verts[idx1][2];
         for(idx2 = idx1 + 1;idx2 < objRef->size();++idx2){
             parallel_test.col(2) << objRef->verts[idx2][0],objRef->verts[idx2][1],objRef->verts[idx2][2];
-            if(fabs(parallel_test.determinant()) > 1e-3)
+            if(fabs(parallel_test.determinant()) > 1e-6)
                 break;
         }
 
@@ -176,7 +176,7 @@ struct RetrieveRigidTransform : zeno::INode {
         refTet.col(2) << parallel_test.col(2),1.0;
         for(idx3 = idx2 + 1;idx3 < objRef->size();++idx3){
             refTet.col(3) << objRef->verts[idx3][0],objRef->verts[idx3][1],objRef->verts[idx3][2],1.0;
-            if(fabs(refTet.determinant()) > 1e-3)
+            if(fabs(refTet.determinant()) > 1e-6)
                 break;
         }
 
@@ -185,7 +185,7 @@ struct RetrieveRigidTransform : zeno::INode {
         newTet.col(2) << objNew->verts[idx2][0],objNew->verts[idx2][1],objNew->verts[idx2][2],1.0;
         newTet.col(3) << objNew->verts[idx3][0],objNew->verts[idx3][1],objNew->verts[idx3][2],1.0;
 
-        std::cout << "RETRIEVE IDX : " << idx0 << "\t" << idx1 << "\t" << idx2 << "\t" << idx3 << std::endl;
+        // std::cout << "RETRIEVE IDX : " << idx0 << "\t" << idx1 << "\t" << idx2 << "\t" << idx3 << std::endl;
 
         Mat4x4d T = newTet * refTet.inverse();
 

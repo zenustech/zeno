@@ -48,6 +48,10 @@ add_library(zeno_FEM SHARED ${FEM_MUSCLE_SOURCE_FILES})
 target_link_libraries(zeno_FEM PRIVATE Eigen3::Eigen)
 target_link_libraries(zeno_FEM PUBLIC OpenMP::OpenMP_CXX)
 
+target_compile_options(zeno_FEM # MSVC, GNU, Clang, Intel
+  PUBLIC   $<$<COMPILE_LANGUAGE:CXX>: $<IF:$<CXX_COMPILER_ID:MSVC>, /openmp:llvm /openmp:experimental, -fopenmp $<IF:$<CXX_COMPILER_ID:Clang>, , > >>
+)
+
 target_include_directories(zeno_FEM PUBLIC 
     ${CMAKE_CURRENT_SOURCE_DIR}/src/math
     ${CMAKE_CURRENT_SOURCE_DIR}/src/mesh
