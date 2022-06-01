@@ -1,18 +1,9 @@
-#include <zeno/zeno.h>
-#include <zeno/logger.h>
-#include <zeno/ListObject.h>
-#include <zeno/NumericObject.h>
-#include <zeno/PrimitiveObject.h>
-#include <zeno/utils/UserData.h>
-#include <zeno/StringObject.h>
-
-#include "skinning_iobject.h"
+#include "skinning_header.h"
 
 #include <iostream>
 
 namespace{
 using namespace zeno;
-
 // with relatively large rotation, directly interpolate on displacement field will be problematic, the skin apt to be shrinking
 struct RetrieveDisplacementField : zeno::INode {
     virtual void apply() override {
@@ -29,15 +20,12 @@ struct RetrieveDisplacementField : zeno::INode {
         set_output("shape",shape);      
     }
 };
-
 ZENDEFNODE(RetrieveDisplacementField,{
     {"shape"},
     {"shape"},
     {},
     {"Skinning"},
 });
-
-
 // The two input primitive objects should be volumetric mesh, currently only quads is supported
 // Using linear blending for interpolating the nodal affine field from neighbored elements
 struct RetrieveAffineField : zeno::INode {
@@ -116,15 +104,12 @@ struct RetrieveAffineField : zeno::INode {
     }
 
 };
-
 ZENDEFNODE(RetrieveAffineField,{
     {"shape"},
     {"shape"},
     {},
     {"Skinning"},
 });
-
-
 struct AlignPrimitive : zeno::INode {
     virtual void apply() override {
         auto ref_shape = get_input<zeno::PrimitiveObject>("ref_shape");
@@ -187,13 +172,10 @@ struct AlignPrimitive : zeno::INode {
         set_output("res",std::move(res));
     }
 };
-
 ZENDEFNODE(AlignPrimitive,{
     {{"ref_shape"},{"aligned_shape"}},
     {"res"},
     {},
     {"Skinning"},
 });
-
-
 };

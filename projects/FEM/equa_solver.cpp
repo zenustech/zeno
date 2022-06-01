@@ -356,6 +356,8 @@ struct SolveFEMFast : zeno::INode {
                 cpos[i] = shape->attr<zeno::vec3f>("init_guess")[i];
         }
 
+        
+
         auto elmView = get_input<PrimitiveObject>("elmView");
 
         std::shared_ptr<PrimitiveObject> interpShape = has_input("skin") ? get_input<PrimitiveObject>("skin") : nullptr;

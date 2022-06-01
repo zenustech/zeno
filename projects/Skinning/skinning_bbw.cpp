@@ -1,18 +1,9 @@
-#include <zeno/zeno.h>
-#include <zeno/logger.h>
-#include <zeno/ListObject.h>
-#include <zeno/NumericObject.h>
-#include <zeno/PrimitiveObject.h>
-#include <zeno/utils/UserData.h>
-#include <zeno/StringObject.h>
+#include "skinning_header.h"
 
 #include <igl/boundary_conditions.h>
 #include <igl/bbw.h>
 #include <igl/normalize_row_sums.h>
 #include <igl/project_to_line.h>
-
-#include "skinning_iobject.h"
-
 
 namespace{
 using namespace zeno;
@@ -56,7 +47,7 @@ struct SolveBiharmonicWeight : zeno::INode {
             }
         }
 
-        std::cout << "BBW: size of bc " << bc.rows() << "\t" << bc.cols() << std::endl;
+        // std::cout << "BBW: size of bc " << bc.rows() << "\t" << bc.cols() << std::endl;
         // compute BBW weights matrix
         igl::BBWData bbw_data;
         // only a few iterations for sake of demo

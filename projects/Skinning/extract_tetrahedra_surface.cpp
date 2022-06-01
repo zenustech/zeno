@@ -1,16 +1,9 @@
-#include <zeno/zeno.h>
-#include <zeno/logger.h>
-#include <zeno/ListObject.h>
-#include <zeno/NumericObject.h>
-#include <zeno/PrimitiveObject.h>
-#include <zeno/utils/UserData.h>
-#include <zeno/StringObject.h>
+#include "skinning_header.h"
 
 #include <igl/readOBJ.h>
 #include <igl/readTGF.h>
 #include <igl/readMESH.h>
 
-#include "skinning_iobject.h"
 
 namespace{
 using namespace zeno;

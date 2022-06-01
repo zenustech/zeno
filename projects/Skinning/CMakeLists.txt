@@ -17,17 +17,14 @@ if(NOT OpenMP_CXX_FOUND)
 endif(NOT OpenMP_CXX_FOUND)
 
 set(SKINNING_SOURCE_FILES
-    bone_animation.cpp
-    bone_system.cpp
     igl_file_reader.cpp
     skinning_bbw.cpp
-    skinning.cpp
+    DoSkinning.cpp
     tetrahedralize.cpp
     laplace_equa.cpp
     gradient.cpp
     deformation_field.cpp
     extract_tetrahedra_surface.cpp
-    triangularize_quads_surf.cpp
     arap.cpp
 )
 
