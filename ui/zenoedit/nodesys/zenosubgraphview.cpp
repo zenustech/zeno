@@ -3,6 +3,7 @@
 #include "zenosubgraphview.h"
 #include "zenosearchbar.h"
 #include "zenoapplication.h"
+#include "zenomainwindow.h"
 #include "zenonode.h"
 #include "zenonewmenu.h"
 #include <zenoui/comctrl/zlabel.h>
@@ -151,6 +152,7 @@ void _ZenoSubGraphView::cameraFocus()
 		bool found = Zenovis::GetInstance().getSession()->focus_on_node(nodeId.toStdString(), center, radius);
 		if (found) {
 			Zenovis::GetInstance().m_camera_control->focus(QVector3D(center[0], center[1], center[2]), radius * 3.0f);
+            zenoApp->getMainWindow()->updateViewport();
 		}
 	}
 }

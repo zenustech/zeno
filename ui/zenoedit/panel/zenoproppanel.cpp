@@ -165,6 +165,7 @@ ZExpandableSection* ZenoPropPanel::paramsBox(IGraphsModel* pModel, const QModelI
 				pComboBox->setObjectName(paramName);
 				pComboBox->setProperty("control", param.control);
 
+				//todo: unify
 #if QT_VERSION >= QT_VERSION_CHECK(5, 15, 0)
 				connect(pComboBox, &QComboBox::textActivated, this, &ZenoPropPanel::onParamEditFinish);
 #else
@@ -519,6 +520,16 @@ void ZenoPropPanel::onDataChanged(const QModelIndex& subGpIdx, const QModelIndex
 					{
 						ZVecEditor* pEdit = lst[0];
 						pEdit->onValueChanged(inSocket.info.defaultValue.value<QVector<qreal>>());
+					}
+					break;
+				}
+				case CONTROL_ENUM:
+				{
+					auto lst = findChildren<QComboBox*>(inSock, Qt::FindChildrenRecursively);
+					if (lst.size() == 1)
+					{
+						QComboBox* pComboBox = lst[0];
+						pComboBox->setCurrentText(inSocket.info.defaultValue.toString());
 					}
 					break;
 				}

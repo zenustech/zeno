@@ -12,7 +12,7 @@ void *optixgetimg(int &w, int &h);
 void optixinit(int argc, char* argv[]);
 void optixupdatebegin();
 void optixupdatemesh(std::map<std::string, int> const &mtlidlut);
-void optixupdatematerial(std::vector<std::string> const &shaders);
+void optixupdatematerial(std::vector<std::string> const &shaders, std::vector<std::vector<std::string>> &texs);
 void optixupdatelight();
 void optixupdateend();
 

@@ -9,7 +9,9 @@
 #include <zeno/utils/logger.h>
 #include <zeno/core/Graph.h>
 #include <zeno/zeno.h>
+#include <zeno/types/StringObject.h>
 #include "zenoapplication.h"
+#include "zenomainwindow.h"
 #include "ztcpserver.h"
 #include "graphsmanagment.h"
 #include "serialize.h"
@@ -86,6 +88,24 @@ struct ProgramRunData {
         auto graph = session->createGraph();
         graph->loadGraph(progJson.c_str());
 
+        QSettings settings("ZenusTech", "Zeno");
+        QVariant nas_loc_v = settings.value("nas_loc");
+        if (!nas_loc_v.isNull()) {
+            QString nas_loc = nas_loc_v.toString();
+
+            for (auto &[k, n]: graph->nodes) {
+                for (auto & [sn, sv]: n->inputs) {
+                    auto p = std::dynamic_pointer_cast<zeno::StringObject>(sv);
+                    if (p) {
+                        std::string &str = p->get();
+                        if (str.find("$NASLOC") == 0) {
+                            str = str.replace(0, 7, nas_loc.toStdString());
+                        }
+                    }
+                }
+            }
+        }
+
         if (chkfail()) return;
         if (g_state == kQuiting) return;
 
@@ -93,6 +113,8 @@ struct ProgramRunData {
         for (int frame = graph->beginFrameNumber; frame <= graph->endFrameNumber; frame++) {
             zeno::log_debug("begin frame {}", frame);
             session->globalComm->newFrame();
+            //corresponding to processPacket in viewdecode.cpp
+            zenoApp->getMainWindow()->updateViewport(QString::fromStdString("newFrame"));
             session->globalState->frameBegin();
             while (session->globalState->substepBegin())
             {
@@ -105,6 +127,7 @@ struct ProgramRunData {
             if (g_state == kQuiting) return;
             session->globalState->frameEnd();
             session->globalComm->finishFrame();
+            zenoApp->getMainWindow()->updateViewport(QString::fromStdString("finishFrame"));
             zeno::log_debug("end frame {}", frame);
             if (chkfail()) return;
         }

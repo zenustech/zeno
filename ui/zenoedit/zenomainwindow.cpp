@@ -21,6 +21,7 @@
 #include <zenoui/style/zenostyle.h>
 #include <zenoui/util/uihelper.h>
 #include "util/log.h"
+#include "dialog/zfeedbackdlg.h"
 
 
 ZenoMainWindow::ZenoMainWindow(QWidget *parent, Qt::WindowFlags flags)
@@ -229,6 +230,11 @@ void ZenoMainWindow::initMenu() {
     QMenu *pWindow = new QMenu(tr("Window"));
 
     QMenu *pHelp = new QMenu(tr("Help"));
+    {
+        QAction *pAction = new QAction(tr("Send this File"));
+        connect(pAction, SIGNAL(triggered(bool)), this, SLOT(onFeedBack()));
+        pHelp->addAction(pAction);
+    }
 
     pMenuBar->addMenu(pFile);
     pMenuBar->addMenu(pEdit);
@@ -563,6 +569,24 @@ bool ZenoMainWindow::inDlgEventLoop() const {
 
 void ZenoMainWindow::setInDlgEventLoop(bool bOn) {
     m_bInDlgEventloop = bOn;
+}
+
+void ZenoMainWindow::onFeedBack()
+{
+    ZFeedBackDlg dlg(this);
+    if (dlg.exec() == QDialog::Accepted)
+    {
+        QString content = dlg.content();
+        bool isSend = dlg.isSendFile();
+        if (isSend) {
+            IGraphsModel *pModel = zenoApp->graphsManagment()->currentModel();
+            if (!pModel) {
+                return;
+            }
+            QString strContent = ZsgWriter::getInstance().dumpProgramStr(pModel);
+            dlg.sendEmail("bug feedback", content, strContent);
+        }
+    }
 }
 
 void ZenoMainWindow::saveAs() {

@@ -133,6 +133,9 @@ public:
 signals:
     void textActivated(const QString& text);
 
+private slots:
+    void onComboItemActivated(int index);
+
 private:
     ZComboBox* m_combobox;
 };
