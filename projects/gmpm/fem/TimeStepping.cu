@@ -578,8 +578,40 @@ struct ImplicitTimeStepping : INode {
                  z1 * x3 * y4 + z1 * y3 * x4 + x2 * y3 * z4 - x2 * z3 * y4 -
                  y2 * x3 * z4 + y2 * z3 * x4 + z2 * x3 * y4 - z2 * y3 * x4);
 
-          T t = zs::math::get_smallest_positive_real_cubic_root(a, b, c, d,
-                                                                (T)1.e-6);
+          T t = 1;
+          if (zs::abs(a) <= 1e-6) {
+            if (zs::abs(b) <= 1e-6)
+              if (zs::abs(c) <= 1e-6) {
+                t = 1;
+              } else {
+                t = -d / c;
+              }
+            else {
+              T desc = c * c - 4 * b * d;
+              if (desc > 0) {
+                t = (-c - zs::sqrt(desc)) / (2 * b);
+                if (t < 0)
+                  t = (-c + zs::sqrt(desc)) / (2 * b);
+              } else
+                t = 1;
+            }
+          } else {
+            T results[3];
+            int number = 0;
+            math::newton_solve_for_cubic_equation(a, b, c, d, results, number,
+                                                  (T)1e-6);
+
+            t = 1;
+            for (int index = 0; index < number; index++) {
+              if (results[index] > 0 && results[index] < t) {
+                t = results[index];
+              }
+            }
+          }
+          if (t < 0)
+            t = 1;
+        // T t = zs::math::get_smallest_positive_real_cubic_root(a, b, c, d,
+        //                                                      (T)1.e-6);
 #if 0
       if (t >= 0)
         stepSizes[ei] = t;
@@ -2252,7 +2284,7 @@ struct ImplicitTimeStepping : INode {
 
       // line search
       T alpha = 1.;
-      // computeInversionFreeStepSize(cudaPol, eles, vtemp, alpha);
+      computeInversionFreeStepSize(cudaPol, eles, vtemp, alpha);
       find_ground_intersection_free_stepsize(cudaPol, *zstets, vtemp, alpha);
 #if 0
       while (find_self_intersection_free_stepsize(cudaPol, *zstets, vtemp,
