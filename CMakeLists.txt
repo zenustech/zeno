@@ -35,8 +35,10 @@ option(ZENO_USE_CCACHE "Use CCache if found in path" ON)
 option(ZENO_NO_WARNING "Use customized compiler warnings" ON)
 option(ZENO_INSTALL_TARGET "Enable installation targets" ON)
 
-# Otherwise we can't link .so libs with .a libs
-set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+if (NOT DEFINED CMAKE_POSITION_INDEPENDENT_CODE)
+    # Otherwise we can't link .so libs with .a libs
+    set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+endif()
 if (MSVC AND NOT DEFINED CMAKE_MSVC_RUNTIME_LIBRARY)
     # MSVC sucks /MD /MT /MDd /MTd options....
     # MultiThreadedDLL = /MD, MultiThreadedDebugDLL = /MDd
