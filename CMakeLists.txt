@@ -107,7 +107,6 @@ endif()
 if (ZENO_BUILD_EDITOR)
     message(STATUS "Building Zeno Editor")
     add_subdirectory(ui/zenoedit)
-    add_subdirectory(ui/3rdparty)
     add_subdirectory(zenovis)
 endif()
 
