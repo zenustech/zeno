@@ -209,6 +209,24 @@ ZENDEFNODE(NumericRangeList, {
     });
 
 
+struct IsList : zeno::INode {
+    virtual void apply() override {
+        auto result = std::make_shared<zeno::NumericObject>();
+        result->value = 0;
+        if (has_input<zeno::ListObject>("list")) 
+            result->value = 1;
+        set_output("result", std::move(result));
+    } 
+};
+
+ZENDEFNODE(IsList, {
+    {"list"},
+    {"result"},
+    {},
+    {"list"},
+});
+
+
 #ifdef ZENO_VISUALIZATION
 struct ToVisualize_ListObject : zeno::INode {
     virtual void apply() override {
