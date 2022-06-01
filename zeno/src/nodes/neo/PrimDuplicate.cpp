@@ -26,7 +26,7 @@ ZENO_API std::shared_ptr<PrimitiveObject> primDuplicate(PrimitiveObject *parsPri
     auto hasRadAttr = boolean_variant(!radAttr.empty());
     auto hasRadius = boolean_variant(radius != 1);
 
-    task_group tg;
+    immediate_task_group tg;
 
     prim->verts.resize(parsPrim->verts.size() * meshPrim->verts.size());
     prim->points.resize(parsPrim->verts.size() * meshPrim->points.size());
