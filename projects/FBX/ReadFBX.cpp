@@ -196,6 +196,8 @@ struct Mesh{
             SCamera sCam{cam->mHorizontalFOV,
                          cam->mFocalLength,
                          cam->mAspect,
+                         cam->mFilmWidth * 25.4f,  // inch to mm
+                         cam->mFilmHeight * 25.4f,
                          cam->mClipPlaneNear,
                          cam->mClipPlaneFar,
                          zeno::vec3f(cam->mInterestPosition.x, cam->mInterestPosition.y, cam->mInterestPosition.z),
@@ -205,8 +207,9 @@ struct Mesh{
                          /*zeno::vec3f(cam->mUp.x, cam->mUp.y, cam->mUp.z),*/
                          /*camMatrix*/
             };
-            zeno::log_info(">>>>> {} {} {} {} {} {}\n {} {} {}",
+            zeno::log_info(">>>>> {} {} {} {} {} {} - {} {}\n {} {} {}",
                            camName, sCam.hFov, sCam.focL, sCam.aspect, sCam.pNear, sCam.pFar,
+                           sCam.filmW, sCam.filmH,
                            /*sCam.lookAt[0], sCam.lookAt[1], sCam.lookAt[2],  // default is 1,0,0*/
                            /*sCam.pos[0], sCam.pos[1], sCam.pos[2], // default is 0,0,0*/
                            /*sCam.up[0], sCam.up[1], sCam.up[2],  // default is 0,1,0*/

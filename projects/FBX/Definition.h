@@ -357,6 +357,8 @@ struct SCamera {
     float hFov;
     float focL;
     float aspect;
+    float filmW;
+    float filmH;
     float pNear;
     float pFar;
     zeno::vec3f interestPos;
