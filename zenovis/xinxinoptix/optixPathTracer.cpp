@@ -54,6 +54,7 @@ namespace xinxinoptix {
 
 bool resize_dirty = false;
 bool minimized    = false;
+static bool using20xx = false;
 
 // Camera state
 bool             camera_changed = true;
@@ -473,7 +474,7 @@ static void initCameraState()
     trackball.setGimbalLock( true );
 }
 
-void buildMeshAccelSplitMesh( PathTracerState& state, std::shared_ptr<smallMesh> mesh)
+static void buildMeshAccelSplitMesh( PathTracerState& state, std::shared_ptr<smallMesh> mesh)
 {
     //
     // copy mesh data to device
@@ -590,7 +591,7 @@ void buildMeshAccelSplitMesh( PathTracerState& state, std::shared_ptr<smallMesh>
     }
     state.gas_handle = mesh->gas_handle;
 }
-void buildInstanceAccel(PathTracerState& state, int rayTypeCount, std::vector<std::shared_ptr<smallMesh>> m_meshes)
+static void buildInstanceAccel(PathTracerState& state, int rayTypeCount, std::vector<std::shared_ptr<smallMesh>> m_meshes)
 {
     float mat4x4[12] = {1,0,0,0,0,1,0,0,0,0,1,0};
     const size_t num_instances = m_meshes.size();
@@ -907,10 +908,10 @@ static void cleanupState( PathTracerState& state )
         state.d_params.reset();
 }
 
-void detectHuangrenxunHappiness() {
+static void detectHuangrenxunHappiness() {
     int dev;
     CUDA_CHECK(cudaGetDevice(&dev));
-    cudaGetDeviceProperties prop;
+    cudaDeviceProp prop;
     CUDA_CHECK(cudaGetDeviceProperties(&prop, dev));
     zeno::log_info("CUDA graphic card name: {}", prop.name);
     zeno::log_info("CUDA compute capability: {}.{}", prop.major, prop.minor);
@@ -1029,7 +1030,6 @@ std::vector<std::shared_ptr<smallMesh>> &oMeshes);
 
 std::vector<std::shared_ptr<smallMesh>> g_meshPieces;
 static void updatedrawobjects();
-static bool using20xx = false;
 void optixupdatemesh(std::map<std::string, int> const &mtlidlut) {
     camera_changed = true;
     g_mtlidlut = mtlidlut;
@@ -1144,7 +1144,7 @@ void optixupdatemesh(std::map<std::string, int> const &mtlidlut) {
     }
 //#endif
 }
-void addLightMesh(float3 corner, float3 v2, float3 v1, float3 normal, float emission)
+static void addLightMesh(float3 corner, float3 v2, float3 v1, float3 normal, float emission)
 {
     float3 lc = corner - normal * 0.001;
     float3 vert0 = lc, vert1 = lc + v1, vert2 = lc + v2, vert3 = lc + v1 + v2;
@@ -1267,10 +1267,10 @@ struct DrawDat {
     std::map<std::string, std::vector<float>> vertattrs;
     auto const &getAttr(std::string const &s) const
     {
-        if(vertattrs.find(s)!=vertattrs.end())
-        {
-            return vertattrs.find(s)->second;
-        }
+        //if(vertattrs.find(s)!=vertattrs.end())
+        //{
+            return vertattrs.at(s);//->second;
+        //}
         
     }
 };
