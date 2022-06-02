@@ -23,6 +23,12 @@ struct task_group {
             std::move(f)();
         });
     }
+    
+    void run_sequential() {
+        std::for_each(m_tasks.begin(), m_tasks.end(), [&] (auto &&f) {
+            std::move(f)();
+        });
+    }
 };
 
 struct immediate_task_group {
