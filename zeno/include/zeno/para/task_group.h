@@ -23,8 +23,10 @@ struct task_group {
             std::move(f)();
         });
     }
-    
-    void run_sequential() {
+};
+
+struct delayed_task_group : task_group {
+    void run() {
         std::for_each(m_tasks.begin(), m_tasks.end(), [&] (auto &&f) {
             std::move(f)();
         });
