@@ -18,3 +18,4 @@ else:
     assert False, sys.platform
 
 shutil.move(os.path.join('misc', 'ci', 'vcpkg.json'), 'vcpkg.json')
+shutil.move(os.path.join('misc', 'ci', 'CMakePresets.json'), 'CMakePresets.json')

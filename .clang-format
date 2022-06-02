@@ -15,7 +15,7 @@ AlignTrailingComments: true
 AlignEscapedNewlines: true
 AlignConsecutiveDeclarations: false
 AlignOperands: true
-LambdaBodyIndentation: Signature
+#LambdaBodyIndentation: Signature
 NamespaceIndentation: None
 #PackConstructorInitializers: CurrentLine
 ColumnLimit: 120
@@ -30,6 +30,6 @@ BraceWrapping:
   SplitEmptyFunction: false
 DerivePointerAlignment: false
 PointerAlignment: Right
-ReferenceAlignment: Pointer
+#ReferenceAlignment: Pointer
 #QualifierAlignment: Leave
 #QualifierOrder: ['static', 'inline', 'type', 'const', 'volatile']
