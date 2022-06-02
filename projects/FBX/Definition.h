@@ -34,15 +34,6 @@
 #define COMMON_DEFAULT_strokeTint aiColor4D(0.0f, 0.0f, 0.0f, 1.0f)
 #define COMMON_DEFAULT_opacity aiColor4D(0.0f, 0.0f, 0.0f, 1.0f)
 
-struct Helper{
-    static void printAiMatrix(aiMatrix4x4 m){
-        zeno::log_info("    {: f} {: f} {: f} {: f}", m.a1, m.a2, m.a3, m.a4);
-        zeno::log_info("    {: f} {: f} {: f} {: f}", m.b1, m.b2, m.b3, m.b4);
-        zeno::log_info("    {: f} {: f} {: f} {: f}", m.c1, m.c2, m.c3, m.c4);
-        zeno::log_info("    {: f} {: f} {: f} {: f}", m.d1, m.d2, m.d3, m.d4);
-    }
-};
-
 struct SKeyPosition {
     aiVector3D position;
     float timeStamp;
@@ -56,6 +47,13 @@ struct SKeyRotation {
 struct SKeyScale {
     aiVector3D scale;
     float timeStamp;
+};
+
+struct SKeyMorph {
+    double m_Time;
+    double *m_Weights;
+    unsigned int *m_Values;
+    unsigned int m_NumValuesAndWeights;
 };
 
 struct SAnimBone {
@@ -115,23 +113,30 @@ struct SAnimBone {
         m_LocalTransform = translation * rotation * scale;
     }
 
+    void _getIndexWarn(float animationTime){
+        zeno::log_warn("Failed to get index, time {}", animationTime);
+    }
+
     int getPositionIndex(float animationTime) {
         for (int index = 0; index < m_NumPositions - 1; ++index) {
             if (animationTime < m_Positions[index + 1].timeStamp)
                 return index;
         }
+        _getIndexWarn(animationTime);
     }
     int getRotationIndex(float animationTime) {
         for (int index = 0; index < m_NumRotations - 1; ++index) {
             if (animationTime < m_Rotations[index + 1].timeStamp)
                 return index;
         }
+        _getIndexWarn(animationTime);
     }
     int getScaleIndex(float animationTime) {
         for (int index = 0; index < m_NumScalings - 1; ++index) {
             if (animationTime < m_Scales[index + 1].timeStamp)
                 return index;
         }
+        _getIndexWarn(animationTime);
     }
 
     aiMatrix4x4 interpolatePosition(float animationTime) {
@@ -195,12 +200,11 @@ struct SAnimBone {
     }
 
     float getScaleFactor(float lastTimeStamp, float nextTimeStamp, float animationTime) {
-        float scaleFactor = 0.0f;
+        // e.g. last: 1, next: 2, time: 1.5  -> (1.5-1)/(2-1)=0.5
         float midWayLength = animationTime - lastTimeStamp;
         float framesDiff = nextTimeStamp - lastTimeStamp;
-        scaleFactor = midWayLength / framesDiff;
 
-        return scaleFactor;
+        return midWayLength / framesDiff;
     }
 };
 
@@ -211,6 +215,15 @@ struct SVertex{
     aiVector3D tangent;
     aiVector3D bitangent;
     std::unordered_map<std::string, float> boneWeights;
+    float numAnimMesh;
+};
+
+struct SBSVertex{
+    aiVector3D position;
+    aiVector3D deltaPosition;
+    aiVector3D normal;
+    aiVector3D deltaNormal;
+    float weight;
 };
 
 struct SMaterialProp{
@@ -307,8 +320,8 @@ struct SMaterial : zeno::IObjectClone<SMaterial>{
         val.emplace("opacity", SMaterialProp{28, true, aiColor4D(), aiTextureType_OPACITY, "$ai.transmission"});
     }
 
-    std::vector<zeno::Any> getTexList(){
-        std::vector<zeno::Any> tl;
+    std::vector<std::string> getTexList(){
+        std::vector<std::string> tl;
 
         std::copy(val.begin(),
                   val.end(),
@@ -340,6 +353,20 @@ struct SBoneOffset {
     aiMatrix4x4 offset;
 };
 
+struct SCamera {
+    float hFov;
+    float focL;
+    float aspect;
+    float pNear;
+    float pFar;
+    zeno::vec3f interestPos;
+    /*zeno::vec3f lookAt;*/
+    zeno::vec3f pos;
+    zeno::vec3f up;
+    zeno::vec3f view;
+    /*aiMatrix4x4 camM;*/
+};
+
 struct NodeTree : zeno::IObjectClone<NodeTree>{
     aiMatrix4x4 transformation;
     std::string name;
@@ -364,6 +391,10 @@ struct IBoneOffset : zeno::IObjectClone<IBoneOffset>{
     std::unordered_map<std::string, SBoneOffset> value;
 };
 
+struct ICamera : zeno::IObjectClone<ICamera>{
+    std::unordered_map<std::string, SCamera> value;
+};
+
 struct IVertices : zeno::IObjectClone<IVertices>{
     std::vector<SVertex> value;
 };
@@ -372,11 +403,65 @@ struct IIndices : zeno::IObjectClone<IIndices>{
     std::vector<unsigned int> value;
 };
 
+struct IBlendSData : zeno::IObjectClone<IBlendSData>{
+    // value: one-dimensional: Anim Mesh, two-dimensional: Mesh Vertices
+    std::unordered_map<std::string, std::vector<std::vector<SBSVertex>>> value;
+};
+
+struct IKeyMorph : zeno::IObjectClone<IKeyMorph>{
+    std::unordered_map<std::string, std::vector<SKeyMorph>> value;
+};
+
+struct IMeshName : zeno::IObjectClone<IMeshName>{
+    std::string value;
+};
+
 struct FBXData : zeno::IObjectClone<FBXData>{
+    IMeshName iMeshName;
     IVertices iVertices;
     IIndices iIndices;
+    IBlendSData iBlendSData;
+    IKeyMorph iKeyMorph;
     IMaterial iMaterial;
     IBoneOffset iBoneOffset;
+    ICamera iCamera;
+};
+
+struct Helper{
+    static void printAiMatrix(aiMatrix4x4 m, bool transpose = false){
+        zeno::log_info("    {: f} {: f} {: f} {: f}", m.a1, m.a2, m.a3, m.a4);
+        zeno::log_info("    {: f} {: f} {: f} {: f}", m.b1, m.b2, m.b3, m.b4);
+        zeno::log_info("    {: f} {: f} {: f} {: f}", m.c1, m.c2, m.c3, m.c4);
+        zeno::log_info("    {: f} {: f} {: f} {: f}", m.d1, m.d2, m.d3, m.d4);
+
+        aiVector3t<float> trans;
+        aiQuaterniont<float> rotate;
+        aiVector3t<float> scale;
+        m.Decompose(scale, rotate, trans);
+        zeno::log_info("    T {: f} {: f} {: f}", trans.x, trans.y, trans.z);
+        zeno::log_info("    R {: f} {: f} {: f} {: f}", rotate.x, rotate.y, rotate.z, rotate.w);
+        zeno::log_info("    S {: f} {: f} {: f}", scale.x, scale.y, scale.z);
+
+        aiMatrix3x3 r = rotate.GetMatrix();
+        if (transpose)
+            r = rotate.GetMatrix().Transpose();
+        zeno::log_info("    {: f} {: f} {: f}", r.a1, r.a2, r.a3);
+        zeno::log_info("    {: f} {: f} {: f}", r.b1, r.b2, r.b3);
+        zeno::log_info("    {: f} {: f} {: f}", r.c1, r.c2, r.c3);
+    }
+
+    static void printNodeTree(NodeTree *root, int space){
+        int c = 1;
+        if (root == nullptr)
+            return;
+        space += c;
+        for(int i=0;i<root->children.size(); i++){
+            printNodeTree(&root->children[i], space);
+        }
+        for (int i = c; i < space; i++)
+            std::cout << "\t";
+        std::cout << root->name <<"\n";
+    }
 };
 
 #endif //ZENO_DEFINITION_H
