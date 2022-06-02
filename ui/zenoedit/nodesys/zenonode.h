@@ -107,6 +107,7 @@ private:
     void _initStatusBtnPos();
     void _drawBorderWangStyle(QPainter* painter);
     ZenoGraphsEditor* getEditorViewByViewport(QWidget* pWidget);
+    void updateWhole();
 
     QPersistentModelIndex m_index;
     QPersistentModelIndex m_subGpIndex;
@@ -128,8 +129,10 @@ private:
     ZenoBackgroundWidget *m_headerWidget;
     ZenoMinStatusBtnWidget* m_pStatusWidgets;
 
-    QGraphicsLinearLayout *m_pMainLayout;
+    QGraphicsLinearLayout* m_pMainLayout;
     QGraphicsLinearLayout* m_pSocketsLayout;
+    QGraphicsLinearLayout* m_pInSocketsLayout;
+    QGraphicsLinearLayout* m_pOutSocketsLayout;
     QGraphicsRectItem* m_border;
 
     bool m_bInitSockets;

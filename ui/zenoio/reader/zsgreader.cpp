@@ -391,12 +391,12 @@ void ZsgReader::_parseInputs(const QString& id, const QString& nodeName, const N
                 outSock = arr[1].GetString();
             if (arr.Size() > 2)
                 defaultValue = _parseToVariant(descInfo.type, arr[2], pAcceptor->currGraphObj());
-            
-            pAcceptor->setInputSocket(id, inSock, outId, outSock, defaultValue);
+
+            pAcceptor->setInputSocket(nodeName, id, inSock, outId, outSock, defaultValue);
         }
         else if (inputObj.IsNull())
         {
-            pAcceptor->setInputSocket(id, inSock, "", "", QVariant());
+            pAcceptor->setInputSocket(nodeName, id, inSock, "", "", QVariant());
         }
         else
         {

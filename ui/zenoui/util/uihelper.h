@@ -42,6 +42,7 @@ public:
     //todo: place at other helper.
     static QMap<QString, NODE_DATA> dumpItems(IGraphsModel* pGraphsModel, const QPersistentModelIndex& subgIdx,
         const QModelIndexList& nodesIndice, const QModelIndexList& linkIndice);
+    static int getMaxObjId(const QList<QString>& lst);
 
 private:
     static std::pair<qreal, qreal> getRxx2(QRectF r, qreal xRadius, qreal yRadius, bool AbsoluteSize);

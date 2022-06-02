@@ -223,7 +223,7 @@ void ModelAcceptor::setSocketKeys(const QString& id, const QStringList& keys)
 	m_currentGraph->setData(m_currentGraph->index(id), keys, ROLE_SOCKET_KEYS);
 }
 
-void ModelAcceptor::setInputSocket(const QString& id, const QString& inSock, const QString& outId, const QString& outSock, const QVariant& defaultValue)
+void ModelAcceptor::setInputSocket(const QString& nodeCls, const QString& id, const QString& inSock, const QString& outId, const QString& outSock, const QVariant& defaultValue)
 {
 	if (!m_currentGraph)
 		return;
@@ -243,11 +243,22 @@ void ModelAcceptor::setInputSocket(const QString& id, const QString& inSock, con
 		m_currentGraph->setData(idx, QVariant::fromValue(inputs), ROLE_INPUTS);
 	} else {
 		//TODO: support some dynamic socket, "like" objx in MakeList.
-        INPUT_SOCKET inSocket;
-		inSocket.info.name = inSock;
-		inputs[inSock] = inSocket;
-        m_currentGraph->setData(idx, QVariant::fromValue(inputs), ROLE_INPUTS);
-        //zeno::log_warn("no such input socket {}", inSock.toStdString());
+		//TODO: optimize the code.
+		if (nodeCls == "MakeList")
+		{
+			INPUT_SOCKET inSocket;
+			inSocket.info.name = inSock;
+			inputs[inSock] = inSocket;
+			if (!outId.isEmpty() && !outSock.isEmpty())
+			{
+				inputs[inSock].outNodes[outId][outSock] = SOCKET_INFO(outId, outSock);
+			}
+			m_currentGraph->setData(idx, QVariant::fromValue(inputs), ROLE_INPUTS);
+		}
+		else
+		{
+			zeno::log_warn("no such input socket {}", inSock.toStdString());
+		}
     }
 }
 
