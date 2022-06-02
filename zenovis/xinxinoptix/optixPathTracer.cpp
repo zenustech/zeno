@@ -915,7 +915,7 @@ static void detectHuangrenxunHappiness() {
     CUDA_CHECK(cudaGetDeviceProperties(&prop, dev));
     zeno::log_info("CUDA graphic card name: {}", prop.name);
     zeno::log_info("CUDA compute capability: {}.{}", prop.major, prop.minor);
-    zeno::log_info("CUDA total global memory: {} MB", static_cast<float>(prop.totalGlobalMem / 1048576.0f));
+    zeno::log_info("CUDA total global memory: {} MB", float(prop.totalGlobalMem / 1048576.0f));
 
     int driverVersion, runtimeVersion;
     CUDA_CHECK(cudaDriverGetVersion(&driverVersion));

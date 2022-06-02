@@ -224,12 +224,18 @@ struct AttrVector {
 
     template <class T>
     auto const &attr(std::string const &name) const {
-        return std::get<std::vector<T>>(attr(name));
+        auto const &arr = attr(name);
+        if (!std::holds_alternative<std::vector<T>>(arr))
+            throw makeError<TypeError>(typeid(T), std::visit([&] (auto const &t) -> std::type_info const & { return typeid(std::decay_t<decltype(t[0])>); }, arr), "type of primitive attribute " + name);
+        return std::get<std::vector<T>>(arr);
     }
 
     template <class T>
     auto &attr(std::string const &name) {
-        return std::get<std::vector<T>>(attr(name));
+        auto &arr = attr(name);
+        if (!std::holds_alternative<std::vector<T>>(arr))
+            throw makeError<TypeError>(typeid(T), std::visit([&] (auto const &t) -> std::type_info const & { return typeid(std::decay_t<decltype(t[0])>); }, arr), "type of primitive attribute " + name);
+        return std::get<std::vector<T>>(arr);
     }
 
     auto const &attr(std::string const &name) const {
