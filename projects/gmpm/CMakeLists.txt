@@ -134,3 +134,34 @@ if (${ZS_ENABLE_CUDA})
 endif()
 
 target_link_libraries(zeno_zsfem PRIVATE zshelper)
+
+
+add_library(zeno_geometry SHARED)
+target_sources(zeno_geometry PRIVATE
+  geometry/kernel/laplace_matrix.hpp
+  geometry/kernel/harmonic_matrix.hpp
+  geometry/laplace_equation.cu
+  geometry/harmonic_equation.cu
+)
+
+if (${ZS_ENABLE_CUDA})
+  enable_language(CUDA)
+
+  target_compile_features(zeno_geometry PRIVATE cuda_std_17)
+  target_compile_options(zeno_geometry 
+    PRIVATE        $<$<COMPILE_LANGUAGE:CUDA>:${CMAKE_CUDA_FLAGS} --expt-extended-lambda --expt-relaxed-constexpr --default-stream=per-thread -lineinfo --ptxas-options=-allow-expensive-optimizations=true -Xcudafe --display_error_number,--diag_suppress=implicit_return_from_non_void_function,--diag_suppress=2642,--diag_suppress=554>
+  )
+  target_link_options(zeno_geometry
+    PUBLIC $<$<LINK_LANGUAGE:CUDA>:-dlto>
+  )
+
+  set_target_properties(zeno_geometry
+    PROPERTIES  CUDA_EXTENSIONS ON
+    CUDA_SEPARABLE_COMPILATION ON
+    LINKER_LANGUAGE CUDA
+    POSITION_INDEPENDENT_CODE ON
+    CUDA_ARCHITECTURES OFF    
+  )
+endif()
+
+target_link_libraries(zeno_geometry PRIVATE zshelper)

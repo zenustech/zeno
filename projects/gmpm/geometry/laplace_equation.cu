@@ -50,7 +50,7 @@ struct ZSSolveLaplaceEquaOnTets : zeno::INode {
             const auto numEles = eles.size();
             // b -> 0
             pol(range(numVerts),
-                [vtemp = proxy<space>({},vtemp),rTag] ZS_LAMBDA(int vi){
+                [vtemp = proxy<space>({},vtemp),rTag] ZS_LAMBDA(int vi) mutable {
                     vtemp(rTag,vi) = (T)0.0;
                 });
         }
@@ -68,12 +68,12 @@ struct ZSSolveLaplaceEquaOnTets : zeno::INode {
 
             // b -> 0
             pol(range(numVerts),
-                [execTag,vtemp = proxy<space>({},vtemp),bTag] ZS_LAMBDA(int vi){
+                [execTag,vtemp = proxy<space>({},vtemp),bTag] ZS_LAMBDA(int vi) mutable {
                     vtemp(bTag,vi) = (T)0.0;
                 });
             // compute Adx->b
-            pol(range(numEles),[execTag,etemp = proxy<space>({},etemp),vtemp = proxy<space>({},vtemp),eles = proxy<space>({},eles)]
-                ZS_LAMBDA(int ei){
+            pol(range(numEles),[execTag,etemp = proxy<space>({},etemp),vtemp = proxy<space>({},vtemp),eles = proxy<space>({},eles),dxTag,bTag]
+                ZS_LAMBDA(int ei) mutable {
                     constexpr int cdim = 4;
                     auto inds = eles.pack<cdim>("inds",ei).reinterpret_bits<int>();
                     zs::vec<T,cdim> temp{};
@@ -195,7 +195,7 @@ struct ZSSolveLaplaceEquaOnTets : zeno::INode {
              auto inds = eles.template pack<4>("inds",ei).template reinterpret_bits<int>();
              auto H = etemp.pack<cdim,cdim>("L",ei);
              for(int vi = 0;vi != cdim;++vi)
-                atomic_add(exec_cuda,&vtemp("P",inds[vi]),1./H(vi,vi));
+                atomic_add(exec_cuda,&vtemp("P",inds[vi]),(T)1./H(vi,vi));
         });
 
         // Solve Laplace Equation Using PCG
@@ -205,7 +205,7 @@ struct ZSSolveLaplaceEquaOnTets : zeno::INode {
                 [vtemp = proxy<space>({},vtemp),verts = proxy<space>({},verts),tag = zs::SmallString(attr)] ZS_LAMBDA(int vi) mutable{
                     vtemp("x",vi) = verts(tag,vi);
                 }
-            )
+            );
             // eval the right hand side
             A.rhs(cudaPol,"x","b",vtemp);
             A.multiply(cudaPol,"x","temp",vtemp,etemp);
@@ -214,12 +214,12 @@ struct ZSSolveLaplaceEquaOnTets : zeno::INode {
                     vtemp("r",vi) = vtemp("b",vi) - vtemp("temp",vi);
                 });
 
-            A.project(cudaPol,"r",vtemp);
+            A.project(cudaPol,"btag",verts,"r",vtemp);
             A.precondition(cudaPol,"r","q",vtemp);
             cudaPol(zs::range(vtemp.size()),
                 [vtemp = proxy<space>({},vtemp)] ZS_LAMBDA(int vi) mutable {
                     vtemp("p",vi) = vtemp("q",vi);
-            })
+            });
 
             T zTrk = dot(cudaPol,vtemp,"r","q");
             if(std::isnan(zTrk)){
@@ -234,8 +234,8 @@ struct ZSSolveLaplaceEquaOnTets : zeno::INode {
             if(zTrk < 0){
                 T rn = std::sqrt(dot(cudaPol,vtemp,"r","r"));
                 T qn = std::sqrt(dot(cudaPol,vtemp,"q","q"));
-                fmt::print("\t#Begin invalid zTrk found in {} iters with zTrk {} and r {} and q {}\n",
-                    newtonIter, zTrk, infNorm(cudaPol, vtemp, "grad"),rn,qn);
+                fmt::print("\t#Begin invalid zTrk found  with zTrk {} and b{} and r {} and q {}\n",
+                    zTrk, infNorm(cudaPol, vtemp, "b"),rn,qn);
 
                 fmt::print("FOUND NON_SPD P\n");
                 cudaPol(zs::range(vtemp.size()),
@@ -279,7 +279,7 @@ struct ZSSolveLaplaceEquaOnTets : zeno::INode {
                     break;
                 }
                 A.multiply(cudaPol, "p", "temp",vtemp,etemp);
-                A.project(cudaPol, "temp",vtemp);
+                A.project(cudaPol,"btag",verts, "temp",vtemp);
 
                 T alpha = zTrk / dot(cudaPol, vtemp, "temp", "p");
                 cudaPol(range(verts.size()), [verts = proxy<space>({}, verts),
@@ -302,14 +302,14 @@ struct ZSSolveLaplaceEquaOnTets : zeno::INode {
 
         cudaPol(zs::range(verts.size()),
                 [vtemp = proxy<space>({},vtemp),verts = proxy<space>({},verts),tag = zs::SmallString(attr)] ZS_LAMBDA(int vi) mutable {
-                    verts(tag,"vi") = vtemp("x",vi);
+                    verts(tag,vi) = vtemp("x",vi);
         });
 
         set_output("zstets",zstets);
     }
 };
 
-ZENDEFNODE(QuasiStaticStepping, {
+ZENDEFNODE(ZSSolveLaplaceEquaOnTets, {
                                     {"zstets"},
                                     {"zstets"},
                                     {

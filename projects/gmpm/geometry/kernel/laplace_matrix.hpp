@@ -4,17 +4,14 @@
 
 namespace zeno {
     template<typename T>
-    constexpr T doublearea(zs::vec<T, 3> l) {
-        T a = l[0];
-        T b = l[1];
-        T c = l[2];
+    constexpr T doublearea(T a,T b,T c) {
         T s = (a + b + c)/2;
         return 2*zs::sqrt(s*(s-a)*(s-b)*(s-c));
     }
 
     template<typename T>
-    constexpr T area(zs::vec<T, 3> l) {
-        return doublearea(l)/2;
+    constexpr T area(T a,T b,T c) {
+        return doublearea(a,b,c)/2;
     }
 
     template<typename T>
@@ -100,27 +97,27 @@ namespace zeno {
         // compute cotangent entries
         pol(zs::range(etemp.size()),
             [eles = proxy<space>({},eles),verts = proxy<space>({},verts),
-            etemp = proxy<space>({},etemp),xTag,HTag,codim_v = wrapv<codim>{}] ZS_LAMBDA(int ei) {
+            etemp = proxy<space>({},etemp),xTag,HTag,codim_v = wrapv<codim>{}] ZS_LAMBDA(int ei) mutable {
                 constexpr int cdim = RM_CVREF_T(codim_v)::value;
                 constexpr int ne = cdim*(cdim-1)/2;
                 auto inds = eles.template pack<cdim>("inds",ei).template reinterpret_bits<int>();
                 
-                using IV = zs::vec<int,ne>;
+                using IV = zs::vec<int,ne*2>;
                 using TV = zs::vec<T, ne>;
 
                 TV C;
                 IV edges;
                 // compute the cotangent entris
-                if(cdim == 3){
+                if constexpr (cdim == 3){
                     edges = IV{1,2,2,0,0,1};
                     zs::vec<T,cdim> l;
                     for(size_t i = 0;i != ne;++i)
                         l[i] = (verts.pack<3>(xTag,inds[edges[i*2+0]]) - verts.pack<3>(xTag,inds[edges[i*2+1]])).norm();
-                    auto dblA = doublearea(l);// check here, double area
+                    auto dblA = doublearea(l[0],l[1],l[2]);// check here, double area
                     for(size_t i = 0;i != ne;++i)
                         C[i] = (l[edges[2*i+0]] + l[edges[2*i+1]] - l[3 - edges[2*i+0] - edges[2*i+1]])/dblA/4.0;
                 }
-                if(cdim == 4){
+                if constexpr (cdim == 4){
                     edges = IV{1,2,2,0,0,1,3,0,3,1,3,2};
                     zs::vec<T,ne> l;
                     for(int i = 0;i != ne;++i)
@@ -142,7 +139,7 @@ namespace zeno {
                 }
 
                 constexpr int cdim2 = cdim*cdim;
-                etemp.tuple<cdim2>(HTag,ei) = zs::vec<T,cdim2>::zeros();
+                etemp.template tuple<cdim2>(HTag,ei) = zs::vec<T,cdim2>::zeros();
                 for(size_t i = 0;i != ne;++i){
                     int source = edges(i*2 + 0);
                     int dest = edges(i*2 + 1);
