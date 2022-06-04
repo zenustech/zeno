@@ -50,10 +50,9 @@ struct ZSSolveLaplaceEquaOnTets : zeno::INode {
             const auto numEles = eles.size();
             // b -> 0
             pol(range(numVerts),
-                [execTag,vtemp = proxy<space>({},vtemp),bTag] ZS_LAMBDA(int vi){
+                [vtemp = proxy<space>({},vtemp),rTag] ZS_LAMBDA(int vi){
                     vtemp(rTag,vi) = (T)0.0;
                 });
-            // compute Adx->b
         }
 
         template<typename Pol>
@@ -139,8 +138,6 @@ struct ZSSolveLaplaceEquaOnTets : zeno::INode {
         return res.getVal();
     }
 
-
-
     virtual void apply() override {
         using namespace zs;
         auto zstets = get_input<ZenoParticles>("zstets");
@@ -159,11 +156,11 @@ struct ZSSolveLaplaceEquaOnTets : zeno::INode {
         }
 
         const auto& eles = zstets->getQuadraturePoints();
-        auto codim = eles.getChannelSize("inds");
-        if(codim != 4)
+        auto cdim = eles.getChannelSize("inds");
+        if(cdim != 4)
             throw std::runtime_error("ZSSolveLaplaceEquaOnTets: invalid simplex size");
 
-        static dtiles_t etemp{eles.get_allocator(),{{"L",codim*codim}},eles.size()};
+        static dtiles_t etemp{eles.get_allocator(),{{"L",cdim*cdim}},eles.size()};
         static dtiles_t vtemp{verts.get_allocator(),{
             {"x",1},
             {"b",1},
@@ -181,7 +178,7 @@ struct ZSSolveLaplaceEquaOnTets : zeno::INode {
         auto cudaPol = cuda_exec();
 
         // compute per-element laplace operator
-        compute_cotmatrix(cudaPol,eles,verts,"x",etemp,"L");
+        compute_cotmatrix(cudaPol,eles,verts,"x",etemp,"L",zs::wrapv<4>{});
         // compute the residual
         LaplaceSystem A{verts,eles};
         // compute preconditioner
@@ -202,20 +199,137 @@ struct ZSSolveLaplaceEquaOnTets : zeno::INode {
         });
 
         // Solve Laplace Equation Using PCG
-    }   
-};
+        {
+            // set the initial guess of the solution subject to boundary condition
+            cudaPol(zs::range(vtemp.size()),
+                [vtemp = proxy<space>({},vtemp),verts = proxy<space>({},verts),tag = zs::SmallString(attr)] ZS_LAMBDA(int vi) mutable{
+                    vtemp("x",vi) = verts(tag,vi);
+                }
+            )
+            // eval the right hand side
+            A.rhs(cudaPol,"x","b",vtemp);
+            A.multiply(cudaPol,"x","temp",vtemp,etemp);
+            cudaPol(zs::range(vtemp.size()),
+                [vtemp = proxy<space>({},vtemp)] ZS_LAMBDA(int vi) mutable {
+                    vtemp("r",vi) = vtemp("b",vi) - vtemp("temp",vi);
+                });
 
-struct ZSSolveLaplaceEquaOnTris : zeno::INode {
-    using T = float;
-    using dtiles_t = zs::TileVector<T,32>;
-    using tiles_t = typename ZenoParticles::particles_t;
-    using vec3 = zs::vec<T,3>;
-    using mat3 = zs::vec<T,3,3>;
+            A.project(cudaPol,"r",vtemp);
+            A.precondition(cudaPol,"r","q",vtemp);
+            cudaPol(zs::range(vtemp.size()),
+                [vtemp = proxy<space>({},vtemp)] ZS_LAMBDA(int vi) mutable {
+                    vtemp("p",vi) = vtemp("q",vi);
+            })
 
-    virtual void apply() override {
-        using namespace zs;
-        auto zstets
+            T zTrk = dot(cudaPol,vtemp,"r","q");
+            if(std::isnan(zTrk)){
+                T rn = std::sqrt(dot(cudaPol,vtemp,"r","r"));
+                T qn = std::sqrt(dot(cudaPol,vtemp,"q","q"));
+                T gn = std::sqrt(dot(cudaPol,vtemp,"grad","grad"));
+                T Pn = std::sqrt(dot<9>(cudaPol,vtemp,"P","P"));
+
+                fmt::print("NAN zTrk Detected r: {} q: {}, gn:{} Pn:{}\n",rn,qn,gn,Pn);
+                throw std::runtime_error("NAN zTrk");
+            }
+            if(zTrk < 0){
+                T rn = std::sqrt(dot(cudaPol,vtemp,"r","r"));
+                T qn = std::sqrt(dot(cudaPol,vtemp,"q","q"));
+                fmt::print("\t#Begin invalid zTrk found in {} iters with zTrk {} and r {} and q {}\n",
+                    newtonIter, zTrk, infNorm(cudaPol, vtemp, "grad"),rn,qn);
+
+                fmt::print("FOUND NON_SPD P\n");
+                cudaPol(zs::range(vtemp.size()),
+                    [vtemp = proxy<space>({},vtemp)] ZS_LAMBDA(int vi){
+                        auto P = vtemp("P",vi);
+                        if(P < 0) 
+                            printf("NON_SPD_P<%d> %f\n",vi,(float)P);
+                    });
+                throw std::runtime_error("INVALID zTrk");
+            }
+
+            auto residualPreconditionedNorm = std::sqrt(zTrk);
+            // auto localTol = std::min(0.5 * residualPreconditionedNorm, 1.0);
+            auto localTol = 0.1 * residualPreconditionedNorm;
+            // if(newtonIter < 10)
+            //     localTol = 0.5 * residualPreconditionedNorm;
+            int iter = 0;            
+            for (; iter != 1000; ++iter) {
+                if (iter % 50 == 0)
+                    fmt::print("cg iter: {}, norm: {} zTrk: {} localTol: {}\n", iter,
+                                residualPreconditionedNorm,zTrk,localTol);
+                if(zTrk < 0){
+                    T rn = std::sqrt(dot(cudaPol,vtemp,"r","r"));
+                    T qn = std::sqrt(dot(cudaPol,vtemp,"q","q"));
+                    fmt::print("\t# invalid zTrk found in {} iters with zTrk {} and r {} and q {}\n",
+                        iter, zTrk,rn,qn);
+
+                    fmt::print("FOUND NON_SPD P\n");
+                    cudaPol(zs::range(vtemp.size()),
+                        [vtemp = proxy<space>({},vtemp)] ZS_LAMBDA(int vi){
+                            auto P = vtemp("P",vi);
+                            if(P < 0) 
+                                printf("NON_SPD_P<%d> %f\n",vi,(float)P);
+                        });
+                    throw std::runtime_error("INVALID zTrk");
+                }
+
+                if (residualPreconditionedNorm <= localTol){ // this termination criterion is dimensionless
+                    fmt::print("finish with cg iter: {}, norm: {} zTrk: {}\n", iter,
+                                residualPreconditionedNorm,zTrk);
+                    break;
+                }
+                A.multiply(cudaPol, "p", "temp",vtemp,etemp);
+                A.project(cudaPol, "temp",vtemp);
+
+                T alpha = zTrk / dot(cudaPol, vtemp, "temp", "p");
+                cudaPol(range(verts.size()), [verts = proxy<space>({}, verts),
+                                    vtemp = proxy<space>({}, vtemp),
+                                    alpha] ZS_LAMBDA(int vi) mutable {
+                    vtemp("x", vi) += alpha * vtemp("p", vi);
+                    vtemp("r", vi) -= alpha * vtemp("temp", vi);
+                });
+                A.precondition(cudaPol, "r", "q",vtemp);
+                auto zTrkLast = zTrk;
+                zTrk = dot(cudaPol, vtemp, "q", "r");
+                auto beta = zTrk / zTrkLast;
+                cudaPol(range(verts.size()), [vtemp = proxy<space>({}, vtemp),beta] ZS_LAMBDA(int vi) mutable {
+                    vtemp("p", vi) = vtemp("q", vi) + beta * vtemp("p", vi);
+                });
+                residualPreconditionedNorm = std::sqrt(zTrk);
+            }
+            fmt::print("FINISH SOLVING PCG with cg_iter = {}\n",iter);  
+        }// end cg step
+
+        cudaPol(zs::range(verts.size()),
+                [vtemp = proxy<space>({},vtemp),verts = proxy<space>({},verts),tag = zs::SmallString(attr)] ZS_LAMBDA(int vi) mutable {
+                    verts(tag,"vi") = vtemp("x",vi);
+        });
+
+        set_output("zstets",zstets);
     }
 };
+
+ZENDEFNODE(QuasiStaticStepping, {
+                                    {"zstets"},
+                                    {"zstets"},
+                                    {
+                                        {"string","tag","T"}
+                                    },
+                                    {"FEM"}
+});
+
+
+// struct ZSSolveLaplaceEquaOnTris : zeno::INode {
+//     using T = float;
+//     using dtiles_t = zs::TileVector<T,32>;
+//     using tiles_t = typename ZenoParticles::particles_t;
+//     using vec3 = zs::vec<T,3>;
+//     using mat3 = zs::vec<T,3,3>;
+
+//     virtual void apply() override {
+//         using namespace zs;
+//         auto zstets
+//     }
+// };
 
 };
