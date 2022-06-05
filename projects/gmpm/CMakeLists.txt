@@ -51,6 +51,30 @@ target_compile_options(zeno_zsfluid
   PRIVATE        $<$<COMPILE_LANGUAGE:CUDA>:-Xcudafe --display_error_number,--diag_suppress=implicit_return_from_non_void_function,--diag_suppress=2642,--diag_suppress=554>
 )
 
+# zeno_gipc
+add_library(zeno_gipc SHARED)
+target_sources(zeno_gipc PRIVATE
+  gipc/ACCD.cu
+  gipc/device_fem_data.cu
+  gipc/femEnergy.cu
+  gipc/GIPC.cu
+  gipc/gpu_eigen_libs.cu
+  gipc/load_mesh.cpp
+  gipc/mlbvh.cu
+  gipc/PCG_SOLVER.cu
+  gipc/svd.cu
+)
+target_link_libraries(zeno_gipc PRIVATE zshelper)
+target_compile_options(zeno_gipc
+  PRIVATE        $<$<COMPILE_LANGUAGE:CUDA>:-Xcudafe --display_error_number,--diag_suppress=implicit_return_from_non_void_function,--diag_suppress=2642,--diag_suppress=554>
+)
+set_target_properties(zeno_gipc
+    PROPERTIES  CUDA_EXTENSIONS ON
+                CUDA_SEPARABLE_COMPILATION ON
+                CUDA_RESOLVE_DEVICE_SYMBOLS ON
+                CUDA_ARCHITECTURES "60"
+                )
+
 add_library(zeno_mpm SHARED)
 target_sources(zeno_mpm PRIVATE
   utils/IndexBuckets.cu
