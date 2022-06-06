@@ -1123,8 +1123,8 @@ struct ImplicitTimeStepping : INode {
         // hessian
         auto eeGrad_ = Vec12View{eeGrad.data()};
         auto eemHess = barrierDist2 * mollifierHessEE +
-                       dyadic_prod(Vec12View{mollifierGradEE.data()}, eeGrad_) +
-                       dyadic_prod(eeGrad_, Vec12View{mollifierGradEE.data()});
+                       barrierDistGrad * (dyadic_prod(Vec12View{mollifierGradEE.data()}, eeGrad_) +
+                       dyadic_prod(eeGrad_, Vec12View{mollifierGradEE.data()}));
 
         auto eeHess = dist_hess_ee(ea0, ea1, eb0, eb1);
         eeHess = (barrierDistHess * dyadic_prod(eeGrad_, eeGrad_) +
