@@ -1,4 +1,5 @@
 #include <zeno/zeno.h>
+#include <zeno/utils/log.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/funcs/PrimitiveUtils.h>
 #include <zeno/types/ListObject.h>
@@ -7,6 +8,9 @@
 namespace zeno {
 
 ZENO_API std::shared_ptr<zeno::PrimitiveObject> primMerge(std::vector<zeno::PrimitiveObject *> const &primList, std::string const &tagAttr) {
+    //zeno::log_critical("asdfjhl {}", primList.size());
+    //throw;
+
     auto outprim = std::make_shared<PrimitiveObject>();
 
     if (!primList.size()) {
@@ -392,6 +396,7 @@ struct PrimMerge : INode {
 
         auto outprim = primMerge(primList, tagAttr);
 
+        //auto outprim = std::make_shared<PrimitiveObject>(*primList[0]);
         set_output("prim", std::move(outprim));
     }
 };

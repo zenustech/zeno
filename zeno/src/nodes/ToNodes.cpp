@@ -22,26 +22,38 @@ struct ToView : zeno::INode {
     virtual void apply() override {
         auto p = get_input("object");
         bool isStatic = has_input("isStatic") ? get_input2<bool>("isStatic") : false;
-        if (!p) {
-            log_error("ToView: given object is nullptr");
-        } else {
-            auto pp = isStatic && hasViewed ? std::make_shared<DummyObject>() : p->clone();
-            hasViewed = true;
-            if (!pp) {
-                log_error("ToView: given object doesn't support clone, giving up");
+        auto addtoview = [&] (zany const &p, auto extraOps) {
+            if (!p) {
+                log_error("ToView: given object is nullptr");
             } else {
-                log_debug("ToView: added view object of type {}", cppdemangle(typeid(*p)));
-                auto key = this->myname;
-                key.push_back(':');
-                if (isStatic)
-                    key.append("static");
-                else
-                    key.append(std::to_string(getThisSession()->globalState->frameid));
-                key.push_back(':');
-                key.append(std::to_string(getThisSession()->globalState->sessionid));
-                getThisSession()->globalComm->addViewObject(key, std::move(pp));
-                set_output2("viewid", std::move(key));
+                auto pp = isStatic && hasViewed ? std::make_shared<DummyObject>() : p->clone();
+                hasViewed = true;
+                if (!pp) {
+                    log_error("ToView: given object doesn't support clone, giving up");
+                } else {
+                    log_debug("ToView: added view object of type {}", cppdemangle(typeid(*p)));
+                    auto key = this->myname;
+                    key.push_back(':');
+                    if (isStatic)
+                        key.append("static");
+                    else
+                        key.append(std::to_string(getThisSession()->globalState->frameid));
+                    key.push_back(':');
+                    key.append(std::to_string(getThisSession()->globalState->sessionid));
+                    extraOps(key);
+                    getThisSession()->globalComm->addViewObject(key, std::move(pp));
+                    set_output2("viewid", std::move(key));
+                }
             }
+        };
+        if (auto *lst = dynamic_cast<ListObject *>(p.get())) {
+            for (size_t i = 0; i < lst->arr.size(); i++) {
+                addtoview(lst->arr[i], [i] (auto &key) {
+                    key.append("lst-" + std::to_string(i));
+                });
+            }
+        } else {
+            addtoview(p, [] (auto &key) {});
         }
         set_output("object", std::move(p));
     }
