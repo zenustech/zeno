@@ -46,7 +46,7 @@ QGraphicsLinearLayout* MakeCurveNode::initCustomParamWidgets()
 
 void MakeCurveNode::onEditClicked()
 {
-    PARAMS_INFO params = index().data(ROLE_PARAMETERS_NOT_DESC).value<PARAMS_INFO>();
+    PARAMS_INFO params = index().data(ROLE_PARAMS_NO_DESC).value<PARAMS_INFO>();
 
     IGraphsModel *pGraphsModel = zenoApp->graphsManagment()->currentModel();
     ZASSERT_EXIT(pGraphsModel);
