@@ -51,7 +51,46 @@ struct Mesh{
         createTexDir("valueTex");
         readTrans(scene->mRootNode, aiMatrix4x4());
         processNode(scene->mRootNode, scene);
+        // TODO read Animation of Camera property and Light property,
+        // e.g. FocalLength LightIntensity
         processCamera(scene);
+        readLights(scene);
+    }
+
+    void readLights(const aiScene *scene){
+        zeno::log_info("Num Light {}", scene->mNumLights);
+
+        for(unsigned int i=0; i<scene->mNumLights; i++){
+            aiLight* l = scene->mLights[i];
+            std::string lightName = l->mName.data;
+            // TODO support to import light
+            // Except the CD is valid property we read.
+            // aiLight -> Model: 1019948832, "Model::aiAreaLight1", "Null"
+            // mayaLight -> Model: 911159248, "Model::ambientLight1", "Light"
+            // So we can't import aiLight
+            // In maya, export `aiAreaLight1` to .fbx -> import the .fbx
+            // `aiAreaLight1` -> Changed to a transform-node
+            zeno::log_info("Light N {} T {} P {} {} {} S {} {}\nD {} {} {} U {} {} {}"
+                           " AC {} AL {} AQ {} CD {} {} {} CS {} {} {} CA {} {} {}"
+                           " AI {} AO {}",
+                           lightName, l->mType, l->mPosition.x, l->mPosition.y, l->mPosition.z,
+                           l->mSize.x, l->mSize.y,
+                           l->mDirection.x, l->mDirection.y, l->mDirection.z, l->mUp.x, l->mUp.y, l->mUp.z,
+                           l->mAttenuationConstant, l->mAttenuationLinear, l->mAttenuationQuadratic,
+                           l->mColorDiffuse.r, l->mColorDiffuse.g, l->mColorDiffuse.b,
+                           l->mColorSpecular.r, l->mColorSpecular.g, l->mColorSpecular.b,
+                           l->mColorAmbient.r, l->mColorAmbient.g, l->mColorAmbient.b,
+                           l->mAngleInnerCone, l->mAngleOuterCone
+                           );
+            SLight sLig{
+                lightName, l->mType, l->mPosition, l->mDirection, l->mUp,
+                l->mAttenuationConstant, l->mAttenuationLinear, l->mAttenuationQuadratic,
+                l->mColorDiffuse, l->mColorSpecular, l->mColorAmbient,
+                l->mAngleInnerCone, l->mAngleOuterCone, l->mSize
+            };
+
+            fbxData.iLight.value[lightName] = sLig;
+        }
     }
 
     void readTrans(const aiNode * parentNode, aiMatrix4x4 parentTransform){
@@ -585,7 +624,7 @@ void readFBXFile(
     importer.SetPropertyInteger(AI_CONFIG_PP_PTV_NORMALIZE, true);
     aiScene const* scene = importer.ReadFile(fbx_path,
                                              aiProcess_Triangulate
-//                                             | aiProcess_FlipUVs
+                                             //| aiProcess_FlipUVs
                                              | aiProcess_CalcTangentSpace
                                              | aiProcess_JoinIdenticalVertices
                                              );

@@ -369,6 +369,23 @@ struct SCamera {
     /*aiMatrix4x4 camM;*/
 };
 
+struct SLight{
+    std::string mName;
+    aiLightSourceType mType;
+    aiVector3D mPosition;
+    aiVector3D mDirection;
+    aiVector3D mUp;
+    float mAttenuationConstant;
+    float mAttenuationLinear;
+    float mAttenuationQuadratic;
+    aiColor3D mColorDiffuse;
+    aiColor3D mColorSpecular;
+    aiColor3D mColorAmbient;
+    float mAngleInnerCone;
+    float mAngleOuterCone;
+    aiVector2D mSize;
+};
+
 struct NodeTree : zeno::IObjectClone<NodeTree>{
     aiMatrix4x4 transformation;
     std::string name;
@@ -395,6 +412,10 @@ struct IBoneOffset : zeno::IObjectClone<IBoneOffset>{
 
 struct ICamera : zeno::IObjectClone<ICamera>{
     std::unordered_map<std::string, SCamera> value;
+};
+
+struct ILight : zeno::IObjectClone<ILight>{
+    std::unordered_map<std::string, SLight> value;
 };
 
 struct IVertices : zeno::IObjectClone<IVertices>{
@@ -427,6 +448,7 @@ struct FBXData : zeno::IObjectClone<FBXData>{
     IMaterial iMaterial;
     IBoneOffset iBoneOffset;
     ICamera iCamera;
+    ILight iLight;
 };
 
 struct Helper{
