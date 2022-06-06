@@ -285,15 +285,9 @@ void SubGraphModel::updateParam(const QString& nodeid, const QString& paramName,
 
     PARAMS_INFO params = m_nodes[nodeid][ROLE_PARAMETERS].value<PARAMS_INFO>();
     const QVariant oldValue = params[paramName].value;
-    QVariant newValue = var;
-    params[paramName].value = newValue;
+    params[paramName].value = var;
 
-    const QModelIndex &idx = index(nodeid);
-    const QString &nodeName = idx.data(ROLE_OBJNAME).toString();
-
-    const QModelIndex& subgIdx = m_pGraphsModel->indexBySubModel(this);
-    //for SubInput and SubOutput£¬the "name" value shoudle be checked.
-    AppHelper::correctSubIOName(m_pGraphsModel, subgIdx, nodeName, params);
+    const QModelIndex& idx = index(nodeid);
     setData(idx, QVariant::fromValue(params), ROLE_PARAMETERS);
     //emit dataChanged signal, notify ui view to sync.
     setData(idx, QVariant::fromValue(params[paramName]), ROLE_MODIFY_PARAM);  
@@ -305,14 +299,14 @@ void SubGraphModel::updateParamNotDesc(const QString& nodeid, const QString& par
     if (it == m_nodes.end())
         return;
 
-    PARAMS_INFO params = m_nodes[nodeid][ROLE_PARAMETERS_NOT_DESC].value<PARAMS_INFO>();
+    PARAMS_INFO params = m_nodes[nodeid][ROLE_PARAMS_NO_DESC].value<PARAMS_INFO>();
     const QVariant oldValue = params[paramName].value;
     QVariant newValue = var;
     params[paramName].value = newValue;
 
     const QModelIndex& idx = index(nodeid);
     const QModelIndex& subgIdx = m_pGraphsModel->indexBySubModel(this);
-    setData(idx, QVariant::fromValue(params), ROLE_PARAMETERS_NOT_DESC);
+    setData(idx, QVariant::fromValue(params), ROLE_PARAMS_NO_DESC);
 }
 
 void SubGraphModel::updateSocket(const QString& nodeid, const SOCKET_UPDATE_INFO& info)
@@ -331,7 +325,6 @@ void SubGraphModel::updateSocket(const QString& nodeid, const SOCKET_UPDATE_INFO
                 newSock.info = info.newInfo;
                 inputs[newName] = newSock;
                 setData(idx, QVariant::fromValue(inputs), ROLE_INPUTS);
-                setData(idx, QVariant::fromValue(info), ROLE_MODIFY_SOCKET);
                 break;
             }
             case SOCKET_REMOVE:
@@ -346,7 +339,6 @@ void SubGraphModel::updateSocket(const QString& nodeid, const SOCKET_UPDATE_INFO
 				}
                 inputs.remove(oldName);
 				setData(idx, QVariant::fromValue(inputs), ROLE_INPUTS);
-				setData(idx, QVariant::fromValue(info), ROLE_MODIFY_SOCKET);
                 break;
             }
             case SOCKET_UPDATE_NAME:
@@ -359,8 +351,6 @@ void SubGraphModel::updateSocket(const QString& nodeid, const SOCKET_UPDATE_INFO
 			    inputs.remove(oldName);
 			    inputs[newName] = inputSock;
 			    setData(idx, QVariant::fromValue(inputs), ROLE_INPUTS);
-			    setData(idx, QVariant::fromValue(info), ROLE_MODIFY_SOCKET);    //will sync to scene/node.
-                //todo: The sync by calling setData is somehow dangerous, we need to fetch scene and update node directly.
 
 			    for (QPersistentModelIndex linkIdx : inputSock.linkIndice)
 			    {
@@ -385,7 +375,6 @@ void SubGraphModel::updateSocket(const QString& nodeid, const SOCKET_UPDATE_INFO
 			    INPUT_SOCKET& inputSock = inputs[oldName];
 			    inputSock.info = info.newInfo;
 			    setData(idx, QVariant::fromValue(inputs), ROLE_INPUTS);
-			    setData(idx, QVariant::fromValue(info), ROLE_MODIFY_SOCKET);
                 break;
             }
         }
@@ -405,7 +394,6 @@ void SubGraphModel::updateSocket(const QString& nodeid, const SOCKET_UPDATE_INFO
 				newSock.info = info.newInfo;
 				outputs[newName] = newSock;
 				setData(idx, QVariant::fromValue(outputs), ROLE_OUTPUTS);
-				setData(idx, QVariant::fromValue(info), ROLE_MODIFY_SOCKET);
 				break;
             }
             case SOCKET_REMOVE:
@@ -420,7 +408,6 @@ void SubGraphModel::updateSocket(const QString& nodeid, const SOCKET_UPDATE_INFO
 				}
                 outputs.remove(oldName);
 				setData(idx, QVariant::fromValue(outputs), ROLE_OUTPUTS);
-				setData(idx, QVariant::fromValue(info), ROLE_MODIFY_SOCKET);
 				break;
             }
             case SOCKET_UPDATE_NAME:
@@ -432,7 +419,6 @@ void SubGraphModel::updateSocket(const QString& nodeid, const SOCKET_UPDATE_INFO
 				outputs.remove(oldName);
 				outputs[newName] = outputSock;
 				setData(idx, QVariant::fromValue(outputs), ROLE_OUTPUTS);
-				setData(idx, QVariant::fromValue(info), ROLE_MODIFY_SOCKET);
 
 				for (QPersistentModelIndex linkIdx : outputSock.linkIndice)
 				{
@@ -460,7 +446,6 @@ void SubGraphModel::updateSocket(const QString& nodeid, const SOCKET_UPDATE_INFO
 				OUTPUT_SOCKET& outputSock = outputs[oldName];
 				outputSock.info = info.newInfo;
 				setData(idx, QVariant::fromValue(outputs), ROLE_OUTPUTS);
-				setData(idx, QVariant::fromValue(info), ROLE_MODIFY_SOCKET);
                 break;
             }
         }
@@ -475,7 +460,6 @@ void SubGraphModel::updateSocketDefl(const QString& nodeid, const PARAM_UPDATE_I
     ZASSERT_EXIT(inputs.find(info.name) != inputs.end());
     inputs[info.name].info.defaultValue = info.newValue;
     setData(idx, QVariant::fromValue(inputs), ROLE_INPUTS);
-    setData(idx, QVariant::fromValue(info), ROLE_MODIFY_SOCKET_DEFL);
 }
 
 QVariant SubGraphModel::getParamValue(const QString& nodeid, const QString& paramName)
