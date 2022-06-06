@@ -164,9 +164,11 @@ static std::string_view lutRandTypes[] = {
 }
 
 ZENO_API void primRandomize(PrimitiveObject *prim, std::string attr, std::string dirAttr, std::string randType, std::string combType, float scale, int seed) {
+    static thread_local int default_seed = 314152718;
     auto randty = enum_variant<RandTypes>(array_index_safe(lutRandTypes, randType, "randType"));
     auto combIsAdd = boolean_variant(combType == "add");
     auto hasDirArr = boolean_variant(!dirAttr.empty());
+    if (seed == -1) seed = default_seed++;
     std::visit([&] (auto &&randty, auto combIsAdd, auto hasDirArr) {
         using T = std::invoke_result_t<decltype(randty), wangsrng &>;
         auto &arr = prim->add_attr<T>(attr);
@@ -211,9 +213,9 @@ ZENDEFNODE(PrimRandomize, {
     {"string", "attr", "pos"},
     {"string", "dirAttr", ""},
     {"float", "scale", "1"},
-    {"int", "seed", "0"},
+    {"int", "seed", "-1"},
     {"enum scalar01 scalar11 cube01 cube11 plane01 plane11 disk cylinder ball semiball sphere semisphere", "randType", "scalar01"},
-    {"enum set add", "combType", "add"},
+    {"enum set add", "combType", "set"},
     },
     {
     {"PrimitiveObject", "prim"},

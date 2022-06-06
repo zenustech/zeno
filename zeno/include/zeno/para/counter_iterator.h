@@ -2,76 +2,50 @@
 
 #include <iterator>
 #include <tuple>
+#include <zeno/para/iterator_facade.h>
 
 namespace zeno {
 
 template <class T>
-struct counter_iterator {
-    using iterator_category = std::random_access_iterator_tag;
-    using value_type = T;
-    using pointer = T const *;
-    using reference = T const &;
-    using difference_type = std::ptrdiff_t;
-
+struct counter_iterator : iterator_facade<counter_iterator<T>
+, T
+, std::random_access_iterator_tag
+, T const &
+, T const *
+, std::ptrdiff_t
+> {
     T counter;
 
     explicit counter_iterator(T counter) : counter(std::move(counter)) {}
 
-    constexpr value_type operator*() const {
+    T dereference() const {
         return counter;
     }
 
-    constexpr pointer operator->() const {
-        return &counter;
-    }
-
-    counter_iterator &operator++() {
+    void increment() {
         ++counter;
-        return *this;
     }
 
-    counter_iterator operator++(int) {
-        auto that = *this;
-        this->operator++();
-        return that;
+    void decrement() {
+        --counter;
     }
 
-    counter_iterator &operator+=(difference_type n) {
+    void advance(std::ptrdiff_t n) {
         counter += n;
-        return *this;
     }
 
-    counter_iterator &operator-=(difference_type n) {
-        counter -= n;
-        return *this;
+    std::ptrdiff_t distance_to(counter_iterator const &that) const {
+        return that.counter - counter;
     }
 
-    counter_iterator operator+(difference_type n) const {
-        auto that = *this;
-        that.operator+=(n);
-        return that;
-    }
-
-    counter_iterator operator-(difference_type n) const {
-        auto that = *this;
-        that.operator-=(n);
-        return that;
-    }
-
-    difference_type operator-(counter_iterator that) const {
-        return counter - that.counter;
-    }
-
-    bool operator==(counter_iterator that) const {
+    bool equal_to(counter_iterator const &that) const {
         return counter == that.counter;
-    }
-
-    bool operator!=(counter_iterator that) const {
-        return !this->operator==(that);
     }
 };
 
 template <class T>
 counter_iterator(T) -> counter_iterator<T>;
+
+//static_assert(std::is_same_v<typename std::iterator_traits<counter_iterator<int>>::iterator_category, std::random_access_iterator_tag>);
 
 }

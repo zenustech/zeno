@@ -6,6 +6,7 @@
 #include <zeno/types/CameraObject.h>
 #include <zeno/types/DummyObject.h>
 #include <zeno/types/LightObject.h>
+#include <zeno/types/ListObject.h>
 #include <zeno/utils/cppdemangle.h>
 #include <zeno/types/UserData.h>
 #include <zeno/utils/log.h>
