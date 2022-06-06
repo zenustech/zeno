@@ -135,7 +135,7 @@ struct GraphicsManager {
                 auto vs = (float const *)prim->verts.data();
                 std::map<std::string, std::pair<float const *, size_t>> vtab;
                 prim->verts.foreach_attr([&] (auto const &key, auto const &arr) {
-                    vtab[key] = {(float const *)arr.data(), sizeof(arr[0])};
+                    vtab[key] = {(float const *)arr.data(), sizeof(arr[0]) / sizeof(float)};
                 });
                 auto ts = (int const *)prim->tris.data();
                 auto nvs = prim->verts.size();
