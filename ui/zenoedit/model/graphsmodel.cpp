@@ -6,6 +6,7 @@
 #include "util/log.h"
 #include <zeno/zeno.h>
 #include <zenoui/util/cihou.h>
+#include <zeno/utils/scope_exit.h>
 #include "zenoapplication.h"
 
 
@@ -697,13 +698,30 @@ void GraphsModel::addNode(const NODE_DATA& nodeData, const QModelIndex& subGpIdx
         QString descName = nodeData[ROLE_OBJNAME].toString();
         if (descName == "SubInput" || descName == "SubOutput")
         {
-            AppHelper::correctSubIOName(this, subGpIdx, descName, params);
+            ZASSERT_EXIT(params.find("name") != params.end());
+            PARAM_INFO& param = params["name"];
+            QString newSockName =
+                AppHelper::correctSubIOName(this, pGraph->name(), param.value.toString(), descName == "SubInput");
+            param.value = newSockName;
             nodeData2[ROLE_PARAMETERS] = QVariant::fromValue(params);
             pGraph->appendItem(nodeData2);
         }
         else
         {
-            pGraph->appendItem(nodeData);
+            if (descName == "MakeList")
+            {
+                INPUT_SOCKETS inputs = nodeData2[ROLE_INPUTS].value<INPUT_SOCKETS>();
+                INPUT_SOCKET inSocket;
+
+                int maxObjId = UiHelper::getMaxObjId(inputs.keys());
+                if (maxObjId == -1)
+                {
+                    inSocket.info.name = "obj0";
+                    inputs.insert(inSocket.info.name, inSocket);
+                    nodeData2[ROLE_INPUTS] = QVariant::fromValue(inputs);
+                }
+            }
+            pGraph->appendItem(nodeData2);
         }
 
         //update desc if meet subinput/suboutput node.
@@ -985,30 +1003,29 @@ void GraphsModel::removeLink(const QPersistentModelIndex& linkIdx, const QModelI
 
 		SubGraphModel* pGraph = subGraph(subGpIdx.row());
         ZASSERT_EXIT(pGraph && linkIdx.isValid());
-		if (pGraph)
-		{
-			const QString& outNode = linkIdx.data(ROLE_OUTNODE).toString();
-			const QString& outSock = linkIdx.data(ROLE_OUTSOCK).toString();
-			const QString& inNode = linkIdx.data(ROLE_INNODE).toString();
-			const QString& inSock = linkIdx.data(ROLE_INSOCK).toString();
 
-			const QModelIndex& outIdx = pGraph->index(outNode);
-			const QModelIndex& inIdx = pGraph->index(inNode);
+        const QString& outNode = linkIdx.data(ROLE_OUTNODE).toString();
+        const QString& outSock = linkIdx.data(ROLE_OUTSOCK).toString();
+        const QString& inNode = linkIdx.data(ROLE_INNODE).toString();
+        const QString& inSock = linkIdx.data(ROLE_INSOCK).toString();
 
-			OUTPUT_SOCKETS outputs = pGraph->data(outIdx, ROLE_OUTPUTS).value<OUTPUT_SOCKETS>();
-            if (outputs.find(outSock) != outputs.end())
-            {
-				outputs[outSock].linkIndice.removeOne(linkIdx);
-				pGraph->setData(outIdx, QVariant::fromValue(outputs), ROLE_OUTPUTS);
-            }
+        const QModelIndex& outIdx = pGraph->index(outNode);
+        const QModelIndex& inIdx = pGraph->index(inNode);
 
-			INPUT_SOCKETS inputs = pGraph->data(inIdx, ROLE_INPUTS).value<INPUT_SOCKETS>();
-            if (inputs.find(inSock) != inputs.end())
-            {
-				inputs[inSock].linkIndice.removeOne(linkIdx);
-				pGraph->setData(inIdx, QVariant::fromValue(inputs), ROLE_INPUTS);
-            }
-		}
+        OUTPUT_SOCKETS outputs = pGraph->data(outIdx, ROLE_OUTPUTS).value<OUTPUT_SOCKETS>();
+        if (outputs.find(outSock) != outputs.end())
+        {
+            outputs[outSock].linkIndice.removeOne(linkIdx);
+            pGraph->setData(outIdx, QVariant::fromValue(outputs), ROLE_OUTPUTS);
+        }
+
+        INPUT_SOCKETS inputs = pGraph->data(inIdx, ROLE_INPUTS).value<INPUT_SOCKETS>();
+        if (inputs.find(inSock) != inputs.end())
+        {
+            inputs[inSock].linkIndice.removeOne(linkIdx);
+            pGraph->setData(inIdx, QVariant::fromValue(inputs), ROLE_INPUTS);
+        }
+
 		m_linkModel->removeRow(linkIdx.row());
     }
 }
@@ -1017,8 +1034,39 @@ QModelIndex GraphsModel::addLink(const EdgeInfo& info, const QModelIndex& subGpI
 {
     if (enableTransaction)
     {
+        beginTransaction("addLink issues");
+        zeno::scope_exit sp([=]() { endTransaction(); });
+
         AddLinkCommand* pCmd = new AddLinkCommand(info, this, subGpIdx);
         m_stack->push(pCmd);
+
+        SubGraphModel *pGraph = subGraph(subGpIdx.row());
+        ZASSERT_EXIT(pGraph, QModelIndex());
+        const QModelIndex &inIdx = pGraph->index(info.inputNode);
+        //todo: encapsulation when case grows.
+        if (inIdx.data(ROLE_OBJNAME).toString() == "MakeList")
+        {
+            const INPUT_SOCKETS inputs = inIdx.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
+            QList<QString> lst = inputs.keys();
+            int maxObjId = UiHelper::getMaxObjId(lst);
+            if (maxObjId == -1)
+                maxObjId = 0;
+            QString maxObjSock = QString("obj%1").arg(maxObjId);
+            if (info.inputSock == maxObjSock)
+            {
+                //add a new
+                const QString &newObjName = QString("obj%1").arg(maxObjId + 1);
+                INPUT_SOCKET inSockObj;
+                inSockObj.info.name = newObjName;
+
+                //need transcation.
+                SOCKET_UPDATE_INFO sockUpdateinfo;
+                sockUpdateinfo.bInput = true;
+                sockUpdateinfo.updateWay = SOCKET_INSERT;
+                sockUpdateinfo.newInfo.name = newObjName;
+                updateSocket(info.inputNode, sockUpdateinfo, subGpIdx, true);
+            }
+        }
         return QModelIndex();
     }
     else
@@ -1028,26 +1076,27 @@ QModelIndex GraphsModel::addLink(const EdgeInfo& info, const QModelIndex& subGpI
 		SubGraphModel* pGraph = subGraph(subGpIdx.row());
         ZASSERT_EXIT(pGraph, QModelIndex());
 
-			QStandardItem* pItem = new QStandardItem;
-			pItem->setData(UiHelper::generateUuid(), ROLE_OBJID);
-			pItem->setData(info.inputNode, ROLE_INNODE);
-			pItem->setData(info.inputSock, ROLE_INSOCK);
-			pItem->setData(info.outputNode, ROLE_OUTNODE);
-			pItem->setData(info.outputSock, ROLE_OUTSOCK);
+        QStandardItem* pItem = new QStandardItem;
+        pItem->setData(UiHelper::generateUuid(), ROLE_OBJID);
+        pItem->setData(info.inputNode, ROLE_INNODE);
+        pItem->setData(info.inputSock, ROLE_INSOCK);
+        pItem->setData(info.outputNode, ROLE_OUTNODE);
+        pItem->setData(info.outputSock, ROLE_OUTSOCK);
 
-			m_linkModel->appendRow(pItem);
-			QModelIndex linkIdx = m_linkModel->indexFromItem(pItem);
+        m_linkModel->appendRow(pItem);
+        QModelIndex linkIdx = m_linkModel->indexFromItem(pItem);
 
-			const QModelIndex& inIdx = pGraph->index(info.inputNode);
-			const QModelIndex& outIdx = pGraph->index(info.outputNode);
+        const QModelIndex& inIdx = pGraph->index(info.inputNode);
+        const QModelIndex& outIdx = pGraph->index(info.outputNode);
 
-			INPUT_SOCKETS inputs = inIdx.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
-			OUTPUT_SOCKETS outputs = outIdx.data(ROLE_OUTPUTS).value<OUTPUT_SOCKETS>();
-			inputs[info.inputSock].linkIndice.append(QPersistentModelIndex(linkIdx));
-			outputs[info.outputSock].linkIndice.append(QPersistentModelIndex(linkIdx));
-			pGraph->setData(inIdx, QVariant::fromValue(inputs), ROLE_INPUTS);
-			pGraph->setData(outIdx, QVariant::fromValue(outputs), ROLE_OUTPUTS);
-            return linkIdx;
+        INPUT_SOCKETS inputs = inIdx.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
+        OUTPUT_SOCKETS outputs = outIdx.data(ROLE_OUTPUTS).value<OUTPUT_SOCKETS>();
+        inputs[info.inputSock].linkIndice.append(QPersistentModelIndex(linkIdx));
+        outputs[info.outputSock].linkIndice.append(QPersistentModelIndex(linkIdx));
+        pGraph->setData(inIdx, QVariant::fromValue(inputs), ROLE_INPUTS);
+        pGraph->setData(outIdx, QVariant::fromValue(outputs), ROLE_OUTPUTS);
+        
+        return linkIdx;
     }
 }
 
@@ -1092,6 +1141,16 @@ void GraphsModel::updateParamInfo(const QString& id, PARAM_UPDATE_INFO info, con
 {
     if (enableTransaction)
     {
+        QModelIndex idx = index(id, subGpIdx);
+        const QString& nodeName = idx.data(ROLE_OBJNAME).toString();
+        //validate the name of SubInput/SubOutput
+        if (info.name == "name" && (nodeName == "SubInput" || nodeName == "SubOutput"))
+        {
+            const QString& subgName = subGpIdx.data(ROLE_OBJNAME).toString();
+            QString correctName = AppHelper::correctSubIOName(this, subgName, info.newValue.toString(), nodeName == "SubInput");
+            info.newValue = correctName;
+        }
+
         UpdateDataCommand* pCmd = new UpdateDataCommand(id, info, this, subGpIdx);
         m_stack->push(pCmd);
     }
