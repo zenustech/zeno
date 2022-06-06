@@ -137,7 +137,7 @@ struct ImplicitTimeStepping : INode {
   inline static T kappaMax = 1e8;
   inline static T kappaMin = 1e3;
   inline static T kappa = 1e5;
-  inline static T xi = 1e-2; // 1e-2; // 2e-3;
+  inline static T xi = 0; // 1e-2; // 2e-3;
   inline static T dHat = 0.01;
 
   /// ref: codim-ipc
@@ -171,8 +171,8 @@ struct ImplicitTimeStepping : INode {
     /// tri
     const auto &surfaces = zstets[ZenoParticles::s_surfTriTag];
     {
-      auto bvs = retrieve_bounding_volumes(pol, vtemp, surfaces, wrapv<3>{},
-                                           2 * (xi + dHat), "xn");
+      auto bvs =
+          retrieve_bounding_volumes(pol, vtemp, surfaces, wrapv<3>{}, xi, "xn");
       if (!zstets.hasBvh(ZenoParticles::s_surfTriTag)) // build if bvh not exist
         zstets.bvh(ZenoParticles::s_surfTriTag).build(pol, bvs);
       else
@@ -184,7 +184,7 @@ struct ImplicitTimeStepping : INode {
     const auto &surfEdges = zstets[ZenoParticles::s_surfEdgeTag];
     {
       auto bvs = retrieve_bounding_volumes(pol, vtemp, surfEdges, wrapv<2>{},
-                                           2 * (xi + dHat), "xn");
+                                           xi, "xn");
       if (!zstets.hasBvh(ZenoParticles::s_surfEdgeTag))
         zstets.bvh(ZenoParticles::s_surfEdgeTag).build(pol, bvs);
       else
@@ -204,10 +204,11 @@ struct ImplicitTimeStepping : INode {
          PE = proxy<space>(PE), wPE = proxy<space>(wPE),
          nPE = proxy<space>(nPE), PT = proxy<space>(PT),
          wPT = proxy<space>(wPT), nPT = proxy<space>(nPT),
-         thickness = dHat + xi, xi2, activeGap2] ZS_LAMBDA(int svi) mutable {
+         thickness = dHat + xi / 2, dHat, xi2,
+         activeGap2] ZS_LAMBDA(int svi) mutable {
           auto vi = reinterpret_bits<int>(svs("inds", svi));
           auto p = vtemp.template pack<3>("xn", vi);
-          auto wp = svs("w", vi) / 4;
+          auto wp = 1 / dHat;
           auto [mi, ma] = get_bounding_box(p - thickness, p + thickness);
           auto bv = bv_t{mi, ma};
           bvh.iter_neighbors(bv, [&](int stI) {
@@ -291,7 +292,6 @@ struct ImplicitTimeStepping : INode {
         });
 
     // query ee
-    zs::Vector<T> surfEdgeAlphas{surfEdges.get_allocator(), surfEdges.size()};
     pol(Collapse{surfEdges.size()},
         [ses = proxy<space>({}, surfEdges), verts = proxy<space>({}, verts),
          vtemp = proxy<space>({}, vtemp), bvh = proxy<space>(seBvh),
@@ -305,11 +305,11 @@ struct ImplicitTimeStepping : INode {
          nPPM = proxy<space>(nPPM), PEM = proxy<space>(PEM),
          wPEM = proxy<space>(wPEM), nPEM = proxy<space>(nPEM),
          EEM = proxy<space>(EEM), wEEM = proxy<space>(wEEM),
-         nEEM = proxy<space>(nEEM), thickness = dHat + xi, xi2,
+         nEEM = proxy<space>(nEEM), thickness = dHat + xi / 2, dHat, xi2,
          activeGap2] ZS_LAMBDA(int sei) mutable {
           auto eiInds = ses.template pack<2>("inds", sei)
                             .template reinterpret_bits<int>();
-          auto selfWe = ses("w", sei);
+          // auto selfWe = ses("w", sei);
           bool selfFixed =
               reinterpret_bits<int>(verts("BCorder", eiInds[0])) == 3 &&
               reinterpret_bits<int>(verts("BCorder", eiInds[1])) == 3;
@@ -320,7 +320,8 @@ struct ImplicitTimeStepping : INode {
           auto [mi, ma] = get_bounding_box(x0, x1);
           auto bv = bv_t{mi - thickness, ma + thickness};
           bvh.iter_neighbors(bv, [&](int sej) {
-            // if (sei > sej) return;
+            if (sei > sej)
+              return;
             auto ejInds = ses.template pack<2>("inds", sej)
                               .template reinterpret_bits<int>();
             if (eiInds[0] == ejInds[0] || eiInds[0] == ejInds[1] ||
@@ -336,7 +337,8 @@ struct ImplicitTimeStepping : INode {
             auto eb1 = vtemp.template pack<3>("xn", ejInds[1]);
             auto eb0Rest = verts.template pack<3>("x0", ejInds[0]);
             auto eb1Rest = verts.template pack<3>("x0", ejInds[1]);
-            auto we = (selfWe + ses("w", sej)) / 4;
+            // auto we = (selfWe + ses("w", sej)) / 4;
+            auto we = 1 / dHat;
 
             // IPC (24)
             T c = cn2_ee(x0, x1, eb0, eb1);
@@ -610,27 +612,13 @@ struct ImplicitTimeStepping : INode {
           }
           if (t < 0)
             t = 1;
-        // T t = zs::math::get_smallest_positive_real_cubic_root(a, b, c, d,
-        //                                                      (T)1.e-6);
-#if 0
-      if (t >= 0)
-        stepSizes[ei] = t;
-      else
-        stepSizes[ei] = limits<T>::max();
-#else
-      if (t < stepSize && t >= 0)
-        atomic_min(exec_cuda, &minSize[0], t);
-#endif
+          // T t = zs::math::get_smallest_positive_real_cubic_root(a, b, c, d,
+          //                                                      (T)1.e-6);
+          if (t < stepSize && t >= 0)
+            atomic_min(exec_cuda, &minSize[0], t);
         });
 
-#if 0
-    zs::Vector<T> res{eles.get_allocator(), 1};
-    zs::reduce(pol, std::begin(stepSizes), std::end(stepSizes), std::begin(res),
-               stepSize, zs::getmin<T>{});
-    stepSize = res.getVal();
-#else
     stepSize = minSize.getVal();
-#endif
     fmt::print("inversion free alpha: {}\n", stepSize);
   }
   static void
@@ -693,10 +681,8 @@ struct ImplicitTimeStepping : INode {
             auto x1 = vtemp.pack<3>("xn", pp[1]);
             auto ppGrad = dist_grad_pp(x0, x1);
             auto dist2 = dist2_pp(x0, x1);
-            if (dist2 < xi2) {
-              dist2 = xi2 + 1e-3 * dHat;
+            if (dist2 < xi2)
               printf("dist already smaller than xi!\n");
-            }
             tempPP.tuple<2>("inds_pre", ppi) =
                 pp.template cast<Ti>().template reinterpret_bits<T>();
             tempPP("dist2_pre", ppi) = dist2 - xi2;
@@ -741,10 +727,8 @@ struct ImplicitTimeStepping : INode {
 
             auto peGrad = dist_grad_pe(p, e0, e1);
             auto dist2 = dist2_pe(p, e0, e1);
-            if (dist2 < xi2) {
-              dist2 = xi2 + 1e-3 * dHat;
+            if (dist2 < xi2)
               printf("dist already smaller than xi!\n");
-            }
             tempPE.tuple<3>("inds_pre", pei) =
                 pe.template cast<Ti>().template reinterpret_bits<T>();
             tempPE("dist2_pre", pei) = dist2 - xi2;
@@ -791,10 +775,8 @@ struct ImplicitTimeStepping : INode {
 
             auto ptGrad = dist_grad_pt(p, t0, t1, t2);
             auto dist2 = dist2_pt(p, t0, t1, t2);
-            if (dist2 < xi2) {
-              dist2 = xi2 + 1e-3 * dHat;
+            if (dist2 < xi2)
               printf("dist already smaller than xi!\n");
-            }
             tempPT.tuple<4>("inds_pre", pti) =
                 pt.template cast<Ti>().template reinterpret_bits<T>();
             tempPT("dist2_pre", pti) = dist2 - xi2;
@@ -842,10 +824,8 @@ struct ImplicitTimeStepping : INode {
 
             auto eeGrad = dist_grad_ee(ea0, ea1, eb0, eb1);
             auto dist2 = dist2_ee(ea0, ea1, eb0, eb1);
-            if (dist2 < xi2) {
-              dist2 = xi2 + 1e-3 * dHat;
+            if (dist2 < xi2)
               printf("dist already smaller than xi!\n");
-            }
             tempEE.tuple<4>("inds_pre", eei) =
                 ee.template cast<Ti>().template reinterpret_bits<T>();
             tempEE("dist2_pre", eei) = dist2 - xi2;
@@ -912,10 +892,8 @@ struct ImplicitTimeStepping : INode {
 
         auto ppGrad = dist_grad_pp(ea0, eb0);
         auto dist2 = dist2_pp(ea0, eb0);
-        if (dist2 < xi2) {
-          dist2 = xi2 + 1e-3 * dHat;
+        if (dist2 < xi2)
           printf("dist already smaller than xi!\n");
-        }
         tempPPM.tuple<4>("inds_pre", ppmi) =
             ppm.template cast<Ti>().template reinterpret_bits<T>();
         tempPPM("dist2_pre", ppmi) = dist2 - xi2;
@@ -996,10 +974,8 @@ struct ImplicitTimeStepping : INode {
 
         auto peGrad = dist_grad_pe(ea0, eb0, eb1);
         auto dist2 = dist2_pe(ea0, eb0, eb1);
-        if (dist2 < xi2) {
-          dist2 = xi2 + 1e-3 * dHat;
+        if (dist2 < xi2)
           printf("dist already smaller than xi!\n");
-        }
         tempPEM.tuple<4>("inds_pre", pemi) =
             pem.template cast<Ti>().template reinterpret_bits<T>();
         tempPEM("dist2_pre", pemi) = dist2 - xi2;
@@ -1122,9 +1098,11 @@ struct ImplicitTimeStepping : INode {
         }
         // hessian
         auto eeGrad_ = Vec12View{eeGrad.data()};
-        auto eemHess = barrierDist2 * mollifierHessEE +
-                       barrierDistGrad * (dyadic_prod(Vec12View{mollifierGradEE.data()}, eeGrad_) +
-                       dyadic_prod(eeGrad_, Vec12View{mollifierGradEE.data()}));
+        auto eemHess =
+            barrierDist2 * mollifierHessEE +
+            barrierDistGrad *
+                (dyadic_prod(Vec12View{mollifierGradEE.data()}, eeGrad_) +
+                 dyadic_prod(eeGrad_, Vec12View{mollifierGradEE.data()}));
 
         auto eeHess = dist_hess_ee(ea0, ea1, eb0, eb1);
         eeHess = (barrierDistHess * dyadic_prod(eeGrad_, eeGrad_) +
@@ -2286,35 +2264,7 @@ struct ImplicitTimeStepping : INode {
       T alpha = 1.;
       computeInversionFreeStepSize(cudaPol, eles, vtemp, alpha);
       find_ground_intersection_free_stepsize(cudaPol, *zstets, vtemp, alpha);
-#if 0
-      while (find_self_intersection_free_stepsize(cudaPol, *zstets, vtemp,
-                                                  alpha, xi)) {
-        alpha /= 2;
-        cudaPol(zs::range(vtemp.size()), [vtemp = proxy<space>({}, vtemp),
-                                          alpha] __device__(int i) mutable {
-          vtemp.tuple<3>("xn", i) =
-              vtemp.pack<3>("xn0", i) + alpha * vtemp.pack<3>("dir", i);
-        });
-      }
-      fmt::print(fg(fmt::color::dark_cyan),
-                 "discrete intersection-free alpha: {}\n", alpha);
-#endif
-#if 0
-      do {
-        find_intersection_free_stepsize(cudaPol, *zstets, vtemp, alpha, xi);
-        if (!find_self_intersection_free_stepsize(cudaPol, *zstets, vtemp,
-                                                  alpha, xi))
-          break;
-        alpha /= 2;
-        cudaPol(zs::range(vtemp.size()), [vtemp = proxy<space>({}, vtemp),
-                                          alpha] __device__(int i) mutable {
-          vtemp.tuple<3>("xn", i) =
-              vtemp.pack<3>("xn0", i) + alpha * vtemp.pack<3>("dir", i);
-        });
-      } while (true);
-#else
-      find_intersection_free_stepsize(cudaPol, *zstets, vtemp, alpha, xi);
-#endif
+      find_intersection_free_stepsize(cudaPol, *zstets, vtemp, alpha, xi, dHat);
       //
       if (zsboundary)
         find_boundary_intersection_free_stepsize(cudaPol, *zstets, vtemp,
