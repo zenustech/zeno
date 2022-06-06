@@ -21,7 +21,6 @@ namespace zeno{
             #else
                 static_assert(space != execspace_e::cuda,"specified policy and compiler not match");
             #endif
-
             if(!verts.hasProperty(xTag)){
                 // printf("verts buffer does not contain specified channel\n");
                 throw std::runtime_error("verts buffer does not contain specified channel");

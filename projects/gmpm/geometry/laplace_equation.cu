@@ -113,9 +113,9 @@ struct ZSSolveLaplaceEquaOnTets : zeno::INode {
         cudaPol(range(vertData.size()),
                 [data = proxy<space>({}, vertData), res = proxy<space>(res), tag0,
                 tag1] __device__(int pi) mutable {
-                auto v0 = data.pack<pack_dim>(tag0, pi);
-                auto v1 = data.pack<pack_dim>(tag1, pi);
-                atomic_add(exec_cuda, res.data(), v0.dot(v1));
+                    auto v0 = data.pack<pack_dim>(tag0,pi);
+                    auto v1 = data.pack<pack_dim>(tag1,pi);
+                    atomic_add(exec_cuda, res.data(), v0.dot(v1));
                 });
         return res.getVal();
     }
@@ -539,7 +539,7 @@ struct ZSSolveBiHarmonicEquaOnTets : zeno::INode {
                 vtemp("P",vi) = 1./zs::sqrt(vtemp("vol",vi))/vtemp("P",vi);
         });
 
-{
+        {
             // set the initial guess of the solution subject to boundary condition
             cudaPol(zs::range(vtemp.size()),
                 [vtemp = proxy<space>({},vtemp),verts = proxy<space>({},verts),tag = zs::SmallString(attr)] ZS_LAMBDA(int vi) mutable{
