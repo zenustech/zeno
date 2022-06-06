@@ -1,5 +1,6 @@
 #include <zenovis/bate/IGraphic.h>
 #include <zeno/types/StringObject.h>
+#include <zeno/types/ListObject.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/utils/log.h>
 
@@ -51,6 +52,22 @@ struct GraphicDummy final : IGraphic {
 
 void MakeGraphicVisitor::visit(zeno::DummyObject *obj) {
      this->out_result = std::make_unique<GraphicDummy>(this->in_scene, obj);
+}
+
+namespace {
+
+struct GraphicList final : IGraphic {
+    Scene *scene;
+
+    explicit GraphicList(Scene *scene_, zeno::ListObject *lst) : scene(scene_) {
+        zeno::log_info("ToView got ListObject with size: {}", lst->arr.size());
+    }
+};
+
+}
+
+void MakeGraphicVisitor::visit(zeno::ListObject *obj) {
+     this->out_result = std::make_unique<GraphicList>(this->in_scene, obj);
 }
 
 }

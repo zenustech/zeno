@@ -33,7 +33,7 @@ option(ZENO_OUT_TO_BIN "Output files to a fixed directory" ON)
 option(ZENO_BUILD_SHARED "Build shared library for ZENO" OFF)
 option(ZENO_USE_CCACHE "Use CCache if found in path" ON)
 option(ZENO_NO_WARNING "Use customized compiler warnings" ON)
-option(ZENO_INSTALL_TARGET "Enable installation targets" ON)
+option(ZENO_INSTALL_TARGET "Enable installation targets" OFF)
 
 if (NOT DEFINED CMAKE_POSITION_INDEPENDENT_CODE)
     # Otherwise we can't link .so libs with .a libs

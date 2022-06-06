@@ -44,16 +44,16 @@ ZENO_API std::shared_ptr<PrimitiveObject> primDuplicate(PrimitiveObject *parsPri
                         auto basePos = parsPrim->verts[i];
                         for (size_t j = 0; j < meshPrim->verts.size(); j++) {
                             auto pos = meshPrim->verts[j];
-                            if constexpr (hasRadAttr) {
+                            if constexpr (hasRadAttr.value) {
                                 pos *= accRad[i];
                             }
-                            if constexpr (hasRadius) {
+                            if constexpr (hasRadius.value) {
                                 pos *= radius;
                             }
-                            if constexpr (hasDirAttr) {
+                            if constexpr (hasDirAttr.value) {
                                 auto t0 = accDir[i];
                                 vec3f t1, t2;
-                                if constexpr (hasTanAttr) {
+                                if constexpr (hasTanAttr.value) {
                                     t1 = accTan[i];
                                     t2 = cross(t0, t1);
                                 } else {
@@ -66,10 +66,10 @@ ZENO_API std::shared_ptr<PrimitiveObject> primDuplicate(PrimitiveObject *parsPri
                     });
                 });
             };
-            if constexpr (hasDirAttr) {
-                auto const &accDir = meshPrim->attr<vec3f>(dirAttr);
+            if constexpr (hasDirAttr.value) {
+                auto const &accDir = parsPrim->attr<vec3f>(dirAttr);
                 if (!tanAttr.empty())
-                    func(accDir, std::true_type{}, meshPrim->attr<vec3f>(tanAttr));
+                    func(accDir, std::true_type{}, parsPrim->attr<vec3f>(tanAttr));
                 else
                     func(accDir, std::false_type{}, std::array<int, 0>{});
             } else {
@@ -132,12 +132,12 @@ ZENO_API std::shared_ptr<PrimitiveObject> primDuplicate(PrimitiveObject *parsPri
             });
         });
     };
-    advanceinds(prim->points, meshPrim->points, parsPrim->points, meshPrim->verts.size());
-    advanceinds(prim->lines, meshPrim->lines, parsPrim->lines, meshPrim->verts.size());
-    advanceinds(prim->tris, meshPrim->tris, parsPrim->tris, meshPrim->verts.size());
-    advanceinds(prim->quads, meshPrim->quads, parsPrim->quads, meshPrim->verts.size());
-    advanceinds(prim->polys, meshPrim->polys, parsPrim->polys, meshPrim->loops.size());
-    advanceinds(prim->loops, meshPrim->loops, parsPrim->loops, meshPrim->verts.size());
+    advanceinds(prim->points, meshPrim->points, parsPrim->verts, meshPrim->verts.size());
+    advanceinds(prim->lines, meshPrim->lines, parsPrim->verts, meshPrim->verts.size());
+    advanceinds(prim->tris, meshPrim->tris, parsPrim->verts, meshPrim->verts.size());
+    advanceinds(prim->quads, meshPrim->quads, parsPrim->verts, meshPrim->verts.size());
+    advanceinds(prim->polys, meshPrim->polys, parsPrim->verts, meshPrim->loops.size());
+    advanceinds(prim->loops, meshPrim->loops, parsPrim->verts, meshPrim->verts.size());
 
     tg.run();
 
