@@ -159,13 +159,12 @@ endif()
 
 target_link_libraries(zeno_zsfem PRIVATE zshelper)
 
-
 add_library(zeno_geometry SHARED)
 target_sources(zeno_geometry PRIVATE
   geometry/kernel/laplace_matrix.hpp
-  geometry/kernel/harmonic_matrix.hpp
+  geometry/kernel/gradient_field.hpp
   geometry/laplace_equation.cu
-  geometry/harmonic_equation.cu
+  geometry/gradient_field.cu
 )
 
 if (${ZS_ENABLE_CUDA})
