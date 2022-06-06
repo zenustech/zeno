@@ -186,29 +186,6 @@ void ZenoSubGraphScene::onDataChanged(const QModelIndex& subGpIdx, const QModelI
         PARAM_INFO info = idx.data(ROLE_MODIFY_PARAM).value<PARAM_INFO>();
         m_nodes[id]->onParamUpdated(info.name, info.value);
     }
-    //if (role == ROLE_MODIFY_SOCKET)
-    //{
-    //    ZASSERT_EXIT(m_nodes.find(id) != m_nodes.end());
-    //    QVariant var = idx.data(ROLE_MODIFY_SOCKET);
-    //    if (var.isNull())
-    //        return;
-    //    SOCKET_UPDATE_INFO info = var.value<SOCKET_UPDATE_INFO>();
-    //    m_nodes[id]->onSocketUpdated(info);
-    //}
-    //if (role == ROLE_INPUTS_NO_DESC)
-    //{
-    //    ZASSERT_EXIT(m_nodes.find(id) != m_nodes.end());
-    //    m_nodes[id]->onSocketNoDescChanged(true);
-    //}
-    //if (role == ROLE_MODIFY_SOCKET_DEFL)
-    //{
-    //    ZASSERT_EXIT(m_nodes.find(id) != m_nodes.end());
-    //    QVariant var = idx.data(ROLE_MODIFY_SOCKET_DEFL);
-    //    if (var.isNull())
-    //        return;
-    //    PARAM_UPDATE_INFO info = idx.data(ROLE_MODIFY_SOCKET_DEFL).value<PARAM_UPDATE_INFO>();
-    //    m_nodes[id]->onSocketDeflUpdated(info);
-    //}
     if (role == ROLE_OBJNAME)
     {
         ZASSERT_EXIT(m_nodes.find(id) != m_nodes.end());

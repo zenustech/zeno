@@ -698,7 +698,11 @@ void GraphsModel::addNode(const NODE_DATA& nodeData, const QModelIndex& subGpIdx
         QString descName = nodeData[ROLE_OBJNAME].toString();
         if (descName == "SubInput" || descName == "SubOutput")
         {
-            AppHelper::correctSubIOName(this, subGpIdx, descName, params);
+            ZASSERT_EXIT(params.find("name") != params.end());
+            PARAM_INFO& param = params["name"];
+            QString newSockName =
+                AppHelper::correctSubIOName(this, pGraph->name(), param.value.toString(), descName == "SubInput");
+            param.value = newSockName;
             nodeData2[ROLE_PARAMETERS] = QVariant::fromValue(params);
             pGraph->appendItem(nodeData2);
         }
@@ -1137,6 +1141,16 @@ void GraphsModel::updateParamInfo(const QString& id, PARAM_UPDATE_INFO info, con
 {
     if (enableTransaction)
     {
+        QModelIndex idx = index(id, subGpIdx);
+        const QString& nodeName = idx.data(ROLE_OBJNAME).toString();
+        //validate the name of SubInput/SubOutput
+        if (info.name == "name" && (nodeName == "SubInput" || nodeName == "SubOutput"))
+        {
+            const QString& subgName = subGpIdx.data(ROLE_OBJNAME).toString();
+            QString correctName = AppHelper::correctSubIOName(this, subgName, info.newValue.toString(), nodeName == "SubInput");
+            info.newValue = correctName;
+        }
+
         UpdateDataCommand* pCmd = new UpdateDataCommand(id, info, this, subGpIdx);
         m_stack->push(pCmd);
     }

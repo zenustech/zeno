@@ -65,11 +65,8 @@ public slots:
     void onOptionsBtnToggled(STATUS_BTN btn, bool toggled);
     void onOptionsUpdated(int options);
     void onParamUpdated(const QString &paramName, const QVariant &val);
-    void onSocketUpdated(const SOCKET_UPDATE_INFO& info);
-    void onSocketDeflUpdated(const PARAM_UPDATE_INFO& info);
     void onSocketLinkChanged(const QString& sockName, bool bInput, bool bAdded);
     void onSocketsUpdateOverall(bool bInput);
-    void onInOutSocketChanged(bool bInput);
     void updateSocketDeflValue(const QString& nodeid, const QString& inSock, const INPUT_SOCKET& inSocket, const QVariant& textValue);
     void onNameUpdated(const QString& newName);
 
