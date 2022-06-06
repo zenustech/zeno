@@ -40,7 +40,7 @@ struct ZSEvalGradientFieldOnTets : zeno::INode {
             throw std::runtime_error("only scaler field is currently supported");
         }
 
-        const auto& eles = zstets->getQuadraturePoints();
+        auto& eles = zstets->getQuadraturePoints();
         auto cdim = eles.getChannelSize("inds");
         if(cdim != 4)
             throw std::runtime_error("ZSEvalGradientFieldOnTets: invalid simplex size");
@@ -70,7 +70,7 @@ struct ZSEvalGradientFieldOnTets : zeno::INode {
         compute_gradient(cudaPol,eles,verts,"x",vtemp,"T",etemp,"g");
         // copy the gradient field from etemp to eles
         cudaPol(zs::range(eles.size()),
-            [eles = proxy<space>({},verts),etemp = proxy<space>({},etemp),gtag = zs::SmallString(gtag)]
+            [eles = proxy<space>({},verts),etemp = proxy<space>({},etemp),gtag = zs::SmallString(attrg)]
                 ZS_LAMBDA(int ei) mutable {
                     eles.tuple<3>(gtag,ei) = etemp.pack<3>("g",ei);
         });
