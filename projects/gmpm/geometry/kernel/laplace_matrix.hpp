@@ -86,9 +86,13 @@ namespace zeno {
                     "specified policy and compiler not match");
         #endif
 
-        if(!verts.hasProperty(xTag) || !verts.hasProperty(HTag)){
-            printf("the verts buffer does not contain specified channel");
+        if(!verts.hasProperty(xTag)){
+            printf("the verts buffer does not contain specified channel\n");
         }   
+
+        // if(!etemp.hasProperty(HTag)){
+        //     printf("the etemp buffer does not contain specified channel\n");
+        // }  
 
         etemp.append_channels(pol,{{HTag,codim*codim}});
 

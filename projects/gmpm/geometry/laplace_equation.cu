@@ -1,4 +1,3 @@
-#include "../Structures.hpp"
 #include "zensim/Logger.hpp"
 #include "zensim/cuda/execution/ExecutionPolicy.cuh"
 #include "zensim/geometry/PoissonDisk.hpp"
@@ -24,9 +23,7 @@ struct ZSSolveLaplaceEquaOnTets : zeno::INode {
     using tiles_t = typename ZenoParticles::particles_t;
     using vec3 = zs::vec<T,3>;
     using mat3 = zs::vec<T,3,3>;
-
     struct LaplaceSystem {
-
         template<typename Pol> 
         void project(Pol& pol,const zs::SmallString& btag,tiles_t& verts,const zs::SmallString& tag, dtiles_t& vtemp) {
             using namespace zs;
