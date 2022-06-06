@@ -13,7 +13,7 @@ ZENO_API std::shared_ptr<zeno::PrimitiveObject> primMerge(std::vector<zeno::Prim
 
     auto outprim = std::make_shared<PrimitiveObject>();
 
-    if (!primList.size()) {
+    if (primList.size()) {
         std::vector<size_t> bases(primList.size() + 1);
         std::vector<size_t> pointbases(primList.size() + 1);
         std::vector<size_t> linebases(primList.size() + 1);
