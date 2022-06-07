@@ -1,6 +1,7 @@
 #ifdef ZENO_MULTIPROCESS
 #include "viewdecode.h"
 #include "zenoapplication.h"
+#include "graphsmanagment.h"
 #include "zenomainwindow.h"
 #include <zeno/utils/log.h>
 #include <zeno/types/UserData.h>
@@ -94,6 +95,14 @@ struct PacketProc {
         } else if (action == "reportStatus") {
             std::string statJson{buf, len};
             zeno::getSession().globalStatus->fromJson(statJson);
+
+            const auto& stat = zeno::getSession().globalStatus;
+            if (stat) {
+                zeno::log_error("reportStatus: error in {}, message {}", stat->nodeName, stat->error->message);
+                auto nodeName = stat->nodeName.substr(0, stat->nodeName.find(':'));
+                zenoApp->graphsManagment()->appendErr(QString::fromStdString(nodeName),
+                                                      QString::fromStdString(stat->error->message));
+            }
 
         } else {
             zeno::log_warn("unknown packet action type {}", action);

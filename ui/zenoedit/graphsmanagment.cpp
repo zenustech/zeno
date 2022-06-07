@@ -160,7 +160,7 @@ void GraphsManagment::appendMsgStream(const QByteArray& arr)
     QList<QByteArray> lst = arr.split('\n');
     for (QByteArray line : lst)
     {
-        std::cout << line.data();
+        std::cout << line.data() << std::endl;
     }
 }
 

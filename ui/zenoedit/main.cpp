@@ -2,10 +2,12 @@
 #include "style/zenostyle.h"
 #include "zenoapplication.h"
 #include "zenomainwindow.h"
+#include "startup/zstartup.h"
 
 
 int main(int argc, char *argv[]) 
 {
+    startUp();
 #ifdef ZENO_MULTIPROCESS
     if (argc == 3 && !strcmp(argv[1], "-runner")) {
         extern int runner_main(int sessionid);
