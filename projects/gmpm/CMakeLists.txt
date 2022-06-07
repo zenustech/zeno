@@ -63,11 +63,13 @@ target_sources(zeno_gipc PRIVATE
   gipc/mlbvh.cu
   gipc/PCG_SOLVER.cu
   gipc/svd.cu
+  gipc/nosys.cu
 )
 target_link_libraries(zeno_gipc PRIVATE zshelper)
 target_compile_options(zeno_gipc
   PRIVATE        $<$<COMPILE_LANGUAGE:CUDA>:-Xcudafe --display_error_number,--diag_suppress=implicit_return_from_non_void_function,--diag_suppress=2642,--diag_suppress=554>
 )
+add_compile_definitions(zeno_gipc PRIVATE USE_SNK)
 set_target_properties(zeno_gipc
     PROPERTIES  CUDA_EXTENSIONS ON
                 CUDA_SEPARABLE_COMPILATION ON

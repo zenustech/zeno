@@ -138,7 +138,7 @@ struct ImplicitTimeStepping : INode {
   inline static T kappaMin = 1e3;
   inline static T kappa = 1e5;
   inline static T xi = 0; // 1e-2; // 2e-3;
-  inline static T dHat = 0.01;
+  inline static T dHat = 0.001;
 
   /// ref: codim-ipc
   static void precompute_constraints(
@@ -2262,6 +2262,7 @@ struct ImplicitTimeStepping : INode {
 
       // line search
       T alpha = 1.;
+      alpha = std::min(alpha, res / (0.8 * dHat));
       computeInversionFreeStepSize(cudaPol, eles, vtemp, alpha);
       find_ground_intersection_free_stepsize(cudaPol, *zstets, vtemp, alpha);
       find_intersection_free_stepsize(cudaPol, *zstets, vtemp, alpha, xi, dHat);
