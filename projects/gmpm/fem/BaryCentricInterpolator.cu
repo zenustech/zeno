@@ -82,7 +82,11 @@ struct ZSComputeBaryCentricWeights : INode {
         T b = p02.length();
         T c = p12.length();
         T s = (a + b + c)/2;
-        return zs::sqrt(s*(s-a)*(s-b)*(s-c));
+        T A2 = s*(s-a)*(s-b)*(s-c);
+        if(A2 > zs::limits<T>::epsilon()*10)
+            return zs::sqrt(A2);
+        else
+            return 0;
     }
 
     static constexpr vec4 ComputeBaryCentricCoordinate(const vec3& p,
@@ -156,9 +160,9 @@ struct ZSComputeBaryCentricWeights : INode {
                 T closest_dist = 1e6;
                 bool found = false;
                 tetsBvh.iter_neighbors(p,[&](int ei){
+
                     if(found)
                         return;
-
 
                     auto inds = eles.pack<4>("inds", ei).reinterpret_bits<int>();
                     auto p0 = verts.pack<3>("x",inds[0]);
@@ -174,7 +178,7 @@ struct ZSComputeBaryCentricWeights : INode {
                     //     );
                     // }
 
-                    T epsilon = limits<T>::epsilon();
+                    T epsilon = zs::limits<T>::epsilon();
                     if(ws[0] > -epsilon && ws[1] > -epsilon && ws[2] > -epsilon && ws[3] > -epsilon){
                         bcw("inds",vi) = reinterpret_bits<float>(ei);
                         bcw.tuple<4>("w",vi) = ws;
@@ -225,12 +229,13 @@ struct ZSComputeBaryCentricWeights : INode {
             }
         );
 
-        // cudaExec(zs::range(numEmbedVerts),
-        //     [bcw = proxy<space>({},bcw),fitting_in] ZS_LAMBDA (int vi) mutable {
-        //         auto idx = reinterpret_bits<int>(bcw("inds",vi));
-        //         if(idx < 0 && !fitting_in)
-        //             printf("INVALID INTERPOLATED VERTS<%d> : %d\n",vi,idx);
-        // });
+        cudaExec(zs::range(numEmbedVerts),
+            [bcw = proxy<space>({},bcw),fitting_in] ZS_LAMBDA (int vi) mutable {
+                auto idx = reinterpret_bits<int>(bcw("inds",vi));
+                if(idx < 0 && fitting_in){
+                    printf("INVALID INTERPOLATED VERTS<%d> : %d\n",vi,idx);
+                }
+        });
 
         auto e_dim = e_eles.getChannelSize("inds");
 
@@ -265,13 +270,18 @@ struct ZSComputeBaryCentricWeights : INode {
                         auto l02 = (p0 - p2).norm();
                         auto l12 = (p1 - p2).norm();
 
- 
-                        atomic_add(execTag,&bcw("cnorm",inds[0]),(T)(2*A/l12));
-                        atomic_add(execTag,&edgeCount[inds[0]],(T)1.0);
-                        atomic_add(execTag,&bcw("cnorm",inds[1]),(T)(2*A/l02));
-                        atomic_add(execTag,&edgeCount[inds[1]],(T)1.0);
-                        atomic_add(execTag,&bcw("cnorm",inds[2]),(T)(2*A/l01));
-                        atomic_add(execTag,&edgeCount[inds[2]],(T)1.0);
+                        if(l12 > zs::limits<T>::epsilon() * 10){
+                            atomic_add(execTag,&bcw("cnorm",inds[0]),(T)(2*A/l12));
+                            atomic_add(execTag,&edgeCount[inds[0]],(T)1.0);
+                        }
+                        if(l02 > zs::limits<T>::epsilon() * 10){
+                            atomic_add(execTag,&bcw("cnorm",inds[1]),(T)(2*A/l02));
+                            atomic_add(execTag,&edgeCount[inds[1]],(T)1.0);
+                        }
+                        if(l01 > zs::limits<T>::epsilon() * 10){
+                            atomic_add(execTag,&bcw("cnorm",inds[2]),(T)(2*A/l01));
+                            atomic_add(execTag,&edgeCount[inds[2]],(T)1.0);
+                        }
 
                         // bcw("area",inds[0]) += aA;
                         // bcw("area",inds[1]) += aA;
@@ -289,21 +299,30 @@ struct ZSComputeBaryCentricWeights : INode {
                         auto A013 = ComputeArea(p0,p1,p3);
                         auto A123 = ComputeArea(p1,p2,p3); 
 
-                        atomic_add(execTag,&bcw("cnorm",inds[0]),(T)(3*V/A123));
-                        atomic_add(execTag,&edgeCount[inds[0]],(T)1.0);
-                        atomic_add(execTag,&bcw("cnorm",inds[1]),(T)(3*V/A023));
-                        atomic_add(execTag,&edgeCount[inds[1]],(T)1.0);
-                        atomic_add(execTag,&bcw("cnorm",inds[2]),(T)(3*V/A013));
-                        atomic_add(execTag,&edgeCount[inds[2]],(T)1.0);
-                        atomic_add(execTag,&bcw("cnorm",inds[3]),(T)(3*V/A012));
-                        atomic_add(execTag,&edgeCount[inds[3]],(T)1.0);
+                        if(A123 > limits<T>::epsilon()){
+                            atomic_add(execTag,&bcw("cnorm",inds[0]),(T)(3*V/A123));
+                            atomic_add(execTag,&edgeCount[inds[0]],(T)1.0);
+                        }
+                        if(A023 > limits<T>::epsilon()){
+                            atomic_add(execTag,&bcw("cnorm",inds[1]),(T)(3*V/A023));
+                            atomic_add(execTag,&edgeCount[inds[1]],(T)1.0);
+                        }
+                        if(A013 > limits<T>::epsilon()){
+                            atomic_add(execTag,&bcw("cnorm",inds[2]),(T)(3*V/A013));
+                            atomic_add(execTag,&edgeCount[inds[2]],(T)1.0);
+                        }
+                        if(A012 > limits<T>::epsilon()){
+                            atomic_add(execTag,&bcw("cnorm",inds[3]),(T)(3*V/A012));
+                            atomic_add(execTag,&edgeCount[inds[3]],(T)1.0);
+                        }
                     }
         });
 
         cudaExec(zs::range(numEmbedVerts),
             [bcw = proxy<space>({},bcw),edgeCount = proxy<space>(edgeCount)] 
                 ZS_LAMBDA(int vi) mutable{
-                    bcw("cnorm",vi) /= edgeCount[vi];
+                    if(edgeCount[vi] > 0)
+                        bcw("cnorm",vi) /= edgeCount[vi];
         });
 
 
