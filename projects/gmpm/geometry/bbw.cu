@@ -15,18 +15,17 @@
 
 #include "kernel/laplace_matrix.hpp"
 
-namespace {
+namespace zeno {
 
-struct ZSEvalBBW : zeno::INode [
+struct ZSEvalBBW : zeno::INode {
     using T = float;
     using dtiles_t = zs::TileVector<T,32>;
     using tiles_t = typename ZenoParticles::particles_t;
     using vec3 = zs::vec<T,3>;
     using mat3 = zs::vec<T,3,3>;
-
     struct HarmonicSystem {
         template<typename Pol> 
-        void project(Pol& pol,const zs::SmallString& btag,tiles_t& verts,const zs::SmallString& tag, dtiles_t& vtemp,int wdim) {
+        void project(Pol& pol,const zs::SmallString& btag,const tiles_t& verts,const zs::SmallString& tag, dtiles_t& vtemp,int wdim) const {
             using namespace zs;
             constexpr execspace_e space = execspace_e::cuda;
             pol(zs::range(vtemp.size()),
@@ -41,7 +40,7 @@ struct ZSEvalBBW : zeno::INode [
 
         // the right hand-side are all zeros;
         template<typename Pol>
-        void rhs(Pol& pol,const zs::SmallString& tag,const zs::SmallString& rTag,dtiles_t& vtemp,int wdim) {
+        void rhs(Pol& pol,const zs::SmallString& tag,const zs::SmallString& rTag,dtiles_t& vtemp,int wdim) const {
             using namespace zs;
             constexpr auto space = execspace_e::cuda;
             const auto numVerts = verts.size();
@@ -58,7 +57,7 @@ struct ZSEvalBBW : zeno::INode [
         void multiply(Pol& pol,const zs::SmallString& dxTag,
                     const zs::SmallString& bTag,
                     dtiles_t& vtemp,
-                    const dtiles_t& etemp,int wdim) {
+                    const dtiles_t& etemp,int wdim) const {
             using namespace zs;
             constexpr auto space = execspace_e::cuda;
             constexpr auto execTag = wrapv<space>{};
@@ -96,7 +95,7 @@ struct ZSEvalBBW : zeno::INode [
                         vtemp(bTag,d,vi) /= vtemp("vol",vi);
             });
             // compute LMLdx->b
-            pol(range(numEles),[execTag,etemp = proxy<space>({},etemp),vtemp = proxy<space>({},vtemp),eles = proxy<space>({},eles),dxTag,bTag]
+            pol(range(numEles),[execTag,etemp = proxy<space>({},etemp),vtemp = proxy<space>({},vtemp),eles = proxy<space>({},eles),dxTag,bTag,wdim]
                 ZS_LAMBDA(int ei) mutable {
                     constexpr int cdim = 4;
                     auto inds = eles.pack<cdim>("inds",ei).reinterpret_bits<int>();
@@ -115,7 +114,7 @@ struct ZSEvalBBW : zeno::INode [
         // for biharmonic equation, using laplace diagonal preconditioner seems reasonable
         template <typename Pol>
         void precondition(Pol &pol, const zs::SmallString srcTag,
-                        const zs::SmallString dstTag,dtiles_t& vtemp,int wdim) {
+                        const zs::SmallString dstTag,dtiles_t& vtemp,int wdim) const {
             using namespace zs;
             constexpr execspace_e space = execspace_e::cuda;
             // precondition
@@ -164,87 +163,29 @@ struct ZSEvalBBW : zeno::INode [
         return res.getVal();
     }
 
-    virtual void apply() override {
-        using namespace zs;
-        auto zstets = get_input<ZenoParticles>("zstets");
-        auto wtag = get_param<std::string>("wtag");
-        auto btag = get_param<std::string>("btag");
-
-        auto& verts = zstets->getParticles();
-        auto& eles = zstets->getQuadraturePoints();
-
-        if(!verts.hasProperty(wtag)){
-            fmt::print("The input tets does not contain specified property:{}\n",wtag);
-        }
-        if(!verts.hasProperty(btag)){
-            fmt::print("The input tets does not contain specified property:{}\n",btag);
-        }
-
-        auto wdim = zstets->getChannelSize(wtag);
-        if(wdim == 0){
-            throw std::runtime_error("The input tets does not contain bbw channel\n");
-        }
-        
-        static dtiles_t etemp{eles.get_allocator(),{{"L",cdim*cdim}},eles.size()};
-        static dtiles_t vtemp{verts.get_allocator(),{
-            {"x",wdim},
-            {"b",wdim},
-            {"P",1},
-            {"temp",wdim},
-            {"r",wdim},
-            {"p",wdim},
-            {"q",wdim}
-        },verts.size()};
-
-        etemp.resize(eles.size());
-        vtemp.resize(verts.size());
-
-        constexpr auto space = execspace_e::cuda;
-        auto cudaPol = cuda_exec();
-
-        compute_cotmatrix(cudaPol,eles,verts,"x",etemp,"L",zs::wrapv<4>{});
-        // compute the residual
-        LaplaceSystem A{verts,eles};
-        // compute preconditioner
-        cudaPol(zs::range(vtemp.size()),
-            [vtemp = proxy<space>({}, vtemp),
-                verts = proxy<space>({}, verts)] ZS_LAMBDA (int vi) mutable {
-                    vtemp("P", vi) = (T)0.0;
-        });
-
-        cudaPol(zs::range(eles.size()),
-                    [vtemp = proxy<space>({},vtemp),etemp = proxy<space>({},etemp),eles = proxy<space>({},eles)]
-                        ZS_LAMBDA(int ei) mutable{
-             constexpr int cdim = 4;
-             auto inds = eles.template pack<4>("inds",ei).template reinterpret_bits<int>();
-             auto H = etemp.pack<cdim,cdim>("L",ei);
-             for(int vi = 0;vi != cdim;++vi)
-                atomic_add(exec_cuda,&vtemp("P",inds[vi]),(T)H(vi,vi));
-        });
-
-        cudaPol(zs::range(verts.size()),
-            [vtemp = proxy<space>({},vtemp)] ZS_LAMBDA(int vi) mutable{
-                vtemp("P",vi) = 1./vtemp("P",vi);
-        });
-
-        // Solve Laplace Equation Using PCG
-        {
+    template<typename Equation,typename VTileVec,typename ETileVec>
+    void pcg_with_fixed_solve(zs::CudaExecutionPolicy &cudaPol,const Equation& A,
+            const VTileVec& verts,const ETileVec& eles,int wdim,
+            const zs::SmallString& wtag,
+            dtiles_t& vtemp,dtiles_t& etemp) {
+            using namespace zs;
+            constexpr auto space = execspace_e::cuda;
             cudaPol(zs::range(vtemp.size()),
                 [vtemp = proxy<space>({},vtemp),verts = proxy<space>({},verts),tag = zs::SmallString(wtag),wdim]
                     ZS_LAMBDA(int vi) mutable{
-                        for(size_t i = 0;i != wdim;++i)
+                        for(size_t d = 0;d != wdim;++d)
                             vtemp("x",d,vi) = verts(tag,d,vi);
             });
             A.rhs(cudaPol,"x","b",vtemp,wdim);
-            A.multiply(cudaPol,"x","temp",vtemp,etemp);
+            A.multiply(cudaPol,"x","temp",vtemp,etemp,wdim);
             cudaPol(zs::range(vtemp.size()),
                 [vtemp = proxy<space>({},vtemp),wdim] ZS_LAMBDA(int vi) mutable {
                     for(size_t d = 0;d != wdim;++d)
                         vtemp("r",d,vi) = vtemp("b",d,vi) - vtemp("temp",d,vi);
                 });
 
-            A.project(cudaPol,"btag",verts,"r",vtemp);
-            A.precondition(cudaPol,"r","q",vtemp);
+            A.project(cudaPol,"btag",verts,"r",vtemp,wdim);
+            A.precondition(cudaPol,"r","q",vtemp,wdim);
             cudaPol(zs::range(vtemp.size()),
                 [vtemp = proxy<space>({},vtemp)] ZS_LAMBDA(int vi) mutable {
                     vtemp("p",vi) = vtemp("q",vi);
@@ -314,7 +255,7 @@ struct ZSEvalBBW : zeno::INode [
                 cudaPol(range(verts.size()), [verts = proxy<space>({}, verts),
                                     vtemp = proxy<space>({}, vtemp),
                                     alpha,wdim] ZS_LAMBDA(int vi) mutable {
-                    for(size_t i = 0;i != wdim;++i){
+                    for(size_t d = 0;d != wdim;++d){
                         vtemp("x", d, vi) += alpha * vtemp("p", vi);
                         vtemp("r", d, vi) -= alpha * vtemp("temp", vi);
                     }
@@ -329,17 +270,139 @@ struct ZSEvalBBW : zeno::INode [
                 residualPreconditionedNorm = std::sqrt(zTrk);            
             }
             fmt::print("FINISH SOLVING PCG with cg_iter = {}\n",iter);  
+    }
+
+    template<typename Equation,typename VTileVec,typename ETileVec>
+    void active_set_with_fixed_solve(zs::CudaExecutionPolicy &cudaPol,const Equation& A,
+            const VTileVec& verts,const ETileVec& eles,int wdim,
+            const zs::SmallString& wtag,
+            dtiles_t& vtemp,dtiles_t& etemp) {
+
+        pcg_with_fixed_solve(cudaPol,A,verts,eles,wdim,wtag,vtemp,etemp);
+        // only enforce the positive weights
+        // initialize the active_set as empty, only the lower bound constraint is needed
+        cudaPol(zs::range(vtemp.size()),
+            [vtemp = proxy<space>({},vtemp),wdim] ZS_LAMBDA(int vi) mutable{
+                for(size_t d = 0;d < wdim;++d)
+                    vtemp("w_old",d,vi) = limits<T>::max();
+                    vtemp("as_lx",vi) = false;
+            });
+
+        constexpr T solution_res = (T)1e-8;
+
+        while(true) {
+            int new_as_lx = 0;
+            // check the violations
+            cudaPol(zs::range(vtemp.size()),
+                [vtemp = proxy<space>({},vtemp),wtag.wdim] ZS_LAMBDA(int vi) mutable{
+                    for(size_t d = 0;d < wdim;++d)
+                        vtemp("temp",d,vi) = vtemp(wtag,d,vi) - vtemp("w_old",d,vi);
+                }
+            )
+            auto diffnorm = std::sqrt(dot(vtemp,"temp","temp"));
+            if(diffnorm < solution_res)
+                break;
+
+            // mark the new constrained nodes
+            cudaPol(zs::range(vtemp.size()),
+                [vtemp = proxy<space>({},vtemp),new_as_lx,wtag,wdim] ZS_LAMBDA(int vi) mutable {
+                    for(size_t d = 0;d < wdim;++d){
+                        if(vtemp(wtag,d,vi) < limits<T>::min()){
+                            vtemp(wtag,d,vi) = limits<T>::min()*2;
+                            vtemp("btag",d,vi) = (T)1.0;
+                        }
+                    }
+                });
+
+            pcg_with_fixed_solve(cudaPol,A,verts,eles,wdim,wtag,vtemp,etemp);
+
+
+            // relieve the constrained nodes with negative lagrangian
+            
+
+        }
+    }     
+
+    virtual void apply() override {
+        using namespace zs;
+        auto zstets = get_input<ZenoParticles>("zstets");
+        auto wtag = get_param<std::string>("wtag");
+        auto btag = get_param<std::string>("btag");
+
+        auto& verts = zstets->getParticles();
+        auto& eles = zstets->getQuadraturePoints();
+
+        if(!verts.hasProperty(wtag)){
+            fmt::print("The input tets does not contain specified property:{}\n",wtag);
+        }
+        if(!verts.hasProperty(btag)){
+            fmt::print("The input tets does not contain specified property:{}\n",btag);
         }
 
+        int wdim = verts.getChannelSize(wtag);
+        if(wdim == 0){
+            throw std::runtime_error("The input tets does not contain bbw channel\n");
+        }
+        
+        int cdim = eles.getChannelSize("inds");
+        if(cdim != 4){
+            throw std::runtime_error("Only tetrahedra is currently supported\n");
+        }
+
+        static dtiles_t etemp{eles.get_allocator(),{{"L",cdim*cdim}},eles.size()};
+        static dtiles_t vtemp{verts.get_allocator(),{
+            {"x",wdim},
+            {"b",wdim},
+            {"P",1},
+            {"temp",wdim},
+            {"r",wdim},
+            {"p",wdim},
+            {"q",wdim}
+        },verts.size()};
+
+        etemp.resize(eles.size());
+        vtemp.resize(verts.size());
+
+        constexpr auto space = execspace_e::cuda;
+        auto cudaPol = cuda_exec();
+
+        compute_cotmatrix(cudaPol,eles,verts,"x",etemp,"L",zs::wrapv<4>{});
+        // compute the residual
+        HarmonicSystem A{verts,eles};
+        // compute preconditioner
+        cudaPol(zs::range(vtemp.size()),
+            [vtemp = proxy<space>({}, vtemp),
+                verts = proxy<space>({}, verts)] ZS_LAMBDA (int vi) mutable {
+                    vtemp("P", vi) = (T)0.0;
+        });
+
+        cudaPol(zs::range(eles.size()),
+                    [vtemp = proxy<space>({},vtemp),etemp = proxy<space>({},etemp),eles = proxy<space>({},eles)]
+                        ZS_LAMBDA(int ei) mutable{
+             constexpr int cdim = 4;
+             auto inds = eles.template pack<4>("inds",ei).template reinterpret_bits<int>();
+             auto H = etemp.pack<cdim,cdim>("L",ei);
+             for(int vi = 0;vi != cdim;++vi)
+                atomic_add(exec_cuda,&vtemp("P",inds[vi]),(T)H(vi,vi));
+        });
+
         cudaPol(zs::range(verts.size()),
-                [vtemp = proxy<space>({},vtemp),verts = proxy<space>({},verts),tag = zs::SmallString(attr),wdim] ZS_LAMBDA(int vi) mutable {
-                    for(size_t i = 0;i != wdim;++i)
+            [vtemp = proxy<space>({},vtemp)] ZS_LAMBDA(int vi) mutable{
+                vtemp("P",vi) = 1./vtemp("P",vi);
+        });
+
+        // Solve BBW using active-set method
+        active_set_with_fixed_solve(cudaPol,A,verts,eles,wdim,zs::SmallString(wtag),vtemp,etemp);
+
+        cudaPol(zs::range(verts.size()),
+                [vtemp = proxy<space>({},vtemp),verts = proxy<space>({},verts),tag = zs::SmallString(wtag),wdim] ZS_LAMBDA(int vi) mutable {
+                    for(size_t d = 0;d != wdim;++d)
                         verts(tag,d,vi) = vtemp("x",d,vi);
         });
 
         set_output("zstets",zstets);        
     }
 
-];
+};
 
 };
