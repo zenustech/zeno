@@ -9,6 +9,15 @@ static __inline__ __device__  float fresnel(float cosT){
     float v2 = v *v;
     return v2 * v2 * v;
 }
+static __inline__ __device__ vec3 fresnelSchlick(vec3 r0, float radians)
+{
+    float exponential = powf( 1.0f - radians, 5.0f);
+    return r0 + (vec3(1.0f) - r0) * exponential;
+}
+static __inline__ __device__ float fresnelSchlick(float r0, float radians)
+{
+    return mix(1.0f, fresnel(radians), r0);
+}
 static __inline__ __device__  float GTR1(float cosT,float a){
     if(a >= 1.0f) return 1/M_PIf;
     float t = (1+(a*a-1)*cosT*cosT);
@@ -21,7 +30,7 @@ static __inline__ __device__  float GTR2(float cosT,float a){
 static __inline__ __device__  float GGX(float cosT, float a){
     float a2 = a*a;
     float b = cosT*cosT;
-    return 1.0f/ (cosT + sqrtf(a2 + b - a2*b));
+    return 2.0f/ (1.0f + sqrtf(a2 + b - a2*b));
 }
 static __inline__ __device__  vec3 sampleOnHemisphere(unsigned int &seed, float roughness)
 {
@@ -36,6 +45,25 @@ static __inline__ __device__  vec3 sampleOnHemisphere(unsigned int &seed, float 
 
 
     return vec3(cos(phi) * sinTheta,  sin(phi) * sinTheta, cosTheta);
+}
+static __inline__ __device__ float pdfDiffuse(vec3 wi, vec3 n)
+{
+    return abs(dot(n, wi)/M_PIf);
+}
+static __inline__ __device__ float pdfMicrofacet(float NoH, float roughness)
+{
+    float a2 = roughness * roughness;
+    a2 *= a2;
+    float cos2Theta = NoH * NoH;
+    float denom = cos2Theta * (a2 - 1.) + 1;
+    if(denom == 0 ) return 0;
+    float pdfDistrib = a2 / (M_PIf * denom * denom);
+    return pdfDistrib;
+}
+static __inline__ __device__ float pdfClearCoat(float NoH, float ccAlpha)
+{
+    float Dr = GTR1(NoH, ccAlpha);
+    return Dr;
 }
 }
 namespace DisneyBRDF
@@ -71,7 +99,7 @@ static __inline__ __device__ float pdf(
         float pdfGTR1 = BRDFBasics::GTR1(cosTheta, ccAlpha) * cosTheta;
 
         float ratio = 1.0f/(1.0f + clearcoat);
-        float pdfSpec = mix(pdfGTR1, pdfGTR2, ratio)/(4.0f * abs(dot(wi, half)));
+        float pdfSpec = mix(pdfGTR1, pdfGTR2, ratio)/(4.0f * abs(dot(wo, half)));
         float pdfDiff = abs(dot(wi, n)) * (1.0f/M_PIf);
 
         return diffRatio * pdfDiff + spRatio * pdfSpec;
@@ -176,7 +204,7 @@ static __inline__ __device__ vec3 eval(
         float Dc = BRDFBasics::GTR1(ndoth, mix(0.1f, 0.001f, clearcoatGloss));
 
         float roughg = sqrtf(roughness*0.5f + 0.5f);
-        float Gs = BRDFBasics::GGX(ndotwo, roughg) * BRDFBasics::GGX(ndotwi, roughg);
+        float Gs = BRDFBasics::GGX(ndotwo, roughness) * BRDFBasics::GGX(ndotwi, roughness);
 
         float Gc = BRDFBasics::GGX(ndotwo, 0.25) * BRDFBasics::GGX(ndotwi, 0.25f);
 
@@ -190,61 +218,6 @@ static __inline__ __device__ vec3 eval(
         + Gs*Fs*Ds + 0.25f*clearcoat*Gc*Fc*Dc;
     }
 }
-
-//////////////////////////////////////////
-///here inject common code in glsl style
-static __inline__ __device__ vec3 perlin_hash22(vec3 p)
-{
-    p = vec3( dot(p,vec3(127.1f,311.7f,284.4f)),
-              dot(p,vec3(269.5f,183.3f,162.2f)),
-	      	  dot(p,vec3(228.3f,164.9f,126.0f)));
-    return -1.0f + 2.0f * fract(sin(p)*43758.5453123f);
-}
-
-static __inline__ __device__ float perlin_lev1(vec3 p)
-{
-    vec3 pi = vec3(floor(p));
-    vec3 pf = p - pi;
-    vec3 w = pf * pf * (3.0f - 2.0f * pf);
-    return .08f + .8f * (mix(
-			            mix(
-                            mix(
-                            dot(perlin_hash22(pi + 0), pf - 0),
-                            dot(perlin_hash22(pi + 0), pf - 0),
-                            w.x),
-                            mix(
-                            dot(perlin_hash22(pi + vec3(0, 1, 0)), pf - vec3(0, 1, 0)),
-                            dot(perlin_hash22(pi + vec3(1, 1, 0)), pf - vec3(1, 1, 0)),
-                            w.x),
-				        w.y),
-			            mix(
-				            mix(
-                            dot(perlin_hash22(pi + vec3(0, 0, 1)), pf - vec3(0, 0, 1)),
-                            dot(perlin_hash22(pi + vec3(1, 0, 1)), pf - vec3(1, 0, 1)),
-                            w.x),
-				            mix(
-                            dot(perlin_hash22(pi + vec3(0, 1, 1)), pf - vec3(0, 1, 1)),
-                            dot(perlin_hash22(pi + vec3(1, 1, 1)), pf - vec3(1, 1, 1)),
-                            w.x),
-				        w.y),
-			          w.z));
-}
-
-static __inline__ __device__ float perlin(float p,int n,vec3 a)
-{
-    float total = 0;
-    for(int i=0; i<n; i++)
-    {
-        float frequency = pow(2.0f,i*1.0f);
-        float amplitude = pow(p,i*1.0f);
-        total = total + perlin_lev1(a * frequency) * amplitude;
-    }
-
-    return total;
-}
-
-///end example of common code injection in glsl style
-
 
 
 

@@ -152,6 +152,36 @@ struct AttrVector {
         }
     }
 
+#ifdef ZENO_PARALLEL_STL
+    template <class Accept = std::tuple<vec3f, float>, class F, class Pol>
+    void foreach_attr(Pol pol, F &&f) const {
+        std::for_each(pol, attrs.begin(), attrs.end(), [&] (auto &kv) {
+            auto &[key, arr] = kv;
+            auto &k = key;
+            std::visit([&] (auto &arr) {
+                using T = std::decay_t<decltype(arr[0])>;
+                if constexpr (tuple_contains<T, Accept>::value) {
+                    f(k, arr);
+                }
+            }, arr);
+        });
+    }
+
+    template <class Accept = std::tuple<vec3f, float>, class F, class Pol>
+    void foreach_attr(Pol pol, F &&f) {
+        std::for_each(pol, attrs.begin(), attrs.end(), [&] (auto &kv) {
+            auto &[key, arr] = kv;
+            auto &k = key;
+            std::visit([&] (auto &arr) {
+                using T = std::decay_t<decltype(arr[0])>;
+                if constexpr (tuple_contains<T, Accept>::value) {
+                    f(k, arr);
+                }
+            }, arr);
+        });
+    }
+#endif
+
     template <class Accept = std::tuple<vec3f, float>>
     size_t num_attrs() const {
         if constexpr (std::is_void_v<Accept>) {
@@ -194,12 +224,18 @@ struct AttrVector {
 
     template <class T>
     auto const &attr(std::string const &name) const {
-        return std::get<std::vector<T>>(attr(name));
+        auto const &arr = attr(name);
+        if (!std::holds_alternative<std::vector<T>>(arr))
+            throw makeError<TypeError>(typeid(T), std::visit([&] (auto const &t) -> std::type_info const & { return typeid(std::decay_t<decltype(t[0])>); }, arr), "type of primitive attribute " + name);
+        return std::get<std::vector<T>>(arr);
     }
 
     template <class T>
     auto &attr(std::string const &name) {
-        return std::get<std::vector<T>>(attr(name));
+        auto &arr = attr(name);
+        if (!std::holds_alternative<std::vector<T>>(arr))
+            throw makeError<TypeError>(typeid(T), std::visit([&] (auto const &t) -> std::type_info const & { return typeid(std::decay_t<decltype(t[0])>); }, arr), "type of primitive attribute " + name);
+        return std::get<std::vector<T>>(arr);
     }
 
     auto const &attr(std::string const &name) const {

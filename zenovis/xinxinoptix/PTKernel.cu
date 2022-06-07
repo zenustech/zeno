@@ -62,9 +62,11 @@ extern "C" __global__ void __raygen__rg()
                     1e16f,  // tmax
                     &prd );
 
-            result += prd.emitted;
-            result += prd.radiance * prd.attenuation2/prd.prob2;
-
+            //result += prd.emitted;
+            if(prd.countEmitted==false || depth>0)
+                result += prd.radiance * prd.attenuation2/prd.prob2;
+            if(prd.countEmitted==true && depth>0)
+                prd.done = true;
             if( prd.done  || depth >= 5 ) // TODO RR, variable for depth
                 break;
 

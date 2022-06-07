@@ -3,6 +3,7 @@
 #include "zenosubgraphview.h"
 #include "zenosearchbar.h"
 #include "zenoapplication.h"
+#include "zenomainwindow.h"
 #include "zenonode.h"
 #include "zenonewmenu.h"
 #include <zenoui/comctrl/zlabel.h>
@@ -75,6 +76,15 @@ _ZenoSubGraphView::_ZenoSubGraphView(QWidget *parent)
 	connect(cameraFocus, SIGNAL(triggered()), this, SLOT(cameraFocus()));
 	addAction(cameraFocus);
 
+    QAction* mActZenoNewNode = new QAction();
+    mActZenoNewNode->setShortcut(QKeySequence(Qt::Key_Tab));
+    connect(mActZenoNewNode, &QAction::triggered, [=]() {
+        QPoint pos = this->mapFromGlobal(QCursor::pos());
+        QContextMenuEvent *e = new QContextMenuEvent(QContextMenuEvent::Reason::Mouse, pos, QCursor::pos());
+        contextMenuEvent(e);
+    });
+    addAction(mActZenoNewNode);
+
     QRectF rcView(-SCENE_INIT_WIDTH / 2, -SCENE_INIT_HEIGHT / 2, SCENE_INIT_WIDTH, SCENE_INIT_HEIGHT);
     setSceneRect(rcView);
 }
@@ -142,6 +152,7 @@ void _ZenoSubGraphView::cameraFocus()
 		bool found = Zenovis::GetInstance().getSession()->focus_on_node(nodeId.toStdString(), center, radius);
 		if (found) {
 			Zenovis::GetInstance().m_camera_control->focus(QVector3D(center[0], center[1], center[2]), radius * 3.0f);
+            zenoApp->getMainWindow()->updateViewport();
 		}
 	}
 }

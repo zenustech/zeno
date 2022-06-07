@@ -1,8 +1,12 @@
 cmake_minimum_required(VERSION 3.16)
 
+if (NOT DEFINED OPTIX_PATH AND DEFINED ENV{OPTIX_PATH})
+    set(OPTIX_PATH $ENV{OPTIX_PATH})
+endif()
 if (NOT DEFINED OPTIX_PATH)
     message(FATAL_ERROR "OPTIX_PATH not defined, please specify from command line, for example: cmake -B build -DOPTIX_PATH=\"/home/bate/Downloads/NVIDIA-OptiX-SDK-7.4.0-linux64-x86_64\"")
 endif()
+message(STATUS "OPTIX_PATH: ${OPTIX_PATH}")
 
 target_sources(zenovis PRIVATE
   optixPathTracer.cpp
@@ -20,6 +24,10 @@ target_sources(zenovis PRIVATE
   SDK/sutil/PPMLoader.h         SDK/sutil/vec_math.h
   SDK/sutil/Preprocessor.h      SDK/sutil/WorkDistribution.h
   )
+
+#if (OPTIX_USE_20XX)
+    #target_compile_definitions(zenovis PRIVATE -DUSING_20XX)
+#endif()
 
 find_package(CUDAToolkit REQUIRED COMPONENTS cudart nvrtc REQUIRED)
 target_link_libraries(zenovis PRIVATE CUDA::cudart CUDA::nvrtc)

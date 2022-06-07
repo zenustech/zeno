@@ -47,6 +47,10 @@ public:
         return getEngine(defaultEngineName);
     }
 
+    std::string getDefaultName() const {
+        return defaultEngineName;
+    }
+
     void switchDefaultEngine(std::string const &name) {
         defaultEngineName = name;
     }

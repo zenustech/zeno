@@ -6,7 +6,7 @@
 class AppHelper
 {
 public:
-    static void correctSubIOName(IGraphsModel* pModel, QModelIndex subgIdx, const QString& descName, PARAMS_INFO& params);
+    static QString correctSubIOName(IGraphsModel* pModel, const QString& subgName, const QString& newName, bool bInput);
 };
 
 

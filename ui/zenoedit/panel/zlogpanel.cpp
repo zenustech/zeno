@@ -3,6 +3,7 @@
 #include "zenoapplication.h"
 #include <zenoui/model/modelrole.h>
 #include <zenoui/util/uihelper.h>
+#include <zenoui/style/zenostyle.h>
 
 
 LogItemDelegate::LogItemDelegate(QObject* parent)
@@ -57,17 +58,21 @@ ZlogPanel::ZlogPanel(QWidget* parent)
     m_ui = new Ui::LogPanel;
     m_ui->setupUi(this);
 
+    m_ui->btnClearAll->setIcons(ZenoStyle::dpiScaledSize(QSize(16, 16))
+        , ":/icons/trash.svg"
+        , ":/icons/trashnote-on.svg");
+
     initSignals();
     initModel();
-    //onFilterChanged();
+    onFilterChanged();
 }
 
 void ZlogPanel::initModel()
 {
-    //m_pFilterModel = new CustomFilterProxyModel(this);
-    //m_pFilterModel->setSourceModel(zenoApp->logModel());
-    //m_pFilterModel->setFilterRole(ROLE_LOGTYPE);
-    m_ui->listView->setModel(zenoApp->logModel());
+    m_pFilterModel = new CustomFilterProxyModel(this);
+    m_pFilterModel->setSourceModel(zenoApp->logModel());
+    m_pFilterModel->setFilterRole(ROLE_LOGTYPE);
+    m_ui->listView->setModel(m_pFilterModel);
 }
 
 void ZlogPanel::initSignals()
@@ -139,6 +144,10 @@ void ZlogPanel::initSignals()
         }
         onFilterChanged();
     });
+
+    connect(m_ui->btnClearAll, &ZIconLabel::clicked, this, [=]() {
+        zenoApp->logModel()->clear();
+    });
 }
 
 void ZlogPanel::onFilterChanged()
@@ -154,7 +163,7 @@ void ZlogPanel::onFilterChanged()
         filters.append(QtFatalMsg);
     if (m_ui->cbInfo->isChecked())
         filters.append(QtInfoMsg);
-    //m_pFilterModel->setFilters(filters);
+    m_pFilterModel->setFilters(filters);
 }
 
 

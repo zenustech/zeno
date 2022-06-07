@@ -1,5 +1,7 @@
 #ifdef ZENO_MULTIPROCESS
 #include "viewdecode.h"
+#include "zenoapplication.h"
+#include "zenomainwindow.h"
 #include <zeno/utils/log.h>
 #include <zeno/types/UserData.h>
 #include <zeno/core/Session.h>
@@ -73,9 +75,12 @@ struct PacketProc {
 
         } else if (action == "newFrame") {
             globalCommNeedNewFrame = 1; // postpone `zeno::getSession().globalComm->newFrame();`
+            zenoApp->getMainWindow()->updateViewport(QString::fromStdString(action));
 
         } else if (action == "finishFrame") {
             zeno::getSession().globalComm->finishFrame();
+            //need to notify the GL to update.
+            zenoApp->getMainWindow()->updateViewport(QString::fromStdString(action));
 
         } else if (action == "frameRange") {
             auto pos = objKey.find(':');

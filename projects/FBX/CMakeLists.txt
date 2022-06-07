@@ -1,10 +1,11 @@
-cmake_minimum_required(VERSION 3.16)
-
 file(GLOB FBX_SOURCE *.cpp *.h)
 
 target_sources(zeno PRIVATE ${FBX_SOURCE})
 
 target_include_directories(zeno PRIVATE .)
+
+target_include_directories(zeno PRIVATE .)
+target_include_directories(zeno PRIVATE ${CMAKE_SOURCE_DIR}/zenovis/stbi/include)
 
 add_subdirectory(assimp)
 

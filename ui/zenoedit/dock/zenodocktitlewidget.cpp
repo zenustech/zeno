@@ -4,6 +4,8 @@
 #include <zenoui/style/zenostyle.h>
 #include <zenoui/include/igraphsmodel.h>
 #include "zenoapplication.h"
+#include "zenomainwindow.h"
+#include "viewport/viewportwidget.h"
 #include "graphsmanagment.h"
 #include "viewport/zenovis.h"
 #include "util/log.h"
@@ -182,7 +184,8 @@ QMenuBar* ZenoEditorDockTitleWidget::initMenu()
 		pEdit->addAction(createAction(tr("Redo")));
 		pEdit->addAction(createAction(tr("Collaspe")));
 		pEdit->addAction(createAction(tr("Expand")));
-        pEdit->addAction(createAction(tr("Easy Subgraph")));
+                pEdit->addAction(createAction(tr("Easy Subgraph")));
+                pEdit->addAction(createAction(tr("Set NASLOC")));
 	}
 
 	QMenu* pGo = new QMenu(tr("Go"));
@@ -307,7 +310,11 @@ QMenuBar* ZenoViewDockTitle::initMenu()
         pAction->setChecked(true);
         pDisplay->addAction(pAction);
         connect(pAction, &QAction::triggered, this,
-            [=]() { Zenovis::GetInstance().getSession()->set_show_grid(pAction->isChecked()); });
+            [=]() {
+                Zenovis::GetInstance().getSession()->set_show_grid(pAction->isChecked());
+                //todo: need a notify mechanism from zenovis/session.
+                zenoApp->getMainWindow()->updateViewport();
+            });
 
         pAction = new QAction(tr("Background Color"), this);
         pDisplay->addAction(pAction);
@@ -317,6 +324,7 @@ QMenuBar* ZenoViewDockTitle::initMenu()
             c = QColorDialog::getColor(c);
             if (c.isValid()) {
                 Zenovis::GetInstance().getSession()->set_background_color(c.redF(), c.greenF(), c.blueF());
+                zenoApp->getMainWindow()->updateViewport();
             }
             });
 
@@ -327,21 +335,30 @@ QMenuBar* ZenoViewDockTitle::initMenu()
         pAction->setChecked(false);
         pDisplay->addAction(pAction);
         connect(pAction, &QAction::triggered, this,
-            [=]() { Zenovis::GetInstance().getSession()->set_smooth_shading(pAction->isChecked()); });
+            [=]() {
+                Zenovis::GetInstance().getSession()->set_smooth_shading(pAction->isChecked());
+                zenoApp->getMainWindow()->updateViewport();
+            });
 
         pAction = new QAction(tr("Normal Check"), this);
         pAction->setCheckable(true);
         pAction->setChecked(false);
         pDisplay->addAction(pAction);
         connect(pAction, &QAction::triggered, this,
-            [=]() { Zenovis::GetInstance().getSession()->set_normal_check(pAction->isChecked()); });
+            [=]() {
+                Zenovis::GetInstance().getSession()->set_normal_check(pAction->isChecked());
+                zenoApp->getMainWindow()->updateViewport();
+            });
 
         pAction = new QAction(tr("Wireframe"), this);
         pAction->setCheckable(true);
         pAction->setChecked(false);
         pDisplay->addAction(pAction);
         connect(pAction, &QAction::triggered, this,
-            [=]() { Zenovis::GetInstance().getSession()->set_render_wireframe(pAction->isChecked()); });
+            [=]() {
+                Zenovis::GetInstance().getSession()->set_render_wireframe(pAction->isChecked());
+                zenoApp->getMainWindow()->updateViewport();
+            });
 
         pDisplay->addSeparator();
 
@@ -357,6 +374,7 @@ QMenuBar* ZenoViewDockTitle::initMenu()
                 const char *e = pAction->isChecked() ? "optx" : "bate";
 #endif
                 Zenovis::GetInstance().getSession()->set_render_engine(e);
+                zenoApp->getMainWindow()->updateViewport(QString::fromLatin1(e));
             });
 
         pAction = new QAction(tr("Enable GI"), this);
@@ -364,7 +382,10 @@ QMenuBar* ZenoViewDockTitle::initMenu()
         pAction->setChecked(false);
         pDisplay->addAction(pAction);
         connect(pAction, &QAction::triggered, this,
-            [=]() { Zenovis::GetInstance().getSession()->set_enable_gi(pAction->isChecked()); });
+            [=]() {
+                Zenovis::GetInstance().getSession()->set_enable_gi(pAction->isChecked());
+                zenoApp->getMainWindow()->updateViewport();
+            });
 
         pDisplay->addSeparator();
 

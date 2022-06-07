@@ -149,6 +149,7 @@ Enabling them you will find our well-packaged high-level nodes like `FLIPSimTemp
 they were exported from another subgraph file using Ctrl-Shfit-E by the way, see the
 source code of `FLIPtools` for the original graph file name.
 
+<!-- deprecated, see misc/ci/CMakePresets.json, now only used by CI
 ### Using CMake presets (experimental)
 
 Latest version of CMake supports `CMakePresets.json` and `--preset`, so you may use the following command instead of above huge command lines:
@@ -173,3 +174,4 @@ Note that you may still specify extra arguments under preset mode, for example:
 cmake --preset default -G Ninja -DCMAKE_INSTALL_PREFIX:BOOL=/opt/zeno
 cmake --build --preset default --parallel
 ```
+-->
