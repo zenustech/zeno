@@ -123,6 +123,7 @@ struct SAnimBone {
                 return index;
         }
         _getIndexWarn(animationTime);
+        return 0;
     }
     int getRotationIndex(float animationTime) {
         for (int index = 0; index < m_NumRotations - 1; ++index) {
@@ -130,6 +131,7 @@ struct SAnimBone {
                 return index;
         }
         _getIndexWarn(animationTime);
+        return 0;
     }
     int getScaleIndex(float animationTime) {
         for (int index = 0; index < m_NumScalings - 1; ++index) {
@@ -137,6 +139,7 @@ struct SAnimBone {
                 return index;
         }
         _getIndexWarn(animationTime);
+        return 0;
     }
 
     aiMatrix4x4 interpolatePosition(float animationTime) {

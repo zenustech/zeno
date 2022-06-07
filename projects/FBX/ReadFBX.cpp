@@ -238,6 +238,17 @@ struct Mesh{
             aiMatrix4x4 camMatrix;
             cam->GetCameraMatrix(camMatrix);
 
+#if USE_OFFICIAL_ASSIMP
+            SCamera sCam{cam->mHorizontalFOV,
+                         35.0f,
+                         cam->mAspect,
+                         1.417f * 25.4f,  // inch to mm
+                         0.945f * 25.4f,
+                         cam->mClipPlaneNear,
+                         cam->mClipPlaneFar,
+                         zeno::vec3f(0, 0, 0),
+            };
+#else
             SCamera sCam{cam->mHorizontalFOV,
                          cam->mFocalLength,
                          cam->mAspect,
@@ -246,12 +257,14 @@ struct Mesh{
                          cam->mClipPlaneNear,
                          cam->mClipPlaneFar,
                          zeno::vec3f(cam->mInterestPosition.x, cam->mInterestPosition.y, cam->mInterestPosition.z),
-                         // TODO The following data that is all default, we use Cam-Anim TRS instead of them
-                         /*zeno::vec3f(cam->mLookAt.x, cam->mLookAt.y, cam->mLookAt.z),*/
-                         /*zeno::vec3f(cam->mPosition.x, cam->mPosition.y, cam->mPosition.z),*/
-                         /*zeno::vec3f(cam->mUp.x, cam->mUp.y, cam->mUp.z),*/
-                         /*camMatrix*/
+                // TODO The following data that is all default, we use Cam-Anim TRS instead of them
+                /*zeno::vec3f(cam->mLookAt.x, cam->mLookAt.y, cam->mLookAt.z),*/
+                /*zeno::vec3f(cam->mPosition.x, cam->mPosition.y, cam->mPosition.z),*/
+                /*zeno::vec3f(cam->mUp.x, cam->mUp.y, cam->mUp.z),*/
+                /*camMatrix*/
             };
+#endif
+
             zeno::log_info(">>>>> {} {} {} {} {} {} - {} {}\n {} {} {}",
                            camName, sCam.hFov, sCam.focL, sCam.aspect, sCam.pNear, sCam.pFar,
                            sCam.filmW, sCam.filmH,
