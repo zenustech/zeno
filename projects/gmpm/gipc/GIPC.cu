@@ -3359,7 +3359,7 @@ bool GIPC::lineSearch(device_TetraData& TetMesh, double& alpha, const double& cf
     //double temp_c1m = c1m;
     std::cout.precision(18);
     //std::cout << "testE:    " << testingE << "      lastEnergyVal:        " << abs(lastEnergyVal- RestNHEnergy) << std::endl;
-#if 0
+#if 1
     while ((testingE > lastEnergyVal + c1m * alpha) && alpha > 1e-3 * LFStepSize && abs(testingE - lastEnergyVal) / abs(lastEnergyVal - RestNHEnergy) > 1e-8 / IPC_dt / (1 << (numOfLineSearch + 1)) /*/ vertexNum*/) {
         //printf("testE:    %f      lastEnergyVal:        %f         clm*alpha:    %f\n", testingE, lastEnergyVal, c1m * alpha);
         std::cout << "testE:    " << testingE << "      lastEnergyVal:        " << lastEnergyVal << std::endl;

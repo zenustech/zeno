@@ -167,7 +167,7 @@ void device_TetraData::retrieve() {
 }
 
 device_TetraData::~device_TetraData() {
-	FREE_DEVICE_MEM();
+	// FREE_DEVICE_MEM();
 }
 
 void device_TetraData::FREE_DEVICE_MEM() {
