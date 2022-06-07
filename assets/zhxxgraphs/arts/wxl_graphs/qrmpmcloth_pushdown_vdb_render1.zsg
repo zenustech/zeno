@@ -18,8 +18,8 @@
      },
      "params": {},
      "uipos": [
-      -58.50782456623938,
-      751.6534226932472
+      -73.37349620802992,
+      698.7977013002143
      ],
      "options": [
       "ONCE"
@@ -245,8 +245,8 @@
      },
      "params": {},
      "uipos": [
-      232.34109333209722,
-      1016.2904280299636
+      240.59979979975867,
+      896.5391842488734
      ],
      "options": [
       "ONCE"
@@ -295,8 +295,8 @@
       "type": "vertex"
      },
      "uipos": [
-      566.5274930978985,
-      928.7337574718349
+      559.9205279237696,
+      943.2690808549191
      ],
      "options": [
       "ONCE"
@@ -1613,8 +1613,8 @@
       "triangulate": true
      },
      "uipos": [
-      -580.3765396719907,
-      1704.2705528635904
+      -373.9088779804555,
+      1735.2407021173208
      ],
      "options": [
       "ONCE"
@@ -1641,8 +1641,8 @@
      },
      "params": {},
      "uipos": [
-      544.8077919564855,
-      2215.1601500768616
+      2204.6402197072002,
+      2349.3101000189195
      ],
      "options": [
       "VIEW"
@@ -1841,8 +1841,8 @@
       "backend": "GLSL"
      },
      "uipos": [
-      245.04168637590357,
-      2296.8826614891686
+      1849.4262557621923,
+      2027.7754596899463
      ],
      "options": []
     },
@@ -1859,8 +1859,8 @@
       "value": "vec3 perlin_hash22(vec3 p)\n{\n    p = vec3( dot(p,vec3(127.1,311.7,284.4)),\n              dot(p,vec3(269.5,183.3,162.2)),\n\t      \t  dot(p,vec3(228.3,164.9,126.0)));\n\n    return -1.0 + 2.0 * fract(sin(p)*43758.5453123);\n}\n\nfloat perlin_lev1(vec3 p)\n{\n    vec3 pi = floor(p);\n    vec3 pf = p - pi;\n    vec3 w = pf * pf * (3.0 - 2.0 * pf);\n    return .08 + .8 * (mix(\n\t\t\t    mix(\n\t\t\t\t    mix(\n\t\t\t\t\t    dot(perlin_hash22(pi + vec3(0, 0, 0)), pf - vec3(0, 0, 0)),\n\t\t\t\t\t    dot(perlin_hash22(pi + vec3(1, 0, 0)), pf - vec3(1, 0, 0)),\n\t\t\t\t\t    w.x),\n\t\t\t\t    mix(\n\t\t\t\t\t    dot(perlin_hash22(pi + vec3(0, 1, 0)), pf - vec3(0, 1, 0)),\n\t\t\t\t\t    dot(perlin_hash22(pi + vec3(1, 1, 0)), pf - vec3(1, 1, 0)),\n\t\t\t\t\t    w.x),\n\t\t\t\t    w.y),\n\t\t\t    mix(\n\t\t\t\t    mix(\n\t\t\t\t\t    dot(perlin_hash22(pi + vec3(0, 0, 1)), pf - vec3(0, 0, 1)),\n\t\t\t\t\t    dot(perlin_hash22(pi + vec3(1, 0, 1)), pf - vec3(1, 0, 1)),\n\t\t\t\t\t    w.x),\n\t\t\t\t    mix(\n\t\t\t\t\t    dot(perlin_hash22(pi + vec3(0, 1, 1)), pf - vec3(0, 1, 1)),\n\t\t\t\t\t    dot(perlin_hash22(pi + vec3(1, 1, 1)), pf - vec3(1, 1, 1)),\n\t\t\t\t\t    w.x),\n\t\t\t\t    w.y),\n\t\t\t    w.z));\n}\n\nfloat perlin(float p,int n,vec3 a)\n{\n    float total = 0;\n    for(int i=0; i<n; i++)\n    {\n        float frequency = pow(2,i);\n        float amplitude = pow(p,i);\n        total = total + perlin_lev1(a * frequency) * amplitude;\n    }\n\n    return total;\n}\n\n#define VARIANT 1             // 1: amplifies Voronoi cell jittering\n#if VARIANT\n      float ofs = .5;          // jitter Voronoi centers in -ofs ... 1.+ofs\n#else\n      float ofs = 0.;\n#endif\n\n// === Voronoi =====================================================\n// --- Base Voronoi. inspired by https://www.shadertoy.com/view/MslGD8\n\n#define hash22(p)  fract( 18.5453 * sin( p * mat2(127.1,311.7,269.5,183.3)) )\n#define disp(p) ( -ofs + (1.+2.*ofs) * hash22(p) )\n\nvec3 voronoi( vec2 u )  // returns len + id\n{\n    vec2 iu = floor(u), v;\n\tfloat m = 1e9,d;\n#if VARIANT\n    for( int k=0; k < 25; k++ ) {\n        vec2  p = iu + vec2(k%5-2,k/5-2),\n#else\n    for( int k=0; k < 9; k++ ) {\n        vec2  p = iu + vec2(k%3-1,k/3-1),\n#endif\n            o = disp(p),\n      \t      r = p - u + o;\n\t\td = dot(r,r);\n        if( d < m ) m = d, v = r;\n    }\n\n    return vec3( sqrt(m), v+u );\n}\n\n// --- Voronoi distance to borders. inspired by https://www.shadertoy.com/view/ldl3W8\nvec3 voronoiB( vec2 u )  // returns len + id\n{\n    vec2 iu = floor(u), C, P;\n\tfloat m = 1e9,d;\n#if VARIANT\n    for( int k=0; k < 25; k++ ) {\n        vec2  p = iu + vec2(k%5-2,k/5-2),\n#else\n    for( int k=0; k < 9; k++ ) {\n        vec2  p = iu + vec2(k%3-1,k/3-1),\n#endif\n              o = disp(p),\n      \t      r = p - u + o;\n\t\td = dot(r,r);\n        if( d < m ) m = d, C = p-iu, P = r;\n    }\n\n    m = 1e9;\n    \n    for( int k=0; k < 25; k++ ) {\n        vec2 p = iu+C + vec2(k%5-2,k/5-2),\n\t\t     o = disp(p),\n             r = p-u + o;\n\n        if( dot(P-r,P-r)>1e-5 )\n        m = min( m, .5*dot( (P+r), normalize(r-P) ) );\n    }\n\n    return vec3( m,  u-P);\n}\nfloat linearLight(float a, float b)\n{\n    if(a>0.5)\n        return b + 2 * (a-0.5);\n   else\n       return b + a - 1;\n}\nfloat softLight(float a, float b)\n{\nfloat G;\nfloat res;\nif(b<=0.25)\n    G = ((16*b-12)*b+4)*b;\nelse\n   G = sqrt(b);\nif(a<=0.5)\n   res = b - (1-2*a)*b*(1-b);\nelse\n   res = b+(2*a-1)*(G-b);\nreturn res;\n}"
      },
      "uipos": [
-      -149.3078737610035,
-      2840.6362327521633
+      1444.9952668317533,
+      2470.7147430176205
      ],
      "options": []
     },
@@ -2114,8 +2114,8 @@
       "backend": "GLSL"
      },
      "uipos": [
-      3764.1740094842453,
-      1145.9288111261308
+      3852.780317239897,
+      722.5875629602365
      ],
      "options": []
     },
@@ -2140,8 +2140,8 @@
      },
      "params": {},
      "uipos": [
-      2777.7683994543086,
-      1475.3642602279247
+      2846.6844165975936,
+      1111.093883899132
      ],
      "options": []
     },
@@ -2166,8 +2166,8 @@
      },
      "params": {},
      "uipos": [
-      4237.075207089035,
-      1490.7267153177459
+      4305.99122423232,
+      1126.4563389889531
      ],
      "options": [
       "VIEW"
@@ -2199,8 +2199,8 @@
      },
      "params": {},
      "uipos": [
-      3035.8536689153852,
-      1535.1839009464888
+      3104.7696860586702,
+      1170.913524617696
      ],
      "options": []
     },
@@ -2217,8 +2217,8 @@
       "value": "vec3 perlin_hash22(vec3 p)\n{\n    p = vec3( dot(p,vec3(127.1,311.7,284.4)),\n              dot(p,vec3(269.5,183.3,162.2)),\n\t      \t  dot(p,vec3(228.3,164.9,126.0)));\n\n    return -1.0 + 2.0 * fract(sin(p)*43758.5453123);\n}\n\nfloat perlin_lev1(vec3 p)\n{\n    vec3 pi = floor(p);\n    vec3 pf = p - pi;\n    vec3 w = pf * pf * (3.0 - 2.0 * pf);\n    return .08 + .8 * (mix(\n\t\t\t    mix(\n\t\t\t\t    mix(\n\t\t\t\t\t    dot(perlin_hash22(pi + vec3(0, 0, 0)), pf - vec3(0, 0, 0)),\n\t\t\t\t\t    dot(perlin_hash22(pi + vec3(1, 0, 0)), pf - vec3(1, 0, 0)),\n\t\t\t\t\t    w.x),\n\t\t\t\t    mix(\n\t\t\t\t\t    dot(perlin_hash22(pi + vec3(0, 1, 0)), pf - vec3(0, 1, 0)),\n\t\t\t\t\t    dot(perlin_hash22(pi + vec3(1, 1, 0)), pf - vec3(1, 1, 0)),\n\t\t\t\t\t    w.x),\n\t\t\t\t    w.y),\n\t\t\t    mix(\n\t\t\t\t    mix(\n\t\t\t\t\t    dot(perlin_hash22(pi + vec3(0, 0, 1)), pf - vec3(0, 0, 1)),\n\t\t\t\t\t    dot(perlin_hash22(pi + vec3(1, 0, 1)), pf - vec3(1, 0, 1)),\n\t\t\t\t\t    w.x),\n\t\t\t\t    mix(\n\t\t\t\t\t    dot(perlin_hash22(pi + vec3(0, 1, 1)), pf - vec3(0, 1, 1)),\n\t\t\t\t\t    dot(perlin_hash22(pi + vec3(1, 1, 1)), pf - vec3(1, 1, 1)),\n\t\t\t\t\t    w.x),\n\t\t\t\t    w.y),\n\t\t\t    w.z));\n}\n\nfloat perlin(float p,int n,vec3 a)\n{\n    float total = 0;\n    for(int i=0; i<n; i++)\n    {\n        float frequency = pow(2,i);\n        float amplitude = pow(p,i);\n        total = total + perlin_lev1(a * frequency) * amplitude;\n    }\n\n    return total;\n}\n\n#define VARIANT 1             // 1: amplifies Voronoi cell jittering\n#if VARIANT\n      float ofs = .5;          // jitter Voronoi centers in -ofs ... 1.+ofs\n#else\n      float ofs = 0.;\n#endif\n\n// === Voronoi =====================================================\n// --- Base Voronoi. inspired by https://www.shadertoy.com/view/MslGD8\n\n#define hash22(p)  fract( 18.5453 * sin( p * mat2(127.1,311.7,269.5,183.3)) )\n#define disp(p) ( -ofs + (1.+2.*ofs) * hash22(p) )\n\nvec3 voronoi( vec2 u )  // returns len + id\n{\n    vec2 iu = floor(u), v;\n\tfloat m = 1e9,d;\n#if VARIANT\n    for( int k=0; k < 25; k++ ) {\n        vec2  p = iu + vec2(k%5-2,k/5-2),\n#else\n    for( int k=0; k < 9; k++ ) {\n        vec2  p = iu + vec2(k%3-1,k/3-1),\n#endif\n            o = disp(p),\n      \t      r = p - u + o;\n\t\td = dot(r,r);\n        if( d < m ) m = d, v = r;\n    }\n\n    return vec3( sqrt(m), v+u );\n}\n\n// --- Voronoi distance to borders. inspired by https://www.shadertoy.com/view/ldl3W8\nvec3 voronoiB( vec2 u )  // returns len + id\n{\n    vec2 iu = floor(u), C, P;\n\tfloat m = 1e9,d;\n#if VARIANT\n    for( int k=0; k < 25; k++ ) {\n        vec2  p = iu + vec2(k%5-2,k/5-2),\n#else\n    for( int k=0; k < 9; k++ ) {\n        vec2  p = iu + vec2(k%3-1,k/3-1),\n#endif\n              o = disp(p),\n      \t      r = p - u + o;\n\t\td = dot(r,r);\n        if( d < m ) m = d, C = p-iu, P = r;\n    }\n\n    m = 1e9;\n    \n    for( int k=0; k < 25; k++ ) {\n        vec2 p = iu+C + vec2(k%5-2,k/5-2),\n\t\t     o = disp(p),\n             r = p-u + o;\n\n        if( dot(P-r,P-r)>1e-5 )\n        m = min( m, .5*dot( (P+r), normalize(r-P) ) );\n    }\n\n    return vec3( m,  u-P);\n}\nfloat linearLight(float a, float b)\n{\n    if(a>0.5)\n        return b + 2 * (a-0.5);\n   else\n       return b + a - 1;\n}\nfloat softLight(float a, float b)\n{\nfloat G;\nfloat res;\nif(b<=0.25)\n    G = ((16*b-12)*b+4)*b;\nelse\n   G = sqrt(b);\nif(a<=0.5)\n   res = b - (1-2*a)*b*(1-b);\nelse\n   res = b+(2*a-1)*(G-b);\nreturn res;\n}"
      },
      "uipos": [
-      3311.774308885445,
-      1666.294080587208
+      3380.69032602873,
+      1302.0237042584154
      ],
      "options": []
     },
@@ -2237,8 +2237,8 @@
       "z": 0.0
      },
      "uipos": [
-      3411.845222059098,
-      1150.6193051381074
+      3480.761239202383,
+      786.3489288093147
      ],
      "options": []
     },
@@ -2435,8 +2435,8 @@
       "backend": "GLSL"
      },
      "uipos": [
-      4374.952924933962,
-      2434.5209005504294
+      3900.361788362199,
+      2125.5510992122827
      ],
      "options": []
     },
@@ -2453,8 +2453,8 @@
       "value": "vec3 perlin_hash22(vec3 p)\n{\n    p = vec3( dot(p,vec3(127.1,311.7,284.4)),\n              dot(p,vec3(269.5,183.3,162.2)),\n\t      \t  dot(p,vec3(228.3,164.9,126.0)));\n\n    return -1.0 + 2.0 * fract(sin(p)*43758.5453123);\n}\n\nfloat perlin_lev1(vec3 p)\n{\n    vec3 pi = floor(p);\n    vec3 pf = p - pi;\n    vec3 w = pf * pf * (3.0 - 2.0 * pf);\n    return .08 + .8 * (mix(\n\t\t\t    mix(\n\t\t\t\t    mix(\n\t\t\t\t\t    dot(perlin_hash22(pi + vec3(0, 0, 0)), pf - vec3(0, 0, 0)),\n\t\t\t\t\t    dot(perlin_hash22(pi + vec3(1, 0, 0)), pf - vec3(1, 0, 0)),\n\t\t\t\t\t    w.x),\n\t\t\t\t    mix(\n\t\t\t\t\t    dot(perlin_hash22(pi + vec3(0, 1, 0)), pf - vec3(0, 1, 0)),\n\t\t\t\t\t    dot(perlin_hash22(pi + vec3(1, 1, 0)), pf - vec3(1, 1, 0)),\n\t\t\t\t\t    w.x),\n\t\t\t\t    w.y),\n\t\t\t    mix(\n\t\t\t\t    mix(\n\t\t\t\t\t    dot(perlin_hash22(pi + vec3(0, 0, 1)), pf - vec3(0, 0, 1)),\n\t\t\t\t\t    dot(perlin_hash22(pi + vec3(1, 0, 1)), pf - vec3(1, 0, 1)),\n\t\t\t\t\t    w.x),\n\t\t\t\t    mix(\n\t\t\t\t\t    dot(perlin_hash22(pi + vec3(0, 1, 1)), pf - vec3(0, 1, 1)),\n\t\t\t\t\t    dot(perlin_hash22(pi + vec3(1, 1, 1)), pf - vec3(1, 1, 1)),\n\t\t\t\t\t    w.x),\n\t\t\t\t    w.y),\n\t\t\t    w.z));\n}\n\nfloat perlin(float p,int n,vec3 a)\n{\n    float total = 0;\n    for(int i=0; i<n; i++)\n    {\n        float frequency = pow(2,i);\n        float amplitude = pow(p,i);\n        total = total + perlin_lev1(a * frequency) * amplitude;\n    }\n\n    return total;\n}\n\n#define VARIANT 1             // 1: amplifies Voronoi cell jittering\n#if VARIANT\n      float ofs = .5;          // jitter Voronoi centers in -ofs ... 1.+ofs\n#else\n      float ofs = 0.;\n#endif\n\n// === Voronoi =====================================================\n// --- Base Voronoi. inspired by https://www.shadertoy.com/view/MslGD8\n\n#define hash22(p)  fract( 18.5453 * sin( p * mat2(127.1,311.7,269.5,183.3)) )\n#define disp(p) ( -ofs + (1.+2.*ofs) * hash22(p) )\n\nvec3 voronoi( vec2 u )  // returns len + id\n{\n    vec2 iu = floor(u), v;\n\tfloat m = 1e9,d;\n#if VARIANT\n    for( int k=0; k < 25; k++ ) {\n        vec2  p = iu + vec2(k%5-2,k/5-2),\n#else\n    for( int k=0; k < 9; k++ ) {\n        vec2  p = iu + vec2(k%3-1,k/3-1),\n#endif\n            o = disp(p),\n      \t      r = p - u + o;\n\t\td = dot(r,r);\n        if( d < m ) m = d, v = r;\n    }\n\n    return vec3( sqrt(m), v+u );\n}\n\n// --- Voronoi distance to borders. inspired by https://www.shadertoy.com/view/ldl3W8\nvec3 voronoiB( vec2 u )  // returns len + id\n{\n    vec2 iu = floor(u), C, P;\n\tfloat m = 1e9,d;\n#if VARIANT\n    for( int k=0; k < 25; k++ ) {\n        vec2  p = iu + vec2(k%5-2,k/5-2),\n#else\n    for( int k=0; k < 9; k++ ) {\n        vec2  p = iu + vec2(k%3-1,k/3-1),\n#endif\n              o = disp(p),\n      \t      r = p - u + o;\n\t\td = dot(r,r);\n        if( d < m ) m = d, C = p-iu, P = r;\n    }\n\n    m = 1e9;\n    \n    for( int k=0; k < 25; k++ ) {\n        vec2 p = iu+C + vec2(k%5-2,k/5-2),\n\t\t     o = disp(p),\n             r = p-u + o;\n\n        if( dot(P-r,P-r)>1e-5 )\n        m = min( m, .5*dot( (P+r), normalize(r-P) ) );\n    }\n\n    return vec3( m,  u-P);\n}\nfloat linearLight(float a, float b)\n{\n    if(a>0.5)\n        return b + 2 * (a-0.5);\n   else\n       return b + a - 1;\n}\nfloat softLight(float a, float b)\n{\nfloat G;\nfloat res;\nif(b<=0.25)\n    G = ((16*b-12)*b+4)*b;\nelse\n   G = sqrt(b);\nif(a<=0.5)\n   res = b - (1-2*a)*b*(1-b);\nelse\n   res = b+(2*a-1)*(G-b);\nreturn res;\n}"
      },
      "uipos": [
-      3844.746687874237,
-      2773.1551833832236
+      3370.155551302474,
+      2464.185382045077
      ],
      "options": []
     },
@@ -2479,8 +2479,8 @@
      },
      "params": {},
      "uipos": [
-      5504.821238772433,
-      2513.69320733532
+      5030.23010220067,
+      2204.7234059971734
      ],
      "options": []
     },
@@ -2495,8 +2495,8 @@
      },
      "params": {},
      "uipos": [
-      3926.0379194038333,
-      2377.659995213895
+      3451.4467828320703,
+      2068.6901938757483
      ],
      "options": []
     },
@@ -2526,8 +2526,8 @@
      },
      "params": {},
      "uipos": [
-      5179.199999999977,
-      2438.9077844311278
+      4704.608863428213,
+      2129.937983092981
      ],
      "options": []
     },
@@ -2544,8 +2544,8 @@
       "value": "@pos = vec3(5,3,5)\n@nrm = vec3(0,1,0)\n@clr = vec3(-1,-1,-1)\n@uv = vec3(45,7,20000)"
      },
      "uipos": [
-      4687.3628742514775,
-      2316.047904191607
+      4212.771737679715,
+      2007.0781028534602
      ],
      "options": []
     },
@@ -2678,8 +2678,8 @@
      },
      "params": {},
      "uipos": [
-      4931.977533416887,
-      -2042.728696649231
+      5198.320816998968,
+      -1951.8829255049557
      ],
      "options": []
     },
@@ -2732,14 +2732,19 @@
        "ZSLevelSet",
        null
       ],
-      "obj3": [
+      "frameno": [
+       "f1a93d01-NumericOperator",
+       "ret",
+       null
+      ],
+      "obj4": [
        null,
        null,
        null
       ]
      },
      "params": {
-      "_KEYS": "wind_drag\nwind_density\nzsls\nobj3"
+      "_KEYS": "wind_drag\nwind_density\nzsls\nframeno\nobj4"
      },
      "uipos": [
       3060.0030842445058,
@@ -2750,7 +2755,8 @@
       "wind_drag",
       "wind_density",
       "zsls",
-      "obj3"
+      "frameno",
+      "obj4"
      ]
     },
     "ebb55d52-PrimitiveToSDF": {
@@ -2819,7 +2825,7 @@
       "path": [
        null,
        null,
-       "assets/rock.obj"
+       "assets/Pig_Head.obj"
       ],
       "SRC": [
        null,
@@ -2829,8 +2835,8 @@
      },
      "params": {},
      "uipos": [
-      -910.3154454667549,
-      -2422.210923473884
+      -863.4730947204879,
+      -2439.115463274878
      ],
      "options": [
       "ONCE"
@@ -2842,7 +2848,7 @@
       "path": [
        null,
        null,
-       "assets/cube.obj"
+       "assets/sphere.obj"
       ],
       "SRC": [
        null,
@@ -2852,8 +2858,8 @@
      },
      "params": {},
      "uipos": [
-      -929.2214149461083,
-      -1958.8749719478674
+      -863.3086786277026,
+      -1942.1139271717484
      ],
      "options": [
       "ONCE"
@@ -2863,12 +2869,12 @@
      "name": "CombineVDB",
      "inputs": {
       "FieldA": [
-       "3bfd3a08-PrimitiveToSDF",
+       "ebb55d52-PrimitiveToSDF",
        "sdf",
        null
       ],
       "FieldB": [
-       "ebb55d52-PrimitiveToSDF",
+       "3bfd3a08-PrimitiveToSDF",
        "sdf",
        null
       ],
@@ -2881,7 +2887,7 @@
      "params": {
       "MultiplierA": 1.0,
       "MultiplierB": 1.0,
-      "OpType": "CSGIntersection",
+      "OpType": "CSGDifference",
       "writeBack": false
      },
      "uipos": [
@@ -2901,8 +2907,8 @@
        null
       ],
       "translation": [
-       null,
-       null,
+       "f66df4c2-NumericVec3",
+       "vec3",
        null
       ],
       "offset": [
@@ -2965,13 +2971,13 @@
       ]
      },
      "params": {
-      "x": 0.3,
-      "y": 2.0,
-      "z": 0.3
+      "x": 2.5,
+      "y": 2.5,
+      "z": 2.5
      },
      "uipos": [
-      -959.2101941202543,
-      -1733.9591281417715
+      -853.2509901401585,
+      -1739.6411181915225
      ],
      "options": []
     },
@@ -2984,8 +2990,8 @@
        null
       ],
       "translation": [
-       null,
-       null,
+       "18b6d87d-NumericVec3",
+       "vec3",
        null
       ],
       "offset": [
@@ -3048,13 +3054,13 @@
       ]
      },
      "params": {
-      "x": 0.3,
-      "y": 0.4,
-      "z": 0.3
+      "x": 0.65,
+      "y": 0.65,
+      "z": 0.65
      },
      "uipos": [
-      -905.1931384649594,
-      -2240.601857046601
+      -861.5871683157072,
+      -2199.3248421212284
      ],
      "options": []
     },
@@ -3115,8 +3121,8 @@
     "08780e64-Blackboard": {
      "name": "Blackboard",
      "uipos": [
-      -1129.6724220152212,
-      -2495.1572318221756
+      -1128.6153075873606,
+      -2493.043002966454
      ],
      "special": true,
      "width": 1604.0709156193404,
@@ -3181,8 +3187,8 @@
      },
      "params": {},
      "uipos": [
-      -253.90344479352817,
-      1900.5388801615138
+      -47.43578310199305,
+      1931.5090294152437
      ],
      "options": [
       "ONCE"
@@ -3203,8 +3209,8 @@
       "z": 0.7
      },
      "uipos": [
-      -583.5937499999798,
-      2150.1349304308055
+      -377.12608830844454,
+      2181.105079684536
      ],
      "options": []
     },
@@ -3223,8 +3229,8 @@
       "z": 0.0
      },
      "uipos": [
-      -583.011669658867,
-      1912.9488330340448
+      -376.5440079673318,
+      1943.9189822877747
      ],
      "options": []
     },
@@ -3392,7 +3398,7 @@
       ]
      },
      "params": {
-      "x": -2.0,
+      "x": 2.0,
       "y": 1.0,
       "z": 0.0
      },
@@ -3441,15 +3447,15 @@
        0.1
       ],
       "SRC": [
-       null,
-       null,
+       "c78590fa-ZSParticlesWrangler",
+       "DST",
        null
       ]
      },
      "params": {},
      "uipos": [
-      3989.353966752081,
-      -2159.6524265597823
+      4645.921130931163,
+      -2031.6424763110297
      ],
      "options": []
     },
@@ -3697,8 +3703,8 @@
       "_KEYS": "zsgrid\nobj1"
      },
      "uipos": [
-      4634.126403326243,
-      -1943.4769230768559
+      4900.469686908324,
+      -1852.6311519325802
      ],
      "options": [],
      "socket_keys": [
@@ -3713,8 +3719,8 @@
       -2423.603614600845
      ],
      "special": true,
-     "width": 828.1998492944917,
-     "height": 729.28785397714,
+     "width": 821.5928841203627,
+     "height": 894.4619833303682,
      "title": "Callable for wind force application",
      "content": "\"extraArgs\" for this callable are like the \"captured variables\" in a c++ lambda function object\n\nhere we capture two parameters for wind force\nand a velocity field which describes the direction",
      "params": []
@@ -3726,8 +3732,8 @@
       -3107.957971673488
      ],
      "special": true,
-     "width": 1910.8949993724168,
-     "height": 1512.8726707650549,
+     "width": 2228.4600063686744,
+     "height": 1517.9133851618205,
      "title": "Callable for wind force application",
      "content": "here we can extract arguments (stored in \"args\") from both the \"extraArgs\" and the input parameters, which are passed in upon the function call\nbefore return, we pack the result (zsgrid in this case) in a dict object.",
      "params": []
@@ -3792,12 +3798,165 @@
      "title": "MPM simulation setup",
      "content": "load mesh\n\nmesh -> levelset conversion\n\nlevelset csg operation",
      "params": []
+    },
+    "36a0d33d-NumericVec3": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": 0.0,
+      "y": 0.2,
+      "z": -0.15
+     },
+     "uipos": [
+      -1338.5050746268196,
+      -2291.675422885493
+     ],
+     "options": []
+    },
+    "f66df4c2-NumericVec3": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": 0.1,
+      "y": -0.8,
+      "z": 0.0
+     },
+     "uipos": [
+      -1097.5490547263298,
+      -1790.6857711442167
+     ],
+     "options": []
+    },
+    "18b6d87d-NumericVec3": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": 0.25,
+      "y": 0.2,
+      "z": -0.1
+     },
+     "uipos": [
+      -1090.809950248718,
+      -2284.4242786068858
+     ],
+     "options": []
+    },
+    "c78590fa-ZSParticlesWrangler": {
+     "name": "ZSParticlesWrangler",
+     "inputs": {
+      "ZSParticles": [
+       "3fa27bc1-DictGetItem",
+       "object",
+       null
+      ],
+      "zfxCode": [
+       "45020687-MakeMultilineString",
+       "value",
+       ""
+      ],
+      "params": [
+       "81dd85f8-FuncBegin",
+       "args",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      4338.990367692635,
+      -2425.343812966333
+     ],
+     "options": []
+    },
+    "45020687-MakeMultilineString": {
+     "name": "MakeMultilineString",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": "@v.y += 0.05 * exp(0 - $frameno /0.001) * sin(@x.x * 10) * sin(@x.z * 10)"
+     },
+     "uipos": [
+      3940.658308457577,
+      -2561.7846766168273
+     ],
+     "options": []
+    },
+    "7dc30e4b-GetFrameNum": {
+     "name": "GetFrameNum",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      2523.067860696429,
+      -1690.6563184079014
+     ],
+     "options": []
+    },
+    "f1a93d01-NumericOperator": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "7dc30e4b-GetFrameNum",
+       "FrameNum",
+       null
+      ],
+      "rhs": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "op_type": "tofloat"
+     },
+     "uipos": [
+      2786.1572139302534,
+      -1719.4626865671046
+     ],
+     "options": []
     }
    },
    "view_rect": {
-    "x": -3809.2366814642583,
-    "y": -2719.905336094841,
-    "width": 11175.870895385735,
+    "x": -1229.3320974490812,
+    "y": -3019.488936823192,
+    "width": 11175.8708953857,
     "height": 6183.981895446561
    }
   },
@@ -3891,8 +4050,8 @@
      },
      "params": {},
      "uipos": [
-      -877.6980691936135,
-      266.0118660235715
+      -870.5851960592853,
+      268.38282373501426
      ],
      "options": []
     },
@@ -3958,15 +4117,15 @@
        null
       ],
       "SRC": [
-       "2d868f0c-ZSGridFromZSPartition",
+       "bf3d6e3f-DictGetItem",
        "DST",
        null
       ]
      },
      "params": {},
      "uipos": [
-      -641.4369799300716,
-      204.8621675900647
+      288.1451509195859,
+      172.50229945029474
      ],
      "options": []
     },
@@ -4101,8 +4260,8 @@
        null
       ],
       "ZSGrid": [
-       "bf3d6e3f-DictGetItem",
-       "object",
+       "496a39ca-ZSParticleToZSGrid",
+       "ZSGrid",
        null
       ],
       "dt": [
@@ -4116,15 +4275,15 @@
        null
       ],
       "SRC": [
-       "f3d70cbc-FuncCall",
+       "496a39ca-ZSParticleToZSGrid",
        "DST",
        null
       ]
      },
      "params": {},
      "uipos": [
-      712.8894268925601,
-      168.96970432663375
+      644.1316532607193,
+      157.11491576941984
      ],
      "options": []
     },
@@ -4318,15 +4477,15 @@
        null
       ],
       "SRC": [
-       "496a39ca-ZSParticleToZSGrid",
+       "2d868f0c-ZSGridFromZSPartition",
        "DST",
        null
       ]
      },
      "params": {},
      "uipos": [
-      88.08412748831927,
-      -586.0905962967062
+      -351.8396666270412,
+      -620.8214221479188
      ],
      "options": []
     },
@@ -4368,8 +4527,8 @@
       "_KEYS": "zspars\nstepdt\nzspartition\nzsgrid\nobj4"
      },
      "uipos": [
-      -188.51336020872077,
-      -798.5034485994368
+      -628.4371543240811,
+      -833.2342744506493
      ],
      "options": [],
      "socket_keys": [
@@ -4401,8 +4560,8 @@
      },
      "params": {},
      "uipos": [
-      344.74024090217597,
-      -565.0705697178126
+      -95.18355321318455,
+      -599.8013955690253
      ],
      "options": []
     },
@@ -4421,17 +4580,17 @@
       "defl": ""
      },
      "uipos": [
-      -186.09825415442083,
-      -1056.8894506075208
+      -626.0220482697812,
+      -1091.6202764587335
      ],
      "options": []
     }
    },
    "view_rect": {
-    "x": -1947.3529980668904,
-    "y": -1298.0575179945743,
-    "width": 4573.822021484372,
-    "height": 2326.9653320312486
+    "x": -2103.1630636892305,
+    "y": -1555.6427018424379,
+    "width": 5717.2775268554615,
+    "height": 2908.706665039059
    }
   }
  },
