@@ -190,6 +190,19 @@ struct EvalAnim{
             zeno::vec3i incs(m_Indices[i],m_Indices[i+1],m_Indices[i+2]);
             ind.push_back(incs);
         }
+
+        auto &uv0 = prim->tris.add_attr<zeno::vec3f>("uv0");
+        auto &uv1 = prim->tris.add_attr<zeno::vec3f>("uv1");
+        auto &uv2 = prim->tris.add_attr<zeno::vec3f>("uv2");
+        for(unsigned int i=0; i<ind.size(); i++){
+            unsigned int _i1 = ind[i][0];
+            unsigned int _i2 = ind[i][1];
+            unsigned int _i3 = ind[i][2];
+            uv0[i] = zeno::vec3f(m_Vertices[_i1].texCoord[0], m_Vertices[_i1].texCoord[1], 0);
+            uv1[i] = zeno::vec3f(m_Vertices[_i2].texCoord[0], m_Vertices[_i2].texCoord[1], 0);
+            uv2[i] = zeno::vec3f(m_Vertices[_i3].texCoord[0], m_Vertices[_i3].texCoord[1], 0);
+
+        }
     }
 };
 

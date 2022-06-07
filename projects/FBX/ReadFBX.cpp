@@ -127,7 +127,10 @@ struct Mesh{
             if (mesh->mTextureCoords[0]){
                 aiVector3D uvw(fmodf(mesh->mTextureCoords[0][j].x, 1.0f),
                                fmodf(mesh->mTextureCoords[0][j].y, 1.0f), 0.0f);
-                //zeno::log_info(">>>>> {} {} ", uvw.x, uvw.y);
+                // Same vert but diff uv
+                // U 0.980281 0.0276042 V -0.5 -1 -0.866026
+                // U 0.0325739 0.0276042 V -0.5 -1 -0.866026
+                //zeno::log_info(">>>>> U {} {} V {} {} {}", uvw.x, uvw.y, vec.x, vec.y, vec.z);
                 vertexInfo.texCoord = uvw;
             }
             if (mesh->mNormals) {
@@ -189,8 +192,11 @@ struct Mesh{
         for(unsigned int j = 0; j < mesh->mNumFaces; j++)
         {
             aiFace face = mesh->mFaces[j];
-            for(unsigned int j = 0; j < face.mNumIndices; j++)
+            //zeno::log_info("-----");
+            for(unsigned int j = 0; j < face.mNumIndices; j++) {
                 fbxData.iIndices.value.push_back(face.mIndices[j] + m_VerticesIncrease);
+                //zeno::log_info(" {}", face.mIndices[j] + m_VerticesIncrease);
+            }
         }
 
         // Material
