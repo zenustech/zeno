@@ -1117,7 +1117,8 @@ const char* getInputData( const char*                     sample,
 #else
         getInputDataFromFile( *ptx, sample, filename );
 #endif
-        g_ptxSourceCache.map[key] = ptx;
+        if(is_success==true)
+            g_ptxSourceCache.map[key] = ptx;
     }
     else
     {

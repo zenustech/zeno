@@ -147,7 +147,7 @@ double SUTILAPI currentTime();
 SUTILAPI const char* getInputData( const char* sampleName,  // Name of the sample, used to locate the input file. NULL = only search the common /cuda dir
                                    const char* sampleDir,  // Directory name for the sample (typically the same as the sample name).
                                    const char* filename,      // Cuda C input file name
-                          const char*                     location,
+                                   const char* location,
                                    size_t&     dataSize,
                                    bool &is_success, 
                                    const char** log = NULL,    // (Optional) pointer to compiler log string. If *log == NULL there is no output. Only valid until the next getInputData call
