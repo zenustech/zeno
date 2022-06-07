@@ -34,9 +34,10 @@ struct ToZSTets : INode {
     std::shared_ptr<ZSTets> ret{};
     if (has_input("ZSTets")) {
       ret = get_input<ZSTets>("ZSTets");
-      ret->tetMesh = tetrahedra_obj{};
-    } else
+    } else {
       ret = std::make_shared<ZSTets>();
+      ret->tetMesh = tetrahedra_obj{};
+    }
 
     auto &tetMesh = ret->tetMesh;
     auto prim = get_input<PrimitiveObject>("prim");
