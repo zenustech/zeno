@@ -1135,6 +1135,7 @@ void optixupdatemesh(std::map<std::string, int> const &mtlidlut) {
                 ) );
 
     splitMesh(g_vertices, g_mat_indices, g_meshPieces);
+    std::cout<<"split mesh done\n";
     std::cout<<"mesh pieces:"<<g_meshPieces.size()<<std::endl;
     for(int i=0;i<g_meshPieces.size();i++)
     {
@@ -1212,15 +1213,16 @@ std::vector<std::vector<std::string>> &texs) {
     }
     for(int i=0;i<OptixUtil::rtMaterialShaders.size();i++)
     {
+        std::cout<<"now compiling "<<i<<"'th shader"<<std::endl;
         if(OptixUtil::rtMaterialShaders[i].loadProgram()==false)
         {
             std::cout<<"program compile failed, using default"<<std::endl;
             
             OptixUtil::rtMaterialShaders[i].m_shaderFile     = shaders[0];
-            std::cout<<OptixUtil::rtMaterialShaders[i].m_shaderFile<<std::endl;
             OptixUtil::rtMaterialShaders[i].m_shadingEntry   = "__closesthit__radiance";
             OptixUtil::rtMaterialShaders[i].m_occlusionEntry = "__anyhit__shadow_cutout";
             std::cout<<OptixUtil::rtMaterialShaders[i].loadProgram()<<std::endl;
+            std::cout<<"shader restored to default\n";
         }
     }
     OptixUtil::createRenderGroups(state.context, OptixUtil::ray_module);

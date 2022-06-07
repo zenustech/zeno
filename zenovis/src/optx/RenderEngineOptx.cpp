@@ -47,10 +47,21 @@ struct GraphicsManager {
                     const auto &pos0 = pos[tris[i][0]];
                     const auto &pos1 = pos[tris[i][1]];
                     const auto &pos2 = pos[tris[i][2]];
-                    auto uv0 = tris.attr<zeno::vec3f>("uv0")[i];
-                    auto uv1 = tris.attr<zeno::vec3f>("uv1")[i];
-                    auto uv2 = tris.attr<zeno::vec3f>("uv2")[i];
-
+                    zeno::vec3f uv0;
+                    zeno::vec3f uv1;
+                    zeno::vec3f uv2;
+                    if(has_uv)
+                    {
+                        uv0 = tris.attr<zeno::vec3f>("uv0")[i];
+                        uv1 = tris.attr<zeno::vec3f>("uv1")[i];
+                        uv2 = tris.attr<zeno::vec3f>("uv2")[i];
+                    }
+                    else
+                    {
+                        uv0 = prim->attr<zeno::vec3f>("uv")[tris[i][0]];
+                        uv1 = prim->attr<zeno::vec3f>("uv")[tris[i][1]];
+                        uv2 = prim->attr<zeno::vec3f>("uv")[tris[i][2]];
+                    }
                     auto edge0 = pos1 - pos0;
                     auto edge1 = pos2 - pos0;
                     auto deltaUV0 = uv1 - uv0;
@@ -88,6 +99,7 @@ struct GraphicsManager {
         {
             if (auto prim_in = dynamic_cast<zeno::PrimitiveObject *>(obj))
             {
+                prim_in->add_attr<zeno::vec3f>("uv");
                 bool primNormalCorrect = prim_in->has_attr("nrm") && length(prim_in->attr<zeno::vec3f>("nrm")[0])>1e-5;
                 bool need_computeNormal = !primNormalCorrect || !(prim_in->has_attr("nrm"));
                 if(prim_in->tris.size() && need_computeNormal)
@@ -97,6 +109,7 @@ struct GraphicsManager {
                 }
                 computeTrianglesTangent(prim_in);
                 auto prim = std::make_shared<zeno::PrimitiveObject>();
+                
                 prim->verts.resize(prim_in->tris.size()*3);
                 prim->tris.resize(prim_in->tris.size());
                 auto &att_clr = prim->add_attr<zeno::vec3f>("clr");
@@ -104,12 +117,16 @@ struct GraphicsManager {
                 auto &att_uv  = prim->add_attr<zeno::vec3f>("uv");
                 auto &att_tan = prim->add_attr<zeno::vec3f>("tang");
                 bool has_uv =   prim_in->tris.has_attr("uv0")&&prim_in->tris.has_attr("uv1")&&prim_in->tris.has_attr("uv2");
+
+                std::cout<<"size verts:"<<prim_in->verts.size()<<std::endl;
                 auto &in_pos   = prim_in->verts;
                 auto &in_clr   = prim_in->add_attr<zeno::vec3f>("clr");
                 auto &in_nrm   = prim_in->add_attr<zeno::vec3f>("nrm");
+                auto &in_uv    = prim_in->attr<zeno::vec3f>("uv");
                 
                 for(size_t tid=0;tid<prim_in->tris.size();tid++)
                 {
+                    //std::cout<<tid<<std::endl;
                     size_t vid = tid*3;
                       prim->verts[vid]         = in_pos[prim_in->tris[tid][0]];
                       prim->verts[vid+1]       = in_pos[prim_in->tris[tid][1]];
@@ -120,9 +137,9 @@ struct GraphicsManager {
                           att_nrm[vid]         = in_nrm[prim_in->tris[tid][0]];
                           att_nrm[vid+1]       = in_nrm[prim_in->tris[tid][1]];
                           att_nrm[vid+2]       = in_nrm[prim_in->tris[tid][2]];
-                          att_uv[vid]          = has_uv?prim_in->tris.attr<zeno::vec3f>("uv0")[tid]:zeno::vec3f(0);
-                          att_uv[vid+1]        = has_uv?prim_in->tris.attr<zeno::vec3f>("uv1")[tid]:zeno::vec3f(0);
-                          att_uv[vid+2]        = has_uv?prim_in->tris.attr<zeno::vec3f>("uv2")[tid]:zeno::vec3f(0);
+                          att_uv[vid]          = has_uv?prim_in->tris.attr<zeno::vec3f>("uv0")[tid]:in_uv[prim_in->tris[tid][0]];
+                          att_uv[vid+1]        = has_uv?prim_in->tris.attr<zeno::vec3f>("uv1")[tid]:in_uv[prim_in->tris[tid][1]];
+                          att_uv[vid+2]        = has_uv?prim_in->tris.attr<zeno::vec3f>("uv2")[tid]:in_uv[prim_in->tris[tid][2]];
                           att_tan[vid]         = prim_in->tris.attr<zeno::vec3f>("tang")[tid];
                           att_tan[vid+1]       = prim_in->tris.attr<zeno::vec3f>("tang")[tid];
                           att_tan[vid+2]       = prim_in->tris.attr<zeno::vec3f>("tang")[tid];
@@ -253,6 +270,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
     std::map<std::string, int> mtlidlut;
 
     void draw() override {
+        //std::cout<<"in draw()"<<std::endl;
         auto guard = setupState();
         auto const &cam = *scene->camera;
         auto const &opt = *scene->drawOptions;
