@@ -7,6 +7,9 @@
 #include "util/log.h"
 #include "launch/ztcpserver.h"
 #include "launch/corelaunch.h"
+#ifdef _WIN32
+#include "zeno/InitVDB.h"
+#endif
 
 
 ZenoApplication::ZenoApplication(int &argc, char **argv)
@@ -19,6 +22,10 @@ ZenoApplication::ZenoApplication(int &argc, char **argv)
     initStyleSheets();
     m_errSteam.registerMsgHandler();
     zeno::log_info("build date: {} {}", __DATE__, __TIME__);
+
+#ifdef _WIN32 
+    static zeno::OpenvdbInitializer g_openvdb_initializer;
+#endif
 
 #ifdef ZENO_MULTIPROCESS
     m_server = new ZTcpServer(this);
