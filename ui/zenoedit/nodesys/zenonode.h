@@ -10,7 +10,7 @@
 #include <zenoui/comctrl/gv/zenoparamwidget.h>
 #include <zenoui/model/modeldata.h>
 
-class SubGraphModel;
+
 class ZenoGraphsEditor;
 
 class ZenoNode : public QGraphicsWidget

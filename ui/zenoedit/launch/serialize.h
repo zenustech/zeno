@@ -4,10 +4,9 @@
 #include <QtWidgets>
 #include <zenoui/util/jsonhelper.h>
 
-class GraphsModel;
-class SubGraphModel;
+class IGraphsModel;
 
-void serializeScene(GraphsModel* pModel, RAPIDJSON_WRITER& writer);
-QString translateGraphToCpp(const char *subgJson, size_t subgJsonLen, GraphsModel *model);
+void serializeScene(IGraphsModel* pModel, RAPIDJSON_WRITER& writer);
+QString translateGraphToCpp(const char *subgJson, size_t subgJsonLen, IGraphsModel *model);
 
 #endif

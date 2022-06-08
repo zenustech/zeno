@@ -5,41 +5,35 @@
 #include <model/modelrole.h>
 #include <zenoui/util/uihelper.h>
 #include "util/log.h"
+#include "util/apphelper.h"
 
 using namespace JsonHelper;
 
-static void serializeGraph(SubGraphModel* pModel, GraphsModel* pGraphsModel, QStringList const &graphNames, RAPIDJSON_WRITER& writer, QString const &graphIdPrefix)
+static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgIdx, RAPIDJSON_WRITER& writer, QString const &graphIdPrefix)
 {
-	const QString& name = pModel->name();
-	const NODES_DATA& nodes = pModel->nodes();
+    ZASSERT_EXIT(pGraphsModel && subgIdx.isValid());
 
-	for (const NODE_DATA& node : nodes)
-	{
-		QString ident = node[ROLE_OBJID].toString();
-        ident = graphIdPrefix + ident;
-		QString name = node[ROLE_OBJNAME].toString();
+    QModelIndexList subgNodes, normNodes;
+    pGraphsModel->getNodeIndices(subgIdx, subgNodes, normNodes);
+
+    //now, we want to expand all subgraph nodes recursively.
+    //so, we need to serialize the subgraph first, and then build the connection with other nodes in this graph.
+    for (const QModelIndex& idx : subgNodes)
+    {
         //zeno::log_critical("got node {} {}", name.toStdString(), ident.toStdString());
-		const INPUT_SOCKETS& inputs = node[ROLE_INPUTS].value<INPUT_SOCKETS>();
-        const OUTPUT_SOCKETS& outputs = node[ROLE_OUTPUTS].value<OUTPUT_SOCKETS>();
-		PARAMS_INFO params = node[ROLE_PARAMETERS].value<PARAMS_INFO>();
-		int opts = node[ROLE_OPTIONS].toInt();
-		/*QStringList options;
-		if (opts & OPT_ONCE)
-		{
-			options.push_back("ONCE");
-		}
-		if (opts & OPT_MUTE)
-		{
-			options.push_back("MUTE");
-		}
-		if (opts & OPT_PREP)
-		{
-			options.push_back("PREP");
-		}
-		if (opts & OPT_VIEW)
-		{
-			options.push_back("VIEW");
-		}*/
+        const QString& subgName = idx.data(ROLE_OBJNAME).toString();
+        serializeGraph(pGraphsModel, pGraphsModel->index(subgName), writer, graphIdPrefix + "/" + subgName);
+    }
+
+    //scan all the nodes in the subgraph.
+    for (int r = 0; r < pGraphsModel->itemCount(subgIdx); r++)
+	{
+        const QModelIndex& idx = pGraphsModel->index(r, subgIdx);
+        QString ident = idx.data(ROLE_OBJID).toString();
+        //ident = graphIdPrefix + ident;  
+        QString name = idx.data(ROLE_OBJNAME).toString();
+
+		int opts = idx.data(ROLE_OPTIONS).toInt();
         QString noOnceIdent;
         if (opts & OPT_ONCE) {
             noOnceIdent = ident;
@@ -49,24 +43,15 @@ static void serializeGraph(SubGraphModel* pModel, GraphsModel* pGraphsModel, QSt
         if (opts & OPT_MUTE) {
             AddStringList({ "addNode", "HelperMute", ident }, writer);
         } else {
-
-            if (graphNames.indexOf(name) != -1)
-            {
-                zeno::log_critical("got subgraph {}", name.toStdString());
-                auto nextGraphIdPrefix = ident + "/";
-                SubGraphModel* pSubModel = pGraphsModel->subGraph(name);
-                serializeGraph(pSubModel, pGraphsModel, graphNames, writer, nextGraphIdPrefix);
-                //ret.push_back(QJsonArray({ "pushSubgraph", ident, name }));
-                //serializeGraph(pSubModel, pGraphsModel, graphNames, ret);
-                //ret.push_back(QJsonArray({ "popSubgraph", ident, name }));
-
-            } else {
-                AddStringList({ "addNode", name, ident }, writer);
+            if (!pGraphsModel->index(name).isValid()) {
+                AddStringList({"addNode", name, ident}, writer);
             }
         }
 
+        const OUTPUT_SOCKETS &outputs = idx.data(ROLE_OUTPUTS).value<OUTPUT_SOCKETS>();
         auto outputIt = outputs.begin();
 
+        const INPUT_SOCKETS &inputs = idx.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
         for (INPUT_SOCKET input : inputs)
         {
             auto inputName = input.info.name;
@@ -80,12 +65,15 @@ static void serializeGraph(SubGraphModel* pModel, GraphsModel* pGraphsModel, QSt
                 }
             }
 
+            bool bSubgNode = subgNodes.indexOf(idx) != -1;
+
             if (input.linkIndice.isEmpty())
             {
                 const QVariant& defl = input.info.defaultValue;
                 if (!defl.isNull())
                 {
                     AddVariantList({"setNodeInput", ident, inputName, defl}, input.info.type, writer);
+                    //todo: for subgraph node. but now there is not edit control on subgraphnode.
                 }
             }
             else
@@ -93,13 +81,42 @@ static void serializeGraph(SubGraphModel* pModel, GraphsModel* pGraphsModel, QSt
                 for (QPersistentModelIndex linkIdx : input.linkIndice)
                 {
                     ZASSERT_EXIT(linkIdx.isValid());
-                    const QString& outSock = linkIdx.data(ROLE_OUTSOCK).toString();
-                    const QString& outId = linkIdx.data(ROLE_OUTNODE).toString();
-                    AddStringList({ "bindNodeInput", ident, inputName, outId, outSock }, writer);
+                    QString outSock = linkIdx.data(ROLE_OUTSOCK).toString();
+                    QString outId = linkIdx.data(ROLE_OUTNODE).toString();
+
+                    //the node of outId may be a subgNode.
+                    const QModelIndex& idx_ = pGraphsModel->index(outId, subgIdx);
+                    if (subgNodes.indexOf(idx_) != -1) {
+                        const QString& subgName = idx_.data(ROLE_OBJNAME).toString();
+                        const QModelIndex &subnodeIdx =
+                            AppHelper::getSubInOutNode(pGraphsModel, pGraphsModel->index(subgName), outSock, false);
+                        if (subnodeIdx.isValid())
+                        {
+                            outSock = "DST";
+                            outId = subnodeIdx.data(ROLE_OBJID).toString();
+                        }
+                    }
+
+                    if (bSubgNode)
+                    {
+                        // should bind the subinput node to the outSock of the node with outId.
+                        const QModelIndex& subnodeIdx =
+                            AppHelper::getSubInOutNode(pGraphsModel, pGraphsModel->index(name), inputName, true);
+                        if (subnodeIdx.isValid())
+                        {
+                            const QString& subInputId = subnodeIdx.data(ROLE_OBJID).toString();
+                            AddStringList({"bindNodeInput", subInputId, "SRC", outId, outSock}, writer);
+                        }
+                    }
+                    else
+                    {
+                        AddStringList({"bindNodeInput", ident, inputName, outId, outSock}, writer);
+                    }
                 }
             }
         }
 
+        const PARAMS_INFO& params = idx.data(ROLE_PARAMETERS).value<PARAMS_INFO>();
 		for (PARAM_INFO param_info : params)
 		{
             AddVariantList({ "setNodeParam", ident, param_info.name, param_info.value }, param_info.typeDesc, writer);
@@ -118,6 +135,7 @@ static void serializeGraph(SubGraphModel* pModel, GraphsModel* pGraphsModel, QSt
         AddStringList({ "completeNode", ident }, writer);
 
 		if (opts & OPT_VIEW) {
+            //todo: subg?
             for (OUTPUT_SOCKET output : outputs)
             {
                 //if (output.info.name == "DST") continue;//qmap wants to put DST/SRC as first socket, skip it
@@ -149,17 +167,9 @@ static void serializeGraph(SubGraphModel* pModel, GraphsModel* pGraphsModel, QSt
 	}
 }
 
-void serializeScene(GraphsModel* pModel, RAPIDJSON_WRITER& writer)
+void serializeScene(IGraphsModel* pModel, RAPIDJSON_WRITER& writer)
 {
-	//QJsonArray item = { "clearAllState" };
-    //ret.push_back(item);
-
-	QStringList graphs;
-	for (int i = 0; i < pModel->rowCount(); i++)
-		graphs.push_back(pModel->subGraph(i)->name());
-
-    SubGraphModel* pSubModel = pModel->subGraph("main");
-    serializeGraph(pSubModel, pModel, graphs, writer, "");
+    serializeGraph(pModel, pModel->index("main"), writer, "");
 }
 
 
@@ -171,7 +181,7 @@ static void appendSerializedCharArray(QString &res, const char *buf, size_t len)
     res.append('0');
 }
 
-QString translateGraphToCpp(const char *subgJson, size_t subgJsonLen, GraphsModel *model)
+QString translateGraphToCpp(const char *subgJson, size_t subgJsonLen, IGraphsModel *model)
 {
     QString res = R"RAW(/* auto generated from: )RAW";
     res.append(model->filePath());
@@ -183,8 +193,7 @@ namespace {
 
     decltype(auto) descs = model->descriptors();
     for (int i = 0; i < model->rowCount(); i++) {
-        auto subg = model->subGraph(i);
-        auto key = subg->name();
+        auto key = model->name(model->index(i, 0));
         if (key == "main") continue;
         if (!descs.contains(key)) {
             zeno::log_warn("cannot find subgraph `{}` in descriptors table", key.toStdString());
