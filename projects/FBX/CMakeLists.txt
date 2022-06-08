@@ -15,3 +15,21 @@ else()
 endif()
 
 target_link_libraries(zeno PRIVATE assimp)
+
+set(DEM_BD "${PROJECT_BINARY_DIR}/bin/dem")
+message(STATUS "Dem Bin Directory ${DEM_BD}")
+
+if(WIN32)
+    configure_file(${CMAKE_CURRENT_LIST_DIR}/bin/Windows/DemBones.exe
+            ${DEM_BD}/DemBones.exe COPYONLY)
+    configure_file(${CMAKE_CURRENT_LIST_DIR}/bin/Windows/Alembic.dll
+            ${DEM_BD}/dem/Alembic.dll COPYONLY)
+    configure_file(${CMAKE_CURRENT_LIST_DIR}/bin/Windows/hdf5.dll
+            ${DEM_BD}/dem/hdf5.dll COPYONLY)
+    configure_file(${CMAKE_CURRENT_LIST_DIR}/bin/Windows/Imath-3_1.dll
+            ${DEM_BD}/dem/Imath-3_1.dll COPYONLY)
+    configure_file(${CMAKE_CURRENT_LIST_DIR}/bin/Windows/zlib1.dll
+            ${DEM_BD}/dem/zlib1.dll COPYONLY)
+else()
+    configure_file(${CMAKE_CURRENT_LIST_DIR}/bin/Linux/DemBones ${DEM_BD}/DemBones COPYONLY)
+endif()

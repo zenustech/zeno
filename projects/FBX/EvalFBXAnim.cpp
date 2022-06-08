@@ -125,8 +125,8 @@ struct EvalAnim{
                               std::shared_ptr<ILight>& iLight){;
         for(auto& m: m_LazyTransforms){
             if(fbxData->iCamera.value.find(m.first) != fbxData->iCamera.value.end()){
-                zeno::log_info("----- LT Camera {}", m.first);
-                Helper::printAiMatrix(m.second, true);
+                //zeno::log_info("----- LT Camera {}", m.first);
+                //Helper::printAiMatrix(m.second, true);
 
                 SCamera cam = fbxData->iCamera.value.at(m.first);
 
@@ -141,8 +141,8 @@ struct EvalAnim{
 
                 iCamera->value[m.first] = cam;
             }else if(fbxData->iLight.value.find(m.first) != fbxData->iLight.value.end()){
-                zeno::log_info("+++++ LT Light {}", m.first);
-                Helper::printAiMatrix(m.second, true);
+                //zeno::log_info("+++++ LT Light {}", m.first);
+                //Helper::printAiMatrix(m.second, true);
             }
         }
     }

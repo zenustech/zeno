@@ -103,6 +103,9 @@ struct SAnimBone {
             data.timeStamp = timeStamp;
             m_Scales.push_back(data);
         }
+
+        //zeno::log_info("----- N {} NP {} NR {} NS {}",
+        //               m_Name, m_NumPositions, m_NumRotations, m_NumScalings);
     }
 
     void update(float animationTime) {

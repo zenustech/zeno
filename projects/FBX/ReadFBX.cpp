@@ -541,24 +541,26 @@ struct Anim{
         readHierarchyData(m_RootNode, scene->mRootNode);
         //zeno::log_info("----- Anim: Convert AssimpNode.");
 
-        Helper::printNodeTree(&m_RootNode, 0);
+        //Helper::printNodeTree(&m_RootNode, 0);
 
         if(scene->mNumAnimations){
             // TODO handle more animation if have
-            auto animation = scene->mAnimations[0];
-            duration = animation->mDuration;
-            tick = animation->mTicksPerSecond;
-            zeno::log_info("AniName: {} NC {} NMC {} NMMC {} D {} T {}",
-                           animation->mName.data,
-                           animation->mNumChannels,
-                           animation->mNumMeshChannels,
-                           animation->mNumMorphMeshChannels,
-                           animation->mDuration,
-                           animation->mTicksPerSecond
-                           );
+            for(unsigned int i=0; i<scene->mNumAnimations; i++){
+                auto animation = scene->mAnimations[i];
+                duration = animation->mDuration;
+                tick = animation->mTicksPerSecond;
+                zeno::log_info("AniName: {} NC {} NMC {} NMMC {} D {} T {}",
+                               animation->mName.data,
+                               animation->mNumChannels,
+                               animation->mNumMeshChannels,
+                               animation->mNumMorphMeshChannels,
+                               animation->mDuration,
+                               animation->mTicksPerSecond
+                               );
 
-            setupBones(animation);
-            setupBlendShape(animation);
+                setupBones(animation);
+                setupBlendShape(animation);
+            }
         }
     }
 
