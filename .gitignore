@@ -71,6 +71,9 @@ assets/character
 assets/tets/
 timeCost.txt
 iterCount.txt
+assets/cloth
+assets/objout
+output/
 
 # temp path setting
 zenqt/assets/cache_path.txt

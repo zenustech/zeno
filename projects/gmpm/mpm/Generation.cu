@@ -1458,6 +1458,27 @@ ZENDEFNODE(StepZSBoundary, {
                            });
 
 /// conversion
+struct RetrievePrimitiveFromZSParticles : INode {
+  void apply() override {
+    auto parObjPtrs = RETRIEVE_OBJECT_PTRS(ZenoParticles, "ZSParticles");
+    if (parObjPtrs.size() == 0)
+      throw std::runtime_error("there are no zsparticles!");
+    if (has_input<ListObject>("ZSParticles")) {
+      auto list = std::make_shared<ListObject>();
+      for (auto &&ptr : parObjPtrs)
+        list->arr.push_back(ptr->prim);
+      set_output("prim", list);
+    } else
+      set_output("prim", parObjPtrs[0]->prim);
+  }
+};
+
+ZENDEFNODE(RetrievePrimitiveFromZSParticles, {
+                                                 {"ZSParticles"},
+                                                 {"prim"},
+                                                 {},
+                                                 {"MPM"},
+                                             });
 
 struct ZSParticlesToPrimitiveObject : INode {
   void apply() override {
