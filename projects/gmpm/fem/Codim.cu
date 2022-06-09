@@ -106,6 +106,7 @@ struct CodimStepping : INode {
             // hessian rotation: trans^T hess * trans
             // left trans^T: multiplied on rows
             // right trans: multiplied on cols
+            make_pd(hess);
             {
               auto tmp = hess;
               auto BCbasis = verts.pack<3, 3>("BCbasis", vi);
@@ -207,8 +208,12 @@ struct CodimStepping : INode {
       pol(zs::range(verts.size()),
           [vtemp = proxy<space>({}, vtemp), verts = proxy<space>({}, verts),
            tag] ZS_LAMBDA(int vi) mutable {
-            if (verts("x", 1, vi) > 0.8)
-              vtemp.tuple<3>(tag, vi) = vec3::zeros();
+            auto BCbasis = verts.template pack<3, 3>("BCbasis", vi);
+            auto BCorder = reinterpret_bits<int>(verts("BCorder", vi));
+            for (int d = 0; d != BCorder; ++d)
+              vtemp(tag, d, vi) = 0;
+            // if (verts("x", 1, vi) > 0.8)
+            //  vtemp.tuple<3>(tag, vi) = vec3::zeros();
           });
 #endif
     }
