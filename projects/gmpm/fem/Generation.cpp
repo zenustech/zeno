@@ -650,6 +650,8 @@ struct ToZSSurfaceMesh : INode {
 
               vec3 ds[2] = {xs[1] - xs[0], xs[2] - xs[0]};
 
+              // ref: codim-ipc
+              // for first fundamental form
               mat2 B{};
               B(0, 0) = ds[0].l2NormSqr();
               B(1, 0) = B(0, 1) = ds[0].dot(ds[1]);

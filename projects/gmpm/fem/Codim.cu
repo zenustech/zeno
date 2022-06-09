@@ -25,10 +25,10 @@ struct CodimStepping : INode {
   using dtiles_t = zs::TileVector<T, 32>;
   using tiles_t = typename ZenoParticles::particles_t;
   using vec3 = zs::vec<T, 3>;
+  using mat2 = zs::vec<T, 2, 2>;
   using mat3 = zs::vec<T, 3, 3>;
   using pair_t = zs::vec<int, 2>;
   using pair3_t = zs::vec<int, 3>;
-  using pair4_t = zs::vec<int, 4>;
 
   static constexpr vec3 s_groundNormal{0, 1, 0};
 
@@ -48,19 +48,16 @@ struct CodimStepping : INode {
     constexpr auto space = execspace_e::cuda;
 
     const auto &verts = zstets.getParticles();
-    const auto &surfVerts = zstets[ZenoParticles::s_surfVertTag];
 
     ///
     // query pt
-    zs::Vector<T> finalAlpha{surfVerts.get_allocator(), 1};
+    zs::Vector<T> finalAlpha{verts.get_allocator(), 1};
     finalAlpha.setVal(stepSize);
-    pol(Collapse{surfVerts.size()},
-        [svs = proxy<space>({}, surfVerts), vtemp = proxy<space>({}, vtemp),
-         verts = proxy<space>({}, verts),
+    pol(Collapse{verts.size()},
+        [vtemp = proxy<space>({}, vtemp), verts = proxy<space>({}, verts),
          // boundary
          gn = s_groundNormal, finalAlpha = proxy<space>(finalAlpha),
-         stepSize] ZS_LAMBDA(int svi) mutable {
-          auto vi = reinterpret_bits<int>(svs("inds", svi));
+         stepSize] ZS_LAMBDA(int vi) mutable {
           // this vert affected by sticky boundary conditions
           if (reinterpret_bits<int>(verts("BCorder", vi)) == 3)
             return;
@@ -140,25 +137,29 @@ struct CodimStepping : INode {
                                vtemp = proxy<space>({}, vtemp),
                                res = proxy<space>(res), tag, model = model,
                                dt = this->dt] __device__(int ei) mutable {
-        auto DmInv = eles.template pack<3, 3>("IB", ei);
+        auto IB = eles.template pack<2, 2>("IB", ei);
         auto inds =
-            eles.template pack<4>("inds", ei).template reinterpret_bits<int>();
-        vec3 xs[4] = {vtemp.template pack<3>(tag, inds[0]),
+            eles.template pack<3>("inds", ei).template reinterpret_bits<int>();
+        auto vole = eles("vol", ei);
+        vec3 xs[3] = {vtemp.template pack<3>(tag, inds[0]),
                       vtemp.template pack<3>(tag, inds[1]),
-                      vtemp.template pack<3>(tag, inds[2]),
-                      vtemp.template pack<3>(tag, inds[3])};
-        mat3 F{};
+                      vtemp.template pack<3>(tag, inds[2])};
+        mat2 A{};
+        T E;
         {
           auto x1x0 = xs[1] - xs[0];
           auto x2x0 = xs[2] - xs[0];
-          auto x3x0 = xs[3] - xs[0];
-          auto Ds = mat3{x1x0[0], x2x0[0], x3x0[0], x1x0[1], x2x0[1],
-                         x3x0[1], x1x0[2], x2x0[2], x3x0[2]};
-          F = Ds * DmInv;
+          A(0, 0) = x1x0.l2NormSqr();
+          A(1, 0) = A(0, 1) = x1x0.dot(x2x0);
+          A(1, 1) = x2x0.l2NormSqr();
+
+          auto IA = inverse(A);
+          auto lnJ = zs::log(determinant(A) * determinant(IB)) / 2;
+          E = dt * dt * vole *
+              (model.mu / 2 * (trace(IB * A) - 2 - 2 * lnJ) +
+               model.lam / 2 * lnJ * lnJ);
         }
-        auto psi = model.psi(F);
-        auto vole = eles("vol", ei);
-        atomic_add(exec_cuda, &res[0], vole * psi * dt * dt);
+        atomic_add(exec_cuda, &res[0], E);
       });
       // contacts
       {
@@ -239,19 +240,18 @@ struct CodimStepping : INode {
                            eles = proxy<space>({}, eles), dxTag,
                            bTag] ZS_LAMBDA(int ei) mutable {
         constexpr int dim = 3;
-        constexpr auto dimp1 = dim + 1;
-        auto inds = eles.template pack<dimp1>("inds", ei)
-                        .template reinterpret_bits<int>();
-        zs::vec<T, dimp1 * dim> temp{};
-        for (int vi = 0; vi != dimp1; ++vi)
+        auto inds =
+            eles.template pack<3>("inds", ei).template reinterpret_bits<int>();
+        zs::vec<T, 3 * dim> temp{};
+        for (int vi = 0; vi != 3; ++vi)
           for (int d = 0; d != dim; ++d) {
             temp[vi * dim + d] = vtemp(dxTag, d, inds[vi]);
           }
-        auto He = etemp.template pack<dim * dimp1, dim * dimp1>("He", ei);
+        auto He = etemp.template pack<dim * 3, dim * 3>("He", ei);
 
         temp = He * temp;
 
-        for (int vi = 0; vi != dimp1; ++vi)
+        for (int vi = 0; vi != 3; ++vi)
           for (int d = 0; d != dim; ++d) {
             atomic_add(execTag, &vtemp(bTag, d, inds[vi]), temp[vi * dim + d]);
           }
@@ -272,8 +272,7 @@ struct CodimStepping : INode {
     }
 
     FEMSystem(const tiles_t &verts, const tiles_t &eles, dtiles_t &vtemp,
-              dtiles_t &etemp, T dt,
-              const ZenoConstitutiveModel &models)
+              dtiles_t &etemp, T dt, const ZenoConstitutiveModel &models)
         : verts{verts}, eles{eles}, vtemp{vtemp}, etemp{etemp},
           tempPB{verts.get_allocator(), {{"H", 9}}, verts.size()}, dt{dt},
           models{models} {}
@@ -302,47 +301,88 @@ struct CodimStepping : INode {
                                      verts = proxy<space>({}, verts),
                                      eles = proxy<space>({}, eles), model, gTag,
                                      dt] __device__(int ei) mutable {
-      auto DmInv = eles.pack<3, 3>("IB", ei);
-      auto dFdX = dFdXMatrix(DmInv);
-      auto inds = eles.pack<4>("inds", ei).reinterpret_bits<int>();
-      vec3 xs[4] = {vtemp.pack<3>("xn", inds[0]), vtemp.pack<3>("xn", inds[1]),
-                    vtemp.pack<3>("xn", inds[2]), vtemp.pack<3>("xn", inds[3])};
-      mat3 F{};
-      {
-        auto x1x0 = xs[1] - xs[0];
-        auto x2x0 = xs[2] - xs[0];
-        auto x3x0 = xs[3] - xs[0];
-        auto Ds = mat3{x1x0[0], x2x0[0], x3x0[0], x1x0[1], x2x0[1],
-                       x3x0[1], x1x0[2], x2x0[2], x3x0[2]};
-        F = Ds * DmInv;
-      }
-      auto P = model.first_piola(F);
+      auto IB = eles.template pack<2, 2>("IB", ei);
+      auto inds =
+          eles.template pack<3>("inds", ei).template reinterpret_bits<int>();
       auto vole = eles("vol", ei);
-      auto vecP = flatten(P);
-      auto dFdXT = dFdX.transpose();
-      auto vfdt2 = -vole * (dFdXT * vecP) * dt * dt;
+      vec3 xs[3] = {vtemp.template pack<3>("xn", inds[0]),
+                    vtemp.template pack<3>("xn", inds[1]),
+                    vtemp.template pack<3>("xn", inds[2])};
+      mat2 A{}, temp{};
+      auto dA_div_dx = zs::vec<T, 4, 9>::zeros();
+      auto x1x0 = xs[1] - xs[0];
+      auto x2x0 = xs[2] - xs[0];
+      A(0, 0) = x1x0.l2NormSqr();
+      A(1, 0) = A(0, 1) = x1x0.dot(x2x0);
+      A(1, 1) = x2x0.l2NormSqr();
 
-      for (int i = 0; i != 4; ++i) {
-        auto vi = inds[i];
-        for (int d = 0; d != 3; ++d)
-          atomic_add(exec_cuda, &vtemp(gTag, d, vi), vfdt2(i * 3 + d));
+      auto IA = inverse(A);
+      auto lnJ = zs::log(determinant(A) * determinant(IB)) / 2;
+      temp = dt * dt * vole *
+             (model.mu / 2 * IB + (-model.mu + model.lam * lnJ) / 2 * IA);
+      for (int d = 0; d != 3; ++d) {
+        dA_div_dx(0, d) = -2 * x1x0[d];
+        dA_div_dx(0, 3 + d) = 2 * x1x0[d];
+        dA_div_dx(1, d) = -x1x0[d] - x2x0[d];
+        dA_div_dx(1, 3 + d) = x2x0[d];
+        dA_div_dx(1, 6 + d) = x1x0[d];
+        dA_div_dx(2, d) = -x1x0[d] - x2x0[d];
+        dA_div_dx(2, 3 + d) = x2x0[d];
+        dA_div_dx(2, 6 + d) = x1x0[d];
+        dA_div_dx(3, d) = -2 * x2x0[d];
+        dA_div_dx(3, 6 + d) = 2 * x2x0[d];
+      }
+
+      for (int i_ = 0; i_ != 3; ++i_) {
+        auto vi = inds[i_];
+        for (int d = 0; d != 3; ++d) {
+          int i = i_ * 3 + d;
+          atomic_add(
+              exec_cuda, &vtemp(gTag, d, vi),
+              dA_div_dx(0, i) * temp(0, 0) + dA_div_dx(1, i) * temp(1, 0) +
+                  dA_div_dx(2, i) * temp(0, 1) + dA_div_dx(3, i) * temp(1, 1));
+        }
       }
 
       // hessian rotation: trans^T hess * trans
       // left trans^T: multiplied on rows
       // right trans: multiplied on cols
-      mat3 BCbasis[4];
-      int BCorder[4];
-      for (int i = 0; i != 4; ++i) {
+      mat3 BCbasis[3];
+      int BCorder[3];
+      for (int i = 0; i != 3; ++i) {
         BCbasis[i] = verts.pack<3, 3>("BCbasis", inds[i]);
         BCorder[i] = reinterpret_bits<int>(verts("BCorder", inds[i]));
       }
-      auto Hq = model.first_piola_derivative(F, true_c);
-      auto H = dFdXT * Hq * dFdX * vole * dt * dt;
+      zs::vec<T, 9, 9> H;
+      zs::vec<T, 9> ainvda;
+      for (int i_ = 0; i_ < 3; ++i_) {
+        for (int d = 0; d < 3; ++d) {
+          int i = i_ * 3 + d;
+          ainvda(i) = dA_div_dx(0, i) * IA(0, 0) + dA_div_dx(1, i) * IA(1, 0) +
+                      dA_div_dx(2, i) * IA(0, 1) + dA_div_dx(3, i) * IA(1, 1);
+
+          const T deta = determinant(A);
+          const T lnJ = std::log(deta * determinant(IB)) / 2;
+          const T term1 = (-model.mu + model.lam * lnJ) / 2;
+          H = (-term1 + model.lam / 4) * dyadic_prod(ainvda, ainvda);
+
+          zs::vec<T, 4, 9> aderivadj;
+          for (int d = 0; d != 9; ++d) {
+            aderivadj(0, d) = dA_div_dx(3, d);
+            aderivadj(1, d) = -dA_div_dx(1, d);
+            aderivadj(2, d) = -dA_div_dx(2, d);
+            aderivadj(3, d) = dA_div_dx(0, d);
+          }
+          H += term1 / deta * aderivadj.transpose() * dA_div_dx;
+        }
+      }
+      H *= dt * dt * vole;
+      make_pd(H);
+
       // rotate and project
-      for (int vi = 0; vi != 4; ++vi) {
+      for (int vi = 0; vi != 3; ++vi) {
         int offsetI = vi * 3;
-        for (int vj = 0; vj != 4; ++vj) {
+        for (int vj = 0; vj != 3; ++vj) {
           int offsetJ = vj * 3;
           mat3 tmp{};
           for (int i = 0; i != 3; ++i)
@@ -367,7 +407,7 @@ struct CodimStepping : INode {
               H(offsetI + i, offsetJ + j) = tmp(i, j);
         }
       }
-      etemp.tuple<12 * 12>("He", ei) = H;
+      etemp.tuple<9 * 9>("He", ei) = H;
     });
   }
 
@@ -429,12 +469,12 @@ struct CodimStepping : INode {
                            {"p", 3},
                            {"q", 3}},
                           verts.size()};
-    static dtiles_t etemp{eles.get_allocator(), {{"He", 12 * 12}}, eles.size()};
+    static dtiles_t etemp{eles.get_allocator(), {{"He", 9 * 9}}, eles.size()};
 
     vtemp.resize(verts.size());
     etemp.resize(eles.size());
 
-    FEMSystem A{verts, eles, vtemp, etemp, dt,  models};
+    FEMSystem A{verts, eles, vtemp, etemp, dt, models};
 
     constexpr auto space = execspace_e::cuda;
     auto cudaPol = cuda_exec();
@@ -515,11 +555,9 @@ struct CodimStepping : INode {
               [vtemp = proxy<space>({}, vtemp), etemp = proxy<space>({}, etemp),
                eles = proxy<space>({}, eles)] __device__(int ei) mutable {
                 constexpr int dim = 3;
-                constexpr auto dimp1 = dim + 1;
-                auto inds =
-                    eles.pack<dimp1>("inds", ei).reinterpret_bits<int>();
-                auto He = etemp.pack<dim * dimp1, dim * dimp1>("He", ei);
-                for (int vi = 0; vi != dimp1; ++vi) {
+                auto inds = eles.pack<3>("inds", ei).reinterpret_bits<int>();
+                auto He = etemp.pack<dim * 3, dim * 3>("He", ei);
+                for (int vi = 0; vi != 3; ++vi) {
                   for (int i = 0; i != dim; ++i)
                     for (int j = 0; j != dim; ++j) {
                       atomic_add(exec_cuda, &vtemp("P", i * dim + j, inds[vi]),
@@ -624,6 +662,7 @@ struct CodimStepping : INode {
       find_ground_intersection_free_stepsize(cudaPol, *zstets, vtemp, alpha);
 
       T E{E0};
+#if 0
       do {
         cudaPol(zs::range(vtemp.size()), [vtemp = proxy<space>({}, vtemp),
                                           alpha] __device__(int i) mutable {
@@ -641,6 +680,7 @@ struct CodimStepping : INode {
 
         alpha /= 2;
       } while (true);
+#endif
       cudaPol(zs::range(vtemp.size()), [vtemp = proxy<space>({}, vtemp),
                                         alpha] __device__(int i) mutable {
         vtemp.tuple<3>("xn", i) =
