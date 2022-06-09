@@ -571,4 +571,111 @@ ZENDEFNODE(ToZSTriMesh, {{{"surf (tri) mesh", "prim"}},
                          {},
                          {"FEM"}});
 
+struct ToZSSurfaceMesh : INode {
+  using T = float;
+  using dtiles_t = zs::TileVector<T, 32>;
+  using tiles_t = typename ZenoParticles::particles_t;
+  using vec3 = zs::vec<T, 3>;
+
+  void apply() override {
+    using namespace zs;
+    auto zsmodel = get_input<ZenoConstitutiveModel>("ZSModel");
+    auto prim = get_input<PrimitiveObject>("prim");
+    const auto &pos = prim->attr<zeno::vec3f>("pos");
+    const auto &points = prim->points;
+    const auto &lines = prim->lines;
+    const auto &tris = prim->tris;
+
+    auto ompExec = zs::omp_exec();
+    const auto numVerts = pos.size();
+    const auto numTris = tris.size();
+
+    auto zstris = std::make_shared<ZenoParticles>();
+    zstris->prim = prim;
+    zstris->getModel() = *zsmodel;
+    zstris->category = ZenoParticles::surface;
+    zstris->sprayedOffset = pos.size();
+
+    std::vector<zs::PropertyTag> tags{
+        {"m", 1},
+        {"x", 3},
+        {"x0", 3},
+        {"v", 3},
+        {"BCbasis", 9} /* normals for slip boundary*/,
+        {"BCorder", 1},
+        {"BCtarget", 3}};
+    std::vector<zs::PropertyTag> eleTags{{"vol", 1}, {"IB", 4}, {"inds", 3}};
+
+    constexpr auto space = zs::execspace_e::openmp;
+    zstris->particles =
+        std::make_shared<tiles_t>(tags, pos.size(), zs::memsrc_e::host);
+    auto &pars = zstris->getParticles();
+    ompExec(Collapse{pars.size()},
+            [pars = proxy<space>({}, pars), &pos, &prim](int vi) mutable {
+              using vec3 = zs::vec<float, 3>;
+              using mat3 = zs::vec<float, 3, 3>;
+              auto p = vec3{pos[vi][0], pos[vi][1], pos[vi][2]};
+              pars.tuple<3>("x", vi) = p;
+              pars.tuple<3>("x0", vi) = p;
+              pars.tuple<3>("v", vi) = vec3::zeros();
+              if (prim->has_attr("vel")) {
+                auto vel = prim->attr<zeno::vec3f>("vel")[vi];
+                pars.tuple<3>("v", vi) = vec3{vel[0], vel[1], vel[2]};
+              }
+              // default boundary handling setup
+              pars.tuple<9>("BCbasis", vi) = mat3::identity();
+              pars("BCorder", vi) = reinterpret_bits<float>(0);
+              pars.tuple<3>("BCtarget", vi) = vec3::zeros();
+              // computed later
+              pars("m", vi) = 0.f;
+            });
+
+    zstris->elements = typename ZenoParticles::particles_t(eleTags, tris.size(),
+                                                           zs::memsrc_e::host);
+    auto &eles = zstris->getQuadraturePoints();
+    ompExec(Collapse{tris.size()},
+            [&zsmodel, pars = proxy<space>({}, pars),
+             eles = proxy<space>({}, eles), &tris](int ei) mutable {
+              for (size_t i = 0; i < 3; ++i)
+                eles("inds", i, ei) = zs::reinterpret_bits<float>(tris[ei][i]);
+              using vec3 = zs::vec<float, 3>;
+              using mat2 = zs::vec<float, 2, 2>;
+              using vec4 = zs::vec<float, 4>;
+              auto tri = tris[ei];
+              vec3 xs[3];
+              for (int d = 0; d != 3; ++d) {
+                eles("inds", d, ei) = zs::reinterpret_bits<float>(tri[d]);
+                xs[d] = pars.pack<3>("x", tri[d]);
+              }
+
+              vec3 ds[2] = {xs[1] - xs[0], xs[2] - xs[0]};
+
+              // ref: codim-ipc
+              // for first fundamental form
+              mat2 B{};
+              B(0, 0) = ds[0].l2NormSqr();
+              B(1, 0) = B(0, 1) = ds[0].dot(ds[1]);
+              B(1, 1) = ds[1].l2NormSqr();
+              eles.template tuple<4>("IB", ei) = inverse(B);
+
+              auto vol = ds[0].cross(ds[1]).norm() / 2 * zsmodel->dx;
+              eles("vol", ei) = vol;
+              // vert masses
+              auto vmass = vol * zsmodel->density / 3;
+              for (int d = 0; d != 3; ++d)
+                atomic_add(zs::exec_omp, &pars("m", tri[d]), vmass);
+            });
+
+    pars = pars.clone({zs::memsrc_e::device, 0});
+    eles = eles.clone({zs::memsrc_e::device, 0});
+
+    set_output("ZSParticles", std::move(zstris));
+  }
+};
+
+ZENDEFNODE(ToZSSurfaceMesh, {{{"ZSModel"}, {"surf (tri) mesh", "prim"}},
+                             {{"trimesh on gpu", "ZSParticles"}},
+                             {},
+                             {"FEM"}});
+
 } // namespace zeno

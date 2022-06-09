@@ -3338,6 +3338,7 @@ bool GIPC::lineSearch(device_TetraData& TetMesh, double& alpha, const double& cf
     //buildCP();
     //if (h_cpNum[0] > 0) system("pause");
     int numOfIntersect = 0;
+#if 0
     while (isIntersected(TetMesh)) {
         //printf("type 0 intersection happened\n");
         alpha /= 2.0;
@@ -3346,6 +3347,7 @@ bool GIPC::lineSearch(device_TetraData& TetMesh, double& alpha, const double& cf
         stepForward(TetMesh.vertexes, TetMesh.temp_double3Mem, _moveDir, TetMesh.BoundaryType, alpha, false, vertexNum);
         buildBVH();
     }
+#endif
 
     buildCP();
     //if (h_cpNum[0] > 0) system("pause");
@@ -3376,6 +3378,7 @@ bool GIPC::lineSearch(device_TetraData& TetMesh, double& alpha, const double& cf
 
     if (alpha < LFStepSize) {
         bool needRecomputeCS = false;
+#if 0
         while (isIntersected(TetMesh)) {
             //printf("type 1 intersection happened\n");
             alpha /= 2.0;
@@ -3385,6 +3388,7 @@ bool GIPC::lineSearch(device_TetraData& TetMesh, double& alpha, const double& cf
             buildBVH();
             needRecomputeCS = true;
         }
+#endif
         if (needRecomputeCS) {
             buildCP();
         }
@@ -3520,7 +3524,7 @@ int GIPC::solve_subIP(device_TetraData& TetMesh) {
 
         bool isStop = lineSearch(TetMesh, alpha, alpha_CFL);
         cudaEventRecord(end3);
-        // postLineSearch(TetMesh, alpha);
+        postLineSearch(TetMesh, alpha);
         cudaEventRecord(end4);
         //BH.FREE_DEVICE_MEM();
         //if (h_cpNum[0] > 0) return;
