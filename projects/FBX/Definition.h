@@ -103,6 +103,9 @@ struct SAnimBone {
             data.timeStamp = timeStamp;
             m_Scales.push_back(data);
         }
+
+        //zeno::log_info("----- N {} NP {} NR {} NS {}",
+        //               m_Name, m_NumPositions, m_NumRotations, m_NumScalings);
     }
 
     void update(float animationTime) {
@@ -123,6 +126,7 @@ struct SAnimBone {
                 return index;
         }
         _getIndexWarn(animationTime);
+        return 0;
     }
     int getRotationIndex(float animationTime) {
         for (int index = 0; index < m_NumRotations - 1; ++index) {
@@ -130,6 +134,7 @@ struct SAnimBone {
                 return index;
         }
         _getIndexWarn(animationTime);
+        return 0;
     }
     int getScaleIndex(float animationTime) {
         for (int index = 0; index < m_NumScalings - 1; ++index) {
@@ -137,6 +142,7 @@ struct SAnimBone {
                 return index;
         }
         _getIndexWarn(animationTime);
+        return 0;
     }
 
     aiMatrix4x4 interpolatePosition(float animationTime) {
@@ -357,6 +363,8 @@ struct SCamera {
     float hFov;
     float focL;
     float aspect;
+    float filmW;
+    float filmH;
     float pNear;
     float pFar;
     zeno::vec3f interestPos;
@@ -365,6 +373,23 @@ struct SCamera {
     zeno::vec3f up;
     zeno::vec3f view;
     /*aiMatrix4x4 camM;*/
+};
+
+struct SLight{
+    std::string mName;
+    aiLightSourceType mType;
+    aiVector3D mPosition;
+    aiVector3D mDirection;
+    aiVector3D mUp;
+    float mAttenuationConstant;
+    float mAttenuationLinear;
+    float mAttenuationQuadratic;
+    aiColor3D mColorDiffuse;
+    aiColor3D mColorSpecular;
+    aiColor3D mColorAmbient;
+    float mAngleInnerCone;
+    float mAngleOuterCone;
+    aiVector2D mSize;
 };
 
 struct NodeTree : zeno::IObjectClone<NodeTree>{
@@ -393,6 +418,10 @@ struct IBoneOffset : zeno::IObjectClone<IBoneOffset>{
 
 struct ICamera : zeno::IObjectClone<ICamera>{
     std::unordered_map<std::string, SCamera> value;
+};
+
+struct ILight : zeno::IObjectClone<ILight>{
+    std::unordered_map<std::string, SLight> value;
 };
 
 struct IVertices : zeno::IObjectClone<IVertices>{
@@ -425,6 +454,7 @@ struct FBXData : zeno::IObjectClone<FBXData>{
     IMaterial iMaterial;
     IBoneOffset iBoneOffset;
     ICamera iCamera;
+    ILight iLight;
 };
 
 struct Helper{
