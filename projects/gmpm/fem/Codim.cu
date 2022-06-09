@@ -180,14 +180,14 @@ struct CodimStepping : INode {
       return res.getVal();
     }
     template <typename Pol> void project(Pol &pol, const zs::SmallString tag) {
-#if 0
+#if 1
       using namespace zs;
       constexpr execspace_e space = execspace_e::cuda;
       // projection
       pol(zs::range(verts.size()),
           [vtemp = proxy<space>({}, vtemp), verts = proxy<space>({}, verts),
            tag] ZS_LAMBDA(int vi) mutable {
-            if (verts("x", 1, vi) > 0.5)
+            if (verts("x", 1, vi) > 0.8)
               vtemp.tuple<3>(tag, vi) = vec3::zeros();
           });
 #endif
