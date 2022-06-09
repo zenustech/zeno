@@ -232,7 +232,7 @@ struct ZSComputeBaryCentricWeights : INode {
         cudaExec(zs::range(numEmbedVerts),
             [bcw = proxy<space>({},bcw),fitting_in] ZS_LAMBDA (int vi) mutable {
                 auto idx = reinterpret_bits<int>(bcw("inds",vi));
-                if(idx < 0 && fitting_in){
+                if(idx < 0 && !fitting_in){
                     printf("INVALID INTERPOLATED VERTS<%d> : %d\n",vi,idx);
                 }
         });
@@ -255,74 +255,90 @@ struct ZSComputeBaryCentricWeights : INode {
         if(e_dim !=3 && e_dim !=4){
             throw std::runtime_error("INVALID EMBEDDED PRIM TOPO");
         }
+
+        // cudaExec(zs::range(numEmbedEles),
+        //     [everts = proxy<space>({},everts),e_eles = proxy<space>({},e_eles),bcw = proxy<space>({},bcw),e_dim,execTag = wrapv<space>{},edgeCount = proxy<space>(edgeCount)]
+        //         ZS_LAMBDA (int ti) mutable {
+        //             using T = typename RM_CVREF_T(bcw)::value_type;
+        //             if(e_dim == 3){// for triangle mesh
+        //                 auto inds = e_eles.pack<3>("inds",ti).reinterpret_bits<int>(); 
+        //                 auto p0 = everts.pack<3>("x",inds[0]);
+        //                 auto p1 = everts.pack<3>("x",inds[1]);
+        //                 auto p2 = everts.pack<3>("x",inds[2]);
+
+        //                 auto A = ComputeArea(p0,p1,p2)/3;
+        //                 auto l01 = (p0 - p1).norm();
+        //                 auto l02 = (p0 - p2).norm();
+        //                 auto l12 = (p1 - p2).norm();
+
+        //                 if(l12 > zs::limits<T>::epsilon() * 10){
+        //                     atomic_add(execTag,&bcw("cnorm",inds[0]),(T)(2*A/l12));
+        //                     atomic_add(execTag,&edgeCount[inds[0]],(T)1.0);
+        //                 }
+        //                 if(l02 > zs::limits<T>::epsilon() * 10){
+        //                     atomic_add(execTag,&bcw("cnorm",inds[1]),(T)(2*A/l02));
+        //                     atomic_add(execTag,&edgeCount[inds[1]],(T)1.0);
+        //                 }
+        //                 if(l01 > zs::limits<T>::epsilon() * 10){
+        //                     atomic_add(execTag,&bcw("cnorm",inds[2]),(T)(2*A/l01));
+        //                     atomic_add(execTag,&edgeCount[inds[2]],(T)1.0);
+        //                 }
+
+        //                 // bcw("area",inds[0]) += aA;
+        //                 // bcw("area",inds[1]) += aA;
+        //                 // bcw("area",inds[2]) += aA;
+        //             }else if(e_dim == 4){// for tet mesh
+        //                 auto inds = e_eles.pack<4>("inds",ti).reinterpret_bits<int>();
+        //                 auto p0 = everts.pack<3>("x",inds[0]);
+        //                 auto p1 = everts.pack<3>("x",inds[1]);
+        //                 auto p2 = everts.pack<3>("x",inds[2]);
+        //                 auto p3 = everts.pack<3>("x",inds[3]);
+
+        //                 auto V = zs::abs(ComputeVolume(p0,p1,p2,p3));
+        //                 auto A012 = ComputeArea(p0,p1,p2);
+        //                 auto A023 = ComputeArea(p0,p2,p3);
+        //                 auto A013 = ComputeArea(p0,p1,p3);
+        //                 auto A123 = ComputeArea(p1,p2,p3); 
+
+        //                 if(A123 > limits<T>::epsilon()){
+        //                     atomic_add(execTag,&bcw("cnorm",inds[0]),(T)(3*V/A123));
+        //                     atomic_add(execTag,&edgeCount[inds[0]],(T)1.0);
+        //                 }
+        //                 if(A023 > limits<T>::epsilon()){
+        //                     atomic_add(execTag,&bcw("cnorm",inds[1]),(T)(3*V/A023));
+        //                     atomic_add(execTag,&edgeCount[inds[1]],(T)1.0);
+        //                 }
+        //                 if(A013 > limits<T>::epsilon()){
+        //                     atomic_add(execTag,&bcw("cnorm",inds[2]),(T)(3*V/A013));
+        //                     atomic_add(execTag,&edgeCount[inds[2]],(T)1.0);
+        //                 }
+        //                 if(A012 > limits<T>::epsilon()){
+        //                     atomic_add(execTag,&bcw("cnorm",inds[3]),(T)(3*V/A012));
+        //                     atomic_add(execTag,&edgeCount[inds[3]],(T)1.0);
+        //                 }
+        //             }
+        // });
+
         cudaExec(zs::range(numEmbedEles),
             [everts = proxy<space>({},everts),e_eles = proxy<space>({},e_eles),bcw = proxy<space>({},bcw),e_dim,execTag = wrapv<space>{},edgeCount = proxy<space>(edgeCount)]
                 ZS_LAMBDA (int ti) mutable {
                     using T = typename RM_CVREF_T(bcw)::value_type;
                     if(e_dim == 3){// for triangle mesh
                         auto inds = e_eles.pack<3>("inds",ti).reinterpret_bits<int>(); 
-                        auto p0 = everts.pack<3>("x",inds[0]);
-                        auto p1 = everts.pack<3>("x",inds[1]);
-                        auto p2 = everts.pack<3>("x",inds[2]);
-
-                        auto A = ComputeArea(p0,p1,p2)/3;
-                        auto l01 = (p0 - p1).norm();
-                        auto l02 = (p0 - p2).norm();
-                        auto l12 = (p1 - p2).norm();
-
-                        if(l12 > zs::limits<T>::epsilon() * 10){
-                            atomic_add(execTag,&bcw("cnorm",inds[0]),(T)(2*A/l12));
-                            atomic_add(execTag,&edgeCount[inds[0]],(T)1.0);
-                        }
-                        if(l02 > zs::limits<T>::epsilon() * 10){
-                            atomic_add(execTag,&bcw("cnorm",inds[1]),(T)(2*A/l02));
-                            atomic_add(execTag,&edgeCount[inds[1]],(T)1.0);
-                        }
-                        if(l01 > zs::limits<T>::epsilon() * 10){
-                            atomic_add(execTag,&bcw("cnorm",inds[2]),(T)(2*A/l01));
-                            atomic_add(execTag,&edgeCount[inds[2]],(T)1.0);
-                        }
-
-                        // bcw("area",inds[0]) += aA;
-                        // bcw("area",inds[1]) += aA;
-                        // bcw("area",inds[2]) += aA;
+                        atomic_add(execTag,&edgeCount[inds[0]],(T)1.0);
                     }else if(e_dim == 4){// for tet mesh
                         auto inds = e_eles.pack<4>("inds",ti).reinterpret_bits<int>();
-                        auto p0 = everts.pack<3>("x",inds[0]);
-                        auto p1 = everts.pack<3>("x",inds[1]);
-                        auto p2 = everts.pack<3>("x",inds[2]);
-                        auto p3 = everts.pack<3>("x",inds[3]);
-
-                        auto V = zs::abs(ComputeVolume(p0,p1,p2,p3));
-                        auto A012 = ComputeArea(p0,p1,p2);
-                        auto A023 = ComputeArea(p0,p2,p3);
-                        auto A013 = ComputeArea(p0,p1,p3);
-                        auto A123 = ComputeArea(p1,p2,p3); 
-
-                        if(A123 > limits<T>::epsilon()){
-                            atomic_add(execTag,&bcw("cnorm",inds[0]),(T)(3*V/A123));
-                            atomic_add(execTag,&edgeCount[inds[0]],(T)1.0);
-                        }
-                        if(A023 > limits<T>::epsilon()){
-                            atomic_add(execTag,&bcw("cnorm",inds[1]),(T)(3*V/A023));
-                            atomic_add(execTag,&edgeCount[inds[1]],(T)1.0);
-                        }
-                        if(A013 > limits<T>::epsilon()){
-                            atomic_add(execTag,&bcw("cnorm",inds[2]),(T)(3*V/A013));
-                            atomic_add(execTag,&edgeCount[inds[2]],(T)1.0);
-                        }
-                        if(A012 > limits<T>::epsilon()){
-                            atomic_add(execTag,&bcw("cnorm",inds[3]),(T)(3*V/A012));
-                            atomic_add(execTag,&edgeCount[inds[3]],(T)1.0);
-                        }
-                    }
+                        atomic_add(execTag,&edgeCount[inds[0]],(T)1.0);
+                    }                    
         });
 
         cudaExec(zs::range(numEmbedVerts),
             [bcw = proxy<space>({},bcw),edgeCount = proxy<space>(edgeCount)] 
                 ZS_LAMBDA(int vi) mutable{
                     if(edgeCount[vi] > 0)
-                        bcw("cnorm",vi) /= edgeCount[vi];
+                        bcw("cnorm",vi) = (T)1.0/edgeCount[vi];
+                    else
+                        bcw("cnorm",vi) = 0.0;
         });
 
 

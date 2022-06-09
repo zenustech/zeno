@@ -58,6 +58,7 @@ struct QuasiStaticStepping : INode {
       });
 // Bone Driven Potential Energy
       T lambda = model.lam;
+      T mu = model.mu;
       auto nmEmbedVerts = b_verts.size();
       if(b_bcws.size() != b_verts.size()){
           fmt::print("B_BCWS_SIZE = {}\t B_VERTS_SIZE = {}\n",b_bcws.size(),b_verts.size());
@@ -66,7 +67,7 @@ struct QuasiStaticStepping : INode {
       pol(range(nmEmbedVerts), [vtemp = proxy<space>({},vtemp),
                 eles = proxy<space>({},eles),
                 b_verts = proxy<space>({},b_verts),
-                bcws = proxy<space>({},b_bcws),lambda,tag,res = proxy<space>(res),bone_driven_weight = bone_driven_weight]
+                bcws = proxy<space>({},b_bcws),lambda,mu,tag,res = proxy<space>(res),bone_driven_weight = bone_driven_weight]
                 ZS_LAMBDA(int vi) mutable {
                     auto ei = reinterpret_bits<int>(bcws("inds",vi));
                     if(ei < 0)
@@ -79,7 +80,12 @@ struct QuasiStaticStepping : INode {
                         tpos += w[i] * vtemp.pack<3>(tag,inds[i]);
 
                     auto pdiff = tpos - b_verts.pack<3>("x",vi);
-                    T bpsi = (0.5 * bcws("cnorm",vi) * lambda * bone_driven_weight) * pdiff.dot(pdiff);
+
+                    T stiffness = 2.0066 * mu + 1.0122 * lambda;
+                    T bpsi = (0.5 * bcws("cnorm",vi) * stiffness * bone_driven_weight * eles("vol",ei)) * pdiff.dot(pdiff);
+
+                    // bpsi = (0.5 * bcws("cnorm",vi) * lambda * bone_driven_weight) * pdiff.dot(pdiff);
+// the cnorm here should be the allocated volume of point in embeded tet 
                     atomic_add(exec_cuda, &res[0], (T)bpsi);
       });
 
@@ -147,6 +153,7 @@ struct QuasiStaticStepping : INode {
         });
 
         T lambda = model.lam;
+        T mu = model.mu;
         if(b_bcws.size() != b_verts.size()){
             fmt::print("B_BCWS_SIZE = {}\t B_VERTS_SIZE = {}\n",b_bcws.size(),b_verts.size());
             throw std::runtime_error("B_BCWS SIZE AND B_VERTS SIZE NOT MATCH");
@@ -155,7 +162,7 @@ struct QuasiStaticStepping : INode {
         auto nmEmbedVerts = b_verts.size();
         cudaPol(zs::range(nmEmbedVerts),
             [bcws = proxy<space>({},b_bcws),b_verts = proxy<space>({},b_verts),vtemp = proxy<space>({},vtemp),etemp = proxy<space>({},etemp),
-                eles = proxy<space>({},eles),lambda,tag,bone_driven_weight = bone_driven_weight] ZS_LAMBDA(int vi) mutable {
+                eles = proxy<space>({},eles),lambda,mu,tag,bone_driven_weight = bone_driven_weight] ZS_LAMBDA(int vi) mutable {
                     auto ei = reinterpret_bits<int>(bcws("inds",vi));
                     if(ei < 0)
                         return;
@@ -164,15 +171,18 @@ struct QuasiStaticStepping : INode {
                     auto tpos = vec3::zeros();
                     for(size_t i = 0;i != 4;++i)
                         tpos += w[i] * vtemp.pack<3>(tag,inds[i]);
+                    T stiffness = 2.0066 * mu + 1.0122 * lambda;
                     auto pdiff = tpos - b_verts.pack<3>("x",vi);
                     for(size_t i = 0;i != 4;++i){
-                        auto tmp = pdiff * (-lambda * bcws("cnorm",vi) * bone_driven_weight * w[i]);
+                        auto tmp = pdiff * (-stiffness * bcws("cnorm",vi) * bone_driven_weight * w[i] * eles("vol",ei)); 
+                        // tmp = pdiff * (-lambda * bcws("cnorm",vi) * bone_driven_weight * w[i]);
                         for(size_t d = 0;d != 3;++d)
                             atomic_add(exec_cuda,&vtemp("grad",d,inds[i]),tmp[d]);
                     }
                     for(int i = 0;i != 4;++i)
                         for(int j = 0;j != 4;++j){
-                            auto alpha = lambda * bone_driven_weight * w[i] * w[j] * bcws("cnorm",vi);
+                            auto alpha = stiffness * bone_driven_weight * w[i] * w[j] * bcws("cnorm",vi) * eles("vol",ei);
+                            // alpha = lambda * bone_driven_weight * w[i] * w[j] * bcws("cnorm",vi);
                             for(int d = 0;d != 3;++d){
                                 // etemp("He",(i * 3 + d) * 12 + j * 3 + d,ei) += alpha;
                                 if(isnan(alpha)){
@@ -358,11 +368,11 @@ struct QuasiStaticStepping : INode {
         A.computeGradientAndHessian(cudaPol, elasticModel,"xn",vtemp,etemp);
       })(models.getElasticModel());
 
-    //   T Hn = dot<144>(cudaPol,etemp,"He","He");
-    //   fmt::print("Hn:{}\n",Hn);
+    //  T Hn = dot<144>(cudaPol,etemp,"He","He");
+    //  fmt::print("Hn:{}\n",Hn);
 
-    //   fmt::print("prepare Preconditioner \n",newtonIter);
-  //  Prepare Preconditioning
+    //  fmt::print("prepare Preconditioner \n",newtonIter);
+    //  Prepare Preconditioning
       cudaPol(zs::range(vtemp.size()),
           [vtemp = proxy<space>({}, vtemp),
             verts = proxy<space>({}, verts)] ZS_LAMBDA (int vi) mutable {
