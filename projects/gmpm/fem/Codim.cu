@@ -81,9 +81,9 @@ struct CodimStepping : INode {
       using namespace zs;
       constexpr auto space = execspace_e::cuda;
       pol(range(vtemp.size()),
-          [vtemp = proxy<space>({}, vtemp), tempPB = proxy<space>({}, tempPB),
-           gTag, gn = s_groundNormal, dHat2 = dHat * dHat,
-           kappa = kappa] ZS_LAMBDA(int vi) mutable {
+          [verts = proxy<space>({}, verts), vtemp = proxy<space>({}, vtemp),
+           tempPB = proxy<space>({}, tempPB), gTag, gn = s_groundNormal,
+           dHat2 = dHat * dHat, kappa = kappa] ZS_LAMBDA(int vi) mutable {
             auto x = vtemp.pack<3>("xn", vi);
             auto dist = gn.dot(x);
             auto dist2 = dist * dist;
@@ -102,6 +102,25 @@ struct CodimStepping : INode {
             if (dist2 < dHat2 && param > 0) {
               auto nn = dyadic_prod(gn, gn);
               hess = (kappa * param) * nn;
+            }
+            // hessian rotation: trans^T hess * trans
+            // left trans^T: multiplied on rows
+            // right trans: multiplied on cols
+            {
+              auto tmp = hess;
+              auto BCbasis = verts.pack<3, 3>("BCbasis", vi);
+              int BCorder = reinterpret_bits<int>(verts("BCorder", vi));
+              // rotate
+              tmp = BCbasis.transpose() * tmp * BCbasis;
+              // project
+              if (BCorder > 0) {
+                for (int i = 0; i != BCorder; ++i)
+                  for (int j = 0; j != BCorder; ++j)
+                    tmp(i, j) = (i == j ? 1 : 0);
+              }
+              for (int i = 0; i != 3; ++i)
+                for (int j = 0; j != 3; ++j)
+                  hess(i, j) = tmp(i, j);
             }
             tempPB.tuple<9>("H", vi) = hess;
             for (int i = 0; i != 3; ++i)
@@ -230,7 +249,14 @@ struct CodimStepping : INode {
         auto m = verts("m", vi);
         auto dx = vtemp.template pack<3>(dxTag, vi);
         auto BCbasis = verts.template pack<3, 3>("BCbasis", vi);
-        dx = BCbasis.transpose() * m * BCbasis * dx;
+        auto BCorder = reinterpret_bits<int>(verts("BCorder", vi));
+        // dx = BCbasis.transpose() * m * BCbasis * dx;
+        auto M = mat3::identity() * m;
+        M = BCbasis.transpose() * M * BCbasis;
+        for (int i = 0; i != BCorder; ++i)
+          for (int j = 0; j != BCorder; ++j)
+            M(i, j) = (i == j ? 1 : 0);
+        dx = M * dx;
         for (int d = 0; d != 3; ++d)
           atomic_add(execTag, &vtemp(bTag, d, vi), dx(d));
       });
