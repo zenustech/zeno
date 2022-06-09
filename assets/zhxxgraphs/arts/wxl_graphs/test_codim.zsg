@@ -18,8 +18,8 @@
      },
      "params": {},
      "uipos": [
-      695.4390453590005,
-      12.630650279370542
+      579.8612970793027,
+      450.8629458398914
      ],
      "options": [
       "ONCE"
@@ -43,8 +43,8 @@
       "op": "all"
      },
      "uipos": [
-      1911.9729580573937,
-      610.4649390243899
+      1796.3952097776955,
+      995.7240999567157
      ],
      "options": [
       "ONCE"
@@ -106,8 +106,8 @@
      },
      "params": {},
      "uipos": [
-      1072.2571575674365,
-      192.05266044796213
+      956.6794092877385,
+      577.3118213802879
      ],
      "options": [
       "ONCE"
@@ -128,8 +128,8 @@
       "z": 0.0
      },
      "uipos": [
-      742.0088131965754,
-      361.7215346201474
+      626.4310649168774,
+      746.9806955524732
      ],
      "options": [
       "ONCE"
@@ -191,8 +191,8 @@
      },
      "params": {},
      "uipos": [
-      2166.0734889439636,
-      199.87871706829097
+      2050.495740664265,
+      585.1378780006169
      ],
      "options": [
       "ONCE"
@@ -219,8 +219,8 @@
      },
      "params": {},
      "uipos": [
-      2524.4717487246276,
-      595.3903752464934
+      2408.8940004449296,
+      980.6495361788193
      ],
      "options": [
       "ONCE"
@@ -242,8 +242,8 @@
      },
      "params": {},
      "uipos": [
-      3124.7580820166577,
-      640.0238761385422
+      2785.7300203962113,
+      -127.41237243865112
      ],
      "options": [
       "VIEW"
@@ -305,8 +305,8 @@
      },
      "params": {},
      "uipos": [
-      1076.9537601626012,
-      584.7383130081298
+      961.3760118829032,
+      969.9974739404556
      ],
      "options": [
       "ONCE"
@@ -327,8 +327,8 @@
       "z": 0.0
      },
      "uipos": [
-      738.4781504065038,
-      674.31656504065
+      622.9004021268061,
+      1059.5757259729755
      ],
      "options": [
       "ONCE"
@@ -360,12 +360,11 @@
      },
      "params": {},
      "uipos": [
-      2189.2428861788603,
-      620.1511686991865
+      2073.665137899162,
+      1005.4103296315125
      ],
      "options": [
-      "ONCE",
-      "VIEW"
+      "ONCE"
      ]
     },
     "c26d0d5b-PrimMerge": {
@@ -389,8 +388,8 @@
      },
      "params": {},
      "uipos": [
-      1654.408028455283,
-      606.3579776422761
+      1538.830280175585,
+      991.617138574602
      ],
      "options": [
       "ONCE"
@@ -424,8 +423,8 @@
       "_KEYS": "obj0\nobj1\nobj2"
      },
      "uipos": [
-      1377.3818597560971,
-      540.4916158536582
+      1261.8041114763992,
+      925.750776785984
      ],
      "options": [
       "ONCE"
@@ -440,7 +439,7 @@
      "name": "CodimStepping",
      "inputs": {
       "ZSParticles": [
-       "1862be08-ToZSTetrahedra",
+       "e0305336-ToZSSurfaceMesh",
        "ZSParticles",
        null
       ],
@@ -462,17 +461,291 @@
      },
      "params": {},
      "uipos": [
-      2815.3905447070897,
-      604.3165467625896
+      2476.362483086643,
+      -163.11970181460367
+     ],
+     "options": []
+    },
+    "e0305336-ToZSSurfaceMesh": {
+     "name": "ToZSSurfaceMesh",
+     "inputs": {
+      "ZSModel": [
+       "52560824-ConfigConstitutiveModel",
+       "ZSModel",
+       null
+      ],
+      "prim": [
+       "ef1abe04-TransformPrimitive",
+       "outPrim",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      2164.9469034561253,
+      -152.47632967715225
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "2bb0b722-ReadObjPrim": {
+     "name": "ReadObjPrim",
+     "inputs": {
+      "path": [
+       null,
+       null,
+       "assets/mattress2d-tri.obj"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "triangulate": true
+     },
+     "uipos": [
+      1476.041882243377,
+      -82.56997620033108
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "52560824-ConfigConstitutiveModel": {
+     "name": "ConfigConstitutiveModel",
+     "inputs": {
+      "dx": [
+       null,
+       null,
+       0.1
+      ],
+      "ppc": [
+       null,
+       null,
+       8.0
+      ],
+      "density": [
+       null,
+       null,
+       1000.0
+      ],
+      "type": [
+       null,
+       null,
+       "fcr"
+      ],
+      "aniso": [
+       null,
+       null,
+       "none"
+      ],
+      "plasticity": [
+       null,
+       null,
+       "none"
+      ],
+      "E": [
+       null,
+       null,
+       10000.0
+      ],
+      "nu": [
+       null,
+       null,
+       0.4
+      ],
+      "params": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1502.276490066224,
+      -479.7185430463573
+     ],
+     "options": []
+    },
+    "ef1abe04-TransformPrimitive": {
+     "name": "TransformPrimitive",
+     "inputs": {
+      "prim": [
+       "2bb0b722-ReadObjPrim",
+       "prim",
+       null
+      ],
+      "translation": [
+       "46fdbf32-NumericVec3",
+       "vec3",
+       null
+      ],
+      "offset": [
+       null,
+       null,
+       null
+      ],
+      "eulerXYZ": [
+       "00b7506e-NumericVec3",
+       "vec3",
+       null
+      ],
+      "quatRotation": [
+       null,
+       null,
+       null
+      ],
+      "scaling": [
+       null,
+       null,
+       null
+      ],
+      "Matrix": [
+       null,
+       null,
+       null
+      ],
+      "preTransform": [
+       null,
+       null,
+       null
+      ],
+      "local": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1837.7678109478468,
+      -104.95421150662241
+     ],
+     "options": [
+      "ONCE",
+      "VIEW"
+     ]
+    },
+    "46fdbf32-NumericVec3": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": -0.5,
+      "y": 0.1,
+      "z": -0.2
+     },
+     "uipos": [
+      1425.4623473716877,
+      103.8495964403973
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "00b7506e-NumericVec3": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": 0.5,
+      "y": 0.0,
+      "z": 0.0
+     },
+     "uipos": [
+      1556.9799006379985,
+      333.4636865072689
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "b808bed0-UpdatePrimitiveFromZSParticles": {
+     "name": "UpdatePrimitiveFromZSParticles",
+     "inputs": {
+      "ZSParticles": [
+       "399bd2fa-CodimStepping",
+       "ZSParticles",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      3045.668512290958,
+      960.9680906503102
+     ],
+     "options": []
+    },
+    "399bd2fa-CodimStepping": {
+     "name": "CodimStepping",
+     "inputs": {
+      "ZSParticles": [
+       null,
+       null,
+       null
+      ],
+      "ZSBoundaryPrimitives": [
+       null,
+       null,
+       null
+      ],
+      "dt": [
+       null,
+       null,
+       0.01
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      2736.3009749813896,
+      925.2607612743576
      ],
      "options": []
     }
    },
    "view_rect": {
-    "x": 359.5800778834134,
-    "y": -354.3912005211221,
-    "width": 2929.687499999998,
-    "height": 1489.257812499999
+    "x": -35.79734175609542,
+    "y": -547.7794924249893,
+    "width": 3662.1093749999977,
+    "height": 1861.5722656249989
    }
   }
  },
@@ -16603,6 +16876,41 @@
    "params": [],
    "categories": [
     "Mesh"
+   ]
+  },
+  "ToZSSurfaceMesh": {
+   "inputs": [
+    [
+     "",
+     "ZSModel",
+     ""
+    ],
+    [
+     "surf (tri) mesh",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "trimesh on gpu",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
    ]
   },
   "ToZSTetrahedra": {
