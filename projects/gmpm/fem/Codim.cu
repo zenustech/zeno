@@ -353,6 +353,26 @@ struct CodimStepping : INode {
         BCbasis[i] = verts.pack<3, 3>("BCbasis", inds[i]);
         BCorder[i] = reinterpret_bits<int>(verts("BCorder", inds[i]));
       }
+      using mat9 = zs::vec<T, 9, 9>;
+      mat9 ahess[4];
+      for (int i = 0; i != 4; ++i)
+        ahess[i] = mat9::zeros();
+      for (int i = 0; i != 3; ++i) {
+        ahess[3](i, i) = ahess[0](i, i) = 2;
+        ahess[3](6 + i, 6 + i) = ahess[0](3 + i, 3 + i) = 2;
+        ahess[3](i, 6 + i) = ahess[0](i, 3 + i) = -2;
+        ahess[3](6 + i, i) = ahess[0](3 + i, i) = -2;
+      }
+      for (int i = 0; i != 3; ++i) {
+        ahess[2](3 + i, 6 + i) = ahess[1](3 + i, 6 + i) = 1;
+        ahess[2](6 + i, 3 + i) = ahess[1](6 + i, 3 + i) = 1;
+        ahess[2](i, 3 + i) = ahess[1](i, 3 + i) = -1;
+        ahess[2](i, 6 + i) = ahess[1](i, 6 + i) = -1;
+        ahess[2](3 + i, i) = ahess[1](3 + i, i) = -1;
+        ahess[2](6 + i, i) = ahess[1](6 + i, i) = -1;
+        ahess[2](i, i) = ahess[1](i, i) = 2;
+      }
+
       zs::vec<T, 9, 9> H;
       zs::vec<T, 9> ainvda;
       for (int i_ = 0; i_ < 3; ++i_) {
@@ -374,6 +394,12 @@ struct CodimStepping : INode {
             aderivadj(3, d) = dA_div_dx(0, d);
           }
           H += term1 / deta * aderivadj.transpose() * dA_div_dx;
+
+          for (int i = 0; i < 2; ++i)
+            for (int j = 0; j < 2; ++j) {
+              H += (term1 * IA(i, j) + model.mu / 2 * IB(i, j)) *
+                   ahess[i + j * 2];
+            }
         }
       }
       H *= dt * dt * vole;
