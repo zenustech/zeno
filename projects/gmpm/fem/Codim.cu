@@ -34,7 +34,7 @@ struct CodimStepping : INode {
 
   inline static T kappaMax = 1e8;
   inline static T kappaMin = 1e3;
-  inline static T kappa = 1e5;
+  inline static T kappa = 1e4;
   inline static T xi = 0; // 1e-2; // 2e-3;
   inline static T dHat = 0.001;
 
@@ -318,7 +318,7 @@ struct CodimStepping : INode {
 
       auto IA = inverse(A);
       auto lnJ = zs::log(determinant(A) * determinant(IB)) / 2;
-      temp = dt * dt * vole *
+      temp = -dt * dt * vole *
              (model.mu / 2 * IB + (-model.mu + model.lam * lnJ) / 2 * IA);
       for (int d = 0; d != 3; ++d) {
         dA_div_dx(0, d) = -2 * x1x0[d];
@@ -362,7 +362,7 @@ struct CodimStepping : INode {
                       dA_div_dx(2, i) * IA(0, 1) + dA_div_dx(3, i) * IA(1, 1);
 
           const T deta = determinant(A);
-          const T lnJ = std::log(deta * determinant(IB)) / 2;
+          const T lnJ = zs::log(deta * determinant(IB)) / 2;
           const T term1 = (-model.mu + model.lam * lnJ) / 2;
           H = (-term1 + model.lam / 4) * dyadic_prod(ainvda, ainvda);
 
@@ -523,10 +523,12 @@ struct CodimStepping : INode {
                     m * vec3{0, -9, 0} * dt * dt -
                     m * (vtemp.pack<3>("xn", i) - vtemp.pack<3>("xtilde", i));
               });
+#if 1
       match([&](auto &elasticModel) {
         computeElasticGradientAndHessian(cudaPol, elasticModel, verts, eles,
                                          vtemp, etemp, dt);
       })(models.getElasticModel());
+#endif
       A.computeBoundaryBarrierGradientAndHessian(cudaPol);
 
       // rotate gradient and project
@@ -662,7 +664,7 @@ struct CodimStepping : INode {
       find_ground_intersection_free_stepsize(cudaPol, *zstets, vtemp, alpha);
 
       T E{E0};
-#if 0
+#if 1
       do {
         cudaPol(zs::range(vtemp.size()), [vtemp = proxy<space>({}, vtemp),
                                           alpha] __device__(int i) mutable {
