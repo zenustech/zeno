@@ -16,7 +16,7 @@ static QString nameMangling(const QString& prefix, const QString& ident) {
         return prefix + "/" + ident;
 }
 
-static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgIdx, RAPIDJSON_WRITER& writer, QString const &graphIdPrefix)
+static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgIdx, QString const &graphIdPrefix, bool bView, RAPIDJSON_WRITER& writer)
 {
     ZASSERT_EXIT(pGraphsModel && subgIdx.isValid());
 
@@ -30,7 +30,8 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
         //zeno::log_critical("got node {} {}", name.toStdString(), ident.toStdString());
         const QString& subgName = idx.data(ROLE_OBJNAME).toString();
         const QString& prefix = nameMangling(graphIdPrefix, idx.data(ROLE_OBJID).toString());
-        serializeGraph(pGraphsModel, pGraphsModel->index(subgName), writer, prefix);
+        bool _bView = bView && (idx.data(ROLE_OPTIONS).toInt() & OPT_VIEW);
+        serializeGraph(pGraphsModel, pGraphsModel->index(subgName), prefix, _bView, writer);
     }
 
     //scan all the nodes in the subgraph.
@@ -151,42 +152,39 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
 
         AddStringList({ "completeNode", ident }, writer);
 
-		if (opts & OPT_VIEW) {
-            //todo: subg?
-            for (OUTPUT_SOCKET output : outputs)
+		if (bView && (opts & OPT_VIEW))
+        {
+            if (name == "SubOutput")
             {
-                //if (output.info.name == "DST") continue;//qmap wants to put DST/SRC as first socket, skip it
                 auto viewerIdent = ident + ":TOVIEW";
                 AddStringList({"addNode", "ToView", viewerIdent}, writer);
-                AddStringList({"bindNodeInput", viewerIdent, "object", ident, output.info.name}, writer);
+                AddStringList({"bindNodeInput", viewerIdent, "object", ident, "_OUT_port"}, writer);
                 bool isStatic = opts & OPT_ONCE;
                 AddVariantList({"setNodeInput", viewerIdent, "isStatic", isStatic}, "int", writer);
                 AddStringList({"completeNode", viewerIdent}, writer);
-                break;  //??? should we view all outputs?
+            }
+            else
+            {
+                for (OUTPUT_SOCKET output : outputs)
+                {
+                    if (output.info.name == "DST")
+                        continue;
+                    auto viewerIdent = ident + ":TOVIEW";
+                    AddStringList({"addNode", "ToView", viewerIdent}, writer);
+                    AddStringList({"bindNodeInput", viewerIdent, "object", ident, output.info.name}, writer);
+                    bool isStatic = opts & OPT_ONCE;
+                    AddVariantList({"setNodeInput", viewerIdent, "isStatic", isStatic}, "int", writer);
+                    AddStringList({"completeNode", viewerIdent}, writer);
+                    break;  //current node is not a subgraph node, so only one output is needed to view this obj.
+                }
             }
         }
-
-		/*if (opts & OPT_MUTE) {
-            auto inputIt = inputs.begin();
-            for (OUTPUT_SOCKET output : outputs)
-            {
-                if (inputIt == inputs.end()) break;
-                INPUT_SOCKET input = *++inputIt;
-                input.info.name
-            }
-        }*/
-
-        // mock options at editor side, done
-		/*for (QString optionName : options)
-		{
-			ret.push_back(QJsonArray({"setNodeOption", ident, optionName}));
-		}*/
 	}
 }
 
 void serializeScene(IGraphsModel* pModel, RAPIDJSON_WRITER& writer)
 {
-    serializeGraph(pModel, pModel->index("main"), writer, "");
+    serializeGraph(pModel, pModel->index("main"), "", true, writer);
 }
 
 
