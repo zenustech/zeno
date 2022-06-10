@@ -57,8 +57,6 @@ if (WIN32)
     add_definitions(-DNOMINMAX -D_USE_MATH_DEFINES)
 endif()
 
-add_definitions( -DZENO2 )
-
 if (ZENO_NO_WARNING)
     set(ZENO_OLD_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
     if (CMAKE_CXX_COMPILER_ID MATCHES "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
