@@ -56,7 +56,9 @@ struct ExtractMatTexList : zeno::INode {
         auto lo = std::make_shared<zeno::ListObject>();
         auto tl = mat->value.at(key).getTexList();
         for(auto&p: tl){
-            lo->arr.emplace_back(p);
+            auto s = std::make_shared<zeno::StringObject>();
+            s->value = p;
+            lo->arr.emplace_back(s);
         }
 
         //for(auto&l: lo->arr){
@@ -94,11 +96,15 @@ struct ExtractCameraData : zeno::INode {
         auto up = std::make_shared<zeno::NumericObject>();
         auto view = std::make_shared<zeno::NumericObject>();
         auto focL = std::make_shared<zeno::NumericObject>();
+        auto filmW = std::make_shared<zeno::NumericObject>();
+        auto filmH = std::make_shared<zeno::NumericObject>();
 
         pos->set<zeno::vec3f>(cam.pos);
         up->set<zeno::vec3f>(cam.up);
         view->set<zeno::vec3f>(cam.view);
         focL->set<float>(cam.focL);
+        filmW->set<float>(cam.filmW);
+        filmH->set<float>(cam.filmH);
 
         auto _pos = pos->get<zeno::vec3f>();
         auto _up = up->get<zeno::vec3f>();
@@ -106,13 +112,16 @@ struct ExtractCameraData : zeno::INode {
         zeno::log_info(">>>>> P {: f} {: f} {: f}", _pos[0], _pos[1], _pos[2]);
         zeno::log_info(">>>>> U {: f} {: f} {: f}", _up[0], _up[1], _up[2]);
         zeno::log_info(">>>>> V {: f} {: f} {: f}", _view[0], _view[1], _view[2]);
-        zeno::log_info(">>>>> FL {: f}", focL->get<float>());
+        zeno::log_info(">>>>> FL {: f} FW {: f} FH {: f}",
+                       focL->get<float>(), filmW->get<float>(), filmH->get<float>());
         zeno::log_info("-------------------------");
 
         set_output("pos", std::move(pos));
         set_output("up", std::move(up));
         set_output("view", std::move(view));
         set_output("focL", std::move(focL));
+        set_output("filmW", std::move(filmW));
+        set_output("filmH", std::move(filmH));
     }
 };
 ZENDEFNODE(ExtractCameraData,
@@ -121,7 +130,7 @@ ZENDEFNODE(ExtractCameraData,
                    "key", "camobject"
                },  /* outputs: */
                {
-                   "pos", "up", "view", "focL"
+                   "pos", "up", "view", "focL", "filmW", "filmH"
                },  /* params: */
                {
 

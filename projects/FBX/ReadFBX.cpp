@@ -20,11 +20,23 @@
 #include <glm/mat4x4.hpp>
 
 #include <stb_image.h>
-#define STBI_MSC_SECURE_CRT
-#define STB_IMAGE_WRITE_IMPLEMENTATION
+#ifndef ZENO2
+    #define STBI_MSC_SECURE_CRT
+    #define STB_IMAGE_WRITE_IMPLEMENTATION
+#endif
 #include <stb_image_write.h>
 
 #include "Definition.h"
+
+void readFBXFile(
+    std::shared_ptr<zeno::PrimitiveObject>& prim,
+    std::shared_ptr<zeno::DictObject>& prims,
+    std::shared_ptr<zeno::DictObject>& datas,
+    std::shared_ptr<NodeTree>& nodeTree,
+    std::shared_ptr<FBXData>& fbxData,
+    std::shared_ptr<BoneTree>& boneTree,
+    std::shared_ptr<AnimInfo>& animInfo,
+    const char *fbx_path);
 
 struct Mesh{
     FBXData fbxData;
@@ -53,7 +65,46 @@ struct Mesh{
         createTexDir("valueTex");
         readTrans(scene->mRootNode, aiMatrix4x4());
         processNode(scene->mRootNode, scene);
+        // TODO read Animation of Camera property and Light property,
+        // e.g. FocalLength LightIntensity
         processCamera(scene);
+        readLights(scene);
+    }
+
+    void readLights(const aiScene *scene){
+        zeno::log_info("Num Light {}", scene->mNumLights);
+
+        for(unsigned int i=0; i<scene->mNumLights; i++){
+            aiLight* l = scene->mLights[i];
+            std::string lightName = l->mName.data;
+            // TODO support to import light
+            // Except the CD is valid property we read.
+            // aiLight -> Model: 1019948832, "Model::aiAreaLight1", "Null"
+            // mayaLight -> Model: 911159248, "Model::ambientLight1", "Light"
+            // So we can't import aiLight
+            // In maya, export `aiAreaLight1` to .fbx -> import the .fbx
+            // `aiAreaLight1` -> Changed to a transform-node
+            zeno::log_info("Light N {} T {} P {} {} {} S {} {}\nD {} {} {} U {} {} {}"
+                           " AC {} AL {} AQ {} CD {} {} {} CS {} {} {} CA {} {} {}"
+                           " AI {} AO {}",
+                           lightName, l->mType, l->mPosition.x, l->mPosition.y, l->mPosition.z,
+                           l->mSize.x, l->mSize.y,
+                           l->mDirection.x, l->mDirection.y, l->mDirection.z, l->mUp.x, l->mUp.y, l->mUp.z,
+                           l->mAttenuationConstant, l->mAttenuationLinear, l->mAttenuationQuadratic,
+                           l->mColorDiffuse.r, l->mColorDiffuse.g, l->mColorDiffuse.b,
+                           l->mColorSpecular.r, l->mColorSpecular.g, l->mColorSpecular.b,
+                           l->mColorAmbient.r, l->mColorAmbient.g, l->mColorAmbient.b,
+                           l->mAngleInnerCone, l->mAngleOuterCone
+                           );
+            SLight sLig{
+                lightName, l->mType, l->mPosition, l->mDirection, l->mUp,
+                l->mAttenuationConstant, l->mAttenuationLinear, l->mAttenuationQuadratic,
+                l->mColorDiffuse, l->mColorSpecular, l->mColorAmbient,
+                l->mAngleInnerCone, l->mAngleOuterCone, l->mSize
+            };
+
+            fbxData.iLight.value[lightName] = sLig;
+        }
     }
 
     void readTrans(const aiNode * parentNode, aiMatrix4x4 parentTransform){
@@ -90,7 +141,10 @@ struct Mesh{
             if (mesh->mTextureCoords[0]){
                 aiVector3D uvw(fmodf(mesh->mTextureCoords[0][j].x, 1.0f),
                                fmodf(mesh->mTextureCoords[0][j].y, 1.0f), 0.0f);
-                //zeno::log_info(">>>>> {} {} ", uvw.x, uvw.y);
+                // Same vert but diff uv
+                // U 0.980281 0.0276042 V -0.5 -1 -0.866026
+                // U 0.0325739 0.0276042 V -0.5 -1 -0.866026
+                //zeno::log_info(">>>>> U {} {} V {} {} {}", uvw.x, uvw.y, vec.x, vec.y, vec.z);
                 vertexInfo.texCoord = uvw;
             }
             if (mesh->mNormals) {
@@ -104,6 +158,15 @@ struct Mesh{
             if(mesh->mBitangents){
                 aiVector3D bitangent(mesh->mBitangents[j].x, mesh->mBitangents[j].y, mesh->mBitangents[j].z);
                 vertexInfo.bitangent = bitangent;
+            }
+
+            // TODO Support more color channel
+            if(mesh->HasVertexColors(0)){
+                aiColor4D cls(mesh->mColors[0][j].r, mesh->mColors[0][j].g,
+                              mesh->mColors[0][j].b, mesh->mColors[0][j].a);
+                vertexInfo.vectexColor = cls;
+            }else{
+                vertexInfo.vectexColor = aiColor4D(0, 0, 0, 0);
             }
 
             fbxData.iVertices.value.push_back(vertexInfo);
@@ -152,8 +215,11 @@ struct Mesh{
         for(unsigned int j = 0; j < mesh->mNumFaces; j++)
         {
             aiFace face = mesh->mFaces[j];
-            for(unsigned int j = 0; j < face.mNumIndices; j++)
+            //zeno::log_info("-----");
+            for(unsigned int j = 0; j < face.mNumIndices; j++) {
                 fbxData.iIndices.value.push_back(face.mIndices[j] + m_VerticesIncrease);
+                //zeno::log_info(" {}", face.mIndices[j] + m_VerticesIncrease);
+            }
         }
 
         // Material
@@ -195,20 +261,36 @@ struct Mesh{
             aiMatrix4x4 camMatrix;
             cam->GetCameraMatrix(camMatrix);
 
+#if USE_OFFICIAL_ASSIMP
+            SCamera sCam{cam->mHorizontalFOV,
+                         35.0f,
+                         cam->mAspect,
+                         1.417f * 25.4f,  // inch to mm
+                         0.945f * 25.4f,
+                         cam->mClipPlaneNear,
+                         cam->mClipPlaneFar,
+                         zeno::vec3f(0, 0, 0),
+            };
+#else
             SCamera sCam{cam->mHorizontalFOV,
                          cam->mFocalLength,
                          cam->mAspect,
+                         cam->mFilmWidth * 25.4f,  // inch to mm
+                         cam->mFilmHeight * 25.4f,
                          cam->mClipPlaneNear,
                          cam->mClipPlaneFar,
                          zeno::vec3f(cam->mInterestPosition.x, cam->mInterestPosition.y, cam->mInterestPosition.z),
-                         // TODO The following data that is all default, we use Cam-Anim TRS instead of them
-                         /*zeno::vec3f(cam->mLookAt.x, cam->mLookAt.y, cam->mLookAt.z),*/
-                         /*zeno::vec3f(cam->mPosition.x, cam->mPosition.y, cam->mPosition.z),*/
-                         /*zeno::vec3f(cam->mUp.x, cam->mUp.y, cam->mUp.z),*/
-                         /*camMatrix*/
+                // TODO The following data that is all default, we use Cam-Anim TRS instead of them
+                /*zeno::vec3f(cam->mLookAt.x, cam->mLookAt.y, cam->mLookAt.z),*/
+                /*zeno::vec3f(cam->mPosition.x, cam->mPosition.y, cam->mPosition.z),*/
+                /*zeno::vec3f(cam->mUp.x, cam->mUp.y, cam->mUp.z),*/
+                /*camMatrix*/
             };
-            zeno::log_info(">>>>> {} {} {} {} {} {}\n {} {} {}",
+#endif
+
+            zeno::log_info(">>>>> {} {} {} {} {} {} - {} {}\n {} {} {}",
                            camName, sCam.hFov, sCam.focL, sCam.aspect, sCam.pNear, sCam.pFar,
+                           sCam.filmW, sCam.filmH,
                            /*sCam.lookAt[0], sCam.lookAt[1], sCam.lookAt[2],  // default is 1,0,0*/
                            /*sCam.pos[0], sCam.pos[1], sCam.pos[2], // default is 0,0,0*/
                            /*sCam.up[0], sCam.up[1], sCam.up[2],  // default is 0,1,0*/
@@ -450,14 +532,18 @@ struct Mesh{
         auto &ind = prim->tris;
         auto &uv = prim->verts.add_attr<zeno::vec3f>("uv");
         auto &norm = prim->verts.add_attr<zeno::vec3f>("nrm");
+        auto &clr0 = prim->verts.add_attr<zeno::vec3f>("clr0");
 
         for(unsigned int i=0; i<fbxData.iVertices.value.size(); i++){
             auto& vpos = fbxData.iVertices.value[i].position;
             auto& vnor = fbxData.iVertices.value[i].normal;
             auto& vuv = fbxData.iVertices.value[i].texCoord;
+            auto& vc = fbxData.iVertices.value[i].vectexColor;
+
             ver.emplace_back(vpos.x, vpos.y, vpos.z);
             uv.emplace_back(vuv.x, vuv.y, vuv.z);
             norm.emplace_back(vnor.x, vnor.y, vnor.z);
+            clr0.emplace_back(vc.r, vc.g, vc.b);
         }
 
         for(unsigned int i=0; i<fbxData.iIndices.value.size(); i+=3){
@@ -482,24 +568,26 @@ struct Anim{
         readHierarchyData(m_RootNode, scene->mRootNode);
         //zeno::log_info("----- Anim: Convert AssimpNode.");
 
-        Helper::printNodeTree(&m_RootNode, 0);
+        //Helper::printNodeTree(&m_RootNode, 0);
 
         if(scene->mNumAnimations){
             // TODO handle more animation if have
-            auto animation = scene->mAnimations[0];
-            duration = animation->mDuration;
-            tick = animation->mTicksPerSecond;
-            zeno::log_info("AniName: {} NC {} NMC {} NMMC {} D {} T {}",
-                           animation->mName.data,
-                           animation->mNumChannels,
-                           animation->mNumMeshChannels,
-                           animation->mNumMorphMeshChannels,
-                           animation->mDuration,
-                           animation->mTicksPerSecond
-                           );
+            for(unsigned int i=0; i<scene->mNumAnimations; i++){
+                auto animation = scene->mAnimations[i];
+                duration = animation->mDuration;
+                tick = animation->mTicksPerSecond;
+                zeno::log_info("AniName: {} NC {} NMC {} NMMC {} D {} T {}",
+                               animation->mName.data,
+                               animation->mNumChannels,
+                               animation->mNumMeshChannels,
+                               animation->mNumMorphMeshChannels,
+                               animation->mDuration,
+                               animation->mTicksPerSecond
+                               );
 
-            setupBones(animation);
-            setupBlendShape(animation);
+                setupBones(animation);
+                setupBlendShape(animation);
+            }
         }
     }
 
@@ -582,9 +670,10 @@ void readFBXFile(
 {
     Assimp::Importer importer;
     importer.SetPropertyInteger(AI_CONFIG_PP_PTV_NORMALIZE, true);
+
     aiScene const* scene = importer.ReadFile(fbx_path,
                                              aiProcess_Triangulate
-//                                             | aiProcess_FlipUVs
+                                             //| aiProcess_FlipUVs
                                              | aiProcess_CalcTangentSpace
                                              | aiProcess_JoinIdenticalVertices
                                              );
