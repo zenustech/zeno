@@ -1157,6 +1157,7 @@ static void addLightMesh(float3 corner, float3 v2, float3 v1, float3 normal, flo
     g_lightMesh.push_back(make_float4(vert2.x, vert2.y, vert2.z, emission));
     g_lightMesh.push_back(make_float4(vert1.x, vert1.y, vert1.z, emission));
 }
+
 void optixupdatelight() {
     camera_changed = true;
     
