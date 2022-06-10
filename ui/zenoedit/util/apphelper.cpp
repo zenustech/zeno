@@ -37,7 +37,7 @@ QString AppHelper::correctSubIOName(IGraphsModel* pModel, const QString& subgNam
 
 QModelIndex AppHelper::getSubInOutNode(IGraphsModel* pModel, const QModelIndex& subgIdx, const QString& subName, bool bInput)
 {
-    auto& indices = pModel->searchInSubgraph(bInput ? "SubInput" : "SubOutput", subgIdx);
+    const QList<QModelIndex>& indices = pModel->searchInSubgraph(bInput ? "SubInput" : "SubOutput", subgIdx);
     for (const QModelIndex &idx_ : indices)
     {
         const QString &subInputId = idx_.data(ROLE_OBJID).toString();
