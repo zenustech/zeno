@@ -20,9 +20,23 @@
 #include <glm/mat4x4.hpp>
 
 #include <stb_image.h>
+#ifndef ZENO2
+    #define STBI_MSC_SECURE_CRT
+    #define STB_IMAGE_WRITE_IMPLEMENTATION
+#endif
 #include <stb_image_write.h>
 
 #include "Definition.h"
+
+void readFBXFile(
+    std::shared_ptr<zeno::PrimitiveObject>& prim,
+    std::shared_ptr<zeno::DictObject>& prims,
+    std::shared_ptr<zeno::DictObject>& datas,
+    std::shared_ptr<NodeTree>& nodeTree,
+    std::shared_ptr<FBXData>& fbxData,
+    std::shared_ptr<BoneTree>& boneTree,
+    std::shared_ptr<AnimInfo>& animInfo,
+    const char *fbx_path);
 
 struct Mesh{
     FBXData fbxData;
@@ -144,6 +158,15 @@ struct Mesh{
             if(mesh->mBitangents){
                 aiVector3D bitangent(mesh->mBitangents[j].x, mesh->mBitangents[j].y, mesh->mBitangents[j].z);
                 vertexInfo.bitangent = bitangent;
+            }
+
+            // TODO Support more color channel
+            if(mesh->HasVertexColors(0)){
+                aiColor4D cls(mesh->mColors[0][j].r, mesh->mColors[0][j].g,
+                              mesh->mColors[0][j].b, mesh->mColors[0][j].a);
+                vertexInfo.vectexColor = cls;
+            }else{
+                vertexInfo.vectexColor = aiColor4D(0, 0, 0, 0);
             }
 
             fbxData.iVertices.value.push_back(vertexInfo);
@@ -509,14 +532,18 @@ struct Mesh{
         auto &ind = prim->tris;
         auto &uv = prim->verts.add_attr<zeno::vec3f>("uv");
         auto &norm = prim->verts.add_attr<zeno::vec3f>("nrm");
+        auto &clr0 = prim->verts.add_attr<zeno::vec3f>("clr0");
 
         for(unsigned int i=0; i<fbxData.iVertices.value.size(); i++){
             auto& vpos = fbxData.iVertices.value[i].position;
             auto& vnor = fbxData.iVertices.value[i].normal;
             auto& vuv = fbxData.iVertices.value[i].texCoord;
+            auto& vc = fbxData.iVertices.value[i].vectexColor;
+
             ver.emplace_back(vpos.x, vpos.y, vpos.z);
             uv.emplace_back(vuv.x, vuv.y, vuv.z);
             norm.emplace_back(vnor.x, vnor.y, vnor.z);
+            clr0.emplace_back(vc.r, vc.g, vc.b);
         }
 
         for(unsigned int i=0; i<fbxData.iIndices.value.size(); i+=3){
@@ -643,6 +670,7 @@ void readFBXFile(
 {
     Assimp::Importer importer;
     importer.SetPropertyInteger(AI_CONFIG_PP_PTV_NORMALIZE, true);
+
     aiScene const* scene = importer.ReadFile(fbx_path,
                                              aiProcess_Triangulate
                                              //| aiProcess_FlipUVs
