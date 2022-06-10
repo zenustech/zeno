@@ -220,6 +220,7 @@ struct SVertex{
     aiVector3D normal;
     aiVector3D tangent;
     aiVector3D bitangent;
+    aiColor4D vectexColor;
     std::unordered_map<std::string, float> boneWeights;
     float numAnimMesh;
 };
