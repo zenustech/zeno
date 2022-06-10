@@ -106,7 +106,7 @@ struct CodimStepping : INode {
             // hessian rotation: trans^T hess * trans
             // left trans^T: multiplied on rows
             // right trans: multiplied on cols
-            make_pd(hess);
+            // make_pd(hess);
             {
               auto tmp = hess;
               auto BCbasis = verts.pack<3, 3>("BCbasis", vi);
@@ -433,8 +433,8 @@ struct CodimStepping : INode {
             }
         }
       }
-      H *= dt * dt * vole;
       make_pd(H);
+      H *= dt * dt * vole;
 
       // rotate and project
       for (int vi = 0; vi != 3; ++vi) {
@@ -472,32 +472,29 @@ struct CodimStepping : INode {
         const zs::SmallString tag0, const zs::SmallString tag1) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
-    Vector<T> res{vertData.get_allocator(), vertData.size()},
-        ret{vertData.get_allocator(), 1};
+    Vector<T> ret{vertData.get_allocator(), 1};
+    ret.setVal(0);
     cudaPol(range(vertData.size()),
-            [data = proxy<space>({}, vertData), res = proxy<space>(res), tag0,
+            [data = proxy<space>({}, vertData), ret = proxy<space>(ret), tag0,
              tag1] __device__(int pi) mutable {
               auto v0 = data.pack<3>(tag0, pi);
               auto v1 = data.pack<3>(tag1, pi);
-              res[pi] = v0.dot(v1);
+              atomic_add(exec_cuda, &ret[0], v0.dot(v1));
             });
-    zs::reduce(cudaPol, std::begin(res), std::end(res), std::begin(ret), (T)0);
     return ret.getVal();
   }
   T infNorm(zs::CudaExecutionPolicy &cudaPol, dtiles_t &vertData,
             const zs::SmallString tag = "dir") {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
-    Vector<T> res{vertData.get_allocator(), vertData.size()},
-        ret{vertData.get_allocator(), 1};
+    Vector<T> ret{vertData.get_allocator(), 1};
+    ret.setVal(0);
     cudaPol(range(vertData.size()),
-            [data = proxy<space>({}, vertData), res = proxy<space>(res),
+            [data = proxy<space>({}, vertData), ret = proxy<space>(ret),
              tag] __device__(int pi) mutable {
               auto v = data.pack<3>(tag, pi);
-              res[pi] = v.abs().max();
+              atomic_max(exec_cuda, &ret[0], v.abs().max());
             });
-    zs::reduce(cudaPol, std::begin(res), std::end(res), std::begin(ret), (T)0,
-               getmax<T>{});
     return ret.getVal();
   }
 
