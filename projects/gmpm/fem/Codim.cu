@@ -472,6 +472,7 @@ struct CodimStepping : INode {
         const zs::SmallString tag0, const zs::SmallString tag1) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
+#if 0
     Vector<T> ret{vertData.get_allocator(), 1};
     ret.setVal(0);
     cudaPol(range(vertData.size()),
@@ -481,7 +482,31 @@ struct CodimStepping : INode {
               auto v1 = data.pack<3>(tag1, pi);
               atomic_add(exec_cuda, &ret[0], v0.dot(v1));
             });
-    return ret.getVal();
+#else
+    Vector<double> res{vertData.get_allocator(), vertData.size()};
+    cudaPol(range(vertData.size()),
+            [data = proxy<space>({}, vertData), res = proxy<space>(res), tag0,
+             tag1] __device__(int pi) mutable {
+              auto v0 = data.pack<3>(tag0, pi);
+              auto v1 = data.pack<3>(tag1, pi);
+              res[pi] = v0.dot(v1);
+              // atomic_add(exec_cuda, &ret[0], v0.dot(v1));
+            });
+    Vector<double> ret{vertData.get_allocator(), 1};
+    auto sid = cudaPol.getStreamid();
+    auto procid = cudaPol.getProcid();
+    auto &context = Cuda::context(procid);
+    auto stream = (cudaStream_t)context.streamSpare(sid);
+    std::size_t temp_bytes = 0;
+    cub::DeviceReduce::Reduce(nullptr, temp_bytes, res.data(), ret.data(),
+                              vertData.size(), std::plus<double>{}, 0., stream);
+    Vector<std::max_align_t> temp{vertData.get_allocator(),
+                                  temp_bytes / sizeof(std::max_align_t) + 1};
+    cub::DeviceReduce::Reduce(temp.data(), temp_bytes, res.data(), ret.data(),
+                              vertData.size(), std::plus<double>{}, 0., stream);
+    context.syncStreamSpare(sid);
+#endif
+    return (T)ret.getVal();
   }
   T infNorm(zs::CudaExecutionPolicy &cudaPol, dtiles_t &vertData,
             const zs::SmallString tag = "dir") {
@@ -651,7 +676,7 @@ struct CodimStepping : INode {
                 });
         T zTrk = dot(cudaPol, vtemp, "r", "q");
         auto residualPreconditionedNorm = std::sqrt(zTrk);
-        auto localTol = std::min(0.01 * residualPreconditionedNorm, 1e-7);
+        auto localTol = 0.5 * residualPreconditionedNorm;
         int iter = 0;
         for (; iter != 10000; ++iter) {
           if (iter % 10 == 0)
@@ -694,7 +719,7 @@ struct CodimStepping : INode {
               });
       // check "dir" inf norm
       T res = infNorm(cudaPol, vtemp, "dir");
-      if (res < 1e-7) {
+      if (res < 1e-3) {
         fmt::print("\t# newton optimizer ends in {} iters with residual {}\n",
                    newtonIter, res);
         break;
