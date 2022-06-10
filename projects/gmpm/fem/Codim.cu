@@ -81,9 +81,9 @@ struct CodimStepping : INode {
       using namespace zs;
       constexpr auto space = execspace_e::cuda;
       pol(range(vtemp.size()),
-          [vtemp = proxy<space>({}, vtemp), tempPB = proxy<space>({}, tempPB),
-           gTag, gn = s_groundNormal, dHat2 = dHat * dHat,
-           kappa = kappa] ZS_LAMBDA(int vi) mutable {
+          [verts = proxy<space>({}, verts), vtemp = proxy<space>({}, vtemp),
+           tempPB = proxy<space>({}, tempPB), gTag, gn = s_groundNormal,
+           dHat2 = dHat * dHat, kappa = kappa] ZS_LAMBDA(int vi) mutable {
             auto x = vtemp.pack<3>("xn", vi);
             auto dist = gn.dot(x);
             auto dist2 = dist * dist;
@@ -102,6 +102,26 @@ struct CodimStepping : INode {
             if (dist2 < dHat2 && param > 0) {
               auto nn = dyadic_prod(gn, gn);
               hess = (kappa * param) * nn;
+            }
+            // hessian rotation: trans^T hess * trans
+            // left trans^T: multiplied on rows
+            // right trans: multiplied on cols
+            // make_pd(hess);
+            {
+              auto tmp = hess;
+              auto BCbasis = verts.pack<3, 3>("BCbasis", vi);
+              int BCorder = reinterpret_bits<int>(verts("BCorder", vi));
+              // rotate
+              tmp = BCbasis.transpose() * tmp * BCbasis;
+              // project
+              if (BCorder > 0) {
+                for (int i = 0; i != BCorder; ++i)
+                  for (int j = 0; j != BCorder; ++j)
+                    tmp(i, j) = (i == j ? 1 : 0);
+              }
+              for (int i = 0; i != 3; ++i)
+                for (int j = 0; j != 3; ++j)
+                  hess(i, j) = tmp(i, j);
             }
             tempPB.tuple<9>("H", vi) = hess;
             for (int i = 0; i != 3; ++i)
@@ -188,8 +208,12 @@ struct CodimStepping : INode {
       pol(zs::range(verts.size()),
           [vtemp = proxy<space>({}, vtemp), verts = proxy<space>({}, verts),
            tag] ZS_LAMBDA(int vi) mutable {
-            if (verts("x", 1, vi) > 0.8)
-              vtemp.tuple<3>(tag, vi) = vec3::zeros();
+            auto BCbasis = verts.template pack<3, 3>("BCbasis", vi);
+            auto BCorder = reinterpret_bits<int>(verts("BCorder", vi));
+            for (int d = 0; d != BCorder; ++d)
+              vtemp(tag, d, vi) = 0;
+            // if (verts("x", 1, vi) > 0.8)
+            //  vtemp.tuple<3>(tag, vi) = vec3::zeros();
           });
 #endif
     }
@@ -230,7 +254,14 @@ struct CodimStepping : INode {
         auto m = verts("m", vi);
         auto dx = vtemp.template pack<3>(dxTag, vi);
         auto BCbasis = verts.template pack<3, 3>("BCbasis", vi);
-        dx = BCbasis.transpose() * m * BCbasis * dx;
+        auto BCorder = reinterpret_bits<int>(verts("BCorder", vi));
+        // dx = BCbasis.transpose() * m * BCbasis * dx;
+        auto M = mat3::identity() * m;
+        M = BCbasis.transpose() * M * BCbasis;
+        for (int i = 0; i != BCorder; ++i)
+          for (int j = 0; j != BCorder; ++j)
+            M(i, j) = (i == j ? 1 : 0);
+        dx = M * dx;
         for (int d = 0; d != 3; ++d)
           atomic_add(execTag, &vtemp(bTag, d, vi), dx(d));
       });
@@ -353,6 +384,26 @@ struct CodimStepping : INode {
         BCbasis[i] = verts.pack<3, 3>("BCbasis", inds[i]);
         BCorder[i] = reinterpret_bits<int>(verts("BCorder", inds[i]));
       }
+      using mat9 = zs::vec<T, 9, 9>;
+      mat9 ahess[4];
+      for (int i = 0; i != 4; ++i)
+        ahess[i] = mat9::zeros();
+      for (int i = 0; i != 3; ++i) {
+        ahess[3](i, i) = ahess[0](i, i) = 2;
+        ahess[3](6 + i, 6 + i) = ahess[0](3 + i, 3 + i) = 2;
+        ahess[3](i, 6 + i) = ahess[0](i, 3 + i) = -2;
+        ahess[3](6 + i, i) = ahess[0](3 + i, i) = -2;
+      }
+      for (int i = 0; i != 3; ++i) {
+        ahess[2](3 + i, 6 + i) = ahess[1](3 + i, 6 + i) = 1;
+        ahess[2](6 + i, 3 + i) = ahess[1](6 + i, 3 + i) = 1;
+        ahess[2](i, 3 + i) = ahess[1](i, 3 + i) = -1;
+        ahess[2](i, 6 + i) = ahess[1](i, 6 + i) = -1;
+        ahess[2](3 + i, i) = ahess[1](3 + i, i) = -1;
+        ahess[2](6 + i, i) = ahess[1](6 + i, i) = -1;
+        ahess[2](i, i) = ahess[1](i, i) = 2;
+      }
+
       zs::vec<T, 9, 9> H;
       zs::vec<T, 9> ainvda;
       for (int i_ = 0; i_ < 3; ++i_) {
@@ -374,10 +425,16 @@ struct CodimStepping : INode {
             aderivadj(3, d) = dA_div_dx(0, d);
           }
           H += term1 / deta * aderivadj.transpose() * dA_div_dx;
+
+          for (int i = 0; i < 2; ++i)
+            for (int j = 0; j < 2; ++j) {
+              H += (term1 * IA(i, j) + model.mu / 2 * IB(i, j)) *
+                   ahess[i + j * 2];
+            }
         }
       }
-      H *= dt * dt * vole;
       make_pd(H);
+      H *= dt * dt * vole;
 
       // rotate and project
       for (int vi = 0; vi != 3; ++vi) {
@@ -415,32 +472,29 @@ struct CodimStepping : INode {
         const zs::SmallString tag0, const zs::SmallString tag1) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
-    Vector<T> res{vertData.get_allocator(), vertData.size()},
-        ret{vertData.get_allocator(), 1};
+    Vector<T> ret{vertData.get_allocator(), 1};
+    ret.setVal(0);
     cudaPol(range(vertData.size()),
-            [data = proxy<space>({}, vertData), res = proxy<space>(res), tag0,
+            [data = proxy<space>({}, vertData), ret = proxy<space>(ret), tag0,
              tag1] __device__(int pi) mutable {
               auto v0 = data.pack<3>(tag0, pi);
               auto v1 = data.pack<3>(tag1, pi);
-              res[pi] = v0.dot(v1);
+              atomic_add(exec_cuda, &ret[0], v0.dot(v1));
             });
-    zs::reduce(cudaPol, std::begin(res), std::end(res), std::begin(ret), (T)0);
     return ret.getVal();
   }
   T infNorm(zs::CudaExecutionPolicy &cudaPol, dtiles_t &vertData,
             const zs::SmallString tag = "dir") {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
-    Vector<T> res{vertData.get_allocator(), vertData.size()},
-        ret{vertData.get_allocator(), 1};
+    Vector<T> ret{vertData.get_allocator(), 1};
+    ret.setVal(0);
     cudaPol(range(vertData.size()),
-            [data = proxy<space>({}, vertData), res = proxy<space>(res),
+            [data = proxy<space>({}, vertData), ret = proxy<space>(ret),
              tag] __device__(int pi) mutable {
               auto v = data.pack<3>(tag, pi);
-              res[pi] = v.abs().max();
+              atomic_max(exec_cuda, &ret[0], v.abs().max());
             });
-    zs::reduce(cudaPol, std::begin(res), std::end(res), std::begin(ret), (T)0,
-               getmax<T>{});
     return ret.getVal();
   }
 

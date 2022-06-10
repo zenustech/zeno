@@ -2,6 +2,7 @@
 #define __DEVICE_FEM_MESHES_CUH__
 
 //#include <cuda_runtime.h>
+#include "../Structures.hpp"
 #include "gpu_eigen_libs.cuh"
 #include "zensim/container/TileVector.hpp"
 #include <cstdint>
@@ -15,6 +16,8 @@ public:
 	tiles_t verts, eles;
 	dtiles_t vtemp, etemp;
 	std::size_t numVerts, numEles;
+
+  	zeno::ZenoConstitutiveModel model{};
 
 	double3* vertexes;
 	double3* o_vertexes;

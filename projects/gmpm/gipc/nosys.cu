@@ -23,6 +23,7 @@
 
 namespace zeno {
 
+/// ref: kemeng huang, gpu ipc
 struct ZSTets : IObject {
   tetrahedra_obj tetMesh;
   device_TetraData d_tetMesh;
@@ -138,12 +139,14 @@ constexpr auto density = 1e3;
 struct ZSGIPC : INode {
   void apply() override {
     auto zstets = get_input<ZSTets>("ZSTets");
+    auto zsmodel = get_input<ZenoConstitutiveModel>("ZSModel");
     auto &tetMesh = zstets->tetMesh;
     auto &d_tetMesh = zstets->d_tetMesh;
 
     // init
     if (!zstets->initYet) {
       zstets->initYet = true;
+      d_tetMesh.model = *zsmodel;
 // tetMesh = tetrahedra_obj{};
 #if 0
       tetMesh.load_tetrahedraVtk("tets/sphere1K.vtk", 0.5,
@@ -270,7 +273,8 @@ struct ZSGIPC : INode {
   }
 };
 ZENDEFNODE(ZSGIPC,
-           {{"ZSTets", {"float", "dt", "0.01"}}, {"ZSTets"}, {}, {"IPC"}});
+           {{"ZSTets", "ZSModel", {"float", "dt", "0.01"}}, 
+           {"ZSTets"}, {}, {"IPC"}});
 
 struct ZSTetsToPrim : INode {
   void apply() override {
