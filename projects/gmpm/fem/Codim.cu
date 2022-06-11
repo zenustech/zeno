@@ -38,6 +38,7 @@ struct CodimStepping : INode {
   inline static T kappa = 1e4;
   inline static T xi = 0; // 1e-2; // 2e-3;
   inline static T dHat = 0.001;
+  inline static vec3 extForce;
 
   /// ref: codim-ipc
   static void
@@ -132,237 +133,35 @@ struct CodimStepping : INode {
           });
       return;
     }
-    template <typename Pol, typename Model>
-    T energy(Pol &pol, const Model &model, const zs::SmallString tag) {
+    template <typename Model>
+    void
+    computeElasticGradientAndHessian(zs::CudaExecutionPolicy &cudaPol,
+                                     const Model &model,
+                                     const zs::SmallString &gTag = "grad") {
       using namespace zs;
       constexpr auto space = execspace_e::cuda;
-      Vector<T> res{verts.get_allocator(), 1};
-      res.setVal(0);
-      pol(range(vtemp.size()), [verts = proxy<space>({}, verts),
-                                vtemp = proxy<space>({}, vtemp),
-                                res = proxy<space>(res), tag,
-                                dt = this->dt] __device__(int vi) mutable {
-        // inertia
-        auto m = verts("m", vi);
-        auto x = vtemp.pack<3>(tag, vi);
-        atomic_add(exec_cuda, &res[0],
-                   (T)0.5 * m * (x - vtemp.pack<3>("xtilde", vi)).l2NormSqr());
-        // gravity
-        atomic_add(exec_cuda, &res[0],
-                   -m * vec3{0, -9, 0}.dot(x - verts.pack<3>("x", vi)) * dt *
-                       dt);
-      });
-      // elasticity
-      pol(range(eles.size()), [verts = proxy<space>({}, verts),
-                               eles = proxy<space>({}, eles),
-                               vtemp = proxy<space>({}, vtemp),
-                               res = proxy<space>(res), tag, model = model,
-                               dt = this->dt] __device__(int ei) mutable {
-        auto IB = eles.template pack<2, 2>("IB", ei);
-        auto inds =
-            eles.template pack<3>("inds", ei).template reinterpret_bits<int>();
-        auto vole = eles("vol", ei);
-        vec3 xs[3] = {vtemp.template pack<3>(tag, inds[0]),
-                      vtemp.template pack<3>(tag, inds[1]),
-                      vtemp.template pack<3>(tag, inds[2])};
-        mat2 A{};
-        T E;
-        auto x1x0 = xs[1] - xs[0];
-        auto x2x0 = xs[2] - xs[0];
-#if 0
-        {
-          A(0, 0) = x1x0.l2NormSqr();
-          A(1, 0) = A(0, 1) = x1x0.dot(x2x0);
-          A(1, 1) = x2x0.l2NormSqr();
+      cudaPol(zs::range(eles.size()),
+              [vtemp = proxy<space>({}, vtemp), etemp = proxy<space>({}, etemp),
+               verts = proxy<space>({}, verts), eles = proxy<space>({}, eles),
+               model, gTag, dt = this->dt] __device__(int ei) mutable {
+                auto IB = eles.template pack<2, 2>("IB", ei);
+                auto inds = eles.template pack<3>("inds", ei)
+                                .template reinterpret_bits<int>();
+                auto vole = eles("vol", ei);
+                vec3 xs[3] = {vtemp.template pack<3>("xn", inds[0]),
+                              vtemp.template pack<3>("xn", inds[1]),
+                              vtemp.template pack<3>("xn", inds[2])};
+                auto x1x0 = xs[1] - xs[0];
+                auto x2x0 = xs[2] - xs[0];
 
-          auto IA = inverse(A);
-          auto lnJ = zs::log(determinant(A) * determinant(IB)) / 2;
-          E = dt * dt * vole *
-              (model.mu / 2 * (trace(IB * A) - 2 - 2 * lnJ) +
-               model.lam / 2 * lnJ * lnJ);
-        }
-#else
-        zs::vec<T, 3, 2> Ds{x1x0[0], x2x0[0], x1x0[1], x2x0[1], x1x0[2], x2x0[2]};
-        auto F = Ds * IB;
-        auto f0 = col(F, 0);
-        auto f1 = col(F, 1);
-        auto f0Norm = zs::sqrt(f0.l2NormSqr());
-        auto f1Norm = zs::sqrt(f1.l2NormSqr());
-        auto Estretch = dt * dt * model.mu *vole * (zs::sqr(f0Norm - 1) + zs::sqr(f1Norm - 1));
-        auto Eshear = dt * dt * model.mu *vole * zs::sqr(f0.dot(f1));
-        E = Estretch + Eshear;
-#endif
-        atomic_add(exec_cuda, &res[0], E);
-      });
-      // contacts
-      {
-        // boundary
-        pol(range(verts.size()),
-            [vtemp = proxy<space>({}, vtemp), res = proxy<space>(res),
-             gn = s_groundNormal, dHat2 = dHat * dHat,
-             kappa = kappa] ZS_LAMBDA(int vi) mutable {
-              auto x = vtemp.pack<3>("xn", vi);
-              auto dist = gn.dot(x);
-              auto dist2 = dist * dist;
-              if (dist2 < dHat2) {
-                auto temp = -(dist2 - dHat2) * (dist2 - dHat2) *
-                            zs::log(dist2 / dHat2) * kappa;
-                atomic_add(exec_cuda, &res[0], temp);
-              }
-            });
-      }
-      return res.getVal();
-    }
-    template <typename Pol> void project(Pol &pol, const zs::SmallString tag) {
-#if 1
-      using namespace zs;
-      constexpr execspace_e space = execspace_e::cuda;
-      // projection
-      pol(zs::range(verts.size()),
-          [vtemp = proxy<space>({}, vtemp), verts = proxy<space>({}, verts),
-           tag] ZS_LAMBDA(int vi) mutable {
-            auto BCbasis = verts.template pack<3, 3>("BCbasis", vi);
-            auto BCorder = reinterpret_bits<int>(verts("BCorder", vi));
-            for (int d = 0; d != BCorder; ++d)
-              vtemp(tag, d, vi) = 0;
-            // if (verts("x", 1, vi) > 0.8)
-            //  vtemp.tuple<3>(tag, vi) = vec3::zeros();
-          });
-#endif
-    }
-    template <typename Pol>
-    void precondition(Pol &pol, const zs::SmallString srcTag,
-                      const zs::SmallString dstTag) {
-      using namespace zs;
-      constexpr execspace_e space = execspace_e::cuda;
-      // precondition
-      pol(zs::range(verts.size()),
-          [vtemp = proxy<space>({}, vtemp), verts = proxy<space>({}, verts),
-           srcTag, dstTag] ZS_LAMBDA(int vi) mutable {
-            vtemp.template tuple<3>(dstTag, vi) =
-                vtemp.template pack<3, 3>("P", vi) *
-                vtemp.template pack<3>(srcTag, vi);
-          });
-    }
-    template <typename Pol>
-    void multiply(Pol &pol, const zs::SmallString dxTag,
-                  const zs::SmallString bTag) {
-      using namespace zs;
-      constexpr execspace_e space = execspace_e::cuda;
-      constexpr auto execTag = wrapv<space>{};
-      const auto numVerts = verts.size();
-      const auto numEles = eles.size();
-      // hessian rotation: trans^T hess * trans
-      // left trans^T: multiplied on rows
-      // right trans: multiplied on cols
-      // dx -> b
-      pol(range(numVerts), [execTag, vtemp = proxy<space>({}, vtemp),
-                            bTag] ZS_LAMBDA(int vi) mutable {
-        vtemp.template tuple<3>(bTag, vi) = vec3::zeros();
-      });
-      // inertial
-      pol(range(numVerts), [execTag, verts = proxy<space>({}, verts),
-                            vtemp = proxy<space>({}, vtemp), dxTag,
-                            bTag] ZS_LAMBDA(int vi) mutable {
-        auto m = verts("m", vi);
-        auto dx = vtemp.template pack<3>(dxTag, vi);
-        auto BCbasis = verts.template pack<3, 3>("BCbasis", vi);
-        auto BCorder = reinterpret_bits<int>(verts("BCorder", vi));
-        // dx = BCbasis.transpose() * m * BCbasis * dx;
-        auto M = mat3::identity() * m;
-        M = BCbasis.transpose() * M * BCbasis;
-        for (int i = 0; i != BCorder; ++i)
-          for (int j = 0; j != BCorder; ++j)
-            M(i, j) = (i == j ? 1 : 0);
-        dx = M * dx;
-        for (int d = 0; d != 3; ++d)
-          atomic_add(execTag, &vtemp(bTag, d, vi), dx(d));
-      });
-      // elasticity
-      pol(range(numEles), [execTag, etemp = proxy<space>({}, etemp),
-                           vtemp = proxy<space>({}, vtemp),
-                           eles = proxy<space>({}, eles), dxTag,
-                           bTag] ZS_LAMBDA(int ei) mutable {
-        constexpr int dim = 3;
-        auto inds =
-            eles.template pack<3>("inds", ei).template reinterpret_bits<int>();
-        zs::vec<T, 3 * dim> temp{};
-        for (int vi = 0; vi != 3; ++vi)
-          for (int d = 0; d != dim; ++d) {
-            temp[vi * dim + d] = vtemp(dxTag, d, inds[vi]);
-          }
-        auto He = etemp.template pack<dim * 3, dim * 3>("He", ei);
+                mat3 BCbasis[3];
+                int BCorder[3];
+                for (int i = 0; i != 3; ++i) {
+                  BCbasis[i] = verts.pack<3, 3>("BCbasis", inds[i]);
+                  BCorder[i] = reinterpret_bits<int>(verts("BCorder", inds[i]));
+                }
 
-        temp = He * temp;
-
-        for (int vi = 0; vi != 3; ++vi)
-          for (int d = 0; d != dim; ++d) {
-            atomic_add(execTag, &vtemp(bTag, d, inds[vi]), temp[vi * dim + d]);
-          }
-      });
-      // contacts
-      {
-        // boundary
-        pol(range(verts.size()), [execTag, vtemp = proxy<space>({}, vtemp),
-                                  tempPB = proxy<space>({}, tempPB), dxTag,
-                                  bTag] ZS_LAMBDA(int vi) mutable {
-          auto dx = vtemp.template pack<3>(dxTag, vi);
-          auto pbHess = tempPB.template pack<3, 3>("H", vi);
-          dx = pbHess * dx;
-          for (int d = 0; d != 3; ++d)
-            atomic_add(execTag, &vtemp(bTag, d, vi), dx(d));
-        });
-      } // end contacts
-    }
-
-    FEMSystem(const tiles_t &verts, const tiles_t &eles, dtiles_t &vtemp,
-              dtiles_t &etemp, T dt, const ZenoConstitutiveModel &models)
-        : verts{verts}, eles{eles}, vtemp{vtemp}, etemp{etemp},
-          tempPB{verts.get_allocator(), {{"H", 9}}, verts.size()}, dt{dt},
-          models{models} {}
-
-    const tiles_t &verts;
-    const tiles_t &eles;
-    dtiles_t &vtemp;
-    dtiles_t &etemp;
-
-    // boundary contacts
-    dtiles_t tempPB;
-    // end contacts
-    T dt;
-    const ZenoConstitutiveModel &models;
-  };
-
-  template <typename Model>
-  static void computeElasticGradientAndHessian(
-      zs::CudaExecutionPolicy &cudaPol, const Model &model,
-      const tiles_t &verts, const tiles_t &eles, dtiles_t &vtemp,
-      dtiles_t &etemp, float dt, const zs::SmallString &gTag = "grad") {
-    using namespace zs;
-    constexpr auto space = execspace_e::cuda;
-    cudaPol(zs::range(eles.size()), [vtemp = proxy<space>({}, vtemp),
-                                     etemp = proxy<space>({}, etemp),
-                                     verts = proxy<space>({}, verts),
-                                     eles = proxy<space>({}, eles), model, gTag,
-                                     dt] __device__(int ei) mutable {
-      auto IB = eles.template pack<2, 2>("IB", ei);
-      auto inds =
-          eles.template pack<3>("inds", ei).template reinterpret_bits<int>();
-      auto vole = eles("vol", ei);
-      vec3 xs[3] = {vtemp.template pack<3>("xn", inds[0]),
-                    vtemp.template pack<3>("xn", inds[1]),
-                    vtemp.template pack<3>("xn", inds[2])};
-      auto x1x0 = xs[1] - xs[0];
-      auto x2x0 = xs[2] - xs[0];
-
-      mat3 BCbasis[3];
-      int BCorder[3];
-      for (int i = 0; i != 3; ++i) {
-        BCbasis[i] = verts.pack<3, 3>("BCbasis", inds[i]);
-        BCorder[i] = reinterpret_bits<int>(verts("BCorder", inds[i]));
-      }
-
-      zs::vec<T, 9, 9> H;
+                zs::vec<T, 9, 9> H;
 #if 0
       mat2 A{}, temp{};
       auto dA_div_dx = zs::vec<T, 4, 9>::zeros();
@@ -542,39 +341,251 @@ struct CodimStepping : INode {
       auto He = stretchHessian() + shearHessian();
       H = dFdX.transpose() * He * dFdX;
 #endif
-      H *= dt * dt * vole;
+                H *= dt * dt * vole;
 
-      // rotate and project
-      for (int vi = 0; vi != 3; ++vi) {
-        int offsetI = vi * 3;
-        for (int vj = 0; vj != 3; ++vj) {
-          int offsetJ = vj * 3;
-          mat3 tmp{};
-          for (int i = 0; i != 3; ++i)
-            for (int j = 0; j != 3; ++j)
-              tmp(i, j) = H(offsetI + i, offsetJ + j);
-          // rotate
-          tmp = BCbasis[vi].transpose() * tmp * BCbasis[vj];
-          // project
-          if (BCorder[vi] > 0 || BCorder[vj] > 0) {
-            if (vi == vj) {
-              for (int i = 0; i != BCorder[vi]; ++i)
-                for (int j = 0; j != BCorder[vj]; ++j)
-                  tmp(i, j) = (i == j ? 1 : 0);
-            } else {
-              for (int i = 0; i != BCorder[vi]; ++i)
-                for (int j = 0; j != BCorder[vj]; ++j)
-                  tmp(i, j) = 0;
-            }
-          }
-          for (int i = 0; i != 3; ++i)
-            for (int j = 0; j != 3; ++j)
-              H(offsetI + i, offsetJ + j) = tmp(i, j);
+                // rotate and project
+                for (int vi = 0; vi != 3; ++vi) {
+                  int offsetI = vi * 3;
+                  for (int vj = 0; vj != 3; ++vj) {
+                    int offsetJ = vj * 3;
+                    mat3 tmp{};
+                    for (int i = 0; i != 3; ++i)
+                      for (int j = 0; j != 3; ++j)
+                        tmp(i, j) = H(offsetI + i, offsetJ + j);
+                    // rotate
+                    tmp = BCbasis[vi].transpose() * tmp * BCbasis[vj];
+                    // project
+                    if (BCorder[vi] > 0 || BCorder[vj] > 0) {
+                      if (vi == vj) {
+                        for (int i = 0; i != BCorder[vi]; ++i)
+                          for (int j = 0; j != BCorder[vj]; ++j)
+                            tmp(i, j) = (i == j ? 1 : 0);
+                      } else {
+                        for (int i = 0; i != BCorder[vi]; ++i)
+                          for (int j = 0; j != BCorder[vj]; ++j)
+                            tmp(i, j) = 0;
+                      }
+                    }
+                    for (int i = 0; i != 3; ++i)
+                      for (int j = 0; j != 3; ++j)
+                        H(offsetI + i, offsetJ + j) = tmp(i, j);
+                  }
+                }
+                etemp.tuple<9 * 9>("He", ei) = H;
+              });
+    }
+    template <typename Pol, typename Model>
+    T energy(Pol &pol, const Model &model, const zs::SmallString tag) {
+      using namespace zs;
+      constexpr auto space = execspace_e::cuda;
+      Vector<T> res{verts.get_allocator(), 1};
+      res.setVal(0);
+      pol(range(vtemp.size()), [verts = proxy<space>({}, verts),
+                                vtemp = proxy<space>({}, vtemp),
+                                res = proxy<space>(res), tag,
+                                dt = this->dt] __device__(int vi) mutable {
+        // inertia
+        auto m = verts("m", vi);
+        auto x = vtemp.pack<3>(tag, vi);
+        atomic_add(exec_cuda, &res[0],
+                   (T)0.5 * m * (x - vtemp.pack<3>("xtilde", vi)).l2NormSqr());
+      });
+      // elasticity
+      pol(range(eles.size()), [verts = proxy<space>({}, verts),
+                               eles = proxy<space>({}, eles),
+                               vtemp = proxy<space>({}, vtemp),
+                               res = proxy<space>(res), tag, model = model,
+                               dt = this->dt] __device__(int ei) mutable {
+        auto IB = eles.template pack<2, 2>("IB", ei);
+        auto inds =
+            eles.template pack<3>("inds", ei).template reinterpret_bits<int>();
+        auto vole = eles("vol", ei);
+        vec3 xs[3] = {vtemp.template pack<3>(tag, inds[0]),
+                      vtemp.template pack<3>(tag, inds[1]),
+                      vtemp.template pack<3>(tag, inds[2])};
+        mat2 A{};
+        T E;
+        auto x1x0 = xs[1] - xs[0];
+        auto x2x0 = xs[2] - xs[0];
+#if 0
+        {
+          A(0, 0) = x1x0.l2NormSqr();
+          A(1, 0) = A(0, 1) = x1x0.dot(x2x0);
+          A(1, 1) = x2x0.l2NormSqr();
+
+          auto IA = inverse(A);
+          auto lnJ = zs::log(determinant(A) * determinant(IB)) / 2;
+          E = dt * dt * vole *
+              (model.mu / 2 * (trace(IB * A) - 2 - 2 * lnJ) +
+               model.lam / 2 * lnJ * lnJ);
         }
+#else
+        zs::vec<T, 3, 2> Ds{x1x0[0], x2x0[0], x1x0[1], x2x0[1], x1x0[2], x2x0[2]};
+        auto F = Ds * IB;
+        auto f0 = col(F, 0);
+        auto f1 = col(F, 1);
+        auto f0Norm = zs::sqrt(f0.l2NormSqr());
+        auto f1Norm = zs::sqrt(f1.l2NormSqr());
+        auto Estretch = dt * dt * model.mu *vole * (zs::sqr(f0Norm - 1) + zs::sqr(f1Norm - 1));
+        auto Eshear = dt * dt * model.mu *vole * zs::sqr(f0.dot(f1));
+        E = Estretch + Eshear;
+#endif
+        atomic_add(exec_cuda, &res[0], E);
+      });
+      // contacts
+      {
+        // boundary
+        pol(range(verts.size()),
+            [vtemp = proxy<space>({}, vtemp), res = proxy<space>(res),
+             gn = s_groundNormal, dHat2 = dHat * dHat,
+             kappa = kappa] ZS_LAMBDA(int vi) mutable {
+              auto x = vtemp.pack<3>("xn", vi);
+              auto dist = gn.dot(x);
+              auto dist2 = dist * dist;
+              if (dist2 < dHat2) {
+                auto temp = -(dist2 - dHat2) * (dist2 - dHat2) *
+                            zs::log(dist2 / dHat2) * kappa;
+                atomic_add(exec_cuda, &res[0], temp);
+              }
+            });
       }
-      etemp.tuple<9 * 9>("He", ei) = H;
-    });
-  }
+      return res.getVal();
+    }
+    template <typename Pol> void project(Pol &pol, const zs::SmallString tag) {
+#if 1
+      using namespace zs;
+      constexpr execspace_e space = execspace_e::cuda;
+      // projection
+      pol(zs::range(verts.size()),
+          [vtemp = proxy<space>({}, vtemp), verts = proxy<space>({}, verts),
+           tag] ZS_LAMBDA(int vi) mutable {
+            auto BCbasis = verts.template pack<3, 3>("BCbasis", vi);
+            auto BCorder = reinterpret_bits<int>(verts("BCorder", vi));
+            for (int d = 0; d != BCorder; ++d)
+              vtemp(tag, d, vi) = 0;
+            // if (verts("x", 1, vi) > 0.8)
+            //  vtemp.tuple<3>(tag, vi) = vec3::zeros();
+          });
+#endif
+    }
+    template <typename Pol>
+    void precondition(Pol &pol, const zs::SmallString srcTag,
+                      const zs::SmallString dstTag) {
+      using namespace zs;
+      constexpr execspace_e space = execspace_e::cuda;
+      // precondition
+      pol(zs::range(verts.size()),
+          [vtemp = proxy<space>({}, vtemp), verts = proxy<space>({}, verts),
+           srcTag, dstTag] ZS_LAMBDA(int vi) mutable {
+            vtemp.template tuple<3>(dstTag, vi) =
+                vtemp.template pack<3, 3>("P", vi) *
+                vtemp.template pack<3>(srcTag, vi);
+          });
+    }
+    template <typename Pol>
+    void multiply(Pol &pol, const zs::SmallString dxTag,
+                  const zs::SmallString bTag) {
+      using namespace zs;
+      constexpr execspace_e space = execspace_e::cuda;
+      constexpr auto execTag = wrapv<space>{};
+      const auto numVerts = verts.size();
+      const auto numEles = eles.size();
+      // hessian rotation: trans^T hess * trans
+      // left trans^T: multiplied on rows
+      // right trans: multiplied on cols
+      // dx -> b
+      pol(range(numVerts), [execTag, vtemp = proxy<space>({}, vtemp),
+                            bTag] ZS_LAMBDA(int vi) mutable {
+        vtemp.template tuple<3>(bTag, vi) = vec3::zeros();
+      });
+      // inertial
+      pol(range(numVerts), [execTag, verts = proxy<space>({}, verts),
+                            vtemp = proxy<space>({}, vtemp), dxTag,
+                            bTag] ZS_LAMBDA(int vi) mutable {
+        auto m = verts("m", vi);
+        auto dx = vtemp.template pack<3>(dxTag, vi);
+        auto BCbasis = verts.template pack<3, 3>("BCbasis", vi);
+        auto BCorder = reinterpret_bits<int>(verts("BCorder", vi));
+        // dx = BCbasis.transpose() * m * BCbasis * dx;
+        auto M = mat3::identity() * m;
+        M = BCbasis.transpose() * M * BCbasis;
+        for (int i = 0; i != BCorder; ++i)
+          for (int j = 0; j != BCorder; ++j)
+            M(i, j) = (i == j ? 1 : 0);
+        dx = M * dx;
+        for (int d = 0; d != 3; ++d)
+          atomic_add(execTag, &vtemp(bTag, d, vi), dx(d));
+      });
+      // elasticity
+      pol(range(numEles), [execTag, etemp = proxy<space>({}, etemp),
+                           vtemp = proxy<space>({}, vtemp),
+                           eles = proxy<space>({}, eles), dxTag,
+                           bTag] ZS_LAMBDA(int ei) mutable {
+        constexpr int dim = 3;
+        auto inds =
+            eles.template pack<3>("inds", ei).template reinterpret_bits<int>();
+        zs::vec<T, 3 * dim> temp{};
+        for (int vi = 0; vi != 3; ++vi)
+          for (int d = 0; d != dim; ++d) {
+            temp[vi * dim + d] = vtemp(dxTag, d, inds[vi]);
+          }
+        auto He = etemp.template pack<dim * 3, dim * 3>("He", ei);
+
+        temp = He * temp;
+
+        for (int vi = 0; vi != 3; ++vi)
+          for (int d = 0; d != dim; ++d) {
+            atomic_add(execTag, &vtemp(bTag, d, inds[vi]), temp[vi * dim + d]);
+          }
+      });
+      // contacts
+      {
+        // boundary
+        pol(range(verts.size()), [execTag, vtemp = proxy<space>({}, vtemp),
+                                  tempPB = proxy<space>({}, tempPB), dxTag,
+                                  bTag] ZS_LAMBDA(int vi) mutable {
+          auto dx = vtemp.template pack<3>(dxTag, vi);
+          auto pbHess = tempPB.template pack<3, 3>("H", vi);
+          dx = pbHess * dx;
+          for (int d = 0; d != 3; ++d)
+            atomic_add(execTag, &vtemp(bTag, d, vi), dx(d));
+        });
+      } // end contacts
+    }
+
+    FEMSystem(const tiles_t &verts, const tiles_t &eles, dtiles_t &vtemp,
+              dtiles_t &etemp, T dt, const ZenoConstitutiveModel &models)
+        : verts{verts}, eles{eles}, vtemp{vtemp}, etemp{etemp},
+          PP{verts.get_allocator(), 100000}, nPP{verts.get_allocator(), 1},
+          PE{verts.get_allocator(), 100000}, nPE{verts.get_allocator(), 1},
+          PT{verts.get_allocator(), 100000}, nPT{verts.get_allocator(), 1},
+          EE{verts.get_allocator(), 100000}, nEE{verts.get_allocator(), 1},
+          tempPB{verts.get_allocator(), {{"H", 9}}, verts.size()}, dt{dt},
+          models{models} {}
+
+    const tiles_t &verts;
+    const tiles_t &eles;
+    dtiles_t &vtemp;
+    dtiles_t &etemp;
+    // self contacts
+    using pair_t = zs::vec<int, 2>;
+    using pair3_t = zs::vec<int, 3>;
+    using pair4_t = zs::vec<int, 4>;
+    zs::Vector<pair_t> PP;
+    zs::Vector<int> nPP;
+    zs::Vector<pair3_t> PE;
+    zs::Vector<int> nPE;
+    zs::Vector<pair4_t> PT;
+    zs::Vector<int> nPT;
+    zs::Vector<pair4_t> EE;
+    zs::Vector<int> nEE;
+
+    // boundary contacts
+    dtiles_t tempPB;
+    // end contacts
+    T dt;
+    const ZenoConstitutiveModel &models;
+  };
 
   T dot(zs::CudaExecutionPolicy &cudaPol, dtiles_t &vertData,
         const zs::SmallString tag0, const zs::SmallString tag1) {
@@ -661,6 +672,7 @@ struct CodimStepping : INode {
     vtemp.resize(verts.size());
     etemp.resize(eles.size());
 
+    extForce = vec3{0, -9, 0};
     FEMSystem A{verts, eles, vtemp, etemp, dt, models};
 
     constexpr auto space = execspace_e::cuda;
@@ -670,10 +682,10 @@ struct CodimStepping : INode {
     // predict pos
     cudaPol(zs::range(vtemp.size()),
             [vtemp = proxy<space>({}, vtemp), verts = proxy<space>({}, verts),
-             dt] __device__(int i) mutable {
+             dt, extForce = extForce] __device__(int i) mutable {
               auto x = verts.pack<3>("x", i);
               auto v = verts.pack<3>("v", i);
-              vtemp.tuple<3>("xtilde", i) = x + v * dt;
+              vtemp.tuple<3>("xtilde", i) = x + v * dt + extForce * dt * dt;
             });
     // fix initial x for all bcs if not feasible
     cudaPol(zs::range(verts.size()),
@@ -707,13 +719,11 @@ struct CodimStepping : INode {
                 auto m = verts("m", i);
                 auto v = verts.pack<3>("v", i);
                 vtemp.tuple<3>("grad", i) =
-                    m * vec3{0, -9, 0} * dt * dt -
-                    m * (vtemp.pack<3>("xn", i) - vtemp.pack<3>("xtilde", i));
+                    -m * (vtemp.pack<3>("xn", i) - vtemp.pack<3>("xtilde", i));
               });
 #if 1
       match([&](auto &elasticModel) {
-        computeElasticGradientAndHessian(cudaPol, elasticModel, verts, eles,
-                                         vtemp, etemp, dt);
+        A.computeElasticGradientAndHessian(cudaPol, elasticModel);
       })(models.getElasticModel());
 #endif
       A.computeBoundaryBarrierGradientAndHessian(cudaPol);
@@ -881,12 +891,11 @@ struct CodimStepping : INode {
     cudaPol(zs::range(verts.size()),
             [vtemp = proxy<space>({}, vtemp), verts = proxy<space>({}, verts),
              dt] __device__(int vi) mutable {
+              auto x = verts.pack<3>("x", vi);
               auto newX = vtemp.pack<3>("xn", vi);
               verts.tuple<3>("x", vi) = newX;
-              auto dv = (newX - vtemp.pack<3>("xtilde", vi)) / dt;
-              auto vn = verts.pack<3>("v", vi);
-              vn += dv;
-              verts.tuple<3>("v", vi) = vn;
+              auto v = (x - newX) / dt;
+              verts.tuple<3>("v", vi) = v;
             });
 
     set_output("ZSParticles", std::move(zstets));
