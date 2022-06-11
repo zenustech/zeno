@@ -17,16 +17,25 @@ namespace zfx {
             return new BasicBlock(m, name);
         }
 
-        Module* getModule() ;
+        BasicBlock(const BasicBlock& ) = delete;
+        BasicBlock& operator=(const BasicBlock&) = delete;
+        const Module* getModule() const {
+
+        }
+
+        Module* getModule() {
+
+        }
 
         virtual std::string print() override;
+
 
         //api for cfg
         std::list<BasicBlock *> &get_pre_basic_blocks() {
 
         }
 
-        std::list<BasicBlock *>
+       //选一个迭代器遍历一遍
       private:
         explicit BasicBlock(Module *m, const std::string &name);
         std::list<BasicBlock *> pre_bbs;

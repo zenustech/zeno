@@ -3,14 +3,15 @@
 //
 /*
  *Prog : statementList? EOF;
- *statementList : statement+;
+ *statementList : (variableDecl | functionDecl | expressionStatement);
+ * variableDecl : '$'|'@' Identifier
  * statement : block | expressionStatement | ifStatement | forStatement
  * emptyStatement | functionDecl | variableDecl
  *
  * ifStatement : 'if' '(' expression ') statement ('else' statement)?;
  * forStatement :
  * variableStatement:
- * variableDecl : (Identifier|
+ *
  * expression:assignment;
  *Identifier : [a-zA-z][a-zA-Z0-9]*;
  * IntegerLiteral : '0' | [1-9][0-9]*
@@ -44,48 +45,32 @@ namespace zfx {
 
         }
 
-        AstNode parse_atom() {
+        std::shared_ptr<AstNode> parseVariableDecl() {
+            auto t = this->scanner.next();
+            //解析$或者@
+            if (t.kind = TokenKind::Decl) {
+
+            }
+        }
+
+        std::shared_ptr<AstNode> parseAssignment() {
 
         }
 
-        AstNode parse_operator() {
+        std::shared_ptr<AstNode> parseBinary(int32_t prec) {
 
         }
 
-        AstNode parse_compound() {
+        std::shared_ptr<AstNode> parseUnary() {
 
-        }
-
-        AstNode parse_factor() {
-
-        }
-
-        AstNode parse_term() {
-
-        }
-
-        AstNode parse_side() {
-
-        }
-
-        AstNode parse_cond() {
-
-        }
-
-        AstNode parse_andexpr() {
-
-        }
-
-        AstNode parse_orexpr() {
-
-        }
-
-        AstNode parse_expr() {
-
-        }
-
-        AstNode parse_stmt() {
-
+            auto t = this->scanner.peak();
+            if (t.kind == TokenKind::Op) {
+                //前缀的一元表达式
+                //跳过运算符
+                this->scanner.next();
+                auto exp = this->parseUnary();
+                //return std::make_shared<Unary>
+            }
         }
     };
 

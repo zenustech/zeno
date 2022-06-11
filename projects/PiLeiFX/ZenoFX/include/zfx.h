@@ -11,11 +11,19 @@
 #include <vector>
 
 namespace zfx {
-
+//可以单独设置一个表示arch的同文件
     struct Options {
+        //一些基本设置参数加优化选项
 
         // Options two
-        Options() {}
+        int simd_width;
+        int arch_max_regs{16};
+        bool const_fold {false};
+        bool kill_unreachable_code {false};
+        constexpr struct {} for_x64{};
+
+        constexpr struct {} cuda{};
+        Options(decltype(for_x64)) {}
 
         Options(int a) {}
     };
