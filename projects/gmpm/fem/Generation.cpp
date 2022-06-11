@@ -653,9 +653,16 @@ struct ToZSSurfaceMesh : INode {
               // ref: codim-ipc
               // for first fundamental form
               mat2 B{};
+#if 0
               B(0, 0) = ds[0].l2NormSqr();
               B(1, 0) = B(0, 1) = ds[0].dot(ds[1]);
               B(1, 1) = ds[1].l2NormSqr();
+#else
+              B(0, 0) = ds[0].norm();
+              B(1, 0) = 0;
+              B(0, 1) = ds[0].dot(ds[1]) / B(0, 0);
+              B(1, 1) = ds[0].cross(ds[1]).norm() / B(0, 0);
+#endif
               eles.template tuple<4>("IB", ei) = inverse(B);
 
               auto vol = ds[0].cross(ds[1]).norm() / 2 * zsmodel->dx;

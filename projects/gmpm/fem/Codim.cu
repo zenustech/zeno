@@ -9,6 +9,7 @@
 #include "zensim/geometry/VdbSampler.h"
 #include "zensim/io/MeshIO.hpp"
 #include "zensim/math/bit/Bits.h"
+#include "zensim/physics/ConstitutiveModel.hpp"
 #include "zensim/types/Property.h"
 #include <atomic>
 #include <zeno/VDBGrid.h>
@@ -166,9 +167,10 @@ struct CodimStepping : INode {
                       vtemp.template pack<3>(tag, inds[2])};
         mat2 A{};
         T E;
+        auto x1x0 = xs[1] - xs[0];
+        auto x2x0 = xs[2] - xs[0];
+#if 0
         {
-          auto x1x0 = xs[1] - xs[0];
-          auto x2x0 = xs[2] - xs[0];
           A(0, 0) = x1x0.l2NormSqr();
           A(1, 0) = A(0, 1) = x1x0.dot(x2x0);
           A(1, 1) = x2x0.l2NormSqr();
@@ -179,6 +181,17 @@ struct CodimStepping : INode {
               (model.mu / 2 * (trace(IB * A) - 2 - 2 * lnJ) +
                model.lam / 2 * lnJ * lnJ);
         }
+#else
+        zs::vec<T, 3, 2> Ds{x1x0[0], x2x0[0], x1x0[1], x2x0[1], x1x0[2], x2x0[2]};
+        auto F = Ds * IB;
+        auto f0 = col(F, 0);
+        auto f1 = col(F, 1);
+        auto f0Norm = zs::sqrt(f0.l2NormSqr());
+        auto f1Norm = zs::sqrt(f1.l2NormSqr());
+        auto Estretch = dt * dt * model.mu *vole * (zs::sqr(f0Norm - 1) + zs::sqr(f1Norm - 1));
+        auto Eshear = dt * dt * model.mu *vole * zs::sqr(f0.dot(f1));
+        E = Estretch + Eshear;
+#endif
         atomic_add(exec_cuda, &res[0], E);
       });
       // contacts
@@ -339,10 +352,20 @@ struct CodimStepping : INode {
       vec3 xs[3] = {vtemp.template pack<3>("xn", inds[0]),
                     vtemp.template pack<3>("xn", inds[1]),
                     vtemp.template pack<3>("xn", inds[2])};
-      mat2 A{}, temp{};
-      auto dA_div_dx = zs::vec<T, 4, 9>::zeros();
       auto x1x0 = xs[1] - xs[0];
       auto x2x0 = xs[2] - xs[0];
+
+      mat3 BCbasis[3];
+      int BCorder[3];
+      for (int i = 0; i != 3; ++i) {
+        BCbasis[i] = verts.pack<3, 3>("BCbasis", inds[i]);
+        BCorder[i] = reinterpret_bits<int>(verts("BCorder", inds[i]));
+      }
+
+      zs::vec<T, 9, 9> H;
+#if 0
+      mat2 A{}, temp{};
+      auto dA_div_dx = zs::vec<T, 4, 9>::zeros();
       A(0, 0) = x1x0.l2NormSqr();
       A(1, 0) = A(0, 1) = x1x0.dot(x2x0);
       A(1, 1) = x2x0.l2NormSqr();
@@ -378,12 +401,7 @@ struct CodimStepping : INode {
       // hessian rotation: trans^T hess * trans
       // left trans^T: multiplied on rows
       // right trans: multiplied on cols
-      mat3 BCbasis[3];
-      int BCorder[3];
-      for (int i = 0; i != 3; ++i) {
-        BCbasis[i] = verts.pack<3, 3>("BCbasis", inds[i]);
-        BCorder[i] = reinterpret_bits<int>(verts("BCorder", inds[i]));
-      }
+      
       using mat9 = zs::vec<T, 9, 9>;
       mat9 ahess[4];
       for (int i = 0; i != 4; ++i)
@@ -404,7 +422,6 @@ struct CodimStepping : INode {
         ahess[2](i, i) = ahess[1](i, i) = 2;
       }
 
-      zs::vec<T, 9, 9> H;
       zs::vec<T, 9> ainvda;
       for (int i_ = 0; i_ < 3; ++i_) {
         for (int d = 0; d < 3; ++d) {
@@ -434,6 +451,97 @@ struct CodimStepping : INode {
         }
       }
       make_pd(H);
+#else
+      zs::vec<T, 3, 2> Ds{x1x0[0], x2x0[0], x1x0[1], x2x0[1], x1x0[2], x2x0[2]};
+      auto F = Ds * IB;
+
+      auto dFdX = dFdXMatrix(IB, wrapv<3>{});
+      auto dFdXT = dFdX.transpose();
+      auto f0 = col(F, 0);
+      auto f1 = col(F, 1);
+      auto f0Norm = zs::sqrt(f0.l2NormSqr());
+      auto f1Norm = zs::sqrt(f1.l2NormSqr());
+      auto f0Tf1 = f0.dot(f1);
+      zs::vec<T, 3, 2> Pstretch, Pshear;
+      for (int d = 0; d != 3; ++d) {
+        Pstretch(d, 0) = 2 * (1 - 1 / f0Norm) * F(d, 0);
+        Pstretch(d, 1) = 2 * (1 - 1 / f1Norm) * F(d, 1);
+        Pshear(d, 0) = 2 * f0Tf1 * f1(d);
+        Pshear(d, 1) = 2 * f0Tf1 * f0(d);
+      }
+      auto vecP = flatten(Pstretch + Pshear) ;
+      auto vfdt2 = -vole * (dFdXT * vecP)* (model.mu * dt * dt);
+
+      for (int i = 0; i != 3; ++i) {
+        auto vi = inds[i];
+        for (int d = 0; d != 3; ++d) 
+          atomic_add(exec_cuda, &vtemp(gTag, d, vi), (T)vfdt2(i * 3 + d));
+      }
+
+      /// ref: A Finite Element Formulation of Baraff-Witkin Cloth
+      // suggested by huang kemeng
+      auto stretchHessian = [&F, &model]() {
+        auto H = zs::vec<T, 6, 6>::zeros();
+        const zs::vec<T, 2> u{1, 0};
+        const zs::vec<T, 2> v{0, 1};
+        const T I5u = (F * u).l2NormSqr();
+        const T I5v = (F * v).l2NormSqr();
+        const T invSqrtI5u = (T)1 / zs::sqrt(I5u);
+        const T invSqrtI5v = (T)1 / zs::sqrt(I5v);
+
+        H(0, 0) = H(1, 1) = H(2, 2) = zs::max(1 - invSqrtI5u, (T)0);
+        H(3, 3) = H(4, 4) = H(5, 5) = zs::max(1 - invSqrtI5v, (T)0);
+
+        const auto fu = col(F, 0).normalized();
+        const T uCoeff = (1 - invSqrtI5u >= 0) ? invSqrtI5u : (T)1;
+        for (int i = 0; i != 3; ++i)
+          for (int j = 0; j != 3; ++j)
+            H(i, j) += uCoeff * fu(i) * fu(j);
+
+        const auto fv = col(F, 1).normalized();
+        const T vCoeff = (1 - invSqrtI5v >= 0) ? invSqrtI5v : (T)1;
+        for (int i = 0; i != 3; ++i)
+          for (int j = 0; j != 3; ++j)
+            H(3 + i, 3 + j) += vCoeff * fv(i) * fv(j);
+
+        H *= model.mu;
+        return H;
+      };
+      auto shearHessian = [&F, &model]() {
+        using mat6 = zs::vec<T, 6, 6>;
+        auto H = mat6::zeros();
+        const zs::vec<T, 2> u{1, 0};
+        const zs::vec<T, 2> v{0, 1};
+        const T I6 = (F * u).dot(F * v);
+        const T signI6 = I6 >= 0 ? 1 : -1;
+
+        H(3, 0) = H(4, 1) = H(5, 2) = H(0, 3) = H(1, 4) = H(2, 5) = (T)1;
+
+        const auto g_ = F * (dyadic_prod(u, v) + dyadic_prod(v, u));
+        zs::vec<T, 6> g{};
+        for (int j = 0, offset = 0; j != 2; ++j) {
+        for (int i = 0; i != 3; ++i)
+          g(offset++) = g_(i, j);
+        }
+
+        const T I2 = F.l2NormSqr();
+        const T lambda0 = (T)0.5 * (I2 + zs::sqrt(I2 * I2 + (T)12 * I6 * I6));
+
+        const zs::vec<T, 6> q0 = (I6 * H * g + lambda0 * g).normalized();
+
+        auto t = mat6::identity();
+        t = 0.5 * (t + signI6 * H);
+
+        const zs::vec<T, 6> Tq = t * q0;
+        const auto normTq = Tq.l2NormSqr();
+
+        mat6 dPdF = zs::abs(I6) * (t - (dyadic_prod(Tq, Tq) / normTq)) + lambda0 * (dyadic_prod(q0, q0));
+        dPdF *= model.mu;
+        return dPdF;
+      };
+      auto He = stretchHessian() + shearHessian();
+      H = dFdX.transpose() * He * dFdX;
+#endif
       H *= dt * dt * vole;
 
       // rotate and project
