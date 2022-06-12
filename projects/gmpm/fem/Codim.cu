@@ -1356,6 +1356,75 @@ struct CodimStepping : INode {
       });
       // contacts
       {
+        auto activeGap2 = dHat * dHat + 2 * xi * dHat;
+        auto numPP = nPP.getVal();
+        pol(range(numPP),
+            [vtemp = proxy<space>({}, vtemp), tempPP = proxy<space>({}, tempPP),
+             PP = proxy<space>(PP), res = proxy<space>(res), xi2 = xi * xi,
+             dHat = dHat, activeGap2,
+             kappa = kappa] __device__(int ppi) mutable {
+              auto pp = PP[ppi];
+              auto x0 = vtemp.pack<3>("xn", pp[0]);
+              auto x1 = vtemp.pack<3>("xn", pp[1]);
+              auto dist2 = dist2_pp(x0, x1);
+              if (dist2 < xi2)
+                printf("dist already smaller than xi!\n");
+              atomic_add(exec_cuda, &res[0],
+                         zs::barrier(dist2 - xi2, activeGap2, kappa));
+            });
+        auto numPE = nPE.getVal();
+        pol(range(numPE),
+            [vtemp = proxy<space>({}, vtemp), tempPE = proxy<space>({}, tempPE),
+             PE = proxy<space>(PE), res = proxy<space>(res), xi2 = xi * xi,
+             dHat = dHat, activeGap2,
+             kappa = kappa] __device__(int pei) mutable {
+              auto pe = PE[pei];
+              auto p = vtemp.pack<3>("xn", pe[0]);
+              auto e0 = vtemp.pack<3>("xn", pe[1]);
+              auto e1 = vtemp.pack<3>("xn", pe[2]);
+
+              auto dist2 = dist2_pe(p, e0, e1);
+              if (dist2 < xi2)
+                printf("dist already smaller than xi!\n");
+              atomic_add(exec_cuda, &res[0],
+                         zs::barrier(dist2 - xi2, activeGap2, kappa));
+            });
+        auto numPT = nPT.getVal();
+        pol(range(numPT),
+            [vtemp = proxy<space>({}, vtemp), tempPT = proxy<space>({}, tempPT),
+             PT = proxy<space>(PT), res = proxy<space>(res), xi2 = xi * xi,
+             dHat = dHat, activeGap2,
+             kappa = kappa] __device__(int pti) mutable {
+              auto pt = PT[pti];
+              auto p = vtemp.pack<3>("xn", pt[0]);
+              auto t0 = vtemp.pack<3>("xn", pt[1]);
+              auto t1 = vtemp.pack<3>("xn", pt[2]);
+              auto t2 = vtemp.pack<3>("xn", pt[3]);
+
+              auto dist2 = dist2_pt(p, t0, t1, t2);
+              if (dist2 < xi2)
+                printf("dist already smaller than xi!\n");
+              atomic_add(exec_cuda, &res[0],
+                         zs::barrier(dist2 - xi2, activeGap2, kappa));
+            });
+        auto numEE = nEE.getVal();
+        pol(range(numEE),
+            [vtemp = proxy<space>({}, vtemp), tempEE = proxy<space>({}, tempEE),
+             EE = proxy<space>(EE), res = proxy<space>(res), xi2 = xi * xi,
+             dHat = dHat, activeGap2,
+             kappa = kappa] __device__(int eei) mutable {
+              auto ee = EE[eei];
+              auto ea0 = vtemp.pack<3>("xn", ee[0]);
+              auto ea1 = vtemp.pack<3>("xn", ee[1]);
+              auto eb0 = vtemp.pack<3>("xn", ee[2]);
+              auto eb1 = vtemp.pack<3>("xn", ee[3]);
+
+              auto dist2 = dist2_ee(ea0, ea1, eb0, eb1);
+              if (dist2 < xi2)
+                printf("dist already smaller than xi!\n");
+              atomic_add(exec_cuda, &res[0],
+                         zs::barrier(dist2 - xi2, activeGap2, kappa));
+            });
         // boundary
         pol(range(verts.size()),
             [vtemp = proxy<space>({}, vtemp), res = proxy<space>(res),
@@ -1462,6 +1531,86 @@ struct CodimStepping : INode {
       });
       // contacts
       {
+        auto numPP = nPP.getVal();
+        pol(range(numPP), [execTag, tempPP = proxy<space>({}, tempPP),
+                           vtemp = proxy<space>({}, vtemp), dxTag, bTag,
+                           PP = proxy<space>(PP)] ZS_LAMBDA(int ppi) mutable {
+          constexpr int dim = 3;
+          auto pp = PP[ppi];
+          zs::vec<T, dim * 2> temp{};
+          for (int vi = 0; vi != 2; ++vi)
+            for (int d = 0; d != dim; ++d) {
+              temp[vi * dim + d] = vtemp(dxTag, d, pp[vi]);
+            }
+          auto ppHess = tempPP.template pack<6, 6>("H", ppi);
+
+          temp = ppHess * temp;
+
+          for (int vi = 0; vi != 2; ++vi)
+            for (int d = 0; d != dim; ++d) {
+              atomic_add(execTag, &vtemp(bTag, d, pp[vi]), temp[vi * dim + d]);
+            }
+        });
+        auto numPE = nPE.getVal();
+        pol(range(numPE), [execTag, tempPE = proxy<space>({}, tempPE),
+                           vtemp = proxy<space>({}, vtemp), dxTag, bTag,
+                           PE = proxy<space>(PE)] ZS_LAMBDA(int pei) mutable {
+          constexpr int dim = 3;
+          auto pe = PE[pei];
+          zs::vec<T, dim * 3> temp{};
+          for (int vi = 0; vi != 3; ++vi)
+            for (int d = 0; d != dim; ++d) {
+              temp[vi * dim + d] = vtemp(dxTag, d, pe[vi]);
+            }
+          auto peHess = tempPE.template pack<9, 9>("H", pei);
+
+          temp = peHess * temp;
+
+          for (int vi = 0; vi != 3; ++vi)
+            for (int d = 0; d != dim; ++d) {
+              atomic_add(execTag, &vtemp(bTag, d, pe[vi]), temp[vi * dim + d]);
+            }
+        });
+        auto numPT = nPT.getVal();
+        pol(range(numPT), [execTag, tempPT = proxy<space>({}, tempPT),
+                           vtemp = proxy<space>({}, vtemp), dxTag, bTag,
+                           PT = proxy<space>(PT)] ZS_LAMBDA(int pti) mutable {
+          constexpr int dim = 3;
+          auto pt = PT[pti];
+          zs::vec<T, dim * 4> temp{};
+          for (int vi = 0; vi != 4; ++vi)
+            for (int d = 0; d != dim; ++d) {
+              temp[vi * dim + d] = vtemp(dxTag, d, pt[vi]);
+            }
+          auto ptHess = tempPT.template pack<12, 12>("H", pti);
+
+          temp = ptHess * temp;
+
+          for (int vi = 0; vi != 4; ++vi)
+            for (int d = 0; d != dim; ++d) {
+              atomic_add(execTag, &vtemp(bTag, d, pt[vi]), temp[vi * dim + d]);
+            }
+        });
+        auto numEE = nEE.getVal();
+        pol(range(numEE), [execTag, tempEE = proxy<space>({}, tempEE),
+                           vtemp = proxy<space>({}, vtemp), dxTag, bTag,
+                           EE = proxy<space>(EE)] ZS_LAMBDA(int eei) mutable {
+          constexpr int dim = 3;
+          auto ee = EE[eei];
+          zs::vec<T, dim * 4> temp{};
+          for (int vi = 0; vi != 4; ++vi)
+            for (int d = 0; d != dim; ++d) {
+              temp[vi * dim + d] = vtemp(dxTag, d, ee[vi]);
+            }
+          auto eeHess = tempEE.template pack<12, 12>("H", eei);
+
+          temp = eeHess * temp;
+
+          for (int vi = 0; vi != 4; ++vi)
+            for (int d = 0; d != dim; ++d) {
+              atomic_add(execTag, &vtemp(bTag, d, ee[vi]), temp[vi * dim + d]);
+            }
+        });
         // boundary
         pol(range(verts.size()), [execTag, vtemp = proxy<space>({}, vtemp),
                                   tempPB = proxy<space>({}, tempPB), dxTag,
