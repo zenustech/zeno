@@ -673,8 +673,43 @@ struct ToZSSurfaceMesh : INode {
                 atomic_add(zs::exec_omp, &pars("m", tri[d]), vmass);
             });
 
+    zs::HashTable<int, 2, int> surfEdgeTable{0};
+    surfEdgeTable.resize(ompExec, 3 * tris.size());
+    surfEdgeTable.reset(ompExec, true);
+
+    auto seTable = proxy<space>(surfEdgeTable);
+    using table_t = RM_CVREF_T(seTable);
+    using vec3i = zs::vec<int, 3>;
+    using vec2i = zs::vec<int, 2>;
+    ompExec(range(tris.size()), [&](int ei) {
+      auto tri = tris[ei];
+      seTable.insert(vec2i{tri[0], tri[1]});
+      seTable.insert(vec2i{tri[1], tri[2]});
+      seTable.insert(vec2i{tri[2], tri[0]});
+    });
+    Vector<int> surfEdgeCnt{1, memsrc_e::host};
+    surfEdgeCnt.setVal(0);
+    auto &surfEdges = (*zstris)[ZenoParticles::s_surfEdgeTag];
+    surfEdges = typename ZenoParticles::particles_t(
+        {{"inds", 2}}, tris.size() * 3, zs::memsrc_e::host);
+    ompExec(range(seTable.size()),
+            [&, edges = proxy<space>({}, surfEdges),
+             cnt = proxy<space>(surfEdgeCnt)](int i) mutable {
+              auto edgeInds = seTable._activeKeys[i];
+              if (auto no = seTable.query(vec2i{edgeInds[1], edgeInds[0]});
+                  no == table_t::sentinel_v ||
+                  (no != table_t::sentinel_v && edgeInds[0] < edgeInds[1])) {
+                auto id = atomic_add(exec_omp, &cnt[0], 1);
+                edges("inds", 0, id) = reinterpret_bits<float>(edgeInds[0]);
+                edges("inds", 1, id) = reinterpret_bits<float>(edgeInds[1]);
+              }
+            });
+    auto seCnt = surfEdgeCnt.getVal();
+    surfEdges.resize(seCnt);
+
     pars = pars.clone({zs::memsrc_e::device, 0});
     eles = eles.clone({zs::memsrc_e::device, 0});
+    surfEdges = surfEdges.clone({zs::memsrc_e::device, 0});
 
     set_output("ZSParticles", std::move(zstris));
   }
