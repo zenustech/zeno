@@ -120,6 +120,7 @@ struct ZenoParticles : IObjectClone<ZenoParticles> {
     bending
   };
   using particles_t = zs::TileVector<float, 32>;
+  using dtiles_t = zs::TileVector<double, 32>;
   using lbvh_t = zs::LBvh<3>;
 
   static constexpr auto s_elementTag = "elements";
