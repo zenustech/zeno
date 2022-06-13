@@ -3,6 +3,7 @@
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/funcs/PrimitiveUtils.h>
 #include <zeno/types/NumericObject.h>
+#include <zeno/para/parallel_for.h>
 #include <zeno/utils/vec.h>
 #include <cstring>
 #include <cstdlib>
@@ -10,17 +11,15 @@
 namespace zeno {
 
 ZENO_API void primTranslate(PrimitiveObject *prim, vec3f const &offset) {
-#pragma omp parallel for
-    for (int i = 0; i < prim->verts.size(); i++) {
+    parallel_for((size_t)0, prim->verts.size(), [&] (size_t i) {
         prim->verts[i] = prim->verts[i] + offset;
-    }
+    });
 }
 
 ZENO_API void primScale(PrimitiveObject *prim, vec3f const &scale) {
-#pragma omp parallel for
-    for (int i = 0; i < prim->verts.size(); i++) {
+    parallel_for((size_t)0, prim->verts.size(), [&] (size_t i) {
         prim->verts[i] = prim->verts[i] * scale;
-    }
+    });
 }
 
 namespace {

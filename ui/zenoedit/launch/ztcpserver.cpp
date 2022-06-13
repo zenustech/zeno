@@ -6,6 +6,8 @@
 #include <zeno/zeno.h>
 #include "launch/viewdecode.h"
 #include "util/log.h"
+#include "zenoapplication.h"
+#include "graphsmanagment.h"
 
 
 ZTcpServer::ZTcpServer(QObject *parent)
@@ -55,6 +57,8 @@ void ZTcpServer::startProc(const std::string& progJson)
 
     m_proc->write(progJson.data(), progJson.size());
     m_proc->closeWriteChannel();
+
+    connect(m_proc.get(), SIGNAL(readyRead()), this, SLOT(onProcPipeReady()));
 }
 
 void ZTcpServer::killProc()
@@ -86,12 +90,20 @@ void ZTcpServer::onNewConnection()
 void ZTcpServer::onReadyRead()
 {
     QByteArray arr = m_tcpSocket->readAll();
-    QString wtf(arr.constData());
     qint64 redSize = arr.size();
     zeno::log_debug("qtcpsocket got {} bytes (ping test has 19)", redSize);
     if (redSize > 0) {
         viewDecodeAppend(arr.data(), redSize);
     }
+}
+
+void ZTcpServer::onProcPipeReady()
+{
+    if (!m_proc) {
+        return;
+    }
+    QByteArray arr = m_proc->readAll();
+    zenoApp->graphsManagment()->appendMsgStream(arr);
 }
 
 void ZTcpServer::onDisconnect()

@@ -5,6 +5,10 @@
 #if 1
 struct vec2{
     float x, y;
+    vec2 xy()
+    {
+        return vec2(x,y);
+    }
     __forceinline__ __device__ vec2(const float2 &_v)
     {
         x = _v.x;
@@ -25,6 +29,14 @@ struct vec2{
 };
 struct vec3{
     float x, y, z;
+    vec2 xy()
+    {
+        return vec2(x,y);
+    }
+    vec3 xyz()
+    {
+        return vec3(x,y,z);
+    }
     __forceinline__ __device__ vec3(const float3 &_v)
     {
         x = _v.x;
@@ -47,6 +59,18 @@ struct vec3{
 
 struct vec4{
     float x, y, z, w;
+    vec2 xy()
+    {
+        return vec2(x,y);
+    }
+    vec3 xyz()
+    {
+        return vec3(x,y,z);
+    }
+    vec4 xyzw()
+    {
+        return vec4(x,y,z,w);
+    }
     __forceinline__ __device__ vec4(const float4 &_v)
     {
         x = _v.x; z = _v.z;
@@ -843,6 +867,12 @@ __forceinline__ __device__ vec3 cross(vec3 a, vec3 b)
 {
     float3 res = cross(make_float3(a.x, a.y, a.z), make_float3(b.x, b.y, b.z));
     return vec3(res.x, res.y, res.z);
+}
+
+__forceinline__ __device__ vec4 texture2D(cudaTextureObject_t texObj, vec2 uv)
+{
+    float4 res = tex2D<float4>(texObj, uv.x, uv.y);
+    return vec4(res.x, res.y, res.z, res.w);
 }
 /////////////end of geometry math/////////////////////////////////////////////////
 

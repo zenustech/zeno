@@ -317,6 +317,24 @@ QString UiHelper::variantToString(const QVariant& var)
     return value;
 }
 
+int UiHelper::getMaxObjId(const QList<QString> &lst)
+{
+    int maxObjId = -1;
+    for (QString key : lst)
+    {
+        QRegExp rx("obj(\\d+)");
+        if (rx.indexIn(key) != -1)
+        {
+            auto caps = rx.capturedTexts();
+            if (caps.length() == 2) {
+                int id = caps[1].toInt();
+                maxObjId = qMax(maxObjId, id);
+            }
+        }
+    }
+    return maxObjId;
+}
+
 QMap<QString, NODE_DATA> UiHelper::dumpItems(IGraphsModel* pGraphsModel, const QPersistentModelIndex& subgIdx, 
     const QModelIndexList& nodesIndice, const QModelIndexList& linkIndice)
 {

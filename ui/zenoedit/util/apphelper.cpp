@@ -4,30 +4,32 @@
 #include "util/log.h"
 
 
-void AppHelper::correctSubIOName(IGraphsModel* pModel, QModelIndex subgIdx, const QString& descName, PARAMS_INFO& params)
+QString AppHelper::correctSubIOName(IGraphsModel* pModel, const QString& subgName, const QString& newName, bool bInput)
 {
-    if (descName != "SubInput" && descName != "SubOutput")
-        return;
+    ZASSERT_EXIT(pModel, "");
 
-    ZASSERT_EXIT(params.find("name") != params.end());
-    QString name = params["name"].value.toString();
+    NODE_DESCS descs = pModel->descriptors();
+    if (descs.find(subgName) == descs.end())
+        return "";
 
-    QModelIndexList results = pModel->searchInSubgraph(descName, subgIdx);
-    QStringList nameList;
-    for (auto idx : results)
-	{
-        const PARAMS_INFO &_params = idx.data(ROLE_PARAMETERS).value<PARAMS_INFO>();
-        ZASSERT_EXIT(_params.find("name") != _params.end());
-        QString _name = _params["name"].value.toString();
-        nameList.append(_name);
-	}
-
-	int i = 1;
-	QString finalName = name;
-	while (nameList.indexOf(finalName) != -1)
-	{
-		finalName = name + QString("(%1)").arg(i);
-		i++;
-	}
-	params["name"].value = finalName;
+    const NODE_DESC &desc = descs[subgName];
+    QString finalName = newName;
+    int i = 1;
+    if (bInput)
+    {
+        while (desc.inputs.find(finalName) != desc.inputs.end())
+        {
+            finalName = finalName + QString("_%1").arg(i);
+            i++;
+        }
+    }
+    else
+    {
+        while (desc.outputs.find(finalName) != desc.outputs.end())
+        {
+            finalName = finalName + QString("_%1").arg(i);
+            i++;
+        }
+    }
+    return finalName;
 }

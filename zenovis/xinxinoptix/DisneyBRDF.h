@@ -9,6 +9,56 @@ static __inline__ __device__  float fresnel(float cosT){
     float v2 = v *v;
     return v2 * v2 * v;
 }
+static __inline__ __device__ vec3 fresnelSchlick(vec3 r0, float radians)
+{
+    float exponential = powf( 1.0f - radians, 5.0f);
+    return r0 + (vec3(1.0f) - r0) * exponential;
+}
+static __inline__ __device__ float fresnelSchlick(float r0, float radians)
+{
+    return mix(1.0f, fresnel(radians), r0);
+}
+static __inline__ __device__ float SchlickWeight(float u)
+{
+    float m = clamp(1.0f - u, 0.0f, 1.0f);
+    float m2 = m * m;
+    return m * m2 * m2;
+}
+static __inline__ __device__ float fresnelSchlickR0(float eta)
+{
+    return pow(eta - 1.0f, 2.0f) / pow(eta + 1.0f, 2.0f);
+}
+static __inline__ __device__ float SchlickDielectic(float cosThetaI, float relativeIor)
+{
+    float r0 = fresnelSchlickR0(relativeIor);
+    return r0 + (1.0f - r0) * SchlickWeight(cosThetaI);
+}
+
+static __inline__ __device__ float fresnelDielectric(float cosThetaI, float ni, float nt, bool is_inside)
+{
+    cosThetaI = clamp(cosThetaI, -1.0f, 1.0f);
+
+    if(is_inside)
+    {
+        float temp = ni;
+        ni = nt;
+        nt = temp;
+    }
+
+    float sinThetaI = sqrtf(max(0.0f, 1.0f - cosThetaI * cosThetaI));
+    float sinThetaT = ni / nt * sinThetaI;
+
+    if(sinThetaT >= 1)
+    {
+        return 1;
+    }
+
+    float cosThetaT = sqrtf(max(0.0f, 1.0f - sinThetaT * sinThetaT));
+
+    float rParallel     = ((nt * cosThetaI) - (ni * cosThetaT)) / ((nt * cosThetaI) + (ni * cosThetaT));
+    float rPerpendicuar = ((ni * cosThetaI) - (nt * cosThetaT)) / ((ni * cosThetaI) + (nt * cosThetaT));
+    return (rParallel * rParallel + rPerpendicuar * rPerpendicuar) / 2;
+}
 static __inline__ __device__  float GTR1(float cosT,float a){
     if(a >= 1.0f) return 1/M_PIf;
     float t = (1+(a*a-1)*cosT*cosT);
@@ -21,7 +71,7 @@ static __inline__ __device__  float GTR2(float cosT,float a){
 static __inline__ __device__  float GGX(float cosT, float a){
     float a2 = a*a;
     float b = cosT*cosT;
-    return 1.0f/ (cosT + sqrtf(a2 + b - a2*b));
+    return 2.0f/ (1.0f + sqrtf(a2 + b - a2*b));
 }
 static __inline__ __device__  vec3 sampleOnHemisphere(unsigned int &seed, float roughness)
 {
@@ -36,6 +86,110 @@ static __inline__ __device__  vec3 sampleOnHemisphere(unsigned int &seed, float 
 
 
     return vec3(cos(phi) * sinTheta,  sin(phi) * sinTheta, cosTheta);
+}
+static __inline__ __device__ float pdfDiffuse(vec3 wi, vec3 n)
+{
+    return abs(dot(n, wi)/M_PIf);
+}
+static __inline__ __device__ float pdfMicrofacet(float NoH, float roughness)
+{
+    float a2 = roughness * roughness;
+    a2 *= a2;
+    float cos2Theta = NoH * NoH;
+    float denom = cos2Theta * (a2 - 1.) + 1;
+    if(denom == 0 ) return 0;
+    float pdfDistrib = a2 / (M_PIf * denom * denom);
+    return pdfDistrib;
+}
+static __inline__ __device__ float pdfClearCoat(float NoH, float ccAlpha)
+{
+    float Dr = GTR1(NoH, ccAlpha);
+    return Dr;
+}
+static __inline__ __device__ 
+float ThinTransmissionRoughness(float ior, float roughness)
+{
+    return clamp((0.65f * ior - 0.35f)*roughness, 0.0f, 1.0f);
+}
+static __inline__ __device__
+void CalculateAnisotropicParams(float roughness, float anisotropic, float &ax, float &ay)
+{
+    float aspect = sqrtf(1.0f - 0.9f * anisotropic);
+    ax = max(0.001f, roughness*roughness / aspect);
+    ay = max(0.001f, roughness*roughness * aspect);
+}
+static __inline__ __device__
+vec3 CalculateTint(vec3 baseColor)
+{
+    float luminance = dot(vec3(0.3f, 0.6f,1.0f), baseColor);
+    return luminance>0.0f?baseColor * (1.0f/luminance) : vec3(1.0f);
+}
+static __inline__ __device__ float  SeparableSmithGGXG1(vec3 w, vec3 wm, float ax, float ay)
+{
+
+    if(abs(w.z)<1e-7) {
+        return 0.0f;
+    }
+    float sinTheta = sqrtf(1.0f - w.z * w.z);
+    float absTanTheta = abs( sinTheta / w.z);
+    float Cos2Phi = (sinTheta == 0.0f)? 1.0f:clamp(w.x / sinTheta, -1.0f, 1.0f);
+    Cos2Phi *= Cos2Phi;
+    float Sin2Phi = (sinTheta == 0.0f)? 1.0f:clamp(w.y / sinTheta, -1.0f, 1.0f);
+    Sin2Phi *= Sin2Phi;
+    float a = sqrtf(Cos2Phi * ax * ax + Sin2Phi * ay * ay);
+    float a2Tan2Theta = pow(a * absTanTheta, 2.0f);
+
+    float lambda = 0.5f * (-1.0f + sqrtf(1.0f + a2Tan2Theta));
+    return 1.0f / (1.0f + lambda);
+}
+static __inline__ __device__ float GgxAnisotropicD(vec3 wm, float ax, float ay)
+{
+    float dotHX2 = wm.x * wm.x;
+    float dotHY2 = wm.y * wm.y;
+    float cos2Theta = wm.z * wm.z;
+    float ax2 = ax * ax;
+    float ay2 = ay * ay;
+
+    return 1.0f / (M_PIf * ax * ay * powf(dotHX2 / ax2 + dotHY2 / ay2 + cos2Theta, 2.0f));
+}
+
+static __inline__ __device__ void GgxVndfAnisotropicPdf(vec3 wi, vec3 wm, vec3 wo, float ax, float ay,
+                                   float& forwardPdfW, float& reversePdfW)
+{
+    float D = GgxAnisotropicD(wm, ax, ay);
+
+    float absDotNL = abs(wi.z);
+    float absDotHL = abs(dot(wm, wi));
+    float G1v = SeparableSmithGGXG1(wo, wm, ax, ay);
+    forwardPdfW = G1v * absDotHL * D / absDotNL;
+
+    float absDotNV = abs(wo.z);
+    float absDotHV = abs(dot(wm, wo));
+    float G1l = SeparableSmithGGXG1(wi, wm, ax, ay);
+    reversePdfW = G1l * absDotHV * D / absDotNV;
+}
+static __inline__ __device__ 
+vec3 SampleGgxVndfAnisotropic(vec3 wo, float ax, float ay, float u1, float u2)
+{
+    // -- Stretch the view vector so we are sampling as though roughness==1
+    vec3 v = normalize(vec3(wo.x * ax, wo.y * ay,  wo.z));
+
+    // -- Build an orthonormal basis with v, t1, and t2
+    vec3 t1 = (v.z < 0.9999f) ? normalize(cross(v, vec3(0,0,1))) : vec3(1,0,0);
+    vec3 t2 = cross(t1, v);
+
+    // -- Choose a point on a disk with each half of the disk weighted proportionally to its projection onto direction v
+    float a = 1.0f / (1.0f + v.z);
+    float r = sqrtf(u1);
+    float phi = (u2 < a) ? (u2 / a) * M_PIf : M_PIf + (u2 - a) / (1.0f - a) * M_PIf;
+    float p1 = r * cos(phi);
+    float p2 = r * sin(phi) * ((u2 < a) ? 1.0f : v.z);
+
+    // -- Calculate the normal in this stretched tangent space
+    vec3 n = p1 * t1 + p2 * t2 + sqrtf(max(0.0f, 1.0f - p1 * p1 - p2 * p2)) * v;
+
+    // -- unstretch and normalize the normal
+    return normalize(vec3(ax * n.x, ay * n.y, n.z));
 }
 }
 namespace DisneyBRDF
@@ -71,7 +225,7 @@ static __inline__ __device__ float pdf(
         float pdfGTR1 = BRDFBasics::GTR1(cosTheta, ccAlpha) * cosTheta;
 
         float ratio = 1.0f/(1.0f + clearcoat);
-        float pdfSpec = mix(pdfGTR1, pdfGTR2, ratio)/(4.0f * abs(dot(wi, half)));
+        float pdfSpec = mix(pdfGTR1, pdfGTR2, ratio)/(4.0f * abs(dot(wo, half)));
         float pdfDiff = abs(dot(wi, n)) * (1.0f/M_PIf);
 
         return diffRatio * pdfDiff + spRatio * pdfSpec;
@@ -176,7 +330,7 @@ static __inline__ __device__ vec3 eval(
         float Dc = BRDFBasics::GTR1(ndoth, mix(0.1f, 0.001f, clearcoatGloss));
 
         float roughg = sqrtf(roughness*0.5f + 0.5f);
-        float Gs = BRDFBasics::GGX(ndotwo, roughg) * BRDFBasics::GGX(ndotwi, roughg);
+        float Gs = BRDFBasics::GGX(ndotwo, roughness) * BRDFBasics::GGX(ndotwi, roughness);
 
         float Gc = BRDFBasics::GGX(ndotwo, 0.25) * BRDFBasics::GGX(ndotwi, 0.25f);
 
@@ -190,61 +344,6 @@ static __inline__ __device__ vec3 eval(
         + Gs*Fs*Ds + 0.25f*clearcoat*Gc*Fc*Dc;
     }
 }
-
-//////////////////////////////////////////
-///here inject common code in glsl style
-static __inline__ __device__ vec3 perlin_hash22(vec3 p)
-{
-    p = vec3( dot(p,vec3(127.1f,311.7f,284.4f)),
-              dot(p,vec3(269.5f,183.3f,162.2f)),
-	      	  dot(p,vec3(228.3f,164.9f,126.0f)));
-    return -1.0f + 2.0f * fract(sin(p)*43758.5453123f);
-}
-
-static __inline__ __device__ float perlin_lev1(vec3 p)
-{
-    vec3 pi = vec3(floor(p));
-    vec3 pf = p - pi;
-    vec3 w = pf * pf * (3.0f - 2.0f * pf);
-    return .08f + .8f * (mix(
-			            mix(
-                            mix(
-                            dot(perlin_hash22(pi + 0), pf - 0),
-                            dot(perlin_hash22(pi + 0), pf - 0),
-                            w.x),
-                            mix(
-                            dot(perlin_hash22(pi + vec3(0, 1, 0)), pf - vec3(0, 1, 0)),
-                            dot(perlin_hash22(pi + vec3(1, 1, 0)), pf - vec3(1, 1, 0)),
-                            w.x),
-				        w.y),
-			            mix(
-				            mix(
-                            dot(perlin_hash22(pi + vec3(0, 0, 1)), pf - vec3(0, 0, 1)),
-                            dot(perlin_hash22(pi + vec3(1, 0, 1)), pf - vec3(1, 0, 1)),
-                            w.x),
-				            mix(
-                            dot(perlin_hash22(pi + vec3(0, 1, 1)), pf - vec3(0, 1, 1)),
-                            dot(perlin_hash22(pi + vec3(1, 1, 1)), pf - vec3(1, 1, 1)),
-                            w.x),
-				        w.y),
-			          w.z));
-}
-
-static __inline__ __device__ float perlin(float p,int n,vec3 a)
-{
-    float total = 0;
-    for(int i=0; i<n; i++)
-    {
-        float frequency = pow(2.0f,i*1.0f);
-        float amplitude = pow(p,i*1.0f);
-        total = total + perlin_lev1(a * frequency) * amplitude;
-    }
-
-    return total;
-}
-
-///end example of common code injection in glsl style
-
 
 
 

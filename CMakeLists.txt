@@ -33,21 +33,17 @@ option(ZENO_OUT_TO_BIN "Output files to a fixed directory" ON)
 option(ZENO_BUILD_SHARED "Build shared library for ZENO" OFF)
 option(ZENO_USE_CCACHE "Use CCache if found in path" ON)
 option(ZENO_NO_WARNING "Use customized compiler warnings" ON)
-option(ZENO_INSTALL_TARGET "Enable installation targets" ON)
+option(ZENO_INSTALL_TARGET "Enable installation targets" OFF)
 
-if (ZENO_BUILD_SHARED)
+if (NOT DEFINED CMAKE_POSITION_INDEPENDENT_CODE)
     # Otherwise we can't link .so libs with .a libs
     set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-    if (MSVC AND NOT DEFINED CMAKE_MSVC_RUNTIME_LIBRARY)
-        # MSVC sucks /MD /MT /MDd /MTd options....
-        # MultiThreadedDLL = /MD, MultiThreadedDebugDLL = /MDd
-        # MultiThreaded = /MT, MultiThreadedDebug = /MTd
-        set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
-    endif()
-else()
-    if (MSVC AND NOT DEFINED CMAKE_MSVC_RUNTIME_LIBRARY)
-        set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
-    endif()
+endif()
+if (MSVC AND NOT DEFINED CMAKE_MSVC_RUNTIME_LIBRARY)
+    # MSVC sucks /MD /MT /MDd /MTd options....
+    # MultiThreadedDLL = /MD, MultiThreadedDebugDLL = /MDd
+    # MultiThreaded = /MT, MultiThreadedDebug = /MTd
+    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
 endif()
 
 if (NOT CMAKE_BUILD_TYPE)
@@ -94,6 +90,19 @@ if (ZENO_OUT_TO_BIN)
     set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE ${ZENO_OUTPUT_DIR})
     set(CMAKE_DEBUG_POSTFIX "")  # No more annoying zeno_d.dll
 endif()
+
+if (EXISTS ${CMAKE_CURRENT_BINARY_DIR}/zeno_asset_dirs.txt)
+    file(REMOVE ${CMAKE_CURRENT_BINARY_DIR}/zeno_asset_dirs.txt)
+endif()
+function (zeno_add_asset_dir dir)
+    if (ZENO_INSTALL_TARGET)
+        install(
+            DIRECTORY ${dir}
+            DESTINATION share/Zeno/assets/${dir}
+            )
+    endif()
+    file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/zeno_asset_dirs.txt "${dir}")
+endfunction()
 
 add_subdirectory(zeno)
 add_subdirectory(projects)

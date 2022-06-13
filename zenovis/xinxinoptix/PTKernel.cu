@@ -62,15 +62,17 @@ extern "C" __global__ void __raygen__rg()
                     1e16f,  // tmax
                     &prd );
 
-            result += prd.emitted;
-            result += prd.radiance * prd.attenuation2/prd.prob2;
-
+            //result += prd.emitted;
+            if(prd.countEmitted==false || depth>0)
+                result += prd.radiance * prd.attenuation2/prd.prob2;
+            if(prd.countEmitted==true && depth>=0)
+                prd.done = true;
             if( prd.done  || depth >= 5 ) // TODO RR, variable for depth
                 break;
 
             ray_origin    = prd.origin;
             ray_direction = prd.direction;
-            if(prd.opacity<0.99)
+            if(prd.passed == false)
                 ++depth;
         }
     }
@@ -86,6 +88,10 @@ extern "C" __global__ void __raygen__rg()
         const float3 accum_color_prev = make_float3( params.accum_buffer[ image_index ]);
         accum_color = lerp( accum_color_prev, accum_color, a );
     }
+    /*if (launch_index.x == 0) {*/
+        /*printf("%p\n", params.accum_buffer);*/
+        /*printf("%p\n", params.frame_buffer);*/
+    /*}*/
     params.accum_buffer[ image_index ] = make_float4( accum_color, 1.0f);
     params.frame_buffer[ image_index ] = make_color ( accum_color );
 }

@@ -25,6 +25,7 @@ signals:
     void playForwardOneFrame();
     void playForwardLastFrame();
     int sliderValueChanged(int);
+    void alwaysChecked();
     void run();
     void kill();
 

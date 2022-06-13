@@ -18,6 +18,7 @@ public:
 private slots:
     void onNewConnection();
     void onReadyRead();
+    void onProcPipeReady();
     void onDisconnect();
 
 private:

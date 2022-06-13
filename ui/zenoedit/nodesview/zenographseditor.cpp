@@ -574,4 +574,18 @@ void ZenoGraphsEditor::onMenuActionTriggered(QAction* pAction)
             }
         }
     }
+    else if (text == tr("Set NASLOC"))
+    {
+        QSettings settings("ZenusTech", "Zeno");
+        QString v = settings.value("nas_loc").toString();
+
+        bool ok;
+        QString text = QInputDialog::getText(this, tr("Set NASLOC"),
+                                             tr("NASLOC"), QLineEdit::Normal,
+                                             v, &ok);
+        if (ok) {
+            text.replace('\\', '/');
+            settings.setValue("nas_loc", text);
+        }
+    }
 }

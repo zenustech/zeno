@@ -12,6 +12,7 @@
 #include <QTcpServer>
 #include <QtWidgets>
 #include <QTcpSocket>
+#include <zeno/utils/scope_exit.h>
 #include "corelaunch.h"
 
 namespace {
@@ -49,7 +50,9 @@ static void send_packet(std::string_view info, const char *buf, size_t len) {
         clientSocket->write(&c, 1);
     }
     clientSocket->write(buf, len);
-    clientSocket->waitForBytesWritten();
+    while (clientSocket->bytesToWrite() > 0) {
+        clientSocket->waitForBytesWritten();
+    }
 }
 
 static void runner_start(std::string const &progJson, int sessionid) {
@@ -81,6 +84,7 @@ static void runner_start(std::string const &progJson, int sessionid) {
                 + "\"}", "", 0);
 
     for (frame = graph->beginFrameNumber; frame <= graph->endFrameNumber; frame++) {
+        zeno::scope_exit sp([=]() { std::cout.flush(); });
         zeno::log_debug("begin frame {}", frame);
 
         session->globalComm->newFrame();

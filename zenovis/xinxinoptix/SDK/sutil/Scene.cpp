@@ -1170,7 +1170,8 @@ void Scene::createPTXModule()
     m_pipeline_compile_options.pipelineLaunchParamsVariableName = "params";
 
     size_t      inputSize = 0;
-    const char* input     = sutil::getInputData( nullptr, nullptr, "whitted.cu", "whitted.cu", inputSize );
+    bool is_success;
+    const char* input     = sutil::getInputData( nullptr, nullptr, "whitted.cu", "whitted.cu", inputSize, is_success);
 
     m_ptx_module  = {};
     char log[2048];

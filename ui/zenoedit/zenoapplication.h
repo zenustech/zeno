@@ -43,9 +43,8 @@ private:
 
 #define zenoApp (qobject_cast<ZenoApplication*>(QApplication::instance()))
 
-#define DlgInEventLoopScope  \
-    zeno::scope_exit sp([=]() {zenoApp->getMainWindow()->setInDlgEventLoop(false);});\
-    zenoApp->getMainWindow()->setInDlgEventLoop(true);    
-
+#define DlgInEventLoopScope                                                             \
+    zeno::scope_exit sp([=]() { zenoApp->getMainWindow()->setInDlgEventLoop(false); }); \
+    zenoApp->getMainWindow()->setInDlgEventLoop(true);
 
 #endif

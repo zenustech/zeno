@@ -15,6 +15,8 @@ struct MatOutput {
     float clearcoat;
     float clearcoatGloss;
     float opacity;
+    vec3 nrm;
+    vec3 emission;
 };
 
 struct MatInput {
