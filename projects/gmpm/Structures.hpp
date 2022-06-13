@@ -119,10 +119,11 @@ struct ZenoParticles : IObjectClone<ZenoParticles> {
     tri_bending_spring,
     bending
   };
-  using particles_t = zs::TileVector<float, 32>;
-  using dtiles_t = zs::TileVector<double, 32>;
+  using particles_t = zs::TileVector<zs::f32, 32>;
+  using dtiles_t = zs::TileVector<zs::f64, 32>;
   using lbvh_t = zs::LBvh<3>;
 
+  static constexpr auto s_particleTag = "particles";
   static constexpr auto s_elementTag = "elements";
   static constexpr auto s_surfTriTag = "surfaces";
   static constexpr auto s_surfEdgeTag = "surfEdges";
@@ -145,25 +146,45 @@ struct ZenoParticles : IObjectClone<ZenoParticles> {
     return *this;
   }
 
-  auto &getParticles() {
-    if (!particles)
-      throw std::runtime_error("particles (verts) not inited.");
-    return *particles;
+  template <bool HighPrecision = false>
+  auto &getParticles(zs::wrapv<HighPrecision> = {}) {
+    if constexpr (HighPrecision) {
+      return images[s_particleTag];
+    } else {
+      if (!particles)
+        throw std::runtime_error("particles (verts) not inited.");
+      return *particles;
+    }
   }
-  const auto &getParticles() const {
-    if (!particles)
-      throw std::runtime_error("particles (verts) not inited.");
-    return *particles;
+  template <bool HighPrecision = false>
+  const auto &getParticles(zs::wrapv<HighPrecision> = {}) const {
+    if constexpr (HighPrecision) {
+      return images.at(s_particleTag);
+    } else {
+      if (!particles)
+        throw std::runtime_error("particles (verts) not inited.");
+      return *particles;
+    }
   }
-  auto &getQuadraturePoints() {
-    if (!elements.has_value())
-      throw std::runtime_error("quadrature points not binded.");
-    return *elements;
+  template <bool HighPrecision = false>
+  auto &getQuadraturePoints(zs::wrapv<HighPrecision> = {}) {
+    if constexpr (HighPrecision) {
+      return images[s_elementTag];
+    } else {
+      if (!elements.has_value())
+        throw std::runtime_error("quadrature points not binded.");
+      return *elements;
+    }
   }
-  const auto &getQuadraturePoints() const {
-    if (!elements.has_value())
-      throw std::runtime_error("quadrature points not binded.");
-    return *elements;
+  template <bool HighPrecision = false>
+  const auto &getQuadraturePoints(zs::wrapv<HighPrecision> = {}) const {
+    if constexpr (HighPrecision) {
+      return images.at(s_elementTag);
+    } else {
+      if (!elements.has_value())
+        throw std::runtime_error("quadrature points not binded.");
+      return *elements;
+    }
   }
   bool isBendingString() const noexcept {
     return particles && elements.has_value() &&
@@ -237,12 +258,19 @@ struct ZenoParticles : IObjectClone<ZenoParticles> {
         return true;
     return false;
   }
+  bool hasImage(const std::string &tag) const {
+    if (auto it = images.find(tag); it != images.end())
+      if (it->second.size() != 0)
+        return true;
+    return false;
+  }
 
   std::shared_ptr<particles_t> particles{};
   std::optional<particles_t> elements{};
   std::map<std::string, particles_t> auxData;
   std::map<std::string, lbvh_t> auxSpatialData;
   std::map<std::string, std::any> metas;
+  std::map<std::string, dtiles_t> images;
   category_e category{category_e::mpm}; // 0: conventional mpm particle, 1:
                                         // curve, 2: surface, 3: tet
   std::shared_ptr<PrimitiveObject> prim{};

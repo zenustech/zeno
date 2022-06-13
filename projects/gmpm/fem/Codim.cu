@@ -240,7 +240,7 @@ struct CodimStepping : INode {
     constexpr T slackness = 0.8;
     constexpr auto space = execspace_e::cuda;
 
-    const auto &verts = zstets.getParticles();
+    const auto &verts = zstets.getParticles<true>();
 
     ///
     // query pt
@@ -252,7 +252,7 @@ struct CodimStepping : INode {
          gn = s_groundNormal, finalAlpha = proxy<space>(finalAlpha),
          stepSize] ZS_LAMBDA(int vi) mutable {
           // this vert affected by sticky boundary conditions
-          if (reinterpret_bits<int>(verts("BCorder", vi)) == 3)
+          if (reinterpret_bits<zs::i64>(verts("BCorder", vi)) == 3)
             return;
           auto dir = vtemp.pack<3>("dir", vi);
           auto coef = gn.dot(dir);
@@ -311,10 +311,10 @@ struct CodimStepping : INode {
               if (vi == tri[0] || vi == tri[1] || vi == tri[2])
                 return;
               // all affected by sticky boundary conditions
-              if (reinterpret_bits<int>(verts("BCorder", vi)) == 3 &&
-                  reinterpret_bits<int>(verts("BCorder", tri[0])) == 3 &&
-                  reinterpret_bits<int>(verts("BCorder", tri[1])) == 3 &&
-                  reinterpret_bits<int>(verts("BCorder", tri[2])) == 3)
+              if (reinterpret_bits<zs::i64>(verts("BCorder", vi)) == 3 &&
+                  reinterpret_bits<zs::i64>(verts("BCorder", tri[0])) == 3 &&
+                  reinterpret_bits<zs::i64>(verts("BCorder", tri[1])) == 3 &&
+                  reinterpret_bits<zs::i64>(verts("BCorder", tri[2])) == 3)
                 return;
               // ccd
               auto t0 = vtemp.template pack<3>("xn", tri[0]);
@@ -402,8 +402,8 @@ struct CodimStepping : INode {
         auto eiInds = edges.template pack<2>("inds", sei)
                           .template reinterpret_bits<int>();
         bool selfFixed =
-            reinterpret_bits<int>(verts("BCorder", eiInds[0])) == 3 &&
-            reinterpret_bits<int>(verts("BCorder", eiInds[1])) == 3;
+            reinterpret_bits<zs::i64>(verts("BCorder", eiInds[0])) == 3 &&
+            reinterpret_bits<zs::i64>(verts("BCorder", eiInds[1])) == 3;
         auto v0 = vtemp.template pack<3>("xn", eiInds[0]);
         auto v1 = vtemp.template pack<3>("xn", eiInds[1]);
         auto rv0 = verts.template pack<3>("x0", eiInds[0]);
@@ -420,8 +420,8 @@ struct CodimStepping : INode {
             return;
           // all affected by sticky boundary conditions
           if (selfFixed &&
-              reinterpret_bits<int>(verts("BCorder", ejInds[0])) == 3 &&
-              reinterpret_bits<int>(verts("BCorder", ejInds[1])) == 3)
+              reinterpret_bits<zs::i64>(verts("BCorder", ejInds[0])) == 3 &&
+              reinterpret_bits<zs::i64>(verts("BCorder", ejInds[1])) == 3)
             return;
           // ccd
           auto v2 = vtemp.template pack<3>("xn", ejInds[0]);
@@ -564,10 +564,10 @@ struct CodimStepping : INode {
               if (vi == tri[0] || vi == tri[1] || vi == tri[2])
                 return;
               // all affected by sticky boundary conditions
-              if (reinterpret_bits<int>(verts("BCorder", vi)) == 3 &&
-                  reinterpret_bits<int>(verts("BCorder", tri[0])) == 3 &&
-                  reinterpret_bits<int>(verts("BCorder", tri[1])) == 3 &&
-                  reinterpret_bits<int>(verts("BCorder", tri[2])) == 3)
+              if (reinterpret_bits<zs::i64>(verts("BCorder", vi)) == 3 &&
+                  reinterpret_bits<zs::i64>(verts("BCorder", tri[0])) == 3 &&
+                  reinterpret_bits<zs::i64>(verts("BCorder", tri[1])) == 3 &&
+                  reinterpret_bits<zs::i64>(verts("BCorder", tri[2])) == 3)
                 return;
               csPT[atomic_add(exec_cuda, &ncsPT[0], 1)] = pair_t{vi, stI};
             });
@@ -584,8 +584,8 @@ struct CodimStepping : INode {
             auto eiInds = edges.template pack<2>("inds", sei)
                               .template reinterpret_bits<int>();
             bool selfFixed =
-                reinterpret_bits<int>(verts("BCorder", eiInds[0])) == 3 &&
-                reinterpret_bits<int>(verts("BCorder", eiInds[1])) == 3;
+                reinterpret_bits<zs::i64>(verts("BCorder", eiInds[0])) == 3 &&
+                reinterpret_bits<zs::i64>(verts("BCorder", eiInds[1])) == 3;
             auto v0 = vtemp.template pack<3>("xn", eiInds[0]);
             auto v1 = vtemp.template pack<3>("xn", eiInds[1]);
             auto dir0 = vtemp.template pack<3>("dir", eiInds[0]);
@@ -605,8 +605,8 @@ struct CodimStepping : INode {
                 return;
               // all affected by sticky boundary conditions
               if (selfFixed &&
-                  reinterpret_bits<int>(verts("BCorder", ejInds[0])) == 3 &&
-                  reinterpret_bits<int>(verts("BCorder", ejInds[1])) == 3)
+                  reinterpret_bits<zs::i64>(verts("BCorder", ejInds[0])) == 3 &&
+                  reinterpret_bits<zs::i64>(verts("BCorder", ejInds[1])) == 3)
                 return;
               csEE[atomic_add(exec_cuda, &ncsEE[0], 1)] = pair_t{sei, sej};
             });
@@ -654,7 +654,7 @@ struct CodimStepping : INode {
             int BCorder[2];
             for (int i = 0; i != 2; ++i) {
               BCbasis[i] = verts.pack<3, 3>("BCbasis", pp[i]);
-              BCorder[i] = reinterpret_bits<int>(verts("BCorder", pp[i]));
+              BCorder[i] = reinterpret_bits<zs::i64>(verts("BCorder", pp[i]));
             }
             for (int vi = 0; vi != 2; ++vi) {
               int offsetI = vi * 3;
@@ -731,7 +731,7 @@ struct CodimStepping : INode {
             int BCorder[3];
             for (int i = 0; i != 3; ++i) {
               BCbasis[i] = verts.pack<3, 3>("BCbasis", pe[i]);
-              BCorder[i] = reinterpret_bits<int>(verts("BCorder", pe[i]));
+              BCorder[i] = reinterpret_bits<zs::i64>(verts("BCorder", pe[i]));
             }
             for (int vi = 0; vi != 3; ++vi) {
               int offsetI = vi * 3;
@@ -810,7 +810,7 @@ struct CodimStepping : INode {
             int BCorder[4];
             for (int i = 0; i != 4; ++i) {
               BCbasis[i] = verts.pack<3, 3>("BCbasis", pt[i]);
-              BCorder[i] = reinterpret_bits<int>(verts("BCorder", pt[i]));
+              BCorder[i] = reinterpret_bits<zs::i64>(verts("BCorder", pt[i]));
             }
             for (int vi = 0; vi != 4; ++vi) {
               int offsetI = vi * 3;
@@ -889,7 +889,7 @@ struct CodimStepping : INode {
             int BCorder[4];
             for (int i = 0; i != 4; ++i) {
               BCbasis[i] = verts.pack<3, 3>("BCbasis", ee[i]);
-              BCorder[i] = reinterpret_bits<int>(verts("BCorder", ee[i]));
+              BCorder[i] = reinterpret_bits<zs::i64>(verts("BCorder", ee[i]));
             }
             for (int vi = 0; vi != 4; ++vi) {
               int offsetI = vi * 3;
@@ -1021,7 +1021,7 @@ struct CodimStepping : INode {
             {
               auto tmp = hess;
               auto BCbasis = verts.pack<3, 3>("BCbasis", vi);
-              int BCorder = reinterpret_bits<int>(verts("BCorder", vi));
+              int BCorder = reinterpret_bits<zs::i64>(verts("BCorder", vi));
               // rotate
               tmp = BCbasis.transpose() * tmp * BCbasis;
               // project
@@ -1067,7 +1067,8 @@ struct CodimStepping : INode {
                 int BCorder[3];
                 for (int i = 0; i != 3; ++i) {
                   BCbasis[i] = verts.pack<3, 3>("BCbasis", inds[i]);
-                  BCorder[i] = reinterpret_bits<int>(verts("BCorder", inds[i]));
+                  BCorder[i] =
+                      reinterpret_bits<zs::i64>(verts("BCorder", inds[i]));
                 }
 
                 zs::vec<T, 9, 9> H;
@@ -1451,7 +1452,7 @@ struct CodimStepping : INode {
           [vtemp = proxy<space>({}, vtemp), verts = proxy<space>({}, verts),
            tag] ZS_LAMBDA(int vi) mutable {
             auto BCbasis = verts.template pack<3, 3>("BCbasis", vi);
-            auto BCorder = reinterpret_bits<int>(verts("BCorder", vi));
+            auto BCorder = reinterpret_bits<zs::i64>(verts("BCorder", vi));
             for (int d = 0; d != BCorder; ++d)
               vtemp(tag, d, vi) = 0;
             // if (verts("x", 1, vi) > 0.8)
@@ -1465,13 +1466,12 @@ struct CodimStepping : INode {
       using namespace zs;
       constexpr execspace_e space = execspace_e::cuda;
       // precondition
-      pol(zs::range(verts.size()),
-          [vtemp = proxy<space>({}, vtemp), verts = proxy<space>({}, verts),
-           srcTag, dstTag] ZS_LAMBDA(int vi) mutable {
-            vtemp.template tuple<3>(dstTag, vi) =
-                vtemp.template pack<3, 3>("P", vi) *
-                vtemp.template pack<3>(srcTag, vi);
-          });
+      pol(zs::range(verts.size()), [vtemp = proxy<space>({}, vtemp), srcTag,
+                                    dstTag] ZS_LAMBDA(int vi) mutable {
+        vtemp.template tuple<3>(dstTag, vi) =
+            vtemp.template pack<3, 3>("P", vi) *
+            vtemp.template pack<3>(srcTag, vi);
+      });
     }
     template <typename Pol>
     void multiply(Pol &pol, const zs::SmallString dxTag,
@@ -1496,7 +1496,7 @@ struct CodimStepping : INode {
         auto m = verts("m", vi);
         auto dx = vtemp.template pack<3>(dxTag, vi);
         auto BCbasis = verts.template pack<3, 3>("BCbasis", vi);
-        auto BCorder = reinterpret_bits<int>(verts("BCorder", vi));
+        auto BCorder = reinterpret_bits<zs::i64>(verts("BCorder", vi));
         // dx = BCbasis.transpose() * m * BCbasis * dx;
         auto M = mat3::identity() * m;
         M = BCbasis.transpose() * M * BCbasis;
@@ -1624,7 +1624,7 @@ struct CodimStepping : INode {
       } // end contacts
     }
 
-    FEMSystem(const tiles_t &verts, const tiles_t &edges, const tiles_t &eles,
+    FEMSystem(const dtiles_t &verts, const tiles_t &edges, const tiles_t &eles,
               dtiles_t &vtemp, dtiles_t &etemp, T dt,
               const ZenoConstitutiveModel &models)
         : verts{verts}, edges{edges}, eles{eles}, vtemp{vtemp}, etemp{etemp},
@@ -1650,7 +1650,7 @@ struct CodimStepping : INode {
           tempPB{verts.get_allocator(), {{"H", 9}}, verts.size()}, dt{dt},
           models{models} {}
 
-    const tiles_t &verts;
+    const dtiles_t &verts;
     const tiles_t &edges;
     const tiles_t &eles;
     dtiles_t &vtemp;
@@ -1745,7 +1745,7 @@ struct CodimStepping : INode {
       zsboundary = get_input<ZenoParticles>("ZSBoundaryPrimitives");
     auto models = zstets->getModel();
     auto dt = get_input2<float>("dt");
-    auto &verts = zstets->getParticles();
+    auto &verts = zstets->getParticles<true>();
     auto &eles = zstets->getQuadraturePoints();
 
     static dtiles_t vtemp{verts.get_allocator(),
@@ -1789,7 +1789,8 @@ struct CodimStepping : INode {
             [vtemp = proxy<space>({}, vtemp),
              verts = proxy<space>({}, verts)] __device__(int vi) mutable {
               auto x = verts.pack<3>("x", vi);
-              if (auto BCorder = reinterpret_bits<int>(verts("BCorder", vi));
+              if (auto BCorder =
+                      reinterpret_bits<zs::i64>(verts("BCorder", vi));
                   BCorder > 0) {
                 auto BCbasis = verts.pack<3, 3>("BCbasis", vi);
                 auto BCtarget = verts.pack<3>("BCtarget", vi);
@@ -1825,17 +1826,17 @@ struct CodimStepping : INode {
       A.computeBarrierGradientAndHessian(cudaPol);
 
       // rotate gradient and project
-      cudaPol(zs::range(vtemp.size()),
-              [vtemp = proxy<space>({}, vtemp), verts = proxy<space>({}, verts),
-               dt] __device__(int i) mutable {
-                auto grad = verts.pack<3, 3>("BCbasis", i).transpose() *
-                            vtemp.pack<3>("grad", i);
-                if (auto BCorder = reinterpret_bits<int>(verts("BCorder", i));
-                    BCorder > 0)
-                  for (int d = 0; d != BCorder; ++d)
-                    grad(d) = 0;
-                vtemp.tuple<3>("grad", i) = grad;
-              });
+      cudaPol(zs::range(vtemp.size()), [vtemp = proxy<space>({}, vtemp),
+                                        verts = proxy<space>({}, verts),
+                                        dt] __device__(int i) mutable {
+        auto grad = verts.pack<3, 3>("BCbasis", i).transpose() *
+                    vtemp.pack<3>("grad", i);
+        if (auto BCorder = reinterpret_bits<zs::i64>(verts("BCorder", i));
+            BCorder > 0)
+          for (int d = 0; d != BCorder; ++d)
+            grad(d) = 0;
+        vtemp.tuple<3>("grad", i) = grad;
+      });
 
       // prepare preconditioner
       cudaPol(zs::range(vtemp.size()),
@@ -1888,8 +1889,7 @@ struct CodimStepping : INode {
           A.project(cudaPol, "temp");
 
           T alpha = zTrk / dot(cudaPol, vtemp, "temp", "p");
-          cudaPol(range(verts.size()), [verts = proxy<space>({}, verts),
-                                        vtemp = proxy<space>({}, vtemp),
+          cudaPol(range(verts.size()), [vtemp = proxy<space>({}, vtemp),
                                         alpha] ZS_LAMBDA(int vi) mutable {
             vtemp.tuple<3>("dir", vi) =
                 vtemp.pack<3>("dir", vi) + alpha * vtemp.pack<3>("p", vi);

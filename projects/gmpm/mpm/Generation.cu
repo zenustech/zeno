@@ -1170,46 +1170,64 @@ struct UpdatePrimitiveFromZSParticles : INode {
     auto parObjPtrs = RETRIEVE_OBJECT_PTRS(ZenoParticles, "ZSParticles");
 
     using namespace zs;
-    auto ompExec = zs::omp_exec();
 
     for (auto &&parObjPtr : parObjPtrs) {
-      bool requireClone =
-          !(parObjPtr->getParticles().memspace() == memsrc_e::host ||
-            parObjPtr->getParticles().memspace() == memsrc_e::um);
-      const auto &pars = requireClone
-                             ? parObjPtr->getParticles().clone({memsrc_e::host})
-                             : parObjPtr->getParticles();
-      if (parObjPtr->prim.get() == nullptr)
-        continue;
 
-      auto &prim = *parObjPtr->prim;
-      // const auto category = parObjPtr->category;
-      auto &pos = prim.attr<vec3f>("pos");
-      auto size = pos.size(); // in case zsparticle-mesh is refined
-      vec3f *velsPtr{nullptr};
-      if (prim.has_attr("vel") && pars.hasProperty("v"))
-        velsPtr = prim.attr<vec3f>("vel").data();
+      auto process = [](const auto &pars, PrimitiveObject &prim) {
+        auto ompExec = zs::omp_exec();
+        // const auto category = parObjPtr->category;
+        auto &pos = prim.attr<vec3f>("pos");
+        auto size = pos.size(); // in case zsparticle-mesh is refined
+        vec3f *velsPtr{nullptr};
+        if (prim.has_attr("vel") && pars.hasProperty("v"))
+          velsPtr = prim.attr<vec3f>("vel").data();
 
-      if (pars.hasProperty("id")) {
-        ompExec(range(pars.size()),
-                [&, pars = proxy<execspace_e::host>({}, pars)](auto pi) {
-                  auto id = (int)pars("id", pi);
-                  if (id >= size)
-                    return;
-                  pos[id] = pars.array<3>("x", pi);
-                  if (velsPtr != nullptr)
-                    velsPtr[id] = pars.array<3>("v", pi);
-                });
+        if (pars.hasProperty("id")) {
+          ompExec(range(pars.size()),
+                  [&, pars = proxy<execspace_e::host>({}, pars)](auto pi) {
+                    auto id = (int)pars("id", pi);
+                    if (id >= size)
+                      return;
+                    pos[id] = pars.template array<3, float>("x", pi);
+                    if (velsPtr != nullptr)
+                      velsPtr[id] = pars.template array<3, float>("v", pi);
+                  });
+        } else {
+          // currently only write back pos and vel (if exists)
+          ompExec(range(size),
+                  [&, pars = proxy<execspace_e::host>({}, pars)](auto pi) {
+                    pos[pi] = pars.template array<3, float>("x", pi);
+                    if (velsPtr != nullptr)
+                      velsPtr[pi] = pars.template array<3, float>("v", pi);
+                  });
+        }
+      };
+      if (parObjPtr->hasImage(ZenoParticles::s_particleTag)) {
+        bool requireClone =
+            !(parObjPtr->getParticles<true>().memspace() == memsrc_e::host ||
+              parObjPtr->getParticles<true>().memspace() == memsrc_e::um);
+        const auto &pars =
+            requireClone
+                ? parObjPtr->getParticles<true>().clone({memsrc_e::host})
+                : parObjPtr->getParticles<true>();
+        if (parObjPtr->prim.get() == nullptr)
+          continue;
+
+        auto &prim = *parObjPtr->prim;
+        process(pars, prim);
       } else {
-        // currently only write back pos and vel (if exists)
-        ompExec(range(size),
-                [&, pars = proxy<execspace_e::host>({}, pars)](auto pi) {
-                  pos[pi] = pars.array<3>("x", pi);
-                  if (velsPtr != nullptr)
-                    velsPtr[pi] = pars.array<3>("v", pi);
-                });
+        bool requireClone =
+            !(parObjPtr->getParticles().memspace() == memsrc_e::host ||
+              parObjPtr->getParticles().memspace() == memsrc_e::um);
+        const auto &pars =
+            requireClone ? parObjPtr->getParticles().clone({memsrc_e::host})
+                         : parObjPtr->getParticles();
+        if (parObjPtr->prim.get() == nullptr)
+          continue;
+
+        auto &prim = *parObjPtr->prim;
+        process(pars, prim);
       }
-      const auto cnt = pars.size();
     }
 
     fmt::print(fg(fmt::color::cyan),

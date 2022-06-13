@@ -573,7 +573,7 @@ ZENDEFNODE(ToZSTriMesh, {{{"surf (tri) mesh", "prim"}},
 
 struct ToZSSurfaceMesh : INode {
   using T = float;
-  using dtiles_t = zs::TileVector<T, 32>;
+  using dtiles_t = typename ZenoParticles::dtiles_t;
   using tiles_t = typename ZenoParticles::particles_t;
   using vec3 = zs::vec<T, 3>;
 
@@ -607,12 +607,11 @@ struct ToZSSurfaceMesh : INode {
     std::vector<zs::PropertyTag> eleTags{{"vol", 1}, {"IB", 4}, {"inds", 3}};
 
     constexpr auto space = zs::execspace_e::openmp;
-    zstris->particles =
-        std::make_shared<tiles_t>(tags, pos.size(), zs::memsrc_e::host);
-    auto &pars = zstris->getParticles();
+    auto &pars = zstris->getParticles<true>();
+    pars = dtiles_t{tags, pos.size(), zs::memsrc_e::host};
     ompExec(Collapse{pars.size()},
             [pars = proxy<space>({}, pars), &pos, &prim](int vi) mutable {
-              using vec3 = zs::vec<float, 3>;
+              using vec3 = zs::vec<double, 3>;
               using mat3 = zs::vec<float, 3, 3>;
               auto p = vec3{pos[vi][0], pos[vi][1], pos[vi][2]};
               pars.tuple<3>("x", vi) = p;
@@ -624,7 +623,7 @@ struct ToZSSurfaceMesh : INode {
               }
               // default boundary handling setup
               pars.tuple<9>("BCbasis", vi) = mat3::identity();
-              pars("BCorder", vi) = reinterpret_bits<float>(0);
+              pars("BCorder", vi) = reinterpret_bits<zs::f64>((zs::i64)0);
               pars.tuple<3>("BCtarget", vi) = vec3::zeros();
               // computed later
               pars("m", vi) = 0.f;
@@ -638,7 +637,7 @@ struct ToZSSurfaceMesh : INode {
              eles = proxy<space>({}, eles), &tris](int ei) mutable {
               for (size_t i = 0; i < 3; ++i)
                 eles("inds", i, ei) = zs::reinterpret_bits<float>(tris[ei][i]);
-              using vec3 = zs::vec<float, 3>;
+              using vec3 = zs::vec<double, 3>;
               using mat2 = zs::vec<float, 2, 2>;
               using vec4 = zs::vec<float, 4>;
               auto tri = tris[ei];
