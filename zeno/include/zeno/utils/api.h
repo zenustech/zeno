@@ -11,3 +11,5 @@
 #else
 # define ZENO_API
 #endif
+
+#define ZENO_VERSION_2
