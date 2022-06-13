@@ -213,11 +213,22 @@ struct GraphicsManager {
 
     bool load_objects(std::vector<std::pair<std::string, zeno::IObject *>> const &objs) {
         auto ins = graphics.insertPass();
+
+        bool changelight = false;
         for (auto const &[key, obj] : objs) {
             if (ins.may_emplace(key)) {
-                zeno::log_debug("zxx_load_object: loading graphics [{}]", key);
+                changelight = true;
+            }
+        }
+        if(changelight){
+            xinxinoptix::unload_light();
+        }
+
+        for (auto const &[key, obj] : objs) {
+            if (ins.may_emplace(key)) {
+                zeno::log_info("zxx_load_object: loading graphics [{}]", key);
                 auto ig = std::make_unique<ZxxGraphic>(key, obj);
-                zeno::log_debug("zxx_load_object: loaded graphics to {}", ig.get());
+                zeno::log_info("zxx_load_object: loaded graphics to {}", ig.get());
                 ins.try_emplace(key, std::move(ig));
             }
         }

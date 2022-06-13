@@ -169,7 +169,6 @@ struct ExtractMaterialShader : zeno::INode
         {
             auto obj = get_input<zeno::IObject>("object");
             auto isL = get_input2<int>("islight");
-            printf("isL %d\n", isL);
             obj->userData().setLiterial("isL", std::move(isL));
             set_output("object", std::move(obj));
         }

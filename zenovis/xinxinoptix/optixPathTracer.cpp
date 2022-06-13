@@ -1155,9 +1155,11 @@ struct LightDat{
 };
 static std::map<std::string, LightDat> lightdats;
 
-void load_light(std::string const &key, float const*v0,float const*v1,float const*v2, float const*nor,float const*emi){
+void unload_light(){
     lightdats.clear();
+}
 
+void load_light(std::string const &key, float const*v0,float const*v1,float const*v2, float const*nor,float const*emi){
     LightDat ld;
     ld.v0.assign(v0, v0 + 3);
     ld.v1.assign(v1, v1 + 3);
@@ -1182,22 +1184,14 @@ static void addLightMesh(float3 corner, float3 v2, float3 v1, float3 normal, flo
 }
 void optixupdatelight() {
     camera_changed = true;
-    
+
+    zeno::log_info("lights size {}", lightdats.size());
+
     g_lights.clear();
     g_lightMesh.clear();
 
-    for (auto const &[key, dat]: lightdats) {
-        auto &light = g_lights.emplace_back();
-        light.emission = make_float3( dat.emission[0], dat.emission[1], dat.emission[2] );
-        light.corner   = make_float3( dat.v0[0], dat.v0[1], dat.v0[2] );
-        light.v1       = make_float3( dat.v1[0], dat.v1[1], dat.v1[2] );
-        light.v2       = make_float3( dat.v2[0], dat.v2[1], dat.v2[2] );
-        light.normal   = make_float3( dat.normal[0], dat.normal[1], dat.normal[2] );
-        addLightMesh(light.corner, light.v2, light.v1, light.normal, 100.0f);
-    }
-
-    if(g_lights.empty()){
-        zeno::log_info("No light in the scene, add a default light");
+    if(lightdats.empty())
+    {
         for (int i = 0; i < 1; i++) {
             auto &light = g_lights.emplace_back();
             light.emission = make_float3( 30000.f );
@@ -1206,6 +1200,18 @@ void optixupdatelight() {
             light.normal   = make_float3( 0.0f, -10.0f, 0.0f );
             light.v1       = normalize( cross( light.v2, light.normal ) );
             addLightMesh(light.corner, light.v2, light.v1, light.normal, 30000.f);
+        }
+    }
+    else
+    {
+        for (auto const &[key, dat]: lightdats) {
+            auto &light = g_lights.emplace_back();
+            light.emission = make_float3( dat.emission[0], dat.emission[1], dat.emission[2] );
+            light.corner   = make_float3( dat.v0[0], dat.v0[1], dat.v0[2] );
+            light.v1       = make_float3( dat.v1[0], dat.v1[1], dat.v1[2] );
+            light.v2       = make_float3( dat.v2[0], dat.v2[1], dat.v2[2] );
+            light.normal   = make_float3( dat.normal[0], dat.normal[1], dat.normal[2] );
+            addLightMesh(light.corner, light.v2, light.v1, light.normal, 100.0f);
         }
     }
 
