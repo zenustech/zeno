@@ -14,6 +14,7 @@ struct GlobalComm {
 
     struct FrameData {
         ViewObjects view_objects;
+        bool b_frame_completed = false;
     };
     std::vector<FrameData> m_frames;
     int m_maxPlayFrame = 0;
@@ -21,8 +22,6 @@ struct GlobalComm {
 
     int beginFrameNumber = 0;
     int endFrameNumber = 0;
-
-    bool has_frame_completed = false;
 
     ZENO_API void frameRange(int beg, int end);
     ZENO_API void newFrame();
@@ -32,6 +31,7 @@ struct GlobalComm {
     ZENO_API void clearState();
     ZENO_API ViewObjects const *getViewObjects(int frameid);
     ZENO_API ViewObjects const &getViewObjects();
+    ZENO_API bool isFrameCompleted(int frameid) const;
 };
 
 }

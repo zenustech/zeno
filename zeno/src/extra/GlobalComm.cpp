@@ -8,14 +8,15 @@ ZENO_API void GlobalComm::newFrame() {
     std::lock_guard lck(m_mtx);
     log_debug("GlobalComm::newFrame {}", m_frames.size());
     m_frames.emplace_back();
-    has_frame_completed = false;
+    m_frames.back().b_frame_completed = false;
 }
 
 ZENO_API void GlobalComm::finishFrame() {
     std::lock_guard lck(m_mtx);
     log_debug("GlobalComm::finishFrame {}", m_maxPlayFrame);
+    if (m_maxPlayFrame >= 0 && m_maxPlayFrame < m_frames.size())
+        m_frames[m_maxPlayFrame].b_frame_completed = true;
     m_maxPlayFrame += 1;
-    has_frame_completed = true;
 }
 
 ZENO_API void GlobalComm::addViewObject(std::string const &key, std::shared_ptr<IObject> object) {
@@ -29,7 +30,6 @@ ZENO_API void GlobalComm::clearState() {
     std::lock_guard lck(m_mtx);
     m_frames.clear();
     m_maxPlayFrame = 0;
-    has_frame_completed = false;
 }
 
 ZENO_API void GlobalComm::frameRange(int beg, int end) {
@@ -53,6 +53,12 @@ ZENO_API GlobalComm::ViewObjects const *GlobalComm::getViewObjects(int frameid) 
 ZENO_API GlobalComm::ViewObjects const &GlobalComm::getViewObjects() {
     std::lock_guard lck(m_mtx);
     return m_frames.back().view_objects;
+}
+
+ZENO_API bool GlobalComm::isFrameCompleted(int frameid) const {
+    if (frameid < 0 || frameid >= m_frames.size())
+        return false;
+    return m_frames[frameid].b_frame_completed;
 }
 
 }

@@ -76,7 +76,6 @@ struct PacketProc {
 
         } else if (action == "newFrame") {
             globalCommNeedNewFrame = 1; // postpone `zeno::getSession().globalComm->newFrame();`
-            zeno::getSession().globalComm->has_frame_completed = false;
             zenoApp->getMainWindow()->updateViewport(QString::fromStdString(action));
 
         } else if (action == "finishFrame") {
