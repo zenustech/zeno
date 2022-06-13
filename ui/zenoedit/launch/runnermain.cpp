@@ -2,6 +2,7 @@
 #include <cstdio>
 #include <iostream>
 #include <zeno/utils/log.h>
+#include <zeno/utils/Timer.h>
 #include <zeno/core/Graph.h>
 #include <zeno/extra/GlobalState.h>
 #include <zeno/extra/GlobalComm.h>
@@ -57,6 +58,9 @@ static void send_packet(std::string_view info, const char *buf, size_t len) {
 
 static void runner_start(std::string const &progJson, int sessionid) {
     zeno::log_debug("runner got program JSON: {}", progJson);
+    //MessageBox(0, "runner", "runner", MB_OK);           //convient to attach process by debugger, at windows.
+    zeno::scope_exit sp([=]() { std::cout.flush(); });
+    zeno::TimerAtexitHelper timerHelper;
 
     auto session = &zeno::getSession();
     session->globalState->sessionid = sessionid;

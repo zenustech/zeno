@@ -35,6 +35,8 @@ public:
 	/* get the corresponding scene by model item*/
 	virtual QGraphicsScene* scene(const QModelIndex& subgIdx) = 0;
 
+	virtual void getNodeIndices(const QModelIndex& subGpIdx, QModelIndexList& subgNodes, QModelIndexList& normNodes) = 0;
+
 	//virtual QModelIndex clone()
 	virtual QModelIndex addLink(const EdgeInfo& info, const QModelIndex& subGpIdx, bool enableTransaction = false) = 0;
 	virtual QVariant getParamValue(const QString& id, const QString& name, const QModelIndex& subGpIdx) = 0;

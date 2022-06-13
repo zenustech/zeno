@@ -42,4 +42,8 @@ public:
 #define ZINC_FUNC_TIMER ::zeno::Timer _zeno_timer(__func__);
 #define ZINC_PRETTY_TIMER ::zeno::Timer _zeno_timer(__PRETTY_FUNCTION__);
 
+struct TimerAtexitHelper {
+    ~TimerAtexitHelper();
+};
+
 }

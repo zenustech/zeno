@@ -112,6 +112,7 @@ public:
     QList<SEARCH_RESULT> search(const QString& content, int searchOpts) override;
 	void collaspe(const QModelIndex& subgIdx) override;
 	void expand(const QModelIndex& subgIdx) override;
+    void getNodeIndices(const QModelIndex& subGpIdx, QModelIndexList& subgNodes, QModelIndexList& normNodes) override;
 
     void beginTransaction(const QString& name);
 	void endTransaction();

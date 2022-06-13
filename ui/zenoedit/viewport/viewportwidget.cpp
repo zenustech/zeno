@@ -511,6 +511,7 @@ void DisplayWidget::updateFrame(const QString &action)
 
     if (action == "newFrame") {
         m_pTimer->stop();
+        return;
     } else if (action == "finishFrame") {
         auto& inst = Zenovis::GetInstance();
         auto sess = inst.getSession();
