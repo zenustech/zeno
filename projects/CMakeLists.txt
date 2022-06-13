@@ -24,6 +24,7 @@ set(ZENO_EXTENSIONS
     Skinning
     Functional
     TreeSketch
+    CalcGeometryUV
     )
 
 foreach (name IN ITEMS ${ZENO_EXTENSIONS})
