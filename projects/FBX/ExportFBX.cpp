@@ -2,6 +2,7 @@
 #include <zeno/core/IObject.h>
 #include <zeno/types/StringObject.h>
 #include <zeno/types/PrimitiveObject.h>
+#include <zeno_FBX_config.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/DictObject.h>
 #include <zeno/utils/logger.h>
@@ -22,25 +23,26 @@ struct ExportFBX : zeno::INode {
 
         //system("pwd");
 
-        std::vector<std::string> cmds = {
-            "./dem/DemBones",
-            "-i=\"" + fbxpath + "\"",
-            "-a=\"" + abcpath + "\"",
-            "-b=5",
-            "-o=\"" + outpath + "\"",
-        };
+        auto cmd = (std::string)
+            "\"" + DEM_PATH + "/dem/DemBones\"" +
+            "-i=\"" + fbxpath + "\"" +
+            "-a=\"" + abcpath + "\"" +
+            "-b=5" +
+            "-o=\"" + outpath + "\"" +
+            "";
 
-        std::vector<char *> cmds_cs;
-        for (auto const &cmd: cmds)
-            cmds_cs.push_back((char *)cmd.c_str());
-        int er = DemBones_main(cmds_cs.data());
-
+#ifdef _WIN32
+        for (auto &c: cmd) {
+            if (c == '/') c = '\\';
+        }
+#endif
+        int er = std::system(cmd.c_str());
         auto result = std::make_shared<zeno::NumericObject>();
-
-        //zeno::log_info("----- CMD {}", cmd);
-        zeno::log_info("----- DemBones Exec Result {}", er);
-
         result->set(er);
+
+        zeno::log_info("----- CMD {}", cmd);
+        zeno::log_info("----- Exec Result {}", er);
+
         set_output("result", std::move(result));
     }
 };

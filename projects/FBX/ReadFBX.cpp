@@ -1,3 +1,7 @@
+#define STB_IMAGE_WRITE_STATIC
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include <stb_image_write.h>
+
 #include "assimp/scene.h"
 #include "assimp/Importer.hpp"
 #include "assimp/postprocess.h"
@@ -18,13 +22,6 @@
 
 #include <glm/vec4.hpp>
 #include <glm/mat4x4.hpp>
-
-//#include <stb_image.h>
-//#ifndef ZENO2
-    //#define STBI_MSC_SECURE_CRT
-    //#define STB_IMAGE_WRITE_IMPLEMENTATION
-//#endif
-#include <stb_image_write.h>
 
 #include "Definition.h"
 
