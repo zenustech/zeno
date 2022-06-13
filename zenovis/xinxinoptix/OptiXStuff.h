@@ -156,6 +156,8 @@ inline void createRTProgramGroups(OptixDeviceContext &context, OptixModule &_mod
     OptixProgramGroupOptions  program_group_options = {};
     char   log[2048];
     size_t sizeof_log = sizeof( log );
+    std::cout<<kind<<std::endl;
+    std::cout<<entry<<std::endl;
     if(kind == "OPTIX_PROGRAM_GROUP_KIND_CLOSEHITGROUP")
     {
         OptixProgramGroupDesc desc        = {};
@@ -176,8 +178,6 @@ inline void createRTProgramGroups(OptixDeviceContext &context, OptixModule &_mod
     {
         OptixProgramGroupDesc desc        = {};
         desc.kind                         = OPTIX_PROGRAM_GROUP_KIND_HITGROUP;
-        desc.hitgroup.moduleCH            = nullptr;
-        desc.hitgroup.entryFunctionNameCH = nullptr;
         desc.hitgroup.moduleAH            = _module;
         desc.hitgroup.entryFunctionNameAH = entry.c_str();
         sizeof_log                        = sizeof( log );
@@ -188,7 +188,7 @@ inline void createRTProgramGroups(OptixDeviceContext &context, OptixModule &_mod
                     &program_group_options,
                     log,
                     &sizeof_log,
-                    &oGroup
+                    &oGroup.reset()
                     ) );
     }
 }

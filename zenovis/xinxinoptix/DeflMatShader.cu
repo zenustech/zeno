@@ -150,13 +150,13 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     float2       barys    = optixGetTriangleBarycentrics();
     
     float3 n0 = normalize(make_float3(rt_data->nrm[ vert_idx_offset+0 ] ));
-    n0 = dot(n0, N_0)>0.6?n0:N_0;
+    n0 = dot(n0, N_0)>0.8?n0:N_0;
 
     float3 n1 = normalize(make_float3(rt_data->nrm[ vert_idx_offset+1 ] ));
-    n1 = dot(n1, N_0)>0.6?n1:N_0;
+    n1 = dot(n1, N_0)>0.8?n1:N_0;
 
     float3 n2 = normalize(make_float3(rt_data->nrm[ vert_idx_offset+2 ] ));
-    n2 = dot(n2, N_0)>0.6?n2:N_0;
+    n2 = dot(n2, N_0)>0.8?n2:N_0;
     float3 uv0 = make_float3(rt_data->uv[ vert_idx_offset+0 ] );
     float3 uv1 = make_float3(rt_data->uv[ vert_idx_offset+1 ] );
     float3 uv2 = make_float3(rt_data->uv[ vert_idx_offset+2 ] );
@@ -303,13 +303,13 @@ extern "C" __global__ void __closesthit__radiance()
     float2       barys    = optixGetTriangleBarycentrics();
     
     float3 n0 = normalize(make_float3(rt_data->nrm[ vert_idx_offset+0 ] ));
-    n0 = dot(n0, N_0)>0.6?n0:N_0;
+    n0 = dot(n0, N_0)>0.8?n0:N_0;
 
     float3 n1 = normalize(make_float3(rt_data->nrm[ vert_idx_offset+1 ] ));
-    n1 = dot(n1, N_0)>0.6?n1:N_0;
+    n1 = dot(n1, N_0)>0.8?n1:N_0;
 
     float3 n2 = normalize(make_float3(rt_data->nrm[ vert_idx_offset+2 ] ));
-    n2 = dot(n2, N_0)>0.6?n2:N_0;
+    n2 = dot(n2, N_0)>0.8?n2:N_0;
 
     float3 uv0 = make_float3(rt_data->uv[ vert_idx_offset+0 ] );
     float3 uv1 = make_float3(rt_data->uv[ vert_idx_offset+1 ] );
@@ -409,20 +409,24 @@ extern "C" __global__ void __closesthit__radiance()
         prd->direction = ray_dir;
         return;
     }
+    prd->passed = false;
     if(opacity>0.99)
     {
+        prd->passed = true;
         prd->radiance = make_float3(0.0f);
         prd->origin = P;
         prd->direction = ray_dir;
         return;
     }
+
+    
     
     //{
-    unsigned int seed = prd->seed;
+    
     float is_refl;
     float3 inDir = ray_dir;
     float3 wi = DisneyBRDF::sample_f(
-                                seed,
+                                prd->seed,
                                 basecolor,
                                 metallic,
                                 subsurface,
@@ -474,21 +478,21 @@ extern "C" __global__ void __closesthit__radiance()
                                 wi,
                                 -normalize(ray_dir)
                                 );
-
-    if(opacity<0.99)
+    if(opacity<=0.99)
     {
         //we have some simple transparent thing
         //roll a dice to see if just pass
-        float ratioTrans = 0.5 * opacity;
-        float p = rnd(seed);
-        pdf = (1-ratioTrans) * pdf + ratioTrans * 1;
-        if(p<ratioTrans)
+        if(rnd(prd->seed)<opacity)
         {
+            
+            prd->passed = true;
             //you shall pass!
             prd->radiance = make_float3(0.0f);
             prd->origin = P;
             prd->direction = ray_dir;
-            prd->prob *= pdf;
+            prd->prob *= 1;
+            prd->countEmitted = false;
+            prd->attenuation *= 1;
             return;
 
         }
@@ -517,9 +521,8 @@ extern "C" __global__ void __closesthit__radiance()
     //     prd->countEmitted = false;
     // }
 
-    const float z1 = rnd(seed);
-    const float z2 = rnd(seed);
-    prd->seed = seed;
+    const float z1 = rnd(prd->seed);
+    const float z2 = rnd(prd->seed);
 
     ParallelogramLight light = params.lights[0];
     const float3 light_pos = light.corner + light.v1 * z1 + light.v2 * z2;

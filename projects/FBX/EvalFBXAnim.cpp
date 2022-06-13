@@ -45,12 +45,14 @@ struct EvalAnim{
         m_CurrentFrame = 0.0f;
     }
 
-    void updateAnimation(float dt, std::shared_ptr<zeno::PrimitiveObject>& prim) {
+    void updateAnimation(int fi, std::shared_ptr<zeno::PrimitiveObject>& prim) {
+        // TODO Use the actual frame number
+        float dt = fi / 24.0f;
         m_DeltaTime = dt;
         m_CurrentFrame += m_TicksPerSecond * dt;
         m_CurrentFrame = fmod(m_CurrentFrame, m_Duration);
 
-        //zeno::log_info("Update: Frame {}", m_CurrentFrame);
+        zeno::log_info("Update: F {} D {} C {}", fi, dt, m_CurrentFrame);
 
         calculateBoneTransform(&m_RootNode, aiMatrix4x4());
         calculateFinal(prim);
@@ -89,18 +91,19 @@ struct EvalAnim{
         std::string nodeName = node->name;
         aiMatrix4x4 nodeTransform = node->transformation;
         //zeno::log_info("***** {}", nodeName);
+        // Any object that just has the key-anim is a bone
         if (m_AnimBones.find(nodeName) != m_AnimBones.end()) {
             auto& bone = m_AnimBones[nodeName];
 
             bone.update(m_CurrentFrame);
             nodeTransform = bone.m_LocalTransform;
 
-            //zeno::log_info("+++++ {}", nodeName);
+            //zeno::log_info("///// {}", nodeName);
             //Helper::printAiMatrix(nodeTransform);
         }
         aiMatrix4x4 globalTransformation = parentTransform * nodeTransform;
 
-        // XXX
+        // XXX Lazy Transform
         if (m_BoneOffset.find(nodeName) != m_BoneOffset.end()) {  // found
             std::string boneName = m_BoneOffset[nodeName].name;
             aiMatrix4x4 boneOffset = m_BoneOffset[nodeName].offset;
@@ -109,6 +112,7 @@ struct EvalAnim{
 
             m_Transforms[boneName] = globalTransformation * boneOffset;
         }else{
+            // The child is already applied the parent transformation by the tree struct.
             m_LazyTransforms[nodeName] = globalTransformation;
         }
 
@@ -116,11 +120,13 @@ struct EvalAnim{
             calculateBoneTransform(&node->children[i], globalTransformation);
     }
 
-    void updateCamera(std::shared_ptr<FBXData>& fbxData, std::shared_ptr<ICamera>& iCamera){;
+    void updateCameraAndLight(std::shared_ptr<FBXData>& fbxData,
+                              std::shared_ptr<ICamera>& iCamera,
+                              std::shared_ptr<ILight>& iLight){;
         for(auto& m: m_LazyTransforms){
             if(fbxData->iCamera.value.find(m.first) != fbxData->iCamera.value.end()){
-                //zeno::log_info("----- {}", m.first);
-                Helper::printAiMatrix(m.second, true);
+                //zeno::log_info("----- LT Camera {}", m.first);
+                //Helper::printAiMatrix(m.second, true);
 
                 SCamera cam = fbxData->iCamera.value.at(m.first);
 
@@ -134,6 +140,9 @@ struct EvalAnim{
                 cam.up = zeno::vec3f(r.b1, r.b2, r.b3);
 
                 iCamera->value[m.first] = cam;
+            }else if(fbxData->iLight.value.find(m.first) != fbxData->iLight.value.end()){
+                //zeno::log_info("+++++ LT Light {}", m.first);
+                //Helper::printAiMatrix(m.second, true);
             }
         }
     }
@@ -181,6 +190,19 @@ struct EvalAnim{
             zeno::vec3i incs(m_Indices[i],m_Indices[i+1],m_Indices[i+2]);
             ind.push_back(incs);
         }
+
+        auto &uv0 = prim->tris.add_attr<zeno::vec3f>("uv0");
+        auto &uv1 = prim->tris.add_attr<zeno::vec3f>("uv1");
+        auto &uv2 = prim->tris.add_attr<zeno::vec3f>("uv2");
+        for(unsigned int i=0; i<ind.size(); i++){
+            unsigned int _i1 = ind[i][0];
+            unsigned int _i2 = ind[i][1];
+            unsigned int _i3 = ind[i][2];
+            uv0[i] = zeno::vec3f(m_Vertices[_i1].texCoord[0], m_Vertices[_i1].texCoord[1], 0);
+            uv1[i] = zeno::vec3f(m_Vertices[_i2].texCoord[0], m_Vertices[_i2].texCoord[1], 0);
+            uv2[i] = zeno::vec3f(m_Vertices[_i3].texCoord[0], m_Vertices[_i3].texCoord[1], 0);
+
+        }
     }
 };
 
@@ -191,8 +213,11 @@ struct EvalFBXAnim : zeno::INode {
         if (has_input("frameid")) {
             frameid = get_input<zeno::NumericObject>("frameid")->get<int>();
         } else {
-            //frameid = zeno::state.frameid;
+#ifndef ZENO2
+            frameid = zeno::state.frameid;
+#else
             frameid = getGlobalState()->frameid;
+#endif
         }
 
         auto prim = std::make_shared<zeno::PrimitiveObject>();
@@ -205,12 +230,12 @@ struct EvalFBXAnim : zeno::INode {
         auto quatDict = std::make_shared<zeno::DictObject>();
         auto scaleDict = std::make_shared<zeno::DictObject>();
         auto iCamera = std::make_shared<ICamera>();
+        auto iLight = std::make_shared<ILight>();
 
         EvalAnim anim;
         anim.initAnim(nodeTree, boneTree, fbxData, animInfo);
-        // TODO Use the actual frame number
-        anim.updateAnimation(frameid/24.0f, prim);
-        anim.updateCamera(fbxData, iCamera);
+        anim.updateAnimation(frameid, prim);
+        anim.updateCameraAndLight(fbxData, iCamera, iLight);
         anim.decomposeAnimation(transDict, quatDict, scaleDict);
 
         auto prims = std::make_shared<zeno::ListObject>();
@@ -265,7 +290,8 @@ struct EvalFBXAnim : zeno::INode {
 
         set_output("prim", std::move(prim));
         set_output("bsPrims", std::move(prims));
-        set_output("icamera", std::move(iCamera));
+        set_output("camera", std::move(iCamera));
+        set_output("light", std::move(iLight));
         set_output("transDict", std::move(transDict));
         set_output("quatDict", std::move(quatDict));
         set_output("scaleDict", std::move(scaleDict));
@@ -281,7 +307,7 @@ ZENDEFNODE(EvalFBXAnim,
                    {"BoneTree", "bonetree"},
                },  /* outputs: */
                {
-                   "prim", "icamera", "bsPrims", "transDict", "quatDict", "scaleDict"
+                   "prim", "camera", "light", "bsPrims", "transDict", "quatDict", "scaleDict"
                },  /* params: */
                {
 

@@ -29,6 +29,7 @@ struct RadiancePRD
     float3       attenuation2;
     float3       origin;
     float3       direction;
+    bool         passed;
     float        opacity;
     float        prob;
     float        prob2;

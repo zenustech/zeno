@@ -17,12 +17,14 @@ set(ZENO_EXTENSIONS
     mesher
     Euler
     FEM
+    DemBones
     FBX
     Alembic
     LSystem
     Skinning
     Functional
     TreeSketch
+    CalcGeometryUV
     )
 
 foreach (name IN ITEMS ${ZENO_EXTENSIONS})
