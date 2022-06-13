@@ -124,3 +124,12 @@ if (ZENO_INSTALL_TARGET)
         #DESTINATION lib/cmake/Zeno
         #)
 endif()
+
+if (ZENO_ASSET_DIRS)
+    foreach (dir IN ITEMS ZENO_ASSET_DIRS)
+        install(
+            DIRECTORY ${dir}
+            DESTINATION share/Zeno/${dir}
+            )
+    endforeach()
+endif()

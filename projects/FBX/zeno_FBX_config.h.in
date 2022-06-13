@@ -1,3 +1,3 @@
 #pragma once
 
-#define DEM_PATH "@DEM_PATH@"
+#define DEM_DIR "@DEM_DIR@"

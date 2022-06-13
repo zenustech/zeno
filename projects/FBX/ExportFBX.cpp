@@ -2,6 +2,7 @@
 #include <zeno/core/IObject.h>
 #include <zeno/types/StringObject.h>
 #include <zeno/types/PrimitiveObject.h>
+#include <zeno/extra/assetDir.h>
 #include <zeno_FBX_config.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/DictObject.h>
@@ -24,7 +25,7 @@ struct ExportFBX : zeno::INode {
         //system("pwd");
 
         auto cmd = (std::string)
-            "\"" + DEM_PATH + "/dem/DemBones\"" +
+            "\"" + zeno::getAssetDir(DEM_DIR) + "/DemBones" + "\"" +
             "-i=\"" + fbxpath + "\"" +
             "-a=\"" + abcpath + "\"" +
             "-b=5" +
