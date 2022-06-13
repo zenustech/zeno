@@ -1145,6 +1145,29 @@ void optixupdatemesh(std::map<std::string, int> const &mtlidlut) {
     }
 //#endif
 }
+
+struct LightDat{
+    std::vector<float> v0;
+    std::vector<float> v1;
+    std::vector<float> v2;
+    std::vector<float> normal;
+    std::vector<float> emission;
+};
+static std::map<std::string, LightDat> lightdats;
+
+void load_light(std::string const &key, float const*v0,float const*v1,float const*v2, float const*nor,float const*emi){
+    lightdats.clear();
+
+    LightDat ld;
+    ld.v0.assign(v0, v0 + 3);
+    ld.v1.assign(v1, v1 + 3);
+    ld.v2.assign(v2, v2 + 3);
+    ld.normal.assign(nor, nor + 3);
+    ld.emission.assign(emi, emi + 3);
+
+    lightdats[key] = ld;
+}
+
 static void addLightMesh(float3 corner, float3 v2, float3 v1, float3 normal, float emission)
 {
     float3 lc = corner - normal * 0.001;
@@ -1162,15 +1185,30 @@ void optixupdatelight() {
     
     g_lights.clear();
     g_lightMesh.clear();
-    for (int i = 0; i < 1; i++) {
+
+    for (auto const &[key, dat]: lightdats) {
         auto &light = g_lights.emplace_back();
-        light.emission = make_float3( 30000.f );
-        light.corner   = make_float3( 343.0f, 548.5f, 227.0f );
-        light.v2       = make_float3( -10.0f, 0.0f, 0.0f );
-        light.normal   = make_float3( 0.0f, -10.0f, 0.0f );
-        light.v1       = normalize( cross( light.v2, light.normal ) );
-        addLightMesh(light.corner, light.v2, light.v1, light.normal, 30000.f);
+        light.emission = make_float3( dat.emission[0], dat.emission[1], dat.emission[2] );
+        light.corner   = make_float3( dat.v0[0], dat.v0[1], dat.v0[2] );
+        light.v1       = make_float3( dat.v1[0], dat.v1[1], dat.v1[2] );
+        light.v2       = make_float3( dat.v2[0], dat.v2[1], dat.v2[2] );
+        light.normal   = make_float3( dat.normal[0], dat.normal[1], dat.normal[2] );
+        addLightMesh(light.corner, light.v2, light.v1, light.normal, 100.0f);
     }
+
+    if(g_lights.empty()){
+        zeno::log_info("No light in the scene, add a default light");
+        for (int i = 0; i < 1; i++) {
+            auto &light = g_lights.emplace_back();
+            light.emission = make_float3( 30000.f );
+            light.corner   = make_float3( 343.0f, 548.5f, 227.0f );
+            light.v2       = make_float3( -10.0f, 0.0f, 0.0f );
+            light.normal   = make_float3( 0.0f, -10.0f, 0.0f );
+            light.v1       = normalize( cross( light.v2, light.normal ) );
+            addLightMesh(light.corner, light.v2, light.v1, light.normal, 30000.f);
+        }
+    }
+
     CUDA_CHECK( cudaMalloc(
                 reinterpret_cast<void**>( &state.lightsbuf_p.reset() ),
                 sizeof( ParallelogramLight ) * g_lights.size()
