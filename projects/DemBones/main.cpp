@@ -15,6 +15,21 @@
 #include "DemBonesExt.h"
 #include "MatBlocks.h"
 
+#ifdef ZENO_VERSION_2
+#include <zeno/utils/log.h>
+namespace _zeno_version_2_fmt {
+namespace fmt {
+template <class ...Ts>
+static void print(Ts &&...ts) {
+    zeno::log_info(std::forward<Ts>(ts)...);
+}
+}
+}
+using namespace _zeno_version_2_fmt;
+#else
+#include <spdlog/spdlog.h>
+#endif
+
 using namespace std;
 using namespace Eigen;
 using namespace Dem;
