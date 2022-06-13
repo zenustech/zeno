@@ -1,4 +1,5 @@
 #include <QApplication>
+#include <zeno/extra/assetDir.h>
 #include "style/zenostyle.h"
 #include "zenoapplication.h"
 #include "zenomainwindow.h"
@@ -14,6 +15,8 @@ int main(int argc, char *argv[])
 #endif
     ZenoApplication a(argc, argv);
     a.setStyle(new ZenoStyle);
+
+    zeno::setExecutableDir(a.applicationDirPath().toStdString());
 
     QTranslator t;
     if (t.load(":languages/zh.qm")) {
