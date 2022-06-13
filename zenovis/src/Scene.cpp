@@ -57,6 +57,9 @@ bool Scene::cameraFocusOnNode(std::string const &nodeid, zeno::vec3f &center, fl
 }
 
 void Scene::loadFrameObjects(int frameid) {
+    if (!zeno::getSession().globalComm->has_frame_completed)
+        return;
+
     auto const *viewObjs = zeno::getSession().globalComm->getViewObjects(frameid);
     if (viewObjs) {
         zeno::log_trace("load_objects: {} objects at frame {}", viewObjs->size(), frameid);

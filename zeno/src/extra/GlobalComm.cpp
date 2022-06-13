@@ -8,12 +8,14 @@ ZENO_API void GlobalComm::newFrame() {
     std::lock_guard lck(m_mtx);
     log_debug("GlobalComm::newFrame {}", m_frames.size());
     m_frames.emplace_back();
+    has_frame_completed = false;
 }
 
 ZENO_API void GlobalComm::finishFrame() {
     std::lock_guard lck(m_mtx);
     log_debug("GlobalComm::finishFrame {}", m_maxPlayFrame);
     m_maxPlayFrame += 1;
+    has_frame_completed = true;
 }
 
 ZENO_API void GlobalComm::addViewObject(std::string const &key, std::shared_ptr<IObject> object) {
@@ -27,6 +29,7 @@ ZENO_API void GlobalComm::clearState() {
     std::lock_guard lck(m_mtx);
     m_frames.clear();
     m_maxPlayFrame = 0;
+    has_frame_completed = false;
 }
 
 ZENO_API void GlobalComm::frameRange(int beg, int end) {

@@ -22,6 +22,8 @@ struct GlobalComm {
     int beginFrameNumber = 0;
     int endFrameNumber = 0;
 
+    bool has_frame_completed = false;
+
     ZENO_API void frameRange(int beg, int end);
     ZENO_API void newFrame();
     ZENO_API void finishFrame();
