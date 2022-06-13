@@ -20,11 +20,11 @@
 #include <glm/mat4x4.hpp>
 
 #include <stb_image.h>
-#ifndef ZENO2
-    #define STBI_MSC_SECURE_CRT
-    #define STB_IMAGE_WRITE_IMPLEMENTATION
-#endif
-#include <stb_image_write.h>
+//#ifndef ZENO2
+    //#define STBI_MSC_SECURE_CRT
+    //#define STB_IMAGE_WRITE_IMPLEMENTATION
+//#endif
+//#include <stb_image_write.h>
 
 #include "Definition.h"
 

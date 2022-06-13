@@ -22,15 +22,23 @@ struct ExportFBX : zeno::INode {
 
         //system("pwd");
 
-        std::string cmd = "./dem/DemBones -i=\""
-                          + fbxpath + "\" -a=\"" + abcpath + "\" -b=5 -o=\""
-                          + outpath + "\"";
+        std::vector<std::string> cmds = {
+            "./dem/DemBones",
+            "-i=\"" + fbxpath + "\"",
+            "-a=\"" + abcpath + "\"",
+            "-b=5",
+            "-o=\"" + outpath + "\"",
+        };
+
+        std::vector<char *> cmds_cs;
+        for (auto const &cmd: cmds)
+            cmds_cs.push_back((char *)cmd.c_str());
+        int er = DemBones_main(cmds_cs.data());
 
         auto result = std::make_shared<zeno::NumericObject>();
-        int er = system(cmd.c_str());
 
-        zeno::log_info("----- CMD {}", cmd);
-        zeno::log_info("----- Exec Result {}", er);
+        //zeno::log_info("----- CMD {}", cmd);
+        zeno::log_info("----- DemBones Exec Result {}", er);
 
         result->set(er);
         set_output("result", std::move(result));
@@ -40,9 +48,9 @@ struct ExportFBX : zeno::INode {
 ZENDEFNODE(ExportFBX,
            {       /* inputs: */
                {
-                   {"readpath", "abcpath"},
-                   {"readpath", "fbxpath"},
-                   {"readpath", "outpath"}
+                   {"string", "abcpath"},
+                   {"string", "fbxpath"},
+                   {"string", "outpath"}
                },  /* outputs: */
                {
                     "result"
