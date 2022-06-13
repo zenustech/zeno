@@ -270,6 +270,10 @@ struct CodimStepping : INode {
 
   struct FEMSystem {
     ///
+    auto getCnts() const {
+      return zs::make_tuple(nPP.getVal(), nPE.getVal(), nPT.getVal(),
+                            nEE.getVal(), ncsPT.getVal(), ncsEE.getVal());
+    }
     void findConstraints(zs::CudaExecutionPolicy &pol, T dHat, T xi = 0) {
       using namespace zs;
       constexpr auto space = execspace_e::cuda;
@@ -392,8 +396,8 @@ struct CodimStepping : INode {
                                    nPP = proxy<space>(nPP),
                                    PE = proxy<space>(PE),
                                    nPE = proxy<space>(nPE),
-                                   EE = proxy<space>(PT),
-                                   nEE = proxy<space>(nPT),
+                                   EE = proxy<space>(EE),
+                                   nEE = proxy<space>(nEE),
                                    csEE = proxy<space>(csEE),
                                    ncsEE = proxy<space>(ncsEE), dHat, xi,
                                    thickness =
@@ -631,6 +635,7 @@ struct CodimStepping : INode {
             auto pp = PP[ppi];
             auto x0 = vtemp.pack<3>("xn", pp[0]);
             auto x1 = vtemp.pack<3>("xn", pp[1]);
+#if 1
             auto ppGrad = dist_grad_pp(x0, x1);
             auto dist2 = dist2_pp(x0, x1);
             if (dist2 < xi2)
@@ -649,6 +654,10 @@ struct CodimStepping : INode {
             ppHess = (zs::barrier_hessian(dist2 - xi2, activeGap2, kappa) *
                           dyadic_prod(ppGrad_, ppGrad_) +
                       barrierDistGrad * ppHess);
+            // make pd
+            make_pd(ppHess);
+#else
+#endif
             // rotate and project
             mat3 BCbasis[2];
             int BCorder[2];
@@ -683,8 +692,6 @@ struct CodimStepping : INode {
                     ppHess(offsetI + i, offsetJ + j) = tmp(i, j);
               }
             }
-            // make pd
-            make_pd(ppHess);
             // pp[0], pp[1]
             tempPP.tuple<36>("H", ppi) = ppHess;
             /// construct P
@@ -706,7 +713,7 @@ struct CodimStepping : INode {
             auto p = vtemp.pack<3>("xn", pe[0]);
             auto e0 = vtemp.pack<3>("xn", pe[1]);
             auto e1 = vtemp.pack<3>("xn", pe[2]);
-
+#if 1
             auto peGrad = dist_grad_pe(p, e0, e1);
             auto dist2 = dist2_pe(p, e0, e1);
             if (dist2 < xi2)
@@ -726,6 +733,10 @@ struct CodimStepping : INode {
             peHess = (zs::barrier_hessian(dist2 - xi2, activeGap2, kappa) *
                           dyadic_prod(peGrad_, peGrad_) +
                       barrierDistGrad * peHess);
+            // make pd
+            make_pd(peHess);
+#else
+#endif
             // rotate and project
             mat3 BCbasis[3];
             int BCorder[3];
@@ -760,8 +771,6 @@ struct CodimStepping : INode {
                     peHess(offsetI + i, offsetJ + j) = tmp(i, j);
               }
             }
-            // make pd
-            make_pd(peHess);
             // pe[0], pe[1], pe[2]
             tempPE.tuple<81>("H", pei) = peHess;
             /// construct P
@@ -784,7 +793,7 @@ struct CodimStepping : INode {
             auto t0 = vtemp.pack<3>("xn", pt[1]);
             auto t1 = vtemp.pack<3>("xn", pt[2]);
             auto t2 = vtemp.pack<3>("xn", pt[3]);
-
+#if 1
             auto ptGrad = dist_grad_pt(p, t0, t1, t2);
             auto dist2 = dist2_pt(p, t0, t1, t2);
             if (dist2 < xi2)
@@ -805,6 +814,10 @@ struct CodimStepping : INode {
             ptHess = (zs::barrier_hessian(dist2 - xi2, activeGap2, kappa) *
                           dyadic_prod(ptGrad_, ptGrad_) +
                       barrierDistGrad * ptHess);
+            // make pd
+            make_pd(ptHess);
+#else
+#endif
             // rotate and project
             mat3 BCbasis[4];
             int BCorder[4];
@@ -839,8 +852,6 @@ struct CodimStepping : INode {
                     ptHess(offsetI + i, offsetJ + j) = tmp(i, j);
               }
             }
-            // make pd
-            make_pd(ptHess);
             // pt[0], pt[1], pt[2], pt[3]
             tempPT.tuple<144>("H", pti) = ptHess;
             /// construct P
@@ -863,7 +874,7 @@ struct CodimStepping : INode {
             auto ea1 = vtemp.pack<3>("xn", ee[1]);
             auto eb0 = vtemp.pack<3>("xn", ee[2]);
             auto eb1 = vtemp.pack<3>("xn", ee[3]);
-
+#if 1
             auto eeGrad = dist_grad_ee(ea0, ea1, eb0, eb1);
             auto dist2 = dist2_ee(ea0, ea1, eb0, eb1);
             if (dist2 < xi2)
@@ -884,6 +895,10 @@ struct CodimStepping : INode {
             eeHess = (zs::barrier_hessian(dist2 - xi2, activeGap2, kappa) *
                           dyadic_prod(eeGrad_, eeGrad_) +
                       barrierDistGrad * eeHess);
+            // make pd
+            make_pd(eeHess);
+#else
+#endif
             // rotate and project
             mat3 BCbasis[4];
             int BCorder[4];
@@ -918,8 +933,6 @@ struct CodimStepping : INode {
                     eeHess(offsetI + i, offsetJ + j) = tmp(i, j);
               }
             }
-            // make pd
-            make_pd(eeHess);
             // ee[0], ee[1], ee[2], ee[3]
             tempEE.tuple<144>("H", eei) = eeHess;
             /// construct P
@@ -1306,12 +1319,16 @@ struct CodimStepping : INode {
       pol(range(vtemp.size()), [verts = proxy<space>({}, verts),
                                 vtemp = proxy<space>({}, vtemp),
                                 res = proxy<space>(res), tag,
+                                extForce = extForce,
                                 dt = this->dt] __device__(int vi) mutable {
         // inertia
         auto m = verts("m", vi);
         auto x = vtemp.pack<3>(tag, vi);
         atomic_add(exec_cuda, &res[0],
                    (T)0.5 * m * (x - vtemp.pack<3>("xtilde", vi)).l2NormSqr());
+        // gravity
+        atomic_add(exec_cuda, &res[0],
+                   -m * extForce.dot(x - verts.pack<3>("x", vi)) * dt * dt);
       });
       // elasticity
       pol(range(eles.size()), [verts = proxy<space>({}, verts),
@@ -1648,7 +1665,15 @@ struct CodimStepping : INode {
                                                     100000},
           ncsPT{verts.get_allocator(), 1}, ncsEE{verts.get_allocator(), 1},
           tempPB{verts.get_allocator(), {{"H", 9}}, verts.size()}, dt{dt},
-          models{models} {}
+          models{models} {
+      nPP.setVal(0);
+      nPE.setVal(0);
+      nPT.setVal(0);
+      nEE.setVal(0);
+
+      ncsPT.setVal(0);
+      ncsEE.setVal(0);
+    }
 
     const dtiles_t &verts;
     const tiles_t &edges;
@@ -1782,7 +1807,7 @@ struct CodimStepping : INode {
              dt, extForce = extForce] __device__(int i) mutable {
               auto x = verts.pack<3>("x", i);
               auto v = verts.pack<3>("v", i);
-              vtemp.tuple<3>("xtilde", i) = x + v * dt + extForce * dt * dt;
+              vtemp.tuple<3>("xtilde", i) = x + v * dt;
             });
     // fix initial x for all bcs if not feasible
     cudaPol(zs::range(verts.size()),
@@ -1806,6 +1831,7 @@ struct CodimStepping : INode {
     /// optimizer
     for (int newtonIter = 0; newtonIter != 100; ++newtonIter) {
       A.findConstraints(cudaPol, dHat, xi);
+      auto [npp, npe, npt, nee, ncspt, ncsee] = A.getCnts();
       // construct gradient, prepare hessian, prepare preconditioner
       cudaPol(zs::range(vtemp.size()),
               [vtemp = proxy<space>({}, vtemp)] __device__(int i) mutable {
@@ -1813,11 +1839,12 @@ struct CodimStepping : INode {
               });
       cudaPol(zs::range(vtemp.size()),
               [vtemp = proxy<space>({}, vtemp), verts = proxy<space>({}, verts),
-               dt] __device__(int i) mutable {
+               extForce = extForce, dt] __device__(int i) mutable {
                 auto m = verts("m", i);
                 auto v = verts.pack<3>("v", i);
                 vtemp.tuple<3>("grad", i) =
-                    -m * (vtemp.pack<3>("xn", i) - vtemp.pack<3>("xtilde", i));
+                    m * extForce * dt * dt -
+                    m * (vtemp.pack<3>("xn", i) - vtemp.pack<3>("xtilde", i));
               });
       match([&](auto &elasticModel) {
         A.computeElasticGradientAndHessian(cudaPol, elasticModel);
@@ -1881,8 +1908,14 @@ struct CodimStepping : INode {
         int iter = 0;
         for (; iter != 10000; ++iter) {
           if (iter % 10 == 0)
-            fmt::print("cg iter: {}, norm: {}\n", iter,
-                       residualPreconditionedNorm);
+            fmt::print("cg iter: {}, norm: {} (zTrk: {}) npp: {}, npe: {}, "
+                       "npt: {}, nee: {}, ncspt: {}, ncsee: {}\n",
+                       iter, residualPreconditionedNorm, zTrk, npp, npe, npt,
+                       nee, ncspt, ncsee);
+          if (zTrk < 0) {
+            puts("what the heck?");
+            getchar();
+          }
           if (residualPreconditionedNorm <= localTol)
             break;
           A.multiply(cudaPol, "p", "temp");
@@ -1919,7 +1952,7 @@ struct CodimStepping : INode {
               });
       // check "dir" inf norm
       T res = infNorm(cudaPol, vtemp, "dir");
-      if (res < 1e-3) {
+      if (res < 1e-6) {
         fmt::print("\t# newton optimizer ends in {} iters with residual {}\n",
                    newtonIter, res);
         break;
@@ -1944,11 +1977,9 @@ struct CodimStepping : INode {
       fmt::print("\tstepsize after ground: {}\n", alpha);
       A.intersectionFreeStepsize(cudaPol, xi, alpha);
       fmt::print("\tstepsize after intersection-free: {}\n", alpha);
-#if 0
       A.findCCDConstraints(cudaPol, alpha, xi);
       A.intersectionFreeStepsize(cudaPol, xi, alpha);
       fmt::print("\tstepsize after ccd: {}\n", alpha);
-#endif
 
       T E{E0};
 #if 1
@@ -1982,11 +2013,12 @@ struct CodimStepping : INode {
     cudaPol(zs::range(verts.size()),
             [vtemp = proxy<space>({}, vtemp), verts = proxy<space>({}, verts),
              dt] __device__(int vi) mutable {
-              auto x = verts.pack<3>("x", vi);
               auto newX = vtemp.pack<3>("xn", vi);
               verts.tuple<3>("x", vi) = newX;
-              auto v = (x - newX) / dt;
-              verts.tuple<3>("v", vi) = v;
+              auto dv = (newX - vtemp.pack<3>("xtilde", vi)) / dt;
+              auto vn = verts.pack<3>("v", vi);
+              vn += dv;
+              verts.tuple<3>("v", vi) = vn;
             });
 
     set_output("ZSParticles", std::move(zstets));
