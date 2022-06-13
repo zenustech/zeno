@@ -229,13 +229,13 @@ struct ZSComputeBaryCentricWeights : INode {
             }
         );
 
-        cudaExec(zs::range(numEmbedVerts),
-            [bcw = proxy<space>({},bcw),fitting_in] ZS_LAMBDA (int vi) mutable {
-                auto idx = reinterpret_bits<int>(bcw("inds",vi));
-                if(idx < 0 && !fitting_in){
-                    printf("INVALID INTERPOLATED VERTS<%d> : %d\n",vi,idx);
-                }
-        });
+        // cudaExec(zs::range(numEmbedVerts),
+        //     [bcw = proxy<space>({},bcw),fitting_in] ZS_LAMBDA (int vi) mutable {
+        //         auto idx = reinterpret_bits<int>(bcw("inds",vi));
+        //         if(idx < 0 && !fitting_in){
+        //             printf("INVALID INTERPOLATED VERTS<%d> : %d\n",vi,idx);
+        //         }
+        // });
 
         auto e_dim = e_eles.getChannelSize("inds");
 
@@ -245,11 +245,11 @@ struct ZSComputeBaryCentricWeights : INode {
                 bcw("cnorm",vi) = (T)0.;
         });
 
-        zs::Vector<T> edgeCount(bcw.get_allocator(),bcw.size());
-        cudaExec(zs::range(bcw.size()),[edgeCount = proxy<space>(edgeCount)]
-            ZS_LAMBDA(int vi) mutable{
+        zs::Vector<T> nmEmbedVerts(eles.get_allocator(),eles.size());
+        cudaExec(zs::range(eles.size()),[nmEmbedVerts = proxy<space>(nmEmbedVerts)]
+            ZS_LAMBDA(int ei) mutable{
                 using T = typename RM_CVREF_T(bcw)::value_type;
-                edgeCount[vi] = (T)0.;
+                nmEmbedVerts[ei] = (T)0.;
         });
 
         if(e_dim !=3 && e_dim !=4){
@@ -319,26 +319,21 @@ struct ZSComputeBaryCentricWeights : INode {
         //             }
         // });
 
-        cudaExec(zs::range(numEmbedEles),
-            [everts = proxy<space>({},everts),e_eles = proxy<space>({},e_eles),bcw = proxy<space>({},bcw),e_dim,execTag = wrapv<space>{},edgeCount = proxy<space>(edgeCount)]
-                ZS_LAMBDA (int ti) mutable {
+        cudaExec(zs::range(bcw.size()),
+            [everts = proxy<space>({},everts),bcw = proxy<space>({},bcw),e_dim,execTag = wrapv<space>{},nmEmbedVerts = proxy<space>(nmEmbedVerts)]
+                ZS_LAMBDA (int vi) mutable {
                     using T = typename RM_CVREF_T(bcw)::value_type;
-                    if(e_dim == 3){// for triangle mesh
-                        auto inds = e_eles.pack<3>("inds",ti).reinterpret_bits<int>(); 
-                        atomic_add(execTag,&edgeCount[inds[0]],(T)1.0);
-                    }else if(e_dim == 4){// for tet mesh
-                        auto inds = e_eles.pack<4>("inds",ti).reinterpret_bits<int>();
-                        atomic_add(execTag,&edgeCount[inds[0]],(T)1.0);
-                    }                    
+                    auto ei = reinterpret_bits<int>(bcw("inds",vi));
+                    atomic_add(execTag,&nmEmbedVerts[ei],(T)1.0);                  
         });
 
-        cudaExec(zs::range(numEmbedVerts),
-            [bcw = proxy<space>({},bcw),edgeCount = proxy<space>(edgeCount)] 
+        cudaExec(zs::range(bcw.size()),
+            [bcw = proxy<space>({},bcw),nmEmbedVerts = proxy<space>(nmEmbedVerts)] 
                 ZS_LAMBDA(int vi) mutable{
-                    if(edgeCount[vi] > 0)
-                        bcw("cnorm",vi) = (T)1.0/edgeCount[vi];
-                    else
-                        bcw("cnorm",vi) = 0.0;
+                    auto ei = reinterpret_bits<int>(bcw("inds",vi));
+                    if(ei < 0)
+                        return;
+                    bcw("cnorm",vi) = (T)1.0/(T)nmEmbedVerts[ei];
         });
 
 
