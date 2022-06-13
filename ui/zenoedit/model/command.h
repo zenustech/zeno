@@ -4,7 +4,6 @@
 #include <QUndoCommand>
 #include <zenoui/model/modeldata.h>
 
-class SubGraphModel;
 class GraphsModel;
 
 class AddNodeCommand : public QUndoCommand

@@ -2,6 +2,7 @@
 #include <zeno/utils/Timer.h>
 #include <zeno/utils/envconfig.h>
 #include <zeno/utils/cformat.h>
+#include <zeno/utils/log.h>
 #include <algorithm>
 #include <cstdlib>
 #include <cstdio>
@@ -68,19 +69,17 @@ std::string Timer::getLog() {
     return res;
 }
 
-namespace {
-    static struct TimerAtexitHelper {
-        ~TimerAtexitHelper() {
-            auto log = Timer::getLog();
-            if (auto env = zeno::envconfig::get("TIMER")) {
-                FILE *fp = fopen(env, "w");
-                fprintf(fp, "%s", log.c_str());
-                fclose(fp);
-            } else if (log.size()) {
-                printf("ZENO benchmarking status:\n%s\n", log.c_str());
-            }
-        }
-    } timerAtexitHelper;
+
+TimerAtexitHelper::~TimerAtexitHelper() {
+    auto log = Timer::getLog();
+    if (auto env = zeno::envconfig::get("TIMER")) {
+        FILE *fp = fopen(env, "w");
+        fprintf(fp, "%s", log.c_str());
+        fclose(fp);
+    } else if (log.size()) {
+        printf("ZENO benchmarking status:\n%s\n", log.c_str());
+        zeno::log_debug("ZENO benchmarking status:\n{}\n", log.c_str());
+    }
 }
 
 }

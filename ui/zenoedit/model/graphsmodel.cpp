@@ -1627,3 +1627,20 @@ void GraphsModel::expand(const QModelIndex& subgIdx)
     ZASSERT_EXIT(pModel);
     pModel->expand();
 }
+
+void GraphsModel::getNodeIndices(const QModelIndex& subGpIdx, QModelIndexList& subgNodes, QModelIndexList& normNodes)
+{
+    SubGraphModel* pModel = subGraph(subGpIdx.row());
+    ZASSERT_EXIT(pModel);
+    for (int r = 0; r < pModel->rowCount(); r++)
+    {
+        QModelIndex idx = pModel->index(r, 0);
+        const QString& nodeName = idx.data(ROLE_OBJNAME).toString();
+        if (subGraph(nodeName)) {
+            subgNodes.append(idx);
+        } else {
+            normNodes.append(idx);
+        }
+    }
+}
+

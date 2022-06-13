@@ -91,6 +91,19 @@ if (ZENO_OUT_TO_BIN)
     set(CMAKE_DEBUG_POSTFIX "")  # No more annoying zeno_d.dll
 endif()
 
+if (EXISTS ${CMAKE_CURRENT_BINARY_DIR}/zeno_asset_dirs.txt)
+    file(REMOVE ${CMAKE_CURRENT_BINARY_DIR}/zeno_asset_dirs.txt)
+endif()
+function (zeno_add_asset_dir dir)
+    if (ZENO_INSTALL_TARGET)
+        install(
+            DIRECTORY ${dir}
+            DESTINATION share/Zeno/assets/${dir}
+            )
+    endif()
+    file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/zeno_asset_dirs.txt "${dir}")
+endfunction()
+
 add_subdirectory(zeno)
 add_subdirectory(projects)
 
@@ -123,13 +136,4 @@ if (ZENO_INSTALL_TARGET)
         #FILES ${CMAKE_CURRENT_BINARY_DIR}/ZenoConfig.cmake
         #DESTINATION lib/cmake/Zeno
         #)
-endif()
-
-if (ZENO_ASSET_DIRS)
-    foreach (dir IN ITEMS ZENO_ASSET_DIRS)
-        install(
-            DIRECTORY ${dir}
-            DESTINATION share/Zeno/${dir}
-            )
-    endforeach()
 endif()

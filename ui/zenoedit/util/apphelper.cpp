@@ -33,3 +33,19 @@ QString AppHelper::correctSubIOName(IGraphsModel* pModel, const QString& subgNam
     }
     return finalName;
 }
+
+
+QModelIndex AppHelper::getSubInOutNode(IGraphsModel* pModel, const QModelIndex& subgIdx, const QString& subName, bool bInput)
+{
+    const QList<QModelIndex>& indices = pModel->searchInSubgraph(bInput ? "SubInput" : "SubOutput", subgIdx);
+    for (const QModelIndex &idx_ : indices)
+    {
+        const QString &subInputId = idx_.data(ROLE_OBJID).toString();
+        const PARAMS_INFO &params = idx_.data(ROLE_PARAMETERS).value<PARAMS_INFO>();
+        if (params["name"].value == subName)
+        {
+            return idx_;
+        }
+    }
+    return QModelIndex();
+}
