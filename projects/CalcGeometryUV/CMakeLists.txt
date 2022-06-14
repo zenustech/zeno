@@ -12,4 +12,4 @@ file(GLOB SRC_LIST *.cpp *.h ./calcUVCore/*.cpp ./calcUVCore/*.h)
 
 target_include_directories(zeno PRIVATE . ./calcUVCore)
 target_sources(zeno PRIVATE ${SRC_LIST})
-target_link_libraries(zeno PRIVATE ${CMAKE_THREAD_LIBS_INIT})
+# target_link_libraries(zeno PRIVATE ${CMAKE_THREAD_LIBS_INIT})
