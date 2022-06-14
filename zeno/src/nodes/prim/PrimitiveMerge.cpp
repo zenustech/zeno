@@ -167,7 +167,7 @@ ZENDEFNODE(PrimitiveMerge, {
     {"listPrim", "dst"},
     {"prim"},
     {},
-    {"primitive"},
+    {"deprecated"},
 });
 
 
