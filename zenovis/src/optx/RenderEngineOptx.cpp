@@ -115,10 +115,10 @@ struct GraphicsManager {
                     auto g_e1 = glm::vec3(e1[0], e1[1], e1[2]);
                     auto g_e2 = glm::vec3(e2[0], e2[1], e2[2]);
                     glm::vec3 g_nor;
-                    if(ivD == 1)
-                        g_nor = glm::normalize(glm::cross(g_e1, g_e2));
-                    else
-                        g_nor = glm::normalize(glm::cross(g_e2, g_e1));
+                    // if(ivD == 1)
+                    //     g_nor = glm::normalize(glm::cross(g_e1, g_e2));
+                    // else
+                    //     g_nor = glm::normalize(glm::cross(g_e2, g_e1));
                     auto nor = zeno::vec3f(g_nor.x, g_nor.y, g_nor.z);
                     zeno::vec3f clr;
                     if(prim_in->verts.has_attr("clr")){

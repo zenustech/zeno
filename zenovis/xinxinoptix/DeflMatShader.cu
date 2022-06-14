@@ -406,7 +406,7 @@ extern "C" __global__ void __closesthit__radiance()
         float  LnDl  = clamp(-dot( lnrm, L ),0.0f,1.0f);
         float A = length(cross(lv1, lv2))/2;
         float weight = LnDl * A / (M_PIf*dist * dist);
-        prd->radiance = make_float3(1.0f,1.0f,1.0f) * w * weight;
+        prd->radiance = attrs.clr * weight;
         prd->origin = P;
         prd->direction = ray_dir;
         return;
