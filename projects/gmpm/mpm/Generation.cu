@@ -43,6 +43,8 @@ struct ConfigConstitutiveModel : INode {
       model = zs::NeoHookean<float>{E, nu};
     else if (typeStr == "stvk")
       model = zs::StvkWithHencky<float>{E, nu};
+    else if(typeStr == "snhk")
+      model = zs::StableNeohookeanInvarient<float>{E,nu};
     else
       throw std::runtime_error(fmt::format(
           "unrecognized (isotropic) elastic model [{}]\n", typeStr));
@@ -1655,9 +1657,9 @@ struct ComputeVonMises : INode {
     auto option = get_param<int>("by_log1p(base10)");
 
     auto cudaExec = zs::cuda_exec().device(0);
-    zs::match([&](auto &elasticModel) {
+    zs::match([&](auto &elasticModel) -> std::enable_if_t<std::is_same_v<RM_CVREF_T(elasticModel), zs::StvkWithHencky<float>>> {
       computeVms(cudaExec, elasticModel, pars, option);
-    })(model.getElasticModel());
+    }, [](...){})(model.getElasticModel());
 
     set_output("ZSParticles", std::move(zspars));
     fmt::print(fg(fmt::color::cyan), "done executing ComputeVonMises\n");

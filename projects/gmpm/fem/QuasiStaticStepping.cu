@@ -83,7 +83,6 @@ struct QuasiStaticStepping : INode {
 
                     T stiffness = 2.0066 * mu + 1.0122 * lambda;
                     T bpsi = (0.5 * bcws("cnorm",vi) * stiffness * bone_driven_weight * eles("vol",ei)) * pdiff.dot(pdiff);
-
                     // bpsi = (0.5 * bcws("cnorm",vi) * lambda * bone_driven_weight) * pdiff.dot(pdiff);
 // the cnorm here should be the allocated volume of point in embeded tet 
                     atomic_add(exec_cuda, &res[0], (T)bpsi);
@@ -146,10 +145,19 @@ struct QuasiStaticStepping : INode {
                     atomic_add(exec_cuda, &vtemp("grad", d, vi), vf(i * 3 + d) + mg(d));
             }
 
-            auto Hq = model.first_piola_derivative(F, true_c);
+            auto Hq = model.first_piola_derivative(F, true_c,ei);
             auto H = dFdXT * Hq * dFdX * vole;
 
             etemp.tuple<12 * 12>("He", ei) = H;
+
+            // if(ei == 0){
+            //     printf("F : \n%f %f %f\n%f %f %f\n%f %f %f\n",
+            //         F(0,0),F(0,1),F(0,2),
+            //         F(1,0),F(1,1),F(1,2),
+            //         F(2,0),F(2,1),F(2,2)
+            //     );
+            //     printf("ELM_H<%d>:%e %f %f\n",ei,Hq.norm(),(float)model.lam,(float)model.mu);
+            // }
             // etemp.tuple<12 * 12>("Hec",ei) = H;
             // etemp.tuple<12 * 12>("Hec",ei) = H
         });
@@ -178,6 +186,10 @@ struct QuasiStaticStepping : INode {
                         tpos += w[i] * vtemp.pack<3>(tag,inds[i]);
                     T stiffness = 2.0066 * mu + 1.0122 * lambda;
                     auto pdiff = tpos - b_verts.pack<3>("x",vi);
+
+                    // if(ei == 0)
+                    //     printf("INTERPOLATE WEIGHT:%f %f %d\n",(float)(stiffness * bone_driven_weight),(float)bcws("cnorm",vi),vi);
+
                     for(size_t i = 0;i != 4;++i){
                         auto tmp = pdiff * (-stiffness * bcws("cnorm",vi) * bone_driven_weight * w[i] * eles("vol",ei)); 
                         // tmp = pdiff * (-lambda * bcws("cnorm",vi) * bone_driven_weight * w[i]);
@@ -401,6 +413,8 @@ struct QuasiStaticStepping : INode {
       })(models.getElasticModel());
     //   fmt::print("FINISH COMPUTE HESSIAN\n");
 
+    // break;
+
     //  T Hn = dot<144>(cudaPol,etemp,"He","He");
     //  fmt::print("Hn:{}\n",Hn);
 
@@ -412,36 +426,34 @@ struct QuasiStaticStepping : INode {
                 vtemp.tuple<9>("P", vi) = mat3::zeros();
       });
 
-    
-
       cudaPol(zs::range(eles.size()),
-                [vtemp = proxy<space>({},vtemp),etemp = proxy<space>({},etemp),eles = proxy<space>({},eles)]
-                  ZS_LAMBDA (int ei) mutable {
-                    constexpr int dim = 3;
-                    constexpr auto dimp1 = dim + 1;
-                    auto inds = 
-                        eles.template pack<dimp1>("inds",ei).template reinterpret_bits<int>();
-                    auto He = etemp.pack<dim * dimp1,dim * dimp1>("He",ei);
-                    // auto Hec = etemp.pack<dim * dimp1,dim * dimp1>("Hec",ei);
+        [vtemp = proxy<space>({},vtemp),etemp = proxy<space>({},etemp),eles = proxy<space>({},eles)]
+            ZS_LAMBDA (int ei) mutable {
+            constexpr int dim = 3;
+            constexpr auto dimp1 = dim + 1;
+            auto inds = 
+                eles.template pack<dimp1>("inds",ei).template reinterpret_bits<int>();
+            auto He = etemp.pack<dim * dimp1,dim * dimp1>("He",ei);
+            // auto Hec = etemp.pack<dim * dimp1,dim * dimp1>("Hec",ei);
 
-                    // if(ei == 4723){
-                    //     printf("ELE<4723>:%d %d %d %d\n",inds[0],inds[1],inds[2],inds[3]);
-                    // }
+            // if(ei == 4723){
+            //     printf("ELE<4723>:%d %d %d %d\n",inds[0],inds[1],inds[2],inds[3]);
+            // }
 
-                    for (int vi = 0; vi != dimp1; ++vi) {
-                    #if 1
-                      for (int i = 0; i != dim; ++i)
-                        for (int j = i; j != dim; ++j){ 
-                          atomic_add(exec_cuda, &vtemp("P", i * dim + j, inds[vi]),He(vi * dim + i, vi * dim + j));
-                        //   atomic_add(exec_cuda, &vtemp("P", j * dim + i, inds[vi]),He(vi * dim + i, vi * dim + j));
-                        }
-                    #else
-                      for (int j = 0; j != dim; ++j) {
-                          atomic_add(exec_cuda, &vtemp("P", j * dim + j, inds[vi]),
-                                    He(vi * dim + j, vi * dim + j));
-                      }
-                    #endif
-                    }
+            for (int vi = 0; vi != dimp1; ++vi) {
+            #if 1
+                for (int i = 0; i != dim; ++i)
+                for (int j = i; j != dim; ++j){ 
+                    atomic_add(exec_cuda, &vtemp("P", i * dim + j, inds[vi]),He(vi * dim + i, vi * dim + j));
+                //   atomic_add(exec_cuda, &vtemp("P", j * dim + i, inds[vi]),He(vi * dim + i, vi * dim + j));
+                }
+            #else
+                for (int j = 0; j != dim; ++j) {
+                    atomic_add(exec_cuda, &vtemp("P", j * dim + j, inds[vi]),
+                            He(vi * dim + j, vi * dim + j));
+                }
+            #endif
+            }
       });
 
       // make sure it is symmetric
