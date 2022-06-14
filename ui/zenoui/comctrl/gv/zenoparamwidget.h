@@ -185,6 +185,27 @@ private:
     QTextEdit* m_pTextEdit;
 };
 
+class ZenoParamBlackboard : public ZenoParamWidget
+{
+    Q_OBJECT
+public:
+    ZenoParamBlackboard(const QString &value, LineEditParam param, QGraphicsItem *parent = nullptr);
+    QString text() const;
+    void setText(const QString &text);
+
+protected:
+    bool eventFilter(QObject *object, QEvent *event) override;
+
+signals:
+    void textChanged();
+    void editingFinished();
+
+private:
+    QString m_value;
+    QTextEdit *m_pTextEdit;
+};
+
+
 class ZenoSpacerItem : public QGraphicsLayoutItem, public QGraphicsItem
 {
 public:
