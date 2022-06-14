@@ -235,6 +235,8 @@ struct CreateSphere : zeno::INode {
         auto prim = std::make_shared<zeno::PrimitiveObject>();
         auto position = get_input2<zeno::vec3f>("position");
         auto scaleSize = get_input2<zeno::vec3f>("scaleSize");
+        auto rows = get_input2<int>("rows");
+        auto columns = get_input2<int>("columns");
         auto radius = get_input2<float>("radius");
 
         size_t seg = 32;
@@ -243,6 +245,7 @@ struct CreateSphere : zeno::INode {
         uvs.reserve(19 * 33);
         auto &pos = prim->verts;
         auto &nrm = prim->add_attr<zeno::vec3f>("nrm");
+        auto &uv = prim->add_attr<zeno::vec3f>("uv");
         for (auto i = -90; i <= 90; i += 10) {
             float r = cos(i / 180.0 * M_PI);
             float h = sin(i / 180.0 * M_PI);
@@ -250,6 +253,7 @@ struct CreateSphere : zeno::INode {
                 float rad = 2 * M_PI * j / 32;
                 pos.push_back(vec3f(cos(rad) * r, h, -sin(rad) * r) * radius * scaleSize + position);
                 uvs.push_back(vec3f(j / 32.0, i / 90.0 * 0.5 + 0.5, 0));
+                uv.push_back(vec3f(j / 32.0, i / 90.0 * 0.5 + 0.5, 0));
                 nrm.push_back(zeno::normalize(pos[pos.size()-1]));
             }
         }
@@ -287,6 +291,8 @@ ZENDEFNODE(CreateSphere, {
         {"vec3f", "position", "0, 0, 0"},
         {"vec3f", "scaleSize", "1, 1, 1"},
         {"float", "radius", "1"},
+        {"int", "rows", "13"},
+        {"int", "columns", "24"},
     },
     {"prim"},
     {},
