@@ -231,7 +231,8 @@ struct CodimStepping : INode {
 
   inline static T kappaMax = 1e8;
   inline static T kappaMin = 1e4;
-  inline static T kappa = 1e5;
+  static constexpr T kappa0 = 1e5;
+  inline static T kappa = kappa0;
   inline static T xi = 0; // 1e-2; // 2e-3;
   inline static T dHat = 0.001;
   inline static vec3 extForce;
@@ -279,15 +280,16 @@ struct CodimStepping : INode {
       return zs::make_tuple(nPP.getVal(), nPE.getVal(), nPT.getVal(),
                             nEE.getVal(), ncsPT.getVal(), ncsEE.getVal());
     }
-    void computeConstraints(zs::CudaExecutionPolicy &pol) {
+    void computeConstraints(zs::CudaExecutionPolicy &pol,
+                            const zs::SmallString &tag) {
       using namespace zs;
       constexpr auto space = execspace_e::cuda;
       pol(Collapse{vtemp.size()},
-          [vtemp = proxy<space>({}, vtemp)] __device__(int vi) mutable {
+          [vtemp = proxy<space>({}, vtemp), tag] __device__(int vi) mutable {
             auto BCbasis = vtemp.pack<3, 3>("BCbasis", vi);
             auto BCtarget = vtemp.pack<3>("BCtarget", vi);
             int BCorder = vtemp("BCorder", vi);
-            auto x = BCbasis.transpose() * vtemp.pack<3>("xn", vi);
+            auto x = BCbasis.transpose() * vtemp.pack<3>(tag, vi);
             int d = 0;
             for (; d != BCorder; ++d)
               vtemp("cons", d, vi) = x[d] - BCtarget[d];
@@ -298,7 +300,7 @@ struct CodimStepping : INode {
     bool areConstraintsSatisfied(zs::CudaExecutionPolicy &pol) {
       using namespace zs;
       constexpr auto space = execspace_e::cuda;
-      computeConstraints(pol);
+      computeConstraints(pol, "xn");
       auto res = infNorm(pol, vtemp, "cons");
       return res < 1e-2;
     }
@@ -328,10 +330,12 @@ struct CodimStepping : INode {
           });
       auto nsqr = reduce(pol, num);
       auto dsqr = reduce(pol, den);
+      T ret = 0;
       if (dsqr == 0)
-        return std::sqrt(nsqr);
+        ret = std::sqrt(nsqr);
       else
-        return std::sqrt(nsqr / dsqr);
+        ret = std::sqrt(nsqr / dsqr);
+      return ret < 1e-6 ? 0 : ret;
     }
     void findCollisionConstraints(zs::CudaExecutionPolicy &pol, T dHat,
                                   T xi = 0) {
@@ -1002,7 +1006,8 @@ struct CodimStepping : INode {
               });
     }
     template <typename Pol, typename Model>
-    T energy(Pol &pol, const Model &model, const zs::SmallString tag) {
+    T energy(Pol &pol, const Model &model, const zs::SmallString tag,
+             bool includeAugLagEnergy = false) {
       using namespace zs;
       constexpr auto space = execspace_e::cuda;
       Vector<T> res{verts.get_allocator(), 1};
@@ -1019,7 +1024,7 @@ struct CodimStepping : INode {
                    (T)0.5 * m * (x - vtemp.pack<3>("xtilde", vi)).l2NormSqr());
         // gravity
         atomic_add(exec_cuda, &res[0],
-                   -m * extForce.dot(x - verts.pack<3>("x", vi)) * dt * dt);
+                   -m * extForce.dot(x - vtemp.pack<3>("xt", vi)) * dt * dt);
       });
       // elasticity
       pol(range(eles.size()), [verts = proxy<space>({}, verts),
@@ -1148,6 +1153,20 @@ struct CodimStepping : INode {
                 atomic_add(exec_cuda, &res[0], temp);
               }
             });
+      }
+      // constraints
+      if (includeAugLagEnergy) {
+        computeConstraints(pol, tag);
+        pol(range(numDofs), [vtemp = proxy<space>({}, vtemp),
+                             res = proxy<space>(res), tag,
+                             kappa = kappa] __device__(int vi) mutable {
+          auto x = vtemp.pack<3>(tag, vi);
+          auto cons = vtemp.template pack<3>("cons", vi);
+          auto w = vtemp("ws", vi);
+          auto lambda = vtemp.pack<3>("lambda", vi);
+          atomic_add(exec_cuda, &res[0],
+                     (T)(-lambda.dot(cons) + 0.5 * kappa * cons.l2NormSqr()));
+        });
       }
       return res.getVal();
     }
@@ -1619,7 +1638,7 @@ struct CodimStepping : INode {
               auto x = coverts.pack<3>("x", i);
               auto v = coverts.pack<3>("v", i);
               vtemp.tuple<3>("xtilde", coOffset + i) = x + v * dt;
-              vtemp("ws", coOffset + i) = zs::sqrt(coverts("m", i) * 1e6);
+              vtemp("ws", coOffset + i) = zs::sqrt(coverts("m", i) * 1e3);
               vtemp.tuple<3>("lambda", coOffset + i) = vec3::zeros();
               vtemp.tuple<3>("xn", coOffset + i) = x;
               vtemp.tuple<3>("xt", coOffset + i) = x;
@@ -1647,6 +1666,7 @@ struct CodimStepping : INode {
       projectDBC = false;
       BCsatisfied = false;
     }
+    kappa = kappa0;
 
     /// optimizer
     for (int newtonIter = 0; newtonIter != 100; ++newtonIter) {
@@ -1678,8 +1698,9 @@ struct CodimStepping : INode {
                 auto m = zs::sqr(vtemp("ws", coOffset + i));
                 auto v = coverts.pack<3>("v", i);
                 // only inertial, no extforce grad
-                vtemp.tuple<3>("grad", i) =
-                    -m * (vtemp.pack<3>("xn", i) - vtemp.pack<3>("xtilde", i));
+                vtemp.tuple<3>("grad", coOffset + i) =
+                    -m * (vtemp.pack<3>("xn", coOffset + i) -
+                          vtemp.pack<3>("xtilde", coOffset + i));
               });
       match([&](auto &elasticModel) {
         A.computeElasticGradientAndHessian(cudaPol, elasticModel);
@@ -1690,7 +1711,7 @@ struct CodimStepping : INode {
       // rotate gradient and project
       cudaPol(zs::range(vtemp.size()),
               [vtemp = proxy<space>({}, vtemp), verts = proxy<space>({}, verts),
-               projectDBC = projectDBC, dt] __device__(int i) mutable {
+               projectDBC = projectDBC] __device__(int i) mutable {
                 auto grad = vtemp.pack<3, 3>("BCbasis", i).transpose() *
                             vtemp.pack<3>("grad", i);
                 int BCfixed = vtemp("BCfixed", i);
@@ -1710,9 +1731,9 @@ struct CodimStepping : INode {
                   // computed during the previous constraint residual check
                   auto cons = vtemp.pack<3>("cons", i);
                   auto w = vtemp("ws", i);
-                  vtemp.tuple<3>("grad", i) = vtemp.pack<3>("grad", i) -
-                                              w * vtemp.pack<3>("lambda", i) +
-                                              kappa * w * cons;
+                  vtemp.tuple<3>("grad", i) =
+                      vtemp.pack<3>("grad", i) -
+                      (-w * vtemp.pack<3>("lambda", i) + kappa * w * cons);
                   for (int d = 0; d != 4; ++d)
                     if (cons[d] != 0) {
                       vtemp("P", 4 * d, i) += kappa * w;
@@ -1824,7 +1845,7 @@ struct CodimStepping : INode {
               });
       T E0{};
       match([&](auto &elasticModel) {
-        E0 = A.energy(cudaPol, elasticModel, "xn0");
+        E0 = A.energy(cudaPol, elasticModel, "xn0", !BCsatisfied);
       })(models.getElasticModel());
 
       // line search
@@ -1848,7 +1869,7 @@ struct CodimStepping : INode {
 
         A.findCollisionConstraints(cudaPol, dHat, xi);
         match([&](auto &elasticModel) {
-          E = A.energy(cudaPol, elasticModel, "xn");
+          E = A.energy(cudaPol, elasticModel, "xn", !BCsatisfied);
         })(models.getElasticModel());
 
         fmt::print("E: {} at alpha {}. E0 {}\n", E, alpha, E0);
@@ -1863,6 +1884,22 @@ struct CodimStepping : INode {
         vtemp.tuple<3>("xn", i) =
             vtemp.pack<3>("xn0", i) + alpha * vtemp.pack<3>("dir", i);
       });
+
+      // update rule
+      cons_res = A.constraintResidual(cudaPol);
+      if (res < updateZoneTol && cons_res > consTol) {
+        if (kappa < kappaMax)
+          kappa *= 2;
+        else {
+          cudaPol(Collapse{vtemp.size()},
+                  [vtemp = proxy<space>({}, vtemp),
+                   kappa = kappa] __device__(int vi) mutable {
+                    vtemp.tuple<3>("lambda", vi) =
+                        vtemp.pack<3>("lambda", vi) -
+                        kappa * vtemp("ws", vi) * vtemp.pack<3>("cons", vi);
+                  });
+        }
+      }
     } // end newton step
 
     // update velocity and positions
