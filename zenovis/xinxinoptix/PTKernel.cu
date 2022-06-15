@@ -30,9 +30,9 @@ extern "C" __global__ void __raygen__rg()
     do
     {
         // The center of each pixel is at fraction (0.5,0.5)
-        const float2 subpixel_jitter = make_float2( rnd( seed ), rnd( seed ) );
+        float2 subpixel_jitter = make_float2( rnd( seed ), rnd( seed ) );
 
-        const float2 d = 2.0f * make_float2(
+        float2 d = 2.0f * make_float2(
                 ( static_cast<float>( idx.x ) + subpixel_jitter.x ) / static_cast<float>( w ),
                 ( static_cast<float>( idx.y ) + subpixel_jitter.y ) / static_cast<float>( h )
                 ) - 1.0f;
