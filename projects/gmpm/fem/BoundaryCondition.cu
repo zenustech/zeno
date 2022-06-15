@@ -26,6 +26,8 @@ struct ApplyBoundaryOnVertices : INode {
           if (boundary.queryInside(pos)) {
             auto v = boundary.getVelocity(pos);
             auto n = boundary.getNormal(pos);
+            if (v.l2NormSqr() == 0)
+              verts("BCfixed", vi) = 1;
             if (boundary.type == collider_e::Sticky) {
               verts.template tuple<9>("BCbasis", vi) = mat3::identity();
               verts("BCorder", vi) = reinterpret_bits<zs::f64>((zs::i64)3);
@@ -72,6 +74,7 @@ struct ApplyBoundaryOnVertices : INode {
               using mat3 = zs::vec<zs::f64, 3, 3>;
               verts.tuple<9>("BCbasis", vi) = mat3::identity();
               verts("BCorder", vi) = reinterpret_bits<zs::f64>((zs::i64)0);
+              verts("BCfixed", vi) = 0;
               verts.tuple<3>("BCtarget", vi) = verts.pack<3>("x", vi);
             });
 

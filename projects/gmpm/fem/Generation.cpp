@@ -399,21 +399,21 @@ struct ToZSTetrahedra : INode {
     std::vector<zs::PropertyTag> auxVertAttribs{};
     std::vector<zs::PropertyTag> auxElmAttribs{};
 
-    if(include_customed_properties){
-      for(auto &&[key, arr] : prim->verts.attrs) {
-        const auto checkDuplication = [&tags] (const std::string &name) {
-          for(std::size_t i = 0;i != tags.size();++i)
-            if(tags[i].name == name.data())
+    if (include_customed_properties) {
+      for (auto &&[key, arr] : prim->verts.attrs) {
+        const auto checkDuplication = [&tags](const std::string &name) {
+          for (std::size_t i = 0; i != tags.size(); ++i)
+            if (tags[i].name == name.data())
               return true;
           return false;
         };
-        if(checkDuplication(key) || key == "pos" || key == "vel")
+        if (checkDuplication(key) || key == "pos" || key == "vel")
           continue;
         const auto &k{key};
         match(
-          [&k,&auxVertAttribs](const std::vector<vec3f> &vals){
-            auxVertAttribs.push_back(PropertyTag{k,3});
-          },
+            [&k, &auxVertAttribs](const std::vector<vec3f> &vals) {
+              auxVertAttribs.push_back(PropertyTag{k, 3});
+            },
             [&k, &auxVertAttribs](const std::vector<float> &vals) {
               auxVertAttribs.push_back(PropertyTag{k, 1});
             },
@@ -422,24 +422,23 @@ struct ToZSTetrahedra : INode {
             [](...) {
               throw std::runtime_error(
                   "what the heck is this type of attribute!");
-        })(arr);
+            })(arr);
       }
 
-
-      for(auto &&[key, arr] : prim->quads.attrs) {
-        const auto checkDuplication = [&eleTags] (const std::string& name){
-          for(std::size_t i = 0;i != eleTags.size();++i)
-            if(eleTags[i].name == name.data())
+      for (auto &&[key, arr] : prim->quads.attrs) {
+        const auto checkDuplication = [&eleTags](const std::string &name) {
+          for (std::size_t i = 0; i != eleTags.size(); ++i)
+            if (eleTags[i].name == name.data())
               return true;
           return false;
         };
-        if(checkDuplication(key))
+        if (checkDuplication(key))
           continue;
-        const auto& k{key};
+        const auto &k{key};
         match(
-          [&k,&auxElmAttribs](const std::vector<vec3f> &vals){
-            auxElmAttribs.push_back(PropertyTag{k,3});
-          },
+            [&k, &auxElmAttribs](const std::vector<vec3f> &vals) {
+              auxElmAttribs.push_back(PropertyTag{k, 3});
+            },
             [&k, &auxElmAttribs](const std::vector<float> &vals) {
               auxElmAttribs.push_back(PropertyTag{k, 1});
             },
@@ -448,12 +447,13 @@ struct ToZSTetrahedra : INode {
             [](...) {
               throw std::runtime_error(
                   "what the heck is this type of attribute!");
-        })(arr);
+            })(arr);
       }
     }
-    tags.insert(std::end(tags), std::begin(auxVertAttribs), std::end(auxVertAttribs));
-    // eleTags.insert(std::end(eleTags), std::begin(auxElmAttribs), std::end(auxElmAttribs));
-
+    tags.insert(std::end(tags), std::begin(auxVertAttribs),
+                std::end(auxVertAttribs));
+    // eleTags.insert(std::end(eleTags), std::begin(auxElmAttribs),
+    // std::end(auxElmAttribs));
 
     constexpr auto space = zs::execspace_e::openmp;
     zstets->particles = std::make_shared<typename ZenoParticles::particles_t>(
@@ -461,31 +461,33 @@ struct ToZSTetrahedra : INode {
     auto &pars = zstets->getParticles();
     // initialize the nodal attributes
     ompExec(zs::range(pos.size()),
-      [&, pars = proxy<space>({}, pars)](int vi) mutable {
-        using vec3 = zs::vec<float, 3>;
-        using mat3 = zs::vec<float, 3, 3>;
-        auto p = vec3{pos[vi][0], pos[vi][1], pos[vi][2]};
-        pars.tuple<3>("x", vi) = p;
-        pars.tuple<3>("x0", vi) = p;
-        pars.tuple<3>("v", vi) = vec3::zeros();
-        if (prim->has_attr("vel")) {
-          auto vel = prim->attr<zeno::vec3f>("vel")[vi];
-          pars.tuple<3>("v", vi) = vec3{vel[0], vel[1], vel[2]};
-        }
-        // default boundary handling setup
-        pars.tuple<9>("BCbasis", vi) = mat3::identity();
-        pars("BCorder", vi) = reinterpret_bits<float>(0);
-        pars.tuple<3>("BCtarget", vi) = vec3::zeros();
-        // computed later
-        pars("m", vi) = 0.f;
+            [&, pars = proxy<space>({}, pars)](int vi) mutable {
+              using vec3 = zs::vec<float, 3>;
+              using mat3 = zs::vec<float, 3, 3>;
+              auto p = vec3{pos[vi][0], pos[vi][1], pos[vi][2]};
+              pars.tuple<3>("x", vi) = p;
+              pars.tuple<3>("x0", vi) = p;
+              pars.tuple<3>("v", vi) = vec3::zeros();
+              if (prim->has_attr("vel")) {
+                auto vel = prim->attr<zeno::vec3f>("vel")[vi];
+                pars.tuple<3>("v", vi) = vec3{vel[0], vel[1], vel[2]};
+              }
+              // default boundary handling setup
+              pars.tuple<9>("BCbasis", vi) = mat3::identity();
+              pars("BCorder", vi) = reinterpret_bits<float>(0);
+              pars.tuple<3>("BCtarget", vi) = vec3::zeros();
+              // computed later
+              pars("m", vi) = 0.f;
 
-        for(auto& prop : auxVertAttribs){
-          if(prop.numChannels == 3)
-            pars.tuple<3>(prop.name,vi) = prim->attr<vec3f>(std::string{prop.name})[vi];
-          else // prop.numChannles == 1
-            pars(prop.name,vi) = prim->attr<float>(std::string{prop.name})[vi];
-        }
-    });
+              for (auto &prop : auxVertAttribs) {
+                if (prop.numChannels == 3)
+                  pars.tuple<3>(prop.name, vi) =
+                      prim->attr<vec3f>(std::string{prop.name})[vi];
+                else // prop.numChannles == 1
+                  pars(prop.name, vi) =
+                      prim->attr<float>(std::string{prop.name})[vi];
+              }
+            });
     zstets->elements = typename ZenoParticles::particles_t(
         eleTags, quads.size(), zs::memsrc_e::host);
     auto &eles = zstets->getQuadraturePoints();
@@ -493,39 +495,41 @@ struct ToZSTetrahedra : INode {
     double volumeSum{0.0};
     // initialize element-wise attributes
     ompExec(zs::range(eles.size()),
-    [&, pars = proxy<space>({}, pars),
-        eles = proxy<space>({}, eles)](int ei) mutable {
-        using vec3 = zs::vec<float, 3>;
-        using mat3 = zs::vec<float, 3, 3>;
-        using vec4 = zs::vec<float, 4>;
-        auto quad = quads[ei];
-        vec3 xs[4];
-        for (int d = 0; d != 4; ++d) {
-          eles("inds", d, ei) = zs::reinterpret_bits<float>(quad[d]);
-          xs[d] = pars.pack<3>("x", quad[d]);
-        }
+            [&, pars = proxy<space>({}, pars),
+             eles = proxy<space>({}, eles)](int ei) mutable {
+              using vec3 = zs::vec<float, 3>;
+              using mat3 = zs::vec<float, 3, 3>;
+              using vec4 = zs::vec<float, 4>;
+              auto quad = quads[ei];
+              vec3 xs[4];
+              for (int d = 0; d != 4; ++d) {
+                eles("inds", d, ei) = zs::reinterpret_bits<float>(quad[d]);
+                xs[d] = pars.pack<3>("x", quad[d]);
+              }
 
-        vec3 ds[3] = {xs[1] - xs[0], xs[2] - xs[0], xs[3] - xs[0]};
-        mat3 D{};
-        for (int d = 0; d != 3; ++d)
-          for (int i = 0; i != 3; ++i)
-            D(d, i) = ds[i][d];
-        eles.tuple<9>("IB", ei) = zs::inverse(D);
-        auto vol = zs::abs(zs::determinant(D)) / 6;
-        atomic_add(exec_omp, &volumeSum, (double)vol);
-        eles("vol", ei) = vol;
-        // vert masses
-        auto vmass = vol * zsmodel->density / 4;
-        for (int d = 0; d != 4; ++d)
-          atomic_add(zs::exec_omp, &pars("m", quad[d]), vmass);
+              vec3 ds[3] = {xs[1] - xs[0], xs[2] - xs[0], xs[3] - xs[0]};
+              mat3 D{};
+              for (int d = 0; d != 3; ++d)
+                for (int i = 0; i != 3; ++i)
+                  D(d, i) = ds[i][d];
+              eles.tuple<9>("IB", ei) = zs::inverse(D);
+              auto vol = zs::abs(zs::determinant(D)) / 6;
+              atomic_add(exec_omp, &volumeSum, (double)vol);
+              eles("vol", ei) = vol;
+              // vert masses
+              auto vmass = vol * zsmodel->density / 4;
+              for (int d = 0; d != 4; ++d)
+                atomic_add(zs::exec_omp, &pars("m", quad[d]), vmass);
 
-        for(auto& prop : auxElmAttribs) {
-          if(prop.numChannels == 3)
-            eles.tuple<3>(prop.name,ei) = prim->quads.attr<vec3f>(std::string{prop.name})[ei];
-          else
-            eles(prop.name,ei) = prim->quads.attr<float>(std::string{prop.name})[ei];
-        }
-    });
+              for (auto &prop : auxElmAttribs) {
+                if (prop.numChannels == 3)
+                  eles.tuple<3>(prop.name, ei) =
+                      prim->quads.attr<vec3f>(std::string{prop.name})[ei];
+                else
+                  eles(prop.name, ei) =
+                      prim->quads.attr<float>(std::string{prop.name})[ei];
+              }
+            });
     zstets->setMeta("meanMass",
                     (float)(volumeSum * zsmodel->density / pars.size()));
 
@@ -587,7 +591,7 @@ struct ToZSTetrahedra : INode {
 
 ZENDEFNODE(ToZSTetrahedra, {{{"ZSModel"}, {"quad (tet) mesh", "prim"}},
                             {{"tetmesh on gpu", "ZSParticles"}},
-                            {{"int","add_customed_attr","0"}},
+                            {{"int", "add_customed_attr", "0"}},
                             {"FEM"}});
 
 struct ToZSTriMesh : INode {
@@ -680,6 +684,7 @@ struct ToZSSurfaceMesh : INode {
         {"v", 3},
         {"BCbasis", 9} /* normals for slip boundary*/,
         {"BCorder", 1},
+        {"BCfixed", 1},
         {"BCtarget", 3}};
     std::vector<zs::PropertyTag> eleTags{{"vol", 1}, {"IB", 4}, {"inds", 3}};
 
@@ -701,6 +706,7 @@ struct ToZSSurfaceMesh : INode {
               // default boundary handling setup
               pars.tuple<9>("BCbasis", vi) = mat3::identity();
               pars("BCorder", vi) = reinterpret_bits<zs::f64>((zs::i64)0);
+              pars("BCfixed", vi) = 0;
               pars.tuple<3>("BCtarget", vi) = vec3::zeros();
               // computed later
               pars("m", vi) = 0.f;
