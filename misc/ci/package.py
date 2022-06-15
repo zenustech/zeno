@@ -72,4 +72,3 @@ elif sys.platform == 'linux':
     print('finished with', outpath + '.tar.gz')
 else:
     assert False, sys.platform
-
