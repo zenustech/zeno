@@ -494,6 +494,9 @@
             </widget>
            </item>
            <item>
+            <widget class="ZTextLabel" name="lblVideos"/>
+           </item>
+           <item>
             <widget class="ZTextLabel" name="lblManual"/>
            </item>
            <item>

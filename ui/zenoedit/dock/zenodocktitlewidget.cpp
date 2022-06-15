@@ -92,7 +92,7 @@ void ZenoDockTitleWidget::onDockSwitchClicked()
 	QAction* pSwitchView = new QAction("View");
 	QAction* pSwitchNodeParam = new QAction("parameter");
 	QAction* pSwitchNodeData = new QAction("data");
-	QAction *pSwitchLog = new QAction(tr("logger"));
+	QAction *pSwitchLog = new QAction("logger");
 	menu->addAction(pSwitchEditor);
 	menu->addAction(pSwitchView);
 	menu->addAction(pSwitchNodeParam);
