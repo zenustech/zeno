@@ -188,7 +188,7 @@ struct ProgramRunData {
 
 void launchProgramJSON(std::string progJson)
 {
-#if defined(ZENO_MULTIPROCESS) && defined(MULTIPROC_BASE_TCP)
+#if defined(ZENO_MULTIPROCESS) && defined(ZENO_IPC_USE_TCP)
     ZTcpServer *pServer = zenoApp->getServer();
     if (pServer)
     {
@@ -211,7 +211,7 @@ void launchProgramJSON(std::string progJson)
 void killProgramJSON()
 {
     zeno::log_info("killing current program");
-#if defined(ZENO_MULTIPROCESS) && defined(MULTIPROC_BASE_TCP)
+#if defined(ZENO_MULTIPROCESS) && defined(ZENO_IPC_USE_TCP)
     ZTcpServer *pServer = zenoApp->getServer();
     if (pServer)
     {

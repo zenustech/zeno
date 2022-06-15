@@ -10,7 +10,7 @@
 #include <zeno/funcs/ObjectCodec.h>
 #include <zeno/zeno.h>
 #include <string>
-#ifdef MULTIPROC_BASE_TCP
+#ifdef ZENO_IPC_USE_TCP
 #include <QTcpServer>
 #include <QtWidgets>
 #include <QTcpSocket>
@@ -20,7 +20,7 @@
 
 namespace {
 
-#ifdef MULTIPROC_BASE_TCP
+#ifdef ZENO_IPC_USE_TCP
 static std::unique_ptr<QTcpSocket> clientSocket;
 #else
 static FILE *ourfp;
@@ -54,7 +54,7 @@ static void send_packet(std::string_view info, const char *buf, size_t len) {
     std::memcpy(headbuffer.data() + 4 + sizeof(Header), info.data(), info.size());
 
     zeno::log_debug("runner tx head-buffer {} data-buffer {}", headbuffer.size(), len);
-#ifdef MULTIPROC_BASE_TCP
+#ifdef ZENO_IPC_USE_TCP
     for (char c: headbuffer) {
         clientSocket->write(&c, 1);
     }
@@ -146,7 +146,7 @@ int runner_main(int sessionid);
 int runner_main(int sessionid) {
     printf("(stdout ping test)\n");
 
-#ifdef MULTIPROC_BASE_TCP
+#ifdef ZENO_IPC_USE_TCP
     clientSocket = std::make_unique<QTcpSocket>();
     clientSocket->connectToHost(QHostAddress::LocalHost, TCP_PORT);
     if (!clientSocket->waitForConnected(10000)) {

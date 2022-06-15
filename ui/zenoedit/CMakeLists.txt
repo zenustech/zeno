@@ -18,7 +18,6 @@ set_property(TARGET zenoedit PROPERTY WIN32_EXECUTABLE OFF)
 
 find_package(Threads REQUIRED)
 target_link_libraries(zenoedit PRIVATE Threads::Threads)
-add_definitions(-DMULTIPROC_BASE_TCP)  #multiprocess base tcp.
 if (ZENO_MULTIPROCESS)
     target_link_libraries(zenoedit PRIVATE Qt5::Widgets Qt5::OpenGL Qt5::Network)
 else()
@@ -30,6 +29,9 @@ target_include_directories(zenoedit PRIVATE . .. ../zenoui)
 target_include_directories(zenoedit PRIVATE ${Qt5Widgets_PRIVATE_INCLUDE_DIRS})
 if (ZENO_MULTIPROCESS)
     target_compile_definitions(zenoedit PRIVATE -DZENO_MULTIPROCESS)
+    if (ZENO_IPC_USE_TCP)
+        target_compile_definitions(zenoedit PRIVATE -DZENO_IPC_USE_TCP)
+    endif()
 endif()
 
 if (ZENO_INSTALL_TARGET)
