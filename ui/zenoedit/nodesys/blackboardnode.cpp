@@ -1,13 +1,16 @@
 #include "blackboardnode.h"
 #include <zenoui/render/common_id.h>
+#include "zenoapplication.h"
+#include "graphsmanagment.h"
+#include "util/log.h"
 
 
 BlackboardNode::BlackboardNode(const NodeUtilParam &params, QGraphicsItem *parent)
     : ZenoNode(params, parent)
     , m_bDragging(false)
-    , m_pTextItem(nullptr)
+    , m_pTextEdit(nullptr)
+    , m_pTitle(nullptr)
 {
-    m_ptBottomRight = QPointF(256, 180);
 }
 
 BlackboardNode::~BlackboardNode()
@@ -17,8 +20,6 @@ BlackboardNode::~BlackboardNode()
 QRectF BlackboardNode::boundingRect() const
 {
     return ZenoNode::boundingRect();
-    //QRectF rc = QRectF(QPointF(0, 0), m_ptBottomRight);
-    //return rc;
 }
 
 ZenoBackgroundWidget* BlackboardNode::initBodyWidget(NODE_TYPE type)
@@ -37,11 +38,41 @@ ZenoBackgroundWidget* BlackboardNode::initBodyWidget(NODE_TYPE type)
     pVLayout->setContentsMargins(border, border, border, border);
 
     BLACKBOARD_INFO blackboard = index().data(ROLE_BLACKBOARD).value<BLACKBOARD_INFO>();
-    ZenoParamBlackboard* pTextEdit = new ZenoParamBlackboard(blackboard.content, m_renderParams.lineEditParam);
-    pVLayout->addItem(pTextEdit);
+    m_pTextEdit = new ZenoParamBlackboard(blackboard.content, m_renderParams.lineEditParam);
+    pVLayout->addItem(m_pTextEdit);
+
+    connect(m_pTextEdit, &ZenoParamBlackboard::editingFinished, this, [=]() {
+        BLACKBOARD_INFO info = index().data(ROLE_BLACKBOARD).value<BLACKBOARD_INFO>();
+        if (info.content != m_pTextEdit->text())
+        {
+            updateBlackboard();
+        }
+    });
 
     bodyWidget->setLayout(pVLayout);
+
+    if (blackboard.sz.isValid()) {
+        resize(blackboard.sz);
+    }
+
     return bodyWidget;
+}
+
+void BlackboardNode::updateBlackboard()
+{
+    BLACKBOARD_INFO info = index().data(ROLE_BLACKBOARD).value<BLACKBOARD_INFO>();
+    if (m_pTitle)
+    {
+        info.title = m_pTitle->toPlainText();
+    }
+    if (m_pTextEdit)
+    {
+        info.content = m_pTextEdit->text();
+    }
+    info.sz = this->size();
+    IGraphsModel *pModel = zenoApp->graphsManagment()->currentModel();
+    ZASSERT_EXIT(pModel);
+    pModel->updateBlackboard(index(), info, subGraphIndex(), false);
 }
 
 ZenoBackgroundWidget* BlackboardNode::initHeaderWangStyle(NODE_TYPE type)
@@ -56,10 +87,23 @@ ZenoBackgroundWidget* BlackboardNode::initHeaderWangStyle(NODE_TYPE type)
 
     ZenoSpacerItem *pSpacerItem = new ZenoSpacerItem(true, 100);
 
-    const QString &name = index().data(ROLE_OBJNAME).toString();
-    auto nameItem = new ZenoTextLayoutItem(name, m_renderParams.nameFont, m_renderParams.nameClr.color(), this);
+    BLACKBOARD_INFO blackboard = index().data(ROLE_BLACKBOARD).value<BLACKBOARD_INFO>();
+
+    m_pTitle = new ZenoTextLayoutItem(blackboard.title, m_renderParams.nameFont, m_renderParams.nameClr.color(), this);
+    m_pTitle->setTextInteractionFlags(Qt::TextEditorInteraction);
+    connect(m_pTitle->document(), &QTextDocument::contentsChanged, this, [=]() {
+        m_pTitle->updateGeometry();
+        pHLayout->invalidate();
+    });
+    connect(m_pTitle, &ZenoTextLayoutItem::editingFinished, this, [=]() {
+        BLACKBOARD_INFO info = index().data(ROLE_BLACKBOARD).value<BLACKBOARD_INFO>();
+        if (info.title != m_pTitle->toPlainText()) {
+            updateBlackboard();
+        }
+    });
+
     QGraphicsLinearLayout *pNameLayout = new QGraphicsLinearLayout(Qt::Horizontal);
-    pNameLayout->addItem(nameItem);
+    pNameLayout->addItem(m_pTitle);
     pNameLayout->setContentsMargins(5, 5, 5, 5);
 
     int options = index().data(ROLE_OPTIONS).toInt();
@@ -90,7 +134,6 @@ void BlackboardNode::mousePressEvent(QGraphicsSceneMouseEvent* event)
     }
     else {
         m_bDragging = false;
-        //m_ptBottomRight = pos;
     }
 }
 
@@ -120,6 +163,7 @@ void BlackboardNode::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
     if (m_bDragging) {
         m_bDragging = false;
         updateWhole();
+        updateBlackboard();
         return;
     }
     ZenoNode::mouseReleaseEvent(event);

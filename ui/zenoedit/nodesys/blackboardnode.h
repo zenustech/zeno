@@ -23,11 +23,14 @@ protected:
     void hoverLeaveEvent(QGraphicsSceneHoverEvent* event) override;
     void hoverMoveEvent(QGraphicsSceneHoverEvent* event) override;
 
+private slots:
+    void updateBlackboard();
+
 private:
     bool isDragArea(QPointF pos);
 
-    QPointF m_ptBottomRight;
-    ZenoBoardTextLayoutItem* m_pTextItem;
+    ZenoParamBlackboard* m_pTextEdit;
+    ZenoTextLayoutItem* m_pTitle;
     bool m_bDragging;
 };
 

@@ -289,6 +289,15 @@ ZExpandableSection* ZenoPropPanel::inputsBox(IGraphsModel* pModel, const QModelI
 				pLayout->addWidget(pLineEdit, r++, 1);
 				break;
 			}
+			case CONTROL_BOOL:
+			{
+				QLabel *pNameItem = new QLabel(inputSock);
+				pNameItem->setProperty("cssClass", "proppanel");
+				pLayout->addWidget(pNameItem, r, 0, Qt::AlignLeft);
+
+				//todo
+				break;
+			}
 			case CONTROL_VEC3F:
 			{
 				QLabel* pNameItem = new QLabel(inputSock);
@@ -500,7 +509,6 @@ void ZenoPropPanel::onDataChanged(const QModelIndex& subGpIdx, const QModelIndex
 				case CONTROL_STRING:
 				case CONTROL_INT:
 				case CONTROL_FLOAT:
-				case CONTROL_BOOL:
 				case CONTROL_READPATH:
 				case CONTROL_WRITEPATH:
 				{
@@ -511,6 +519,10 @@ void ZenoPropPanel::onDataChanged(const QModelIndex& subGpIdx, const QModelIndex
 						QLineEdit* pEdit = lst[0];
 						pEdit->setText(inSocket.info.defaultValue.toString());
 					}
+					break;
+				}
+				case CONTROL_BOOL:
+				{
 					break;
 				}
 				case CONTROL_VEC3F:

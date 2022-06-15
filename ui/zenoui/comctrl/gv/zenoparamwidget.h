@@ -44,6 +44,7 @@ protected:
     void paintEvent(QPaintEvent* e) override;
 };
 
+
 class ZenoGvLineEdit : public QLineEdit
 {
     Q_OBJECT
@@ -54,9 +55,7 @@ protected:
     void paintEvent(QPaintEvent *e) override;
 };
 
-/// <summary>
-/// lineEdit
-/// </summary>
+
 class ZenoParamLineEdit : public ZenoParamWidget
 {
     Q_OBJECT
@@ -71,6 +70,23 @@ signals:
 private:
     QLineEdit *m_pLineEdit;
 };
+
+
+class ZenoParamCheckBox : public ZenoParamWidget
+{
+    Q_OBJECT
+public:
+    ZenoParamCheckBox(const QString &text, QGraphicsItem *parent = nullptr);
+    Qt::CheckState checkState() const;
+    void setCheckState(Qt::CheckState state);
+
+Q_SIGNALS:
+    void stateChanged(int);
+
+private:
+    QCheckBox* m_pCheckbox;
+};
+
 
 class ZenoVecEditWidget : public ZenoParamWidget
 {
@@ -222,8 +238,9 @@ private:
     bool m_bHorizontal;
 };
 
-class ZenoTextLayoutItem : public QGraphicsLayoutItem, public QGraphicsTextItem
+class ZenoTextLayoutItem : public QGraphicsTextItem, public QGraphicsLayoutItem
 {
+    Q_OBJECT
 public:
     ZenoTextLayoutItem(const QString &text, const QFont &font, const QColor &color, QGraphicsItem *parent = nullptr);
     void setGeometry(const QRectF &rect) override;
@@ -231,11 +248,13 @@ public:
     QRectF boundingRect() const override;
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) override;
 
-//signals:
+signals:
+    void editingFinished();
 //    void geometrySetup(const QPointF &pos);
 
 protected:
     QSizeF sizeHint(Qt::SizeHint which, const QSizeF &constraint = QSizeF()) const override;
+    void focusOutEvent(QFocusEvent *event) override;
 
 private:
     QString m_text;

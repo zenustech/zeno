@@ -163,6 +163,7 @@ struct BLACKBOARD_INFO
 Q_DECLARE_METATYPE(BLACKBOARD_INFO)
 
 struct NODE_DESC {
+    QString name;
     INPUT_SOCKETS inputs;
     PARAMS_INFO params;
     OUTPUT_SOCKETS outputs;

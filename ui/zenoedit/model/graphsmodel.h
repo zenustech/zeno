@@ -44,6 +44,7 @@ public:
     QItemSelectionModel* selectionModel() const;
     NODE_DESCS descriptors() const override;
     void setDescriptors(const NODE_DESCS& nodesParams) override;
+    void appendDescriptors(const QList<NODE_DESC>& descs) override;
     //NODE_DESC
     void appendSubGraph(SubGraphModel* pGraph);
     QModelIndex fork(const QModelIndex& subgIdx, const QModelIndex& subnetNodeIdx) override;
@@ -90,6 +91,8 @@ public:
     void updateSocketDefl(const QString& id, PARAM_UPDATE_INFO info, const QModelIndex& subGpIdx, bool enableTransaction = false) override;
     QVariant getNodeStatus(const QString& id, int role, const QModelIndex& subGpIdx) override;
     void updateNodeStatus(const QString& nodeid, STATUS_UPDATE_INFO info, const QModelIndex& subgIdx, bool enableTransaction = false) override;
+    void updateBlackboard(const QModelIndex& index, const BLACKBOARD_INFO& blackboard, const QModelIndex& subgIdx,
+                          bool enableTransaction) override;
     void copyPaste(const QModelIndex& fromSubg, const QModelIndexList& srcNodes, const QModelIndex& toSubg, QPointF pos, bool enableTrans = false) override;
     QModelIndex extractSubGraph(const QModelIndexList& nodes, const QModelIndex& fromSubg, const QString& toSubg, bool enableTrans = false) override;
 
@@ -113,6 +116,7 @@ public:
 	void collaspe(const QModelIndex& subgIdx) override;
 	void expand(const QModelIndex& subgIdx) override;
     void getNodeIndices(const QModelIndex& subGpIdx, QModelIndexList& subgNodes, QModelIndexList& normNodes) override;
+    bool hasDescriptor(const QString& nodeName) const;
 
     void beginTransaction(const QString& name);
 	void endTransaction();

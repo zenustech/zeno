@@ -119,6 +119,27 @@ void ZenoParamLineEdit::setText(const QString &text)
 
 
 ///////////////////////////////////////////////////////////////////////////
+ZenoParamCheckBox::ZenoParamCheckBox(const QString& text, QGraphicsItem* parent)
+    : ZenoParamWidget(parent)
+{
+    m_pCheckbox = new QCheckBox(text);
+    //ui..
+    setWidget(m_pCheckbox);
+    connect(m_pCheckbox, SIGNAL(stateChanged(int)), this, SIGNAL(stateChanged(int)));
+}
+
+Qt::CheckState ZenoParamCheckBox::checkState() const
+{
+    return m_pCheckbox->checkState();
+}
+
+void ZenoParamCheckBox::setCheckState(Qt::CheckState state)
+{
+    m_pCheckbox->setCheckState(state);
+}
+
+
+///////////////////////////////////////////////////////////////////////////
 ZenoVecEditWidget::ZenoVecEditWidget(const QVector<qreal>& vec, QGraphicsItem* parent)
     : ZenoParamWidget(parent)
     , m_pEdit(nullptr)
@@ -438,6 +459,12 @@ QSizeF ZenoTextLayoutItem::sizeHint(Qt::SizeHint which, const QSizeF &constraint
             break;
     }
     return constraint;
+}
+
+void ZenoTextLayoutItem::focusOutEvent(QFocusEvent* event)
+{
+    QGraphicsTextItem::focusOutEvent(event);
+    emit editingFinished();
 }
 
 

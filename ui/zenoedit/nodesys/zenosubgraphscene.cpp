@@ -170,7 +170,7 @@ void ZenoSubGraphScene::onDataChanged(const QModelIndex& subGpIdx, const QModelI
         //now we choose the second.
         if (m_nodes.find(id) != m_nodes.end())
         {
-            m_nodes[id]->onSocketsUpdateOverall(role == ROLE_INPUTS);
+            m_nodes[id]->onSocketsUpdate(role == ROLE_INPUTS);
         }
 	}
     if (role == ROLE_OPTIONS)

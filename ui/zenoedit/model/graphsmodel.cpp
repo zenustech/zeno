@@ -42,6 +42,8 @@ GraphsModel::GraphsModel(QObject *parent)
     connect(m_linkModel, &QAbstractItemModel::rowsInserted, this, &GraphsModel::on_linkInserted);
     connect(m_linkModel, &QAbstractItemModel::rowsAboutToBeRemoved, this, &GraphsModel::on_linkAboutToBeRemoved);
     connect(m_linkModel, &QAbstractItemModel::rowsRemoved, this, &GraphsModel::on_linkRemoved);
+
+    initDescriptors();
 }
 
 GraphsModel::~GraphsModel()
@@ -444,6 +446,17 @@ void GraphsModel::setDescriptors(const NODE_DESCS& nodeDescs)
         {
             m_nodesCate[cate].name = cate;
             m_nodesCate[cate].nodes.push_back(name);
+        }
+    }
+}
+
+void GraphsModel::appendDescriptors(const QList<NODE_DESC>& descs)
+{
+    for (NODE_DESC desc : descs)
+    {
+        if (!desc.name.isEmpty() && m_nodesDesc.find(desc.name) == m_nodesDesc.end())
+        {
+            m_nodesDesc.insert(desc.name, desc);
         }
     }
 }
@@ -1247,6 +1260,20 @@ void GraphsModel::updateNodeStatus(const QString& nodeid, STATUS_UPDATE_INFO inf
     }
 }
 
+void GraphsModel::updateBlackboard(const QModelIndex& index, const BLACKBOARD_INFO& blackboard, const QModelIndex& subgIdx, bool enableTransaction)
+{
+    if (enableTransaction)
+    {
+
+    }
+    else
+    {
+        SubGraphModel* pSubg = subGraph(subgIdx.row());
+        ZASSERT_EXIT(pSubg);
+        pSubg->setData(index, QVariant::fromValue(blackboard), ROLE_BLACKBOARD);
+    }
+}
+
 void GraphsModel::updateDescInfo(const QString& descName, const SOCKET_UPDATE_INFO& updateInfo)
 {
     ZASSERT_EXIT(m_nodesDesc.find(descName) != m_nodesDesc.end());
@@ -1647,5 +1674,10 @@ void GraphsModel::getNodeIndices(const QModelIndex& subGpIdx, QModelIndexList& s
             normNodes.append(idx);
         }
     }
+}
+
+bool GraphsModel::hasDescriptor(const QString& nodeName) const
+{
+    return m_nodesDesc.find(nodeName) != m_nodesDesc.end();
 }
 
