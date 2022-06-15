@@ -24,7 +24,8 @@ if sys.platform == 'win32':
             for line in f.readlines():
                 line = line.strip()
                 if line:
-                    shutil.copytree(line, os.path.join(outpath, 'assets', line.replace(':', '_pan')))
+                    dest = os.path.join(outpath, 'assets', line.replace(':', '_pan'))
+                    shutil.copytree(line, dest, dirs_exist_ok=True)
     shutil.make_archive(outpath, 'zip', outpath, verbose=True)
     print('finished with', outpath + '.zip')
 elif sys.platform == 'linux':
@@ -65,7 +66,8 @@ elif sys.platform == 'linux':
             for line in f.readlines():
                 line = line.strip()
                 if line:
-                    shutil.copytree(line, os.path.join(outpath, 'share', 'Zeno', 'assets', line))
+                    dest = os.path.join(outpath, 'share', 'Zeno', 'assets', line)
+                    shutil.copytree(line, dest, dirs_exist_ok=True)
     shutil.make_archive(outpath, 'gztar', outpath, verbose=True)
     print('finished with', outpath + '.tar.gz')
 else:
