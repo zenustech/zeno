@@ -369,14 +369,6 @@
     </message>
 </context>
 <context>
-    <name>ZenoDockTitleWidget</name>
-    <message>
-        <location filename="../../dock/zenodocktitlewidget.cpp" line="95"/>
-        <source>logger</source>
-        <translation type="unfinished"></translation>
-    </message>
-</context>
-<context>
     <name>ZenoEditorDockTitleWidget</name>
     <message>
         <location filename="../../dock/zenodocktitlewidget.cpp" line="175"/>
