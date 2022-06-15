@@ -294,11 +294,9 @@ bool find_self_intersection_free_stepsize(Pol &pol, ZenoParticles &zstets,
           tri[1] == line[1] || tri[2] == line[0] || tri[2] == line[1])
         return;
       // all affected by sticky boundary conditions
-      if (reinterpret_bits<int>(verts("BCorder", tri[0])) == 3 &&
-          reinterpret_bits<int>(verts("BCorder", tri[1])) == 3 &&
-          reinterpret_bits<int>(verts("BCorder", tri[2])) == 3 &&
-          reinterpret_bits<int>(verts("BCorder", line[0])) == 3 &&
-          reinterpret_bits<int>(verts("BCorder", line[1])) == 3)
+      if ((verts("BCorder", tri[0])) == 3 && (verts("BCorder", tri[1])) == 3 &&
+          (verts("BCorder", tri[2])) == 3 && (verts("BCorder", line[0])) == 3 &&
+          (verts("BCorder", line[1])) == 3)
         return;
       // ccd
       if (et_intersected(vtemp.pack<3>("xn", line[0]),
@@ -382,10 +380,9 @@ void find_intersection_free_stepsize(Pol &pol, ZenoParticles &zstets,
           if (vi == tri[0] || vi == tri[1] || vi == tri[2])
             return;
           // all affected by sticky boundary conditions
-          if (reinterpret_bits<int>(verts("BCorder", vi)) == 3 &&
-              reinterpret_bits<int>(verts("BCorder", tri[0])) == 3 &&
-              reinterpret_bits<int>(verts("BCorder", tri[1])) == 3 &&
-              reinterpret_bits<int>(verts("BCorder", tri[2])) == 3)
+          if ((verts("BCorder", vi)) == 3 && (verts("BCorder", tri[0])) == 3 &&
+              (verts("BCorder", tri[1])) == 3 &&
+              (verts("BCorder", tri[2])) == 3)
             return;
           // ccd
           auto t0 = vtemp.pack<3>("xn", tri[0]);
@@ -432,10 +429,10 @@ void find_intersection_free_stepsize(Pol &pol, ZenoParticles &zstets,
               edgeInds[1] == oEdgeInds[0] || edgeInds[1] == oEdgeInds[1])
             return;
           // all affected by sticky boundary conditions
-          if (reinterpret_bits<int>(verts("BCorder", edgeInds[0])) == 3 &&
-              reinterpret_bits<int>(verts("BCorder", edgeInds[1])) == 3 &&
-              reinterpret_bits<int>(verts("BCorder", oEdgeInds[0])) == 3 &&
-              reinterpret_bits<int>(verts("BCorder", oEdgeInds[1])) == 3)
+          if ((verts("BCorder", edgeInds[0])) == 3 &&
+              (verts("BCorder", edgeInds[1])) == 3 &&
+              (verts("BCorder", oEdgeInds[0])) == 3 &&
+              (verts("BCorder", oEdgeInds[1])) == 3)
             return;
           // ccd
           auto eb0 = vtemp.pack<3>("xn", oEdgeInds[0]);
@@ -516,7 +513,7 @@ void find_boundary_intersection_free_stepsize(Pol &pol, ZenoParticles &zstets,
        stepSize, thickness = xi, dt] ZS_LAMBDA(int svi) mutable {
         auto vi = reinterpret_bits<int>(svs("inds", svi));
         // this vert affected by sticky boundary conditions
-        if (reinterpret_bits<int>(verts("BCorder", vi)) == 3)
+        if ((verts("BCorder", vi)) == 3)
           return;
         auto p = vtemp.pack<3>("xn", vi);
         auto [mi, ma] = get_bounding_box(p - thickness / 2, p + thickness / 2);
@@ -560,8 +557,8 @@ void find_boundary_intersection_free_stepsize(Pol &pol, ZenoParticles &zstets,
         auto edgeInds =
             ses.template pack<2>("inds", sei).template reinterpret_bits<int>();
         // both verts affected by sticky boundary conditions
-        if (reinterpret_bits<int>(verts("BCorder", edgeInds[0])) == 3 &&
-            reinterpret_bits<int>(verts("BCorder", edgeInds[1])) == 3)
+        if ((verts("BCorder", edgeInds[0])) == 3 &&
+            (verts("BCorder", edgeInds[1])) == 3)
           return;
         auto x0 = vtemp.pack<3>("xn", edgeInds[0]);
         auto x1 = vtemp.pack<3>("xn", edgeInds[1]);

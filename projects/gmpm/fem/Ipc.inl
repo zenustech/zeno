@@ -10,15 +10,15 @@ void CodimStepping::FEMSystem::computeBarrierGradientAndHessian(
   using Vec9View = zs::vec_view<T, zs::integer_seq<int, 9>>;
   using Vec6View = zs::vec_view<T, zs::integer_seq<int, 6>>;
   auto numPP = nPP.getVal();
-  pol(range(numPP), [verts = proxy<space>({}, verts),
-                     vtemp = proxy<space>({}, vtemp),
-                     tempPP = proxy<space>({}, tempPP), PP = proxy<space>(PP),
-                     gTag, xi2 = xi * xi, dHat = dHat, activeGap2,
-                     kappa = kappa] __device__(int ppi) mutable {
-    auto pp = PP[ppi];
-    auto x0 = vtemp.pack<3>("xn", pp[0]);
-    auto x1 = vtemp.pack<3>("xn", pp[1]);
-#if 1
+  pol(range(numPP),
+      [verts = proxy<space>({}, verts), vtemp = proxy<space>({}, vtemp),
+       tempPP = proxy<space>({}, tempPP), PP = proxy<space>(PP), gTag,
+       xi2 = xi * xi, dHat = dHat, activeGap2,
+       kappa = kappa] __device__(int ppi) mutable {
+        auto pp = PP[ppi];
+        auto x0 = vtemp.pack<3>("xn", pp[0]);
+        auto x1 = vtemp.pack<3>("xn", pp[1]);
+#if 0
     auto ppGrad = dist_grad_pp(x0, x1);
     auto dist2 = dist2_pp(x0, x1);
     if (dist2 < xi2)
@@ -40,51 +40,51 @@ void CodimStepping::FEMSystem::computeBarrierGradientAndHessian(
     make_pd(ppHess);
 #else
 #endif
-    // rotate and project
-    mat3 BCbasis[2];
-    int BCorder[2];
-    for (int i = 0; i != 2; ++i) {
-      BCbasis[i] = verts.pack<3, 3>("BCbasis", pp[i]);
-      BCorder[i] = reinterpret_bits<zs::i64>(verts("BCorder", pp[i]));
-    }
-    for (int vi = 0; vi != 2; ++vi) {
-      int offsetI = vi * 3;
-      for (int vj = 0; vj != 2; ++vj) {
-        int offsetJ = vj * 3;
-        mat3 tmp{};
-        for (int i = 0; i != 3; ++i)
-          for (int j = 0; j != 3; ++j)
-            tmp(i, j) = ppHess(offsetI + i, offsetJ + j);
-        // rotate
-        tmp = BCbasis[vi].transpose() * tmp * BCbasis[vj];
-        // project
-        if (BCorder[vi] > 0 || BCorder[vj] > 0) {
-          if (vi == vj) {
-            for (int i = 0; i != BCorder[vi]; ++i)
-              for (int j = 0; j != BCorder[vj]; ++j)
-                tmp(i, j) = (i == j ? 1 : 0);
-          } else {
-            for (int i = 0; i != BCorder[vi]; ++i)
-              for (int j = 0; j != BCorder[vj]; ++j)
-                tmp(i, j) = 0;
+        // rotate and project
+        mat3 BCbasis[2];
+        int BCorder[2];
+        for (int i = 0; i != 2; ++i) {
+          BCbasis[i] = vtemp.pack<3, 3>("BCbasis", pp[i]);
+          BCorder[i] = vtemp("BCorder", pp[i]);
+        }
+        for (int vi = 0; vi != 2; ++vi) {
+          int offsetI = vi * 3;
+          for (int vj = 0; vj != 2; ++vj) {
+            int offsetJ = vj * 3;
+            mat3 tmp{};
+            for (int i = 0; i != 3; ++i)
+              for (int j = 0; j != 3; ++j)
+                tmp(i, j) = ppHess(offsetI + i, offsetJ + j);
+            // rotate
+            tmp = BCbasis[vi].transpose() * tmp * BCbasis[vj];
+            // project
+            if (BCorder[vi] > 0 || BCorder[vj] > 0) {
+              if (vi == vj) {
+                for (int i = 0; i != BCorder[vi]; ++i)
+                  for (int j = 0; j != BCorder[vj]; ++j)
+                    tmp(i, j) = (i == j ? 1 : 0);
+              } else {
+                for (int i = 0; i != BCorder[vi]; ++i)
+                  for (int j = 0; j != BCorder[vj]; ++j)
+                    tmp(i, j) = 0;
+              }
+            }
+            for (int i = 0; i != 3; ++i)
+              for (int j = 0; j != 3; ++j)
+                ppHess(offsetI + i, offsetJ + j) = tmp(i, j);
           }
         }
-        for (int i = 0; i != 3; ++i)
-          for (int j = 0; j != 3; ++j)
-            ppHess(offsetI + i, offsetJ + j) = tmp(i, j);
-      }
-    }
-    // pp[0], pp[1]
-    tempPP.tuple<36>("H", ppi) = ppHess;
-    /// construct P
-    for (int vi = 0; vi != 2; ++vi) {
-      for (int i = 0; i != 3; ++i)
-        for (int j = 0; j != 3; ++j) {
-          atomic_add(exec_cuda, &vtemp("P", i * 3 + j, pp[vi]),
-                     ppHess(vi * 3 + i, vi * 3 + j));
+        // pp[0], pp[1]
+        tempPP.tuple<36>("H", ppi) = ppHess;
+        /// construct P
+        for (int vi = 0; vi != 2; ++vi) {
+          for (int i = 0; i != 3; ++i)
+            for (int j = 0; j != 3; ++j) {
+              atomic_add(exec_cuda, &vtemp("P", i * 3 + j, pp[vi]),
+                         ppHess(vi * 3 + i, vi * 3 + j));
+            }
         }
-    }
-  });
+      });
   auto numPE = nPE.getVal();
   pol(range(numPE),
       [verts = proxy<space>({}, verts), vtemp = proxy<space>({}, vtemp),
@@ -95,7 +95,7 @@ void CodimStepping::FEMSystem::computeBarrierGradientAndHessian(
         auto p = vtemp.pack<3>("xn", pe[0]);
         auto e0 = vtemp.pack<3>("xn", pe[1]);
         auto e1 = vtemp.pack<3>("xn", pe[2]);
-#if 1
+#if 0
         auto peGrad = dist_grad_pe(p, e0, e1);
         auto dist2 = dist2_pe(p, e0, e1);
         if (dist2 < xi2)
@@ -122,8 +122,8 @@ void CodimStepping::FEMSystem::computeBarrierGradientAndHessian(
         mat3 BCbasis[3];
         int BCorder[3];
         for (int i = 0; i != 3; ++i) {
-          BCbasis[i] = verts.pack<3, 3>("BCbasis", pe[i]);
-          BCorder[i] = reinterpret_bits<zs::i64>(verts("BCorder", pe[i]));
+          BCbasis[i] = vtemp.pack<3, 3>("BCbasis", pe[i]);
+          BCorder[i] = vtemp("BCorder", pe[i]);
         }
         for (int vi = 0; vi != 3; ++vi) {
           int offsetI = vi * 3;
@@ -174,7 +174,7 @@ void CodimStepping::FEMSystem::computeBarrierGradientAndHessian(
         auto t0 = vtemp.pack<3>("xn", pt[1]);
         auto t1 = vtemp.pack<3>("xn", pt[2]);
         auto t2 = vtemp.pack<3>("xn", pt[3]);
-#if 1
+#if 0
         auto ptGrad = dist_grad_pt(p, t0, t1, t2);
         auto dist2 = dist2_pt(p, t0, t1, t2);
         if (dist2 < xi2)
@@ -202,8 +202,8 @@ void CodimStepping::FEMSystem::computeBarrierGradientAndHessian(
         mat3 BCbasis[4];
         int BCorder[4];
         for (int i = 0; i != 4; ++i) {
-          BCbasis[i] = verts.pack<3, 3>("BCbasis", pt[i]);
-          BCorder[i] = reinterpret_bits<zs::i64>(verts("BCorder", pt[i]));
+          BCbasis[i] = vtemp.pack<3, 3>("BCbasis", pt[i]);
+          BCorder[i] = vtemp("BCorder", pt[i]);
         }
         for (int vi = 0; vi != 4; ++vi) {
           int offsetI = vi * 3;
@@ -254,7 +254,7 @@ void CodimStepping::FEMSystem::computeBarrierGradientAndHessian(
         auto ea1 = vtemp.pack<3>("xn", ee[1]);
         auto eb0 = vtemp.pack<3>("xn", ee[2]);
         auto eb1 = vtemp.pack<3>("xn", ee[3]);
-#if 1
+#if 0
         auto eeGrad = dist_grad_ee(ea0, ea1, eb0, eb1);
         auto dist2 = dist2_ee(ea0, ea1, eb0, eb1);
         if (dist2 < xi2)
@@ -282,8 +282,8 @@ void CodimStepping::FEMSystem::computeBarrierGradientAndHessian(
         mat3 BCbasis[4];
         int BCorder[4];
         for (int i = 0; i != 4; ++i) {
-          BCbasis[i] = verts.pack<3, 3>("BCbasis", ee[i]);
-          BCorder[i] = reinterpret_bits<zs::i64>(verts("BCorder", ee[i]));
+          BCbasis[i] = vtemp.pack<3, 3>("BCbasis", ee[i]);
+          BCorder[i] = vtemp("BCorder", ee[i]);
         }
         for (int vi = 0; vi != 4; ++vi) {
           int offsetI = vi * 3;

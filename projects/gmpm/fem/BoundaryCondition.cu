@@ -16,47 +16,46 @@ struct ApplyBoundaryOnVertices : INode {
                                  float dt) {
     using namespace zs;
     auto collider = boundary.getBoundary(lsv);
-    cudaPol(
-        Collapse{verts.size()},
-        [verts = proxy<execspace_e::cuda>({}, verts), boundary = collider,
-         dt] __device__(int vi) mutable {
-          using mat3 = zs::vec<double, 3, 3>;
-          auto vel = verts.template pack<3>("v", vi);
-          auto pos = verts.template pack<3>("x", vi);
-          if (boundary.queryInside(pos)) {
-            auto v = boundary.getVelocity(pos);
-            auto n = boundary.getNormal(pos);
-            if (v.l2NormSqr() == 0)
-              verts("BCfixed", vi) = 1;
-            if (boundary.type == collider_e::Sticky) {
-              verts.template tuple<9>("BCbasis", vi) = mat3::identity();
-              verts("BCorder", vi) = reinterpret_bits<zs::f64>((zs::i64)3);
-              verts.template tuple<3>("BCtarget", vi) =
-                  verts.template pack<3>("BCtarget", vi) + dt * v;
-            } else if (boundary.type == collider_e::Slip) {
-              auto BCbasis = verts.template pack<3, 3>("BCbasis", vi);
-              auto BCtarget = verts.template pack<3>("BCtarget", vi);
-              auto BCorder = reinterpret_bits<zs::i64>(verts("BCorder", vi));
-              if (BCorder >= 3)
-                return;
-              for (int d = 0; d != BCorder; ++d) {
-                auto nd = col(BCbasis, d);
-                // remove components in previous normal directions
-                n -= n.dot(nd) * nd;
+    cudaPol(Collapse{verts.size()},
+            [verts = proxy<execspace_e::cuda>({}, verts), boundary = collider,
+             dt] __device__(int vi) mutable {
+              using mat3 = zs::vec<double, 3, 3>;
+              auto vel = verts.template pack<3>("v", vi);
+              auto pos = verts.template pack<3>("x", vi);
+              if (boundary.queryInside(pos)) {
+                auto v = boundary.getVelocity(pos);
+                auto n = boundary.getNormal(pos);
+                if (v.l2NormSqr() == 0)
+                  verts("BCfixed", vi) = 1;
+                if (boundary.type == collider_e::Sticky) {
+                  verts.template tuple<9>("BCbasis", vi) = mat3::identity();
+                  verts("BCorder", vi) = 3;
+                  verts.template tuple<3>("BCtarget", vi) =
+                      verts.template pack<3>("BCtarget", vi) + dt * v;
+                } else if (boundary.type == collider_e::Slip) {
+                  auto BCbasis = verts.template pack<3, 3>("BCbasis", vi);
+                  auto BCtarget = verts.template pack<3>("BCtarget", vi);
+                  int BCorder = verts("BCorder", vi);
+                  if (BCorder >= 3)
+                    return;
+                  for (int d = 0; d != BCorder; ++d) {
+                    auto nd = col(BCbasis, d);
+                    // remove components in previous normal directions
+                    n -= n.dot(nd) * nd;
+                  }
+                  if (n.l2NormSqr() > limits<float>::epsilon()) {
+                    n = n.normalized();
+                    for (int d = 0; d != 3; ++d)
+                      BCbasis(d, BCorder) = n(d);
+                    verts.template tuple<9>("BCbasis", vi) = BCbasis;
+                    verts("BCorder", vi) = (BCorder + 1);
+                    verts.template tuple<3>("BCtarget", vi) =
+                        verts.template pack<3>("BCtarget", vi) +
+                        dt * v.dot(n) * n;
+                  }
+                }
               }
-              if (n.l2NormSqr() > limits<float>::epsilon()) {
-                n = n.normalized();
-                for (int d = 0; d != 3; ++d)
-                  BCbasis(d, BCorder) = n(d);
-                verts.template tuple<9>("BCbasis", vi) = BCbasis;
-                verts("BCorder", vi) =
-                    reinterpret_bits<zs::f64>((zs::i64)(BCorder + 1));
-                verts.template tuple<3>("BCtarget", vi) =
-                    verts.template pack<3>("BCtarget", vi) + dt * v.dot(n) * n;
-              }
-            }
-          }
-        });
+            });
   }
   void apply() override {
     auto zsverts = get_input<ZenoParticles>("ZSParticles");
@@ -73,7 +72,7 @@ struct ApplyBoundaryOnVertices : INode {
                 int vi) mutable {
               using mat3 = zs::vec<zs::f64, 3, 3>;
               verts.tuple<9>("BCbasis", vi) = mat3::identity();
-              verts("BCorder", vi) = reinterpret_bits<zs::f64>((zs::i64)0);
+              verts("BCorder", vi) = 0;
               verts("BCfixed", vi) = 0;
               verts.tuple<3>("BCtarget", vi) = verts.pack<3>("x", vi);
             });
@@ -117,8 +116,7 @@ struct ApplyBoundaryOnVertices : INode {
                     int vi) mutable {
                   using mat3 = zs::vec<float, 3, 3>;
                   auto BCbasis = verts.pack<3, 3>("BCbasis", vi);
-                  auto BCorder =
-                      reinterpret_bits<zs::i64>(verts("BCorder", vi));
+                  int BCorder = verts("BCorder", vi);
                   if (BCorder != 0) {
                     if (BCorder == 1) {
                       auto n0 = col(BCbasis, 0);

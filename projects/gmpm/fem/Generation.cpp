@@ -474,7 +474,7 @@ struct ToZSTetrahedra : INode {
               }
               // default boundary handling setup
               pars.tuple<9>("BCbasis", vi) = mat3::identity();
-              pars("BCorder", vi) = reinterpret_bits<float>(0);
+              pars("BCorder", vi) = 0;
               pars.tuple<3>("BCtarget", vi) = vec3::zeros();
               // computed later
               pars("m", vi) = 0.f;
@@ -705,7 +705,7 @@ struct ToZSSurfaceMesh : INode {
               }
               // default boundary handling setup
               pars.tuple<9>("BCbasis", vi) = mat3::identity();
-              pars("BCorder", vi) = reinterpret_bits<zs::f64>((zs::i64)0);
+              pars("BCorder", vi) = 0;
               pars("BCfixed", vi) = 0;
               pars.tuple<3>("BCtarget", vi) = vec3::zeros();
               // computed later
