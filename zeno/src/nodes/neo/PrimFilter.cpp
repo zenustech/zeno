@@ -1,6 +1,6 @@
 #include <zeno/zeno.h>
 #include <zeno/types/PrimitiveObject.h>
-#include <zeno/types/PrimitiveUtils.h>
+#include <zeno/funcs/PrimitiveUtils.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/StringObject.h>
 #include <zeno/utils/vec.h>
@@ -161,10 +161,6 @@ ZENO_API void primRevampVerts(PrimitiveObject *prim, std::vector<int> const &rev
     }
 }
 
-ZENO_API void primFilterFaces(PrimitiveObject *prim, std::string tagAttr, int tagValue, bool isInversed) {
-    throw; // TODO
-}
-
 namespace {
 
 struct PrimFilter : INode {
@@ -174,11 +170,7 @@ struct PrimFilter : INode {
     auto tagValue = get_input<NumericObject>("tagValue")->get<int>();
     auto isInversed = get_input<NumericObject>("isInversed")->get<bool>();
     auto method = get_input<StringObject>("method")->get();
-    if (method == "faces") {
-        primFilterFaces(prim.get(), tagAttr, tagValue, isInversed);
-    } else {
-        primFilterVerts(prim.get(), tagAttr, tagValue, isInversed);
-    }
+    primFilterVerts(prim.get(), tagAttr, tagValue, isInversed);
     set_output("prim", get_input("prim"));
   }
 };

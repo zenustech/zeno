@@ -75,7 +75,8 @@ struct PacketProc {
             zeno::getSession().globalComm->addViewObject(objKey, object);
 
         } else if (action == "newFrame") {
-            globalCommNeedNewFrame = 1; // postpone `zeno::getSession().globalComm->newFrame();`
+            globalCommNeedNewFrame = 1;
+            clearGlobalIfNeeded();
             zenoApp->getMainWindow()->updateViewport(QString::fromStdString(action));
 
         } else if (action == "finishFrame") {

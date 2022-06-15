@@ -345,6 +345,11 @@ void GraphsModel::initDescriptors()
         ZASSERT_EXIT(descs.find(key) == descs.end());
         descs.insert(key, subgDescs[key]);
     }
+    //add Blackboard
+    NODE_DESC desc;
+    desc.categories.push_back("layout");
+    descs.insert("Blackboard", desc);
+
     setDescriptors(descs);
 }
 

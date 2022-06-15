@@ -138,7 +138,7 @@ ZENO_DEFNODE(PrimScatter)({
         {"prim"},
         {"enum tris lines", "type", "tris"},
         {"int", "npoints", "100"},
-        {"int", "interpAttrs", "1"},
+        {"bool", "interpAttrs", "1"},
         {"int", "seed", "-1"},
     },
     {
