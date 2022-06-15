@@ -111,7 +111,7 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     float3 N_0  = normalize( cross( v1-v0, v2-v0 ) );
     
     const float3 P    = optixGetWorldRayOrigin() + optixGetRayTmax()*ray_dir;
-    unsigned short isLight = rt_data->lightMark[inst_idx * 1024 + prim_idx];
+
     float w = rt_data->vertices[ vert_idx_offset+0 ].w;
     cudaTextureObject_t zenotex0  = rt_data->textures[0 ];
     cudaTextureObject_t zenotex1  = rt_data->textures[1 ];
@@ -232,8 +232,9 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     auto clearcoat = mats.clearcoat;
     auto clearcoatGloss = mats.clearcoatGloss;
     auto opacity = mats.opacity;
+    unsigned short isLight = rt_data->lightMark[inst_idx * 1024 + prim_idx];
     if(isLight==1)
-        mats.opacity = 1;
+        opacity = 1;
     // Stochastic alpha test to get an alpha blend effect.
     if (opacity >0.99) // No need to calculate an expensive random number if the test is going to fail anyway.
     {
@@ -241,9 +242,10 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     }
     else
     {
+
         //roll a dice
         float p = rnd(prd->seed);
-        if(p<opacity)
+        if (p < opacity)
             optixIgnoreIntersection();
         prd->flags |= 1;
         optixTerminateRay();
@@ -404,7 +406,7 @@ extern "C" __global__ void __closesthit__radiance()
         float  LnDl  = clamp(-dot( lnrm, L ),0.0f,1.0f);
         float A = length(cross(lv1, lv2))/2;
         float weight = LnDl * A / (M_PIf*dist * dist);
-        prd->radiance = make_float3(1.0f,1.0f,1.0f) * w * weight;
+        prd->radiance = attrs.clr * weight;
         prd->origin = P;
         prd->direction = ray_dir;
         return;
@@ -521,71 +523,40 @@ extern "C" __global__ void __closesthit__radiance()
     //     prd->countEmitted = false;
     // }
 
-    const float z1 = rnd(prd->seed);
-    const float z2 = rnd(prd->seed);
+    prd->radiance = make_float3(0,0,0);
+    for(int lidx=0;lidx<params.num_lights;lidx++) {
+        ParallelogramLight light = params.lights[lidx];
+        float z1 = rnd(prd->seed);
+        float z2 = rnd(prd->seed);
+        const float3 light_pos = light.corner + light.v1 * z1 + light.v2 * z2;
 
-    ParallelogramLight light = params.lights[0];
-    const float3 light_pos = light.corner + light.v1 * z1 + light.v2 * z2;
+        // Calculate properties of light sample (for area based pdf)
+        const float Ldist = length(light_pos - P);
+        const float3 L = normalize(light_pos - P);
+        const float nDl = clamp(dot(N, L), 0.0f, 1.0f);
+        const float LnDl = clamp(-dot(light.normal, L), 0.0f, 1.0f);
 
-    // Calculate properties of light sample (for area based pdf)
-    const float  Ldist = length(light_pos - P );
-    const float3 L     = normalize(light_pos - P );
-    const float  nDl   = clamp(dot( N, L ),0.0f,1.0f);
-    const float  LnDl  = clamp(-dot( light.normal, L ),0.0f,1.0f);
-
-    float weight = 0.0f;
-    if( nDl > 0.0f && LnDl > 0.0f )
-    {
-        prd->flags = 0;
-        traceOcclusion(
-            params.handle,
-            P,
-            L,
-            1e-5f,         // tmin
-            Ldist - 1e-5f  // tmax
+        float weight = 0.0f;
+        if (nDl > 0.0f && LnDl > 0.0f) {
+            prd->flags = 0;
+            traceOcclusion(params.handle, P, L,
+                           1e-5f,        // tmin
+                           Ldist - 1e-5f // tmax
             );
-        unsigned int occluded = prd->flags;
-        if( !occluded )
-        {
-            float wpdf = DisneyBRDF::pdf(basecolor,
-                                metallic,
-                                subsurface,
-                                specular,
-                                roughness,
-                                specularTint,
-                                anisotropic,
-                                sheen,
-                                sheenTint,
-                                clearcoat,
-                                clearcoatGloss,
-                                N,
-                                make_float3(0,0,0),
-                                make_float3(0,0,0),
-                                L,
-                                -normalize(inDir)
-                                );
-            const float A = length(cross(light.v1, light.v2));
-            weight = nDl * LnDl * A / (M_PIf * Ldist * Ldist);
+            unsigned int occluded = prd->flags;
+            if (!occluded) {
+                float wpdf = DisneyBRDF::pdf(basecolor, metallic, subsurface, specular, roughness, specularTint,
+                                             anisotropic, sheen, sheenTint, clearcoat, clearcoatGloss, N,
+                                             make_float3(0, 0, 0), make_float3(0, 0, 0), L, -normalize(inDir));
+                const float A = length(cross(light.v1, light.v2));
+                weight = nDl * LnDl * A / (M_PIf * Ldist * Ldist);
+            }
         }
+        float3 lbrdf = DisneyBRDF::eval(basecolor, metallic, subsurface, specular, roughness, specularTint, anisotropic,
+                                        sheen, sheenTint, clearcoat, clearcoatGloss, N, make_float3(0, 0, 0),
+                                        make_float3(0, 0, 0), L, -normalize(inDir));
+        prd->radiance += light.emission * weight * lbrdf + float3(mats.emission);
     }
-    float3 lbrdf = DisneyBRDF::eval(basecolor,
-                                metallic,
-                                subsurface,
-                                specular,
-                                roughness,
-                                specularTint,
-                                anisotropic,
-                                sheen,
-                                sheenTint,
-                                clearcoat,
-                                clearcoatGloss,
-                                N,
-                                make_float3(0,0,0),
-                                make_float3(0,0,0),
-                                L,
-                                -normalize(inDir)
-                                );
-    prd->radiance = light.emission * weight * lbrdf + float3(mats.emission);
 }
 
 extern "C" __global__ void __closesthit__occlusion()
