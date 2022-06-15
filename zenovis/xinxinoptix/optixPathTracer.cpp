@@ -1183,7 +1183,7 @@ void load_light(std::string const &key, float const*v0,float const*v1,float cons
 
 static void addLightMesh(float3 corner, float3 v2, float3 v1, float3 normal, float3 emission)
 {
-    float3 lc = corner - normal * 0.001;
+    float3 lc = corner;
     float3 vert0 = lc, vert1 = lc + v1, vert2 = lc + v2, vert3 = lc + v1 + v2;
     g_lightMesh.push_back(make_float4(vert0.x, vert0.y, vert0.z, 0.f));
     g_lightMesh.push_back(make_float4(vert1.x, vert1.y, vert1.z, 0.f));
@@ -1212,12 +1212,12 @@ void optixupdatelight() {
     {
         for (int i = 0; i < 1; i++) {
             auto &light = g_lights.emplace_back();
-            light.emission = make_float3( 30000.f,0,0 );
+            light.emission = make_float3( 30000.f,30000.f,30000.f );
             light.corner   = make_float3( 343.0f, 548.5f, 227.0f );
             light.v2       = make_float3( -10.0f, 0.0f, 0.0f );
-            light.normal   = make_float3( 0.0f, -10.0f, 0.0f );
-            light.v1       = normalize( cross( light.v2, light.normal ) );
-            addLightMesh(light.corner, light.v2, light.v1, light.normal, make_float3(30000.f));
+            light.normal   = make_float3( 0.0f, -1.0f, 0.0f );
+            light.v1       = cross( light.v2, light.normal );
+            addLightMesh(light.corner, light.v2, light.v1, light.normal, light.emission);
         }
     }
     else
@@ -1227,9 +1227,13 @@ void optixupdatelight() {
             light.emission = make_float3( (float)(dat.emission[0]), (float)dat.emission[1], (float)dat.emission[2] );
             zeno::log_info("light clr after read: {} {} {}", light.emission.x,light.emission.y,light.emission.z);
             light.corner   = make_float3( dat.v0[0], dat.v0[1], dat.v0[2] );
+            zeno::log_info("light clr after read: {} {} {}", light.corner.x,light.corner.y,light.corner.z);
             light.v1       = make_float3( dat.v1[0], dat.v1[1], dat.v1[2] );
+            zeno::log_info("light clr after read: {} {} {}", light.v1.x,light.v1.y,light.v1.z);
             light.v2       = make_float3( dat.v2[0], dat.v2[1], dat.v2[2] );
+            zeno::log_info("light clr after read: {} {} {}", light.v2.x,light.v2.y,light.v2.z);
             light.normal   = make_float3( dat.normal[0], dat.normal[1], dat.normal[2] );
+            zeno::log_info("light clr after read: {} {} {}", light.normal.x,light.normal.y,light.normal.z);
             addLightMesh(light.corner, light.v2, light.v1, light.normal, light.emission);
         }
     }
