@@ -28,8 +28,8 @@ struct IObject {
 
     ZENO_API virtual std::shared_ptr<IObject> clone() const;
     ZENO_API virtual std::shared_ptr<IObject> move_clone();
-    ZENO_API virtual bool assign(IObject *other);
-    ZENO_API virtual bool move_assign(IObject *other);
+    ZENO_API virtual bool assign(IObject const *other);
+    ZENO_API virtual bool move_assign(IObject const *other);
     ZENO_API virtual void accept(IObjectVisitor *visitor);
 
     ZENO_API UserData &userData() const;
@@ -106,8 +106,8 @@ struct IObjectClone : CustomBase {
         return std::make_shared<Derived>(static_cast<Derived &&>(*this));
     }
 
-    virtual bool assign(IObject *other) override {
-        auto src = dynamic_cast<Derived *>(other);
+    virtual bool assign(IObject const *other) override {
+        auto src = dynamic_cast<Derived const *>(other);
         if (!src)
             return false;
         auto dst = static_cast<Derived *>(this);
@@ -115,8 +115,8 @@ struct IObjectClone : CustomBase {
         return true;
     }
 
-    virtual bool move_assign(IObject *other) override {
-        auto src = dynamic_cast<Derived *>(other);
+    virtual bool move_assign(IObject const *other) override {
+        auto src = dynamic_cast<Derived const *>(other);
         if (!src)
             return false;
         auto dst = static_cast<Derived *>(this);
