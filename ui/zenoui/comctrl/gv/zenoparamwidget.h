@@ -7,6 +7,7 @@
 #include "zenosocketitem.h"
 #include <zenoui/comctrl/zcombobox.h>
 #include <zenoui/comctrl/zveceditor.h>
+#include <zenoui/comctrl/zcheckboxbar.h>
 
 
 class ZenoParamWidget : public QGraphicsProxyWidget
@@ -84,7 +85,7 @@ Q_SIGNALS:
     void stateChanged(int);
 
 private:
-    QCheckBox* m_pCheckbox;
+    ZCheckBoxBar* m_pCheckbox;
 };
 
 

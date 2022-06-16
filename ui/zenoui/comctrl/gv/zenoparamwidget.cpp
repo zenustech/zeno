@@ -122,8 +122,7 @@ void ZenoParamLineEdit::setText(const QString &text)
 ZenoParamCheckBox::ZenoParamCheckBox(const QString& text, QGraphicsItem* parent)
     : ZenoParamWidget(parent)
 {
-    m_pCheckbox = new QCheckBox(text);
-    //ui..
+    m_pCheckbox = new ZCheckBoxBar;
     setWidget(m_pCheckbox);
     connect(m_pCheckbox, SIGNAL(stateChanged(int)), this, SIGNAL(stateChanged(int)));
 }

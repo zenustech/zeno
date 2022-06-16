@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="24px" height="24px" viewBox="0 0 24 24" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>编组 2</title>
+    <g id="ZENO@2NodeEditor" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="画板" transform="translate(-1108.000000, -426.000000)">
+            <g id="Group-2备份" transform="translate(840.000000, 158.000000)">
+                <g id="para" transform="translate(12.000000, 268.000000)">
+                    <g id="编组-2" transform="translate(256.000000, 0.000000)">
+                        <rect id="矩形" stroke="#313131" stroke-width="2" fill="#0B0B0B" x="1" y="1" width="22" height="22"></rect>
+                        <g id="ic_parameter_checkbox" fill-rule="nonzero">
+                            <rect id="矩形" fill="#000000" opacity="0" x="0" y="0" width="24" height="24"></rect>
+                            <polygon id="路径" fill="#4B9EF4" points="17.374125 6.493125 19.338375 8.506875 9.7545 17.8606875 4.7285625 13.0614375 6.6714375 11.0274375 9.733125 13.9513125"></polygon>
+                        </g>
+                    </g>
+                </g>
+            </g>
+        </g>
+    </g>
+</svg>

@@ -134,5 +134,8 @@
     <file>icons/checkbox_checked_yellow.svg</file>
     <file>icons/trash.svg</file>
     <file>icons/trashnote-on.svg</file>
+    <file>icons/ic_parameter_checkbox_check.svg</file>
+    <file>icons/ic_parameter_checkbox_uncheck.svg</file>
+    <file>icons/ic_parameter_checkbox_check_on.svg</file>
 </qresource>
 </RCC>
