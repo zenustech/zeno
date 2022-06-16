@@ -1,6 +1,8 @@
 find_package(Qt5 COMPONENTS Widgets OpenGL REQUIRED)
 message(STATUS "Found Qt5 version ${Qt5_VERSION}: ${Qt5_DIR}")
 
+option(ZENO_MULTIPROCESS "Enable multiprocessing for ZENO" OFF)
+
 file(GLOB_RECURSE source CONFIGURE_DEPENDS *.h *.cpp *.ui ../zenoedit/*)
 file(GLOB_RECURSE resource CONFIGURE_DEPENDS *.qrc)
 qt5_add_big_resources(source ${resource})  # cihou msvc: fatal error C1060: compiler is out of heap space

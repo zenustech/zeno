@@ -113,7 +113,8 @@ struct ProgramRunData {
             zeno::log_debug("begin frame {}", frame);
             session->globalComm->newFrame();
             //corresponding to processPacket in viewdecode.cpp
-            zenoApp->getMainWindow()->updateViewport(QString::fromStdString("newFrame"));
+            if (zenoApp->getMainWindow())
+                zenoApp->getMainWindow()->updateViewport(QString::fromStdString("newFrame"));
             session->globalState->frameBegin();
             while (session->globalState->substepBegin())
             {
@@ -126,7 +127,8 @@ struct ProgramRunData {
             if (g_state == kQuiting) return;
             session->globalState->frameEnd();
             session->globalComm->finishFrame();
-            zenoApp->getMainWindow()->updateViewport(QString::fromStdString("finishFrame"));
+            if (zenoApp->getMainWindow())
+                zenoApp->getMainWindow()->updateViewport(QString::fromStdString("finishFrame"));
             zeno::log_debug("end frame {}", frame);
             if (chkfail()) return;
         }
