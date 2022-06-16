@@ -231,7 +231,7 @@ struct CodimStepping : INode {
 
   inline static T kappaMax = 1e8;
   inline static T kappaMin = 1e4;
-  static constexpr T kappa0 = 1e5;
+  static constexpr T kappa0 = 1e3;
   inline static T kappa = kappa0;
   inline static T xi = 0; // 1e-2; // 2e-3;
   inline static T dHat = 0.001;
@@ -870,8 +870,12 @@ struct CodimStepping : INode {
                   BCorder[i] = vtemp("BCorder", inds[i]);
                   BCfixed[i] = vtemp("BCfixed", inds[i]);
                 }
-
                 zs::vec<T, 9, 9> H;
+                if (BCorder[0] == 3 && BCorder[1] == 3 && BCorder[2] == 3) {
+                  etemp.tuple<9 * 9>("He", ei) = H.zeros();
+                  return;
+                }
+
 #if 0
       mat2 A{}, temp{};
       auto dA_div_dx = zs::vec<T, 4, 9>::zeros();
@@ -1078,7 +1082,7 @@ struct CodimStepping : INode {
       constexpr auto space = execspace_e::cuda;
       Vector<T> res{verts.get_allocator(), 1};
       res.setVal(0);
-      pol(range(vtemp.size()), [verts = proxy<space>({}, verts),
+      pol(range(verts.size()), [verts = proxy<space>({}, verts),
                                 vtemp = proxy<space>({}, vtemp),
                                 res = proxy<space>(res), tag,
                                 extForce = extForce,
@@ -1086,11 +1090,15 @@ struct CodimStepping : INode {
         // inertia
         auto m = verts("m", vi);
         auto x = vtemp.pack<3>(tag, vi);
-        atomic_add(exec_cuda, &res[0],
-                   (T)0.5 * m * (x - vtemp.pack<3>("xtilde", vi)).l2NormSqr());
-        // gravity
-        atomic_add(exec_cuda, &res[0],
-                   -m * extForce.dot(x - vtemp.pack<3>("xt", vi)) * dt * dt);
+        int BCorder = vtemp("BCorder", vi);
+        if (BCorder != 3) {
+          atomic_add(exec_cuda, &res[0],
+                     (T)0.5 * m *
+                         (x - vtemp.pack<3>("xtilde", vi)).l2NormSqr());
+          // gravity
+          atomic_add(exec_cuda, &res[0],
+                     -m * extForce.dot(x - vtemp.pack<3>("xt", vi)) * dt * dt);
+        }
       });
       // elasticity
       pol(range(eles.size()), [verts = proxy<space>({}, verts),
@@ -1101,6 +1109,14 @@ struct CodimStepping : INode {
         auto IB = eles.template pack<2, 2>("IB", ei);
         auto inds =
             eles.template pack<3>("inds", ei).template reinterpret_bits<int>();
+
+        int BCorder[3];
+        for (int i = 0; i != 3; ++i)
+          BCorder[i] = vtemp("BCorder", inds[i]);
+        if (BCorder[0] == 3 && BCorder[1] == 3 && BCorder[2] == 3) {
+          return;
+        }
+
         auto vole = eles("vol", ei);
         vec3 xs[3] = {vtemp.template pack<3>(tag, inds[0]),
                       vtemp.template pack<3>(tag, inds[1]),
@@ -1660,13 +1676,13 @@ struct CodimStepping : INode {
               auto x = coverts.pack<3>("x", i);
               auto v = coverts.pack<3>("v", i);
               vtemp.tuple<3>("xtilde", coOffset + i) = x + v * dt;
-              vtemp("ws", coOffset + i) = zs::sqrt(coverts("m", i) * 1e5);
+              vtemp("ws", coOffset + i) = zs::sqrt(coverts("m", i) * 1e3);
               vtemp.tuple<3>("lambda", coOffset + i) = vec3::zeros();
               vtemp.tuple<3>("xn", coOffset + i) = x;
               vtemp.tuple<3>("xt", coOffset + i) = x;
             });
     // fix initial x for all bcs if not feasible
-    if constexpr (true) { // dont do this in augmented lagrangian
+    if constexpr (false) { // dont do this in augmented lagrangian
       cudaPol(zs::range(verts.size()),
               [vtemp = proxy<space>({}, vtemp),
                verts = proxy<space>({}, verts)] __device__(int vi) mutable {
@@ -1694,17 +1710,18 @@ struct CodimStepping : INode {
     for (int newtonIter = 0; newtonIter != 1000; ++newtonIter) {
       // check constraints
       if (!BCsatisfied) {
+        A.computeConstraints(cudaPol, "xn");
+        auto cr = A.constraintResidual(cudaPol);
         if (A.areConstraintsSatisfied(cudaPol)) {
-          auto cr = A.constraintResidual(cudaPol);
           fmt::print("satisfied cons res [{}] at newton iter [{}]\n", cr,
                      newtonIter);
-          A.checkDBCStatus(cudaPol);
+          // A.checkDBCStatus(cudaPol);
           getchar();
           projectDBC = true;
           BCsatisfied = true;
         }
-        auto cr = A.constraintResidual(cudaPol);
-        fmt::print("newton iter {} cons residual: {}\n", newtonIter, cr);
+        fmt::print(fg(fmt::color::alice_blue),
+                   "newton iter {} cons residual: {}\n", newtonIter, cr);
       }
 
       A.findCollisionConstraints(cudaPol, dHat, xi);
@@ -1713,16 +1730,19 @@ struct CodimStepping : INode {
       cudaPol(zs::range(vtemp.size()),
               [vtemp = proxy<space>({}, vtemp)] __device__(int i) mutable {
                 vtemp.tuple<9>("P", i) = mat3::zeros();
+                vtemp.tuple<3>("grad", i) = vec3::zeros();
               });
       cudaPol(zs::range(verts.size()),
               [vtemp = proxy<space>({}, vtemp), verts = proxy<space>({}, verts),
                extForce = extForce, dt] __device__(int i) mutable {
                 auto m = verts("m", i);
                 auto v = verts.pack<3>("v", i);
-                // int BCorder = vtemp("BCorder", i);
-                vtemp.tuple<3>("grad", i) =
-                    m * extForce * dt * dt -
-                    m * (vtemp.pack<3>("xn", i) - vtemp.pack<3>("xtilde", i));
+                int BCorder = vtemp("BCorder", i);
+                if (BCorder != 3) {
+                  vtemp.tuple<3>("grad", i) =
+                      m * extForce * dt * dt -
+                      m * (vtemp.pack<3>("xn", i) - vtemp.pack<3>("xtilde", i));
+                }
               });
 #if 0
       cudaPol(zs::range(coVerts.size()),
@@ -1777,6 +1797,7 @@ struct CodimStepping : INode {
       }
 
       // prepare preconditioner
+      // should rotate here
       cudaPol(zs::range(verts.size()),
               [vtemp = proxy<space>({}, vtemp),
                verts = proxy<space>({}, verts)] __device__(int i) mutable {
@@ -1815,7 +1836,7 @@ struct CodimStepping : INode {
                 });
         T zTrk = dot(cudaPol, vtemp, "r", "q");
         auto residualPreconditionedNorm = std::sqrt(zTrk);
-        auto localTol = 0.01 * residualPreconditionedNorm;
+        auto localTol = 0.25 * residualPreconditionedNorm;
         int iter = 0;
         for (; iter != 10000; ++iter) {
           if (iter % 10 == 0)
@@ -1863,14 +1884,16 @@ struct CodimStepping : INode {
       // check "dir" inf norm
       T res = infNorm(cudaPol, vtemp, "dir") / dt;
       T cons_res = A.constraintResidual(cudaPol);
-      if (res < 1e-3 && cons_res == 0) {
+      if (res < 1e-2 && cons_res == 0) {
         fmt::print("\t# newton optimizer ends in {} iters with residual {}\n",
                    newtonIter, res);
         break;
       }
 
-      fmt::print("newton iter {}: direction residual {}, grad residual {}\n",
-                 newtonIter, res, infNorm(cudaPol, vtemp, "grad"));
+      fmt::print(
+          fg(fmt::color::aquamarine),
+          "newton iter {}: direction residual(/dt) {}, grad residual {}\n",
+          newtonIter, res, infNorm(cudaPol, vtemp, "grad"));
 
       // xn0 <- xn for line search
       cudaPol(zs::range(vtemp.size()),

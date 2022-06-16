@@ -43,7 +43,7 @@ struct TestCodimStepping : INode {
 
   inline static T kappaMax = 1e8;
   inline static T kappaMin = 1e4;
-  static constexpr T kappa0 = 1e-2;
+  static constexpr T kappa0 = 1e3;
   inline static T kappa = kappa0;
   inline static vec3 extForce;
 
@@ -211,6 +211,10 @@ struct TestCodimStepping : INode {
                 }
 
                 zs::vec<T, 9, 9> H;
+                if (BCorder[0] == 3 && BCorder[1] == 3 && BCorder[2] == 3) {
+                  etemp.tuple<9 * 9>("He", ei) = H.zeros();
+                  return;
+                }
 #if 0
       mat2 A{}, temp{};
       auto dA_div_dx = zs::vec<T, 4, 9>::zeros();
@@ -418,21 +422,24 @@ struct TestCodimStepping : INode {
       Vector<T> res{verts.get_allocator(), 1};
       res.setVal(0);
       if constexpr (enable_inertial) {
-        pol(range(vtemp.size()), [verts = proxy<space>({}, verts),
-                                  vtemp = proxy<space>({}, vtemp),
-                                  res = proxy<space>(res), tag,
-                                  extForce = extForce,
-                                  dt = this->dt] __device__(int vi) mutable {
-          // inertia
-          auto m = verts("m", vi);
-          auto x = vtemp.pack<3>(tag, vi);
-          atomic_add(exec_cuda, &res[0],
-                     (T)0.5 * m *
-                         (x - vtemp.pack<3>("xtilde", vi)).l2NormSqr());
-          // gravity
-          atomic_add(exec_cuda, &res[0],
-                     -m * extForce.dot(x - vtemp.pack<3>("xt", vi)) * dt * dt);
-        });
+        pol(range(verts.size()),
+            [verts = proxy<space>({}, verts), vtemp = proxy<space>({}, vtemp),
+             res = proxy<space>(res), tag, extForce = extForce,
+             dt = this->dt] __device__(int vi) mutable {
+              // inertia
+              auto m = verts("m", vi);
+              auto x = vtemp.pack<3>(tag, vi);
+              int BCorder = vtemp("BCorder", vi);
+              if (BCorder != 3) {
+                atomic_add(exec_cuda, &res[0],
+                           (T)0.5 * m *
+                               (x - vtemp.pack<3>("xtilde", vi)).l2NormSqr());
+                // gravity
+                atomic_add(exec_cuda, &res[0],
+                           -m * extForce.dot(x - vtemp.pack<3>("xt", vi)) * dt *
+                               dt);
+              }
+            });
       }
       if constexpr (enable_elasticity) {
         // elasticity
@@ -443,6 +450,14 @@ struct TestCodimStepping : INode {
               auto IB = eles.template pack<2, 2>("IB", ei);
               auto inds = eles.template pack<3>("inds", ei)
                               .template reinterpret_bits<int>();
+
+              int BCorder[3];
+              for (int i = 0; i != 3; ++i)
+                BCorder[i] = vtemp("BCorder", inds[i]);
+              if (BCorder[0] == 3 && BCorder[1] == 3 && BCorder[2] == 3) {
+                return;
+              }
+
               auto vole = eles("vol", ei);
               vec3 xs[3] = {vtemp.template pack<3>(tag, inds[0]),
                             vtemp.template pack<3>(tag, inds[1]),
@@ -782,7 +797,7 @@ struct TestCodimStepping : INode {
     vtemp.resize(numDofs);
     etemp.resize(eles.size());
 
-    extForce = vec3{0, 0, 0};
+    extForce = vec3{0, -9, 0};
     FEMSystem A{verts,  edges, eles,  coVerts, coEdges,
                 coEles, vtemp, etemp, dt,      models};
 
@@ -836,7 +851,7 @@ struct TestCodimStepping : INode {
               vtemp.tuple<3>("xn", coOffset + i) = x;
               vtemp.tuple<3>("xt", coOffset + i) = x;
             });
-    if constexpr (true) { // dont do this in augmented lagrangian
+    if constexpr (false) { // dont do this in augmented lagrangian
       cudaPol(zs::range(verts.size()),
               [vtemp = proxy<space>({}, vtemp),
                verts = proxy<space>({}, verts)] __device__(int vi) mutable {
@@ -864,6 +879,7 @@ struct TestCodimStepping : INode {
     for (int newtonIter = 0; newtonIter != 100; ++newtonIter) {
       // check constraints
       if (!BCsatisfied) {
+        A.computeConstraints(cudaPol, "xn");
         auto cr = A.constraintResidual(cudaPol);
         if (A.areConstraintsSatisfied(cudaPol)) {
           // auto cr = A.constraintResidual(cudaPol);
@@ -874,7 +890,8 @@ struct TestCodimStepping : INode {
           projectDBC = true;
           BCsatisfied = true;
         }
-        fmt::print("newton iter {} cons residual: {}\n", newtonIter, cr);
+        fmt::print(fg(fmt::color::alice_blue),
+                   "newton iter {} cons residual: {}\n", newtonIter, cr);
       }
 
       // A.findCollisionConstraints(cudaPol, dHat, xi);
@@ -883,19 +900,21 @@ struct TestCodimStepping : INode {
       cudaPol(zs::range(vtemp.size()),
               [vtemp = proxy<space>({}, vtemp)] __device__(int i) mutable {
                 vtemp.tuple<9>("P", i) = mat3::zeros();
+                vtemp.tuple<3>("grad", i) = vec3::zeros();
               });
       if constexpr (enable_inertial) {
-        cudaPol(zs::range(verts.size()),
-                [vtemp = proxy<space>({}, vtemp),
-                 verts = proxy<space>({}, verts), extForce = extForce,
-                 dt] __device__(int i) mutable {
-                  auto m = verts("m", i);
-                  auto v = verts.pack<3>("v", i);
-                  // int BCorder = vtemp("BCorder", i);
-                  vtemp.tuple<3>("grad", i) =
-                      m * extForce * dt * dt -
-                      m * (vtemp.pack<3>("xn", i) - vtemp.pack<3>("xtilde", i));
-                });
+        cudaPol(zs::range(verts.size()), [vtemp = proxy<space>({}, vtemp),
+                                          verts = proxy<space>({}, verts),
+                                          extForce = extForce,
+                                          dt] __device__(int i) mutable {
+          auto m = verts("m", i);
+          auto v = verts.pack<3>("v", i);
+          int BCorder = vtemp("BCorder", i);
+          if (BCorder != 3)
+            vtemp.tuple<3>("grad", i) =
+                m * extForce * dt * dt -
+                m * (vtemp.pack<3>("xn", i) - vtemp.pack<3>("xtilde", i));
+        });
       }
       if constexpr (enable_elasticity) {
         match([&](auto &elasticModel) {
@@ -932,7 +951,7 @@ struct TestCodimStepping : INode {
           vtemp.tuple<3>("grad", i) = vtemp.pack<3>("grad", i) +
                                       w * vtemp.pack<3>("lambda", i) -
                                       kappa * w * cons;
-          for (int d = 0; d != 4; ++d)
+          for (int d = 0; d != 3; ++d)
             if (cons[d] != 0) {
               vtemp("P", 4 * d, i) += kappa * w;
             }
@@ -945,9 +964,12 @@ struct TestCodimStepping : INode {
               [vtemp = proxy<space>({}, vtemp),
                verts = proxy<space>({}, verts)] __device__(int i) mutable {
                 auto m = verts("m", i);
-                vtemp("P", 0, i) += m;
-                vtemp("P", 4, i) += m;
-                vtemp("P", 8, i) += m;
+                int BCorder = vtemp("BCorder", i);
+                int d = 0;
+                for (; d != BCorder; ++d)
+                  vtemp("P", d * 4, i) += m;
+                for (; d != 3; ++d)
+                  vtemp("P", d * 4, i) += m;
               });
       cudaPol(zs::range(numDofs),
               [vtemp = proxy<space>({}, vtemp)] __device__(int i) mutable {
@@ -979,7 +1001,7 @@ struct TestCodimStepping : INode {
                 });
         T zTrk = dot(cudaPol, vtemp, "r", "q");
         auto residualPreconditionedNorm = std::sqrt(zTrk);
-        auto localTol = 0.5 * residualPreconditionedNorm;
+        auto localTol = 0.25 * residualPreconditionedNorm;
         int iter = 0;
         for (; iter != 10000; ++iter) {
           if (iter % 10 == 0)
@@ -1027,13 +1049,14 @@ struct TestCodimStepping : INode {
       // check "dir" inf norm
       T res = infNorm(cudaPol, vtemp, "dir") / dt;
       T cons_res = A.constraintResidual(cudaPol);
-      if (res < 1e-3 && cons_res == 0) {
+      if (res < 1e-2 && cons_res == 0) {
         fmt::print("\t# newton optimizer ends in {} iters with residual {}\n",
                    newtonIter, res);
         break;
       }
 
-      fmt::print("newton iter {}: direction residual {}, grad residual {}\n",
+      fmt::print(fg(fmt::color::aquamarine),
+                 "newton iter {}: direction residual {}, grad residual {}\n",
                  newtonIter, res, infNorm(cudaPol, vtemp, "grad"));
 
       // xn0 <- xn for line search
@@ -1042,9 +1065,11 @@ struct TestCodimStepping : INode {
                 vtemp.tuple<3>("xn0", i) = vtemp.pack<3>("xn", i);
               });
       T E0{};
+      T cr0{};
       match([&](auto &elasticModel) {
         E0 = A.energy(cudaPol, elasticModel, "xn0", !BCsatisfied);
       })(models.getElasticModel());
+      cr0 = A.constraintResidual(cudaPol);
 
       // line search
       T alpha = 1.;
@@ -1071,8 +1096,10 @@ struct TestCodimStepping : INode {
         match([&](auto &elasticModel) {
           E = A.energy(cudaPol, elasticModel, "xn", !BCsatisfied);
         })(models.getElasticModel());
+        auto cr = A.constraintResidual(cudaPol);
 
-        fmt::print("E: {} at alpha {}. E0 {}\n", E, alpha, E0);
+        fmt::print("E: {} (cr: {}) at alpha {}. E0 {} (cr0: {})\n", E, cr,
+                   alpha, E0, cr0);
         if (E < E0)
           break;
 
@@ -1098,6 +1125,8 @@ struct TestCodimStepping : INode {
                         vtemp.pack<3>("lambda", vi) -
                         kappa * vtemp("ws", vi) * vtemp.pack<3>("cons", vi);
                   });
+          fmt::print("the heck, lambda updated!\n");
+          getchar();
         }
       }
     } // end newton step
