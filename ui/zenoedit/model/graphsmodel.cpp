@@ -461,6 +461,15 @@ void GraphsModel::appendDescriptors(const QList<NODE_DESC>& descs)
     }
 }
 
+bool GraphsModel::getDescriptor(const QString& descName, NODE_DESC& desc)
+{
+    if (m_nodesDesc.find(descName) == m_nodesDesc.end())
+        return false;
+
+    desc = m_nodesDesc[descName];
+    return true;
+}
+
 void GraphsModel::appendSubGraph(SubGraphModel* pGraph)
 {
     int row = m_subGraphs.size();

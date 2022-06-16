@@ -65,15 +65,23 @@ void ModelAcceptor::EndSubgraph()
 		foreach(const QString & inSockName, inputs.keys())
 		{
 			const INPUT_SOCKET& inSocket = inputs[inSockName];
-
 			//init connection
 			for (const QString& outNode : inSocket.outNodes.keys())
 			{
-				for (const QString& outSock : inSocket.outNodes[outNode].keys())
+				const QModelIndex& outIdx = m_currentGraph->index(outNode);
+				if (outIdx.isValid())
 				{
-					const QModelIndex& outIdx = m_currentGraph->index(outNode);
-					if (outIdx.isValid())
+					//the items in outputs are descripted by core descriptors.
+					OUTPUT_SOCKETS outputs = outIdx.data(ROLE_OUTPUTS).value<OUTPUT_SOCKETS>();
+					for (const QString &outSock : inSocket.outNodes[outNode].keys())
 					{
+						//checkout whether outSock is existed.
+						if (outputs.find(outSock) == outputs.end())
+						{
+							const QString& nodeName = outIdx.data(ROLE_OBJNAME).toString();
+							zeno::log_warn("no such output socket {} in {}", outSock.toStdString(), nodeName.toStdString());
+							continue;
+						}
 						GraphsModel* pGraphsModel = m_currentGraph->getGraphsModel();
 						const QModelIndex& subgIdx = pGraphsModel->indexBySubModel(m_currentGraph);
 						pGraphsModel->addLink(EdgeInfo(outNode, inNode, outSock, inSockName), subgIdx);
@@ -173,14 +181,16 @@ void ModelAcceptor::initSockets(const QString& id, const QString& name, const NO
 	if (!m_currentGraph)
 		return;
 
+	NODE_DESC desc;
+	bool ret = m_pModel->getDescriptor(name, desc);
+	ZASSERT_EXIT(ret);
+
 	//params
 	INPUT_SOCKETS inputs;
 	PARAMS_INFO params;
 	OUTPUT_SOCKETS outputs;
 
-	const NODE_DESCS& descs = m_pModel->descriptors();
-
-	for (PARAM_INFO descParam : descs[name].params)
+	for (PARAM_INFO descParam : desc.params)
 	{
 		PARAM_INFO param;
 		param.name = descParam.name;
@@ -190,7 +200,7 @@ void ModelAcceptor::initSockets(const QString& id, const QString& name, const NO
 		params.insert(param.name, param);
 	}
 	
-	for (INPUT_SOCKET descInput : descs[name].inputs)
+	for (INPUT_SOCKET descInput : desc.inputs)
 	{
 		INPUT_SOCKET input;
 		input.info.nodeid = id;
@@ -216,7 +226,7 @@ void ModelAcceptor::initSockets(const QString& id, const QString& name, const NO
 		inputs.insert(input.info.name, input);
 	}
 	
-	for (OUTPUT_SOCKET descOutput : descs[name].outputs)
+	for (OUTPUT_SOCKET descOutput : desc.outputs)
 	{
 		OUTPUT_SOCKET output;
 		output.info.nodeid = id;
@@ -252,14 +262,14 @@ void ModelAcceptor::setInputSocket(
 	if (!m_currentGraph)
 		return;
 
-	//parse default value.
-    const NODE_DESCS& descs = m_pModel->descriptors();
-	ZASSERT_EXIT(descs.find(nodeCls) != descs.end());
+	NODE_DESC desc;
+	bool ret = m_pModel->getDescriptor(nodeCls, desc);
+	ZASSERT_EXIT(ret);
 
+	//parse default value.
 	QVariant defaultValue;
 	if (!defaultVal.IsNull())
 	{
-		const NODE_DESC &desc = descs[nodeCls];
 		SOCKET_INFO descInfo;
 		if (desc.inputs.find(inSock) != desc.inputs.end()) {
 			descInfo = desc.inputs[inSock].info;
@@ -269,11 +279,14 @@ void ModelAcceptor::setInputSocket(
 
 	QModelIndex idx = m_currentGraph->index(id);
 	ZASSERT_EXIT(idx.isValid());
+
+	//standard inputs desc by latest descriptors. 
 	INPUT_SOCKETS inputs = m_currentGraph->data(idx, ROLE_INPUTS).value<INPUT_SOCKETS>();
+
 	if (inputs.find(inSock) != inputs.end())
 	{
 		if (!defaultValue.isNull())
-			inputs[inSock].info.defaultValue = defaultValue;	//default value?
+			inputs[inSock].info.defaultValue = defaultValue;
         //if (defaultValue.type() == QVariant::Int)
             //zeno::log_critical("rehappy {}", defaultValue.toInt());
 		if (!outId.isEmpty() && !outSock.isEmpty())
@@ -281,8 +294,9 @@ void ModelAcceptor::setInputSocket(
 			inputs[inSock].outNodes[outId][outSock] = SOCKET_INFO(outId, outSock);
 		}
 		m_currentGraph->setData(idx, QVariant::fromValue(inputs), ROLE_INPUTS);
-	} else {
-		//TODO: support some dynamic socket, "like" objx in MakeList.
+	}
+	else
+	{
 		//TODO: optimize the code.
 		if (nodeCls == "MakeList")
 		{

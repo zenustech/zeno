@@ -45,6 +45,7 @@ public:
     NODE_DESCS descriptors() const override;
     void setDescriptors(const NODE_DESCS& nodesParams) override;
     void appendDescriptors(const QList<NODE_DESC>& descs) override;
+    bool getDescriptor(const QString& descName, NODE_DESC& desc) override;
     //NODE_DESC
     void appendSubGraph(SubGraphModel* pGraph);
     QModelIndex fork(const QModelIndex& subgIdx, const QModelIndex& subnetNodeIdx) override;

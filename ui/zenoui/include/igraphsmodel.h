@@ -56,6 +56,7 @@ public:
 	virtual NODE_DESCS descriptors() const = 0;
 	virtual void setDescriptors(const NODE_DESCS& nodesParams) = 0;
     virtual void appendDescriptors(const QList<NODE_DESC>& descs) = 0;
+	virtual bool getDescriptor(const QString& descName, NODE_DESC& desc) = 0;
 	virtual void clearSubGraph(const QModelIndex& subGpIdx) = 0;
 	virtual void clear() = 0;
 	virtual void reload(const QModelIndex& subGpIdx) = 0;
