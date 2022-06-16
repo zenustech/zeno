@@ -301,7 +301,8 @@ struct CodimStepping : INode {
       using namespace zs;
       constexpr auto space = execspace_e::cuda;
       computeConstraints(pol, "xn");
-      auto res = infNorm(pol, vtemp, "cons");
+      // auto res = infNorm(pol, vtemp, "cons");
+      auto res = constraintResidual(pol);
       return res < 1e-2;
     }
     T constraintResidual(zs::CudaExecutionPolicy &pol) {
@@ -319,14 +320,14 @@ struct CodimStepping : INode {
             int BCorder = vtemp("BCorder", vi);
             auto cons = vtemp.pack<3>("cons", vi);
             auto xt = vtemp.pack<3>("xt", vi);
-            T n = 0, d = 0;
+            T n = 0, d_ = 0;
             // https://ipc-sim.github.io/file/IPC-supplement-A-technical.pdf Eq5
             for (int d = 0; d != BCorder; ++d) {
               n += zs::sqr(cons[d]);
-              d += zs::sqr(col(BCbasis, d).dot(xt) - BCtarget[d]);
+              d_ += zs::sqr(col(BCbasis, d).dot(xt) - BCtarget[d]);
             }
             num[vi] = n;
-            den[vi] = d;
+            den[vi] = d_;
           });
       auto nsqr = reduce(pol, num);
       auto dsqr = reduce(pol, den);
@@ -338,7 +339,9 @@ struct CodimStepping : INode {
       return ret < 1e-6 ? 0 : ret;
     }
     void findCollisionConstraints(zs::CudaExecutionPolicy &pol, T dHat,
-                                  T xi = 0) {
+                                  T xi = 0/*, const tiles_t &tris = eles,
+                                  const tiles_t &edges = edges,
+                                  int offset = 0*/) {
       using namespace zs;
       constexpr auto space = execspace_e::cuda;
       const auto dHat2 = dHat * dHat;
@@ -1366,10 +1369,11 @@ struct CodimStepping : INode {
     }
 
     FEMSystem(const dtiles_t &verts, const tiles_t &edges, const tiles_t &eles,
-              const tiles_t &coVerts, const tiles_t &coEles, dtiles_t &vtemp,
-              dtiles_t &etemp, T dt, const ZenoConstitutiveModel &models)
+              const tiles_t &coVerts, const tiles_t &coEdges,
+              const tiles_t &coEles, dtiles_t &vtemp, dtiles_t &etemp, T dt,
+              const ZenoConstitutiveModel &models)
         : verts{verts}, edges{edges}, eles{eles}, coVerts{coVerts},
-          coEles{coEles}, vtemp{vtemp}, etemp{etemp},
+          coEdges{coEdges}, coEles{coEles}, vtemp{vtemp}, etemp{etemp},
           PP{verts.get_allocator(), 100000}, nPP{verts.get_allocator(), 1},
           tempPP{PP.get_allocator(),
                  {{"H", 36}, {"inds_pre", 2}, {"dist2_pre", 1}},
@@ -1407,7 +1411,7 @@ struct CodimStepping : INode {
     const tiles_t &edges;
     const tiles_t &eles;
     // (scripted) collision objects
-    const tiles_t &coVerts, &coEles;
+    const tiles_t &coVerts, &coEdges, &coEles;
     dtiles_t &vtemp;
     dtiles_t &etemp;
     // self contacts
@@ -1547,17 +1551,17 @@ struct CodimStepping : INode {
     auto models = zstets->getModel();
     auto dt = get_input2<float>("dt");
     auto &verts = zstets->getParticles<true>();
+    auto &edges = (*zstets)[ZenoParticles::s_surfEdgeTag];
     auto &eles = zstets->getQuadraturePoints();
     const tiles_t &coVerts =
         zsboundary ? zsboundary->getParticles() : tiles_t{};
-    // auto totalEles = eles;
-    // auto totalSurfEdges = eles;
-    const tiles_t &coEles =
-        zsboundary ? zsboundary->getQuadraturePoints() : tiles_t{};
     const tiles_t &coEdges =
         zsboundary ? (*zsboundary)[ZenoParticles::s_surfEdgeTag] : tiles_t{};
+    const tiles_t &coEles =
+        zsboundary ? zsboundary->getQuadraturePoints() : tiles_t{};
 
     auto coOffset = verts.size();
+    auto numDofs = coOffset + coVerts.size();
 
     static dtiles_t vtemp{
         verts.get_allocator(),
@@ -1580,18 +1584,15 @@ struct CodimStepping : INode {
          {"r", 3},
          {"p", 3},
          {"q", 3}},
-        verts.size() + coVerts.size()};
+        numDofs};
     static dtiles_t etemp{eles.get_allocator(), {{"He", 9 * 9}}, eles.size()};
 
     vtemp.resize(verts.size());
     etemp.resize(eles.size());
 
     extForce = vec3{0, -9, 0};
-    FEMSystem A{verts,  (*zstets)[ZenoParticles::s_surfEdgeTag],
-                eles,   coVerts,
-                coEles, vtemp,
-                etemp,  dt,
-                models};
+    FEMSystem A{verts,  edges, eles,  coVerts, coEdges,
+                coEles, vtemp, etemp, dt,      models};
 
     constexpr auto space = execspace_e::cuda;
     auto cudaPol = cuda_exec();
@@ -1638,13 +1639,13 @@ struct CodimStepping : INode {
               auto x = coverts.pack<3>("x", i);
               auto v = coverts.pack<3>("v", i);
               vtemp.tuple<3>("xtilde", coOffset + i) = x + v * dt;
-              vtemp("ws", coOffset + i) = zs::sqrt(coverts("m", i) * 1e3);
+              vtemp("ws", coOffset + i) = zs::sqrt(coverts("m", i) * 1e5);
               vtemp.tuple<3>("lambda", coOffset + i) = vec3::zeros();
               vtemp.tuple<3>("xn", coOffset + i) = x;
               vtemp.tuple<3>("xt", coOffset + i) = x;
             });
     // fix initial x for all bcs if not feasible
-    if constexpr (false) { // dont do this in augmented lagrangian
+    if constexpr (true) { // dont do this in augmented lagrangian
       cudaPol(zs::range(verts.size()),
               [vtemp = proxy<space>({}, vtemp),
                verts = proxy<space>({}, verts)] __device__(int vi) mutable {
@@ -1669,12 +1670,17 @@ struct CodimStepping : INode {
     kappa = kappa0;
 
     /// optimizer
-    for (int newtonIter = 0; newtonIter != 100; ++newtonIter) {
+    for (int newtonIter = 0; newtonIter != 1000; ++newtonIter) {
       // check constraints
-      if (A.areConstraintsSatisfied(cudaPol)) {
-        projectDBC = true;
-        BCsatisfied = true;
-      }
+      if (!BCsatisfied)
+        if (A.areConstraintsSatisfied(cudaPol)) {
+          auto cr = A.constraintResidual(cudaPol);
+          fmt::print("satisfied cons res [{}] at newton iter [{}]\n", cr,
+                     newtonIter);
+          // getchar();
+          projectDBC = true;
+          BCsatisfied = true;
+        }
       A.findCollisionConstraints(cudaPol, dHat, xi);
       auto [npp, npe, npt, nee, ncspt, ncsee] = A.getCnts();
       // construct gradient, prepare hessian, prepare preconditioner
@@ -1687,6 +1693,7 @@ struct CodimStepping : INode {
                extForce = extForce, dt] __device__(int i) mutable {
                 auto m = verts("m", i);
                 auto v = verts.pack<3>("v", i);
+                // int BCorder = vtemp("BCorder", i);
                 vtemp.tuple<3>("grad", i) =
                     m * extForce * dt * dt -
                     m * (vtemp.pack<3>("xn", i) - vtemp.pack<3>("xtilde", i));
@@ -1829,7 +1836,7 @@ struct CodimStepping : INode {
       // check "dir" inf norm
       T res = infNorm(cudaPol, vtemp, "dir") / dt;
       T cons_res = A.constraintResidual(cudaPol);
-      if (res < 1e-6 && cons_res == 0) {
+      if (res < 1e-3 && cons_res == 0) {
         fmt::print("\t# newton optimizer ends in {} iters with residual {}\n",
                    newtonIter, res);
         break;
