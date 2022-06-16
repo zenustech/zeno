@@ -37,8 +37,8 @@ struct IObject {
     virtual ~IObject() = default;
     virtual std::shared_ptr<IObject> clone() const { return nullptr; }
     virtual std::shared_ptr<IObject> move_clone() { return nullptr; }
-    virtual bool assign(IObject *other) { return false; }
-    virtual bool move_assign(IObject *other) { return false; }
+    virtual bool assign(IObject const *other) { return false; }
+    virtual bool move_assign(IObject const *other) { return false; }
     ZENO_API virtual void accept(IObjectVisitor *visitor) {}
 
     UserData &userData() { return *reinterpret_cast<UserData *>(0); }

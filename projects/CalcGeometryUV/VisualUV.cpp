@@ -12,7 +12,7 @@
 #include <fstream>
 
 
-void prim_flatten(zeno::PrimitiveObject *prim_in, zeno::PrimitiveObject *prim) {
+static void prim_flatten(zeno::PrimitiveObject *prim_in, zeno::PrimitiveObject *prim) {
     prim_in->add_attr<zeno::vec3f>("uv");
     prim->verts.resize(prim_in->tris.size() * 3);
     prim->tris.resize(prim_in->tris.size());
