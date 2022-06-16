@@ -67,7 +67,8 @@ struct ZSComputeBaryCentricWeights : INode {
             m(i,3) = p3[i];
         }
         m(3,0) = m(3,1) = m(3,2) = m(3,3) = 1;
-        return zs::determinant(m)/6;
+        return (T)zs::determinant(m.cast<double>())/6;
+        // return (T)zs::determinant(m)/6;
     }
 
     static constexpr T ComputeArea(
@@ -179,7 +180,7 @@ struct ZSComputeBaryCentricWeights : INode {
                     // }
 
                     T epsilon = zs::limits<T>::epsilon();
-                    if(ws[0] > -epsilon && ws[1] > -epsilon && ws[2] > -epsilon && ws[3] > -epsilon){
+                    if(ws[0] > epsilon && ws[1] > epsilon && ws[2] > epsilon && ws[3] > epsilon){
                         bcw("inds",vi) = reinterpret_bits<float>(ei);
                         bcw.tuple<4>("w",vi) = ws;
                         found = true;
@@ -320,10 +321,12 @@ struct ZSComputeBaryCentricWeights : INode {
         // });
 
         cudaExec(zs::range(bcw.size()),
-            [everts = proxy<space>({},everts),bcw = proxy<space>({},bcw),e_dim,execTag = wrapv<space>{},nmEmbedVerts = proxy<space>(nmEmbedVerts)]
+            [everts = proxy<space>({},everts),bcw = proxy<space>({},bcw),execTag = wrapv<space>{},nmEmbedVerts = proxy<space>(nmEmbedVerts)]
                 ZS_LAMBDA (int vi) mutable {
                     using T = typename RM_CVREF_T(bcw)::value_type;
                     auto ei = reinterpret_bits<int>(bcw("inds",vi));
+                    if(ei < 0)
+                        return;
                     atomic_add(execTag,&nmEmbedVerts[ei],(T)1.0);                  
         });
 
@@ -332,8 +335,9 @@ struct ZSComputeBaryCentricWeights : INode {
                 ZS_LAMBDA(int vi) mutable{
                     auto ei = reinterpret_bits<int>(bcw("inds",vi));
                     if(ei < 0)
-                        return;
-                    bcw("cnorm",vi) = (T)1.0/(T)nmEmbedVerts[ei];
+                        bcw("cnorm",vi) = (T)0.0;
+                    else
+                        bcw("cnorm",vi) = (T)1.0/(T)nmEmbedVerts[ei];
         });
 
 

@@ -321,13 +321,18 @@ struct FEMIntegrator : zeno::IObject {
                 // #pragma omp parallel for 
                 for(size_t i = 0;i < interpShape->size();++i){
                     auto elm_id = elm_ids[i];
-                    if(elm_id < 0)
+                    if(elm_id < -1e-6)
                         continue;
                     const auto& pos = interpShape->verts[i];
                     const auto& w = elm_ws[i];
                     interpPs[elm_id].emplace_back(pos[0],pos[1],pos[2]);
                     interpWs[elm_id].emplace_back(w[0],w[1],w[2]);
+
+                    // if(elm_id == 0)
+                    //     std::cout << "FOUND_ELM:" << elm_id << "\t" << i << std::endl;
                 }
+
+
             }
             // if(!interpShape){
             //     std::cout << "NULLPTR FOR INTERPSHAPE" << std::endl;
@@ -535,7 +540,19 @@ struct FEMIntegrator : zeno::IObject {
                         elm_traj,
                         &objBuffer[elm_id],derivBuffer[elm_id],HBuffer[elm_id],enforce_spd);
                 }
+
+                // if(elm_id == 0)
+                //     std::cout << "ELM_H<" << elm_id << ">:" << HBuffer[elm_id].squaredNorm() << std::endl;
             }
+
+            // for(size_t elm_id = 0;elm_id < nm_elms;++elm_id){
+            //     auto tet = shape->quads[elm_id];
+            //     for(size_t i = 0;i < 4;++i)
+            //         if(tet[i] == shape->quads[11221][0]){
+            //             std::cout << "add<" << shape->quads[11221][0] << "> : " << derivBuffer[elm_id].segment(i*3,3).transpose() << std::endl;
+            //         }
+            // }
+
 
             deriv.setZero();
             HValBuffer.setZero();
@@ -553,6 +570,13 @@ struct FEMIntegrator : zeno::IObject {
                 // std::cout << "FINISH ASSEMBLING" << std::endl;
             }
 
+            // auto tet = shape->quads[11221];
+            // std::cout << "g1:\n" <<  
+            //     -deriv.segment(tet[0]*3,3).transpose() << "\t" << 
+            //     -deriv.segment(tet[1]*3,3).transpose() << "\t" << 
+            //     -deriv.segment(tet[2]*3,3).transpose() << "\t" << 
+            //     -deriv.segment(tet[3]*3,3).transpose() << std::endl;
+            
             // std::cout << "FINISH ASSEMBLING" << std::endl;
             return obj;
     }

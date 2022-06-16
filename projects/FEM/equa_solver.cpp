@@ -296,7 +296,7 @@ struct BuildLapaceOperator : zeno::INode {
 
                     for(size_t j = 0;j < 4;++j)
                         for(size_t k = 0;k < 4;++k){
-                            FEM_Scaler alpha = interpPenalty * iw[j] * iw[k] / interpPs[elm_id].size();
+                            FEM_Scaler alpha = elm_stiffness[elm_id] * interpPenalty * iw[j] * iw[k] / interpPs[elm_id].size();
                             elm_H.block(j * 3,k*3,3,3).diagonal() += Vec3d::Constant(alpha);
                         }                    
                 }
@@ -356,6 +356,8 @@ struct SolveFEMFast : zeno::INode {
                 cpos[i] = shape->attr<zeno::vec3f>("init_guess")[i];
         }
 
+        // std::cout << "return skinning result" << std::endl;
+        // set_output("shape",shape); 
         
 
         auto elmView = get_input<PrimitiveObject>("elmView");
@@ -500,12 +502,14 @@ struct SolveFEM : zeno::INode {
         FEM_Scaler stop_error = 0;
 
         // std::cout << "BEGIN LOOP" << std::endl;
-
+        FEM_Scaler e0,e1,eg0;
         do{
-            FEM_Scaler e0,e1,eg0;
 
             e0 = integrator->EvalObjDerivHessian(shape,elmView,interpShape,r,HBuffer,true);
             // std::cout << "FINISH EVAL A X B" << std::endl;
+            
+            if(iter_idx == 0)
+                std::cout << "initial energy : " << e0 << std::endl;
             // break;
             if(iter_idx == 0)
                 r0 = r.norm();
@@ -620,10 +624,12 @@ struct SolveFEM : zeno::INode {
                     break;
                 }
             }
-            // std::cout << "SOLVE TIME : " << (float)(end_solve - begin_solve)/CLOCKS_PER_SEC << "\t" << r0 << "\t" << r.norm() << "\t" << eg0 << "\t" << search_idx << "\t" << e_start << "\t" << e0 << "\t" << e1 << std::endl;
+            std::cout << "SOLVE TIME : " << (float)(end_solve - begin_solve)/CLOCKS_PER_SEC << "\t" << r0 << "\t" << r.norm() << "\t" << eg0 << "\t" << search_idx << "\t" << e_start << "\t" << e0 << "\t" << e1 << std::endl;
 
             ++iter_idx;
         }while(iter_idx < max_iters);
+
+        std::cout << "finish energy : " << e1 << std::endl; 
 
         if(iter_idx == max_iters){
             std::cout << "MAX NEWTON ITERS EXCEED" << std::endl;
