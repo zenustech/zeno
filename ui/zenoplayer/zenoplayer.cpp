@@ -65,8 +65,10 @@ void ZenoPlayer::slot_OpenFileDialog()
 
     Zenovis::GetInstance().startPlay(false);
     m_pTimerUpVIew->stop();
+    m_iFrameCount = 0;
 
     auto pGraphs = zenoApp->graphsManagment();
+    pGraphs->clear();
     IGraphsModel *pModel = pGraphs->openZsgFile(filePath);
     if (!pModel){
         QMessageBox::warning(this,tr("Error"),QString(tr("Open %1 error!")).arg(filePath));
