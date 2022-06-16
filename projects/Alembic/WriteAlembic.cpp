@@ -29,7 +29,7 @@ struct WriteAlembic : INode {
         if (has_input("frameid")) {
             frameid = get_param<int>("frameid");
         } else {
-            frameid = zeno::state.frameid;
+            frameid = getGlobalState()->frameid;
         }
         int frame_start = get_param<int>("frame_start");
         int frame_end = get_param<int>("frame_end");
