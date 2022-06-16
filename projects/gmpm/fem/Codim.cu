@@ -305,6 +305,27 @@ struct CodimStepping : INode {
       auto res = constraintResidual(pol);
       return res < 1e-2;
     }
+    T checkDBCStatus(zs::CudaExecutionPolicy &pol) {
+      using namespace zs;
+      constexpr auto space = execspace_e::cuda;
+      pol(Collapse{numDofs},
+          [vtemp = proxy<space>({}, vtemp)] __device__(int vi) mutable {
+            int BCorder = vtemp("BCorder", vi);
+            if (BCorder > 0) {
+              auto BCbasis = vtemp.pack<3, 3>("BCbasis", vi);
+              auto BCtarget = vtemp.pack<3>("BCtarget", vi);
+              auto cons = vtemp.pack<3>("cons", vi);
+              auto xt = vtemp.pack<3>("xt", vi);
+              auto x = vtemp.pack<3>("xn", vi);
+              printf("%d-th vert (order [%d]): cur (%f, %f, %f) xt (%f, %f, %f)"
+                     "\n\ttar(%f, %f, %f) cons (%f, %f, %f)\n",
+                     vi, BCorder, (float)x[0], (float)x[1], (float)x[2],
+                     (float)xt[0], (float)xt[1], (float)xt[2],
+                     (float)BCtarget[0], (float)BCtarget[1], (float)BCtarget[2],
+                     (float)cons[0], (float)cons[1], (float)cons[2]);
+            }
+          });
+    }
     T constraintResidual(zs::CudaExecutionPolicy &pol) {
       using namespace zs;
       if (projectDBC)
@@ -1578,6 +1599,7 @@ struct CodimStepping : INode {
 
          {"dir", 3},
          {"xn", 3},
+         {"xt", 3},
          {"xn0", 3},
          {"xtilde", 3},
          {"temp", 3},
@@ -1645,7 +1667,7 @@ struct CodimStepping : INode {
               vtemp.tuple<3>("xt", coOffset + i) = x;
             });
     // fix initial x for all bcs if not feasible
-    if constexpr (true) { // dont do this in augmented lagrangian
+    if constexpr (false) { // dont do this in augmented lagrangian
       cudaPol(zs::range(verts.size()),
               [vtemp = proxy<space>({}, vtemp),
                verts = proxy<space>({}, verts)] __device__(int vi) mutable {
@@ -1677,7 +1699,8 @@ struct CodimStepping : INode {
           auto cr = A.constraintResidual(cudaPol);
           fmt::print("satisfied cons res [{}] at newton iter [{}]\n", cr,
                      newtonIter);
-          // getchar();
+          A.checkDBCStatus(cudaPol);
+          getchar();
           projectDBC = true;
           BCsatisfied = true;
         }
