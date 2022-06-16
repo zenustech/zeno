@@ -16,6 +16,8 @@
 #include <cstring>
 #include <cstdio>
 
+using namespace Alembic::AbcGeom;
+
 namespace zeno {
 namespace {
 
@@ -152,6 +154,42 @@ static std::shared_ptr<PrimitiveObject> foundABCMesh(Alembic::AbcGeom::IPolyMesh
                 uv1[count] = zeno::vec3f(0, 0, 0);
                 uv2[count] = zeno::vec3f(0, 0, 0);
                 count += 1;
+            }
+        }
+    }
+
+    ICompoundProperty arbattrs = mesh.getArbGeomParams();
+
+    if (arbattrs) {
+        size_t numProps = arbattrs.getNumProperties();
+        for (auto i = 0; i < numProps; i++) {
+            PropertyHeader p = arbattrs.getPropertyHeader(i);
+            if (IFloatGeomParam::matches(p)) {
+                IFloatGeomParam param(arbattrs, p.getName());
+                if (!read_done) {
+                    log_info("[alembic] float attr {}.", p.getName());
+                }
+                IFloatGeomParam::Sample samp = param.getIndexedValue();
+                if (prim->verts.size() == samp.getVals()->size()) {
+                    auto &attr = prim->add_attr<float>(p.getName());
+                    for (auto i = 0; i < prim->verts.size(); i++) {
+                        attr[i] = samp.getVals()->get()[i];
+                    }
+                }
+            }
+            else if (IV3fGeomParam::matches(p)) {
+                IV3fGeomParam param(arbattrs, p.getName());
+                if (!read_done) {
+                    log_info("[alembic] vec3f attr {}.", p.getName());
+                }
+                IV3fGeomParam::Sample samp = param.getIndexedValue();
+                if (prim->verts.size() == samp.getVals()->size()) {
+                    auto &attr = prim->add_attr<zeno::vec3f>(p.getName());
+                    for (auto i = 0; i < prim->verts.size(); i++) {
+                        auto v = samp.getVals()->get()[i];
+                        attr[i] = {v[0], v[1], v[2]};
+                    }
+                }
             }
         }
     }
