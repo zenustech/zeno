@@ -1768,7 +1768,7 @@ struct CodimStepping : INode {
           vtemp.tuple<3>("grad", i) = vtemp.pack<3>("grad", i) +
                                       w * vtemp.pack<3>("lambda", i) -
                                       kappa * w * cons;
-          for (int d = 0; d != 4; ++d)
+          for (int d = 0; d != 3; ++d)
             if (cons[d] != 0) {
               vtemp("P", 4 * d, i) += kappa * w;
             }
