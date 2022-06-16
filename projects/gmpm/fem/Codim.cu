@@ -237,6 +237,48 @@ struct CodimStepping : INode {
   inline static T dHat = 0.001;
   inline static vec3 extForce;
 
+  template <
+      typename VecT, int N = VecT::template range_t<0>::value,
+      zs::enable_if_all<N % 3 == 0, N == VecT::template range_t<1>::value> = 0>
+  static constexpr void rotate_hessian(zs::VecInterface<VecT> &H,
+                                       mat3 BCbasis[N / 3], int BCorder[N / 3],
+                                       int BCfixed[], bool projectDBC) {
+    // hessian rotation: trans^T hess * trans
+    // left trans^T: multiplied on rows
+    // right trans: multiplied on cols
+    constexpr int NV = N / 3;
+    // rotate and project
+    for (int vi = 0; vi != NV; ++vi) {
+      int offsetI = vi * 3;
+      for (int vj = 0; vj != NV; ++vj) {
+        int offsetJ = vj * 3;
+        mat3 tmp{};
+        for (int i = 0; i != 3; ++i)
+          for (int j = 0; j != 3; ++j)
+            tmp(i, j) = H(offsetI + i, offsetJ + j);
+        // rotate
+        tmp = BCbasis[vi].transpose() * tmp * BCbasis[vj];
+        // project
+        if (projectDBC || (!projectDBC && (BCfixed[vi] > 0 || BCfixed[vj] > 0)))
+          if (BCorder[vi] > 0 || BCorder[vj] > 0) {
+            if (vi == vj) {
+              for (int i = 0; i != BCorder[vi]; ++i)
+                for (int j = 0; j != BCorder[vj]; ++j)
+                  tmp(i, j) = (i == j ? 1 : 0);
+            } else {
+              for (int i = 0; i != BCorder[vi]; ++i)
+                for (int j = 0; j != BCorder[vj]; ++j)
+                  tmp(i, j) = 0;
+            }
+          }
+        for (int i = 0; i != 3; ++i)
+          for (int j = 0; j != 3; ++j)
+            H(offsetI + i, offsetJ + j) = tmp(i, j);
+      }
+    }
+    return;
+  }
+
   /// ref: codim-ipc
   static void
   find_ground_intersection_free_stepsize(zs::CudaExecutionPolicy &pol,
@@ -1182,34 +1224,33 @@ struct CodimStepping : INode {
       if (includeAugLagEnergy) {
         computeConstraints(pol, tag);
         pol(range(numDofs), [vtemp = proxy<space>({}, vtemp),
-                             res = proxy<space>(res), tag,
+                             res = proxy<space>(res),
                              kappa = kappa] __device__(int vi) mutable {
-          auto x = vtemp.pack<3>(tag, vi);
+          // already updated during "xn" update
           auto cons = vtemp.template pack<3>("cons", vi);
           auto w = vtemp("ws", vi);
           auto lambda = vtemp.pack<3>("lambda", vi);
-          atomic_add(exec_cuda, &res[0],
-                     (T)(-lambda.dot(cons) + 0.5 * kappa * cons.l2NormSqr()));
+          atomic_add(
+              exec_cuda, &res[0],
+              (T)(-lambda.dot(cons) * w + 0.5 * kappa * w * cons.l2NormSqr()));
         });
       }
       return res.getVal();
     }
     template <typename Pol> void project(Pol &pol, const zs::SmallString tag) {
-#if 1
       using namespace zs;
       constexpr execspace_e space = execspace_e::cuda;
       // projection
-      pol(zs::range(verts.size()),
-          [vtemp = proxy<space>({}, vtemp), verts = proxy<space>({}, verts),
+      pol(zs::range(numDofs),
+          [vtemp = proxy<space>({}, vtemp), projectDBC = projectDBC,
            tag] ZS_LAMBDA(int vi) mutable {
-            auto BCbasis = vtemp.template pack<3, 3>("BCbasis", vi);
-            int BCorder = vtemp("BCorder", vi);
-            for (int d = 0; d != BCorder; ++d)
-              vtemp(tag, d, vi) = 0;
-            // if (verts("x", 1, vi) > 0.8)
-            //  vtemp.tuple<3>(tag, vi) = vec3::zeros();
+            int BCfixed = vtemp("BCfixed", vi);
+            if (projectDBC || (!projectDBC && BCfixed)) {
+              int BCorder = vtemp("BCorder", vi);
+              for (int d = 0; d != BCorder; ++d)
+                vtemp(tag, d, vi) = 0;
+            }
           });
-#endif
     }
     template <typename Pol>
     void precondition(Pol &pol, const zs::SmallString srcTag,
@@ -1217,8 +1258,8 @@ struct CodimStepping : INode {
       using namespace zs;
       constexpr execspace_e space = execspace_e::cuda;
       // precondition
-      pol(zs::range(verts.size()), [vtemp = proxy<space>({}, vtemp), srcTag,
-                                    dstTag] ZS_LAMBDA(int vi) mutable {
+      pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp), srcTag,
+                               dstTag] ZS_LAMBDA(int vi) mutable {
         vtemp.template tuple<3>(dstTag, vi) =
             vtemp.template pack<3, 3>("P", vi) *
             vtemp.template pack<3>(srcTag, vi);
@@ -1521,47 +1562,6 @@ struct CodimStepping : INode {
             });
     return ret.getVal();
   }
-  template <
-      typename VecT, int N = VecT::template range_t<0>::value,
-      zs::enable_if_all<N % 3 == 0, N == VecT::template range_t<1>::value> = 0>
-  static constexpr void rotate_hessian(zs::VecInterface<VecT> &H,
-                                       mat3 BCbasis[N / 3], int BCorder[N / 3],
-                                       int BCfixed[], bool projectDBC) {
-    // hessian rotation: trans^T hess * trans
-    // left trans^T: multiplied on rows
-    // right trans: multiplied on cols
-    constexpr int NV = N / 3;
-    // rotate and project
-    for (int vi = 0; vi != NV; ++vi) {
-      int offsetI = vi * 3;
-      for (int vj = 0; vj != NV; ++vj) {
-        int offsetJ = vj * 3;
-        mat3 tmp{};
-        for (int i = 0; i != 3; ++i)
-          for (int j = 0; j != 3; ++j)
-            tmp(i, j) = H(offsetI + i, offsetJ + j);
-        // rotate
-        tmp = BCbasis[vi].transpose() * tmp * BCbasis[vj];
-        // project
-        if (projectDBC || (!projectDBC && (BCfixed[vi] > 0 || BCfixed[vj] > 0)))
-          if (BCorder[vi] > 0 || BCorder[vj] > 0) {
-            if (vi == vj) {
-              for (int i = 0; i != BCorder[vi]; ++i)
-                for (int j = 0; j != BCorder[vj]; ++j)
-                  tmp(i, j) = (i == j ? 1 : 0);
-            } else {
-              for (int i = 0; i != BCorder[vi]; ++i)
-                for (int j = 0; j != BCorder[vj]; ++j)
-                  tmp(i, j) = 0;
-            }
-          }
-        for (int i = 0; i != 3; ++i)
-          for (int j = 0; j != 3; ++j)
-            H(offsetI + i, offsetJ + j) = tmp(i, j);
-      }
-    }
-    return;
-  }
 
   void apply() override {
     using namespace zs;
@@ -1667,7 +1667,7 @@ struct CodimStepping : INode {
               vtemp.tuple<3>("xt", coOffset + i) = x;
             });
     // fix initial x for all bcs if not feasible
-    if constexpr (false) { // dont do this in augmented lagrangian
+    if constexpr (true) { // dont do this in augmented lagrangian
       cudaPol(zs::range(verts.size()),
               [vtemp = proxy<space>({}, vtemp),
                verts = proxy<space>({}, verts)] __device__(int vi) mutable {
@@ -1694,7 +1694,7 @@ struct CodimStepping : INode {
     /// optimizer
     for (int newtonIter = 0; newtonIter != 1000; ++newtonIter) {
       // check constraints
-      if (!BCsatisfied)
+      if (!BCsatisfied) {
         if (A.areConstraintsSatisfied(cudaPol)) {
           auto cr = A.constraintResidual(cudaPol);
           fmt::print("satisfied cons res [{}] at newton iter [{}]\n", cr,
@@ -1704,6 +1704,10 @@ struct CodimStepping : INode {
           projectDBC = true;
           BCsatisfied = true;
         }
+        auto cr = A.constraintResidual(cudaPol);
+        fmt::print("newton iter {} cons residual: {}\n", newtonIter, cr);
+      }
+
       A.findCollisionConstraints(cudaPol, dHat, xi);
       auto [npp, npe, npt, nee, ncspt, ncsee] = A.getCnts();
       // construct gradient, prepare hessian, prepare preconditioner
@@ -1761,9 +1765,9 @@ struct CodimStepping : INode {
                   // computed during the previous constraint residual check
                   auto cons = vtemp.pack<3>("cons", i);
                   auto w = vtemp("ws", i);
-                  vtemp.tuple<3>("grad", i) =
-                      vtemp.pack<3>("grad", i) -
-                      (-w * vtemp.pack<3>("lambda", i) + kappa * w * cons);
+                  vtemp.tuple<3>("grad", i) = vtemp.pack<3>("grad", i) +
+                                              w * vtemp.pack<3>("lambda", i) -
+                                              kappa * w * cons;
                   for (int d = 0; d != 4; ++d)
                     if (cons[d] != 0) {
                       vtemp("P", 4 * d, i) += kappa * w;
@@ -1811,7 +1815,7 @@ struct CodimStepping : INode {
                 });
         T zTrk = dot(cudaPol, vtemp, "r", "q");
         auto residualPreconditionedNorm = std::sqrt(zTrk);
-        auto localTol = 0.5 * residualPreconditionedNorm;
+        auto localTol = 0.01 * residualPreconditionedNorm;
         int iter = 0;
         for (; iter != 10000; ++iter) {
           if (iter % 10 == 0)
