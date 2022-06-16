@@ -1,5 +1,7 @@
 #include <zeno/zeno.h>
 #include <zeno/types/StringObject.h>
+#include <zeno/types/NumericObject.h>
+#include <zeno/utils/format.h>
 #include <zeno/extra/GlobalState.h>
 #include <iostream>
 #include <fstream>
@@ -161,6 +163,38 @@ struct StringFormat : zeno::INode {
 
 ZENDEFNODE(StringFormat, {
     {{"string", "str"}},
+    {{"string", "str"}},
+    {},
+    {"string"},
+});
+
+struct StringFormatNumber : zeno::INode {
+    virtual void apply() override {
+        auto str = get_input2<std::string>("str");
+        auto num = get_input<zeno::NumericObject>("number");
+
+        std::string output;
+        std::visit([&](const auto &v) {
+            using T = std::decay_t<decltype(v)>;
+            if constexpr (std::is_same_v<T, int>) {
+                output = zeno::format(str, T(v));
+            }
+            else if constexpr (std::is_same_v<T, float>) {
+                output = zeno::format(str, T(v));
+            }
+            else {
+                output = str;
+            }
+        }, num->value);
+        set_output2("str", output);
+    }
+};
+
+ZENDEFNODE(StringFormatNumber, {
+    {
+        {"string", "str"},
+        {"number"},
+    },
     {{"string", "str"}},
     {},
     {"string"},
