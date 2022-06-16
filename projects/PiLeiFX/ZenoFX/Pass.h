@@ -5,10 +5,12 @@
 #pragma once
 
 #include "IR/Module.h"
-
+#include <string>
 namespace  zfx {
+    using PassID = std::string;
     class Pass {
       public:
+        PassID
         Pass(Module *m) {}
        virtual ~Pass() ;
        virtual void run() = 0;

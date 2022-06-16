@@ -13,6 +13,9 @@ namespace zfx {
         IRBuilder() = default;
         IRBuilder(BasicBlock *bb) : bb(bb) {}
 
+        void reset() ;
+        //把所有的指令清空
+
         inline BasicBlock *getInsertBlock() {
             return bb;
         }

@@ -50,11 +50,11 @@ struct Options {
     void define_symbol(std::string const &name, int dimension) {
         symdims[name] = dimension;
     }
-
+//插入定义的符号
     void define_param(std::string const &name, int dimension) {
         pardims[name] = dimension;
     }
-
+//插入参数
     void dump(std::ostream &os) const {
         for (auto const &[name, dim]: symdims) {
             os << '/' << name << '/' << dim;
@@ -79,10 +79,10 @@ std::tuple
     ( std::string const &code
     , Options const &options
     );
-
+//分别是code symbol params  new symbol;
 struct Program {
     std::vector<std::pair<std::string, int>> symbols;
-    std::vector<std::pair<std::string, int>> params;
+    std::vector<std::pair<std::string, int>> params;@ 和$
     std::map<std::string, int> newsyms;
     std::string assembly;
 

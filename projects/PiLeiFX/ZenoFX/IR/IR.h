@@ -19,7 +19,12 @@ namespace zfx {
         virtual IRNode* get_parent() const = 0;
 
         virtual IRNode* get_ir_root();
+
         virtual ~IRNode() = default;
+
+        //获取一个编译选项,表示怎么处理IR
+        //
+        std::unique_ptr<IRNode> clone();//克隆IRNode节点
     };
     class Statement {
       protected:

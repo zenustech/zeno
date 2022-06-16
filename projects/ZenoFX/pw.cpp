@@ -59,7 +59,6 @@ struct ParticlesWrangle : zeno::INode {
     virtual void apply() override {
         auto prim = get_input<zeno::PrimitiveObject>("prim");
         auto code = get_input<zeno::StringObject>("zfxCode")->get();
-
         zfx::Options opts(zfx::Options::for_x64);
         opts.detect_new_symbols = true;
         prim->foreach_attr([&] (auto const &key, auto const &attr) {

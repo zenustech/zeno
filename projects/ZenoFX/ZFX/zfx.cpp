@@ -78,6 +78,7 @@ std::tuple
         newsyms = apply_detect_new_symbols(
                 ir.get(), temporaries, symbols);
 #ifdef ZFX_PRINT_IR
+
         ir->print();
 #endif
     }
