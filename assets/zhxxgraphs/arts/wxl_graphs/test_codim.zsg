@@ -6,20 +6,20 @@
      "name": "UpdatePrimitiveFromZSParticles",
      "inputs": {
       "ZSParticles": [
-       "7e365677-CodimStepping",
+       "22566709-TestCodimStepping",
        "ZSParticles",
        null
       ],
       "SRC": [
-       "7e365677-CodimStepping",
+       "22566709-TestCodimStepping",
        "DST",
        null
       ]
      },
      "params": {},
      "uipos": [
-      4249.5287126094845,
-      139.42098032742706
+      4269.079994660768,
+      125.8854773688472
      ],
      "options": [
       "VIEW"
@@ -34,8 +34,8 @@
        null
       ],
       "ZSBoundaryPrimitives": [
-       "9ac89464-ToBoundaryParticles",
-       "ZSParticles",
+       null,
+       null,
        null
       ],
       "dt": [
@@ -51,8 +51,8 @@
      },
      "params": {},
      "uipos": [
-      3957.189920214966,
-      88.6382740670523
+      3954.723450786957,
+      131.29014783431063
      ],
      "options": []
     },
@@ -304,8 +304,8 @@
      },
      "params": {},
      "uipos": [
-      3599.9315780050156,
-      57.29719402550086
+      3580.3802959537334,
+      40.75380152056988
      ],
      "options": []
     },
@@ -361,8 +361,7 @@
       620.5622166259278
      ],
      "options": [
-      "ONCE",
-      "VIEW"
+      "ONCE"
      ]
     },
     "571011bb-TransformPrimitive": {
@@ -439,7 +438,7 @@
      },
      "params": {
       "x": 0.0,
-      "y": 1.35,
+      "y": 1.47,
       "z": 0.3
      },
      "uipos": [
@@ -516,8 +515,8 @@
       "type": "sticky"
      },
      "uipos": [
-      3263.044614299519,
-      399.0428646577536
+      3296.8833716959684,
+      414.08231238950896
      ],
      "options": [
       "ONCE"
@@ -554,8 +553,8 @@
      },
      "params": {},
      "uipos": [
-      4654.671684172693,
-      430.19592198307055
+      4584.708173324565,
+      270.0709219830708
      ],
      "options": [
       "VIEW"
@@ -571,7 +570,7 @@
       ]
      },
      "params": {
-      "x": 0.0,
+      "x": 0.5,
       "y": 0.0,
       "z": 0.0
      },
@@ -769,13 +768,87 @@
       "ONCE",
       "VIEW"
      ]
+    },
+    "877c323f-ZSLevelSetToVDBGrid": {
+     "name": "ZSLevelSetToVDBGrid",
+     "inputs": {
+      "ZSLevelSet": [
+       "d2aa3b83-ToZSLevelSet",
+       "ZSLevelSet",
+       null
+      ],
+      "SRC": [
+       "4439476e-TransformZSLevelSet",
+       "DST",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      4892.7384122287895,
+      439.9489644970407
+     ],
+     "options": [
+      "VIEW"
+     ]
+    },
+    "62bc9911-NumericVec3": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": 0.0,
+      "y": 1.35,
+      "z": 0.3
+     },
+     "uipos": [
+      1866.3954635108455,
+      918.910256410255
+     ],
+     "options": []
+    },
+    "22566709-TestCodimStepping": {
+     "name": "TestCodimStepping",
+     "inputs": {
+      "ZSParticles": [
+       "b5e7d2e6-ApplyBoundaryOnVertices",
+       "ZSParticles",
+       null
+      ],
+      "ZSBoundaryPrimitives": [
+       null,
+       null,
+       null
+      ],
+      "dt": [
+       "c74ac458-NumericFloat",
+       "value",
+       0.01
+      ],
+      "SRC": [
+       "b5e7d2e6-ApplyBoundaryOnVertices",
+       "DST",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      3953.8708086784945,
+      -105.27613412228783
+     ],
+     "options": []
     }
    },
    "view_rect": {
-    "x": 981.6427127445577,
-    "y": -972.6806178673228,
-    "width": 4577.636718749997,
-    "height": 2326.9653320312464
+    "x": 2089.4860737848976,
+    "y": -309.52620026194154,
+    "width": 2929.687499999998,
+    "height": 1489.2578124999977
    }
   }
  },
@@ -17972,6 +18045,46 @@
    "params": [],
    "categories": [
     "zenofx"
+   ]
+  },
+  "TestCodimStepping": {
+   "inputs": [
+    [
+     "",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "",
+     "ZSBoundaryPrimitives",
+     ""
+    ],
+    [
+     "float",
+     "dt",
+     "0.01"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
    ]
   },
   "ToBoundaryParticles": {
