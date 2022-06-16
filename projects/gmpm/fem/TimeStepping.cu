@@ -217,10 +217,10 @@ struct ImplicitTimeStepping : INode {
             if (vi == tri[0] || vi == tri[1] || vi == tri[2])
               return;
             // all affected by sticky boundary conditions
-            if (reinterpret_bits<int>(verts("BCorder", vi)) == 3 &&
-                reinterpret_bits<int>(verts("BCorder", tri[0])) == 3 &&
-                reinterpret_bits<int>(verts("BCorder", tri[1])) == 3 &&
-                reinterpret_bits<int>(verts("BCorder", tri[2])) == 3)
+            if ((verts("BCorder", vi)) == 3 &&
+                (verts("BCorder", tri[0])) == 3 &&
+                (verts("BCorder", tri[1])) == 3 &&
+                (verts("BCorder", tri[2])) == 3)
               return;
             // ccd
             auto t0 = vtemp.template pack<3>("xn", tri[0]);
@@ -310,9 +310,8 @@ struct ImplicitTimeStepping : INode {
           auto eiInds = ses.template pack<2>("inds", sei)
                             .template reinterpret_bits<int>();
           // auto selfWe = ses("w", sei);
-          bool selfFixed =
-              reinterpret_bits<int>(verts("BCorder", eiInds[0])) == 3 &&
-              reinterpret_bits<int>(verts("BCorder", eiInds[1])) == 3;
+          bool selfFixed = (verts("BCorder", eiInds[0])) == 3 &&
+                           (verts("BCorder", eiInds[1])) == 3;
           auto x0 = vtemp.template pack<3>("xn", eiInds[0]);
           auto x1 = vtemp.template pack<3>("xn", eiInds[1]);
           auto ea0Rest = verts.template pack<3>("x0", eiInds[0]);
@@ -328,9 +327,8 @@ struct ImplicitTimeStepping : INode {
                 eiInds[1] == ejInds[0] || eiInds[1] == ejInds[1])
               return;
             // all affected by sticky boundary conditions
-            if (selfFixed &&
-                reinterpret_bits<int>(verts("BCorder", ejInds[0])) == 3 &&
-                reinterpret_bits<int>(verts("BCorder", ejInds[1])) == 3)
+            if (selfFixed && (verts("BCorder", ejInds[0])) == 3 &&
+                (verts("BCorder", ejInds[1])) == 3)
               return;
             // ccd
             auto eb0 = vtemp.template pack<3>("xn", ejInds[0]);
@@ -644,7 +642,7 @@ struct ImplicitTimeStepping : INode {
          stepSize] ZS_LAMBDA(int svi) mutable {
           auto vi = reinterpret_bits<int>(svs("inds", svi));
           // this vert affected by sticky boundary conditions
-          if (reinterpret_bits<int>(verts("BCorder", vi)) == 3)
+          if ((verts("BCorder", vi)) == 3)
             return;
           auto dir = vtemp.pack<3>("dir", vi);
           auto coef = gn.dot(dir);
@@ -1920,7 +1918,7 @@ struct ImplicitTimeStepping : INode {
       int BCorder[4];
       for (int i = 0; i != 4; ++i) {
         BCbasis[i] = verts.pack<3, 3>("BCbasis", inds[i]);
-        BCorder[i] = reinterpret_bits<int>(verts("BCorder", inds[i]));
+        BCorder[i] = (verts("BCorder", inds[i]));
       }
       auto Hq = model.first_piola_derivative(F, true_c);
       auto H = dFdXT * Hq * dFdX * vole * dt * dt;
@@ -2062,8 +2060,7 @@ struct ImplicitTimeStepping : INode {
             [vtemp = proxy<space>({}, vtemp),
              verts = proxy<space>({}, verts)] __device__(int vi) mutable {
               auto x = verts.pack<3>("x", vi);
-              if (auto BCorder = reinterpret_bits<int>(verts("BCorder", vi));
-                  BCorder > 0) {
+              if (int BCorder = (verts("BCorder", vi)); BCorder > 0) {
                 auto BCbasis = verts.pack<3, 3>("BCbasis", vi);
                 auto BCtarget = verts.pack<3>("BCtarget", vi);
                 x = BCbasis.transpose() * x;
@@ -2135,8 +2132,7 @@ struct ImplicitTimeStepping : INode {
                dt] __device__(int i) mutable {
                 auto grad = verts.pack<3, 3>("BCbasis", i).transpose() *
                             vtemp.pack<3>("grad", i);
-                if (auto BCorder = reinterpret_bits<int>(verts("BCorder", i));
-                    BCorder > 0)
+                if (int BCorder = (verts("BCorder", i)); BCorder > 0)
                   for (int d = 0; d != BCorder; ++d)
                     grad(d) = 0;
                 vtemp.tuple<3>("grad", i) = grad;
