@@ -5,6 +5,7 @@ import shutil
 
 binpath = os.path.join('build', 'bin')
 outpath = os.path.join('build', 'out')
+assetlist = os.path.join('build', 'zeno_asset_dirs.txt')
 
 if os.path.exists(outpath):
     shutil.rmtree(outpath, ignore_errors=True)
@@ -18,7 +19,14 @@ if sys.platform == 'win32':
         '..\\Qt\\5.15.2\\msvc2019_64\\bin\\windeployqt.exe',
         os.path.join(outpath, 'zenoedit.exe'),
     ])
-    shutil.make_archive(outpath, 'zip', outpath, verbose=1)
+    if os.path.exists(assetlist):
+        with open(assetlist, 'r') as f:
+            for line in f.readlines():
+                line = line.strip()
+                if line:
+                    dest = os.path.join(outpath, 'assets', line.replace(':', '_pan'))
+                    shutil.copytree(line, dest, dirs_exist_ok=True)
+    shutil.make_archive(outpath, 'zip', outpath, verbose=True)
     print('finished with', outpath + '.zip')
 elif sys.platform == 'linux':
     shutil.copytree(os.path.join('misc', 'ci', 'nix'), outpath)
@@ -53,8 +61,14 @@ elif sys.platform == 'linux':
         '+x',
         os.path.join(outpath, '000_start.sh'),
     ])
+    if os.path.exists(assetlist):
+        with open(assetlist, 'r') as f:
+            for line in f.readlines():
+                line = line.strip()
+                if line:
+                    dest = os.path.join(outpath, 'share', 'Zeno', 'assets', line)
+                    shutil.copytree(line, dest, dirs_exist_ok=True)
     shutil.make_archive(outpath, 'gztar', outpath, verbose=True)
     print('finished with', outpath + '.tar.gz')
 else:
     assert False, sys.platform
-

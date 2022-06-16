@@ -114,7 +114,7 @@ ZENDEFNODE(ReadObjPrimitive,
         "prim",
         }, /* params: */ {
         }, /* category: */ {
-        "primitive",
+        "deprecated",
         }});
 
 struct ImportObjPrimitive : ReadObjPrimitive {
@@ -127,7 +127,7 @@ ZENDEFNODE(ImportObjPrimitive,
         "prim",
         }, /* params: */ {
         }, /* category: */ {
-        "primitive",
+        "deprecated",
         }});
 
 
@@ -206,7 +206,7 @@ ZENDEFNODE(ExportObjPrimitive,
         }, /* outputs: */ {
         }, /* params: */ {
         }, /* category: */ {
-        "primitive",
+        "deprecated",
         }});
 
 //--------------------- dict--------------------------//

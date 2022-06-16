@@ -320,31 +320,42 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
             zeno::log_trace("computing normal");
             zeno::primCalcNormal(&*prim, 1);
         }
+        /* BEGIN TODO */
         if (!prim->has_attr("nrm")) {
-            auto &nrm = prim->add_attr<zeno::vec3f>("nrm");
+            auto &radopa = prim->add_attr<zeno::vec3f>("nrm");
 
             if (prim->has_attr("rad")) {
                 if (prim->has_attr("opa")) {
                     auto &rad = prim->attr<float>("rad");
                     auto &opa = prim->attr<float>("opa");
-                    for (size_t i = 0; i < nrm.size(); i++) {
-                        nrm[i] = zeno::vec3f(rad[i], opa[i], 0.0f);
+                    for (size_t i = 0; i < radopa.size(); i++) {
+                        radopa[i] = zeno::vec3f(rad[i], opa[i], 0.0f);
                     }
                 } else {
                     auto &rad = prim->attr<float>("rad");
-                    for (size_t i = 0; i < nrm.size(); i++) {
-                        nrm[i] = zeno::vec3f(rad[i], 0.0f, 0.0f);
+                    for (size_t i = 0; i < radopa.size(); i++) {
+                        radopa[i] = zeno::vec3f(rad[i], 0.0f, 0.0f);
                     }
                 }
             } else if (prim->tris.size()) {
-                // for (size_t i = 0; i < nrm.size(); i++) {
-                //     nrm[i] = zeno::vec3f(1 / zeno::sqrt(3.0f));
+                // for (size_t i = 0; i < radopa.size(); i++) {
+                //     radopa[i] = zeno::vec3f(1 / zeno::sqrt(3.0f));
                 // }
+                for (size_t i = 0; i < radopa.size(); i++) {
+                    radopa[i] = zeno::vec3f(0.0f);
+                }
 
             } else {
-                for (size_t i = 0; i < nrm.size(); i++) {
-                    nrm[i] = zeno::vec3f(1.5f, 0.0f, 0.0f);
+                for (size_t i = 0; i < radopa.size(); i++) {
+                    radopa[i] = zeno::vec3f(1.5f, 0.0f, 0.0f);
                 }
+            }
+        }
+        /* END TODO */
+        if (!prim->has_attr("nrm") || !prim->tris.size()) {
+            auto &nrm = prim->add_attr<zeno::vec3f>("nrm");
+            for (size_t i = 0; i < nrm.size(); i++) {
+                nrm[i] = zeno::vec3f(1.0f, 0.0f, 0.0f);
             }
         }
         if (!prim->has_attr("uv")) {

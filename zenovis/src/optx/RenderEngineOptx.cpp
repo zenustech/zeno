@@ -102,30 +102,31 @@ struct GraphicsManager {
                 auto isL = prim_in->userData().getLiterial<int>("isL", 0);
                 if(isL == 1){
                     zeno::log_info("processing light key {}", key);
+                    auto ivD = prim_in->userData().getLiterial<int>("ivD", 0);
 
                     auto prim = std::make_shared<zeno::PrimitiveObject>();
-                    auto i0 = prim_in->tris[0][0];
-                    auto i1 = prim_in->tris[0][1];
-                    auto i2 = prim_in->tris[0][2];
-                    auto p0 = prim_in->verts[i0];
-                    auto p1 = prim_in->verts[i1];
-                    auto p2 = prim_in->verts[i2];
-                    auto e1 = p1-p0;
-                    auto e2 = p2-p0;
                     prim->verts.resize(5);
-                    prim->verts[0] = p0;
-                    prim->verts[1] = e1;
-                    prim->verts[2] = e2;
-                    auto ge1 = glm::vec3(e1[0], e1[1], e1[2]);
-                    auto ge2 = glm::vec3(e2[0], e2[1], e2[2]);
-                    auto _nor = glm::normalize(glm::cross(ge1, ge2));
-                    auto nor = zeno::vec3f(_nor.x, _nor.y, _nor.z);
+
+                    auto p0 = prim_in->verts[prim_in->tris[0][0]];
+                    auto p1 = prim_in->verts[prim_in->tris[0][1]];
+                    auto p2 = prim_in->verts[prim_in->tris[0][2]];
+                    auto e1 = p0-p1;
+                    auto e2 = p2-p1;
+                    auto g_e1 = glm::vec3(e1[0], e1[1], e1[2]);
+                    auto g_e2 = glm::vec3(e2[0], e2[1], e2[2]);
+                    glm::vec3 g_nor;
+
+                    g_nor = glm::normalize(glm::cross(g_e1, g_e2));
+                    auto nor = zeno::vec3f(g_nor.x, g_nor.y, g_nor.z);
                     zeno::vec3f clr;
                     if(prim_in->verts.has_attr("clr")){
                         clr = prim_in->verts.attr<zeno::vec3f>("clr")[0];
                     }else{
                         clr = zeno::vec3f(30000.0f, 30000.0f, 30000.0f);
                     }
+                    prim->verts[0] = p1;
+                    prim->verts[1] = e1;
+                    prim->verts[2] = e2;
                     prim->verts[3] = nor;
                     prim->verts[4] = clr;
 
