@@ -20,6 +20,11 @@ ZenoWelcomePage::ZenoWelcomePage(QWidget* parent)
     m_ui->lblManual->setTextColor(QColor(133, 130, 128));
     m_ui->lblManual->setUnderlineOnHover(true);
 
+    m_ui->lblVideos->setText(tr("ZENO Video Tutorials"));
+    m_ui->lblVideos->setFont(QFont("HarmonyOS Sans", 11));
+    m_ui->lblVideos->setTextColor(QColor(133, 130, 128));
+    m_ui->lblVideos->setUnderlineOnHover(true);
+
     m_ui->lblOfficialWeb->setText(tr("Zenus Official Web"));
     m_ui->lblOfficialWeb->setFont(QFont("HarmonyOS Sans", 11));
     m_ui->lblOfficialWeb->setTextColor(QColor(133, 130, 128));
@@ -44,6 +49,9 @@ void ZenoWelcomePage::initSignals()
 	connect(m_ui->btnOpen, SIGNAL(clicked()), this, SIGNAL(openRequest()));
 
     connect(m_ui->lblManual, &ZTextLabel::clicked, this, [=]() {
+        QDesktopServices::openUrl(QUrl("http://help.zenustech.com/"));
+    });
+    connect(m_ui->lblVideos, &ZTextLabel::clicked, this, [=]() {
         QDesktopServices::openUrl(QUrl("https://space.bilibili.com/263032155"));  //gei xiaopeng laoshi yinliu
     });
     connect(m_ui->lblOfficialWeb, &ZTextLabel::clicked, this, [=]() {

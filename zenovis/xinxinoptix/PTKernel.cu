@@ -30,9 +30,9 @@ extern "C" __global__ void __raygen__rg()
     do
     {
         // The center of each pixel is at fraction (0.5,0.5)
-        const float2 subpixel_jitter = make_float2( rnd( seed ), rnd( seed ) );
+        float2 subpixel_jitter = make_float2( rnd( seed ), rnd( seed ) );
 
-        const float2 d = 2.0f * make_float2(
+        float2 d = 2.0f * make_float2(
                 ( static_cast<float>( idx.x ) + subpixel_jitter.x ) / static_cast<float>( w ),
                 ( static_cast<float>( idx.y ) + subpixel_jitter.y ) / static_cast<float>( h )
                 ) - 1.0f;
@@ -65,14 +65,15 @@ extern "C" __global__ void __raygen__rg()
             //result += prd.emitted;
             if(prd.countEmitted==false || depth>0)
                 result += prd.radiance * prd.attenuation2/prd.prob2;
-            if(prd.countEmitted==true && depth>=0)
+            if(prd.countEmitted==true && depth>0)
                 prd.done = true;
             if( prd.done  || depth >= 5 ) // TODO RR, variable for depth
                 break;
-
+            if(prd.countEmitted == true)
+                prd.passed = true;
             ray_origin    = prd.origin;
             ray_direction = prd.direction;
-            if(prd.passed == false)
+            if(prd.passed == false )
                 ++depth;
         }
     }

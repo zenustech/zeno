@@ -10,3 +10,6 @@
 [submodule "projects/FBX/assimp"]
 	path = projects/FBX/assimp
 	url = https://github.com/zenustech/assimp.git
+[submodule "projects/FBX/dem-bones-bin"]
+	path = projects/FBX/dem-bones-bin
+	url = https://github.com/zenustech/dem-bones-bin.git

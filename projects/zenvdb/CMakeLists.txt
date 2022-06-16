@@ -8,11 +8,11 @@ endif()
 # FUN FACT: DID U KNOW THAT MICROSOFT LOVES LINUX? #
 ####################################################
 if (MSVC)  # must use this to make msvc linker happy
-    add_compile_options(
-            $<$<CONFIG:>:/bigobj>
-            $<$<CONFIG:Debug>:/bigobj>
-            $<$<CONFIG:Release>:/bigobj>
-    )  # 节数超过对象文件格式限制: 请使用 /bigobj 进行编译 
+    # 节数超过对象文件格式限制: 请使用 /bigobj 进行编译 
+    target_compile_options(zeno
+        PRIVATE
+        $<$<CXX_COMPILER_ID:MSVC>:/bigobj>
+    )
 endif()
 ####################################################
 # FUN FACT: DID U KNOW THAT MICROSOFT BUYS GITHUB? #

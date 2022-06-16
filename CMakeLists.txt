@@ -14,7 +14,7 @@ endif()
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-project(zeno
+project(Zeno
     LANGUAGES CXX C
     DESCRIPTION "Open-source node system framework for simulation and others"
     HOMEPAGE_URL https://github.com/zenustech/zeno
@@ -29,6 +29,7 @@ endif()
 option(ZENO_BUILD_EDITOR "Build ZENO editor" ON)
 option(ZENO_BUILD_DESIGNER "Build ZENO designer" OFF)
 option(ZENO_MULTIPROCESS "Enable multiprocessing for ZENO" ON)
+option(ZENO_IPC_USE_TCP "Use TCP for inter-process communication" ON)
 option(ZENO_OUT_TO_BIN "Output files to a fixed directory" ON)
 option(ZENO_BUILD_SHARED "Build shared library for ZENO" OFF)
 option(ZENO_USE_CCACHE "Use CCache if found in path" ON)
@@ -58,16 +59,6 @@ if (WIN32)
     add_definitions(-DNOMINMAX -D_USE_MATH_DEFINES)
 endif()
 
-if (ZENO_NO_WARNING)
-    set(ZENO_OLD_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-    if (CMAKE_CXX_COMPILER_ID MATCHES "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-all -Wno-cpp -Wno-deprecated-declarations -Wno-enum-compare -Wno-ignored-attributes -Wno-extra -Wreturn-type -Wmissing-declarations -Wnon-virtual-dtor -Wsuggest-override -Wconversion-null -Wuninitialized -Wmaybe-uninitialized -Wno-format-security")
-    endif()
-    if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w")
-    endif()
-endif()
-
 if (ZENO_USE_CCACHE AND NOT MSVC)  # speed up compilation by cache (https://ccache.dev)
     find_program(CCACHE_PROGRAM ccache)
     if (CCACHE_PROGRAM)
@@ -91,6 +82,30 @@ if (ZENO_OUT_TO_BIN)
     set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE ${ZENO_OUTPUT_DIR})
     set(CMAKE_DEBUG_POSTFIX "")  # No more annoying zeno_d.dll
 endif()
+
+if (ZENO_NO_WARNING)
+    set(ZENO_OLD_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+    if (CMAKE_CXX_COMPILER_ID MATCHES "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-all -Wno-cpp -Wno-deprecated-declarations -Wno-enum-compare -Wno-ignored-attributes -Wno-extra -Wreturn-type -Wmissing-declarations -Wnon-virtual-dtor -Wsuggest-override -Wconversion-null -Wuninitialized -Wmaybe-uninitialized -Wno-format-security")
+    endif()
+    if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w")
+    endif()
+endif()
+
+set(zeno_asset_dirs_txt ${CMAKE_CURRENT_BINARY_DIR}/zeno_asset_dirs.txt)
+if (EXISTS ${zeno_asset_dirs_txt})
+    file(REMOVE ${zeno_asset_dirs_txt})
+endif()
+function (zeno_add_asset_dir dir)
+    if (ZENO_INSTALL_TARGET)
+        install(
+            DIRECTORY ${dir}
+            DESTINATION share/Zeno/assets/${dir}
+            )
+    endif()
+    file(APPEND ${zeno_asset_dirs_txt} "${dir}\n")
+endfunction()
 
 add_subdirectory(zeno)
 add_subdirectory(projects)

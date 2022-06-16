@@ -345,6 +345,11 @@ void GraphsModel::initDescriptors()
         ZASSERT_EXIT(descs.find(key) == descs.end());
         descs.insert(key, subgDescs[key]);
     }
+    //add Blackboard
+    NODE_DESC desc;
+    desc.categories.push_back("layout");
+    descs.insert("Blackboard", desc);
+
     setDescriptors(descs);
 }
 
@@ -1627,3 +1632,20 @@ void GraphsModel::expand(const QModelIndex& subgIdx)
     ZASSERT_EXIT(pModel);
     pModel->expand();
 }
+
+void GraphsModel::getNodeIndices(const QModelIndex& subGpIdx, QModelIndexList& subgNodes, QModelIndexList& normNodes)
+{
+    SubGraphModel* pModel = subGraph(subGpIdx.row());
+    ZASSERT_EXIT(pModel);
+    for (int r = 0; r < pModel->rowCount(); r++)
+    {
+        QModelIndex idx = pModel->index(r, 0);
+        const QString& nodeName = idx.data(ROLE_OBJNAME).toString();
+        if (subGraph(nodeName)) {
+            subgNodes.append(idx);
+        } else {
+            normNodes.append(idx);
+        }
+    }
+}
+

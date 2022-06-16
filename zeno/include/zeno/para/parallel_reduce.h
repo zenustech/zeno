@@ -11,9 +11,9 @@
 namespace zeno {
 
 template <class Index, class Value, class Reduce, class Transform>
-Value parallel_reduce(Index first, Index last, Value identity, Reduce reduceFn, Transform transformFn) {
+Value parallel_reduce(Index first, Index last, Value initVal, Reduce reduceFn, Transform transformFn) {
     return std::transform_reduce(ZENO_PAR counter_iterator<Index>(first), counter_iterator<Index>(last),
-            identity, reduceFn, transformFn);
+            initVal, reduceFn, transformFn);
 }
 
 template <class It, class Transform = identity>
@@ -44,7 +44,7 @@ auto parallel_reduce_minmax(It first, It last, Transform transformFn = {}) {
 
 template <class It, class Transform = identity>
 auto parallel_reduce_sum(It first, It last, Transform transformFn = {}) {
-    return std::transform_reduce(ZENO_PAR_UNSEQ first, last, *first, [] (auto &&x, auto &&y) {
+    return std::transform_reduce(ZENO_PAR_UNSEQ first, last, std::decay_t<decltype(transformFn(*first))>(), [] (auto &&x, auto &&y) {
         return std::move(x) + std::move(y);
     }, transformFn);
 }

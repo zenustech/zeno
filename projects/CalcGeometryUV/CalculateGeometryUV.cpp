@@ -14,6 +14,8 @@
 #include <xatlas.h>
 #include <tiny_obj_loader.h>
 
+namespace {
+
 class Stopwatch
 {
 public:
@@ -275,3 +277,5 @@ ZENDEFNODE(CalcGeometryUV,
     /*类别*/
     {"math"}
 });
+
+}

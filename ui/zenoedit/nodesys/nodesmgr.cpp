@@ -69,6 +69,9 @@ QList<QAction*> NodesMgr::getCategoryActions(IGraphsModel* pModel, QModelIndex s
 	{
 		QList<QString> condidates;
 		for (const NODE_CATE& cate : cates) {
+            if (cate.name == "deprecated") {
+                continue;
+            }
 			for (const QString& name : cate.nodes) {
 				condidates.push_back(name);
 			}

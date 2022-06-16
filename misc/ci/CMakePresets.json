@@ -13,8 +13,7 @@
       "binaryDir": "${sourceDir}/build",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release"
-      },
-      "generator": "Ninja"
+      }
     },
     {
       "name": "openvdb",
@@ -49,6 +48,8 @@
         "ZENO_WITH_mesher": "ON",
         "ZENO_WITH_Alembic": "ON",
         "ZENO_WITH_FBX": "ON",
+        "ZENO_WITH_DemBones": "ON",
+        "ZENO_WITH_CalcGeometryUV": "ON",
         "ZENO_WITH_TOOL_cgmeshTools": "ON",
         "ZENO_WITH_TOOL_HerculesTools": "ON"
       }

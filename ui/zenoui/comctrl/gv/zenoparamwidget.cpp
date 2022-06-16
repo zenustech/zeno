@@ -334,6 +334,47 @@ void ZenoParamMultilineStr::initTextFormat()
 
 
 //////////////////////////////////////////////////////////////////////////////////////
+ZenoParamBlackboard::ZenoParamBlackboard(const QString& value, LineEditParam param, QGraphicsItem* parent)
+    : ZenoParamWidget(parent)
+    , m_value(value)
+    , m_pTextEdit(nullptr)
+{
+    m_pTextEdit = new QTextEdit;
+    setWidget(m_pTextEdit);
+    connect(m_pTextEdit, SIGNAL(textChanged()), this, SIGNAL(textChanged()));
+    m_pTextEdit->installEventFilter(this);
+    m_pTextEdit->setFrameShape(QFrame::NoFrame);
+    m_pTextEdit->setFont(param.font);
+    m_pTextEdit->setProperty("cssClass", "blackboard");
+
+    QTextCharFormat format;
+    QFont font("HarmonyOS Sans", 12);
+    format.setFont(font);
+    m_pTextEdit->setCurrentFont(font);
+    m_pTextEdit->setText(value);
+    m_pTextEdit->setStyleSheet("QTextEdit { background-color: rgb(0, 0, 0); color: rgb(111, 111, 111); }");
+}
+
+QString ZenoParamBlackboard::text() const
+{
+    return m_pTextEdit->toPlainText();
+}
+
+void ZenoParamBlackboard::setText(const QString& text)
+{
+    m_pTextEdit->setText(text);
+}
+
+bool ZenoParamBlackboard::eventFilter(QObject* object, QEvent* event)
+{
+    if (object == m_pTextEdit && event->type() == QEvent::FocusOut) {
+        emit editingFinished();
+    }
+    return ZenoParamWidget::eventFilter(object, event);
+}
+
+
+//////////////////////////////////////////////////////////////////////////////////////
 ZenoTextLayoutItem::ZenoTextLayoutItem(const QString &text, const QFont &font, const QColor &color, QGraphicsItem *parent)
     : QGraphicsLayoutItem()
     , QGraphicsTextItem(text, parent)

@@ -2,6 +2,7 @@
 #include <cstdio>
 #include <iostream>
 #include <zeno/utils/log.h>
+#include <zeno/utils/Timer.h>
 #include <zeno/core/Graph.h>
 #include <zeno/extra/GlobalState.h>
 #include <zeno/extra/GlobalComm.h>
@@ -9,15 +10,22 @@
 #include <zeno/funcs/ObjectCodec.h>
 #include <zeno/zeno.h>
 #include <string>
+#ifdef ZENO_IPC_USE_TCP
 #include <QTcpServer>
 #include <QtWidgets>
 #include <QTcpSocket>
+#endif
 #include <zeno/utils/scope_exit.h>
 #include "corelaunch.h"
 
 namespace {
 
+#ifdef ZENO_IPC_USE_TCP
 static std::unique_ptr<QTcpSocket> clientSocket;
+#else
+static FILE *ourfp;
+static char ourbuf[1 << 20]; // 1MB
+#endif
 
 struct Header { // sync with viewdecode.cpp
     size_t total_size;
@@ -46,6 +54,7 @@ static void send_packet(std::string_view info, const char *buf, size_t len) {
     std::memcpy(headbuffer.data() + 4 + sizeof(Header), info.data(), info.size());
 
     zeno::log_debug("runner tx head-buffer {} data-buffer {}", headbuffer.size(), len);
+#ifdef ZENO_IPC_USE_TCP
     for (char c: headbuffer) {
         clientSocket->write(&c, 1);
     }
@@ -53,10 +62,22 @@ static void send_packet(std::string_view info, const char *buf, size_t len) {
     while (clientSocket->bytesToWrite() > 0) {
         clientSocket->waitForBytesWritten();
     }
+#else
+    for (char c : headbuffer) {
+        fputc(c, ourfp);
+    }
+    for (size_t i = 0; i < len; i++) {
+        fputc(buf[i], ourfp);
+    }
+    fflush(ourfp);
+#endif
 }
 
 static void runner_start(std::string const &progJson, int sessionid) {
     zeno::log_debug("runner got program JSON: {}", progJson);
+    //MessageBox(0, "runner", "runner", MB_OK);           //convient to attach process by debugger, at windows.
+    zeno::scope_exit sp([=]() { std::cout.flush(); });
+    zeno::TimerAtexitHelper timerHelper;
 
     auto session = &zeno::getSession();
     session->globalState->sessionid = sessionid;
@@ -125,6 +146,7 @@ int runner_main(int sessionid);
 int runner_main(int sessionid) {
     printf("(stdout ping test)\n");
 
+#ifdef ZENO_IPC_USE_TCP
     clientSocket = std::make_unique<QTcpSocket>();
     clientSocket->connectToHost(QHostAddress::LocalHost, TCP_PORT);
     if (!clientSocket->waitForConnected(10000)) {
@@ -133,6 +155,9 @@ int runner_main(int sessionid) {
     } else {
         zeno::log_info("connect succeed!");
     }
+#else
+    ourfp = stdout;
+#endif
 
     zeno::set_log_stream(std::cout);
     zeno::log_debug("runner started on sessionid={}", sessionid);

@@ -213,11 +213,7 @@ struct EvalFBXAnim : zeno::INode {
         if (has_input("frameid")) {
             frameid = get_input<zeno::NumericObject>("frameid")->get<int>();
         } else {
-#ifndef ZENO2
-            frameid = zeno::state.frameid;
-#else
             frameid = getGlobalState()->frameid;
-#endif
         }
 
         auto prim = std::make_shared<zeno::PrimitiveObject>();

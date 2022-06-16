@@ -33,6 +33,6 @@ void ZFeedBackDlg::sendEmail(const QString& subject, const QString& content, con
     email.addAttachment("C:\\zeno\\enum_example.zsg");
     email.openInDefaultProgram();
     */
-    QString msg = QString("mailto:626332185@qq.com?subject=%1&body=%2").arg(subject).arg(content);
+    QString msg = QString("mailto:pengyb@zenustech.com?subject=%1&body=%2").arg(subject).arg(content);
     QDesktopServices::openUrl(QUrl(msg));
 }

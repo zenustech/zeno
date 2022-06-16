@@ -106,7 +106,7 @@ typedef Record<HitGroupData> HitGroupRecord;
 
 using Vertex = float4;
 std::vector<Vertex> g_lightMesh;
-
+std::vector<Vertex> g_lightColor;
 struct PathTracerState
 {
     OptixDeviceContext context = 0;
@@ -844,6 +844,17 @@ static void createSBT( PathTracerState& state )
             memset( &hitgroup_records[sbt_idx], 0, hitgroup_record_size );
 
             OPTIX_CHECK( optixSbtRecordPackHeader( OptixUtil::rtMaterialShaders[i].m_occlusion_hit_group, &hitgroup_records[sbt_idx] ) );
+            hitgroup_records[sbt_idx].data.uniforms        = nullptr; //TODO uniforms like iTime, iFrame, etc.
+            hitgroup_records[sbt_idx].data.vertices        = reinterpret_cast<float4*>( (CUdeviceptr)state.d_vertices );
+            hitgroup_records[sbt_idx].data.uv              = reinterpret_cast<float4*>( (CUdeviceptr)state.d_uv );
+            hitgroup_records[sbt_idx].data.nrm             = reinterpret_cast<float4*>( (CUdeviceptr)state.d_nrm );
+            hitgroup_records[sbt_idx].data.clr             = reinterpret_cast<float4*>( (CUdeviceptr)state.d_clr );
+            hitgroup_records[sbt_idx].data.tan             = reinterpret_cast<float4*>( (CUdeviceptr)state.d_tan );
+            hitgroup_records[sbt_idx].data.lightMark       = reinterpret_cast<unsigned short*>( (CUdeviceptr)state.d_lightMark );
+            for(int t=0;t<32;t++)
+            {
+                hitgroup_records[sbt_idx].data.textures[t] = OptixUtil::rtMaterialShaders[i].getTexture(t);
+            }
         }
     }
     // {
@@ -1145,33 +1156,88 @@ void optixupdatemesh(std::map<std::string, int> const &mtlidlut) {
     }
 //#endif
 }
-static void addLightMesh(float3 corner, float3 v2, float3 v1, float3 normal, float emission)
-{
-    float3 lc = corner - normal * 0.001;
-    float3 vert0 = lc, vert1 = lc + v1, vert2 = lc + v2, vert3 = lc + v1 + v2;
-    g_lightMesh.push_back(make_float4(vert0.x, vert0.y, vert0.z, emission));
-    g_lightMesh.push_back(make_float4(vert1.x, vert1.y, vert1.z, emission));
-    g_lightMesh.push_back(make_float4(vert2.x, vert2.y, vert2.z, emission));
 
-    g_lightMesh.push_back(make_float4(vert3.x, vert3.y, vert3.z, emission));
-    g_lightMesh.push_back(make_float4(vert2.x, vert2.y, vert2.z, emission));
-    g_lightMesh.push_back(make_float4(vert1.x, vert1.y, vert1.z, emission));
+struct LightDat{
+    std::vector<float> v0;
+    std::vector<float> v1;
+    std::vector<float> v2;
+    std::vector<float> normal;
+    std::vector<float> emission;
+};
+static std::map<std::string, LightDat> lightdats;
+
+void unload_light(){
+    lightdats.clear();
+}
+
+void load_light(std::string const &key, float const*v0,float const*v1,float const*v2, float const*nor,float const*emi){
+    LightDat ld;
+    ld.v0.assign(v0, v0 + 3);
+    ld.v1.assign(v1, v1 + 3);
+    ld.v2.assign(v2, v2 + 3);
+    ld.normal.assign(nor, nor + 3);
+    ld.emission.assign(emi, emi + 3);
+    zeno::log_info("light clr after read: {} {} {}", ld.emission[0],ld.emission[1],ld.emission[2]);
+    lightdats[key] = ld;
+}
+
+static void addLightMesh(float3 corner, float3 v2, float3 v1, float3 normal, float3 emission)
+{
+    float3 lc = corner;
+    float3 vert0 = lc, vert1 = lc + v1, vert2 = lc + v2, vert3 = lc + v1 + v2;
+    g_lightMesh.push_back(make_float4(vert0.x, vert0.y, vert0.z, 0.f));
+    g_lightMesh.push_back(make_float4(vert1.x, vert1.y, vert1.z, 0.f));
+    g_lightMesh.push_back(make_float4(vert2.x, vert2.y, vert2.z, 0.f));
+    g_lightColor.push_back(make_float4(emission.x, emission.y, emission.z, 0.0f));
+    g_lightColor.push_back(make_float4(emission.x, emission.y, emission.z, 0.0f));
+    g_lightColor.push_back(make_float4(emission.x, emission.y, emission.z, 0.0f));
+
+    g_lightMesh.push_back(make_float4(vert3.x, vert3.y, vert3.z, 0.f));
+    g_lightMesh.push_back(make_float4(vert2.x, vert2.y, vert2.z, 0.f));
+    g_lightMesh.push_back(make_float4(vert1.x, vert1.y, vert1.z, 0.f));
+    g_lightColor.push_back(make_float4(emission.x, emission.y, emission.z, 0.0f));
+    g_lightColor.push_back(make_float4(emission.x, emission.y, emission.z, 0.0f));
+    g_lightColor.push_back(make_float4(emission.x, emission.y, emission.z, 0.0f));
 }
 
 void optixupdatelight() {
     camera_changed = true;
-    
+
+    zeno::log_info("lights size {}", lightdats.size());
+
     g_lights.clear();
     g_lightMesh.clear();
-    for (int i = 0; i < 1; i++) {
-        auto &light = g_lights.emplace_back();
-        light.emission = make_float3( 30000.f );
-        light.corner   = make_float3( 343.0f, 548.5f, 227.0f );
-        light.v2       = make_float3( -10.0f, 0.0f, 0.0f );
-        light.normal   = make_float3( 0.0f, -10.0f, 0.0f );
-        light.v1       = normalize( cross( light.v2, light.normal ) );
-        addLightMesh(light.corner, light.v2, light.v1, light.normal, 30000.f);
+    g_lightColor.clear();
+    if(lightdats.empty())
+    {
+        for (int i = 0; i < 1; i++) {
+            auto &light = g_lights.emplace_back();
+            light.emission = make_float3( 30000.f,30000.f,30000.f );
+            light.corner   = make_float3( 343.0f, 548.5f, 227.0f );
+            light.v2       = make_float3( -10.0f, 0.0f, 0.0f );
+            light.normal   = make_float3( 0.0f, -1.0f, 0.0f );
+            light.v1       = cross( light.v2, light.normal );
+            addLightMesh(light.corner, light.v2, light.v1, light.normal, light.emission);
+        }
     }
+    else
+    {
+        for (auto const &[key, dat]: lightdats) {
+            auto &light = g_lights.emplace_back();
+            light.emission = make_float3( (float)(dat.emission[0]), (float)dat.emission[1], (float)dat.emission[2] );
+            zeno::log_info("light clr after read: {} {} {}", light.emission.x,light.emission.y,light.emission.z);
+            light.corner   = make_float3( dat.v0[0], dat.v0[1], dat.v0[2] );
+            zeno::log_info("light clr after read: {} {} {}", light.corner.x,light.corner.y,light.corner.z);
+            light.v1       = make_float3( dat.v1[0], dat.v1[1], dat.v1[2] );
+            zeno::log_info("light clr after read: {} {} {}", light.v1.x,light.v1.y,light.v1.z);
+            light.v2       = make_float3( dat.v2[0], dat.v2[1], dat.v2[2] );
+            zeno::log_info("light clr after read: {} {} {}", light.v2.x,light.v2.y,light.v2.z);
+            light.normal   = make_float3( dat.normal[0], dat.normal[1], dat.normal[2] );
+            zeno::log_info("light clr after read: {} {} {}", light.normal.x,light.normal.y,light.normal.z);
+            addLightMesh(light.corner, light.v2, light.v1, light.normal, light.emission);
+        }
+    }
+
     CUDA_CHECK( cudaMalloc(
                 reinterpret_cast<void**>( &state.lightsbuf_p.reset() ),
                 sizeof( ParallelogramLight ) * g_lights.size()
@@ -1443,9 +1509,9 @@ static void updatedrawobjects() {
         g_nrm.push_back(make_float4(normal[0], normal[1], normal[2],0));
         g_nrm.push_back(make_float4(normal[0], normal[1], normal[2],0));
         g_nrm.push_back(make_float4(normal[0], normal[1], normal[2],0));
-        g_clr.push_back(make_float4(0));
-        g_clr.push_back(make_float4(0));
-        g_clr.push_back(make_float4(0));
+        g_clr.push_back(g_lightColor[l*3+0]);
+        g_clr.push_back(g_lightColor[l*3+1]);
+        g_clr.push_back(g_lightColor[l*3+2]);
         g_tan.push_back(make_float4(0));
         g_tan.push_back(make_float4(0));
         g_tan.push_back(make_float4(0));

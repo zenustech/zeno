@@ -16,6 +16,7 @@
 #include <zeno/utils/log.h>
 #include "util/log.h"
 #include "makelistnode.h"
+#include "blackboardnode.h"
 
 
 ZenoSubGraphScene::ZenoSubGraphScene(QObject *parent)
@@ -134,6 +135,10 @@ ZenoNode* ZenoSubGraphScene::createNode(const QModelIndex& idx, const NodeUtilPa
     else if (descName == "MakeList")
     {
         return new MakeListNode(params);
+    }
+    else if (descName == "Blackboard")
+    {
+        return new BlackboardNode(params);
     }
     else
     {

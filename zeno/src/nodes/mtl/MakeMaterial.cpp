@@ -162,4 +162,46 @@ struct ExtractMaterialShader : zeno::INode
           },
       });
 
+    struct BindLight
+        : zeno::INode
+    {
+        virtual void apply() override
+        {
+            auto obj = get_input<zeno::IObject>("object");
+            auto isL = get_input2<int>("islight");
+            auto inverdir = get_input2<int>("invertdir");
+
+            auto prim = dynamic_cast<zeno::PrimitiveObject *>(obj.get());
+
+            if(inverdir){
+                for(int i=0;i<prim->tris.size(); i++){
+                    int tmp = prim->tris[i][2];
+                    prim->tris[i][2] = prim->tris[i][0];
+                    prim->tris[i][0] = tmp;
+                }
+            }
+
+            obj->userData().setLiterial("isL", std::move(isL));
+            obj->userData().setLiterial("ivD", std::move(inverdir));
+            set_output("object", std::move(obj));
+        }
+    };
+
+    ZENDEFNODE(
+        BindLight,
+        {
+            {
+                {"object"},
+                {"int", "islight", "1"},// actually string or list
+                {"int", "invertdir", "0"}
+            },
+            {
+                {"object"},
+            },
+            {},
+            {
+                "shader",
+            },
+        });
+
 } // namespace zeno

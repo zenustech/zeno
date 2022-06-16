@@ -20,9 +20,11 @@
 
 namespace zeno {
 
-ZENO_API std::shared_ptr<PrimitiveObject> primDuplicate(PrimitiveObject *parsPrim, PrimitiveObject *meshPrim, std::string dirAttr, std::string tanAttr, std::string radAttr, float radius, int seed) {
+ZENO_API std::shared_ptr<PrimitiveObject> primDuplicate(PrimitiveObject *parsPrim, PrimitiveObject *meshPrim, std::string dirAttr, std::string tanAttr, std::string radAttr, std::string onbType, float radius, int seed) {
     auto prim = std::make_shared<PrimitiveObject>();
     auto hasDirAttr = boolean_variant(!dirAttr.empty());
+    auto indOnbType = array_index({"XYZ", "YXZ", "YZX", "ZYX", "ZXY", "XZY"}, onbType);
+    auto hasOnbType = boolean_variant(indOnbType != 0);
     auto hasRadAttr = boolean_variant(!radAttr.empty());
     auto hasRadius = boolean_variant(radius != 1);
 
@@ -36,7 +38,7 @@ ZENO_API std::shared_ptr<PrimitiveObject> primDuplicate(PrimitiveObject *parsPri
     prim->loops.resize(parsPrim->verts.size() * meshPrim->loops.size());
     prim->polys.resize(parsPrim->verts.size() * meshPrim->polys.size());
 
-    std::visit([&] (auto hasDirAttr, auto hasRadius, auto hasRadAttr) {
+    std::visit([&] (auto hasDirAttr, auto hasRadius, auto hasRadAttr, auto hasOnbType) {
         auto func = [&] (auto const &accRad) {
             auto func = [&] (auto const &accDir, auto hasTanAttr, auto const &accTan) {
                 tg.add([&] {
@@ -50,6 +52,15 @@ ZENO_API std::shared_ptr<PrimitiveObject> primDuplicate(PrimitiveObject *parsPri
                             if constexpr (hasRadius.value) {
                                 pos *= radius;
                             }
+                            if constexpr (hasOnbType.value) {
+                                const std::array<std::size_t, 6> a0{0, 1, 1, 2, 2, 0};
+                                const std::array<std::size_t, 6> a1{1, 0, 2, 1, 0, 2};
+                                const std::array<std::size_t, 6> a2{2, 2, 0, 0, 1, 1};
+                                auto i0 = a0[indOnbType];
+                                auto i1 = a1[indOnbType];
+                                auto i2 = a2[indOnbType];
+                                pos = {pos[i0], pos[i1], pos[i2]};
+                            }
                             if constexpr (hasDirAttr.value) {
                                 auto t0 = accDir[i];
                                 vec3f t1, t2;
@@ -59,7 +70,7 @@ ZENO_API std::shared_ptr<PrimitiveObject> primDuplicate(PrimitiveObject *parsPri
                                 } else {
                                     pixarONB(t0, t1, t2);
                                 }
-                                pos = pos[0] * t0 + pos[1] * t1 + pos[2] * t2;
+                                pos = pos[2] * t0 + pos[1] * t1 + pos[0] * t2;
                             }
                             prim->verts[i * meshPrim->verts.size() + j] = basePos + pos;
                         }
@@ -80,7 +91,7 @@ ZENO_API std::shared_ptr<PrimitiveObject> primDuplicate(PrimitiveObject *parsPri
             meshPrim->verts.attr_visit(radAttr, func);
         else
             func(std::array<int, 0>{});
-    }, hasDirAttr, hasRadius, hasRadAttr);
+    }, hasDirAttr, hasRadius, hasRadAttr, hasOnbType);
 
     auto copyattr = [&] (auto &primAttrs, auto &meshAttrs, auto &parsAttrs) {
         meshAttrs.foreach_attr([&] (auto const &key, auto const &arrMesh) {
@@ -153,10 +164,12 @@ struct PrimDuplicate : INode {
         auto tanAttr = get_input2<std::string>("tanAttr");
         auto dirAttr = get_input2<std::string>("dirAttr");
         auto radAttr = get_input2<std::string>("radAttr");
+        auto onbType = get_input2<std::string>("onbType");
         auto radius = get_input2<float>("radius");
         auto seed = get_input2<int>("seed");
         auto prim = primDuplicate(parsPrim.get(), meshPrim.get(),
-                                  dirAttr, tanAttr, radAttr, radius, seed);
+                                  dirAttr, tanAttr, radAttr, onbType,
+                                  radius, seed);
         set_output("prim", prim);
     }
 };
@@ -168,6 +181,7 @@ ZENDEFNODE(PrimDuplicate, {
     {"string", "dirAttr", ""},
     {"string", "tanAttr", ""},
     {"string", "radAttr", ""},
+    {"enum XYZ YXZ YZX ZYX ZXY XZY", "onbType", "XYZ"},
     {"float", "radius", "1"},
     {"int", "seed", "0"},
     },

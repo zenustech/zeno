@@ -10,7 +10,7 @@
 #include <zenoui/comctrl/gv/zenoparamwidget.h>
 #include <zenoui/model/modeldata.h>
 
-class SubGraphModel;
+
 class ZenoGraphsEditor;
 
 class ZenoNode : public QGraphicsWidget
@@ -31,12 +31,12 @@ public:
     virtual ~ZenoNode();
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget = nullptr) override;
     QRectF boundingRect() const override;
+    void updateWhole();
 
     enum { Type = ZTYPE_NODE };
     int type() const override;
 
     void initUI(const QModelIndex& subGIdx, const QModelIndex& index);
-    void initLegacy(const QModelIndex& subGIdx, const QModelIndex& index);
     void initWangStyle(const QModelIndex& subGIdx, const QModelIndex& index);
 
     QPersistentModelIndex index() { return m_index; }
@@ -86,6 +86,8 @@ protected:
     //ZenoNode:
     virtual void onParamEditFinished(PARAM_CONTROL editCtrl, const QString& paramName, const QString& textValue);
     QPersistentModelIndex subGraphIndex() const;
+    virtual ZenoBackgroundWidget *initBodyWidget(NODE_TYPE type);
+    virtual ZenoBackgroundWidget *initHeaderWangStyle(NODE_TYPE type);
     virtual QGraphicsLayout* initParams();
     virtual void initParam(PARAM_CONTROL ctrl, QGraphicsLinearLayout* pParamLayout, const QString& name, const PARAM_INFO& param);
     virtual QGraphicsLinearLayout* initCustomParamWidgets();
@@ -93,18 +95,18 @@ protected:
 protected:
     NodeUtilParam m_renderParams;
 
+    //temp
+    ZenoBackgroundWidget *m_bodyWidget;
+    ZenoBackgroundWidget *m_headerWidget;
+
 private:
-    ZenoBackgroundWidget* initBodyWidget(NODE_TYPE type);
-    ZenoBackgroundWidget* initHeaderLegacy(NODE_TYPE type);
-    ZenoBackgroundWidget* initHeaderWangStyle(NODE_TYPE type);
     ZenoBackgroundWidget* initCollaspedWidget();
     QGraphicsLayout* initSockets();
     void initIndependentWidgetsLegacy();
     void _initSocketItemPos();
-    void _initStatusBtnPos();
     void _drawBorderWangStyle(QPainter* painter);
     ZenoGraphsEditor* getEditorViewByViewport(QWidget* pWidget);
-    void updateWhole();
+
 
     QPersistentModelIndex m_index;
     QPersistentModelIndex m_subGpIndex;
@@ -122,8 +124,7 @@ private:
     ZenoImageItem *m_collaspe;
 
     ZenoBackgroundWidget* m_collaspedWidget;
-    ZenoBackgroundWidget *m_bodyWidget;
-    ZenoBackgroundWidget *m_headerWidget;
+
     ZenoMinStatusBtnWidget* m_pStatusWidgets;
 
     QGraphicsLinearLayout* m_pMainLayout;

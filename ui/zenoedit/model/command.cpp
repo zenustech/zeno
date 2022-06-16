@@ -1,5 +1,4 @@
 #include "command.h"
-#include "subgraphmodel.h"
 #include "graphsmodel.h"
 #include <zenoui/model/modelrole.h>
 #include "util/log.h"

@@ -7,7 +7,6 @@
 #include <zenoui/model/modeldata.h>
 
 
-class SubGraphModel;
 class ZenoNode;
 class ZenoFullLink;
 class ZenoTempLink;

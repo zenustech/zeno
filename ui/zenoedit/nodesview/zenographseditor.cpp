@@ -576,7 +576,7 @@ void ZenoGraphsEditor::onMenuActionTriggered(QAction* pAction)
     }
     else if (text == tr("Set NASLOC"))
     {
-        QSettings settings("ZenusTech", "Zeno");
+        QSettings settings(QSettings::UserScope, "Zenus Inc.", "zeno2");
         QString v = settings.value("nas_loc").toString();
 
         bool ok;

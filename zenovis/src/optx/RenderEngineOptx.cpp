@@ -99,66 +99,102 @@ struct GraphicsManager {
         {
             if (auto prim_in = dynamic_cast<zeno::PrimitiveObject *>(obj))
             {
-                prim_in->add_attr<zeno::vec3f>("uv");
-                bool primNormalCorrect = prim_in->has_attr("nrm") && length(prim_in->attr<zeno::vec3f>("nrm")[0])>1e-5;
-                bool need_computeNormal = !primNormalCorrect || !(prim_in->has_attr("nrm"));
-                if(prim_in->tris.size() && need_computeNormal)
-                {
-                    std::cout<<"computing normal\n";
-                    zeno::primCalcNormal(prim_in,1);
+                auto isL = prim_in->userData().getLiterial<int>("isL", 0);
+                if(isL == 1){
+                    zeno::log_info("processing light key {}", key);
+                    auto ivD = prim_in->userData().getLiterial<int>("ivD", 0);
+
+                    auto prim = std::make_shared<zeno::PrimitiveObject>();
+                    prim->verts.resize(5);
+
+                    auto p0 = prim_in->verts[prim_in->tris[0][0]];
+                    auto p1 = prim_in->verts[prim_in->tris[0][1]];
+                    auto p2 = prim_in->verts[prim_in->tris[0][2]];
+                    auto e1 = p0-p1;
+                    auto e2 = p2-p1;
+                    auto g_e1 = glm::vec3(e1[0], e1[1], e1[2]);
+                    auto g_e2 = glm::vec3(e2[0], e2[1], e2[2]);
+                    glm::vec3 g_nor;
+
+                    g_nor = glm::normalize(glm::cross(g_e1, g_e2));
+                    auto nor = zeno::vec3f(g_nor.x, g_nor.y, g_nor.z);
+                    zeno::vec3f clr;
+                    if(prim_in->verts.has_attr("clr")){
+                        clr = prim_in->verts.attr<zeno::vec3f>("clr")[0];
+                    }else{
+                        clr = zeno::vec3f(30000.0f, 30000.0f, 30000.0f);
+                    }
+                    prim->verts[0] = p1;
+                    prim->verts[1] = e1;
+                    prim->verts[2] = e2;
+                    prim->verts[3] = nor;
+                    prim->verts[4] = clr;
+
+                    xinxinoptix::load_light(key, prim->verts[0].data(), prim->verts[1].data(), prim->verts[2].data(),
+                                            prim->verts[3].data(), prim->verts[4].data());
+
+                }else{
+                    prim_in->add_attr<zeno::vec3f>("uv");
+                    bool primNormalCorrect = prim_in->has_attr("nrm") && length(prim_in->attr<zeno::vec3f>("nrm")[0])>1e-5;
+                    bool need_computeNormal = !primNormalCorrect || !(prim_in->has_attr("nrm"));
+                    if(prim_in->tris.size() && need_computeNormal)
+                    {
+                        std::cout<<"computing normal\n";
+                        zeno::primCalcNormal(prim_in,1);
+                    }
+                    computeTrianglesTangent(prim_in);
+                    auto prim = std::make_shared<zeno::PrimitiveObject>();
+
+                    prim->verts.resize(prim_in->tris.size()*3);
+                    prim->tris.resize(prim_in->tris.size());
+                    auto &att_clr = prim->add_attr<zeno::vec3f>("clr");
+                    auto &att_nrm = prim->add_attr<zeno::vec3f>("nrm");
+                    auto &att_uv  = prim->add_attr<zeno::vec3f>("uv");
+                    auto &att_tan = prim->add_attr<zeno::vec3f>("tang");
+                    bool has_uv =   prim_in->tris.has_attr("uv0")&&prim_in->tris.has_attr("uv1")&&prim_in->tris.has_attr("uv2");
+
+                    std::cout<<"size verts:"<<prim_in->verts.size()<<std::endl;
+                    auto &in_pos   = prim_in->verts;
+                    auto &in_clr   = prim_in->add_attr<zeno::vec3f>("clr");
+                    auto &in_nrm   = prim_in->add_attr<zeno::vec3f>("nrm");
+                    auto &in_uv    = prim_in->attr<zeno::vec3f>("uv");
+
+                    for(size_t tid=0;tid<prim_in->tris.size();tid++)
+                    {
+                        //std::cout<<tid<<std::endl;
+                        size_t vid = tid*3;
+                          prim->verts[vid]         = in_pos[prim_in->tris[tid][0]];
+                          prim->verts[vid+1]       = in_pos[prim_in->tris[tid][1]];
+                          prim->verts[vid+2]       = in_pos[prim_in->tris[tid][2]];
+                              att_clr[vid]         = in_clr[prim_in->tris[tid][0]];
+                              att_clr[vid+1]       = in_clr[prim_in->tris[tid][1]];
+                              att_clr[vid+2]       = in_clr[prim_in->tris[tid][2]];
+                              att_nrm[vid]         = in_nrm[prim_in->tris[tid][0]];
+                              att_nrm[vid+1]       = in_nrm[prim_in->tris[tid][1]];
+                              att_nrm[vid+2]       = in_nrm[prim_in->tris[tid][2]];
+                              att_uv[vid]          = has_uv?prim_in->tris.attr<zeno::vec3f>("uv0")[tid]:in_uv[prim_in->tris[tid][0]];
+                              att_uv[vid+1]        = has_uv?prim_in->tris.attr<zeno::vec3f>("uv1")[tid]:in_uv[prim_in->tris[tid][1]];
+                              att_uv[vid+2]        = has_uv?prim_in->tris.attr<zeno::vec3f>("uv2")[tid]:in_uv[prim_in->tris[tid][2]];
+                              att_tan[vid]         = prim_in->tris.attr<zeno::vec3f>("tang")[tid];
+                              att_tan[vid+1]       = prim_in->tris.attr<zeno::vec3f>("tang")[tid];
+                              att_tan[vid+2]       = prim_in->tris.attr<zeno::vec3f>("tang")[tid];
+                             prim->tris[tid]       = zeno::vec3i(vid, vid+1, vid+2);
+
+                    }
+                    //flatten here, keep the rest of codes unchanged.
+
+                    det = DetPrimitive{};
+                    auto vs = (float const *)prim->verts.data();
+                    std::map<std::string, std::pair<float const *, size_t>> vtab;
+                    prim->verts.foreach_attr([&] (auto const &key, auto const &arr) {
+                        vtab[key] = {(float const *)arr.data(), sizeof(arr[0]) / sizeof(float)};
+                    });
+                    auto ts = (int const *)prim->tris.data();
+                    auto nvs = prim->verts.size();
+                    auto nts = prim->tris.size();
+                    auto mtlid = prim_in->userData().getLiterial<std::string>("mtlid", "Default");
+                    xinxinoptix::load_object(key, mtlid, vs, nvs, ts, nts, vtab);
                 }
-                computeTrianglesTangent(prim_in);
-                auto prim = std::make_shared<zeno::PrimitiveObject>();
-                
-                prim->verts.resize(prim_in->tris.size()*3);
-                prim->tris.resize(prim_in->tris.size());
-                auto &att_clr = prim->add_attr<zeno::vec3f>("clr");
-                auto &att_nrm = prim->add_attr<zeno::vec3f>("nrm");
-                auto &att_uv  = prim->add_attr<zeno::vec3f>("uv");
-                auto &att_tan = prim->add_attr<zeno::vec3f>("tang");
-                bool has_uv =   prim_in->tris.has_attr("uv0")&&prim_in->tris.has_attr("uv1")&&prim_in->tris.has_attr("uv2");
-
-                std::cout<<"size verts:"<<prim_in->verts.size()<<std::endl;
-                auto &in_pos   = prim_in->verts;
-                auto &in_clr   = prim_in->add_attr<zeno::vec3f>("clr");
-                auto &in_nrm   = prim_in->add_attr<zeno::vec3f>("nrm");
-                auto &in_uv    = prim_in->attr<zeno::vec3f>("uv");
-                
-                for(size_t tid=0;tid<prim_in->tris.size();tid++)
-                {
-                    //std::cout<<tid<<std::endl;
-                    size_t vid = tid*3;
-                      prim->verts[vid]         = in_pos[prim_in->tris[tid][0]];
-                      prim->verts[vid+1]       = in_pos[prim_in->tris[tid][1]];
-                      prim->verts[vid+2]       = in_pos[prim_in->tris[tid][2]];
-                          att_clr[vid]         = in_clr[prim_in->tris[tid][0]];
-                          att_clr[vid+1]       = in_clr[prim_in->tris[tid][1]];
-                          att_clr[vid+2]       = in_clr[prim_in->tris[tid][2]];
-                          att_nrm[vid]         = in_nrm[prim_in->tris[tid][0]];
-                          att_nrm[vid+1]       = in_nrm[prim_in->tris[tid][1]];
-                          att_nrm[vid+2]       = in_nrm[prim_in->tris[tid][2]];
-                          att_uv[vid]          = has_uv?prim_in->tris.attr<zeno::vec3f>("uv0")[tid]:in_uv[prim_in->tris[tid][0]];
-                          att_uv[vid+1]        = has_uv?prim_in->tris.attr<zeno::vec3f>("uv1")[tid]:in_uv[prim_in->tris[tid][1]];
-                          att_uv[vid+2]        = has_uv?prim_in->tris.attr<zeno::vec3f>("uv2")[tid]:in_uv[prim_in->tris[tid][2]];
-                          att_tan[vid]         = prim_in->tris.attr<zeno::vec3f>("tang")[tid];
-                          att_tan[vid+1]       = prim_in->tris.attr<zeno::vec3f>("tang")[tid];
-                          att_tan[vid+2]       = prim_in->tris.attr<zeno::vec3f>("tang")[tid];
-                         prim->tris[tid]       = zeno::vec3i(vid, vid+1, vid+2);
-
-                }
-                //flatten here, keep the rest of codes unchanged.
-
-                det = DetPrimitive{};
-                auto vs = (float const *)prim->verts.data();
-                std::map<std::string, std::pair<float const *, size_t>> vtab;
-                prim->verts.foreach_attr([&] (auto const &key, auto const &arr) {
-                    vtab[key] = {(float const *)arr.data(), sizeof(arr[0]) / sizeof(float)};
-                });
-                auto ts = (int const *)prim->tris.data();
-                auto nvs = prim->verts.size();
-                auto nts = prim->tris.size();
-                auto mtlid = prim_in->userData().getLiterial<std::string>("mtlid", "Default");
-                xinxinoptix::load_object(key, mtlid, vs, nvs, ts, nts, vtab);
             }
             else if (auto mtl = dynamic_cast<zeno::MaterialObject *>(obj))
             {
@@ -178,11 +214,22 @@ struct GraphicsManager {
 
     bool load_objects(std::vector<std::pair<std::string, zeno::IObject *>> const &objs) {
         auto ins = graphics.insertPass();
+
+        bool changelight = false;
         for (auto const &[key, obj] : objs) {
             if (ins.may_emplace(key)) {
-                zeno::log_debug("zxx_load_object: loading graphics [{}]", key);
+                changelight = true;
+            }
+        }
+        if(changelight){
+            xinxinoptix::unload_light();
+        }
+
+        for (auto const &[key, obj] : objs) {
+            if (ins.may_emplace(key)) {
+                zeno::log_info("zxx_load_object: loading graphics [{}]", key);
                 auto ig = std::make_unique<ZxxGraphic>(key, obj);
-                zeno::log_debug("zxx_load_object: loaded graphics to {}", ig.get());
+                zeno::log_info("zxx_load_object: loaded graphics to {}", ig.get());
                 ins.try_emplace(key, std::move(ig));
             }
         }

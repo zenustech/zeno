@@ -92,7 +92,7 @@ void ZenoDockTitleWidget::onDockSwitchClicked()
 	QAction* pSwitchView = new QAction("View");
 	QAction* pSwitchNodeParam = new QAction("parameter");
 	QAction* pSwitchNodeData = new QAction("data");
-	QAction *pSwitchLog = new QAction(tr("logger"));
+	QAction *pSwitchLog = new QAction("logger");
 	menu->addAction(pSwitchEditor);
 	menu->addAction(pSwitchView);
 	menu->addAction(pSwitchNodeParam);
@@ -361,32 +361,36 @@ QMenuBar* ZenoViewDockTitle::initMenu()
             });
 
         pDisplay->addSeparator();
-
-        pAction = new QAction(tr("Enable PBR"), this);
-        pAction->setCheckable(true);
-        pAction->setChecked(false);
+        pAction = new QAction(tr("Solid"), this);
         pDisplay->addAction(pAction);
-        connect(pAction, &QAction::triggered, this,
-            [=]() {
-#ifdef ZENO_ENABLE_OPTIX
-                const char *e = pAction->isChecked() ? "zhxx" : "bate";
-#else
-                const char *e = pAction->isChecked() ? "optx" : "bate";
-#endif
-                Zenovis::GetInstance().getSession()->set_render_engine(e);
-                zenoApp->getMainWindow()->updateViewport(QString::fromLatin1(e));
-            });
-
-        pAction = new QAction(tr("Enable GI"), this);
-        pAction->setCheckable(true);
-        pAction->setChecked(false);
+        connect(pAction, &QAction::triggered, this, [=]() {
+            const char *e = "bate";
+            Zenovis::GetInstance().getSession()->set_render_engine(e);
+            zenoApp->getMainWindow()->updateViewport(QString::fromLatin1(e));
+        });
+        pAction = new QAction(tr("Shading"), this);
         pDisplay->addAction(pAction);
-        connect(pAction, &QAction::triggered, this,
-            [=]() {
-                Zenovis::GetInstance().getSession()->set_enable_gi(pAction->isChecked());
-                zenoApp->getMainWindow()->updateViewport();
-            });
-
+        connect(pAction, &QAction::triggered, this, [=]() {
+            const char *e = "zhxx";
+            Zenovis::GetInstance().getSession()->set_render_engine(e);
+            Zenovis::GetInstance().getSession()->set_enable_gi(false);
+            zenoApp->getMainWindow()->updateViewport(QString::fromLatin1(e));
+        });
+        pAction = new QAction(tr("VXGI"), this);
+        pDisplay->addAction(pAction);
+        connect(pAction, &QAction::triggered, this, [=]() {
+            const char *e = "zhxx";
+            Zenovis::GetInstance().getSession()->set_render_engine(e);
+            Zenovis::GetInstance().getSession()->set_enable_gi(true);
+            zenoApp->getMainWindow()->updateViewport(QString::fromLatin1(e));
+        });
+        pAction = new QAction(tr("Optix"), this);
+        pDisplay->addAction(pAction);
+        connect(pAction, &QAction::triggered, this, [=]() {
+            const char *e = "optx";
+            Zenovis::GetInstance().getSession()->set_render_engine(e);
+            zenoApp->getMainWindow()->updateViewport(QString::fromLatin1(e));
+        });
         pDisplay->addSeparator();
 
         pAction = new QAction(tr("Camera Keyframe"), this);
