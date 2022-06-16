@@ -66,7 +66,7 @@ elif sys.platform == 'linux':
             for line in f.readlines():
                 line = line.strip()
                 if line:
-                    dest = os.path.join(outpath, 'share', 'Zeno', 'assets') + '/' + line
+                    dest = os.path.join(outpath, 'usr', 'share', 'Zeno', 'assets') + '/' + line
                     shutil.copytree(line, dest, dirs_exist_ok=True)
     shutil.make_archive(outpath, 'gztar', outpath, verbose=True)
     print('finished with', outpath + '.tar.gz')

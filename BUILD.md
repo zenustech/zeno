@@ -60,6 +60,8 @@ then add `export CXX=g++-9` in your `.bashrc` and restart the shell.
 
 > As a contrast, Ubuntu 20.04 users have GCC 9 by default (which have full C++17 support for Zeno).
 
+> We always prefer the latest version when possible, for all GCC, Qt, CMake...
+
 ### Arch Linux (recommended)
 
 Arch Linux is the author's recommended environment, as it always provide latest version of packages.
