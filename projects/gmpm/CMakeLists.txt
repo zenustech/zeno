@@ -139,6 +139,7 @@ target_sources(zeno_zsfem PRIVATE
   fem/QuasiStaticStepping.cu
   fem/BaryCentricInterpolator.cu
   fem/Codim.cu
+  fem/TestAugLag.cu
 )
 
 if (${ZS_ENABLE_CUDA})
