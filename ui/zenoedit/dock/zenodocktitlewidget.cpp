@@ -373,15 +373,6 @@ QMenuBar* ZenoViewDockTitle::initMenu()
         connect(pAction, &QAction::triggered, this, [=]() {
             const char *e = "zhxx";
             Zenovis::GetInstance().getSession()->set_render_engine(e);
-            Zenovis::GetInstance().getSession()->set_enable_gi(false);
-            zenoApp->getMainWindow()->updateViewport(QString::fromLatin1(e));
-        });
-        pAction = new QAction(tr("VXGI"), this);
-        pDisplay->addAction(pAction);
-        connect(pAction, &QAction::triggered, this, [=]() {
-            const char *e = "zhxx";
-            Zenovis::GetInstance().getSession()->set_render_engine(e);
-            Zenovis::GetInstance().getSession()->set_enable_gi(true);
             zenoApp->getMainWindow()->updateViewport(QString::fromLatin1(e));
         });
         pAction = new QAction(tr("Optix"), this);
