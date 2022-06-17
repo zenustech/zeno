@@ -21,7 +21,7 @@
 namespace zeno {
 namespace {
 
-struct PrimBend : zeno::INode {
+struct WBPrimBend : zeno::INode {
     void apply() override {
         auto prim = get_input<zeno::PrimitiveObject>("prim");
 
@@ -162,7 +162,7 @@ struct PrimBend : zeno::INode {
     }
 };
 
-ZENDEFNODE(PrimBend,
+ZENDEFNODE(WBPrimBend,
            {  /* inputs: */ {
                    {"PrimitiveObject", "prim"},
                    {"int", "Limit Deformation", "1"},
