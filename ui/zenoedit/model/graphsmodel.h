@@ -108,6 +108,7 @@ public:
 	void undo() override;
 	void redo() override;
     QModelIndexList searchInSubgraph(const QString& objName, const QModelIndex& subgIdx) override;
+    QModelIndexList subgraphsIndice() const override;
     QStandardItemModel* linkModel() const;
     QModelIndex getSubgraphIndex(const QModelIndex& linkIdx);
     QGraphicsScene* scene(const QModelIndex& subgIdx) override;

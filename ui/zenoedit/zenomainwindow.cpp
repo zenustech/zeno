@@ -578,13 +578,31 @@ void ZenoMainWindow::onFeedBack()
     {
         QString content = dlg.content();
         bool isSend = dlg.isSendFile();
-        if (isSend) {
+        if (isSend)
+        {
             IGraphsModel *pModel = zenoApp->graphsManagment()->currentModel();
             if (!pModel) {
                 return;
             }
             QString strContent = ZsgWriter::getInstance().dumpProgramStr(pModel);
             dlg.sendEmail("bug feedback", content, strContent);
+        }
+    }
+}
+
+void ZenoMainWindow::onRunTriggered()
+{
+    //clear all mark at every scene.
+    auto docks = findChildren<ZenoDockWidget*>(QString(), Qt::FindDirectChildrenOnly);
+
+    IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+    ZASSERT_EXIT(pModel);
+    const QModelIndexList& lst = pModel->subgraphsIndice();
+    for (const QModelIndex& idx : lst)
+    {
+        ZenoSubGraphScene* pScene = qobject_cast<ZenoSubGraphScene*>(pModel->scene(idx));
+        if (pScene) {
+            pScene->clearMark();
         }
     }
 }

@@ -1461,6 +1461,11 @@ QModelIndexList GraphsModel::searchInSubgraph(const QString& objName, const QMod
     return pModel->match(pModel->index(0, 0), ROLE_OBJNAME, objName, -1, Qt::MatchContains);
 }
 
+QModelIndexList GraphsModel::subgraphsIndice() const
+{
+    return persistentIndexList();
+}
+
 QStandardItemModel* GraphsModel::linkModel() const
 {
     return m_linkModel;
@@ -1649,7 +1654,6 @@ QList<SEARCH_RESULT> GraphsModel::search(const QString& content, int searchOpts)
             QModelIndexList lst = pModel->match(pModel->index(0, 0), ROLE_OBJID, content, -1, Qt::MatchContains);
             if (!lst.isEmpty())
             {
-                ZASSERT_EXIT(lst.size() == 1, results);
                 const QModelIndex &nodeIdx = lst[0];
 
                 SEARCH_RESULT result;

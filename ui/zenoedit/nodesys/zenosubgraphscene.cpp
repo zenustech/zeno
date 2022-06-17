@@ -302,8 +302,18 @@ void ZenoSubGraphScene::select(const QString& id)
 void ZenoSubGraphScene::markError(const QString& nodeid)
 {
     ZASSERT_EXIT(m_nodes.find(nodeid) != m_nodes.end());
-    m_nodes[nodeid]->markError(true);
-    m_nodes[nodeid]->setSelected(true);
+    ZenoNode *pNode = m_nodes[nodeid];
+    pNode->markError(true);
+    pNode->setSelected(true);
+    m_errNodes.append(pNode);
+}
+
+void ZenoSubGraphScene::clearMark()
+{
+    for (ZenoNode* pNode : m_errNodes)
+    {
+        pNode->markError(false);
+    }
 }
 
 void ZenoSubGraphScene::undo()
