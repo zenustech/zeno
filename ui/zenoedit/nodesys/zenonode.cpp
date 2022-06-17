@@ -393,6 +393,7 @@ void ZenoNode::initParam(PARAM_CONTROL ctrl, QGraphicsLinearLayout* pParamLayout
 	    {
 		    QStringList items = param.typeDesc.mid(QString("enum ").length()).split(QRegExp("\\s+"));
 		    ZenoParamComboBox* pComboBox = new ZenoParamComboBox(items, m_renderParams.comboboxParam);
+            pComboBox->setText(value);
 		    pParamLayout->addItem(pComboBox);
 
 		    connect(pComboBox, &ZenoParamComboBox::textActivated, this, [=](const QString& textValue) {

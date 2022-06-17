@@ -164,6 +164,7 @@ ZExpandableSection* ZenoPropPanel::paramsBox(IGraphsModel* pModel, const QModelI
 				pComboBox->setItemDelegate(new ZComboBoxItemDelegate(pComboBox));
 				pComboBox->setObjectName(paramName);
 				pComboBox->setProperty("control", param.control);
+				pComboBox->setCurrentText(param.value.toString());
 
 				//todo: unify
 #if QT_VERSION >= QT_VERSION_CHECK(5, 15, 0)
