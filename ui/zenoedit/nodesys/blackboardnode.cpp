@@ -22,6 +22,18 @@ QRectF BlackboardNode::boundingRect() const
     return ZenoNode::boundingRect();
 }
 
+void BlackboardNode::onUpdateParamsNotDesc()
+{
+    PARAMS_INFO params = index().data(ROLE_PARAMS_NO_DESC).value<PARAMS_INFO>();
+    BLACKBOARD_INFO info = params["blackboard"].value.value<BLACKBOARD_INFO>();
+    m_pTextEdit->setText(info.content);
+    m_pTitle->setPlainText(info.title);
+    if (info.sz.isValid())
+    {
+        resize(info.sz);
+    }
+}
+
 ZenoBackgroundWidget* BlackboardNode::initBodyWidget(NODE_TYPE type)
 {
     ZenoBackgroundWidget *bodyWidget = new ZenoBackgroundWidget(this);
@@ -37,12 +49,15 @@ ZenoBackgroundWidget* BlackboardNode::initBodyWidget(NODE_TYPE type)
     qreal border = m_renderParams.bodyBg.border_witdh;
     pVLayout->setContentsMargins(border, border, border, border);
 
-    BLACKBOARD_INFO blackboard = index().data(ROLE_BLACKBOARD).value<BLACKBOARD_INFO>();
+    PARAMS_INFO params = index().data(ROLE_PARAMS_NO_DESC).value<PARAMS_INFO>();
+    BLACKBOARD_INFO blackboard = params["blackboard"].value.value<BLACKBOARD_INFO>();
+
     m_pTextEdit = new ZenoParamBlackboard(blackboard.content, m_renderParams.lineEditParam);
     pVLayout->addItem(m_pTextEdit);
 
     connect(m_pTextEdit, &ZenoParamBlackboard::editingFinished, this, [=]() {
-        BLACKBOARD_INFO info = index().data(ROLE_BLACKBOARD).value<BLACKBOARD_INFO>();
+        PARAMS_INFO params = index().data(ROLE_PARAMS_NO_DESC).value<PARAMS_INFO>();
+        BLACKBOARD_INFO info = params["blackboard"].value.value<BLACKBOARD_INFO>();
         if (info.content != m_pTextEdit->text())
         {
             updateBlackboard();
@@ -60,7 +75,8 @@ ZenoBackgroundWidget* BlackboardNode::initBodyWidget(NODE_TYPE type)
 
 void BlackboardNode::updateBlackboard()
 {
-    BLACKBOARD_INFO info = index().data(ROLE_BLACKBOARD).value<BLACKBOARD_INFO>();
+    PARAMS_INFO params = index().data(ROLE_PARAMS_NO_DESC).value<PARAMS_INFO>();
+    BLACKBOARD_INFO info = params["blackboard"].value.value<BLACKBOARD_INFO>();
     if (m_pTitle)
     {
         info.title = m_pTitle->toPlainText();
@@ -72,7 +88,7 @@ void BlackboardNode::updateBlackboard()
     info.sz = this->size();
     IGraphsModel *pModel = zenoApp->graphsManagment()->currentModel();
     ZASSERT_EXIT(pModel);
-    pModel->updateBlackboard(index(), info, subGraphIndex(), false);
+    pModel->updateBlackboard(index().data(ROLE_OBJID).toString(), info, subGraphIndex(), true);
 }
 
 ZenoBackgroundWidget* BlackboardNode::initHeaderWangStyle(NODE_TYPE type)
@@ -87,7 +103,8 @@ ZenoBackgroundWidget* BlackboardNode::initHeaderWangStyle(NODE_TYPE type)
 
     ZenoSpacerItem *pSpacerItem = new ZenoSpacerItem(true, 100);
 
-    BLACKBOARD_INFO blackboard = index().data(ROLE_BLACKBOARD).value<BLACKBOARD_INFO>();
+    PARAMS_INFO params = index().data(ROLE_PARAMS_NO_DESC).value<PARAMS_INFO>();
+    BLACKBOARD_INFO blackboard = params["blackboard"].value.value<BLACKBOARD_INFO>();
 
     m_pTitle = new ZenoTextLayoutItem(blackboard.title, m_renderParams.nameFont, m_renderParams.nameClr.color(), this);
     m_pTitle->setTextInteractionFlags(Qt::TextEditorInteraction);
@@ -96,7 +113,8 @@ ZenoBackgroundWidget* BlackboardNode::initHeaderWangStyle(NODE_TYPE type)
         pHLayout->invalidate();
     });
     connect(m_pTitle, &ZenoTextLayoutItem::editingFinished, this, [=]() {
-        BLACKBOARD_INFO info = index().data(ROLE_BLACKBOARD).value<BLACKBOARD_INFO>();
+        PARAMS_INFO params = index().data(ROLE_PARAMS_NO_DESC).value<PARAMS_INFO>();
+        BLACKBOARD_INFO info = params["blackboard"].value.value<BLACKBOARD_INFO>();
         if (info.title != m_pTitle->toPlainText()) {
             updateBlackboard();
         }

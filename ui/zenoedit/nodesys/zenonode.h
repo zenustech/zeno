@@ -49,6 +49,7 @@ public:
     QPointF nodePos() const;
     INPUT_SOCKETS inputParams() const;
     OUTPUT_SOCKETS outputParams() const;
+    virtual void onUpdateParamsNotDesc();
 
 signals:
     void socketClicked(const QString& id, bool bInput, const QString& name);

@@ -19,6 +19,7 @@ void NodesMgr::createNewNode(IGraphsModel* pModel, QModelIndex subgIdx, const QS
 	node[ROLE_INPUTS] = QVariant::fromValue(desc.inputs);
 	node[ROLE_OUTPUTS] = QVariant::fromValue(desc.outputs);
 	node[ROLE_PARAMETERS] = QVariant::fromValue(desc.params);
+	node[ROLE_PARAMS_NO_DESC] = QVariant::fromValue(initParamsNotDesc(descName));
 	node[ROLE_OBJPOS] = pt;
 	node[ROLE_COLLASPED] = false;
 
@@ -47,6 +48,20 @@ NODE_TYPE NodesMgr::nodeType(const QString& name)
 	{
 		return NORMAL_NODE;
 	}
+}
+
+PARAMS_INFO NodesMgr::initParamsNotDesc(const QString& name)
+{
+	PARAMS_INFO paramsNotDesc;
+	if (name == "Blackboard")
+	{
+		BLACKBOARD_INFO blackboard;
+		blackboard.content = tr("Please input the content of blackboard");
+		blackboard.title = tr("Please input the title of blackboard");
+		paramsNotDesc["blackboard"].name = "blackboard";
+		paramsNotDesc["blackboard"].value = QVariant::fromValue(blackboard);
+	}
+	return paramsNotDesc;
 }
 
 QList<QAction*> NodesMgr::getCategoryActions(IGraphsModel* pModel, QModelIndex subgIdx, const QString& filter, QPointF scenePos)

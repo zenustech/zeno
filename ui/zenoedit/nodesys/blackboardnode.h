@@ -10,6 +10,7 @@ public:
     BlackboardNode(const NodeUtilParam& params, QGraphicsItem* parent = nullptr);
     ~BlackboardNode();
     QRectF boundingRect() const override;
+    void onUpdateParamsNotDesc() override;
 
 protected:
     ZenoBackgroundWidget* initBodyWidget(NODE_TYPE type) override;

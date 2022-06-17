@@ -20,7 +20,7 @@ ModelAcceptor::ModelAcceptor(GraphsModel* pModel, bool bImport)
 void ModelAcceptor::setDescriptors(const NODE_DESCS& legacyDescs)
 {
 	//discard legacy desc except subnet desc.
-    QList<NODE_DESC> subnetDescs;
+	QList<NODE_DESC> subnetDescs;
 	for (NODE_DESC desc : legacyDescs)
 	{
 		if (desc.categories.contains("subgraph") && 
@@ -416,7 +416,7 @@ void ModelAcceptor::setBlackboard(const QString& id, const BLACKBOARD_INFO& blac
 
 	QModelIndex idx = m_currentGraph->index(id);
 	ZASSERT_EXIT(idx.isValid());
-	m_currentGraph->setData(idx, QVariant::fromValue(blackboard), ROLE_BLACKBOARD);
+	m_pModel->updateBlackboard(id, blackboard, m_pModel->indexBySubModel(m_currentGraph), false);
 }
 
 QObject* ModelAcceptor::currGraphObj()

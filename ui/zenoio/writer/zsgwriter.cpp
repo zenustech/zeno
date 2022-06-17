@@ -179,7 +179,7 @@ void ZsgWriter::dumpNode(const NODE_DATA& data, RAPIDJSON_WRITER& writer)
 		}
 		AddStringList(options, writer);
 	}
-	
+
 	QStringList socketKeys = data[ROLE_SOCKET_KEYS].value<QStringList>();
 	if (!socketKeys.isEmpty())
 	{
@@ -189,7 +189,8 @@ void ZsgWriter::dumpNode(const NODE_DATA& data, RAPIDJSON_WRITER& writer)
 
 	if (name == "Blackboard") {
 		// do not compatible with zeno1
-		BLACKBOARD_INFO info = data[ROLE_BLACKBOARD].value<BLACKBOARD_INFO>();
+		PARAMS_INFO params = data[ROLE_PARAMS_NO_DESC].value<PARAMS_INFO>();
+		BLACKBOARD_INFO info = params["blackboard"].value.value<BLACKBOARD_INFO>();
 		writer.Key("blackboard");
 		{
 			JsonObjBatch _batch(writer);

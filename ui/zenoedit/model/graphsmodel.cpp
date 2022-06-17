@@ -1271,17 +1271,25 @@ void GraphsModel::updateNodeStatus(const QString& nodeid, STATUS_UPDATE_INFO inf
     }
 }
 
-void GraphsModel::updateBlackboard(const QModelIndex& index, const BLACKBOARD_INFO& blackboard, const QModelIndex& subgIdx, bool enableTransaction)
+void GraphsModel::updateBlackboard(const QString& id, const BLACKBOARD_INFO& newInfo, const QModelIndex& subgIdx, bool enableTransaction)
 {
+    SubGraphModel *pSubg = subGraph(subgIdx.row());
+    const QModelIndex& idx = pSubg->index(id);
+    ZASSERT_EXIT(pSubg);
+
     if (enableTransaction)
     {
-
+        PARAMS_INFO params = idx.data(ROLE_PARAMS_NO_DESC).value<PARAMS_INFO>();
+        BLACKBOARD_INFO oldInfo = params["blackboard"].value.value<BLACKBOARD_INFO>();
+        UpdateBlackboardCommand *pCmd = new UpdateBlackboardCommand(id, newInfo, oldInfo, this, subgIdx);
+        m_stack->push(pCmd);
     }
     else
     {
-        SubGraphModel* pSubg = subGraph(subgIdx.row());
-        ZASSERT_EXIT(pSubg);
-        pSubg->setData(index, QVariant::fromValue(blackboard), ROLE_BLACKBOARD);
+        PARAMS_INFO params = idx.data(ROLE_PARAMS_NO_DESC).value<PARAMS_INFO>();
+        params["blackboard"].name = "blackboard";
+        params["blackboard"].value = QVariant::fromValue(newInfo);
+        pSubg->setData(idx, QVariant::fromValue(params), ROLE_PARAMS_NO_DESC);
     }
 }
 

@@ -122,5 +122,21 @@ private:
     GraphsModel* m_pModel;
 };
 
+class UpdateBlackboardCommand : public QUndoCommand
+{
+public:
+    UpdateBlackboardCommand(const QString &nodeid, BLACKBOARD_INFO newInfo, BLACKBOARD_INFO oldInfo,
+                            GraphsModel *pModel, QPersistentModelIndex subgIdx);
+    void redo() override;
+    void undo() override;
+
+private:
+    BLACKBOARD_INFO m_oldInfo;
+    BLACKBOARD_INFO m_newInfo;
+    QString m_nodeid;
+    QPersistentModelIndex m_subgIdx;
+    GraphsModel *m_pModel;
+};
+
 
 #endif

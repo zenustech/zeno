@@ -196,6 +196,11 @@ void ZenoSubGraphScene::onDataChanged(const QModelIndex& subGpIdx, const QModelI
         ZASSERT_EXIT(m_nodes.find(id) != m_nodes.end());
         m_nodes[id]->onNameUpdated(idx.data(ROLE_OBJNAME).toString());
     }
+    if (role == ROLE_PARAMS_NO_DESC)
+    {
+        ZASSERT_EXIT(m_nodes.find(id) != m_nodes.end());
+        m_nodes[id]->onUpdateParamsNotDesc();
+    }
 }
 
 void ZenoSubGraphScene::onLinkDataChanged(const QModelIndex& subGpIdx, const QModelIndex& idx, int role)

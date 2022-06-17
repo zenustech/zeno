@@ -46,7 +46,7 @@ public:
 
 	virtual QVariant getNodeStatus(const QString& id, int role, const QModelIndex& subGpIdx) = 0;
 	virtual void updateNodeStatus(const QString& nodeid, STATUS_UPDATE_INFO info, const QModelIndex& subgIdx, bool enableTransaction = false) = 0;
-	virtual void updateBlackboard(const QModelIndex& index, const BLACKBOARD_INFO& blackboard, const QModelIndex& subgIdx, bool enableTransaction) = 0;
+	virtual void updateBlackboard(const QString& id, const BLACKBOARD_INFO& blackboard, const QModelIndex& subgIdx, bool enableTransaction) = 0;
 
 	virtual NODE_DATA itemData(const QModelIndex& index, const QModelIndex& subGpIdx) const = 0;
 	virtual QString name(const QModelIndex& subGpIdx) const = 0;

@@ -1001,6 +1001,10 @@ OUTPUT_SOCKETS ZenoNode::outputParams() const
     return m_index.data(ROLE_OUTPUTS).value<OUTPUT_SOCKETS>();
 }
 
+void ZenoNode::onUpdateParamsNotDesc()
+{
+}
+
 bool ZenoNode::sceneEventFilter(QGraphicsItem* watched, QEvent* event)
 {
     return _base::sceneEventFilter(watched, event);
