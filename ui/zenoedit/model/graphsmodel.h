@@ -50,7 +50,6 @@ public:
     void appendSubGraph(SubGraphModel* pGraph);
     QModelIndex fork(const QModelIndex& subgIdx, const QModelIndex& subnetNodeIdx) override;
     void removeGraph(int idx) override;
-    void initDescriptors() override;
     bool isDirty() const override;
     void markDirty() override;
     void clearDirty() override;
@@ -150,6 +149,7 @@ private:
     void onSubInfoChanged(SubGraphModel* pSubModel, const QModelIndex& idx, bool bInput, bool bInsert);
     void updateDescInfo(const QString& descName, const SOCKET_UPDATE_INFO& updateInfo);
     void importNodeLinks(const QList<NODE_DATA> &nodes, const QModelIndex &subGpIdx);
+    void initDescriptors();
 
     void beginApiLevel();
     void endApiLevel();

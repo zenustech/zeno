@@ -367,7 +367,7 @@ void ZsgReader::_parseInputs(const QString& id, const QString& nodeName, const N
         if (inputObj.IsArray())
         {
             const auto& arr = inputObj.GetArray();
-            ZASSERT_EXIT(arr.Size() >= 2 && arr.Size() <= 3);
+            //ZASSERT_EXIT(arr.Size() >= 2 && arr.Size() <= 3);
 
             QString outId, outSock;
             QVariant defaultValue;
@@ -375,8 +375,8 @@ void ZsgReader::_parseInputs(const QString& id, const QString& nodeName, const N
                 outId = arr[0].GetString();
             if (arr.Size() > 1 && arr[1].IsString())
                 outSock = arr[1].GetString();
-
-            pAcceptor->setInputSocket(nodeName, id, inSock, outId, outSock, arr[2], legacyDescs);
+            if (arr.Size() > 2)
+                pAcceptor->setInputSocket(nodeName, id, inSock, outId, outSock, arr[2], legacyDescs);
         }
         else if (inputObj.IsNull())
         {

@@ -63,7 +63,6 @@ public:
 	virtual void onModelInited() {};
 	virtual void undo() = 0;
 	virtual void redo() = 0;
-	virtual void initDescriptors() = 0;
 	virtual void switchSubGraph(const QString& graphName) {}
 	virtual void newSubgraph(const QString& graphName) = 0;
 	virtual void reloadSubGraph(const QString& graphName) = 0;

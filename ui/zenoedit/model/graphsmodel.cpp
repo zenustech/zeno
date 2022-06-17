@@ -477,8 +477,10 @@ void GraphsModel::appendSubGraph(SubGraphModel* pGraph)
     SUBMODEL_SCENE info;
     info.pModel = pGraph;
     m_subGraphs.append(info);
-    initDescriptors();
 	endInsertRows();
+    //the subgraph desc has been inited when processing io.
+    if (!zenoApp->IsIOProcessing())
+        initDescriptors();
 }
 
 void GraphsModel::removeGraph(int idx)
