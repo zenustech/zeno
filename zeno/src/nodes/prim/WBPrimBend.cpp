@@ -5,7 +5,7 @@
 ///////////////////////////////////////////////
 #include <zeno/utils/orthonormal.h>
 
-#include <math.h>
+#include <cmath>
 
 #include <glm/gtc/epsilon.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -100,7 +100,7 @@ struct WBPrimBend : zeno::INode {
                 if (symmetricDeformation)
                 {
                     // 如果将变形限制在变形捕获区，超出变形捕获区的长度的 vert 的变形角度按 angleRad 处理
-                    if (limitDeformation && abs(deformedPos.x) > capLen)
+                    if (limitDeformation && std::abs(deformedPos.x) > capLen)
                     {
                         bend = angleRad;
                         d = 1;
@@ -126,8 +126,8 @@ struct WBPrimBend : zeno::INode {
                 }
 
                 // 生成旋转矩阵
-                float cb = cos(bend);
-                float sb = sin(bend);
+                float cb = std::cos(bend);
+                float sb = std::sin(bend);
                 float bendMatEle[9] = {cb, sb, 0,
                                        -sb, cb, 0,
                                        0, 0, 1};
