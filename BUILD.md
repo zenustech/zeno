@@ -32,7 +32,7 @@ Git >= 2.0 && CMake >= 3.16 && Qt >= 5.12 && (MSVC >= 2019 || GCC >= 9 || Clang 
 
 5. If the install location is `C:\Qt\Qt5.14.2`, then please add `C:\Qt\Qt5.14.2\msvc2017_64\bin` to the `PATH` environment variable.
 
-> This is to allow the `zeno.exe` being able to find `Qt5Widgets.dll` there. Otherwise you need to manually copy `C:\Qt\Qt5.14.2\bin\msvc2017_64\bin\Qt5Widgets.dll` and other DLLs to `build\bin`. After this step rebooting the computer (or at least restart Visual Studio) would be best.
+> This is to allow the `zeno.exe` being able to find `Qt5Widgets.dll` there. Otherwise you need to manually copy `C:\Qt\Qt5.14.2\msvc2017_64\bin\Qt5Widgets.dll` and other DLLs to `build\bin`. After this step rebooting the computer (or at least restart Visual Studio) would be best.
 
 > JOKE: Because offcial Qt prebuilt binaries not matching VS2019, so we have to use `msvc2017_64` rather than `msvc2019_64`, it works too.
 
@@ -127,6 +127,8 @@ Please replace the `C:/Qt/Qt5.14.2` by your custom Qt install location. And make
 > If you use `-DCMAKE_BUILD_TYPE=Debug` in the *configure* phase, then you should also `--config Debug` in the *build* phase.
 
 > Also, Windows doesn't support `--parallel` argument, which means MSBuild is a single-threaded build system, you have to wait.
+
+> If the second command (`cmake --build build --config Release`) failed with `cannot find compiler 'cc1.exe'`: Please open the `build/zeno.sln` with Visual Studio, select `Release` configuration in the UI, click the `Build` button. (Yes, MSPigs prefer GUI than CLI... They never expose `cc1` to `PATH`... After `Build` complete, simply exit Visual Studio, and continue edit files with your favorite IDE :)
 
 ### Linux
 

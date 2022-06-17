@@ -22,19 +22,25 @@ namespace zeno {
 namespace {
 
 struct WriteAlembic : INode {
-    int acc_count = 0;
     OArchive archive;
     OPolyMesh meshyObj;
     virtual void apply() override {
-        int frame_count = get_param<int>("frame_count");
-        if (acc_count == 0) {
+        int frameid;
+        if (has_input("frameid")) {
+            frameid = get_param<int>("frameid");
+        } else {
+            frameid = getGlobalState()->frameid;
+        }
+        int frame_start = get_param<int>("frame_start");
+        int frame_end = get_param<int>("frame_end");
+        if (frameid == frame_start) {
             std::string path = get_param<std::string>("path");
             archive = {Alembic::AbcCoreOgawa::WriteArchive(), path};
-            archive.addTimeSampling(TimeSampling(1.0/24, 1.0/24));
+            archive.addTimeSampling(TimeSampling(1.0/24, frame_start / 24.0));
             meshyObj = OPolyMesh( OObject( archive, 1 ), "mesh" );
         }
         auto prim = get_input<PrimitiveObject>("prim");
-        if (acc_count < frame_count) {
+        if (frame_start <= frameid && frameid <= frame_end) {
             // Create a PolyMesh class.
             OPolyMeshSchema &mesh = meshyObj.getSchema();
             mesh.setTimeSampling(1);
@@ -92,22 +98,19 @@ struct WriteAlembic : INode {
                 mesh.set( mesh_samp );
             }
         }
-
-        acc_count += 1;
-        if (acc_count == frame_count) {
-
-        }
     }
 };
 
 ZENDEFNODE(WriteAlembic, {
     {
         {"prim"},
+        {"frameid"},
     },
     {},
     {
         {"writepath", "path", ""},
-        {"int", "frame_count", "100"},
+        {"int", "frame_start", "0"},
+        {"int", "frame_end", "100"},
     },
     {"alembic"},
 });
