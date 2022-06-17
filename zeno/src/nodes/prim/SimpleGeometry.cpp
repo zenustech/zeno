@@ -234,52 +234,121 @@ struct CreateSphere : zeno::INode {
     virtual void apply() override {
         auto prim = std::make_shared<zeno::PrimitiveObject>();
         auto position = get_input2<zeno::vec3f>("position");
-        auto scaleSize = get_input2<zeno::vec3f>("scaleSize");
+        auto scale = get_input2<zeno::vec3f>("scaleSize");
         auto rows = get_input2<int>("rows");
         auto columns = get_input2<int>("columns");
         auto radius = get_input2<float>("radius");
 
-        size_t seg = 32;
+        if(rows <= 3)
+            rows = 3;
+        if(columns <= 3)
+            columns = 3;
 
-        std::vector<vec3f> uvs;
-        uvs.reserve(19 * 33);
-        auto &pos = prim->verts;
-        auto &nrm = prim->add_attr<zeno::vec3f>("nrm");
         auto &uv = prim->add_attr<zeno::vec3f>("uv");
-        for (auto i = -90; i <= 90; i += 10) {
-            float r = cos(i / 180.0 * M_PI);
-            float h = sin(i / 180.0 * M_PI);
-            for (size_t j = 0; j <= seg; j++) {
-                float rad = 2 * M_PI * j / 32;
-                pos.push_back(vec3f(cos(rad) * r, h, -sin(rad) * r) * radius * scaleSize + position);
-                uvs.push_back(vec3f(j / 32.0, i / 90.0 * 0.5 + 0.5, 0));
-                uv.push_back(vec3f(j / 32.0, i / 90.0 * 0.5 + 0.5, 0));
-                nrm.push_back(zeno::normalize(pos[pos.size()-1]));
+        auto &nrm = prim->add_attr<zeno::vec3f>("nrm");
+
+        int c = 0;
+        int tp = rows * columns;
+        float row_sep = 180.0f / (rows - 1);
+
+        for (int i = 0; i<rows; i++) {
+            float ic = -90.0f + i*row_sep;
+            float r = std::cos(ic / 180.0 * M_PI);
+            float h = std::sin(ic / 180.0 * M_PI);
+
+            for (int j = 0; j < columns; j++) {
+                float rad = 2 * M_PI * j / columns;
+                // position
+                zeno::vec3f op = zeno::vec3f (
+                    cos(rad) * r,
+                    h,
+                    sin(rad) * r);
+                zeno::vec3f p = op * scale * radius + position;
+                zeno::vec3f np = op * scale * radius;
+                prim->verts.push_back(p);
+
+                // normal
+                zeno::vec3f n;
+                n = zeno::normalize(np - zeno::vec3f(0,0,0));
+                nrm.push_back(n);
+
+                // uv
+                zeno::vec3f uvw;
+                float u,v;
+                if(i == 0){
+                    u = float(j)/(columns-1);
+                    v = 0.0;
+
+                }else if(i == rows-1){
+                    u = float(j)/(columns-1);
+                    v = 1.0;
+                }else{
+                    u = -1.0;
+                    v = -1.0;
+                }
+                uv.emplace_back(u,v,0);
+                if(j == 0 && i > 0 && i < rows-1){
+                    prim->verts.push_back(p);
+                    nrm.push_back(n);
+                    uv.emplace_back(u,v,0);
+                    c+=1;
+                }
+
+                // indices
+                if(i == 0){
+                    int i1 = c;//bottom
+                    int i2 = c+columns+2;
+                    int i3 = c+columns+1;
+                    if(i2 >= 2*columns+1)
+                        i2 = columns;
+                    int i4 = tp-columns+j+rows-2;//top
+                    int _t = tp-2*columns+rows-2;
+                    int _t1 = tp-columns+rows-2;
+                    int i5 = _t+j;
+                    int i6 = _t+j+1;
+                    if(i6>=_t1)
+                        i6 -= columns+1;
+
+                    prim->tris.push_back(zeno::vec3i(i1, i2, i3));
+                    prim->tris.push_back(zeno::vec3i(i4, i5, i6));
+                }
+
+                if(rows > 3 && i < rows-2 && i>0){
+
+                    int i1 = c;
+                    int i2 = c+1;
+                    int i3 = c+columns+1;
+
+                    int i4 = i3;
+                    int i5 = i1+columns+2;
+
+                    if(j == columns-1){
+                        i2 -= columns+1;
+                        i5 -= columns+1;
+                    }
+                    int i6 = i2;
+
+                    prim->tris.push_back(zeno::vec3i(i1, i2, i3));
+                    prim->tris.push_back(zeno::vec3i(i4, i6, i5));
+                }
+                c+=1;
             }
         }
 
-        auto &tris = prim->tris;
-        auto &uv0  = tris.add_attr<zeno::vec3f>("uv0");
-        auto &uv1  = tris.add_attr<zeno::vec3f>("uv1");
-        auto &uv2  = tris.add_attr<zeno::vec3f>("uv2");
-        size_t count = 0;
-        for (auto i = -90; i < 90; i += 10) {
-            for (size_t i = 0; i < seg; i++) {
-                size_t _0 = i + (seg + 1) * count;
-                size_t _1 = i + 1 + (seg + 1) * count;
-                size_t _2 = i + 1 + (seg + 1) * (count + 1);
-                size_t _3 = i + (seg + 1) * (count + 1);
-                tris.push_back(vec3i(_1, _0, _2));
-                tris.attr<zeno::vec3f>("uv0").push_back(uvs[_1]);
-                tris.attr<zeno::vec3f>("uv1").push_back(uvs[_0]);
-                tris.attr<zeno::vec3f>("uv2").push_back(uvs[_2]);
+        float vi = 0;
+        float s = 1.0f/(rows-1);
+        for(int i=columns; i<(prim->verts.size() - columns); i++){
 
-                tris.push_back(vec3i(_2, _0, _3));
-                tris.attr<zeno::vec3f>("uv0").push_back(uvs[_2]);
-                tris.attr<zeno::vec3f>("uv1").push_back(uvs[_0]);
-                tris.attr<zeno::vec3f>("uv2").push_back(uvs[_3]);
-            }
-            count += 1;
+            int id = (i-columns)%(columns+1);
+            if(id == 0)
+                vi += 1;
+            float u,v;
+            if(id-1 < 0)
+                u = 1.0;
+            else
+                u = float(id-1)/(columns);
+            v = s*vi;
+            uv[i] = zeno::vec3f(u,v,0);
         }
 
         set_output("prim", std::move(prim));
