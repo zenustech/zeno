@@ -123,7 +123,11 @@ struct NumericEval : zeno::INode {
         auto key = name.substr(1);
         std::visit([dimid = dimid, value] (auto &res) {
             dimid[(float*)(void*)&res] = value;
+<<<<<<< HEAD
         }, result->get());
+=======
+        }, result->get())
+>>>>>>> 391b0ac962b7c1d02dc606d38ca61e53d5db028a
     }
     set_output("result", std::move(result));
 };
