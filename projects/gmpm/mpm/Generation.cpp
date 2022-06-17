@@ -1393,7 +1393,8 @@ struct ToBoundaryParticles : INode {
     }
 
     // attributes
-    std::vector<zs::PropertyTag> tags{{"m", 1}, {"x", 3}, {"v", 3}, {"nrm", 3}};
+    std::vector<zs::PropertyTag> tags{
+        {"m", 1}, {"x0", 3}, {"x", 3}, {"v", 3}, {"nrm", 3}};
     std::vector<zs::PropertyTag> eleTags{
         {"m", 1}, {"x", 3}, {"v", 3}, {"nrm", 3}, {"inds", (int)category + 1}};
     if (sprayed) {
@@ -1421,6 +1422,7 @@ struct ToBoundaryParticles : INode {
 
       // pos
       pars.tuple<3>("x", pi) = pos[pi];
+      pars.tuple<3>("x0", pi) = pos[pi];
 
       // vel
       if (velsPtr != nullptr)
