@@ -368,7 +368,6 @@ void ZenoNode::initParam(PARAM_CONTROL ctrl, QGraphicsLinearLayout* pParamLayout
 	    case CONTROL_STRING:
 	    case CONTROL_INT:
 	    case CONTROL_FLOAT:
-	    case CONTROL_BOOL:
 	    {
 		    ZenoParamLineEdit* pLineEdit = new ZenoParamLineEdit(value, param.control,  m_renderParams.lineEditParam);
 		    pParamLayout->addItem(pLineEdit);
@@ -378,6 +377,44 @@ void ZenoNode::initParam(PARAM_CONTROL ctrl, QGraphicsLinearLayout* pParamLayout
 		    m_paramControls[paramName] = pLineEdit;
 		    break;
 	    }
+        case CONTROL_BOOL:
+        {
+            ZenoParamCheckBox *pSocketCheckbox = new ZenoParamCheckBox(paramName);
+            pParamLayout->addItem(pSocketCheckbox);
+
+            bool isChecked = param.value.toBool();
+            pSocketCheckbox->setCheckState(isChecked ? Qt::Checked : Qt::Unchecked);
+
+            connect(pSocketCheckbox, &ZenoParamCheckBox::stateChanged, this, [=](int state) {
+                bool bChecked = false;
+                if (state == Qt::Checked) {
+                    bChecked = true;
+                }
+                else if (state == Qt::Unchecked) {
+                    bChecked = false;
+                }
+                else {
+                    Q_ASSERT(false);
+                    return;
+                }
+
+                IGraphsModel *pGraphsModel = zenoApp->graphsManagment()->currentModel();
+                ZASSERT_EXIT(pGraphsModel);
+
+                const QString& nodeid = m_index.data(ROLE_OBJID).toString();
+
+                PARAM_UPDATE_INFO info;
+                info.oldValue = pGraphsModel->getParamValue(nodeid, paramName, m_subGpIndex);
+                info.newValue = bChecked;
+                info.name = paramName;
+                if (info.oldValue != info.newValue)
+                    pGraphsModel->updateParamInfo(nodeid, info, m_subGpIndex, true);
+
+                updateWhole();
+            });
+            m_paramControls[paramName] = pSocketCheckbox;
+            break;
+        }
         case CONTROL_VEC3F:
         {
             QVector<qreal> vec = param.value.value<QVector<qreal>>();
@@ -531,6 +568,11 @@ void ZenoNode::onParamUpdated(const QString &paramName, const QVariant &val)
         else if (ZenoVecEditWidget* pVecEdit = qobject_cast<ZenoVecEditWidget*>(pWidget))
         {
             pVecEdit->setVec(val.value<QVector<qreal>>());
+        }
+        else if (ZenoParamCheckBox* pCheckbox = qobject_cast<ZenoParamCheckBox*>(pWidget))
+        {
+            pCheckbox->setCheckState(val.toBool() ? Qt::Checked : Qt::Unchecked);
+            updateWhole();
         }
     }
 }

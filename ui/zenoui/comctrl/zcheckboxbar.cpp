@@ -20,8 +20,11 @@ Qt::CheckState ZCheckBoxBar::checkState() const
 
 void ZCheckBoxBar::setCheckState(Qt::CheckState state)
 {
-    m_checkState = state;
-    update();
+    if (m_checkState != state)
+    {
+        m_checkState = state;
+        update();
+    }
 }
 
 void ZCheckBoxBar::initStyleOption(ZStyleOptionCheckBoxBar* option)
@@ -57,11 +60,11 @@ void ZCheckBoxBar::leaveEvent(QEvent* event)
 
 void ZCheckBoxBar::mousePressEvent(QMouseEvent* event)
 {
-    m_checkState = (m_checkState == Qt::Unchecked) ? Qt::Checked : Qt::Unchecked;
 }
 
 void ZCheckBoxBar::mouseReleaseEvent(QMouseEvent* event)
 {
-    emit stateChanged(m_checkState);
+    m_checkState = (m_checkState == Qt::Unchecked) ? Qt::Checked : Qt::Unchecked;
     update();
+    emit stateChanged(m_checkState);
 }
