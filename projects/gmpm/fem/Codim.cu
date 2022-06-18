@@ -692,7 +692,8 @@ struct CodimStepping : INode {
       if (sedges.size() == 0 || tris.size() == 0)
         return;
 
-      // fmt::print("offset : {}. before boundary ccd surf tri bvhs\n", voffset);
+      // fmt::print("offset : {}. before boundary ccd surf tri bvhs\n",
+      // voffset);
       auto triBvs = retrieve_bounding_volumes(
           pol, vtemp, "xn", tris, wrapv<3>{}, vtemp, "dir", alpha, voffset);
       bvh_t stBvh;
@@ -1872,13 +1873,13 @@ struct CodimStepping : INode {
                 vtemp("P", 4, i) += m;
                 vtemp("P", 8, i) += m;
               });
-      cudaPol(zs::range(coVerts.size()),
-              [vtemp = proxy<space>({}, vtemp), coOffset,
-               kappa = kappa] __device__(int i) mutable {
-                auto cons = vtemp.pack<3>("cons", i);
-                auto w = vtemp("ws", coOffset + i);
-                if (cons.l2NormSqr() != 0)
-                  vtemp.tuple<9>("P", coOffset + i) = mat3::identity() * kappa * w;
+      cudaPol(
+          zs::range(coVerts.size()), [vtemp = proxy<space>({}, vtemp), coOffset,
+                                      kappa = kappa] __device__(int i) mutable {
+            auto cons = vtemp.pack<3>("cons", i);
+            auto w = vtemp("ws", coOffset + i);
+            if (cons.l2NormSqr() != 0)
+              vtemp.tuple<9>("P", coOffset + i) = mat3::identity() * kappa * w;
 #if 0
                 int d = 0;
                 for (; d != 3 && cons[d] != 0; ++d)
@@ -1886,7 +1887,7 @@ struct CodimStepping : INode {
                 for (; d != 3; ++d)
                   vtemp("P", 4 * d, coOffset + i) = kappa * w;
 #endif
-              });
+          });
       cudaPol(zs::range(numDofs),
               [vtemp = proxy<space>({}, vtemp)] __device__(int i) mutable {
                 auto mat = vtemp.pack<3, 3>("P", i);
@@ -2002,6 +2003,7 @@ struct CodimStepping : INode {
 
       T E{E0};
 #if 1
+      int numLineSearchIter = 0;
       do {
         cudaPol(zs::range(vtemp.size()), [vtemp = proxy<space>({}, vtemp),
                                           alpha] __device__(int i) mutable {
@@ -2019,10 +2021,11 @@ struct CodimStepping : INode {
           break;
 
         alpha /= 2;
-        if (alpha < 1e-4) {
+        if ((++numLineSearchIter) >= 20) {
           auto cr = A.constraintResidual(cudaPol);
-          fmt::print("too small stepsize! alpha: {}, cons res: {}\n", alpha,
-                     cr);
+          fmt::print("too small stepsize after {} iterations! alpha: {}, cons "
+                     "res: {}, \n",
+                     numLineSearchIter, alpha, cr);
           getchar();
         }
       } while (true);
@@ -2043,9 +2046,9 @@ struct CodimStepping : INode {
                   [vtemp = proxy<space>({}, vtemp),
                    kappa = kappa] __device__(int vi) mutable {
                     if (int BCorder = vtemp("BCorder", vi); BCorder > 0) {
-                    vtemp.tuple<3>("lambda", vi) =
-                        vtemp.pack<3>("lambda", vi) -
-                        kappa * vtemp("ws", vi) * vtemp.pack<3>("cons", vi);
+                      vtemp.tuple<3>("lambda", vi) =
+                          vtemp.pack<3>("lambda", vi) -
+                          kappa * vtemp("ws", vi) * vtemp.pack<3>("cons", vi);
                     }
                   });
         }
