@@ -39,7 +39,7 @@ struct PrimitiveWireframe : INode {
             for (int i = start + 1; i < start + len; i++) {
                 append(prim->loops[i - 1], prim->loops[i]);
             }
-            append(prim->loops[len - 1], prim->loops[0]);
+            append(prim->loops[start + len - 1], prim->loops[start]);
         }
         prim->lines.clear();
         prim->lines.reserve(segments.size());

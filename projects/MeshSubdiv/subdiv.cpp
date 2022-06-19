@@ -30,6 +30,8 @@ using namespace OpenSubdiv;
 static void osdPrimSubdiv(PrimitiveObject *prim, int levels, bool triangulate = false) {
 
     const int maxlevel=levels;
+    if (maxlevel <= 0 || !prim->verts.size()) return;
+
         //nCoarseVerts=0,
         //nRefinedVerts=0;
     //std::vector<int> ncfaces(maxlevel);
@@ -53,17 +55,20 @@ static void osdPrimSubdiv(PrimitiveObject *prim, int levels, bool triangulate = 
                      reinterpret_cast<int const *>(prim->quads.data()),
                      reinterpret_cast<int const *>(prim->quads.data() + prim->quads.size()));
 
-    int offsetred = polysInd.size();
+    int offsetred = prim->tris.size() * 3 + prim->quads.size() * 4;
     polysLen.resize(prim->tris.size() + prim->quads.size() + prim->polys.size());
     polysInd.resize(offsetred + primpolyreduced);
     for (int i = 0; i < prim->polys.size(); i++) {
         auto [base, len] = prim->polys[i];
+        if (len <= 2) continue;
         polysLen[prim->tris.size() + prim->quads.size() + i] = len;
         for (int j = 0; j < len; j++) {
             polysInd[offsetred + j] = prim->loops[base + j];
         }
         offsetred += len;
     }
+
+    if (!polysLen.size() || !polysInd.size()) return;
     
     prim->tris.clear();
     prim->quads.clear();
@@ -83,8 +88,9 @@ static void osdPrimSubdiv(PrimitiveObject *prim, int levels, bool triangulate = 
 
 
     // Instantiate a Far::TopologyRefiner from the descriptor
-    std::unique_ptr<Far::TopologyRefiner> refiner(Far::TopologyRefinerFactory<Far::TopologyDescriptor>
-        ::Create(desc, {type, options}));
+            using Factory = Far::TopologyRefinerFactory<Far::TopologyDescriptor>;
+    Far::TopologyRefiner * refiner = Factory::Create(desc, Factory::Options(type, options));
+    if (!refiner) throw makeError("refiner is null");
 
     // Uniformly refine the topology up to 'maxlevel'
     refiner->RefineUniform(Far::TopologyRefiner::UniformOptions(maxlevel));
