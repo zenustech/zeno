@@ -8,7 +8,9 @@
 #include <zeno/utils/variantswitch.h>
 #include <zeno/utils/wangsrng.h>
 #include <zeno/utils/tuple_hash.h>
-#include <unordered_set>
+#include <unordered_map>
+#include <vector>
+#include <array>
 #include <random>
 #include <cmath>
 #ifndef M_PI
@@ -25,24 +27,31 @@ ZENO_API void primSubdiv(PrimitiveObject *prim, std::string type, std::string me
     };
 
     std::vector<vec3f> tricents(prim->tris.size());
-    std::unordered_set<std::pair<int, int>, tuple_hash, tuple_equal> edgelut;
+    std::unordered_map<std::pair<int, int>, std::vector<int>, tuple_hash, tuple_equal> edgelut;
+    edgelut.reserve(prim->tris.size());
     for (size_t i = 0; i < prim->tris.size(); i++) {
         auto ind = prim->tris[i];
         auto a = prim->verts[ind[0]];
         auto b = prim->verts[ind[1]];
         auto c = prim->verts[ind[2]];
         tricents[i] = (a + b + c) / 3;
-        edgelut.insert(sorted(ind[0], ind[1]));
-        edgelut.insert(sorted(ind[1], ind[2]));
-        edgelut.insert(sorted(ind[2], ind[0]));
+        edgelut[sorted(ind[0], ind[1])].push_back(i);
+        edgelut[sorted(ind[1], ind[2])].push_back(i);
+        edgelut[sorted(ind[2], ind[0])].push_back(i);
     }
 
     std::vector<vec3f> edgecents(edgelut.size());
-    auto edgecentsit = edgecents.begin();
-    for (auto const &[src, dst]: edgelut) {
-        auto a = prim->verts[src];
-        auto b = prim->verts[dst];
-        *edgecentsit++ = (a + b) / 2;
+    std::vector<std::array<int, 4>> trineiedges(tricents.size());
+    size_t edgecentscnt = 0;
+    for (auto const &[edge, triids]: edgelut) {
+        auto a = prim->verts[edge.first];
+        auto b = prim->verts[edge.second];
+        auto id = edgecentscnt++;
+        for (auto triid: triids) {
+            auto &neiarr = trineiedges[triid];
+            neiarr[++neiarr[0]] = id;
+        }
+        edgecents[id] = (a + b) / 2;
     }
 
     const size_t oldnumverts = prim->verts.size();
@@ -65,6 +74,9 @@ ZENO_API void primSubdiv(PrimitiveObject *prim, std::string type, std::string me
         int i01 = oldnumverts + i;
         int i20 = oldnumverts + i;
         int i012 = oldnumverts + edgecents.size() + i;
+        trineiedges[i][1];
+        trineiedges[i][2];
+        trineiedges[i][3];
         prim->quads[i] = {ind[0], i01, i012, i20};
     }
 }
