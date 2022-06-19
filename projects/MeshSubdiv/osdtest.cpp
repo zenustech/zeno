@@ -98,6 +98,7 @@ static void osdPrimSubdiv(PrimitiveObject *prim) {
         Far::StencilTableFactory::Options options;
         options.generateOffsets=true;
         options.generateIntermediateLevels=false;
+        //options.maxLevel = 10;
 
         stencilTable = Far::StencilTableFactory::Create(*refiner, options);
 
@@ -147,6 +148,7 @@ static void osdPrimSubdiv(PrimitiveObject *prim) {
         for (int i=0; i<nRefinedVerts; ++i) {
             float const * vert = refinedVerts + 3*i;
             prim->verts[i] = vec3f(vert[0], vert[1], vert[2]);
+            //prim->add_attr<vec3f>("clr")[i] = vec3f((float)i / nRefinedVerts);
             //ZENO_P(vert[0]);
             //ZENO_P(vert[1]);
             //ZENO_P(vert[2]);
