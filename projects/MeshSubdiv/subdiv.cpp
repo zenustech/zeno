@@ -27,7 +27,7 @@ using namespace OpenSubdiv;
 
 
 //------------------------------------------------------------------------------
-static void osdPrimSubdiv(PrimitiveObject *prim, int levels) {
+static void osdPrimSubdiv(PrimitiveObject *prim, int levels, bool triangulate = false) {
 
     const int maxlevel=levels;
         //nCoarseVerts=0,
@@ -127,17 +127,18 @@ static void osdPrimSubdiv(PrimitiveObject *prim, int levels) {
 
     // Allocate a buffer for vertex primvar data. The buffer length is set to
     // be the sum of all children vertices up to the highest level of refinement.
-    //std::vector<Vertex> vbuffer(refiner->GetNumVerticesTotal());
-    int nCoarseVerts = prim->verts.size();
-    prim->verts.resize(refiner->GetNumVerticesTotal());
-    Vertex * verts = reinterpret_cast<Vertex *>(prim->verts.data());
+    std::vector<Vertex> vbuffer(refiner->GetNumVerticesTotal());
+    //int nCoarseVerts = prim->verts.size();
+    //prim->verts.resize(refiner->GetNumVerticesTotal());
+    //Vertex * verts = reinterpret_cast<Vertex *>(prim->verts.data());
+    Vertex * verts = vbuffer.data();
 
 
     // Initialize coarse mesh positions
-    //int nCoarseVerts = prim->verts.size();
-    //for (int i=0; i<nCoarseVerts; ++i) {
-        //verts[i].SetPosition(prim->verts[i][0], prim->verts[i][1], prim->verts[i][2]);
-    //}
+    int nCoarseVerts = prim->verts.size();
+    for (int i=0; i<nCoarseVerts; ++i) {
+        verts[i].SetPosition(prim->verts[i][0], prim->verts[i][1], prim->verts[i][2]);
+    }
 
 
     // Interpolate vertex primvar data
@@ -160,26 +161,62 @@ static void osdPrimSubdiv(PrimitiveObject *prim, int levels) {
 
         // Print vertex positions
         int firstOfLastVerts = refiner->GetNumVerticesTotal() - nverts;
-        prim->verts->erase(prim->verts.begin(), prim->verts.begin() + firstOfLastVerts);
+        //assert(firstOfLastVerts == nCoarseVerts);
+        //prim->verts->erase(prim->verts.begin(), prim->verts.begin() + firstOfLastVerts);
 
-        //for (int vert = 0; vert < nverts; ++vert) {
-            //float const * pos = verts[firstOfLastVerts + vert].GetPosition();
+        prim->verts.resize(nverts);
+        for (int vert = 0; vert < nverts; ++vert) {
+            float const * pos = verts[firstOfLastVerts + vert].GetPosition();
             //printf("v %f %f %f\n", pos[0], pos[1], pos[2]);
-        //}
+            prim->verts[vert] = {pos[0], pos[1], pos[2]};
+        }
 
         // Print faces
-        for (int face = 0; face < nfaces; ++face) {
+        if (!triangulate) {
+            prim->quads.resize(nfaces);
+            for (int face = 0; face < nfaces; ++face) {
 
-            Far::ConstIndexArray fverts = refLastLevel.GetFaceVertices(face);
+                Far::ConstIndexArray fverts = refLastLevel.GetFaceVertices(face);
 
-            // all refined Catmark faces should be quads
-            assert(fverts.size()==4);
+                // all refined Catmark faces should be quads
+                assert(fverts.size()==4);
 
-            //printf("f ");
-            //for (int vert=0; vert<fverts.size(); ++vert) {
-                //printf("%d ", fverts[vert]+1); // OBJ uses 1-based arrays...
-            //}
-            //printf("\n");
+                auto &refquad = prim->quads[face];
+                refquad[0] = fverts[0];
+                refquad[1] = fverts[1];
+                refquad[2] = fverts[2];
+                refquad[3] = fverts[3];
+
+                //printf("f ");
+                //for (int vert=0; vert<fverts.size(); ++vert) {
+                    //printf("%d ", fverts[vert]+1); // OBJ uses 1-based arrays...
+                //}
+                //printf("\n");
+            }
+        } else {
+            prim->tris.resize(nfaces * 2);
+            for (int face = 0; face < nfaces; ++face) {
+
+                Far::ConstIndexArray fverts = refLastLevel.GetFaceVertices(face);
+
+                // all refined Catmark faces should be quads
+                assert(fverts.size()==4);
+
+                auto &reftri1 = prim->tris[face * 2];
+                auto &reftri2 = prim->tris[face * 2 + 1];
+                reftri1[0] = fverts[0];
+                reftri1[1] = fverts[1];
+                reftri1[2] = fverts[2];
+                reftri2[0] = fverts[0];
+                reftri2[1] = fverts[2];
+                reftri2[2] = fverts[3];
+
+                //printf("f ");
+                //for (int vert=0; vert<fverts.size(); ++vert) {
+                    //printf("%d ", fverts[vert]+1); // OBJ uses 1-based arrays...
+                //}
+                //printf("\n");
+            }
         }
     }
 
@@ -208,7 +245,8 @@ struct OSDPrimSubdiv : INode {
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
         int levels = get_input2<int>("levels");
-        if (levels) osdPrimSubdiv(prim.get(), levels);
+        bool triangulate = get_input2<bool>("triangulate");
+        if (levels) osdPrimSubdiv(prim.get(), levels, 1);
         set_output("prim", std::move(prim));
     }
 };
@@ -216,6 +254,7 @@ ZENO_DEFNODE(OSDPrimSubdiv)({
     {
         "prim",
         {"int", "levels", "2"},
+        {"bool", "triangulate", "true"},
     },
     {
         "prim",
