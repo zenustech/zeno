@@ -25,9 +25,9 @@ using namespace OpenSubdiv;
 
 
 //------------------------------------------------------------------------------
-static void osdPrimSubdiv(PrimitiveObject *prim) {
+static void osdPrimSubdiv(PrimitiveObject *prim, int levels) {
 
-    int maxlevel=2,
+    int maxlevel=levels,
         nCoarseVerts=0,
         nRefinedVerts=0;
         //nCoarseFaces=0,
@@ -173,13 +173,15 @@ static void osdPrimSubdiv(PrimitiveObject *prim) {
 struct OSDPrimSubdiv : INode {
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
-        osdPrimSubdiv(prim.get());
+        int levels = get_input2<int>("levels");
+        osdPrimSubdiv(prim.get(), levels);
         set_output("prim", std::move(prim));
     }
 };
 ZENO_DEFNODE(OSDPrimSubdiv)({
     {
         "prim",
+        {"int", "levels", "2"},
     },
     {
         "prim",
