@@ -43,13 +43,13 @@ static void osdPrimSubdiv(PrimitiveObject *prim) {
 
     polysLen.resize(prim->tris.size(), 3);
     polysInd.insert(polysInd.end(),
-                     reinterpret_cast<float const *>(prim->tris.data()),
-                     reinterpret_cast<float const *>(prim->tris.data() + prim->tris.size()));
+                     reinterpret_cast<int const *>(prim->tris.data()),
+                     reinterpret_cast<int const *>(prim->tris.data() + prim->tris.size()));
 
     polysLen.resize(prim->tris.size() + prim->quads.size(), 4);
     polysInd.insert(polysInd.end(),
-                     reinterpret_cast<float const *>(prim->quads.data()),
-                     reinterpret_cast<float const *>(prim->quads.data() + prim->quads.size()));
+                     reinterpret_cast<int const *>(prim->quads.data()),
+                     reinterpret_cast<int const *>(prim->quads.data() + prim->quads.size()));
 
     int offsetred = polysInd.size();
     polysLen.resize(prim->tris.size() + prim->quads.size() + prim->polys.size());
@@ -109,6 +109,10 @@ static void osdPrimSubdiv(PrimitiveObject *prim) {
 
         // We are done with Far: cleanup table
         delete refiner;
+        polysInd.clear();
+        polysInd.shrink_to_fit();
+        polysLen.clear();
+        polysLen.shrink_to_fit();
     }
 
     // Setup a buffer for vertex primvar data:
@@ -136,11 +140,11 @@ static void osdPrimSubdiv(PrimitiveObject *prim) {
     { // Visualization with Maya : print a MEL script that generates particles
       // at the location of the refined vertices
 
-        float const * refinedVerts = vbuffer->BindCpuBuffer();// + 3*nCoarseVerts;
+        float const * refinedVerts = vbuffer->BindCpuBuffer() + 3*nCoarseVerts;
 
-        prim->verts.resize(nCoarseVerts + nRefinedVerts);
+        prim->verts.resize(nRefinedVerts);
 
-        for (int i=0; i<nCoarseVerts + nRefinedVerts; ++i) {
+        for (int i=0; i<nRefinedVerts; ++i) {
             float const * vert = refinedVerts + 3*i;
             prim->verts[i] = vec3f(vert[0], vert[1], vert[2]);
             //ZENO_P(vert[0]);
