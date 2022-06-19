@@ -30,8 +30,8 @@ static void osdPrimSubdiv(PrimitiveObject *prim, int levels) {
     int maxlevel=levels,
         nCoarseVerts=0,
         nRefinedVerts=0;
-        //nCoarseFaces=0,
-        //nRefinedFaces=0 ;
+    std::vector<int> ncfaces(maxlevel);
+    std::vector<int> ncedges(maxlevel);
 
     std::vector<int> polysInd, polysLen;
     int primpolyreduced = 0;
@@ -102,8 +102,11 @@ static void osdPrimSubdiv(PrimitiveObject *prim, int levels) {
 
         stencilTable = Far::StencilTableFactory::Create(*refiner, options);
 
-        //nCoarseFaces = refiner->GetLevel(0).GetNumFaces();
         nCoarseVerts = refiner->GetLevel(0).GetNumVertices();
+        for (int l = 0; l < maxlevel; l++) {
+            ncfaces[l] = refiner->GetLevel(l).GetNumFaces();
+            ncedges[l] = refiner->GetLevel(l).GetNumEdges();
+        }
         nRefinedVerts = stencilTable->GetNumStencils();
         log_info("[osd] coarse verts: {}", nCoarseVerts);
         log_info("[osd] refined verts: {}", nRefinedVerts);
@@ -141,18 +144,13 @@ static void osdPrimSubdiv(PrimitiveObject *prim, int levels) {
     { // Visualization with Maya : print a MEL script that generates particles
       // at the location of the refined vertices
 
-        float const * refinedVerts = vbuffer->BindCpuBuffer() + 3*nCoarseVerts;
+        vec3f const * refinedVerts = reinterpret_cast<vec3f const *>(
+            vbuffer->BindCpuBuffer()) + nCoarseVerts;
 
-        prim->verts.resize(nRefinedVerts);
+        //refinedVerts += nCoarseVerts + ncfaces[0] + ncedges[0] + ncfaces[1];
+        //nRefinedVerts = ncedges[1];
 
-        for (int i=0; i<nRefinedVerts; ++i) {
-            float const * vert = refinedVerts + 3*i;
-            prim->verts[i] = vec3f(vert[0], vert[1], vert[2]);
-            //prim->add_attr<vec3f>("clr")[i] = vec3f((float)i / nRefinedVerts);
-            //ZENO_P(vert[0]);
-            //ZENO_P(vert[1]);
-            //ZENO_P(vert[2]);
-        }
+        prim->verts.values.assign(refinedVerts, refinedVerts + nRefinedVerts);
 
         prim->tris.clear();
         prim->quads.clear();
@@ -174,7 +172,7 @@ struct OSDPrimSubdiv : INode {
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
         int levels = get_input2<int>("levels");
-        osdPrimSubdiv(prim.get(), levels);
+        if (levels) osdPrimSubdiv(prim.get(), levels);
         set_output("prim", std::move(prim));
     }
 };
