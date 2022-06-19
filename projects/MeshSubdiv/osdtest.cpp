@@ -1,3 +1,6 @@
+#include <zeno/zeno.h>
+#include <zeno/utils/log.h>
+#include <zeno/utils/zeno_p.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <opensubdiv/far/topologyDescriptor.h>
 #include <opensubdiv/far/stencilTableFactory.h>
@@ -12,13 +15,13 @@ namespace {
 using namespace OpenSubdiv;
 
 
-struct OSDParams {
-    float *verts; // 3 * nverts
-    int *vertsperface; // nfaces
-    int *vertIndices; // vertsperface[0] + ... + vertsperface[nfaces - 1]
-    int nverts;
-    int nfaces;
-};
+//struct OSDParams {
+    //float *verts; // 3 * nverts
+    //int *vertsperface; // nfaces
+    //int *vertIndices; // vertsperface[0] + ... + vertsperface[nfaces - 1]
+    //int nverts;
+    //int nfaces;
+//};
 
 
 //------------------------------------------------------------------------------
@@ -26,9 +29,9 @@ static void osdPrimSubdiv(PrimitiveObject *prim) {
 
     int maxlevel=2,
         nCoarseVerts=0,
-        nRefinedVerts=0,
-        nCoarseFaces=0,
-        nRefinedFaces=0 ;
+        nRefinedVerts=0;
+        //nCoarseFaces=0,
+        //nRefinedFaces=0 ;
 
     std::vector<int> polysInd, polysLen;
     int primpolyreduced = 0;
@@ -37,25 +40,30 @@ static void osdPrimSubdiv(PrimitiveObject *prim) {
     }
     polysLen.reserve(prim->tris.size() + prim->quads.size() + prim->polys.size());
     polysInd.reserve(prim->tris.size() * 3 + prim->quads.size() * 4 + primpolyreduced);
+
     polysLen.resize(prim->tris.size(), 3);
     polysInd.insert(polysInd.end(),
                      reinterpret_cast<float const *>(prim->tris.data()),
                      reinterpret_cast<float const *>(prim->tris.data() + prim->tris.size()));
+
     polysLen.resize(prim->tris.size() + prim->quads.size(), 4);
     polysInd.insert(polysInd.end(),
                      reinterpret_cast<float const *>(prim->quads.data()),
                      reinterpret_cast<float const *>(prim->quads.data() + prim->quads.size()));
+
     int offsetred = polysInd.size();
     polysLen.resize(prim->tris.size() + prim->quads.size() + prim->polys.size());
     polysInd.resize(offsetred + primpolyreduced);
-    for (int i = 0; i < primpolyreduced; i++) {
+    for (int i = 0; i < prim->polys.size(); i++) {
         auto [base, len] = prim->polys[i];
-        polysLen[prim->tris.size() + prim->quads.size()] = len;
+        polysLen[prim->tris.size() + prim->quads.size() + i] = len;
         for (int j = 0; j < len; j++) {
             polysInd[offsetred + j] = prim->loops[base + j];
         }
         offsetred += len;
     }
+    //ZENO_P(polysLen.size());
+    //ZENO_P(polysInd.size());
 
     //
     // Setup phase
@@ -93,9 +101,11 @@ static void osdPrimSubdiv(PrimitiveObject *prim) {
 
         stencilTable = Far::StencilTableFactory::Create(*refiner, options);
 
-        nCoarseFaces = refiner->GetLevel(0).GetNumFaces();
+        //nCoarseFaces = refiner->GetLevel(0).GetNumFaces();
         nCoarseVerts = refiner->GetLevel(0).GetNumVertices();
         nRefinedVerts = stencilTable->GetNumStencils();
+        log_info("[osd] coarse verts: {}", nCoarseVerts);
+        log_info("[osd] refined verts: {}", nRefinedVerts);
 
         // We are done with Far: cleanup table
         delete refiner;
@@ -126,12 +136,21 @@ static void osdPrimSubdiv(PrimitiveObject *prim) {
     { // Visualization with Maya : print a MEL script that generates particles
       // at the location of the refined vertices
 
-        float const * refinedVerts = vbuffer->BindCpuBuffer() + 3*nCoarseVerts;
+        float const * refinedVerts = vbuffer->BindCpuBuffer();// + 3*nCoarseVerts;
 
-        for (int i=0; i<nRefinedVerts; ++i) {
+        prim->verts.resize(nCoarseVerts + nRefinedVerts);
+
+        for (int i=0; i<nCoarseVerts + nRefinedVerts; ++i) {
             float const * vert = refinedVerts + 3*i;
-            (void)(vert[0], vert[1], vert[2]);
+            prim->verts[i] = vec3f(vert[0], vert[1], vert[2]);
+            //ZENO_P(vert[0]);
+            //ZENO_P(vert[1]);
+            //ZENO_P(vert[2]);
         }
+
+        prim->tris.clear();
+        prim->quads.clear();
+        prim->polys.clear();
 
         //printf("particle ");
         //for (int i=0; i<nRefinedVerts; ++i) {
@@ -144,6 +163,24 @@ static void osdPrimSubdiv(PrimitiveObject *prim) {
     delete stencilTable;
     delete vbuffer;
 }
+
+struct OSDPrimSubdiv : INode {
+    virtual void apply() override {
+        auto prim = get_input<PrimitiveObject>("prim");
+        osdPrimSubdiv(prim.get());
+        set_output("prim", std::move(prim));
+    }
+};
+ZENO_DEFNODE(OSDPrimSubdiv)({
+    {
+        "prim",
+    },
+    {
+        "prim",
+    },
+    {},
+    {"primitive"},
+});
 
 
 //------------------------------------------------------------------------------
