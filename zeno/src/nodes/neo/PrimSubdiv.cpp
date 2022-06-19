@@ -1,3 +1,4 @@
+#if 0
 #include <zeno/zeno.h>
 #include <zeno/funcs/PrimitiveUtils.h>
 #include <zeno/types/PrimitiveObject.h>
@@ -117,3 +118,4 @@ ZENO_DEFNODE(PrimSubdiv)({
 }
 
 }
+#endif
