@@ -127,6 +127,7 @@ static CUmodule compileJITModule
 
 
 #if 0
+
 int main() {
     CU(cuInit(0));
 

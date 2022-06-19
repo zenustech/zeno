@@ -16,7 +16,8 @@ struct IRVisitor {
 };
 
 template <class T>
-struct Visitor : IRVisitor {
+struct
+    Visitor : IRVisitor {
     using IRVisitor::apply;
 
     virtual void apply(Statement *stmt) override {
