@@ -25,13 +25,13 @@ using namespace OpenSubdiv;
 
 
 //------------------------------------------------------------------------------
-static void osdPrimSubdiv(PrimitiveObject *prim, int levels) {
+static void osdPrimSubdivStencils(PrimitiveObject *prim, int levels) {
 
     int maxlevel=levels,
         nCoarseVerts=0,
         nRefinedVerts=0;
-    std::vector<int> ncfaces(maxlevel);
-    std::vector<int> ncedges(maxlevel);
+    //std::vector<int> ncfaces(maxlevel);
+    //std::vector<int> ncedges(maxlevel);
 
     std::vector<int> polysInd, polysLen;
     int primpolyreduced = 0;
@@ -103,10 +103,10 @@ static void osdPrimSubdiv(PrimitiveObject *prim, int levels) {
         stencilTable = Far::StencilTableFactory::Create(*refiner, options);
 
         nCoarseVerts = refiner->GetLevel(0).GetNumVertices();
-        for (int l = 0; l < maxlevel; l++) {
-            ncfaces[l] = refiner->GetLevel(l).GetNumFaces();
-            ncedges[l] = refiner->GetLevel(l).GetNumEdges();
-        }
+        //for (int l = 0; l < maxlevel; l++) {
+            //ncfaces[l] = refiner->GetLevel(l).GetNumFaces();
+            //ncedges[l] = refiner->GetLevel(l).GetNumEdges();
+        //}
         nRefinedVerts = stencilTable->GetNumStencils();
         log_info("[osd] coarse verts: {}", nCoarseVerts);
         log_info("[osd] refined verts: {}", nRefinedVerts);
@@ -168,15 +168,15 @@ static void osdPrimSubdiv(PrimitiveObject *prim, int levels) {
     delete vbuffer;
 }
 
-struct OSDPrimSubdiv : INode {
+struct OSDPrimSubdivStencils : INode {
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
         int levels = get_input2<int>("levels");
-        if (levels) osdPrimSubdiv(prim.get(), levels);
+        if (levels) osdPrimSubdivStencils(prim.get(), levels);
         set_output("prim", std::move(prim));
     }
 };
-ZENO_DEFNODE(OSDPrimSubdiv)({
+ZENO_DEFNODE(OSDPrimSubdivStencils)({
     {
         "prim",
         {"int", "levels", "2"},
