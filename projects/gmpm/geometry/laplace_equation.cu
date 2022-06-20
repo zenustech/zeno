@@ -31,9 +31,9 @@ struct ZSSolveLaplaceEquaOnTets : zeno::INode {
             pol(zs::range(vtemp.size()),
                 [vtemp = proxy<space>({},vtemp),verts = proxy<space>({},verts),btag,tag]
                         ZS_LAMBDA(int vi) mutable {
-                    if(verts(btag,vi) > 0.0)
-                        return;
-                    vtemp(tag,vi) = (T)0.0;
+                    if(verts(btag,vi) > zs::limits<T>::epsilon())
+                        vtemp(tag,vi) = (T)0.0;
+                    // vtemp(tag,vi) = (T)0.0;
                 });
         }    
 
@@ -103,7 +103,7 @@ struct ZSSolveLaplaceEquaOnTets : zeno::INode {
         const tiles_t &eles;
     };
 
-    template<int pack_dim = 3>
+    template<int pack_dim = 1>
     T dot(zs::CudaExecutionPolicy &cudaPol, dtiles_t &vertData,
             const zs::SmallString tag0, const zs::SmallString tag1) {
         using namespace zs;
@@ -119,8 +119,9 @@ struct ZSSolveLaplaceEquaOnTets : zeno::INode {
                 });
         return res.getVal();
     }
+    template<int pack_dim = 1>
     T infNorm(zs::CudaExecutionPolicy &cudaPol, dtiles_t &vertData,
-                const zs::SmallString tag = "dir") {
+                const zs::SmallString tag) {
         using namespace zs;
         constexpr auto space = execspace_e::cuda;
         Vector<T> res{vertData.get_allocator(), 1};
@@ -128,7 +129,7 @@ struct ZSSolveLaplaceEquaOnTets : zeno::INode {
         cudaPol(range(vertData.size()),
                 [data = proxy<space>({}, vertData), res = proxy<space>(res),
                 tag] __device__(int pi) mutable {
-                auto v = data.pack<3>(tag, pi);
+                auto v = data.pack<pack_dim>(tag, pi);
                 atomic_max(exec_cuda, res.data(), v.abs().max());
                 });
         return res.getVal();
@@ -140,6 +141,7 @@ struct ZSSolveLaplaceEquaOnTets : zeno::INode {
         // specify the name of a nodal attribute
         auto attr = get_param<std::string>("tag");
         auto& verts = zstets->getParticles();
+        auto accuracy = get_param<float>("accuracy");
         //  make sure the input zstets has specified attributes
         if(!verts.hasProperty(attr)){
             fmt::print("the input zstets does not contain specified channel:{}\n",attr);
@@ -174,7 +176,11 @@ struct ZSSolveLaplaceEquaOnTets : zeno::INode {
         auto cudaPol = cuda_exec();
 
         // compute per-element laplace operator
+        // fmt::print("COMPUTE COTMATRIX\n");
         compute_cotmatrix(cudaPol,eles,verts,"x",etemp,"L",zs::wrapv<4>{});
+        fmt::print("FINISH COMPUTE COTMATRIX\n");
+        // auto Ln = dot<16>(cudaPol,etemp,"L","L");
+        // fmt::print("Ln:%f\n",(float)Ln);
         // compute the residual
         LaplaceSystem A{verts,eles};
         // compute preconditioner
@@ -194,19 +200,26 @@ struct ZSSolveLaplaceEquaOnTets : zeno::INode {
                 atomic_add(exec_cuda,&vtemp("P",inds[vi]),(T)H(vi,vi));
         });
 
+        T Ln = dot<16>(cudaPol,etemp,"L","L");
+        fmt::print("Ln:{}\n",Ln);
+        T Pn = dot(cudaPol,vtemp,"P","P");
+        fmt::print("Pn:{}\n",Pn);
+
         cudaPol(zs::range(verts.size()),
             [vtemp = proxy<space>({},vtemp)] ZS_LAMBDA(int vi) mutable{
-                vtemp("P",vi) = 1./vtemp("P",vi);
+                // vtemp("P",vi) = 1./vtemp("P",vi);
+                vtemp("P",vi) = 1.0;
         });
-
+        // initial guess
+        cudaPol(zs::range(vtemp.size()),
+            [vtemp = proxy<space>({},vtemp),verts = proxy<space>({},verts),tag = zs::SmallString(attr)] ZS_LAMBDA(int vi) mutable{
+                vtemp("x",vi) = verts(tag,vi);
+            }
+        );
         // Solve Laplace Equation Using PCG
         {
             // set the initial guess of the solution subject to boundary condition
-            cudaPol(zs::range(vtemp.size()),
-                [vtemp = proxy<space>({},vtemp),verts = proxy<space>({},verts),tag = zs::SmallString(attr)] ZS_LAMBDA(int vi) mutable{
-                    vtemp("x",vi) = verts(tag,vi);
-                }
-            );
+
             // eval the right hand side
             A.rhs(cudaPol,"x","b",vtemp);
             A.multiply(cudaPol,"x","temp",vtemp,etemp);
@@ -250,14 +263,16 @@ struct ZSSolveLaplaceEquaOnTets : zeno::INode {
 
             auto residualPreconditionedNorm = std::sqrt(zTrk);
             // auto localTol = std::min(0.5 * residualPreconditionedNorm, 1.0);
-            auto localTol = 0.1 * residualPreconditionedNorm;
+            auto localTol = accuracy * residualPreconditionedNorm;
             // if(newtonIter < 10)
             //     localTol = 0.5 * residualPreconditionedNorm;
             int iter = 0;            
             for (; iter != 1000; ++iter) {
-                if (iter % 50 == 0)
-                    fmt::print("cg iter: {}, norm: {} zTrk: {} localTol: {}\n", iter,
-                                residualPreconditionedNorm,zTrk,localTol);
+                // if (iter % 50 == 0){
+                //     // recalculate the residual every 50 iterations
+                //     fmt::print("cg iter: {}, norm: {} zTrk: {} localTol: {}\n", iter,
+                //                 residualPreconditionedNorm,zTrk,localTol);
+                // }
                 if(zTrk < 0){
                     T rn = std::sqrt(dot(cudaPol,vtemp,"r","r"));
                     T qn = std::sqrt(dot(cudaPol,vtemp,"q","q"));
@@ -275,7 +290,7 @@ struct ZSSolveLaplaceEquaOnTets : zeno::INode {
                 }
 
                 if (residualPreconditionedNorm <= localTol){ // this termination criterion is dimensionless
-                    fmt::print("finish with cg iter: {}, norm: {} zTrk: {}\n", iter,
+                    fmt::print("finish with cg iter: {}, norm: {} zTrk: {}\n",iter,
                                 residualPreconditionedNorm,zTrk);
                     break;
                 }
@@ -283,23 +298,44 @@ struct ZSSolveLaplaceEquaOnTets : zeno::INode {
                 A.project(cudaPol,"btag",verts, "temp",vtemp);
 
                 T alpha = zTrk / dot(cudaPol, vtemp, "temp", "p");
+
                 cudaPol(range(verts.size()), [verts = proxy<space>({}, verts),
                                     vtemp = proxy<space>({}, vtemp),
                                     alpha] ZS_LAMBDA(int vi) mutable {
                     vtemp("x", vi) += alpha * vtemp("p", vi);
                     vtemp("r", vi) -= alpha * vtemp("temp", vi);
                 });
+                // recalcute the residual every 50 iterations
+                if(iter % 51 == 50){
+                    A.rhs(cudaPol,"x","b",vtemp);
+                    A.multiply(cudaPol,"x","temp",vtemp,etemp);
+                    cudaPol(zs::range(vtemp.size()),
+                        [vtemp = proxy<space>({},vtemp)] ZS_LAMBDA(int vi) mutable {
+                            vtemp("r",vi) = vtemp("b",vi) - vtemp("temp",vi);
+                        });
+                    A.project(cudaPol,"btag",verts,"r",vtemp);
+                }              
                 A.precondition(cudaPol, "r", "q",vtemp);
+                A.project(cudaPol,"btag",verts,"q",vtemp);
                 auto zTrkLast = zTrk;
                 zTrk = dot(cudaPol, vtemp, "q", "r");
+                if (iter % 50 == 0){
+                    fmt::print("cg iter: {}, norm: {} zTrk: {} localTol: {}\n", iter,
+                                residualPreconditionedNorm,zTrk,localTol);
+                }
+
                 auto beta = zTrk / zTrkLast;
                 cudaPol(range(verts.size()), [vtemp = proxy<space>({}, vtemp),beta] ZS_LAMBDA(int vi) mutable {
                     vtemp("p", vi) = vtemp("q", vi) + beta * vtemp("p", vi);
                 });
                 residualPreconditionedNorm = std::sqrt(zTrk);
+                ++iter;
             }
             fmt::print("FINISH SOLVING PCG with cg_iter = {}\n",iter);  
         }// end cg step
+
+
+
 
         cudaPol(zs::range(verts.size()),
                 [vtemp = proxy<space>({},vtemp),verts = proxy<space>({},verts),tag = zs::SmallString(attr)] ZS_LAMBDA(int vi) mutable {
@@ -314,11 +350,10 @@ ZENDEFNODE(ZSSolveLaplaceEquaOnTets, {
                                     {"zstets"},
                                     {"zstets"},
                                     {
-                                        {"string","tag","T"}
+                                        {"string","tag","T"},{"float","accuracy","1e-6"}
                                     },
                                     {"FEM"}
 });
-
 
 
 // the biharmonic hessian can be eval as LML, where M is a diagonal matrix with diagonal entries the inverse of nodal volume
