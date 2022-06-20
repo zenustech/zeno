@@ -111,5 +111,13 @@ ZenoMainWindow* ZenoApplication::getMainWindow()
 	foreach(QWidget* widget, topLevelWidgets())
 		if (ZenoMainWindow* mainWindow = qobject_cast<ZenoMainWindow*>(widget))
 			return mainWindow;
-	return nullptr;
+    return nullptr;
+}
+
+QWidget *ZenoApplication::getWindow(const QString &objName)
+{
+    foreach (QWidget *widget, QApplication::allWidgets())
+        if(widget->objectName() == objName)
+            return widget;
+    return nullptr;
 }

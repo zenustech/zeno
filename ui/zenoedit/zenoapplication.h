@@ -24,6 +24,7 @@ public:
     void setIOProcessing(bool bIOProcessing);
     bool IsIOProcessing() const;
     ZenoMainWindow* getMainWindow();
+    QWidget* getWindow(const QString& objName);
 #ifdef ZENO_MULTIPROCESS
     ZTcpServer* getServer();
 #endif
