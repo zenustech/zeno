@@ -433,13 +433,13 @@ struct CodimStepping : INode {
                                               wrapv<3>{}, voffset);
       // puts("before boundary dcd surf tri bvh build");
       bvh_t &stBvh = voffset == 0 ? this->stBvh : this->bouStBvh;
-      stBvh.build(pol, triBvs);
+      stBvh.refit(pol, triBvs);
       // puts("before boundary dcd surf edge bvs");
       auto edgeBvs = retrieve_bounding_volumes(pol, vtemp, "xn", sedges,
                                                wrapv<2>{}, voffset);
       // puts("before boundary dcd surf edge bvh build");
       bvh_t &seBvh = voffset == 0 ? this->seBvh : this->bouSeBvh;
-      seBvh.build(pol, edgeBvs);
+      seBvh.refit(pol, edgeBvs);
 
       /// pt
       pol(Collapse{verts.size()},
@@ -698,12 +698,12 @@ struct CodimStepping : INode {
       auto triBvs = retrieve_bounding_volumes(
           pol, vtemp, "xn", tris, wrapv<3>{}, vtemp, "dir", alpha, voffset);
       bvh_t &stBvh = voffset == 0 ? this->stBvh : this->bouStBvh;
-      stBvh.build(pol, triBvs);
+      stBvh.refit(pol, triBvs);
       // puts("before boundary ccd surf edge bvhs");
       auto edgeBvs = retrieve_bounding_volumes(
           pol, vtemp, "xn", sedges, wrapv<2>{}, vtemp, "dir", alpha, voffset);
       bvh_t &seBvh = voffset == 0 ? this->seBvh : this->bouSeBvh;
-      seBvh.build(pol, edgeBvs);
+      seBvh.refit(pol, edgeBvs);
 
       /// pt
       pol(Collapse{verts.size()},
@@ -1945,7 +1945,7 @@ struct CodimStepping : INode {
                 });
         T zTrk = dot(cudaPol, vtemp, "r", "q");
         auto residualPreconditionedNorm = std::sqrt(zTrk);
-        auto localTol = 1e-1 * residualPreconditionedNorm;
+        auto localTol = 1e-5 * residualPreconditionedNorm;
         int iter = 0;
         for (; iter != 10000; ++iter) {
           if (iter % 10 == 0)
