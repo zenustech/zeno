@@ -22,6 +22,9 @@
 namespace {
 using namespace zeno;
 
+#ifdef ZENO_VERSION_2
+#define log_debugf printf
+#endif
 
 struct BulletTransform : zeno::IObject {
     btTransform trans;
