@@ -226,13 +226,17 @@ struct CodimStepping : INode {
   using bv_t = zs::AABBBox<3, T>;
 
   static constexpr vec3 s_groundNormal{0, 1, 0};
-
+  inline static const char s_meanMassTag[] = "MeanMass";
   inline static bool projectDBC = true;
   inline static bool BCsatisfied = false;
   inline static T updateZoneTol = 1e-1;
   inline static T consTol = 1e-2;
   inline static T armijoParam = 1e-4;
   inline static bool useGD = false;
+  inline static T boxDiagSize2 = 0;
+  inline static T avgNodeMass = 0;
+  inline static T targetGRes = 1e-2;
+  static constexpr bool s_enableAdaptiveSetting = false;
 
   inline static T kappaMax = 1e8;
   inline static T kappaMin = 1e4;
@@ -241,6 +245,23 @@ struct CodimStepping : INode {
   inline static T xi = 0; // 1e-2; // 2e-3;
   inline static T dHat = 0.005;
   inline static vec3 extForce;
+
+  template <typename T> static inline T computeHb(const T d2, const T dHat2) {
+#if 0
+    T hess = 0;
+    if (d2 < dHat2) {
+      T t2 = d2 - dHat2;
+      hess = (std::log(d2 / dHat2) * (T)-2.0 - t2 * (T)4.0 / d2) / (dHat2 * dHat2)
+                + 1.0 / (d2 * d2) * (t2 / dHat2) * (t2 / dHat2);
+    }
+    return hess;
+#else
+    if (d2 >= dHat2)
+      return 0;
+    T t2 = d2 - dHat2;
+    return ((std::log(d2 / dHat2) * -2 - t2 * 4 / d2) + (t2 / d2) * (t2 / d2));
+#endif
+  }
 
   template <
       typename VecT, int N = VecT::template range_t<0>::value,
@@ -405,6 +426,16 @@ struct CodimStepping : INode {
       else
         ret = std::sqrt(nsqr / dsqr);
       return ret < 1e-6 ? 0 : ret;
+    }
+    void updateWholeBoundingBoxSize(zs::CudaExecutionPolicy &pol) const {
+      using namespace zs;
+      constexpr auto space = execspace_e::cuda;
+      Vector<bv_t> box{vtemp.get_allocator(), 1};
+      pol(Collapse{1},
+          [bvh = proxy<space>(stBvh), box = proxy<space>(box)] __device__(
+              int vi) mutable { box[0] = bvh.getNodeBV(0); });
+      bv_t bv = box.getVal();
+      boxDiagSize2 = (bv._max - bv._min).l2NormSqr();
     }
     void findCollisionConstraints(zs::CudaExecutionPolicy &pol, T dHat,
                                   T xi = 0) {
@@ -1720,7 +1751,7 @@ struct CodimStepping : INode {
 #endif
 
     /// time integrator
-    // set BC... info
+    // initialize BC info
     cudaPol(zs::range(verts.size()),
             [vtemp = proxy<space>({}, vtemp),
              verts = proxy<space>({}, verts)] __device__(int i) mutable {
@@ -1742,7 +1773,7 @@ struct CodimStepping : INode {
       vtemp.template tuple<3>("BCtarget", coOffset + i) = x + v * dt;
       vtemp("BCfixed", coOffset + i) = v.l2NormSqr() == 0 ? 1 : 0;
     });
-    // predict pos, initialize constrain weights
+    // predict pos, initialize augmented lagrangian, constrain weights
     cudaPol(zs::range(verts.size()),
             [vtemp = proxy<space>({}, vtemp), verts = proxy<space>({}, verts),
              dt, extForce = extForce] __device__(int i) mutable {
@@ -1794,9 +1825,42 @@ struct CodimStepping : INode {
     }
     kappa = kappa0;
     useGD = false;
+    targetGRes = 1e-2;
 
     FEMSystem A{verts,  edges, eles,  coVerts, coEdges,
                 coEles, vtemp, etemp, dt,      models};
+
+    if constexpr (s_enableAdaptiveSetting) {
+      A.updateWholeBoundingBoxSize(cudaPol);
+      /// dHat
+      dHat = 1e-3 * std::sqrt(boxDiagSize2);
+      /// grad pn residual tolerance
+      targetGRes = 1e-5 * std::sqrt(boxDiagSize2);
+      /// mean mass
+      avgNodeMass = 0;
+      if (zstets->hasMeta(s_meanMassTag))
+        avgNodeMass = zstets->readMeta(s_meanMassTag, wrapt<T>{});
+      else {
+        Vector<T> masses{vtemp.get_allocator(), coOffset};
+        cudaPol(Collapse{coOffset},
+                [masses = proxy<space>(masses),
+                 vtemp = proxy<space>({}, vtemp)] __device__(int vi) mutable {
+                  masses[vi] = zs::sqr(vtemp("ws", vi));
+                });
+        avgNodeMass = reduce(cudaPol, masses) / coOffset;
+        zstets->setMeta(s_meanMassTag, avgNodeMass);
+      }
+      /// adaptive kappa
+      {
+        T H_b = computeHb((T)1e-16 * boxDiagSize2, dHat * dHat);
+        kappaMin = 1e11 * avgNodeMass / (4e-16 * boxDiagSize2 * H_b);
+        kappa = kappaMin;
+        kappaMax = 100 * kappa;
+      }
+      fmt::print("auto dHat: {}, targetGRes: {}\n", dHat, targetGRes);
+      fmt::print("average node mass: {}, kappa: {}\n", avgNodeMass, kappa);
+      getchar();
+    }
 
     /// optimizer
     for (int newtonIter = 0; newtonIter != 1000; ++newtonIter) {
@@ -1959,7 +2023,7 @@ struct CodimStepping : INode {
                        iter, residualPreconditionedNorm, zTrk, npp, npe, npt,
                        nee, ncspt, ncsee);
           if (zTrk < 0) {
-            puts("what the heck?");
+            fmt::print("what the heck? zTrk: {} at iteration {}\n", zTrk, iter);
             getchar();
           }
           if (residualPreconditionedNorm <= localTol)
@@ -1998,7 +2062,7 @@ struct CodimStepping : INode {
       // check "dir" inf norm
       T res = infNorm(cudaPol, vtemp, "dir") / dt;
       T cons_res = A.constraintResidual(cudaPol);
-      if (!useGD && res < 1e-2 && cons_res == 0) {
+      if (!useGD && res < targetGRes && cons_res == 0) {
         fmt::print("\t# newton optimizer ends in {} iters with residual {}\n",
                    newtonIter, res);
         break;
