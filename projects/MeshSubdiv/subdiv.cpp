@@ -490,8 +490,8 @@ ZENO_DEFNODE(OSDPrimSubdiv)({
     {
         "prim",
         {"int", "levels", "2"},
-        {"bool", "triangulate", "true"},
-        {"bool", "hasLoopAttrs", "true"},
+        {"bool", "triangulate", "1"},
+        {"bool", "hasLoopAttrs", "1"},
     },
     {
         "prim",
