@@ -2,6 +2,7 @@
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/StringObject.h>
 #include <zeno/types/NumericObject.h>
+#include <zeno/utils/tuple_hash.h>
 #include <random>
 #include <cmath>
 #include <set>
@@ -15,7 +16,7 @@ struct PrimitiveWireframe : INode {
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
 
-        std::set<std::pair<int, int>> segments;
+        std::set<vec2i, tuple_less> segments;
         auto append = [&] (int i, int j) {
             segments.emplace(std::min(i, j), std::max(i, j));
         };
