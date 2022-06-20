@@ -28,6 +28,17 @@ jobs:
     strategy:
       matrix:
         include:
+        - label: x86_64-linux-cpu
+          os: ubuntu-18.04
+          triplet: x64-linux
+          cxx: g++-9
+          gpu: cpu
+          pkgext: tar.gz
+        - label: x86_64-windows-cpu
+          os: windows-2022
+          triplet: x64-windows
+          gpu: cpu
+          pkgext: zip
         - label: x86_64-linux-cuda
           os: ubuntu-18.04
           triplet: x64-linux
@@ -156,6 +167,10 @@ jobs:
     strategy:
       matrix:
         include:
+        - label: x86_64-linux-cpu
+          pkgext: tar.gz
+        - label: x86_64-windows-cpu
+          pkgext: zip
         - label: x86_64-linux-cuda
           pkgext: tar.gz
         - label: x86_64-windows-cuda
