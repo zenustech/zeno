@@ -232,6 +232,7 @@ struct CodimStepping : INode {
   inline static T updateZoneTol = 1e-1;
   inline static T consTol = 1e-2;
   inline static T armijoParam = 1e-4;
+  inline static bool useGD = false;
 
   inline static T kappaMax = 1e8;
   inline static T kappaMin = 1e4;
@@ -1665,7 +1666,7 @@ struct CodimStepping : INode {
     auto coOffset = verts.size();
     auto numDofs = coOffset + coVerts.size();
 
-    static dtiles_t vtemp{
+    dtiles_t vtemp{
         verts.get_allocator(),
         {{"grad", 3},
          {"P", 9},
@@ -1689,7 +1690,7 @@ struct CodimStepping : INode {
          {"p", 3},
          {"q", 3}},
         numDofs};
-    static dtiles_t etemp{eles.get_allocator(), {{"He", 9 * 9}}, eles.size()};
+    dtiles_t etemp{eles.get_allocator(), {{"He", 9 * 9}}, eles.size()};
 
     vtemp.resize(numDofs);
     etemp.resize(eles.size());
@@ -1792,6 +1793,7 @@ struct CodimStepping : INode {
       BCsatisfied = false;
     }
     kappa = kappa0;
+    useGD = false;
 
     FEMSystem A{verts,  edges, eles,  coVerts, coEdges,
                 coEles, vtemp, etemp, dt,      models};
@@ -1923,7 +1925,10 @@ struct CodimStepping : INode {
       // modify initial x so that it satisfied the constraint.
 
       // A dir = grad
-      {
+      if (useGD) {
+        A.precondition(cudaPol, "grad", "dir");
+        A.project(cudaPol, "dir");
+      } else {
         // solve for A dir = grad;
         cudaPol(zs::range(numDofs),
                 [vtemp = proxy<space>({}, vtemp)] __device__(int i) mutable {
@@ -1945,7 +1950,7 @@ struct CodimStepping : INode {
                 });
         T zTrk = dot(cudaPol, vtemp, "r", "q");
         auto residualPreconditionedNorm = std::sqrt(zTrk);
-        auto localTol = 1e-5 * residualPreconditionedNorm;
+        auto localTol = 1e-2 * residualPreconditionedNorm;
         int iter = 0;
         for (; iter != 10000; ++iter) {
           if (iter % 10 == 0)
@@ -1993,7 +1998,7 @@ struct CodimStepping : INode {
       // check "dir" inf norm
       T res = infNorm(cudaPol, vtemp, "dir") / dt;
       T cons_res = A.constraintResidual(cudaPol);
-      if (res < 1e-2 && cons_res == 0) {
+      if (!useGD && res < 1e-2 && cons_res == 0) {
         fmt::print("\t# newton optimizer ends in {} iters with residual {}\n",
                    newtonIter, res);
         break;
@@ -2066,6 +2071,12 @@ struct CodimStepping : INode {
         vtemp.tuple<3>("xn", i) =
             vtemp.pack<3>("xn0", i) + alpha * vtemp.pack<3>("dir", i);
       });
+
+      if (alpha < 1e-8) {
+        useGD = true;
+      } else {
+        useGD = false;
+      }
 
       // update rule
       cons_res = A.constraintResidual(cudaPol);
