@@ -60,15 +60,7 @@
       "displayName": "CUDA configuration",
       "description": "Additionally build with CUDA extension modules",
       "cacheVariables": {
-        "ZENO_WITH_gmpm": "ON"
-      }
-    },
-    {
-      "name": "optix",
-      "inherits": "cuda",
-      "displayName": "OptiX configuration",
-      "description": "Additionally build with the OptiX rendering engine",
-      "cacheVariables": {
+        "ZENO_WITH_gmpm": "OFF",
         "ZENO_ENABLE_OPTIX": "ON"
       }
     }

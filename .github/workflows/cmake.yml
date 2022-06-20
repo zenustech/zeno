@@ -46,6 +46,7 @@ jobs:
     env:
       CXX: ${{ matrix.cxx }}
       VCPKG_DEFAULT_TRIPLET: ${{ needs.check.outputs.vcpkg == 'true' && matrix.triplet || '' }}
+      OPTIX_PATH: ${{github.workspace}}/optix-sdk
 
     steps:
     - name: Checkout Repo
@@ -77,6 +78,10 @@ jobs:
       id: cuda-toolkit
       with:
         cuda: 11.5.1
+
+    - name: Install OptiX
+      if: ${{ matrix.gpu == 'cuda' }}
+      run: python misc/ci/optix.py
 
     - name: Setup Vcpkg
       uses: lukka/run-vcpkg@v10
