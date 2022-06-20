@@ -10,8 +10,10 @@
 #include <iostream>
 #include <fstream>
 
+#undef tinyply
+#define tinyply _zeno_primplyio_tinyply
 #define TINYPLY_IMPLEMENTATION
-#include "tinyply.h"
+#include "primplyio_tinyply.h"
 
 
 static void readply(
