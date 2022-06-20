@@ -28,16 +28,16 @@ jobs:
     strategy:
       matrix:
         include:
-        - label: x86_64-linux-cpu
+        - label: x86_64-linux-cuda
           os: ubuntu-18.04
           triplet: x64-linux
           cxx: g++-9
-          gpu: cpu
+          gpu: cuda
           pkgext: tar.gz
-        - label: x86_64-windows-cpu
+        - label: x86_64-windows-cuda
           os: windows-2022
           triplet: x64-windows
-          gpu: cpu
+          gpu: cuda
           pkgext: zip
 
     runs-on: ${{ matrix.os }}
