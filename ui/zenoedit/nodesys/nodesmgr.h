@@ -13,6 +13,7 @@ public:
 	static void createNewNode(IGraphsModel* pModel, QModelIndex subgIdx, const QString& descName, const QPointF& pt);
 	static NODE_TYPE nodeType(const QString& name);
 	static QList<QAction*> getCategoryActions(IGraphsModel* pModel, QModelIndex subgIdx, const QString& filter, QPointF scenePos);
+	static PARAMS_INFO initParamsNotDesc(const QString& name);
 };
 
 

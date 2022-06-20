@@ -19,7 +19,6 @@ enum MODEL_ROLE
 	ROLE_COLLASPED,
 	ROLE_COLORRAMPS,
 	ROLE_GRAPHPTR,
-	ROLE_BLACKBOARD,
 
 	//synchronize link change, param
 	ROLE_ADDLINK,

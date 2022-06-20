@@ -37,7 +37,6 @@ public:
     int type() const override;
 
     void initUI(const QModelIndex& subGIdx, const QModelIndex& index);
-    void initWangStyle(const QModelIndex& subGIdx, const QModelIndex& index);
 
     QPersistentModelIndex index() { return m_index; }
     QPointF getPortPos(bool bInput, const QString& portName);
@@ -50,6 +49,7 @@ public:
     QPointF nodePos() const;
     INPUT_SOCKETS inputParams() const;
     OUTPUT_SOCKETS outputParams() const;
+    virtual void onUpdateParamsNotDesc();
 
 signals:
     void socketClicked(const QString& id, bool bInput, const QString& name);
@@ -66,7 +66,7 @@ public slots:
     void onOptionsUpdated(int options);
     void onParamUpdated(const QString &paramName, const QVariant &val);
     void onSocketLinkChanged(const QString& sockName, bool bInput, bool bAdded);
-    void onSocketsUpdateOverall(bool bInput);
+    void onSocketsUpdate(bool bInput);
     void updateSocketDeflValue(const QString& nodeid, const QString& inSock, const INPUT_SOCKET& inSocket, const QVariant& textValue);
     void onNameUpdated(const QString& newName);
 

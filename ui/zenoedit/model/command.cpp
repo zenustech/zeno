@@ -214,3 +214,28 @@ void UpdateSocketCommand::undo()
     }
     m_pModel->updateSocket(m_nodeid, revertInfo, m_subgIdx);
 }
+
+
+UpdateBlackboardCommand::UpdateBlackboardCommand(
+        const QString& nodeid,
+        BLACKBOARD_INFO newInfo,
+        BLACKBOARD_INFO oldInfo,
+        GraphsModel* pModel,
+        QPersistentModelIndex subgIdx) 
+    : m_nodeid(nodeid)
+    , m_oldInfo(oldInfo)
+    , m_newInfo(newInfo)
+    , m_pModel(pModel)
+    , m_subgIdx(subgIdx)
+{
+}
+
+void UpdateBlackboardCommand::redo()
+{
+    m_pModel->updateBlackboard(m_nodeid, m_newInfo, m_subgIdx, false);
+}
+
+void UpdateBlackboardCommand::undo()
+{
+    m_pModel->updateBlackboard(m_nodeid, m_oldInfo, m_subgIdx, false);
+}

@@ -1,10 +1,10 @@
 #pragma once
 
-#if __has_include(<zeno/utils/logstd.h>)
-#include <zeno/utils/logstd.h>
-#else
+//#if __has_include(<zeno/utils/logstd.h>)
+//#include <zeno/utils/logstd.h>
+//#else
 #include <cstdio>
-#endif
+//#endif
 
 
-#define dbg_printf(...) zeno::__logstd::log_printf("[ZenoFX] " __VA_ARGS__)
+#define dbg_printf(...) printf("[ZenoFX] " __VA_ARGS__)
