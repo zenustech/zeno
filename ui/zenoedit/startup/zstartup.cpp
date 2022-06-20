@@ -1,11 +1,15 @@
 #include "zstartup.h"
 #ifdef _WIN32
-#include "zeno/InitVDB.h"
+    #ifdef ZENO_WITH_zenvdb
+        #include "zeno/InitVDB.h"
+    #endif
 #endif
 
 void startUp()
 {
 #ifdef _WIN32
-    static zeno::OpenvdbInitializer g_openvdb_initializer;
+    #ifdef ZENO_WITH_zenvdb
+        static zeno::OpenvdbInitializer g_openvdb_initializer;
+    #endif
 #endif
 }
