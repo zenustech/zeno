@@ -155,10 +155,12 @@ static void osdPrimSubdiv(PrimitiveObject *prim, int levels, bool triangulate = 
 
     std::vector<Far::TopologyDescriptor::FVarChannel> channels;
     std::vector<std::vector<int>> loopsIndTab;
+    std::vector<std::string> chanveckeys;
     if (hasLoopAttrs) {
 
         channels.reserve(prim->loops.num_attrs());
         loopsIndTab.reserve(prim->loops.num_attrs());
+        chanvecptrs.reserve(prim->loops.num_attrs());
         for (auto const &key: prim->loops.attr_keys()) {
             auto &loopsInd = loopsIndTab.emplace_back();
             loopsInd.resize(polysInd.size());
@@ -179,6 +181,13 @@ static void osdPrimSubdiv(PrimitiveObject *prim, int levels, bool triangulate = 
             auto &ch = channels.emplace_back();
             ch.numValues = loopsInd.size();
             ch.valueIndices = loopsInd.data();
+
+            //void *chvp{};
+            //prim->loops.attr_visit(key, [&] (auto const &arr) {
+                //chvp = reinterpret_cast<void *>(arr.data());
+            //});
+            //assert(chvp);
+            chanveckeys.push_back(key);
         }
 
         desc.numFVarChannels = channels.size();
@@ -263,6 +272,17 @@ static void osdPrimSubdiv(PrimitiveObject *prim, int levels, bool triangulate = 
 
     size_t srcposoffs = 0;
     size_t dstposoffs = nCoarseVerts;
+
+    std::vector<size_t> srcfvaroffs;
+    std::vector<size_t> dstfvaroffs;
+    if (hasLoopAttrs) {
+        srcfvaroffs.resize(channels.size());
+        dstfvaroffs.resize(channels.size());
+        for (int i = 0; i < channels.size(); i++) {
+            dstfvaroffs[i] += channels[i].numValues;
+        }
+    }
+
     for (int level = 1; level < maxlevel; ++level) {
         //Vertex * dst = src + refiner->GetLevel(level-1).GetNumVertices();
         //primvarRefiner.Interpolate(level, src, dst);
@@ -275,6 +295,18 @@ static void osdPrimSubdiv(PrimitiveObject *prim, int levels, bool triangulate = 
             auto *dstClr = convvertexptr(arr.data() + dstposoffs);
             primvarRefiner.InterpolateVarying(level, srcClr, dstClr);
         });
+        if (hasLoopAttrs) {
+            for (int chi = 0; chi < channels.size(); chi++) {
+                prim->loops.attr_visit(chanveckeys[chi], [&] (auto &chva) {
+                    auto *srcFVarColor = chva.data() + srcfvaroffs[chi];
+                    auto *dstFVarColor = chva.data() + dstfvaroffs[chi];
+                    primvarRefiner.InterpolateFaceVarying(level, srcFVarColor, dstFVarColor, chi);
+                    auto numfvars = refiner->GetLevel(level).GetNumFVarValues(chi);
+                    srcfvaroffs[chi] = dstfvaroffs[chi];
+                    dstfvaroffs[chi] += numfvars;
+                });
+            }
+        }
         //for (auto const &[key, arr]: srcDstAttrs) {
         //}
         auto numverts = refiner->GetLevel(level).GetNumVertices();
@@ -299,6 +331,19 @@ static void osdPrimSubdiv(PrimitiveObject *prim, int levels, bool triangulate = 
             auto *dstClr = convvertexptr(fine_arr.data());
             primvarRefiner.InterpolateVarying(maxlevel, srcClr, dstClr);
         });
+        if (hasLoopAttrs) {
+            //primvarRefiner.InterpolateFaceVarying(maxlevel, srcFVarColor, dstFVarColor, channelColor);
+            for (int chi = 0; chi < channels.size(); chi++) {
+                prim->loops.attr_visit(chanveckeys[chi], [&] (auto &chva) {
+                    auto *srcFVarColor = convvertexptr(chva.data() + srcfvaroffs[chi]);
+                    auto *dstFVarColor = convvertexptr(chva.data() + dstfvaroffs[chi]);
+                    primvarRefiner.InterpolateFaceVarying(maxlevel, srcFVarColor, dstFVarColor, chi);
+                    auto numfvars = refiner->GetLevel(maxlevel).GetNumFVarValues(chi);
+                    srcfvaroffs[chi] = dstfvaroffs[chi];
+                    dstfvaroffs[chi] += numfvars;
+                });
+            }
+        }
     }
 
 
@@ -308,6 +353,14 @@ static void osdPrimSubdiv(PrimitiveObject *prim, int levels, bool triangulate = 
 
         int nverts = refLastLevel.GetNumVertices();
         int nfaces = refLastLevel.GetNumFaces();
+
+        std::vector<int> nfvverts;
+        if (hasLoopAttrs) {
+            nfvverts.resize(channels.size());
+            for (int i = 0; i < channels.size(); i++) {
+                nfvverts[i] = refLastLevel.GetNumFVarValues(i);
+            }
+        }
 
         // Print vertex positions
         //int firstOfLastVerts = refiner->GetNumVerticesTotal() - nverts;
