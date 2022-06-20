@@ -39,13 +39,9 @@ struct PrimitiveWireframe : INode {
             for (int i = start + 1; i < start + len; i++) {
                 append(prim->loops[i - 1], prim->loops[i]);
             }
-            append(prim->loops[len - 1], prim->loops[0]);
+            append(prim->loops[start + len - 1], prim->loops[start]);
         }
-        prim->lines.clear();
-        prim->lines.reserve(segments.size());
-        for (auto const &[i, j]: segments) {
-            prim->lines.push_back({i, j});
-        }
+        prim->lines.values.assign(segments.begin(), segments.end());
         if (get_param<bool>("removeFaces")) {
             prim->tris.clear();
             prim->quads.clear();

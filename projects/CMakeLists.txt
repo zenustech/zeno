@@ -25,6 +25,7 @@ set(ZENO_EXTENSIONS
     Functional
     TreeSketch
     CalcGeometryUV
+    MeshSubdiv
     )
 
 foreach (name IN ITEMS ${ZENO_EXTENSIONS})
