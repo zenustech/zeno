@@ -144,7 +144,6 @@ ZExpandableSection* ZenoPropPanel::paramsBox(IGraphsModel* pModel, const QModelI
 			case CONTROL_STRING:
 			case CONTROL_INT:
 			case CONTROL_FLOAT:
-			case CONTROL_BOOL:
 			{
 				QLineEdit* pLineEdit = new QLineEdit(param.value.toString());
 				pLineEdit->setProperty("cssClass", "proppanel");
@@ -153,6 +152,16 @@ ZExpandableSection* ZenoPropPanel::paramsBox(IGraphsModel* pModel, const QModelI
 				connect(pLineEdit, &QLineEdit::editingFinished, this, &ZenoPropPanel::onParamEditFinish);
 
 				pLayout->addWidget(pLineEdit, r++, 1);
+				break;
+			}
+			case CONTROL_BOOL:
+			{
+				ZCheckBoxBar *pCheckbox = new ZCheckBoxBar;
+				pCheckbox->setObjectName(paramName);
+				pCheckbox->setCheckState(param.value.toBool()?Qt::Checked:Qt::Unchecked);
+				connect(pCheckbox, &ZCheckBoxBar::stateChanged, this, &ZenoPropPanel::onParamEditFinish);
+
+				pLayout->addWidget(pCheckbox, r++, 1);
 				break;
 			}
 			case CONTROL_ENUM:
@@ -164,6 +173,7 @@ ZExpandableSection* ZenoPropPanel::paramsBox(IGraphsModel* pModel, const QModelI
 				pComboBox->setItemDelegate(new ZComboBoxItemDelegate(pComboBox));
 				pComboBox->setObjectName(paramName);
 				pComboBox->setProperty("control", param.control);
+				pComboBox->setCurrentText(param.value.toString());
 
 				//todo: unify
 #if QT_VERSION >= QT_VERSION_CHECK(5, 15, 0)
@@ -289,6 +299,19 @@ ZExpandableSection* ZenoPropPanel::inputsBox(IGraphsModel* pModel, const QModelI
 				pLayout->addWidget(pLineEdit, r++, 1);
 				break;
 			}
+			case CONTROL_BOOL:
+			{
+				QLabel *pNameItem = new QLabel(inputSock);
+				pNameItem->setProperty("cssClass", "proppanel");
+				pLayout->addWidget(pNameItem, r, 0, Qt::AlignLeft);
+
+				ZCheckBoxBar *pCheckbox = new ZCheckBoxBar;
+				pCheckbox->setObjectName(inputSock);
+				pCheckbox->setCheckState(input.info.defaultValue.toBool() ? Qt::Checked : Qt::Unchecked);
+				connect(pCheckbox, &ZCheckBoxBar::stateChanged, this, &ZenoPropPanel::onInputEditFinish);
+				pLayout->addWidget(pCheckbox, r++, 1);
+				break;
+			}
 			case CONTROL_VEC3F:
 			{
 				QLabel* pNameItem = new QLabel(inputSock);
@@ -376,6 +399,10 @@ void ZenoPropPanel::onInputEditFinish()
 	{
 		info.newValue = pComboBox->currentText();
 	}
+	else if (ZCheckBoxBar* pCheckbox = qobject_cast<ZCheckBoxBar*>(pSender))
+	{
+		info.newValue = pCheckbox->checkState() == Qt::Checked;
+	}
 
 	if (info.oldValue != info.newValue)
 	{
@@ -409,6 +436,18 @@ void ZenoPropPanel::onParamEditFinish()
 	{
 		textValue = pTextEdit->toPlainText();
 	}
+	else if (ZCheckBoxBar *pCheckbox = qobject_cast<ZCheckBoxBar *>(pSender))
+	{
+		PARAM_UPDATE_INFO info;
+		info.oldValue = model->getParamValue(nodeid, paramName, m_subgIdx);
+		info.newValue = pCheckbox->checkState() == Qt::Checked;
+		info.name = paramName;
+		if (info.newValue != info.oldValue)
+		{
+			model->updateParamInfo(nodeid, info, m_subgIdx, true);
+		}
+		return;
+	}
 	else
 	{
 		return;
@@ -441,7 +480,6 @@ void ZenoPropPanel::onDataChanged(const QModelIndex& subGpIdx, const QModelIndex
 				case CONTROL_STRING:
 				case CONTROL_INT:
 				case CONTROL_FLOAT:
-				case CONTROL_BOOL:
 				case CONTROL_READPATH:
 				case CONTROL_WRITEPATH:
 				{
@@ -451,6 +489,16 @@ void ZenoPropPanel::onDataChanged(const QModelIndex& subGpIdx, const QModelIndex
 					{
 						QLineEdit* pEdit = lst[0];
 						pEdit->setText(param.value.toString());
+					}
+					break;
+				}
+				case CONTROL_BOOL:
+				{
+					//update lineedit
+					auto lst = findChildren<ZCheckBoxBar*>(param.name, Qt::FindChildrenRecursively);
+					if (lst.size() == 1) {
+						ZCheckBoxBar *pEdit = lst[0];
+						pEdit->setCheckState(param.value.toBool() ? Qt::Checked : Qt::Unchecked);
 					}
 					break;
 				}
@@ -500,7 +548,6 @@ void ZenoPropPanel::onDataChanged(const QModelIndex& subGpIdx, const QModelIndex
 				case CONTROL_STRING:
 				case CONTROL_INT:
 				case CONTROL_FLOAT:
-				case CONTROL_BOOL:
 				case CONTROL_READPATH:
 				case CONTROL_WRITEPATH:
 				{
@@ -510,6 +557,15 @@ void ZenoPropPanel::onDataChanged(const QModelIndex& subGpIdx, const QModelIndex
 					{
 						QLineEdit* pEdit = lst[0];
 						pEdit->setText(inSocket.info.defaultValue.toString());
+					}
+					break;
+				}
+				case CONTROL_BOOL:
+				{
+					auto lst = findChildren<ZCheckBoxBar*>(inSock, Qt::FindChildrenRecursively);
+					if (lst.size() == 1) {
+						ZCheckBoxBar *pEdit = lst[0];
+						pEdit->setCheckState(inSocket.info.defaultValue.toBool() ? Qt::Checked : Qt::Unchecked);
 					}
 					break;
 				}
