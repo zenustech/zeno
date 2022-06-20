@@ -46,7 +46,7 @@ namespace zeno {
     template<typename T>
     constexpr void dihedral_angle_intrinsic(const zs::vec<T, 6>& l,const zs::vec<T, 4>& s,zs::vec<T, 6>& theta,zs::vec<T, 6>& cos_theta) {
         zs::vec<T, 6> H_sqr{};
-        H_sqr[0] = (1./16.) * (4.*l(3)*l(3)*l(0)*l(0) - zs::sqr((l(1)*l(1) + l(4)*l(4)) - (l(2)*l(1) + l(5)*l(5))));
+        H_sqr[0] = (1./16.) * (4.*l(3)*l(3)*l(0)*l(0) - zs::sqr((l(1)*l(1) + l(4)*l(4)) - (l(2)*l(2) + l(5)*l(5))));
         H_sqr[1] = (1./16.) * (4.*l(4)*l(4)*l(1)*l(1) - zs::sqr((l(2)*l(2) + l(5)*l(5)) - (l(3)*l(3) + l(0)*l(0))));
         H_sqr[2] = (1./16.) * (4.*l(5)*l(5)*l(2)*l(2) - zs::sqr((l(3)*l(3) + l(0)*l(0)) - (l(4)*l(4) + l(1)*l(1))));
         H_sqr[3] = (1./16.) * (4.*l(0)*l(0)*l(3)*l(3) - zs::sqr((l(4)*l(4) + l(1)*l(1)) - (l(5)*l(5) + l(2)*l(2))));
@@ -154,15 +154,17 @@ namespace zeno {
                     // if(fabs(vol_cmp - vol) > 1e-6)
                         // printf("VOL_ERROR<%d> : %f\n",ei,(float)fabs(vol_cmp - vol));
                     zs::vec<T, 6> sin_theta{};
-                    // for(size_t i = 0;i != ne;++i)
+                    #if 0
                     sin_theta(0) = vol / ((2./(3.*l(0))) * s(1) * s(2));
                     sin_theta(1) = vol / ((2./(3.*l(1))) * s(2) * s(0));
                     sin_theta(2) = vol / ((2./(3.*l(2))) * s(0) * s(1));
                     sin_theta(3) = vol / ((2./(3.*l(3))) * s(3) * s(0));
                     sin_theta(4) = vol / ((2./(3.*l(4))) * s(3) * s(1));
                     sin_theta(5) = vol / ((2./(3.*l(5))) * s(3) * s(2));
-                    // for(size_t i = 0;i !=ne; ++i)
-                    //     sin_theta(i) = zs::sin(theta(i));
+                    #else
+                    for(size_t i = 0;i !=ne; ++i)
+                        sin_theta(i) = zs::sin(theta(i));
+                    #endif
                     // printf("check_5\n");
                     C = (1./6.) * l * cos_theta / sin_theta;
                     // printf("check_6\n");
