@@ -24,6 +24,71 @@ using namespace OpenSubdiv;
     //int nverts;
     //int nfaces;
 //};
+namespace {
+    struct Vertex3 {
+
+        // Minimal required interface ----------------------
+        Vertex3() { }
+
+        void Clear( void * =0 ) {
+            _point[0]=_point[1]=_point[2]=0.0f;
+        }
+
+        void AddWithWeight(Vertex3 const & src, float weight) {
+            _point[0]+=weight*src._point[0];
+            _point[1]+=weight*src._point[1];
+            _point[2]+=weight*src._point[2];
+        }
+
+        // Public interface ------------------------------------
+        void SetPoint(float x, float y, float z) {
+            _point[0]=x;
+            _point[1]=y;
+            _point[2]=z;
+        }
+
+        const float * GetPoint() const {
+            return _point;
+        }
+
+    private:
+        float _point[3];
+    };
+
+    struct Vertex1 {
+
+        // Minimal required interface ----------------------
+        Vertex1() { }
+
+        void Clear( void * =0 ) {
+            _point[0]=0.0f;
+        }
+
+        void AddWithWeight(Vertex1 const & src, float weight) {
+            _point[0]+=weight*src._point[0];
+        }
+
+        // Public interface ------------------------------------
+        void SetPoint(float x, float y, float z) {
+            _point[0]=x;
+        }
+
+        const float * GetPoint() const {
+            return _point;
+        }
+
+    private:
+        float _point[1];
+    };
+
+    static Vertex3 *convvertexptr(vec3f *p) {
+        return reinterpret_cast<Vertex3 *>(p);
+    }
+
+    static Vertex1 *convvertexptr(float *p) {
+        return reinterpret_cast<Vertex1 *>(p);
+    }
+}
 
 
 //------------------------------------------------------------------------------
@@ -89,72 +154,112 @@ static void osdPrimSubdiv(PrimitiveObject *prim, int levels, bool triangulate = 
 
     // Instantiate a Far::TopologyRefiner from the descriptor
             using Factory = Far::TopologyRefinerFactory<Far::TopologyDescriptor>;
-    Far::TopologyRefiner * refiner = Factory::Create(desc, Factory::Options(type, options));
+    std::unique_ptr<Far::TopologyRefiner> refiner(
+        Factory::Create(desc, Factory::Options(type, options)));
     if (!refiner) throw makeError("refiner is null");
 
     // Uniformly refine the topology up to 'maxlevel'
     refiner->RefineUniform(Far::TopologyRefiner::UniformOptions(maxlevel));
 
-    struct Vertex {
+    //// Allocate a buffer for vertex primvar data. The buffer length is set to
+    //// be the sum of all children vertices up to the highest level of refinement.
+    //std::vector<Vertex> vbuffer(refiner->GetNumVerticesTotal());
+    ////int nCoarseVerts = prim->verts.size();
+    ////prim->verts.resize(refiner->GetNumVerticesTotal());
+    ////Vertex * verts = reinterpret_cast<Vertex *>(prim->verts.data());
+    //Vertex * verts = vbuffer.data();
 
-        // Minimal required interface ----------------------
-        Vertex() { }
+    int nCoarseVerts = prim->verts.size();
+    int nFineVerts   = refiner->GetLevel(maxlevel).GetNumVertices();
+    int nTotalVerts  = refiner->GetNumVerticesTotal();
+    int nTempVerts   = nTotalVerts - nCoarseVerts - nFineVerts;
 
-        Vertex(Vertex const & src) {
-            _position[0] = src._position[0];
-            _position[1] = src._position[1];
-            _position[2] = src._position[2];
-        }
+    prim->verts.resize(nCoarseVerts + nTempVerts);
 
-        void Clear( void * =0 ) {
-            _position[0]=_position[1]=_position[2]=0.0f;
-        }
-
-        void AddWithWeight(Vertex const & src, float weight) {
-            _position[0]+=weight*src._position[0];
-            _position[1]+=weight*src._position[1];
-            _position[2]+=weight*src._position[2];
-        }
-
-        // Public interface ------------------------------------
-        void SetPosition(float x, float y, float z) {
-            _position[0]=x;
-            _position[1]=y;
-            _position[2]=z;
-        }
-
-        const float * GetPosition() const {
-            return _position;
-        }
-
-    private:
-        float _position[3];
-    };
-
-    // Allocate a buffer for vertex primvar data. The buffer length is set to
-    // be the sum of all children vertices up to the highest level of refinement.
-    std::vector<Vertex> vbuffer(refiner->GetNumVerticesTotal());
-    //int nCoarseVerts = prim->verts.size();
-    //prim->verts.resize(refiner->GetNumVerticesTotal());
-    //Vertex * verts = reinterpret_cast<Vertex *>(prim->verts.data());
-    Vertex * verts = vbuffer.data();
-
+    //std::vector<Vertex> coarsePosBuffer(nCoarseVerts);
+    //std::vector<Vertex> coarseClrBuffer(nCoarseVerts);
 
     // Initialize coarse mesh positions
-    int nCoarseVerts = prim->verts.size();
-    for (int i=0; i<nCoarseVerts; ++i) {
-        verts[i].SetPosition(prim->verts[i][0], prim->verts[i][1], prim->verts[i][2]);
-    }
+    //{
+        //auto &posarr = prim->verts.values;
+        //auto &clrarr = prim->verts.add_attr<vec3f>("clr");
+        //for (int i=0; i<nCoarseVerts; ++i) {
+            //coarsePosBuffer[i].SetPoint(posarr[i][0], posarr[i][1], posarr[i][2]);
+            //coarseClrBuffer[i].SetPoint(clrarr[i][0], clrarr[i][1], clrarr[i][2]);
+        //}
+    //}
+    //AttrVector<vec3f> temp_verts(nTempVerts);
+    AttrVector<vec3f> fine_verts(nFineVerts);
+
+    //auto srcPos = reinterpret_cast<Vertex *>(prim->verts.data());
+    //auto dstPos = srcPos + 1;
+    //auto coarseClrBuffer = reinterpret_cast<Vertex const *>(prim->verts.attr<vec3f>("clr").data());
+
+    //std::map<std::string, std::pair<void *, void *>> srcDstAttrs;
+    //prim->verts.foreach_attr([&] (auto const &key, auto &arr) {
+        //using T = std::decay_t<decltype(arr[0])>;
+        //[>auto &temp_arr = <]temp_verts.add_attr<T>(key);
+        ////srcDstAttrs[key] = {
+            ////reinterpret_cast<void *>(arr.data()),
+            ////reinterpret_cast<void *>(temp_arr.data()),
+        ////};
+    //});
+
+    //std::vector<Vertex> tempPosBuffer(nTempVerts);
+    //std::vector<Vertex> finePosBuffer(nFineVerts);
+
+    //std::vector<Vertex> tempClrBuffer(nTempVerts);
+    //std::vector<Vertex> fineClrBuffer(nFineVerts);
 
 
     // Interpolate vertex primvar data
     Far::PrimvarRefiner primvarRefiner(*refiner);
 
-    Vertex * src = verts;
-    for (int level = 1; level <= maxlevel; ++level) {
-        Vertex * dst = src + refiner->GetLevel(level-1).GetNumVertices();
-        primvarRefiner.Interpolate(level, src, dst);
-        src = dst;
+    //Vertex * src = verts;
+    //Vertex * srcPos = &coarsePosBuffer[0];
+    //Vertex * dstPos = &tempPosBuffer[0];
+
+    //Vertex * srcClr = &coarseClrBuffer[0];
+    //Vertex * dstClr = &tempClrBuffer[0];
+
+    size_t srcposoffs = 0;
+    size_t dstposoffs = nCoarseVerts;
+    for (int level = 1; level < maxlevel; ++level) {
+        //Vertex * dst = src + refiner->GetLevel(level-1).GetNumVertices();
+        //primvarRefiner.Interpolate(level, src, dst);
+        //src = dst;
+        auto *srcPos = convvertexptr(prim->verts.data() + srcposoffs);
+        auto *dstPos = convvertexptr(prim->verts.data() + dstposoffs);
+        primvarRefiner.Interpolate(       level, srcPos, dstPos);
+        prim->verts.foreach_attr([&] (auto const &key, auto &arr) {
+            auto *srcClr = convvertexptr(arr.data() + srcposoffs);
+            auto *dstClr = convvertexptr(arr.data() + dstposoffs);
+            primvarRefiner.InterpolateVarying(level, srcClr, dstClr);
+        });
+        //for (auto const &[key, arr]: srcDstAttrs) {
+        //}
+        auto numverts = refiner->GetLevel(level).GetNumVertices();
+        srcposoffs = dstposoffs;
+        dstposoffs += numverts;
+
+        //srcPos = dstPos, dstPos += numverts;
+        //srcClr = dstClr, dstClr += numverts;
+    }
+
+    // Interpolate the last level into the separate buffers for our final data:
+    //primvarRefiner.Interpolate(       maxlevel, srcPos, finePosBuffer);
+    //primvarRefiner.InterpolateVarying(maxlevel, srcClr, fineClrBuffer);
+    {
+        auto *srcPos = convvertexptr(prim->verts.data() + srcposoffs);
+        auto *dstPos = convvertexptr(fine_verts.data());
+        primvarRefiner.Interpolate(       maxlevel, srcPos, dstPos);
+        prim->verts.foreach_attr([&] (auto const &key, auto &arr) {
+            using T = std::decay_t<decltype(arr[0])>;
+            auto &fine_arr = fine_verts.add_attr<T>(key);
+            auto *srcClr = convvertexptr(arr.data() + srcposoffs);
+            auto *dstClr = convvertexptr(fine_arr.data());
+            primvarRefiner.InterpolateVarying(maxlevel, srcClr, dstClr);
+        });
     }
 
 
@@ -166,16 +271,28 @@ static void osdPrimSubdiv(PrimitiveObject *prim, int levels, bool triangulate = 
         int nfaces = refLastLevel.GetNumFaces();
 
         // Print vertex positions
-        int firstOfLastVerts = refiner->GetNumVerticesTotal() - nverts;
+        //int firstOfLastVerts = refiner->GetNumVerticesTotal() - nverts;
         //assert(firstOfLastVerts == nCoarseVerts);
         //prim->verts->erase(prim->verts.begin(), prim->verts.begin() + firstOfLastVerts);
 
-        prim->verts.resize(nverts);
-        for (int vert = 0; vert < nverts; ++vert) {
-            float const * pos = verts[firstOfLastVerts + vert].GetPosition();
-            //printf("v %f %f %f\n", pos[0], pos[1], pos[2]);
-            prim->verts[vert] = {pos[0], pos[1], pos[2]};
-        }
+        std::swap(prim->verts, fine_verts);
+        fine_verts.clear();
+        fine_verts.shrink_to_fit();
+        assert(prim->verts.size() == nverts);
+        //prim->verts.resize(nverts);
+        //for (int vert = 0; vert < nverts; ++vert) {
+            //float const * pos = finePosBuffer[vert].GetPoint();
+            ////printf("v %f %f %f\n", pos[0], pos[1], pos[2]);
+            //prim->verts[vert] = {pos[0], pos[1], pos[2]};
+        //}
+
+        //{
+            //auto &clrarr = prim->verts.add_attr<vec3f>("clr");
+            //for (int i=0; i<nverts; ++i) {
+                //float const * clr = fineClrBuffer[i].GetPoint();
+                //clrarr[i] = {clr[0], clr[1], clr[2]};
+            //}
+        //}
 
         // Print faces
         if (!triangulate) {
