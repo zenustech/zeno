@@ -1,3 +1,4 @@
+#include <zeno/utils/nowarn.h>
 #include <zeno/zeno.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/StringObject.h>
