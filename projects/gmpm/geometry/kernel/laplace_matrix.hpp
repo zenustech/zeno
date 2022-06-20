@@ -120,12 +120,17 @@ namespace zeno {
                 // compute the cotangent entris
                 if constexpr (cdim == 3){
                     edges = IV{1,2,2,0,0,1};
-                    zs::vec<T,cdim> l;
+                    zs::vec<T,3> l;
                     for(size_t i = 0;i != ne;++i)
                         l[i] = (verts.pack<3>(xTag,inds[edges[i*2+0]]) - verts.pack<3>(xTag,inds[edges[i*2+1]])).norm();
                     auto dblA = doublearea(l[0],l[1],l[2]);// check here, double area
                     for(size_t i = 0;i != ne;++i)
-                        C[i] = (l[edges[2*i+0]] + l[edges[2*i+1]] - l[6 - edges[2*i+0] - edges[2*i+1]])/dblA/4.0;
+                        C[i] = (l[edges[2*i+0]] + l[edges[2*i+1]] - l[3 - edges[2*i+0] - edges[2*i+1]])/dblA/4.0;
+                    if(ei == 0){
+                        printf("C : %f %f %f\n",(float)C[0],(float)C[1],(float)C[2]);
+                        printf("l : %f %f %f\n",(float)l[0],(float)l[1],(float)l[2]);
+                        printf("lblA : %f\n",(float)dblA);
+                    }
                 }
                 if constexpr (cdim == 4){
                     // printf("check_1\n");

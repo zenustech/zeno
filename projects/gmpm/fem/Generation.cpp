@@ -600,6 +600,11 @@ struct ToZSTriMesh : INode {
   using tiles_t = typename ZenoParticles::particles_t;
   using vec3 = zs::vec<T, 3>;
 
+  constexpr T area(T a,T b,T c) {
+      T s = (a + b + c)/2;
+      return zs::sqrt(s*(s-a)*(s-b)*(s-c));
+  }
+
   void apply() override {
     using namespace zs;
     // auto zsmodel = get_input<ZenoConstitutiveModel>("ZSModel");
@@ -619,25 +624,110 @@ struct ToZSTriMesh : INode {
     zstris->category = ZenoParticles::surface;
     zstris->sprayedOffset = pos.size();
 
+
+    bool include_customed_properties = get_param<int>("add_customed_attr");
+
     std::vector<zs::PropertyTag> tags{{"x", 3}};
-    std::vector<zs::PropertyTag> eleTags{{"inds", 3}};
+    std::vector<zs::PropertyTag> eleTags{{"inds", 3},{"area",1}};
+
+    std::vector<zs::PropertyTag> auxVertAttribs{};
+    std::vector<zs::PropertyTag> auxElmAttribs{};
+
+    if (include_customed_properties) {
+      for (auto &&[key, arr] : prim->verts.attrs) {
+        const auto checkDuplication = [&tags](const std::string &name) {
+          for (std::size_t i = 0; i != tags.size(); ++i)
+            if (tags[i].name == name.data())
+              return true;
+          return false;
+        };
+        if (checkDuplication(key) || key == "pos" || key == "vel")
+          continue;
+        const auto &k{key};
+        match(
+            [&k, &auxVertAttribs](const std::vector<vec3f> &vals) {
+              auxVertAttribs.push_back(PropertyTag{k, 3});
+            },
+            [&k, &auxVertAttribs](const std::vector<float> &vals) {
+              auxVertAttribs.push_back(PropertyTag{k, 1});
+            },
+            [&k, &auxVertAttribs](const std::vector<vec3i> &vals) {},
+            [&k, &auxVertAttribs](const std::vector<int> &vals) {},
+            [](...) {
+              throw std::runtime_error(
+                  "what the heck is this type of attribute!");
+            })(arr);
+      }
+      for (auto &&[key, arr] : prim->tris.attrs) {
+        const auto checkDuplication = [&eleTags](const std::string &name) {
+          for (std::size_t i = 0; i != eleTags.size(); ++i)
+            if (eleTags[i].name == name.data())
+              return true;
+          return false;
+        };
+        if (checkDuplication(key))
+          continue;
+        const auto &k{key};
+        match(
+            [&k, &auxElmAttribs](const std::vector<vec3f> &vals) {
+              auxElmAttribs.push_back(PropertyTag{k, 3});
+            },
+            [&k, &auxElmAttribs](const std::vector<float> &vals) {
+              auxElmAttribs.push_back(PropertyTag{k, 1});
+            },
+            [&k, &auxElmAttribs](const std::vector<vec3i> &vals) {},
+            [&k, &auxElmAttribs](const std::vector<int> &vals) {},
+            [](...) {
+              throw std::runtime_error(
+                  "what the heck is this type of attribute!");
+            })(arr);
+      }
+    }
+
+
+    tags.insert(std::end(tags), std::begin(auxVertAttribs),
+                std::end(auxVertAttribs));
+    eleTags.insert(std::end(eleTags),std::begin(auxElmAttribs),
+                std::end(auxElmAttribs));
 
     constexpr auto space = zs::execspace_e::openmp;
     zstris->particles =
         std::make_shared<tiles_t>(tags, pos.size(), zs::memsrc_e::host);
     auto &pars = zstris->getParticles();
     ompExec(Collapse{pars.size()},
-            [pars = proxy<space>({}, pars), &pos](int vi) mutable {
+            [pars = proxy<space>({}, pars), &pos,prim,&auxVertAttribs](int vi) mutable {
               pars.tuple<3>("x", vi) = vec3{pos[vi][0], pos[vi][1], pos[vi][2]};
+
+              for (auto &prop : auxVertAttribs) {
+                if (prop.numChannels == 3)
+                  pars.tuple<3>(prop.name, vi) =
+                      prim->attr<vec3f>(std::string{prop.name})[vi];
+                else // prop.numChannles == 1
+                  pars(prop.name, vi) =
+                      prim->attr<float>(std::string{prop.name})[vi];
+              }
+
             });
 
     zstris->elements = typename ZenoParticles::particles_t(eleTags, tris.size(),
                                                            zs::memsrc_e::host);
     auto &eles = zstris->getQuadraturePoints();
     ompExec(Collapse{tris.size()},
-            [eles = proxy<space>({}, eles), &tris](int ei) mutable {
-              for (size_t i = 0; i < 3; ++i)
+            [this,eles = proxy<space>({}, eles),pars = proxy<space>({},pars), &tris,&auxElmAttribs](int ei) mutable {
+              T l[3] = {};
+              for (size_t i = 0; i < 3; ++i){
                 eles("inds", i, ei) = zs::reinterpret_bits<float>(tris[ei][i]);
+                l[i] = (pars.pack<3>("x",tris[ei][i]) - pars.pack<3>("x",tris[ei][(i+1)%3])).length();
+              }
+              eles("area",ei) = area(l[0],l[1],l[2]);
+
+              for (auto &prop : auxElmAttribs) {
+                if (prop.numChannels == 3)
+                  eles.tuple<3>(prop.name, ei) =
+                      tris.attr<vec3f>(std::string{prop.name})[ei];
+                else
+                  eles(prop.name, ei) = tris.attr<float>(std::string{prop.name})[ei];
+              }
             });
 
     pars = pars.clone({zs::memsrc_e::device, 0});
@@ -649,7 +739,7 @@ struct ToZSTriMesh : INode {
 
 ZENDEFNODE(ToZSTriMesh, {{{"surf (tri) mesh", "prim"}},
                          {{"trimesh on gpu", "ZSParticles"}},
-                         {},
+                         {{"int", "add_customed_attr", "0"}},
                          {"FEM"}});
 
 struct ToZSSurfaceMesh : INode {
