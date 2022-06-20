@@ -92,7 +92,7 @@ namespace {
 
 
 //------------------------------------------------------------------------------
-static void osdPrimSubdiv(PrimitiveObject *prim, int levels, bool triangulate = false, bool hasLoopAttrs = true) {
+static void osdPrimSubdivInterpol(PrimitiveObject *prim, int levels, bool triangulate = false) {
 
     const int maxlevel=levels;
     if (maxlevel <= 0 || !prim->verts.size()) return;
@@ -151,16 +151,6 @@ static void osdPrimSubdiv(PrimitiveObject *prim, int levels, bool triangulate = 
             desc.numVertsPerFace = polysLen.data();
             desc.vertIndicesPerFace = polysInd.data();
 
-    std::vector<Far::TopologyDescriptor::FVarChannel> channels;
-
-    if (hasLoopAttrs) {
-        channels.emplace_back();
-        channels.back().numValues = 1;
-
-        desc.numFVarChannels = channels.size();
-        desc.fvarChannels = channels.data();
-    }
-
 
     // Instantiate a Far::TopologyRefiner from the descriptor
             using Factory = Far::TopologyRefinerFactory<Far::TopologyDescriptor>;
@@ -169,12 +159,7 @@ static void osdPrimSubdiv(PrimitiveObject *prim, int levels, bool triangulate = 
     if (!refiner) throw makeError("refiner is null");
 
     // Uniformly refine the topology up to 'maxlevel'
-    // note: fullTopologyInLastLevel must be true to work with face-varying data
-    {
-        Far::TopologyRefiner::UniformOptions refineOptions(maxlevel);
-        refineOptions.fullTopologyInLastLevel = hasLoopAttrs;
-        refiner->RefineUniform(refineOptions);
-    }
+    refiner->RefineUniform(Far::TopologyRefiner::UniformOptions(maxlevel));
 
     //// Allocate a buffer for vertex primvar data. The buffer length is set to
     //// be the sum of all children vertices up to the highest level of refinement.
@@ -373,27 +358,26 @@ static void osdPrimSubdiv(PrimitiveObject *prim, int levels, bool triangulate = 
             //printf("-p %f %f %f\n", vert[0], vert[1], vert[2]);
         //}
         //printf("-c 1;\n");
+    //}
 
     //delete stencilTable;
     //delete vbuffer;
 }
 
-struct OSDPrimSubdiv : INode {
+struct OSDPrimSubdivInterpol : INode {
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
         int levels = get_input2<int>("levels");
         bool triangulate = get_input2<bool>("triangulate");
-        bool hasLoopAttrs = get_input2<bool>("hasLoopAttrs");
-        if (levels) osdPrimSubdiv(prim.get(), levels, triangulate, hasLoopAttrs);
+        if (levels) osdPrimSubdivInterpol(prim.get(), levels, triangulate);
         set_output("prim", std::move(prim));
     }
 };
-ZENO_DEFNODE(OSDPrimSubdiv)({
+ZENO_DEFNODE(OSDPrimSubdivInterpol)({
     {
         "prim",
         {"int", "levels", "2"},
         {"bool", "triangulate", "true"},
-        {"bool", "hasLoopAttrs", "true"},
     },
     {
         "prim",
