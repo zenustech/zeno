@@ -105,7 +105,9 @@ static void osdPrimSubdiv(PrimitiveObject *prim, int levels, bool triangulate = 
     std::vector<int> polysInd, polysLen;
     int primpolyreduced = 0;
     for (int i = 0; i < prim->polys.size(); i++) {
-        primpolyreduced += prim->polys[i].second;
+        auto [base, len] = prim->polys[i];
+        if (len <= 2) continue;
+        primpolyreduced += len;
     }
     polysLen.reserve(prim->tris.size() + prim->quads.size() + prim->polys.size());
     polysInd.reserve(prim->tris.size() * 3 + prim->quads.size() * 4 + primpolyreduced);
@@ -152,10 +154,32 @@ static void osdPrimSubdiv(PrimitiveObject *prim, int levels, bool triangulate = 
             desc.vertIndicesPerFace = polysInd.data();
 
     std::vector<Far::TopologyDescriptor::FVarChannel> channels;
-
+    std::vector<std::vector<int>> loopsIndTab;
     if (hasLoopAttrs) {
-        channels.emplace_back();
-        channels.back().numValues = 1;
+
+        channels.reserve(prim->loops.num_attrs());
+        loopsIndTab.reserve(prim->loops.num_attrs());
+        for (auto const &key: prim->loops.attr_keys()) {
+            auto &loopsInd = loopsIndTab.emplace_back();
+            loopsInd.resize(polysInd.size());
+            int offsetred = prim->tris.size() * 3 + prim->quads.size() * 4;
+            for (int i = 0; i < prim->polys.size(); i++) {
+                auto [base, len] = prim->polys[i];
+                if (len <= 2) continue;
+                for (int j = 0; j < len; j++) {
+                    loopsInd[offsetred + j] = base + j;
+                    //prim->loops.attr<int>(key)[base + j];
+                }
+                offsetred += len;
+            }
+            //if (key.size() >= 4 && key[0] == 'I' && key[1] == 'N' && key[2] == 'D' && key[3] == '_'
+            //   prim->loops.attr_is<int>(key)) {
+            //}
+
+            auto &ch = channels.emplace_back();
+            ch.numValues = loopsInd.size();
+            ch.valueIndices = loopsInd.data();
+        }
 
         desc.numFVarChannels = channels.size();
         desc.fvarChannels = channels.data();
@@ -166,7 +190,7 @@ static void osdPrimSubdiv(PrimitiveObject *prim, int levels, bool triangulate = 
             using Factory = Far::TopologyRefinerFactory<Far::TopologyDescriptor>;
     std::unique_ptr<Far::TopologyRefiner> refiner(
         Factory::Create(desc, Factory::Options(type, options)));
-    if (!refiner) throw makeError("refiner is null");
+    if (!refiner) throw makeError("refiner is null (factory creation failed)");
 
     // Uniformly refine the topology up to 'maxlevel'
     // note: fullTopologyInLastLevel must be true to work with face-varying data
