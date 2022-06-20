@@ -17,7 +17,7 @@
 
 namespace zeno {
 
-struct ZSSolveLaplaceEquaOnTets : zeno::INode {
+struct ZSSolveLaplacian : zeno::INode {
     using T = float;
     using dtiles_t = zs::TileVector<T,32>;
     using tiles_t = typename ZenoParticles::particles_t;
@@ -191,8 +191,8 @@ struct ZSSolveLaplaceEquaOnTets : zeno::INode {
             throw std::runtime_error("ZSSolveLaplaceEquaOnTets: invalid simplex size");
         }
 
-        static dtiles_t etemp{eles.get_allocator(),{{"L",cdim*cdim}},eles.size()};
-        static dtiles_t vtemp{verts.get_allocator(),{
+        dtiles_t etemp{eles.get_allocator(),{{"L",cdim*cdim}},eles.size()};
+        dtiles_t vtemp{verts.get_allocator(),{
             {"x",1},
             {"b",1},
             {"P",1},
@@ -387,7 +387,7 @@ struct ZSSolveLaplaceEquaOnTets : zeno::INode {
     }
 };
 
-ZENDEFNODE(ZSSolveLaplaceEquaOnTets, {
+ZENDEFNODE(ZSSolveLaplacian, {
                                     {"ZSParticles"},
                                     {"ZSParticles"},
                                     {
@@ -565,8 +565,8 @@ struct ZSSolveBiHarmonicEquaOnTets : zeno::INode {
         if(cdim != 4 || cdim != 3)
             throw std::runtime_error("ZSSolveLaplaceEquaOnTets: invalid simplex size");
 
-        static dtiles_t etemp{eles.get_allocator(),{{"L",cdim*cdim}},eles.size()};
-        static dtiles_t vtemp{verts.get_allocator(),{
+        dtiles_t etemp{eles.get_allocator(),{{"L",cdim*cdim}},eles.size()};
+        dtiles_t vtemp{verts.get_allocator(),{
             {"x",1},
             {"b",1},
             {"P",1},
