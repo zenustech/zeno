@@ -60,7 +60,7 @@
       "displayName": "CUDA configuration",
       "description": "Additionally build with CUDA extension modules",
       "cacheVariables": {
-        "ZENO_WITH_gmpm": "OFF",
+        "ZENO_WITH_gmpm": "ON",
         "ZENO_ENABLE_OPTIX": "ON"
       }
     }
