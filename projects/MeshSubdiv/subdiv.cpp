@@ -136,16 +136,7 @@ static void osdPrimSubdiv(PrimitiveObject *prim, int levels, bool triangulate = 
     }
 
     if (!polysLen.size() || !polysInd.size()) return;
-    
-    prim->tris.clear();
-    prim->quads.clear();
-    prim->polys.clear();
-    prim->loops.clear();
 
-    Sdc::SchemeType type = OpenSubdiv::Sdc::SCHEME_CATMARK;
-
-    Sdc::Options options;
-    options.SetVtxBoundaryInterpolation(Sdc::Options::VTX_BOUNDARY_EDGE_ONLY);
 
     Far::TopologyDescriptor desc;
             desc.numVertices = prim->verts.size();
@@ -160,7 +151,7 @@ static void osdPrimSubdiv(PrimitiveObject *prim, int levels, bool triangulate = 
 
         channels.reserve(prim->loops.num_attrs());
         loopsIndTab.reserve(prim->loops.num_attrs());
-        chanvecptrs.reserve(prim->loops.num_attrs());
+        chanveckeys.reserve(prim->loops.num_attrs());
         for (auto const &key: prim->loops.attr_keys()) {
             auto &loopsInd = loopsIndTab.emplace_back();
             loopsInd.resize(polysInd.size());
@@ -193,12 +184,21 @@ static void osdPrimSubdiv(PrimitiveObject *prim, int levels, bool triangulate = 
         desc.numFVarChannels = channels.size();
         desc.fvarChannels = channels.data();
     }
+    
+    prim->tris.clear();
+    prim->quads.clear();
+    prim->polys.clear();
+    prim->loops.clear();
 
 
+
+    Sdc::SchemeType refinetfactype = OpenSubdiv::Sdc::SCHEME_CATMARK;
+    Sdc::Options refineofactptions;
+    refineofactptions.SetVtxBoundaryInterpolation(Sdc::Options::VTX_BOUNDARY_EDGE_ONLY);
     // Instantiate a Far::TopologyRefiner from the descriptor
             using Factory = Far::TopologyRefinerFactory<Far::TopologyDescriptor>;
     std::unique_ptr<Far::TopologyRefiner> refiner(
-        Factory::Create(desc, Factory::Options(type, options)));
+        Factory::Create(desc, Factory::Options(refinetfactype, refineofactptions)));
     if (!refiner) throw makeError("refiner is null (factory creation failed)");
 
     // Uniformly refine the topology up to 'maxlevel'
@@ -298,8 +298,8 @@ static void osdPrimSubdiv(PrimitiveObject *prim, int levels, bool triangulate = 
         if (hasLoopAttrs) {
             for (int chi = 0; chi < channels.size(); chi++) {
                 prim->loops.attr_visit(chanveckeys[chi], [&] (auto &chva) {
-                    auto *srcFVarColor = chva.data() + srcfvaroffs[chi];
-                    auto *dstFVarColor = chva.data() + dstfvaroffs[chi];
+                    auto *srcFVarColor = convvertexptr(chva.data() + srcfvaroffs[chi]);
+                    auto *dstFVarColor = convvertexptr(chva.data() + dstfvaroffs[chi]);
                     primvarRefiner.InterpolateFaceVarying(level, srcFVarColor, dstFVarColor, chi);
                     auto numfvars = refiner->GetLevel(level).GetNumFVarValues(chi);
                     srcfvaroffs[chi] = dstfvaroffs[chi];
