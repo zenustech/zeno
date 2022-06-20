@@ -231,6 +231,7 @@ struct CodimStepping : INode {
   inline static bool BCsatisfied = false;
   inline static T updateZoneTol = 1e-1;
   inline static T consTol = 1e-2;
+  inline static T armijoParam = 1e-4;
 
   inline static T kappaMax = 1e8;
   inline static T kappaMin = 1e4;
@@ -431,13 +432,13 @@ struct CodimStepping : INode {
       auto triBvs = retrieve_bounding_volumes(pol, vtemp, "xn", tris,
                                               wrapv<3>{}, voffset);
       // puts("before boundary dcd surf tri bvh build");
-      bvh_t stBvh;
+      bvh_t &stBvh = voffset == 0 ? this->stBvh : this->bouStBvh;
       stBvh.build(pol, triBvs);
       // puts("before boundary dcd surf edge bvs");
       auto edgeBvs = retrieve_bounding_volumes(pol, vtemp, "xn", sedges,
                                                wrapv<2>{}, voffset);
       // puts("before boundary dcd surf edge bvh build");
-      bvh_t seBvh;
+      bvh_t &seBvh = voffset == 0 ? this->seBvh : this->bouSeBvh;
       seBvh.build(pol, edgeBvs);
 
       /// pt
@@ -696,12 +697,12 @@ struct CodimStepping : INode {
       // voffset);
       auto triBvs = retrieve_bounding_volumes(
           pol, vtemp, "xn", tris, wrapv<3>{}, vtemp, "dir", alpha, voffset);
-      bvh_t stBvh;
+      bvh_t &stBvh = voffset == 0 ? this->stBvh : this->bouStBvh;
       stBvh.build(pol, triBvs);
       // puts("before boundary ccd surf edge bvhs");
       auto edgeBvs = retrieve_bounding_volumes(
           pol, vtemp, "xn", sedges, wrapv<2>{}, vtemp, "dir", alpha, voffset);
-      bvh_t seBvh;
+      bvh_t &seBvh = voffset == 0 ? this->seBvh : this->bouSeBvh;
       seBvh.build(pol, edgeBvs);
 
       /// pt
@@ -1525,6 +1526,24 @@ struct CodimStepping : INode {
 
       ncsPT.setVal(0);
       ncsEE.setVal(0);
+
+      auto cudaPol = zs::cuda_exec();
+      {
+        auto triBvs = retrieve_bounding_volumes(cudaPol, vtemp, "xn", eles,
+                                                zs::wrapv<3>{}, 0);
+        stBvh.build(cudaPol, triBvs);
+        auto edgeBvs = retrieve_bounding_volumes(cudaPol, vtemp, "xn", edges,
+                                                 zs::wrapv<2>{}, 0);
+        seBvh.build(cudaPol, edgeBvs);
+      }
+      {
+        auto triBvs = retrieve_bounding_volumes(cudaPol, vtemp, "xn", coEles,
+                                                zs::wrapv<3>{}, coOffset);
+        bouStBvh.build(cudaPol, triBvs);
+        auto edgeBvs = retrieve_bounding_volumes(cudaPol, vtemp, "xn", coEdges,
+                                                 zs::wrapv<2>{}, coOffset);
+        bouSeBvh.build(cudaPol, edgeBvs);
+      }
     }
 
     const dtiles_t &verts;
@@ -1560,6 +1579,9 @@ struct CodimStepping : INode {
     // end contacts
     T dt;
     const ZenoConstitutiveModel &models;
+    // auxiliary data (spatial acceleration)
+    bvh_t stBvh, seBvh;       // for simulated objects
+    bvh_t bouStBvh, bouSeBvh; // for collision objects
   };
 
   static T reduce(zs::CudaExecutionPolicy &cudaPol, const zs::Vector<T> &res) {
@@ -1673,8 +1695,6 @@ struct CodimStepping : INode {
     etemp.resize(eles.size());
 
     extForce = vec3{0, -9, 0};
-    FEMSystem A{verts,  edges, eles,  coVerts, coEdges,
-                coEles, vtemp, etemp, dt,      models};
 
     constexpr auto space = execspace_e::cuda;
     auto cudaPol = cuda_exec().sync(true);
@@ -1772,6 +1792,9 @@ struct CodimStepping : INode {
       BCsatisfied = false;
     }
     kappa = kappa0;
+
+    FEMSystem A{verts,  edges, eles,  coVerts, coEdges,
+                coEles, vtemp, etemp, dt,      models};
 
     /// optimizer
     for (int newtonIter = 0; newtonIter != 1000; ++newtonIter) {
@@ -1922,7 +1945,7 @@ struct CodimStepping : INode {
                 });
         T zTrk = dot(cudaPol, vtemp, "r", "q");
         auto residualPreconditionedNorm = std::sqrt(zTrk);
-        auto localTol = 0.1 * residualPreconditionedNorm;
+        auto localTol = 1e-1 * residualPreconditionedNorm;
         int iter = 0;
         for (; iter != 10000; ++iter) {
           if (iter % 10 == 0)
@@ -2002,6 +2025,10 @@ struct CodimStepping : INode {
       fmt::print("\tstepsize after ccd: {}\n", alpha);
 
       T E{E0};
+      T c1m = 0;
+      int lsIter = 0;
+      c1m = armijoParam * dot(cudaPol, vtemp, "dir", "grad");
+      fmt::print(fg(fmt::color::white), "c1m : {}\n", c1m);
 #if 1
       int numLineSearchIter = 0;
       do {
@@ -2017,15 +2044,19 @@ struct CodimStepping : INode {
         })(models.getElasticModel());
 
         fmt::print("E: {} at alpha {}. E0 {}\n", E, alpha, E0);
-        if (E < E0)
+#if 0
+        if (E < E0) break;
+#else
+        if (E <= E0 + alpha * c1m)
           break;
+#endif
 
         alpha /= 2;
-        if ((++numLineSearchIter) >= 20) {
+        if (++lsIter > 20) {
           auto cr = A.constraintResidual(cudaPol);
-          fmt::print("too small stepsize after {} iterations! alpha: {}, cons "
-                     "res: {}, \n",
-                     numLineSearchIter, alpha, cr);
+          fmt::print(
+              "too small stepsize at iteration [{}]! alpha: {}, cons res: {}\n",
+              lsIter, alpha, cr);
           getchar();
         }
       } while (true);
