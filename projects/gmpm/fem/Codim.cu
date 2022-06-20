@@ -231,6 +231,7 @@ struct CodimStepping : INode {
   inline static bool BCsatisfied = false;
   inline static T updateZoneTol = 1e-1;
   inline static T consTol = 1e-2;
+  inline static T armijoParam = 1e-4;
 
   inline static T kappaMax = 1e8;
   inline static T kappaMin = 1e4;
@@ -692,7 +693,8 @@ struct CodimStepping : INode {
       if (sedges.size() == 0 || tris.size() == 0)
         return;
 
-      // fmt::print("offset : {}. before boundary ccd surf tri bvhs\n", voffset);
+      // fmt::print("offset : {}. before boundary ccd surf tri bvhs\n",
+      // voffset);
       auto triBvs = retrieve_bounding_volumes(
           pol, vtemp, "xn", tris, wrapv<3>{}, vtemp, "dir", alpha, voffset);
       bvh_t stBvh;
@@ -1872,13 +1874,13 @@ struct CodimStepping : INode {
                 vtemp("P", 4, i) += m;
                 vtemp("P", 8, i) += m;
               });
-      cudaPol(zs::range(coVerts.size()),
-              [vtemp = proxy<space>({}, vtemp), coOffset,
-               kappa = kappa] __device__(int i) mutable {
-                auto cons = vtemp.pack<3>("cons", i);
-                auto w = vtemp("ws", coOffset + i);
-                if (cons.l2NormSqr() != 0)
-                  vtemp.tuple<9>("P", coOffset + i) = mat3::identity() * kappa * w;
+      cudaPol(
+          zs::range(coVerts.size()), [vtemp = proxy<space>({}, vtemp), coOffset,
+                                      kappa = kappa] __device__(int i) mutable {
+            auto cons = vtemp.pack<3>("cons", i);
+            auto w = vtemp("ws", coOffset + i);
+            if (cons.l2NormSqr() != 0)
+              vtemp.tuple<9>("P", coOffset + i) = mat3::identity() * kappa * w;
 #if 0
                 int d = 0;
                 for (; d != 3 && cons[d] != 0; ++d)
@@ -1886,7 +1888,7 @@ struct CodimStepping : INode {
                 for (; d != 3; ++d)
                   vtemp("P", 4 * d, coOffset + i) = kappa * w;
 #endif
-              });
+          });
       cudaPol(zs::range(numDofs),
               [vtemp = proxy<space>({}, vtemp)] __device__(int i) mutable {
                 auto mat = vtemp.pack<3, 3>("P", i);
@@ -2001,6 +2003,10 @@ struct CodimStepping : INode {
       fmt::print("\tstepsize after ccd: {}\n", alpha);
 
       T E{E0};
+      T c1m = 0;
+      int lsIter = 0;
+      c1m = armijoParam * dot(cudaPol, vtemp, "dir", "grad");
+      fmt::print(fg(fmt::color::white), "c1m : {}\n", c1m);
 #if 1
       do {
         cudaPol(zs::range(vtemp.size()), [vtemp = proxy<space>({}, vtemp),
@@ -2015,14 +2021,19 @@ struct CodimStepping : INode {
         })(models.getElasticModel());
 
         fmt::print("E: {} at alpha {}. E0 {}\n", E, alpha, E0);
-        if (E < E0)
+#if 0
+        if (E < E0) break;
+#else
+        if (E <= E0 + alpha * c1m)
           break;
+#endif
 
         alpha /= 2;
-        if (alpha < 1e-4) {
+        if (++lsIter > 20) {
           auto cr = A.constraintResidual(cudaPol);
-          fmt::print("too small stepsize! alpha: {}, cons res: {}\n", alpha,
-                     cr);
+          fmt::print(
+              "too small stepsize at iteration [{}]! alpha: {}, cons res: {}\n",
+              lsIter, alpha, cr);
           getchar();
         }
       } while (true);
@@ -2043,9 +2054,9 @@ struct CodimStepping : INode {
                   [vtemp = proxy<space>({}, vtemp),
                    kappa = kappa] __device__(int vi) mutable {
                     if (int BCorder = vtemp("BCorder", vi); BCorder > 0) {
-                    vtemp.tuple<3>("lambda", vi) =
-                        vtemp.pack<3>("lambda", vi) -
-                        kappa * vtemp("ws", vi) * vtemp.pack<3>("cons", vi);
+                      vtemp.tuple<3>("lambda", vi) =
+                          vtemp.pack<3>("lambda", vi) -
+                          kappa * vtemp("ws", vi) * vtemp.pack<3>("cons", vi);
                     }
                   });
         }
