@@ -3,7 +3,7 @@
 //
 #include <zeno/zeno.h>
 #include <zeno/types/StringObject.h>
-
+#include <zeno/types/NumericObject.h>
 #include <zfx/zfx.h>
 #include <zfx/x64.h>
 #include <cassert>
@@ -26,28 +26,32 @@ static void numeric_eval (zfx::x64::Executable *exec,
     }
 
 }
-
+/*
+ * 接收一个Numericfloat的参数，makedict一下传给$
+ * */
 struct NumericEval : zeno::INode {
     virtual void apply() override {
-        auto code = get_input<zeno::StringObject>("zfxCode")->get();
+        auto code = get_input<std::string>("zfxCode")->get();
+        //auto code = get_params<>
         //一个模板函数，返回一个std::shared_ptr<T>，这里对这一个智能指针调用get()返回一个裸指针
+       // auto op = get_param<std::string>("op_type");
+       // auto FrameId = std::make_shared<zeno::NumericObject>();
+        //auto FrameTime = std::make_shared<zeno::NumericObject>();
+
+
         zfx::Options opts(zfx::Options::for_x64);
         opts.detect_new_symbols = true;
-
-        //接收参数
-        auto params = has_input("params") ? get_input<zeno::DictObject>("params") :
-                                          std::make_shared<zeno::DictObject>();
-
-        std::vector<float> parvals;//存储参数值
-        std::vector<std::pair<string, int>> parnames;
+//现在有一个问题就是NumericEval如果只接收一个std::string，那么用户输入zfx代码中包含$frame，我们如何设置这一个$DictObject的值
+        auto params = std::make_shared<zeno::DictObject>();
+        //params->
+        std::vector<float> parvals;//存储$的值
+        std::vector<std::pair<string, int>> parnames;//保存所以$的变量
         for (auto const &[key_, obj] : params->lut) {
             //lut是DictObject中的一个map<std::string, zany>
             //zany是std::shared_ptr<IObject>的别名
             auto key = '$' + key_;
             auto par = zeno::objectToLiterial<zeno::NumericValue>(obj);
-            //par 是一个NumericValue
-            //ObjectToLiterial是一个模板函数由两个重载一个返回bool， 一个返回T
-            //获取参数的维数
+            //取出$的值
             auto dim = std::visit([&](auto const &v){
                 using T = std::decay_t<decltype(v)>;
                 //判断参数是三维数组还是，单浮点数
@@ -123,11 +127,8 @@ struct NumericEval : zeno::INode {
         auto key = name.substr(1);
         std::visit([dimid = dimid, value] (auto &res) {
             dimid[(float*)(void*)&res] = value;
-<<<<<<< HEAD
         }, result->get());
-=======
-        }, result->get())
->>>>>>> 391b0ac962b7c1d02dc606d38ca61e53d5db028a
+
     }
     set_output("result", std::move(result));
 };
@@ -135,13 +136,14 @@ struct NumericEval : zeno::INode {
     ZENDEFNODE(NumericEval, {
                             /* inputs*/
                             {
-                                {"DictObject:NumericObject", "params"}, {"string", "zfxCode"}
+                                 {"string", "zfxCode"},
                             },
+
                             /*OutPut*/
                             {
                                 {"NumericObject", "result"}
                             },
-                            {},
-                            {"zenofx"},
+                            {},//参数
+                            {"numeric"},
                         });
 }
