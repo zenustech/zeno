@@ -93,6 +93,7 @@ namespace {
 
 //------------------------------------------------------------------------------
 static void osdPrimSubdiv(PrimitiveObject *prim, int levels, bool triangulate = false, bool hasLoopAttrs = true) {
+    hasLoopAttrs = false;
 
     const int maxlevel=levels;
     if (maxlevel <= 0 || !prim->verts.size()) return;
@@ -136,6 +137,13 @@ static void osdPrimSubdiv(PrimitiveObject *prim, int levels, bool triangulate = 
     }
 
     if (!polysLen.size() || !polysInd.size()) return;
+    
+    if (!hasLoopAttrs) {
+        prim->tris.clear();
+        prim->quads.clear();
+        prim->polys.clear();
+        prim->loops.clear();
+    }
 
 
     Far::TopologyDescriptor desc;
@@ -184,11 +192,6 @@ static void osdPrimSubdiv(PrimitiveObject *prim, int levels, bool triangulate = 
         desc.numFVarChannels = channels.size();
         desc.fvarChannels = channels.data();
     }
-    
-    prim->tris.clear();
-    prim->quads.clear();
-    prim->polys.clear();
-    prim->loops.clear();
 
 
 
@@ -221,8 +224,21 @@ static void osdPrimSubdiv(PrimitiveObject *prim, int levels, bool triangulate = 
     int nFineVerts   = refiner->GetLevel(maxlevel).GetNumVertices();
     int nTotalVerts  = refiner->GetNumVerticesTotal();
     int nTempVerts   = nTotalVerts - nCoarseVerts - nFineVerts;
-
     prim->verts.resize(nCoarseVerts + nTempVerts);
+
+    AttrVector<int> fine_loops;
+    if (hasLoopAttrs) {
+        for (int chi = 0; chi < channels.size(); chi++) {
+            int nCoarseFVars = channels[chi].numValues;
+            int nFineFVars = refiner->GetLevel(maxlevel).GetNumFVarValues(chi);
+            int nTotalFVars = refiner->GetNumFVarValuesTotal(chi);
+            int nTempFVars   = nTotalFVars - nCoarseFVars - nFineFVars;
+            prim->loops.attr_visit(chanveckeys[chi], [&] (auto &arr) {
+                arr.resize(nCoarseFVars + nTempFVars);
+            });
+        }
+        //prim->loops.resize
+    }
 
     //std::vector<Vertex> coarsePosBuffer(nCoarseVerts);
     //std::vector<Vertex> coarseClrBuffer(nCoarseVerts);
@@ -386,6 +402,11 @@ static void osdPrimSubdiv(PrimitiveObject *prim, int levels, bool triangulate = 
             //}
         //}
 
+    
+        prim->tris.clear();
+        prim->quads.clear();
+        prim->polys.clear();
+        prim->loops.clear();
         // Print faces
         if (!triangulate) {
             prim->quads.resize(nfaces);
