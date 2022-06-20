@@ -17,6 +17,7 @@
 #include "util/log.h"
 #include "makelistnode.h"
 #include "blackboardnode.h"
+#include "makedictnode.h"
 
 
 ZenoSubGraphScene::ZenoSubGraphScene(QObject *parent)
@@ -139,6 +140,10 @@ ZenoNode* ZenoSubGraphScene::createNode(const QModelIndex& idx, const NodeUtilPa
     else if (descName == "Blackboard")
     {
         return new BlackboardNode(params);
+    }
+    else if (descName == "MakeDict")
+    {
+        return new MakeDictNode(params);
     }
     else
     {
@@ -616,8 +621,12 @@ void ZenoSubGraphScene::updateLinkPos(ZenoNode* pNode, QPointF newPos)
             const QString& linkId = index.data(ROLE_OBJID).toString();
             const QString& outNode = index.data(ROLE_OUTNODE).toString();
             const QString& outSock = index.data(ROLE_OUTSOCK).toString();
-
             const QPointF& outputPos = m_nodes[outNode]->getPortPos(false, outSock);
+
+            if (inSock == "dict") {
+                //todo: for expanded dict panel, the inputPos should be a dict item socket.
+                //inputPos = ...
+            }
 
             ZenoFullLink* pLink = m_links[linkId];
             ZASSERT_EXIT(pLink);
@@ -635,6 +644,10 @@ void ZenoSubGraphScene::updateLinkPos(ZenoNode* pNode, QPointF newPos)
             const QString& linkId = index.data(ROLE_OBJID).toString();
             const QString& inNode = index.data(ROLE_INNODE).toString();
             const QString& inSock = index.data(ROLE_INSOCK).toString();
+
+            if (inSock == "dict") {
+                //todo
+            }
 
             QPointF inputPos = m_nodes[inNode]->getPortPos(true, inSock);
             ZenoFullLink* pLink = m_links[linkId];

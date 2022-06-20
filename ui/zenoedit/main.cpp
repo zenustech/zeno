@@ -4,6 +4,8 @@
 #include "zenoapplication.h"
 #include "zenomainwindow.h"
 #include "startup/zstartup.h"
+#include "panel/zdicteditor.h"
+#include <zenoui/model/dictmodel.h>
 
 
 int main(int argc, char *argv[]) 
@@ -26,6 +28,18 @@ int main(int argc, char *argv[])
     }
 
 	ZenoMainWindow mainWindow;
-	mainWindow.showMaximized();
+    mainWindow.showMaximized();
+
+    //DictModel dictModel;
+
+    //QStandardItem *pItem = new QStandardItem("");
+    //pItem->setData(QVariant("a"), ROLE_KEY);
+    //pItem->setData(QVariant(3), ROLE_DATATYPE);
+    //pItem->setData(QVariant("int"), ROLE_VALUE);
+    //dictModel.appendRow(pItem);
+
+    //ZDictEditor dictEditor(&dictModel);
+    //dictEditor.show();
+
 	return a.exec();
 }

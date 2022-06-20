@@ -91,6 +91,7 @@ protected:
     virtual QGraphicsLayout* initParams();
     virtual void initParam(PARAM_CONTROL ctrl, QGraphicsLinearLayout* pParamLayout, const QString& name, const PARAM_INFO& param);
     virtual QGraphicsLinearLayout* initCustomParamWidgets();
+    void registerParamSocket(const QString& paramName, ZenoSocketItem* socket, ZenoTextLayoutItem* socket_text, ZenoParamWidget* socket_control);
 
 protected:
     NodeUtilParam m_renderParams;
@@ -103,7 +104,7 @@ private:
     ZenoBackgroundWidget* initCollaspedWidget();
     QGraphicsLayout* initSockets();
     void initIndependentWidgetsLegacy();
-    void _initSocketItemPos();
+    void _adjustSocketIconPos();
     void _drawBorderWangStyle(QPainter* painter);
     ZenoGraphsEditor* getEditorViewByViewport(QWidget* pWidget);
 
@@ -113,6 +114,7 @@ private:
 
     QMap<QString, _socket_ctrl> m_inSockets;
     QMap<QString, _socket_ctrl> m_outSockets;
+    QMap<QString, _socket_ctrl> m_paramsSockets;    //special case like "MakeDict", does need a socket to display ui.
 
     QMap<QString, ZenoParamWidget*> m_paramControls;
 

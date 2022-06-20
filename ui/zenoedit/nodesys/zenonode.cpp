@@ -74,7 +74,7 @@ ZenoNode::~ZenoNode()
 {
 }
 
-void ZenoNode::_initSocketItemPos()
+void ZenoNode::_adjustSocketIconPos()
 {
     //need to optimizize
     QString nodeid = nodeId();
@@ -112,6 +112,24 @@ void ZenoNode::_initSocketItemPos()
 
         socketItem->setPos(pos);
         emit socketPosInited(nodeid, sockName, false);
+    }
+    for (auto sockName : m_paramsSockets.keys())
+    {
+        auto sockLabelItem = m_paramsSockets[sockName].socket_text;
+        auto socketItem = m_paramsSockets[sockName].socket;
+        QPointF scenePos = sockLabelItem->scenePos();
+        QRectF sRect = sockLabelItem->sceneBoundingRect();
+        QPointF pos = this->mapFromScene(scenePos);
+        qreal x = -socketItem->size().width() / 2;
+        qreal y = pos.y() + sRect.height() / 2 - socketItem->size().height() / 2;
+        pos -= QPointF(m_renderParams.socketToText + socketItem->size().width(), 0);
+        //fixed center on the border.
+        //socket icon is hard to layout, as it's not a part of layout item but rely on the position of the layouted item.
+        pos.setX(-socketItem->size().width() / 2 + m_renderParams.bodyBg.border_witdh / 2);
+        pos.setY(y);
+
+        socketItem->setPos(pos);
+        //emit socketPosInited(nodeid, sockName, true);
     }
 }
 
@@ -330,7 +348,8 @@ QGraphicsLayout* ZenoNode::initParams()
     const QString nodeid = nodeId();
 
     QGraphicsLinearLayout* pParamsLayout = nullptr;
-    if (n > 0)
+    QGraphicsLinearLayout *pCustomParams = initCustomParamWidgets();
+    if (n > 0 || pCustomParams != nullptr)
     {
         pParamsLayout = new QGraphicsLinearLayout(Qt::Vertical);
         for (auto paramName : params.keys())
@@ -345,7 +364,6 @@ QGraphicsLayout* ZenoNode::initParams()
             r++;
         }
     }
-    QGraphicsLinearLayout* pCustomParams = initCustomParamWidgets();
     if (pParamsLayout && pCustomParams)
         pParamsLayout->addItem(pCustomParams);
     return pParamsLayout;
@@ -354,6 +372,15 @@ QGraphicsLayout* ZenoNode::initParams()
 QGraphicsLinearLayout* ZenoNode::initCustomParamWidgets()
 {
     return nullptr;
+}
+
+void ZenoNode::registerParamSocket(const QString& paramName, ZenoSocketItem* socket, ZenoTextLayoutItem* socket_text, ZenoParamWidget* socket_control)
+{
+    _socket_ctrl ctrl;
+    ctrl.socket = socket;
+    ctrl.socket_text = socket_text;
+    ctrl.socket_control = socket_control;
+    m_paramsSockets[paramName] = ctrl;
 }
 
 void ZenoNode::initParam(PARAM_CONTROL ctrl, QGraphicsLinearLayout* pParamLayout, const QString& paramName, const PARAM_INFO& param)
@@ -1142,7 +1169,7 @@ void ZenoNode::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
 void ZenoNode::resizeEvent(QGraphicsSceneResizeEvent* event)
 {
     _base::resizeEvent(event);
-    _initSocketItemPos();
+    _adjustSocketIconPos();
 }
 
 void ZenoNode::hoverEnterEvent(QGraphicsSceneHoverEvent* event)

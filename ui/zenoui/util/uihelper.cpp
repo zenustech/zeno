@@ -151,6 +151,11 @@ QVariant UiHelper::_parseDefaultValue(const QString &defaultValue, const QString
         }
         return QVariant::fromValue(vec);
     }
+    case CONTROL_DICT:
+    {
+        int j;
+        j = 0;
+    }
     default:
         return QVariant();
     };
@@ -257,6 +262,8 @@ PARAM_CONTROL UiHelper::_getControlType(const QString &type)
         return CONTROL_MULTILINE_STRING;
     } else if (type == "heatmap") {
         return CONTROL_HEATMAP;
+    } else if (type == "dict") {
+        return CONTROL_DICT;
     } else if (type == "curve") {
         return CONTROL_CURVE;
     } else if (type.startsWith("enum ")) {
