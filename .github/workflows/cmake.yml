@@ -161,9 +161,9 @@ jobs:
     strategy:
       matrix:
         include:
-        - label: x86_64-linux-cpu
+        - label: x86_64-linux-cuda
           pkgext: tar.gz
-        - label: x86_64-windows-cpu
+        - label: x86_64-windows-cuda
           pkgext: zip
 
     if: ${{ needs.check.outputs.deploy == 'true' }}
