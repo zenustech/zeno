@@ -4,5 +4,5 @@
 
 void startUp()
 {
-    zeno::getSession().eventCallbacks->triggerEvent("init");
+    static int initOnce = (zeno::getSession().eventCallbacks->triggerEvent("init"), 0);
 }
