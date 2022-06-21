@@ -11,6 +11,12 @@
 #include <math.h>
 //#include <spdlog/spdlog.h>
 
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+#include <glm/vec2.hpp>
+#include <glm/vec3.hpp>
+
 namespace zeno {
 struct CreateCube : zeno::INode {
     virtual void apply() override {
@@ -145,18 +151,118 @@ struct CreatePlane : zeno::INode {
     virtual void apply() override {
         auto prim = std::make_shared<zeno::PrimitiveObject>();
         auto position = get_input2<zeno::vec3f>("position");
-        auto scaleSize = get_input2<zeno::vec3f>("scaleSize");
+        auto scale = get_input2<zeno::vec3f>("scaleSize");
         auto size = get_input2<float>("size");
+        auto rows = get_input2<int>("rows");;
+        auto columns = get_input2<int>("columns");;
+        auto rotate = get_input2<zeno::vec3f>("rotate");
 
-        auto &pos = prim->verts;
-        pos.push_back(vec3f( 1, 0,  1) * size * scaleSize + position);
-        pos.push_back(vec3f( 1, 0, -1) * size * scaleSize + position);
-        pos.push_back(vec3f(-1, 0, -1) * size * scaleSize + position);
-        pos.push_back(vec3f(-1, 0,  1) * size * scaleSize + position);
-
+        auto &verts = prim->verts;
         auto &tris = prim->tris;
-        tris.push_back(vec3i(0, 1, 2));
-        tris.push_back(vec3i(0, 2, 3));
+        std::vector<zeno::vec3f> uvs;
+        std::vector<zeno::vec3f> nors;
+
+        if(rows <= 1)
+            rows = 1;
+        if(columns <= 1)
+            columns = 1;
+
+        auto start_point = glm::vec3(0.5, 0, 0.5);
+        auto gscale = glm::vec3(scale[0], scale[1], scale[2]);
+        auto gposition = glm::vec3(position[0], position[1], position[2]);
+        zeno::vec3f normal(0.0f);
+        float rm = 1.0 / rows;
+        float cm = 1.0 / columns;
+        int fi = 0;
+
+        float ax = rotate[0] * (M_PI / 180.0);
+        float ay = rotate[1] * (M_PI / 180.0);
+        float az = rotate[2] * (M_PI / 180.0);
+        glm::mat3 mx = glm::mat3(
+            1, 0, 0,
+            0, cos(ax), -sin(ax),
+            0, sin(ax), cos(ax));
+        glm::mat3 my = glm::mat3(
+            cos(ay), 0, sin(ay),
+            0, 1, 0,
+            -sin(ay), 0, cos(ay));
+        glm::mat3 mz = glm::mat3(
+            cos(az), -sin(az), 0,
+            sin(az), cos(az), 0,
+            0, 0, 1);
+
+        // Vertices & UV
+        for(int i=0; i<=rows; i++){
+
+            auto rp = start_point - glm::vec3(i*rm, 0, 0);
+
+            for(int j=0; j<=columns; j++){
+                auto cp = glm::vec3(rp - glm::vec3(0, 0, j*cm));
+                cp = mz * my * mx * cp;
+                auto zcp = zeno::vec3f(cp.x, cp.y, cp.z);
+                zcp = zcp * scale + position;
+                zcp = zcp * size;
+                verts.push_back(zcp);
+                uvs.emplace_back(i*rm, j*cm*-1+1, 0);
+            }
+        }
+
+        // Indices
+        for(int i=0; i<rows; i++){
+            for(int j=0; j<columns; j++){
+                int i1 = fi;
+                int i2 = i1+1;
+                int i3 = fi+(columns+1);
+                int i4 = i3+1;
+
+                tris.emplace_back(i1, i3, i2);
+                tris.emplace_back(i2, i3, i4);
+
+                fi += 1;
+            }
+            fi += 1;
+        }
+
+        // Normal
+        for(int i=0; i<1; i++){
+            auto ind = tris[i];
+            // 0,3,1
+            auto pos1 = verts[int(ind[0])];
+            auto pos2 = verts[int(ind[1])];
+            auto pos3 = verts[int(ind[2])];
+
+            auto uv1 = uvs[int(ind[0])];
+            auto uv2 = uvs[int(ind[1])];
+            auto uv3 = uvs[int(ind[2])];
+
+            auto edge1 = pos2 - pos1;
+            auto edge2 = pos3 - pos1;
+            auto deltaUV1 = uv2 - uv1;
+            auto deltaUV2 = uv3 - uv1;
+
+            zeno::vec3f tangent1, bitangent1;
+
+            float f = 1.0f / (deltaUV1[0] * deltaUV2[1] - deltaUV2[0] * deltaUV1[1]);
+
+            tangent1[0] = f * (deltaUV2[1] * edge1[0] - deltaUV1[1] * edge2[0]);
+            tangent1[1] = f * (deltaUV2[1] * edge1[1] - deltaUV1[1] * edge2[1]);
+            tangent1[2] = f * (deltaUV2[1] * edge1[2] - deltaUV1[1] * edge2[2]);
+
+            bitangent1[0] = f * (-deltaUV2[0] * edge1[0] + deltaUV1[0] * edge2[0]);
+            bitangent1[1] = f * (-deltaUV2[0] * edge1[1] + deltaUV1[0] * edge2[1]);
+            bitangent1[2] = f * (-deltaUV2[0] * edge1[2] + deltaUV1[0] * edge2[2]);
+
+            normal = cross(tangent1, bitangent1);
+            //normal = normalize(cross(edge2, edge1));
+        }
+
+        // Assign uv & normal
+        auto &uv = prim->verts.add_attr<zeno::vec3f>("uv");
+        auto &norm = prim->verts.add_attr<zeno::vec3f>("nrm");
+        for(int i=0; i<verts.size(); i++){
+            uv[i] = uvs[i];
+            norm[i] = normal;
+        }
 
         set_output("prim", std::move(prim));
     }
@@ -166,7 +272,10 @@ ZENDEFNODE(CreatePlane, {
     {
         {"vec3f", "position", "0, 0, 0"},
         {"vec3f", "scaleSize", "1, 1, 1"},
+        {"vec3f", "rotate", "0, 0, 0"},
         {"float", "size", "1"},
+        {"int", "rows", "2"},
+        {"int", "columns", "2"},
     },
     {"prim"},
     {},
@@ -244,8 +353,10 @@ struct CreateSphere : zeno::INode {
         if(columns <= 3)
             columns = 3;
 
-        auto &uv = prim->add_attr<zeno::vec3f>("uv");
-        auto &nrm = prim->add_attr<zeno::vec3f>("nrm");
+        //auto &uv = prim->add_attr<zeno::vec3f>("uv");
+        //auto &nrm = prim->add_attr<zeno::vec3f>("nrm");
+        auto &uv = prim->verts.add_attr<zeno::vec3f>("uv");
+        auto &nrm = prim->verts.add_attr<zeno::vec3f>("nrm");
 
         int c = 0;
         int tp = rows * columns;
