@@ -409,6 +409,10 @@ QMenuBar* ZenoViewDockTitle::initMenu()
         connect(pAction, &QAction::triggered, this, [=]() {
             QSettings settings("ZenusTech", "Zeno");
             settings.setValue("use_chinese", pAction->isChecked());
+            QMessageBox msg(QMessageBox::Information, "Language",
+                        tr("Please restart Zeno to apply changes."),
+                        QMessageBox::Ok, this);
+            msg.exec();
         });
     }
 
