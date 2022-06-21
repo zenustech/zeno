@@ -139,6 +139,192 @@ constexpr bool pt_accd(VecT p, VecT t0, VecT t1, VecT t2, VecT dp, VecT dt0,
   }
   return true;
 }
+
+template <typename VecT,
+          zs::enable_if_all<VecT::dim == 1, VecT::extent == 3> = 0>
+constexpr auto solve_quadratic(const zs::VecInterface<VecT> &c,
+                               double eps = 1e-8) {
+  using T = typename VecT::value_type;
+  using RetT = typename VecT::template variant_vec<
+      T, zs::integer_seq<typename VecT::index_type, 2>>;
+  auto s = RetT::zeros();
+  // make sure we have a d2 equation
+  if (zs::abs(c[2]) < eps) {
+    if (zs::abs(c[1]) < eps)
+      return zs::make_tuple(0, s);
+    s[0] = -c[0] / c[1];
+    return zs::make_tuple(1, s);
+  }
+
+  T p{}, q{}, D{};
+  // normal for: x^2 + px + q
+  p = c[1] / (2 * c[2]);
+  q = c[0] / c[2];
+  D = p * p - q;
+
+  if (zs::abs(D) < eps) {
+    // one float root
+    s[0] = s[1] = -p;
+    return zs::make_tuple(1, s);
+  }
+
+  if (D < eps)
+    // no real root
+    return zs::make_tuple(0, s);
+
+  else {
+    // two real roots, s[0] < s[1]
+    auto sqrt_D = zs::sqrt(D);
+    s[0] = -sqrt_D - p;
+    s[1] = sqrt_D - p;
+    return zs::make_tuple(2, s);
+  }
+}
+template <typename VecT, typename T,
+          zs::enable_if_all<VecT::dim == 1, VecT::extent == 3,
+                            std::is_floating_point_v<T>> = 0>
+[[nodiscard("VF coplanarity cubic equation coefficients")]] constexpr auto
+cubic_eqn_VF(const zs::VecInterface<VecT> a0, const zs::VecInterface<VecT> ad,
+             const zs::VecInterface<VecT> b0, const zs::VecInterface<VecT> bd,
+             const zs::VecInterface<VecT> c0, const zs::VecInterface<VecT> cd,
+             const zs::VecInterface<VecT> p0, const zs::VecInterface<VecT> pd,
+             T thickness) noexcept {
+  auto dab = bd - ad, dac = cd - ad, dap = pd - ad;
+  auto oab = b0 - a0, oac = c0 - a0, oap = p0 - a0;
+  auto dabXdac = cross(dab, dac);
+  auto dabXoac = cross(dab, oac);
+  auto oabXdac = cross(oab, dac);
+  auto oabXoac = cross(oab, oac);
+
+  T a = dot(dap, dabXdac);
+  T b = dot(oap, dabXdac) + dot(dap, dabXoac + oabXdac);
+  T c = dot(dap, oabXoac) + dot(oap, dabXoac + oabXdac);
+  T d = dot(oap, oabXoac);
+  if (d > 0)
+    d -= thickness;
+  return zs::make_tuple(a, b, c, d);
+}
+template <typename VecT, typename T,
+          zs::enable_if_all<VecT::dim == 1, VecT::extent == 3,
+                            std::is_floating_point_v<T>> = 0>
+[[nodiscard("EE coplanaritycubic equation coefficients")]] constexpr auto
+cubic_eqn_EE(const zs::VecInterface<VecT> a0, const zs::VecInterface<VecT> ad,
+             const zs::VecInterface<VecT> b0, const zs::VecInterface<VecT> bd,
+             const zs::VecInterface<VecT> c0, const zs::VecInterface<VecT> cd,
+             const zs::VecInterface<VecT> d0, const zs::VecInterface<VecT> dd,
+             T thickness) {
+  auto dba = bd - ad, ddc = dd - cd, dca = cd - ad;
+  auto odc = d0 - c0, oba = b0 - a0, oca = c0 - a0;
+  auto dbaXddc = cross(dba, ddc);
+  auto dbaXodc = cross(dba, odc);
+  auto obaXddc = cross(oba, ddc);
+  auto obaXodc = cross(oba, odc);
+
+  T a = dot(dca, dbaXddc);
+  T b = dot(oca, dbaXddc) + dot(dca, dbaXodc + obaXddc);
+  T c = dot(dca, obaXodc) + dot(oca, dbaXodc + obaXddc);
+  T d = dot(oca, obaXodc);
+
+  if (d > 0)
+    d -= thickness;
+  return zs::make_tuple(a, b, c, d);
+}
+template <typename VecT>
+constexpr bool pt_ccd(VecT p, VecT t0, VecT t1, VecT t2, VecT dp, VecT dt0,
+                      VecT dt1, VecT dt2, typename VecT::value_type thickness,
+                      typename VecT::value_type &toc) {
+  using T = typename VecT::value_type;
+  auto [A, B, C, D] = cubic_eqn_VF(t0, dt0, t1, dt1, t2, dt2, p, dp, thickness);
+  if (zs::abs(A) < 1e-8 && zs::abs(B) < 1e-8 && zs::abs(C) < 1e-8 &&
+      zs::abs(D) < 1e-8)
+    return false;
+  // tmin, tmax
+  auto [numSols, ts] = solve_quadratic(zs::vec<T, 3>{C, 2 * B, 3 * A});
+  if (numSols != 2) {
+    printf(
+        "\n\n\n\n\nstrangely no local minima & maxima during ccd!\n\n\n\n\n");
+    return false;
+  }
+// ensure ts[0] < ts[1]
+#if 0
+  if (ts[0] > ts[1]) {
+    auto t = ts[0];
+    ts[0] = ts[1];
+    ts[1] = t;
+  }
+#endif
+  auto d = [&A = A, &B = B, &C = C, &D = D](T t) {
+    auto t2 = t * 2;
+    return A * t2 * t + B * t2 + C * t + D;
+  };
+  auto dDrv = [&A = A, &B = B, &C = C](T t) {
+    return 3 * A * t * t + 2 * B * t + C;
+  };
+  if (d(0) <= 0) {
+    printf("\n\n\n\n\nwhat the heck??? trange [%f, %f]; t0 %f d "
+           "%f\n\n\n\n\n",
+           (float)ts[0], (float)ts[1], 0.f, (float)d(0));
+  }
+  T toi{toc};
+  bool check = false;
+  // coplanarity test
+  // case 1
+  if (A > 0) {
+    // ts[0] : tmax
+    // ts[1] : tmin
+    if (ts[1] > 0)
+      if (d(ts[1]) <= 0) {
+        // auto k = -B / (3 * A);
+        if (d(ts[0]) < 0 && A * B < 0) {
+          printf("\n\n\n\n\nwhat the heck??\n\n\n\n\n\n");
+        }
+        T st = 0;
+        if (ts[0] > st)
+          st = ts[0];
+        toi = st + d(st) * 3 * A / B;
+        check = true;
+      }
+  } else { // A < 0
+    // ts[0] : tmin
+    // ts[1] : tmax
+    if (auto dmin = d(ts[0]); dmin > 0 || dmin <= 0 && ts[0] < 0) {
+      toi = ts[1] + d(ts[1]) / -dDrv(toc);
+      check = true;
+    } else if (dmin <= 0 && ts[0] >= 0) {
+      toi = d(0) / -dDrv(0);
+      check = true;
+    }
+  }
+  // inside test
+  if (check) {
+    if (d(toi) <= 0) {
+      printf(
+          "\n\n\n\n\nwhat the heck??? trange [%f, %f]; toi %f d %f\n\n\n\n\n",
+          (float)ts[0], (float)ts[1], (float)toi, (float)d(toi));
+    }
+    if (toi > 0 && toi < toc) {
+      auto a_ = t0 + toi * dt0;
+      auto b_ = t1 + toi * dt1;
+      auto c_ = t2 + toi * dt2;
+      auto p_ = p + toi * dp;
+      auto n = cross(b_ - a_, c_ - a_);
+      auto da = a_ - p_;
+      auto db = b_ - p_;
+      auto dc = c_ - p_;
+#if 0
+      if (dot(cross(db, dc), n) < 0)
+        return false;
+      if (dot(cross(dc, da), n) < 0)
+        return false;
+      if (dot(cross(da, db), n) < 0)
+        return false;
+#endif
+      toc = toi;
+      return true;
+    }
+  }
+  return false;
+}
 template <typename VecT>
 constexpr bool
 ee_accd(VecT ea0, VecT ea1, VecT eb0, VecT eb1, VecT dea0, VecT dea1, VecT deb0,
@@ -207,6 +393,86 @@ ee_accd(VecT ea0, VecT ea1, VecT eb0, VecT eb1, VecT dea0, VecT dea1, VecT deb0,
     if (toc > toc_prev) {
       toc = toc_prev;
       return false;
+    }
+  }
+  return true;
+}
+template <typename VecT>
+constexpr bool ee_ccd(VecT ea0, VecT ea1, VecT eb0, VecT eb1, VecT dea0,
+                      VecT dea1, VecT deb0, VecT deb1,
+                      typename VecT::value_type thickness,
+                      typename VecT::value_type &toc) {
+  using T = typename VecT::value_type;
+  auto [A, B, C, D] =
+      cubic_eqn_EE(ea0, dea0, ea1, dea1, eb0, deb0, eb1, deb1, thickness);
+  if (zs::abs(A) < 1e-8 && zs::abs(B) < 1e-8 && zs::abs(C) < 1e-8 &&
+      zs::abs(D) < 1e-8)
+    return false;
+  // tmin, tmax
+  auto [numSols, ts] = solve_quadratic(zs::vec<T, 3>{C, 2 * B, 3 * A});
+  auto d = [&A = A, &B = B, &C = C, &D = D](T t) {
+    auto t2 = t * 2;
+    return A * t2 * t + B * t2 + C * t + D;
+  };
+  auto dDrv = [&A = A, &B = B, &C = C](T t) {
+    return 3 * A * t * t + 2 * B * t + C;
+  };
+  T toi{toc};
+  bool check = false;
+  // coplanarity test
+  // case 1
+  if (A > 0) {
+    // ts[0] : tmax
+    // ts[1] : tmin
+    if (ts[1] > 0)
+      if (d(ts[1]) <= 0) {
+        // auto k = -B / (3 * A);
+        if (d(ts[0]) < 0 && A * B < 0) {
+          printf("\n\n\n\n\nwhat the heck??\n\n\n\n\n\n");
+        }
+        T st = 0;
+        if (ts[0] > st)
+          st = ts[0];
+        toi = st + d(st) * 3 * A / B;
+        check = true;
+      }
+  } else { // A < 0
+    // ts[0] : tmin
+    // ts[1] : tmax
+    if (auto dmin = d(ts[0]); dmin > 0 || dmin <= 0 && ts[0] < 0) {
+      toi = ts[1] + d(ts[1]) / -dDrv(toc);
+      check = true;
+    } else if (dmin <= 0 && ts[0] >= 0) {
+      toi = d(0) / -dDrv(0);
+      check = true;
+    }
+  }
+  // inside test
+  if (check) {
+    if (d(toi) <= 0 || d(0) <= 0 || d(toc) <= 0) {
+      printf("\n\n\n\n\nwhat the heck??? trange [%f, %f]; toi %f d %f; t0 %f d "
+             "%f; t1 %f d "
+             "%f\n\n\n\n\n",
+             (float)ts[0], (float)ts[1], (float)toi, (float)d(toi), 0.f,
+             (float)d(0), (float)toc, (float)d(toc));
+    }
+    if (toi > 0 && toi < toc) {
+      auto p1 = ea0 + toi * dea0;
+      auto p2 = ea1 + toi * dea1;
+      auto p3 = eb0 + toi * deb0;
+      auto p4 = eb1 + toi * deb1;
+      auto p13 = p1 - p3;
+      auto p43 = p4 - p3;
+#if 0
+      if (dot(cross(db, dc), n) < 0)
+        return false;
+      if (dot(cross(dc, da), n) < 0)
+        return false;
+      if (dot(cross(da, db), n) < 0)
+        return false;
+#endif
+      toc = toi;
+      return true;
     }
   }
   return true;
@@ -842,8 +1108,12 @@ struct CodimStepping : INode {
             auto dt1 = vtemp.template pack<3>("dir", tri[1]);
             auto dt2 = vtemp.template pack<3>("dir", tri[2]);
             T tmp = stepSize;
+#if 0
             if (pt_accd(p, t0, t1, t2, dp, dt0, dt1, dt2, (T)0.1, xi, tmp))
-              atomic_min(exec_cuda, &alpha[0], tmp);
+#else
+            if (pt_ccd(p, t0, t1, t2, dp, dt0, dt1, dt2, xi, tmp))
+#endif
+            atomic_min(exec_cuda, &alpha[0], tmp);
           });
       auto nee = ncsEE.getVal();
       pol(range(nee),
@@ -869,8 +1139,12 @@ struct CodimStepping : INode {
             auto deb0 = vtemp.template pack<3>("dir", ej[0]);
             auto deb1 = vtemp.template pack<3>("dir", ej[1]);
             auto tmp = stepSize;
+#if 1
             if (ee_accd(ea0, ea1, eb0, eb1, dea0, dea1, deb0, deb1, (T)0.1, xi,
                         tmp))
+#else
+            if (ee_ccd(ea0, ea1, eb0, eb1, dea0, dea1, deb0, deb1, xi, tmp))
+#endif
               atomic_min(exec_cuda, &alpha[0], tmp);
           });
       stepSize = alpha.getVal();
