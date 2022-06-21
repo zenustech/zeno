@@ -206,12 +206,12 @@
     <message>
         <location filename="../../nodesys/nodesmgr.cpp" line="59"/>
         <source>Please input the content of blackboard</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">请输入黑板的文字内容</translation>
     </message>
     <message>
         <location filename="../../nodesys/nodesmgr.cpp" line="60"/>
         <source>Please input the title of blackboard</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">请输入黑板的标题</translation>
     </message>
 </context>
 <context>
@@ -780,72 +780,77 @@
         <translation>中英文切换</translation>
     </message>
     <message>
-        <location filename="../../dock/zenodocktitlewidget.cpp" line="415"/>
+        <location filename="../../dock/zenodocktitlewidget.cpp" line="413"/>
+        <source>Please restart Zeno to apply changes.</source>
+        <translation>请重启Zeno以应用更改。</translation>
+    </message>
+    <message>
+        <location filename="../../dock/zenodocktitlewidget.cpp" line="419"/>
         <source>Record</source>
         <translation>导出</translation>
     </message>
     <message>
-        <location filename="../../dock/zenodocktitlewidget.cpp" line="417"/>
+        <location filename="../../dock/zenodocktitlewidget.cpp" line="421"/>
         <source>Screenshot</source>
         <translation>截屏</translation>
     </message>
     <message>
-        <location filename="../../dock/zenodocktitlewidget.cpp" line="424"/>
+        <location filename="../../dock/zenodocktitlewidget.cpp" line="428"/>
         <source>Screenshot EXR</source>
         <translation>截屏为EXR格式</translation>
     </message>
     <message>
-        <location filename="../../dock/zenodocktitlewidget.cpp" line="430"/>
+        <location filename="../../dock/zenodocktitlewidget.cpp" line="434"/>
         <source>Record Video</source>
         <translation>录制视频</translation>
     </message>
     <message>
-        <location filename="../../dock/zenodocktitlewidget.cpp" line="431"/>
+        <location filename="../../dock/zenodocktitlewidget.cpp" line="435"/>
         <source>Shift+F12</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../../dock/zenodocktitlewidget.cpp" line="435"/>
+        <location filename="../../dock/zenodocktitlewidget.cpp" line="439"/>
         <source>EnvTex</source>
         <translation>环境贴图</translation>
     </message>
     <message>
-        <location filename="../../dock/zenodocktitlewidget.cpp" line="437"/>
+        <location filename="../../dock/zenodocktitlewidget.cpp" line="441"/>
         <source>BlackWhite</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../../dock/zenodocktitlewidget.cpp" line="443"/>
+        <location filename="../../dock/zenodocktitlewidget.cpp" line="447"/>
         <source>Creek</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../../dock/zenodocktitlewidget.cpp" line="449"/>
+        <location filename="../../dock/zenodocktitlewidget.cpp" line="453"/>
         <source>Daylight</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../../dock/zenodocktitlewidget.cpp" line="455"/>
+        <location filename="../../dock/zenodocktitlewidget.cpp" line="459"/>
         <source>Default</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../../dock/zenodocktitlewidget.cpp" line="461"/>
+        <location filename="../../dock/zenodocktitlewidget.cpp" line="465"/>
         <source>Footballfield</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../../dock/zenodocktitlewidget.cpp" line="467"/>
+        <location filename="../../dock/zenodocktitlewidget.cpp" line="471"/>
         <source>Forest</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../../dock/zenodocktitlewidget.cpp" line="473"/>
+        <location filename="../../dock/zenodocktitlewidget.cpp" line="477"/>
         <source>Lake</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../../dock/zenodocktitlewidget.cpp" line="479"/>
+        <location filename="../../dock/zenodocktitlewidget.cpp" line="483"/>
         <source>Sea</source>
         <translation></translation>
     </message>
