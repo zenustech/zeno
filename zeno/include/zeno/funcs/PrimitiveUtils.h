@@ -12,6 +12,7 @@ ZENO_API void primPolygonate(PrimitiveObject *prim, bool with_uv = true);
 
 ZENO_API void primCalcNormal(PrimitiveObject *prim, float flip = 1.0f);
 ZENO_API void primDecodeUVs(PrimitiveObject *prim);
+ZENO_API void primLoopUVsToVerts(PrimitiveObject *prim);
 
 ZENO_API std::shared_ptr<zeno::PrimitiveObject> primMerge(std::vector<zeno::PrimitiveObject *> const &primList, std::string const &tagAttr = {});
 ZENO_API std::shared_ptr<PrimitiveObject> primDuplicate(PrimitiveObject *parsPrim, PrimitiveObject *meshPrim, std::string dirAttr, std::string tanAttr, std::string radAttr, std::string onbType, float radius, int seed);
