@@ -259,6 +259,25 @@ void ZenoStyle::drawDropdownArrow(QPainter* painter, QRect downArrowRect, bool i
     render->render(painter, downArrowRect);
 }
 
+void ZenoStyle::drawCheckBox(QPainter* painter, QRect rect, bool bHover, Qt::CheckState state) const
+{
+    QString iconPath = ":/icons/ic_parameter_checkbox_check.svg";
+    if (state == Qt::Checked) {
+        if (bHover) {
+            iconPath = ":/icons/ic_parameter_checkbox_check_on.svg";
+        }
+        else {
+            iconPath = ":/icons/ic_parameter_checkbox_check.svg";
+        }
+    }
+    else {
+        iconPath = ":/icons/ic_parameter_checkbox_uncheck.svg";
+    }
+
+    QSvgRenderer *render = new QSvgRenderer(QString(iconPath));
+    render->render(painter, rect);
+}
+
 void ZenoStyle::drawZenoToolButton(const ZStyleOptionToolButton* option, QPainter* painter, const QWidget* widget) const
 {
     QStyle::ComplexControl cc = static_cast<QStyle::ComplexControl>(CC_ZenoToolButton);
@@ -377,6 +396,40 @@ void ZenoStyle::drawComplexControl(ComplexControl control, const QStyleOptionCom
             }
             return base::drawComplexControl(control, option, painter, widget);
         }
+    case CC_ZenoCheckBoxBar:
+    {
+        if (const ZStyleOptionCheckBoxBar* cbopt = qstyleoption_cast<const ZStyleOptionCheckBoxBar*>(option))
+        {
+            const int w = cbopt->rect.width(), h = cbopt->rect.height();
+            const int cb_width = h;
+            QRect rcButton, rcCheckbox;
+            if (w > h) {
+                //fill button
+                if (cbopt->bHovered) {
+                    if (cbopt->state == Qt::Checked)
+                        painter->fillRect(cbopt->rect, QColor(49, 49, 49));
+                    else
+                        painter->fillRect(cbopt->rect, QColor(38, 36, 37));
+                }
+                else {
+                    if (cbopt->state == Qt::Checked)
+                        painter->fillRect(cbopt->rect, QColor(38, 36, 37));
+                    else
+                        painter->fillRect(cbopt->rect, QColor(30, 30, 30));
+                }
+
+                rcButton = cbopt->rect.adjusted(0, 0, -cb_width, 0);
+                rcCheckbox = cbopt->rect.adjusted(rcButton.width(), 0, 0, 0);
+                painter->setClipRect(rcCheckbox);
+                drawCheckBox(painter, rcCheckbox, cbopt->bHovered, cbopt->state);
+            }
+            else {
+                //todo
+            }
+            return;
+        }
+        return base::drawComplexControl(control, option, painter, widget);
+    }
     case CC_ZenoToolButton:
         if (const ZStyleOptionToolButton* opt = qstyleoption_cast<const ZStyleOptionToolButton*>(option))
         {

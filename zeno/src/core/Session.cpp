@@ -4,6 +4,7 @@
 #include <zeno/extra/GlobalComm.h>
 #include <zeno/extra/GlobalStatus.h>
 #include <zeno/utils/Translator.h>
+#include <zeno/extra/EventCallbacks.h>
 #include <zeno/core/Graph.h>
 #include <zeno/core/INode.h>
 #include <zeno/utils/safe_at.h>
@@ -17,6 +18,7 @@ ZENO_API Session::Session()
     , globalComm(std::make_unique<GlobalComm>())
     , globalStatus(std::make_unique<GlobalStatus>())
     , translator(std::make_unique<Translator>())
+    , eventCallbacks(std::make_unique<EventCallbacks>())
     {
 }
 

@@ -36,7 +36,7 @@ struct GraphicsManager {
         {
             const auto &tris = prim->tris;
             const auto &pos = prim->attr<zeno::vec3f>("pos");
-            auto const &nrm = prim->attr<zeno::vec3f>("nrm");
+            auto const &nrm = prim->add_attr<zeno::vec3f>("nrm");
             auto &tang = prim->tris.add_attr<zeno::vec3f>("tang");
             bool has_uv = tris.has_attr("uv0")&&tris.has_attr("uv1")&&tris.has_attr("uv2");
             //printf("!!has_uv = %d\n", has_uv);

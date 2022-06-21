@@ -38,6 +38,7 @@ struct GlobalState;
 struct GlobalComm;
 struct GlobalStatus;
 struct Translator;
+struct EventCallbacks;
 
 struct Session {
     std::map<std::string, std::unique_ptr<INodeClass>> nodeClasses;
@@ -46,6 +47,7 @@ struct Session {
     std::unique_ptr<GlobalComm> const globalComm;
     std::unique_ptr<GlobalStatus> const globalStatus;
     std::unique_ptr<Translator> const translator;
+    std::unique_ptr<EventCallbacks> const eventCallbacks;
 
     ZENO_API Session();
     ZENO_API ~Session();

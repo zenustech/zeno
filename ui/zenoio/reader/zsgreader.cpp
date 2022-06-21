@@ -115,30 +115,27 @@ bool ZsgReader::_parseSubGraph(const QString& name, const rapidjson::Value& subg
     return true;
 }
 
-void ZsgReader::_parseNode(const QString& nodeid, const rapidjson::Value& nodeObj, const NODE_DESCS& descriptors, IAcceptor* pAcceptor)
+void ZsgReader::_parseNode(const QString& nodeid, const rapidjson::Value& nodeObj, const NODE_DESCS& legacyDescs, IAcceptor* pAcceptor)
 {
     const auto& objValue = nodeObj;
     const rapidjson::Value& nameValue = objValue["name"];
     const QString& name = nameValue.GetString();
 
-    if (descriptors.find(name) == descriptors.end())
-    {
-        qDebug() << QString("no node class named [%1]").arg(name);
+    bool bSucceed = pAcceptor->addNode(nodeid, name, legacyDescs);
+    if (!bSucceed) {
         return;
     }
-
-    pAcceptor->addNode(nodeid, nameValue.GetString(), descriptors);
 
     //socket_keys should be inited before socket init.
     if (objValue.HasMember("socket_keys"))
     {
         _parseBySocketKeys(nodeid, objValue, pAcceptor);
     }
-    pAcceptor->initSockets(nodeid, name, descriptors);
+    pAcceptor->initSockets(nodeid, name, legacyDescs);
 
     if (objValue.HasMember("inputs"))
     {
-        _parseInputs(nodeid, name, descriptors, objValue["inputs"], pAcceptor);
+        _parseInputs(nodeid, name, legacyDescs, objValue["inputs"], pAcceptor);
     }
 
     if (objValue.HasMember("params"))
@@ -180,28 +177,25 @@ void ZsgReader::_parseNode(const QString& nodeid, const rapidjson::Value& nodeOb
     if (name == "Blackboard")
     {
         BLACKBOARD_INFO blackboard;
-        QString title, content;
-        QSizeF sz;
-        bool special = false;
+        //use subkey "blackboard" for zeno2 io, but still compatible with zeno1
+        const rapidjson::Value &blackBoardValue = objValue.HasMember("blackboard") ? objValue["blackboard"] : objValue;
 
-        if (objValue.HasMember("special"))
-        {
-            blackboard.special = objValue["special"].GetBool();
+        if (blackBoardValue.HasMember("special")) {
+            blackboard.special = blackBoardValue["special"].GetBool();
         }
 
-        title = objValue.HasMember("title") ? objValue["title"].GetString() : "";
-        content = objValue.HasMember("content") ? objValue["content"].GetString() : "";
+        blackboard.title = blackBoardValue.HasMember("title") ? blackBoardValue["title"].GetString() : "";
+        blackboard.content = blackBoardValue.HasMember("content") ? blackBoardValue["content"].GetString() : "";
 
-        if (objValue.HasMember("width") && objValue.HasMember("height"))
-        {
-            qreal w = objValue["width"].GetFloat();
-            qreal h = objValue["height"].GetFloat();
+        if (blackBoardValue.HasMember("width") && blackBoardValue.HasMember("height")) {
+            qreal w = blackBoardValue["width"].GetFloat();
+            qreal h = blackBoardValue["height"].GetFloat();
             blackboard.sz = QSizeF(w, h);
         }
-        if (objValue.HasMember("params"))
-        {
+        if (blackBoardValue.HasMember("params")) {
             //todo
         }
+
         pAcceptor->setBlackboard(nodeid, blackboard);
     }
 }
@@ -364,10 +358,8 @@ void ZsgReader::_parseBySocketKeys(const QString& id, const rapidjson::Value& ob
     pAcceptor->setSocketKeys(id, socketKeys);
 }
 
-void ZsgReader::_parseInputs(const QString& id, const QString& nodeName, const NODE_DESCS& descriptors, const rapidjson::Value& inputs, IAcceptor* pAcceptor)
+void ZsgReader::_parseInputs(const QString& id, const QString& nodeName, const NODE_DESCS& legacyDescs, const rapidjson::Value& inputs, IAcceptor* pAcceptor)
 {
-    ZASSERT_EXIT(descriptors.find(nodeName) != descriptors.end());
-    const NODE_DESC &desc = descriptors[nodeName];
     for (const auto& inObj : inputs.GetObject())
     {
         const QString& inSock = inObj.name.GetString();
@@ -377,12 +369,6 @@ void ZsgReader::_parseInputs(const QString& id, const QString& nodeName, const N
             const auto& arr = inputObj.GetArray();
             //ZASSERT_EXIT(arr.Size() >= 2 && arr.Size() <= 3);
 
-            SOCKET_INFO descInfo;
-            if (desc.inputs.find(inSock) != desc.inputs.end())
-            {
-                descInfo = desc.inputs[inSock].info;
-            }
-
             QString outId, outSock;
             QVariant defaultValue;
             if (arr.Size() > 0 && arr[0].IsString())
@@ -390,13 +376,11 @@ void ZsgReader::_parseInputs(const QString& id, const QString& nodeName, const N
             if (arr.Size() > 1 && arr[1].IsString())
                 outSock = arr[1].GetString();
             if (arr.Size() > 2)
-                defaultValue = _parseToVariant(descInfo.type, arr[2], pAcceptor->currGraphObj());
-
-            pAcceptor->setInputSocket(nodeName, id, inSock, outId, outSock, defaultValue);
+                pAcceptor->setInputSocket(nodeName, id, inSock, outId, outSock, arr[2], legacyDescs);
         }
         else if (inputObj.IsNull())
         {
-            pAcceptor->setInputSocket(nodeName, id, inSock, "", "", QVariant());
+            pAcceptor->setInputSocket(nodeName, id, inSock, "", "", rapidjson::Value(), legacyDescs);
         }
         else
         {
@@ -455,6 +439,7 @@ NODE_DESCS ZsgReader::_parseDescs(const rapidjson::Value& jsonDescs)
         const auto& objValue = node.value;
 
         NODE_DESC desc;
+        desc.name = name;
         if (objValue.HasMember("inputs") && objValue["inputs"].IsArray())
         {
             auto inputs = objValue["inputs"].GetArray();

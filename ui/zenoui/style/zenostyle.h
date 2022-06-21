@@ -14,6 +14,7 @@ public:
     {
         CC_ZenoToolButton = CC_CustomBase + 1,
         CC_ZenoComboBox,
+        CC_ZenoCheckBoxBar,
     };
     enum ZenoSubControl
     {
@@ -63,6 +64,7 @@ public:
 private:
     void drawZenoToolButton(const ZStyleOptionToolButton* option, QPainter* painter, const QWidget* widget) const;
     void drawDropdownArrow(QPainter* painter, QRect downArrowRect, bool isDown) const;
+    void drawCheckBox(QPainter* painter, QRect rect, bool bHover, Qt::CheckState state) const;
 };
 
 #endif

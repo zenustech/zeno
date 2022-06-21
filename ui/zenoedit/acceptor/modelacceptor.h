@@ -17,11 +17,17 @@ public:
 	void EndSubgraph() override;
 	void setFilePath(const QString& fileName) override;
 	void switchSubGraph(const QString& graphName) override;
-	void addNode(const QString& nodeid, const QString& name, const NODE_DESCS& descriptors) override;
+	bool addNode(const QString& nodeid, const QString& name, const NODE_DESCS& descriptors) override;
 	void setViewRect(const QRectF& rc) override;
 	void setSocketKeys(const QString& id, const QStringList& keys) override;
 	void initSockets(const QString& id, const QString& name, const NODE_DESCS& descs) override;
-	void setInputSocket(const QString& nodeCls, const QString& id, const QString& inSock, const QString& outId, const QString& outSock, const QVariant& defaultValue) override;
+	void setInputSocket(const QString &nodeCls,
+		const QString &id,
+		const QString &inSock,
+		const QString &outId,
+		const QString &outSock,
+		const rapidjson::Value &defaultValue,
+        const NODE_DESCS &legacyDescs) override;
 	void setParamValue(const QString& id, const QString& name, const QVariant& var) override;
 	void setPos(const QString& id, const QPointF& pos) override;
 	void setOptions(const QString& id, const QStringList& options) override;
