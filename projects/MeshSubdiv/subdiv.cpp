@@ -120,11 +120,15 @@ namespace {
     static Vertex1 *convvertexptr(float *p) {
         return reinterpret_cast<Vertex1 *>(p);
     }
+
+    static vec3f v2to3(vec2f const &v) {
+        return {v[0], v[1], 0};
+    }
 }
 
 
 //------------------------------------------------------------------------------
-static void osdPrimSubdiv(PrimitiveObject *prim, int levels, bool triangulate = false, bool hasLoopUVs = true) {
+static void osdPrimSubdiv(PrimitiveObject *prim, int levels, bool triangulate = false, bool asQuadFaces = false, bool hasLoopUVs = true) {
     const int maxlevel=levels;
     if (maxlevel <= 0 || !prim->verts.size()) return;
 
@@ -445,28 +449,7 @@ static void osdPrimSubdiv(PrimitiveObject *prim, int levels, bool triangulate = 
         //prim->polys.clear();
         //prim->loops.clear();
         // Print faces
-        if (!triangulate) {
-            prim->quads.resize(nfaces);
-            for (int face = 0; face < nfaces; ++face) {
-
-                Far::ConstIndexArray fverts = refLastLevel.GetFaceVertices(face);
-
-                // all refined Catmark faces should be quads
-                assert(fverts.size()==4);
-
-                auto &refquad = prim->quads[face];
-                refquad[0] = fverts[0];
-                refquad[1] = fverts[1];
-                refquad[2] = fverts[2];
-                refquad[3] = fverts[3];
-
-                //printf("f ");
-                //for (int vert=0; vert<fverts.size(); ++vert) {
-                    //printf("%d ", fverts[vert]+1); // OBJ uses 1-based arrays...
-                //}
-                //printf("\n");
-            }
-        } else {
+        if (triangulate) {
             prim->tris.resize(nfaces * 2);
             for (int face = 0; face < nfaces; ++face) {
 
@@ -490,7 +473,97 @@ static void osdPrimSubdiv(PrimitiveObject *prim, int levels, bool triangulate = 
                 //}
                 //printf("\n");
             }
+
+            if (hasLoopUVs) {  // very qianqiang uv0~2 for quads/tris, avoid use
+                auto &uv0 = prim->tris.add_attr<vec3f>("uv0");
+                auto &uv1 = prim->tris.add_attr<vec3f>("uv1");
+                auto &uv2 = prim->tris.add_attr<vec3f>("uv2");
+                for (int face = 0; face < nfaces; ++face) {
+                    Far::ConstIndexArray fvars = refLastLevel.GetFaceFVarValues(face);
+                    assert(fvars.size() == 4);
+                    uv0[face*2] = v2to3(prim->uvs[fvars[0]]);
+                    uv1[face*2] = v2to3(prim->uvs[fvars[1]]);
+                    uv2[face*2] = v2to3(prim->uvs[fvars[2]]);
+                    uv0[face*2+1] = v2to3(prim->uvs[fvars[0]]);
+                    uv1[face*2+1] = v2to3(prim->uvs[fvars[2]]);
+                    uv2[face*2+1] = v2to3(prim->uvs[fvars[3]]);
+                }
+                prim->uvs.clear();
+            }
+
+        } else if (asQuadFaces) {
+
+            prim->quads.resize(nfaces);
+            for (int face = 0; face < nfaces; ++face) {
+
+                Far::ConstIndexArray fverts = refLastLevel.GetFaceVertices(face);
+
+                // all refined Catmark faces should be quads
+                assert(fverts.size()==4);
+
+                auto &refquad = prim->quads[face];
+                refquad[0] = fverts[0];
+                refquad[1] = fverts[1];
+                refquad[2] = fverts[2];
+                refquad[3] = fverts[3];
+
+                //printf("f ");
+                //for (int vert=0; vert<fverts.size(); ++vert) {
+                    //printf("%d ", fverts[vert]+1); // OBJ uses 1-based arrays...
+                //}
+                //printf("\n");
+            }
+
+            if (hasLoopUVs) {  // very qianqiang uv0~3 for quads/tris, avoid use
+                auto &uv0 = prim->quads.add_attr<vec3f>("uv0");
+                auto &uv1 = prim->quads.add_attr<vec3f>("uv1");
+                auto &uv2 = prim->quads.add_attr<vec3f>("uv2");
+                auto &uv3 = prim->quads.add_attr<vec3f>("uv3");
+                for (int face = 0; face < nfaces; ++face) {
+                    Far::ConstIndexArray fvars = refLastLevel.GetFaceFVarValues(face);
+                    assert(fvars.size() == 4);
+                    uv0[face] = v2to3(prim->uvs[fvars[0]]);
+                    uv1[face] = v2to3(prim->uvs[fvars[1]]);
+                    uv2[face] = v2to3(prim->uvs[fvars[2]]);
+                    uv3[face] = v2to3(prim->uvs[fvars[3]]);
+                }
+                prim->uvs.clear();
+            }
+
+        } else {
+
+            prim->polys.resize(nfaces);
+            prim->loops.resize(nfaces * 4);
+
+            for (int face = 0; face < nfaces; ++face) {
+
+                Far::ConstIndexArray fverts = refLastLevel.GetFaceVertices(face);
+
+                // all refined Catmark faces should be quads
+                assert(fverts.size()==4);
+
+                prim->loops[face*4+0] = fverts[0];
+                prim->loops[face*4+1] = fverts[1];
+                prim->loops[face*4+2] = fverts[2];
+                prim->loops[face*4+3] = fverts[3];
+                prim->polys[face] = {face * 4, 4};
+            }
+
+            if (hasLoopUVs) {
+                prim->loop_uvs.resize(nfaces * 4);
+
+                for (int face = 0; face < nfaces; ++face) {
+                    Far::ConstIndexArray fvars = refLastLevel.GetFaceFVarValues(face);
+                    assert(fvars.size()==4);
+                    prim->loop_uvs[face*4+0] = fvars[0];
+                    prim->loop_uvs[face*4+1] = fvars[1];
+                    prim->loop_uvs[face*4+2] = fvars[2];
+                    prim->loop_uvs[face*4+3] = fvars[3];
+                }
+            }
+
         }
+
     }
 
         //refinedVerts += nCoarseVerts + ncfaces[0] + ncedges[0] + ncfaces[1];
@@ -518,8 +591,9 @@ struct OSDPrimSubdiv : INode {
         auto prim = get_input<PrimitiveObject>("prim");
         int levels = get_input2<int>("levels");
         bool triangulate = get_input2<bool>("triangulate");
+        bool asQuadFaces = get_input2<bool>("asQuadFaces");
         bool hasLoopUVs = get_input2<bool>("hasLoopUVs");
-        if (levels) osdPrimSubdiv(prim.get(), levels, triangulate, hasLoopUVs);
+        if (levels) osdPrimSubdiv(prim.get(), levels, triangulate, asQuadFaces, hasLoopUVs);
         set_output("prim", std::move(prim));
     }
 };
@@ -528,6 +602,7 @@ ZENO_DEFNODE(OSDPrimSubdiv)({
         "prim",
         {"int", "levels", "2"},
         {"bool", "triangulate", "1"},
+        {"bool", "asQuadFaces", "1"},
         {"bool", "hasLoopUVs", "1"},
     },
     {
