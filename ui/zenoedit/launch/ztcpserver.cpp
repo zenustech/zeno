@@ -1,4 +1,4 @@
-#ifdef ZENO_MULTIPROCESS
+#if defined(ZENO_MULTIPROCESS) && defined(ZENO_IPC_USE_TCP)
 #include "ztcpserver.h"
 #include <zeno/extra/GlobalState.h>
 #include <zeno/utils/log.h>
