@@ -1,4 +1,3 @@
-# third-party files
 projects/FastFLIP/partio
 projects/Rigid/bullet3
 projects/Rigid/HACD
@@ -10,12 +9,17 @@ projects/cgmesh/voro
 projects/gmpm/zecomp
 projects/zenvdb/openvdb
 projects/FBX/assimp
-zenovis/openexr
+projects/FBX/dem-bones-bin
+projects/DemBones/include
+projects/CalcGeometryUV/calcUVCore
+projects/MeshSubdiv/OpenSubdiv
+projects/ZenoFX/ZFX/x64/vectorclass
+projects/Euler/Libs
+zenovis/xinxinoptix
 zenovis/glad
 zenovis/stbi
+docs/licenses
 zeno/tpls
-
-# our binary files
 ui/zenodesign
 ui/zenoedit/res
 projects/tools
