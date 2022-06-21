@@ -258,6 +258,11 @@ struct ZenoParticles : IObjectClone<ZenoParticles> {
         return true;
     return false;
   }
+  bool hasMeta(const std::string &tag) const {
+    if (auto it = metas.find(tag); it != metas.end())
+      return true;
+    return false;
+  }
   bool hasImage(const std::string &tag) const {
     if (auto it = images.find(tag); it != images.end())
       if (it->second.size() != 0)
