@@ -21,8 +21,12 @@ int main(int argc, char *argv[])
     zeno::setExecutableDir(a.applicationDirPath().toStdString());
 
     QTranslator t;
-    if (t.load(":languages/zh.qm")) {
-        a.installTranslator(&t);
+    QSettings settings("ZenusTech", "Zeno");
+    QVariant use_chinese = settings.value("use_chinese");
+    if (use_chinese.isNull() || use_chinese.toBool()) {
+        if (t.load(":languages/zh.qm")) {
+            a.installTranslator(&t);
+        }
     }
 
 	ZenoMainWindow mainWindow;
