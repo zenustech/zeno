@@ -267,6 +267,7 @@ static void osdPrimSubdiv(PrimitiveObject *prim, int levels, bool triangulate = 
             nTotalFVars = refiner->GetNumFVarValuesTotal();
             nTempFVars   = nTotalFVars - nCoarseFVars - nFineFVars;
             prim->uvs.resize(nCoarseFVars + nTempFVars);
+            fine_uvs.resize(nFineFVars);
         //}
         //prim->loops.resize
     }
