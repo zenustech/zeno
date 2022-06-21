@@ -35,6 +35,7 @@ public slots:
     void onNodesSelected(const QModelIndex& subgIdx, const QModelIndexList& nodes, bool select);
     void updateViewport(const QString& action = "");
     void onFeedBack();
+    void onRunTriggered();
 
 protected:
     void resizeEvent(QResizeEvent* event) override;

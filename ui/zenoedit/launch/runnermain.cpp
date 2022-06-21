@@ -1,5 +1,6 @@
 #ifdef ZENO_MULTIPROCESS
 #include <cstdio>
+#include <cstring>
 #include <iostream>
 #include <zeno/utils/log.h>
 #include <zeno/utils/Timer.h>

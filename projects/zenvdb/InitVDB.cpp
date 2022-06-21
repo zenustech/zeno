@@ -1,14 +1,14 @@
-#include "zeno/InitVDB.h"
 #include <openvdb/openvdb.h>
-#include <cstdio>
+#include <zeno/utils/log.h>
+#include <zeno/core/Session.h>
+#include <zeno/extra/EventCallbacks.h>
 
 namespace zeno {
-    OpenvdbInitializer::OpenvdbInitializer() {
-        printf("Initializing OpenVDB...\n");
-        openvdb::initialize();
-        printf("Initialized OpenVDB successfully!\n");
-    }
-#ifdef __linux__
-    static OpenvdbInitializer g_openvdb_initializer{};
-#endif
+
+static int defOpenvdbInit = getSession().eventCallbacks->hookEvent("init", [] {
+    zeno::log_debug("Initializing OpenVDB...");
+    openvdb::initialize();
+    zeno::log_debug("Initialized OpenVDB successfully!");
+});
+
 }

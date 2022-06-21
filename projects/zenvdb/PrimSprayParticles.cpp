@@ -66,7 +66,7 @@ struct PrimSprayParticles : zeno::INode {
     auto result = zeno::IObject::make<PrimitiveObject>();
     tbb::concurrent_vector<zeno::vec3f> data(0);
     size_t n = prim->tris.size();
-    log_debugf("PrimSprayParticles got num tris:", n);
+    log_debug("PrimSprayParticles got num tris: {}", n);
     tbb::parallel_for((size_t)0, (size_t)n, (size_t)1, [&](size_t index) {
       zeno::vec3f a, b, c;
       zeno::vec3i vi = prim->tris[index];

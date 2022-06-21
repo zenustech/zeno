@@ -16,6 +16,7 @@ class ZsgReader
 public:
     static ZsgReader& getInstance();
     bool openFile(const QString& fn, IAcceptor* pAcceptor);
+    static QVariant _parseToVariant(const QString &type, const rapidjson::Value &val, QObject *parentRef);
 
 private:
     ZsgReader();
@@ -26,8 +27,7 @@ private:
     void _parseColorRamps(const QString& id, const rapidjson::Value& jsonColorRamps, IAcceptor* pAcceptor);
     void _parseBySocketKeys(const QString& id, const rapidjson::Value& objValue, IAcceptor* pAcceptor);
     QVariant _parseDefaultValue(const QString& val, const QString &type);
-    QVariant _parseToVariant(const QString& type, const rapidjson::Value& val, QObject* parentRef);
-    CurveModel* _parseCurveModel(const rapidjson::Value& jsonCurve, QObject* parentRef);
+    static CurveModel* _parseCurveModel(const rapidjson::Value& jsonCurve, QObject* parentRef);
     NODE_DESCS _parseDescs(const rapidjson::Value& descs);
 };
 

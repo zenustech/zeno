@@ -1,6 +1,7 @@
 #include "uihelper.h"
 #include <zeno/utils/logger.h>
 #include <zenoui/model/modelrole.h>
+#include <zenoui/model/curvemodel.h>
 #include <QUuid>
 
 

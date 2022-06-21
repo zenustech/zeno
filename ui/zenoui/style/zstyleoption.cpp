@@ -23,8 +23,15 @@ ZStyleOptionComboBox::ZStyleOptionComboBox()
 {
 }
 
-ZStyleOptionComboBox::ZStyleOptionComboBox(const QStyleOptionComboBox &opt)
-    : QStyleOptionComboBox(opt)
-    , textMargin(0)
-{
+ZStyleOptionComboBox::ZStyleOptionComboBox(const QStyleOptionComboBox &opt) : QStyleOptionComboBox(opt), textMargin(0) {
+}
+
+
+ZStyleOptionCheckBoxBar::ZStyleOptionCheckBoxBar() : QStyleOptionComplex(), bHovered(false) {
+
+}
+
+ZStyleOptionCheckBoxBar::ZStyleOptionCheckBoxBar(const QStyleOptionComplex &opt)
+    : QStyleOptionComplex(opt), bHovered(false) {
+
 }

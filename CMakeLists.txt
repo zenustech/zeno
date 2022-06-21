@@ -82,16 +82,17 @@ if (ZENO_OUT_TO_BIN)
     set(CMAKE_DEBUG_POSTFIX "")  # No more annoying zeno_d.dll
 endif()
 
-if (ZENO_NO_WARNING)
+if (ZENO_NO_WARNING)  # Use our customized warning flags
     set(ZENO_OLD_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
     if (CMAKE_CXX_COMPILER_ID MATCHES "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-all -Wno-cpp -Wno-deprecated-declarations -Wno-enum-compare -Wno-ignored-attributes -Wno-extra -Wreturn-type -Wmissing-declarations -Wnon-virtual-dtor -Wsuggest-override -Wconversion-null -Wuninitialized -Wmaybe-uninitialized -Wno-format-security")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-all -Wno-cpp -Wno-deprecated-declarations -Wno-enum-compare -Wno-ignored-attributes -Wno-extra -Wreturn-type -Wmissing-declarations -Wnon-virtual-dtor -Wsuggest-override -Wconversion-null -Wuninitialized -Wmaybe-uninitialized -Wno-format-security -Wnarrowing")
     endif()
     if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w")
     endif()
 endif()
 
+## --- begin cihou asset dir
 set(zeno_asset_dirs_txt ${CMAKE_CURRENT_BINARY_DIR}/zeno_asset_dirs.txt)
 if (EXISTS ${zeno_asset_dirs_txt})
     file(REMOVE ${zeno_asset_dirs_txt})
@@ -105,6 +106,7 @@ function (zeno_add_asset_dir dir)
     endif()
     file(APPEND ${zeno_asset_dirs_txt} "${dir}\n")
 endfunction()
+## --- end cihou asset dir
 
 add_subdirectory(zeno)
 add_subdirectory(projects)

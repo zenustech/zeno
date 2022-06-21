@@ -170,7 +170,7 @@ void ZenoSubGraphScene::onDataChanged(const QModelIndex& subGpIdx, const QModelI
         //now we choose the second.
         if (m_nodes.find(id) != m_nodes.end())
         {
-            m_nodes[id]->onSocketsUpdateOverall(role == ROLE_INPUTS);
+            m_nodes[id]->onSocketsUpdate(role == ROLE_INPUTS);
         }
 	}
     if (role == ROLE_OPTIONS)
@@ -195,6 +195,11 @@ void ZenoSubGraphScene::onDataChanged(const QModelIndex& subGpIdx, const QModelI
     {
         ZASSERT_EXIT(m_nodes.find(id) != m_nodes.end());
         m_nodes[id]->onNameUpdated(idx.data(ROLE_OBJNAME).toString());
+    }
+    if (role == ROLE_PARAMS_NO_DESC)
+    {
+        ZASSERT_EXIT(m_nodes.find(id) != m_nodes.end());
+        m_nodes[id]->onUpdateParamsNotDesc();
     }
 }
 
@@ -297,8 +302,18 @@ void ZenoSubGraphScene::select(const QString& id)
 void ZenoSubGraphScene::markError(const QString& nodeid)
 {
     ZASSERT_EXIT(m_nodes.find(nodeid) != m_nodes.end());
-    m_nodes[nodeid]->markError(true);
-    m_nodes[nodeid]->setSelected(true);
+    ZenoNode *pNode = m_nodes[nodeid];
+    pNode->markError(true);
+    pNode->setSelected(true);
+    m_errNodes.append(pNode);
+}
+
+void ZenoSubGraphScene::clearMark()
+{
+    for (ZenoNode* pNode : m_errNodes)
+    {
+        pNode->markError(false);
+    }
 }
 
 void ZenoSubGraphScene::undo()

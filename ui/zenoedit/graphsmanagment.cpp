@@ -69,7 +69,6 @@ IGraphsModel* GraphsManagment::openZsgFile(const QString& fn)
     }
 
     pModel->clearDirty();
-    pModel->initDescriptors();
     setCurrentModel(pModel);
     return pModel;
 }
@@ -90,13 +89,13 @@ void GraphsManagment::importGraph(const QString& fn)
         return;
 
 	ModelAcceptor acceptor(qobject_cast<GraphsModel*>(m_model), true);
+    //todo
 	bool ret = ZsgReader::getInstance().openFile(fn, &acceptor);
 	if (!ret)
 	{
 		zeno::log_error("failed to open zsg file: {}", fn.toStdString());
 		return;
 	}
-    m_model->initDescriptors();
 }
 
 void GraphsManagment::reloadGraph(const QString& graphName)

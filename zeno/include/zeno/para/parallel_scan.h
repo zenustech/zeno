@@ -21,7 +21,7 @@ OutputIt parallel_inclusive_scan(Index first, Index last, OutputIt dest,
 template <class It, class OutputIt, class Transform = identity>
 OutputIt parallel_inclusive_scan_sum(It first, It last, OutputIt dest, Transform transformFn = {}) {
     return std::transform_inclusive_scan(ZENO_PAR_UNSEQ first, last, dest, [] (auto &&x, auto &&y) {
-        return std::move(x) + std::move(y);
+        return x + y;
     }, transformFn, std::decay_t<decltype(transformFn(*first))>());
 }
 
@@ -30,9 +30,9 @@ Value parallel_exclusive_scan(Index first, Index last, OutputIt dest,
                     Value initVal, Reduce reduceFn, Transform transformFn) {
     auto endp = std::transform_exclusive_scan(ZENO_PAR
             counter_iterator<Index>(first), counter_iterator<Index>(last),
-            dest, reduceFn, transformFn, initVal);
+            dest, initVal, reduceFn, transformFn);
     if (first != last)
-        return reduceFn(transformFn(*std::prev(endp)), transformFn(*std::prev(last)));
+        return reduceFn(*std::prev(endp), transformFn(*std::prev(last)));
     else
         return initVal;
 }
@@ -40,10 +40,10 @@ Value parallel_exclusive_scan(Index first, Index last, OutputIt dest,
 template <class It, class OutputIt, class Transform = identity>
 auto parallel_exclusive_scan_sum(It first, It last, OutputIt dest, Transform transformFn = {}) {
     auto endp = std::transform_exclusive_scan(ZENO_PAR_UNSEQ first, last, dest, std::decay_t<decltype(transformFn(*first))>(), [] (auto &&x, auto &&y) {
-        return std::move(x) + std::move(y);
+        return x + y;
     }, transformFn);
     if (first != last)
-        return reduceFn(transformFn(*std::prev(endp)), transformFn(*std::prev(last)));
+        return *std::prev(endp) + transformFn(*std::prev(last));
     else
         return std::decay_t<decltype(transformFn(*first))>();
 }

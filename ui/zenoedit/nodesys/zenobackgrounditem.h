@@ -58,6 +58,7 @@ private:
 
     qreal m_borderWidth;
     int lt_radius, rt_radius, lb_radius, rb_radius;
+
     QColor m_clrNormal, m_clrHovered, m_clrSelected;
     QColor m_color;
     QColor m_clrBorder;

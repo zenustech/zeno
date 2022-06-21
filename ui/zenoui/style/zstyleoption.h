@@ -69,4 +69,15 @@ public:
     int textMargin;
 };
 
+class ZStyleOptionCheckBoxBar : public QStyleOptionComplex {
+public:
+    ZStyleOptionCheckBoxBar();
+    ZStyleOptionCheckBoxBar(const QStyleOptionComplex &opt);
+
+    bool bHovered;
+    Qt::CheckState state;
+    //...
+};
+
+
 #endif
