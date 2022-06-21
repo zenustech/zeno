@@ -17,6 +17,32 @@
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 
+#define ROTATE_COMPUTE                          \
+    auto gp = glm::vec3(p[0], p[1], p[2]);      \
+    gp = mz * my * mx * gp;                     \
+    p = zeno::vec3f(gp.x, gp.y, gp.z);
+
+#define ROTATE_PARM                             \
+    {"vec3f", "rotate", "0, 0, 0"},
+
+#define ROTATE_MATRIX                           \
+    auto rotate = get_input2<zeno::vec3f>("rotate"); \
+    float ax = rotate[0] * (M_PI / 180.0);      \
+    float ay = rotate[1] * (M_PI / 180.0);      \
+    float az = rotate[2] * (M_PI / 180.0);      \
+    glm::mat3 mx = glm::mat3(                   \
+        1, 0, 0,                                \
+        0, cos(ax), -sin(ax),                   \
+        0, sin(ax), cos(ax));                   \
+    glm::mat3 my = glm::mat3(                   \
+        cos(ay), 0, sin(ay),                    \
+        0, 1, 0,                                \
+        -sin(ay), 0, cos(ay));                  \
+    glm::mat3 mz = glm::mat3(                   \
+        cos(az), -sin(az), 0,                   \
+        sin(az), cos(az), 0,                    \
+        0, 0, 1);
+
 namespace zeno {
 struct CreateCube : zeno::INode {
     virtual void apply() override {
@@ -117,19 +143,42 @@ struct CreateDisk : zeno::INode {
         auto position = get_input2<zeno::vec3f>("position");
         auto scaleSize = get_input2<zeno::vec3f>("scaleSize");
         auto radius = get_input2<float>("radius");
-        auto lons = get_input2<int>("lons");
+        auto divisions = get_input2<int>("divisions");
 
-        auto &pos = prim->verts;
-        for (size_t i = 0; i < lons; i++) {
-            float rad = 2 * M_PI * i / lons;
-            pos.push_back(vec3f(cos(rad) * radius, 0, -sin(rad) * radius) * scaleSize + position);
-        }
-        pos.push_back(vec3f(0, 0, 0) * scaleSize + position);
+        ROTATE_MATRIX
 
+        auto &verts = prim->verts;
         auto &tris = prim->tris;
-        for (size_t i = 0; i < lons; i++) {
-            tris.push_back(vec3i(lons, i, (i + 1) % lons));
+        auto &uv = prim->verts.add_attr<zeno::vec3f>("uv");
+        auto &norm = prim->verts.add_attr<zeno::vec3f>("nrm");
+
+        if(divisions <= 3){
+            divisions = 3;
         }
+
+        verts.emplace_back(zeno::vec3f(0, 0, 0)+position);
+        uv.emplace_back(0.5, 0.5, 0);
+        norm.emplace_back(0, 1, 0);
+
+        for (int i = 0; i < divisions; i++) {
+            float rad = 2 * M_PI * i / divisions;
+            auto p = zeno::vec3f(cos(rad) * radius, 0,
+                           -sin(rad) * radius);
+
+            ROTATE_COMPUTE
+
+            auto p4uv = p * scaleSize;
+            p = p4uv + position;
+
+            verts.emplace_back(p);
+            tris.emplace_back(i+1, 0, i+2);
+            uv.emplace_back(p4uv[0]/2.0+0.5,
+                            p4uv[2]/2.0+0.5, 0);
+            norm.emplace_back(0, 1, 0);
+        }
+
+        // Update last
+        tris[tris.size()-1] = zeno::vec3i(divisions, 0, 1);
 
         set_output("prim", std::move(prim));
     }
@@ -139,8 +188,9 @@ ZENDEFNODE(CreateDisk, {
     {
         {"vec3f", "position", "0, 0, 0"},
         {"vec3f", "scaleSize", "1, 1, 1"},
+        ROTATE_PARM
         {"float", "radius", "1"},
-        {"int", "lons", "32"},
+        {"int", "divisions", "32"},
     },
     {"prim"},
     {},
@@ -155,7 +205,8 @@ struct CreatePlane : zeno::INode {
         auto size = get_input2<float>("size");
         auto rows = get_input2<int>("rows");;
         auto columns = get_input2<int>("columns");;
-        auto rotate = get_input2<zeno::vec3f>("rotate");
+
+        ROTATE_MATRIX
 
         auto &verts = prim->verts;
         auto &tris = prim->tris;
@@ -167,7 +218,7 @@ struct CreatePlane : zeno::INode {
         if(columns <= 1)
             columns = 1;
 
-        auto start_point = glm::vec3(0.5, 0, 0.5);
+        auto start_point = zeno::vec3f(0.5, 0, 0.5);
         auto gscale = glm::vec3(scale[0], scale[1], scale[2]);
         auto gposition = glm::vec3(position[0], position[1], position[2]);
         zeno::vec3f normal(0.0f);
@@ -175,31 +226,17 @@ struct CreatePlane : zeno::INode {
         float cm = 1.0 / columns;
         int fi = 0;
 
-        float ax = rotate[0] * (M_PI / 180.0);
-        float ay = rotate[1] * (M_PI / 180.0);
-        float az = rotate[2] * (M_PI / 180.0);
-        glm::mat3 mx = glm::mat3(
-            1, 0, 0,
-            0, cos(ax), -sin(ax),
-            0, sin(ax), cos(ax));
-        glm::mat3 my = glm::mat3(
-            cos(ay), 0, sin(ay),
-            0, 1, 0,
-            -sin(ay), 0, cos(ay));
-        glm::mat3 mz = glm::mat3(
-            cos(az), -sin(az), 0,
-            sin(az), cos(az), 0,
-            0, 0, 1);
-
         // Vertices & UV
         for(int i=0; i<=rows; i++){
 
-            auto rp = start_point - glm::vec3(i*rm, 0, 0);
+            auto rp = start_point - zeno::vec3f(i*rm, 0, 0);
 
             for(int j=0; j<=columns; j++){
-                auto cp = glm::vec3(rp - glm::vec3(0, 0, j*cm));
-                cp = mz * my * mx * cp;
-                auto zcp = zeno::vec3f(cp.x, cp.y, cp.z);
+                auto p = rp - zeno::vec3f(0, 0, j*cm);
+
+                ROTATE_COMPUTE
+
+                auto zcp = zeno::vec3f(p[0], p[1], p[2]);
                 zcp = zcp * scale + position;
                 zcp = zcp * size;
                 verts.push_back(zcp);
@@ -272,7 +309,7 @@ ZENDEFNODE(CreatePlane, {
     {
         {"vec3f", "position", "0, 0, 0"},
         {"vec3f", "scaleSize", "1, 1, 1"},
-        {"vec3f", "rotate", "0, 0, 0"},
+        ROTATE_PARM
         {"float", "size", "1"},
         {"int", "rows", "2"},
         {"int", "columns", "2"},
@@ -348,6 +385,8 @@ struct CreateSphere : zeno::INode {
         auto columns = get_input2<int>("columns");
         auto radius = get_input2<float>("radius");
 
+        ROTATE_MATRIX
+
         if(rows <= 3)
             rows = 3;
         if(columns <= 3)
@@ -374,7 +413,11 @@ struct CreateSphere : zeno::INode {
                     cos(rad) * r,
                     h,
                     sin(rad) * r);
-                zeno::vec3f p = op * scale * radius + position;
+                zeno::vec3f p = op * scale * radius;
+
+                ROTATE_COMPUTE
+
+                p = p + position;
                 zeno::vec3f np = op * scale * radius;
                 prim->verts.push_back(p);
 
@@ -471,6 +514,7 @@ ZENDEFNODE(CreateSphere, {
         {"vec3f", "position", "0, 0, 0"},
         {"vec3f", "scaleSize", "1, 1, 1"},
         {"float", "radius", "1"},
+        ROTATE_PARM
         {"int", "rows", "13"},
         {"int", "columns", "24"},
     },
