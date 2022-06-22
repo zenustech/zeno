@@ -23,6 +23,7 @@ ZENO_API std::string getConfigVariable(std::string key) {
 ZENO_API void setExecutableDir(std::string dir) {
 #ifdef _WIN32
     g_assetRoot = dir + "/assets/";
+    g_assetRoot.replace("/", "\\");
 #else
     g_assetRoot = dir + "/../share/Zeno/assets/";
 #endif

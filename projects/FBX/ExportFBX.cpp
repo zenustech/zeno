@@ -22,6 +22,12 @@ struct ExportFBX : zeno::INode {
         zeno::log_info("----- FBX Path {}", fbxpath);
         zeno::log_info("----- OUT Path {}", outpath);
 
+#ifdef _WIN32
+        abcpath.replace("/", "\\");
+        fbxpath.replace("/", "\\");
+        outpath.replace("/", "\\");
+#endif
+
         //system("pwd");
 
         auto cmd = (std::string)
