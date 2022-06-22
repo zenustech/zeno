@@ -1,20 +1,20 @@
 #include <zeno/zeno.h>
 #include <zeno/types/PrimitiveObject.h>
-#include <zeno/types/PrimitiveUtils.h>
+#include <zeno/funcs/PrimitiveUtils.h>
 #include <zeno/types/StringObject.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/utils/tuple_hash.h>
 #include <unordered_map>
 
 namespace zeno {
-namespace {
 
-static void primMarkIsland(PrimitiveObject *prim, std::string tagAttr) {
+ZENO_API void primMarkIsland(PrimitiveObject *prim, std::string tagAttr) {
+    // TODO: have bugs.. need cihou lines/quads/loops too
     auto const &tris = prim->tris;
     auto n = tris.size();
     auto &tagVert = prim->add_attr<int>(tagAttr);
     auto m = tagVert.size();
-    static std::vector<int> found(m);
+    std::vector<int> found(m);
     for (int i = 0; i < m; i++) {
         found[i] = i;
     }
@@ -35,6 +35,8 @@ static void primMarkIsland(PrimitiveObject *prim, std::string tagAttr) {
         tagVert[i] = find(i);
     }
 }
+
+namespace {
 
 struct PrimMarkIsland : INode {
     virtual void apply() override {

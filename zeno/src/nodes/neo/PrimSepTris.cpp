@@ -1,10 +1,44 @@
 #include <zeno/zeno.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/funcs/PrimitiveUtils.h>
+//#include <zeno/para/execution.h>
+//#include <algorithm>
 
 namespace zeno {
 
-ZENO_API void primSepTriangles(PrimitiveObject *prim, bool keepTriFaces, bool withUVattr) {
+#if 0
+ZENO_API void primSmoothNormal(PrimitiveObject *prim) {
+    auto &nrm = prim->verts.add_attr<vec3f>("nrm");
+    std::fill(ZENO_PAR_UNSEQ nrm.begin(), nrm.end(), vec3f());
+    for (size_t i = 0; i < prim->polys.size(); i++) {
+        auto [base, len] = prim->polys[i];
+        if (len < 3) continue;
+        auto a = prim->verts[prim->loops[base]];
+        auto b = prim->verts[prim->loops[base + 1]];
+        auto c = prim->verts[prim->loops[base + 2]];
+        auto n = cross(b - a, c - a);
+        for (size_t j = base + 2; j < base + len; j++) {
+            auto b = prim->verts[prim->loops[j]];
+            auto c = prim->verts[prim->loops[j + 1]];
+            n += cross(b - a, c - a);
+        }
+        for (size_t j = base; j < base + len; j++) {
+            nrm[j] += n;
+        }
+    }
+    std::for_each(ZENO_PAR_UNSEQ nrm.begin(), nrm.end(), [] (vec3f &n) {
+        n = normalizeSafe(n, 1e-6f);
+    });
+}
+#endif
+
+ZENO_API void primSepTriangles(PrimitiveObject *prim, bool smoothNormal, bool keepTriFaces) {
+    //if (smoothNormal && !prim->verts.has_attr("nrm")) {
+        //primSmoothNormal(prim);
+    //}
+    bool needCompNormal = !prim->verts.has_attr("nrm");
+    bool needCompUVs = !prim->verts.has_attr("uv");
+
     std::vector<int> v;
     int loopcount = 0;
     for (size_t i = 0; i < prim->polys.size(); i++) {
@@ -57,7 +91,7 @@ ZENO_API void primSepTriangles(PrimitiveObject *prim, bool keepTriFaces, bool wi
         }
     });
 
-    if (withUVattr) {
+    if (needCompUVs) {
         if (prim->tris.has_attr("uv0") &&
             prim->tris.has_attr("uv1") &&
             prim->tris.has_attr("uv2")) {
@@ -125,7 +159,41 @@ ZENO_API void primSepTriangles(PrimitiveObject *prim, bool keepTriFaces, bool wi
     prim->loop_uvs.clear();
     prim->uvs.clear();
 
+    if (smoothNormal && needCompNormal) {
+        std::vector<vec3f> shn(prim->verts.size());
+        for (size_t i = 0; i < v.size() / 3; i++) {
+            auto a = new_verts[i * 3 + 0];
+            auto b = new_verts[i * 3 + 1];
+            auto c = new_verts[i * 3 + 2];
+            auto n = cross(b - a, c - a);
+            n = normalizeSafe(n, 1e-6f);
+            shn[v[i * 3 + 0]] += n;
+            shn[v[i * 3 + 1]] += n;
+            shn[v[i * 3 + 2]] += n;
+        }
+        auto &new_nrm = new_verts.add_attr<vec3f>("nrm");
+        for (size_t i = 0; i < v.size(); i++) {
+            auto n = shn[v[i]];
+            n = normalizeSafe(n, 1e-6f);
+            new_nrm[i] = n;
+        }
+    }
+
     std::swap(new_verts, prim->verts);
+
+    if (!smoothNormal && needCompNormal) {
+        auto &nrm = prim->verts.add_attr<vec3f>("nrm");
+        for (size_t i = 0; i < v.size() / 3; i++) {
+            auto a = prim->verts[i * 3 + 0];
+            auto b = prim->verts[i * 3 + 1];
+            auto c = prim->verts[i * 3 + 2];
+            auto n = cross(b - a, c - a);
+            n = normalizeSafe(n, 1e-6f);
+            nrm[i * 3 + 0] = n;
+            nrm[i * 3 + 1] = n;
+            nrm[i * 3 + 2] = n;
+        }
+    }
 
     if (keepTriFaces) {
         prim->tris.resize(v.size() / 3);
@@ -140,9 +208,10 @@ namespace {
 struct PrimSepTriangles : INode {
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
+        auto smoothNormal = get_input2<bool>("smoothNormal");
         auto keepTriFaces = get_input2<bool>("keepTriFaces");
-        auto withUVattr = get_input2<bool>("withUVattr");
-        primSepTriangles(prim.get(), keepTriFaces);
+        //printf("asdasd %d\n", prim->verts.attrs.erase("nrm"));
+        primSepTriangles(prim.get(), smoothNormal, keepTriFaces);
         set_output("prim", std::move(prim));
     }
 };
@@ -150,8 +219,8 @@ struct PrimSepTriangles : INode {
 ZENDEFNODE(PrimSepTriangles,
         { /* inputs: */ {
         {"primitive", "prim"},
+        {"bool", "smoothNormal", "1"},
         {"bool", "keepTriFaces", "1"},
-        {"bool", "withUVattr", "1"},
         }, /* outputs: */ {
         {"primitive", "prim"},
         }, /* params: */ {
