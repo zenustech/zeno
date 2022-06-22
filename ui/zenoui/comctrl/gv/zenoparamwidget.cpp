@@ -422,6 +422,12 @@ void ZenoTextLayoutItem::setRight(bool right)
     m_bRight = right;
 }
 
+void ZenoTextLayoutItem::setText(const QString& text)
+{
+    m_text = text;
+    setPlainText(m_text);
+}
+
 QRectF ZenoTextLayoutItem::boundingRect() const
 {
     QRectF rc = QRectF(QPointF(0, 0), geometry().size());
@@ -430,7 +436,6 @@ QRectF ZenoTextLayoutItem::boundingRect() const
 
 void ZenoTextLayoutItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
 {
-    //painter->fillRect(boundingRect(), QColor(0, 0, 0));
     if (m_bRight)
     {
         QString text = toPlainText();
@@ -440,8 +445,18 @@ void ZenoTextLayoutItem::paint(QPainter *painter, const QStyleOptionGraphicsItem
     }
     else
     {
-        QGraphicsTextItem::paint(painter, option, widget);
+        QStyleOptionGraphicsItem myOption(*option);
+        myOption.state &= ~QStyle::State_Selected;
+        myOption.state &= ~QStyle::State_HasFocus;
+        QGraphicsTextItem::paint(painter, &myOption, widget);
     }
+}
+
+QPainterPath ZenoTextLayoutItem::shape() const
+{
+    QPainterPath path;
+    path.addRect(boundingRect());
+    return path;
 }
 
 QSizeF ZenoTextLayoutItem::sizeHint(Qt::SizeHint which, const QSizeF &constraint) const
@@ -464,6 +479,33 @@ void ZenoTextLayoutItem::focusOutEvent(QFocusEvent* event)
 {
     QGraphicsTextItem::focusOutEvent(event);
     emit editingFinished();
+
+    QString newText = document()->toPlainText();
+    if (newText != m_text)
+    {
+        QString oldText = m_text;
+        m_text = newText;
+        emit contentsChanged(oldText, newText);
+    }
+}
+
+void ZenoTextLayoutItem::hoverEnterEvent(QGraphicsSceneHoverEvent* event)
+{
+    QGraphicsTextItem::hoverEnterEvent(event);
+    if (textInteractionFlags() & Qt::TextEditorInteraction)
+        setCursor(QCursor(Qt::IBeamCursor));
+}
+
+void ZenoTextLayoutItem::hoverMoveEvent(QGraphicsSceneHoverEvent* event)
+{
+    QGraphicsTextItem::hoverMoveEvent(event);
+}
+
+void ZenoTextLayoutItem::hoverLeaveEvent(QGraphicsSceneHoverEvent* event)
+{
+    QGraphicsTextItem::hoverLeaveEvent(event);
+    if (textInteractionFlags() & Qt::TextEditorInteraction)
+        setCursor(QCursor(Qt::ArrowCursor));
 }
 
 

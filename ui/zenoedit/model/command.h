@@ -138,5 +138,19 @@ private:
     GraphsModel *m_pModel;
 };
 
+class UpdateNotDescSockNameCommand : public QUndoCommand
+{
+public:
+    UpdateNotDescSockNameCommand(const QString& nodeid, const SOCKET_UPDATE_INFO& updateInfo, GraphsModel* pModel,                                 QPersistentModelIndex subgIdx);
+    void redo() override;
+    void undo() override;
+
+private:
+    SOCKET_UPDATE_INFO m_info;
+    QString m_nodeid;
+    QPersistentModelIndex m_subgIdx;
+    GraphsModel* m_pModel;
+};
+
 
 #endif

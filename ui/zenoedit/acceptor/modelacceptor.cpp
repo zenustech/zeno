@@ -138,7 +138,7 @@ void ModelAcceptor::_initSockets(const QString& id, const QString& name, INPUT_S
 {
 	if (!m_currentGraph)
 		return;
-	//TODO
+
 	if (name == "MakeDict")
 	{
 		const QStringList& socketKeys = m_currentGraph->data(m_currentGraph->index(id), ROLE_SOCKET_KEYS).toStringList();
@@ -147,12 +147,9 @@ void ModelAcceptor::_initSockets(const QString& id, const QString& name, INPUT_S
 			INPUT_SOCKET inputSock;
 			inputSock.info.name = key;
 			inputSock.info.nodeid = id;
+			inputSock.info.control = CONTROL_DICTKEY;
 			inputs[key] = inputSock;
 		}
-		PARAM_INFO info;
-		info.name = "_KEYS";
-		info.value = socketKeys.join("\n");
-		params.insert(info.name, info);
 	}
 	else if (name == "MakeList")
 	{
@@ -238,9 +235,11 @@ void ModelAcceptor::initSockets(const QString& id, const QString& name, const NO
 
 	_initSockets(id, name, inputs, params, outputs);
 
-	m_currentGraph->setData(m_currentGraph->index(id), QVariant::fromValue(inputs), ROLE_INPUTS);
-	m_currentGraph->setData(m_currentGraph->index(id), QVariant::fromValue(params), ROLE_PARAMETERS);
-	m_currentGraph->setData(m_currentGraph->index(id), QVariant::fromValue(outputs), ROLE_OUTPUTS);
+	QModelIndex idx = m_currentGraph->index(id);
+
+	m_currentGraph->setData(idx, QVariant::fromValue(inputs), ROLE_INPUTS);
+	m_currentGraph->setData(idx, QVariant::fromValue(params), ROLE_PARAMETERS);
+	m_currentGraph->setData(idx, QVariant::fromValue(outputs), ROLE_OUTPUTS);
 }
 
 void ModelAcceptor::setSocketKeys(const QString& id, const QStringList& keys)
@@ -298,11 +297,16 @@ void ModelAcceptor::setInputSocket(
 	else
 	{
 		//TODO: optimize the code.
-		if (nodeCls == "MakeList")
+		if (nodeCls == "MakeList" || nodeCls == "MakeDict")
 		{
 			INPUT_SOCKET inSocket;
 			inSocket.info.name = inSock;
+			if (nodeCls == "MakeDict")
+			{
+				inSocket.info.control = CONTROL_DICTKEY;
+			}
 			inputs[inSock] = inSocket;
+
 			if (!outId.isEmpty() && !outSock.isEmpty())
 			{
 				inputs[inSock].outNodes[outId][outSock] = SOCKET_INFO(outId, outSock);

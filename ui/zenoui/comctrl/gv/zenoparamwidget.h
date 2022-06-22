@@ -246,16 +246,21 @@ public:
     ZenoTextLayoutItem(const QString &text, const QFont &font, const QColor &color, QGraphicsItem *parent = nullptr);
     void setGeometry(const QRectF &rect) override;
     void setRight(bool right);
+    void setText(const QString& text);
     QRectF boundingRect() const override;
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) override;
+    QPainterPath shape() const override;
 
 signals:
     void editingFinished();
-//    void geometrySetup(const QPointF &pos);
+    void contentsChanged(QString oldText, QString newText);
 
 protected:
     QSizeF sizeHint(Qt::SizeHint which, const QSizeF &constraint = QSizeF()) const override;
     void focusOutEvent(QFocusEvent *event) override;
+    void hoverEnterEvent(QGraphicsSceneHoverEvent *event) override;
+    void hoverMoveEvent(QGraphicsSceneHoverEvent *event) override;
+    void hoverLeaveEvent(QGraphicsSceneHoverEvent *event) override;
 
 private:
     QString m_text;

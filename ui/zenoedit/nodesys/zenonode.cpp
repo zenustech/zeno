@@ -621,6 +621,35 @@ void ZenoNode::onSocketsUpdate(bool bInput)
     if (bInput)
     {
         INPUT_SOCKETS inputs = m_index.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
+
+        QStringList coreKeys = inputs.keys();
+        QStringList uiKeys = m_inSockets.keys();
+        QSet<QString> coreNewSet = coreKeys.toSet().subtract(uiKeys.toSet());
+        QSet<QString> uiNewSet = uiKeys.toSet().subtract(coreKeys.toSet());
+        //detecting the rename case for "MakeDict".
+        if (coreNewSet.size() == 1 && uiNewSet.size() == 1 && m_index.data(ROLE_OBJNAME) == "MakeDict")
+        {
+            //rename.
+            QString oldName = *uiNewSet.begin();
+            QString newName = *coreNewSet.begin();
+            ZASSERT_EXIT(oldName != newName);
+
+            _socket_ctrl ctrl = m_inSockets[oldName];
+            ctrl.socket_text->setText(newName);
+            
+            //have to reset the text format, which is trivial.
+            QTextFrame *frame = ctrl.socket_text->document()->rootFrame();
+            QTextFrameFormat format = frame->frameFormat();
+            format.setBackground(QColor(37, 37, 37));
+            frame->setFrameFormat(format);
+
+            m_inSockets[newName] = ctrl;
+            m_inSockets.remove(oldName);
+
+            updateWhole();
+            return;
+        }
+
         for (INPUT_SOCKET inSocket : inputs)
         {
             //copy from initSockets()
@@ -720,6 +749,33 @@ void ZenoNode::onSocketsUpdate(bool bInput)
                 else if (ctrl == CONTROL_HEATMAP)
                 {
                     //todo
+                }
+                else if (ctrl == CONTROL_DICTKEY)
+                {
+                    pSocketItem->setTextInteractionFlags(Qt::TextEditorInteraction);
+
+                    QTextFrame* frame = pSocketItem->document()->rootFrame();
+                    QTextFrameFormat format = frame->frameFormat();
+                    format.setBackground(QColor(37, 37, 37));
+                    frame->setFrameFormat(format);
+
+                    connect(pSocketItem, &ZenoTextLayoutItem::contentsChanged, this, [=](QString oldText, QString newText) {
+                        IGraphsModel *pGraphsModel = zenoApp->graphsManagment()->currentModel();
+                        ZASSERT_EXIT(pGraphsModel);
+                        SOCKET_UPDATE_INFO info;
+                        info.bInput = true;
+                        info.newInfo.name = newText;
+                        info.oldInfo.name = oldText;
+                        info.updateWay = SOCKET_UPDATE_NAME;
+                        bool ret = pGraphsModel->updateSocketNameNotDesc(m_index.data(ROLE_OBJID).toString(), info, m_subGpIndex, true);
+                        if (!ret) {
+                            //todo: error hint.
+                            pSocketItem->blockSignals(true);
+                            pSocketItem->setText(oldText);
+                            pSocketItem->blockSignals(false);
+                        }
+                    });
+                    socket_ctrl.socket_control = nullptr;
                 }
                 else if (ctrl == CONTROL_VEC3F)
                 {

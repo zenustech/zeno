@@ -737,7 +737,7 @@ void GraphsModel::addNode(const NODE_DATA& nodeData, const QModelIndex& subGpIdx
         }
         else
         {
-            if (descName == "MakeList")
+            if (descName == "MakeList" || descName == "MakeDict")
             {
                 INPUT_SOCKETS inputs = nodeData2[ROLE_INPUTS].value<INPUT_SOCKETS>();
                 INPUT_SOCKET inSocket;
@@ -746,6 +746,10 @@ void GraphsModel::addNode(const NODE_DATA& nodeData, const QModelIndex& subGpIdx
                 if (maxObjId == -1)
                 {
                     inSocket.info.name = "obj0";
+                    if (descName == "MakeDict")
+                    {
+                        inSocket.info.control = CONTROL_DICTKEY;
+                    }
                     inputs.insert(inSocket.info.name, inSocket);
                     nodeData2[ROLE_INPUTS] = QVariant::fromValue(inputs);
                 }
@@ -1073,7 +1077,8 @@ QModelIndex GraphsModel::addLink(const EdgeInfo& info, const QModelIndex& subGpI
         ZASSERT_EXIT(pGraph, QModelIndex());
         const QModelIndex &inIdx = pGraph->index(info.inputNode);
         //todo: encapsulation when case grows.
-        if (inIdx.data(ROLE_OBJNAME).toString() == "MakeList")
+        const QString& objName = inIdx.data(ROLE_OBJNAME).toString();
+        if (objName == "MakeList" || objName == "MakeDict")
         {
             const INPUT_SOCKETS inputs = inIdx.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
             QList<QString> lst = inputs.keys();
@@ -1093,6 +1098,10 @@ QModelIndex GraphsModel::addLink(const EdgeInfo& info, const QModelIndex& subGpI
                 sockUpdateinfo.bInput = true;
                 sockUpdateinfo.updateWay = SOCKET_INSERT;
                 sockUpdateinfo.newInfo.name = newObjName;
+                if (objName == "MakeDict")
+                {
+                    sockUpdateinfo.newInfo.control = CONTROL_DICTKEY;
+                }
                 updateSocket(info.inputNode, sockUpdateinfo, subGpIdx, true);
             }
         }
@@ -1290,6 +1299,56 @@ void GraphsModel::updateBlackboard(const QString& id, const BLACKBOARD_INFO& new
         params["blackboard"].name = "blackboard";
         params["blackboard"].value = QVariant::fromValue(newInfo);
         pSubg->setData(idx, QVariant::fromValue(params), ROLE_PARAMS_NO_DESC);
+    }
+}
+
+bool GraphsModel::updateSocketNameNotDesc(const QString& id, SOCKET_UPDATE_INFO info, const QModelIndex& subGpIdx, bool enableTransaction)
+{
+    SubGraphModel* pSubg = subGraph(subGpIdx.row());
+    ZASSERT_EXIT(pSubg, false);
+    const QModelIndex &idx = pSubg->index(id);
+
+    bool ret = false;
+    if (enableTransaction)
+    {
+        UpdateNotDescSockNameCommand *pCmd = new UpdateNotDescSockNameCommand(id, info, this, subGpIdx);
+        m_stack->push(pCmd);
+
+        ret = m_retStack.top();
+        m_retStack.pop();
+        return ret;
+    }
+    else
+    {
+        if (info.updateWay == SOCKET_UPDATE_NAME)
+        {
+            //especially for MakeDict£¬we update the name of socket which are not registerd by descriptors.
+            const QString& newSockName = info.newInfo.name;
+            const QString& oldSockName = info.oldInfo.name;
+
+            INPUT_SOCKETS inputs = pSubg->data(idx, ROLE_INPUTS).value<INPUT_SOCKETS>();
+            if (info.bInput && newSockName != oldSockName && inputs.find(newSockName) == inputs.end())
+            {
+                INPUT_SOCKET& newInput = inputs[newSockName];
+                const INPUT_SOCKET& oldInput = inputs[oldSockName];
+                newInput = oldInput;
+                newInput.info.name = newSockName;
+
+                //update all link connect with oldInfo.
+                m_linkModel->blockSignals(true);
+                for (auto idx : oldInput.linkIndice)
+                {
+                    m_linkModel->setData(idx, newSockName, ROLE_INSOCK);
+                }
+                m_linkModel->blockSignals(false);
+
+                inputs.remove(oldSockName);
+                pSubg->setData(idx, QVariant::fromValue(inputs), ROLE_INPUTS);
+                ret = true;
+            }
+        }
+        m_retStack.push(ret);
+        return ret;
     }
 }
 

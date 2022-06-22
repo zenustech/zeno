@@ -8,6 +8,7 @@
 #include "../nodesys/zenosubgraphscene.h"
 #include "subgraphmodel.h"
 #include <zenoui/model/modeldata.h>
+#include <stack>
 
 class SubGraphModel;
 class GraphsModel;
@@ -117,8 +118,9 @@ public:
 	void collaspe(const QModelIndex& subgIdx) override;
 	void expand(const QModelIndex& subgIdx) override;
     void getNodeIndices(const QModelIndex& subGpIdx, QModelIndexList& subgNodes, QModelIndexList& normNodes) override;
-    bool hasDescriptor(const QString& nodeName) const;
+    bool updateSocketNameNotDesc(const QString &id, SOCKET_UPDATE_INFO info, const QModelIndex &subGpIdx, bool enableTransaction = false) override;
 
+    bool hasDescriptor(const QString& nodeName) const;
     void beginTransaction(const QString& name);
 	void endTransaction();
     void removeLinks(const QList<QPersistentModelIndex>& info, const QModelIndex& subGpIdx, bool enableTransaction = false);
@@ -164,6 +166,7 @@ private:
     QString m_filePath;
     QMutex m_mutex;
     QUndoStack* m_stack;
+    std::stack<bool> m_retStack;
     int m_apiLevel;
     bool m_dirty;
 
