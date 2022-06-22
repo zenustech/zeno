@@ -28,6 +28,7 @@ void MakeCurveNode::initParam(PARAM_CONTROL ctrl, QGraphicsLinearLayout* pParamL
     ZenoNode::initParam(ctrl, pParamLayout, name, param);
 }
 
+/*
 QGraphicsLinearLayout* MakeCurveNode::initCustomParamWidgets()
 {
     QGraphicsLinearLayout* pHLayout = new QGraphicsLinearLayout(Qt::Horizontal);
@@ -75,3 +76,4 @@ void MakeCurveNode::onEditClicked()
     pEditor->addCurve(pModel);
     pEditor->show();
 }
+*/
