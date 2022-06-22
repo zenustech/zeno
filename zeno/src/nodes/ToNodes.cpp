@@ -46,6 +46,7 @@ struct ToView : zeno::INode {
                 }
             }
         };
+        // TODO: what about list of lists?
         if (auto *lst = dynamic_cast<ListObject *>(p.get())) {
             for (size_t i = 0; i < lst->arr.size(); i++) {
                 addtoview(lst->arr[i], [i] (auto &key) {
