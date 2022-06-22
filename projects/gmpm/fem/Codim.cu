@@ -1,5 +1,5 @@
 #include "../Structures.hpp"
-// #include "../Utils.hpp"
+#include "../Utils.hpp"
 #include "zensim/Logger.hpp"
 #include "zensim/cuda/execution/ExecutionPolicy.cuh"
 #include "zensim/execution/ExecutionPolicy.hpp"
@@ -91,10 +91,10 @@ auto retrieve_bounding_volumes(zs::CudaExecutionPolicy &pol,
 }
 
 template <typename VecT>
-constexpr bool pt_accd(VecT p, VecT t0, VecT t1, VecT t2, VecT dp, VecT dt0,
-                       VecT dt1, VecT dt2, typename VecT::value_type eta,
-                       typename VecT::value_type thickness,
-                       typename VecT::value_type &toc) {
+constexpr bool ptaccd(VecT p, VecT t0, VecT t1, VecT t2, VecT dp, VecT dt0,
+                      VecT dt1, VecT dt2, typename VecT::value_type eta,
+                      typename VecT::value_type thickness,
+                      typename VecT::value_type &toc) {
   using T = typename VecT::value_type;
   auto mov = (dt0 + dt1 + dt2 + dp) / 4;
   dt0 -= mov;
@@ -139,11 +139,190 @@ constexpr bool pt_accd(VecT p, VecT t0, VecT t1, VecT t2, VecT dp, VecT dt0,
   }
   return true;
 }
+
+template <typename VecT,
+          zs::enable_if_all<VecT::dim == 1, VecT::extent == 3> = 0>
+constexpr auto solve_quadratic(const zs::VecInterface<VecT> &c,
+                               double eps = 1e-8) {
+  using T = typename VecT::value_type;
+  using RetT = typename VecT::template variant_vec<
+      T, zs::integer_seq<typename VecT::index_type, 2>>;
+  auto s = RetT::zeros();
+  // make sure we have a d2 equation
+  if (zs::abs(c[2]) < eps) {
+    if (zs::abs(c[1]) < eps)
+      return zs::make_tuple(0, s);
+    s[0] = -c[0] / c[1];
+    return zs::make_tuple(1, s);
+  }
+
+  T p{}, q{}, D{};
+  // normal for: x^2 + px + q
+  p = c[1] / (2 * c[2]);
+  q = c[0] / c[2];
+  D = p * p - q;
+
+  if (zs::abs(D) < eps) {
+    // one float root
+    s[0] = s[1] = -p;
+    return zs::make_tuple(1, s);
+  }
+
+  if (D < eps)
+    // no real root
+    return zs::make_tuple(0, s);
+
+  else {
+    // two real roots, s[0] < s[1]
+    auto sqrt_D = zs::sqrt(D);
+    s[0] = -sqrt_D - p;
+    s[1] = sqrt_D - p;
+    return zs::make_tuple(2, s);
+  }
+}
+template <typename VecT, typename T,
+          zs::enable_if_all<VecT::dim == 1, VecT::extent == 3,
+                            std::is_floating_point_v<T>> = 0>
+[[nodiscard("VF coplanarity cubic equation coefficients")]] constexpr auto
+cubic_eqn_VF(const zs::VecInterface<VecT> a0, const zs::VecInterface<VecT> ad,
+             const zs::VecInterface<VecT> b0, const zs::VecInterface<VecT> bd,
+             const zs::VecInterface<VecT> c0, const zs::VecInterface<VecT> cd,
+             const zs::VecInterface<VecT> p0, const zs::VecInterface<VecT> pd,
+             T thickness) noexcept {
+  auto dab = bd - ad, dac = cd - ad, dap = pd - ad;
+  auto oab = b0 - a0, oac = c0 - a0, oap = p0 - a0;
+  auto dabXdac = cross(dab, dac);
+  auto dabXoac = cross(dab, oac);
+  auto oabXdac = cross(oab, dac);
+  auto oabXoac = cross(oab, oac);
+
+  T a = dot(dap, dabXdac);
+  T b = dot(oap, dabXdac) + dot(dap, dabXoac + oabXdac);
+  T c = dot(dap, oabXoac) + dot(oap, dabXoac + oabXdac);
+  T d = dot(oap, oabXoac);
+  if (d > 0)
+    d -= thickness;
+  return zs::make_tuple(a, b, c, d);
+}
+template <typename VecT, typename T,
+          zs::enable_if_all<VecT::dim == 1, VecT::extent == 3,
+                            std::is_floating_point_v<T>> = 0>
+[[nodiscard("EE coplanaritycubic equation coefficients")]] constexpr auto
+cubic_eqn_EE(const zs::VecInterface<VecT> a0, const zs::VecInterface<VecT> ad,
+             const zs::VecInterface<VecT> b0, const zs::VecInterface<VecT> bd,
+             const zs::VecInterface<VecT> c0, const zs::VecInterface<VecT> cd,
+             const zs::VecInterface<VecT> d0, const zs::VecInterface<VecT> dd,
+             T thickness) {
+  auto dba = bd - ad, ddc = dd - cd, dca = cd - ad;
+  auto odc = d0 - c0, oba = b0 - a0, oca = c0 - a0;
+  auto dbaXddc = cross(dba, ddc);
+  auto dbaXodc = cross(dba, odc);
+  auto obaXddc = cross(oba, ddc);
+  auto obaXodc = cross(oba, odc);
+
+  T a = dot(dca, dbaXddc);
+  T b = dot(oca, dbaXddc) + dot(dca, dbaXodc + obaXddc);
+  T c = dot(dca, obaXodc) + dot(oca, dbaXodc + obaXddc);
+  T d = dot(oca, obaXodc);
+
+  if (d > 0)
+    d -= thickness;
+  return zs::make_tuple(a, b, c, d);
+}
+template <typename VecT>
+constexpr bool pt_ccd(VecT p, VecT t0, VecT t1, VecT t2, VecT dp, VecT dt0,
+                      VecT dt1, VecT dt2, typename VecT::value_type thickness,
+                      typename VecT::value_type &toc) {
+  using T = typename VecT::value_type;
+  auto [A, B, C, D] = cubic_eqn_VF(t0, dt0, t1, dt1, t2, dt2, p, dp, thickness);
+  if (zs::abs(A) < 1e-8 && zs::abs(B) < 1e-8 && zs::abs(C) < 1e-8 &&
+      zs::abs(D) < 1e-8)
+    return false;
+  // tmin, tmax
+  auto [numSols, ts] = solve_quadratic(zs::vec<T, 3>{C, 2 * B, 3 * A});
+  if (numSols != 2) {
+    printf(
+        "\n\n\n\n\nstrangely no local minima & maxima during ccd!\n\n\n\n\n");
+    return false;
+  }
+  // ensure ts[0] < ts[1]
+  auto d = [&A = A, &B = B, &C = C, &D = D](T t) {
+    auto t2 = t * 2;
+    return A * t2 * t + B * t2 + C * t + D;
+  };
+  auto dDrv = [&A = A, &B = B, &C = C](T t) {
+    return 3 * A * t * t + 2 * B * t + C;
+  };
+  if (d(0) <= 0) {
+    printf("\n\n\n\n\nwhat the heck??? trange [%f, %f]; t0 %f d "
+           "%f\n\n\n\n\n",
+           (float)ts[0], (float)ts[1], 0.f, (float)d(0));
+  }
+  T toi{toc};
+  bool check = false;
+  // coplanarity test
+  // case 1
+  if (A > 0) {
+    // ts[0] : tmax
+    // ts[1] : tmin
+    if (ts[1] > 0)
+      if (d(ts[1]) <= 0) {
+        // auto k = -B / (3 * A);
+        if (d(ts[0]) < 0 && A * B < 0) {
+          printf("\n\n\n\n\nwhat the heck??\n\n\n\n\n\n");
+        }
+        T st = 0;
+        if (ts[0] > st)
+          st = ts[0];
+        toi = st + d(st) * 3 * A / B;
+        check = true;
+      }
+  } else { // A < 0
+    // ts[0] : tmin
+    // ts[1] : tmax
+    if (auto dmin = d(ts[0]); dmin > 0 || dmin <= 0 && ts[0] < 0) {
+      toi = ts[1] + d(ts[1]) / -dDrv(toc);
+      check = true;
+    } else if (dmin <= 0 && ts[0] >= 0) {
+      toi = d(0) / -dDrv(0);
+      check = true;
+    }
+  }
+  // inside test
+  if (check) {
+    if (d(toi) <= 0) {
+      printf(
+          "\n\n\n\n\nwhat the heck??? trange [%f, %f]; toi %f d %f\n\n\n\n\n",
+          (float)ts[0], (float)ts[1], (float)toi, (float)d(toi));
+    }
+    if (toi > 0 && toi < toc) {
+      auto a_ = t0 + toi * dt0;
+      auto b_ = t1 + toi * dt1;
+      auto c_ = t2 + toi * dt2;
+      auto p_ = p + toi * dp;
+      auto n = cross(b_ - a_, c_ - a_);
+      auto da = a_ - p_;
+      auto db = b_ - p_;
+      auto dc = c_ - p_;
+#if 0
+      if (dot(cross(db, dc), n) < 0)
+        return false;
+      if (dot(cross(dc, da), n) < 0)
+        return false;
+      if (dot(cross(da, db), n) < 0)
+        return false;
+#endif
+      toc = toi;
+      return true;
+    }
+  }
+  return false;
+}
 template <typename VecT>
 constexpr bool
-ee_accd(VecT ea0, VecT ea1, VecT eb0, VecT eb1, VecT dea0, VecT dea1, VecT deb0,
-        VecT deb1, typename VecT::value_type eta,
-        typename VecT::value_type thickness, typename VecT::value_type &toc) {
+eeaccd(VecT ea0, VecT ea1, VecT eb0, VecT eb1, VecT dea0, VecT dea1, VecT deb0,
+       VecT deb1, typename VecT::value_type eta,
+       typename VecT::value_type thickness, typename VecT::value_type &toc) {
   using T = typename VecT::value_type;
   auto mov = (dea0 + dea1 + deb0 + deb1) / 4;
   dea0 -= mov;
@@ -207,6 +386,86 @@ ee_accd(VecT ea0, VecT ea1, VecT eb0, VecT eb1, VecT dea0, VecT dea1, VecT deb0,
     if (toc > toc_prev) {
       toc = toc_prev;
       return false;
+    }
+  }
+  return true;
+}
+template <typename VecT>
+constexpr bool ee_ccd(VecT ea0, VecT ea1, VecT eb0, VecT eb1, VecT dea0,
+                      VecT dea1, VecT deb0, VecT deb1,
+                      typename VecT::value_type thickness,
+                      typename VecT::value_type &toc) {
+  using T = typename VecT::value_type;
+  auto [A, B, C, D] =
+      cubic_eqn_EE(ea0, dea0, ea1, dea1, eb0, deb0, eb1, deb1, thickness);
+  if (zs::abs(A) < 1e-8 && zs::abs(B) < 1e-8 && zs::abs(C) < 1e-8 &&
+      zs::abs(D) < 1e-8)
+    return false;
+  // tmin, tmax
+  auto [numSols, ts] = solve_quadratic(zs::vec<T, 3>{C, 2 * B, 3 * A});
+  auto d = [&A = A, &B = B, &C = C, &D = D](T t) {
+    auto t2 = t * 2;
+    return A * t2 * t + B * t2 + C * t + D;
+  };
+  auto dDrv = [&A = A, &B = B, &C = C](T t) {
+    return 3 * A * t * t + 2 * B * t + C;
+  };
+  T toi{toc};
+  bool check = false;
+  // coplanarity test
+  // case 1
+  if (A > 0) {
+    // ts[0] : tmax
+    // ts[1] : tmin
+    if (ts[1] > 0)
+      if (d(ts[1]) <= 0) {
+        // auto k = -B / (3 * A);
+        if (d(ts[0]) < 0 && A * B < 0) {
+          printf("\n\n\n\n\nwhat the heck??\n\n\n\n\n\n");
+        }
+        T st = 0;
+        if (ts[0] > st)
+          st = ts[0];
+        toi = st + d(st) * 3 * A / B;
+        check = true;
+      }
+  } else { // A < 0
+    // ts[0] : tmin
+    // ts[1] : tmax
+    if (auto dmin = d(ts[0]); dmin > 0 || dmin <= 0 && ts[0] < 0) {
+      toi = ts[1] + d(ts[1]) / -dDrv(toc);
+      check = true;
+    } else if (dmin <= 0 && ts[0] >= 0) {
+      toi = d(0) / -dDrv(0);
+      check = true;
+    }
+  }
+  // inside test
+  if (check) {
+    if (d(toi) <= 0 || d(0) <= 0 || d(toc) <= 0) {
+      printf("\n\n\n\n\nwhat the heck??? trange [%f, %f]; toi %f d %f; t0 %f d "
+             "%f; t1 %f d "
+             "%f\n\n\n\n\n",
+             (float)ts[0], (float)ts[1], (float)toi, (float)d(toi), 0.f,
+             (float)d(0), (float)toc, (float)d(toc));
+    }
+    if (toi > 0 && toi < toc) {
+      auto p1 = ea0 + toi * dea0;
+      auto p2 = ea1 + toi * dea1;
+      auto p3 = eb0 + toi * deb0;
+      auto p4 = eb1 + toi * deb1;
+      auto p13 = p1 - p3;
+      auto p43 = p4 - p3;
+#if 0
+      if (dot(cross(db, dc), n) < 0)
+        return false;
+      if (dot(cross(dc, da), n) < 0)
+        return false;
+      if (dot(cross(da, db), n) < 0)
+        return false;
+#endif
+      toc = toi;
+      return true;
     }
   }
   return true;
@@ -343,6 +602,37 @@ struct CodimStepping : INode {
   }
 
   struct FEMSystem {
+    struct PrimitiveHandle {
+      PrimitiveHandle(ZenoParticles &zsprim, std::size_t offset, zs::wrapv<3>)
+          : zsprim{zsprim}, verts{zsprim.getParticles<true>()},
+            eles{zsprim.getQuadraturePoints()},
+            surfTris{zsprim.getQuadraturePoints()},
+            surfEdges{zsprim[ZenoParticles::s_surfEdgeTag]},
+            p_surfVerts{nullptr}, voffset{offset} {}
+      PrimitiveHandle(ZenoParticles &zsprim, std::size_t offset, zs::wrapv<4>)
+          : zsprim{zsprim}, verts{zsprim.getParticles<true>()},
+            eles{zsprim.getQuadraturePoints()},
+            surfTris{zsprim[ZenoParticles::s_surfTriTag]},
+            surfEdges{zsprim[ZenoParticles::s_surfEdgeTag]},
+            p_surfVerts{&zsprim[ZenoParticles::s_surfVertTag]}, voffset{
+                                                                    offset} {}
+
+      decltype(auto) getVerts() const { return verts; }
+      decltype(auto) getEles() const { return eles; }
+      decltype(auto) getSurfTris() const { return surfTris; }
+      decltype(auto) getSurfEdges() const { return surfEdges; }
+      decltype(auto) getSurfVerts() const { return *p_surfVerts; }
+
+      ZenoParticles &zsprim;
+      typename ZenoParticles::dtiles_t &verts;
+      typename ZenoParticles::particles_t &eles;
+      typename ZenoParticles::particles_t &surfTris;
+      typename ZenoParticles::particles_t &surfEdges;
+      // not required for codim obj
+      typename ZenoParticles::particles_t *p_surfVerts;
+      std::size_t voffset;
+    };
+
     ///
     auto getCnts() const {
       return zs::make_tuple(nPP.getVal(), nPE.getVal(), nPT.getVal(),
@@ -842,37 +1132,44 @@ struct CodimStepping : INode {
             auto dt1 = vtemp.template pack<3>("dir", tri[1]);
             auto dt2 = vtemp.template pack<3>("dir", tri[2]);
             T tmp = stepSize;
-            if (pt_accd(p, t0, t1, t2, dp, dt0, dt1, dt2, (T)0.1, xi, tmp))
+#if 1
+            if (ptaccd(p, t0, t1, t2, dp, dt0, dt1, dt2, (T)0.1, xi, tmp))
+#else
+            if (pt_ccd(p, t0, t1, t2, dp, dt0, dt1, dt2, xi, tmp))
+#endif
               atomic_min(exec_cuda, &alpha[0], tmp);
           });
       auto nee = ncsEE.getVal();
-      pol(range(nee),
-          [csEE = proxy<space>(csEE), vtemp = proxy<space>({}, vtemp),
-           edges = proxy<space>({}, edges), coEdges = proxy<space>({}, coEdges),
-           alpha = proxy<space>(alpha), stepSize, xi,
-           coOffset = (int)coOffset] __device__(int eei) {
-            auto ids = csEE[eei];
-            auto ei = edges.template pack<2>("inds", ids[0])
-                          .template reinterpret_bits<int>();
-            auto ej = ids[1] >= 0
-                          ? edges.template pack<2>("inds", ids[1])
-                                .template reinterpret_bits<int>()
-                          : coEdges.template pack<2>("inds", -ids[1] - 1)
-                                    .template reinterpret_bits<int>() +
-                                coOffset;
-            auto ea0 = vtemp.template pack<3>("xn", ei[0]);
-            auto ea1 = vtemp.template pack<3>("xn", ei[1]);
-            auto eb0 = vtemp.template pack<3>("xn", ej[0]);
-            auto eb1 = vtemp.template pack<3>("xn", ej[1]);
-            auto dea0 = vtemp.template pack<3>("dir", ei[0]);
-            auto dea1 = vtemp.template pack<3>("dir", ei[1]);
-            auto deb0 = vtemp.template pack<3>("dir", ej[0]);
-            auto deb1 = vtemp.template pack<3>("dir", ej[1]);
-            auto tmp = stepSize;
-            if (ee_accd(ea0, ea1, eb0, eb1, dea0, dea1, deb0, deb1, (T)0.1, xi,
-                        tmp))
-              atomic_min(exec_cuda, &alpha[0], tmp);
-          });
+      pol(range(nee), [csEE = proxy<space>(csEE),
+                       vtemp = proxy<space>({}, vtemp),
+                       edges = proxy<space>({}, edges),
+                       coEdges = proxy<space>({}, coEdges),
+                       alpha = proxy<space>(alpha), stepSize, xi,
+                       coOffset = (int)coOffset] __device__(int eei) {
+        auto ids = csEE[eei];
+        auto ei = edges.template pack<2>("inds", ids[0])
+                      .template reinterpret_bits<int>();
+        auto ej = ids[1] >= 0 ? edges.template pack<2>("inds", ids[1])
+                                    .template reinterpret_bits<int>()
+                              : coEdges.template pack<2>("inds", -ids[1] - 1)
+                                        .template reinterpret_bits<int>() +
+                                    coOffset;
+        auto ea0 = vtemp.template pack<3>("xn", ei[0]);
+        auto ea1 = vtemp.template pack<3>("xn", ei[1]);
+        auto eb0 = vtemp.template pack<3>("xn", ej[0]);
+        auto eb1 = vtemp.template pack<3>("xn", ej[1]);
+        auto dea0 = vtemp.template pack<3>("dir", ei[0]);
+        auto dea1 = vtemp.template pack<3>("dir", ei[1]);
+        auto deb0 = vtemp.template pack<3>("dir", ej[0]);
+        auto deb1 = vtemp.template pack<3>("dir", ej[1]);
+        auto tmp = stepSize;
+#if 1
+        if (eeaccd(ea0, ea1, eb0, eb1, dea0, dea1, deb0, deb1, (T)0.1, xi, tmp))
+#else
+            if (ee_ccd(ea0, ea1, eb0, eb1, dea0, dea1, deb0, deb1, xi, tmp))
+#endif
+          atomic_min(exec_cuda, &alpha[0], tmp);
+      });
       stepSize = alpha.getVal();
     }
     ///
@@ -1522,31 +1819,31 @@ struct CodimStepping : INode {
       }
     }
 
-    FEMSystem(const dtiles_t &verts, const tiles_t &edges, const tiles_t &eles,
-              const tiles_t &coVerts, const tiles_t &coEdges,
-              const tiles_t &coEles, dtiles_t &vtemp, dtiles_t &etemp, T dt,
-              const ZenoConstitutiveModel &models)
+    FEMSystem(std::vector<ZenoParticles *> prims, const dtiles_t &verts,
+              const tiles_t &edges, const tiles_t &eles, const tiles_t &coVerts,
+              const tiles_t &coEdges, const tiles_t &coEles, dtiles_t &vtemp,
+              dtiles_t &etemp, T dt, const ZenoConstitutiveModel &models)
         : verts{verts}, edges{edges}, eles{eles}, coVerts{coVerts},
           coEdges{coEdges}, coEles{coEles}, vtemp{vtemp}, etemp{etemp},
-          PP{verts.get_allocator(), 100000}, nPP{verts.get_allocator(), 1},
+          PP{vtemp.get_allocator(), 100000}, nPP{vtemp.get_allocator(), 1},
           tempPP{PP.get_allocator(),
                  {{"H", 36}, {"inds_pre", 2}, {"dist2_pre", 1}},
                  100000},
-          PE{verts.get_allocator(), 100000}, nPE{verts.get_allocator(), 1},
+          PE{vtemp.get_allocator(), 100000}, nPE{vtemp.get_allocator(), 1},
           tempPE{PE.get_allocator(),
                  {{"H", 81}, {"inds_pre", 3}, {"dist2_pre", 1}},
                  100000},
-          PT{verts.get_allocator(), 100000}, nPT{verts.get_allocator(), 1},
+          PT{vtemp.get_allocator(), 100000}, nPT{vtemp.get_allocator(), 1},
           tempPT{PT.get_allocator(),
                  {{"H", 144}, {"inds_pre", 4}, {"dist2_pre", 1}},
                  100000},
-          EE{verts.get_allocator(), 100000}, nEE{verts.get_allocator(), 1},
+          EE{vtemp.get_allocator(), 100000}, nEE{vtemp.get_allocator(), 1},
           tempEE{EE.get_allocator(),
                  {{"H", 144}, {"inds_pre", 4}, {"dist2_pre", 1}},
                  100000},
-          csPT{verts.get_allocator(), 100000}, csEE{verts.get_allocator(),
+          csPT{vtemp.get_allocator(), 100000}, csEE{vtemp.get_allocator(),
                                                     100000},
-          ncsPT{verts.get_allocator(), 1}, ncsEE{verts.get_allocator(), 1},
+          ncsPT{vtemp.get_allocator(), 1}, ncsEE{vtemp.get_allocator(), 1},
           tempPB{verts.get_allocator(), {{"H", 9}}, verts.size()}, dt{dt},
           models{models} {
       coOffset = verts.size();
@@ -1577,6 +1874,8 @@ struct CodimStepping : INode {
         bouSeBvh.build(cudaPol, edgeBvs);
       }
     }
+
+    std::vector<PrimitiveHandle> prims;
 
     const dtiles_t &verts;
     std::size_t coOffset, numDofs;
@@ -1678,15 +1977,39 @@ struct CodimStepping : INode {
 
   void apply() override {
     using namespace zs;
-    auto zstets = get_input<ZenoParticles>("ZSParticles");
+    constexpr auto space = execspace_e::cuda;
+    auto cudaPol = cuda_exec().sync(true);
+
+    auto zstets = RETRIEVE_OBJECT_PTRS(ZenoParticles, "ZSParticles");
+    // auto zstets = get_input<ZenoParticles>("ZSParticles");
     std::shared_ptr<ZenoParticles> zsboundary;
     if (has_input<ZenoParticles>("ZSBoundaryPrimitives"))
       zsboundary = get_input<ZenoParticles>("ZSBoundaryPrimitives");
-    auto models = zstets->getModel();
+    auto models = zstets[0]->getModel();
     auto dt = get_input2<float>("dt");
-    auto &verts = zstets->getParticles<true>();
-    auto &edges = (*zstets)[ZenoParticles::s_surfEdgeTag];
-    auto &eles = zstets->getQuadraturePoints();
+    /// if there are no high precision verts, init from the low precision one
+    for (auto zstet : zstets) {
+      if (!zstet->hasImage(ZenoParticles::s_particleTag)) {
+        auto &loVerts = zstet->getParticles();
+        auto &verts = zstet->images[ZenoParticles::s_particleTag];
+        verts = typename ZenoParticles::dtiles_t{loVerts.getPropertyTags(),
+                                                 loVerts.size()};
+        cudaPol(range(verts.size()),
+                [loVerts = proxy<space>({}, loVerts),
+                 verts = proxy<space>({}, verts)] __device__(int vi) mutable {
+                  // make sure there are no "inds"-like properties in verts!
+                  for (int propid = 0; propid != verts._N; ++propid) {
+                    auto propOffset = verts._tagOffsets[propid];
+                    for (int chn = 0; chn != verts._tagSizes[propid]; ++chn)
+                      verts(propOffset + chn, vi) =
+                          loVerts(propOffset + chn, vi);
+                  }
+                });
+      }
+    }
+    auto &verts = zstets[0]->getParticles<true>();
+    auto &edges = (*zstets[0])[ZenoParticles::s_surfEdgeTag];
+    auto &eles = zstets[0]->getQuadraturePoints();
     const tiles_t &coVerts =
         zsboundary ? zsboundary->getParticles() : tiles_t{};
     const tiles_t &coEdges =
@@ -1727,9 +2050,6 @@ struct CodimStepping : INode {
     etemp.resize(eles.size());
 
     extForce = vec3{0, -9, 0};
-
-    constexpr auto space = execspace_e::cuda;
-    auto cudaPol = cuda_exec().sync(true);
 
 #if 0
     cudaPol(Collapse{coEles.size()}, [eles = proxy<space>({}, coEles), coOffset,
@@ -1827,8 +2147,8 @@ struct CodimStepping : INode {
     useGD = false;
     targetGRes = 1e-2;
 
-    FEMSystem A{verts,  edges, eles,  coVerts, coEdges,
-                coEles, vtemp, etemp, dt,      models};
+    FEMSystem A{zstets, verts, edges, eles, coVerts, coEdges,
+                coEles, vtemp, etemp, dt,   models};
 
     if constexpr (s_enableAdaptiveSetting) {
       A.updateWholeBoundingBoxSize(cudaPol);
@@ -1838,8 +2158,8 @@ struct CodimStepping : INode {
       targetGRes = 1e-5 * std::sqrt(boxDiagSize2);
       /// mean mass
       avgNodeMass = 0;
-      if (zstets->hasMeta(s_meanMassTag))
-        avgNodeMass = zstets->readMeta(s_meanMassTag, wrapt<T>{});
+      if (zstets[0]->hasMeta(s_meanMassTag))
+        avgNodeMass = zstets[0]->readMeta(s_meanMassTag, wrapt<T>{});
       else {
         Vector<T> masses{vtemp.get_allocator(), coOffset};
         cudaPol(Collapse{coOffset},
@@ -1848,7 +2168,7 @@ struct CodimStepping : INode {
                   masses[vi] = zs::sqr(vtemp("ws", vi));
                 });
         avgNodeMass = reduce(cudaPol, masses) / coOffset;
-        zstets->setMeta(s_meanMassTag, avgNodeMass);
+        zstets[0]->setMeta(s_meanMassTag, avgNodeMass);
       }
       /// adaptive kappa
       {
@@ -2085,7 +2405,7 @@ struct CodimStepping : INode {
 
       // line search
       T alpha = 1.;
-      find_ground_intersection_free_stepsize(cudaPol, *zstets, vtemp, alpha);
+      find_ground_intersection_free_stepsize(cudaPol, *zstets[0], vtemp, alpha);
       fmt::print("\tstepsize after ground: {}\n", alpha);
       A.intersectionFreeStepsize(cudaPol, xi, alpha);
       fmt::print("\tstepsize after intersection-free: {}\n", alpha);
@@ -2184,7 +2504,7 @@ struct CodimStepping : INode {
                 // also, boundary velocies are set elsewhere
               });
 
-    set_output("ZSParticles", std::move(zstets));
+    set_output("ZSParticles", get_input("ZSParticles"));
   }
 };
 
