@@ -33,6 +33,7 @@ ZENO_API void primSmoothNormal(PrimitiveObject *prim) {
 #endif
 
 ZENO_API void primSepTriangles(PrimitiveObject *prim, bool smoothNormal, bool keepTriFaces) {
+    // TODO: support index compress?
     //if (smoothNormal && !prim->verts.has_attr("nrm")) {
         //primSmoothNormal(prim);
     //}
