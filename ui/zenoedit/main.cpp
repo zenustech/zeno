@@ -23,10 +23,16 @@ int main(int argc, char *argv[])
     QTranslator t;
     QSettings settings("ZenusTech", "Zeno");
     QVariant use_chinese = settings.value("use_chinese");
+
     if (use_chinese.isNull() || use_chinese.toBool()) {
         if (t.load(":languages/zh.qm")) {
             a.installTranslator(&t);
         }
+    }
+
+    QVariant nas_loc_v = settings.value("nas_loc");
+    if (!nas_loc_v.isNull()) {
+        zeno::setConfigVariable("NASLOC", nas_loc_v.toString().toStdString());
     }
 
 	ZenoMainWindow mainWindow;
