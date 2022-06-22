@@ -9,7 +9,7 @@ namespace zeno {
 ZENO_API void primTriangulateQuads(PrimitiveObject *prim);
 ZENO_API void primTriangulate(PrimitiveObject *prim, bool with_uv = true);
 ZENO_API void primPolygonate(PrimitiveObject *prim, bool with_uv = true);
-ZENO_API void primSepTriangles(PrimitiveObject *prim, bool keepTriFaces = true);
+ZENO_API void primSepTriangles(PrimitiveObject *prim, bool keepTriFaces = true, bool withUVattr = true);
 
 ZENO_API void primCalcNormal(PrimitiveObject *prim, float flip = 1.0f);
 ZENO_API void primDecodeUVs(PrimitiveObject *prim);
