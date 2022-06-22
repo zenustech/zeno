@@ -30,6 +30,9 @@ ZENO_API void setExecutableDir(std::string dir) {
 
 ZENO_API std::string getAssetDir(std::string dir) {
     //dir = fs::absolute(dir).string();
+#ifdef _WIN32
+    dir.replace("/", "\\");
+#endif
     if (fs::exists(dir))
         return dir;
 #ifdef _WIN32
@@ -39,6 +42,14 @@ ZENO_API std::string getAssetDir(std::string dir) {
     if (auto edir = g_assetRoot + dir; fs::exists(edir))
         return edir;
     throw makeError("cannot find asset directory: " + dir);
+}
+
+ZENO_API std::string getAssetDir(std::string dir, std::string extra) {
+    extra.insert(extra.begin(), '/');
+#ifdef _WIN32
+    extra.replace("/", "\\");
+#endif
+    return getAssetDir(dir) + extra;
 }
 
 }

@@ -11,6 +11,7 @@ ZENO_API void setConfigVariable(std::string key, std::string val);
 
 // used from zeno node apply():
 ZENO_API std::string getAssetDir(std::string dir);
+ZENO_API std::string getAssetDir(std::string dir, std::string extra);
 ZENO_API std::string getConfigVariable(std::string key);
 
 }

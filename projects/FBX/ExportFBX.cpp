@@ -25,7 +25,7 @@ struct ExportFBX : zeno::INode {
         //system("pwd");
 
         auto cmd = (std::string)
-            "\"" + zeno::getAssetDir(DEM_DIR) + "/DemBones" + "\"" +
+            "\"" + zeno::getAssetDir(DEM_DIR, "DemBones") + "\"" +
             " -i=\"" + fbxpath + "\"" +
             " -a=\"" + abcpath + "\"" +
             " -b=5" +
