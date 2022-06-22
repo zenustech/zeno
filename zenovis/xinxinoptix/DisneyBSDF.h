@@ -24,9 +24,9 @@ void pdf(float metallic,
     float specularW      = metallicBRDF + dielectricBRDF;
     float transmissionW  = specularBSDF;
     float diffuseW       = dielectricBRDF;
-    float clearcoatW     = 1.0f * clamp(specularW, 0.0f, 1,0f);
+    float clearcoatW     = 1.0f * clamp(specularW, 0.0f, 1.0f);
 
-    floar norm = 1.0f/(specularW + transmissionW + diffuseW + clearcoatW);
+    float norm = 1.0f/(specularW + transmissionW + diffuseW + clearcoatW);
 
     pSpecular  = specularW      * norm;
     pSpecTrans = transmissionW  * norm;
@@ -59,7 +59,7 @@ vec3 EvaluateSheen(vec3 baseColor, float sheen, float sheenTint, float HoL)
 {
     if(sheen<=0.0f)
     {
-        return vec3(0,0f);
+        return vec3(0.0f);
     }
 
     
@@ -74,7 +74,7 @@ vec3 DisneyFresnel(vec3 baseColor, float metallic, float ior, float specularTint
     vec3 tint = BRDFBasics::CalculateTint(baseColor);
     vec3 R0 = BRDFBasics::fresnelSchlickR0(ior) * mix(vec3(1.0f), tint, specularTint);
          R0 = mix(R0, baseColor, metallic);
-    float dielectricFresnel = BRDFBasics::fresnelDielectirc(HoV, 1.0f, ior, is_inside);
+    float dielectricFresnel = BRDFBasics::fresnelDielectric(HoV, 1.0f, ior, is_inside);
     vec3 metallicFresnel = BRDFBasics::fresnelSchlick(R0, HoL);
 
     return mix(vec3(dielectricFresnel), metallicFresnel, metallic);
@@ -202,7 +202,7 @@ vec3 EvaluateDisneySpecTransmission(
     //convert vectors to TBN space
     wo = normalize(vec3(dot(T, wo), dot(B, wo), dot(N, wo)));
     wi = normalize(vec3(dot(T, wi), dot(B, wi), dot(N, wi)));
-    wm = normalize(wo + wi);
+    vec3 wm = normalize(wo + wi);
     float NoL = abs(wi.z);
     float NoV = abs(wo.z);
     float HoL = abs(dot(wm, wi));
@@ -248,7 +248,8 @@ float roughness,
 float subsurface,
 vec3 wi, 
 vec3 wo, 
-vec3 wm
+vec3 wm,
+bool thin
 )
 {
     float NoL = abs(wi.z);
