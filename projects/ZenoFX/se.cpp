@@ -31,29 +31,26 @@ namespace {
 
 
             std::size_t pos0 = 0;
-            while (1) {
-                if (auto pos = code.find("$F", pos0); pos != std::string::npos) {
-                    auto oldpos0 = pos0;
-                    std::ostringstream oss;
-                    pos0 = pos;
-                    int w = 1;
-                    while (code.size() > pos0 + 1 && code[pos0] == 'F') {
-                        ++pos0;
-                        ++w;
-                    }
-                    if (w != 1) {
-                        oss << std::setfill('0') << std::setw(w);
-                    }
-                    oss << getGlobalState()->frameid;
-                    code.replace(oldpos0, pos0 - oldpos0, oss.str());
-                } else if (auto pos = code.find("$NASLOC", pos0); pos != std::string::npos) {
-                    auto nasloc = zeno::getConfigVariable("NASLOC");
-                    code.replace(pos0, pos - pos0, nasloc);
-                    pos0 = pos;
-                } else {
-                    break;
+            while (1) if (auto pos = code.find("$F", pos0); pos != std::string::npos) {
+                std::ostringstream oss;
+                pos0 = pos + 2;
+                int w = 1;
+                while (code.size() > pos0 + 1 && code[pos0] == 'F') {
+                    ++pos0;
+                    ++w;
                 }
-            }
+                if (w != 1) {
+                    oss << std::setfill('0') << std::setw(w);
+                }
+                oss << getGlobalState()->frameid;
+                code.replace(pos, 2 + w - 1, oss.str());
+            } else break;
+            pos0 = 0;
+            while (1) if (auto pos = code.find("$NASLOC", pos0); pos != std::string::npos) {
+                auto nasloc = zeno::getConfigVariable("NASLOC");
+                code.replace(pos, 7, nasloc);
+                pos0 = pos + 7;
+            } else break;
 
             //for (int i = 0; i < code.size(); i++) {
                 //if (code[i] == '$' && code[i+1] == 'F') {

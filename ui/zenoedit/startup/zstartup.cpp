@@ -12,5 +12,7 @@ void startUp()
         zeno::setConfigVariable("NASLOC", nas_loc_v.toString().toStdString());
     }
 
-    zeno::getSession().eventCallbacks->triggerEvent("init");
+    static int calledOnce = ([]{
+        zeno::getSession().eventCallbacks->triggerEvent("init");
+    }(), 0);
 }

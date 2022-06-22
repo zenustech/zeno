@@ -1,6 +1,7 @@
 #include <zeno/extra/assetDir.h>
 #include <zeno/utils/filesystem.h>
 #include <zeno/utils/Error.h>
+#include <iostream>
 #include <map>
 
 namespace zeno {
