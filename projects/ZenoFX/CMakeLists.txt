@@ -3,7 +3,7 @@ add_subdirectory(ZFX)
 target_include_directories(zeno PRIVATE .)
 
 target_link_libraries(zeno PRIVATE $<BUILD_INTERFACE:ZFX>)
-target_sources(zeno PRIVATE nw.cpp pw.cpp pnw.cpp ppw.cpp pew.cpp dbg_printf.h)
+target_sources(zeno PRIVATE nw.cpp pw.cpp pnw.cpp ppw.cpp pew.cpp ne.cpp dbg_printf.h)
 
 if (ZENO_WITH_zenvdb)
     option(ZENOFX_ENABLE_OPENVDB "Enable OpenVDB wrangler in ZenoFX" ON)
