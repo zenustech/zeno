@@ -161,13 +161,16 @@ struct ZSDoSkinning : INode {
         auto ompExec = omp_exec();
         
         auto weight_dim = pars.getChannelSize(prefix);
+        fmt::print("weight_dim : {}\n",weight_dim);
+        fmt::print("nm_handles : {}\n",nm_handles);
         
         // transform the quaternion + trans into quaternion + dual quaternion pairs
         ompExec(zs::Collapse(nm_handles),
             [this,qs_,ts_,pose_buffer = proxy<space>({},pose_buffer)] (int hi) mutable{
                 auto zq = qs_[hi]->get<zeno::vec4f>();
                 auto zt = ts_[hi]->get<zeno::vec3f>();
-                pose_buffer.tuple<4>("q",hi) = dual_quat(vec4{zq[0],zq[1],zq[2],zq[3]},vec3{zt[0],zt[1],zt[2]});
+                pose_buffer.tuple<4>("q",hi) = vec4{zq[0],zq[1],zq[2],zq[3]};
+                pose_buffer.tuple<4>("dq",hi) = dual_quat(vec4{zq[0],zq[1],zq[2],zq[3]},vec3{zt[0],zt[1],zt[2]});
         });
 
         constexpr auto cspace = execspace_e::cuda;
@@ -238,7 +241,7 @@ struct ZSDoSkinning : INode {
 
 ZENDEFNODE(ZSDoSkinning, {
     {"ZSParticles","Qs","Ts"},
-    {"shape"},
+    {"ZSParticles"},
     {{"enum LBS DQS CoRs","algorithm","DQS"},{"string","weight_channel","sw"},{"string","inAttr","x"},{"string","outAttr","x"}},
     {"ZSGeometry"},
 });
