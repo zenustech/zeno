@@ -18,7 +18,7 @@ SubnetNode::~SubnetNode()
 
 }
 
-void SubnetNode::onParamEditFinished(PARAM_CONTROL editCtrl, const QString& paramName, const QString& textValue)
+void SubnetNode::onParamEditFinished(PARAM_CONTROL editCtrl, const QString& paramName, const QVariant& textValue)
 {
 	//get old name first.
 	IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();

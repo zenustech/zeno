@@ -102,10 +102,15 @@ ZENO_API std::unique_ptr<INode> Graph::getOverloadNode(std::string const &id,
 }
 
 ZENO_API void Graph::setNodeParam(std::string const &id, std::string const &par,
-    std::variant<int, float, std::string> const &val) {
+    std::variant<int, float, std::string, zany> const &val) {
     auto parid = par + ":";
     std::visit([&] (auto const &val) {
-        setNodeInput(id, parid, objectFromLiterial(val));
+        using T = std::decay_t<decltype(val)>;
+        if constexpr (std::is_same_v<T, zany>) {
+            setNodeInput(id, parid, val);
+        } else {
+            setNodeInput(id, parid, objectFromLiterial(val));
+        }
     }, val);
 }
 
