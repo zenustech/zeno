@@ -43,43 +43,195 @@
         sin(az), cos(az), 0,                    \
         0, 0, 1);
 
+namespace cc4{
+    std::vector<zeno::vec3f> genindi(int div1, int div2, int inc);
+    std::vector<zeno::vec3f> igenindi(std::vector<zeno::vec3f>& in, int inc);
+    void appind(std::vector<zeno::vec3f> in, zeno::AttrVector<zeno::vec3i>& out);
+
+    std::vector<zeno::vec3f> genindi(int div1, int div2, int inc){
+        std::vector<zeno::vec3f> ind;
+
+        for (int i = 0; i < div1-1; i++)
+        {
+            int i1, i2, i3, i4;
+            i1 = i+inc;
+            i2 = i1+1;
+            i3 = i1+div1;
+            i4 = i3+1;
+            ind.emplace_back(i1, i3, i2);
+            ind.emplace_back(i2, i3, i4);
+            for (int j = 0; j < div2-2; j++)
+            {
+                i1 = div1*(j+1)+i+inc;
+                i2 = i1+1;
+                i3 = i1+div1;
+                i4 = i3+1;
+                ind.emplace_back(i1, i3, i2);
+                ind.emplace_back(i2, i3, i4);
+            }
+        }
+
+        return ind;
+    }
+
+    std::vector<zeno::vec3f> igenindi(std::vector<zeno::vec3f>& in, int inc)
+    {
+        std::vector<zeno::vec3f> out;
+        for (int i = 0; i < in.size(); i++)
+        {
+            out.push_back(in[i]+inc);
+        }
+
+        return out;
+    }
+
+    void appind(std::vector<zeno::vec3f> in, zeno::AttrVector<zeno::vec3i>& out){
+        for (int i = 0; i < in.size(); i++)
+        {
+            out.push_back(in[i]);
+        }
+    }
+}
+
 namespace zeno {
 struct CreateCube : zeno::INode {
     virtual void apply() override {
         auto prim = std::make_shared<zeno::PrimitiveObject>();
         auto size = get_input2<float>("size");
+        auto div_w = get_input2<int>("div_w");
+        auto div_h = get_input2<int>("div_h");
+        auto div_d = get_input2<int>("div_d");
         auto position = get_input2<zeno::vec3f>("position");
-        auto scaleSize = get_input2<zeno::vec3f>("scaleSize");
+        auto scale = get_input2<zeno::vec3f>("scaleSize");
+        ROTATE_MATRIX
 
         auto &pos = prim->verts;
-        pos.push_back(vec3f( 1,  1,  1) * size * scaleSize + position);
-        pos.push_back(vec3f( 1,  1, -1) * size * scaleSize + position);
-        pos.push_back(vec3f(-1,  1, -1) * size * scaleSize + position);
-        pos.push_back(vec3f(-1,  1,  1) * size * scaleSize + position);
-        pos.push_back(vec3f( 1, -1,  1) * size * scaleSize + position);
-        pos.push_back(vec3f( 1, -1, -1) * size * scaleSize + position);
-        pos.push_back(vec3f(-1, -1, -1) * size * scaleSize + position);
-        pos.push_back(vec3f(-1, -1,  1) * size * scaleSize + position);
-
         auto &tris = prim->tris;
-        // Top 0, 1, 2, 3
-        tris.push_back(vec3i(0, 1, 2));
-        tris.push_back(vec3i(0, 2, 3));
-        // Right 0, 4, 5, 1
-        tris.push_back(vec3i(0, 4, 5));
-        tris.push_back(vec3i(0, 5, 1));
-        // Front 0, 3, 7, 4
-        tris.push_back(vec3i(0, 3, 7));
-        tris.push_back(vec3i(0, 7, 4));
-        // Left 2, 6, 7, 3
-        tris.push_back(vec3i(2, 6, 7));
-        tris.push_back(vec3i(2, 7, 3));
-        // Back 1, 5, 6, 2
-        tris.push_back(vec3i(1, 5, 6));
-        tris.push_back(vec3i(1, 6, 2));
-        // Bottom 4, 7, 6, 5
-        tris.push_back(vec3i(4, 7, 6));
-        tris.push_back(vec3i(4, 6, 5));
+        auto &uv = prim->verts.add_attr<zeno::vec3f>("uv");
+        auto &norm = prim->verts.add_attr<zeno::vec3f>("nrm");
+
+        if(div_w <= 2)
+            div_w = 2;
+        if(div_h <= 2)
+            div_h = 2;
+        if(div_d <= 2)
+            div_d = 2;
+
+        float sw = 1.0 / (div_w-1);
+        float sh = 1.0 / (div_h-1);
+        float sd = 1.0 / (div_d-1);
+
+        std::vector<zeno::vec3f> fverts;
+        std::vector<zeno::vec3f> findis;
+        std::vector<zeno::vec3f> bverts;
+        std::vector<zeno::vec3f> bindis;
+        std::vector<zeno::vec3f> lverts;
+        std::vector<zeno::vec3f> lindis;
+        std::vector<zeno::vec3f> rverts;
+        std::vector<zeno::vec3f> rindis;
+        std::vector<zeno::vec3f> uverts;
+        std::vector<zeno::vec3f> uindis;
+        std::vector<zeno::vec3f> dverts;
+        std::vector<zeno::vec3f> dindis;
+
+        std::vector<zeno::vec3f> verts;
+        std::vector<zeno::vec3f> indics;
+        std::vector<zeno::vec3f> uvs;
+        std::vector<zeno::vec3f> normal;
+
+
+        for (int i = 0; i < div_w; i++)
+        {
+            for (int j = 0; j < div_h; j++)
+            {
+                auto p = zeno::vec3f(0.5-i*sw, 0.5-j*sh, -0.5);
+                fverts.push_back(p);
+                verts.push_back(p);
+                uvs.emplace_back(0.375+i*sw*0.25, 0.75+j*sh*0.25, 0);
+                normal.emplace_back(0,0,-1);
+            }
+        }
+        for (int i = 0; i < fverts.size(); i++)
+        {
+            auto fv = fverts[i];
+            auto p = zeno::vec3f(fv[0], -fv[1], 0.5);
+            bverts.push_back(p);
+            verts.push_back(p);
+            uvs.emplace_back(uvs[i][0],uvs[i][1]-0.5, 0);
+            normal.emplace_back(0,0,1);
+        }
+        for (int i = 0; i < div_w; i++)
+        {
+            for (int j = 0; j < div_d; j++)
+            {
+                auto p = zeno::vec3f(0.5-i*sw, 0.5, 0.5-j*sd);
+                uverts.push_back(p);
+                verts.push_back(p);
+                uvs.emplace_back(0.375+i*sw*0.25, 0.5+j*sd*0.25, 0);
+                normal.emplace_back(0,1,0);
+            }
+        }
+        int ui1 = fverts.size()*2;
+        for (int i = 0; i < uverts.size(); i++)
+        {
+            auto uv = uverts[i];
+            auto p = zeno::vec3f(uv[0], -uv[1], -uv[2]);
+            dverts.push_back(p);
+            verts.push_back(p);
+            uvs.emplace_back(uvs[i+ui1][0],uvs[i+ui1][1]-0.5, 0);
+            normal.emplace_back(0,-1,0);
+        }
+        for (int i = 0; i < div_h; i++)
+        {
+            for (int j = 0; j < div_d; j++)
+            {
+                auto p = zeno::vec3f(0.5, -0.5+i*sh, 0.5-j*sd);
+                lverts.push_back(p);
+                verts.push_back(p);
+                uvs.emplace_back(0.125+i*sh*0.25, j*sd*0.25, 0);
+                normal.emplace_back(1,0,0);
+            }
+        }
+        int ui2 = fverts.size()*2+uverts.size()*2;
+        for (int i = 0; i < lverts.size(); i++)
+        {
+            auto lv = lverts[i];
+            auto p = zeno::vec3f(-lv[0], -lv[1], lv[2]);
+            rverts.push_back(p);
+            verts.push_back(p);
+            uvs.emplace_back(0.5+uvs[i+ui2][0],uvs[i+ui2][1], 0);
+            normal.emplace_back(-1,0,0);
+        }
+
+        findis = cc4::genindi(div_h, div_w, 0);
+        bindis = cc4::igenindi(findis, fverts.size());
+        uindis = cc4::genindi(div_d, div_w,fverts.size()*2);
+        dindis = cc4::igenindi(uindis, uverts.size());
+        lindis = cc4::genindi(div_d, div_h,fverts.size()*2+uverts.size()*2);
+        rindis = cc4::igenindi(lindis, lverts.size());
+
+        cc4::appind(findis, tris);
+        cc4::appind(bindis, tris);
+        cc4::appind(uindis, tris);
+        cc4::appind(dindis, tris);
+        cc4::appind(lindis, tris);
+        cc4::appind(rindis, tris);
+
+        for (int i = 0; i < verts.size(); i++)
+        {
+            auto p = verts[i];
+            auto n = normal[i];
+            auto gn = glm::vec3(n[0], n[1], n[2]);
+            p = p * scale * size;
+            ROTATE_COMPUTE
+            gn = mz * my * mx * gn;
+            p = p + position;
+
+            norm.push_back(zeno::vec3f(gn.x, gn.y, gn.z));
+            pos.push_back(p);
+            uv.push_back(uvs[i]);
+        }
+
         set_output("prim", std::move(prim));
     }
 };
@@ -88,6 +240,10 @@ ZENDEFNODE(CreateCube, {
     {
         {"vec3f", "position", "0, 0, 0"},
         {"vec3f", "scaleSize", "1, 1, 1"},
+        ROTATE_PARM
+        {"int", "div_w", "2"},
+        {"int", "div_h", "2"},
+        {"int", "div_d", "2"},
         {"float", "size", "1"},
     },
     {"prim"},
@@ -418,7 +574,7 @@ struct CreateSphere : zeno::INode {
                 ROTATE_COMPUTE
 
                 p = p + position;
-                zeno::vec3f np = op * scale * radius;
+                zeno::vec3f np = p * scale * radius;
                 prim->verts.push_back(p);
 
                 // normal
