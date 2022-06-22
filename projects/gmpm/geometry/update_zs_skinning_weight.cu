@@ -54,18 +54,36 @@ struct ZSSetupSkinningWeight : zeno::INode {
                 for(int i = 0;i != weight_dim;++i){
                     auto attr_name = prefix + "_" + std::to_string(i);
                     tmp_inds[i] = i;
-                    tmp_weight[i] = prim.attr<float>(attr_name)[i];
+                    tmp_weight[i] = prim.attr<float>(attr_name)[vi];
                 }
                 // sort the buffer using bubble sort using descending order
                 for(int i = 0;i != weight_dim;++i)
-                    for(int j = i;j != weight_dim-1;++j)
-                        if(tmp_weight[j] < tmp_weight[j+1])
-                            std::swap(tmp_weight[j],tmp_weight[j+1]);
+                    for(int j = weight_dim-1;j != i;--j)
+                        if(tmp_weight[j] > tmp_weight[j-1]){
+                            // if(vi == 0)
+                            //     printf("do_swap\n");
+                            std::swap(tmp_weight[j],tmp_weight[j-1]);
+                            std::swap(tmp_inds[j],tmp_inds[j-1]);
+                            // auto tmpw = tmp_weight[j];
+                            // tmp_weight[j] = tmp_weight[j+1];
+                            // tmp_weight[j+1] = tmpw;
+
+                            // auto tmpidx = tmp_inds[j];
+                            // tmp_inds[j] = tmp_inds[j+1];
+                            // tmp_inds[j+1] = tmpidx;
+                        }
                 // assign the first preserve_dim weight into skinning_buffer
                 for(int i = 0;i != preserve_dim;++i){
                     skinning_buffer(prefix,i,vi) = tmp_weight[i];
                     skinning_buffer("inds",i,vi) = reinterpret_bits<float>(tmp_inds[i]);
-                }                
+                }   
+
+                // if(vi == 100){
+                //     printf("skinning_buffer:\n");
+                //     for(int i = 0;i < preserve_dim;++i){
+                //         printf("%f\t%d\n",(float)skinning_buffer(prefix,i,vi),reinterpret_bits<int>(skinning_buffer("inds",i,vi)));
+                //     }
+                // }             
             });
 
         // kind of evaluate skinning information loss
@@ -77,8 +95,20 @@ struct ZSSetupSkinningWeight : zeno::INode {
                     nodal_weight_sum[vi] += skinning_buffer(prefix,i,vi);
         });
 
-        for(size_t i = 0;i < prim.size();++i)
-            fmt::print("NODAL_WEIGHT_SUM<{}> : {}\n",i,nodal_weight_sum[i]);
+        // ompExec(Collapse{prim.size()},
+        //     [&nodal_weight_sum,skinning_buffer = proxy<space>({},skinning_buffer),preserve_dim,prefix] (int vi) mutable {
+        //         if(vi == 0){
+        //             printf("skinning_buffer:\n");
+        //             for(int i = 0;i != preserve_dim;++i)
+        //                 printf("%f %d\n",skinning_buffer(prefix,i,vi),reinterpret_bits<int>(skinning_buffer("inds",i,vi)));
+        //         }
+        // });
+
+        // fmt::print("nodal_sum : \n");
+        // for(int i = 0;i < prim.size();++i)
+        //     if((nodal_weight_sum[i] - 1) > 1e-4)
+        //         fmt::print("v<{}> : {}\n",i,nodal_weight_sum[i]);
+
 
         skinning_buffer = skinning_buffer.clone({zs::memsrc_e::device, 0});
 
@@ -98,7 +128,6 @@ struct ZSSetupSkinningWeight : zeno::INode {
                 }
             });
         
-
         set_output("ZSParticles",zspars);
     }
 };
