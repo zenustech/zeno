@@ -30,11 +30,6 @@ int main(int argc, char *argv[])
         }
     }
 
-    QVariant nas_loc_v = settings.value("nas_loc");
-    if (!nas_loc_v.isNull()) {
-        zeno::setConfigVariable("NASLOC", nas_loc_v.toString().toStdString());
-    }
-
 	ZenoMainWindow mainWindow;
 	mainWindow.showMaximized();
 	return a.exec();
