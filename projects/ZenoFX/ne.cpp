@@ -41,7 +41,7 @@ struct NumericEval : zeno::INode {
         opts.detect_new_symbols = true;
 //现在有一个问题就是NumericEval如果只接收一个std::string，那么用户输入zfx代码中包含$frame，我们如何设置这一个$DictObject的值
         auto params = std::make_shared<zeno::DictObject>();
-        //params->
+        params->lut["FRAME"] = getGlobalState()->frameid;
         params->lut["frame"] = getGlobalState()->frameid;
         std::vector<float> parvals;//存储$的值
         std::vector<std::pair<string, int>> parnames;//保存所以$的变量
