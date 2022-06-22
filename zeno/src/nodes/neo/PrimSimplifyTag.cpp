@@ -1,15 +1,14 @@
 #include <zeno/zeno.h>
 #include <zeno/types/PrimitiveObject.h>
-#include <zeno/types/PrimitiveUtils.h>
+#include <zeno/funcs/PrimitiveUtils.h>
 #include <zeno/types/StringObject.h>
 #include <zeno/types/NumericObject.h>
-#include <zeno/utils/random.h>
 #include <unordered_map>
+#include <random>
 
 namespace zeno {
-namespace {
 
-static void primSimplifyTag(PrimitiveObject *prim, std::string tagAttr) {
+ZENO_API void primSimplifyTag(PrimitiveObject *prim, std::string tagAttr) {
     auto &tag = prim->verts.attr<int>(tagAttr);
     std::unordered_map<int, int> lut;
     int top = 0;
@@ -25,6 +24,28 @@ static void primSimplifyTag(PrimitiveObject *prim, std::string tagAttr) {
         }
     }
 }
+
+ZENO_API void primColorByTag(PrimitiveObject *prim, std::string tagAttr, std::string clrAttr) {
+    auto const &tag = prim->verts.attr<int>(tagAttr);
+    auto &clr = prim->verts.add_attr<vec3f>(clrAttr);
+    std::unordered_map<int, vec3f> lut;
+    std::mt19937 gen;
+    std::uniform_real_distribution<float> unif(0.4f, 1.0f);
+    for (int i = 0; i < tag.size(); i++) {
+        auto k = tag[i];
+        auto it = lut.find(k);
+        if (it != lut.end()) {
+            clr[i] = it->second;
+        } else {
+            vec3f c(unif(gen), unif(gen), unif(gen));
+            lut.emplace(k, c);
+            clr[i] = c;
+        }
+    }
+}
+
+
+namespace {
 
 struct PrimSimplifyTag : INode {
     virtual void apply() override {
@@ -50,24 +71,6 @@ ZENDEFNODE(PrimSimplifyTag, {
     },
     {"primitive"},
 });
-
-static void primColorByTag(PrimitiveObject *prim, std::string tagAttr, std::string clrAttr) {
-    auto const &tag = prim->verts.attr<int>(tagAttr);
-    auto &clr = prim->verts.add_attr<vec3f>(clrAttr);
-    std::unordered_map<int, vec3f> lut;
-    for (int i = 0; i < tag.size(); i++) {
-        auto k = tag[i];
-        auto it = lut.find(k);
-        if (it != lut.end()) {
-            clr[i] = it->second;
-        } else {
-            vec3f c(frand(), frand(), frand());
-            c = 0.4f + 0.6f * c;
-            lut.emplace(k, c);
-            clr[i] = c;
-        }
-    }
-}
 
 struct PrimColorByTag : INode {
     virtual void apply() override {
