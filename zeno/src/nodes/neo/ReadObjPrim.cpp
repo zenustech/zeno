@@ -1,6 +1,6 @@
 #include <zeno/zeno.h>
 #include <zeno/types/PrimitiveObject.h>
-#include <zeno/types/PrimitiveUtils.h>
+#include <zeno/funcs/PrimitiveUtils.h>
 #include <zeno/types/StringObject.h>
 #include <zeno/utils/string.h>
 #include <zeno/utils/fileio.h>
@@ -47,15 +47,12 @@ static int takeu(char const *&it) {
 }
 
 std::shared_ptr<PrimitiveObject> parse_obj(std::vector<char> &&bin) {
-    bin.resize(bin.size() + 8, '\0');
+    /*bin.resize(bin.size() + 8, '\0');*/
 
     char const *it = bin.data();
-    char const *eit = bin.data() + bin.size() - 8;
+    char const *eit = bin.data() + bin.size();// - 8;
 
     auto prim = std::make_shared<PrimitiveObject>();
-
-    std::vector<vec2f> uvs;
-    std::vector<int> loop_uvs;
 
     while (it < eit) {
         auto nit = std::find(it, eit, '\n');
@@ -69,7 +66,7 @@ std::shared_ptr<PrimitiveObject> parse_obj(std::vector<char> &&bin) {
         } else if (match(it, "vt ")) {
             float x = takef(it);
             float y = takef(it);
-            uvs.emplace_back(x, y);
+            prim->uvs.emplace_back(x, y);
 
         } else if (match(it, "f ")) {
             int beg = prim->loops.size();
@@ -79,7 +76,7 @@ std::shared_ptr<PrimitiveObject> parse_obj(std::vector<char> &&bin) {
                 if (*it == '/' && it[1] != '/') {
                     ++it;
                     int xt = takeu(it) - 1;
-                    loop_uvs.push_back(xt);
+                    prim->loop_uvs.push_back(xt);
                 }
                 it = std::find(it, nit, ' ');
                 prim->loops.push_back(x);
@@ -101,16 +98,6 @@ std::shared_ptr<PrimitiveObject> parse_obj(std::vector<char> &&bin) {
         it = nit + 1;
     }
 
-    if (!loop_uvs.empty()) {
-        // todo: support vec2f in attr...
-        auto &attuv = prim->loops.add_attr<vec3f>("uv");
-        attuv.resize(prim->loops.size());
-        for (size_t i = 0; i < loop_uvs.size(); i++) {
-            auto uv = uvs[loop_uvs[i]];
-            attuv[i] = vec3f(uv[0], uv[1], 0);
-        }
-    }
-
     return prim;
 }
 
@@ -119,6 +106,9 @@ struct ReadObjPrim : INode {
         auto path = get_input<StringObject>("path")->get();
         auto binary = file_get_binary<std::vector<char>>(path);
         auto prim = parse_obj(std::move(binary));
+        if (get_param<bool>("decodeUVs")) {
+            primDecodeUVs(prim.get());
+        }
         if (get_param<bool>("triangulate")) {
             primTriangulate(prim.get());
         }
@@ -132,6 +122,7 @@ ZENDEFNODE(ReadObjPrim,
         }, /* outputs: */ {
         {"primitive", "prim"},
         }, /* params: */ {
+        {"bool", "decodeUVs", "1"},
         {"bool", "triangulate", "1"},
         }, /* category: */ {
         "primitive",

@@ -400,8 +400,20 @@ QMenuBar* ZenoViewDockTitle::initMenu()
 
         pAction = new QAction(tr("English / Chinese"), this);
         pAction->setCheckable(true);
-        pAction->setChecked(true);
+        {
+            QSettings settings("ZenusTech", "Zeno");
+            QVariant use_chinese = settings.value("use_chinese");
+            pAction->setChecked(use_chinese.isNull() || use_chinese.toBool());
+        }
         pDisplay->addAction(pAction);
+        connect(pAction, &QAction::triggered, this, [=]() {
+            QSettings settings("ZenusTech", "Zeno");
+            settings.setValue("use_chinese", pAction->isChecked());
+            QMessageBox msg(QMessageBox::Information, "Language",
+                        tr("Please restart Zeno to apply changes."),
+                        QMessageBox::Ok, this);
+            msg.exec();
+        });
     }
 
     QMenu* pRecord = new QMenu(tr("Record"));

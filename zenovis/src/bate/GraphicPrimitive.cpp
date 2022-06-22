@@ -310,6 +310,7 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
                 clr[i] = zeno::vec3f(1.0f);
             }
         }
+#if 0
         bool primNormalCorrect =
             prim->has_attr("nrm") &&
             length(prim->attr<zeno::vec3f>("nrm")[0]) > 1e-5;
@@ -320,6 +321,9 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
             zeno::log_trace("computing normal");
             zeno::primCalcNormal(&*prim, 1);
         }
+#else
+        zeno::primSepTriangles(&*prim, true, true);//TODO: rm keepTriFaces
+#endif
         /* BEGIN TODO */
         if (!prim->has_attr("nrm")) {
             auto &radopa = prim->add_attr<zeno::vec3f>("nrm");

@@ -36,6 +36,7 @@ ZENO_API void primPerlinNoise(PrimitiveObject *prim, std::string inAttr, std::st
                 } else {
                     throw makeError<TypeError>(typeid(vec3f), typeid(InT), "input type");
                 }
+                p = scale * (p - offset);
                 if constexpr (std::is_same_v<OutT, float>) {
                     outArr[i] = PerlinNoise::perlin(p[0], p[1], p[2]);
                 } else if constexpr (std::is_same_v<OutT, vec3f>) {

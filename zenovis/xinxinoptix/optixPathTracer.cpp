@@ -1332,7 +1332,7 @@ void optixupdateend() {
 struct DrawDat {
     std::string mtlid;
     std::vector<float> verts;
-    std::vector<float> tris;
+    std::vector<int> tris;
     std::map<std::string, std::vector<float>> vertattrs;
     auto const &getAttr(std::string const &s) const
     {
