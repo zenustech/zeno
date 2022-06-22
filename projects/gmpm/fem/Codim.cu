@@ -1,5 +1,5 @@
 #include "../Structures.hpp"
-// #include "../Utils.hpp"
+#include "../Utils.hpp"
 #include "zensim/Logger.hpp"
 #include "zensim/cuda/execution/ExecutionPolicy.cuh"
 #include "zensim/execution/ExecutionPolicy.hpp"
@@ -91,10 +91,10 @@ auto retrieve_bounding_volumes(zs::CudaExecutionPolicy &pol,
 }
 
 template <typename VecT>
-constexpr bool pt_accd(VecT p, VecT t0, VecT t1, VecT t2, VecT dp, VecT dt0,
-                       VecT dt1, VecT dt2, typename VecT::value_type eta,
-                       typename VecT::value_type thickness,
-                       typename VecT::value_type &toc) {
+constexpr bool ptaccd(VecT p, VecT t0, VecT t1, VecT t2, VecT dp, VecT dt0,
+                      VecT dt1, VecT dt2, typename VecT::value_type eta,
+                      typename VecT::value_type thickness,
+                      typename VecT::value_type &toc) {
   using T = typename VecT::value_type;
   auto mov = (dt0 + dt1 + dt2 + dp) / 4;
   dt0 -= mov;
@@ -245,14 +245,7 @@ constexpr bool pt_ccd(VecT p, VecT t0, VecT t1, VecT t2, VecT dp, VecT dt0,
         "\n\n\n\n\nstrangely no local minima & maxima during ccd!\n\n\n\n\n");
     return false;
   }
-// ensure ts[0] < ts[1]
-#if 0
-  if (ts[0] > ts[1]) {
-    auto t = ts[0];
-    ts[0] = ts[1];
-    ts[1] = t;
-  }
-#endif
+  // ensure ts[0] < ts[1]
   auto d = [&A = A, &B = B, &C = C, &D = D](T t) {
     auto t2 = t * 2;
     return A * t2 * t + B * t2 + C * t + D;
@@ -327,9 +320,9 @@ constexpr bool pt_ccd(VecT p, VecT t0, VecT t1, VecT t2, VecT dp, VecT dt0,
 }
 template <typename VecT>
 constexpr bool
-ee_accd(VecT ea0, VecT ea1, VecT eb0, VecT eb1, VecT dea0, VecT dea1, VecT deb0,
-        VecT deb1, typename VecT::value_type eta,
-        typename VecT::value_type thickness, typename VecT::value_type &toc) {
+eeaccd(VecT ea0, VecT ea1, VecT eb0, VecT eb1, VecT dea0, VecT dea1, VecT deb0,
+       VecT deb1, typename VecT::value_type eta,
+       typename VecT::value_type thickness, typename VecT::value_type &toc) {
   using T = typename VecT::value_type;
   auto mov = (dea0 + dea1 + deb0 + deb1) / 4;
   dea0 -= mov;
@@ -609,6 +602,37 @@ struct CodimStepping : INode {
   }
 
   struct FEMSystem {
+    struct PrimitiveHandle {
+      PrimitiveHandle(ZenoParticles &zsprim, std::size_t offset, zs::wrapv<3>)
+          : zsprim{zsprim}, verts{zsprim.getParticles<true>()},
+            eles{zsprim.getQuadraturePoints()},
+            surfTris{zsprim.getQuadraturePoints()},
+            surfEdges{zsprim[ZenoParticles::s_surfEdgeTag]},
+            p_surfVerts{nullptr}, voffset{offset} {}
+      PrimitiveHandle(ZenoParticles &zsprim, std::size_t offset, zs::wrapv<4>)
+          : zsprim{zsprim}, verts{zsprim.getParticles<true>()},
+            eles{zsprim.getQuadraturePoints()},
+            surfTris{zsprim[ZenoParticles::s_surfTriTag]},
+            surfEdges{zsprim[ZenoParticles::s_surfEdgeTag]},
+            p_surfVerts{&zsprim[ZenoParticles::s_surfVertTag]}, voffset{
+                                                                    offset} {}
+
+      decltype(auto) getVerts() const { return verts; }
+      decltype(auto) getEles() const { return eles; }
+      decltype(auto) getSurfTris() const { return surfTris; }
+      decltype(auto) getSurfEdges() const { return surfEdges; }
+      decltype(auto) getSurfVerts() const { return *p_surfVerts; }
+
+      ZenoParticles &zsprim;
+      typename ZenoParticles::dtiles_t &verts;
+      typename ZenoParticles::particles_t &eles;
+      typename ZenoParticles::particles_t &surfTris;
+      typename ZenoParticles::particles_t &surfEdges;
+      // not required for codim obj
+      typename ZenoParticles::particles_t *p_surfVerts;
+      std::size_t voffset;
+    };
+
     ///
     auto getCnts() const {
       return zs::make_tuple(nPP.getVal(), nPE.getVal(), nPT.getVal(),
@@ -1108,45 +1132,44 @@ struct CodimStepping : INode {
             auto dt1 = vtemp.template pack<3>("dir", tri[1]);
             auto dt2 = vtemp.template pack<3>("dir", tri[2]);
             T tmp = stepSize;
-#if 0
-            if (pt_accd(p, t0, t1, t2, dp, dt0, dt1, dt2, (T)0.1, xi, tmp))
+#if 1
+            if (ptaccd(p, t0, t1, t2, dp, dt0, dt1, dt2, (T)0.1, xi, tmp))
 #else
             if (pt_ccd(p, t0, t1, t2, dp, dt0, dt1, dt2, xi, tmp))
 #endif
-            atomic_min(exec_cuda, &alpha[0], tmp);
+              atomic_min(exec_cuda, &alpha[0], tmp);
           });
       auto nee = ncsEE.getVal();
-      pol(range(nee),
-          [csEE = proxy<space>(csEE), vtemp = proxy<space>({}, vtemp),
-           edges = proxy<space>({}, edges), coEdges = proxy<space>({}, coEdges),
-           alpha = proxy<space>(alpha), stepSize, xi,
-           coOffset = (int)coOffset] __device__(int eei) {
-            auto ids = csEE[eei];
-            auto ei = edges.template pack<2>("inds", ids[0])
-                          .template reinterpret_bits<int>();
-            auto ej = ids[1] >= 0
-                          ? edges.template pack<2>("inds", ids[1])
-                                .template reinterpret_bits<int>()
-                          : coEdges.template pack<2>("inds", -ids[1] - 1)
-                                    .template reinterpret_bits<int>() +
-                                coOffset;
-            auto ea0 = vtemp.template pack<3>("xn", ei[0]);
-            auto ea1 = vtemp.template pack<3>("xn", ei[1]);
-            auto eb0 = vtemp.template pack<3>("xn", ej[0]);
-            auto eb1 = vtemp.template pack<3>("xn", ej[1]);
-            auto dea0 = vtemp.template pack<3>("dir", ei[0]);
-            auto dea1 = vtemp.template pack<3>("dir", ei[1]);
-            auto deb0 = vtemp.template pack<3>("dir", ej[0]);
-            auto deb1 = vtemp.template pack<3>("dir", ej[1]);
-            auto tmp = stepSize;
+      pol(range(nee), [csEE = proxy<space>(csEE),
+                       vtemp = proxy<space>({}, vtemp),
+                       edges = proxy<space>({}, edges),
+                       coEdges = proxy<space>({}, coEdges),
+                       alpha = proxy<space>(alpha), stepSize, xi,
+                       coOffset = (int)coOffset] __device__(int eei) {
+        auto ids = csEE[eei];
+        auto ei = edges.template pack<2>("inds", ids[0])
+                      .template reinterpret_bits<int>();
+        auto ej = ids[1] >= 0 ? edges.template pack<2>("inds", ids[1])
+                                    .template reinterpret_bits<int>()
+                              : coEdges.template pack<2>("inds", -ids[1] - 1)
+                                        .template reinterpret_bits<int>() +
+                                    coOffset;
+        auto ea0 = vtemp.template pack<3>("xn", ei[0]);
+        auto ea1 = vtemp.template pack<3>("xn", ei[1]);
+        auto eb0 = vtemp.template pack<3>("xn", ej[0]);
+        auto eb1 = vtemp.template pack<3>("xn", ej[1]);
+        auto dea0 = vtemp.template pack<3>("dir", ei[0]);
+        auto dea1 = vtemp.template pack<3>("dir", ei[1]);
+        auto deb0 = vtemp.template pack<3>("dir", ej[0]);
+        auto deb1 = vtemp.template pack<3>("dir", ej[1]);
+        auto tmp = stepSize;
 #if 1
-            if (ee_accd(ea0, ea1, eb0, eb1, dea0, dea1, deb0, deb1, (T)0.1, xi,
-                        tmp))
+        if (eeaccd(ea0, ea1, eb0, eb1, dea0, dea1, deb0, deb1, (T)0.1, xi, tmp))
 #else
             if (ee_ccd(ea0, ea1, eb0, eb1, dea0, dea1, deb0, deb1, xi, tmp))
 #endif
-              atomic_min(exec_cuda, &alpha[0], tmp);
-          });
+          atomic_min(exec_cuda, &alpha[0], tmp);
+      });
       stepSize = alpha.getVal();
     }
     ///
@@ -1796,31 +1819,31 @@ struct CodimStepping : INode {
       }
     }
 
-    FEMSystem(const dtiles_t &verts, const tiles_t &edges, const tiles_t &eles,
-              const tiles_t &coVerts, const tiles_t &coEdges,
-              const tiles_t &coEles, dtiles_t &vtemp, dtiles_t &etemp, T dt,
-              const ZenoConstitutiveModel &models)
+    FEMSystem(std::vector<ZenoParticles *> prims, const dtiles_t &verts,
+              const tiles_t &edges, const tiles_t &eles, const tiles_t &coVerts,
+              const tiles_t &coEdges, const tiles_t &coEles, dtiles_t &vtemp,
+              dtiles_t &etemp, T dt, const ZenoConstitutiveModel &models)
         : verts{verts}, edges{edges}, eles{eles}, coVerts{coVerts},
           coEdges{coEdges}, coEles{coEles}, vtemp{vtemp}, etemp{etemp},
-          PP{verts.get_allocator(), 100000}, nPP{verts.get_allocator(), 1},
+          PP{vtemp.get_allocator(), 100000}, nPP{vtemp.get_allocator(), 1},
           tempPP{PP.get_allocator(),
                  {{"H", 36}, {"inds_pre", 2}, {"dist2_pre", 1}},
                  100000},
-          PE{verts.get_allocator(), 100000}, nPE{verts.get_allocator(), 1},
+          PE{vtemp.get_allocator(), 100000}, nPE{vtemp.get_allocator(), 1},
           tempPE{PE.get_allocator(),
                  {{"H", 81}, {"inds_pre", 3}, {"dist2_pre", 1}},
                  100000},
-          PT{verts.get_allocator(), 100000}, nPT{verts.get_allocator(), 1},
+          PT{vtemp.get_allocator(), 100000}, nPT{vtemp.get_allocator(), 1},
           tempPT{PT.get_allocator(),
                  {{"H", 144}, {"inds_pre", 4}, {"dist2_pre", 1}},
                  100000},
-          EE{verts.get_allocator(), 100000}, nEE{verts.get_allocator(), 1},
+          EE{vtemp.get_allocator(), 100000}, nEE{vtemp.get_allocator(), 1},
           tempEE{EE.get_allocator(),
                  {{"H", 144}, {"inds_pre", 4}, {"dist2_pre", 1}},
                  100000},
-          csPT{verts.get_allocator(), 100000}, csEE{verts.get_allocator(),
+          csPT{vtemp.get_allocator(), 100000}, csEE{vtemp.get_allocator(),
                                                     100000},
-          ncsPT{verts.get_allocator(), 1}, ncsEE{verts.get_allocator(), 1},
+          ncsPT{vtemp.get_allocator(), 1}, ncsEE{vtemp.get_allocator(), 1},
           tempPB{verts.get_allocator(), {{"H", 9}}, verts.size()}, dt{dt},
           models{models} {
       coOffset = verts.size();
@@ -1851,6 +1874,8 @@ struct CodimStepping : INode {
         bouSeBvh.build(cudaPol, edgeBvs);
       }
     }
+
+    std::vector<PrimitiveHandle> prims;
 
     const dtiles_t &verts;
     std::size_t coOffset, numDofs;
@@ -1952,15 +1977,39 @@ struct CodimStepping : INode {
 
   void apply() override {
     using namespace zs;
-    auto zstets = get_input<ZenoParticles>("ZSParticles");
+    constexpr auto space = execspace_e::cuda;
+    auto cudaPol = cuda_exec().sync(true);
+
+    auto zstets = RETRIEVE_OBJECT_PTRS(ZenoParticles, "ZSParticles");
+    // auto zstets = get_input<ZenoParticles>("ZSParticles");
     std::shared_ptr<ZenoParticles> zsboundary;
     if (has_input<ZenoParticles>("ZSBoundaryPrimitives"))
       zsboundary = get_input<ZenoParticles>("ZSBoundaryPrimitives");
-    auto models = zstets->getModel();
+    auto models = zstets[0]->getModel();
     auto dt = get_input2<float>("dt");
-    auto &verts = zstets->getParticles<true>();
-    auto &edges = (*zstets)[ZenoParticles::s_surfEdgeTag];
-    auto &eles = zstets->getQuadraturePoints();
+    /// if there are no high precision verts, init from the low precision one
+    for (auto zstet : zstets) {
+      if (!zstet->hasImage(ZenoParticles::s_particleTag)) {
+        auto &loVerts = zstet->getParticles();
+        auto &verts = zstet->images[ZenoParticles::s_particleTag];
+        verts = typename ZenoParticles::dtiles_t{loVerts.getPropertyTags(),
+                                                 loVerts.size()};
+        cudaPol(range(verts.size()),
+                [loVerts = proxy<space>({}, loVerts),
+                 verts = proxy<space>({}, verts)] __device__(int vi) mutable {
+                  // make sure there are no "inds"-like properties in verts!
+                  for (int propid = 0; propid != verts._N; ++propid) {
+                    auto propOffset = verts._tagOffsets[propid];
+                    for (int chn = 0; chn != verts._tagSizes[propid]; ++chn)
+                      verts(propOffset + chn, vi) =
+                          loVerts(propOffset + chn, vi);
+                  }
+                });
+      }
+    }
+    auto &verts = zstets[0]->getParticles<true>();
+    auto &edges = (*zstets[0])[ZenoParticles::s_surfEdgeTag];
+    auto &eles = zstets[0]->getQuadraturePoints();
     const tiles_t &coVerts =
         zsboundary ? zsboundary->getParticles() : tiles_t{};
     const tiles_t &coEdges =
@@ -2001,9 +2050,6 @@ struct CodimStepping : INode {
     etemp.resize(eles.size());
 
     extForce = vec3{0, -9, 0};
-
-    constexpr auto space = execspace_e::cuda;
-    auto cudaPol = cuda_exec().sync(true);
 
 #if 0
     cudaPol(Collapse{coEles.size()}, [eles = proxy<space>({}, coEles), coOffset,
@@ -2101,8 +2147,8 @@ struct CodimStepping : INode {
     useGD = false;
     targetGRes = 1e-2;
 
-    FEMSystem A{verts,  edges, eles,  coVerts, coEdges,
-                coEles, vtemp, etemp, dt,      models};
+    FEMSystem A{zstets, verts, edges, eles, coVerts, coEdges,
+                coEles, vtemp, etemp, dt,   models};
 
     if constexpr (s_enableAdaptiveSetting) {
       A.updateWholeBoundingBoxSize(cudaPol);
@@ -2112,8 +2158,8 @@ struct CodimStepping : INode {
       targetGRes = 1e-5 * std::sqrt(boxDiagSize2);
       /// mean mass
       avgNodeMass = 0;
-      if (zstets->hasMeta(s_meanMassTag))
-        avgNodeMass = zstets->readMeta(s_meanMassTag, wrapt<T>{});
+      if (zstets[0]->hasMeta(s_meanMassTag))
+        avgNodeMass = zstets[0]->readMeta(s_meanMassTag, wrapt<T>{});
       else {
         Vector<T> masses{vtemp.get_allocator(), coOffset};
         cudaPol(Collapse{coOffset},
@@ -2122,7 +2168,7 @@ struct CodimStepping : INode {
                   masses[vi] = zs::sqr(vtemp("ws", vi));
                 });
         avgNodeMass = reduce(cudaPol, masses) / coOffset;
-        zstets->setMeta(s_meanMassTag, avgNodeMass);
+        zstets[0]->setMeta(s_meanMassTag, avgNodeMass);
       }
       /// adaptive kappa
       {
@@ -2359,7 +2405,7 @@ struct CodimStepping : INode {
 
       // line search
       T alpha = 1.;
-      find_ground_intersection_free_stepsize(cudaPol, *zstets, vtemp, alpha);
+      find_ground_intersection_free_stepsize(cudaPol, *zstets[0], vtemp, alpha);
       fmt::print("\tstepsize after ground: {}\n", alpha);
       A.intersectionFreeStepsize(cudaPol, xi, alpha);
       fmt::print("\tstepsize after intersection-free: {}\n", alpha);
@@ -2458,7 +2504,7 @@ struct CodimStepping : INode {
                 // also, boundary velocies are set elsewhere
               });
 
-    set_output("ZSParticles", std::move(zstets));
+    set_output("ZSParticles", get_input("ZSParticles"));
   }
 };
 
