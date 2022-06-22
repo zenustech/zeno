@@ -84,7 +84,7 @@ protected:
 	void hoverLeaveEvent(QGraphicsSceneHoverEvent* event) override;
     QSizeF sizeHint(Qt::SizeHint which, const QSizeF& constraint = QSizeF()) const override;
     //ZenoNode:
-    virtual void onParamEditFinished(PARAM_CONTROL editCtrl, const QString& paramName, const QString& textValue);
+    virtual void onParamEditFinished(PARAM_CONTROL editCtrl, const QString& paramName, const QVariant& value);
     QPersistentModelIndex subGraphIndex() const;
     virtual ZenoBackgroundWidget *initBodyWidget(NODE_TYPE type);
     virtual ZenoBackgroundWidget *initHeaderWangStyle(NODE_TYPE type);
