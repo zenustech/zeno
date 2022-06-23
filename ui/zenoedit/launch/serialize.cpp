@@ -167,8 +167,8 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
             {
                 for (OUTPUT_SOCKET output : outputs)
                 {
-                    if (output.info.name == "DST")
-                        continue;
+                    //if (output.info.name == "DST" && outputs.size() > 1)
+                        //continue;
                     auto viewerIdent = ident + ":TOVIEW";
                     AddStringList({"addNode", "ToView", viewerIdent}, writer);
                     AddStringList({"bindNodeInput", viewerIdent, "object", ident, output.info.name}, writer);

@@ -1,7 +1,7 @@
 #include <zeno/zeno.h>
 #include <zeno/types/DictObject.h>
 #include <zeno/types/FunctionObject.h>
-#include <zeno/types/ConditionObject.h>
+#include <zeno/types/DummyObject.h>
 #include <zeno/extra/ContextManaged.h>
 #include <cassert>
 #include <iostream>
@@ -9,7 +9,7 @@ namespace {
 
 struct FuncBegin : zeno::INode {
     virtual void apply() override {
-        set_output("FUNC", std::make_shared<zeno::ConditionObject>());
+        set_output("FUNC", std::make_shared<zeno::DummyObject>());
     }
 
     void update_arguments(zeno::FunctionObject::DictType const &callargs) {

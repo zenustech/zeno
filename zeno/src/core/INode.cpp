@@ -2,7 +2,7 @@
 #include <zeno/core/Graph.h>
 #include <zeno/core/Descriptor.h>
 #include <zeno/core/Session.h>
-#include <zeno/types/ConditionObject.h>
+#include <zeno/types/DummyObject.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/StringObject.h>
 #include <zeno/extra/GlobalState.h>
@@ -31,7 +31,7 @@ ZENO_API GlobalState *INode::getGlobalState() const {
 }
 
 ZENO_API void INode::doComplete() {
-    set_output("DST", std::make_shared<ConditionObject>());
+    set_output("DST", std::make_shared<DummyObject>());
     complete();
 }
 
