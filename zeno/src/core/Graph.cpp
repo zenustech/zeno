@@ -99,7 +99,8 @@ ZENO_API std::map<std::string, zany> Graph::callTempNode(std::string const &id,
     se->graph = const_cast<Graph *>(this);
     se->inputs = std::move(inputs);
     se->doApply();
-    return std::move(se->outputs);}
+    return std::move(se->outputs);
+}
 
 ZENO_API void Graph::addNodeOutput(std::string const& id, std::string const& par) {
     // add "dynamic" output which is not descriped by core.
