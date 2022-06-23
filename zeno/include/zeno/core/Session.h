@@ -72,11 +72,11 @@ struct Session {
         defNodeClass(id, std::make_unique<ImplNodeClass<F>>(ctor, desc));
     }
 
-    template <class F>
-    void defOverloadNodeClass(F const &ctor, std::string const &id,
-            std::vector<std::string> const &types, Descriptor const &desc = {}) {
-        defOverloadNodeClass(id, types, std::make_unique<ImplNodeClass<F>>(ctor, desc));
-    }
+    //template <class F>
+    //void defOverloadNodeClass(F const &ctor, std::string const &id,
+            //std::vector<std::string> const &types, Descriptor const &desc = {}) {
+        //defOverloadNodeClass(id, types, std::make_unique<ImplNodeClass<F>>(ctor, desc));
+    //}
 };
 
 ZENO_API Session &getSession();
