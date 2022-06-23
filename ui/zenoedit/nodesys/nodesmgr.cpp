@@ -3,21 +3,28 @@
 #include <zenoui/util/uihelper.h>
 #include "util/apphelper.h"
 #include <zeno/utils/log.h>
+#include "zenoapplication.h"
+#include "graphsmanagment.h"
+#include <zenoui/model/curvemodel.h>
+#include <zenoui/model/variantptr.h>
+#include "curvemap/curveutil.h"
 
 
 void NodesMgr::createNewNode(IGraphsModel* pModel, QModelIndex subgIdx, const QString& descName, const QPointF& pt)
 {
 	zeno::log_debug("onNewNodeCreated");
 	NODE_DESCS descs = pModel->descriptors();
-	const NODE_DESC& desc = descs[descName];
+	NODE_DESC desc = descs[descName];
 
 	const QString& nodeid = UiHelper::generateUuid(descName);
 	NODE_DATA node;
 	node[ROLE_OBJID] = nodeid;
 	node[ROLE_OBJNAME] = descName;
 	node[ROLE_NODETYPE] = nodeType(descName);
+	initInputSocks(pModel, desc.inputs);
 	node[ROLE_INPUTS] = QVariant::fromValue(desc.inputs);
 	node[ROLE_OUTPUTS] = QVariant::fromValue(desc.outputs);
+	initParams(pModel, desc.params);
 	node[ROLE_PARAMETERS] = QVariant::fromValue(desc.params);
 	node[ROLE_PARAMS_NO_DESC] = QVariant::fromValue(initParamsNotDesc(descName));
 	node[ROLE_OBJPOS] = pt;
@@ -47,6 +54,32 @@ NODE_TYPE NodesMgr::nodeType(const QString& name)
 	else
 	{
 		return NORMAL_NODE;
+	}
+}
+
+void NodesMgr::initInputSocks(IGraphsModel* pGraphsModel, INPUT_SOCKETS& descInputs)
+{
+	if (descInputs.find("curve") != descInputs.end())
+	{
+        INPUT_SOCKET& input = descInputs["curve"];
+		if (input.info.control == CONTROL_CURVE)
+		{
+            CurveModel *pModel = curve_util::deflModel(pGraphsModel);
+            input.info.defaultValue = QVariantPtr<CurveModel>::asVariant(pModel);
+		}
+	}
+}
+
+void NodesMgr::initParams(IGraphsModel* pGraphsModel, PARAMS_INFO& params)
+{
+	if (params.find("curve") != params.end())
+	{
+        PARAM_INFO& param = params["curve"];
+		if (param.control == CONTROL_CURVE)
+		{
+            CurveModel *pModel = curve_util::deflModel(pGraphsModel);
+			param.value = QVariantPtr<CurveModel>::asVariant(pModel);
+		}
 	}
 }
 

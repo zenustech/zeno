@@ -60,21 +60,23 @@ struct Session {
     ZENO_API std::unique_ptr<Graph> createGraph();
     ZENO_API std::string dumpDescriptors() const;
     ZENO_API void defNodeClass(std::string const &id, std::unique_ptr<INodeClass> &&cls);
-    ZENO_API void defOverloadNodeClass(std::string const &id, std::vector<std::string> const &types,
-            std::unique_ptr<INodeClass> &&cls);
-    ZENO_API std::unique_ptr<INode> getOverloadNode(
-            std::string const &name, std::vector<std::shared_ptr<IObject>> const &inputs);
+    //ZENO_API void defOverloadNodeClass(std::string const &id, std::vector<std::string> const &types,
+            //std::unique_ptr<INodeClass> &&cls);
+    //ZENO_API std::unique_ptr<INode> getOverloadNode(
+            //std::string const &name, std::vector<std::shared_ptr<IObject>> const &inputs);
+    //ZENO_API std::map<std::string, zany> callTempNode(std::string const &id,
+            //std::map<std::string, zany> const &inputs) const;
 
     template <class F>
     void defNodeClass(F const &ctor, std::string const &id, Descriptor const &desc = {}) {
         defNodeClass(id, std::make_unique<ImplNodeClass<F>>(ctor, desc));
     }
 
-    template <class F>
-    void defOverloadNodeClass(F const &ctor, std::string const &id,
-            std::vector<std::string> const &types, Descriptor const &desc = {}) {
-        defOverloadNodeClass(id, types, std::make_unique<ImplNodeClass<F>>(ctor, desc));
-    }
+    //template <class F>
+    //void defOverloadNodeClass(F const &ctor, std::string const &id,
+            //std::vector<std::string> const &types, Descriptor const &desc = {}) {
+        //defOverloadNodeClass(id, types, std::make_unique<ImplNodeClass<F>>(ctor, desc));
+    //}
 };
 
 ZENO_API Session &getSession();

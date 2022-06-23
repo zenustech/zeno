@@ -26,8 +26,11 @@ static QString getOpenFileName(
     QString path = QFileDialog::getOpenFileName(nullptr, caption, dir, filter);
     QSettings settings("ZenusTech", "Zeno");
     QVariant nas_loc_v = settings.value("nas_loc");
+    path.replace('\\', '/');
     if (!nas_loc_v.isNull()) {
-        path.replace(nas_loc_v.toString(), "$NASLOC");
+        QString nas = nas_loc_v.toString();
+        nas.replace('\\', '/');
+        path.replace(nas, "$NASLOC");
     }
     return path;
 }
@@ -40,8 +43,11 @@ static QString getSaveFileName(
     QString path = QFileDialog::getSaveFileName(nullptr, caption, dir, filter);
     QSettings settings("ZenusTech", "Zeno");
     QVariant nas_loc_v = settings.value("nas_loc");
+    path.replace('\\', '/');
     if (!nas_loc_v.isNull()) {
-        path.replace(nas_loc_v.toString(), "$NASLOC");
+        QString nas = nas_loc_v.toString();
+        nas.replace('\\', '/');
+        path.replace(nas, "$NASLOC");
     }
     return path;
 }
@@ -508,14 +514,31 @@ void ZenoNode::initParam(PARAM_CONTROL ctrl, QGraphicsLinearLayout* pParamLayout
 		    break;
 	    }
 	    case CONTROL_HEATMAP:
+        {
+            break;
+        }
 	    case CONTROL_CURVE:
 	    {
-		    ZenoParamLineEdit* pLineEdit = new ZenoParamLineEdit(value, param.control,  m_renderParams.lineEditParam);
-		    pParamLayout->addItem(pLineEdit);
-		    connect(pLineEdit, &ZenoParamLineEdit::editingFinished, this, [=]() {
-			    onParamEditFinished(param.control, paramName, pLineEdit->text());
-			    });
-		    m_paramControls[paramName] = pLineEdit;
+            ZenoParamPushButton* pEditBtn = new ZenoParamPushButton("Edit", -1, QSizePolicy::Expanding);
+		    pParamLayout->addItem(pEditBtn);
+            connect(pEditBtn, &ZenoParamPushButton::clicked, this, [=]() {
+                IGraphsModel *pGraphsModel = zenoApp->graphsManagment()->currentModel();
+                ZASSERT_EXIT(pGraphsModel);
+                CurveModel *pModel = nullptr;
+                const QVariant& val = pGraphsModel->getParamValue(m_index.data(ROLE_OBJID).toString(), paramName, m_subGpIndex);
+                pModel = QVariantPtr<CurveModel>::asPtr(val);
+                if (!pModel)
+                {
+                    pModel = curve_util::deflModel(pGraphsModel);
+                    onParamEditFinished(param.control, paramName, QVariantPtr<CurveModel>::asVariant(pModel));
+                }
+                ZASSERT_EXIT(pModel);
+                ZCurveMapEditor *pEditor = new ZCurveMapEditor(true);
+                pEditor->setAttribute(Qt::WA_DeleteOnClose);
+                pEditor->addCurve(pModel);
+                pEditor->show();
+            });
+		    m_paramControls[paramName] = pEditBtn;
 		    break;
 	    }
 	    default:
@@ -533,17 +556,26 @@ QPersistentModelIndex ZenoNode::subGraphIndex() const
     return m_subGpIndex;
 }
 
-void ZenoNode::onParamEditFinished(PARAM_CONTROL editCtrl, const QString& paramName, const QString& textValue)
+void ZenoNode::onParamEditFinished(PARAM_CONTROL editCtrl, const QString& paramName, const QVariant& value)
 {
     // graphics item sync to model.
-
     const QString nodeid = nodeId();
     IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
 
     PARAM_UPDATE_INFO info;
     info.oldValue = pGraphsModel->getParamValue(nodeid, paramName, m_subGpIndex);
-    info.newValue = UiHelper::parseTextValue(editCtrl, textValue);
     info.name = paramName;
+
+    switch (editCtrl)
+    {
+    case CONTROL_HEATMAP:
+    case CONTROL_CURVE:
+        info.newValue = value;
+        break;
+    default:
+        info.newValue = UiHelper::parseTextValue(editCtrl, value.toString());
+        break;
+    }
     if (info.oldValue != info.newValue)
         pGraphsModel->updateParamInfo(nodeid, info, m_subGpIndex, true);
 }

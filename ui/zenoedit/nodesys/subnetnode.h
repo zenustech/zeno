@@ -12,7 +12,7 @@ public:
 	~SubnetNode();
 
 protected:
-	void onParamEditFinished(PARAM_CONTROL editCtrl, const QString& paramName, const QString& textValue) override;
+	void onParamEditFinished(PARAM_CONTROL editCtrl, const QString& paramName, const QVariant& textValue) override;
 
 private:
 	bool m_bInput;

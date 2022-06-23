@@ -1,7 +1,7 @@
 #include <zeno/zeno.h>
 #include <zeno/types/ListObject.h>
 #include <zeno/types/NumericObject.h>
-#include <zeno/types/ConditionObject.h>
+#include <zeno/types/DummyObject.h>
 #include <zeno/extra/ContextManaged.h>
 #include <zeno/extra/evaluate_condition.h>
 #include <zeno/utils/safe_at.h>
@@ -28,7 +28,7 @@ struct BeginFor : IBeginFor {
         m_index = 0;
         is_break = false;
         m_count = get_input<zeno::NumericObject>("count")->get<int>();
-        set_output("FOR", std::make_shared<zeno::ConditionObject>());
+        set_output("FOR", std::make_shared<zeno::DummyObject>());
     }
 
     virtual void update() override {
@@ -118,7 +118,7 @@ struct BeginForEach : IBeginFor {
         m_list = get_input<zeno::ListObject>("list");
         if (has_input("accumate"))
             m_accumate = get_input("accumate");
-        set_output("FOR", std::make_shared<zeno::ConditionObject>());
+        set_output("FOR", std::make_shared<zeno::DummyObject>());
     }
 
     virtual void update() override {
@@ -236,7 +236,7 @@ struct BeginSubstep : IBeginFor {
         auto min_scale = has_input("min_scale") ?
             get_input<zeno::NumericObject>("min_scale")->get<float>() : 0.05f;
         m_mindt = m_total * min_scale;
-        set_output("FOR", std::make_shared<zeno::ConditionObject>());
+        set_output("FOR", std::make_shared<zeno::DummyObject>());
     }
 
     virtual void update() override {
@@ -330,7 +330,7 @@ struct IF : zeno::INode {
     bool m_condition;
     virtual void apply() override {
         m_condition = (get_input<zeno::NumericObject>("condition")->get<int>());
-        set_output("Then", std::make_shared<zeno::ConditionObject>());
+        set_output("Then", std::make_shared<zeno::DummyObject>());
     }
     bool getCondition() const
     {
@@ -380,7 +380,7 @@ struct TrueBranch : IBranch {
     virtual void apply() override {
         auto innum = (get_input<zeno::NumericObject>("condition")->get<int>());
         m_execute = (innum == 1);
-        set_output("Branch", std::make_shared<zeno::ConditionObject>());
+        set_output("Branch", std::make_shared<zeno::DummyObject>());
     }
     virtual bool getCondition() const override
     {
@@ -400,7 +400,7 @@ struct FalseBranch : IBranch {
     virtual void apply() override {
         auto innum = (get_input<zeno::NumericObject>("condition")->get<int>());
         m_execute = (innum == 1);
-        set_output("Branch", std::make_shared<zeno::ConditionObject>());
+        set_output("Branch", std::make_shared<zeno::DummyObject>());
     }
     virtual bool getCondition() const override
     {
@@ -429,7 +429,7 @@ struct EndBranch : zeno::ContextManagedNode {
     }
 
     virtual void apply() override {
-        set_output("Branch", std::make_shared<zeno::ConditionObject>());
+        set_output("Branch", std::make_shared<zeno::DummyObject>());
     }
 };
 

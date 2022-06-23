@@ -1,7 +1,7 @@
 #include <zeno/zeno.h>
 #include <zeno/utils/logger.h>
 #include <zeno/extra/GlobalState.h>
-#include <zeno/types/ConditionObject.h>
+#include <zeno/types/DummyObject.h>
 #include <zeno/types/UserData.h>
 #include <zeno/utils/safe_at.h>
 #include <zeno/core/Graph.h>
@@ -52,7 +52,7 @@ struct Route : zeno::INode {
             auto obj = get_input("input");
             set_output("output", std::move(obj));
         } else {
-            set_output("output", std::make_shared<zeno::ConditionObject>());
+            set_output("output", std::make_shared<zeno::DummyObject>());
         }
     }
 };
