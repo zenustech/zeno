@@ -7,6 +7,48 @@
 namespace zeno {
 namespace {
 
+struct PrimFlattenTris : INode {
+    virtual void apply() override {
+        auto prim = get_input<PrimitiveObject>("prim");
+        AttrVector<vec3f> new_verts(prim->tris.size());
+        for (int i = 0; i < prim->tris.size(); i++) {
+            auto ind = prim->tris[i];
+            new_verts[i*3+0] = prim->verts[ind[0]];
+            new_verts[i*3+1] = prim->verts[ind[1]];
+            new_verts[i*3+2] = prim->verts[ind[2]];
+        }
+        prim->verts.foreach_attr([&] (auto const &key, auto const &arr) {
+            using T = std::decay_t<decltype(arr[0])>;
+            auto &new_arr = new_verts.add_attr<T>(key);
+            for (int i = 0; i < prim->tris.size(); i++) {
+                auto ind = prim->tris[i];
+                new_arr[i*3+0] = arr[ind[0]];
+                new_arr[i*3+1] = arr[ind[1]];
+                new_arr[i*3+2] = arr[ind[2]];
+            }
+        });
+        std::swap(new_verts, prim->verts);
+        prim->points.clear();
+        prim->lines.clear();
+        prim->tris.clear();
+        prim->quads.clear();
+        prim->polys.clear();
+        prim->loops.clear();
+        prim->loop_uvs.clear();
+    }
+};
+
+ZENO_DEFNODE(PrimFlattenTris)({
+    {
+        "prim",
+    },
+    {
+        "prim",
+    },
+    {},
+    {"primitive"},
+});
+
 struct PrimToList : INode {
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
