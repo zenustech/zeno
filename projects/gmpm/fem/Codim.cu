@@ -22,6 +22,69 @@
 namespace zeno {
 
 template <typename TileVecT, int codim = 3>
+void assemble_bounding_volumes(
+    zs::Vector<zs::AABBBox<3, typename TileVecT::value_type>> &ret,
+    zs::CudaExecutionPolicy &pol, const TileVecT &vtemp,
+    const zs::SmallString &xTag,
+    const typename ZenoParticles::particles_t &eles, zs::wrapv<codim>,
+    int voffset, int boffset) {
+  using namespace zs;
+  using T = typename TileVecT::value_type;
+  using bv_t = AABBBox<3, T>;
+  static_assert(codim >= 1 && codim <= 4, "invalid co-dimension!\n");
+  constexpr auto space = execspace_e::cuda;
+  pol(zs::range(eles.size()), [eles = proxy<space>({}, eles),
+                               bvs = proxy<space>(ret),
+                               vtemp = proxy<space>({}, vtemp),
+                               codim_v = wrapv<codim>{}, xTag, voffset,
+                               boffset] ZS_LAMBDA(int ei) mutable {
+    constexpr int dim = RM_CVREF_T(codim_v)::value;
+    auto inds =
+        eles.template pack<dim>("inds", ei).template reinterpret_bits<int>() +
+        voffset;
+    auto x0 = vtemp.template pack<3>(xTag, inds[0]);
+    bv_t bv{x0, x0};
+    for (int d = 1; d != dim; ++d)
+      merge(bv, vtemp.template pack<3>(xTag, inds[d]));
+    bvs[boffset + ei] = bv;
+  });
+}
+template <typename TileVecT0, typename TileVecT1, int codim = 3>
+void assemble_bounding_volumes(
+    zs::Vector<zs::AABBBox<3, typename TileVecT0::value_type>> &ret,
+    zs::CudaExecutionPolicy &pol, const TileVecT0 &verts,
+    const zs::SmallString &xTag,
+    const typename ZenoParticles::particles_t &eles, zs::wrapv<codim>,
+    const TileVecT1 &vtemp, const zs::SmallString &dirTag, float stepSize,
+    int voffset, int boffset) {
+  using namespace zs;
+  using T = typename TileVecT0::value_type;
+  using bv_t = AABBBox<3, T>;
+  static_assert(codim >= 1 && codim <= 4, "invalid co-dimension!\n");
+  constexpr auto space = execspace_e::cuda;
+  pol(zs::range(eles.size()), [eles = proxy<space>({}, eles),
+                               bvs = proxy<space>(ret),
+                               verts = proxy<space>({}, verts),
+                               vtemp = proxy<space>({}, vtemp),
+                               codim_v = wrapv<codim>{}, xTag, dirTag, stepSize,
+                               voffset, boffset] ZS_LAMBDA(int ei) mutable {
+    constexpr int dim = RM_CVREF_T(codim_v)::value;
+    auto inds =
+        eles.template pack<dim>("inds", ei).template reinterpret_bits<int>() +
+        voffset;
+    auto x0 = verts.template pack<3>(xTag, inds[0]);
+    auto dir0 = vtemp.template pack<3>(dirTag, inds[0]);
+    bv_t bv{get_bounding_box(x0, x0 + stepSize * dir0)};
+    for (int d = 1; d != dim; ++d) {
+      auto x = verts.template pack<3>(xTag, inds[d]);
+      auto dir = vtemp.template pack<3>(dirTag, inds[d]);
+      merge(bv, x);
+      merge(bv, x + stepSize * dir);
+    }
+    bvs[boffset + ei] = bv;
+  });
+}
+template <typename TileVecT, int codim = 3>
 auto retrieve_bounding_volumes(zs::CudaExecutionPolicy &pol,
                                const TileVecT &vtemp,
                                const zs::SmallString &xTag,
@@ -603,19 +666,32 @@ struct CodimStepping : INode {
 
   struct FEMSystem {
     struct PrimitiveHandle {
-      PrimitiveHandle(ZenoParticles &zsprim, std::size_t offset, zs::wrapv<3>)
+      PrimitiveHandle(ZenoParticles &zsprim, std::size_t &vOffset,
+                      std::size_t &sfOffset, std::size_t &seOffset,
+                      zs::wrapv<3>)
           : zsprim{zsprim}, verts{zsprim.getParticles<true>()},
             eles{zsprim.getQuadraturePoints()},
             surfTris{zsprim.getQuadraturePoints()},
             surfEdges{zsprim[ZenoParticles::s_surfEdgeTag]},
-            p_surfVerts{nullptr}, voffset{offset} {}
-      PrimitiveHandle(ZenoParticles &zsprim, std::size_t offset, zs::wrapv<4>)
+            p_surfVerts{nullptr}, vOffset{vOffset}, sfOffset{sfOffset},
+            seOffset{seOffset} {
+        vOffset += verts.size();
+        sfOffset += surfTris.size();
+        seOffset += surfEdges.size();
+      }
+      PrimitiveHandle(ZenoParticles &zsprim, std::size_t &vOffset,
+                      std::size_t &sfOffset, std::size_t &seOffset,
+                      zs::wrapv<4>)
           : zsprim{zsprim}, verts{zsprim.getParticles<true>()},
             eles{zsprim.getQuadraturePoints()},
             surfTris{zsprim[ZenoParticles::s_surfTriTag]},
             surfEdges{zsprim[ZenoParticles::s_surfEdgeTag]},
-            p_surfVerts{&zsprim[ZenoParticles::s_surfVertTag]}, voffset{
-                                                                    offset} {}
+            p_surfVerts{&zsprim[ZenoParticles::s_surfVertTag]},
+            vOffset{vOffset}, sfOffset{sfOffset}, seOffset{seOffset} {
+        vOffset += verts.size();
+        sfOffset += surfTris.size();
+        seOffset += surfEdges.size();
+      }
 
       decltype(auto) getVerts() const { return verts; }
       decltype(auto) getEles() const { return eles; }
@@ -630,7 +706,7 @@ struct CodimStepping : INode {
       typename ZenoParticles::particles_t &surfEdges;
       // not required for codim obj
       typename ZenoParticles::particles_t *p_surfVerts;
-      std::size_t voffset;
+      const std::size_t vOffset, sfOffset, seOffset;
     };
 
     ///
@@ -751,15 +827,27 @@ struct CodimStepping : INode {
         return;
 
       // fmt::print("offset : {}. before boundary dcd surf tri bvs\n", voffset);
-      auto triBvs = retrieve_bounding_volumes(pol, vtemp, "xn", tris,
-                                              wrapv<3>{}, voffset);
-      // puts("before boundary dcd surf tri bvh build");
+      const auto nTris = voffset == 0 ? sfOffset : tris.size();
+      const auto nSurfEdges = voffset == 0 ? seOffset : sedges.size();
+      zs::Vector<zs::AABBBox<3, T>> triBvs{vtemp.get_allocator(), nTris},
+          edgeBvs{vtemp.get_allocator(), nSurfEdges};
+      if (voffset == 0) {
+        for (auto &primHandle : prims) {
+          assemble_bounding_volumes(triBvs, pol, vtemp, "xn",
+                                    primHandle.getSurfTris(), zs::wrapv<3>{},
+                                    primHandle.vOffset, primHandle.sfOffset);
+          assemble_bounding_volumes(edgeBvs, pol, vtemp, "xn",
+                                    primHandle.getSurfEdges(), zs::wrapv<2>{},
+                                    primHandle.vOffset, primHandle.seOffset);
+        }
+      } else {
+        assemble_bounding_volumes(triBvs, pol, vtemp, "xn", tris,
+                                  zs::wrapv<3>{}, voffset, 0);
+        assemble_bounding_volumes(edgeBvs, pol, vtemp, "xn", sedges,
+                                  zs::wrapv<2>{}, voffset, 0);
+      }
       bvh_t &stBvh = voffset == 0 ? this->stBvh : this->bouStBvh;
       stBvh.refit(pol, triBvs);
-      // puts("before boundary dcd surf edge bvs");
-      auto edgeBvs = retrieve_bounding_volumes(pol, vtemp, "xn", sedges,
-                                               wrapv<2>{}, voffset);
-      // puts("before boundary dcd surf edge bvh build");
       bvh_t &seBvh = voffset == 0 ? this->seBvh : this->bouSeBvh;
       seBvh.refit(pol, edgeBvs);
 
@@ -1017,13 +1105,32 @@ struct CodimStepping : INode {
 
       // fmt::print("offset : {}. before boundary ccd surf tri bvhs\n",
       // voffset);
-      auto triBvs = retrieve_bounding_volumes(
-          pol, vtemp, "xn", tris, wrapv<3>{}, vtemp, "dir", alpha, voffset);
+      const auto nTris = voffset == 0 ? sfOffset : tris.size();
+      const auto nSurfEdges = voffset == 0 ? seOffset : sedges.size();
+      zs::Vector<zs::AABBBox<3, T>> triBvs{vtemp.get_allocator(), nTris},
+          edgeBvs{vtemp.get_allocator(), nSurfEdges};
+      if (voffset == 0) {
+        for (auto &primHandle : prims) {
+          assemble_bounding_volumes(triBvs, pol, vtemp, "xn",
+                                    primHandle.getSurfTris(), zs::wrapv<3>{},
+                                    vtemp, "dir", alpha, primHandle.vOffset,
+                                    primHandle.sfOffset);
+          assemble_bounding_volumes(edgeBvs, pol, vtemp, "xn",
+                                    primHandle.getSurfEdges(), zs::wrapv<2>{},
+                                    vtemp, "dir", alpha, primHandle.vOffset,
+                                    primHandle.seOffset);
+        }
+      } else {
+        assemble_bounding_volumes(triBvs, pol, vtemp, "xn", tris,
+                                  zs::wrapv<3>{}, vtemp, "dir", alpha, voffset,
+                                  0);
+        assemble_bounding_volumes(edgeBvs, pol, vtemp, "xn", sedges,
+                                  zs::wrapv<2>{}, vtemp, "dir", alpha, voffset,
+                                  0);
+      }
+
       bvh_t &stBvh = voffset == 0 ? this->stBvh : this->bouStBvh;
       stBvh.refit(pol, triBvs);
-      // puts("before boundary ccd surf edge bvhs");
-      auto edgeBvs = retrieve_bounding_volumes(
-          pol, vtemp, "xn", sedges, wrapv<2>{}, vtemp, "dir", alpha, voffset);
       bvh_t &seBvh = voffset == 0 ? this->seBvh : this->bouSeBvh;
       seBvh.refit(pol, edgeBvs);
 
@@ -1819,7 +1926,7 @@ struct CodimStepping : INode {
       }
     }
 
-    FEMSystem(std::vector<ZenoParticles *> prims, const dtiles_t &verts,
+    FEMSystem(std::vector<ZenoParticles *> zsprims, const dtiles_t &verts,
               const tiles_t &edges, const tiles_t &eles, const tiles_t &coVerts,
               const tiles_t &coEdges, const tiles_t &coEles, dtiles_t &vtemp,
               dtiles_t &etemp, T dt, const ZenoConstitutiveModel &models)
@@ -1846,6 +1953,15 @@ struct CodimStepping : INode {
           ncsPT{vtemp.get_allocator(), 1}, ncsEE{vtemp.get_allocator(), 1},
           tempPB{verts.get_allocator(), {{"H", 9}}, verts.size()}, dt{dt},
           models{models} {
+      coOffset = sfOffset = seOffset = 0;
+      for (auto primPtr : zsprims) {
+        if (primPtr->category == ZenoParticles::category_e::surface)
+          prims.emplace_back(*primPtr, coOffset, sfOffset, seOffset,
+                             zs::wrapv<3>{});
+        else if (primPtr->category == ZenoParticles::category_e::tet)
+          prims.emplace_back(*primPtr, coOffset, sfOffset, seOffset,
+                             zs::wrapv<4>{});
+      }
       coOffset = verts.size();
       numDofs = coOffset + coVerts.size();
       nPP.setVal(0);
@@ -1858,26 +1974,33 @@ struct CodimStepping : INode {
 
       auto cudaPol = zs::cuda_exec();
       {
-        auto triBvs = retrieve_bounding_volumes(cudaPol, vtemp, "xn", eles,
-                                                zs::wrapv<3>{}, 0);
+        zs::Vector<zs::AABBBox<3, T>> triBvs{vtemp.get_allocator(), sfOffset},
+            edgeBvs{vtemp.get_allocator(), seOffset};
+        for (auto &primHandle : prims) {
+          assemble_bounding_volumes(triBvs, cudaPol, vtemp, "xn",
+                                    primHandle.getSurfTris(), zs::wrapv<3>{},
+                                    primHandle.vOffset, primHandle.sfOffset);
+          assemble_bounding_volumes(edgeBvs, cudaPol, vtemp, "xn",
+                                    primHandle.getSurfEdges(), zs::wrapv<2>{},
+                                    primHandle.vOffset, primHandle.seOffset);
+        }
         stBvh.build(cudaPol, triBvs);
-        auto edgeBvs = retrieve_bounding_volumes(cudaPol, vtemp, "xn", edges,
-                                                 zs::wrapv<2>{}, 0);
         seBvh.build(cudaPol, edgeBvs);
-      }
-      {
-        auto triBvs = retrieve_bounding_volumes(cudaPol, vtemp, "xn", coEles,
-                                                zs::wrapv<3>{}, coOffset);
-        bouStBvh.build(cudaPol, triBvs);
-        auto edgeBvs = retrieve_bounding_volumes(cudaPol, vtemp, "xn", coEdges,
-                                                 zs::wrapv<2>{}, coOffset);
-        bouSeBvh.build(cudaPol, edgeBvs);
+        {
+          auto triBvs = retrieve_bounding_volumes(cudaPol, vtemp, "xn", coEles,
+                                                  zs::wrapv<3>{}, coOffset);
+          bouStBvh.build(cudaPol, triBvs);
+          auto edgeBvs = retrieve_bounding_volumes(
+              cudaPol, vtemp, "xn", coEdges, zs::wrapv<2>{}, coOffset);
+          bouSeBvh.build(cudaPol, edgeBvs);
+        }
       }
     }
 
     std::vector<PrimitiveHandle> prims;
 
     const dtiles_t &verts;
+    std::size_t sfOffset, seOffset;
     std::size_t coOffset, numDofs;
     const tiles_t &edges;
     const tiles_t &eles;
