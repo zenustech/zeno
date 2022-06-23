@@ -38,6 +38,7 @@ static void numeric_eval (zfx::x64::Executable *exec,
 struct NumericEval : zeno::INode {
     virtual void apply() override {
         auto code = get_input2<std::string>("zfxCode");
+        auto type = get_input2<std::string>("resType");
         //auto code = get_params<>
         //一个模板函数，返回一个std::shared_ptr<T>，这里对这一个智能指针调用get()返回一个裸指针
        // auto op = get_param<std::string>("op_type");
@@ -134,17 +135,33 @@ struct NumericEval : zeno::INode {
 
     numeric_eval(exec, chs);
 
+    std::vector<float> resex(chs.size());
     for (int i = 0; i < chs.size(); i++) {
         auto [name, dimid] = prog->symbols[i];
         float value = chs[i];
         dbg_printf("output %d : %s. %d = %f\n", i , name.c_str(), dimid, value);
         auto key = name.substr(1);
-        result->set(value);
+        resex[i] = value;
         //std::visit([dimid = dimid, value] (auto &res) {
             ////dimid[(float*)(void*)&res] = value;
             //res = value;
         //}, result->value);
 
+    }
+    if (type == "float") {
+        if (resex.size() != 1)
+            throw makeError("expect float, got dimension " + std::to_string(resex.size()));
+        result->set(float(resex[0]));
+    } else if (type == "vec3f") {
+        if (resex.size() != 3)
+            throw makeError("expect vec3f, got dimension " + std::to_string(resex.size()));
+        result->set(vec3f(resex[0], resex[1], resex[2]));
+    } else if (type == "int") {
+        if (resex.size() != 1)
+            throw makeError("expect int, got dimension " + std::to_string(resex.size()));
+        result->set(int(resex[0]));
+    } else {
+        throw makeError("invalid resType value: " + type);
     }
     set_output("result", std::move(result));
     }
@@ -154,6 +171,7 @@ struct NumericEval : zeno::INode {
                             /* inputs*/
                             {
                                  {"string", "zfxCode"},
+                                 {"enum float vec3f int", "resType"},
                             },
 
                             /*OutPut*/
