@@ -16,7 +16,6 @@
 #include <zeno/types/StringObject.h>
 
 namespace zeno {
-
 struct FastQuasiStaticStepping : INode {
     using T = float;
     using dtiles_t = zs::TileVector<T,32>;
@@ -25,7 +24,6 @@ struct FastQuasiStaticStepping : INode {
     using mat3 = zs::vec<T, 3, 3>;
 
     struct FastFEMSystem {
-        
         template <typename Pol, typename Model>
         T energy(Pol &pol, const Model &model, const zs::SmallString tag, dtiles_t& vtemp) {
             using namespace zs;
@@ -85,11 +83,7 @@ struct FastQuasiStaticStepping : INode {
                     auto pdiff = tpos - b_verts.pack<3>("x",vi);
 
                     T stiffness = 2.0066 * mu + 1.0122 * lambda;
-                    // if(eles("vol",ei) < 0)
-                    //     printf("WARNING INVERT TET DETECTED<%d> %f\n",ei,(float)eles("vol",ei));
                     T bpsi = (0.5 * bcws("cnorm",vi) * stiffness * bone_driven_weight * eles("vol",ei)) * pdiff.l2NormSqr();
-                            // bpsi = (0.5 * bcws("cnorm",vi) * lambda * bone_driven_weight) * pdiff.dot(pdiff);
-        // the cnorm here should be the allocated volume of point in embeded tet 
                     atomic_add(exec_cuda, &res[0], (T)bpsi);
             });
 
@@ -137,12 +131,13 @@ struct FastQuasiStaticStepping : INode {
                 }
 
             });
-            T stiffness = 2.0066 * model.mu + 1.0122 * model.lam;
+
             if(b_bcws.size() != b_verts.size()){
                 fmt::print("B_BCWS_SIZE = {}\t B_VERTS_SIZE = {}\n",b_bcws.size(),b_verts.size());
                 throw std::runtime_error("B_BCWS SIZE AND B_VERTS SIZE NOT MATCH");
             }
 
+            T stiffness = 2.0066 * model.mu + 1.0122 * model.lam;
             auto nmEmbedVerts = b_verts.size();
             cudaPol(zs::range(nmEmbedVerts),
                 [bcws = proxy<space>({},b_bcws),b_verts = proxy<space>({},b_verts),vtemp = proxy<space>({},vtemp),etemp = proxy<space>({},etemp),
@@ -207,6 +202,67 @@ struct FastQuasiStaticStepping : INode {
 
             });                                         
         }
+
+        template <typename Model>
+        void hessian(zs::CudaExecutionPolicy& cudaPol,
+                                                const Model& model,
+                                                const zs::SmallString xTag,
+                                                const zs::SmallString HTag, 
+                                                dtiles_t& vtemp,
+                                                dtiles_t& etemp) {
+            using namespace zs;
+            constexpr auto space = execspace_e::cuda;
+            // fmt::print("check here 0");
+            cudaPol(zs::range(eles.size()), [vtemp = proxy<space>({}, vtemp),
+                                            etemp = proxy<space>({}, etemp),
+                                            bcws = proxy<space>({},b_bcws),
+                                            b_verts = proxy<space>({},b_verts),
+                                            verts = proxy<space>({}, verts),
+                                            eles = proxy<space>({}, eles),tag = xTag,HTag, model, volf = volf] ZS_LAMBDA (int ei) mutable {
+                auto DmInv = eles.pack<3, 3>("IB", ei);
+                auto dFdX = dFdXMatrix(DmInv);
+                auto inds = eles.pack<4>("inds", ei).reinterpret_bits<int>();
+                vec3 xs[4] = {vtemp.pack<3>(tag, inds[0]), vtemp.pack<3>(tag, inds[1]),
+                                vtemp.pack<3>(tag, inds[2]), vtemp.pack<3>(tag, inds[3])};
+                mat3 F{};
+                {
+                    auto x1x0 = xs[1] - xs[0];
+                    auto x2x0 = xs[2] - xs[0];
+                    auto x3x0 = xs[3] - xs[0];
+                    auto Ds = mat3{x1x0[0], x2x0[0], x3x0[0], x1x0[1], x2x0[1],
+                                x3x0[1], x1x0[2], x2x0[2], x3x0[2]};
+                    F = Ds * DmInv;
+                }
+                auto vole = eles("vol", ei);
+                auto dFdXT = dFdX.transpose();
+
+                auto Hq = model.first_piola_derivative(F, true_c);
+                auto H = dFdXT * Hq * dFdX * vole;
+
+                etemp.tuple<12 * 12>(HTag, ei) = H;
+
+            });
+            T stiffness = 2.0066 * model.mu + 1.0122 * model.lam;   
+            cudaPol(zs::range(b_bcws.size()),
+                    [bcws = proxy<space>({},b_bcws),b_verts = proxy<space>({},b_verts),vtemp = proxy<space>({},vtemp),etemp = proxy<space>({},etemp),
+                    eles = proxy<space>({},eles),stiffness,HTag,bone_driven_weight = bone_driven_weight] ZS_LAMBDA(int vi) mutable {
+                auto ei = reinterpret_bits<int>(bcws("inds",vi));
+                if(ei < 0)
+                    return;
+                auto inds = eles.pack<4>("inds",ei).reinterpret_bits<int>();
+                auto w = bcws.pack<4>("w",vi);
+
+                for(int i = 0;i != 4;++i)
+                    for(int j = 0;j != 4;++j){
+                        T alpha = stiffness * bone_driven_weight * w[i] * w[j] * bcws("cnorm",vi) * eles("vol",ei);
+                        for(int d = 0;d != 3;++d){
+                            atomic_add(exec_cuda,&etemp(HTag,(i * 3 + d) * 12 + j * 3 + d,ei),alpha);
+                        }
+                    }
+
+            }); 
+        }
+
 
         template <typename Pol>
         void precondition(Pol &pol, const zs::SmallString srcTag,
@@ -567,13 +623,10 @@ struct FastQuasiStaticStepping : INode {
                 ++k;
             }
         }
-
         cudaPol(zs::range(vtemp.size()),
             [vtemp = proxy<space>({},vtemp),verts = proxy<space>({},verts)] ZS_LAMBDA(int vi) mutable {
                 verts.pack<3>("x",vi) = vtemp.pack<3>("xn",vi);
         });
-
-
         set_output("ZSParticles", zstets);
     }
 };
