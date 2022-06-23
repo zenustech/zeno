@@ -427,6 +427,11 @@ inline auto normalize(vec<N, T> const &a) {
   return a * (1 / length(a));
 }
 
+template <size_t N, class T>
+inline auto normalizeSafe(vec<N, T> const &a, T b) {
+  return a * (1 / max(b, length(a)));
+}
+
 template <class T, class S>
 inline auto cross(vec<2, T> const &a, vec<2, S> const &b) {
   return a[0] * b[1] - b[0] * a[1];

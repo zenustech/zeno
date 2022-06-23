@@ -7,8 +7,10 @@
 #include <zeno/utils/string.h>
 #include <zeno/utils/logger.h>
 #include <zeno/utils/vec.h>
-#define _USE_MATH_DEFINES
-#include <math.h>
+#include <cmath>
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
 //#include <spdlog/spdlog.h>
 
 #include <glm/glm.hpp>
@@ -43,12 +45,10 @@
         sin(az), cos(az), 0,                    \
         0, 0, 1);
 
+namespace zeno {
+namespace {
 namespace cc4{
-    std::vector<zeno::vec3f> genindi(int div1, int div2, int inc);
-    std::vector<zeno::vec3f> igenindi(std::vector<zeno::vec3f>& in, int inc);
-    void appind(std::vector<zeno::vec3f> in, zeno::AttrVector<zeno::vec3i>& out);
-
-    std::vector<zeno::vec3f> genindi(int div1, int div2, int inc){
+    static std::vector<zeno::vec3f> genindi(int div1, int div2, int inc){
         std::vector<zeno::vec3f> ind;
 
         for (int i = 0; i < div1-1; i++)
@@ -74,7 +74,7 @@ namespace cc4{
         return ind;
     }
 
-    std::vector<zeno::vec3f> igenindi(std::vector<zeno::vec3f>& in, int inc)
+    static std::vector<zeno::vec3f> igenindi(std::vector<zeno::vec3f>& in, int inc)
     {
         std::vector<zeno::vec3f> out;
         for (int i = 0; i < in.size(); i++)
@@ -85,15 +85,19 @@ namespace cc4{
         return out;
     }
 
-    void appind(std::vector<zeno::vec3f> in, zeno::AttrVector<zeno::vec3i>& out){
+    static void appind(std::vector<zeno::vec3f> in, zeno::AttrVector<zeno::vec3i>& out){
         for (int i = 0; i < in.size(); i++)
         {
             out.push_back(in[i]);
         }
     }
 }
+}
+}
 
 namespace zeno {
+namespace {
+
 struct CreateCube : zeno::INode {
     virtual void apply() override {
         auto prim = std::make_shared<zeno::PrimitiveObject>();
@@ -830,4 +834,5 @@ ZENDEFNODE(CreateCylinder, {
     {"create"},
 });
 
+}
 }

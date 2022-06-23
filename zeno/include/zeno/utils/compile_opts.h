@@ -35,14 +35,16 @@
 #define ZENO_NOWARN_BEGIN \
     _Pragma("clang diagnostic push") \
     _Pragma("clang diagnostic ignored \"-Wall\"") \
-    _Pragma("GCC diagnostic ignored \"-Wextra\"")
+    _Pragma("GCC diagnostic ignored \"-Wextra\"") \
+    _Pragma("GCC diagnostic ignored \"-Wsuggest-override\"")
 #define ZENO_NOWARN_END \
     _Pragma("clang diagnostic pop")
 #elif defined __GNUC__
 #define ZENO_NOWARN_BEGIN \
     _Pragma("GCC diagnostic push") \
     _Pragma("GCC diagnostic ignored \"-Wall\"") \
-    _Pragma("GCC diagnostic ignored \"-Wextra\"")
+    _Pragma("GCC diagnostic ignored \"-Wextra\"") \
+    _Pragma("GCC diagnostic ignored \"-Wsuggest-override\"")
 #define ZENO_NOWARN_END \
     _Pragma("GCC diagnostic pop")
 #elif defined _MSC_VER
