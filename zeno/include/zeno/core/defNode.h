@@ -40,6 +40,6 @@ static int _deprecated_ZENDEFNODE_helper() { return 1; }
     ZENO_DEFNODE(Class)(__VA_ARGS__), _deprecatedDef##Class = ::zeno::_deprecated_ZENDEFNODE_helper();
 
 #define ZENO_DEFOVERLOADNODE(Class, PostFix, ...) \
-    static int _deprecatedDefOverload##Class = [] (auto &&...) { ::zeno::_deprecated_ZENDEFNODE_helper(); }
+    static int _deprecatedDefOverload##Class##And##PostFix = [] (auto &&...) { ::zeno::_deprecated_ZENDEFNODE_helper(); }
 
 }
