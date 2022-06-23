@@ -2,6 +2,8 @@
 #include <zeno/types/StringObject.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/DictObject.h>
+#include <zeno/extra/GlobalState.h>
+#include <zeno/core/Graph.h>
 #include <zfx/zfx.h>
 #include <zfx/x64.h>
 #include <cassert>

@@ -13,3 +13,6 @@
 [submodule "projects/FBX/dem-bones-bin"]
 	path = projects/FBX/dem-bones-bin
 	url = https://github.com/zenustech/dem-bones-bin.git
+[submodule "projects/MeshSubdiv/OpenSubdiv"]
+	path = projects/MeshSubdiv/OpenSubdiv
+	url = https://github.com/zenustech/OpenSubdiv

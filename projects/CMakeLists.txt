@@ -13,7 +13,6 @@ set(ZENO_EXTENSIONS
     FastFLIP
     Rigid
     cgmesh
-    gmpm
     mesher
     Euler
     FEM
@@ -25,6 +24,7 @@ set(ZENO_EXTENSIONS
     Functional
     TreeSketch
     CalcGeometryUV
+    MeshSubdiv
     )
 
 foreach (name IN ITEMS ${ZENO_EXTENSIONS})

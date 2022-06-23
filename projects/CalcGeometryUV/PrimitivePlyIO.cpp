@@ -1,3 +1,4 @@
+#include <zeno/utils/nowarn.h>
 #include <zeno/zeno.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/StringObject.h>
@@ -10,8 +11,10 @@
 #include <iostream>
 #include <fstream>
 
+#undef tinyply
+#define tinyply _zeno_primplyio_tinyply
 #define TINYPLY_IMPLEMENTATION
-#include "tinyply.h"
+#include "primplyio_tinyply.h"
 
 
 static void readply(

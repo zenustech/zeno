@@ -4,6 +4,7 @@
 #include <zeno/extra/GlobalComm.h>
 #include <zeno/extra/GlobalStatus.h>
 #include <zeno/utils/Translator.h>
+#include <zeno/extra/EventCallbacks.h>
 #include <zeno/core/Graph.h>
 #include <zeno/core/INode.h>
 #include <zeno/utils/safe_at.h>
@@ -17,6 +18,7 @@ ZENO_API Session::Session()
     , globalComm(std::make_unique<GlobalComm>())
     , globalStatus(std::make_unique<GlobalStatus>())
     , translator(std::make_unique<Translator>())
+    , eventCallbacks(std::make_unique<EventCallbacks>())
     {
 }
 
@@ -29,40 +31,48 @@ ZENO_API void Session::defNodeClass(std::string const &id, std::unique_ptr<INode
     nodeClasses.emplace(id, std::move(cls));
 }
 
-ZENO_API void Session::defOverloadNodeClass(
-        std::string const &id,
-        std::vector<std::string> const &types,
-        std::unique_ptr<INodeClass> &&cls) {
-    std::string key = '^' + id;
-    for (auto const &type: types) {
-        key += '^';
-        key += type;
-    }
-    defNodeClass(key, std::move(cls));
-}
+//ZENO_API void Session::defOverloadNodeClass(
+        //std::string const &id,
+        //std::vector<std::string> const &types,
+        //std::unique_ptr<INodeClass> &&cls) {
+    //std::string key = '^' + id;
+    //for (auto const &type: types) {
+        //key += '^';
+        //key += type;
+    //}
+    //defNodeClass(key, std::move(cls));
+//}
+//ZENO_API std::map<std::string, zany> callTempNode(std::string const &id,
+        //std::map<std::string, zany> const &inputs) const {
+    //auto se = getThisSession()->nodeClasses.at(id)->new_instance();
+    //se->graph = getThisGraph();
+    //se->inputs = inputs;
+    //se->doApply();
+    //return se->outputs;
+//}
 
-ZENO_API std::unique_ptr<INode> Session::getOverloadNode(
-        std::string const &name, std::vector<std::shared_ptr<IObject>> const &inputs) {
-    std::string key = '^' + name;
-    for (auto const &obj: inputs) {
-        auto type = typeid(*obj).name();
-        key += '^';
-        key += type;
-    }
-    auto it = nodeClasses.find(key);
-    if (it == nodeClasses.end()) {
-        return nullptr;
-    }
-    auto const &cls = it->second;
-    auto node = cls->new_instance();
-    node->myname = key + "(TEMP)";
+//ZENO_API std::unique_ptr<INode> Session::getOverloadNode(
+        //std::string const &name, std::vector<std::shared_ptr<IObject>> const &inputs) {
+    //std::string key = '^' + name;
+    //for (auto const &obj: inputs) {
+        //auto type = typeid(*obj).name();
+        //key += '^';
+        //key += type;
+    //}
+    //auto it = nodeClasses.find(key);
+    //if (it == nodeClasses.end()) {
+        //return nullptr;
+    //}
+    //auto const &cls = it->second;
+    //auto node = cls->new_instance();
+    //node->myname = key + "(TEMP)";
 
-    for (int i = 0; i < inputs.size(); i++) {
-        auto key = cls->desc->inputs.at(i).name;
-        node->inputs[key] = std::move(inputs[i]);
-    }
-    return node;
-}
+    //for (int i = 0; i < inputs.size(); i++) {
+        //auto key = cls->desc->inputs.at(i).name;
+        //node->inputs[key] = std::move(inputs[i]);
+    //}
+    //return node;
+//}
 
 ZENO_API INodeClass::INodeClass(Descriptor const &desc)
         : desc(std::make_unique<Descriptor>(desc)) {

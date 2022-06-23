@@ -1,3 +1,4 @@
+#include <zeno/utils/nowarn.h>
 #include <zeno/zeno.h>
 #include <zeno/logger.h>
 #include <zeno/ListObject.h>
@@ -22,6 +23,9 @@
 namespace {
 using namespace zeno;
 
+#ifdef ZENO_VERSION_2
+#define log_debugf printf
+#endif
 
 struct BulletTransform : zeno::IObject {
     btTransform trans;

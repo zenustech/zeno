@@ -22,10 +22,14 @@ struct ExportFBX : zeno::INode {
         zeno::log_info("----- FBX Path {}", fbxpath);
         zeno::log_info("----- OUT Path {}", outpath);
 
+        cihouWinPath(abcpath);
+        cihouWinPath(fbxpath);
+        cihouWinPath(outpath);
+
         //system("pwd");
 
         auto cmd = (std::string)
-            "\"" + zeno::getAssetDir(DEM_DIR) + "/DemBones" + "\"" +
+            "\"" + zeno::getAssetDir(DEM_DIR, "DemBones") + "\"" +
             " -i=\"" + fbxpath + "\"" +
             " -a=\"" + abcpath + "\"" +
             " -b=5" +

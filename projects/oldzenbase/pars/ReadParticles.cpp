@@ -1,6 +1,7 @@
 #include <zeno/zeno.h>
 #include <zeno/ParticlesObject.h>
 #include <zeno/StringObject.h>
+#include <utility>
 #include <cstring>
 
 namespace zeno {
@@ -21,13 +22,13 @@ static void readpars(
   while (EOF != fscanf(fp, "%s", hdr)) {
     if (!strcmp(hdr, "v")) {
       glm::vec3 position;
-      fscanf(fp, "%f %f %f\n", &position.x, &position.y, &position.z);
+      std::ignore = fscanf(fp, "%f %f %f\n", &position.x, &position.y, &position.z);
       positions.push_back(position);
       pos_n++;
 
     } else if (!strcmp(hdr, "#v_vel")) {
       glm::vec3 velocity;
-      fscanf(fp, "%f %f %f\n", &velocity.x, &velocity.y, &velocity.z);
+      std::ignore = fscanf(fp, "%f %f %f\n", &velocity.x, &velocity.y, &velocity.z);
       velocities.push_back(velocity);
       vel_n++;
     }

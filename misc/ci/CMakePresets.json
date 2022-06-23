@@ -48,6 +48,8 @@
         "ZENO_WITH_mesher": "ON",
         "ZENO_WITH_Alembic": "ON",
         "ZENO_WITH_FBX": "ON",
+        "ZENO_WITH_DemBones": "ON",
+        "ZENO_WITH_CalcGeometryUV": "ON",
         "ZENO_WITH_TOOL_cgmeshTools": "ON",
         "ZENO_WITH_TOOL_HerculesTools": "ON"
       }
@@ -58,15 +60,7 @@
       "displayName": "CUDA configuration",
       "description": "Additionally build with CUDA extension modules",
       "cacheVariables": {
-        "ZENO_WITH_gmpm": "ON"
-      }
-    },
-    {
-      "name": "optix",
-      "inherits": "cuda",
-      "displayName": "OptiX configuration",
-      "description": "Additionally build with the OptiX rendering engine",
-      "cacheVariables": {
+        "ZENO_WITH_gmpm": "ON",
         "ZENO_ENABLE_OPTIX": "ON"
       }
     }

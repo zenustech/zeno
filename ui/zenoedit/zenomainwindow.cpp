@@ -67,11 +67,13 @@ void ZenoMainWindow::initMenu() {
     QMenu *pFile = new QMenu(tr("File"));
     {
         QAction *pAction = new QAction(tr("New"), pFile);
-        QMenu *pNewMenu = new QMenu;
-        QAction *pNewGraph = pNewMenu->addAction("New Scene");
-        connect(pNewGraph, SIGNAL(triggered()), this, SLOT(onNewFile()));
+        pAction->setCheckable(false);
+        pAction->setShortcut(QKeySequence(tr("Ctrl+N")));
+        //QMenu *pNewMenu = new QMenu;
+        //QAction *pNewGraph = pNewMenu->addAction("New Scene");
+        connect(pAction, SIGNAL(triggered()), this, SLOT(onNewFile()));
 
-        pAction->setMenu(pNewMenu);
+        //pAction->setMenu(pNewMenu);
 
         pFile->addAction(pAction);
 
@@ -89,6 +91,7 @@ void ZenoMainWindow::initMenu() {
 
         pAction = new QAction(tr("Save As"), pFile);
         pAction->setCheckable(false);
+        pAction->setShortcut(QKeySequence(tr("Ctrl+Shift+S")));
         connect(pAction, SIGNAL(triggered()), this, SLOT(saveAs()));
         pFile->addAction(pAction);
 

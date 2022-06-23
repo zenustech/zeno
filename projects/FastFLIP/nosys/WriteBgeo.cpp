@@ -1,3 +1,4 @@
+#include <zeno/utils/nowarn.h>
 #include <Partio.h>
 #include <zeno/ParticlesObject.h>
 #include <zeno/zeno.h>

@@ -50,10 +50,32 @@ when running `build\bin\zenoedit.exe`.
 ### A
 
 Suppose you have installed `Qt5` in `C:\Qt\Qt5.14.2`.
-Then this file may be located in `C:\Qt\Qt5.14.2\bin\msvc2017_64\bin\Qt5Core.dll`.
+Then this file may be located in `C:\Qt\Qt5.14.2\msvc2017_64\bin\Qt5Core.dll`.
+You have two solutions:
 
 1. Manually copy the `Qt5Core.dll`, `Qt5Gui.dll`, and etc. to the `build\bin` directory (same directory as `zenoedit.exe` is).
-2. Add the path `C:\Qt\Qt5.14.2\bin\msvc2017_64\bin` (where `Qt5Core.dll` is located in) to the environment variable `PATH`.
+2. Add the path `C:\Qt\Qt5.14.2\msvc2017_64\bin` (where `Qt5Core.dll` is located in) to the environment variable `PATH`.
+
+### Q
+
+```
+error LNK2038: mismatch detected for 'RuntimeLibrary': value 'MDd_DynamicDebug' doesn't match value 'MD_DynamicRelease' in xxx.obj
+```
+
+### A
+
+Please always use the `Release` configuration.
+
+```
+cmake -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build --config Release
+```
+
+Both `-DCMAKE_BUILD_TYPE=Release` and `--config Release` are required.
+
+> Delete the `build` directory completely (see CMake problem) whenever you restart the build.
+
+> If the second step (`--config Release`) doesn't work, you need to open the `zeno.sln` in Visual Studio, and **select the `Release` configuration in the UI**, and click `Build`.
 
 ## WSL problem
 
@@ -97,11 +119,11 @@ xclock
 ```
 
 * If the `xclock` failed to start: your WSL still doesn't have GUI, **all GUI application won't work**, not just Zeno.
-* If the `xclock` starts successfully: configurations for a working GUI, go ahead and Zeno should work too.
+* If the `xclock` starts successfully: your WSL GUI is working well, go ahead and Zeno should work too.
 
 > Zeno still gives the same error even after `xclock` worked? Try `sudo apt-get install qt5-default`.
 
-> Not WSL but still meet this problem? You might be using Zeno on a headless-server, hint: `ssh -X root@yourserver.address`
+> Not using WSL but still meet this problem? You might be using Zeno on a headless-server, hint: `ssh -X root@yourserver.address`
 
 ## Ubuntu problem
 

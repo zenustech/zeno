@@ -1,11 +1,18 @@
+#include <zeno/extra/EventCallbacks.h>
+#include <zeno/extra/assetDir.h>
+#include <zeno/core/Session.h>
 #include "zstartup.h"
-#ifdef _WIN32
-#include "zeno/InitVDB.h"
-#endif
+#include <QSettings>
 
 void startUp()
 {
-#ifdef _WIN32
-    static zeno::OpenvdbInitializer g_openvdb_initializer;
-#endif
+    QSettings settings("ZenusTech", "Zeno");
+    QVariant nas_loc_v = settings.value("nas_loc");
+    if (!nas_loc_v.isNull()) {
+        zeno::setConfigVariable("NASLOC", nas_loc_v.toString().toStdString());
+    }
+
+    static int calledOnce = ([]{
+        zeno::getSession().eventCallbacks->triggerEvent("init");
+    }(), 0);
 }

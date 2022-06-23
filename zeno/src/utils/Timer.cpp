@@ -70,6 +70,7 @@ std::string Timer::getLog() {
 }
 
 
+#if 0
 TimerAtexitHelper::~TimerAtexitHelper() {
     auto log = Timer::getLog();
     if (auto env = zeno::envconfig::get("TIMER")) {
@@ -81,6 +82,7 @@ TimerAtexitHelper::~TimerAtexitHelper() {
         zeno::log_debug("ZENO benchmarking status:\n{}\n", log.c_str());
     }
 }
+#endif
 
 }
 #endif

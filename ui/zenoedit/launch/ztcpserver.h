@@ -1,7 +1,7 @@
 #ifndef __ZCORE_TCPSERVER_H__
 #define __ZCORE_TCPSERVER_H__
 
-#ifdef ZENO_MULTIPROCESS
+#if defined(ZENO_MULTIPROCESS) && defined(ZENO_IPC_USE_TCP)
 
 #include <QObject>
 #include <QtNetwork>

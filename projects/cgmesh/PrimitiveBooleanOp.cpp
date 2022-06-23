@@ -103,7 +103,7 @@ struct PrimitiveListBoolOp : PrimitiveBooleanOp {
 
         #pragma omp parallel for
         for (int i = 0; i < listB.size(); i++) {
-            log_debugf("PrimitiveListBoolOp: processing mesh #%d...\n", i);
+            log_debug("PrimitiveListBoolOp: processing mesh #{}...", i);
             auto const &primB = listB[i];
             auto [primC, anyFromA, anyFromB] = boolean_op(VFA.first, VFA.second, primA.get(), primB.get());
             listC[i] = std::make_pair(anyFromA, std::move(primC));

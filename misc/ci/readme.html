@@ -1,12 +1,48 @@
 <html>
+<head>
 <meta charset="UTF-8">
+</head>
+<body>
 
-<h1>Installation guide / 安装方法</h1>
+<h1>安装方法</h1>
 <ul>
-<li>Windows: After download, extract the zip file to a directory, then double-click the file <code>000_start.bat</code> in that directory to start our application. Alternatively you may manually run <code>zenoedit.exe</code>. If you encounter bugs, please let us know by submitting a <a href="https://github.com/zenustech/zeno/issues">Github Issue</a>, thank for your support!</li>
-<li>Linux: Our released binary support Ubuntu 18.04 and above (glibcxx &gt;= 3.4.26, glibc &gt;= 2.14), otherwise please build from source. Extract the downloaded tar.gz to a directory, then run <code>bash 000_start.sh</code> in that directory to start our application. Alternatively you may manually run <code>usr/bin/zenoedit</code> in there. Try <code>chmod +x usr/bin/*</code> if they don't have execute permission.</li>
-<li>Windows: 下载后，把 zip 文件解压到一个目录，然后双击其中的 <code>000_start.bat</code> 这个文件，即可启动我们的程序。此外您也可以找到 <code>zenoedit.exe</code> 直接双击运行。如果您遇到了 BUG，请通过提交 <a href="https://github.com/zenustech/zeno/issues">Github Issue</a> 的方式来反馈给我们, 感谢您的支持！</li>
-<li>Linux: 我们发布的二进制版支持 Ubuntu 18.04 以上的系统 (glibcxx &gt;= 3.4.26, glibc &gt;= 2.14)，否则请从源码构建。把下载的 tar.gz 文件解压到一个目录，然后在那个目录中运行命令 <code>bash 000_start.sh</code> 即可启动我们的程序。此外您也可以直接运行其中的 <code>usr/bin/zenoedit</code>。如果遇到没有执行权限的问题可以试试看 <code>chmod +x usr/bin/*</code>。</li>
+<li>首先根据您的平台和硬件下载对应的压缩包文件。例如 Windows，有英伟达显卡的用户，可以下载 <code>zeno-****.*.*-x86_64-windows-cuda.zip</code> 这个文件；如果没有英伟达显卡，则下载 <code>zeno-****.*.*-x86_64-windows-cpu.zip</code>。</li>
+<li>Windows: 下载后，把 zip 文件解压到一个目录，然后双击其中的 <code>000_start.bat</code> 这个文件，即可启动我们的程序。此外您也可以找到 <code>zenoedit.exe</code> 直接双击运行，或者将其“发送到桌面快捷方式”。</li>
+<li>Linux: 我们发布的二进制版支持 Ubuntu 18.04 以上的系统 (glibcxx &gt;= 3.4.26, glibc &gt;= 2.14)，否则请从<a href="https://github.com/zenustech/zeno">源码</a>构建。把下载的 tar.gz 文件解压到一个目录，然后在那个目录中运行命令 <code>bash 000_start.sh</code> 即可启动我们的程序。此外您也可以直接运行其中的 <code>usr/bin/zenoedit</code>。如果遇到没有执行权限的问题可以试试看 <code>chmod +x usr/bin/*</code>。</li>
 </ul>
 
+<h2>问题反馈</h2>
+<p>如果您遇到了 BUG，或是使用过程中有任何不懂的问题，可以通过发送邮件到 pengyb@zenustech.com 来联系我们帮助您解决, 感谢您的支持！</p>
+<p>在反馈的信件中，请尽可能多地附上更多的信息，例如：软件界面截图，控制台报错信息，你使用的显卡型号，或是直接将 zsg 文件作为附件发送，这能帮助我们更快地帮你解决问题。</p>
+
+<h2>推荐配置</h2>
+<p>(这是流畅运行 Zeno 获得最佳体验所需的配置)</p>
+<ul>
+<li>Windows 10 及以上</li>
+<li>... 或 Ubuntu 20.04 及以上</li>
+<li>至少 4 核 8 线程的 x86 处理器 (64位)</li>
+<li>至少 16 GB 内存</li>
+<li>至少 64 GB 空闲磁盘空间 (固态硬盘)</li>
+<li>显卡 NVIDIA RTX2070 或更高</li>
+<li>至少 6 GB 显存</li>
+<li>NVIDIA 驱动版本 510.54 及以上</li>
+<li>CUDA 版本 11.5 及以上 [<a href="https://developer.download.nvidia.com/compute/cuda/11.5.1/local_installers/cuda_11.5.1_496.13_windows.exe">下载</a>]</li>
+</ul>
+
+<h2>最低配置</h2>
+<p>(这是能够正常运行 Zeno 的最低要求配置)</p>
+<ul>
+<li>Windows 10 及以上</li>
+<li>... 或 Ubuntu 18.04 及以上</li>
+<li>x86 处理器 (64位)</li>
+<li>至少 4 GB 内存</li>
+<li>至少 4 GB 空闲磁盘空间</li>
+<li>任意支持 OpenGL 3.2 的显卡</li>
+<li>... 或没有显卡（会自动切换为 CPU 软光栅渲染）</li>
+<li>提示：没有英伟达显卡，则应选择 cpu 版本的安装包下载。</li>
+<li>cpu 版具有完全相同节点，只不过会在 cpu 上相对更慢地运行（得益于 zpc 的多后端技术）。</li>
+<li>cpu 版没有 OptiX 实时光线追踪渲染器，但仍具有通用的 OpenGL 渲染器。</li>
+</ul>
+
+</body>
 </html>

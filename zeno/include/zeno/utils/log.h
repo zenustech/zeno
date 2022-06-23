@@ -2,7 +2,7 @@
 
 #include <zeno/utils/api.h>
 #include <zeno/utils/source_location.h>
-#include <zeno/utils/cformat.h>
+//#include <zeno/utils/cformat.h>
 #include <zeno/utils/format.h>
 #include <string_view>
 
@@ -43,11 +43,12 @@ void log_print(log_level_t level, __with_source_location<std::string_view> const
 template <class ...Args> \
 void log_##x(__with_source_location<std::string_view> const &msg, Args &&...args) { \
     log_print(log_level_t::x, msg, std::forward<Args>(args)...); \
-} \
-template <class ...Args> \
-void log_##x##f(__with_source_location<const char *> const &msg, Args &&...args) { \
-    log_print(log_level_t::x, {"{}", msg.location()}, cformat(msg.value(), std::forward<Args>(args)...)); \
 }
+/*
+template <class ...Args>
+void log_##x##f(__with_source_location<const char *> const &msg, Args &&...args) {
+    log_print(log_level_t::x, {"{}", msg.location()}, cformat(msg.value(), std::forward<Args>(args)...));
+}*/
 _ZENO_PER_LOG_LEVEL(trace)
 _ZENO_PER_LOG_LEVEL(debug)
 _ZENO_PER_LOG_LEVEL(info)

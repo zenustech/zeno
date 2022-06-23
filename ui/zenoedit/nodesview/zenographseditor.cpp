@@ -16,6 +16,7 @@
 #include "nodesview/zsubnetlistitemdelegate.h"
 #include "searchitemdelegate.h"
 #include <zenoui/util/cihou.h>
+#include "startup/zstartup.h"
 #include "util/log.h"
 
 
@@ -576,6 +577,7 @@ void ZenoGraphsEditor::onMenuActionTriggered(QAction* pAction)
     }
     else if (text == tr("Set NASLOC"))
     {
+        //QSettings settings(QSettings::UserScope, "Zenus Inc.", "zeno2");
         QSettings settings("ZenusTech", "Zeno");
         QString v = settings.value("nas_loc").toString();
 
@@ -586,6 +588,8 @@ void ZenoGraphsEditor::onMenuActionTriggered(QAction* pAction)
         if (ok) {
             text.replace('\\', '/');
             settings.setValue("nas_loc", text);
+            // refresh settings, needed in single-process mode
+            startUp();
         }
     }
 }

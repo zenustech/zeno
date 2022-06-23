@@ -2,6 +2,7 @@
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/StringObject.h>
 #include <zeno/types/NumericObject.h>
+#include <zeno/utils/tuple_hash.h>
 #include <random>
 #include <cmath>
 #include <set>
@@ -15,7 +16,7 @@ struct PrimitiveWireframe : INode {
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
 
-        std::set<std::pair<int, int>> segments;
+        std::set<vec2i, tuple_less> segments;
         auto append = [&] (int i, int j) {
             segments.emplace(std::min(i, j), std::max(i, j));
         };
@@ -39,13 +40,9 @@ struct PrimitiveWireframe : INode {
             for (int i = start + 1; i < start + len; i++) {
                 append(prim->loops[i - 1], prim->loops[i]);
             }
-            append(prim->loops[len - 1], prim->loops[0]);
+            append(prim->loops[start + len - 1], prim->loops[start]);
         }
-        prim->lines.clear();
-        prim->lines.reserve(segments.size());
-        for (auto const &[i, j]: segments) {
-            prim->lines.push_back({i, j});
-        }
+        prim->lines.values.assign(segments.begin(), segments.end());
         if (get_param<bool>("removeFaces")) {
             prim->tris.clear();
             prim->quads.clear();
