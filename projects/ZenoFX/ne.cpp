@@ -41,6 +41,7 @@ struct NumericEval : zeno::INode {
         auto type = get_input2<std::string>("resType");
         if (type == "string") { // 转发给 se
             auto se = getThisSession()->nodeClasses.at("StringEval")->new_instance();
+            se->graph = getThisGraph();
             se->inputs["zfxCode"] = objectFromLiterial(code);
             se->doApply();
             set_output("result", se->outputs.at("result"));
