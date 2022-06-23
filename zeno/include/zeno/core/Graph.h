@@ -67,8 +67,8 @@ struct Graph {
     ZENO_API void loadGraph(const char *json);
     ZENO_API void setNodeParam(std::string const &id, std::string const &par,
         std::variant<int, float, std::string, zany> const &val);  /* to be deprecated */
-    ZENO_API std::unique_ptr<INode> getOverloadNode(std::string const &id,
-            std::vector<std::shared_ptr<IObject>> const &inputs) const;
+    ZENO_API std::map<std::string, zany> callTempNode(std::string const &id,
+            std::map<std::string, zany> inputs) const;
 };
 
 }

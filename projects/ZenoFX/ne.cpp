@@ -6,6 +6,7 @@
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/DictObject.h>
 #include <zeno/extra/GlobalState.h>
+#include <zeno/core/Graph.h>
 #include <zfx/zfx.h>
 #include <zfx/x64.h>
 #include <cassert>
@@ -40,11 +41,9 @@ struct NumericEval : zeno::INode {
         auto code = get_input2<std::string>("zfxCode");
         auto type = get_input2<std::string>("resType");
         if (type == "string") { // 转发给 se
-            auto se = getThisSession()->nodeClasses.at("StringEval")->new_instance();
-            se->graph = getThisGraph();
-            se->inputs["zfxCode"] = objectFromLiterial(code);
-            se->doApply();
-            set_output("result", se->outputs.at("result"));
+            auto res = getThisGraph()->callTempNode("StringEval",
+                    {{"zfxCode", objectFromLiterial(code)}}).at("result");
+            set_output("result", std::move(res));
             return;
         }
         //auto code = get_params<>
