@@ -33,7 +33,7 @@ struct PrimitiveObject : IObjectClone<PrimitiveObject> {
     std::shared_ptr<InstancingObject> inst;
 
     // deprecated:
-    template <class Accept = std::tuple<vec3f, float>, class F>
+    template <class Accept = std::variant<vec3f, float>, class F>
     void foreach_attr(F &&f) {
         std::string pos_name = "pos";
         f(pos_name, verts.values);
@@ -41,7 +41,7 @@ struct PrimitiveObject : IObjectClone<PrimitiveObject> {
     }
 
     // deprecated:
-    template <class Accept = std::tuple<vec3f, float>, class F>
+    template <class Accept = std::variant<vec3f, float>, class F>
     void foreach_attr(F &&f) const {
         std::string const pos_name = "pos";
         f(pos_name, verts.values);
@@ -109,7 +109,7 @@ struct PrimitiveObject : IObjectClone<PrimitiveObject> {
     }
 
     // deprecated:
-    template <class Accept = std::tuple<vec3f, float>, class F>
+    template <class Accept = std::variant<vec3f, float>, class F>
     auto attr_visit(std::string const &name, F const &f) const {
         if (name == "pos") {
             return f(verts.values);
@@ -119,7 +119,7 @@ struct PrimitiveObject : IObjectClone<PrimitiveObject> {
     }
 
     // deprecated:
-    template <class Accept = std::tuple<vec3f, float>, class F>
+    template <class Accept = std::variant<vec3f, float>, class F>
     auto attr_visit(std::string const &name, F const &f) {
         if (name == "pos") {
             return f(verts.values);

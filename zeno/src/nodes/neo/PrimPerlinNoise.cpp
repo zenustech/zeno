@@ -74,7 +74,8 @@ struct PrimPerlinNoise : INode {
         auto outAttr = get_input2<std::string>("outAttr");
         auto inAttr = get_input2<std::string>("inAttr");
         auto outType = get_input2<std::string>("outType");
-        primPerlinNoise(prim.get(), inAttr, outAttr, outType, scale, detail, roughness, disortion, offset);
+        primPerlinNoise(prim.get(), inAttr, outAttr, outType, scale,
+                        detail, roughness, disortion, offset, average, strength);
         set_output("prim", get_input("prim"));
     }
 };

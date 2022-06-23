@@ -39,6 +39,21 @@ template <typename T, typename... Ts>
 struct tuple_contains<T, std::tuple<T, Ts...>> : std::true_type {
 };
 
+template <typename T, typename Tuple>
+struct variant_contains;
+
+template <typename T>
+struct variant_contains<T, std::variant<>> : std::false_type {
+};
+
+template <typename T, typename U, typename... Ts>
+struct variant_contains<T, std::variant<U, Ts...>> : variant_contains<T, std::variant<Ts...>> {
+};
+
+template <typename T, typename... Ts>
+struct variant_contains<T, std::variant<T, Ts...>> : std::true_type {
+};
+
 template <class T>
 struct is_variant : std::false_type {
 };
@@ -50,11 +65,22 @@ struct is_variant<std::variant<Ts...>> : std::true_type {
 
 template <class T>
 struct variant_to_tuple {
+    using type = T;
 };
 
 template <class ...Ts>
 struct variant_to_tuple<std::variant<Ts...>> {
     using type = std::tuple<Ts...>;
+};
+
+template <class T>
+struct tuple_to_variant {
+    using type = T;
+};
+
+template <class ...Ts>
+struct tuple_to_variant<std::tuple<Ts...>> {
+    using type = std::variant<Ts...>;
 };
 
 

@@ -9,21 +9,30 @@
 
 namespace zeno {
 
+using AttrAcceptAll = std::variant
+    < vec3f
+    , float
+    , vec3i
+    , int
+    >;
+
+using AttrVectorVariant = std::variant
+    < std::vector<vec3f>
+    , std::vector<float>
+    , std::vector<vec3i>
+    , std::vector<int>
+    >;
+
+
 template <class ValT>
 struct AttrVector {
-    using VariantType = std::variant
-        < std::vector<vec3f>
-        , std::vector<float>
-        , std::vector<vec3i>
-        , std::vector<int>
-        >;
 
     using value_type = ValT;
     using iterator = typename std::vector<ValT>::iterator;
     using const_iterator = typename std::vector<ValT>::const_iterator;
 
     std::vector<ValT> values;
-    std::map<std::string, VariantType> attrs;
+    std::map<std::string, AttrVectorVariant> attrs;
 
     AttrVector() = default;
     AttrVector(std::vector<ValT> const &values_) : values(values_) {}
@@ -70,11 +79,11 @@ struct AttrVector {
         values.push_back(std::move(t));
     }
 
-    void _ensure_update() const {
-        if (!attrs.empty()) {
-            const_cast<AttrVector *>(this)->update();
-        }
-    }
+    //void _ensure_update() const {
+        //if (!attrs.empty()) {
+            //const_cast<AttrVector *>(this)->update();
+        //}
+    //}
 
     void update() {
         for (auto &[key, val] : attrs) {
@@ -106,46 +115,52 @@ struct AttrVector {
         return values;
     }
 
-    template <class Accept = std::tuple<vec3f, float>, class F>
+    template <class Accept = std::variant<vec3f, float>, class F>
     void attr_visit(std::string const &name, F const &f) const {
+        auto it = attrs.find(name);
+        if (it == attrs.end())
+            throw makeError<KeyError>(name, "attribute name of primitive");
         std::visit([&] (auto &arr) {
             using T = std::decay_t<decltype(arr[0])>;
-            if constexpr (tuple_contains<T, Accept>::value) {
+            if constexpr (variant_contains<T, Accept>::value) {
                 f(arr);
             }
-        }, attr(name));
+        }, it->second);
     }
 
-    template <class Accept = std::tuple<vec3f, float>, class F>
+    template <class Accept = std::variant<vec3f, float>, class F>
     void attr_visit(std::string const &name, F const &f) {
+        auto it = attrs.find(name);
+        if (it == attrs.end())
+            throw makeError<KeyError>(name, "attribute name of primitive");
         std::visit([&] (auto &arr) {
             using T = std::decay_t<decltype(arr[0])>;
-            if constexpr (tuple_contains<T, Accept>::value) {
+            if constexpr (variant_contains<T, Accept>::value) {
                 f(arr);
             }
-        }, attr(name));
+        }, it->second);
     }
 
-    template <class Accept = std::tuple<vec3f, float>, class F>
+    template <class Accept = std::variant<vec3f, float>, class F>
     void foreach_attr(F &&f) const {
         for (auto const &[key, arr]: attrs) {
             auto const &k = key;
             std::visit([&] (auto &arr) {
                 using T = std::decay_t<decltype(arr[0])>;
-                if constexpr (tuple_contains<T, Accept>::value) {
+                if constexpr (variant_contains<T, Accept>::value) {
                     f(k, arr);
                 }
             }, arr);
         }
     }
 
-    template <class Accept = std::tuple<vec3f, float>, class F>
+    template <class Accept = std::variant<vec3f, float>, class F>
     void foreach_attr(F &&f) {
         for (auto &[key, arr]: attrs) {
             auto &k = key;
             std::visit([&] (auto &arr) {
                 using T = std::decay_t<decltype(arr[0])>;
-                if constexpr (tuple_contains<T, Accept>::value) {
+                if constexpr (variant_contains<T, Accept>::value) {
                     f(k, arr);
                 }
             }, arr);
@@ -153,28 +168,28 @@ struct AttrVector {
     }
 
 #ifdef ZENO_PARALLEL_STL
-    template <class Accept = std::tuple<vec3f, float>, class F, class Pol>
+    template <class Accept = std::variant<vec3f, float>, class F, class Pol>
     void foreach_attr(Pol pol, F &&f) const {
         std::for_each(pol, attrs.begin(), attrs.end(), [&] (auto &kv) {
             auto &[key, arr] = kv;
             auto &k = key;
             std::visit([&] (auto &arr) {
                 using T = std::decay_t<decltype(arr[0])>;
-                if constexpr (tuple_contains<T, Accept>::value) {
+                if constexpr (variant_contains<T, Accept>::value) {
                     f(k, arr);
                 }
             }, arr);
         });
     }
 
-    template <class Accept = std::tuple<vec3f, float>, class F, class Pol>
+    template <class Accept = std::variant<vec3f, float>, class F, class Pol>
     void foreach_attr(Pol pol, F &&f) {
         std::for_each(pol, attrs.begin(), attrs.end(), [&] (auto &kv) {
             auto &[key, arr] = kv;
             auto &k = key;
             std::visit([&] (auto &arr) {
                 using T = std::decay_t<decltype(arr[0])>;
-                if constexpr (tuple_contains<T, Accept>::value) {
+                if constexpr (variant_contains<T, Accept>::value) {
                     f(k, arr);
                 }
             }, arr);
@@ -182,7 +197,7 @@ struct AttrVector {
     }
 #endif
 
-    template <class Accept = std::tuple<vec3f, float>>
+    template <class Accept = std::variant<vec3f, float>>
     size_t num_attrs() const {
         if constexpr (std::is_void_v<Accept>) {
             return attrs.size();
@@ -195,11 +210,12 @@ struct AttrVector {
         }
     }
 
+    template <class Accept = std::variant<vec3f, float>>
     auto attr_keys() const {
         std::vector<std::string> keys;
-        for (auto const &[key, val]: attrs) {
+        foreach_attr<Accept>([&] (auto const &key, auto const &arr) {
             keys.push_back(key);
-        }
+        });
         return keys;
     }
 
@@ -238,6 +254,7 @@ struct AttrVector {
         return std::get<std::vector<T>>(arr);
     }
 
+    // deprecated:
     auto const &attr(std::string const &name) const {
         //this causes bug in primitive clip
         //reason: in primitiveClip, we will emplace back to attr by
@@ -253,6 +270,7 @@ struct AttrVector {
         return it->second;
     }
 
+    // deprecated:
     auto &attr(std::string const &name) {
         //_ensure_update();
         auto it = attrs.find(name);
