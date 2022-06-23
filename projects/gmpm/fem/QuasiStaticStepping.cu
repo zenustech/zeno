@@ -502,26 +502,35 @@ struct QuasiStaticStepping : INode {
     static dtiles_t etemp{eles.get_allocator(), {{"He", 12 * 12}/*,{"Hec",12*12}*/}, eles.size()};
     vtemp.resize(verts.size());
     etemp.resize(eles.size());
-
     FEMSystem A{verts,eles,(*zstets)[tag],zsbones->getParticles(),bone_driven_weight,volf};
 
     constexpr auto space = execspace_e::cuda;
     auto cudaPol = cuda_exec();
 
     // use the previous simulation result as initial guess
-    cudaPol(zs::range(vtemp.size()),
-              [vtemp = proxy<space>({},vtemp), verts = proxy<space>({},verts)]
-                  __device__(int i) mutable{
-                auto x = verts.pack<3>("x",i);
-                vtemp.tuple<3>("xtilde",i) = x;
-    });
+    // cudaPol(zs::range(vtemp.size()),
+    //           [vtemp = proxy<space>({},vtemp), verts = proxy<space>({},verts)]
+    //               __device__(int i) mutable{
+    //             auto x = verts.pack<3>("x",i);
+    //             vtemp.tuple<3>("xtilde",i) = x;
+    // });
 
-    cudaPol(zs::range(verts.size()),
-            [vtemp = proxy<space>({}, vtemp),
-             verts = proxy<space>({}, verts)] __device__(int vi) mutable {
-              auto x = verts.pack<3>("x", vi);
-              vtemp.tuple<3>("xn", vi) = x;
-            });
+    // use the initial guess if given
+    if(verts.hasProperty("init_x")){
+      cudaPol(zs::range(verts.size()),
+              [vtemp = proxy<space>({}, vtemp),
+              verts = proxy<space>({}, verts)] __device__(int vi) mutable {
+                auto x = verts.pack<3>("init_x", vi);
+                vtemp.tuple<3>("xn", vi) = x;
+              });      
+    }else{// use the previous simulation result
+      cudaPol(zs::range(verts.size()),
+              [vtemp = proxy<space>({}, vtemp),
+              verts = proxy<space>({}, verts)] __device__(int vi) mutable {
+                auto x = verts.pack<3>("x", vi);
+                vtemp.tuple<3>("xn", vi) = x;
+              });
+    }
 
     for(int newtonIter = 0;newtonIter != 1000;++newtonIter){
       cudaPol(zs::range(vtemp.size()),
@@ -530,7 +539,7 @@ struct QuasiStaticStepping : INode {
                 vtemp.tuple<3>("grad",i) = vec3{0,0,0};
       });
       // fmt::print("COMPUTE GRADIENT AND HESSIAN\n",newtonIter);
-    //   fmt::print("volf_density:{}\n",volf_density)
+      // fmt::print("volf_density:{}\n",volf_density);
       match([&](auto &elasticModel) {
         A.computeGradientAndHessian(cudaPol, elasticModel,"xn",vtemp,etemp);
       })(models.getElasticModel());
