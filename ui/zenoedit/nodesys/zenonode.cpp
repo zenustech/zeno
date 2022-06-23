@@ -905,7 +905,34 @@ void ZenoNode::onSocketsUpdate(bool bInput)
     else
     {
         OUTPUT_SOCKETS outputs = m_index.data(ROLE_OUTPUTS).value<OUTPUT_SOCKETS>();
-        //todo: it seems that there are not controls on outputsocket. if true, should update it.
+
+        QStringList coreKeys = outputs.keys();
+        QStringList uiKeys = m_outSockets.keys();
+        QSet<QString> coreNewSet = coreKeys.toSet().subtract(uiKeys.toSet());
+        QSet<QString> uiNewSet = uiKeys.toSet().subtract(coreKeys.toSet());
+        //detecting the rename case for "MakeDict".
+        if (coreNewSet.size() == 1 && uiNewSet.size() == 1 && m_index.data(ROLE_OBJNAME) == "ExtractDict") {
+            //rename.
+            QString oldName = *uiNewSet.begin();
+            QString newName = *coreNewSet.begin();
+            ZASSERT_EXIT(oldName != newName);
+
+            _socket_ctrl ctrl = m_outSockets[oldName];
+            ctrl.socket_text->setText(newName);
+
+            //have to reset the text format, which is trivial.
+            QTextFrame *frame = ctrl.socket_text->document()->rootFrame();
+            QTextFrameFormat format = frame->frameFormat();
+            format.setBackground(QColor(37, 37, 37));
+            frame->setFrameFormat(format);
+
+            m_outSockets[newName] = ctrl;
+            m_outSockets.remove(oldName);
+
+            updateWhole();
+            return;
+        }
+
         for (OUTPUT_SOCKET outSocket : outputs)
         {
             const QString& outSock = outSocket.info.name;

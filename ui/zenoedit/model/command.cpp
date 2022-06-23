@@ -260,5 +260,17 @@ void UpdateNotDescSockNameCommand::undo()
     revertInfo.bInput = m_info.bInput;
     revertInfo.newInfo = m_info.oldInfo;
     revertInfo.oldInfo = m_info.newInfo;
+    switch (m_info.updateWay)
+    {
+    case SOCKET_INSERT:
+        revertInfo.updateWay = SOCKET_REMOVE;
+        break;
+    case SOCKET_REMOVE:
+        revertInfo.updateWay = SOCKET_INSERT;
+        break;
+    default:
+        revertInfo.updateWay = m_info.updateWay;
+        break;
+    }
     m_pModel->updateSocketNameNotDesc(m_nodeid, revertInfo, m_subgIdx, false);
 }
