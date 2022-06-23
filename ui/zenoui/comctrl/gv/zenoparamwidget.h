@@ -263,6 +263,8 @@ protected:
     void hoverLeaveEvent(QGraphicsSceneHoverEvent *event) override;
 
 private:
+    void initAlignment(qreal textWidth);
+
     QString m_text;
     bool m_bRight;
 };

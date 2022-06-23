@@ -16,6 +16,7 @@ public:
     virtual void setViewRect(const QRectF& rc) = 0;
     virtual void setSocketKeys(const QString& id, const QStringList& keys) = 0;
     virtual void initSockets(const QString& id, const QString& name, const NODE_DESCS& legacyDescs) = 0;
+    virtual void addDictKey(const QString& id, const QString& keyName, bool bInput) = 0;
     virtual void setInputSocket(
         const QString& nodeCls,
         const QString& id,

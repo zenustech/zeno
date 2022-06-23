@@ -314,7 +314,9 @@ ZenoBackgroundWidget* ZenoNode::initBodyWidget(NODE_TYPE type)
     }
     if (QGraphicsLayout* pSocketsLayout = initSockets())
     {
-        pSocketsLayout->setContentsMargins(m_renderParams.distParam.paramsLPadding, m_renderParams.distParam.paramsToTopSocket, m_renderParams.distParam.paramsLPadding, 0);
+        pSocketsLayout->setContentsMargins(
+            m_renderParams.distParam.paramsLPadding, m_renderParams.distParam.paramsToTopSocket,
+            m_renderParams.distParam.paramsLPadding, m_renderParams.distParam.outSocketsBottomMargin);
         pVLayout->addItem(pSocketsLayout);
     }
 
@@ -903,7 +905,7 @@ void ZenoNode::onSocketsUpdate(bool bInput)
     else
     {
         OUTPUT_SOCKETS outputs = m_index.data(ROLE_OUTPUTS).value<OUTPUT_SOCKETS>();
-        //todo: it seems that there are controls on outputsocket. if true, should update it.
+        //todo: it seems that there are not controls on outputsocket. if true, should update it.
         for (OUTPUT_SOCKET outSocket : outputs)
         {
             const QString& outSock = outSocket.info.name;
@@ -911,13 +913,40 @@ void ZenoNode::onSocketsUpdate(bool bInput)
             {
                 _socket_ctrl sock;
                 sock.socket = new ZenoSocketItem(m_renderParams.socket, m_renderParams.szSocket, this);
-                sock.socket_text =
-                    new ZenoTextLayoutItem(outSock, m_renderParams.socketFont, m_renderParams.socketClr.color());
+                sock.socket_text = new ZenoTextLayoutItem(outSock, m_renderParams.socketFont, m_renderParams.socketClr.color());
                 sock.socket_text->setRight(true);
+
+                if (outSocket.info.control == CONTROL_DICTKEY)
+                {
+                    sock.socket_text->setTextInteractionFlags(Qt::TextEditorInteraction);
+
+                    QTextFrame *frame = sock.socket_text->document()->rootFrame();
+                    QTextFrameFormat format = frame->frameFormat();
+                    format.setBackground(QColor(37, 37, 37));
+                    frame->setFrameFormat(format);
+
+                    connect(sock.socket_text, &ZenoTextLayoutItem::contentsChanged, this, [=](QString oldText, QString newText) {
+                        IGraphsModel *pGraphsModel = zenoApp->graphsManagment()->currentModel();
+                        ZASSERT_EXIT(pGraphsModel);
+                        SOCKET_UPDATE_INFO info;
+                        info.bInput = false;
+                        info.newInfo.name = newText;
+                        info.oldInfo.name = oldText;
+                        info.updateWay = SOCKET_UPDATE_NAME;
+                        bool ret = pGraphsModel->updateSocketNameNotDesc(m_index.data(ROLE_OBJID).toString(), info, m_subGpIndex, true);
+                        if (!ret) {
+                            //todo: error hint.
+                            sock.socket_text->blockSignals(true);
+                            sock.socket_text->setText(oldText);
+                            sock.socket_text->blockSignals(false);
+                        }
+                    });
+                    sock.socket_control = nullptr;
+                }
+
                 m_outSockets[outSock] = sock;
 
                 QGraphicsLinearLayout *pMiniLayout = new QGraphicsLinearLayout(Qt::Horizontal);
-                pMiniLayout->addStretch();
                 pMiniLayout->addItem(sock.socket_text);
                 m_pOutSocketsLayout->addItem(pMiniLayout);
                 updateWhole();
@@ -1010,6 +1039,9 @@ QGraphicsLayout* ZenoNode::initSockets()
     onSocketsUpdate(false);
     m_pSocketsLayout->addItem(m_pInSocketsLayout);
     m_pSocketsLayout->addItem(m_pOutSocketsLayout);
+
+    qreal right, top, left, bottom;
+    m_pSocketsLayout->getContentsMargins(&left, &top, &right, &bottom);
     return m_pSocketsLayout;
 }
 

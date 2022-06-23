@@ -134,45 +134,6 @@ void ModelAcceptor::setViewRect(const QRectF& rc)
 	m_currentGraph->setViewRect(rc);
 }
 
-void ModelAcceptor::_initSockets(const QString& id, const QString& name, INPUT_SOCKETS& inputs, PARAMS_INFO& params, OUTPUT_SOCKETS& outputs)
-{
-	if (!m_currentGraph)
-		return;
-
-	if (name == "MakeDict")
-	{
-		const QStringList& socketKeys = m_currentGraph->data(m_currentGraph->index(id), ROLE_SOCKET_KEYS).toStringList();
-		for (const QString& key : socketKeys)
-		{
-			INPUT_SOCKET inputSock;
-			inputSock.info.name = key;
-			inputSock.info.nodeid = id;
-			inputSock.info.control = CONTROL_DICTKEY;
-			inputs[key] = inputSock;
-		}
-	}
-	else if (name == "MakeList")
-	{
-
-	}
-	else if (name == "ExtractList")
-	{
-		//todo: dynamic_sockets_is_output
-	}
-	else if (name == "MakeHeatmap")
-	{
-
-	}
-	else if (name == "MakeCurvemap")
-	{
-
-	}
-	else
-	{
-
-	}
-}
-
 void ModelAcceptor::initSockets(const QString& id, const QString& name, const NODE_DESCS& legacyDescs)
 {
 	if (!m_currentGraph)
@@ -233,8 +194,6 @@ void ModelAcceptor::initSockets(const QString& id, const QString& name, const NO
 		outputs[output.info.name] = output;
 	}
 
-	_initSockets(id, name, inputs, params, outputs);
-
 	QModelIndex idx = m_currentGraph->index(id);
 
 	m_currentGraph->setData(idx, QVariant::fromValue(inputs), ROLE_INPUTS);
@@ -246,7 +205,65 @@ void ModelAcceptor::setSocketKeys(const QString& id, const QStringList& keys)
 {
 	if (!m_currentGraph)
 		return;
-	m_currentGraph->setData(m_currentGraph->index(id), keys, ROLE_SOCKET_KEYS);
+
+	//legacy io formats.
+
+	//there is no info about whether the key belongs to input or output.
+	//have to classify by nodecls.
+	QModelIndex idx = m_currentGraph->index(id);
+    const QString& nodeName = idx.data(ROLE_OBJNAME).toString();
+	if (nodeName == "MakeDict")
+	{
+        INPUT_SOCKETS inputs = m_currentGraph->data(idx, ROLE_INPUTS).value<INPUT_SOCKETS>();
+		for (auto keyName : keys)
+		{
+            addDictKey(id, keyName, true);
+		}
+	}
+	else if (nodeName == "ExtractDict")
+	{
+        OUTPUT_SOCKETS outputs = m_currentGraph->data(idx, ROLE_OUTPUTS).value<OUTPUT_SOCKETS>();
+		for (auto keyName : keys)
+		{
+            addDictKey(id, keyName, false);
+		}
+	}
+}
+
+void ModelAcceptor::addDictKey(const QString& id, const QString& keyName, bool bInput)
+{
+    if (!m_currentGraph)
+        return;
+
+	QModelIndex idx = m_currentGraph->index(id);
+	if (bInput)
+	{
+        INPUT_SOCKETS inputs = m_currentGraph->data(idx, ROLE_INPUTS).value<INPUT_SOCKETS>();
+		if (inputs.find(keyName) == inputs.end())
+		{
+            INPUT_SOCKET inputSocket;
+			inputSocket.info.name = keyName;
+            inputSocket.info.nodeid = id;
+			inputSocket.info.control = CONTROL_DICTKEY;
+            inputSocket.info.type = "";
+			inputs[keyName] = inputSocket;
+            m_currentGraph->setData(idx, QVariant::fromValue(inputs), ROLE_INPUTS);
+		}
+	}
+	else
+	{
+        OUTPUT_SOCKETS outputs = m_currentGraph->data(idx, ROLE_OUTPUTS).value<OUTPUT_SOCKETS>();
+		if (outputs.find(keyName) == outputs.end())
+		{
+            OUTPUT_SOCKET outputSocket;
+			outputSocket.info.name = keyName;
+            outputSocket.info.nodeid = id;
+            outputSocket.info.control = CONTROL_DICTKEY;
+            outputSocket.info.type = "";
+            outputs[keyName] = outputSocket;
+            m_currentGraph->setData(idx, QVariant::fromValue(outputs), ROLE_OUTPUTS);
+		}
+	}
 }
 
 void ModelAcceptor::setInputSocket(

@@ -754,6 +754,21 @@ void GraphsModel::addNode(const NODE_DATA& nodeData, const QModelIndex& subGpIdx
                     nodeData2[ROLE_INPUTS] = QVariant::fromValue(inputs);
                 }
             }
+            else if (descName == "ExtractDict")
+            {
+                OUTPUT_SOCKETS outputs = nodeData2[ROLE_OUTPUTS].value<OUTPUT_SOCKETS>();
+                OUTPUT_SOCKET outSocket;
+
+                int maxObjId = UiHelper::getMaxObjId(outputs.keys());
+                if (maxObjId == -1)
+                {
+                    outSocket.info.name = "obj0";
+                    outSocket.info.control = CONTROL_DICTKEY;
+                    outputs.insert(outSocket.info.name, outSocket);
+                    nodeData2[ROLE_OUTPUTS] = QVariant::fromValue(outputs);
+                }
+            }
+
             pGraph->appendItem(nodeData2);
         }
 
@@ -1072,39 +1087,6 @@ QModelIndex GraphsModel::addLink(const EdgeInfo& info, const QModelIndex& subGpI
 
         AddLinkCommand* pCmd = new AddLinkCommand(info, this, subGpIdx);
         m_stack->push(pCmd);
-
-        SubGraphModel *pGraph = subGraph(subGpIdx.row());
-        ZASSERT_EXIT(pGraph, QModelIndex());
-        const QModelIndex &inIdx = pGraph->index(info.inputNode);
-        //todo: encapsulation when case grows.
-        const QString& objName = inIdx.data(ROLE_OBJNAME).toString();
-        if (objName == "MakeList" || objName == "MakeDict")
-        {
-            const INPUT_SOCKETS inputs = inIdx.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
-            QList<QString> lst = inputs.keys();
-            int maxObjId = UiHelper::getMaxObjId(lst);
-            if (maxObjId == -1)
-                maxObjId = 0;
-            QString maxObjSock = QString("obj%1").arg(maxObjId);
-            if (info.inputSock == maxObjSock)
-            {
-                //add a new
-                const QString &newObjName = QString("obj%1").arg(maxObjId + 1);
-                INPUT_SOCKET inSockObj;
-                inSockObj.info.name = newObjName;
-
-                //need transcation.
-                SOCKET_UPDATE_INFO sockUpdateinfo;
-                sockUpdateinfo.bInput = true;
-                sockUpdateinfo.updateWay = SOCKET_INSERT;
-                sockUpdateinfo.newInfo.name = newObjName;
-                if (objName == "MakeDict")
-                {
-                    sockUpdateinfo.newInfo.control = CONTROL_DICTKEY;
-                }
-                updateSocket(info.inputNode, sockUpdateinfo, subGpIdx, true);
-            }
-        }
         return QModelIndex();
     }
     else
@@ -1133,7 +1115,62 @@ QModelIndex GraphsModel::addLink(const EdgeInfo& info, const QModelIndex& subGpI
         outputs[info.outputSock].linkIndice.append(QPersistentModelIndex(linkIdx));
         pGraph->setData(inIdx, QVariant::fromValue(inputs), ROLE_INPUTS);
         pGraph->setData(outIdx, QVariant::fromValue(outputs), ROLE_OUTPUTS);
-        
+
+        //todo: encapsulation when case grows.
+        const QString& inNodeName = inIdx.data(ROLE_OBJNAME).toString();
+        const QString& outNodeName = outIdx.data(ROLE_OBJNAME).toString();
+        if (inNodeName == "MakeList" || inNodeName == "MakeDict")
+        {
+            const INPUT_SOCKETS _inputs = inIdx.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
+            QList<QString> lst = _inputs.keys();
+            int maxObjId = UiHelper::getMaxObjId(lst);
+            if (maxObjId == -1)
+                maxObjId = 0;
+            QString maxObjSock = QString("obj%1").arg(maxObjId);
+            if (info.inputSock == maxObjSock)
+            {
+                //add a new
+                const QString &newObjName = QString("obj%1").arg(maxObjId + 1);
+                INPUT_SOCKET inSockObj;
+                inSockObj.info.name = newObjName;
+
+                //need transcation.
+                SOCKET_UPDATE_INFO sockUpdateinfo;
+                sockUpdateinfo.bInput = true;
+                sockUpdateinfo.updateWay = SOCKET_INSERT;
+                sockUpdateinfo.newInfo.name = newObjName;
+                if (inNodeName == "MakeDict")
+                {
+                    sockUpdateinfo.newInfo.control = CONTROL_DICTKEY;
+                }
+                updateSocket(info.inputNode, sockUpdateinfo, subGpIdx, false);
+            }
+        }
+        if (outNodeName == "ExtractDict")
+        {
+            QList<QString> lst = outputs.keys();
+            int maxObjId = UiHelper::getMaxObjId(lst);
+            if (maxObjId == -1)
+                maxObjId = 0;
+            QString maxObjSock = QString("obj%1").arg(maxObjId);
+            if (info.outputSock == maxObjSock)
+            {
+                //add a new
+                const QString &newObjName = QString("obj%1").arg(maxObjId + 1);
+                OUTPUT_SOCKET outSockObj;
+                outSockObj.info.name = newObjName;
+
+                SOCKET_UPDATE_INFO sockUpdateinfo;
+                sockUpdateinfo.bInput = false;
+                sockUpdateinfo.updateWay = SOCKET_INSERT;
+                sockUpdateinfo.newInfo.name = newObjName;
+                if (outNodeName == "ExtractDict")
+                {
+                    sockUpdateinfo.newInfo.control = CONTROL_DICTKEY;
+                }
+                updateSocket(info.outputNode, sockUpdateinfo, subGpIdx, false);
+            }
+        }
         return linkIdx;
     }
 }
@@ -1344,6 +1381,27 @@ bool GraphsModel::updateSocketNameNotDesc(const QString& id, SOCKET_UPDATE_INFO 
 
                 inputs.remove(oldSockName);
                 pSubg->setData(idx, QVariant::fromValue(inputs), ROLE_INPUTS);
+                ret = true;
+            }
+
+            OUTPUT_SOCKETS outputs = pSubg->data(idx, ROLE_OUTPUTS).value<OUTPUT_SOCKETS>();
+            if (!info.bInput && newSockName != oldSockName && outputs.find(newSockName) == outputs.end())
+            {
+                OUTPUT_SOCKET& newOutput = outputs[newSockName];
+                const OUTPUT_SOCKET& oldOutput = outputs[oldSockName];
+                newOutput = oldOutput;
+                newOutput.info.name = newSockName;
+
+                //update all link connect with oldInfo
+                m_linkModel->blockSignals(true);
+                for (auto idx : oldOutput.linkIndice)
+                {
+                    m_linkModel->setData(idx, newSockName, ROLE_OUTSOCK);
+                }
+                m_linkModel->blockSignals(false);
+
+                outputs.remove(oldSockName);
+                pSubg->setData(idx, QVariant::fromValue(outputs), ROLE_OUTPUTS);
                 ret = true;
             }
         }

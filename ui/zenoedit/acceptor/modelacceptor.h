@@ -21,6 +21,7 @@ public:
 	void setViewRect(const QRectF& rc) override;
 	void setSocketKeys(const QString& id, const QStringList& keys) override;
 	void initSockets(const QString& id, const QString& name, const NODE_DESCS& descs) override;
+	void addDictKey(const QString& id, const QString& keyName, bool bInput) override;
 	void setInputSocket(const QString &nodeCls,
 		const QString &id,
 		const QString &inSock,
@@ -36,8 +37,6 @@ public:
 	QObject* currGraphObj() override;
 
 private:
-	void _initSockets(const QString& id, const QString& name, INPUT_SOCKETS& inputs, PARAMS_INFO& params, OUTPUT_SOCKETS& outputs);
-
 	SubGraphModel* m_currentGraph;
 	GraphsModel* m_pModel;
 	bool m_bImport;

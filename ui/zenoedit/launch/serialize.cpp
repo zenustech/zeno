@@ -40,7 +40,7 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
         const QModelIndex& idx = pGraphsModel->index(r, subgIdx);
         QString ident = idx.data(ROLE_OBJID).toString();
         ident = nameMangling(graphIdPrefix, ident);
-        QString name = idx.data(ROLE_OBJNAME).toString();
+        const QString& name = idx.data(ROLE_OBJNAME).toString();
 
 		int opts = idx.data(ROLE_OPTIONS).toInt();
         QString noOnceIdent;
@@ -148,6 +148,13 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
             }
             AddStringList({ "completeNode", ident }, writer);
             ident = noOnceIdent;//must before OPT_VIEW branch
+        }
+
+        for (OUTPUT_SOCKET output : outputs) {
+            //the output key of the dict has not descripted by the core, need to add it manually.
+            if (output.info.control == CONTROL_DICTKEY) {
+                AddStringList({"addNodeOutput", ident, output.info.name}, writer);
+            }     
         }
 
         AddStringList({ "completeNode", ident }, writer);

@@ -415,11 +415,38 @@ void ZenoTextLayoutItem::setGeometry(const QRectF& geom)
     prepareGeometryChange();
     QGraphicsLayoutItem::setGeometry(geom);
     setPos(geom.topLeft());
+    initAlignment(geom.width());
 }
 
 void ZenoTextLayoutItem::setRight(bool right)
 {
     m_bRight = right;
+}
+
+void ZenoTextLayoutItem::initAlignment(qreal textWidth)
+{
+    if (m_bRight)
+    {
+        QTextDocument *doc = document();
+
+        QTextCursor cursor = textCursor();
+        cursor.movePosition(QTextCursor::Start);
+
+        QTextFrame::iterator it;
+        QTextFrame *rootFrame = doc->rootFrame();
+        for (it = rootFrame->begin(); !(it.atEnd()); ++it)
+        {
+            QTextFrame *childFrame = it.currentFrame();
+            QTextBlock childBlock = it.currentBlock();
+            if (childBlock.isValid())
+            {
+                QTextBlockFormat format = childBlock.blockFormat();
+                format.setAlignment(Qt::AlignRight);
+                cursor.setBlockFormat(format);
+            }
+        }
+        doc->setTextWidth(textWidth);
+    }
 }
 
 void ZenoTextLayoutItem::setText(const QString& text)
@@ -436,20 +463,10 @@ QRectF ZenoTextLayoutItem::boundingRect() const
 
 void ZenoTextLayoutItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
 {
-    if (m_bRight)
-    {
-        QString text = toPlainText();
-        painter->setFont(this->font());
-        painter->setPen(QPen(this->defaultTextColor()));
-        painter->drawText(boundingRect(), Qt::AlignRight | Qt::AlignCenter, text);
-    }
-    else
-    {
-        QStyleOptionGraphicsItem myOption(*option);
-        myOption.state &= ~QStyle::State_Selected;
-        myOption.state &= ~QStyle::State_HasFocus;
-        QGraphicsTextItem::paint(painter, &myOption, widget);
-    }
+    QStyleOptionGraphicsItem myOption(*option);
+    myOption.state &= ~QStyle::State_Selected;
+    myOption.state &= ~QStyle::State_HasFocus;
+    QGraphicsTextItem::paint(painter, &myOption, widget);
 }
 
 QPainterPath ZenoTextLayoutItem::shape() const

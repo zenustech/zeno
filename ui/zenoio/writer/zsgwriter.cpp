@@ -95,11 +95,13 @@ void ZsgWriter::dumpNode(const NODE_DATA& data, RAPIDJSON_WRITER& writer)
 	const QString& name = data[ROLE_OBJNAME].toString();
 	writer.String(name.toLatin1());
 
+	const INPUT_SOCKETS& inputs = data[ROLE_INPUTS].value<INPUT_SOCKETS>();
+	const OUTPUT_SOCKETS& outputs = data[ROLE_OUTPUTS].value<OUTPUT_SOCKETS>();
+	const PARAMS_INFO& params = data[ROLE_PARAMETERS].value<PARAMS_INFO>();
+
 	writer.Key("inputs");
 	{
 		JsonObjBatch _batch(writer);
-
-		const INPUT_SOCKETS& inputs = data[ROLE_INPUTS].value<INPUT_SOCKETS>();
 		for (const INPUT_SOCKET& inSock : inputs)
 		{
 			writer.Key(inSock.info.name.toLatin1());
@@ -123,8 +125,6 @@ void ZsgWriter::dumpNode(const NODE_DATA& data, RAPIDJSON_WRITER& writer)
 	writer.Key("params");
 	{
 		JsonObjBatch _batch(writer);
-
-		const PARAMS_INFO& params = data[ROLE_PARAMETERS].value<PARAMS_INFO>();
 		for (const PARAM_INFO& info : params)
 		{
 			writer.Key(info.name.toLatin1());
@@ -180,11 +180,39 @@ void ZsgWriter::dumpNode(const NODE_DATA& data, RAPIDJSON_WRITER& writer)
 		AddStringList(options, writer);
 	}
 
-	QStringList socketKeys = data[ROLE_SOCKET_KEYS].value<QStringList>();
-	if (!socketKeys.isEmpty())
+	//dump custom keys in dictnode.
 	{
-		writer.Key("socket_keys");
-		AddStringList(socketKeys, writer);
+		QStringList inDictKeys, outDictKeys;
+		for (const INPUT_SOCKET& inSock : inputs) {
+			if (inSock.info.control == CONTROL_DICTKEY) {
+				inDictKeys.append(inSock.info.name);
+			}
+		}
+		for (const OUTPUT_SOCKET& outSock : outputs) {
+			if (outSock.info.control == CONTROL_DICTKEY) {
+				outDictKeys.append(outSock.info.name);
+			}
+		}
+		//replace socket_keys with dict_keys, which is more expressive.
+		if (!inDictKeys.isEmpty() || !outDictKeys.isEmpty())
+		{
+			writer.Key("dict_keys");
+			JsonObjBatch _batch(writer);
+
+            writer.Key("inputs");
+			writer.StartArray();
+			for (auto inSock : inDictKeys) {
+				writer.String(inSock.toUtf8());
+			}
+			writer.EndArray();
+
+			writer.Key("outputs");
+            writer.StartArray();
+			for (auto outSock : outDictKeys) {
+				writer.String(outSock.toUtf8());
+			}
+            writer.EndArray();
+		}
 	}
 
 	if (name == "Blackboard") {

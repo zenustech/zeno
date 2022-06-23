@@ -93,6 +93,11 @@ ZENO_API void Graph::setNodeInput(std::string const &id, std::string const &par,
     safe_at(nodes, id, "node name")->inputs[par] = val;
 }
 
+ZENO_API void Graph::addNodeOutput(std::string const& id, std::string const& par) {
+    // add "dynamic" output which is not descriped by core.
+    safe_at(nodes, id, "node name")->outputs[par] = nullptr;
+}
+
 ZENO_API std::unique_ptr<INode> Graph::getOverloadNode(std::string const &id,
         std::vector<std::shared_ptr<IObject>> const &inputs) const {
     auto node = session->getOverloadNode(id, inputs);

@@ -126,11 +126,6 @@ void ZsgReader::_parseNode(const QString& nodeid, const rapidjson::Value& nodeOb
         return;
     }
 
-    //socket_keys should be inited before socket init.
-    if (objValue.HasMember("socket_keys"))
-    {
-        _parseBySocketKeys(nodeid, objValue, pAcceptor);
-    }
     pAcceptor->initSockets(nodeid, name, legacyDescs);
 
     if (objValue.HasMember("inputs"))
@@ -160,15 +155,13 @@ void ZsgReader::_parseNode(const QString& nodeid, const rapidjson::Value& nodeOb
         }
         pAcceptor->setOptions(nodeid, options);
     }
+    if (objValue.HasMember("dict_keys"))
+    {
+        _parseDictKeys(nodeid, objValue["dict_keys"], pAcceptor);
+    }
     if (objValue.HasMember("socket_keys"))
     {
-        auto socket_keys = objValue["socket_keys"].GetArray();
-        QStringList socketKeys;
-        for (int i = 0; i < socket_keys.Size(); i++)
-        {
-            socketKeys.append(socket_keys[i].GetString());
-        }
-        pAcceptor->setSocketKeys(nodeid, socketKeys);
+        _parseBySocketKeys(nodeid, objValue, pAcceptor);
     }
     if (objValue.HasMember("color_ramps"))
     {
@@ -344,6 +337,25 @@ CurveModel* ZsgReader::_parseCurveModel(const rapidjson::Value& jsonCurve, QObje
         pModel->appendRow(pItem);
     }
     return pModel;
+}
+
+void ZsgReader::_parseDictKeys(const QString& id, const rapidjson::Value& objValue, IAcceptor* pAcceptor)
+{
+    ZASSERT_EXIT(objValue.HasMember("inputs") && objValue["inputs"].IsArray());
+    auto input_keys = objValue["inputs"].GetArray();
+    for (int i = 0; i < input_keys.Size(); i++)
+    {
+        QString key = input_keys[i].GetString();
+        pAcceptor->addDictKey(id, key, true);
+    }
+
+    ZASSERT_EXIT(objValue.HasMember("outputs") && objValue["outputs"].IsArray());
+    auto output_keys = objValue["outputs"].GetArray();
+    for (int i = 0; i < output_keys.Size(); i++)
+    {
+        QString key = output_keys[i].GetString();
+        pAcceptor->addDictKey(id, key, false);
+    }
 }
 
 void ZsgReader::_parseBySocketKeys(const QString& id, const rapidjson::Value& objValue, IAcceptor* pAcceptor)

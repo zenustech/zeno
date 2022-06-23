@@ -26,6 +26,7 @@ private:
     void _parseParams(const QString& id, const rapidjson::Value &jsonParams, IAcceptor* pAcceptor);
     void _parseColorRamps(const QString& id, const rapidjson::Value& jsonColorRamps, IAcceptor* pAcceptor);
     void _parseBySocketKeys(const QString& id, const rapidjson::Value& objValue, IAcceptor* pAcceptor);
+    void _parseDictKeys(const QString& id, const rapidjson::Value& objValue, IAcceptor* pAcceptor);
     QVariant _parseDefaultValue(const QString& val, const QString &type);
     static CurveModel* _parseCurveModel(const rapidjson::Value& jsonCurve, QObject* parentRef);
     NODE_DESCS _parseDescs(const rapidjson::Value& descs);

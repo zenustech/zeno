@@ -314,6 +314,7 @@ void SubGraphModel::updateSocket(const QString& nodeid, const SOCKET_UPDATE_INFO
     if (info.bInput)
     {
         QModelIndex idx = index(nodeid);
+        ZASSERT_EXIT(idx.isValid());
         INPUT_SOCKETS inputs = data(idx, ROLE_INPUTS).value<INPUT_SOCKETS>();
         const QString& oldName = info.oldInfo.name;
         const QString& newName = info.newInfo.name;
@@ -382,6 +383,7 @@ void SubGraphModel::updateSocket(const QString& nodeid, const SOCKET_UPDATE_INFO
     else
     {
         QModelIndex idx = index(nodeid);
+        ZASSERT_EXIT(idx.isValid());
         OUTPUT_SOCKETS outputs = data(idx, ROLE_OUTPUTS).value<OUTPUT_SOCKETS>();
         const QString& oldName = info.oldInfo.name;
         const QString& newName = info.newInfo.name;
