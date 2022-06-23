@@ -3,6 +3,8 @@
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/DictObject.h>
 #include <zeno/utils/variantswitch.h>
+#include <zeno/extra/GlobalState.h>
+#include <zeno/core/Graph.h>
 #include <zeno/VDBGrid.h>
 #include <zfx/zfx.h>
 #include <zfx/x64.h>
