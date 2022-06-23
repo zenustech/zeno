@@ -11,6 +11,7 @@
 #include <zfx/x64.h>
 #include <cassert>
 #include <vector>
+#include <cctype>
 #include "dbg_printf.h"
 
 namespace zeno {
@@ -61,6 +62,16 @@ struct NumericEval : zeno::INode {
         params->lut["F"] = objectFromLiterial(gs.frameid);
         params->lut["DT"] = objectFromLiterial(gs.frame_time);
         params->lut["T"] = objectFromLiterial(gs.frame_time * gs.frameid + gs.frame_time_elapsed);
+        for (auto const &[key, ref]: getThisGraph()->portalIns) {
+            if (auto i = code.find('$' + key); i != std::string::npos) {
+                i = i + key.size() + 1;
+                if (code.size() <= i || std::isalnum(code[i])) {
+                    auto res = getThisGraph()->callTempNode("PortalOut",
+                          {{"name:", objectFromLiterial(key)}}).at("port");
+                    params->lut[key] = std::move(res);
+                }
+            }
+        }
         std::vector<float> parvals;//存储$的值
         std::vector<std::pair<std::string, int>> parnames;//保存所以$的变量
         for (auto const &[key_, obj] : params->lut) {
