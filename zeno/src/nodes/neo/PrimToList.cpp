@@ -95,7 +95,7 @@ ZENO_DEFNODE(PrimToList)({
     {"primitive"},
 });
 
-struct PrimSetFromList : INode {
+struct PrimUpdateFromList : INode {
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
         auto lst = get_input<ListObject>("list");
@@ -143,7 +143,7 @@ struct PrimSetFromList : INode {
                 throw makeError("invalid type " + type);
             }
         } else {
-            auto fun = [&] (auto const &arr) {
+            auto fun = [&] (auto &arr) {
                 using T = std::decay_t<decltype(arr[0])>;
                 for (size_t i = 0; i < arr.size(); i++) {
                     arr[i] = objectToLiterial<T>(lst->arr[i]);
@@ -179,7 +179,7 @@ struct PrimSetFromList : INode {
     }
 };
 
-ZENO_DEFNODE(PrimSetFromList)({
+ZENO_DEFNODE(PrimUpdateFromList)({
     {
         {"prim"},
         {"list"},
