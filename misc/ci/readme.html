@@ -6,7 +6,8 @@
 
 <h1>安装方法</h1>
 <ul>
-<li>Windows: 下载后，把 zip 文件解压到一个目录，然后双击其中的 <code>000_start.bat</code> 这个文件，即可启动我们的程序。此外您也可以找到 <code>zenoedit.exe</code> 直接双击运行。</li>
+<li>首先根据您的平台和硬件下载对应的压缩包文件。例如 Windows，有英伟达显卡的用户，可以下载 <code>zeno-****.*.*-x86_64-windows-cuda.zip</code> 这个文件；如果没有英伟达显卡，则下载 <code>zeno-****.*.*-x86_64-windows-cpu.zip</code>。</li>
+<li>Windows: 下载后，把 zip 文件解压到一个目录，然后双击其中的 <code>000_start.bat</code> 这个文件，即可启动我们的程序。此外您也可以找到 <code>zenoedit.exe</code> 直接双击运行，或者将其“发送到桌面快捷方式”。</li>
 <li>Linux: 我们发布的二进制版支持 Ubuntu 18.04 以上的系统 (glibcxx &gt;= 3.4.26, glibc &gt;= 2.14)，否则请从<a href="https://github.com/zenustech/zeno">源码</a>构建。把下载的 tar.gz 文件解压到一个目录，然后在那个目录中运行命令 <code>bash 000_start.sh</code> 即可启动我们的程序。此外您也可以直接运行其中的 <code>usr/bin/zenoedit</code>。如果遇到没有执行权限的问题可以试试看 <code>chmod +x usr/bin/*</code>。</li>
 </ul>
 
@@ -37,9 +38,10 @@
 <li>至少 4 GB 内存</li>
 <li>至少 4 GB 空闲磁盘空间</li>
 <li>任意支持 OpenGL 3.2 的显卡</li>
-<li>... 或没有显卡</li>
-<li>没有 NVIDIA</li>
-<li>没有 CUDA</li>
+<li>... 或没有显卡（会自动切换为 CPU 软光栅渲染）</li>
+<li>提示：没有英伟达显卡，则应选择 cpu 版本的安装包下载。</li>
+<li>cpu 版具有完全相同节点，只不过会在 cpu 上相对更慢地运行（得益于 zpc 的多后端技术）。</li>
+<li>cpu 版没有 OptiX 实时光线追踪渲染器，但仍具有通用的 OpenGL 渲染器。</li>
 </ul>
 
 </body>
