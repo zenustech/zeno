@@ -33,12 +33,19 @@ static void numeric_eval (zfx::x64::Executable *exec,
     //
     // $F       current frame number (int, GetFrameNum)
     // $DT      delta-t of current graph (float, GetFrameTime)
-    // $TIME    time elapsed in total (float, GetFrameTime * GetFrameNum + GetFrameTimeElapsed)
+    // $T       time elapsed in total (float, GetFrameTime * GetFrameNum + GetFrameTimeElapsed)
     //
 struct NumericEval : zeno::INode {
     virtual void apply() override {
         auto code = get_input2<std::string>("zfxCode");
         auto type = get_input2<std::string>("resType");
+        if (type == "string") { // 转发给 se
+            auto se = getThisSession()->nodeClasses.at("StringEval")->new_instance();
+            se->inputs["zfxCode"] = objectFromLiterial(code);
+            se->doApply();
+            set_output("result", se->outputs.at("result"));
+            return;
+        }
         //auto code = get_params<>
         //一个模板函数，返回一个std::shared_ptr<T>，这里对这一个智能指针调用get()返回一个裸指针
        // auto op = get_param<std::string>("op_type");
@@ -53,7 +60,7 @@ struct NumericEval : zeno::INode {
         auto const &gs = *this->getGlobalState();
         params->lut["F"] = objectFromLiterial(gs.frameid);
         params->lut["DT"] = objectFromLiterial(gs.frame_time);
-        params->lut["TIME"] = objectFromLiterial(gs.frame_time * gs.frameid + gs.frame_time_elapsed);
+        params->lut["T"] = objectFromLiterial(gs.frame_time * gs.frameid + gs.frame_time_elapsed);
         std::vector<float> parvals;//存储$的值
         std::vector<std::pair<std::string, int>> parnames;//保存所以$的变量
         for (auto const &[key_, obj] : params->lut) {
@@ -171,7 +178,7 @@ struct NumericEval : zeno::INode {
                             /* inputs*/
                             {
                                  {"string", "zfxCode"},
-                                 {"enum float vec3f int", "resType"},
+                                 {"enum float vec3f int string", "resType"},
                             },
 
                             /*OutPut*/
