@@ -789,10 +789,19 @@ struct ToZSSurfaceMesh : INode {
             });
     auto seCnt = surfEdgeCnt.getVal();
     surfEdges.resize(seCnt);
+    // surface vert indices
+    auto &surfVerts = (*zstris)[ZenoParticles::s_surfVertTag];
+    surfVerts = typename ZenoParticles::particles_t({{"inds", 1}}, pos.size(),
+                                                    zs::memsrc_e::host);
+    ompExec(zs::range(pos.size()),
+            [&, surfVerts = proxy<space>({}, surfVerts)](int pointNo) mutable {
+              surfVerts("inds", pointNo) = zs::reinterpret_bits<float>(pointNo);
+            });
 
     pars = pars.clone({zs::memsrc_e::device, 0});
     eles = eles.clone({zs::memsrc_e::device, 0});
     surfEdges = surfEdges.clone({zs::memsrc_e::device, 0});
+    surfVerts = surfVerts.clone({zs::memsrc_e::device, 0});
 
     set_output("ZSParticles", std::move(zstris));
   }

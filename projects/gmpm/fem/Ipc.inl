@@ -1,7 +1,7 @@
 
 namespace zeno {
 
-void CodimStepping::FEMSystem::computeBarrierGradientAndHessian(
+void CodimStepping::IPCSystem::computeBarrierGradientAndHessian(
     zs::CudaExecutionPolicy &pol, const zs::SmallString &gTag) {
   using namespace zs;
   constexpr auto space = execspace_e::cuda;
@@ -11,10 +11,9 @@ void CodimStepping::FEMSystem::computeBarrierGradientAndHessian(
   using Vec6View = zs::vec_view<T, zs::integer_seq<int, 6>>;
   auto numPP = nPP.getVal();
   pol(range(numPP),
-      [verts = proxy<space>({}, verts), vtemp = proxy<space>({}, vtemp),
-       tempPP = proxy<space>({}, tempPP), PP = proxy<space>(PP), gTag,
-       xi2 = xi * xi, dHat = dHat, activeGap2, kappa = kappa,
-       projectDBC = projectDBC] __device__(int ppi) mutable {
+      [vtemp = proxy<space>({}, vtemp), tempPP = proxy<space>({}, tempPP),
+       PP = proxy<space>(PP), gTag, xi2 = xi * xi, dHat = dHat, activeGap2,
+       kappa = kappa, projectDBC = projectDBC] __device__(int ppi) mutable {
         auto pp = PP[ppi];
         auto x0 = vtemp.pack<3>("xn", pp[0]);
         auto x1 = vtemp.pack<3>("xn", pp[1]);
@@ -91,10 +90,9 @@ void CodimStepping::FEMSystem::computeBarrierGradientAndHessian(
       });
   auto numPE = nPE.getVal();
   pol(range(numPE),
-      [verts = proxy<space>({}, verts), vtemp = proxy<space>({}, vtemp),
-       tempPE = proxy<space>({}, tempPE), PE = proxy<space>(PE), gTag,
-       xi2 = xi * xi, dHat = dHat, activeGap2, kappa = kappa,
-       projectDBC = projectDBC] __device__(int pei) mutable {
+      [vtemp = proxy<space>({}, vtemp), tempPE = proxy<space>({}, tempPE),
+       PE = proxy<space>(PE), gTag, xi2 = xi * xi, dHat = dHat, activeGap2,
+       kappa = kappa, projectDBC = projectDBC] __device__(int pei) mutable {
         auto pe = PE[pei];
         auto p = vtemp.pack<3>("xn", pe[0]);
         auto e0 = vtemp.pack<3>("xn", pe[1]);
@@ -145,10 +143,9 @@ void CodimStepping::FEMSystem::computeBarrierGradientAndHessian(
       });
   auto numPT = nPT.getVal();
   pol(range(numPT),
-      [verts = proxy<space>({}, verts), vtemp = proxy<space>({}, vtemp),
-       tempPT = proxy<space>({}, tempPT), PT = proxy<space>(PT), gTag,
-       xi2 = xi * xi, dHat = dHat, activeGap2, kappa = kappa,
-       projectDBC = projectDBC] __device__(int pti) mutable {
+      [vtemp = proxy<space>({}, vtemp), tempPT = proxy<space>({}, tempPT),
+       PT = proxy<space>(PT), gTag, xi2 = xi * xi, dHat = dHat, activeGap2,
+       kappa = kappa, projectDBC = projectDBC] __device__(int pti) mutable {
         auto pt = PT[pti];
         auto p = vtemp.pack<3>("xn", pt[0]);
         auto t0 = vtemp.pack<3>("xn", pt[1]);
@@ -201,10 +198,9 @@ void CodimStepping::FEMSystem::computeBarrierGradientAndHessian(
       });
   auto numEE = nEE.getVal();
   pol(range(numEE),
-      [verts = proxy<space>({}, verts), vtemp = proxy<space>({}, vtemp),
-       tempEE = proxy<space>({}, tempEE), EE = proxy<space>(EE), gTag,
-       xi2 = xi * xi, dHat = dHat, activeGap2, kappa = kappa,
-       projectDBC = projectDBC] __device__(int eei) mutable {
+      [vtemp = proxy<space>({}, vtemp), tempEE = proxy<space>({}, tempEE),
+       EE = proxy<space>(EE), gTag, xi2 = xi * xi, dHat = dHat, activeGap2,
+       kappa = kappa, projectDBC = projectDBC] __device__(int eei) mutable {
         auto ee = EE[eei];
         auto ea0 = vtemp.pack<3>("xn", ee[0]);
         auto ea1 = vtemp.pack<3>("xn", ee[1]);
