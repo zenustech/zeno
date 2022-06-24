@@ -420,6 +420,11 @@ void ZenoSubGraphScene::mousePressEvent(QGraphicsSceneMouseEvent* event)
 			if (pSocket = qgraphicsitem_cast<ZenoSocketItem*>(item))
 				break;
 		}
+        if (m_tempLink && !pSocket)
+        {
+            pSocket = m_tempLink->getAdsorbedSocket();
+        }
+
 		if (!pSocket)
 		{
 			delete m_tempLink;
@@ -512,8 +517,55 @@ void ZenoSubGraphScene::mousePressEvent(QGraphicsSceneMouseEvent* event)
 
 void ZenoSubGraphScene::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
 {
-    if (m_tempLink) {
+    if (m_tempLink)
+    {
+        bool bFixedInput = false;
+        QString nodeId;
+        m_tempLink->getFixedInfo(nodeId, QString(), QPointF(), bFixedInput);
+
         QPointF pos = event->scenePos();
+        QList<QGraphicsItem*> catchedItems = items(pos);
+        QList<ZenoNode*> catchNodes;
+        for (QGraphicsItem* item : catchedItems)
+        {
+            if (ZenoNode* pNode = qgraphicsitem_cast<ZenoNode*>(item))
+            {
+                if (pNode->index().data(ROLE_OBJID).toString() != nodeId)
+                {
+                    catchNodes.append(pNode);
+                }
+            }
+        }
+        //adsorption
+        if (!catchNodes.isEmpty())
+        {
+            ZenoNode *pTarget = nullptr;
+            float minDist = std::numeric_limits<float>::max();
+            for (ZenoNode* pNode : catchNodes)
+            {
+                QPointF nodePos = pNode->sceneBoundingRect().center();
+                QPointF offset = nodePos - pos;
+                float dist = std::sqrt(offset.x() * offset.x() + offset.y() * offset.y());
+                if (dist < minDist)
+                {
+                    minDist = dist;
+                    pTarget = pNode;
+                }
+            }
+            ZASSERT_EXIT(pTarget);
+
+            minDist = std::numeric_limits<float>::max();
+
+            //find the min dist from socket to current pos.
+            ZenoSocketItem* pSocket = pTarget->getNearestSocket(pos, !bFixedInput);
+            if (pSocket) {
+                pos = pSocket->sceneBoundingRect().center();
+            }
+            m_tempLink->setAdsortedSocket(pSocket);
+        }
+        else {
+            m_tempLink->setAdsortedSocket(nullptr);
+        }
         m_tempLink->setFloatingPos(pos);
     }
     QGraphicsScene::mouseMoveEvent(event);

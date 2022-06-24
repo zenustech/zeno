@@ -6,6 +6,7 @@
 #include <zenoui/model/modeldata.h>
 
 class ZenoSubGraphScene;
+class ZenoSocketItem;
 
 class ZenoLink : public QGraphicsObject
 {
@@ -43,6 +44,8 @@ public:
     virtual QPointF getDstPos() const override;
     void setFloatingPos(QPointF pos);
     void getFixedInfo(QString& nodeId, QString& sockName, QPointF& fixedPos, bool& bFixedInput);
+    ZenoSocketItem* getAdsorbedSocket() const;
+    void setAdsortedSocket(ZenoSocketItem *pSocket);
 
 protected:
     void mouseMoveEvent(QGraphicsSceneMouseEvent *event) override;
@@ -56,6 +59,7 @@ private:
     QPointF m_floatingPos;
     SOCKET_INFO m_info;
     QPointF m_fixedPos;
+    ZenoSocketItem* m_adsortedSocket;
     bool m_bfixInput;
 };
 

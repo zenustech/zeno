@@ -55,7 +55,7 @@ void ZenoGraphsEditor::initUI()
     m_ui->treeviewBtn->setSize(szIcons, margins);
     m_ui->searchBtn->setSize(szIcons, margins);
 
-    m_ui->stackedWidget->setCurrentWidget(m_ui->subnetPage);
+    m_ui->stackedWidget->hide();
     m_ui->splitter->setStretchFactor(1, 5);
 
     m_ui->mainStackedWidget->setCurrentWidget(m_ui->welcomePage);
@@ -112,7 +112,7 @@ void ZenoGraphsEditor::initSignals()
     connect(m_ui->searchEdit, SIGNAL(textChanged(const QString&)), this, SLOT(onSearchEdited(const QString&)));
     connect(m_ui->searchResView, SIGNAL(clicked(const QModelIndex&)), this, SLOT(onSearchItemClicked(const QModelIndex&)));
 
-    m_selection->setCurrentIndex(m_sideBarModel->index(0, 0), QItemSelectionModel::SelectCurrent);
+    //m_selection->setCurrentIndex(m_sideBarModel->index(0, 0), QItemSelectionModel::SelectCurrent);
 }
 
 void ZenoGraphsEditor::initRecentFiles()

@@ -667,6 +667,7 @@ void ZenoNode::onSocketsUpdate(bool bInput)
                 //add socket
 
                 ZenoSocketItem *socket = new ZenoSocketItem(m_renderParams.socket, m_renderParams.szSocket, this);
+                socket->setIsInput(true);
                 socket->setZValue(ZVALUE_ELEMENT);
 
                 QGraphicsLinearLayout *pMiniLayout = new QGraphicsLinearLayout(Qt::Horizontal);
@@ -946,6 +947,7 @@ void ZenoNode::onSocketsUpdate(bool bInput)
             {
                 _socket_ctrl sock;
                 sock.socket = new ZenoSocketItem(m_renderParams.socket, m_renderParams.szSocket, this);
+                sock.socket->setIsInput(false);
                 sock.socket_text = new ZenoTextLayoutItem(outSock, m_renderParams.socketFont, m_renderParams.socketClr.color());
                 sock.socket_text->setRight(true);
 
@@ -1129,6 +1131,25 @@ void ZenoNode::markError(bool isError)
     else
         m_headerWidget->setColors(false, QColor(83, 96, 147), QColor(), QColor());
     update();
+}
+
+ZenoSocketItem* ZenoNode::getNearestSocket(const QPointF& pos, bool bInput)
+{
+    ZenoSocketItem* pItem = nullptr;
+    float minDist = std::numeric_limits<float>::max();
+    auto socks = bInput ? m_inSockets : m_outSockets;
+    for (_socket_ctrl ctrl : socks)
+    {
+        QPointF sockPos = ctrl.socket->sceneBoundingRect().center();
+        QPointF offset = sockPos - pos;
+        float dist = std::sqrt(offset.x() * offset.x() + offset.y() * offset.y());
+        if (dist < minDist)
+        {
+            minDist = dist;
+            pItem = ctrl.socket;
+        }
+    }
+    return pItem;
 }
 
 QPointF ZenoNode::getPortPos(bool bInput, const QString &portName)

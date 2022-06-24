@@ -69,6 +69,7 @@ ZenoTempLink::ZenoTempLink(QString nodeId, QString sockName, QPointF fixedPos, b
     , m_bfixInput(fixInput)
     , m_nodeId(nodeId)
     , m_sockName(sockName)
+    , m_adsortedSocket(nullptr)
 {
 }
 
@@ -94,6 +95,16 @@ void ZenoTempLink::getFixedInfo(QString& nodeId, QString& sockName, QPointF& fix
     fixedPos = m_fixedPos;
     bFixedInput = m_bfixInput;
     sockName = m_sockName;
+}
+
+ZenoSocketItem* ZenoTempLink::getAdsorbedSocket() const
+{
+    return m_adsortedSocket;
+}
+
+void ZenoTempLink::setAdsortedSocket(ZenoSocketItem* pSocket)
+{
+    m_adsortedSocket = pSocket;
 }
 
 int ZenoTempLink::type() const

@@ -14,12 +14,16 @@ public:
     enum { Type = ZTYPE_SOCKET };
     int type() const override;
     void setOffsetToName(const QPointF& offsetToName);
+    QRectF boundingRect() const override;
+    void setIsInput(bool left);
+    bool isInput() const;
 
 public slots:
     void socketNamePosition(const QPointF& nameScenePos);
 
 private:
     QPointF m_offsetToName;
+    bool m_bLeftSock;
 };
 
 #endif
