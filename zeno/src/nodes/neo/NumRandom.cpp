@@ -184,7 +184,6 @@ namespace {
 
 struct NumRandom : INode {
     virtual void apply() override {
-        auto prim = get_input<PrimitiveObject>("prim");
         auto dir = get_input2<vec3f>("dir");
         auto base = get_input2<float>("base");
         auto scale = get_input2<float>("scale");
@@ -197,8 +196,6 @@ struct NumRandom : INode {
 
 ZENDEFNODE(NumRandom, {
     {
-    {"PrimitiveObject", "prim"},
-    {"string", "attr", "pos"},
     {"vec3f", "dir", "0,0,1"},
     {"float", "base", "0"},
     {"float", "scale", "1"},
@@ -213,18 +210,18 @@ ZENDEFNODE(NumRandom, {
     {"numeric"},
 });
 
-struct NumRandomHash : INode {
+struct NumRandomSeedCombine : INode {
     virtual void apply() override {
         int x = get_input2<int>("x");
         int y = get_input2<int>("y");
         int z = get_input2<int>("z");
         int w = get_input2<int>("w");
         wangsrng rng(x, y, z, w);
-        set_output2("value", rng.next_int32());
+        set_output2("seed", rng.next_int32());
     }
 };
 
-ZENDEFNODE(NumRandomHash, {
+ZENDEFNODE(NumRandomSeedCombine, {
     {
     {"int", "x", "0"},
     {"int", "y", "0"},
@@ -232,7 +229,7 @@ ZENDEFNODE(NumRandomHash, {
     {"int", "w", "0"},
     },
     {
-    {"int", "value"},
+    {"int", "seed"},
     },
     {
     },
