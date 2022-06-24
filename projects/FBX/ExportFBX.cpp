@@ -22,9 +22,9 @@ struct ExportFBX : zeno::INode {
         zeno::log_info("----- FBX Path {}", fbxpath);
         zeno::log_info("----- OUT Path {}", outpath);
 
-        cihouWinPath(abcpath);
-        cihouWinPath(fbxpath);
-        cihouWinPath(outpath);
+        zeno::cihouWinPath(abcpath);
+        zeno::cihouWinPath(fbxpath);
+        zeno::cihouWinPath(outpath);
 
         //system("pwd");
 
