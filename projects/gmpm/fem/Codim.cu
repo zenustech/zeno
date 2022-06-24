@@ -565,7 +565,7 @@ struct CodimStepping : INode {
 
   inline static T kappaMax = 1e8;
   inline static T kappaMin = 1e4;
-  static constexpr T kappa0 = 1e4;
+  static constexpr T kappa0 = 1e3;
   inline static T kappa = kappa0;
   inline static T xi = 0; // 1e-2; // 2e-3;
   inline static T dHat = 0.005;
@@ -2337,7 +2337,6 @@ struct CodimStepping : INode {
                 });
       }
     }
-    puts("0");
     if (!zsboundary->hasImage(ZenoParticles::s_particleTag)) {
       auto &loVerts = zsboundary->getParticles();
       auto &verts = zsboundary->images[ZenoParticles::s_particleTag];
@@ -2354,7 +2353,6 @@ struct CodimStepping : INode {
                 }
               });
     }
-    puts("1");
     const dtiles_t &coVerts =
         zsboundary ? zsboundary->getParticles<true>() : dtiles_t{};
     const tiles_t &coEdges =
@@ -2580,8 +2578,12 @@ struct CodimStepping : INode {
                        iter, residualPreconditionedNorm, zTrk, npp, npe, npt,
                        nee, ncspt, ncsee);
           if (zTrk < 0) {
-            fmt::print("what the heck? zTrk: {} at iteration {}\n", zTrk, iter);
+            fmt::print("what the heck? zTrk: {} at iteration {}. switching to "
+                       "gradient descent ftm.\n",
+                       zTrk, iter);
+            useGD = true;
             getchar();
+            break;
           }
           if (residualPreconditionedNorm <= localTol)
             break;
@@ -2609,6 +2611,8 @@ struct CodimStepping : INode {
 
           residualPreconditionedNorm = std::sqrt(zTrk);
         } // end cg step
+        if (useGD == true)
+          continue;
       }
       // recover rotated solution
       cudaPol(Collapse{vtemp.size()},
