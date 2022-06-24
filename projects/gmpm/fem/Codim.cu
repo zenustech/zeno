@@ -2100,7 +2100,7 @@ struct CodimStepping : INode {
       if (coVerts.size())
         pol(zs::range(coVerts.size()),
             [vtemp = proxy<space>({}, vtemp),
-             verts = proxy<space>({}, const_cast<tiles_t &>(coVerts)),
+             verts = proxy<space>({}, const_cast<dtiles_t &>(coVerts)),
              coOffset = coOffset] __device__(int vi) mutable {
               auto newX = vtemp.pack<3>("xn", coOffset + vi);
               verts.tuple<3>("x", vi) = newX;
@@ -2109,7 +2109,7 @@ struct CodimStepping : INode {
             });
     }
 
-    IPCSystem(std::vector<ZenoParticles *> zsprims, const tiles_t &coVerts,
+    IPCSystem(std::vector<ZenoParticles *> zsprims, const dtiles_t &coVerts,
               const tiles_t &coEdges, const tiles_t &coEles, T dt,
               const ZenoConstitutiveModel &models)
         : coVerts{coVerts}, coEdges{coEdges}, coEles{coEles},
@@ -2209,7 +2209,7 @@ struct CodimStepping : INode {
     std::vector<PrimitiveHandle> prims;
 
     // (scripted) collision objects
-    const tiles_t &coVerts;
+    const dtiles_t &coVerts;
     const tiles_t &coEdges, &coEles;
     dtiles_t vtemp;
     // self contacts
@@ -2322,8 +2322,8 @@ struct CodimStepping : INode {
       if (!zstet->hasImage(ZenoParticles::s_particleTag)) {
         auto &loVerts = zstet->getParticles();
         auto &verts = zstet->images[ZenoParticles::s_particleTag];
-        verts = typename ZenoParticles::dtiles_t{loVerts.getPropertyTags(),
-                                                 loVerts.size()};
+        verts = typename ZenoParticles::dtiles_t{
+            loVerts.get_allocator(), loVerts.getPropertyTags(), loVerts.size()};
         cudaPol(range(verts.size()),
                 [loVerts = proxy<space>({}, loVerts),
                  verts = proxy<space>({}, verts)] __device__(int vi) mutable {
@@ -2337,8 +2337,26 @@ struct CodimStepping : INode {
                 });
       }
     }
-    const tiles_t &coVerts =
-        zsboundary ? zsboundary->getParticles() : tiles_t{};
+    puts("0");
+    if (!zsboundary->hasImage(ZenoParticles::s_particleTag)) {
+      auto &loVerts = zsboundary->getParticles();
+      auto &verts = zsboundary->images[ZenoParticles::s_particleTag];
+      verts = typename ZenoParticles::dtiles_t{
+          loVerts.get_allocator(), loVerts.getPropertyTags(), loVerts.size()};
+      cudaPol(range(verts.size()),
+              [loVerts = proxy<space>({}, loVerts),
+               verts = proxy<space>({}, verts)] __device__(int vi) mutable {
+                // make sure there are no "inds"-like properties in verts!
+                for (int propid = 0; propid != verts._N; ++propid) {
+                  auto propOffset = verts._tagOffsets[propid];
+                  for (int chn = 0; chn != verts._tagSizes[propid]; ++chn)
+                    verts(propOffset + chn, vi) = loVerts(propOffset + chn, vi);
+                }
+              });
+    }
+    puts("1");
+    const dtiles_t &coVerts =
+        zsboundary ? zsboundary->getParticles<true>() : dtiles_t{};
     const tiles_t &coEdges =
         zsboundary ? (*zsboundary)[ZenoParticles::s_surfEdgeTag] : tiles_t{};
     const tiles_t &coEles =
