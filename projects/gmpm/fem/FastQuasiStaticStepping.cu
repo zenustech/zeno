@@ -369,11 +369,68 @@ struct FastQuasiStaticStepping : INode {
     }
 
     template<typename Equation,typename Model>
-    constexpr void solve_equation_using_pcg(zs::CudaExecutionPolicy &cudaPol,Equation& A,Model& models,const zs::SmallString& btag,const zs::SmallString& xtag,const zs::SmallString& Ptag,dtiles_t& vtemp,
-            zs::SmallString Htag,dtiles_t& etemp) {
+    constexpr int solve_equation_using_pcg(zs::CudaExecutionPolicy &cudaPol,Equation& A,Model& models,const zs::SmallString& btag,const zs::SmallString& xtag,const zs::SmallString& Ptag,dtiles_t& vtemp,
+            zs::SmallString Htag,dtiles_t& etemp,T accuracy) {
         using namespace zs;
         constexpr auto space = execspace_e::cuda;
+        // set b = 0 outside the function call
+        // cudaPol(zs::range(vtemp.size()),[vtemp = proxy<space>({},vtemp)] ZS_LAMBDA(int vi) mutable {
+        //     vtemp.pack<3>("b",vi) = vec3::zeros();
+        // });
 
+        A.multiply(cudaPol,xtag,"temp","L",vtemp,etemp);
+        cudaPol(zs::range(vtemp.size()),[vtemp = proxy<space>({},vtemp)] ZS_LAMBDA(int vi) mutable {
+            vtemp.tuple<3>("r",vi) = vtemp.pack<3>("b",vi) - vtemp.pack<3>("temp",vi);
+        });
+        // no projection here
+        // A.project(cudaPol,"btag",verts,"r",vtemp);
+        A.precondition(cudaPol,"r","q",vtemp);
+        cudaPol(zs::range(vtemp.size()),
+            [vtemp = proxy<space>({},vtemp)] ZS_LAMBDA(int vi) mutable {
+                vtemp.tuple<3>("p",vi) = vtemp.pack<3>("q",vi);
+            });
+
+        T zTrk = dot(cudaPol,vtemp,"r","q");
+
+        auto residualPreconditionedNorm = std::sqrt(zTrk);
+        auto localTol = accuracy * residualPreconditionedNorm;
+        int iter = 0;
+        for(;iter != 1000;++iter){
+            if(residualPreconditionedNorm <= localTol){
+                fmt::print("finish with cg iter: {}, norm: {} zTrk: {}\n",iter,residualPreconditionedNorm,zTrk);
+                break;
+            }
+
+
+            A.multiply(cudaPol,"p","temp","L",vtemp,etemp);
+            T alpha = zTrk / dot(cudaPol,vtemp,"temp","p");
+
+            cudaPol(range(vtemp.size()), [vtemp = proxy<space>({},vtemp),alpha,xtag] ZS_LAMBDA(int vi) mutable {
+                vtemp.pack<3>(xtag, vi) += alpha * vtemp.pack<3>("p", vi);
+                vtemp.pack<3>("r", vi) -= alpha * vtemp.pack<3>("temp", vi);
+            });
+            if(iter % 51 == 50){
+                A.multiply(cudaPol,xtag,"temp","L",vtemp,etemp);
+                cudaPol(zs::range(vtemp.size()),
+                    [vtemp = proxy<space>({},vtemp),btag] ZS_LAMBDA(int vi) mutable {
+                        vtemp.pack<3>("r",vi) = vtemp.pack<3>(btag,vi) - vtemp.pack<3>("temp",vi);
+                    });
+            }   
+
+            A.precondition(cudaPol,"r","q",vtemp);
+            auto zTrkLast = zTrk;
+            zTrk = dot(cudaPol,vtemp,"q","r");
+            auto beta = zTrk / zTrkLast;
+
+            cudaPol(range(vtemp.size()), [vtemp = proxy<space>({}, vtemp),beta] ZS_LAMBDA(int vi) mutable {
+                vtemp("p", vi) = vtemp("q", vi) + beta * vtemp("p", vi);
+            });
+
+            residualPreconditionedNorm = std::sqrt(zTrk);
+            ++iter;
+        }
+
+        return iter;
     }
 
     static T reduce(zs::CudaExecutionPolicy &cudaPol, const zs::Vector<T> &res) {
@@ -603,10 +660,8 @@ struct FastQuasiStaticStepping : INode {
                                         vtemp("temp",i,vi) -= alpha * vtemp("y",(k % ws)*3 + i,vi);
                         });
                     }
-
                     // solve laplace equation using cg, do not have to be that accurate?
-                    solve_equation_using_pcg(cudaPol,A,models,"temp","dir","P",vtemp,"L",etemp);
-
+                    solve_equation_using_pcg(cudaPol,A,models,"temp","dir","P",vtemp,"L",etemp,cg_res);
                     // Loop 2
                     for(int i = 0;i < nm_corr;++i){
                         T beta = dot(cudaPol,vtemp,"y","dir",j) / m_ys[j];
