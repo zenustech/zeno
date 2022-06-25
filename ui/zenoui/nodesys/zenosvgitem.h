@@ -52,7 +52,6 @@ protected:
     void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
     void mouseReleaseEvent(QGraphicsSceneMouseEvent* event) override;
 
-private:
     QString m_normal;
     QString m_hovered;
     QString m_selected;

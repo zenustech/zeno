@@ -1030,6 +1030,7 @@ void ZenoNode::onSocketLinkChanged(const QString& sockName, bool bInput, bool bA
         if (m_inSockets.find(sockName) != m_inSockets.end())
         {
             m_inSockets[sockName].socket->toggle(bAdded);
+            m_inSockets[sockName].socket->setSockStatus(bAdded ? ZenoSocketItem::STATUS_CONNECTED : ZenoSocketItem::STATUS_NOCONN);
         }
 	}
 	else
@@ -1037,6 +1038,7 @@ void ZenoNode::onSocketLinkChanged(const QString& sockName, bool bInput, bool bA
         if (m_outSockets.find(sockName) != m_outSockets.end())
         {
             m_outSockets[sockName].socket->toggle(bAdded);
+            m_outSockets[sockName].socket->setSockStatus(bAdded ? ZenoSocketItem::STATUS_CONNECTED : ZenoSocketItem::STATUS_NOCONN);
         }
 	}
 }
@@ -1131,6 +1133,17 @@ void ZenoNode::markError(bool isError)
     else
         m_headerWidget->setColors(false, QColor(83, 96, 147), QColor(), QColor());
     update();
+}
+
+ZenoSocketItem* ZenoNode::getSocketItem(bool bInput, const QString& sockName)
+{
+    if (bInput) {
+        ZASSERT_EXIT(m_inSockets.find(sockName) != m_inSockets.end(), nullptr);
+        return m_inSockets[sockName].socket;
+    } else {
+        ZASSERT_EXIT(m_outSockets.find(sockName) != m_outSockets.end(), nullptr);
+        return m_outSockets[sockName].socket;
+    }
 }
 
 ZenoSocketItem* ZenoNode::getNearestSocket(const QPointF& pos, bool bInput)

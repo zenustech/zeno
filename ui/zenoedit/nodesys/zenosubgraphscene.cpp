@@ -88,7 +88,9 @@ void ZenoSubGraphScene::initModel(const QModelIndex& index)
                 addItem(pEdge);
                 m_links[linkId] = pEdge;
                 outNode->toggleSocket(false, outSock, true);
+                outNode->getSocketItem(false, outSock)->setSockStatus(ZenoSocketItem::STATUS_CONNECTED);
                 inNode->toggleSocket(true, inSock, true);
+                inNode->getSocketItem(true, inSock)->setSockStatus(ZenoSocketItem::STATUS_CONNECTED);
             }
         }
     }
@@ -453,12 +455,14 @@ void ZenoSubGraphScene::mousePressEvent(QGraphicsSceneMouseEvent* event)
 					pGraphsModel->removeLink(linkIdx, m_subgIdx, true);
 
 					socketPos = m_nodes[outNode]->getPortPos(false, outSock);
-					m_tempLink = new ZenoTempLink(outNode, outSock, socketPos, false);
+                    ZenoSocketItem* pSocketItem = m_nodes[outNode]->getSocketItem(false, outSock);
+                    m_tempLink = new ZenoTempLink(pSocketItem, outNode, outSock, socketPos, false);
 					addItem(m_tempLink);
 				}
 				else
 				{
-					m_tempLink = new ZenoTempLink(nodeid, sockName, socketPos, bInput);
+                    ZenoSocketItem* pSocketItem = m_nodes[nodeid]->getSocketItem(bInput, sockName);
+                    m_tempLink = new ZenoTempLink(pSocketItem, nodeid, sockName, socketPos, bInput);
 					addItem(m_tempLink);
 				}
 				return;

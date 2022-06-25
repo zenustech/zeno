@@ -2,6 +2,7 @@
 #include "zenosubgraphscene.h"
 #include <zenoui/nodesys/nodesys_common.h>
 #include <zenoui/render/common_id.h>
+#include <zenoui/comctrl/gv/zenosocketitem.h>
 
 
 ZenoLink::ZenoLink(QGraphicsItem *parent)
@@ -62,8 +63,9 @@ void ZenoLink::paint(QPainter* painter, QStyleOptionGraphicsItem const* styleOpt
 }
 
 
-ZenoTempLink::ZenoTempLink(QString nodeId, QString sockName, QPointF fixedPos, bool fixInput)
+ZenoTempLink::ZenoTempLink(ZenoSocketItem* socketItem, QString nodeId, QString sockName, QPointF fixedPos, bool fixInput)
     : ZenoLink(nullptr)
+    , m_fixedSocket(socketItem)
     , m_fixedPos(fixedPos)
     , m_floatingPos(fixedPos)
     , m_bfixInput(fixInput)
@@ -71,6 +73,12 @@ ZenoTempLink::ZenoTempLink(QString nodeId, QString sockName, QPointF fixedPos, b
     , m_sockName(sockName)
     , m_adsortedSocket(nullptr)
 {
+    m_fixedSocket->setSockStatus(ZenoSocketItem::STATUS_TRY_CONN);
+}
+
+ZenoTempLink::~ZenoTempLink()
+{
+    m_fixedSocket->setSockStatus(ZenoSocketItem::STATUS_TRY_DISCONN);
 }
 
 QPointF ZenoTempLink::getSrcPos() const
@@ -81,6 +89,19 @@ QPointF ZenoTempLink::getSrcPos() const
 QPointF ZenoTempLink::getDstPos() const
 {
     return m_bfixInput ? m_fixedPos : m_floatingPos;
+}
+
+void ZenoTempLink::paint(QPainter* painter, QStyleOptionGraphicsItem const* styleOptions, QWidget* widget)
+{
+    painter->save();
+    QPen pen;
+    pen.setColor(QColor(255,255,255));
+    pen.setWidthF(WIDTH);
+    painter->setRenderHint(QPainter::Antialiasing);
+    painter->setPen(pen);
+    painter->setBrush(Qt::NoBrush);
+    painter->drawPath(shape());
+    painter->restore();
 }
 
 void ZenoTempLink::setFloatingPos(QPointF pos)
@@ -102,9 +123,18 @@ ZenoSocketItem* ZenoTempLink::getAdsorbedSocket() const
     return m_adsortedSocket;
 }
 
+ZenoSocketItem* ZenoTempLink::getFixedSocket() const
+{
+    return m_fixedSocket;
+}
+
 void ZenoTempLink::setAdsortedSocket(ZenoSocketItem* pSocket)
 {
+    if (m_adsortedSocket)
+        m_adsortedSocket->setSockStatus(ZenoSocketItem::STATUS_TRY_DISCONN);
     m_adsortedSocket = pSocket;
+    if (m_adsortedSocket)
+        m_adsortedSocket->setSockStatus(ZenoSocketItem::STATUS_TRY_CONN);
 }
 
 int ZenoTempLink::type() const

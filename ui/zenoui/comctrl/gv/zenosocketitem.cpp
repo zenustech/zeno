@@ -5,8 +5,13 @@
 ZenoSocketItem::ZenoSocketItem(const ImageElement &elem, const QSizeF &sz, QGraphicsItem *parent)
     : ZenoImageItem(elem, sz, parent)
     , m_bLeftSock(false)
+    , m_status(STATUS_UNKNOWN)
+    , m_svgHover(nullptr)
+    , m_hoverSvg(elem.imageHovered)
+    , m_noHoverSvg(elem.image)
 {
     setCheckable(true);
+    setSockStatus(STATUS_NOCONN);
 }
 
 int ZenoSocketItem::type() const
@@ -48,4 +53,66 @@ void ZenoSocketItem::setIsInput(bool left)
 bool ZenoSocketItem::isInput() const
 {
     return m_bLeftSock;
+}
+
+void ZenoSocketItem::setSockStatus(SOCK_STATUS status)
+{
+    if (m_status == STATUS_CONNECTED && status != STATUS_NOCONN)
+        return;
+    if (m_status == status)
+        return;
+
+    m_status = status;
+    switch (m_status)
+    {
+    case STATUS_CONNECTED:
+        m_noHoverSvg = m_selected;
+        m_hoverSvg = ":/icons/socket-on-hover.svg";
+        delete m_svg;
+        m_svg = new ZenoSvgItem(m_noHoverSvg, this);
+        m_svg->setSize(m_size);
+        break;
+    case STATUS_TRY_CONN:
+        m_noHoverSvg = ":/icons/socket-on-hover.svg";
+        m_hoverSvg = ":/icons/socket-on-hover.svg";
+        delete m_svg;
+        m_svg = new ZenoSvgItem(m_noHoverSvg, this);
+        m_svg->setSize(m_size);
+        break;
+    case STATUS_TRY_DISCONN:
+    case STATUS_NOCONN:
+        m_noHoverSvg = m_normal;
+        m_hoverSvg = m_hoverSvg;
+        delete m_svg;
+        m_svg = new ZenoSvgItem(m_noHoverSvg, this);
+        m_svg->setSize(m_size);
+        break;
+    }
+    update();
+}
+
+void ZenoSocketItem::hoverEnterEvent(QGraphicsSceneHoverEvent* event)
+{
+    delete m_svg;
+    m_svg = new ZenoSvgItem(m_hoverSvg, this);
+    m_svg->setSize(m_size);
+    QGraphicsObject::hoverEnterEvent(event);
+}
+
+void ZenoSocketItem::hoverMoveEvent(QGraphicsSceneHoverEvent* event)
+{
+    QGraphicsObject::hoverMoveEvent(event);
+}
+
+void ZenoSocketItem::hoverLeaveEvent(QGraphicsSceneHoverEvent* event)
+{
+    delete m_svg;
+    m_svg = new ZenoSvgItem(m_noHoverSvg, this);
+    m_svg->setSize(m_size);
+    QGraphicsObject::hoverLeaveEvent(event);
+}
+
+void ZenoSocketItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
+{
+    ZenoImageItem::paint(painter, option, widget);
 }

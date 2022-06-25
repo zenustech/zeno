@@ -41,6 +41,7 @@ public:
     QPersistentModelIndex index() { return m_index; }
     QPointF getPortPos(bool bInput, const QString& portName);
     ZenoSocketItem* getNearestSocket(const QPointF& pos, bool bInput);
+    ZenoSocketItem* getSocketItem(bool bInput, const QString& sockName);
     void toggleSocket(bool bInput, const QString& sockName, bool bSelected);
     void markError(bool isError);
     void getSocketInfoByItem(ZenoSocketItem* pSocketItem, QString& sockName, QPointF& scenePos, bool& bInput, QPersistentModelIndex& linkIdx);

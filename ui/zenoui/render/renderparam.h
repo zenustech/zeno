@@ -20,6 +20,7 @@ struct ImageElement
 	QString image;
     QString imageHovered;
 	QString imageOn;
+    QString imageOnHovered;
     QRectF rc;
 };
 
