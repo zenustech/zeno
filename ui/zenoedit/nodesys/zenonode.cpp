@@ -658,16 +658,16 @@ void ZenoNode::onSocketsUpdate(bool bInput)
             return;
         }
 
-        for (INPUT_SOCKET inSocket : inputs)
+        for (const INPUT_SOCKET inSocket : inputs)
         {
             //copy from initSockets()
-            const QString &inSock = inSocket.info.name;
+            const QString& inSock = inSocket.info.name;
             if (m_inSockets.find(inSock) == m_inSockets.end())
             {
                 //add socket
 
                 ZenoSocketItem *socket = new ZenoSocketItem(m_renderParams.socket, m_renderParams.szSocket, this);
-                socket->setIsInput(true);
+                socket->setSocketInfo(m_index, true, inSocket.info);
                 socket->setZValue(ZVALUE_ELEMENT);
 
                 QGraphicsLinearLayout *pMiniLayout = new QGraphicsLinearLayout(Qt::Horizontal);
@@ -678,7 +678,6 @@ void ZenoNode::onSocketsUpdate(bool bInput)
 
                 _socket_ctrl socket_ctrl;
 
-                const INPUT_SOCKET &inSocket = inputs[inSock];
                 const QString &sockType = inSocket.info.type;
                 PARAM_CONTROL ctrl = inSocket.info.control;
 
@@ -947,7 +946,7 @@ void ZenoNode::onSocketsUpdate(bool bInput)
             {
                 _socket_ctrl sock;
                 sock.socket = new ZenoSocketItem(m_renderParams.socket, m_renderParams.szSocket, this);
-                sock.socket->setIsInput(false);
+                sock.socket->setSocketInfo(m_index, false, outSocket.info);
                 sock.socket_text = new ZenoTextLayoutItem(outSock, m_renderParams.socketFont, m_renderParams.socketClr.color());
                 sock.socket_text->setRight(true);
 

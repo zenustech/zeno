@@ -25,8 +25,7 @@ public:
     int type() const override;
     void setOffsetToName(const QPointF& offsetToName);
     QRectF boundingRect() const override;
-    void setIsInput(bool left);
-    bool isInput() const;
+    void setSocketInfo(QPersistentModelIndex index, bool input, SOCKET_INFO info);
     void setSockStatus(SOCK_STATUS status);
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget = 0) override;
 
@@ -39,12 +38,14 @@ protected:
     void hoverLeaveEvent(QGraphicsSceneHoverEvent *event) override;
 
 private:
+    QPersistentModelIndex m_index;
     QPointF m_offsetToName;
     SOCK_STATUS m_status;
+    SOCKET_INFO m_info;
     ZenoSvgItem* m_svgHover;
     QString m_noHoverSvg;
     QString m_hoverSvg;
-    bool m_bLeftSock;
+    bool m_bInput;
 };
 
 #endif
