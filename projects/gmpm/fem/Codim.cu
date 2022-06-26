@@ -304,9 +304,8 @@ constexpr bool pt_ccd(VecT p, VecT t0, VecT t1, VecT t2, VecT dp, VecT dt0,
   // tmin, tmax
   auto [numSols, ts] = solve_quadratic(zs::vec<T, 3>{C, 2 * B, 3 * A});
   if (numSols != 2) {
-    printf(
-        "\n\n\n\n\nstrangely no local minima & maxima during ccd!\n\n\n\n\n");
-    return false;
+    // no local minima & maxima
+    return pt_accd(p, t0, t1, t2, dp, dt0, dt1, dt2, 0.1, thickness, toc);
   }
   // ensure ts[0] < ts[1]
   auto d = [&A = A, &B = B, &C = C, &D = D](T t) {
@@ -466,6 +465,11 @@ constexpr bool ee_ccd(VecT ea0, VecT ea1, VecT eb0, VecT eb1, VecT dea0,
     return false;
   // tmin, tmax
   auto [numSols, ts] = solve_quadratic(zs::vec<T, 3>{C, 2 * B, 3 * A});
+  if (numSols != 2) {
+    // no local minima & maxima
+    return ee_accd(ea0, ea1, eb0, eb1, dea0, dea1, deb0, deb1, 0.1, thickness,
+                   toc);
+  }
   auto d = [&A = A, &B = B, &C = C, &D = D](T t) {
     auto t2 = t * 2;
     return A * t2 * t + B * t2 + C * t + D;
@@ -563,12 +567,15 @@ struct CodimStepping : INode {
   static constexpr bool s_enableAdaptiveSetting = false;
   static constexpr bool s_enableContact = true;
 
+  inline static T augLagCoeff = 1e4;
+  inline static T cgRel = 1e-2;
+  inline static T pnRel = 1e-2;
   inline static T kappaMax = 1e8;
   inline static T kappaMin = 1e4;
-  static constexpr T kappa0 = 1e3;
+  inline static T kappa0 = 1e4;
   inline static T kappa = kappa0;
   inline static T xi = 0; // 1e-2; // 2e-3;
-  inline static T dHat = 0.005;
+  inline static T dHat = 0.0025;
   inline static vec3 extForce;
 
   template <typename T> static inline T computeHb(const T d2, const T dHat2) {
@@ -2031,7 +2038,8 @@ struct CodimStepping : INode {
       }
       pol(Collapse(coVerts.size()),
           [vtemp = proxy<space>({}, vtemp), coverts = proxy<space>({}, coVerts),
-           coOffset = coOffset, dt = dt] __device__(int i) mutable {
+           coOffset = coOffset, dt = dt,
+           augLagCoeff = augLagCoeff] __device__(int i) mutable {
             auto x = coverts.pack<3>("x", i);
             auto v = coverts.pack<3>("v", i);
             vtemp("BCorder", coOffset + i) = 3;
@@ -2041,7 +2049,7 @@ struct CodimStepping : INode {
 
             vtemp.tuple<3>("xtilde", coOffset + i) = x + v * dt;
             // vtemp("ws", coOffset + i) = zs::sqrt(coverts("m", i) * 1e3);
-            vtemp("ws", coOffset + i) = zs::sqrt(coverts("m", i) * 1e3);
+            vtemp("ws", coOffset + i) = zs::sqrt(coverts("m", i) * augLagCoeff);
             vtemp.tuple<3>("lambda", coOffset + i) = vec3::zeros();
             vtemp.tuple<3>("xn", coOffset + i) = x;
             vtemp.tuple<3>("xt", coOffset + i) = x;
@@ -2262,6 +2270,20 @@ struct CodimStepping : INode {
       zsboundary = get_input<ZenoParticles>("ZSBoundaryPrimitives");
     auto models = zstets[0]->getModel();
     auto dt = get_input2<float>("dt");
+
+    /// solver parameters
+    auto input_dHat = get_input2<float>("dHat");
+    auto input_kappa0 = get_input2<float>("kappa0");
+    auto input_aug_coeff = get_input2<float>("aug_coeff");
+    auto input_pn_rel = get_input2<float>("pn_rel");
+    auto input_cg_rel = get_input2<float>("cg_rel");
+    auto input_gravity = get_input2<float>("gravity");
+
+    kappa0 = input_kappa0;
+    augLagCoeff = input_aug_coeff;
+    pnRel = input_pn_rel;
+    cgRel = input_cg_rel;
+
     /// if there are no high precision verts, init from the low precision one
     for (auto zstet : zstets) {
       if (!zstet->hasImage(ZenoParticles::s_particleTag)) {
@@ -2313,12 +2335,14 @@ struct CodimStepping : INode {
     dtiles_t &vtemp = A.vtemp;
 
     /// time integrator
-    extForce = vec3{0, -9, 0};
+    dHat = input_dHat;
+    extForce = vec3{0, input_gravity, 0};
+    kappa = kappa0;
+    targetGRes = pnRel;
+
     projectDBC = false;
     BCsatisfied = false;
-    kappa = kappa0;
     useGD = false;
-    targetGRes = 1e-2;
 
     if constexpr (s_enableAdaptiveSetting) {
       A.updateWholeBoundingBoxSize(cudaPol);
@@ -2495,7 +2519,7 @@ struct CodimStepping : INode {
                 });
         T zTrk = dot(cudaPol, vtemp, "r", "q");
         auto residualPreconditionedNorm = std::sqrt(zTrk);
-        auto localTol = 1e-2 * residualPreconditionedNorm;
+        auto localTol = cgRel * residualPreconditionedNorm;
         int iter = 0;
         for (; iter != 10000; ++iter) {
           if (iter % 10 == 0)
@@ -2673,11 +2697,20 @@ struct CodimStepping : INode {
   }
 };
 
-ZENDEFNODE(CodimStepping,
-           {{"ZSParticles", "ZSBoundaryPrimitives", {"float", "dt", "0.01"}},
-            {"ZSParticles"},
-            {},
-            {"FEM"}});
+ZENDEFNODE(CodimStepping, {{
+                               "ZSParticles",
+                               "ZSBoundaryPrimitives",
+                               {"float", "dt", "0.01"},
+                               {"float", "dHat", "0.005"},
+                               {"float", "kappa0", "1e3"},
+                               {"float", "aug_coeff", "1e3"},
+                               {"float", "pn_rel", "0.01"},
+                               {"float", "cg_rel", "0.01"},
+                               {"float", "gravity", "-9."},
+                           },
+                           {"ZSParticles"},
+                           {},
+                           {"FEM"}});
 
 } // namespace zeno
 
