@@ -567,6 +567,7 @@ struct CodimStepping : INode {
   static constexpr bool s_enableAdaptiveSetting = false;
   static constexpr bool s_enableContact = true;
 
+  inline static std::size_t estNumCps = 1000000;
   inline static T augLagCoeff = 1e4;
   inline static T cgRel = 1e-2;
   inline static T pnRel = 1e-2;
@@ -2204,28 +2205,23 @@ struct CodimStepping : INode {
               const tiles_t &coEdges, const tiles_t &coEles, T dt,
               const ZenoConstitutiveModel &models)
         : coVerts{coVerts}, coEdges{coEdges}, coEles{coEles},
-          PP{zsprims[0]->getParticles<true>().get_allocator(), 100000},
+          PP{estNumCps, zs::memsrc_e::um, 0},
           nPP{zsprims[0]->getParticles<true>().get_allocator(), 1},
-          tempPP{PP.get_allocator(),
-                 {{"H", 36}, {"inds_pre", 2}, {"dist2_pre", 1}},
-                 100000},
-          PE{zsprims[0]->getParticles<true>().get_allocator(), 100000},
+          tempPP{{{"H", 36}}, //, {"inds_pre", 2}, {"dist2_pre", 1}
+                 estNumCps,
+                 zs::memsrc_e::um,
+                 0},
+          PE{estNumCps, zs::memsrc_e::um, 0},
           nPE{zsprims[0]->getParticles<true>().get_allocator(), 1},
-          tempPE{PE.get_allocator(),
-                 {{"H", 81}, {"inds_pre", 3}, {"dist2_pre", 1}},
-                 100000},
-          PT{zsprims[0]->getParticles<true>().get_allocator(), 100000},
+          tempPE{{{"H", 81}}, estNumCps, zs::memsrc_e::um, 0},
+          PT{estNumCps, zs::memsrc_e::um, 0},
           nPT{zsprims[0]->getParticles<true>().get_allocator(), 1},
-          tempPT{PT.get_allocator(),
-                 {{"H", 144}, {"inds_pre", 4}, {"dist2_pre", 1}},
-                 100000},
-          EE{zsprims[0]->getParticles<true>().get_allocator(), 100000},
+          tempPT{{{"H", 144}}, estNumCps, zs::memsrc_e::um, 0},
+          EE{estNumCps, zs::memsrc_e::um, 0},
           nEE{zsprims[0]->getParticles<true>().get_allocator(), 1},
-          tempEE{EE.get_allocator(),
-                 {{"H", 144}, {"inds_pre", 4}, {"dist2_pre", 1}},
-                 100000},
-          csPT{zsprims[0]->getParticles<true>().get_allocator(), 100000},
-          csEE{zsprims[0]->getParticles<true>().get_allocator(), 100000},
+          tempEE{{{"H", 144}}, estNumCps, zs::memsrc_e::um, 0},
+          csPT{estNumCps, zs::memsrc_e::um, 0}, csEE{estNumCps,
+                                                     zs::memsrc_e::um, 0},
           ncsPT{zsprims[0]->getParticles<true>().get_allocator(), 1},
           ncsEE{zsprims[0]->getParticles<true>().get_allocator(), 1}, dt{dt},
           models{models} {
@@ -2397,6 +2393,7 @@ struct CodimStepping : INode {
     auto dt = get_input2<float>("dt");
 
     /// solver parameters
+    auto input_est_num_cps = get_input2<int>("est_num_cps");
     auto input_dHat = get_input2<float>("dHat");
     auto input_kappa0 = get_input2<float>("kappa0");
     auto input_aug_coeff = get_input2<float>("aug_coeff");
@@ -2456,6 +2453,10 @@ struct CodimStepping : INode {
 
     auto coOffset = A.coOffset;
     auto numDofs = A.numDofs;
+
+    estNumCps = input_est_num_cps > 0
+                    ? input_est_num_cps // if specified, overwrite
+                    : std::max(numDofs * 4, estNumCps);
 
     dtiles_t &vtemp = A.vtemp;
 
@@ -2840,6 +2841,7 @@ struct CodimStepping : INode {
 ZENDEFNODE(CodimStepping, {{
                                "ZSParticles",
                                "ZSBoundaryPrimitives",
+                               {"int", "est_num_cps", "0"},
                                {"float", "dt", "0.01"},
                                {"float", "dHat", "0.005"},
                                {"float", "kappa0", "1e3"},
