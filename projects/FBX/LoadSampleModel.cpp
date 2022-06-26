@@ -10,9 +10,9 @@ struct LoadSampleModel : INode {
     virtual void apply() override {
         auto name = get_input2<std::string>("name");
         set_output("prim", getThisGraph()->callTempNode("ReadObjPrim", {
-            {"triangulate", get_input2<bool>("triangulate")},
-            {"decodeUVs", get_input2<bool>("decodeUVs")},
-            {"path", getAssetDir(MODELS_DIR, name + ".obj")},
+            {"triangulate", objectFromLiterial(get_input2<bool>("triangulate"))},
+            {"decodeUVs", objectFromLiterial(get_input2<bool>("decodeUVs"))},
+            {"path", objectFromLiterial(getAssetDir(MODELS_DIR, name + ".obj"))},
         }).at("prim"));
     }
 };
@@ -23,6 +23,9 @@ ZENO_DEFNODE(LoadSampleModel)({
         {"bool", "decodeUVs", "1"},
         {"enum cube monkey sphere humannose Pig_Head temple", "name", "cube"},
     },
+    {"prim"},
+    {},
+    {"primitive"},
 });
 
 }
