@@ -1,3 +1,4 @@
 #pragma once
 
 #define DEM_DIR "@DEM_DIR@"
+#define MODELS_DIR "@MODELS_DIR@"
