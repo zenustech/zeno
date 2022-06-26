@@ -67,8 +67,9 @@ class iterator_facade_forward : public iterator_facade_base
     using self_type = Derived;
 
 public:
-    void operator++() {
+    self_type &operator++() {
         this->self().increment();
+        return this->self();
     }
 
     self_type operator++(int) {
@@ -119,6 +120,7 @@ class iterator_facade_bidirectional : public iterator_facade_forward
 public:
     self_type &operator--() {
         this->self().decrement();
+        return this->self();
     }
 
     self_type operator--(int) {
@@ -157,13 +159,13 @@ public:
 
     self_type operator+(Difference n) const {
         auto tmp = this->self();
-        tmp += n;
+        tmp.advance(+n);
         return tmp;
     }
 
     self_type operator-(Difference n) const {
         auto tmp = this->self();
-        tmp -= n;
+        tmp.advance(-n);
         return tmp;
     }
 
@@ -185,6 +187,12 @@ public:
 
     friend bool operator>=(self_type const &lhs, self_type const &rhs) {
         return (lhs - rhs) >= 0;
+    }
+
+    decltype(auto) operator[](Difference n) const {
+        auto tmp = this->self();
+        tmp.advance(n);
+        return tmp.dereference();
     }
 };
 
