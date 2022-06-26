@@ -10,8 +10,8 @@ struct LoadSampleModel : INode {
     virtual void apply() override {
         auto name = get_input2<std::string>("name");
         set_output("prim", getThisGraph()->callTempNode("ReadObjPrim", {
-            {"triangulate", objectFromLiterial(get_input2<bool>("triangulate"))},
-            {"decodeUVs", objectFromLiterial(get_input2<bool>("decodeUVs"))},
+            {"triangulate:", objectFromLiterial(get_input2<bool>("triangulate"))},
+            {"decodeUVs:", objectFromLiterial(get_input2<bool>("decodeUVs"))},
             {"path", objectFromLiterial(getAssetDir(MODELS_DIR, name + ".obj"))},
         }).at("prim"));
     }
