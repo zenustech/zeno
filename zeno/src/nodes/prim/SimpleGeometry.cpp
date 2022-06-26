@@ -255,48 +255,6 @@ ZENDEFNODE(CreateCube, {
     {"create"},
 });
 
-struct CreateCone : zeno::INode {
-    virtual void apply() override {
-        auto prim = std::make_shared<zeno::PrimitiveObject>();
-        auto position = get_input2<zeno::vec3f>("position");
-        auto scaleSize = get_input2<zeno::vec3f>("scaleSize");
-        auto radius = get_input2<float>("radius");
-        auto height = get_input2<float>("height");
-        auto lons = get_input2<int>("lons");
-
-        auto &pos = prim->verts;
-        for (size_t i = 0; i < lons; i++) {
-            float rad = 2 * M_PI * i / lons;
-            pos.push_back(vec3f(cos(rad) * radius, -0.5 * height, -sin(rad) * radius) * scaleSize + position);
-        }
-        // top
-        pos.push_back(vec3f(0, 0.5 * height, 0) * scaleSize + position);
-        // bottom
-        pos.push_back(vec3f(0, -0.5 * height, 0) * scaleSize + position);
-
-        auto &tris = prim->tris;
-        for (size_t i = 0; i < lons; i++) {
-            tris.push_back(vec3i(lons, i, (i + 1) % lons));
-            tris.push_back(vec3i(i, lons + 1, (i + 1) % lons));
-        }
-
-        set_output("prim", std::move(prim));
-    }
-};
-
-ZENDEFNODE(CreateCone, {
-    {
-        {"vec3f", "position", "0, 0, 0"},
-        {"vec3f", "scaleSize", "1, 1, 1"},
-        {"float", "radius", "1"},
-        {"float", "height", "2"},
-        {"int", "lons", "32"},
-    },
-    {"prim"},
-    {},
-    {"create"},
-});
-
 struct CreateDisk : zeno::INode {
     virtual void apply() override {
         auto prim = std::make_shared<zeno::PrimitiveObject>();
@@ -479,57 +437,208 @@ ZENDEFNODE(CreatePlane, {
     {"create"},
 });
 
-struct CreateCylinder : zeno::INode {
+struct CreateTube : zeno::INode {
     virtual void apply() override {
         auto prim = std::make_shared<zeno::PrimitiveObject>();
 
         auto position = get_input2<zeno::vec3f>("position");
-        auto scaleSize = get_input2<zeno::vec3f>("scaleSize");
-        auto radius = get_input2<float>("radius");
+        auto scale = get_input2<zeno::vec3f>("scaleSize");
+        auto radius = get_input2<zeno::vec3f>("radius");
         auto height = get_input2<float>("height");
-        auto lons = get_input2<int>("lons");
+        auto rows = get_input2<int>("rows");
+        auto columns = get_input2<int>("columns");
+        ROTATE_MATRIX
 
-        auto &pos = prim->verts;
-        for (size_t i = 0; i < lons; i++) {
-            float rad = 2 * M_PI * i / lons;
-            pos.push_back(vec3f(cos(rad) * radius, 0.5 * height, -sin(rad) * radius) * scaleSize + position);
-        }
-        for (size_t i = 0; i < lons; i++) {
-            float rad = 2 * M_PI * i / lons;
-            pos.push_back(vec3f(cos(rad) * radius, -0.5 * height, -sin(rad) * radius) * scaleSize + position);
-        }
-        pos.push_back(vec3f(0, 0.5 * height, 0) * scaleSize + position);
-        pos.push_back(vec3f(0, -0.5 * height, 0) * scaleSize + position);
+        auto &verts = prim->verts;
+        auto &indis = prim->tris;
+        auto &uvs = prim->verts.add_attr<zeno::vec3f>("uv");
+        auto &normal = prim->verts.add_attr<zeno::vec3f>("nrm");
 
-        auto &tris = prim->tris;
-        // Top
-        for (size_t i = 0; i < lons; i++) {
-            tris.push_back(vec3i(lons * 2, i, (i + 1) % lons));
+        if(rows <= 2)
+            rows = 2;
+        if(columns <= 3)
+            columns = 3;
+
+        std::vector<zeno::vec3f> mverts;
+        std::vector<int> svi;
+        std::vector<int> cvi;
+
+        float hs = height/2.0;
+        float hm = height / 1.0/(rows-1);
+
+        verts.emplace_back(0,hs,0);
+        normal.emplace_back(0,1,0);
+        uvs.emplace_back(0.5, 0.85, 0);
+        for (int i = 0; i < columns; i++) {
+            float rad = 2 * M_PI * i / columns;
+            float x = cos(rad);
+            float z = -sin(rad);
+            float of = 0.125;
+            auto p1 = zeno::vec3f(x*radius[0], hs, z*radius[0]);
+            auto p2 = zeno::vec3f(x*radius[1], -hs, z*radius[1]);
+            auto n1 = zeno::vec3f(0,1,0);
+            auto n2 = zeno::vec3f(0,-1,0);
+            verts.push_back(p1);
+            verts.push_back(p2);
+            normal.push_back(n1);
+            normal.push_back(n2);
+            uvs.emplace_back(
+                x*0.5*3/10+0.5,
+                z*0.5*3/10+0.85, 0);
+            uvs.emplace_back(
+                x*0.5*3/10+0.5,
+                z*0.5*3/10+0.15, 0);
         }
-        // Bottom
-        for (size_t i = 0; i < lons; i++) {
-            tris.push_back(vec3i(i + lons, lons * 2 + 1, (i + 1) % lons + lons));
+        verts.emplace_back(0,-hs,0);
+        normal.emplace_back(0,-1,0);
+        uvs.emplace_back(0.5, 0.15, 0);
+
+        for (int i = 1; i < columns+1; i++) {
+            int i1, i2, i3;
+            i1 = i*2-1;
+            i2 = 0;
+            i3 = i1+2;
+            if(i == columns)
+                i3 = 1;
+            indis.emplace_back(i1, i2, i3);
+
+            i1 = i*2;
+            i2 = verts.size()-1;
+            i3 = i1+2;
+            if(i == columns)
+                i3 = 2;
+            indis.emplace_back(i3, i2, i1);
         }
-        // Side
-        for (size_t i = 0; i < lons; i++) {
-            size_t _0 = i;
-            size_t _1 = (i + 1) % lons;
-            size_t _2 = (i + 1) % lons + lons;
-            size_t _3 = i + lons;
-            tris.push_back(vec3i(_1, _0, _2));
-            tris.push_back(vec3i(_2, _0, _3));
+
+        for (int i = 0; i < rows; i++)
+        {
+            for (int j = 0; j < columns; j++)
+            {
+                float f = float(i)/(rows-1);
+                int it = 1+2*j;
+                int id = 2+2*j;
+                auto pu = verts[it];
+                auto pd = verts[id];
+                auto np = (1-f)*pu+(f)*pd;
+
+                if(j == 0){
+                    mverts.emplace_back(np[0], np[1], np[2]);
+                    normal.emplace_back(-1,0,0);
+                    int fi = verts.size()+mverts.size()-1;
+                    svi.push_back(fi);
+                    cvi.push_back(fi+1);
+                }
+
+                mverts.emplace_back(np[0], np[1], np[2]);
+                normal.emplace_back(-1,0,0);
+            }
         }
+
+        for (int i = 0; i < rows+1; i++)
+        {
+            for (int j = 0; j < columns+1; j++)
+            {
+                float rf = 1.0/(rows-1);
+                float cf = 1.0/(columns);
+                float sf = 4.0/10;
+                float uf = 0.3;
+                auto uv = zeno::vec3f(
+                    (j-1)*cf*sf+uf,
+                    i*rf*sf+uf, 0);
+
+                if(j == 0){
+                    uvs.emplace_back(1*sf+uf, uv[1], 0);
+                }else if(j == 1){
+                    uvs.emplace_back(0*sf+uf, uv[1], 0);
+                }
+                else{
+                    uvs.emplace_back(uv);
+                }
+            }
+        }
+
+        for (int i = 0; i < mverts.size(); i++)
+        {
+            verts.push_back(mverts[i]);
+        }
+
+        for (int i = 0; i < rows-1; i++)
+        {
+            for (int j = 0; j < columns; j++)
+            {
+                int i1, i2, i3, i4;
+                i1 = j+i*(columns+1)+1;
+                i2 = i1+columns+1;
+                i3 = i1+1;
+                i4 = i2+1;
+                if(j == columns-1){
+                    i3 = i3 - columns-1;
+                    i4 = i4 - columns-1;
+                }
+                i1 += (verts.size() - mverts.size());
+                i2 += (verts.size() - mverts.size());
+                i3 += (verts.size() - mverts.size());
+                i4 += (verts.size() - mverts.size());
+
+                int fi = i1-1;
+                if(j == 0){
+                    fi += columns;
+                }
+                auto p1 = verts[i1]*scale;
+                auto p2 = verts[i2]*scale;
+                auto p3 = verts[i3]*scale;
+                auto pn = verts[fi]*scale;
+
+                auto n1 = normalize(cross(p2-p1, p3-p1));
+                auto n2 = normalize(cross(pn-p1, p2-p1));
+
+                n1 = normalize((n1+n2)/2.0);
+
+                normal[i1] = n1;
+                normal[i2] = n1;
+                normal[i3] = n1;
+                normal[i4] = n1;
+
+                indis.emplace_back(i1, i3, i2);
+                indis.emplace_back(i4, i2, i3);
+            }
+        }
+
+        for (int i = 0; i < svi.size(); i++)
+        {
+            normal[svi[i]] = normal[cvi[i]];
+        }
+
+        for (int i = 0; i < verts->size(); i++)
+        {
+            auto p = verts[i];
+            auto n = normal[i];
+
+            auto gp = glm::vec3(p[0], p[1], p[2]);
+            gp = mz * my * mx * gp;
+            p = zeno::vec3f(gp.x, gp.y, gp.z);
+
+            auto gn = glm::vec3(n[0], n[1], n[2]);
+            gn = mz * my * mx * gn;
+            n = zeno::vec3f(gn.x, gn.y, gn.z);
+
+            verts[i] = p * scale + position;
+            normal[i] = n;
+        }
+
         set_output("prim", std::move(prim));
     }
 };
 
-ZENDEFNODE(CreateCylinder, {
+ZENDEFNODE(CreateTube, {
     {
         {"vec3f", "position", "0, 0, 0"},
         {"vec3f", "scaleSize", "1, 1, 1"},
-        {"float", "radius", "1"},
+        ROTATE_PARM
+        {"vec3f", "radius", "1, 1, 0"},
         {"float", "height", "2"},
-        {"int", "lons", "32"},
+        {"int", "rows", "2"},
+        {"int", "columns", "12"}
     },
     {"prim"},
     {},
@@ -677,6 +786,105 @@ ZENDEFNODE(CreateSphere, {
         ROTATE_PARM
         {"int", "rows", "13"},
         {"int", "columns", "24"},
+    },
+    {"prim"},
+    {},
+    {"create"},
+});
+
+struct CreateCone : zeno::INode {
+    virtual void apply() override {
+        auto prim = std::make_shared<zeno::PrimitiveObject>();
+        auto position = get_input2<zeno::vec3f>("position");
+        auto scaleSize = get_input2<zeno::vec3f>("scaleSize");
+        auto radius = get_input2<float>("radius");
+        auto height = get_input2<float>("height");
+        auto lons = get_input2<int>("lons");
+
+        auto &pos = prim->verts;
+        for (size_t i = 0; i < lons; i++) {
+            float rad = 2 * M_PI * i / lons;
+            pos.push_back(vec3f(cos(rad) * radius, -0.5 * height, -sin(rad) * radius) * scaleSize + position);
+        }
+        // top
+        pos.push_back(vec3f(0, 0.5 * height, 0) * scaleSize + position);
+        // bottom
+        pos.push_back(vec3f(0, -0.5 * height, 0) * scaleSize + position);
+
+        auto &tris = prim->tris;
+        for (size_t i = 0; i < lons; i++) {
+            tris.push_back(vec3i(lons, i, (i + 1) % lons));
+            tris.push_back(vec3i(i, lons + 1, (i + 1) % lons));
+        }
+
+        set_output("prim", std::move(prim));
+    }
+};
+
+ZENDEFNODE(CreateCone, {
+    {
+        {"vec3f", "position", "0, 0, 0"},
+        {"vec3f", "scaleSize", "1, 1, 1"},
+        {"float", "radius", "1"},
+        {"float", "height", "2"},
+        {"int", "lons", "32"},
+    },
+    {"prim"},
+    {},
+    {"create"},
+});
+
+struct CreateCylinder : zeno::INode {
+    virtual void apply() override {
+        auto prim = std::make_shared<zeno::PrimitiveObject>();
+
+        auto position = get_input2<zeno::vec3f>("position");
+        auto scaleSize = get_input2<zeno::vec3f>("scaleSize");
+        auto radius = get_input2<float>("radius");
+        auto height = get_input2<float>("height");
+        auto lons = get_input2<int>("lons");
+
+        auto &pos = prim->verts;
+        for (size_t i = 0; i < lons; i++) {
+            float rad = 2 * M_PI * i / lons;
+            pos.push_back(vec3f(cos(rad) * radius, 0.5 * height, -sin(rad) * radius) * scaleSize + position);
+        }
+        for (size_t i = 0; i < lons; i++) {
+            float rad = 2 * M_PI * i / lons;
+            pos.push_back(vec3f(cos(rad) * radius, -0.5 * height, -sin(rad) * radius) * scaleSize + position);
+        }
+        pos.push_back(vec3f(0, 0.5 * height, 0) * scaleSize + position);
+        pos.push_back(vec3f(0, -0.5 * height, 0) * scaleSize + position);
+
+        auto &tris = prim->tris;
+        // Top
+        for (size_t i = 0; i < lons; i++) {
+            tris.push_back(vec3i(lons * 2, i, (i + 1) % lons));
+        }
+        // Bottom
+        for (size_t i = 0; i < lons; i++) {
+            tris.push_back(vec3i(i + lons, lons * 2 + 1, (i + 1) % lons + lons));
+        }
+        // Side
+        for (size_t i = 0; i < lons; i++) {
+            size_t _0 = i;
+            size_t _1 = (i + 1) % lons;
+            size_t _2 = (i + 1) % lons + lons;
+            size_t _3 = i + lons;
+            tris.push_back(vec3i(_1, _0, _2));
+            tris.push_back(vec3i(_2, _0, _3));
+        }
+        set_output("prim", std::move(prim));
+    }
+};
+
+ZENDEFNODE(CreateCylinder, {
+    {
+        {"vec3f", "position", "0, 0, 0"},
+        {"vec3f", "scaleSize", "1, 1, 1"},
+        {"float", "radius", "1"},
+        {"float", "height", "2"},
+        {"int", "lons", "32"},
     },
     {"prim"},
     {},
