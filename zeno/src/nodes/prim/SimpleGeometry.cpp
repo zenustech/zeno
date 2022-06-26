@@ -48,6 +48,11 @@
 namespace zeno {
 namespace {
 namespace cc4{
+    static void flipPrimFaceOrder(PrimitiveObject *prim) {
+        for (auto &ind: prim->tris) {
+            std::swap(ind[1], ind[2]);
+        }
+    }
     static std::vector<zeno::vec3f> genindi(int div1, int div2, int inc){
         std::vector<zeno::vec3f> ind;
 
@@ -236,6 +241,7 @@ struct CreateCube : zeno::INode {
             uv.push_back(uvs[i]);
         }
 
+        cc4::flipPrimFaceOrder(prim.get());
         set_output("prim", std::move(prim));
     }
 };
@@ -298,6 +304,7 @@ struct CreateDisk : zeno::INode {
         // Update last
         tris[tris.size()-1] = zeno::vec3i(divisions, 0, 1);
 
+        cc4::flipPrimFaceOrder(prim.get());
         set_output("prim", std::move(prim));
     }
 };
@@ -419,6 +426,7 @@ struct CreatePlane : zeno::INode {
             norm[i] = normal;
         }
 
+        cc4::flipPrimFaceOrder(prim.get());
         set_output("prim", std::move(prim));
     }
 };
@@ -626,6 +634,7 @@ struct CreateTube : zeno::INode {
             normal[i] = n;
         }
 
+        cc4::flipPrimFaceOrder(prim.get());
         set_output("prim", std::move(prim));
     }
 };
@@ -774,6 +783,7 @@ struct CreateSphere : zeno::INode {
             uv[i] = zeno::vec3f(u,v,0);
         }
 
+        cc4::flipPrimFaceOrder(prim.get());
         set_output("prim", std::move(prim));
     }
 };
