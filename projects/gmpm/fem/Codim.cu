@@ -1558,6 +1558,73 @@ struct CodimStepping : INode {
                         }
                     }
                   });
+        else if (primHandle.category == ZenoParticles::tet)
+          cudaPol(
+              zs::range(primHandle.getEles().size()),
+              [vtemp = proxy<space>({}, vtemp),
+               etemp = proxy<space>({}, primHandle.etemp),
+               eles = proxy<space>({}, primHandle.getEles()), model, gTag,
+               dt = this->dt, projectDBC = projectDBC,
+               vOffset = primHandle.vOffset] __device__(int ei) mutable {
+                auto IB = eles.template pack<3, 3>("IB", ei);
+                auto inds = eles.template pack<4>("inds", ei)
+                                .template reinterpret_bits<int>() +
+                            vOffset;
+                auto vole = eles("vol", ei);
+                vec3 xs[4] = {
+                    vtemp.pack<3>("xn", inds[0]), vtemp.pack<3>("xn", inds[1]),
+                    vtemp.pack<3>("xn", inds[2]), vtemp.pack<3>("xn", inds[3])};
+
+                mat3 BCbasis[4];
+                int BCorder[4];
+                int BCfixed[4];
+                for (int i = 0; i != 4; ++i) {
+                  BCbasis[i] = vtemp.pack<3, 3>("BCbasis", inds[i]);
+                  BCorder[i] = vtemp("BCorder", inds[i]);
+                  BCfixed[i] = vtemp("BCfixed", inds[i]);
+                }
+                zs::vec<T, 12, 12> H;
+                if (BCorder[0] == 3 && BCorder[1] == 3 && BCorder[2] == 3 &&
+                    BCorder[3] == 3) {
+                  etemp.tuple<12 * 12>("He", ei) = H.zeros();
+                  return;
+                }
+                mat3 F{};
+                {
+                  auto x1x0 = xs[1] - xs[0];
+                  auto x2x0 = xs[2] - xs[0];
+                  auto x3x0 = xs[3] - xs[0];
+                  auto Ds = mat3{x1x0[0], x2x0[0], x3x0[0], x1x0[1], x2x0[1],
+                                 x3x0[1], x1x0[2], x2x0[2], x3x0[2]};
+                  F = Ds * IB;
+                }
+                auto P = model.first_piola(F);
+                auto vecP = flatten(P);
+                auto dFdX = dFdXMatrix(IB);
+                auto dFdXT = dFdX.transpose();
+                auto vfdt2 = -vole * (dFdXT * vecP) * dt * dt;
+
+                for (int i = 0; i != 4; ++i) {
+                  auto vi = inds[i];
+                  for (int d = 0; d != 3; ++d)
+                    atomic_add(exec_cuda, &vtemp(gTag, d, vi),
+                               (T)vfdt2(i * 3 + d));
+                }
+
+                auto Hq = model.first_piola_derivative(F, true_c);
+                H = dFdXT * Hq * dFdX * vole * dt * dt;
+
+                // rotate and project
+                rotate_hessian(H, BCbasis, BCorder, BCfixed, projectDBC);
+                etemp.tuple<12 * 12>("He", ei) = H;
+                for (int vi = 0; vi != 4; ++vi) {
+                  for (int i = 0; i != 3; ++i)
+                    for (int j = 0; j != 3; ++j) {
+                      atomic_add(exec_cuda, &vtemp("P", i * 3 + j, inds[vi]),
+                                 H(vi * 3 + i, vi * 3 + j));
+                    }
+                }
+              });
     }
     void computeInertialAndGravityPotentialGradient(
         zs::CudaExecutionPolicy &cudaPol,
@@ -1664,6 +1731,38 @@ struct CodimStepping : INode {
         E = Estretch + Eshear;
 #endif
                 atomic_add(exec_cuda, &res[0], E);
+              });
+        else if (primHandle.category == ZenoParticles::tet)
+          pol(zs::range(eles.size()),
+              [vtemp = proxy<space>({}, vtemp), eles = proxy<space>({}, eles),
+               res = proxy<space>(res), model, dt = this->dt,
+               vOffset = primHandle.vOffset] __device__(int ei) mutable {
+                auto IB = eles.template pack<3, 3>("IB", ei);
+                auto inds = eles.template pack<4>("inds", ei)
+                                .template reinterpret_bits<int>() +
+                            vOffset;
+                auto vole = eles("vol", ei);
+                vec3 xs[4] = {
+                    vtemp.pack<3>("xn", inds[0]), vtemp.pack<3>("xn", inds[1]),
+                    vtemp.pack<3>("xn", inds[2]), vtemp.pack<3>("xn", inds[3])};
+
+                int BCorder[4];
+                for (int i = 0; i != 4; ++i)
+                  BCorder[i] = vtemp("BCorder", inds[i]);
+                if (BCorder[0] == 3 && BCorder[1] == 3 && BCorder[2] == 3 &&
+                    BCorder[3] == 3)
+                  return;
+
+                mat3 F{};
+                {
+                  auto x1x0 = xs[1] - xs[0];
+                  auto x2x0 = xs[2] - xs[0];
+                  auto x3x0 = xs[3] - xs[0];
+                  auto Ds = mat3{x1x0[0], x2x0[0], x3x0[0], x1x0[1], x2x0[1],
+                                 x3x0[1], x1x0[2], x2x0[2], x3x0[2]};
+                  F = Ds * IB;
+                }
+                atomic_add(exec_cuda, &res[0], model.psi(F) * dt * dt * vole);
               });
       }
       // contacts
@@ -1836,30 +1935,56 @@ struct CodimStepping : INode {
                 atomic_add(execTag, &vtemp(bTag, d, vi), dx(d));
             });
         // elasticity
-        pol(range(eles.size()),
-            [execTag, etemp = proxy<space>({}, primHandle.etemp),
-             vtemp = proxy<space>({}, vtemp), eles = proxy<space>({}, eles),
-             dxTag, bTag,
-             vOffset = primHandle.vOffset] ZS_LAMBDA(int ei) mutable {
-              constexpr int dim = 3;
-              auto inds = eles.template pack<3>("inds", ei)
-                              .template reinterpret_bits<int>() +
-                          vOffset;
-              zs::vec<T, 3 * dim> temp{};
-              for (int vi = 0; vi != 3; ++vi)
-                for (int d = 0; d != dim; ++d) {
-                  temp[vi * dim + d] = vtemp(dxTag, d, inds[vi]);
-                }
-              auto He = etemp.template pack<dim * 3, dim * 3>("He", ei);
+        if (primHandle.category == ZenoParticles::surface)
+          pol(range(eles.size()),
+              [execTag, etemp = proxy<space>({}, primHandle.etemp),
+               vtemp = proxy<space>({}, vtemp), eles = proxy<space>({}, eles),
+               dxTag, bTag,
+               vOffset = primHandle.vOffset] ZS_LAMBDA(int ei) mutable {
+                constexpr int dim = 3;
+                auto inds = eles.template pack<3>("inds", ei)
+                                .template reinterpret_bits<int>() +
+                            vOffset;
+                zs::vec<T, 3 * dim> temp{};
+                for (int vi = 0; vi != 3; ++vi)
+                  for (int d = 0; d != dim; ++d) {
+                    temp[vi * dim + d] = vtemp(dxTag, d, inds[vi]);
+                  }
+                auto He = etemp.template pack<dim * 3, dim * 3>("He", ei);
 
-              temp = He * temp;
+                temp = He * temp;
 
-              for (int vi = 0; vi != 3; ++vi)
-                for (int d = 0; d != dim; ++d) {
-                  atomic_add(execTag, &vtemp(bTag, d, inds[vi]),
-                             temp[vi * dim + d]);
-                }
-            });
+                for (int vi = 0; vi != 3; ++vi)
+                  for (int d = 0; d != dim; ++d) {
+                    atomic_add(execTag, &vtemp(bTag, d, inds[vi]),
+                               temp[vi * dim + d]);
+                  }
+              });
+        else if (primHandle.category == ZenoParticles::tet)
+          pol(range(eles.size()),
+              [execTag, etemp = proxy<space>({}, primHandle.etemp),
+               vtemp = proxy<space>({}, vtemp), eles = proxy<space>({}, eles),
+               dxTag, bTag,
+               vOffset = primHandle.vOffset] ZS_LAMBDA(int ei) mutable {
+                constexpr int dim = 3;
+                auto inds = eles.template pack<4>("inds", ei)
+                                .template reinterpret_bits<int>() +
+                            vOffset;
+                zs::vec<T, 4 * dim> temp{};
+                for (int vi = 0; vi != 4; ++vi)
+                  for (int d = 0; d != dim; ++d) {
+                    temp[vi * dim + d] = vtemp(dxTag, d, inds[vi]);
+                  }
+                auto He = etemp.template pack<dim * 4, dim * 4>("He", ei);
+
+                temp = He * temp;
+
+                for (int vi = 0; vi != 4; ++vi)
+                  for (int d = 0; d != dim; ++d) {
+                    atomic_add(execTag, &vtemp(bTag, d, inds[vi]),
+                               temp[vi * dim + d]);
+                  }
+              });
       }
       // contacts
       {
@@ -2679,6 +2804,21 @@ struct CodimStepping : INode {
 
     // update velocity and positions
     A.updateVelocities(cudaPol);
+#if 0
+    // double -> float
+    for (auto zstet : zstets) {
+      if (!zstet->hasImage(ZenoParticles::s_particleTag)) {
+        auto &loVerts = zstet->getParticles();
+        auto &verts = zstet->getParticles<true>();
+        cudaPol(range(loVerts.size()),
+                [loVerts = proxy<space>({}, loVerts),
+                 verts = proxy<space>({}, verts)] __device__(int vi) mutable {
+                  loVerts.tuple<3>("x", vi) = verts.pack<3>("x", vi);
+                  loVerts.tuple<3>("v", vi) = verts.pack<3>("v", vi);
+                });
+      }
+    }
+#endif
     // not sure if this is necessary for numerical reasons
     if (coVerts.size())
       cudaPol(zs::range(coVerts.size()),
