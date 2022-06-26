@@ -2654,11 +2654,12 @@ struct CodimStepping : INode {
                        iter, residualPreconditionedNorm, zTrk, npp, npe, npt,
                        nee, ncspt, ncsee);
           if (zTrk < 0) {
-            fmt::print("what the heck? zTrk: {} at iteration {}. switching to "
+            fmt::print(fg(fmt::color::pale_violet_red),
+                       "what the heck? zTrk: {} at iteration {}. switching to "
                        "gradient descent ftm.\n",
                        zTrk, iter);
             useGD = true;
-            getchar();
+            // getchar();
             break;
           }
           if (residualPreconditionedNorm <= localTol)
