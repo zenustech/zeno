@@ -451,7 +451,8 @@ struct CreateTube : zeno::INode {
 
         auto position = get_input2<zeno::vec3f>("position");
         auto scale = get_input2<zeno::vec3f>("scaleSize");
-        auto radius = get_input2<zeno::vec3f>("radius");
+        auto radius1 = get_input2<float>("radius1");
+        auto radius2 = get_input2<float>("radius2");
         auto height = get_input2<float>("height");
         auto rows = get_input2<int>("rows");
         auto columns = get_input2<int>("columns");
@@ -482,8 +483,8 @@ struct CreateTube : zeno::INode {
             float x = cos(rad);
             float z = -sin(rad);
             float of = 0.125;
-            auto p1 = zeno::vec3f(x*radius[0], hs, z*radius[0]);
-            auto p2 = zeno::vec3f(x*radius[1], -hs, z*radius[1]);
+            auto p1 = zeno::vec3f(x*radius1, hs, z*radius1);
+            auto p2 = zeno::vec3f(x*radius2, -hs, z*radius2);
             auto n1 = zeno::vec3f(0,1,0);
             auto n2 = zeno::vec3f(0,-1,0);
             verts.push_back(p1);
@@ -644,7 +645,8 @@ ZENDEFNODE(CreateTube, {
         {"vec3f", "position", "0, 0, 0"},
         {"vec3f", "scaleSize", "1, 1, 1"},
         ROTATE_PARM
-        {"vec3f", "radius", "1, 1, 0"},
+        {"float", "radius1", "1"},
+        {"float", "radius2", "1"},
         {"float", "height", "2"},
         {"int", "rows", "2"},
         {"int", "columns", "12"}
