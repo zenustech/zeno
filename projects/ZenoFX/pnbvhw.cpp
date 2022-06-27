@@ -135,6 +135,7 @@ ZENDEFNODE(RefitPrimitiveBvh, {
 
 struct QueryNearestPrimitive : zeno::INode {
   struct KVPair {
+    zeno::vec3f w;
     float dist;
     int pid;
     bool operator<(const KVPair &o) const noexcept { return dist < o.dist; }
@@ -147,13 +148,19 @@ struct QueryNearestPrimitive : zeno::INode {
 
     using Ti = typename LBvh::Ti;
     Ti pid = 0;
-    Ti id = -1;
+    Ti bvhId = -1;
     float dist = std::numeric_limits<float>::max();
+    zeno::vec3f w{0.f, 0.f, 0.f};
     if (has_input<PrimitiveObject>("prim")) {
       auto prim = get_input<PrimitiveObject>("prim");
 
-      auto &bvhids = prim->add_attr<float>("bvh_id");
-      auto &dists = prim->add_attr<float>("bvh_dist");
+      auto idTag = get_input2<std::string>("idTag");
+      auto distTag = get_input2<std::string>("distTag");
+      auto weightTag = get_input2<std::string>("weightTag");
+
+      auto &bvhids = prim->add_attr<float>(idTag);
+      auto &dists = prim->add_attr<float>(distTag);
+      auto &ws = prim->add_attr<zeno::vec3f>(weightTag);
 
       std::vector<KVPair> kvs(prim->size());
       std::vector<Ti> ids(prim->size(), -1);
@@ -163,20 +170,21 @@ struct QueryNearestPrimitive : zeno::INode {
       for (Ti i = 0; i < prim->size(); ++i) {
         kvs[i].dist = std::numeric_limits<float>::max();
         kvs[i].pid = i;
-        lbvh->find_nearest(prim->verts[i], ids[i], kvs[i].dist);
+        kvs[i].w = lbvh->find_nearest(prim->verts[i], ids[i], kvs[i].dist);
         // record info as attribs
         bvhids[i] = ids[i];
         dists[i] = kvs[i].dist;
+        ws[i] = kvs[i].w;
       }
 
-      KVPair mi{std::numeric_limits<float>::max(), -1};
+      KVPair mi{zeno::vec3f{0.f, 0.f, 0.f}, std::numeric_limits<float>::max(), -1};
 // ref:
 // https://stackoverflow.com/questions/28258590/using-openmp-to-get-the-index-of-minimum-element-parallelly
 #ifndef _MSC_VER
 #if defined(_OPENMP)
 #pragma omp declare reduction(minimum:KVPair                                   \
                               : omp_out = omp_in < omp_out ? omp_in : omp_out) \
-    initializer(omp_priv = KVPair{std::numeric_limits <float>::max(), -1})
+    initializer(omp_priv = KVPair{zeno::vec3f{0.f, 0.f, 0.f}, std::numeric_limits <float>::max(), -1})
 #pragma omp parallel for reduction(minimum : mi)
 #endif
 #endif
@@ -186,34 +194,39 @@ struct QueryNearestPrimitive : zeno::INode {
       }
       pid = mi.pid;
       dist = mi.dist;
-      id = ids[pid];
+      w = mi.w;
+      bvhId = ids[pid];
       line->verts.push_back(prim->verts[pid]);
 #if 0
       fmt::print("done nearest reduction. dist: {}, bvh[{}] (of {})-prim[{}]"
                  "(of {})\n",
-                 dist, id, lbvh->getNumLeaves(), pid, prim->size());
+                 dist, bvhId, lbvh->getNumLeaves(), pid, prim->size());
 #endif
     } else if (has_input<NumericObject>("prim")) {
       auto p = get_input<NumericObject>("prim")->get<vec3f>();
-      lbvh->find_nearest(p, id, dist);
+      w = lbvh->find_nearest(p, bvhId, dist);
       line->verts.push_back(p);
     } else
       throw std::runtime_error("unknown primitive kind (only supports "
                                "PrimitiveObject and NumericObject::vec3f).");
 
-    line->verts.push_back(lbvh->retrievePrimitiveCenter(id));
+    line->verts.push_back(lbvh->retrievePrimitiveCenter(bvhId, w));
     line->lines.push_back({0, 1});
 
     set_output("primid", std::make_shared<NumericObject>(pid));
-    set_output("bvh_primid", std::make_shared<NumericObject>(id));
+    set_output("bvh_primid", std::make_shared<NumericObject>(bvhId));
     set_output("dist", std::make_shared<NumericObject>(dist));
-    set_output("bvh_prim", lbvh->retrievePrimitive(id));
+    set_output("bvh_prim", lbvh->retrievePrimitive(bvhId));
     set_output("segment", std::move(line));
   }
 };
 
 ZENDEFNODE(QueryNearestPrimitive, {
-                                      {{"prim"}, {"LBvh", "lbvh"}},
+                                      {{"prim"}, {"LBvh", "lbvh"},
+                                      {"string", "idTag", "bvh_id"},
+                                      {"string", "distTag", "bvh_dist"},
+                                      {"string", "weightTag", "bvh_ws"}
+                                      },
                                       {{"NumericObject", "primid"},
                                        {"NumericObject", "bvh_primid"},
                                        {"NumericObject", "dist"},

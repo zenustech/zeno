@@ -153,4 +153,71 @@ ZENDEFNODE(ApplyBoundaryOnVertices,
                {"FEM"},
            });
 
+struct MoveTowards : INode {
+  template <typename VertsT>
+  void setupVelocity(zs::CudaExecutionPolicy &pol, VertsT &bouVerts,
+                     typename ZenoParticles::particles_t &next, double dt) {
+    using namespace zs;
+    // update mesh verts
+    bouVerts.append_channels(pol, {{"BCtarget", 3}});
+    pol(Collapse{bouVerts.size()},
+        [prev = proxy<execspace_e::cuda>({}, bouVerts),
+         next = proxy<execspace_e::cuda>({}, next),
+         dt] __device__(int pi) mutable {
+          auto newX = next.pack<3>("x", pi);
+          prev.template tuple<3>("BCtarget", pi) = newX;
+          prev.template tuple<3>("v", pi) =
+              (newX - prev.template pack<3>("x", pi)) / dt;
+        });
+  }
+  void apply() override {
+    using namespace zs;
+    fmt::print(fg(fmt::color::green), "begin executing MoveTowards\n");
+
+    std::shared_ptr<ZenoParticles> zsprimseq{};
+
+    if (!has_input<ZenoParticles>("ZSParticles"))
+      throw std::runtime_error(
+          fmt::format("no incoming prim for prim sequence!\n"));
+    auto next = get_input<ZenoParticles>("ZSParticles");
+    if (!next->asBoundary)
+      throw std::runtime_error(
+          fmt::format("incoming prim is not used as a boundary!\n"));
+
+    auto cudaPol = cuda_exec().device(0);
+    if (has_input<ZenoParticles>("ZSBoundaryPrimitive")) {
+      zsprimseq = get_input<ZenoParticles>("ZSBoundaryPrimitive");
+      auto numV = zsprimseq->numParticles();
+      auto numE = zsprimseq->numElements();
+      if (numV != next->numParticles() || numE != next->numElements()) {
+        fmt::print("current numVerts {}, numEles ({}).\nIncoming "
+                   "boundary primitive numVerts ({}), numEles ({})\n",
+                   numV, numE, next->numParticles(), next->numElements());
+        throw std::runtime_error(
+            fmt::format("prim size mismatch with current sequence prim!\n"));
+      }
+
+      auto dt = get_input2<float>("framedt"); // framedt
+      /// update velocity
+      if (zsprimseq->hasImage(ZenoParticles::s_particleTag))
+        setupVelocity(cudaPol, zsprimseq->getParticles<true>(),
+                      next->getParticles(), dt);
+      setupVelocity(cudaPol, zsprimseq->getParticles(), next->getParticles(),
+                    dt);
+    }
+
+    fmt::print(fg(fmt::color::cyan), "done executing MoveTowards\n");
+    set_output("ZSBoundaryPrimitive", get_input("ZSBoundaryPrimitive"));
+  }
+};
+
+ZENDEFNODE(MoveTowards, {
+                            {"ZSBoundaryPrimitive",
+                             {"float", "framedt", "0.1"},
+                             "ZSParticles"},
+                            {"ZSBoundaryPrimitive"},
+                            {},
+                            {"FEM"},
+                        });
+
 } // namespace zeno

@@ -268,7 +268,7 @@ struct ToBoundaryPrimitive : INode {
     auto ompExec = zs::omp_exec();
 
     // attributes
-    std::vector<zs::PropertyTag> tags{{"x", 3}, {"v", 3}};
+    std::vector<zs::PropertyTag> tags{{"x", 3}, {"x0", 3}, {"v", 3}};
     std::vector<zs::PropertyTag> eleTags{{"inds", (int)3}};
 
     // verts
@@ -280,6 +280,7 @@ struct ToBoundaryPrimitive : INode {
       using vec3 = zs::vec<float, 3>;
       // pos
       pars.tuple<3>("x", pi) = pos[pi];
+      pars.tuple<3>("x0", pi) = pos[pi];
       // vel
       if (velsPtr != nullptr)
         pars.tuple<3>("v", pi) = velsPtr[pi];
@@ -878,10 +879,19 @@ struct ToZSSurfaceMesh : INode {
             });
     auto seCnt = surfEdgeCnt.getVal();
     surfEdges.resize(seCnt);
+    // surface vert indices
+    auto &surfVerts = (*zstris)[ZenoParticles::s_surfVertTag];
+    surfVerts = typename ZenoParticles::particles_t({{"inds", 1}}, pos.size(),
+                                                    zs::memsrc_e::host);
+    ompExec(zs::range(pos.size()),
+            [&, surfVerts = proxy<space>({}, surfVerts)](int pointNo) mutable {
+              surfVerts("inds", pointNo) = zs::reinterpret_bits<float>(pointNo);
+            });
 
     pars = pars.clone({zs::memsrc_e::device, 0});
     eles = eles.clone({zs::memsrc_e::device, 0});
     surfEdges = surfEdges.clone({zs::memsrc_e::device, 0});
+    surfVerts = surfVerts.clone({zs::memsrc_e::device, 0});
 
     set_output("ZSParticles", std::move(zstris));
   }

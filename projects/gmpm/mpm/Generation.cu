@@ -5,6 +5,7 @@
 #include "zensim/geometry/VdbSampler.h"
 #include "zensim/io/ParticleIO.hpp"
 #include "zensim/omp/execution/ExecutionPolicy.hpp"
+#include "zensim/physics/constitutive_models/NeoHookean.hpp"
 #include "zensim/zpc_tpls/fmt/color.h"
 #include "zensim/zpc_tpls/fmt/format.h"
 #include <zeno/types/DictObject.h>
@@ -43,8 +44,8 @@ struct ConfigConstitutiveModel : INode {
       model = zs::NeoHookean<float>{E, nu};
     else if (typeStr == "stvk")
       model = zs::StvkWithHencky<float>{E, nu};
-    else if(typeStr == "snhk")
-      model = zs::StableNeohookeanInvarient<float>{E,nu};
+    else if (typeStr == "snhk")
+      model = zs::StableNeohookeanInvarient<float>{E, nu};
     else
       throw std::runtime_error(fmt::format(
           "unrecognized (isotropic) elastic model [{}]\n", typeStr));
