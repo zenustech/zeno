@@ -168,22 +168,7 @@ void ModelAcceptor::initSockets(const QString& id, const QString& name, const NO
 		input.info.control = descInput.info.control;
 		input.info.type = descInput.info.type;
 		input.info.name = descInput.info.name;
-
-		QVariant deflVal = descInput.info.defaultValue;
-		QString type = descInput.info.type;
-		if (type == "NumericObject")
-		{
-			type = "float";
-		}
-		if (!type.startsWith("enum "))
-		{
-			static QStringList acceptTypes = { "int", "bool", "float", "string", "writepath", "readpath" };
-			if (type.isEmpty() || acceptTypes.indexOf(type) == -1)
-			{
-				deflVal = QVariant();
-			}
-		}
-		input.info.defaultValue = deflVal;
+		input.info.defaultValue = descInput.info.defaultValue;
 		inputs.insert(input.info.name, input);
 	}
 	
