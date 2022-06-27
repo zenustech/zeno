@@ -600,8 +600,9 @@ struct CodimStepping : INode {
       typename VecT, int N = VecT::template range_t<0>::value,
       zs::enable_if_all<N % 3 == 0, N == VecT::template range_t<1>::value> = 0>
   static constexpr void rotate_hessian(zs::VecInterface<VecT> &H,
-                                       mat3 BCbasis[N / 3], int BCorder[N / 3],
-                                       int BCfixed[], bool projectDBC) {
+                                       const mat3 BCbasis[N / 3],
+                                       const int BCorder[N / 3],
+                                       const int BCfixed[], bool projectDBC) {
     // hessian rotation: trans^T hess * trans
     // left trans^T: multiplied on rows
     // right trans: multiplied on cols
@@ -751,7 +752,8 @@ struct CodimStepping : INode {
             }
           });
     }
-    T constraintResidual(zs::CudaExecutionPolicy &pol) {
+    T constraintResidual(zs::CudaExecutionPolicy &pol,
+                         bool maintainFixed = false) {
       using namespace zs;
       if (projectDBC)
         return 0;
@@ -760,7 +762,7 @@ struct CodimStepping : INode {
       constexpr auto space = execspace_e::cuda;
       pol(Collapse{numDofs},
           [vtemp = proxy<space>({}, vtemp), den = proxy<space>(den),
-           num = proxy<space>(num)] __device__(int vi) mutable {
+           num = proxy<space>(num), maintainFixed] __device__(int vi) mutable {
             auto BCbasis = vtemp.pack<3, 3>("BCbasis", vi);
             auto BCtarget = vtemp.pack<3>("BCtarget", vi);
             int BCorder = vtemp("BCorder", vi);
@@ -774,6 +776,15 @@ struct CodimStepping : INode {
             }
             num[vi] = n;
             den[vi] = d_;
+            if (maintainFixed) {
+              if (d_ != 0) {
+                if (zs::sqrt(n / d_) < 1e-6)
+                  vtemp("BCfixed", vi) = 1;
+              } else {
+                if (zs::sqrt(n) < 1e-6)
+                  vtemp("BCfixed", vi) = 1;
+              }
+            }
           });
       auto nsqr = reduce(pol, num);
       auto dsqr = reduce(pol, den);
@@ -2523,7 +2534,7 @@ struct CodimStepping : INode {
       // check constraints
       if (!BCsatisfied) {
         A.computeConstraints(cudaPol, "xn");
-        auto cr = A.constraintResidual(cudaPol);
+        auto cr = A.constraintResidual(cudaPol, true);
         if (A.areConstraintsSatisfied(cudaPol)) {
           fmt::print("satisfied cons res [{}] at newton iter [{}]\n", cr,
                      newtonIter);
