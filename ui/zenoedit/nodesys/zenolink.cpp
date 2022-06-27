@@ -1,8 +1,10 @@
 #include "zenolink.h"
+#include "zenonode.h"
 #include "zenosubgraphscene.h"
 #include <zenoui/nodesys/nodesys_common.h>
 #include <zenoui/render/common_id.h>
 #include <zenoui/comctrl/gv/zenosocketitem.h>
+#include "../util/log.h"
 
 
 ZenoLink::ZenoLink(QGraphicsItem *parent)
@@ -149,31 +151,39 @@ void ZenoTempLink::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 }
 
 
-ZenoFullLink::ZenoFullLink(const QPersistentModelIndex& idx)
+ZenoFullLink::ZenoFullLink(const QPersistentModelIndex& idx, ZenoNode* outNode, ZenoNode* inNode)
     : ZenoLink(nullptr)
     , m_index(idx)
 {
+    ZASSERT_EXIT(inNode && outNode && idx.isValid());
+
     setZValue(ZVALUE_LINK);
     setFlag(QGraphicsItem::ItemIsSelectable);
+
+    m_inNode = idx.data(ROLE_INNODE).toString();
+    m_outNode = idx.data(ROLE_OUTNODE).toString();
+    m_inSock = idx.data(ROLE_INSOCK).toString();
+    m_outSock = idx.data(ROLE_OUTSOCK).toString();
+
+    m_srcPos = outNode->getPortPos(false, m_outSock);
+    m_dstPos = inNode->getPortPos(true, m_inSock);
+
+    connect(inNode, SIGNAL(inSocketPosChanged()), this, SLOT(onInSocketPosChanged()));
+    connect(outNode, SIGNAL(outSocketPosChanged()), this, SLOT(onOutSocketPosChanged()));
 }
 
-void ZenoFullLink::updatePos(const QPointF& srcPos, const QPointF& dstPos)
+void ZenoFullLink::onInSocketPosChanged()
 {
-    m_srcPos = srcPos;
-    m_dstPos = dstPos;
-    update();
+    ZenoNode* pNode = qobject_cast<ZenoNode*>(sender());
+    ZASSERT_EXIT(pNode);
+    m_dstPos = pNode->getPortPos(true, m_inSock);
 }
 
-void ZenoFullLink::initSrcPos(const QPointF& srcPos)
+void ZenoFullLink::onOutSocketPosChanged()
 {
-    m_srcPos = srcPos;
-    update();
-}
-
-void ZenoFullLink::initDstPos(const QPointF& dstPos)
-{
-    m_dstPos = dstPos;
-    update();
+    ZenoNode* pNode = qobject_cast<ZenoNode *>(sender());
+    ZASSERT_EXIT(pNode);
+    m_srcPos = pNode->getPortPos(false, m_outSock);
 }
 
 QPersistentModelIndex ZenoFullLink::linkInfo() const

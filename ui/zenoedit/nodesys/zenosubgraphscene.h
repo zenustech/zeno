@@ -55,7 +55,6 @@ public slots:
 private slots:
     void reload(const QModelIndex& subGpIdx);
     void clearLayout(const QModelIndex& subGpIdx);
-    void onSocketPosInited(const QString& nodeid, const QString& sockName, bool bInput);
 
 private:
     void updateLinkPos(ZenoNode *pNode, QPointF newPos);

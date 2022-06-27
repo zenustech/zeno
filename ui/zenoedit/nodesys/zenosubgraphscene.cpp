@@ -61,8 +61,6 @@ void ZenoSubGraphScene::initModel(const QModelIndex& index)
         addItem(pNode);
         const QString& nodeid = pNode->nodeId();
         m_nodes[nodeid] = pNode;
-        connect(pNode, SIGNAL(socketPosInited(const QString&, const QString&, bool)),
-                this, SLOT(onSocketPosInited(const QString&, const QString&, bool)));
     }
 
     for (auto it : m_nodes)
@@ -76,15 +74,13 @@ void ZenoSubGraphScene::initModel(const QModelIndex& index)
             const INPUT_SOCKET& inputSocket = inputs[inSock];
             for (const QPersistentModelIndex& linkIdx : inputSocket.linkIndice)
             {
-                ZenoFullLink* pEdge = new ZenoFullLink(linkIdx);
-
                 const QString& linkId = linkIdx.data(ROLE_OBJID).toString();
                 const QString& outId = linkIdx.data(ROLE_OUTNODE).toString();
                 const QString& outSock = linkIdx.data(ROLE_OUTSOCK).toString();
                 ZenoNode* outNode = m_nodes[outId];
                 const QPointF& outSockPos = outNode->getPortPos(false, outSock);
 
-                pEdge->updatePos(outSockPos, inSockPos);
+                ZenoFullLink *pEdge = new ZenoFullLink(linkIdx, outNode, inNode);
                 addItem(pEdge);
                 m_links[linkId] = pEdge;
                 outNode->toggleSocket(false, outSock, true);
@@ -167,7 +163,6 @@ void ZenoSubGraphScene::onDataChanged(const QModelIndex& subGpIdx, const QModelI
         ZASSERT_EXIT(m_nodes.find(id) != m_nodes.end());
 	    QPointF pos = idx.data(ROLE_OBJPOS).toPointF();
         m_nodes[id]->setPos(pos);
-		updateLinkPos(m_nodes[id], pos);
 	}
     if (role == ROLE_INPUTS || role == ROLE_OUTPUTS)
     {
@@ -232,8 +227,6 @@ void ZenoSubGraphScene::onLinkInserted(const QModelIndex& subGpIdx, const QModel
     IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
     QModelIndex linkIdx = pGraphsModel->linkIndex(first);
 
-	ZenoFullLink* pEdge = new ZenoFullLink(QPersistentModelIndex(linkIdx));
-
 	const QString& linkId = linkIdx.data(ROLE_OBJID).toString();
 
     const QString& inId = linkIdx.data(ROLE_INNODE).toString();
@@ -245,7 +238,7 @@ void ZenoSubGraphScene::onLinkInserted(const QModelIndex& subGpIdx, const QModel
     const QPointF& inSockPos = pNode->getPortPos(true, inSock);
 	const QPointF& outSockPos = m_nodes[outId]->getPortPos(false, outSock);
 
-	pEdge->updatePos(outSockPos, inSockPos);
+    ZenoFullLink *pEdge = new ZenoFullLink(QPersistentModelIndex(linkIdx), m_nodes[outId], m_nodes[inId]);
 	addItem(pEdge);
 	m_links[linkId] = pEdge;
 
@@ -631,37 +624,6 @@ void ZenoSubGraphScene::onRowsInserted(const QModelIndex& subgIdx, const QModelI
     addItem(pNode);
     QString id = pNode->nodeId();
     m_nodes[id] = pNode;
-	connect(pNode, SIGNAL(socketPosInited(const QString&, const QString&, bool)),
-		this, SLOT(onSocketPosInited(const QString&, const QString&, bool)));
-}
-
-void ZenoSubGraphScene::onSocketPosInited(const QString& nodeid, const QString& sockName, bool bInput)
-{
-    ZASSERT_EXIT(m_nodes.find(nodeid) != m_nodes.end());
-    if (bInput)
-    {
-        ZenoNode* pInputNode = m_nodes[nodeid];
-        QPointF pos = pInputNode->getPortPos(true, sockName);
-        const INPUT_SOCKET inputSocket = pInputNode->inputParams()[sockName];
-        for (QPersistentModelIndex index : inputSocket.linkIndice)
-        {
-            ZASSERT_EXIT(index.isValid());
-            const QString& linkId = index.data(ROLE_OBJID).toString();
-            m_links[linkId]->initDstPos(pos);
-        }
-    }
-    else
-    {
-        ZenoNode* pOutputNode = m_nodes[nodeid];
-        QPointF pos = pOutputNode->getPortPos(false, sockName);
-        const OUTPUT_SOCKET outputSocket = pOutputNode->outputParams()[sockName];
-        for (QPersistentModelIndex index : outputSocket.linkIndice)
-        {
-            ZASSERT_EXIT(index.isValid());
-			const QString& linkId = index.data(ROLE_OBJID).toString();
-			m_links[linkId]->initSrcPos(pos);
-        }
-    }
 }
 
 void ZenoSubGraphScene::updateLinkPos(ZenoNode* pNode, QPointF newPos)
@@ -684,7 +646,6 @@ void ZenoSubGraphScene::updateLinkPos(ZenoNode* pNode, QPointF newPos)
 
             ZenoFullLink* pLink = m_links[linkId];
             ZASSERT_EXIT(pLink);
-			pLink->updatePos(outputPos, inputPos);
         }
     }
 
@@ -701,7 +662,6 @@ void ZenoSubGraphScene::updateLinkPos(ZenoNode* pNode, QPointF newPos)
 
             QPointF inputPos = m_nodes[inNode]->getPortPos(true, inSock);
             ZenoFullLink* pLink = m_links[linkId];
-            pLink->updatePos(outputPos, inputPos);
         }
     }
 }

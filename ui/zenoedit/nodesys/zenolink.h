@@ -7,6 +7,7 @@
 
 class ZenoSubGraphScene;
 class ZenoSocketItem;
+class ZenoNode;
 
 class ZenoLink : public QGraphicsObject
 {
@@ -73,23 +74,28 @@ class ZenoFullLink : public ZenoLink
 {
     Q_OBJECT
 public:
-    ZenoFullLink(const QPersistentModelIndex& idx);
+    ZenoFullLink(const QPersistentModelIndex& idx, ZenoNode* outNode, ZenoNode* inNode);
 
     virtual QPointF getSrcPos() const override;
     virtual QPointF getDstPos() const override;
-    virtual void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
-
-    void updatePos(const QPointF& srcPos, const QPointF& dstPos);
-    void initSrcPos(const QPointF& srcPos);
-    void initDstPos(const QPointF& dstPos);
     QPersistentModelIndex linkInfo() const;
+
+    virtual void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
 
     enum { Type = ZTYPE_FULLLINK };
     int type() const override;
 
+private slots:
+    void onInSocketPosChanged();
+    void onOutSocketPosChanged();
+
 private:
     QPersistentModelIndex m_index;
     QPointF m_srcPos, m_dstPos;
+    QString m_inNode;
+    QString m_outNode;
+    QString m_inSock;
+    QString m_outSock;
 };
 
 #endif

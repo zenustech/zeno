@@ -68,6 +68,7 @@ ZenoNode::ZenoNode(const NodeUtilParam &params, QGraphicsItem *parent)
     , m_border(new QGraphicsRectItem)
     , m_NameItem(nullptr)
     , m_bError(false)
+    , m_bEnableSnap(false)
 {
     setFlags(ItemIsMovable | ItemIsSelectable);
     setAcceptHoverEvents(true);
@@ -97,7 +98,6 @@ void ZenoNode::_initSocketItemPos()
         pos.setY(y);
 
         socketItem->setPos(pos);
-        emit socketPosInited(nodeid, sockName, true);
     }
     for (auto sockName : m_outSockets.keys())
     {
@@ -114,8 +114,10 @@ void ZenoNode::_initSocketItemPos()
         pos.setY(y);
 
         socketItem->setPos(pos);
-        emit socketPosInited(nodeid, sockName, false);
     }
+
+    emit inSocketPosChanged();
+    emit outSocketPosChanged();
 }
 
 void ZenoNode::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
@@ -1492,11 +1494,14 @@ QVariant ZenoNode::itemChange(GraphicsItemChange change, const QVariant &value)
     }
     else if (change == QGraphicsItem::ItemPositionChange)
     {
-        QPointF pos = value.toPointF();
-        int x = pos.x(), y = pos.y();
-        x = x - x % SCENE_GRID_SIZE;
-        y = y - y % SCENE_GRID_SIZE;
-        return QPointF(x, y);
+        if (m_bEnableSnap)
+        {
+            QPointF pos = value.toPointF();
+            int x = pos.x(), y = pos.y();
+            x = x - x % SCENE_GRID_SIZE;
+            y = y - y % SCENE_GRID_SIZE;
+            return QPointF(x, y);
+        }
     }
     else if (change == QGraphicsItem::ItemPositionHasChanged)
     {
@@ -1510,6 +1515,12 @@ QVariant ZenoNode::itemChange(GraphicsItemChange change, const QVariant &value)
             info.newValue = newPos;
             info.oldValue = oldPos;
             pGraphsModel->updateNodeStatus(nodeId(), info, m_subGpIndex, false);
+
+            bool bCollasped = m_index.data(ROLE_COLLASPED).toBool();
+            QRectF rc = m_headerWidget->sceneBoundingRect();
+
+            emit inSocketPosChanged();
+            emit outSocketPosChanged();
         }
     }
     return value;
