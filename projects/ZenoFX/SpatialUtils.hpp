@@ -3,12 +3,14 @@
 
 namespace zeno {
 
-inline auto dist_pp_sqr(const vec3f &a, const vec3f &b) noexcept {
+inline auto dist_pp_sqr(const vec3f &a, const vec3f &b, vec3f &ws) noexcept {
+  ws[0] = 1.f;
+  ws[1] = ws[2] = 0.f;
   return lengthSquared(b - a);
 }
 
-inline auto dist_pp(const vec3f &a, const vec3f &b) {
-  return std::sqrt(dist_pp_sqr(a, b));
+inline auto dist_pp(const vec3f &a, const vec3f &b, vec3f &ws) {
+  return std::sqrt(dist_pp_sqr(a, b, ws));
 }
 
 //! point-edge
@@ -20,27 +22,41 @@ inline int dist_pe_category(const vec3f &p, const vec3f &e0,
   return indicator < 0 ? 0 : (indicator > 1 ? 1 : 2);
 }
 
-inline auto dist_pe_sqr(const vec3f &p, const vec3f &e0, const vec3f &e1) {
+inline auto dist_pe_sqr(const vec3f &p, const vec3f &e0, const vec3f &e1, vec3f &ws) {
   using T = float;
   T ret = std::numeric_limits<T>::max();
   switch (dist_pe_category(p, e0, e1)) {
   case 0:
-    ret = dist_pp_sqr(p, e0);
+    ret = dist_pp_sqr(p, e0, ws);
+    ws[0] = 1.f;
+    ws[1] = ws[2] = 0.f;
     break;
   case 1:
-    ret = dist_pp_sqr(p, e1);
+    ret = dist_pp_sqr(p, e1, ws);
+    ws[1] = 1.f;
+    ws[0] = ws[2] = 0.f;
     break;
-  case 2:
-    ret = lengthSquared(cross(e0 - p, e1 - p)) / lengthSquared(e1 - e0);
+  case 2: {
+    auto dir = e1 - e0;
+    auto dir2 = lengthSquared(dir);
+    auto dirNorm = std::sqrt(dir2);
+    dir /= dirNorm;
+    ret = lengthSquared(cross(e0 - p, e1 - p)) / dir2;
+    auto e0Proj = dot(p - e0, dir) / dirNorm;
+    auto e1Proj = -(dot(p - e1, dir)) / dirNorm;
+    ws[0] = e1Proj;
+    ws[1] = e0Proj;
+    ws[2] = 0.f;
     break;
+  }
   default:
     break;
   }
   return ret;
 }
 
-inline auto dist_pe(const vec3f &p, const vec3f &e0, const vec3f &e1) {
-  return std::sqrt(dist_pe_sqr(p, e0, e1));
+inline auto dist_pe(const vec3f &p, const vec3f &e0, const vec3f &e1, vec3f &ws) {
+  return std::sqrt(dist_pe_sqr(p, e0, e1, ws));
 }
 
 //! point-triangle
@@ -53,7 +69,7 @@ inline auto dist_pe(const vec3f &p, const vec3f &e0, const vec3f &e1) {
 
 // ref: https://www.geometrictools.com/GTE/Mathematics/DistPointTriangle.h
 inline auto dist_pt_sqr(const vec3f &p, const vec3f &t0, const vec3f &t1,
-                        const vec3f &t2) noexcept {
+                        const vec3f &t2, vec3f &ws) noexcept {
   using T = float;
   using TV = vec3f;
   TV diff = t0 - p;
@@ -172,12 +188,15 @@ inline auto dist_pt_sqr(const vec3f &p, const vec3f &t0, const vec3f &t1,
     }
   }
   auto hitpoint = t0 + s * e0 + t * e1;
+  ws[0] = 1 - s - t;
+  ws[1] = s;
+  ws[2] = t;
   return lengthSquared(p - hitpoint);
 }
 
 inline auto dist_pt(const vec3f &p, const vec3f &t0, const vec3f &t1,
-                    const vec3f &t2) {
-  return std::sqrt(dist_pt_sqr(p, t0, t1, t2));
+                    const vec3f &t2, vec3f &ws) {
+  return std::sqrt(dist_pt_sqr(p, t0, t1, t2, ws));
 }
 
 } // namespace zeno

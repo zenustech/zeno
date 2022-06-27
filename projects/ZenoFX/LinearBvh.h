@@ -70,11 +70,11 @@ struct LBvh : IObjectClone<LBvh> {
 
   /// closest bounding box
   template <element_e et>
-  void find_nearest(TV const &pos, Ti &id, float &dist, element_t<et>) const;
-  void find_nearest(TV const &pos, Ti &id, float &dist) const;
+  TV find_nearest(TV const &pos, Ti &id, float &dist, element_t<et>) const;
+  TV find_nearest(TV const &pos, Ti &id, float &dist) const;
 
   std::shared_ptr<PrimitiveObject> retrievePrimitive(Ti eid) const;
-  vec3f retrievePrimitiveCenter(Ti eid) const;
+  vec3f retrievePrimitiveCenter(Ti eid, const TV &w) const;
 
   template <class F> void iter_neighbors(TV const &pos, F &&f) const {
     if (auto numLeaves = getNumLeaves(); numLeaves <= 2) {
