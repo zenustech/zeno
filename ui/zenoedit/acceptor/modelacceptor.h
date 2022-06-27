@@ -12,7 +12,7 @@ public:
 	ModelAcceptor(GraphsModel* pModel, bool bImport);
 
 	//IAcceptor
-	void setDescriptors(const NODE_DESCS& nodesParams) override;
+	void setLegacyDescs(const rapidjson::Value& graphObj, const NODE_DESCS& nodesParams) override;
 	void BeginSubgraph(const QString& name) override;
 	void EndSubgraph() override;
 	void setFilePath(const QString& fileName) override;

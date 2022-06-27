@@ -47,7 +47,7 @@ bool ZsgReader::openFile(const QString& fn, IAcceptor* pAcceptor)
 
     ZASSERT_EXIT(doc.HasMember("descs"), false);
     NODE_DESCS nodesDescs = _parseDescs(doc["descs"]);
-    pAcceptor->setDescriptors(nodesDescs);
+    pAcceptor->setLegacyDescs(graph, nodesDescs);
 
     for (const auto& subgraph : graph.GetObject())
     {

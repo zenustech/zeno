@@ -457,6 +457,11 @@ void GraphsModel::appendDescriptors(const QList<NODE_DESC>& descs)
         if (!desc.name.isEmpty() && m_nodesDesc.find(desc.name) == m_nodesDesc.end())
         {
             m_nodesDesc.insert(desc.name, desc);
+            for (auto cate : desc.categories)
+            {
+                m_nodesCate[cate].name = cate;
+                m_nodesCate[cate].nodes.push_back(desc.name);
+            }
         }
     }
 }

@@ -16,18 +16,21 @@ ModelAcceptor::ModelAcceptor(GraphsModel* pModel, bool bImport)
 {
 }
 
-
-void ModelAcceptor::setDescriptors(const NODE_DESCS& legacyDescs)
+void ModelAcceptor::setLegacyDescs(const rapidjson::Value& graphObj, const NODE_DESCS& legacyDescs)
 {
 	//discard legacy desc except subnet desc.
-	QList<NODE_DESC> subnetDescs;
-	for (NODE_DESC desc : legacyDescs)
+	QStringList subgraphs;
+	for (const auto& subgraph : graphObj.GetObject())
 	{
-		if (desc.categories.contains("subgraph") && 
-			!QStringList({"SubInput", "SubOutput", "SubCategory"}).contains(desc.name))
-		{
-			subnetDescs.append(desc);
+		if (subgraph.name != "main") {
+            subgraphs.append(QString::fromUtf8(subgraph.name.GetString()));
 		}
+	}
+	QList<NODE_DESC> subnetDescs;
+	for (QString name : subgraphs)
+	{
+		ZASSERT_EXIT(legacyDescs.find(name) != legacyDescs.end());
+        subnetDescs.append(legacyDescs[name]);
 	}
 	m_pModel->appendDescriptors(subnetDescs);
 }
