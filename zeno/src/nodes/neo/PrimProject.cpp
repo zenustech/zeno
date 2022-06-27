@@ -5,6 +5,7 @@
 #include <zeno/types/NumericObject.h>
 #include <zeno/utils/variantswitch.h>
 #include <zeno/utils/arrayindex.h>
+#include <zeno/para/parallel_for.h>  // enable by -DZENO_PARALLEL_STL:BOOL=ON
 #include <unordered_map>
 #include <functional>
 
@@ -22,7 +23,7 @@ static float tri_intersect(Cond cond, vec3f const &ro, vec3f const &rd,
     if (std::abs(b) > eps) {
         float a = dot(n, v0 - ro);
         float r = a / b;
-        if (cond(r)) {  // r > 0
+        if (cond(r)) {  // typically cond is (r > 0)
             vec3f ip = ro + r * rd;
             float uu = dot(u, u);
             float uv = dot(u, v);
@@ -43,7 +44,7 @@ static float tri_intersect(Cond cond, vec3f const &ro, vec3f const &rd,
     return 0;
 }
 
-struct BVH {
+struct BVH {  // TODO: WXL please complete this to accel up
     PrimitiveObject const *prim{};
 
     void build(PrimitiveObject const *prim) {
@@ -51,7 +52,7 @@ struct BVH {
     }
 
     template <class Cond>
-    float intersect(Cond cond, vec3f const &ro, vec3f const &rd) {
+    float intersect(Cond cond, vec3f const &ro, vec3f const &rd) const {
         for (size_t i = 0; i < prim->tris.size(); i++) {
             auto ind = prim->tris[i];
             auto a = prim->verts[ind[0]];
@@ -76,14 +77,16 @@ struct PrimProject : INode {
 
         BVH bvh;
         bvh.build(targetPrim.get());
+
         auto const &nrm = prim->verts.attr<vec3f>(nrmAttr);
         auto comp = enum_variant<std::variant<
             std::greater<float>, std::less<float>, std::not_equal_to<float>
-            >>(array_index_safe({"front", "back", "both"},
-                                allowDir, "allowDir"));
+            >>(array_index({"front", "back", "both"}, allowDir));
         std::visit([&] (auto comp) {
-            auto cond = [=] (float r) { return comp(r, 0.f); };
-            for (size_t i = 0; i < prim->verts.size(); i++) {
+            auto cond = [comp] (float r) {
+                return comp(r, 0.f);
+            };
+            parallel_for((size_t)0, prim->verts.size(), [&] (size_t i) {
                 auto ro = prim->verts[i];
                 auto rd = normalizeSafe(nrm[i], 1e-6f);
                 float t = bvh.intersect(cond, ro, rd);
@@ -91,7 +94,7 @@ struct PrimProject : INode {
                     t = 0;
                 t -= offset;
                 prim->verts[i] = ro + t * rd;
-            }
+            });
         }, comp);
 
         set_output("prim", std::move(prim));
@@ -106,8 +109,6 @@ ZENDEFNODE(PrimProject, {
     {"float", "offset", "0"},
     {"float", "limit", "0"},
     {"enum front back both", "allowDir", "both"},
-    //{"bool", "targetPositive", "1"},
-    //{"bool", "targetNegitive", "1"},
     },
     {
     {"PrimitiveObject", "prim"},

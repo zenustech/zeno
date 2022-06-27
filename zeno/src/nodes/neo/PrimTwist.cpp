@@ -14,7 +14,7 @@
 
 namespace zeno {
 
-struct PrimitiveTwist : zeno::INode { // todo: also add PrimitiveStretch and PrimitiveTaper
+struct PrimTwist : zeno::INode { // todo: also add PrimitiveStretch and PrimitiveTaper
     virtual void apply() override {
         auto prim = get_input<zeno::PrimitiveObject>("prim");
         auto angle = get_input<zeno::NumericObject>("angle")->get<float>();
@@ -76,7 +76,7 @@ struct PrimitiveTwist : zeno::INode { // todo: also add PrimitiveStretch and Pri
 };
 
 
-ZENDEFNODE(PrimitiveTwist, {
+ZENDEFNODE(PrimTwist, {
     {
     {"PrimitiveObject", "prim"},
     {"vec3f", "origin", "0,0,0"},
