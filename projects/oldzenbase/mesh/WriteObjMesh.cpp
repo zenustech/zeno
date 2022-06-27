@@ -51,7 +51,7 @@ static int defWriteObjMesh = zeno::defNodeClass<WriteObjMesh>("WriteObjMesh",
     }, /* params: */ {
     {"writepath", "path", ""},
     }, /* category: */ {
-    "trimesh",
+    "deprecated",
     }});
 
 
@@ -70,7 +70,7 @@ static int defExportObjMesh = zeno::defNodeClass<ExportObjMesh>("ExportObjMesh",
     }, /* outputs: */ {
     }, /* params: */ {
     }, /* category: */ {
-    "trimesh",
+    "deprecated",
     }});
 
 }

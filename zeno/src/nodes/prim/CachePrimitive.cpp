@@ -58,7 +58,7 @@ ZENDEFNODE(CachePrimitive,
     {"string", "prefix", ""},
     {"bool", "ignore", "0"},
     }, /* category: */ {
-    "primitive",
+    "deprecated",
     }});
 
 
