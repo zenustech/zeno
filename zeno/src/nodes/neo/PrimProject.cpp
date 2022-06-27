@@ -14,31 +14,31 @@ namespace {
 template <class Cond>
 static float tri_intersect(Cond cond, vec3f const &ro, vec3f const &rd,
                            vec3f const &v0, vec3f const &v1, vec3f const &v2) {
-        vec3f u = v1 - v0;
-        vec3f v = v2 - v0;
-        vec3f n = cross(u, v);
-
-        float b = dot(n, rd);
-        if (std::abs(b) > 1e-8f) {
-            float a = dot(n, v0 - ro);
-            float r = a / b;
-            if (cond(r)) {  // r > 0
-                vec3f ip = ro + r * rd;
-                float uu = dot(u, u);
-                float uv = dot(u, v);
-                float vv = dot(v, v);
-                vec3f w = ip - v0;
-                float wu = dot(w, u);
-                float wv = dot(w, v);
-                float d = (uv * uv - uu * vv);
-                float s = (uv * wv - vv * wu);
-                float t = (uv * wu - uu * wv);
-                s = std::copysign(s, d);
-                t = std::copysign(t, d);
-                d = std::abs(d);
-                if (0 <= s && s <= d && 0 <= t && s + t <= d)
-                    return r;
-            }
+    const float eps = 1e-6f;
+    vec3f u = v1 - v0;
+    vec3f v = v2 - v0;
+    vec3f n = cross(u, v);
+    float b = dot(n, rd);
+    if (std::abs(b) > eps) {
+        float a = dot(n, v0 - ro);
+        float r = a / b;
+        if (cond(r)) {  // r > 0
+            vec3f ip = ro + r * rd;
+            float uu = dot(u, u);
+            float uv = dot(u, v);
+            float vv = dot(v, v);
+            vec3f w = ip - v0;
+            float wu = dot(w, u);
+            float wv = dot(w, v);
+            float d = uv * uv - uu * vv;
+            float s = uv * wv - vv * wu;
+            float t = uv * wu - uu * wv;
+            d = 1.0f / d;
+            s *= d;
+            t *= d;
+            if (-eps <= s && s <= 1 + eps && -eps <= t && s + t <= 1 + eps)
+                return r;
+        }
     }
     return 0;
 }
