@@ -19,9 +19,8 @@ static float tri_intersect(Cond cond, vec3f const &ro, vec3f const &rd,
         vec3f n = cross(u, v);
 
         float b = dot(n, rd);
-        if (std::abs(b) > 0) {
-            vec3f w0 = ro - v0;
-            float a = -dot(n, w0);
+        if (std::abs(b) > 1e-8f) {
+            float a = dot(n, v0 - ro);
             float r = a / b;
             if (cond(r)) {  // r > 0
                 vec3f ip = ro + r * rd;
@@ -31,10 +30,13 @@ static float tri_intersect(Cond cond, vec3f const &ro, vec3f const &rd,
                 vec3f w = ip - v0;
                 float wu = dot(w, u);
                 float wv = dot(w, v);
-                float d = 1.0f / (uv * uv - uu * vv);
-                float s = (uv * wv - vv * wu) * d;
-                float t = (uv * wu - uu * wv) * d;
-                if (0 <= s && s <= 1 && 0 <= t && s + t <= 1)
+                float d = (uv * uv - uu * vv);
+                float s = (uv * wv - vv * wu);
+                float t = (uv * wu - uu * wv);
+                s = std::copysign(s, d);
+                t = std::copysign(t, d);
+                d = std::abs(d);
+                if (0 <= s && s <= d && 0 <= t && s + t <= d)
                     return r;
             }
     }
