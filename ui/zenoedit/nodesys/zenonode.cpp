@@ -17,6 +17,8 @@
 #include "graphsmanagment.h"
 #include "../nodesview/zenographseditor.h"
 #include "util/log.h"
+#include "zenosubgraphview.h"
+
 
 static QString getOpenFileName(
     const QString &caption,
@@ -55,21 +57,16 @@ static QString getSaveFileName(
 ZenoNode::ZenoNode(const NodeUtilParam &params, QGraphicsItem *parent)
     : _base(parent)
     , m_renderParams(params)
-    , m_bInitSockets(false)
     , m_bodyWidget(nullptr)
     , m_headerWidget(nullptr)
-    , m_collaspedWidget(nullptr)
-    , m_bHeapMap(false)
+    , m_previewItem(nullptr)
+    , m_previewText(nullptr)
     , m_pMainLayout(nullptr)
     , m_pInSocketsLayout(nullptr)
     , m_pOutSocketsLayout(nullptr)
     , m_pSocketsLayout(nullptr)
     , m_border(new QGraphicsRectItem)
     , m_NameItem(nullptr)
-    , m_mute(nullptr)
-    , m_view(nullptr)
-    , m_once(nullptr)
-    , m_collaspe(nullptr)
     , m_bError(false)
 {
     setFlags(ItemIsMovable | ItemIsSelectable);
@@ -176,12 +173,14 @@ void ZenoNode::initUI(const QModelIndex& subGIdx, const QModelIndex& index)
     IGraphsModel *pGraphsModel = zenoApp->graphsManagment()->currentModel();
     ZASSERT_EXIT(pGraphsModel);
 
-    m_headerWidget = initHeaderWangStyle(type);
-    m_bodyWidget = initBodyWidget(type);
+    m_headerWidget = initHeaderStyle();
+    m_bodyWidget = initBodyWidget();
+    m_previewItem = initPreview();
 
     m_pMainLayout = new QGraphicsLinearLayout(Qt::Vertical);
     m_pMainLayout->addItem(m_headerWidget);
     m_pMainLayout->addItem(m_bodyWidget);
+    m_pMainLayout->addItem(m_previewItem);
     m_pMainLayout->setContentsMargins(0, 0, 0, 0);
     m_pMainLayout->setSpacing(1);
 
@@ -205,59 +204,38 @@ void ZenoNode::initUI(const QModelIndex& subGIdx, const QModelIndex& index)
 
     m_border->setZValue(ZVALUE_NODE_BORDER);
     m_border->hide();
+    m_previewItem->hide();
 }
 
-void ZenoNode::initIndependentWidgetsLegacy()
+ZenoBackgroundWidget* ZenoNode::initPreview()
 {
-    QRectF rc;
-
-    rc = m_renderParams.rcMute;
-    m_mute = new ZenoImageItem(m_renderParams.mute, QSizeF(rc.width(), rc.height()), this);
-    m_mute->setPos(rc.topLeft());
-    m_mute->setZValue(ZVALUE_ELEMENT);
-
-    rc = m_renderParams.rcView;
-    m_view = new ZenoImageItem(m_renderParams.view, QSizeF(rc.width(), rc.height()), this);
-    m_view->setPos(rc.topLeft());
-    m_view->setZValue(ZVALUE_ELEMENT);
-
-    rc = m_renderParams.rcPrep;
-    m_once = new ZenoImageItem(m_renderParams.prep, QSizeF(rc.width(), rc.height()), this);
-    m_once->setPos(rc.topLeft());
-    m_once->setZValue(ZVALUE_ELEMENT);
-
-    rc = m_renderParams.rcCollasped;
-    m_collaspe = new ZenoImageItem(m_renderParams.collaspe, QSizeF(rc.width(), rc.height()), this);
-    m_collaspe->setPos(rc.topLeft());
-    m_collaspe->setZValue(ZVALUE_ELEMENT);
-    connect(m_collaspe, SIGNAL(clicked()), this, SLOT(onCollaspeBtnClicked()));
-}
-
-ZenoBackgroundWidget* ZenoNode::initCollaspedWidget()
-{
-    ZenoBackgroundWidget *widget = new ZenoBackgroundWidget(this);
-    const auto &headerBg = m_renderParams.headerBg;
-    widget->setColors(headerBg.bAcceptHovers, headerBg.clr_normal, headerBg.clr_hovered, headerBg.clr_selected);
-
-    QGraphicsLinearLayout *pHLayout = new QGraphicsLinearLayout(Qt::Horizontal);
-
-    const QString &name = m_index.data(ROLE_OBJNAME).toString();
+    QString text = m_index.data(ROLE_OBJNAME).toString();
     QFont font = m_renderParams.nameFont;
-    font.setPointSize(font.pointSize() + 4);
-    ZenoTextLayoutItem *pNameItem = new ZenoTextLayoutItem(name, font, m_renderParams.nameClr.color());
-    pNameItem->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
+    font.setPointSize(24);
 
-    int horizontalPadding = 20;
+    QColor clrBg(76, 159, 244);
+    QColor clrFore(255, 255, 255);
+    //clrBg = m_renderParams.headerBg.clr_normal;
+    //clrFore = m_renderParams.nameClr.color();
 
-    pHLayout->addItem(pNameItem);
-    pHLayout->setAlignment(pNameItem, Qt::AlignLeft);
-    pHLayout->addStretch();
+    auto headerBg = m_renderParams.headerBg;
+    ZenoBackgroundWidget *pBg = new ZenoBackgroundWidget;
+    pBg->setRadius(0, 0, 0, 0);
+    pBg->setColors(false, clrBg, clrBg, clrBg);
+    pBg->setBorder(headerBg.border_witdh, headerBg.clr_border);
 
-    widget->setLayout(pHLayout);
-    return widget;
+    QGraphicsLinearLayout* pVLayout = new QGraphicsLinearLayout(Qt::Vertical);
+
+    m_previewText = new ZenoTextLayoutItem(text, font, clrFore);
+    m_previewText->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Preferred);
+
+    pVLayout->addItem(m_previewText);
+    pBg->setLayout(pVLayout);
+    
+    return pBg;
 }
 
-ZenoBackgroundWidget* ZenoNode::initHeaderWangStyle(NODE_TYPE type)
+ZenoBackgroundWidget* ZenoNode::initHeaderStyle()
 {
     ZenoBackgroundWidget* headerWidget = new ZenoBackgroundWidget(this);
 	auto headerBg = m_renderParams.headerBg;
@@ -293,13 +271,7 @@ ZenoBackgroundWidget* ZenoNode::initHeaderWangStyle(NODE_TYPE type)
 	return headerWidget;
 }
 
-QSizeF ZenoNode::sizeHint(Qt::SizeHint which, const QSizeF& constraint) const
-{
-    QSizeF sz = _base::sizeHint(which, constraint);
-    return sz;
-}
-
-ZenoBackgroundWidget* ZenoNode::initBodyWidget(NODE_TYPE type)
+ZenoBackgroundWidget* ZenoNode::initBodyWidget()
 {
     ZenoBackgroundWidget *bodyWidget = new ZenoBackgroundWidget(this);
 
@@ -1017,6 +989,8 @@ void ZenoNode::updateWhole()
         m_bodyWidget->layout()->invalidate();
     if (m_headerWidget)
         m_headerWidget->layout()->invalidate();
+    if (m_previewItem)
+        m_previewItem->layout()->invalidate();
     if (m_pMainLayout)
         m_pMainLayout->invalidate();
     this->updateGeometry();
@@ -1124,6 +1098,64 @@ void ZenoNode::toggleSocket(bool bInput, const QString& sockName, bool bSelected
     }
 }
 
+void ZenoNode::switchView(bool bPreview)
+{
+    if (!bEnableZoomPreview)
+        return;
+    
+    m_headerWidget->setVisible(!bPreview);
+    m_bodyWidget->setVisible(!bPreview);
+    m_previewItem->setVisible(bPreview);
+    m_pStatusWidgets->setVisible(!bPreview);
+
+    for (auto p : m_inSockets) {
+        p.socket->setVisible(!bPreview);
+    }
+    for (auto p : m_outSockets) {
+        p.socket->setVisible(!bPreview);
+    }
+    adjustPreview(bPreview);
+}
+
+void ZenoNode::adjustPreview(bool bVisible)
+{
+    ZASSERT_EXIT(m_previewText);
+    QFont font = m_previewText->font();
+    if (bVisible) {
+        font.setPointSize(100);
+    }
+    else {
+        font.setPointSize(24);
+    }
+    m_previewText->setFont(font);
+    m_previewText->updateGeometry();
+
+    qreal leftM = bVisible ? ZenoStyle::dpiScaled(100) : 0;
+    qreal rightM = leftM;
+    qreal topM = bVisible ? ZenoStyle::dpiScaled(50) : 0;
+    qreal bottomM = topM;
+    m_previewText->setMargins(leftM, topM, rightM, bottomM);
+
+    updateWhole();
+}
+
+void ZenoNode::setGeometry(const QRectF &rect)
+{
+    QRectF rc = rect;
+    if (bEnableZoomPreview) {
+        // solution for preview node case
+        QSizeF sz = effectiveSizeHint(Qt::MinimumSize);
+        rc.setSize(sz);
+    }
+    _base::setGeometry(rc);
+}
+
+QSizeF ZenoNode::sizeHint(Qt::SizeHint which, const QSizeF &constraint) const
+{
+    QSizeF sz = _base::sizeHint(which, constraint);
+    return sz;
+}
+
 void ZenoNode::markError(bool isError)
 {
     m_bError = isError;
@@ -1166,30 +1198,37 @@ ZenoSocketItem* ZenoNode::getNearestSocket(const QPointF& pos, bool bInput)
 
 QPointF ZenoNode::getPortPos(bool bInput, const QString &portName)
 {
-    bool bCollasped = m_index.data(ROLE_COLLASPED).toBool();
-    if (bCollasped)
+    //preview.
+    if (m_previewItem->isVisible())
     {
-        QRectF rc = m_headerWidget->sceneBoundingRect();
-        if (bInput)
-        {
+        QRectF rc = m_previewItem->sceneBoundingRect();
+        if (bInput) {
             return QPointF(rc.left(), rc.center().y());
-        }
-        else
-        {
+        } else {
             return QPointF(rc.right(), rc.center().y());
         }
     }
     else
     {
-        QString id = nodeId();
-        if (bInput) {
-            ZASSERT_EXIT(m_inSockets.find(portName) != m_inSockets.end(), QPointF());
-            QPointF pos = m_inSockets[portName].socket->sceneBoundingRect().center();
-            return pos;
+        bool bCollasped = m_index.data(ROLE_COLLASPED).toBool();
+        if (bCollasped) {
+            QRectF rc = m_headerWidget->sceneBoundingRect();
+            if (bInput) {
+                return QPointF(rc.left(), rc.center().y());
+            } else {
+                return QPointF(rc.right(), rc.center().y());
+            }
         } else {
-            ZASSERT_EXIT(m_outSockets.find(portName) != m_outSockets.end(), QPointF());
-            QPointF pos = m_outSockets[portName].socket->sceneBoundingRect().center();
-            return pos;
+            QString id = nodeId();
+            if (bInput) {
+                ZASSERT_EXIT(m_inSockets.find(portName) != m_inSockets.end(), QPointF());
+                QPointF pos = m_inSockets[portName].socket->sceneBoundingRect().center();
+                return pos;
+            } else {
+                ZASSERT_EXIT(m_outSockets.find(portName) != m_outSockets.end(), QPointF());
+                QPointF pos = m_outSockets[portName].socket->sceneBoundingRect().center();
+                return pos;
+            }
         }
     }
 }
@@ -1403,45 +1442,6 @@ void ZenoNode::onOptionsBtnToggled(STATUS_BTN btn, bool toggled)
     info.oldValue = oldOpts;
 
     pGraphsModel->updateNodeStatus(nodeId(), info, m_subGpIndex, true);
-}
-
-void ZenoNode::onCollaspeLegacyUpdated(bool collasped)
-{
-    if (collasped)
-    {
-        m_headerWidget->hide();
-        m_bodyWidget->hide();
-        //socket icon item is out of the layout.
-        for (auto p : m_inSockets) {
-            p.socket->hide();
-        }
-        for (auto p : m_outSockets) {
-            p.socket->hide();
-        }
-        m_mute->hide();
-        m_view->hide();
-        m_once->hide();
-
-        m_collaspedWidget->show();
-        m_collaspe->toggle(true);
-    }
-    else
-    {
-        m_bodyWidget->show();
-        for (auto p : m_inSockets) {
-            p.socket->show();
-        }
-        for (auto p : m_outSockets) {
-            p.socket->show();
-        }
-        m_mute->show();
-        m_view->show();
-        m_once->show();
-        m_headerWidget->show();
-        m_collaspedWidget->hide();
-        m_collaspe->toggle(false);
-    }
-    update();
 }
 
 void ZenoNode::onCollaspeUpdated(bool collasped)

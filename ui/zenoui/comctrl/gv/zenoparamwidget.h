@@ -247,6 +247,7 @@ public:
     void setGeometry(const QRectF &rect) override;
     void setRight(bool right);
     void setText(const QString& text);
+    void setMargins(qreal leftM, qreal topM, qreal rightM, qreal bottomM);
     QRectF boundingRect() const override;
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) override;
     QPainterPath shape() const override;

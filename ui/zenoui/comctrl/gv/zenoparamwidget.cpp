@@ -455,6 +455,17 @@ void ZenoTextLayoutItem::setText(const QString& text)
     setPlainText(m_text);
 }
 
+void ZenoTextLayoutItem::setMargins(qreal leftM, qreal topM, qreal rightM, qreal bottomM)
+{
+    QTextFrame *frame = document()->rootFrame();
+    QTextFrameFormat format = frame->frameFormat();
+    format.setLeftMargin(leftM);
+    format.setRightMargin(rightM);
+    format.setTopMargin(topM);
+    format.setBottomMargin(bottomM);
+    frame->setFrameFormat(format);
+}
+
 QRectF ZenoTextLayoutItem::boundingRect() const
 {
     QRectF rc = QRectF(QPointF(0, 0), geometry().size());
@@ -485,7 +496,7 @@ QSizeF ZenoTextLayoutItem::sizeHint(Qt::SizeHint which, const QSizeF &constraint
         case Qt::PreferredSize:
             return rc.size();
         case Qt::MaximumSize:
-            return QSizeF(1000, rc.height());
+            return QSizeF(3000, rc.height());
         default:
             break;
     }

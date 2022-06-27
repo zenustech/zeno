@@ -386,6 +386,8 @@ void ZenoGraphsEditor::activateTab(const QString& subGraphName, const QString& p
 
 		idx = m_ui->graphsViewTab->addTab(pView, subGraphName);
 
+        connect(pView, &ZenoSubGraphView::zoomed, pScene, &ZenoSubGraphScene::onZoomed);
+
         connect(pView, &ZenoSubGraphView::pathUpdated, this, [=](QString newPath) {
             QStringList L = newPath.split("/", QtSkipEmptyParts);
             QString subgName = L.last();

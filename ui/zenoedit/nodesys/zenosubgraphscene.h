@@ -39,6 +39,8 @@ protected:
     void contextMenuEvent(QGraphicsSceneContextMenuEvent* event) override;
 
 public slots:
+    void onZoomed(qreal factor);
+
     void onDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, int role);
     void onRowsAboutToBeRemoved(const QModelIndex& subgIdx, const QModelIndex &parent, int first, int last);
     void onRowsInserted(const QModelIndex& subgIdx, const QModelIndex& parent, int first, int last);

@@ -18,6 +18,7 @@ public:
     _ZenoSubGraphView(QWidget* parent = nullptr);
     void initScene(ZenoSubGraphScene* pScene);
     void setPath(const QString& path);
+    qreal scaleFactor() const;
 
 protected:
     void mousePressEvent(QMouseEvent *event) override;
@@ -95,6 +96,7 @@ public:
 
 signals:
 	void pathUpdated(QString);
+    void zoomed(qreal);
 
 private:
     _ZenoSubGraphView* m_view;

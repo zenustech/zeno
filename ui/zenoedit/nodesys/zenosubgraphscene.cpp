@@ -148,6 +148,13 @@ ZenoNode* ZenoSubGraphScene::createNode(const QModelIndex& idx, const NodeUtilPa
     }
 }
 
+void ZenoSubGraphScene::onZoomed(qreal factor)
+{
+    for (auto pair : m_nodes) {
+        pair.second->switchView(factor < 0.3);
+    }
+}
+
 void ZenoSubGraphScene::onDataChanged(const QModelIndex& subGpIdx, const QModelIndex& idx, int role)
 {
     if (subGpIdx != m_subgIdx)
@@ -244,7 +251,6 @@ void ZenoSubGraphScene::onLinkInserted(const QModelIndex& subGpIdx, const QModel
 
     pNode->onSocketLinkChanged(inSock, true, true);
     m_nodes[outId]->onSocketLinkChanged(outSock, false, true);
-    //outNode->toggleSocket(false, outSock, true);
 }
 
 void ZenoSubGraphScene::onLinkAboutToBeRemoved(const QModelIndex& subGpIdx, const QModelIndex&, int first, int last)

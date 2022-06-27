@@ -42,7 +42,9 @@ public:
     QPointF getPortPos(bool bInput, const QString& portName);
     ZenoSocketItem* getNearestSocket(const QPointF& pos, bool bInput);
     ZenoSocketItem* getSocketItem(bool bInput, const QString& sockName);
+    void setGeometry(const QRectF& rect) override;
     void toggleSocket(bool bInput, const QString& sockName, bool bSelected);
+    void switchView(bool bPreview);
     void markError(bool isError);
     void getSocketInfoByItem(ZenoSocketItem* pSocketItem, QString& sockName, QPointF& scenePos, bool& bInput, QPersistentModelIndex& linkIdx);
 
@@ -62,7 +64,6 @@ signals:
 
 public slots:
     void onCollaspeBtnClicked();
-    void onCollaspeLegacyUpdated(bool);
     void onCollaspeUpdated(bool);
     void onOptionsBtnToggled(STATUS_BTN btn, bool toggled);
     void onOptionsUpdated(int options);
@@ -88,8 +89,10 @@ protected:
     //ZenoNode:
     virtual void onParamEditFinished(PARAM_CONTROL editCtrl, const QString& paramName, const QVariant& value);
     QPersistentModelIndex subGraphIndex() const;
-    virtual ZenoBackgroundWidget *initBodyWidget(NODE_TYPE type);
-    virtual ZenoBackgroundWidget *initHeaderWangStyle(NODE_TYPE type);
+    virtual ZenoBackgroundWidget *initBodyWidget();
+    virtual ZenoBackgroundWidget *initHeaderStyle();
+    virtual ZenoBackgroundWidget *initPreview();
+    void adjustPreview(bool bVisible);
     virtual QGraphicsLayout* initParams();
     virtual void initParam(PARAM_CONTROL ctrl, QGraphicsLinearLayout* pParamLayout, const QString& name, const PARAM_INFO& param);
     virtual QGraphicsLinearLayout* initCustomParamWidgets();
@@ -97,14 +100,13 @@ protected:
 protected:
     NodeUtilParam m_renderParams;
 
-    //temp
     ZenoBackgroundWidget *m_bodyWidget;
     ZenoBackgroundWidget *m_headerWidget;
+    ZenoBackgroundWidget *m_previewItem;
+    ZenoTextLayoutItem *m_previewText;
 
 private:
-    ZenoBackgroundWidget* initCollaspedWidget();
     QGraphicsLayout* initSockets();
-    void initIndependentWidgetsLegacy();
     void _initSocketItemPos();
     void _drawBorderWangStyle(QPainter* painter);
     ZenoGraphsEditor* getEditorViewByViewport(QWidget* pWidget);
@@ -117,16 +119,7 @@ private:
     QMap<QString, _socket_ctrl> m_outSockets;
 
     QMap<QString, ZenoParamWidget*> m_paramControls;
-
-    QGraphicsTextItem* m_nameItem;
     ZenoTextLayoutItem* m_NameItem;
-    ZenoImageItem *m_mute;
-    ZenoImageItem *m_view;
-    ZenoImageItem *m_once;
-    ZenoImageItem *m_collaspe;
-
-    ZenoBackgroundWidget* m_collaspedWidget;
-
     ZenoMinStatusBtnWidget* m_pStatusWidgets;
 
     QGraphicsLinearLayout* m_pMainLayout;
@@ -135,9 +128,11 @@ private:
     QGraphicsLinearLayout* m_pOutSocketsLayout;
     QGraphicsRectItem* m_border;
 
-    bool m_bInitSockets;
-    bool m_bHeapMap;
     bool m_bError;
+
+    // when zoom out the view, the view of node will be displayed as text with large size font.
+    // it's convenient to view all nodes in big scale picture, but it also brings some problem.
+    static const bool bEnableZoomPreview = false;
 };
 
 #endif
