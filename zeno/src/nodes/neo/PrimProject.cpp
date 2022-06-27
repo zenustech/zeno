@@ -8,6 +8,35 @@
 namespace zeno {
 namespace {
 
+static float tri_intersect(vec3f const &ro, vec3f const &rd, vec3f const &v0, vec3f const &v1, vec3f const &v2) {
+        vec3f u = v1 - v0;
+        vec3f v = v2 - v0;
+        vec3f norm = cross(u, v);
+
+        float b = dot(norm, rd);
+        if (std::abs(b) >= eps) {
+            float w0 = ro - v0;
+            float a = -dot(norm, w0);
+            float r = a / b;
+            if (r > 0) {
+                vec3f ip = ro + r * rd;
+                float uu = dot(u, u);
+                float uv = dot(u, v);
+                float vv = dot(v, v);
+                vec3f w = ip - v0;
+                float wu = dot(w, u);
+                float wv = dot(w, v);
+                float d = uv * uv - uu * vv;
+                d = 1.0f / d;
+                float s = (uv * wv - vv * wu) * d;
+                float t = (uv * wu - uu * wv) * d;
+                if (0 <= s && s <= 1 && 0 <= t && s + t <= 1)
+                    return r;
+            }
+    }
+    return 0;
+}
+
 struct BVH {
     PrimitiveObject const *prim{};
 
