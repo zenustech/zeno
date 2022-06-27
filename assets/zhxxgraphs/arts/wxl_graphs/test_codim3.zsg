@@ -2,128 +2,308 @@
  "graph": {
   "main": {
    "nodes": {
-    "9f1a6fc8-UpdatePrimitiveFromZSParticles": {
-     "name": "UpdatePrimitiveFromZSParticles",
+    "985adf6b-MakeString": {
+     "name": "MakeString",
      "inputs": {
-      "ZSParticles": [
-       "7e365677-CodimStepping",
-       "ZSParticles",
-       null
-      ],
-      "SRC": [
-       "7e365677-CodimStepping",
-       "DST",
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      4269.079994660768,
-      125.8854773688472
-     ],
-     "options": []
-    },
-    "7e365677-CodimStepping": {
-     "name": "CodimStepping",
-     "inputs": {
-      "ZSParticles": [
-       "60f79439-MakeList",
-       "list",
-       null
-      ],
-      "ZSBoundaryPrimitives": [
-       "d4e17fee-ToBoundaryParticles",
-       "ZSParticles",
-       null
-      ],
-      "est_num_cps": [
-       null,
-       null,
-       5000000
-      ],
-      "dt": [
-       "c74ac458-NumericFloat",
-       "value",
-       0.01
-      ],
-      "dHat": [
-       null,
-       null,
-       0.005
-      ],
-      "kappa0": [
-       null,
-       null,
-       1000.0
-      ],
-      "aug_coeff": [
-       null,
-       null,
-       1000.0
-      ],
-      "pn_rel": [
-       null,
-       null,
-       0.01
-      ],
-      "cg_rel": [
-       null,
-       null,
-       0.01
-      ],
-      "gravity": [
-       null,
-       null,
-       -9.0
-      ],
-      "SRC": [
-       "60f79439-MakeList",
-       "DST",
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      3963.5846391991377,
-      87.75060750317294
-     ],
-     "options": []
-    },
-    "e0305336-ToZSSurfaceMesh": {
-     "name": "ToZSSurfaceMesh",
-     "inputs": {
-      "ZSModel": [
-       "52560824-ConfigConstitutiveModel",
-       "ZSModel",
-       null
-      ],
-      "prim": [
-       "ef1abe04-TransformPrimitive",
-       "outPrim",
-       null
-      ],
       "SRC": [
        null,
        null,
        null
       ]
      },
-     "params": {},
+     "params": {
+      "value": "assets/cloth/do_not_share/output/char/char.{frame}.obj"
+     },
      "uipos": [
-      2589.906146968927,
-      -604.1484256067641
+      560.6394421785499,
+      -1233.8608750020767
      ],
      "options": [
       "ONCE"
      ]
     },
-    "2bb0b722-ReadObjPrim": {
+    "540a9b3a-BuildPrimitiveSequence": {
+     "name": "BuildPrimitiveSequence",
+     "inputs": {
+      "ZSPrimitiveSequence": [
+       null,
+       null,
+       null
+      ],
+      "framedt": [
+       "803eb82d-GetFrameTime",
+       "time",
+       0.1
+      ],
+      "ZSParticles": [
+       "4382680b-ToBoundaryParticles",
+       "ZSParticles",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1399.2892231438373,
+      -1350.6141548749824
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "803eb82d-GetFrameTime": {
+     "name": "GetFrameTime",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1158.0185095360598,
+      -1460.9814967637349
+     ],
+     "options": []
+    },
+    "4382680b-ToBoundaryParticles": {
+     "name": "ToBoundaryParticles",
+     "inputs": {
+      "prim": [
+       "b8666a01-ImportObjPrimitive",
+       "prim",
+       null
+      ],
+      "prim_tris": [
+       null,
+       null,
+       null
+      ],
+      "dx": [
+       "1216d5d1-PortalOut",
+       "port",
+       0.1
+      ],
+      "SRC": [
+       "b8666a01-ImportObjPrimitive",
+       "DST",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1144.5878100541945,
+      -1303.1563672300567
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "fece8a16-ToBoundaryParticles": {
+     "name": "ToBoundaryParticles",
+     "inputs": {
+      "prim": [
+       "14c77abd-ImportObjPrimitive",
+       "prim",
+       null
+      ],
+      "prim_tris": [
+       null,
+       null,
+       null
+      ],
+      "dx": [
+       "1216d5d1-PortalOut",
+       "port",
+       0.1
+      ],
+      "SRC": [
+       "14c77abd-ImportObjPrimitive",
+       "DST",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1358.9210430760281,
+      -1104.437974978257
+     ],
+     "options": []
+    },
+    "b8666a01-ImportObjPrimitive": {
+     "name": "ImportObjPrimitive",
+     "inputs": {
+      "path": [
+       "985adf6b-MakeString",
+       "value",
+       ""
+      ],
+      "SRC": [
+       "985adf6b-MakeString",
+       "DST",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      840.7542608313984,
+      -1247.704294691196
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "d87f2a10-MakeString": {
+     "name": "MakeString",
+     "inputs": {
+      "SRC": [
+       "540a9b3a-BuildPrimitiveSequence",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "value": "assets/cloth/do_not_share/output/char/char.{frame+1}.obj"
+     },
+     "uipos": [
+      783.240892955751,
+      -1050.9082325150312
+     ],
+     "options": []
+    },
+    "1216d5d1-PortalOut": {
+     "name": "PortalOut",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "dx"
+     },
+     "uipos": [
+      846.5185095360616,
+      -1460.8518011678798
+     ],
+     "options": []
+    },
+    "94086ec8-BuildPrimitiveSequence": {
+     "name": "BuildPrimitiveSequence",
+     "inputs": {
+      "ZSPrimitiveSequence": [
+       "540a9b3a-BuildPrimitiveSequence",
+       "ZSPrimitiveSequence",
+       null
+      ],
+      "framedt": [
+       "803eb82d-GetFrameTime",
+       "time",
+       0.1
+      ],
+      "ZSParticles": [
+       "fece8a16-ToBoundaryParticles",
+       "ZSParticles",
+       null
+      ],
+      "SRC": [
+       "fece8a16-ToBoundaryParticles",
+       "DST",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1673.8636912289426,
+      -1186.9515408932198
+     ],
+     "options": []
+    },
+    "14c77abd-ImportObjPrimitive": {
+     "name": "ImportObjPrimitive",
+     "inputs": {
+      "path": [
+       "d87f2a10-MakeString",
+       "value",
+       ""
+      ],
+      "SRC": [
+       "d87f2a10-MakeString",
+       "DST",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1063.355711608599,
+      -1064.7516522041506
+     ],
+     "options": []
+    },
+    "cf09a5cc-ToBoundaryParticles": {
+     "name": "ToBoundaryParticles",
+     "inputs": {
+      "prim": [
+       "e70dc12e-ReadObjPrim",
+       "prim",
+       null
+      ],
+      "prim_tris": [
+       null,
+       null,
+       null
+      ],
+      "dx": [
+       null,
+       null,
+       0.01
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1816.1733261007346,
+      -391.3616660414942
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "9d4684d2-MakeString": {
+     "name": "MakeString",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": "assets/cloth/do_not_share/output/char/char.0.obj"
+     },
+     "uipos": [
+      1175.194544507968,
+      -392.07054289760976
+     ],
+     "options": []
+    },
+    "d940ed72-ReadObjPrim": {
      "name": "ReadObjPrim",
      "inputs": {
       "path": [
        null,
        null,
-       "assets/mattress2d-tri.obj"
+       "assets/cloth/do_not_share/output/andy_cloth_1.obj"
       ],
       "SRC": [
        null,
@@ -135,14 +315,95 @@
       "triangulate": true
      },
      "uipos": [
-      1811.8555655907057,
-      -799.4517837082788
+      593.8252793874173,
+      66.75031043046356
+     ],
+     "options": [
+      "ONCE",
+      "VIEW"
+     ]
+    },
+    "569d8c89-ReadObjPrim": {
+     "name": "ReadObjPrim",
+     "inputs": {
+      "path": [
+       null,
+       null,
+       "assets/cloth/do_not_share/output/andy_cloth_2.obj"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "triangulate": true
+     },
+     "uipos": [
+      590.8112582781455,
+      285.81125827814566
+     ],
+     "options": [
+      "ONCE",
+      "VIEW"
+     ]
+    },
+    "aa3b7a9d-ReadObjPrim": {
+     "name": "ReadObjPrim",
+     "inputs": {
+      "path": [
+       null,
+       null,
+       "assets/cloth/do_not_share/output/andy_cloth_3.obj"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "triangulate": true
+     },
+     "uipos": [
+      591.82119205298,
+      501.93708609271516
+     ],
+     "options": [
+      "ONCE",
+      "VIEW"
+     ]
+    },
+    "5cb5d423-ToZSSurfaceMesh": {
+     "name": "ToZSSurfaceMesh",
+     "inputs": {
+      "ZSModel": [
+       "a4dbcf1a-ConfigConstitutiveModel",
+       "ZSModel",
+       null
+      ],
+      "prim": [
+       "d940ed72-ReadObjPrim",
+       "prim",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1150.8769862699191,
+      99.55096718491303
      ],
      "options": [
       "ONCE"
      ]
     },
-    "52560824-ConfigConstitutiveModel": {
+    "a4dbcf1a-ConfigConstitutiveModel": {
      "name": "ConfigConstitutiveModel",
      "inputs": {
       "dx": [
@@ -158,7 +419,7 @@
       "density": [
        null,
        null,
-       1000.0
+       400.0
       ],
       "type": [
        null,
@@ -198,57 +459,50 @@
      },
      "params": {},
      "uipos": [
-      2243.9662743613385,
-      -974.3776996225349
+      855.2753372697641,
+      -219.59772173142593
      ],
      "options": []
     },
-    "ef1abe04-TransformPrimitive": {
-     "name": "TransformPrimitive",
+    "ed493fcf-ToZSSurfaceMesh": {
+     "name": "ToZSSurfaceMesh",
      "inputs": {
+      "ZSModel": [
+       "a4dbcf1a-ConfigConstitutiveModel",
+       "ZSModel",
+       null
+      ],
       "prim": [
-       "2bb0b722-ReadObjPrim",
+       "569d8c89-ReadObjPrim",
        "prim",
        null
       ],
-      "translation": [
-       "46fdbf32-NumericVec3",
-       "vec3",
-       null
-      ],
-      "offset": [
+      "SRC": [
        null,
        null,
        null
-      ],
-      "eulerXYZ": [
-       "00b7506e-NumericVec3",
-       "vec3",
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1149.983185016556,
+      339.2746274834437
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "a0dae4d3-ToZSSurfaceMesh": {
+     "name": "ToZSSurfaceMesh",
+     "inputs": {
+      "ZSModel": [
+       "a4dbcf1a-ConfigConstitutiveModel",
+       "ZSModel",
        null
       ],
-      "quatRotation": [
-       null,
-       null,
-       null
-      ],
-      "scaling": [
-       null,
-       null,
-       null
-      ],
-      "Matrix": [
-       null,
-       null,
-       null
-      ],
-      "preTransform": [
-       null,
-       null,
-       null
-      ],
-      "local": [
-       null,
-       null,
+      "prim": [
+       "aa3b7a9d-ReadObjPrim",
+       "prim",
        null
       ],
       "SRC": [
@@ -259,96 +513,20 @@
      },
      "params": {},
      "uipos": [
-      2149.365574784115,
-      -627.2978771099205
-     ],
-     "options": [
-      "ONCE",
-      "VIEW"
-     ]
-    },
-    "46fdbf32-NumericVec3": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "x": -0.5,
-      "y": 1.1,
-      "z": -0.5
-     },
-     "uipos": [
-      1653.7964160814681,
-      -578.6460176376031
+      1148.010658112583,
+      554.2800600165563
      ],
      "options": [
       "ONCE"
      ]
     },
-    "00b7506e-NumericVec3": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "x": 0.9,
-      "y": 0.0,
-      "z": 0.0
-     },
-     "uipos": [
-      1891.852636572481,
-      -410.2333319606121
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
-    "b5e7d2e6-ApplyBoundaryOnVertices": {
-     "name": "ApplyBoundaryOnVertices",
-     "inputs": {
-      "ZSParticles": [
-       null,
-       null,
-       null
-      ],
-      "ZSBoundary": [
-       null,
-       null,
-       null
-      ],
-      "dt": [
-       "c74ac458-NumericFloat",
-       "value",
-       0.01
-      ],
-      "SRC": [
-       "e0305336-ToZSSurfaceMesh",
-       "DST",
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      3823.784818566799,
-      -314.5382839065656
-     ],
-     "options": []
-    },
-    "b64f7d69-ReadObjPrim": {
+    "e70dc12e-ReadObjPrim": {
      "name": "ReadObjPrim",
      "inputs": {
       "path": [
-       null,
-       null,
-       "assets/sphere.obj"
+       "9d4684d2-MakeString",
+       "value",
+       "assets/cloth/do_not_share/output/char_cloth1.obj"
       ],
       "SRC": [
        null,
@@ -360,60 +538,112 @@
       "triangulate": true
      },
      "uipos": [
-      2579.6195578565303,
-      598.5051211981149
+      1496.7780713213992,
+      -396.971039424669
+     ],
+     "options": [
+      "ONCE",
+      "VIEW"
+     ]
+    },
+    "88469287-MakeList": {
+     "name": "MakeList",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ],
+      "obj0": [
+       "a0dae4d3-ToZSSurfaceMesh",
+       "ZSParticles",
+       null
+      ],
+      "obj1": [
+       "ed493fcf-ToZSSurfaceMesh",
+       "ZSParticles",
+       null
+      ],
+      "obj2": [
+       "5cb5d423-ToZSSurfaceMesh",
+       "ZSParticles",
+       null
+      ],
+      "obj3": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "_KEYS": "obj0\nobj1\nobj2\nobj3"
+     },
+     "uipos": [
+      1643.114911009934,
+      312.6455142798014
      ],
      "options": [
       "ONCE"
+     ],
+     "socket_keys": [
+      "obj0",
+      "obj1",
+      "obj2",
+      "obj3"
      ]
     },
-    "571011bb-TransformPrimitive": {
-     "name": "TransformPrimitive",
+    "fb6adcbb-CodimStepping": {
+     "name": "CodimStepping",
      "inputs": {
-      "prim": [
-       "b64f7d69-ReadObjPrim",
-       "prim",
+      "ZSParticles": [
+       "88469287-MakeList",
+       "list",
        null
       ],
-      "translation": [
-       "7c996354-NumericVec3",
-       "vec3",
+      "ZSBoundaryPrimitives": [
+       "cf09a5cc-ToBoundaryParticles",
+       "ZSParticles",
        null
       ],
-      "offset": [
+      "est_num_cps": [
        null,
        null,
-       null
+       10000000
       ],
-      "eulerXYZ": [
-       null,
-       null,
-       null
+      "dt": [
+       "136095b5-NumericFloat",
+       "value",
+       0.01
       ],
-      "quatRotation": [
+      "dHat": [
        null,
        null,
-       null
+       0.001
       ],
-      "scaling": [
+      "kappa0": [
        null,
        null,
-       null
+       1000.0
       ],
-      "Matrix": [
+      "aug_coeff": [
        null,
        null,
-       null
+       1000.0
       ],
-      "preTransform": [
+      "pn_rel": [
        null,
        null,
-       null
+       0.01
       ],
-      "local": [
+      "cg_rel": [
        null,
        null,
-       null
+       0.01
+      ],
+      "gravity": [
+       null,
+       null,
+       -9.0
       ],
       "SRC": [
        null,
@@ -423,14 +653,12 @@
      },
      "params": {},
      "uipos": [
-      2904.0039251492626,
-      559.4504129477832
+      2177.176570260762,
+      268.75679066639066
      ],
-     "options": [
-      "ONCE"
-     ]
+     "options": []
     },
-    "c74ac458-NumericFloat": {
+    "136095b5-NumericFloat": {
      "name": "NumericFloat",
      "inputs": {
       "SRC": [
@@ -443,584 +671,40 @@
       "value": 0.01
      },
      "uipos": [
-      3000.5084583042853,
-      -306.39417909318985
+      1755.548944536424,
+      -108.48897971854305
      ],
      "options": []
     },
-    "ede2ee36-ReadObjPrim": {
-     "name": "ReadObjPrim",
-     "inputs": {
-      "path": [
-       null,
-       null,
-       "assets/Body/PhySimObj_{frame:07d}.obj"
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "triangulate": true
-     },
-     "uipos": [
-      3171.769252549272,
-      -538.362249820519
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
-    "e7f44ac6-ReadObjPrim": {
-     "name": "ReadObjPrim",
-     "inputs": {
-      "path": [
-       null,
-       null,
-       "assets/cloth/body0.obj"
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "triangulate": true
-     },
-     "uipos": [
-      3421.7377206284486,
-      -530.135649273125
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
-    "7c996354-NumericVec3": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "x": 0.0,
-      "y": 0.8,
-      "z": 0.03
-     },
-     "uipos": [
-      2580.944776562717,
-      818.2379550579092
-     ],
-     "options": []
-    },
-    "5abc2172-ParticlesWrangle": {
-     "name": "ParticlesWrangle",
-     "inputs": {
-      "prim": [
-       "571011bb-TransformPrimitive",
-       "outPrim",
-       null
-      ],
-      "zfxCode": [
-       null,
-       null,
-       "@vel = vec3(0.0, 0.0, -0.5)"
-      ],
-      "params": [
-       null,
-       null,
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      3233.9369864292776,
-      527.6541295754474
-     ],
-     "options": [
-      "ONCE",
-      "VIEW"
-     ]
-    },
-    "d4e17fee-ToBoundaryParticles": {
-     "name": "ToBoundaryParticles",
-     "inputs": {
-      "prim": [
-       "5abc2172-ParticlesWrangle",
-       "prim",
-       null
-      ],
-      "prim_tris": [
-       null,
-       null,
-       null
-      ],
-      "dx": [
-       null,
-       null,
-       0.01
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      3581.623505976091,
-      422.6406872509955
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
-    "fe52832a-MakeCubePrimitive": {
-     "name": "MakeCubePrimitive",
-     "inputs": {
-      "spacing": [
-       null,
-       null,
-       null
-      ],
-      "nx": [
-       null,
-       null,
-       null
-      ],
-      "ny": [
-       null,
-       null,
-       null
-      ],
-      "nz": [
-       null,
-       null,
-       null
-      ],
-      "origin": [
-       null,
-       null,
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      2247.4193849601556,
-      690.7687998007958
-     ],
-     "options": []
-    },
-    "14d809b6-UpdatePrimitiveFromZSParticles": {
+    "b1f42e38-UpdatePrimitiveFromZSParticles": {
      "name": "UpdatePrimitiveFromZSParticles",
      "inputs": {
       "ZSParticles": [
-       "d4e17fee-ToBoundaryParticles",
+       "fb6adcbb-CodimStepping",
        "ZSParticles",
        null
       ],
       "SRC": [
-       "9f1a6fc8-UpdatePrimitiveFromZSParticles",
-       "DST",
+       null,
+       null,
        null
       ]
      },
      "params": {},
      "uipos": [
-      4585.632470119514,
-      287.0766932270912
+      2537.1627302359275,
+      443.81855339403984
      ],
      "options": [
       "VIEW"
      ]
-    },
-    "f438074b-NumericVec3": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "x": 0.0,
-      "y": 0.0,
-      "z": 0.0
-     },
-     "uipos": [
-      1792.8768433122832,
-      303.551048625235
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
-    "ea3b305b-TransformPrimitive": {
-     "name": "TransformPrimitive",
-     "inputs": {
-      "prim": [
-       "b3c8265a-ReadVtkMesh",
-       "prim",
-       null
-      ],
-      "translation": [
-       "7668ee58-NumericVec3",
-       "vec3",
-       null
-      ],
-      "offset": [
-       null,
-       null,
-       null
-      ],
-      "eulerXYZ": [
-       "f438074b-NumericVec3",
-       "vec3",
-       null
-      ],
-      "quatRotation": [
-       null,
-       null,
-       null
-      ],
-      "scaling": [
-       "9c72187b-NumericVec3",
-       "vec3",
-       null
-      ],
-      "Matrix": [
-       null,
-       null,
-       null
-      ],
-      "preTransform": [
-       null,
-       null,
-       null
-      ],
-      "local": [
-       null,
-       null,
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      2112.879433841798,
-      63.13178493288025
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
-    "7668ee58-NumericVec3": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "x": -0.2,
-      "y": 0.2,
-      "z": -0.7
-     },
-     "uipos": [
-      1800.3607718278927,
-      67.5990417561911
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
-    "60f79439-MakeList": {
-     "name": "MakeList",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ],
-      "obj0": [
-       "e0305336-ToZSSurfaceMesh",
-       "ZSParticles",
-       null
-      ],
-      "obj1": [
-       "02033b29-ToZSTetrahedra",
-       "ZSParticles",
-       null
-      ],
-      "obj2": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "_KEYS": "obj0\nobj1\nobj2"
-     },
-     "uipos": [
-      2951.2798366834154,
-      61.34186557788942
-     ],
-     "options": [
-      "ONCE"
-     ],
-     "socket_keys": [
-      "obj0",
-      "obj1",
-      "obj2"
-     ]
-    },
-    "d5490cd6-ApplyBoundaryOnVertices": {
-     "name": "ApplyBoundaryOnVertices",
-     "inputs": {
-      "ZSParticles": [
-       null,
-       null,
-       null
-      ],
-      "ZSBoundary": [
-       null,
-       null,
-       null
-      ],
-      "dt": [
-       null,
-       null,
-       0.01
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      3833.621231155777,
-      -535.882537688442
-     ],
-     "options": []
-    },
-    "b3c8265a-ReadVtkMesh": {
-     "name": "ReadVtkMesh",
-     "inputs": {
-      "path": [
-       null,
-       null,
-       "assets/tets/cube.vtk"
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      1800.2069536423817,
-      -102.25579470198666
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
-    "be55056c-ExtractMeshSurface": {
-     "name": "ExtractMeshSurface",
-     "inputs": {
-      "prim": [
-       "ea3b305b-TransformPrimitive",
-       "outPrim",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "op": "all"
-     },
-     "uipos": [
-      2382.3706539735063,
-      139.11837748344357
-     ],
-     "options": [
-      "ONCE",
-      "VIEW"
-     ]
-    },
-    "9f2a7448-MakeList": {
-     "name": "MakeList",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ],
-      "obj0": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "_KEYS": "obj0"
-     },
-     "uipos": [
-      2422.2630380794662,
-      403.9735099337742
-     ],
-     "options": [],
-     "socket_keys": [
-      "obj0"
-     ]
-    },
-    "02033b29-ToZSTetrahedra": {
-     "name": "ToZSTetrahedra",
-     "inputs": {
-      "ZSModel": [
-       "cd42d8a4-ConfigConstitutiveModel",
-       "ZSModel",
-       null
-      ],
-      "prim": [
-       "be55056c-ExtractMeshSurface",
-       "prim",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "add_customed_attr": 0
-     },
-     "uipos": [
-      2651.076158940392,
-      83.95074503311247
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
-    "9c72187b-NumericVec3": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "x": 0.4,
-      "y": 0.4,
-      "z": 0.4
-     },
-     "uipos": [
-      1802.100579470196,
-      557.0415976821183
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
-    "cd42d8a4-ConfigConstitutiveModel": {
-     "name": "ConfigConstitutiveModel",
-     "inputs": {
-      "dx": [
-       null,
-       null,
-       0.1
-      ],
-      "ppc": [
-       null,
-       null,
-       8.0
-      ],
-      "density": [
-       null,
-       null,
-       1000.0
-      ],
-      "type": [
-       null,
-       null,
-       "nhk"
-      ],
-      "aniso": [
-       null,
-       null,
-       "none"
-      ],
-      "plasticity": [
-       null,
-       null,
-       "none"
-      ],
-      "E": [
-       null,
-       null,
-       10000.0
-      ],
-      "nu": [
-       null,
-       null,
-       0.4
-      ],
-      "params": [
-       null,
-       null,
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      2362.1404180463537,
-      -238.7546564569533
-     ],
-     "options": []
     }
    },
    "view_rect": {
-    "x": 1343.6834554328702,
-    "y": -887.2213786087107,
-    "width": 3662.1093749999977,
-    "height": 1861.572265624997
+    "x": 183.5682850010428,
+    "y": -609.5108133278064,
+    "width": 2929.6875,
+    "height": 1489.2578125
    }
   }
  },
@@ -19153,7 +18837,7 @@
  "viewport": {
   "camera_record": {},
   "lights": {
-   "0": "14 DirX 1 0 1.0 align -5.0 0.0 5.0 0.0 DirY 1 0 1.0 align -5.0 0.0 5.0 0.0 DirZ 1 0 0.0 align -5.0 0.0 5.0 0.0 Height 1 0 1000.0 align -5.0 0.0 5.0 0.0 Softness 1 0 1.0 align -5.0 0.0 5.0 0.0 ShadowR 1 0 0.2 align -5.0 0.0 5.0 0.0 ShadowG 1 0 0.2 align -5.0 0.0 5.0 0.0 ShadowB 1 0 0.2 align -5.0 0.0 5.0 0.0 ColorR 1 0 1.0 align -5.0 0.0 5.0 0.0 ColorG 1 0 1.0 align -5.0 0.0 5.0 0.0 ColorB 1 0 1.0 align -5.0 0.0 5.0 0.0 Intensity 1 0 10.0 align -5.0 0.0 5.0 0.0 Scale 1 0 1.0 align -5.0 0.0 5.0 0.0 Enable 1 0 1.0 constant -5.0 0.0 5.0 0.0"
+   "0": "14 DirX 1 0 1 align -5 0 5 0 DirY 1 0 1 align -5 0 5 0 DirZ 1 0 0 align -5 0 5 0 Height 1 0 1000.0 align -5 0 5 0 Softness 1 0 1.0 align -5 0 5 0 ShadowR 1 0 0.2 align -5 0 5 0 ShadowG 1 0 0.2 align -5 0 5 0 ShadowB 1 0 0.2 align -5 0 5 0 ColorR 1 0 1 align -5 0 5 0 ColorG 1 0 1 align -5 0 5 0 ColorB 1 0 1 align -5 0 5 0 Intensity 1 0 10.0 align -5 0 5 0 Scale 1 0 1.0 align -5 0 5 0 Enable 1 0 1.0 constant -5 0 5 0"
   }
  }
 }
