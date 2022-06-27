@@ -32,7 +32,8 @@ struct ZpcInitializer {
 
 using ElasticModel =
     zs::variant<zs::FixedCorotated<float>, zs::NeoHookean<float>,
-                zs::StvkWithHencky<float>>;
+                zs::StvkWithHencky<float>,
+                zs::StableNeohookeanInvarient<float>>;
 using AnisoElasticModel =
     zs::variant<std::monostate, zs::AnisotropicArap<float>>;
 using PlasticModel =

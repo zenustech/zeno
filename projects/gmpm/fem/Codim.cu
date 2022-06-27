@@ -2167,13 +2167,20 @@ struct CodimStepping : INode {
            coOffset = coOffset, dt = dt,
            augLagCoeff = augLagCoeff] __device__(int i) mutable {
             auto x = coverts.pack<3>("x", i);
-            auto v = coverts.pack<3>("v", i);
+            vec3 newX{};
+            if (coverts.hasProperty("BCtarget"))
+              newX = coverts.pack<3>("BCtarget", i);
+            else {
+              auto v = coverts.pack<3>("v", i);
+              newX = x + v * dt;
+            }
             vtemp("BCorder", coOffset + i) = 3;
             vtemp.template tuple<9>("BCbasis", coOffset + i) = mat3::identity();
-            vtemp.template tuple<3>("BCtarget", coOffset + i) = x + v * dt;
-            vtemp("BCfixed", coOffset + i) = v.l2NormSqr() == 0 ? 1 : 0;
+            vtemp.template tuple<3>("BCtarget", coOffset + i) = newX;
+            vtemp("BCfixed", coOffset + i) =
+                (newX - x).l2NormSqr() == 0 ? 1 : 0;
 
-            vtemp.tuple<3>("xtilde", coOffset + i) = x + v * dt;
+            vtemp.tuple<3>("xtilde", coOffset + i) = newX;
             // vtemp("ws", coOffset + i) = zs::sqrt(coverts("m", i) * 1e3);
             vtemp("ws", coOffset + i) = zs::sqrt(coverts("m", i) * augLagCoeff);
             vtemp.tuple<3>("lambda", coOffset + i) = vec3::zeros();
