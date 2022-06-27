@@ -530,8 +530,9 @@ void ZenoSubGraphScene::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
     if (m_tempLink)
     {
         bool bFixedInput = false;
-        QString nodeId;
-        m_tempLink->getFixedInfo(nodeId, QString(), QPointF(), bFixedInput);
+        QString nodeId, sockName;
+        QPointF fixedPos;
+        m_tempLink->getFixedInfo(nodeId, sockName, fixedPos, bFixedInput);
 
         QPointF pos = event->scenePos();
         QList<QGraphicsItem*> catchedItems = items(pos);
