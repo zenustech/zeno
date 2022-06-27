@@ -1,8 +1,7 @@
 #include <zeno/zeno.h>
 #include <zeno/types/CurveObject.h>
 #include <zeno/funcs/ParseObjectFromUi.h>
-#include <sstream>
-#include <array>
+#include <zeno/types/PrimitiveObject.h>
 
 namespace zeno {
 
@@ -48,5 +47,34 @@ ZENO_DEFNODE(EvalCurve)({
     {},
     {"curve"},
 });
+
+struct EvalCurveOnPrimAttr : zeno::INode {
+    virtual void apply() override {
+        auto prim = get_input<PrimitiveObject>("prim");
+        auto curve = get_input<CurveObject>("curve");
+        auto attrName = get_input2<std::string>("attrName");
+        prim->attr_visit(attrName, [&curve](auto &arr) {
+            for (int i = 0; i < arr.size(); i++) {
+                arr[i] = curve->eval(arr[i]);
+            }
+        });
+        set_output("prim", prim);
+    }
+};
+
+ZENO_DEFNODE(EvalCurveOnPrimAttr)({
+    {
+        {"prim"},
+        {"string", "attrName"},
+        {"curve", "curve"},
+    },
+    {
+        {"prim"},
+    },
+    {},
+    {"curve"},
+});
+
+
 
 }
