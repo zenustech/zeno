@@ -61,7 +61,7 @@ struct NumericEval : zeno::INode {
         {
         // BEGIN心欣你也可以把这段代码加到其他wrangle节点去，这样这些wrangle也可以自动有$F$DT$T做参数
         auto const &gs = *this->getGlobalState();
-        params->lut["F"] = objectFromLiterial(gs.frameid);
+        params->lut["F"] = objectFromLiterial((float)gs.frameid);
         params->lut["DT"] = objectFromLiterial(gs.frame_time);
         params->lut["T"] = objectFromLiterial(gs.frame_time * gs.frameid + gs.frame_time_elapsed);
         // END心欣你也可以把这段代码加到其他wrangle节点去，这样这些wrangle也可以自动有$F$DT$T做参数
@@ -90,7 +90,7 @@ struct NumericEval : zeno::INode {
             auto dim = std::visit([&](auto const &v){
                 using T = std::decay_t<decltype(v)>;
                 //判断参数是三维数组还是，单浮点数
-                if constexpr(std::is_same_v<T, zeno::vec3f>) {
+                if constexpr(std::is_convertible_v<T, zeno::vec3f>) {
                     parvals.push_back(v[0]);
                     parvals.push_back(v[1]);
                     parvals.push_back(v[2]);
@@ -98,7 +98,7 @@ struct NumericEval : zeno::INode {
                     parnames.emplace_back(key, 1);
                     parnames.emplace_back(key, 2);
                     return 3;
-                } else if constexpr(std::is_constructible_v<float, T>) {
+                } else if constexpr(std::is_convertible_v<T, float>) {
                     parvals.push_back(float(v));
                     parnames.emplace_back(key, 0);
                     return 1;
