@@ -7,6 +7,7 @@
 #include "zenolink.h"
 #include <zenoui/model/modelrole.h>
 #include <zenoio/reader/zsgreader.h>
+#include <zenoio/writer/zsgwriter.h>
 #include <zenoui/util/uihelper.h>
 #include <zenoui/nodesys/nodesys_common.h>
 #include <zenoui/nodesys/nodegrid.h>
@@ -17,6 +18,7 @@
 #include "util/log.h"
 #include "makelistnode.h"
 #include "blackboardnode.h"
+#include "acceptor/modelacceptor.h"
 
 
 ZenoSubGraphScene::ZenoSubGraphScene(QObject *parent)
@@ -345,14 +347,15 @@ QModelIndexList ZenoSubGraphScene::selectNodesIndice() const
 
 void ZenoSubGraphScene::copy()
 {
+    copy2();
+    /* legacy copy by custom mimedata.
     QList<QGraphicsItem*> selItems = this->selectedItems();
     if (selItems.isEmpty())
         return;
 
-    QList<QPersistentModelIndex> selLinks;
     QMap<QString, ZenoNode*> selNodes;
 
-    QModelIndexList nodesIndice, linkIndice;
+    QModelIndexList nodesIndice;
     for (auto item : selItems)
     {
         if (ZenoNode *pNode = qgraphicsitem_cast<ZenoNode *>(item))
@@ -374,13 +377,125 @@ void ZenoSubGraphScene::copy()
     QMimeData *pMimeData = new QMimeData;
     pMimeData->setUserData(MINETYPE_MULTI_NODES, pNodesData);
     QApplication::clipboard()->setMimeData(pMimeData);
+    */
+}
+
+void ZenoSubGraphScene::copy2()
+{
+    QList<QGraphicsItem*> selItems = this->selectedItems();
+    if (selItems.isEmpty())
+        return;
+
+    IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+    ZASSERT_EXIT(pModel);
+
+    //first record all nodes.
+    QModelIndexList selNodes, selLinks;
+    for (auto item : selItems)
+    {
+        if (ZenoNode* pNode = qgraphicsitem_cast<ZenoNode*>(item))
+        {
+            selNodes.append(pNode->index());
+        }
+        else if (ZenoFullLink *pLink = qgraphicsitem_cast<ZenoFullLink*>(item))
+        {
+            selLinks.append(pLink->linkInfo());
+        }
+    }
+
+    QMap<QString, NODE_DATA> oldNodes, newNodes;
+    QMap<QString, QString> old2new, new2old;
+
+    for (QModelIndex idx : selNodes)
+    {
+        NODE_DATA old = pModel->itemData(idx, m_subgIdx);
+        const QString& oldId = old[ROLE_OBJID].toString();
+        oldNodes.insert(oldId, old);
+
+        NODE_DATA newNode = old;
+        const QString& nodeName = old[ROLE_OBJNAME].toString();
+        const QString& newId = UiHelper::generateUuid(nodeName);
+        newNode[ROLE_OBJID] = newId;
+        newNode[ROLE_OBJPOS] = old[ROLE_OBJPOS];
+
+        //clear all link info in socket.
+        INPUT_SOCKETS inputs = newNode[ROLE_INPUTS].value<INPUT_SOCKETS>();
+        for (INPUT_SOCKET& inSocket : inputs)
+        {
+            inSocket.linkIndice.clear();
+            inSocket.outNodes.clear();
+            inSocket.info.nodeid = newId;
+        }
+        newNode[ROLE_INPUTS] = QVariant::fromValue(inputs);
+
+        OUTPUT_SOCKETS outputs = newNode[ROLE_OUTPUTS].value<OUTPUT_SOCKETS>();
+        for (OUTPUT_SOCKET& outSocket : outputs)
+        {
+            outSocket.linkIndice.clear();
+            outSocket.linkIndice.clear();
+            outSocket.info.nodeid = newId;
+        }
+        newNode[ROLE_OUTPUTS] = QVariant::fromValue(outputs);
+
+        newNodes.insert(newId, newNode);
+
+        old2new.insert(oldId, newId);
+        new2old.insert(newId, oldId);
+    }
+
+    QStandardItemModel tempLinkModel;
+    //copy all link.
+    for (QModelIndex idx : selLinks)
+    {
+        const QString& outNode = idx.data(ROLE_OUTNODE).toString();
+        const QString& outSock = idx.data(ROLE_OUTSOCK).toString();
+        const QString& inNode = idx.data(ROLE_INNODE).toString();
+        const QString& inSock = idx.data(ROLE_INSOCK).toString();
+
+        if (oldNodes.find(outNode) != oldNodes.end() &&
+            oldNodes.find(inNode) != oldNodes.end())
+        {
+            const QString& newOutNode = old2new[outNode];
+            const QString& newInNode = old2new[inNode];
+            NODE_DATA& inData = newNodes[newInNode];
+            NODE_DATA& outData = newNodes[newOutNode];
+            INPUT_SOCKETS inputs = inData[ROLE_INPUTS].value<INPUT_SOCKETS>();
+            OUTPUT_SOCKETS outputs = outData[ROLE_OUTPUTS].value<OUTPUT_SOCKETS>();
+
+            ZASSERT_EXIT(inputs.find(inSock) != inputs.end());
+            ZASSERT_EXIT(outputs.find(outSock) != outputs.end());
+            INPUT_SOCKET& inputSocket = inputs[inSock];
+            OUTPUT_SOCKET& outputSocket = outputs[outSock];
+
+            //construct new link.
+            QStandardItem* pItem = new QStandardItem;
+            pItem->setData(UiHelper::generateUuid(), ROLE_OBJID);
+            pItem->setData(newInNode, ROLE_INNODE);
+            pItem->setData(inSock, ROLE_INSOCK);
+            pItem->setData(newOutNode, ROLE_OUTNODE);
+            pItem->setData(outSock, ROLE_OUTSOCK);
+            tempLinkModel.appendRow(pItem);
+            QModelIndex linkIdx = tempLinkModel.indexFromItem(pItem);
+            QPersistentModelIndex persistIdx(linkIdx);
+
+            inputSocket.linkIndice.append(persistIdx);
+            outputSocket.linkIndice.append(persistIdx);
+
+            inData[ROLE_INPUTS] = QVariant::fromValue(inputs);
+            outData[ROLE_OUTPUTS] = QVariant::fromValue(outputs);
+        }
+    }
+
+    ZsgWriter::getInstance().dumpToClipboard(newNodes);
 }
 
 void ZenoSubGraphScene::paste(QPointF pos)
 {
+    /*
+    * base custom mime data.
+    * 
     const QMimeData* pMimeData = QApplication::clipboard()->mimeData();
     IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
-
     if (QObjectUserData *pUserData = pMimeData->userData(MINETYPE_MULTI_NODES))
     {
         NODES_MIME_DATA* pNodesData = static_cast<NODES_MIME_DATA*>(pUserData);
@@ -389,6 +504,15 @@ void ZenoSubGraphScene::paste(QPointF pos)
         pGraphsModel->copyPaste(pNodesData->m_fromSubg, pNodesData->nodes, m_subgIdx, pos, true);
         clearSelection();
         //todo: select them
+    }
+    */
+    const QMimeData* pMimeData = QApplication::clipboard()->mimeData();
+    IGraphsModel *pGraphsModel = zenoApp->graphsManagment()->currentModel();
+    if (pMimeData->hasText())
+    {
+        const QString& strJson = pMimeData->text();
+        ModelAcceptor acceptor(nullptr, false);
+        ZsgReader::getInstance().importNodes(pGraphsModel, m_subgIdx, strJson, pos, &acceptor);
     }
 }
 

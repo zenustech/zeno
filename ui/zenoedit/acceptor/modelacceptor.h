@@ -14,7 +14,9 @@ public:
 	//IAcceptor
 	void setLegacyDescs(const rapidjson::Value& graphObj, const NODE_DESCS& nodesParams) override;
 	void BeginSubgraph(const QString& name) override;
+	bool setCurrentSubGraph(IGraphsModel* pModel, const QModelIndex& subgIdx) override;
 	void EndSubgraph() override;
+	void resolvePosLinks(const QStringList& ids, const QPointF& pos) override;
 	void setFilePath(const QString& fileName) override;
 	void switchSubGraph(const QString& graphName) override;
 	bool addNode(const QString& nodeid, const QString& name, const NODE_DESCS& descriptors) override;
@@ -37,6 +39,8 @@ public:
 	QObject* currGraphObj() override;
 
 private:
+    void generateLink(const QModelIndex& idx);
+
 	SubGraphModel* m_currentGraph;
 	GraphsModel* m_pModel;
 	bool m_bImport;

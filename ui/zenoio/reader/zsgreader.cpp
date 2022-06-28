@@ -20,6 +20,41 @@ ZsgReader& ZsgReader::getInstance()
     return reader;
 }
 
+bool ZsgReader::importNodes(IGraphsModel* pModel, const QModelIndex& subgIdx, const QString& nodeJson, const QPointF& targetPos, IAcceptor* pAcceptor)
+{
+    rapidjson::Document doc;
+    QByteArray bytes = nodeJson.toUtf8();
+    doc.Parse(bytes);
+
+    if (!doc.IsObject() || !doc.HasMember("nodes"))
+        return false;
+
+    const rapidjson::Value& nodes = doc["nodes"];
+    if (nodes.IsNull())
+        return false;
+
+    bool ret = pAcceptor->setCurrentSubGraph(pModel, subgIdx);
+    if (!ret)
+        return false;
+
+    QStringList idents;
+    for (const auto &node : nodes.GetObject())
+    {
+        const QString &nodeid = node.name.GetString();
+        idents.append(nodeid);
+        ret = _parseNode(nodeid, node.value, NODE_DESCS(), pAcceptor);
+        if (!ret)
+            return false;
+    }
+
+    //adjust item position.
+    ZASSERT_EXIT(!idents.isEmpty(), false);
+    const QString& ident = idents[0];
+
+    pAcceptor->resolvePosLinks(idents, targetPos);
+    return true;
+}
+
 bool ZsgReader::openFile(const QString& fn, IAcceptor* pAcceptor)
 {
     QFile file(fn);
@@ -115,7 +150,7 @@ bool ZsgReader::_parseSubGraph(const QString& name, const rapidjson::Value& subg
     return true;
 }
 
-void ZsgReader::_parseNode(const QString& nodeid, const rapidjson::Value& nodeObj, const NODE_DESCS& legacyDescs, IAcceptor* pAcceptor)
+bool ZsgReader::_parseNode(const QString& nodeid, const rapidjson::Value& nodeObj, const NODE_DESCS& legacyDescs, IAcceptor* pAcceptor)
 {
     const auto& objValue = nodeObj;
     const rapidjson::Value& nameValue = objValue["name"];
@@ -123,7 +158,7 @@ void ZsgReader::_parseNode(const QString& nodeid, const rapidjson::Value& nodeOb
 
     bool bSucceed = pAcceptor->addNode(nodeid, name, legacyDescs);
     if (!bSucceed) {
-        return;
+        return false;
     }
 
     pAcceptor->initSockets(nodeid, name, legacyDescs);
@@ -149,7 +184,7 @@ void ZsgReader::_parseNode(const QString& nodeid, const rapidjson::Value& nodeOb
         QStringList options;
         for (int i = 0; i < optionsArr.Size(); i++)
         {
-            ZASSERT_EXIT(optionsArr[i].IsString());
+            ZASSERT_EXIT(optionsArr[i].IsString(), false);
             const QString& optName = optionsArr[i].GetString();
             options.append(optName);
         }
@@ -191,6 +226,7 @@ void ZsgReader::_parseNode(const QString& nodeid, const rapidjson::Value& nodeOb
 
         pAcceptor->setBlackboard(nodeid, blackboard);
     }
+    return true;
 }
 
 QVariant ZsgReader::_parseDefaultValue(const QString& defaultValue, const QString& type)

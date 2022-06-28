@@ -13,6 +13,33 @@ ZsgWriter& ZsgWriter::getInstance()
 	return writer;
 }
 
+void ZsgWriter::dumpToClipboard(const QMap<QString, NODE_DATA>& nodes)
+{
+	QString strJson;
+
+	rapidjson::StringBuffer s;
+    RAPIDJSON_WRITER writer(s);
+    {
+		JsonObjBatch batch(writer);
+        writer.Key("nodes");
+		{
+            JsonObjBatch _batch(writer);
+			for (auto iter = nodes.keyValueBegin(); iter != nodes.keyValueEnd(); iter++)
+			{
+				const QString& nodeId = iter->first;
+				const NODE_DATA& nodeData = iter->second;
+				writer.Key(nodeId.toLatin1());
+				dumpNode(nodeData, writer);
+			}
+		}
+	}
+
+	strJson = QString::fromLatin1(s.GetString());
+	QMimeData* pMimeData = new QMimeData;
+	pMimeData->setText(strJson);
+	QApplication::clipboard()->setMimeData(pMimeData);
+}
+
 QString ZsgWriter::dumpProgramStr(IGraphsModel* pModel)
 {
 	QString strJson;

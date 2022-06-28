@@ -4,12 +4,16 @@
 #include <zenoui/model/modeldata.h>
 #include <rapidjson/document.h>
 
+class IGraphsModel;
+
 class IAcceptor
 {
 public:
     virtual void setLegacyDescs(const rapidjson::Value& graphObj, const NODE_DESCS &legacyDescs) = 0;
     virtual void BeginSubgraph(const QString& name) = 0;
     virtual void EndSubgraph() = 0;
+    virtual void resolvePosLinks(const QStringList& ids, const QPointF& pos) = 0;
+    virtual bool setCurrentSubGraph(IGraphsModel* pModel, const QModelIndex& subgIdx) = 0;
     virtual void setFilePath(const QString& fileName) = 0;
     virtual void switchSubGraph(const QString& graphName) = 0;
     virtual bool addNode(const QString& nodeid, const QString& name, const NODE_DESCS& descriptors) = 0;

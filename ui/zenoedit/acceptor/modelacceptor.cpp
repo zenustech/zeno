@@ -53,6 +53,16 @@ void ModelAcceptor::BeginSubgraph(const QString& name)
 	m_currentGraph = pSubModel;
 }
 
+bool ModelAcceptor::setCurrentSubGraph(IGraphsModel* pModel, const QModelIndex& subgIdx)
+{
+    ZASSERT_EXIT(pModel, false);
+    m_pModel = qobject_cast<GraphsModel*>(pModel);
+    ZASSERT_EXIT(m_pModel, false);
+	m_currentGraph = m_pModel->subGraph(subgIdx.row());
+    ZASSERT_EXIT(m_currentGraph, false);
+	return true;
+}
+
 void ModelAcceptor::EndSubgraph()
 {
 	if (!m_currentGraph)
@@ -63,39 +73,70 @@ void ModelAcceptor::EndSubgraph()
 	for (int r = 0; r < n; r++)
 	{
 		const QModelIndex& idx = m_currentGraph->index(r, 0);
-		const QString& inNode = idx.data(ROLE_OBJID).toString();
-		INPUT_SOCKETS inputs = idx.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
-		foreach(const QString & inSockName, inputs.keys())
-		{
-			const INPUT_SOCKET& inSocket = inputs[inSockName];
-			//init connection
-			for (const QString& outNode : inSocket.outNodes.keys())
-			{
-				const QModelIndex& outIdx = m_currentGraph->index(outNode);
-				if (outIdx.isValid())
-				{
-					//the items in outputs are descripted by core descriptors.
-					OUTPUT_SOCKETS outputs = outIdx.data(ROLE_OUTPUTS).value<OUTPUT_SOCKETS>();
-					for (const QString &outSock : inSocket.outNodes[outNode].keys())
-					{
-						//checkout whether outSock is existed.
-						if (outputs.find(outSock) == outputs.end())
-						{
-							const QString& nodeName = outIdx.data(ROLE_OBJNAME).toString();
-							zeno::log_warn("no such output socket {} in {}", outSock.toStdString(), nodeName.toStdString());
-							continue;
-						}
-						GraphsModel* pGraphsModel = m_currentGraph->getGraphsModel();
-						const QModelIndex& subgIdx = pGraphsModel->indexBySubModel(m_currentGraph);
-						pGraphsModel->addLink(EdgeInfo(outNode, inNode, outSock, inSockName), subgIdx);
-					}
-				}
-			}
-		}
+        generateLink(idx);
 	}
 
 	m_currentGraph->onModelInited();
 	m_currentGraph = nullptr;
+}
+
+void ModelAcceptor::resolvePosLinks(const QStringList& ids, const QPointF& pos)
+{
+	//have to offer this method to handle issues about copy-paste...
+	if (!m_currentGraph || ids.isEmpty())
+		return;
+
+	const QString &id = ids[0];
+    QPointF _pos = m_currentGraph->getNodeStatus(id, ROLE_OBJPOS).toPointF();
+	const QPointF offset = pos - _pos;
+
+	for (const QString& ident : ids)
+	{
+		const QModelIndex& idx = m_currentGraph->index(ident);
+		_pos = idx.data(ROLE_OBJPOS).toPointF();
+		_pos += offset;
+		m_currentGraph->setData(idx, _pos, ROLE_OBJPOS);
+	}
+
+	//init output ports for each node.
+	for (const QString& ident : ids)
+	{
+		const QModelIndex& idx = m_currentGraph->index(ident);
+		generateLink(idx);
+	}
+}
+
+void ModelAcceptor::generateLink(const QModelIndex& idx)
+{
+	const QString& inNode = idx.data(ROLE_OBJID).toString();
+	INPUT_SOCKETS inputs = idx.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
+	foreach(const QString & inSockName, inputs.keys())
+	{
+		const INPUT_SOCKET& inSocket = inputs[inSockName];
+		//init connection
+		for (const QString& outNode : inSocket.outNodes.keys())
+		{
+			const QModelIndex& outIdx = m_currentGraph->index(outNode);
+			if (outIdx.isValid())
+			{
+				//the items in outputs are descripted by core descriptors.
+				OUTPUT_SOCKETS outputs = outIdx.data(ROLE_OUTPUTS).value<OUTPUT_SOCKETS>();
+				for (const QString &outSock : inSocket.outNodes[outNode].keys())
+				{
+					//checkout whether outSock is existed.
+					if (outputs.find(outSock) == outputs.end())
+					{
+						const QString& nodeName = outIdx.data(ROLE_OBJNAME).toString();
+						zeno::log_warn("no such output socket {} in {}", outSock.toStdString(), nodeName.toStdString());
+						continue;
+					}
+					GraphsModel* pGraphsModel = m_currentGraph->getGraphsModel();
+					const QModelIndex& subgIdx = pGraphsModel->indexBySubModel(m_currentGraph);
+					pGraphsModel->addLink(EdgeInfo(outNode, inNode, outSock, inSockName), subgIdx);
+				}
+			}
+		}
+	}
 }
 
 void ModelAcceptor::setFilePath(const QString& fileName)
