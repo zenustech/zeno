@@ -56,3 +56,36 @@ git push
 Push it, then GitHub CI will do the depolyment automatically for you.
 
 It will create a release with tag, for example, `v2022.4.19` (today's date).
+
+## Accelerate compile process
+
+You may install `ccache` to compile faster on Linux.
+
+```bash
+sudo apt-get install -y ccache
+```
+
+```bash
+sudo pacman -S ccache
+```
+
+You may install `ninja` (a faster build system than `make`).
+
+```bash
+sudo apt-get install -y ninja
+```
+
+```bash
+sudo pacman -S ninja
+```
+
+```bash
+pip install ninja
+```
+
+Then use `-GNinja` parameter in cmake configuration step:
+
+```bash
+cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+cmake --build build --parallel
+```
