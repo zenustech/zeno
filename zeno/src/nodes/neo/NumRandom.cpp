@@ -169,7 +169,7 @@ static NumericValue numRandom(vec3f dir, std::string randType, float base, float
     NumericValue ret;
     std::visit([&] (auto &&randty) {
         using T = std::invoke_result_t<decltype(randty), wangsrng &>;
-        T offs = randty(rng) * scale;
+        T offs = base + randty(rng) * scale;
         if constexpr (std::is_same_v<T, vec3f>) {
             vec3f b3 = dir, b1, b2;
             pixarONB(b3, b1, b2);
