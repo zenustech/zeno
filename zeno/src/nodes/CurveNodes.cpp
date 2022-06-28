@@ -65,7 +65,7 @@ struct EvalCurveOnPrimAttr : zeno::INode {
 ZENO_DEFNODE(EvalCurveOnPrimAttr)({
     {
         {"prim"},
-        {"string", "attrName"},
+        {"string", "attrName", "pos"},
         {"curve", "curve"},
     },
     {
