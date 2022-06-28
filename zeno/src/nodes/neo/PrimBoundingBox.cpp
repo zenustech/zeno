@@ -20,19 +20,34 @@ namespace {
 struct PrimBoundingBox : INode {
   virtual void apply() override {
     auto prim = get_input<PrimitiveObject>("prim");
+    auto extraBound = get_input2<float>("extraBound");
     auto [bmin, bmax] = primBoundingBox(prim.get());
+    if (extraBound != 0) {
+        bmin -= extraBound;
+        bmax += extraBound;
+    }
+    auto center = (bmin + bmax) / 2;
+    auto radius = (bmax - bmin) / 2;
+    auto diameter = bmax - bmin;
     set_output2("bmin", bmin);
     set_output2("bmax", bmax);
+    set_output2("center", center);
+    set_output2("radius", radius);
+    set_output2("diameter", diameter);
   }
 };
 
 ZENDEFNODE(PrimBoundingBox, {
     {
     {"PrimitiveObject", "prim"},
+    {"float", "extraBound", "0"},
     },
     {
     {"vec3f", "bmin"},
     {"vec3f", "bmax"},
+    {"vec3f", "center"},
+    {"vec3f", "radius"},
+    {"vec3f", "diameter"},
     },
     {
     },
