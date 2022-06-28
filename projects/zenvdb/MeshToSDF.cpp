@@ -61,7 +61,7 @@ static int defMeshToSDF = zeno::defNodeClass<MeshToSDF>("MeshToSDF",
     {"float", "voxel_size", "0.08 0"},
     {"enum vertex cell", "type", "vertex"},
     }, /* category: */ {
-    "openvdb",
+    "deprecated",
     }});
 
 

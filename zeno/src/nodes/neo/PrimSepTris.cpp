@@ -33,6 +33,13 @@ ZENO_API void primSmoothNormal(PrimitiveObject *prim) {
 #endif
 
 ZENO_API void primSepTriangles(PrimitiveObject *prim, bool smoothNormal, bool keepTriFaces) {
+    if (!prim->tris.size() && !prim->quads.size() && !prim->polys.size()) {
+        //if ((prim->points.size() || prim->lines.size()) && !prim->verts.has_attr("clr")) {
+            //throw;
+            //prim->verts.add_attr<vec3f>("clr").assign(prim->verts.size(), vec3f(1, 1, 0));
+        //}
+        return; // TODO: cihou pars and lines
+    }
     // TODO: support index compress?
     //if (smoothNormal && !prim->verts.has_attr("nrm")) {
         //primSmoothNormal(prim);

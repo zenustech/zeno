@@ -48,7 +48,7 @@ static int defPolyDuplicate = zeno::defNodeClass<PolyDuplicate>("PolyDuplicate",
     }, /* params: */ {
     
     }, /* category: */ {
-        "trimesh",
+        "deprecated",
     }});
 
 struct MeshCopy : zeno::INode {
@@ -79,6 +79,6 @@ static int defMeshCopy =
                                              {},
                                              /* category: */
                                              {
-                                                 "trimesh",
+                                                 "deprecated",
                                              }});
 } // namespace zeno

@@ -48,6 +48,11 @@
 namespace zeno {
 namespace {
 namespace cc4{
+    static void flipPrimFaceOrder(PrimitiveObject *prim) {
+        for (auto &ind: prim->tris) {
+            std::swap(ind[1], ind[2]);
+        }
+    }
     static std::vector<zeno::vec3f> genindi(int div1, int div2, int inc){
         std::vector<zeno::vec3f> ind;
 
@@ -236,6 +241,7 @@ struct CreateCube : zeno::INode {
             uv.push_back(uvs[i]);
         }
 
+        cc4::flipPrimFaceOrder(prim.get());
         set_output("prim", std::move(prim));
     }
 };
@@ -298,6 +304,7 @@ struct CreateDisk : zeno::INode {
         // Update last
         tris[tris.size()-1] = zeno::vec3i(divisions, 0, 1);
 
+        cc4::flipPrimFaceOrder(prim.get());
         set_output("prim", std::move(prim));
     }
 };
@@ -419,6 +426,7 @@ struct CreatePlane : zeno::INode {
             norm[i] = normal;
         }
 
+        cc4::flipPrimFaceOrder(prim.get());
         set_output("prim", std::move(prim));
     }
 };
@@ -443,7 +451,8 @@ struct CreateTube : zeno::INode {
 
         auto position = get_input2<zeno::vec3f>("position");
         auto scale = get_input2<zeno::vec3f>("scaleSize");
-        auto radius = get_input2<zeno::vec3f>("radius");
+        auto radius1 = get_input2<float>("radius1");
+        auto radius2 = get_input2<float>("radius2");
         auto height = get_input2<float>("height");
         auto rows = get_input2<int>("rows");
         auto columns = get_input2<int>("columns");
@@ -474,8 +483,8 @@ struct CreateTube : zeno::INode {
             float x = cos(rad);
             float z = -sin(rad);
             float of = 0.125;
-            auto p1 = zeno::vec3f(x*radius[0], hs, z*radius[0]);
-            auto p2 = zeno::vec3f(x*radius[1], -hs, z*radius[1]);
+            auto p1 = zeno::vec3f(x*radius1, hs, z*radius1);
+            auto p2 = zeno::vec3f(x*radius2, -hs, z*radius2);
             auto n1 = zeno::vec3f(0,1,0);
             auto n2 = zeno::vec3f(0,-1,0);
             verts.push_back(p1);
@@ -626,6 +635,7 @@ struct CreateTube : zeno::INode {
             normal[i] = n;
         }
 
+        cc4::flipPrimFaceOrder(prim.get());
         set_output("prim", std::move(prim));
     }
 };
@@ -635,7 +645,8 @@ ZENDEFNODE(CreateTube, {
         {"vec3f", "position", "0, 0, 0"},
         {"vec3f", "scaleSize", "1, 1, 1"},
         ROTATE_PARM
-        {"vec3f", "radius", "1, 1, 0"},
+        {"float", "radius1", "1"},
+        {"float", "radius2", "1"},
         {"float", "height", "2"},
         {"int", "rows", "2"},
         {"int", "columns", "12"}
@@ -774,6 +785,7 @@ struct CreateSphere : zeno::INode {
             uv[i] = zeno::vec3f(u,v,0);
         }
 
+        cc4::flipPrimFaceOrder(prim.get());
         set_output("prim", std::move(prim));
     }
 };
