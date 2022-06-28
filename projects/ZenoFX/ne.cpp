@@ -133,8 +133,7 @@ struct NumericEval : zeno::INode {
             } else if (dim == 1) {
                 value = float{};
             } else {
-                dbg_printf("ERROR : bad output dimension for numeric : %d\n", dim);
-                abort();
+                err_printf("ERROR : bad output dimension for numeric : %d\n", dim);
             }
         }
         //result->set(value);

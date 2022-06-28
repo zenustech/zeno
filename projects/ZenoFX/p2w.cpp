@@ -64,6 +64,11 @@ struct ParticlesTwoWrangle : zeno::INode {
         auto prim2 = get_input<zeno::PrimitiveObject>("prim2");
         auto code = get_input<zeno::StringObject>("zfxCode")->get();
 
+        if (prim->size() != prim2->size()) {
+            dbg_printf("prim and prim2 size mismatch (%d != %d), using minimal\n",
+                       prim->size(), prim2->size());
+        }
+
         zfx::Options opts(zfx::Options::for_x64);
         opts.detect_new_symbols = true;
         prim->foreach_attr([&] (auto const &key, auto const &attr) {
@@ -149,9 +154,8 @@ struct ParticlesTwoWrangle : zeno::INode {
                     name.c_str(), dim);
             assert(name[0] == '@');
             if (name[1] == '@') {
-                dbg_printf("ERROR: cannot define new attribute %s on prim2\n",
+                err_printf("ERROR: cannot define new attribute %s on prim2\n",
                         name.c_str());
-                abort();
             }
             auto key = name.substr(1);
             if (dim == 3) {
@@ -159,9 +163,8 @@ struct ParticlesTwoWrangle : zeno::INode {
             } else if (dim == 1) {
                 prim->add_attr<float>(key);
             } else {
-                dbg_printf("ERROR: bad attribute dimension for primitive: %d\n",
+                err_printf("ERROR: bad attribute dimension for primitive: %d\n",
                     dim);
-                abort();
             }
         }
 
@@ -205,7 +208,7 @@ struct ParticlesTwoWrangle : zeno::INode {
 };
 
 ZENDEFNODE(ParticlesTwoWrangle, {
-    {{"PrimitiveObject", "prim"},
+    {{"PrimitiveObject", "prim"}, {"PrimitiveObject", "prim2"},
      {"string", "zfxCode"}, {"DictObject:NumericObject", "params"}},
     {{"PrimitiveObject", "prim"}},
     {},

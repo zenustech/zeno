@@ -143,9 +143,8 @@ struct ParticlesWrangle : zeno::INode {
             } else if (dim == 1) {
                 prim->add_attr<float>(key);
             } else {
-                dbg_printf("ERROR: bad attribute dimension for primitive: %d\n",
+                err_printf("ERROR: bad attribute dimension for primitive: %d\n",
                     dim);
-                abort();
             }
         }
 

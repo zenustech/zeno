@@ -145,9 +145,8 @@ struct ParticleParticleWrangle : zeno::INode {
                     name.c_str(), dim);
             assert(name[0] == '@');
             if (name[1] == '@') {
-                dbg_printf("ERROR: cannot define new attribute %s on primNei\n",
+                err_printf("ERROR: cannot define new attribute %s on primNei\n",
                         name.c_str());
-                abort();
             }
             auto key = name.substr(1);
             if (dim == 3) {
@@ -155,9 +154,8 @@ struct ParticleParticleWrangle : zeno::INode {
             } else if (dim == 1) {
                 prim->add_attr<float>(key);
             } else {
-                dbg_printf("ERROR: bad attribute dimension for primitive: %d\n",
+                err_printf("ERROR: bad attribute dimension for primitive: %d\n",
                     dim);
-                abort();
             }
         }
 
