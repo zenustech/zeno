@@ -10,6 +10,7 @@
 #include "dbg_printf.h"
 
 namespace {
+    using namespace zeno;
 
 static zfx::Compiler compiler;
 static zfx::x64::Assembler assembler;
