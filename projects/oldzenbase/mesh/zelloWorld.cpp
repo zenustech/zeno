@@ -56,6 +56,6 @@ ZENDEFNODE(StringToMesh, {
     {"string", "AZmesh" ,"spacing"},
     {"StringMeshList", "SpacingList"},
     {},
-    {"math"},
+    {"deprecated"},
 });
 }

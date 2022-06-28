@@ -56,7 +56,7 @@ static int defGetVDBPoints = zeno::defNodeClass<GetVDBPoints>("GetVDBPoints",
         "pars",
     }, /* params: */ {
     }, /* category: */ {
-      "openvdb",
+      "deprecated",
     }});
 
 #if 0

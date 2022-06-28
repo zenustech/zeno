@@ -252,7 +252,7 @@ struct OSDPrimSubdivSimple : INode {
         auto prim = get_input<PrimitiveObject>("prim");
         int levels = get_input2<int>("levels");
         bool triangulate = get_input2<bool>("triangulate");
-        if (levels) osdPrimSubdivSimple(prim.get(), levels, 1);
+        if (levels) osdPrimSubdivSimple(prim.get(), levels, triangulate);
         set_output("prim", std::move(prim));
     }
 };

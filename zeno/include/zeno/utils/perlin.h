@@ -2,10 +2,11 @@
 
 #include <cstdint>
 #include <tuple>
+#include <zeno/utils/vec.h>
 
 namespace zeno {
 
-struct PerlinNoise {
+struct PerlinNoise1 {
 
 static inline constexpr int permutation[] = {151,160,137,91,90,15,
 131,13,201,95,96,53,194,233,7,225,140,36,103,30,69,142,8,99,37,240,21,10,23,
@@ -103,6 +104,61 @@ static float perlin(float x, float y, float z) {
     return mix (y1, y2, w);
 }
 
+};
+
+struct PerlinNoise {
+    static vec3f perlin_hash22(vec3f p)
+    {
+        p = vec3f( dot(p,vec3f(127.1f,311.7f,284.4f)),
+                  dot(p,vec3f(269.5f,183.3f,162.2f)),
+                  dot(p,vec3f(228.3f,164.9f,126.0f)));
+
+        return -1.0f + 2.0f * fract(sin(p)*43758.5453123f);
+    }
+
+    static float perlin_lev1(vec3f p)
+    {
+        vec3f pi = floor(p);
+        vec3f pf = p - pi;
+        vec3f w = pf * pf * (3.0f - 2.0f * pf);
+        return 0.08f + 0.8f * (mix(
+                    mix(
+                        mix(
+                            dot(perlin_hash22(pi + vec3f(0, 0, 0)), pf - vec3f(0, 0, 0)),
+                            dot(perlin_hash22(pi + vec3f(1, 0, 0)), pf - vec3f(1, 0, 0)),
+                            w[0]),
+                        mix(
+                            dot(perlin_hash22(pi + vec3f(0, 1, 0)), pf - vec3f(0, 1, 0)),
+                            dot(perlin_hash22(pi + vec3f(1, 1, 0)), pf - vec3f(1, 1, 0)),
+                            w[0]),
+                        w[1]),
+                    mix(
+                        mix(
+                            dot(perlin_hash22(pi + vec3f(0, 0, 1)), pf - vec3f(0, 0, 1)),
+                            dot(perlin_hash22(pi + vec3f(1, 0, 1)), pf - vec3f(1, 0, 1)),
+                            w[0]),
+                        mix(
+                            dot(perlin_hash22(pi + vec3f(0, 1, 1)), pf - vec3f(0, 1, 1)),
+                            dot(perlin_hash22(pi + vec3f(1, 1, 1)), pf - vec3f(1, 1, 1)),
+                            w[0]),
+                        w[1]),
+                    w[2]));
+    }
+
+    static float perlin(vec3f a,float power,float depth)
+    {
+        float total = 0;
+        int n = (int)floor(depth);
+        for(int i=0; i<n; i++)
+        {
+            float frequency = 1<<i;
+            float amplitude = pow(power,i);
+            amplitude *= 1.f - max(0.f, depth - n);
+            total += perlin_lev1(a * frequency) * amplitude;
+        }
+
+        return total;
+    }
 };
 
 }

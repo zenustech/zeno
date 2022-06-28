@@ -228,7 +228,7 @@ namespace zeno { // credits by zhouhang
             },
             // category
             {
-                "numeric",
+                "deprecated"
             }
         }
     );
@@ -262,7 +262,7 @@ namespace zeno { // credits by zhouhang
             },
             // category
             {
-                "numeric",
+                "deprecated",
             }
         }
     );
@@ -483,7 +483,7 @@ ZENDEFNODE(PrimitiveCurvemap, {
             },
             // category
             {
-                "numeric",
+                "deprecated",
             }
         }
     );

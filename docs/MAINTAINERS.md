@@ -23,6 +23,56 @@ Now rebuild Zeno, and you will see your updated translations in UI.
 
 This process can be ran for multiple times, `lupdate` won't override the old translations, no worry.
 
+> See also `misc/trans.sh`.
+
+## Deploying Zeno (CI/CD)
+
+The deployment is automated via GitHub CI, see `.github/workflows/cmake.yml`.
+
+To trigger it, simply push a commit message containing `[release]`, for example:
+
+```bash
+git commit -m "[release] some description"
+git push
+```
+
+Push it, then GitHub CI will do the depolyment automatically for you.
+
+It will create a release with tag, for example, `v2022.4.19` (today's date).
+
+## Accelerate compile process
+
+You may install `ccache` to compile faster on Linux.
+
+```bash
+sudo apt-get install -y ccache
+```
+
+```bash
+sudo pacman -S ccache
+```
+
+You may install `ninja` (a faster build system than `make`).
+
+```bash
+sudo apt-get install -y ninja
+```
+
+```bash
+sudo pacman -S ninja
+```
+
+```bash
+pip install ninja
+```
+
+Then use `-GNinja` parameter in cmake configuration step:
+
+```bash
+cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+cmake --build build --parallel
+```
+
 ## Install Zeno from source (not recommended)
 
 For the Linux traditional `make install` style installation, please specify this argument:
@@ -41,18 +91,3 @@ sudo cmake --build build --target install
 ```
 
 This will install Zeno **globally in your system**.
-
-## Deploying Zeno (CI/CD)
-
-The deployment is automated via GitHub CI, see `.github/workflows/cmake.yml`.
-
-To trigger it, simply push a commit message containing `[release]`, for example:
-
-```bash
-git commit -m "[release] some description"
-git push
-```
-
-Push it, then GitHub CI will do the depolyment automatically for you.
-
-It will create a release with tag, for example, `v2022.4.19` (today's date).

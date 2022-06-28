@@ -158,7 +158,7 @@ static int defReadObjMesh = zeno::defNodeClass<ReadObjMesh>("ReadObjMesh",
     }, /* params: */ {
     {"readpath", "path", ""},
     }, /* category: */ {
-    "trimesh",
+    "deprecated",
     }});
 
 struct MeshMix : zeno::INode {
@@ -188,7 +188,7 @@ static int defMeshMix = zeno::defNodeClass<MeshMix>("MeshMix",
     "mesh",
     }, /* params: */ {
     }, /* category: */ {
-    "trimesh",
+    "deprecated",
     }});
 struct ImportObjMesh : zeno::INode {
   virtual void apply() override {
@@ -206,7 +206,7 @@ static int defImportObjMesh = zeno::defNodeClass<ImportObjMesh>("ImportObjMesh",
     "mesh",
     }, /* params: */ {
     }, /* category: */ {
-    "trimesh",
+    "deprecated",
     }});
 
 }

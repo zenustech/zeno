@@ -13,7 +13,6 @@ set(ZENO_EXTENSIONS
     FastFLIP
     Rigid
     cgmesh
-    gmpm
     mesher
     Euler
     FEM

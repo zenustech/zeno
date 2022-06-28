@@ -20,7 +20,7 @@ ZenoApplication::ZenoApplication(int &argc, char **argv)
     m_errSteam.registerMsgHandler();
     zeno::log_info("build date: {} {}", __DATE__, __TIME__);
 
-#ifdef ZENO_MULTIPROCESS
+#if defined(ZENO_MULTIPROCESS) && defined(ZENO_IPC_USE_TCP)
     m_server = new ZTcpServer(this);
     m_server->init(QHostAddress::LocalHost, TCP_PORT);
 #endif

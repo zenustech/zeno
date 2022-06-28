@@ -26,7 +26,7 @@ ZENDEFNODE(ExportZpmPrimitive,
     }, /* outputs: */ {
     }, /* params: */ {
     }, /* category: */ {
-    "primitive",
+    "deprecated",
     }});
 
 
@@ -46,7 +46,7 @@ ZENDEFNODE(ImportZpmPrimitive,
     {"PrimitiveObject", "prim"},
     }, /* params: */ {
     }, /* category: */ {
-    "primitive",
+    "deprecated",
     }});
 
 }

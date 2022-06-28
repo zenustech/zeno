@@ -42,7 +42,7 @@ static int defGeoVertexVel = zeno::defNodeClass<GeoVertexVel>("GeoVertexVel",
     }, /* params: */ {
     
     }, /* category: */ {
-        "trimesh",
+        "deprecated",
     }});
 
 }

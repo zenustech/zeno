@@ -9,7 +9,6 @@
 #include <openvdb/tools/MeshToVolume.h>
 #include <openvdb/tools/LevelSetTracker.h>
 #include <openvdb/tools/Filter.h>
-#include <zeno/ParticlesObject.h>
 #include <openvdb/openvdb.h>
 #include <openvdb/tools/LevelSetSphere.h>
 #include <openvdb/tools/ChangeBackground.h>

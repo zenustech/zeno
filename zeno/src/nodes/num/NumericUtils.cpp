@@ -70,7 +70,7 @@ ZENDEFNODE(NumericRandom, {
     {{"float", "scale", "1"}},
     {{"NumericObject", "value"}},
     {{"int", "dim", "1"}, {"bool", "symmetric", "0"}},
-    {"numeric"},
+    {"deprecated"},
 });
 
 
@@ -92,7 +92,7 @@ ZENDEFNODE(NumericRandomInt, {
     {{"int", "min", "0"}, {"int", "max", "65536"}},
     {{"int", "value"}},
     {},
-    {"numeric"},
+    {"deprecated"},
 });
 
 
@@ -112,7 +112,7 @@ ZENDEFNODE(SetRandomSeed, {
     {"routeIn", {"int", "seed", "0"}},
     {"routeOut"},
     {},
-    {"numeric"},
+    {"deprecated"},
 });
 
 

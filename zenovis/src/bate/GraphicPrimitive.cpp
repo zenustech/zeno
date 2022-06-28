@@ -306,10 +306,16 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
         }
         if (!prim->has_attr("clr")) {
             auto &clr = prim->add_attr<zeno::vec3f>("clr");
+            zeno::vec3f clr0(1.0f);
+            if (prim->lines.size())
+                clr0 = {1.0f, 0.6f, 0.2f};
+            else if (!prim->tris.size() && !prim->quads.size() && !prim->polys.size())
+                clr0 = {0.2f, 0.6f, 1.0f};
             for (size_t i = 0; i < clr.size(); i++) {
-                clr[i] = zeno::vec3f(1.0f);
+                clr[i] = clr0;
             }
         }
+#if 0
         bool primNormalCorrect =
             prim->has_attr("nrm") &&
             length(prim->attr<zeno::vec3f>("nrm")[0]) > 1e-5;
@@ -320,6 +326,9 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
             zeno::log_trace("computing normal");
             zeno::primCalcNormal(&*prim, 1);
         }
+#else
+        zeno::primSepTriangles(&*prim, true, true);//TODO: rm keepTriFaces
+#endif
         /* BEGIN TODO */
         if (!prim->has_attr("nrm")) {
             auto &radopa = prim->add_attr<zeno::vec3f>("nrm");

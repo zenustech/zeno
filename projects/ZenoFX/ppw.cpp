@@ -3,11 +3,14 @@
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/DictObject.h>
+#include <zeno/extra/GlobalState.h>
+#include <zeno/core/Graph.h>
 #include <zfx/zfx.h>
 #include <zfx/x64.h>
 #include <cassert>
 #include "dbg_printf.h"
 
+namespace zeno {
 namespace {
 
 static zfx::Compiler compiler;
@@ -85,13 +88,34 @@ struct ParticleParticleWrangle : zeno::INode {
         auto params = has_input("params") ?
             get_input<zeno::DictObject>("params") :
             std::make_shared<zeno::DictObject>();
+        {
+        // BEGIN心欣你也可以把这段代码加到其他wrangle节点去，这样这些wrangle也可以自动有$F$DT$T做参数
+        auto const &gs = *this->getGlobalState();
+        params->lut["F"] = objectFromLiterial((float)gs.frameid);
+        params->lut["DT"] = objectFromLiterial(gs.frame_time);
+        params->lut["T"] = objectFromLiterial(gs.frame_time * gs.frameid + gs.frame_time_elapsed);
+        // END心欣你也可以把这段代码加到其他wrangle节点去，这样这些wrangle也可以自动有$F$DT$T做参数
+        // BEGIN心欣你也可以把这段代码加到其他wrangle节点去，这样这些wrangle也可以自动引用portal做参数
+        for (auto const &[key, ref]: getThisGraph()->portalIns) {
+            if (auto i = code.find('$' + key); i != std::string::npos) {
+                i = i + key.size() + 1;
+                if (code.size() <= i || !std::isalnum(code[i])) {
+                    dbg_printf("ref portal %s\n", key.c_str());
+                    auto res = getThisGraph()->callTempNode("PortalOut",
+                          {{"name:", objectFromLiterial(key)}}).at("port");
+                    params->lut[key] = std::move(res);
+                }
+            }
+        }
+        // END心欣你也可以把这段代码加到其他wrangle节点去，这样这些wrangle也可以自动引用portal做参数
+        }
         std::vector<float> parvals;
         std::vector<std::pair<std::string, int>> parnames;
         for (auto const &[key_, par]: params->getLiterial<zeno::NumericValue>()) {
             auto key = '$' + key_;
                 auto dim = std::visit([&] (auto const &v) {
                     using T = std::decay_t<decltype(v)>;
-                    if constexpr (std::is_same_v<T, zeno::vec3f>) {
+                    if constexpr (std::is_convertible_v<T, zeno::vec3f>) {
                         parvals.push_back(v[0]);
                         parvals.push_back(v[1]);
                         parvals.push_back(v[2]);
@@ -99,7 +123,7 @@ struct ParticleParticleWrangle : zeno::INode {
                         parnames.emplace_back(key, 1);
                         parnames.emplace_back(key, 2);
                         return 3;
-                    } else if constexpr (std::is_same_v<T, float>) {
+                    } else if constexpr (std::is_convertible_v<T, float>) {
                         parvals.push_back(v);
                         parnames.emplace_back(key, 0);
                         return 1;
@@ -121,7 +145,7 @@ struct ParticleParticleWrangle : zeno::INode {
                     name.c_str(), dim);
             assert(name[0] == '@');
             if (name[1] == '@') {
-                dbg_printf("ERROR: cannot define new attribute %s on primNei\n",
+                err_printf("ERROR: cannot define new attribute %s on primNei\n",
                         name.c_str());
             }
             auto key = name.substr(1);
@@ -130,9 +154,8 @@ struct ParticleParticleWrangle : zeno::INode {
             } else if (dim == 1) {
                 prim->add_attr<float>(key);
             } else {
-                dbg_printf("ERROR: bad attribute dimension for primitive: %d\n",
+                err_printf("ERROR: bad attribute dimension for primitive: %d\n",
                     dim);
-                abort();
             }
         }
 
@@ -209,4 +232,5 @@ ZENDEFNODE(ParticleParticleWrangle, {
     {"zenofx"},
 });
 
+}
 }

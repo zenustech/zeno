@@ -78,7 +78,7 @@ static void runner_start(std::string const &progJson, int sessionid) {
     zeno::log_debug("runner got program JSON: {}", progJson);
     //MessageBox(0, "runner", "runner", MB_OK);           //convient to attach process by debugger, at windows.
     zeno::scope_exit sp([=]() { std::cout.flush(); });
-    zeno::TimerAtexitHelper timerHelper;
+    //zeno::TimerAtexitHelper timerHelper;
 
     auto session = &zeno::getSession();
     session->globalState->sessionid = sessionid;
@@ -98,19 +98,21 @@ static void runner_start(std::string const &progJson, int sessionid) {
 
     std::vector<char> buffer;
 
-    int &frame = session->globalState->frameid;
     session->globalComm->frameRange(graph->beginFrameNumber, graph->endFrameNumber);
     send_packet("{\"action\":\"frameRange\",\"key\":\""
                 + std::to_string(graph->beginFrameNumber)
                 + ":" + std::to_string(graph->endFrameNumber)
                 + "\"}", "", 0);
 
-    for (frame = graph->beginFrameNumber; frame <= graph->endFrameNumber; frame++) {
+    for (int frame = graph->beginFrameNumber; frame <= graph->endFrameNumber; frame++)
+    {
         zeno::scope_exit sp([=]() { std::cout.flush(); });
         zeno::log_debug("begin frame {}", frame);
 
+        session->globalState->frameid = frame;
         session->globalComm->newFrame();
         session->globalState->frameBegin();
+
         while (session->globalState->substepBegin())
         {
             graph->applyNodesToExec();
@@ -122,7 +124,6 @@ static void runner_start(std::string const &progJson, int sessionid) {
 
         auto const &viewObjs = session->globalComm->getViewObjects();
         zeno::log_debug("runner got {} view objects", viewObjs.size());
-        session->globalState->frameEnd();
         zeno::log_debug("end frame {}", frame);
 
         send_packet("{\"action\":\"newFrame\"}", "", 0);

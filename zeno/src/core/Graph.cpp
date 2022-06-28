@@ -93,19 +93,25 @@ ZENO_API void Graph::setNodeInput(std::string const &id, std::string const &par,
     safe_at(nodes, id, "node name")->inputs[par] = val;
 }
 
-ZENO_API std::unique_ptr<INode> Graph::getOverloadNode(std::string const &id,
-        std::vector<std::shared_ptr<IObject>> const &inputs) const {
-    auto node = session->getOverloadNode(id, inputs);
-    if (!node) return nullptr;
-    node->graph = const_cast<Graph *>(this);
-    return node;
+ZENO_API std::map<std::string, zany> Graph::callTempNode(std::string const &id,
+        std::map<std::string, zany> inputs) const {
+    auto se = session->nodeClasses.at(id)->new_instance();
+    se->graph = const_cast<Graph *>(this);
+    se->inputs = std::move(inputs);
+    se->doApply();
+    return std::move(se->outputs);
 }
 
 ZENO_API void Graph::setNodeParam(std::string const &id, std::string const &par,
-    std::variant<int, float, std::string> const &val) {
+    std::variant<int, float, std::string, zany> const &val) {
     auto parid = par + ":";
     std::visit([&] (auto const &val) {
-        setNodeInput(id, parid, objectFromLiterial(val));
+        using T = std::decay_t<decltype(val)>;
+        if constexpr (std::is_same_v<T, zany>) {
+            setNodeInput(id, parid, val);
+        } else {
+            setNodeInput(id, parid, objectFromLiterial(val));
+        }
     }, val);
 }
 
