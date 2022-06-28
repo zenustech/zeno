@@ -306,8 +306,13 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
         }
         if (!prim->has_attr("clr")) {
             auto &clr = prim->add_attr<zeno::vec3f>("clr");
+            zeno::vec3f clr0(1.0f);
+            if (prim->lines.size())
+                clr0 = {1.0f, 0.6f, 0.2f};
+            else if (!prim->tris.size())
+                clr0 = {0.2f, 0.6f, 1.0f};
             for (size_t i = 0; i < clr.size(); i++) {
-                clr[i] = zeno::vec3f(1.0f);
+                clr[i] = clr0;
             }
         }
 #if 0

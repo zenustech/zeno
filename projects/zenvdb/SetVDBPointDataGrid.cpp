@@ -154,7 +154,7 @@ static int defSetVDBPointDataGrid = zeno::defNodeClass<SetVDBPointDataGrid>("Set
     }, /* params: */ {
     {"float", "dx", "0.08"},
     }, /* category: */ {
-        "particles",
+        "deprecated",
     }});
 
 

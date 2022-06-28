@@ -70,7 +70,7 @@ static int defTransformMesh = zeno::defNodeClass<TransformMesh>("TransformMesh",
     "mesh",
     }, /* params: */ {
     }, /* category: */ {
-    "trimesh",
+    "deprecated",
     }});
 
 }

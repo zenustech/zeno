@@ -49,7 +49,7 @@ static int defMeshToPrimitive = zeno::defNodeClass<MeshToPrimitive>("MeshToPrimi
         "prim",
     }, /* params: */ { 
     }, /* category: */ {
-    "primitive",
+    "deprecated",
     }});
 
 
@@ -91,7 +91,7 @@ static int defPrimitiveToMesh = zeno::defNodeClass<PrimitiveToMesh>("PrimitiveTo
         "mesh",
     }, /* params: */ { 
     }, /* category: */ {
-    "primitive",
+    "deprecated",
     }});
 
 
@@ -106,7 +106,7 @@ ZENO_DEFOVERLOADNODE(ConvertTo, _MeshObject_PrimitiveObject, typeid(MeshObject).
         {"mesh", "prim"},
         {},
         {},
-        {"primitive"},
+        {"deprecated"},
 });
 
 
@@ -121,7 +121,7 @@ ZENO_DEFOVERLOADNODE(ConvertTo, _PrimitiveObject_MeshObject, typeid(PrimitiveObj
         {"prim", "mesh"},
         {},
         {},
-        {"primitive"},
+        {"deprecated"},
 });
 
 }
