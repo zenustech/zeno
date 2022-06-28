@@ -4,7 +4,7 @@
 #include <zenovis/bate/IGraphic.h>
 #include <zenovis/ShaderManager.h>
 #include <zeno/types/CameraObject.h>
-#include <zeno/utils/scope_exit.h>
+//#include <zeno/utils/scope_exit.h>
 
 namespace zenovis {
 namespace {
@@ -15,8 +15,8 @@ struct GraphicCamera final : IGraphic {
     Scene *scene;
 
     explicit GraphicCamera(Scene *scene_, zeno::CameraObject *cam) : scene(scene_) {
-        zeno::scope_restore _1(scene->camera->m_nx);
-        zeno::scope_restore _2(scene->camera->m_ny);
+        //zeno::scope_restore _1(scene->camera->m_nx);
+        //zeno::scope_restore _2(scene->camera->m_ny);
         scene->camera->setCamera(cam->get());
     }
 };
