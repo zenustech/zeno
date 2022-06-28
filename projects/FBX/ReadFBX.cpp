@@ -258,17 +258,6 @@ struct Mesh{
             aiMatrix4x4 camMatrix;
             cam->GetCameraMatrix(camMatrix);
 
-#if USE_OFFICIAL_ASSIMP
-            SCamera sCam{cam->mHorizontalFOV,
-                         35.0f,
-                         cam->mAspect,
-                         1.417f * 25.4f,  // inch to mm
-                         0.945f * 25.4f,
-                         cam->mClipPlaneNear,
-                         cam->mClipPlaneFar,
-                         zeno::vec3f(0, 0, 0),
-            };
-#else
             SCamera sCam{cam->mHorizontalFOV,
                          cam->mFocalLength,
                          cam->mAspect,
@@ -283,9 +272,8 @@ struct Mesh{
                 /*zeno::vec3f(cam->mUp.x, cam->mUp.y, cam->mUp.z),*/
                 /*camMatrix*/
             };
-#endif
 
-            zeno::log_info(">>>>> {} {} {} {} {} {} - {} {}\n {} {} {}",
+            zeno::log_info("{} hfov {} fl {} ap {} n {} f {}\n\tfw {} fh {} x {} y {} z {}",
                            camName, sCam.hFov, sCam.focL, sCam.aspect, sCam.pNear, sCam.pFar,
                            sCam.filmW, sCam.filmH,
                            /*sCam.lookAt[0], sCam.lookAt[1], sCam.lookAt[2],  // default is 1,0,0*/
