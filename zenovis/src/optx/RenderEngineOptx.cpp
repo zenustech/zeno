@@ -91,12 +91,17 @@ struct GraphicsManager {
             }
         }
         std::string key;
-
+        Scene *scene;
         std::variant<DetPrimitive, DetMaterial> det;
 
-        explicit ZxxGraphic(std::string key_, zeno::IObject *obj)
-        : key(std::move(key_))
+        explicit ZxxGraphic(std::string key_, zeno::IObject *obj, Scene *scene_)
+        : key(std::move(key_)), scene(scene_)
         {
+            if (auto cam_prim = dynamic_cast<zeno::CameraObject *>(obj)){
+                zeno::log_info("processing camera object {}", key);
+                scene->camera->setCamera(cam_prim->get());
+            }
+
             if (auto prim_in = dynamic_cast<zeno::PrimitiveObject *>(obj))
             {
                 auto isL = prim_in->userData().getLiterial<int>("isL", 0);
@@ -228,7 +233,7 @@ struct GraphicsManager {
         for (auto const &[key, obj] : objs) {
             if (ins.may_emplace(key)) {
                 zeno::log_info("zxx_load_object: loading graphics [{}]", key);
-                auto ig = std::make_unique<ZxxGraphic>(key, obj);
+                auto ig = std::make_unique<ZxxGraphic>(key, obj, scene);
                 zeno::log_info("zxx_load_object: loaded graphics to {}", ig.get());
                 ins.try_emplace(key, std::move(ig));
             }
