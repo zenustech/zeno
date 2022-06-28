@@ -323,7 +323,8 @@ void ViewportWidget::initializeGL()
 
 void ViewportWidget::resizeGL(int nx, int ny)
 {
-    float ratio = QApplication::desktop()->devicePixelRatio();
+    float ratio = devicePixelRatioF();
+    zeno::log_trace("nx={}, ny={}, dpr={}", nx, ny, ratio);
     m_camera->setRes(QVector2D(nx * ratio, ny * ratio));
     m_camera->updatePerspective();
 }
