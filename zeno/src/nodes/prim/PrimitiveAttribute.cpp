@@ -48,6 +48,27 @@ ZENDEFNODE(PrimitiveAddAttr,
     "primitive",
     } });
 
+struct PrimitiveDelAttr : zeno::INode {
+    virtual void apply() override {
+        auto prim = get_input<PrimitiveObject>("prim");
+        auto name = get_param<std::string>("name");
+        prim->verts.attrs.erase(name);
+
+        set_output("prim", get_input("prim"));
+    }
+};
+
+ZENDEFNODE(PrimitiveDelAttr,
+    { /* inputs: */ {
+    "prim",
+    }, /* outputs: */ {
+    "prim",
+    }, /* params: */ {
+    {"string", "name", "pos"},
+    }, /* category: */ {
+    "primitive",
+    } });
+
 struct PrimitiveGetAttrValue : zeno::INode {
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
