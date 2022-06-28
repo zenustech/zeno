@@ -20,46 +20,48 @@ struct Buffer {
     float *base = nullptr;
     size_t count = 0;
     size_t stride = 0;
-    int which = 0;
 };
-
 
 static void vectors_wrangle
     ( zfx::x64::Executable *exec
     , std::vector<Buffer> const &chs
-    , std::vector<Buffer> const &chs2
-    , std::vector<zeno::vec3f> const &pos
-    , std::vector<zeno::vec3f> const &posj) {
+    ) {
     if (chs.size() == 0)
         return;
+    size_t size = chs[0].count;
+    for (int i = 1; i < chs.size(); i++) {
+        size = std::min(chs[i].count, size);
+    }
 
     #pragma omp parallel for
-    for (int i = 0; i < pos.size(); i++) {
+    for (int i = 0; i < size - exec->SimdWidth + 1; i += exec->SimdWidth) {
         auto ctx = exec->make_context();
-        for (int k = 0; k < chs.size(); k++) {
-            if (!chs[k].which)
-                ctx.channel(k)[0] = chs[k].base[chs[k].stride * i];
+        for (int j = 0; j < chs.size(); j++) {
+            for (int k = 0; k < exec->SimdWidth; k++)
+                ctx.channel(j)[k] = chs[j].base[chs[j].stride * (i + k)];
         }
-        for(int pid=0;pid<posj.size();pid++) {
-            for (int k = 0; k < chs.size(); k++) {
-                if (chs[k].which)
-                    ctx.channel(k)[0] = chs2[k].base[chs2[k].stride * pid];
-            }
-            ctx.execute();
+        ctx.execute();
+        for (int j = 0; j < chs.size(); j++) {
+            for (int k = 0; k < exec->SimdWidth; k++)
+                 chs[j].base[chs[j].stride * (i + k)] = ctx.channel(j)[k];
         }
-        for (int k = 0; k < chs.size(); k++) {
-            if (!chs[k].which)
-                chs[k].base[chs[k].stride * i] = ctx.channel(k)[0];
+    }
+    for (int i = size / exec->SimdWidth * exec->SimdWidth; i < size; i++) {
+        auto ctx = exec->make_context();
+        for (int j = 0; j < chs.size(); j++) {
+            ctx.channel(j)[0] = chs[j].base[chs[j].stride * i];
+        }
+        ctx.execute();
+        for (int j = 0; j < chs.size(); j++) {
+            chs[j].base[chs[j].stride * i] = ctx.channel(j)[0];
         }
     }
 }
 
-struct ParticleParticleWrangle : zeno::INode {
+struct ParticlesTwoWrangle : zeno::INode {
     virtual void apply() override {
-        auto prim = get_input<zeno::PrimitiveObject>("prim1");
-        auto primNei = has_input("prim2") ?
-            get_input<zeno::PrimitiveObject>("prim2") :
-            std::static_pointer_cast<zeno::PrimitiveObject>(prim->clone());
+        auto prim = get_input<zeno::PrimitiveObject>("prim");
+        auto prim2 = get_input<zeno::PrimitiveObject>("prim2");
         auto code = get_input<zeno::StringObject>("zfxCode")->get();
 
         zfx::Options opts(zfx::Options::for_x64);
@@ -74,7 +76,7 @@ struct ParticleParticleWrangle : zeno::INode {
             dbg_printf("define symbol: @%s dim %d\n", key.c_str(), dim);
             opts.define_symbol('@' + key, dim);
         });
-        primNei->foreach_attr([&] (auto const &key, auto const &attr) {
+        prim2->foreach_attr([&] (auto const &key, auto const &attr) {
             int dim = ([] (auto const &v) {
                 using T = std::decay_t<decltype(v[0])>;
                 if constexpr (std::is_same_v<T, zeno::vec3f>) return 3;
@@ -135,6 +137,8 @@ struct ParticleParticleWrangle : zeno::INode {
                 }, par);
                 dbg_printf("define param: %s dim %d\n", key.c_str(), dim);
                 opts.define_param(key, dim);
+            //auto par = zeno::safe_any_cast<zeno::NumericValue>(obj);
+            
         }
 
         auto prog = compiler.compile(code, opts);
@@ -145,7 +149,7 @@ struct ParticleParticleWrangle : zeno::INode {
                     name.c_str(), dim);
             assert(name[0] == '@');
             if (name[1] == '@') {
-                dbg_printf("ERROR: cannot define new attribute %s on primNei\n",
+                dbg_printf("ERROR: cannot define new attribute %s on prim2\n",
                         name.c_str());
                 abort();
             }
@@ -181,58 +185,33 @@ struct ParticleParticleWrangle : zeno::INode {
             zeno::PrimitiveObject *primPtr;
             if (name[1] == '@') {
                 name = name.substr(2);
-                primPtr = primNei.get();
-                iob.which = 1;
+                primPtr = prim2.get();
             } else {
                 name = name.substr(1);
                 primPtr = prim.get();
-                iob.which = 0;
             }
-            prim->attr_visit(name, [&, dimid_ = dimid] (auto const &arr) {
+            prim->attr_visit(name,
+            [&, dimid_ = dimid] (auto const &arr) {
                 iob.base = (float *)arr.data() + dimid_;
                 iob.count = arr.size();
                 iob.stride = sizeof(arr[0]) / sizeof(float);
             });
             chs[i] = iob;
         }
-
-        std::vector<Buffer> chs2(prog->symbols.size());
-        for (int i = 0; i < chs2.size(); i++) {
-            auto [name, dimid] = prog->symbols[i];
-            dbg_printf("channel %d: %s.%d\n", i, name.c_str(), dimid);
-            assert(name[0] == '@');
-            Buffer iob;
-            zeno::PrimitiveObject *primPtr;
-            if (name[1] == '@') {
-                name = name.substr(2);
-                primPtr = primNei.get();
-                iob.which = 1;
-            } else {
-                name = name.substr(1);
-                primPtr = prim.get();
-                iob.which = 0;
-            }
-            primNei->attr_visit(name, [&, dimid_ = dimid] (auto const &arr) {
-                iob.base = (float *)arr.data() + dimid_;
-                iob.count = arr.size();
-                iob.stride = sizeof(arr[0]) / sizeof(float);
-            });
-            chs2[i] = iob;
-        }
-
-        vectors_wrangle(exec, chs, chs2, prim->attr<zeno::vec3f>("pos"), primNei->attr<zeno::vec3f>("pos"));
+        vectors_wrangle(exec, chs);
 
         set_output("prim", std::move(prim));
     }
 };
 
-ZENDEFNODE(ParticleParticleWrangle, {
-    {{"PrimitiveObject", "prim1"}, {"PrimitiveObject", "prim2"},
+ZENDEFNODE(ParticlesTwoWrangle, {
+    {{"PrimitiveObject", "prim"},
      {"string", "zfxCode"}, {"DictObject:NumericObject", "params"}},
     {{"PrimitiveObject", "prim"}},
     {},
     {"zenofx"},
 });
+
 
 }
 }
