@@ -23,24 +23,7 @@ Now rebuild Zeno, and you will see your updated translations in UI.
 
 This process can be ran for multiple times, `lupdate` won't override the old translations, no worry.
 
-## Install Zeno from source (not recommended)
-
-For the Linux traditional `make install` style installation, please specify this argument:
-
-```bash
-cmake -DZENO_INSTALL_TARGET:BOOL=ON -DCMAKE_INSTALL_PREFIX=/usr/local
-```
-
-> Change the `/usr/local` to your preferred install path, for example `/opt/zeno-2022.4.19`.
-
-Next, build and install via CMake:
-
-```bash
-cmake --build build
-sudo cmake --build build --target install
-```
-
-This will install Zeno **globally in your system**.
+> See also `misc/trans.sh`.
 
 ## Deploying Zeno (CI/CD)
 
@@ -89,3 +72,22 @@ Then use `-GNinja` parameter in cmake configuration step:
 cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
 cmake --build build --parallel
 ```
+
+## Install Zeno from source (not recommended)
+
+For the Linux traditional `make install` style installation, please specify this argument:
+
+```bash
+cmake -DZENO_INSTALL_TARGET:BOOL=ON -DCMAKE_INSTALL_PREFIX=/usr/local
+```
+
+> Change the `/usr/local` to your preferred install path, for example `/opt/zeno-2022.4.19`.
+
+Next, build and install via CMake:
+
+```bash
+cmake --build build
+sudo cmake --build build --target install
+```
+
+This will install Zeno **globally in your system**.
