@@ -193,7 +193,7 @@ struct ParticlesTwoWrangle : zeno::INode {
                 name = name.substr(1);
                 primPtr = prim.get();
             }
-            prim->attr_visit(name,
+            primPtr->attr_visit(name,
             [&, dimid_ = dimid] (auto const &arr) {
                 iob.base = (float *)arr.data() + dimid_;
                 iob.count = arr.size();
