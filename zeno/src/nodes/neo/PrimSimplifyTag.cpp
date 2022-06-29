@@ -30,7 +30,7 @@ ZENO_API void primColorByTag(PrimitiveObject *prim, std::string tagAttr, std::st
     auto &clr = prim->verts.add_attr<vec3f>(clrAttr);
     std::unordered_map<int, vec3f> lut;
     std::mt19937 gen;
-    std::uniform_real_distribution<float> unif(0.4f, 1.0f);
+    std::uniform_real_distribution<float> unif(0.2f, 1.0f);
     for (int i = 0; i < tag.size(); i++) {
         auto k = tag[i];
         auto it = lut.find(k);

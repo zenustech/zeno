@@ -104,11 +104,12 @@ struct CurveData : private _CurveDataDetails {
                 cf = cpbases.front() + cf;
             else  // CycleType::kMirror
                 cf = cpbases.back() - cf;
+            moreit = std::lower_bound(cpbases.begin(), cpbases.end(), cf);
         }
         if (moreit == cpbases.end())
-            return cpbases.back();
+            return cpoints.back().v;
         else if (moreit == cpbases.begin())
-            return cpbases.front();
+            return cpoints.front().v;
         auto lessit = std::prev(moreit);
         ControlPoint p = cpoints[lessit - cpbases.begin()];
         ControlPoint n = cpoints[moreit - cpbases.begin()];
