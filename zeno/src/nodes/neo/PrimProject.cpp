@@ -53,16 +53,17 @@ struct BVH {  // TODO: WXL please complete this to accel up
 
     template <class Cond>
     float intersect(Cond cond, vec3f const &ro, vec3f const &rd) const {
+        float ret = 0;
         for (size_t i = 0; i < prim->tris.size(); i++) {
             auto ind = prim->tris[i];
             auto a = prim->verts[ind[0]];
             auto b = prim->verts[ind[1]];
             auto c = prim->verts[ind[2]];
             float d = tri_intersect(cond, ro, rd, a, b, c);
-            if (d != 0)
-                return d;
+            if (d != 0 && (ret == 0 || std::abs(d) < std::abs(ret)))
+                ret = d;
         }
-        return 0;
+        return ret;
     }
 };
 
@@ -82,6 +83,7 @@ struct PrimProject : INode {
         auto comp = enum_variant<std::variant<
             std::greater<float>, std::less<float>, std::not_equal_to<float>
             >>(array_index({"front", "back", "both"}, allowDir));
+
         std::visit([&] (auto comp) {
             auto cond = [comp] (float r) {
                 return comp(r, 0.f);

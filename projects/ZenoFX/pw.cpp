@@ -82,7 +82,7 @@ struct ParticlesWrangle : zeno::INode {
         {
         // BEGIN心欣你也可以把这段代码加到其他wrangle节点去，这样这些wrangle也可以自动有$F$DT$T做参数
         auto const &gs = *this->getGlobalState();
-        params->lut["F"] = objectFromLiterial(gs.frameid);
+        params->lut["F"] = objectFromLiterial((float)gs.frameid);
         params->lut["DT"] = objectFromLiterial(gs.frame_time);
         params->lut["T"] = objectFromLiterial(gs.frame_time * gs.frameid + gs.frame_time_elapsed);
         // END心欣你也可以把这段代码加到其他wrangle节点去，这样这些wrangle也可以自动有$F$DT$T做参数
@@ -106,7 +106,7 @@ struct ParticlesWrangle : zeno::INode {
             auto key = '$' + key_;
                 auto dim = std::visit([&] (auto const &v) {
                     using T = std::decay_t<decltype(v)>;
-                    if constexpr (std::is_same_v<T, zeno::vec3f>) {
+                    if constexpr (std::is_convertible_v<T, zeno::vec3f>) {
                         parvals.push_back(v[0]);
                         parvals.push_back(v[1]);
                         parvals.push_back(v[2]);
@@ -114,7 +114,7 @@ struct ParticlesWrangle : zeno::INode {
                         parnames.emplace_back(key, 1);
                         parnames.emplace_back(key, 2);
                         return 3;
-                    } else if constexpr (std::is_same_v<T, float>) {
+                    } else if constexpr (std::is_convertible_v<T, float>) {
                         parvals.push_back(v);
                         parnames.emplace_back(key, 0);
                         return 1;
@@ -143,9 +143,8 @@ struct ParticlesWrangle : zeno::INode {
             } else if (dim == 1) {
                 prim->add_attr<float>(key);
             } else {
-                dbg_printf("ERROR: bad attribute dimension for primitive: %d\n",
+                err_printf("ERROR: bad attribute dimension for primitive: %d\n",
                     dim);
-                abort();
             }
         }
 

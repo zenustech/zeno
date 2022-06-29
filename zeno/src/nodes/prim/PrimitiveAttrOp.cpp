@@ -140,7 +140,7 @@ ZENDEFNODE(PrimitiveRandomizeAttr,
     {"float", "maxY", "1"},
     {"float", "maxZ", "1"},
     }, /* category: */ {
-    "primitive",
+    "deprecated",
     }});
 
 
@@ -188,7 +188,7 @@ ZENDEFNODE(PrimitiveRandomAttr,
     {"string", "attrName", "pos"},
     {"enum float float3", "attrType", ""},
     }, /* category: */ {
-    "primitive",
+    "deprecated",
     }});
 
 }

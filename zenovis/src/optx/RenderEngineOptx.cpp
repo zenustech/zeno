@@ -6,9 +6,12 @@
 #include <zeno/types/UserData.h>
 #include <zenovis/DrawOptions.h>
 #include <zeno/types/MaterialObject.h>
+#include <zeno/types/CameraObject.h>
 #include <zenovis/ObjectsManager.h>
 #include <zeno/utils/UserData.h>
 #include <zeno/utils/fileio.h>
+#include <zenovis/Scene.h>
+#include <zenovis/Camera.h>
 #include <zenovis/RenderEngine.h>
 #include <zenovis/bate/GraphicsManager.h>
 #include <zenovis/bate/IGraphic.h>
@@ -228,7 +231,14 @@ struct GraphicsManager {
         for (auto const &[key, obj] : objs) {
             if (ins.may_emplace(key)) {
                 zeno::log_info("zxx_load_object: loading graphics [{}]", key);
+
+                if (auto cam = dynamic_cast<zeno::CameraObject *>(obj))
+                {
+                    scene->camera->setCamera(cam->get());     // pyb fix
+                }
+
                 auto ig = std::make_unique<ZxxGraphic>(key, obj);
+
                 zeno::log_info("zxx_load_object: loaded graphics to {}", ig.get());
                 ins.try_emplace(key, std::move(ig));
             }
@@ -358,7 +368,9 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         //zeno::log_warn("lodup = {}", zeno::other_to_vec<3>(cam.m_lodup));
         //zeno::log_warn("lodfront = {}", zeno::other_to_vec<3>(cam.m_lodfront));
         //zeno::log_warn("lodright = {}", zeno::other_to_vec<3>(lodright));
-        xinxinoptix::set_perspective(glm::value_ptr(lodright), glm::value_ptr(cam.m_lodup), glm::value_ptr(cam.m_lodfront), glm::value_ptr(cam.m_lodcenter), cam.getAspect(), cam.m_fov);
+        xinxinoptix::set_perspective(glm::value_ptr(lodright), glm::value_ptr(cam.m_lodup),
+                                     glm::value_ptr(cam.m_lodfront), glm::value_ptr(cam.m_lodcenter),
+                                     cam.getAspect(), cam.m_fov, cam.m_focL);
         //xinxinoptix::set_projection(glm::value_ptr(cam.m_proj));
         }
 

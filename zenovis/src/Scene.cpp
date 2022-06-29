@@ -76,10 +76,12 @@ void Scene::draw() {
     CHECK_GL(glViewport(0, 0, camera->m_nx, camera->m_ny));
     //CHECK_GL(glClearColor(drawOptions->bgcolor.r, drawOptions->bgcolor.g, drawOptions->bgcolor.b, 0.0f));
 
+    zeno::log_trace("scene redraw {}x{}", camera->m_nx, camera->m_ny);
     renderMan->getEngine()->draw();
 }
 
 std::vector<char> Scene::record_frame_offline(int hdrSize, int rgbComps) {
+    zeno::log_trace("offline draw {}x{}x{}x{}", camera->m_nx, camera->m_ny, rgbComps, hdrSize);
     auto hdrType = std::map<int, int>{
         {1, GL_UNSIGNED_BYTE},
         {2, GL_HALF_FLOAT},

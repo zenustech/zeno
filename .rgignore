@@ -15,7 +15,8 @@ projects/CalcGeometryUV/calcUVCore
 projects/MeshSubdiv/OpenSubdiv
 projects/ZenoFX/ZFX/x64/vectorclass
 projects/Euler/Libs
-zenovis/xinxinoptix
+zenovis/xinxinoptix/include
+zenovis/xinxinoptix/SDK
 zenovis/glad
 zenovis/stbi
 docs/licenses

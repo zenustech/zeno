@@ -267,7 +267,7 @@ struct ParticlesNeighborBvhWrangle : zeno::INode {
         {
         // BEGIN心欣你也可以把这段代码加到其他wrangle节点去，这样这些wrangle也可以自动有$F$DT$T做参数
         auto const &gs = *this->getGlobalState();
-        params->lut["F"] = objectFromLiterial(gs.frameid);
+        params->lut["F"] = objectFromLiterial((float)gs.frameid);
         params->lut["DT"] = objectFromLiterial(gs.frame_time);
         params->lut["T"] = objectFromLiterial(gs.frame_time * gs.frameid + gs.frame_time_elapsed);
         // END心欣你也可以把这段代码加到其他wrangle节点去，这样这些wrangle也可以自动有$F$DT$T做参数
@@ -287,6 +287,7 @@ struct ParticlesNeighborBvhWrangle : zeno::INode {
         }
     std::vector<float> parvals;
     std::vector<std::pair<std::string, int>> parnames;
+    //static_assert(std::is_convertible_v<zeno::vec3i, zeno::vec3f>);
     for (auto const &[key_, obj] : params->lut) {
       auto key = '$' + key_;
       if (auto o = std::dynamic_pointer_cast<zeno::NumericObject>(obj); o) {
@@ -294,7 +295,7 @@ struct ParticlesNeighborBvhWrangle : zeno::INode {
         auto dim = std::visit(
             [&](auto const &v) {
               using T = std::decay_t<decltype(v)>;
-              if constexpr (std::is_same_v<T, zeno::vec3f>) {
+              if constexpr (std::is_convertible_v<T, zeno::vec3f>) {
                 parvals.push_back(v[0]);
                 parvals.push_back(v[1]);
                 parvals.push_back(v[2]);
@@ -302,7 +303,7 @@ struct ParticlesNeighborBvhWrangle : zeno::INode {
                 parnames.emplace_back(key, 1);
                 parnames.emplace_back(key, 2);
                 return 3;
-              } else if constexpr (std::is_same_v<T, float>) {
+              } else if constexpr (std::is_convertible_v<T, float>) {
                 parvals.push_back(v);
                 parnames.emplace_back(key, 0);
                 return 1;
@@ -326,7 +327,7 @@ struct ParticlesNeighborBvhWrangle : zeno::INode {
                  dim);
       assert(name[0] == '@');
       if (name[1] == '@') {
-        dbg_printf("ERROR: cannot define new attribute %s on primNei\n",
+        err_printf("ERROR: cannot define new attribute %s on primNei\n",
                    name.c_str());
       }
       auto key = name.substr(1);
@@ -335,8 +336,7 @@ struct ParticlesNeighborBvhWrangle : zeno::INode {
       } else if (dim == 1) {
         prim->add_attr<float>(key);
       } else {
-        dbg_printf("ERROR: bad attribute dimension for primitive: %d\n", dim);
-        abort();
+        err_printf("ERROR: bad attribute dimension for primitive: %d\n", dim);
       }
     }
 

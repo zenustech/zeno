@@ -1,4 +1,3 @@
-#if 0
 #include <zeno/zeno.h>
 #include <zeno/types/StringObject.h>
 #include <zeno/types/PrimitiveObject.h>
@@ -20,37 +19,55 @@ static zfx::x64::Assembler assembler;
 struct Buffer {
     float *base = nullptr;
     size_t count = 0;
-    size_t stride = 1;
-    int which = 0;
+    size_t stride = 0;
 };
 
 static void vectors_wrangle
     ( zfx::x64::Executable *exec
     , std::vector<Buffer> const &chs
-    , std::vector<zeno::vec2i> const &edges
     ) {
     if (chs.size() == 0)
         return;
+    size_t size = chs[0].count;
+    for (int i = 1; i < chs.size(); i++) {
+        size = std::min(chs[i].count, size);
+    }
 
-    //#pragma omp parallel for
-    for (int i = 0; i < edges.size(); i++) {
-        int uv[3] = {i, edges[i][0], edges[i][1]};
+    #pragma omp parallel for
+    for (int i = 0; i < size - exec->SimdWidth + 1; i += exec->SimdWidth) {
         auto ctx = exec->make_context();
-        for (int k = 0; k < chs.size(); k++) {
-            ctx.channel(k)[0] = chs[k].base[chs[k].stride * uv[chs[k].which]];
+        for (int j = 0; j < chs.size(); j++) {
+            for (int k = 0; k < exec->SimdWidth; k++)
+                ctx.channel(j)[k] = chs[j].base[chs[j].stride * (i + k)];
         }
         ctx.execute();
-        for (int k = 0; k < chs.size(); k++) {
-            chs[k].base[chs[k].stride * uv[chs[k].which]] = ctx.channel(k)[0];
+        for (int j = 0; j < chs.size(); j++) {
+            for (int k = 0; k < exec->SimdWidth; k++)
+                 chs[j].base[chs[j].stride * (i + k)] = ctx.channel(j)[k];
+        }
+    }
+    for (int i = size / exec->SimdWidth * exec->SimdWidth; i < size; i++) {
+        auto ctx = exec->make_context();
+        for (int j = 0; j < chs.size(); j++) {
+            ctx.channel(j)[0] = chs[j].base[chs[j].stride * i];
+        }
+        ctx.execute();
+        for (int j = 0; j < chs.size(); j++) {
+            chs[j].base[chs[j].stride * i] = ctx.channel(j)[0];
         }
     }
 }
 
-struct PrimitiveEdgeWrangle : zeno::INode {
+struct ParticlesTwoWrangle : zeno::INode {
     virtual void apply() override {
         auto prim = get_input<zeno::PrimitiveObject>("prim");
-        auto edgePrim = get_input<zeno::PrimitiveObject>("edgePrim");
+        auto prim2 = get_input<zeno::PrimitiveObject>("prim2");
         auto code = get_input<zeno::StringObject>("zfxCode")->get();
+
+        if (prim->size() != prim2->size()) {
+            dbg_printf("prim and prim2 size mismatch (%d != %d), using minimal\n",
+                       prim->size(), prim2->size());
+        }
 
         zfx::Options opts(zfx::Options::for_x64);
         opts.detect_new_symbols = true;
@@ -61,22 +78,19 @@ struct PrimitiveEdgeWrangle : zeno::INode {
                 else if constexpr (std::is_same_v<T, float>) return 1;
                 else return 0;
             })(attr);
-            dbg_printf("define symbol: @1%s dim %d\n", key.c_str(), dim);
-            opts.define_symbol("@1" + key, dim);
-            dbg_printf("define symbol: @2%s dim %d\n", key.c_str(), dim);
-            opts.define_symbol("@2" + key, dim);
+            dbg_printf("define symbol: @%s dim %d\n", key.c_str(), dim);
+            opts.define_symbol('@' + key, dim);
         });
-        prim->foreach_attr([&] (auto const &key, auto const &attr) {
-        for (auto const &[key, attr]: edgePrim->m_attrs) {
-            int dim = std::visit([] (auto const &v) {
+        prim2->foreach_attr([&] (auto const &key, auto const &attr) {
+            int dim = ([] (auto const &v) {
                 using T = std::decay_t<decltype(v[0])>;
                 if constexpr (std::is_same_v<T, zeno::vec3f>) return 3;
                 else if constexpr (std::is_same_v<T, float>) return 1;
                 else return 0;
-            }, attr);
-            dbg_printf("define symbol: @%s dim %d\n", key.c_str(), dim);
-            opts.define_symbol('@' + key, dim);
-        }
+            })(attr);
+            dbg_printf("define symbol: @@%s dim %d\n", key.c_str(), dim);
+            opts.define_symbol("@@" + key, dim);
+        });
 
         auto params = has_input("params") ?
             get_input<zeno::DictObject>("params") :
@@ -84,7 +98,7 @@ struct PrimitiveEdgeWrangle : zeno::INode {
         {
         // BEGIN心欣你也可以把这段代码加到其他wrangle节点去，这样这些wrangle也可以自动有$F$DT$T做参数
         auto const &gs = *this->getGlobalState();
-        params->lut["F"] = objectFromLiterial(gs.frameid);
+        params->lut["F"] = objectFromLiterial((float)gs.frameid);
         params->lut["DT"] = objectFromLiterial(gs.frame_time);
         params->lut["T"] = objectFromLiterial(gs.frame_time * gs.frameid + gs.frame_time_elapsed);
         // END心欣你也可以把这段代码加到其他wrangle节点去，这样这些wrangle也可以自动有$F$DT$T做参数
@@ -104,27 +118,32 @@ struct PrimitiveEdgeWrangle : zeno::INode {
         }
         std::vector<float> parvals;
         std::vector<std::pair<std::string, int>> parnames;
-        for (auto const &[key_, obj]: params->lut) {
+        for (auto const &[key_, par]: params->getLiterial<zeno::NumericValue>()) {
             auto key = '$' + key_;
-            auto par = zeno::safe_any_cast<zeno::NumericValue>(obj);
-            auto dim = std::visit([&] (auto const &v) {
-                using T = std::decay_t<decltype(v)>;
-                if constexpr (std::is_same_v<T, zeno::vec3f>) {
-                    parvals.push_back(v[0]);
-                    parvals.push_back(v[1]);
-                    parvals.push_back(v[2]);
-                    parnames.emplace_back(key, 0);
-                    parnames.emplace_back(key, 1);
-                    parnames.emplace_back(key, 2);
-                    return 3;
-                } else if constexpr (std::is_same_v<T, float>) {
-                    parvals.push_back(v);
-                    parnames.emplace_back(key, 0);
-                    return 1;
-                } else return 0;
-            }, par);
-            dbg_printf("define param: %s dim %d\n", key.c_str(), dim);
-            opts.define_param(key, dim);
+                auto dim = std::visit([&] (auto const &v) {
+                    using T = std::decay_t<decltype(v)>;
+                    if constexpr (std::is_convertible_v<T, zeno::vec3f>) {
+                        parvals.push_back(v[0]);
+                        parvals.push_back(v[1]);
+                        parvals.push_back(v[2]);
+                        parnames.emplace_back(key, 0);
+                        parnames.emplace_back(key, 1);
+                        parnames.emplace_back(key, 2);
+                        return 3;
+                    } else if constexpr (std::is_convertible_v<T, float>) {
+                        parvals.push_back(v);
+                        parnames.emplace_back(key, 0);
+                        return 1;
+                    } else {
+                        printf("invalid parameter type encountered: `%s`\n",
+                                typeid(T).name());
+                        return 0;
+                    }
+                }, par);
+                dbg_printf("define param: %s dim %d\n", key.c_str(), dim);
+                opts.define_param(key, dim);
+            //auto par = zeno::safe_any_cast<zeno::NumericValue>(obj);
+            
         }
 
         auto prog = compiler.compile(code, opts);
@@ -134,24 +153,20 @@ struct PrimitiveEdgeWrangle : zeno::INode {
             dbg_printf("auto-defined new attribute: %s with dim %d\n",
                     name.c_str(), dim);
             assert(name[0] == '@');
-            std::string key = name.substr(1);
-            auto *primPtr = edgePrim.get();
-            if ('1' <= key[0] && key[0] <= '9') {
-                key = key.substr(1);
-                primPtr = prim.get();
+            if (name[1] == '@') {
+                err_printf("ERROR: cannot define new attribute %s on prim2\n",
+                        name.c_str());
             }
+            auto key = name.substr(1);
             if (dim == 3) {
-                primPtr->add_attr<zeno::vec3f>(key);
+                prim->add_attr<zeno::vec3f>(key);
             } else if (dim == 1) {
-                primPtr->add_attr<float>(key);
+                prim->add_attr<float>(key);
             } else {
-                dbg_printf("ERROR: bad attribute dimension for primitive: %d\n",
+                err_printf("ERROR: bad attribute dimension for primitive: %d\n",
                     dim);
-                abort();
             }
         }
-
-        edgePrim->resize(prim->lines.size());
 
         for (int i = 0; i < prog->params.size(); i++) {
             auto [name, dimid] = prog->params[i];
@@ -171,39 +186,35 @@ struct PrimitiveEdgeWrangle : zeno::INode {
             assert(name[0] == '@');
             Buffer iob;
             zeno::PrimitiveObject *primPtr;
-            if ('1' <= name[1] && name[1] <= '9') {
-                iob.which = name[1] - '0';
+            if (name[1] == '@') {
                 name = name.substr(2);
-                primPtr = prim.get();
+                primPtr = prim2.get();
             } else {
-                iob.which = 0;
                 name = name.substr(1);
-                primPtr = edgePrim.get();
+                primPtr = prim.get();
             }
-            auto const &attr = primPtr->attr(name);
-            std::visit([&, dimid_ = dimid] (auto const &arr) {
+            primPtr->attr_visit(name,
+            [&, dimid_ = dimid] (auto const &arr) {
                 iob.base = (float *)arr.data() + dimid_;
                 iob.count = arr.size();
                 iob.stride = sizeof(arr[0]) / sizeof(float);
-            }, attr);
+            });
             chs[i] = iob;
         }
-
-        vectors_wrangle(exec, chs, prim->lines);
+        vectors_wrangle(exec, chs);
 
         set_output("prim", std::move(prim));
-        set_output("edgePrim", std::move(edgePrim));
     }
 };
 
-ZENDEFNODE(PrimitiveEdgeWrangle, {
-    {{"PrimitiveObject", "prim"}, {"PrimitiveObject", "edgePrim"},
+ZENDEFNODE(ParticlesTwoWrangle, {
+    {{"PrimitiveObject", "prim"}, {"PrimitiveObject", "prim2"},
      {"string", "zfxCode"}, {"DictObject:NumericObject", "params"}},
-    {{"PrimitiveObject", "prim"}, {"PrimitiveObject", "edgePrim"}},
+    {{"PrimitiveObject", "prim"}},
     {},
     {"zenofx"},
 });
 
+
 }
 }
-#endif

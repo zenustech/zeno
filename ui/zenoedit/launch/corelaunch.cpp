@@ -15,9 +15,11 @@
 #include "ztcpserver.h"
 #include "graphsmanagment.h"
 #include "serialize.h"
+#if !defined(ZENO_MULTIPROCESS) || !defined(ZENO_IPC_USE_TCP)
 #include <thread>
 #include <mutex>
 #include <atomic>
+#endif
 #ifdef ZENO_MULTIPROCESS
 #include <QProcess>
 #include "viewdecode.h"
@@ -25,6 +27,7 @@
 
 namespace {
 
+#if !defined(ZENO_MULTIPROCESS) || !defined(ZENO_IPC_USE_TCP)
 struct ProgramRunData {
     enum ProgramState {
         kStopped = 0,
@@ -185,6 +188,7 @@ struct ProgramRunData {
 #endif
     }
 };
+#endif
 
 void launchProgramJSON(std::string progJson)
 {

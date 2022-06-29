@@ -12,6 +12,15 @@ void startUp()
         zeno::setConfigVariable("NASLOC", nas_loc_v.toString().toStdString());
     }
 
+#if 0
+    QVariant scalefac_v = settings.value("scale_factor");
+    if (!scalefac_v.isNull()) {
+        float scalefac = scalefac_v.toFloat();
+        if (scalefac >= 1.0f)
+            qputenv("QT_SCALE_FACTOR", QString::number(scalefac).toLatin1());
+    }
+#endif
+
     static int calledOnce = ([]{
         zeno::getSession().eventCallbacks->triggerEvent("init");
     }(), 0);
