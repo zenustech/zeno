@@ -20,6 +20,7 @@ struct ImageElement
 	QString image;
     QString imageHovered;
 	QString imageOn;
+    QString imageOnHovered;
     QRectF rc;
 };
 
@@ -109,6 +110,7 @@ struct DistanceParam
     int paramsBottomPadding = 10;   //the dist from last param to next item(socket).
     int paramsLPadding = 16;
     int paramsToTopSocket = 16;
+    int outSocketsBottomMargin = 10;
 };
 
 struct LineEditParam

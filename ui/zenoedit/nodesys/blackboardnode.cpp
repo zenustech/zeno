@@ -34,7 +34,7 @@ void BlackboardNode::onUpdateParamsNotDesc()
     }
 }
 
-ZenoBackgroundWidget* BlackboardNode::initBodyWidget(NODE_TYPE type)
+ZenoBackgroundWidget* BlackboardNode::initBodyWidget()
 {
     ZenoBackgroundWidget *bodyWidget = new ZenoBackgroundWidget(this);
 
@@ -91,7 +91,7 @@ void BlackboardNode::updateBlackboard()
     pModel->updateBlackboard(index().data(ROLE_OBJID).toString(), info, subGraphIndex(), true);
 }
 
-ZenoBackgroundWidget* BlackboardNode::initHeaderWangStyle(NODE_TYPE type)
+ZenoBackgroundWidget* BlackboardNode::initHeaderStyle()
 {
     ZenoBackgroundWidget *headerWidget = new ZenoBackgroundWidget(this);
     auto headerBg = m_renderParams.headerBg;
@@ -134,11 +134,9 @@ ZenoBackgroundWidget* BlackboardNode::initHeaderWangStyle(NODE_TYPE type)
     headerWidget->setLayout(pHLayout);
     headerWidget->setZValue(ZVALUE_BACKGROUND);
     headerWidget->setSizePolicy(QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
+    QColor clr(98, 108, 111);
+    headerWidget->setColors(false, clr, clr, clr);
 
-    if (type == BLACKBOARD_NODE) {
-        QColor clr(98, 108, 111);
-        headerWidget->setColors(false, clr, clr, clr);
-    }
     return headerWidget;
 }
 

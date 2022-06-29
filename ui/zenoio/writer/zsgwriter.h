@@ -12,6 +12,7 @@ class ZsgWriter
 public:
 	static ZsgWriter& getInstance();
 	QString dumpProgramStr(IGraphsModel* pModel);
+	void dumpToClipboard(const QMap<QString, NODE_DATA>& nodes);
 
 private:
 	ZsgWriter();

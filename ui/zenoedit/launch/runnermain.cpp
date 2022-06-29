@@ -144,13 +144,13 @@ static void runner_start(std::string const &progJson, int sessionid) {
 
 }
 
-int runner_main(int sessionid);
-int runner_main(int sessionid) {
+int runner_main(int sessionid, int port);
+int runner_main(int sessionid, int port) {
     printf("(stdout ping test)\n");
 
 #ifdef ZENO_IPC_USE_TCP
     clientSocket = std::make_unique<QTcpSocket>();
-    clientSocket->connectToHost(QHostAddress::LocalHost, TCP_PORT);
+    clientSocket->connectToHost(QHostAddress::LocalHost, port);
     if (!clientSocket->waitForConnected(10000)) {
         zeno::log_error("tcp client connection fail.");
         return 0;
