@@ -73,7 +73,23 @@ cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
 cmake --build build --parallel
 ```
 
-## Install Zeno from source (not recommended)
+## Using pre-installed libraries
+
+By default, Zeno uses bundled OpenVDB (as submodule).
+
+If you wish to use the system-wide pre-installed OpenVDB (for faster compile speed), use:
+
+```bash
+cmake -B build -DZENO_WITH_zenvdb:BOOL=ON -DZENO_SYSTEM_OPENVDB:BOOL=ON
+```
+
+The same to Alembic:
+
+```bash
+cmake -B build -DZENO_WITH_Alembic:BOOL=ON -DZENO_SYSTEM_ALEMBIC:BOOL=ON
+```
+
+## Install Zeno globally (not recommended)
 
 For the Linux traditional `make install` style installation, please specify this argument:
 
