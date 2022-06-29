@@ -1579,7 +1579,7 @@ void set_perspective(float const *U, float const *V, float const *W, float const
 
 
 void optixrender(int fbo) {
-    zeno::log_info("[optix] rendering subframe {}", state.params.subframe_index);
+    zeno::log_trace("[optix] rendering subframe {}", state.params.subframe_index);
     if (!output_buffer_o) throw sutil::Exception("no output_buffer_o");
     if (!gl_display_o) throw sutil::Exception("no gl_display_o");
     updateState( *output_buffer_o, state.params );
