@@ -1,6 +1,6 @@
 projects/FastFLIP/partio
 projects/Rigid/bullet3
-projects/Rigid/HACD
+projects/FEM/LBFGSpp
 projects/mesher/mpmmeshing
 projects/Alembic/Alembic
 projects/cgmesh/libigl
@@ -16,6 +16,7 @@ projects/MeshSubdiv/OpenSubdiv
 projects/ZenoFX/ZFX/x64/vectorclass
 projects/Euler/Libs
 projects/.unusedTools
+projects/tools
 zenovis/xinxinoptix/include
 zenovis/xinxinoptix/SDK
 zenovis/glad
