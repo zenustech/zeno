@@ -47,13 +47,16 @@ ENDIF (BULLET2_MULTITHREADING)
 ####################################################
 if (MSVC)  # we must use this to fix bullet3 on win
     set(BUILD_SHARED_LIBS OFF)
-    add_compile_options(
-            $<$<CONFIG:>:/MD> #---------|
-            $<$<CONFIG:Debug>:/MDd> #---|-- Statically link the runtime libraries
-            $<$<CONFIG:Release>:/MD> #--|
-    )  # cl: 命令行 warning D9025 :正在重写“/MT”(用“/MD”)
+    #if (ZENO_BUILD_SHARED)
+        #add_compile_options(
+                #$<$<CONFIG:>:/MD> #---------|
+                #$<$<CONFIG:Debug>:/MDd> #---|-- Statically link the runtime libraries
+                #$<$<CONFIG:Release>:/MD> #--|
+        #)  # cl: 命令行 warning D9025 :正在重写“/MT”(用“/MD”)
+    #endif()
+    SET(USE_MSVC_RUNTIME_LIBRARY_DLL ${ZENO_BUILD_SHARED} CACHE BOOL "MT-FXXKER MSVC" FORCE)
 else()
-    set(BUILD_SHARED_LIBS OFF)
+    set(BUILD_SHARED_LIBS ON)
 endif()
 ####################################################
 # FUN FACT: DID U KNOW THAT MICROSOFT BUYS GITHUB? #

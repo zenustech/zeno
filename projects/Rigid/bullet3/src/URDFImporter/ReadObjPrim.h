@@ -3,8 +3,7 @@
 #include <zeno/utils/vec.h>
 #include <zeno/types/PrimitiveObject.h>
 
-using namespace zeno;
-std::shared_ptr<zeno::PrimitiveObject> parse_obj(std::vector<char> &&bin);
+std::shared_ptr<zeno::PrimitiveObject> wenqiang_parse_obj(std::vector<char> &&bin);
 
 
 #endif //ZENO_READOBJPRIM_H

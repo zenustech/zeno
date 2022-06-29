@@ -619,12 +619,12 @@ btCollisionShape* BulletURDFImporter::convertURDFToCollisionShape(const UrdfColl
                         std::string path = pathPrefix;
                         path += collision->m_geometry.m_meshFileName;
                         auto binary = file_get_binary(path);
-                        zenoMesh = parse_obj(std::move(binary));
+                        zenoMesh = wenqiang_parse_obj(std::move(binary));
 					}
 					else
 					{
 						std::vector<std::shared_ptr<zeno::PrimitiveObject>> shapes;
-						auto singleObj = parse_obj(file_get_binary(collision->m_geometry.m_meshFileName)); // TODO: fake multi-group here, implement later.
+						auto singleObj = wenqiang_parse_obj(file_get_binary(collision->m_geometry.m_meshFileName)); // TODO: fake multi-group here, implement later.
                         shapes.push_back(std::move(singleObj));
                         //create a convex hull for each shape, and store it in a btCompoundShape
 						shape = createConvexHullFromShapes(shapes, collision->m_geometry.m_meshScale, m_data->m_flags);

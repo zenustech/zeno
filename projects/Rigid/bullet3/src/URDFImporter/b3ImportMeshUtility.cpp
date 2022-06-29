@@ -62,7 +62,7 @@ bool b3ImportMeshUtility::loadAndRegisterMeshFromFileInternal(const std::string&
         btVector3 shift(0, 0, 0);
 
         std::string path = relativeFileName;
-        std::shared_ptr<zeno::PrimitiveObject> shape = parse_obj(file_get_binary(path));
+        std::shared_ptr<zeno::PrimitiveObject> shape = wenqiang_parse_obj(file_get_binary(path));
 
         {
             // TODO: handle texture later

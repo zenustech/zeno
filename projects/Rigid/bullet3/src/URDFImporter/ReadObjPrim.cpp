@@ -39,7 +39,7 @@ static int takeu(char const *&it) {
     return val;
 }
 
-std::shared_ptr<zeno::PrimitiveObject> parse_obj(std::vector<char> &&bin) {
+std::shared_ptr<zeno::PrimitiveObject> wenqiang_parse_obj(std::vector<char> &&bin) {
     bin.resize(bin.size() + 8, '\0');
 
     char const *it = bin.data();

@@ -219,7 +219,7 @@ struct RobotSetJointPoses : zeno::INode {
         if (has_input("qDesiredList")){
             {
                 auto numericObjs = get_input<zeno::ListObject>(
-                    "qDesiredList")->get<std::shared_ptr<NumericObject>>();
+                    "qDesiredList")->get<std::decay_t<NumericObject>>();
                 for (auto &&no: numericObjs)
                     qDesiredArray.push_back(no->get<float>());
             }
