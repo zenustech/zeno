@@ -1,5 +1,7 @@
 #include "../Structures.hpp"
 #include "../Utils.hpp"
+// #include "Ccd.hpp"
+#include "RP2022Ccd.hpp"
 #include "zensim/Logger.hpp"
 #include "zensim/cuda/execution/ExecutionPolicy.cuh"
 #include "zensim/execution/ExecutionPolicy.hpp"
@@ -154,10 +156,10 @@ auto retrieve_bounding_volumes(zs::CudaExecutionPolicy &pol,
 }
 
 template <typename VecT>
-constexpr bool ptaccd(VecT p, VecT t0, VecT t1, VecT t2, VecT dp, VecT dt0,
-                      VecT dt1, VecT dt2, typename VecT::value_type eta,
-                      typename VecT::value_type thickness,
-                      typename VecT::value_type &toc) {
+constexpr bool
+ptaccd(VecT p, VecT t0, VecT t1, VecT t2, VecT dp, VecT dt0, VecT dt1, VecT dt2,
+       typename VecT::value_type eta, typename VecT::value_type thickness,
+       typename VecT::value_type &toc, typename VecT::value_type tStart = 0) {
   using T = typename VecT::value_type;
   auto mov = (dt0 + dt1 + dt2 + dp) / 4;
   dt0 -= mov;
@@ -177,7 +179,7 @@ constexpr bool ptaccd(VecT p, VecT t0, VecT t1, VecT t2, VecT dp, VecT dt0,
   T dist_cur = zs::sqrt(dist2_cur);
   T gap = eta * (dist2_cur - thickness * thickness) / (dist_cur + thickness);
   T toc_prev = toc;
-  toc = 0;
+  toc = tStart;
   while (true) {
     T tocLowerBound = (1 - eta) * (dist2_cur - thickness * thickness) /
                       ((dist_cur + thickness) * maxDispMag);
@@ -305,7 +307,7 @@ constexpr bool pt_ccd(VecT p, VecT t0, VecT t1, VecT t2, VecT dp, VecT dt0,
   auto [numSols, ts] = solve_quadratic(zs::vec<T, 3>{C, 2 * B, 3 * A});
   if (numSols != 2) {
     // no local minima & maxima
-    return pt_accd(p, t0, t1, t2, dp, dt0, dt1, dt2, 0.1, thickness, toc);
+    return ptaccd(p, t0, t1, t2, dp, dt0, dt1, dt2, 0.1, thickness, toc);
   }
   // ensure ts[0] < ts[1]
   auto d = [&A = A, &B = B, &C = C, &D = D](T t) {
@@ -315,16 +317,17 @@ constexpr bool pt_ccd(VecT p, VecT t0, VecT t1, VecT t2, VecT dp, VecT dt0,
   auto dDrv = [&A = A, &B = B, &C = C](T t) {
     return 3 * A * t * t + 2 * B * t + C;
   };
-  if (d(0) <= 0) {
+  if (d(0) < zs::limits<T>::min()) {
     printf("\n\n\n\n\nwhat the heck??? trange [%f, %f]; t0 %f d "
            "%f\n\n\n\n\n",
            (float)ts[0], (float)ts[1], 0.f, (float)d(0));
+    return ptaccd(p, t0, t1, t2, dp, dt0, dt1, dt2, 0.1, thickness, toc);
   }
   T toi{toc};
   bool check = false;
   // coplanarity test
   // case 1
-  if (A > 0) {
+  if (A > zs::limits<T>::min()) {
     // ts[0] : tmax
     // ts[1] : tmin
     if (ts[1] > 0)
@@ -358,6 +361,9 @@ constexpr bool pt_ccd(VecT p, VecT t0, VecT t1, VecT t2, VecT dp, VecT dt0,
           (float)ts[0], (float)ts[1], (float)toi, (float)d(toi));
     }
     if (toi > 0 && toi < toc) {
+      if (d(toi) < zs::limits<T>::min())
+        return ptaccd(p, t0, t1, t2, dp, dt0, dt1, dt2, 0.1, thickness, toc);
+      toi *= 0.8;
       auto a_ = t0 + toi * dt0;
       auto b_ = t1 + toi * dt1;
       auto c_ = t2 + toi * dt2;
@@ -375,7 +381,9 @@ constexpr bool pt_ccd(VecT p, VecT t0, VecT t1, VecT t2, VecT dp, VecT dt0,
         return false;
 #endif
       toc = toi;
-      return true;
+      // return true;
+      return ptaccd(p_, a_, b_, c_, dp, dt0, dt1, dt2, 0.1, thickness, toc,
+                    toi);
     }
   }
   return false;
@@ -1229,12 +1237,14 @@ struct CodimStepping : INode {
             auto dt1 = vtemp.template pack<3>("dir", ids[2]);
             auto dt2 = vtemp.template pack<3>("dir", ids[3]);
             T tmp = stepSize;
-#if 1
+#if 0
             if (ptaccd(p, t0, t1, t2, dp, dt0, dt1, dt2, (T)0.1, xi, tmp))
+#elif 1
+            if (rpccd::ptccd(p, t0, t1, t2, dp, dt0, dt1, dt2, (T)0.1, xi, tmp))
 #else
             if (pt_ccd(p, t0, t1, t2, dp, dt0, dt1, dt2, xi, tmp))
 #endif
-              atomic_min(exec_cuda, &alpha[0], tmp);
+            atomic_min(exec_cuda, &alpha[0], tmp);
           });
       auto nee = ncsEE.getVal();
       pol(range(nee), [csEE = proxy<space>(csEE),
