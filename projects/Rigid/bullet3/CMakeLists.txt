@@ -3,7 +3,6 @@ set(CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS true)
 cmake_policy(SET CMP0017 NEW)
 #this line has to appear before 'PROJECT' in order to be able to disable incremental linking
 SET(MSVC_INCREMENTAL_DEFAULT ON)
-add_compile_options(-w)
 
 PROJECT(BULLET_PHYSICS)
 FILE (STRINGS "VERSION" BULLET_VERSION)
@@ -48,16 +47,13 @@ ENDIF (BULLET2_MULTITHREADING)
 ####################################################
 if (MSVC)  # we must use this to fix bullet3 on win
     set(BUILD_SHARED_LIBS OFF)
-    if (ZENO_BUILD_SHARED)
-        add_compile_options(
-                $<$<CONFIG:>:/MD> #---------|
-                $<$<CONFIG:Debug>:/MDd> #---|-- Statically link the runtime libraries
-                $<$<CONFIG:Release>:/MD> #--|
-        )  # cl: 命令行 warning D9025 :正在重写“/MT”(用“/MD”)
-    endif()
-    SET(USE_MSVC_RUNTIME_LIBRARY_DLL ${ZENO_BUILD_SHARED} CACHE BOOL "MT-FXXKER MSVC" FORCE)
+    add_compile_options(
+            $<$<CONFIG:>:/MD> #---------|
+            $<$<CONFIG:Debug>:/MDd> #---|-- Statically link the runtime libraries
+            $<$<CONFIG:Release>:/MD> #--|
+    )  # cl: 命令行 warning D9025 :正在重写“/MT”(用“/MD”)
 else()
-    set(BUILD_SHARED_LIBS ON)
+    set(BUILD_SHARED_LIBS OFF)
 endif()
 ####################################################
 # FUN FACT: DID U KNOW THAT MICROSOFT BUYS GITHUB? #
@@ -397,9 +393,9 @@ IF(BUILD_PYBULLET)
 	ENDIF()
 
 	IF(WIN32)
-        SET(BUILD_SHARED_LIBS OFF)
+		SET(BUILD_SHARED_LIBS OFF CACHE BOOL "Shared Libs" FORCE)
 	ELSE(WIN32)
-        SET(BUILD_SHARED_LIBS ON)
+		SET(BUILD_SHARED_LIBS ON CACHE BOOL "Shared Libs" FORCE)
 	ENDIF(WIN32)
 
 	IF(APPLE)
