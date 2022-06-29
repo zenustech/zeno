@@ -12,7 +12,6 @@ public:
     virtual void setLegacyDescs(const rapidjson::Value& graphObj, const NODE_DESCS &legacyDescs) = 0;
     virtual void BeginSubgraph(const QString& name) = 0;
     virtual void EndSubgraph() = 0;
-    virtual void resolvePosLinks(const QStringList& ids, const QPointF& pos) = 0;
     virtual bool setCurrentSubGraph(IGraphsModel* pModel, const QModelIndex& subgIdx) = 0;
     virtual void setFilePath(const QString& fileName) = 0;
     virtual void switchSubGraph(const QString& graphName) = 0;
@@ -29,7 +28,7 @@ public:
         const QString& outSock,
         const rapidjson::Value& defaultValue,
         const NODE_DESCS& legacyDescs) = 0;
-    virtual void setParamValue(const QString& id, const QString& name, const QVariant& var) = 0;
+    virtual void setParamValue(const QString& id, const QString& nodeCls, const QString& name, const rapidjson::Value& value) = 0;
     virtual void setPos(const QString& id, const QPointF& pos) = 0;
     virtual void setOptions(const QString& id, const QStringList& options) = 0;
     virtual void setColorRamps(const QString& id, const COLOR_RAMPS& colorRamps) = 0;

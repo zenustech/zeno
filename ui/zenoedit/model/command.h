@@ -152,5 +152,19 @@ private:
     GraphsModel* m_pModel;
 };
 
+class ImportNodesCommand : public QUndoCommand
+{
+public:
+    ImportNodesCommand(const QMap<QString, NODE_DATA>& nodes, QPointF pos, GraphsModel *pModel, QPersistentModelIndex subgIdx);
+    void redo() override;
+    void undo() override;
+
+private:
+    const QMap<QString, NODE_DATA> m_nodes;
+    QPersistentModelIndex m_subgIdx;
+    GraphsModel* m_model;
+    QPointF m_pos;
+};
+
 
 #endif

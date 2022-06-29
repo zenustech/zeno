@@ -777,7 +777,7 @@ void GraphsModel::addNode(const NODE_DATA& nodeData, const QModelIndex& subGpIdx
             pGraph->appendItem(nodeData2);
         }
 
-        //update desc if meet subinput/suboutput node.
+        //todo: update desc if meet subinput/suboutput node, but pay attention to main graph.
         if (!bEnableIOProc)
         {
             const QModelIndex &idx = pGraph->index(nodeData[ROLE_OBJID].toString());
@@ -870,6 +870,44 @@ void GraphsModel::importNodeLinks(const QList<NODE_DATA>& nodes, const QModelInd
 		}
 	}
     endTransaction();
+}
+
+void GraphsModel::importNodes(const QMap<QString, NODE_DATA>& nodes, const QPointF& pos, const QModelIndex& subGpIdx, bool enableTransaction)
+{
+    ZASSERT_EXIT(!nodes.isEmpty());
+    if (enableTransaction)
+    {
+        ImportNodesCommand *pCmd = new ImportNodesCommand(nodes, pos, this, subGpIdx);
+        m_stack->push(pCmd);
+    }
+    else
+    {
+        SubGraphModel *pGraph = subGraph(subGpIdx.row());
+        ZASSERT_EXIT(pGraph);
+        for (const NODE_DATA& data : nodes)
+        {
+            addNode(data, subGpIdx, false);
+        }
+
+        //resolve pos and links.
+        QStringList ids = nodes.keys();
+        QPointF _pos = pGraph->getNodeStatus(ids[0], ROLE_OBJPOS).toPointF();
+        const QPointF offset = pos - _pos;
+
+        for (const QString& ident : ids)
+	    {
+		    const QModelIndex& idx = pGraph->index(ident);
+		    _pos = idx.data(ROLE_OBJPOS).toPointF();
+		    _pos += offset;
+		    pGraph->setData(idx, _pos, ROLE_OBJPOS);
+	    }
+
+        for (const QString &ident : ids)
+        {
+            const QModelIndex& idx = pGraph->index(ident);
+            resolveLinks(idx, pGraph);
+        }
+    }
 }
 
 void GraphsModel::copyPaste(const QModelIndex &fromSubg, const QModelIndexList &srcNodes, const QModelIndex &toSubg, QPointF pos, bool enableTrans)
@@ -1826,3 +1864,37 @@ bool GraphsModel::hasDescriptor(const QString& nodeName) const
     return m_nodesDesc.find(nodeName) != m_nodesDesc.end();
 }
 
+void GraphsModel::resolveLinks(const QModelIndex& idx, SubGraphModel* pCurrentGraph)
+{
+    ZASSERT_EXIT(pCurrentGraph);
+
+    const QString& inNode = idx.data(ROLE_OBJID).toString();
+	INPUT_SOCKETS inputs = idx.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
+	foreach(const QString & inSockName, inputs.keys())
+	{
+		const INPUT_SOCKET& inSocket = inputs[inSockName];
+		//init connection
+		for (const QString& outNode : inSocket.outNodes.keys())
+		{
+			const QModelIndex& outIdx = pCurrentGraph->index(outNode);
+			if (outIdx.isValid())
+			{
+				//the items in outputs are descripted by core descriptors.
+				OUTPUT_SOCKETS outputs = outIdx.data(ROLE_OUTPUTS).value<OUTPUT_SOCKETS>();
+				for (const QString &outSock : inSocket.outNodes[outNode].keys())
+				{
+					//checkout whether outSock is existed.
+					if (outputs.find(outSock) == outputs.end())
+					{
+						const QString& nodeName = outIdx.data(ROLE_OBJNAME).toString();
+						zeno::log_warn("no such output socket {} in {}", outSock.toStdString(), nodeName.toStdString());
+						continue;
+					}
+					GraphsModel* pGraphsModel = pCurrentGraph->getGraphsModel();
+					const QModelIndex& subgIdx = pGraphsModel->indexBySubModel(pCurrentGraph);
+					pGraphsModel->addLink(EdgeInfo(outNode, inNode, outSock, inSockName), subgIdx);
+				}
+			}
+		}
+	}
+}

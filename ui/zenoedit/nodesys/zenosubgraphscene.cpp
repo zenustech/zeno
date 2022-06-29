@@ -19,6 +19,7 @@
 #include "makelistnode.h"
 #include "blackboardnode.h"
 #include "acceptor/modelacceptor.h"
+#include "acceptor/transferacceptor.h"
 
 
 ZenoSubGraphScene::ZenoSubGraphScene(QObject *parent)
@@ -347,41 +348,6 @@ QModelIndexList ZenoSubGraphScene::selectNodesIndice() const
 
 void ZenoSubGraphScene::copy()
 {
-    copy2();
-    /* legacy copy by custom mimedata.
-    QList<QGraphicsItem*> selItems = this->selectedItems();
-    if (selItems.isEmpty())
-        return;
-
-    QMap<QString, ZenoNode*> selNodes;
-
-    QModelIndexList nodesIndice;
-    for (auto item : selItems)
-    {
-        if (ZenoNode *pNode = qgraphicsitem_cast<ZenoNode *>(item))
-        {
-            nodesIndice.append(pNode->index());
-            selNodes.insert(pNode->nodeId(), pNode);
-        }
-    }
-
-    if (selNodes.isEmpty())
-    {
-        QApplication::clipboard()->clear();
-    }
-
-    NODES_MIME_DATA* pNodesData = new NODES_MIME_DATA;
-    pNodesData->nodes = nodesIndice;
-    pNodesData->m_fromSubg = m_subgIdx;
-
-    QMimeData *pMimeData = new QMimeData;
-    pMimeData->setUserData(MINETYPE_MULTI_NODES, pNodesData);
-    QApplication::clipboard()->setMimeData(pMimeData);
-    */
-}
-
-void ZenoSubGraphScene::copy2()
-{
     QList<QGraphicsItem*> selItems = this->selectedItems();
     if (selItems.isEmpty())
         return;
@@ -491,28 +457,14 @@ void ZenoSubGraphScene::copy2()
 
 void ZenoSubGraphScene::paste(QPointF pos)
 {
-    /*
-    * base custom mime data.
-    * 
-    const QMimeData* pMimeData = QApplication::clipboard()->mimeData();
-    IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
-    if (QObjectUserData *pUserData = pMimeData->userData(MINETYPE_MULTI_NODES))
-    {
-        NODES_MIME_DATA* pNodesData = static_cast<NODES_MIME_DATA*>(pUserData);
-        if (pNodesData->nodes.isEmpty())
-            return;
-        pGraphsModel->copyPaste(pNodesData->m_fromSubg, pNodesData->nodes, m_subgIdx, pos, true);
-        clearSelection();
-        //todo: select them
-    }
-    */
     const QMimeData* pMimeData = QApplication::clipboard()->mimeData();
     IGraphsModel *pGraphsModel = zenoApp->graphsManagment()->currentModel();
     if (pMimeData->hasText())
     {
         const QString& strJson = pMimeData->text();
-        ModelAcceptor acceptor(nullptr, false);
+        TransferAcceptor acceptor(pGraphsModel);
         ZsgReader::getInstance().importNodes(pGraphsModel, m_subgIdx, strJson, pos, &acceptor);
+        pGraphsModel->importNodes(acceptor.nodes(), pos, m_subgIdx, true);
     }
 }
 

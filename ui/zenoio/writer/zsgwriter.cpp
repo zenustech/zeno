@@ -155,24 +155,7 @@ void ZsgWriter::dumpNode(const NODE_DATA& data, RAPIDJSON_WRITER& writer)
 		for (const PARAM_INFO& info : params)
 		{
 			writer.Key(info.name.toLatin1());
-
-			QVariant val = info.value;
-			if (val.type() == QVariant::String) {
-				writer.String(val.toString().toLatin1());
-			}
-			else if (val.type() == QVariant::Double) {
-				writer.Double(val.toDouble());
-			}
-			else if (val.type() == QVariant::Int) {
-				writer.Int(val.toInt());
-			}
-			else if (val.type() == QVariant::Bool) {
-				writer.Bool(val.toBool());
-			}
-			else if (val.type() != QVariant::Invalid) {
-				zeno::log_warn("bad param info qvariant type {}", val.typeName() ? val.typeName() : "(null)");
-				writer.String("");	//to think...
-			}
+			AddVariant(info.value, info.typeDesc, writer, true);
 		}
 	}
 	writer.Key("uipos");

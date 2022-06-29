@@ -80,32 +80,6 @@ void ModelAcceptor::EndSubgraph()
 	m_currentGraph = nullptr;
 }
 
-void ModelAcceptor::resolvePosLinks(const QStringList& ids, const QPointF& pos)
-{
-	//have to offer this method to handle issues about copy-paste...
-	if (!m_currentGraph || ids.isEmpty())
-		return;
-
-	const QString &id = ids[0];
-    QPointF _pos = m_currentGraph->getNodeStatus(id, ROLE_OBJPOS).toPointF();
-	const QPointF offset = pos - _pos;
-
-	for (const QString& ident : ids)
-	{
-		const QModelIndex& idx = m_currentGraph->index(ident);
-		_pos = idx.data(ROLE_OBJPOS).toPointF();
-		_pos += offset;
-		m_currentGraph->setData(idx, _pos, ROLE_OBJPOS);
-	}
-
-	//init output ports for each node.
-	for (const QString& ident : ids)
-	{
-		const QModelIndex& idx = m_currentGraph->index(ident);
-		generateLink(idx);
-	}
-}
-
 void ModelAcceptor::generateLink(const QModelIndex& idx)
 {
 	const QString& inNode = idx.data(ROLE_OBJID).toString();
@@ -199,6 +173,7 @@ void ModelAcceptor::initSockets(const QString& id, const QString& name, const NO
 		param.control = descParam.control;
 		param.typeDesc = descParam.typeDesc;
 		param.defaultValue = descParam.defaultValue;
+		param.value = param.defaultValue;
 		params.insert(param.name, param);
 	}
 	
@@ -366,10 +341,25 @@ void ModelAcceptor::setInputSocket(
     }
 }
 
-void ModelAcceptor::setParamValue(const QString& id, const QString& name, const QVariant& var)
+void ModelAcceptor::setParamValue(const QString& id, const QString& nodeCls, const QString& name, const rapidjson::Value& value)
 {
 	if (!m_currentGraph)
 		return;
+
+	NODE_DESC desc;
+	bool ret = m_pModel->getDescriptor(nodeCls, desc);
+	ZASSERT_EXIT(ret);
+
+	QVariant var;
+	if (!value.IsNull())
+	{
+		PARAM_INFO paramInfo;
+		if (desc.params.find(name) != desc.params.end()) {
+			paramInfo = desc.params[name];
+		}
+		var = ZsgReader::getInstance()._parseToVariant(paramInfo.typeDesc, value, m_currentGraph);
+	}
+
 	QModelIndex idx = m_currentGraph->index(id);
 	ZASSERT_EXIT(idx.isValid());
 	PARAMS_INFO params = m_currentGraph->data(idx, ROLE_PARAMETERS).value<PARAMS_INFO>();

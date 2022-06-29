@@ -46,12 +46,6 @@ bool ZsgReader::importNodes(IGraphsModel* pModel, const QModelIndex& subgIdx, co
         if (!ret)
             return false;
     }
-
-    //adjust item position.
-    ZASSERT_EXIT(!idents.isEmpty(), false);
-    const QString& ident = idents[0];
-
-    pAcceptor->resolvePosLinks(idents, targetPos);
     return true;
 }
 
@@ -170,7 +164,7 @@ bool ZsgReader::_parseNode(const QString& nodeid, const rapidjson::Value& nodeOb
 
     if (objValue.HasMember("params"))
     {
-        _parseParams(nodeid, objValue["params"], pAcceptor);
+        _parseParams(nodeid, name, objValue["params"], pAcceptor);
     }
     if (objValue.HasMember("uipos"))
     {
@@ -437,7 +431,7 @@ void ZsgReader::_parseInputs(const QString& id, const QString& nodeName, const N
     }
 }
 
-void ZsgReader::_parseParams(const QString& id, const rapidjson::Value& jsonParams, IAcceptor* pAcceptor)
+void ZsgReader::_parseParams(const QString& id, const QString& nodeName, const rapidjson::Value& jsonParams, IAcceptor* pAcceptor)
 {
     if (jsonParams.IsObject())
     {
@@ -445,8 +439,7 @@ void ZsgReader::_parseParams(const QString& id, const rapidjson::Value& jsonPara
         {
             const QString& name = paramObj.name.GetString();
             const rapidjson::Value& val = paramObj.value;
-            QVariant var = _parseToVariant("", val, pAcceptor->currGraphObj()); //todo: fill type.
-            pAcceptor->setParamValue(id, name, var);
+            pAcceptor->setParamValue(id, nodeName, name, val);
         }
     } else {
         zeno::log_warn("not object json param");

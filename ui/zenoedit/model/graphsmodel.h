@@ -78,6 +78,7 @@ public:
     int itemCount(const QModelIndex& subGpIdx) const override;
 	void addNode(const NODE_DATA& nodeData, const QModelIndex& subGpIdx, bool enableTransaction = false) override;
 	void appendNodes(const QList<NODE_DATA>& nodes, const QModelIndex& subGpIdx, bool enableTransaction = false);
+    void importNodes(const QMap<QString, NODE_DATA>& nodes, const QPointF& pos, const QModelIndex& subGpIdx, bool enableTransaction = false) override;
 	void removeNode(const QString& nodeid, const QModelIndex& subGpIdx, bool enableTransaction = false) override;
 	void removeNode(int row, const QModelIndex& subGpIdx);
     void removeLink(const QPersistentModelIndex& linkIdx, const QModelIndex& subGpIdx, bool enableTransaction = false) override;
@@ -152,6 +153,7 @@ private:
     void onSubInfoChanged(SubGraphModel* pSubModel, const QModelIndex& idx, bool bInput, bool bInsert);
     void updateDescInfo(const QString& descName, const SOCKET_UPDATE_INFO& updateInfo);
     void importNodeLinks(const QList<NODE_DATA> &nodes, const QModelIndex &subGpIdx);
+    void resolveLinks(const QModelIndex& idx, SubGraphModel* pCurrentGraph);
     void initDescriptors();
 
     void beginApiLevel();

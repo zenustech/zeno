@@ -274,3 +274,25 @@ void UpdateNotDescSockNameCommand::undo()
     }
     m_pModel->updateSocketNameNotDesc(m_nodeid, revertInfo, m_subgIdx, false);
 }
+
+
+ImportNodesCommand::ImportNodesCommand(const QMap<QString, NODE_DATA>& nodes, QPointF pos, GraphsModel* pModel, QPersistentModelIndex subgIdx)
+    : m_nodes(nodes)
+    , m_model(pModel)
+    , m_subgIdx(subgIdx)
+    , m_pos(pos)
+{
+}
+
+void ImportNodesCommand::redo()
+{
+    m_model->importNodes(m_nodes, m_pos, m_subgIdx, false);
+}
+
+void ImportNodesCommand::undo()
+{
+    for (QString id : m_nodes.keys())
+    {
+        m_model->removeNode(id, m_subgIdx, false);
+    }
+}
