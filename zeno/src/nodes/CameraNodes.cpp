@@ -23,7 +23,7 @@ struct MakeCamera : INode {
 
 ZENO_DEFNODE(MakeCamera)({
     {
-        {"vec3f", "pos", "0,0,1"},
+        {"vec3f", "pos", "0,0,5"},
         {"vec3f", "up", "0,1,0"},
         {"vec3f", "view", "0,0,-1"},
         {"float", "dof", "-1"},
@@ -31,8 +31,8 @@ ZENO_DEFNODE(MakeCamera)({
         {"float", "far", "20000"},
         {"float", "focL", "35"},
         {"float", "fov", "45"},
-        {"int", "nx", "1920"},
-        {"int", "ny", "1080"},
+        {"int", "nx", "0"},
+        {"int", "ny", "0"},
     },
     {
         {"CameraObject", "camera"},

@@ -32,7 +32,7 @@ ZENDEFNODE(LineAddVert,
     //"prim",
     }, /* params: */ {
     }, /* category: */ {
-    "primitive",
+    "deprecated",
     }});
 
 }

@@ -164,7 +164,7 @@ static std::string_view lutRandTypes[] = {
 
 }
 
-ZENO_API void primRandomize(PrimitiveObject *prim, std::string attr, std::string dirAttr, std::string randType, std::string combType, float scale, int seed) {
+ZENO_API void primRandomize(PrimitiveObject *prim, std::string attr, std::string dirAttr, std::string randType, std::string combType, float base, float scale, int seed) {
     auto randty = enum_variant<RandTypes>(array_index_safe(lutRandTypes, randType, "randType"));
     auto combIsAdd = boolean_variant(combType == "add");
     auto hasDirArr = boolean_variant(!dirAttr.empty());
@@ -175,7 +175,7 @@ ZENO_API void primRandomize(PrimitiveObject *prim, std::string attr, std::string
         auto const &dirArr = hasDirArr ? prim->attr<vec3f>(dirAttr) : std::vector<vec3f>();
         parallel_for((size_t)0, arr.size(), [&] (size_t i) {
             wangsrng rng(seed, i);
-            T offs = randty(rng) * scale;
+            T offs = base + randty(rng) * scale;
 
             if constexpr (hasDirArr.value && std::is_same_v<T, vec3f>) {
                 vec3f dir = dirArr[i], b1, b2;
@@ -196,13 +196,14 @@ namespace {
 struct PrimRandomize : INode {
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
+        auto base = get_input2<float>("base");
         auto scale = get_input2<float>("scale");
         auto seed = get_input2<int>("seed");
         auto attr = get_input2<std::string>("attr");
         auto dirAttr = get_input2<std::string>("dirAttr");
         auto randType = get_input2<std::string>("randType");
         auto combType = get_input2<std::string>("combType");
-        primRandomize(prim.get(), attr, dirAttr, randType, combType, scale, seed);
+        primRandomize(prim.get(), attr, dirAttr, randType, combType, base, scale, seed);
         set_output("prim", get_input("prim"));
     }
 };
@@ -212,6 +213,7 @@ ZENDEFNODE(PrimRandomize, {
     {"PrimitiveObject", "prim"},
     {"string", "attr", "pos"},
     {"string", "dirAttr", ""},
+    {"float", "base", "0"},
     {"float", "scale", "1"},
     {"int", "seed", "-1"},
     {"enum scalar01 scalar11 cube01 cube11 plane01 plane11 disk cylinder ball semiball sphere semisphere", "randType", "scalar01"},

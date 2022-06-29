@@ -6,9 +6,12 @@
 #include <zeno/types/UserData.h>
 #include <zenovis/DrawOptions.h>
 #include <zeno/types/MaterialObject.h>
+#include <zeno/types/CameraObject.h>
 #include <zenovis/ObjectsManager.h>
 #include <zeno/utils/UserData.h>
 #include <zeno/utils/fileio.h>
+#include <zenovis/Scene.h>
+#include <zenovis/Camera.h>
 #include <zenovis/RenderEngine.h>
 #include <zenovis/bate/GraphicsManager.h>
 #include <zenovis/bate/IGraphic.h>
@@ -91,17 +94,12 @@ struct GraphicsManager {
             }
         }
         std::string key;
-        Scene *scene;
+
         std::variant<DetPrimitive, DetMaterial> det;
 
-        explicit ZxxGraphic(std::string key_, zeno::IObject *obj, Scene *scene_)
-        : key(std::move(key_)), scene(scene_)
+        explicit ZxxGraphic(std::string key_, zeno::IObject *obj)
+        : key(std::move(key_))
         {
-            if (auto cam_prim = dynamic_cast<zeno::CameraObject *>(obj)){
-                zeno::log_info("processing camera object {}", key);
-                scene->camera->setCamera(cam_prim->get());
-            }
-
             if (auto prim_in = dynamic_cast<zeno::PrimitiveObject *>(obj))
             {
                 auto isL = prim_in->userData().getLiterial<int>("isL", 0);
@@ -233,7 +231,14 @@ struct GraphicsManager {
         for (auto const &[key, obj] : objs) {
             if (ins.may_emplace(key)) {
                 zeno::log_info("zxx_load_object: loading graphics [{}]", key);
-                auto ig = std::make_unique<ZxxGraphic>(key, obj, scene);
+
+                if (auto cam = dynamic_cast<zeno::CameraObject *>(obj))
+                {
+                    scene->camera->setCamera(cam->get());     // pyb fix
+                }
+
+                auto ig = std::make_unique<ZxxGraphic>(key, obj);
+
                 zeno::log_info("zxx_load_object: loaded graphics to {}", ig.get());
                 ins.try_emplace(key, std::move(ig));
             }
