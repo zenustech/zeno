@@ -145,9 +145,7 @@ struct ZSComputeBaryCentricWeights : INode {
         auto tetsBvh = zsvolume->bvh(ZenoParticles::s_elementTag);
 
         tetsBvh.build(cudaExec,bvs);
-
-
-
+        // tetsBvh.refit(cudaExec,bvs);
 
         cudaExec(zs::range(numEmbedVerts),
             [bcw = proxy<space>({},bcw)] ZS_LAMBDA(int vi) mutable{
@@ -253,7 +251,7 @@ struct ZSComputeBaryCentricWeights : INode {
                 nmEmbedVerts[ei] = (T)0.;
         });
 
-        if(e_dim !=3 && e_dim !=4){
+        if(e_dim !=3 && e_dim !=4) {
             throw std::runtime_error("INVALID EMBEDDED PRIM TOPO");
         }
 
