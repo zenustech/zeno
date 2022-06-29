@@ -94,8 +94,6 @@ private:
     QPointF m_srcPos, m_dstPos;
     QString m_inNode;
     QString m_outNode;
-    QString m_inSock;
-    QString m_outSock;
 };
 
 #endif

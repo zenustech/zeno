@@ -349,11 +349,8 @@ void SubGraphModel::updateSocket(const QString& nodeid, const SOCKET_UPDATE_INFO
 			    INPUT_SOCKET inputSock = inputs[oldName];
 			    inputSock.info.name = newName;
 
-			    inputs.remove(oldName);
-			    inputs[newName] = inputSock;
-			    setData(idx, QVariant::fromValue(inputs), ROLE_INPUTS);
-
-			    for (QPersistentModelIndex linkIdx : inputSock.linkIndice)
+                //update link info first, to avoid the old link info.
+                for (QPersistentModelIndex linkIdx : inputSock.linkIndice)
 			    {
 				    //modify link info.
 				    QString outNode = linkIdx.data(ROLE_OUTNODE).toString();
@@ -366,8 +363,14 @@ void SubGraphModel::updateSocket(const QString& nodeid, const SOCKET_UPDATE_INFO
 				    updateInfo.oldEdge = EdgeInfo(outNode, inNode, outSock, inSock);
 				    updateInfo.newEdge = EdgeInfo(outNode, inNode, outSock, newName);
 
+                    BlockSignalScope scope(m_pGraphsModel);
+                    //cannot triggered view update.
 				    m_pGraphsModel->updateLinkInfo(linkIdx, updateInfo, false);
 			    }
+
+			    inputs.remove(oldName);
+			    inputs[newName] = inputSock;
+			    setData(idx, QVariant::fromValue(inputs), ROLE_INPUTS);
                 break;
             }
             case SOCKET_UPDATE_TYPE:
@@ -418,11 +421,7 @@ void SubGraphModel::updateSocket(const QString& nodeid, const SOCKET_UPDATE_INFO
 				OUTPUT_SOCKET outputSock = outputs[oldName];
 				outputSock.info.name = newName;
 
-				outputs.remove(oldName);
-				outputs[newName] = outputSock;
-				setData(idx, QVariant::fromValue(outputs), ROLE_OUTPUTS);
-
-				for (QPersistentModelIndex linkIdx : outputSock.linkIndice)
+                for (QPersistentModelIndex linkIdx : outputSock.linkIndice)
 				{
 					//modify link info.
 					QString outNode = linkIdx.data(ROLE_OUTNODE).toString();
@@ -437,6 +436,10 @@ void SubGraphModel::updateSocket(const QString& nodeid, const SOCKET_UPDATE_INFO
 
 					m_pGraphsModel->updateLinkInfo(linkIdx, updateInfo, false);
 				}
+
+				outputs.remove(oldName);
+				outputs[newName] = outputSock;
+				setData(idx, QVariant::fromValue(outputs), ROLE_OUTPUTS);
                 break;
             }
             case SOCKET_UPDATE_TYPE:

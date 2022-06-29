@@ -162,11 +162,11 @@ ZenoFullLink::ZenoFullLink(const QPersistentModelIndex& idx, ZenoNode* outNode, 
 
     m_inNode = idx.data(ROLE_INNODE).toString();
     m_outNode = idx.data(ROLE_OUTNODE).toString();
-    m_inSock = idx.data(ROLE_INSOCK).toString();
-    m_outSock = idx.data(ROLE_OUTSOCK).toString();
+    QString inSock = idx.data(ROLE_INSOCK).toString();
+    QString outSock = idx.data(ROLE_OUTSOCK).toString();
 
-    m_srcPos = outNode->getPortPos(false, m_outSock);
-    m_dstPos = inNode->getPortPos(true, m_inSock);
+    m_srcPos = outNode->getPortPos(false, outSock);
+    m_dstPos = inNode->getPortPos(true, inSock);
 
     connect(inNode, SIGNAL(inSocketPosChanged()), this, SLOT(onInSocketPosChanged()));
     connect(outNode, SIGNAL(outSocketPosChanged()), this, SLOT(onOutSocketPosChanged()));
@@ -176,14 +176,16 @@ void ZenoFullLink::onInSocketPosChanged()
 {
     ZenoNode* pNode = qobject_cast<ZenoNode*>(sender());
     ZASSERT_EXIT(pNode);
-    m_dstPos = pNode->getPortPos(true, m_inSock);
+    const QString& inSock = m_index.data(ROLE_INSOCK).toString();
+    m_dstPos = pNode->getPortPos(true, inSock);
 }
 
 void ZenoFullLink::onOutSocketPosChanged()
 {
     ZenoNode* pNode = qobject_cast<ZenoNode *>(sender());
     ZASSERT_EXIT(pNode);
-    m_srcPos = pNode->getPortPos(false, m_outSock);
+    const QString& outSock = m_index.data(ROLE_OUTSOCK).toString();
+    m_srcPos = pNode->getPortPos(false, outSock);
 }
 
 QPersistentModelIndex ZenoFullLink::linkInfo() const
