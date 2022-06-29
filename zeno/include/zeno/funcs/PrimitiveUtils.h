@@ -37,7 +37,7 @@ ZENO_API void primScale(PrimitiveObject *prim, vec3f const &scale);
 
 ZENO_API std::pair<vec3f, vec3f> primBoundingBox(PrimitiveObject *prim);
 
-ZENO_API void primRandomize(PrimitiveObject *prim, std::string attr, std::string dirAttr, std::string randType, std::string combType, float base, float scale, int seed);
+ZENO_API void primRandomize(PrimitiveObject *prim, std::string attr, std::string dirAttr, std::string randType, float base, float scale, int seed);
 ZENO_API void primPerlinNoise(PrimitiveObject *prim, std::string inAttr, std::string outAttr, std::string outType, float scale, float detail, float roughness, float disortion, vec3f offset, float average, float strength);
 
 ZENO_API std::shared_ptr<PrimitiveObject> primScatter(

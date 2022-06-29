@@ -3,6 +3,7 @@
 #include <iostream>
 
 // zeno basics
+#include <zeno/utils/nowarn.h>
 #include <zeno/ListObject.h>
 #include <zeno/DictObject.h>
 #include <zeno/NumericObject.h>

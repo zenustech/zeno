@@ -65,6 +65,9 @@ struct PrimitiveObject : IObjectClone<PrimitiveObject> {
     auto &add_attr(std::string const &name) {
         if constexpr (std::is_same_v<T, vec3f>) {
             if (name == "pos") return verts.values;
+        } else {
+            if (name == "pos") throw makeError<TypeError>(
+                typeid(vec3f), typeid(T), "attribute 'pos' must be vec3f");
         }
         return verts.add_attr<T>(name);
     }
@@ -74,6 +77,9 @@ struct PrimitiveObject : IObjectClone<PrimitiveObject> {
     auto &add_attr(std::string const &name, T const &value) {
         if constexpr (std::is_same_v<T, vec3f>) {
             if (name == "pos") return verts.values;
+        } else {
+            if (name == "pos") throw makeError<TypeError>(
+                typeid(vec3f), typeid(T), "attribute 'pos' must be vec3f");
         }
         return verts.add_attr<T>(name, value);
     }
@@ -83,6 +89,9 @@ struct PrimitiveObject : IObjectClone<PrimitiveObject> {
     auto const &attr(std::string const &name) const {
         if constexpr (std::is_same_v<T, vec3f>) {
             if (name == "pos") return verts.values;
+        } else {
+            if (name == "pos") throw makeError<TypeError>(
+                typeid(vec3f), typeid(T), "attribute 'pos' must be vec3f");
         }
         return verts.attr<T>(name);
     }
@@ -92,6 +101,9 @@ struct PrimitiveObject : IObjectClone<PrimitiveObject> {
     auto &attr(std::string const &name) {
         if constexpr (std::is_same_v<T, vec3f>) {
             if (name == "pos") return verts.values;
+        } else {
+            if (name == "pos") throw makeError<TypeError>(
+                typeid(vec3f), typeid(T), "attribute 'pos' must be vec3f");
         }
         return verts.attr<T>(name);
     }
