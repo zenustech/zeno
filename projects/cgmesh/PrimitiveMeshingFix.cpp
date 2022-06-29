@@ -3,7 +3,7 @@
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/PrimitiveObject.h>
 #define MESHFIX_WITH_EIGEN
-#include "meshfix/meshfix.h"
+#include "libigl/meshfix/meshfix.h"
 #include "EigenUtils.h"
 
 namespace zeno {
