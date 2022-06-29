@@ -65,7 +65,7 @@ sutil::Trackball trackball;
 int32_t mouse_button = -1;
 
 //int32_t samples_per_launch = 16;
-int32_t samples_per_launch = 1;
+int32_t samples_per_launch = 16;
 
 //------------------------------------------------------------------------------
 //
@@ -1258,11 +1258,11 @@ std::vector<std::vector<std::string>> &texs) {
         static bool hadOnce = false;
         if (!hadOnce) {
             //OPTIX_CHECK( optixModuleDestroy( OptixUtil::ray_module ) );
-    OptixUtil::createModule(
+    if (!OptixUtil::createModule(
         OptixUtil::ray_module,
         state.context,
         sutil::lookupIncFile("PTKernel.cu"),
-        "PTKernel.cu");
+        "PTKernel.cu")) throw std::runtime_error("base ray module failed to compile");
         } hadOnce = true;
     OptixUtil::rtMaterialShaders.resize(0);
     for (int i = 0; i < shaders.size(); i++) {
@@ -1546,20 +1546,29 @@ void set_window_size(int nx, int ny) {
     resize_dirty = true;
 }
 
-void set_perspective(float const *U, float const *V, float const *W, float const *E, float aspect, float fov) {
+void set_perspective(float const *U, float const *V, float const *W, float const *E, float aspect, float fov, float focL) {
     auto &cam = state.params.cam;
     cam.eye = make_float3(E[0], E[1], E[2]);
     cam.right = make_float3(U[0], U[1], U[2]);
     cam.right *= aspect;
     cam.up = make_float3(V[0], V[1], V[2]);
     cam.front = make_float3(W[0], W[1], W[2]);
-    if (fov > 0) {
-        float radfov = fov * float(M_PI) / 180;
-        float tanfov = std::tan(radfov / 2);
-        cam.front /= tanfov;
-        float focallen = 0.018f / tanfov;
-        cam.eye -= focallen * cam.front;
+
+    if (focL > 0) {
+        // Angle of view (in degrees) = 2 ArcTan( sensor width / (2 X focal length)) * (180/π)
+        // Field of view = 2 (Tan (Angle of view/2) X Distance to Subject)
+
+        //float radaov = fov * float(M_PI) / 180;
+        //float tanfov = 2.0f * std::tan(radaov / 2.0f);
+        //cam.front /= tanfov;
+        //float focallen = 0.018f / tanfov;
+        //cam.eye -= focallen * cam.front;
+        //zeno::log_info("F {} {} {}", radaov, tanfov, focallen);
+
+        // The unit of focalLength is mm, so multiply 0.1;
+        cam.front *= focL*0.001f;
     }
+
     camera_changed = true;
     //cam.aspect = aspect;
     //cam.fov = fov;
@@ -1570,13 +1579,15 @@ void set_perspective(float const *U, float const *V, float const *W, float const
 
 
 void optixrender(int fbo) {
+    zeno::log_info("[optix] rendering subframe {}", state.params.subframe_index);
     if (!output_buffer_o) throw sutil::Exception("no output_buffer_o");
     if (!gl_display_o) throw sutil::Exception("no gl_display_o");
     updateState( *output_buffer_o, state.params );
-    for(int f=0;f<16;f++){
+    //for(int f=0;f<1;f++){
+    // edit samples_per_launch instead!
         launchSubframe( *output_buffer_o, state );
         state.params.subframe_index++;
-    }
+    //}
     displaySubframe( *output_buffer_o, *gl_display_o, state, fbo );
                     
 }

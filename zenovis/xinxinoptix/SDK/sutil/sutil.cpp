@@ -970,7 +970,7 @@ static bool getPtxFromCuString( std::string&                    ptx,
         std::cout<<mod_cu_source<<"\n=============END==============\n";
         std::cout<<g_nvrtcLog<<std::endl;
         NVRTC_CHECK_ERROR( nvrtcDestroyProgram( &prog ) );
-        std::cout<<"not compiled!!!!!"<<std::endl;
+        std::cout<<"mabimabi not compiled!!!!!"<<std::endl;
         return false;
     }
 

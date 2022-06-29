@@ -513,6 +513,7 @@ void DisplayWidget::updateFrame(const QString &action)
 
     if (action == "newFrame") {
         m_pTimer->stop();
+        //zeno::log_warn("stop");
         return;
     } else if (action == "finishFrame") {
         auto& inst = Zenovis::GetInstance();
@@ -522,9 +523,9 @@ void DisplayWidget::updateFrame(const QString &action)
         ZASSERT_EXIT(scene);
         if (scene->renderMan)
         {
-            std::string name = scene->renderMan->getDefaultName();
-            if (name == "optx") {
+            if (scene->renderMan->getDefaultEngineName() == "optx") {
                 m_pTimer->start(m_updateFeq);
+                //zeno::log_warn("start");
             }
         }
     } else if (!action.isEmpty()) {

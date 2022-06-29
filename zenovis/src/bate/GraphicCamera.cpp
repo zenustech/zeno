@@ -8,8 +8,6 @@
 namespace zenovis {
 namespace {
 
-using zeno::vec3f;
-
 struct GraphicCamera final : IGraphic {
     Scene *scene;
 
