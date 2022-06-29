@@ -1,6 +1,7 @@
 INCLUDE_DIRECTORIES(
         ${BULLET_PHYSICS_SOURCE_DIR}/src
         ${BULLET_PHYSICS_SOURCE_DIR}/../../../zeno/include
+        ${BULLET_PHYSICS_SOURCE_DIR}/../../../zeno/tpls/include
 )
 
 SET(URDF_SRCS
@@ -30,13 +31,13 @@ SET(URDF_HDRS
     ShapeData.h
         ReadObjPrim.h b3ImportMeshUtility.h URDFImporterInterface.h)
 
-ADD_LIBRARY(URDFImporter ${URDF_SRCS} ${URDF_HDRS})
+    ADD_LIBRARY(URDFImporter STATIC ${URDF_SRCS} ${URDF_HDRS})
 TARGET_INCLUDE_DIRECTORIES(
         URDFImporter PUBLIC .
 )
 
 IF (BUILD_SHARED_LIBS)
-    TARGET_LINK_LIBRARIES(URDFImporter BulletCollision LinearMath Zeno)
+    TARGET_LINK_LIBRARIES(URDFImporter BulletCollision LinearMath)
 ENDIF (BUILD_SHARED_LIBS)
 
 IF (NOT MSVC)

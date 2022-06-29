@@ -240,7 +240,7 @@ struct PrimitiveConvexDecompositionV : zeno::INode {
 
         unsigned int nConvexHulls = interfaceVHACD->GetNConvexHulls();
         //std::cout<< "Generate output:" << nConvexHulls << " convex-hulls" << std::endl;
-        log_debugf("Generate output: %d convex-hulls \n", nConvexHulls);
+        printf("Generate output: %d convex-hulls \n", nConvexHulls);
 
         bool good_ch_flag = true;
         VHACD::IVHACD::ConvexHull ch;
@@ -334,11 +334,11 @@ struct PrimitiveConvexDecomposition : zeno::INode {
         auto listPrim = std::make_shared<zeno::ListObject>();
         listPrim->arr.clear();
 
-        log_debugf("hacd got %d clusters\n", nClusters);
+        printf("hacd got %d clusters\n", nClusters);
         for (size_t c = 0; c < nClusters; c++) {
             size_t nPoints = hacd.GetNPointsCH(c);
             size_t nTriangles = hacd.GetNTrianglesCH(c);
-            log_debugf("hacd cluster %d have %d points, %d triangles\n",
+            printf("hacd cluster %d have %d points, %d triangles\n",
                        c, nPoints, nTriangles);
 
             points.clear();
@@ -1490,7 +1490,7 @@ ZENDEFNODE(BulletWorldRemoveObject, {
 struct BulletWorldSetObjList : zeno::INode {
     virtual void apply() override {
         auto world = get_input<BulletWorld>("world");
-        auto objList = get_input<ListObject>("objList")->get<std::shared_ptr<BulletObject>>();
+        auto objList = get_input<ListObject>("objList")->get<std::decay_t<BulletObject>>();
         world->setObjectList(std::move(objList));
         set_output("world", get_input("world"));
     }
@@ -1538,7 +1538,7 @@ ZENDEFNODE(BulletWorldRemoveConstraint, {
 struct BulletWorldSetConsList : zeno::INode {
     virtual void apply() override {
         auto world = get_input<BulletWorld>("world");
-        auto consList = get_input<ListObject>("consList")->get<std::shared_ptr<BulletConstraint>>();
+        auto consList = get_input<ListObject>("consList")->get<std::decay_t<BulletConstraint>>();
         world->setConstraintList(std::move(consList));
         set_output("world", get_input("world"));
     }
@@ -2026,7 +2026,7 @@ struct BulletMultiBodyPDControl : zeno::INode {
         if (has_input("qDesiredList")){
             {
                 auto numericObjs = get_input<zeno::ListObject>(
-                    "qDesiredList")->get<std::shared_ptr<NumericObject>>();
+                    "qDesiredList")->get<std::decay_t<NumericObject>>();
                 for (auto &&no: numericObjs)
                     qDesiredArray.push_back(no->get<float>());
             }
@@ -2038,7 +2038,7 @@ struct BulletMultiBodyPDControl : zeno::INode {
 		if (has_input("dqDesiredList")) {
             {
                 auto numericObjs = get_input<zeno::ListObject>(
-                    "dqDesiredList")->get<std::shared_ptr<NumericObject>>();
+                    "dqDesiredList")->get<std::decay_t<NumericObject>>();
                 for (auto &&no: numericObjs)
                     qdDesiredArray.push_back(no->get<float>());
             }
@@ -2308,7 +2308,7 @@ struct BulletCalcInverseKinematics : zeno::INode {
         std::vector<int> endEffectorLinkIndices;
         {
             auto numericObjs = get_input<zeno::ListObject>(
-                "endEffectorLinkIndices")->get<std::shared_ptr<NumericObject>>();
+                "endEffectorLinkIndices")->get<std::decay_t<NumericObject>>();
             for (auto &&no: numericObjs)
                 endEffectorLinkIndices.push_back(no->get<int>());
         }
@@ -2318,14 +2318,14 @@ struct BulletCalcInverseKinematics : zeno::INode {
         std::vector<vec3f> targetPositions;
         {
             auto numericObjs = get_input<zeno::ListObject>(
-                "targetPositions")->get<std::shared_ptr<NumericObject>>();
+                "targetPositions")->get<std::decay_t<NumericObject>>();
             for (auto &&no: numericObjs)
                 targetPositions.push_back(no->get<vec3f>());
         }
 
         std::vector<vec4f> targetOrientations;
         {
-            auto numericObjs = get_input<zeno::ListObject>("targetOrientations")->get<std::shared_ptr<NumericObject>>();
+            auto numericObjs = get_input<zeno::ListObject>("targetOrientations")->get<std::decay_t<NumericObject>>();
             for (auto &&no : numericObjs)
                 targetOrientations.push_back(no->get<vec4f>());
         }
@@ -2942,7 +2942,7 @@ struct BulletMultiBodyCalculateJacobian : zeno::INode {
         std::vector<float> jointPositionsQ;
         {
             auto numericObjs = get_input<zeno::ListObject>("jointPositionsQ")
-                                   ->get<std::shared_ptr<NumericObject>>();
+                                   ->get<std::decay_t<NumericObject>>();
             for (auto &&no : numericObjs)
                 jointPositionsQ.push_back(no->get<float>());
         }
@@ -2950,7 +2950,7 @@ struct BulletMultiBodyCalculateJacobian : zeno::INode {
         std::vector<float> jointVelocitiesQd;
         {
             auto numericObjs = get_input<zeno::ListObject>("jointVelocitiesQd")
-                                   ->get<std::shared_ptr<NumericObject>>();
+                                   ->get<std::decay_t<NumericObject>>();
             for (auto &&no : numericObjs)
                 jointVelocitiesQd.push_back(no->get<float>());
         }
@@ -2958,7 +2958,7 @@ struct BulletMultiBodyCalculateJacobian : zeno::INode {
         std::vector<float> jointAccelerations;
         {
             auto numericObjs = get_input<zeno::ListObject>("jointAccelerations")
-                                   ->get<std::shared_ptr<NumericObject>>();
+                                   ->get<std::decay_t<NumericObject>>();
             for (auto &&no : numericObjs)
                 jointAccelerations.push_back(no->get<float>());
         }
@@ -3141,7 +3141,7 @@ struct BulletMultiBodyCalculateMassMatrix : zeno::INode {
         std::vector<float> jointPositionsQ;
         {
             auto numericObjs = get_input<zeno::ListObject>("jointPositionsQ")
-                                   ->get<std::shared_ptr<NumericObject>>();
+                                   ->get<std::decay_t<NumericObject>>();
             for (auto &&no : numericObjs)
                 jointPositionsQ.push_back(no->get<float>());
         }
