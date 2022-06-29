@@ -3,7 +3,7 @@
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/PrimitiveObject.h>
 #define MESHFIX_WITH_EIGEN
-#include "meshfix/meshfix.h"
+#include "./libigl/meshfix/meshfix.h"
 #include "EigenUtils.h"
 
 namespace zeno {
@@ -12,7 +12,7 @@ std::pair<Eigen::MatrixXd, Eigen::MatrixXi> prim_to_eigen_with_fix(PrimitiveObje
     Eigen::MatrixXd VB;
     Eigen::MatrixXi FB;
     meshfix(VA, FA, VB, FB);
-    return {VB, FB};
+    return {std::move(VB), std::move(FB)};
 }
 }
 
