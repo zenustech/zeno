@@ -27,68 +27,72 @@ namespace JsonHelper
         writer.StartArray();
         for (const QVariant& value : list)
         {
-            QVariant::Type varType = value.type();
-            if (varType == QVariant::Double)
-            {
-                writer.Double(value.toDouble());
-            }
-            else if (varType == QVariant::Int)
-            {
-                writer.Int(value.toInt());
-            }
-            else if (varType == QVariant::String)
-            {
-                auto s = value.toString().toStdString();
-				writer.String(s.data(), s.size());
-            }
-            else if (varType == QVariant::Bool)
-            {
-                writer.Bool(value.toBool());
-            }
-            //todo: qlineargradient.
-            else if (varType != QVariant::Invalid)
-            {
-				if (varType == QVariant::UserType)
-                {
-                    //todo: declare a custom metatype
-                    QVector<qreal> vec = value.value<QVector<qreal>>();
-                    if (!vec.isEmpty())
-                    {
-                        writer.StartArray();
-                        for (int i = 0; i < vec.size(); i++) {
-                            if (type == "vec3i")
-                                writer.Int(vec[i]);
-                            else
-                                writer.Double(vec[i]);
-                        }
-                        writer.EndArray();
-                        continue;
-                    }
-                }
-                else if (varType == QMetaType::VoidStar)
-                {
-                    // TODO: use qobject_cast<CurveModel *>(QVariantPtr<IModel>::asPtr(value))
-                    // also btw luzh, will this have a memory leakage? no, we make sure that curvemodel is child of subgraphmodel.
-                    if (type == "curve")
-                    {
-                        auto pModel = QVariantPtr<CurveModel>::asPtr(value);
-                        dumpCurveModel(pModel, writer);
-                    }
-                }
-                else
-                {
-                    writer.Null();
-                    zeno::log_warn("bad qt variant type {}", value.typeName() ? value.typeName() : "(null)");
-                    //Q_ASSERT(false);
-                }
-            }
-            else if (varType == QVariant::Invalid)
-            {
-                if (fillInvalid)
-                    writer.Null();
-            }
+            AddVariant(value, type, writer, fillInvalid);
 		}
         writer.EndArray();
+    }
+
+    void AddVariant(const QVariant& value, const QString& type, RAPIDJSON_WRITER& writer, bool fillInvalid)
+    {
+        QVariant::Type varType = value.type();
+        if (varType == QVariant::Double)
+        {
+            writer.Double(value.toDouble());
+        }
+        else if (varType == QVariant::Int)
+        {
+            writer.Int(value.toInt());
+        }
+        else if (varType == QVariant::String)
+        {
+            auto s = value.toString().toStdString();
+            writer.String(s.data(), s.size());
+        }
+        else if (varType == QVariant::Bool)
+        {
+            writer.Bool(value.toBool());
+        }
+        //todo: qlineargradient.
+        else if (varType != QVariant::Invalid)
+        {
+            if (varType == QVariant::UserType)
+            {
+                //todo: declare a custom metatype
+                QVector<qreal> vec = value.value<QVector<qreal>>();
+                if (!vec.isEmpty())
+                {
+                    writer.StartArray();
+                    for (int i = 0; i < vec.size(); i++) {
+                        if (type == "vec3i")
+                            writer.Int(vec[i]);
+                        else
+                            writer.Double(vec[i]);
+                    }
+                    writer.EndArray();
+                }
+            }
+            else if (varType == QMetaType::VoidStar)
+            {
+                // TODO: use qobject_cast<CurveModel *>(QVariantPtr<IModel>::asPtr(value))
+                // also btw luzh, will this have a memory leakage? no, we make sure that curvemodel is child of subgraphmodel.
+                if (type == "curve")
+                {
+                    auto pModel = QVariantPtr<CurveModel>::asPtr(value);
+                    dumpCurveModel(pModel, writer);
+                }
+            }
+            else
+            {
+                writer.Null();
+                zeno::log_warn("bad qt variant type {}", value.typeName() ? value.typeName() : "(null)");
+                //Q_ASSERT(false);
+            }
+        }
+        else if (varType == QVariant::Invalid)
+        {
+            if (fillInvalid)
+                writer.Null();
+        }
     }
 
     void AddVariantToStringList(const QVariantList& list, RAPIDJSON_WRITER& writer)

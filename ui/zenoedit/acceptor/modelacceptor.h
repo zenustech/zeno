@@ -12,8 +12,9 @@ public:
 	ModelAcceptor(GraphsModel* pModel, bool bImport);
 
 	//IAcceptor
-	void setDescriptors(const NODE_DESCS& nodesParams) override;
+	void setLegacyDescs(const rapidjson::Value& graphObj, const NODE_DESCS& nodesParams) override;
 	void BeginSubgraph(const QString& name) override;
+	bool setCurrentSubGraph(IGraphsModel* pModel, const QModelIndex& subgIdx) override;
 	void EndSubgraph() override;
 	void setFilePath(const QString& fileName) override;
 	void switchSubGraph(const QString& graphName) override;
@@ -21,6 +22,7 @@ public:
 	void setViewRect(const QRectF& rc) override;
 	void setSocketKeys(const QString& id, const QStringList& keys) override;
 	void initSockets(const QString& id, const QString& name, const NODE_DESCS& descs) override;
+	void addDictKey(const QString& id, const QString& keyName, bool bInput) override;
 	void setInputSocket(const QString &nodeCls,
 		const QString &id,
 		const QString &inSock,
@@ -28,7 +30,7 @@ public:
 		const QString &outSock,
 		const rapidjson::Value &defaultValue,
         const NODE_DESCS &legacyDescs) override;
-	void setParamValue(const QString& id, const QString& name, const QVariant& var) override;
+	void setParamValue(const QString& id, const QString& nodeCls, const QString& name, const rapidjson::Value& value) override;
 	void setPos(const QString& id, const QPointF& pos) override;
 	void setOptions(const QString& id, const QStringList& options) override;
 	void setColorRamps(const QString& id, const COLOR_RAMPS& colorRamps) override;
@@ -36,7 +38,7 @@ public:
 	QObject* currGraphObj() override;
 
 private:
-	void _initSockets(const QString& id, const QString& name, INPUT_SOCKETS& inputs, PARAMS_INFO& params, OUTPUT_SOCKETS& outputs);
+    void generateLink(const QModelIndex& idx);
 
 	SubGraphModel* m_currentGraph;
 	GraphsModel* m_pModel;

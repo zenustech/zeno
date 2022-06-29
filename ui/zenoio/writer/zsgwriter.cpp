@@ -13,6 +13,32 @@ ZsgWriter& ZsgWriter::getInstance()
 	return writer;
 }
 
+void ZsgWriter::dumpToClipboard(const QMap<QString, NODE_DATA>& nodes)
+{
+    QString strJson;
+
+    rapidjson::StringBuffer s;
+    RAPIDJSON_WRITER writer(s);
+    {
+        JsonObjBatch batch(writer);
+        writer.Key("nodes");
+        {
+            JsonObjBatch _batch(writer);
+	    for (const QString& nodeId : nodes.keys())
+	    {
+                const NODE_DATA& nodeData = nodes[nodeId];
+                writer.Key(nodeId.toLatin1());
+                dumpNode(nodeData, writer);
+	    }
+        }
+    }
+
+    strJson = QString::fromLatin1(s.GetString());
+    QMimeData* pMimeData = new QMimeData;
+    pMimeData->setText(strJson);
+    QApplication::clipboard()->setMimeData(pMimeData);
+}
+
 QString ZsgWriter::dumpProgramStr(IGraphsModel* pModel)
 {
 	QString strJson;
@@ -95,11 +121,13 @@ void ZsgWriter::dumpNode(const NODE_DATA& data, RAPIDJSON_WRITER& writer)
 	const QString& name = data[ROLE_OBJNAME].toString();
 	writer.String(name.toLatin1());
 
+	const INPUT_SOCKETS& inputs = data[ROLE_INPUTS].value<INPUT_SOCKETS>();
+	const OUTPUT_SOCKETS& outputs = data[ROLE_OUTPUTS].value<OUTPUT_SOCKETS>();
+	const PARAMS_INFO& params = data[ROLE_PARAMETERS].value<PARAMS_INFO>();
+
 	writer.Key("inputs");
 	{
 		JsonObjBatch _batch(writer);
-
-		const INPUT_SOCKETS& inputs = data[ROLE_INPUTS].value<INPUT_SOCKETS>();
 		for (const INPUT_SOCKET& inSock : inputs)
 		{
 			writer.Key(inSock.info.name.toLatin1());
@@ -123,29 +151,10 @@ void ZsgWriter::dumpNode(const NODE_DATA& data, RAPIDJSON_WRITER& writer)
 	writer.Key("params");
 	{
 		JsonObjBatch _batch(writer);
-
-		const PARAMS_INFO& params = data[ROLE_PARAMETERS].value<PARAMS_INFO>();
 		for (const PARAM_INFO& info : params)
 		{
 			writer.Key(info.name.toLatin1());
-
-			QVariant val = info.value;
-			if (val.type() == QVariant::String) {
-				writer.String(val.toString().toLatin1());
-			}
-			else if (val.type() == QVariant::Double) {
-				writer.Double(val.toDouble());
-			}
-			else if (val.type() == QVariant::Int) {
-				writer.Int(val.toInt());
-			}
-			else if (val.type() == QVariant::Bool) {
-				writer.Bool(val.toBool());
-			}
-			else if (val.type() != QVariant::Invalid) {
-				zeno::log_warn("bad param info qvariant type {}", val.typeName() ? val.typeName() : "(null)");
-				writer.String("");	//to think...
-			}
+			AddVariant(info.value, info.typeDesc, writer, true);
 		}
 	}
 	writer.Key("uipos");
@@ -180,11 +189,39 @@ void ZsgWriter::dumpNode(const NODE_DATA& data, RAPIDJSON_WRITER& writer)
 		AddStringList(options, writer);
 	}
 
-	QStringList socketKeys = data[ROLE_SOCKET_KEYS].value<QStringList>();
-	if (!socketKeys.isEmpty())
+	//dump custom keys in dictnode.
 	{
-		writer.Key("socket_keys");
-		AddStringList(socketKeys, writer);
+		QStringList inDictKeys, outDictKeys;
+		for (const INPUT_SOCKET& inSock : inputs) {
+			if (inSock.info.control == CONTROL_DICTKEY) {
+				inDictKeys.append(inSock.info.name);
+			}
+		}
+		for (const OUTPUT_SOCKET& outSock : outputs) {
+			if (outSock.info.control == CONTROL_DICTKEY) {
+				outDictKeys.append(outSock.info.name);
+			}
+		}
+		//replace socket_keys with dict_keys, which is more expressive.
+		if (!inDictKeys.isEmpty() || !outDictKeys.isEmpty())
+		{
+			writer.Key("dict_keys");
+			JsonObjBatch _batch(writer);
+
+            writer.Key("inputs");
+			writer.StartArray();
+			for (auto inSock : inDictKeys) {
+				writer.String(inSock.toUtf8());
+			}
+			writer.EndArray();
+
+			writer.Key("outputs");
+            writer.StartArray();
+			for (auto outSock : outDictKeys) {
+				writer.String(outSock.toUtf8());
+			}
+            writer.EndArray();
+		}
 	}
 
 	if (name == "Blackboard") {
