@@ -74,16 +74,16 @@ namespace hg::OpenGL {
     void bind_image(void *img, size_t nx, size_t ny) = delete;
 
     void bind_image(void *img, size_t nx, size_t ny, size_t nz) {
-      printf("- %p\n", this);
+      //printf("- %p\n", this);
       CHECK_GL(glBindTexture(target, tex));
-      printf("0\n");
+      //printf("0\n");
       CHECK_GL(glTexParameteri(target, GL_TEXTURE_WRAP_S, wrap_s));
       CHECK_GL(glTexParameteri(target, GL_TEXTURE_WRAP_T, wrap_t));
       CHECK_GL(glTexParameteri(target, GL_TEXTURE_MIN_FILTER, min_filter));
       CHECK_GL(glTexParameteri(target, GL_TEXTURE_MAG_FILTER, mag_filter));
-      printf("1\n");
+      //printf("1\n");
       CHECK_GL(glTexImage3D(target, 0, internal_fmt, nx, ny, nz, 0, format, dtype, img));
-      printf("2\n");
+      //printf("2\n");
     }
 
     void load(const char *path) = delete;
