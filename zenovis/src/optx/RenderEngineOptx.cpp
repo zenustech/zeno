@@ -238,6 +238,7 @@ struct GraphicsManager {
                 }
 
                 auto ig = std::make_unique<ZxxGraphic>(key, obj);
+
                 zeno::log_info("zxx_load_object: loaded graphics to {}", ig.get());
                 ins.try_emplace(key, std::move(ig));
             }
@@ -367,7 +368,9 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         //zeno::log_warn("lodup = {}", zeno::other_to_vec<3>(cam.m_lodup));
         //zeno::log_warn("lodfront = {}", zeno::other_to_vec<3>(cam.m_lodfront));
         //zeno::log_warn("lodright = {}", zeno::other_to_vec<3>(lodright));
-        xinxinoptix::set_perspective(glm::value_ptr(lodright), glm::value_ptr(cam.m_lodup), glm::value_ptr(cam.m_lodfront), glm::value_ptr(cam.m_lodcenter), cam.getAspect(), cam.m_fov);
+        xinxinoptix::set_perspective(glm::value_ptr(lodright), glm::value_ptr(cam.m_lodup),
+                                     glm::value_ptr(cam.m_lodfront), glm::value_ptr(cam.m_lodcenter),
+                                     cam.getAspect(), cam.m_fov, cam.m_focL);
         //xinxinoptix::set_projection(glm::value_ptr(cam.m_proj));
         }
 
