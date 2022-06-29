@@ -649,10 +649,10 @@ __forceinline__ __device__ vec4 max(vec4 a, vec4 b)
     return vec4(fmaxf(a.x, b.x), fmaxf(a.y,b.y), fmaxf(a.z, b.z), fmaxf(a.w, b.w));
 }
 
-__forceinline__ __device__ float clamp(float a, float b, float c)
-{
-    return min(max(a, b), c);
-}
+//__forceinline__ __device__ float clamp(float a, float b, float c)
+//{
+    //return min(max(a, b), c);
+//}
 __forceinline__ __device__ vec2 clamp(vec2 a, float b, float c)
 {
     return min(max(a, b), c);

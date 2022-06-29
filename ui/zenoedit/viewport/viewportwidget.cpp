@@ -522,8 +522,7 @@ void DisplayWidget::updateFrame(const QString &action)
         ZASSERT_EXIT(scene);
         if (scene->renderMan)
         {
-            std::string name = scene->renderMan->getDefaultName();
-            if (name == "optx") {
+            if (scene->renderMan->engineRequiresTAA()) {
                 m_pTimer->start(m_updateFeq);
             }
         }

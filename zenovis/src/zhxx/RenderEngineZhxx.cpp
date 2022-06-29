@@ -73,6 +73,10 @@ struct RenderEngineZhxx : RenderEngine, zeno::disable_copy {
         zenvis::setup_env_map("Default");
     }
 
+    bool requiresTAA() override {
+        return true;
+    }
+
     void update() override {
         if (graphicsMan->load_objects(scene->objectsMan->pairs()))
             giNeedUpdate = true;

@@ -15,6 +15,7 @@ struct Scene;
 struct RenderEngine {
     virtual void draw() = 0;
     virtual void update() = 0;
+    virtual bool requiresTAA() { return false; }
 
     virtual ~RenderEngine() = default;
 };
@@ -47,8 +48,8 @@ public:
         return getEngine(defaultEngineName);
     }
 
-    std::string getDefaultName() const {
-        return defaultEngineName;
+    bool engineRequiresTAA() {
+        return getEngine()->requiresTAA();
     }
 
     void switchDefaultEngine(std::string const &name) {

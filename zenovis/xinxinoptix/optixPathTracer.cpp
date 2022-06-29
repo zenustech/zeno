@@ -1258,11 +1258,11 @@ std::vector<std::vector<std::string>> &texs) {
         static bool hadOnce = false;
         if (!hadOnce) {
             //OPTIX_CHECK( optixModuleDestroy( OptixUtil::ray_module ) );
-    OptixUtil::createModule(
+    if (!OptixUtil::createModule(
         OptixUtil::ray_module,
         state.context,
         sutil::lookupIncFile("PTKernel.cu"),
-        "PTKernel.cu");
+        "PTKernel.cu")) throw std::runtime_error("base ray module failed to compile");
         } hadOnce = true;
     OptixUtil::rtMaterialShaders.resize(0);
     for (int i = 0; i < shaders.size(); i++) {
@@ -1570,6 +1570,7 @@ void set_perspective(float const *U, float const *V, float const *W, float const
 
 
 void optixrender(int fbo) {
+    zeno::log_debug("[optix] rendering subframe {}", state.params.subframe_index);
     if (!output_buffer_o) throw sutil::Exception("no output_buffer_o");
     if (!gl_display_o) throw sutil::Exception("no gl_display_o");
     updateState( *output_buffer_o, state.params );
