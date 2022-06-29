@@ -41,6 +41,14 @@ cmake --build build --config Release
 
 ### Q
 
+Zeno runs extremely slow, I believe this is abnormal.
+
+### A
+
+Consider quit anti-virus softwares like 360, they will put all console process into a virtualized sandbox, result in a very poor performance.
+
+### Q
+
 ```
 Error: Could not find 'Qt5Core.dll'
 ```
