@@ -309,7 +309,7 @@ ZENDEFNODE(EvalFBXAnim,
 
                },  /* category: */
                {
-                   "primitive",
+                   "FBX",
                }
            });
 
