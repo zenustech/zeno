@@ -178,4 +178,75 @@ ZENDEFNODE(AlignPrimitive,{
     {},
     {"Skinning"},
 });
+
+struct EvalSurfaceDeformtion : zeno::INode {
+    double computeArea(const zeno::vec3f& p0,
+                        const zeno::vec3f& p1,
+                        const zeno::vec3f& p2) const {
+        auto p01 = p0 - p1;
+        auto p02 = p0 - p2;
+        auto p12 = p1 - p2;
+        auto a = zeno::length(p01);
+        auto b = zeno::length(p02);
+        auto c = zeno::length(p12);
+
+        auto s = (a + b + c)/2;
+        return std::sqrt(s*(s-a)*(s-b)*(s-c));
+    }
+
+    virtual void apply() override {
+        auto prim_ref = get_input<zeno::PrimitiveObject>("prim_ref");
+        auto prim = get_input<zeno::PrimitiveObject>("prim");
+        auto outAttr = get_param<std::string>("attr");
+
+        size_t nm_tris = prim_ref->tris.size();
+        if(prim->tris.size() != nm_tris || prim->size() != prim_ref->size()){
+            throw std::runtime_error("THE SIZE OF TWO INPUT SURFACE NOT MATCH");
+        }
+
+        for(size_t ti = 0;ti < nm_tris;++ti){
+            const auto& tri_ref = prim_ref->tris[ti];
+            const auto& tri = prim->tris[ti];
+
+            if(tri_ref[0] != tri[0] || tri_ref[1] != tri[1] || tri_ref[2] != tri[2])
+                throw std::runtime_error("THE TOPO OF TWO INPUT SURFACE NOT MATCH");
+        }
+
+        std::vector<int> nm_neigh_tris(prim->size());
+        std::fill(nm_neigh_tris.begin(),nm_neigh_tris.end(),0);
+
+        auto& outDefs = prim->add_attr<float>(outAttr);
+        const auto& pos_ref = prim_ref->attr<zeno::vec3f>("pos");
+        const auto& pos = prim->attr<zeno::vec3f>("pos");
+        std::cout << "nm_tris:" << nm_tris << std::endl;
+        for(size_t ti = 0;ti < nm_tris;++ti){
+            const auto& tri = prim->tris[ti];
+            auto Aref = computeArea(pos_ref[tri[0]],pos_ref[tri[1]],pos_ref[tri[2]]);
+            auto A = computeArea(pos[tri[0]],pos[tri[1]],pos[tri[2]]);
+
+            auto adef = A/Aref;
+            nm_neigh_tris[tri[0]] += 1;
+            nm_neigh_tris[tri[1]] += 1;
+            nm_neigh_tris[tri[2]] += 1;
+
+            outDefs[tri[0]] += adef;
+            outDefs[tri[1]] += adef;
+            outDefs[tri[2]] += adef;
+        }
+
+        for(size_t i = 0;i < prim->size();++i)
+            outDefs[i] /= nm_neigh_tris[i];
+
+        set_output("prim",prim);
+    }
+};
+
+ZENDEFNODE(EvalSurfaceDeformtion,{
+    {{"prim_ref"},{"prim"}},
+    {"prim"},
+    {{"string","attr","def"}},
+    {"Skinning"},
+});
+
+
 };

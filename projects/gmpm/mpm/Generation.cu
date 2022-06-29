@@ -1246,6 +1246,60 @@ ZENDEFNODE(UpdatePrimitiveFromZSParticles, {
                                                {"MPM"},
                                            });
 
+
+struct UpdatePrimitiveAttrFromZSParticles : INode {
+  void apply() override {
+      auto parobjPtrs = RETRIEVE_OBJECT_PTRS(ZenoParticles, "ZSParticles");
+
+      using namespace zs;
+
+      auto prim_idx = get_input<zeno::NumericObject>("index")->get<int>();
+      auto attrName = get_param<std::string>("attr");
+      auto attrType = get_param<std::string>("type");
+      if(parobjPtrs.size() <= prim_idx)
+        throw std::runtime_error("prim index out of range");
+      const auto parobjPtr = parobjPtrs[prim_idx];
+      bool requireClone = !(parobjPtr->getParticles().memspace() == memsrc_e::host || parobjPtr->getParticles().memspace() == memsrc_e::um);
+      const auto& pars = requireClone ? parobjPtr->getParticles().clone({memsrc_e::host}) : parobjPtr->getParticles();
+      if(parobjPtr->prim.get() == nullptr)
+        return;
+      
+      auto prim = parobjPtr->prim;
+      if(!pars.hasProperty(attrName) || !prim->has_attr(attrName))
+        throw std::runtime_error("the particle or primitive has no specified channel");
+      // clone the specified attribute from particles to primitiveObject
+      auto ompExec = zs::omp_exec();
+      if(attrType == "float"){
+        fmt::print("update float attr {}\n",attrName);
+        auto& attr = prim->attr<float>(attrName);
+        ompExec(range(pars.size()),
+          [pars = proxy<execspace_e::host>({},pars),&attr,attrName = zs::SmallString(attrName)] (auto pi) {
+            attr[pi] = pars(attrName,pi);
+          });
+      }else if(attrType == "vec3f"){
+        fmt::print("update vec3f attr {}\n",attrName);
+        auto& attr = prim->attr<zeno::vec3f>(attrName);
+        ompExec(range(pars.size()),
+          [pars = proxy<execspace_e::host>({},pars),&attr,attrName = zs::SmallString(attrName)] (auto pi) {
+            attr[pi] = pars.template array<3,float>(attrName,pi);
+          });
+      }else{
+        throw std::runtime_error("INVALID SPECIFIED TYPE");
+      }
+
+      fmt::print(fg(fmt::color::cyan),
+          "done executing UpdatePrimitiveAttrFromZSParticles\n");
+      set_output("ZSParticles",get_input("ZSParticles"));
+  }
+};
+
+ZENDEFNODE(UpdatePrimitiveAttrFromZSParticles,{
+                {"ZSParticles","index"},
+                {"ZSParticles"},
+                {{"string","attr","x"},{"enum float vec3f","type","float"}},
+                {"MPM"},
+});
+
 struct MakeZSPartition : INode {
   void apply() override {
     auto partition = std::make_shared<ZenoPartition>();
@@ -1676,14 +1730,9 @@ struct ComputeVonMises : INode {
     auto option = get_param<int>("by_log1p(base10)");
 
     auto cudaExec = zs::cuda_exec().device(0);
-    zs::match(
-        [&](auto &elasticModel)
-            -> std::enable_if_t<
-                !zs::is_same_v<RM_CVREF_T(elasticModel),
-                               zs::StableNeohookeanInvarient<float>>> {
-          computeVms(cudaExec, elasticModel, pars, option);
-        },
-        [](...) {})(model.getElasticModel());
+    zs::match([&](auto &elasticModel) -> std::enable_if_t<std::is_same_v<RM_CVREF_T(elasticModel), zs::StvkWithHencky<float>>> {
+      computeVms(cudaExec, elasticModel, pars, option);
+    }, [](...){})(model.getElasticModel());
 
     set_output("ZSParticles", std::move(zspars));
     fmt::print(fg(fmt::color::cyan), "done executing ComputeVonMises\n");

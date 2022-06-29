@@ -297,6 +297,8 @@ struct EmbedPrimitiveToVolumeMesh : zeno::INode {
         // embed_id.resize(prim->size(),-1);
         // std::cout << "CHECK:" << embed_id[10641] << std::endl;
         auto& elm_w = prim->add_attr<zeno::vec3f>("embed_w");
+
+        auto fitting_in = (int)get_input<zeno::NumericObject>("fitting_in")->get<float>();
         // elm_w.resize(prim->size(),zeno::vec3f(0));
 
         // auto& v0s = prim->add_attr<zeno::vec3f>("v0");
@@ -428,7 +430,7 @@ struct EmbedPrimitiveToVolumeMesh : zeno::INode {
             }
 
 
-            if(embed_id[i] < -1e-3) {
+            if(embed_id[i] < -1e-3 && fitting_in) {
 
 
                 embed_id[i] = closest_tet_id;
@@ -445,7 +447,7 @@ struct EmbedPrimitiveToVolumeMesh : zeno::INode {
         }
 
         for(size_t i = 0;i < embed_id.size();++i){
-            if(embed_id[i] < -1e-3){
+            if(embed_id[i] < -1e-3 && fitting_in){
                 std::cerr << "COULD NOT FIND EMBED TET FOR " << i << std::endl; 
                 throw std::runtime_error("COULD NOT FIND EMBED TET");
             }
@@ -458,7 +460,7 @@ struct EmbedPrimitiveToVolumeMesh : zeno::INode {
 };
 
 ZENDEFNODE(EmbedPrimitiveToVolumeMesh, {
-    {"prim","vmesh"},
+    {"prim","vmesh","fitting_in"},
     {"prim"},
     {},
     {"FEM"},
