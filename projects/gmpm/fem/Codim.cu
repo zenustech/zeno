@@ -1247,27 +1247,29 @@ struct CodimStepping : INode {
             atomic_min(exec_cuda, &alpha[0], tmp);
           });
       auto nee = ncsEE.getVal();
-      pol(range(nee), [csEE = proxy<space>(csEE),
-                       vtemp = proxy<space>({}, vtemp),
-                       alpha = proxy<space>(alpha), stepSize, xi,
-                       coOffset = (int)coOffset] __device__(int eei) {
-        auto ids = csEE[eei];
-        auto ea0 = vtemp.template pack<3>("xn", ids[0]);
-        auto ea1 = vtemp.template pack<3>("xn", ids[1]);
-        auto eb0 = vtemp.template pack<3>("xn", ids[2]);
-        auto eb1 = vtemp.template pack<3>("xn", ids[3]);
-        auto dea0 = vtemp.template pack<3>("dir", ids[0]);
-        auto dea1 = vtemp.template pack<3>("dir", ids[1]);
-        auto deb0 = vtemp.template pack<3>("dir", ids[2]);
-        auto deb1 = vtemp.template pack<3>("dir", ids[3]);
-        auto tmp = stepSize;
-#if 1
-        if (eeaccd(ea0, ea1, eb0, eb1, dea0, dea1, deb0, deb1, (T)0.1, xi, tmp))
+      pol(range(nee),
+          [csEE = proxy<space>(csEE), vtemp = proxy<space>({}, vtemp),
+           alpha = proxy<space>(alpha), stepSize, xi,
+           coOffset = (int)coOffset] __device__(int eei) {
+            auto ids = csEE[eei];
+            auto ea0 = vtemp.template pack<3>("xn", ids[0]);
+            auto ea1 = vtemp.template pack<3>("xn", ids[1]);
+            auto eb0 = vtemp.template pack<3>("xn", ids[2]);
+            auto eb1 = vtemp.template pack<3>("xn", ids[3]);
+            auto dea0 = vtemp.template pack<3>("dir", ids[0]);
+            auto dea1 = vtemp.template pack<3>("dir", ids[1]);
+            auto deb0 = vtemp.template pack<3>("dir", ids[2]);
+            auto deb1 = vtemp.template pack<3>("dir", ids[3]);
+            auto tmp = stepSize;
+#if 0
+            if (eeaccd(ea0, ea1, eb0, eb1, dea0, dea1, deb0, deb1, (T)0.1, xi, tmp))
+#elif 1
+            if (rpccd::eeccd(ea0, ea1, eb0, eb1, dea0, dea1, deb0, deb1, (T)0.1, xi, tmp))
 #else
             if (ee_ccd(ea0, ea1, eb0, eb1, dea0, dea1, deb0, deb1, xi, tmp))
 #endif
-          atomic_min(exec_cuda, &alpha[0], tmp);
-      });
+            atomic_min(exec_cuda, &alpha[0], tmp);
+          });
       stepSize = alpha.getVal();
     }
     void groundIntersectionFreeStepsize(zs::CudaExecutionPolicy &pol,

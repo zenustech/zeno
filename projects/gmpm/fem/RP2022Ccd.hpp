@@ -34,7 +34,6 @@ ptccd(const VecT &p, const VecT &t0, const VecT &t1, const VecT &t2,
   }
 }
 
-#if 0
 template <typename VecT>
 constexpr bool
 eeccd(const VecT &ea0, const VecT &ea1, const VecT &eb0, const VecT &eb1,
@@ -47,8 +46,7 @@ eeccd(const VecT &ea0, const VecT &ea1, const VecT &eb0, const VecT &eb1,
   auto ea1end = ea1 + t * dea1;
   auto eb0end = eb0 + t * deb0;
   auto eb1end = eb1 + t * deb1;
-  while (
-      Intersect_EE_robust(ea0, ea1, eb0, eb1, ea0end, ea1end, eb0end, eb1end)) {
+  while (edgeEdgeCCD(ea0, ea1, eb0, eb1, ea0end, ea1end, eb0end, eb1end)) {
     t /= 2;
     ea0end = ea0 + t * dea0;
     ea1end = ea1 + t * dea1;
@@ -63,7 +61,6 @@ eeccd(const VecT &ea0, const VecT &ea1, const VecT &eb0, const VecT &eb1,
     return true;
   }
 }
-#endif
 
 } // namespace rpccd
 
