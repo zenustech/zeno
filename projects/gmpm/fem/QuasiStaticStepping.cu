@@ -65,28 +65,28 @@ struct QuasiStaticStepping : INode {
           throw std::runtime_error("B_BCWS SIZE AND B_VERTS SIZE NOT MATCH");
       }
       pol(range(nmEmbedVerts), [vtemp = proxy<space>({},vtemp),
-                eles = proxy<space>({},eles),
-                b_verts = proxy<space>({},b_verts),
-                bcws = proxy<space>({},b_bcws),lambda,mu,tag,res = proxy<space>(res),bone_driven_weight = bone_driven_weight]
-                ZS_LAMBDA(int vi) mutable {
-                    auto ei = reinterpret_bits<int>(bcws("inds",vi));
-                    if(ei < 0)
-                        return;
-                    auto inds = eles.pack<4>("inds",ei).reinterpret_bits<int>();
-                    auto w = bcws.pack<4>("w",vi);
+          eles = proxy<space>({},eles),
+          b_verts = proxy<space>({},b_verts),
+          bcws = proxy<space>({},b_bcws),lambda,mu,tag,res = proxy<space>(res),bone_driven_weight = bone_driven_weight]
+          ZS_LAMBDA(int vi) mutable {
+              auto ei = reinterpret_bits<int>(bcws("inds",vi));
+              if(ei < 0)
+                  return;
+              auto inds = eles.pack<4>("inds",ei).reinterpret_bits<int>();
+              auto w = bcws.pack<4>("w",vi);
 
-                    auto tpos = vec3::zeros();
-                    for(size_t i = 0;i != 4;++i)
-                        tpos += w[i] * vtemp.pack<3>(tag,inds[i]);
+              auto tpos = vec3::zeros();
+              for(size_t i = 0;i != 4;++i)
+                  tpos += w[i] * vtemp.pack<3>(tag,inds[i]);
+              auto pdiff = tpos - b_verts.pack<3>("x",vi);
 
-                    auto pdiff = tpos - b_verts.pack<3>("x",vi);
-
-                    T stiffness = 2.0066 * mu + 1.0122 * lambda;
-                    T bpsi = (0.5 * bcws("cnorm",vi) * stiffness * bone_driven_weight * eles("vol",ei)) * pdiff.dot(pdiff);
-
+              T stiffness = 2.0066 * mu + 1.0122 * lambda;
+              // if(eles("vol",ei) < 0)
+              //     printf("WARNING INVERT TET DETECTED<%d> %f\n",ei,(float)eles("vol",ei));
+              T bpsi = (0.5 * bcws("cnorm",vi) * stiffness * bone_driven_weight * eles("vol",ei)) * pdiff.l2NormSqr();
                     // bpsi = (0.5 * bcws("cnorm",vi) * lambda * bone_driven_weight) * pdiff.dot(pdiff);
 // the cnorm here should be the allocated volume of point in embeded tet 
-                    atomic_add(exec_cuda, &res[0], (T)bpsi);
+              atomic_add(exec_cuda, &res[0], (T)bpsi);
       });
 
       return res.getVal();
@@ -150,9 +150,79 @@ struct QuasiStaticStepping : INode {
             auto H = dFdXT * Hq * dFdX * vole;
 
             etemp.tuple<12 * 12>("He", ei) = H;
+
+            // if(ei == 0){
+            //     printf("F : \n%f %f %f\n%f %f %f\n%f %f %f\n",
+            //         F(0,0),F(0,1),F(0,2),
+            //         F(1,0),F(1,1),F(1,2),
+            //         F(2,0),F(2,1),F(2,2)
+            //     );
+            //     printf("ELM_H<%d>:%e %f %f\n",ei,Hq.norm(),(float)model.lam,(float)model.mu);
+            // }
             // etemp.tuple<12 * 12>("Hec",ei) = H;
             // etemp.tuple<12 * 12>("Hec",ei) = H
+
+                    // if(ei == 11221){
+                    //     printf("H0:\n");
+                    //     for(int i = 0;i != 12;++i)
+                    //         printf("%lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf\n",
+                    //             (double)etemp.pack<12,12>("He",ei)(i,0),
+                    //             (double)etemp.pack<12,12>("He",ei)(i,1),
+                    //             (double)etemp.pack<12,12>("He",ei)(i,2),
+                    //             (double)etemp.pack<12,12>("He",ei)(i,3),
+                    //             (double)etemp.pack<12,12>("He",ei)(i,4),
+                    //             (double)etemp.pack<12,12>("He",ei)(i,5),
+                    //             (double)etemp.pack<12,12>("He",ei)(i,6),
+                    //             (double)etemp.pack<12,12>("He",ei)(i,7),
+                    //             (double)etemp.pack<12,12>("He",ei)(i,8),
+                    //             (double)etemp.pack<12,12>("He",ei)(i,9),
+                    //             (double)etemp.pack<12,12>("He",ei)(i,10),
+                    //             (double)etemp.pack<12,12>("He",ei)(i,11)
+                    //         );
+                    // }
+
+
         });
+
+
+        // cudaPol(zs::range(etemp.size()),
+        //     [etemp = proxy<space>({},etemp),vtemp = proxy<space>({},vtemp),eles = proxy<space>({},eles)] ZS_LAMBDA(int ei) {
+        //             if(ei == 11221){
+        //                 printf("H0:\n");
+        //                 for(int i = 0;i != 12;++i)
+        //                     printf("%lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf\n",
+        //                         (double)etemp.pack<12,12>("He",ei)(i,0),
+        //                         (double)etemp.pack<12,12>("He",ei)(i,1),
+        //                         (double)etemp.pack<12,12>("He",ei)(i,2),
+        //                         (double)etemp.pack<12,12>("He",ei)(i,3),
+        //                         (double)etemp.pack<12,12>("He",ei)(i,4),
+        //                         (double)etemp.pack<12,12>("He",ei)(i,5),
+        //                         (double)etemp.pack<12,12>("He",ei)(i,6),
+        //                         (double)etemp.pack<12,12>("He",ei)(i,7),
+        //                         (double)etemp.pack<12,12>("He",ei)(i,8),
+        //                         (double)etemp.pack<12,12>("He",ei)(i,9),
+        //                         (double)etemp.pack<12,12>("He",ei)(i,10),
+        //                         (double)etemp.pack<12,12>("He",ei)(i,11)
+        //                     );
+        //                 printf("g0:\n");
+        //                 auto inds = eles.pack<4>("inds",ei).reinterpret_bits<int>();
+        //                 printf("%lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf\n",
+        //                     (double)vtemp("grad",0,inds[0]),
+        //                     (double)vtemp("grad",1,inds[0]),
+        //                     (double)vtemp("grad",2,inds[0]),
+        //                     (double)vtemp("grad",0,inds[1]),
+        //                     (double)vtemp("grad",1,inds[1]),
+        //                     (double)vtemp("grad",2,inds[1]),
+        //                     (double)vtemp("grad",0,inds[2]),
+        //                     (double)vtemp("grad",1,inds[2]),
+        //                     (double)vtemp("grad",2,inds[2]),
+        //                     (double)vtemp("grad",0,inds[2]),
+        //                     (double)vtemp("grad",1,inds[2]),
+        //                     (double)vtemp("grad",2,inds[2])
+        //                 );
+        //             }
+        // });
+
 
         // fmt::print("check here 1\n");
         T lambda = model.lam;
@@ -176,8 +246,29 @@ struct QuasiStaticStepping : INode {
                     auto tpos = vec3::zeros();
                     for(size_t i = 0;i != 4;++i)
                         tpos += w[i] * vtemp.pack<3>(tag,inds[i]);
-                    T stiffness = 2.0066 * mu + 1.0122 * lambda;
                     auto pdiff = tpos - b_verts.pack<3>("x",vi);
+
+                    T stiffness = 2.0066 * mu + 1.0122 * lambda;
+                    // if(ei == 11221)
+                    //     printf("INTERPOLATE WEIGHT:%f %f %d\n",(float)(stiffness * bone_driven_weight),1./(float)bcws("cnorm",vi),vi);
+                    // if(fabs(1./(float)bcws("cnorm",vi) > 21.0))
+                    //     printf("FOUND ELM<%d> %f\n",ei,1./(float)bcws("cnorm",vi));
+
+                    // auto nid = eles.pack<4>("inds",11221).reinterpret_bits<int>()[0];
+                    // for(int i = 0;i != 4;++i){
+                    //     if(inds[i] == nid){
+                    //         auto tmp = pdiff * (-stiffness * bcws("cnorm",vi) * bone_driven_weight * w[i] * eles("vol",ei)); 
+                    //         printf("EMBED_VERT_ID:<%d> %f tpos: %f %f %f bpos: %f %f %f pdiff: %f %f %f add: %f %f %f\n",vi,(float)(-stiffness * bcws("cnorm",vi) * bone_driven_weight * eles("vol",ei) * w[i]),
+                    //             b_verts.pack<3>("x",vi)[0],
+                    //             b_verts.pack<3>("x",vi)[1],
+                    //             b_verts.pack<3>("x",vi)[2],
+                    //             tpos[0],tpos[1],tpos[2],
+                    //             pdiff[0],pdiff[1],pdiff[2],
+                    //             tmp[0],tmp[1],tmp[2]
+                    //         );
+                    //     }
+                    // }
+
                     for(size_t i = 0;i != 4;++i){
                         auto tmp = pdiff * (-stiffness * bcws("cnorm",vi) * bone_driven_weight * w[i] * eles("vol",ei)); 
                         // tmp = pdiff * (-lambda * bcws("cnorm",vi) * bone_driven_weight * w[i]);
@@ -188,6 +279,9 @@ struct QuasiStaticStepping : INode {
                         for(int j = 0;j != 4;++j){
                             T alpha = stiffness * bone_driven_weight * w[i] * w[j] * bcws("cnorm",vi) * eles("vol",ei);
                             // alpha = lambda * bone_driven_weight * w[i] * w[j] * bcws("cnorm",vi);
+                            // if(ei == 11221)
+                            //   if(i == 3 && j == 3)
+                            //     printf("alpha : %f\n",alpha);
                             for(int d = 0;d != 3;++d){
                                 // etemp("He",(i * 3 + d) * 12 + j * 3 + d,ei) += alpha;
                                 if(isnan(alpha)){
@@ -196,7 +290,48 @@ struct QuasiStaticStepping : INode {
                                 atomic_add(exec_cuda,&etemp("He",(i * 3 + d) * 12 + j * 3 + d,ei),alpha);
                             }
                         }
+
         });
+        // cudaPol(zs::range(etemp.size()),
+        //     [etemp = proxy<space>({},etemp),vtemp = proxy<space>({},vtemp),eles = proxy<space>({},eles)] ZS_LAMBDA(int ei) {
+        //             if(ei == 11221){
+        //                 printf("H1:\n");
+        //                 for(int i = 0;i != 12;++i)
+        //                     printf("%lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf\n",
+        //                         (double)etemp.pack<12,12>("He",ei)(i,0),
+        //                         (double)etemp.pack<12,12>("He",ei)(i,1),
+        //                         (double)etemp.pack<12,12>("He",ei)(i,2),
+        //                         (double)etemp.pack<12,12>("He",ei)(i,3),
+        //                         (double)etemp.pack<12,12>("He",ei)(i,4),
+        //                         (double)etemp.pack<12,12>("He",ei)(i,5),
+        //                         (double)etemp.pack<12,12>("He",ei)(i,6),
+        //                         (double)etemp.pack<12,12>("He",ei)(i,7),
+        //                         (double)etemp.pack<12,12>("He",ei)(i,8),
+        //                         (double)etemp.pack<12,12>("He",ei)(i,9),
+        //                         (double)etemp.pack<12,12>("He",ei)(i,10),
+        //                         (double)etemp.pack<12,12>("He",ei)(i,11)
+        //                     );
+        //                 printf("g:\n");
+        //                 auto inds = eles.pack<4>("inds",ei).reinterpret_bits<int>();
+        //                 printf("%lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf\n",
+        //                     (double)vtemp("grad",0,inds[0]),
+        //                     (double)vtemp("grad",1,inds[0]),
+        //                     (double)vtemp("grad",2,inds[0]),
+        //                     (double)vtemp("grad",0,inds[1]),
+        //                     (double)vtemp("grad",1,inds[1]),
+        //                     (double)vtemp("grad",2,inds[1]),
+        //                     (double)vtemp("grad",0,inds[2]),
+        //                     (double)vtemp("grad",1,inds[2]),
+        //                     (double)vtemp("grad",2,inds[2]),
+        //                     (double)vtemp("grad",0,inds[3]),
+        //                     (double)vtemp("grad",1,inds[3]),
+        //                     (double)vtemp("grad",2,inds[3])
+        //                 );
+        //             }
+        // });
+
+
+
         // fmt::print("check here 3");
     }
     template <typename Pol>
@@ -319,19 +454,19 @@ struct QuasiStaticStepping : INode {
             });
     return res.getVal();
   }
-  T avgForceRes(zs::CudaExecutionPolicy &cudaPol,const tiles_t &verts, dtiles_t &vertData,const zs::SmallString tag,const zeno::vec<3,T>& g) {
-        using namespace zs;
-        constexpr auto space = execspace_e::cuda;
-        Vector<T> res{vertData.get_allocator(), 1};
-        res.setVal(0);
-        T gn = vec3::from_array(g).norm();
-        cudaPol(range(vertData.size()),[data = proxy<space>({},vertData),verts = proxy<space>({},verts),tag,gn,res = proxy<space>(res)]
-                ZS_LAMBDA(int vi) mutable {
-                    auto ag = data.pack<3>(tag,vi).norm()/verts("m",vi)/gn;
-                    atomic_add(exec_cuda,res.data(),ag);
-                });
-        return res.getVal()/verts.size();
-  }
+  // T avgForceRes(zs::CudaExecutionPolicy &cudaPol,const tiles_t &verts, dtiles_t &vertData,const zs::SmallString tag,const zeno::vec<3,T>& g) {
+  //       using namespace zs;
+  //       constexpr auto space = execspace_e::cuda;
+  //       Vector<T> res{vertData.get_allocator(), 1};
+  //       res.setVal(0);
+  //       T gn = vec3::from_array(g).norm();
+  //       cudaPol(range(vertData.size()),[data = proxy<space>({},vertData),verts = proxy<space>({},verts),tag,gn,res = proxy<space>(res)]
+  //               ZS_LAMBDA(int vi) mutable {
+  //                   auto ag = data.pack<3>(tag,vi).norm()/verts("m",vi)/gn;
+  //                   atomic_add(exec_cuda,res.data(),ag);
+  //               });
+  //       return res.getVal()/verts.size();
+  // }
 
   void apply() override {
     using namespace zs;
@@ -367,39 +502,58 @@ struct QuasiStaticStepping : INode {
     static dtiles_t etemp{eles.get_allocator(), {{"He", 12 * 12}/*,{"Hec",12*12}*/}, eles.size()};
     vtemp.resize(verts.size());
     etemp.resize(eles.size());
-
     FEMSystem A{verts,eles,(*zstets)[tag],zsbones->getParticles(),bone_driven_weight,volf};
 
     constexpr auto space = execspace_e::cuda;
     auto cudaPol = cuda_exec();
 
     // use the previous simulation result as initial guess
-    cudaPol(zs::range(vtemp.size()),
-              [vtemp = proxy<space>({},vtemp), verts = proxy<space>({},verts)]
-                  __device__(int i) mutable{
-                auto x = verts.pack<3>("x",i);
-                vtemp.tuple<3>("xtilde",i) = x;
-    });
+    // cudaPol(zs::range(vtemp.size()),
+    //           [vtemp = proxy<space>({},vtemp), verts = proxy<space>({},verts)]
+    //               __device__(int i) mutable{
+    //             auto x = verts.pack<3>("x",i);
+    //             vtemp.tuple<3>("xtilde",i) = x;
+    // });
 
-    cudaPol(zs::range(verts.size()),
-            [vtemp = proxy<space>({}, vtemp),
-             verts = proxy<space>({}, verts)] __device__(int vi) mutable {
-              auto x = verts.pack<3>("x", vi);
-              vtemp.tuple<3>("xn", vi) = x;
-            });
+    // use the initial guess if given
+    if(verts.hasProperty("init_x")){
+      cudaPol(zs::range(verts.size()),
+              [vtemp = proxy<space>({}, vtemp),
+              verts = proxy<space>({}, verts)] __device__(int vi) mutable {
+                auto x = verts.pack<3>("init_x", vi);
+                vtemp.tuple<3>("xn", vi) = x;
+              });      
+    }else{// use the previous simulation result
+      cudaPol(zs::range(verts.size()),
+              [vtemp = proxy<space>({}, vtemp),
+              verts = proxy<space>({}, verts)] __device__(int vi) mutable {
+                auto x = verts.pack<3>("x", vi);
+                vtemp.tuple<3>("xn", vi) = x;
+              });
+    }
 
-    for(int newtonIter = 0;newtonIter != 100;++newtonIter){
+    for(int newtonIter = 0;newtonIter != 1000;++newtonIter){
       cudaPol(zs::range(vtemp.size()),
             [vtemp = proxy<space>({},vtemp),verts = proxy<space>({},verts)]
               __device__(int i) mutable {
                 vtemp.tuple<3>("grad",i) = vec3{0,0,0};
       });
-    //   fmt::print("COMPUTE GRADIENT AND HESSIAN\n",newtonIter);
-    //   fmt::print("volf_density:{}\n",volf_density)
+      // fmt::print("COMPUTE GRADIENT AND HESSIAN\n",newtonIter);
+      // fmt::print("volf_density:{}\n",volf_density);
       match([&](auto &elasticModel) {
         A.computeGradientAndHessian(cudaPol, elasticModel,"xn",vtemp,etemp);
       })(models.getElasticModel());
-    //   fmt::print("FINISH COMPUTE HESSIAN\n");
+      // fmt::print("FINISH COMPUTE HESSIAN\n");
+
+      // if(newtonIter == 0){
+      //   T e0;
+      //   match([&](auto &elasticModel) {
+      //     e0 = A.energy(cudaPol, elasticModel,"xn",vtemp);
+      //   })(models.getElasticModel());
+      //   fmt::print("initial energy {}\n",e0);
+      // }
+
+      // break;
 
     //  T Hn = dot<144>(cudaPol,etemp,"He","He");
     //  fmt::print("Hn:{}\n",Hn);
@@ -412,36 +566,34 @@ struct QuasiStaticStepping : INode {
                 vtemp.tuple<9>("P", vi) = mat3::zeros();
       });
 
-    
-
       cudaPol(zs::range(eles.size()),
-                [vtemp = proxy<space>({},vtemp),etemp = proxy<space>({},etemp),eles = proxy<space>({},eles)]
-                  ZS_LAMBDA (int ei) mutable {
-                    constexpr int dim = 3;
-                    constexpr auto dimp1 = dim + 1;
-                    auto inds = 
-                        eles.template pack<dimp1>("inds",ei).template reinterpret_bits<int>();
-                    auto He = etemp.pack<dim * dimp1,dim * dimp1>("He",ei);
-                    // auto Hec = etemp.pack<dim * dimp1,dim * dimp1>("Hec",ei);
+        [vtemp = proxy<space>({},vtemp),etemp = proxy<space>({},etemp),eles = proxy<space>({},eles)]
+            ZS_LAMBDA (int ei) mutable {
+            constexpr int dim = 3;
+            constexpr auto dimp1 = dim + 1;
+            auto inds = 
+                eles.template pack<dimp1>("inds",ei).template reinterpret_bits<int>();
+            auto He = etemp.pack<dim * dimp1,dim * dimp1>("He",ei);
+            // auto Hec = etemp.pack<dim * dimp1,dim * dimp1>("Hec",ei);
 
-                    // if(ei == 4723){
-                    //     printf("ELE<4723>:%d %d %d %d\n",inds[0],inds[1],inds[2],inds[3]);
-                    // }
+            // if(ei == 4723){
+            //     printf("ELE<4723>:%d %d %d %d\n",inds[0],inds[1],inds[2],inds[3]);
+            // }
 
-                    for (int vi = 0; vi != dimp1; ++vi) {
-                    #if 1
-                      for (int i = 0; i != dim; ++i)
-                        for (int j = i; j != dim; ++j){ 
-                          atomic_add(exec_cuda, &vtemp("P", i * dim + j, inds[vi]),He(vi * dim + i, vi * dim + j));
-                        //   atomic_add(exec_cuda, &vtemp("P", j * dim + i, inds[vi]),He(vi * dim + i, vi * dim + j));
-                        }
-                    #else
-                      for (int j = 0; j != dim; ++j) {
-                          atomic_add(exec_cuda, &vtemp("P", j * dim + j, inds[vi]),
-                                    He(vi * dim + j, vi * dim + j));
-                      }
-                    #endif
-                    }
+            for (int vi = 0; vi != dimp1; ++vi) {
+            #if 1
+                for (int i = 0; i != dim; ++i)
+                for (int j = i; j != dim; ++j){ 
+                    atomic_add(exec_cuda, &vtemp("P", i * dim + j, inds[vi]),He(vi * dim + i, vi * dim + j));
+                //   atomic_add(exec_cuda, &vtemp("P", j * dim + i, inds[vi]),He(vi * dim + i, vi * dim + j));
+                }
+            #else
+                for (int j = 0; j != dim; ++j) {
+                    atomic_add(exec_cuda, &vtemp("P", j * dim + j, inds[vi]),
+                            He(vi * dim + j, vi * dim + j));
+                }
+            #endif
+            }
       });
 
       // make sure it is symmetric
@@ -574,39 +726,38 @@ struct QuasiStaticStepping : INode {
         int iter = 0;
         for (; iter != 1000; ++iter) {
           if (iter % 200 == 0)
-            fmt::print("cg iter: {}, norm: {} zTrk: {} localTol: {}\n", iter,
-                        residualPreconditionedNorm,zTrk,localTol);
+            fmt::print("cg iter: {}, norm: {} zTrk: {} localTol: {}\n", iter, residualPreconditionedNorm,zTrk,localTol);
           
-            if(zTrk < 0){
-                T rn = std::sqrt(dot(cudaPol,vtemp,"r","r"));
-                T qn = std::sqrt(dot(cudaPol,vtemp,"q","q"));
-                fmt::print("\t# invalid zTrk found in {} iters with zTrk {} and r {} and q {}\n",
-                    iter, zTrk,rn,qn);
+          if(zTrk < 0){
+              T rn = std::sqrt(dot(cudaPol,vtemp,"r","r"));
+              T qn = std::sqrt(dot(cudaPol,vtemp,"q","q"));
+              fmt::print("\t# invalid zTrk found in {} iters with zTrk {} and r {} and q {}\n",
+                  iter, zTrk,rn,qn);
 
-                // fmt::print("FOUND NON_SPD P\n");
-                // cudaPol(zs::range(vtemp.size()),
-                //     [vtemp = proxy<space>({},vtemp)] ZS_LAMBDA(int vi){
-                //         auto P = vtemp.pack<3,3>("P",vi);
-                //         auto Pc = vtemp.pack<3,3>("Pc",vi);
-                //         auto PCdet = zs::determinant(Pc);
-                //         // if(vi == 4966){
-                //             auto Pdet = zs::determinant(P);
-                //             if(P(0,0) < 0 || P(1,1) < 0 || P(2,2) < 0 || isnan(Pdet)) {
-                //                 printf("NON_SPD_P<%d> %f : \n%f\t%f\t%f\n%f\t%f\t%f\n%f\t%f\t%f\nSDP_PC<%d>: %f \n%f\t%f\t%f\n%f\t%f\t%f\n%f\t%f\t%f\n",vi,(float)Pdet,
-                //                     (float)P(0,0),(float)P(0,1),(float)P(0,2),(float)P(1,0),(float)P(1,1),(float)P(1,2),(float)P(2,0),(float)P(2,1),(float)P(2,2),vi,(float)PCdet,
-                //                     (float)Pc(0,0),(float)Pc(0,1),(float)Pc(0,2),(float)Pc(1,0),(float)Pc(1,1),(float)Pc(1,2),(float)Pc(2,0),(float)Pc(2,1),(float)Pc(2,2));
-                //             }
-                //     });
+              // fmt::print("FOUND NON_SPD P\n");
+              // cudaPol(zs::range(vtemp.size()),
+              //     [vtemp = proxy<space>({},vtemp)] ZS_LAMBDA(int vi){
+              //         auto P = vtemp.pack<3,3>("P",vi);
+              //         auto Pc = vtemp.pack<3,3>("Pc",vi);
+              //         auto PCdet = zs::determinant(Pc);
+              //         // if(vi == 4966){
+              //             auto Pdet = zs::determinant(P);
+              //             if(P(0,0) < 0 || P(1,1) < 0 || P(2,2) < 0 || isnan(Pdet)) {
+              //                 printf("NON_SPD_P<%d> %f : \n%f\t%f\t%f\n%f\t%f\t%f\n%f\t%f\t%f\nSDP_PC<%d>: %f \n%f\t%f\t%f\n%f\t%f\t%f\n%f\t%f\t%f\n",vi,(float)Pdet,
+              //                     (float)P(0,0),(float)P(0,1),(float)P(0,2),(float)P(1,0),(float)P(1,1),(float)P(1,2),(float)P(2,0),(float)P(2,1),(float)P(2,2),vi,(float)PCdet,
+              //                     (float)Pc(0,0),(float)Pc(0,1),(float)Pc(0,2),(float)Pc(1,0),(float)Pc(1,1),(float)Pc(1,2),(float)Pc(2,0),(float)Pc(2,1),(float)Pc(2,2));
+              //             }
+              //     });
 
 
-                throw std::runtime_error("INVALID zTrk");
-            }
+              throw std::runtime_error("INVALID zTrk");
+          }
 
           if (residualPreconditionedNorm <= localTol){ // this termination criterion is dimensionless
             // T dg = dot(cudaPol,vtemp,"grad","dir");
             // if(dg > 0)
-                fmt::print("finish with cg iter: {}, norm: {} zTrk: {}\n", iter,
-                            residualPreconditionedNorm,zTrk);
+                // fmt::print("finish with cg iter: {}, norm: {} zTrk: {}\n", iter,
+                //             residualPreconditionedNorm,zTrk);
           
                 break;
           }
@@ -644,19 +795,17 @@ struct QuasiStaticStepping : INode {
     //   fmt::print("NEWTON_ITER<{}> with gradn: {} and dirn: {}\n",newtonIter,gradn,res);
 
       if (res < newton_res) {
-        T gradn = avgForceRes(cudaPol,verts,vtemp,"grad",gravity);
         // infNorm(cudaPol, vtemp, "grad")/(infNorm(cudaPol,eles,));
-        fmt::print("\t# newton optimizer reach desired resolution in {} iters with residual {} and grad {}\n",
-                   newtonIter, res, gradn);
+        fmt::print("\t# newton optimizer reach desired resolution in {} iters with residual {}\n",
+                   newtonIter, res);
         break;
       }
 
 
       T dg = dot(cudaPol,vtemp,"grad","dir");
       if(fabs(dg) < btl_res){
-        T gradn = avgForceRes(cudaPol,verts,vtemp,"grad",gravity);
-        fmt::print("\t# newton optimizer reach stagnation point in {} iters with residual {} and grad {}\n",
-        newtonIter, res, gradn);
+        fmt::print("\t# newton optimizer reach stagnation point in {} iters with residual {}\n",
+        newtonIter, res);
         break;
       }
       if(dg < 0){
@@ -714,7 +863,7 @@ struct QuasiStaticStepping : INode {
             fmt::print("AB[{}]\t = {} dg = {}\n",i,armijo_buffer[i],dg);
       }
 
-      fmt::print("FINISH NEWTON STEP WITH {} steps and line search {}\n",newtonIter,line_search);
+      // fmt::print("FINISH NEWTON STEP WITH {} steps and line search {}\n",newtonIter,line_search);
 
       cudaPol(zs::range(vtemp.size()), [vtemp = proxy<space>({}, vtemp),
                                         alpha] __device__(int i) mutable {
@@ -723,6 +872,14 @@ struct QuasiStaticStepping : INode {
       });
     
     }
+
+    // T e1;
+    // match([&](auto &elasticModel) {
+    //   e1 = A.energy(cudaPol, elasticModel, "xn",vtemp);
+    // })(models.getElasticModel());
+
+    // fmt::print("finish energy {}\n",e1);
+
 
     cudaPol(zs::range(verts.size()),
             [vtemp = proxy<space>({}, vtemp), verts = proxy<space>({}, verts)] __device__(int vi) mutable {

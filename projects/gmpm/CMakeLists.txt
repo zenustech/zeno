@@ -140,6 +140,7 @@ target_sources(zeno_zsfem PRIVATE
   fem/BaryCentricInterpolator.cu
   fem/Codim.cu
   fem/TestAugLag.cu
+  fem/FastQuasiStaticStepping.cu
 )
 
 if (${ZS_ENABLE_CUDA})
@@ -169,6 +170,8 @@ target_sources(zeno_geometry PRIVATE
   geometry/kernel/gradient_field.hpp
   geometry/laplace_equation.cu
   geometry/gradient_field.cu
+  geometry/update_zs_skinning_weight.cu
+  geometry/zs_do_skinning.cu
 )
 
 if (${ZS_ENABLE_CUDA})
