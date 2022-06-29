@@ -14,7 +14,7 @@
 
 namespace zeno {
 
-struct PrimitiveBend : zeno::INode {
+struct PrimBend : zeno::INode {
     virtual void apply() override {
         auto prim = get_input<zeno::PrimitiveObject>("prim");
         auto angle = get_input<zeno::NumericObject>("angle")->get<float>();
@@ -96,7 +96,7 @@ struct PrimitiveBend : zeno::INode {
 };
 
 
-ZENDEFNODE(PrimitiveBend, {
+ZENDEFNODE(PrimBend, {
     {
     {"PrimitiveObject", "prim"},
     //{"vec3f", "origin", "0,0,0"},

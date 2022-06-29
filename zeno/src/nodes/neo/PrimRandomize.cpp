@@ -206,7 +206,7 @@ struct PrimRandomize : INode {
 ZENDEFNODE(PrimRandomize, {
     {
     {"PrimitiveObject", "prim"},
-    {"string", "attr", "val"},
+    {"string", "attr", "tmp"},
     {"string", "dirAttr", ""},
     {"float", "base", "0"},
     {"float", "scale", "1"},
