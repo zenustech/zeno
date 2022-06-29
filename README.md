@@ -100,14 +100,7 @@ To build ZENO from source, you need:
 - [Click me for detailed build instructions](BUILD.md)
 
 
-## Install from package manager
-
-Arch Linux users may install Zeno from [AUR](https://aur.archlinux.org):
-```bash
-yay -S zeno
-```
-The package is maintained by @archibate.
-
+# Miscellaneous
 
 ## Contributors
 
@@ -117,17 +110,22 @@ Thank you to all the people who have already contributed to ZENO!
 
 - [Contributor guidelines and helps](docs/CONTRIBUTING.md)
 
-
-# Miscellaneous
-
 ## Write your own extension!
 
-See [`zenustech/zeno_addon_wizard`](https://github.com/zenustech/zeno_addon_wizard) for an example on how to write custom nodes in ZENO.
+See [`projects/FBX`](https://github.com/zenustech/zeno/projects/FBX) for an example on how to write custom nodes in ZENO.
 
 ## Legacy version of Zeno
 
 Currently the [`master`](https://github.com/zenustech/tree/master) branch is for Zeno 2.0.
-You may find Zeno 1.0 in the [`legacy`](https://github.com/zenustech/tree/legacy) branch.
+You may find Zeno 1.0 in the [`zeno_old_stable`](https://github.com/zenustech/tree/zeno_old_stable) branch.
+
+## Install via AUR (experimental)
+
+Arch Linux users may install Zeno from [AUR](https://aur.archlinux.org):
+```bash
+yay -S zeno
+```
+The package is maintained by @archibate.
 
 ## License
 
