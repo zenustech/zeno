@@ -1566,7 +1566,7 @@ void set_perspective(float const *U, float const *V, float const *W, float const
         //zeno::log_info("F {} {} {}", radaov, tanfov, focallen);
 
         // The unit of focalLength is mm, so multiply 0.1;
-        cam.front *= focL*0.1;
+        cam.front *= focL*0.001f;
     }
 
     camera_changed = true;
