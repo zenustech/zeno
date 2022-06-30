@@ -56,7 +56,7 @@ public:
     virtual void onUpdateParamsNotDesc();
 
 signals:
-    void socketClicked(const QString& id, bool bInput, const QString& name);
+    void socketClicked(QString nodeid, bool bInput, QString sockName, QPointF scenePos, QPersistentModelIndex linkIndex);
     void doubleClicked(const QString &nodename);
     void paramChanged(const QString& nodeid, const QString& paramName, const QVariant& var);
     void socketPosInited(const QString& nodeid, const QString& sockName, bool bInput);

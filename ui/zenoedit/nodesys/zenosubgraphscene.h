@@ -55,9 +55,13 @@ public slots:
 private slots:
     void reload(const QModelIndex& subGpIdx);
     void clearLayout(const QModelIndex& subGpIdx);
+    void onSocketClicked(QString nodeid, bool bInput, QString sockName, QPointF scenePos,
+                         QPersistentModelIndex linkIndex);
 
 private:
     void updateLinkPos(ZenoNode *pNode, QPointF newPos);
+    void onSocketAbsorted(const QPointF mousePos);
+    void onTempLinkClosed();
     ZenoNode* createNode(const QModelIndex& idx, const NodeUtilParam& params);
 
     QRectF m_viewRect;

@@ -3,9 +3,9 @@
 #include <zenoui/model/modelrole.h>
 
 
-ZenoSocketItem::ZenoSocketItem(const ImageElement &elem, const QSizeF &sz, QGraphicsItem *parent)
+ZenoSocketItem::ZenoSocketItem(bool bInput, const ImageElement& elem, const QSizeF& sz, QGraphicsItem* parent)
     : ZenoImageItem(elem, sz, parent)
-    , m_bInput(false)
+    , m_bInput(bInput)
     , m_status(STATUS_UNKNOWN)
     , m_svgHover(nullptr)
     , m_hoverSvg(elem.imageHovered)
@@ -46,11 +46,16 @@ QRectF ZenoSocketItem::boundingRect() const
     return rc;
 }
 
-void ZenoSocketItem::setSocketInfo(QPersistentModelIndex index, bool input, SOCKET_INFO info)
+void ZenoSocketItem::setSocketInfo(QPersistentModelIndex index, SOCKET_INFO info)
 {
     m_index = index;
-    m_bInput = input;
     m_info = info;
+}
+
+SOCKET_INFO ZenoSocketItem::socketInfo(bool& bInput) const
+{
+    bInput = m_bInput;
+    return m_info;
 }
 
 void ZenoSocketItem::setSockStatus(SOCK_STATUS status)
@@ -125,6 +130,17 @@ void ZenoSocketItem::hoverLeaveEvent(QGraphicsSceneHoverEvent* event)
     m_svg = new ZenoSvgItem(m_noHoverSvg, this);
     m_svg->setSize(m_size);
     QGraphicsObject::hoverLeaveEvent(event);
+}
+
+void ZenoSocketItem::mousePressEvent(QGraphicsSceneMouseEvent* event)
+{
+    ZenoImageItem::mousePressEvent(event);
+}
+
+void ZenoSocketItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
+{
+    ZenoImageItem::mouseReleaseEvent(event);
+    emit clicked(m_bInput);
 }
 
 void ZenoSocketItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)

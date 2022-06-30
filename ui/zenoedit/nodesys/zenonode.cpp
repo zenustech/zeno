@@ -640,9 +640,18 @@ void ZenoNode::onSocketsUpdate(bool bInput)
             {
                 //add socket
 
-                ZenoSocketItem *socket = new ZenoSocketItem(m_renderParams.socket, m_renderParams.szSocket, this);
-                socket->setSocketInfo(m_index, true, inSocket.info);
+                ZenoSocketItem *socket = new ZenoSocketItem(true, m_renderParams.socket, m_renderParams.szSocket, this);
+                socket->setSocketInfo(m_index, inSocket.info);
                 socket->setZValue(ZVALUE_ELEMENT);
+                connect(socket, &ZenoSocketItem::clicked, this, [=]() {
+                    QString sockName;
+                    QPointF sockPos;
+                    bool bInput = false;
+                    QPersistentModelIndex linkIdx;
+                    getSocketInfoByItem(socket, sockName, sockPos, bInput, linkIdx);
+                    // must use sockName rather than outSock because the sockname is dynamic.
+                    emit socketClicked(nodeid, bInput, sockName, sockPos, linkIdx);
+                });
 
                 QGraphicsLinearLayout *pMiniLayout = new QGraphicsLinearLayout(Qt::Horizontal);
 
@@ -919,10 +928,19 @@ void ZenoNode::onSocketsUpdate(bool bInput)
             if (m_outSockets.find(outSock) == m_outSockets.end())
             {
                 _socket_ctrl sock;
-                sock.socket = new ZenoSocketItem(m_renderParams.socket, m_renderParams.szSocket, this);
-                sock.socket->setSocketInfo(m_index, false, outSocket.info);
+                sock.socket = new ZenoSocketItem(false, m_renderParams.socket, m_renderParams.szSocket, this);
+                sock.socket->setSocketInfo(m_index, outSocket.info);
                 sock.socket_text = new ZenoTextLayoutItem(outSock, m_renderParams.socketFont, m_renderParams.socketClr.color());
                 sock.socket_text->setRight(true);
+                connect(sock.socket, &ZenoSocketItem::clicked, this, [=]() {
+                    QString sockName;
+                    QPointF sockPos;
+                    bool bInput = false;
+                    QPersistentModelIndex linkIdx;
+                    getSocketInfoByItem(sock.socket, sockName, sockPos, bInput, linkIdx);
+                    // must use sockName rather than outSock because the sockname is dynamic.
+                    emit socketClicked(nodeid, bInput, sockName, sockPos, linkIdx);
+                });
 
                 if (outSocket.info.control == CONTROL_DICTKEY)
                 {
