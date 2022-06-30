@@ -29,7 +29,7 @@ ZENO_DEFNODE(MakeCamera)({
         {"vec3f", "up", "0,1,0"},
         {"vec3f", "view", "0,0,-1"},
         {"float", "dof", "-1"},
-        {"float", "near", "0.01"},
+        {"float", "near", "0.001"},
         {"float", "far", "20000"},
         {"float", "focL", "-1"},
         {"float", "fov", "45"},

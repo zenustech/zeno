@@ -11,7 +11,7 @@ struct CameraData {
     vec3f view{0, 0, -1};
     float fov{45.f};
     float focL{-1.f};
-    float fnear{0.1f};
+    float fnear{0.001f};
     float ffar{20000.f};
     float nx{1920};
     float ny{1080};
