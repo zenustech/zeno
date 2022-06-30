@@ -11,7 +11,7 @@ class ZTcpServer : public QObject
     Q_OBJECT
 public:
     ZTcpServer(QObject* parent = nullptr);
-    void init(const QHostAddress &address, quint16 port);
+    void init(const QHostAddress &address);
     void startProc(const std::string& progJson);
     void killProc();
 
@@ -25,6 +25,7 @@ private:
     QTcpServer* m_tcpServer;
     QTcpSocket* m_tcpSocket;
     std::unique_ptr<QProcess> m_proc;
+    int m_port;
 };
 
 #endif

@@ -20,6 +20,35 @@ ZsgReader& ZsgReader::getInstance()
     return reader;
 }
 
+bool ZsgReader::importNodes(IGraphsModel* pModel, const QModelIndex& subgIdx, const QString& nodeJson, const QPointF& targetPos, IAcceptor* pAcceptor)
+{
+    rapidjson::Document doc;
+    QByteArray bytes = nodeJson.toUtf8();
+    doc.Parse(bytes);
+
+    if (!doc.IsObject() || !doc.HasMember("nodes"))
+        return false;
+
+    const rapidjson::Value& nodes = doc["nodes"];
+    if (nodes.IsNull())
+        return false;
+
+    bool ret = pAcceptor->setCurrentSubGraph(pModel, subgIdx);
+    if (!ret)
+        return false;
+
+    QStringList idents;
+    for (const auto &node : nodes.GetObject())
+    {
+        const QString &nodeid = node.name.GetString();
+        idents.append(nodeid);
+        ret = _parseNode(nodeid, node.value, NODE_DESCS(), pAcceptor);
+        if (!ret)
+            return false;
+    }
+    return true;
+}
+
 bool ZsgReader::openFile(const QString& fn, IAcceptor* pAcceptor)
 {
     QFile file(fn);
@@ -47,7 +76,7 @@ bool ZsgReader::openFile(const QString& fn, IAcceptor* pAcceptor)
 
     ZASSERT_EXIT(doc.HasMember("descs"), false);
     NODE_DESCS nodesDescs = _parseDescs(doc["descs"]);
-    pAcceptor->setDescriptors(nodesDescs);
+    pAcceptor->setLegacyDescs(graph, nodesDescs);
 
     for (const auto& subgraph : graph.GetObject())
     {
@@ -115,7 +144,7 @@ bool ZsgReader::_parseSubGraph(const QString& name, const rapidjson::Value& subg
     return true;
 }
 
-void ZsgReader::_parseNode(const QString& nodeid, const rapidjson::Value& nodeObj, const NODE_DESCS& legacyDescs, IAcceptor* pAcceptor)
+bool ZsgReader::_parseNode(const QString& nodeid, const rapidjson::Value& nodeObj, const NODE_DESCS& legacyDescs, IAcceptor* pAcceptor)
 {
     const auto& objValue = nodeObj;
     const rapidjson::Value& nameValue = objValue["name"];
@@ -123,14 +152,9 @@ void ZsgReader::_parseNode(const QString& nodeid, const rapidjson::Value& nodeOb
 
     bool bSucceed = pAcceptor->addNode(nodeid, name, legacyDescs);
     if (!bSucceed) {
-        return;
+        return false;
     }
 
-    //socket_keys should be inited before socket init.
-    if (objValue.HasMember("socket_keys"))
-    {
-        _parseBySocketKeys(nodeid, objValue, pAcceptor);
-    }
     pAcceptor->initSockets(nodeid, name, legacyDescs);
 
     if (objValue.HasMember("inputs"))
@@ -140,7 +164,7 @@ void ZsgReader::_parseNode(const QString& nodeid, const rapidjson::Value& nodeOb
 
     if (objValue.HasMember("params"))
     {
-        _parseParams(nodeid, objValue["params"], pAcceptor);
+        _parseParams(nodeid, name, objValue["params"], pAcceptor);
     }
     if (objValue.HasMember("uipos"))
     {
@@ -154,21 +178,19 @@ void ZsgReader::_parseNode(const QString& nodeid, const rapidjson::Value& nodeOb
         QStringList options;
         for (int i = 0; i < optionsArr.Size(); i++)
         {
-            ZASSERT_EXIT(optionsArr[i].IsString());
+            ZASSERT_EXIT(optionsArr[i].IsString(), false);
             const QString& optName = optionsArr[i].GetString();
             options.append(optName);
         }
         pAcceptor->setOptions(nodeid, options);
     }
+    if (objValue.HasMember("dict_keys"))
+    {
+        _parseDictKeys(nodeid, objValue["dict_keys"], pAcceptor);
+    }
     if (objValue.HasMember("socket_keys"))
     {
-        auto socket_keys = objValue["socket_keys"].GetArray();
-        QStringList socketKeys;
-        for (int i = 0; i < socket_keys.Size(); i++)
-        {
-            socketKeys.append(socket_keys[i].GetString());
-        }
-        pAcceptor->setSocketKeys(nodeid, socketKeys);
+        _parseBySocketKeys(nodeid, objValue, pAcceptor);
     }
     if (objValue.HasMember("color_ramps"))
     {
@@ -198,6 +220,7 @@ void ZsgReader::_parseNode(const QString& nodeid, const rapidjson::Value& nodeOb
 
         pAcceptor->setBlackboard(nodeid, blackboard);
     }
+    return true;
 }
 
 QVariant ZsgReader::_parseDefaultValue(const QString& defaultValue, const QString& type)
@@ -346,6 +369,25 @@ CurveModel* ZsgReader::_parseCurveModel(const rapidjson::Value& jsonCurve, QObje
     return pModel;
 }
 
+void ZsgReader::_parseDictKeys(const QString& id, const rapidjson::Value& objValue, IAcceptor* pAcceptor)
+{
+    ZASSERT_EXIT(objValue.HasMember("inputs") && objValue["inputs"].IsArray());
+    auto input_keys = objValue["inputs"].GetArray();
+    for (int i = 0; i < input_keys.Size(); i++)
+    {
+        QString key = input_keys[i].GetString();
+        pAcceptor->addDictKey(id, key, true);
+    }
+
+    ZASSERT_EXIT(objValue.HasMember("outputs") && objValue["outputs"].IsArray());
+    auto output_keys = objValue["outputs"].GetArray();
+    for (int i = 0; i < output_keys.Size(); i++)
+    {
+        QString key = output_keys[i].GetString();
+        pAcceptor->addDictKey(id, key, false);
+    }
+}
+
 void ZsgReader::_parseBySocketKeys(const QString& id, const rapidjson::Value& objValue, IAcceptor* pAcceptor)
 {
     auto socket_keys = objValue["socket_keys"].GetArray();
@@ -389,7 +431,7 @@ void ZsgReader::_parseInputs(const QString& id, const QString& nodeName, const N
     }
 }
 
-void ZsgReader::_parseParams(const QString& id, const rapidjson::Value& jsonParams, IAcceptor* pAcceptor)
+void ZsgReader::_parseParams(const QString& id, const QString& nodeName, const rapidjson::Value& jsonParams, IAcceptor* pAcceptor)
 {
     if (jsonParams.IsObject())
     {
@@ -397,8 +439,7 @@ void ZsgReader::_parseParams(const QString& id, const rapidjson::Value& jsonPara
         {
             const QString& name = paramObj.name.GetString();
             const rapidjson::Value& val = paramObj.value;
-            QVariant var = _parseToVariant("", val, pAcceptor->currGraphObj()); //todo: fill type.
-            pAcceptor->setParamValue(id, name, var);
+            pAcceptor->setParamValue(id, nodeName, name, val);
         }
     } else {
         zeno::log_warn("not object json param");

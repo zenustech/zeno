@@ -143,6 +143,10 @@ Enabling them you will find our well-packaged high-level nodes like `FLIPSimTemp
 they were exported from another subgraph file using Ctrl-Shfit-E by the way, see the
 source code of `FLIPtools` for the original graph file name.
 
+## What's next?
+
+If you are the project maintainer, you may also checkout [`docs/MAINTAINERS.md`](docs/MAINTAINERS.md) for advanced skills.
+
 <!-- deprecated, see misc/ci/CMakePresets.json, now only used by CI
 ### Using CMake presets (experimental)
 

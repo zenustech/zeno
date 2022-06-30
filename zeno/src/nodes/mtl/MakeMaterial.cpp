@@ -151,7 +151,7 @@ struct ExtractMaterialShader : zeno::INode
       {
           {
               {"object"},
-              {"string", "mtlid"},// actually string or list
+              {"string", "mtlid", "Mat1"},
           },
           {
               {"object"},

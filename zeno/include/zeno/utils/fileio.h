@@ -3,6 +3,7 @@
 #include <string>
 #include <fstream>
 #include <cstdio>
+#include <vector>
 
 namespace zeno {
 
@@ -25,7 +26,7 @@ static bool file_exists(std::string const &path) {
   return (bool)fin;
 }
 
-template <class Arr>
+template <class Arr = std::vector<char>>
 static Arr file_get_binary(std::string const &path) {
   char const *filename = path.c_str();
   FILE *fp = fopen(filename, "rb");
@@ -82,7 +83,7 @@ static bool file_put_binary(char const *arr_data, size_t arr_size, std::string c
   return true;
 }
 
-template <class Arr>
+template <class Arr = std::vector<char>>
 static bool file_put_binary(Arr const &arr, std::string const &path) {
     return file_put_binary(std::data(arr), std::size(arr), path);
 }

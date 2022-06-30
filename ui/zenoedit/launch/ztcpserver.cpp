@@ -14,18 +14,30 @@ ZTcpServer::ZTcpServer(QObject *parent)
     : QObject(parent)
     , m_tcpServer(nullptr)
     , m_tcpSocket(nullptr)
+    , m_port(0)
 {
 }
 
-void ZTcpServer::init(const QHostAddress& address, quint16 port)
+void ZTcpServer::init(const QHostAddress& address)
 {
     m_tcpServer = new QTcpServer(this);
-    if (!m_tcpServer->listen(QHostAddress::LocalHost, port))
+    bool bSucceed = false;
+    int maxTry = 10, i = 0;
+
+    while (i < maxTry)
     {
-        zeno::log_error("tcp socket listen failure");
-        return;
+        int minPort = 49152;
+        int maxPort = 65535;
+        m_port = rand() % (maxPort - minPort + 1) + minPort;
+        if (m_tcpServer->listen(QHostAddress::LocalHost, m_port))
+        {
+            zeno::log_info("tcp server listend, port is {}", m_port);
+            bSucceed = true;
+            break;
+        }
+        i++;
     }
-    else
+    if (!bSucceed)
     {
         zeno::log_info("tcp server listend");
     }
@@ -49,7 +61,8 @@ void ZTcpServer::startProc(const std::string& progJson)
     m_proc->setReadChannel(QProcess::ProcessChannel::StandardOutput);
     m_proc->setProcessChannelMode(QProcess::ProcessChannelMode::ForwardedErrorChannel);
     int sessionid = zeno::getSession().globalState->sessionid;
-    m_proc->start(QCoreApplication::applicationFilePath(), QStringList({"-runner", QString::number(sessionid)}));
+    m_proc->start(QCoreApplication::applicationFilePath(),
+                  QStringList({"-runner", QString::number(sessionid), "-port", QString::number(m_port)}));
     if (!m_proc->waitForStarted(-1)) {
         zeno::log_warn("process failed to get started, giving up");
         return;

@@ -316,7 +316,7 @@ ZENDEFNODE(EvalFBXAnim,
                    {"enum FROM_MAYA DEFAULT", "unit", "FROM_MAYA"},
                },  /* category: */
                {
-                   "primitive",
+                   "FBX",
                }
            });
 

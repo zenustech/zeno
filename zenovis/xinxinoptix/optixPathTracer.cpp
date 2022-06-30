@@ -1556,6 +1556,16 @@ void set_perspective(float const *U, float const *V, float const *W, float const
 
     if (focL > 0) {
         cam.front *= focL*0.001f;
+        
+        // The unit of focalLength is mm, so multiply 0.1;
+        // bate: so you guys use the anti-intellegence CGS? just to cihou FBX? ultra-silly!
+
+    } else {         // then bate happy
+        float radfov = fov * float(M_PI) / 180;
+        float tanfov = std::tan(radfov / 2.0f);
+        cam.front /= tanfov;
+        //float focallen = 0.018f / tanfov;
+        //cam.eye -= focallen * cam.front;
     }
 
     camera_changed = true;
@@ -1568,7 +1578,7 @@ void set_perspective(float const *U, float const *V, float const *W, float const
 
 
 void optixrender(int fbo) {
-    zeno::log_debug("[optix] rendering subframe {}", state.params.subframe_index);
+    zeno::log_trace("[optix] rendering subframe {}", state.params.subframe_index);
     if (!output_buffer_o) throw sutil::Exception("no output_buffer_o");
     if (!gl_display_o) throw sutil::Exception("no gl_display_o");
     updateState( *output_buffer_o, state.params );

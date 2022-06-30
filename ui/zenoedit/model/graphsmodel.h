@@ -8,6 +8,7 @@
 #include "../nodesys/zenosubgraphscene.h"
 #include "subgraphmodel.h"
 #include <zenoui/model/modeldata.h>
+#include <stack>
 
 class SubGraphModel;
 class GraphsModel;
@@ -77,6 +78,7 @@ public:
     int itemCount(const QModelIndex& subGpIdx) const override;
 	void addNode(const NODE_DATA& nodeData, const QModelIndex& subGpIdx, bool enableTransaction = false) override;
 	void appendNodes(const QList<NODE_DATA>& nodes, const QModelIndex& subGpIdx, bool enableTransaction = false);
+    void importNodes(const QMap<QString, NODE_DATA>& nodes, const QPointF& pos, const QModelIndex& subGpIdx, bool enableTransaction = false) override;
 	void removeNode(const QString& nodeid, const QModelIndex& subGpIdx, bool enableTransaction = false) override;
 	void removeNode(int row, const QModelIndex& subGpIdx);
     void removeLink(const QPersistentModelIndex& linkIdx, const QModelIndex& subGpIdx, bool enableTransaction = false) override;
@@ -117,8 +119,9 @@ public:
 	void collaspe(const QModelIndex& subgIdx) override;
 	void expand(const QModelIndex& subgIdx) override;
     void getNodeIndices(const QModelIndex& subGpIdx, QModelIndexList& subgNodes, QModelIndexList& normNodes) override;
-    bool hasDescriptor(const QString& nodeName) const;
+    bool updateSocketNameNotDesc(const QString &id, SOCKET_UPDATE_INFO info, const QModelIndex &subGpIdx, bool enableTransaction = false) override;
 
+    bool hasDescriptor(const QString& nodeName) const;
     void beginTransaction(const QString& name);
 	void endTransaction();
     void removeLinks(const QList<QPersistentModelIndex>& info, const QModelIndex& subGpIdx, bool enableTransaction = false);
@@ -150,6 +153,7 @@ private:
     void onSubInfoChanged(SubGraphModel* pSubModel, const QModelIndex& idx, bool bInput, bool bInsert);
     void updateDescInfo(const QString& descName, const SOCKET_UPDATE_INFO& updateInfo);
     void importNodeLinks(const QList<NODE_DATA> &nodes, const QModelIndex &subGpIdx);
+    void resolveLinks(const QModelIndex& idx, SubGraphModel* pCurrentGraph);
     void initDescriptors();
 
     void beginApiLevel();
@@ -164,6 +168,7 @@ private:
     QString m_filePath;
     QMutex m_mutex;
     QUndoStack* m_stack;
+    std::stack<bool> m_retStack;
     int m_apiLevel;
     bool m_dirty;
 

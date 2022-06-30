@@ -16,3 +16,6 @@
 [submodule "projects/MeshSubdiv/OpenSubdiv"]
 	path = projects/MeshSubdiv/OpenSubdiv
 	url = https://github.com/zenustech/OpenSubdiv
+[submodule "projects/Rigid/bullet3"]
+	path = projects/Rigid/bullet3
+	url = https://github.com/zenustech/bullet3.git

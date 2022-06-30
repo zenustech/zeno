@@ -102,6 +102,11 @@ ZENO_API std::map<std::string, zany> Graph::callTempNode(std::string const &id,
     return std::move(se->outputs);
 }
 
+ZENO_API void Graph::addNodeOutput(std::string const& id, std::string const& par) {
+    // add "dynamic" output which is not descriped by core.
+    safe_at(nodes, id, "node name")->outputs[par] = nullptr;
+}
+
 ZENO_API void Graph::setNodeParam(std::string const &id, std::string const &par,
     std::variant<int, float, std::string, zany> const &val) {
     auto parid = par + ":";

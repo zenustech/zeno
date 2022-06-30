@@ -725,6 +725,6 @@ ZENDEFNODE(ReadFBXPrim,
 
                },  /* category: */
                {
-                   "primitive",
+                   "FBX",
                }
            });

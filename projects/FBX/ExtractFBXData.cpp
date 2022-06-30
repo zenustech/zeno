@@ -40,7 +40,7 @@ ZENDEFNODE(ExtractFBXData,
 
                },  /* category: */
                {
-                   "primitive",
+                   "FBX",
                }
            });
 
@@ -81,7 +81,7 @@ ZENDEFNODE(ExtractMatTexList,
 
                },  /* category: */
                {
-                   "primitive",
+                   "FBX",
                }
            });
 
@@ -146,6 +146,6 @@ ZENDEFNODE(ExtractCameraData,
 
                },  /* category: */
                {
-                   "primitive",
+                   "FBX",
                }
            });

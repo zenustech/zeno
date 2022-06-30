@@ -415,11 +415,55 @@ void ZenoTextLayoutItem::setGeometry(const QRectF& geom)
     prepareGeometryChange();
     QGraphicsLayoutItem::setGeometry(geom);
     setPos(geom.topLeft());
+    initAlignment(geom.width());
 }
 
 void ZenoTextLayoutItem::setRight(bool right)
 {
     m_bRight = right;
+}
+
+void ZenoTextLayoutItem::initAlignment(qreal textWidth)
+{
+    if (m_bRight)
+    {
+        QTextDocument *doc = document();
+
+        QTextCursor cursor = textCursor();
+        cursor.movePosition(QTextCursor::Start);
+
+        QTextFrame::iterator it;
+        QTextFrame *rootFrame = doc->rootFrame();
+        for (it = rootFrame->begin(); !(it.atEnd()); ++it)
+        {
+            QTextFrame *childFrame = it.currentFrame();
+            QTextBlock childBlock = it.currentBlock();
+            if (childBlock.isValid())
+            {
+                QTextBlockFormat format = childBlock.blockFormat();
+                format.setAlignment(Qt::AlignRight);
+                cursor.setBlockFormat(format);
+            }
+        }
+        doc->setTextWidth(textWidth);
+    }
+}
+
+void ZenoTextLayoutItem::setText(const QString& text)
+{
+    m_text = text;
+    setPlainText(m_text);
+}
+
+void ZenoTextLayoutItem::setMargins(qreal leftM, qreal topM, qreal rightM, qreal bottomM)
+{
+    QTextFrame *frame = document()->rootFrame();
+    QTextFrameFormat format = frame->frameFormat();
+    format.setLeftMargin(leftM);
+    format.setRightMargin(rightM);
+    format.setTopMargin(topM);
+    format.setBottomMargin(bottomM);
+    frame->setFrameFormat(format);
 }
 
 QRectF ZenoTextLayoutItem::boundingRect() const
@@ -430,18 +474,17 @@ QRectF ZenoTextLayoutItem::boundingRect() const
 
 void ZenoTextLayoutItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
 {
-    //painter->fillRect(boundingRect(), QColor(0, 0, 0));
-    if (m_bRight)
-    {
-        QString text = toPlainText();
-        painter->setFont(this->font());
-        painter->setPen(QPen(this->defaultTextColor()));
-        painter->drawText(boundingRect(), Qt::AlignRight | Qt::AlignCenter, text);
-    }
-    else
-    {
-        QGraphicsTextItem::paint(painter, option, widget);
-    }
+    QStyleOptionGraphicsItem myOption(*option);
+    myOption.state &= ~QStyle::State_Selected;
+    myOption.state &= ~QStyle::State_HasFocus;
+    QGraphicsTextItem::paint(painter, &myOption, widget);
+}
+
+QPainterPath ZenoTextLayoutItem::shape() const
+{
+    QPainterPath path;
+    path.addRect(boundingRect());
+    return path;
 }
 
 QSizeF ZenoTextLayoutItem::sizeHint(Qt::SizeHint which, const QSizeF &constraint) const
@@ -453,7 +496,7 @@ QSizeF ZenoTextLayoutItem::sizeHint(Qt::SizeHint which, const QSizeF &constraint
         case Qt::PreferredSize:
             return rc.size();
         case Qt::MaximumSize:
-            return QSizeF(1000, rc.height());
+            return QSizeF(3000, rc.height());
         default:
             break;
     }
@@ -464,6 +507,33 @@ void ZenoTextLayoutItem::focusOutEvent(QFocusEvent* event)
 {
     QGraphicsTextItem::focusOutEvent(event);
     emit editingFinished();
+
+    QString newText = document()->toPlainText();
+    if (newText != m_text)
+    {
+        QString oldText = m_text;
+        m_text = newText;
+        emit contentsChanged(oldText, newText);
+    }
+}
+
+void ZenoTextLayoutItem::hoverEnterEvent(QGraphicsSceneHoverEvent* event)
+{
+    QGraphicsTextItem::hoverEnterEvent(event);
+    if (textInteractionFlags() & Qt::TextEditorInteraction)
+        setCursor(QCursor(Qt::IBeamCursor));
+}
+
+void ZenoTextLayoutItem::hoverMoveEvent(QGraphicsSceneHoverEvent* event)
+{
+    QGraphicsTextItem::hoverMoveEvent(event);
+}
+
+void ZenoTextLayoutItem::hoverLeaveEvent(QGraphicsSceneHoverEvent* event)
+{
+    QGraphicsTextItem::hoverLeaveEvent(event);
+    if (textInteractionFlags() & Qt::TextEditorInteraction)
+        setCursor(QCursor(Qt::ArrowCursor));
 }
 
 

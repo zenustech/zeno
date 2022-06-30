@@ -138,5 +138,33 @@ private:
     GraphsModel *m_pModel;
 };
 
+class UpdateNotDescSockNameCommand : public QUndoCommand
+{
+public:
+    UpdateNotDescSockNameCommand(const QString& nodeid, const SOCKET_UPDATE_INFO& updateInfo, GraphsModel* pModel,                                 QPersistentModelIndex subgIdx);
+    void redo() override;
+    void undo() override;
+
+private:
+    SOCKET_UPDATE_INFO m_info;
+    QString m_nodeid;
+    QPersistentModelIndex m_subgIdx;
+    GraphsModel* m_pModel;
+};
+
+class ImportNodesCommand : public QUndoCommand
+{
+public:
+    ImportNodesCommand(const QMap<QString, NODE_DATA>& nodes, QPointF pos, GraphsModel *pModel, QPersistentModelIndex subgIdx);
+    void redo() override;
+    void undo() override;
+
+private:
+    const QMap<QString, NODE_DATA> m_nodes;
+    QPersistentModelIndex m_subgIdx;
+    GraphsModel* m_model;
+    QPointF m_pos;
+};
+
 
 #endif

@@ -13,8 +13,8 @@ public:
     void onUpdateParamsNotDesc() override;
 
 protected:
-    ZenoBackgroundWidget* initBodyWidget(NODE_TYPE type) override;
-    ZenoBackgroundWidget* initHeaderWangStyle(NODE_TYPE type) override;
+    ZenoBackgroundWidget* initBodyWidget() override;
+    ZenoBackgroundWidget* initHeaderStyle() override;
 
     void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
     void mouseMoveEvent(QGraphicsSceneMouseEvent* event) override;
