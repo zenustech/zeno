@@ -23,7 +23,7 @@ void Camera::placeCamera(glm::vec3 pos, glm::vec3 front, glm::vec3 up, float fov
     front = glm::normalize(front);
     up = glm::normalize(up);
 
-    float c_fov = m_fov;
+    float c_fov = fov;
     if(m_focL > 0){
         float c_aspect = m_fw/m_fh;
         float u_aspect = getAspect();
