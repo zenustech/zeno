@@ -17,6 +17,8 @@ struct Camera {
     float m_far = 20000.0f;
     float m_fov = 45.f;
     float m_focL = -1.f;
+    float m_fw = 36.0f;
+    float m_fh = 24.0f;
 
     float m_aperature = 0.05f;
     float m_dof = -1.f;

@@ -14,6 +14,8 @@ struct MakeCamera : INode {
         camera->ffar = get_input2<float>("far");
         camera->fnear = get_input2<float>("near");
         camera->fov = get_input2<float>("fov");
+        camera->fw = get_input2<float>("fw");
+        camera->fh = get_input2<float>("fh");
         camera->focL = get_input2<int>("focL");
         camera->nx = get_input2<int>("nx");
         camera->ny = get_input2<int>("ny");
@@ -31,6 +33,8 @@ ZENO_DEFNODE(MakeCamera)({
         {"float", "far", "20000"},
         {"float", "focL", "-1"},
         {"float", "fov", "45"},
+        {"float", "fw", "36"},
+        {"float", "fh", "24"},
         {"int", "nx", "0"},
         {"int", "ny", "0"},
     },

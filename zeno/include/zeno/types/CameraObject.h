@@ -15,6 +15,8 @@ struct CameraData {
     float ffar{20000.f};
     float nx{1920};
     float ny{1080};
+    float fw{36.0f};
+    float fh{24.0f};
     float dof{-1.f};
     float aperature{-1.f};
 };

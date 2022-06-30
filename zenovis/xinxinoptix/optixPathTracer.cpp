@@ -1546,26 +1546,15 @@ void set_window_size(int nx, int ny) {
     resize_dirty = true;
 }
 
-void set_perspective(float const *U, float const *V, float const *W, float const *E, float aspect, float fov, float focL) {
+void set_perspective(float const *U, float const *V, float const *W, float const *E, float fw, float fh, float aspect, float fov, float focL) {
     auto &cam = state.params.cam;
     cam.eye = make_float3(E[0], E[1], E[2]);
-    cam.right = make_float3(U[0], U[1], U[2]);
-    cam.right *= aspect;
-    cam.up = make_float3(V[0], V[1], V[2]);
-    cam.front = make_float3(W[0], W[1], W[2]);
+    cam.right = normalize(make_float3(U[0], U[1], U[2]));
+    cam.up = normalize(make_float3(V[0], V[1], V[2])) * fh * 0.001 / 2;
+    cam.right *= length(cam.up) * (fw/fh);
+    cam.front = normalize(make_float3(W[0], W[1], W[2]));
 
     if (focL > 0) {
-        // Angle of view (in degrees) = 2 ArcTan( sensor width / (2 X focal length)) * (180/π)
-        // Field of view = 2 (Tan (Angle of view/2) X Distance to Subject)
-
-        //float radaov = fov * float(M_PI) / 180;
-        //float tanfov = 2.0f * std::tan(radaov / 2.0f);
-        //cam.front /= tanfov;
-        //float focallen = 0.018f / tanfov;
-        //cam.eye -= focallen * cam.front;
-        //zeno::log_info("F {} {} {}", radaov, tanfov, focallen);
-
-        // The unit of focalLength is mm, so multiply 0.1;
         cam.front *= focL*0.001f;
     }
 
@@ -1579,7 +1568,7 @@ void set_perspective(float const *U, float const *V, float const *W, float const
 
 
 void optixrender(int fbo) {
-    zeno::log_info("[optix] rendering subframe {}", state.params.subframe_index);
+    zeno::log_debug("[optix] rendering subframe {}", state.params.subframe_index);
     if (!output_buffer_o) throw sutil::Exception("no output_buffer_o");
     if (!gl_display_o) throw sutil::Exception("no gl_display_o");
     updateState( *output_buffer_o, state.params );
