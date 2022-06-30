@@ -1548,24 +1548,27 @@ void set_window_size(int nx, int ny) {
 
 void set_perspective(float const *U, float const *V, float const *W, float const *E, float fw, float fh, float aspect, float fov, float focL) {
     auto &cam = state.params.cam;
+    float c_aspect = fw/fh;
+    float u_aspect = aspect;
+    float r_fh = fh * 0.001;
+    float r_fw = fw * 0.001;
+    zeno::log_info("Camera film w {} film h {} aspect {} {}", fw, fh, c_aspect, u_aspect);
+
     cam.eye = make_float3(E[0], E[1], E[2]);
     cam.right = normalize(make_float3(U[0], U[1], U[2]));
-    cam.up = normalize(make_float3(V[0], V[1], V[2])) * fh * 0.001 / 2;
-    cam.right *= length(cam.up) * (fw/fh);
+
+    if(u_aspect > c_aspect){
+        cam.up = normalize(make_float3(V[0], V[1], V[2])) * (r_fw/u_aspect) / 2;
+        cam.right *= r_fw / 2;
+    }else{
+        cam.up = normalize(make_float3(V[0], V[1], V[2])) * (r_fh) / 2;
+        cam.right *= (r_fh*u_aspect) / 2;
+    }
+
     cam.front = normalize(make_float3(W[0], W[1], W[2]));
 
     if (focL > 0) {
         cam.front *= focL*0.001f;
-        
-        // The unit of focalLength is mm, so multiply 0.1;
-        // bate: so you guys use the anti-intellegence CGS? just to cihou FBX? ultra-silly!
-
-    } else {         // then bate happy
-        float radfov = fov * float(M_PI) / 180;
-        float tanfov = std::tan(radfov / 2.0f);
-        cam.front /= tanfov;
-        //float focallen = 0.018f / tanfov;
-        //cam.eye -= focallen * cam.front;
     }
 
     camera_changed = true;
