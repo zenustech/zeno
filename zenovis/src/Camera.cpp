@@ -23,13 +23,16 @@ void Camera::placeCamera(glm::vec3 pos, glm::vec3 front, glm::vec3 up, float fov
     front = glm::normalize(front);
     up = glm::normalize(up);
 
-    float c_aspect = m_fw/m_fh;
-    float u_aspect = getAspect();
-    printf("cam nx %d ny %d fw %f fh %f aspect %f %f\n", m_nx, m_ny, m_fw, m_fh, u_aspect, c_aspect);
-
-    float c_fov = 2.0f * std::atan(m_fh / (2.0f * m_focL) ) * (180.0f / M_PI);
-    if(u_aspect > c_aspect){
-        c_fov = 2.0f * std::atan(m_fh/(u_aspect/c_aspect) / (2.0f * m_focL) ) * (180.0f / M_PI);
+    float c_fov = m_fov;
+    if(m_focL > 0){
+        float c_aspect = m_fw/m_fh;
+        float u_aspect = getAspect();
+        printf("cam nx %d ny %d fw %f fh %f aspect %f %f\n", m_nx, m_ny, m_fw, m_fh, u_aspect, c_aspect);
+        if(u_aspect > c_aspect){
+            c_fov = 2.0f * std::atan(m_fh/(u_aspect/c_aspect) / (2.0f * m_focL) ) * (180.0f / M_PI);
+        }else{
+            c_fov = 2.0f * std::atan(m_fh / (2.0f * m_focL) ) * (180.0f / M_PI);
+        }
     }
 
     if (fov <= 0) {
