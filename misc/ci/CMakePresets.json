@@ -21,6 +21,7 @@
       "displayName": "OpenVDB configuration",
       "description": "Additionally build the OpenVDB extensions",
       "cacheVariables": {
+        "ZENO_PARALLEL_STL": "ON",
         "ZENO_WITH_ZenoFX": "ON",
         "ZENOFX_ENABLE_OPENVDB": "ON",
         "ZENOFX_ENABLE_LBVH": "ON",
