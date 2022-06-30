@@ -1106,6 +1106,94 @@ struct CodimStepping : INode {
         });
       });
     }
+    bool checkSelfIntersection(zs::CudaExecutionPolicy &pol) {
+      using namespace zs;
+      constexpr auto space = execspace_e::cuda;
+      const auto dHat2 = dHat * dHat;
+      zs::Vector<int> intersected{vtemp.get_allocator(), 1};
+      intersected.setVal(0);
+      // self
+      {
+        auto edgeBvs = retrieve_bounding_volumes(pol, vtemp, "xn", seInds,
+                                                 zs::wrapv<2>{}, 0);
+        bvh_t seBvh;
+        seBvh.build(pol, edgeBvs);
+        pol(Collapse{stInds.size()},
+            [stInds = proxy<space>({}, stInds),
+             seInds = proxy<space>({}, seInds), vtemp = proxy<space>({}, vtemp),
+             intersected = proxy<space>(intersected),
+             bvh = proxy<space>(seBvh)] __device__(int sti) mutable {
+              auto tri = stInds.template pack<3>("inds", sti)
+                             .template reinterpret_bits<int>();
+              auto t0 = vtemp.pack<3>("xn", tri[0]);
+              auto t1 = vtemp.pack<3>("xn", tri[1]);
+              auto t2 = vtemp.pack<3>("xn", tri[2]);
+              auto bv = bv_t{get_bounding_box(t0, t1)};
+              merge(bv, t2);
+              bool allFixed = vtemp("BCorder", tri[0]) == 3 &&
+                              vtemp("BCorder", tri[1]) == 3 &&
+                              vtemp("BCorder", tri[2]) == 3;
+              bvh.iter_neighbors(bv, [&](int sei) {
+                auto line = seInds.template pack<2>("inds", sei)
+                                .template reinterpret_bits<int>();
+                if (tri[0] == line[0] || tri[0] == line[1] ||
+                    tri[1] == line[0] || tri[1] == line[1] ||
+                    tri[2] == line[0] || tri[2] == line[1])
+                  return;
+                // ignore intersection under sticky boundary conditions
+                if (allFixed && vtemp("BCorder", line[0]) == 3 &&
+                    vtemp("BCorder", line[1]) == 3)
+                  return;
+                // ccd
+                if (et_intersected(vtemp.pack<3>("xn", line[0]),
+                                   vtemp.pack<3>("xn", line[1]), t0, t1, t2))
+                  if (intersected[0] == 0)
+                    intersected[0] = 1;
+                // atomic_cas(exec_cuda, &intersected[0], 0, 1);
+              });
+            });
+      }
+      // boundary
+      {
+        auto edgeBvs = retrieve_bounding_volumes(pol, vtemp, "xn", coEdges,
+                                                 zs::wrapv<2>{}, coOffset);
+        bvh_t seBvh;
+        seBvh.build(pol, edgeBvs);
+        pol(Collapse{stInds.size()},
+            [stInds = proxy<space>({}, stInds),
+             coEdges = proxy<space>({}, coEdges),
+             vtemp = proxy<space>({}, vtemp),
+             intersected = proxy<space>(intersected), bvh = proxy<space>(seBvh),
+             coOffset = coOffset] __device__(int sti) mutable {
+              auto tri = stInds.template pack<3>("inds", sti)
+                             .template reinterpret_bits<int>();
+              auto t0 = vtemp.pack<3>("xn", tri[0]);
+              auto t1 = vtemp.pack<3>("xn", tri[1]);
+              auto t2 = vtemp.pack<3>("xn", tri[2]);
+              auto bv = bv_t{get_bounding_box(t0, t1)};
+              merge(bv, t2);
+              bool allFixed = vtemp("BCorder", tri[0]) == 3 &&
+                              vtemp("BCorder", tri[1]) == 3 &&
+                              vtemp("BCorder", tri[2]) == 3;
+              bvh.iter_neighbors(bv, [&](int sei) {
+                auto line = coEdges.template pack<2>("inds", sei)
+                                .template reinterpret_bits<int>() +
+                            coOffset;
+                // ignore intersection under sticky boundary conditions
+                if (allFixed && vtemp("BCorder", line[0]) == 3 &&
+                    vtemp("BCorder", line[1]) == 3)
+                  return;
+                // ccd
+                if (et_intersected(vtemp.pack<3>("xn", line[0]),
+                                   vtemp.pack<3>("xn", line[1]), t0, t1, t2))
+                  if (intersected[0] == 0)
+                    intersected[0] = 1;
+                // atomic_cas(exec_cuda, &intersected[0], 0, 1);
+              });
+            });
+      }
+      return intersected.getVal();
+    }
     void findCCDConstraints(zs::CudaExecutionPolicy &pol, T alpha, T xi = 0) {
       ncsPT.setVal(0);
       ncsEE.setVal(0);
@@ -1262,7 +1350,7 @@ struct CodimStepping : INode {
             auto deb1 = vtemp.template pack<3>("dir", ids[3]);
             auto tmp = stepSize;
 #if 0
-            if (eeaccd(ea0, ea1, eb0, eb1, dea0, dea1, deb0, deb1, (T)0.1, xi, tmp))
+        if (eeaccd(ea0, ea1, eb0, eb1, dea0, dea1, deb0, deb1, (T)0.1, xi, tmp))
 #elif 1
             if (rpccd::eeccd(ea0, ea1, eb0, eb1, dea0, dea1, deb0, deb1, (T)0.1, xi, tmp))
 #else
@@ -2763,6 +2851,15 @@ struct CodimStepping : INode {
         A.intersectionFreeStepsize(cudaPol, xi, alpha);
         fmt::print("\tstepsize after ccd: {}. (ncspt: {}, ncsee: {})\n", alpha,
                    ncspt, ncsee);
+        /// check discrete collision
+        while (A.checkSelfIntersection(cudaPol)) {
+          alpha /= 2;
+          cudaPol(zs::range(vtemp.size()), [vtemp = proxy<space>({}, vtemp),
+                                            alpha] __device__(int i) mutable {
+            vtemp.tuple<3>("xn", i) =
+                vtemp.pack<3>("xn0", i) + alpha * vtemp.pack<3>("dir", i);
+          });
+        }
       }
 
       T E{E0};
@@ -2794,20 +2891,32 @@ struct CodimStepping : INode {
 #endif
 
         alpha /= 2;
-        if (++lsIter > 20) {
+        if (++lsIter > 30) {
           auto cr = A.constraintResidual(cudaPol);
           fmt::print(
               "too small stepsize at iteration [{}]! alpha: {}, cons res: {}\n",
               lsIter, alpha, cr);
-          getchar();
+          if (!useGD)
+            getchar();
         }
       } while (true);
 #endif
+
       cudaPol(zs::range(vtemp.size()), [vtemp = proxy<space>({}, vtemp),
                                         alpha] __device__(int i) mutable {
         vtemp.tuple<3>("xn", i) =
             vtemp.pack<3>("xn0", i) + alpha * vtemp.pack<3>("dir", i);
       });
+
+      /// check discrete collision
+      while (A.checkSelfIntersection(cudaPol)) {
+        alpha /= 2;
+        cudaPol(zs::range(vtemp.size()), [vtemp = proxy<space>({}, vtemp),
+                                          alpha] __device__(int i) mutable {
+          vtemp.tuple<3>("xn", i) =
+              vtemp.pack<3>("xn0", i) + alpha * vtemp.pack<3>("dir", i);
+        });
+      }
 
       if (alpha < 1e-8) {
         useGD = true;
