@@ -117,6 +117,10 @@ struct AttrVector {
 
     template <class Accept = std::variant<vec3f, float>, class F>
     void attr_visit(std::string const &name, F const &f) const {
+        if (name == "pos") {
+            f(values);
+            return;
+        }
         auto it = attrs.find(name);
         if (it == attrs.end())
             throw makeError<KeyError>(name, "attribute name of primitive");
@@ -130,6 +134,10 @@ struct AttrVector {
 
     template <class Accept = std::variant<vec3f, float>, class F>
     void attr_visit(std::string const &name, F const &f) {
+        if (name == "pos") {
+            f(values);
+            return;
+        }
         auto it = attrs.find(name);
         if (it == attrs.end())
             throw makeError<KeyError>(name, "attribute name of primitive");
@@ -157,7 +165,37 @@ struct AttrVector {
     template <class Accept = std::variant<vec3f, float>, class F>
     void foreach_attr(F &&f) {
         for (auto &[key, arr]: attrs) {
-            auto &k = key;
+            auto const &k = key;
+            std::visit([&] (auto &arr) {
+                using T = std::decay_t<decltype(arr[0])>;
+                if constexpr (variant_contains<T, Accept>::value) {
+                    f(k, arr);
+                }
+            }, arr);
+        }
+    }
+
+    template <class Accept = std::variant<vec3f, float>, class F>
+    void forall_attr(F &&f) const {
+        const std::string kpos = "pos";
+        f(kpos, values);
+        for (auto const &[key, arr]: attrs) {
+            auto const &k = key;
+            std::visit([&] (auto &arr) {
+                using T = std::decay_t<decltype(arr[0])>;
+                if constexpr (variant_contains<T, Accept>::value) {
+                    f(k, arr);
+                }
+            }, arr);
+        }
+    }
+
+    template <class Accept = std::variant<vec3f, float>, class F>
+    void forall_attr(F &&f) {
+        const std::string kpos = "pos";
+        f(kpos, values);
+        for (auto &[key, arr]: attrs) {
+            auto const &k = key;
             std::visit([&] (auto &arr) {
                 using T = std::decay_t<decltype(arr[0])>;
                 if constexpr (variant_contains<T, Accept>::value) {
@@ -186,7 +224,39 @@ struct AttrVector {
     void foreach_attr(Pol pol, F &&f) {
         std::for_each(pol, attrs.begin(), attrs.end(), [&] (auto &kv) {
             auto &[key, arr] = kv;
+            auto const &k = key;
+            std::visit([&] (auto &arr) {
+                using T = std::decay_t<decltype(arr[0])>;
+                if constexpr (variant_contains<T, Accept>::value) {
+                    f(k, arr);
+                }
+            }, arr);
+        });
+    }
+
+    template <class Accept = std::variant<vec3f, float>, class F, class Pol>
+    void forall_attr(Pol pol, F &&f) const {
+        const std::string kpos = "pos";
+        f(kpos, values);
+        std::for_each(pol, attrs.begin(), attrs.end(), [&] (auto &kv) {
+            auto &[key, arr] = kv;
             auto &k = key;
+            std::visit([&] (auto &arr) {
+                using T = std::decay_t<decltype(arr[0])>;
+                if constexpr (variant_contains<T, Accept>::value) {
+                    f(k, arr);
+                }
+            }, arr);
+        });
+    }
+
+    template <class Accept = std::variant<vec3f, float>, class F, class Pol>
+    void forall_attr(Pol pol, F &&f) {
+        const std::string kpos = "pos";
+        f(kpos, values);
+        std::for_each(pol, attrs.begin(), attrs.end(), [&] (auto &kv) {
+            auto &[key, arr] = kv;
+            auto const &k = key;
             std::visit([&] (auto &arr) {
                 using T = std::decay_t<decltype(arr[0])>;
                 if constexpr (variant_contains<T, Accept>::value) {
