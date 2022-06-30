@@ -574,6 +574,7 @@ struct CodimStepping : INode {
   inline static T targetGRes = 1e-2;
   static constexpr bool s_enableAdaptiveSetting = false;
   static constexpr bool s_enableContact = true;
+  static constexpr bool s_enableDCDCheck = false;
 
   inline static std::size_t estNumCps = 1000000;
   inline static T augLagCoeff = 1e4;
@@ -1325,39 +1326,39 @@ struct CodimStepping : INode {
             auto dt1 = vtemp.template pack<3>("dir", ids[2]);
             auto dt2 = vtemp.template pack<3>("dir", ids[3]);
             T tmp = stepSize;
-#if 0
+#if 1
             if (ptaccd(p, t0, t1, t2, dp, dt0, dt1, dt2, (T)0.1, xi, tmp))
 #elif 1
             if (rpccd::ptccd(p, t0, t1, t2, dp, dt0, dt1, dt2, (T)0.1, xi, tmp))
 #else
             if (pt_ccd(p, t0, t1, t2, dp, dt0, dt1, dt2, xi, tmp))
 #endif
-            atomic_min(exec_cuda, &alpha[0], tmp);
+              atomic_min(exec_cuda, &alpha[0], tmp);
           });
       auto nee = ncsEE.getVal();
-      pol(range(nee),
-          [csEE = proxy<space>(csEE), vtemp = proxy<space>({}, vtemp),
-           alpha = proxy<space>(alpha), stepSize, xi,
-           coOffset = (int)coOffset] __device__(int eei) {
-            auto ids = csEE[eei];
-            auto ea0 = vtemp.template pack<3>("xn", ids[0]);
-            auto ea1 = vtemp.template pack<3>("xn", ids[1]);
-            auto eb0 = vtemp.template pack<3>("xn", ids[2]);
-            auto eb1 = vtemp.template pack<3>("xn", ids[3]);
-            auto dea0 = vtemp.template pack<3>("dir", ids[0]);
-            auto dea1 = vtemp.template pack<3>("dir", ids[1]);
-            auto deb0 = vtemp.template pack<3>("dir", ids[2]);
-            auto deb1 = vtemp.template pack<3>("dir", ids[3]);
-            auto tmp = stepSize;
-#if 0
+      pol(range(nee), [csEE = proxy<space>(csEE),
+                       vtemp = proxy<space>({}, vtemp),
+                       alpha = proxy<space>(alpha), stepSize, xi,
+                       coOffset = (int)coOffset] __device__(int eei) {
+        auto ids = csEE[eei];
+        auto ea0 = vtemp.template pack<3>("xn", ids[0]);
+        auto ea1 = vtemp.template pack<3>("xn", ids[1]);
+        auto eb0 = vtemp.template pack<3>("xn", ids[2]);
+        auto eb1 = vtemp.template pack<3>("xn", ids[3]);
+        auto dea0 = vtemp.template pack<3>("dir", ids[0]);
+        auto dea1 = vtemp.template pack<3>("dir", ids[1]);
+        auto deb0 = vtemp.template pack<3>("dir", ids[2]);
+        auto deb1 = vtemp.template pack<3>("dir", ids[3]);
+        auto tmp = stepSize;
+#if 1
         if (eeaccd(ea0, ea1, eb0, eb1, dea0, dea1, deb0, deb1, (T)0.1, xi, tmp))
 #elif 1
             if (rpccd::eeccd(ea0, ea1, eb0, eb1, dea0, dea1, deb0, deb1, (T)0.1, xi, tmp))
 #else
             if (ee_ccd(ea0, ea1, eb0, eb1, dea0, dea1, deb0, deb1, xi, tmp))
 #endif
-            atomic_min(exec_cuda, &alpha[0], tmp);
-          });
+          atomic_min(exec_cuda, &alpha[0], tmp);
+      });
       stepSize = alpha.getVal();
     }
     void groundIntersectionFreeStepsize(zs::CudaExecutionPolicy &pol,
@@ -2852,14 +2853,15 @@ struct CodimStepping : INode {
         fmt::print("\tstepsize after ccd: {}. (ncspt: {}, ncsee: {})\n", alpha,
                    ncspt, ncsee);
         /// check discrete collision
-        while (A.checkSelfIntersection(cudaPol)) {
-          alpha /= 2;
-          cudaPol(zs::range(vtemp.size()), [vtemp = proxy<space>({}, vtemp),
-                                            alpha] __device__(int i) mutable {
-            vtemp.tuple<3>("xn", i) =
-                vtemp.pack<3>("xn0", i) + alpha * vtemp.pack<3>("dir", i);
-          });
-        }
+        if constexpr (s_enableDCDCheck)
+          while (A.checkSelfIntersection(cudaPol)) {
+            alpha /= 2;
+            cudaPol(zs::range(vtemp.size()), [vtemp = proxy<space>({}, vtemp),
+                                              alpha] __device__(int i) mutable {
+              vtemp.tuple<3>("xn", i) =
+                  vtemp.pack<3>("xn0", i) + alpha * vtemp.pack<3>("dir", i);
+            });
+          }
       }
 
       T E{E0};
@@ -2909,14 +2911,15 @@ struct CodimStepping : INode {
       });
 
       /// check discrete collision
-      while (A.checkSelfIntersection(cudaPol)) {
-        alpha /= 2;
-        cudaPol(zs::range(vtemp.size()), [vtemp = proxy<space>({}, vtemp),
-                                          alpha] __device__(int i) mutable {
-          vtemp.tuple<3>("xn", i) =
-              vtemp.pack<3>("xn0", i) + alpha * vtemp.pack<3>("dir", i);
-        });
-      }
+      if constexpr (s_enableDCDCheck)
+        while (A.checkSelfIntersection(cudaPol)) {
+          alpha /= 2;
+          cudaPol(zs::range(vtemp.size()), [vtemp = proxy<space>({}, vtemp),
+                                            alpha] __device__(int i) mutable {
+            vtemp.tuple<3>("xn", i) =
+                vtemp.pack<3>("xn0", i) + alpha * vtemp.pack<3>("dir", i);
+          });
+        }
 
       if (alpha < 1e-8) {
         useGD = true;
