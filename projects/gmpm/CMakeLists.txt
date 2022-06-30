@@ -169,7 +169,7 @@ target_sources(zeno_geometry PRIVATE
   geometry/kernel/gradient_field.hpp
   geometry/kernel/bary_centric_weights.hpp
   geometry/SolveLaplacian.cu
-  geometry/GradientField.cu
+  geometry/VectorField.cu
   geometry/SetupSkinningWeight.cu
   geometry/Skinning.cu
   geometry/BaryCentricInterpolator.cu
