@@ -68,7 +68,6 @@ struct ZSEvalGradientFieldOnTets : zeno::INode {
                     vtemp(tag,vi) = verts(attr,vi);
         });
         // fmt::print("CHECK POINT 1\n");
-
         compute_gradient(cudaPol,eles,verts,"x",vtemp,"T",etemp,"g");
         // fmt::print("CHECK POINT 2\n");
         // copy the gradient field from etemp to eles
@@ -139,11 +138,11 @@ struct ZSRetrieveVectorField : zeno::INode {
                             bx += verts.pack<3>(xtag,inds[j]) / 4;
                         vec_buffer.tuple<3>("x",i) = bx;
                         vec_buffer.tuple<3>("vec",i) = scale * eles.pack<3>(gtag,i) / eles.pack<3>(gtag,i).norm();
-                        if(i == 0){
-                            auto dir = eles.pack<3>(gtag,i);
-                            printf("pos<0> : %f %f %f\n",(float)bx[0],(float)bx[1],(float)bx[2]);
-                            printf("dir<0> : %f %f %f\n",(float)dir[0],(float)dir[1],(float)dir[2]);
-                        }
+                        // if(i == 0){
+                        //     auto dir = eles.pack<3>(gtag,i);
+                        //     printf("pos<0> : %f %f %f\n",(float)bx[0],(float)bx[1],(float)bx[2]);
+                        //     printf("dir<0> : %f %f %f\n",(float)dir[0],(float)dir[1],(float)dir[2]);
+                        // }
                     }else{
                         vec_buffer.tuple<3>("x",i) = verts.pack<3>(xtag,i);
                         vec_buffer.tuple<3>("vec",i) = scale * verts.pack<3>(gtag,i) / verts.pack<3>(gtag,i).norm();
@@ -169,17 +168,17 @@ struct ZSRetrieveVectorField : zeno::INode {
                 sverts[i*2 + 0] = zeno::vec3f{start[0],start[1],start[2]};
                 sverts[i*2 + 1] = zeno::vec3f{end[0],end[1],end[2]};
 
-                if(i == 0){
-                    printf("svert[0] : %f %f %f\n",(float)sverts[i*2 + 0][0],(float)sverts[i*2 + 0][1],(float)sverts[i*2 + 0][2]);
-                    printf("svert[1] : %f %f %f\n",(float)sverts[i*2 + 1][0],(float)sverts[i*2 + 1][1],(float)sverts[i*2 + 1][2]);
-                }
+                // if(i == 0){
+                //     printf("svert[0] : %f %f %f\n",(float)sverts[i*2 + 0][0],(float)sverts[i*2 + 0][1],(float)sverts[i*2 + 0][2]);
+                //     printf("svert[1] : %f %f %f\n",(float)sverts[i*2 + 1][0],(float)sverts[i*2 + 1][1],(float)sverts[i*2 + 1][2]);
+                // }
         });
 
-        int i = 0;
-        if(i == 0){
-            printf("svert[0] : %f %f %f\n",(float)sverts[i*2 + 0][0],(float)sverts[i*2 + 0][1],(float)sverts[i*2 + 0][2]);
-            printf("svert[1] : %f %f %f\n",(float)sverts[i*2 + 1][0],(float)sverts[i*2 + 1][1],(float)sverts[i*2 + 1][2]);
-        }
+        // int i = 0;
+        // if(i == 0){
+        //     printf("svert[0] : %f %f %f\n",(float)sverts[i*2 + 0][0],(float)sverts[i*2 + 0][1],(float)sverts[i*2 + 0][2]);
+        //     printf("svert[1] : %f %f %f\n",(float)sverts[i*2 + 1][0],(float)sverts[i*2 + 1][1],(float)sverts[i*2 + 1][2]);
+        // }
         set_output("vec_field",std::move(vec_field));
     }    
 };
