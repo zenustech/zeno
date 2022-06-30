@@ -45,8 +45,6 @@ struct ZSEvalGradientFieldOnTets : zeno::INode {
         if(cdim != 4)
             throw std::runtime_error("ZSEvalGradientFieldOnTets: invalid simplex size");
 
-
-
         static dtiles_t etemp(eles.get_allocator(),{{"g",3}},eles.size());
         static dtiles_t vtemp{verts.get_allocator(),{
             {"T",1},
@@ -85,7 +83,7 @@ ZENDEFNODE(ZSEvalGradientFieldOnTets, {
                                     {
                                         {"string","tag","T"},{"string","gtag","gradT"}
                                     },
-                                    {"FEM"}
+                                    {"ZSGeometry"}
 });
 
 };

@@ -366,6 +366,7 @@ struct FastQuasiStaticStepping : INode {
             ++line_search;
         } while (line_search < max_line_search);
         // return line_search;
+
     }
 
     template<typename Equation,typename Model>
@@ -533,155 +534,175 @@ struct FastQuasiStaticStepping : INode {
 
         constexpr auto space = execspace_e::cuda;
         auto cudaPol = cuda_exec();   
-        
-        match([&](auto &elasticModel){
-            A.laplacian(cudaPol,elasticModel,"xn","L",vtemp,etemp);
-        })(models.getElasticModel());
 
-        // build preconditioner for fast cg convergence
-        cudaPol(zs::range(vtemp.size()),
-            [vtemp = proxy<space>({}, vtemp),
-                verts = proxy<space>({}, verts)] ZS_LAMBDA (int vi) mutable {
-                    vtemp.tuple<9>("P", vi) = mat3::zeros();
-        });        
-        cudaPol(zs::range(eles.size()),
-            [vtemp = proxy<space>({},vtemp),etemp = proxy<space>({},etemp),eles = proxy<space>({},eles)]
-                ZS_LAMBDA (int ei) mutable {
-                constexpr int dim = 3;
-                constexpr auto dimp1 = dim + 1;
-                auto inds = 
-                    eles.template pack<dimp1>("inds",ei).template reinterpret_bits<int>();
-                auto He = etemp.pack<dim * dimp1,dim * dimp1>("L",ei);
-
-                for (int vi = 0; vi != dimp1; ++vi) {
-                #if 1
-                    for (int i = 0; i != dim; ++i)
-                    for (int j = i; j != dim; ++j){ 
-                        atomic_add(exec_cuda, &vtemp("P", i * dim + j, inds[vi]),He(vi * dim + i, vi * dim + j));
-                    //   atomic_add(exec_cuda, &vtemp("P", j * dim + i, inds[vi]),He(vi * dim + i, vi * dim + j));
-                    }
-                #else
-                    for (int j = 0; j != dim; ++j) {
-                        atomic_add(exec_cuda, &vtemp("P", j * dim + j, inds[vi]),
-                                He(vi * dim + j, vi * dim + j));
-                    }
-                #endif
-                }
-        });
-        cudaPol(zs::range(vtemp.size()),
-            [vtemp = proxy<space>({}, vtemp),
-                verts = proxy<space>({}, verts)] ZS_LAMBDA (int vi) mutable {
-                    constexpr int dim = 3;
-                    for (int i = 0; i != dim; ++i)
-                        for (int j = i+1; j != dim; ++j){ 
-                            vtemp("P", j * dim + i, vi) = vtemp("P", i * dim + j, vi);
-                    //   atomic_add(exec_cuda, &vtemp("P", j * dim + i, inds[vi]),He(vi * dim + i, vi * dim + j));
-                    }
-        });
-
-        cudaPol(zs::range(vtemp.size()),
-                [vtemp = proxy<space>({},vtemp)] __device__(int vi) mutable {
-                    // we need to use double-precision inverse here, when the P matrix is nearly singular or has very large coeffs
-                    vtemp.tuple<9>("P",vi) = inverse(vtemp.pack<3,3>("P",vi).cast<double>());
-        });
-
-        // solve the problem using quasi-newton solver
-        T fx;
-        match([&](auto &elasticModel){
-            fx = A.energy(cudaPol,elasticModel,"xn",vtemp);
-        })(models.getElasticModel());
-
-        match([&](auto &elasticModel){
-            A.gradient(cudaPol,elasticModel,"xn",vtemp,etemp);
-        })(models.getElasticModel());
-
-        T gn = std::sqrt(dot(cudaPol,vtemp,"grad","grad"));
-        T xn = std::sqrt(dot(cudaPol,vtemp,"xn","xn"));
-
-        if(gn > epsilon && gn > xn * rel_epsilon) {
-            int k = 0;
-            T step = 1. / gn;
-            // solve for cg newton dir might be better?
-            cudaPol(zs::range(vtemp.size()),
-                [vtemp = proxy<space>({},vtemp)] ZS_LAMBDA(int vi) mutable {
-                    vtemp.tuple<3>("dir",vi) = -vtemp.pack<3,3>("P",vi) * vtemp.pack<3>("grad",vi);
-            }); 
-
-            int nm_corr = 0;
-            std::vector<T> m_alpha(quasi_newton_window_size);
-            std::vector<T> m_ys(quasi_newton_window_size);
-
-            while(k < nm_newton_iters) {
-                // copy the x and grad
-                cudaPol(zs::range(vtemp.size()),
-                    [vtemp = proxy<space>({},vtemp)] ZS_LAMBDA(int vi) mutable {
-                        vtemp.tuple<3>("xp",vi) = vtemp.pack<3>("xn",vi);
-                        vtemp.tuple<3>("gradp",vi) = vtemp.pack<3>("grad",vi);
-                });
-                // do line search along the searching direction using armijo condition.../ consider wolfe only when the spd is not enforced
-                backtracking_line_search(cudaPol,A,models,10,armijo,"dir","grad","xn",step,vtemp);
-                T gn = std::sqrt(dot(cudaPol,vtemp,"grad","grad"));
-                T xn = std::sqrt(dot(cudaPol,vtemp,"xn","xn"));
-                // gradient termination criterion test
-                if(gn <= epsilon || gn <= epsilon * xn)
-                    break;
-                // add correction to hessian approximation
-                cudaPol(zs::range(vtemp.size()),
-                    [vtemp = proxy<space>({},vtemp),ws = quasi_newton_window_size,k] ZS_LAMBDA(int vi) mutable {
-                        for(int i = 0;i != 3;++i){
-                            vtemp("s",(k % ws)*3 + i,vi) = vtemp("xn",i,vi) - vtemp("xp",i,vi);
-                            vtemp("y",(k % ws)*3 + i,vi) = vtemp("grad",i,vi) - vtemp("gradp",i,vi);
-                            // vtemp.tuple<3>("s",k % ws,vi) = vtemp.pack<3>("xn",vi) - vtemp.pack<3>("xp",vi);
-                            // vtemp.tuple<3>("y",k % ws,vi) = vtemp.pack<3>("grad",vi) - vtemp.pack<3>("gradp",vi);
-                        }
-                });
-                // some problem use atomic add
-                m_ys[k % quasi_newton_window_size] = dot(cudaPol,vtemp,"s","y",k % quasi_newton_window_size,k % quasi_newton_window_size);
-                ++nm_corr;
-                // apply Hv 
-                // recursively compute d = -H*g
-                {
-                    // Loop1
-                    // m_dir = -m_g
-                    cudaPol(zs::range(vtemp.size()),
-                        [vtemp = proxy<space>({},vtemp)] ZS_LAMBDA(int vi) mutable {
-                            vtemp.tuple<3>("temp",vi) = -vtemp.pack<3>("grad",vi);
-                        });
-                    // point to the most recent correction buffer
-                    int j = (k+1) % quasi_newton_window_size;
-                    for(int i = 0;i < nm_corr;++i){
-                        // moving backward
-                        j = (j + quasi_newton_window_size - 1) % quasi_newton_window_size;
-                        m_alpha[j] = dot(cudaPol,vtemp,"s","temp",k % quasi_newton_window_size) / m_ys[j];
-                        cudaPol(zs::range(vtemp.size()),
-                            [vtemp = proxy<space>({},vtemp),alpha = m_alpha[j],ws = quasi_newton_window_size,k]
-                                ZS_LAMBDA(int vi) mutable {
-                                    for(int i = 0;i != 3;++i)
-                                        vtemp("temp",i,vi) -= alpha * vtemp("y",(k % ws)*3 + i,vi);
-                        });
-                    }
-                    // solve laplace equation using cg, do not have to be that accurate?
-                    solve_equation_using_pcg(cudaPol,A,models,"temp","dir","P",vtemp,"L",etemp,cg_res);
-                    // Loop 2
-                    for(int i = 0;i < nm_corr;++i){
-                        T beta = dot(cudaPol,vtemp,"y","dir",j) / m_ys[j];
-                        cudaPol(zs::range(vtemp.size()),
-                            [vtemp = proxy<space>({},vtemp),offset = k % quasi_newton_window_size,alpha = m_alpha[j],beta,j] ZS_LAMBDA(int vi) mutable{
-                                for(int i = 0;i != 3;++i)
-                                    vtemp("dir",i,vi) += (alpha - beta) * vtemp("s",j*3 + i,vi);
-                            });
-                        j = (j+1) % quasi_newton_window_size;
-                    }
-                }
-
-                step = 1.;
-                ++k;
-            }
+        // use the initial guess if given
+        if(verts.hasProperty("init_x")) {
+            fmt::print("set up initial guess for equation solution\n");
+            cudaPol(zs::range(verts.size()),
+                    [vtemp = proxy<space>({}, vtemp),verts = proxy<space>({}, verts)] __device__(int vi) mutable {
+                        auto x = verts.pack<3>("init_x", vi);
+                        vtemp.tuple<3>("xn", vi) = x;
+                    });      
+        } else {// use the previous simulation result
+            cudaPol(zs::range(verts.size()),
+                    [vtemp = proxy<space>({}, vtemp),
+                    verts = proxy<space>({}, verts)] __device__(int vi) mutable {
+                        auto x = verts.pack<3>("x", vi);
+                        vtemp.tuple<3>("xn", vi) = x;
+                    });
         }
-        cudaPol(zs::range(vtemp.size()),
-            [vtemp = proxy<space>({},vtemp),verts = proxy<space>({},verts)] ZS_LAMBDA(int vi) mutable {
-                verts.pack<3>("x",vi) = vtemp.pack<3>("xn",vi);
-        });
+        // match([&](auto &elasticModel){
+        //     A.laplacian(cudaPol,elasticModel,"xn","L",vtemp,etemp);
+        // })(models.getElasticModel());
+
+        // match([&](auto &elasticModel){
+        //     A.hessian(cudaPol,elasticModel,"xn","H",vtemp,etemp);
+        // })(models.getElasticModel());
+
+        // // build preconditioner for fast cg convergence
+        // cudaPol(zs::range(vtemp.size()),
+        //     [vtemp = proxy<space>({}, vtemp),
+        //         verts = proxy<space>({}, verts)] ZS_LAMBDA (int vi) mutable {
+        //             vtemp.tuple<9>("P", vi) = mat3::zeros();
+        // });        
+        // cudaPol(zs::range(eles.size()),
+        //     [vtemp = proxy<space>({},vtemp),etemp = proxy<space>({},etemp),eles = proxy<space>({},eles)]
+        //         ZS_LAMBDA (int ei) mutable {
+        //         constexpr int dim = 3;
+        //         constexpr auto dimp1 = dim + 1;
+        //         auto inds = 
+        //             eles.template pack<dimp1>("inds",ei).template reinterpret_bits<int>();
+        //         auto He = etemp.pack<dim * dimp1,dim * dimp1>("L",ei);
+
+        //         for (int vi = 0; vi != dimp1; ++vi) {
+        //         #if 1
+        //             for (int i = 0; i != dim; ++i)
+        //             for (int j = i; j != dim; ++j){ 
+        //                 atomic_add(exec_cuda, &vtemp("P", i * dim + j, inds[vi]),He(vi * dim + i, vi * dim + j));
+        //             //   atomic_add(exec_cuda, &vtemp("P", j * dim + i, inds[vi]),He(vi * dim + i, vi * dim + j));
+        //             }
+        //         #else
+        //             for (int j = 0; j != dim; ++j) {
+        //                 atomic_add(exec_cuda, &vtemp("P", j * dim + j, inds[vi]),
+        //                         He(vi * dim + j, vi * dim + j));
+        //             }
+        //         #endif
+        //         }
+        // });
+        // cudaPol(zs::range(vtemp.size()),
+        //     [vtemp = proxy<space>({}, vtemp),
+        //         verts = proxy<space>({}, verts)] ZS_LAMBDA (int vi) mutable {
+        //             constexpr int dim = 3;
+        //             for (int i = 0; i != dim; ++i)
+        //                 for (int j = i+1; j != dim; ++j){ 
+        //                     vtemp("P", j * dim + i, vi) = vtemp("P", i * dim + j, vi);
+        //             //   atomic_add(exec_cuda, &vtemp("P", j * dim + i, inds[vi]),He(vi * dim + i, vi * dim + j));
+        //             }
+        // });
+
+        // cudaPol(zs::range(vtemp.size()),
+        //         [vtemp = proxy<space>({},vtemp)] __device__(int vi) mutable {
+        //             // we need to use double-precision inverse here, when the P matrix is nearly singular or has very large coeffs
+        //             vtemp.tuple<9>("P",vi) = inverse(vtemp.pack<3,3>("P",vi).cast<double>());
+        // });
+
+        // // solve the problem using quasi-newton solver
+        // match([&](auto &elasticModel){
+        //     A.gradient(cudaPol,elasticModel,"xn",vtemp,etemp);
+        // })(models.getElasticModel());
+
+        // T gn = std::sqrt(dot(cudaPol,vtemp,"grad","grad"));
+        // T xn = std::sqrt(dot(cudaPol,vtemp,"xn","xn"));
+
+        // if(gn > epsilon && gn > xn * rel_epsilon && false) {
+        //     int k = 0;
+        //     T step = 1. / gn;
+        //     // solve for cg newton dir might be better?
+        //     cudaPol(zs::range(vtemp.size()),
+        //         [vtemp = proxy<space>({},vtemp)] ZS_LAMBDA(int vi) mutable {
+        //             vtemp.tuple<3>("dir",vi) = -vtemp.pack<3,3>("P",vi) * vtemp.pack<3>("grad",vi);
+        //     }); 
+
+        //     int nm_corr = 0;
+        //     std::vector<T> m_alpha(quasi_newton_window_size);
+        //     std::vector<T> m_ys(quasi_newton_window_size);
+
+        //     fmt::print("SOLVE EQUA USING QUASI_NEWTON\n");
+
+        //     while(k < nm_newton_iters) {
+        //         // copy the x and grad
+        //         cudaPol(zs::range(vtemp.size()),
+        //             [vtemp = proxy<space>({},vtemp)] ZS_LAMBDA(int vi) mutable {
+        //                 vtemp.tuple<3>("xp",vi) = vtemp.pack<3>("xn",vi);
+        //                 vtemp.tuple<3>("gradp",vi) = vtemp.pack<3>("grad",vi);
+        //         });
+        //         // do line search along the searching direction using armijo condition.../ consider wolfe only when the spd is not enforced
+        //         backtracking_line_search(cudaPol,A,models,10,armijo,"dir","grad","xn",step,vtemp);
+        //         T gn = std::sqrt(dot(cudaPol,vtemp,"grad","grad"));
+        //         T xn = std::sqrt(dot(cudaPol,vtemp,"xn","xn"));
+        //         // gradient termination criterion test
+        //         if(gn <= epsilon || gn <= epsilon * xn)
+        //             break;
+        //         // add correction to hessian approximation
+        //         cudaPol(zs::range(vtemp.size()),
+        //             [vtemp = proxy<space>({},vtemp),ws = quasi_newton_window_size,k] ZS_LAMBDA(int vi) mutable {
+        //                 for(int i = 0;i != 3;++i){
+        //                     vtemp("s",(k % ws)*3 + i,vi) = vtemp("xn",i,vi) - vtemp("xp",i,vi);
+        //                     vtemp("y",(k % ws)*3 + i,vi) = vtemp("grad",i,vi) - vtemp("gradp",i,vi);
+        //                     // vtemp.tuple<3>("s",k % ws,vi) = vtemp.pack<3>("xn",vi) - vtemp.pack<3>("xp",vi);
+        //                     // vtemp.tuple<3>("y",k % ws,vi) = vtemp.pack<3>("grad",vi) - vtemp.pack<3>("gradp",vi);
+        //                 }
+        //         });
+        //         // some problem use atomic add
+        //         m_ys[k % quasi_newton_window_size] = dot(cudaPol,vtemp,"s","y",k % quasi_newton_window_size,k % quasi_newton_window_size);
+        //         ++nm_corr;
+        //         // apply Hv 
+        //         // recursively compute d = -H*g
+        //         {
+        //             // Loop1
+        //             // m_dir = -m_g
+        //             cudaPol(zs::range(vtemp.size()),
+        //                 [vtemp = proxy<space>({},vtemp)] ZS_LAMBDA(int vi) mutable {
+        //                     vtemp.tuple<3>("temp",vi) = -vtemp.pack<3>("grad",vi);
+        //                 });
+        //             // point to the most recent correction buffer
+        //             int j = (k+1) % quasi_newton_window_size;
+        //             for(int i = 0;i < nm_corr;++i){
+        //                 // moving backward
+        //                 j = (j + quasi_newton_window_size - 1) % quasi_newton_window_size;
+        //                 m_alpha[j] = dot(cudaPol,vtemp,"s","temp",k % quasi_newton_window_size) / m_ys[j];
+        //                 cudaPol(zs::range(vtemp.size()),
+        //                     [vtemp = proxy<space>({},vtemp),alpha = m_alpha[j],ws = quasi_newton_window_size,k]
+        //                         ZS_LAMBDA(int vi) mutable {
+        //                             for(int i = 0;i != 3;++i)
+        //                                 vtemp("temp",i,vi) -= alpha * vtemp("y",(k % ws)*3 + i,vi);
+        //                 });
+        //             }
+        //             // solve laplace equation using cg, do not have to be that accurate?
+        //             solve_equation_using_pcg(cudaPol,A,models,"temp","dir","P",vtemp,"L",etemp,cg_res);
+        //             // Loop 2
+        //             for(int i = 0;i < nm_corr;++i){
+        //                 T beta = dot(cudaPol,vtemp,"y","dir",j) / m_ys[j];
+        //                 cudaPol(zs::range(vtemp.size()),
+        //                     [vtemp = proxy<space>({},vtemp),offset = k % quasi_newton_window_size,alpha = m_alpha[j],beta,j] ZS_LAMBDA(int vi) mutable{
+        //                         for(int i = 0;i != 3;++i)
+        //                             vtemp("dir",i,vi) += (alpha - beta) * vtemp("s",j*3 + i,vi);
+        //                     });
+        //                 j = (j+1) % quasi_newton_window_size;
+        //             }
+        //         }
+
+        //         step = 1.;
+        //         ++k;
+        //     }
+        // }else{
+        //     fmt::print("EARLY TERMINATION\n");
+        // }
+        // cudaPol(zs::range(vtemp.size()),
+        //     [vtemp = proxy<space>({},vtemp),verts = proxy<space>({},verts)] ZS_LAMBDA(int vi) mutable {
+        //         verts.pack<3>("x",vi) = vtemp.pack<3>("xn",vi);
+        // });
+
         set_output("ZSParticles", zstets);
     }
 };

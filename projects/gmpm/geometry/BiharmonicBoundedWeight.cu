@@ -37,7 +37,6 @@ struct ZSEvalBBW : zeno::INode {
                         vtemp(tag,d,vi) = (T)0.0;
                 });
         }   
-
         // the right hand-side are all zeros;
         template<typename Pol>
         void rhs(Pol& pol,const zs::SmallString& tag,const zs::SmallString& rTag,dtiles_t& vtemp,int wdim) const {
@@ -63,7 +62,6 @@ struct ZSEvalBBW : zeno::INode {
             constexpr auto execTag = wrapv<space>{};
             const auto numVerts = verts.size();
             const auto numEles = eles.size();
-
             // b -> 0
             pol(range(numVerts),
                 [execTag,vtemp = proxy<space>({},vtemp),bTag,wdim] ZS_LAMBDA(int vi) mutable {
@@ -86,7 +84,6 @@ struct ZSEvalBBW : zeno::INode {
                             atomic_add(execTag,&vtemp(bTag,d,inds[vi]),temp[vi]);
                     }
             });
-
             // compute MLdx->b
             // the vtemp contains a nodal-volume
             pol(range(numEles),[vtemp = proxy<space>({},vtemp),bTag,wdim]

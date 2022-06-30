@@ -137,7 +137,6 @@ target_sources(zeno_zsfem PRIVATE
   fem/Fiber.cpp
   fem/Integrator.cpp
   fem/QuasiStaticStepping.cu
-  fem/BaryCentricInterpolator.cu
   fem/Codim.cu
   fem/TestAugLag.cu
   fem/FastQuasiStaticStepping.cu
@@ -168,10 +167,13 @@ add_library(zeno_geometry SHARED)
 target_sources(zeno_geometry PRIVATE
   geometry/kernel/laplace_matrix.hpp
   geometry/kernel/gradient_field.hpp
-  geometry/laplace_equation.cu
-  geometry/gradient_field.cu
-  geometry/update_zs_skinning_weight.cu
-  geometry/zs_do_skinning.cu
+  geometry/kernel/bary_centric_weights.hpp
+  geometry/SolveLaplacian.cu
+  geometry/GradientField.cu
+  geometry/SetupSkinningWeight.cu
+  geometry/Skinning.cu
+  geometry/BaryCentricInterpolator.cu
+  # geometry/BiharmonicBoundedWeight.cu
 )
 
 if (${ZS_ENABLE_CUDA})

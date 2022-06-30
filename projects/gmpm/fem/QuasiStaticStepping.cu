@@ -151,37 +151,6 @@ struct QuasiStaticStepping : INode {
 
             etemp.tuple<12 * 12>("He", ei) = H;
 
-            // if(ei == 0){
-            //     printf("F : \n%f %f %f\n%f %f %f\n%f %f %f\n",
-            //         F(0,0),F(0,1),F(0,2),
-            //         F(1,0),F(1,1),F(1,2),
-            //         F(2,0),F(2,1),F(2,2)
-            //     );
-            //     printf("ELM_H<%d>:%e %f %f\n",ei,Hq.norm(),(float)model.lam,(float)model.mu);
-            // }
-            // etemp.tuple<12 * 12>("Hec",ei) = H;
-            // etemp.tuple<12 * 12>("Hec",ei) = H
-
-                    // if(ei == 11221){
-                    //     printf("H0:\n");
-                    //     for(int i = 0;i != 12;++i)
-                    //         printf("%lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf\n",
-                    //             (double)etemp.pack<12,12>("He",ei)(i,0),
-                    //             (double)etemp.pack<12,12>("He",ei)(i,1),
-                    //             (double)etemp.pack<12,12>("He",ei)(i,2),
-                    //             (double)etemp.pack<12,12>("He",ei)(i,3),
-                    //             (double)etemp.pack<12,12>("He",ei)(i,4),
-                    //             (double)etemp.pack<12,12>("He",ei)(i,5),
-                    //             (double)etemp.pack<12,12>("He",ei)(i,6),
-                    //             (double)etemp.pack<12,12>("He",ei)(i,7),
-                    //             (double)etemp.pack<12,12>("He",ei)(i,8),
-                    //             (double)etemp.pack<12,12>("He",ei)(i,9),
-                    //             (double)etemp.pack<12,12>("He",ei)(i,10),
-                    //             (double)etemp.pack<12,12>("He",ei)(i,11)
-                    //         );
-                    // }
-
-
         });
 
 
@@ -506,15 +475,7 @@ struct QuasiStaticStepping : INode {
 
     constexpr auto space = execspace_e::cuda;
     auto cudaPol = cuda_exec();
-
-    // use the previous simulation result as initial guess
-    // cudaPol(zs::range(vtemp.size()),
-    //           [vtemp = proxy<space>({},vtemp), verts = proxy<space>({},verts)]
-    //               __device__(int i) mutable{
-    //             auto x = verts.pack<3>("x",i);
-    //             vtemp.tuple<3>("xtilde",i) = x;
-    // });
-
+    
     // use the initial guess if given
     if(verts.hasProperty("init_x")){
       cudaPol(zs::range(verts.size()),

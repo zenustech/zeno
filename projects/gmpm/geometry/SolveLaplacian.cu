@@ -393,7 +393,7 @@ ZENDEFNODE(ZSSolveLaplacian, {
                                     {
                                         {"string","tag","T"},{"float","accuracy","1e-6"}
                                     },
-                                    {"FEM"}
+                                    {"ZSGeometry"}
 });
 
 
@@ -739,7 +739,7 @@ ZENDEFNODE(ZSSolveBiHarmonicEquaOnTets, {
                                     {
                                         {"string","tag","T"}
                                     },
-                                    {"FEM"}
+                                    {"ZSGeometry"}
 });
 
 
