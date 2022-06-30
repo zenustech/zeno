@@ -16,6 +16,8 @@ struct counter_iterator : iterator_facade<counter_iterator<T>
 > {
     T counter;
 
+    counter_iterator() = default;
+
     explicit counter_iterator(T counter) : counter(std::move(counter)) {}
 
     T dereference() const {
