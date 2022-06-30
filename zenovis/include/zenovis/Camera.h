@@ -13,7 +13,7 @@ struct Camera {
     int m_nx{512}, m_ny{512};
     glm::mat4x4 m_view{1}, m_proj{1};
 
-    float m_near = 0.1f;
+    float m_near = 0.01f;
     float m_far = 20000.0f;
     float m_fov = 45.f;
     float m_focL = -1.f;

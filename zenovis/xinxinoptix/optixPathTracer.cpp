@@ -1561,8 +1561,10 @@ void set_perspective(float const *U, float const *V, float const *W, float const
         cam.up = normalize(make_float3(V[0], V[1], V[2])) * (r_fw/u_aspect) / 2;
         cam.right *= r_fw / 2;
     }else{
-        cam.up = normalize(make_float3(V[0], V[1], V[2])) * (r_fh) / 2;
-        cam.right *= (r_fh*u_aspect) / 2;
+        //cam.up = normalize(make_float3(V[0], V[1], V[2])) * (r_fh) / 2;
+        //cam.right *= (r_fh*u_aspect) / 2;
+        cam.up = normalize(make_float3(V[0], V[1], V[2])) * (r_fw/u_aspect) / 2;
+        cam.right *= r_fw / 2;
     }
 
     cam.front = normalize(make_float3(W[0], W[1], W[2]));
