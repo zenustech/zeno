@@ -17,7 +17,7 @@
 
 namespace zeno {
 
-struct ZSEvalBBW : zeno::INode {
+struct SolveBBW : zeno::INode {
     using T = float;
     using dtiles_t = zs::TileVector<T,32>;
     using tiles_t = typename ZenoParticles::particles_t;
@@ -274,15 +274,18 @@ struct ZSEvalBBW : zeno::INode {
             const VTileVec& verts,const ETileVec& eles,int wdim,
             const zs::SmallString& wtag,
             dtiles_t& vtemp,dtiles_t& etemp) {
+        using namespace zs;
+        constexpr auto space = execspace_e::cuda;
 
         pcg_with_fixed_solve(cudaPol,A,verts,eles,wdim,wtag,vtemp,etemp);
         // only enforce the positive weights
         // initialize the active_set as empty, only the lower bound constraint is needed
         cudaPol(zs::range(vtemp.size()),
-            [vtemp = proxy<space>({},vtemp),wdim] ZS_LAMBDA(int vi) mutable{
-                for(size_t d = 0;d < wdim;++d)
+            [vtemp = proxy<space>({},vtemp),wdim] ZS_LAMBDA(int vi) mutable {
+                for(int d = 0;d != wdim;++d){
                     vtemp("w_old",d,vi) = limits<T>::max();
                     vtemp("as_lx",vi) = false;
+                }
             });
 
         constexpr T solution_res = (T)1e-8;
@@ -291,12 +294,11 @@ struct ZSEvalBBW : zeno::INode {
             int new_as_lx = 0;
             // check the violations
             cudaPol(zs::range(vtemp.size()),
-                [vtemp = proxy<space>({},vtemp),wtag.wdim] ZS_LAMBDA(int vi) mutable{
+                [vtemp = proxy<space>({},vtemp),wtag,wdim] ZS_LAMBDA(int vi) mutable{
                     for(size_t d = 0;d < wdim;++d)
                         vtemp("temp",d,vi) = vtemp(wtag,d,vi) - vtemp("w_old",d,vi);
-                }
-            )
-            auto diffnorm = std::sqrt(dot(vtemp,"temp","temp"));
+            });
+            auto diffnorm = std::sqrt(dot(cudaPol,vtemp,"temp","temp"));
             if(diffnorm < solution_res)
                 break;
 
@@ -312,8 +314,6 @@ struct ZSEvalBBW : zeno::INode {
                 });
 
             pcg_with_fixed_solve(cudaPol,A,verts,eles,wdim,wtag,vtemp,etemp);
-
-
             // relieve the constrained nodes with negative lagrangian
             
 

@@ -173,7 +173,7 @@ target_sources(zeno_geometry PRIVATE
   geometry/SetupSkinningWeight.cu
   geometry/Skinning.cu
   geometry/BaryCentricInterpolator.cu
-  # geometry/BiharmonicBoundedWeight.cu
+  geometry/BiharmonicBoundedWeight.cu
 )
 
 if (${ZS_ENABLE_CUDA})
