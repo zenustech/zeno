@@ -261,6 +261,8 @@ PARAM_CONTROL UiHelper::_getControlType(const QString &type)
         return CONTROL_CURVE;
     } else if (type.startsWith("enum ")) {
         return CONTROL_ENUM;
+    } else if (type == "NumericObject") {
+        return CONTROL_FLOAT;
     } else if (type.isEmpty()) {
         return CONTROL_NONE;
     } else {
