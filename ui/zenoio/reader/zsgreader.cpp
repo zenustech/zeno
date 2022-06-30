@@ -442,6 +442,11 @@ void ZsgReader::_parseParams(const QString& id, const QString& nodeName, const r
             pAcceptor->setParamValue(id, nodeName, name, val);
         }
     } else {
+        if (nodeName == "Blackboard" && jsonParams.IsArray())
+        {
+            //deprecate by zeno-old.
+            return;
+        }
         zeno::log_warn("not object json param");
     }
 }

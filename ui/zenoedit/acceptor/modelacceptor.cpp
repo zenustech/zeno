@@ -375,6 +375,16 @@ void ModelAcceptor::setParamValue(const QString& id, const QString& nodeCls, con
 		PARAMS_INFO _params = m_currentGraph->data(idx, ROLE_PARAMS_NO_DESC).value<PARAMS_INFO>();
 		_params[name].value = var;
 		m_currentGraph->setData(idx, QVariant::fromValue(_params), ROLE_PARAMS_NO_DESC);
+
+		if (name == "_KEYS" && (
+			nodeCls == "MakeDict" ||
+			nodeCls == "ExtractDict" ||
+			nodeCls == "MakeList"))
+		{
+			//parse by socket_keys in zeno2.
+			return;
+		}
+
         zeno::log_warn("not found param name {}", name.toStdString());
     }
 }
