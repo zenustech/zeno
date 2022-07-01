@@ -14,6 +14,7 @@
 #include <zeno/types/StringObject.h>
 
 #include "kernel/laplace_matrix.hpp"
+#include "utils/pcg_with_fixed_boudary.hpp"
 
 namespace zeno {
 
@@ -55,7 +56,6 @@ struct ZSSolveLaplacian : zeno::INode {
         void prepare_preconditioner(zs::CudaExecutionPolicy &pol,const zs::SmallString& HTag,dtiles_t& etemp,const zs::SmallString& PTag,dtiles_t& vtemp) {
             using namespace zs;
             constexpr auto space = execspace_e::cuda;
-            constexpr auto execTag = wrapv<space>{};
             const auto numVerts = verts.size();
             const auto numEles = eles.size();
 
