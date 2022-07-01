@@ -7,6 +7,12 @@ namespace zeno {
 struct MakeCamera : INode {
     virtual void apply() override {
         auto camera = std::make_unique<CameraObject>();
+
+        auto fit_gate = get_param<std::string>("fit_gate");
+        if (fit_gate == "Horizontal")
+            camera->fit_gate = 1;
+        else if (fit_gate == "Vertical")
+            camera->fit_gate = 2;
         camera->pos = get_input2<vec3f>("pos");
         camera->up = get_input2<vec3f>("up");
         camera->view = get_input2<vec3f>("view");
@@ -41,7 +47,9 @@ ZENO_DEFNODE(MakeCamera)({
     {
         {"CameraObject", "camera"},
     },
-    {},
+    {
+        {"enum Horizontal Vertical", "fit_gate", "Horizontal"},
+    },
     {"scenevis"},
 });
 
@@ -75,7 +83,8 @@ ZENO_DEFNODE(MakeLight)({
     {
         {"LightObject", "light"},
     },
-    {},
+    {
+    },
     {"scenevis"},
 });
 

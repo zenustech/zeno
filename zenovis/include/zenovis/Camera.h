@@ -11,6 +11,7 @@ namespace zenovis {
 
 struct Camera {
     int m_nx{512}, m_ny{512};
+    int m_fit_gate = 1;
     glm::mat4x4 m_view{1}, m_proj{1};
 
     float m_near = 0.01f;

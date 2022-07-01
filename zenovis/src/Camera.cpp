@@ -6,6 +6,7 @@ void Camera::setCamera(zeno::CameraData const &cam) {
     this->m_focL = cam.focL;
     this->m_fw = cam.fw;
     this->m_fh = cam.fh;
+    this->m_fit_gate = cam.fit_gate;
     if (cam.nx && cam.ny) {
         this->m_nx = cam.nx;
         this->m_ny = cam.ny;
@@ -28,10 +29,10 @@ void Camera::placeCamera(glm::vec3 pos, glm::vec3 front, glm::vec3 up, float fov
         float c_aspect = m_fw/m_fh;
         float u_aspect = getAspect();
         printf("cam nx %d ny %d fw %f fh %f aspect %f %f\n", m_nx, m_ny, m_fw, m_fh, u_aspect, c_aspect);
-        if(u_aspect > c_aspect){
+        if(this->m_fit_gate == 1){
             c_fov = 2.0f * std::atan(m_fh/(u_aspect/c_aspect) / (2.0f * m_focL) ) * (180.0f / M_PI);
-        }else{
-            c_fov = 2.0f * std::atan(m_fh / (2.0f * m_focL) ) * (180.0f / M_PI);
+        }else if(this->m_fit_gate == 2){
+            c_fov = 2.0f * std::atan(m_fw/c_aspect / (2.0f * m_focL) ) * (180.0f / M_PI);
         }
     }
 

@@ -9,6 +9,7 @@ struct CameraData {
     vec3f pos{0, 0, 1};
     vec3f up{0, 1, 0};
     vec3f view{0, 0, -1};
+    int fit_gate = 1;  // 1 Horizontal 2 Vertical
     float fov{45.f};
     float focL{-1.f};
     float fnear{0.001f};
