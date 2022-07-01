@@ -153,56 +153,6 @@ retrieve_bounding_volumes(zs::CudaExecutionPolicy &pol, const TileVecT0 &verts,
   return ret;
 }
 
-template <typename VecT>
-constexpr bool
-ptaccd(VecT p, VecT t0, VecT t1, VecT t2, VecT dp, VecT dt0, VecT dt1, VecT dt2,
-       typename VecT::value_type eta, typename VecT::value_type thickness,
-       typename VecT::value_type &toc, typename VecT::value_type tStart = 0) {
-  using T = typename VecT::value_type;
-  auto mov = (dt0 + dt1 + dt2 + dp) / 4;
-  dt0 -= mov;
-  dt1 -= mov;
-  dt2 -= mov;
-  dp -= mov;
-  T dispMag2Vec[3] = {dt0.l2NormSqr(), dt1.l2NormSqr(), dt2.l2NormSqr()};
-  T tmp = zs::limits<T>::lowest();
-  for (int i = 0; i != 3; ++i)
-    if (dispMag2Vec[i] > tmp)
-      tmp = dispMag2Vec[i];
-  T maxDispMag = dp.norm() + zs::sqrt(tmp);
-  if (maxDispMag == 0)
-    return false;
-
-  T dist2_cur = dist2_pt_unclassified(p, t0, t1, t2);
-  T dist_cur = zs::sqrt(dist2_cur);
-  T gap = eta * (dist2_cur - thickness * thickness) / (dist_cur + thickness);
-  T toc_prev = toc;
-  toc = tStart;
-  while (true) {
-    T tocLowerBound = (1 - eta) * (dist2_cur - thickness * thickness) /
-                      ((dist_cur + thickness) * maxDispMag);
-    if (tocLowerBound < 0)
-      printf("damn pt!\n");
-
-    p += tocLowerBound * dp;
-    t0 += tocLowerBound * dt0;
-    t1 += tocLowerBound * dt1;
-    t2 += tocLowerBound * dt2;
-    dist2_cur = dist2_pt_unclassified(p, t0, t1, t2);
-    dist_cur = zs::sqrt(dist2_cur);
-    if (toc &&
-        ((dist2_cur - thickness * thickness) / (dist_cur + thickness) < gap))
-      break;
-
-    toc += tocLowerBound;
-    if (toc > toc_prev) {
-      toc = toc_prev;
-      return false;
-    }
-  }
-  return true;
-}
-
 template <typename VecT,
           zs::enable_if_all<VecT::dim == 1, VecT::extent == 3> = 0>
 constexpr auto solve_quadratic(const zs::VecInterface<VecT> &c,
@@ -385,78 +335,6 @@ constexpr bool pt_ccd(VecT p, VecT t0, VecT t1, VecT t2, VecT dp, VecT dt0,
     }
   }
   return false;
-}
-template <typename VecT>
-constexpr bool
-eeaccd(VecT ea0, VecT ea1, VecT eb0, VecT eb1, VecT dea0, VecT dea1, VecT deb0,
-       VecT deb1, typename VecT::value_type eta,
-       typename VecT::value_type thickness, typename VecT::value_type &toc) {
-  using T = typename VecT::value_type;
-  auto mov = (dea0 + dea1 + deb0 + deb1) / 4;
-  dea0 -= mov;
-  dea1 -= mov;
-  deb0 -= mov;
-  deb1 -= mov;
-  T maxDispMag = zs::sqrt(zs::max(dea0.l2NormSqr(), dea1.l2NormSqr())) +
-                 zs::sqrt(zs::max(deb0.l2NormSqr(), deb1.l2NormSqr()));
-  if (maxDispMag == 0)
-    return false;
-
-  T dist2_cur = dist2_ee_unclassified(ea0, ea1, eb0, eb1);
-  T dFunc = dist2_cur - thickness * thickness;
-  if (dFunc <= 0) {
-    // since we ensured other place that all dist smaller than dHat are
-    // positive, this must be some far away nearly parallel edges
-    T dists[] = {(ea0 - eb0).l2NormSqr(), (ea0 - eb1).l2NormSqr(),
-                 (ea1 - eb0).l2NormSqr(), (ea1 - eb1).l2NormSqr()};
-    {
-      dist2_cur = zs::limits<T>::max();
-      for (const auto &dist : dists)
-        if (dist < dist2_cur)
-          dist2_cur = dist;
-      // dist2_cur = *std::min_element(dists.begin(), dists.end());
-    }
-    dFunc = dist2_cur - thickness * thickness;
-  }
-  T dist_cur = zs::sqrt(dist2_cur);
-  T gap = eta * dFunc / (dist_cur + thickness);
-  T toc_prev = toc;
-  toc = 0;
-  while (true) {
-    T tocLowerBound = (1 - eta) * dFunc / ((dist_cur + thickness) * maxDispMag);
-    if (tocLowerBound < 0)
-      printf("damn ee!\n");
-
-    ea0 += tocLowerBound * dea0;
-    ea1 += tocLowerBound * dea1;
-    eb0 += tocLowerBound * deb0;
-    eb1 += tocLowerBound * deb1;
-    dist2_cur = dist2_ee_unclassified(ea0, ea1, eb0, eb1);
-    dFunc = dist2_cur - thickness * thickness;
-    if (dFunc <= 0) {
-      // since we ensured other place that all dist smaller than dHat are
-      // positive, this must be some far away nearly parallel edges
-      T dists[] = {(ea0 - eb0).l2NormSqr(), (ea0 - eb1).l2NormSqr(),
-                   (ea1 - eb0).l2NormSqr(), (ea1 - eb1).l2NormSqr()};
-      {
-        dist2_cur = zs::limits<T>::max();
-        for (const auto &dist : dists)
-          if (dist < dist2_cur)
-            dist2_cur = dist;
-      }
-      dFunc = dist2_cur - thickness * thickness;
-    }
-    dist_cur = zs::sqrt(dist2_cur);
-    if (toc && (dFunc / (dist_cur + thickness) < gap))
-      break;
-
-    toc += tocLowerBound;
-    if (toc > toc_prev) {
-      toc = toc_prev;
-      return false;
-    }
-  }
-  return true;
 }
 template <typename VecT>
 constexpr bool ee_ccd(VecT ea0, VecT ea1, VecT eb0, VecT eb1, VecT dea0,
@@ -1328,7 +1206,7 @@ struct CodimStepping : INode {
             auto dt2 = vtemp.template pack<3>("dir", ids[3]);
             T tmp = stepSize;
 #if 1
-            if (ptaccd(p, t0, t1, t2, dp, dt0, dt1, dt2, (T)0.1, xi, tmp))
+            if (accd::ptccd(p, t0, t1, t2, dp, dt0, dt1, dt2, (T)0.1, xi, tmp))
 #elif 1
             if (ticcd::ptccd(p, t0, t1, t2, dp, dt0, dt1, dt2, (T)0.1, xi, tmp))
 #else
@@ -1337,29 +1215,30 @@ struct CodimStepping : INode {
               atomic_min(exec_cuda, &alpha[0], tmp);
           });
       auto nee = ncsEE.getVal();
-      pol(range(nee), [csEE = proxy<space>(csEE),
-                       vtemp = proxy<space>({}, vtemp),
-                       alpha = proxy<space>(alpha), stepSize, xi,
-                       coOffset = (int)coOffset] __device__(int eei) {
-        auto ids = csEE[eei];
-        auto ea0 = vtemp.template pack<3>("xn", ids[0]);
-        auto ea1 = vtemp.template pack<3>("xn", ids[1]);
-        auto eb0 = vtemp.template pack<3>("xn", ids[2]);
-        auto eb1 = vtemp.template pack<3>("xn", ids[3]);
-        auto dea0 = vtemp.template pack<3>("dir", ids[0]);
-        auto dea1 = vtemp.template pack<3>("dir", ids[1]);
-        auto deb0 = vtemp.template pack<3>("dir", ids[2]);
-        auto deb1 = vtemp.template pack<3>("dir", ids[3]);
-        auto tmp = stepSize;
+      pol(range(nee),
+          [csEE = proxy<space>(csEE), vtemp = proxy<space>({}, vtemp),
+           alpha = proxy<space>(alpha), stepSize, xi,
+           coOffset = (int)coOffset] __device__(int eei) {
+            auto ids = csEE[eei];
+            auto ea0 = vtemp.template pack<3>("xn", ids[0]);
+            auto ea1 = vtemp.template pack<3>("xn", ids[1]);
+            auto eb0 = vtemp.template pack<3>("xn", ids[2]);
+            auto eb1 = vtemp.template pack<3>("xn", ids[3]);
+            auto dea0 = vtemp.template pack<3>("dir", ids[0]);
+            auto dea1 = vtemp.template pack<3>("dir", ids[1]);
+            auto deb0 = vtemp.template pack<3>("dir", ids[2]);
+            auto deb1 = vtemp.template pack<3>("dir", ids[3]);
+            auto tmp = stepSize;
 #if 1
-        if (eeaccd(ea0, ea1, eb0, eb1, dea0, dea1, deb0, deb1, (T)0.1, xi, tmp))
+            if (accd::eeccd(ea0, ea1, eb0, eb1, dea0, dea1, deb0, deb1, (T)0.1,
+                            xi, tmp))
 #elif 1
             if (ticcd::eeccd(ea0, ea1, eb0, eb1, dea0, dea1, deb0, deb1, (T)0.1, xi, tmp))
 #else
             if (ee_ccd(ea0, ea1, eb0, eb1, dea0, dea1, deb0, deb1, xi, tmp))
 #endif
-          atomic_min(exec_cuda, &alpha[0], tmp);
-      });
+              atomic_min(exec_cuda, &alpha[0], tmp);
+          });
       stepSize = alpha.getVal();
     }
     void groundIntersectionFreeStepsize(zs::CudaExecutionPolicy &pol,
