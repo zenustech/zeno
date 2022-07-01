@@ -76,7 +76,7 @@ void set_perspective(
   std::memcpy(glm::value_ptr(view), viewArr.data(), viewArr.size());
   std::memcpy(glm::value_ptr(proj), projArr.data(), projArr.size());
 }
-float g_fw, g_fh, g_focl;
+float g_fw, g_fh, g_focl, g_fit_gate;
 float g_near, g_far, g_fov;
 glm::mat4 g_view, g_proj;
 glm::vec3 g_camPos, g_camView, g_camUp;
@@ -92,7 +92,7 @@ void clearCameraControl()
   g_far = 20000;
   g_proj = proj;
 }
-extern void setCamera(glm::vec3 pos, glm::vec3 front, glm::vec3 up, double _fov, double fw, double fh, double focl, double fnear, double ffar, double _dof, int set)
+extern void setCamera(glm::vec3 pos, glm::vec3 front, glm::vec3 up, double _fov, double fw, double fh, double focl, int fit_gate, double fnear, double ffar, double _dof, int set)
 {
   front = glm::normalize(front);
   up = glm::normalize(up);
@@ -111,6 +111,7 @@ extern void setCamera(glm::vec3 pos, glm::vec3 front, glm::vec3 up, double _fov,
   g_fw = fw;
   g_fh = fh;
   g_focl = focl;
+  g_fit_gate = fit_gate;
 }
 void look_perspective(
     double cx, double cy, double cz,
@@ -417,16 +418,16 @@ void voxelizePass()
   proj = backup_proj;
   b_requireVoxelize = false;
 }
-glm::mat4 MakeInfReversedZProjRH(float fovY_radians, float fw, float fh, float focl, float aspectWbyH, float zNear)
+glm::mat4 MakeInfReversedZProjRH(float fovY_radians, float fw, float fh, float focl, int fit_gate, float aspectWbyH, float zNear)
 {
 
     float c_aspect = fw/fh;
     float u_aspect = aspectWbyH;
     float c_fov;
-    if(u_aspect > c_aspect){
+    if(fit_gate == 1){
         c_fov = 2.0f * std::atan(fh/(u_aspect/c_aspect) / (2.0f * focl) );
-    }else{
-        c_fov = 2.0f * std::atan(fh / (2.0f * focl) );
+    }else if(fit_gate == 2){
+        c_fov = 2.0f * std::atan(fw/c_aspect / (2.0f * focl) );
     }
     //std::cout << "aaaaa " << fw << " " << fh << " " << c_aspect << " " << u_aspect << " " << focl <<
     //    " - " << c_fov << " " << fovY_radians << std::endl;
@@ -473,7 +474,7 @@ static void drawSceneDepthSafe(float aspRatio, float sampleweight, bool reflect,
       glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE);
       glEnable(GL_DEPTH_TEST);
       glDepthFunc(GL_GEQUAL);
-      proj = MakeInfReversedZProjRH(glm::radians(g_fov), g_fw, g_fh, g_focl, aspRatio, 0.01f);
+      proj = MakeInfReversedZProjRH(glm::radians(g_fov), g_fw, g_fh, g_focl, g_fit_gate, aspRatio, 0.01f);
       for (auto const &[key, gra]: current_frame_data()->graphics) {
         gra->setMultiSampleWeight(sampleweight);
         gra->draw(reflect, isDepthPass);
