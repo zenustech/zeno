@@ -2,6 +2,15 @@
 
 #include <memory>
 #include <zeno/core/IObject.h>
+#include <zeno/types/IObjectXMacro.h>
+
+
+namespace zeno {
+#define _ZENO_PER_XMACRO(TypeName, ...) \
+struct TypeName;
+ZENO_XMACRO_IObject(_ZENO_PER_XMACRO)
+#undef _ZENO_PER_XMACRO
+}
 
 namespace zenovis {
 
@@ -17,12 +26,12 @@ struct IGraphicDraw : IGraphic {
     virtual void draw() = 0;
 };
 
-struct MakeGraphicVisitor : zeno::IObjectVisitor {
+struct MakeGraphicVisitor {
     Scene *in_scene{};
     std::unique_ptr<IGraphic> out_result;
 
 #define _ZENO_PER_XMACRO(TypeName, ...) \
-    virtual void visit(zeno::TypeName *object) override;
+    void visit(zeno::TypeName *object);
 ZENO_XMACRO_IObject(_ZENO_PER_XMACRO)
 #undef _ZENO_PER_XMACRO
 };

@@ -9,7 +9,15 @@ namespace zenovis {
 std::unique_ptr<IGraphic> makeGraphic(Scene *scene, zeno::IObject *obj) {
     MakeGraphicVisitor visitor;
     visitor.in_scene = scene;
-    obj->accept(&visitor);
+
+    if (0) {
+#define _ZENO_PER_XMACRO(TypeName, ...) \
+    } else if (auto p = dynamic_cast<zeno::TypeName *>(obj)) { \
+        visitor.visit(p); \
+ZENO_XMACRO_IObject(_ZENO_PER_XMACRO)
+#undef _ZENO_PER_XMACRO
+    }
+
     auto res = std::move(visitor.out_result);
 
     if (!res)
