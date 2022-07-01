@@ -14,6 +14,10 @@ using AttrAcceptAll = std::variant
     , float
     , vec3i
     , int
+    , vec2f
+    , vec2i
+    , vec4f
+    , vec4i
     >;
 
 using AttrVectorVariant = std::variant
@@ -21,6 +25,10 @@ using AttrVectorVariant = std::variant
     , std::vector<float>
     , std::vector<vec3i>
     , std::vector<int>
+    , std::vector<vec2f>
+    , std::vector<vec2i>
+    , std::vector<vec4f>
+    , std::vector<vec4i>
     >;
 
 
@@ -205,11 +213,12 @@ struct AttrVector {
         }
     }
 
+    /*
 #ifdef ZENO_PARALLEL_STL
     template <class Accept = std::variant<vec3f, float>, class F, class Pol>
     void foreach_attr(Pol pol, F &&f) const {
         std::for_each(pol, attrs.begin(), attrs.end(), [&] (auto &kv) {
-            auto &[key, arr] = kv;
+            auto const &[key, arr] = kv;
             auto &k = key;
             std::visit([&] (auto &arr) {
                 using T = std::decay_t<decltype(arr[0])>;
@@ -239,8 +248,8 @@ struct AttrVector {
         const std::string kpos = "pos";
         f(kpos, values);
         std::for_each(pol, attrs.begin(), attrs.end(), [&] (auto &kv) {
-            auto &[key, arr] = kv;
-            auto &k = key;
+            auto const &[key, arr] = kv;
+            auto const &k = key;
             std::visit([&] (auto &arr) {
                 using T = std::decay_t<decltype(arr[0])>;
                 if constexpr (variant_contains<T, Accept>::value) {
@@ -266,6 +275,7 @@ struct AttrVector {
         });
     }
 #endif
+    */
 
     template <class Accept = std::variant<vec3f, float>>
     size_t num_attrs() const {

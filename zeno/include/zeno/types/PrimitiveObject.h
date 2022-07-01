@@ -24,7 +24,7 @@ struct PrimitiveObject : IObjectClone<PrimitiveObject> {
     AttrVector<vec4i> quads;
 
     AttrVector<int> loops;
-    AttrVector<std::pair<int, int>> polys;
+    AttrVector<vec2i> polys;
 
     AttrVector<int> loop_uvs;
     AttrVector<vec2f> uvs;
