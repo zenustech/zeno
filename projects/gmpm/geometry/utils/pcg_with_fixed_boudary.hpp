@@ -6,13 +6,13 @@ namespace zeno {
     // the interface the equation should have:
     using T = float;
 
-    template<int space_dim ,typename Pol,typename VTileVec,typename ETileVec>
+    template<int space_dim ,typename Pol,typename VTileVec>
     T dot(Pol &pol, VTileVec &vtemp,const zs::SmallString tag0, const zs::SmallString tag1) {
         using namespace zs;
         constexpr auto space = execspace_e::cuda;
         Vector<T> res{vtemp.get_allocator(), 1};
         res.setVal(0);
-        cudaPol(range(vtemp.size()),
+        pol(range(vtemp.size()),
                 [data = proxy<space>({}, vtemp), res = proxy<space>(res), tag0,tag1] __device__(int pi) mutable {
                     auto v0 = data.template pack<space_dim>(tag0,pi);
                     auto v1 = data.template pack<space_dim>(tag1,pi);
@@ -37,18 +37,18 @@ namespace zeno {
                     inds_tag,H_tag,x_tag,y_tag] __device__(int ei) mutable {    
                 constexpr int hessian_width = space_dim * simplex_dim;
                 auto inds = etemp.template pack<simplex_dim>(inds_tag,ei).template reinterpret_bits<int>();
-
                 zs::vec<T,hessian_width> temp{};
+
                 for(int i = 0;i != simplex_dim;++i)
                     for(int j = 0;j != space_dim;++j)
-                        temp[i * 3 + j] = vtemp(x_tag,inds[i]*3 + j);
+                        temp[i * space_dim + j] = vtemp(x_tag,j,inds[i]);
 
                 auto He = etemp.template pack<hessian_width,hessian_width>(H_tag,ei);
                 temp = He * temp;
 
                 for(int i = 0;i != simplex_dim;++i)
                     for(int j = 0;j != space_dim;++j)
-                        atomic_add(execTag,&vtemp(y_tag,inds[i]*3 + j),temp[i*3 + j]);
+                        atomic_add(execTag,&vtemp(y_tag,j,inds[i]),temp[i*space_dim + j]);
         });
     }
 
@@ -57,7 +57,7 @@ namespace zeno {
             const zs::SmallString& dst_tag){
         using namespace zs;
         constexpr auto space = execspace_e::cuda;
-        Pol(zs::range(vtemp.size()),
+        pol(zs::range(vtemp.size()),
             [vtemp = proxy<space>({},vtemp),src_tag,dst_tag,P_tag] __device__(int vi) {
                 vtemp.template tuple<space_dim>(dst_tag,vi) = vtemp.template pack<space_dim,space_dim>(P_tag,vi) * vtemp.template pack<space_dim>(src_tag,vi);
         });
@@ -78,7 +78,7 @@ namespace zeno {
     void copy(Pol& pol,const SrcTileVec& src,const zs::SmallString& src_tag,DstTileVec& dst,const zs::SmallString& dst_tag) {
         using namespace zs;
         constexpr auto space = execspace_e::cuda;
-        Pol(zs::range(src.size()),
+        pol(zs::range(src.size()),
             [src = proxy<space>({},src),src_tag,dst = proxy<space>({},dst),dst_tag] __device__(int vi) {
                 dst.template tuple<width>(dst_tag,vi) = src.template pack<width>(src_tag,vi);
         });
@@ -95,7 +95,7 @@ namespace zeno {
     }
 
     // initialize the boundary values and tags, hessian, rhs and block diagonal preconditioner before apply this function
-    template<typename Pol,typename VTileVec,typename ETileVec,int space_dim = 3,int simplex_dim = 4>
+    template<int space_dim,int simplex_dim,typename Pol,typename VTileVec,typename ETileVec>
     int pcg_with_fixed_sol_solve(
         Pol& pol,
         VTileVec& vert_buffer,
@@ -106,7 +106,6 @@ namespace zeno {
         const zs::SmallString& Ptag,
         const zs::SmallString& inds_tag,
         const zs::SmallString& Htag,
-        T accuracy,
         T rel_accuracy,
         int max_iters,
         int recal_iter = 50
@@ -119,7 +118,7 @@ namespace zeno {
         constexpr auto space = execspace_e::cuda;
         auto cudaPol = cuda_exec();
 
-        VTileVec vtemp{vert_buffer.get_allocator(),
+        VTileVec vtemp{vert_buffer.get_allocator(),{
             {"x",space_dim},
             {"btag",1},
             {"b",space_dim},
@@ -127,34 +126,50 @@ namespace zeno {
             {"P",space_dim * space_dim},
             {"temp",space_dim},
             {"p",space_dim},
-            {"q",space_dim}
-        };
+            {"q",space_dim},
+        },vert_buffer.size()};
         vtemp.resize(vert_buffer.size());
+
+        fmt::print("check point 0\n");
+
         copy<space_dim>(pol,vert_buffer,xtag,vtemp,"x");
         copy<1>(pol,vert_buffer,bou_tag,vtemp,"btag");
         copy<space_dim>(pol,vert_buffer,btag,vtemp,"b");
         copy<space_dim*space_dim>(pol,vert_buffer,Ptag,vtemp,"P");
-
-        ETileVec etemp{elm_buffer.get_allocator(),
+        fmt::print("check point 1\n");
+        ETileVec etemp{elm_buffer.get_allocator(),{
             {"inds",simplex_dim},
             {"H",simplex_dim*space_dim*simplex_dim*space_dim}
-        };
+        },elm_buffer.size()};
         etemp.resize(elm_buffer.size());
         copy<simplex_dim>(pol,elm_buffer,inds_tag,etemp,"inds");
-        copy<space_dim * simplex_dim * space_dim * simplex_dim>(pol,elm_buffer,Htag,etemp,"H");
 
-        multiply<space_dim,simplex_dim>(pol,vtemp,etemp,"H","x","temp");
+        fmt::print("check point 2\n");
+        copy<space_dim * simplex_dim * space_dim * simplex_dim>(pol,elm_buffer,Htag,etemp,"H");
+        fmt::print("check point 3\n");
+
+
+        multiply<space_dim,simplex_dim>(pol,vtemp,etemp,"H","inds","x","temp");
+
+
+        fmt::print("check point 4\n");
         // compute initial residual : b - Hx -> r
         add<space_dim>(pol,vtemp,"b",(T)1.0,"temp",(T)(-1.0),"r");
         project<space_dim>(pol,vtemp,"r","btag");
+
+
+        fmt::print("check point 5\n");
         // P * r -> q
         precondition<space_dim>(pol,vtemp,"P","r","q");
         // q -> p
         copy<space_dim>(pol,vtemp,"q",vtemp,"p");
         
+
+
         T zTrk = dot<space_dim>(pol,vtemp,"r","q");
         T residualPreconditionedNorm = std::sqrt(zTrk);
-        T localTol = accuracy * residualPreconditionedNorm;
+        T localTol = rel_accuracy * residualPreconditionedNorm;
+        fmt::print("initial residual : {}\t{}\n",residualPreconditionedNorm,zTrk);
 
         int iter = 0;
         for(;iter != max_iters;++iter){
@@ -163,7 +178,7 @@ namespace zeno {
             if(residualPreconditionedNorm < localTol)
                 break;
             // H * p -> tmp
-            multiply<space_dim,simplex_dim>(pol,vtemp,etemp,"H","p","temp");
+            multiply<space_dim,simplex_dim>(pol,vtemp,etemp,"H","inds","p","temp");
             project<space_dim>(pol,vtemp,"temp","btag");
             // alpha = zTrk / (pHp)
             T alpha = zTrk / dot<space_dim>(pol,vtemp,"temp","p");
@@ -174,7 +189,7 @@ namespace zeno {
             // recalculate the residual to fix floating point error accumulation
             if(iter % (recal_iter + 1) == recal_iter){
                 // r = b - Hx
-                multiply<space_dim,simplex_dim>(pol,vtemp,etemp,"H","x","temp");
+                multiply<space_dim,simplex_dim>(pol,vtemp,etemp,"H","inds","x","temp");
                 add<space_dim>(pol,vtemp,"b",(T)1.0,"temp",(T)(-1.0),"r");
                 project<space_dim>(pol,vtemp,"r","btag");
             }
@@ -190,5 +205,7 @@ namespace zeno {
             ++iter;
         }
         copy<space_dim>(pol,vtemp,"x",vert_buffer,xtag);
+
+        return iter;
     }
 };

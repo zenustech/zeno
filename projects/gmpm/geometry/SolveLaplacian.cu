@@ -191,10 +191,11 @@ struct ZSSolveLaplacian : zeno::INode {
             throw std::runtime_error("ZSSolveLaplaceEquaOnTets: invalid simplex size");
         }
 
-        dtiles_t etemp{eles.get_allocator(),{{"L",cdim*cdim}},eles.size()};
+        dtiles_t etemp{eles.get_allocator(),{{"L",cdim*cdim},{"inds",cdim}},eles.size()};
         dtiles_t vtemp{verts.get_allocator(),{
             {"x",1},
             {"b",1},
+            {"btag",1},
             {"P",1},
             {"temp",1},
             {"r",1},
@@ -214,6 +215,14 @@ struct ZSSolveLaplacian : zeno::INode {
             compute_cotmatrix(cudaPol,eles,verts,"x",etemp,"L",zs::wrapv<4>{});
         else
             compute_cotmatrix(cudaPol,eles,verts,"x",etemp,"L",zs::wrapv<3>{});
+        cudaPol(range(etemp.size()),
+            [etemp = proxy<space>({},etemp),eles = proxy<space>({},eles),cdim] ZS_LAMBDA(int ei) mutable {
+                if(cdim == 3)
+                    etemp.tuple<3>("inds",ei) = eles.pack<3>("inds",ei);
+                if(cdim == 4)
+                    etemp.tuple<4>("inds",ei) = eles.pack<4>("inds",ei);
+        });
+
         fmt::print("FINISH COMPUTE COTMATRIX\n");
         // compute the residual
         LaplaceSystem A{verts,eles};
@@ -228,155 +237,17 @@ struct ZSSolveLaplacian : zeno::INode {
         cudaPol(zs::range(vtemp.size()),
             [vtemp = proxy<space>({},vtemp),verts = proxy<space>({},verts),tag = zs::SmallString(attr)] ZS_LAMBDA(int vi) mutable {
                 vtemp("x",vi) = verts(tag,vi);
+                vtemp("btag",vi) = verts("btag",vi);
+                vtemp("b",vi) = (T)0.0;
             }
         );
 
-        // if(cdim == 3){
-        //     cudaPol(zs::range(etemp.size()),
-        //         [etemp = proxy<space>({},etemp)] ZS_LAMBDA(int ei) mutable {
-        //             auto L = etemp.pack<3,3>("L",ei);
-        //             T Ln = L.norm();
-        //             if(isnan(Ln)){
-        //                 printf("NAN LN<%d> : \n%f %f %f\n%f %f %f\n%f %f %f\n",ei,
-        //                     (float)L(0,0),(float)L(0,1),(float)L(0,2),
-        //                     (float)L(1,0),(float)L(1,1),(float)L(1,2),
-        //                     (float)L(2,0),(float)L(2,1),(float)L(2,2));
-        //             }
-        //         });
-
-        //     auto Ln = dot<9>(cudaPol,vtemp,"P","P");
-        //     auto Pn = dot(cudaPol,vtemp,"P","P");
-
-        //     fmt::print("Ln : {}\t Pn : {}\n",Ln,Pn);
-        // }
-
         // Solve Laplace Equation Using PCG
-        {
-            // set the initial guess of the solution subject to boundary condition
-            // eval the right hand side
-            A.rhs(cudaPol,"x","b",vtemp);
-            if(cdim == 4)
-                A.multiply<4>(cudaPol,"x","temp",vtemp,etemp);
-            else
-                A.multiply<3>(cudaPol,"x","temp",vtemp,etemp);
-
-            cudaPol(zs::range(vtemp.size()),
-                [vtemp = proxy<space>({},vtemp)] ZS_LAMBDA(int vi) mutable {
-                    vtemp("r",vi) = vtemp("b",vi) - vtemp("temp",vi);
-                });
-
-            A.project(cudaPol,"btag",verts,"r",vtemp);
-            A.precondition(cudaPol,"r","q",vtemp);
-
-            cudaPol(zs::range(vtemp.size()),
-                [vtemp = proxy<space>({},vtemp)] ZS_LAMBDA(int vi) mutable {
-                    vtemp("p",vi) = vtemp("q",vi);
-            });
-
-            T zTrk = dot(cudaPol,vtemp,"r","q");
-            if(std::isnan(zTrk)){
-                T rn = std::sqrt(dot(cudaPol,vtemp,"r","r"));
-                T qn = std::sqrt(dot(cudaPol,vtemp,"q","q"));
-                T gn = std::sqrt(dot(cudaPol,vtemp,"grad","grad"));
-                T Pn = std::sqrt(dot<9>(cudaPol,vtemp,"P","P"));
-
-                fmt::print("NAN zTrk Detected r: {} q: {}, gn:{} Pn:{}\n",rn,qn,gn,Pn);
-                throw std::runtime_error("NAN zTrk");
-            }
-            if(zTrk < 0){
-                T rn = std::sqrt(dot(cudaPol,vtemp,"r","r"));
-                T qn = std::sqrt(dot(cudaPol,vtemp,"q","q"));
-                fmt::print("\t#Begin invalid zTrk found  with zTrk {} and b{} and r {} and q {}\n",
-                    zTrk, infNorm(cudaPol, vtemp, "b"),rn,qn);
-
-                fmt::print("FOUND NON_SPD P\n");
-                cudaPol(zs::range(vtemp.size()),
-                    [vtemp = proxy<space>({},vtemp)] ZS_LAMBDA(int vi){
-                        auto P = vtemp("P",vi);
-                        if(P < 0) 
-                            printf("NON_SPD_P<%d> %f\n",vi,(float)P);
-                    });
-                throw std::runtime_error("INVALID zTrk");
-            }
-
-            auto residualPreconditionedNorm = std::sqrt(zTrk);
-            // auto localTol = std::min(0.5 * residualPreconditionedNorm, 1.0);
-            auto localTol = accuracy * residualPreconditionedNorm;
-            // if(newtonIter < 10)
-            //     localTol = 0.5 * residualPreconditionedNorm;
-            int iter = 0;            
-            for (; iter != 1000; ++iter) {
-                // if (iter % 50 == 0){
-                //     // recalculate the residual every 50 iterations
-                //     fmt::print("cg iter: {}, norm: {} zTrk: {} localTol: {}\n", iter,
-                //                 residualPreconditionedNorm,zTrk,localTol);
-                // }
-                if(zTrk < 0){
-                    T rn = std::sqrt(dot(cudaPol,vtemp,"r","r"));
-                    T qn = std::sqrt(dot(cudaPol,vtemp,"q","q"));
-                    fmt::print("\t# invalid zTrk found in {} iters with zTrk {} and r {} and q {}\n",
-                        iter, zTrk,rn,qn);
-
-                    fmt::print("FOUND NON_SPD P\n");
-                    cudaPol(zs::range(vtemp.size()),
-                        [vtemp = proxy<space>({},vtemp)] ZS_LAMBDA(int vi){
-                            auto P = vtemp("P",vi);
-                            if(P < 0) 
-                                printf("NON_SPD_P<%d> %f\n",vi,(float)P);
-                        });
-                    throw std::runtime_error("INVALID zTrk");
-                }
-
-                if (residualPreconditionedNorm <= localTol){ // this termination criterion is dimensionless
-                    fmt::print("finish with cg iter: {}, norm: {} zTrk: {}\n",iter,
-                                residualPreconditionedNorm,zTrk);
-                    break;
-                }
-                if(cdim == 4)
-                    A.multiply<4>(cudaPol, "p", "temp",vtemp,etemp);
-                else
-                    A.multiply<3>(cudaPol, "p", "temp",vtemp,etemp);
-                A.project(cudaPol,"btag",verts, "temp",vtemp);
-
-                T alpha = zTrk / dot(cudaPol, vtemp, "temp", "p");
-
-                cudaPol(range(verts.size()), [verts = proxy<space>({}, verts),
-                                    vtemp = proxy<space>({}, vtemp),
-                                    alpha] ZS_LAMBDA(int vi) mutable {
-                    vtemp("x", vi) += alpha * vtemp("p", vi);
-                    vtemp("r", vi) -= alpha * vtemp("temp", vi);
-                });
-                // recalcute the residual every 50 iterations
-                if(iter % 51 == 50){
-                    A.rhs(cudaPol,"x","b",vtemp);
-                    if(cdim == 4)
-                        A.multiply<4>(cudaPol,"x","temp",vtemp,etemp);
-                    else
-                        A.multiply<3>(cudaPol,"x","temp",vtemp,etemp);
-                    cudaPol(zs::range(vtemp.size()),
-                        [vtemp = proxy<space>({},vtemp)] ZS_LAMBDA(int vi) mutable {
-                            vtemp("r",vi) = vtemp("b",vi) - vtemp("temp",vi);
-                        });
-                    A.project(cudaPol,"btag",verts,"r",vtemp);
-                }             
-                A.precondition(cudaPol, "r", "q",vtemp);
-                A.project(cudaPol,"btag",verts,"q",vtemp);
-                auto zTrkLast = zTrk;
-                zTrk = dot(cudaPol, vtemp, "q", "r");
-                if (iter % 50 == 0){
-                    fmt::print("cg iter: {}, norm: {} zTrk: {} localTol: {}\n", iter,
-                                residualPreconditionedNorm,zTrk,localTol);
-                }
-
-                auto beta = zTrk / zTrkLast;
-                cudaPol(range(verts.size()), [vtemp = proxy<space>({}, vtemp),beta] ZS_LAMBDA(int vi) mutable {
-                    vtemp("p", vi) = vtemp("q", vi) + beta * vtemp("p", vi);
-                });
-                residualPreconditionedNorm = std::sqrt(zTrk);
-                ++iter;
-            }
-            fmt::print("FINISH SOLVING PCG with cg_iter = {}\n",iter);  
-        }// end cg step
+        int iter = 0;
+        if(cdim == 3)
+            iter = pcg_with_fixed_sol_solve<1,3>(cudaPol,vtemp,etemp,"x","btag","b","P","inds","L",accuracy,1000,100);
+        else if(cdim == 4)
+            iter = pcg_with_fixed_sol_solve<1,4>(cudaPol,vtemp,etemp,"x","btag","b","P","inds","L",accuracy,1000,100);
 
         cudaPol(zs::range(verts.size()),
                 [vtemp = proxy<space>({},vtemp),verts = proxy<space>({},verts),tag = zs::SmallString(attr)] ZS_LAMBDA(int vi) mutable {
