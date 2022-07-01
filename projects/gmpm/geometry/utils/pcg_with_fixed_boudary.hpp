@@ -53,8 +53,8 @@ namespace zeno {
     }
 
     template<int space_dim,typename Pol,typename VTileVec>
-    void precondition(Pol& pol,VTileVec& vtemp,const zs::SmallString& src_tag,
-            const zs::SmallString& dst_tag,const zs::SmallString& P_tag){
+    void precondition(Pol& pol,VTileVec& vtemp,const zs::SmallString& P_tag,const zs::SmallString& src_tag,
+            const zs::SmallString& dst_tag){
         using namespace zs;
         constexpr auto space = execspace_e::cuda;
         Pol(zs::range(vtemp.size()),
@@ -94,7 +94,7 @@ namespace zeno {
         });
     }
 
-    // initialize the boundary values, hessian, rhs and block diagonal preconditioner before apply this function
+    // initialize the boundary values and tags, hessian, rhs and block diagonal preconditioner before apply this function
     template<typename Pol,typename VTileVec,typename ETileVec,int space_dim = 3,int simplex_dim = 4>
     int pcg_with_fixed_sol_solve(
         Pol& pol,
@@ -143,13 +143,14 @@ namespace zeno {
         copy<simplex_dim>(pol,elm_buffer,inds_tag,etemp,"inds");
         copy<space_dim * simplex_dim * space_dim * simplex_dim>(pol,elm_buffer,Htag,etemp,"H");
 
-        // compute initial residual : r = b - Hx
         multiply<space_dim,simplex_dim>(pol,vtemp,etemp,"H","x","temp");
+        // compute initial residual : b - Hx -> r
         add<space_dim>(pol,vtemp,"b",(T)1.0,"temp",(T)(-1.0),"r");
         project<space_dim>(pol,vtemp,"r","btag");
-        precondition<space_dim>(pol,vtemp,"r","q","P");
-        // r->q
-        copy<space_dim>(pol,vtemp,"r",vtemp,"q");
+        // P * r -> q
+        precondition<space_dim>(pol,vtemp,"P","r","q");
+        // q -> p
+        copy<space_dim>(pol,vtemp,"q",vtemp,"p");
         
         T zTrk = dot<space_dim>(pol,vtemp,"r","q");
         T residualPreconditionedNorm = std::sqrt(zTrk);
@@ -161,26 +162,29 @@ namespace zeno {
                 throw std::runtime_error("negative zTrk detected");
             if(residualPreconditionedNorm < localTol)
                 break;
+            // H * p -> tmp
             multiply<space_dim,simplex_dim>(pol,vtemp,etemp,"H","p","temp");
             project<space_dim>(pol,vtemp,"temp","btag");
+            // alpha = zTrk / (pHp)
             T alpha = zTrk / dot<space_dim>(pol,vtemp,"temp","p");
             // x += alpha * p
             add<space_dim>(pol,vtemp,"x",(T)1.0,"p",alpha,"x");
             // r -= alpha * Hp
             add<space_dim>(pol,vtemp,"r",(T)1.0,"temp",-alpha,"r");
-
+            // recalculate the residual to fix floating point error accumulation
             if(iter % (recal_iter + 1) == recal_iter){
                 // r = b - Hx
                 multiply<space_dim,simplex_dim>(pol,vtemp,etemp,"H","x","temp");
                 add<space_dim>(pol,vtemp,"b",(T)1.0,"temp",(T)(-1.0),"r");
                 project<space_dim>(pol,vtemp,"r","btag");
             }
-            precondition<space_dim>(pol,vtemp,"r","q","P");
+            // P * r -> q
+            precondition<space_dim>(pol,vtemp,"P","r","q");
             project<space_dim>(pol,vtemp,"q","btag");
             auto zTrkLast = zTrk;
             zTrk = dot<space_dim>(pol,vtemp,"q","r");
             auto beta = zTrk / zTrkLast;
-            // p = q + alpha * p
+            // q + beta * p -> p
             add<space_dim>(pol,vtemp,"q",(T)(1.0),"p",beta,"p");
             residualPreconditionedNorm = std::sqrt(zTrk);
             ++iter;
