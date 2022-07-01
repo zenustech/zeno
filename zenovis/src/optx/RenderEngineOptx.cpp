@@ -282,7 +282,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         }
     }
 
-#define MY_CAM_ID(cam) cam.m_nx, cam.m_ny, cam.m_lodup, cam.m_lodfront, cam.m_lodcenter, cam.m_fov, cam.m_fw, cam.m_fh, cam.m_focL, cam.m_fit_gate
+#define MY_CAM_ID(cam) cam.m_nx, cam.m_ny, cam.m_lodup, cam.m_lodfront, cam.m_lodcenter, cam.m_fov
 #define MY_SIZE_ID(cam) cam.m_nx, cam.m_ny
     std::optional<decltype(std::tuple{MY_CAM_ID(std::declval<Camera>())})> oldcamid;
     std::optional<decltype(std::tuple{MY_SIZE_ID(std::declval<Camera>())})> oldsizeid;
@@ -370,7 +370,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         //zeno::log_warn("lodright = {}", zeno::other_to_vec<3>(lodright));
         xinxinoptix::set_perspective(glm::value_ptr(lodright), glm::value_ptr(cam.m_lodup),
                                      glm::value_ptr(cam.m_lodfront), glm::value_ptr(cam.m_lodcenter),
-                                     cam.m_fw, cam.m_fh, cam.getAspect(), cam.m_fit_gate, cam.m_fov, cam.m_focL);
+                                     cam.getAspect(), cam.m_fov, cam.m_focL);
         //xinxinoptix::set_projection(glm::value_ptr(cam.m_proj));
         }
 

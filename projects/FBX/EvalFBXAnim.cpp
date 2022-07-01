@@ -45,7 +45,7 @@ struct EvalAnim{
         m_CurrentFrame = 0.0f;
     }
 
-    void updateAnimation(int fi, std::shared_ptr<zeno::PrimitiveObject>& prim, float s) {
+    void updateAnimation(int fi, std::shared_ptr<zeno::PrimitiveObject>& prim) {
         // TODO Use the actual frame number
         float dt = fi / 24.0f;
         m_DeltaTime = dt;
@@ -55,7 +55,7 @@ struct EvalAnim{
         zeno::log_info("Update: F {} D {} C {}", fi, dt, m_CurrentFrame);
 
         calculateBoneTransform(&m_RootNode, aiMatrix4x4());
-        calculateFinal(prim, s);
+        calculateFinal(prim);
     }
 
     void decomposeAnimation(std::shared_ptr<zeno::DictObject> &t,
@@ -122,8 +122,7 @@ struct EvalAnim{
 
     void updateCameraAndLight(std::shared_ptr<FBXData>& fbxData,
                               std::shared_ptr<ICamera>& iCamera,
-                              std::shared_ptr<ILight>& iLight,
-                              float s){;
+                              std::shared_ptr<ILight>& iLight){;
         for(auto& m: m_LazyTransforms){
             if(fbxData->iCamera.value.find(m.first) != fbxData->iCamera.value.end()){
                 //zeno::log_info("----- LT Camera {}", m.first);
@@ -135,7 +134,7 @@ struct EvalAnim{
                 aiQuaterniont<float> rotate;
                 aiVector3t<float> scale;
                 m.second.Decompose(scale, rotate, trans);
-                cam.pos = zeno::vec3f(trans.x*s, trans.y*s, trans.z*s);
+                cam.pos = zeno::vec3f(trans.x, trans.y, trans.z);
                 aiMatrix3x3 r = rotate.GetMatrix().Transpose();
                 cam.view = zeno::vec3f(r.a1, r.a2, r.a3);
                 cam.up = zeno::vec3f(r.b1, r.b2, r.b3);
@@ -148,7 +147,7 @@ struct EvalAnim{
         }
     }
 
-    void calculateFinal(std::shared_ptr<zeno::PrimitiveObject>& prim, float s){
+    void calculateFinal(std::shared_ptr<zeno::PrimitiveObject>& prim){
         auto &ver = prim->verts;
         auto &ind = prim->tris;
         auto &uv = prim->verts.add_attr<zeno::vec3f>("uv");
@@ -181,7 +180,7 @@ struct EvalAnim{
 
             glm::vec3 fpos = glm::vec3(tpos.x/tpos.w, tpos.y/tpos.w, tpos.z/tpos.w);
 
-            ver.emplace_back(fpos.x*s, fpos.y*s, fpos.z*s);
+            ver.emplace_back(fpos.x, fpos.y, fpos.z);
             posb.emplace_back(0.0f, 0.0f, 0.0f);
             uv.emplace_back(uvw.x, uvw.y, uvw.z);
             norm.emplace_back(nor.x, nor.y, nor.z);
@@ -216,12 +215,6 @@ struct EvalFBXAnim : zeno::INode {
         } else {
             frameid = getGlobalState()->frameid;
         }
-        float s = 1.0f;
-        auto unit = get_param<std::string>("unit");
-        if (unit == "FROM_MAYA"){
-            zeno::log_info("EvalFBXAnim Maya unit");
-            s = 0.01f;
-        }
 
         auto prim = std::make_shared<zeno::PrimitiveObject>();
         auto fbxData = get_input<FBXData>("data");
@@ -237,8 +230,8 @@ struct EvalFBXAnim : zeno::INode {
 
         EvalAnim anim;
         anim.initAnim(nodeTree, boneTree, fbxData, animInfo);
-        anim.updateAnimation(frameid, prim, s);
-        anim.updateCameraAndLight(fbxData, iCamera, iLight, s);
+        anim.updateAnimation(frameid, prim);
+        anim.updateCameraAndLight(fbxData, iCamera, iLight);
         anim.decomposeAnimation(transDict, quatDict, scaleDict);
 
         auto prims = std::make_shared<zeno::ListObject>();
@@ -313,7 +306,7 @@ ZENDEFNODE(EvalFBXAnim,
                    "prim", "camera", "light", "bsPrims", "transDict", "quatDict", "scaleDict"
                },  /* params: */
                {
-                   {"enum FROM_MAYA DEFAULT", "unit", "FROM_MAYA"},
+
                },  /* category: */
                {
                    "FBX",

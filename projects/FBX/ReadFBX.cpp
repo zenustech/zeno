@@ -26,6 +26,8 @@
 #include "Definition.h"
 
 void readFBXFile(
+    std::shared_ptr<zeno::PrimitiveObject>& prim,
+    std::shared_ptr<zeno::DictObject>& prims,
     std::shared_ptr<zeno::DictObject>& datas,
     std::shared_ptr<NodeTree>& nodeTree,
     std::shared_ptr<FBXData>& fbxData,
@@ -439,6 +441,7 @@ struct Mesh{
 
     void processTrans(std::unordered_map<std::string, std::vector<SKeyMorph>>& morph,
                       std::unordered_map<std::string, SAnimBone>& bones,
+                      std::shared_ptr<zeno::DictObject>& prims,
                       std::shared_ptr<zeno::DictObject>& datas) {
         for(auto& iter: m_VerticesSlice) {
             std::string meshName = iter.first;
@@ -504,7 +507,7 @@ struct Mesh{
             sub_data->iBlendSData = fbxData.iBlendSData;
             sub_data->iKeyMorph.value = morph;
 
-            //prims->lut[meshName] = sub_prim;
+            prims->lut[meshName] = sub_prim;
             datas->lut[meshName] = sub_data;
         }
     }
@@ -641,6 +644,8 @@ struct Anim{
 };
 
 void readFBXFile(
+        std::shared_ptr<zeno::PrimitiveObject>& prim,
+        std::shared_ptr<zeno::DictObject>& prims,
         std::shared_ptr<zeno::DictObject>& datas,
         std::shared_ptr<NodeTree>& nodeTree,
         std::shared_ptr<FBXData>& fbxData,
@@ -669,8 +674,8 @@ void readFBXFile(
 
     mesh.initMesh(scene);
     anim.initAnim(scene, &mesh);
-    mesh.processTrans(anim.m_Morph, anim.m_Bones.AnimBoneMap, datas);
-    //mesh.processPrim(prim);
+    mesh.processTrans(anim.m_Morph, anim.m_Bones.AnimBoneMap, prims, datas);
+    mesh.processPrim(prim);
 
     mesh.fbxData.iKeyMorph.value = anim.m_Morph;
 
@@ -690,6 +695,8 @@ struct ReadFBXPrim : zeno::INode {
 
     virtual void apply() override {
         auto path = get_input<zeno::StringObject>("path")->get();
+        auto prim = std::make_shared<zeno::PrimitiveObject>();
+        std::shared_ptr<zeno::DictObject> prims = std::make_shared<zeno::DictObject>();
         std::shared_ptr<zeno::DictObject> datas = std::make_shared<zeno::DictObject>();
         auto nodeTree = std::make_shared<NodeTree>();
         auto animInfo = std::make_shared<AnimInfo>();
@@ -698,10 +705,12 @@ struct ReadFBXPrim : zeno::INode {
 
         //zeno::log_info("ReadFBXPrim: File Path {}", path);
 
-        readFBXFile(datas,
+        readFBXFile(prim,prims, datas,
                     nodeTree, fbxData, boneTree, animInfo,
                     path.c_str());
 
+        set_output("prim", std::move(prim));
+        set_output("prims", std::move(prims));
         set_output("data", std::move(fbxData));
         set_output("datas", std::move(datas));
         set_output("animinfo", std::move(animInfo));
@@ -714,9 +723,10 @@ ZENDEFNODE(ReadFBXPrim,
            {       /* inputs: */
                {
                    {"readpath", "path"},
+                   {"frameid"}
                },  /* outputs: */
                {
-                   "data", "datas",
+                   "prim", "prims", "data", "datas",
                    {"AnimInfo", "animinfo"},
                    {"NodeTree", "nodetree"},
                    {"BoneTree", "bonetree"},

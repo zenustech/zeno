@@ -3,39 +3,23 @@
 namespace zenovis {
 
 void Camera::setCamera(zeno::CameraData const &cam) {
-    this->m_focL = cam.focL;
-    this->m_fw = cam.fw;
-    this->m_fh = cam.fh;
-    this->m_fit_gate = cam.fit_gate;
-    if (cam.nx && cam.ny) {
-        this->m_nx = cam.nx;
-        this->m_ny = cam.ny;
-    }
     this->placeCamera(
             glm::vec3(cam.pos[0], cam.pos[1], cam.pos[2]),
             glm::vec3(cam.view[0], cam.view[1], cam.view[2]),
             glm::vec3(cam.up[0], cam.up[1], cam.up[2]),
             cam.fov, cam.fnear, cam.ffar, 2.0f);
+    if (cam.nx && cam.ny) {
+        this->m_nx = cam.nx;
+        this->m_ny = cam.ny;
+    }
     this->m_dof = cam.dof;
     this->m_aperature = cam.aperature;
+    this->m_focL = cam.focL;
 }
 
 void Camera::placeCamera(glm::vec3 pos, glm::vec3 front, glm::vec3 up, float fov, float fnear, float ffar, float radius) {
     front = glm::normalize(front);
     up = glm::normalize(up);
-
-    float c_fov = fov;
-    if(m_focL > 0){
-        float c_aspect = m_fw/m_fh;
-        float u_aspect = getAspect();
-        printf("cam nx %d ny %d fw %f fh %f aspect %f %f\n", m_nx, m_ny, m_fw, m_fh, u_aspect, c_aspect);
-        if(this->m_fit_gate == 1){
-            c_fov = 2.0f * std::atan(m_fh/(u_aspect/c_aspect) / (2.0f * m_focL) ) * (180.0f / M_PI);
-        }else if(this->m_fit_gate == 2){
-            c_fov = 2.0f * std::atan(m_fw/c_aspect / (2.0f * m_focL) ) * (180.0f / M_PI);
-        }
-    }
-
     if (fov <= 0) {
         m_view = glm::lookAt(pos, pos + front, up);
         m_proj = glm::ortho(-radius * getAspect(), radius * getAspect(), -radius,
@@ -45,7 +29,7 @@ void Camera::placeCamera(glm::vec3 pos, glm::vec3 front, glm::vec3 up, float fov
         //ZENO_P(front);
         //ZENO_P(up);
         m_view = glm::lookAt(pos, pos + front, up);
-        m_proj = glm::perspective(glm::radians(c_fov), getAspect(), fnear, ffar);
+        m_proj = glm::perspective(glm::radians(fov), getAspect(), fnear, ffar);
         //ZENO_P(m_view);
         //ZENO_P(m_proj);
     }
