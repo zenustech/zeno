@@ -455,12 +455,12 @@ struct ZSSolveBiHarmonicEquaOnTets : zeno::INode {
                 ZS_LAMBDA(int ei) mutable {
                     // constexpr int cdim = RM_CVREF_T(codim_v)::value;
                     constexpr int cdim = 4;
-                    auto inds = eles.pack<cdim>("inds",ei).reinterpret_bits<int>();
+                    auto inds = eles.template pack<cdim>("inds",ei).template reinterpret_bits<int>();
                     zs::vec<T,cdim> temp{};
                     for(int vi = 0;vi != cdim;++vi)
                         temp[vi] = vtemp(dxTag,inds[vi]);
 
-                    auto He = etemp.pack<cdim,cdim>("L",ei);
+                    auto He = etemp.template pack<cdim,cdim>("L",ei);
                     temp = He * temp;
                     for(int vi = 0;vi != cdim;++vi)
                         atomic_add(execTag,&vtemp(bTag,inds[vi]),temp[vi]);
@@ -476,7 +476,7 @@ struct ZSSolveBiHarmonicEquaOnTets : zeno::INode {
             pol(range(numEles),[execTag,etemp = proxy<space>({},etemp),vtemp = proxy<space>({},vtemp),eles = proxy<space>({},eles),dxTag,bTag]
                 ZS_LAMBDA(int ei) mutable {
                     constexpr int cdim = 4;
-                    auto inds = eles.pack<cdim>("inds",ei).reinterpret_bits<int>();
+                    auto inds = eles.template pack<cdim>("inds",ei).template reinterpret_bits<int>();
                     zs::vec<T,cdim> temp{};
                     for(int vi = 0;vi != cdim;++vi)
                         temp[vi] = vtemp(dxTag,inds[vi]);

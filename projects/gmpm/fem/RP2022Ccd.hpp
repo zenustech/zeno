@@ -65,7 +65,6 @@ eeccd(const VecT &ea0, const VecT &ea1, const VecT &eb0, const VecT &eb1,
 } // namespace rpccd
 namespace ticcd {
 
-#if 0
 template <typename VecT>
 constexpr bool
 ptccd(const VecT &p, const VecT &t0, const VecT &t1, const VecT &t2,
@@ -78,8 +77,17 @@ ptccd(const VecT &p, const VecT &t0, const VecT &t1, const VecT &t2,
   auto t0end = t0 + t * dt0;
   auto t1end = t1 + t * dt1;
   auto t2end = t2 + t * dt2;
-  while (vertexFaceCCD(p, t0, t1, t2, pend, t0end, t1end, t2end)) {
-    t /= 2;
+
+  constexpr zs::vec<double, 3> err(-1, -1, -1);
+  double ms = 1e-8;
+  double toi{};
+  const double tolerance = 1e-6;
+  const double t_max = 1;
+  const int max_itr = 1e6;
+  double output_tolerance = 1e-6;
+  while (vertexFaceCCD(p, t0, t1, t2, pend, t0end, t1end, t2end, err, ms, toi,
+                       tolerance, t_max, max_itr, output_tolerance, true)) {
+    t = zs::min(t / 2, toi);
     pend = p + t * dp;
     t0end = t0 + t * dt0;
     t1end = t1 + t * dt1;
@@ -93,7 +101,6 @@ ptccd(const VecT &p, const VecT &t0, const VecT &t1, const VecT &t2,
     return true;
   }
 }
-#endif
 
 template <typename VecT>
 constexpr bool
@@ -114,11 +121,12 @@ eeccd(const VecT &ea0, const VecT &ea1, const VecT &eb0, const VecT &eb1,
   const double tolerance = 1e-6;
   const double t_max = 1;
   const int max_itr = 1e6;
-  double output_tolerance{};
+  double output_tolerance = 1e-6;
   while (edgeEdgeCCD(ea0, ea1, eb0, eb1, ea0end, ea1end, eb0end, eb1end, err,
                      ms, toi, tolerance, t_max, max_itr, output_tolerance,
                      true)) {
-    t /= 2;
+    t = zs::min(t / 2, toi);
+    // t /= 2;
     ea0end = ea0 + t * dea0;
     ea1end = ea1 + t * dea1;
     eb0end = eb0 + t * deb0;

@@ -1329,7 +1329,7 @@ struct CodimStepping : INode {
 #if 1
             if (ptaccd(p, t0, t1, t2, dp, dt0, dt1, dt2, (T)0.1, xi, tmp))
 #elif 1
-            if (rpccd::ptccd(p, t0, t1, t2, dp, dt0, dt1, dt2, (T)0.1, xi, tmp))
+            if (ticcd::ptccd(p, t0, t1, t2, dp, dt0, dt1, dt2, (T)0.1, xi, tmp))
 #else
             if (pt_ccd(p, t0, t1, t2, dp, dt0, dt1, dt2, xi, tmp))
 #endif
@@ -1353,7 +1353,7 @@ struct CodimStepping : INode {
 #if 1
         if (eeaccd(ea0, ea1, eb0, eb1, dea0, dea1, deb0, deb1, (T)0.1, xi, tmp))
 #elif 1
-            if (rpccd::eeccd(ea0, ea1, eb0, eb1, dea0, dea1, deb0, deb1, (T)0.1, xi, tmp))
+            if (ticcd::eeccd(ea0, ea1, eb0, eb1, dea0, dea1, deb0, deb1, (T)0.1, xi, tmp))
 #else
             if (ee_ccd(ea0, ea1, eb0, eb1, dea0, dea1, deb0, deb1, xi, tmp))
 #endif
