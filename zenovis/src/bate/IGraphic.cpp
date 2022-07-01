@@ -1,5 +1,13 @@
 #include <zenovis/Scene.h>
 #include <zeno/core/IObject.h>
+#include <zeno/types/PrimitiveObject.h>
+#include <zeno/types/StringObject.h>
+#include <zeno/types/DictObject.h>
+#include <zeno/types/ListObject.h>
+#include <zeno/types/CameraObject.h>
+#include <zeno/types/LightObject.h>
+#include <zeno/types/MaterialObject.h>
+#include <zeno/types/DummyObject.h>
 #include <zeno/utils/cppdemangle.h>
 #include <zeno/utils/log.h>
 #include <zenovis/bate/IGraphic.h>
@@ -13,16 +21,17 @@ std::unique_ptr<IGraphic> makeGraphic(Scene *scene, zeno::IObject *obj) {
     if (0) {
 #define _ZENO_PER_XMACRO(TypeName, ...) \
     } else if (auto p = dynamic_cast<zeno::TypeName *>(obj)) { \
-        visitor.visit(p); \
+        visitor.visit(p);
 ZENO_XMACRO_IObject(_ZENO_PER_XMACRO)
 #undef _ZENO_PER_XMACRO
     }
 
     auto res = std::move(visitor.out_result);
 
-    if (!res)
-        zeno::log_debug("load_object: unexpected view object {}",
+    if (!res) {
+        zeno::log_error("load_object: unexpected view object {}",
                         zeno::cppdemangle(typeid(*obj)));
+    }
 
     //printf("%s\n", ext.c_str());
     //assert(0 && "bad file extension name");
