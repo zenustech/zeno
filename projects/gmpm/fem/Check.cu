@@ -525,9 +525,10 @@ struct ChkIpcSystem : INode {
           [vtemp = proxy<space>({}, vtemp), etemp = proxy<space>({}, etemp),
            verts = proxy<space>({}, verts), eles = proxy<space>({}, eles),
            model, xTag, gTag, hTag, dt = this->dt] __device__(int ei) mutable {
-            auto DmInv = eles.pack<3, 3>("IB", ei);
+            auto DmInv = eles.template pack<3, 3>("IB", ei);
             auto dFdX = dFdXMatrix(DmInv);
-            auto inds = eles.pack<4>("inds", ei).reinterpret_bits<int>();
+            auto inds = eles.template pack<4>("inds", ei)
+                            .template reinterpret_bits<int>();
             vec3 xs[4] = {
                 vtemp.pack<3>(xTag, inds[0]), vtemp.pack<3>(xTag, inds[1]),
                 vtemp.pack<3>(xTag, inds[2]), vtemp.pack<3>(xTag, inds[3])};
@@ -591,7 +592,7 @@ struct ChkIpcSystem : INode {
                     H(offsetI + i, offsetJ + j) = tmp(i, j);
               }
             }
-            etemp.tuple<12 * 12>(hTag, ei) = H;
+            etemp.template tuple<12 * 12>(hTag, ei) = H;
           });
     }
     void computeBarrierGradientAndHessian(zs::CudaExecutionPolicy &pol,
