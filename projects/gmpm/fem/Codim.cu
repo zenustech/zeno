@@ -87,23 +87,22 @@ void assemble_bounding_volumes(
   });
 }
 template <typename TileVecT, int codim = 3>
-auto retrieve_bounding_volumes(zs::CudaExecutionPolicy &pol,
-                               const TileVecT &vtemp,
-                               const zs::SmallString &xTag,
-                               const typename ZenoParticles::particles_t &eles,
-                               zs::wrapv<codim>, int voffset)
-    -> zs::Vector<zs::AABBBox<3, typename TileVecT::value_type>> {
+zs::Vector<zs::AABBBox<3, typename TileVecT::value_type>>
+retrieve_bounding_volumes(zs::CudaExecutionPolicy &pol, const TileVecT &vtemp,
+                          const zs::SmallString &xTag,
+                          const typename ZenoParticles::particles_t &eles,
+                          zs::wrapv<codim>, int voffset) {
   using namespace zs;
   using T = typename TileVecT::value_type;
   using bv_t = AABBBox<3, T>;
   static_assert(codim >= 1 && codim <= 4, "invalid co-dimension!\n");
   constexpr auto space = execspace_e::cuda;
-  Vector<bv_t> ret{eles.get_allocator(), eles.size()};
-  pol(zs::range(eles.size()), [eles = proxy<space>({}, eles),
-                               bvs = proxy<space>(ret),
-                               vtemp = proxy<space>({}, vtemp),
-                               codim_v = wrapv<codim>{}, xTag,
-                               voffset] ZS_LAMBDA(int ei) mutable {
+  zs::Vector<bv_t> ret{eles.get_allocator(), eles.size()};
+  pol(range(eles.size()), [eles = proxy<space>({}, eles),
+                           bvs = proxy<space>(ret),
+                           vtemp = proxy<space>({}, vtemp),
+                           codim_v = wrapv<codim>{}, xTag,
+                           voffset] ZS_LAMBDA(int ei) mutable {
     constexpr int dim = RM_CVREF_T(codim_v)::value;
     auto inds =
         eles.template pack<dim>("inds", ei).template reinterpret_bits<int>() +
@@ -117,14 +116,13 @@ auto retrieve_bounding_volumes(zs::CudaExecutionPolicy &pol,
   return ret;
 }
 template <typename TileVecT0, typename TileVecT1, int codim = 3>
-auto retrieve_bounding_volumes(zs::CudaExecutionPolicy &pol,
-                               const TileVecT0 &verts,
-                               const zs::SmallString &xTag,
-                               const typename ZenoParticles::particles_t &eles,
-                               zs::wrapv<codim>, const TileVecT1 &vtemp,
-                               const zs::SmallString &dirTag, float stepSize,
-                               int voffset)
-    -> zs::Vector<zs::AABBBox<3, typename TileVecT0::value_type>> {
+zs::Vector<zs::AABBBox<3, typename TileVecT0::value_type>>
+retrieve_bounding_volumes(zs::CudaExecutionPolicy &pol, const TileVecT0 &verts,
+                          const zs::SmallString &xTag,
+                          const typename ZenoParticles::particles_t &eles,
+                          zs::wrapv<codim>, const TileVecT1 &vtemp,
+                          const zs::SmallString &dirTag, float stepSize,
+                          int voffset) {
   using namespace zs;
   using T = typename TileVecT0::value_type;
   using bv_t = AABBBox<3, T>;
@@ -572,9 +570,12 @@ struct CodimStepping : INode {
   inline static T boxDiagSize2 = 0;
   inline static T avgNodeMass = 0;
   inline static T targetGRes = 1e-2;
-  static constexpr bool s_enableAdaptiveSetting = false;
-  static constexpr bool s_enableContact = true;
-  static constexpr bool s_enableDCDCheck = false;
+#define s_enableAdaptiveSetting 0
+// static constexpr bool s_enableAdaptiveSetting = false;
+#define s_enableContact 1
+// static constexpr bool s_enableContact = true;
+#define s_enableDCDCheck 0
+  // static constexpr bool s_enableDCDCheck = false;
 
   inline static std::size_t estNumCps = 1000000;
   inline static T augLagCoeff = 1e4;
@@ -1329,7 +1330,7 @@ struct CodimStepping : INode {
 #if 1
             if (ptaccd(p, t0, t1, t2, dp, dt0, dt1, dt2, (T)0.1, xi, tmp))
 #elif 1
-            if (rpccd::ptccd(p, t0, t1, t2, dp, dt0, dt1, dt2, (T)0.1, xi, tmp))
+            if (ticcd::ptccd(p, t0, t1, t2, dp, dt0, dt1, dt2, (T)0.1, xi, tmp))
 #else
             if (pt_ccd(p, t0, t1, t2, dp, dt0, dt1, dt2, xi, tmp))
 #endif
@@ -1353,7 +1354,7 @@ struct CodimStepping : INode {
 #if 1
         if (eeaccd(ea0, ea1, eb0, eb1, dea0, dea1, deb0, deb1, (T)0.1, xi, tmp))
 #elif 1
-            if (rpccd::eeccd(ea0, ea1, eb0, eb1, dea0, dea1, deb0, deb1, (T)0.1, xi, tmp))
+            if (ticcd::eeccd(ea0, ea1, eb0, eb1, dea0, dea1, deb0, deb1, (T)0.1, xi, tmp))
 #else
             if (ee_ccd(ea0, ea1, eb0, eb1, dea0, dea1, deb0, deb1, xi, tmp))
 #endif
@@ -1880,7 +1881,8 @@ struct CodimStepping : INode {
       }
       // contacts
       {
-        if constexpr (s_enableContact) {
+#if s_enableContact
+        {
           auto activeGap2 = dHat * dHat + 2 * xi * dHat;
           auto numPP = nPP.getVal();
           pol(range(numPP),
@@ -1951,6 +1953,7 @@ struct CodimStepping : INode {
                            zs::barrier(dist2 - xi2, activeGap2, kappa));
               });
         }
+#endif
         // boundary
         pol(range(coOffset),
             [vtemp = proxy<space>({}, vtemp), res = proxy<space>(res),
@@ -2101,7 +2104,8 @@ struct CodimStepping : INode {
       }
       // contacts
       {
-        if constexpr (s_enableContact) {
+#if s_enableContact
+        {
           auto numPP = nPP.getVal();
           pol(range(numPP), [execTag, tempPP = proxy<space>({}, tempPP),
                              vtemp = proxy<space>({}, vtemp), dxTag, bTag,
@@ -2187,6 +2191,7 @@ struct CodimStepping : INode {
               }
           });
         }
+#endif
         // boundary
         pol(range(coOffset), [execTag, vtemp = proxy<space>({}, vtemp),
                               tempPB = proxy<space>({}, tempPB), dxTag,
@@ -2589,7 +2594,8 @@ struct CodimStepping : INode {
     BCsatisfied = false;
     useGD = false;
 
-    if constexpr (s_enableAdaptiveSetting) {
+#if s_enableAdaptiveSetting
+    {
       A.updateWholeBoundingBoxSize(cudaPol);
       /// dHat
       dHat = 1e-3 * std::sqrt(boxDiagSize2);
@@ -2629,6 +2635,7 @@ struct CodimStepping : INode {
       fmt::print("average node mass: {}, kappa: {}\n", avgNodeMass, kappa);
       getchar();
     }
+#endif
 
     /// optimizer
     for (int newtonIter = 0; newtonIter != 1000; ++newtonIter) {
@@ -2844,7 +2851,8 @@ struct CodimStepping : INode {
       T alpha = 1.;
       A.groundIntersectionFreeStepsize(cudaPol, alpha);
       fmt::print("\tstepsize after ground: {}\n", alpha);
-      if constexpr (s_enableContact) {
+#if s_enableContact
+      {
         A.intersectionFreeStepsize(cudaPol, xi, alpha);
         fmt::print("\tstepsize after intersection-free: {}\n", alpha);
         A.findCCDConstraints(cudaPol, alpha, xi);
@@ -2852,17 +2860,19 @@ struct CodimStepping : INode {
         A.intersectionFreeStepsize(cudaPol, xi, alpha);
         fmt::print("\tstepsize after ccd: {}. (ncspt: {}, ncsee: {})\n", alpha,
                    ncspt, ncsee);
-        /// check discrete collision
-        if constexpr (s_enableDCDCheck)
-          while (A.checkSelfIntersection(cudaPol)) {
-            alpha /= 2;
-            cudaPol(zs::range(vtemp.size()), [vtemp = proxy<space>({}, vtemp),
-                                              alpha] __device__(int i) mutable {
-              vtemp.tuple<3>("xn", i) =
-                  vtemp.pack<3>("xn0", i) + alpha * vtemp.pack<3>("dir", i);
-            });
-          }
+/// check discrete collision
+#if s_enableDCDCheck
+        while (A.checkSelfIntersection(cudaPol)) {
+          alpha /= 2;
+          cudaPol(zs::range(vtemp.size()), [vtemp = proxy<space>({}, vtemp),
+                                            alpha] __device__(int i) mutable {
+            vtemp.tuple<3>("xn", i) =
+                vtemp.pack<3>("xn0", i) + alpha * vtemp.pack<3>("dir", i);
+          });
+        }
+#endif
       }
+#endif
 
       T E{E0};
       T c1m = 0;
@@ -2910,16 +2920,17 @@ struct CodimStepping : INode {
             vtemp.pack<3>("xn0", i) + alpha * vtemp.pack<3>("dir", i);
       });
 
-      /// check discrete collision
-      if constexpr (s_enableDCDCheck)
-        while (A.checkSelfIntersection(cudaPol)) {
-          alpha /= 2;
-          cudaPol(zs::range(vtemp.size()), [vtemp = proxy<space>({}, vtemp),
-                                            alpha] __device__(int i) mutable {
-            vtemp.tuple<3>("xn", i) =
-                vtemp.pack<3>("xn0", i) + alpha * vtemp.pack<3>("dir", i);
-          });
-        }
+/// check discrete collision
+#if s_enableDCDCheck
+      while (A.checkSelfIntersection(cudaPol)) {
+        alpha /= 2;
+        cudaPol(zs::range(vtemp.size()), [vtemp = proxy<space>({}, vtemp),
+                                          alpha] __device__(int i) mutable {
+          vtemp.tuple<3>("xn", i) =
+              vtemp.pack<3>("xn0", i) + alpha * vtemp.pack<3>("dir", i);
+        });
+      }
+#endif
 
       if (alpha < 1e-8) {
         useGD = true;

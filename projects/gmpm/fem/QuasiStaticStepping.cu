@@ -34,8 +34,8 @@ struct QuasiStaticStepping : INode {
                                vtemp = proxy<space>({}, vtemp),
                                res = proxy<space>(res), tag, model = model,volf = volf] 
                                ZS_LAMBDA (int ei) mutable {
-        auto DmInv = eles.pack<3, 3>("IB", ei);
-        auto inds = eles.pack<4>("inds", ei).reinterpret_bits<int>();
+        auto DmInv = eles.template pack<3, 3>("IB", ei);
+        auto inds = eles.template pack<4>("inds", ei).template reinterpret_bits<int>();
         vec3 xs[4] = {vtemp.pack<3>(tag, inds[0]), vtemp.pack<3>(tag, inds[1]),
                       vtemp.pack<3>(tag, inds[2]), vtemp.pack<3>(tag, inds[3])};
         mat3 F{};
@@ -119,9 +119,9 @@ struct QuasiStaticStepping : INode {
                                         b_verts = proxy<space>({},b_verts),
                                         verts = proxy<space>({}, verts),
                                         eles = proxy<space>({}, eles),tag, model, volf = volf] ZS_LAMBDA (int ei) mutable {
-            auto DmInv = eles.pack<3, 3>("IB", ei);
+            auto DmInv = eles.template pack<3, 3>("IB", ei);
             auto dFdX = dFdXMatrix(DmInv);
-            auto inds = eles.pack<4>("inds", ei).reinterpret_bits<int>();
+            auto inds = eles.template pack<4>("inds", ei).template reinterpret_bits<int>();
             vec3 xs[4] = {vtemp.pack<3>(tag, inds[0]), vtemp.pack<3>(tag, inds[1]),
                             vtemp.pack<3>(tag, inds[2]), vtemp.pack<3>(tag, inds[3])};
             mat3 F{};
@@ -150,6 +150,37 @@ struct QuasiStaticStepping : INode {
             auto H = dFdXT * Hq * dFdX * vole;
 
             etemp.tuple<12 * 12>("He", ei) = H;
+
+            // if(ei == 0){
+            //     printf("F : \n%f %f %f\n%f %f %f\n%f %f %f\n",
+            //         F(0,0),F(0,1),F(0,2),
+            //         F(1,0),F(1,1),F(1,2),
+            //         F(2,0),F(2,1),F(2,2)
+            //     );
+            //     printf("ELM_H<%d>:%e %f %f\n",ei,Hq.norm(),(float)model.lam,(float)model.mu);
+            // }
+            // etemp.tuple<12 * 12>("Hec",ei) = H;
+            // etemp.tuple<12 * 12>("Hec",ei) = H
+
+                    // if(ei == 11221){
+                    //     printf("H0:\n");
+                    //     for(int i = 0;i != 12;++i)
+                    //         printf("%lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf\n",
+                    //             (double)etemp.pack<12,12>("He",ei)(i,0),
+                    //             (double)etemp.pack<12,12>("He",ei)(i,1),
+                    //             (double)etemp.pack<12,12>("He",ei)(i,2),
+                    //             (double)etemp.pack<12,12>("He",ei)(i,3),
+                    //             (double)etemp.pack<12,12>("He",ei)(i,4),
+                    //             (double)etemp.pack<12,12>("He",ei)(i,5),
+                    //             (double)etemp.pack<12,12>("He",ei)(i,6),
+                    //             (double)etemp.pack<12,12>("He",ei)(i,7),
+                    //             (double)etemp.pack<12,12>("He",ei)(i,8),
+                    //             (double)etemp.pack<12,12>("He",ei)(i,9),
+                    //             (double)etemp.pack<12,12>("He",ei)(i,10),
+                    //             (double)etemp.pack<12,12>("He",ei)(i,11)
+                    //         );
+                    // }
+
 
         });
 
@@ -337,7 +368,7 @@ struct QuasiStaticStepping : INode {
                            eles = proxy<space>({}, eles), dxTag, bTag] ZS_LAMBDA(int ei) mutable {
         constexpr int dim = 3;
         constexpr auto dimp1 = dim + 1;
-        auto inds = eles.pack<dimp1>("inds", ei).reinterpret_bits<int>();
+        auto inds = eles.template pack<dimp1>("inds", ei).template reinterpret_bits<int>();
         zs::vec<T, dimp1 * dim> temp{};
         for (int vi = 0; vi != dimp1; ++vi)
           for (int d = 0; d != dim; ++d) {
@@ -475,7 +506,15 @@ struct QuasiStaticStepping : INode {
 
     constexpr auto space = execspace_e::cuda;
     auto cudaPol = cuda_exec();
-    
+
+    // use the previous simulation result as initial guess
+    // cudaPol(zs::range(vtemp.size()),
+    //           [vtemp = proxy<space>({},vtemp), verts = proxy<space>({},verts)]
+    //               __device__(int i) mutable{
+    //             auto x = verts.pack<3>("x",i);
+    //             vtemp.tuple<3>("xtilde",i) = x;
+    // });
+
     // use the initial guess if given
     if(verts.hasProperty("init_x")){
       cudaPol(zs::range(verts.size()),
