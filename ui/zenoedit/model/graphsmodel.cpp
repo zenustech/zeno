@@ -294,7 +294,7 @@ NODE_DESCS GraphsModel::getCoreDescs()
 				INPUT_SOCKET socket;
 				socket.info.type = type;
 				socket.info.name = name;
-                socket.info.control = UiHelper::_getControlType(type);
+                socket.info.control = UiHelper::getControlType(type);
 				socket.info.defaultValue = UiHelper::_parseDefaultValue(defl, type);
 				desc.inputs[name] = socket;
 			}
@@ -309,7 +309,7 @@ NODE_DESCS GraphsModel::getCoreDescs()
 				OUTPUT_SOCKET socket;
 				socket.info.type = type;
 				socket.info.name = name;
-                socket.info.control = UiHelper::_getControlType(type);
+                socket.info.control = UiHelper::getControlType(type);
 				socket.info.defaultValue = UiHelper::_parseDefaultValue(defl, type);
 				desc.outputs[name] = socket;
 			}
@@ -324,7 +324,7 @@ NODE_DESCS GraphsModel::getCoreDescs()
 				paramInfo.bEnableConnect = false;
 				paramInfo.name = name;
 				paramInfo.typeDesc = type;
-				paramInfo.control = UiHelper::_getControlType(type);
+				paramInfo.control = UiHelper::getControlType(type);
 				paramInfo.defaultValue = UiHelper::_parseDefaultValue(defl, type);
 				//thers is no "value" in descriptor, but it's convient to initialize param value. 
 				paramInfo.value = paramInfo.defaultValue;
@@ -1281,15 +1281,49 @@ void GraphsModel::updateParamInfo(const QString& id, PARAM_UPDATE_INFO info, con
 		pGraph->updateParam(id, info.name, info.newValue);
 
         const QString& nodeName = pGraph->index(id).data(ROLE_OBJNAME).toString();
-        if (info.name == "name" && (nodeName == "SubInput" || nodeName == "SubOutput"))
+        if (nodeName == "SubInput" || nodeName == "SubOutput")
         {
-            SOCKET_UPDATE_INFO updateInfo;
-            updateInfo.bInput = (nodeName == "SubInput");
-            updateInfo.oldInfo.name = info.oldValue.toString();
-            updateInfo.newInfo.name = info.newValue.toString();
+            if (info.name == "name")
+            {
+                SOCKET_UPDATE_INFO updateInfo;
+                updateInfo.bInput = (nodeName == "SubInput");
+                updateInfo.oldInfo.name = info.oldValue.toString();
+                updateInfo.newInfo.name = info.newValue.toString();
 
-            updateInfo.updateWay = SOCKET_UPDATE_NAME;
-            updateDescInfo(pGraph->name(), updateInfo);
+                updateInfo.updateWay = SOCKET_UPDATE_NAME;
+                updateDescInfo(pGraph->name(), updateInfo);
+            }
+            else
+            {
+                const QString& subName = pGraph->getParamValue(id, "name").toString();
+                const QVariant &deflVal = pGraph->getParamValue(id, "defl");
+                SOCKET_UPDATE_INFO updateInfo;
+                updateInfo.newInfo.name = subName;
+                updateInfo.oldInfo.name = subName;
+                updateInfo.bInput = (nodeName == "SubInput");
+
+                if (info.name == "defl")
+                {
+                    updateInfo.updateWay = SOCKET_UPDATE_DEFL;
+                    updateInfo.oldInfo.type = pGraph->getParamValue(id, "type").toString();
+                    updateInfo.oldInfo.control = UiHelper::getControlType(updateInfo.oldInfo.type);
+                    updateInfo.newInfo.control = updateInfo.oldInfo.control;
+                    updateInfo.oldInfo.defaultValue = info.oldValue;
+                    updateInfo.newInfo.defaultValue = info.newValue;
+                    updateDescInfo(pGraph->name(), updateInfo);
+                }
+                else if (info.name == "type")
+                {
+                    updateInfo.updateWay = SOCKET_UPDATE_TYPE;
+                    updateInfo.oldInfo.type = info.oldValue.toString();
+                    updateInfo.newInfo.type = info.newValue.toString();
+                    updateInfo.oldInfo.control = UiHelper::getControlType(updateInfo.oldInfo.type);
+                    updateInfo.newInfo.control = UiHelper::getControlType(updateInfo.newInfo.type);
+                    updateInfo.newInfo.defaultValue = deflVal;
+                    updateInfo.oldInfo.defaultValue = deflVal;
+                    updateDescInfo(pGraph->name(), updateInfo);
+                }
+            }
         }
     }
 }
@@ -1523,6 +1557,21 @@ void GraphsModel::updateDescInfo(const QString& descName, const SOCKET_UPDATE_IN
         }
         case SOCKET_UPDATE_TYPE:
         {
+            const QString& name = updateInfo.newInfo.name;
+            const QString& socketType = updateInfo.newInfo.type;
+            PARAM_CONTROL ctrl = UiHelper::getControlType(socketType);
+            if (updateInfo.bInput)
+            {
+                ZASSERT_EXIT(desc.inputs.find(name) != desc.inputs.end());
+                desc.inputs[name].info.type = socketType;
+                desc.inputs[name].info.control = ctrl;
+            }
+            else
+            {
+                ZASSERT_EXIT(desc.outputs.find(name) != desc.outputs.end());
+                desc.outputs[name].info.type = socketType;
+                desc.outputs[name].info.control = ctrl;
+            }
             break;
         }
     }

@@ -22,8 +22,15 @@ class ZenoNode : public QGraphicsWidget
         ZenoSocketItem* socket;
         ZenoTextLayoutItem* socket_text;
         ZenoParamWidget* socket_control;
+        QGraphicsLinearLayout* ctrl_layout;
 
-        _socket_ctrl() : socket(nullptr), socket_text(nullptr), socket_control(nullptr) {}
+        _socket_ctrl()
+            : socket(nullptr)
+            , socket_text(nullptr)
+            , socket_control(nullptr)
+            , ctrl_layout(nullptr)
+        {
+        }
     };
 
 public:
@@ -39,6 +46,7 @@ public:
     void initUI(const QModelIndex& subGIdx, const QModelIndex& index);
 
     QPersistentModelIndex index() { return m_index; }
+    QPersistentModelIndex subgIndex() { return m_subGpIndex; }
     QPointF getPortPos(bool bInput, const QString& portName);
     ZenoSocketItem* getNearestSocket(const QPointF& pos, bool bInput);
     ZenoSocketItem* getSocketItem(bool bInput, const QString& sockName);
@@ -112,7 +120,8 @@ private:
     void _initSocketItemPos();
     void _drawBorderWangStyle(QPainter* painter);
     ZenoGraphsEditor* getEditorViewByViewport(QWidget* pWidget);
-
+    ZenoParamWidget* initSocketWidget(const INPUT_SOCKET inSocket, ZenoTextLayoutItem* pSocketText);
+    void clearInSocketControl(const QString& sockName);
 
     QPersistentModelIndex m_index;
     QPersistentModelIndex m_subGpIndex;
