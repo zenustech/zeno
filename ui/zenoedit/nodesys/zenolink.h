@@ -49,7 +49,7 @@ public:
     ZenoSocketItem* getFixedSocket() const;
     ZenoSocketItem* getAdsorbedSocket() const;
     void setAdsortedSocket(ZenoSocketItem* pSocket);
-    void paint(QPainter *painter, QStyleOptionGraphicsItem const *styleOptions, QWidget *widget);
+    void paint(QPainter *painter, QStyleOptionGraphicsItem const *styleOptions, QWidget *widget) override;
 
 protected:
     void mouseMoveEvent(QGraphicsSceneMouseEvent *event) override;

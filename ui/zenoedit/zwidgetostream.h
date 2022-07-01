@@ -23,7 +23,7 @@ protected:
 
 private:
     static void customMsgHandler(QtMsgType type, const QMessageLogContext &, const QString &msg);
-    static void luzhPutString(QString str);
+    static void luzhPutString(std::string const &str);
     std::ostream &m_stream;
     std::streambuf *m_old_buf;
     std::string m_linebuffer;
