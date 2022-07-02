@@ -327,6 +327,9 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
             /* std::cout << "computing normal\n"; */
             zeno::log_trace("computing normal");
             zeno::primCalcNormal(&*prim, 1);
+        }
+        if (thePrmHasFaces) {
+            zeno::log_trace("demoting faces");
             if (prim->loop_uvs.size()) {
                 zeno::primDecodeUVs(&*prim);//loop_uvs to loop.attr("uv")
             }

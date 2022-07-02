@@ -1,15 +1,19 @@
 #include <zeno/zeno.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/funcs/PrimitiveUtils.h>
+#include <zeno/para/parallel_for.h>
+#include <zeno/para/parallel_scan.h>
 
 namespace zeno {
 
 ZENO_API void primTriangulateQuads(PrimitiveObject *prim) {
-    prim->tris.reserve(prim->tris.size() + prim->quads.size() * 2);
+    auto base = prim->tris.size();
+    prim->tris.resize(base + prim->quads.size() * 2);
 
-    for (auto quad: prim->quads) {
-        prim->tris.emplace_back(quad[0], quad[1], quad[2]);
-        prim->tris.emplace_back(quad[0], quad[2], quad[3]);
+    for (size_t i = 0; i < prim->quads.size(); i++) {
+        auto quad = prim->quads[i];
+        prim->tris[base+i*2+0] = vec3f(quad[0], quad[1], quad[2]);
+        prim->tris[base+i*2+1] = vec3f(quad[0], quad[2], quad[3]);
     }
     prim->quads.clear();
 }
@@ -17,75 +21,56 @@ ZENO_API void primTriangulateQuads(PrimitiveObject *prim) {
 ZENO_API void primTriangulate(PrimitiveObject *prim, bool with_uv) {
     prim->tris.reserve(prim->tris.size() + prim->polys.size());
 
-    if (!prim->loops.has_attr("uv") || !with_uv) {
+    std::vector<int> scansum(prim->polys.size());
+    auto redsum = parallel_exclusive_scan_sum(prim->polys.begin(), prim->polys.end(),
+                                           scansum.begin(), [&] (auto &ind) {
+                                               return ind[1] >= 3 ? ind[1] : 0;
+                                           });
+    auto tribase = prim->tris.size();
+    prim->tris.resize(tribase + redsum);
 
-        for (auto [start, len]: prim->polys) {
-            if (len >= 3) {
-                prim->tris.emplace_back(
+    if (!prim->loops.has_attr("uv") || !with_uv) {
+        parallel_for(prim->polys.size(), [&] (size_t i) {
+            auto [start, len] = prim->polys[i];
+            int scanbase = scansum[i] + tribase;
+            prim->tris[scanbase++] = vec3f(
+                    prim->loops[start],
+                    prim->loops[start + 1],
+                    prim->loops[start + 2]);
+            for (int j = 3; j < len; j++) {
+                prim->tris[scanbase++] = vec3f(
                         prim->loops[start],
-                        prim->loops[start + 1],
-                        prim->loops[start + 2]);
-                for (int i = 3; i < len; i++) {
-                    prim->tris.emplace_back(
-                            prim->loops[start],
-                            prim->loops[start + i - 1],
-                            prim->loops[start + i]);
-                }
-            } else if (len == 2) {
-                prim->lines.emplace_back(
-                        prim->loops[start],
-                        prim->loops[start + 1]);
-            } else if (len == 1) {
-                prim->points.emplace_back(
-                        prim->loops[start]);
+                        prim->loops[start + j - 1],
+                        prim->loops[start + j]);
             }
-        }
+        });
 
     } else {
         auto &loop_uv = prim->loops.attr<vec3f>("uv");
-
         auto &uv0 = prim->tris.add_attr<vec3f>("uv0");
         auto &uv1 = prim->tris.add_attr<vec3f>("uv1");
         auto &uv2 = prim->tris.add_attr<vec3f>("uv2");
 
-        auto &line_uv0 = prim->lines.add_attr<vec3f>("uv0");
-        auto &line_uv1 = prim->lines.add_attr<vec3f>("uv1");
-        auto &point_uv = prim->points.add_attr<vec3f>("uv");
-
-        uv0.reserve(uv0.size() + prim->polys.size());
-        uv1.reserve(uv1.size() + prim->polys.size());
-        uv2.reserve(uv2.size() + prim->polys.size());
-
-        for (auto [start, len]: prim->polys) {
-            if (len >= 3) {
-                uv0.push_back(loop_uv[start]);
-                uv1.push_back(loop_uv[start + 1]);
-                uv2.push_back(loop_uv[start + 2]);
-                prim->tris.emplace_back(
+        parallel_for(prim->polys.size(), [&] (size_t i) {
+            auto [start, len] = prim->polys[i];
+            int scanbase = scansum[i] + tribase;
+            uv0[scanbase] = loop_uv[start];
+            uv1[scanbase] = loop_uv[start + 1];
+            uv2[scanbase] = loop_uv[start + 2];
+            prim->tris[scanbase++] = vec3f(
+                    prim->loops[start],
+                    prim->loops[start + 1],
+                    prim->loops[start + 2]);
+            for (int j = 3; j < len; j++) {
+                uv0[scanbase] = loop_uv[start];
+                uv1[scanbase] = loop_uv[start + j - 1];
+                uv2[scanbase] = loop_uv[start + j];
+                prim->tris[scanbase++] = vec3f(
                         prim->loops[start],
-                        prim->loops[start + 1],
-                        prim->loops[start + 2]);
-                for (int i = 3; i < len; i++) {
-                    uv0.push_back(loop_uv[start]);
-                    uv1.push_back(loop_uv[start + i - 1]);
-                    uv2.push_back(loop_uv[start + i]);
-                    prim->tris.emplace_back(
-                            prim->loops[start],
-                            prim->loops[start + i - 1],
-                            prim->loops[start + i]);
-                }
-            } else if (len == 2) {
-                line_uv0.push_back(loop_uv[start]);
-                line_uv1.push_back(loop_uv[start + 1]);
-                prim->lines.emplace_back(
-                        prim->loops[start],
-                        prim->loops[start + 1]);
-            } else if (len == 1) {
-                point_uv.push_back(loop_uv[start]);
-                prim->points.emplace_back(
-                        prim->loops[start]);
+                        prim->loops[start + j - 1],
+                        prim->loops[start + j]);
             }
-        }
+        });
 
     }
     prim->loops.clear();
