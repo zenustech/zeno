@@ -315,10 +315,11 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
                 clr[i] = clr0;
             }
         }
-#if 0
+#if 1
         bool primNormalCorrect =
             prim->has_attr("nrm") &&
-            length(prim->attr<zeno::vec3f>("nrm")[0]) > 1e-5;
+            (!prim->attr<zeno::vec3f>("nrm").size() ||
+             length(prim->attr<zeno::vec3f>("nrm")[0]) > 1e-5);
         bool need_computeNormal =
             !primNormalCorrect || !(prim->has_attr("nrm"));
         if (prim->tris.size() && need_computeNormal) {
@@ -326,6 +327,11 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
             zeno::log_trace("computing normal");
             zeno::primCalcNormal(&*prim, 1);
         }
+        if (prim->loop_uvs.size()) {
+            zeno::primDecodeUVs(&*prim);//loop_uvs to loop.attr("uv")
+        }
+        zeno::primTriangulateQuads(&*prim);
+        zeno::primTriangulate(&*prim);//will further loop.attr("uv") to tris.attr("uv0")...
 #else
         zeno::primSepTriangles(&*prim, true, true);//TODO: rm keepTriFaces
 #endif
