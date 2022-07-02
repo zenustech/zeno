@@ -125,4 +125,4 @@ struct RenderEngineZhxx : RenderEngine, zeno::disable_copy {
 static auto definer = RenderManager::registerRenderEngine<RenderEngineZhxx>("zhxx");
 
 }
-Ednfi
+#endif
