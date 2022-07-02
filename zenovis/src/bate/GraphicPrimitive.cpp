@@ -322,16 +322,17 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
              length(prim->attr<zeno::vec3f>("nrm")[0]) > 1e-5);
         bool need_computeNormal =
             !primNormalCorrect || !(prim->has_attr("nrm"));
-        if (prim->tris.size() && need_computeNormal) {
+        bool thePrmHasFaces = !(!prim->tris.size() && !prim->quads.size() && !prim->polys.size());
+        if (thePrmHasFaces && need_computeNormal) {
             /* std::cout << "computing normal\n"; */
             zeno::log_trace("computing normal");
             zeno::primCalcNormal(&*prim, 1);
+            if (prim->loop_uvs.size()) {
+                zeno::primDecodeUVs(&*prim);//loop_uvs to loop.attr("uv")
+            }
+            zeno::primTriangulateQuads(&*prim);
+            zeno::primTriangulate(&*prim);//will further loop.attr("uv") to tris.attr("uv0")...
         }
-        if (prim->loop_uvs.size()) {
-            zeno::primDecodeUVs(&*prim);//loop_uvs to loop.attr("uv")
-        }
-        zeno::primTriangulateQuads(&*prim);
-        zeno::primTriangulate(&*prim);//will further loop.attr("uv") to tris.attr("uv0")...
 #else
         zeno::primSepTriangles(&*prim, true, true);//TODO: rm keepTriFaces
 #endif

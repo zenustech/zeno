@@ -348,7 +348,7 @@ ZENDEFNODE(MakeCubePrimitive,
         }, /* params: */ {
         {},
         }, /* category: */ {
-        "primitive",
+        "deprecated",
         }});
 
 struct MakeBoxPrimitive : INode {
