@@ -64,10 +64,11 @@ struct ZSEvalGradientField : zeno::INode {
                 ZS_LAMBDA(int vi) mutable {
                     vtemp(tag,vi) = verts(attr,vi);
         });
+        // compute_gradient(cudaPol,eles,verts,"x",vtemp,"T",etemp,"g",zs::wrapv(simplex_size));
         if(simplex_size == 4)
-            compute_gradient<4,3>(cudaPol,eles,verts,"x",vtemp,"T",etemp,"g");
+            compute_gradient<4>(cudaPol,eles,verts,"x",vtemp,"T",etemp,"g");
         if(simplex_size == 3)
-            compute_gradient<3,3>(cudaPol,eles,verts,"x",vtemp,"T",etemp,"g");
+            compute_gradient<3>(cudaPol,eles,verts,"x",vtemp,"T",etemp,"g");
         // copy the gradient field from etemp to eles
         cudaPol(zs::range(eles.size()),
             [eles = proxy<space>({},eles),etemp = proxy<space>({},etemp),gtag = zs::SmallString(attrg)]

@@ -24,147 +24,6 @@ struct ZSSolveLaplacian : zeno::INode {
     using tiles_t = typename ZenoParticles::particles_t;
     using vec3 = zs::vec<T,3>;
     using mat3 = zs::vec<T,3,3>;
-    struct LaplaceSystem {
-        template<typename Pol> 
-        void project(Pol& pol,const zs::SmallString& btag,tiles_t& verts,const zs::SmallString& tag, dtiles_t& vtemp) {
-            using namespace zs;
-            constexpr execspace_e space = execspace_e::cuda;
-            pol(zs::range(vtemp.size()),
-                [vtemp = proxy<space>({},vtemp),verts = proxy<space>({},verts),btag,tag]
-                        ZS_LAMBDA(int vi) mutable {
-                    if(verts(btag,vi) > zs::limits<T>::epsilon())
-                        vtemp(tag,vi) = (T)0.0;
-                    // vtemp(tag,vi) = (T)0.0;
-                });
-        }    
-
-        // the right hand-side are all zeros;
-        template<typename Pol>
-        void rhs(Pol& pol,const zs::SmallString& tag,const zs::SmallString& rTag,dtiles_t& vtemp) {
-            using namespace zs;
-            constexpr auto space = execspace_e::cuda;
-            const auto numVerts = verts.size();
-            const auto numEles = eles.size();
-            // b -> 0
-            pol(range(numVerts),
-                [vtemp = proxy<space>({},vtemp),rTag] ZS_LAMBDA(int vi) mutable {
-                    vtemp(rTag,vi) = (T)0.0;
-                });
-        }
-
-        template<int codim>
-        void prepare_preconditioner(zs::CudaExecutionPolicy &pol,const zs::SmallString& HTag,dtiles_t& etemp,const zs::SmallString& PTag,dtiles_t& vtemp) {
-            using namespace zs;
-            constexpr auto space = execspace_e::cuda;
-            const auto numVerts = verts.size();
-            const auto numEles = eles.size();
-
-            pol(zs::range(vtemp.size()),
-                [vtemp = proxy<space>({}, vtemp),
-                    verts = proxy<space>({}, verts)] ZS_LAMBDA (int vi) mutable {
-                        vtemp("P", vi) = (T)0.0;
-            });
-
-            pol(zs::range(eles.size()),
-                        [vtemp = proxy<space>({},vtemp),etemp = proxy<space>({},etemp),eles = proxy<space>({},eles),codim_v = wrapv<codim>{}]
-                            ZS_LAMBDA(int ei) mutable{
-                constexpr int cdim = RM_CVREF_T(codim_v)::value;
-                auto inds = eles.template pack<4>("inds",ei).template reinterpret_bits<int>();
-                auto H = etemp.pack<cdim,cdim>("L",ei);
-                for(int vi = 0;vi != cdim;++vi)
-                    atomic_add(exec_cuda,&vtemp("P",inds[vi]),(T)H(vi,vi));
-            });
-
-            pol(zs::range(verts.size()),
-                [vtemp = proxy<space>({},vtemp)] ZS_LAMBDA(int vi) mutable{
-                    vtemp("P",vi) = 1./vtemp("P",vi);
-                    // vtemp("P",vi) = 1.0;
-            });            
-        }
-
-        template<int codim>
-        void multiply(zs::CudaExecutionPolicy &pol,const zs::SmallString& dxTag,
-                    const zs::SmallString& bTag,
-                    dtiles_t& vtemp,
-                    const dtiles_t& etemp) {
-            using namespace zs;
-            constexpr auto space = execspace_e::cuda;
-            constexpr auto execTag = wrapv<space>{};
-            const auto numVerts = verts.size();
-            const auto numEles = eles.size();
-
-            // b -> 0
-            pol(range(numVerts),
-                [execTag,vtemp = proxy<space>({},vtemp),bTag] ZS_LAMBDA(int vi) mutable {
-                    vtemp(bTag,vi) = (T)0.0;
-                });
-            // compute Adx->b
-            pol(range(numEles),[execTag,etemp = proxy<space>({},etemp),vtemp = proxy<space>({},vtemp),eles = proxy<space>({},eles),dxTag,bTag,cdim_v = wrapv<codim>{}]
-                ZS_LAMBDA(int ei) mutable {
-                    constexpr int cdim = RM_CVREF_T(cdim_v)::value;
-                    auto inds = eles.template pack<cdim>("inds",ei).template reinterpret_bits<int>();
-                    zs::vec<T,cdim> temp{};
-                    for(int vi = 0;vi != cdim;++vi)
-                        temp[vi] = vtemp(dxTag,inds[vi]);
-
-                    auto He = etemp.pack<cdim,cdim>("L",ei);
-                    temp = He * temp;
-                    for(int vi = 0;vi != cdim;++vi)
-                        atomic_add(execTag,&vtemp(bTag,inds[vi]),temp[vi]);
-            });
-        }
-
-        template <typename Pol>
-        void precondition(Pol &pol, const zs::SmallString srcTag,
-                        const zs::SmallString dstTag,dtiles_t& vtemp) {
-        using namespace zs;
-        constexpr execspace_e space = execspace_e::cuda;
-        // precondition
-        pol(zs::range(verts.size()),
-            [vtemp = proxy<space>({}, vtemp), verts = proxy<space>({}, verts),
-            srcTag, dstTag] ZS_LAMBDA(int vi) mutable {
-                vtemp(dstTag, vi) =
-                    vtemp("P", vi) * vtemp(srcTag, vi);
-            });
-        }
-
-        LaplaceSystem(const tiles_t& verts,const tiles_t& eles) : verts{verts},eles{eles} {}
-
-        const tiles_t &verts;
-        const tiles_t &eles;
-    };
-
-    template<int pack_dim = 1>
-    T dot(zs::CudaExecutionPolicy &cudaPol, dtiles_t &vertData,
-            const zs::SmallString tag0, const zs::SmallString tag1) {
-        using namespace zs;
-        constexpr auto space = execspace_e::cuda;
-        Vector<T> res{vertData.get_allocator(), 1};
-        res.setVal(0);
-        cudaPol(range(vertData.size()),
-                [data = proxy<space>({}, vertData), res = proxy<space>(res), tag0,
-                tag1] __device__(int pi) mutable {
-                    auto v0 = data.pack<pack_dim>(tag0,pi);
-                    auto v1 = data.pack<pack_dim>(tag1,pi);
-                    atomic_add(exec_cuda, res.data(), v0.dot(v1));
-                });
-        return res.getVal();
-    }
-    template<int pack_dim = 1>
-    T infNorm(zs::CudaExecutionPolicy &cudaPol, dtiles_t &vertData,
-                const zs::SmallString tag) {
-        using namespace zs;
-        constexpr auto space = execspace_e::cuda;
-        Vector<T> res{vertData.get_allocator(), 1};
-        res.setVal(0);
-        cudaPol(range(vertData.size()),
-                [data = proxy<space>({}, vertData), res = proxy<space>(res),
-                tag] __device__(int pi) mutable {
-                auto v = data.pack<pack_dim>(tag, pi);
-                atomic_max(exec_cuda, res.data(), v.abs().max());
-                });
-        return res.getVal();
-    }
 
     virtual void apply() override {
         using namespace zs;
@@ -222,17 +81,11 @@ struct ZSSolveLaplacian : zeno::INode {
                 if(cdim == 4)
                     etemp.tuple<4>("inds",ei) = eles.pack<4>("inds",ei);
         });
-
-        fmt::print("FINISH COMPUTE COTMATRIX\n");
-        // compute the residual
-        LaplaceSystem A{verts,eles};
         // compute preconditioner
-        fmt::print("prepare preconditioner\n");
         if(cdim == 4)
-            A.prepare_preconditioner<4>(cudaPol,"L",etemp,"P",vtemp);
+            prepare_preconditioner<4>(cudaPol,eles,"L",etemp,"P",vtemp);
         else
-            A.prepare_preconditioner<3>(cudaPol,"L",etemp,"P",vtemp);
-        fmt::print("finish setup preconditioner\n");
+            prepare_preconditioner<3>(cudaPol,eles,"L",etemp,"P",vtemp);
         // initial guess
         cudaPol(zs::range(vtemp.size()),
             [vtemp = proxy<space>({},vtemp),verts = proxy<space>({},verts),tag = zs::SmallString(attr)] ZS_LAMBDA(int vi) mutable {

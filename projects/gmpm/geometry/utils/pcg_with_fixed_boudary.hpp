@@ -6,6 +6,29 @@ namespace zeno {
     // the interface the equation should have:
     using T = float;
 
+    template<int simplex_dim,typename Pol,typename ElmTileVec,typename VBufTileVec,typename EBufTileVec>
+    void prepare_preconditioner(Pol &pol,const ElmTileVec& eles,const zs::SmallString& HTag,const EBufTileVec& etemp,const zs::SmallString& PTag,VBufTileVec& vtemp) {
+        using namespace zs;
+        constexpr auto space = execspace_e::cuda;
+        pol(zs::range(vtemp.size()),
+            [vtemp = proxy<space>({}, vtemp),PTag] ZS_LAMBDA (int vi) mutable {
+                    vtemp(PTag, vi) = (T)0.0;
+        });
+        pol(zs::range(eles.size()),
+                    [vtemp = proxy<space>({},vtemp),etemp = proxy<space>({},etemp),eles = proxy<space>({},eles),HTag,PTag]
+                        ZS_LAMBDA(int ei) mutable{
+            auto inds = eles.template pack<simplex_dim>("inds",ei).template reinterpret_bits<int>();
+            auto H = etemp.template pack<simplex_dim,simplex_dim>(HTag,ei);
+            for(int vi = 0;vi != simplex_dim;++vi)
+                atomic_add(exec_cuda,&vtemp(PTag,inds[vi]),(T)H(vi,vi));
+        });
+        pol(zs::range(vtemp.size()),
+            [vtemp = proxy<space>({},vtemp),PTag] ZS_LAMBDA(int vi) mutable{
+                vtemp(PTag,vi) = 1./vtemp(PTag,vi);
+        });            
+    }
+
+
     template<int space_dim ,typename Pol,typename VTileVec>
     T dot(Pol &pol, VTileVec &vtemp,const zs::SmallString tag0, const zs::SmallString tag1) {
         using namespace zs;
@@ -130,13 +153,13 @@ namespace zeno {
         },vert_buffer.size()};
         vtemp.resize(vert_buffer.size());
 
-        fmt::print("check point 0\n");
+        // fmt::print("check point 0\n");
 
         copy<space_dim>(pol,vert_buffer,xtag,vtemp,"x");
         copy<1>(pol,vert_buffer,bou_tag,vtemp,"btag");
         copy<space_dim>(pol,vert_buffer,btag,vtemp,"b");
         copy<space_dim*space_dim>(pol,vert_buffer,Ptag,vtemp,"P");
-        fmt::print("check point 1\n");
+        // fmt::print("check point 1\n");
         ETileVec etemp{elm_buffer.get_allocator(),{
             {"inds",simplex_dim},
             {"H",simplex_dim*space_dim*simplex_dim*space_dim}
@@ -144,21 +167,21 @@ namespace zeno {
         etemp.resize(elm_buffer.size());
         copy<simplex_dim>(pol,elm_buffer,inds_tag,etemp,"inds");
 
-        fmt::print("check point 2\n");
+        // fmt::print("check point 2\n");
         copy<space_dim * simplex_dim * space_dim * simplex_dim>(pol,elm_buffer,Htag,etemp,"H");
-        fmt::print("check point 3\n");
+        // fmt::print("check point 3\n");
 
 
         multiply<space_dim,simplex_dim>(pol,vtemp,etemp,"H","inds","x","temp");
 
 
-        fmt::print("check point 4\n");
+        // fmt::print("check point 4\n");
         // compute initial residual : b - Hx -> r
         add<space_dim>(pol,vtemp,"b",(T)1.0,"temp",(T)(-1.0),"r");
         project<space_dim>(pol,vtemp,"r","btag");
 
 
-        fmt::print("check point 5\n");
+        // fmt::print("check point 5\n");
         // P * r -> q
         precondition<space_dim>(pol,vtemp,"P","r","q");
         // q -> p
