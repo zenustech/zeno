@@ -128,7 +128,7 @@ namespace {
 
 
 //------------------------------------------------------------------------------
-static void osdPrimSubdiv(PrimitiveObject *prim, int levels, bool triangulate = false, bool asQuadFaces = false, bool hasLoopUVs = true, bool hasEdgeCrease = true) {
+static void osdPrimSubdiv(PrimitiveObject *prim, int levels, std::string edgeCreaseAttr = {}, bool triangulate = false, bool asQuadFaces = false, bool hasLoopUVs = true) {
     const int maxlevel=levels;
     if (maxlevel <= 0 || !prim->verts.size()) return;
 
@@ -177,10 +177,16 @@ static void osdPrimSubdiv(PrimitiveObject *prim, int levels, bool triangulate = 
 
 
     Far::TopologyDescriptor desc;
-            desc.numVertices = prim->verts.size();
-            desc.numFaces = polysLen.size();
-            desc.numVertsPerFace = polysLen.data();
-            desc.vertIndicesPerFace = polysInd.data();
+    desc.numVertices = prim->verts.size();
+    desc.numFaces = polysLen.size();
+    desc.numVertsPerFace = polysLen.data();
+    desc.vertIndicesPerFace = polysInd.data();
+    if (edgeCreaseAttr.size()) {
+        auto const &crease = prim->lines.attr<float>(edgeCreaseAttr);
+        desc.numCreases = crease.size();
+        desc.creaseVertexIndexPairs = reinterpret_cast<int const *>(prim->lines.data());
+        desc.creaseWeights = crease.data();
+    }
 
     std::vector<Far::TopologyDescriptor::FVarChannel> channels;
     std::vector<int> uvsInd;
@@ -223,6 +229,8 @@ static void osdPrimSubdiv(PrimitiveObject *prim, int levels, bool triangulate = 
         desc.fvarChannels = channels.data();
     }
     
+        prim->points.clear();
+        prim->lines.clear();
         prim->tris.clear();
         prim->quads.clear();
         prim->polys.clear();
@@ -590,12 +598,12 @@ struct OSDPrimSubdiv : INode {
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
         int levels = get_input2<int>("levels");
+        auto edgeCreaseAttr = get_input2<std::string>("edgeCreaseAttr");
         bool triangulate = get_input2<bool>("triangulate");
         bool asQuadFaces = get_input2<bool>("asQuadFaces");
         bool hasLoopUVs = get_input2<bool>("hasLoopUVs");
-        bool hasEdgeCrease = get_input2<bool>("hasEdgeCrease");
-        if (levels) osdPrimSubdiv(prim.get(), levels, triangulate,
-                                  asQuadFaces, hasLoopUVs, hasEdgeCrease);
+        if (levels) osdPrimSubdiv(prim.get(), levels, edgeCreaseAttr, triangulate,
+                                  asQuadFaces, hasLoopUVs);
         set_output("prim", std::move(prim));
     }
 };
@@ -603,10 +611,10 @@ ZENO_DEFNODE(OSDPrimSubdiv)({
     {
         "prim",
         {"int", "levels", "2"},
+        {"string", "edgeCreaseAttr", ""},
         {"bool", "triangulate", "1"},
         {"bool", "asQuadFaces", "1"},
         {"bool", "hasLoopUVs", "1"},
-        {"bool", "hasEdgeCrease", "1"},
     },
     {
         "prim",
