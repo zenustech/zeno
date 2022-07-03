@@ -128,7 +128,7 @@ namespace {
 
 
 //------------------------------------------------------------------------------
-static void osdPrimSubdiv(PrimitiveObject *prim, int levels, bool triangulate = false, bool asQuadFaces = false, bool hasLoopUVs = true, bool hasEdgeCrease = true) {
+static void osdPrimSubdivFvar(PrimitiveObject *prim, int levels, bool triangulate = false, bool asQuadFaces = false, bool hasLoopUVs = true) {
     const int maxlevel=levels;
     if (maxlevel <= 0 || !prim->verts.size()) return;
 
@@ -235,7 +235,7 @@ static void osdPrimSubdiv(PrimitiveObject *prim, int levels, bool triangulate = 
     Sdc::Options refineofactptions;
     refineofactptions.SetVtxBoundaryInterpolation(Sdc::Options::VTX_BOUNDARY_EDGE_ONLY);
     // Instantiate a Far::TopologyRefiner from the descriptor
-    using Factory = Far::TopologyRefinerFactory<Far::TopologyDescriptor>;
+            using Factory = Far::TopologyRefinerFactory<Far::TopologyDescriptor>;
     std::unique_ptr<Far::TopologyRefiner> refiner(
         Factory::Create(desc, Factory::Options(refinetfactype, refineofactptions)));
     if (!refiner) throw makeError("refiner is null (factory creation failed)");
@@ -586,27 +586,24 @@ static void osdPrimSubdiv(PrimitiveObject *prim, int levels, bool triangulate = 
     //delete vbuffer;
 }
 
-struct OSDPrimSubdiv : INode {
+struct OSDPrimSubdivFvar : INode {
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
         int levels = get_input2<int>("levels");
         bool triangulate = get_input2<bool>("triangulate");
         bool asQuadFaces = get_input2<bool>("asQuadFaces");
         bool hasLoopUVs = get_input2<bool>("hasLoopUVs");
-        bool hasEdgeCrease = get_input2<bool>("hasEdgeCrease");
-        if (levels) osdPrimSubdiv(prim.get(), levels, triangulate,
-                                  asQuadFaces, hasLoopUVs, hasEdgeCrease);
+        if (levels) osdPrimSubdivFvar(prim.get(), levels, triangulate, asQuadFaces, hasLoopUVs);
         set_output("prim", std::move(prim));
     }
 };
-ZENO_DEFNODE(OSDPrimSubdiv)({
+ZENO_DEFNODE(OSDPrimSubdivFvar)({
     {
         "prim",
         {"int", "levels", "2"},
         {"bool", "triangulate", "1"},
         {"bool", "asQuadFaces", "1"},
         {"bool", "hasLoopUVs", "1"},
-        {"bool", "hasEdgeCrease", "1"},
     },
     {
         "prim",
