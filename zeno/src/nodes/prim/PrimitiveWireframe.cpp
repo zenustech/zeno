@@ -47,6 +47,7 @@ struct PrimitiveWireframe : INode {
             prim->tris.clear();
             prim->quads.clear();
             prim->loops.clear();
+            prim->loop_uvs.clear();
             prim->polys.clear();
         }
 
