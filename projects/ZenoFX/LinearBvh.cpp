@@ -536,7 +536,7 @@ void LBvh::refit() {
 
 /// nearest primitive
 template <LBvh::element_e et>
-void LBvh::find_nearest(TV const &pos, Ti &id, float &dist,
+typename LBvh::TV LBvh::find_nearest(TV const &pos, Ti &id, float &dist,
                         element_t<et>) const {
   std::shared_ptr<const PrimitiveObject> prim = primPtr.lock();
   if (!prim)
@@ -546,6 +546,8 @@ void LBvh::find_nearest(TV const &pos, Ti &id, float &dist,
 
   const Ti numNodes = sortedBvs.size();
   Ti node = 0;
+  TV ws{0.f, 0.f, 0.f};
+  TV wsTmp{0.f, 0.f, 0.f};
   while (node != -1 && node != numNodes) {
     Ti level = levels[node];
     // level and node are always in sync
@@ -557,64 +559,66 @@ void LBvh::find_nearest(TV const &pos, Ti &id, float &dist,
       const auto eid = auxIndices[node];
       float d = std::numeric_limits<float>::max();
       if constexpr (et == element_e::point)
-        d = length(refpos[prim->points[eid]] - pos);
+        d = dist_pp(refpos[prim->points[eid]], pos, wsTmp);
       else if constexpr (et == element_e::line) {
         auto line = prim->lines[eid];
-        d = dist_pe(pos, refpos[line[0]], refpos[line[1]]);
+        d = dist_pe(pos, refpos[line[0]], refpos[line[1]], wsTmp);
       } else if constexpr (et == element_e::tri) {
         auto tri = prim->tris[eid];
-        d = dist_pt(pos, refpos[tri[0]], refpos[tri[1]], refpos[tri[2]]);
+        d = dist_pt(pos, refpos[tri[0]], refpos[tri[1]], refpos[tri[2]], wsTmp);
       } else if constexpr (et == element_e::tet) {
         auto tet = prim->quads[eid];
         if (auto dd =
-                dist_pt(pos, refpos[tet[0]], refpos[tet[1]], refpos[tet[2]]);
+                dist_pt(pos, refpos[tet[0]], refpos[tet[1]], refpos[tet[2]], wsTmp);
             dd < d)
           d = dd;
         if (auto dd =
-                dist_pt(pos, refpos[tet[1]], refpos[tet[3]], refpos[tet[2]]);
+                dist_pt(pos, refpos[tet[1]], refpos[tet[3]], refpos[tet[2]], wsTmp);
             dd < d)
           d = dd;
         if (auto dd =
-                dist_pt(pos, refpos[tet[0]], refpos[tet[3]], refpos[tet[2]]);
+                dist_pt(pos, refpos[tet[0]], refpos[tet[3]], refpos[tet[2]], wsTmp);
             dd < d)
           d = dd;
         if (auto dd =
-                dist_pt(pos, refpos[tet[0]], refpos[tet[2]], refpos[tet[3]]);
+                dist_pt(pos, refpos[tet[0]], refpos[tet[2]], refpos[tet[3]], wsTmp);
             dd < d)
           d = dd;
       }
       if (d < dist) {
         id = eid;
         dist = d;
+        ws = wsTmp;
       }
       node++;
     } else // separate at internal nodes
       node = auxIndices[node];
   }
+  return ws;
 }
 
-template void LBvh::find_nearest<LBvh::element_e::point>(
+template typename LBvh::TV LBvh::find_nearest<LBvh::element_e::point>(
     const LBvh::TV &, LBvh::Ti &, float &,
     typename LBvh::element_t<element_e::point>) const;
-template void LBvh::find_nearest<LBvh::element_e::line>(
+template typename LBvh::TV LBvh::find_nearest<LBvh::element_e::line>(
     const LBvh::TV &, LBvh::Ti &, float &,
     typename LBvh::element_t<element_e::line>) const;
-template void LBvh::find_nearest<LBvh::element_e::tri>(
+template typename LBvh::TV LBvh::find_nearest<LBvh::element_e::tri>(
     const LBvh::TV &, LBvh::Ti &, float &,
     typename LBvh::element_t<element_e::tri>) const;
-template void LBvh::find_nearest<LBvh::element_e::tet>(
+template typename LBvh::TV LBvh::find_nearest<LBvh::element_e::tet>(
     const LBvh::TV &, LBvh::Ti &, float &,
     typename LBvh::element_t<element_e::tet>) const;
 
-void LBvh::find_nearest(TV const &pos, Ti &id, float &dist) const {
+typename LBvh::TV LBvh::find_nearest(TV const &pos, Ti &id, float &dist) const {
   if (eleCategory == element_e::tet)
-    find_nearest(pos, id, dist, element_c<element_e::tet>);
+    return find_nearest(pos, id, dist, element_c<element_e::tet>);
   else if (eleCategory == element_e::tri)
-    find_nearest(pos, id, dist, element_c<element_e::tri>);
+    return find_nearest(pos, id, dist, element_c<element_e::tri>);
   else if (eleCategory == element_e::line)
-    find_nearest(pos, id, dist, element_c<element_e::line>);
+    return find_nearest(pos, id, dist, element_c<element_e::line>);
   else if (eleCategory == element_e::point)
-    find_nearest(pos, id, dist, element_c<element_e::point>);
+    return find_nearest(pos, id, dist, element_c<element_e::point>);
 }
 
 std::shared_ptr<PrimitiveObject> LBvh::retrievePrimitive(Ti eid) const {
@@ -651,7 +655,7 @@ std::shared_ptr<PrimitiveObject> LBvh::retrievePrimitive(Ti eid) const {
   return ret;
 }
 
-vec3f LBvh::retrievePrimitiveCenter(Ti eid) const {
+vec3f LBvh::retrievePrimitiveCenter(Ti eid, const TV &w) const {
   std::shared_ptr<const PrimitiveObject> prim = primPtr.lock();
   if (!prim)
     throw std::runtime_error(
@@ -666,10 +670,12 @@ vec3f LBvh::retrievePrimitiveCenter(Ti eid) const {
           4;
   } else if (eleCategory == element_e::tri) {
     auto tri = prim->tris[eid];
-    ret = (refpos[tri[0]] + refpos[tri[1]] + refpos[tri[2]]) / 3;
+    ret = w[0] * refpos[tri[0]] + w[1] * refpos[tri[1]] + w[2] * refpos[tri[2]];
+    // ret = (refpos[tri[0]] + refpos[tri[1]] + refpos[tri[2]]) / 3;
   } else if (eleCategory == element_e::line) {
     auto line = prim->lines[eid];
-    ret = (refpos[line[0]] + refpos[line[1]]) / 2;
+    ret = w[0] * refpos[line[0]] + w[1] * refpos[line[1]];
+    // ret = (refpos[line[0]] + refpos[line[1]]) / 2;
   } else if (eleCategory == element_e::point) {
     auto point = prim->points[eid];
     ret = refpos[point];
