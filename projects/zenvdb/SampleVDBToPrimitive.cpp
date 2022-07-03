@@ -88,11 +88,12 @@ struct SampleVDBToPrimitive : INode {
       //warp the sample coordinates
     }
 
-    std::visit([&](auto &vel) { 
+    //std::visit([&](auto &vel) { 
+    prim->attr_visit(attr, [&] (auto &vel) {
       if constexpr (is_vdb_to_prim_convertible<std::remove_reference_t<decltype(vel)>>::value)
         sampleVDBAttribute(pos, vel, grid.get()); 
-      },
-               prim->attr(attr));
+    });
+               //prim->attr(attr));
 
 
     if(type == "Periodic")

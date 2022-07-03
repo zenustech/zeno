@@ -4,7 +4,7 @@
 #include <zeno/utils/filesystem.h>
 #include <zeno/funcs/PrimitiveUtils.h>
 #include <zeno/utils/log.h>
-#include <zeno_FBX_config.h>
+#include <zeno_SampleModel_config.h>
 #include <sstream>
 #include <cctype>
 

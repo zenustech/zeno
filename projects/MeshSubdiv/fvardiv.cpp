@@ -128,7 +128,7 @@ namespace {
 
 
 //------------------------------------------------------------------------------
-static void osdPrimSubdiv(PrimitiveObject *prim, int levels, std::string edgeCreaseAttr = {}, bool triangulate = false, bool asQuadFaces = false, bool hasLoopUVs = true) {
+static void osdPrimSubdivFvar(PrimitiveObject *prim, int levels, bool triangulate = false, bool asQuadFaces = false, bool hasLoopUVs = true) {
     const int maxlevel=levels;
     if (maxlevel <= 0 || !prim->verts.size()) return;
 
@@ -177,16 +177,10 @@ static void osdPrimSubdiv(PrimitiveObject *prim, int levels, std::string edgeCre
 
 
     Far::TopologyDescriptor desc;
-    desc.numVertices = prim->verts.size();
-    desc.numFaces = polysLen.size();
-    desc.numVertsPerFace = polysLen.data();
-    desc.vertIndicesPerFace = polysInd.data();
-    if (edgeCreaseAttr.size()) {
-        auto const &crease = prim->lines.attr<float>(edgeCreaseAttr);
-        desc.numCreases = crease.size();
-        desc.creaseVertexIndexPairs = reinterpret_cast<int const *>(prim->lines.data());
-        desc.creaseWeights = crease.data();
-    }
+            desc.numVertices = prim->verts.size();
+            desc.numFaces = polysLen.size();
+            desc.numVertsPerFace = polysLen.data();
+            desc.vertIndicesPerFace = polysInd.data();
 
     std::vector<Far::TopologyDescriptor::FVarChannel> channels;
     std::vector<int> uvsInd;
@@ -229,8 +223,6 @@ static void osdPrimSubdiv(PrimitiveObject *prim, int levels, std::string edgeCre
         desc.fvarChannels = channels.data();
     }
     
-        prim->points.clear();
-        prim->lines.clear();
         prim->tris.clear();
         prim->quads.clear();
         prim->polys.clear();
@@ -243,7 +235,7 @@ static void osdPrimSubdiv(PrimitiveObject *prim, int levels, std::string edgeCre
     Sdc::Options refineofactptions;
     refineofactptions.SetVtxBoundaryInterpolation(Sdc::Options::VTX_BOUNDARY_EDGE_ONLY);
     // Instantiate a Far::TopologyRefiner from the descriptor
-    using Factory = Far::TopologyRefinerFactory<Far::TopologyDescriptor>;
+            using Factory = Far::TopologyRefinerFactory<Far::TopologyDescriptor>;
     std::unique_ptr<Far::TopologyRefiner> refiner(
         Factory::Create(desc, Factory::Options(refinetfactype, refineofactptions)));
     if (!refiner) throw makeError("refiner is null (factory creation failed)");
@@ -594,24 +586,21 @@ static void osdPrimSubdiv(PrimitiveObject *prim, int levels, std::string edgeCre
     //delete vbuffer;
 }
 
-struct OSDPrimSubdiv : INode {
+struct OSDPrimSubdivFvar : INode {
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
         int levels = get_input2<int>("levels");
-        auto edgeCreaseAttr = get_input2<std::string>("edgeCreaseAttr");
         bool triangulate = get_input2<bool>("triangulate");
         bool asQuadFaces = get_input2<bool>("asQuadFaces");
         bool hasLoopUVs = get_input2<bool>("hasLoopUVs");
-        if (levels) osdPrimSubdiv(prim.get(), levels, edgeCreaseAttr, triangulate,
-                                  asQuadFaces, hasLoopUVs);
+        if (levels) osdPrimSubdivFvar(prim.get(), levels, triangulate, asQuadFaces, hasLoopUVs);
         set_output("prim", std::move(prim));
     }
 };
-ZENO_DEFNODE(OSDPrimSubdiv)({
+ZENO_DEFNODE(OSDPrimSubdivFvar)({
     {
         "prim",
         {"int", "levels", "2"},
-        {"string", "edgeCreaseAttr", ""},
         {"bool", "triangulate", "1"},
         {"bool", "asQuadFaces", "1"},
         {"bool", "hasLoopUVs", "1"},

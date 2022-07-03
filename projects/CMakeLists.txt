@@ -21,6 +21,7 @@ set(ZENO_EXTENSIONS
     Alembic
     LSystem
     Skinning
+    SampleModel
     Functional
     TreeSketch
     CalcGeometryUV
