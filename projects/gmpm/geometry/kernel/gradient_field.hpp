@@ -3,17 +3,18 @@
 #include "../../Structures.hpp"
 
 namespace zeno{
-    template<typename T,typename Pol,int dim = 3>
+    template<int simplex_size,int dim,typename T,typename Pol>
     constexpr void compute_gradient(Pol &pol,const typename ZenoParticles::particles_t &eles,
         const typename ZenoParticles::particles_t &verts,const zs::SmallString& xTag,
         const zs::TileVector<T,32>& vtemp,const zs::SmallString& tTag,
         zs::TileVector<T,32>& etemp,const zs::SmallString& gTag,zs::wrapv<dim> = {}) {
             using namespace zs;
-            using mat = zs::vec<T,dim,dim>;
-            using vec = zs::vec<T,dim>;
+            using mat_sm1xd = zs::vec<T,simplex_size - 1,dim>;
+            using mat_sm1xsm1 = zs::vec<T,simplex_size - 1,simplex_size - 1>;
+            using vec_d = zs::vec<T,dim>;
+            using vec_sm1 = zs::vec<T,simplex_size - 1>;
 
             static_assert(dim == 3 || dim == 2,"invalid dimension!\n");
-            constexpr auto dimp1 = dim + 1;
 
             constexpr auto space = Pol::exec_tag::value;
             #if ZS_ENABLE_CUDA && defined(__CUDACC__)
@@ -32,7 +33,7 @@ namespace zeno{
                 // printf("etemp buffer does not contain specified channel\n");
                 throw std::runtime_error("etemp buffer does not contain specified channel");
             }
-            if(eles.getChannelSize("inds") != dimp1){
+            if(eles.getChannelSize("inds") != simplex_size){
                 throw std::runtime_error("the specified dimension does not match the input simplex size");
             }
             // etemp.append_channels(pol,{{gTag,dim}});
@@ -42,15 +43,17 @@ namespace zeno{
                     vtemp = proxy<space>({},vtemp),xTag,tTag,gTag]
                     ZS_LAMBDA(int ei) mutable {
                         // constexpr int dim = RM_CVREF_T(dim_v)::value;
-                        constexpr int dimp1 = dim + 1;
-                        mat Dm = mat{(T)0.0};
-                        auto inds = eles.template pack<dimp1>("inds",ei).template reinterpret_bits<int>();
-                        vec g{};
-                        for(size_t i = 0;i != dim;++i){
+                        mat_sm1xd Dm{};
+                        mat_sm1xsm1 Dm2{};
+                        auto inds = eles.template pack<simplex_size>("inds",ei).template reinterpret_bits<int>();
+                        vec_sm1 g{};
+                        for(size_t i = 0;i != simplex_size - 1;++i){
                             // zs::row(Dm,i) = verts.pack<dim>(xTag,inds[i+1]) - verts.pack<dim>(xTag,inds[0]);
                             zs::tie(Dm(i, 0), Dm(i, 1), Dm(i, 2)) = verts.pack<dim>(xTag,inds[i+1]) - verts.pack<dim>(xTag,inds[0]);
                             g[i] = vtemp(tTag,inds[i+1]) - vtemp(tTag,inds[0]);
                         }
+
+                        Dm2 = Dm * Dm.transpose();
                         // if(ei == 0){
                         //     printf("verts[0] : %f %f %f\n",(float)verts.pack<dim>(xTag,inds[0])[0],(float)verts.pack<dim>(xTag,inds[0])[1],(float)verts.pack<dim>(xTag,inds[0])[2]);
                         //     printf("verts[1] : %f %f %f\n",(float)verts.pack<dim>(xTag,inds[1])[0],(float)verts.pack<dim>(xTag,inds[1])[1],(float)verts.pack<dim>(xTag,inds[1])[2]);
@@ -63,10 +66,8 @@ namespace zeno{
                         //     printf("g[0] : %f %f %f\n",(float)g[0],(float)g[1],(float)g[2]);
                         // }
 
-                        Dm = zs::inverse(Dm);
-                        etemp.template tuple<dim>(gTag,ei) = Dm * g;
-
-
+                        Dm2 = zs::inverse(Dm2);
+                        etemp.template tuple<dim>(gTag,ei) = Dm.transpose() * Dm2 * g;
             });
     }
 };
