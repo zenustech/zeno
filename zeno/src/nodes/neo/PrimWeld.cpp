@@ -49,6 +49,7 @@ struct PrimWeld : INode {
             ++nrevamp;
         }
         revamp.resize(nrevamp);
+        // TODO: fix normal after merge!
         primRevampVerts(prim.get(), revamp, &unrevamp);
 
         set_output("prim", std::move(prim));
