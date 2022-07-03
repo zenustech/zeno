@@ -112,7 +112,7 @@ ZENO_API void primCalcNormal(zeno::PrimitiveObject* prim, float flip)
             for (int d = 0; d != 3; ++d)
                 atomicFloatAdd(&n_i[d], nsj[d]);
 #else
-            nrm[ind[j]] += nsj;
+            nrm[ind(j)] += nsj;
 #endif
         }
     }
