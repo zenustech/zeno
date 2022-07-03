@@ -59,10 +59,10 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
 
         bool bSubgNode = subgNodes.indexOf(idx) != -1;
 
-        const OUTPUT_SOCKETS &outputs = idx.data(ROLE_OUTPUTS).value<OUTPUT_SOCKETS>();
+        const OUTPUT_SOCKETS& outputs = idx.data(ROLE_OUTPUTS).value<OUTPUT_SOCKETS>();
         auto outputIt = outputs.begin();
 
-        const INPUT_SOCKETS &inputs = idx.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
+        const INPUT_SOCKETS& inputs = idx.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
         for (INPUT_SOCKET input : inputs)
         {
             auto inputName = input.info.name;
@@ -81,8 +81,19 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
                 const QVariant& defl = input.info.defaultValue;
                 if (!defl.isNull())
                 {
-                    AddVariantList({"setNodeInput", ident, inputName, defl}, input.info.type, writer);
-                    //todo: for subgraph node. but now there is not edit control on subgraphnode.
+                    if (bSubgNode)
+                    {
+                        //directly write defl value to SubInput defl value.
+                        const QModelIndex& subnodeIdx = AppHelper::getSubInOutNode(pGraphsModel, pGraphsModel->index(name), inputName, true);
+                        const QString& subInputId = subnodeIdx.data(ROLE_OBJID).toString();
+                        const QString& ident_ = nameMangling(ident, subInputId);
+                        AddVariantList({"setNodeParam", ident_, "defl", defl}, input.info.type, writer);
+                        AddVariantList({"setNodeInput", ident_, "_IN_hasValue", true}, "", writer);
+                    }
+                    else
+                    {
+                        AddVariantList({"setNodeInput", ident, inputName, defl}, input.info.type, writer);
+                    }
                 }
             }
             else
