@@ -363,7 +363,7 @@ struct SolveBBW : zeno::INode {
         constexpr auto space = execspace_e::cuda;
         auto cudaPol = cuda_exec();
 
-        compute_cotmatrix(cudaPol,eles,verts,"x",etemp,"L",zs::wrapv<4>{});
+        compute_cotmatrix<4>(cudaPol,eles,verts,"x",etemp,"L");
         // compute the residual
         HarmonicSystem A{verts,eles};
         // compute preconditioner
@@ -372,6 +372,8 @@ struct SolveBBW : zeno::INode {
                 verts = proxy<space>({}, verts)] ZS_LAMBDA (int vi) mutable {
                     vtemp("P", vi) = (T)0.0;
         });
+
+        
 
         cudaPol(zs::range(eles.size()),
                     [vtemp = proxy<space>({},vtemp),etemp = proxy<space>({},etemp),eles = proxy<space>({},eles)]

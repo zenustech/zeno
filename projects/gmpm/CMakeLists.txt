@@ -165,6 +165,7 @@ target_link_libraries(zeno_zsfem PRIVATE zshelper)
 
 add_library(zeno_geometry SHARED)
 target_sources(zeno_geometry PRIVATE
+  geometry/linear_system/mfcg.hpp
   geometry/kernel/laplace_matrix.hpp
   geometry/kernel/gradient_field.hpp
   geometry/kernel/bary_centric_weights.hpp

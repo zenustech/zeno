@@ -97,7 +97,7 @@ struct ZSComputeBaryCentricWeights : INode {
 ZENDEFNODE(ZSComputeBaryCentricWeights, {{{"interpolator","zsvolume"}, {"embed surf", "zssurf"}},
                             {{"interpolator on gpu", "zsvolume"}},
                             {{"float","bvh_thickness","0"},{"int","fitting_in","1"},{"string","tag","skin_bw"},{"string","bvh_channel","x"}},
-                            {"FEM"}});
+                            {"ZSGeometry"}});
 
 struct ZSSampleEmbedVectorField : zeno::INode {
     void apply() override {

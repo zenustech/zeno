@@ -133,7 +133,6 @@ struct ZSRetrieveVectorField : zeno::INode {
                 gtag = zs::SmallString(gtag),xtag = zs::SmallString(xtag),on_elm,scale,normalize,elm_dim] ZS_LAMBDA(int i) mutable {
                     if(on_elm){
                         auto bx = vec3::zeros();
-                        // auto bclr = vec3::zeros();
                         if(elm_dim == 4){
                             auto inds = eles.pack<4>("inds",i).reinterpret_bits<int>();
                             for(int j = 0;j != 4;++j)
@@ -145,11 +144,6 @@ struct ZSRetrieveVectorField : zeno::INode {
                         }
                         vec_buffer.tuple<3>("x",i) = bx;
                         vec_buffer.tuple<3>("vec",i) = scale * eles.pack<3>(gtag,i) / eles.pack<3>(gtag,i).norm();
-                        // if(i == 0){
-                        //     auto dir = eles.pack<3>(gtag,i);
-                        //     printf("pos<0> : %f %f %f\n",(float)bx[0],(float)bx[1],(float)bx[2]);
-                        //     printf("dir<0> : %f %f %f\n",(float)dir[0],(float)dir[1],(float)dir[2]);
-                        // }
                     }else{
                         vec_buffer.tuple<3>("x",i) = verts.pack<3>(xtag,i);
                         vec_buffer.tuple<3>("vec",i) = scale * verts.pack<3>(gtag,i) / verts.pack<3>(gtag,i).norm();
@@ -174,18 +168,8 @@ struct ZSRetrieveVectorField : zeno::INode {
                 auto end = start + vec_buffer.pack<3>("vec",i);
                 sverts[i*2 + 0] = zeno::vec3f{start[0],start[1],start[2]};
                 sverts[i*2 + 1] = zeno::vec3f{end[0],end[1],end[2]};
-
-                // if(i == 0){
-                //     printf("svert[0] : %f %f %f\n",(float)sverts[i*2 + 0][0],(float)sverts[i*2 + 0][1],(float)sverts[i*2 + 0][2]);
-                //     printf("svert[1] : %f %f %f\n",(float)sverts[i*2 + 1][0],(float)sverts[i*2 + 1][1],(float)sverts[i*2 + 1][2]);
-                // }
         });
 
-        // int i = 0;
-        // if(i == 0){
-        //     printf("svert[0] : %f %f %f\n",(float)sverts[i*2 + 0][0],(float)sverts[i*2 + 0][1],(float)sverts[i*2 + 0][2]);
-        //     printf("svert[1] : %f %f %f\n",(float)sverts[i*2 + 1][0],(float)sverts[i*2 + 1][1],(float)sverts[i*2 + 1][2]);
-        // }
         set_output("vec_field",std::move(vec_field));
     }    
 };
@@ -194,7 +178,7 @@ ZENDEFNODE(ZSRetrieveVectorField, {
     {"field"},
     {"vec_field"},
     {{"enum element vert","location","element"},{"string","gtag","vec_field"},{"string","xtag","xtag"},{"float","scale","1.0"},{"int","normalize","1"}},
-    {"FEM"},
+    {"ZSGeometry"},
 });
 
 

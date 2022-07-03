@@ -14,7 +14,7 @@
 #include <zeno/types/StringObject.h>
 
 #include "kernel/laplace_matrix.hpp"
-#include "utils/pcg_with_fixed_boudary.hpp"
+#include "linear_system/mfcg.hpp"
 
 namespace zeno {
 
@@ -32,6 +32,7 @@ struct ZSSolveLaplacian : zeno::INode {
         auto attr = get_param<std::string>("tag");
         auto& verts = zspars->getParticles();
         auto accuracy = get_param<float>("accuracy");
+        auto degree = get_param<int>("degree");
         //  make sure the input zspars has specified attributes
         if(!verts.hasProperty(attr)){
             fmt::print("the input zspars does not contain specified channel:{}\n",attr);
@@ -71,9 +72,9 @@ struct ZSSolveLaplacian : zeno::INode {
         // compute per-element laplace operator
         // fmt::print("COMPUTE COTMATRIX\n");
         if(cdim == 4)
-            compute_cotmatrix(cudaPol,eles,verts,"x",etemp,"L",zs::wrapv<4>{});
+            compute_cotmatrix<4>(cudaPol,eles,verts,"x",etemp,"L");
         else
-            compute_cotmatrix(cudaPol,eles,verts,"x",etemp,"L",zs::wrapv<3>{});
+            compute_cotmatrix<3>(cudaPol,eles,verts,"x",etemp,"L");
         cudaPol(range(etemp.size()),
             [etemp = proxy<space>({},etemp),eles = proxy<space>({},eles),cdim] ZS_LAMBDA(int ei) mutable {
                 if(cdim == 3)
@@ -83,9 +84,9 @@ struct ZSSolveLaplacian : zeno::INode {
         });
         // compute preconditioner
         if(cdim == 4)
-            prepare_preconditioner<4>(cudaPol,eles,"L",etemp,"P",vtemp);
+            PCG::prepare_block_diagonal_preconditioner<4,1>(cudaPol,eles,"L",etemp,"P",vtemp);
         else
-            prepare_preconditioner<3>(cudaPol,eles,"L",etemp,"P",vtemp);
+            PCG::prepare_block_diagonal_preconditioner<3,1>(cudaPol,eles,"L",etemp,"P",vtemp);
         // initial guess
         cudaPol(zs::range(vtemp.size()),
             [vtemp = proxy<space>({},vtemp),verts = proxy<space>({},verts),tag = zs::SmallString(attr)] ZS_LAMBDA(int vi) mutable {
@@ -97,15 +98,22 @@ struct ZSSolveLaplacian : zeno::INode {
 
         // Solve Laplace Equation Using PCG
         int iter = 0;
-        if(cdim == 3)
-            iter = pcg_with_fixed_sol_solve<1,3>(cudaPol,vtemp,etemp,"x","btag","b","P","inds","L",accuracy,1000,100);
-        else if(cdim == 4)
-            iter = pcg_with_fixed_sol_solve<1,4>(cudaPol,vtemp,etemp,"x","btag","b","P","inds","L",accuracy,1000,100);
+        if(cdim == 3 && degree == 1)
+            iter = PCG::pcg_with_fixed_sol_solve<1,3>(cudaPol,vtemp,etemp,"x","btag","b","P","inds","L",accuracy,1000,100);
+        else if(cdim == 4 && degree == 1)
+            iter = PCG::pcg_with_fixed_sol_solve<1,4>(cudaPol,vtemp,etemp,"x","btag","b","P","inds","L",accuracy,1000,100);
+        else if(cdim == 3 && degree == 2)
+            iter = PCG::gn_pcg_with_fixed_sol_solve<1,3>(cudaPol,vtemp,etemp,"x","btag","b","P","inds","L",accuracy,50000,50);
+        else if(cdim == 4 && degree == 2)
+            iter = PCG::gn_pcg_with_fixed_sol_solve<1,4>(cudaPol,vtemp,etemp,"x","btag","b","P","inds","L",accuracy,50000,50);
+
+        fmt::print("solve {} dim laplacion<{}> with {} pcg iters\n",cdim,degree,iter);
 
         cudaPol(zs::range(verts.size()),
                 [vtemp = proxy<space>({},vtemp),verts = proxy<space>({},verts),tag = zs::SmallString(attr)] ZS_LAMBDA(int vi) mutable {
                     verts(tag,vi) = vtemp("x",vi);
         });
+
 
         set_output("ZSParticles",zspars);
     }
@@ -115,14 +123,14 @@ ZENDEFNODE(ZSSolveLaplacian, {
                                     {"ZSParticles"},
                                     {"ZSParticles"},
                                     {
-                                        {"string","tag","T"},{"float","accuracy","1e-6"}
+                                        {"string","tag","T"},{"float","accuracy","1e-6"},{"int","degree","1"}
                                     },
                                     {"ZSGeometry"}
 });
 
 
 // the biharmonic hessian can be eval as LML, where M is a diagonal matrix with diagonal entries the inverse of nodal volume
-struct ZSSolveBiHarmonicEquaOnTets : zeno::INode {
+struct ZSSolveBiHarmonicEqua : zeno::INode {
     using T = float;
     using dtiles_t = zs::TileVector<T,32>;
     using tiles_t = typename ZenoParticles::particles_t;
@@ -309,9 +317,9 @@ struct ZSSolveBiHarmonicEquaOnTets : zeno::INode {
         
         // compute laplace matrix
         if(cdim == 4)
-            compute_cotmatrix(cudaPol,eles,verts,"x",etemp,"L",zs::wrapv<4>{});
+            compute_cotmatrix<4>(cudaPol,eles,verts,"x",etemp,"L");
         else //(cdim == 3)
-            compute_cotmatrix(cudaPol,eles,verts,"x",etemp,"L",zs::wrapv<3>{});
+            compute_cotmatrix<3>(cudaPol,eles,verts,"x",etemp,"L");
         
         // compute nodal volume
         cudaPol(zs::range(vtemp.size()),
@@ -457,7 +465,7 @@ struct ZSSolveBiHarmonicEquaOnTets : zeno::INode {
 
 };
 
-ZENDEFNODE(ZSSolveBiHarmonicEquaOnTets, {
+ZENDEFNODE(ZSSolveBiHarmonicEqua, {
                                     {"ZSParticles"},
                                     {"ZSParticles"},
                                     {
