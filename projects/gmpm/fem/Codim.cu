@@ -1350,7 +1350,7 @@ struct CodimStepping : INode {
                 });
       }
     }
-#if 0
+#if 1
     template <typename Model>
     T energy(zs::CudaExecutionPolicy &pol, const Model &model,
              const zs::SmallString tag, bool includeAugLagEnergy = false) {
@@ -1383,7 +1383,7 @@ struct CodimStepping : INode {
                                dt);
 #else
                 es[vi] = (T)0.5 * m * (x - vtemp.pack<3>("xtilde", vi)).l2NormSqr() + 
-                  -m * extForce.dot(x - vtemp.pack<3>("xt", vi)) * dt * dt;
+                  -m * extForce.dot(x) * dt * dt;
 #endif
               }
             });
@@ -1649,9 +1649,7 @@ struct CodimStepping : INode {
                            (T)0.5 * m *
                                (x - vtemp.pack<3>("xtilde", vi)).l2NormSqr());
                 // gravity
-                atomic_add(exec_cuda, &res[0],
-                           -m * extForce.dot(x - vtemp.pack<3>("xt", vi)) * dt *
-                               dt);
+                atomic_add(exec_cuda, &res[0], -m * extForce.dot(x) * dt * dt);
               }
             });
         if (primHandle.category == ZenoParticles::surface)
@@ -2754,7 +2752,7 @@ struct CodimStepping : INode {
                   lens[ei] = vtemp.template pack<3>("dir", ei).abs().sum();
                 });
         auto meanDirSize = (reduce(cudaPol, lens) / dt) / coOffset;
-        auto spanSize = meanDirSize * alpha / (A.meanEdgeLength * 8);
+        auto spanSize = meanDirSize * alpha / A.meanEdgeLength;
 #else
         // infNorm
         auto spanSize = res * alpha / (A.meanEdgeLength * 8);

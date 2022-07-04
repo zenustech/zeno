@@ -51,6 +51,7 @@ target_compile_options(zeno_zsfluid
   PRIVATE        $<$<COMPILE_LANGUAGE:CUDA>:-Xcudafe --display_error_number,--diag_suppress=implicit_return_from_non_void_function,--diag_suppress=2642,--diag_suppress=554>
 )
 
+#[=[
 # zeno_gipc
 add_library(zeno_gipc SHARED)
 target_sources(zeno_gipc PRIVATE
@@ -76,6 +77,7 @@ set_target_properties(zeno_gipc
                 CUDA_RESOLVE_DEVICE_SYMBOLS ON
                 CUDA_ARCHITECTURES "60"
                 )
+#]=]
 
 add_library(zeno_mpm SHARED)
 target_sources(zeno_mpm PRIVATE
@@ -139,7 +141,7 @@ target_sources(zeno_zsfem PRIVATE
   fem/QuasiStaticStepping.cu
   fem/BaryCentricInterpolator.cu
   fem/Codim.cu
-  fem/TestAugLag.cu
+  # fem/TestAugLag.cu
   fem/FastQuasiStaticStepping.cu
 )
 
