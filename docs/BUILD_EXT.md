@@ -126,13 +126,13 @@ cmake -B build -DCMAKE_BUILD_TYPE=Release -DZENO_WITH_ZenoFX:BOOL=ON -DZENOFX_EN
 
 ### Enabling CUDA extensions
 
-NVIDIA users may additionally specify `-DZENO_WITH_gmpm:BOOL=ON -DZENO_ENABLE_OPTIX:BOOL=ON` in arguments for building CUDA support.
+NVIDIA users may additionally specify `-DZENO_WITH_CUDA:BOOL=ON -DZENO_ENABLE_OPTIX:BOOL=ON` in arguments for building CUDA support.
 
 > This will also builds the OptiX real-time ray-tracing for the Zeno renderer.
 
 > NOTE: **CUDA 11.x requried**.
-> NOTE: `gmpm` is work in progress, may not work.
-> NOTE: ZenoFX must be enabled when gmpm is enabled, because gmpm depends on ZenoFX.
+> NOTE: `CUDA` is work in progress, may not work.
+> NOTE: ZenoFX must be enabled when CUDA is enabled, because CUDA depends on ZenoFX.
 
 ### Enabling subgraph extensions
 
