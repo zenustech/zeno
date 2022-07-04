@@ -915,7 +915,7 @@ struct CodimStepping : INode {
 #else
             if (pt_ccd(p, t0, t1, t2, dp, dt0, dt1, dt2, xi, tmp))
 #endif
-            atomic_min(exec_cuda, &alpha[0], tmp);
+              atomic_min(exec_cuda, &alpha[0], tmp);
           });
       auto nee = ncsEE.getVal();
       pol(range(nee),
@@ -940,7 +940,7 @@ struct CodimStepping : INode {
 #else
             if (ee_ccd(ea0, ea1, eb0, eb1, dea0, dea1, deb0, deb1, xi, tmp))
 #endif
-            atomic_min(exec_cuda, &alpha[0], tmp);
+              atomic_min(exec_cuda, &alpha[0], tmp);
           });
       stepSize = alpha.getVal();
     }
@@ -1348,6 +1348,23 @@ struct CodimStepping : INode {
                   vtemp("P", 8, vOffset + i) += m;
                 });
       }
+      // collision object
+      cudaPol(zs::range(coVerts.size()),
+              [vtemp = proxy<space>({}, vtemp),
+               coverts = proxy<space>({}, coVerts), projectDBC = projectDBC,
+               gTag, coOffset = coOffset, dt = dt] __device__(int i) mutable {
+                i += coOffset;
+                auto m = zs::sqr(vtemp("ws", i));
+                // only inertial, overwrite
+                if (projectDBC || vtemp("BCfixed", i) == 1)
+                  vtemp.tuple<3>(gTag, i) = vec3::zeros();
+                else
+                  vtemp.tuple<3>(gTag, i) = -m * (vtemp.pack<3>("xn", i) -
+                                                  vtemp.pack<3>("xtilde", i));
+                vtemp("P", 0, i) += m;
+                vtemp("P", 4, i) += m;
+                vtemp("P", 8, i) += m;
+              });
     }
 #if 1
     template <typename Model>
@@ -1450,7 +1467,7 @@ struct CodimStepping : INode {
         } else if (primHandle.category == ZenoParticles::tet) {
           pol(zs::range(eles.size()),
               [vtemp = proxy<space>({}, vtemp), eles = proxy<space>({}, eles),
-               es = proxy<space>(es), model, dt = this->dt,
+               es = proxy<space>(es), model, dt = this->dt, tag,
                vOffset = primHandle.vOffset] __device__(int ei) mutable {
                 auto IB = eles.template pack<3, 3>("IB", ei);
                 auto inds = eles.template pack<4>("inds", ei)
@@ -1458,8 +1475,8 @@ struct CodimStepping : INode {
                             vOffset;
                 auto vole = eles("vol", ei);
                 vec3 xs[4] = {
-                    vtemp.pack<3>("xn", inds[0]), vtemp.pack<3>("xn", inds[1]),
-                    vtemp.pack<3>("xn", inds[2]), vtemp.pack<3>("xn", inds[3])};
+                    vtemp.pack<3>(tag, inds[0]), vtemp.pack<3>(tag, inds[1]),
+                    vtemp.pack<3>(tag, inds[2]), vtemp.pack<3>(tag, inds[3])};
 
                 bool fixed[4];
                 // int BCorder[4];
@@ -1487,6 +1504,27 @@ struct CodimStepping : INode {
           // E += reduce(pol, es);
         }
       }
+
+      // collision object
+      es.resize(coVerts.size());
+      // boundary inertial
+      pol(range(coVerts.size()),
+          [vtemp = proxy<space>({}, vtemp), es = proxy<space>(es), tag,
+           projectDBC = projectDBC, dt = this->dt,
+           coOffset = coOffset] __device__(int vi) mutable {
+            vi += coOffset;
+            // inertia
+            auto m = zs::sqr(vtemp("ws", vi));
+            auto x = vtemp.pack<3>(tag, vi);
+
+            if (projectDBC || vtemp("BCfixed", vi) == 1)
+              es[vi] = 0;
+            else
+              es[vi] =
+                  (T)0.5 * m * (x - vtemp.pack<3>("xtilde", vi)).l2NormSqr();
+          });
+      Es.push_back(reduce(pol, es));
+      // E += reduce(pol, es);
       // contacts
       {
 #if s_enableContact
@@ -1964,6 +2002,21 @@ struct CodimStepping : INode {
                   }
               });
       }
+      // collision object
+      pol(range(coVerts.size()),
+          [execTag, verts = proxy<space>({}, coVerts),
+           vtemp = proxy<space>({}, vtemp), projectDBC = projectDBC, dxTag,
+           bTag, coOffset = coOffset] ZS_LAMBDA(int vi) mutable {
+            vi += coOffset;
+            if (projectDBC || vtemp("BCfixed", vi) == 1)
+              return;
+            // inertia
+            auto m = zs::sqr(vtemp("ws", vi));
+            auto dx = vtemp.template pack<3>(dxTag, vi);
+            dx = m * dx;
+            for (int d = 0; d != 3; ++d)
+              atomic_add(execTag, &vtemp(bTag, d, vi), dx(d));
+          });
       // contacts
       {
 #if s_enableContact
@@ -2298,7 +2351,6 @@ struct CodimStepping : INode {
             vtemp.tuple<3>("x0", coOffset + i) = coverts.pack<3>("x0", i);
           });
     }
-#if 0
     void advanceBoundary(zs::CudaExecutionPolicy &pol, T ratio) {
       using namespace zs;
       constexpr auto space = execspace_e::cuda;
@@ -2314,15 +2366,12 @@ struct CodimStepping : INode {
               newX = x + v * dt;
             }
             auto xt = x + (newX - x) * ratio;
-            vtemp.template tuple<3>("xt", coOffset + i) =
-                vtemp.template pack<3>("xn", coOffset + i);
             vtemp.template tuple<3>("BCtarget", coOffset + i) = xt;
             vtemp("BCfixed", coOffset + i) =
                 (newX - x).l2NormSqr() == 0 ? 1 : 0;
             vtemp.template tuple<3>("xtilde", coOffset + i) = xt;
           });
     }
-#endif
     void updateVelocities(zs::CudaExecutionPolicy &pol) {
       using namespace zs;
       constexpr auto space = execspace_e::cuda;
@@ -2365,7 +2414,7 @@ struct CodimStepping : INode {
                                                      zs::memsrc_e::um, 0},
           ncsPT{zsprims[0]->getParticles<true>().get_allocator(), 1},
           ncsEE{zsprims[0]->getParticles<true>().get_allocator(), 1}, dt{dt},
-          models{models} {
+          framedt{dt}, models{models} {
       coOffset = sfOffset = seOffset = svOffset = 0;
       for (auto primPtr : zsprims) {
         if (primPtr->category == ZenoParticles::category_e::surface)
@@ -2472,7 +2521,7 @@ struct CodimStepping : INode {
     std::size_t coOffset, numDofs;
     std::size_t sfOffset, seOffset, svOffset;
     bvh_t bouStBvh, bouSeBvh; // for collision objects
-    T meanEdgeLength, dt;
+    T meanEdgeLength, dt, framedt;
   };
 
 #if 1
@@ -2721,19 +2770,6 @@ struct CodimStepping : INode {
                   vtemp.tuple<3>("grad", i) = vec3::zeros();
                 });
         A.computeInertialAndGravityPotentialGradient(cudaPol, "grad");
-#if 0
-      cudaPol(zs::range(coVerts.size()),
-              [vtemp = proxy<space>({}, vtemp),
-               coverts = proxy<space>({}, coVerts), coOffset,
-               dt] __device__(int i) mutable {
-                auto m = zs::sqr(vtemp("ws", coOffset + i));
-                auto v = coverts.pack<3>("v", i);
-                // only inertial, no extforce grad
-                vtemp.tuple<3>("grad", coOffset + i) =
-                    -m * (vtemp.pack<3>("xn", coOffset + i) -
-                          vtemp.pack<3>("xtilde", coOffset + i));
-              });
-#endif
         match([&](auto &elasticModel) {
           A.computeElasticGradientAndHessian(cudaPol, elasticModel);
         })(models.getElasticModel());
