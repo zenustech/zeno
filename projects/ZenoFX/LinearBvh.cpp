@@ -617,7 +617,7 @@ typename LBvh::TV LBvh::find_nearest(TV const &pos, Ti &id, float &dist) const {
     return find_nearest(pos, id, dist, element_c<element_e::tri>);
   else if (eleCategory == element_e::line)
     return find_nearest(pos, id, dist, element_c<element_e::line>);
-  else if (eleCategory == element_e::point)
+  else // if (eleCategory == element_e::point)
     return find_nearest(pos, id, dist, element_c<element_e::point>);
 }
 

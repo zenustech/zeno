@@ -35,6 +35,11 @@ option(ZENO_BUILD_SHARED "Build shared library for ZENO" OFF)
 option(ZENO_USE_CCACHE "Use CCache if found in path" ON)
 option(ZENO_NO_WARNING "Use customized compiler warnings" ON)
 option(ZENO_INSTALL_TARGET "Enable installation targets" OFF)
+option(ZENO_WITH_CUDA "Build ZENO with CUDA support" OFF)
+
+if (ZENO_WITH_CUDA)        # must move enable_language ahead to here
+    enable_language(CUDA)  # otherwise projects/CUDA will fail to compile
+endif()
 
 if (NOT DEFINED CMAKE_POSITION_INDEPENDENT_CODE)
     # Otherwise we can't link .so libs with .a libs
