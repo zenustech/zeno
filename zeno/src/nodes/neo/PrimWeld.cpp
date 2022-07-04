@@ -8,6 +8,15 @@
 namespace zeno {
 namespace {
 
+template <class T>
+static void revamp_vector(std::vector<T> &arr, std::vector<int> const &revamp) {
+    std::vector<T> newarr(arr.size());
+    for (int i = 0; i < revamp.size(); i++) {
+        newarr[i] = arr[revamp[i]];
+    }
+    std::swap(arr, newarr);
+}
+
 struct PrimWeld : INode {
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
@@ -37,20 +46,37 @@ struct PrimWeld : INode {
                     average += pos;
                     ++count;
                 }
-                average *= 1.f / count;
+                average *= 1 / (float)count;
                 prim->verts[start] = average;
             } else {
                 for (; it != nit; ++it) {
                     //printf("(%d) %d -> %d\n", it->first, it->second, nrevamp);
                     unrevamp[it->second] = nrevamp;
+                    // unrevamp[old_coor] = new_coor
                 }
             }
             revamp[nrevamp] = start;
             ++nrevamp;
         }
         revamp.resize(nrevamp);
-        // TODO: fix normal after merge!
-        primRevampVerts(prim.get(), revamp, &unrevamp);
+        //primRevampVerts(prim.get(), revamp, &unrevamp);
+
+        if (isAverage) {
+            prim->foreach_attr<AttrAcceptAll>([&] (auto const &key, auto &arr) {
+                using T = std::decay_t<decltype(arr[0])>;
+                std::vector<T> new_arr(nrevamp);
+                for (size_t i = 0; i < arr.size(); i++) {
+                    new_arr[unrevamp[i]] += arr[i] / (T)lut.count(i);
+                }
+                arr = std::move(new_arr);
+            });
+        } else {
+            prim->foreach_attr<AttrAcceptAll>([&] (auto const &key, auto &arr) {
+                revamp_vector(arr, revamp);
+            });
+        }
+
+        prim->resize(nrevamp);
 
         set_output("prim", std::move(prim));
     }
