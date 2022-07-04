@@ -2074,6 +2074,137 @@ struct CodimStepping : INode {
         });
       }
     }
+    void cgsolve(zs::CudaExecutionPolicy &cudaPol, bool &useGD) {
+      // input "grad", multiply, constraints
+      // output "dir"
+      using namespace zs;
+      constexpr auto space = execspace_e::cuda;
+      if (useGD) {
+        precondition(cudaPol, "grad", "dir");
+        project(cudaPol, "dir");
+      } else {
+        // solve for A dir = grad;
+        cudaPol(zs::range(numDofs),
+                [vtemp = proxy<space>({}, vtemp)] __device__(int i) mutable {
+                  vtemp.tuple<3>("dir", i) = vec3::zeros();
+                });
+        // temp = A * dir
+        multiply(cudaPol, "dir", "temp");
+        // r = grad - temp
+        cudaPol(zs::range(numDofs),
+                [vtemp = proxy<space>({}, vtemp)] __device__(int i) mutable {
+                  vtemp.tuple<3>("r", i) =
+                      vtemp.pack<3>("grad", i) - vtemp.pack<3>("temp", i);
+                });
+        project(cudaPol, "r");
+        precondition(cudaPol, "r", "q");
+        cudaPol(zs::range(numDofs),
+                [vtemp = proxy<space>({}, vtemp)] __device__(int i) mutable {
+                  vtemp.tuple<3>("p", i) = vtemp.pack<3>("q", i);
+                });
+        T zTrk = dot(cudaPol, vtemp, "r", "q");
+        auto residualPreconditionedNorm = std::sqrt(zTrk);
+        auto localTol = cgRel * residualPreconditionedNorm;
+        int iter = 0;
+
+        //
+        auto [npp, npe, npt, nee, ncspt, ncsee] = getCnts();
+
+        for (; iter != 10000; ++iter) {
+          if (iter % 10 == 0)
+            fmt::print("cg iter: {}, norm: {} (zTrk: {}) npp: {}, npe: {}, "
+                       "npt: {}, nee: {}, ncspt: {}, ncsee: {}\n",
+                       iter, residualPreconditionedNorm, zTrk, npp, npe, npt,
+                       nee, ncspt, ncsee);
+          if (zTrk < 0) {
+            fmt::print(fg(fmt::color::pale_violet_red),
+                       "what the heck? zTrk: {} at iteration {}. switching to "
+                       "gradient descent ftm.\n",
+                       zTrk, iter);
+            useGD = true;
+            // getchar();
+            break;
+          }
+          if (residualPreconditionedNorm <= localTol)
+            break;
+          multiply(cudaPol, "p", "temp");
+          project(cudaPol, "temp");
+
+          T alpha = zTrk / dot(cudaPol, vtemp, "temp", "p");
+          cudaPol(range(numDofs), [vtemp = proxy<space>({}, vtemp),
+                                   alpha] ZS_LAMBDA(int vi) mutable {
+            vtemp.tuple<3>("dir", vi) =
+                vtemp.pack<3>("dir", vi) + alpha * vtemp.pack<3>("p", vi);
+            vtemp.tuple<3>("r", vi) =
+                vtemp.pack<3>("r", vi) - alpha * vtemp.pack<3>("temp", vi);
+          });
+
+          precondition(cudaPol, "r", "q");
+          auto zTrkLast = zTrk;
+          zTrk = dot(cudaPol, vtemp, "q", "r");
+          auto beta = zTrk / zTrkLast;
+          cudaPol(range(numDofs), [vtemp = proxy<space>({}, vtemp),
+                                   beta] ZS_LAMBDA(int vi) mutable {
+            vtemp.tuple<3>("p", vi) =
+                vtemp.pack<3>("q", vi) + beta * vtemp.pack<3>("p", vi);
+          });
+
+          residualPreconditionedNorm = std::sqrt(zTrk);
+        } // end cg step
+        if (useGD == true)
+          return;
+      }
+    }
+    void lineSearch(zs::CudaExecutionPolicy &cudaPol, T &alpha,
+                    bool CCDfiltered) {
+      using namespace zs;
+      constexpr auto space = execspace_e::cuda;
+      // initial energy
+      T E0{};
+      match([&](auto &elasticModel) {
+        E0 = energy(cudaPol, elasticModel, "xn0", !BCsatisfied);
+      })(models.getElasticModel());
+
+      T E{E0};
+      T c1m = 0;
+      int lsIter = 0;
+      c1m = armijoParam * dot(cudaPol, vtemp, "dir", "grad");
+      fmt::print(fg(fmt::color::white), "c1m : {}\n", c1m);
+#if 1
+      int numLineSearchIter = 0;
+      do {
+        cudaPol(zs::range(vtemp.size()), [vtemp = proxy<space>({}, vtemp),
+                                          alpha] __device__(int i) mutable {
+          vtemp.tuple<3>("xn", i) =
+              vtemp.pack<3>("xn0", i) + alpha * vtemp.pack<3>("dir", i);
+        });
+
+        if constexpr (s_enableContact)
+          findCollisionConstraints(cudaPol, dHat, xi);
+        match([&](auto &elasticModel) {
+          E = energy(cudaPol, elasticModel, "xn", !BCsatisfied);
+        })(models.getElasticModel());
+
+        fmt::print("E: {} at alpha {}. E0 {}\n", E, alpha, E0);
+#if 0
+        if (E < E0) break;
+#else
+        if (E <= E0 + alpha * c1m)
+          break;
+#endif
+
+        alpha /= 2;
+        if (++lsIter > 30) {
+          auto cr = constraintResidual(cudaPol);
+          fmt::print(
+              "too small stepsize at iteration [{}]! alpha: {}, cons res: {}\n",
+              lsIter, alpha, cr);
+          if (!useGD && !CCDfiltered)
+            getchar();
+        }
+      } while (true);
+#endif
+    }
     void initialize(zs::CudaExecutionPolicy &pol) {
       using namespace zs;
       constexpr auto space = execspace_e::cuda;
@@ -2547,7 +2678,6 @@ struct CodimStepping : INode {
 
       if constexpr (s_enableContact)
         A.findCollisionConstraints(cudaPol, dHat, xi);
-      auto [npp, npe, npt, nee, ncspt, ncsee] = A.getCnts();
       // construct gradient, prepare hessian, prepare preconditioner
       cudaPol(zs::range(numDofs),
               [vtemp = proxy<space>({}, vtemp)] __device__(int i) mutable {
@@ -2636,77 +2766,8 @@ struct CodimStepping : INode {
       // modify initial x so that it satisfied the constraint.
 
       // A dir = grad
-      if (useGD) {
-        A.precondition(cudaPol, "grad", "dir");
-        A.project(cudaPol, "dir");
-      } else {
-        // solve for A dir = grad;
-        cudaPol(zs::range(numDofs),
-                [vtemp = proxy<space>({}, vtemp)] __device__(int i) mutable {
-                  vtemp.tuple<3>("dir", i) = vec3::zeros();
-                });
-        // temp = A * dir
-        A.multiply(cudaPol, "dir", "temp");
-        // r = grad - temp
-        cudaPol(zs::range(numDofs),
-                [vtemp = proxy<space>({}, vtemp)] __device__(int i) mutable {
-                  vtemp.tuple<3>("r", i) =
-                      vtemp.pack<3>("grad", i) - vtemp.pack<3>("temp", i);
-                });
-        A.project(cudaPol, "r");
-        A.precondition(cudaPol, "r", "q");
-        cudaPol(zs::range(numDofs),
-                [vtemp = proxy<space>({}, vtemp)] __device__(int i) mutable {
-                  vtemp.tuple<3>("p", i) = vtemp.pack<3>("q", i);
-                });
-        T zTrk = dot(cudaPol, vtemp, "r", "q");
-        auto residualPreconditionedNorm = std::sqrt(zTrk);
-        auto localTol = cgRel * residualPreconditionedNorm;
-        int iter = 0;
-        for (; iter != 10000; ++iter) {
-          if (iter % 10 == 0)
-            fmt::print("cg iter: {}, norm: {} (zTrk: {}) npp: {}, npe: {}, "
-                       "npt: {}, nee: {}, ncspt: {}, ncsee: {}\n",
-                       iter, residualPreconditionedNorm, zTrk, npp, npe, npt,
-                       nee, ncspt, ncsee);
-          if (zTrk < 0) {
-            fmt::print(fg(fmt::color::pale_violet_red),
-                       "what the heck? zTrk: {} at iteration {}. switching to "
-                       "gradient descent ftm.\n",
-                       zTrk, iter);
-            useGD = true;
-            // getchar();
-            break;
-          }
-          if (residualPreconditionedNorm <= localTol)
-            break;
-          A.multiply(cudaPol, "p", "temp");
-          A.project(cudaPol, "temp");
+      A.cgsolve(cudaPol, useGD);
 
-          T alpha = zTrk / dot(cudaPol, vtemp, "temp", "p");
-          cudaPol(range(numDofs), [vtemp = proxy<space>({}, vtemp),
-                                   alpha] ZS_LAMBDA(int vi) mutable {
-            vtemp.tuple<3>("dir", vi) =
-                vtemp.pack<3>("dir", vi) + alpha * vtemp.pack<3>("p", vi);
-            vtemp.tuple<3>("r", vi) =
-                vtemp.pack<3>("r", vi) - alpha * vtemp.pack<3>("temp", vi);
-          });
-
-          A.precondition(cudaPol, "r", "q");
-          auto zTrkLast = zTrk;
-          zTrk = dot(cudaPol, vtemp, "q", "r");
-          auto beta = zTrk / zTrkLast;
-          cudaPol(range(numDofs), [vtemp = proxy<space>({}, vtemp),
-                                   beta] ZS_LAMBDA(int vi) mutable {
-            vtemp.tuple<3>("p", vi) =
-                vtemp.pack<3>("q", vi) + beta * vtemp.pack<3>("p", vi);
-          });
-
-          residualPreconditionedNorm = std::sqrt(zTrk);
-        } // end cg step
-        if (useGD == true)
-          continue;
-      }
       // recover rotated solution
       cudaPol(Collapse{vtemp.size()},
               [vtemp = proxy<space>({}, vtemp)] __device__(int vi) mutable {
@@ -2732,11 +2793,6 @@ struct CodimStepping : INode {
               [vtemp = proxy<space>({}, vtemp)] __device__(int i) mutable {
                 vtemp.tuple<3>("xn0", i) = vtemp.pack<3>("xn", i);
               });
-      // initial energy
-      T E0{};
-      match([&](auto &elasticModel) {
-        E0 = A.energy(cudaPol, elasticModel, "xn0", !BCsatisfied);
-      })(models.getElasticModel());
 
       // line search
       bool CCDfiltered = false;
@@ -2791,45 +2847,7 @@ struct CodimStepping : INode {
       }
 #endif
 
-      T E{E0};
-      T c1m = 0;
-      int lsIter = 0;
-      c1m = armijoParam * dot(cudaPol, vtemp, "dir", "grad");
-      fmt::print(fg(fmt::color::white), "c1m : {}\n", c1m);
-#if 1
-      int numLineSearchIter = 0;
-      do {
-        cudaPol(zs::range(vtemp.size()), [vtemp = proxy<space>({}, vtemp),
-                                          alpha] __device__(int i) mutable {
-          vtemp.tuple<3>("xn", i) =
-              vtemp.pack<3>("xn0", i) + alpha * vtemp.pack<3>("dir", i);
-        });
-
-        if constexpr (s_enableContact)
-          A.findCollisionConstraints(cudaPol, dHat, xi);
-        match([&](auto &elasticModel) {
-          E = A.energy(cudaPol, elasticModel, "xn", !BCsatisfied);
-        })(models.getElasticModel());
-
-        fmt::print("E: {} at alpha {}. E0 {}\n", E, alpha, E0);
-#if 0
-        if (E < E0) break;
-#else
-        if (E <= E0 + alpha * c1m)
-          break;
-#endif
-
-        alpha /= 2;
-        if (++lsIter > 30) {
-          auto cr = A.constraintResidual(cudaPol);
-          fmt::print(
-              "too small stepsize at iteration [{}]! alpha: {}, cons res: {}\n",
-              lsIter, alpha, cr);
-          if (!useGD && !CCDfiltered)
-            getchar();
-        }
-      } while (true);
-#endif
+      A.lineSearch(cudaPol, alpha, CCDfiltered);
 
       cudaPol(zs::range(vtemp.size()), [vtemp = proxy<space>({}, vtemp),
                                         alpha] __device__(int i) mutable {
