@@ -1,5 +1,6 @@
 #include <zeno/zeno.h>
 #include <zeno/NumericObject.h>
+#include <zeno/StringObject.h>
 #include <vector>
 #include <zeno/VDBGrid.h>
 #include <openvdb/points/PointCount.h>
@@ -56,11 +57,17 @@ struct VDBSmooth : zeno::INode {
         auto inoutVDBtype = get_input<VDBGrid>("inoutVDB")->getType();
         int width = get_input<NumericObject>("width")->get<int>();
         int iterations = get_input<NumericObject>("iterations")->get<int>();
+        auto type = get_input<zeno::StringObject>("type")->value;
         if (inoutVDBtype == std::string("FloatGrid")) {
             auto inoutVDB = get_input("inoutVDB")->as<VDBFloatGrid>();
             auto lsf = openvdb::tools::Filter<openvdb::FloatGrid>(*(inoutVDB->m_grid));
             lsf.setGrainSize(1);
-            lsf.gaussian(width, iterations, nullptr);
+            if(type == "Gaussian")
+              lsf.gaussian(width, iterations, nullptr);
+            else if(type == "Mean")
+              lsf.mean(width, iterations, nullptr);
+            else if(type == "Median")
+              lsf.median(width, iterations, nullptr);
             //openvdb::tools::ttls_internal::smoothLevelSet(*inoutSDF->m_grid, normIter, halfWidth);
             set_output("inoutVDB", get_input("inoutVDB"));
         }
@@ -68,7 +75,12 @@ struct VDBSmooth : zeno::INode {
             auto inoutVDB = get_input("inoutVDB")->as<VDBFloat3Grid>();
             auto lsf = openvdb::tools::Filter<openvdb::Vec3fGrid>(*(inoutVDB->m_grid));
             lsf.setGrainSize(1);
-            lsf.gaussian(width, iterations, nullptr);
+            if(type == "Gaussian")
+              lsf.gaussian(width, iterations, nullptr);
+            else if(type == "Mean")
+              lsf.mean(width, iterations, nullptr);
+            else if(type == "Median")
+              lsf.median(width, iterations, nullptr);
             set_output("inoutVDB", get_input("inoutVDB"));
         }
     }
@@ -77,6 +89,7 @@ struct VDBSmooth : zeno::INode {
 ZENO_DEFNODE(VDBSmooth)(
     { /* inputs: */ {
     "inoutVDB",
+    {"enum Mean Gaussian Median", "type", "Gaussian"},
     {"int", "width", "1"},
     {"int", "iterations", "1"},
     }, /* outputs: */ {
