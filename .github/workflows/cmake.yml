@@ -42,7 +42,7 @@ jobs:
         - label: x86_64-linux-cuda
           os: ubuntu-18.04
           triplet: x64-linux
-          cxx: g++-9
+          cxx: g++-10
           gpu: cuda
           pkgext: tar.gz
         - label: x86_64-windows-cuda
