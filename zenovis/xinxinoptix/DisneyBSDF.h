@@ -6,16 +6,25 @@
 
 //todo implement full disney bsdf 
 //reference: https://schuttejoe.github.io/post/DisneyBsdf/
+//list of component:
+//Sheen
+//Clearcoat
+//Specular BRDF
+//Specular BSDF
+//Diffuse BRDF
+//
 
 namespace DisneyBSDF{
+
 static __inline__ __device__ 
-void pdf(float metallic,
-         float specTrans,
-         float clearCoat,
-         float &pSpecular, 
-         float &pDiffuse,
-         float &pClearcoat,
-         float &pSpecTrans)
+void pdf(
+    float metallic,
+    float specTrans,
+    float clearCoat,
+    float &pSpecular, 
+    float &pDiffuse,
+    float &pClearcoat,
+    float &pSpecTrans)
 {
     float metallicBRDF   = metallic;
     float specularBSDF   = ( 1 - metallic ) * specTrans;
@@ -34,15 +43,33 @@ void pdf(float metallic,
     pClearcoat = clearcoatW     * norm;
 }
 
-static __inline__ __device__
-float EvaluateClearcoat(float clearcoat, 
-float alpha, float NoH, float NoL, float NoV, float HoL, float HoV, 
-float &fPdfW, float& rPdfW)
+
+static __inline__ __device__ 
+vec3 EvaluateSheen(vec3 baseColor, float sheen, float sheenTint, float HoL)
 {
-    if(clearcoat<=0.0f)
+    if(sheen<=0.0f)
+    {
+        return vec3(0.0f);
+    }
+    vec3 tint = BRDFBasics::CalculateTint(baseColor);
+    return sheen * mix(vec3(1.0f), tint, sheenTint) * BRDFBasics::fresnel(HoL);
+}
+
+static __inline__ __device__
+float EvaluateClearcoat(
+    float clearcoat, 
+    float alpha,
+    float NoH,
+    float NoL,
+    float NoV,
+    float HoL,
+    float HoV,
+    float& fPdfW, 
+    float& rPdfW)
+{
+    if(clearcoat<=0.0f){
         return 0.0f;
-    
-    
+    }
     float d  = BRDFBasics::GTR1(NoH, mix(0.1f, 0.001f, alpha));
     float f  = BRDFBasics::fresnelSchlick(0.04f, HoL);
     float gl = BRDFBasics::GGX(NoL, 0.25f);
@@ -54,23 +81,16 @@ float &fPdfW, float& rPdfW)
     return 0.25f * clearcoat * d * f * gl * gv;
 }
 
-static __inline__ __device__ 
-vec3 EvaluateSheen(vec3 baseColor, float sheen, float sheenTint, float HoL)
-{
-    if(sheen<=0.0f)
-    {
-        return vec3(0.0f);
-    }
-
-    
-    vec3 tint = BRDFBasics::CalculateTint(baseColor);
-    return sheen * mix(vec3(1.0f), tint, sheenTint) * BRDFBasics::fresnel(HoL);
-}
-
 static __inline__ __device__
-vec3 DisneyFresnel(vec3 baseColor, float metallic, float ior, float specularTint, float HoV, float HoL, bool is_inside)
+vec3 DisneyFresnel(
+        vec3 baseColor,
+        float metallic,
+        float ior,
+        float specularTint,
+        float HoV,
+        float HoL,
+        bool is_inside)
 {
-    
     vec3 tint = BRDFBasics::CalculateTint(baseColor);
     vec3 R0 = BRDFBasics::fresnelSchlickR0(ior) * mix(vec3(1.0f), tint, specularTint);
          R0 = mix(R0, baseColor, metallic);
@@ -81,7 +101,8 @@ vec3 DisneyFresnel(vec3 baseColor, float metallic, float ior, float specularTint
 }
 
 static __inline__ __device__
-vec3 EvaluateDisneyBRDF(vec3 baseColor,
+vec3 EvaluateDisneyBRDF(
+        vec3 baseColor,
         float metallic,
         float subsurface,
         float specular,
@@ -109,14 +130,16 @@ vec3 EvaluateDisneyBRDF(vec3 baseColor,
 
     float NoL = wi.z;
     float NoV = wo.z;
-    vec3 wm = normalize(wi + wo);
-    float HoV = dot(wm, wo);
-    float HoL = dot(wm, wi);
-    
-    if(NoV <= 0.0f || NoL)
+
+    if(NoV <= 0.0f || NoL <= 0.0f)
     {
         return vec3(0.0);
     }
+
+    vec3 wm = normalize(wi + wo);
+    float HoV = dot(wm, wo);
+    //float HoL = dot(wm, wi);
+    float HoL = HoV;
 
     float ax, ay;
     BRDFBasics::CalculateAnisotropicParams(roughness, anisotropic, ax, ay);
@@ -133,6 +156,105 @@ vec3 EvaluateDisneyBRDF(vec3 baseColor,
 
     return d * gl * gv * f / (4.0f * NoL * NoV);
 }
+
+
+static __inline__ __device__
+vec3 EvaluateDisneySpecTransmission(
+    vec3 baseColor,
+    float metallic,
+    float ior,
+    float specuularTint,
+    float roughness,
+    float ax,
+    float ay,
+    bool thin,
+    bool is_inside,
+    vec3 N, 
+    vec3 T,
+    vec3 B,
+    vec3 wo,
+    vec3 wi)
+{
+    float n2 = ior * ior;
+    //convert vectors to TBN space
+    wo = normalize(vec3(dot(T, wo), dot(B, wo), dot(N, wo)));
+    wi = normalize(vec3(dot(T, wi), dot(B, wi), dot(N, wi)));
+    vec3 wm = normalize(wo + wi);
+    float NoL = abs(wi.z);
+    float NoV = abs(wo.z);
+    float HoL = abs(dot(wm, wi));
+    //float HoL = abs(dot(wm, wo));
+    float HoV = HoL;
+
+    float d  = BRDFBasics::GgxAnisotropicD(wm, ax, ay);
+    float gl = BRDFBasics::SeparableSmithGGXG1(wi, wm, ax, ay);
+    float gv = BRDFBasics::SeparableSmithGGXG1(wo, wm, ax, ay);
+
+    float F = BRDFBasics::fresnelDielectric(HoV, 1.0f, ior, is_inside);
+    vec3 color;
+    if(thin)
+        color = sqrt(baseColor);
+    else
+        color = baseColor;
+
+    //float c = (HoL * HoV) / (NoL * NoV);
+    float c = (HoL * HoL) / (NoL * NoV);
+    float t = (n2 / pow(dot(wm, wi) + ior * dot(wm, wo), 2));
+    return color * c * t * (1.0f - F) * gl * gv * d; 
+}
+
+static __inline__ __device__
+float EvaluateDisneyRetroDiffuse(
+    float roughness,
+    vec3 wi,
+    vec3 wo)
+{
+    float NoL = abs(wi.z);
+    float NoV = abs(wo.z);
+
+    float a = roughness * roughness;
+    float rr = 0.5f + 2.0f * NoL * NoL * roughness;
+    float fl = BRDFBasics::SchlickWeight(NoL);
+    float fv = BRDFBasics::SchlickWeight(NoV);
+
+    return rr * (fl + fv + fl * fv * (rr - 1.0f));
+}
+
+static __inline__ __device__
+float EvaluateDisneyDiffuse(
+    float roughness,
+    float subsurface,
+    vec3 wi, 
+    vec3 wo, 
+    vec3 wm,
+    bool thin)
+{
+    float NoL = abs(wi.z);
+    float NoV = abs(wo.z);
+
+    float fl = BRDFBasics::SchlickWeight(NoL);
+    float fv = BRDFBasics::SchlickWeight(NoV);
+
+    float h = 0.0f;
+
+    if(thin && subsurface > 0.0f) {
+        float a = roughness * roughness;
+
+        float HoL = dot(wm, wi);
+        float fss90 = HoL * HoL * roughness;
+        float fss = mix(1.0f, fss90, fl) * mix(1.0f, fss90, fv);
+
+        float ss = 1.25f * (fss * (1.0f / (NoL + NoV) - 0.5f) + 0.5f);
+        h = ss;
+    }
+
+    float lambert = 1.0f;
+    float retro = EvaluateDisneyRetroDiffuse(roughness, wi, wo);
+    float subsurfaceApprox = mix(lambert, h, thin ? subsurface : 0.0f);
+
+    return 1.0f/M_PIf * (retro + subsurfaceApprox * (1.0f - 0.5f * fl) * (1.0f - 0.5f * fv));
+}
+
 static __inline__ __device__
 bool SampleDisneyBRDF(
         unsigned int &seed,
@@ -182,105 +304,8 @@ bool SampleDisneyBRDF(
 }
 
 static __inline__ __device__
-vec3 EvaluateDisneySpecTransmission(
-    vec3 baseColor,
-    float metallic,
-    float ior,
-    float specuularTint,
-    float roughness,
-    float ax,
-    float ay,
-    bool thin,
-    bool is_inside,
-    vec3 N, 
-    vec3 T,
-    vec3 B,
-    vec3 wo,
-    vec3 wi)
-{
-    float n2 = ior * ior;
-    //convert vectors to TBN space
-    wo = normalize(vec3(dot(T, wo), dot(B, wo), dot(N, wo)));
-    wi = normalize(vec3(dot(T, wi), dot(B, wi), dot(N, wi)));
-    vec3 wm = normalize(wo + wi);
-    float NoL = abs(wi.z);
-    float NoV = abs(wo.z);
-    float HoL = abs(dot(wm, wi));
-    float HoV = abs(dot(wm, wo));
-
-    float d  = BRDFBasics::GgxAnisotropicD(wm, ax, ay);
-    float gl = BRDFBasics::SeparableSmithGGXG1(wi, wm, ax, ay);
-    float gv = BRDFBasics::SeparableSmithGGXG1(wo, wm, ax, ay);
-
-    float F = BRDFBasics::fresnelDielectric(HoV, 1.0f, ior, is_inside);
-    vec3 color;
-    if(thin)
-        color = sqrt(baseColor);
-    else
-        color = baseColor;
-
-    float c = (HoL * HoV) / (NoL * NoV);
-    float t = (n2 / pow(dot(wm, wi) + ior * dot(wm, wo), 2));
-    return color * c * t * (1.0f - F) * gl * gv * d; 
-}
-
-static __inline__ __device__
-float EvaluateDisneyRetroDiffuse(
-float roughness,
-vec3 wi,
-vec3 wo
-)
-{
-    float NoL = abs(wi.z);
-    float NoV = abs(wo.z);
-
-    float a = roughness * roughness;
-    float rr = 0.5f + 2.0f * NoL * NoL * roughness;
-    float fl = BRDFBasics::SchlickWeight(NoL);
-    float fv = BRDFBasics::SchlickWeight(NoV);
-
-    return rr * (fl + fv + fl * fv * (rr - 1.0f));
-}
-
-static __inline__ __device__
-float EvaluateDisneyDiffuse(
-float roughness,
-float subsurface,
-vec3 wi, 
-vec3 wo, 
-vec3 wm,
-bool thin
-)
-{
-    float NoL = abs(wi.z);
-    float NoV = abs(wo.z);
-
-    float fl = BRDFBasics::SchlickWeight(NoL);
-    float fv = BRDFBasics::SchlickWeight(NoV);
-
-    float h = 0.0f;
-
-    if(thin && subsurface > 0.0f) {
-        float a = roughness * roughness;
-
-        float HoL = dot(wm, wi);
-        float fss90 = HoL * HoL * roughness;
-        float fss = mix(1.0f, fss90, fl) * mix(1.0f, fss90, fv);
-
-        float ss = 1.25f * (fss * (1.0f / (NoL + NoV) - 0.5f) + 0.5f);
-        h = ss;
-    }
-
-    float lambert = 1.0f;
-    float retro = EvaluateDisneyRetroDiffuse(roughness, wi, wo);
-    float subsurfaceApprox = mix(lambert, h, thin ? subsurface : 0.0f);
-
-    return 1.0f/M_PIf * (retro + subsurfaceApprox * (1.0f - 0.5f * fl) * (1.0f - 0.5f * fv));
-}
-
-static __inline__ __device__
 bool SampleDisneyClearCoat()
 {
-    
 }
+
 }
