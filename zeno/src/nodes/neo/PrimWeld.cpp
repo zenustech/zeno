@@ -92,7 +92,7 @@ struct PrimWeld : INode {
         }
         prim->lines->erase(std::remove_if(prim->lines.begin(), prim->lines.end(), [&] (auto const &ind) {
             return ind[0] == ind[1];
-        });
+        }));
 
         for (size_t i = 0; i < prim->tris.size(); i++) {
             auto &ind = prim->tris[i];
