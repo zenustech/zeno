@@ -76,7 +76,7 @@ void set_perspective(
   std::memcpy(glm::value_ptr(view), viewArr.data(), viewArr.size());
   std::memcpy(glm::value_ptr(proj), projArr.data(), projArr.size());
 }
-float g_fw, g_fh, g_focl, g_fit_gate;
+float g_fw=36.0f, g_fh=24.0f, g_focl=35.0f, g_fit_gate=1;
 float g_near, g_far, g_fov;
 glm::mat4 g_view, g_proj;
 glm::vec3 g_camPos, g_camView, g_camUp;
