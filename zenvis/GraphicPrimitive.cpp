@@ -32,7 +32,7 @@ extern std::vector<unsigned int> getReflectMaps();
 extern void setReflectivePlane(int i, glm::vec3 n, glm::vec3 c);
 extern bool renderReflect(int i);
 extern int getReflectionViewID();
-extern void setCamera(glm::vec3 pos, glm::vec3 front, glm::vec3 up, double _fov, double fnear, double ffar, double _dof, int set);
+extern void setCamera(glm::vec3 pos, glm::vec3 front, glm::vec3 up, double _fov, double fw, double fh, double focl, int fit_gate, double fnear, double ffar, double _dof, int set);
 extern unsigned int getDepthTexture();
 extern glm::vec3 getReflectiveNormal(int i);
 extern glm::vec3 getReflectiveCenter(int i);
@@ -607,10 +607,14 @@ struct GraphicPrimitive : IGraphic {
                 auto fov = prim->attr<zeno::vec3f>("uv")[0][0];
                 auto dof = prim->attr<zeno::vec3f>("uv")[0][1];
                 auto ffar = prim->attr<zeno::vec3f>("uv")[0][2];
+                auto fw = prim->attr<zeno::vec3f>("asp")[0][0];
+                auto fh = prim->attr<zeno::vec3f>("asp")[0][1];
+                auto focl = prim->attr<zeno::vec3f>("asp")[0][2];
+                auto fit_gate = (int)prim->attr<zeno::vec3f>("fit")[0][0];
                 setCamera(glm::vec3(pos[0],pos[1],pos[2]),
                           glm::vec3(view[0],view[1],view[2]),
                           glm::vec3(up[0],up[1],up[2]),
-                          fov, 0.1,ffar, dof, 1);
+                          fov, fw, fh,focl,fit_gate, 0.1,ffar, dof, 1);
                 
             }
             if(code.find("mat_isVoxelDomain = float(float(1))")!=std::string::npos)
