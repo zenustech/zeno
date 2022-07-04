@@ -61,6 +61,7 @@ struct PrimWeld : INode {
         revamp.resize(nrevamp);
         //primRevampVerts(prim.get(), revamp, &unrevamp);
 
+        revamp_vector(prim->verts.values, revamp);
         if (isAverage) {
             prim->verts.foreach_attr<AttrAcceptAll>([&] (auto const &key, auto &arr) {
                 using T = std::decay_t<decltype(arr[0])>;
@@ -77,7 +78,9 @@ struct PrimWeld : INode {
         }
 
         auto repair = [&] (int &x) {
-            x = unrevamp[x];
+            //printf("%d -> %d\n", x, unrevamp[x]);
+            if (x >= 0 && x < unrevamp.size())
+                x = unrevamp[x];
         };
 
         for (size_t i = 0; i < prim->points.size(); i++) {
@@ -92,7 +95,7 @@ struct PrimWeld : INode {
         }
         prim->lines->erase(std::remove_if(prim->lines.begin(), prim->lines.end(), [&] (auto const &ind) {
             return ind[0] == ind[1];
-        }));
+        }), prim->lines.end());
 
         for (size_t i = 0; i < prim->tris.size(); i++) {
             auto &ind = prim->tris[i];
@@ -102,7 +105,7 @@ struct PrimWeld : INode {
         }
         prim->tris->erase(std::remove_if(prim->tris.begin(), prim->tris.end(), [&] (auto const &ind) {
             return ind[0] == ind[1] || ind[0] == ind[2] || ind[1] == ind[2];
-        }));
+        }), prim->tris.end());
 
         for (size_t i = 0; i < prim->quads.size(); i++) {
             auto &ind = prim->quads[i];
@@ -114,7 +117,7 @@ struct PrimWeld : INode {
         prim->quads->erase(std::remove_if(prim->quads.begin(), prim->quads.end(), [&] (auto const &ind) {
             return ind[0] == ind[1] || ind[0] == ind[2] || ind[1] == ind[2]
                 || ind[0] == ind[3] || ind[1] == ind[3] || ind[2] == ind[3];
-        }));
+        }), prim->quads.end());
 
         for (size_t i = 0; i < prim->loops.size(); i++) {
             auto &ind = prim->loops[i];
@@ -125,7 +128,7 @@ struct PrimWeld : INode {
             // TODO: fixme
             std::set<int> uniq(prim->loops.begin() + base, prim->loops.begin() + (base + len));
             return uniq.size() != len;
-        }));
+        }), prim->polys.end());
 
         prim->resize(nrevamp);
 
