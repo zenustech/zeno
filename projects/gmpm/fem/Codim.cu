@@ -1366,7 +1366,7 @@ struct CodimStepping : INode {
                 vtemp("P", 8, i) += m;
               });
     }
-#if 1
+#if 0
     template <typename Model>
     T energy(zs::CudaExecutionPolicy &pol, const Model &model,
              const zs::SmallString tag, bool includeAugLagEnergy = false) {
@@ -1778,6 +1778,23 @@ struct CodimStepping : INode {
                 atomic_add(exec_cuda, &res[0], model.psi(F) * dt * dt * vole);
               });
       }
+      // collision object
+      pol(range(coVerts.size()),
+          [vtemp = proxy<space>({}, vtemp), res = proxy<space>(res), tag,
+           projectDBC = projectDBC, dt = this->dt,
+           coOffset = coOffset] __device__(int vi) mutable {
+            vi += coOffset;
+            if (projectDBC || vtemp("BCfixed", vi) == 1)
+              return;
+            // inertia
+            auto m = zs::sqr(vtemp("ws", vi));
+            auto x = vtemp.pack<3>(tag, vi);
+
+            atomic_add(exec_cuda, &res[0],
+                       (T)0.5 * m *
+                           (x - vtemp.pack<3>("xtilde", vi)).l2NormSqr());
+            ;
+          });
       // contacts
       {
 #if s_enableContact
