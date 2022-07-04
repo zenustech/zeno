@@ -69,14 +69,13 @@ namespace zeno {
         theta(5) = zs::acos(cos_theta(5));       
     }
 
-    template <typename T,typename Pol,int codim = 3>
+    template <int simplex_size,typename T,typename Pol>
     constexpr void compute_cotmatrix(Pol &pol,const typename ZenoParticles::particles_t &eles,
         const typename ZenoParticles::particles_t &verts, const zs::SmallString& xTag, 
-        zs::TileVector<T,32>& etemp, const zs::SmallString& HTag,
-        zs::wrapv<codim> = {}) {
+        zs::TileVector<T,32>& etemp, const zs::SmallString& HTag) {
 
         using namespace zs;
-        static_assert(codim >= 3 && codim <=4, "invalid co-dimension!\n");
+        static_assert(simplex_size >= 3 && simplex_size <=4, "invalid co-dimension!\n");
         constexpr auto space = Pol::exec_tag::value;
 
         #if ZS_ENABLE_CUDA && defined(__CUDACC__)
@@ -95,19 +94,19 @@ namespace zeno {
         //     printf("the etemp buffer does not contain specified channel\n");
         // }  
 
-        etemp.append_channels(pol,{{HTag,codim*codim}});
+        etemp.append_channels(pol,{{HTag,simplex_size*simplex_size}});
 
-        // zs::Vector<T> C{eles.get_allocator(),eles.size()*codim*(codim-1)/2};
+        // zs::Vector<T> C{eles.get_allocator(),eles.size()*simplex_size*(simplex_size-1)/2};
 
         // compute cotangent entries
         fmt::print("COMPUTE COTANGENT ENTRIES\n");
         int nm_elms = etemp.size();
         pol(zs::range(etemp.size()),
             [eles = proxy<space>({},eles),verts = proxy<space>({},verts),
-            etemp = proxy<space>({},etemp),xTag,HTag,codim_v = wrapv<codim>{},nm_elms] ZS_LAMBDA(int ei) mutable {
+            etemp = proxy<space>({},etemp),xTag,HTag,simplex_size_v = wrapv<simplex_size>{},nm_elms] ZS_LAMBDA(int ei) mutable {
                 // if(ei != nm_elms-1)
                 //     return;
-                constexpr int cdim = RM_CVREF_T(codim_v)::value;
+                constexpr int cdim = RM_CVREF_T(simplex_size_v)::value;
                 constexpr int ne = cdim*(cdim-1)/2;
                 auto inds = eles.template pack<cdim>("inds",ei).template reinterpret_bits<int>();
                 
@@ -126,11 +125,11 @@ namespace zeno {
                     auto dblA = doublearea(l[0],l[1],l[2]);// check here, double area
                     for(size_t i = 0;i != ne;++i)
                         C[i] = (l[edges[2*i+0]] + l[edges[2*i+1]] - l[3 - edges[2*i+0] - edges[2*i+1]])/dblA/4.0;
-                    if(ei == 0){
-                        printf("C : %f %f %f\n",(float)C[0],(float)C[1],(float)C[2]);
-                        printf("l : %f %f %f\n",(float)l[0],(float)l[1],(float)l[2]);
-                        printf("lblA : %f\n",(float)dblA);
-                    }
+                    // if(ei == 0){
+                    //     printf("C : %f %f %f\n",(float)C[0],(float)C[1],(float)C[2]);
+                    //     printf("l : %f %f %f\n",(float)l[0],(float)l[1],(float)l[2]);
+                    //     printf("lblA : %f\n",(float)dblA);
+                    // }
                 }
                 if constexpr (cdim == 4){
                     // printf("check_1\n");
@@ -237,8 +236,8 @@ namespace zeno {
         });
 
         // pol(zs::range(etemp.size()),
-        //     [etemp = proxy<space>({},etemp),HTag,codim_v = wrapv<codim>{}] ZS_LAMBDA(int ei) mutable {
-        //         constexpr int cdim = RM_CVREF_T(codim_v)::value;
+        //     [etemp = proxy<space>({},etemp),HTag,simplex_size_v = wrapv<simplex_size>{}] ZS_LAMBDA(int ei) mutable {
+        //         constexpr int cdim = RM_CVREF_T(simplex_size_v)::value;
         //         auto L = etemp.template pack<cdim,cdim>(HTag,ei);
         //         auto Ln = L.norm();
         //         if(isnan(Ln)){
@@ -255,16 +254,16 @@ namespace zeno {
     }
 
 
-    // template <typename T,typename Pol,int codim = 4>
+    // template <typename T,typename Pol,int simplex_size = 4>
     // constexpr void compute_laplace_matrix(Pol &pol,const typename ZenoParticles::particles_t &eles,
     //     const typename ZenoParticles::particles_t &verts, const zs::SmallString& xTag, 
     //     zs::TileVector<T,32>& etemp, const zs::SmallString& HTag,
-    //     zs::wrapv<codim> = {}) {
+    //     zs::wrapv<simplex_size> = {}) {
 
     //         int nmElms = eles.size();
     //         pol(zs::range(etemp.size()),
     //             [eles = proxy<space>({},eles),verts = proxy<space>({},verts),
-    //             etemp = proxy<space>({},etemp),xTag,HTag,codim_v = wrapv<codim>{},nmElms] 
+    //             etemp = proxy<space>({},etemp),xTag,HTag,simplex_size_v = wrapv<simplex_size>{},nmElms] 
     //                 ZS_LAMBDA(int ei) mutable {
     //             auto quad = eles.pack<4>("inds",ei).reinterpret_bits<int>();
     //             auto vol = eles("vol",ei);

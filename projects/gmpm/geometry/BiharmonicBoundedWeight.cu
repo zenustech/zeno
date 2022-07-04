@@ -17,7 +17,7 @@
 
 namespace zeno {
 
-struct ZSEvalBBW : zeno::INode {
+struct SolveBBW : zeno::INode {
     using T = float;
     using dtiles_t = zs::TileVector<T,32>;
     using tiles_t = typename ZenoParticles::particles_t;
@@ -37,7 +37,6 @@ struct ZSEvalBBW : zeno::INode {
                         vtemp(tag,d,vi) = (T)0.0;
                 });
         }   
-
         // the right hand-side are all zeros;
         template<typename Pol>
         void rhs(Pol& pol,const zs::SmallString& tag,const zs::SmallString& rTag,dtiles_t& vtemp,int wdim) const {
@@ -63,7 +62,6 @@ struct ZSEvalBBW : zeno::INode {
             constexpr auto execTag = wrapv<space>{};
             const auto numVerts = verts.size();
             const auto numEles = eles.size();
-
             // b -> 0
             pol(range(numVerts),
                 [execTag,vtemp = proxy<space>({},vtemp),bTag,wdim] ZS_LAMBDA(int vi) mutable {
@@ -86,7 +84,6 @@ struct ZSEvalBBW : zeno::INode {
                             atomic_add(execTag,&vtemp(bTag,d,inds[vi]),temp[vi]);
                     }
             });
-
             // compute MLdx->b
             // the vtemp contains a nodal-volume
             pol(range(numEles),[vtemp = proxy<space>({},vtemp),bTag,wdim]
@@ -277,15 +274,18 @@ struct ZSEvalBBW : zeno::INode {
             const VTileVec& verts,const ETileVec& eles,int wdim,
             const zs::SmallString& wtag,
             dtiles_t& vtemp,dtiles_t& etemp) {
+        using namespace zs;
+        constexpr auto space = execspace_e::cuda;
 
         pcg_with_fixed_solve(cudaPol,A,verts,eles,wdim,wtag,vtemp,etemp);
         // only enforce the positive weights
         // initialize the active_set as empty, only the lower bound constraint is needed
         cudaPol(zs::range(vtemp.size()),
-            [vtemp = proxy<space>({},vtemp),wdim] ZS_LAMBDA(int vi) mutable{
-                for(size_t d = 0;d < wdim;++d)
+            [vtemp = proxy<space>({},vtemp),wdim] ZS_LAMBDA(int vi) mutable {
+                for(int d = 0;d != wdim;++d){
                     vtemp("w_old",d,vi) = limits<T>::max();
                     vtemp("as_lx",vi) = false;
+                }
             });
 
         constexpr T solution_res = (T)1e-8;
@@ -294,12 +294,11 @@ struct ZSEvalBBW : zeno::INode {
             int new_as_lx = 0;
             // check the violations
             cudaPol(zs::range(vtemp.size()),
-                [vtemp = proxy<space>({},vtemp),wtag.wdim] ZS_LAMBDA(int vi) mutable{
+                [vtemp = proxy<space>({},vtemp),wtag,wdim] ZS_LAMBDA(int vi) mutable{
                     for(size_t d = 0;d < wdim;++d)
                         vtemp("temp",d,vi) = vtemp(wtag,d,vi) - vtemp("w_old",d,vi);
-                }
-            )
-            auto diffnorm = std::sqrt(dot(vtemp,"temp","temp"));
+            });
+            auto diffnorm = std::sqrt(dot(cudaPol,vtemp,"temp","temp"));
             if(diffnorm < solution_res)
                 break;
 
@@ -315,8 +314,6 @@ struct ZSEvalBBW : zeno::INode {
                 });
 
             pcg_with_fixed_solve(cudaPol,A,verts,eles,wdim,wtag,vtemp,etemp);
-
-
             // relieve the constrained nodes with negative lagrangian
             
 
@@ -366,7 +363,7 @@ struct ZSEvalBBW : zeno::INode {
         constexpr auto space = execspace_e::cuda;
         auto cudaPol = cuda_exec();
 
-        compute_cotmatrix(cudaPol,eles,verts,"x",etemp,"L",zs::wrapv<4>{});
+        compute_cotmatrix<4>(cudaPol,eles,verts,"x",etemp,"L");
         // compute the residual
         HarmonicSystem A{verts,eles};
         // compute preconditioner
@@ -375,6 +372,8 @@ struct ZSEvalBBW : zeno::INode {
                 verts = proxy<space>({}, verts)] ZS_LAMBDA (int vi) mutable {
                     vtemp("P", vi) = (T)0.0;
         });
+
+        
 
         cudaPol(zs::range(eles.size()),
                     [vtemp = proxy<space>({},vtemp),etemp = proxy<space>({},etemp),eles = proxy<space>({},eles)]
