@@ -18,10 +18,10 @@ struct SolveBiharmonicWeight : zeno::INode {
         // btag == -1 means free vertices, and (int)indicating the index of binding handle
         const auto& boneIDs = mesh->attr<float>("BoneID");
         auto attr_prefix = get_param<std::string>("attr_prefix");
+        auto max_iters = get_param<int>("max_iters");
 
         Eigen::MatrixXd V(mesh->size(),3);
         Eigen::MatrixXi T(mesh->quads.size(),4);
-
 
         size_t nm_boundary_verts = 0;
         for(size_t i = 0;i < mesh->size();++i){
@@ -51,7 +51,7 @@ struct SolveBiharmonicWeight : zeno::INode {
         // compute BBW weights matrix
         igl::BBWData bbw_data;
         // only a few iterations for sake of demo
-        bbw_data.active_set_params.max_iter = 8;
+        bbw_data.active_set_params.max_iter = max_iters;
         bbw_data.verbosity = 0;
 
         Eigen::MatrixXd W;
@@ -77,7 +77,7 @@ ZENDEFNODE(SolveBiharmonicWeight, {
     {"skinMesh",{"float","nm_handles","2"}},
     {"mesh"},
     {
-        {"string","attr_prefix","sw"},
+        {"string","attr_prefix","sw"},{"int","max_iters","50"}
     },
     {"Skinning"},
 });
