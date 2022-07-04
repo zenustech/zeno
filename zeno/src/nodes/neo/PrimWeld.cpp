@@ -29,7 +29,7 @@ struct PrimWeld : INode {
             lut.insert({tag[i], i});
         }
         std::vector<int> revamp;
-        std::vector<int> unrevamp(prim->size(), -1);
+        std::vector<int> unrevamp(prim->size());
         revamp.resize(lut.size());
         int nrevamp = 0;
         for (auto it = lut.begin(); it != lut.end();) {
@@ -62,7 +62,7 @@ struct PrimWeld : INode {
         //primRevampVerts(prim.get(), revamp, &unrevamp);
 
         if (isAverage) {
-            prim->foreach_attr<AttrAcceptAll>([&] (auto const &key, auto &arr) {
+            prim->verts.foreach_attr<AttrAcceptAll>([&] (auto const &key, auto &arr) {
                 using T = std::decay_t<decltype(arr[0])>;
                 std::vector<T> new_arr(nrevamp);
                 for (size_t i = 0; i < arr.size(); i++) {
@@ -71,10 +71,61 @@ struct PrimWeld : INode {
                 arr = std::move(new_arr);
             });
         } else {
-            prim->foreach_attr<AttrAcceptAll>([&] (auto const &key, auto &arr) {
+            prim->verts.foreach_attr<AttrAcceptAll>([&] (auto const &key, auto &arr) {
                 revamp_vector(arr, revamp);
             });
         }
+
+        auto repair = [&] (int &x) {
+            x = unrevamp[x];
+        };
+
+        for (size_t i = 0; i < prim->points.size(); i++) {
+            auto &ind = prim->points[i];
+            repair(ind);
+        }
+
+        for (size_t i = 0; i < prim->lines.size(); i++) {
+            auto &ind = prim->lines[i];
+            repair(ind[0]);
+            repair(ind[1]);
+        }
+        prim->lines->erase(std::remove_if(prim->lines.begin(), prim->lines.end(), [&] (auto const &ind) {
+            return ind[0] == ind[1];
+        });
+
+        for (size_t i = 0; i < prim->tris.size(); i++) {
+            auto &ind = prim->tris[i];
+            repair(ind[0]);
+            repair(ind[1]);
+            repair(ind[2]);
+        }
+        prim->tris->erase(std::remove_if(prim->tris.begin(), prim->tris.end(), [&] (auto const &ind) {
+            return ind[0] == ind[1] || ind[0] == ind[2] || ind[1] == ind[2];
+        }));
+
+        for (size_t i = 0; i < prim->quads.size(); i++) {
+            auto &ind = prim->quads[i];
+            repair(ind[0]);
+            repair(ind[1]);
+            repair(ind[2]);
+            repair(ind[3]);
+        }
+        prim->quads->erase(std::remove_if(prim->quads.begin(), prim->quads.end(), [&] (auto const &ind) {
+            return ind[0] == ind[1] || ind[0] == ind[2] || ind[1] == ind[2]
+                || ind[0] == ind[3] || ind[1] == ind[3] || ind[2] == ind[3];
+        }));
+
+        for (size_t i = 0; i < prim->loops.size(); i++) {
+            auto &ind = prim->loops[i];
+            repair(ind);
+        }
+        prim->polys->erase(std::remove_if(prim->polys.begin(), prim->polys.end(), [&] (auto const &ply) {
+            auto [base, len] = ply;
+            // TODO: fixme
+            std::set<int> uniq(prim->loops.begin() + base, prim->loops.begin() + (base + len));
+            return uniq.size() != len;
+        }));
 
         prim->resize(nrevamp);
 
