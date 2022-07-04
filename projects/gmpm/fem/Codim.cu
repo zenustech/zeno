@@ -317,7 +317,6 @@ struct CodimStepping : INode {
     }
     bool areConstraintsSatisfied(zs::CudaExecutionPolicy &pol) {
       using namespace zs;
-      constexpr auto space = execspace_e::cuda;
       computeConstraints(pol, "xn");
       // auto res = infNorm(pol, vtemp, "cons");
       auto res = constraintResidual(pol);
@@ -908,15 +907,15 @@ struct CodimStepping : INode {
             auto dt0 = vtemp.template pack<3>("dir", ids[1]);
             auto dt1 = vtemp.template pack<3>("dir", ids[2]);
             auto dt2 = vtemp.template pack<3>("dir", ids[3]);
-            T tmp = stepSize;
+            T tmp = alpha[0];
 #if 1
-            if (accd::ptccd(p, t0, t1, t2, dp, dt0, dt1, dt2, (T)0.1, xi, tmp))
+            if (accd::ptccd(p, t0, t1, t2, dp, dt0, dt1, dt2, (T)0.2, xi, tmp))
 #elif 1
-            if (ticcd::ptccd(p, t0, t1, t2, dp, dt0, dt1, dt2, (T)0.1, xi, tmp))
+            if (ticcd::ptccd(p, t0, t1, t2, dp, dt0, dt1, dt2, (T)0.2, xi, tmp))
 #else
             if (pt_ccd(p, t0, t1, t2, dp, dt0, dt1, dt2, xi, tmp))
 #endif
-              atomic_min(exec_cuda, &alpha[0], tmp);
+            atomic_min(exec_cuda, &alpha[0], tmp);
           });
       auto nee = ncsEE.getVal();
       pol(range(nee),
@@ -932,23 +931,23 @@ struct CodimStepping : INode {
             auto dea1 = vtemp.template pack<3>("dir", ids[1]);
             auto deb0 = vtemp.template pack<3>("dir", ids[2]);
             auto deb1 = vtemp.template pack<3>("dir", ids[3]);
-            auto tmp = stepSize;
+            auto tmp = alpha[0];
 #if 1
-            if (accd::eeccd(ea0, ea1, eb0, eb1, dea0, dea1, deb0, deb1, (T)0.1,
+            if (accd::eeccd(ea0, ea1, eb0, eb1, dea0, dea1, deb0, deb1, (T)0.2,
                             xi, tmp))
 #elif 1
-            if (ticcd::eeccd(ea0, ea1, eb0, eb1, dea0, dea1, deb0, deb1, (T)0.1, xi, tmp))
+            if (ticcd::eeccd(ea0, ea1, eb0, eb1, dea0, dea1, deb0, deb1, (T)0.2, xi, tmp))
 #else
             if (ee_ccd(ea0, ea1, eb0, eb1, dea0, dea1, deb0, deb1, xi, tmp))
 #endif
-              atomic_min(exec_cuda, &alpha[0], tmp);
+            atomic_min(exec_cuda, &alpha[0], tmp);
           });
       stepSize = alpha.getVal();
     }
     void groundIntersectionFreeStepsize(zs::CudaExecutionPolicy &pol,
                                         T &stepSize) {
       using namespace zs;
-      constexpr T slackness = 0.8;
+      // constexpr T slackness = 0.8;
       constexpr auto space = execspace_e::cuda;
 
       zs::Vector<T> finalAlpha{coVerts.get_allocator(), 1};
@@ -1372,7 +1371,8 @@ struct CodimStepping : INode {
               vi += vOffset;
               auto x = vtemp.pack<3>(tag, vi);
               int BCorder = vtemp("BCorder", vi);
-              if (BCorder != 3) {
+              int BCfixed = vtemp("BCorder", vi);
+              if (BCorder != 3 && BCfixed == 0) {
 #if 0
                 atomic_add(exec_cuda, &res[0],
                            (T)0.5 * m *
@@ -1402,22 +1402,25 @@ struct CodimStepping : INode {
                                 .template reinterpret_bits<int>() +
                             vOffset;
 
-                int BCorder[3];
+                bool fixed[3];
+                // int BCorder[3];
                 for (int i = 0; i != 3; ++i)
-                  BCorder[i] = vtemp("BCorder", inds[i]);
-                if (BCorder[0] == 3 && BCorder[1] == 3 && BCorder[2] == 3)
+                  // BCorder[i] = vtemp("BCorder", inds[i]);
+                  fixed[i] = vtemp("BCorder", inds[i]) == 3 ||
+                             vtemp("BCfixed", inds[i]) == 1;
+                if (fixed[0] && fixed[1] && fixed[2])
                   return;
 
                 auto vole = eles("vol", ei);
                 vec3 xs[3] = {vtemp.template pack<3>(tag, inds[0]),
                               vtemp.template pack<3>(tag, inds[1]),
                               vtemp.template pack<3>(tag, inds[2])};
-                mat2 A{};
                 T E;
                 auto x1x0 = xs[1] - xs[0];
                 auto x2x0 = xs[2] - xs[0];
 #if 0
         {
+          mat2 A{};
           A(0, 0) = x1x0.l2NormSqr();
           A(1, 0) = A(0, 1) = x1x0.dot(x2x0);
           A(1, 1) = x2x0.l2NormSqr();
@@ -1458,11 +1461,13 @@ struct CodimStepping : INode {
                     vtemp.pack<3>("xn", inds[0]), vtemp.pack<3>("xn", inds[1]),
                     vtemp.pack<3>("xn", inds[2]), vtemp.pack<3>("xn", inds[3])};
 
-                int BCorder[4];
+                bool fixed[4];
+                // int BCorder[4];
                 for (int i = 0; i != 4; ++i)
-                  BCorder[i] = vtemp("BCorder", inds[i]);
-                if (BCorder[0] == 3 && BCorder[1] == 3 && BCorder[2] == 3 &&
-                    BCorder[3] == 3)
+                  // BCorder[i] = vtemp("BCorder", inds[i]);
+                  fixed[i] = vtemp("BCorder", inds[i]) == 3 ||
+                             vtemp("BCfixed", inds[i]) == 1;
+                if (fixed[0] && fixed[1] && fixed[2] && fixed[3])
                   return;
 
                 mat3 F{};
@@ -2171,7 +2176,6 @@ struct CodimStepping : INode {
       c1m = armijoParam * dot(cudaPol, vtemp, "dir", "grad");
       fmt::print(fg(fmt::color::white), "c1m : {}\n", c1m);
 #if 1
-      int numLineSearchIter = 0;
       do {
         cudaPol(zs::range(vtemp.size()), [vtemp = proxy<space>({}, vtemp),
                                           alpha] __device__(int i) mutable {
@@ -2294,6 +2298,31 @@ struct CodimStepping : INode {
             vtemp.tuple<3>("x0", coOffset + i) = coverts.pack<3>("x0", i);
           });
     }
+#if 0
+    void advanceBoundary(zs::CudaExecutionPolicy &pol, T ratio) {
+      using namespace zs;
+      constexpr auto space = execspace_e::cuda;
+      pol(Collapse(coVerts.size()),
+          [vtemp = proxy<space>({}, vtemp), coverts = proxy<space>({}, coVerts),
+           coOffset = coOffset, dt = dt, ratio] __device__(int i) mutable {
+            auto x = coverts.pack<3>("x", i);
+            vec3 newX{};
+            if (coverts.hasProperty("BCtarget"))
+              newX = coverts.pack<3>("BCtarget", i);
+            else {
+              auto v = coverts.pack<3>("v", i);
+              newX = x + v * dt;
+            }
+            auto xt = x + (newX - x) * ratio;
+            vtemp.template tuple<3>("xt", coOffset + i) =
+                vtemp.template pack<3>("xn", coOffset + i);
+            vtemp.template tuple<3>("BCtarget", coOffset + i) = xt;
+            vtemp("BCfixed", coOffset + i) =
+                (newX - x).l2NormSqr() == 0 ? 1 : 0;
+            vtemp.template tuple<3>("xtilde", coOffset + i) = xt;
+          });
+    }
+#endif
     void updateVelocities(zs::CudaExecutionPolicy &pol) {
       using namespace zs;
       constexpr auto space = execspace_e::cuda;
@@ -2449,7 +2478,6 @@ struct CodimStepping : INode {
 #if 1
   static T reduce(zs::CudaExecutionPolicy &cudaPol, const zs::Vector<T> &res) {
     using namespace zs;
-    constexpr auto space = execspace_e::cuda;
     Vector<T> ret{res.get_allocator(), 1};
     auto sid = cudaPol.getStreamid();
     auto procid = cudaPol.getProcid();
@@ -2546,6 +2574,8 @@ struct CodimStepping : INode {
     auto input_cg_rel = get_input2<float>("cg_rel");
     auto input_gravity = get_input2<float>("gravity");
 
+    int nSubsteps = get_input2<int>("num_substeps");
+
     kappa0 = input_kappa0;
     augLagCoeff = input_aug_coeff;
     pnRel = input_pn_rel;
@@ -2611,10 +2641,6 @@ struct CodimStepping : INode {
     kappa = kappa0;
     targetGRes = pnRel;
 
-    projectDBC = false;
-    BCsatisfied = false;
-    useGD = false;
-
 #if s_enableAdaptiveSetting
     {
       A.updateWholeBoundingBoxSize(cudaPol);
@@ -2658,33 +2684,43 @@ struct CodimStepping : INode {
     }
 #endif
 
-    /// optimizer
-    for (int newtonIter = 0; newtonIter != 1000; ++newtonIter) {
-      // check constraints
-      if (!BCsatisfied) {
-        A.computeConstraints(cudaPol, "xn");
-        auto cr = A.constraintResidual(cudaPol, true);
-        if (A.areConstraintsSatisfied(cudaPol)) {
-          fmt::print("satisfied cons res [{}] at newton iter [{}]\n", cr,
-                     newtonIter);
-          // A.checkDBCStatus(cudaPol);
-          // getchar();
-          projectDBC = true;
-          BCsatisfied = true;
-        }
-        fmt::print(fg(fmt::color::alice_blue),
-                   "newton iter {} cons residual: {}\n", newtonIter, cr);
-      }
+    nSubsteps = 1;
 
-      if constexpr (s_enableContact)
-        A.findCollisionConstraints(cudaPol, dHat, xi);
-      // construct gradient, prepare hessian, prepare preconditioner
-      cudaPol(zs::range(numDofs),
-              [vtemp = proxy<space>({}, vtemp)] __device__(int i) mutable {
-                vtemp.tuple<9>("P", i) = mat3::zeros();
-                vtemp.tuple<3>("grad", i) = vec3::zeros();
-              });
-      A.computeInertialAndGravityPotentialGradient(cudaPol, "grad");
+    for (int subi = 0; subi != nSubsteps; ++subi) {
+      fmt::print("processing substep {}\n", subi);
+
+      projectDBC = false;
+      BCsatisfied = false;
+      useGD = false;
+      // A.advanceBoundary(cudaPol, (T)(subi + 1) / nSubsteps);
+
+      /// optimizer
+      for (int newtonIter = 0; newtonIter != 1000; ++newtonIter) {
+        // check constraints
+        if (!BCsatisfied) {
+          A.computeConstraints(cudaPol, "xn");
+          auto cr = A.constraintResidual(cudaPol, true);
+          if (A.areConstraintsSatisfied(cudaPol)) {
+            fmt::print("satisfied cons res [{}] at newton iter [{}]\n", cr,
+                       newtonIter);
+            // A.checkDBCStatus(cudaPol);
+            // getchar();
+            projectDBC = true;
+            BCsatisfied = true;
+          }
+          fmt::print(fg(fmt::color::alice_blue),
+                     "newton iter {} cons residual: {}\n", newtonIter, cr);
+        }
+
+        if constexpr (s_enableContact)
+          A.findCollisionConstraints(cudaPol, dHat, xi);
+        // construct gradient, prepare hessian, prepare preconditioner
+        cudaPol(zs::range(numDofs),
+                [vtemp = proxy<space>({}, vtemp)] __device__(int i) mutable {
+                  vtemp.tuple<9>("P", i) = mat3::zeros();
+                  vtemp.tuple<3>("grad", i) = vec3::zeros();
+                });
+        A.computeInertialAndGravityPotentialGradient(cudaPol, "grad");
 #if 0
       cudaPol(zs::range(coVerts.size()),
               [vtemp = proxy<space>({}, vtemp),
@@ -2698,54 +2734,56 @@ struct CodimStepping : INode {
                           vtemp.pack<3>("xtilde", coOffset + i));
               });
 #endif
-      match([&](auto &elasticModel) {
-        A.computeElasticGradientAndHessian(cudaPol, elasticModel);
-      })(models.getElasticModel());
-      A.computeBoundaryBarrierGradientAndHessian(cudaPol);
-      if constexpr (s_enableContact)
-        A.computeBarrierGradientAndHessian(cudaPol);
+        match([&](auto &elasticModel) {
+          A.computeElasticGradientAndHessian(cudaPol, elasticModel);
+        })(models.getElasticModel());
+        A.computeBoundaryBarrierGradientAndHessian(cudaPol);
+        if constexpr (s_enableContact)
+          A.computeBarrierGradientAndHessian(cudaPol);
 
-      // rotate gradient and project
-      cudaPol(zs::range(numDofs),
-              [vtemp = proxy<space>({}, vtemp),
-               projectDBC = projectDBC] __device__(int i) mutable {
-                auto grad = vtemp.pack<3, 3>("BCbasis", i).transpose() *
-                            vtemp.pack<3>("grad", i);
-                int BCfixed = vtemp("BCfixed", i);
-                if (projectDBC || BCfixed == 1) {
-                  if (int BCorder = vtemp("BCorder", i); BCorder > 0)
-                    for (int d = 0; d != BCorder; ++d)
-                      grad(d) = 0;
-                }
-                vtemp.tuple<3>("grad", i) = grad;
-              });
-      // apply constraints (augmented lagrangians) after rotation!
-      if (!BCsatisfied) {
-        // grad
-        cudaPol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp),
-                                     kappa = kappa] __device__(int i) mutable {
-          // computed during the previous constraint residual check
-          auto cons = vtemp.pack<3>("cons", i);
-          auto w = vtemp("ws", i);
-          vtemp.tuple<3>("grad", i) = vtemp.pack<3>("grad", i) +
-                                      w * vtemp.pack<3>("lambda", i) -
-                                      kappa * w * cons;
-          for (int d = 0; d != 3; ++d)
-            if (cons[d] != 0) {
-              vtemp("P", 4 * d, i) += kappa * w;
-            }
-        });
-        // hess (embedded in multiply)
-      }
+        // rotate gradient and project
+        cudaPol(zs::range(numDofs),
+                [vtemp = proxy<space>({}, vtemp),
+                 projectDBC = projectDBC] __device__(int i) mutable {
+                  auto grad = vtemp.pack<3, 3>("BCbasis", i).transpose() *
+                              vtemp.pack<3>("grad", i);
+                  int BCfixed = vtemp("BCfixed", i);
+                  if (projectDBC || BCfixed == 1) {
+                    if (int BCorder = vtemp("BCorder", i); BCorder > 0)
+                      for (int d = 0; d != BCorder; ++d)
+                        grad(d) = 0;
+                  }
+                  vtemp.tuple<3>("grad", i) = grad;
+                });
+        // apply constraints (augmented lagrangians) after rotation!
+        if (!BCsatisfied) {
+          // grad
+          cudaPol(zs::range(numDofs),
+                  [vtemp = proxy<space>({}, vtemp),
+                   kappa = kappa] __device__(int i) mutable {
+                    // computed during the previous constraint residual check
+                    auto cons = vtemp.pack<3>("cons", i);
+                    auto w = vtemp("ws", i);
+                    vtemp.tuple<3>("grad", i) = vtemp.pack<3>("grad", i) +
+                                                w * vtemp.pack<3>("lambda", i) -
+                                                kappa * w * cons;
+                    for (int d = 0; d != 3; ++d)
+                      if (cons[d] != 0) {
+                        vtemp("P", 4 * d, i) += kappa * w;
+                      }
+                  });
+          // hess (embedded in multiply)
+        }
 
-      // prepare preconditioner
-      cudaPol(
-          zs::range(coVerts.size()), [vtemp = proxy<space>({}, vtemp), coOffset,
-                                      kappa = kappa] __device__(int i) mutable {
-            auto cons = vtemp.pack<3>("cons", i);
-            auto w = vtemp("ws", coOffset + i);
-            if (cons.l2NormSqr() != 0)
-              vtemp.tuple<9>("P", coOffset + i) = mat3::identity() * kappa * w;
+        // prepare preconditioner
+        cudaPol(zs::range(coVerts.size()),
+                [vtemp = proxy<space>({}, vtemp), coOffset,
+                 kappa = kappa] __device__(int i) mutable {
+                  auto cons = vtemp.pack<3>("cons", i);
+                  auto w = vtemp("ws", coOffset + i);
+                  if (cons.l2NormSqr() != 0)
+                    vtemp.tuple<9>("P", coOffset + i) =
+                        mat3::identity() * kappa * w;
 #if 0
                 int d = 0;
                 for (; d != 3 && cons[d] != 0; ++d)
@@ -2753,86 +2791,108 @@ struct CodimStepping : INode {
                 for (; d != 3; ++d)
                   vtemp("P", 4 * d, coOffset + i) = kappa * w;
 #endif
-          });
-      cudaPol(zs::range(numDofs),
-              [vtemp = proxy<space>({}, vtemp)] __device__(int i) mutable {
-                auto mat = vtemp.pack<3, 3>("P", i);
-                if (zs::abs(zs::determinant(mat)) > limits<T>::epsilon() * 10)
-                  vtemp.tuple<9>("P", i) = inverse(mat);
-                else
-                  vtemp.tuple<9>("P", i) = mat3::identity();
-              });
-
-      // modify initial x so that it satisfied the constraint.
-
-      // A dir = grad
-      A.cgsolve(cudaPol, useGD);
-
-      // recover rotated solution
-      cudaPol(Collapse{vtemp.size()},
-              [vtemp = proxy<space>({}, vtemp)] __device__(int vi) mutable {
-                vtemp.tuple<3>("dir", vi) =
-                    vtemp.pack<3, 3>("BCbasis", vi) * vtemp.pack<3>("dir", vi);
-              });
-      // check "dir" inf norm
-      T res = infNorm(cudaPol, vtemp, "dir") / dt;
-      T cons_res = A.constraintResidual(cudaPol);
-      if (!useGD && res < targetGRes && cons_res == 0) {
-        fmt::print("\t# newton optimizer ends in {} iters with residual {}\n",
-                   newtonIter, res);
-        break;
-      }
-
-      fmt::print(
-          fg(fmt::color::aquamarine),
-          "newton iter {}: direction residual(/dt) {}, grad residual {}\n",
-          newtonIter, res, infNorm(cudaPol, vtemp, "grad"));
-
-      // xn0 <- xn for line search
-      cudaPol(zs::range(vtemp.size()),
-              [vtemp = proxy<space>({}, vtemp)] __device__(int i) mutable {
-                vtemp.tuple<3>("xn0", i) = vtemp.pack<3>("xn", i);
-              });
-
-      // line search
-      bool CCDfiltered = false;
-      T alpha = 1.;
-      { //
-#if 1
-        // average length
-        zs::Vector<T> lens{vtemp.get_allocator(), coOffset};
-        cudaPol(Collapse{coOffset},
-                [lens = proxy<space>(lens),
-                 vtemp = proxy<space>({}, vtemp)] __device__(int ei) mutable {
-                  // lens[ei] = vtemp.template pack<3>("dir", ei).norm();
-                  lens[ei] = vtemp.template pack<3>("dir", ei).abs().sum();
                 });
-        auto meanDirSize = (reduce(cudaPol, lens) / dt) / coOffset;
-        auto spanSize = meanDirSize * alpha / A.meanEdgeLength;
-#else
-        // infNorm
-        auto spanSize = res * alpha / (A.meanEdgeLength * 8);
-#endif
-        if (spanSize > 1) { // mainly for reducing ccd pairs
-          alpha /= spanSize;
-          CCDfiltered = true;
-          fmt::print("\tstepsize after dir magnitude pre-filtering: {} "
-                     "(spansize: {})\n",
-                     alpha, spanSize);
-        }
-      }
-      A.groundIntersectionFreeStepsize(cudaPol, alpha);
-      fmt::print("\tstepsize after ground: {}\n", alpha);
-#if s_enableContact
-      {
-        A.intersectionFreeStepsize(cudaPol, xi, alpha);
-        fmt::print("\tstepsize after intersection-free: {}\n", alpha);
+        cudaPol(zs::range(numDofs),
+                [vtemp = proxy<space>({}, vtemp)] __device__(int i) mutable {
+                  auto mat = vtemp.pack<3, 3>("P", i);
+                  if (zs::abs(zs::determinant(mat)) > limits<T>::epsilon() * 10)
+                    vtemp.tuple<9>("P", i) = inverse(mat);
+                  else
+                    vtemp.tuple<9>("P", i) = mat3::identity();
+                });
 
-        A.findCCDConstraints(cudaPol, alpha, xi);
-        auto [npp, npe, npt, nee, ncspt, ncsee] = A.getCnts();
-        A.intersectionFreeStepsize(cudaPol, xi, alpha);
-        fmt::print("\tstepsize after ccd: {}. (ncspt: {}, ncsee: {})\n", alpha,
-                   ncspt, ncsee);
+        // modify initial x so that it satisfied the constraint.
+
+        // A dir = grad
+        A.cgsolve(cudaPol, useGD);
+
+        // recover rotated solution
+        cudaPol(Collapse{vtemp.size()},
+                [vtemp = proxy<space>({}, vtemp)] __device__(int vi) mutable {
+                  vtemp.tuple<3>("dir", vi) = vtemp.pack<3, 3>("BCbasis", vi) *
+                                              vtemp.pack<3>("dir", vi);
+                });
+        // check "dir" inf norm
+        T res = infNorm(cudaPol, vtemp, "dir") / dt;
+        T cons_res = A.constraintResidual(cudaPol);
+        if (!useGD && res < targetGRes && cons_res == 0) {
+          fmt::print("\t# newton optimizer ends in {} iters with residual {}\n",
+                     newtonIter, res);
+          break;
+        }
+
+        fmt::print(
+            fg(fmt::color::aquamarine),
+            "newton iter {}: direction residual(/dt) {}, grad residual {}\n",
+            newtonIter, res, infNorm(cudaPol, vtemp, "grad"));
+
+        // xn0 <- xn for line search
+        cudaPol(zs::range(vtemp.size()),
+                [vtemp = proxy<space>({}, vtemp)] __device__(int i) mutable {
+                  vtemp.tuple<3>("xn0", i) = vtemp.pack<3>("xn", i);
+                });
+
+        // line search
+        bool CCDfiltered = false;
+        T alpha = 1.;
+        { //
+#if 1
+          // average length
+          zs::Vector<T> lens{vtemp.get_allocator(), coOffset};
+          cudaPol(Collapse{coOffset},
+                  [lens = proxy<space>(lens),
+                   vtemp = proxy<space>({}, vtemp)] __device__(int ei) mutable {
+                    // lens[ei] = vtemp.template pack<3>("dir", ei).norm();
+                    lens[ei] = vtemp.template pack<3>("dir", ei).abs().sum();
+                  });
+          auto meanDirSize = (reduce(cudaPol, lens) / dt) / coOffset;
+          auto spanSize = meanDirSize * alpha / A.meanEdgeLength;
+#else
+          // infNorm
+          auto spanSize = res * alpha / (A.meanEdgeLength * 1);
+#endif
+          if (spanSize > 1) { // mainly for reducing ccd pairs
+            alpha /= spanSize;
+            CCDfiltered = true;
+            fmt::print("\tstepsize after dir magnitude pre-filtering: {} "
+                       "(spansize: {})\n",
+                       alpha, spanSize);
+          }
+        }
+        A.groundIntersectionFreeStepsize(cudaPol, alpha);
+        fmt::print("\tstepsize after ground: {}\n", alpha);
+#if s_enableContact
+        {
+          // A.intersectionFreeStepsize(cudaPol, xi, alpha);
+          // fmt::print("\tstepsize after intersection-free: {}\n", alpha);
+
+          A.findCCDConstraints(cudaPol, alpha, xi);
+          auto [npp, npe, npt, nee, ncspt, ncsee] = A.getCnts();
+          A.intersectionFreeStepsize(cudaPol, xi, alpha);
+          fmt::print("\tstepsize after ccd: {}. (ncspt: {}, ncsee: {})\n",
+                     alpha, ncspt, ncsee);
+/// check discrete collision
+#if s_enableDCDCheck
+          while (A.checkSelfIntersection(cudaPol)) {
+            alpha /= 2;
+            cudaPol(zs::range(vtemp.size()), [vtemp = proxy<space>({}, vtemp),
+                                              alpha] __device__(int i) mutable {
+              vtemp.tuple<3>("xn", i) =
+                  vtemp.pack<3>("xn0", i) + alpha * vtemp.pack<3>("dir", i);
+            });
+          }
+#endif
+        }
+#endif
+
+        A.lineSearch(cudaPol, alpha, CCDfiltered);
+
+        cudaPol(zs::range(vtemp.size()), [vtemp = proxy<space>({}, vtemp),
+                                          alpha] __device__(int i) mutable {
+          vtemp.tuple<3>("xn", i) =
+              vtemp.pack<3>("xn0", i) + alpha * vtemp.pack<3>("dir", i);
+        });
+
 /// check discrete collision
 #if s_enableDCDCheck
         while (A.checkSelfIntersection(cudaPol)) {
@@ -2844,71 +2904,35 @@ struct CodimStepping : INode {
           });
         }
 #endif
-      }
-#endif
 
-      A.lineSearch(cudaPol, alpha, CCDfiltered);
-
-      cudaPol(zs::range(vtemp.size()), [vtemp = proxy<space>({}, vtemp),
-                                        alpha] __device__(int i) mutable {
-        vtemp.tuple<3>("xn", i) =
-            vtemp.pack<3>("xn0", i) + alpha * vtemp.pack<3>("dir", i);
-      });
-
-/// check discrete collision
-#if s_enableDCDCheck
-      while (A.checkSelfIntersection(cudaPol)) {
-        alpha /= 2;
-        cudaPol(zs::range(vtemp.size()), [vtemp = proxy<space>({}, vtemp),
-                                          alpha] __device__(int i) mutable {
-          vtemp.tuple<3>("xn", i) =
-              vtemp.pack<3>("xn0", i) + alpha * vtemp.pack<3>("dir", i);
-        });
-      }
-#endif
-
-      if (alpha < 1e-8) {
-        useGD = true;
-      } else {
-        useGD = false;
-      }
-
-      // update rule
-      cons_res = A.constraintResidual(cudaPol);
-      if (res < updateZoneTol && cons_res > consTol) {
-        if (kappa < kappaMax)
-          kappa *= 2;
-        else {
-          cudaPol(Collapse{numDofs},
-                  [vtemp = proxy<space>({}, vtemp),
-                   kappa = kappa] __device__(int vi) mutable {
-                    if (int BCorder = vtemp("BCorder", vi); BCorder > 0) {
-                      vtemp.tuple<3>("lambda", vi) =
-                          vtemp.pack<3>("lambda", vi) -
-                          kappa * vtemp("ws", vi) * vtemp.pack<3>("cons", vi);
-                    }
-                  });
+        if (alpha < 1e-8) {
+          useGD = true;
+        } else {
+          useGD = false;
         }
-      }
-    } // end newton step
+
+        // update rule
+        cons_res = A.constraintResidual(cudaPol);
+        if (res < updateZoneTol && cons_res > consTol) {
+          if (kappa < kappaMax)
+            kappa *= 2;
+          else {
+            cudaPol(Collapse{numDofs},
+                    [vtemp = proxy<space>({}, vtemp),
+                     kappa = kappa] __device__(int vi) mutable {
+                      if (int BCorder = vtemp("BCorder", vi); BCorder > 0) {
+                        vtemp.tuple<3>("lambda", vi) =
+                            vtemp.pack<3>("lambda", vi) -
+                            kappa * vtemp("ws", vi) * vtemp.pack<3>("cons", vi);
+                      }
+                    });
+          }
+        }
+      } // end newton step
+    }
 
     // update velocity and positions
     A.updateVelocities(cudaPol);
-#if 0
-    // double -> float
-    for (auto zstet : zstets) {
-      if (!zstet->hasImage(ZenoParticles::s_particleTag)) {
-        auto &loVerts = zstet->getParticles();
-        auto &verts = zstet->getParticles<true>();
-        cudaPol(range(loVerts.size()),
-                [loVerts = proxy<space>({}, loVerts),
-                 verts = proxy<space>({}, verts)] __device__(int vi) mutable {
-                  loVerts.tuple<3>("x", vi) = verts.pack<3>("x", vi);
-                  loVerts.tuple<3>("v", vi) = verts.pack<3>("v", vi);
-                });
-      }
-    }
-#endif
     // not sure if this is necessary for numerical reasons
     if (coVerts.size())
       cudaPol(zs::range(coVerts.size()),
@@ -2937,7 +2961,8 @@ ZENDEFNODE(CodimStepping, {{
                                {"float", "aug_coeff", "1e3"},
                                {"float", "pn_rel", "0.01"},
                                {"float", "cg_rel", "0.01"},
-                               {"float", "gravity", "-9."},
+                               {"float", "gravity", "-9.0"},
+                               {"int", "num_substeps", "1"},
                            },
                            {"ZSParticles"},
                            {},
