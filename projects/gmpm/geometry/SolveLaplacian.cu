@@ -75,6 +75,7 @@ struct ZSSolveLaplacian : zeno::INode {
             compute_cotmatrix<4>(cudaPol,eles,verts,"x",etemp,"L");
         else
             compute_cotmatrix<3>(cudaPol,eles,verts,"x",etemp,"L");
+        
         cudaPol(range(etemp.size()),
             [etemp = proxy<space>({},etemp),eles = proxy<space>({},eles),cdim] ZS_LAMBDA(int ei) mutable {
                 if(cdim == 3)
@@ -83,10 +84,13 @@ struct ZSSolveLaplacian : zeno::INode {
                     etemp.tuple<4>("inds",ei) = eles.pack<4>("inds",ei);
         });
         // compute preconditioner
-        if(cdim == 4)
-            PCG::prepare_block_diagonal_preconditioner<4,1>(cudaPol,eles,"L",etemp,"P",vtemp);
-        else
-            PCG::prepare_block_diagonal_preconditioner<3,1>(cudaPol,eles,"L",etemp,"P",vtemp);
+        if(cdim == 4){
+            PCG::copy<4>(cudaPol,eles,"inds",etemp,"inds");
+            PCG::prepare_block_diagonal_preconditioner<4,1>(cudaPol,"L",etemp,"P",vtemp);
+        }else{
+            PCG::copy<3>(cudaPol,eles,"inds",etemp,"inds");
+            PCG::prepare_block_diagonal_preconditioner<3,1>(cudaPol,"L",etemp,"P",vtemp);
+        }
         // initial guess
         cudaPol(zs::range(vtemp.size()),
             [vtemp = proxy<space>({},vtemp),verts = proxy<space>({},verts),tag = zs::SmallString(attr)] ZS_LAMBDA(int vi) mutable {

@@ -6,8 +6,22 @@ namespace zeno { namespace PCG {
     // the interface the equation should have:
     using T = float;
 
-    template<int simplex_dim,int space_dim,typename Pol,typename ElmTileVec,typename VBufTileVec,typename EBufTileVec>
-    void prepare_block_diagonal_preconditioner(Pol &pol,const ElmTileVec& eles,const zs::SmallString& HTag,const EBufTileVec& etemp,const zs::SmallString& PTag,VBufTileVec& vtemp,bool use_block = true) {
+    template<int space_dim,typename Pol,typename VTileVec>
+    T inf_norm(Pol &cudaPol, VTileVec &vtemp,const zs::SmallString tag) {
+        using namespace zs;
+        constexpr auto space = execspace_e::cuda;
+        Vector<T> res{vtemp.get_allocator(), 1};
+        res.setVal(0);
+        cudaPol(range(vtemp.size()),
+            [data = proxy<space>({}, vtemp), res = proxy<space>(res),tag] __device__(int pi) mutable {
+                auto v = data.template pack<space_dim>(tag, pi);
+                atomic_max(exec_cuda, res.data(), v.abs().max());
+        });
+        return res.getVal();
+    }    
+
+    template<int simplex_dim,int space_dim,typename Pol,typename VBufTileVec,typename EBufTileVec>
+    void prepare_block_diagonal_preconditioner(Pol &pol,const zs::SmallString& HTag,const EBufTileVec& etemp,const zs::SmallString& PTag,VBufTileVec& vtemp,bool use_block = true) {
         using namespace zs;
         constexpr auto space = execspace_e::cuda;
         pol(zs::range(vtemp.size()),
@@ -15,20 +29,20 @@ namespace zeno { namespace PCG {
                 constexpr int block_size = space_dim * space_dim;
                 vtemp.template tuple<block_size>(PTag, vi) = zs::vec<T,space_dim,space_dim>::zeros();
         });
-        pol(zs::range(eles.size()),
-                    [vtemp = proxy<space>({},vtemp),etemp = proxy<space>({},etemp),eles = proxy<space>({},eles),HTag,PTag,use_block]
+        pol(zs::range(etemp.size()),
+                    [vtemp = proxy<space>({},vtemp),etemp = proxy<space>({},etemp),HTag,PTag,use_block]
                         ZS_LAMBDA(int ei) mutable{
             constexpr int h_width = space_dim * simplex_dim;
-            auto inds = eles.template pack<simplex_dim>("inds",ei).template reinterpret_bits<int>();
+            auto inds = etemp.template pack<simplex_dim>("inds",ei).template reinterpret_bits<int>();
             auto H = etemp.template pack<h_width,h_width>(HTag,ei);
 
             for(int vi = 0;vi != simplex_dim;++vi)
                 for(int j = 0;j != space_dim;++j){
                     if(use_block)
                         for(int k = 0;k != space_dim;++k)
-                            atomic_add(exec_cuda,&vtemp(PTag,j*space_dim + k,inds[vi]),(T)H(vi*space_dim + j + k,vi*space_dim + k));
+                            atomic_add(exec_cuda,&vtemp(PTag,j*space_dim + k,inds[vi]),(T)H(vi*space_dim + j,vi*space_dim + k));
                     else
-                        atomic_add(exec_cuda,&vtemp(PTag,j*space_dim + j,inds[vi]),(T)H(vi*space_dim + j + j,vi*space_dim + j));
+                        atomic_add(exec_cuda,&vtemp(PTag,j*space_dim + j,inds[vi]),(T)H(vi*space_dim + j,vi*space_dim + j));
                 }
         });
         pol(zs::range(vtemp.size()),
@@ -156,6 +170,16 @@ namespace zeno { namespace PCG {
         pol(range(vtemp.size()),
             [vtemp = proxy<space>({},vtemp),src0,a0,src1,a1,dst] __device__(int vi) mutable {
                 vtemp.template tuple<space_dim>(dst,vi) = a0 * vtemp.template pack<space_dim>(src0,vi) + a1 * vtemp.template pack<space_dim>(src1,vi);
+        });
+    }
+
+    template<int space_dim,typename Pol,typename VTileVec>
+    void fill(Pol& pol,VTileVec& vtemp,const zs::SmallString& tag,const zs::vec<T,space_dim>& value) {
+        using namespace zs;
+        constexpr auto space = execspace_e::cuda;
+        pol(range(vtemp.size()),
+            [vtemp = proxy<space>({},vtemp),tag,value] __device__(int vi) mutable {
+                vtemp.template tuple<space_dim>(tag,vi) = value;
         });
     }
 
