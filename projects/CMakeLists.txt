@@ -25,6 +25,7 @@ set(ZENO_EXTENSIONS
     TreeSketch
     CalcGeometryUV
     MeshSubdiv
+    BezierCurve
     )
 
 foreach (name IN ITEMS ${ZENO_EXTENSIONS})
