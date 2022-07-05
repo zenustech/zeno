@@ -582,8 +582,10 @@ void ZenoSubGraphScene::onTempLinkClosed()
         QPointF socketPos;
         QPersistentModelIndex linkIdx;
 
-        SOCKET_INFO targetInfo = targetSock->socketInfo(bTargetInput);
-        const QString nodeid = targetInfo.nodeid;
+        QString targetSockName;
+        QString nodeid;
+        bool bRet = targetSock->getSocketInfo(bTargetInput, nodeid, targetSockName);
+        ZASSERT_EXIT(bRet);
 
         QString fixedNodeId, fixedSocket;
         bool fixedInput = false;
@@ -596,7 +598,7 @@ void ZenoSubGraphScene::onTempLinkClosed()
             QPointF outPos, inPos;
             if (fixedInput) {
                 outNode = nodeid;
-                outSock = targetInfo.name;
+                outSock = targetSockName;
                 outPos = socketPos;
                 inNode = fixedNodeId;
                 inSock = fixedSocket;
@@ -606,7 +608,7 @@ void ZenoSubGraphScene::onTempLinkClosed()
                 outSock = fixedSocket;
                 outPos = fixedPos;
                 inNode = nodeid;
-                inSock = targetInfo.name;
+                inSock = targetSockName;
                 inPos = socketPos;
             }
 
@@ -615,6 +617,7 @@ void ZenoSubGraphScene::onTempLinkClosed()
             {
                 QPersistentModelIndex linkIdx;
                 QString sockName;
+                ZASSERT_EXIT(m_nodes.find(inNode) != m_nodes.end());
                 m_nodes[inNode]->getSocketInfoByItem(targetSock, sockName, socketPos, bTargetInput, linkIdx);
                 if (linkIdx.isValid())
                     pGraphsModel->removeLink(linkIdx, m_subgIdx, true);

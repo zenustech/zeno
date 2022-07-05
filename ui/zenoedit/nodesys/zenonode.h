@@ -121,6 +121,8 @@ private:
     void _drawBorderWangStyle(QPainter* painter);
     ZenoGraphsEditor* getEditorViewByViewport(QWidget* pWidget);
     ZenoParamWidget* initSocketWidget(const INPUT_SOCKET inSocket, ZenoTextLayoutItem* pSocketText);
+    bool renameDictKey(bool bInput, const INPUT_SOCKETS& inputs, const OUTPUT_SOCKETS& outputs);
+    void updateSocketWidget(const INPUT_SOCKET inSocket);
     void clearInSocketControl(const QString& sockName);
 
     QPersistentModelIndex m_index;

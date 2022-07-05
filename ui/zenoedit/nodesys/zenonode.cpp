@@ -610,13 +610,10 @@ void ZenoNode::clearInSocketControl(const QString& sockName)
     }
 }
 
-void ZenoNode::onSocketsUpdate(bool bInput)
+bool ZenoNode::renameDictKey(bool bInput, const INPUT_SOCKETS& inputs, const OUTPUT_SOCKETS& outputs)
 {
-    const QString &nodeid = nodeId();
     if (bInput)
     {
-        INPUT_SOCKETS inputs = m_index.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
-
         QStringList coreKeys = inputs.keys();
         QStringList uiKeys = m_inSockets.keys();
         QSet<QString> coreNewSet = coreKeys.toSet().subtract(uiKeys.toSet());
@@ -627,11 +624,12 @@ void ZenoNode::onSocketsUpdate(bool bInput)
             //rename.
             QString oldName = *uiNewSet.begin();
             QString newName = *coreNewSet.begin();
-            ZASSERT_EXIT(oldName != newName);
+            ZASSERT_EXIT(oldName != newName, false);
 
             _socket_ctrl ctrl = m_inSockets[oldName];
             ctrl.socket_text->setText(newName);
-            
+            ctrl.socket->updateSockName(newName);
+
             //have to reset the text format, which is trivial.
             QTextFrame *frame = ctrl.socket_text->document()->rootFrame();
             QTextFrameFormat format = frame->frameFormat();
@@ -642,17 +640,62 @@ void ZenoNode::onSocketsUpdate(bool bInput)
             m_inSockets.remove(oldName);
 
             updateWhole();
+            return true;
+        }
+        return false;
+    }
+    else
+    {
+        QStringList coreKeys = outputs.keys();
+        QStringList uiKeys = m_outSockets.keys();
+        QSet<QString> coreNewSet = coreKeys.toSet().subtract(uiKeys.toSet());
+        QSet<QString> uiNewSet = uiKeys.toSet().subtract(coreKeys.toSet());
+        //detecting the rename case for "MakeDict".
+        if (coreNewSet.size() == 1 && uiNewSet.size() == 1 && m_index.data(ROLE_OBJNAME) == "ExtractDict")
+        {
+            //rename.
+            QString oldName = *uiNewSet.begin();
+            QString newName = *coreNewSet.begin();
+            ZASSERT_EXIT(oldName != newName, false);
+
+            _socket_ctrl ctrl = m_outSockets[oldName];
+            ctrl.socket_text->setText(newName);
+            ctrl.socket->updateSockName(newName);
+
+            //have to reset the text format, which is trivial.
+            QTextFrame *frame = ctrl.socket_text->document()->rootFrame();
+            QTextFrameFormat format = frame->frameFormat();
+            format.setBackground(QColor(37, 37, 37));
+            frame->setFrameFormat(format);
+
+            m_outSockets[newName] = ctrl;
+            m_outSockets.remove(oldName);
+
+            updateWhole();
+            return true;
+        }
+        return false;
+    }
+}
+
+void ZenoNode::onSocketsUpdate(bool bInput)
+{
+    const QString &nodeid = nodeId();
+    if (bInput)
+    {
+        INPUT_SOCKETS inputs = m_index.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
+        if (renameDictKey(true, inputs, OUTPUT_SOCKETS()))
+        {
             return;
         }
-
         for (const INPUT_SOCKET inSocket : inputs)
         {
             const QString& inSock = inSocket.info.name;
             if (m_inSockets.find(inSock) == m_inSockets.end())
             {
                 //add socket
-                ZenoSocketItem *socket = new ZenoSocketItem(true, m_renderParams.socket, m_renderParams.szSocket, this);
-                socket->setSocketInfo(m_index, inSocket.info);
+                ZenoSocketItem *socket = new ZenoSocketItem(inSock, true, m_index, m_renderParams.socket, m_renderParams.szSocket, this);
+                socket->updateSockName(inSock);
                 socket->setZValue(ZVALUE_ELEMENT);
                 connect(socket, &ZenoSocketItem::clicked, this, [=]() {
                     QString sockName;
@@ -675,7 +718,7 @@ void ZenoNode::onSocketsUpdate(bool bInput)
                 ZenoParamWidget* pSocketControl = initSocketWidget(inSocket, pSocketItem);
                 if (pSocketControl) {
                     pMiniLayout->addItem(pSocketControl);
-                            }
+                }
 
                 _socket_ctrl socket_ctrl;
                 socket_ctrl.socket = socket;
@@ -689,88 +732,8 @@ void ZenoNode::onSocketsUpdate(bool bInput)
             else
             {
                 //update value directly.
-                _socket_ctrl ctrl = m_inSockets[inSocket.info.name];
-                QGraphicsLinearLayout* pControlLayout = ctrl.ctrl_layout;
-                ZASSERT_EXIT(pControlLayout);
-
-                bool bUpdateLayout = false;
-                switch (inSocket.info.control)
-                {
-                    case CONTROL_STRING:
-                    case CONTROL_INT:
-                    case CONTROL_FLOAT:{
-                        ZenoParamLineEdit *pLineEdit = qobject_cast<ZenoParamLineEdit *>(ctrl.socket_control);
-                        if (!pLineEdit)
-                        {
-                            //sock type has been changed to this control type
-                            clearInSocketControl(inSocket.info.name);
-                            pLineEdit = qobject_cast<ZenoParamLineEdit *>(initSocketWidget(inSocket, ctrl.socket_text));
-                            ZASSERT_EXIT(pLineEdit);
-                            pControlLayout->addItem(pLineEdit);
-                            m_inSockets[inSocket.info.name].socket_control = pLineEdit;
-                            bUpdateLayout = true;
-                        }
-                        pLineEdit->setText(inSocket.info.defaultValue.toString());
-                        break;
-                    }
-                    case CONTROL_BOOL: {
-                        ZenoParamCheckBox* pSocketCheckbox = qobject_cast<ZenoParamCheckBox*>(ctrl.socket_control);
-                        if (!pSocketCheckbox)
-                        {
-                            clearInSocketControl(inSocket.info.name);
-                            pSocketCheckbox = qobject_cast<ZenoParamCheckBox*>(initSocketWidget(inSocket, ctrl.socket_text));
-                            ZASSERT_EXIT(pSocketCheckbox);
-                            pControlLayout->addItem(pSocketCheckbox);
-                            m_inSockets[inSocket.info.name].socket_control = pSocketCheckbox; 
-                            bUpdateLayout = true;
-                        }
-                            bool bChecked = inSocket.info.defaultValue.toBool();
-                            pSocketCheckbox->setCheckState(bChecked ? Qt::Checked : Qt::Unchecked);
-                        break;
-                    }
-                    case CONTROL_VEC3F: {
-                        ZenoVecEditWidget* pVecEdit = qobject_cast<ZenoVecEditWidget*>(ctrl.socket_control);
-                        if (!pVecEdit)
-                        {
-                            clearInSocketControl(inSocket.info.name);
-                            pVecEdit = qobject_cast<ZenoVecEditWidget*>(initSocketWidget(inSocket, ctrl.socket_text));
-                            ZASSERT_EXIT(pVecEdit);
-                            pControlLayout->addItem(pVecEdit);
-                            m_inSockets[inSocket.info.name].socket_control = pVecEdit; 
-                            bUpdateLayout = true;
-                        }
-                            const QVector<qreal> &vec = inSocket.info.defaultValue.value<QVector<qreal>>();
-                            pVecEdit->setVec(vec);
-                        break;
-                    }
-                    case CONTROL_ENUM: {
-                        ZenoParamComboBox* pComboBox = qobject_cast<ZenoParamComboBox*>(ctrl.socket_control);
-                        if (!pComboBox)
-                        {
-                            clearInSocketControl(inSocket.info.name);
-                            pComboBox = qobject_cast<ZenoParamComboBox*>(initSocketWidget(inSocket, ctrl.socket_text));
-                            ZASSERT_EXIT(pComboBox);
-                            pControlLayout->addItem(pComboBox);
-                            m_inSockets[inSocket.info.name].socket_control = pComboBox; 
-                            bUpdateLayout = true;
-                        }
-                            pComboBox->setText(inSocket.info.defaultValue.toString());
-                        break;
-                        }
-                    case CONTROL_NONE: {
-                        //should clear the control if exists.
-                        if (ctrl.socket_control)
-                        {
-                            clearInSocketControl(inSocket.info.name);
-                            bUpdateLayout = true;
-                        }
-                        break;
-                    }
-                }
-                if (bUpdateLayout) {
-                    updateWhole();
+                updateSocketWidget(inSocket);
             }
-        }
         }
         //remove all keys which don't exist in model.
         for (auto name : m_inSockets.keys())
@@ -790,42 +753,18 @@ void ZenoNode::onSocketsUpdate(bool bInput)
     else
     {
         OUTPUT_SOCKETS outputs = m_index.data(ROLE_OUTPUTS).value<OUTPUT_SOCKETS>();
-
-        QStringList coreKeys = outputs.keys();
-        QStringList uiKeys = m_outSockets.keys();
-        QSet<QString> coreNewSet = coreKeys.toSet().subtract(uiKeys.toSet());
-        QSet<QString> uiNewSet = uiKeys.toSet().subtract(coreKeys.toSet());
-        //detecting the rename case for "MakeDict".
-        if (coreNewSet.size() == 1 && uiNewSet.size() == 1 && m_index.data(ROLE_OBJNAME) == "ExtractDict") {
-            //rename.
-            QString oldName = *uiNewSet.begin();
-            QString newName = *coreNewSet.begin();
-            ZASSERT_EXIT(oldName != newName);
-
-            _socket_ctrl ctrl = m_outSockets[oldName];
-            ctrl.socket_text->setText(newName);
-
-            //have to reset the text format, which is trivial.
-            QTextFrame *frame = ctrl.socket_text->document()->rootFrame();
-            QTextFrameFormat format = frame->frameFormat();
-            format.setBackground(QColor(37, 37, 37));
-            frame->setFrameFormat(format);
-
-            m_outSockets[newName] = ctrl;
-            m_outSockets.remove(oldName);
-
-            updateWhole();
+        if (renameDictKey(false, INPUT_SOCKETS(), outputs))
+        {
             return;
         }
-
         for (OUTPUT_SOCKET outSocket : outputs)
         {
             const QString& outSock = outSocket.info.name;
             if (m_outSockets.find(outSock) == m_outSockets.end())
             {
                 _socket_ctrl sock;
-                sock.socket = new ZenoSocketItem(false, m_renderParams.socket, m_renderParams.szSocket, this);
-                sock.socket->setSocketInfo(m_index, outSocket.info);
+                sock.socket = new ZenoSocketItem(outSock, false, m_index, m_renderParams.socket, m_renderParams.szSocket, this);
+                sock.socket->updateSockName(outSock);
                 sock.socket_text = new ZenoTextLayoutItem(outSock, m_renderParams.socketFont, m_renderParams.socketClr.color());
                 sock.socket_text->setRight(true);
                 connect(sock.socket, &ZenoSocketItem::clicked, this, [=]() {
@@ -1061,6 +1000,90 @@ ZenoParamWidget* ZenoNode::initSocketWidget(const INPUT_SOCKET inSocket, ZenoTex
         }
         default:
             return nullptr;
+    }
+}
+
+void ZenoNode::updateSocketWidget(const INPUT_SOCKET inSocket)
+{
+    _socket_ctrl ctrl = m_inSockets[inSocket.info.name];
+    QGraphicsLinearLayout *pControlLayout = ctrl.ctrl_layout;
+    ZASSERT_EXIT(pControlLayout);
+
+    bool bUpdateLayout = false;
+    switch (inSocket.info.control)
+    {
+        case CONTROL_STRING:
+        case CONTROL_INT:
+        case CONTROL_FLOAT:
+        {
+            ZenoParamLineEdit *pLineEdit = qobject_cast<ZenoParamLineEdit*>(ctrl.socket_control);
+            if (!pLineEdit) {
+                //sock type has been changed to this control type
+                clearInSocketControl(inSocket.info.name);
+                pLineEdit = qobject_cast<ZenoParamLineEdit *>(initSocketWidget(inSocket, ctrl.socket_text));
+                ZASSERT_EXIT(pLineEdit);
+                pControlLayout->addItem(pLineEdit);
+                m_inSockets[inSocket.info.name].socket_control = pLineEdit;
+                bUpdateLayout = true;
+            }
+            pLineEdit->setText(inSocket.info.defaultValue.toString());
+            break;
+        }
+        case CONTROL_BOOL:
+        {
+            ZenoParamCheckBox *pSocketCheckbox = qobject_cast<ZenoParamCheckBox *>(ctrl.socket_control);
+            if (!pSocketCheckbox) {
+                clearInSocketControl(inSocket.info.name);
+                pSocketCheckbox = qobject_cast<ZenoParamCheckBox *>(initSocketWidget(inSocket, ctrl.socket_text));
+                ZASSERT_EXIT(pSocketCheckbox);
+                pControlLayout->addItem(pSocketCheckbox);
+                m_inSockets[inSocket.info.name].socket_control = pSocketCheckbox;
+                bUpdateLayout = true;
+            }
+            bool bChecked = inSocket.info.defaultValue.toBool();
+            pSocketCheckbox->setCheckState(bChecked ? Qt::Checked : Qt::Unchecked);
+            break;
+        }
+        case CONTROL_VEC3F:
+        {
+            ZenoVecEditWidget *pVecEdit = qobject_cast<ZenoVecEditWidget *>(ctrl.socket_control);
+            if (!pVecEdit) {
+                clearInSocketControl(inSocket.info.name);
+                pVecEdit = qobject_cast<ZenoVecEditWidget *>(initSocketWidget(inSocket, ctrl.socket_text));
+                ZASSERT_EXIT(pVecEdit);
+                pControlLayout->addItem(pVecEdit);
+                m_inSockets[inSocket.info.name].socket_control = pVecEdit;
+                bUpdateLayout = true;
+            }
+            const QVector<qreal> &vec = inSocket.info.defaultValue.value<QVector<qreal>>();
+            pVecEdit->setVec(vec);
+            break;
+        }
+        case CONTROL_ENUM:
+        {
+            ZenoParamComboBox *pComboBox = qobject_cast<ZenoParamComboBox *>(ctrl.socket_control);
+            if (!pComboBox) {
+                clearInSocketControl(inSocket.info.name);
+                pComboBox = qobject_cast<ZenoParamComboBox *>(initSocketWidget(inSocket, ctrl.socket_text));
+                ZASSERT_EXIT(pComboBox);
+                pControlLayout->addItem(pComboBox);
+                m_inSockets[inSocket.info.name].socket_control = pComboBox;
+                bUpdateLayout = true;
+            }
+            pComboBox->setText(inSocket.info.defaultValue.toString());
+            break;
+        }
+        case CONTROL_NONE: {
+            //should clear the control if exists.
+            if (ctrl.socket_control) {
+                clearInSocketControl(inSocket.info.name);
+                bUpdateLayout = true;
+            }
+            break;
+        }
+    }
+    if (bUpdateLayout) {
+        updateWhole();
     }
 }
 

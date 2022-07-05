@@ -746,6 +746,7 @@ void GraphsModel::addNode(const NODE_DATA& nodeData, const QModelIndex& subGpIdx
             {
                 INPUT_SOCKETS inputs = nodeData2[ROLE_INPUTS].value<INPUT_SOCKETS>();
                 INPUT_SOCKET inSocket;
+                inSocket.info.nodeid = nodeData2[ROLE_OBJID].toString();
 
                 int maxObjId = UiHelper::getMaxObjId(inputs.keys());
                 if (maxObjId == -1)
@@ -763,6 +764,7 @@ void GraphsModel::addNode(const NODE_DATA& nodeData, const QModelIndex& subGpIdx
             {
                 OUTPUT_SOCKETS outputs = nodeData2[ROLE_OUTPUTS].value<OUTPUT_SOCKETS>();
                 OUTPUT_SOCKET outSocket;
+                outSocket.info.nodeid = nodeData2[ROLE_OBJID].toString();
 
                 int maxObjId = UiHelper::getMaxObjId(outputs.keys());
                 if (maxObjId == -1)
