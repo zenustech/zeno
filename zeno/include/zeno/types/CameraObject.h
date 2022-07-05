@@ -12,8 +12,8 @@ struct CameraData {
     float fov{45.f};
     float fnear{0.01f};
     float ffar{20000.f};
-    float dof{-1.f};
-    float aperature{-1.f};
+    //float dof{-1.f};
+    //float aperature{-1.f};
 };
 
 struct CameraObject : IObjectClone<CameraObject>, CameraData {
