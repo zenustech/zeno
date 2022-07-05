@@ -8,11 +8,6 @@ struct MakeCamera : INode {
     virtual void apply() override {
         auto camera = std::make_unique<CameraObject>();
 
-        auto fit_gate = get_param<std::string>("fit_gate");
-        if (fit_gate == "Horizontal")
-            camera->fit_gate = 1;
-        else if (fit_gate == "Vertical")
-            camera->fit_gate = 2;
         camera->pos = get_input2<vec3f>("pos");
         camera->up = get_input2<vec3f>("up");
         camera->view = get_input2<vec3f>("view");
@@ -20,11 +15,11 @@ struct MakeCamera : INode {
         camera->ffar = get_input2<float>("far");
         camera->fnear = get_input2<float>("near");
         camera->fov = get_input2<float>("fov");
-        camera->fw = get_input2<float>("fw");
-        camera->fh = get_input2<float>("fh");
-        camera->focL = get_input2<int>("focL");
-        camera->nx = get_input2<int>("nx");
-        camera->ny = get_input2<int>("ny");
+        //camera->fw = get_input2<float>("fw");
+        //camera->fh = get_input2<float>("fh");
+        //camera->focL = get_input2<int>("focL");
+        //camera->nx = get_input2<int>("nx");
+        //camera->ny = get_input2<int>("ny");
         set_output("camera", std::move(camera));
     }
 };
@@ -37,10 +32,7 @@ ZENO_DEFNODE(MakeCamera)({
         {"float", "dof", "-1"},
         {"float", "near", "0.01"},
         {"float", "far", "20000"},
-        {"float", "focL", "35"},
         {"float", "fov", "45"},
-        {"float", "fw", "36"},
-        {"float", "fh", "24"},
         {"int", "nx", "0"},
         {"int", "ny", "0"},
     },
@@ -48,7 +40,6 @@ ZENO_DEFNODE(MakeCamera)({
         {"CameraObject", "camera"},
     },
     {
-        {"enum Horizontal Vertical", "fit_gate", "Horizontal"},
     },
     {"scenevis"},
 });
