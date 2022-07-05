@@ -33,16 +33,24 @@ QVariant PrimAttrTableModel::data(const QModelIndex& index, int role) const
 {
     if (!index.isValid())
         return QVariant();
-//
-//    if (Qt::TextAlignmentRole == role)
-//    {
-//        return int(Qt::AlignLeft | Qt::AlignVCenter);
-//    }
-//    else if (Qt::DisplayRole == role)
-//    {
-//        return m_datas[index.row()][index.column()];
-//    }
-    return 1;
+
+    if (Qt::TextAlignmentRole == role)
+    {
+        return int(Qt::AlignLeft | Qt::AlignVCenter);
+    }
+    else if (Qt::DisplayRole == role)
+    {
+        std::string attr_name = m_prim->attr_keys()[index.column()];
+        if (m_prim->attr_is<float>(attr_name)) {
+            return m_prim->attr<float>(attr_name)[index.row()];
+        }
+        else if (m_prim->attr_is<zeno::vec3f>(attr_name)) {
+            auto v = m_prim->attr<zeno::vec3f>(attr_name)[index.row()];
+            return QString("%1, %2, %3").arg(v[0]).arg(v[1]).arg(v[2]);
+        }
+        return "-";
+    }
+    return QVariant();
 }
 
 QVariant PrimAttrTableModel::headerData(int section, Qt::Orientation orientation, int role) const
