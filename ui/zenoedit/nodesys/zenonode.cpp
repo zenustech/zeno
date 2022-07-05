@@ -898,6 +898,27 @@ ZenoParamWidget* ZenoNode::initSocketWidget(const INPUT_SOCKET inSocket, ZenoTex
             });
             return pSocketEditor;
         }
+        case CONTROL_BOOL:
+        {
+            ZenoParamCheckBox* pSocketCheckbox = new ZenoParamCheckBox(inSock);
+            bool isChecked = inSocket.info.defaultValue.toBool();
+            pSocketCheckbox->setCheckState(isChecked ? Qt::Checked : Qt::Unchecked);
+            connect(pSocketCheckbox, &ZenoParamCheckBox::stateChanged, this, [=](int state) {
+                bool bChecked = false;
+                if (state == Qt::Checked) {
+                    bChecked = true;
+                }
+                else if (state == Qt::Unchecked) {
+                    bChecked = false;
+                }
+                else {
+                    Q_ASSERT(false);
+                    return;
+                }
+                updateSocketDeflValue(nodeid, inSock, inSocket, bChecked);
+            });
+            return pSocketCheckbox;
+        }
         case CONTROL_READPATH:
         case CONTROL_WRITEPATH:
         {
