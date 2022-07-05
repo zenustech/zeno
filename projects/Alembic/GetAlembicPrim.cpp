@@ -205,13 +205,13 @@ struct GetAlembicCamera : INode {
         auto up = Imath::V4d(0, 1, 0, 0) * mat;
         auto right = Imath::V4d(1, 0, 0, 0) * mat;
 
-        float h_fov = (float)std::atan(35.0 / (2.0 * cam_info.value().focal_length));
+        float focal_length = cam_info.value().focal_length;
 
         set_output("pos", std::make_shared<NumericObject>(zeno::vec3f((float)pos.x, (float)pos.y, (float)pos.z)));
         set_output("up", std::make_shared<NumericObject>(zeno::vec3f((float)up.x, (float)up.y, (float)up.z)));
         set_output("right", std::make_shared<NumericObject>(zeno::vec3f((float)right.x, (float)right.y, (float)right.z)));
 
-        set_output("half_fov", std::make_shared<NumericObject>(h_fov));
+        set_output("focal_length", std::make_shared<NumericObject>(focal_length));
         set_output("near", std::make_shared<NumericObject>((float)cam_info.value()._near));
         set_output("far", std::make_shared<NumericObject>((float)cam_info.value()._far));
     }
@@ -223,7 +223,7 @@ ZENDEFNODE(GetAlembicCamera, {
         "pos",
         "up",
         "right",
-        "half_fov",
+        "focal_length",
         "near",
         "far",
     },
