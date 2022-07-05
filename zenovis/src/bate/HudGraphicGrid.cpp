@@ -119,9 +119,9 @@ struct GraphicGrid final : IGraphicDraw {
         scene->camera->set_program_uniforms(prog);
 
         {
-            auto camera_radius = scene->camera->m_lodradius;
+            auto camera_radius = glm::length(scene->camera->m_lodcenter);
             auto camera_center = scene->camera->m_lodcenter
-                + scene->camera->m_lodfront * scene->camera->m_lodradius;
+                + scene->camera->m_lodfront * camera_radius;
             camera_radius *= scene->camera->m_fov / 45.f;
             float level = std::max(std::log(camera_radius) / std::log(5.0f) - 1.0f, -1.0f);
             auto grid_scale = std::pow(5.f, std::floor(level));

@@ -7,16 +7,17 @@ void Camera::setCamera(zeno::CameraData const &cam) {
             glm::vec3(cam.pos[0], cam.pos[1], cam.pos[2]),
             glm::vec3(cam.view[0], cam.view[1], cam.view[2]),
             glm::vec3(cam.up[0], cam.up[1], cam.up[2]),
-            cam.fov, cam.fnear, cam.ffar, 2.0f);
+            cam.fov, cam.fnear, cam.ffar);
     this->m_dof = cam.dof;
     this->m_aperature = cam.aperature;
 }
 
-void Camera::placeCamera(glm::vec3 pos, glm::vec3 front, glm::vec3 up, float fov, float fnear, float ffar, float radius) {
+void Camera::placeCamera(glm::vec3 pos, glm::vec3 front, glm::vec3 up, float fov, float fnear, float ffar) {
     front = glm::normalize(front);
     up = glm::normalize(up);
 
     if (fov <= 0) {
+        auto radius = glm::length(pos);
         m_view = glm::lookAt(pos, pos + front, up);
         m_proj = glm::ortho(-radius * getAspect(), radius * getAspect(), -radius,
                 radius, fnear, ffar);
@@ -29,7 +30,6 @@ void Camera::placeCamera(glm::vec3 pos, glm::vec3 front, glm::vec3 up, float fov
         //ZENO_P(m_view);
         //ZENO_P(m_proj);
     }
-    m_lodradius = radius;
     m_lodcenter = pos;
     m_lodfront = front;
     m_lodup = up;
@@ -40,7 +40,7 @@ void Camera::placeCamera(glm::vec3 pos, glm::vec3 front, glm::vec3 up, float fov
 
 void Camera::focusCamera(float cx, float cy, float cz, float radius) {
     auto center = glm::vec3(cx, cy, cz);
-    placeCamera(center - m_lodfront * radius, m_lodfront, m_lodup, m_fov, m_near, m_far, radius);
+    placeCamera(center - m_lodfront * radius, m_lodfront, m_lodup, m_fov, m_near, m_far);
 }
 
 void Camera::lookCamera(float cx, float cy, float cz, float theta, float phi, float radius, float fov) {
@@ -63,9 +63,9 @@ void Camera::lookCamera(float cx, float cy, float cz, float theta, float phi, fl
     if (!(fov <= 0)) {
         auto fnear = 0.1f;
         auto ffar = 20000.0f * std::max(1.0f, (float)radius / 10000.f);
-        placeCamera(center - front * radius, front, up, fov, fnear, ffar, radius);
+        placeCamera(center - front * radius, front, up, fov, fnear, ffar);
     } else {
-        placeCamera(center - front * radius, front, up, 0.f, -100.f, 100.f, radius);
+        placeCamera(center - front * radius, front, up, 0.f, -100.f, 100.f);
     }
 }
 
