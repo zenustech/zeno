@@ -82,7 +82,8 @@ static const char *frag_code = R"(
         }
         vec3 cam_on_grid = vec3(mCameraCenter.x, 0, mCameraCenter.z);
         alpha *= 1 - ratio_clamp(distance(cam_on_grid, pos), mCameraRadius, mCameraRadius * 2);
-        gl_FragColor = vec4(0.5, 0.5, 0.5, alpha);
+        alpha *= 0.8;
+        gl_FragColor = vec4(0.45, 0.45, 0.45, alpha);
     }
 )";
 

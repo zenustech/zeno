@@ -306,7 +306,7 @@ QMenuBar* ZenoViewDockTitle::initMenu()
     QMenu* pDisplay = new QMenu(tr("Display"));
     {
         QAction* pAction = new QAction(tr("Show Grid"), this);
-        pAction->setShortcut(QKeySequence("Shift+F7"));
+        pAction->setShortcut(QKeySequence("Shift+F8"));
         pAction->setCheckable(true);
         pAction->setChecked(true);
         pDisplay->addAction(pAction);
