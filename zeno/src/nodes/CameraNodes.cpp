@@ -33,8 +33,6 @@ ZENO_DEFNODE(MakeCamera)({
         {"float", "near", "0.01"},
         {"float", "far", "20000"},
         {"float", "fov", "45"},
-        {"int", "nx", "0"},
-        {"int", "ny", "0"},
     },
     {
         {"CameraObject", "camera"},

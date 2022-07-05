@@ -1546,13 +1546,13 @@ void set_window_size(int nx, int ny) {
     resize_dirty = true;
 }
 
-void set_perspective(float const *U, float const *V, float const *W, float const *E, float fw, float fh, float aspect, int fit_gate, float fov, float focL) {
+void set_perspective(float const *U, float const *V, float const *W, float const *E, float aspect, float fov) {
     auto &cam = state.params.cam;
-    float c_aspect = fw/fh;
-    float u_aspect = aspect;
-    float r_fh = fh * 0.001;
-    float r_fw = fw * 0.001;
-    zeno::log_info("Camera film w {} film h {} aspect {} {}", fw, fh, u_aspect, c_aspect);
+    //float c_aspect = fw/fh;
+    //float u_aspect = aspect;
+    //float r_fh = fh * 0.001;
+    //float r_fw = fw * 0.001;
+    //zeno::log_info("Camera film w {} film h {} aspect {} {}", fw, fh, u_aspect, c_aspect);
 
     cam.eye = make_float3(E[0], E[1], E[2]);
     cam.right = normalize(make_float3(U[0], U[1], U[2]));
@@ -1562,6 +1562,7 @@ void set_perspective(float const *U, float const *V, float const *W, float const
     float radfov = fov * float(M_PI) / 180;
     float tanfov = std::tan(radfov / 2.0f);
     cam.front /= tanfov;
+    cam.right *= aspect;
 
     camera_changed = true;
     //cam.aspect = aspect;

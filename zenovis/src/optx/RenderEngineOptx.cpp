@@ -370,7 +370,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         //zeno::log_warn("lodright = {}", zeno::other_to_vec<3>(lodright));
         xinxinoptix::set_perspective(glm::value_ptr(lodright), glm::value_ptr(cam.m_lodup),
                                      glm::value_ptr(cam.m_lodfront), glm::value_ptr(cam.m_lodcenter),
-                                     cam.m_fw, cam.m_fh, cam.getAspect(), cam.m_fit_gate, cam.m_fov);
+                                     cam.getAspect(), cam.m_fov);
         //xinxinoptix::set_projection(glm::value_ptr(cam.m_proj));
         }
 

@@ -1,6 +1,7 @@
 #include <zeno/zeno.h>
 #include <zeno/types/CameraObject.h>
 #include <zeno/utils/arrayindex.h>
+#include <zeno/utils/log.h>
 
 namespace zeno {
 
@@ -30,12 +31,12 @@ struct CihouMayaCameraFov : INode {
 
 ZENO_DEFNODE(CihouMayaCameraFov)({
     {
+        {"enum Horizontal Vertical", "fit_gate", "Horizontal"},
         {"float", "focL", "35"},
-        {"float", "nx", "0"},
-        {"float", "ny", "0"},
         {"float", "fw", "36"},
         {"float", "fh", "24"},
-        {"enum Horizontal Vertical", "fit_gate", "Horizontal"},
+        {"float", "nx", "0"},
+        {"float", "ny", "0"},
     },
     {
         {"float", "fov"},
