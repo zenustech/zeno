@@ -27,6 +27,7 @@ public:
 	virtual void removeSubGraph(const QString& name) = 0;
 	virtual void copyPaste(const QModelIndex& fromSubg, const QModelIndexList& srcNodes, const QModelIndex& toSubg, QPointF pos, bool enableTrans = false) = 0;
 	virtual QModelIndex extractSubGraph(const QModelIndexList& nodes, const QModelIndex& fromSubg, const QString& toSubg, bool enableTrans = false) = 0;
+    virtual bool IsSubGraphNode(const QModelIndex& nodeIdx) const = 0;
 
 	/*
 	 fork subnet node indexed by subnetNodeIdx under subgIdx. 

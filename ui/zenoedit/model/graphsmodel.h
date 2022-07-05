@@ -97,6 +97,7 @@ public:
                           bool enableTransaction) override;
     void copyPaste(const QModelIndex& fromSubg, const QModelIndexList& srcNodes, const QModelIndex& toSubg, QPointF pos, bool enableTrans = false) override;
     QModelIndex extractSubGraph(const QModelIndexList& nodes, const QModelIndex& fromSubg, const QString& toSubg, bool enableTrans = false) override;
+    bool IsSubGraphNode(const QModelIndex& nodeIdx) const override;
 
 	NODE_DATA itemData(const QModelIndex& index, const QModelIndex& subGpIdx) const override;
 	QString name(const QModelIndex& subGpIdx) const override;
