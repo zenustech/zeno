@@ -1043,6 +1043,15 @@ QModelIndex GraphsModel::extractSubGraph(const QModelIndexList& nodes, const QMo
     return toSubgIdx;
 }
 
+bool GraphsModel::IsSubGraphNode(const QModelIndex& nodeIdx) const
+{
+    if (!nodeIdx.isValid())
+        return false;
+
+    QString nodeName = nodeIdx.data(ROLE_OBJNAME).toString();
+    return subGraph(nodeName) != nullptr;
+}
+
 void GraphsModel::removeNode(int row, const QModelIndex& subGpIdx)
 {
 	SubGraphModel* pGraph = subGraph(subGpIdx.row());
