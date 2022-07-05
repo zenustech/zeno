@@ -128,10 +128,13 @@ cmake -B build -DCMAKE_BUILD_TYPE=Release -DZENO_WITH_ZenoFX:BOOL=ON -DZENOFX_EN
 
 NVIDIA users may additionally specify `-DZENO_WITH_CUDA:BOOL=ON -DZENO_ENABLE_OPTIX:BOOL=ON` in arguments for building CUDA support.
 
-> This will also builds the OptiX real-time ray-tracing for the Zeno renderer.
+> This will also builds the OptiX real-time ray-tracing for the Zeno renderer (RTX20xx above required).
 
-> NOTE: **CUDA 11.x requried**.
-> NOTE: `CUDA` is work in progress, may not work.
+Notice that **CUDA 11.6 requried, CUDA 11.7 will fail to compile for now**, thanks to @littlemine's modern-fancy-cuda skills :(
+
+> But if you only use the OptiX part, Simply CUDA 11.0 or above is enough, thanks to @zhxx1987 not using modern-fancy-cuda features :)
+
+> NOTE: The CUDA extension is work in progress, may not work.
 > NOTE: ZenoFX must be enabled when CUDA is enabled, because CUDA depends on ZenoFX.
 
 ### Enabling subgraph extensions
