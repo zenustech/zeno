@@ -15,11 +15,7 @@ struct MakeCamera : INode {
         camera->ffar = get_input2<float>("far");
         camera->fnear = get_input2<float>("near");
         camera->fov = get_input2<float>("fov");
-        //camera->fw = get_input2<float>("fw");
-        //camera->fh = get_input2<float>("fh");
-        //camera->focL = get_input2<int>("focL");
-        //camera->nx = get_input2<int>("nx");
-        //camera->ny = get_input2<int>("ny");
+
         set_output("camera", std::move(camera));
     }
 };
