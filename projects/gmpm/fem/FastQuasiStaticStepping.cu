@@ -14,6 +14,7 @@
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/StringObject.h>
+#include <function>
 
 namespace zeno {
 struct FastQuasiStaticStepping : INode {
@@ -22,6 +23,8 @@ struct FastQuasiStaticStepping : INode {
     using tiles_t = typename ZenoParticles::particles_t;
     using vec3 = zs::vec<T, 3>;
     using mat3 = zs::vec<T, 3, 3>;
+
+    // using FuncT = std::function<void(Pol &, const Model &, const zs::SmallString, dtiles_t&)>;
 
     struct FastFEMSystem {
         template <typename Pol, typename Model>
@@ -261,60 +264,6 @@ struct FastQuasiStaticStepping : INode {
                     }
 
             }); 
-        }
-
-
-        template <typename Pol>
-        void precondition(Pol &pol, const zs::SmallString srcTag,
-                        const zs::SmallString dstTag,dtiles_t& vtemp) {
-        using namespace zs;
-        constexpr execspace_e space = execspace_e::cuda;
-        // precondition
-        pol(zs::range(verts.size()),
-            [vtemp = proxy<space>({}, vtemp), verts = proxy<space>({}, verts),
-            srcTag, dstTag] ZS_LAMBDA(int vi) mutable {
-                vtemp.tuple<3>(dstTag, vi) =
-                    vtemp.pack<3, 3>("P", vi) * vtemp.pack<3>(srcTag, vi);
-                // vtemp.tuple<3>(dstTag, vi) = vtemp.pack<3>(srcTag, vi);
-            });
-        }
-
-        template <typename Pol>
-        void multiply(Pol &pol, const zs::SmallString dxTag,
-                    const zs::SmallString bTag,
-                    const zs::SmallString HTag,
-                    dtiles_t& vtemp,
-                    const dtiles_t& etemp) {
-            using namespace zs;
-            constexpr execspace_e space = execspace_e::cuda;
-            constexpr auto execTag = wrapv<space>{};
-            const auto numVerts = verts.size();
-            const auto numEles = eles.size();
-            // dx -> b
-            pol(range(numVerts),
-                [execTag, vtemp = proxy<space>({}, vtemp), bTag] ZS_LAMBDA(
-                    int vi) mutable { vtemp.tuple<3>(bTag, vi) = vec3::zeros(); });
-            // elastic energy
-            pol(range(numEles), [execTag, etemp = proxy<space>({}, etemp),
-                                vtemp = proxy<space>({}, vtemp),
-                                eles = proxy<space>({}, eles), dxTag, bTag, HTag] ZS_LAMBDA(int ei) mutable {
-                constexpr int dim = 3;
-                constexpr auto dimp1 = dim + 1;
-                auto inds = eles.template pack<dimp1>("inds", ei).template reinterpret_bits<int>();
-                zs::vec<T, dimp1 * dim> temp{};
-                for (int vi = 0; vi != dimp1; ++vi)
-                for (int d = 0; d != dim; ++d) {
-                    temp[vi * dim + d] = vtemp(dxTag, d, inds[vi]);
-                }
-                auto He = etemp.pack<dim * dimp1, dim * dimp1>(HTag, ei);
-
-                temp = He * temp;
-
-                for (int vi = 0; vi != dimp1; ++vi)
-                for (int d = 0; d != dim; ++d) {
-                    atomic_add(execTag, &vtemp(bTag, d, inds[vi]), temp[vi * dim + d]);
-                }
-            });
         }
 
         FastFEMSystem(const tiles_t &verts, const tiles_t &eles, const tiles_t &b_bcws, const tiles_t& b_verts,T bone_driven_weight,vec3 volf)

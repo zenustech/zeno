@@ -87,7 +87,7 @@ struct QuasiStaticStepping : INode {
               //     printf("WARNING INVERT TET DETECTED<%d> %f\n",ei,(float)eles("vol",ei));
               T bpsi = (0.5 * bcws("cnorm",vi) * stiffness * bone_driven_weight * eles("vol",ei)) * pdiff.l2NormSqr();
                     // bpsi = (0.5 * bcws("cnorm",vi) * lambda * bone_driven_weight) * pdiff.dot(pdiff);
-// the cnorm here should be the allocated volume of point in embeded tet 
+              // the cnorm here should be the allocated volume of point in embeded tet 
               atomic_add(exec_cuda, &res[0], (T)bpsi);
       });
 
@@ -145,16 +145,12 @@ struct QuasiStaticStepping : INode {
 
         });
 
-
-        // fmt::print("check here 1\n");
         T lambda = model.lam;
         T mu = model.mu;
         if(b_bcws.size() != b_verts.size()){
             fmt::print("B_BCWS_SIZE = {}\t B_VERTS_SIZE = {}\n",b_bcws.size(),b_verts.size());
             throw std::runtime_error("B_BCWS SIZE AND B_VERTS SIZE NOT MATCH");
         }
-
-        // fmt::print("check here 2\n");
 
         auto nmEmbedVerts = b_verts.size();
         cudaPol(zs::range(nmEmbedVerts),
@@ -259,14 +255,13 @@ struct QuasiStaticStepping : INode {
       match([&](auto &elasticModel) {
         A.computeGradientAndHessian(cudaPol, elasticModel,"xn",vtemp,etemp);
       })(models.getElasticModel());
-
-    //  Prepare Preconditioning
+      // prepare Preconditioning
       PCG::prepare_block_diagonal_preconditioner<4,3>(cudaPol,"He",etemp,"P",vtemp);
-
       // if the grad is too small, return the result
       // Solve equation using PCG
       PCG::fill<3>(cudaPol,vtemp,"dir",zs::vec<T,3>::zeros());
       PCG::pcg_with_fixed_sol_solve<3,4>(cudaPol,vtemp,etemp,"dir","bou_tag","grad","P","inds","He",cg_res,1000,50);
+      
       PCG::project<3>(cudaPol,vtemp,"dir","bou_tag");
       PCG::project<3>(cudaPol,vtemp,"grad","bou_tag");
       T res = PCG::inf_norm<3>(cudaPol, vtemp, "dir");// this norm is independent of descriterization

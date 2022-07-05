@@ -257,7 +257,8 @@ namespace zeno { namespace PCG {
         T zTrk = dot<space_dim>(pol,vtemp,"r","q");
         T residualPreconditionedNorm = std::sqrt(zTrk);
         T localTol = rel_accuracy * residualPreconditionedNorm;
-        fmt::print("initial residual : {}\t{}\n",residualPreconditionedNorm,zTrk);
+
+        T init_res = residualPreconditionedNorm;
 
         int iter = 0;
         for(;iter != max_iters;++iter){
@@ -293,6 +294,9 @@ namespace zeno { namespace PCG {
             ++iter;
         }
         copy<space_dim>(pol,vtemp,"x",vert_buffer,xtag);
+
+        if(iter == max_iters)
+            fmt::print("residual drop : {}\t{}\n",init_res,residualPreconditionedNorm);
 
         return iter;
     }
@@ -361,7 +365,8 @@ namespace zeno { namespace PCG {
         T zTrk = dot<space_dim>(pol,vtemp,"r","q");
         T residualPreconditionedNorm = std::sqrt(zTrk);
         T localTol = rel_accuracy * residualPreconditionedNorm;
-        fmt::print("initial residual : {}\t{}\n",residualPreconditionedNorm,zTrk);
+
+        T init_res = residualPreconditionedNorm;
 
         int iter = 0;
         for(;iter != max_iters;++iter){
@@ -399,7 +404,9 @@ namespace zeno { namespace PCG {
             ++iter;
         }
         copy<space_dim>(pol,vtemp,"x",vert_buffer,xtag);
-        fmt::print("final residual : {}\t{}\n",residualPreconditionedNorm,zTrk);
+
+        if(iter == max_iters)
+           fmt::print("residual drop: {}\t{}\n",init_res,residualPreconditionedNorm);
 
         return iter;
     }
