@@ -35,17 +35,26 @@ QString AppHelper::correctSubIOName(IGraphsModel* pModel, const QString& subgNam
 }
 
 
-QModelIndex AppHelper::getSubInOutNode(IGraphsModel* pModel, const QModelIndex& subgIdx, const QString& subName, bool bInput)
+QModelIndexList AppHelper::getSubInOutNode(IGraphsModel* pModel, const QModelIndex& subgIdx, const QString& sockName, bool bInput)
 {
-    const QList<QModelIndex>& indices = pModel->searchInSubgraph(bInput ? "SubInput" : "SubOutput", subgIdx);
+    //get SubInput/SubOutput Node by socket of a subnet node.
+    const QModelIndexList& indices = pModel->searchInSubgraph(bInput ? "SubInput" : "SubOutput", subgIdx);
+    QModelIndexList result;
     for (const QModelIndex &idx_ : indices)
     {
-        const QString &subInputId = idx_.data(ROLE_OBJID).toString();
-        const PARAMS_INFO &params = idx_.data(ROLE_PARAMETERS).value<PARAMS_INFO>();
-        if (params["name"].value == subName)
+        const QString& subInputId = idx_.data(ROLE_OBJID).toString();
+        if ((sockName == "DST" && !bInput) || (sockName == "SRC" && bInput))
         {
-            return idx_;
+            result.append(idx_);
+            continue;
+        }
+        const PARAMS_INFO &params = idx_.data(ROLE_PARAMETERS).value<PARAMS_INFO>();
+        if (params["name"].value == sockName)
+        {
+            result.append(idx_);
+            // there muse be a unique SubOutput for specific name.
+            return result;
         }
     }
-    return QModelIndex();
+    return result;
 }

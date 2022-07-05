@@ -32,39 +32,35 @@ static void serializeSubInput(
         INPUT_SOCKETS upInputs = subNode.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
         ZASSERT_EXIT(upInputs.find(sockName) != upInputs.end());
         const INPUT_SOCKET &upInput = upInputs[sockName];
-        if (upInput.linkIndice.isEmpty())
-        {
-            for (PARAM_INFO param_info : params)
-            {
-                if (param_info.name == "defl")
-                {
-                    //tothink: if subNode's defl val is omitted, should we get defl value from this SubInput.
-                    QVariant defl = upInput.info.defaultValue;
-                    if (!defl.isValid())
-                        defl = param_info.defaultValue;
-                    AddVariantList({"setNodeParam", ident, "defl", defl}, upInput.info.type, writer);
-                    AddVariantList({"setNodeInput", ident, "_IN_hasValue", true}, "", writer);
-                }
-                else
-                {
-                    AddVariantList({"setNodeParam", ident, param_info.name, param_info.value}, param_info.typeDesc, writer);
-                }
-            }
-        }
-        else
-        {
-            for (auto linkIdx : upInput.linkIndice)
-            {
-                const QString &inNode = linkIdx.data(ROLE_INNODE).toString();
-                const QString &inSock = linkIdx.data(ROLE_INSOCK).toString();
-                QString outNode = linkIdx.data(ROLE_OUTNODE).toString();
-                const QString &outSock = linkIdx.data(ROLE_OUTSOCK).toString();
-                ZASSERT_EXIT(inSock == sockName);
 
-                outNode = nameMangling(upperPrefix, outNode);
-                AddStringList({"bindNodeInput", ident, "_IN_port", outNode, outSock}, writer);
+        for (PARAM_INFO param_info : params)
+        {
+            if (param_info.name == "defl")
+            {
+                //tothink: if subNode's defl val is omitted, should we get defl value from this SubInput.
+                QVariant defl = upInput.info.defaultValue;
+                if (!defl.isValid())
+                    defl = param_info.defaultValue;
+                AddVariantList({"setNodeParam", ident, "defl", defl}, upInput.info.type, writer);
                 AddVariantList({"setNodeInput", ident, "_IN_hasValue", true}, "", writer);
             }
+            else
+            {
+                AddVariantList({"setNodeParam", ident, param_info.name, param_info.value}, param_info.typeDesc, writer);
+            }
+        }
+
+        for (auto linkIdx : upInput.linkIndice)
+        {
+            const QString &inNode = linkIdx.data(ROLE_INNODE).toString();
+            const QString &inSock = linkIdx.data(ROLE_INSOCK).toString();
+            QString outNode = linkIdx.data(ROLE_OUTNODE).toString();
+            const QString &outSock = linkIdx.data(ROLE_OUTSOCK).toString();
+            ZASSERT_EXIT(inSock == sockName);
+
+            outNode = nameMangling(upperPrefix, outNode);
+            AddStringList({"bindNodeInput", ident, "_IN_port", outNode, outSock}, writer);
+            AddVariantList({"setNodeInput", ident, "_IN_hasValue", true}, "", writer);
         }
     }
 }
@@ -116,18 +112,28 @@ static void serializeInputs(
                 //the node of outId may be a subgNode, if so, reconnect into "SubOutput".
                 if (pGraphsModel->IsSubGraphNode(idx_))
                 {
-                    const QString &subgName = idx_.data(ROLE_OBJNAME).toString();
-                    const QModelIndex &subnodeIdx =
-                        AppHelper::getSubInOutNode(pGraphsModel, pGraphsModel->index(subgName), outSock, false);
-                    if (subnodeIdx.isValid())
+                    const QString& subgName = idx_.data(ROLE_OBJNAME).toString();
+                    const QModelIndex& subgIdx = pGraphsModel->index(subgName);
+                    const QString& ident_ = nameMangling(graphIdPrefix, idx_.data(ROLE_OBJID).toString());
+                    const QModelIndexList& subOutputList = AppHelper::getSubInOutNode(pGraphsModel, subgIdx, outSock, false);
+                    for (QModelIndex subOutIdx : subOutputList)
                     {
-                        outSock = "_OUT_port";
-                        const QString &ident_ = nameMangling(graphIdPrefix, idx_.data(ROLE_OBJID).toString());
-                        outId = nameMangling(ident_, subnodeIdx.data(ROLE_OBJID).toString());
+                        outId = nameMangling(ident_, subOutIdx.data(ROLE_OBJID).toString());
+                        if (outSock == "DST") {
+                            //should connect  DST of every Suboutput.
+                            AddStringList({"bindNodeInput", ident, inputName, outId, outSock}, writer);
+                            continue;
+                        } else {
+                            outSock = "_OUT_port";
+                            AddStringList({"bindNodeInput", ident, inputName, outId, outSock}, writer);
+                            break;
+                        }
                     }
                 }
-
-                AddStringList({"bindNodeInput", ident, inputName, outId, outSock}, writer);
+                else
+                {
+                    AddStringList({"bindNodeInput", ident, inputName, outId, outSock}, writer);
+                }
             }
         }
     }
