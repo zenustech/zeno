@@ -121,7 +121,7 @@ struct CodimStepping : INode {
   inline static T boxDiagSize2 = 0;
   inline static T avgNodeMass = 0;
   inline static T targetGRes = 1e-2;
-#define s_enableAdaptiveSetting 1
+#define s_enableAdaptiveSetting 0
 // static constexpr bool s_enableAdaptiveSetting = false;
 #define s_enableContact 1
 // static constexpr bool s_enableContact = true;
@@ -2926,6 +2926,7 @@ struct CodimStepping : INode {
     }
 #endif
 
+    nSubsteps = 1;
     for (int subi = 0; subi != nSubsteps; ++subi) {
       fmt::print("processing substep {}\n", subi);
 
@@ -3097,7 +3098,6 @@ struct CodimStepping : INode {
         {
           // A.intersectionFreeStepsize(cudaPol, xi, alpha);
           // fmt::print("\tstepsize after intersection-free: {}\n", alpha);
-
           A.findCCDConstraints(cudaPol, alpha, xi);
           auto [npp, npe, npt, nee, ncspt, ncsee] = A.getCnts();
           A.intersectionFreeStepsize(cudaPol, xi, alpha);
