@@ -7,6 +7,7 @@
 #include "nodesview/zenographseditor.h"
 #include "panel/zenodatapanel.h"
 #include "panel/zenoproppanel.h"
+#include "panel/zenospreadsheet.h"
 #include "panel/zlogpanel.h"
 #include "timeline/ztimeline.h"
 #include "tmpwidgets/ztoolbar.h"
@@ -510,11 +511,7 @@ void ZenoMainWindow::onDockSwitched(DOCK_TYPE type)
             break;
         }
         case DOCK_NODE_DATA: {
-            QWidget *pWidget = new QWidget;
-            QPalette pal = pWidget->palette();
-            pal.setColor(QPalette::Window, QColor(0, 0, 255));
-            pWidget->setAutoFillBackground(true);
-            pWidget->setPalette(pal);
+            ZenoSpreadsheet *pWidget = new ZenoSpreadsheet;
             pDock->setWidget(type, pWidget);
             break;
         }
@@ -697,5 +694,13 @@ void ZenoMainWindow::onNodesSelected(const QModelIndex &subgIdx, const QModelInd
     auto docks = findChildren<ZenoDockWidget *>(QString(), Qt::FindDirectChildrenOnly);
     for (ZenoDockWidget *dock : docks) {
         dock->onNodesSelected(subgIdx, nodes, select);
+    }
+}
+
+void ZenoMainWindow::onPrimitiveSelected(const std::unordered_set<std::string>& primids) {
+    //dispatch to all property panel.
+    auto docks = findChildren<ZenoDockWidget *>(QString(), Qt::FindDirectChildrenOnly);
+    for (ZenoDockWidget *dock : docks) {
+        dock->onPrimitiveSelected(primids);
     }
 }

@@ -22,4 +22,15 @@ void ObjectsManager::clear_objects() {
     objects.clear();
 }
 
+std::optional<zeno::IObject* > ObjectsManager::get(std::string nid) {
+    for (auto &[key, ptr]: this->pairs()) {
+        if (key != nid) {
+            continue;
+        }
+        return ptr;
+    }
+
+    return std::nullopt;
+}
+
 }
