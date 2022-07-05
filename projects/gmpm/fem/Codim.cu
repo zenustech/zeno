@@ -110,6 +110,8 @@ struct CodimStepping : INode {
   static constexpr vec3 s_groundNormal{0, 1, 0};
   inline static const char s_meanMassTag[] = "MeanMass";
   inline static const char s_meanSurfEdgeLengthTag[] = "MeanSurfEdgeLength";
+  inline static int refStepsizeCoeff = 1;
+  inline static int numContinuousCap = 0;
   inline static bool projectDBC = true;
   inline static bool BCsatisfied = false;
   inline static T updateZoneTol = 1e-1;
@@ -2354,15 +2356,7 @@ struct CodimStepping : INode {
                        "npt: {}, nee: {}, ncspt: {}, ncsee: {}\n",
                        iter, residualPreconditionedNorm, zTrk, npp, npe, npt,
                        nee, ncspt, ncsee);
-          if (zTrk < 0) {
-            fmt::print(fg(fmt::color::pale_violet_red),
-                       "what the heck? zTrk: {} at iteration {}. switching to "
-                       "gradient descent ftm.\n",
-                       zTrk, iter);
-            useGD = true;
-            // getchar();
-            break;
-          }
+
           if (residualPreconditionedNorm <= localTol)
             break;
           multiply(cudaPol, "p", "temp");
@@ -2387,6 +2381,15 @@ struct CodimStepping : INode {
                 vtemp.pack<3>("q", vi) + beta * vtemp.pack<3>("p", vi);
           });
 
+          if (zTrk < 0) {
+            fmt::print(fg(fmt::color::pale_violet_red),
+                       "what the heck? zTrk: {} at iteration {}. switching to "
+                       "gradient descent ftm.\n",
+                       zTrk, iter);
+            useGD = true;
+            // getchar();
+            break;
+          }
           residualPreconditionedNorm = std::sqrt(zTrk);
         } // end cg step
         if (useGD == true)
@@ -2923,8 +2926,6 @@ struct CodimStepping : INode {
     }
 #endif
 
-    // nSubsteps = 1;
-
     for (int subi = 0; subi != nSubsteps; ++subi) {
       fmt::print("processing substep {}\n", subi);
 
@@ -3063,6 +3064,7 @@ struct CodimStepping : INode {
         // line search
         bool CCDfiltered = false;
         T alpha = 1.;
+        T prevAlpha{limits<T>::infinity()};
         { //
 #if 1
           // average length
@@ -3074,7 +3076,8 @@ struct CodimStepping : INode {
                     lens[ei] = vtemp.template pack<3>("dir", ei).abs().sum();
                   });
           auto meanDirSize = (reduce(cudaPol, lens) / dt) / coOffset;
-          auto spanSize = meanDirSize * alpha / A.meanEdgeLength;
+          auto spanSize =
+              meanDirSize * alpha / (A.meanEdgeLength * refStepsizeCoeff);
 #else
           // infNorm
           auto spanSize = res * alpha / (A.meanEdgeLength * 1);
@@ -3085,6 +3088,7 @@ struct CodimStepping : INode {
             fmt::print("\tstepsize after dir magnitude pre-filtering: {} "
                        "(spansize: {})\n",
                        alpha, spanSize);
+            prevAlpha = alpha;
           }
         }
         A.groundIntersectionFreeStepsize(cudaPol, alpha);
@@ -3114,6 +3118,14 @@ struct CodimStepping : INode {
 #endif
 
         A.lineSearch(cudaPol, alpha, CCDfiltered);
+
+        if (CCDfiltered && prevAlpha == alpha) {
+          if (++numContinuousCap < 8)
+            refStepsizeCoeff++;
+        } else {
+          refStepsizeCoeff = 1;
+          numContinuousCap = 0;
+        }
 
         cudaPol(zs::range(vtemp.size()), [vtemp = proxy<space>({}, vtemp),
                                           alpha] __device__(int i) mutable {
