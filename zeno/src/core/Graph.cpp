@@ -51,13 +51,23 @@ ZENO_API void Graph::addNode(std::string const &cls, std::string const &id) {
 }
 
 ZENO_API void Graph::addSubnetNode(std::string const &name, std::string const &id) {
-    auto subcl = std::unique_ptr<ImplSubnetNodeClass>();
+    auto subcl = std::make_unique<ImplSubnetNodeClass>();
     auto node = subcl->new_instance();
     node->graph = this;
     node->myname = id;
     node->nodeClass = subcl.get();
     static_cast<SubnetNode *>(node.get())->subnetClass = std::move(subcl);
     nodes[id] = std::move(node);
+}
+
+ZENO_API void Graph::addSubnetInput(std::string const &id, std::string const &par) {
+    auto node = static_cast<SubnetNode *>(safe_at(nodes, id, "node name").get());
+    node->addSubnetInput(par);
+}
+
+ZENO_API void Graph::addSubnetOutput(std::string const &id, std::string const &par) {
+    auto node = static_cast<SubnetNode *>(safe_at(nodes, id, "node name").get());
+    node->addSubnetOutput(par);
 }
 
 ZENO_API void Graph::completeNode(std::string const &id) {

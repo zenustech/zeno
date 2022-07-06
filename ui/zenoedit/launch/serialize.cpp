@@ -51,6 +51,9 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
 
         bool bSubgNode = subgNodes.indexOf(idx) != -1;
 
+        const INPUT_SOCKETS &inputs = idx.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
+        const OUTPUT_SOCKETS &outputs = idx.data(ROLE_OUTPUTS).value<OUTPUT_SOCKETS>();
+
         if (opts & OPT_MUTE) {
             AddStringList({ "addNode", "HelperMute", ident }, writer);
         } else {
@@ -58,13 +61,17 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
                 AddStringList({"addNode", name, ident}, writer);
             } else {
                 AddStringList({"addSubnetNode", name, ident}, writer);
+                for (INPUT_SOCKET input : inputs) {
+                    AddStringList({"addSubnetInput", ident, input.info.name}, writer);
+                }
+                for (OUTPUT_SOCKET output : outputs) {
+                    AddStringList({"addSubnetOutput", ident, output.info.name}, writer);
+                }
             }
         }
 
-        const OUTPUT_SOCKETS &outputs = idx.data(ROLE_OUTPUTS).value<OUTPUT_SOCKETS>();
         auto outputIt = outputs.begin();
 
-        const INPUT_SOCKETS &inputs = idx.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
         for (INPUT_SOCKET input : inputs)
         {
             auto inputName = input.info.name;
@@ -154,7 +161,7 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
 
         for (OUTPUT_SOCKET output : outputs) {
             //the output key of the dict has not descripted by the core, need to add it manually.
-            if (bSubgNode || output.info.control == CONTROL_DICTKEY) {
+            if (output.info.control == CONTROL_DICTKEY) {
                 AddStringList({"addNodeOutput", ident, output.info.name}, writer);
             }     
         }
