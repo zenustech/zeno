@@ -136,6 +136,7 @@ Notice that **CUDA 11.6 requried, CUDA 11.7 will fail to compile for now**, than
 
 > NOTE: The CUDA extension is work in progress, may not work.
 > NOTE: ZenoFX must be enabled when CUDA is enabled, because CUDA depends on ZenoFX.
+> NOTE: Windows user must install the `CUDA Visual Studio integration`, otherwise CMake will complains `No CUDA toolset found`.
 
 ### Enabling subgraph extensions
 
