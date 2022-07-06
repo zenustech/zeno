@@ -10,6 +10,7 @@
 #include <zeno/extra/GraphException.h>
 #include <zeno/funcs/LiterialConverter.h>
 #include <zeno/extra/GlobalStatus.h>
+#include <zeno/extra/SubnetNode.h>
 #include <zeno/utils/Error.h>
 #include <zeno/utils/log.h>
 #include <iostream>
@@ -50,6 +51,13 @@ ZENO_API void Graph::addNode(std::string const &cls, std::string const &id) {
 }
 
 ZENO_API void Graph::addSubnetNode(std::string const &name, std::string const &id) {
+    auto subcl = std::unique_ptr<ImplSubnetNodeClass>();
+    auto node = subcl->new_instance();
+    node->graph = this;
+    node->myname = id;
+    node->nodeClass = subcl.get();
+    static_cast<SubnetNode *>(node.get())->subnetClass = std::move(subcl);
+    nodes[id] = std::move(node);
 }
 
 ZENO_API void Graph::completeNode(std::string const &id) {

@@ -49,17 +49,17 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
             ident = ident + ":RUNONCE";
         }
 
+        bool bSubgNode = subgNodes.indexOf(idx) != -1;
+
         if (opts & OPT_MUTE) {
             AddStringList({ "addNode", "HelperMute", ident }, writer);
         } else {
-            if (!pGraphsModel->index(name).isValid()) {
+            if (!bSubgNode) {
                 AddStringList({"addNode", name, ident}, writer);
             } else {
                 AddStringList({"addSubnetNode", name, ident}, writer);
             }
         }
-
-        bool bSubgNode = subgNodes.indexOf(idx) != -1;
 
         const OUTPUT_SOCKETS &outputs = idx.data(ROLE_OUTPUTS).value<OUTPUT_SOCKETS>();
         auto outputIt = outputs.begin();
@@ -154,7 +154,7 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
 
         for (OUTPUT_SOCKET output : outputs) {
             //the output key of the dict has not descripted by the core, need to add it manually.
-            if (output.info.control == CONTROL_DICTKEY) {
+            if (bSubgNode || output.info.control == CONTROL_DICTKEY) {
                 AddStringList({"addNodeOutput", ident, output.info.name}, writer);
             }     
         }
