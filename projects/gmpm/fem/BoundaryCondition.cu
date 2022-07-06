@@ -34,7 +34,6 @@ struct ApplyBoundaryOnVertices : INode {
                       verts.template pack<3>("BCtarget", vi) + dt * v;
                 } else if (boundary.type == collider_e::Slip) {
                   auto BCbasis = verts.template pack<3, 3>("BCbasis", vi);
-                  auto BCtarget = verts.template pack<3>("BCtarget", vi);
                   int BCorder = verts("BCorder", vi);
                   if (BCorder >= 3)
                     return;
