@@ -25,11 +25,12 @@ ZENO_API void SubnetNode::apply() {
         }
     }
 
-    std::set<std::string> ids;
+    std::set<std::string> nodesToExec;
     for (auto const &[key, nodeid]: subgraph->subOutputNodes) {
-        ids.insert(nodeid);
+        nodesToExec.insert(nodeid);
     }
-    subgraph->applyNodes(ids);
+    log_debug("{} subnet nodes to exec", nodesToExec.size());
+    subgraph->applyNodes(nodesToExec);
 
     for (auto const &[key, nodeid]: subgraph->subOutputNodes) {
         zeno::log_warn("output {} {}", key, nodeid);

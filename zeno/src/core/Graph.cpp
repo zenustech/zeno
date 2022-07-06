@@ -89,11 +89,9 @@ ZENO_API void Graph::applyNodes(std::set<std::string> const &ids) {
         ctx = nullptr;
     }};
 
-    GraphException::catched([&] {
-        for (auto const &id: ids) {
-            applyNode(id);
-        }
-    }, *session->globalStatus);
+    for (auto const &id: ids) {
+        applyNode(id);
+    }
 }
 
 ZENO_API void Graph::applyNodesToExec() {
