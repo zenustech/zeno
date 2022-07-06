@@ -14,7 +14,7 @@ ZENO_API SubnetNode::~SubnetNode() = default;
 
 ZENO_API void SubnetNode::apply() {
     for (auto const &[key, nodeid]: subgraph->subInputNodes) {
-        zeno::log_warn("input {} {}", key, nodeid);
+        //zeno::log_warn("input {} {}", key, nodeid);
         auto node = safe_at(subgraph->nodes, nodeid, "node name").get();
         if (has_input(key)) {
             node->inputs["_IN_port"] = get_input(key);
@@ -33,7 +33,7 @@ ZENO_API void SubnetNode::apply() {
     subgraph->applyNodes(nodesToExec);
 
     for (auto const &[key, nodeid]: subgraph->subOutputNodes) {
-        zeno::log_warn("output {} {}", key, nodeid);
+        //zeno::log_warn("output {} {}", key, nodeid);
         auto node = safe_at(subgraph->nodes, nodeid, "node name").get();
         auto it = node->outputs.find("_OUT_port");
         if (it != node->outputs.end()) {
