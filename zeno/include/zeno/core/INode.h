@@ -58,7 +58,7 @@ protected:
     template <class T>
     std::shared_ptr<T> get_input(std::string const &id) const {
         auto obj = get_input(id);
-        return safe_dynamic_cast<T>(std::move(obj), "input socket `" + id + "` ");
+        return safe_dynamic_cast<T>(std::move(obj), "input socket `" + id + "`");
     }
 
     template <class T>
