@@ -61,12 +61,12 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
                 AddStringList({"addNode", name, ident}, writer);
             } else {
                 AddStringList({"addSubnetNode", name, ident}, writer);
-                for (INPUT_SOCKET input : inputs) {
-                    AddStringList({"addSubnetInput", ident, input.info.name}, writer);
-                }
-                for (OUTPUT_SOCKET output : outputs) {
-                    AddStringList({"addSubnetOutput", ident, output.info.name}, writer);
-                }
+                //for (INPUT_SOCKET input : inputs) {
+                    //AddStringList({"addSubnetInput", ident, input.info.name}, writer);
+                //}
+                //for (OUTPUT_SOCKET output : outputs) {
+                    //AddStringList({"addSubnetOutput", ident, output.info.name}, writer);
+                //}
                 AddStringList({"pushSubnetScope", ident}, writer);
                 const QString& prefix = nameMangling(graphIdPrefix, idx.data(ROLE_OBJID).toString());
                 bool _bView = bView && (idx.data(ROLE_OPTIONS).toInt() & OPT_VIEW);

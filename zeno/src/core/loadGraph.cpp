@@ -100,10 +100,6 @@ ZENO_API void Graph::loadGraph(const char *json) {
                     g->completeNode(di[1].GetString());
                 } else if (cmd == "addSubnetNode") {
                     g->addSubnetNode(di[1].GetString(), di[2].GetString());
-                } else if (cmd == "addSubnetInput") {
-                    g->addSubnetInput(di[1].GetString(), tno(di[2].GetString()));
-                } else if (cmd == "addSubnetOutput") {
-                    g->addSubnetOutput(di[1].GetString(), tno(di[2].GetString()));
                 } else if (cmd == "addNodeOutput") {
                     g->addNodeOutput(di[1].GetString(), tno(di[2].GetString()));
                 } else if (cmd == "pushSubnetScope") {

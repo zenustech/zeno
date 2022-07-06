@@ -9,22 +9,22 @@ namespace zeno {
 
 struct SubnetNode : INode {
     std::unique_ptr<INodeClass> subnetClass;
-    std::vector<std::string> inputKeys;
-    std::vector<std::string> outputKeys;
+    //std::vector<std::string> inputKeys;
+    //std::vector<std::string> outputKeys;
     std::unique_ptr<Graph> const subgraph;
 
     ZENO_API SubnetNode();
     ZENO_API ~SubnetNode();
 
-    void addSubnetInput(std::string const &key) {
-        subnetClass->desc->inputs.push_back({{}, key, {}});
-        inputKeys.push_back(key);
-    }
+    //void addSubnetInput(std::string const &key) {
+        //subnetClass->desc->inputs.push_back({{}, key, {}});
+        //inputKeys.push_back(key);
+    //}
 
-    void addSubnetOutput(std::string const &key) {
-        subnetClass->desc->outputs.push_back({{}, key, {}});
-        outputKeys.push_back(key);
-    }
+    //void addSubnetOutput(std::string const &key) {
+        //subnetClass->desc->outputs.push_back({{}, key, {}});
+        //outputKeys.push_back(key);
+    //}
 
     ZENO_API virtual void apply() override;
 };

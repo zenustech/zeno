@@ -62,16 +62,6 @@ ZENO_API void Graph::addSubnetNode(std::string const &name, std::string const &i
     nodes[id] = std::move(node);
 }
 
-ZENO_API void Graph::addSubnetInput(std::string const &id, std::string const &par) {
-    auto node = static_cast<SubnetNode *>(safe_at(nodes, id, "node name").get());
-    node->addSubnetInput(par);
-}
-
-ZENO_API void Graph::addSubnetOutput(std::string const &id, std::string const &par) {
-    auto node = static_cast<SubnetNode *>(safe_at(nodes, id, "node name").get());
-    node->addSubnetOutput(par);
-}
-
 ZENO_API Graph *Graph::getSubnetGraph(std::string const& id) const {
     auto node = static_cast<SubnetNode *>(safe_at(nodes, id, "node name").get());
     return node->subgraph.get();
