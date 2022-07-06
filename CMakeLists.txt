@@ -97,10 +97,7 @@ endif()
 if (ZENO_WITH_CUDA)        # must move enable_language ahead to here
     if (DEFINED ENV{CUDA_PATH})  # this is an envvar defined by GitHub CI...
         message(STATUS "Found environment variable CUDA_PATH: $ENV{CUDA_PATH}")
-        set(CUDA_TOOLKIT_ROOT_DIR $ENV{CUDA_PATH})
-        set(CUDA_DIR $ENV{CUDA_PATH})
-        set(CUDAToolkit_DIR $ENV{CUDA_PATH})
-        find_package(CUDAToolkit REQUIRED)
+        set(CMAKE_CUDA_COMPILER $ENV{CUDA_PATH}/bin/nvcc)
     endif()
     enable_language(CUDA)  # otherwise projects/CUDA will fail to compile
 endif()
