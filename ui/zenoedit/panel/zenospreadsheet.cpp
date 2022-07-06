@@ -61,6 +61,7 @@ ZenoSpreadsheet::ZenoSpreadsheet(QWidget *parent) : QWidget(parent) {
 
 void ZenoSpreadsheet::clear() {
     pPrimName->clear();
+    this->dataModel->setModelData(nullptr);
     pStatusBar->clear();
 }
 
