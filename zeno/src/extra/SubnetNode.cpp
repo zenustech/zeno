@@ -18,10 +18,10 @@ ZENO_API void SubnetNode::apply() {
         auto node = safe_at(subgraph->nodes, nodeid, "node name").get();
         if (has_input(key)) {
             node->inputs["_IN_port"] = get_input(key);
-            node->inputs["_IN_hasValue"] = objectFromLiterial(true);
+            node->inputs["_IN_hasValue"] = std::make_shared<NumericObject>(true);
         } else {
             node->inputs["_IN_port"] = std::make_shared<DummyObject>();
-            node->inputs["_IN_hasValue"] = objectFromLiterial(false);
+            node->inputs["_IN_hasValue"] = std::make_shared<NumericObject>(false);
         }
     }
 
