@@ -20,7 +20,12 @@ public:
 	virtual int itemCount(const QModelIndex& subGpIdx) const = 0;
 
 	virtual void addNode(const NODE_DATA& nodeData, const QModelIndex& subGpIdx, bool enableTransaction = false) = 0;
-	virtual void importNodes(const QMap<QString, NODE_DATA>& nodes, const QPointF& pos, const QModelIndex& subGpIdx, bool enableTransaction = false) = 0;
+	virtual void importNodes(
+			const QMap<QString, NODE_DATA>& nodes,
+			const QList<EdgeInfo>& links,
+			const QPointF& pos,
+			const QModelIndex& subGpIdx,
+			bool enableTransaction = false) = 0;
 	virtual void removeNode(const QString& nodeid, const QModelIndex& subGpIdx, bool enableTransaction = false) = 0;
 	virtual void removeLink(const QPersistentModelIndex& linkIdx, const QModelIndex& subGpIdx, bool enableTransaction = false) = 0;
 	virtual void removeNodeLinks(const QList<QPersistentModelIndex>& nodes, const QList<QPersistentModelIndex>& links, const QModelIndex& subGpIdx) = 0;
@@ -40,7 +45,7 @@ public:
 	virtual void getNodeIndices(const QModelIndex& subGpIdx, QModelIndexList& subgNodes, QModelIndexList& normNodes) = 0;
 
 	//virtual QModelIndex clone()
-	virtual QModelIndex addLink(const EdgeInfo& info, const QModelIndex& subGpIdx, bool enableTransaction = false) = 0;
+	virtual QModelIndex addLink(const EdgeInfo& info, const QModelIndex& subGpIdx, bool bAddDynamicSock, bool enableTransaction = false) = 0;
 	virtual QVariant getParamValue(const QString& id, const QString& name, const QModelIndex& subGpIdx) = 0;
 	virtual void updateParamInfo(const QString& id, PARAM_UPDATE_INFO info, const QModelIndex& subGpIdx, bool enableTransaction = false) = 0;
 	virtual void updateParamNotDesc(const QString& id, PARAM_UPDATE_INFO info, const QModelIndex& subGpIdx, bool enableTransaction = false) = 0;

@@ -32,10 +32,13 @@ public:
 
     //TransferAcceptor
     QMap<QString, NODE_DATA> nodes() const;
+    void getDumpData(QMap<QString, NODE_DATA>& nodes, QList<EdgeInfo>& links);
+    void reAllocIdents();
 
 private:
     IGraphsModel* m_pModel;
     QMap<QString, NODE_DATA> m_nodes;
+    QList<EdgeInfo> m_links;
 };
 
 

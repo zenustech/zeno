@@ -78,14 +78,18 @@ public:
     int itemCount(const QModelIndex& subGpIdx) const override;
 	void addNode(const NODE_DATA& nodeData, const QModelIndex& subGpIdx, bool enableTransaction = false) override;
 	void appendNodes(const QList<NODE_DATA>& nodes, const QModelIndex& subGpIdx, bool enableTransaction = false);
-    void importNodes(const QMap<QString, NODE_DATA>& nodes, const QPointF& pos, const QModelIndex& subGpIdx, bool enableTransaction = false) override;
+    void importNodes(
+            const QMap<QString, NODE_DATA>& nodes,
+            const QList<EdgeInfo>& links,
+            const QPointF& pos,
+            const QModelIndex& subGpIdx,
+            bool enableTransaction = false) override;
 	void removeNode(const QString& nodeid, const QModelIndex& subGpIdx, bool enableTransaction = false) override;
 	void removeNode(int row, const QModelIndex& subGpIdx);
     void removeLink(const QPersistentModelIndex& linkIdx, const QModelIndex& subGpIdx, bool enableTransaction = false) override;
     void removeNodeLinks(const QList<QPersistentModelIndex>& nodes, const QList<QPersistentModelIndex>& links, const QModelIndex& subGpIdx) override;
 	void removeSubGraph(const QString& name) override;
-    QModelIndex addLink(const EdgeInfo& info, const QModelIndex& subGpIdx, bool enableTransaction = false) override;
-    //
+    QModelIndex addLink(const EdgeInfo& info, const QModelIndex& subGpIdx, bool bAddDynamicSock, bool enableTransaction = false) override;
 
     QVariant getParamValue(const QString& id, const QString& name, const QModelIndex& subGpIdx) override;
 	void updateParamInfo(const QString& id, PARAM_UPDATE_INFO info, const QModelIndex& subGpIdx, bool enableTransaction = false) override;

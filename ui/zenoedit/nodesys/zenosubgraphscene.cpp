@@ -465,7 +465,21 @@ void ZenoSubGraphScene::paste(QPointF pos)
         const QString& strJson = pMimeData->text();
         TransferAcceptor acceptor(pGraphsModel);
         ZsgReader::getInstance().importNodes(pGraphsModel, m_subgIdx, strJson, pos, &acceptor);
-        pGraphsModel->importNodes(acceptor.nodes(), pos, m_subgIdx, true);
+        acceptor.reAllocIdents();
+
+        QMap<QString, NODE_DATA> nodes;
+        QList<EdgeInfo> links;
+        acceptor.getDumpData(nodes, links);
+        //todo: ret value for api.
+        pGraphsModel->importNodes(nodes, links, pos, m_subgIdx, true);
+
+        //mark selection for all nodes and links.
+        clearSelection();
+        for (QString ident : nodes.keys())
+        {
+            ZASSERT_EXIT(m_nodes.find(ident) != m_nodes.end());
+            m_nodes[ident]->setSelected(true);
+        }
     }
 }
 
@@ -624,7 +638,7 @@ void ZenoSubGraphScene::onTempLinkClosed()
             }
 
             EdgeInfo info(outNode, inNode, outSock, inSock);
-            pGraphsModel->addLink(info, m_subgIdx, true);
+            pGraphsModel->addLink(info, m_subgIdx, true, true);
         }
     }
 }

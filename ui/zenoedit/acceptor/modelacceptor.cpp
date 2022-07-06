@@ -106,7 +106,7 @@ void ModelAcceptor::generateLink(const QModelIndex& idx)
                     }
                     GraphsModel* pGraphsModel = m_currentGraph->getGraphsModel();
                     const QModelIndex& subgIdx = pGraphsModel->indexBySubModel(m_currentGraph);
-                    pGraphsModel->addLink(EdgeInfo(outNode, inNode, outSock, inSockName), subgIdx);
+                    pGraphsModel->addLink(EdgeInfo(outNode, inNode, outSock, inSockName), subgIdx, false);
                 }
             }
         }

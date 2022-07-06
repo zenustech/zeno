@@ -74,7 +74,7 @@ AddLinkCommand::AddLinkCommand(EdgeInfo info, GraphsModel* pModel, QPersistentMo
 
 void AddLinkCommand::redo()
 {
-    QModelIndex idx = m_model->addLink(m_info, m_subgIdx);
+    QModelIndex idx = m_model->addLink(m_info, m_subgIdx, true);
     ZASSERT_EXIT(idx.isValid());
 	m_linkIdx = QPersistentModelIndex(idx);
 }
@@ -104,7 +104,7 @@ void RemoveLinkCommand::redo()
 
 void RemoveLinkCommand::undo()
 {
-	QModelIndex idx = m_model->addLink(m_info, m_subgIdx);
+	QModelIndex idx = m_model->addLink(m_info, m_subgIdx, true);
     ZASSERT_EXIT(idx.isValid());
 	m_linkIdx = QPersistentModelIndex(idx);
 }
@@ -276,8 +276,14 @@ void UpdateNotDescSockNameCommand::undo()
 }
 
 
-ImportNodesCommand::ImportNodesCommand(const QMap<QString, NODE_DATA>& nodes, QPointF pos, GraphsModel* pModel, QPersistentModelIndex subgIdx)
+ImportNodesCommand::ImportNodesCommand(
+                const QMap<QString, NODE_DATA>& nodes,
+                const QList<EdgeInfo>& links,
+                QPointF pos,
+                GraphsModel* pModel,
+                QPersistentModelIndex subgIdx)
     : m_nodes(nodes)
+    , m_links(links)
     , m_model(pModel)
     , m_subgIdx(subgIdx)
     , m_pos(pos)
@@ -286,7 +292,7 @@ ImportNodesCommand::ImportNodesCommand(const QMap<QString, NODE_DATA>& nodes, QP
 
 void ImportNodesCommand::redo()
 {
-    m_model->importNodes(m_nodes, m_pos, m_subgIdx, false);
+    m_model->importNodes(m_nodes, m_links, m_pos, m_subgIdx, false);
 }
 
 void ImportNodesCommand::undo()
