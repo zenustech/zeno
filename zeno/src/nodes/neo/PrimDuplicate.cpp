@@ -20,7 +20,7 @@
 
 namespace zeno {
 
-ZENO_API std::shared_ptr<PrimitiveObject> primDuplicate(PrimitiveObject *parsPrim, PrimitiveObject *meshPrim, std::string dirAttr, std::string tanAttr, std::string radAttr, std::string onbType, float radius, int seed) {
+ZENO_API std::shared_ptr<PrimitiveObject> primDuplicate(PrimitiveObject *parsPrim, PrimitiveObject *meshPrim, std::string dirAttr, std::string tanAttr, std::string radAttr, std::string onbType, float radius) {
     auto prim = std::make_shared<PrimitiveObject>();
     auto hasDirAttr = boolean_variant(!dirAttr.empty());
     auto indOnbType = array_index({"XYZ", "YXZ", "YZX", "ZYX", "ZXY", "XZY"}, onbType);
@@ -166,10 +166,9 @@ struct PrimDuplicate : INode {
         auto radAttr = get_input2<std::string>("radAttr");
         auto onbType = get_input2<std::string>("onbType");
         auto radius = get_input2<float>("radius");
-        auto seed = get_input2<int>("seed");
         auto prim = primDuplicate(parsPrim.get(), meshPrim.get(),
                                   dirAttr, tanAttr, radAttr, onbType,
-                                  radius, seed);
+                                  radius);
         set_output("prim", prim);
     }
 };
