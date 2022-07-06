@@ -101,6 +101,9 @@ if (ZENO_WITH_CUDA)        # must move enable_language ahead to here
         set(CUDA_DIR $ENV{CUDA_PATH})
         set(CUDAToolkit_DIR $ENV{CUDA_PATH})
         find_package(CUDAToolkit REQUIRED)
+        if (MSVC)
+            find_package(CUDA REQUIRED)
+        endif()
     endif()
     enable_language(CUDA)  # otherwise projects/CUDA will fail to compile
 endif()
