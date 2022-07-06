@@ -399,6 +399,60 @@ struct CodimStepping : INode {
       boxDiagSize2 = (bv._max - bv._min).l2NormSqr();
     }
 
+    void computeInertialGradient(zs::CudaExecutionPolicy &cudaPol,
+                                 const zs::SmallString &gTag) {
+      using namespace zs;
+      constexpr auto space = execspace_e::cuda;
+      for (auto &primHandle : prims) {
+        auto &verts = primHandle.getVerts();
+        cudaPol(range(verts.size()),
+                [vtemp = proxy<space>({}, vtemp),
+                 verts = proxy<space>({}, verts), gTag, extForce = extForce,
+                 dt = dt,
+                 vOffset = primHandle.vOffset] __device__(int i) mutable {
+                  auto m = verts("m", i);
+                  int BCorder = vtemp("BCorder", vOffset + i);
+                  if (BCorder != 3) {
+                    // no need to neg
+                    vtemp.tuple<3>(gTag, vOffset + i) =
+                        -m * (vtemp.pack<3>("xn", vOffset + i) -
+                              vtemp.pack<3>("xtilde", vOffset + i));
+                  }
+                });
+      }
+    }
+    void computeCollisionBarrierGradient(zs::CudaExecutionPolicy &cudaPol,
+                                         const zs::SmallString &gTag) {
+      using namespace zs;
+      constexpr auto space = execspace_e::cuda;
+    }
+    void initKappa(zs::CudaExecutionPolicy &pol) {
+      // should be called after dHat set
+      if (!s_enableContact)
+        return;
+      using namespace zs;
+      constexpr auto space = execspace_e::cuda;
+      pol(zs::range(numDofs),
+          [vtemp = proxy<space>({}, vtemp)] __device__(int i) mutable {
+            vtemp.tuple<3>("p", i) = vec3::zeros();
+            vtemp.tuple<3>("q", i) = vec3::zeros();
+          });
+      // inertial + elasticity
+      computeInertialGradient(pol, "p");
+      match([&](auto &elasticModel) {
+        computeElasticGradientAndHessian(pol, elasticModel, "p", false);
+      })(models.getElasticModel());
+      // contacts
+      findCollisionConstraints(pol, dHat, xi, false);
+      computeBarrierGradientAndHessian(pol, "q", false);
+      computeBoundaryBarrierGradientAndHessian(pol, "q", false);
+
+      auto gsum = dot(pol, vtemp, "p", "q");
+      auto gsnorm = dot(pol, vtemp, "q", "q");
+      kappaMin = -gsum / gsnorm;
+      fmt::print("kappaMin: {}, gsum: {}, gsnorm: {}\n", kappaMin, gsum,
+                 gsnorm);
+    }
     bool updateKappaRequired(zs::CudaExecutionPolicy &pol) {
       using namespace zs;
       constexpr auto space = execspace_e::cuda;
@@ -1049,7 +1103,8 @@ struct CodimStepping : INode {
     }
     ///
     void computeBarrierGradientAndHessian(zs::CudaExecutionPolicy &pol,
-                                          const zs::SmallString &gTag = "grad");
+                                          const zs::SmallString &gTag = "grad",
+                                          bool includeHessian = true);
 
     void intersectionFreeStepsize(zs::CudaExecutionPolicy &pol, T xi,
                                   T &stepSize) {
@@ -1140,13 +1195,14 @@ struct CodimStepping : INode {
     }
     ///
     void computeBoundaryBarrierGradientAndHessian(
-        zs::CudaExecutionPolicy &pol, const zs::SmallString &gTag = "grad") {
+        zs::CudaExecutionPolicy &pol, const zs::SmallString &gTag = "grad",
+        bool includeHessian = true) {
       using namespace zs;
       constexpr auto space = execspace_e::cuda;
       pol(range(coOffset),
           [vtemp = proxy<space>({}, vtemp), tempPB = proxy<space>({}, tempPB),
            gTag, gn = s_groundNormal, dHat2 = dHat * dHat, kappa = kappa,
-           projectDBC = projectDBC] ZS_LAMBDA(int vi) mutable {
+           projectDBC = projectDBC, includeHessian] ZS_LAMBDA(int vi) mutable {
             auto x = vtemp.pack<3>("xn", vi);
             auto dist = gn.dot(x);
             auto dist2 = dist * dist;
@@ -1160,6 +1216,8 @@ struct CodimStepping : INode {
                 atomic_add(exec_cuda, &vtemp(gTag, d, vi), grad(d));
             }
 
+            if (!includeHessian)
+              return;
             auto param = 4 * H_b * dist2 + 2 * g_b;
             auto hess = mat3::zeros();
             if (dist2 < dHat2 && param > 0) {
@@ -1181,10 +1239,10 @@ struct CodimStepping : INode {
       return;
     }
     template <typename Model>
-    void
-    computeElasticGradientAndHessian(zs::CudaExecutionPolicy &cudaPol,
-                                     const Model &model,
-                                     const zs::SmallString &gTag = "grad") {
+    void computeElasticGradientAndHessian(zs::CudaExecutionPolicy &cudaPol,
+                                          const Model &model,
+                                          const zs::SmallString &gTag = "grad",
+                                          bool includeHessian = true) {
       using namespace zs;
       constexpr auto space = execspace_e::cuda;
       for (auto &primHandle : prims)
@@ -1194,7 +1252,8 @@ struct CodimStepping : INode {
                    etemp = proxy<space>({}, primHandle.etemp),
                    eles = proxy<space>({}, primHandle.getEles()), model, gTag,
                    dt = this->dt, projectDBC = projectDBC,
-                   vOffset = primHandle.vOffset] __device__(int ei) mutable {
+                   vOffset = primHandle.vOffset,
+                   includeHessian] __device__(int ei) mutable {
                     auto IB = eles.template pack<2, 2>("IB", ei);
                     auto inds = eles.template pack<3>("inds", ei)
                                     .template reinterpret_bits<int>() +
@@ -1255,6 +1314,7 @@ struct CodimStepping : INode {
         }
       }
 
+      if (!includeHessian) return;
       // hessian rotation: trans^T hess * trans
       // left trans^T: multiplied on rows
       // right trans: multiplied on cols
@@ -1337,6 +1397,7 @@ struct CodimStepping : INode {
                              (T)vfdt2(i * 3 + d));
               }
 
+              if(!includeHessian) return;
               /// ref: A Finite Element Formulation of Baraff-Witkin Cloth
               // suggested by huang kemeng
               auto stretchHessian = [&F, &model]() {
@@ -1426,7 +1487,8 @@ struct CodimStepping : INode {
                etemp = proxy<space>({}, primHandle.etemp),
                eles = proxy<space>({}, primHandle.getEles()), model, gTag,
                dt = this->dt, projectDBC = projectDBC,
-               vOffset = primHandle.vOffset] __device__(int ei) mutable {
+               vOffset = primHandle.vOffset,
+               includeHessian] __device__(int ei) mutable {
                 auto IB = eles.template pack<3, 3>("IB", ei);
                 auto inds = eles.template pack<4>("inds", ei)
                                 .template reinterpret_bits<int>() +
@@ -1472,6 +1534,8 @@ struct CodimStepping : INode {
                                (T)vfdt2(i * 3 + d));
                 }
 
+                if (!includeHessian)
+                  return;
                 auto Hq = model.first_piola_derivative(F, true_c);
                 H = dFdXT * Hq * dFdX * vole * dt * dt;
 
