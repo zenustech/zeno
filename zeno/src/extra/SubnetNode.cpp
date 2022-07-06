@@ -11,6 +11,7 @@ ZENO_API SubnetNode::SubnetNode() : subgraph(std::make_unique<Graph>())
 ZENO_API SubnetNode::~SubnetNode() = default;
 
 ZENO_API void SubnetNode::apply() {
+    subgraph->applyNodesToExec();
 }
 
 }

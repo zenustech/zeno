@@ -25,14 +25,14 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
 
     //now, we want to expand all subgraph nodes recursively.
     //so, we need to serialize the subgraph first, and then build the connection with other nodes in this graph.
-    for (const QModelIndex& idx : subgNodes)
-    {
-        //zeno::log_critical("got node {} {}", name.toStdString(), ident.toStdString());
-        const QString& subgName = idx.data(ROLE_OBJNAME).toString();
-        const QString& prefix = nameMangling(graphIdPrefix, idx.data(ROLE_OBJID).toString());
-        bool _bView = bView && (idx.data(ROLE_OPTIONS).toInt() & OPT_VIEW);
-        serializeGraph(pGraphsModel, pGraphsModel->index(subgName), prefix, _bView, writer);
-    }
+    //for (const QModelIndex& idx : subgNodes)
+    //{
+        ////zeno::log_critical("got node {} {}", name.toStdString(), ident.toStdString());
+        //const QString& subgName = idx.data(ROLE_OBJNAME).toString();
+        //const QString& prefix = nameMangling(graphIdPrefix, idx.data(ROLE_OBJID).toString());
+        //bool _bView = bView && (idx.data(ROLE_OPTIONS).toInt() & OPT_VIEW);
+        //serializeGraph(pGraphsModel, pGraphsModel->index(subgName), prefix, _bView, writer);
+    //}
 
     //scan all the nodes in the subgraph.
     for (int r = 0; r < pGraphsModel->itemCount(subgIdx); r++)
@@ -67,6 +67,11 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
                 for (OUTPUT_SOCKET output : outputs) {
                     AddStringList({"addSubnetOutput", ident, output.info.name}, writer);
                 }
+                AddStringList({"pushSubnetScope", ident}, writer);
+                const QString& prefix = nameMangling(graphIdPrefix, idx.data(ROLE_OBJID).toString());
+                bool _bView = bView && (idx.data(ROLE_OPTIONS).toInt() & OPT_VIEW);
+                serializeGraph(pGraphsModel, pGraphsModel->index(name), prefix, _bView, writer);
+                AddStringList({"popSubnetScope", ident}, writer);
             }
         }
 

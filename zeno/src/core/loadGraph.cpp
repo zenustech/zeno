@@ -8,6 +8,7 @@
 #include <zeno/utils/logger.h>
 #include <zeno/utils/vec.h>
 #include <zeno/zeno.h>
+#include <stack>
 
 namespace zeno {
 
@@ -78,6 +79,9 @@ ZENO_API void Graph::loadGraph(const char *json) {
 #endif
         };
 
+        Graph *g = this;
+        std::stack<Graph *> gStack;
+
         for (int i = 0; i < d.Size(); i++) {
             Value const &di = d[i];
             std::string cmd = di[0].GetString();
@@ -85,23 +89,29 @@ ZENO_API void Graph::loadGraph(const char *json) {
             GraphException::translated([&] {
                 if (0) {
                 } else if (cmd == "addNode") {
-                    addNode(tno(di[1].GetString()), di[2].GetString());
+                    g->addNode(tno(di[1].GetString()), di[2].GetString());
                 } else if (cmd == "setNodeInput") {
-                    setNodeInput(di[1].GetString(), tno(di[2].GetString()), generic_get<zany>(di[3]));
+                    g->setNodeInput(di[1].GetString(), tno(di[2].GetString()), generic_get<zany>(di[3]));
                 } else if (cmd == "setNodeParam") {
-                    setNodeParam(di[1].GetString(), tno(di[2].GetString()), generic_get<std::variant<int, float, std::string, zany>, false>(di[3]));
+                    g->setNodeParam(di[1].GetString(), tno(di[2].GetString()), generic_get<std::variant<int, float, std::string, zany>, false>(di[3]));
                 } else if (cmd == "bindNodeInput") {
-                    bindNodeInput(di[1].GetString(), tno(di[2].GetString()), di[3].GetString(), tno(di[4].GetString()));
+                    g->bindNodeInput(di[1].GetString(), tno(di[2].GetString()), di[3].GetString(), tno(di[4].GetString()));
                 } else if (cmd == "completeNode") {
-                    completeNode(di[1].GetString());
+                    g->completeNode(di[1].GetString());
                 } else if (cmd == "addSubnetNode") {
-                    addSubnetNode(tno(di[1].GetString()), di[2].GetString());
+                    g->addSubnetNode(di[1].GetString(), di[2].GetString());
                 } else if (cmd == "addSubnetInput") {
-                    addSubnetInput(tno(di[1].GetString()), di[2].GetString());
+                    g->addSubnetInput(di[1].GetString(), tno(di[2].GetString()));
                 } else if (cmd == "addSubnetOutput") {
-                    addSubnetOutput(tno(di[1].GetString()), di[2].GetString());
+                    g->addSubnetOutput(di[1].GetString(), tno(di[2].GetString()));
                 } else if (cmd == "addNodeOutput") {
-                    addNodeOutput(di[1].GetString(), tno(di[2].GetString()));
+                    g->addNodeOutput(di[1].GetString(), tno(di[2].GetString()));
+                } else if (cmd == "pushSubnetScope") {
+                    gStack.push(g);
+                    g = g->getSubnetGraph(di[1].GetString());
+                } else if (cmd == "popSubnetScope") {
+                    g = gStack.top();
+                    gStack.pop();
                 } else if (cmd == "setBeginFrameNumber") {
                     this->beginFrameNumber = di[1].GetInt();
                 } else if (cmd == "setEndFrameNumber") {

@@ -11,7 +11,7 @@ struct SubnetNode : INode {
     std::unique_ptr<INodeClass> subnetClass;
     std::vector<std::string> inputKeys;
     std::vector<std::string> outputKeys;
-    std::unique_ptr<Graph> subgraph;
+    std::unique_ptr<Graph> const subgraph;
 
     ZENO_API SubnetNode();
     ZENO_API ~SubnetNode();

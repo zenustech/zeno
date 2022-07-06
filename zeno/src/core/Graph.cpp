@@ -70,6 +70,11 @@ ZENO_API void Graph::addSubnetOutput(std::string const &id, std::string const &p
     node->addSubnetOutput(par);
 }
 
+ZENO_API Graph *Graph::getSubnetGraph(std::string const& id) const {
+    auto node = static_cast<SubnetNode *>(safe_at(nodes, id, "node name").get());
+    return node->subgraph.get();
+}
+
 ZENO_API void Graph::completeNode(std::string const &id) {
     safe_at(nodes, id, "node name")->doComplete();
 }
