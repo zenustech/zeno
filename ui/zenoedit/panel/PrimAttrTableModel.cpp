@@ -48,6 +48,13 @@ QVariant PrimAttrTableModel::data(const QModelIndex& index, int role) const
             auto v = m_prim->attr<zeno::vec3f>(attr_name)[index.row()];
             return QString("%1, %2, %3").arg(v[0]).arg(v[1]).arg(v[2]);
         }
+        else if (m_prim->attr_is<int>(attr_name)) {
+            return m_prim->attr<int>(attr_name)[index.row()];
+        }
+        else if (m_prim->attr_is<zeno::vec3i>(attr_name)) {
+            auto v = m_prim->attr<zeno::vec3i>(attr_name)[index.row()];
+            return QString("%1, %2, %3").arg(v[0]).arg(v[1]).arg(v[2]);
+        }
         return "-";
     }
     return QVariant();
