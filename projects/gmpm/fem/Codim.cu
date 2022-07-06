@@ -369,7 +369,7 @@ struct CodimStepping : INode {
             }
             num[vi] = n;
             den[vi] = d_;
-            if (maintainFixed) {
+            if (maintainFixed && BCorder > 0) {
               if (d_ != 0) {
                 if (zs::sqrt(n / d_) < 1e-6)
                   vtemp("BCfixed", vi) = 1;
@@ -2551,6 +2551,7 @@ struct CodimStepping : INode {
             vtemp.template tuple<3>("BCtarget", coOffset + i) = xk;
             vtemp("BCfixed", coOffset + i) = (xk - xn).l2NormSqr() == 0 ? 1 : 0;
             vtemp.template tuple<3>("xtilde", coOffset + i) = xk;
+            vtemp.template tuple<3>("xt", coOffset + i) = xn;
           });
     }
     void updateVelocities(zs::CudaExecutionPolicy &pol) {
