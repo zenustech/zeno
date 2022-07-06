@@ -407,6 +407,10 @@ struct LineCarve : INode {
         auto prim = get_input<PrimitiveObject>("prim");
         auto insertU = get_input<NumericObject>("insertU")->get<float>();
 
+        if (!prim->lines.size()) {
+            throw makeError("LineCarve expect prim to have lines");
+        }
+
         float total = 0;
         std::vector<float> linesLen(prim->lines.size());   // u 记录线的累加长度
         for (size_t i = 0; i < prim->lines.size(); i++) {
@@ -526,43 +530,28 @@ struct VisVec3Attribute : INode {
         auto name = get_input2<std::string>("name");
         auto prim = get_input<PrimitiveObject>("prim");
 
-        auto &it = prim->attr(name);
-        std::vector<vec3f>& attr = std::get<std::vector<vec3f>>(it);
+        auto &attr = prim->attr<vec3f>(name);
 
         // 构建新的可视化的 Prim
         auto primVis = std::make_shared<PrimitiveObject>();
         primVis->verts.resize(prim->size() * 2);
         primVis->lines.resize(prim->size());
 
-        primVis->add_attr<vec3f>("clr");
-        auto &itVisColor = primVis->attr("clr");
-        std::vector<vec3f>& visColor = std::get<std::vector<vec3f>>(itVisColor);
+        auto &visColor = primVis->add_attr<vec3f>("clr");
 
 #pragma omp parallel for
-        for (int i = 0; i < primVis->verts.size(); i++)
+        for (int iPrim = 0; iPrim < prim->size(); iPrim++)
         {
-            // primVis
-            int iRem = i % 2;   // 模 2 的余数，0 放起点位置，1 放终点位置
-            int iPrim = (i - iRem)/2;   // prim 的索引
-            if (iRem == 0)  // 设置起点
-            {
-                primVis->verts[i] = prim->verts[iPrim];
-                visColor[i] = color;
-            }
-            else    // 设置终点
-            {
-                if (useNormalize)
-                {
-                    primVis->verts[i] = prim->verts[iPrim] + normalize(attr[iPrim]) * lengthScale;
-                }
-                else
-                {
-                    primVis->verts[i] = prim->verts[iPrim] + attr[iPrim] * lengthScale;
-                }
-                visColor[i] = color * 0.25;
-                primVis->lines[i/2][0] = i-1;  // 线
-                primVis->lines[i/2][1] = i;  // 线
-            }
+            int i = iPrim * 2;
+            primVis->verts[i] = prim->verts[iPrim];
+            visColor[i] = color;
+            ++i; // primVis
+            auto a=attr[iPrim];
+            if (useNormalize) a = normalize(a);
+            primVis->verts[i] = prim->verts[iPrim] + a * lengthScale;
+            visColor[i] = color * 0.25;
+            primVis->lines[i/2][0] = i-1;  // 线
+            primVis->lines[i/2][1] = i;  // 线
         }
 
         set_output("primVis", std::move(primVis));
@@ -571,10 +560,10 @@ struct VisVec3Attribute : INode {
 ZENDEFNODE(VisVec3Attribute,
            {  /* inputs: */ {
                    "prim",
-                   {"string", "name", "NotUsePos"},
-                   {"int", "normalize", "1"},
+                   {"string", "name", "vel"},
+                   {"bool", "normalize", "1"},
                    {"float", "lengthScale", "1.0"},
-                   {"vec3f", "color", ""},
+                   {"vec3f", "color", "1,1,0"},
                }, /* outputs: */ {
                    "primVis",
                }, /* params: */ {

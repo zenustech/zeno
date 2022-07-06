@@ -30,6 +30,15 @@ template <> struct attr_to_vdb_type<vec3i> {
   using type = VDBInt3Grid;
 };
 
+template <typename T, typename = void>
+struct is_vdb_to_prim_convertible {
+  static constexpr bool value = false;
+};
+template <typename T>
+struct is_vdb_to_prim_convertible<std::vector<T>, std::void_t<typename attr_to_vdb_type<T>::type>> {
+  static constexpr bool value = true;
+};
+
 template <class T>
 void sampleVDBAttribute(std::vector<vec3f> const &pos, std::vector<T> &arr,
                         VDBGrid *ggrid) {
@@ -79,8 +88,12 @@ struct SampleVDBToPrimitive : INode {
       //warp the sample coordinates
     }
 
-    std::visit([&](auto &vel) { sampleVDBAttribute(pos, vel, grid.get()); },
-               prim->attr(attr));
+    //std::visit([&](auto &vel) { 
+    prim->attr_visit(attr, [&] (auto &vel) {
+      if constexpr (is_vdb_to_prim_convertible<std::remove_reference_t<decltype(vel)>>::value)
+        sampleVDBAttribute(pos, vel, grid.get()); 
+    });
+               //prim->attr(attr));
 
 
     if(type == "Periodic")

@@ -19,3 +19,7 @@ else:
 
 shutil.move(os.path.join('misc', 'ci', 'vcpkg.json'), 'vcpkg.json')
 shutil.move(os.path.join('misc', 'ci', 'CMakePresets.json'), 'CMakePresets.json')
+
+if os.environ.get('CUDA_PATH'):
+    cuda_path = os.environ['CUDA_PATH']
+    print('cuda path:', cuda_path)

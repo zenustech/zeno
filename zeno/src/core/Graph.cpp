@@ -10,6 +10,7 @@
 #include <zeno/extra/GraphException.h>
 #include <zeno/funcs/LiterialConverter.h>
 #include <zeno/extra/GlobalStatus.h>
+#include <zeno/extra/SubnetNode.h>
 #include <zeno/utils/Error.h>
 #include <zeno/utils/log.h>
 #include <iostream>
@@ -49,6 +50,23 @@ ZENO_API void Graph::addNode(std::string const &cls, std::string const &id) {
     nodes[id] = std::move(node);
 }
 
+ZENO_API void Graph::addSubnetNode(std::string const &name, std::string const &id) {
+    auto subcl = std::make_unique<ImplSubnetNodeClass>();
+    auto node = subcl->new_instance();
+    node->graph = this;
+    node->myname = id;
+    node->nodeClass = subcl.get();
+    auto subnode = static_cast<SubnetNode *>(node.get());
+    subnode->subgraph->session = this->session;
+    subnode->subnetClass = std::move(subcl);
+    nodes[id] = std::move(node);
+}
+
+ZENO_API Graph *Graph::getSubnetGraph(std::string const& id) const {
+    auto node = static_cast<SubnetNode *>(safe_at(nodes, id, "node name").get());
+    return node->subgraph.get();
+}
+
 ZENO_API void Graph::completeNode(std::string const &id) {
     safe_at(nodes, id, "node name")->doComplete();
 }
@@ -71,11 +89,9 @@ ZENO_API void Graph::applyNodes(std::set<std::string> const &ids) {
         ctx = nullptr;
     }};
 
-    GraphException::catched([&] {
-        for (auto const &id: ids) {
-            applyNode(id);
-        }
-    }, *session->globalStatus);
+    for (auto const &id: ids) {
+        applyNode(id);
+    }
 }
 
 ZENO_API void Graph::applyNodesToExec() {

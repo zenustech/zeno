@@ -21,10 +21,12 @@ set(ZENO_EXTENSIONS
     Alembic
     LSystem
     Skinning
+    SampleModel
     Functional
     TreeSketch
     CalcGeometryUV
     MeshSubdiv
+    CUDA
     )
 
 foreach (name IN ITEMS ${ZENO_EXTENSIONS})

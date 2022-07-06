@@ -1,4 +1,4 @@
-#if 0
+#if 0//TODO: simple subdiv
 #include <zeno/zeno.h>
 #include <zeno/funcs/PrimitiveUtils.h>
 #include <zeno/types/PrimitiveObject.h>

@@ -1546,37 +1546,23 @@ void set_window_size(int nx, int ny) {
     resize_dirty = true;
 }
 
-void set_perspective(float const *U, float const *V, float const *W, float const *E, float aspect, float fov, float focL) {
+void set_perspective(float const *U, float const *V, float const *W, float const *E, float aspect, float fov) {
     auto &cam = state.params.cam;
+    //float c_aspect = fw/fh;
+    //float u_aspect = aspect;
+    //float r_fh = fh * 0.001;
+    //float r_fw = fw * 0.001;
+    //zeno::log_info("Camera film w {} film h {} aspect {} {}", fw, fh, u_aspect, c_aspect);
+
     cam.eye = make_float3(E[0], E[1], E[2]);
-    cam.right = make_float3(U[0], U[1], U[2]);
+    cam.right = normalize(make_float3(U[0], U[1], U[2]));
+    cam.up = normalize(make_float3(V[0], V[1], V[2]));
+    cam.front = normalize(make_float3(W[0], W[1], W[2]));
+
+    float radfov = fov * float(M_PI) / 180;
+    float tanfov = std::tan(radfov / 2.0f);
+    cam.front /= tanfov;
     cam.right *= aspect;
-    cam.up = make_float3(V[0], V[1], V[2]);
-    cam.front = make_float3(W[0], W[1], W[2]);
-
-    if (focL > 0) {  // then zhxx happy
-        // Angle of view (in degrees) = 2 ArcTan( sensor width / (2 X focal length)) * (180/π)
-        // Field of view = 2 (Tan (Angle of view/2) X Distance to Subject)
-
-        //float radaov = fov * float(M_PI) / 180;
-        //float tanfov = 2.0f * std::tan(radaov / 2.0f);
-        //cam.front /= tanfov;
-        //float focallen = 0.018f / tanfov;
-        //cam.eye -= focallen * cam.front;
-        //zeno::log_info("F {} {} {}", radaov, tanfov, focallen);
-
-        // The unit of focalLength is mm, so multiply 0.1;
-        // bate: so you guys use the anti-intellegence CGS? just to cihou FBX? ultra-silly!
-        cam.front *= focL*0.1f;
-        cam.eye -= cam.front;
-    } else {         // then bate happy
-        float radfov = fov * float(M_PI) / 180;
-        float tanfov = std::tan(radfov / 2.0f);
-        cam.front /= tanfov;
-        //float focallen = 0.018f / tanfov;
-        //cam.eye -= focallen * cam.front;
-
-    }
 
     camera_changed = true;
     //cam.aspect = aspect;

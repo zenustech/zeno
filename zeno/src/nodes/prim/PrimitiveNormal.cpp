@@ -73,6 +73,53 @@ ZENO_API void primCalcNormal(zeno::PrimitiveObject* prim, float flip)
 #if defined(_OPENMP) && defined(__GNUG__)
 #pragma omp parallel for
 #endif
+    for (size_t i = 0; i < prim->quads.size(); i++) {
+        auto ind = prim->quads[i];
+        std::array<vec3f, 4> ns = {
+            cross(pos[ind[1]] - pos[ind[0]], pos[ind[2]] - pos[ind[0]]),
+            cross(pos[ind[2]] - pos[ind[1]], pos[ind[3]] - pos[ind[1]]),
+            cross(pos[ind[3]] - pos[ind[2]], pos[ind[0]] - pos[ind[2]]),
+            cross(pos[ind[0]] - pos[ind[3]], pos[ind[1]] - pos[ind[3]]),
+        };
+
+#if defined(_OPENMP) && defined(__GNUG__)
+        for (int j = 0; j != 4; ++j) {
+            auto &n_i = nrm[ind[j]];
+            for (int d = 0; d != 3; ++d)
+                atomicFloatAdd(&n_i[d], ns[j][d]);
+        }
+#else
+        for (int j = 0; j != 4; ++j) {
+            nrm[ind[j]] += ns[j];
+        }
+#endif
+    }
+
+#if defined(_OPENMP) && defined(__GNUG__)
+#pragma omp parallel for
+#endif
+    for (size_t i = 0; i < prim->polys.size(); i++) {
+        auto [beg, len] = prim->polys[i];
+
+        auto ind = [loops = prim->loops.data(), beg = beg, len = len] (int t) -> int {
+            if (t >= len) t -= len;
+            return loops[beg + t];
+        };
+        for (int j = 0; j < len; ++j) {
+            auto nsj = cross(pos[ind(j + 1)] - pos[ind(j)], pos[ind(j + 2)] - pos[ind(j)]);
+#if defined(_OPENMP) && defined(__GNUG__)
+            auto &n_i = nrm[ind(j)];
+            for (int d = 0; d != 3; ++d)
+                atomicFloatAdd(&n_i[d], nsj[d]);
+#else
+            nrm[ind(j)] += nsj;
+#endif
+        }
+    }
+
+#if defined(_OPENMP) && defined(__GNUG__)
+#pragma omp parallel for
+#endif
     for (size_t i = 0; i < nrm.size(); i++) {
         nrm[i] = flip * normalize(nrm[i]);
     }
@@ -81,14 +128,14 @@ struct PrimitiveCalcNormal : zeno::INode {
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
         auto flip = get_input<NumericObject>("flip")->get<bool>();
-        primCalcNormal(prim.get(), flip ? 1 : -1);
+        primCalcNormal(prim.get(), flip ? -1 : 1);
         set_output("prim", get_input("prim"));
     }
 };
 
 ZENDEFNODE(PrimitiveCalcNormal, {
     {"prim",
-    {"int", "flip", "0"}
+    {"bool", "flip", "0"}
     },
     {"prim"},
     {},

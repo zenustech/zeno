@@ -40,7 +40,7 @@ static void osdPrimSubdivSimple(PrimitiveObject *prim, int levels, bool triangul
     std::vector<int> polysInd, polysLen;
     int primpolyreduced = 0;
     for (int i = 0; i < prim->polys.size(); i++) {
-        primpolyreduced += prim->polys[i].second;
+        primpolyreduced += prim->polys[i][1];
     }
     polysLen.reserve(prim->tris.size() + prim->quads.size() + prim->polys.size());
     polysInd.reserve(prim->tris.size() * 3 + prim->quads.size() * 4 + primpolyreduced);

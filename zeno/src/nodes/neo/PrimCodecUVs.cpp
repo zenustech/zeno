@@ -15,6 +15,7 @@ ZENO_API void primDecodeUVs(PrimitiveObject *prim) {
             auto uv = prim->uvs[prim->loop_uvs[i]];
             attr_uv[i] = {uv[0], uv[1], 0};
         });
+        prim->loop_uvs.clear();
     }
     // for 'qianqiang loop.attr(uv)' to 'qianqiang tris.attr(uv0-3)'
     // please use primTriangulate (after calling primDecodeUVs)
@@ -32,6 +33,7 @@ ZENO_API void primLoopUVsToVerts(PrimitiveObject *prim) {
             // uv may overlap and conflict at edges, but doesn't matter
             // this node is veryqianqiang after all, just to serve ZFX pw
         }
+        prim->loop_uvs.clear();
     }
 }
 

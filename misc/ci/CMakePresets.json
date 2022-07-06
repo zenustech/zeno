@@ -21,6 +21,7 @@
       "displayName": "OpenVDB configuration",
       "description": "Additionally build the OpenVDB extensions",
       "cacheVariables": {
+        "ZENO_PARALLEL_STL": "ON",
         "ZENO_WITH_ZenoFX": "ON",
         "ZENOFX_ENABLE_OPENVDB": "ON",
         "ZENOFX_ENABLE_LBVH": "ON",
@@ -49,6 +50,7 @@
         "ZENO_WITH_Alembic": "ON",
         "ZENO_WITH_FBX": "ON",
         "ZENO_WITH_DemBones": "ON",
+        "ZENO_WITH_SampleModel": "ON",
         "ZENO_WITH_CalcGeometryUV": "ON",
         "ZENO_WITH_TOOL_cgmeshTools": "ON",
         "ZENO_WITH_TOOL_HerculesTools": "ON"
@@ -60,7 +62,7 @@
       "displayName": "CUDA configuration",
       "description": "Additionally build with CUDA extension modules",
       "cacheVariables": {
-        "ZENO_WITH_gmpm": "ON",
+        "ZENO_WITH_CUDA": "ON",
         "ZENO_ENABLE_OPTIX": "ON"
       }
     }

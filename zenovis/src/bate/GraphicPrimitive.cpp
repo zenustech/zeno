@@ -307,24 +307,36 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
         if (!prim->has_attr("clr")) {
             auto &clr = prim->add_attr<zeno::vec3f>("clr");
             zeno::vec3f clr0(1.0f);
-            if (prim->lines.size())
-                clr0 = {1.0f, 0.6f, 0.2f};
-            else if (!prim->tris.size() && !prim->quads.size() && !prim->polys.size())
-                clr0 = {0.2f, 0.6f, 1.0f};
+            if (!prim->tris.size() && !prim->quads.size() && !prim->polys.size()) {
+                if (prim->lines.size())
+                    clr0 = {1.0f, 0.6f, 0.2f};
+                else
+                    clr0 = {0.2f, 0.6f, 1.0f};
+            }
             for (size_t i = 0; i < clr.size(); i++) {
                 clr[i] = clr0;
             }
         }
-#if 0
+#if 1
         bool primNormalCorrect =
             prim->has_attr("nrm") &&
-            length(prim->attr<zeno::vec3f>("nrm")[0]) > 1e-5;
+            (!prim->attr<zeno::vec3f>("nrm").size() ||
+             length(prim->attr<zeno::vec3f>("nrm")[0]) > 1e-5);
         bool need_computeNormal =
             !primNormalCorrect || !(prim->has_attr("nrm"));
-        if (prim->tris.size() && need_computeNormal) {
+        bool thePrmHasFaces = !(!prim->tris.size() && !prim->quads.size() && !prim->polys.size());
+        if (thePrmHasFaces && need_computeNormal) {
             /* std::cout << "computing normal\n"; */
             zeno::log_trace("computing normal");
             zeno::primCalcNormal(&*prim, 1);
+        }
+        if (thePrmHasFaces) {
+            zeno::log_trace("demoting faces");
+            if (prim->loop_uvs.size()) {
+                zeno::primDecodeUVs(&*prim);//loop_uvs to loop.attr("uv")
+            }
+            zeno::primTriangulateQuads(&*prim);
+            zeno::primTriangulate(&*prim);//will further loop.attr("uv") to tris.attr("uv0")...
         }
 #else
         zeno::primSepTriangles(&*prim, true, true);//TODO: rm keepTriFaces

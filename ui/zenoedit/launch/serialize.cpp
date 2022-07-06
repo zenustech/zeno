@@ -16,192 +16,143 @@ static QString nameMangling(const QString& prefix, const QString& ident) {
         return prefix + "/" + ident;
 }
 
-static void serializeSubInput(
-                    const QString& ident,
-                    const QString& name,
-                    const PARAMS_INFO& params,
-                    const QModelIndex& subNode,
-                    QString const& upperPrefix,
-                    RAPIDJSON_WRITER& writer)
-{
-    ZASSERT_EXIT(params.find("name") != params.end());
-    const QString &sockName = params["name"].value.toString();
-    if (subNode.isValid())
-    {
-        PARAMS_INFO parentParams = subNode.data(ROLE_PARAMETERS).value<PARAMS_INFO>();
-        INPUT_SOCKETS upInputs = subNode.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
-        ZASSERT_EXIT(upInputs.find(sockName) != upInputs.end());
-        const INPUT_SOCKET &upInput = upInputs[sockName];
-
-        for (PARAM_INFO param_info : params)
-        {
-            if (param_info.name == "defl")
-            {
-                //tothink: if subNode's defl val is omitted, should we get defl value from this SubInput.
-                QVariant defl = upInput.info.defaultValue;
-                if (!defl.isValid())
-                    defl = param_info.defaultValue;
-                AddVariantList({"setNodeParam", ident, "defl", defl}, upInput.info.type, writer);
-                AddVariantList({"setNodeInput", ident, "_IN_hasValue", true}, "", writer);
-            }
-            else
-            {
-                AddVariantList({"setNodeParam", ident, param_info.name, param_info.value}, param_info.typeDesc, writer);
-            }
-        }
-
-        for (auto linkIdx : upInput.linkIndice)
-        {
-            const QString &inNode = linkIdx.data(ROLE_INNODE).toString();
-            const QString &inSock = linkIdx.data(ROLE_INSOCK).toString();
-            QString outNode = linkIdx.data(ROLE_OUTNODE).toString();
-            const QString &outSock = linkIdx.data(ROLE_OUTSOCK).toString();
-            ZASSERT_EXIT(inSock == sockName);
-
-            outNode = nameMangling(upperPrefix, outNode);
-            AddStringList({"bindNodeInput", ident, "_IN_port", outNode, outSock}, writer);
-            AddVariantList({"setNodeInput", ident, "_IN_hasValue", true}, "", writer);
-        }
-    }
-}
-
-static void serializeInputs(
-                IGraphsModel* pGraphsModel,
-                const QModelIndex &subgIdx,
-                const QString& ident,
-                const QModelIndex& nodeIdx,
-                QString const &graphIdPrefix,
-                RAPIDJSON_WRITER& writer)
-{
-    const int opts = nodeIdx.data(ROLE_OPTIONS).toInt();
-
-    const OUTPUT_SOCKETS& outputs = nodeIdx.data(ROLE_OUTPUTS).value<OUTPUT_SOCKETS>();
-    auto outputIt = outputs.begin();
-
-    const INPUT_SOCKETS& inputs = nodeIdx.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
-    for (INPUT_SOCKET input : inputs)
-    {
-        auto inputName = input.info.name;
-
-        if (opts & OPT_MUTE) {
-            if (outputIt != outputs.end()) {
-                OUTPUT_SOCKET output = *outputIt++;
-                inputName = output.info.name; // HelperMute forward all inputs to outputs by socket name
-            } else {
-                inputName += ":DUMMYDEP";
-            }
-        }
-
-        if (input.linkIndice.isEmpty())
-        {
-            const QVariant &defl = input.info.defaultValue;
-            if (!defl.isNull()) {
-                AddVariantList({"setNodeInput", ident, inputName, defl}, input.info.type, writer);
-            }
-        }
-        else
-        {
-            for (QPersistentModelIndex linkIdx : input.linkIndice)
-            {
-                ZASSERT_EXIT(linkIdx.isValid());
-                QString outSock = linkIdx.data(ROLE_OUTSOCK).toString();
-                QString outId = linkIdx.data(ROLE_OUTNODE).toString();
-                const QModelIndex& idx_ = pGraphsModel->index(outId, subgIdx);
-                outId = nameMangling(graphIdPrefix, outId);
-
-                //the node of outId may be a subgNode, if so, reconnect into "SubOutput".
-                if (pGraphsModel->IsSubGraphNode(idx_))
-                {
-                    const QString& subgName = idx_.data(ROLE_OBJNAME).toString();
-                    const QModelIndex& subgIdx = pGraphsModel->index(subgName);
-                    const QString& ident_ = nameMangling(graphIdPrefix, idx_.data(ROLE_OBJID).toString());
-                    const QModelIndexList& subOutputList = AppHelper::getSubInOutNode(pGraphsModel, subgIdx, outSock, false);
-                    for (QModelIndex subOutIdx : subOutputList)
-                    {
-                        outId = nameMangling(ident_, subOutIdx.data(ROLE_OBJID).toString());
-                        if (outSock == "DST") {
-                            //should connect  DST of every Suboutput.
-                            AddStringList({"bindNodeInput", ident, inputName, outId, outSock}, writer);
-                            continue;
-                        } else {
-                            outSock = "_OUT_port";
-                            AddStringList({"bindNodeInput", ident, inputName, outId, outSock}, writer);
-                            break;
-                        }
-                    }
-                }
-                else
-                {
-                    AddStringList({"bindNodeInput", ident, inputName, outId, outSock}, writer);
-                }
-            }
-        }
-    }
-}
-
-
-static void serializeGraph(
-                IGraphsModel* pGraphsModel,
-                const QModelIndex& subgIdx,     //current subgraph idx, refers to a graph.
-                const QModelIndex& subNode,     //the node of subgraph on the upper layer, refers to a node.
-                QString const &graphIdPrefix,   //.
-                QString const &upperPrefix,     //..
-                bool bView,
-                RAPIDJSON_WRITER& writer)
+static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgIdx, QString const &graphIdPrefix, bool bView, RAPIDJSON_WRITER& writer)
 {
     ZASSERT_EXIT(pGraphsModel && subgIdx.isValid());
+
+    QModelIndexList subgNodes, normNodes;
+    pGraphsModel->getNodeIndices(subgIdx, subgNodes, normNodes);
+
+    //now, we want to expand all subgraph nodes recursively.
+    //so, we need to serialize the subgraph first, and then build the connection with other nodes in this graph.
+    //for (const QModelIndex& idx : subgNodes)
+    //{
+        ////zeno::log_critical("got node {} {}", name.toStdString(), ident.toStdString());
+        //const QString& subgName = idx.data(ROLE_OBJNAME).toString();
+        //const QString& prefix = nameMangling(graphIdPrefix, idx.data(ROLE_OBJID).toString());
+        //bool _bView = bView && (idx.data(ROLE_OPTIONS).toInt() & OPT_VIEW);
+        //serializeGraph(pGraphsModel, pGraphsModel->index(subgName), prefix, _bView, writer);
+    //}
 
     //scan all the nodes in the subgraph.
     for (int r = 0; r < pGraphsModel->itemCount(subgIdx); r++)
 	{
         const QModelIndex& idx = pGraphsModel->index(r, subgIdx);
-        int opts = idx.data(ROLE_OPTIONS).toInt();
-        const QString& name = idx.data(ROLE_OBJNAME).toString();
         QString ident = idx.data(ROLE_OBJID).toString();
         ident = nameMangling(graphIdPrefix, ident);
+        const QString& name = idx.data(ROLE_OBJNAME).toString();
 
-        if (pGraphsModel->IsSubGraphNode(idx))
-        {
-            //now, we want to expand the subgraph node recursively.
-            //so, we need to serialize the subgraph first, and then build the connection with other nodes in this graph.
-            const QString &prefix = ident;
-            bool _bView = bView && (opts & OPT_VIEW);
-            serializeGraph(pGraphsModel, pGraphsModel->index(name), idx, prefix, graphIdPrefix, _bView, writer);
-            continue;
-        }
-
+		int opts = idx.data(ROLE_OPTIONS).toInt();
         QString noOnceIdent;
         if (opts & OPT_ONCE) {
             noOnceIdent = ident;
             ident = ident + ":RUNONCE";
         }
 
+        bool bSubgNode = subgNodes.indexOf(idx) != -1;
+
+        const INPUT_SOCKETS &inputs = idx.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
+        const OUTPUT_SOCKETS &outputs = idx.data(ROLE_OUTPUTS).value<OUTPUT_SOCKETS>();
+
         if (opts & OPT_MUTE) {
             AddStringList({ "addNode", "HelperMute", ident }, writer);
         } else {
-            if (!pGraphsModel->index(name).isValid()) {
+            if (!bSubgNode) {
                 AddStringList({"addNode", name, ident}, writer);
+            } else {
+                AddStringList({"addSubnetNode", name, ident}, writer);
+                //for (INPUT_SOCKET input : inputs) {
+                    //AddStringList({"addSubnetInput", ident, input.info.name}, writer);
+                //}
+                //for (OUTPUT_SOCKET output : outputs) {
+                    //AddStringList({"addSubnetOutput", ident, output.info.name}, writer);
+                //}
+                AddStringList({"pushSubnetScope", ident}, writer);
+                const QString& prefix = nameMangling(graphIdPrefix, idx.data(ROLE_OBJID).toString());
+                bool _bView = bView && (idx.data(ROLE_OPTIONS).toInt() & OPT_VIEW);
+                serializeGraph(pGraphsModel, pGraphsModel->index(name), prefix, _bView, writer);
+                AddStringList({"popSubnetScope", ident}, writer);
             }
         }
 
-        const OUTPUT_SOCKETS& outputs = idx.data(ROLE_OUTPUTS).value<OUTPUT_SOCKETS>();
         auto outputIt = outputs.begin();
 
-        const INPUT_SOCKETS& inputs = idx.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
-        const PARAMS_INFO& params = idx.data(ROLE_PARAMETERS).value<PARAMS_INFO>();
+        for (INPUT_SOCKET input : inputs)
+        {
+            auto inputName = input.info.name;
 
-        if (name == "SubInput")
-        {
-            serializeSubInput(ident, name, params, subNode, upperPrefix, writer);
-        }
-        else
-        {
-            serializeInputs(pGraphsModel, subgIdx, ident, idx, graphIdPrefix, writer);
-            for (PARAM_INFO param_info : params)
+            if (opts & OPT_MUTE) {
+                if (outputIt != outputs.end()) {
+                    OUTPUT_SOCKET output = *outputIt++;
+                    inputName = output.info.name; // HelperMute forward all inputs to outputs by socket name
+                } else {
+                    inputName += ":DUMMYDEP";
+                }
+            }
+
+            if (input.linkIndice.isEmpty())
             {
-                AddVariantList({"setNodeParam", ident, param_info.name, param_info.value}, param_info.typeDesc, writer);
+                const QVariant& defl = input.info.defaultValue;
+                if (!defl.isNull())
+                {
+                    AddVariantList({"setNodeInput", ident, inputName, defl}, input.info.type, writer);
+                    //todo: for subgraph node. but now there is not edit control on subgraphnode.
+                }
+            }
+            else
+            {
+                for (QPersistentModelIndex linkIdx : input.linkIndice)
+                {
+                    ZASSERT_EXIT(linkIdx.isValid());
+                    QString outSock = linkIdx.data(ROLE_OUTSOCK).toString();
+                    QString outId = linkIdx.data(ROLE_OUTNODE).toString();
+                    const QModelIndex& idx_ = pGraphsModel->index(outId, subgIdx);
+                    outId = nameMangling(graphIdPrefix, outId);
+
+                    //the node of outId may be a subgNode.
+                    //if (subgNodes.indexOf(idx_) != -1)
+                    //{
+                        //const QString& subgName = idx_.data(ROLE_OBJNAME).toString();
+                        //const QModelIndex& subnodeIdx =
+                            //AppHelper::getSubInOutNode(pGraphsModel, pGraphsModel->index(subgName), outSock, false);
+                        //if (subnodeIdx.isValid())
+                        //{
+                            //outSock  = "_OUT_port";
+                            //const QString& ident_ = nameMangling(graphIdPrefix, idx_.data(ROLE_OBJID).toString());
+                            //outId = nameMangling(ident_, subnodeIdx.data(ROLE_OBJID).toString());
+                        //}
+                    //}
+
+                    //if (bSubgNode)
+                    //{
+                        //// should bind the subinput node to the outSock of the node with outId.
+                        //const QModelIndex& subnodeIdx =
+                            //AppHelper::getSubInOutNode(pGraphsModel, pGraphsModel->index(name), inputName, true);
+                        //if (subnodeIdx.isValid())
+                        //{
+                            //const QString& subInputId = subnodeIdx.data(ROLE_OBJID).toString();
+                            //const QString& ident_ = nameMangling(ident, subInputId);
+                            //AddStringList({"bindNodeInput", ident_, "_IN_port", outId, outSock}, writer);
+                            //AddVariantList({"setNodeInput", ident_, "_IN_hasValue", true}, "", writer);
+                        //}
+                    //}
+                    //else
+                    {
+                        AddStringList({"bindNodeInput", ident, inputName, outId, outSock}, writer);
+                    }
+                }
             }
         }
+
+        //if (bSubgNode) {
+            //continue;
+        //}
+
+        const PARAMS_INFO& params = idx.data(ROLE_PARAMETERS).value<PARAMS_INFO>();
+		for (PARAM_INFO param_info : params)
+		{
+            AddVariantList({ "setNodeParam", ident, param_info.name, param_info.value }, param_info.typeDesc, writer);
+		}
 
         if (opts & OPT_ONCE) {
             AddStringList({ "addNode", "HelperOnce", noOnceIdent }, writer);
@@ -224,17 +175,29 @@ static void serializeGraph(
 
 		if (bView && (opts & OPT_VIEW))
         {
-            for (OUTPUT_SOCKET output : outputs)
+            if (name == "SubOutput")
             {
-                if (output.info.name == "DST" /*&& outputs.size() > 1*/)
-                    continue;
                 auto viewerIdent = ident + ":TOVIEW";
                 AddStringList({"addNode", "ToView", viewerIdent}, writer);
-                AddStringList({"bindNodeInput", viewerIdent, "object", ident, output.info.name}, writer);
+                AddStringList({"bindNodeInput", viewerIdent, "object", ident, "_OUT_port"}, writer);
                 bool isStatic = opts & OPT_ONCE;
                 AddVariantList({"setNodeInput", viewerIdent, "isStatic", isStatic}, "int", writer);
                 AddStringList({"completeNode", viewerIdent}, writer);
-                break;  //current node is not a subgraph node, so only one output is needed to view this obj.
+            }
+            else
+            {
+                for (OUTPUT_SOCKET output : outputs)
+                {
+                    //if (output.info.name == "DST" && outputs.size() > 1)
+                        //continue;
+                    auto viewerIdent = ident + ":TOVIEW";
+                    AddStringList({"addNode", "ToView", viewerIdent}, writer);
+                    AddStringList({"bindNodeInput", viewerIdent, "object", ident, output.info.name}, writer);
+                    bool isStatic = opts & OPT_ONCE;
+                    AddVariantList({"setNodeInput", viewerIdent, "isStatic", isStatic}, "int", writer);
+                    AddStringList({"completeNode", viewerIdent}, writer);
+                    break;  //current node is not a subgraph node, so only one output is needed to view this obj.
+                }
             }
         }
 	}
@@ -242,7 +205,7 @@ static void serializeGraph(
 
 void serializeScene(IGraphsModel* pModel, RAPIDJSON_WRITER& writer)
 {
-    serializeGraph(pModel, pModel->index("main"), QModelIndex(), "", "", true, writer);
+    serializeGraph(pModel, pModel->index("main"), "", true, writer);
 }
 
 

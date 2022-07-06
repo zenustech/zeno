@@ -2,6 +2,7 @@
 #include <zeno/types/CurveObject.h>
 #include <zeno/funcs/ParseObjectFromUi.h>
 #include <zeno/types/PrimitiveObject.h>
+#include <zeno/para/parallel_for.h>
 
 namespace zeno {
 
@@ -54,9 +55,9 @@ struct EvalCurveOnPrimAttr : zeno::INode {
         auto curve = get_input<CurveObject>("curve");
         auto attrName = get_input2<std::string>("attrName");
         prim->attr_visit(attrName, [&curve](auto &arr) {
-            for (int i = 0; i < arr.size(); i++) {
-                arr[i] = curve->eval(arr[i]);
-            }
+            parallel_for_each(arr.begin(), arr.end(), [&] (auto &val) {
+                val = curve->eval(val);
+            });
         });
         set_output("prim", prim);
     }
@@ -65,7 +66,7 @@ struct EvalCurveOnPrimAttr : zeno::INode {
 ZENO_DEFNODE(EvalCurveOnPrimAttr)({
     {
         {"prim"},
-        {"string", "attrName", "pos"},
+        {"string", "attrName", "tmp"},
         {"curve", "curve"},
     },
     {

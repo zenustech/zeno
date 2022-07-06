@@ -96,16 +96,41 @@ struct CurveData : private _CurveDataDetails {
     float eval(float cf) const {
         assert(!cpoints.empty());
         assert(cpbases.size() == cpoints.size());
-        auto moreit = std::lower_bound(cpbases.begin(), cpbases.end(), cf);
+        assert(cpbases.front() <= cpbases.back());
         if (cycleType != CycleType::kClamp) {
-            cf -= cpbases.front();
-            cf = std::fmod(cf - cpbases.front(), cpbases.back() - cpbases.front());
-            if (cycleType == CycleType::kCycle)
-                cf = cpbases.front() + cf;
-            else  // CycleType::kMirror
-                cf = cpbases.back() - cf;
-            moreit = std::lower_bound(cpbases.begin(), cpbases.end(), cf);
+            auto delta = cpbases.back() - cpbases.front();
+            if (cycleType == CycleType::kMirror) {
+                int cd;
+                if (delta != 0) {
+                    cd = int(std::floor((cf - cpbases.front()) / delta)) & 1;
+                    cf = std::fmod(cf - cpbases.front(), delta);
+                } else {
+                    cd = 0;
+                    cf = 0;
+                }
+                if (cd != 0) {
+                    if (cf < 0) {
+                        cf = -cf;
+                    } else {
+                        cf = delta - cf;
+                    }
+                }
+                if (cf < 0)
+                    cf = cpbases.back() + cf;
+                else
+                    cf = cpbases.front() + cf;
+            } else {
+                if (delta != 0)
+                    cf = std::fmod(cf - cpbases.front(), delta);
+                else
+                    cf = 0;
+                if (cf < 0)
+                    cf = cpbases.back() + cf;
+                else
+                    cf = cpbases.front() + cf;
+            }
         }
+        auto moreit = std::lower_bound(cpbases.begin(), cpbases.end(), cf);
         if (moreit == cpbases.end())
             return cpoints.back().v;
         else if (moreit == cpbases.begin())
@@ -148,7 +173,7 @@ struct CurveObject : IObjectClone<CurveObject> {
     }
 
     float eval(std::string const &key, float x) const {
-        return getEvaluator(key)(x);
+        return keys.at(key).eval(x);
     }
 
     float eval(float x) const {

@@ -73,7 +73,7 @@ struct Program : zeno::disable_copy {
         CHECK_GL(glGetProgramiv(pro, GL_LINK_STATUS, &status));
         if (status != GL_TRUE) {
             GLsizei logLength;
-            CHECK_GL(glGetProgramiv(pro, GL_INFO_LOG_LENGTH, &status));
+            CHECK_GL(glGetProgramiv(pro, GL_INFO_LOG_LENGTH, &logLength));
             std::vector<GLchar> log(logLength + 1);
             CHECK_GL(glGetProgramInfoLog(pro, logLength, &logLength, log.data()));
             log[logLength] = 0;

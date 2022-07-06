@@ -306,6 +306,7 @@ QMenuBar* ZenoViewDockTitle::initMenu()
     QMenu* pDisplay = new QMenu(tr("Display"));
     {
         QAction* pAction = new QAction(tr("Show Grid"), this);
+        pAction->setShortcut(QKeySequence("Shift+F8"));
         pAction->setCheckable(true);
         pAction->setChecked(true);
         pDisplay->addAction(pAction);
@@ -331,6 +332,7 @@ QMenuBar* ZenoViewDockTitle::initMenu()
         pDisplay->addSeparator();
 
         pAction = new QAction(tr("Smooth Shading"), this);
+        pAction->setShortcut(QKeySequence("F7"));
         pAction->setCheckable(true);
         pAction->setChecked(false);
         pDisplay->addAction(pAction);
@@ -341,6 +343,7 @@ QMenuBar* ZenoViewDockTitle::initMenu()
             });
 
         pAction = new QAction(tr("Normal Check"), this);
+        pAction->setShortcut(QKeySequence("Shift+F7"));
         pAction->setCheckable(true);
         pAction->setChecked(false);
         pDisplay->addAction(pAction);
@@ -351,6 +354,7 @@ QMenuBar* ZenoViewDockTitle::initMenu()
             });
 
         pAction = new QAction(tr("Wireframe"), this);
+        pAction->setShortcut(QKeySequence("F8"));
         pAction->setCheckable(true);
         pAction->setChecked(false);
         pDisplay->addAction(pAction);
@@ -362,6 +366,7 @@ QMenuBar* ZenoViewDockTitle::initMenu()
 
         pDisplay->addSeparator();
         pAction = new QAction(tr("Solid"), this);
+        pAction->setShortcut(QKeySequence("F5"));
         pDisplay->addAction(pAction);
         connect(pAction, &QAction::triggered, this, [=]() {
             const char *e = "bate";
@@ -369,41 +374,21 @@ QMenuBar* ZenoViewDockTitle::initMenu()
             zenoApp->getMainWindow()->updateViewport(QString::fromLatin1(e));
         });
         pAction = new QAction(tr("Shading"), this);
+        pAction->setShortcut(QKeySequence("Shift+F5"));
         pDisplay->addAction(pAction);
         connect(pAction, &QAction::triggered, this, [=]() {
             const char *e = "zhxx";
             Zenovis::GetInstance().getSession()->set_render_engine(e);
+            //Zenovis::GetInstance().getSession()->set_enable_gi(false);
             zenoApp->getMainWindow()->updateViewport(QString::fromLatin1(e));
         });
         pAction = new QAction(tr("Optix"), this);
+        pAction->setShortcut(QKeySequence("F6"));
         pDisplay->addAction(pAction);
         connect(pAction, &QAction::triggered, this, [=]() {
             const char *e = "optx";
             Zenovis::GetInstance().getSession()->set_render_engine(e);
             zenoApp->getMainWindow()->updateViewport(QString::fromLatin1(e));
-        });
-        pDisplay->addSeparator();
-
-        pAction = new QAction(tr("Camera Keyframe"), this);
-        pDisplay->addAction(pAction);
-
-        pDisplay->addSeparator();
-
-        pAction = new QAction(tr("English / Chinese"), this);
-        pAction->setCheckable(true);
-        {
-            QSettings settings("ZenusTech", "Zeno");
-            QVariant use_chinese = settings.value("use_chinese");
-            pAction->setChecked(use_chinese.isNull() || use_chinese.toBool());
-        }
-        pDisplay->addAction(pAction);
-        connect(pAction, &QAction::triggered, this, [=]() {
-            QSettings settings("ZenusTech", "Zeno");
-            settings.setValue("use_chinese", pAction->isChecked());
-            QMessageBox msg(QMessageBox::Information, "Language",
-                        tr("Please restart Zeno to apply changes."),
-                        QMessageBox::Ok, this);
-            msg.exec();
         });
     }
 
@@ -423,7 +408,7 @@ QMenuBar* ZenoViewDockTitle::initMenu()
             Zenovis::GetInstance().getSession()->do_screenshot(s.toStdString(), "exr");
         });
         pAction = new QAction(tr("Record Video"), this);
-        pAction->setShortcut(QKeySequence(tr("Shift+F12")));
+        pAction->setShortcut(QKeySequence(("Shift+F12")));
         pRecord->addAction(pAction);
     }
 

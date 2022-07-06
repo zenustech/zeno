@@ -237,6 +237,25 @@ void ZenoMainWindow::initMenu() {
         QAction *pAction = new QAction(tr("Send this File"));
         connect(pAction, SIGNAL(triggered(bool)), this, SLOT(onFeedBack()));
         pHelp->addAction(pAction);
+
+        pHelp->addSeparator();
+
+        pAction = new QAction(tr("English / Chinese"), this);
+        pAction->setCheckable(true);
+        {
+            QSettings settings("ZenusTech", "Zeno");
+            QVariant use_chinese = settings.value("use_chinese");
+            pAction->setChecked(use_chinese.isNull() || use_chinese.toBool());
+        }
+        pHelp->addAction(pAction);
+        connect(pAction, &QAction::triggered, this, [=]() {
+            QSettings settings("ZenusTech", "Zeno");
+            settings.setValue("use_chinese", pAction->isChecked());
+            QMessageBox msg(QMessageBox::Information, "Language",
+                        tr("Please restart Zeno to apply changes."),
+                        QMessageBox::Ok, this);
+            msg.exec();
+        });
     }
 
     pMenuBar->addMenu(pFile);
