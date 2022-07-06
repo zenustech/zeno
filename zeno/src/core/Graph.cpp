@@ -49,6 +49,9 @@ ZENO_API void Graph::addNode(std::string const &cls, std::string const &id) {
     nodes[id] = std::move(node);
 }
 
+ZENO_API void Graph::addSubnetNode(std::string const &name, std::string const &id) {
+}
+
 ZENO_API void Graph::completeNode(std::string const &id) {
     safe_at(nodes, id, "node name")->doComplete();
 }

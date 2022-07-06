@@ -86,16 +86,16 @@ ZENO_API void Graph::loadGraph(const char *json) {
                 if (0) {
                 } else if (cmd == "addNode") {
                     addNode(tno(di[1].GetString()), di[2].GetString());
-                } else if (cmd == "completeNode") {
-                    completeNode(di[1].GetString());
                 } else if (cmd == "setNodeInput") {
                     setNodeInput(di[1].GetString(), tno(di[2].GetString()), generic_get<zany>(di[3]));
                 } else if (cmd == "setNodeParam") {
                     setNodeParam(di[1].GetString(), tno(di[2].GetString()), generic_get<std::variant<int, float, std::string, zany>, false>(di[3]));
-                /*} else if (cmd == "setNodeOption") {
-                    setNodeOption(di[1].GetString(), di[2].GetString());*/
                 } else if (cmd == "bindNodeInput") {
                     bindNodeInput(di[1].GetString(), tno(di[2].GetString()), di[3].GetString(), tno(di[4].GetString()));
+                } else if (cmd == "completeNode") {
+                    completeNode(di[1].GetString());
+                } else if (cmd == "addSubnetNode") {
+                    addSubnetNode(tno(di[1].GetString()), di[2].GetString());
                 } else if (cmd == "addNodeOutput") {
                     addNodeOutput(di[1].GetString(), tno(di[2].GetString()));
                 } else if (cmd == "setBeginFrameNumber") {
