@@ -121,7 +121,7 @@ struct CodimStepping : INode {
   inline static T boxDiagSize2 = 0;
   inline static T avgNodeMass = 0;
   inline static T targetGRes = 1e-2;
-#define s_enableAdaptiveSetting 0
+#define s_enableAdaptiveSetting 1
 // static constexpr bool s_enableAdaptiveSetting = false;
 #define s_enableContact 1
 // static constexpr bool s_enableContact = true;
@@ -449,7 +449,10 @@ struct CodimStepping : INode {
 
       auto gsum = dot(pol, vtemp, "p", "q");
       auto gsnorm = dot(pol, vtemp, "q", "q");
-      kappaMin = -gsum / gsnorm;
+      if (gsnorm < limits<T>::min())
+        kappaMin = 0;
+      else
+        kappaMin = -gsum / gsnorm;
       fmt::print("kappaMin: {}, gsum: {}, gsnorm: {}\n", kappaMin, gsum,
                  gsnorm);
     }
@@ -2973,15 +2976,21 @@ struct CodimStepping : INode {
       sumNodeMass += tmp;
       sumNodes = coOffset;
       avgNodeMass = sumNodeMass / sumNodes;
+      /// kappaMin
+      A.initKappa(cudaPol);
       /// adaptive kappa
       {
         T H_b = computeHb((T)1e-16 * boxDiagSize2, dHat * dHat);
-        kappaMin = 1e11 * avgNodeMass / (4e-16 * boxDiagSize2 * H_b);
-        kappa = kappaMin;
+        kappa = 1e11 * avgNodeMass / (4e-16 * boxDiagSize2 * H_b);
         kappaMax = 100 * kappa;
+        if (kappa < kappaMin)
+          kappa = kappaMin;
+        if (kappa > kappaMax)
+          kappa = kappaMax;
       }
       fmt::print("auto dHat: {}, targetGRes: {}\n", dHat, targetGRes);
-      fmt::print("average node mass: {}, kappa: {}\n", avgNodeMass, kappa);
+      fmt::print("average node mass: {}, kappa: {} ({} - {})\n", avgNodeMass,
+                 kappa, kappaMin, kappaMax);
       // getchar();
     }
 #endif
@@ -3265,11 +3274,11 @@ ZENDEFNODE(CodimStepping, {{
                                "ZSBoundaryPrimitives",
                                {"int", "est_num_cps", "0"},
                                {"float", "dt", "0.01"},
-                               {"float", "dHat", "0.005"},
+                               {"float", "dHat", "0.001"},
                                {"float", "kappa0", "1e3"},
                                {"float", "aug_coeff", "1e3"},
                                {"float", "pn_rel", "0.01"},
-                               {"float", "cg_rel", "0.01"},
+                               {"float", "cg_rel", "0.0001"},
                                {"float", "gravity", "-9.0"},
                                {"int", "num_substeps", "1"},
                            },
