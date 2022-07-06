@@ -84,7 +84,6 @@ jobs:
       id: cuda-toolkit
       with:
         cuda: 11.5.1
-        sub-packages: ${{ matrix.os == 'windows-2022' && '["nvcc", "visual_studio_integration"]' || '[]' }}
 
     - name: Setup Dependencies
       if: ${{ needs.check.outputs.vcpkg == 'true' }}
