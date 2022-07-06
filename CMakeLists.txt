@@ -37,10 +37,6 @@ option(ZENO_NO_WARNING "Use customized compiler warnings" ON)
 option(ZENO_INSTALL_TARGET "Enable installation targets" OFF)
 option(ZENO_WITH_CUDA "Build ZENO with CUDA support" OFF)
 
-if (ZENO_WITH_CUDA)        # must move enable_language ahead to here
-    enable_language(CUDA)  # otherwise projects/CUDA will fail to compile
-endif()
-
 if (NOT DEFINED CMAKE_POSITION_INDEPENDENT_CODE)
     # Otherwise we can't link .so libs with .a libs
     set(CMAKE_POSITION_INDEPENDENT_CODE ON)
@@ -96,6 +92,19 @@ if (ZENO_NO_WARNING)  # Use our customized warning flags
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w")
     endif()
 endif()
+
+## --- begin cihou wxl cuda
+if (ZENO_WITH_CUDA)        # must move enable_language ahead to here
+    if (DEFINED ENV{CUDA_PATH})  # this is an envvar defined by GitHub CI...
+        message(STATUS "Found environment variable CUDA_PATH: $ENV{CUDA_PATH}")
+        set(CUDA_TOOLKIT_ROOT_DIR $ENV{CUDA_PATH})
+        set(CUDA_DIR $ENV{CUDA_PATH})
+        set(CUDAToolkit_DIR $ENV{CUDA_PATH})
+        find_package(CUDAToolkit REQUIRED)
+    endif()
+    enable_language(CUDA)  # otherwise projects/CUDA will fail to compile
+endif()
+## --- end cihou wxl cuda
 
 ## --- begin cihou asset dir
 set(zeno_asset_dirs_txt ${CMAKE_CURRENT_BINARY_DIR}/zeno_asset_dirs.txt)

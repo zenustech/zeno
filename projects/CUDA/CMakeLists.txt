@@ -13,13 +13,6 @@ set(ZS_ENABLE_OPENVDB ON)
 set(ZENSIM_INSTALL OFF)
 set(ZS_BUILD_SHARED_LIBS OFF)
 set(CMAKE_CUDA_RESOLVE_DEVICE_SYMBOLS ON)
-
-if (DEFINED ENV{CUDA_PATH})
-    message(STATUS "Found environment variable CUDA_PATH: $ENV{CUDA_PATH}")
-    set(CUDA_TOOLKIT_ROOT_DIR $ENV{CUDA_PATH})
-    set(CUDA_DIR $ENV{CUDA_PATH})
-    set(CUDAToolkit_DIR $ENV{CUDA_PATH})
-endif()
 find_package(CUDAToolkit)
 
 add_subdirectory(zpc)
