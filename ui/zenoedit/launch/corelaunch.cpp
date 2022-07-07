@@ -25,7 +25,7 @@
 #include "viewdecode.h"
 #endif
 
-#define DEBUG_SERIALIZE
+//#define DEBUG_SERIALIZE
 
 namespace {
 
