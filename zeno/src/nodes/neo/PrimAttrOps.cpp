@@ -34,9 +34,30 @@ struct PrimFillAttr : INode {
 ZENDEFNODE(PrimFillAttr, {
     {
     {"PrimitiveObject", "prim"},
-    {"string", "attr", "tag"},
-    {"enum float vec3f int", "type"},
+    {"string", "attr", "rad"},
+    {"enum float vec3f int", "type", "float"},
     {"float", "value", "0"},
+    },
+    {
+    {"PrimitiveObject", "prim"},
+    },
+    {
+    },
+    {"primitive"},
+});
+
+struct PrimFillColor : PrimFillAttr {
+    virtual void apply() override {
+        this->inputs["attr"] = std::make_shared<StringObject>("clr");
+        this->inputs["type"] = std::make_shared<StringObject>("vec3f");
+        PrimFillAttr::apply();
+    }
+};
+
+ZENDEFNODE(PrimFillColor, {
+    {
+    {"PrimitiveObject", "prim"},
+    {"vec3f", "value", "1,0.5,0.5"},
     },
     {
     {"PrimitiveObject", "prim"},

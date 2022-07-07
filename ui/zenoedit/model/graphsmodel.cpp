@@ -881,7 +881,8 @@ void GraphsModel::importNodes(
                 const QModelIndex& subGpIdx,
                 bool enableTransaction)
 {
-    ZASSERT_EXIT(!nodes.isEmpty());
+    if (nodes.isEmpty()) return;
+    //ZASSERT_EXIT(!nodes.isEmpty());
     if (enableTransaction)
     {
         ImportNodesCommand *pCmd = new ImportNodesCommand(nodes, links, pos, this, subGpIdx);
