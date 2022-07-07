@@ -63,13 +63,13 @@ ZENO_API std::shared_ptr<PrimitiveObject> primDuplicate(PrimitiveObject *parsPri
                             }
                             if constexpr (hasDirAttr.value) {
                                 auto t0 = accDir[i];
-                                t0 = normalizeSafe(t0, 1e-6f);
+                                t0 = normalizeSafe(t0);
                                 vec3f t1, t2;
                                 if constexpr (hasTanAttr.value) {
                                     t1 = accTan[i];
-                                    t1 = normalizeSafe(t1, 1e-6f);
+                                    t1 = normalizeSafe(t1);
                                     t2 = cross(t0, t1);
-                                    t2 = normalizeSafe(t2, 1e-6f);
+                                    t2 = normalizeSafe(t2);
                                 } else {
                                     pixarONB(t0, t1, t2);
                                 }
