@@ -40,6 +40,6 @@ ZENO_API void primRandomize(PrimitiveObject *prim, std::string attr, std::string
 ZENO_API void primPerlinNoise(PrimitiveObject *prim, std::string inAttr, std::string outAttr, std::string outType, float scale, float detail, float roughness, float disortion, vec3f offset, float average, float strength);
 
 ZENO_API std::shared_ptr<PrimitiveObject> primScatter(
-    PrimitiveObject *prim, std::string type, int npoints, bool interpAttrs, int seed);
+    PrimitiveObject *prim, std::string type, std::string denAttr, float density, bool interpAttrs, int seed);
 
 }

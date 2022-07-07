@@ -7,6 +7,7 @@
 #include <zeno/para/parallel_scan.h>
 #include <zeno/utils/variantswitch.h>
 #include <zeno/utils/wangsrng.h>
+#include <zeno/utils/log.h>
 #include <random>
 #include <cmath>
 #ifndef M_PI
@@ -16,11 +17,12 @@
 namespace zeno {
 
 ZENO_API std::shared_ptr<PrimitiveObject> primScatter(
-    PrimitiveObject *prim, std::string type, int npoints, bool interpAttrs, int seed) {
+    PrimitiveObject *prim, std::string type, std::string denAttr, float density, bool interpAttrs, int seed) {
     auto retprim = std::make_shared<PrimitiveObject>();
 
     if (seed == -1) seed = std::random_device{}();
     std::vector<float> cdf;
+    bool hasDenAttr = !denAttr.empty();
     
     if (type == "tris") {
         if (!prim->tris.size()) return retprim;
@@ -30,6 +32,13 @@ ZENO_API std::shared_ptr<PrimitiveObject> primScatter(
             auto b = prim->verts[ind[1]];
             auto c = prim->verts[ind[2]];
             auto area = length(cross(c - a, c - b));
+            if (hasDenAttr) {
+                auto &den = prim->verts.attr<float>(denAttr);
+                auto da = den[ind[0]];
+                auto db = den[ind[1]];
+                auto dc = den[ind[2]];
+                area *= std::abs(da + db + dc) / 3;
+            }
             return area;
         });
     } else if (type == "lines") {
@@ -39,14 +48,23 @@ ZENO_API std::shared_ptr<PrimitiveObject> primScatter(
             auto a = prim->lines[ind[0]];
             auto b = prim->lines[ind[1]];
             auto area = length(a - b);
+            if (hasDenAttr) {
+                auto &den = prim->verts.attr<float>(denAttr);
+                auto da = den[ind[0]];
+                auto db = den[ind[1]];
+                area *= std::abs(da + db) / 2;
+            }
             return area;
         });
     }
+    if (cdf.empty()) return retprim;
 
+    auto npoints = (int)std::rint(cdf.back() * density);
     auto inv_total = 1 / cdf.back();
     parallel_for((size_t)0, cdf.size(), [&] (size_t i) {
         cdf[i] *= inv_total;
     });
+    zeno::log_info("PrimScatter total npoints {}", npoints);
 
     retprim->verts.resize(npoints);
 
@@ -125,10 +143,11 @@ struct PrimScatter : INode {
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
         auto type = get_input2<std::string>("type");
-        auto npoints = get_input2<int>("npoints");
+        auto denAttr = get_input2<std::string>("denAttr");
+        auto density = get_input2<float>("density");
         auto interpAttrs = get_input2<bool>("interpAttrs");
         auto seed = get_input2<int>("seed");
-        auto retprim = primScatter(prim.get(), type, npoints, interpAttrs, seed);
+        auto retprim = primScatter(prim.get(), type, denAttr, density, interpAttrs, seed);
         set_output("parsPrim", retprim);
     }
 };
@@ -137,7 +156,8 @@ ZENO_DEFNODE(PrimScatter)({
     {
         {"prim"},
         {"enum tris lines", "type", "tris"},
-        {"int", "npoints", "100"},
+        {"string", "denAttr", ""},
+        {"float", "density", "100"},
         {"bool", "interpAttrs", "1"},
         {"int", "seed", "-1"},
     },
