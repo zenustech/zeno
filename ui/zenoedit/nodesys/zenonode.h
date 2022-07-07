@@ -22,8 +22,15 @@ class ZenoNode : public QGraphicsWidget
         ZenoSocketItem* socket;
         ZenoTextLayoutItem* socket_text;
         ZenoParamWidget* socket_control;
+        QGraphicsLinearLayout* ctrl_layout;
 
-        _socket_ctrl() : socket(nullptr), socket_text(nullptr), socket_control(nullptr) {}
+        _socket_ctrl()
+            : socket(nullptr)
+            , socket_text(nullptr)
+            , socket_control(nullptr)
+            , ctrl_layout(nullptr)
+        {
+        }
     };
 
 public:
@@ -39,6 +46,7 @@ public:
     void initUI(const QModelIndex& subGIdx, const QModelIndex& index);
 
     QPersistentModelIndex index() { return m_index; }
+    QPersistentModelIndex subgIndex() { return m_subGpIndex; }
     QPointF getPortPos(bool bInput, const QString& portName);
     ZenoSocketItem* getNearestSocket(const QPointF& pos, bool bInput);
     ZenoSocketItem* getSocketItem(bool bInput, const QString& sockName);
@@ -56,7 +64,7 @@ public:
     virtual void onUpdateParamsNotDesc();
 
 signals:
-    void socketClicked(const QString& id, bool bInput, const QString& name);
+    void socketClicked(QString nodeid, bool bInput, QString sockName, QPointF scenePos, QPersistentModelIndex linkIndex);
     void doubleClicked(const QString &nodename);
     void paramChanged(const QString& nodeid, const QString& paramName, const QVariant& var);
     void socketPosInited(const QString& nodeid, const QString& sockName, bool bInput);
@@ -98,6 +106,8 @@ protected:
     virtual QGraphicsLayout* initParams();
     virtual void initParam(PARAM_CONTROL ctrl, QGraphicsLinearLayout* pParamLayout, const QString& name, const PARAM_INFO& param);
     virtual QGraphicsLinearLayout* initCustomParamWidgets();
+    virtual QValidator* validateForParams(PARAM_INFO info);
+    virtual QValidator* validateForSockets(INPUT_SOCKET inSocket);
 
 protected:
     NodeUtilParam m_renderParams;
@@ -112,7 +122,10 @@ private:
     void _initSocketItemPos();
     void _drawBorderWangStyle(QPainter* painter);
     ZenoGraphsEditor* getEditorViewByViewport(QWidget* pWidget);
-
+    ZenoParamWidget* initSocketWidget(const INPUT_SOCKET inSocket, ZenoTextLayoutItem* pSocketText);
+    bool renameDictKey(bool bInput, const INPUT_SOCKETS& inputs, const OUTPUT_SOCKETS& outputs);
+    void updateSocketWidget(const INPUT_SOCKET inSocket);
+    void clearInSocketControl(const QString& sockName);
 
     QPersistentModelIndex m_index;
     QPersistentModelIndex m_subGpIndex;

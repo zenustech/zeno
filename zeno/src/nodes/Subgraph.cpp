@@ -188,7 +188,11 @@ struct SubInput : zeno::INode {
     }
 
     virtual void apply() override {
-        set_output("port", get_input("_IN_port"));
+        if (has_input("_IN_port")) {
+            set_output("port", get_input("_IN_port")); 
+        } else {
+            set_output("port", get_input("defl:"));
+        }
         set_output("hasValue", get_input("_IN_hasValue"));
     }
 };

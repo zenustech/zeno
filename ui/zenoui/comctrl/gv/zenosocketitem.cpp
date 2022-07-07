@@ -3,9 +3,17 @@
 #include <zenoui/model/modelrole.h>
 
 
-ZenoSocketItem::ZenoSocketItem(const ImageElement &elem, const QSizeF &sz, QGraphicsItem *parent)
+ZenoSocketItem::ZenoSocketItem(
+        const QString& sockName,
+        bool bInput,
+        QPersistentModelIndex nodeIdx,
+        const ImageElement& elem,
+        const QSizeF& sz,
+        QGraphicsItem* parent)
     : ZenoImageItem(elem, sz, parent)
-    , m_bInput(false)
+    , m_bInput(bInput)
+    , m_name(sockName)
+    , m_index(nodeIdx)
     , m_status(STATUS_UNKNOWN)
     , m_svgHover(nullptr)
     , m_hoverSvg(elem.imageHovered)
@@ -46,11 +54,21 @@ QRectF ZenoSocketItem::boundingRect() const
     return rc;
 }
 
-void ZenoSocketItem::setSocketInfo(QPersistentModelIndex index, bool input, SOCKET_INFO info)
+void ZenoSocketItem::updateSockName(const QString& sockName)
 {
-    m_index = index;
-    m_bInput = input;
-    m_info = info;
+    m_name = sockName;
+}
+
+bool ZenoSocketItem::getSocketInfo(bool& bInput, QString& nodeid, QString& sockName)
+{
+    Q_ASSERT(m_index.isValid());
+    if (!m_index.isValid())
+        return false;
+
+    bInput = m_bInput;
+    nodeid = m_index.data(ROLE_OBJID).toString();
+    sockName = m_name;
+    return true;
 }
 
 void ZenoSocketItem::setSockStatus(SOCK_STATUS status)
@@ -62,15 +80,15 @@ void ZenoSocketItem::setSockStatus(SOCK_STATUS status)
     {
         if (m_bInput) {
             INPUT_SOCKETS inputs = m_index.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
-            if (inputs.find(m_info.name) != inputs.end()) {
-                if (!inputs[m_info.name].linkIndice.isEmpty()) {
+            if (inputs.find(m_name) != inputs.end()) {
+                if (!inputs[m_name].linkIndice.isEmpty()) {
                     status = STATUS_CONNECTED;
                 }
             }
         } else {
             OUTPUT_SOCKETS outputs = m_index.data(ROLE_OUTPUTS).value<OUTPUT_SOCKETS>();
-            if (outputs.find(m_info.name) != outputs.end()) {
-                if (!outputs[m_info.name].linkIndice.isEmpty()) {
+            if (outputs.find(m_name) != outputs.end()) {
+                if (!outputs[m_name].linkIndice.isEmpty()) {
                     status = STATUS_CONNECTED;
                 }
             }
@@ -125,6 +143,17 @@ void ZenoSocketItem::hoverLeaveEvent(QGraphicsSceneHoverEvent* event)
     m_svg = new ZenoSvgItem(m_noHoverSvg, this);
     m_svg->setSize(m_size);
     QGraphicsObject::hoverLeaveEvent(event);
+}
+
+void ZenoSocketItem::mousePressEvent(QGraphicsSceneMouseEvent* event)
+{
+    ZenoImageItem::mousePressEvent(event);
+}
+
+void ZenoSocketItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
+{
+    ZenoImageItem::mouseReleaseEvent(event);
+    emit clicked(m_bInput);
 }
 
 void ZenoSocketItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)

@@ -25,6 +25,8 @@
 #include "viewdecode.h"
 #endif
 
+//#define DEBUG_SERIALIZE
+
 namespace {
 
 #if !defined(ZENO_MULTIPROCESS) || !defined(ZENO_IPC_USE_TCP)
@@ -239,6 +241,13 @@ void launchProgram(GraphsModel* pModel, int beginFrame, int endFrame)
         serializeScene(pModel, writer);
     }
     std::string progJson(s.GetString());
+#ifdef DEBUG_SERIALIZE
+    QString qstrJson = QString::fromStdString(progJson);
+    QFile f("serialize.json");
+    f.open(QIODevice::WriteOnly);
+    f.write(qstrJson.toUtf8());
+    f.close();
+#endif
     launchProgramJSON(std::move(progJson));
 }
 

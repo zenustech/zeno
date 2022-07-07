@@ -20,6 +20,7 @@ private slots:
     void onReadyRead();
     void onProcPipeReady();
     void onDisconnect();
+    void onProcFinished(int exitCode, QProcess::ExitStatus exitStatus);
 
 private:
     QTcpServer* m_tcpServer;

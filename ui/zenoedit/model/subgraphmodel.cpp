@@ -374,10 +374,17 @@ void SubGraphModel::updateSocket(const QString& nodeid, const SOCKET_UPDATE_INFO
                 break;
             }
             case SOCKET_UPDATE_TYPE:
+            {
+                INPUT_SOCKET &inputSock = inputs[oldName];
+                inputSock.info.type = info.newInfo.type;
+                inputSock.info.control = info.newInfo.control;
+                setData(idx, QVariant::fromValue(inputs), ROLE_INPUTS);
+                break;
+            }
             case SOCKET_UPDATE_DEFL:
             {
 			    INPUT_SOCKET& inputSock = inputs[oldName];
-			    inputSock.info = info.newInfo;
+			    inputSock.info.defaultValue = info.newInfo.defaultValue;
 			    setData(idx, QVariant::fromValue(inputs), ROLE_INPUTS);
                 break;
             }

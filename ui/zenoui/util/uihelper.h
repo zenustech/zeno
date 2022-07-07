@@ -36,7 +36,7 @@ public:
     static QVariant parseVariantValue(const rapidjson::Value& val);
     static QVariant parseTextValue(PARAM_CONTROL editCtrl, const QString& textValue);
     static QSizeF viewItemTextLayout(QTextLayout& textLayout, int lineWidth, int maxHeight = -1, int* lastVisibleLine = nullptr);
-    static PARAM_CONTROL _getControlType(const QString& type);
+    static PARAM_CONTROL getControlType(const QString& type);
     static QString variantToString(const QVariant& var);
 
     //todo: place at other helper.

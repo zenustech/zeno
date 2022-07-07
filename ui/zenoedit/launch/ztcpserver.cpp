@@ -71,6 +71,7 @@ void ZTcpServer::startProc(const std::string& progJson)
     m_proc->write(progJson.data(), progJson.size());
     m_proc->closeWriteChannel();
 
+    connect(m_proc.get(), SIGNAL(finished(int, QProcess::ExitStatus)), this, SLOT(onProcFinished(int, QProcess::ExitStatus)));
     connect(m_proc.get(), SIGNAL(readyRead()), this, SLOT(onProcPipeReady()));
 }
 
@@ -121,13 +122,24 @@ void ZTcpServer::onProcPipeReady()
 
 void ZTcpServer::onDisconnect()
 {
-    if (m_proc)
-    {
-        viewDecodeFinish();
-        m_proc->terminate();
-        int code = m_proc->exitCode();
-        m_proc = nullptr;
-        zeno::log_info("runner process exited with {}", code);
-    }
+    viewDecodeFinish();
 }
+
+void ZTcpServer::onProcFinished(int exitCode, QProcess::ExitStatus exitStatus)
+{
+    if (exitStatus == QProcess::NormalExit)
+    {
+        m_proc->terminate();
+        m_proc = nullptr;
+        zeno::log_info("runner process normally exited with {}", exitCode);
+    }
+    else if (exitStatus == QProcess::CrashExit)
+    {
+        m_proc->terminate();
+        m_proc= nullptr;
+        zeno::log_info("runner process crashed with code {}", exitCode);
+    }
+    viewDecodeFinish();
+}
+
 #endif
