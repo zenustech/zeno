@@ -2301,7 +2301,8 @@ struct CodimStepping : INode {
                 atomic_add(execTag, &vtemp(bTag, d, vi), dx(d));
             });
         // elasticity
-        if (primHandle.category == ZenoParticles::surface)
+        if (primHandle.category == ZenoParticles::surface) {
+#if 0
           pol(range(eles.size()),
               [execTag, etemp = proxy<space>({}, primHandle.etemp),
                vtemp = proxy<space>({}, vtemp), eles = proxy<space>({}, eles),
@@ -2326,7 +2327,61 @@ struct CodimStepping : INode {
                                temp[vi * dim + d]);
                   }
               });
-        else if (primHandle.category == ZenoParticles::tet)
+#else
+          pol(range(eles.size() * 81),
+              [execTag, etemp = proxy<space>({}, primHandle.etemp),
+               vtemp = proxy<space>({}, vtemp), eles = proxy<space>({}, eles),
+               dxTag, bTag, vOffset = primHandle.vOffset,
+               n = eles.size() * 81] ZS_LAMBDA(int idx) mutable {
+                constexpr int dim = 3;
+                __shared__ int offset;
+                // directly use PCG_Solve_AX9_b2 from kemeng huang
+                int ei = idx / 81;
+                int entryId = idx % 81;
+                int MRid = entryId / 9;
+                int MCid = entryId % 9;
+                int vId = MCid / dim;
+                int axisId = MCid % dim;
+                int GRtid = idx % 9;
+
+                auto inds = eles.template pack<3>("inds", ei)
+                                .template reinterpret_bits<int>() +
+                            vOffset;
+                T rdata =
+                    etemp("He", entryId, ei) * vtemp(dxTag, axisId, inds[vId]);
+
+                if (threadIdx.x == 0)
+                  offset = 9 - GRtid;
+                __syncthreads();
+
+                int BRid = (threadIdx.x - offset + 9) / 9;
+                int landidx = (threadIdx.x - offset) % 9;
+                if (BRid == 0) {
+                  landidx = threadIdx.x;
+                }
+
+                auto [mask, numValid] = warp_mask(idx, n);
+                int laneId = threadIdx.x & 0x1f;
+                bool bBoundary = (landidx == 0) || (laneId == 0);
+
+                unsigned int mark =
+                    __ballot_sync(mask, bBoundary); // a bit-mask
+                mark = __brev(mark);
+                unsigned int interval =
+                    zs::math::min(__clz(mark << (laneId + 1)), 31 - laneId);
+
+                for (int iter = 1; iter < 9; iter <<= 1) {
+                  T tmp = __shfl_down_sync(mask, rdata, iter);
+                  if (interval >= iter && laneId + iter < numValid)
+                    rdata += tmp;
+                }
+
+                if (bBoundary)
+                  atomic_add(exec_cuda, &vtemp(bTag, MRid % 3, inds[MRid / 3]),
+                             rdata);
+              });
+#endif
+        } else if (primHandle.category == ZenoParticles::tet)
           pol(range(eles.size()),
               [execTag, etemp = proxy<space>({}, primHandle.etemp),
                vtemp = proxy<space>({}, vtemp), eles = proxy<space>({}, eles),
