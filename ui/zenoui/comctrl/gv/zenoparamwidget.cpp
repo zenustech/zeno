@@ -91,20 +91,13 @@ ZenoParamLineEdit::ZenoParamLineEdit(const QString &text, PARAM_CONTROL ctrl, Li
     m_pLineEdit->setPalette(param.palette);
     m_pLineEdit->setFont(param.font);
     m_pLineEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    switch (ctrl)
-    {
-    case CONTROL_INT:
-        m_pLineEdit->setValidator(new QIntValidator);
-        break;
-    case CONTROL_FLOAT:
-        m_pLineEdit->setValidator(new QDoubleValidator);
-        break;
-    case CONTROL_BOOL:
-        break;
-    }
-
     setWidget(m_pLineEdit);
     connect(m_pLineEdit, SIGNAL(editingFinished()), this, SIGNAL(editingFinished()));
+}
+
+void ZenoParamLineEdit::setValidator(const QValidator* pValidator)
+{
+    m_pLineEdit->setValidator(pValidator);
 }
 
 QString ZenoParamLineEdit::text() const
@@ -117,6 +110,52 @@ void ZenoParamLineEdit::setText(const QString &text)
     m_pLineEdit->setText(text);
 }
 
+
+///////////////////////////////////////////////////////////////////////////
+ZenoParamPathEdit::ZenoParamPathEdit(const QString& path, PARAM_CONTROL ctrl, LineEditParam param, QGraphicsItem* parent)
+    : ZenoParamWidget(parent)
+{
+    QGraphicsLinearLayout *pLayout = new QGraphicsLinearLayout(Qt::Horizontal);
+    m_pLineEdit = new ZenoParamLineEdit(path, ctrl, param);
+    pLayout->addItem(m_pLineEdit);
+
+    ImageElement elem;
+    elem.image = ":/icons/ic_openfile.svg";
+    elem.imageHovered = ":/icons/ic_openfile-on.svg";
+    elem.imageOn = ":/icons/ic_openfile-on.svg";
+    m_openBtn = new ZenoSvgLayoutItem(elem, ZenoStyle::dpiScaledSize(QSize(30, 30)));
+    bool isRead = (ctrl == CONTROL_READPATH);
+    pLayout->addItem(m_openBtn);
+    pLayout->setItemSpacing(0, 0);
+    pLayout->setItemSpacing(0, 0);
+
+    this->setLayout(pLayout);
+
+    //connect slot.
+    connect(m_pLineEdit, &ZenoParamLineEdit::editingFinished, this, [=]() {
+        emit pathValueChanged(m_pLineEdit->text());
+    });
+    connect(m_openBtn, &ZenoImageItem::clicked, this, &ZenoParamPathEdit::clicked);
+}
+
+void ZenoParamPathEdit::setValidator(QValidator* pValidator)
+{
+    m_pLineEdit->setValidator(pValidator);
+}
+
+QString ZenoParamPathEdit::path() const
+{
+    return m_pLineEdit->text();
+}
+
+void ZenoParamPathEdit::setPath(const QString& path)
+{
+    if (m_pLineEdit->text() != path)
+    {
+        m_pLineEdit->setText(path);
+        emit pathValueChanged(path);
+    }
+}
 
 ///////////////////////////////////////////////////////////////////////////
 ZenoParamCheckBox::ZenoParamCheckBox(const QString& text, QGraphicsItem* parent)

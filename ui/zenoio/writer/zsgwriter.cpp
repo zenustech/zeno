@@ -109,7 +109,6 @@ void ZsgWriter::_dumpSubGraph(IGraphsModel* pModel, const QModelIndex& subgIdx, 
 			writer.Key("width"); writer.Double(viewRc.width());
 			writer.Key("height"); writer.Double(viewRc.height());
 		}
-
 	}
 }
 

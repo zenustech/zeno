@@ -42,12 +42,20 @@ void MakeHeatMapNode::onEditClicked()
 	PARAMS_INFO params = index().data(ROLE_PARAMETERS).value<PARAMS_INFO>();
 	if (params.find("color") != params.end())
 	{
-		const QLinearGradient& grad = params["color"].value.value<QLinearGradient>();
-		ZenoHeatMapEditor* editor = new ZenoHeatMapEditor(grad);
-		int ret = editor->exec();
-		//COLOR_RAMPS newRamps = editor->colorRamps();
-		IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
-		//pModel->setData2(subGraphIndex(), index(), QVariant::fromValue(newRamps), ROLE_COLORRAMPS);
-		editor->deleteLater();
+		PARAM_UPDATE_INFO info;
+        PARAM_INFO& param = params["color"];
+        info.name = "color";
+		info.oldValue = param.value;
+		QLinearGradient grad = param.value.value<QLinearGradient>();
+
+		ZenoHeatMapEditor editor(grad);
+		editor.exec();
+        QLinearGradient newGrad = editor.colorRamps();
+		if (newGrad != grad)
+		{
+            info.newValue = QVariant::fromValue(newGrad);
+            IGraphsModel *pModel = zenoApp->graphsManagment()->currentModel();
+            pModel->updateParamInfo(nodeId(), info, subGraphIndex(), true);
+		}
 	}
 }

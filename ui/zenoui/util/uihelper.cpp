@@ -52,11 +52,11 @@ NODE_DESCS UiHelper::parseDescs(const rapidjson::Value &jsonDescs)
                 const QString &socketType = input_triple[0].GetString();
                 const QString &socketName = input_triple[1].GetString();
                 const QString &socketDefl = input_triple[2].GetString();
-                PARAM_CONTROL ctrlType = _getControlType(socketType);
+                PARAM_CONTROL ctrlType = getControlType(socketType);
                 INPUT_SOCKET inputSocket;
                 inputSocket.info = SOCKET_INFO("", socketName);
                 inputSocket.info.type = socketType;
-                inputSocket.info.control = _getControlType(socketType);
+                inputSocket.info.control = getControlType(socketType);
                 inputSocket.info.defaultValue = _parseDefaultValue(socketDefl, socketType);
                 desc.inputs.insert(socketName, inputSocket);
             } else {
@@ -70,7 +70,7 @@ NODE_DESCS UiHelper::parseDescs(const rapidjson::Value &jsonDescs)
                 const QString &socketType = param_triple[0].GetString();
                 const QString &socketName = param_triple[1].GetString();
                 const QString &socketDefl = param_triple[2].GetString();
-                PARAM_CONTROL ctrlType = _getControlType(socketType);
+                PARAM_CONTROL ctrlType = getControlType(socketType);
                 PARAM_INFO paramInfo;
                 paramInfo.bEnableConnect = false;
                 paramInfo.control = ctrlType;
@@ -90,11 +90,11 @@ NODE_DESCS UiHelper::parseDescs(const rapidjson::Value &jsonDescs)
                 const QString &socketType = output_triple[0].GetString();
                 const QString &socketName = output_triple[1].GetString();
                 const QString &socketDefl = output_triple[2].GetString();
-                PARAM_CONTROL ctrlType = _getControlType(socketType);
+                PARAM_CONTROL ctrlType = getControlType(socketType);
                 OUTPUT_SOCKET outputSocket;
                 outputSocket.info = SOCKET_INFO("", socketName);
                 outputSocket.info.type = socketType;
-                outputSocket.info.control = _getControlType(socketType);
+                outputSocket.info.control = getControlType(socketType);
                 outputSocket.info.defaultValue = _parseDefaultValue(socketDefl, socketType);
 
                 desc.outputs.insert(socketName, outputSocket);
@@ -115,7 +115,7 @@ NODE_DESCS UiHelper::parseDescs(const rapidjson::Value &jsonDescs)
 
 QVariant UiHelper::_parseDefaultValue(const QString &defaultValue, const QString &type)
 {
-    auto control = _getControlType(type);
+    auto control = getControlType(type);
     switch (control) {
     case CONTROL_INT:
         return defaultValue.toInt();
@@ -235,7 +235,7 @@ QString UiHelper::generateUuid(const QString& name)
     return QString::number(uuid.data1, 16) + "-" + name;
 }
 
-PARAM_CONTROL UiHelper::_getControlType(const QString &type)
+PARAM_CONTROL UiHelper::getControlType(const QString &type)
 {
     if (type.isEmpty()) {
         return CONTROL_NONE;
@@ -261,6 +261,8 @@ PARAM_CONTROL UiHelper::_getControlType(const QString &type)
         return CONTROL_CURVE;
     } else if (type.startsWith("enum ")) {
         return CONTROL_ENUM;
+    } else if (type == "NumericObject") {
+        return CONTROL_FLOAT;
     } else if (type.isEmpty()) {
         return CONTROL_NONE;
     } else {
