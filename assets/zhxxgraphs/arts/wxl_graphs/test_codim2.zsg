@@ -49,32 +49,52 @@
       "dHat": [
        null,
        null,
-       0.005
+       0.002
       ],
       "kappa0": [
        null,
        null,
-       1000.0
+       10000.0
       ],
       "aug_coeff": [
        null,
        null,
-       1000.0
+       10000.0
       ],
       "pn_rel": [
        null,
        null,
-       0.01
+       0.001
       ],
       "cg_rel": [
        null,
        null,
-       0.01
+       0.0001
+      ],
+      "pn_iter_cap": [
+       null,
+       null,
+       1000
+      ],
+      "cg_iter_cap": [
+       null,
+       null,
+       500
+      ],
+      "ccd_iter_cap": [
+       null,
+       null,
+       20000
       ],
       "gravity": [
        null,
        null,
        -9.0
+      ],
+      "num_substeps": [
+       null,
+       null,
+       4
       ],
       "SRC": [
        "60f79439-MakeList",
@@ -440,7 +460,7 @@
       ]
      },
      "params": {
-      "value": 0.01
+      "value": 0.02
      },
      "uipos": [
       3000.5084583042853,
@@ -960,7 +980,7 @@
       "dx": [
        null,
        null,
-       0.1
+       1.0
       ],
       "ppc": [
        null,
@@ -1017,8 +1037,8 @@
     }
    },
    "view_rect": {
-    "x": 1343.6834554328702,
-    "y": -887.2213786087107,
+    "x": 1295.48471085751,
+    "y": -955.0961976065224,
     "width": 3662.1093749999977,
     "height": 1861.572265624997
    }
@@ -2406,7 +2426,7 @@
     [
      "int",
      "est_num_cps",
-     "5000000"
+     "0"
     ],
     [
      "float",
@@ -2416,7 +2436,7 @@
     [
      "float",
      "dHat",
-     "0.005"
+     "0.001"
     ],
     [
      "float",
@@ -2436,12 +2456,32 @@
     [
      "float",
      "cg_rel",
-     "0.01"
+     "0.0001"
+    ],
+    [
+     "int",
+     "pn_iter_cap",
+     "1000"
+    ],
+    [
+     "int",
+     "cg_iter_cap",
+     "500"
+    ],
+    [
+     "int",
+     "ccd_iter_cap",
+     "20000"
     ],
     [
      "float",
      "gravity",
-     "-9."
+     "-9.0"
+    ],
+    [
+     "int",
+     "num_substeps",
+     "1"
     ],
     [
      "",
@@ -2882,6 +2922,41 @@
    "params": [],
    "categories": [
     "alembic"
+   ]
+  },
+  "CreateCircle": {
+   "inputs": [
+    [
+     "int",
+     "segments",
+     "32"
+    ],
+    [
+     "float",
+     "r",
+     "1.0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
    ]
   },
   "CreateCone": {
@@ -4506,6 +4581,97 @@
     "FLIPSolver"
    ]
   },
+  "FastQuasiStaticStepping": {
+   "inputs": [
+    [
+     "",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "",
+     "driven_bones",
+     ""
+    ],
+    [
+     "",
+     "gravity",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "float",
+     "armijo",
+     "0.1"
+    ],
+    [
+     "float",
+     "wolfe",
+     "0.9"
+    ],
+    [
+     "float",
+     "cg_res",
+     "0.1"
+    ],
+    [
+     "float",
+     "btl_res",
+     "0.0001"
+    ],
+    [
+     "float",
+     "epsilon",
+     "1e-5"
+    ],
+    [
+     "float",
+     "rel_epsilon",
+     "1e-3"
+    ],
+    [
+     "string",
+     "driven_tag",
+     "bone_bw"
+    ],
+    [
+     "float",
+     "bone_driven_weight",
+     "0.0"
+    ],
+    [
+     "int",
+     "nm_newton_iters",
+     "20"
+    ],
+    [
+     "int",
+     "window_size",
+     "8"
+    ]
+   ],
+   "categories": [
+    "FEM"
+   ]
+  },
   "FiberParticleToFEMFiber2": {
    "inputs": [
     [
@@ -5044,7 +5210,7 @@
     ],
     [
      "",
-     "half_fov",
+     "focal_length",
      ""
     ],
     [
@@ -5850,6 +6016,86 @@
     ]
    ],
    "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "LineCarve": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "float",
+     "insertU",
+     "0.15"
+    ],
+    [
+     "bool",
+     "cut",
+     "0"
+    ],
+    [
+     "bool",
+     "cut insert to end",
+     "1"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "LineResample": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "int",
+     "segments",
+     "3"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
     [
      "",
      "DST",
@@ -7558,6 +7804,36 @@
     "Volume"
    ]
   },
+  "MatTranspose": {
+   "inputs": [
+    [
+     "",
+     "mat",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "transposeMat",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "math"
+   ]
+  },
   "MeshCopy": {
    "inputs": [
     [
@@ -7792,6 +8068,46 @@
    "params": [],
    "categories": [
     "portal"
+   ]
+  },
+  "MoveTowards": {
+   "inputs": [
+    [
+     "",
+     "ZSBoundaryPrimitive",
+     ""
+    ],
+    [
+     "float",
+     "framedt",
+     "0.1"
+    ],
+    [
+     "",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "ZSBoundaryPrimitive",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FEM"
    ]
   },
   "NumericCounter": {
@@ -9397,6 +9713,51 @@
     "primitive"
    ]
   },
+  "PrimCreatOrSetAttr": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "string",
+     "name",
+     "pos"
+    ],
+    [
+     "enum float float3",
+     "type",
+     "float3"
+    ],
+    [
+     "",
+     "fillValue",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
   "PrimFilter": {
    "inputs": [
     [
@@ -9469,6 +9830,51 @@
     [
      "",
      "oParticles",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimGetAttrPerVertByName": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "string",
+     "name",
+     "pos"
+    ],
+    [
+     "enum float float3",
+     "type",
+     "float3"
+    ],
+    [
+     "int",
+     "index",
+     "0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "value",
      ""
     ],
     [
@@ -9581,6 +9987,51 @@
      "prim",
      ""
     ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimSetAttrPerVertByName": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "string",
+     "name",
+     "pos"
+    ],
+    [
+     "enum float float3",
+     "type",
+     "float3"
+    ],
+    [
+     "int",
+     "index",
+     "0"
+    ],
+    [
+     "",
+     "value",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
     [
      "",
      "DST",
@@ -12167,6 +12618,42 @@
     "numeric"
    ]
   },
+  "PrintPrimInfo": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "int",
+     "printInfo",
+     "1"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
   "PrintString": {
    "inputs": [
     [
@@ -12454,6 +12941,41 @@
     "FEM"
    ]
   },
+  "QuatRotBetweenVectors": {
+   "inputs": [
+    [
+     "vec3f",
+     "start",
+     "1,0,0"
+    ],
+    [
+     "vec3f",
+     "dest",
+     "1,0,0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "vec4f",
+     "quatRotation",
+     "0,0,0,1"
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "math"
+   ]
+  },
   "QueryNearestPrimitive": {
    "inputs": [
     [
@@ -12465,6 +12987,21 @@
      "LBvh",
      "lbvh",
      ""
+    ],
+    [
+     "string",
+     "idTag",
+     "bvh_id"
+    ],
+    [
+     "string",
+     "distTag",
+     "bvh_dist"
+    ],
+    [
+     "string",
+     "weightTag",
+     "bvh_ws"
     ],
     [
      "",
@@ -15690,46 +16227,6 @@
     "zenofx"
    ]
   },
-  "TestCodimStepping": {
-   "inputs": [
-    [
-     "",
-     "ZSParticles",
-     ""
-    ],
-    [
-     "",
-     "ZSBoundaryPrimitives",
-     ""
-    ],
-    [
-     "float",
-     "dt",
-     "0.01"
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "ZSParticles",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "FEM"
-   ]
-  },
   "ToBoundaryParticles": {
    "inputs": [
     [
@@ -16203,7 +16700,13 @@
      ""
     ]
    ],
-   "params": [],
+   "params": [
+    [
+     "int",
+     "add_customed_attr",
+     "0"
+    ]
+   ],
    "categories": [
     "FEM"
    ]
@@ -16261,6 +16764,81 @@
    "params": [],
    "categories": [
     "openvdb"
+   ]
+  },
+  "TraceVec3FieldOneStep": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "primB",
+     ""
+    ],
+    [
+     "int",
+     "vertsNum",
+     "0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "visualize"
+   ]
+  },
+  "TraceVec3FieldOneStep_v2": {
+   "inputs": [
+    [
+     "",
+     "primData",
+     ""
+    ],
+    [
+     "",
+     "primEmpty",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "primVis",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "visualize"
    ]
   },
   "TransformMesh": {
@@ -16879,6 +17457,52 @@
     "control"
    ]
   },
+  "UpdatePrimitiveAttrFromZSParticles": {
+   "inputs": [
+    [
+     "",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "",
+     "index",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "attr",
+     "x"
+    ],
+    [
+     "enum float vec3f",
+     "type",
+     "float"
+    ]
+   ],
+   "categories": [
+    "MPM"
+   ]
+  },
   "UpdatePrimitiveFromZSParticles": {
    "inputs": [
     [
@@ -17459,6 +18083,11 @@
      ""
     ],
     [
+     "enum Mean Gaussian Median",
+     "type",
+     "Gaussian"
+    ],
+    [
      "int",
      "width",
      "1"
@@ -17810,6 +18439,56 @@
     "openvdb"
    ]
   },
+  "VisVec3Attribute": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "string",
+     "name",
+     "vel"
+    ],
+    [
+     "bool",
+     "normalize",
+     "1"
+    ],
+    [
+     "float",
+     "lengthScale",
+     "1.0"
+    ],
+    [
+     "vec3f",
+     "color",
+     "1,1,0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "primVis",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "visualize"
+   ]
+  },
   "VisualizeBvh": {
    "inputs": [
     [
@@ -17909,6 +18588,71 @@
    "params": [],
    "categories": [
     "openvdb"
+   ]
+  },
+  "WBPrimBend": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "int",
+     "Limit Deformation",
+     "1"
+    ],
+    [
+     "int",
+     "Symmetric Deformation",
+     "0"
+    ],
+    [
+     "float",
+     "Bend Angle (degree)",
+     "90"
+    ],
+    [
+     "vec3f",
+     "Up Vector",
+     "0,1,0"
+    ],
+    [
+     "vec3f",
+     "Capture Origin",
+     "0,0,0"
+    ],
+    [
+     "vec3f",
+     "Capture Direction",
+     "0,0,1"
+    ],
+    [
+     "float",
+     "Capture Length",
+     "1.0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
    ]
   },
   "WriteAlembic": {
@@ -18285,14 +19029,24 @@
     ]
    ],
    "categories": [
-    "FEM"
+    "ZSGeometry"
    ]
   },
-  "ZSEvalGradientFieldOnTets": {
+  "ZSDoSkinning": {
    "inputs": [
     [
      "",
-     "zstets",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "",
+     "Qs",
+     ""
+    ],
+    [
+     "",
+     "Ts",
      ""
     ],
     [
@@ -18304,7 +19058,58 @@
    "outputs": [
     [
      "",
-     "zstets",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "enum LBS DQS CoRs",
+     "algorithm",
+     "DQS"
+    ],
+    [
+     "string",
+     "weight_channel",
+     "sw"
+    ],
+    [
+     "string",
+     "inAttr",
+     "x"
+    ],
+    [
+     "string",
+     "outAttr",
+     "x"
+    ]
+   ],
+   "categories": [
+    "ZSGeometry"
+   ]
+  },
+  "ZSEvalGradientField": {
+   "inputs": [
+    [
+     "",
+     "field",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "field",
      ""
     ],
     [
@@ -18326,7 +19131,7 @@
     ]
    ],
    "categories": [
-    "FEM"
+    "ZSGeometry"
    ]
   },
   "ZSGIPC": {
@@ -18492,7 +19297,7 @@
     ]
    ],
    "categories": [
-    "FEM"
+    "ZSGeometry"
    ]
   },
   "ZSLevelSetBinaryOperator": {
@@ -19008,6 +19813,62 @@
     "MPM"
    ]
   },
+  "ZSRetrieveVectorField": {
+   "inputs": [
+    [
+     "",
+     "field",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "vec_field",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "enum element vert",
+     "location",
+     "element"
+    ],
+    [
+     "string",
+     "gtag",
+     "vec_field"
+    ],
+    [
+     "string",
+     "xtag",
+     "xtag"
+    ],
+    [
+     "float",
+     "scale",
+     "1.0"
+    ],
+    [
+     "int",
+     "normalize",
+     "1"
+    ]
+   ],
+   "categories": [
+    "ZSGeometry"
+   ]
+  },
   "ZSReturnMapping": {
    "inputs": [
     [
@@ -19038,11 +19899,21 @@
     "MPM"
    ]
   },
-  "ZSSolveBiHarmonicEquaOnTets": {
+  "ZSSampleEmbedTagField": {
    "inputs": [
     [
      "",
-     "zstets",
+     "volume",
+     ""
+    ],
+    [
+     "embed tag field",
+     "tag_field",
+     ""
+    ],
+    [
+     "default value",
+     "default",
      ""
     ],
     [
@@ -19053,8 +19924,8 @@
    ],
    "outputs": [
     [
-     "",
-     "zstets",
+     "out volume",
+     "volume",
      ""
     ],
     [
@@ -19066,19 +19937,100 @@
    "params": [
     [
      "string",
-     "tag",
-     "T"
+     "interpolate_tag",
+     "bws"
+    ],
+    [
+     "string",
+     "sampleAttr",
+     "vec_field"
+    ],
+    [
+     "string",
+     "outAttr",
+     " vec_field"
+    ],
+    [
+     "enum element vert",
+     "type",
+     "element"
     ]
    ],
    "categories": [
-    "FEM"
+    "ZSGeometry"
    ]
   },
-  "ZSSolveLaplaceEquaOnTets": {
+  "ZSSampleEmbedVectorField": {
    "inputs": [
     [
      "",
-     "zstets",
+     "volume",
+     ""
+    ],
+    [
+     "embed vec field",
+     "vec_field",
+     ""
+    ],
+    [
+     "default value",
+     "default",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "out volume",
+     "volume",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "bcw_channel",
+     "bcw"
+    ],
+    [
+     "string",
+     "sampleAttr",
+     "vec_field"
+    ],
+    [
+     "string",
+     "outAttr",
+     " vec_field"
+    ],
+    [
+     "enum element vert",
+     "type",
+     "element"
+    ]
+   ],
+   "categories": [
+    "ZSGeometry"
+   ]
+  },
+  "ZSSetupSkinningWeight": {
+   "inputs": [
+    [
+     "",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "",
+     "weight_dim",
      ""
     ],
     [
@@ -19090,7 +20042,53 @@
    "outputs": [
     [
      "",
-     "zstets",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "prefix",
+     "RENAME_ME"
+    ],
+    [
+     "float",
+     "filter_threshold",
+     "1e-5"
+    ],
+    [
+     "int",
+     "preserve_dim",
+     "5"
+    ]
+   ],
+   "categories": [
+    "ZSGeometry"
+   ]
+  },
+  "ZSSolveBiHarmonicEqua": {
+   "inputs": [
+    [
+     "",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "ZSParticles",
      ""
     ],
     [
@@ -19107,7 +20105,53 @@
     ]
    ],
    "categories": [
-    "FEM"
+    "ZSGeometry"
+   ]
+  },
+  "ZSSolveLaplacian": {
+   "inputs": [
+    [
+     "",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "tag",
+     "T"
+    ],
+    [
+     "float",
+     "accuracy",
+     "1e-6"
+    ],
+    [
+     "int",
+     "degree",
+     "1"
+    ]
+   ],
+   "categories": [
+    "ZSGeometry"
    ]
   },
   "ZSTetsToPrim": {

@@ -49,17 +49,17 @@
       "dHat": [
        null,
        null,
-       0.0004
+       0.0005
       ],
       "kappa0": [
        null,
        null,
-       380.0
+       0.0
       ],
       "aug_coeff": [
        null,
        null,
-       380.0
+       100.0
       ],
       "pn_rel": [
        null,
@@ -69,7 +69,22 @@
       "cg_rel": [
        null,
        null,
-       0.01
+       0.001
+      ],
+      "pn_iter_cap": [
+       null,
+       null,
+       1000
+      ],
+      "cg_iter_cap": [
+       null,
+       null,
+       500
+      ],
+      "ccd_iter_cap": [
+       null,
+       null,
+       20000
       ],
       "gravity": [
        null,
@@ -236,7 +251,7 @@
       "path": [
        null,
        null,
-       "assets/cloth/clt_high.obj"
+       "assets/cloth/clt.obj"
       ],
       "SRC": [
        null,
@@ -432,7 +447,7 @@
       "E": [
        null,
        null,
-       100.0
+       100000.0
       ],
       "nu": [
        null,
@@ -493,10 +508,10 @@
     }
    },
    "view_rect": {
-    "x": 2195.8289939098026,
-    "y": -330.299832904318,
-    "width": 2343.749999999992,
-    "height": 1191.4062499999982
+    "x": 2008.1050487449588,
+    "y": -596.1773768698416,
+    "width": 2929.6874999999895,
+    "height": 1489.2578124999977
    }
   }
  },
@@ -1892,7 +1907,7 @@
     [
      "float",
      "dHat",
-     "0.005"
+     "0.001"
     ],
     [
      "float",
@@ -1912,7 +1927,22 @@
     [
      "float",
      "cg_rel",
-     "0.01"
+     "0.0001"
+    ],
+    [
+     "int",
+     "pn_iter_cap",
+     "1000"
+    ],
+    [
+     "int",
+     "cg_iter_cap",
+     "500"
+    ],
+    [
+     "int",
+     "ccd_iter_cap",
+     "20000"
     ],
     [
      "float",
@@ -2363,6 +2393,41 @@
    "params": [],
    "categories": [
     "alembic"
+   ]
+  },
+  "CreateCircle": {
+   "inputs": [
+    [
+     "int",
+     "segments",
+     "32"
+    ],
+    [
+     "float",
+     "r",
+     "1.0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
    ]
   },
   "CreateCone": {
@@ -4616,7 +4681,7 @@
     ],
     [
      "",
-     "half_fov",
+     "focal_length",
      ""
     ],
     [
@@ -5422,6 +5487,86 @@
     ]
    ],
    "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "LineCarve": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "float",
+     "insertU",
+     "0.15"
+    ],
+    [
+     "bool",
+     "cut",
+     "0"
+    ],
+    [
+     "bool",
+     "cut insert to end",
+     "1"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "LineResample": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "int",
+     "segments",
+     "3"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
     [
      "",
      "DST",
@@ -7128,6 +7273,36 @@
    "params": [],
    "categories": [
     "Volume"
+   ]
+  },
+  "MatTranspose": {
+   "inputs": [
+    [
+     "",
+     "mat",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "transposeMat",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "math"
    ]
   },
   "MeshCopy": {
@@ -9009,6 +9184,51 @@
     "primitive"
    ]
   },
+  "PrimCreatOrSetAttr": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "string",
+     "name",
+     "pos"
+    ],
+    [
+     "enum float float3",
+     "type",
+     "float3"
+    ],
+    [
+     "",
+     "fillValue",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
   "PrimFilter": {
    "inputs": [
     [
@@ -9081,6 +9301,51 @@
     [
      "",
      "oParticles",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimGetAttrPerVertByName": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "string",
+     "name",
+     "pos"
+    ],
+    [
+     "enum float float3",
+     "type",
+     "float3"
+    ],
+    [
+     "int",
+     "index",
+     "0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "value",
      ""
     ],
     [
@@ -9193,6 +9458,51 @@
      "prim",
      ""
     ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimSetAttrPerVertByName": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "string",
+     "name",
+     "pos"
+    ],
+    [
+     "enum float float3",
+     "type",
+     "float3"
+    ],
+    [
+     "int",
+     "index",
+     "0"
+    ],
+    [
+     "",
+     "value",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
     [
      "",
      "DST",
@@ -11779,6 +12089,42 @@
     "numeric"
    ]
   },
+  "PrintPrimInfo": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "int",
+     "printInfo",
+     "1"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
   "PrintString": {
    "inputs": [
     [
@@ -12064,6 +12410,41 @@
    ],
    "categories": [
     "FEM"
+   ]
+  },
+  "QuatRotBetweenVectors": {
+   "inputs": [
+    [
+     "vec3f",
+     "start",
+     "1,0,0"
+    ],
+    [
+     "vec3f",
+     "dest",
+     "1,0,0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "vec4f",
+     "quatRotation",
+     "0,0,0,1"
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "math"
    ]
   },
   "QueryNearestPrimitive": {
@@ -15856,6 +16237,81 @@
     "openvdb"
    ]
   },
+  "TraceVec3FieldOneStep": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "primB",
+     ""
+    ],
+    [
+     "int",
+     "vertsNum",
+     "0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "visualize"
+   ]
+  },
+  "TraceVec3FieldOneStep_v2": {
+   "inputs": [
+    [
+     "",
+     "primData",
+     ""
+    ],
+    [
+     "",
+     "primEmpty",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "primVis",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "visualize"
+   ]
+  },
   "TransformMesh": {
    "inputs": [
     [
@@ -17454,6 +17910,56 @@
     "openvdb"
    ]
   },
+  "VisVec3Attribute": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "string",
+     "name",
+     "vel"
+    ],
+    [
+     "bool",
+     "normalize",
+     "1"
+    ],
+    [
+     "float",
+     "lengthScale",
+     "1.0"
+    ],
+    [
+     "vec3f",
+     "color",
+     "1,1,0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "primVis",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "visualize"
+   ]
+  },
   "VisualizeBvh": {
    "inputs": [
     [
@@ -17553,6 +18059,71 @@
    "params": [],
    "categories": [
     "openvdb"
+   ]
+  },
+  "WBPrimBend": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "int",
+     "Limit Deformation",
+     "1"
+    ],
+    [
+     "int",
+     "Symmetric Deformation",
+     "0"
+    ],
+    [
+     "float",
+     "Bend Angle (degree)",
+     "90"
+    ],
+    [
+     "vec3f",
+     "Up Vector",
+     "0,1,0"
+    ],
+    [
+     "vec3f",
+     "Capture Origin",
+     "0,0,0"
+    ],
+    [
+     "vec3f",
+     "Capture Direction",
+     "0,0,1"
+    ],
+    [
+     "float",
+     "Capture Length",
+     "1.0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
    ]
   },
   "WriteAlembic": {
