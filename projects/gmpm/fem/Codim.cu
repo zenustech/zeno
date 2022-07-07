@@ -114,6 +114,9 @@ struct CodimStepping : INode {
   inline static int numContinuousCap = 0;
   inline static bool projectDBC = true;
   inline static bool BCsatisfied = false;
+  inline static int PNCap = 1000;
+  inline static int CGCap = 500;
+  inline static int CCDCap = 20000;
   inline static T updateZoneTol = 1e-1;
   inline static T consTol = 1e-2;
   inline static T armijoParam = 1e-4;
@@ -396,6 +399,12 @@ struct CodimStepping : INode {
           [bvh = proxy<space>(stBvh), box = proxy<space>(box)] __device__(
               int vi) mutable { box[0] = bvh.getNodeBV(0); });
       bv_t bv = box.getVal();
+      pol(Collapse{1},
+          [bvh = proxy<space>(bouStBvh), box = proxy<space>(box)] __device__(
+              int vi) mutable { box[0] = bvh.getNodeBV(0); });
+      bv_t boubv = box.getVal();
+      merge(bv, boubv._min);
+      merge(bv, boubv._max);
       boxDiagSize2 = (bv._max - bv._min).l2NormSqr();
     }
 
@@ -1385,8 +1394,8 @@ struct CodimStepping : INode {
                 Pshear(d, 0) = 2 * f0Tf1 * f1(d);
                 Pshear(d, 1) = 2 * f0Tf1 * f0(d);
               }
-              auto vecP = flatten(Pstretch + Pshear);
-              auto vfdt2 = -vole * (dFdXT * vecP) * (model.mu * dt * dt);
+              auto vecP = flatten(33.557047 *Pstretch + 10.067114*Pshear);
+              auto vfdt2 = -vole * (dFdXT * vecP) * (dt * dt);
 
               for (int i = 0; i != 3; ++i) {
                 auto vi = inds[i];
@@ -1422,7 +1431,7 @@ struct CodimStepping : INode {
                   for (int j = 0; j != 3; ++j)
                     H(3 + i, 3 + j) += vCoeff * fv(i) * fv(j);
 
-                H *= model.mu;
+                H *= 33.557047;
                 return H;
               };
               auto shearHessian = [&F, &model]() {
@@ -1458,7 +1467,7 @@ struct CodimStepping : INode {
 
                 mat6 dPdF = zs::abs(I6) * (t - (dyadic_prod(Tq, Tq) / normTq)) +
                             lambda0 * (dyadic_prod(q0, q0));
-                dPdF *= model.mu;
+                dPdF *= 10.067114;
                 return dPdF;
               };
               auto He = stretchHessian() + shearHessian();
@@ -1623,7 +1632,7 @@ struct CodimStepping : INode {
               }
             });
         Es.push_back(reduce(pol, es));
-        
+
         // external force
         pol(range(verts.size()),
             [verts = proxy<space>({}, verts), vtemp = proxy<space>({}, vtemp),
@@ -1689,8 +1698,8 @@ struct CodimStepping : INode {
         auto f1 = col(F, 1);
         auto f0Norm = zs::sqrt(f0.l2NormSqr());
         auto f1Norm = zs::sqrt(f1.l2NormSqr());
-        auto Estretch = model.mu *vole * (zs::sqr(f0Norm - 1) + zs::sqr(f1Norm - 1));
-        auto Eshear = model.mu *vole * zs::sqr(f0.dot(f1));
+        auto Estretch = 33.557047 *vole * (zs::sqr(f0Norm - 1) + zs::sqr(f1Norm - 1));
+        auto Eshear = 10.067114 *vole * zs::sqr(f0.dot(f1));
         E = Estretch + Eshear;
 #endif
                 // atomic_add(exec_cuda, &res[0], E);
@@ -1961,8 +1970,8 @@ struct CodimStepping : INode {
         auto f1 = col(F, 1);
         auto f0Norm = zs::sqrt(f0.l2NormSqr());
         auto f1Norm = zs::sqrt(f1.l2NormSqr());
-        auto Estretch = dt * dt * model.mu *vole * (zs::sqr(f0Norm - 1) + zs::sqr(f1Norm - 1));
-        auto Eshear = dt * dt * model.mu *vole * zs::sqr(f0.dot(f1));
+        auto Estretch = dt * dt * 33.557047 *vole * (zs::sqr(f0Norm - 1) + zs::sqr(f1Norm - 1));
+        auto Eshear = dt * dt * 10.067114 *vole * zs::sqr(f0.dot(f1));
         E = Estretch + Eshear;
 #endif
                 atomic_add(exec_cuda, &res[0], E);
@@ -2407,7 +2416,7 @@ struct CodimStepping : INode {
         //
         auto [npp, npe, npt, nee, ncspt, ncsee] = getCnts();
 
-        for (; iter != 10000; ++iter) {
+        for (; iter != CGCap; ++iter) {
           if (iter % 25 == 0)
             fmt::print("cg iter: {}, norm: {} (zTrk: {}) npp: {}, npe: {}, "
                        "npt: {}, nee: {}, ncspt: {}, ncsee: {}\n",
@@ -2848,10 +2857,10 @@ struct CodimStepping : INode {
     std::size_t temp_bytes = 0;
     cub::DeviceReduce::Reduce(nullptr, temp_bytes, res.data(), ret.data(),
                               res.size(), std::plus<T>{}, (T)0, stream);
-    Vector<std::max_align_t> temp{res.get_allocator(),
-                                  temp_bytes / sizeof(std::max_align_t) + 1};
-    cub::DeviceReduce::Reduce(temp.data(), temp_bytes, res.data(), ret.data(),
+    void *d_tmp = context.streamMemAlloc(temp_bytes, stream);
+    cub::DeviceReduce::Reduce(d_tmp, temp_bytes, res.data(), ret.data(),
                               res.size(), std::plus<T>{}, (T)0, stream);
+    context.streamMemFree(d_tmp, stream);
     context.syncStreamSpare(sid);
     return (T)ret.getVal();
   }
@@ -2935,6 +2944,9 @@ struct CodimStepping : INode {
     auto input_pn_rel = get_input2<float>("pn_rel");
     auto input_cg_rel = get_input2<float>("cg_rel");
     auto input_gravity = get_input2<float>("gravity");
+    auto input_pn_cap = get_input2<int>("pn_iter_cap");
+    auto input_cg_cap = get_input2<int>("cg_iter_cap");
+    auto input_ccd_cap = get_input2<int>("ccd_iter_cap");
 
     int nSubsteps = get_input2<int>("num_substeps");
 
@@ -2942,6 +2954,9 @@ struct CodimStepping : INode {
     augLagCoeff = input_aug_coeff;
     pnRel = input_pn_rel;
     cgRel = input_cg_rel;
+    PNCap = input_pn_cap;
+    CGCap = input_cg_cap;
+    CCDCap = input_ccd_cap;
 
     /// if there are no high precision verts, init from the low precision one
     for (auto zstet : zstets) {
@@ -3054,7 +3069,7 @@ struct CodimStepping : INode {
       A.advanceSubstep(cudaPol, (T)1 / nSubsteps);
 
       /// optimizer
-      for (int newtonIter = 0; newtonIter != 1000; ++newtonIter) {
+      for (int newtonIter = 0; newtonIter != PNCap; ++newtonIter) {
         // check constraints
         if (!BCsatisfied) {
           A.computeConstraints(cudaPol, "xn");
@@ -3330,6 +3345,9 @@ ZENDEFNODE(CodimStepping, {{
                                {"float", "aug_coeff", "1e3"},
                                {"float", "pn_rel", "0.01"},
                                {"float", "cg_rel", "0.0001"},
+                               {"int", "pn_iter_cap", "1000"},
+                               {"int", "cg_iter_cap", "500"},
+                               {"int", "ccd_iter_cap", "20000"},
                                {"float", "gravity", "-9.0"},
                                {"int", "num_substeps", "1"},
                            },

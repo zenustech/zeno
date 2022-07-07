@@ -601,9 +601,9 @@ struct ToZSTriMesh : INode {
   using tiles_t = typename ZenoParticles::particles_t;
   using vec3 = zs::vec<T, 3>;
 
-  constexpr T area(T a,T b,T c) {
-      T s = (a + b + c)/2;
-      return zs::sqrt(s*(s-a)*(s-b)*(s-c));
+  constexpr T area(T a, T b, T c) {
+    T s = (a + b + c) / 2;
+    return zs::sqrt(s * (s - a) * (s - b) * (s - c));
   }
 
   void apply() override {
@@ -625,11 +625,10 @@ struct ToZSTriMesh : INode {
     zstris->category = ZenoParticles::surface;
     zstris->sprayedOffset = pos.size();
 
-
     bool include_customed_properties = get_param<int>("add_customed_attr");
 
     std::vector<zs::PropertyTag> tags{{"x", 3}};
-    std::vector<zs::PropertyTag> eleTags{{"inds", 3},{"area",1}};
+    std::vector<zs::PropertyTag> eleTags{{"inds", 3}, {"area", 1}};
 
     std::vector<zs::PropertyTag> auxVertAttribs{};
     std::vector<zs::PropertyTag> auxElmAttribs{};
@@ -685,51 +684,51 @@ struct ToZSTriMesh : INode {
       }
     }
 
-
     tags.insert(std::end(tags), std::begin(auxVertAttribs),
                 std::end(auxVertAttribs));
-    eleTags.insert(std::end(eleTags),std::begin(auxElmAttribs),
-                std::end(auxElmAttribs));
+    eleTags.insert(std::end(eleTags), std::begin(auxElmAttribs),
+                   std::end(auxElmAttribs));
 
     constexpr auto space = zs::execspace_e::openmp;
     zstris->particles =
         std::make_shared<tiles_t>(tags, pos.size(), zs::memsrc_e::host);
     auto &pars = zstris->getParticles();
-    ompExec(Collapse{pars.size()},
-            [pars = proxy<space>({}, pars), &pos,prim,&auxVertAttribs](int vi) mutable {
-              pars.tuple<3>("x", vi) = vec3{pos[vi][0], pos[vi][1], pos[vi][2]};
+    ompExec(Collapse{pars.size()}, [pars = proxy<space>({}, pars), &pos, prim,
+                                    &auxVertAttribs](int vi) mutable {
+      pars.tuple<3>("x", vi) = vec3{pos[vi][0], pos[vi][1], pos[vi][2]};
 
-              for (auto &prop : auxVertAttribs) {
-                if (prop.numChannels == 3)
-                  pars.tuple<3>(prop.name, vi) =
-                      prim->attr<vec3f>(std::string{prop.name})[vi];
-                else // prop.numChannles == 1
-                  pars(prop.name, vi) =
-                      prim->attr<float>(std::string{prop.name})[vi];
-              }
-
-            });
+      for (auto &prop : auxVertAttribs) {
+        if (prop.numChannels == 3)
+          pars.tuple<3>(prop.name, vi) =
+              prim->attr<vec3f>(std::string{prop.name})[vi];
+        else // prop.numChannles == 1
+          pars(prop.name, vi) = prim->attr<float>(std::string{prop.name})[vi];
+      }
+    });
 
     zstris->elements = typename ZenoParticles::particles_t(eleTags, tris.size(),
                                                            zs::memsrc_e::host);
     auto &eles = zstris->getQuadraturePoints();
-    ompExec(Collapse{tris.size()},
-            [this,eles = proxy<space>({}, eles),pars = proxy<space>({},pars), &tris,&auxElmAttribs](int ei) mutable {
-              T l[3] = {};
-              for (size_t i = 0; i < 3; ++i){
-                eles("inds", i, ei) = zs::reinterpret_bits<float>(tris[ei][i]);
-                l[i] = (pars.pack<3>("x",tris[ei][i]) - pars.pack<3>("x",tris[ei][(i+1)%3])).length();
-              }
-              eles("area",ei) = area(l[0],l[1],l[2]);
+    ompExec(Collapse{tris.size()}, [this, eles = proxy<space>({}, eles),
+                                    pars = proxy<space>({}, pars), &tris,
+                                    &auxElmAttribs](int ei) mutable {
+      T l[3] = {};
+      for (size_t i = 0; i < 3; ++i) {
+        eles("inds", i, ei) = zs::reinterpret_bits<float>(tris[ei][i]);
+        l[i] = (pars.pack<3>("x", tris[ei][i]) -
+                pars.pack<3>("x", tris[ei][(i + 1) % 3]))
+                   .length();
+      }
+      eles("area", ei) = area(l[0], l[1], l[2]);
 
-              for (auto &prop : auxElmAttribs) {
-                if (prop.numChannels == 3)
-                  eles.tuple<3>(prop.name, ei) =
-                      tris.attr<vec3f>(std::string{prop.name})[ei];
-                else
-                  eles(prop.name, ei) = tris.attr<float>(std::string{prop.name})[ei];
-              }
-            });
+      for (auto &prop : auxElmAttribs) {
+        if (prop.numChannels == 3)
+          eles.tuple<3>(prop.name, ei) =
+              tris.attr<vec3f>(std::string{prop.name})[ei];
+        else
+          eles(prop.name, ei) = tris.attr<float>(std::string{prop.name})[ei];
+      }
+    });
 
     pars = pars.clone({zs::memsrc_e::device, 0});
     eles = eles.clone({zs::memsrc_e::device, 0});
