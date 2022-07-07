@@ -19,6 +19,7 @@
 #include "util/log.h"
 #include "zenosubgraphview.h"
 #include "../panel/zenoheatmapeditor.h"
+#include "zvalidator.h"
 
 
 static QString getOpenFileName(
@@ -353,6 +354,7 @@ void ZenoNode::initParam(PARAM_CONTROL ctrl, QGraphicsLinearLayout* pParamLayout
 	    case CONTROL_FLOAT:
 	    {
 		    ZenoParamLineEdit* pLineEdit = new ZenoParamLineEdit(value, param.control,  m_renderParams.lineEditParam);
+            pLineEdit->setValidator(validateForParams(param));
 		    pParamLayout->addItem(pLineEdit);
 		    connect(pLineEdit, &ZenoParamLineEdit::editingFinished, this, [=]() {
 			    onParamEditFinished(param.control, paramName, pLineEdit->text());
@@ -425,6 +427,7 @@ void ZenoNode::initParam(PARAM_CONTROL ctrl, QGraphicsLinearLayout* pParamLayout
 	    case CONTROL_READPATH:
 	    {
 		    ZenoParamLineEdit* pFileWidget = new ZenoParamLineEdit(value, param.control, m_renderParams.lineEditParam);
+            pFileWidget->setValidator(validateForParams(param));
 
 			ImageElement elem;
 			elem.image = ":/icons/ic_openfile.svg";
@@ -454,6 +457,7 @@ void ZenoNode::initParam(PARAM_CONTROL ctrl, QGraphicsLinearLayout* pParamLayout
 	    case CONTROL_WRITEPATH:
 	    {
 		    ZenoParamLineEdit* pFileWidget = new ZenoParamLineEdit(value, param.control, m_renderParams.lineEditParam);
+            pFileWidget->setValidator(validateForParams(param));
 
             ImageElement elem;
 			elem.image = ":/icons/ic_openfile.svg";
@@ -531,6 +535,31 @@ void ZenoNode::initParam(PARAM_CONTROL ctrl, QGraphicsLinearLayout* pParamLayout
 QPersistentModelIndex ZenoNode::subGraphIndex() const
 {
     return m_subGpIndex;
+}
+
+QValidator* ZenoNode::validateForParams(PARAM_INFO info)
+{
+    switch (info.control)
+    {
+    case CONTROL_INT:       return new QIntValidator;
+    case CONTROL_FLOAT:     return new QDoubleValidator;
+    case CONTROL_READPATH:
+    case CONTROL_WRITEPATH:
+        return new PathValidator;
+    }
+    return nullptr;
+}
+
+QValidator* ZenoNode::validateForSockets(INPUT_SOCKET inSocket)
+{
+    switch (inSocket.info.control)
+    {
+    case CONTROL_INT:       return new QIntValidator;
+    case CONTROL_FLOAT:     return new QDoubleValidator;
+    case CONTROL_READPATH:
+    case CONTROL_WRITEPATH: return new PathValidator;
+    }
+    return nullptr;
 }
 
 void ZenoNode::onParamEditFinished(PARAM_CONTROL editCtrl, const QString& paramName, const QVariant& value)
@@ -841,13 +870,14 @@ ZenoParamWidget* ZenoNode::initSocketWidget(const INPUT_SOCKET inSocket, ZenoTex
     switch (ctrl)
     {
         case CONTROL_INT:
-        case CONTROL_FLOAT: 
+        case CONTROL_FLOAT:
         case CONTROL_STRING:
         {
             ZenoParamLineEdit *pSocketEditor = new ZenoParamLineEdit(
                 UiHelper::variantToString(inSocket.info.defaultValue),
                 inSocket.info.control,
                 m_renderParams.lineEditParam);
+            pSocketEditor->setValidator(validateForSockets(inSocket));
             //todo: allow to edit path directly?
             connect(pSocketEditor, &ZenoParamLineEdit::editingFinished, this, [=]() {
                 const QVariant &newValue = UiHelper::_parseDefaultValue(pSocketEditor->text(), inSocket.info.type);
@@ -879,8 +909,9 @@ ZenoParamWidget* ZenoNode::initSocketWidget(const INPUT_SOCKET inSocket, ZenoTex
         case CONTROL_READPATH:
         case CONTROL_WRITEPATH:
         {
-            const QString &path = UiHelper::variantToString(inSocket.info.defaultValue);
+            const QString& path = UiHelper::variantToString(inSocket.info.defaultValue);
             ZenoParamPathEdit *pPathEditor = new ZenoParamPathEdit(path, ctrl, m_renderParams.lineEditParam);
+            pPathEditor->setValidator(validateForSockets(inSocket));
             bool isRead = ctrl == CONTROL_READPATH;
 
             connect(pPathEditor, &ZenoParamPathEdit::clicked, this, [=]() {
@@ -1026,6 +1057,7 @@ void ZenoNode::updateSocketWidget(const INPUT_SOCKET inSocket)
                 m_inSockets[inSocket.info.name].socket_control = pLineEdit;
                 bUpdateLayout = true;
             }
+            pLineEdit->setValidator(validateForSockets(inSocket));
             pLineEdit->setText(inSocket.info.defaultValue.toString());
             break;
         }

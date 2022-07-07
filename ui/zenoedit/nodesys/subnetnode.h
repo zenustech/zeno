@@ -5,17 +5,18 @@
 
 class SubnetNode : public ZenoNode
 {
-	Q_OBJECT
-	typedef ZenoNode _base;
+    Q_OBJECT
+    typedef ZenoNode _base;
 public:
-	SubnetNode(bool bInput, const NodeUtilParam& params, QGraphicsItem* parent = nullptr);
-	~SubnetNode();
+    SubnetNode(bool bInput, const NodeUtilParam& params, QGraphicsItem* parent = nullptr);
+    ~SubnetNode();
 
 protected:
-	void onParamEditFinished(PARAM_CONTROL editCtrl, const QString& paramName, const QVariant& textValue) override;
+    void onParamEditFinished(PARAM_CONTROL editCtrl, const QString& paramName, const QVariant& textValue) override;
+    QValidator* validateForParams(PARAM_INFO info) override;
 
 private:
-	bool m_bInput;
+    bool m_bInput;
 };
 
 #endif

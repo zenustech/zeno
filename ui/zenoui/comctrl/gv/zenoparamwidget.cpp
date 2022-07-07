@@ -91,20 +91,13 @@ ZenoParamLineEdit::ZenoParamLineEdit(const QString &text, PARAM_CONTROL ctrl, Li
     m_pLineEdit->setPalette(param.palette);
     m_pLineEdit->setFont(param.font);
     m_pLineEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    switch (ctrl)
-    {
-    case CONTROL_INT:
-        m_pLineEdit->setValidator(new QIntValidator);
-        break;
-    case CONTROL_FLOAT:
-        m_pLineEdit->setValidator(new QDoubleValidator);
-        break;
-    case CONTROL_BOOL:
-        break;
-    }
-
     setWidget(m_pLineEdit);
     connect(m_pLineEdit, SIGNAL(editingFinished()), this, SIGNAL(editingFinished()));
+}
+
+void ZenoParamLineEdit::setValidator(const QValidator* pValidator)
+{
+    m_pLineEdit->setValidator(pValidator);
 }
 
 QString ZenoParamLineEdit::text() const
@@ -143,6 +136,11 @@ ZenoParamPathEdit::ZenoParamPathEdit(const QString& path, PARAM_CONTROL ctrl, Li
         emit pathValueChanged(m_pLineEdit->text());
     });
     connect(m_openBtn, &ZenoImageItem::clicked, this, &ZenoParamPathEdit::clicked);
+}
+
+void ZenoParamPathEdit::setValidator(QValidator* pValidator)
+{
+    m_pLineEdit->setValidator(pValidator);
 }
 
 QString ZenoParamPathEdit::path() const

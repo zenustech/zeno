@@ -64,6 +64,7 @@ public:
     ZenoParamLineEdit(const QString &text, PARAM_CONTROL ctrl, LineEditParam param, QGraphicsItem *parent = nullptr);
     QString text() const;
     void setText(const QString& text);
+    void setValidator(const QValidator* pValidator);
 
 signals:
     void editingFinished();
@@ -82,6 +83,7 @@ public:
     QString path() const;
     void setPath(const QString& path);
     QString getOpenFileName(const QString& caption, const QString& dir, const QString& filter);
+    void setValidator(QValidator*);
 
 signals:
     void pathValueChanged(QString);
