@@ -172,11 +172,11 @@ QMenuBar* ZenoEditorDockTitleWidget::initMenu()
 	QMenuBar* pMenuBar = new QMenuBar(this);
     pMenuBar->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Expanding);
 
-	QMenu* pAdd = new QMenu(tr("Add"));
-	{
-		pAdd->addAction(createAction(tr("Add Subnet")));
-		pAdd->addAction(createAction(tr("Add Node")));
-	}
+	//QMenu* pAdd = new QMenu(tr("Add"));
+	//{
+		//pAdd->addAction(createAction(tr("Add Subnet")));
+		//pAdd->addAction(createAction(tr("Add Node")));
+	//}
 
 	QMenu* pEdit = new QMenu(tr("Edit"));
 	{
@@ -184,30 +184,35 @@ QMenuBar* ZenoEditorDockTitleWidget::initMenu()
 		pEdit->addAction(createAction(tr("Redo")));
 		pEdit->addAction(createAction(tr("Collaspe")));
 		pEdit->addAction(createAction(tr("Expand")));
-                pEdit->addAction(createAction(tr("Easy Subgraph")));
-                pEdit->addAction(createAction(tr("Set NASLOC")));
+        pEdit->addAction(createAction(tr("Easy Subgraph")));
 	}
 
-	QMenu* pGo = new QMenu(tr("Go"));
-	{
+	QMenu* pOption = new QMenu(tr("Option"));
+    {
+        pOption->addAction(createAction(tr("Set NASLOC")));
+    }
 
-	}
+	//QMenu* pGo = new QMenu(tr("Go"));
+	//{
 
-	QMenu* pView = new QMenu(tr("View"));
-	{
+	//}
 
-	}
+	//QMenu* pView = new QMenu(tr("View"));
+	//{
 
-	QMenu* pHelp = new QMenu(tr("Help"));
-	{
+	//}
 
-	}
+	//QMenu* pHelp = new QMenu(tr("Help"));
+	//{
 
-	pMenuBar->addMenu(pAdd);
+	//}
+
+	//pMenuBar->addMenu(pAdd);
 	pMenuBar->addMenu(pEdit);
-	pMenuBar->addMenu(pGo);
-	pMenuBar->addMenu(pView);
-	pMenuBar->addMenu(pHelp);
+	pMenuBar->addMenu(pOption);
+	//pMenuBar->addMenu(pGo);
+	//pMenuBar->addMenu(pView);
+	//pMenuBar->addMenu(pHelp);
 
 	return pMenuBar;
 }
@@ -305,33 +310,7 @@ QMenuBar* ZenoViewDockTitle::initMenu()
 
     QMenu* pDisplay = new QMenu(tr("Display"));
     {
-        QAction* pAction = new QAction(tr("Show Grid"), this);
-        pAction->setShortcut(QKeySequence("Shift+F8"));
-        pAction->setCheckable(true);
-        pAction->setChecked(true);
-        pDisplay->addAction(pAction);
-        connect(pAction, &QAction::triggered, this,
-            [=]() {
-                Zenovis::GetInstance().getSession()->set_show_grid(pAction->isChecked());
-                //todo: need a notify mechanism from zenovis/session.
-                zenoApp->getMainWindow()->updateViewport();
-            });
-
-        pAction = new QAction(tr("Background Color"), this);
-        pDisplay->addAction(pAction);
-        connect(pAction, &QAction::triggered, this, [=]() {
-            auto [r, g, b] = Zenovis::GetInstance().getSession()->get_background_color();
-            auto c = QColor::fromRgbF(r, g, b);
-            c = QColorDialog::getColor(c);
-            if (c.isValid()) {
-                Zenovis::GetInstance().getSession()->set_background_color(c.redF(), c.greenF(), c.blueF());
-                zenoApp->getMainWindow()->updateViewport();
-            }
-            });
-
-        pDisplay->addSeparator();
-
-        pAction = new QAction(tr("Smooth Shading"), this);
+        QAction* pAction = new QAction(tr("Smooth Shading"), this);
         pAction->setShortcut(QKeySequence("F7"));
         pAction->setCheckable(true);
         pAction->setChecked(false);
@@ -362,6 +341,31 @@ QMenuBar* ZenoViewDockTitle::initMenu()
             [=]() {
                 Zenovis::GetInstance().getSession()->set_render_wireframe(pAction->isChecked());
                 zenoApp->getMainWindow()->updateViewport();
+            });
+
+        pDisplay->addSeparator();
+        pAction = new QAction(tr("Show Grid"), this);
+        pAction->setShortcut(QKeySequence("Shift+F8"));
+        pAction->setCheckable(true);
+        pAction->setChecked(true);
+        pDisplay->addAction(pAction);
+        connect(pAction, &QAction::triggered, this,
+            [=]() {
+                Zenovis::GetInstance().getSession()->set_show_grid(pAction->isChecked());
+                //todo: need a notify mechanism from zenovis/session.
+                zenoApp->getMainWindow()->updateViewport();
+            });
+
+        pAction = new QAction(tr("Background Color"), this);
+        pDisplay->addAction(pAction);
+        connect(pAction, &QAction::triggered, this, [=]() {
+            auto [r, g, b] = Zenovis::GetInstance().getSession()->get_background_color();
+            auto c = QColor::fromRgbF(r, g, b);
+            c = QColorDialog::getColor(c);
+            if (c.isValid()) {
+                Zenovis::GetInstance().getSession()->set_background_color(c.redF(), c.greenF(), c.blueF());
+                zenoApp->getMainWindow()->updateViewport();
+            }
             });
 
         pDisplay->addSeparator();
