@@ -90,7 +90,7 @@ void ZenoDockWidget::onNodesSelected(const QModelIndex& subgIdx, const QModelInd
     }
     else
     {
-        pPropTitle->setTitle("property");
+        pPropTitle->setTitle(tr("property"));
     }
     panel->reset(pModel, subgIdx, nodes, select);
 }

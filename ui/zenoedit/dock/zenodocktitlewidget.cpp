@@ -487,7 +487,7 @@ QAction* ZenoViewDockTitle::createAction(const QString& text)
 
 ZenoPropDockTitleWidget::ZenoPropDockTitleWidget(QWidget* parent)
 	: ZenoDockTitleWidget(parent)
-	, m_title("property")
+	, m_title(tr("property"))
 {
 
 }
