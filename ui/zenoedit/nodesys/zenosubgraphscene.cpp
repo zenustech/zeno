@@ -776,10 +776,12 @@ void ZenoSubGraphScene::keyPressEvent(QKeyEvent* event)
                 links.append(pLink->linkInfo());
             }
         }
-        IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
-        ZASSERT_EXIT(pGraphsModel);
-        pGraphsModel->removeNodeLinks(nodes, links, m_subgIdx);
-
+        if (!nodes.isEmpty() || !links.isEmpty())
+        {
+            IGraphsModel *pGraphsModel = zenoApp->graphsManagment()->currentModel();
+            ZASSERT_EXIT(pGraphsModel);
+            pGraphsModel->removeNodeLinks(nodes, links, m_subgIdx);
+        }
     }
     QGraphicsScene::keyPressEvent(event);
 }

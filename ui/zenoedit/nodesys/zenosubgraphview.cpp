@@ -354,6 +354,7 @@ void _ZenoSubGraphView::contextMenuEvent(QContextMenuEvent* event)
 		m_menu = new ZenoNewnodeMenu(m_scene->subGraphIndex(), cates, mapToScene(pos), this);
 		m_menu->setEditorFocus();
 		m_menu->exec(QCursor::pos());
+		m_menu->deleteLater();
 	}
 }
 

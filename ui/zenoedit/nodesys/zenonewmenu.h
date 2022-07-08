@@ -5,6 +5,7 @@
 #include <zenoui/model/modeldata.h>
 
 class ZenoGvLineEdit;
+class IGraphsModel;
 
 class ZenoNewnodeMenu : public QMenu
 {
@@ -14,10 +15,15 @@ public:
 	~ZenoNewnodeMenu();
 	void setEditorFocus();
 
+protected:
+	bool eventFilter(QObject* watched, QEvent* event) override;
+
 public slots:
 	void onTextChanged(const QString& text);
 
 private:
+	QList<QAction*> getCategoryActions(IGraphsModel* pModel, QModelIndex subgIdx, const QString& filter, QPointF scenePos);
+
 	const NODE_CATES m_cates;
 	const QModelIndex m_subgIdx;
 	const QPointF m_scenePos;
