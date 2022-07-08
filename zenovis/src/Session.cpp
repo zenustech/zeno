@@ -108,10 +108,10 @@ void Session::do_screenshot(std::string path, std::string type, int nsamples) {
         stbi_write_bmp(path.c_str(), nx, ny, 3, pixels.data());
     }},
     {"exr", [&] {
-        for (int line = 0; line != ny / 2; ++line) {
-            std::swap_ranges(pixels.begin() + 3 * nx * line,
-                             pixels.begin() + 3 * nx * (line + 1),
-                             pixels.begin() + 3 * nx * (ny - line - 1));
+        for (int line = 0; line < ny / 2; ++line) {
+            std::swap_ranges(pixels.begin() + hdrSize * 3 * nx * line,
+                             pixels.begin() + hdrSize * 3 * nx * (line + 1),
+                             pixels.begin() + hdrSize * 3 * nx * (ny - line - 1));
         }
         const char *err = nullptr;
         int ret = SaveEXR((float *)pixels.data(), nx, ny, 3, 1, path.c_str(), &err);
