@@ -612,9 +612,9 @@ void ZenoMainWindow::onFeedBack()
     }
 }
 
-void ZenoMainWindow::onRunTriggered()
+void ZenoMainWindow::clearErrorMark()
 {
-    //clear all mark at every scene.
+    //clear all error mark at every scene.
     auto docks = findChildren<ZenoDockWidget*>(QString(), Qt::FindDirectChildrenOnly);
 
     IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
