@@ -183,7 +183,7 @@ struct CodimStepping : INode {
         // rotate
         tmp = BCbasis[vi].transpose() * tmp * BCbasis[vj];
         // project
-        if (projectDBC || (!projectDBC && (BCfixed[vi] > 0 || BCfixed[vj] > 0)))
+        if (projectDBC) {
           if (BCorder[vi] > 0 || BCorder[vj] > 0) {
             if (vi == vj) {
               for (int i = 0; i != BCorder[vi]; ++i)
@@ -195,6 +195,20 @@ struct CodimStepping : INode {
                   tmp(i, j) = 0;
             }
           }
+        } else {
+          if (BCorder[vi] > 0 && BCfixed[vi] ||
+              BCorder[vj] > 0 && BCfixed[vj]) {
+            if (vi == vj) {
+              for (int i = 0; i != BCorder[vi]; ++i)
+                for (int j = 0; j != BCorder[vj]; ++j)
+                  tmp(i, j) = (i == j ? 1 : 0);
+            } else {
+              for (int i = 0; i != BCorder[vi]; ++i)
+                for (int j = 0; j != BCorder[vj]; ++j)
+                  tmp(i, j) = 0;
+            }
+          }
+        }
         for (int i = 0; i != 3; ++i)
           for (int j = 0; j != 3; ++j)
             H(offsetI + i, offsetJ + j) = tmp(i, j);
@@ -1655,27 +1669,24 @@ struct CodimStepping : INode {
         const zs::SmallString &gTag = "grad") {
       using namespace zs;
       constexpr auto space = execspace_e::cuda;
-      for (auto &primHandle : prims) {
-        auto &verts = primHandle.getVerts();
-        cudaPol(range(verts.size()),
-                [vtemp = proxy<space>({}, vtemp),
-                 verts = proxy<space>({}, verts), gTag, extForce = extForce,
-                 dt = dt,
-                 vOffset = primHandle.vOffset] __device__(int i) mutable {
-                  auto m = verts("m", i);
-                  int BCorder = vtemp("BCorder", vOffset + i);
-                  if (BCorder != 3) {
-                    vtemp.tuple<3>(gTag, vOffset + i) =
-                        m * extForce * dt * dt -
-                        m * (vtemp.pack<3>("xn", vOffset + i) -
-                             vtemp.pack<3>("xtilde", vOffset + i));
-                  }
-                  // should rotate here
-                  vtemp("P", 0, vOffset + i) += m;
-                  vtemp("P", 4, vOffset + i) += m;
-                  vtemp("P", 8, vOffset + i) += m;
-                });
-      }
+      cudaPol(zs::range(coOffset), [vtemp = proxy<space>({}, vtemp), gTag,
+                                    dt = dt] __device__(int i) mutable {
+        auto m = zs::sqr(vtemp("ws", i));
+        auto BCbasis = vtemp.template pack<3, 3>("BCbasis", i);
+        vtemp.tuple<3>(gTag, i) =
+            m * extForce * dt * dt -
+            m * (vtemp.pack<3>("xn", i) - vtemp.pack<3>("xtilde", i));
+
+        auto M = mat3::identity() * m;
+        M = BCbasis.transpose() * M * BCbasis;
+        for (int r = 0; r != BCorder; ++r)
+          for (int c = 0; c != BCorder; ++c)
+            M(r, c) = (r == c ? 1 : 0);
+        // prepare preconditioner
+        for (int r = 0; r != 3; ++r)
+          for (int c = 0; c != 3; ++c)
+            vtemp("P", r * 3 + c, i) += M(r, c);
+      });
       // collision object
       cudaPol(zs::range(coVerts.size()),
               [vtemp = proxy<space>({}, vtemp),
@@ -2543,8 +2554,8 @@ struct CodimStepping : INode {
       using namespace zs;
       constexpr auto space = execspace_e::cuda;
       if (useGD) {
+        project(cudaPol, "grad");
         precondition(cudaPol, "grad", "dir");
-        project(cudaPol, "dir");
       } else {
         // solve for A dir = grad;
         cudaPol(zs::range(numDofs),
