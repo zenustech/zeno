@@ -20,6 +20,7 @@
 #include "zenosubgraphview.h"
 #include "../panel/zenoheatmapeditor.h"
 #include "zvalidator.h"
+#include "zenonewmenu.h"
 
 
 static QString getOpenFileName(
@@ -1433,37 +1434,38 @@ ZenoGraphsEditor* ZenoNode::getEditorViewByViewport(QWidget* pWidget)
 
 void ZenoNode::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
 {
-    scene()->clearSelection();
-    this->setSelected(true);
-
-	QMenu* nodeMenu = new QMenu;
-	QAction* pCopy = new QAction("Copy");
-	QAction* pPaste = new QAction("Paste");
-	QAction* pDelete = new QAction("Delete");
-    QAction* pResolve = new QAction("Resolve");
-
-    connect(pResolve, &QAction::triggered, this, [=]() { markError(false); });
-
-	nodeMenu->addAction(pCopy);
-	nodeMenu->addAction(pPaste);
-	nodeMenu->addAction(pDelete);
-    nodeMenu->addAction(pResolve);
-
     IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
-    const QString& name = m_index.data(ROLE_OBJNAME).toString();
-    QModelIndex subnetnodeIdx = pGraphsModel->index(name);
-    if (subnetnodeIdx.isValid())
+    if (pGraphsModel && pGraphsModel->IsSubGraphNode(m_index))
     {
+        scene()->clearSelection();
+        this->setSelected(true);
+
+        QMenu *nodeMenu = new QMenu;
+        QAction *pCopy = new QAction("Copy");
+        QAction *pPaste = new QAction("Paste");
+        QAction *pDelete = new QAction("Delete");
+
+        nodeMenu->addAction(pCopy);
+        nodeMenu->addAction(pPaste);
+        nodeMenu->addAction(pDelete);
         QAction* pFork = new QAction("Fork");
         nodeMenu->addAction(pFork);
         connect(pFork, &QAction::triggered, this, [=]()
         {
             pGraphsModel->fork(m_subGpIndex, index());
         });
+        nodeMenu->exec(QCursor::pos());
+        nodeMenu->deleteLater();
     }
-
-	nodeMenu->exec(QCursor::pos());
-    nodeMenu->deleteLater();
+    else
+    {
+        NODE_CATES cates = zenoApp->graphsManagment()->currentModel()->getCates();
+        QPointF pos = event->scenePos();
+        ZenoNewnodeMenu *menu = new ZenoNewnodeMenu(m_subGpIndex, cates, pos);
+        menu->setEditorFocus();
+        menu->exec(pos.toPoint());
+        menu->deleteLater();
+    }
 }
 
 void ZenoNode::mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event)
