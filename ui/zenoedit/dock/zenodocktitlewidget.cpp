@@ -9,6 +9,7 @@
 #include "graphsmanagment.h"
 #include "viewport/zenovis.h"
 #include "util/log.h"
+#include <QFileDialog>
 
 
 ZenoDockTitleWidget::ZenoDockTitleWidget(QWidget* parent)
@@ -402,14 +403,10 @@ QMenuBar* ZenoViewDockTitle::initMenu()
         pAction->setShortcut(QKeySequence("F12"));
         pRecord->addAction(pAction);
         connect(pAction, &QAction::triggered, this, [=]() {
-            auto s = QDateTime::currentDateTime().toString(QString("yyyy-dd-MM_hh-mm-ss.png"));
-            Zenovis::GetInstance().getSession()->do_screenshot(s.toStdString(), "png");
-        });
-        pAction = new QAction(tr("Screenshot EXR"), this);
-        pRecord->addAction(pAction);
-        connect(pAction, &QAction::triggered, this, [=]() {
-            auto s = QDateTime::currentDateTime().toString(QString("yyyy-dd-MM_hh-mm-ss.exr"));
-            Zenovis::GetInstance().getSession()->do_screenshot(s.toStdString(), "exr");
+            //QString path = QDateTime::currentDateTime().toString(QString("yyyy-dd-MM_hh-mm-ss.png"));
+            QString path = QFileDialog::getSaveFileName(nullptr, tr("Path to Save"), "", tr("PNG images(*.png);JPEG images(*.jpg);BMP images(*.bmp);EXR images(*.exr);HDR images(*.hdr);;"));
+            QString ext = QFileInfo(path).suffix();
+            Zenovis::GetInstance().getSession()->do_screenshot(path.toStdString(), ext.toStdString());
         });
         pAction = new QAction(tr("Record Video"), this);
         pAction->setShortcut(QKeySequence(("Shift+F12")));

@@ -475,7 +475,7 @@ void ZenoNode::initParam(PARAM_CONTROL ctrl, QGraphicsLinearLayout* pParamLayout
 			});
             connect(openBtn, &ZenoImageItem::clicked, this, [=]() {
                 DlgInEventLoopScope;
-                QString path = getSaveFileName("Path to Save", "", "All Files(*);;");
+                QString path = getSaveFileName(tr("Path to Save"), "", "All Files(*);;");
                 if (path.isEmpty())
                     return;
                 pFileWidget->setText(path);
@@ -918,9 +918,9 @@ ZenoParamWidget* ZenoNode::initSocketWidget(const INPUT_SOCKET inSocket, ZenoTex
                 DlgInEventLoopScope;
                 QString path;
                 if (isRead) {
-                    path = getOpenFileName("File to Open", "", "All Files(*);;");
+                    path = getOpenFileName(tr("File to Open"), "", tr("All Files(*);;"));
                 } else {
-                    path = getSaveFileName("Path to Save", "", "All Files(*);;");
+                    path = getSaveFileName(tr("Path to Save"), "", tr("All Files(*);;"));
                 }
                 if (path.isEmpty())
                     return;
