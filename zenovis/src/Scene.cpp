@@ -110,14 +110,14 @@ std::vector<char> Scene::record_frame_offline(int nsamples, int hdrSize, int rgb
         auto bindFbo = opengl::scopeGLBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
 
         CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, rbo1));
-        if (nsamples > 1)
-            CHECK_GL(glRenderbufferStorageMultisample(GL_RENDERBUFFER, nsamples, GL_RGBA, camera->m_nx, camera->m_ny));
-        else
+        //if (nsamples > 1)//TODO: will crash!
+            //CHECK_GL(glRenderbufferStorageMultisample(GL_RENDERBUFFER, nsamples, GL_RGBA, camera->m_nx, camera->m_ny));
+        //else
             CHECK_GL(glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA, camera->m_nx, camera->m_ny));
         CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, rbo2));
-        if (nsamples > 1)
-            CHECK_GL(glRenderbufferStorageMultisample(GL_RENDERBUFFER, nsamples, GL_DEPTH_COMPONENT32F, camera->m_nx, camera->m_ny));
-        else
+        //if (nsamples > 1)
+            //CHECK_GL(glRenderbufferStorageMultisample(GL_RENDERBUFFER, nsamples, GL_DEPTH_COMPONENT32F, camera->m_nx, camera->m_ny));
+        //else
             CHECK_GL(glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT32F, camera->m_nx, camera->m_ny));
         CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, 0));
 
