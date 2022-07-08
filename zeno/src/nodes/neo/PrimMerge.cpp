@@ -362,7 +362,7 @@ ZENO_API std::shared_ptr<zeno::PrimitiveObject> primMerge(std::vector<zeno::Prim
                     auto &outarr = outprim->polys.values;
                     size_t n = std::min(arr.size(), prim->polys.size());
                     for (size_t i = 0; i < n; i++) {
-                        outarr[base + i] = {arr[i].first + lbase, arr[i].second};
+                        outarr[base + i] = {arr[i][0] + (int)lbase, arr[i][1]};
                     }
                 } else {
                     auto &outarr = outprim->polys.add_attr<T>(key);

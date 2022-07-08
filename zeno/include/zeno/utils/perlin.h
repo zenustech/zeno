@@ -148,12 +148,12 @@ struct PerlinNoise {
     static float perlin(vec3f a,float power,float depth)
     {
         float total = 0;
-        int n = (int)floor(depth);
+        int n = (int)ceil(depth);
         for(int i=0; i<n; i++)
         {
             float frequency = 1<<i;
             float amplitude = pow(power,i);
-            amplitude *= 1.f - max(0.f, depth - n);
+            amplitude *= 1.f - max(0.f, i - (depth - 1));
             total += perlin_lev1(a * frequency) * amplitude;
         }
 

@@ -196,7 +196,7 @@ struct PrimitiveFilterByAttr : INode {
             for (int i = 0; i < prim->polys.size(); i++) {
                 auto &poly = prim->polys[i];
                 bool succ = [&] {
-                    for (int p = poly.first; p < poly.first + poly.second; p++)
+                    for (int p = poly[0]; p < poly[0] + poly[1]; p++)
                         if (!mock(prim->loops[p]))
                             return false;
                     return true;

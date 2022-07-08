@@ -8,6 +8,7 @@
 #include <zeno/para/parallel_for.h>  // enable by -DZENO_PARALLEL_STL:BOOL=ON
 #include <unordered_map>
 #include <functional>
+#include <limits>
 
 namespace zeno {
 namespace {
@@ -23,7 +24,7 @@ static float tri_intersect(Cond cond, vec3f const &ro, vec3f const &rd,
     if (std::abs(b) > eps) {
         float a = dot(n, v0 - ro);
         float r = a / b;
-        if (cond(r)) {  // typically cond is (r > 0)
+        if (cond(r)) {
             vec3f ip = ro + r * rd;
             float uu = dot(u, u);
             float uv = dot(u, v);
@@ -37,11 +38,11 @@ static float tri_intersect(Cond cond, vec3f const &ro, vec3f const &rd,
             d = 1.0f / d;
             s *= d;
             t *= d;
-            if (-eps <= s && s <= 1 + eps && -eps <= t && s + t <= 1 + eps)
+            if (-eps <= s && s <= 1 + eps && -eps <= t && s + t <= 1 + eps * 2)
                 return r;
         }
     }
-    return 0;
+    return std::numeric_limits<float>::infinity();
 }
 
 struct BVH {  // TODO: WXL please complete this to accel up
@@ -53,16 +54,17 @@ struct BVH {  // TODO: WXL please complete this to accel up
 
     template <class Cond>
     float intersect(Cond cond, vec3f const &ro, vec3f const &rd) const {
+        float ret = std::numeric_limits<float>::infinity();
         for (size_t i = 0; i < prim->tris.size(); i++) {
             auto ind = prim->tris[i];
             auto a = prim->verts[ind[0]];
             auto b = prim->verts[ind[1]];
             auto c = prim->verts[ind[2]];
             float d = tri_intersect(cond, ro, rd, a, b, c);
-            if (d != 0)
-                return d;
+            if (std::abs(d) < std::abs(ret))
+                ret = d;
         }
-        return 0;
+        return ret;
     }
 };
 
@@ -78,24 +80,43 @@ struct PrimProject : INode {
         BVH bvh;
         bvh.build(targetPrim.get());
 
+        if (limit <= 0)
+            limit = std::numeric_limits<float>::infinity();
+
+        struct allow_front {
+            bool operator()(float x) const {
+                return x >= 0;
+            }
+        };
+
+        struct allow_back {
+            bool operator()(float x) const {
+                return x <= 0;
+            }
+        };
+
+        struct allow_both {
+            bool operator()(float x) const {
+                return true;
+            }
+        };
+
         auto const &nrm = prim->verts.attr<vec3f>(nrmAttr);
-        auto comp = enum_variant<std::variant<
-            std::greater<float>, std::less<float>, std::not_equal_to<float>
+        auto cond = enum_variant<std::variant<
+            allow_front, allow_back, allow_both
             >>(array_index({"front", "back", "both"}, allowDir));
-        std::visit([&] (auto comp) {
-            auto cond = [comp] (float r) {
-                return comp(r, 0.f);
-            };
+
+        std::visit([&] (auto cond) {
             parallel_for((size_t)0, prim->verts.size(), [&] (size_t i) {
                 auto ro = prim->verts[i];
-                auto rd = normalizeSafe(nrm[i], 1e-6f);
+                auto rd = normalizeSafe(nrm[i]);
                 float t = bvh.intersect(cond, ro, rd);
-                if (limit > 0 && std::abs(t) > limit)
+                if (std::abs(t) >= limit)
                     t = 0;
                 t -= offset;
                 prim->verts[i] = ro + t * rd;
             });
-        }, comp);
+        }, cond);
 
         set_output("prim", std::move(prim));
     }

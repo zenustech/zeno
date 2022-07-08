@@ -366,7 +366,7 @@ static std::shared_ptr<PrimitiveObject> prim_merge(std::shared_ptr<ListObject> l
                     size_t n = std::min(arr.size(), prim->polys.size());
                     for (size_t i = 0; i < n; i++) {
                         if constexpr (std::is_same_v<decltype(key), std::true_type>) {
-                            outarr[base + i] = {arr[i].first + lbase, arr[i].second};
+                            outarr[base + i] = {arr[i][0] + lbase, arr[i][1]};
                         } else {
                             outarr[base + i] = arr[i];
                         }
@@ -376,7 +376,7 @@ static std::shared_ptr<PrimitiveObject> prim_merge(std::shared_ptr<ListObject> l
                         auto &outarr = outprim->polys.values;
                         size_t n = std::min(arr.size(), prim->polys.size());
                         for (size_t i = 0; i < n; i++) {
-                            outarr[base + i] = {arr[i].first + lbase, arr[i].second};
+                            outarr[base + i] = {arr[i][0] + (int)lbase, arr[i][1]};
                         }
                     } else {
                         auto &outarr = outprim->polys.add_attr<T>(key);

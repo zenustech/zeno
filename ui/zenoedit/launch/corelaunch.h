@@ -3,8 +3,6 @@
 
 #include <QtWidgets>
 
-const int TCP_PORT = 8887;
-
 class GraphsModel;
 
 void launchProgram(GraphsModel* pModel, int beginFrame, int endFrame);

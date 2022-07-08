@@ -209,6 +209,12 @@ void _ZenoSubGraphView::gentle_zoom(qreal factor)
 	emit viewChanged(m_factor);
 }
 
+qreal _ZenoSubGraphView::scaleFactor() const
+{
+    qreal factor_i_want = transform().m11();
+	return factor_i_want;
+}
+
 void _ZenoSubGraphView::set_modifiers(Qt::KeyboardModifiers modifiers)
 {
 	_modifiers = modifiers;
@@ -492,6 +498,7 @@ ZenoSubGraphView::ZenoSubGraphView(QWidget* parent)
     setLayout(pLayout);
 
 	connect(m_pathWidget, SIGNAL(pathUpdated(QString)), this, SIGNAL(pathUpdated(QString)));
+    connect(m_view, SIGNAL(zoomed(qreal)), this, SIGNAL(zoomed(qreal)));
 }
 
 void ZenoSubGraphView::initScene(ZenoSubGraphScene* pScene)

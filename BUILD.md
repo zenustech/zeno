@@ -160,7 +160,7 @@ This should shows up an node editor window if everything is working well.
 ## Building Zeno extensions (optional)
 
 Zeno is a C++ project with thousands of `.cpp` files. However what you have just built is just some
-hundreds of them. To build the full-featured version of Zeno, you need to build the Zeno extension modules.
+hundreds of them. To build the full-featured version of Zeno, you need to *enable* the Zeno extension modules.
 
 > Why not build the extension modules by default? Because they require a lot of dedicated setup, which can
 > be unfriendly to new users. E.g., some of them depends on `x86_64` architecture, or the `CUDA` toolkit.

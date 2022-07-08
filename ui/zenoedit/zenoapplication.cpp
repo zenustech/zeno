@@ -22,7 +22,7 @@ ZenoApplication::ZenoApplication(int &argc, char **argv)
 
 #if defined(ZENO_MULTIPROCESS) && defined(ZENO_IPC_USE_TCP)
     m_server = new ZTcpServer(this);
-    m_server->init(QHostAddress::LocalHost, TCP_PORT);
+    m_server->init(QHostAddress::LocalHost);
 #endif
 
     QStringList locations;

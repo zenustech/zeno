@@ -4,6 +4,7 @@
 #include <cmath>
 #include <cstdint>
 #include <type_traits>
+#include <limits>
 
 namespace zeno {
 template <class T, class S>
@@ -428,7 +429,7 @@ inline auto normalize(vec<N, T> const &a) {
 }
 
 template <size_t N, class T>
-inline auto normalizeSafe(vec<N, T> const &a, T b) {
+inline auto normalizeSafe(vec<N, T> const &a, T b = std::numeric_limits<T>::epsilon()) {
   return a * (1 / max(b, length(a)));
 }
 

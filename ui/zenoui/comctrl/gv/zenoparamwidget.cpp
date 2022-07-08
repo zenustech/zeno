@@ -91,20 +91,13 @@ ZenoParamLineEdit::ZenoParamLineEdit(const QString &text, PARAM_CONTROL ctrl, Li
     m_pLineEdit->setPalette(param.palette);
     m_pLineEdit->setFont(param.font);
     m_pLineEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    switch (ctrl)
-    {
-    case CONTROL_INT:
-        m_pLineEdit->setValidator(new QIntValidator);
-        break;
-    case CONTROL_FLOAT:
-        m_pLineEdit->setValidator(new QDoubleValidator);
-        break;
-    case CONTROL_BOOL:
-        break;
-    }
-
     setWidget(m_pLineEdit);
     connect(m_pLineEdit, SIGNAL(editingFinished()), this, SIGNAL(editingFinished()));
+}
+
+void ZenoParamLineEdit::setValidator(const QValidator* pValidator)
+{
+    m_pLineEdit->setValidator(pValidator);
 }
 
 QString ZenoParamLineEdit::text() const
@@ -117,6 +110,52 @@ void ZenoParamLineEdit::setText(const QString &text)
     m_pLineEdit->setText(text);
 }
 
+
+///////////////////////////////////////////////////////////////////////////
+ZenoParamPathEdit::ZenoParamPathEdit(const QString& path, PARAM_CONTROL ctrl, LineEditParam param, QGraphicsItem* parent)
+    : ZenoParamWidget(parent)
+{
+    QGraphicsLinearLayout *pLayout = new QGraphicsLinearLayout(Qt::Horizontal);
+    m_pLineEdit = new ZenoParamLineEdit(path, ctrl, param);
+    pLayout->addItem(m_pLineEdit);
+
+    ImageElement elem;
+    elem.image = ":/icons/ic_openfile.svg";
+    elem.imageHovered = ":/icons/ic_openfile-on.svg";
+    elem.imageOn = ":/icons/ic_openfile-on.svg";
+    m_openBtn = new ZenoSvgLayoutItem(elem, ZenoStyle::dpiScaledSize(QSize(30, 30)));
+    bool isRead = (ctrl == CONTROL_READPATH);
+    pLayout->addItem(m_openBtn);
+    pLayout->setItemSpacing(0, 0);
+    pLayout->setItemSpacing(0, 0);
+
+    this->setLayout(pLayout);
+
+    //connect slot.
+    connect(m_pLineEdit, &ZenoParamLineEdit::editingFinished, this, [=]() {
+        emit pathValueChanged(m_pLineEdit->text());
+    });
+    connect(m_openBtn, &ZenoImageItem::clicked, this, &ZenoParamPathEdit::clicked);
+}
+
+void ZenoParamPathEdit::setValidator(QValidator* pValidator)
+{
+    m_pLineEdit->setValidator(pValidator);
+}
+
+QString ZenoParamPathEdit::path() const
+{
+    return m_pLineEdit->text();
+}
+
+void ZenoParamPathEdit::setPath(const QString& path)
+{
+    if (m_pLineEdit->text() != path)
+    {
+        m_pLineEdit->setText(path);
+        emit pathValueChanged(path);
+    }
+}
 
 ///////////////////////////////////////////////////////////////////////////
 ZenoParamCheckBox::ZenoParamCheckBox(const QString& text, QGraphicsItem* parent)
@@ -415,11 +454,55 @@ void ZenoTextLayoutItem::setGeometry(const QRectF& geom)
     prepareGeometryChange();
     QGraphicsLayoutItem::setGeometry(geom);
     setPos(geom.topLeft());
+    initAlignment(geom.width());
 }
 
 void ZenoTextLayoutItem::setRight(bool right)
 {
     m_bRight = right;
+}
+
+void ZenoTextLayoutItem::initAlignment(qreal textWidth)
+{
+    if (m_bRight)
+    {
+        QTextDocument *doc = document();
+
+        QTextCursor cursor = textCursor();
+        cursor.movePosition(QTextCursor::Start);
+
+        QTextFrame::iterator it;
+        QTextFrame *rootFrame = doc->rootFrame();
+        for (it = rootFrame->begin(); !(it.atEnd()); ++it)
+        {
+            QTextFrame *childFrame = it.currentFrame();
+            QTextBlock childBlock = it.currentBlock();
+            if (childBlock.isValid())
+            {
+                QTextBlockFormat format = childBlock.blockFormat();
+                format.setAlignment(Qt::AlignRight);
+                cursor.setBlockFormat(format);
+            }
+        }
+        doc->setTextWidth(textWidth);
+    }
+}
+
+void ZenoTextLayoutItem::setText(const QString& text)
+{
+    m_text = text;
+    setPlainText(m_text);
+}
+
+void ZenoTextLayoutItem::setMargins(qreal leftM, qreal topM, qreal rightM, qreal bottomM)
+{
+    QTextFrame *frame = document()->rootFrame();
+    QTextFrameFormat format = frame->frameFormat();
+    format.setLeftMargin(leftM);
+    format.setRightMargin(rightM);
+    format.setTopMargin(topM);
+    format.setBottomMargin(bottomM);
+    frame->setFrameFormat(format);
 }
 
 QRectF ZenoTextLayoutItem::boundingRect() const
@@ -430,18 +513,17 @@ QRectF ZenoTextLayoutItem::boundingRect() const
 
 void ZenoTextLayoutItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
 {
-    //painter->fillRect(boundingRect(), QColor(0, 0, 0));
-    if (m_bRight)
-    {
-        QString text = toPlainText();
-        painter->setFont(this->font());
-        painter->setPen(QPen(this->defaultTextColor()));
-        painter->drawText(boundingRect(), Qt::AlignRight | Qt::AlignCenter, text);
-    }
-    else
-    {
-        QGraphicsTextItem::paint(painter, option, widget);
-    }
+    QStyleOptionGraphicsItem myOption(*option);
+    myOption.state &= ~QStyle::State_Selected;
+    myOption.state &= ~QStyle::State_HasFocus;
+    QGraphicsTextItem::paint(painter, &myOption, widget);
+}
+
+QPainterPath ZenoTextLayoutItem::shape() const
+{
+    QPainterPath path;
+    path.addRect(boundingRect());
+    return path;
 }
 
 QSizeF ZenoTextLayoutItem::sizeHint(Qt::SizeHint which, const QSizeF &constraint) const
@@ -453,7 +535,7 @@ QSizeF ZenoTextLayoutItem::sizeHint(Qt::SizeHint which, const QSizeF &constraint
         case Qt::PreferredSize:
             return rc.size();
         case Qt::MaximumSize:
-            return QSizeF(1000, rc.height());
+            return QSizeF(3000, rc.height());
         default:
             break;
     }
@@ -464,6 +546,33 @@ void ZenoTextLayoutItem::focusOutEvent(QFocusEvent* event)
 {
     QGraphicsTextItem::focusOutEvent(event);
     emit editingFinished();
+
+    QString newText = document()->toPlainText();
+    if (newText != m_text)
+    {
+        QString oldText = m_text;
+        m_text = newText;
+        emit contentsChanged(oldText, newText);
+    }
+}
+
+void ZenoTextLayoutItem::hoverEnterEvent(QGraphicsSceneHoverEvent* event)
+{
+    QGraphicsTextItem::hoverEnterEvent(event);
+    if (textInteractionFlags() & Qt::TextEditorInteraction)
+        setCursor(QCursor(Qt::IBeamCursor));
+}
+
+void ZenoTextLayoutItem::hoverMoveEvent(QGraphicsSceneHoverEvent* event)
+{
+    QGraphicsTextItem::hoverMoveEvent(event);
+}
+
+void ZenoTextLayoutItem::hoverLeaveEvent(QGraphicsSceneHoverEvent* event)
+{
+    QGraphicsTextItem::hoverLeaveEvent(event);
+    if (textInteractionFlags() & Qt::TextEditorInteraction)
+        setCursor(QCursor(Qt::ArrowCursor));
 }
 
 

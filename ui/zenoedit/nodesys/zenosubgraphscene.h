@@ -39,6 +39,8 @@ protected:
     void contextMenuEvent(QGraphicsSceneContextMenuEvent* event) override;
 
 public slots:
+    void onZoomed(qreal factor);
+
     void onDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, int role);
     void onRowsAboutToBeRemoved(const QModelIndex& subgIdx, const QModelIndex &parent, int first, int last);
     void onRowsInserted(const QModelIndex& subgIdx, const QModelIndex& parent, int first, int last);
@@ -53,10 +55,13 @@ public slots:
 private slots:
     void reload(const QModelIndex& subGpIdx);
     void clearLayout(const QModelIndex& subGpIdx);
-    void onSocketPosInited(const QString& nodeid, const QString& sockName, bool bInput);
+    void onSocketClicked(QString nodeid, bool bInput, QString sockName, QPointF scenePos,
+                         QPersistentModelIndex linkIndex);
 
 private:
     void updateLinkPos(ZenoNode *pNode, QPointF newPos);
+    void onSocketAbsorted(const QPointF mousePos);
+    void onTempLinkClosed();
     ZenoNode* createNode(const QModelIndex& idx, const NodeUtilParam& params);
 
     QRectF m_viewRect;

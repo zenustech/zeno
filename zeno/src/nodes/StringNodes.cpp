@@ -2,6 +2,7 @@
 #include <zeno/types/StringObject.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/utils/format.h>
+#include <zeno/utils/fileio.h>
 #include <zeno/extra/GlobalState.h>
 #include <iostream>
 #include <fstream>
@@ -100,9 +101,7 @@ struct FileWriteString
     {
         auto path = get_input<zeno::StringObject>("path")->get();
         auto str = get_input<zeno::StringObject>("str")->get();
-        std::ofstream ofs{path};
-        ofs << str;
-        ofs.close();
+        zeno::file_put_content(path, str);
     }
 };
 
@@ -124,14 +123,8 @@ struct FileReadString
     virtual void apply() override
     {
         auto path = get_input<zeno::StringObject>("path")->get();
-        std::ifstream ifs{path};
-        std::string buffer;
-        ifs >> buffer;
-        ifs.close();
-
-        auto str = std::make_unique<zeno::StringObject>();
-        str->set(buffer);
-        set_output("str", std::move(str));
+        auto str = zeno::file_get_content(path);
+        set_output2("str", std::move(str));
     }
 };
 
@@ -165,7 +158,7 @@ ZENDEFNODE(StringFormat, {
     {{"string", "str"}},
     {{"string", "str"}},
     {},
-    {"string"},
+    {"deprecated"},
 });
 
 struct StringFormatNumber : zeno::INode {
@@ -175,16 +168,17 @@ struct StringFormatNumber : zeno::INode {
 
         std::string output;
         std::visit([&](const auto &v) {
-            using T = std::decay_t<decltype(v)>;
-            if constexpr (std::is_same_v<T, int>) {
-                output = zeno::format(str, T(v));
-            }
-            else if constexpr (std::is_same_v<T, float>) {
-                output = zeno::format(str, T(v));
-            }
-            else {
-                output = str;
-            }
+            //using T = std::decay_t<decltype(v)>;
+            //if constexpr (std::is_same_v<T, int>) {
+                //output = zeno::format(str, T(v));
+                output = zeno::format(str, v);
+            //}
+            //else if constexpr (std::is_same_v<T, float>) {
+                //output = zeno::format(str, T(v));
+            //}
+            //else {
+                //output = str;
+            //}
         }, num->value);
         set_output2("str", output);
     }
@@ -192,7 +186,7 @@ struct StringFormatNumber : zeno::INode {
 
 ZENDEFNODE(StringFormatNumber, {
     {
-        {"string", "str"},
+        {"string", "str", "{}"},
         {"number"},
     },
     {{"string", "str"}},

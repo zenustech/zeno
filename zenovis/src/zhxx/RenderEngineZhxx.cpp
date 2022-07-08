@@ -1,3 +1,4 @@
+#ifdef ZENO_ENABLE_ZHXXVIS
 #include <zenovis/RenderEngine.h>
 #include <zenovis/DrawOptions.h>
 #include <zenovis/bate/GraphicsManager.h>
@@ -124,3 +125,4 @@ struct RenderEngineZhxx : RenderEngine, zeno::disable_copy {
 static auto definer = RenderManager::registerRenderEngine<RenderEngineZhxx>("zhxx");
 
 }
+#endif

@@ -2,6 +2,7 @@
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/PrimitiveObject.h>
 
+namespace {
 using namespace zeno;
 
 struct PlaneProjectPrimitive2DAABB : INode {
@@ -40,3 +41,4 @@ ZENDEFNODE(PlaneProjectPrimitive2DAABB, {
     {},
     {"math"},
 });
+}

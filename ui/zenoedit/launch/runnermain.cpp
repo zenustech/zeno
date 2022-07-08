@@ -8,6 +8,7 @@
 #include <zeno/extra/GlobalState.h>
 #include <zeno/extra/GlobalComm.h>
 #include <zeno/extra/GlobalStatus.h>
+#include <zeno/extra/GraphException.h>
 #include <zeno/funcs/ObjectCodec.h>
 #include <zeno/zeno.h>
 #include <string>
@@ -92,7 +93,9 @@ static void runner_start(std::string const &progJson, int sessionid) {
         send_packet("{\"action\":\"reportStatus\"}", statJson.data(), statJson.size());
     };
 
-    graph->loadGraph(progJson.c_str());
+    zeno::GraphException::catched([&] {
+        graph->loadGraph(progJson.c_str());
+    }, *session->globalStatus);
     if (session->globalStatus->failed())
         return onfail();
 
@@ -115,7 +118,9 @@ static void runner_start(std::string const &progJson, int sessionid) {
 
         while (session->globalState->substepBegin())
         {
-            graph->applyNodesToExec();
+            zeno::GraphException::catched([&] {
+                graph->applyNodesToExec();
+            }, *session->globalStatus);
             session->globalState->substepEnd();
             if (session->globalStatus->failed())
                 return onfail();
@@ -144,13 +149,13 @@ static void runner_start(std::string const &progJson, int sessionid) {
 
 }
 
-int runner_main(int sessionid);
-int runner_main(int sessionid) {
+int runner_main(int sessionid, int port);
+int runner_main(int sessionid, int port) {
     printf("(stdout ping test)\n");
 
 #ifdef ZENO_IPC_USE_TCP
     clientSocket = std::make_unique<QTcpSocket>();
-    clientSocket->connectToHost(QHostAddress::LocalHost, TCP_PORT);
+    clientSocket->connectToHost(QHostAddress::LocalHost, port);
     if (!clientSocket->waitForConnected(10000)) {
         zeno::log_error("tcp client connection fail.");
         return 0;

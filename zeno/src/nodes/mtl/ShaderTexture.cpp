@@ -31,25 +31,12 @@ struct ShaderTexture2D : ShaderNodeClone<ShaderTexture2D>
         auto texId = get_input2<int>("texId");
         auto coord = em->determineExpr(get_input("coord").get());
         auto type = get_input2<std::string>("type");
-        const char *tab[] = {"float", "vec2", "vec3", "vec4"};
-        auto ty = std::find(std::begin(tab), std::end(tab), type) - std::begin(tab);
-        const char *bat[] = {"x", "xy", "xyz", "xyzw"};
-        int isCuda = 0;
-        if(has_input("isCuda"))
-            isCuda = get_input2<int>("isCuda");
-        std::string xy = ".xy).";
-        if(isCuda==1)
-            xy = ".xy()).";
-        std::string vec = bat[ty];
-        if(isCuda==1&&ty>0)
-            vec = vec + "()";
-        em->emitCode("texture2D(zenotex" + std::to_string(texId) + ", " + coord + xy + vec);
+        em->emitCode(type + "(texture2D(zenotex" + std::to_string(texId) + ", vec2(" + coord + ")))");
     }
 };
 
 ZENDEFNODE(ShaderTexture2D, {
     {
-        {"int", "isCuda", "0"},
         {"int", "texId", "0"},
         {"vec2f", "coord", "0,0"},
         {"enum float vec2 vec3 vec4", "type", "vec3"},

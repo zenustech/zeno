@@ -15,16 +15,21 @@
 #include "ztcpserver.h"
 #include "graphsmanagment.h"
 #include "serialize.h"
+#if !defined(ZENO_MULTIPROCESS) || !defined(ZENO_IPC_USE_TCP)
 #include <thread>
 #include <mutex>
 #include <atomic>
+#endif
 #ifdef ZENO_MULTIPROCESS
 #include <QProcess>
 #include "viewdecode.h"
 #endif
 
+//#define DEBUG_SERIALIZE
+
 namespace {
 
+#if !defined(ZENO_MULTIPROCESS) || !defined(ZENO_IPC_USE_TCP)
 struct ProgramRunData {
     enum ProgramState {
         kStopped = 0,
@@ -185,6 +190,7 @@ struct ProgramRunData {
 #endif
     }
 };
+#endif
 
 void launchProgramJSON(std::string progJson)
 {
@@ -235,6 +241,13 @@ void launchProgram(GraphsModel* pModel, int beginFrame, int endFrame)
         serializeScene(pModel, writer);
     }
     std::string progJson(s.GetString());
+#ifdef DEBUG_SERIALIZE
+    QString qstrJson = QString::fromStdString(progJson);
+    QFile f("serialize.json");
+    f.open(QIODevice::WriteOnly);
+    f.write(qstrJson.toUtf8());
+    f.close();
+#endif
     launchProgramJSON(std::move(progJson));
 }
 

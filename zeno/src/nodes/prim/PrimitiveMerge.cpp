@@ -107,7 +107,7 @@ ZENO_API std::shared_ptr<PrimitiveObject> primitive_merge(std::shared_ptr<zeno::
 #pragma omp parallel for
         for (omp_size_t i = 0; i < prim->polys.size(); ++i) {
             const auto &poly = prim->polys[i];
-            outprim->polys[nCurPolys + i] = std::make_pair(poly.first + nCurLoops, poly.second);
+            outprim->polys[nCurPolys + i] = {poly[0] + (int)nCurLoops, poly[1]};
         }
         nCurPolys += prim->polys.size();
         // update nCurLoops after poly update!

@@ -174,7 +174,7 @@ ZENO_API void primSepTriangles(PrimitiveObject *prim, bool smoothNormal, bool ke
             auto b = new_verts[i * 3 + 1];
             auto c = new_verts[i * 3 + 2];
             auto n = cross(b - a, c - a);
-            n = normalizeSafe(n, 1e-6f);
+            n = normalizeSafe(n);
             shn[v[i * 3 + 0]] += n;
             shn[v[i * 3 + 1]] += n;
             shn[v[i * 3 + 2]] += n;
@@ -182,7 +182,7 @@ ZENO_API void primSepTriangles(PrimitiveObject *prim, bool smoothNormal, bool ke
         auto &new_nrm = new_verts.add_attr<vec3f>("nrm");
         for (size_t i = 0; i < v.size(); i++) {
             auto n = shn[v[i]];
-            n = normalizeSafe(n, 1e-6f);
+            n = normalizeSafe(n);
             new_nrm[i] = n;
         }
     }
@@ -196,7 +196,7 @@ ZENO_API void primSepTriangles(PrimitiveObject *prim, bool smoothNormal, bool ke
             auto b = prim->verts[i * 3 + 1];
             auto c = prim->verts[i * 3 + 2];
             auto n = cross(b - a, c - a);
-            n = normalizeSafe(n, 1e-6f);
+            n = normalizeSafe(n);
             nrm[i * 3 + 0] = n;
             nrm[i * 3 + 1] = n;
             nrm[i * 3 + 2] = n;

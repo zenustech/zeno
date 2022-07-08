@@ -69,7 +69,7 @@ void ZenoMainWindow::initMenu() {
     {
         QAction *pAction = new QAction(tr("New"), pFile);
         pAction->setCheckable(false);
-        pAction->setShortcut(QKeySequence(tr("Ctrl+N")));
+        pAction->setShortcut(QKeySequence(("Ctrl+N")));
         //QMenu *pNewMenu = new QMenu;
         //QAction *pNewGraph = pNewMenu->addAction("New Scene");
         connect(pAction, SIGNAL(triggered()), this, SLOT(onNewFile()));
@@ -80,31 +80,31 @@ void ZenoMainWindow::initMenu() {
 
         pAction = new QAction(tr("Open"), pFile);
         pAction->setCheckable(false);
-        pAction->setShortcut(QKeySequence(tr("Ctrl+O")));
+        pAction->setShortcut(QKeySequence(("Ctrl+O")));
         connect(pAction, SIGNAL(triggered()), this, SLOT(openFileDialog()));
         pFile->addAction(pAction);
 
         pAction = new QAction(tr("Save"), pFile);
         pAction->setCheckable(false);
-        pAction->setShortcut(QKeySequence(tr("Ctrl+S")));
+        pAction->setShortcut(QKeySequence(("Ctrl+S")));
         connect(pAction, SIGNAL(triggered()), this, SLOT(save()));
         pFile->addAction(pAction);
 
         pAction = new QAction(tr("Save As"), pFile);
         pAction->setCheckable(false);
-        pAction->setShortcut(QKeySequence(tr("Ctrl+Shift+S")));
+        pAction->setShortcut(QKeySequence(("Ctrl+Shift+S")));
         connect(pAction, SIGNAL(triggered()), this, SLOT(saveAs()));
         pFile->addAction(pAction);
 
         pAction = new QAction(tr("Import"), pFile);
         pAction->setCheckable(false);
-        pAction->setShortcut(QKeySequence(tr("Ctrl+Shift+O")));
+        pAction->setShortcut(QKeySequence(("Ctrl+Shift+O")));
         connect(pAction, SIGNAL(triggered()), this, SLOT(importGraph()));
         pFile->addAction(pAction);
 
         pAction = new QAction(tr("Export"), pFile);
         pAction->setCheckable(false);
-        pAction->setShortcut(QKeySequence(tr("Ctrl+Shift+E")));
+        pAction->setShortcut(QKeySequence(("Ctrl+Shift+E")));
         connect(pAction, SIGNAL(triggered()), this, SLOT(exportGraph()));
         pFile->addAction(pAction);
 
@@ -136,7 +136,7 @@ void ZenoMainWindow::initMenu() {
         pEdit->addAction(pAction);
     }
 
-    QMenu *pRender = new QMenu(tr("Render"));
+    //QMenu *pRender = new QMenu(tr("Render"));
 
     QMenu *pView = new QMenu(tr("View"));
     {
@@ -231,20 +231,39 @@ void ZenoMainWindow::initMenu() {
         }
     }
 
-    QMenu *pWindow = new QMenu(tr("Window"));
+    //QMenu *pWindow = new QMenu(tr("Window"));
 
     QMenu *pHelp = new QMenu(tr("Help"));
     {
         QAction *pAction = new QAction(tr("Send this File"));
         connect(pAction, SIGNAL(triggered(bool)), this, SLOT(onFeedBack()));
         pHelp->addAction(pAction);
+
+        pHelp->addSeparator();
+
+        pAction = new QAction(tr("English / Chinese"), this);
+        pAction->setCheckable(true);
+        {
+            QSettings settings("ZenusTech", "Zeno");
+            QVariant use_chinese = settings.value("use_chinese");
+            pAction->setChecked(use_chinese.isNull() || use_chinese.toBool());
+        }
+        pHelp->addAction(pAction);
+        connect(pAction, &QAction::triggered, this, [=]() {
+            QSettings settings("ZenusTech", "Zeno");
+            settings.setValue("use_chinese", pAction->isChecked());
+            QMessageBox msg(QMessageBox::Information, "Language",
+                        tr("Please restart Zeno to apply changes."),
+                        QMessageBox::Ok, this);
+            msg.exec();
+        });
     }
 
     pMenuBar->addMenu(pFile);
     pMenuBar->addMenu(pEdit);
-    pMenuBar->addMenu(pRender);
+    //pMenuBar->addMenu(pRender);
     pMenuBar->addMenu(pView);
-    pMenuBar->addMenu(pWindow);
+    //pMenuBar->addMenu(pWindow);
     pMenuBar->addMenu(pHelp);
     pMenuBar->setProperty("cssClass", "mainWin");
 

@@ -45,6 +45,12 @@ void ZTimeline::initSignals()
         if (bChecked)
             emit alwaysChecked();
     });
+    m_ui->btnAlways->setShortcut(QKeySequence("F1"));
+    m_ui->btnRun->setShortcut(QKeySequence("F2"));
+    m_ui->btnKill->setShortcut(QKeySequence("Shift+F2"));
+    m_ui->btnBackward->setShortcut(QKeySequence("Shift+F3"));
+    m_ui->btnForward->setShortcut(QKeySequence("F3"));
+    m_ui->btnPlay->setShortcut(QKeySequence("F4"));
     connect(m_ui->btnBackward, &QPushButton::clicked, this, [=]() {
         int frame = m_ui->timeliner->value();
         auto ft = fromTo();

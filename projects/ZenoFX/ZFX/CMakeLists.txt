@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.12)
 project(ZFX LANGUAGES CXX)
 
-option(ZFX_PRINT_IR "Print generated IR in log" ON)
+option(ZFX_PRINT_IR "Print generated IR in log" OFF)
 option(ZFX_ENABLE_CUDA "Build ZFX with CUDA support" ON)
 
 set(CMAKE_CXX_STANDARD 17)

@@ -12,14 +12,15 @@ target_include_directories(zenovis PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/glad/include>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/stbi/include>)
 
-add_subdirectory(zhxxvis)
-target_link_libraries(zenovis PRIVATE zhxxvis)
+option(ZENO_ENABLE_ZHXXVIS "Enable Zhxx Real-time Rendering Engine" ON)
+if (ZENO_ENABLE_ZHXXVIS)
+    add_subdirectory(zhxxvis)
+    target_link_libraries(zenovis PRIVATE zhxxvis)
+    target_compile_definitions(zenovis PRIVATE -DZENO_ENABLE_ZHXXVIS)
+endif()
 
 option(ZENO_ENABLE_OPTIX "Enable NVIDIA OptiX in ZENO for path tracing" OFF)
 if (ZENO_ENABLE_OPTIX)
-    if (NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/xinxinoptix/CMakeLists.txt)
-        message(FATAL_ERROR "xinxinoptix submodule not found! Please run: git submodule update --init --recursive")
-    endif()
     add_subdirectory(xinxinoptix)  # this in-place modify zenovis
     target_compile_definitions(zenovis PRIVATE -DZENO_ENABLE_OPTIX)
 endif()

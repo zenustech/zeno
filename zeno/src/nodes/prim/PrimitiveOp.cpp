@@ -71,7 +71,7 @@ ZENDEFNODE(PrimitiveUnaryOp,
     {"string", "attrOut", "pos"},
     {"string", "op", "copy"},
     }, /* category: */ {
-    "primitive",
+    "deprecated",
     }});
 
 
@@ -151,7 +151,7 @@ ZENDEFNODE(PrimitiveBinaryOp,
     {"string", "attrOut", "pos"},
     {"string", "op", "copyA"},
     }, /* category: */ {
-    "primitive",
+    "deprecated",
     }});
 
 
@@ -197,7 +197,7 @@ ZENDEFNODE(PrimitiveMix,
     {"string", "attrB", "pos"},
     {"string", "attrOut", "pos"},
     }, /* category: */ {
-    "primitive",
+    "deprecated",
     }});
 
 
@@ -275,7 +275,7 @@ ZENDEFNODE(PrimitiveHalfBinaryOp,
     {"string", "attrOut", "pos"},
     {"string", "op", "copyA"},
     }, /* category: */ {
-    "primitive",
+    "deprecated",
     }});
 
 }
