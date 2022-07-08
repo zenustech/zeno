@@ -256,7 +256,8 @@ ZenoBackgroundWidget* ZenoNode::initHeaderStyle()
 	m_NameItem = new ZenoTextLayoutItem(name, m_renderParams.nameFont, m_renderParams.nameClr.color(), this);
 	QGraphicsLinearLayout* pNameLayout = new QGraphicsLinearLayout(Qt::Horizontal);
 	pNameLayout->addItem(m_NameItem);
-	pNameLayout->setContentsMargins(5, 5, 5, 5);
+    int margins = ZenoStyle::dpiScaled(5);
+	pNameLayout->setContentsMargins(margins, margins, margins, margins);
 
     m_pStatusWidgets = new ZenoMinStatusBtnWidget(m_renderParams.status, this);
     m_pStatusWidgets->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
@@ -288,18 +289,24 @@ ZenoBackgroundWidget* ZenoNode::initBodyWidget()
     bodyWidget->setBorder(bodyBg.border_witdh, bodyBg.clr_border);
 
     QGraphicsLinearLayout *pVLayout = new QGraphicsLinearLayout(Qt::Vertical);
-    pVLayout->setContentsMargins(0, 5, 0, 5);
+    pVLayout->setContentsMargins(0, ZenoStyle::dpiScaled(5), 0, ZenoStyle::dpiScaled(5));
 
     if (QGraphicsLayout* pParamsLayout = initParams())
     {
-        pParamsLayout->setContentsMargins(m_renderParams.distParam.paramsLPadding, 10, 10, 0);
+        pParamsLayout->setContentsMargins(
+            ZenoStyle::dpiScaled(m_renderParams.distParam.paramsLPadding),
+            ZenoStyle::dpiScaled(10),
+            ZenoStyle::dpiScaled(10),
+            ZenoStyle::dpiScaled(0));
         pVLayout->addItem(pParamsLayout);
     }
     if (QGraphicsLayout* pSocketsLayout = initSockets())
     {
         pSocketsLayout->setContentsMargins(
-            m_renderParams.distParam.paramsLPadding, m_renderParams.distParam.paramsToTopSocket,
-            m_renderParams.distParam.paramsLPadding, m_renderParams.distParam.outSocketsBottomMargin);
+            ZenoStyle::dpiScaled(m_renderParams.distParam.paramsLPadding),
+            ZenoStyle::dpiScaled(m_renderParams.distParam.paramsToTopSocket),
+            ZenoStyle::dpiScaled(m_renderParams.distParam.paramsLPadding),
+            ZenoStyle::dpiScaled(m_renderParams.distParam.outSocketsBottomMargin));
         pVLayout->addItem(pSocketsLayout);
     }
 

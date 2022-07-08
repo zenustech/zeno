@@ -36,7 +36,7 @@ QSize LayerTreeView::sizeHint() const
         return sz;
 
     int nToShow = model()->rowCount();
-    return QSize(700, sz.height());
+    return QSize(ZenoStyle::dpiScaled(700), sz.height());
 }
 
 void LayerTreeView::mousePressEvent(QMouseEvent* e)

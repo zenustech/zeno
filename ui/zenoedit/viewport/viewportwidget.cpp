@@ -15,7 +15,7 @@
 #include <zeno/types/UserData.h>
 #include <viewport/zenovis.h>
 #include <util/log.h>
-
+#include <zenoui/style/zenostyle.h>
 #include <cmath>
 #include <algorithm>
 #include <optional>
@@ -502,7 +502,7 @@ void DisplayWidget::init()
 
 QSize DisplayWidget::sizeHint() const
 {
-    return QSize(12, 400);
+    return ZenoStyle::dpiScaledSize(QSize(12, 400));
 }
 
 void DisplayWidget::updateFrame(const QString &action)
