@@ -2,6 +2,7 @@
 #include <zeno/funcs/PrimitiveUtils.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/NumericObject.h>
+#include <zeno/types/StringObject.h>
 #include <zeno/utils/vec.h>
 #include <cstring>
 #include <cstdlib>
@@ -19,10 +20,10 @@ template <typename DstT, typename SrcT> constexpr auto reinterpret_bits(SrcT &&v
                   "Source Type and Destination Type must be of the same size");
     return reinterpret_cast<Dst const volatile &>(val);
   }
-ZENO_API void primCalcNormal(zeno::PrimitiveObject* prim, float flip)
+ZENO_API void primCalcNormal(zeno::PrimitiveObject* prim, float flip, std::string nrmAttr)
 {
-        auto &nrm = prim->add_attr<zeno::vec3f>("nrm");
-    auto &pos = prim->attr<zeno::vec3f>("pos");
+    auto &nrm = prim->add_attr<zeno::vec3f>(nrmAttr);
+    auto &pos = prim->verts.values;
 
 #if defined(_OPENMP) && defined(__GNUG__)
 #pragma omp parallel for
@@ -127,15 +128,18 @@ ZENO_API void primCalcNormal(zeno::PrimitiveObject* prim, float flip)
 struct PrimitiveCalcNormal : zeno::INode {
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
+        auto nrmAttr = get_input<StringObject>("nrmAttr")->get();
         auto flip = get_input<NumericObject>("flip")->get<bool>();
-        primCalcNormal(prim.get(), flip ? -1 : 1);
+        primCalcNormal(prim.get(), flip ? -1 : 1, nrmAttr);
         set_output("prim", get_input("prim"));
     }
 };
 
 ZENDEFNODE(PrimitiveCalcNormal, {
-    {"prim",
-    {"bool", "flip", "0"}
+    {
+    {"prim"},
+    {"string", "nrmAttr", "nrm"},
+    {"bool", "flip", "0"},
     },
     {"prim"},
     {},
