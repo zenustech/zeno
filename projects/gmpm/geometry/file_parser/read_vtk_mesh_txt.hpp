@@ -201,16 +201,10 @@ namespace zs {
                         fclose(fp);
                         return false;
                     }
-                    bufferp = findnextnumber(bufferp);
-                    int id1 = (int) strtol(bufferp,&bufferp,0);
-                    bufferp = findnextnumber(bufferp);
-                    int id2 = (int) strtol(bufferp,&bufferp,0):
-                    bufferp = findnextnumber(bufferp);
-                    int id3 = (int) strtol(bufferp,&bufferp,0);
-                    faces[i][0] = id1;
-                    faces[i][1] = id2;
-                    faces[i][2] = id3;
-
+                    for(int j = 0;j < 3;++j){
+                        bufferp = findnextnumber(bufferp);
+                        faces[i][j] = (int) strtol(bufferp,&bufferp,0);   
+                    }
                     for(int j = 0;j < 3;++j)
                         smallestidx = smallestidx > faces[i][j] ? faces[i][j] : smallestidx;
                 }
@@ -246,18 +240,10 @@ namespace zs {
                         fclose(fp);
                         return false;                        
                     }
-                    bufferp = findnextnumber(bufferp);
-                    int id1 = (int) strtol(bufferp,&bufferp,0);
-                    bufferp = findnextnumber(bufferp);
-                    int id2 = (int) strtol(bufferp,&bufferp,0);
-                    bufferp = findnextnumber(bufferp);
-                    int id3 = (int) strtol(bufferp,&bufferp,0);
-                    bufferp = findnextnumber(bufferp);
-                    int id4 = (int) strtol(bufferp,&bufferp,0);
-                    indices[i][0] = id1;
-                    indices[i][1] = id2;
-                    indices[i][2] = id3;
-                    indices[i][3] = id4;
+                    for(int j = 0;j < 4;++j){
+                        bufferp = findnextnumber(bufferp);
+                        indices[i][j] = (int) strtol(bufferp,&bufferp,0);    
+                    }
                 }
             } 
 
@@ -273,7 +259,10 @@ namespace zs {
                 for(int i = 0;i < ncells;++i) {
                     bufferp = readling(line,fp,&line_count);
                     int type_id = strtol(bufferp,&bufferp);
-                    if(type_id)
+                    if(type_id != CELL_TYPE){
+                        printf("invalid cell type detected at %d line\n",line_count);
+                        return false;
+                    }
 
                 }
             }
@@ -283,7 +272,7 @@ namespace zs {
             }
 
             if(!strcmp(id,"POINTS_DATA")){
-                
+
             }
 
 
