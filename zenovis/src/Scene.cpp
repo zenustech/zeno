@@ -80,7 +80,7 @@ void Scene::draw() {
     renderMan->getEngine()->draw();
 }
 
-std::vector<char> Scene::record_frame_offline(int hdrSize, int rgbComps) {
+std::vector<char> Scene::record_frame_offline(int nsamples, int hdrSize, int rgbComps) {
     zeno::log_trace("offline draw {}x{}x{}x{}", camera->m_nx, camera->m_ny, rgbComps, hdrSize);
     auto hdrType = std::map<int, int>{
         {1, GL_UNSIGNED_BYTE},
@@ -110,11 +110,15 @@ std::vector<char> Scene::record_frame_offline(int hdrSize, int rgbComps) {
         auto bindFbo = opengl::scopeGLBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
 
         CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, rbo1));
-        CHECK_GL(glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA, camera->m_nx,
-                                       camera->m_ny));
+        if (nsamples > 1)
+            CHECK_GL(glRenderbufferStorageMultisample(GL_RENDERBUFFER, nsamples, GL_RGBA, camera->m_nx, camera->m_ny));
+        else
+            CHECK_GL(glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA, camera->m_nx, camera->m_ny));
         CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, rbo2));
-        CHECK_GL(glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT32F,
-                                       camera->m_nx, camera->m_ny));
+        if (nsamples > 1)
+            CHECK_GL(glRenderbufferStorageMultisample(GL_RENDERBUFFER, nsamples, GL_DEPTH_COMPONENT32F, camera->m_nx, camera->m_ny));
+        else
+            CHECK_GL(glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT32F, camera->m_nx, camera->m_ny));
         CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, 0));
 
         CHECK_GL(glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, rbo1));

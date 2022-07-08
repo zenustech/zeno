@@ -71,16 +71,16 @@ void Session::new_frame() {
     //impl->render_tasks.clear();
 }
 
-void Session::new_frame_offline(std::string path) {
-    //impl->render_tasks.push_back([this, path] {
-    auto newpath = zeno::format("{}/{:06d}.png", path, impl->curr_frameid);
-    //zeno::log_info("saving screen {}x{} to {}", impl->scene->camera->m_nx,
-                   //impl->scene->camera->m_ny, newpath);
-    do_screenshot(newpath, "png");
-    //});
-}
+//void Session::new_frame_offline(std::string path, int nsamples) {
+    ////impl->render_tasks.push_back([this, path] {
+    //auto newpath = zeno::format("{}/{:06d}.png", path, impl->curr_frameid);
+    ////zeno::log_info("saving screen {}x{} to {}", impl->scene->camera->m_nx,
+                   ////impl->scene->camera->m_ny, newpath);
+    //do_screenshot(newpath, "png", nsamples);
+    ////});
+//}
 
-void Session::do_screenshot(std::string path, std::string type) {
+void Session::do_screenshot(std::string path, std::string type, int nsamples) {
     auto hdrSize = std::map<std::string, int>{
         {"png", 1},
         {"jpg", 1},
@@ -92,7 +92,7 @@ void Session::do_screenshot(std::string path, std::string type) {
     auto ny = impl->scene->camera->m_ny;
 
     zeno::log_info("saving screenshot {}x{} to {}", nx, ny, path);
-    std::vector<char> pixels = impl->scene->record_frame_offline(hdrSize, 3);
+    std::vector<char> pixels = impl->scene->record_frame_offline(nsamples, hdrSize, 3);
 
     std::map<std::string, std::function<void()>>{
     {"png", [&] {

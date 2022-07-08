@@ -332,18 +332,24 @@ void ViewportWidget::resizeGL(int nx, int ny)
 void ViewportWidget::paintGL()
 {
     Zenovis::GetInstance().paintGL();
-    checkRecord();
+    if (!record_path.empty() /*&& f <= frame_end*/) //py has bug: frame_end not initialized.
+    {
+        int f = Zenovis::GetInstance().getCurrentFrameId();
+        auto record_file = zeno::format("{}/{:06d}.png", record_path, f);
+        int nsamples = 16;
+        checkRecord(record_file, record_res, nsamples);
+    }
 }
 
-void ViewportWidget::checkRecord()
+void ViewportWidget::checkRecord(std::string a_record_file, QVector2D a_record_res, int a_nsamples)
 {
-    int f = Zenovis::GetInstance().getCurrentFrameId();
     if (!record_path.empty() /*&& f <= frame_end*/) //py has bug: frame_end not initialized.
     {
         QVector2D oldRes = m_camera->res();
-        m_camera->setRes(record_res);
+        m_camera->setRes(a_record_res);
         m_camera->updatePerspective();
-        Zenovis::GetInstance().recordGL(record_path);
+        auto extname = QFileInfo(QString::fromStdString(a_record_file)).suffix().toStdString();
+        Zenovis::GetInstance().getSession()->do_screenshot(a_record_file, extname, a_nsamples);
         m_camera->setRes(oldRes);
         m_camera->updatePerspective();
         //if f == self.frame_end:
