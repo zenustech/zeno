@@ -1638,9 +1638,8 @@ struct CodimStepping : INode {
             auto m = zs::sqr(vtemp("ws", vi));
             auto x = vtemp.pack<3>(tag, vi);
             int BCorder = vtemp("BCorder", vi);
-            int BCfixed = vtemp("BCorder", vi);
             T E = 0;
-            if (BCorder != 3 && BCfixed == 0) {
+            if (BCorder != 3) {
               // inertia
               E += (T)0.5 * m * (x - vtemp.pack<3>("xtilde", vi)).l2NormSqr();
               // external force
@@ -1667,14 +1666,11 @@ struct CodimStepping : INode {
                             .template reinterpret_bits<int>() +
                         vOffset;
 
-            bool fixed[3];
-            // int BCorder[3];
+            int BCorder[3];
             for (int i = 0; i != 3; ++i)
-              // BCorder[i] = vtemp("BCorder", inds[i]);
-              fixed[i] = vtemp("BCorder", inds[i]) == 3 ||
-                         vtemp("BCfixed", inds[i]) == 1;
+              BCorder[i] = vtemp("BCorder", inds[i]);
             T E;
-            if (fixed[0] && fixed[1] && fixed[2])
+            if (BCorder[0] == 3 && BCorder[1] == 3 && BCorder[2] == 3)
               E = 0;
             else {
               auto vole = eles("vol", ei);
@@ -1715,15 +1711,12 @@ struct CodimStepping : INode {
                     vtemp.pack<3>(tag, inds[0]), vtemp.pack<3>(tag, inds[1]),
                     vtemp.pack<3>(tag, inds[2]), vtemp.pack<3>(tag, inds[3])};
 
-                bool fixed[4];
-                // int BCorder[4];
+                int BCorder[4];
                 for (int i = 0; i != 4; ++i)
-                  // BCorder[i] = vtemp("BCorder", inds[i]);
-                  fixed[i] = vtemp("BCorder", inds[i]) == 3 ||
-                             vtemp("BCfixed", inds[i]) == 1;
-
+                  BCorder[i] = vtemp("BCorder", inds[i]);
                 T E;
-                if (fixed[0] && fixed[1] && fixed[2] && fixed[3])
+                if (BCorder[0] == 3 && BCorder[1] == 3 && BCorder[2] == 3 &&
+                    BCorder[3] == 3)
                   E = 0;
                 else {
                   mat3 F{};
@@ -2028,6 +2021,7 @@ struct CodimStepping : INode {
                 reduce_to(ei, numEles, E, res[0]);
               });
       }
+#if 0
       // collision object
       pol(range(coVerts.size()),
           [vtemp = proxy<space>({}, vtemp), res = proxy<space>(res), tag,
@@ -2045,6 +2039,7 @@ struct CodimStepping : INode {
             };
             reduce_to(vi, n, E, res[0]);
           });
+#endif
       // contacts
       {
 #if s_enableContact
@@ -2302,6 +2297,7 @@ struct CodimStepping : INode {
               });
 #endif
         } else if (primHandle.category == ZenoParticles::tet)
+#if 0
           pol(range(eles.size()),
               [execTag, etemp = proxy<space>({}, primHandle.etemp),
                vtemp = proxy<space>({}, vtemp), eles = proxy<space>({}, eles),
@@ -2326,6 +2322,60 @@ struct CodimStepping : INode {
                                temp[vi * dim + d]);
                   }
               });
+#else
+          pol(range(eles.size() * 144),
+              [execTag, etemp = proxy<space>({}, primHandle.etemp),
+               vtemp = proxy<space>({}, vtemp), eles = proxy<space>({}, eles),
+               dxTag, bTag, vOffset = primHandle.vOffset,
+               n = eles.size() * 144] ZS_LAMBDA(int idx) mutable {
+                constexpr int dim = 3;
+                __shared__ int offset;
+                // directly use PCG_Solve_AX9_b2 from kemeng huang
+                int Hid = idx / 144;
+                int entryId = idx % 144;
+                int MRid = entryId / 12;
+                int MCid = entryId % 12;
+                int vId = MCid / dim;
+                int axisId = MCid % dim;
+                int GRtid = idx % 12;
+
+                auto inds = eles.template pack<4>("inds", Hid)
+                                .template reinterpret_bits<int>() +
+                            vOffset;
+                T rdata =
+                    etemp("He", entryId, Hid) * vtemp(dxTag, axisId, inds[vId]);
+
+                if (threadIdx.x == 0)
+                  offset = 12 - GRtid;
+                __syncthreads();
+
+                int BRid = (threadIdx.x - offset + 12) / 12;
+                int landidx = (threadIdx.x - offset) % 12;
+                if (BRid == 0) {
+                  landidx = threadIdx.x;
+                }
+
+                auto [mask, numValid] = warp_mask(idx, n);
+                int laneId = threadIdx.x & 0x1f;
+                bool bBoundary = (landidx == 0) || (laneId == 0);
+
+                unsigned int mark =
+                    __ballot_sync(mask, bBoundary); // a bit-mask
+                mark = __brev(mark);
+                unsigned int interval =
+                    zs::math::min(__clz(mark << (laneId + 1)), 31 - laneId);
+
+                for (int iter = 1; iter < 12; iter <<= 1) {
+                  T tmp = __shfl_down_sync(mask, rdata, iter);
+                  if (interval >= iter && laneId + iter < numValid)
+                    rdata += tmp;
+                }
+
+                if (bBoundary)
+                  atomic_add(exec_cuda, &vtemp(bTag, MRid % 3, inds[MRid / 3]),
+                             rdata);
+              });
+#endif
       }
 #if 0
       // collision object
@@ -2349,6 +2399,7 @@ struct CodimStepping : INode {
 #if s_enableContact
         {
           auto numPP = nPP.getVal();
+#if 0
           pol(range(numPP), [execTag, tempPP = proxy<space>({}, tempPP),
                              vtemp = proxy<space>({}, vtemp), dxTag, bTag,
                              PP = proxy<space>(PP)] ZS_LAMBDA(int ppi) mutable {
@@ -2369,7 +2420,58 @@ struct CodimStepping : INode {
                            temp[vi * dim + d]);
               }
           });
+#else
+          pol(range(numPP * 36), [execTag, tempPP = proxy<space>({}, tempPP),
+                                  vtemp = proxy<space>({}, vtemp), dxTag, bTag,
+                                  PP = proxy<space>(PP),
+                                  n = numPP * 36] ZS_LAMBDA(int idx) mutable {
+            constexpr int dim = 3;
+            __shared__ int offset;
+            // directly use PCG_Solve_AX9_b2 from kemeng huang
+            int Hid = idx / 36;
+            int entryId = idx % 36;
+            int MRid = entryId / 6;
+            int MCid = entryId % 6;
+            int vId = MCid / dim;
+            int axisId = MCid % dim;
+            int GRtid = idx % 6;
+
+            auto inds = PP[Hid];
+            T rdata =
+                tempPP("H", entryId, Hid) * vtemp(dxTag, axisId, inds[vId]);
+
+            if (threadIdx.x == 0)
+              offset = 6 - GRtid;
+            __syncthreads();
+
+            int BRid = (threadIdx.x - offset + 6) / 6;
+            int landidx = (threadIdx.x - offset) % 6;
+            if (BRid == 0) {
+              landidx = threadIdx.x;
+            }
+
+            auto [mask, numValid] = warp_mask(idx, n);
+            int laneId = threadIdx.x & 0x1f;
+            bool bBoundary = (landidx == 0) || (laneId == 0);
+
+            unsigned int mark = __ballot_sync(mask, bBoundary); // a bit-mask
+            mark = __brev(mark);
+            unsigned int interval =
+                zs::math::min(__clz(mark << (laneId + 1)), 31 - laneId);
+
+            for (int iter = 1; iter < 6; iter <<= 1) {
+              T tmp = __shfl_down_sync(mask, rdata, iter);
+              if (interval >= iter && laneId + iter < numValid)
+                rdata += tmp;
+            }
+
+            if (bBoundary)
+              atomic_add(exec_cuda, &vtemp(bTag, MRid % 3, inds[MRid / 3]),
+                         rdata);
+          });
+#endif
           auto numPE = nPE.getVal();
+#if 0
           pol(range(numPE), [execTag, tempPE = proxy<space>({}, tempPE),
                              vtemp = proxy<space>({}, vtemp), dxTag, bTag,
                              PE = proxy<space>(PE)] ZS_LAMBDA(int pei) mutable {
@@ -2390,7 +2492,58 @@ struct CodimStepping : INode {
                            temp[vi * dim + d]);
               }
           });
+#else
+          pol(range(numPE * 81), [execTag, tempPE = proxy<space>({}, tempPE),
+                                  vtemp = proxy<space>({}, vtemp), dxTag, bTag,
+                                  PE = proxy<space>(PE),
+                                  n = numPE * 81] ZS_LAMBDA(int idx) mutable {
+            constexpr int dim = 3;
+            __shared__ int offset;
+            // directly use PCG_Solve_AX9_b2 from kemeng huang
+            int Hid = idx / 81;
+            int entryId = idx % 81;
+            int MRid = entryId / 9;
+            int MCid = entryId % 9;
+            int vId = MCid / dim;
+            int axisId = MCid % dim;
+            int GRtid = idx % 9;
+
+            auto inds = PE[Hid];
+            T rdata =
+                tempPE("H", entryId, Hid) * vtemp(dxTag, axisId, inds[vId]);
+
+            if (threadIdx.x == 0)
+              offset = 9 - GRtid;
+            __syncthreads();
+
+            int BRid = (threadIdx.x - offset + 9) / 9;
+            int landidx = (threadIdx.x - offset) % 9;
+            if (BRid == 0) {
+              landidx = threadIdx.x;
+            }
+
+            auto [mask, numValid] = warp_mask(idx, n);
+            int laneId = threadIdx.x & 0x1f;
+            bool bBoundary = (landidx == 0) || (laneId == 0);
+
+            unsigned int mark = __ballot_sync(mask, bBoundary); // a bit-mask
+            mark = __brev(mark);
+            unsigned int interval =
+                zs::math::min(__clz(mark << (laneId + 1)), 31 - laneId);
+
+            for (int iter = 1; iter < 9; iter <<= 1) {
+              T tmp = __shfl_down_sync(mask, rdata, iter);
+              if (interval >= iter && laneId + iter < numValid)
+                rdata += tmp;
+            }
+
+            if (bBoundary)
+              atomic_add(exec_cuda, &vtemp(bTag, MRid % 3, inds[MRid / 3]),
+                         rdata);
+          });
+#endif
           auto numPT = nPT.getVal();
+#if 0
           pol(range(numPT), [execTag, tempPT = proxy<space>({}, tempPT),
                              vtemp = proxy<space>({}, vtemp), dxTag, bTag,
                              PT = proxy<space>(PT)] ZS_LAMBDA(int pti) mutable {
@@ -2411,7 +2564,58 @@ struct CodimStepping : INode {
                            temp[vi * dim + d]);
               }
           });
+#else
+          pol(range(numPT * 144), [execTag, tempPT = proxy<space>({}, tempPT),
+                                   vtemp = proxy<space>({}, vtemp), dxTag, bTag,
+                                   PT = proxy<space>(PT),
+                                   n = numPT * 144] ZS_LAMBDA(int idx) mutable {
+            constexpr int dim = 3;
+            __shared__ int offset;
+            // directly use PCG_Solve_AX9_b2 from kemeng huang
+            int Hid = idx / 144;
+            int entryId = idx % 144;
+            int MRid = entryId / 12;
+            int MCid = entryId % 12;
+            int vId = MCid / dim;
+            int axisId = MCid % dim;
+            int GRtid = idx % 12;
+
+            auto inds = PT[Hid];
+            T rdata =
+                tempPT("H", entryId, Hid) * vtemp(dxTag, axisId, inds[vId]);
+
+            if (threadIdx.x == 0)
+              offset = 12 - GRtid;
+            __syncthreads();
+
+            int BRid = (threadIdx.x - offset + 12) / 12;
+            int landidx = (threadIdx.x - offset) % 12;
+            if (BRid == 0) {
+              landidx = threadIdx.x;
+            }
+
+            auto [mask, numValid] = warp_mask(idx, n);
+            int laneId = threadIdx.x & 0x1f;
+            bool bBoundary = (landidx == 0) || (laneId == 0);
+
+            unsigned int mark = __ballot_sync(mask, bBoundary); // a bit-mask
+            mark = __brev(mark);
+            unsigned int interval =
+                zs::math::min(__clz(mark << (laneId + 1)), 31 - laneId);
+
+            for (int iter = 1; iter < 12; iter <<= 1) {
+              T tmp = __shfl_down_sync(mask, rdata, iter);
+              if (interval >= iter && laneId + iter < numValid)
+                rdata += tmp;
+            }
+
+            if (bBoundary)
+              atomic_add(exec_cuda, &vtemp(bTag, MRid % 3, inds[MRid / 3]),
+                         rdata);
+          });
+#endif
           auto numEE = nEE.getVal();
+#if 0
           pol(range(numEE), [execTag, tempEE = proxy<space>({}, tempEE),
                              vtemp = proxy<space>({}, vtemp), dxTag, bTag,
                              EE = proxy<space>(EE)] ZS_LAMBDA(int eei) mutable {
@@ -2432,6 +2636,56 @@ struct CodimStepping : INode {
                            temp[vi * dim + d]);
               }
           });
+#else
+          pol(range(numEE * 144), [execTag, tempEE = proxy<space>({}, tempEE),
+                                   vtemp = proxy<space>({}, vtemp), dxTag, bTag,
+                                   EE = proxy<space>(EE),
+                                   n = numEE * 144] ZS_LAMBDA(int idx) mutable {
+            constexpr int dim = 3;
+            __shared__ int offset;
+            // directly use PCG_Solve_AX9_b2 from kemeng huang
+            int Hid = idx / 144;
+            int entryId = idx % 144;
+            int MRid = entryId / 12;
+            int MCid = entryId % 12;
+            int vId = MCid / dim;
+            int axisId = MCid % dim;
+            int GRtid = idx % 12;
+
+            auto inds = EE[Hid];
+            T rdata =
+                tempEE("H", entryId, Hid) * vtemp(dxTag, axisId, inds[vId]);
+
+            if (threadIdx.x == 0)
+              offset = 12 - GRtid;
+            __syncthreads();
+
+            int BRid = (threadIdx.x - offset + 12) / 12;
+            int landidx = (threadIdx.x - offset) % 12;
+            if (BRid == 0) {
+              landidx = threadIdx.x;
+            }
+
+            auto [mask, numValid] = warp_mask(idx, n);
+            int laneId = threadIdx.x & 0x1f;
+            bool bBoundary = (landidx == 0) || (laneId == 0);
+
+            unsigned int mark = __ballot_sync(mask, bBoundary); // a bit-mask
+            mark = __brev(mark);
+            unsigned int interval =
+                zs::math::min(__clz(mark << (laneId + 1)), 31 - laneId);
+
+            for (int iter = 1; iter < 12; iter <<= 1) {
+              T tmp = __shfl_down_sync(mask, rdata, iter);
+              if (interval >= iter && laneId + iter < numValid)
+                rdata += tmp;
+            }
+
+            if (bBoundary)
+              atomic_add(exec_cuda, &vtemp(bTag, MRid % 3, inds[MRid / 3]),
+                         rdata);
+          });
+#endif
         }
 #endif
         // boundary
@@ -2505,7 +2759,7 @@ struct CodimStepping : INode {
           if (residualPreconditionedNorm <= localTol)
             break;
           multiply(cudaPol, "p", "temp");
-          project(cudaPol, "temp");
+          // project(cudaPol, "temp");
 
           T alpha = zTrk / dot(cudaPol, vtemp, "temp", "p");
           cudaPol(range(numDofs), [vtemp = proxy<space>({}, vtemp),
