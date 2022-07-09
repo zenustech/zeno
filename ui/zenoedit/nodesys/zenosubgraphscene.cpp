@@ -660,7 +660,7 @@ void ZenoSubGraphScene::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
 
 void ZenoSubGraphScene::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
 {
-    if (m_tempLink && event->button() != Qt::MidButton)
+    if (m_tempLink && event->button() != Qt::MidButton && event->button() != Qt::RightButton)
     {
         onTempLinkClosed();
         removeItem(m_tempLink);
