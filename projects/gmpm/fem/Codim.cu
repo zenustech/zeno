@@ -1579,20 +1579,20 @@ struct CodimStepping : INode {
       using namespace zs;
       constexpr auto space = execspace_e::cuda;
       cudaPol(zs::range(coOffset),
-              [vtemp = proxy<space>({}, vtemp), gTag, extForce = extForce,
-               dt = dt] __device__(int i) mutable {
+              [tempPB = proxy<space>({}, tempPB),
+               vtemp = proxy<space>({}, vtemp), gTag, extForce = extForce,
+               dt = dt, projectDBC = projectDBC] __device__(int i) mutable {
                 auto m = zs::sqr(vtemp("ws", i));
-                auto BCbasis = vtemp.template pack<3, 3>("BCbasis", i);
-                int BCorder = vtemp("BCorder", i);
                 vtemp.tuple<3>(gTag, i) =
                     m * extForce * dt * dt -
                     m * (vtemp.pack<3>("xn", i) - vtemp.pack<3>("xtilde", i));
 
                 auto M = mat3::identity() * m;
-                M = BCbasis.transpose() * M * BCbasis;
-                for (int r = 0; r != BCorder; ++r)
-                  for (int c = 0; c != BCorder; ++c)
-                    M(r, c) = (r == c ? 1 : 0);
+                mat3 BCbasis[1] = {vtemp.template pack<3, 3>("BCbasis", i)};
+                int BCorder[1] = {(int)vtemp("BCorder", i)};
+                int BCfixed[1] = {(int)vtemp("BCfixed", i)};
+                rotate_hessian(M, BCbasis, BCorder, BCfixed, projectDBC);
+                tempPB.template tuple<9>("Hi", i) = M;
                 // prepare preconditioner
                 for (int r = 0; r != 3; ++r)
                   for (int c = 0; c != 3; ++c)
@@ -2156,6 +2156,229 @@ struct CodimStepping : INode {
       return res.getVal();
     }
 #endif
+    void checkSPD(zs::CudaExecutionPolicy &pol,
+                  const zs::SmallString dxTag) const {
+      using namespace zs;
+      constexpr execspace_e space = execspace_e::cuda;
+      constexpr auto execTag = wrapv<space>{};
+      auto checkHess = [] __device__(const auto &m,
+                                     const zs::SmallString &msg = "") -> bool {
+        auto checkDet = [&msg](auto &checkDet, const auto &m) -> bool {
+          using MatT = RM_CVREF_T(m);
+          using Ti = typename MatT::index_type;
+          using T = typename MatT::value_type;
+          constexpr int dim = MatT::template range_t<0>::value;
+          if (auto det = determinant(m); det < -limits<T>::epsilon()) {
+            printf("msg[%s]: subblock[%d] determinant is %f\n", msg.asChars(),
+                   (int)dim, (float)det);
+            return true;
+          }
+          if constexpr (dim > 1) {
+            using SubMatT = typename MatT::template variant_vec<
+                T, integer_seq<Ti, dim - 1, dim - 1>>;
+            SubMatT subm;
+            for (int i = 0; i != dim - 1; ++i)
+              for (int j = 0; j != dim - 1; ++j)
+                subm(i, j) = m(i, j);
+            return checkDet(checkDet, subm);
+          }
+          return false;
+        };
+        return checkDet(checkDet, m);
+      };
+      // inertial
+      pol(zs::range(coOffset), [checkHess,
+                                tempPB = proxy<space>(
+                                    {}, tempPB)] __device__(int i) mutable {
+        auto Hi = tempPB.template pack<3, 3>("Hi", i);
+        checkHess(Hi, "inertial");
+        if (Hi(0, 0) < 0 || Hi(1, 1) < 0 || Hi(2, 2) < 0)
+          printf(
+              "%d-th Inertial Hessian [%f, %f, %f; %f, %f, %f; %f, %f, %f]\n",
+              i, (float)Hi(0, 0), (float)Hi(0, 1), (float)Hi(0, 2),
+              (float)Hi(1, 0), (float)Hi(1, 1), (float)Hi(1, 2),
+              (float)Hi(2, 0), (float)Hi(2, 1), (float)Hi(2, 2));
+      });
+
+      for (auto &primHandle : prims) {
+        auto &verts = primHandle.getVerts();
+        auto &eles = primHandle.getEles();
+        // elasticity
+        if (primHandle.category == ZenoParticles::surface) {
+          pol(range(eles.size()),
+              [checkHess, etemp = proxy<space>({}, primHandle.etemp),
+               vtemp = proxy<space>({}, vtemp), eles = proxy<space>({}, eles),
+               vOffset = primHandle.vOffset] ZS_LAMBDA(int ei) mutable {
+                constexpr int dim = 3;
+                auto inds = eles.template pack<3>("inds", ei)
+                                .template reinterpret_bits<int>() +
+                            vOffset;
+                auto He = etemp.template pack<dim * 3, dim * 3>("He", ei);
+                checkHess(He, "surf elasticity");
+                for (int d = 0; d != 3; ++d) {
+                  mat3 Hi{};
+                  for (int e = 0; e != 9; ++e)
+                    Hi(e / 3, e % 3) = He(d * 3 + e / 3, d * 3 + e % 3);
+
+                  if (Hi(0, 0) < 0 || Hi(1, 1) < 0 || Hi(2, 2) < 0)
+                    printf("%d-th Elastic Hessian9 %d-th subdiagblock:\n\t[%f, "
+                           "%f, %f; %f, %f, %f; %f, "
+                           "%f, %f]\n",
+                           ei, d, (float)Hi(0, 0), (float)Hi(0, 1),
+                           (float)Hi(0, 2), (float)Hi(1, 0), (float)Hi(1, 1),
+                           (float)Hi(1, 2), (float)Hi(2, 0), (float)Hi(2, 1),
+                           (float)Hi(2, 2));
+                }
+              });
+        } else if (primHandle.category == ZenoParticles::tet)
+          pol(range(eles.size()),
+              [checkHess, etemp = proxy<space>({}, primHandle.etemp),
+               vtemp = proxy<space>({}, vtemp), eles = proxy<space>({}, eles),
+               vOffset = primHandle.vOffset] ZS_LAMBDA(int ei) mutable {
+                constexpr int dim = 3;
+                auto inds = eles.template pack<4>("inds", ei)
+                                .template reinterpret_bits<int>() +
+                            vOffset;
+                auto He = etemp.template pack<dim * 4, dim * 4>("He", ei);
+                checkHess(He, "tet elasticity");
+                for (int d = 0; d != 4; ++d) {
+                  mat3 Hi{};
+                  for (int e = 0; e != 9; ++e)
+                    Hi(e / 3, e % 3) = He(d * 3 + e / 3, d * 3 + e % 3);
+
+                  if (Hi(0, 0) < 0 || Hi(1, 1) < 0 || Hi(2, 2) < 0)
+                    printf(
+                        "%d-th Elastic Hessian12 %d-th subdiagblock:\n\t[%f, "
+                        "%f, %f; %f, %f, %f; %f, "
+                        "%f, %f]\n",
+                        ei, d, (float)Hi(0, 0), (float)Hi(0, 1),
+                        (float)Hi(0, 2), (float)Hi(1, 0), (float)Hi(1, 1),
+                        (float)Hi(1, 2), (float)Hi(2, 0), (float)Hi(2, 1),
+                        (float)Hi(2, 2));
+                }
+              });
+      }
+      // contacts
+      {
+#if s_enableContact
+        {
+          auto numPP = nPP.getVal();
+          pol(range(numPP), [checkHess, tempPP = proxy<space>({}, tempPP),
+                             vtemp = proxy<space>({}, vtemp),
+                             PP = proxy<space>(PP)] ZS_LAMBDA(int ppi) mutable {
+            constexpr int dim = 3;
+            auto pp = PP[ppi];
+            auto ppHess = tempPP.template pack<6, 6>("H", ppi);
+            checkHess(ppHess, "pp hess");
+            for (int d = 0; d != 2; ++d) {
+              mat3 Hi{};
+              for (int e = 0; e != 9; ++e)
+                Hi(e / 3, e % 3) = ppHess(d * 3 + e / 3, d * 3 + e % 3);
+
+              if (Hi(0, 0) < 0 || Hi(1, 1) < 0 || Hi(2, 2) < 0)
+                printf("%d-th Contact Hessian6 %d-th subdiagblock:\n\t[%f, "
+                       "%f, %f; %f, %f, %f; %f, "
+                       "%f, %f]\n",
+                       ppi, d, (float)Hi(0, 0), (float)Hi(0, 1),
+                       (float)Hi(0, 2), (float)Hi(1, 0), (float)Hi(1, 1),
+                       (float)Hi(1, 2), (float)Hi(2, 0), (float)Hi(2, 1),
+                       (float)Hi(2, 2));
+            }
+          });
+          auto numPE = nPE.getVal();
+          pol(range(numPE), [checkHess, tempPE = proxy<space>({}, tempPE),
+                             vtemp = proxy<space>({}, vtemp),
+                             PE = proxy<space>(PE)] ZS_LAMBDA(int pei) mutable {
+            constexpr int dim = 3;
+            auto pe = PE[pei];
+            auto peHess = tempPE.template pack<9, 9>("H", pei);
+            checkHess(peHess, "pe hess");
+            for (int d = 0; d != 3; ++d) {
+              mat3 Hi{};
+              for (int e = 0; e != 9; ++e)
+                Hi(e / 3, e % 3) = peHess(d * 3 + e / 3, d * 3 + e % 3);
+
+              if (Hi(0, 0) < 0 || Hi(1, 1) < 0 || Hi(2, 2) < 0)
+                printf("%d-th Contact Hessian9 %d-th subdiagblock:\n\t[%f, "
+                       "%f, %f; %f, %f, %f; %f, "
+                       "%f, %f]\n",
+                       pei, d, (float)Hi(0, 0), (float)Hi(0, 1),
+                       (float)Hi(0, 2), (float)Hi(1, 0), (float)Hi(1, 1),
+                       (float)Hi(1, 2), (float)Hi(2, 0), (float)Hi(2, 1),
+                       (float)Hi(2, 2));
+            }
+          });
+          auto numPT = nPT.getVal();
+          pol(range(numPT), [checkHess, tempPT = proxy<space>({}, tempPT),
+                             vtemp = proxy<space>({}, vtemp),
+                             PT = proxy<space>(PT)] ZS_LAMBDA(int pti) mutable {
+            constexpr int dim = 3;
+            auto pt = PT[pti];
+            auto ptHess = tempPT.template pack<12, 12>("H", pti);
+            checkHess(ptHess, "pt hess");
+            for (int d = 0; d != 4; ++d) {
+              mat3 Hi{};
+              for (int e = 0; e != 9; ++e)
+                Hi(e / 3, e % 3) = ptHess(d * 3 + e / 3, d * 3 + e % 3);
+
+              if (Hi(0, 0) < 0 || Hi(1, 1) < 0 || Hi(2, 2) < 0)
+                printf("%d-th Contact Hessian12 %d-th subdiagblock:\n\t[%f, "
+                       "%f, %f; %f, %f, %f; %f, "
+                       "%f, %f]\n",
+                       pti, d, (float)Hi(0, 0), (float)Hi(0, 1),
+                       (float)Hi(0, 2), (float)Hi(1, 0), (float)Hi(1, 1),
+                       (float)Hi(1, 2), (float)Hi(2, 0), (float)Hi(2, 1),
+                       (float)Hi(2, 2));
+            }
+          });
+          auto numEE = nEE.getVal();
+          pol(range(numEE), [checkHess, tempEE = proxy<space>({}, tempEE),
+                             vtemp = proxy<space>({}, vtemp),
+                             EE = proxy<space>(EE)] ZS_LAMBDA(int eei) mutable {
+            constexpr int dim = 3;
+            auto ee = EE[eei];
+            auto eeHess = tempEE.template pack<12, 12>("H", eei);
+            if (checkHess(eeHess, "ee hess")) {
+              auto ea0 = vtemp.template pack<3>("xn", ee[0]);
+              auto ea1 = vtemp.template pack<3>("xn", ee[1]);
+              auto eb0 = vtemp.template pack<3>("xn", ee[2]);
+              auto eb1 = vtemp.template pack<3>("xn", ee[3]);
+              auto ea0Rest = vtemp.template pack<3>("x0", ee[0]);
+              auto ea1Rest = vtemp.template pack<3>("x0", ee[1]);
+              auto eb0Rest = vtemp.template pack<3>("x0", ee[2]);
+              auto eb1Rest = vtemp.template pack<3>("x0", ee[3]);
+              auto cro = (ea1 - ea0).cross(eb1 - eb0);
+              T c = cn2_ee(ea0, ea1, eb0, eb1);
+              T epsX =
+                  mollifier_threshold_ee(ea0Rest, ea1Rest, eb0Rest, eb1Rest);
+              bool mollify = c < epsX;
+              printf("e0 (%f, %f, %f)-(%f, %f, %f), e1 (%f, %f, %f)-(%f, %f, "
+                     "%f), c (%f) < epsX (%f) ?\n",
+                     (float)ea0[0], (float)ea0[1], (float)ea0[2], (float)ea1[0],
+                     (float)ea1[1], (float)ea1[2], (float)eb0[0], (float)eb0[1],
+                     (float)eb0[2], (float)eb1[0], (float)eb1[1], (float)eb1[2],
+                     (float)c, (float)epsX);
+            }
+            for (int d = 0; d != 4; ++d) {
+              mat3 Hi{};
+              for (int e = 0; e != 9; ++e)
+                Hi(e / 3, e % 3) = eeHess(d * 3 + e / 3, d * 3 + e % 3);
+
+              if (Hi(0, 0) < 0 || Hi(1, 1) < 0 || Hi(2, 2) < 0)
+                printf("%d-th Contact Hessian12 %d-th subdiagblock:\n\t[%f, "
+                       "%f, %f; %f, %f, %f; %f, "
+                       "%f, %f]\n",
+                       eei, d, (float)Hi(0, 0), (float)Hi(0, 1),
+                       (float)Hi(0, 2), (float)Hi(1, 0), (float)Hi(1, 1),
+                       (float)Hi(1, 2), (float)Hi(2, 0), (float)Hi(2, 1),
+                       (float)Hi(2, 2));
+            }
+          });
+        }
+#endif
+      } // end contacts
+      puts("done checking SPD");
+    }
     void project(zs::CudaExecutionPolicy &pol, const zs::SmallString tag) {
       using namespace zs;
       constexpr execspace_e space = execspace_e::cuda;
@@ -2198,26 +2421,22 @@ struct CodimStepping : INode {
         vtemp.template tuple<3>(bTag, vi) = vec3::zeros();
       });
       // inertial
-      pol(zs::range(coOffset),
-          [execTag, vtemp = proxy<space>({}, vtemp), dxTag, bTag,
-           projectDBC = projectDBC] __device__(int i) mutable {
-            auto m = zs::sqr(vtemp("ws", i));
-            mat3 BCbasis[1] = {vtemp.template pack<3, 3>("BCbasis", i)};
-            int BCorder[1] = {(int)vtemp("BCorder", i)};
-            int BCfixed[1] = {(int)vtemp("BCfixed", i)};
-            auto M = mat3::identity() * m;
-            rotate_hessian(M, BCbasis, BCorder, BCfixed, projectDBC);
-            auto dx = vtemp.template pack<3>(dxTag, i);
-            dx = M * dx;
-            for (int d = 0; d != 3; ++d)
-              atomic_add(execTag, &vtemp(bTag, d, i), dx(d));
-          });
+      pol(zs::range(coOffset), [execTag, tempPB = proxy<space>({}, tempPB),
+                                vtemp = proxy<space>({}, vtemp), dxTag,
+                                bTag] __device__(int i) mutable {
+        auto Hi = tempPB.template pack<3, 3>("Hi", i);
+        auto dx = vtemp.template pack<3>(dxTag, i);
+        dx = Hi * dx;
+        for (int d = 0; d != 3; ++d)
+          atomic_add(execTag, &vtemp(bTag, d, i), dx(d));
+      });
+
       for (auto &primHandle : prims) {
         auto &verts = primHandle.getVerts();
         auto &eles = primHandle.getEles();
         // elasticity
         if (primHandle.category == ZenoParticles::surface) {
-#if 0
+#if 1
           pol(range(eles.size()),
               [execTag, etemp = proxy<space>({}, primHandle.etemp),
                vtemp = proxy<space>({}, vtemp), eles = proxy<space>({}, eles),
@@ -2297,7 +2516,7 @@ struct CodimStepping : INode {
               });
 #endif
         } else if (primHandle.category == ZenoParticles::tet)
-#if 0
+#if 1
           pol(range(eles.size()),
               [execTag, etemp = proxy<space>({}, primHandle.etemp),
                vtemp = proxy<space>({}, vtemp), eles = proxy<space>({}, eles),
@@ -2399,7 +2618,7 @@ struct CodimStepping : INode {
 #if s_enableContact
         {
           auto numPP = nPP.getVal();
-#if 0
+#if 1
           pol(range(numPP), [execTag, tempPP = proxy<space>({}, tempPP),
                              vtemp = proxy<space>({}, vtemp), dxTag, bTag,
                              PP = proxy<space>(PP)] ZS_LAMBDA(int ppi) mutable {
@@ -2471,7 +2690,7 @@ struct CodimStepping : INode {
           });
 #endif
           auto numPE = nPE.getVal();
-#if 0
+#if 1
           pol(range(numPE), [execTag, tempPE = proxy<space>({}, tempPE),
                              vtemp = proxy<space>({}, vtemp), dxTag, bTag,
                              PE = proxy<space>(PE)] ZS_LAMBDA(int pei) mutable {
@@ -2543,7 +2762,7 @@ struct CodimStepping : INode {
           });
 #endif
           auto numPT = nPT.getVal();
-#if 0
+#if 1
           pol(range(numPT), [execTag, tempPT = proxy<space>({}, tempPT),
                              vtemp = proxy<space>({}, vtemp), dxTag, bTag,
                              PT = proxy<space>(PT)] ZS_LAMBDA(int pti) mutable {
@@ -2615,7 +2834,7 @@ struct CodimStepping : INode {
           });
 #endif
           auto numEE = nEE.getVal();
-#if 0
+#if 1
           pol(range(numEE), [execTag, tempEE = proxy<space>({}, tempEE),
                              vtemp = proxy<space>({}, vtemp), dxTag, bTag,
                              EE = proxy<space>(EE)] ZS_LAMBDA(int eei) mutable {
@@ -2719,7 +2938,7 @@ struct CodimStepping : INode {
       using namespace zs;
       constexpr auto space = execspace_e::cuda;
       if (useGD) {
-        project(cudaPol, "grad");
+        // project(cudaPol, "grad");
         precondition(cudaPol, "grad", "dir");
       } else {
         // solve for A dir = grad;
@@ -2735,7 +2954,7 @@ struct CodimStepping : INode {
                   vtemp.tuple<3>("r", i) =
                       vtemp.pack<3>("grad", i) - vtemp.pack<3>("temp", i);
                 });
-        project(cudaPol, "r");
+        // project(cudaPol, "r");
         precondition(cudaPol, "r", "q");
         cudaPol(zs::range(numDofs),
                 [vtemp = proxy<space>({}, vtemp)] __device__(int i) mutable {
@@ -2786,7 +3005,8 @@ struct CodimStepping : INode {
                        "gradient descent ftm.\n",
                        zTrk, iter);
             useGD = true;
-            // getchar();
+            checkSPD(cudaPol, "xn");
+            getchar();
             break;
           }
           residualPreconditionedNorm = std::sqrt(zTrk);
@@ -3101,8 +3321,8 @@ struct CodimStepping : INode {
            {"p", 3},
            {"q", 3}},
           numDofs};
-      // ground hessian
-      tempPB = dtiles_t{vtemp.get_allocator(), {{"H", 9}}, coOffset};
+      // ground + inertial hessian
+      tempPB = dtiles_t{vtemp.get_allocator(), {{"H", 9}, {"Hi", 9}}, coOffset};
       nPP.setVal(0);
       nPE.setVal(0);
       nPT.setVal(0);
@@ -3365,19 +3585,7 @@ struct CodimStepping : INode {
           A.computeBarrierGradientAndHessian(cudaPol);
 
         // rotate gradient and project
-        cudaPol(zs::range(numDofs),
-                [vtemp = proxy<space>({}, vtemp),
-                 projectDBC = projectDBC] __device__(int i) mutable {
-                  auto grad = vtemp.pack<3, 3>("BCbasis", i).transpose() *
-                              vtemp.pack<3>("grad", i);
-                  int BCfixed = vtemp("BCfixed", i);
-                  if (projectDBC || BCfixed == 1) {
-                    if (int BCorder = vtemp("BCorder", i); BCorder > 0)
-                      for (int d = 0; d != BCorder; ++d)
-                        grad(d) = 0;
-                  }
-                  vtemp.tuple<3>("grad", i) = grad;
-                });
+        A.project(cudaPol, "grad");
         // apply constraints (augmented lagrangians) after rotation!
         if (!BCsatisfied) {
           // grad
