@@ -46,7 +46,7 @@ void sampleVDBAttribute(std::vector<vec3f> const &pos, std::vector<T> &arr,
     auto p0 = pos[i];
     auto p1 = vec_to_other<openvdb::Vec3R>(p0);
     auto p2 = grid->worldToIndex(p1);
-    auto val = openvdb::tools::BoxSampler::sample(grid->tree(), p2);
+    auto val = openvdb::tools::BoxSampler::sample(grid->getConstUnsafeAccessor(), p2);
     if constexpr (attr_to_vdb_type<T>::is_scalar) {
       arr[i] = val;
     } else {
