@@ -1,4 +1,5 @@
 #include "zenonode.h"
+#include "zenosubgraphscene.h"
 #include <zenoui/model/modelrole.h>
 #include "model/subgraphmodel.h"
 #include <zenoui/render/common_id.h>
@@ -1459,7 +1460,14 @@ void ZenoNode::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
         nodeMenu->addAction(pFork);
         connect(pFork, &QAction::triggered, this, [=]()
         {
-            pGraphsModel->fork(m_subGpIndex, index());
+            QModelIndex forkNode = pGraphsModel->fork(m_subGpIndex, index());
+            if (forkNode.isValid())
+            {
+                ZenoSubGraphScene* pScene = qobject_cast<ZenoSubGraphScene*>(scene());
+                if (pScene) {
+                    pScene->select(forkNode.data(ROLE_OBJID).toString());
+                }
+            }
         });
         nodeMenu->exec(QCursor::pos());
         nodeMenu->deleteLater();

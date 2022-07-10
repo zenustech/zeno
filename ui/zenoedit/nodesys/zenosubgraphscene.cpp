@@ -82,6 +82,8 @@ void ZenoSubGraphScene::initModel(const QModelIndex& index)
                 const QString& outId = linkIdx.data(ROLE_OUTNODE).toString();
                 const QString& outSock = linkIdx.data(ROLE_OUTSOCK).toString();
                 ZenoNode* outNode = m_nodes[outId];
+                ZASSERT_EXIT(outNode);
+
                 const QPointF& outSockPos = outNode->getPortPos(false, outSock);
 
                 ZenoFullLink *pEdge = new ZenoFullLink(linkIdx, outNode, inNode);
