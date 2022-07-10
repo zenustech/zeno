@@ -17,7 +17,6 @@ namespace zeno {
     template<typename T>
     constexpr T volume(zs::vec<T, 6> l) {
         T u = l(0);
-
         T v = l(1);
         T w = l(2);
         T U = l(3);
@@ -69,10 +68,15 @@ namespace zeno {
         theta(5) = zs::acos(cos_theta(5));       
     }
 
-    template <int simplex_size,typename T,typename Pol>
-    constexpr void compute_cotmatrix(Pol &pol,const typename ZenoParticles::particles_t &eles,
-        const typename ZenoParticles::particles_t &verts, const zs::SmallString& xTag, 
-        zs::TileVector<T,32>& etemp, const zs::SmallString& HTag) {
+    template <int simplex_size,typename Pol,typename ETileVec,typename VTileVec,typename ETmpTileVec>
+    constexpr void compute_cotmatrix(Pol &pol,const ETileVec &eles,
+        const VTileVec &verts, const zs::SmallString& xTag, 
+        ETmpTileVec& etemp, const zs::SmallString& HTag) {
+
+        static_assert(zs::is_same_v<typename ETileVec::value_type,typename VTileVec::value_type>,"precision not match");
+        static_assert(zs::is_same_v<typename ETileVec::value_type,typename ETmpTileVec::value_type>,"precision not match");   
+
+        using T = typename VTileVec::value_type;
 
         using namespace zs;
         static_assert(simplex_size >= 3 && simplex_size <=4, "invalid co-dimension!\n");
@@ -99,16 +103,13 @@ namespace zeno {
         // zs::Vector<T> C{eles.get_allocator(),eles.size()*simplex_size*(simplex_size-1)/2};
 
         // compute cotangent entries
-        fmt::print("COMPUTE COTANGENT ENTRIES\n");
+        // fmt::print("COMPUTE COTANGENT ENTRIES\n");
         int nm_elms = etemp.size();
         pol(zs::range(etemp.size()),
             [eles = proxy<space>({},eles),verts = proxy<space>({},verts),
-            etemp = proxy<space>({},etemp),xTag,HTag,simplex_size_v = wrapv<simplex_size>{},nm_elms] ZS_LAMBDA(int ei) mutable {
-                // if(ei != nm_elms-1)
-                //     return;
-                constexpr int cdim = RM_CVREF_T(simplex_size_v)::value;
-                constexpr int ne = cdim*(cdim-1)/2;
-                auto inds = eles.template pack<cdim>("inds",ei).template reinterpret_bits<int>();
+            etemp = proxy<space>({},etemp),xTag,HTag,nm_elms] ZS_LAMBDA(int ei) mutable {
+                constexpr int ne = simplex_size*(simplex_size-1)/2;
+                auto inds = eles.template pack<simplex_size>("inds",ei).template reinterpret_bits<int>();
                 
                 using IV = zs::vec<int,ne*2>;
                 using TV = zs::vec<T, ne>;
@@ -117,7 +118,7 @@ namespace zeno {
                 IV edges;
                 // printf("check_0\n");
                 // compute the cotangent entris
-                if constexpr (cdim == 3){
+                if constexpr (simplex_size == 3){
                     edges = IV{1,2,2,0,0,1};
                     zs::vec<T,3> l;
                     for(size_t i = 0;i != ne;++i)
@@ -125,13 +126,8 @@ namespace zeno {
                     auto dblA = doublearea(l[0],l[1],l[2]);// check here, double area
                     for(size_t i = 0;i != ne;++i)
                         C[i] = (l[edges[2*i+0]] + l[edges[2*i+1]] - l[3 - edges[2*i+0] - edges[2*i+1]])/dblA/4.0;
-                    // if(ei == 0){
-                    //     printf("C : %f %f %f\n",(float)C[0],(float)C[1],(float)C[2]);
-                    //     printf("l : %f %f %f\n",(float)l[0],(float)l[1],(float)l[2]);
-                    //     printf("lblA : %f\n",(float)dblA);
-                    // }
                 }
-                if constexpr (cdim == 4){
+                if constexpr (simplex_size == 4){
                     // printf("check_1\n");
                     edges = IV{1,2,2,0,0,1,3,0,3,1,3,2};
                     zs::vec<T,ne> l{};
@@ -169,136 +165,26 @@ namespace zeno {
                     for(size_t i = 0;i !=ne; ++i)
                         sin_theta(i) = zs::sin(theta(i));
                     #endif
-                    // printf("check_5\n");
                     C = (1./6.) * l * cos_theta / sin_theta;
-                    // printf("check_6\n");
-                    // if(ei == 29695){
-                    //     printf("l<%d> : %f %f %f %f %f %f\n",ei,
-                    //         (float)l[0],
-                    //         (float)l[1],
-                    //         (float)l[2],
-                    //         (float)l[3],
-                    //         (float)l[4],
-                    //         (float)l[5]
-                    //     );
-
-                    //     printf("s<%d> : %f %f %f %f\n",ei,
-                    //         (float)s[0],
-                    //         (float)s[1],
-                    //         (float)s[2],
-                    //         (float)s[3]
-                    //     );
-
-                    //     printf("cos_theta<%d> : %f %f %f %f %f %f\n",ei,
-                    //         (float)cos_theta[0],
-                    //         (float)cos_theta[1],
-                    //         (float)cos_theta[2],
-                    //         (float)cos_theta[3],
-                    //         (float)cos_theta[4],
-                    //         (float)cos_theta[5]
-                    //     );
-
-                    //     printf("sin_theta<%d> : %f %f %f %f %f %f\n",ei,
-                    //         (float)sin_theta[0],
-                    //         (float)sin_theta[1],
-                    //         (float)sin_theta[2],
-                    //         (float)sin_theta[3],
-                    //         (float)sin_theta[4],
-                    //         (float)sin_theta[5]
-                    //     );
-                    //     printf("C<%d>: %f %f %f %f %f %f\n",ei,C(0),C(1),C(2),C(3),C(4),C(5));
-                    // }
                 }
 
-                constexpr int cdim2 = cdim*cdim;
-                etemp.template tuple<cdim2>(HTag,ei) = zs::vec<T,cdim2>::zeros();
+                constexpr int simplex_size2 = simplex_size*simplex_size;
+                etemp.template tuple<simplex_size2>(HTag,ei) = zs::vec<T,simplex_size2>::zeros();
 
 
                 for(size_t i = 0;i != ne;++i){
                     int source = edges(i*2 + 0);
                     int dest = edges(i*2 + 1);
-                    etemp(HTag,cdim*source + dest,ei) -= C(i); 
-                    etemp(HTag,cdim*dest + source,ei) -= C(i); 
-                    etemp(HTag,cdim*source + source,ei) += C(i); 
-                    etemp(HTag,cdim*dest + dest,ei) += C(i); 
+                    etemp(HTag,simplex_size*source + dest,ei) -= C(i); 
+                    etemp(HTag,simplex_size*dest + source,ei) -= C(i); 
+                    etemp(HTag,simplex_size*source + source,ei) += C(i); 
+                    etemp(HTag,simplex_size*dest + dest,ei) += C(i); 
                 }
 
-                auto L = etemp.template pack<cdim,cdim>(HTag,ei);
-                // T Ln = L.norm();
-                // if(ei == 11687){
-                //     printf("L<%d>:\n%f %f %f %f\n%f %f %f %f\n%f %f %f %f\n%f %f %f %f\n",ei,
-                //             L(0,0),L(0,1),L(0,2),L(0,3),
-                //             L(1,0),L(1,1),L(1,2),L(1,3),
-                //             L(2,0),L(2,1),L(2,2),L(2,3),
-                //             L(3,0),L(3,1),L(3,2),L(3,3));
-                // }
-                // printf("check_7\n");
+                auto L = etemp.template pack<simplex_size,simplex_size>(HTag,ei);
         });
 
-        // pol(zs::range(etemp.size()),
-        //     [etemp = proxy<space>({},etemp),HTag,simplex_size_v = wrapv<simplex_size>{}] ZS_LAMBDA(int ei) mutable {
-        //         constexpr int cdim = RM_CVREF_T(simplex_size_v)::value;
-        //         auto L = etemp.template pack<cdim,cdim>(HTag,ei);
-        //         auto Ln = L.norm();
-        //         if(isnan(Ln)){
-        //             printf("FOUND NAN L<%d> :\n%f %f %f %f\n%f %f %f %f\n%f %f %f %f\n%f %f %f %f\n",ei,
-        //                 (float)L(0,0),(float)L(0,1),(float)L(0,2),(float)L(0,3),
-        //                 (float)L(1,0),(float)L(1,1),(float)L(1,2),(float)L(1,3),
-        //                 (float)L(2,0),(float)L(2,1),(float)L(2,2),(float)L(2,3),
-        //                 (float)L(3,0),(float)L(3,1),(float)L(3,2),(float)L(3,3));
-        //         }
-        //     });
-
-        fmt::print("FINISH COMPUTING COTANGENT ENTRIES\n");
+        // fmt::print("FINISH COMPUTING COTANGENT ENTRIES\n");
 
     }
-
-
-    // template <typename T,typename Pol,int simplex_size = 4>
-    // constexpr void compute_laplace_matrix(Pol &pol,const typename ZenoParticles::particles_t &eles,
-    //     const typename ZenoParticles::particles_t &verts, const zs::SmallString& xTag, 
-    //     zs::TileVector<T,32>& etemp, const zs::SmallString& HTag,
-    //     zs::wrapv<simplex_size> = {}) {
-
-    //         int nmElms = eles.size();
-    //         pol(zs::range(etemp.size()),
-    //             [eles = proxy<space>({},eles),verts = proxy<space>({},verts),
-    //             etemp = proxy<space>({},etemp),xTag,HTag,simplex_size_v = wrapv<simplex_size>{},nmElms] 
-    //                 ZS_LAMBDA(int ei) mutable {
-    //             auto quad = eles.pack<4>("inds",ei).reinterpret_bits<int>();
-    //             auto vol = eles("vol",ei);
-    //             auto DmInv = eles.pack<3,3>("IB",ei);
-
-    //             double m = DmInv(0,0);
-    //             double n = DmInv(0,1);
-    //             double o = DmInv(0,2);
-    //             double p = DmInv(1,0);
-    //             double q = DmInv(1,1);
-    //             double r = DmInv(1,2);
-    //             double s = DmInv(2,0);
-    //             double t = DmInv(2,1);
-    //             double u = DmInv(2,2);
-
-    //             double t1 = - m - p - s;
-    //             double t2 = - n - q - t;
-    //             double t3 = - o - r - u; 
-
-    //             // auto dFdX = dFdXMatrix(DmInv);
-    //             // elm_dFdx[elm_id] << 
-    //             //     t1, 0,  0,  m,  0,  0,  p,  0,  0,  s,  0,  0, 
-    //             //     0, t1,  0,  0,  m,  0,  0,  p,  0,  0,  s,  0,
-    //             //     0,  0, t1,  0,  0,  m,  0,  0,  p,  0,  0,  s,
-    //             //     t2, 0,  0,  n,  0,  0,  q,  0,  0,  t,  0,  0,
-    //             //     0, t2,  0,  0,  n,  0,  0,  q,  0,  0,  t,  0,
-    //             //     0,  0, t2,  0,  0,  n,  0,  0,  q,  0,  0,  t,
-    //             //     t3, 0,  0,  o,  0,  0,  r,  0,  0,  u,  0,  0,
-    //             //     0, t3,  0,  0,  o,  0,  0,  r,  0,  0,  u,  0,
-    //             //     0,  0, t3,  0,  0,  o,  0,  0,  r,  0,  0,  u;
-
-    //             //  compute dFdX' dFdX
-
-
-    //         }
-    // }
-
 };

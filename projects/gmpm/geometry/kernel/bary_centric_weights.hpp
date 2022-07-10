@@ -84,17 +84,21 @@ namespace zeno {
         return zs::vec<T,4>{vol0/vol,vol1/vol,vol2/vol,vol3/vol};
     }
 
-    template <typename T,typename Pol>
-    constexpr void compute_barycentric_weights(Pol& pol,const typename ZenoParticles::particles_t& verts,
-        const typename ZenoParticles::particles_t& quads,const typename ZenoParticles::particles_t& everts,
-        const zs::SmallString& x_tag, typename ZenoParticles::particles_t& bcw,
+    template <typename Pol,typename VTileVec,typename ETileVec,typename EmbedTileVec,typename BCWTileVec>
+    constexpr void compute_barycentric_weights(Pol& pol,const VTileVec& verts,
+        const ETileVec& quads,const EmbedTileVec& everts,
+        const zs::SmallString& x_tag,BCWTileVec& bcw,
         const zs::SmallString& elm_tag,const zs::SmallString& weight_tag,int fitting_in) {
 
+        static_assert(zs::is_same_v<typename BCWTileVec::value_type,typename EmbedTileVec::value_type>,"precision not match");
+        static_assert(zs::is_same_v<typename VTileVec::value_type,typename ETileVec::value_type>,"precision not match");        
+        static_assert(zs::is_same_v<typename VTileVec::value_type,typename BCWTileVec::value_type>,"precision not match"); 
+        using T = typename VTileVec::value_type; 
+        
         using namespace zs;
 
         auto cudaExec = zs::cuda_exec();
         constexpr auto space = zs::execspace_e::cuda;
-
 
         T bvh_thickness = 0;
         auto bvs = retrieve_bounding_volumes(cudaExec,verts,quads,wrapv<4>{},bvh_thickness,x_tag);
@@ -116,7 +120,7 @@ namespace zeno {
                 tetsBvh.iter_neighbors(p,[&](int ei){
                     if(found)
                         return;
-                    auto inds = eles.pack<4>(elm_tag, ei).reinterpret_bits<int>();
+                    auto inds = eles.template pack<4>(elm_tag, ei).template reinterpret_bits<int>();
                     auto p0 = verts.pack<3>(x_tag,inds[0]);
                     auto p1 = verts.pack<3>(x_tag,inds[1]);
                     auto p2 = verts.pack<3>(x_tag,inds[2]);
@@ -126,8 +130,8 @@ namespace zeno {
 
                     T epsilon = zs::limits<T>::epsilon();
                     if(ws[0] > epsilon && ws[1] > epsilon && ws[2] > epsilon && ws[3] > epsilon){
-                        bcw(elm_tag,vi) = reinterpret_bits<float>(ei);
-                        bcw.tuple<4>(weight_tag,vi) = ws;
+                        bcw(elm_tag,vi) = reinterpret_bits<T>(ei);
+                        bcw.template tuple<4>(weight_tag,vi) = ws;
                         found = true;
                         return;
                     }
@@ -138,32 +142,32 @@ namespace zeno {
                         T dist = compute_dist_2_facet(p,p1,p2,p3);
                         if(dist < closest_dist){
                             closest_dist = dist;
-                            bcw(elm_tag,vi) = reinterpret_bits<float>(ei);
-                            bcw.tuple<4>(weight_tag,vi) = ws;
+                            bcw(elm_tag,vi) = reinterpret_bits<T>(ei);
+                            bcw.template tuple<4>(weight_tag,vi) = ws;
                         }
                     }
                     if(ws[1] < 0){
                         T dist = compute_dist_2_facet(p,p0,p2,p3);
                         if(dist < closest_dist){
                             closest_dist = dist;
-                            bcw(elm_tag,vi) = reinterpret_bits<float>(ei);
-                            bcw.tuple<4>(weight_tag,vi) = ws;
+                            bcw(elm_tag,vi) = reinterpret_bits<T>(ei);
+                            bcw.template tuple<4>(weight_tag,vi) = ws;
                         }
                     }
                     if(ws[2] < 0){
                         T dist = compute_dist_2_facet(p,p0,p1,p3);
                         if(dist < closest_dist){
                             closest_dist = dist;
-                            bcw(elm_tag,vi) = reinterpret_bits<float>(ei);
-                            bcw.tuple<4>(weight_tag,vi) = ws;
+                            bcw(elm_tag,vi) = reinterpret_bits<T>(ei);
+                            bcw.template tuple<4>(weight_tag,vi) = ws;
                         }
                     }
                     if(ws[3] < 0){
                         T dist = compute_dist_2_facet(p,p0,p1,p2);
                         if(dist < closest_dist){
                             closest_dist = dist;
-                            bcw(elm_tag,vi) = reinterpret_bits<float>(ei);
-                            bcw.tuple<4>(weight_tag,vi) = ws;
+                            bcw(elm_tag,vi) = reinterpret_bits<T>(ei);
+                            bcw.template tuple<4>(weight_tag,vi) = ws;
                         }
                     }
                 });// finish iter the neighbor tets

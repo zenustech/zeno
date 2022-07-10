@@ -39,7 +39,6 @@ struct ZSComputeBaryCentricWeights : INode {
         auto &bcw = (*zsvolume)[tag];
         bcw = typename ZenoParticles::particles_t({{"inds",1},{"w",4},{"cnorm",1}},everts.size(),zs::memsrc_e::device,0);
 
-
         auto cudaExec = zs::cuda_exec();
         const auto numFEMVerts = verts.size();
         const auto numFEMEles = eles.size();
@@ -48,7 +47,7 @@ struct ZSComputeBaryCentricWeights : INode {
 
         constexpr auto space = zs::execspace_e::cuda;
 
-        compute_barycentric_weights<T>(cudaExec,verts,eles,everts,"x",bcw,"inds","w",fitting_in);
+        compute_barycentric_weights(cudaExec,verts,eles,everts,"x",bcw,"inds","w",fitting_in);
 
         auto e_dim = e_eles.getChannelSize("inds");
 

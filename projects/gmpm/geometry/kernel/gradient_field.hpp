@@ -3,11 +3,14 @@
 #include "../../Structures.hpp"
 
 namespace zeno{
-    template<int simplex_size,typename T,typename Pol,int dim = 3>
-    constexpr void compute_gradient(Pol &pol,const typename ZenoParticles::particles_t &eles,
-        const typename ZenoParticles::particles_t &verts,const zs::SmallString& xTag,
-        const zs::TileVector<T,32>& vtemp,const zs::SmallString& tTag,
-        zs::TileVector<T,32>& etemp,const zs::SmallString& gTag,zs::wrapv<simplex_size> = {}) {
+    template<int simplex_size,typename Pol,typename ETileVec,typename VTileVec,typename VTmpTileVec,typename ETmpTileVec,int dim = 3>
+    constexpr void compute_gradient(Pol &pol,const ETileVec&eles,
+        const VTileVec &verts,const zs::SmallString& xTag,
+        const VTmpTileVec& vtemp,const zs::SmallString& tTag,
+        ETmpTileVec& etemp,const zs::SmallString& gTag) {
+            static_assert(zs::is_same_v<typename VTmpTileVec::value_type, typename ETmpTileVec::value_type>, "precision not match");
+            using T = typename VTmpTileVec::value_type;
+
             using namespace zs;
             using mat_sm1xd = zs::vec<T,simplex_size - 1,dim>;
             using mat_sm1xsm1 = zs::vec<T,simplex_size - 1,simplex_size - 1>;

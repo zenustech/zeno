@@ -19,9 +19,6 @@ target_include_directories(zshelper INTERFACE
 target_compile_features(zshelper INTERFACE cxx_std_17 cuda_std_17)
 if (WIN32)
 else()
-target_compile_options(zshelper 
-  INTERFACE        $<$<COMPILE_LANGUAGE:CXX>:-march=native>
-)
 endif()
 
 #add_library(zeno_zstest SHARED test.cpp)
