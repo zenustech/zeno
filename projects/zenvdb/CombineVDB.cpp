@@ -147,6 +147,23 @@ struct CombineVDB : zeno::INode{
         set_output("FieldOut", get_input("FieldA"));
       }
     }
+    if(OpType==std::string("Mul"))
+    {
+      if(targetType == sourceType && targetType==std::string("FloatGrid")){
+        auto target = get_input("FieldA")->as<VDBFloatGrid>();
+        auto source = get_input("FieldB")->as<VDBFloatGrid>();
+        auto srcgrid = source->m_grid->deepCopy();
+        openvdb::tools::compMul(*(target->m_grid), *(srcgrid));
+        set_output("FieldOut", get_input("FieldA"));
+      }
+      if(targetType == sourceType && targetType==std::string("Vec3fGrid")){
+        auto target = get_input("FieldA")->as<VDBFloat3Grid>();
+        auto source = get_input("FieldB")->as<VDBFloat3Grid>();
+        auto srcgrid = source->m_grid->deepCopy();
+        openvdb::tools::compMul(*(target->m_grid), *(srcgrid));
+        set_output("FieldOut", get_input("FieldA"));
+      }
+    }
     if(OpType==std::string("Replace"))
     {
       if(targetType == sourceType && targetType==std::string("FloatGrid")){
@@ -175,11 +192,75 @@ static int defCombineVDB = zeno::defNodeClass<CombineVDB>("CombineVDB",
      }, /* params: */ {
        {"float", "MultiplierA", "1"},
        {"float", "MultiplierB", "1"},
-       {"enum CSGUnion CSGIntersection CSGDifference Add Replace", "OpType", "CSGUnion"},
+       {"enum CSGUnion CSGIntersection CSGDifference Add Mul Replace A_Sample_B", "OpType", "CSGUnion"},
        {"bool", "writeBack", "0"},
      }, /* category: */ {
      "openvdb",
      }});
+
+
+struct VDBDeactivate : zeno::INode
+{
+  virtual void apply() override {
+    auto gType = get_input("Field")->as<VDBGrid>()->getType();
+    auto mType = get_input("Mask")->as<VDBGrid>()->getType();
+    if(gType == mType && gType==std::string("FloatGrid"))
+    {
+      auto const &grid = get_input<VDBFloatGrid>("Field")->m_grid;
+      auto const &mask = get_input<VDBFloatGrid>("Mask")->m_grid;
+      auto modifier = [&](auto &leaf, openvdb::Index leafpos) {
+        for (auto iter = leaf.beginValueOn(); iter != leaf.endValueOn(); ++iter) {
+            auto coord = iter.getCoord();
+            if(mask->getAccessor().getValue(coord)==0)
+            {
+              iter.setValueOn(false);
+            }
+            else{
+              iter.setValueOn(true);
+            }
+            
+            //sdf.emplace_back(value);
+        }
+      };
+      openvdb::tree::LeafManager<std::decay_t<decltype(grid->tree())>> leafman(grid->tree());
+      leafman.foreach(modifier);
+      openvdb::tools::prune(grid->tree());
+    }
+    if(gType == mType && gType==std::string("Vec3fGrid"))
+    {
+      auto const &grid = get_input<VDBFloat3Grid>("Field")->m_grid;
+      auto const &mask = get_input<VDBFloat3Grid>("Mask")->m_grid;
+      auto modifier = [&](auto &leaf, openvdb::Index leafpos) {
+        for (auto iter = leaf.beginValueOn(); iter != leaf.endValueOn(); ++iter) {
+            auto coord = iter.getCoord();
+            if(mask->getAccessor().getValue(coord)[0]==0
+            || mask->getAccessor().getValue(coord)[1]==0
+            || mask->getAccessor().getValue(coord)[2]==0) 
+            {
+              iter.setValueOn(false);
+            }
+            else{
+              iter.setValueOn(true);
+            }
+            
+            //sdf.emplace_back(value);
+        }
+      };
+      openvdb::tree::LeafManager<std::decay_t<decltype(grid->tree())>> leafman(grid->tree());
+      leafman.foreach(modifier);
+      openvdb::tools::prune(grid->tree());
+    }
+  }
+};
+static int defVDBDeactivate = zeno::defNodeClass<VDBDeactivate>("VDBDeactivate",
+     { /* inputs: */ {
+     "Field", "Mask",
+     }, /* outputs: */ {
+     }, /* params: */ {
+     }, /* category: */ {
+     "openvdb",
+     }});
+
 
 
 #if 0 // TODO: datan help me

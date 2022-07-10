@@ -591,8 +591,8 @@ void FLIP_vdb::Advect(float dt, float dx,
                                           FLIP_vdb::VelocityCodec>
         velocityHandle(velocityArray);
 
-    auto ovaxr{velocity_after_p2g->getConstAccessor()};
-    auto vaxr{velocity->getConstAccessor()};
+    auto ovaxr{velocity_after_p2g->getConstUnsafeAccessor()};
+    auto vaxr{velocity->getConstUnsafeAccessor()};
     for (auto iter = leaf.beginIndexOn(); iter; ++iter) {
       openvdb::Vec3R index_gpos =
           iter.getCoord().asVec3d() + positionHandle.get(*iter);
@@ -962,7 +962,7 @@ struct point_to_counter_reducer2 {
     auto liquid_sdf_axr{m_liquidsdf.getConstUnsafeAccessor()};
     auto counter_axr{m_counter_grid->getAccessor()};
     auto vaxr{m_velocity.getConstUnsafeAccessor()};
-    auto v_tobe_adv_axr{m_velocity_to_be_advected.getConstAccessor()};
+    auto v_tobe_adv_axr{m_velocity_to_be_advected.getConstUnsafeAccessor()};
     auto old_vaxr{m_old_velocity.getConstUnsafeAccessor()};
 
     auto sdfaxr{m_solid_sdf.getConstUnsafeAccessor()};
@@ -1989,9 +1989,9 @@ struct particle_fill_kill_op {
     std::vector<openvdb::Vec3f> new_velocity;
 
     // solid is assumed to point to the minimum corner of this voxel
-    auto solid_axr = m_solid->getConstAccessor();
-    auto velocity_axr = m_velocity_volume->getConstAccessor();
-    auto boundary_volume_axr = m_boundary_fill_kill_volume->getConstAccessor();
+    auto solid_axr = m_solid->getConstUnsafeAccessor();
+    auto velocity_axr = m_velocity_volume->getConstUnsafeAccessor();
+    auto boundary_volume_axr = m_boundary_fill_kill_volume->getConstUnsafeAccessor();
 
     float voxel_include_threshold = m_transform->voxelSize()[0] * 0.5;
     float particle_radius =
@@ -2294,7 +2294,7 @@ struct get_fill_kill_nodes_op {
 
   // this is intended to be used with leaf manager of particles
   void operator()(node_t &leaf, openvdb::Index leafpos) const {
-    auto solid_axr = m_solid->getConstAccessor();
+    auto solid_axr = m_solid->getConstUnsafeAccessor();
 
     auto worth_dealing = [&](const openvdb::Coord &origin) {
       // the node must either include active solid voxels
@@ -2334,7 +2334,7 @@ struct get_fill_kill_nodes_op {
     auto first_leaf = m_particles->treePtr()->touchLeaf(m_domain_begin);
     const auto leaf_idxmin = first_leaf->origin();
 
-    auto solid_axr = m_solid->getConstAccessor();
+    auto solid_axr = m_solid->getConstUnsafeAccessor();
     // loop over all leaf nodes intersecting the big bounding box
     for (int x = leaf_idxmin[0]; x < m_domain_end[0]; x += 8) {
       for (int y = leaf_idxmin[1]; y < m_domain_end[1]; y += 8) {
@@ -2549,7 +2549,7 @@ void FLIP_vdb::update_solid_sdf(
   auto update_solid_op = [&](openvdb::FloatTree::LeafNodeType &leaf,
                              openvdb::Index leafpos) {
     for (const auto &solidsdfptr : moving_solids) {
-      auto source_solid_axr{solidsdfptr->getConstAccessor()};
+      auto source_solid_axr{solidsdfptr->getConstUnsafeAccessor()};
 
       // get the sdf from the moving solids
       for (auto offset = 0; offset < leaf.SIZE; ++offset) {
@@ -2658,8 +2658,8 @@ void FLIP_vdb::reseed_fluid(
           // 	continue;
           // }
           sub_voxel_occupancy |= (1 << sv_pos);
-          new_pos.push_back(p);
-          new_vel.push_back(v_handle_ptr->get(idx));
+          new_pos.emplace_back(p);
+          new_vel.emplace_back(v_handle_ptr->get(idx));
           emitted_particle++;
           this_voxel_emitted++;
         }
@@ -2668,17 +2668,17 @@ void FLIP_vdb::reseed_fluid(
             in_out_particles->indexToWorld(leaf.offsetToGlobalCoord(offset));
         auto voxelipos = liquid_sdf->worldToIndex(voxelwpos);
         float liquid_phi = openvdb::tools::BoxSampler::sample(
-            liquid_sdf->getConstAccessor(), voxelipos);
-        if (liquid_phi < dx && this_voxel_emitted < 4) {
+            liquid_sdf->getConstUnsafeAccessor(), voxelipos);
+        if (liquid_phi < dx && this_voxel_emitted <= 4) {
           const int max_emit_trial = 16;
-          for (int trial = 0; this_voxel_emitted < 6 && trial < max_emit_trial;
+          for (int trial = 0; this_voxel_emitted < 8 && trial < max_emit_trial;
                trial++) {
             openvdb::Vec3d particle_pipos{randomTable[(index++) % 21474836],
                                           randomTable[(index++) % 21474836],
                                           randomTable[(index++) % 21474836]};
             openvdb::Vec3d pwpos = in_out_particles->indexToWorld(particle_pipos) + voxelwpos;                              
             float liquid_phi2 = openvdb::tools::BoxSampler::sample(
-            liquid_sdf->getConstAccessor(), liquid_sdf->worldToIndex(pwpos));
+            liquid_sdf->getConstUnsafeAccessor(), liquid_sdf->worldToIndex(pwpos));
             if(liquid_phi2 > - dx)
               continue;
             auto &p = particle_pipos;
@@ -2694,13 +2694,13 @@ void FLIP_vdb::reseed_fluid(
                 in_out_particles->indexToWorld(particle_pipos) + voxelwpos;
             auto velsamplepos = velocity->worldToIndex(particlewpos);
             sub_voxel_occupancy |= 1 << sv_pos;
-            new_pos.push_back(particle_pipos);
-            new_vel.push_back(StaggeredBoxSampler::sample(vaxr, velsamplepos));
+            new_pos.emplace_back(particle_pipos);
+            new_vel.emplace_back(StaggeredBoxSampler::sample(vaxr, velsamplepos));
             emitted_particle++;
             this_voxel_emitted++;
           } // end for 16 emit trials
         }
-        new_idxend.push_back(emitted_particle);
+        new_idxend.emplace_back(emitted_particle);
       }
 
       auto local_pv_descriptor = m_pv_attribute_descriptor;
@@ -2795,7 +2795,7 @@ void FLIP_vdb::emit_liquid(
   printf("%f\n", dx);
   auto mark_active_point_leaves =
       [&](const tbb::blocked_range3d<int, int, int> &r) {
-        auto solid_axr{in_sdf->getConstAccessor()};
+        auto solid_axr{in_sdf->getConstUnsafeAccessor()};
 
         for (int i = r.pages().begin(); i < r.pages().end(); i += 1) {
           for (int j = r.rows().begin(); j < r.rows().end(); j += 1) {
@@ -2872,8 +2872,8 @@ void FLIP_vdb::emit_liquid(
   // seed each leaf
   auto seed_leaf = [&](const tbb::blocked_range<size_t> &r) {
     if (use_vel_volume) {
-      auto in_sdf_axr{in_sdf->getConstAccessor()};
-      auto in_vel_axr{in_vel->getConstAccessor()};
+      auto in_sdf_axr{in_sdf->getConstUnsafeAccessor()};
+      auto in_vel_axr{in_vel->getConstUnsafeAccessor()};
 
       float sdf_threshold = -dx * 0.1;
 
@@ -2948,7 +2948,7 @@ void FLIP_vdb::emit_liquid(
           float liquid_phi = 10000;
           if (liquid_sdf != nullptr) {
             liquid_phi = openvdb::tools::BoxSampler::sample(
-                liquid_sdf->getConstAccessor(), voxelipos);
+                liquid_sdf->getConstUnsafeAccessor(), voxelipos);
           }
           if (openvdb::tools::BoxSampler::sample(in_sdf_axr, voxelipos) < dx) {
             const int max_emit_trial = 16;
@@ -3013,7 +3013,7 @@ void FLIP_vdb::emit_liquid(
         } // end for all on voxels
       }   // end for range leaf
     } else {
-      auto in_sdf_axr{in_sdf->getConstAccessor()};
+      auto in_sdf_axr{in_sdf->getConstUnsafeAccessor()};
       float sdf_threshold = -dx * 0.1;
 
       // std::random_device device;
@@ -3087,7 +3087,7 @@ void FLIP_vdb::emit_liquid(
           float liquid_phi = 10000;
           if (liquid_sdf != nullptr) {
             liquid_phi = openvdb::tools::BoxSampler::sample(
-                liquid_sdf->getConstAccessor(), voxelipos);
+                liquid_sdf->getConstUnsafeAccessor(), voxelipos);
           }
           if (openvdb::tools::BoxSampler::sample(in_sdf_axr, voxelipos) < dx) {
             const int max_emit_trial = 16;
@@ -3180,7 +3180,7 @@ void FLIP_vdb::calculate_face_weights(openvdb::Vec3fGrid::Ptr &face_weight,
   face_weight->setGridClass(openvdb::GridClass::GRID_STAGGERED);
   auto set_face_weight_op = [&](openvdb::Vec3fTree::LeafNodeType &leaf,
                                 openvdb::Index leafpos) {
-    auto solid_axr{solid_sdf->getConstAccessor()};
+    auto solid_axr{solid_sdf->getConstUnsafeAccessor()};
     // solid sdf
     float ssdf[2][2][2];
     openvdb::Vec3f uvwweight{1.f};
@@ -3252,7 +3252,7 @@ void FLIP_vdb::clamp_liquid_phi_in_solids(
                                          openvdb::Index leafpos) {
     // detech if there is solid
     if (solid_sdf->tree().probeConstLeaf(leaf.origin())) {
-      auto const_solid_axr{solid_sdf->getConstAccessor()};
+      auto const_solid_axr{solid_sdf->getConstUnsafeAccessor()};
       auto shift{openvdb::Vec3R{0.5}};
 
       for (auto offset = 0; offset < leaf.SIZE; offset++) {
@@ -3282,8 +3282,8 @@ void FLIP_vdb::clamp_liquid_phi_in_solids(
                                        openvdb::Index leafpos) {
     // detech if there is solid
     if (solid_sdf->tree().probeConstLeaf(leaf.origin())) {
-      auto pushed_out_liquid_axr{pushed_out_liquid_sdf->getConstAccessor()};
-      auto const_solid_axr{solid_sdf->getConstAccessor()};
+      auto pushed_out_liquid_axr{pushed_out_liquid_sdf->getConstUnsafeAccessor()};
+      auto const_solid_axr{solid_sdf->getConstUnsafeAccessor()};
       auto shift{openvdb::Vec3R{0.5}};
 
       for (auto iter = leaf.beginValueOn(); iter; ++iter) {
@@ -3530,7 +3530,7 @@ void FLIP_vdb::solve_pressure_simd(
   // use the previous pressure as warm start
   auto set_warm_pressure = [&](openvdb::Int32Tree::LeafNodeType &leaf,
                                openvdb::Index leafpos) {
-    auto old_pressure_axr{curr_pressure->getConstAccessor()};
+    auto old_pressure_axr{curr_pressure->getConstUnsafeAccessor()};
     auto *new_pressure_leaf = pressure->tree().probeLeaf(leaf.origin());
 
     for (auto iter = new_pressure_leaf->beginValueOn(); iter; ++iter) {
@@ -3576,7 +3576,7 @@ void FLIP_vdb::field_add_vector(openvdb::Vec3fGrid::Ptr &velocity_field,
   if (face_weight != nullptr) {
     auto add_gravity = [&](openvdb::Vec3fTree::LeafNodeType &leaf,
                            openvdb::Index leafpos) {
-      auto face_weight_axr{face_weight->getConstAccessor()};
+      auto face_weight_axr{face_weight->getConstUnsafeAccessor()};
       for (auto iter = leaf.beginValueOn(); iter != leaf.endValueOn(); ++iter) {
         // if (face_weight_axr.getValue(iter.getCoord())[0] > 0)
         {
@@ -3760,8 +3760,8 @@ void FLIP_vdb::custom_move_points_and_set_flip_vel(
   auto set_voxel_center_solid_grad_and_vn =
       [&](openvdb::Vec3fTree::LeafNodeType &leaf, openvdb::Index leafpos) {
         auto vnleaf = voxel_center_solid_vn->tree().probeLeaf(leaf.origin());
-        auto sdfaxr = in_solid_sdf->getConstAccessor();
-        auto velaxr = in_solid_vel->getConstAccessor();
+        auto sdfaxr = in_solid_sdf->getConstUnsafeAccessor();
+        auto velaxr = in_solid_vel->getConstUnsafeAccessor();
 
         Eigen::VectorXf data;
         data.setZero(8);

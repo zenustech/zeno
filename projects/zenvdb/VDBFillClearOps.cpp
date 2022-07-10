@@ -147,6 +147,52 @@ ZENO_DEFNODE(VDBTouchAABBRegion)(
      "openvdb",
      }});
 
+struct VDBTopoCopy : INode{
+  virtual void apply() override {
+    auto grid = get_input<VDBGrid>("grid");
+    auto topo = get_input<VDBGrid>("topo");
+    if (auto p = std::dynamic_pointer_cast<VDBFloatGrid>(grid); p) {
+        if(auto t = std::dynamic_pointer_cast<VDBFloatGrid>(topo); t)
+        {
+            p->m_grid->setTree(std::make_shared<openvdb::FloatTree>(t->m_grid->tree(),0, openvdb::TopologyCopy()));
+            openvdb::tools::dilateActiveValues(
+            p->m_grid->tree(), 1,
+            openvdb::tools::NearestNeighbors::NN_FACE_EDGE_VERTEX, openvdb::tools::TilePolicy::EXPAND_TILES);
+        }
+        else if (auto t = std::dynamic_pointer_cast<VDBFloat3Grid>(topo); t)
+        {
+            p->m_grid->setTree(std::make_shared<openvdb::FloatTree>(t->m_grid->tree(),0, openvdb::TopologyCopy()));
+            openvdb::tools::dilateActiveValues(
+            p->m_grid->tree(), 1,
+            openvdb::tools::NearestNeighbors::NN_FACE_EDGE_VERTEX, openvdb::tools::TilePolicy::EXPAND_TILES);
+        }
+    } else if (auto p = std::dynamic_pointer_cast<VDBFloat3Grid>(grid); p) {
+        if(auto t = std::dynamic_pointer_cast<VDBFloatGrid>(topo); t)
+        {
+            p->m_grid->setTree(std::make_shared<openvdb::Vec3fTree>(t->m_grid->tree(), openvdb::Vec3f{0}, openvdb::TopologyCopy()));
+            openvdb::tools::dilateActiveValues(
+            p->m_grid->tree(), 1,
+            openvdb::tools::NearestNeighbors::NN_FACE_EDGE_VERTEX, openvdb::tools::TilePolicy::EXPAND_TILES);
+        }
+        else if (auto t = std::dynamic_pointer_cast<VDBFloat3Grid>(topo); t)
+        {
+            p->m_grid->setTree(std::make_shared<openvdb::Vec3fTree>(t->m_grid->tree(), openvdb::Vec3f{0}, openvdb::TopologyCopy()));
+            openvdb::tools::dilateActiveValues(
+            p->m_grid->tree(), 1,
+            openvdb::tools::NearestNeighbors::NN_FACE_EDGE_VERTEX, openvdb::tools::TilePolicy::EXPAND_TILES);
+        }
+    }
 
-
+    set_output("grid", get_input("grid"));
+  }
+};
+ZENO_DEFNODE(VDBTopoCopy)(
+     { /* inputs: */ {
+     "grid", "topo"
+     }, /* outputs: */ {
+       "grid",
+     }, /* params: */ {
+     }, /* category: */ {
+     "openvdb",
+     }});
 }

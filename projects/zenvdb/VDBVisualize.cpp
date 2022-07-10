@@ -19,13 +19,14 @@ struct ParticleAsVoxels : INode{
             auto const &grid = ingrid->m_grid;
             auto inparticles = get_input<PrimitiveObject>("particles");
             auto attrName = get_input<StringObject>("Attr")->value;
+            
 
             inparticles->attr_visit(attrName, [&](auto &arr) {
             #pragma omp parallel for
                 for (int i = 0; i < arr.size(); i++) {
                     if constexpr (is_decay_same_v<decltype(arr[i]), vec3f>) {
                     } else {
-                        auto accessor = grid->getAccessor();
+                        auto accessor = grid->getUnsafeAccessor();
                         openvdb::Vec3d p(inparticles->verts[i][0], inparticles->verts[i][1], inparticles->verts[i][2]);
                         openvdb::Coord coord(grid->worldToIndex(p).x(),grid->worldToIndex(p).y(),grid->worldToIndex(p).z());
                         accessor.setValue(coord, arr[i]);
@@ -39,12 +40,13 @@ struct ParticleAsVoxels : INode{
             auto const &grid = ingrid->m_grid;
             auto inparticles = get_input<PrimitiveObject>("particles");
             auto attrName = get_input<StringObject>("Attr")->value;
+            
             inparticles->attr_visit(attrName, [&](auto &arr) {
             #pragma omp parallel for
                 for (int i = 0; i < arr.size(); i++) {
                     if constexpr (is_decay_same_v<decltype(arr[i]), vec3f>) {
 
-                        auto accessor = grid->getAccessor();
+                        auto accessor = grid->getUnsafeAccessor();
                         openvdb::Vec3d p(inparticles->verts[i][0], inparticles->verts[i][1], inparticles->verts[i][2]);
                         openvdb::Coord coord(grid->worldToIndex(p).x(),grid->worldToIndex(p).y(),grid->worldToIndex(p).z());
                         accessor.setValue(coord, openvdb::Vec3f(arr[i][0], arr[i][1], arr[i][2]));
@@ -121,7 +123,11 @@ struct VDBVoxelAsParticles : INode {
                 for (auto iter = leaf.cbeginValueOn(); iter != leaf.cendValueOn(); ++iter) {
                     auto coord = iter.getCoord();
                     auto value = iter.getValue();
-                    auto p = grid->transform().indexToWorld(coord.asVec3d());
+                    auto p = grid->transform().indexToWorld(coord.asVec3d() - openvdb::Vec3d(0.5, 0, 0));
+                    pos.emplace_back(p[0], p[1], p[2]);
+                    p = grid->transform().indexToWorld(coord.asVec3d() - openvdb::Vec3d(0, 0.5, 0));
+                    pos.emplace_back(p[0], p[1], p[2]);
+                    p = grid->transform().indexToWorld(coord.asVec3d() - openvdb::Vec3d(0, 0, 0.5));
                     pos.emplace_back(p[0], p[1], p[2]);
                     //sdf.emplace_back(value);
                 }
@@ -129,7 +135,11 @@ struct VDBVoxelAsParticles : INode {
                     for (auto iter = leaf.cbeginValueOff(); iter != leaf.cendValueOff(); ++iter) {
                         auto coord = iter.getCoord();
                         auto value = iter.getValue();
-                        auto p = grid->transform().indexToWorld(coord.asVec3d());
+                        auto p = grid->transform().indexToWorld(coord.asVec3d() - openvdb::Vec3d(0.5, 0, 0));
+                        pos.emplace_back(p[0], p[1], p[2]);
+                        p = grid->transform().indexToWorld(coord.asVec3d() - openvdb::Vec3d(0, 0.5, 0));
+                        pos.emplace_back(p[0], p[1], p[2]);
+                        p = grid->transform().indexToWorld(coord.asVec3d() - openvdb::Vec3d(0, 0, 0.5));
                         pos.emplace_back(p[0], p[1], p[2]);
                         //sdf.emplace_back(value);
                     }
