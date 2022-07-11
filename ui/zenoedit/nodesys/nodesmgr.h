@@ -13,7 +13,7 @@ public:
 	static void createNewNode(IGraphsModel* pModel, QModelIndex subgIdx, const QString& descName, const QPointF& pt);
 	static NODE_TYPE nodeType(const QString& name);
     static void initInputSocks(IGraphsModel* pModel, INPUT_SOCKETS& descInputs);
-	static void initParams(IGraphsModel* pModel, PARAMS_INFO& params);
+	static void initParams(const QString& descName, IGraphsModel* pModel, PARAMS_INFO& params);
 	static PARAMS_INFO initParamsNotDesc(const QString& name);
 };
 

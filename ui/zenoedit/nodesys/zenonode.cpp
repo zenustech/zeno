@@ -508,7 +508,7 @@ QGraphicsLayout* ZenoNode::initParam(PARAM_CONTROL ctrl, const QString& paramNam
 		    m_paramControls[paramName] = pMultiStrEdit;
 		    break;
 	    }
-	    case CONTROL_HEATMAP:
+	    case CONTROL_COLOR:
         {
             break;
         }
@@ -589,7 +589,7 @@ void ZenoNode::onParamEditFinished(PARAM_CONTROL editCtrl, const QString& paramN
 
     switch (editCtrl)
     {
-    case CONTROL_HEATMAP:
+    case CONTROL_COLOR:
     case CONTROL_CURVE:
         info.newValue = value;
         break;
@@ -951,7 +951,7 @@ ZenoParamWidget* ZenoNode::initSocketWidget(const INPUT_SOCKET inSocket, ZenoTex
             //todo
             break;
         }
-        case CONTROL_HEATMAP:
+        case CONTROL_COLOR:
         {
             QLinearGradient grad = inSocket.info.defaultValue.value<QLinearGradient>();
             ZenoParamPushButton* pEditBtn = new ZenoParamPushButton("Edit", -1, QSizePolicy::Expanding);

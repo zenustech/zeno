@@ -10,6 +10,8 @@ public:
     static QModelIndexList getSubInOutNode(IGraphsModel* pModel, const QModelIndex& subgIdx, const QString& sockName, bool bInput);
     static void reAllocIdents(QMap<QString, NODE_DATA>& nodes, QList<EdgeInfo>& links);
     static QString nthSerialNumName(QString name);
+    static QLinearGradient colorString2Grad(const QString& colorStr);
+    static QString gradient2colorString(const QLinearGradient& grad);
 };
 
 

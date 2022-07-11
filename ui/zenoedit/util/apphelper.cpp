@@ -123,3 +123,53 @@ QString AppHelper::nthSerialNumName(QString name)
         return name + "(" + QString::number(ith + 1) + ")";
     }
 }
+
+QLinearGradient AppHelper::colorString2Grad(const QString& colorStr)
+{
+    QLinearGradient grad;
+    QStringList L = colorStr.split("\n", Qt::SkipEmptyParts);
+    ZASSERT_EXIT(!L.isEmpty(), grad);
+
+    bool bOk = false;
+    int n = L[0].toInt(&bOk);
+    ZASSERT_EXIT(bOk && n == L.size() - 1, grad);
+    for (int i = 1; i <= n; i++)
+    {
+        QStringList color_info = L[i].split(" ", Qt::SkipEmptyParts);
+        ZASSERT_EXIT(color_info.size() == 4, grad);
+
+        float f = color_info[0].toFloat(&bOk);
+        ZASSERT_EXIT(bOk, grad);
+        float r = color_info[1].toFloat(&bOk);
+        ZASSERT_EXIT(bOk, grad);
+        float g = color_info[2].toFloat(&bOk);
+        ZASSERT_EXIT(bOk, grad);
+        float b = color_info[3].toFloat(&bOk);
+        ZASSERT_EXIT(bOk, grad);
+
+        QColor clr;
+        clr.setRgbF(r, g, b);
+        grad.setColorAt(f, clr);
+    }
+    return grad;
+}
+
+QString AppHelper::gradient2colorString(const QLinearGradient& grad)
+{
+    QString colorStr;
+    const QGradientStops& stops = grad.stops();
+    colorStr += QString::number(stops.size());
+    colorStr += "\n";
+    for (QGradientStop grad : stops)
+    {
+        colorStr += QString::number(grad.first);
+        colorStr += " ";
+        colorStr += QString::number(grad.second.redF());
+        colorStr += " ";
+        colorStr += QString::number(grad.second.greenF());
+        colorStr += " ";
+        colorStr += QString::number(grad.second.blueF());
+        colorStr += "\n";
+    }
+    return colorStr;
+}

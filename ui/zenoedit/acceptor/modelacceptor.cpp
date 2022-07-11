@@ -399,6 +399,17 @@ void ModelAcceptor::setParamValue(const QString& id, const QString& nodeCls, con
             m_currentGraph->setData(idx, QVariant::fromValue(params), ROLE_PARAMETERS);
             return;
         }
+        if (nodeCls == "MakeHeatmap" && name == "_RAMPS")
+        {
+            PARAM_INFO paramData;
+            paramData.control = CONTROL_COLOR;
+            paramData.name = name;
+            paramData.bEnableConnect = false;
+            paramData.value = var;
+            params[name] = paramData;
+            m_currentGraph->setData(idx, QVariant::fromValue(params), ROLE_PARAMETERS);
+            return;
+        }
         zeno::log_warn("not found param name {}", name.toStdString());
     }
 }
@@ -450,6 +461,7 @@ void ModelAcceptor::setOptions(const QString& id, const QStringList& options)
 
 void ModelAcceptor::setColorRamps(const QString& id, const COLOR_RAMPS& colorRamps)
 {
+    /* keep legacy format
     if (!m_currentGraph)
         return;
 
@@ -466,11 +478,11 @@ void ModelAcceptor::setColorRamps(const QString& id, const COLOR_RAMPS& colorRam
 
     PARAM_INFO param;
     param.name = "color";
-    param.control = CONTROL_HEATMAP;
+    param.control = CONTROL_COLOR;
     param.value = QVariant::fromValue(linearGrad);
     params.insert(param.name, param);
-
     m_currentGraph->setData(idx, QVariant::fromValue(params), ROLE_PARAMETERS);
+    */
 }
 
 void ModelAcceptor::setBlackboard(const QString& id, const BLACKBOARD_INFO& blackboard)
