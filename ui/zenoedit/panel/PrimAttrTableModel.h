@@ -7,6 +7,7 @@
 
 #include <QtWidgets>
 #include "zeno/core/IObject.h"
+#include "zeno/types/PrimitiveObject.h"
 
 class PrimAttrTableModel : public QAbstractTableModel {
     Q_OBJECT
