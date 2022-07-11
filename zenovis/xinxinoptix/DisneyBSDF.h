@@ -1,5 +1,6 @@
 #pragma once
 
+#include "vec_math.h"
 #include "zxxglslvec.h"
 #include "TraceStuff.h"
 #include "DisneyBRDF.h"
@@ -15,6 +16,10 @@
 //
 
 namespace DisneyBSDF{
+static __inline__ __device__
+void world2local(vec3& v, vec3 T, vec3 B, vec3 N){
+    v = normalize(vec3(dot(T,v), dot(B,v), dot(N,v)));
+}
 
 static __inline__ __device__ 
 void pdf(
@@ -115,16 +120,11 @@ vec3 EvaluateDisneyBRDF(
         float clearcoatGloss,
         float ior, 
         bool is_inside,
-        vec3 N,
-        vec3 T,
-        vec3 B,
         vec3 wi,
         vec3 wo,
         float &fPdf, 
         float &rPdf)
 {
-    wi = normalize(vec3(dot(T,wi), dot(B,wi), dot(N,wi)));
-    wo = normalize(vec3(dot(T,wo), dot(B,wo), dot(N,wo)));
     fPdf = 0.0f;
     rPdf = 0.0f;
 
@@ -163,22 +163,16 @@ vec3 EvaluateDisneySpecTransmission(
     vec3 baseColor,
     float metallic,
     float ior,
-    float specuularTint,
+    float specularTint,
     float roughness,
     float ax,
     float ay,
     bool thin,
     bool is_inside,
-    vec3 N, 
-    vec3 T,
-    vec3 B,
     vec3 wo,
     vec3 wi)
 {
     float n2 = ior * ior;
-    //convert vectors to TBN space
-    wo = normalize(vec3(dot(T, wo), dot(B, wo), dot(N, wo)));
-    wi = normalize(vec3(dot(T, wi), dot(B, wi), dot(N, wi)));
     vec3 wm = normalize(wo + wi);
     float NoL = abs(wi.z);
     float NoV = abs(wo.z);
@@ -207,7 +201,8 @@ static __inline__ __device__
 float EvaluateDisneyRetroDiffuse(
     float roughness,
     vec3 wi,
-    vec3 wo)
+    vec3 wo
+    )
 {
     float NoL = abs(wi.z);
     float NoV = abs(wo.z);
@@ -255,6 +250,117 @@ float EvaluateDisneyDiffuse(
     return 1.0f/M_PIf * (retro + subsurfaceApprox * (1.0f - 0.5f * fl) * (1.0f - 0.5f * fv));
 }
 
+float3 EvaluateDisneyBSDF(
+    vec3 baseColor,
+    float metallic,
+    float subsurface,
+    float specular,
+    float specularTint,
+    float anisotropic,
+    float roughness,
+    float sheen,
+    float sheenTint,
+    float clearCoat,
+    float clearcoatGloss,
+
+    float specTrans,
+
+    float transmission,
+    float transmissionRoughness,
+    float ior,
+    bool thin,
+    bool is_inside,
+    vec3 wi,
+    vec3 wo,
+    vec3 T,
+    vec3 B,
+    vec3 N,
+    float& fPdf,
+    float& rPdf)
+{
+    wi = normalize(vec3(dot(T, wi), dot(B, wi), dot(N, wi)));
+    wo = normalize(vec3(dot(T, wo), dot(B, wo), dot(N, wo)));
+    vec3 wm = normalize(wo+wi);
+
+    float NoL = wi.z;
+    float NoV = wo.z;
+    float NoH = wm.z;
+    float HoL = dot(wm,wi);
+    
+    float3 reflectance = make_float3(0.0f,0.0f,0.0f);
+    fPdf = 0.0f;
+    rPdf = 0.0f;
+
+    float pSpecular,pDiffuse,pClearcoat,pSpecTrans;
+    pdf(metallic,specTrans,clearCoat,pSpecular,pDiffuse,pClearcoat,pSpecTrans);
+
+    // calculate all of the anisotropic params 
+    float ax,ay;
+    BRDFBasics::CalculateAnisotropicParams(roughness, anisotropic, ax, ay);
+
+    float diffuseW = (1.0f - metallic) * (1.0f - specTrans);
+    float transmissionW = (1.0f - metallic) * specTrans;
+
+
+    // Clearcoat
+ 
+    bool upperHemisphere = NoL > 0.0f && NoV > 0.0f;
+    if(upperHemisphere && clearCoat > 0.0f) {
+        float forwardClearcoatPdfW;
+        float reverseClearcoatPdfW;
+        float clearcoat = EvaluateClearcoat(clearCoat,clearcoatGloss,NoH,NoL,NoV,HoL,HoL,forwardClearcoatPdfW,reverseClearcoatPdfW);
+        fPdf += pClearcoat * forwardClearcoatPdfW;
+        rPdf += pClearcoat * reverseClearcoatPdfW;
+        reflectance += make_float3(clearcoat,clearcoat,clearcoat);
+    }
+    // Diffuse
+
+    if(diffuseW > 0.0f){
+        float forwardDiffusePdfW = abs(wi.z);
+        float reverseDiffusePdfW = abs(wo.z);
+        float diffuse = EvaluateDisneyDiffuse(roughness,subsurface, wi, wo, wm, thin);
+
+        vec3 lobeOfSheen =  EvaluateSheen(baseColor,sheen,sheenTint, HoL);
+
+        fPdf += pDiffuse * forwardDiffusePdfW;
+        rPdf += pDiffuse * reverseDiffusePdfW;
+
+        reflectance += diffuseW * (diffuse * baseColor + sheen);
+    }
+    // Transsmission
+    if(transmissionW > 0.0f) {
+        float rscaled = thin ? BRDFBasics::ThinTransmissionRoughness(ior, roughness) : roughness;
+        float tax, tay;
+        BRDFBasics::CalculateAnisotropicParams(rscaled, anisotropic, tax, tay);
+
+        float3 transmission = EvaluateDisneySpecTransmission(baseColor,metallic,ior,specularTint,roughness, tax, tay, thin, is_inside,wo,wi);
+        reflectance += transmissionW * transmission;
+
+        float forwardTransmissivePdfW;
+        float reverseTransmissivePdfW;
+        BRDFBasics::GgxVndfAnisotropicPdf(wi, wm, wo, tax, tay, forwardTransmissivePdfW, reverseTransmissivePdfW);
+
+        fPdf += pSpecTrans * forwardTransmissivePdfW / (sqrt(HoL + ior * HoL));
+        rPdf += pSpecTrans * reverseTransmissivePdfW / (sqrt(HoL + ior * HoL));
+    }
+    // Specular
+
+    if(upperHemisphere) {
+        float forwardMetallicPdfW;
+        float reverseMetallicPdfW;
+        vec3 Spec = EvaluateDisneyBRDF(baseColor,  metallic, subsurface,  specular, roughness, specularTint, anisotropic, sheen, sheenTint, clearCoat, clearcoatGloss, ior, is_inside, wi, wo, fPdf, rPdf);
+
+        reflectance += Spec;
+        fPdf += pSpecular * forwardMetallicPdfW / (4 * abs(HoL) );
+        rPdf += pSpecular * reverseMetallicPdfW / (4 * abs(HoL));
+    }
+
+    reflectance = reflectance * abs(NoL);
+
+    return reflectance;
+
+}
+
 static __inline__ __device__
 bool SampleDisneyBRDF(
         unsigned int &seed,
@@ -274,7 +380,6 @@ bool SampleDisneyBRDF(
         float &fPdf,
         float &rPdf)
 {
-    wo = normalize(vec3(dot(T, wo), dot(B, wo), dot(N, wo)));
     float ax, ay;
     BRDFBasics::CalculateAnisotropicParams(roughness, anisotropic, ax, ay);
     float r0 = rnd(seed);
