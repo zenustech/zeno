@@ -77,8 +77,14 @@ void ZenoSpreadsheet::setPrim(std::string primid) {
             found = true;
             size_t sizeUserData = obj->userData().size();
             size_t num_attrs = obj->num_attrs();
+            size_t num_vert = obj->verts.size();
+            size_t num_tris = obj->tris.size();
 
-            QString statusInfo = QString("UserData count: %1, Attribute count: %2").arg(sizeUserData).arg(num_attrs);
+            QString statusInfo = QString("Vertex: %1, Triangle: %2, UserData: %3, Attribute: %4")
+                .arg(num_vert)
+                .arg(num_tris)
+                .arg(sizeUserData)
+                .arg(num_attrs);
             pStatusBar->setText(statusInfo);
             this->dataModel->setModelData(obj);
         }
