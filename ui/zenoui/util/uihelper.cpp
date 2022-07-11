@@ -320,6 +320,55 @@ QString UiHelper::variantToString(const QVariant& var)
     return value;
 }
 
+qreal UiHelper::parseNumeric(const rapidjson::Value& val, bool& bSucceed)
+{
+    qreal num = 0;
+    if (val.IsFloat())
+    {
+        num = val.GetFloat();
+        bSucceed = true;
+    }
+    else if (val.IsDouble())
+    {
+        num = val.GetDouble();
+        bSucceed = true;
+    }
+    else if (val.IsInt())
+    {
+        num = val.GetInt();
+        bSucceed = true;
+    }
+    else
+    {
+        RAPIDJSON_ASSERT(false);
+        bSucceed = false;
+    }
+    return num;
+}
+
+QPointF UiHelper::parsePoint(const rapidjson::Value& ptObj, bool& bSucceed)
+{
+    QPointF pt;
+
+    RAPIDJSON_ASSERT(ptObj.IsArray());
+    const auto &arr_ = ptObj.GetArray();
+    RAPIDJSON_ASSERT(arr_.Size() == 2);
+
+    const auto &xObj = arr_[0];
+    pt.setX(UiHelper::parseNumeric(xObj, bSucceed));
+    RAPIDJSON_ASSERT(bSucceed);
+    if (!bSucceed)
+        return pt;
+
+    const auto &yObj = arr_[1];
+    pt.setY(UiHelper::parseNumeric(yObj, bSucceed));
+    RAPIDJSON_ASSERT(bSucceed);
+    if (!bSucceed)
+        return pt;
+
+    return pt;
+}
+
 int UiHelper::getMaxObjId(const QList<QString> &lst)
 {
     int maxObjId = -1;

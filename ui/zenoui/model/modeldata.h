@@ -18,6 +18,7 @@ enum PARAM_CONTROL {
     CONTROL_HEATMAP,
     CONTROL_CURVE,
     CONTROL_DICTKEY,
+    CONTROL_NONVISIBLE,     //for legacy param like _KEYS, _POINTS, _HANDLES.
 };
 
 enum NODE_TYPE {

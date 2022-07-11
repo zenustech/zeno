@@ -319,7 +319,7 @@ QGraphicsLayout* ZenoNode::initParams()
 {
     const PARAMS_INFO &params = m_index.data(ROLE_PARAMETERS).value<PARAMS_INFO>();
     QList<QString> names = params.keys();
-    int r = 0, n = names.length();
+    int n = names.length();
     const QString nodeid = nodeId();
 
     QGraphicsLinearLayout* pParamsLayout = nullptr;
@@ -332,10 +332,11 @@ QGraphicsLayout* ZenoNode::initParams()
             if (param.bEnableConnect)
                 continue;
 
-            QGraphicsLinearLayout* pParamLayout = new QGraphicsLinearLayout(Qt::Horizontal);
-            initParam(param.control, pParamLayout, paramName, param);
-            pParamsLayout->addItem(pParamLayout);
-            r++;
+            QGraphicsLayout* pParamLayout = initParam(param.control, paramName, param);
+            if (pParamLayout)
+            {
+                pParamsLayout->addItem(pParamLayout);
+            }
         }
     }
     QGraphicsLinearLayout* pCustomParams = initCustomParamWidgets();
@@ -349,8 +350,12 @@ QGraphicsLinearLayout* ZenoNode::initCustomParamWidgets()
     return nullptr;
 }
 
-void ZenoNode::initParam(PARAM_CONTROL ctrl, QGraphicsLinearLayout* pParamLayout, const QString& paramName, const PARAM_INFO& param)
+QGraphicsLayout* ZenoNode::initParam(PARAM_CONTROL ctrl, const QString& paramName, const PARAM_INFO& param)
 {
+    if (ctrl == CONTROL_NONVISIBLE)
+        return nullptr;
+
+    QGraphicsLinearLayout* pParamLayout = new QGraphicsLinearLayout(Qt::Horizontal);
     const QString& value = UiHelper::variantToString(param.value);
 
 	ZenoTextLayoutItem* pNameItem = new ZenoTextLayoutItem(paramName, m_renderParams.paramFont, m_renderParams.paramClr.color());
@@ -539,6 +544,7 @@ void ZenoNode::initParam(PARAM_CONTROL ctrl, QGraphicsLinearLayout* pParamLayout
 		    break;
 	    }
 	}
+    return pParamLayout;
 }
 
 QPersistentModelIndex ZenoNode::subGraphIndex() const

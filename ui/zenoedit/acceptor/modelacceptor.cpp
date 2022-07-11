@@ -388,7 +388,17 @@ void ModelAcceptor::setParamValue(const QString& id, const QString& nodeCls, con
 			//parse by socket_keys in zeno2.
 			return;
 		}
-
+        if (nodeCls == "MakeCurvemap" && (name == "_POINTS" || name == "_HANDLERS"))
+        {
+            PARAM_INFO paramData;
+            paramData.control = CONTROL_NONVISIBLE;
+            paramData.name = name;
+            paramData.bEnableConnect = false;
+            paramData.value = var;
+            params[name] = paramData;
+            m_currentGraph->setData(idx, QVariant::fromValue(params), ROLE_PARAMETERS);
+            return;
+        }
         zeno::log_warn("not found param name {}", name.toStdString());
     }
 }
@@ -471,6 +481,22 @@ void ModelAcceptor::setBlackboard(const QString& id, const BLACKBOARD_INFO& blac
     QModelIndex idx = m_currentGraph->index(id);
     ZASSERT_EXIT(idx.isValid());
     m_pModel->updateBlackboard(id, blackboard, m_pModel->indexBySubModel(m_currentGraph), false);
+}
+
+void ModelAcceptor::setLegacyCurve(
+                    const QString& id,
+                    const QVector<QPointF>& pts,
+                    const QVector<QPair<QPointF, QPointF>>& hdls)
+{
+    if (!m_currentGraph)
+        return;
+
+    QModelIndex idx = m_currentGraph->index(id);
+    ZASSERT_EXIT(idx.isValid());
+
+    //no id in legacy curvemap.
+    //todo: enable editting of legacy curve.
+    //only need to parse _POINTS and __HANDLES to core legacy node like Makecurvemap.
 }
 
 QObject* ModelAcceptor::currGraphObj()

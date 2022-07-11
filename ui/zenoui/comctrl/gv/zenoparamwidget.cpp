@@ -139,7 +139,8 @@ ZenoParamPathEdit::ZenoParamPathEdit(const QString& path, PARAM_CONTROL ctrl, Li
 
 void ZenoParamPathEdit::setValidator(QValidator* pValidator)
 {
-    m_pLineEdit->setValidator(pValidator);
+    //will override the original.
+    //m_pLineEdit->setValidator(pValidator);
 }
 
 QString ZenoParamPathEdit::path() const
