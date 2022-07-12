@@ -51,7 +51,63 @@ namespace zeno { namespace PCG {
         });            
     }
 
-
+    static constexpr std::size_t count_warps(std::size_t n) noexcept {
+      return (n + 31) / 32;
+    }
+    static constexpr int warp_index(int n) noexcept { return n / 32; }
+    static constexpr auto warp_mask(int i, int n) noexcept {
+      int k = n % 32;
+      const int tail = n - k;
+      if (i < tail)
+        return zs::make_tuple(0xFFFFFFFFu, 32);
+      return zs::make_tuple(((unsigned)(1ull << k) - 1), k);
+    }
+    template <typename T>
+    static __forceinline__ __device__ void reduce_to(int i, int n, T val,
+                                                     T &dst) {
+      auto [mask, numValid] = warp_mask(i, n);
+      __syncwarp(mask);
+      auto locid = threadIdx.x & 31;
+      for (int stride = 1; stride < 32; stride <<= 1) {
+        auto tmp = __shfl_down_sync(mask, val, stride);
+        if (locid + stride < numValid)
+          val += tmp;
+      }
+      if (locid == 0)
+        zs::atomic_add(zs::exec_cuda, &dst, val);
+    }
+    template <typename Op = std::plus<T>>
+    T reduce(zs::CudaExecutionPolicy &cudaPol, const zs::Vector<T> &res,
+             Op op = {}) {
+      using namespace zs;
+      Vector<T> ret{res.get_allocator(), 1};
+      zs::reduce(cudaPol, std::begin(res), std::end(res), std::begin(ret), (T)0,
+                 op);
+      return ret.getVal();
+    }
+#if 0
+    template<int space_dim ,typename Pol,typename VTileVec>
+    T dot(Pol &cudaPol, VTileVec &vertData,
+          const zs::SmallString tag0, const zs::SmallString tag1) {
+      using namespace zs;
+      constexpr auto space = execspace_e::cuda;
+      // Vector<double> res{vertData.get_allocator(), vertData.size()};
+      Vector<T> res{vertData.get_allocator(),
+                         count_warps(vertData.size())};
+      zs::memset(zs::mem_device, res.data(), 0,
+                 sizeof(T) * count_warps(vertData.size()));
+      cudaPol(range(vertData.size()),
+              [data = proxy<space>({}, vertData), res = proxy<space>(res), tag0,
+               tag1, n = vertData.size()] __device__(int pi) mutable {
+                auto v0 = data.pack<space_dim>(tag0, pi);
+                auto v1 = data.pack<space_dim>(tag1, pi);
+                auto v = v0.dot(v1);
+                // res[pi] = v;
+                reduce_to(pi, n, v, res[pi / 32]);
+              });
+      return reduce(cudaPol, res, std::plus<T>{});
+    }
+#else
     template<int space_dim ,typename Pol,typename VTileVec>
     T dot(Pol &pol, VTileVec &vtemp,const zs::SmallString tag0, const zs::SmallString tag1) {
         using namespace zs;
@@ -66,6 +122,7 @@ namespace zeno { namespace PCG {
                 });
         return res.getVal();
     }
+#endif
 
     template<int space_dim,int simplex_dim,typename Pol,typename VTileVec,typename ETileVec>
     void multiply(Pol& pol,VTileVec& vtemp,const ETileVec& etemp,const zs::SmallString& H_tag,const zs::SmallString& inds_tag,const zs::SmallString& x_tag,const zs::SmallString& y_tag){
@@ -78,6 +135,57 @@ namespace zeno { namespace PCG {
                 vtemp.template tuple<space_dim>(y_tag,vi) = zs::vec<T,space_dim>::zeros();
         });
 
+#if 0
+        pol(range(etemp.size() * 144),
+              [execTag, etemp = proxy<space>({}, etemp),
+               vtemp = proxy<space>({}, vtemp), inds_tag,H_tag,x_tag,y_tag,
+               n = etemp.size() * 144] ZS_LAMBDA(int idx) mutable {
+                constexpr int dim = 3;
+                __shared__ int offset;
+                // directly use PCG_Solve_AX9_b2 from kemeng huang
+                int ei = idx / 144;
+                int entryId = idx % 144;
+                int MRid = entryId / 12;
+                int MCid = entryId % 12;
+                int vId = MCid / dim;
+                int axisId = MCid % dim;
+                int GRtid = idx % 12;
+
+                auto inds = etemp.template pack<simplex_dim>(inds_tag,ei).template reinterpret_bits<int>();
+                T rdata =
+                    etemp(H_tag, entryId, ei) * vtemp(x_tag, axisId, inds[vId]);
+
+                if (threadIdx.x == 0)
+                  offset = 12 - GRtid;
+                __syncthreads();
+
+                int BRid = (threadIdx.x - offset + 12) / 12;
+                int landidx = (threadIdx.x - offset) % 12;
+                if (BRid == 0) {
+                  landidx = threadIdx.x;
+                }
+
+                auto [mask, numValid] = warp_mask(idx, n);
+                int laneId = threadIdx.x & 0x1f;
+                bool bBoundary = (landidx == 0) || (laneId == 0);
+
+                unsigned int mark =
+                    __ballot_sync(mask, bBoundary); // a bit-mask
+                mark = __brev(mark);
+                unsigned int interval =
+                    zs::math::min(__clz(mark << (laneId + 1)), 31 - laneId);
+
+                for (int iter = 1; iter < 12; iter <<= 1) {
+                  T tmp = __shfl_down_sync(mask, rdata, iter);
+                  if (interval >= iter && laneId + iter < numValid)
+                    rdata += tmp;
+                }
+
+                if (bBoundary)
+                  atomic_add(execTag, &vtemp(y_tag, MRid % 3, inds[MRid / 3]),
+                             rdata);
+              });
+#else
         pol(range(etemp.size()),
             [execTag,vtemp = proxy<space>({},vtemp),etemp = proxy<space>({},etemp),
                     inds_tag,H_tag,x_tag,y_tag] __device__(int ei) mutable {    
@@ -96,6 +204,7 @@ namespace zeno { namespace PCG {
                     for(int j = 0;j != space_dim;++j)
                         atomic_add(execTag,&vtemp(y_tag,j,inds[i]),temp[i*space_dim + j]);
         });
+#endif
     }
 
     template<int space_dim,int simplex_dim,typename Pol,typename VTileVec,typename ETileVec>
@@ -255,7 +364,7 @@ namespace zeno { namespace PCG {
         copy<space_dim>(pol,vtemp,"q",vtemp,"p");
 
         T zTrk = dot<space_dim>(pol,vtemp,"r","q");
-        T residualPreconditionedNorm = std::sqrt(zTrk);
+        T residualPreconditionedNorm = std::sqrt(std::abs(zTrk));
         T localTol = rel_accuracy * residualPreconditionedNorm;
         fmt::print("initial residual : {}\t{}\n",residualPreconditionedNorm,zTrk);
 
@@ -289,7 +398,7 @@ namespace zeno { namespace PCG {
             auto beta = zTrk / zTrkLast;
             // q + beta * p -> p
             add<space_dim>(pol,vtemp,"q",(T)(1.0),"p",beta,"p");
-            residualPreconditionedNorm = std::sqrt(zTrk);
+            residualPreconditionedNorm = std::sqrt(std::abs(zTrk));
             ++iter;
         }
         copy<space_dim>(pol,vtemp,"x",vert_buffer,xtag);

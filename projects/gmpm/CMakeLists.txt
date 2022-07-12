@@ -164,6 +164,7 @@ target_link_libraries(zeno_zsfem PRIVATE zshelper)
 
 add_library(zeno_geometry SHARED)
 target_sources(zeno_geometry PRIVATE
+  geometry/file_parser/read_vtk_mesh.hpp
   geometry/linear_system/mfcg.hpp
   geometry/kernel/laplace_matrix.hpp
   geometry/kernel/gradient_field.hpp
@@ -174,6 +175,7 @@ target_sources(zeno_geometry PRIVATE
   geometry/Skinning.cu
   geometry/BaryCentricInterpolator.cu
   geometry/BiharmonicBoundedWeight.cu
+  geometry/MeshIO.cu
 )
 
 if (${ZS_ENABLE_CUDA})
