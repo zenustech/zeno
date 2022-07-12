@@ -477,7 +477,8 @@ struct CodimStepping : INode {
             }
             num[vi] = n;
             den[vi] = d_;
-            if (maintainFixed && BCorder > 0) {
+            // dof which BCorder != 3 may posess other energies
+            if (maintainFixed && BCorder == 3) {
               if (d_ != 0) {
                 if (zs::sqrt(n / d_) < 1e-6)
                   vtemp("BCfixed", vi) = 1;
@@ -2621,23 +2622,6 @@ struct CodimStepping : INode {
               });
 #endif
       }
-#if 0
-      // collision object
-      pol(range(coVerts.size()),
-          [execTag, verts = proxy<space>({}, coVerts),
-           vtemp = proxy<space>({}, vtemp), projectDBC = projectDBC, dxTag,
-           bTag, coOffset = coOffset] ZS_LAMBDA(int vi) mutable {
-            vi += coOffset;
-            if (projectDBC || vtemp("BCfixed", vi) == 1)
-              return;
-            // inertia
-            auto m = zs::sqr(vtemp("ws", vi));
-            auto dx = vtemp.template pack<3>(dxTag, vi);
-            dx = m * dx;
-            for (int d = 0; d != 3; ++d)
-              atomic_add(execTag, &vtemp(bTag, d, vi), dx(d));
-          });
-#endif
       // contacts
       {
 #if s_enableContact
