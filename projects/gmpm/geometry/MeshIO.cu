@@ -10,10 +10,29 @@
 #include <zeno/types/StringObject.h>
 
 namespace zeno {
-    struct ReadVTKMesh : INode {
-        void apply() override {
-            auto path = get_input<StringObject>("path")->get();
 
-        }
+struct ReadVTKMesh : INode {
+    void apply() override {
+        auto path = get_input<StringObject>("path")->get();
+        auto prim = std::make_shared<PrimitiveObject>();
+        bool ret = load_vtk_data(path,prim,0);
+        set_output("prim",std::move(prim));
     }
+};
+
+ZENDEFNODE(ReadVTKMesh, {/* inputs: */ {
+                            {"readpath", "path"},
+                        },
+                        /* outputs: */
+                        {
+                            {"primitive", "prim"},
+                        },
+                        /* params: */
+                        {},
+                        /* category: */
+                        {
+                            "primitive",
+                        }});
+
+
 }

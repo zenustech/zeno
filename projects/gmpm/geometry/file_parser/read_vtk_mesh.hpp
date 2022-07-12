@@ -48,8 +48,7 @@ namespace zeno {
         }
     }
 
-    bool test_is_big_endian()
-    {
+    bool test_is_big_endian(){
         short word = 0x4321;
         if((*(char *)& word) != 0x21)
             return true;
@@ -57,15 +56,18 @@ namespace zeno {
             return false;
     }
 
-    char* readline(char *buffer, FILE *infile, int *linenumber)
-    {
+    char* readline(char *buffer, FILE *infile, int *linenumber,int verbose = 0){
         char *result;
         // Search for a non-empty line.
         do {
             result = fgets(buffer, INPUTLINESIZE - 1, infile);
+            // if(*linenumber < 100)
+            //     printf("read %p %d %p %d\n",buffer,*linenumber,result,verbose);
             if (linenumber) (*linenumber)++;
-            if (result == (char *) NULL) {
-            return (char *) NULL;
+            if (!result) {
+                // if(verbose > 0 && *linenumber < 100)
+                //     printf("return null\n");
+                return (char *) NULL;
             }
             // Skip white spaces.
             while ((*result == ' ') || (*result == '\t')) result++;
@@ -98,17 +100,18 @@ namespace zeno {
     }
 
     char* find_next_numeric(char* seek,char line[INPUTLINESIZE],FILE* infile,int *linenumber){
-        while(true){
+        // while(true){
             seek = find_next_numeric(seek);
             if(*seek == '\0'){
                 seek = readline(line,infile,linenumber);
+                // printf("read new lines : %s\n",seek);
                 if(seek == NULL){
                     return NULL;
                 }
-                continue;
+                // continue;
             }
-            break;
-        }
+            // break;
+        // }
         return seek;
     }
 
@@ -125,21 +128,25 @@ namespace zeno {
             fclose(fp);
             return false;
         }
+
+        // printf("read line : %s\n",bufferp);
+
         while(nm_points_read < numberofpoints){
+            // printf("reading point<%d> : ",nm_points_read);
             for(int j = 0;j != 3;++j){
                 if(*bufferp == '\0') {
                     printf("syntax error reading vertex coords on line %d while reading coords\n",line_count);
                     fclose(fp);
                     return false;
                 }
-                bufferp = find_next_numeric(bufferp,buffer,fp,&line_count);
-                if(bufferp == NULL) {
-                    printf("reach unexpected end of file on line %d\n",line_count);
-                    fclose(fp);
-                    return false;
-                }
                 verts[nm_points_read][j] = (float)strtod(bufferp,&bufferp);
+                // printf("%f\t",verts[nm_points_read][j]);
+                // if(j != 2)
+                if(j != 2 || nm_points_read != (numberofpoints - 1))
+                    bufferp = find_next_numeric(bufferp,buffer,fp,&line_count);
+
             }
+            // printf("\n");
             nm_points_read++;
         }
         return true;
@@ -155,6 +162,8 @@ namespace zeno {
 
         int nm_cells_read = 0;
 
+        // printf("numberofcells : %d\n",numberofcells);
+
         while(nm_cells_read < numberofcells){
             bufferp = readline(buffer,fp,&line_count);
             if(bufferp == NULL) {
@@ -165,18 +174,23 @@ namespace zeno {
             int nn = strtol(bufferp,&bufferp,0);
             if(nn != CELL_SIZE){
                 printf("the size of cell(%d) does not match the target memory type(%d)\n",nn,CELL_SIZE);
+                printf("line : %s\n",bufferp);
                 fclose(fp);
                 return false;
             }
+            // printf("reading cell<%d> : ",nm_cells_read);
             for(int j = 0;j != CELL_SIZE;++j){
                 if(*bufferp == '\0') {
                     printf("syntax error reading vertex coords on line %d parsing cells(%d)\n",line_count,CELL_SIZE);
                     fclose(fp);
                     return false;
                 }
-                bufferp = find_next_numeric(bufferp,buffer,fp,&line_count);
+                bufferp = find_next_numeric(bufferp);// skip the header line idx, different index packs in different lines
                 cells[nm_cells_read][j] = (int)strtol(bufferp,&bufferp,0);
+                // printf("%d\t",cells[nm_cells_read][j]);
             }
+            // printf("\n");
+            nm_cells_read++;
         }   
         return true;
     }
@@ -185,33 +199,76 @@ namespace zeno {
         char *bufferp;
         char buffer[INPUTLINESIZE];
 
+        // printf("parsing attribs \n");
+
         bufferp = readline(buffer,fp,&line_count);
         if(bufferp == NULL){
             printf("reach unexpected end of file on line %d\n",line_count);
             fclose(fp);
             return false;
         }
+        // if(attr.size() != rows) {
+            // printf("the buffer size %d does not match the input size %d and cols %d\n",attr.size(),rows,cols);
+        // }
+
         int nm_field_read = 0;
         while(nm_field_read < rows){
             // if(cols == 1){
             //     bufferp = find_next_numeric(bufferp,buffer,fp,&line_count);
             //     attr[nm_field_read] = (T)strtod(bufferp,&bufferp);
             // }else{ // vector
-                for(int i = 0;i != 3;++i){
-                    bufferp = find_next_numeric(bufferp,buffer,fp,&line_count);
+                for(int i = 0;i != cols;++i){
                     attr[nm_field_read][i] = (float)strtod(bufferp,&bufferp);
+                    // printf("read in<%d,%d,%d> : %f\n",nm_field_read,rows,i,attr[nm_field_read][i]);
+                    bufferp = find_next_numeric(bufferp,buffer,fp,&line_count);
                 }
+                // printf("read lines : <%d %d> %d \n",nm_field_read,rows,nm_field_read < rows);
             // }
             nm_field_read++;
         }
+
+        return true;
     }
 
-    template<typename T>
-    bool parsing_attributes_data(FILE *fp,zeno::AttrVector<T>& attrv,int& line_count) {
+    bool parsing_attribs(FILE *fp,typename std::vector<float>& attr,int rows,int& line_count){
+        char *bufferp;
+        char buffer[INPUTLINESIZE];
+
+        // printf("parsing attribs \n");
+
+        bufferp = readline(buffer,fp,&line_count);
+        if(bufferp == NULL){
+            printf("reach unexpected end of file on line %d\n",line_count);
+            fclose(fp);
+            return false;
+        }
+        // if(attr.size() != rows) {
+            // printf("the buffer size %d does not match the input size %d and cols %d\n",attr.size(),rows,cols);
+        // }
+
+        int nm_field_read = 0;
+        while(nm_field_read < rows){
+            attr[nm_field_read] = (float)strtod(bufferp,&bufferp);
+            bufferp = find_next_numeric(bufferp,buffer,fp,&line_count);
+            nm_field_read++;
+        }
+
+        return true;
+    }
+
+
+    template<typename AttrVec>
+    bool parsing_attributes_data(FILE *fp,std::shared_ptr<zeno::PrimitiveObject>& prim,AttrVec& attrv,int& line_count,int cell_type) {
         char *bufferp;
         char buffer[INPUTLINESIZE];
         char id[256],dummy_str[64],data_name[64],array_name[64];
         int dummy;
+
+        // using EleIds = std::variant<std::monostate, AttrVector<vec3f>&, AttrVector<vec2i>&, AttrVector<vec3i>&, AttrVector<vec4i>&>;
+        // EleIds attrv;
+        // attrv = (!cell_wise) ? EleIds(prim->verts) : ((cell_type == 2) ? EleIds(prim->lines) : ((cell_type) == 3 ? EleIds(prim->tris) : EleIds(prim->quads)));
+
+        // zs::match([]() {})(attrv);
 
         int buffer_size = attrv.size();
 
@@ -223,11 +280,10 @@ namespace zeno {
             // currently we don't support lookup table
             // if(!strcmp(id,"SCALERS")){
                 // int numberofpoints = 0;
-                // sscanf(line,"%s %d %s",id,numberofpoints,dummy_str);
+                // sscanf(line,"%s %d %s",id,&numberofpoints,dummy_str);
                 // parsing_verts_coord(fp,prim,numberofpoints,line_count);
                 // continue;
             // }
-
             if(!strcmp(id,"COLOR_SCALARS")){    
                 int numberofchannels = 0;
                 sscanf(bufferp,"%s %s %d",id,dummy_str,&numberofchannels);
@@ -269,6 +325,8 @@ namespace zeno {
                     int nm_components,nm_tuples;
                     bufferp = readline(buffer,fp,&line_count);
                     sscanf(bufferp,"%s %d %d %s",array_name,&nm_components,&nm_tuples,dummy_str);
+                    printf("array_name : %s | nm_components  %d | nm_tuples : %d | type : %s\n",
+                        array_name,nm_components,nm_tuples,dummy_str);
 
                     if(nm_tuples != buffer_size){
                         printf("the number of tuples[%d] in the field(%s) should match the number of cells[%d]\n",
@@ -283,18 +341,36 @@ namespace zeno {
                         return false;
                     }
                     // for nm_channels == 1,2,3, we use unified 3d vector to store the field data.
-                    auto& data = attrv.add_attr(array_name,zeno::vec3f{0,0,0});
-                    parsing_attribs(fp,data,buffer_size,nm_components,line_count);
+                    if(nm_components > 1){
+                        auto& data = attrv.add_attr(array_name,zeno::vec3f{0,0,0});
+                        printf("add channel  %s <%d,%d>\n",array_name,data.size(),nm_components);
+                        parsing_attribs(fp,data,buffer_size,nm_components,line_count);
+                    }else{
+                        auto& data = attrv.add_attr(array_name,0.f);
+                        printf("add channel  %s <%d,%d>\n",array_name,data.size(),nm_components);
+                        parsing_attribs(fp,data,buffer_size,line_count);
+                    }
                     continue;
                 }
             }
 
+            // return true;
             if(!strcmp(id,"POINT_DATA")){
-                printf("detected point-wise data while parsing cell data\n");
-                fclose(fp);
-                return false;
+                printf("parsing point-wise attributes\n");
+                return parsing_attributes_data(fp,prim,prim->verts,line_count,cell_type);
+            }
+            if(!strcmp(id,"CELL_DATA")){
+                printf("parsing cell-wise attributes\n");
+                if(cell_type == 2)
+                    return parsing_attributes_data(fp,prim,prim->lines,line_count,cell_type);
+                if(cell_type == 3)
+                    return parsing_attributes_data(fp,prim,prim->tris,line_count,cell_type);
+                if(cell_type == 4)
+                    return parsing_attributes_data(fp,prim,prim->quads,line_count,cell_type);
             }
         }
+
+        return true;
     }
 
     // define the dataset type
@@ -372,47 +448,63 @@ namespace zeno {
             if(line[0] == '#' || line[0]=='\n' || line[0] == 10 || line[0] == 13 || line[0] == 32) continue;   
 
             sscanf(line,"%s",id);
+            printf("tag : %s\n",id);
             // reading the points
             if(!strcmp(id,"POINTS")){
                 int numberofpoints = 0;
-                sscanf(line,"%s %d %s",id,numberofpoints,dummy_str);
+                printf("reading points\n");
+                sscanf(line,"%s %d %s",id,&numberofpoints,dummy_str);
                 auto& verts = prim->verts;
                 if(!parsing_verts_coord(fp,verts,numberofpoints,line_count))
                     return false;
+                printf("finish reading points\n");
                 continue;
             }
             // skip handling the verts topology
             // handle lines topology
             if(!strcmp(id,"LINES")){
                 int numberoflines = 0;
+                printf("reading lines\n");
                 sscanf(line,"%s %d %d",id,&numberoflines,&dummy);
-                parsing_cells_topology<2>(fp,prim->lines,numberoflines,line_count);
+                if(!parsing_cells_topology<2>(fp,prim->lines,numberoflines,line_count))
+                    return false;
+                printf("finish reading lines\n");
                 continue;
             }
 
             if(!strcmp(id,"POLYGONS")) {
                 int numberofpolys = 0;
+
                 sscanf(line,"%s %d %d",id,&numberofpolys,&dummy);
-                parsing_cells_topology<3>(fp,prim->tris,numberofpolys,line_count);
+                printf("readling polygons %s %d %d\n",id,numberofpolys,dummy);
+                if(!parsing_cells_topology<3>(fp,prim->tris,numberofpolys,line_count))
+                    return false;
+                printf("finish reading polygons\n");
                 continue;
             }
-
             // parsing the cell data
             if(!strcmp(id,"CELL_DATA")){
-                int numberofcells = 0;
-                sscanf(line,"%s %d",id,numberofcells);
-                parsing_attributes_data(fp,prim->tris,line_count);
+                int numberofpolys = 0;
+                printf("parsing cell-wise attributes\n");
+                sscanf(line,"%s %d",id,&numberofpolys);
+                if(!parsing_attributes_data(fp,prim,prim->tris,line_count,3))
+                    return false;
+                printf("finish parsing cell-wise attributes\n");
                 continue;
             }
             // parsing the points data
             if(!strcmp(id,"POINT_DATA")){
                 int numberofpoints = 0;
-                sscanf(line,"%s %d",id,numberofpoints);
-                parsing_attributes_data(fp,prim->verts,line_count);
+                printf("parsing points data\n");
+                sscanf(line,"%s %d",id,&numberofpoints);
+                if(!parsing_attributes_data(fp,prim,prim->verts,line_count,3))
+                    return false;
+                printf("fnish parsing points data\n");
                 continue;
             }
         }
 
+        printf("finish reading polydata\n");
         return true;
     }
 
@@ -443,60 +535,84 @@ namespace zeno {
         char id[256],dummy_str[64];
         int dummy;
 
-        while((bufferp = readline(line,fp,&line_count)) != NULL) {
+        while((bufferp = readline(line,fp,&line_count,1)) != nullptr) {
+            // if(line_count < 100)
+            
+            // if(bufferp == nullptr){
+            //     printf("reach the end of file\n");
+            //     break;
+            // }
+
+            // if(line_count < 100)
+            //     printf("read lines[%d] %d\n",line_count,(bufferp == (char*)NULL));
+
             if(strlen(line) == 0) continue;
             if(line[0] == '#' || line[0]=='\n' || line[0] == 10 || line[0] == 13 || line[0] == 32) continue;   
             sscanf(line,"%s",id);
             // reading the points
             if(!strcmp(id,"POINTS")){
+                printf("reading points\n");
                 int numberofpoints = 0;
-                sscanf(line,"%s %d %s",id,numberofpoints,dummy_str);
+                sscanf(line,"%s %d %s",id,&numberofpoints,dummy_str);
+                printf("number of points %d\n",numberofpoints);
                 parsing_verts_coord(fp,prim->verts,numberofpoints,line_count);
                 continue;
             }
             if(!strcmp(id,"CELLS")){
+                printf("reading cells\n");
                 int numberofcells = 0;
                 sscanf(line,"%s %d %d",id,&numberofcells,&dummy);
                 parsing_cells_topology<4>(fp,prim->quads,numberofcells,line_count);
                 continue;
             }            
             if(!strcmp(id,"CELL_TYPES")){
+                printf("reading cell types\n");
                 int numberofcells = 0;
-                sscanf(line,"%s %d",&numberofcells);
+                sscanf(line,"%s %d",id,&numberofcells);
+                printf("number of cell types : %d\n",numberofcells);
+                bufferp = readline(line,fp,&line_count);
                 if(numberofcells > 0){
-                    bufferp = readline(line,fp,&line_count);
-                    int type = strtoll(bufferp,&bufferp,0);
+                    int type = strtol(bufferp,&bufferp,0);
                     if(type != VTK_TETRA){
                         printf("non-tetra cell detected on line %d parsing cell types\n",line_count);
                         fclose(fp);
                         return false;
                     }
+                    bufferp = find_next_numeric(bufferp,line,fp,&line_count);
                 }
+                printf("finish cell type check\n");
                 continue;
             }
 
             // parsing the cell data
             if(!strcmp(id,"CELL_DATA")){
+                printf("reading cell data\n");
                 int numberofcells = 0;
-                sscanf(line,"%s %d",id,numberofcells);
-                parsing_attributes_data(fp,prim->tris,line_count);
+                sscanf(line,"%s %d",id,&numberofcells);
+                parsing_attributes_data(fp,prim,prim->quads,line_count,4);
                 continue;
             }
             // parsing the points data
             if(!strcmp(id,"POINT_DATA")){
+                printf("reading point data\n");
                 int numberofpoints = 0;
-                sscanf(line,"%s %d",id,numberofpoints);
-                parsing_attributes_data(fp,prim->verts,line_count);
+                sscanf(line,"%s %d",id,&numberofpoints);
+                parsing_attributes_data(fp,prim,prim->verts,line_count,4);
                 continue;
             }
+
+            // printf("read lines[%d] %s\n",line_count,line);
+            // if(line_count > 100)
         }
+
+        fclose(fp);
+        return true;
     }
 
 
-    template <typename T,typename Tn,int SPACE_DIM,int SIMPLEX_SIZE>
     bool load_vtk_data(const std::string& file,std::shared_ptr<zeno::PrimitiveObject>& prim,int verbose = 0) {
-        static_assert(SPACE_DIM == 3,"only 3d model is currently supported");
-        static_assert(SIMPLEX_SIZE == 4 || SIMPLEX_SIZE == 3,"only tet and tri mesh is currently supported");
+        // static_assert(SPACE_DIM == 3,"only 3d model is currently supported");
+        // static_assert(SIMPLEX_SIZE == 4 || SIMPLEX_SIZE == 3,"only tet and tri mesh is currently supported");
 
         // auto &X = mesh.nodes;
         // auto &eles = mesh.elms;
@@ -509,43 +625,62 @@ namespace zeno {
         }
 
         char mode[128],id[256],fmt[64],dummy[64];
-        int line_count;
+        int line_count = 0;
         char *bufferp;
         char line[INPUTLINESIZE];
 
-        while((bufferp = readline(line,fp,&line_count)) != NULL) {
-            if(strlen(line) == 0) continue;
-            if(line[0] == '#' || line[0]=='\n' || line[0] == 10 || line[0] == 13 || line[0] == 32) continue;            
-            sscanf(line,"%s",id);
+        bool ret;
+
+        while((bufferp = readline(line,fp,&line_count,1)) != (char*)NULL) {
+            if(strlen(bufferp) == 0){ 
+                printf("zeno-length bufferp\n");
+                continue;
+            }
+
+            if(bufferp[0] == '#' || bufferp[0]=='\n' || bufferp[0] == 10 || bufferp[0] == 13 || bufferp[0] == 32) continue;            
+            sscanf(bufferp,"%s",id);
             
             // currently the binary format is not supported
             if(!strcmp(id,"BINARY")){
-                sscanf(line,"%s",mode);
+                sscanf(bufferp,"%s",mode);
                 printf("the binary file is not currently supported");
                 fclose(fp);
-                return false;
+                ret = false;
+                break;
             }
+
             if(!strcmp(id,"DATASET")){
-                sscanf(line,"%s %s",id,fmt);
-                if(!strcmp(fmt,structure_points))
-                    return read_structure_points(fp,prim,line_count);
-                else if(!strcmp(fmt,structured_grids))
-                    return read_structured_grid(fp,prim,line_count);
-                else if(!strcmp(fmt,rectilinear_grid))
-                    return read_rectilinear_grid(fp,prim,line_count);
-                else if(!strcmp(fmt,polydata))
-                    return read_polydata(fp,prim,line_count);
-                else if(!strcmp(fmt,unstructured_grid))
-                    return read_unstructured_grid(fp,prim,line_count);
-                else{
+                sscanf(bufferp,"%s %s",id,fmt);
+                if(!strcmp(fmt,structure_points)){
+                    printf("reading structure points\n");
+                    ret = read_structure_points(fp,prim,line_count);
+                }
+                else if(!strcmp(fmt,structured_grids)){
+                    printf("reading structure grids\n");
+                    ret = read_structured_grid(fp,prim,line_count);
+                }
+                else if(!strcmp(fmt,rectilinear_grid)){
+                    printf("reading rectilinear grid\n");
+                    ret = read_rectilinear_grid(fp,prim,line_count);
+                }
+                else if(!strcmp(fmt,polydata)){
+                    printf("reading polydata\n");
+                    ret = read_polydata(fp,prim,line_count);
+                }
+                else if(!strcmp(fmt,unstructured_grid)){
+                    printf("reading unstructured grid at line %d\n",line_count);
+                    ret = read_unstructured_grid(fp,prim,line_count);
+                }else{
                     printf("unrecoginized dataset type(%s) detected at %d line\n",fmt,line);
                     fclose(fp);
-                    return false;
+                    ret = false;
                 }
+                break;
             }
 
         }
 
+        return ret;
     }
 
 }
