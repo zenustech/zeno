@@ -524,17 +524,16 @@ void find_boundary_intersection_free_stepsize(Pol &pol, ZenoParticles &zstets,
           // ccd
           auto alpha = stepSize;
           // surfAlphas[svi] = alpha;
-          if (pt_accd(p, bouVerts.pack<3>("x", tri[0]).template cast<T>(),
+          if (pt_accd(p.template cast<T>(), bouVerts.pack<3>("x", tri[0]).template cast<T>(),
                       bouVerts.pack<3>("x", tri[1]).template cast<T>(),
                       bouVerts.pack<3>("x", tri[2]).template cast<T>(),
-                      vtemp.pack<3>("dir", vi),
+                      vtemp.pack<3>("dir", vi).template cast<T>(),
                       bouVerts.pack<3>("v", tri[0]).template cast<T>() * dt,
                       bouVerts.pack<3>("v", tri[1]).template cast<T>() * dt,
                       bouVerts.pack<3>("v", tri[2]).template cast<T>() * dt,
-                      (T)0.1, thickness, alpha))
-            if (alpha < stepSize)
-              // surfAlphas[svi] = alpha;
-              atomic_min(exec_cuda, &finalAlpha[0], alpha);
+                      (T)0.1, (T)thickness, (T)alpha))
+            if (alpha < stepSize) 
+              zs::atomic_min(wrapv<space>{}, (T*)&finalAlpha[0], (T)alpha);
         });
       });
   // zs::reduce(pol, std::begin(surfAlphas), std::end(surfAlphas),
@@ -573,17 +572,17 @@ void find_boundary_intersection_free_stepsize(Pol &pol, ZenoParticles &zstets,
           auto alpha = stepSize;
           // surfEdgeAlphas[sei] = alpha;
           if (ee_accd(
-                  x0, x1,
+                  x0.template cast<T>(), x1.template cast<T>(),
                   bouVerts.pack<3>("x", oEdgeInds[0]).template cast<T>(),
                   bouVerts.pack<3>("x", oEdgeInds[1]).template cast<T>(),
-                  vtemp.pack<3>("dir", edgeInds[0]),
-                  vtemp.pack<3>("dir", edgeInds[1]),
+                  vtemp.pack<3>("dir", edgeInds[0]).template cast<T>(),
+                  vtemp.pack<3>("dir", edgeInds[1]).template cast<T>(),
                   bouVerts.pack<3>("v", oEdgeInds[0]).template cast<T>() * dt,
                   bouVerts.pack<3>("v", oEdgeInds[1]).template cast<T>() * dt,
-                  (T)0.1, thickness, alpha))
+                  (T)0.1, (T)thickness, (T)alpha))
             if (alpha < stepSize)
               // surfEdgeAlphas[sei] = alpha;
-              atomic_min(exec_cuda, &finalAlpha[0], alpha);
+              zs::atomic_min(wrapv<space>{}, &finalAlpha[0], alpha);
         });
       });
 #if 0

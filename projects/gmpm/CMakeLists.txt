@@ -128,7 +128,7 @@ add_library(zeno_zsfem SHARED)
 target_sources(zeno_zsfem PRIVATE
   fem/BoundaryCondition.cu
   fem/Collisions.cu
-  fem/TimeStepping.cu
+  # fem/TimeStepping.cu
   fem/Check.cu
   fem/Generation.cpp
   fem/test.cpp
