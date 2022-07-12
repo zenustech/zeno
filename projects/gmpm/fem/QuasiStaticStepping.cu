@@ -285,7 +285,7 @@ struct QuasiStaticStepping : INode {
       if(dg < 0){
           T gradn = std::sqrt(PCG::dot<3>(cudaPol,vtemp,"grad","grad"));
           T dirn = std::sqrt(PCG::dot<3>(cudaPol,vtemp,"dir","dir"));
-          fmt::print("invalid dg = {} grad = {} dir = {}\n",dg);
+          fmt::print("invalid dg = {} grad = {} dir = {}\n",dg,gradn,dirn);
           throw std::runtime_error("INVALID DESCENT DIRECTION");
       }
       T alpha = 1.;
