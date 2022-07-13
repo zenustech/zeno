@@ -8,16 +8,17 @@ namespace zeno {
 
 // 'smart loop_uvs' to 'qianqiang loop.attr(uv)'
 ZENO_API void primDecodeUVs(PrimitiveObject *prim) {
-    if (prim->loop_uvs.size()) {
+    if (prim->loops.size() && prim->loops.has_attr("uvi")) {
+        auto &loop_uvs = prim->loops.attr<int>("uvi");
         auto &attr_uv = prim->loops.add_attr<vec3f>("uv"); // todo: support vec2f in attr...
         /*attr_uv.resize(prim->loop_uvs.size());*/
-        size_t n = std::min(prim->loop_uvs.size(), attr_uv.size());
+        size_t n = std::min(loop_uvs.size(), attr_uv.size());
         if (n == 0) zeno::log_warn("primDecodeUVs: no loops but have loop_uvs");
         parallel_for(n, [&] (size_t i) {
-            auto uv = prim->uvs[prim->loop_uvs[i]];
+            auto uv = prim->uvs[loop_uvs[i]];
             attr_uv[i] = {uv[0], uv[1], 0};
         });
-        prim->loop_uvs.clear();
+        prim->loops.attrs.erase("uvi");
     }
     // for 'qianqiang loop.attr(uv)' to 'qianqiang tris.attr(uv0-3)'
     // please use primTriangulate (after calling primDecodeUVs)
@@ -25,17 +26,18 @@ ZENO_API void primDecodeUVs(PrimitiveObject *prim) {
 
 // 'smart loop_uvs' to 'veryqianqiang vert.attr(uv)'
 ZENO_API void primLoopUVsToVerts(PrimitiveObject *prim) {
-    if (prim->loop_uvs.size()) {
-        auto &vert_uvs = prim->verts.add_attr<vec3f>("uv"); // todo: support vec2f in attr...
+    if (prim->loops.size() && prim->loops.has_attr("uvi")) {
+        auto &loop_uvs = prim->loops.attr<int>("uvi");
+        auto &vert_uv = prim->verts.add_attr<vec3f>("uv"); // todo: support vec2f in attr...
         /*attr_uv.resize(prim->loop_uvs.size());*/
-        for (size_t i = 0; i < prim->loop_uvs.size(); i++) {
-            auto uv = prim->uvs[prim->loop_uvs[i]];
+        for (size_t i = 0; i < loop_uvs.size(); i++) {
+            auto uv = prim->uvs[loop_uvs[i]];
             int vertid = prim->loops[i];
-            vert_uvs[vertid] = {uv[0], uv[1], 0};
+            vert_uv[vertid] = {uv[0], uv[1], 0};
             // uv may overlap and conflict at edges, but doesn't matter
             // this node is veryqianqiang after all, just to serve ZFX pw
         }
-        prim->loop_uvs.clear();
+        prim->loops.attrs.erase("uvi");
     }
 }
 
