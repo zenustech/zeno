@@ -53,29 +53,6 @@ struct PolymorphicVector {
         return m_curr.push_back(std::move(ptr));
     }
 
-    template <class Derived>
-    std::vector<Derived *> values() const {
-        static_assert(std::is_base_of_v<element_type, Derived>);
-        std::vector<Derived *> ret;
-        for (auto const &ptr: m_curr) {
-            auto p = std::addressof(*ptr);
-            if (auto q = dynamic_cast<Derived *>(p)) {
-                ret.push_back(q);
-            }
-        }
-        return ret;
-    }
-
-    std::vector<element_type *> values() const {
-        std::vector<element_type *> ret;
-        ret.reserve(m_curr.size());
-        for (auto const &ptr: m_curr) {
-            auto p = std::addressof(*ptr);
-            ret.push_back(p);
-        }
-        return ret;
-    }
-
     template <class Derived = void>
     std::size_t size() const {
         if constexpr (std::is_void_v<Derived>) {
