@@ -81,6 +81,10 @@ struct UserData {
         return m_data.end();
     }
 
+    size_t size() const {
+        return m_data.size();
+    }
+
     auto begin() {
         return m_data.begin();
     }

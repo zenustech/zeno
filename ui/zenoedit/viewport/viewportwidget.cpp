@@ -282,6 +282,8 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
             }
             scene->selected.insert(passed_prim.begin(), passed_prim.end());
         }
+        ZenoMainWindow* mainWin = zenoApp->getMainWindow();
+        mainWin->onPrimitiveSelected(scene->selected);
     }
 }
 
