@@ -18,6 +18,7 @@ struct Scene;
 
 struct IGraphic {
     std::string nameid;
+    std::shared_ptr<zeno::IObject> objholder;
 
     virtual ~IGraphic() = default;
 };

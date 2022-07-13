@@ -20,14 +20,15 @@ struct GraphicsManager {
     explicit GraphicsManager(Scene *scene) : scene(scene) {
     }
 
-    bool load_objects(std::vector<std::pair<std::string, zeno::IObject *>> const &objs) {
+    bool load_objects(std::vector<std::pair<std::string, std::shared_ptr<zeno::IObject>>> const &objs) {
         auto ins = graphics.insertPass();
         for (auto const &[key, obj] : objs) {
             if (ins.may_emplace(key)) {
                 zeno::log_debug("load_object: loading graphics [{}]", key);
-                auto ig = makeGraphic(scene, obj);
+                auto ig = makeGraphic(scene, obj.get());
                 zeno::log_debug("load_object: loaded graphics to {}", ig.get());
                 ig->nameid = key;
+                ig->objholder = obj;
                 ins.try_emplace(key, std::move(ig));
             }
         }

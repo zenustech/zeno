@@ -1,6 +1,7 @@
 #ifndef __ZENO_DOCKWIDGET_H__
 #define __ZENO_DOCKWIDGET_H__
 
+#include <unordered_set>
 #include <QtWidgets>
 
 class ZenoMainWindow;
@@ -28,6 +29,7 @@ public:
 
     void setWidget(DOCK_TYPE m_type, QWidget* widget);
     void onNodesSelected(const QModelIndex& subgIdx, const QModelIndexList& nodes, bool select);
+    void onPrimitiveSelected(const std::unordered_set<std::string>& primids);
     DOCK_TYPE type() const;
 
 protected:

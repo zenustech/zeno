@@ -16,19 +16,21 @@ struct ObjectsManager : zeno::disable_copy {
         std::string, std::shared_ptr<zeno::IObject>>>> objects;
 
     template <class T = void>
-    auto values() const {
-        return objects.values<T>();
+    auto pairs() const {
+        return objects.pairs<T>();
     }
 
     template <class T = void>
-    auto pairs() const {
-        return objects.pairs<T>();
+    auto pairsShared() const {
+        return objects.pairsShared<T>();
     }
 
     ObjectsManager();
     ~ObjectsManager();
     void clear_objects();
     void load_objects(std::map<std::string, std::shared_ptr<zeno::IObject>> const &objs);
+
+    std::optional<zeno::IObject*> get(std::string nid);
 };
 
 }

@@ -34,7 +34,6 @@ struct PrimFlattenTris : INode {
         prim->quads.clear();
         prim->polys.clear();
         prim->loops.clear();
-        prim->loop_uvs.clear();
     }
 };
 

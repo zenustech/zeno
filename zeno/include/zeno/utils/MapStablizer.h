@@ -32,19 +32,19 @@ struct MapStablizer {
     }
 
     template <class T = void>
-    decltype(auto) values() const {
-        if constexpr (std::is_void_v<T>)
-            return m_curr.values();
-        else
-            return m_curr.template values<T>();
-    }
-
-    template <class T = void>
     decltype(auto) pairs() const {
         if constexpr (std::is_void_v<T>)
             return m_curr.pairs();
         else
             return m_curr.template pairs<T>();
+    }
+
+    template <class T = void>
+    decltype(auto) pairsShared() const {
+        if constexpr (std::is_void_v<T>)
+            return m_curr.pairsShared();
+        else
+            return m_curr.template pairsShared<T>();
     }
 
     template <class T>

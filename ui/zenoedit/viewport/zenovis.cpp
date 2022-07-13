@@ -40,10 +40,10 @@ void Zenovis::paintGL()
     session->new_frame();
 }
 
-void Zenovis::recordGL(const std::string& record_path)
-{
-    session->new_frame_offline(record_path);
-}
+//void Zenovis::recordGL(const std::string& record_path, int nsamples)
+//{
+    //session->new_frame_offline(record_path, nsamples);
+//}
 
 int Zenovis::getCurrentFrameId()
 {

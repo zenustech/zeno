@@ -35,7 +35,7 @@ struct RenderEngineBate : RenderEngine {
     }
 
     void update() override {
-        graphicsMan->load_objects(scene->objectsMan->pairs());
+        graphicsMan->load_objects(scene->objectsMan->pairsShared());
     }
 
     void draw() override {
@@ -45,7 +45,7 @@ struct RenderEngineBate : RenderEngine {
         CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 
         auto bindVao = opengl::scopeGLBindVertexArray(vao->vao);
-        for (auto const &gra : graphicsMan->graphics.values<IGraphicDraw>()) {
+        for (auto const &[key, gra] : graphicsMan->graphics.pairs<IGraphicDraw>()) {
             gra->draw();
         }
         if (scene->drawOptions->show_grid) {

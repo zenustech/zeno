@@ -204,14 +204,14 @@
 <context>
     <name>NodesMgr</name>
     <message>
-        <location filename="../../nodesys/nodesmgr.cpp" line="59"/>
+        <location filename="../../nodesys/nodesmgr.cpp" line="92"/>
         <source>Please input the content of blackboard</source>
-        <translation type="unfinished">请输入黑板的文字内容</translation>
+        <translation>请输入黑板的文字内容</translation>
     </message>
     <message>
-        <location filename="../../nodesys/nodesmgr.cpp" line="60"/>
+        <location filename="../../nodesys/nodesmgr.cpp" line="93"/>
         <source>Please input the title of blackboard</source>
-        <translation type="unfinished">请输入黑板的标题</translation>
+        <translation>请输入黑板的标题</translation>
     </message>
 </context>
 <context>
@@ -382,21 +382,26 @@
     </message>
 </context>
 <context>
+    <name>ZenoDockWidget</name>
+    <message>
+        <location filename="../../dock/zenodockwidget.cpp" line="93"/>
+        <source>property</source>
+        <translation>属性</translation>
+    </message>
+</context>
+<context>
     <name>ZenoEditorDockTitleWidget</name>
     <message>
-        <location filename="../../dock/zenodocktitlewidget.cpp" line="175"/>
         <source>Add</source>
-        <translation>添加</translation>
+        <translation type="vanished">添加</translation>
     </message>
     <message>
-        <location filename="../../dock/zenodocktitlewidget.cpp" line="177"/>
         <source>Add Subnet</source>
-        <translation>添加子图</translation>
+        <translation type="vanished">添加子图</translation>
     </message>
     <message>
-        <location filename="../../dock/zenodocktitlewidget.cpp" line="178"/>
         <source>Add Node</source>
-        <translation>添加节点</translation>
+        <translation type="vanished">添加节点</translation>
     </message>
     <message>
         <location filename="../../dock/zenodocktitlewidget.cpp" line="181"/>
@@ -429,104 +434,106 @@
         <translation>简易子图</translation>
     </message>
     <message>
-        <location filename="../../dock/zenodocktitlewidget.cpp" line="188"/>
+        <location filename="../../dock/zenodocktitlewidget.cpp" line="190"/>
+        <source>Option</source>
+        <translation>选项</translation>
+    </message>
+    <message>
+        <location filename="../../dock/zenodocktitlewidget.cpp" line="192"/>
         <source>Set NASLOC</source>
         <translation>设置NASLOC</translation>
     </message>
     <message>
-        <location filename="../../dock/zenodocktitlewidget.cpp" line="191"/>
         <source>Go</source>
-        <translation>前往</translation>
+        <translation type="vanished">前往</translation>
     </message>
     <message>
-        <location filename="../../dock/zenodocktitlewidget.cpp" line="196"/>
         <source>View</source>
-        <translation>查看</translation>
+        <translation type="vanished">查看</translation>
     </message>
     <message>
-        <location filename="../../dock/zenodocktitlewidget.cpp" line="201"/>
         <source>Help</source>
-        <translation>帮助</translation>
+        <translation type="vanished">帮助</translation>
     </message>
 </context>
 <context>
     <name>ZenoGraphsEditor</name>
     <message>
-        <location filename="../../nodesview/zenographseditor.cpp" line="187"/>
+        <location filename="../../nodesview/zenographseditor.cpp" line="188"/>
         <source>Node</source>
         <translation>节点</translation>
     </message>
     <message>
-        <location filename="../../nodesview/zenographseditor.cpp" line="191"/>
+        <location filename="../../nodesview/zenographseditor.cpp" line="192"/>
         <source>Subnet</source>
         <translation>子图</translation>
     </message>
     <message>
-        <location filename="../../nodesview/zenographseditor.cpp" line="195"/>
+        <location filename="../../nodesview/zenographseditor.cpp" line="196"/>
         <source>Annotation</source>
         <translation>编辑</translation>
     </message>
     <message>
-        <location filename="../../nodesview/zenographseditor.cpp" line="199"/>
+        <location filename="../../nodesview/zenographseditor.cpp" line="200"/>
         <source>wrangle snippet</source>
         <translation>修改器模板</translation>
     </message>
     <message>
-        <location filename="../../nodesview/zenographseditor.cpp" line="244"/>
-        <location filename="../../nodesview/zenographseditor.cpp" line="257"/>
-        <location filename="../../nodesview/zenographseditor.cpp" line="561"/>
+        <location filename="../../nodesview/zenographseditor.cpp" line="245"/>
+        <location filename="../../nodesview/zenographseditor.cpp" line="258"/>
+        <location filename="../../nodesview/zenographseditor.cpp" line="564"/>
         <source>create subnet</source>
         <translation>创建子图</translation>
     </message>
     <message>
-        <location filename="../../nodesview/zenographseditor.cpp" line="245"/>
+        <location filename="../../nodesview/zenographseditor.cpp" line="246"/>
         <source>subnet map</source>
         <translation>子图映射</translation>
     </message>
     <message>
-        <location filename="../../nodesview/zenographseditor.cpp" line="246"/>
+        <location filename="../../nodesview/zenographseditor.cpp" line="247"/>
         <source>import from local file</source>
         <translation>从本地文件导入</translation>
     </message>
     <message>
-        <location filename="../../nodesview/zenographseditor.cpp" line="247"/>
+        <location filename="../../nodesview/zenographseditor.cpp" line="248"/>
         <source>import system subnet</source>
         <translation>从內建子图导入</translation>
     </message>
     <message>
-        <location filename="../../nodesview/zenographseditor.cpp" line="257"/>
-        <location filename="../../nodesview/zenographseditor.cpp" line="561"/>
+        <location filename="../../nodesview/zenographseditor.cpp" line="258"/>
+        <location filename="../../nodesview/zenographseditor.cpp" line="564"/>
         <source>new subgraph name:</source>
         <translation>新建子图名称：</translation>
     </message>
     <message>
-        <location filename="../../nodesview/zenographseditor.cpp" line="456"/>
+        <location filename="../../nodesview/zenographseditor.cpp" line="459"/>
         <source>next one?</source>
         <translation>下一个？</translation>
     </message>
     <message>
-        <location filename="../../nodesview/zenographseditor.cpp" line="539"/>
+        <location filename="../../nodesview/zenographseditor.cpp" line="542"/>
         <source>Collaspe</source>
         <translation>折叠</translation>
     </message>
     <message>
-        <location filename="../../nodesview/zenographseditor.cpp" line="546"/>
+        <location filename="../../nodesview/zenographseditor.cpp" line="549"/>
         <source>Expand</source>
         <translation>展开</translation>
     </message>
     <message>
-        <location filename="../../nodesview/zenographseditor.cpp" line="553"/>
+        <location filename="../../nodesview/zenographseditor.cpp" line="556"/>
         <source>Easy Subgraph</source>
         <translation>简易子图</translation>
     </message>
     <message>
-        <location filename="../../nodesview/zenographseditor.cpp" line="577"/>
-        <location filename="../../nodesview/zenographseditor.cpp" line="583"/>
+        <location filename="../../nodesview/zenographseditor.cpp" line="580"/>
+        <location filename="../../nodesview/zenographseditor.cpp" line="587"/>
         <source>Set NASLOC</source>
         <translation>设置NASLOC</translation>
     </message>
     <message>
-        <location filename="../../nodesview/zenographseditor.cpp" line="584"/>
+        <location filename="../../nodesview/zenographseditor.cpp" line="588"/>
         <source>NASLOC</source>
         <translation>NASLOC</translation>
     </message>
@@ -544,20 +551,10 @@
         <translation>新建</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.cpp" line="71"/>
-        <source>Ctrl+N</source>
-        <translation></translation>
-    </message>
-    <message>
         <location filename="../../zenomainwindow.cpp" line="80"/>
-        <location filename="../../zenomainwindow.cpp" line="624"/>
+        <location filename="../../zenomainwindow.cpp" line="643"/>
         <source>Open</source>
         <translation>打开</translation>
-    </message>
-    <message>
-        <location filename="../../zenomainwindow.cpp" line="82"/>
-        <source>Ctrl+O</source>
-        <translation></translation>
     </message>
     <message>
         <location filename="../../zenomainwindow.cpp" line="86"/>
@@ -565,19 +562,9 @@
         <translation>保存</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.cpp" line="88"/>
-        <source>Ctrl+S</source>
-        <translation></translation>
-    </message>
-    <message>
         <location filename="../../zenomainwindow.cpp" line="92"/>
         <source>Save As</source>
         <translation>另存为</translation>
-    </message>
-    <message>
-        <location filename="../../zenomainwindow.cpp" line="94"/>
-        <source>Ctrl+Shift+S</source>
-        <translation></translation>
     </message>
     <message>
         <location filename="../../zenomainwindow.cpp" line="98"/>
@@ -585,19 +572,9 @@
         <translation>导入</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.cpp" line="100"/>
-        <source>Ctrl+Shift+O</source>
-        <translation></translation>
-    </message>
-    <message>
         <location filename="../../zenomainwindow.cpp" line="104"/>
         <source>Export</source>
         <translation>导出</translation>
-    </message>
-    <message>
-        <location filename="../../zenomainwindow.cpp" line="106"/>
-        <source>Ctrl+Shift+E</source>
-        <translation></translation>
     </message>
     <message>
         <location filename="../../zenomainwindow.cpp" line="110"/>
@@ -635,9 +612,8 @@
         <translation>粘贴</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.cpp" line="138"/>
         <source>Render</source>
-        <translation>渲染</translation>
+        <translation type="vanished">渲染</translation>
     </message>
     <message>
         <location filename="../../zenomainwindow.cpp" line="140"/>
@@ -686,9 +662,18 @@
         <translation>自定义布局</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.cpp" line="233"/>
+        <location filename="../../zenomainwindow.cpp" line="243"/>
+        <source>English / Chinese</source>
+        <translation>中英文切换</translation>
+    </message>
+    <message>
+        <location filename="../../zenomainwindow.cpp" line="255"/>
+        <source>Please restart Zeno to apply changes.</source>
+        <translation>请重启Zeno以应用更改。</translation>
+    </message>
+    <message>
         <source>Window</source>
-        <translation>窗口</translation>
+        <translation type="vanished">窗口</translation>
     </message>
     <message>
         <location filename="../../zenomainwindow.cpp" line="235"/>
@@ -702,6 +687,14 @@
     </message>
 </context>
 <context>
+    <name>ZenoPropDockTitleWidget</name>
+    <message>
+        <location filename="../../dock/zenodocktitlewidget.cpp" line="490"/>
+        <source>property</source>
+        <translation>属性</translation>
+    </message>
+</context>
+<context>
     <name>ZenoPropPanel</name>
     <message>
         <location filename="../../panel/zenoproppanel.cpp" line="92"/>
@@ -712,32 +705,32 @@
 <context>
     <name>ZenoViewDockTitle</name>
     <message>
-        <location filename="../../dock/zenodocktitlewidget.cpp" line="306"/>
+        <location filename="../../dock/zenodocktitlewidget.cpp" line="311"/>
         <source>Display</source>
         <translation>显示</translation>
     </message>
     <message>
-        <location filename="../../dock/zenodocktitlewidget.cpp" line="308"/>
+        <location filename="../../dock/zenodocktitlewidget.cpp" line="347"/>
         <source>Show Grid</source>
         <translation>显示网格</translation>
     </message>
     <message>
-        <location filename="../../dock/zenodocktitlewidget.cpp" line="319"/>
+        <location filename="../../dock/zenodocktitlewidget.cpp" line="359"/>
         <source>Background Color</source>
         <translation>背景颜色</translation>
     </message>
     <message>
-        <location filename="../../dock/zenodocktitlewidget.cpp" line="333"/>
+        <location filename="../../dock/zenodocktitlewidget.cpp" line="313"/>
         <source>Smooth Shading</source>
         <translation>平滑渲染</translation>
     </message>
     <message>
-        <location filename="../../dock/zenodocktitlewidget.cpp" line="343"/>
+        <location filename="../../dock/zenodocktitlewidget.cpp" line="324"/>
         <source>Normal Check</source>
         <translation>法线检查</translation>
     </message>
     <message>
-        <location filename="../../dock/zenodocktitlewidget.cpp" line="353"/>
+        <location filename="../../dock/zenodocktitlewidget.cpp" line="335"/>
         <source>Wireframe</source>
         <translation>线框</translation>
     </message>
@@ -750,107 +743,98 @@
         <translation type="vanished">开启GI</translation>
     </message>
     <message>
-        <location filename="../../dock/zenodocktitlewidget.cpp" line="364"/>
+        <location filename="../../dock/zenodocktitlewidget.cpp" line="372"/>
         <source>Solid</source>
         <translation>实体</translation>
     </message>
     <message>
-        <location filename="../../dock/zenodocktitlewidget.cpp" line="371"/>
+        <location filename="../../dock/zenodocktitlewidget.cpp" line="380"/>
         <source>Shading</source>
         <translation>上色</translation>
     </message>
     <message>
-        <location filename="../../dock/zenodocktitlewidget.cpp" line="379"/>
         <source>VXGI</source>
-        <translation>全局光照</translation>
+        <translation type="vanished">全局光照</translation>
     </message>
     <message>
-        <location filename="../../dock/zenodocktitlewidget.cpp" line="387"/>
+        <location filename="../../dock/zenodocktitlewidget.cpp" line="389"/>
         <source>Optix</source>
         <translation>光线追踪</translation>
     </message>
     <message>
-        <location filename="../../dock/zenodocktitlewidget.cpp" line="396"/>
         <source>Camera Keyframe</source>
-        <translation>摄像机关键帧</translation>
+        <translation type="vanished">摄像机关键帧</translation>
     </message>
     <message>
-        <location filename="../../dock/zenodocktitlewidget.cpp" line="401"/>
         <source>English / Chinese</source>
-        <translation>中英文切换</translation>
+        <translation type="vanished">中英文切换</translation>
     </message>
     <message>
-        <location filename="../../dock/zenodocktitlewidget.cpp" line="413"/>
         <source>Please restart Zeno to apply changes.</source>
-        <translation>请重启Zeno以应用更改。</translation>
+        <translation type="vanished">请重启Zeno以应用更改。</translation>
     </message>
     <message>
-        <location filename="../../dock/zenodocktitlewidget.cpp" line="419"/>
+        <location filename="../../dock/zenodocktitlewidget.cpp" line="399"/>
         <source>Record</source>
         <translation>导出</translation>
     </message>
     <message>
-        <location filename="../../dock/zenodocktitlewidget.cpp" line="421"/>
+        <location filename="../../dock/zenodocktitlewidget.cpp" line="401"/>
         <source>Screenshot</source>
         <translation>截屏</translation>
     </message>
     <message>
-        <location filename="../../dock/zenodocktitlewidget.cpp" line="428"/>
+        <location filename="../../dock/zenodocktitlewidget.cpp" line="408"/>
         <source>Screenshot EXR</source>
         <translation>截屏为EXR格式</translation>
     </message>
     <message>
-        <location filename="../../dock/zenodocktitlewidget.cpp" line="434"/>
+        <location filename="../../dock/zenodocktitlewidget.cpp" line="414"/>
         <source>Record Video</source>
         <translation>录制视频</translation>
     </message>
     <message>
-        <location filename="../../dock/zenodocktitlewidget.cpp" line="435"/>
-        <source>Shift+F12</source>
-        <translation></translation>
-    </message>
-    <message>
-        <location filename="../../dock/zenodocktitlewidget.cpp" line="439"/>
+        <location filename="../../dock/zenodocktitlewidget.cpp" line="419"/>
         <source>EnvTex</source>
         <translation>环境贴图</translation>
     </message>
     <message>
-        <location filename="../../dock/zenodocktitlewidget.cpp" line="441"/>
+        <location filename="../../dock/zenodocktitlewidget.cpp" line="421"/>
         <source>BlackWhite</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../../dock/zenodocktitlewidget.cpp" line="447"/>
+        <location filename="../../dock/zenodocktitlewidget.cpp" line="427"/>
         <source>Creek</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../../dock/zenodocktitlewidget.cpp" line="453"/>
+        <location filename="../../dock/zenodocktitlewidget.cpp" line="433"/>
         <source>Daylight</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../../dock/zenodocktitlewidget.cpp" line="459"/>
+        <location filename="../../dock/zenodocktitlewidget.cpp" line="439"/>
         <source>Default</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../../dock/zenodocktitlewidget.cpp" line="465"/>
+        <location filename="../../dock/zenodocktitlewidget.cpp" line="445"/>
         <source>Footballfield</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../../dock/zenodocktitlewidget.cpp" line="471"/>
+        <location filename="../../dock/zenodocktitlewidget.cpp" line="451"/>
         <source>Forest</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../../dock/zenodocktitlewidget.cpp" line="477"/>
+        <location filename="../../dock/zenodocktitlewidget.cpp" line="457"/>
         <source>Lake</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../../dock/zenodocktitlewidget.cpp" line="483"/>
+        <location filename="../../dock/zenodocktitlewidget.cpp" line="463"/>
         <source>Sea</source>
         <translation></translation>
     </message>

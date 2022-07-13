@@ -135,19 +135,20 @@ ZENO_API void primSepTriangles(PrimitiveObject *prim, bool smoothNormal, bool ke
                 new_uv[b + i * 6 + 5] = uv3[i];
             }
         }
-        if (prim->loop_uvs.size()) {
+        if (prim->loops.size() && prim->loops.has_attr("uvi")) {
+            auto &loop_uvs = prim->loops.attr<int>("uvi");
             size_t b = 0;
             std::vector<int> v(loopcount * 3);
             for (size_t i = 0; i < prim->polys.size(); i++) {
                 auto [base, len] = prim->polys[i];
                 if (len < 3) continue;
-                v[b] = prim->loop_uvs[base];
-                v[b + 1] = prim->loop_uvs[base + 1];
-                v[b + 2] = prim->loop_uvs[base + 2];
+                v[b] = loop_uvs[base];
+                v[b + 1] = loop_uvs[base + 1];
+                v[b + 2] = loop_uvs[base + 2];
                 for (int j = 0; j < len - 3; j++) {
-                    v[b + 3 + 3 * j] = prim->loop_uvs[base];
-                    v[b + 4 + 3 * j] = prim->loop_uvs[base + j + 2];
-                    v[b + 5 + 3 * j] = prim->loop_uvs[base + j + 3];
+                    v[b + 3 + 3 * j] = loop_uvs[base];
+                    v[b + 4 + 3 * j] = loop_uvs[base + j + 2];
+                    v[b + 5 + 3 * j] = loop_uvs[base + j + 3];
                 }
                 b += (len - 2) * 3;
             }
@@ -164,7 +165,6 @@ ZENO_API void primSepTriangles(PrimitiveObject *prim, bool smoothNormal, bool ke
     prim->quads.clear();
     prim->polys.clear();
     prim->loops.clear();
-    prim->loop_uvs.clear();
     prim->uvs.clear();
 
     if (smoothNormal && needCompNormal) {

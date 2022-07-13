@@ -15,9 +15,11 @@ struct GraphicsManager {
 
     struct ZxxGraphic : zeno::disable_copy {
         std::string key;
+        std::shared_ptr<zeno::IObject> objholder;
 
-        explicit ZxxGraphic(std::string key_, zeno::IObject *obj) : key(std::move(key_)) {
-            zenvis::zxx_load_object(key, obj);
+        explicit ZxxGraphic(std::string key_, std::shared_ptr<zeno::IObject> const &obj)
+            : key(std::move(key_)), objholder(obj) {
+            zenvis::zxx_load_object(key, obj.get());
         }
 
         ~ZxxGraphic() {
@@ -30,7 +32,7 @@ struct GraphicsManager {
     explicit GraphicsManager(Scene *scene) : scene(scene) {
     }
 
-    bool load_objects(std::vector<std::pair<std::string, zeno::IObject *>> const &objs) {
+    bool load_objects(std::vector<std::pair<std::string, std::shared_ptr<zeno::IObject>>> const &objs) {
         auto ins = graphics.insertPass();
         for (auto const &[key, obj] : objs) {
             if (ins.may_emplace(key)) {
@@ -75,7 +77,7 @@ struct RenderEngineZhxx : RenderEngine, zeno::disable_copy {
     }
 
     void update() override {
-        if (graphicsMan->load_objects(scene->objectsMan->pairs()))
+        if (graphicsMan->load_objects(scene->objectsMan->pairsShared()))
             giNeedUpdate = true;
     }
 
