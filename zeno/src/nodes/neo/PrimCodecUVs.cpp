@@ -11,7 +11,8 @@ ZENO_API void primDecodeUVs(PrimitiveObject *prim) {
     if (prim->loop_uvs.size()) {
         auto &attr_uv = prim->loops.add_attr<vec3f>("uv"); // todo: support vec2f in attr...
         /*attr_uv.resize(prim->loop_uvs.size());*/
-        parallel_for(prim->loop_uvs.size(), [&] (size_t i) {
+        size_t n = std::min(prim->loop_uvs.size(), attr_uv.size());
+        parallel_for(n, [&] (size_t i) {
             auto uv = prim->uvs[prim->loop_uvs[i]];
             attr_uv[i] = {uv[0], uv[1], 0};
         });
