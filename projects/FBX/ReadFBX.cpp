@@ -67,7 +67,7 @@ struct Mesh{
     }
 
     void readLights(const aiScene *scene){
-        zeno::log_info("Num Light {}", scene->mNumLights);
+        zeno::log_info("FBX: Num Light {}", scene->mNumLights);
 
         for(unsigned int i=0; i<scene->mNumLights; i++){
             aiLight* l = scene->mLights[i];
@@ -79,18 +79,18 @@ struct Mesh{
             // So we can't import aiLight
             // In maya, export `aiAreaLight1` to .fbx -> import the .fbx
             // `aiAreaLight1` -> Changed to a transform-node
-            zeno::log_info("Light N {} T {} P {} {} {} S {} {}\nD {} {} {} U {} {} {}"
-                           " AC {} AL {} AQ {} CD {} {} {} CS {} {} {} CA {} {} {}"
-                           " AI {} AO {}",
-                           lightName, l->mType, l->mPosition.x, l->mPosition.y, l->mPosition.z,
-                           l->mSize.x, l->mSize.y,
-                           l->mDirection.x, l->mDirection.y, l->mDirection.z, l->mUp.x, l->mUp.y, l->mUp.z,
-                           l->mAttenuationConstant, l->mAttenuationLinear, l->mAttenuationQuadratic,
-                           l->mColorDiffuse.r, l->mColorDiffuse.g, l->mColorDiffuse.b,
-                           l->mColorSpecular.r, l->mColorSpecular.g, l->mColorSpecular.b,
-                           l->mColorAmbient.r, l->mColorAmbient.g, l->mColorAmbient.b,
-                           l->mAngleInnerCone, l->mAngleOuterCone
-                           );
+//            zeno::log_info("Light N {} T {} P {} {} {} S {} {}\nD {} {} {} U {} {} {}"
+//                           " AC {} AL {} AQ {} CD {} {} {} CS {} {} {} CA {} {} {}"
+//                           " AI {} AO {}",
+//                           lightName, l->mType, l->mPosition.x, l->mPosition.y, l->mPosition.z,
+//                           l->mSize.x, l->mSize.y,
+//                           l->mDirection.x, l->mDirection.y, l->mDirection.z, l->mUp.x, l->mUp.y, l->mUp.z,
+//                           l->mAttenuationConstant, l->mAttenuationLinear, l->mAttenuationQuadratic,
+//                           l->mColorDiffuse.r, l->mColorDiffuse.g, l->mColorDiffuse.b,
+//                           l->mColorSpecular.r, l->mColorSpecular.g, l->mColorSpecular.b,
+//                           l->mColorAmbient.r, l->mColorAmbient.g, l->mColorAmbient.b,
+//                           l->mAngleInnerCone, l->mAngleOuterCone
+//                           );
             SLight sLig{
                 lightName, l->mType, l->mPosition, l->mDirection, l->mUp,
                 l->mAttenuationConstant, l->mAttenuationLinear, l->mAttenuationQuadratic,
@@ -125,6 +125,8 @@ struct Mesh{
     void processMesh(aiMesh *mesh, const aiScene *scene) {
         std::string meshName(mesh->mName.data);
         auto numAnimMesh = mesh->mNumAnimMeshes;
+
+        zeno::log_info("FBX: Mesh name {}, vert count {}", mesh->mName.C_Str(), mesh->mNumVertices);
 
         // Vertices & BlendShape
         for(unsigned int j = 0; j < mesh->mNumVertices; j++){
@@ -326,52 +328,67 @@ struct Mesh{
         //zeno::log_info("1M {} M {} NT {}", meshName, matName, scene->mNumTextures);
 
         if( findCaseInsensitive(matName, "SKIN") != std::string::npos ){
+            zeno::log_info("FBX: SKIN");
             mat.setDefaultValue(dMatProp.getUnknownProp());
         }else if( findCaseInsensitive(matName, "CLOTH") != std::string::npos ){
+            zeno::log_info("FBX: CLOTH");
             mat.setDefaultValue(dMatProp.getUnknownProp());
         }else if( findCaseInsensitive(matName, "HAIR") != std::string::npos ){
+            zeno::log_info("FBX: HAIR");
             mat.setDefaultValue(dMatProp.getUnknownProp());
         }else{
             mat.setDefaultValue(dMatProp.getUnknownProp());
         }
 
-        for(auto&com: mat.val){
-
-            aiTextureType texType = com.second.type;
+        for(auto&com: mat.val)
+        {
+            bool texfound=false;
             bool forceD = com.second.forceDefault;
 
-            // TODO Support material multi-tex
-            // The first step - to find the texture
-            if(material->GetTextureCount(texType)){
-                aiString str;
-                material->GetTexture(texType, 0, &str);
-                auto p = fbxPath;
-                auto s = std::string(str.C_Str());
-                auto c = (p += s).string();
-                std::replace(c.begin(), c.end(), '\\', '/');
-                //zeno::log_info("2N {} TN {} TT {} CP {}", com.first, str.data, texType, c);
+            for(int i=0;i<com.second.types.size(); i++){
+                aiTextureType texType = com.second.types[i];
 
-                mat.val.at(com.first).texPath = c;
+                // TODO Support material multi-tex
+                // The first step - to find the texture
+                if(material->GetTextureCount(texType)){
+                    aiString str;
+                    material->GetTexture(texType, 0, &str);
+                    auto p = fbxPath;
+                    auto s = std::string(str.C_Str());
+                    auto c = (p += s).string();
+                    std::replace(c.begin(), c.end(), '\\', '/');
+                    zeno::log_info("FBX: Mat name {}, PropName {} RelTexPath {} TexType {} MerPath {}",matName,com.first, str.data, texType, c);
+
+                    mat.val.at(com.first).texPath = c;
+                    texfound = true;
+
+                    break;
+                }
             }
+            if(! texfound)
             // The second step - to find the material-prop and to generate a value-based texture
-            else
             {
                 aiColor4D tmp;
                 bool found = false;
-                auto key = com.second.aiName.c_str();
-                if(!forceD && com.second.aiName != ""){
-                    if(AI_SUCCESS == aiGetMaterialColor(material,
-                                                        key,0,0,
-                                                        &tmp)){ // Found or use default value
-                        found = true;
-                        com.second.value = tmp;
+
+                for(int i=0;i<com.second.aiNames.size(); i++){
+                    auto key = com.second.aiNames[i];
+
+                    if(!forceD && !key.empty()){
+                        if(AI_SUCCESS == aiGetMaterialColor(material,
+                                                            key.c_str(),0,0,
+                                                            &tmp)){
+                            found = true;
+                            // override the default value
+                            zeno::log_info("FBX: Mat name {}, PropName {}, MatValue {} {} {} {}",matName, com.first,tmp.r, tmp.g,tmp.b,tmp.a);
+                            com.second.value = tmp;
+                        }
+                    }
+
+                    if(found){
+                        break;
                     }
                 }
-
-                // TODO read material-float properties
-                //if(AI_SUCCESS != aiGetMaterialFloat(material, "$ai.normalCameraFactor", 0, 0, &mat.testFloat))
-                //    mat.testFloat = 0.5f;
-                //zeno::log_info("----- TestFloat {}", mat.testFloat);
 
                 auto v = std::any_cast<aiColor4D>(com.second.value);
                 int channel_num = 4;
@@ -558,7 +575,7 @@ struct Anim{
                 auto animation = scene->mAnimations[i];
                 duration = animation->mDuration;
                 tick = animation->mTicksPerSecond;
-                zeno::log_info("AniName: {} NC {} NMC {} NMMC {} D {} T {}",
+                zeno::log_info("FBX: AniName {} NC {} NMC {} NMMC {} D {} T {}",
                                animation->mName.data,
                                animation->mNumChannels,
                                animation->mNumMeshChannels,
@@ -612,12 +629,12 @@ struct Anim{
                 aiMeshMorphAnim* channel = animation->mMorphMeshChannels[j];
                 std::string channelName(channel->mName.data);  // pPlane1*0 with *0
                 channelName = channelName.substr(0, channelName.find_last_of('*'));
-                zeno::log_info("BlendShape Channel Name {}", channelName);
+                zeno::log_info("FBX: BS Channel Name {}", channelName);
 
                 if(channel->mNumKeys) {
                     std::vector<SKeyMorph> keyMorph;
 
-                    zeno::log_info("BlendShape NumKeys {} NumVAW {}", channel->mNumKeys,
+                    zeno::log_info("FBX: BS NumKeys {} NumVal&Wei {}", channel->mNumKeys,
                                    channel->mKeys[0].mNumValuesAndWeights);
 
                     for (int i = 0; i < channel->mNumKeys; ++i) {
@@ -658,14 +675,13 @@ void readFBXFile(
                                              | aiProcess_JoinIdenticalVertices
                                              );
     if(! scene)
-        zeno::log_error("ReadFBXPrim: Invalid assimp scene");
+        zeno::log_error("FBX: Invalid assimp scene");
 
     Mesh mesh;
     Anim anim;
 
     std::filesystem::path p(fbx_path);
     mesh.fbxPath = p.remove_filename();
-    //zeno::log_info("ReadFBXPrim: FBXPath {}", mesh.fbxPath.string());
 
     mesh.initMesh(scene);
     anim.initAnim(scene, &mesh);
@@ -681,9 +697,9 @@ void readFBXFile(
     animInfo->duration = anim.duration;
     animInfo->tick = anim.tick;
 
-    zeno::log_info("ReadFBXPrim: Num Animation {}", scene->mNumAnimations);
-    zeno::log_info("ReadFBXPrim: Vertices count {}", mesh.fbxData.iVertices.value.size());
-    zeno::log_info("ReadFBXPrim: Indices count {}", mesh.fbxData.iIndices.value.size());
+    zeno::log_info("FBX: Num Animation {}", scene->mNumAnimations);
+    zeno::log_info("FBX: Total Vertices count {}", mesh.fbxData.iVertices.value.size());
+    zeno::log_info("FBX: Total Indices count {}", mesh.fbxData.iIndices.value.size());
 }
 
 struct ReadFBXPrim : zeno::INode {
@@ -696,7 +712,7 @@ struct ReadFBXPrim : zeno::INode {
         auto fbxData = std::make_shared<FBXData>();
         auto boneTree = std::make_shared<BoneTree>();
 
-        //zeno::log_info("ReadFBXPrim: File Path {}", path);
+        zeno::log_info("FBX: File Path {}", path);
 
         readFBXFile(datas,
                     nodeTree, fbxData, boneTree, animInfo,
