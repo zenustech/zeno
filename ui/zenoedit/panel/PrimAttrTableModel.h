@@ -21,7 +21,7 @@ public:
     void setModelData(zeno::PrimitiveObject* prim);
 
 private:
-    zeno::PrimitiveObject* m_prim = nullptr;
+    std::shared_ptr<zeno::PrimitiveObject> m_prim = nullptr;
 };
 
 

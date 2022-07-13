@@ -79,6 +79,9 @@ QVariant PrimAttrTableModel::headerData(int section, Qt::Orientation orientation
 
 void PrimAttrTableModel::setModelData(zeno::PrimitiveObject *prim) {
     beginResetModel();
-    m_prim = prim;
+    if (prim)
+        m_prim = std::make_shared<zeno::PrimitiveObject>(*prim);
+    else
+        m_prim = nullptr;
     endResetModel();
 }
