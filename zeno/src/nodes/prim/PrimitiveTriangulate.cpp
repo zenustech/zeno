@@ -74,6 +74,7 @@ ZENO_API void primTriangulate(PrimitiveObject *prim, bool with_uv) {
 
     }
     prim->loops.clear();
+    prim->loop_uvs.clear();
     prim->polys.clear();
 }
 
