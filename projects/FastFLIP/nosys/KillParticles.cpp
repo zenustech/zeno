@@ -12,7 +12,8 @@ namespace zeno {
 
 static void kill_particles_inside(
         openvdb::points::PointDataGrid::Ptr &points,
-        openvdb::FloatGrid::Ptr &solid_sdf) {
+        openvdb::FloatGrid::Ptr &solid_sdf,
+        bool keep) {
 
    		auto pnamepair = FLIP_vdb::position_attribute::attributeType();
    		auto m_p_descriptor =
@@ -28,7 +29,7 @@ static void kill_particles_inside(
   auto kill_particles_op = [&](openvdb::points::PointDataTree::LeafNodeType &leaf,
           openvdb::Index leafpos) {
 
-    auto solid_axr = solid_sdf->getConstAccessor();
+    auto solid_axr = solid_sdf->getConstUnsafeAccessor();
 
     std::vector<openvdb::PointDataIndex32> new_attribute_offsets;
     std::vector<openvdb::Vec3f> new_positions;
@@ -91,12 +92,18 @@ static void kill_particles_inside(
           for (int i_emit = original_attribute_begin;
                i_emit < original_attribute_end; i_emit++) {
             auto current_pos = positionHandle.get(i_emit);
-              if (openvdb::tools::BoxSampler::sample(
-                      solid_axr, voxel_gcoord + current_pos) > 0) {
+              if ( (keep == true) && (openvdb::tools::BoxSampler::sample(
+                      solid_axr, voxel_gcoord + current_pos) <= 0) ) {
                 new_positions.push_back(current_pos);
                 new_velocity.push_back(velocityHandle.get(i_emit));
                 current_particle_count++;
               } // end if the particle position if outside solid
+              else if((keep == false) && (openvdb::tools::BoxSampler::sample(
+                      solid_axr, voxel_gcoord + current_pos) >= 0) ){
+                new_positions.push_back(current_pos);
+                new_velocity.push_back(velocityHandle.get(i_emit));
+                current_particle_count++;
+              }
             }
           }
           new_attribute_offsets.push_back(current_particle_count);
@@ -144,8 +151,8 @@ struct KillParticlesInSDF : zeno::INode {
     virtual void apply() override {
         auto points = get_input<VDBPointsGrid>("Particles");
         auto sdf = get_input<VDBFloatGrid>("KillerSDF");
-
-        kill_particles_inside(points->m_grid, sdf->m_grid);
+        auto keep = std::get<std::string>(get_param("OpType"));
+        kill_particles_inside(points->m_grid, sdf->m_grid, keep=="KEEP");
         set_output("Particles", std::move(points));
     }
 };
@@ -153,7 +160,7 @@ struct KillParticlesInSDF : zeno::INode {
 ZENDEFNODE(KillParticlesInSDF, {
     {"Particles", "KillerSDF"},
     {"Particles"},
-    {},
+    {{"enum KEEP DEL", "OpType", "KEEP"}},
     {"FLIPSolver"},
 });
 
