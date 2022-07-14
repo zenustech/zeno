@@ -3706,7 +3706,14 @@ struct CodimStepping : INode {
         if constexpr (s_enableContact)
           A.computeBarrierGradientAndHessian(cudaPol);
 
-        // rotate gradient and project
+        // rotate gradient
+        // here we assume boundary dofs are all STICKY, thus BCbasis is I
+        cudaPol(zs::range(coOffset),
+              [vtemp = proxy<space>({}, vtemp)] __device__(int i) mutable {
+                auto grad = vtemp.pack<3, 3>("BCbasis", i).transpose() *
+                            vtemp.pack<3>("grad", i);
+                vtemp.tuple<3>("grad", i) = grad;
+              });
         // apply constraints (augmented lagrangians) after rotation!
         if (!BCsatisfied) {
           // grad
@@ -3728,6 +3735,7 @@ struct CodimStepping : INode {
                   });
           // hess (embedded in multiply)
         }
+        // project
         A.project(cudaPol, "grad");
 
         // prepare preconditioner
