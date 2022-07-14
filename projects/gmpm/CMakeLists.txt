@@ -166,6 +166,7 @@ add_library(zeno_geometry SHARED)
 target_sources(zeno_geometry PRIVATE
   geometry/file_parser/read_vtk_mesh.hpp
   geometry/linear_system/mfcg.hpp
+  geometry/linear_system/active_set.hpp
   geometry/kernel/laplace_matrix.hpp
   geometry/kernel/gradient_field.hpp
   geometry/kernel/bary_centric_weights.hpp

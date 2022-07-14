@@ -14,6 +14,7 @@
 #include <zeno/types/StringObject.h>
 
 #include "kernel/laplace_matrix.hpp"
+#include "linear_system/active_set.hpp"
 
 namespace zeno {
 
