@@ -196,6 +196,10 @@ bool ZsgReader::_parseNode(const QString& nodeid, const rapidjson::Value& nodeOb
     {
         _parseColorRamps(nodeid, objValue["color_ramps"], pAcceptor);
     }
+    if (objValue.HasMember("points") && objValue.HasMember("handlers"))
+    {
+        _parseLegacyCurves(nodeid, objValue["points"], objValue["handlers"], pAcceptor);
+    }
     if (name == "Blackboard")
     {
         BLACKBOARD_INFO blackboard;
@@ -474,6 +478,87 @@ void ZsgReader::_parseColorRamps(const QString& id, const rapidjson::Value& json
         colorRamps.push_back(clrRamp);
     }
     pAcceptor->setColorRamps(id, colorRamps);
+}
+
+void ZsgReader::_parseLegacyCurves(const QString& id,
+                                   const rapidjson::Value& jsonPoints,
+                                   const rapidjson::Value& jsonHandlers,
+                                   IAcceptor* pAcceptor)
+{
+    if (jsonPoints.IsNull() || jsonHandlers.IsNull())
+        return;
+
+    QVector<QPointF> pts;
+    RAPIDJSON_ASSERT(jsonPoints.IsArray());
+    const auto &arr = jsonPoints.GetArray();
+    for (int i = 0; i < arr.Size(); i++)
+    {
+        const auto &pointObj = arr[i];
+        bool bSucceed = false;
+        QPointF pt = UiHelper::parsePoint(pointObj, bSucceed);
+        ZASSERT_EXIT(bSucceed);
+        pts.append(pt);
+    }
+
+    RAPIDJSON_ASSERT(jsonHandlers.IsArray());
+    const auto &arr2 = jsonHandlers.GetArray();
+    QVector<QPair<QPointF, QPointF>> hdls;
+    for (int i = 0; i < arr2.Size(); i++)
+    {
+        RAPIDJSON_ASSERT(arr2[i].IsArray() && arr2[i].Size() == 2);
+        const auto &arr_ = arr2[i].GetArray();
+
+        bool bSucceed = false;
+        QPointF leftHdl = UiHelper::parsePoint(arr_[0], bSucceed);
+        ZASSERT_EXIT(bSucceed);
+        QPointF rightHdl = UiHelper::parsePoint(arr_[1], bSucceed);
+        ZASSERT_EXIT(bSucceed);
+
+        hdls.append(QPair(leftHdl, rightHdl));
+    }
+
+    pAcceptor->setLegacyCurve(id, pts, hdls);
+}
+
+void ZsgReader::_parseCurvePoints(const QString& id, const rapidjson::Value& jsonPoints, IAcceptor* pAcceptor)
+{
+    if (jsonPoints.IsNull())
+        return;
+
+    QVector<QPointF> pts;
+    RAPIDJSON_ASSERT(jsonPoints.IsArray());
+    const auto& arr = jsonPoints.GetArray();
+    for (int i = 0; i < arr.Size(); i++)
+    {
+        const auto& pointObj = arr[i];
+        bool bSucceed = false;
+        QPointF pt = UiHelper::parsePoint(pointObj, bSucceed);
+        ZASSERT_EXIT(bSucceed);
+        pts.append(pt);
+    }
+}
+
+void ZsgReader::_parseCurveHandlers(const QString& id, const rapidjson::Value& jsonHandlers, IAcceptor* pAcceptor)
+{
+    if (jsonHandlers.IsNull())
+        return;
+
+    RAPIDJSON_ASSERT(jsonHandlers.IsArray());
+    const auto& arr = jsonHandlers.GetArray();
+    QVector<QPair<QPointF, QPointF>> hdls;
+    for (int i = 0; i < arr.Size(); i++)
+    {
+        RAPIDJSON_ASSERT(arr[i].IsArray() && arr[i].Size() == 2);
+        const auto& arr_ = arr[i].GetArray();
+
+        bool bSucceed = false;
+        QPointF leftHdl = UiHelper::parsePoint(arr_[0], bSucceed);
+        ZASSERT_EXIT(bSucceed);
+        QPointF rightHdl = UiHelper::parsePoint(arr_[1], bSucceed);
+        ZASSERT_EXIT(bSucceed);
+
+        hdls.append(QPair(leftHdl, rightHdl));
+    }
 }
 
 NODE_DESCS ZsgReader::_parseDescs(const rapidjson::Value& jsonDescs)

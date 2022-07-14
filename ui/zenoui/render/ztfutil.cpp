@@ -1,6 +1,7 @@
 #include "ztfutil.h"
 #include "common_id.h"
 #include <stdexcept>
+#include <zenoui/style/zenostyle.h>
 
 ZtfUtil& ZtfUtil::GetInstance()
 {
@@ -443,14 +444,17 @@ NodeUtilParam ZtfUtil::toUtilParam(const NodeParam& nodeParam)
     param.bodyBg.rc = nodeParam.body.backboard.rc.translated(-base);
 
     param.socket = nodeParam.body.leftTopSocket.image;
-    param.szSocket = QSizeF(nodeParam.body.leftTopSocket.image.rc.width(), nodeParam.body.leftTopSocket.image.rc.height());
+    param.szSocket = ZenoStyle::dpiScaledSize(QSize(nodeParam.body.leftTopSocket.image.rc.width(), nodeParam.body.leftTopSocket.image.rc.height()));
 
-    param.socketHOffset = std::abs(nodeParam.body.leftTopSocket.image.rc.left() - 
-                        nodeParam.body.backboard.rc.left());
-    param.socketToText = std::abs(nodeParam.body.leftTopSocket.image.rc.right() -
-                                  nodeParam.body.leftTopSocket.text.rc.left());
-    param.socketVMargin = std::abs(nodeParam.body.leftTopSocket.image.rc.bottom() -
-                                  nodeParam.body.leftBottomSocket.image.rc.top());
+    param.socketHOffset = std::abs(nodeParam.body.leftTopSocket.image.rc.left() - nodeParam.body.backboard.rc.left());
+    param.socketHOffset = ZenoStyle::dpiScaled(param.socketHOffset);
+
+    param.socketToText = std::abs(nodeParam.body.leftTopSocket.image.rc.right() - nodeParam.body.leftTopSocket.text.rc.left());
+    param.socketToText = ZenoStyle::dpiScaled(param.socketToText);
+
+    param.socketVMargin = std::abs(nodeParam.body.leftTopSocket.image.rc.bottom() - nodeParam.body.leftBottomSocket.image.rc.top());
+    param.socketVMargin = ZenoStyle::dpiScaled(param.socketVMargin);
+
     //todo: parameterized.
     param.nameFont = QFont("HarmonyOS Sans", 13);
     param.nameFont.setBold(true);
@@ -479,14 +483,14 @@ NodeUtilParam ZtfUtil::toUtilParam(const NodeParam& nodeParam)
     clr.setAlphaF(0.4);
     palette.setColor(QPalette::Text, clr);
     param.lineEditParam.palette = palette;
-    param.lineEditParam.margins = QMargins(8, 0, 0, 0);
+    param.lineEditParam.margins = QMargins(ZenoStyle::dpiScaled(8), 0, 0, 0);
 
     param.comboboxParam.font = QFont("HarmonyOS Sans SC", 13);
     param.comboboxParam.textColor = QColor(255, 255, 255);
     param.comboboxParam.itemBgNormal = QColor(58, 58, 58);
     param.comboboxParam.itemBgHovered = QColor(23, 160, 252);
     param.comboboxParam.itemBgSelected = QColor(23, 160, 252);
-    param.comboboxParam.margins = QMargins(8, 0, 0, 0);
+    param.comboboxParam.margins = QMargins(ZenoStyle::dpiScaled(8), 0, 0, 0);
     palette.setColor(QPalette::Base, QColor(37, 37, 37));
     palette.setColor(QPalette::Window, QColor(37, 37, 37));
     palette.setColor(QPalette::Text, Qt::white);

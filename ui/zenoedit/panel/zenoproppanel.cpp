@@ -237,7 +237,7 @@ ZExpandableSection* ZenoPropPanel::paramsBox(IGraphsModel* pModel, const QModelI
 				pLayout->addWidget(pTextEdit, r++, 1);
 				break;
 			}
-			case CONTROL_HEATMAP:
+			case CONTROL_COLOR:
 			{
 				QPushButton* pBtn = new QPushButton("Edit Heatmap");
 				pBtn->setObjectName("grayButton");
@@ -522,7 +522,7 @@ void ZenoPropPanel::onDataChanged(const QModelIndex& subGpIdx, const QModelIndex
 					}
 					break;
 				}
-				case CONTROL_HEATMAP:
+				case CONTROL_COLOR:
                 case CONTROL_CURVE:  //TODO(bate): find the QPushButton
 				{
 					//update lineedit

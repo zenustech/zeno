@@ -1,4 +1,5 @@
 #include "zenonode.h"
+#include "zenosubgraphscene.h"
 #include <zenoui/model/modelrole.h>
 #include "model/subgraphmodel.h"
 #include <zenoui/render/common_id.h>
@@ -20,6 +21,7 @@
 #include "zenosubgraphview.h"
 #include "../panel/zenoheatmapeditor.h"
 #include "zvalidator.h"
+#include "zenonewmenu.h"
 
 
 static QString getOpenFileName(
@@ -255,7 +257,8 @@ ZenoBackgroundWidget* ZenoNode::initHeaderStyle()
 	m_NameItem = new ZenoTextLayoutItem(name, m_renderParams.nameFont, m_renderParams.nameClr.color(), this);
 	QGraphicsLinearLayout* pNameLayout = new QGraphicsLinearLayout(Qt::Horizontal);
 	pNameLayout->addItem(m_NameItem);
-	pNameLayout->setContentsMargins(5, 5, 5, 5);
+    int margins = ZenoStyle::dpiScaled(5);
+	pNameLayout->setContentsMargins(margins, margins, margins, margins);
 
     m_pStatusWidgets = new ZenoMinStatusBtnWidget(m_renderParams.status, this);
     m_pStatusWidgets->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
@@ -287,18 +290,24 @@ ZenoBackgroundWidget* ZenoNode::initBodyWidget()
     bodyWidget->setBorder(bodyBg.border_witdh, bodyBg.clr_border);
 
     QGraphicsLinearLayout *pVLayout = new QGraphicsLinearLayout(Qt::Vertical);
-    pVLayout->setContentsMargins(0, 5, 0, 5);
+    pVLayout->setContentsMargins(0, ZenoStyle::dpiScaled(5), 0, ZenoStyle::dpiScaled(5));
 
     if (QGraphicsLayout* pParamsLayout = initParams())
     {
-        pParamsLayout->setContentsMargins(m_renderParams.distParam.paramsLPadding, 10, 10, 0);
+        pParamsLayout->setContentsMargins(
+            ZenoStyle::dpiScaled(m_renderParams.distParam.paramsLPadding),
+            ZenoStyle::dpiScaled(10),
+            ZenoStyle::dpiScaled(10),
+            ZenoStyle::dpiScaled(0));
         pVLayout->addItem(pParamsLayout);
     }
     if (QGraphicsLayout* pSocketsLayout = initSockets())
     {
         pSocketsLayout->setContentsMargins(
-            m_renderParams.distParam.paramsLPadding, m_renderParams.distParam.paramsToTopSocket,
-            m_renderParams.distParam.paramsLPadding, m_renderParams.distParam.outSocketsBottomMargin);
+            ZenoStyle::dpiScaled(m_renderParams.distParam.paramsLPadding),
+            ZenoStyle::dpiScaled(m_renderParams.distParam.paramsToTopSocket),
+            ZenoStyle::dpiScaled(m_renderParams.distParam.paramsLPadding),
+            ZenoStyle::dpiScaled(m_renderParams.distParam.outSocketsBottomMargin));
         pVLayout->addItem(pSocketsLayout);
     }
 
@@ -310,7 +319,7 @@ QGraphicsLayout* ZenoNode::initParams()
 {
     const PARAMS_INFO &params = m_index.data(ROLE_PARAMETERS).value<PARAMS_INFO>();
     QList<QString> names = params.keys();
-    int r = 0, n = names.length();
+    int n = names.length();
     const QString nodeid = nodeId();
 
     QGraphicsLinearLayout* pParamsLayout = nullptr;
@@ -323,10 +332,11 @@ QGraphicsLayout* ZenoNode::initParams()
             if (param.bEnableConnect)
                 continue;
 
-            QGraphicsLinearLayout* pParamLayout = new QGraphicsLinearLayout(Qt::Horizontal);
-            initParam(param.control, pParamLayout, paramName, param);
-            pParamsLayout->addItem(pParamLayout);
-            r++;
+            QGraphicsLayout* pParamLayout = initParam(param.control, paramName, param);
+            if (pParamLayout)
+            {
+                pParamsLayout->addItem(pParamLayout);
+            }
         }
     }
     QGraphicsLinearLayout* pCustomParams = initCustomParamWidgets();
@@ -340,8 +350,12 @@ QGraphicsLinearLayout* ZenoNode::initCustomParamWidgets()
     return nullptr;
 }
 
-void ZenoNode::initParam(PARAM_CONTROL ctrl, QGraphicsLinearLayout* pParamLayout, const QString& paramName, const PARAM_INFO& param)
+QGraphicsLayout* ZenoNode::initParam(PARAM_CONTROL ctrl, const QString& paramName, const PARAM_INFO& param)
 {
+    if (ctrl == CONTROL_NONVISIBLE)
+        return nullptr;
+
+    QGraphicsLinearLayout* pParamLayout = new QGraphicsLinearLayout(Qt::Horizontal);
     const QString& value = UiHelper::variantToString(param.value);
 
 	ZenoTextLayoutItem* pNameItem = new ZenoTextLayoutItem(paramName, m_renderParams.paramFont, m_renderParams.paramClr.color());
@@ -494,7 +508,7 @@ void ZenoNode::initParam(PARAM_CONTROL ctrl, QGraphicsLinearLayout* pParamLayout
 		    m_paramControls[paramName] = pMultiStrEdit;
 		    break;
 	    }
-	    case CONTROL_HEATMAP:
+	    case CONTROL_COLOR:
         {
             break;
         }
@@ -530,6 +544,7 @@ void ZenoNode::initParam(PARAM_CONTROL ctrl, QGraphicsLinearLayout* pParamLayout
 		    break;
 	    }
 	}
+    return pParamLayout;
 }
 
 QPersistentModelIndex ZenoNode::subGraphIndex() const
@@ -574,7 +589,7 @@ void ZenoNode::onParamEditFinished(PARAM_CONTROL editCtrl, const QString& paramN
 
     switch (editCtrl)
     {
-    case CONTROL_HEATMAP:
+    case CONTROL_COLOR:
     case CONTROL_CURVE:
         info.newValue = value;
         break;
@@ -936,7 +951,7 @@ ZenoParamWidget* ZenoNode::initSocketWidget(const INPUT_SOCKET inSocket, ZenoTex
             //todo
             break;
         }
-        case CONTROL_HEATMAP:
+        case CONTROL_COLOR:
         {
             QLinearGradient grad = inSocket.info.defaultValue.value<QLinearGradient>();
             ZenoParamPushButton* pEditBtn = new ZenoParamPushButton("Edit", -1, QSizePolicy::Expanding);
@@ -1433,37 +1448,45 @@ ZenoGraphsEditor* ZenoNode::getEditorViewByViewport(QWidget* pWidget)
 
 void ZenoNode::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
 {
-    scene()->clearSelection();
-    this->setSelected(true);
-
-	QMenu* nodeMenu = new QMenu;
-	QAction* pCopy = new QAction("Copy");
-	QAction* pPaste = new QAction("Paste");
-	QAction* pDelete = new QAction("Delete");
-    QAction* pResolve = new QAction("Resolve");
-
-    connect(pResolve, &QAction::triggered, this, [=]() { markError(false); });
-
-	nodeMenu->addAction(pCopy);
-	nodeMenu->addAction(pPaste);
-	nodeMenu->addAction(pDelete);
-    nodeMenu->addAction(pResolve);
-
     IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
-    const QString& name = m_index.data(ROLE_OBJNAME).toString();
-    QModelIndex subnetnodeIdx = pGraphsModel->index(name);
-    if (subnetnodeIdx.isValid())
+    if (pGraphsModel && pGraphsModel->IsSubGraphNode(m_index))
     {
+        scene()->clearSelection();
+        this->setSelected(true);
+
+        QMenu *nodeMenu = new QMenu;
+        QAction *pCopy = new QAction("Copy");
+        QAction *pPaste = new QAction("Paste");
+        QAction *pDelete = new QAction("Delete");
+
+        nodeMenu->addAction(pCopy);
+        nodeMenu->addAction(pPaste);
+        nodeMenu->addAction(pDelete);
         QAction* pFork = new QAction("Fork");
         nodeMenu->addAction(pFork);
         connect(pFork, &QAction::triggered, this, [=]()
         {
-            pGraphsModel->fork(m_subGpIndex, index());
+            QModelIndex forkNode = pGraphsModel->fork(m_subGpIndex, index());
+            if (forkNode.isValid())
+            {
+                ZenoSubGraphScene* pScene = qobject_cast<ZenoSubGraphScene*>(scene());
+                if (pScene) {
+                    pScene->select(forkNode.data(ROLE_OBJID).toString());
+                }
+            }
         });
+        nodeMenu->exec(QCursor::pos());
+        nodeMenu->deleteLater();
     }
-
-	nodeMenu->exec(QCursor::pos());
-    nodeMenu->deleteLater();
+    else
+    {
+        NODE_CATES cates = zenoApp->graphsManagment()->currentModel()->getCates();
+        QPointF pos = event->scenePos();
+        ZenoNewnodeMenu *menu = new ZenoNewnodeMenu(m_subGpIndex, cates, pos);
+        menu->setEditorFocus();
+        menu->exec(pos.toPoint());
+        menu->deleteLater();
+    }
 }
 
 void ZenoNode::mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event)

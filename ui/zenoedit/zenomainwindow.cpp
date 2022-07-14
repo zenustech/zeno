@@ -58,6 +58,19 @@ void ZenoMainWindow::init()
     pal.setColor(QPalette::Window, QColor(11, 11, 11));
     setAutoFillBackground(true);
     setPalette(pal);
+
+    QString qss = "\
+        QMainWindow::separator {\
+            background: black;\
+            width: 3px;\
+            height: 3px;\
+        }\
+        \
+        QMainWindow::separator:hover {\
+            background: rgb(0,127,212);\
+        }\
+    ";
+    setStyleSheet(qss);
 }
 
 void ZenoMainWindow::initMenu() {
@@ -609,9 +622,9 @@ void ZenoMainWindow::onFeedBack()
     }
 }
 
-void ZenoMainWindow::onRunTriggered()
+void ZenoMainWindow::clearErrorMark()
 {
-    //clear all mark at every scene.
+    //clear all error mark at every scene.
     auto docks = findChildren<ZenoDockWidget*>(QString(), Qt::FindDirectChildrenOnly);
 
     IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();

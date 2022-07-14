@@ -160,6 +160,8 @@ private:
     void importNodeLinks(const QList<NODE_DATA> &nodes, const QModelIndex &subGpIdx);
     void resolveLinks(const QModelIndex& idx, SubGraphModel* pCurrentGraph);
     void initDescriptors();
+    NODE_DATA _fork(const QModelIndex& subgIdx, const QModelIndex& subnetNodeIdx);
+    QString uniqueSubgraph(QString orginName);
 
     void beginApiLevel();
     void endApiLevel();
