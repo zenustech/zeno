@@ -39,6 +39,7 @@ struct Mesh{
     std::unordered_map<std::string, std::vector<unsigned int>> m_VerticesSlice;
     std::unordered_map<std::string, std::vector<unsigned int>> m_BlendShapeSlice;
     std::unordered_map<std::string, aiMatrix4x4> m_TransMatrix;
+    std::unordered_map<std::string, SMaterial> m_loadedMat;
     unsigned int m_VerticesIncrease = 0;
     unsigned int m_IndicesIncrease = 0;
 
@@ -317,12 +318,19 @@ struct Mesh{
             aiTextureType_UNKNOWN = 18,
          */
 
-        SMaterial mat;
         SDefaultMatProp dMatProp;
         aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
-
-        std::string meshName = mesh->mName.data;
         std::string matName = material->GetName().data;
+        std::string meshName = mesh->mName.data;
+
+        if(m_loadedMat.find(matName) != m_loadedMat.end()){
+            fbxData.iMaterial.value[meshName] = m_loadedMat[matName];
+            return;
+        }
+
+        SMaterial mat;
+        mat.matName = matName;
+
         std::string vmPath = createTexDir("valueTex/" + matName);
 
         //zeno::log_info("1M {} M {} NT {}", meshName, matName, scene->mNumTextures);
@@ -373,7 +381,7 @@ struct Mesh{
 
                 for(int i=0;i<com.second.aiNames.size(); i++){
                     auto key = com.second.aiNames[i];
-
+                    //zeno::log_info("Getting {}", key);
                     if(!forceD && !key.empty()){
                         if(AI_SUCCESS == aiGetMaterialColor(material,
                                                             key.c_str(),0,0,
@@ -391,6 +399,11 @@ struct Mesh{
                 }
 
                 auto v = std::any_cast<aiColor4D>(com.second.value);
+
+                // XXX
+                if(com.first == "opacity" && v.r>0.99f && v.g>0.99f && v.b>0.99f)
+                    v *= 0.8;
+
                 int channel_num = 4;
                 int width = 2, height = 2;
                 uint8_t* pixels = new uint8_t[width * height * channel_num];
@@ -421,8 +434,7 @@ struct Mesh{
             }
         }
 
-        mat.matName = matName;
-
+        m_loadedMat[matName] = mat;
         fbxData.iMaterial.value[meshName] = mat;
     }
 
