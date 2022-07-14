@@ -41,7 +41,7 @@ namespace zeno
             auto frameAmount{vertexFrameBuffer.size()};
             size += sizeof(frameAmount);
 
-            auto vertexAmount{vertexFrameBuffer[0].size()};
+            std::size_t vertexAmount = (frameAmount != 0) ? vertexFrameBuffer[0].size() : 0;
             size += sizeof(vertexAmount);
 
             size += sizeof(zeno::vec3f) * vertexAmount * frameAmount;
@@ -80,7 +80,7 @@ namespace zeno
             memcpy(str.data() + i, &frameAmount, sizeof(frameAmount));
             i += sizeof(frameAmount);
 
-            auto vertexAmount{vertexFrameBuffer[0].size()};
+            std::size_t vertexAmount = (frameAmount != 0) ? vertexFrameBuffer[0].size() : 0;
             memcpy(str.data() + i, &vertexAmount, sizeof(vertexAmount));
             i += sizeof(vertexAmount);
 

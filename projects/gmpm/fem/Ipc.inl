@@ -11,87 +11,66 @@ void CodimStepping::IPCSystem::computeBarrierGradientAndHessian(
   using Vec9View = zs::vec_view<T, zs::integer_seq<int, 9>>;
   using Vec6View = zs::vec_view<T, zs::integer_seq<int, 6>>;
   auto numPP = nPP.getVal();
-  pol(range(numPP),
-      [vtemp = proxy<space>({}, vtemp), tempPP = proxy<space>({}, tempPP),
-       PP = proxy<space>(PP), gTag, xi2 = xi * xi, dHat = dHat, activeGap2,
-       kappa = kappa, projectDBC = projectDBC,
-       includeHessian] __device__(int ppi) mutable {
-        auto pp = PP[ppi];
-        auto x0 = vtemp.pack<3>("xn", pp[0]);
-        auto x1 = vtemp.pack<3>("xn", pp[1]);
+  pol(range(numPP), [vtemp = proxy<space>({}, vtemp),
+                     tempPP = proxy<space>({}, tempPP), PP = proxy<space>(PP),
+                     gTag, xi2 = xi * xi, dHat = dHat, activeGap2,
+                     kappa = kappa, projectDBC = projectDBC,
+                     includeHessian] __device__(int ppi) mutable {
+    auto pp = PP[ppi];
+    auto x0 = vtemp.pack<3>("xn", pp[0]);
+    auto x1 = vtemp.pack<3>("xn", pp[1]);
 #if 1
-        auto ppGrad = dist_grad_pp(x0, x1);
-        auto dist2 = dist2_pp(x0, x1);
-        if (dist2 < xi2)
-          printf("dist already smaller than xi!\n");
-        auto barrierDistGrad =
-            zs::barrier_gradient(dist2 - xi2, activeGap2, kappa);
-        auto grad = ppGrad * (-barrierDistGrad);
-        // gradient
-        for (int d = 0; d != 3; ++d) {
-          atomic_add(exec_cuda, &vtemp(gTag, d, pp[0]), grad(0, d));
-          atomic_add(exec_cuda, &vtemp(gTag, d, pp[1]), grad(1, d));
-        }
-        // hessian
-        if (!includeHessian) return;
-        auto ppHess = dist_hess_pp(x0, x1);
-        auto ppGrad_ = Vec6View{ppGrad.data()};
-        ppHess = (zs::barrier_hessian(dist2 - xi2, activeGap2, kappa) *
-                      dyadic_prod(ppGrad_, ppGrad_) +
-                  barrierDistGrad * ppHess);
-        // make pd
-        make_pd(ppHess);
-
+    auto ppGrad = dist_grad_pp(x0, x1);
+    auto dist2 = dist2_pp(x0, x1);
+    if (dist2 < xi2)
+      printf("dist already smaller than xi!\n");
+    auto barrierDistGrad = zs::barrier_gradient(dist2 - xi2, activeGap2, kappa);
+    auto grad = ppGrad * (-barrierDistGrad);
+    // gradient
+    for (int d = 0; d != 3; ++d) {
+      atomic_add(exec_cuda, &vtemp(gTag, d, pp[0]), grad(0, d));
+      atomic_add(exec_cuda, &vtemp(gTag, d, pp[1]), grad(1, d));
+    }
+    // hessian
+    if (!includeHessian)
+      return;
+    auto ppHess = dist_hess_pp(x0, x1);
+    auto ppGrad_ = Vec6View{ppGrad.data()};
+    ppHess = (zs::barrier_hessian(dist2 - xi2, activeGap2, kappa) *
+                  dyadic_prod(ppGrad_, ppGrad_) +
+              barrierDistGrad * ppHess);
+    // make pd
+    make_pd(ppHess);
+#elif 0
+    auto [ppHess, grad] = get_hkm_pp_hess(x0, x1, kappa, dHat);
+    // gradient
+    for (int d = 0; d != 3; ++d) {
+      atomic_add(exec_cuda, &vtemp(gTag, d, pp[0]), grad(d));
+      atomic_add(exec_cuda, &vtemp(gTag, d, pp[1]), grad(3 + d));
+    }
 #else
 #endif
-        // rotate and project
-        mat3 BCbasis[2];
-        int BCorder[2];
-        int BCfixed[2];
-        for (int i = 0; i != 2; ++i) {
-          BCbasis[i] = vtemp.pack<3, 3>("BCbasis", pp[i]);
-          BCorder[i] = vtemp("BCorder", pp[i]);
-          BCfixed[i] = vtemp("BCfixed", pp[i]);
+    // rotate and project
+    mat3 BCbasis[2];
+    int BCorder[2];
+    int BCfixed[2];
+    for (int i = 0; i != 2; ++i) {
+      BCbasis[i] = vtemp.pack<3, 3>("BCbasis", pp[i]);
+      BCorder[i] = (int)vtemp("BCorder", pp[i]);
+      BCfixed[i] = (int)vtemp("BCfixed", pp[i]);
+    }
+    rotate_hessian(ppHess, BCbasis, BCorder, BCfixed, projectDBC);
+    // pp[0], pp[1]
+    tempPP.tuple<36>("H", ppi) = ppHess;
+    /// construct P
+    for (int vi = 0; vi != 2; ++vi) {
+      for (int i = 0; i != 3; ++i)
+        for (int j = 0; j != 3; ++j) {
+          atomic_add(exec_cuda, &vtemp("P", i * 3 + j, pp[vi]),
+                     ppHess(vi * 3 + i, vi * 3 + j));
         }
-        for (int vi = 0; vi != 2; ++vi) {
-          int offsetI = vi * 3;
-          for (int vj = 0; vj != 2; ++vj) {
-            int offsetJ = vj * 3;
-            mat3 tmp{};
-            for (int i = 0; i != 3; ++i)
-              for (int j = 0; j != 3; ++j)
-                tmp(i, j) = ppHess(offsetI + i, offsetJ + j);
-            // rotate
-            tmp = BCbasis[vi].transpose() * tmp * BCbasis[vj];
-            // project
-            if (BCorder[vi] > 0 || BCorder[vj] > 0) {
-              if (vi == vj) {
-                for (int i = 0; i != BCorder[vi]; ++i)
-                  for (int j = 0; j != BCorder[vj]; ++j)
-                    tmp(i, j) = (i == j ? 1 : 0);
-              } else {
-                for (int i = 0; i != BCorder[vi]; ++i)
-                  for (int j = 0; j != BCorder[vj]; ++j)
-                    tmp(i, j) = 0;
-              }
-            }
-            for (int i = 0; i != 3; ++i)
-              for (int j = 0; j != 3; ++j)
-                ppHess(offsetI + i, offsetJ + j) = tmp(i, j);
-          }
-        }
-        rotate_hessian(ppHess, BCbasis, BCorder, BCfixed, projectDBC);
-        // pp[0], pp[1]
-        tempPP.tuple<36>("H", ppi) = ppHess;
-        /// construct P
-        for (int vi = 0; vi != 2; ++vi) {
-          for (int i = 0; i != 3; ++i)
-            for (int j = 0; j != 3; ++j) {
-              atomic_add(exec_cuda, &vtemp("P", i * 3 + j, pp[vi]),
-                         ppHess(vi * 3 + i, vi * 3 + j));
-            }
-        }
-      });
+    }
+  });
   auto numPE = nPE.getVal();
   pol(range(numPE),
       [vtemp = proxy<space>({}, vtemp), tempPE = proxy<space>({}, tempPE),
@@ -116,7 +95,8 @@ void CodimStepping::IPCSystem::computeBarrierGradientAndHessian(
           atomic_add(exec_cuda, &vtemp(gTag, d, pe[2]), grad(2, d));
         }
         // hessian
-        if (!includeHessian) return;
+        if (!includeHessian)
+          return;
         auto peHess = dist_hess_pe(p, e0, e1);
         auto peGrad_ = Vec9View{peGrad.data()};
         peHess = (zs::barrier_hessian(dist2 - xi2, activeGap2, kappa) *
@@ -124,6 +104,14 @@ void CodimStepping::IPCSystem::computeBarrierGradientAndHessian(
                   barrierDistGrad * peHess);
         // make pd
         make_pd(peHess);
+#elif 0
+    auto [peHess, grad] = get_hkm_pe_hess(p, e0, e1, kappa, dHat);
+    // gradient
+    for (int d = 0; d != 3; ++d) {
+      atomic_add(exec_cuda, &vtemp(gTag, d, pe[0]), grad(d));
+      atomic_add(exec_cuda, &vtemp(gTag, d, pe[1]), grad(3 + d));
+      atomic_add(exec_cuda, &vtemp(gTag, d, pe[2]), grad(6 + d));
+    }
 #else
 #endif
         // rotate and project
@@ -173,7 +161,8 @@ void CodimStepping::IPCSystem::computeBarrierGradientAndHessian(
           atomic_add(exec_cuda, &vtemp(gTag, d, pt[3]), grad(3, d));
         }
         // hessian
-        if (!includeHessian) return;
+        if (!includeHessian)
+          return;
         auto ptHess = dist_hess_pt(p, t0, t1, t2);
         auto ptGrad_ = Vec12View{ptGrad.data()};
         ptHess = (zs::barrier_hessian(dist2 - xi2, activeGap2, kappa) *
@@ -181,6 +170,15 @@ void CodimStepping::IPCSystem::computeBarrierGradientAndHessian(
                   barrierDistGrad * ptHess);
         // make pd
         make_pd(ptHess);
+#elif 0
+    auto [ptHess, grad] = get_hkm_pt_hess(p, t0, t1, t2, kappa, dHat);
+    // gradient
+    for (int d = 0; d != 3; ++d) {
+      atomic_add(exec_cuda, &vtemp(gTag, d, pt[0]), grad(d));
+      atomic_add(exec_cuda, &vtemp(gTag, d, pt[1]), grad(3 + d));
+      atomic_add(exec_cuda, &vtemp(gTag, d, pt[2]), grad(6 + d));
+      atomic_add(exec_cuda, &vtemp(gTag, d, pt[3]), grad(9 + d));
+    }
 #else
 #endif
         // rotate and project
@@ -230,7 +228,8 @@ void CodimStepping::IPCSystem::computeBarrierGradientAndHessian(
           atomic_add(exec_cuda, &vtemp(gTag, d, ee[3]), grad(3, d));
         }
         // hessian
-        if (!includeHessian) return;
+        if (!includeHessian)
+          return;
         auto eeHess = dist_hess_ee(ea0, ea1, eb0, eb1);
         auto eeGrad_ = Vec12View{eeGrad.data()};
         eeHess = (zs::barrier_hessian(dist2 - xi2, activeGap2, kappa) *
@@ -238,6 +237,15 @@ void CodimStepping::IPCSystem::computeBarrierGradientAndHessian(
                   barrierDistGrad * eeHess);
         // make pd
         make_pd(eeHess);
+#elif 0
+    auto [eeHess, grad] = get_hkm_ee_hess(ea0, ea1, eb0, eb1, kappa, dHat);
+    // gradient
+    for (int d = 0; d != 3; ++d) {
+      atomic_add(exec_cuda, &vtemp(gTag, d, ee[0]), grad(d));
+      atomic_add(exec_cuda, &vtemp(gTag, d, ee[1]), grad(3 + d));
+      atomic_add(exec_cuda, &vtemp(gTag, d, ee[2]), grad(6 + d));
+      atomic_add(exec_cuda, &vtemp(gTag, d, ee[3]), grad(9 + d));
+    }
 #else
 #endif
         // rotate and project
