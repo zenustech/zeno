@@ -8,6 +8,7 @@
 #include <zenoui/util/cihou.h>
 #include <zeno/utils/scope_exit.h>
 #include "zenoapplication.h"
+#include "acceptor/transferacceptor.h"
 
 
 class ApiLevelScope
@@ -496,82 +497,103 @@ void GraphsModel::removeGraph(int idx)
     markDirty();
 }
 
-QModelIndex GraphsModel::fork(const QModelIndex& whichSubg, const QModelIndex& subnetNodeIdx)
+QModelIndex GraphsModel::fork(const QModelIndex& subgIdx /*the subgraph which subnetNodeIdx lays in*/, const QModelIndex &subnetNodeIdx)
 {
-    const QString& subnetName = subnetNodeIdx.data(ROLE_OBJNAME).toString();
+    const QString &subnetName = subnetNodeIdx.data(ROLE_OBJNAME).toString();
     SubGraphModel* pModel = subGraph(subnetName);
     ZASSERT_EXIT(pModel, QModelIndex());
 
-	SubGraphModel* pForkModel = new SubGraphModel(this);
-    const QString& forkName = subnetName + " (copy)";
-    pForkModel->setName(forkName);
-    appendSubGraph(pForkModel);
+    NODE_DATA subnetData = _fork(subgIdx, subnetNodeIdx);
+    SubGraphModel *pCurrentModel = subGraph(subgIdx.row());
+    pCurrentModel->appendItem(subnetData, false);
 
-    QModelIndex subgIdx = indexBySubModel(pModel);
+    QModelIndex newForkNodeIdx = pCurrentModel->index(subnetData[ROLE_OBJID].toString());
+    return newForkNodeIdx;
+}
 
-    QModelIndexList nodeIndice, linkIndice;
+NODE_DATA GraphsModel::_fork(const QModelIndex& subgIdx, const QModelIndex& subnetNodeIdx)
+{
+    const QString &subnetName = subnetNodeIdx.data(ROLE_OBJNAME).toString();
+    SubGraphModel* pModel = subGraph(subnetName);
+    ZASSERT_EXIT(pModel, NODE_DATA());
+
+    QMap<QString, NODE_DATA> nodes;
+    QList<EdgeInfo> links;
     for (int r = 0; r < pModel->rowCount(); r++)
     {
+        QModelIndex newIdx;
         QModelIndex idx = pModel->index(r, 0);
-        nodeIndice.append(idx);
-
-        const INPUT_SOCKETS& inputs = idx.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
-        for (auto input : inputs.values())
+        NODE_DATA data;
+        if (IsSubGraphNode(idx))
         {
-            for (auto linkIdx : input.linkIndice)
-            {
-                linkIndice.append(linkIdx);
-            }
+            const QString& ssubnetName = idx.data(ROLE_OBJNAME).toString();
+            SubGraphModel* psSubModel = subGraph(ssubnetName);
+            ZASSERT_EXIT(psSubModel, NODE_DATA());
+            data = _fork(indexBySubModel(pModel), idx);
+            nodes.insert(data[ROLE_OBJID].toString(), data);
         }
-        const OUTPUT_SOCKETS& outputs = idx.data(ROLE_OUTPUTS).value<OUTPUT_SOCKETS>();
-		for (auto output : outputs.values())
-		{
-			for (auto linkIdx : output.linkIndice)
-			{
-				linkIndice.append(linkIdx);
-			}
-		}
+        else
+        {
+            data = pModel->itemData(idx);
+            const QString &ident = idx.data(ROLE_OBJID).toString();
+            nodes.insert(ident, data);
+        }
+    }
+    for (int r = 0; r < m_linkModel->rowCount(); r++)
+    {
+        QModelIndex idx = m_linkModel->index(r, 0);
+        const QString& outNode = idx.data(ROLE_OUTNODE).toString();
+        const QString& inNode = idx.data(ROLE_INNODE).toString();
+        if (nodes.find(inNode) != nodes.end() && nodes.find(outNode) != nodes.end())
+        {
+            const QString& outSock = idx.data(ROLE_OUTSOCK).toString();
+            const QString& inSock = idx.data(ROLE_INSOCK).toString();
+            links.append(EdgeInfo(outNode, inNode, outSock, inSock));
+        }
     }
 
-    QMap<QString, NODE_DATA> items = UiHelper::dumpItems(this, subgIdx, nodeIndice, linkIndice);
-    QList<NODE_DATA> datas;
-    for (NODE_DATA data : items)
-    {
-        datas.append(data);
-    }
+    const QString& forkName = uniqueSubgraph(subnetName);
+    SubGraphModel* pForkModel = new SubGraphModel(this);
+    pForkModel->setName(forkName);
+    appendSubGraph(pForkModel);
+    AppHelper::reAllocIdents(nodes, links);
 
     QModelIndex newSubgIdx = indexBySubModel(pForkModel);
-    importNodeLinks(datas, newSubgIdx);
 
-    //create the new fork subnet node at graph indexed by whichSubg.
-    NODE_DATA subnetData = itemData(subnetNodeIdx, whichSubg);
+    // import nodes and links into the new created subgraph.
+    importNodes(nodes, links, QPointF(), newSubgIdx, false);
+
+    //create the new fork subnet node at outter layer.
+    NODE_DATA subnetData = itemData(subnetNodeIdx, subgIdx);
     subnetData[ROLE_OBJID] = UiHelper::generateUuid(forkName);
     subnetData[ROLE_OBJNAME] = forkName;
-
+    //clear the link.
     OUTPUT_SOCKETS outputs = subnetData[ROLE_OUTPUTS].value<OUTPUT_SOCKETS>();
-	for (auto it = outputs.begin(); it != outputs.end(); it++)
-	{
-		it->second.linkIndice.clear();
-		it->second.inNodes.clear();
-	}
+    for (auto it = outputs.begin(); it != outputs.end(); it++) {
+        it->second.linkIndice.clear();
+        it->second.inNodes.clear();
+    }
     INPUT_SOCKETS inputs = subnetData[ROLE_INPUTS].value<INPUT_SOCKETS>();
-	for (auto it = inputs.begin(); it != inputs.end(); it++)
-	{
-		it->second.linkIndice.clear();
-		it->second.outNodes.clear();
-	}
+    for (auto it = inputs.begin(); it != inputs.end(); it++) {
+        it->second.linkIndice.clear();
+        it->second.outNodes.clear();
+    }
     subnetData[ROLE_INPUTS] = QVariant::fromValue(inputs);
     subnetData[ROLE_OUTPUTS] = QVariant::fromValue(outputs);
-
     //temp code: node pos.
     QPointF pos = subnetData[ROLE_OBJPOS].toPointF();
     pos.setY(pos.y() + 100);
     subnetData[ROLE_OBJPOS] = pos;
+    return subnetData;
+}
 
-    SubGraphModel* pCurrentModel = subGraph(whichSubg.row());
-    pCurrentModel->appendItem(subnetData, false);
-
-    return newSubgIdx;
+QString GraphsModel::uniqueSubgraph(QString orginName)
+{
+    QString newSubName = orginName;
+    while (subGraph(newSubName)) {
+        newSubName = AppHelper::nthSerialNumName(newSubName);
+    }
+    return newSubName;
 }
 
 NODE_CATES GraphsModel::getCates()
@@ -1162,6 +1184,8 @@ QModelIndex GraphsModel::addLink(const EdgeInfo& info, const QModelIndex& subGpI
         pItem->setData(info.inputSock, ROLE_INSOCK);
         pItem->setData(info.outputNode, ROLE_OUTNODE);
         pItem->setData(info.outputSock, ROLE_OUTSOCK);
+
+        ZASSERT_EXIT(pGraph->index(info.inputNode).isValid() && pGraph->index(info.outputNode).isValid(), QModelIndex());
 
         m_linkModel->appendRow(pItem);
         QModelIndex linkIdx = m_linkModel->indexFromItem(pItem);

@@ -37,7 +37,7 @@ public slots:
     void onPrimitiveSelected(const std::unordered_set<std::string>& primids);
     void updateViewport(const QString& action = "");
     void onFeedBack();
-    void onRunTriggered();
+    void clearErrorMark();
 
 protected:
     void resizeEvent(QResizeEvent* event) override;

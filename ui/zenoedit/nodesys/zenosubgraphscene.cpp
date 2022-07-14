@@ -82,6 +82,8 @@ void ZenoSubGraphScene::initModel(const QModelIndex& index)
                 const QString& outId = linkIdx.data(ROLE_OUTNODE).toString();
                 const QString& outSock = linkIdx.data(ROLE_OUTSOCK).toString();
                 ZenoNode* outNode = m_nodes[outId];
+                ZASSERT_EXIT(outNode);
+
                 const QPointF& outSockPos = outNode->getPortPos(false, outSock);
 
                 ZenoFullLink *pEdge = new ZenoFullLink(linkIdx, outNode, inNode);
@@ -660,7 +662,7 @@ void ZenoSubGraphScene::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
 
 void ZenoSubGraphScene::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
 {
-    if (m_tempLink)
+    if (m_tempLink && event->button() != Qt::MidButton && event->button() != Qt::RightButton)
     {
         onTempLinkClosed();
         removeItem(m_tempLink);
@@ -776,10 +778,12 @@ void ZenoSubGraphScene::keyPressEvent(QKeyEvent* event)
                 links.append(pLink->linkInfo());
             }
         }
-        IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
-        ZASSERT_EXIT(pGraphsModel);
-        pGraphsModel->removeNodeLinks(nodes, links, m_subgIdx);
-
+        if (!nodes.isEmpty() || !links.isEmpty())
+        {
+            IGraphsModel *pGraphsModel = zenoApp->graphsManagment()->currentModel();
+            ZASSERT_EXIT(pGraphsModel);
+            pGraphsModel->removeNodeLinks(nodes, links, m_subgIdx);
+        }
     }
     QGraphicsScene::keyPressEvent(event);
 }

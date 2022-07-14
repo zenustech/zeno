@@ -59,7 +59,6 @@ QSize ZenoFrame::sizeHint() const
 {
     QSize sz = QFrame::sizeHint();
     return sz;
-    //return QSize(4, sz.height());
 }
 
 void ZenoFrame::paintEvent(QPaintEvent* e)
@@ -140,7 +139,8 @@ ZenoParamPathEdit::ZenoParamPathEdit(const QString& path, PARAM_CONTROL ctrl, Li
 
 void ZenoParamPathEdit::setValidator(QValidator* pValidator)
 {
-    m_pLineEdit->setValidator(pValidator);
+    //will override the original.
+    //m_pLineEdit->setValidator(pValidator);
 }
 
 QString ZenoParamPathEdit::path() const
@@ -685,9 +685,24 @@ ZenoMinStatusBtnItem::ZenoMinStatusBtnItem(const StatusComponent& statusComp, QG
     m_minMute = new ZenoImageItem(statusComp.mute, ZenoStyle::dpiScaledSize(QSize(33, 42)), this);
     m_minView = new ZenoImageItem(statusComp.view, ZenoStyle::dpiScaledSize(QSize(25, 42)), this);
     m_minOnce = new ZenoImageItem(statusComp.once, ZenoStyle::dpiScaledSize(QSize(33, 42)), this);
-	m_once = new ZenoImageItem(":/icons/ONCE_dark.svg", ":/icons/ONCE_light.svg", ":/icons/ONCE_light.svg", QSize(50, 42), this);
-	m_mute = new ZenoImageItem(":/icons/MUTE_dark.svg", ":/icons/MUTE_light.svg", ":/icons/MUTE_light.svg", QSize(50, 42), this);
-	m_view = new ZenoImageItem(":/icons/VIEW_dark.svg", ":/icons/VIEW_light.svg", ":/icons/VIEW_light.svg", QSize(50, 42), this);
+	m_once = new ZenoImageItem(
+        ":/icons/ONCE_dark.svg",
+        ":/icons/ONCE_light.svg",
+        ":/icons/ONCE_light.svg",
+        ZenoStyle::dpiScaledSize(QSize(50, 42)),
+        this);
+	m_mute = new ZenoImageItem(
+        ":/icons/MUTE_dark.svg",
+        ":/icons/MUTE_light.svg",
+        ":/icons/MUTE_light.svg", 
+        ZenoStyle::dpiScaledSize(QSize(50, 42)),
+        this);
+	m_view = new ZenoImageItem(
+        ":/icons/VIEW_dark.svg",
+        ":/icons/VIEW_light.svg",
+        ":/icons/VIEW_light.svg",
+        ZenoStyle::dpiScaledSize(QSize(50, 42)),
+        this);
     m_minMute->setCheckable(true);
     m_minView->setCheckable(true);
     m_minOnce->setCheckable(true);
@@ -916,7 +931,6 @@ QSizeF SpacerLayoutItem::sizeHint(Qt::SizeHint which, const QSizeF &constraint) 
             return m_sz;
         case Qt::MaximumSize:
             return m_sz;
-            QSizeF(1000, 1000);
         default:
             return m_sz;
     }

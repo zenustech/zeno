@@ -127,7 +127,7 @@ QVariant UiHelper::_parseDefaultValue(const QString &defaultValue, const QString
     case CONTROL_WRITEPATH:
     case CONTROL_READPATH:
     case CONTROL_MULTILINE_STRING:
-    case CONTROL_HEATMAP:
+    case CONTROL_COLOR:
     case CONTROL_CURVE:
     case CONTROL_ENUM:
         return defaultValue;
@@ -193,7 +193,7 @@ QVariant UiHelper::parseTextValue(PARAM_CONTROL editCtrl, const QString& textVal
 	case CONTROL_READPATH:
 	case CONTROL_WRITEPATH:
 	case CONTROL_MULTILINE_STRING:
-    case CONTROL_HEATMAP:
+    case CONTROL_COLOR:
     case CONTROL_CURVE:
     case CONTROL_ENUM:
 	case CONTROL_STRING: varValue = textValue; break;
@@ -255,8 +255,8 @@ PARAM_CONTROL UiHelper::getControlType(const QString &type)
         return CONTROL_READPATH;
     } else if (type == "multiline_string") {
         return CONTROL_MULTILINE_STRING;
-    } else if (type == "heatmap") {
-        return CONTROL_HEATMAP;
+    } else if (type == "color") {   //color is more general than heatmap.
+        return CONTROL_COLOR;
     } else if (type == "curve") {
         return CONTROL_CURVE;
     } else if (type.startsWith("enum ")) {
@@ -318,6 +318,55 @@ QString UiHelper::variantToString(const QVariant& var)
     }
 
     return value;
+}
+
+qreal UiHelper::parseNumeric(const rapidjson::Value& val, bool& bSucceed)
+{
+    qreal num = 0;
+    if (val.IsFloat())
+    {
+        num = val.GetFloat();
+        bSucceed = true;
+    }
+    else if (val.IsDouble())
+    {
+        num = val.GetDouble();
+        bSucceed = true;
+    }
+    else if (val.IsInt())
+    {
+        num = val.GetInt();
+        bSucceed = true;
+    }
+    else
+    {
+        RAPIDJSON_ASSERT(false);
+        bSucceed = false;
+    }
+    return num;
+}
+
+QPointF UiHelper::parsePoint(const rapidjson::Value& ptObj, bool& bSucceed)
+{
+    QPointF pt;
+
+    RAPIDJSON_ASSERT(ptObj.IsArray());
+    const auto &arr_ = ptObj.GetArray();
+    RAPIDJSON_ASSERT(arr_.Size() == 2);
+
+    const auto &xObj = arr_[0];
+    pt.setX(UiHelper::parseNumeric(xObj, bSucceed));
+    RAPIDJSON_ASSERT(bSucceed);
+    if (!bSucceed)
+        return pt;
+
+    const auto &yObj = arr_[1];
+    pt.setY(UiHelper::parseNumeric(yObj, bSucceed));
+    RAPIDJSON_ASSERT(bSucceed);
+    if (!bSucceed)
+        return pt;
+
+    return pt;
 }
 
 int UiHelper::getMaxObjId(const QList<QString> &lst)
