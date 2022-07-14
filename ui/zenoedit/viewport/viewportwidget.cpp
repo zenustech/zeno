@@ -15,7 +15,7 @@
 #include <zeno/types/UserData.h>
 #include <viewport/zenovis.h>
 #include <util/log.h>
-
+#include <zenoui/style/zenostyle.h>
 #include <cmath>
 #include <algorithm>
 #include <optional>
@@ -488,7 +488,6 @@ DisplayWidget::DisplayWidget(ZenoMainWindow* pMainWin)
     connect(m_timeline, SIGNAL(playForward(bool)), this, SLOT(onPlayClicked(bool)));
 	connect(m_timeline, SIGNAL(sliderValueChanged(int)), this, SLOT(onSliderValueChanged(int)));
 	connect(m_timeline, SIGNAL(run()), this, SLOT(onRun()));
-    connect(m_timeline, SIGNAL(run()), pMainWin, SLOT(onRunTriggered()));
     connect(m_timeline, SIGNAL(alwaysChecked()), this, SLOT(onRun()));
     connect(m_timeline, SIGNAL(kill()), this, SLOT(onKill()));
 
@@ -511,7 +510,7 @@ void DisplayWidget::init()
 
 QSize DisplayWidget::sizeHint() const
 {
-    return QSize(12, 400);
+    return ZenoStyle::dpiScaledSize(QSize(12, 400));
 }
 
 void DisplayWidget::updateFrame(const QString &action)
@@ -571,6 +570,8 @@ void DisplayWidget::onSliderValueChanged(int value)
 
 void DisplayWidget::onRun()
 {
+    m_mainWin->clearErrorMark();
+
     QPair<int, int> fromTo = m_timeline->fromTo();
     int beginFrame = fromTo.first;
     int endFrame = fromTo.second;

@@ -326,6 +326,13 @@ void TransferAcceptor::setBlackboard(const QString& id, const BLACKBOARD_INFO& b
     //todO
 }
 
+void TransferAcceptor::setLegacyCurve(
+    const QString& id,
+    const QVector<QPointF>& pts,
+    const QVector<QPair<QPointF, QPointF>>& hdls)
+{
+}
+
 QObject* TransferAcceptor::currGraphObj()
 {
     return nullptr;

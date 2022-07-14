@@ -104,7 +104,7 @@ protected:
     virtual ZenoBackgroundWidget *initPreview();
     void adjustPreview(bool bVisible);
     virtual QGraphicsLayout* initParams();
-    virtual void initParam(PARAM_CONTROL ctrl, QGraphicsLinearLayout* pParamLayout, const QString& name, const PARAM_INFO& param);
+    virtual QGraphicsLayout* initParam(PARAM_CONTROL ctrl, const QString& name, const PARAM_INFO& param);
     virtual QGraphicsLinearLayout* initCustomParamWidgets();
     virtual QValidator* validateForParams(PARAM_INFO info);
     virtual QValidator* validateForSockets(INPUT_SOCKET inSocket);

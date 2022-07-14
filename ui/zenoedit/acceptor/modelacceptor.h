@@ -35,6 +35,10 @@ public:
 	void setOptions(const QString& id, const QStringList& options) override;
 	void setColorRamps(const QString& id, const COLOR_RAMPS& colorRamps) override;
 	void setBlackboard(const QString& id, const BLACKBOARD_INFO& blackboard) override;
+	void setLegacyCurve(
+        const QString& id,
+        const QVector<QPointF>& pts,
+        const QVector<QPair<QPointF, QPointF>>& hdls) override;
 	QObject* currGraphObj() override;
 
 private:

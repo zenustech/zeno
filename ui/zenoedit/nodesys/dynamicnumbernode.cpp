@@ -18,9 +18,9 @@ QGraphicsLayout* DynamicNumberNode::initParams()
     return ZenoNode::initParams();
 }
 
-void DynamicNumberNode::initParam(PARAM_CONTROL ctrl, QGraphicsLinearLayout *pParamLayout, const QString &name, const PARAM_INFO &param)
+QGraphicsLayout* DynamicNumberNode::initParam(PARAM_CONTROL ctrl, const QString& name, const PARAM_INFO& param)
 {
-    ZenoNode::initParam(ctrl, pParamLayout, name, param);
+    return ZenoNode::initParam(ctrl, name, param);
 }
 
 QGraphicsLinearLayout* DynamicNumberNode::initCustomParamWidgets()

@@ -5,6 +5,7 @@
 #include "curveutil.h"
 #include <zenoui/model/curvemodel.h>
 #include "../util/log.h"
+#include <zenoui/style/zenostyle.h>
 
 
 CurveMapView::CurveMapView(QWidget* parent)
@@ -54,7 +55,7 @@ void CurveMapView::init(bool timeFrame)
 	QRectF rc = scene()->sceneRect();
 	rc = sceneRect();
 
-	m_fixedSceneRect = curve_util::initGridSize(QSize(512, 512), m_gridMargins);
+	m_fixedSceneRect = curve_util::initGridSize(ZenoStyle::dpiScaledSize(QSize(512, 512)), m_gridMargins);
 
 	m_grid = new CurveGrid(this, m_fixedSceneRect);
 	m_grid->setColor(QColor(32, 32, 32), QColor(22, 22, 24));
