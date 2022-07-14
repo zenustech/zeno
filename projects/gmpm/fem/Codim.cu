@@ -521,8 +521,7 @@ struct CodimStepping : INode {
             }
             num[vi] = n;
             den[vi] = d_;
-            // dof which BCorder != 3 may posess other energies
-            if (maintainFixed && BCorder == 3) {
+            if (maintainFixed && BCorder > 0) {
               if (d_ != 0) {
                 if (zs::sqrt(n / d_) < 1e-6)
                   vtemp("BCfixed", vi) = 1;
