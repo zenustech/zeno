@@ -111,6 +111,7 @@ struct CodimStepping : INode {
   static constexpr vec3 s_groundNormal{0, 1, 0};
   inline static const char s_meanMassTag[] = "MeanMass";
   inline static const char s_meanSurfEdgeLengthTag[] = "MeanSurfEdgeLength";
+  inline static const char s_meanSurfAreaTag[] = "MeanSurfArea";
   inline static int refStepsizeCoeff = 1;
   inline static int numContinuousCap = 0;
   inline static bool projectDBC = false;
@@ -365,6 +366,37 @@ struct CodimStepping : INode {
         zsprim.setMeta(s_meanSurfEdgeLengthTag, tmp);
         return tmp;
       }
+      T averageSurfArea(zs::CudaExecutionPolicy &pol, IPCSystem &system) const {
+        using namespace zs;
+        constexpr auto space = execspace_e::cuda;
+        if (zsprim.hasMeta(s_meanSurfAreaTag))
+          return zsprim.readMeta(s_meanSurfAreaTag, zs::wrapt<T>{});
+        auto &tris = surfTris;
+        Vector<T> surfAreas{tris.get_allocator(), tris.size()};
+        pol(Collapse{surfAreas.size()},
+            [tris = proxy<space>({}, tris), verts = proxy<space>({}, verts),
+             surfAreas = proxy<space>(surfAreas)] __device__(int ei) mutable {
+              auto inds = tris.template pack<3>("inds", ei)
+                              .template reinterpret_bits<int>();
+              surfAreas[ei] =
+                  (verts.pack<3>("x0", inds[1]) - verts.pack<3>("x0", inds[0]))
+                      .cross(verts.pack<3>("x0", inds[2]) -
+                             verts.pack<3>("x0", inds[0]))
+                      .norm() /
+                  2;
+            });
+        auto tmp = system.reduce(pol, surfAreas) / tris.size();
+        zsprim.setMeta(s_meanSurfAreaTag, tmp);
+        return tmp;
+      }
+      auto getModelLameParams() const {
+        T mu, lam;
+        zs::match([&](const auto &model) {
+          mu = model.mu;
+          lam = model.lam;
+        })(zsprim.getModel().getElasticModel());
+        return zs::make_tuple(mu, lam);
+      }
 
       decltype(auto) getVerts() const { return verts; }
       decltype(auto) getEles() const { return eles; }
@@ -394,6 +426,25 @@ struct CodimStepping : INode {
             primHandle.averageSurfEdgeLength(pol, *this) * numSE;
       }
       return sumSurfEdgeLengths / sumSE;
+    }
+    T averageSurfArea(zs::CudaExecutionPolicy &pol) {
+      T sumSurfArea = 0;
+      std::size_t sumSF = 0;
+      for (auto &&primHandle : prims) {
+        auto numSF = primHandle.getSurfTris().size();
+        sumSF += numSF;
+        sumSurfArea += primHandle.averageSurfArea(pol, *this) * numSF;
+      }
+      return sumSurfArea / sumSF;
+    }
+    T largestMu() const {
+      T mu = 0;
+      for (auto &&primHandle : prims) {
+        auto [m, l] = primHandle.getModelLameParams();
+        if (m > mu)
+          mu = m;
+      }
+      return mu;
     }
 
     ///
@@ -3410,6 +3461,7 @@ struct CodimStepping : INode {
       auto cudaPol = zs::cuda_exec();
       // average edge length (for CCD filtering)
       meanEdgeLength = averageSurfEdgeLength(cudaPol);
+      meanSurfaceArea = averageSurfArea(cudaPol);
       initialize(cudaPol);
       fmt::print("num total obj <verts, surfV, surfE, surfT>: {}, {}, {}, {}\n",
                  coOffset, svOffset, seOffset, sfOffset);
@@ -3476,7 +3528,7 @@ struct CodimStepping : INode {
     std::size_t coOffset, numDofs;
     std::size_t sfOffset, seOffset, svOffset;
     bvh_t bouStBvh, bouSeBvh; // for collision objects
-    T meanEdgeLength, dt, framedt, curRatio;
+    T meanEdgeLength, meanSurfaceArea, dt, framedt, curRatio;
   };
 
   void apply() override {
@@ -3588,7 +3640,7 @@ struct CodimStepping : INode {
       /// kappaMin
       A.initKappa(cudaPol);
       /// adaptive kappa
-      {
+      { // tet-oriented
         T H_b = computeHb((T)1e-16 * boxDiagSize2, dHat * dHat);
         kappa = 1e11 * avgNodeMass / (4e-16 * boxDiagSize2 * H_b);
         kappaMax = 100 * kappa;
@@ -3596,6 +3648,10 @@ struct CodimStepping : INode {
           kappa = kappaMin;
         if (kappa > kappaMax)
           kappa = kappaMax;
+      }
+      { // surf oriented (use framedt here)
+        auto kappaSurf = dt * dt * A.meanSurfaceArea / 3 * dHat * A.largestMu();
+        fmt::print("kappaSurf: {}, kappa: {}\n", kappaSurf, kappa);
       }
       // boundaryKappa = kappa;
       fmt::print("auto dHat: {}, targetGRes: {}\n", dHat, targetGRes);
