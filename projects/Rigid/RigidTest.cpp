@@ -514,7 +514,7 @@ ZENDEFNODE(BulletCompoundAddChild, {
 
 struct BulletColShapeCalcLocalInertia : zeno::INode {
 	virtual void apply() override {
-		auto isCompound = (std::get<std::string>(get_param("isCompound")) == "true");
+		auto isCompound = (get_param<std::string>("isCompound") == "true");
 		auto mass = get_input2<float>("mass");
 		auto localInertia = zeno::IObject::make<zeno::NumericObject>();
 		btVector3 lInertia;
@@ -853,7 +853,7 @@ public:
 
 struct BulletMakeConstraint : zeno::INode {
     virtual void apply() override {
-        auto constraintType = std::get<std::string>(get_param("constraintType"));
+        auto constraintType = get_param<std::string>("constraintType");
         auto obj1 = get_input<BulletObject>("obj1");
 		if (has_input("obj2")) {
 			auto obj2 = get_input<BulletObject>("obj2");
@@ -895,7 +895,7 @@ struct BulletConstraintSetFrames : zeno::INode {
         auto cons = get_input<BulletConstraint>("constraint");
 	    auto frame1 = get_input<BulletTransform>("frame1");
         auto frame2 = get_input<BulletTransform>("frame2");
-        auto constraintType = std::get<std::string>(get_param("constraintType"));
+        auto constraintType = get_param<std::string>("constraintType");
 
         if (constraintType == "ConeTwist") {
             dynamic_cast<btConeTwistConstraint *>(cons->constraint.get())->setFrames(frame1->trans, frame2->trans);
@@ -938,7 +938,7 @@ ZENDEFNODE(BulletConstraintSetFrames, {
 struct BulletConstraintGetFrames : zeno::INode {
 	virtual void apply() override {
 		auto cons = get_input<BulletConstraint>("constraint");
-		auto constraintType = std::get<std::string>(get_param("constraintType"));
+		auto constraintType = get_param<std::string>("constraintType");
 
 		auto frame1 = std::make_shared<BulletTransform>();
 		auto frame2 = std::make_shared<BulletTransform>();
@@ -998,8 +998,8 @@ ZENDEFNODE(BulletConstraintGetFrames, {
 struct BulletConstraintSetLimitByAxis : zeno::INode {
     virtual void apply() override {
         auto cons = get_input<BulletConstraint>("constraint");
-        auto constraintType = std::get<std::string>(get_param("constraintType"));
-        auto axisId = std::get<std::string>(get_param("axisId"));
+        auto constraintType = get_param<std::string>("constraintType");
+        auto axisId = get_param<std::string>("axisId");
         int axis;
         if (axisId == "linearX"){axis = 0;}
         else if (axisId == "linearY"){axis = 1;}
@@ -1067,8 +1067,8 @@ ZENDEFNODE(BulletConstraintSetLimitByAxis, {
 struct BulletConstraintSetRefFrameA : zeno::INode {
     virtual void apply() override {
         auto cons = get_input<BulletConstraint>("constraint");
-        auto constraintType = std::get<std::string>(get_param("constraintType"));
-        auto useLinearReferenceFrameA = std::get<std::string>(get_param("useReferenceFrameA"));
+        auto constraintType = get_param<std::string>("constraintType");
+        auto useLinearReferenceFrameA = get_param<std::string>("useReferenceFrameA");
 
 		bool flag = (useLinearReferenceFrameA == "true");
 
@@ -1102,7 +1102,7 @@ struct BulletConstraintSetAxis : zeno::INode {
         auto cons = get_input<BulletConstraint>("constraint");
         auto axis1 = zeno::vec_to_other<btVector3>(get_input<zeno::NumericObject>("axis1")->get<zeno::vec3f>());
         auto axis2 = zeno::vec_to_other<btVector3>(get_input<zeno::NumericObject>("axis2")->get<zeno::vec3f>());
-        auto constraintType = std::get<std::string>(get_param("constraintType"));
+        auto constraintType = get_param<std::string>("constraintType");
 
 
         if (constraintType == "Fixed") {
@@ -1148,8 +1148,8 @@ ZENDEFNODE(BulletConstraintSetAxis, {
 struct BulletConstraintSetSpring : zeno::INode {
     virtual void apply() override {
         auto cons = get_input<BulletConstraint>("constraint");
-        auto constraintType = std::get<std::string>(get_param("constraintType"));
-        auto axisId = std::get<std::string>(get_param("axisId"));
+        auto constraintType = get_param<std::string>("constraintType");
+        auto axisId = get_param<std::string>("axisId");
         int axis;
         if (axisId == "linearX"){axis = 0;}
         else if (axisId == "linearY"){axis = 1;}
@@ -1204,8 +1204,8 @@ ZENDEFNODE(BulletConstraintSetSpring , {
 struct BulletConstraintSetMotor : zeno::INode {
     virtual void apply() override {
         auto cons = get_input<BulletConstraint>("constraint");
-        auto constraintType = std::get<std::string>(get_param("constraintType"));
-        auto axisId = std::get<std::string>(get_param("axisId"));
+        auto constraintType = get_param<std::string>("constraintType");
+        auto axisId = get_param<std::string>("axisId");
         int axis;
         if (axisId == "linearX"){axis = 0;}
         else if (axisId == "linearY"){axis = 1;}
@@ -1281,8 +1281,8 @@ ZENDEFNODE(BulletConstraintSetMotor , {
 struct BulletConstraintSetRotOrder : zeno::INode {
     virtual void apply() override {
         auto cons = get_input<BulletConstraint>("constraint");
-        auto constraintType = std::get<std::string>(get_param("constraintType"));
-        auto rotateOrder = std::get<std::string>(get_param("rotateOrder"));
+        auto constraintType = get_param<std::string>("constraintType");
+        auto rotateOrder = get_param<std::string>("rotateOrder");
 
         RotateOrder rotOrder;
         if (rotateOrder == "XYZ"){
@@ -1584,8 +1584,8 @@ struct BulletMultiBodyObjectMakeStart : zeno::INode {
 	btVector3 inertia(0.f, 0.f, 0.f);
 	if (has_input("inertia"))
 		inertia = zeno::vec_to_other<btVector3>(get_input<zeno::NumericObject>("inertia")->get<zeno::vec3f>());
-	auto fixedBase = (std::get<std::string>(get_param("fixedBase")) == "true");
-	auto canSleep = (std::get<std::string>(get_param("canSleep")) == "true");
+	auto fixedBase = (get_param<std::string>("fixedBase") == "true");
+	auto canSleep = (get_param<std::string>("canSleep") == "true");
 	auto object = std::make_shared<BulletMultiBodyObject>(n_links, mass, inertia, fixedBase, canSleep);
 
 	set_output("object", std::move(object));
@@ -1639,7 +1639,7 @@ ZENDEFNODE(BulletMultiBodySetCollider, {
 struct BulletMultiBodySetupJoint : zeno::INode {
     virtual void apply() override {
         auto object = get_input<BulletMultiBodyObject>("object");
-        auto jointType = std::get<std::string>(get_param("jointType"));
+        auto jointType = get_param<std::string>("jointType");
         auto i = get_input2<int>("linkIndex");
         auto parent = get_input2<int>("parentIndex");
         auto mass = get_input2<float>("mass");
@@ -1648,7 +1648,7 @@ struct BulletMultiBodySetupJoint : zeno::INode {
         auto rotParentToThis = zeno::vec_to_other<btQuaternion>(get_input<zeno::NumericObject>("rotParentToThis")->get<zeno::vec4f>());
         auto parentComToThisPivotOffset = zeno::vec_to_other<btVector3>(get_input<zeno::NumericObject>("parentComToThisPivotOffset")->get<zeno::vec3f>());
         auto thisPivotToThisComOffset = zeno::vec_to_other<btVector3>(get_input<zeno::NumericObject>("thisPivotToThisComOffset")->get<zeno::vec3f>());
-        auto disableParentCollision= (std::get<std::string>(get_param("disableParentCollision")) == "true");
+        auto disableParentCollision= (get_param<std::string>("disableParentCollision") == "true");
 
         if (jointType == "Fixed") {
                 object->multibody->setupFixed(i, mass, inertia, parent, rotParentToThis, parentComToThisPivotOffset, thisPivotToThisComOffset, disableParentCollision);
@@ -1817,9 +1817,9 @@ ZENDEFNODE(BulletMultiBodyWorldGetTransformShapes, {
 struct BulletMultiBodySetProperty : zeno::INode {
 	virtual void apply() override {
 		auto object = get_input<BulletMultiBodyObject>("object");
-		auto canSleep = (std::get<std::string>(get_param("canSleep")) == "true");
-		auto selfCollide = (std::get<std::string>(get_param("selfCollide")) == "true");
-		auto useGyro = (std::get<std::string>(get_param("useGyro")) == "true");
+		auto canSleep = (get_param<std::string>("canSleep") == "true");
+		auto selfCollide = (get_param<std::string>("selfCollide") == "true");
+		auto useGyro = (get_param<std::string>("useGyro") == "true");
 		auto linearDamping = get_input2<float>("linearDamp");
 		auto angularDamping = get_input2<float>("angularDamp");
 
@@ -1942,7 +1942,7 @@ struct BulletMultiBodySetJointPosMultiDof : zeno::INode {
 	virtual void apply() override {
 		auto object = get_input<BulletMultiBodyObject>("object");
 		auto link_id = get_input2<int>("startIndex");
-		auto isSpherical = (std::get<std::string>(get_param("isSpherical")) == "true");
+		auto isSpherical = (get_param<std::string>("isSpherical") == "true");
 		if (isSpherical){
 			auto pos = zeno::vec_to_other<btQuaternion>(get_input<zeno::NumericObject>("pos")->get<zeno::vec4f>());
 			pos.normalize();
@@ -1968,7 +1968,7 @@ struct BulletMultiBodySetJointVelMultiDof : zeno::INode {
 	virtual void apply() override {
 		auto object = get_input<BulletMultiBodyObject>("object");
 		auto link_id = get_input2<int>("startIndex");
-		auto isSpherical = (std::get<std::string>(get_param("isSpherical")) == "true");
+		auto isSpherical = (get_param<std::string>("isSpherical") == "true");
 		if (isSpherical){
 			auto pos = zeno::vec_to_other<btQuaternion>(get_input<zeno::NumericObject>("pos")->get<zeno::vec4f>());
 			pos.normalize();
@@ -2075,7 +2075,7 @@ ZENDEFNODE(BulletMultiBodyPDControl, {
 
 struct BulletMakeMultiBodyWorld : zeno::INode {
 	virtual void apply() override {
-		auto solverType = std::get<std::string>(get_param("solverType"));
+		auto solverType = get_param<std::string>("solverType");
 		auto world = std::make_unique<BulletMultiBodyWorld>(solverType);
 		set_output("world", std::move(world));
 	}
@@ -2126,7 +2126,7 @@ ZENDEFNODE(BulletStepMultiBodyWorld, {
 struct BulletMultiBodyWorldAddObject : zeno::INode {
 	virtual void apply() override {
 		auto world = get_input<BulletMultiBodyWorld>("world");
-        auto objType = std::get<std::string>(get_param("objType"));
+        auto objType = get_param<std::string>("objType");
         if (objType == "multi") {
             auto object = get_input<BulletMultiBodyObject>("object");
             world->dynamicsWorld->addMultiBody(object->multibody.get());
@@ -2150,7 +2150,7 @@ ZENDEFNODE(BulletMultiBodyWorldAddObject, {
 struct BulletMultiBodyWorldRemoveObject : zeno::INode {
 	virtual void apply() override {
 		auto world = get_input<BulletMultiBodyWorld>("world");
-        auto objType = std::get<std::string>(get_param("objType"));
+        auto objType = get_param<std::string>("objType");
 
         if (objType == "multi") {
             auto object = get_input<BulletMultiBodyObject>("object");
@@ -2176,7 +2176,7 @@ ZENDEFNODE(BulletMultiBodyWorldRemoveObject, {
 struct BulletMultiBodyWorldAddCollisionObject : zeno::INode {
 	virtual void apply() override {
 		auto world = get_input<BulletMultiBodyWorld>("world");
-		auto isDynamic = (std::get<std::string>(get_param("isDynamic")) == "true");
+		auto isDynamic = (get_param<std::string>("isDynamic") == "true");
 		auto col = get_input<BulletMultiBodyLinkCollider>("collider");
 		int collisionFilterGroup = isDynamic ? int(btBroadphaseProxy::DefaultFilter) : int(btBroadphaseProxy::StaticFilter);
 		int collisionFilterMask = isDynamic ? int(btBroadphaseProxy::AllFilter) : int(btBroadphaseProxy::AllFilter ^ btBroadphaseProxy::StaticFilter);
@@ -2198,7 +2198,7 @@ ZENDEFNODE(BulletMultiBodyWorldAddCollisionObject, {
 
 struct BulletMultiBodyMakeConstraint : zeno::INode {
 	virtual void apply() override {
-		auto constraintType = std::get<std::string>(get_param("constraintType"));
+		auto constraintType = get_param<std::string>("constraintType");
 		auto bodyA = get_input<BulletMultiBodyObject>("bodyA");
 		auto linkA = get_input2<int>("linkA");
 
@@ -2334,7 +2334,7 @@ struct BulletCalcInverseKinematics : zeno::INode {
 		auto numIterations = get_input2<int>("numIterations"); // 20
 		auto residualThreshold = get_input2<float>("residualThreshold"); // 1e-4
 
-		auto ikMethod = std::get<std::string>(get_param("IKMethod"));
+		auto ikMethod = get_param<std::string>("IKMethod");
 
 		auto ikHelperPtr = std::make_shared<IKTrajectoryHelper>();
 
@@ -3053,7 +3053,7 @@ struct BulletMultiBodyCalculateJacobian : zeno::INode {
         }
 struct BulletPerformCollisionDetection : zeno::INode {
     virtual void apply() {
-        auto worldType = std::get<std::string>(get_param("worldType"));
+        auto worldType = get_param<std::string>("worldType");
         if (worldType == "multi") {
             auto world = get_input<BulletMultiBodyWorld>("world");
             world->dynamicsWorld->performDiscreteCollisionDetection();

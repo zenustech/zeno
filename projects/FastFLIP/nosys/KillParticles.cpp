@@ -151,7 +151,7 @@ struct KillParticlesInSDF : zeno::INode {
     virtual void apply() override {
         auto points = get_input<VDBPointsGrid>("Particles");
         auto sdf = get_input<VDBFloatGrid>("KillerSDF");
-        auto keep = std::get<std::string>(get_param("OpType"));
+        auto keep = get_param<std::string>("OpType");
         kill_particles_inside(points->m_grid, sdf->m_grid, keep=="KEEP");
         set_output("Particles", std::move(points));
     }
