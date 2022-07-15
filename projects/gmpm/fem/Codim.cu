@@ -2507,11 +2507,12 @@ struct CodimStepping : INode {
         auto &eles = primHandle.getEles();
         // elasticity
         if (primHandle.category == ZenoParticles::surface) {
-#if 0
+#if 1
           pol(range(eles.size()),
               [execTag, etemp = proxy<space>({}, primHandle.etemp),
                vtemp = proxy<space>({}, vtemp), eles = proxy<space>({}, eles),
-               dxTag, bTag, vOffset = primHandle.vOffset] ZS_LAMBDA(int ei) mutable {
+               dxTag, bTag,
+               vOffset = primHandle.vOffset] ZS_LAMBDA(int ei) mutable {
                 constexpr int dim = 3;
                 auto inds = eles.template pack<3>("inds", ei)
                                 .template reinterpret_bits<int>() +
@@ -2586,7 +2587,7 @@ struct CodimStepping : INode {
               });
 #endif
         } else if (primHandle.category == ZenoParticles::tet)
-#if 0
+#if 1
           pol(range(eles.size()),
               [execTag, etemp = proxy<space>({}, primHandle.etemp),
                vtemp = proxy<space>({}, vtemp), eles = proxy<space>({}, eles),
@@ -2671,13 +2672,10 @@ struct CodimStepping : INode {
 #if s_enableContact
         {
           auto numPP = nPP.getVal();
-#if 0
+#if 1
           pol(range(numPP), [execTag, tempPP = proxy<space>({}, tempPP),
                              vtemp = proxy<space>({}, vtemp), dxTag, bTag,
-                             PP = proxy<space>(PP), checkVec, kappa = kappa,
-                             dHat = dHat,
-                             projectDBC =
-                                 projectDBC] ZS_LAMBDA(int ppi) mutable {
+                             PP = proxy<space>(PP)] ZS_LAMBDA(int ppi) mutable {
             constexpr int dim = 3;
             auto pp = PP[ppi];
             zs::vec<T, dim * 2> temp{};
@@ -2695,45 +2693,6 @@ struct CodimStepping : INode {
                 atomic_add(execTag, &vtemp(bTag, d, pp[vi]),
                            temp[vi * dim + d]);
               }
-            int BCorder[2] = {(int)vtemp("BCorder", pp[0]),
-                              (int)vtemp("BCorder", pp[1])};
-            if (checkVec(temp, BCorder) && ppi == 0) {
-              mat3 BCbasis[2] = {vtemp.pack<3, 3>("BCbasis", pp[0]),
-                                 vtemp.pack<3, 3>("BCbasis", pp[1])};
-              int BCfixed[2] = {(int)vtemp("BCfixed", pp[0]),
-                                (int)vtemp("BCfixed", pp[1])};
-              printf(
-                  "%d-th ppH[%d, %d]: projectDBC: %d, order<%d, %d> fixed<%d, "
-                  "%d>\n\tdx[%f, %f, %f; %f, %f, %f]\n\ttemp[%f, %f, "
-                  "%f; %f, %f, %f]\n",
-                  ppi, pp[0], pp[1], (int)projectDBC, BCorder[0], BCorder[1],
-                  BCfixed[0], BCfixed[1], (float)dx(0), (float)dx(1),
-                  (float)dx(2), (float)dx(3), (float)dx(4), (float)dx(5),
-                  (float)temp(0), (float)temp(1), (float)temp(2),
-                  (float)temp(3), (float)temp(4), (float)temp(5));
-              auto x0 = vtemp.template pack<3>("xn", pp[0]);
-              auto x1 = vtemp.template pack<3>("xn", pp[1]);
-              auto [pph, hhg] = get_hkm_pp_hess(x0, x1, kappa, dHat);
-              for (int i = 0; i != 6; ++i) {
-                printf("%d-th ppH-r[%d]: [%f, %f, %f; %f, %f, %f]\n", ppi, i,
-                       (float)ppHess(i, 0), (float)ppHess(i, 1),
-                       (float)ppHess(i, 2), (float)ppHess(i, 3),
-                       (float)ppHess(i, 4), (float)ppHess(i, 5));
-              }
-              for (int i = 0; i != 6; ++i) {
-                printf("%d-th ppH-chk-r[%d]: [%f, %f, %f; %f, %f, %f]\n", ppi,
-                       i, (float)pph(i, 0), (float)pph(i, 1), (float)pph(i, 2),
-                       (float)pph(i, 3), (float)pph(i, 4), (float)pph(i, 5));
-              }
-              rotate_hessian(pph, BCbasis, BCorder, BCfixed, projectDBC);
-              // auto [ppHess, grad] = get_hkm_pp_hess(x0, x1, kappa, dHat);
-              for (int i = 0; i != 6; ++i) {
-                printf("%d-th ppH-proj-chk-r[%d]: [%f, %f, %f; %f, %f, %f]\n",
-                       ppi, i, (float)pph(i, 0), (float)pph(i, 1),
-                       (float)pph(i, 2), (float)pph(i, 3), (float)pph(i, 4),
-                       (float)pph(i, 5));
-              }
-            }
           });
 #else
           pol(range(numPP * 36), [execTag, tempPP = proxy<space>({}, tempPP),
@@ -2807,6 +2766,35 @@ struct CodimStepping : INode {
                            temp[vi * dim + d]);
               }
           });
+#elif 1
+          pol(Collapse{numPE, 32 * 3},
+              [execTag, tempPE = proxy<space>({}, tempPE),
+               vtemp = proxy<space>({}, vtemp), dxTag, bTag,
+               PE = proxy<space>(PE)] ZS_LAMBDA(int pei, int tid) mutable {
+                constexpr int dim = 3;
+                int vid = tid / 32;
+                int locid = (tid - vid * 32);
+                int colid = locid % 9;
+                int rowid = vid * dim + locid / 9;
+                int numCols = 9;
+                ;
+                auto pe = PE[pei];
+                T entryH = 0, entryDx = 0, entryG = 0;
+                if (locid < 27) {
+                  entryH = tempPE("H", rowid * 9 + colid, pei);
+                  entryDx = vtemp(dxTag, colid % dim, pe[colid / dim]);
+                  entryG = entryH * entryDx;
+                }
+                for (int iter = 1; iter <= 8; iter <<= 1) {
+                  T tmp = __shfl_down_sync(0xFFFFFFFF, entryG, iter);
+                  if (colid + iter < numCols)
+                    entryG += tmp;
+                }
+                if (colid == 0 && locid / 9 < dim)
+                  atomic_add(execTag,
+                             &vtemp(bTag, rowid % dim, pe[rowid / dim]),
+                             entryG);
+              });
 #else
           pol(range(numPE * 81), [execTag, tempPE = proxy<space>({}, tempPE),
                                   vtemp = proxy<space>({}, vtemp), dxTag, bTag,
@@ -2879,6 +2867,38 @@ struct CodimStepping : INode {
                            temp[vi * dim + d]);
               }
           });
+#elif 1
+          pol(Collapse{numPT, 32 * 4},
+              [execTag, tempPT = proxy<space>({}, tempPT),
+               vtemp = proxy<space>({}, vtemp), dxTag, bTag,
+               PT = proxy<space>(PT)] ZS_LAMBDA(int pti, int tid) mutable {
+                constexpr int dim = 3;
+                int vid = tid / 32;
+                int locid = (tid - vid * 32);
+                int colid = locid % 12;
+                int rowid = vid * dim + locid / 12;
+                int numCols = 12 - (rowid % dim == dim - 1 ? 4 : 0);
+                ;
+                auto pt = PT[pti];
+                auto entryH = tempPT("H", rowid * 12 + colid, pti);
+                auto entryDx = vtemp(dxTag, colid % dim, pt[colid / dim]);
+                auto entryG = entryH * entryDx;
+                if (locid >= 24 && locid <= 27) {
+                  auto cid = colid + 8;
+                  // colid / dim == cid / dim;
+                  entryG += tempPT("H", rowid * 12 + cid, pti) *
+                            vtemp(dxTag, cid % dim, pt[cid / dim]);
+                }
+                for (int iter = 1; iter <= 8; iter <<= 1) {
+                  T tmp = __shfl_down_sync(0xFFFFFFFF, entryG, iter);
+                  if (colid + iter < numCols)
+                    entryG += tmp;
+                }
+                if (colid == 0)
+                  atomic_add(execTag,
+                             &vtemp(bTag, rowid % dim, pt[rowid / dim]),
+                             entryG);
+              });
 #else
           pol(range(numPT * 144), [execTag, tempPT = proxy<space>({}, tempPT),
                                    vtemp = proxy<space>({}, vtemp), dxTag, bTag,
@@ -2951,6 +2971,38 @@ struct CodimStepping : INode {
                            temp[vi * dim + d]);
               }
           });
+#elif 1
+          pol(Collapse{numEE, 32 * 4},
+              [execTag, tempEE = proxy<space>({}, tempEE),
+               vtemp = proxy<space>({}, vtemp), dxTag, bTag,
+               EE = proxy<space>(EE)] ZS_LAMBDA(int eei, int tid) mutable {
+                constexpr int dim = 3;
+                int vid = tid / 32;
+                int locid = (tid - vid * 32);
+                int colid = locid % 12;
+                int rowid = vid * dim + locid / 12;
+                int numCols = 12 - (rowid % dim == dim - 1 ? 4 : 0);
+                ;
+                auto ee = EE[eei];
+                auto entryH = tempEE("H", rowid * 12 + colid, eei);
+                auto entryDx = vtemp(dxTag, colid % dim, ee[colid / dim]);
+                auto entryG = entryH * entryDx;
+                if (locid >= 24 && locid <= 27) {
+                  auto cid = colid + 8;
+                  // colid / dim == cid / dim;
+                  entryG += tempEE("H", rowid * 12 + cid, eei) *
+                            vtemp(dxTag, cid % dim, ee[cid / dim]);
+                }
+                for (int iter = 1; iter <= 8; iter <<= 1) {
+                  T tmp = __shfl_down_sync(0xFFFFFFFF, entryG, iter);
+                  if (colid + iter < numCols)
+                    entryG += tmp;
+                }
+                if (colid == 0)
+                  atomic_add(execTag,
+                             &vtemp(bTag, rowid % dim, ee[rowid / dim]),
+                             entryG);
+              });
 #else
           pol(range(numEE * 144), [execTag, tempEE = proxy<space>({}, tempEE),
                                    vtemp = proxy<space>({}, vtemp), dxTag, bTag,
@@ -3708,11 +3760,11 @@ struct CodimStepping : INode {
         // rotate gradient
         // here we assume boundary dofs are all STICKY, thus BCbasis is I
         cudaPol(zs::range(coOffset),
-              [vtemp = proxy<space>({}, vtemp)] __device__(int i) mutable {
-                auto grad = vtemp.pack<3, 3>("BCbasis", i).transpose() *
-                            vtemp.pack<3>("grad", i);
-                vtemp.tuple<3>("grad", i) = grad;
-              });
+                [vtemp = proxy<space>({}, vtemp)] __device__(int i) mutable {
+                  auto grad = vtemp.pack<3, 3>("BCbasis", i).transpose() *
+                              vtemp.pack<3>("grad", i);
+                  vtemp.tuple<3>("grad", i) = grad;
+                });
         // apply constraints (augmented lagrangians) after rotation!
         if (!BCsatisfied) {
           // grad
@@ -3799,7 +3851,7 @@ struct CodimStepping : INode {
           // infNorm
           auto spanSize = res * alpha / (A.meanEdgeLength * 1);
 #endif
-#if 1
+#if 0
           if (spanSize > 1) { // mainly for reducing ccd pairs
             alpha /= spanSize;
             CCDfiltered = true;
