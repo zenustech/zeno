@@ -311,11 +311,13 @@ void templateFunc(Type value) {
 
 std::shared_ptr<MyType> globalFunc(std::string const &arg) {   // this function is visible globally
    auto ret = staticFunc(arg);
-   if (ret.size() > 42) {                   // have space between 'if' and '('
+   if (ret.size() > 42) {                      // have space between 'if' and '('
        return nullptr;
    }
-   auto ptr = std::make_shared<MyType>();   // use smart pointers instead of naked new/delete
-   ptr->some_attr = std::move(ret);               // use std::move for optimal zero-copying
+   auto ptr = std::make_shared<MyType>();      // use smart pointers instead of naked new/delete
+   // std::shared_ptr<MyType> ptr(new MyType); // DO NOT USE THIS, use make_shared/make_unique instead
+
+   ptr->some_attr = std::move(ret);            // use std::move for optimal zero-copying
    return ptr;
 }
 
