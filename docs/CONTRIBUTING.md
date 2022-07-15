@@ -303,7 +303,7 @@ auto staticFunc(int arg) {   // this function is visible only to this file
 // 'class' instead of 'typename' for type argument
 template <class Type>
 void templateFunc(Type value) {
-   using T = std::decay_t<decltype(Type)>;   // perfer 'using' instead of 'typedef' for aliasing
+   using T = typename Type::value_type;   // perfer 'using' instead of 'typedef' for aliasing
 }
 
 #define ZENO_YOUR_USEFUL_MACRO 1   // macro names should have ZENO_ prefix to prevent name conflict
