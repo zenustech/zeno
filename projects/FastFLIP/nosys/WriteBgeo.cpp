@@ -1,11 +1,8 @@
-#include <zeno/utils/nowarn.h>
 #include <Partio.h>
 #include <zeno/ParticlesObject.h>
-#include <zeno/PrimitiveObject.h>
 #include <zeno/zeno.h>
-template <class T>
-static void outputBgeo(std::string path, const std::vector<T> &pos,
-                       const std::vector<T> &vel) {
+static void outputBgeo(std::string path, const std::vector<glm::vec3> &pos,
+                       const std::vector<glm::vec3> &vel) {
   Partio::ParticlesDataMutable *parts = Partio::create();
   Partio::ParticleAttribute vH, posH;
   vH = parts->addAttribute("v", Partio::VECTOR, 3);
@@ -23,7 +20,7 @@ static void outputBgeo(std::string path, const std::vector<T> &pos,
     _v[1] = vel[i][1];
     _v[2] = vel[i][2];
   }
-  printf("writing bgeo\n");
+  printf("writing\n");
   Partio::write(path.c_str(), *parts, /*force compresse*/ false);
   parts->release();
 }
@@ -32,14 +29,9 @@ namespace zeno {
 
 struct WriteBgeo : zeno::INode {
   virtual void apply() override {
-    auto path = get_param<std::string>(("path"));
-    if (dynamic_cast<ParticlesObject *>(get_input("data").get())) {
-        auto data = get_input("data")->as<ParticlesObject>();
-        outputBgeo(path, data->pos, data->vel);
-    } else {
-        auto data = get_input("data")->as<PrimitiveObject>();
-        outputBgeo(path, data->attr<vec3f>("pos"), data->attr<vec3f>("vel"));
-    }
+    auto path = get_param<std::string>("path");
+    auto data = get_input("data")->as<ParticlesObject>();
+    outputBgeo(path, data->pos, data->vel);
   }
 };
 
@@ -53,7 +45,7 @@ static int defWriteBgeo =
                                                 },
                                                 /* category: */
                                                 {
-                                                    "primitive",
+                                                    "particles",
                                                 }});
 
 } // namespace zeno

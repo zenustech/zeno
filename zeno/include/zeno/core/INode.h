@@ -90,8 +90,8 @@ protected:
         return get_input2<T>(id + ':');
     }
 
-    [[deprecated("use get_param<T>")]]
-    ZENO_API std::variant<int, float, std::string> get_param(std::string const &id) const;
+    //[[deprecated("use get_param<T>")]]
+    //ZENO_API std::variant<int, float, std::string> get_param(std::string const &id) const;
 
     template <class T = IObject>
     std::shared_ptr<T> get_input(std::string const &id, std::shared_ptr<T> const &defl) const {

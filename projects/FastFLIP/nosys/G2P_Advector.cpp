@@ -16,13 +16,13 @@ namespace zeno {
 struct G2P_Advector : zeno::INode {
   virtual void apply() override {
     auto dt = get_input("dt")->as<zeno::NumericObject>()->get<float>();
-    auto dx = get_param<float>(("dx"));
+    auto dx = get_param<float>("dx");
     if(has_input("Dx"))
     {
       dx = get_input("Dx")->as<NumericObject>()->get<float>();
     }
-    auto smoothness = get_param<float>(("pic_smoothness"));
-    auto RK_ORDER = get_param<int>(("RK_ORDER"));
+    auto smoothness = get_param<float>("pic_smoothness");
+    auto RK_ORDER = get_param<int>("RK_ORDER");
 
     auto particles = get_input("Particles")->as<VDBPointsGrid>();
     auto velocity = get_input("Velocity")->as<VDBFloat3Grid>();

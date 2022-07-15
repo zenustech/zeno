@@ -47,10 +47,12 @@
 
 #define NORMUV_PARM                             \
     {"bool", "hasNormal", "0"},                 \
-    {"bool", "hasVertUV", "0"},
+    {"bool", "hasVertUV", "0"},                 \
+    {"bool", "isFlipFace", "0"},
 
 #define NORMUV_CIHOU                            \
-    cc4::flipPrimFaceOrder(prim.get());         \
+    if (!get_input2<bool>("isFlipFace"))        \
+        cc4::flipPrimFaceOrder(prim.get());     \
     if (!get_input2<bool>("hasNormal"))         \
         prim->verts.attrs.erase("nrm");         \
     if (!get_input2<bool>("hasVertUV"))         \
@@ -394,7 +396,7 @@ struct CreateCube : zeno::INode {
             nors[i] = n;
         }
 
-        //NORMUV_CIHOU
+        NORMUV_CIHOU
         set_output("prim", std::move(prim));
     }
 };
@@ -817,7 +819,7 @@ struct CreateTube : zeno::INode {
             nors[i] = n;
         }
 
-        //NORMUV_CIHOU
+        NORMUV_CIHOU
         set_output("prim", std::move(prim));
     }
 };
@@ -993,7 +995,7 @@ struct CreateSphere : zeno::INode {
         }
 
         // FIXME Lead to calculation of normal and uv errors
-        //NORMUV_CIHOU
+        NORMUV_CIHOU
         set_output("prim", std::move(prim));
     }
 };

@@ -108,6 +108,7 @@ struct ParticlesTwoWrangle : zeno::INode {
             if (auto i = code.find('$' + key); i != std::string::npos) {
                 i = i + key.size() + 1;
                 if (code.size() <= i || !std::isalnum(code[i])) {
+                    if (params->lut.count(key)) continue;
                     dbg_printf("ref portal %s\n", key.c_str());
                     auto res = getThisGraph()->callTempNode("PortalOut",
                           {{"name:", objectFromLiterial(key)}}).at("port");

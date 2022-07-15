@@ -102,7 +102,7 @@ struct SprayParticles : zeno::INode {
   virtual void apply() override {
     auto dx = get_input("Dx")->as<NumericObject>()->get<float>();
     
-    //auto channel = get_param<std::string>(("channel"));
+    //auto channel = get_param<std::string>("channel");
     
     auto prim = get_input("TrianglePrim")->as<PrimitiveObject>();
     

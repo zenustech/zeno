@@ -129,18 +129,18 @@ ZENO_API void INode::set_output(std::string const &id, zany obj) {
     outputs[id] = std::move(obj);
 }
 
-ZENO_API std::variant<int, float, std::string> INode::get_param(std::string const &id) const {
-    auto nid = id + ':';
-    if (has_input2<int>(nid)) {
-        return get_input2<int>(nid);
-    }
-    if (has_input2<float>(nid)) {
-        return get_input2<float>(nid);
-    }
-    if (has_input2<std::string>(nid)) {
-        return get_input2<std::string>(nid);
-    }
-    throw makeError("bad get_param (variant mode)");
-}
+//ZENO_API std::variant<int, float, std::string> INode::get_param(std::string const &id) const {
+    //auto nid = id + ':';
+    //if (has_input2<float>(nid)) {
+        //return get_input2<float>(nid);
+    //}
+    //if (has_input2<int>(nid)) {
+        //return get_input2<int>(nid);
+    //}
+    //if (has_input2<std::string>(nid)) {
+        //return get_input2<std::string>(nid);
+    //}
+    //throw makeError("bad get_param (legacy variant mode)");
+//}
 
 }
