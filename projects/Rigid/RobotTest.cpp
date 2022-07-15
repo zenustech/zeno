@@ -68,7 +68,7 @@ struct BulletSetContactParameters : zeno::INode {
                 col->linkCollider->setContactStiffnessAndDamping(0, damping);
             }
         }
-        if(std::get<std::string>(get_param("frictionAnchor"))=="true"){
+        if(get_param<std::string>("frictionAnchor")=="true"){
             col->linkCollider->setCollisionFlags(col->linkCollider->getCollisionFlags() | btCollisionObject::CF_HAS_FRICTION_ANCHOR);
         }
         set_output("collider", std::move(col));
@@ -92,7 +92,7 @@ struct RobotLoadURDF : zeno::INode {
         auto path = get_input<zeno::StringObject>("path")->get();
         auto globalScaling = get_input2<float>("globalScaling");
         auto world = get_input<BulletMultiBodyWorld>("world");
-        auto fixedBase = (std::get<std::string>(get_param("fixedBase")) == "true");
+        auto fixedBase = (get_param<std::string>("fixedBase") == "true");
 
         // load URDF by BulletURDFImporter
         int flags = 0; // TODO: make it configurable later
