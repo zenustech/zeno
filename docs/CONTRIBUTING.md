@@ -256,7 +256,7 @@ We generally follows the [Google C++ Style Guide](https://google.github.io/style
 - We allow implicit conversions when used properly
 - We allow exceptions as we widely adopted smart pointers for exception-safety
 - We avoid using STL streams (`std::cout` and so on) -- use `zeno::format` and `zeno::log_info` instead
-- We don't add `Copyright blah blah` to codebase since we're programmers, not lawyers
+- We don't add `Copyright blah blah` to codebase since we're programmers, not lawyers :)
 - We mainly use `smallCamelCase` for functions, `underline_case` for variables
 - We don't add trialling underscope like `m_google_style_`, we use `m_zeno_style`
 
@@ -333,7 +333,7 @@ Then this is the content of `zeno/include/zeno/funcs/my_demo.h`:
 
 namespace zeno {
 
-struct MyType {   // perfer use 'struct' instead of 'class'
+struct MyType {   // perfer 'struct' instead of 'class'
    int m_age{};   // zero-initialize the POD members for security
    std::string m_name;
 };
