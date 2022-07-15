@@ -298,10 +298,10 @@ struct SMaterial : zeno::IObjectClone<SMaterial>{
         // aiTextureType_NORMALS or aiTextureType_NORMAL_CAMERA
         val.emplace("basecolor", SMaterialProp{0,       false, aiColor4D(), {aiTextureType_BASE_COLOR, aiTextureType_DIFFUSE}, {"$ai.base", "Diffuse"}}); // texOk
         val.emplace("metallic", SMaterialProp{1,        false, aiColor4D(), {aiTextureType_METALNESS}, {"$ai.metalness"}}); // texOk
-        val.emplace("roughness", SMaterialProp{2,       false, aiColor4D(), {aiTextureType_DIFFUSE_ROUGHNESS}, {""}});
+        val.emplace("roughness", SMaterialProp{2,       false, aiColor4D(), {aiTextureType_DIFFUSE_ROUGHNESS}, {"$ai.specularRoughness", "$ai.diffuseRoughness"}});
         val.emplace("specular", SMaterialProp{3,        false, aiColor4D(), {aiTextureType_SPECULAR}, {"$ai.specular", "SpecularColor"}});
         val.emplace("subsurface", SMaterialProp{4,      true, aiColor4D(), {aiTextureType_NONE}, {"$ai.subsurface"}});
-        val.emplace("thinkness", SMaterialProp{5,       false, aiColor4D(), {aiTextureType_NONE}, {"$ai.thinFilmThickness"}});
+        val.emplace("thinkness", SMaterialProp{5,       true, aiColor4D(), {aiTextureType_NONE}, {"", /*"$ai.thinFilmThickness"*/}});
         val.emplace("sssParam", SMaterialProp{6,        false, aiColor4D(), {aiTextureType_NONE}, {""}});
         val.emplace("sssColor", SMaterialProp{7,        false, aiColor4D(), {aiTextureType_NONE}, {""}});
         val.emplace("foliage", SMaterialProp{8,         false, aiColor4D(), {aiTextureType_NONE}, {""}});
