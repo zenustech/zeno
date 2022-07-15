@@ -266,20 +266,19 @@ But it would be great if you could follow them for others to understand your cod
 
 For example, suppose this is the content of `zeno/src/funcs/my_demo.cpp`:
 ```cpp
-#include <zeno/funcs/my_demo.h>      // first include the decleration header of this .cpp file
-#include <vector>                    // system headers should use '<>' brackets
+#include <zeno/funcs/my_demo.h>      // first of all, include the decleration header of this .cpp file
+#include <vector>                    // secondly, system headers should use '<>' brackets
 #include <memory>
 #include <string>
-#include <tbb/parallel_for_each.h>   // third-party library headers
-#include <zeno/utils/log.h>          // project headers should also use '<>' for absolute pathing
+#include <tbb/parallel_for_each.h>   // third-party library headers, link it in CMakeLists.txt before use
+#include <zeno/utils/log.h>          // finally, project headers should also use '<>' for absolute pathing
 #include <zeno/utils/format.h>
 
 // never 'using namespace std', think about std::data, std::size, std::ref, std::ws, std::tm, std::next
 
 namespace zeno {  // all our code should be wrapped with 'namespace zeno'
 
-namespace myutils {   // '{' should always stay in same line
-                      // and namespaces does not indent
+namespace myutils {   // '{' should always stay in same line, and namespaces does not indent
 
 namespace {        // use an anonymous namespace for static functions
 
