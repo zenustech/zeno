@@ -128,15 +128,15 @@ struct VDBGridWrapper : zeno::IObjectClone<VDBGridWrapper<GridT>, VDBGrid> {
   }
 
   virtual std::string getType() const override {
-    if (std::is_same<GridT, openvdb::FloatGrid>::value) {
+    if constexpr (std::is_same<GridT, openvdb::FloatGrid>::value) {
       return std::string("FloatGrid");
-    } else if (std::is_same<GridT, openvdb::Int32Grid>::value) {
+    } else if constexpr (std::is_same<GridT, openvdb::Int32Grid>::value) {
       return std::string("Int32Grid");
-    } else if (std::is_same<GridT, openvdb::Vec3fGrid>::value) {
+    } else if constexpr (std::is_same<GridT, openvdb::Vec3fGrid>::value) {
       return std::string("Vec3fGrid");
-    } else if (std::is_same<GridT, openvdb::Vec3IGrid>::value) {
+    } else if constexpr (std::is_same<GridT, openvdb::Vec3IGrid>::value) {
       return std::string("Vec3IGrid");
-    } else if (std::is_same<GridT, openvdb::points::PointDataGrid>::value) {
+    } else if constexpr (std::is_same<GridT, openvdb::points::PointDataGrid>::value) {
       return std::string("PointDataGrid");
     } else {
       return std::string("");
