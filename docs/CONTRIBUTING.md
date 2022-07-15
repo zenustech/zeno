@@ -43,11 +43,11 @@ For bug reports, the *console output* is very helpful to us, make sure you attac
 
 Hint: you may use triple back quotes to insert pretty-shown code (for console output) like this:
 
-```md
-\`\`\`
+```
+\```
 This is the Zeno log...
 [ERROR] file not found: foo.txt
-\`\`\`
+\```
 ```
 
 ## Reproduce your issue with the minimal graph
