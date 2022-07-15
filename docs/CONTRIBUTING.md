@@ -306,6 +306,8 @@ void templateFunc(Type value) {
    using T = std::decay_t<decltype(Type)>;   // perfer 'using' instead of 'typedef' for aliasing
 }
 
+#define ZENO_YOUR_USEFUL_MACRO 1   // macro names should have ZENO_ prefix to prevent name conflict
+
 }   // end of anonymous namespace
 
 std::shared_ptr<MyType> globalFunc(std::string const &arg) {   // this function is visible globally
@@ -347,10 +349,10 @@ std::shared_ptr<MyType> globalFunc(std::string const &arg);
 ```
 
 Idendifier naming convensions example:
-```
+```cpp
 namespace awesomenamespace {
 
-int gAwesomeGlobal = 233;
+int g_awesomeGlobal = 233;
 
 void awesomeFunction(float awesomeArgument);
 
