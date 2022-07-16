@@ -2672,7 +2672,7 @@ struct CodimStepping : INode {
 #if s_enableContact
         {
           auto numPP = nPP.getVal();
-#if 1
+#if 0
           pol(range(numPP), [execTag, tempPP = proxy<space>({}, tempPP),
                              vtemp = proxy<space>({}, vtemp), dxTag, bTag,
                              PP = proxy<space>(PP)] ZS_LAMBDA(int ppi) mutable {
@@ -2694,6 +2694,34 @@ struct CodimStepping : INode {
                            temp[vi * dim + d]);
               }
           });
+#elif 1
+          pol(Collapse{numPP, 32},
+              [execTag, tempPP = proxy<space>({}, tempPP),
+               vtemp = proxy<space>({}, vtemp), dxTag, bTag,
+               PP = proxy<space>(PP)] ZS_LAMBDA(int ppi, int tid) mutable {
+                int rowid = tid / 5;
+                int colid = tid % 5;
+                ;
+                auto pp = PP[ppi];
+                T entryH = 0, entryDx = 0, entryG = 0;
+                if (tid < 30) {
+                  entryH = tempPP("H", rowid * 6 + colid, ppi);
+                  entryDx = vtemp(dxTag, colid % 3, pp[colid / 3]);
+                  entryG = entryH * entryDx;
+                  if (colid == 0) {
+                    entryG += tempPP("H", rowid * 6 + 5, ppi) *
+                              vtemp(dxTag, 2, pp[1]);
+                  }
+                }
+                for (int iter = 1; iter <= 4; iter <<= 1) {
+                  T tmp = __shfl_down_sync(0xFFFFFFFF, entryG, iter);
+                  if (colid + iter < 5 && tid < 30)
+                    entryG += tmp;
+                }
+                if (colid == 0 && rowid < 6)
+                  atomic_add(execTag, &vtemp(bTag, rowid % 3, pp[rowid / 3]),
+                             entryG);
+              });
 #else
           pol(range(numPP * 36), [execTag, tempPP = proxy<space>({}, tempPP),
                                   vtemp = proxy<space>({}, vtemp), dxTag, bTag,
@@ -2767,32 +2795,35 @@ struct CodimStepping : INode {
               }
           });
 #elif 1
-          pol(Collapse{numPE, 32 * 3},
+          auto numRows = numPE * 9;
+          auto numWarps = (numRows + 3) / 4; // 8 threads per row
+          pol(Collapse{numWarps * 32},
               [execTag, tempPE = proxy<space>({}, tempPE),
                vtemp = proxy<space>({}, vtemp), dxTag, bTag,
-               PE = proxy<space>(PE)] ZS_LAMBDA(int pei, int tid) mutable {
-                constexpr int dim = 3;
-                int vid = tid / 32;
-                int locid = (tid - vid * 32);
-                int colid = locid % 9;
-                int rowid = vid * dim + locid / 9;
-                int numCols = 9;
+               PE = proxy<space>(PE), numRows] ZS_LAMBDA(int tid) mutable {
+                int growid = tid / 8;
+                int rowid = growid % 9;
+                int pei = growid / 9;
+                int colid = tid % 8;
                 ;
                 auto pe = PE[pei];
-                T entryH = 0, entryDx = 0, entryG = 0;
-                if (locid < 27) {
-                  entryH = tempPE("H", rowid * 9 + colid, pei);
-                  entryDx = vtemp(dxTag, colid % dim, pe[colid / dim]);
-                  entryG = entryH * entryDx;
+                T entryG = 0;
+                if (growid < numRows) {
+                  entryG = tempPE("H", rowid * 9 + colid, pei) *
+                           vtemp(dxTag, colid % 3, pe[colid / 3]);
+                  if (colid == 0) {
+                    auto cid = colid + 8;
+                    entryG += tempPE("H", rowid * 9 + cid, pei) *
+                              vtemp(dxTag, cid % 3, pe[cid / 3]);
+                  }
                 }
-                for (int iter = 1; iter <= 8; iter <<= 1) {
+                for (int iter = 1; iter <= 4; iter <<= 1) {
                   T tmp = __shfl_down_sync(0xFFFFFFFF, entryG, iter);
-                  if (colid + iter < numCols)
+                  if (colid + iter < 8 && growid < numRows)
                     entryG += tmp;
                 }
-                if (colid == 0 && locid / 9 < dim)
-                  atomic_add(execTag,
-                             &vtemp(bTag, rowid % dim, pe[rowid / dim]),
+                if (colid == 0 && growid < numRows)
+                  atomic_add(execTag, &vtemp(bTag, rowid % 3, pe[rowid / 3]),
                              entryG);
               });
 #else
@@ -2868,35 +2899,33 @@ struct CodimStepping : INode {
               }
           });
 #elif 1
-          pol(Collapse{numPT, 32 * 4},
+          // 0, 1, ..., 7, 0, 1, 2, 3
+          pol(Collapse{numPT, 32 * 3},
               [execTag, tempPT = proxy<space>({}, tempPT),
                vtemp = proxy<space>({}, vtemp), dxTag, bTag,
                PT = proxy<space>(PT)] ZS_LAMBDA(int pti, int tid) mutable {
-                constexpr int dim = 3;
-                int vid = tid / 32;
-                int locid = (tid - vid * 32);
-                int colid = locid % 12;
-                int rowid = vid * dim + locid / 12;
-                int numCols = 12 - (rowid % dim == dim - 1 ? 4 : 0);
+                int rowid = tid / 8;
+                int colid = tid % 8;
                 ;
                 auto pt = PT[pti];
-                auto entryH = tempPT("H", rowid * 12 + colid, pti);
-                auto entryDx = vtemp(dxTag, colid % dim, pt[colid / dim]);
-                auto entryG = entryH * entryDx;
-                if (locid >= 24 && locid <= 27) {
-                  auto cid = colid + 8;
-                  // colid / dim == cid / dim;
-                  entryG += tempPT("H", rowid * 12 + cid, pti) *
-                            vtemp(dxTag, cid % dim, pt[cid / dim]);
+                T entryH = 0, entryDx = 0, entryG = 0;
+                {
+                  entryH = tempPT("H", rowid * 12 + colid, pti);
+                  entryDx = vtemp(dxTag, colid % 3, pt[colid / 3]);
+                  entryG = entryH * entryDx;
+                  if (colid < 4) {
+                    auto cid = colid + 8;
+                    entryG += tempPT("H", rowid * 12 + cid, pti) *
+                              vtemp(dxTag, cid % 3, pt[cid / 3]);
+                  }
                 }
-                for (int iter = 1; iter <= 8; iter <<= 1) {
+                for (int iter = 1; iter <= 4; iter <<= 1) {
                   T tmp = __shfl_down_sync(0xFFFFFFFF, entryG, iter);
-                  if (colid + iter < numCols)
+                  if (colid + iter < 8)
                     entryG += tmp;
                 }
                 if (colid == 0)
-                  atomic_add(execTag,
-                             &vtemp(bTag, rowid % dim, pt[rowid / dim]),
+                  atomic_add(execTag, &vtemp(bTag, rowid % 3, pt[rowid / 3]),
                              entryG);
               });
 #else
@@ -2972,35 +3001,33 @@ struct CodimStepping : INode {
               }
           });
 #elif 1
-          pol(Collapse{numEE, 32 * 4},
+          // 0, 1, ..., 7, 0, 1, 2, 3
+          pol(Collapse{numEE, 32 * 3},
               [execTag, tempEE = proxy<space>({}, tempEE),
                vtemp = proxy<space>({}, vtemp), dxTag, bTag,
                EE = proxy<space>(EE)] ZS_LAMBDA(int eei, int tid) mutable {
-                constexpr int dim = 3;
-                int vid = tid / 32;
-                int locid = (tid - vid * 32);
-                int colid = locid % 12;
-                int rowid = vid * dim + locid / 12;
-                int numCols = 12 - (rowid % dim == dim - 1 ? 4 : 0);
+                int rowid = tid / 8;
+                int colid = tid % 8;
                 ;
                 auto ee = EE[eei];
-                auto entryH = tempEE("H", rowid * 12 + colid, eei);
-                auto entryDx = vtemp(dxTag, colid % dim, ee[colid / dim]);
-                auto entryG = entryH * entryDx;
-                if (locid >= 24 && locid <= 27) {
-                  auto cid = colid + 8;
-                  // colid / dim == cid / dim;
-                  entryG += tempEE("H", rowid * 12 + cid, eei) *
-                            vtemp(dxTag, cid % dim, ee[cid / dim]);
+                T entryH = 0, entryDx = 0, entryG = 0;
+                {
+                  entryH = tempEE("H", rowid * 12 + colid, eei);
+                  entryDx = vtemp(dxTag, colid % 3, ee[colid / 3]);
+                  entryG = entryH * entryDx;
+                  if (colid < 4) {
+                    auto cid = colid + 8;
+                    entryG += tempEE("H", rowid * 12 + cid, eei) *
+                              vtemp(dxTag, cid % 3, ee[cid / 3]);
+                  }
                 }
-                for (int iter = 1; iter <= 8; iter <<= 1) {
+                for (int iter = 1; iter <= 4; iter <<= 1) {
                   T tmp = __shfl_down_sync(0xFFFFFFFF, entryG, iter);
-                  if (colid + iter < numCols)
+                  if (colid + iter < 8)
                     entryG += tmp;
                 }
                 if (colid == 0)
-                  atomic_add(execTag,
-                             &vtemp(bTag, rowid % dim, ee[rowid / dim]),
+                  atomic_add(execTag, &vtemp(bTag, rowid % 3, ee[rowid / 3]),
                              entryG);
               });
 #else
