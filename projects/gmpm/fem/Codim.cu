@@ -1327,7 +1327,7 @@ struct CodimStepping : INode {
       // constexpr T slackness = 0.8;
       constexpr auto space = execspace_e::cuda;
 
-      zs::Vector<T> finalAlpha{coVerts.get_allocator(), 1};
+      zs::Vector<T> finalAlpha{vtemp.get_allocator(), 1};
       finalAlpha.setVal(stepSize);
       pol(Collapse{coOffset},
           [vtemp = proxy<space>({}, vtemp),
@@ -3362,32 +3362,35 @@ struct CodimStepping : INode {
         sumNodes = coOffset;
         avgNodeMass = sumNodeMass / sumNodes;
       }
-      pol(Collapse(coVerts.size()),
-          [vtemp = proxy<space>({}, vtemp), coverts = proxy<space>({}, coVerts),
-           coOffset = coOffset, dt = dt, augLagCoeff = augLagCoeff,
-           avgNodeMass = avgNodeMass] __device__(int i) mutable {
-            auto x = coverts.pack<3>("x", i);
-            vec3 newX{};
-            if (coverts.hasProperty("BCtarget"))
-              newX = coverts.pack<3>("BCtarget", i);
-            else {
-              auto v = coverts.pack<3>("v", i);
-              newX = x + v * dt;
-            }
-            vtemp("BCorder", coOffset + i) = 3;
-            vtemp.template tuple<9>("BCbasis", coOffset + i) = mat3::identity();
-            vtemp.template tuple<3>("BCtarget", coOffset + i) = newX;
-            vtemp("BCfixed", coOffset + i) =
-                (newX - x).l2NormSqr() == 0 ? 1 : 0;
+      if (auto coSize = coVerts.size(); coSize)
+        pol(Collapse(coSize),
+            [vtemp = proxy<space>({}, vtemp),
+             coverts = proxy<space>({}, coVerts), coOffset = coOffset, dt = dt,
+             augLagCoeff = augLagCoeff,
+             avgNodeMass = avgNodeMass] __device__(int i) mutable {
+              auto x = coverts.pack<3>("x", i);
+              vec3 newX{};
+              if (coverts.hasProperty("BCtarget"))
+                newX = coverts.pack<3>("BCtarget", i);
+              else {
+                auto v = coverts.pack<3>("v", i);
+                newX = x + v * dt;
+              }
+              vtemp("BCorder", coOffset + i) = 3;
+              vtemp.template tuple<9>("BCbasis", coOffset + i) =
+                  mat3::identity();
+              vtemp.template tuple<3>("BCtarget", coOffset + i) = newX;
+              vtemp("BCfixed", coOffset + i) =
+                  (newX - x).l2NormSqr() == 0 ? 1 : 0;
 
-            vtemp("ws", coOffset + i) = avgNodeMass * augLagCoeff;
-            vtemp.tuple<3>("xtilde", coOffset + i) = newX;
-            vtemp.tuple<3>("lambda", coOffset + i) = vec3::zeros();
-            vtemp.tuple<3>("xn", coOffset + i) = x;
-            vtemp.tuple<3>("vn", coOffset + i) = (newX - x) / dt;
-            vtemp.tuple<3>("xt", coOffset + i) = x;
-            vtemp.tuple<3>("x0", coOffset + i) = coverts.pack<3>("x0", i);
-          });
+              vtemp("ws", coOffset + i) = avgNodeMass * augLagCoeff;
+              vtemp.tuple<3>("xtilde", coOffset + i) = newX;
+              vtemp.tuple<3>("lambda", coOffset + i) = vec3::zeros();
+              vtemp.tuple<3>("xn", coOffset + i) = x;
+              vtemp.tuple<3>("vn", coOffset + i) = (newX - x) / dt;
+              vtemp.tuple<3>("xt", coOffset + i) = x;
+              vtemp.tuple<3>("x0", coOffset + i) = coverts.pack<3>("x0", i);
+            });
     }
     void advanceSubstep(zs::CudaExecutionPolicy &pol, T ratio) {
       using namespace zs;
@@ -3421,25 +3424,26 @@ struct CodimStepping : INode {
               vtemp("BCfixed", vi) = deltaX.l2NormSqr() == 0 ? 1 : 0;
             }
           });
-      pol(Collapse(coVerts.size()),
-          [vtemp = proxy<space>({}, vtemp), coverts = proxy<space>({}, coVerts),
-           coOffset = coOffset, framedt = framedt,
-           curRatio = curRatio] __device__(int i) mutable {
-            auto xt = vtemp.template pack<3>("xt", coOffset + i);
-            auto xn = vtemp.template pack<3>("xn", coOffset + i);
-            vec3 newX{};
-            if (coverts.hasProperty("BCtarget"))
-              newX = coverts.pack<3>("BCtarget", i);
-            else {
-              auto v = coverts.pack<3>("v", i);
-              newX = xt + v * framedt;
-            }
-            // auto xk = xt + (newX - xt) * curRatio;
-            auto xk = newX * curRatio + (1 - curRatio) * xt;
-            vtemp.template tuple<3>("BCtarget", coOffset + i) = xk;
-            vtemp("BCfixed", coOffset + i) = (xk - xn).l2NormSqr() == 0 ? 1 : 0;
-            vtemp.template tuple<3>("xtilde", coOffset + i) = xk;
-          });
+      if (auto coSize = coVerts.size(); coSize)
+        pol(Collapse(coSize), [vtemp = proxy<space>({}, vtemp),
+                               coverts = proxy<space>({}, coVerts),
+                               coOffset = coOffset, framedt = framedt,
+                               curRatio = curRatio] __device__(int i) mutable {
+          auto xt = vtemp.template pack<3>("xt", coOffset + i);
+          auto xn = vtemp.template pack<3>("xn", coOffset + i);
+          vec3 newX{};
+          if (coverts.hasProperty("BCtarget"))
+            newX = coverts.pack<3>("BCtarget", i);
+          else {
+            auto v = coverts.pack<3>("v", i);
+            newX = xt + v * framedt;
+          }
+          // auto xk = xt + (newX - xt) * curRatio;
+          auto xk = newX * curRatio + (1 - curRatio) * xt;
+          vtemp.template tuple<3>("BCtarget", coOffset + i) = xk;
+          vtemp("BCfixed", coOffset + i) = (xk - xn).l2NormSqr() == 0 ? 1 : 0;
+          vtemp.template tuple<3>("xtilde", coOffset + i) = xk;
+        });
     }
     void updateVelocities(zs::CudaExecutionPolicy &pol) {
       using namespace zs;
@@ -3687,22 +3691,24 @@ struct CodimStepping : INode {
                 });
       }
     }
-    if (!zsboundary->hasImage(ZenoParticles::s_particleTag)) {
-      auto &loVerts = zsboundary->getParticles();
-      auto &verts = zsboundary->images[ZenoParticles::s_particleTag];
-      verts = typename ZenoParticles::dtiles_t{
-          loVerts.get_allocator(), loVerts.getPropertyTags(), loVerts.size()};
-      cudaPol(range(verts.size()),
-              [loVerts = proxy<space>({}, loVerts),
-               verts = proxy<space>({}, verts)] __device__(int vi) mutable {
-                // make sure there are no "inds"-like properties in verts!
-                for (int propid = 0; propid != verts._N; ++propid) {
-                  auto propOffset = verts._tagOffsets[propid];
-                  for (int chn = 0; chn != verts._tagSizes[propid]; ++chn)
-                    verts(propOffset + chn, vi) = loVerts(propOffset + chn, vi);
-                }
-              });
-    }
+    if (zsboundary)
+      if (!zsboundary->hasImage(ZenoParticles::s_particleTag)) {
+        auto &loVerts = zsboundary->getParticles();
+        auto &verts = zsboundary->images[ZenoParticles::s_particleTag];
+        verts = typename ZenoParticles::dtiles_t{
+            loVerts.get_allocator(), loVerts.getPropertyTags(), loVerts.size()};
+        cudaPol(range(verts.size()),
+                [loVerts = proxy<space>({}, loVerts),
+                 verts = proxy<space>({}, verts)] __device__(int vi) mutable {
+                  // make sure there are no "inds"-like properties in verts!
+                  for (int propid = 0; propid != verts._N; ++propid) {
+                    auto propOffset = verts._tagOffsets[propid];
+                    for (int chn = 0; chn != verts._tagSizes[propid]; ++chn)
+                      verts(propOffset + chn, vi) =
+                          loVerts(propOffset + chn, vi);
+                  }
+                });
+      }
     const dtiles_t &coVerts =
         zsboundary ? zsboundary->getParticles<true>() : dtiles_t{};
     const tiles_t &coEdges =
@@ -4018,8 +4024,8 @@ struct CodimStepping : INode {
     // update velocity and positions
     A.updatePositionsAndVelocities(cudaPol);
     // not sure if this is necessary for numerical reasons
-    if (coVerts.size())
-      cudaPol(zs::range(coVerts.size()),
+    if (auto coSize = coVerts.size(); coSize)
+      cudaPol(Collapse(coSize),
               [vtemp = proxy<space>({}, vtemp),
                verts = proxy<space>({}, zsboundary->getParticles<true>()),
                loVerts = proxy<space>({}, zsboundary->getParticles()),
