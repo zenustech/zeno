@@ -37,6 +37,7 @@
     _Pragma("clang diagnostic ignored \"-Wall\"") \
     _Pragma("GCC diagnostic ignored \"-Wextra\"") \
     _Pragma("GCC diagnostic ignored \"-Wsuggest-override\"")
+    _Pragma("GCC diagnostic ignored \"-Wformat\"")
 #define ZENO_NOWARN_END \
     _Pragma("clang diagnostic pop")
 #elif defined __GNUC__
