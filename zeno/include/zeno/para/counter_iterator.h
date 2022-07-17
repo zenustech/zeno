@@ -14,8 +14,11 @@ struct counter_iterator : iterator_facade<counter_iterator<T>
 , T const *
 , std::ptrdiff_t
 > {
+
+private:
     T counter;
 
+public:
     counter_iterator() = default;
 
     explicit counter_iterator(T counter) : counter(std::move(counter)) {}

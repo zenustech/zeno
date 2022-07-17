@@ -11,7 +11,6 @@ namespace {
 
 struct PrimMatchUVLine : INode {
     virtual void apply() override {
-        std::vector<float>::iterator x;
         auto prim = get_input<PrimitiveObject>("prim");
         auto prim2 = get_input<PrimitiveObject>("prim2");
         auto uvAttr = get_input2<std::string>("uvAttr");
@@ -66,9 +65,9 @@ ZENO_DEFNODE(PrimMatchUVLine)({
     {
         "prim",
         "prim2",
-        {"string", "uvAttr", "uv"},
+        {"string", "uvAttr", "tmp"},
         {"string", "posAttr", "pos"},
-        {"string", "uvAttr2", "uv"},
+        {"string", "uvAttr2", "tmp"},
         {"string", "posAttr2", "pos"},
     },
     {

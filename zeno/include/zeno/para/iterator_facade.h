@@ -359,7 +359,11 @@ struct iterator_facade
     using iterator_category = std::random_access_iterator_tag;
 };
 
-template <class Derived, class It, class Value>
+template
+< class Derived
+, class It
+, class Value = typename std::iterator_traits<It>::value_type
+>
 struct iterator_adaptor : iterator_facade<Derived
 , std::remove_cv_t<std::remove_reference_t<Value>>
 , typename std::iterator_traits<It>::iterator_category
