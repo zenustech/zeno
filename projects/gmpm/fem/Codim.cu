@@ -403,6 +403,7 @@ struct CodimStepping : INode {
       decltype(auto) getSurfTris() const { return surfTris; }
       decltype(auto) getSurfEdges() const { return surfEdges; }
       decltype(auto) getSurfVerts() const { return surfVerts; }
+      bool isBoundary() const noexcept { return zsprim.asBoundary; }
 
       ZenoParticles &zsprim;
       typename ZenoParticles::dtiles_t &verts;
@@ -1402,7 +1403,9 @@ struct CodimStepping : INode {
       using namespace zs;
       constexpr auto space = execspace_e::cuda;
       for (auto &primHandle : prims)
-        if (primHandle.category == ZenoParticles::surface)
+        if (primHandle.category == ZenoParticles::surface) {
+          if (primHandle.isBoundary())
+            continue;
           cudaPol(
               zs::range(primHandle.getEles().size()),
               [vtemp = proxy<space>({}, vtemp),
@@ -1548,7 +1551,7 @@ struct CodimStepping : INode {
                     }
                 }
               });
-        else if (primHandle.category == ZenoParticles::tet)
+        } else if (primHandle.category == ZenoParticles::tet)
           cudaPol(
               zs::range(primHandle.getEles().size()),
               [vtemp = proxy<space>({}, vtemp),
@@ -1624,13 +1627,14 @@ struct CodimStepping : INode {
         const zs::SmallString &gTag = "grad") {
       using namespace zs;
       constexpr auto space = execspace_e::cuda;
+      // inertial
       cudaPol(zs::range(coOffset),
               [tempPB = proxy<space>({}, tempPB),
-               vtemp = proxy<space>({}, vtemp), gTag, extForce = extForce,
-               dt = dt, projectDBC = projectDBC] __device__(int i) mutable {
+               vtemp = proxy<space>({}, vtemp), gTag, dt = dt,
+               projectDBC = projectDBC] __device__(int i) mutable {
                 auto m = zs::sqr(vtemp("ws", i));
                 vtemp.tuple<3>(gTag, i) =
-                    m * extForce * dt * dt -
+                    vtemp.pack<3>(gTag, i) -
                     m * (vtemp.pack<3>("xn", i) - vtemp.pack<3>("xtilde", i));
 
                 auto M = mat3::identity() * m;
@@ -1644,6 +1648,19 @@ struct CodimStepping : INode {
                   for (int c = 0; c != 3; ++c)
                     vtemp("P", r * 3 + c, i) += M(r, c);
               });
+      // extforce (only grad modified)
+      for (auto &primHandle : prims) {
+        if (primHandle.isBoundary()) // skip soft boundary
+          continue;
+        cudaPol(
+            zs::range(primHandle.getVerts().size()),
+            [vtemp = proxy<space>({}, vtemp), extForce = extForce, gTag,
+             dt = dt, vOffset = primHandle.vOffset] __device__(int vi) mutable {
+              auto m = zs::sqr(vtemp("ws", vOffset + vi));
+              vtemp.tuple<3>(gTag, vOffset + vi) =
+                  vtemp.pack<3>(gTag, vOffset + vi) + m * extForce * dt * dt;
+            });
+      }
     }
 #if 1
     template <typename Model>
@@ -1682,6 +1699,8 @@ struct CodimStepping : INode {
         es.resize(count_warps(eles.size()));
         es.reset(0);
         if (primHandle.category == ZenoParticles::surface) {
+          if (primHandle.isBoundary())
+            continue;
           // elasticity
           pol(range(eles.size()), [eles = proxy<space>({}, eles),
                                    vtemp = proxy<space>({}, vtemp),
@@ -1954,7 +1973,9 @@ struct CodimStepping : INode {
               // atomic_add(exec_cuda, &res[0], E);
               reduce_to(vi, numVerts, E, res[0]);
             });
-        if (primHandle.category == ZenoParticles::surface)
+        if (primHandle.category == ZenoParticles::surface) {
+          if (primHandle.isBoundary())
+            continue;
           // elasticity
           pol(range(eles.size()),
               [eles = proxy<space>({}, eles), vtemp = proxy<space>({}, vtemp),
@@ -1997,7 +2018,7 @@ struct CodimStepping : INode {
                 // atomic_add(exec_cuda, &res[0], E);
                 reduce_to(ei, numEles, E, res[0]);
               });
-        else if (primHandle.category == ZenoParticles::tet)
+        } else if (primHandle.category == ZenoParticles::tet)
           pol(zs::range(eles.size()),
               [vtemp = proxy<space>({}, vtemp), eles = proxy<space>({}, eles),
                res = proxy<space>(res), model, dt = this->dt,
@@ -2507,6 +2528,8 @@ struct CodimStepping : INode {
         auto &eles = primHandle.getEles();
         // elasticity
         if (primHandle.category == ZenoParticles::surface) {
+          if (primHandle.isBoundary())
+            continue;
 #if 1
           pol(range(eles.size()),
               [execTag, etemp = proxy<space>({}, primHandle.etemp),
