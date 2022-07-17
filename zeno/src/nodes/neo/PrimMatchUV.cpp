@@ -18,7 +18,7 @@ struct PrimMatchUVLine : INode {
         auto posAttrOut = get_input2<std::string>("posAttrOut");
         auto uvAttr2 = get_input2<std::string>("uvAttr2");
         auto posAttr2 = get_input2<std::string>("posAttr2");
-        auto dirAttrOut = get_input2<std::string>("dirAttrOut");
+        //auto dirAttrOut = get_input2<std::string>("dirAttrOut");
 
         if (!prim2->lines.size() || !prim2->verts.size())
             throw makeError("no lines connectivity found in prim2");
@@ -59,13 +59,13 @@ struct PrimMatchUVLine : INode {
                 fac /= std::max(val1 - val0, eps);
                 fac = std::clamp(fac, 0.f, 1.f);
                 pos[i] = mix(pos2[idx0], pos2[idx1], fac);
-                if (!dirAttrOut.empty()) {
-                    auto &dir = prim->verts.attr<PosType>(dirAttrOut);
-                    if constexpr (is_vec<PosType>::value)
-                        dir[i] = normalizeSafe(pos2[idx1] - pos2[idx0]);
-                    else
-                        dir[i] = pos2[idx1] == pos2[idx0] ? 0 : std::copysign(1, pos2[idx1] - pos2[idx0]);
-                }
+                //if (!dirAttrOut.empty()) {
+                    //auto &dir = prim->verts.attr<PosType>(dirAttrOut);
+                    //if constexpr (is_vec<PosType>::value)
+                        //dir[i] = normalizeSafe(pos2[idx1] - pos2[idx0]);
+                    //else
+                        //dir[i] = pos2[idx1] == pos2[idx0] ? 0 : std::copysign(1, pos2[idx1] - pos2[idx0]);
+                //}
             });
         });
 
@@ -81,7 +81,7 @@ ZENO_DEFNODE(PrimMatchUVLine)({
         {"string", "posAttrOut", "pos"},
         {"string", "uvAttr2", "tmp"},
         {"string", "posAttr2", "pos"},
-        {"string", "dirAttrOut", ""},
+        //{"string", "dirAttrOut", ""},
     },
     {
         "prim",
@@ -108,6 +108,8 @@ struct PrimGenerateONB : INode {
             if (doNormalize)
                 dir[i] = d;
         });
+
+        set_output("prim", std::move(prim));
     }
 };
 
