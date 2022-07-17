@@ -161,7 +161,7 @@ struct PrimitiveLineSolidify : zeno::INode {
             if (sealEnd) {
                 for (int a = 0; a < count - 1; a++) {
                     prim->tris.emplace_back(count * n, n * a, n * (a+1));
-                    prim->tris.emplace_back(count * n + 1, n-1 + n * a, n-1 + n * (a+1));
+                    prim->tris.emplace_back(count *  1, n-1 + n * a, n-1 + n * (a+1));
                 }
                 prim->tris.emplace_back(count * n, n * (count-1), 0);
                 prim->tris.emplace_back(count * n + 1, n-1 + n * (count-1), n-1);
