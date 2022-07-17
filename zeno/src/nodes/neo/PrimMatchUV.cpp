@@ -42,19 +42,20 @@ struct PrimMatchUVLine : INode {
 
             for (int i = 0; i < uv.size(); i++) {
                 float val2 = uv[i]; // WARN: `uv` and `pos` may be the same array in some cases
-                size_t index = std::lower_bound(uvs.begin(), uvs.end(), val2) - uvs.begin();
-                int idx0 = index == uvs.size() ? inds.back() : inds[index];
-                auto const &neilst = neigh.at(idx0);
-                int idx1 = idx0;
+                size_t index = std::upper_bound(uvs.begin(), uvs.end(), val2) - uvs.begin();
+                int idx1 = index == uvs.size() ? inds.back() : inds[index];
+                auto const &neilst = neigh.at(idx1);
+                int idx0 = idx1;
                 for (auto neidx: neilst) {
-                    if (uv2[neidx] > uv2[idx0]) {
-                        idx1 = neidx;
+                    if (uv2[neidx] <= uv2[idx1]) {
+                        idx0 = neidx;
                         break;
                     }
                 }
                 float val1 = uv2[idx1], val0 = uv2[idx0];
                 float fac = val2 - val0, eps = std::numeric_limits<float>::epsilon();
                 fac /= std::max(std::abs(val1 - val0), eps);
+                fac = std::clamp(fac, 0.f, 1.f);
                 pos[i] = mix(pos2[idx0], pos2[idx1], fac);
             }
         });
