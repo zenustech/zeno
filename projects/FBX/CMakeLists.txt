@@ -13,7 +13,7 @@ add_subdirectory(assimp)
 target_link_libraries(zeno PRIVATE assimp)
 
 set(DEM_DIR ${CMAKE_CURRENT_SOURCE_DIR}/dem-bones-bin/bin/${CMAKE_SYSTEM_NAME})
-if (NOT EXISTS DEM_DIR)
+if (NOT EXISTS ${DEM_DIR})
     message(FATAL_ERROR "Please run: git submodule update --init --recursive")
 endif()
 zeno_add_asset_dir(${DEM_DIR})
