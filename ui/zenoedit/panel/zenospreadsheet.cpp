@@ -35,17 +35,12 @@ ZenoSpreadsheet::ZenoSpreadsheet(QWidget *parent) : QWidget(parent) {
 
     QComboBox* pMode = new QComboBox();
     pMode->addItem("Vertex");
-    pMode->addItem("Face");
+    pMode->addItem("UserData");
     pMode->setProperty("cssClass", "proppanel");
     pTitleLayout->addWidget(pMode);
-
-    QLabel* pAttribute = new QLabel("ATTRIBUTE");
-    pAttribute->setProperty("cssClass", "proppanel");
-    pTitleLayout->addWidget(pAttribute);
-
-    QComboBox* pAttributeName = new QComboBox();
-    pAttributeName->setProperty("cssClass", "proppanel");
-    pTitleLayout->addWidget(pAttributeName);
+    connect(pMode, &QComboBox::textActivated, [=](const QString &text) {
+        this->dataModel->setSelAttr(text.toStdString());
+    });
 
     pMainLayout->addLayout(pTitleLayout);
 
