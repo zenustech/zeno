@@ -75,15 +75,15 @@ struct PrimLineGenerateONB : zeno::INode {
 
             pixarONB(dirs[0], tans[0], bitans[0]);
             vec3f last_tangent = tans[0];
-                ZENO_P(dirs[0]);
-                ZENO_P(tans[0]);
-                ZENO_P(bitans[0]);
+                //ZENO_P(dirs[0]);
+                //ZENO_P(tans[0]);
+                //ZENO_P(bitans[0]);
             for (size_t i = 1; i < n; i++) {
                 guidedPixarONB(dirs[i], last_tangent, bitans[i]);
                 tans[i] = last_tangent;
-                ZENO_P(dirs[i]);
-                ZENO_P(tans[i]);
-                ZENO_P(bitans[i]);
+                //ZENO_P(dirs[i]);
+                //ZENO_P(tans[i]);
+                //ZENO_P(bitans[i]);
             }
         }
 
