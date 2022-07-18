@@ -196,7 +196,7 @@ struct NumericEval : zeno::INode {
                             /* inputs*/
                             {
                                  {"string", "zfxCode"},
-                                 {"enum float vec3f int string", "resType"},
+                                 {"enum float vec3f int string", "resType", "float"},
                             },
 
                             /*OutPut*/

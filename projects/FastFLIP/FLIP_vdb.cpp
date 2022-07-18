@@ -1041,7 +1041,7 @@ struct point_to_counter_reducer2 {
       // the target voxel coordinate
       openvdb::Coord ptCoord;
       // loop over all particles
-      openvdb::points::PointDataTree::LeafNodeType *writing_leaf;
+      openvdb::points::PointDataTree::LeafNodeType *writing_leaf{};
       // std::vector<
       //	std::pair<openvdb::Vec3f, openvdb::Vec3f>>* writing_vector;
 
