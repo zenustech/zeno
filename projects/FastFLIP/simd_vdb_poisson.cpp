@@ -2623,6 +2623,7 @@ bool simd_vdb_poisson::pcg_solve(openvdb::FloatGrid::Ptr in_out_presssure,
     // line17
   }
   // line18
+  return {};
 }
 
 int simd_vdb_poisson::iterations() { return m_iteration; }

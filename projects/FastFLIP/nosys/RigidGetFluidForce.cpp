@@ -162,7 +162,7 @@ struct rigid_pressure_force_reducer {
   openvdb::Vec3f myTotalForce;
   openvdb::Vec3f myTotalTorque;
 };
-void samplePressureForce(float dt, std::vector<zeno::vec3f> &pos,
+static void samplePressureForce(float dt, std::vector<zeno::vec3f> &pos,
                          openvdb::FloatGrid::Ptr &pressure,
                          openvdb::Vec3fGrid::Ptr &faceWeights,
                          openvdb::FloatGrid::Ptr &liquid_sdf,

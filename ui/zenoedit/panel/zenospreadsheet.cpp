@@ -36,7 +36,7 @@ ZenoSpreadsheet::ZenoSpreadsheet(QWidget *parent) : QWidget(parent) {
 
     ZComboBox* pMode = new ZComboBox();
     pMode->addItem("Vertex");
-    pMode->addItem("Face");
+    pMode->addItem("UserData");
     pMode->setProperty("cssClass", "proppanel");
     pTitleLayout->addWidget(pMode);
 

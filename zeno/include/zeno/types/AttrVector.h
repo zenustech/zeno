@@ -320,6 +320,13 @@ struct AttrVector {
 
     template <class T>
     auto const &attr(std::string const &name) const {
+        if (name == "pos") {
+            if constexpr (!std::is_same_v<T, ValT>) {
+                throw makeError<TypeError>(typeid(T), typeid(ValT), "type of primitive attribute pos");
+            } else {
+                return values;
+            }
+        }
         auto const &arr = attr(name);
         if (!std::holds_alternative<std::vector<T>>(arr))
             throw makeError<TypeError>(typeid(T), std::visit([&] (auto const &t) -> std::type_info const & { return typeid(std::decay_t<decltype(t[0])>); }, arr), "type of primitive attribute " + name);
@@ -328,6 +335,13 @@ struct AttrVector {
 
     template <class T>
     auto &attr(std::string const &name) {
+        if (name == "pos") {
+            if constexpr (!std::is_same_v<T, ValT>) {
+                throw makeError<TypeError>(typeid(T), typeid(ValT), "type of primitive attribute pos");
+            } else {
+                return values;
+            }
+        }
         auto &arr = attr(name);
         if (!std::holds_alternative<std::vector<T>>(arr))
             throw makeError<TypeError>(typeid(T), std::visit([&] (auto const &t) -> std::type_info const & { return typeid(std::decay_t<decltype(t[0])>); }, arr), "type of primitive attribute " + name);
@@ -360,6 +374,7 @@ struct AttrVector {
     }
 
     bool has_attr(std::string const &name) const {
+        if (name == "pos") return true;
         return attrs.find(name) != attrs.end();
     }
 
