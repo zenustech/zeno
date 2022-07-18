@@ -3261,6 +3261,7 @@ struct CodimStepping : INode {
         if (E <= E0 + alpha * c1m)
           break;
 #endif
+        break;
 
         alpha /= 2;
         if (++lsIter > 30) {
@@ -3289,17 +3290,24 @@ struct CodimStepping : INode {
         // predict pos, initialize augmented lagrangian, constrain weights
         pol(Collapse(verts.size()),
             [vtemp = proxy<space>({}, vtemp), verts = proxy<space>({}, verts),
-             voffset = primHandle.vOffset, dt = dt,
-             extForce = extForce] __device__(int i) mutable {
-              int BCorder = verts("BCorder", i);
-              auto BCtarget = verts.template pack<3>("BCtarget", i);
-              auto BCbasis = verts.template pack<3, 3>("BCbasis", i);
+             voffset = primHandle.vOffset, dt = dt, extForce = extForce,
+             asBoundary = primHandle.isBoundary()] __device__(int i) mutable {
               auto x = verts.pack<3>("x", i);
               auto v = verts.pack<3>("v", i);
-              vtemp("BCorder", voffset + i) = verts("BCorder", i);
+              int BCorder = 0;
+              auto BCtarget = x + v * dt;
+              auto BCbasis = mat3::identity();
+              int BCfixed = 0;
+              if (!asBoundary) {
+                BCorder = verts("BCorder", i);
+                BCtarget = verts.template pack<3>("BCtarget", i);
+                BCbasis = verts.template pack<3, 3>("BCbasis", i);
+                BCfixed = verts("BCfixed", i);
+              }
+              vtemp("BCorder", voffset + i) = BCorder;
               vtemp.template tuple<3>("BCtarget", voffset + i) = BCtarget;
               vtemp.template tuple<9>("BCbasis", voffset + i) = BCbasis;
-              vtemp("BCfixed", voffset + i) = verts("BCfixed", i);
+              vtemp("BCfixed", voffset + i) = BCfixed;
 
               vtemp("ws", voffset + i) = zs::sqrt(verts("m", i));
               vtemp.tuple<3>("xtilde", voffset + i) = x + v * dt;
