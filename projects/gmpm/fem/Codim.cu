@@ -130,6 +130,7 @@ struct CodimStepping : INode {
 // static constexpr bool s_enableAdaptiveSetting = false;
 #define s_enableContact 1
 // static constexpr bool s_enableContact = true;
+#define s_enableGround 0
 #define s_enableDCDCheck 0
   // static constexpr bool s_enableDCDCheck = false;
 
@@ -1921,6 +1922,7 @@ struct CodimStepping : INode {
           Es.push_back(reduce(pol, es) * kappa);
         }
 #endif
+#if s_enableGround
         // boundary
         es.resize(count_warps(coOffset));
         es.reset(0);
@@ -1939,6 +1941,7 @@ struct CodimStepping : INode {
               reduce_to(vi, n, E, es[vi / 32]);
             });
         Es.push_back(reduce(pol, es) * kappa);
+#endif
       }
       // constraints
       if (includeAugLagEnergy) {
@@ -2176,6 +2179,7 @@ struct CodimStepping : INode {
               });
         }
 #endif
+#if s_enableGround
         // boundary
         pol(range(coOffset),
             [vtemp = proxy<space>({}, vtemp), res = proxy<space>(res),
@@ -2190,6 +2194,7 @@ struct CodimStepping : INode {
                 atomic_add(exec_cuda, &res[0], temp);
               }
             });
+#endif
       }
       // constraints
       if (includeAugLagEnergy) {
@@ -3131,6 +3136,7 @@ struct CodimStepping : INode {
 #endif
         }
 #endif
+#if s_enableGround
         // boundary
         pol(range(coOffset), [execTag, vtemp = proxy<space>({}, vtemp),
                               tempPB = proxy<space>({}, tempPB), dxTag,
@@ -3141,6 +3147,7 @@ struct CodimStepping : INode {
           for (int d = 0; d != 3; ++d)
             atomic_add(execTag, &vtemp(bTag, d, vi), dx(d));
         });
+#endif
       } // end contacts
 
       // constraint hessian
@@ -3847,7 +3854,9 @@ struct CodimStepping : INode {
         match([&](auto &elasticModel) {
           A.computeElasticGradientAndHessian(cudaPol, elasticModel);
         })(models.getElasticModel());
+#if s_enableGround
         A.computeBoundaryBarrierGradientAndHessian(cudaPol);
+#endif
         if constexpr (s_enableContact)
           A.computeBarrierGradientAndHessian(cudaPol);
 
@@ -3956,8 +3965,10 @@ struct CodimStepping : INode {
           }
 #endif
         }
+#if s_enableGround
         A.groundIntersectionFreeStepsize(cudaPol, alpha);
         fmt::print("\tstepsize after ground: {}\n", alpha);
+#endif
 #if s_enableContact
         {
           // A.intersectionFreeStepsize(cudaPol, xi, alpha);
