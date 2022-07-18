@@ -41,6 +41,7 @@ target_sources(zeno_zsfluid PRIVATE
   volume/VolumeTopology.cu
   volume/VolumeOperator.cu
   volume/Transfer.cu
+  volume/Conversion.cu
 )
 set_source_files_properties(volume/VolumeOperator.cu volume/Transfer.cu PROPERTIES  LANGUAGE CUDA)
 target_link_libraries(zeno_zsfluid PRIVATE zshelper)
