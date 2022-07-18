@@ -13,11 +13,11 @@ find_package(Eigen3 REQUIRED)
 target_sources(zeno PRIVATE nodesys.cpp)
 
 #simd compiler flags
-if (WIN32)
-target_compile_options(zeno PRIVATE /arch:AVX)
-else()
-target_compile_options(zeno PRIVATE "-march=native")
-endif()
+#if (WIN32)
+#target_compile_options(zeno PRIVATE /arch:AVX)
+#else()
+#target_compile_options(zeno PRIVATE "-march=native")
+#endif()
 
 
 target_include_directories(zeno PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
