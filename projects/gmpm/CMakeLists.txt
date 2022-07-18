@@ -139,6 +139,7 @@ target_sources(zeno_zsfem PRIVATE
   fem/Codim.cu
   # fem/TestAugLag.cu
   fem/FastQuasiStaticStepping.cu
+  fem/FleshQuasiStepping.cu
 )
 
 if (${ZS_ENABLE_CUDA})
