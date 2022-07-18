@@ -3,6 +3,7 @@
 #include <zenoui/model/modelrole.h>
 #include "util/log.h"
 #include <zenoui/util/uihelper.h>
+#include <zenoui/util/cihou.h>
 
 
 QString AppHelper::correctSubIOName(IGraphsModel* pModel, const QString& subgName, const QString& newName, bool bInput)
@@ -127,7 +128,7 @@ QString AppHelper::nthSerialNumName(QString name)
 QLinearGradient AppHelper::colorString2Grad(const QString& colorStr)
 {
     QLinearGradient grad;
-    QStringList L = colorStr.split("\n", Qt::SkipEmptyParts);
+    QStringList L = colorStr.split("\n", QtSkipEmptyParts);
     ZASSERT_EXIT(!L.isEmpty(), grad);
 
     bool bOk = false;
@@ -135,7 +136,7 @@ QLinearGradient AppHelper::colorString2Grad(const QString& colorStr)
     ZASSERT_EXIT(bOk && n == L.size() - 1, grad);
     for (int i = 1; i <= n; i++)
     {
-        QStringList color_info = L[i].split(" ", Qt::SkipEmptyParts);
+        QStringList color_info = L[i].split(" ", QtSkipEmptyParts);
         ZASSERT_EXIT(color_info.size() == 4, grad);
 
         float f = color_info[0].toFloat(&bOk);
