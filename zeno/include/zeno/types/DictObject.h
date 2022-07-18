@@ -24,7 +24,9 @@ struct DictObject : IObjectClone<DictObject> {
   std::map<std::string, T> getLiterial() const {
       std::map<std::string, T> res;
       for (auto const &[key, val]: lut) {
-          res.emplace(key, objectToLiterial<T>(val));
+          if (objectIsLiterial<T>(val)) {
+              res.emplace(key, objectToLiterial<T>(val));
+          }
       }
       return res;
   }
