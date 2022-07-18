@@ -36,7 +36,8 @@ void readFBXFile(
     std::shared_ptr<FBXData>& fbxData,
     std::shared_ptr<BoneTree>& boneTree,
     std::shared_ptr<AnimInfo>& animInfo,
-    const char *fbx_path);
+    const char *fbx_path,
+    bool enable_udim);
 
 struct Mesh{
     FBXData fbxData;
@@ -47,6 +48,7 @@ struct Mesh{
     std::unordered_map<std::string, SMaterial> m_loadedMat;
     unsigned int m_VerticesIncrease = 0;
     unsigned int m_IndicesIncrease = 0;
+    bool enable_udim = false;
 
     std::string createTexDir(std::string subPath){
         auto p = fbxPath;
@@ -415,18 +417,18 @@ struct Mesh{
                     int index = 0;
                     bool is_udim_tex = false;
                     int udim_num = 0;
-                    while((index = filename.find("_10", pos)) != std::string::npos) {  // UDIM e.g. Tex_1001.png Tex_1011.png
+                    while((index = filename.find(".10", pos)) != std::string::npos) {  // UDIM e.g. Tex_1001.png Tex_1011.png
                         if(filename.find_last_of('.') == index+5){  // index `_` pos, index+5 `.` pos
                             is_udim_tex = true;
 
                             udim_num = std::stoi(filename.substr(index+3, 2));
-                            zeno::log_info("UDIM: Found udim tex num {}",udim_num);
+                            zeno::log_info("UDIM: Found udim tex num {}, enable {}",udim_num, enable_udim);
                             break;  // for check whether is udim
                         }
                         pos = index + 1; //new position is from next element of index
                     }
 
-                    if(is_udim_tex){  // first udim check
+                    if(is_udim_tex && enable_udim){  // first udim check
                         int max_up=0, max_vp=0;
                         int sw,sh,comp;
                         std::unordered_map<std::string, std::string> udim_texs;
@@ -828,7 +830,8 @@ void readFBXFile(
         std::shared_ptr<FBXData>& fbxData,
         std::shared_ptr<BoneTree>& boneTree,
         std::shared_ptr<AnimInfo>& animInfo,
-        const char *fbx_path)
+        const char *fbx_path,
+        bool enable_udim)
 {
     Assimp::Importer importer;
     importer.SetPropertyInteger(AI_CONFIG_PP_PTV_NORMALIZE, true);
@@ -844,6 +847,8 @@ void readFBXFile(
 
     Mesh mesh;
     Anim anim;
+
+    mesh.enable_udim = enable_udim;
 
     std::filesystem::path p(fbx_path);
     mesh.fbxPath = p.remove_filename();
@@ -879,9 +884,15 @@ struct ReadFBXPrim : zeno::INode {
 
         zeno::log_info("FBX: File path {}", path);
 
+        bool enable_udim = false;
+        auto udim = get_param<std::string>("udim");
+        if (udim == "ENABLE"){
+            enable_udim = true;
+        }
+
         readFBXFile(datas,
                     nodeTree, fbxData, boneTree, animInfo,
-                    path.c_str());
+                    path.c_str(), enable_udim);
 
         set_output("data", std::move(fbxData));
         set_output("datas", std::move(datas));
@@ -903,7 +914,7 @@ ZENDEFNODE(ReadFBXPrim,
                    {"BoneTree", "bonetree"},
                },  /* params: */
                {
-
+                {"enum ENABLE DISABLE", "udim", "DISABLE"},
                },  /* category: */
                {
                    "FBX",
