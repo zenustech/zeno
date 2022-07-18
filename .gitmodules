@@ -7,3 +7,6 @@
 [submodule "projects/FBX/assimp"]
 	path = projects/FBX/assimp
 	url = https://github.com/zenustech/assimp.git
+[submodule "projects/TetWild/fTetWild"]
+	path = projects/TetWild/fTetWild
+	url = https://github.com/wildmeshing/fTetWild.git
