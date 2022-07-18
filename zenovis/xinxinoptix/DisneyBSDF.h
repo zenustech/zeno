@@ -1,9 +1,12 @@
 #pragma once
 
+
+#include "openvdb/math/Math.h"
 #include "vec_math.h"
 #include "zxxglslvec.h"
 #include "TraceStuff.h"
 #include "DisneyBRDF.h"
+#include <math.h>
 
 //todo implement full disney bsdf 
 //reference: https://schuttejoe.github.io/post/DisneyBsdf/
@@ -250,7 +253,7 @@ float EvaluateDisneyDiffuse(
     return 1.0f/M_PIf * (retro + subsurfaceApprox * (1.0f - 0.5f * fl) * (1.0f - 0.5f * fv));
 }
 
-float3 EvaluateDisneyBSDF(
+float3 EvaluateDisney(
     vec3 baseColor,
     float metallic,
     float subsurface,
@@ -270,8 +273,8 @@ float3 EvaluateDisneyBSDF(
     float ior,
     bool thin,
     bool is_inside,
-    vec3 wi,
-    vec3 wo,
+    vec3 wi, //in world space
+    vec3 wo, //in world space
     vec3 T,
     vec3 B,
     vec3 N,
@@ -386,7 +389,7 @@ bool SampleDisneyBRDF(
     float r1 = rnd(seed);
     vec3 wm = BRDFBasics::SampleGgxVndfAnisotropic(wo, ax, ay, r0, r1);
 
-    wi = normalize(reflect(-wo, wm));
+    wi = normalize(reflect(-wo, wm)); //?
     if(wi.z<0.0f)
     {
         fPdf = 0.0f;
@@ -409,8 +412,56 @@ bool SampleDisneyBRDF(
 }
 
 static __inline__ __device__
-bool SampleDisneyClearCoat()
-{
-}
+bool SampleDisneyClearCoat(
+        unsigned int &seed,
+        float clearCoat,
+        float clearcoatGloss,
+        vec3 T,
+        vec3 B,
+        vec3 N,
+        vec3 wo,
+        vec3& wi,
+        vec3& reflectance,
+        float& fPdf,
+        float& rPdf
+        )
 
+{
+    float a2 = 0.0625; //0.25 * 0.25
+
+    float r0 = rnd(seed);
+    float r1 = rnd(seed);
+
+    float cosTheta = sqrt( max(0.0f, (1.0f - pow(a2, 1.0f - r0) ) / (1.0f -a2) ) );
+    float sinTheta = sqrt( max(0.0f, 1.0f - cosTheta * cosTheta) );
+
+
+    float phi = 2.0f * M_PIf * r1;
+
+    vec3 wm = vec3(sinTheta * cosf(phi), cosTheta, sinTheta * sinf(phi));
+    if(dot(wm,wo) < 0.0f){
+        wm = -wm;
+    }
+
+    wi = normalize(reflect(-wo,wm));
+
+    if(dot(wi,wo) < 0.0f){ //removable?
+        return false;
+    }
+
+    float NoH = wm.z;
+    float LoH = dot(wm,wi);
+    float NoL  = abs(wi.z);
+    float NoV = abs(wo.z);
+
+    float d = BRDFBasics::GTR1(abs(NoH),lerp(0.1f, 0.001f, clearcoatGloss));
+    float f = BRDFBasics::fresnelSchlick(LoH,0.04f);
+    float g = BRDFBasics::SeparableSmithGGXG1(wi,  wm, 0.25f, 0.25f);
+
+    fPdf = d / (4.0f * dot(wo,wm));
+    reflectance = vec3(0.25f * clearCoat * g * f *d ) / rPdf; 
+    wi = normalize(T*wi.x + B*wi.y + N*wi.z);
+    rPdf = d /(4.0f * LoH);
+    return true;
+    
 }
