@@ -549,12 +549,14 @@ struct CodimStepping : INode {
           [bvh = proxy<space>(stBvh), box = proxy<space>(box)] __device__(
               int vi) mutable { box[0] = bvh.getNodeBV(0); });
       bv_t bv = box.getVal();
-      pol(Collapse{1},
-          [bvh = proxy<space>(bouStBvh), box = proxy<space>(box)] __device__(
-              int vi) mutable { box[0] = bvh.getNodeBV(0); });
-      bv_t boubv = box.getVal();
-      merge(bv, boubv._min);
-      merge(bv, boubv._max);
+      if (coVerts.size()) {
+        pol(Collapse{1},
+            [bvh = proxy<space>(bouStBvh), box = proxy<space>(box)] __device__(
+                int vi) mutable { box[0] = bvh.getNodeBV(0); });
+        bv_t boubv = box.getVal();
+        merge(bv, boubv._min);
+        merge(bv, boubv._max);
+      }
       boxDiagSize2 = (bv._max - bv._min).l2NormSqr();
     }
 
