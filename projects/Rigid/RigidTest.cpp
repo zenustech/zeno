@@ -3283,8 +3283,8 @@ struct BulletGetAABB : zeno::INode {
     virtual void apply() {
         auto object= get_input<BulletObject>("object");
         auto transform = object->body->getWorldTransform();
-        btVector3 *aabbMin;
-        btVector3 *aabbMax;
+        btVector3 *aabbMin{};
+        btVector3 *aabbMax{};
         object->colShape->shape->getAabb(transform, *aabbMin, *aabbMax);
 
         auto aabbMin_out = std::make_shared<zeno::NumericObject>();
