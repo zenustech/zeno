@@ -303,6 +303,14 @@ struct CodimStepping : INode {
       return reduce(cudaPol, res, getmax<T>{});
     }
 
+    template <int numV> struct Hessian {
+      using inds_t = zs::vec<int, numV>;
+
+      zs::Vector<inds_t> inds;
+      zs::Vector<int> cnt;
+      dtiles_t hess;
+    };
+
     struct PrimitiveHandle {
       PrimitiveHandle(ZenoParticles &zsprim, std::size_t &vOffset,
                       std::size_t &sfOffset, std::size_t &seOffset,
@@ -3183,8 +3191,16 @@ struct CodimStepping : INode {
                   vtemp.tuple<3>("dir", i) = vec3::zeros();
                   vtemp.tuple<3>("temp", i) = vec3::zeros();
                 });
+        // initial guess for hard boundary constraints
+        cudaPol(zs::range(coVerts.size()), [vtemp = proxy<space>({}, vtemp),
+                                            coOffset = coOffset,
+                                            dt = dt] __device__(int i) mutable {
+          i += coOffset;
+          vtemp.tuple<3>("dir", i) =
+              (vtemp.pack<3>("xtilde", i) - vtemp.pack<3>("xn", i)) * dt;
+        });
         // temp = A * dir
-        // multiply(cudaPol, "dir", "temp");  // no need cuz "dir" is set zero
+        multiply(cudaPol, "dir", "temp");
         // r = grad - temp
         cudaPol(zs::range(numDofs),
                 [vtemp = proxy<space>({}, vtemp)] __device__(int i) mutable {
@@ -3340,6 +3356,7 @@ struct CodimStepping : INode {
               vtemp.template tuple<3>("BCtarget", voffset + i) = BCtarget;
               vtemp.template tuple<9>("BCbasis", voffset + i) = BCbasis;
               vtemp("BCfixed", voffset + i) = BCfixed;
+              vtemp("BCsoft", voffset + i) = (int)asBoundary;
 
               vtemp("ws", voffset + i) = asBoundary ? avgNodeMass * augLagCoeff
                                                     : zs::sqrt(verts("m", i));
@@ -3582,7 +3599,8 @@ struct CodimStepping : INode {
            {"BCbasis", 9},
            {"BCtarget", 3},
            {"BCfixed", 1},
-           {"ws", 1}, // also as constraint jacobian
+           {"BCsoft", 1}, // mark if this dof is a soft boundary vert or not
+           {"ws", 1},     // also as constraint jacobian
            {"cons", 3},
            {"lambda", 3},
 
@@ -3664,6 +3682,11 @@ struct CodimStepping : INode {
     zs::Vector<T> temp;
 
     int prevNumPP, prevNumPE, prevNumPT, prevNumEE;
+    // unified hessian storage
+    Hessian<1> H1;
+    Hessian<2> H2;
+    Hessian<3> H3;
+    Hessian<4> H4;
 
     zs::Vector<pair4_t> csPT, csEE;
     zs::Vector<int> ncsPT, ncsEE;
