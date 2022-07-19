@@ -3804,6 +3804,9 @@ struct CodimStepping : INode {
       { // surf oriented (use framedt here)
         auto kappaSurf = dt * dt * A.meanSurfaceArea / 3 * dHat * A.largestMu();
         fmt::print("kappaSurf: {}, kappa: {}\n", kappaSurf, kappa);
+        if (kappaSurf > kappa && kappaSurf < kappaMax) {
+          kappa = kappaSurf;
+        }
       }
       // boundaryKappa = kappa;
       fmt::print("auto dHat: {}, targetGRes: {}\n", dHat, targetGRes);
@@ -3954,7 +3957,7 @@ struct CodimStepping : INode {
           // infNorm
           auto spanSize = res * alpha / (A.meanEdgeLength * 1);
 #endif
-#if 0
+#if 1
           if (spanSize > 1) { // mainly for reducing ccd pairs
             alpha /= spanSize;
             CCDfiltered = true;
