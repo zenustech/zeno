@@ -261,7 +261,7 @@ namespace zeno {
     bool parsing_attributes_data(FILE *fp,std::shared_ptr<zeno::PrimitiveObject>& prim,AttrVec& attrv,int& line_count,int cell_type) {
         char *bufferp;
         char buffer[INPUTLINESIZE];
-        char id[256],dummy_str[64],data_name[64],array_name[64];
+        char id[256],dummy_str[64],data_name[64],array_name[64],lookup_dummy[64];
         int dummy;
 
         // using EleIds = std::variant<std::monostate, AttrVector<vec3f>&, AttrVector<vec2i>&, AttrVector<vec3i>&, AttrVector<vec4i>&>;
@@ -278,12 +278,20 @@ namespace zeno {
 
             sscanf(bufferp,"%s",id);
             // currently we don't support lookup table
-            // if(!strcmp(id,"SCALERS")){
+            if(!strcmp(id,"SCALARS")){
                 // int numberofpoints = 0;
-                // sscanf(line,"%s %d %s",id,&numberofpoints,dummy_str);
-                // parsing_verts_coord(fp,prim,numberofpoints,line_count);
-                // continue;
-            // }
+                sscanf(bufferp,"%s %s %s",id,data_name,dummy_str);
+                printf("parsing scalers: %s\n",data_name);
+                // skip the defination of lookup table
+                bufferp = readline(buffer,fp,&line_count);
+                sscanf(bufferp,"%s %s",lookup_dummy,dummy_str);
+                if(!strcmp(lookup_dummy,"LOOKUP_TABLE"))
+                    printf("the SCALERS defination should follow by LOOKUP_TABLE defination\n");
+                auto& data = attrv.add_attr(data_name,(float)0.0);
+                printf("parsing scalers\n");
+                parsing_attribs(fp,data,buffer_size,line_count);
+                continue;
+            }
             if(!strcmp(id,"COLOR_SCALARS")){    
                 int numberofchannels = 0;
                 sscanf(bufferp,"%s %s %d",id,dummy_str,&numberofchannels);

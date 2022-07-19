@@ -1,4 +1,5 @@
 #include "file_parser/read_vtk_mesh.hpp"
+#include "zensim/omp/execution/ExecutionPolicy.hpp"
 
 #include "zensim/math/bit/Bits.h"
 #include "zensim/types/Property.h"
@@ -13,9 +14,28 @@ namespace zeno {
 
 struct ReadVTKMesh : INode {
     void apply() override {
+        auto view_interior = get_param<int>("view_interior");
         auto path = get_input<StringObject>("path")->get();
         auto prim = std::make_shared<PrimitiveObject>();
         bool ret = load_vtk_data(path,prim,0);
+
+        if(view_interior && prim->quads.size() > 0){
+            prim->tris.resize(prim->quads.size() * 4);
+            
+            constexpr auto space = zs::execspace_e::openmp;
+            auto ompExec = zs::omp_exec();
+
+            ompExec(zs::range(prim->quads.size()),
+                [prim] (int ei) mutable {
+                    const auto& tet = prim->quads[ei];
+                    // for(int i = 0;i < 4;++i)
+                    prim->tris[ei * 4 + 0] = zeno::vec3i{tet[0],tet[1],tet[2]};
+                    prim->tris[ei * 4 + 1] = zeno::vec3i{tet[1],tet[3],tet[2]};
+                    prim->tris[ei * 4 + 2] = zeno::vec3i{tet[0],tet[2],tet[3]};
+                    prim->tris[ei * 4 + 3] = zeno::vec3i{tet[0],tet[3],tet[1]};                    
+                });
+        }
+
         set_output("prim",std::move(prim));
     }
 };
@@ -28,7 +48,9 @@ ZENDEFNODE(ReadVTKMesh, {/* inputs: */ {
                             {"primitive", "prim"},
                         },
                         /* params: */
-                        {},
+                        {
+                            {"int","view_interior","0"}
+                        },
                         /* category: */
                         {
                             "primitive",
