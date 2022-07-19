@@ -130,8 +130,9 @@ struct CodimStepping : INode {
 // static constexpr bool s_enableAdaptiveSetting = false;
 #define s_enableContact 1
 // static constexpr bool s_enableContact = true;
-#define s_enableGround 0
+#define s_enableGround 1
 #define s_enableDCDCheck 0
+#define s_enableDebugCheck 0
   // static constexpr bool s_enableDCDCheck = false;
 
   inline static std::size_t estNumCps = 1000000;
@@ -601,8 +602,7 @@ struct CodimStepping : INode {
         auto &verts = primHandle.getVerts();
         cudaPol(range(verts.size()),
                 [vtemp = proxy<space>({}, vtemp),
-                 verts = proxy<space>({}, verts), gTag, extForce = extForce,
-                 dt = dt,
+                 verts = proxy<space>({}, verts), gTag, dt = dt,
                  vOffset = primHandle.vOffset] __device__(int i) mutable {
                   auto m = verts("m", i);
                   int BCorder = vtemp("BCorder", vOffset + i);
@@ -1692,8 +1692,10 @@ struct CodimStepping : INode {
             [vtemp = proxy<space>({}, vtemp), extForce = extForce, gTag,
              dt = dt, vOffset = primHandle.vOffset] __device__(int vi) mutable {
               auto m = zs::sqr(vtemp("ws", vOffset + vi));
-              vtemp.tuple<3>(gTag, vOffset + vi) =
-                  vtemp.pack<3>(gTag, vOffset + vi) + m * extForce * dt * dt;
+              int BCorder = vtemp("BCorder", vOffset + vi);
+              if (BCorder != 3)
+                vtemp.tuple<3>(gTag, vOffset + vi) =
+                    vtemp.pack<3>(gTag, vOffset + vi) + m * extForce * dt * dt;
             });
       }
     }
@@ -1716,13 +1718,14 @@ struct CodimStepping : INode {
            n = coOffset] __device__(int vi) mutable {
             auto m = zs::sqr(vtemp("ws", vi));
             auto x = vtemp.pack<3>(tag, vi);
+            auto xt = vtemp.pack<3>("xt", vi);
             int BCorder = vtemp("BCorder", vi);
             T E = 0;
             if (BCorder != 3) {
               // inertia
               E += (T)0.5 * m * (x - vtemp.pack<3>("xtilde", vi)).l2NormSqr();
               // external force
-              E += -m * extForce.dot(x) * dt * dt;
+              E += -m * extForce.dot(x - xt) * dt * dt;
             }
             reduce_to(vi, n, E, es[vi / 32]);
           });
@@ -1987,6 +1990,11 @@ struct CodimStepping : INode {
       constexpr auto space = execspace_e::cuda;
       Vector<T> res{vtemp.get_allocator(), 1};
       res.setVal(0);
+
+      auto checkE = [&res](std::string_view msg = "") {
+        fmt::print("[{}] current energy: {}\n", msg, res.getVal());
+      };
+
       for (auto &primHandle : prims) {
         auto &verts = primHandle.getVerts();
         auto &eles = primHandle.getEles();
@@ -1999,17 +2007,21 @@ struct CodimStepping : INode {
               auto m = verts("m", vi);
               vi += vOffset;
               auto x = vtemp.pack<3>(tag, vi);
+              auto xt = vtemp.pack<3>("xt", vi);
               int BCorder = vtemp("BCorder", vi);
               T E = 0;
               if (BCorder != 3) {
                 E += (T)0.5 * m * (x - vtemp.pack<3>("xtilde", vi)).l2NormSqr();
                 // gravity
-                E += -m * extForce.dot(x) * dt * dt;
+                E += -m * extForce.dot(x - xt) * dt * dt;
               }
 
               // atomic_add(exec_cuda, &res[0], E);
               reduce_to(vi, numVerts, E, res[0]);
             });
+        if constexpr (s_enableDebugCheck) {
+          checkE("inertial_extf");
+        }
         if (primHandle.category == ZenoParticles::surface) {
           if (primHandle.isBoundary())
             continue;
@@ -2055,7 +2067,10 @@ struct CodimStepping : INode {
                 // atomic_add(exec_cuda, &res[0], E);
                 reduce_to(ei, numEles, E, res[0]);
               });
-        } else if (primHandle.category == ZenoParticles::tet)
+          if constexpr (s_enableDebugCheck) {
+            checkE("cloth_E");
+          }
+        } else if (primHandle.category == ZenoParticles::tet) {
           pol(zs::range(eles.size()),
               [vtemp = proxy<space>({}, vtemp), eles = proxy<space>({}, eles),
                res = proxy<space>(res), model, dt = this->dt,
@@ -2090,6 +2105,10 @@ struct CodimStepping : INode {
                 }
                 reduce_to(ei, numEles, E, res[0]);
               });
+          if constexpr (s_enableDebugCheck) {
+            checkE("tet_E");
+          }
+        }
       }
       // contacts
       {
@@ -2116,6 +2135,9 @@ struct CodimStepping : INode {
                 auto E = -kappa * lenE * lenE * zs::log(I5);
                 reduce_to(ppi, numPP, E, res[0]);
               });
+          if constexpr (s_enableDebugCheck) {
+            checkE("pp_E");
+          }
           auto numPE = nPE.getVal();
           pol(range(numPE),
               [vtemp = proxy<space>({}, vtemp),
@@ -2138,6 +2160,9 @@ struct CodimStepping : INode {
                 auto E = -kappa * lenE * lenE * zs::log(I5);
                 reduce_to(pei, numPE, E, res[0]);
               });
+          if constexpr (s_enableDebugCheck) {
+            checkE("pe_E");
+          }
           auto numPT = nPT.getVal();
           pol(range(numPT),
               [vtemp = proxy<space>({}, vtemp),
@@ -2161,6 +2186,9 @@ struct CodimStepping : INode {
                 auto E = -kappa * lenE * lenE * zs::log(I5);
                 reduce_to(pti, numPT, E, res[0]);
               });
+          if constexpr (s_enableDebugCheck) {
+            checkE("pt_E");
+          }
           auto numEE = nEE.getVal();
           pol(range(numEE),
               [vtemp = proxy<space>({}, vtemp),
@@ -2185,6 +2213,9 @@ struct CodimStepping : INode {
 
                 reduce_to(eei, numEE, E, res[0]);
               });
+          if constexpr (s_enableDebugCheck) {
+            checkE("ee_E");
+          }
         }
 #endif
 #if s_enableGround
@@ -2202,6 +2233,9 @@ struct CodimStepping : INode {
                 atomic_add(exec_cuda, &res[0], temp);
               }
             });
+        if constexpr (s_enableDebugCheck) {
+          checkE("ground_E");
+        }
 #endif
       }
       // constraints
@@ -2221,6 +2255,9 @@ struct CodimStepping : INode {
                         0.5 * w * boundaryKappa * cons.l2NormSqr());
               atomic_add(exec_cuda, &res[0], E);
             });
+        if constexpr (s_enableDebugCheck) {
+          checkE("cons_E");
+        }
       }
       return res.getVal();
     }
@@ -3337,7 +3374,7 @@ struct CodimStepping : INode {
         // predict pos, initialize augmented lagrangian, constrain weights
         pol(Collapse(verts.size()),
             [vtemp = proxy<space>({}, vtemp), verts = proxy<space>({}, verts),
-             voffset = primHandle.vOffset, dt = dt, extForce = extForce,
+             voffset = primHandle.vOffset, dt = dt,
              asBoundary = primHandle.isBoundary(), avgNodeMass = avgNodeMass,
              augLagCoeff = augLagCoeff] __device__(int i) mutable {
               auto x = verts.pack<3>("x", i);
@@ -3470,6 +3507,7 @@ struct CodimStepping : INode {
                 dx[d] = 0;
               dx = BCbasis * dx;
             };
+            auto xt = vtemp.template pack<3>("xt", vi);
             auto xn = vtemp.template pack<3>("xn", vi);
             auto deltaX = vtemp.template pack<3>("vn", vi) * dt;
             if (BCorder > 0)
@@ -3482,6 +3520,9 @@ struct CodimStepping : INode {
               vtemp.template tuple<3>("BCtarget", vi) =
                   BCbasis.transpose() * newX;
               vtemp("BCfixed", vi) = deltaX.l2NormSqr() == 0 ? 1 : 0;
+            }
+            if (BCorder != 3) { // only for free moving dofs
+              vtemp.template tuple<3>("xt", vi) = xn;
             }
           });
       if (auto coSize = coVerts.size(); coSize)
@@ -3980,7 +4021,7 @@ struct CodimStepping : INode {
           // infNorm
           auto spanSize = res * alpha / (A.meanEdgeLength * 1);
 #endif
-#if 1
+#if 0
           if (spanSize > 1) { // mainly for reducing ccd pairs
             alpha /= spanSize;
             CCDfiltered = true;
