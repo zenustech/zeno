@@ -151,7 +151,7 @@ ColorWidget::ColorWidget(QWidget *parent)
 
 QSize ColorWidget::sizeHint() const
 {
-    return QSize(18, 18);
+    return ZenoStyle::dpiScaledSize(QSize(18, 18));
 }
 
 void ColorWidget::mouseReleaseEvent(QMouseEvent* event)

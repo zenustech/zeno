@@ -34,7 +34,6 @@ struct PrimFlattenTris : INode {
         prim->quads.clear();
         prim->polys.clear();
         prim->loops.clear();
-        prim->loop_uvs.clear();
     }
 };
 
@@ -85,8 +84,7 @@ struct PrimToList : INode {
             } else if (type == "polys") {
                 lst->arr.resize(prim->polys.size());
                 for (size_t i = 0; i < prim->polys.size(); i++) {
-                    auto [base, len] = prim->polys[i];
-                    lst->arr[i] = std::make_shared<NumericObject>(vec2i(base, len));
+                    lst->arr[i] = std::make_shared<NumericObject>(prim->polys[i]);
                 }
             } else if (type == "loops") {
                 lst->arr.resize(prim->loops.size());
@@ -173,8 +171,7 @@ struct PrimUpdateFromList : INode {
             } else if (type == "polys") {
                 prim->polys.resize(lst->arr.size());
                 for (size_t i = 0; i < prim->polys.size(); i++) {
-                    auto v = objectToLiterial<vec2i>(lst->arr[i]);
-                    prim->polys[i] = {v[0], v[1]};
+                    prim->polys[i] = objectToLiterial<vec2i>(lst->arr[i]);
                 }
             } else if (type == "loops") {
                 prim->loops.resize(lst->arr.size());

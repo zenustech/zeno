@@ -71,16 +71,16 @@ void Session::new_frame() {
     //impl->render_tasks.clear();
 }
 
-void Session::new_frame_offline(std::string path) {
-    //impl->render_tasks.push_back([this, path] {
-    auto newpath = zeno::format("{}/{:06d}.png", path, impl->curr_frameid);
-    //zeno::log_info("saving screen {}x{} to {}", impl->scene->camera->m_nx,
-                   //impl->scene->camera->m_ny, newpath);
-    do_screenshot(newpath, "png");
-    //});
-}
+//void Session::new_frame_offline(std::string path, int nsamples) {
+    ////impl->render_tasks.push_back([this, path] {
+    //auto newpath = zeno::format("{}/{:06d}.png", path, impl->curr_frameid);
+    ////zeno::log_info("saving screen {}x{} to {}", impl->scene->camera->m_nx,
+                   ////impl->scene->camera->m_ny, newpath);
+    //do_screenshot(newpath, "png", nsamples);
+    ////});
+//}
 
-void Session::do_screenshot(std::string path, std::string type) {
+void Session::do_screenshot(std::string path, std::string type, int nsamples) {
     auto hdrSize = std::map<std::string, int>{
         {"png", 1},
         {"jpg", 1},
@@ -92,7 +92,7 @@ void Session::do_screenshot(std::string path, std::string type) {
     auto ny = impl->scene->camera->m_ny;
 
     zeno::log_info("saving screenshot {}x{} to {}", nx, ny, path);
-    std::vector<char> pixels = impl->scene->record_frame_offline(hdrSize, 3);
+    std::vector<char> pixels = impl->scene->record_frame_offline(nsamples, hdrSize, 3);
 
     std::map<std::string, std::function<void()>>{
     {"png", [&] {
@@ -108,10 +108,10 @@ void Session::do_screenshot(std::string path, std::string type) {
         stbi_write_bmp(path.c_str(), nx, ny, 3, pixels.data());
     }},
     {"exr", [&] {
-        for (int line = 0; line != ny / 2; ++line) {
-            std::swap_ranges(pixels.begin() + 3 * nx * line,
-                             pixels.begin() + 3 * nx * (line + 1),
-                             pixels.begin() + 3 * nx * (ny - line - 1));
+        for (int line = 0; line < ny / 2; ++line) {
+            std::swap_ranges(pixels.begin() + hdrSize * 3 * nx * line,
+                             pixels.begin() + hdrSize * 3 * nx * (line + 1),
+                             pixels.begin() + hdrSize * 3 * nx * (ny - line - 1));
         }
         const char *err = nullptr;
         int ret = SaveEXR((float *)pixels.data(), nx, ny, 3, 1, path.c_str(), &err);

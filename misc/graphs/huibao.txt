@@ -1,0 +1,361 @@
+cd '/home/bate/zeno'
+ZENO_LOGLEVEL=info ZENO_OPEN=/tmp/a.zsg "/tmp/zeno-build/bin/zenoedit"
+bate@archer ~/zeno (master) $ cd '/home/bate/zeno'
+bate@archer ~/zeno (master) $ ZENO_LOGLEVEL=info ZENO_OPEN=/tmp/a.zsg "/tmp/zeno-build/bin/zenoedit"
+[I 03:18:48.538] (/home/bate/zeno/ui/zenoedit/zenoapplication.cpp:21) build date: Jul 17 2022 12:56:11
+[I 03:18:48.538] (/home/bate/zeno/ui/zenoedit/launch/ztcpserver.cpp:34) tcp server listend, port is 50535
+[I 03:18:48.626] (/home/bate/zeno/ui/zenoedit/zenomainwindow.cpp:40) ZENO_OPEN: /tmp/a.zsg
+[W 03:18:48.640] (/home/bate/zeno/ui/zenoedit/acceptor/modelacceptor.cpp:343) no such input socket dirAttrOut
+[I 03:18:48.828] (/home/bate/zeno/zenovis/src/Scene.cpp:35) OpenGL version: 3.2.0 NVIDIA 510.54
+[I 03:18:55.831] (/home/bate/zeno/ui/zenoedit/launch/ztcpserver.cpp:56) launching program...
+[W 03:18:55.840] (/home/bate/zeno/ui/zenoedit/launch/ztcpserver.cpp:52) A program is already running! Please kill first
+[I 03:18:55.937] (/home/bate/zeno/ui/zenoedit/launch/runnermain.cpp:163) connect succeed!
+[I 03:18:55.937] (/home/bate/zeno/ui/zenoedit/launch/ztcpserver.cpp:96) tcp connection succeed
+Stack trace (most recent call last):
+#28   Object "/usr/lib/libc.so.6", at 0x7fd9741fd30f, in __libc_start_call_main
+#27   Source "/home/bate/zeno/ui/zenoedit/main.cpp", line 18, in main
+         15:         int port = -1;
+         16:         if (argc >= 5 && !strcmp(argv[3], "-port"))
+         17:             port = atoi(argv[4]);
+      >  18:         return runner_main(atoi(argv[2]), port);
+         19:     }
+         20: #endif
+         21:     ZenoApplication a(argc, argv);
+#26   Source "/home/bate/zeno/ui/zenoedit/launch/runnermain.cpp", line 184, in runner_main
+        181:     std::back_insert_iterator<std::string> sit(progJson);
+        182:     std::copy(iit, eiit, sit);
+        183: 
+      > 184:     runner_start(progJson, sessionid);
+        185:     return 0;
+        186: }
+        187: #endif
+#25   Source "/home/bate/zeno/ui/zenoedit/launch/runnermain.cpp", line 121, in runner_start
+        119:         while (session->globalState->substepBegin())
+        120:         {
+      > 121:             zeno::GraphException::catched([&] {
+        122:                 graph->applyNodesToExec();
+        123:             }, *session->globalStatus);
+        124:             session->globalState->substepEnd();
+#24   Source "/home/bate/zeno/zeno/include/zeno/extra/GraphException.h", line 45, in catched<(anonymous namespace)::runner_start(const string&, int)::
+<lambda()> >
+         42:     template <class Func>
+         43:     static void catched(Func &&func, GlobalStatus &globalStatus) {
+         44:         try {
+      >  45:             func();
+         46:         } catch (GraphException const &ge) {
+         47:             globalStatus = ge.evalStatus();
+         48:         }
+#23   Source "/home/bate/zeno/ui/zenoedit/launch/runnermain.cpp", line 122, in operator()
+        119:         while (session->globalState->substepBegin())
+        120:         {
+        121:             zeno::GraphException::catched([&] {
+      > 122:                 graph->applyNodesToExec();
+        123:             }, *session->globalStatus);
+        124:             session->globalState->substepEnd();
+        125:             if (session->globalStatus->failed())
+#22   Source "/home/bate/zeno/zeno/src/core/Graph.cpp", line 99, in applyNodesToExec
+         97: ZENO_API void Graph::applyNodesToExec() {
+         98:     log_debug("{} nodes to exec", nodesToExec.size());
+      >  99:     applyNodes(nodesToExec);
+        100: }
+        101: 
+        102: ZENO_API void Graph::bindNodeInput(std::string const &dn, std::string const &ds,
+#21   Source "/home/bate/zeno/zeno/src/core/Graph.cpp", line 93, in applyNodes
+         90:     }};
+         91: 
+         92:     for (auto const &id: ids) {
+      >  93:         applyNode(id);
+         94:     }
+         95: }
+#20   Source "/home/bate/zeno/zeno/src/core/Graph.cpp", line 80, in applyNode
+         77:     }
+         78:     ctx->visited.insert(id);
+         79:     auto node = safe_at(nodes, id, "node name").get();
+      >  80:     GraphException::translated([&] {
+         81:         node->doApply();
+         82:     }, node->myname);
+         83: }
+#19   Source "/home/bate/zeno/zeno/include/zeno/extra/GraphException.h", line 34, in translated<zeno::Graph::applyNode(const string&)::<lambda()> >
+         31:     template <class Func>
+         32:     static void translated(Func &&func, std::string const &nodeName) {
+         33:         try {
+      >  34:             func();
+         35:         } catch (GraphException const &ge) {
+         36:             throw ge;
+         37:         } catch (...) {
+#18   Source "/home/bate/zeno/zeno/src/core/Graph.cpp", line 81, in operator()
+         78:     ctx->visited.insert(id);
+         79:     auto node = safe_at(nodes, id, "node name").get();
+         80:     GraphException::translated([&] {
+      >  81:         node->doApply();
+         82:     }, node->myname);
+         83: }
+#17   Source "/home/bate/zeno/zeno/src/core/INode.cpp", line 97, in doApply
+         94: ZENO_API void INode::doApply() {
+         95:     //if (checkApplyCondition()) {
+         96:     log_trace("--> enter {}", myname);
+      >  97:     preApply();
+         98:     log_trace("--> leave {}", myname);
+         99:     //}
+#16   Source "/home/bate/zeno/zeno/src/core/INode.cpp", line 70, in preApply
+         68: ZENO_API void INode::preApply() {
+         69:     for (auto const &[ds, bound]: inputBounds) {
+      >  70:         requireInput(ds);
+         71:     }
+         72: 
+         73:     log_debug("==> enter {}", myname);
+#15   Source "/home/bate/zeno/zeno/src/core/INode.cpp", line 88, in requireInput
+         85:     if (it == inputBounds.end())
+         86:         return false;
+         87:     auto [sn, ss] = it->second;
+      >  88:     graph->applyNode(sn);
+         89:     auto ref = graph->getNodeOutput(sn, ss);
+         90:     inputs[ds] = ref;
+         91:     return true;
+#14   Source "/home/bate/zeno/zeno/src/core/Graph.cpp", line 80, in applyNode
+         77:     }
+         78:     ctx->visited.insert(id);
+         79:     auto node = safe_at(nodes, id, "node name").get();
+      >  80:     GraphException::translated([&] {
+         81:         node->doApply();
+         82:     }, node->myname);
+         83: }
+#13   Source "/home/bate/zeno/zeno/include/zeno/extra/GraphException.h", line 34, in translated<zeno::Graph::applyNode(const string&)::<lambda()> >
+         31:     template <class Func>
+         32:     static void translated(Func &&func, std::string const &nodeName) {
+         33:         try {
+      >  34:             func();
+         35:         } catch (GraphException const &ge) {
+         36:             throw ge;
+         37:         } catch (...) {
+#12   Source "/home/bate/zeno/zeno/src/core/Graph.cpp", line 81, in operator()
+         78:     ctx->visited.insert(id);
+         79:     auto node = safe_at(nodes, id, "node name").get();
+         80:     GraphException::translated([&] {
+      >  81:         node->doApply();
+         82:     }, node->myname);
+         83: }
+#11   Source "/home/bate/zeno/zeno/src/core/INode.cpp", line 97, in doApply
+         94: ZENO_API void INode::doApply() {
+         95:     //if (checkApplyCondition()) {
+         96:     log_trace("--> enter {}", myname);
+      >  97:     preApply();
+         98:     log_trace("--> leave {}", myname);
+         99:     //}
+#10   Source "/home/bate/zeno/zeno/src/core/INode.cpp", line 70, in preApply
+         68: ZENO_API void INode::preApply() {
+         69:     for (auto const &[ds, bound]: inputBounds) {
+      >  70:         requireInput(ds);
+         71:     }
+         72: 
+         73:     log_debug("==> enter {}", myname);
+#9    Source "/home/bate/zeno/zeno/src/core/INode.cpp", line 88, in requireInput
+         85:     if (it == inputBounds.end())
+         86:         return false;
+         87:     auto [sn, ss] = it->second;
+      >  88:     graph->applyNode(sn);
+         89:     auto ref = graph->getNodeOutput(sn, ss);
+         90:     inputs[ds] = ref;
+         91:     return true;
+#8    Source "/home/bate/zeno/zeno/src/core/Graph.cpp", line 80, in applyNode
+         77:     }
+         78:     ctx->visited.insert(id);
+         79:     auto node = safe_at(nodes, id, "node name").get();
+      >  80:     GraphException::translated([&] {
+         81:         node->doApply();
+         82:     }, node->myname);
+         83: }
+#7    Source "/home/bate/zeno/zeno/include/zeno/extra/GraphException.h", line 34, in translated<zeno::Graph::applyNode(const string&)::<lambda()> >
+         31:     template <class Func>
+         32:     static void translated(Func &&func, std::string const &nodeName) {
+         33:         try {
+      >  34:             func();
+         35:         } catch (GraphException const &ge) {
+         36:             throw ge;
+         37:         } catch (...) {
+#6    Source "/home/bate/zeno/zeno/src/core/Graph.cpp", line 81, in operator()
+         78:     ctx->visited.insert(id);
+         79:     auto node = safe_at(nodes, id, "node name").get();
+         80:     GraphException::translated([&] {
+      >  81:         node->doApply();
+         82:     }, node->myname);
+         83: }
+#5    Source "/home/bate/zeno/zeno/src/core/INode.cpp", line 97, in doApply
+         94: ZENO_API void INode::doApply() {
+         95:     //if (checkApplyCondition()) {
+         96:     log_trace("--> enter {}", myname);
+      >  97:     preApply();
+         98:     log_trace("--> leave {}", myname);
+         99:     //}
+#4    Source "/home/bate/zeno/zeno/src/core/INode.cpp", line 78, in preApply
+         75: #ifdef ZENO_BENCHMARKING
+         76:         Timer _(myname);
+         77: #endif
+      >  78:         apply();
+         79:     }
+         80:     log_debug("==> leave {}", myname);
+         81: }
+#3    Source "/home/bate/zeno/zeno/src/nodes/neo/PrimGenerateONB.cpp", line 19, in apply
+         16:         auto bitanAttrOut = get_input2<std::string>("bitanAttrOut");
+         17:         auto writebackDir = get_input2<bool>("doNormalize");
+         18: 
+      >  19:         auto &dir = prim->verts.attr<vec3f>(dirAttr);
+         20:         auto &tan = prim->verts.add_attr<vec3f>(tanAttrOut);
+         21:         auto &bitan = prim->verts.add_attr<vec3f>(bitanAttrOut);
+#2    Source "/home/bate/zeno/zeno/include/zeno/types/AttrVector.h", line 345, in attr<zeno::vec<3, float> >
+        342:                 return values;
+        343:             }
+        344:         }
+      > 345:         auto &arr = attr(name);
+        346:         if (!std::holds_alternative<std::vector<T>>(arr))
+        347:             throw makeError<TypeError>(typeid(T), std::visit([&] (auto const &t) -> std::type_info const & { return typeid(std::decay_t<d
+ecltype(t[0])>); }, arr), "type of primitive attribute " + name);
+        348:         return std::get<std::vector<T>>(arr);
+#1    Source "/home/bate/zeno/zeno/include/zeno/types/AttrVector.h", line 372, in attr
+        369:         //_ensure_update();
+        370:         auto it = attrs.find(name);
+        371:         if (it == attrs.end())
+      > 372:             throw makeError<KeyError>(name, "attribute name of primitive");
+        373:         return it->second;
+        374:     }
+#0    Source "/home/bate/zeno/zeno/include/zeno/utils/Error.h", line 65, in makeError<zeno::KeyError, const std::__cxx11::basic_string<char, std::char
+_traits<char>, std::allocator<char> >&, char const (&)[28]>
+         63: template <class T = Error, class ...Ts>
+         64: static ErrorException makeError(Ts &&...ts) {
+      >  65:     return ErrorException(std::make_shared<T>(std::forward<Ts>(ts)...));
+         66: }
+         67: 
+         68: }
+(stdout ping test)
+[ZenoFX] define symbol: @pos dim 3
+[ZenoFX] define param: $DT dim 1
+[ZenoFX] define param: $F dim 1
+[ZenoFX] define param: $PI dim 1
+[ZenoFX] define param: $T dim 1
+[ZenoFX] auto-defined new attribute: @tmp with dim 1
+[ZenoFX] channel 0: @pos.0
+[ZenoFX] channel 1: @tmp.0
+[ZenoFX] define symbol: @pos dim 3
+[ZenoFX] define symbol: @tmp dim 1
+[ZenoFX] define param: $DT dim 1
+[ZenoFX] define param: $F dim 1
+[ZenoFX] define param: $PI dim 1
+[ZenoFX] define param: $T dim 1
+[ZenoFX] auto-defined new attribute: @u with dim 1
+[ZenoFX] channel 0: @tmp.0
+[ZenoFX] channel 1: @pos.1
+[ZenoFX] channel 2: @pos.0
+[ZenoFX] channel 3: @u.0
+[ZenoFX] define param : $DT dim 1
+[ZenoFX] define param : $F dim 1
+[ZenoFX] define param : $PI dim 1
+[ZenoFX] define param : $T dim 1
+[ZenoFX] parameter 0: $T.0
+[ZenoFX] (value 0.000000)
+[ZenoFX] output 0 : @result.0
+[ZenoFX] output 0 : @result. 0 = 0.000000
+[ZenoFX] define symbol: @pos dim 3
+[ZenoFX] define param: $DT dim 1
+[ZenoFX] define param: $F dim 1
+[ZenoFX] define param: $PI dim 1
+[ZenoFX] define param: $T dim 1
+[ZenoFX] auto-defined new attribute: @u with dim 1
+[ZenoFX] channel 0: @pos.0
+[ZenoFX] channel 1: @u.0
+[E 03:18:56.322] (/home/bate/zeno/zeno/include/zeno/extra/GraphException.h:19) ==> error during [ad5a6cd-PrimGenerateONB]: [KeyError] invalid key [dir
+] in [attribute name of primitive]
+
+[E 03:18:56.323] (/home/bate/zeno/ui/zenoedit/launch/viewdecode.cpp:102) reportStatus: error in ad5a6cd-PrimGenerateONB, message [KeyError] invalid ke
+y [dir] in [attribute name of primitive]
+[I 03:18:56.347] (/home/bate/zeno/ui/zenoedit/launch/ztcpserver.cpp:134) runner process normally exited with 0
+Stack trace (most recent call last):
+#31   Object "/usr/lib/libQt5Core.so.5.15.3", at 0x7f2d992e039a, in QEventLoop::exec(QFlags<QEventLoop::ProcessEventsFlag>)
+#30   Object "/usr/lib/libQt5Core.so.5.15.3", at 0x7f2d99334089, in QEventDispatcherGlib::processEvents(QFlags<QEventLoop::ProcessEventsFlag>)
+#29   Object "/usr/lib/libglib-2.0.so.0.7000.4", at 0x7f2d8fb57454, in g_main_context_iteration
+#28   Object "/usr/lib/libglib-2.0.so.0.7000.4", at 0x7f2d8fbb00f8, in 
+#27   Object "/usr/lib/libglib-2.0.so.0.7000.4", at 0x7f2d8fb59ee2, in g_main_context_dispatch
+#26   Object "/usr/lib/libQt5XcbQpa.so.5.15.3", at 0x7f2d86cf5f5f, in 
+#25   Object "/usr/lib/libQt5Gui.so.5.15.3", at 0x7f2d996a66e4, in QWindowSystemInterface::sendWindowSystemEvents(QFlags<QEventLoop::ProcessEventsFlag
+>)
+#24   Object "/usr/lib/libQt5Gui.so.5.15.3", at 0x7f2d996bb22f, in QGuiApplicationPrivate::processMouseEvent(QWindowSystemInterfacePrivate::MouseEvent
+*)
+#23   Object "/usr/lib/libQt5Core.so.5.15.3", at 0x7f2d992e80a9, in QCoreApplication::notifyInternal2(QObject*, QEvent*)
+#22   Object "/usr/lib/libQt5Widgets.so.5.15.3", at 0x7f2d99d5e1c5, in QApplicationPrivate::notify_helper(QObject*, QEvent*)
+#21   Object "/usr/lib/libQt5Widgets.so.5.15.3", at 0x7f2d99db44eb, in 
+#20   Object "/usr/lib/libQt5Widgets.so.5.15.3", at 0x7f2d99db2936, in 
+#19   Object "/usr/lib/libQt5Widgets.so.5.15.3", at 0x7f2d99d619be, in QApplicationPrivate::sendMouseEvent(QWidget*, QMouseEvent*, QWidget*, QWidget*,
+ QWidget**, QPointer<QWidget>&, bool, bool)
+#18   Object "/usr/lib/libQt5Core.so.5.15.3", at 0x7f2d992e80a9, in QCoreApplication::notifyInternal2(QObject*, QEvent*)
+#17   Object "/usr/lib/libQt5Widgets.so.5.15.3", at 0x7f2d99d62ff6, in QApplication::notify(QObject*, QEvent*)
+#16   Object "/usr/lib/libQt5Widgets.so.5.15.3", at 0x7f2d99d5e1c5, in QApplicationPrivate::notify_helper(QObject*, QEvent*)
+#15   Object "/usr/lib/libQt5Widgets.so.5.15.3", at 0x7f2d99d943d5, in QWidget::event(QEvent*)
+#14   Object "/usr/lib/libQt5Widgets.so.5.15.3", at 0x7f2d99e48997, in QAbstractButton::mouseReleaseEvent(QMouseEvent*)
+#13   Object "/usr/lib/libQt5Widgets.so.5.15.3", at 0x7f2d99e487c9, in 
+#12   Object "/usr/lib/libQt5Widgets.so.5.15.3", at 0x7f2d99e44fdb, in 
+#11   Object "/usr/lib/libQt5Widgets.so.5.15.3", at 0x7f2d99e43166, in QAbstractButton::clicked(bool)
+#10   Object "/usr/lib/libQt5Core.so.5.15.3", at 0x7f2d99318fae, in 
+#9    Source "/tmp/zeno-build/ui/zenoedit/zenoedit_autogen/4JHHTUERPF/moc_ztimeline.cpp", line 115, in qt_static_metacall [0x5571768fc5d2]
+        112:         case 3: { int _r = _t->sliderValueChanged((*reinterpret_cast< int(*)>(_a[1])));
+        113:             if (_a[0]) *reinterpret_cast< int*>(_a[0]) = std::move(_r); }  break;
+        114:         case 4: _t->alwaysChecked(); break;
+      > 115:         case 5: _t->run(); break;
+        116:         case 6: _t->kill(); break;
+        117:         case 7: _t->onTimelineUpdate((*reinterpret_cast< int(*)>(_a[1]))); break;
+        118:         case 8: _t->onFrameEditted(); break;
+#8    Source "/tmp/zeno-build/ui/zenoedit/zenoedit_autogen/4JHHTUERPF/moc_ztimeline.cpp", line 253, in run [0x5571768fcbf6]
+        250: // SIGNAL 5
+        251: void ZTimeline::run()
+        252: {
+      > 253:     QMetaObject::activate(this, &staticMetaObject, 5, nullptr);
+        254: }
+        255: 
+        256: // SIGNAL 6
+#7    Object "/usr/lib/libQt5Core.so.5.15.3", at 0x7f2d99318fae, in 
+#6    Source "/tmp/zeno-build/ui/zenoedit/zenoedit_autogen/6WEQZVSXKD/moc_viewportwidget.cpp", line 174, in qt_static_metacall [0x5571768fd0a7]
+        171:         case 0: _t->frameUpdated((*reinterpret_cast< int(*)>(_a[1]))); break;
+        172:         case 1: _t->updateFrame((*reinterpret_cast< const QString(*)>(_a[1]))); break;
+        173:         case 2: _t->updateFrame(); break;
+      > 174:         case 3: _t->onRun(); break;
+        175:         case 4: _t->onKill(); break;
+        176:         case 5: _t->onModelDataChanged(); break;
+        177:         case 6: _t->onPlayClicked((*reinterpret_cast< bool(*)>(_a[1]))); break;
+#5    Source "/home/bate/zeno/ui/zenoedit/viewport/viewportwidget.cpp", line 573, in onRun [0x5571769e4a07]
+        571: void DisplayWidget::onRun()
+        572: {
+      > 573:     m_mainWin->clearErrorMark();
+        574: 
+        575:     QPair<int, int> fromTo = m_timeline->fromTo();
+        576:     int beginFrame = fromTo.first;
+#4    Source "/home/bate/zeno/ui/zenoedit/zenomainwindow.cpp", line 637, in clearErrorMark [0x5571769f1cd4]
+        634:     {
+        635:         ZenoSubGraphScene* pScene = qobject_cast<ZenoSubGraphScene*>(pModel->scene(idx));
+        636:         if (pScene) {
+      > 637:             pScene->clearMark();
+        638:         }
+        639:     }
+        640: }
+#3    Source "/home/bate/zeno/ui/zenoedit/nodesys/zenosubgraphscene.cpp", line 322, in clearMark [0x5571769a68d4]
+        319: {
+        320:     for (ZenoNode* pNode : m_errNodes)
+        321:     {
+      > 322:         pNode->markError(false);
+        323:     }
+        324: }
+#2    Source "/home/bate/zeno/ui/zenoedit/nodesys/zenonode.cpp", line 1322, in markError [0x557176996a39]
+       1319:     if (m_bError)
+       1320:         m_headerWidget->setColors(false, QColor(200, 84, 79), QColor(), QColor());
+       1321:     else
+      >1322:         m_headerWidget->setColors(false, QColor(83, 96, 147), QColor(), QColor());
+       1323:     update();
+       1324: }
+#1    Source "/home/bate/zeno/ui/zenoedit/nodesys/zenobackgrounditem.cpp", line 113, in setColors [0x557176985ab2]
+        111: void ZenoBackgroundWidget::setColors(bool bAcceptHovers, const QColor &clrNormal, const QColor &clrHovered, const QColor &clrSelected)
+        112: {
+      > 113:     setAcceptHoverEvents(bAcceptHovers);
+        114:     m_clrNormal = clrNormal;
+        115:     m_clrHovered = clrHovered;
+        116:     m_clrSelected = clrSelected;
+#0    Object "/usr/lib/libQt5Widgets.so.5.15.3", at 0x7f2d9a054344, in QGraphicsItem::setAcceptHoverEvents(bool)
+Segmentation fault (Signal sent by the kernel [(nil)])
+Segmentation fault (core dumped)
+bate@archer ~/zeno (master) $ 

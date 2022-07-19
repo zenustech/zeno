@@ -17,6 +17,9 @@ struct vec4{
     {
         x = _x; y = _x; z = _x; w = _x;
     }
+    explicit __forceinline__ __device__ operator float() const {
+        return x;
+    }
     vec4() = default;
     __forceinline__ __device__ operator float4() const {
         return make_float4(x, y, z, w);

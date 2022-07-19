@@ -172,3 +172,30 @@ sudo strip --remove-section=.note.ABI-tag /usr/lib64/libQt5Core.so.5
 ```
 
 Reference: https://askubuntu.com/questions/1034313/ubuntu-18-4-libqt5core-so-5-cannot-open-shared-object-file-no-such-file-or-dir
+
+## CUDA problem
+
+### Q
+
+CMake error when I set `-DZENO_WITH_CUDA:BOOL=ON`:
+
+```
+CMake Error at C:/Program Files/CMake/share/cmake-3.23/Modules/CMakeDetermineCompilerId.cmake:491 (message):
+  No CUDA toolset found.
+```
+
+### A
+
+Are you using Windows? Then you must install the **CUDA Visual Studio integration** first. And you cannot use MinGW.
+
+### Q
+
+The OptiX renderer failed to work on my computer.
+
+### A
+
+OptiX requires RTX20xx and above (hardware accelerated ray-tracing). And make sure you have installed NVIDIA's latest CUDA & OpenGL drivers.
+
+Also check if you have **switched to `High-Performance`** in NVIDIA settings panel.
+Laptop users usually have dual-cards, and Windows use the stupid Intel card by default (so called `Power-Saving`), which is extremely slow.
+You need to switch to the `High-Performance` in the stupid Windows GUI settings, so that Windows will start Zeno with NVIDIA card by default.

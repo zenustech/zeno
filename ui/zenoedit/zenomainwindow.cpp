@@ -7,6 +7,7 @@
 #include "nodesview/zenographseditor.h"
 #include "panel/zenodatapanel.h"
 #include "panel/zenoproppanel.h"
+#include "panel/zenospreadsheet.h"
 #include "panel/zlogpanel.h"
 #include "timeline/ztimeline.h"
 #include "tmpwidgets/ztoolbar.h"
@@ -57,6 +58,19 @@ void ZenoMainWindow::init()
     pal.setColor(QPalette::Window, QColor(11, 11, 11));
     setAutoFillBackground(true);
     setPalette(pal);
+
+    QString qss = "\
+        QMainWindow::separator {\
+            background: black;\
+            width: 3px;\
+            height: 3px;\
+        }\
+        \
+        QMainWindow::separator:hover {\
+            background: rgb(0,127,212);\
+        }\
+    ";
+    setStyleSheet(qss);
 }
 
 void ZenoMainWindow::initMenu() {
@@ -68,7 +82,7 @@ void ZenoMainWindow::initMenu() {
     {
         QAction *pAction = new QAction(tr("New"), pFile);
         pAction->setCheckable(false);
-        pAction->setShortcut(QKeySequence(tr("Ctrl+N")));
+        pAction->setShortcut(QKeySequence(("Ctrl+N")));
         //QMenu *pNewMenu = new QMenu;
         //QAction *pNewGraph = pNewMenu->addAction("New Scene");
         connect(pAction, SIGNAL(triggered()), this, SLOT(onNewFile()));
@@ -79,31 +93,31 @@ void ZenoMainWindow::initMenu() {
 
         pAction = new QAction(tr("Open"), pFile);
         pAction->setCheckable(false);
-        pAction->setShortcut(QKeySequence(tr("Ctrl+O")));
+        pAction->setShortcut(QKeySequence(("Ctrl+O")));
         connect(pAction, SIGNAL(triggered()), this, SLOT(openFileDialog()));
         pFile->addAction(pAction);
 
         pAction = new QAction(tr("Save"), pFile);
         pAction->setCheckable(false);
-        pAction->setShortcut(QKeySequence(tr("Ctrl+S")));
+        pAction->setShortcut(QKeySequence(("Ctrl+S")));
         connect(pAction, SIGNAL(triggered()), this, SLOT(save()));
         pFile->addAction(pAction);
 
         pAction = new QAction(tr("Save As"), pFile);
         pAction->setCheckable(false);
-        pAction->setShortcut(QKeySequence(tr("Ctrl+Shift+S")));
+        pAction->setShortcut(QKeySequence(("Ctrl+Shift+S")));
         connect(pAction, SIGNAL(triggered()), this, SLOT(saveAs()));
         pFile->addAction(pAction);
 
         pAction = new QAction(tr("Import"), pFile);
         pAction->setCheckable(false);
-        pAction->setShortcut(QKeySequence(tr("Ctrl+Shift+O")));
+        pAction->setShortcut(QKeySequence(("Ctrl+Shift+O")));
         connect(pAction, SIGNAL(triggered()), this, SLOT(importGraph()));
         pFile->addAction(pAction);
 
         pAction = new QAction(tr("Export"), pFile);
         pAction->setCheckable(false);
-        pAction->setShortcut(QKeySequence(tr("Ctrl+Shift+E")));
+        pAction->setShortcut(QKeySequence(("Ctrl+Shift+E")));
         connect(pAction, SIGNAL(triggered()), this, SLOT(exportGraph()));
         pFile->addAction(pAction);
 
@@ -135,7 +149,7 @@ void ZenoMainWindow::initMenu() {
         pEdit->addAction(pAction);
     }
 
-    QMenu *pRender = new QMenu(tr("Render"));
+    //QMenu *pRender = new QMenu(tr("Render"));
 
     QMenu *pView = new QMenu(tr("View"));
     {
@@ -230,20 +244,39 @@ void ZenoMainWindow::initMenu() {
         }
     }
 
-    QMenu *pWindow = new QMenu(tr("Window"));
+    //QMenu *pWindow = new QMenu(tr("Window"));
 
     QMenu *pHelp = new QMenu(tr("Help"));
     {
         QAction *pAction = new QAction(tr("Send this File"));
         connect(pAction, SIGNAL(triggered(bool)), this, SLOT(onFeedBack()));
         pHelp->addAction(pAction);
+
+        pHelp->addSeparator();
+
+        pAction = new QAction(tr("English / Chinese"), this);
+        pAction->setCheckable(true);
+        {
+            QSettings settings("ZenusTech", "Zeno");
+            QVariant use_chinese = settings.value("use_chinese");
+            pAction->setChecked(use_chinese.isNull() || use_chinese.toBool());
+        }
+        pHelp->addAction(pAction);
+        connect(pAction, &QAction::triggered, this, [=]() {
+            QSettings settings("ZenusTech", "Zeno");
+            settings.setValue("use_chinese", pAction->isChecked());
+            QMessageBox msg(QMessageBox::Information, "Language",
+                        tr("Please restart Zeno to apply changes."),
+                        QMessageBox::Ok, this);
+            msg.exec();
+        });
     }
 
     pMenuBar->addMenu(pFile);
     pMenuBar->addMenu(pEdit);
-    pMenuBar->addMenu(pRender);
+    //pMenuBar->addMenu(pRender);
     pMenuBar->addMenu(pView);
-    pMenuBar->addMenu(pWindow);
+    //pMenuBar->addMenu(pWindow);
     pMenuBar->addMenu(pHelp);
     pMenuBar->setProperty("cssClass", "mainWin");
 
@@ -510,11 +543,7 @@ void ZenoMainWindow::onDockSwitched(DOCK_TYPE type)
             break;
         }
         case DOCK_NODE_DATA: {
-            QWidget *pWidget = new QWidget;
-            QPalette pal = pWidget->palette();
-            pal.setColor(QPalette::Window, QColor(0, 0, 255));
-            pWidget->setAutoFillBackground(true);
-            pWidget->setPalette(pal);
+            ZenoSpreadsheet *pWidget = new ZenoSpreadsheet;
             pDock->setWidget(type, pWidget);
             break;
         }
@@ -593,9 +622,9 @@ void ZenoMainWindow::onFeedBack()
     }
 }
 
-void ZenoMainWindow::onRunTriggered()
+void ZenoMainWindow::clearErrorMark()
 {
-    //clear all mark at every scene.
+    //clear all error mark at every scene.
     auto docks = findChildren<ZenoDockWidget*>(QString(), Qt::FindDirectChildrenOnly);
 
     IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
@@ -697,5 +726,13 @@ void ZenoMainWindow::onNodesSelected(const QModelIndex &subgIdx, const QModelInd
     auto docks = findChildren<ZenoDockWidget *>(QString(), Qt::FindDirectChildrenOnly);
     for (ZenoDockWidget *dock : docks) {
         dock->onNodesSelected(subgIdx, nodes, select);
+    }
+}
+
+void ZenoMainWindow::onPrimitiveSelected(const std::unordered_set<std::string>& primids) {
+    //dispatch to all property panel.
+    auto docks = findChildren<ZenoDockWidget *>(QString(), Qt::FindDirectChildrenOnly);
+    for (ZenoDockWidget *dock : docks) {
+        dock->onPrimitiveSelected(primids);
     }
 }

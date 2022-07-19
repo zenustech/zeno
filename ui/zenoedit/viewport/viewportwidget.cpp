@@ -15,7 +15,7 @@
 #include <zeno/types/UserData.h>
 #include <viewport/zenovis.h>
 #include <util/log.h>
-
+#include <zenoui/style/zenostyle.h>
 #include <nodesys/nodesmgr.h>
 
 #include <cmath>
@@ -311,6 +311,8 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
             }
             scene->selected.insert(passed_prim.begin(), passed_prim.end());
         }
+        ZenoMainWindow* mainWin = zenoApp->getMainWindow();
+        mainWin->onPrimitiveSelected(scene->selected);
     }
 }
 
@@ -378,18 +380,24 @@ void ViewportWidget::resizeGL(int nx, int ny)
 void ViewportWidget::paintGL()
 {
     Zenovis::GetInstance().paintGL();
-    checkRecord();
+    if (!record_path.empty() /*&& f <= frame_end*/) //py has bug: frame_end not initialized.
+    {
+        int f = Zenovis::GetInstance().getCurrentFrameId();
+        auto record_file = zeno::format("{}/{:06d}.png", record_path, f);
+        int nsamples = 16;
+        checkRecord(record_file, record_res, nsamples);
+    }
 }
 
-void ViewportWidget::checkRecord()
+void ViewportWidget::checkRecord(std::string a_record_file, QVector2D a_record_res, int a_nsamples)
 {
-    int f = Zenovis::GetInstance().getCurrentFrameId();
     if (!record_path.empty() /*&& f <= frame_end*/) //py has bug: frame_end not initialized.
     {
         QVector2D oldRes = m_camera->res();
-        m_camera->setRes(record_res);
+        m_camera->setRes(a_record_res);
         m_camera->updatePerspective();
-        Zenovis::GetInstance().recordGL(record_path);
+        auto extname = QFileInfo(QString::fromStdString(a_record_file)).suffix().toStdString();
+        Zenovis::GetInstance().getSession()->do_screenshot(a_record_file, extname, a_nsamples);
         m_camera->setRes(oldRes);
         m_camera->updatePerspective();
         //if f == self.frame_end:
@@ -527,7 +535,6 @@ DisplayWidget::DisplayWidget(ZenoMainWindow* pMainWin)
     connect(m_timeline, SIGNAL(playForward(bool)), this, SLOT(onPlayClicked(bool)));
 	connect(m_timeline, SIGNAL(sliderValueChanged(int)), this, SLOT(onSliderValueChanged(int)));
 	connect(m_timeline, SIGNAL(run()), this, SLOT(onRun()));
-    connect(m_timeline, SIGNAL(run()), pMainWin, SLOT(onRunTriggered()));
     connect(m_timeline, SIGNAL(alwaysChecked()), this, SLOT(onRun()));
     connect(m_timeline, SIGNAL(kill()), this, SLOT(onKill()));
 
@@ -552,7 +559,7 @@ void DisplayWidget::init()
 
 QSize DisplayWidget::sizeHint() const
 {
-    return QSize(12, 400);
+    return ZenoStyle::dpiScaledSize(QSize(12, 400));
 }
 
 void DisplayWidget::updateFrame(const QString &action)
@@ -612,6 +619,8 @@ void DisplayWidget::onSliderValueChanged(int value)
 
 void DisplayWidget::onRun()
 {
+    m_mainWin->clearErrorMark();
+
     QPair<int, int> fromTo = m_timeline->fromTo();
     int beginFrame = fromTo.first;
     int endFrame = fromTo.second;

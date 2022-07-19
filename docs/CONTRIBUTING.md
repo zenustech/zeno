@@ -43,11 +43,19 @@ For bug reports, the *console output* is very helpful to us, make sure you attac
 
 Hint: you may use triple back quotes to insert pretty-shown code (for console output) like this:
 
-```md
 \`\`\`
+
+This is the Zeno log...
+
+[ERROR] file not found: foo.txt
+
+\`\`\`
+
+After submit the issue, it would be displayed as:
+
+```
 This is the Zeno log...
 [ERROR] file not found: foo.txt
-\`\`\`
 ```
 
 ## Reproduce your issue with the minimal graph
@@ -248,7 +256,7 @@ We generally follows the [Google C++ Style Guide](https://google.github.io/style
 - We allow implicit conversions when used properly
 - We allow exceptions as we widely adopted smart pointers for exception-safety
 - We avoid using STL streams (`std::cout` and so on) -- use `zeno::format` and `zeno::log_info` instead
-- We don't add `Copyright blah blah` to codebase since we're programmers, not lawyers
+- We don't add `Copyright blah blah` to codebase since we're programmers, not lawyers :)
 - We mainly use `smallCamelCase` for functions, `underline_case` for variables
 - We don't add trialling underscope like `m_google_style_`, we use `m_zeno_style`
 
@@ -256,20 +264,21 @@ Code style is not forced, we also won't format every code merged in to the repo.
 
 But it would be great if you could follow them for others to understand your code better and review your PR faster.
 
-Example:
+For example, suppose this is the content of `zeno/src/funcs/my_demo.cpp`:
 ```cpp
-#include <vector>            // system headers should use '<>' brackets
+#include <zeno/funcs/my_demo.h>      // first of all, include the decleration header of this .cpp file
+#include <vector>                    // secondly, system headers should use '<>' brackets
 #include <memory>
-#include <tbb/parallel_for_each.h>
-#include <zeno/utils/log.h>    // project headers should also use '<>' for absolute pathing
+#include <string>
+#include <tbb/parallel_for_each.h>   // third-party library headers, link it in CMakeLists.txt before use
+#include <zeno/utils/log.h>          // finally, project headers should also use '<>' for absolute pathing
 #include <zeno/utils/format.h>
 
 // never 'using namespace std', think about std::data, std::size, std::ref, std::ws, std::tm, std::next
 
 namespace zeno {  // all our code should be wrapped with 'namespace zeno'
 
-namespace myutils {   // '{' should stay in same line
-                      // and namespaces does not indent
+namespace myutils {   // '{' should always stay in same line, and namespaces does not indent
 
 namespace {        // use an anonymous namespace for static functions
 
@@ -290,38 +299,81 @@ auto staticFunc(int arg) {   // this function is visible only to this file
     return x;
 }
 
+// 'class' instead of 'typename' for type argument
+template <class Type>
+void templateFunc(Type value) {
+   using T = typename Type::value_type;   // perfer 'using' instead of 'typedef' for aliasing
+}
+
+#define ZENO_YOUR_USEFUL_MACRO 1   // macro names should have ZENO_ prefix to prevent name conflict
+
 }   // end of anonymous namespace
 
-std::shared_ptr<types::MyType> globalFunc(int arg) {   // this function is visible globally
+std::shared_ptr<MyType> globalFunc(std::string const &arg) {   // this function is visible globally
    auto ret = staticFunc(arg);
-   auto ptr = std::make_shared<zeno::MyType>();   // use smart pointers instead of naked new/delete
-   ptr->some_attr = std::move(ret);               // use std::move for optimal zero-copying
+   if (ret.size() > 42) {                      // have space between 'if' and '('
+       return nullptr;
+   }
+   auto ptr = std::make_shared<MyType>();      // use smart pointers instead of naked new/delete
+   // std::shared_ptr<MyType> ptr(new MyType); // DO NOT USE THIS, use make_shared/make_unique instead
+
+   ptr->some_attr = std::move(ret);            // use std::move for optimal zero-copying
    return ptr;
 }
 
 }   // end of namespace myutils
+```
 
-// naming convensions example:
+Then this is the content of `zeno/include/zeno/funcs/my_demo.h`:
+```cpp
+#pragma once     // always use '#pragma once' instead of '#ifndef' guards
 
+#include <memory>
+#include <string>
+
+namespace zeno {
+
+struct MyType {   // perfer 'struct' instead of 'class'
+   int m_age{};   // zero-initialize the POD members for security
+   std::string m_name;
+};
+
+namespace myutils {
+
+// 'const' qualifer should be on the right-side of type 'std::string'
+// '&' or '*' should be attached to the variable name 'arg'
+std::shared_ptr<MyType> globalFunc(std::string const &arg);
+
+}  // end of namespace myutils
+
+}  // end of namespace zeno
+```
+
+Idendifier naming convensions example:
+```cpp
 namespace awesomenamespace {
 
-int gAwesomeGlobal = 233;
+int g_awesomeGlobal = 233;
 
 void awesomeFunction(float awesomeArgument);
 
 struct AwesomeClass {
 private:
-    int mAwesomeMember = 0;
-    static int gAwesomeStaticMember = 1;
+    int m_awesomeMember = 0;
+    static int g_awesomeStaticMember = 1;
 
 public:
-    void awesomeMethod() {
-        int awesomeLocal = mAwesomeMember;
-        awesomeLocal *= gAwesomeStaticMember;
-        mAwesomeMember = awesomeLocal;
+    template <class AwesomeTemplateArgument = void, int kAwesomeNumber = 42>
+    void awesomeMethod(int awesomeArgument = 0) const {
+        int awesomeLocal = m_awesomeMember;
+        awesomeLocal *= g_awesomeStaticMember;
+        awesomeLocal += awesomeArgument;
+        m_awesomeMember = awesomeLocal;
     }
 
-    static void awesomeStaticMethod();
+    static int awesomeStaticMethod() {
+        return g_awesomeStaticMember;
+    }
 };
 
 #define AWESOME_MACRO 3.14f

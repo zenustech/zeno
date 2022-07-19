@@ -42,7 +42,7 @@ ZENDEFNODE(PrimitiveAddAttr,
     }, /* outputs: */ {
     "prim",
     }, /* params: */ {
-    {"string", "name", "pos"},
+    {"string", "name", "clr"},
     {"enum float float3", "type", "float3"},
     }, /* category: */ {
     "primitive",
@@ -64,7 +64,7 @@ ZENDEFNODE(PrimitiveDelAttr,
     }, /* outputs: */ {
     "prim",
     }, /* params: */ {
-    {"string", "name", "pos"},
+    {"string", "name", "nrm"},
     }, /* category: */ {
     "primitive",
     } });

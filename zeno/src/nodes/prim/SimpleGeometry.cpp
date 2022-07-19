@@ -45,55 +45,25 @@
         sin(az), cos(az), 0,                    \
         0, 0, 1);
 
+#define NORMUV_PARM                             \
+    {"bool", "hasNormal", "0"},                 \
+    {"bool", "hasVertUV", "0"},                 \
+    {"bool", "isFlipFace", "0"},
+
+#define NORMUV_CIHOU                            \
+    if (!get_input2<bool>("isFlipFace"))        \
+        cc4::flipPrimFaceOrder(prim.get());     \
+    if (!get_input2<bool>("hasNormal"))         \
+        prim->verts.attrs.erase("nrm");         \
+    if (!get_input2<bool>("hasVertUV"))         \
+        prim->verts.attrs.erase("uv");
+
 namespace zeno {
 namespace {
 namespace cc4{
     static void flipPrimFaceOrder(PrimitiveObject *prim) {
         for (auto &ind: prim->tris) {
             std::swap(ind[1], ind[2]);
-        }
-    }
-    static std::vector<zeno::vec3f> genindi(int div1, int div2, int inc){
-        std::vector<zeno::vec3f> ind;
-
-        for (int i = 0; i < div1-1; i++)
-        {
-            int i1, i2, i3, i4;
-            i1 = i+inc;
-            i2 = i1+1;
-            i3 = i1+div1;
-            i4 = i3+1;
-            ind.emplace_back(i1, i3, i2);
-            ind.emplace_back(i2, i3, i4);
-            for (int j = 0; j < div2-2; j++)
-            {
-                i1 = div1*(j+1)+i+inc;
-                i2 = i1+1;
-                i3 = i1+div1;
-                i4 = i3+1;
-                ind.emplace_back(i1, i3, i2);
-                ind.emplace_back(i2, i3, i4);
-            }
-        }
-
-        return ind;
-    }
-
-    static std::vector<zeno::vec3f> igenindi(std::vector<zeno::vec3f>& in, int inc)
-    {
-        std::vector<zeno::vec3f> out;
-        for (int i = 0; i < in.size(); i++)
-        {
-            out.push_back(in[i]+inc);
-        }
-
-        return out;
-    }
-
-    static void appind(std::vector<zeno::vec3f> in, zeno::AttrVector<zeno::vec3i>& out){
-        for (int i = 0; i < in.size(); i++)
-        {
-            out.push_back(in[i]);
         }
     }
 }
@@ -114,10 +84,12 @@ struct CreateCube : zeno::INode {
         auto scale = get_input2<zeno::vec3f>("scaleSize");
         ROTATE_MATRIX
 
-        auto &pos = prim->verts;
-        auto &tris = prim->tris;
-        auto &uv = prim->verts.add_attr<zeno::vec3f>("uv");
-        auto &norm = prim->verts.add_attr<zeno::vec3f>("nrm");
+        auto &verts = prim->verts;
+        auto &indis = prim->tris;
+        auto &nors = prim->verts.add_attr<zeno::vec3f>("nrm");
+        auto &uv1 = prim->tris.add_attr<zeno::vec3f>("uv0");
+        auto &uv2 = prim->tris.add_attr<zeno::vec3f>("uv1");
+        auto &uv3 = prim->tris.add_attr<zeno::vec3f>("uv2");
 
         if(div_w <= 2)
             div_w = 2;
@@ -126,122 +98,305 @@ struct CreateCube : zeno::INode {
         if(div_d <= 2)
             div_d = 2;
 
-        float sw = 1.0 / (div_w-1);
-        float sh = 1.0 / (div_h-1);
-        float sd = 1.0 / (div_d-1);
-
-        std::vector<zeno::vec3f> fverts;
-        std::vector<zeno::vec3f> findis;
-        std::vector<zeno::vec3f> bverts;
-        std::vector<zeno::vec3f> bindis;
-        std::vector<zeno::vec3f> lverts;
-        std::vector<zeno::vec3f> lindis;
-        std::vector<zeno::vec3f> rverts;
-        std::vector<zeno::vec3f> rindis;
-        std::vector<zeno::vec3f> uverts;
-        std::vector<zeno::vec3f> uindis;
-        std::vector<zeno::vec3f> dverts;
-        std::vector<zeno::vec3f> dindis;
-
-        std::vector<zeno::vec3f> verts;
-        std::vector<zeno::vec3f> indics;
-        std::vector<zeno::vec3f> uvs;
-        std::vector<zeno::vec3f> normal;
-
+        float sw = 1.0f / (div_w-1);
+        float sh = 1.0f / (div_h-1);
+        float sd = 1.0f / (div_d-1);
+        float sc=0.25f;
 
         for (int i = 0; i < div_w; i++)
         {
             for (int j = 0; j < div_h; j++)
             {
-                auto p = zeno::vec3f(0.5-i*sw, 0.5-j*sh, -0.5);
-                fverts.push_back(p);
-                verts.push_back(p);
-                uvs.emplace_back(0.375+i*sw*0.25, 0.75+j*sh*0.25, 0);
-                normal.emplace_back(0,0,-1);
+                for (int k = 0; k < div_d; k++)
+                {
+                    auto p = zeno::vec3f(
+                        0.5-i*sw, -0.5+j*sh, 0.5-k*sd);
+
+                    if(j == 0 || j == div_h-1 || i == 0 || i == div_w-1 || k == 0 || k == div_d-1){
+                        verts.push_back(p);
+                        nors.emplace_back(0.0f,0.0f,0.0f);
+                    }
+                }
             }
         }
-        for (int i = 0; i < fverts.size(); i++)
+
+        int le =div_h*div_d;
+        int rls=verts.size()-div_d;
+        int pp=(div_h-1)*div_d;
+        int pcircle=le-(div_h-2)*(div_d-2);
+        int inc=verts.size()-div_h*div_d;
+
+        for (int j = 0; j < div_h-1; j++)
         {
-            auto fv = fverts[i];
-            auto p = zeno::vec3f(fv[0], -fv[1], 0.5);
-            bverts.push_back(p);
-            verts.push_back(p);
-            uvs.emplace_back(uvs[i][0],uvs[i][1]-0.5, 0);
-            normal.emplace_back(0,0,1);
-        }
-        for (int i = 0; i < div_w; i++)
-        {
-            for (int j = 0; j < div_d; j++)
+            for (int k = 0; k < div_d-1; k++)
             {
-                auto p = zeno::vec3f(0.5-i*sw, 0.5, 0.5-j*sd);
-                uverts.push_back(p);
-                verts.push_back(p);
-                uvs.emplace_back(0.375+i*sw*0.25, 0.5+j*sd*0.25, 0);
-                normal.emplace_back(0,1,0);
+                int a =j*div_h+k*div_d;
+
+                int i1,i2,i3,i4;
+                i1=k+j*(div_d);
+                i2=i1+1;
+                i3=i2+(div_d-1);
+                i4=i3+1;
+
+
+                float u1,v1,u2,v2,u3,v3,u4,v4;
+                zeno::vec3f uvw1,uvw2,uvw3,uvw4;
+
+                v1=1.0f-k*sd;
+                u1=1.0f-sh*j;
+                u2=u1;
+                v2=v1-sd;
+                u3=u1-sh;
+                v3=v1;
+                u4=u3;
+                v4=v2;
+
+                uvw1=zeno::vec3f(0.125+u1*sc,v1*sc,0);
+                uvw2=zeno::vec3f(0.125+u2*sc,v2*sc,0);
+                uvw3=zeno::vec3f(0.125+u3*sc,v3*sc,0);
+                uvw4=zeno::vec3f(0.125+u4*sc,v4*sc,0);
+
+
+
+                // Left
+                indis.emplace_back(i1,i3,i2);
+                indis.emplace_back(i4,i2,i3);
+                uv1.push_back(uvw1);uv2.push_back(uvw3);uv3.push_back(uvw2);
+                uv1.push_back(uvw4);uv2.push_back(uvw2);uv3.push_back(uvw3);
+
+                uvw1=zeno::vec3f((1.0f-u1)*sc+0.625f,v1*sc,0);
+                uvw2=zeno::vec3f((1.0f-u2)*sc+0.625f,v2*sc,0);
+                uvw3=zeno::vec3f((1.0f-u3)*sc+0.625f,v3*sc,0);
+                uvw4=zeno::vec3f((1.0f-u4)*sc+0.625f,v4*sc,0);
+
+                int i1_=i1+inc,i2_=i2+inc,i3_=i3+inc,i4_=i4+inc;
+
+                if(k!=div_d-2&&j!=div_h-2){
+                    nors[i4]=zeno::vec3f(1,0,0);
+                    nors[i4_]=zeno::vec3f(-1,0,0);
+                }
+
+                // Right
+                indis.emplace_back(i1_,i2_,i3_);
+                indis.emplace_back(i4_,i3_,i2_);
+                uv1.push_back(uvw1);uv2.push_back(uvw2);uv3.push_back(uvw3);
+                uv1.push_back(uvw4);uv2.push_back(uvw3);uv3.push_back(uvw2);
             }
         }
-        int ui1 = fverts.size()*2;
-        for (int i = 0; i < uverts.size(); i++)
+
+
+        for (int j = -1; j < div_w-2; j++)
         {
-            auto uv = uverts[i];
-            auto p = zeno::vec3f(uv[0], -uv[1], -uv[2]);
-            dverts.push_back(p);
-            verts.push_back(p);
-            uvs.emplace_back(uvs[i+ui1][0],uvs[i+ui1][1]-0.5, 0);
-            normal.emplace_back(0,-1,0);
-        }
-        for (int i = 0; i < div_h; i++)
-        {
-            for (int j = 0; j < div_d; j++)
+            for (int i = 0; i < div_d-1; i++)
             {
-                auto p = zeno::vec3f(0.5, -0.5+i*sh, 0.5-j*sd);
-                lverts.push_back(p);
-                verts.push_back(p);
-                uvs.emplace_back(0.125+i*sh*0.25, j*sd*0.25, 0);
-                normal.emplace_back(1,0,0);
+                int i1,i2,i3,i4;
+                i1=i+le+j*pcircle;
+                i2=i1+pcircle;
+                if(j==-1)
+                    i1=i;
+                i3=i1+1;
+                i4=i2+1;
+
+                float u1,v1,u2,v2,u3,v3,u4,v4;
+                zeno::vec3f uvw1,uvw2,uvw3,uvw4;
+
+                u1=sw*(j+1);
+                v1=1.0f-i*sd;
+                u2=u1+sw;
+                v2=v1;
+                u3=u1;
+                v3=v1-sd;
+                u4=u2;
+                v4=v3;
+
+                uvw1=zeno::vec3f(0.375f+u1*sc,v1*sc,0);
+                uvw2=zeno::vec3f(0.375f+u2*sc,v2*sc,0);
+                uvw3=zeno::vec3f(0.375f+u3*sc,v3*sc,0);
+                uvw4=zeno::vec3f(0.375f+u4*sc,v4*sc,0);
+
+                // Bottom
+                indis.emplace_back(i1,i3,i2);
+                indis.emplace_back(i4,i2,i3);
+                uv1.push_back(uvw1);uv2.push_back(uvw3);uv3.push_back(uvw2);
+                uv1.push_back(uvw4);uv2.push_back(uvw2);uv3.push_back(uvw3);
+
+                int i1_,i2_,i3_,i4_;
+                i1_=pp+i+(j+1)*pcircle;
+                i2_=i1_+pcircle;
+                if(j==div_w-3)
+                    i2_=rls+i;
+                i3_=i1_+1;
+                i4_=i2_+1;
+
+                uvw1=zeno::vec3f(0.375f+u1*sc,0.5f+(1.0f-v1)*sc,0);
+                uvw2=zeno::vec3f(0.375f+u2*sc,0.5f+(1.0f-v2)*sc,0);
+                uvw3=zeno::vec3f(0.375f+u3*sc,0.5f+(1.0f-v3)*sc,0);
+                uvw4=zeno::vec3f(0.375f+u4*sc,0.5f+(1.0f-v4)*sc,0);
+
+                if(j!=div_w-3&&i!=div_d-2){
+                    nors[i4]=zeno::vec3f(0,-1,0);
+                    nors[i4_]=zeno::vec3f(0,1,0);
+                }
+
+                // Top
+                indis.emplace_back(i1_,i2_,i3_);
+                indis.emplace_back(i4_,i3_,i2_);
+                uv1.push_back(uvw1);uv2.push_back(uvw2);uv3.push_back(uvw3);
+                uv1.push_back(uvw4);uv2.push_back(uvw3);uv3.push_back(uvw2);
             }
         }
-        int ui2 = fverts.size()*2+uverts.size()*2;
-        for (int i = 0; i < lverts.size(); i++)
+
+        for (int j = 0; j < div_w-1; j++)
         {
-            auto lv = lverts[i];
-            auto p = zeno::vec3f(-lv[0], -lv[1], lv[2]);
-            rverts.push_back(p);
-            verts.push_back(p);
-            uvs.emplace_back(0.5+uvs[i+ui2][0],uvs[i+ui2][1], 0);
-            normal.emplace_back(-1,0,0);
+            for (int i = 0; i < div_h-1; i++)
+            {
+                int i1,i2,i3,i4,i1_,i2_,i3_,i4_;
+
+                int tc=le+div_d+j*pcircle;
+                int ci1=tc+i*2; // front and back point increase
+
+                if(j==div_w-2 && i!=0){
+                    i1=tc+i*div_d;  // depth increase
+                    i2=i1-div_d;
+                    i3=ci1-pcircle;
+                }else{
+                    i1=ci1;
+                    i2=i1-2;
+                    i3=i1-pcircle;
+                }
+                if(j==0){
+                    i3=div_d*(i+1);
+                    i4=i3-div_d;
+                }else{
+                    i4=i3-2;
+                }
+
+                if(i==0){
+                    i2=i1-div_d;
+                    i4=i3-div_d;
+                }
+
+                i1_=i1+1;
+                i2_=i2+1;
+                i3_=i3+1;
+                i4_=i4+1;
+                if(i==div_h-2 || j==div_w-2&&i!=div_h-2)
+                    i1_=i1+(div_d-1);
+                if(i==0 || j==div_w-2)
+                    i2_=i2+(div_d-1);
+                if(j!=0&&i==div_h-2)
+                    i3_=i3+(div_d-1);
+                if(i==0||j==0)
+                    i4_=i4+(div_d-1);
+                if(j==0)
+                    i3_=i3+(div_d-1);
+
+                float u1,v1,u2,v2,u3,v3,u4,v4;
+                zeno::vec3f uvw1,uvw2,uvw3,uvw4;
+
+                u4=j*sw;
+                v4=i*sh;
+                u3=u4;
+                v3=v4+sh;
+                u1=u4+sw;
+                v1=v3;
+                u2=u1;
+                v2=v4;
+
+                uvw1=zeno::vec3f(0.375f+u1*sc,0.25f+v1*sc,0);
+                uvw2=zeno::vec3f(0.375f+u2*sc,0.25f+v2*sc,0);
+                uvw3=zeno::vec3f(0.375f+u3*sc,0.25f+v3*sc,0);
+                uvw4=zeno::vec3f(0.375f+u4*sc,0.25f+v4*sc,0);
+
+                // Back
+                indis.emplace_back(i1,i3,i2);
+                indis.emplace_back(i4,i2,i3);
+                uv1.push_back(uvw1);uv2.push_back(uvw3);uv3.push_back(uvw2);
+                uv1.push_back(uvw4);uv2.push_back(uvw2);uv3.push_back(uvw3);
+
+                uvw1=zeno::vec3f(0.375f+u1*sc,0.75f+(1.0f-v1)*sc,0);
+                uvw2=zeno::vec3f(0.375f+u2*sc,0.75f+(1.0f-v2)*sc,0);
+                uvw3=zeno::vec3f(0.375f+u3*sc,0.75f+(1.0f-v3)*sc,0);
+                uvw4=zeno::vec3f(0.375f+u4*sc,0.75f+(1.0f-v4)*sc,0);
+
+                if(j!=div_w-2&&i!=div_h-2){
+                    nors[i1]=zeno::vec3f(0,0,1);
+                    nors[i1_]=zeno::vec3f(0,0,-1);
+                }
+
+                // Front
+                indis.emplace_back(i1_,i2_,i3_);
+                indis.emplace_back(i4_,i3_,i2_);
+                uv1.push_back(uvw1);uv2.push_back(uvw2);uv3.push_back(uvw3);
+                uv1.push_back(uvw4);uv2.push_back(uvw3);uv3.push_back(uvw2);
+            }
         }
 
-        findis = cc4::genindi(div_h, div_w, 0);
-        bindis = cc4::igenindi(findis, fverts.size());
-        uindis = cc4::genindi(div_d, div_w,fverts.size()*2);
-        dindis = cc4::igenindi(uindis, uverts.size());
-        lindis = cc4::genindi(div_d, div_h,fverts.size()*2+uverts.size()*2);
-        rindis = cc4::igenindi(lindis, lverts.size());
+        for (int i = 0; i < div_d; i++)
+        {
+            if(i==0){
+                nors[i]=normalize(zeno::vec3f(0.3,-0.3,0.3));
+                nors[i+inc]=normalize(zeno::vec3f(-0.3,-0.3,0.3));
+                nors[i+rls]=normalize(zeno::vec3f(-0.3,0.3,0.3));
+                nors[i+pp]=normalize(zeno::vec3f(0.3,0.3,0.3));
+            }
+            else if(i==div_d-1){
+                nors[i]=normalize(zeno::vec3f(0.3,-0.3,-0.3));
+                nors[i+inc]=normalize(zeno::vec3f(-0.3,-0.3,-0.3));
+                nors[i+rls]=normalize(zeno::vec3f(-0.3,0.3,-0.3));
+                nors[i+pp]=normalize(zeno::vec3f(0.3,0.3,-0.3));
+            }
+            else{
+                nors[i]=normalize(zeno::vec3f(0.5,-0.5,0));
+                nors[i+inc]=normalize(zeno::vec3f(-0.5,-0.5,0));
+                nors[i+rls]=normalize(zeno::vec3f(-0.5,0.5,0));
+                nors[i+pp]=normalize(zeno::vec3f(0.5,0.5,0));
+            }
+        }
 
-        cc4::appind(findis, tris);
-        cc4::appind(bindis, tris);
-        cc4::appind(uindis, tris);
-        cc4::appind(dindis, tris);
-        cc4::appind(lindis, tris);
-        cc4::appind(rindis, tris);
+        for (int i = 1; i < div_h-1; i++)
+        {
+            int i1=i*(div_d);
+            int i2=i1+(div_d-1);
+            int i3=inc+(i+1)*(div_d)-1;
+            int i4=i3-(div_d-1);
 
-        for (int i = 0; i < verts.size(); i++)
+            nors[i1]=normalize(zeno::vec3f(0.5,0,0.5));
+            nors[i2]=normalize(zeno::vec3f(0.5,0,-0.5));
+            nors[i3]=normalize(zeno::vec3f(-0.5,0,-0.5));
+            nors[i4]=normalize(zeno::vec3f(-0.5,0,0.5));
+        }
+
+        for (int i = 0; i < div_w-2; i++)
+        {
+            int i1=le+i*pcircle;
+            int i2=i1+(div_d-1);
+            int i3=pcircle+pp+i*pcircle;
+            int i4=i3+(div_d-1);
+
+            nors[i1]=normalize(zeno::vec3f(0,-0.5,0.5));
+            nors[i2]=normalize(zeno::vec3f(0,-0.5,-0.5));
+            nors[i3]=normalize(zeno::vec3f(0,0.5,0.5));
+            nors[i4]=normalize(zeno::vec3f(0,0.5,-0.5));
+        }
+
+
+        for (int i = 0; i < verts->size(); i++)
         {
             auto p = verts[i];
-            auto n = normal[i];
-            auto gn = glm::vec3(n[0], n[1], n[2]);
-            p = p * scale * size;
-            ROTATE_COMPUTE
-            gn = mz * my * mx * gn;
-            p = p + position;
+            auto n = nors[i];
 
-            norm.push_back(zeno::vec3f(gn.x, gn.y, gn.z));
-            pos.push_back(p);
-            uv.push_back(uvs[i]);
+            ROTATE_COMPUTE
+
+            auto gn = glm::vec3(n[0], n[1], n[2]);
+            gn = mz * my * mx * gn;
+            n = zeno::vec3f(gn.x, gn.y, gn.z);
+
+            verts[i] = p * scale * size + position;
+            nors[i] = n;
         }
 
-        cc4::flipPrimFaceOrder(prim.get());
+        NORMUV_CIHOU
         set_output("prim", std::move(prim));
     }
 };
@@ -251,6 +406,7 @@ ZENDEFNODE(CreateCube, {
         {"vec3f", "position", "0, 0, 0"},
         {"vec3f", "scaleSize", "1, 1, 1"},
         ROTATE_PARM
+        NORMUV_PARM
         {"int", "div_w", "2"},
         {"int", "div_h", "2"},
         {"int", "div_d", "2"},
@@ -304,7 +460,7 @@ struct CreateDisk : zeno::INode {
         // Update last
         tris[tris.size()-1] = zeno::vec3i(divisions, 0, 1);
 
-        cc4::flipPrimFaceOrder(prim.get());
+        NORMUV_CIHOU
         set_output("prim", std::move(prim));
     }
 };
@@ -314,6 +470,7 @@ ZENDEFNODE(CreateDisk, {
         {"vec3f", "position", "0, 0, 0"},
         {"vec3f", "scaleSize", "1, 1, 1"},
         ROTATE_PARM
+        NORMUV_PARM
         {"float", "radius", "1"},
         {"int", "divisions", "32"},
     },
@@ -426,7 +583,7 @@ struct CreatePlane : zeno::INode {
             norm[i] = normal;
         }
 
-        cc4::flipPrimFaceOrder(prim.get());
+        NORMUV_CIHOU
         set_output("prim", std::move(prim));
     }
 };
@@ -436,6 +593,7 @@ ZENDEFNODE(CreatePlane, {
         {"vec3f", "position", "0, 0, 0"},
         {"vec3f", "scaleSize", "1, 1, 1"},
         ROTATE_PARM
+        NORMUV_PARM
         {"float", "size", "1"},
         {"int", "rows", "2"},
         {"int", "columns", "2"},
@@ -456,67 +614,104 @@ struct CreateTube : zeno::INode {
         auto height = get_input2<float>("height");
         auto rows = get_input2<int>("rows");
         auto columns = get_input2<int>("columns");
+
         ROTATE_MATRIX
 
         auto &verts = prim->verts;
         auto &indis = prim->tris;
         auto &uvs = prim->verts.add_attr<zeno::vec3f>("uv");
-        auto &normal = prim->verts.add_attr<zeno::vec3f>("nrm");
+        auto &nors = prim->verts.add_attr<zeno::vec3f>("nrm");
+        auto &uv1 = prim->tris.add_attr<zeno::vec3f>("uv0");
+        auto &uv2 = prim->tris.add_attr<zeno::vec3f>("uv1");
+        auto &uv3 = prim->tris.add_attr<zeno::vec3f>("uv2");
 
-        if(rows <= 2)
-            rows = 2;
+        if(rows <= 3)
+            rows = 3;
         if(columns <= 3)
             columns = 3;
 
         std::vector<zeno::vec3f> mverts;
-        std::vector<int> svi;
-        std::vector<int> cvi;
 
         float hs = height/2.0;
-        float hm = height / 1.0/(rows-1);
 
         verts.emplace_back(0,hs,0);
-        normal.emplace_back(0,1,0);
-        uvs.emplace_back(0.5, 0.85, 0);
+        nors.emplace_back(0,1,0);
         for (int i = 0; i < columns; i++) {
-            float rad = 2 * M_PI * i / columns;
+            uv1.emplace_back(0.5, 0.85, 0);
+        }
+        for (int i = 0; i < columns; i++) {
+            float rad = 2.0f * M_PI * i / columns;
+            float x = cos(rad);
+            float z = -sin(rad);
+            auto p1 = zeno::vec3f(x*radius1, hs, z*radius1);
+
+            verts.push_back(p1);
+            nors.emplace_back(0,1,0);
+        }
+        for (int i = 0; i < columns; i++) {
+            float rad = 2.0f * M_PI * i / columns;
             float x = cos(rad);
             float z = -sin(rad);
             float of = 0.125;
-            auto p1 = zeno::vec3f(x*radius1, hs, z*radius1);
-            auto p2 = zeno::vec3f(x*radius2, -hs, z*radius2);
-            auto n1 = zeno::vec3f(0,1,0);
-            auto n2 = zeno::vec3f(0,-1,0);
+            auto p1 = zeno::vec3f(x*radius2, -hs, z*radius2);
+
             verts.push_back(p1);
-            verts.push_back(p2);
-            normal.push_back(n1);
-            normal.push_back(n2);
-            uvs.emplace_back(
-                x*0.5*3/10+0.5,
-                z*0.5*3/10+0.85, 0);
-            uvs.emplace_back(
-                x*0.5*3/10+0.5,
-                z*0.5*3/10+0.15, 0);
+            nors.emplace_back(0,-1,0);
         }
         verts.emplace_back(0,-hs,0);
-        normal.emplace_back(0,-1,0);
-        uvs.emplace_back(0.5, 0.15, 0);
+        nors.emplace_back(0,-1,0);
+        for (int i = 0; i < columns; i++) {
+            uv1.emplace_back(0.5, 0.15, 0);
+        }
 
         for (int i = 1; i < columns+1; i++) {
-            int i1, i2, i3;
-            i1 = i*2-1;
-            i2 = 0;
-            i3 = i1+2;
+            float rad = 2.0f * M_PI * (i) / columns;
+            float x = cos(rad);
+            float z = -sin(rad);
+            float radn = 2.0f * M_PI * (i-1) / columns;
+            float xn = cos(radn);
+            float zn = -sin(radn);
+
+            int i1,i2,i3;
+            i1 = 0;
+            i2 = i;
+            i3 = i2+1;
             if(i == columns)
                 i3 = 1;
-            indis.emplace_back(i1, i2, i3);
+            indis.emplace_back(i1, i3, i2);
 
-            i1 = i*2;
-            i2 = verts.size()-1;
-            i3 = i1+2;
+            float u1=x*0.5*3/10+0.5;
+            float v1=z*0.5*3/10+0.85;
+            float u1n=xn*0.5*3/10+0.5;
+            float v1n=zn*0.5*3/10+0.85;
+
+            uv2.emplace_back(u1, v1, 0);
+            uv3.emplace_back(u1n, v1n, 0);
+        }
+
+        for (int i = 1; i < columns+1; i++) {
+            float rad = 2.0f * M_PI * (i-1) / columns;
+            float x = cos(rad);
+            float z = -sin(rad);
+            float radn = 2.0f * M_PI * (i) / columns;
+            float xn = cos(radn);
+            float zn = -sin(radn);
+
+            float b1,b2,b3;
+            b1 = verts->size()-1;
+            b2 = b1-columns+i-1;
+            b3 = b2+1;
             if(i == columns)
-                i3 = 2;
-            indis.emplace_back(i3, i2, i1);
+                b3 -= columns;
+            indis.emplace_back(b1, b2, b3);
+
+            float u1=x*0.5*3/10+0.5;
+            float v1=z*0.5*3/10+0.85;
+            float u1n=xn*0.5*3/10+0.5;
+            float v1n=zn*0.5*3/10+0.85;
+
+            uv2.emplace_back(u1, v1-0.7, 0);
+            uv3.emplace_back(u1n, v1n-0.7, 0);
         }
 
         for (int i = 0; i < rows; i++)
@@ -524,44 +719,15 @@ struct CreateTube : zeno::INode {
             for (int j = 0; j < columns; j++)
             {
                 float f = float(i)/(rows-1);
-                int it = 1+2*j;
-                int id = 2+2*j;
-                auto pu = verts[it];
-                auto pd = verts[id];
+                int ti = j+1;
+                int bi = verts->size()-1-columns+j;
+                auto pu = verts[ti];
+                auto pd = verts[bi];
                 auto np = (1-f)*pu+(f)*pd;
 
-                if(j == 0){
-                    mverts.emplace_back(np[0], np[1], np[2]);
-                    normal.emplace_back(-1,0,0);
-                    int fi = verts.size()+mverts.size()-1;
-                    svi.push_back(fi);
-                    cvi.push_back(fi+1);
-                }
-
-                mverts.emplace_back(np[0], np[1], np[2]);
-                normal.emplace_back(-1,0,0);
-            }
-        }
-
-        for (int i = 0; i < rows+1; i++)
-        {
-            for (int j = 0; j < columns+1; j++)
-            {
-                float rf = 1.0/(rows-1);
-                float cf = 1.0/(columns);
-                float sf = 4.0/10;
-                float uf = 0.3;
-                auto uv = zeno::vec3f(
-                    (j-1)*cf*sf+uf,
-                    i*rf*sf+uf, 0);
-
-                if(j == 0){
-                    uvs.emplace_back(1*sf+uf, uv[1], 0);
-                }else if(j == 1){
-                    uvs.emplace_back(0*sf+uf, uv[1], 0);
-                }
-                else{
-                    uvs.emplace_back(uv);
+                if(i!=0 && i!=(rows-1)){
+                    mverts.push_back(np);
+                    nors.emplace_back(0,0,0);
                 }
             }
         }
@@ -571,71 +737,89 @@ struct CreateTube : zeno::INode {
             verts.push_back(mverts[i]);
         }
 
-        for (int i = 0; i < rows-1; i++)
+        for (int i = 1; i < rows; i++)
         {
             for (int j = 0; j < columns; j++)
             {
                 int i1, i2, i3, i4;
-                i1 = j+i*(columns+1)+1;
-                i2 = i1+columns+1;
-                i3 = i1+1;
-                i4 = i2+1;
+                i1 = j+i*(columns)+2; //Two points at the top and bottom
+                if(i==1)
+                    i1-=columns+1;
+                i2 = i1+1;
+                i3 = i1+columns;
+                if(i==1)
+                    i3+=columns+1;
+                i4 = i3+1;
                 if(j == columns-1){
-                    i3 = i3 - columns-1;
-                    i4 = i4 - columns-1;
+                    i2 -=columns;
+                    i4 -=columns;
                 }
-                i1 += (verts.size() - mverts.size());
-                i2 += (verts.size() - mverts.size());
-                i3 += (verts.size() - mverts.size());
-                i4 += (verts.size() - mverts.size());
+                if(i==rows-1){
+                    i3 -=i1-1-j;
+                    i4 =i3+1;
+                    if(j==columns-1)
+                        i4-=columns;
+                }
 
-                int fi = i1-1;
-                if(j == 0){
-                    fi += columns;
-                }
+                float u1,v1,u2,v2,u3,v3,u4,v4;
+                float sf = 4.0/10;
+                float uf = 0.3;
+
+                u1=float(j)/columns     *sf+uf;
+                u2=float(j+1)/columns   *sf+uf;
+                v1=float(i-1)/(rows-1)  *sf+uf;
+                v2=v1;
+                u3=u1;
+                u4=u2;
+                v3=float(i)/(rows-1)    *sf+uf;
+                v4=v3;
+
+                uv1.emplace_back(u1,v1,0);uv2.emplace_back(u2,v2,0);uv3.emplace_back(u4,v4,0);
+                uv1.emplace_back(u1,v1,0);uv2.emplace_back(u4,v4,0);uv3.emplace_back(u3,v3,0);
+                indis.emplace_back(i1, i2, i4);
+                indis.emplace_back(i1, i4, i3);
+
+                int b4=i1-1;
+                if(j==0)
+                    b4+=columns;
                 auto p1 = verts[i1]*scale;
                 auto p2 = verts[i2]*scale;
                 auto p3 = verts[i3]*scale;
-                auto pn = verts[fi]*scale;
+                auto p4 = verts[b4]*scale;
+                auto n1 = normalize(cross(p2-p1, p1-p3));
+                auto n2 = normalize(cross(p4-p1, p3-p1));
 
-                auto n1 = normalize(cross(p2-p1, p3-p1));
-                auto n2 = normalize(cross(pn-p1, p2-p1));
-
-                n1 = normalize((n1+n2)/2.0);
-
-                normal[i1] = n1;
-                normal[i2] = n1;
-                normal[i3] = n1;
-                normal[i4] = n1;
-
-                indis.emplace_back(i1, i3, i2);
-                indis.emplace_back(i4, i2, i3);
+                zeno::vec3f n;
+                n = normalize((n1+n2)/2.0);
+                if(i==1){
+                    auto up=zeno::vec3f(0,1,0);
+                    nors[i1] = normalize((n1+n2+up)*scale/3.0);
+                }
+                if(i==rows-1){
+                    auto down=zeno::vec3f(0,-1,0);
+                    nors[i3] = normalize((n1+n2+down)*scale/3.0);
+                    continue;
+                }
+                nors[i3] = n;
             }
-        }
-
-        for (int i = 0; i < svi.size(); i++)
-        {
-            normal[svi[i]] = normal[cvi[i]];
         }
 
         for (int i = 0; i < verts->size(); i++)
         {
             auto p = verts[i];
-            auto n = normal[i];
+            auto n = nors[i];
 
-            auto gp = glm::vec3(p[0], p[1], p[2]);
-            gp = mz * my * mx * gp;
-            p = zeno::vec3f(gp.x, gp.y, gp.z);
+            ROTATE_COMPUTE
 
             auto gn = glm::vec3(n[0], n[1], n[2]);
             gn = mz * my * mx * gn;
             n = zeno::vec3f(gn.x, gn.y, gn.z);
 
             verts[i] = p * scale + position;
-            normal[i] = n;
+            nors[i] = n;
         }
 
-        cc4::flipPrimFaceOrder(prim.get());
+        NORMUV_CIHOU
         set_output("prim", std::move(prim));
     }
 };
@@ -645,10 +829,11 @@ ZENDEFNODE(CreateTube, {
         {"vec3f", "position", "0, 0, 0"},
         {"vec3f", "scaleSize", "1, 1, 1"},
         ROTATE_PARM
+        NORMUV_PARM
         {"float", "radius1", "1"},
         {"float", "radius2", "1"},
         {"float", "height", "2"},
-        {"int", "rows", "2"},
+        {"int", "rows", "3"},
         {"int", "columns", "12"}
     },
     {"prim"},
@@ -675,117 +860,142 @@ struct CreateSphere : zeno::INode {
         //auto &uv = prim->add_attr<zeno::vec3f>("uv");
         //auto &nrm = prim->add_attr<zeno::vec3f>("nrm");
         auto &uv = prim->verts.add_attr<zeno::vec3f>("uv");
-        auto &nrm = prim->verts.add_attr<zeno::vec3f>("nrm");
+        auto &nors = prim->verts.add_attr<zeno::vec3f>("nrm");
+        auto &verts = prim->verts;
+        auto &tris = prim->tris;
+        auto &uv1 = prim->tris.add_attr<zeno::vec3f>("uv0");
+        auto &uv2 = prim->tris.add_attr<zeno::vec3f>("uv1");
+        auto &uv3 = prim->tris.add_attr<zeno::vec3f>("uv2");
 
-        int c = 0;
-        int tp = rows * columns;
-        float row_sep = 180.0f / (rows - 1);
+        if(rows <= 3)
+            rows = 3;
+        if(columns <= 3)
+            columns = 3;
 
+        int fi=0;
+        float row_sep = 180.0 / (rows - 1);
+        float uoff = 1.0/columns/2;
+        float vinc = 1.0/(rows-1);
+
+        // verts
         for (int i = 0; i<rows; i++) {
-            float ic = -90.0f + i*row_sep;
-            float r = std::cos(ic / 180.0 * M_PI);
-            float h = std::sin(ic / 180.0 * M_PI);
+            float ic = -90.0 + i*row_sep;
+            float r = cos(ic / 180.0 * M_PI);
+            float h = sin(ic / 180.0 * M_PI);
 
             for (int j = 0; j < columns; j++) {
                 float rad = 2 * M_PI * j / columns;
                 // position
-                zeno::vec3f op = zeno::vec3f (
-                    cos(rad) * r,
-                    h,
-                    sin(rad) * r);
-                zeno::vec3f p = op * scale * radius;
+                auto p = zeno::vec3f(cos(rad) * r, h, sin(rad) * r);
 
                 ROTATE_COMPUTE
 
-                p = p + position;
-                zeno::vec3f np = p * scale * radius;
-                prim->verts.push_back(p);
-
-                // normal
-                zeno::vec3f n;
-                n = zeno::normalize(np - zeno::vec3f(0,0,0));
-                nrm.push_back(n);
-
-                // uv
-                zeno::vec3f uvw;
-                float u,v;
-                if(i == 0){
-                    u = float(j)/(columns-1);
-                    v = 0.0;
-
-                }else if(i == rows-1){
-                    u = float(j)/(columns-1);
-                    v = 1.0;
-                }else{
-                    u = -1.0;
-                    v = -1.0;
-                }
-                uv.emplace_back(u,v,0);
-                if(j == 0 && i > 0 && i < rows-1){
-                    prim->verts.push_back(p);
-                    nrm.push_back(n);
-                    uv.emplace_back(u,v,0);
-                    c+=1;
-                }
-
-                // indices
-                if(i == 0){
-                    int i1 = c;//bottom
-                    int i2 = c+columns+2;
-                    int i3 = c+columns+1;
-                    if(i2 >= 2*columns+1)
-                        i2 = columns;
-                    int i4 = tp-columns+j+rows-2;//top
-                    int _t = tp-2*columns+rows-2;
-                    int _t1 = tp-columns+rows-2;
-                    int i5 = _t+j;
-                    int i6 = _t+j+1;
-                    if(i6>=_t1)
-                        i6 -= columns+1;
-
-                    prim->tris.push_back(zeno::vec3i(i1, i2, i3));
-                    prim->tris.push_back(zeno::vec3i(i4, i5, i6));
-                }
-
-                if(rows > 3 && i < rows-2 && i>0){
-
-                    int i1 = c;
-                    int i2 = c+1;
-                    int i3 = c+columns+1;
-
-                    int i4 = i3;
-                    int i5 = i1+columns+2;
-
-                    if(j == columns-1){
-                        i2 -= columns+1;
-                        i5 -= columns+1;
-                    }
-                    int i6 = i2;
-
-                    prim->tris.push_back(zeno::vec3i(i1, i2, i3));
-                    prim->tris.push_back(zeno::vec3i(i4, i6, i5));
-                }
-                c+=1;
+                auto op = p*scale*radius+position;
+                verts.push_back(op);
+                auto n = op - zeno::vec3f(0,0,0);
+                nors.push_back(zeno::normalize(n/scale));
+                if(i == 0 || i == (rows-1))
+                    break;
             }
         }
 
-        float vi = 0;
-        float s = 1.0f/(rows-1);
-        for(int i=columns; i<(prim->verts.size() - columns); i++){
+        int li=verts.size()-1;
 
-            int id = (i-columns)%(columns+1);
-            if(id == 0)
-                vi += 1;
-            float u,v;
-            if(id-1 < 0)
-                u = 1.0;
-            else
-                u = float(id-1)/(columns);
-            v = s*vi;
-            uv[i] = zeno::vec3f(u,v,0);
+        // head tris & head uv
+        for (int i = 1; i < columns+1; i++)
+        {
+            int i0,i1;
+            i0=i;
+            i1=i0+1;
+            if(i==columns){
+                i1-=columns;
+            }
+
+            tris.emplace_back(fi,i1,i0);
+
+            float u1,v1,u2,v2,u3,v3;
+            float u_ = float(i0-1)/(columns);
+            v1=0; v2=vinc; v3=vinc;
+            u1=u_+uoff;
+            u2=float(i1-1)/(columns);
+            u3=u_;
+            if(i==columns){
+                u2=1.0;
+            }
+            auto uvw1 = zeno::vec3f(u1,v1,0);
+            auto uvw2 = zeno::vec3f(u2,v2,0);
+            auto uvw3 = zeno::vec3f(u3,v3,0);
+
+            uv1.push_back(uvw1);uv2.push_back(uvw2);uv3.push_back(uvw3);
         }
 
-        cc4::flipPrimFaceOrder(prim.get());
+        // body tris
+        for (int i = 0; i<rows-3; i++) {
+            for (int j = 1; j < columns+1; j++) {
+                int i0,i1,i2,i3;
+
+                i0=(i*columns)+j;
+                i1=i0+1;
+                i2=i0+columns;
+                i3=i2+1;
+
+                if(j==columns){
+                    i1-=columns;
+                    i3-=columns;
+                }
+
+                float u1,v1,u2,v2,u3,v3,u4,v4;
+                zeno::vec3f uvw1,uvw2,uvw3,uvw4;
+                v1=v2=(i+1.0f)*vinc;
+                u1 = float(i0-1)/(columns)-i;
+                u2=float(i1-1)/(columns)-i;
+                if(j==columns){
+                    u2=1.0;
+                }
+                u3=u1;
+                u4=u2;
+                v3=v4=(i+2.0f)*vinc;
+
+                uvw1=zeno::vec3f(u1,v1,0);uvw2=zeno::vec3f(u2,v2,0);uvw3=zeno::vec3f(u3,v3,0);uvw4=zeno::vec3f(u4,v4,0);
+
+                uv1.push_back(uvw1);uv2.push_back(uvw2);uv3.push_back(uvw3);
+                uv1.push_back(uvw2);uv2.push_back(uvw4);uv3.push_back(uvw3);
+
+                tris.emplace_back(i0,i1,i2);
+                tris.emplace_back(i1,i3,i2);
+            }
+        }
+
+        // bottom tris
+        for (int i = columns,j=0; i > 0; i--,j++)
+        {
+            int i2,i3;
+            i2=li-i+1;
+            i3=li-i;
+            if(i2==li){
+                i2-=columns;
+            }
+
+            float u1,v1,u2,v2,u3,v3;
+            v1=1.0; v2=1.0-vinc; v3=1.0-vinc;
+            float u_=float(j+1)/(columns);
+            u1=u_-uoff;
+            u2=float(j)/(columns);
+            u3=u_;
+            if(i==0){
+                u2=1.0;
+            }
+            auto uvw1 = zeno::vec3f(u1,v1,0);
+            auto uvw2 = zeno::vec3f(u2,v2,0);
+            auto uvw3 = zeno::vec3f(u3,v3,0);
+
+            uv1.push_back(uvw1);uv2.push_back(uvw2);uv3.push_back(uvw3);
+
+            tris.emplace_back(li,i3,i2);
+        }
+
+        // FIXME Lead to calculation of normal and uv errors
+        NORMUV_CIHOU
         set_output("prim", std::move(prim));
     }
 };
@@ -796,6 +1006,7 @@ ZENDEFNODE(CreateSphere, {
         {"vec3f", "scaleSize", "1, 1, 1"},
         {"float", "radius", "1"},
         ROTATE_PARM
+        NORMUV_PARM
         {"int", "rows", "13"},
         {"int", "columns", "24"},
     },

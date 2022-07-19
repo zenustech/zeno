@@ -47,7 +47,7 @@ ZENDEFNODE(PrimitiveFillAttr,
     {"string", "attrName", "pos"},
     {"enum float float3 none", "attrType", "none"},
     }, /* category: */ {
-    "primitive",
+    "deprecated",
     }});
 
 
@@ -87,7 +87,7 @@ ZENDEFNODE(PrimitivePrintAttr,
     }, /* params: */ {
     {"string", "attrName", "pos"},
     }, /* category: */ {
-    "primitive",
+    "deprecated",
     }});
 
 

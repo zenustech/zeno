@@ -9,6 +9,7 @@
 #include "../panel/zenoproppanel.h"
 #include <zenoui/model/modelrole.h>
 #include "util/log.h"
+#include "panel/zenospreadsheet.h"
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -90,7 +91,7 @@ void ZenoDockWidget::onNodesSelected(const QModelIndex& subgIdx, const QModelInd
     }
     else
     {
-        pPropTitle->setTitle("property");
+        pPropTitle->setTitle(tr("property"));
     }
     panel->reset(pModel, subgIdx, nodes, select);
 }
@@ -235,5 +236,20 @@ void ZenoDockWidget::onFloatTriggered()
             setWindowFlags(m_newFlags);
             show();
         }
+    }
+}
+
+
+void ZenoDockWidget::onPrimitiveSelected(const std::unordered_set <std::string> &primids) {
+    if (m_type != DOCK_NODE_DATA) {
+        return;
+    }
+    ZenoSpreadsheet* panel = qobject_cast<ZenoSpreadsheet*>(widget());
+    ZASSERT_EXIT(panel);
+    if (primids.size() == 1) {
+        panel->setPrim(*primids.begin());
+    }
+    else {
+        panel->clear();
     }
 }

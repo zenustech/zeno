@@ -237,8 +237,8 @@ struct SMaterialProp{
     int order;
     bool forceDefault;
     std::any value;
-    aiTextureType type;
-    std::string aiName;
+    std::vector<aiTextureType> types;
+    std::vector<std::string> aiNames;
     std::string texPath;
 };
 
@@ -296,35 +296,35 @@ struct SMaterial : zeno::IObjectClone<SMaterial>{
         // FIXME (aiTextureType_BASE_COLOR 12 basecolor `aiStandardSurface`)
         //      or (aiTextureType_DIFFUSE 1 diffuse `lambert`)
         // aiTextureType_NORMALS or aiTextureType_NORMAL_CAMERA
-        val.emplace("basecolor", SMaterialProp{0, false, aiColor4D(), aiTextureType_BASE_COLOR, "$ai.base"});
-        val.emplace("metallic", SMaterialProp{1, true, aiColor4D(), aiTextureType_METALNESS, ""});
-        val.emplace("roughness", SMaterialProp{2, true, aiColor4D(), aiTextureType_DIFFUSE_ROUGHNESS, ""});
-        val.emplace("specular", SMaterialProp{3, true, aiColor4D(), aiTextureType_SPECULAR, "$ai.specular"});
-        val.emplace("subsurface", SMaterialProp{4, true, aiColor4D(), aiTextureType_NONE, "$ai.subsurface"});
-        val.emplace("thinkness", SMaterialProp{5, true, aiColor4D(), aiTextureType_NONE, ""});
-        val.emplace("sssParam", SMaterialProp{6, true, aiColor4D(), aiTextureType_NONE, ""});
-        val.emplace("sssColor", SMaterialProp{7, true, aiColor4D(), aiTextureType_NONE, ""});
-        val.emplace("foliage", SMaterialProp{8, true, aiColor4D(), aiTextureType_NONE, ""});
-        val.emplace("skin", SMaterialProp{9, true, aiColor4D(), aiTextureType_NONE, ""});
-        val.emplace("curvature", SMaterialProp{10, true, aiColor4D(), aiTextureType_NONE, ""});
-        val.emplace("specularTint", SMaterialProp{11, true, aiColor4D(), aiTextureType_NONE, ""});
-        val.emplace("anisotropic", SMaterialProp{12, true, aiColor4D(), aiTextureType_NONE, ""});
-        val.emplace("sheen", SMaterialProp{13, true, aiColor4D(), aiTextureType_SHININESS, "$ai.sheen"});
-        val.emplace("sheenTint", SMaterialProp{14, true, aiColor4D(), aiTextureType_NONE, ""});
-        val.emplace("clearcoat", SMaterialProp{15, true, aiColor4D(), aiTextureType_NONE, "$ai.coat"});
-        val.emplace("clearcoatGloss", SMaterialProp{16, true, aiColor4D(), aiTextureType_NONE, ""});
-        val.emplace("normal", SMaterialProp{17, true, aiColor4D(), aiTextureType_NORMAL_CAMERA, ""});
-        val.emplace("emission", SMaterialProp{18, true, aiColor4D(), aiTextureType_EMISSIVE, "$ai.emission"}); // aiTextureType_EMISSION_COLOR
-        val.emplace("exposure", SMaterialProp{19, true, aiColor4D(), aiTextureType_NONE, ""});
-        val.emplace("ao", SMaterialProp{20, true, aiColor4D(), aiTextureType_AMBIENT_OCCLUSION, ""});
-        val.emplace("toon", SMaterialProp{21, true, aiColor4D(), aiTextureType_NONE, ""});
-        val.emplace("stroke", SMaterialProp{22, true, aiColor4D(), aiTextureType_NONE, ""});
-        val.emplace("shape", SMaterialProp{23, true, aiColor4D(), aiTextureType_NONE, ""});
-        val.emplace("style", SMaterialProp{24, true, aiColor4D(), aiTextureType_NONE, ""});
-        val.emplace("strokeNoise", SMaterialProp{25, true, aiColor4D(), aiTextureType_NONE, ""});
-        val.emplace("shad", SMaterialProp{26, true, aiColor4D(), aiTextureType_NONE, ""});
-        val.emplace("strokeTint", SMaterialProp{27, true, aiColor4D(), aiTextureType_NONE, ""});
-        val.emplace("opacity", SMaterialProp{28, true, aiColor4D(), aiTextureType_OPACITY, "$ai.transmission"});
+        val.emplace("basecolor", SMaterialProp{0,       false, aiColor4D(), {aiTextureType_BASE_COLOR, aiTextureType_DIFFUSE}, {"$ai.base", "Diffuse"}}); // texOk
+        val.emplace("metallic", SMaterialProp{1,        false, aiColor4D(), {aiTextureType_METALNESS}, {"$ai.metalness"}}); // texOk
+        val.emplace("roughness", SMaterialProp{2,       false, aiColor4D(), {aiTextureType_DIFFUSE_ROUGHNESS}, {"$ai.specularRoughness", "$ai.diffuseRoughness"}});
+        val.emplace("specular", SMaterialProp{3,        false, aiColor4D(), {aiTextureType_SPECULAR}, {"$ai.specular", "SpecularColor"}});
+        val.emplace("subsurface", SMaterialProp{4,      true, aiColor4D(), {aiTextureType_NONE}, {"$ai.subsurface"}});
+        val.emplace("thinkness", SMaterialProp{5,       true, aiColor4D(), {aiTextureType_NONE}, {"", /*"$ai.thinFilmThickness"*/}});
+        val.emplace("sssParam", SMaterialProp{6,        false, aiColor4D(), {aiTextureType_NONE}, {""}});
+        val.emplace("sssColor", SMaterialProp{7,        false, aiColor4D(), {aiTextureType_NONE}, {""}});
+        val.emplace("foliage", SMaterialProp{8,         false, aiColor4D(), {aiTextureType_NONE}, {""}});
+        val.emplace("skin", SMaterialProp{9,            false, aiColor4D(), {aiTextureType_NONE}, {""}});
+        val.emplace("curvature", SMaterialProp{10,      false, aiColor4D(), {aiTextureType_NONE}, {""}});
+        val.emplace("specularTint", SMaterialProp{11,   false, aiColor4D(), {aiTextureType_NONE}, {""}});
+        val.emplace("anisotropic", SMaterialProp{12,    false, aiColor4D(), {aiTextureType_NONE}, {""}});
+        val.emplace("sheen", SMaterialProp{13,          true, aiColor4D(), {aiTextureType_SHININESS}, {"$ai.sheen"}});
+        val.emplace("sheenTint", SMaterialProp{14,      false, aiColor4D(), {aiTextureType_NONE}, {""}});
+        val.emplace("clearcoat", SMaterialProp{15,      false, aiColor4D(), {aiTextureType_NONE}, {"$ai.coat"}});
+        val.emplace("clearcoatGloss", SMaterialProp{16, true, aiColor4D(), {aiTextureType_NONE}, {""}});
+        val.emplace("normal", SMaterialProp{17,         false, aiColor4D(), {aiTextureType_NORMAL_CAMERA, aiTextureType_NORMALS}, {"",}}); // texOk
+        val.emplace("emission", SMaterialProp{18,       true, aiColor4D(), {aiTextureType_EMISSIVE, aiTextureType_EMISSION_COLOR}, {"$ai.emission", "Emissive"}});
+        val.emplace("exposure", SMaterialProp{19,       false, aiColor4D(), {aiTextureType_NONE}, {""}});
+        val.emplace("ao", SMaterialProp{20,             false, aiColor4D(), {aiTextureType_AMBIENT_OCCLUSION}, {""}});
+        val.emplace("toon", SMaterialProp{21,           false, aiColor4D(), {aiTextureType_NONE}, {""}});
+        val.emplace("stroke", SMaterialProp{22,         false, aiColor4D(), {aiTextureType_NONE}, {""}});
+        val.emplace("shape", SMaterialProp{23,          false, aiColor4D(), {aiTextureType_NONE}, {""}});
+        val.emplace("style", SMaterialProp{24,          false, aiColor4D(), {aiTextureType_NONE}, {""}});
+        val.emplace("strokeNoise", SMaterialProp{25,    false, aiColor4D(), {aiTextureType_NONE}, {""}});
+        val.emplace("shad", SMaterialProp{26,           false, aiColor4D(), {aiTextureType_NONE}, {""}});
+        val.emplace("strokeTint", SMaterialProp{27,     false, aiColor4D(), {aiTextureType_NONE}, {""}});
+        val.emplace("opacity", SMaterialProp{28,        false, aiColor4D(), {aiTextureType_OPACITY}, {"$ai.transmission", "$ai.opacity", "Opacity"}}); // texOk
     }
 
     std::vector<std::string> getTexList(){

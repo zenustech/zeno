@@ -123,7 +123,8 @@ ZENO_XMACRO_IObject(_PER_OBJECT_TYPE)
 
 bool encodeObject(IObject const *object, std::vector<char> &buf) {
     auto oldsize = buf.size();
-    bool ret = _encodeObjectImpl(object, buf);
+    if (!_encodeObjectImpl(object, buf))
+        return false;
 
     std::vector<std::vector<char>> valbufs;
     for (auto const &[key, val]: object->userData()) {
@@ -142,7 +143,7 @@ bool encodeObject(IObject const *object, std::vector<char> &buf) {
         buf.insert(buf.end(), (char *)&valbufsize, (char *)(&valbufsize + 1));
         buf.insert(buf.end(), valbuf.begin(), valbuf.end());
     }
-    return ret;
+    return true;
 }
 
 }

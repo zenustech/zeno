@@ -119,20 +119,24 @@ cmake -B build -DCMAKE_TOOLCHAIN_FILE="C:/vcpkg/scripts/buildsystems/vcpkg.cmake
 The full-featured version of Zeno can be built as follows:
 
 ```bash
-cmake -B build -DCMAKE_BUILD_TYPE=Release -DZENO_WITH_ZenoFX:BOOL=ON -DZENOFX_ENABLE_OPENVDB:BOOL=ON -DZENOFX_ENABLE_LBVH:BOOL=ON -DZENO_WITH_zenvdb:BOOL=ON -DZENO_WITH_FastFLIP:BOOL=ON -DZENO_WITH_FEM:BOOL=ON -DZENO_WITH_Rigid:BOOL=ON -DZENO_WITH_cgmesh:BOOL=ON -DZENO_WITH_oldzenbase:BOOL=ON -DZENO_WITH_TreeSketch:BOOL=ON -DZENO_WITH_Skinning:BOOL=ON -DZENO_WITH_Euler:BOOL=ON -DZENO_WITH_Functional:BOOL=ON -DZENO_WITH_LSystem:BOOL=ON -DZENO_WITH_mesher:BOOL=ON -DZENO_WITH_Alembic:BOOL=ON -DZENO_WITH_FBX:BOOL=ON -DZENO_WITH_DemBones:BOOL=ON -DZENO_WITH_CalcGeometryUV:BOOL=ON -DZENO_WITH_MeshSubdiv:BOOL=ON
+cmake -B build -DCMAKE_BUILD_TYPE=Release -DZENO_WITH_ZenoFX:BOOL=ON -DZENOFX_ENABLE_OPENVDB:BOOL=ON -DZENOFX_ENABLE_LBVH:BOOL=ON -DZENO_WITH_zenvdb:BOOL=ON -DZENO_WITH_FastFLIP:BOOL=ON -DZENO_WITH_FEM:BOOL=ON -DZENO_WITH_Rigid:BOOL=ON -DZENO_WITH_cgmesh:BOOL=ON -DZENO_WITH_oldzenbase:BOOL=ON -DZENO_WITH_TreeSketch:BOOL=ON -DZENO_WITH_Skinning:BOOL=ON -DZENO_WITH_Euler:BOOL=ON -DZENO_WITH_Functional:BOOL=ON -DZENO_WITH_LSystem:BOOL=ON -DZENO_WITH_mesher:BOOL=ON -DZENO_WITH_Alembic:BOOL=ON -DZENO_WITH_FBX:BOOL=ON -DZENO_WITH_DemBones:BOOL=ON -DZENO_WITH_SampleModel:BOOL=ON -DZENO_WITH_CalcGeometryUV:BOOL=ON -DZENO_WITH_MeshSubdiv:BOOL=ON
 ```
 
 > See also `misc/run.sh` (you can use this script instead for the full-featured build on Linux).
 
 ### Enabling CUDA extensions
 
-NVIDIA users may additionally specify `-DZENO_WITH_gmpm:BOOL=ON -DZENO_ENABLE_OPTIX:BOOL=ON` in arguments for building CUDA support.
+NVIDIA users may additionally specify `-DZENO_WITH_CUDA:BOOL=ON -DZENO_ENABLE_OPTIX:BOOL=ON` in arguments for building CUDA support.
 
-> This will also builds the OptiX real-time ray-tracing for the Zeno renderer.
+> This will also builds the OptiX real-time ray-tracing for the Zeno renderer (RTX20xx above required).
 
-> NOTE: **CUDA 11.x requried**.
-> NOTE: `gmpm` is work in progress, may not work.
-> NOTE: ZenoFX must be enabled when gmpm is enabled, because gmpm depends on ZenoFX.
+Notice that **CUDA 11.6 requried, CUDA 11.7 will fail to compile for now**, thanks to @littlemine's modern-fancy-cuda skills :(
+
+> But if you only use the OptiX part, Simply CUDA 11.0 or above is enough, thanks to @zhxx1987 not using modern-fancy-cuda features :)
+
+> NOTE: The CUDA extension is work in progress, may not work.
+> NOTE: ZenoFX must be enabled when CUDA is enabled, because CUDA depends on ZenoFX.
+> NOTE: Windows user must install the `CUDA Visual Studio integration`, otherwise CMake will complains `No CUDA toolset found`.
 
 ### Enabling subgraph extensions
 
@@ -142,6 +146,10 @@ To enable them, just additionally specify `-DZENO_WITH_TOOL_FLIPtools:BOOL=ON -D
 Enabling them you will find our well-packaged high-level nodes like `FLIPSimTemplate`,
 they were exported from another subgraph file using Ctrl-Shfit-E by the way, see the
 source code of `FLIPtools` for the original graph file name.
+
+## What's next?
+
+If you are the project maintainer, you may also checkout [`docs/MAINTAINERS.md`](docs/MAINTAINERS.md) for advanced skills.
 
 <!-- deprecated, see misc/ci/CMakePresets.json, now only used by CI
 ### Using CMake presets (experimental)

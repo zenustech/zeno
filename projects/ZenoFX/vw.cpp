@@ -90,6 +90,7 @@ struct VDBWrangle : zeno::INode {
         {
         // BEGIN心欣你也可以把这段代码加到其他wrangle节点去，这样这些wrangle也可以自动有$F$DT$T做参数
         auto const &gs = *this->getGlobalState();
+        params->lut["PI"] = objectFromLiterial((float)(std::atan(1.f) * 4));
         params->lut["F"] = objectFromLiterial((float)gs.frameid);
         params->lut["DT"] = objectFromLiterial(gs.frame_time);
         params->lut["T"] = objectFromLiterial(gs.frame_time * gs.frameid + gs.frame_time_elapsed);
@@ -99,6 +100,7 @@ struct VDBWrangle : zeno::INode {
             if (auto i = code.find('$' + key); i != std::string::npos) {
                 i = i + key.size() + 1;
                 if (code.size() <= i || !std::isalnum(code[i])) {
+                    if (params->lut.count(key)) continue;
                     dbg_printf("ref portal %s\n", key.c_str());
                     auto res = getThisGraph()->callTempNode("PortalOut",
                           {{"name:", objectFromLiterial(key)}}).at("port");

@@ -69,7 +69,7 @@ public:
     void initializeGL() override;
     void resizeGL(int nx, int ny) override;
     void paintGL() override;
-    void checkRecord();
+    void checkRecord(std::string a_record_file, QVector2D a_record_res, int a_nsamples);
 
     private:
     void createPointNode(QPointF pnt);

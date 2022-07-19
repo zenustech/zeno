@@ -36,7 +36,7 @@ struct Graph {
 
     std::map<std::string, std::unique_ptr<INode>> nodes;
     std::set<std::string> nodesToExec;
-    int beginFrameNumber = 0, endFrameNumber = 0;
+    int beginFrameNumber = 0, endFrameNumber = 0;  // only use by runnermain.cpp
 
     std::map<std::string, std::string> portalIns;
     std::map<std::string, zany> portals;
@@ -57,12 +57,15 @@ struct Graph {
     ZENO_API void applyNodesToExec();
     ZENO_API void applyNodes(std::set<std::string> const &ids);
     ZENO_API void addNode(std::string const &cls, std::string const &id);
+    ZENO_API void addSubnetNode(std::string const &name, std::string const &id);
+    ZENO_API Graph *getSubnetGraph(std::string const &id) const;
     ZENO_API void applyNode(std::string const &id);
     ZENO_API void completeNode(std::string const &id);
     ZENO_API void bindNodeInput(std::string const &dn, std::string const &ds,
         std::string const &sn, std::string const &ss);
     ZENO_API void setNodeInput(std::string const &id, std::string const &par,
         zany const &val);
+    ZENO_API void addNodeOutput(std::string const &id, std::string const &par);
     ZENO_API zany const &getNodeOutput(std::string const &sn, std::string const &ss) const;
     ZENO_API void loadGraph(const char *json);
     ZENO_API void setNodeParam(std::string const &id, std::string const &par,

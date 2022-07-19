@@ -9,6 +9,7 @@
 #include "graphsmanagment.h"
 #include "viewport/zenovis.h"
 #include "util/log.h"
+#include <QFileDialog>
 
 
 ZenoDockTitleWidget::ZenoDockTitleWidget(QWidget* parent)
@@ -172,11 +173,11 @@ QMenuBar* ZenoEditorDockTitleWidget::initMenu()
 	QMenuBar* pMenuBar = new QMenuBar(this);
     pMenuBar->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Expanding);
 
-	QMenu* pAdd = new QMenu(tr("Add"));
-	{
-		pAdd->addAction(createAction(tr("Add Subnet")));
-		pAdd->addAction(createAction(tr("Add Node")));
-	}
+	//QMenu* pAdd = new QMenu(tr("Add"));
+	//{
+		//pAdd->addAction(createAction(tr("Add Subnet")));
+		//pAdd->addAction(createAction(tr("Add Node")));
+	//}
 
 	QMenu* pEdit = new QMenu(tr("Edit"));
 	{
@@ -184,30 +185,35 @@ QMenuBar* ZenoEditorDockTitleWidget::initMenu()
 		pEdit->addAction(createAction(tr("Redo")));
 		pEdit->addAction(createAction(tr("Collaspe")));
 		pEdit->addAction(createAction(tr("Expand")));
-                pEdit->addAction(createAction(tr("Easy Subgraph")));
-                pEdit->addAction(createAction(tr("Set NASLOC")));
+        pEdit->addAction(createAction(tr("Easy Subgraph")));
 	}
 
-	QMenu* pGo = new QMenu(tr("Go"));
-	{
+	QMenu* pOption = new QMenu(tr("Option"));
+    {
+        pOption->addAction(createAction(tr("Set NASLOC")));
+    }
 
-	}
+	//QMenu* pGo = new QMenu(tr("Go"));
+	//{
 
-	QMenu* pView = new QMenu(tr("View"));
-	{
+	//}
 
-	}
+	//QMenu* pView = new QMenu(tr("View"));
+	//{
 
-	QMenu* pHelp = new QMenu(tr("Help"));
-	{
+	//}
 
-	}
+	//QMenu* pHelp = new QMenu(tr("Help"));
+	//{
 
-	pMenuBar->addMenu(pAdd);
+	//}
+
+	//pMenuBar->addMenu(pAdd);
 	pMenuBar->addMenu(pEdit);
-	pMenuBar->addMenu(pGo);
-	pMenuBar->addMenu(pView);
-	pMenuBar->addMenu(pHelp);
+	pMenuBar->addMenu(pOption);
+	//pMenuBar->addMenu(pGo);
+	//pMenuBar->addMenu(pView);
+	//pMenuBar->addMenu(pHelp);
 
 	return pMenuBar;
 }
@@ -305,7 +311,42 @@ QMenuBar* ZenoViewDockTitle::initMenu()
 
     QMenu* pDisplay = new QMenu(tr("Display"));
     {
-        QAction* pAction = new QAction(tr("Show Grid"), this);
+        QAction* pAction = new QAction(tr("Smooth Shading"), this);
+        pAction->setShortcut(QKeySequence("F5"));
+        pAction->setCheckable(true);
+        pAction->setChecked(false);
+        pDisplay->addAction(pAction);
+        connect(pAction, &QAction::triggered, this,
+            [=]() {
+                Zenovis::GetInstance().getSession()->set_smooth_shading(pAction->isChecked());
+                zenoApp->getMainWindow()->updateViewport();
+            });
+
+        pAction = new QAction(tr("Normal Check"), this);
+        pAction->setShortcut(QKeySequence("Shift+F5"));
+        pAction->setCheckable(true);
+        pAction->setChecked(false);
+        pDisplay->addAction(pAction);
+        connect(pAction, &QAction::triggered, this,
+            [=]() {
+                Zenovis::GetInstance().getSession()->set_normal_check(pAction->isChecked());
+                zenoApp->getMainWindow()->updateViewport();
+            });
+
+        pAction = new QAction(tr("Wireframe"), this);
+        pAction->setShortcut(QKeySequence("F6"));
+        pAction->setCheckable(true);
+        pAction->setChecked(false);
+        pDisplay->addAction(pAction);
+        connect(pAction, &QAction::triggered, this,
+            [=]() {
+                Zenovis::GetInstance().getSession()->set_render_wireframe(pAction->isChecked());
+                zenoApp->getMainWindow()->updateViewport();
+            });
+
+        pDisplay->addSeparator();
+        pAction = new QAction(tr("Show Grid"), this);
+        pAction->setShortcut(QKeySequence("Shift+F6"));
         pAction->setCheckable(true);
         pAction->setChecked(true);
         pDisplay->addAction(pAction);
@@ -329,39 +370,8 @@ QMenuBar* ZenoViewDockTitle::initMenu()
             });
 
         pDisplay->addSeparator();
-
-        pAction = new QAction(tr("Smooth Shading"), this);
-        pAction->setCheckable(true);
-        pAction->setChecked(false);
-        pDisplay->addAction(pAction);
-        connect(pAction, &QAction::triggered, this,
-            [=]() {
-                Zenovis::GetInstance().getSession()->set_smooth_shading(pAction->isChecked());
-                zenoApp->getMainWindow()->updateViewport();
-            });
-
-        pAction = new QAction(tr("Normal Check"), this);
-        pAction->setCheckable(true);
-        pAction->setChecked(false);
-        pDisplay->addAction(pAction);
-        connect(pAction, &QAction::triggered, this,
-            [=]() {
-                Zenovis::GetInstance().getSession()->set_normal_check(pAction->isChecked());
-                zenoApp->getMainWindow()->updateViewport();
-            });
-
-        pAction = new QAction(tr("Wireframe"), this);
-        pAction->setCheckable(true);
-        pAction->setChecked(false);
-        pDisplay->addAction(pAction);
-        connect(pAction, &QAction::triggered, this,
-            [=]() {
-                Zenovis::GetInstance().getSession()->set_render_wireframe(pAction->isChecked());
-                zenoApp->getMainWindow()->updateViewport();
-            });
-
-        pDisplay->addSeparator();
         pAction = new QAction(tr("Solid"), this);
+        pAction->setShortcut(QKeySequence("F7"));
         pDisplay->addAction(pAction);
         connect(pAction, &QAction::triggered, this, [=]() {
             const char *e = "bate";
@@ -369,50 +379,21 @@ QMenuBar* ZenoViewDockTitle::initMenu()
             zenoApp->getMainWindow()->updateViewport(QString::fromLatin1(e));
         });
         pAction = new QAction(tr("Shading"), this);
+        pAction->setShortcut(QKeySequence("Shift+F7"));
         pDisplay->addAction(pAction);
         connect(pAction, &QAction::triggered, this, [=]() {
             const char *e = "zhxx";
             Zenovis::GetInstance().getSession()->set_render_engine(e);
-            Zenovis::GetInstance().getSession()->set_enable_gi(false);
-            zenoApp->getMainWindow()->updateViewport(QString::fromLatin1(e));
-        });
-        pAction = new QAction(tr("VXGI"), this);
-        pDisplay->addAction(pAction);
-        connect(pAction, &QAction::triggered, this, [=]() {
-            const char *e = "zhxx";
-            Zenovis::GetInstance().getSession()->set_render_engine(e);
-            Zenovis::GetInstance().getSession()->set_enable_gi(true);
+            //Zenovis::GetInstance().getSession()->set_enable_gi(false);
             zenoApp->getMainWindow()->updateViewport(QString::fromLatin1(e));
         });
         pAction = new QAction(tr("Optix"), this);
+        pAction->setShortcut(QKeySequence("F8"));
         pDisplay->addAction(pAction);
         connect(pAction, &QAction::triggered, this, [=]() {
             const char *e = "optx";
             Zenovis::GetInstance().getSession()->set_render_engine(e);
             zenoApp->getMainWindow()->updateViewport(QString::fromLatin1(e));
-        });
-        pDisplay->addSeparator();
-
-        pAction = new QAction(tr("Camera Keyframe"), this);
-        pDisplay->addAction(pAction);
-
-        pDisplay->addSeparator();
-
-        pAction = new QAction(tr("English / Chinese"), this);
-        pAction->setCheckable(true);
-        {
-            QSettings settings("ZenusTech", "Zeno");
-            QVariant use_chinese = settings.value("use_chinese");
-            pAction->setChecked(use_chinese.isNull() || use_chinese.toBool());
-        }
-        pDisplay->addAction(pAction);
-        connect(pAction, &QAction::triggered, this, [=]() {
-            QSettings settings("ZenusTech", "Zeno");
-            settings.setValue("use_chinese", pAction->isChecked());
-            QMessageBox msg(QMessageBox::Information, "Language",
-                        tr("Please restart Zeno to apply changes."),
-                        QMessageBox::Ok, this);
-            msg.exec();
         });
     }
 
@@ -422,17 +403,14 @@ QMenuBar* ZenoViewDockTitle::initMenu()
         pAction->setShortcut(QKeySequence("F12"));
         pRecord->addAction(pAction);
         connect(pAction, &QAction::triggered, this, [=]() {
-            auto s = QDateTime::currentDateTime().toString(QString("yyyy-dd-MM_hh-mm-ss.png"));
-            Zenovis::GetInstance().getSession()->do_screenshot(s.toStdString(), "png");
+            //QString path = QDateTime::currentDateTime().toString(QString("yyyy-dd-MM_hh-mm-ss.png"));
+            QString path = QFileDialog::getSaveFileName(nullptr, tr("Path to Save"), "", tr("PNG images(*.png);;JPEG images(*.jpg);;BMP images(*.bmp);;EXR images(*.exr);;HDR images(*.hdr);;"));
+            QString ext = QFileInfo(path).suffix();
+            int nsamples = 16;
+            Zenovis::GetInstance().getSession()->do_screenshot(path.toStdString(), ext.toStdString(), nsamples);
         });
-        pAction = new QAction(tr("Screenshot EXR"), this);
-        pRecord->addAction(pAction);
-        connect(pAction, &QAction::triggered, this, [=]() {
-            auto s = QDateTime::currentDateTime().toString(QString("yyyy-dd-MM_hh-mm-ss.exr"));
-            Zenovis::GetInstance().getSession()->do_screenshot(s.toStdString(), "exr");
-        });
-        pAction = new QAction(tr("Record Video"), this);
-        pAction->setShortcut(QKeySequence(tr("Shift+F12")));
+        pAction = new QAction(tr("Record Video"), this); // TODO: luzh make this work
+        pAction->setShortcut(QKeySequence(("Shift+F12")));
         pRecord->addAction(pAction);
     }
 
@@ -517,7 +495,7 @@ QAction* ZenoViewDockTitle::createAction(const QString& text)
 
 ZenoPropDockTitleWidget::ZenoPropDockTitleWidget(QWidget* parent)
 	: ZenoDockTitleWidget(parent)
-	, m_title("property")
+	, m_title(tr("property"))
 {
 
 }

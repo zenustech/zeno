@@ -205,7 +205,7 @@ void LayerTreeitemDelegate::paint(QPainter* painter, const QStyleOptionViewItem&
 QSize LayerTreeitemDelegate::sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const
 {
     int w = ((QWidget*)parent())->width();
-    return QSize(w, 36);
+    return QSize(w, ZenoStyle::dpiScaled(36));
 }
 
 void LayerTreeitemDelegate::initStyleOption(QStyleOptionViewItem* option, const QModelIndex& index) const

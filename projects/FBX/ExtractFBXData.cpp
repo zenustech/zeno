@@ -5,6 +5,7 @@
 #include <zeno/types/StringObject.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/ListObject.h>
+#include <zeno/types/DictObject.h>
 
 #include "assimp/scene.h"
 
@@ -40,21 +41,48 @@ ZENDEFNODE(ExtractFBXData,
 
                },  /* category: */
                {
-                   "primitive",
+                   "FBX",
                }
+           });
+
+struct ExtractMatName : zeno::INode {
+
+    virtual void apply() override {
+        auto mat = get_input<IMaterial>("material");
+        auto key = get_input<zeno::StringObject>("key")->get();
+        auto name = std::make_shared<zeno::StringObject>();
+        name->set(mat->value.at(key).matName);
+        set_output("name", std::move(name));
+    }
+};
+ZENDEFNODE(ExtractMatName,
+           {       /* inputs: */
+            {
+                "material", "key"
+            },  /* outputs: */
+            {
+                "name"
+            },  /* params: */
+            {
+
+            },  /* category: */
+            {
+                "FBX",
+            }
            });
 
 struct ExtractMatTexList : zeno::INode {
 
     virtual void apply() override {
-        auto mat = get_input<IMaterial>("material");
-        auto key = get_input<zeno::StringObject>("key")->get();
+        auto mat = get_input<SMaterial>("material");
 
         //zeno::log_info(">>>>> Get Key {}", key);
         //zeno::log_info(">>>>> Get Mat Name {}", mat->value.at(key).matName);
 
+        auto name = std::make_shared<zeno::StringObject>();
+
         auto lo = std::make_shared<zeno::ListObject>();
-        auto tl = mat->value.at(key).getTexList();
+        auto tl = mat->getTexList();
         for(auto&p: tl){
             auto s = std::make_shared<zeno::StringObject>();
             s->value = p;
@@ -66,23 +94,57 @@ struct ExtractMatTexList : zeno::INode {
         //}
         //zeno::log_info(">>>>> Get TexLen {}", lo->arr.size());
 
+        name->set(mat->matName);
+
+        set_output("name", std::move(name));
         set_output("texLists", std::move(lo));
     }
 };
 ZENDEFNODE(ExtractMatTexList,
            {       /* inputs: */
                {
-                   {"IMaterial", "material"}, {"string", "key"}
+                   {"IMaterial", "material"},
                },  /* outputs: */
                {
-                    "texLists"
+                    "texLists", "name"
                },  /* params: */
                {
 
                },  /* category: */
                {
-                   "primitive",
+                   "FBX",
                }
+           });
+
+struct ExtractMatDict : zeno::INode {
+
+    virtual void apply() override {
+        auto mat = get_input<IMaterial>("material");
+        auto mats = std::make_shared<zeno::DictObject>();
+        for(auto& m:mat->value){
+            auto name = m.second.matName;
+            if(mats->lut.find(name) == mats->lut.end()){
+                auto sm = std::make_shared<SMaterial>(m.second);
+                mats->lut[name] = sm;
+            }
+        }
+        set_output("mats", std::move(mats));
+    }
+};
+ZENDEFNODE(ExtractMatDict,
+           {       /* inputs: */
+            {
+                {"IMaterial", "material"},
+            },  /* outputs: */
+            {
+                "mats",
+            },  /* params: */
+            {
+
+            },  /* category: */
+            {
+                "FBX",
+            }
            });
 
 struct ExtractCameraData : zeno::INode {
@@ -118,10 +180,10 @@ struct ExtractCameraData : zeno::INode {
         //zeno::log_info(">>>>> P {: f} {: f} {: f}", _pos[0], _pos[1], _pos[2]);
         //zeno::log_info(">>>>> U {: f} {: f} {: f}", _up[0], _up[1], _up[2]);
         //zeno::log_info(">>>>> V {: f} {: f} {: f}", _view[0], _view[1], _view[2]);
-        zeno::log_info(">>>>> FL {: f} FW {: f} FH {: f} AOV {: f} {: f} FOV {: f} {: f}",
-                       focL->get<float>(), filmW->get<float>(), filmH->get<float>(),
-                       haov->get<float>(), waov->get<float>(), hfov->get<float>(), cam.hFov);
-        zeno::log_info("-------------------------");
+        //zeno::log_info(">>>>> FL {: f} FW {: f} FH {: f} AOV {: f} {: f} FOV {: f} {: f}",
+        //               focL->get<float>(), filmW->get<float>(), filmH->get<float>(),
+        //               haov->get<float>(), waov->get<float>(), hfov->get<float>(), cam.hFov);
+        //zeno::log_info("-------------------------");
 
         set_output("pos", std::move(pos));
         set_output("up", std::move(up));
@@ -137,7 +199,7 @@ struct ExtractCameraData : zeno::INode {
 ZENDEFNODE(ExtractCameraData,
            {       /* inputs: */
                {
-                   "key", "camobject"
+           {"string", "key", "camera1"}, "camobject"
                },  /* outputs: */
                {
                    "pos", "up", "view", "focL", "haov", "waov", "hfov", "filmW", "filmH"
@@ -146,6 +208,6 @@ ZENDEFNODE(ExtractCameraData,
 
                },  /* category: */
                {
-                   "primitive",
+                   "FBX",
                }
            });

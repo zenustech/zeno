@@ -41,7 +41,7 @@ public:
     void loadGLAPI(void *procaddr);
     void initializeGL();
     void paintGL();
-    void recordGL(const std::string& record_path);
+    //void recordGL(const std::string& record_path);
     int getCurrentFrameId();
     zenovis::Session *getSession() const;
     void updatePerspective(QVector2D const &resolution, PerspectiveInfo const &perspective);

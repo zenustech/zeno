@@ -14,9 +14,8 @@ public:
 	static NODE_DATA createPointNode(IGraphsModel *pModel, QModelIndex subgIdx, const QString &descName, const QPointF &pt,
                               const QPointF &param);
 	static NODE_TYPE nodeType(const QString& name);
-	static QList<QAction*> getCategoryActions(IGraphsModel* pModel, QModelIndex subgIdx, const QString& filter, QPointF scenePos);
     static void initInputSocks(IGraphsModel* pModel, INPUT_SOCKETS& descInputs);
-	static void initParams(IGraphsModel* pModel, PARAMS_INFO& params);
+	static void initParams(const QString& descName, IGraphsModel* pModel, PARAMS_INFO& params);
 	static PARAMS_INFO initParamsNotDesc(const QString& name);
 };
 

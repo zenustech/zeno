@@ -359,27 +359,19 @@ struct iterator_facade
     using iterator_category = std::random_access_iterator_tag;
 };
 
-}
-
-/*template
+template
 < class Derived
-, class Value
-, class Category
-, class Reference
-, class Pointer
-, class Difference
+, class It
+, class Value = typename std::iterator_traits<It>::value_type
 >
-struct allocator_traits<::zeno::iterator_facade
-< Derived
-, Value
-, Category
-, Reference
-, Pointer
-, Difference
->> {
-    using value_type = Value;
-    using iterator_category = Category;
-    using reference = Reference;
-    using pointer = Pointer;
-    using difference_type = Difference;
-};*/
+struct iterator_adaptor : iterator_facade<Derived
+, std::remove_cv_t<std::remove_reference_t<Value>>
+, typename std::iterator_traits<It>::iterator_category
+, std::conditional_t<std::is_lvalue_reference_v<Value>, Value,
+    std::add_lvalue_reference_t<std::add_const_t<Value>>>
+, std::add_pointer_t<std::remove_reference_t<
+  Value>>
+, typename std::iterator_traits<It>::difference_type
+> {};
+
+}

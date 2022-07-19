@@ -1,6 +1,7 @@
 #include "zenosearchbar.h"
 #include <zenoui/comctrl/ziconbutton.h>
 #include <zenoui/model/modelrole.h>
+#include <zenoui/style/zenostyle.h>
 #include "zenoapplication.h"
 #include "graphsmanagment.h"
 
@@ -23,23 +24,36 @@ ZenoSearchBar::ZenoSearchBar(const QModelIndex& idx, QWidget *parentWidget)
     m_pLineEdit->setObjectName("searchEdit");
     m_pLineEdit->setFixedWidth(200);
     m_pLineEdit->setFont(QFont("HarmonyOS Sans", 12));
-    ZIconButton *pCloseBtn = new ZIconButton(QIcon(":/icons/closebtn.svg"), QSize(20, 20),
-                                                   QColor(61, 61, 61), QColor(66, 66, 66));
-    ZIconButton *pSearchBackward = new ZIconButton(QIcon(":/icons/search_arrow_backward.svg"), QSize(20, 20),
-                                                   QColor(61, 61, 61), QColor(66, 66, 66));
-    ZIconButton *pSearchForward = new ZIconButton(QIcon(":/icons/search_arrow.svg"), QSize(20, 20),
-                                               QColor(61, 61, 61), QColor(66, 66, 66));
+    ZIconButton *pCloseBtn = new ZIconButton(
+        QIcon(":/icons/closebtn.svg"),
+        ZenoStyle::dpiScaledSize(QSize(20, 20)),
+        QColor(61, 61, 61),
+        QColor(66, 66, 66));
+    ZIconButton *pSearchBackward = new ZIconButton(
+        QIcon(":/icons/search_arrow_backward.svg"),
+        ZenoStyle::dpiScaledSize(QSize(20, 20)),
+        QColor(61, 61, 61),
+        QColor(66, 66, 66));
+    ZIconButton *pSearchForward = new ZIconButton(
+        QIcon(":/icons/search_arrow.svg"),
+        ZenoStyle::dpiScaledSize(QSize(20, 20)),
+        QColor(61, 61, 61),
+        QColor(66, 66, 66));
     QHBoxLayout *pEditLayout = new QHBoxLayout;
     
     pEditLayout->addWidget(m_pLineEdit);
     pEditLayout->addWidget(pSearchBackward);
     pEditLayout->addWidget(pSearchForward);
     pEditLayout->addWidget(pCloseBtn);
-    pEditLayout->setContentsMargins(10, 6, 10, 6);
+    pEditLayout->setContentsMargins(
+        ZenoStyle::dpiScaled(10),
+        ZenoStyle::dpiScaled(6),
+        ZenoStyle::dpiScaled(10),
+        ZenoStyle::dpiScaled(6));
 
     setLayout(pEditLayout);
 
-    connect(m_pLineEdit, SIGNAL(textChanged(const QString&)), this, SLOT(onSearchExec(const QString &)));
+    connect(m_pLineEdit, SIGNAL(textChanged(const QString&)), this, SLOT(onSearchExec(const QString&)));
     connect(pSearchForward, SIGNAL(clicked()), this, SLOT(onSearchForward()));
     connect(pSearchBackward, SIGNAL(clicked()), this, SLOT(onSearchBackward()));
     connect(pCloseBtn, SIGNAL(clicked()), this, SLOT(close()));

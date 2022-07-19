@@ -52,11 +52,11 @@ NODE_DESCS UiHelper::parseDescs(const rapidjson::Value &jsonDescs)
                 const QString &socketType = input_triple[0].GetString();
                 const QString &socketName = input_triple[1].GetString();
                 const QString &socketDefl = input_triple[2].GetString();
-                PARAM_CONTROL ctrlType = _getControlType(socketType);
+                PARAM_CONTROL ctrlType = getControlType(socketType);
                 INPUT_SOCKET inputSocket;
                 inputSocket.info = SOCKET_INFO("", socketName);
                 inputSocket.info.type = socketType;
-                inputSocket.info.control = _getControlType(socketType);
+                inputSocket.info.control = getControlType(socketType);
                 inputSocket.info.defaultValue = _parseDefaultValue(socketDefl, socketType);
                 desc.inputs.insert(socketName, inputSocket);
             } else {
@@ -70,7 +70,7 @@ NODE_DESCS UiHelper::parseDescs(const rapidjson::Value &jsonDescs)
                 const QString &socketType = param_triple[0].GetString();
                 const QString &socketName = param_triple[1].GetString();
                 const QString &socketDefl = param_triple[2].GetString();
-                PARAM_CONTROL ctrlType = _getControlType(socketType);
+                PARAM_CONTROL ctrlType = getControlType(socketType);
                 PARAM_INFO paramInfo;
                 paramInfo.bEnableConnect = false;
                 paramInfo.control = ctrlType;
@@ -90,11 +90,11 @@ NODE_DESCS UiHelper::parseDescs(const rapidjson::Value &jsonDescs)
                 const QString &socketType = output_triple[0].GetString();
                 const QString &socketName = output_triple[1].GetString();
                 const QString &socketDefl = output_triple[2].GetString();
-                PARAM_CONTROL ctrlType = _getControlType(socketType);
+                PARAM_CONTROL ctrlType = getControlType(socketType);
                 OUTPUT_SOCKET outputSocket;
                 outputSocket.info = SOCKET_INFO("", socketName);
                 outputSocket.info.type = socketType;
-                outputSocket.info.control = _getControlType(socketType);
+                outputSocket.info.control = getControlType(socketType);
                 outputSocket.info.defaultValue = _parseDefaultValue(socketDefl, socketType);
 
                 desc.outputs.insert(socketName, outputSocket);
@@ -115,7 +115,7 @@ NODE_DESCS UiHelper::parseDescs(const rapidjson::Value &jsonDescs)
 
 QVariant UiHelper::_parseDefaultValue(const QString &defaultValue, const QString &type)
 {
-    auto control = _getControlType(type);
+    auto control = getControlType(type);
     switch (control) {
     case CONTROL_INT:
         return defaultValue.toInt();
@@ -127,7 +127,7 @@ QVariant UiHelper::_parseDefaultValue(const QString &defaultValue, const QString
     case CONTROL_WRITEPATH:
     case CONTROL_READPATH:
     case CONTROL_MULTILINE_STRING:
-    case CONTROL_HEATMAP:
+    case CONTROL_COLOR:
     case CONTROL_CURVE:
     case CONTROL_ENUM:
         return defaultValue;
@@ -193,7 +193,7 @@ QVariant UiHelper::parseTextValue(PARAM_CONTROL editCtrl, const QString& textVal
 	case CONTROL_READPATH:
 	case CONTROL_WRITEPATH:
 	case CONTROL_MULTILINE_STRING:
-    case CONTROL_HEATMAP:
+    case CONTROL_COLOR:
     case CONTROL_CURVE:
     case CONTROL_ENUM:
 	case CONTROL_STRING: varValue = textValue; break;
@@ -235,7 +235,7 @@ QString UiHelper::generateUuid(const QString& name)
     return QString::number(uuid.data1, 16) + "-" + name;
 }
 
-PARAM_CONTROL UiHelper::_getControlType(const QString &type)
+PARAM_CONTROL UiHelper::getControlType(const QString &type)
 {
     if (type.isEmpty()) {
         return CONTROL_NONE;
@@ -255,12 +255,14 @@ PARAM_CONTROL UiHelper::_getControlType(const QString &type)
         return CONTROL_READPATH;
     } else if (type == "multiline_string") {
         return CONTROL_MULTILINE_STRING;
-    } else if (type == "heatmap") {
-        return CONTROL_HEATMAP;
+    } else if (type == "color") {   //color is more general than heatmap.
+        return CONTROL_COLOR;
     } else if (type == "curve") {
         return CONTROL_CURVE;
     } else if (type.startsWith("enum ")) {
         return CONTROL_ENUM;
+    } else if (type == "NumericObject") {
+        return CONTROL_FLOAT;
     } else if (type.isEmpty()) {
         return CONTROL_NONE;
     } else {
@@ -316,6 +318,55 @@ QString UiHelper::variantToString(const QVariant& var)
     }
 
     return value;
+}
+
+qreal UiHelper::parseNumeric(const rapidjson::Value& val, bool& bSucceed)
+{
+    qreal num = 0;
+    if (val.IsFloat())
+    {
+        num = val.GetFloat();
+        bSucceed = true;
+    }
+    else if (val.IsDouble())
+    {
+        num = val.GetDouble();
+        bSucceed = true;
+    }
+    else if (val.IsInt())
+    {
+        num = val.GetInt();
+        bSucceed = true;
+    }
+    else
+    {
+        RAPIDJSON_ASSERT(false);
+        bSucceed = false;
+    }
+    return num;
+}
+
+QPointF UiHelper::parsePoint(const rapidjson::Value& ptObj, bool& bSucceed)
+{
+    QPointF pt;
+
+    RAPIDJSON_ASSERT(ptObj.IsArray());
+    const auto &arr_ = ptObj.GetArray();
+    RAPIDJSON_ASSERT(arr_.Size() == 2);
+
+    const auto &xObj = arr_[0];
+    pt.setX(UiHelper::parseNumeric(xObj, bSucceed));
+    RAPIDJSON_ASSERT(bSucceed);
+    if (!bSucceed)
+        return pt;
+
+    const auto &yObj = arr_[1];
+    pt.setY(UiHelper::parseNumeric(yObj, bSucceed));
+    RAPIDJSON_ASSERT(bSucceed);
+    if (!bSucceed)
+        return pt;
+
+    return pt;
 }
 
 int UiHelper::getMaxObjId(const QList<QString> &lst)

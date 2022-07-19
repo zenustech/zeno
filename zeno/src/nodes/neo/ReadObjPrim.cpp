@@ -53,6 +53,7 @@ std::shared_ptr<PrimitiveObject> parse_obj(std::vector<char> &&bin) {
     char const *eit = bin.data() + bin.size();// - 8;
 
     auto prim = std::make_shared<PrimitiveObject>();
+    std::vector<int> loop_uvs;
 
     while (it < eit) {
         auto nit = std::find(it, eit, '\n');
@@ -76,7 +77,7 @@ std::shared_ptr<PrimitiveObject> parse_obj(std::vector<char> &&bin) {
                 if (*it == '/' && it[1] != '/') {
                     ++it;
                     int xt = takeu(it) - 1;
-                    prim->loop_uvs.push_back(xt);
+                    loop_uvs.push_back(xt);
                 }
                 it = std::find(it, nit, ' ');
                 prim->loops.push_back(x);
@@ -96,6 +97,10 @@ std::shared_ptr<PrimitiveObject> parse_obj(std::vector<char> &&bin) {
 
         }
         it = nit + 1;
+    }
+
+    if (loop_uvs.size() == prim->loops.size()) {
+        prim->loops.add_attr<int>("uvi") = std::move(loop_uvs);
     }
 
     return prim;

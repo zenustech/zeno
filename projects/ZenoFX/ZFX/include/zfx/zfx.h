@@ -21,7 +21,7 @@ struct Options {
     bool reassign_parameters = true;
     bool reassign_channels = true;
 
-    bool merge_identical = true;
+    bool merge_identical = false; // have bug...
     bool kill_unreachable = true;
     bool constant_fold = true;
 

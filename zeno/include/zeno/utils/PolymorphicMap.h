@@ -53,29 +53,6 @@ struct PolymorphicMap {
     }
 
     template <class Derived>
-    std::vector<Derived *> values() const {
-        static_assert(std::is_base_of_v<element_type, Derived>);
-        std::vector<Derived *> ret;
-        for (auto const &[key, ptr]: m_curr) {
-            auto p = std::addressof(*ptr);
-            if (auto q = dynamic_cast<Derived *>(p)) {
-                ret.push_back(q);
-            }
-        }
-        return ret;
-    }
-
-    std::vector<element_type *> values() const {
-        std::vector<element_type *> ret;
-        ret.reserve(m_curr.size());
-        for (auto const &[key, ptr]: m_curr) {
-            auto p = std::addressof(*ptr);
-            ret.push_back(p);
-        }
-        return ret;
-    }
-
-    template <class Derived>
     std::vector<std::pair<key_type, Derived *>> pairs() const {
         static_assert(std::is_base_of_v<element_type, Derived>);
         std::vector<std::pair<key_type, Derived *>> ret;
@@ -94,6 +71,27 @@ struct PolymorphicMap {
         for (auto const &[key, ptr]: m_curr) {
             auto p = std::addressof(*ptr);
             ret.emplace_back(key, p);
+        }
+        return ret;
+    }
+
+    template <class Derived>
+    std::vector<std::pair<key_type, typename std::pointer_traits<mapped_type>::template rebind<Derived>>> pairsShared() const {
+        static_assert(std::is_base_of_v<element_type, Derived>);
+        std::vector<std::pair<key_type, typename std::pointer_traits<mapped_type>::template rebind<Derived>>> ret;
+        for (auto const &[key, ptr]: m_curr) {
+            if (auto q = std::dynamic_pointer_cast<Derived>(ptr)) {
+                ret.emplace_back(key, std::move(q));
+            }
+        }
+        return ret;
+    }
+
+    std::vector<std::pair<key_type, mapped_type>> pairsShared() const {
+        std::vector<std::pair<key_type, mapped_type>> ret;
+        ret.reserve(m_curr.size());
+        for (auto const &[key, ptr]: m_curr) {
+            ret.emplace_back(key, ptr);
         }
         return ret;
     }

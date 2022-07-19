@@ -66,6 +66,6 @@ ZENDEFNODE(ExportFBX,
 
                },  /* category: */
                {
-                   "primitive",
+                   "FBX",
                }
            });

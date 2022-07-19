@@ -84,7 +84,7 @@ ZENDEFNODE(PrimPerlinNoise, {
     {
     {"PrimitiveObject", "prim"},
     {"string", "inAttr", "pos"},
-    {"string", "outAttr", "clr"},
+    {"string", "outAttr", "tmp"},
     {"float", "scale", "5"},
     {"float", "detail", "2"},
     {"float", "roughness", "0.5"},
