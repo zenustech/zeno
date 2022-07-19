@@ -43,6 +43,10 @@ public:
     QVariant hitOnFloor(float x, float y) const;
 
 private:
+    void createPointNode(QPointF pnt);
+
+
+private:
     bool m_mmb_pressed;
     float m_theta;
     float m_phi;
@@ -57,6 +61,7 @@ private:
 
 class ViewportWidget : public QOpenGLWidget
 {
+    Q_OBJECT
     typedef QOpenGLWidget _base;
 public:
     ViewportWidget(QWidget* parent = nullptr);
@@ -66,11 +71,17 @@ public:
     void paintGL() override;
     void checkRecord();
 
+    private:
+    void createPointNode(QPointF pnt);
+
 protected:
     void mousePressEvent(QMouseEvent* event) override;
     void mouseReleaseEvent(QMouseEvent* event) override;
     void mouseMoveEvent(QMouseEvent* event) override;
     void wheelEvent(QWheelEvent* event) override;
+
+signals:
+    void sig_Draw();
 
 private:
     std::shared_ptr<CameraControl> m_camera;

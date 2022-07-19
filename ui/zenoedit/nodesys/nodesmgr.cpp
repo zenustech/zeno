@@ -33,6 +33,34 @@ void NodesMgr::createNewNode(IGraphsModel* pModel, QModelIndex subgIdx, const QS
 	pModel->addNode(node, subgIdx, true);
 }
 
+NODE_DATA NodesMgr::createPointNode(IGraphsModel *pModel, QModelIndex subgIdx, const QString &descName,
+                                    const QPointF &pt,
+                               const QPointF &param) {
+    zeno::log_debug("onCreatePointNode");
+    NODE_DESCS descs = pModel->descriptors();
+    NODE_DESC desc = descs[descName];
+
+    const QString &nodeid = UiHelper::generateUuid(descName);
+    NODE_DATA node;
+    node[ROLE_OBJID] = nodeid;
+    node[ROLE_OBJNAME] = descName;
+    node[ROLE_NODETYPE] = nodeType(descName);
+    initInputSocks(pModel, desc.inputs);
+    node[ROLE_INPUTS] = QVariant::fromValue(desc.inputs);
+    node[ROLE_OUTPUTS] = QVariant::fromValue(desc.outputs);
+    initParams(pModel, desc.params);
+	(desc.params["x"]).value = param.x();
+    (desc.params["y"]).value = param.y();
+    node[ROLE_PARAMETERS] = QVariant::fromValue(desc.params);
+    node[ROLE_PARAMS_NO_DESC] = QVariant::fromValue(initParamsNotDesc(descName));
+    node[ROLE_OBJPOS] = pt;
+    node[ROLE_COLLASPED] = false;
+
+    pModel->addNode(node, subgIdx, true);
+
+	return node;
+}
+
 NODE_TYPE NodesMgr::nodeType(const QString& name)
 {
 	if (name == "Blackboard")
