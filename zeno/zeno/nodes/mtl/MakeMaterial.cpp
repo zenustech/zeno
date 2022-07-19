@@ -112,6 +112,12 @@ struct ExtractMaterialShader : zeno::INode
       auto prim = get_input<zeno::PrimitiveObject>("prim");
       auto mtl = get_input<zeno::MaterialObject>("mtl");
       prim->mtl = mtl;
+      if(mtl->ufloat.size() != 0){
+          auto& uf = prim->add_attr<float>("ufloat");
+          uf.resize(mtl->ufloat.size());
+          printf("set material size: %d %d\n",mtl->ufloat.size(), uf.size());
+          uf = mtl->ufloat;
+      }
       set_output("prim", std::move(prim));
     }
   };

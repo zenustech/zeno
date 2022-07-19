@@ -6,6 +6,7 @@
 #include <zeno/types/ListObject.h>
 #include <zeno/types/TextureObject.h>
 #include <zeno/utils/string.h>
+#include <zeno/utils/logger.h>
 
 namespace zeno {
 
@@ -96,6 +97,9 @@ struct ShaderFinalize : INode {
         auto commonCode = em.getCommonCode();
 
         auto mtl = std::make_shared<MaterialObject>();
+
+        zeno::log_info("------> code  {}", code);
+//        zeno::log_info("------> commonCode  {}", commonCode);
         mtl->frag = std::move(code);
         mtl->common = std::move(commonCode);
         if (has_input("extensionsCode"))
@@ -110,6 +114,19 @@ struct ShaderFinalize : INode {
                 auto texCode = "uniform sampler2D zenotex" + std::to_string(texId) + ";\n";
 			    mtl->tex2Ds.push_back(tex);
                 mtl->common.insert(0, texCode);
+            }
+        }
+        if (has_input("u_float_list"))
+        {
+            auto u_float_list = get_input<ListObject>("u_float_list")->get<float>();
+            int count = 0;
+            for (const auto &u_f: u_float_list)
+            {
+                auto texCode = "uniform float ufloat" + std::to_string(count) + ";\n";
+                mtl->common.insert(0, texCode);
+                zeno::log_info("========== value {} code {}\n",u_f, texCode);
+                mtl->ufloat.push_back(u_f);
+                count++;
             }
         }
 
@@ -155,6 +172,10 @@ ZENDEFNODE(ShaderFinalize, {
         {"string", "commonCode"},
         {"string", "extensionsCode"},
         {"list", "tex2dList"},
+        {"list", "u_float_list"},
+        {"list", "u_vec2_list"},
+        {"list", "u_vec3_list"},
+        {"list", "u_vec4_list"},
     },
     {
         {"MaterialObject", "mtl"},

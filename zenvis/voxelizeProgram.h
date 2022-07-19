@@ -148,6 +148,11 @@ uniform bool mRenderWireframe;
 uniform vec3 u_scene_voxel_scale;
 uniform mat4 vxView;
 
+uniform vec4 attr_uniform_vec4[16];
+uniform vec3 attr_uniform_vec3[16];
+uniform vec2 attr_uniform_vec2[16];
+uniform float attr_uniform_float[16];
+
 uniform float alphaPass;
 layout(binding = 1, r32ui) uniform volatile coherent uimage3D vxNormalGrid;
 

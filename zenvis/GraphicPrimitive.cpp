@@ -324,6 +324,8 @@ struct GraphicPrimitive : IGraphic {
   drawObject triObj;
   std::map<int, std::string> textures;
 
+  std::vector<float> ufloat;
+
   bool prim_has_mtl = false;
   bool prim_has_inst = false;
   int prim_inst_amount = 0;
@@ -397,7 +399,16 @@ struct GraphicPrimitive : IGraphic {
         }
     }
     bool enable_uv = false;
-    
+
+    if(prim->has_attr("ufloat")){
+        auto uf_ = prim->attr<float>("ufloat");
+        printf("aaaaaaaaaaaaaaaaaaaaaaaaaaa %d\n", uf_.size());
+            for(int i=0;i<uf_.size();i++){
+            printf("++++++++++ %f\n",uf_[i]);
+            ufloat.push_back(uf_[i]);
+        }
+    }
+
     auto const &pos = prim->attr<zeno::vec3f>("pos");
     auto const &clr = prim->attr<zeno::vec3f>("clr");
     auto const &nrm = prim->attr<zeno::vec3f>("nrm");
@@ -1231,8 +1242,11 @@ struct GraphicPrimitive : IGraphic {
                 CHECK_GL(glBindTexture(GL_TEXTURE_2D, brdfLUT));
             texOcp++;
 
-            
 
+            if(ufloat.size() != 0){
+                auto uf = "attr_uniform_float[" + std::to_string(0) + "]";
+                triObj.prog->set_uniform(uf.c_str(), ufloat[0]);
+            }
 
             
             triObj.prog->set_uniform("farPlane", getCamFar());

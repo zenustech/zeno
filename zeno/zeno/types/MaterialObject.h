@@ -18,6 +18,10 @@ namespace zeno
         std::string common;
         std::string extensions;
         std::vector<std::shared_ptr<Texture2DObject>> tex2Ds;
+        std::vector<float> ufloat{};
+        std::vector<zeno::vec2f> uv2f{};
+        std::vector<zeno::vec3f> uv3f{};
+        std::vector<zeno::vec4f> uv4f{};
 
         size_t serializeSize()
         {

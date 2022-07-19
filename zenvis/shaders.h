@@ -131,6 +131,10 @@ uniform bool mSmoothShading;
 uniform bool mNormalCheck;
 uniform bool mRenderWireframe;
 
+uniform vec4 attr_uniform_vec4[16];
+uniform vec3 attr_uniform_vec3[16];
+uniform vec2 attr_uniform_vec2[16];
+uniform float attr_uniform_float[16];
 
 in vec3 position;
 in vec3 iColor;
@@ -446,6 +450,10 @@ uniform bool mSmoothShading;
 uniform bool mNormalCheck;
 uniform bool mRenderWireframe;
 
+uniform vec4 attr_uniform_vec4[16];
+uniform vec3 attr_uniform_vec3[16];
+uniform vec2 attr_uniform_vec2[16];
+uniform float attr_uniform_float[16];
 
 in vec3 position;
 in vec3 iColor;
