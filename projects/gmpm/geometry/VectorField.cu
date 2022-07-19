@@ -32,6 +32,10 @@ struct ZSEvalGradientField : zeno::INode {
 
         auto attr = get_param<std::string>("tag");
         auto attrg = get_param<std::string>("gtag");
+        auto skip_boundary_gradient = get_param<int>("skip_boundary");
+        auto btag = get_param<std::string>("btag");
+        auto normalize = get_param<int>("normalize");
+
         if(!verts.hasProperty(attr)){
             fmt::print("the input field does not contain specified channel:{}\n",attr);
             throw std::runtime_error("the input field does not contain specified channel");
@@ -71,9 +75,35 @@ struct ZSEvalGradientField : zeno::INode {
             compute_gradient<3>(cudaPol,eles,verts,"x",vtemp,"T",etemp,"g");
         // copy the gradient field from etemp to eles
         cudaPol(zs::range(eles.size()),
-            [eles = proxy<space>({},eles),etemp = proxy<space>({},etemp),gtag = zs::SmallString(attrg)]
+            [verts = proxy<space>({},verts),eles = proxy<space>({},eles),etemp = proxy<space>({},etemp),gtag = zs::SmallString(attrg),normalize,skip_boundary_gradient,btag = zs::SmallString(btag),simplex_size]
                 ZS_LAMBDA(int ei) mutable {
-                    eles.tuple<3>(gtag,ei) = etemp.pack<3>("g",ei);
+                    bool on_bou = false;
+                    if(simplex_size == 3){
+                        auto inds = eles.template pack<3>("inds",ei).reinterpret_bits<int>();
+                        for(int i = 0;i < simplex_size;++i){
+                            auto b = verts(btag,inds[i]);
+                            if(b > 1e-6)
+                                on_bou = true;
+                        }
+                    }
+                    if(simplex_size == 4){
+                        auto inds = eles.template pack<4>("inds",ei).reinterpret_bits<int>();
+                        for(int i = 0;i < simplex_size;++i){
+                            auto b = verts(btag,inds[i]);
+                            if(b > 1e-6)
+                                on_bou = true;
+                        }
+                    }
+
+                    if(on_bou && skip_boundary_gradient){
+                        eles.tuple<3>(gtag,ei) = vec3::zeros();
+                    }else {
+                        float alpha = 1;
+                        if(normalize)
+                            alpha = (etemp.template pack<3>("g",ei).norm());
+                        eles.template tuple<3>(gtag,ei) = etemp.template pack<3>("g",ei)/alpha;
+
+                    }
         });
         set_output("field",field);
     }
@@ -83,7 +113,7 @@ ZENDEFNODE(ZSEvalGradientField, {
                                     {"field"},
                                     {"field"},
                                     {
-                                        {"string","tag","T"},{"string","gtag","gradT"}
+                                        {"string","tag","T"},{"string","gtag","gradT"},{"int","skip_boundary","0"},{"int","normalize","0"},{"string","btag","btag"}
                                     },
                                     {"ZSGeometry"}
 });
@@ -103,7 +133,7 @@ struct ZSRetrieveVectorField : zeno::INode {
         auto type = get_param<std::string>("location");
         auto gtag = get_param<std::string>("gtag");
         auto xtag = get_param<std::string>("xtag");
-        auto normalize = get_param<int>("normalize");
+        // auto normalize = get_param<int>("normalize");
         auto scale = (T)get_param<float>("scale");
 
         if(type == "element" && !eles.hasProperty(gtag)){
@@ -130,7 +160,7 @@ struct ZSRetrieveVectorField : zeno::INode {
 
         cudaPol(zs::range(vec_buffer.size()),
             [vec_buffer = proxy<cuda_space>({},vec_buffer),verts = proxy<cuda_space>({},verts),eles = proxy<cuda_space>({},eles),
-                gtag = zs::SmallString(gtag),xtag = zs::SmallString(xtag),on_elm,scale,normalize,elm_dim] ZS_LAMBDA(int i) mutable {
+                gtag = zs::SmallString(gtag),xtag = zs::SmallString(xtag),on_elm,scale,elm_dim] ZS_LAMBDA(int i) mutable {
                     if(on_elm){
                         auto bx = vec3::zeros();
                         if(elm_dim == 4){
@@ -143,10 +173,10 @@ struct ZSRetrieveVectorField : zeno::INode {
                                 bx += verts.pack<3>("xtag",inds[j]) / 3;
                         }
                         vec_buffer.tuple<3>("x",i) = bx;
-                        vec_buffer.tuple<3>("vec",i) = scale * eles.pack<3>(gtag,i) / eles.pack<3>(gtag,i).norm();
+                        vec_buffer.tuple<3>("vec",i) = scale * eles.pack<3>(gtag,i)/* / eles.pack<3>(gtag,i).norm()*/;
                     }else{
                         vec_buffer.tuple<3>("x",i) = verts.pack<3>(xtag,i);
-                        vec_buffer.tuple<3>("vec",i) = scale * verts.pack<3>(gtag,i) / verts.pack<3>(gtag,i).norm();
+                        vec_buffer.tuple<3>("vec",i) = scale * verts.pack<3>(gtag,i)/* / verts.pack<3>(gtag,i).norm()*/;
                     }
         });
 
@@ -177,7 +207,7 @@ struct ZSRetrieveVectorField : zeno::INode {
 ZENDEFNODE(ZSRetrieveVectorField, {
     {"field"},
     {"vec_field"},
-    {{"enum element vert","location","element"},{"string","gtag","vec_field"},{"string","xtag","xtag"},{"float","scale","1.0"},{"int","normalize","1"}},
+    {{"enum element vert","location","element"},{"string","gtag","vec_field"},{"string","xtag","xtag"},{"float","scale","1.0"}},
     {"ZSGeometry"},
 });
 
