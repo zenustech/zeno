@@ -130,6 +130,7 @@ struct CodimStepping : INode {
 // static constexpr bool s_enableAdaptiveSetting = false;
 #define s_enableContact 1
 // static constexpr bool s_enableContact = true;
+#define s_enableGround 0
 #define s_enableDCDCheck 0
   // static constexpr bool s_enableDCDCheck = false;
 
@@ -248,16 +249,16 @@ struct CodimStepping : INode {
       zs::memset(zs::mem_device, temp.data(), 0, sizeof(T) * size);
     }
     template <typename Op = std::plus<T>>
-    T reduce(zs::CudaExecutionPolicy &cudaPol, const zs::Vector<T> &res,
-             Op op = {}) {
+    static T reduce(zs::CudaExecutionPolicy &cudaPol, const zs::Vector<T> &res,
+                    Op op = {}) {
       using namespace zs;
       Vector<T> ret{res.get_allocator(), 1};
       zs::reduce(cudaPol, std::begin(res), std::end(res), std::begin(ret), (T)0,
                  op);
       return ret.getVal();
     }
-    T dot(zs::CudaExecutionPolicy &cudaPol, dtiles_t &vertData,
-          const zs::SmallString tag0, const zs::SmallString tag1) {
+    static T dot(zs::CudaExecutionPolicy &cudaPol, dtiles_t &vertData,
+                 const zs::SmallString tag0, const zs::SmallString tag1) {
       using namespace zs;
       constexpr auto space = execspace_e::cuda;
       // Vector<double> res{vertData.get_allocator(), vertData.size()};
@@ -276,8 +277,8 @@ struct CodimStepping : INode {
               });
       return reduce(cudaPol, res, std::plus<double>{});
     }
-    T infNorm(zs::CudaExecutionPolicy &cudaPol, dtiles_t &vertData,
-              const zs::SmallString tag = "dir") {
+    static T infNorm(zs::CudaExecutionPolicy &cudaPol, dtiles_t &vertData,
+                     const zs::SmallString tag = "dir") {
       using namespace zs;
       constexpr auto space = execspace_e::cuda;
       Vector<T> res{vertData.get_allocator(), count_warps(vertData.size())};
@@ -343,9 +344,22 @@ struct CodimStepping : INode {
         seOffset += surfEdges.size();
         svOffset += surfVerts.size();
       }
-
-      T averageSurfEdgeLength(zs::CudaExecutionPolicy &pol,
-                              IPCSystem &system) const {
+      T averageNodalMass(zs::CudaExecutionPolicy &pol) const {
+        using namespace zs;
+        constexpr auto space = execspace_e::cuda;
+        if (zsprim.hasMeta(s_meanMassTag))
+          return zsprim.readMeta(s_meanMassTag, zs::wrapt<T>{});
+        Vector<T> masses{verts.get_allocator(), verts.size()};
+        pol(Collapse{verts.size()},
+            [verts = proxy<space>({}, verts),
+             masses = proxy<space>(masses)] __device__(int vi) mutable {
+              masses[vi] = verts("m", vi);
+            });
+        auto tmp = reduce(pol, masses) / masses.size();
+        zsprim.setMeta(s_meanMassTag, tmp);
+        return tmp;
+      }
+      T averageSurfEdgeLength(zs::CudaExecutionPolicy &pol) const {
         using namespace zs;
         constexpr auto space = execspace_e::cuda;
         if (zsprim.hasMeta(s_meanSurfEdgeLengthTag))
@@ -362,11 +376,11 @@ struct CodimStepping : INode {
                   (verts.pack<3>("x0", inds[0]) - verts.pack<3>("x0", inds[1]))
                       .norm();
             });
-        auto tmp = system.reduce(pol, edgeLengths) / edges.size();
+        auto tmp = reduce(pol, edgeLengths) / edges.size();
         zsprim.setMeta(s_meanSurfEdgeLengthTag, tmp);
         return tmp;
       }
-      T averageSurfArea(zs::CudaExecutionPolicy &pol, IPCSystem &system) const {
+      T averageSurfArea(zs::CudaExecutionPolicy &pol) const {
         using namespace zs;
         constexpr auto space = execspace_e::cuda;
         if (zsprim.hasMeta(s_meanSurfAreaTag))
@@ -385,7 +399,7 @@ struct CodimStepping : INode {
                       .norm() /
                   2;
             });
-        auto tmp = system.reduce(pol, surfAreas) / tris.size();
+        auto tmp = reduce(pol, surfAreas) / tris.size();
         zsprim.setMeta(s_meanSurfAreaTag, tmp);
         return tmp;
       }
@@ -417,14 +431,25 @@ struct CodimStepping : INode {
       ZenoParticles::category_e category;
     };
 
+    T averageNodalMass(zs::CudaExecutionPolicy &pol) {
+      T sumNodalMass = 0;
+      std::size_t sumNodes = 0;
+      for (auto &&primHandle : prims) {
+        if (primHandle.isBoundary())
+          continue;
+        auto numNodes = primHandle.getVerts().size();
+        sumNodes += numNodes;
+        sumNodalMass += primHandle.averageNodalMass(pol) * numNodes;
+      }
+      return sumNodalMass / sumNodes;
+    }
     T averageSurfEdgeLength(zs::CudaExecutionPolicy &pol) {
       T sumSurfEdgeLengths = 0;
       std::size_t sumSE = 0;
       for (auto &&primHandle : prims) {
         auto numSE = primHandle.getSurfEdges().size();
         sumSE += numSE;
-        sumSurfEdgeLengths +=
-            primHandle.averageSurfEdgeLength(pol, *this) * numSE;
+        sumSurfEdgeLengths += primHandle.averageSurfEdgeLength(pol) * numSE;
       }
       return sumSurfEdgeLengths / sumSE;
     }
@@ -434,7 +459,7 @@ struct CodimStepping : INode {
       for (auto &&primHandle : prims) {
         auto numSF = primHandle.getSurfTris().size();
         sumSF += numSF;
-        sumSurfArea += primHandle.averageSurfArea(pol, *this) * numSF;
+        sumSurfArea += primHandle.averageSurfArea(pol) * numSF;
       }
       return sumSurfArea / sumSF;
     }
@@ -1897,6 +1922,7 @@ struct CodimStepping : INode {
           Es.push_back(reduce(pol, es) * kappa);
         }
 #endif
+#if s_enableGround
         // boundary
         es.resize(count_warps(coOffset));
         es.reset(0);
@@ -1915,6 +1941,7 @@ struct CodimStepping : INode {
               reduce_to(vi, n, E, es[vi / 32]);
             });
         Es.push_back(reduce(pol, es) * kappa);
+#endif
       }
       // constraints
       if (includeAugLagEnergy) {
@@ -2152,6 +2179,7 @@ struct CodimStepping : INode {
               });
         }
 #endif
+#if s_enableGround
         // boundary
         pol(range(coOffset),
             [vtemp = proxy<space>({}, vtemp), res = proxy<space>(res),
@@ -2166,6 +2194,7 @@ struct CodimStepping : INode {
                 atomic_add(exec_cuda, &res[0], temp);
               }
             });
+#endif
       }
       // constraints
       if (includeAugLagEnergy) {
@@ -3107,6 +3136,7 @@ struct CodimStepping : INode {
 #endif
         }
 #endif
+#if s_enableGround
         // boundary
         pol(range(coOffset), [execTag, vtemp = proxy<space>({}, vtemp),
                               tempPB = proxy<space>({}, tempPB), dxTag,
@@ -3117,6 +3147,7 @@ struct CodimStepping : INode {
           for (int d = 0; d != 3; ++d)
             atomic_add(execTag, &vtemp(bTag, d, vi), dx(d));
         });
+#endif
       } // end contacts
 
       // constraint hessian
@@ -3283,25 +3314,35 @@ struct CodimStepping : INode {
       stInds = tiles_t{vtemp.get_allocator(), {{"inds", 3}}, sfOffset};
       seInds = tiles_t{vtemp.get_allocator(), {{"inds", 2}}, seOffset};
       svInds = tiles_t{vtemp.get_allocator(), {{"inds", 1}}, svOffset};
+      avgNodeMass = averageNodalMass(pol);
       for (auto &primHandle : prims) {
         auto &verts = primHandle.getVerts();
         // initialize BC info
         // predict pos, initialize augmented lagrangian, constrain weights
         pol(Collapse(verts.size()),
             [vtemp = proxy<space>({}, vtemp), verts = proxy<space>({}, verts),
-             voffset = primHandle.vOffset, dt = dt,
-             extForce = extForce] __device__(int i) mutable {
-              int BCorder = verts("BCorder", i);
-              auto BCtarget = verts.template pack<3>("BCtarget", i);
-              auto BCbasis = verts.template pack<3, 3>("BCbasis", i);
+             voffset = primHandle.vOffset, dt = dt, extForce = extForce,
+             asBoundary = primHandle.isBoundary(), avgNodeMass = avgNodeMass,
+             augLagCoeff = augLagCoeff] __device__(int i) mutable {
               auto x = verts.pack<3>("x", i);
               auto v = verts.pack<3>("v", i);
-              vtemp("BCorder", voffset + i) = verts("BCorder", i);
+              int BCorder = 0;
+              auto BCtarget = x + v * dt;
+              auto BCbasis = mat3::identity();
+              int BCfixed = 0;
+              if (!asBoundary) {
+                BCorder = verts("BCorder", i);
+                BCtarget = verts.template pack<3>("BCtarget", i);
+                BCbasis = verts.template pack<3, 3>("BCbasis", i);
+                BCfixed = verts("BCfixed", i);
+              }
+              vtemp("BCorder", voffset + i) = BCorder;
               vtemp.template tuple<3>("BCtarget", voffset + i) = BCtarget;
               vtemp.template tuple<9>("BCbasis", voffset + i) = BCbasis;
-              vtemp("BCfixed", voffset + i) = verts("BCfixed", i);
+              vtemp("BCfixed", voffset + i) = BCfixed;
 
-              vtemp("ws", voffset + i) = zs::sqrt(verts("m", i));
+              vtemp("ws", voffset + i) = asBoundary ? avgNodeMass * augLagCoeff
+                                                    : zs::sqrt(verts("m", i));
               vtemp.tuple<3>("xtilde", voffset + i) = x + v * dt;
               vtemp.tuple<3>("lambda", voffset + i) = vec3::zeros();
               vtemp.tuple<3>("xn", voffset + i) = x;
@@ -3347,7 +3388,7 @@ struct CodimStepping : INode {
                   reinterpret_bits<int>(points("inds", i)) + (int)voffset);
             });
       }
-      {
+#if 0
         // average nodal mass
         /// mean mass
         avgNodeMass = 0;
@@ -3363,7 +3404,7 @@ struct CodimStepping : INode {
         sumNodeMass += tmp;
         sumNodes = coOffset;
         avgNodeMass = sumNodeMass / sumNodes;
-      }
+#endif
       if (auto coSize = coVerts.size(); coSize)
         pol(Collapse(coSize),
             [vtemp = proxy<space>({}, vtemp),
@@ -3477,9 +3518,11 @@ struct CodimStepping : INode {
         // update velocity and positions
         pol(zs::range(verts.size()),
             [vtemp = proxy<space>({}, vtemp), verts = proxy<space>({}, verts),
-             dt = dt, vOffset = primHandle.vOffset] __device__(int vi) mutable {
+             dt = dt, vOffset = primHandle.vOffset,
+             asBoundary = primHandle.isBoundary()] __device__(int vi) mutable {
               verts.tuple<3>("x", vi) = vtemp.pack<3>("xn", vOffset + vi);
-              verts.tuple<3>("v", vi) = vtemp.pack<3>("vn", vOffset + vi);
+              if (!asBoundary)
+                verts.tuple<3>("v", vi) = vtemp.pack<3>("vn", vOffset + vi);
             });
       }
     }
@@ -3811,7 +3854,9 @@ struct CodimStepping : INode {
         match([&](auto &elasticModel) {
           A.computeElasticGradientAndHessian(cudaPol, elasticModel);
         })(models.getElasticModel());
+#if s_enableGround
         A.computeBoundaryBarrierGradientAndHessian(cudaPol);
+#endif
         if constexpr (s_enableContact)
           A.computeBarrierGradientAndHessian(cudaPol);
 
@@ -3920,8 +3965,10 @@ struct CodimStepping : INode {
           }
 #endif
         }
+#if s_enableGround
         A.groundIntersectionFreeStepsize(cudaPol, alpha);
         fmt::print("\tstepsize after ground: {}\n", alpha);
+#endif
 #if s_enableContact
         {
           // A.intersectionFreeStepsize(cudaPol, xi, alpha);
