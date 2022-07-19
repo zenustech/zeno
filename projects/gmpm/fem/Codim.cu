@@ -1725,7 +1725,9 @@ struct CodimStepping : INode {
               // inertia
               E += (T)0.5 * m * (x - vtemp.pack<3>("xtilde", vi)).l2NormSqr();
               // external force
-              E += -m * extForce.dot(x - xt) * dt * dt;
+              if (vtemp("BCsoft", vi) == 0) {
+                E += -m * extForce.dot(x - xt) * dt * dt;
+              }
             }
             reduce_to(vi, n, E, es[vi / 32]);
           });
@@ -2012,8 +2014,10 @@ struct CodimStepping : INode {
               T E = 0;
               if (BCorder != 3) {
                 E += (T)0.5 * m * (x - vtemp.pack<3>("xtilde", vi)).l2NormSqr();
-                // gravity
-                E += -m * extForce.dot(x - xt) * dt * dt;
+                // external force
+                if (vtemp("BCsoft", vi) == 0) {
+                  E += -m * extForce.dot(x - xt) * dt * dt;
+                }
               }
 
               // atomic_add(exec_cuda, &res[0], E);
