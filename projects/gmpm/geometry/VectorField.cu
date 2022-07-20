@@ -15,6 +15,8 @@
 #include <zeno/types/StringObject.h>
 
 #include "kernel/gradient_field.hpp"
+#include "zensim/container/Bvh.hpp"
+#include "zensim/geometry/AnalyticLevelSet.h"
 
 namespace zeno {
 
@@ -364,6 +366,215 @@ ZENDEFNODE(ZSNormalizeVectorField,{
     {"field"},
     {
         {"enum vertex quad","type","vertex"},{"string","attr","attr"}
+    },
+    {"ZSGeometry"}
+});
+
+// a temporary node for sampling a quadrature field to another quadrature using bvh
+// which should  replaced by a more versatile neighbor-wrangle
+struct ZSGaussianNeighborQuadatureSampler : zeno::INode {
+    using vec3 = zs::vec<float,3>;
+    using bv_t = zs::AABBBox<3, float>;
+
+    constexpr float gauss_kernel(float dist,float sigma) {
+        // using namespace zs;
+        auto distds = dist/sigma;
+        return 1/(sigma * zs::sqrt(2*zs::g_pi)) * zs::exp(-0.5 * distds * distds);
+    }
+
+    template <typename TileVecT, int codim = 3>
+    zs::Vector<zs::AABBBox<3, typename TileVecT::value_type>>
+    retrieve_bounding_volumes(zs::CudaExecutionPolicy &pol, const TileVecT &vtemp,
+                            const zs::SmallString &xTag,
+                            const typename ZenoParticles::particles_t &eles,
+                            zs::wrapv<codim>, int voffset) {
+        using namespace zs;
+        using T = typename TileVecT::value_type;
+        using bv_t = AABBBox<3, T>;
+        static_assert(codim >= 1 && codim <= 4, "invalid co-dimension!\n");
+        constexpr auto space = execspace_e::cuda;
+        zs::Vector<bv_t> ret{eles.get_allocator(), eles.size()};
+        pol(range(eles.size()), [eles = proxy<space>({}, eles),
+                                bvs = proxy<space>(ret),
+                                vtemp = proxy<space>({}, vtemp),
+                                codim_v = wrapv<codim>{}, xTag,
+                                voffset] ZS_LAMBDA(int ei) mutable {
+            constexpr int dim = RM_CVREF_T(codim_v)::value;
+            auto inds =
+                eles.template pack<dim>("inds", ei).template reinterpret_bits<int>() +
+                voffset;
+            auto x0 = vtemp.template pack<3>(xTag, inds[0]);
+            bv_t bv{x0, x0};
+            for (int d = 1; d != dim; ++d)
+            merge(bv, vtemp.template pack<3>(xTag, inds[d]));
+            bvs[ei] = bv;
+        });
+        return ret;
+    }
+
+    template<typename Pol,typename VertBuffer,typename QuadBuffer,typename CenterBuffer>
+    void evaluate_quadrature_centers(Pol& pol,VertBuffer& verts,QuadBuffer& quads,CenterBuffer& centers,const std::string& xtag) {
+        using namespace zs;
+        constexpr auto space = execspace_e::cuda;   
+
+        pol(range(centers.size()),
+            [src_centers = proxy<space>(centers),
+                    src_quads = proxy<space>({},quads),
+                    src_verts = proxy<space>({},verts),
+                    xtag = SmallString(xtag)] __device__(int ei) mutable {
+                int simplex_size = src_quads.propertySize("inds");
+                src_centers[ei] = vec3::zeros();
+                for(int i = 0;i != simplex_size;++i){
+                    auto idx = reinterpret_bits<int>(src_quads("inds",i,ei));
+                    src_centers[ei] += src_verts.pack<3>(xtag,idx) / simplex_size;
+                }
+        });         
+    }
+
+    void apply() override {
+        using namespace zs;
+        constexpr auto space = execspace_e::cuda;
+        auto cudaPol = cuda_exec();
+
+        auto src_field = get_input<ZenoParticles>("source");
+        auto dst_field = get_input<ZenoParticles>("dest");
+
+        auto& src_quads = src_field->getQuadraturePoints();
+        auto& src_verts = src_field->getParticles();
+        auto& dst_quads = dst_field->getQuadraturePoints();
+        auto& dst_verts = src_field->getParticles();
+
+        // auto bvh_thickness = get_param<float>("bvh_thickness");
+
+        int simplex_size = src_quads.getChannelSize("inds");
+        if(simplex_size != 4){
+            fmt::print("currently, only the tetrahedron is supported\n");
+            throw std::runtime_error("currently, only the tetrahedron is supported");
+        }
+
+        auto xtag = get_param<std::string>("xtag");
+        auto attr = get_param<std::string>("attr");
+        auto sigma = get_param<float>("sigma");
+
+        if(!src_quads.hasProperty(attr)){
+            fmt::print("the input source quadrature does not have specified channel {}\n",attr);
+            throw std::runtime_error("the input source quadrature does not have specified channel");
+        }
+        if(!dst_quads.hasProperty(attr)){
+            fmt::print("the input dest quadrature does not have specified channel {}\n",attr);
+            throw std::runtime_error("the input dest quadrature does not have specified channel");
+        }
+
+
+
+        int attr_dim = src_quads.getChannelSize(attr);
+        // dst_quads.append_channels(cudaPol,{{attr,attr_dim}});
+
+
+        // initialize the buffer data to 0
+        cudaPol(range(dst_quads.size()),
+            [dst_quads = proxy<space>({},dst_quads),attr = SmallString(attr),attr_dim] ZS_LAMBDA(int ei) mutable {
+                    for(int i = 0;i != attr_dim;++i)
+                        dst_quads(attr,i,ei) = 0.0;
+        }); 
+
+        // build bvh for source
+        auto bvs = retrieve_bounding_volumes(cudaPol,src_verts,xtag,src_quads,wrapv<4>{},0);
+        auto quadsBvh = LBvh<3,32,int,float>{};
+        quadsBvh.build(cudaPol,bvs);
+
+        // initial two buffers containing the quads' centers
+        zs::Vector<vec3> src_centers(src_quads.get_allocator(),src_quads.size());
+        zs::Vector<vec3> dst_centers(dst_quads.get_allocator(),dst_quads.size());
+        evaluate_quadrature_centers(cudaPol,src_verts,src_quads,src_centers,xtag);
+        evaluate_quadrature_centers(cudaPol,dst_verts,dst_quads,dst_centers,xtag);
+
+        // auto sigma2 = sigma*sigma;
+
+        cudaPol(range(dst_quads.size()),
+            [ dst_quads = proxy<space>({},dst_quads),src_quads = proxy<space>({},src_quads),
+                dst_verts = proxy<space>({},dst_verts),src_verts = proxy<space>({},src_verts),
+                src_centers = proxy<space>(src_centers),dst_centers = proxy<space>(dst_centers),
+                attr = SmallString(attr),xtag = SmallString(xtag),simplex_size,attr_dim,
+                bvh = proxy<space>(quadsBvh),sigma,this] __device__(int di) mutable {
+                    for(int i = 0;i != attr_dim;++i)
+                        dst_quads(attr,i,di) = 0.0;
+                    // compute the center of the src tet
+                    auto dst_ct = dst_centers[di]; 
+                    float radius = 0;
+
+                    float w_sum = 0;
+
+                    // automatically detected the approapiate radius size
+                    for(int i = 0; i != simplex_size;++i){
+                        auto idx = reinterpret_bits<int>(dst_quads("inds",i,di));
+                        auto dst_vert = dst_verts.pack<3>(xtag,idx);
+                        auto dc_dist = (dst_vert - dst_ct).norm();
+                        radius = radius < dc_dist ? dc_dist : radius;
+                    }
+
+                    auto dst_bv = bv_t{get_bounding_box(dst_ct - radius, dst_ct + radius)};
+                    bvh.iter_neighbors(dst_bv,[&](int si){
+                        auto src_ct = src_centers[si];
+                        auto dist = (src_ct - dst_ct).norm();
+                        auto w = gauss_kernel(dist,sigma);
+                        w_sum += w;
+
+                        for(int i = 0;i != attr_dim;++i)
+                            dst_quads(attr,i,di) += w * src_quads(attr,i,si);
+                    });
+        });
+
+        set_output("dest",dst_field);
+    }
+};
+
+ZENDEFNODE(ZSGaussianNeighborQuadatureSampler,{
+    {"source","dest"},
+    {"dest"},
+    {
+        {"string","attr","attr"},
+        {"string","xtag","x"},
+        {"float","sigma","1"}
+    },
+    {"ZSGeometry"}
+});
+
+struct ZSAppendAttribute : zeno::INode {
+    using tiles_t = typename ZenoParticles::particles_t;
+
+    void apply() override {
+        using namespace zs;
+        constexpr auto space = execspace_e::cuda;
+        auto cudaPol = cuda_exec();
+
+        auto particles = get_input<ZenoParticles>("ZSParticles");
+        auto attr = get_param<std::string>("attr");
+        auto attr_dim = get_param<int>("attr_dim");
+
+        auto type = get_param<std::string>("type");
+
+        tiles_t& data = (type == "particle") ? particles->getParticles() : particles->getQuadraturePoints();
+
+        data.append_channels(cudaPol,{{attr,attr_dim}});
+        
+        cudaPol(range(data.size()),
+            [data = proxy<space>({},data),attr = SmallString(attr),attr_dim] __device__(int vi) mutable {
+                for(int i = 0;i != attr_dim;++i)
+                    data(attr,i,vi) = 0.;
+        });
+
+        set_output("ZSParticles",particles);
+    }
+};
+
+ZENDEFNODE(ZSAppendAttribute,{
+    {"ZSParticles"},
+    {"ZSParticles"},
+    {
+        {"string","attr","attr"},
+        {"int","attr_dim","1"},
+        {"enum particle quadature","type","particle"}
     },
     {"ZSGeometry"}
 });
