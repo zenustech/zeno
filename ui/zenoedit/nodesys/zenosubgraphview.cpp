@@ -13,6 +13,7 @@
 #include "viewport/zenovis.h"
 #include "viewport/viewportwidget.h"
 #include "util/log.h"
+#include <zenovis/ObjectsManager.h>
 
 
 _ZenoSubGraphView::_ZenoSubGraphView(QWidget *parent)
@@ -152,7 +153,17 @@ void _ZenoSubGraphView::cameraFocus()
 		bool found = Zenovis::GetInstance().getSession()->focus_on_node(nodeId.toStdString(), center, radius);
 		if (found) {
 			Zenovis::GetInstance().m_camera_control->focus(QVector3D(center[0], center[1], center[2]), radius * 3.0f);
-            zenoApp->getMainWindow()->updateViewport();
+                        auto scene = Zenovis::GetInstance().getSession()->get_scene();
+                        scene->selected.clear();
+                        std::string nodeid = nodeId.toStdString();
+                        for (auto const &[key, ptr]: scene->objectsMan->pairs()) {
+                            if (nodeid == key.substr(0, key.find_first_of(':'))) {
+                                scene->selected.insert(key);
+                            }
+                        }
+                        ZenoMainWindow* mainWin = zenoApp->getMainWindow();
+                        mainWin->onPrimitiveSelected(scene->selected);
+                        zenoApp->getMainWindow()->updateViewport();
 		}
 	}
 }
