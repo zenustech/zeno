@@ -455,11 +455,6 @@ void GraphsModel::appendDescriptors(const QList<NODE_DESC>& descs)
 {
     for (NODE_DESC desc : descs)
     {
-        if (desc.name == "SubstepFLIPWorld")
-        {
-            int j;
-            j = 0;
-        }
         if (!desc.name.isEmpty() && m_nodesDesc.find(desc.name) == m_nodesDesc.end())
         {
             m_nodesDesc.insert(desc.name, desc);

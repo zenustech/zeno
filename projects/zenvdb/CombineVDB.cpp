@@ -59,16 +59,6 @@ void resampleVDB(typename GridT::Ptr source, typename GridT::Ptr target)
 struct  ResampleVDBGrid : zeno::INode {
   virtual void apply() override {
 
-    if (myname == "c3005cf3-SubstepFLIPWorld/aad2ade1-x/99810740-SmokeStep/a78cbf1b-DomainFromVolume/d985eeda-ResampleVDBGrid")
-    {
-        openvdb::CoordBBox box = get_input("resampleFrom")->as<VDBGrid>()->evalActiveVoxelBoundingBox();
-        if (box.max()[0] < -100000 || box.max()[0] > 100000)
-        {
-            int j;
-            j = 0;
-        }
-    }
-
     std::string targetType = get_input("resampleTo")->as<VDBGrid>()->getType();
     std::string sourceType = get_input("resampleFrom")->as<VDBGrid>()->getType();
     if(targetType == sourceType)

@@ -15,8 +15,3 @@ target_link_libraries(zenoui PUBLIC zeno)
 
 target_include_directories(zenoui PRIVATE ${Qt5Widgets_PRIVATE_INCLUDE_DIRS})
 target_include_directories(zenoui PRIVATE . ..)
-
-#if(MSVC)
-#  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /Zi /Od /Ob0")
-#  target_link_options(zenoui PUBLIC /DEBUG)
-#endif()

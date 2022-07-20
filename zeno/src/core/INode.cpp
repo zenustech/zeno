@@ -1,6 +1,5 @@
 #include <zeno/core/INode.h>
 #include <zeno/core/Graph.h>
-#include <zeno/VDBGrid.h>
 #include <zeno/core/Descriptor.h>
 #include <zeno/core/Session.h>
 #include <zeno/types/DummyObject.h>
@@ -127,14 +126,6 @@ ZENO_API zany INode::get_input(std::string const &id) const {
 }
 
 ZENO_API void INode::set_output(std::string const &id, zany obj) {
-    auto t = dynamic_cast<VDBGrid*>(obj.get());
-    if (t) {
-        auto bbox = t->evalActiveVoxelBoundingBox();
-        if (bbox.min()[0] < -1000000 || bbox.min()[0] > 2140000000) {
-            int j;
-            j = -0;
-        }
-    }
     outputs[id] = std::move(obj);
 }
 
