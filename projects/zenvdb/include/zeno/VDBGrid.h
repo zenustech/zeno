@@ -51,6 +51,12 @@ struct VDBGrid : zeno::IObject {
   virtual void output(std::string path) = 0;
   virtual void input(std::string path) = 0;
   virtual void setTransform(openvdb::math::Transform::Ptr const &trans) = 0;
+  virtual std::string method_node(std::string const &op) override {
+      if (op == "view") {
+          return "INTERN_PreViewVDB";
+      }
+      return {};
+  }
 
   // using GeneralVdbGrid = variant<typename SomeGrid::Ptr, >;
   // virtual GeneralVdbGrid getGrid() = 0;

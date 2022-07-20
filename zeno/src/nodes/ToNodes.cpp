@@ -27,6 +27,7 @@ struct ToView : zeno::INode {
                 log_error("ToView: given object is nullptr");
             } else {
                 auto pp = isStatic && hasViewed ? std::make_shared<DummyObject>() : p->clone();
+                //auto previewer = pp->method_node("view");
                 hasViewed = true;
                 if (!pp) {
                     log_error("ToView: given object doesn't support clone, giving up");

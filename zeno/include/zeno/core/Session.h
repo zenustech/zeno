@@ -59,7 +59,7 @@ struct Session {
 
     ZENO_API std::unique_ptr<Graph> createGraph();
     ZENO_API std::string dumpDescriptors() const;
-    ZENO_API void defNodeClass(std::string const &id, std::unique_ptr<INodeClass> &&cls);
+    ZENO_API void defNodeClass(std::string const &id, std::unique_ptr<INodeClass> cls);
     //ZENO_API void defOverloadNodeClass(std::string const &id, std::vector<std::string> const &types,
             //std::unique_ptr<INodeClass> &&cls);
     //ZENO_API std::unique_ptr<INode> getOverloadNode(

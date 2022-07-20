@@ -151,6 +151,7 @@ struct VDBVoxelAsParticles : INode {
             auto const &grid = ingrid->m_grid;
 
             auto hasInactive = get_param<bool>("hasInactive");
+            auto asStaggers = get_param<bool>("asStaggers");
             // tbb::concurrent_vector<vec3f> pos;
             //tbb::concurrent_vector<float> sdf;
             // wxl
@@ -174,6 +175,10 @@ struct VDBVoxelAsParticles : INode {
                 for (auto iter = leaf.cbeginValueOn(); iter != leaf.cendValueOn(); ++iter) {
                     auto coord = iter.getCoord();
                     auto value = iter.getValue();
+                        if (!asStaggers) {
+                            auto p = grid->transform().indexToWorld(coord.asVec3d());
+                            pos_.emplace_back(p[0], p[1], p[2]);
+                        } else {
                     auto p = grid->transform().indexToWorld(coord.asVec3d() - openvdb::Vec3d(0.5, 0, 0));
                     // pos.emplace_back(p[0], p[1], p[2]);
                     pos_.emplace_back(p[0], p[1], p[2]);
@@ -184,21 +189,27 @@ struct VDBVoxelAsParticles : INode {
                     // pos.emplace_back(p[0], p[1], p[2]);
                     pos_.emplace_back(p[0], p[1], p[2]);
                     //sdf.emplace_back(value);
+                        }
                 }
                 if (hasInactive) {
                     for (auto iter = leaf.cbeginValueOff(); iter != leaf.cendValueOff(); ++iter) {
                         auto coord = iter.getCoord();
                         auto value = iter.getValue();
-                        auto p = grid->transform().indexToWorld(coord.asVec3d() - openvdb::Vec3d(0.5, 0, 0));
-                        // pos.emplace_back(p[0], p[1], p[2]);
-                        pos_.emplace_back(p[0], p[1], p[2]);
-                        p = grid->transform().indexToWorld(coord.asVec3d() - openvdb::Vec3d(0, 0.5, 0));
-                        // pos.emplace_back(p[0], p[1], p[2]);
-                        pos_.emplace_back(p[0], p[1], p[2]);
-                        p = grid->transform().indexToWorld(coord.asVec3d() - openvdb::Vec3d(0, 0, 0.5));
-                        // pos.emplace_back(p[0], p[1], p[2]);
-                        pos_.emplace_back(p[0], p[1], p[2]);
-                        //sdf.emplace_back(value);
+                        if (!asStaggers) {
+                            auto p = grid->transform().indexToWorld(coord.asVec3d());
+                            pos_.emplace_back(p[0], p[1], p[2]);
+                        } else {
+                            auto p = grid->transform().indexToWorld(coord.asVec3d() - openvdb::Vec3d(0.5, 0, 0));
+                            // pos.emplace_back(p[0], p[1], p[2]);
+                            pos_.emplace_back(p[0], p[1], p[2]);
+                            p = grid->transform().indexToWorld(coord.asVec3d() - openvdb::Vec3d(0, 0.5, 0));
+                            // pos.emplace_back(p[0], p[1], p[2]);
+                            pos_.emplace_back(p[0], p[1], p[2]);
+                            p = grid->transform().indexToWorld(coord.asVec3d() - openvdb::Vec3d(0, 0, 0.5));
+                            // pos.emplace_back(p[0], p[1], p[2]);
+                            pos_.emplace_back(p[0], p[1], p[2]);
+                            //sdf.emplace_back(value);
+                        }
                     }
                 }
             };
@@ -233,6 +244,7 @@ ZENDEFNODE(VDBVoxelAsParticles, {
                             {"primPars"},
                             {
                              {"bool", "hasInactive", "0"},
+                             {"bool", "asStaggers", "1"},
                              {"string", "valToAttr", "sdf"},
                             },
                             {"visualize"},
