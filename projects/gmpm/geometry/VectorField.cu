@@ -212,4 +212,161 @@ ZENDEFNODE(ZSRetrieveVectorField, {
 });
 
 
+struct ZSSampleQuadratureAttr2Vert : zeno::INode {
+    void apply() override {
+        using namespace zs;
+        auto field = get_input<ZenoParticles>("ZSParticles");
+        auto& verts = field->getParticles();
+        auto& quads = field->getQuadraturePoints();
+    
+        auto attr = get_param<std::string>("attr");
+        auto weight = get_param<std::string>("wtag");
+
+        if(!quads.hasProperty(attr)){
+            fmt::print("the input quadrature does not have specified attribute : {}\n",attr);
+            throw std::runtime_error("the input quadrature does not have specified attribute");
+        }
+
+        if(!quads.hasProperty(weight)){
+            fmt::print("the input quadratures does not have specified weight attribute : {}\n",weight);
+            throw std::runtime_error("the input quadratures does not have specified weight attribute");
+        }
+
+        constexpr auto space = execspace_e::cuda;
+        auto cudaPol = cuda_exec();
+
+        int attr_dim = quads.getChannelSize(attr);
+        int simplex_size = quads.getChannelSize("inds");
+
+        verts.append_channels(cudaPol,{{attr,attr_dim}});
+        cudaPol(range(verts.size()),
+            [verts = proxy<space>({},verts),attr_dim,attr = SmallString(attr)] 
+                __device__(int vi) mutable {
+                    for(int i = 0;i < attr_dim;++i)
+                        verts(attr,i,vi) = 0.;
+        });
+
+        cudaPol(range(quads.size()),
+            [verts = proxy<space>({},verts),quads = proxy<space>({},quads),attr_dim,attr = SmallString(attr),simplex_size,weight = SmallString(weight)]
+                __device__(int ei) mutable {
+                    auto w = quads(weight,ei);
+                    // w = 1;// cancel out the specified weight info
+                    for(int i = 0;i != simplex_size;++i){
+                        auto idx = reinterpret_bits<int>(quads("inds",i,ei));
+                        for(int j = 0;j != attr_dim;++j){
+                            verts(attr,j,idx) += w * quads(attr,j,ei) / simplex_size;
+                        }
+                    }                    
+        });
+
+        set_output("ZSParticles",field);
+    }
+};
+
+ZENDEFNODE(ZSSampleQuadratureAttr2Vert,{
+    {"ZSParticles"},
+    {"ZSParticles"},
+    {
+        {"string","attr","attr"},{"string","wtag","vol"}
+    },
+    {"ZSGeometry"}
+});
+
+
+struct ZSSampleVertAttr2Quadrature : zeno::INode {
+    void apply() override {
+        using namespace zs;
+        constexpr auto space = execspace_e::cuda;
+        auto cudaPol = cuda_exec();
+
+        auto field = get_input<ZenoParticles>("field");
+        auto& verts = field->getParticles();
+        auto& quads = field->getQuadraturePoints();
+
+        auto attr = get_param<std::string>("attr");
+        if(!verts.hasProperty(attr)){
+            fmt::print("the input verts have no specified channel : {}\n",attr);
+            throw std::runtime_error("the input verts have no specified channel");
+        }
+
+        // auto weight = get_param<std::string>("weight");
+        // if(!verts.hasProperty(weight)){
+        //     fmt::print("the input vertices have no specified weight channel : {}\n",weight);
+        //     throw std::runtime_error("the input vertices have no specified weight channel");
+        // }
+
+        int simplex_size = quads.getChannelSize("inds");
+        int attr_dim = verts.getChannelSize(attr);
+
+        quads.append_channels(cudaPol,{{attr,attr_dim}});
+
+        cudaPol(range(quads.size()),
+            [verts = proxy<space>({},verts),quads = proxy<space>({},quads),attr = SmallString(attr),simplex_size,attr_dim]
+                __device__(int ei) mutable {
+                    for(int i = 0;i != attr_dim;++i)
+                        quads(attr,i,ei) = 0.0;
+
+                    for(int i  = 0;i != simplex_size;++i){
+                        auto idx = reinterpret_bits<int>(quads("inds",i,ei));
+                        for(int j = 0;j != attr_dim;++j){
+                            quads(attr,j,ei) += verts(attr,j,idx);
+                        }
+                    }
+        });
+
+        set_output("field",field);
+    }
+};
+
+ZENDEFNODE(ZSSampleVertAttr2Quadrature,{
+    {"field"},
+    {"field"},
+    {
+        {"string","attr","attr"}
+    },
+    {"ZSGeometry"}
+});
+
+
+struct ZSNormalizeVectorField : zeno::INode {
+    using tiles_t = typename ZenoParticles::particles_t;
+
+    void apply() override {
+        using namespace zs;
+        auto field = get_input<ZenoParticles>("field");
+        auto type = get_param<std::string>("type");
+        auto attr = get_param<std::string>("attr");
+
+        tiles_t& data = (type == "vertex") ? field->getParticles() : field->getQuadraturePoints();
+
+        auto cudaPol = cuda_exec();
+        constexpr auto space = execspace_e::cuda;
+
+        int attr_dim = data.getChannelSize(attr);
+
+        cudaPol(range(data.size()),
+            [data = proxy<space>({},data),attr_dim,attr = SmallString(attr)] __device__(int di) mutable {
+                float length = 0;
+                for(int i = 0;i != attr_dim;++i){
+                    length += data(attr,i,di) * data(attr,i,di);
+                }
+                length = zs::sqrt(length) + 1e-6;
+                for(int i = 0;i != attr_dim;++i)
+                    data(attr,i,di) /= length;
+            });
+
+        set_output("field",field);
+    }
+};
+
+ZENDEFNODE(ZSNormalizeVectorField,{
+    {"field"},
+    {"field"},
+    {
+        {"enum vertex quad","type","vertex"},{"string","attr","attr"}
+    },
+    {"ZSGeometry"}
+});
+
+
 };
