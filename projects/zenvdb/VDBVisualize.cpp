@@ -27,7 +27,7 @@ struct ParticleAsVoxels : INode{
                 for (int i = 0; i < arr.size(); i++) {
                     if constexpr (is_decay_same_v<decltype(arr[i]), vec3f>) {
                     } else {
-                        auto accessor = grid->getAccessor();
+                        auto accessor = grid->getUnsafeAccessor();
                         openvdb::Vec3d p(inparticles->verts[i][0], inparticles->verts[i][1], inparticles->verts[i][2]);
                         openvdb::Coord coord(grid->worldToIndex(p).x(),grid->worldToIndex(p).y(),grid->worldToIndex(p).z());
                         accessor.setValue(coord, arr[i]);
@@ -46,7 +46,7 @@ struct ParticleAsVoxels : INode{
                 for (int i = 0; i < arr.size(); i++) {
                     if constexpr (is_decay_same_v<decltype(arr[i]), vec3f>) {
 
-                        auto accessor = grid->getAccessor();
+                        auto accessor = grid->getUnsafeAccessor();
                         openvdb::Vec3d p(inparticles->verts[i][0], inparticles->verts[i][1], inparticles->verts[i][2]);
                         openvdb::Coord coord(grid->worldToIndex(p).x(),grid->worldToIndex(p).y(),grid->worldToIndex(p).z());
                         accessor.setValue(coord, openvdb::Vec3f(arr[i][0], arr[i][1], arr[i][2]));
