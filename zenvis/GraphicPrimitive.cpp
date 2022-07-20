@@ -325,6 +325,9 @@ struct GraphicPrimitive : IGraphic {
   std::map<int, std::string> textures;
 
   std::vector<float> ufloat;
+  std::vector<zeno::vec2f> uv2f;
+  std::vector<zeno::vec3f> uv3f;
+  std::vector<zeno::vec4f> uv4f;
 
   bool prim_has_mtl = false;
   bool prim_has_inst = false;
@@ -400,14 +403,15 @@ struct GraphicPrimitive : IGraphic {
     }
     bool enable_uv = false;
 
-    if(prim->has_attr("ufloat")){
-        auto uf_ = prim->attr<float>("ufloat");
-        printf("aaaaaaaaaaaaaaaaaaaaaaaaaaa %d\n", uf_.size());
-            for(int i=0;i<uf_.size();i++){
-            printf("++++++++++ %f\n",uf_[i]);
-            ufloat.push_back(uf_[i]);
-        }
-    }
+    // along
+    // if(prim->has_attr("ufloat")){
+    //     auto uf_ = prim->attr<float>("ufloat");
+    //     printf("aaaaaaaaaaaaaaaaaaaaaaaaaaa %d\n", uf_.size());
+    //         for(int i=0;i<uf_.size();i++){
+    //         printf("++++++++++ %f\n",uf_[i]);
+    //         ufloat.push_back(uf_[i]);
+    //     }
+    // }
 
     auto const &pos = prim->attr<zeno::vec3f>("pos");
     auto const &clr = prim->attr<zeno::vec3f>("clr");
@@ -655,6 +659,22 @@ struct GraphicPrimitive : IGraphic {
     if ((prim->mtl != nullptr) && !prim->mtl->tex2Ds.empty())
     {
       load_texture2Ds(prim->mtl->tex2Ds);
+    }
+    if ((prim->mtl != nullptr) && !prim->mtl->ufloat.empty())
+    {
+      ufloat = prim->mtl->ufloat;
+    }
+    if ((prim->mtl != nullptr) && !prim->mtl->uv2f.empty())
+    {
+      uv2f = prim->mtl->uv2f;
+    }
+    if ((prim->mtl != nullptr) && !prim->mtl->uv3f.empty())
+    {
+      uv3f = prim->mtl->uv3f;
+    }
+    if ((prim->mtl != nullptr) && !prim->mtl->uv4f.empty())
+    {
+      uv4f = prim->mtl->uv4f;
     }
     //load_textures(path);
     prim_has_mtl = (prim->mtl != nullptr) && triObj.prog && triObj.shadowprog;
@@ -1241,14 +1261,40 @@ struct GraphicPrimitive : IGraphic {
             if (auto brdfLUT = getBRDFLut(); brdfLUT != (unsigned int)-1)
                 CHECK_GL(glBindTexture(GL_TEXTURE_2D, brdfLUT));
             texOcp++;
-
-
-            if(ufloat.size() != 0){
-                auto uf = "attr_uniform_float[" + std::to_string(0) + "]";
-                triObj.prog->set_uniform(uf.c_str(), ufloat[0]);
+            
+            // along
+            for(int tmpId = 0; tmpId < ufloat.size(); tmpId++){
+                auto tmpData = "attr_uniform_float[" + std::to_string(tmpId) + "]";
+                triObj.prog->set_uniform(tmpData.c_str(), ufloat[tmpId]);
             }
 
-            
+            for(int tmpId = 0; tmpId < uv2f.size(); tmpId++){
+                auto tmpData = "attr_uniform_vec2[" + std::to_string(tmpId) + "]";
+                glm::vec2 value;
+                value[0] = uv2f[tmpId][0];
+                value[1] = uv2f[tmpId][1];
+                triObj.prog->set_uniform(tmpData.c_str(), value);
+            }
+
+            for(int tmpId = 0; tmpId < uv3f.size(); tmpId++){
+                auto tmpData = "attr_uniform_vec3[" + std::to_string(tmpId) + "]";
+                glm::vec3 value;
+                value[0] = uv3f[tmpId][0];
+                value[1] = uv3f[tmpId][1];
+                value[2] = uv3f[tmpId][2];
+                triObj.prog->set_uniform(tmpData.c_str(), value);
+            }
+
+            for(int tmpId = 0; tmpId < uv4f.size(); tmpId++){
+                auto tmpData = "attr_uniform_vec4[" + std::to_string(tmpId) + "]";
+                glm::vec3 value;
+                value[0] = uv4f[tmpId][0];
+                value[1] = uv4f[tmpId][1];
+                value[2] = uv4f[tmpId][2];
+                value[3] = uv4f[tmpId][3];
+                triObj.prog->set_uniform(tmpData.c_str(), value);
+            }
+
             triObj.prog->set_uniform("farPlane", getCamFar());
             triObj.prog->set_uniformi("cascadeCount", Light::cascadeCount);
             for (int lightNo = 0; lightNo < lights.size(); ++lightNo)

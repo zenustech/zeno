@@ -18,10 +18,10 @@ namespace zeno
         std::string common;
         std::string extensions;
         std::vector<std::shared_ptr<Texture2DObject>> tex2Ds;
-        std::vector<float> ufloat{};
-        std::vector<zeno::vec2f> uv2f{};
-        std::vector<zeno::vec3f> uv3f{};
-        std::vector<zeno::vec4f> uv4f{};
+        std::vector<float> ufloat;
+        std::vector<zeno::vec2f> uv2f;
+        std::vector<zeno::vec3f> uv3f;
+        std::vector<zeno::vec4f> uv4f;
 
         size_t serializeSize()
         {
@@ -51,6 +51,55 @@ namespace zeno
                 size += sizeof(tex2DStrSize);
                 size += tex2DStrSize;
             }
+            
+            auto ufloatSize{ufloat.size()};
+            size += sizeof(ufloatSize);
+            for (const auto tmp : ufloat)
+            {
+                size += sizeof(tmp);
+            }
+
+            // auto uv2fSize{uv2f.size()};
+            // size += sizeof(uv2fSize);
+            // for (const auto tmp : uv2f)
+            // {
+            //     size_t subSize{0};
+            //     subSize += sizeof(tmp[0]);
+            //     subSize += sizeof(tmp[1]);
+
+            //     auto tmpSize = subSize;
+            //     size += sizeof(tmpSize);
+            //     size += tmpSize;
+            // }
+
+            // auto uv3fSize{uv3f.size()};
+            // size += sizeof(uv3fSize);
+            // for (const auto tmp : uv3f)
+            // {
+            //     size_t subSize{0};
+            //     subSize += sizeof(tmp[0]);
+            //     subSize += sizeof(tmp[1]);
+            //     subSize += sizeof(tmp[2]);
+
+            //     auto tmpSize = subSize;
+            //     size += sizeof(tmpSize);
+            //     size += tmpSize;
+            // }
+
+            // auto uv4fSize{uv4f.size()};
+            // size += sizeof(uv4fSize);
+            // for (const auto tmp : uv4f)
+            // {
+            //     size_t subSize{0};
+            //     subSize += sizeof(tmp[0]);
+            //     subSize += sizeof(tmp[1]);
+            //     subSize += sizeof(tmp[2]);
+            //     subSize += sizeof(tmp[3]);
+
+            //     auto tmpSize = subSize;
+            //     size += sizeof(tmpSize);
+            //     size += tmpSize;
+            // }
 
             return size;
         }
@@ -105,6 +154,15 @@ namespace zeno
                 i += tex2DStrSize;
             }
 
+            auto ufloatSize{ufloat.size()};
+            memcpy(str.data() + i, &ufloatSize, sizeof(ufloatSize));
+            i += sizeof(ufloatSize);
+            for (const auto tmp : ufloat)
+            {
+                memcpy(str.data() + i, &tmp, sizeof(tmp));
+                i += sizeof(tmp);
+            }
+            
             return str;
         }
 
@@ -148,7 +206,6 @@ namespace zeno
             mtl.tex2Ds.resize(tex2DsSize);
 
             for (size_t j{0}; j < tex2DsSize; ++j)
-
             {
                 size_t tex2DStrSize;
                 memcpy(&tex2DStrSize, str.data() + i, sizeof(tex2DStrSize));
@@ -162,6 +219,17 @@ namespace zeno
                 auto tex2D = std::make_shared<Texture2DObject>(
                     Texture2DObject::deserialize(tex2DStr));
                 mtl.tex2Ds[j] = tex2D;
+            }
+
+            size_t ufloatSize;
+            memcpy(&ufloatSize, str.data() + i, sizeof(ufloatSize));
+            i += sizeof(ufloatSize);
+            mtl.ufloat.resize(ufloatSize);
+            for (size_t j{0}; j < ufloatSize; ++j)
+            {
+                float tmpData;
+                memcpy(&tmpData, str.data() + i, sizeof(tmpData));
+                i += sizeof(tmpData);
             }
 
             return mtl;
