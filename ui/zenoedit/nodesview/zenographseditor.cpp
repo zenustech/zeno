@@ -488,7 +488,7 @@ void ZenoGraphsEditor::onSearchEdited(const QString& content)
 				pModel->appendRow(pItem);
             }
         }
-        else if (res.type == SEARCH_NODECLS)
+        else if (res.type == SEARCH_NODECLS || res.type == SEARCH_NODEID)
         {
             QString subgName = res.subgIdx.data(ROLE_OBJNAME).toString();
 			QModelIndexList lst = pModel->match(pModel->index(0, 0), ROLE_OBJNAME, subgName, 1, Qt::MatchExactly);

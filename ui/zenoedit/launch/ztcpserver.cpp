@@ -72,7 +72,7 @@ void ZTcpServer::startProc(const std::string& progJson)
     m_proc->closeWriteChannel();
 
     connect(m_proc.get(), SIGNAL(finished(int, QProcess::ExitStatus)), this, SLOT(onProcFinished(int, QProcess::ExitStatus)));
-    connect(m_proc.get(), SIGNAL(readyRead()), this, SLOT(onProcPipeReady()));
+    //connect(m_proc.get(), SIGNAL(readyRead()), this, SLOT(onProcPipeReady()));
 }
 
 void ZTcpServer::killProc()
@@ -113,11 +113,11 @@ void ZTcpServer::onReadyRead()
 
 void ZTcpServer::onProcPipeReady()
 {
-    if (!m_proc) {
-        return;
-    }
-    QByteArray arr = m_proc->readAll();
-    zenoApp->graphsManagment()->appendMsgStream(arr);
+    //if (!m_proc) {
+    //    return;
+    //}
+    //QByteArray arr = m_proc->readAll();
+    //zenoApp->graphsManagment()->appendMsgStream(arr);
 }
 
 void ZTcpServer::onDisconnect()

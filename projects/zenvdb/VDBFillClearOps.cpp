@@ -125,10 +125,24 @@ struct VDBTouchAABBRegion : INode {
     auto grid = get_input<VDBGrid>("grid");
     auto bmin = get_input<NumericObject>("bmin")->get<vec3f>();
     auto bmax = get_input<NumericObject>("bmax")->get<vec3f>();
+
+    if (false) {
+        preApply();
+    }
+
     if (auto p = std::dynamic_pointer_cast<VDBFloatGrid>(grid); p) {
         touch_aabb_region(p->m_grid, bmin, bmax);
     } else if (auto p = std::dynamic_pointer_cast<VDBFloat3Grid>(grid); p) {
         touch_aabb_region(p->m_grid, bmin, bmax);
+    }
+
+    auto t = dynamic_cast<VDBGrid*>(grid.get());
+    if (t) {
+        auto bbox = grid->evalActiveVoxelBoundingBox();
+        if (bbox.min()[0] < -1000000 || bbox.min()[0] > 2140000000) {
+            int j;
+            j = -0;
+        }
     }
 
     set_output("grid", get_input("grid"));

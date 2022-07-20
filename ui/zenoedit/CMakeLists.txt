@@ -37,3 +37,8 @@ endif()
 if (ZENO_INSTALL_TARGET)
     install(TARGETS zenoedit EXPORT ZenoTargets)
 endif()
+
+if(MSVC)
+  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /Zi /Od /Ob0")
+  target_link_options(zenoedit PUBLIC /DEBUG)
+endif()

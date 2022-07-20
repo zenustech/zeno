@@ -72,6 +72,11 @@ if (ZENO_ENABLE_MAGICENUM)
     target_compile_definitions(zeno PUBLIC -DZENO_ENABLE_MAGICENUM)
 endif()
 
+if(MSVC)
+  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /Zi /Od /Ob0")
+  target_link_options(zeno PUBLIC /DEBUG)
+endif()
+
 #if (ZENO_NO_WARNING)
     #if (CMAKE_CXX_COMPILER_ID MATCHES "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         #target_compile_options(zeno PUBLIC $<BUILD_INTERFACE:$<$<COMPILE_LANGUAGE:CXX>:-Wno-all -Wno-cpp -Wno-deprecated-declarations -Wno-enum-compare -Wno-ignored-attributes -Wno-extra -Wreturn-type -Wmissing-declarations -Wnon-virtual-dtor -Wsuggest-override -Wconversion-null>>)

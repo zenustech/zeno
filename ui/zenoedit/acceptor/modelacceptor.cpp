@@ -29,6 +29,11 @@ void ModelAcceptor::setLegacyDescs(const rapidjson::Value& graphObj, const NODE_
     QList<NODE_DESC> subnetDescs;
     for (QString name : subgraphs)
     {
+        if (name == "SubstepFLIPWorld")
+        {
+            int j;
+            j = 0;
+        }
         ZASSERT_EXIT(legacyDescs.find(name) != legacyDescs.end());
         subnetDescs.append(legacyDescs[name]);
     }
@@ -101,7 +106,7 @@ void ModelAcceptor::generateLink(const QModelIndex& idx)
                     if (outputs.find(outSock) == outputs.end())
                     {
                         const QString& nodeName = outIdx.data(ROLE_OBJNAME).toString();
-                        zeno::log_warn("no such output socket {} in {}", outSock.toStdString(), nodeName.toStdString());
+                        zeno::log_warn("no such output socket {} at {} in {}", outSock.toStdString(), nodeName.toStdString(), m_currentGraph->name().toStdString());
                         continue;
                     }
                     GraphsModel* pGraphsModel = m_currentGraph->getGraphsModel();
@@ -290,6 +295,12 @@ void ModelAcceptor::setInputSocket(
     bool ret = m_pModel->getDescriptor(nodeCls, desc);
     ZASSERT_EXIT(ret);
 
+    if (id == "c3005cf3-SubstepFLIPWorld")
+    {
+        int j;
+        j = 0;
+    }
+
     //parse default value.
     QVariant defaultValue;
     if (!defaultVal.IsNull())
@@ -340,7 +351,7 @@ void ModelAcceptor::setInputSocket(
         }
         else
         {
-            zeno::log_warn("no such input socket {}", inSock.toStdString());
+            zeno::log_warn("no such input socket {} at {} in {}", inSock.toStdString(), id.toStdString(), m_currentGraph->name().toStdString());
         }
     }
 }

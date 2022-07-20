@@ -23,17 +23,6 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
     QModelIndexList subgNodes, normNodes;
     pGraphsModel->getNodeIndices(subgIdx, subgNodes, normNodes);
 
-    //now, we want to expand all subgraph nodes recursively.
-    //so, we need to serialize the subgraph first, and then build the connection with other nodes in this graph.
-    //for (const QModelIndex& idx : subgNodes)
-    //{
-        ////zeno::log_critical("got node {} {}", name.toStdString(), ident.toStdString());
-        //const QString& subgName = idx.data(ROLE_OBJNAME).toString();
-        //const QString& prefix = nameMangling(graphIdPrefix, idx.data(ROLE_OBJID).toString());
-        //bool _bView = bView && (idx.data(ROLE_OPTIONS).toInt() & OPT_VIEW);
-        //serializeGraph(pGraphsModel, pGraphsModel->index(subgName), prefix, _bView, writer);
-    //}
-
     //scan all the nodes in the subgraph.
     for (int r = 0; r < pGraphsModel->itemCount(subgIdx); r++)
 	{
@@ -96,7 +85,6 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
                 if (!defl.isNull())
                 {
                     AddVariantList({"setNodeInput", ident, inputName, defl}, input.info.type, writer);
-                    //todo: for subgraph node. but now there is not edit control on subgraphnode.
                 }
             }
             else
@@ -108,45 +96,10 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
                     QString outId = linkIdx.data(ROLE_OUTNODE).toString();
                     const QModelIndex& idx_ = pGraphsModel->index(outId, subgIdx);
                     outId = nameMangling(graphIdPrefix, outId);
-
-                    //the node of outId may be a subgNode.
-                    //if (subgNodes.indexOf(idx_) != -1)
-                    //{
-                        //const QString& subgName = idx_.data(ROLE_OBJNAME).toString();
-                        //const QModelIndex& subnodeIdx =
-                            //AppHelper::getSubInOutNode(pGraphsModel, pGraphsModel->index(subgName), outSock, false);
-                        //if (subnodeIdx.isValid())
-                        //{
-                            //outSock  = "_OUT_port";
-                            //const QString& ident_ = nameMangling(graphIdPrefix, idx_.data(ROLE_OBJID).toString());
-                            //outId = nameMangling(ident_, subnodeIdx.data(ROLE_OBJID).toString());
-                        //}
-                    //}
-
-                    //if (bSubgNode)
-                    //{
-                        //// should bind the subinput node to the outSock of the node with outId.
-                        //const QModelIndex& subnodeIdx =
-                            //AppHelper::getSubInOutNode(pGraphsModel, pGraphsModel->index(name), inputName, true);
-                        //if (subnodeIdx.isValid())
-                        //{
-                            //const QString& subInputId = subnodeIdx.data(ROLE_OBJID).toString();
-                            //const QString& ident_ = nameMangling(ident, subInputId);
-                            //AddStringList({"bindNodeInput", ident_, "_IN_port", outId, outSock}, writer);
-                            //AddVariantList({"setNodeInput", ident_, "_IN_hasValue", true}, "", writer);
-                        //}
-                    //}
-                    //else
-                    {
-                        AddStringList({"bindNodeInput", ident, inputName, outId, outSock}, writer);
-                    }
+                    AddStringList({"bindNodeInput", ident, inputName, outId, outSock}, writer);
                 }
             }
         }
-
-        //if (bSubgNode) {
-            //continue;
-        //}
 
         const PARAMS_INFO& params = idx.data(ROLE_PARAMETERS).value<PARAMS_INFO>();
 		for (PARAM_INFO param_info : params)

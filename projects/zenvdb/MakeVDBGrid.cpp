@@ -14,6 +14,13 @@ struct MakeVDBGrid : zeno::INode {
     {
       dx = get_input("Dx")->as<NumericObject>()->get<float>();
     }
+
+    if (myname == "c3005cf3-SubstepFLIPWorld/aad2ade1-x/99810740-SmokeStep/a78cbf1b-DomainFromVolume/71dc8052-MakeVDBGrid")
+    {
+        int j;
+        j = 0;
+    }
+
     auto type = get_param<std::string>(("type"));
     auto structure = get_param<std::string>(("structure"));
     auto name = get_param<std::string>(("name"));
