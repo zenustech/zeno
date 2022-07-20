@@ -29,8 +29,6 @@ struct Buffer {
 
 template <class GridPtr>
 void vdb_wrangle(zfx::x64::Executable *exec, GridPtr &grid, bool modifyActive) {
-    auto velman = openvdb::tree::LeafManager<std::decay_t<decltype(grid->tree())>>(grid->tree());
-    zeno::boolean_switch(modifyActive, [&] (auto modifyActive) {
     auto wrangler = [&](auto &leaf, openvdb::Index leafpos) {
         for (auto iter = leaf.beginValueOn(); iter != leaf.endValueOn(); ++iter) {
             iter.modifyValue([&](auto &v) {
@@ -53,7 +51,7 @@ void vdb_wrangle(zfx::x64::Executable *exec, GridPtr &grid, bool modifyActive) {
                 
             });
 
-            if constexpr(modifyActive.value){
+            if (modifyActive){
                 float testv;
                 auto v = iter.getValue();
                 if constexpr (std::is_same_v<std::decay_t<decltype(v)>, openvdb::Vec3f>) {
@@ -65,8 +63,8 @@ void vdb_wrangle(zfx::x64::Executable *exec, GridPtr &grid, bool modifyActive) {
             }
         }
     };
+    auto velman = openvdb::tree::LeafManager<std::decay_t<decltype(grid->tree())>>(grid->tree());
     velman.foreach(wrangler);
-    });
     openvdb::tools::prune(grid->tree());
 }
 
@@ -109,6 +107,18 @@ struct VDBWrangle : zeno::INode {
             }
         }
         // END心欣你也可以把这段代码加到其他wrangle节点去，这样这些wrangle也可以自动引用portal做参数
+        // BEGIN伺候心欣伺候懒得extract出变量了
+        std::vector<std::string> keys;
+        for (auto const &[key, val]: params->lut) {
+            keys.push_back(key);
+        }
+        for (auto const &key: keys) {
+            if (!dynamic_cast<zeno::NumericObject>(params->lut.at(key).get())) {
+                dbg_printf("ignored non-numeric %s\n", key.c_str());
+                params->lut.erase(key);
+            }
+        }
+        // END伺候心欣伺候懒得extract出变量了
         }
         std::vector<float> parvals;
         std::vector<std::pair<std::string, int>> parnames;
