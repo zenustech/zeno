@@ -116,7 +116,7 @@ struct ParticleParticleWrangle : zeno::INode {
             keys.push_back(key);
         }
         for (auto const &key: keys) {
-            if (!dynamic_cast<zeno::NumericObject>(params->lut.at(key).get())) {
+            if (!dynamic_cast<zeno::NumericObject*>(params->lut.at(key).get())) {
                 dbg_printf("ignored non-numeric %s\n", key.c_str());
                 params->lut.erase(key);
             }

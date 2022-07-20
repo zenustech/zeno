@@ -51,15 +51,22 @@ void vdb_wrangle(zfx::x64::Executable *exec, GridPtr &grid, bool modifyActive) {
                 
             });
 
-            if (modifyActive){
+            if(modifyActive){
                 float testv;
                 auto v = iter.getValue();
-                if constexpr (std::is_same_v<std::decay_t<decltype(v)>, openvdb::Vec3f>) {
+                if constexpr (std::is_same_v<std::decay_t<decltype(v)>, openvdb::Vec3f>)
+                {
                     testv = std::sqrt(v[0]*v[0]+v[1]*v[1]+v[2]*v[2]);
                 } else {
                     testv = std::abs(v);
                 }
-                iter.setValueOn(testv<1e-5);
+                if(testv<1e-5)
+                {
+                    iter.setValueOn(false);
+                }
+                else{
+                    iter.setValueOn(true);
+                }
             }
         }
     };
@@ -113,7 +120,7 @@ struct VDBWrangle : zeno::INode {
             keys.push_back(key);
         }
         for (auto const &key: keys) {
-            if (!dynamic_cast<zeno::NumericObject>(params->lut.at(key).get())) {
+            if (!dynamic_cast<zeno::NumericObject*>(params->lut.at(key).get())) {
                 dbg_printf("ignored non-numeric %s\n", key.c_str());
                 params->lut.erase(key);
             }

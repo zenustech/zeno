@@ -1047,6 +1047,7 @@ ZenoParamWidget* ZenoNode::initSocketWidget(const INPUT_SOCKET inSocket, ZenoTex
         default:
             return nullptr;
     }
+    return nullptr;
 }
 
 void ZenoNode::updateSocketWidget(const INPUT_SOCKET inSocket)
