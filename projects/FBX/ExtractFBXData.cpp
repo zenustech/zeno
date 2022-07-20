@@ -61,7 +61,7 @@ struct ExtractMatName : zeno::INode {
         }
 
         auto mat_name = mat->value.at(key).matName;
-        zeno::log_error("FBX: Extract Mat Name {} {}", key, mat_name);
+        //zeno::log_error("FBX: Extract Mat Name {} {}", key, mat_name);
         name->set(mat_name);
 
         set_output("name", std::move(name));
