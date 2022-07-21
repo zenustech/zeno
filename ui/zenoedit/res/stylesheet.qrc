@@ -9,5 +9,6 @@
     <file>stylesheet/pushbutton.qss</file>
     <file>stylesheet/spinbox.qss</file>
     <file>stylesheet/scrollbar.qss</file>
+    <file>stylesheet/mainwindow.qss</file>
 </qresource>
 </RCC>
