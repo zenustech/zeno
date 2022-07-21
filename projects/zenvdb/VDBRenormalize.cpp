@@ -122,7 +122,7 @@ static int defVDBSmoothSDF = zeno::defNodeClass<VDBSmoothSDF>("VDBSmoothSDF",
          {"int", "iterations", "1"},
          {"string", "DEPRECATED", "Use VDBSmooth Instead"},
      }, /* category: */ {
-     "openvdb",
+     "deprecated",
      }});
 
 struct  VDBDilateTopo : zeno::INode {

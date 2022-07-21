@@ -185,7 +185,6 @@ ZENDEFNODE(PrimDuplicate, {
     {"string", "radAttr", ""},
     {"enum XYZ YXZ YZX ZYX ZXY XZY", "onbType", "XYZ"},
     {"float", "radius", "1"},
-    {"int", "seed", "0"},
     },
     {
     {"PrimitiveObject", "prim"},

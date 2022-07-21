@@ -14,9 +14,9 @@ struct INTERN_PreViewVDB : INode {
             ret = this->getThisGraph()->callTempNode("SDFToPrimitive",
                         {
                             {"SDF", vdb},
-                            {"isoValue", objectFromLiterial(0.0f)},
-                            {"adaptivity", objectFromLiterial(0.0f)},
-                            {"allowQuads", std::make_shared<NumericObject>(0)},
+                            {"isoValue:", objectFromLiterial(0.0f)},
+                            {"adaptivity:", objectFromLiterial(0.0f)},
+                            {"allowQuads:", std::make_shared<NumericObject>(0)},
                         }).at("prim");
         } else
         if (dynamic_cast<VDBPointsGrid*>(vdb.get())) {
@@ -26,9 +26,9 @@ struct INTERN_PreViewVDB : INode {
                         }).at("prim");
         }
         if (ret)
-            set_output("arg0", std::move(ret));
+            set_output("ret0", std::move(ret));
         else
-            set_output("arg0", std::make_shared<DummyObject>());
+            set_output("ret0", std::make_shared<DummyObject>());
     }
 };
 

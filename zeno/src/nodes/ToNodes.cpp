@@ -22,12 +22,28 @@ struct ToView : zeno::INode {
     virtual void apply() override {
         auto p = get_input("object");
         bool isStatic = has_input("isStatic") ? get_input2<bool>("isStatic") : false;
-        auto addtoview = [&] (zany const &p, auto extraOps) {
+        auto pp = isStatic && hasViewed ? std::make_shared<DummyObject>() : p->clone();
+        auto addtoview = [&] (auto const &addtoview, zany const &p, std::string const &postfix) -> void {
+            if (auto *lst = dynamic_cast<ListObject *>(p.get())) {
+                log_info("ToView got ListObject (size={}), expanding", lst->arr.size());
+                for (size_t i = 0; i < lst->arr.size(); i++) {
+                    zany const &lp = lst->arr[i];
+                    addtoview(addtoview, lp, postfix + "-list" + std::to_string(i));
+                }
+                return;
+            }
+            auto previewclone = [&] (zany const &p) {
+                if (auto methview = p->method_node("view"); methview.empty()) {
+                    return p->clone();
+                } else {
+                    return safe_at(getThisGraph()->callTempNode(methview, {{"arg0", p}}),
+                                   "ret0", "method node output");
+                }
+            };
             if (!p) {
                 log_error("ToView: given object is nullptr");
             } else {
-                auto pp = isStatic && hasViewed ? std::make_shared<DummyObject>() : p->clone();
-                //auto previewer = pp->method_node("view");
+                auto pp = isStatic && hasViewed ? std::make_shared<DummyObject>() : previewclone(p);
                 hasViewed = true;
                 if (!pp) {
                     log_error("ToView: given object doesn't support clone, giving up");
@@ -41,22 +57,14 @@ struct ToView : zeno::INode {
                         key.append(std::to_string(getThisSession()->globalState->frameid));
                     key.push_back(':');
                     key.append(std::to_string(getThisSession()->globalState->sessionid));
-                    extraOps(key);
+                    key.append(postfix);
                     getThisSession()->globalComm->addViewObject(key, std::move(pp));
                     set_output2("viewid", std::move(key));
                 }
             }
         };
-        // TODO: what about list of lists?
-        if (auto *lst = dynamic_cast<ListObject *>(p.get())) {
-            for (size_t i = 0; i < lst->arr.size(); i++) {
-                addtoview(lst->arr[i], [i] (auto &key) {
-                    key.append("lst-" + std::to_string(i));
-                });
-            }
-        } else {
-            addtoview(p, [] (auto &key) {});
-        }
+
+        addtoview(addtoview, p, {});
         set_output("object", std::move(p));
     }
 };

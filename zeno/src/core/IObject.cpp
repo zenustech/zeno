@@ -26,7 +26,7 @@ ZENO_API bool IObject::move_assign(IObject const *other) {
     return false;
 }
 
-ZENO_API virtual std::string IObject::method_node(std::string const &op) {
+ZENO_API std::string IObject::method_node(std::string const &op) {
     return {};
 }
 
