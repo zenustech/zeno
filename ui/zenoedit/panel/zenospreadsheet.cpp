@@ -40,14 +40,6 @@ ZenoSpreadsheet::ZenoSpreadsheet(QWidget *parent) : QWidget(parent) {
     pMode->setProperty("cssClass", "proppanel");
     pTitleLayout->addWidget(pMode);
 
-    QLabel* pAttribute = new QLabel("ATTRIBUTE");
-    pAttribute->setProperty("cssClass", "proppanel");
-    pTitleLayout->addWidget(pAttribute);
-
-    ZComboBox* pAttributeName = new ZComboBox();
-    pAttributeName->setProperty("cssClass", "proppanel");
-    pTitleLayout->addWidget(pAttributeName);
-
     connect(pMode, &ZComboBox::_textActivated, [=](const QString &text) {
         this->dataModel->setSelAttr(text.toStdString());
     });
