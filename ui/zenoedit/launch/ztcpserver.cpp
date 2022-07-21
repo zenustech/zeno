@@ -129,13 +129,15 @@ void ZTcpServer::onProcFinished(int exitCode, QProcess::ExitStatus exitStatus)
 {
     if (exitStatus == QProcess::NormalExit)
     {
-        m_proc->terminate();
+        if (m_proc)
+            m_proc->terminate();
         m_proc = nullptr;
         zeno::log_info("runner process normally exited with {}", exitCode);
     }
     else if (exitStatus == QProcess::CrashExit)
     {
-        m_proc->terminate();
+        if (m_proc)
+            m_proc->terminate();
         m_proc= nullptr;
         zeno::log_info("runner process crashed with code {}", exitCode);
     }
