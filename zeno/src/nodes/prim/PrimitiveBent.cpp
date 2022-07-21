@@ -114,7 +114,7 @@ ZENDEFNODE(PrimitiveBent, {
     {
     {"bool", "useOrigin", "0"},
     },
-    {"primitive"},
+    {"deprecated"},
 });
 
 }

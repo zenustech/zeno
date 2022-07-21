@@ -5,18 +5,18 @@
 #include <zeno/utils/zeno_p.h> 
 
 #if !defined(QT_NO_DEBUG)
-#define ZASSERT_EXIT(cond, ...) \
-    if (!(cond))                \
-    {                           \
-        Q_ASSERT(cond);         \
-        return __VA_ARGS__;     \
+#define ZASSERT_EXIT(cond, ...)                    \
+    if (!(cond))                                   \
+    {                                              \
+        Q_ASSERT(cond);                            \
+        return __VA_ARGS__;                        \
     }
 #else
-#define ZASSERT_EXIT(cond, ...) \
-    if (!(cond))                \
-    {                           \
-        zeno::log_error(#cond); \
-        return __VA_ARGS__;     \
+#define ZASSERT_EXIT(cond, ...)                    \
+    if (!(cond))                                   \
+    {                                              \
+        zeno::log_error("Assert failed: ", #cond); \
+        return __VA_ARGS__;                        \
     }
 #endif
 

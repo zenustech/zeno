@@ -23,9 +23,13 @@ target_compile_features(zshelper INTERFACE cxx_std_17 cuda_std_17)
 
 if(WIN32)
 else()
-  target_compile_options(zshelper
-    INTERFACE $<$<COMPILE_LANGUAGE:CXX>:-march=native>
-  )
+  # BATE: nono wxl stop using -march=native!
+  # the GitHub CI machine has AVX512, but most people doesn't have it
+  # this would cause one who doesn't have AVX512 cannot start zeno at all!
+  # so this is anti-deployment, please stop.
+  #target_compile_options(zshelper
+    #INTERFACE $<$<COMPILE_LANGUAGE:CXX>:-march=native>
+  #)
 endif()
 
 target_compile_features(zeno PRIVATE cuda_std_17)

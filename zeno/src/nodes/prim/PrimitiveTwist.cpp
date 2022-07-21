@@ -92,7 +92,7 @@ ZENDEFNODE(PrimitiveTwist, {
     },
     {
     },
-    {"primitive"},
+    {"deprecated"},
 });
 
 }

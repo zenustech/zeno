@@ -52,7 +52,7 @@ struct EvalAnim{
         m_CurrentFrame += m_TicksPerSecond * dt;
         m_CurrentFrame = fmod(m_CurrentFrame, m_Duration);
 
-        zeno::log_info("Update: F {} D {} C {}", fi, dt, m_CurrentFrame);
+        //zeno::log_info("Update: F {} D {} C {}", fi, dt, m_CurrentFrame);
 
         calculateBoneTransform(&m_RootNode, aiMatrix4x4());
         calculateFinal(prim, s);
@@ -219,7 +219,7 @@ struct EvalFBXAnim : zeno::INode {
         float s = 1.0f;
         auto unit = get_param<std::string>("unit");
         if (unit == "FROM_MAYA"){
-            zeno::log_info("EvalFBXAnim Maya unit");
+            //zeno::log_info("EvalFBXAnim Maya unit");
             s = 0.01f;
         }
 
@@ -276,7 +276,7 @@ struct EvalFBXAnim : zeno::INode {
                     for(unsigned int j=0; j<v.size(); j++){ // Mesh Vert
                         auto& vpos = v[j].deltaPosition;
                         auto& vnor = v[j].deltaNormal;
-                        ver.emplace_back(vpos.x, vpos.y, vpos.z);
+                        ver.emplace_back(vpos.x*s, vpos.y*s, vpos.z*s);
                         posb.emplace_back(0.0f, 0.0f, 0.0f);
                         bsw.emplace_back((float)w);
                         norm.emplace_back(vnor.x, vnor.y, vnor.z);

@@ -173,6 +173,14 @@ sudo strip --remove-section=.note.ABI-tag /usr/lib64/libQt5Core.so.5
 
 Reference: https://askubuntu.com/questions/1034313/ubuntu-18-4-libqt5core-so-5-cannot-open-shared-object-file-no-such-file-or-dir
 
+### Q
+
+Any error around TBB.
+
+### A
+
+Consider uninstall OneAPI (`/opt/intel/oneapi`), OpenVDB requires the old version of TBB, not the stupid OneTBB.
+
 ## CUDA problem
 
 ### Q

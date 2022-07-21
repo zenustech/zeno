@@ -18,6 +18,7 @@ if sys.platform == 'win32':
             shutil.move(os.path.join(binpath, target), os.path.join(outpath, target))
     subprocess.check_call([
         '..\\Qt\\5.15.2\\msvc2019_64\\bin\\windeployqt.exe',
+        # '--no-angle',
         os.path.join(outpath, 'zenoedit.exe'),
     ])
     if os.path.exists(assetlist):

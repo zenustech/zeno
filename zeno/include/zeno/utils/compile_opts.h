@@ -7,6 +7,10 @@
 #define ZENO_RESTRICT __restrict__
 #define ZENO_FORCEINLINE __inline__ __attribute__((always_inline))
 #define ZENO_ASSUME_ALIGNED(x, n) ((void *)__builtin_assume_aligned((void *)(x), (n)))
+#define ZENO_GNUC_ATTRIBUTE(...) __attribute____((__VA_ARGS__))
+#define ZENO_MSVC_DECLSPEC(...)
+#define ZENO_ENABLE_IF_GNUC(...) __VA_ARGS__
+#define ZENO_ENABLE_IF_MSVC(...)
 
 #elif defined(_MSC_VER)
 
@@ -15,6 +19,10 @@
 #define ZENO_RESTRICT __restrict
 #define ZENO_FORCEINLINE __forceinline
 #define ZENO_ASSUME_ALIGNED(x, n) ((void *)((uintptr_t)(x) & (n - 1)))
+#define ZENO_GNUC_ATTRIBUTE(...)
+#define ZENO_MSVC_DECLSPEC(...) __declspec(__VA_ARGS__)
+#define ZENO_ENABLE_IF_GNUC(...)
+#define ZENO_ENABLE_IF_MSVC(...) __VA_ARGS__
 
 #else
 
@@ -23,6 +31,10 @@
 #define ZENO_RESTRICT
 #define ZENO_FORCEINLINE
 #define ZENO_ASSUME_ALIGNED(x, n) (x)
+#define ZENO_GNUC_ATTRIBUTE(...)
+#define ZENO_MSVC_DECLSPEC(...)
+#define ZENO_ENABLE_IF_GNUC(...)
+#define ZENO_ENABLE_IF_MSVC(...)
 
 #endif
 
@@ -37,7 +49,7 @@
     _Pragma("clang diagnostic ignored \"-Wall\"") \
     _Pragma("GCC diagnostic ignored \"-Wextra\"") \
     _Pragma("GCC diagnostic ignored \"-Wsuggest-override\"")
-    _Pragma("GCC diagnostic ignored \"-Wformat\"")
+    _Pragma("GCC diagnostic ignored \"-Wformat=\"")
 #define ZENO_NOWARN_END \
     _Pragma("clang diagnostic pop")
 #elif defined __GNUC__
@@ -46,6 +58,7 @@
     _Pragma("GCC diagnostic ignored \"-Wall\"") \
     _Pragma("GCC diagnostic ignored \"-Wextra\"") \
     _Pragma("GCC diagnostic ignored \"-Wsuggest-override\"")
+    _Pragma("GCC diagnostic ignored \"-Wformat=\"")
 #define ZENO_NOWARN_END \
     _Pragma("GCC diagnostic pop")
 #elif defined _MSC_VER

@@ -101,6 +101,18 @@ struct ParticlesWrangle : zeno::INode {
             }
         }
         // END心欣你也可以把这段代码加到其他wrangle节点去，这样这些wrangle也可以自动引用portal做参数
+        // BEGIN伺候心欣伺候懒得extract出变量了
+        std::vector<std::string> keys;
+        for (auto const &[key, val]: params->lut) {
+            keys.push_back(key);
+        }
+        for (auto const &key: keys) {
+            if (!dynamic_cast<zeno::NumericObject*>(params->lut.at(key).get())) {
+                dbg_printf("ignored non-numeric %s\n", key.c_str());
+                params->lut.erase(key);
+            }
+        }
+        // END伺候心欣伺候懒得extract出变量了
         }
         std::vector<float> parvals;
         std::vector<std::pair<std::string, int>> parnames;

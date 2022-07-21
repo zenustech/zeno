@@ -1,3 +1,6 @@
+//#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+
 #define STB_IMAGE_WRITE_STATIC
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <stb_image_write.h>
@@ -25,13 +28,16 @@
 
 #include "Definition.h"
 
+using Path = std::filesystem::path;
+
 void readFBXFile(
     std::shared_ptr<zeno::DictObject>& datas,
     std::shared_ptr<NodeTree>& nodeTree,
     std::shared_ptr<FBXData>& fbxData,
     std::shared_ptr<BoneTree>& boneTree,
     std::shared_ptr<AnimInfo>& animInfo,
-    const char *fbx_path);
+    const char *fbx_path,
+    bool enable_udim);
 
 struct Mesh{
     FBXData fbxData;
@@ -39,8 +45,10 @@ struct Mesh{
     std::unordered_map<std::string, std::vector<unsigned int>> m_VerticesSlice;
     std::unordered_map<std::string, std::vector<unsigned int>> m_BlendShapeSlice;
     std::unordered_map<std::string, aiMatrix4x4> m_TransMatrix;
+    std::unordered_map<std::string, SMaterial> m_loadedMat;
     unsigned int m_VerticesIncrease = 0;
     unsigned int m_IndicesIncrease = 0;
+    bool enable_udim = false;
 
     std::string createTexDir(std::string subPath){
         auto p = fbxPath;
@@ -67,7 +75,7 @@ struct Mesh{
     }
 
     void readLights(const aiScene *scene){
-        zeno::log_info("Num Light {}", scene->mNumLights);
+        zeno::log_info("FBX: Num Light {}", scene->mNumLights);
 
         for(unsigned int i=0; i<scene->mNumLights; i++){
             aiLight* l = scene->mLights[i];
@@ -79,18 +87,18 @@ struct Mesh{
             // So we can't import aiLight
             // In maya, export `aiAreaLight1` to .fbx -> import the .fbx
             // `aiAreaLight1` -> Changed to a transform-node
-            zeno::log_info("Light N {} T {} P {} {} {} S {} {}\nD {} {} {} U {} {} {}"
-                           " AC {} AL {} AQ {} CD {} {} {} CS {} {} {} CA {} {} {}"
-                           " AI {} AO {}",
-                           lightName, l->mType, l->mPosition.x, l->mPosition.y, l->mPosition.z,
-                           l->mSize.x, l->mSize.y,
-                           l->mDirection.x, l->mDirection.y, l->mDirection.z, l->mUp.x, l->mUp.y, l->mUp.z,
-                           l->mAttenuationConstant, l->mAttenuationLinear, l->mAttenuationQuadratic,
-                           l->mColorDiffuse.r, l->mColorDiffuse.g, l->mColorDiffuse.b,
-                           l->mColorSpecular.r, l->mColorSpecular.g, l->mColorSpecular.b,
-                           l->mColorAmbient.r, l->mColorAmbient.g, l->mColorAmbient.b,
-                           l->mAngleInnerCone, l->mAngleOuterCone
-                           );
+//            zeno::log_info("Light N {} T {} P {} {} {} S {} {}\nD {} {} {} U {} {} {}"
+//                           " AC {} AL {} AQ {} CD {} {} {} CS {} {} {} CA {} {} {}"
+//                           " AI {} AO {}",
+//                           lightName, l->mType, l->mPosition.x, l->mPosition.y, l->mPosition.z,
+//                           l->mSize.x, l->mSize.y,
+//                           l->mDirection.x, l->mDirection.y, l->mDirection.z, l->mUp.x, l->mUp.y, l->mUp.z,
+//                           l->mAttenuationConstant, l->mAttenuationLinear, l->mAttenuationQuadratic,
+//                           l->mColorDiffuse.r, l->mColorDiffuse.g, l->mColorDiffuse.b,
+//                           l->mColorSpecular.r, l->mColorSpecular.g, l->mColorSpecular.b,
+//                           l->mColorAmbient.r, l->mColorAmbient.g, l->mColorAmbient.b,
+//                           l->mAngleInnerCone, l->mAngleOuterCone
+//                           );
             SLight sLig{
                 lightName, l->mType, l->mPosition, l->mDirection, l->mUp,
                 l->mAttenuationConstant, l->mAttenuationLinear, l->mAttenuationQuadratic,
@@ -125,6 +133,13 @@ struct Mesh{
     void processMesh(aiMesh *mesh, const aiScene *scene) {
         std::string meshName(mesh->mName.data);
         auto numAnimMesh = mesh->mNumAnimMeshes;
+        float uv_scale = 1.0f;
+
+        // Material
+        if(mesh->mNumVertices)
+            readMaterial(mesh, scene, &uv_scale);
+
+        zeno::log_info("FBX: Mesh name {}, vert count {}", mesh->mName.C_Str(), mesh->mNumVertices);
 
         // Vertices & BlendShape
         for(unsigned int j = 0; j < mesh->mNumVertices; j++){
@@ -134,12 +149,17 @@ struct Mesh{
             vertexInfo.position = vec;
 
             if (mesh->mTextureCoords[0]){
-                aiVector3D uvw(fmodf(mesh->mTextureCoords[0][j].x, 1.0f),
-                               fmodf(mesh->mTextureCoords[0][j].y, 1.0f), 0.0f);
+                //aiVector3D uvw(fmodf(mesh->mTextureCoords[0][j].x, 1.0f),
+                //               fmodf(mesh->mTextureCoords[0][j].y, 1.0f), 0.0f);
+                aiVector3D uvw(mesh->mTextureCoords[0][j].x, mesh->mTextureCoords[0][j].y, 0.0f);
                 // Same vert but diff uv
                 // U 0.980281 0.0276042 V -0.5 -1 -0.866026
                 // U 0.0325739 0.0276042 V -0.5 -1 -0.866026
                 //zeno::log_info(">>>>> U {} {} V {} {} {}", uvw.x, uvw.y, vec.x, vec.y, vec.z);
+
+                if(uv_scale > 1.0f){
+                    uvw /= uv_scale;
+                }
                 vertexInfo.texCoord = uvw;
             }
             if (mesh->mNormals) {
@@ -217,10 +237,6 @@ struct Mesh{
             }
         }
 
-        // Material
-        if(mesh->mNumVertices)
-            readMaterial(mesh, scene);
-
         // FBXBone
         extractBone(mesh);
 
@@ -291,7 +307,35 @@ struct Mesh{
         return data.find(toSearch, pos);
     }
 
-    void readMaterial(aiMesh* mesh, aiScene const* scene){
+    bool setMergedImageData(uint8_t *pixels, int channel_num, uint8_t *data, int row, int col, int width, int pixel_len, int size){
+        for (int j = (row * width-1), x = width-1; j >= (row-1) * width; j--, x--) {
+
+            int ls = j * size * width * channel_num;
+            int ls_ = x * width * channel_num;
+
+            for (int k = (col-1)*width, y = 0; k < col*width; k++, y++) {
+                int ir,ig,ib,ia;
+
+                ir = data[ls_+y*channel_num+0];
+                ig = data[ls_+y*channel_num+1];
+                ib = data[ls_+y*channel_num+2];
+                ia = data[ls_+y*channel_num+3];
+
+                if(ls+k*channel_num < pixel_len){
+                    pixels[ls+k*channel_num+0] = ir;
+                    pixels[ls+k*channel_num+1] = ig;
+                    pixels[ls+k*channel_num+2] = ib;
+                    pixels[ls+k*channel_num+3] = ia;
+                }else{
+                    printf("ERROR Writing %d %d\n", ls+k*channel_num, pixel_len);
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    void readMaterial(aiMesh* mesh, aiScene const* scene, float *uvscale){
         /*  assimp - v5.0.1
 
             aiTextureType_NONE = 0,
@@ -315,65 +359,206 @@ struct Mesh{
             aiTextureType_UNKNOWN = 18,
          */
 
-        SMaterial mat;
         SDefaultMatProp dMatProp;
         aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
-
-        std::string meshName = mesh->mName.data;
         std::string matName = material->GetName().data;
+        std::string meshName = mesh->mName.data;
+
+        if(m_loadedMat.find(matName) != m_loadedMat.end()){
+            fbxData.iMaterial.value[meshName] = m_loadedMat[matName];
+            return;
+        }
+
+        SMaterial mat;
+        mat.matName = matName;
+
         std::string vmPath = createTexDir("valueTex/" + matName);
 
         //zeno::log_info("1M {} M {} NT {}", meshName, matName, scene->mNumTextures);
 
         if( findCaseInsensitive(matName, "SKIN") != std::string::npos ){
+            zeno::log_info("FBX: SKIN");
             mat.setDefaultValue(dMatProp.getUnknownProp());
         }else if( findCaseInsensitive(matName, "CLOTH") != std::string::npos ){
+            zeno::log_info("FBX: CLOTH");
             mat.setDefaultValue(dMatProp.getUnknownProp());
         }else if( findCaseInsensitive(matName, "HAIR") != std::string::npos ){
+            zeno::log_info("FBX: HAIR");
             mat.setDefaultValue(dMatProp.getUnknownProp());
         }else{
             mat.setDefaultValue(dMatProp.getUnknownProp());
         }
 
-        for(auto&com: mat.val){
-
-            aiTextureType texType = com.second.type;
+        for(auto&com: mat.val)
+        {
+            bool texfound=false;
             bool forceD = com.second.forceDefault;
 
-            // TODO Support material multi-tex
-            // The first step - to find the texture
-            if(material->GetTextureCount(texType)){
-                aiString str;
-                material->GetTexture(texType, 0, &str);
-                auto p = fbxPath;
-                auto s = std::string(str.C_Str());
-                auto c = (p += s).string();
-                std::replace(c.begin(), c.end(), '\\', '/');
-                //zeno::log_info("2N {} TN {} TT {} CP {}", com.first, str.data, texType, c);
+            for(int i=0;i<com.second.types.size(); i++){
+                aiTextureType texType = com.second.types[i];
 
-                mat.val.at(com.first).texPath = c;
+                // TODO Support material multi-tex
+                // The first step - to find the texture
+                if(material->GetTextureCount(texType)){
+                    aiString str;
+                    material->GetTexture(texType, 0, &str);
+                    auto p = fbxPath;
+                    auto s = std::string(str.C_Str());
+                    auto c = (p += s).string();
+                    std::replace(c.begin(), c.end(), '\\', '/');
+                    zeno::log_info("FBX: Mat name {}, PropName {} RelTexPath {} TexType {} MerPath {}",matName,com.first, str.data, texType, c);
+
+                    Path file_full_path(c);
+                    std::string filename = Path(c).filename().string();
+                    Path file_path = Path(c).remove_filename();
+
+                    // Check if it is UDIM
+                    int pos = 0;
+                    int index = 0;
+                    bool is_udim_tex = false;
+                    int udim_num = 0;
+                    while((index = filename.find(".10", pos)) != std::string::npos) {  // UDIM e.g. Tex_1001.png Tex_1011.png
+                        if(filename.find_last_of('.') == index+5){  // index `_` pos, index+5 `.` pos
+                            is_udim_tex = true;
+
+                            udim_num = std::stoi(filename.substr(index+3, 2));
+                            zeno::log_info("UDIM: Found udim tex num {}, enable {}",udim_num, enable_udim);
+                            break;  // for check whether is udim
+                        }
+                        pos = index + 1; //new position is from next element of index
+                    }
+
+                    if(is_udim_tex && enable_udim){  // first udim check
+                        int max_up=0, max_vp=0;
+                        int sw,sh,comp;
+                        std::unordered_map<std::string, std::string> udim_texs;
+                        auto merged_path = Path(file_path);
+                        auto fn_replace = filename;
+                        merged_path+= fn_replace.replace(index+1, 4, "MERGED_UDIM");
+
+                        if(std::filesystem::exists(Path(c))) {
+
+                            stbi_info(Path(c).string().c_str(), &sw, &sh, &comp);
+                            zeno::log_info("UDIM: Info {} {} {} {}", filename, sw, sh, comp);
+
+                            // Find all udim tex
+                            for (int i = 0; i < 10; i++) {
+                                for (int j = 1; j < 10; j++) {
+                                    std::string udnum = std::to_string(i) + std::to_string(j);
+                                    auto replaced_filename = filename.replace(index + 3, 2, udnum);
+                                    auto search_file_path = Path(file_path);
+                                    search_file_path += replaced_filename;
+
+                                    bool file_exists = std::filesystem::exists(search_file_path);
+                                    if (file_exists) {
+                                        zeno::log_info("UDIM: Unum {}, Exists texPath {}", udnum,
+                                                       search_file_path.string());
+                                        max_up = std::max(max_up, j);
+                                        max_vp = std::max(max_vp, i + 1);
+
+                                        udim_texs[udnum] = search_file_path.string();
+                                    }
+                                }
+                            }
+                            zeno::log_info("UDIM: Max u {} v {}, num {}", max_up, max_vp, udim_texs.size());
+
+                            if (udim_texs.size() != 1) {  // final udim check
+                                int size = std::max(max_up, max_vp);
+
+                                if(std::filesystem::exists(merged_path)){
+                                    c = merged_path.string();
+                                    *uvscale = float(size);
+
+                                }else{
+
+                                    int channel_num = 4;
+                                    bool success = true;
+                                    int fsize = sw * size;
+                                    int pixel_len = fsize * fsize * channel_num;
+
+                                    uint8_t *pixels = new uint8_t[pixel_len];
+
+                                    for (auto &ut : udim_texs) {
+                                        int width, height, n;
+
+                                        uint8_t *data = stbi_load(ut.second.c_str(), &width, &height, &n, 4);
+                                        zeno::log_info("UDIM: Read Tex {}, {} {} {}", Path(ut.second).filename().string(),
+                                                       width, height, n);
+                                        if (width != height) {
+                                            success = false;
+                                            break;
+                                        }
+
+                                        int unum = std::stoi(ut.first);
+                                        int row, col;
+                                        if (unum / 10.0f < 1) { // UDIM 100X ~
+                                            row = size;
+                                            col = unum;
+                                        } else {
+                                            col = unum % 10;
+                                            row = size - unum / 10;
+                                        }
+                                        zeno::log_info("UDIM: writting data row {} col {}", row, col);
+                                        bool wr =
+                                            setMergedImageData(pixels, channel_num, data, row, col, width, pixel_len, size);
+                                        if (!wr) {
+                                            success = false;
+                                            break;
+                                        }
+
+                                        delete[] data;
+                                    }
+
+                                    if (success) {
+                                        zeno::log_info("UDIM: Write merged udim tex {}", merged_path.string());
+                                        stbi_write_png(merged_path.string().c_str(), fsize, fsize, channel_num, pixels,
+                                                       fsize * channel_num);
+
+                                        c = merged_path.string();
+                                        *uvscale = float(size);
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    mat.val.at(com.first).texPath = c;
+                    texfound = true;
+
+                    break;  // for tex-types
+                }
             }
+            if(! texfound)
             // The second step - to find the material-prop and to generate a value-based texture
-            else
             {
                 aiColor4D tmp;
                 bool found = false;
-                auto key = com.second.aiName.c_str();
-                if(!forceD && com.second.aiName != ""){
-                    if(AI_SUCCESS == aiGetMaterialColor(material,
-                                                        key,0,0,
-                                                        &tmp)){ // Found or use default value
-                        found = true;
-                        com.second.value = tmp;
+
+                for(int i=0;i<com.second.aiNames.size(); i++){
+                    auto key = com.second.aiNames[i];
+                    //zeno::log_info("Getting {}", key);
+                    if(!forceD && !key.empty()){
+                        if(AI_SUCCESS == aiGetMaterialColor(material,
+                                                            key.c_str(),0,0,
+                                                            &tmp)){
+                            found = true;
+                            // override the default value
+                            zeno::log_info("FBX: Mat name {}, PropName {}, MatValue {} {} {} {}",matName, com.first,tmp.r, tmp.g,tmp.b,tmp.a);
+                            com.second.value = tmp;
+                        }
+                    }
+
+                    if(found){
+                        break;
                     }
                 }
 
-                // TODO read material-float properties
-                //if(AI_SUCCESS != aiGetMaterialFloat(material, "$ai.normalCameraFactor", 0, 0, &mat.testFloat))
-                //    mat.testFloat = 0.5f;
-                //zeno::log_info("----- TestFloat {}", mat.testFloat);
-
                 auto v = std::any_cast<aiColor4D>(com.second.value);
+
+                // XXX
+                if(com.first == "opacity" && v.r>0.99f && v.g>0.99f && v.b>0.99f)
+                    v *= 0.8;
+
                 int channel_num = 4;
                 int width = 2, height = 2;
                 uint8_t* pixels = new uint8_t[width * height * channel_num];
@@ -404,8 +589,7 @@ struct Mesh{
             }
         }
 
-        mat.matName = matName;
-
+        m_loadedMat[matName] = mat;
         fbxData.iMaterial.value[meshName] = mat;
     }
 
@@ -558,7 +742,7 @@ struct Anim{
                 auto animation = scene->mAnimations[i];
                 duration = animation->mDuration;
                 tick = animation->mTicksPerSecond;
-                zeno::log_info("AniName: {} NC {} NMC {} NMMC {} D {} T {}",
+                zeno::log_info("FBX: AniName {} NC {} NMC {} NMMC {} D {} T {}",
                                animation->mName.data,
                                animation->mNumChannels,
                                animation->mNumMeshChannels,
@@ -612,12 +796,12 @@ struct Anim{
                 aiMeshMorphAnim* channel = animation->mMorphMeshChannels[j];
                 std::string channelName(channel->mName.data);  // pPlane1*0 with *0
                 channelName = channelName.substr(0, channelName.find_last_of('*'));
-                zeno::log_info("BlendShape Channel Name {}", channelName);
+                zeno::log_info("FBX: BS Channel Name {}", channelName);
 
                 if(channel->mNumKeys) {
                     std::vector<SKeyMorph> keyMorph;
 
-                    zeno::log_info("BlendShape NumKeys {} NumVAW {}", channel->mNumKeys,
+                    zeno::log_info("FBX: BS NumKeys {} NumVal&Wei {}", channel->mNumKeys,
                                    channel->mKeys[0].mNumValuesAndWeights);
 
                     for (int i = 0; i < channel->mNumKeys; ++i) {
@@ -646,7 +830,8 @@ void readFBXFile(
         std::shared_ptr<FBXData>& fbxData,
         std::shared_ptr<BoneTree>& boneTree,
         std::shared_ptr<AnimInfo>& animInfo,
-        const char *fbx_path)
+        const char *fbx_path,
+        bool enable_udim)
 {
     Assimp::Importer importer;
     importer.SetPropertyInteger(AI_CONFIG_PP_PTV_NORMALIZE, true);
@@ -658,14 +843,15 @@ void readFBXFile(
                                              | aiProcess_JoinIdenticalVertices
                                              );
     if(! scene)
-        zeno::log_error("ReadFBXPrim: Invalid assimp scene");
+        zeno::log_error("FBX: Invalid assimp scene");
 
     Mesh mesh;
     Anim anim;
 
+    mesh.enable_udim = enable_udim;
+
     std::filesystem::path p(fbx_path);
     mesh.fbxPath = p.remove_filename();
-    //zeno::log_info("ReadFBXPrim: FBXPath {}", mesh.fbxPath.string());
 
     mesh.initMesh(scene);
     anim.initAnim(scene, &mesh);
@@ -681,9 +867,9 @@ void readFBXFile(
     animInfo->duration = anim.duration;
     animInfo->tick = anim.tick;
 
-    zeno::log_info("ReadFBXPrim: Num Animation {}", scene->mNumAnimations);
-    zeno::log_info("ReadFBXPrim: Vertices count {}", mesh.fbxData.iVertices.value.size());
-    zeno::log_info("ReadFBXPrim: Indices count {}", mesh.fbxData.iIndices.value.size());
+    zeno::log_info("FBX: Num Animation {}", scene->mNumAnimations);
+    zeno::log_info("FBX: Total Vertices count {}", mesh.fbxData.iVertices.value.size());
+    zeno::log_info("FBX: Total Indices count {}", mesh.fbxData.iIndices.value.size());
 }
 
 struct ReadFBXPrim : zeno::INode {
@@ -696,11 +882,17 @@ struct ReadFBXPrim : zeno::INode {
         auto fbxData = std::make_shared<FBXData>();
         auto boneTree = std::make_shared<BoneTree>();
 
-        //zeno::log_info("ReadFBXPrim: File Path {}", path);
+        zeno::log_info("FBX: File path {}", path);
+
+        bool enable_udim = false;
+        auto udim = get_param<std::string>("udim");
+        if (udim == "ENABLE"){
+            enable_udim = true;
+        }
 
         readFBXFile(datas,
                     nodeTree, fbxData, boneTree, animInfo,
-                    path.c_str());
+                    path.c_str(), enable_udim);
 
         set_output("data", std::move(fbxData));
         set_output("datas", std::move(datas));
@@ -722,7 +914,7 @@ ZENDEFNODE(ReadFBXPrim,
                    {"BoneTree", "bonetree"},
                },  /* params: */
                {
-
+                {"enum ENABLE DISABLE", "udim", "DISABLE"},
                },  /* category: */
                {
                    "FBX",
