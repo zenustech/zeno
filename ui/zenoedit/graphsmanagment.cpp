@@ -162,6 +162,7 @@ void GraphsManagment::appendMsgStream(const QByteArray& arr)
     {
         if (!line.isEmpty())
         {
+            std::cout << line.data() << std::endl;
             ZWidgetErrStream::appendFormatMsg(line.toStdString());
         }
     }
