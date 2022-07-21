@@ -17,6 +17,8 @@
 #include "kernel/gradient_field.hpp"
 #include "zensim/container/Bvh.hpp"
 #include "zensim/geometry/AnalyticLevelSet.h"
+#include "zensim/math/MathUtils.h"
+
 
 namespace zeno {
 
@@ -244,19 +246,21 @@ struct ZSSampleQuadratureAttr2Vert : zeno::INode {
         cudaPol(range(verts.size()),
             [verts = proxy<space>({},verts),attr_dim,attr = SmallString(attr)] 
                 __device__(int vi) mutable {
-                    for(int i = 0;i < attr_dim;++i)
+                    for(int i = 0;i != attr_dim;++i)
                         verts(attr,i,vi) = 0.;
         });
 
         cudaPol(range(quads.size()),
-            [verts = proxy<space>({},verts),quads = proxy<space>({},quads),attr_dim,attr = SmallString(attr),simplex_size,weight = SmallString(weight)]
+            [verts = proxy<space>({},verts),quads = proxy<space>({},quads),attr_dim,attr = SmallString(attr),simplex_size,weight = SmallString(weight),execTag = wrapv<space>{}]
                 __device__(int ei) mutable {
-                    auto w = quads(weight,ei);
-                    // w = 1;// cancel out the specified weight info
+                    float w = quads(weight,ei);
+                    // w = 1.0;// cancel out the specified weight info
                     for(int i = 0;i != simplex_size;++i){
                         auto idx = reinterpret_bits<int>(quads("inds",i,ei));
-                        for(int j = 0;j != attr_dim;++j){
-                            verts(attr,j,idx) += w * quads(attr,j,ei) / simplex_size;
+                        for(int j = 0;j != attr_dim;++j) {
+                            // verts(attr,j,idx) += w * quads(attr,j,ei) / (float)simplex_size;
+                            auto alpha = w * quads(attr,j,ei) / (float)simplex_size;
+                            atomic_add(execTag,&verts(attr,j,idx),alpha);
                         }
                     }                    
         });
@@ -379,7 +383,7 @@ struct ZSGaussianNeighborQuadatureSampler : zeno::INode {
     constexpr float gauss_kernel(float dist,float sigma) {
         // using namespace zs;
         auto distds = dist/sigma;
-        return 1/(sigma * zs::sqrt(2*zs::g_pi)) * zs::exp(-0.5 * distds * distds);
+        return 1/(sigma /** zs::sqrt(2*zs::g_pi)*/) * zs::exp(-0.5 * distds * distds);
     }
 
     template <typename TileVecT, int codim = 3>
@@ -417,6 +421,8 @@ struct ZSGaussianNeighborQuadatureSampler : zeno::INode {
         using namespace zs;
         constexpr auto space = execspace_e::cuda;   
 
+        fmt::print("begin evaluate centers\n");
+
         pol(range(centers.size()),
             [src_centers = proxy<space>(centers),
                     src_quads = proxy<space>({},quads),
@@ -424,11 +430,17 @@ struct ZSGaussianNeighborQuadatureSampler : zeno::INode {
                     xtag = SmallString(xtag)] __device__(int ei) mutable {
                 int simplex_size = src_quads.propertySize("inds");
                 src_centers[ei] = vec3::zeros();
+                if(ei == 1)
+                    printf("simplex_size : %d\n",simplex_size);
                 for(int i = 0;i != simplex_size;++i){
                     auto idx = reinterpret_bits<int>(src_quads("inds",i,ei));
+                    if(ei == 1)
+                        printf("idx : %d\n",idx);
                     src_centers[ei] += src_verts.pack<3>(xtag,idx) / simplex_size;
                 }
-        });         
+        });       
+
+        fmt::print("finish evaluate centers\n");  
     }
 
     void apply() override {
@@ -442,7 +454,7 @@ struct ZSGaussianNeighborQuadatureSampler : zeno::INode {
         auto& src_quads = src_field->getQuadraturePoints();
         auto& src_verts = src_field->getParticles();
         auto& dst_quads = dst_field->getQuadraturePoints();
-        auto& dst_verts = src_field->getParticles();
+        auto& dst_verts = dst_field->getParticles();
 
         // auto bvh_thickness = get_param<float>("bvh_thickness");
 
@@ -478,18 +490,25 @@ struct ZSGaussianNeighborQuadatureSampler : zeno::INode {
                         dst_quads(attr,i,ei) = 0.0;
         }); 
 
+        fmt::print("initial dst field\n");
         // build bvh for source
         auto bvs = retrieve_bounding_volumes(cudaPol,src_verts,xtag,src_quads,wrapv<4>{},0);
         auto quadsBvh = LBvh<3,32,int,float>{};
         quadsBvh.build(cudaPol,bvs);
 
+        fmt::print("finish setup bvh\n");
         // initial two buffers containing the quads' centers
         zs::Vector<vec3> src_centers(src_quads.get_allocator(),src_quads.size());
         zs::Vector<vec3> dst_centers(dst_quads.get_allocator(),dst_quads.size());
+
+        fmt::print("size check {} {} {}\n",src_quads.size(),src_verts.size(),src_centers.size());
+        fmt::print("size check {} {} {}\n",dst_quads.size(),dst_verts.size(),dst_centers.size());
         evaluate_quadrature_centers(cudaPol,src_verts,src_quads,src_centers,xtag);
         evaluate_quadrature_centers(cudaPol,dst_verts,dst_quads,dst_centers,xtag);
 
         // auto sigma2 = sigma*sigma;
+
+        fmt::print("finish evaluating the quadrature centers\n");
 
         cudaPol(range(dst_quads.size()),
             [ dst_quads = proxy<space>({},dst_quads),src_quads = proxy<space>({},src_quads),
@@ -518,12 +537,26 @@ struct ZSGaussianNeighborQuadatureSampler : zeno::INode {
                         auto src_ct = src_centers[si];
                         auto dist = (src_ct - dst_ct).norm();
                         auto w = gauss_kernel(dist,sigma);
-                        w_sum += w;
+                        // float distds = dist/sigma;
+                        // float alpha = zs::sqrt(2*zs::g_pi);
+                        // float beta = zs::exp(-0.5 * distds * distds);
+                        // w = 1/(sigma /* zs::sqrt(2*zs::g_pi)*/) * zs::exp(-0.5 * distds * distds);
 
+                        w_sum += w;
+                        // printf("sample neighbor : %d->%d %f %f %f\n",si,di,(float)w,(float)alpha,(float)zs::g_pi);
                         for(int i = 0;i != attr_dim;++i)
                             dst_quads(attr,i,di) += w * src_quads(attr,i,si);
                     });
+
+                    // if(w_sum < 1e-6){
+                    //     printf("lost element %d\n",di);
+                    // }
+                    for(int i = 0;i != attr_dim;++i)
+                        dst_quads(attr,i,di) /= (w_sum + 1e-6);
         });
+
+
+
 
         set_output("dest",dst_field);
     }
@@ -554,14 +587,16 @@ struct ZSAppendAttribute : zeno::INode {
 
         auto type = get_param<std::string>("type");
 
+        auto fill_val = get_param<float>("fill");
+
         tiles_t& data = (type == "particle") ? particles->getParticles() : particles->getQuadraturePoints();
 
         data.append_channels(cudaPol,{{attr,attr_dim}});
         
         cudaPol(range(data.size()),
-            [data = proxy<space>({},data),attr = SmallString(attr),attr_dim] __device__(int vi) mutable {
+            [data = proxy<space>({},data),attr = SmallString(attr),attr_dim,fill_val] __device__(int vi) mutable {
                 for(int i = 0;i != attr_dim;++i)
-                    data(attr,i,vi) = 0.;
+                    data(attr,i,vi) = fill_val;
         });
 
         set_output("ZSParticles",particles);
@@ -574,7 +609,8 @@ ZENDEFNODE(ZSAppendAttribute,{
     {
         {"string","attr","attr"},
         {"int","attr_dim","1"},
-        {"enum particle quadature","type","particle"}
+        {"enum particle quadature","type","particle"},
+        {"float","fill","0.0"}
     },
     {"ZSGeometry"}
 });
