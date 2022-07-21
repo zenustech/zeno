@@ -1,13 +1,9 @@
 #pragma once
-
-
-#include "openvdb/math/Math.h"
-#include "vec_math.h"
 #include "zxxglslvec.h"
 #include "TraceStuff.h"
+
+
 #include "DisneyBRDF.h"
-#include <cmath>
-#include <math.h>
 
 
 
@@ -52,7 +48,8 @@ namespace DisneyBSDF{
         isotropic
     };
 
-    static __inline__ __device__ vec3 CalculateExtinction(vec3 apparantColor, float scatterDistance)
+    static __inline__ __device__ 
+    vec3 CalculateExtinction(vec3 apparantColor, float scatterDistance)
     {
         vec3 a = apparantColor;
         vec3 a2 = a * a;
@@ -80,8 +77,8 @@ namespace DisneyBSDF{
         float &pSpecTrans)
     {
         float metallicBRDF   = metallic;
-        float specularBSDF   = ( 1 - metallic ) * specTrans;
-        float dielectricBRDF = ( 1 - specTrans ) * ( 1 - metallic );
+        float specularBSDF   = ( 1.0f - metallic ) * specTrans;
+        float dielectricBRDF = ( 1.0f - specTrans ) * ( 1.0f - metallic );
 
         float specularW      = metallicBRDF + dielectricBRDF;
         float transmissionW  = specularBSDF;
@@ -298,6 +295,7 @@ namespace DisneyBSDF{
         return 1.0f/M_PIf * (retro + subsurfaceApprox * (1.0f - 0.5f * fl) * (1.0f - 0.5f * fv));
     }
 
+    static __inline__ __device__
     float3 EvaluateDisney(
         vec3 baseColor,
         float metallic,
@@ -315,14 +313,14 @@ namespace DisneyBSDF{
         float scatterDistance,
         float ior,
         float flatness,
-         
-        bool thin,
-        bool is_inside,
+
         vec3 wi, //in world space
         vec3 wo, //in world space
         vec3 T,
         vec3 B,
         vec3 N,
+        bool thin,
+        bool is_inside,
         float& fPdf,
         float& rPdf)
     {
@@ -396,7 +394,7 @@ namespace DisneyBSDF{
         if(upperHemisphere) {
             float forwardMetallicPdfW;
             float reverseMetallicPdfW;
-            vec3 Spec = EvaluateDisneyBRDF(baseColor,  metallic, subsurface,  specular, roughness, specularTint, anisotropic, sheen, sheenTint, clearCoat, clearcoatGloss, ior, is_inside, wi, wo, fPdf, rPdf);
+            vec3 Spec = EvaluateDisneyBRDF(baseColor,  metallic, subsurface,  specular, roughness, specularTint, anisotropic, sheen, sheenTint, clearCoat, clearcoatGloss, ior, is_inside, wi, wo, forwardMetallicPdfW, reverseMetallicPdfW);
 
             reflectance += Spec;
             fPdf += pSpecular * forwardMetallicPdfW / (4 * abs(HoL) );
@@ -499,7 +497,8 @@ namespace DisneyBSDF{
         float NoL  = abs(wi.z);
         float NoV = abs(wo.z);
 
-        float d = BRDFBasics::GTR1(abs(NoH),lerp(0.1f, 0.001f, clearcoatGloss));
+        //float d = BRDFBasics::GTR1(abs(NoH),lerp(0.1f, 0.001f, clearcoatGloss));
+        float d = BRDFBasics::GTR1(abs(NoH),(0.1f + clearcoatGloss * (0.001f-0.1f) ));
         float f = BRDFBasics::fresnelSchlick(LoH,0.04f);
         float g = BRDFBasics::SeparableSmithGGXG1(wi,  wm, 0.25f, 0.25f);
 
@@ -635,6 +634,7 @@ namespace DisneyBSDF{
         rPdf *= pdf;
 
         wi = normalize(T*wi.x + B*wi.y + N*wi.z);
+        return true;
     }
     static __inline__ __device__ vec3 SampleCosineWeightedHemisphere(float r0, float r1)
     {
@@ -742,23 +742,23 @@ namespace DisneyBSDF{
         float scatterDistance,
         float ior,
 
-        vec3 wi,
         vec3 T,
         vec3 B,
         vec3 N,
+        vec3 wo,
         bool thin,
         bool is_inside,
-        vec3& wo,
+        vec3& wi,
         vec3& reflectance,
         float& rPdf,
         float& fPdf,
         SurfaceEventFlags& flag,
         PhaseFuncions& phaseFuncion,
-        vec3 extinction
+        vec3& extinction
             )
         
     {
-        world2local(wi, T, B, N);
+        world2local(wo, T, B, N);
         float pSpecular,pDiffuse,pClearcoat,pSpecTrans;
 
         pdf(metallic, specTrans, clearCoat, pSpecular, pDiffuse, pClearcoat, pSpecTrans);
@@ -808,6 +808,4 @@ namespace DisneyBSDF{
         return success;
 
     }
-
-
 }
