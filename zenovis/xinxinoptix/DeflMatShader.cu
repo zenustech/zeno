@@ -424,103 +424,103 @@ extern "C" __global__ void __closesthit__radiance()
     }
 
     
-    //float is_refl;
-    //float3 inDir = ray_dir;
-    //vec3 wi = vec3(0.0f);
-    //float pdf = 0.0f;
-    //float rPdf = 1.0f;
-    //float fPdf = 1.0f;
-    //float rrPdf = 0.0f;
-    //float ffPdf = 0.0f;
-    //float3 T = attrs.tang;
-    //float3 B = cross(N, T);
-    //vec3 transmittanceColor = basecolor;
-    //DisneyBSDF::SurfaceEventFlags flag;
-    //DisneyBSDF::PhaseFuncions phaseFuncion;
-    //vec3 extinction;
-    //vec3 reflectance;
-    
-    //float flatness = 0.0f;
-    //float specTrans = 0.0f;
-    //float scatterDistance = 0.0f;
-    //float ior = 1.0f;
-    //bool thin = false;
-
-    //while(DisneyBSDF::SampleDisney(
-    //            prd->seed,
-    //            basecolor,
-    //            transmittanceColor,
-    //            metallic,
-    //            subsurface,
-    //            specular,
-    //            roughness,
-    //            specularTint,
-    //            anisotropic,
-    //            sheen,
-    //            sheenTint,
-    //            clearcoat,
-    //            clearcoatGloss,
-    //            flatness,
-    //            specTrans,
-    //            scatterDistance,
-    //            ior,
-    //            T,
-    //            B,
-    //            N,
-    //            -normalize(ray_dir),
-    //            thin,
-    //            prd->is_inside,
-    //            wi,
-    //            reflectance,
-    //            rPdf,
-    //            fPdf,
-    //            flag,
-    //            phaseFuncion,
-    //            extinction
-    //            )  == false)
-    //    {
-    //    }
-    //pdf = rPdf;
-
-    
     float is_refl;
     float3 inDir = ray_dir;
-    float3 wi = DisneyBRDF::sample_f(
-                                prd->seed,
-                                basecolor,
-                                metallic,
-                                subsurface,
-                                specular,
-                                roughness,
-                                specularTint,
-                                anisotropic,
-                                sheen,
-                                sheenTint,
-                                clearcoat,
-                                clearcoatGloss,
-                                N,
-                                make_float3(0,0,0),
-                                make_float3(0,0,0),
-                                -normalize(ray_dir),
-                                is_refl);
+    vec3 wi = vec3(0.0f);
+    float pdf = 0.0f;
+    float rPdf = 1.0f;
+    float fPdf = 1.0f;
+    float rrPdf = 0.0f;
+    float ffPdf = 0.0f;
+    float3 T = attrs.tang;
+    float3 B = cross(N, T);
+    vec3 transmittanceColor = basecolor;
+    DisneyBSDF::SurfaceEventFlags flag;
+    DisneyBSDF::PhaseFuncions phaseFuncion;
+    vec3 extinction;
+    vec3 reflectance;
+    
+    float flatness = 0.0f;
+    float specTrans = 1.0f;
+    float scatterDistance = 0.0f;
+    float ior = 1.0f;
+    bool thin = false;
 
-    float pdf = DisneyBRDF::pdf(basecolor,
-                                metallic,
-                                subsurface,
-                                specular,
-                                roughness,
-                                specularTint,
-                                anisotropic,
-                                sheen,
-                                sheenTint,
-                                clearcoat,
-                                clearcoatGloss,
-                                N,
-                                make_float3(0,0,0),
-                                make_float3(0,0,0),
-                                wi,
-                                -normalize(ray_dir)
-                                );
+    while(DisneyBSDF::SampleDisney(
+                prd->seed,
+                basecolor,
+                transmittanceColor,
+                metallic,
+                subsurface,
+                specular,
+                roughness,
+                specularTint,
+                anisotropic,
+                sheen,
+                sheenTint,
+                clearcoat,
+                clearcoatGloss,
+                flatness,
+                specTrans,
+                scatterDistance,
+                ior,
+                T,
+                B,
+                N,
+                -normalize(ray_dir),
+                thin,
+                prd->is_inside,
+                wi,
+                reflectance,
+                rPdf,
+                fPdf,
+                flag,
+                phaseFuncion,
+                extinction
+                )  == false)
+        {
+        }
+    pdf = rPdf;
+
+    
+//    float is_refl;
+//    float3 inDir = ray_dir;
+//    float3 wi = DisneyBRDF::sample_f(
+//                                prd->seed,
+//                                basecolor,
+//                                metallic,
+//                                subsurface,
+//                                specular,
+//                                roughness,
+//                                specularTint,
+//                                anisotropic,
+//                                sheen,
+//                                sheenTint,
+//                                clearcoat,
+//                                clearcoatGloss,
+//                                N,
+//                                make_float3(0,0,0),
+//                                make_float3(0,0,0),
+//                                -normalize(ray_dir),
+//                                is_refl);
+//
+//    float pdf = DisneyBRDF::pdf(basecolor,
+//                                metallic,
+//                                subsurface,
+//                                specular,
+//                                roughness,
+//                                specularTint,
+//                                anisotropic,
+//                                sheen,
+//                                sheenTint,
+//                                clearcoat,
+//                                clearcoatGloss,
+//                                N,
+//                                make_float3(0,0,0),
+//                                make_float3(0,0,0),
+//                                wi,
+//                                -normalize(ray_dir)
+//                                );
     float3 f = DisneyBRDF::eval(basecolor,
                                 metallic,
                                 subsurface,
@@ -559,7 +559,7 @@ extern "C" __global__ void __closesthit__radiance()
 
     }
     
-    prd->prob *= pdf/clamp(dot(wi, N),0.0f,1.0f);
+    prd->prob *= pdf/clamp(dot(make_float3(wi.x,wi.y,wi.z), N),0.0f,1.0f);
     prd->origin = P;
     prd->direction = wi;
     prd->countEmitted = false;
