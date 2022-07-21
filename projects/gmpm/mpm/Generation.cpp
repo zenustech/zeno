@@ -1578,8 +1578,8 @@ struct ToBoundaryParticles : INode {
             surfVerts("inds", pointNo) = zs::reinterpret_bits<float>(pointNo);
           });
       // surface info
-      surfEdges = surfEdges.clone({zs::memsrc_e::device, 0});
-      surfVerts = surfVerts.clone({zs::memsrc_e::device, 0});
+      surfEdges = surfEdges.clone({zs::memsrc_e::um, 0});
+      surfVerts = surfVerts.clone({zs::memsrc_e::um, 0});
     }
 
     eles = eles.clone({memsrc_e::device, 0});
