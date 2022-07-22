@@ -338,7 +338,7 @@ struct ToBoundaryPrimitive : INode {
               });
       auto seCnt = surfEdgeCnt.getVal();
       surfEdges.resize(seCnt);
-      surfEdges = surfEdges.clone({zs::memsrc_e::um, 0});
+      surfEdges = surfEdges.clone({zs::memsrc_e::device, 0});
       // surface vert indices
       auto &surfVerts = (*zsbou)[ZenoParticles::s_surfVertTag];
       surfVerts = typename ZenoParticles::particles_t({{"inds", 1}}, pos.size(),
@@ -349,11 +349,11 @@ struct ToBoundaryPrimitive : INode {
             surfVerts("inds", pointNo) = zs::reinterpret_bits<float>(pointNo);
           });
       // surface info
-      surfVerts = surfVerts.clone({zs::memsrc_e::um, 0});
+      surfVerts = surfVerts.clone({zs::memsrc_e::device, 0});
     }
 
-    eles = eles.clone({memsrc_e::um, 0});
-    pars = pars.clone({memsrc_e::um, 0});
+    eles = eles.clone({memsrc_e::device, 0});
+    pars = pars.clone({memsrc_e::device, 0});
 
     set_output("ZSParticles", zsbou);
   }
