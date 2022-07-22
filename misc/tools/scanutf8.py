@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 import sys
 import locale
-import os
+import subprocess
 
-
+failed = False
 def process(path):
     try:
         with open(path, 'r') as f:
@@ -11,12 +11,16 @@ def process(path):
                 for b in map(ord, bs):
                     if not 0 <= b <= 0x7f:
                         print('{}:{}: (U+{:04X}) {}'.format(path, n + 1, b, chr(b)))
-                        exit(1)
+                        failed = True
     except UnicodeDecodeError:
         print('{}: failed to decode as {}'.format(path, locale.getdefaultlocale()))
-        exit(2)
+        failed = True
 
 if len(sys.argv) > 1:
     process(sys.argv[1])
 else:
-    exit(os.system(r"find ui zeno zenovis -type f -regex '.*\.\(c\|h\)\(pp\)?' | xargs -n1 python -O misc/tools/scanutf8.py"))
+    out = subprocess.check_output(['bash', '-c', r"find ui zeno zenovis -type f -regex '.*\.\(c\|h\)\(pp\)?'"])
+    for x in out.decode().splitlines():
+        process(x)
+if failed:
+    exit(1)
