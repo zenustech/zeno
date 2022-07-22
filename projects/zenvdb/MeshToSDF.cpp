@@ -80,13 +80,13 @@ struct PrimitiveToSDF : zeno::INode{
     std::vector<openvdb::Vec3s> points;
     std::vector<openvdb::Vec3I> triangles;
     std::vector<openvdb::Vec4I> quads;
-    points.resize(mesh->attr<zeno::vec3f>("pos").size());
+    points.resize(mesh->verts.size());
     triangles.resize(mesh->tris.size());
     quads.resize(0);
 #pragma omp parallel for
     for(int i=0;i<points.size();i++)
     {
-        points[i] = openvdb::Vec3s(mesh->attr<zeno::vec3f>("pos")[i][0], mesh->attr<zeno::vec3f>("pos")[i][1], mesh->attr<zeno::vec3f>("pos")[i][2]);
+        points[i] = openvdb::Vec3s(mesh->verts[i][0], mesh->verts[i][1], mesh->verts[i][2]);
     }
 #pragma omp parallel for
     for(int i=0;i<triangles.size();i++)

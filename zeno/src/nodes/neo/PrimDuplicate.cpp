@@ -91,7 +91,7 @@ ZENO_API std::shared_ptr<PrimitiveObject> primDuplicate(PrimitiveObject *parsPri
             }
         };
         if constexpr (hasRadAttr)
-            meshPrim->verts.attr_visit(radAttr, func);
+            parsPrim->verts.attr_visit(radAttr, func);
         else
             func(std::array<int, 0>{});
     }, hasDirAttr, hasRadius, hasRadAttr, hasOnbType);
