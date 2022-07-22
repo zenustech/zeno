@@ -76,6 +76,11 @@ class RecordVideoDialog(QDialog):
         self.path_text = QLineEdit()
         self.path_text.setPlaceholderText('(Option)')
 
+        audio_button = QPushButton('Audio:')
+        audio_button.clicked.connect(self.audio_button_callback)
+        self.audio_text = QLineEdit()
+        self.audio_text.setPlaceholderText('(Option)')
+
         ok_button = QPushButton('OK')
         cancel_button = QPushButton('Cancel')
 
@@ -109,8 +114,11 @@ class RecordVideoDialog(QDialog):
         grid.addWidget(path_button, 8, 0)
         grid.addWidget(self.path_text, 8, 1)
 
-        grid.addWidget(ok_button, 9, 0)
-        grid.addWidget(cancel_button, 9, 1)
+        grid.addWidget(audio_button, 9, 0)
+        grid.addWidget(self.audio_text, 9, 1)
+
+        grid.addWidget(ok_button, 10, 0)
+        grid.addWidget(cancel_button, 10, 1)
 
         self.setLayout(grid) 
 
@@ -123,6 +131,7 @@ class RecordVideoDialog(QDialog):
         r['width'] = int(self.viewport_width_editor.text())
         r['height'] = int(self.viewport_height_editor.text())
         r['path'] = self.path_text.text()
+        r['audio'] = self.audio_text.text()
         super().accept()
 
     def build_res_combobox(self):
@@ -205,6 +214,16 @@ class RecordVideoDialog(QDialog):
         print('Executing command:', cmd)
         try:
             subprocess.check_call(cmd)
+            if params['audio']:
+                cmd = [
+                    'ffmpeg',
+                    '-i', path,
+                    '-i', params['audio'],
+                    '-c:v', 'copy',
+                    '-c:a', 'aac',
+                    path.replace('.mp4', '_av.mp4'),
+                ]
+                subprocess.check_call(cmd)
             msg = 'Saved video to {}!'.format(path)
             QMessageBox.information(display, 'Record Video', msg)
         except subprocess.CalledProcessError:
@@ -216,6 +235,10 @@ class RecordVideoDialog(QDialog):
     def path_button_callback(self):
         path, kind = QFileDialog.getSaveFileName(self, 'Path to Save', '', 'MP4(*.mp4);;')
         self.path_text.setText(path)
+
+    def audio_button_callback(self):
+        path, kind = QFileDialog.getOpenFileName(self, 'Audio to Open', '', 'WAV(*.wav);;')
+        self.audio_text.setText(path)
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
