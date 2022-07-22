@@ -51,7 +51,19 @@ struct ExtractMatName : zeno::INode {
         auto mat = get_input<IMaterial>("material");
         auto key = get_input<zeno::StringObject>("key")->get();
         auto name = std::make_shared<zeno::StringObject>();
-        name->set(mat->value.at(key).matName);
+
+        if(mat->value.find(key) == mat->value.end()){
+            zeno::log_error("FBX: ExtractMat {} Not Found", key);
+            for(auto& m:mat->value){
+                zeno::log_info("FBX: ----- {} {}", m.first, m.second.matName);
+            }
+
+        }
+
+        auto mat_name = mat->value.at(key).matName;
+        //zeno::log_error("FBX: Extract Mat Name {} {}", key, mat_name);
+        name->set(mat_name);
+
         set_output("name", std::move(name));
     }
 };
