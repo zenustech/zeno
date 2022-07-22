@@ -137,13 +137,15 @@ struct PrimitiveSetAttrValue : zeno::INode {
         else {
             throw Exception("Bad attribute type: " + type);
         }
+        set_output("prim", std::move(prim));
     }
 };
 
 ZENDEFNODE(PrimitiveSetAttrValue,
     { /* inputs: */ {
-    "prim",{"int","index","0"},"value",
+    "prim",{"int","index","0"},{"float","value"},
     }, /* outputs: */ {
+    "prim",
     }, /* params: */ {
     {"string", "name", "pos"},
     {"enum float float3", "type", "float3"},

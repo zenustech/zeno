@@ -298,13 +298,13 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
         : scene(scene_) {
         zeno::log_trace("rendering primitive size {}", prim->size());
 
-        if (!prim->has_attr("pos")) {
+        if (!prim->attr_is<zeno::vec3f>("pos")) {
             auto &pos = prim->add_attr<zeno::vec3f>("pos");
             for (size_t i = 0; i < pos.size(); i++) {
                 pos[i] = zeno::vec3f(i * (1.0f / (pos.size() - 1)), 0, 0);
             }
         }
-        if (!prim->has_attr("clr")) {
+        if (!prim->attr_is<zeno::vec3f>("clr")) {
             auto &clr = prim->add_attr<zeno::vec3f>("clr");
             zeno::vec3f clr0(1.0f);
             if (!prim->tris.size() && !prim->quads.size() && !prim->polys.size()) {
@@ -319,11 +319,11 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
         }
 #if 1
         bool primNormalCorrect =
-            prim->has_attr("nrm") &&
+            prim->attr_is<zeno::vec3f>("nrm") &&
             (!prim->attr<zeno::vec3f>("nrm").size() ||
              length(prim->attr<zeno::vec3f>("nrm")[0]) > 1e-5);
         bool need_computeNormal =
-            !primNormalCorrect || !(prim->has_attr("nrm"));
+            !primNormalCorrect || !(prim->attr_is<zeno::vec3f>("nrm"));
         bool thePrmHasFaces = !(!prim->tris.size() && !prim->quads.size() && !prim->polys.size());
         if (thePrmHasFaces && need_computeNormal) {
             /* std::cout << "computing normal\n"; */
@@ -344,8 +344,8 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
         /* BEGIN TODO */
         //if (!prim->has_attr("nrm")) {
         if (!thePrmHasFaces) {
-            if (prim->has_attr("rad")) {
-                if (prim->has_attr("opa")) {
+            if (prim->attr_is<float>("rad")) {
+                if (prim->attr_is<float>("opa")) {
                     auto &rad = prim->attr<float>("rad");
                     auto &opa = prim->attr<float>("opa");
                     auto &radopa = prim->add_attr<zeno::vec3f>("nrm");
@@ -360,7 +360,7 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
                     }
                 }
             } else {
-                if (prim->has_attr("opa")) {
+                if (prim->attr_is<float>("opa")) {
                     auto &opa = prim->attr<float>("opa");
                     auto &radopa = prim->add_attr<zeno::vec3f>("nrm");
                     for (size_t i = 0; i < radopa.size(); i++) {
@@ -390,19 +390,19 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
             //}
         //}
         /* END TODO */
-        if (!prim->has_attr("nrm")) {
+        if (!prim->attr_is<zeno::vec3f>("nrm")) {
             auto &nrm = prim->add_attr<zeno::vec3f>("nrm");
             for (size_t i = 0; i < nrm.size(); i++) {
                 nrm[i] = zeno::vec3f(1.0f, 0.0f, 0.0f);
             }
         }
-        if (!prim->has_attr("uv")) {
+        if (!prim->attr_is<zeno::vec3f>("uv")) {
             auto &uv = prim->add_attr<zeno::vec3f>("uv");
             for (size_t i = 0; i < uv.size(); i++) {
                 uv[i] = zeno::vec3f(0.0f);
             }
         }
-        if (!prim->has_attr("tang")) {
+        if (!prim->attr_is<zeno::vec3f>("tang")) {
             auto &tang = prim->add_attr<zeno::vec3f>("tang");
             for (size_t i = 0; i < tang.size(); i++) {
                 tang[i] = zeno::vec3f(0.0f);
