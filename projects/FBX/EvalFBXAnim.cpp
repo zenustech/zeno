@@ -25,6 +25,7 @@ struct EvalAnim{
     std::unordered_map<std::string, aiMatrix4x4> m_LazyTransforms;
     std::unordered_map<std::string, SBoneOffset> m_BoneOffset;
     std::unordered_map<std::string, SAnimBone> m_AnimBones;
+    //std::unordered_map<std::string, std::string> m_MeshCorsName;
     std::vector<SVertex> m_Vertices;
     std::vector<unsigned int> m_Indices;
 
@@ -37,6 +38,7 @@ struct EvalAnim{
 
         m_Vertices = fbxData->iVertices.value;
         m_Indices = fbxData->iIndices.value;
+        //m_MeshCorsName = fbxData->iMeshInfo.value_corsName;
 
         m_RootNode = *nodeTree;
         m_AnimBones = boneTree->AnimBoneMap;
@@ -45,9 +47,9 @@ struct EvalAnim{
         m_CurrentFrame = 0.0f;
     }
 
-    void updateAnimation(int fi, std::shared_ptr<zeno::PrimitiveObject>& prim, float s) {
+    void updateAnimation(int fi, std::shared_ptr<zeno::PrimitiveObject>& prim, float s, float fps) {
         // TODO Use the actual frame number
-        float dt = fi / 24.0f;
+        float dt = fi / fps;
         m_DeltaTime = dt;
         m_CurrentFrame += m_TicksPerSecond * dt;
         m_CurrentFrame = fmod(m_CurrentFrame, m_Duration);
@@ -228,6 +230,7 @@ struct EvalFBXAnim : zeno::INode {
         auto nodeTree = get_input<NodeTree>("nodetree");
         auto boneTree = get_input<BoneTree>("bonetree");
         auto animInfo = get_input<AnimInfo>("animinfo");
+        auto fps = get_input2<float>("fps");
 
         auto transDict = std::make_shared<zeno::DictObject>();
         auto quatDict = std::make_shared<zeno::DictObject>();
@@ -237,12 +240,12 @@ struct EvalFBXAnim : zeno::INode {
 
         EvalAnim anim;
         anim.initAnim(nodeTree, boneTree, fbxData, animInfo);
-        anim.updateAnimation(frameid, prim, s);
+        anim.updateAnimation(frameid, prim, s, fps);
         anim.updateCameraAndLight(fbxData, iCamera, iLight, s);
         anim.decomposeAnimation(transDict, quatDict, scaleDict);
 
         auto prims = std::make_shared<zeno::ListObject>();
-        auto& meshName = fbxData->iMeshName.value;
+        auto& meshName = fbxData->iMeshName.value_relName;
         auto& kmValue = fbxData->iKeyMorph.value;
         auto& bsValue = fbxData->iBlendSData.value;
 
@@ -304,6 +307,7 @@ ZENDEFNODE(EvalFBXAnim,
            {       /* inputs: */
                {
                    {"frameid"},
+                   {"float", "fps", "24.0"},
                    {"FBXData", "data"},
                    {"AnimInfo", "animinfo"},
                    {"NodeTree", "nodetree"},
