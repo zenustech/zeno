@@ -2,5 +2,6 @@
 #define __ZSTARTUP_H__
 
 void startUp();
+void verifyVersion();
 
 #endif

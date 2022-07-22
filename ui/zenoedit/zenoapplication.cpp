@@ -7,6 +7,7 @@
 #include "util/log.h"
 #include "launch/ztcpserver.h"
 #include "launch/corelaunch.h"
+#include "startup/zstartup.h"
 
 
 ZenoApplication::ZenoApplication(int &argc, char **argv)
@@ -18,13 +19,7 @@ ZenoApplication::ZenoApplication(int &argc, char **argv)
     initFonts();
     initStyleSheets();
     m_errSteam.registerMsgHandler();
-    zeno::log_info("build date: {} {} ({})", __DATE__, __TIME__,
-#ifdef NDEBUG
-                   "release"
-#else
-                   "debug"
-#endif
-                   );
+    verifyVersion();
 
 #if defined(ZENO_MULTIPROCESS) && defined(ZENO_IPC_USE_TCP)
     m_server = new ZTcpServer(this);

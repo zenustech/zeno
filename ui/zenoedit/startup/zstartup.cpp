@@ -1,8 +1,10 @@
 #include <zeno/extra/EventCallbacks.h>
 #include <zeno/extra/assetDir.h>
 #include <zeno/core/Session.h>
+#include <zeno/utils/log.h>
 #include "zstartup.h"
 #include <QSettings>
+#include <algorithm>
 
 void startUp()
 {
@@ -24,4 +26,26 @@ void startUp()
     static int calledOnce = ([]{
         zeno::getSession().eventCallbacks->triggerEvent("init");
     }(), 0);
+}
+
+static std::string getDateVersion() {
+    const char *date = __DATE__;
+    const char *table[] = {
+        "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+    };
+    int month = std::find(table, table + 12, std::string(date, 3)) - table + 1;
+    int day = std::stoi(std::string(date + 4, 2));
+    int year = std::stoi(std::string(date + 7, 4));
+    return zeno::format("{:04d}.{:02d}.{:02d}", year, month, day);
+}
+
+void verifyVersion()
+{
+    zeno::log_info("build date: {} {} ({})", getDateVersion(), __TIME__,
+#ifdef NDEBUG
+                   "release"
+#else
+                   "debug"
+#endif
+                   );
 }
