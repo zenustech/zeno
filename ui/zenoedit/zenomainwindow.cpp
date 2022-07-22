@@ -23,6 +23,7 @@
 #include <zenoui/util/uihelper.h>
 #include "util/log.h"
 #include "dialog/zfeedbackdlg.h"
+#include "startup/zstartup.h"
 
 
 ZenoMainWindow::ZenoMainWindow(QWidget *parent, Qt::WindowFlags flags)
@@ -34,7 +35,7 @@ ZenoMainWindow::ZenoMainWindow(QWidget *parent, Qt::WindowFlags flags)
 {
     init();
     setContextMenuPolicy(Qt::NoContextMenu);
-    setWindowTitle("Zeno Editor (" __DATE__ ")");
+    setWindowTitle("Zeno Editor (" + QString::fromStdString(getZenoVersion()) + ")");
 //#ifdef __linux__
     if (char *p = zeno::envconfig::get("OPEN")) {
         zeno::log_info("ZENO_OPEN: {}", p);

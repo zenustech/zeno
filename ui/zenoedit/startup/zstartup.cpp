@@ -28,7 +28,7 @@ void startUp()
     }(), 0);
 }
 
-static std::string getDateVersion() {
+std::string getZenoVersion() {
     const char *date = __DATE__;
     const char *table[] = {
         "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
@@ -41,11 +41,20 @@ static std::string getDateVersion() {
 
 void verifyVersion()
 {
-    zeno::log_info("build date: {} {} ({})", getDateVersion(), __TIME__,
-#ifdef NDEBUG
-                   "release"
+    auto ver = getZenoVersion();
+    // TODO: luzh, may check the internet latest version and compare, if not latest hint the user to update..
+    zeno::log_info("{} {} {} {}",
+#if defined Q_OS_WIN
+                   "windows",
+#elif defined Q_OS_LINUX
+                   "linux",
 #else
-                   "debug"
+                   "unknown",
 #endif
-                   );
+#ifdef NDEBUG
+                   "release",
+#else
+                   "debug",
+#endif
+                   ver, __TIME__);
 }
