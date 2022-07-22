@@ -251,7 +251,7 @@ struct VDBVoxelAsParticles : INode {
             // tbb::concurrent_vector<vec3f> pos;
             // wxl
 #if 1
-            using MapT = std::map<std::thread::id, std::vector<vec3f>>;
+            using MapT = std::map<std::thread::id, std::vector<vec4f>>;
             using IterT = typename MapT::iterator;
             std::map<std::thread::id, std::vector<vec4f>> poses;
             std::mutex mutex;
@@ -265,7 +265,7 @@ struct VDBVoxelAsParticles : INode {
                 {
                     std::lock_guard<std::mutex> lk(mutex);
                     bool tag;
-                    std::tie(iter, tag) = poses.insert(std::make_pair(std::this_thread::get_id(), std::vector<vec3f>{}));
+                    std::tie(iter, tag) = poses.insert(std::make_pair(std::this_thread::get_id(), std::vector<vec4f>{}));
                 }
                 auto &pos_ = iter->second;
 #endif
@@ -328,9 +328,9 @@ struct VDBVoxelAsParticles : INode {
             //tbb::concurrent_vector<float> sdf;
             // wxl
 #if 1
-            using MapT = std::map<std::thread::id, std::vector<vec3f>>;
+            using MapT = std::map<std::thread::id, std::vector<vec<6, float>>>;
             using IterT = typename MapT::iterator;
-            std::map<std::thread::id, std::vector<vec3f>> poses;
+            std::map<std::thread::id, std::vector<vec<6, float>>> poses;
             std::mutex mutex;
 #endif
             auto wrangler = [&](auto &leaf, openvdb::Index leafpos) {
@@ -340,7 +340,7 @@ struct VDBVoxelAsParticles : INode {
                 {
                     std::lock_guard<std::mutex> lk(mutex);
                     bool tag;
-                    std::tie(iter, tag) = poses.insert(std::make_pair(std::this_thread::get_id(), std::vector<vec3f>{}));
+                    std::tie(iter, tag) = poses.insert(std::make_pair(std::this_thread::get_id(), std::vector<vec<6, float>>{}));
                 }
                 auto &pos_ = iter->second;
 #endif
@@ -349,17 +349,17 @@ struct VDBVoxelAsParticles : INode {
                     auto value = iter.getValue();
                         if (!asStaggers) {
                             auto p = grid->transform().indexToWorld(coord.asVec3d());
-                            pos_.emplace_back(p[0], p[1], p[2], value[0], value[1], value[2]);
+                            pos_.push_back({(float)p[0], (float)p[1], (float)p[2], value[0], value[1], value[2]});
                         } else {
                     auto p = grid->transform().indexToWorld(coord.asVec3d() - openvdb::Vec3d(0.5, 0, 0));
                     // pos.emplace_back(p[0], p[1], p[2]);
-                    pos_.emplace_back(p[0], p[1], p[2], value[0], value[1], value[2]);
+                    pos_.push_back({(float)p[0], (float)p[1], (float)p[2], value[0], value[1], value[2]});
                     p = grid->transform().indexToWorld(coord.asVec3d() - openvdb::Vec3d(0, 0.5, 0));
                     // pos.emplace_back(p[0], p[1], p[2]);
-                    pos_.emplace_back(p[0], p[1], p[2], value[0], value[1], value[2]);
+                    pos_.push_back({(float)p[0], (float)p[1], (float)p[2], value[0], value[1], value[2]});
                     p = grid->transform().indexToWorld(coord.asVec3d() - openvdb::Vec3d(0, 0, 0.5));
                     // pos.emplace_back(p[0], p[1], p[2]);
-                    pos_.emplace_back(p[0], p[1], p[2], value[0], value[1], value[2]);
+                    pos_.push_back({(float)p[0], (float)p[1], (float)p[2], value[0], value[1], value[2]});
                     //sdf.emplace_back(value);
                         }
                 }
@@ -369,17 +369,17 @@ struct VDBVoxelAsParticles : INode {
                         auto value = iter.getValue();
                         if (!asStaggers) {
                             auto p = grid->transform().indexToWorld(coord.asVec3d());
-                            pos_.emplace_back(p[0], p[1], p[2], value[0], value[1], value[2]);
+                            pos_.push_back({(float)p[0], (float)p[1], (float)p[2], value[0], value[1], value[2]});
                         } else {
                             auto p = grid->transform().indexToWorld(coord.asVec3d() - openvdb::Vec3d(0.5, 0, 0));
                             // pos.emplace_back(p[0], p[1], p[2]);
-                            pos_.emplace_back(p[0], p[1], p[2], value[0], value[1], value[2]);
+                            pos_.push_back({(float)p[0], (float)p[1], (float)p[2], value[0], value[1], value[2]});
                             p = grid->transform().indexToWorld(coord.asVec3d() - openvdb::Vec3d(0, 0.5, 0));
                             // pos.emplace_back(p[0], p[1], p[2]);
-                            pos_.emplace_back(p[0], p[1], p[2, value[0], value[1], value[2]]);
+                            pos_.push_back({(float)p[0], (float)p[1], (float)p[2], value[0], value[1], value[2]});
                             p = grid->transform().indexToWorld(coord.asVec3d() - openvdb::Vec3d(0, 0, 0.5));
                             // pos.emplace_back(p[0], p[1], p[2]);
-                            pos_.emplace_back(p[0], p[1], p[2], value[0], value[1], value[2]);
+                            pos_.push_back({(float)p[0], (float)p[1], (float)p[2], value[0], value[1], value[2]});
                             //sdf.emplace_back(value);
                         }
                     }
@@ -389,7 +389,7 @@ struct VDBVoxelAsParticles : INode {
             leafman.foreach(wrangler);
 
 #if 1
-            std::vector<vec3f> zspos;
+            std::vector<vec<6, float>> zspos;
             for (const auto &[_, pos] : poses) {
                 zspos.insert(std::end(zspos), std::begin(pos), std::end(pos));
             }
@@ -417,12 +417,12 @@ struct VDBVoxelAsParticles : INode {
 };
 
 ZENDEFNODE(VDBVoxelAsParticles, {
-                            {"vdbGrid"},
+                            {"vdbGrid",
+                             {"string", "valToAttr", "sdf"}},
                             {"primPars"},
                             {
                              {"bool", "hasInactive", "0"},
                              {"bool", "asStaggers", "1"},
-                             {"string", "valToAttr", "sdf"},
                             },
                             {"visualize"},
                         });
