@@ -335,7 +335,7 @@ ZExpandableSection* ZenoPropPanel::inputsBox(IGraphsModel* pModel, const QModelI
 				QString descStr = input.info.type;
 				QStringList items = descStr.mid(QString("enum ").length()).split(QRegExp("\\s+"));
 
-				ZComboBox *pComboBox = new ZComboBox;
+				ZComboBox *pComboBox = new ZComboBox(false);
 				pComboBox->addItems(items);
 				pComboBox->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 				pComboBox->setItemDelegate(new ZComboBoxItemDelegate(pComboBox));

@@ -8,6 +8,7 @@
 #include "zenovis/ObjectsManager.h"
 #include <zeno/types/UserData.h>
 #include <zeno/types/PrimitiveObject.h>
+#include <zenoui/comctrl/zcombobox.h>
 
 ZenoSpreadsheet::ZenoSpreadsheet(QWidget *parent) : QWidget(parent) {
     dataModel = new PrimAttrTableModel();
@@ -33,12 +34,13 @@ ZenoSpreadsheet::ZenoSpreadsheet(QWidget *parent) : QWidget(parent) {
     pTitleLayout->addWidget(pPrimName);
 
 
-    QComboBox* pMode = new QComboBox();
+    ZComboBox* pMode = new ZComboBox();
     pMode->addItem("Vertex");
     pMode->addItem("UserData");
     pMode->setProperty("cssClass", "proppanel");
     pTitleLayout->addWidget(pMode);
-    connect(pMode, &QComboBox::textActivated, [=](const QString &text) {
+
+    connect(pMode, &ZComboBox::_textActivated, [=](const QString &text) {
         this->dataModel->setSelAttr(text.toStdString());
     });
 

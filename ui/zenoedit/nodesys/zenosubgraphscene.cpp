@@ -312,15 +312,19 @@ void ZenoSubGraphScene::markError(const QString& nodeid)
     ZenoNode *pNode = m_nodes[nodeid];
     pNode->markError(true);
     pNode->setSelected(true);
-    m_errNodes.append(pNode);
+    m_errNodes.append(nodeid);
 }
 
 void ZenoSubGraphScene::clearMark()
 {
-    for (ZenoNode* pNode : m_errNodes)
+    for (QString ident : m_errNodes)
     {
-        pNode->markError(false);
+        if (m_nodes.find(ident) != m_nodes.end())
+        {
+            m_nodes[ident]->markError(false);
+        }
     }
+    m_errNodes.clear();
 }
 
 void ZenoSubGraphScene::undo()

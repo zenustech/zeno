@@ -218,5 +218,5 @@ bool BlackboardNode::isDragArea(QPointF pos)
 {
     QPointF bottomright = boundingRect().bottomRight();
     QPointF offset = pos - bottomright;
-    return (offset.manhattanLength() < 10);
+    return (offset.manhattanLength() < 100);
 }

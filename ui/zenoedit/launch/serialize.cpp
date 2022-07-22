@@ -41,6 +41,10 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
         QString ident = idx.data(ROLE_OBJID).toString();
         ident = nameMangling(graphIdPrefix, ident);
         const QString& name = idx.data(ROLE_OBJNAME).toString();
+        //temp: need a node type or flag to mark this case.
+        if (name == "Blackboard") {
+            continue;
+        }
 
 		int opts = idx.data(ROLE_OPTIONS).toInt();
         QString noOnceIdent;

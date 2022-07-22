@@ -1,0 +1,5 @@
+QMainWindow::separator {
+    background: black;
+    width: 1px;
+    height: 0px;
+}

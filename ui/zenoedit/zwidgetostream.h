@@ -13,6 +13,7 @@ public:
     explicit ZWidgetErrStream(std::ostream &stream);
     virtual ~ZWidgetErrStream();
     static void registerMsgHandler();
+    static void appendFormatMsg(std::string const& str);
 
 protected:
     virtual std::streamsize xsputn(const char* p, std::streamsize n) override;
@@ -23,7 +24,7 @@ protected:
 
 private:
     static void customMsgHandler(QtMsgType type, const QMessageLogContext &, const QString &msg);
-    static void luzhPutString(std::string const &str);
+
     std::ostream &m_stream;
     std::streambuf *m_old_buf;
     std::string m_linebuffer;

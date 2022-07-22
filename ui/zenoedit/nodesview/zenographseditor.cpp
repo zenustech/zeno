@@ -257,6 +257,14 @@ void ZenoGraphsEditor::onSubnetOptionClicked()
         bool bOk = false;
         QString newSubgName = QInputDialog::getText(this, tr("create subnet"), tr("new subgraph name:")
             , QLineEdit::Normal, "SubgraphName", &bOk);
+
+        if (newSubgName.compare("main", Qt::CaseInsensitive) == 0)
+        {
+            QMessageBox msg(QMessageBox::Warning, tr("Zeno"), tr("main graph is not allowed to be created"));
+            msg.exec();
+            return;
+        }
+
         if (bOk) {
             m_model->newSubgraph(newSubgName);
         }

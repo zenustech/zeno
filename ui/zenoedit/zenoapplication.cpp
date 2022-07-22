@@ -65,6 +65,7 @@ void ZenoApplication::initStyleSheets()
     qss += readQss(":/stylesheet/pushbutton.qss");
     qss += readQss(":/stylesheet/scrollbar.qss");
     qss += readQss(":/stylesheet/spinbox.qss");
+    qss += readQss(":/stylesheet/mainwindow.qss");
     setStyleSheet(qss);
 }
 

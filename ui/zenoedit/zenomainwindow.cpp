@@ -58,19 +58,6 @@ void ZenoMainWindow::init()
     pal.setColor(QPalette::Window, QColor(11, 11, 11));
     setAutoFillBackground(true);
     setPalette(pal);
-
-    QString qss = "\
-        QMainWindow::separator {\
-            background: black;\
-            width: 3px;\
-            height: 3px;\
-        }\
-        \
-        QMainWindow::separator:hover {\
-            background: rgb(0,127,212);\
-        }\
-    ";
-    setStyleSheet(qss);
 }
 
 void ZenoMainWindow::initMenu() {

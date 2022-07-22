@@ -280,7 +280,7 @@ void ZenoGvComboBox::paintEvent(QPaintEvent *e)
 ZenoParamComboBox::ZenoParamComboBox(const QStringList &items, ComboBoxParam param, QGraphicsItem *parent)
     : ZenoParamWidget(parent)
 {
-    m_combobox = new ZComboBox;
+    m_combobox = new ZComboBox(false);
     m_combobox->addItems(items);
     m_combobox->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     m_combobox->setItemDelegate(new ZComboBoxItemDelegate(m_combobox));

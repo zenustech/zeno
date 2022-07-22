@@ -99,6 +99,11 @@ void GraphsModel::switchSubGraph(const QString& graphName)
 
 void GraphsModel::newSubgraph(const QString &graphName)
 {
+    if (graphName.compare("main", Qt::CaseInsensitive) == 0)
+    {
+        return;
+    }
+
     QModelIndex startIndex = createIndex(0, 0, nullptr);
     const QModelIndexList &lst = this->match(startIndex, ROLE_OBJNAME, graphName, 1, Qt::MatchExactly);
     if (lst.size() == 1)
@@ -1279,8 +1284,11 @@ void GraphsModel::updateLinkInfo(const QPersistentModelIndex& linkIdx, const LIN
 
 void GraphsModel::removeSubGraph(const QString& name)
 {
-	for (int i = 0; i < m_subGraphs.size(); i++)
-	{
+    if (name.compare("main", Qt::CaseInsensitive) == 0)
+        return;
+
+    for (int i = 0; i < m_subGraphs.size(); i++)
+    {
         if (m_subGraphs[i].pModel->name() == name)
         {
             removeGraph(i);
@@ -1289,7 +1297,7 @@ void GraphsModel::removeSubGraph(const QString& name)
         {
             m_subGraphs[i].pModel->removeNodeByDescName(name);
         }
-	}
+    }
 }
 
 QVariant GraphsModel::getParamValue(const QString& id, const QString& name, const QModelIndex& subGpIdx)
