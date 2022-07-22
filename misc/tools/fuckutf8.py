@@ -7,7 +7,7 @@ def process(path):
     out = ''
     changed = False
     with open(path, 'rb') as f:
-        for n, bs in enumerate(f.readlines()):
+        for bs in f:
             for b in bs:
                 if not 0 <= b <= 0x7f:
                     # print('{}:{}: 0x{:02X}'.format(path, n + 1, b))
@@ -16,10 +16,12 @@ def process(path):
                 else:
                     out += chr(b)
     if changed:
-        with open(path, 'w') as f:
-            f.write(out)
+        print(path)
+        if not os.environ.get('DRYRUN'):
+            with open(path, 'w') as f:
+                f.write(out)
 
 if len(sys.argv) > 1:
     process(sys.argv[1])
 else:
-    exit(os.system(r"find ui zeno zenovis -type f -regex '.*\.\(c\|h\)\(pp\)?' | xargs -n1 python -O misc/tools/fuckutf8.py"))
+    exit(os.system(r"find projects ui zeno zenovis -type f -regex '.*\.\(c\|h\)\(pp\)?' | xargs -n1 python -O misc/tools/fuckutf8.py"))

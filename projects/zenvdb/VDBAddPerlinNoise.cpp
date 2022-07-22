@@ -47,21 +47,19 @@ struct VDBPerlinNoise : INode {
         for (auto iter = leaf.beginValueOn(); iter != leaf.endValueOn(); ++iter) {
             auto coord = iter.getCoord();
             using OutT = typename fuck_openvdb_vec<std::decay_t<
-                typename std::decay_t<decltype(iter)>::ValueType>>::type;
+                typename std::decay_t<decltype(leaf)>::ValueType>>::type;
             OutT noise;
             {
                 vec3f p(coord[0], coord[1], coord[2]);
                 p = scale3d * (p - offset);
-                //ZENO_P(p);
                 OutT o;
                 if constexpr (std::is_same_v<OutT, float>) {
                     o = PerlinNoise::perlin(p, roughness, detail);
                 } else if constexpr (std::is_same_v<OutT, vec3f>) {
-                    o = {
+                    o = OutT(
                         PerlinNoise::perlin(vec3f(p[0], p[1], p[2]), roughness, detail),
                         PerlinNoise::perlin(vec3f(p[1], p[2], p[0]), roughness, detail),
-                        PerlinNoise::perlin(vec3f(p[2], p[0], p[1]), roughness, detail),
-                    };
+                        PerlinNoise::perlin(vec3f(p[2], p[0], p[1]), roughness, detail));
                 } else {
                     throw makeError<TypeError>(typeid(vec3f), typeid(OutT), "outType");
                 }

@@ -10,7 +10,7 @@ def process(path):
             for n, bs in enumerate(f.readlines()):
                 for b in map(ord, bs):
                     if not 0 <= b <= 0x7f:
-                        print('{}:{}: U+{:04X}'.format(path, n + 1, b))
+                        print('{}:{}: (U+{:04X}) {}'.format(path, n + 1, b, chr(b)))
                         exit(1)
     except UnicodeDecodeError:
         print('{}: failed to decode as {}'.format(path, locale.getdefaultlocale()))
