@@ -8,6 +8,7 @@
 #include "zeno/types/NumericObject.h"
 #include "aquila/aquila/aquila.h"
 #include <deque>
+#include <zeno/types/ListObject.h>
 #include "AudioFile.h"
 
 namespace zeno {
@@ -92,6 +93,23 @@ namespace zeno {
             int beat = H.back() - threshold > (-15 * var_H + 1.55) * avg_H;
             set_output("beat", std::make_shared<NumericObject>(beat));
             set_output("var_H", std::make_shared<NumericObject>((float)var_H));
+
+
+            auto output_H = std::make_shared<ListObject>();
+            for (int i = 0; i < 43 - H.size(); i++) {
+                output_H->arr.emplace_back(std::make_shared<NumericObject>((float)0));
+            }
+            for (const auto & h: H) {
+                output_H->arr.emplace_back(std::make_shared<NumericObject>((float)h));
+            }
+            set_output("H", output_H);
+
+            auto output_E = std::make_shared<ListObject>();
+            for (const auto& spectrum: spectrums) {
+                double e = spectrum.real() * spectrum.real() + spectrum.imag() * spectrum.imag();
+                output_E->arr.emplace_back(std::make_shared<NumericObject>((float)e));
+            }
+            set_output("E", output_E);
         }
     };
 
@@ -104,12 +122,13 @@ ZENDEFNODE(AudioBeats, {
         {
             "beat",
             "var_H",
+            "H",
+            "E",
         },
         {},
         {
             "audio"
         },
     });
-
 
 } // namespace zeno
