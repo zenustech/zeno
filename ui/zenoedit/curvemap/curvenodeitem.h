@@ -34,6 +34,7 @@ class CurveHandlerItem : public QGraphicsObject
 public:
 	CurveHandlerItem(CurveNodeItem* pNode, const QPointF& pos, QGraphicsItem* parent = nullptr);
 	~CurveHandlerItem();
+	void hideHdlLine();
 	void paint(QPainter*, const QStyleOptionGraphicsItem*, QWidget*) override;
 	QRectF boundingRect(void) const override;
 	void setOtherHandle(CurveHandlerItem* other);
@@ -51,7 +52,7 @@ protected:
 
 private:
 	const int sz = 6;
-    QGraphicsLineItem* m_line;
+	QGraphicsLineItem* m_line;
 	CurveNodeItem* m_node;
 	CurveHandlerItem* m_other;
 	bool m_bMouseTriggered;
@@ -64,6 +65,7 @@ class CurveNodeItem : public QGraphicsObject
 	typedef QGraphicsObject _base;
 public:
 	CurveNodeItem(const QModelIndex& idx, CurveMapView* pView, const QPointF& nodePos, CurveGrid* parentItem, CurvesItem* curve);
+	void hideHdlLines();
 	void initHandles(const QPointF& leftHandle, const QPointF& rightHandle);
 	QRectF boundingRect(void) const override;
     void toggle(bool bChecked);

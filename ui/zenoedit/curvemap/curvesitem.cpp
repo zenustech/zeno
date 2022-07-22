@@ -222,6 +222,7 @@ void CurvesItem::onNodesAboutToBeRemoved(const QModelIndex& parent, int first, i
         CurvePathItem *pathItem = m_vecCurves[i - 1];
 
         m_vecCurves[i]->deleteLater();
+        m_vecNodes[i]->hideHdlLines();
         m_vecNodes[i]->deleteLater();
 
         CurvePathItem *pDeleleCurve = m_vecCurves[i];

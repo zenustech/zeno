@@ -33,6 +33,7 @@ CurveHandlerItem::CurveHandlerItem(CurveNodeItem* pNode, const QPointF& offset, 
 	, m_bMouseTriggered(false)
 	, m_other(nullptr)
 	, m_bNotify(true)
+	, m_line(nullptr)
 {
     CurveGrid *pGrid = m_node->grid();
 
@@ -58,6 +59,14 @@ CurveHandlerItem::CurveHandlerItem(CurveNodeItem* pNode, const QPointF& offset, 
 
 CurveHandlerItem::~CurveHandlerItem()
 {
+}
+
+void CurveHandlerItem::hideHdlLine()
+{
+	// m_line is managed by its parent (CurveGrid), not this item, so we have to hide it during ui operation.
+	// finally, it will be destroyed by CurveGrid, when grid is being destroyed.
+	if (m_line)
+		m_line->hide();
 }
 
 void CurveHandlerItem::setOtherHandle(CurveHandlerItem *other)
@@ -266,6 +275,12 @@ void CurveNodeItem::initHandles(const QPointF& leftOffset, const QPointF& rightO
 
     m_left->setOtherHandle(m_right);
     m_right->setOtherHandle(m_left);
+}
+
+void CurveNodeItem::hideHdlLines()
+{
+	if (m_left) m_left->hideHdlLine();
+	if (m_right) m_right->hideHdlLine();
 }
 
 void CurveNodeItem::toggle(bool bChecked)
