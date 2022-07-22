@@ -156,6 +156,12 @@ bool ZSubnetListItemDelegate::editorEvent(QEvent* event, QAbstractItemModel* mod
 void ZSubnetListItemDelegate::onDelete(const QModelIndex& index)
 {
     QString subgName = index.data(ROLE_OBJNAME).toString();
+    if (subgName.compare("main", Qt::CaseInsensitive) == 0)
+    {
+        QMessageBox msg(QMessageBox::Warning, tr("Zeno"), tr("main graph is not allowed to be deleted"));
+        msg.exec();
+        return;
+    }
     m_model->removeSubGraph(subgName);
 }
 
