@@ -8,17 +8,22 @@ class ZComboBox : public QComboBox
 {
 	Q_OBJECT
 public:
-    ZComboBox(QWidget *parent = nullptr);
+    ZComboBox(bool bSysStyle = true, QWidget *parent = nullptr);
     ~ZComboBox();
     QSize sizeHint() const override;
-    //void initUI(const ZStyleOptionComboBox& styleOption);
     void initStyleOption(ZStyleOptionComboBox* option);
+
+signals:
+    void _textActivated(const QString&);
 
 protected:
     void paintEvent(QPaintEvent* event) override;
 
+private slots:
+    void onComboItemActivated(int index);
+
 private:
-    void init();
+    bool m_bSysStyle;
 };
 
 #endif

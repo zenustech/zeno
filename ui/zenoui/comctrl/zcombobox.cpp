@@ -2,25 +2,30 @@
 #include "zcombobox.h"
 
 
-ZComboBox::ZComboBox(QWidget *parent)
+ZComboBox::ZComboBox(bool bSysStyle, QWidget *parent)
     : QComboBox(parent)
+    , m_bSysStyle(bSysStyle)
 {
-    init();
+    connect(this, SIGNAL(activated(int)), this, SLOT(onComboItemActivated(int)));
 }
 
 ZComboBox::~ZComboBox()
 {
-
-}
-
-void ZComboBox::init()
-{
-
 }
 
 QSize ZComboBox::sizeHint() const
 {
-    return ZenoStyle::dpiScaledSize(QSize(128, 25));
+    if (m_bSysStyle)
+        return QComboBox::sizeHint();
+    else
+        return ZenoStyle::dpiScaledSize(QSize(128, 25));
+}
+
+void ZComboBox::onComboItemActivated(int index)
+{
+    // pay attention to the compatiblity of qt!!!
+    QString text = itemText(index);
+    emit _textActivated(text);
 }
 
 void ZComboBox::initStyleOption(ZStyleOptionComboBox* option)
@@ -50,11 +55,16 @@ void ZComboBox::initStyleOption(ZStyleOptionComboBox* option)
 
 void ZComboBox::paintEvent(QPaintEvent* event)
 {
-    QStylePainter painter(this);
-    painter.setPen(palette().color(QPalette::Text));
-    // draw the combobox frame, focusrect and selected etc.
-    ZStyleOptionComboBox opt;
-    initStyleOption(&opt);
-    painter.drawComplexControl(static_cast<QStyle::ComplexControl>(ZenoStyle::CC_ZenoComboBox), opt);
-    painter.drawControl(static_cast<QStyle::ControlElement>(ZenoStyle::CE_ZenoComboBoxLabel), opt);
+    if (m_bSysStyle) {
+        QComboBox::paintEvent(event);
+    }
+    else {
+        QStylePainter painter(this);
+        painter.setPen(palette().color(QPalette::Text));
+        // draw the combobox frame, focusrect and selected etc.
+        ZStyleOptionComboBox opt;
+        initStyleOption(&opt);
+        painter.drawComplexControl(static_cast<QStyle::ComplexControl>(ZenoStyle::CC_ZenoComboBox), opt);
+        painter.drawControl(static_cast<QStyle::ControlElement>(ZenoStyle::CE_ZenoComboBoxLabel), opt);
+    }
 }

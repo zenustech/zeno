@@ -234,7 +234,8 @@ int ZenoStyle::pixelMetric(PixelMetric m, const QStyleOption* option, const QWid
             //only way to customize the height of titlebar.
             return dpiScaled(10);
         }
-        /* only way to change the splitter between dock widgets. but ZenoStyle has conflict with qss.
+        /* only way to change the splitter between dock widgets. but ZenoStyle has conflict with qss. -> po an le:
+        *  actually, when there is not specific style selector, the qt will choose base style for the result.
         case QStyle::PM_DockWidgetHandleExtent:
         case QStyle::PM_DockWidgetSeparatorExtent: {
             return dpiScaled(5);

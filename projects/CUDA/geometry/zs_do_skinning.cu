@@ -129,7 +129,7 @@ struct ZSDoSkinning : INode {
     virtual void apply() override {
         using namespace zs;
         auto zspars = get_input<ZenoParticles>("ZSParticles");
-        auto algorithm = std::get<std::string>(get_param("algorithm"));
+        auto algorithm = get_param<std::string>("algorithm");
         auto prefix = get_param<std::string>("weight_channel");
         auto inAttr = get_param<std::string>("inAttr");
         auto outAttr = get_param<std::string>("outAttr");
