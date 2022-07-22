@@ -106,7 +106,7 @@ bool ZenoApplication::IsIOProcessing() const
     return m_bIOProcessing;
 }
 
-#ifdef ZENO_MULTIPROCESS
+#if defined(ZENO_MULTIPROCESS) && defined(ZENO_IPC_USE_TCP)
 ZTcpServer* ZenoApplication::getServer()
 {
     return m_server;
