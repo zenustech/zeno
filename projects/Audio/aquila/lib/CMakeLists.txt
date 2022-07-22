@@ -2,7 +2,7 @@
 enable_language(C)
 set(Ooura_fft_SOURCES ooura/fft4g.c)
 
-add_library(Ooura_fft ${Ooura_fft_SOURCES})
+add_library(Ooura_fft STATIC ${Ooura_fft_SOURCES})
 
 # UnitTest++
 if(Aquila_BUILD_TESTS)

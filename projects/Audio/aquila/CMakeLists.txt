@@ -168,7 +168,7 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
     endif()
 endif()
 
-if("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
+if("${CMAKE_BUILD_TYPE}" STREQUAL "Debug" AND NOT MSVC)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0 -Wall -Wextra -Wcast-qual -Wcast-align -Wno-unused-parameter -Wmissing-include-dirs -Wpointer-arith -Wredundant-decls -Wshadow")
 endif()
 
@@ -180,7 +180,7 @@ endif()
 ################################################################################
 
 # main Aquila library
-add_library(Aquila ${Aquila_HEADERS} ${Aquila_SOURCES})
+add_library(Aquila STATIC ${Aquila_HEADERS} ${Aquila_SOURCES})
 
 # linking with extra libs
 target_link_libraries(Aquila ${Aquila_LIBRARIES_TO_LINK_WITH})
@@ -227,12 +227,12 @@ endif()
 ################################################################################
 
 # install the binaries and include files
-install(TARGETS Aquila
-        ARCHIVE DESTINATION lib
-        LIBRARY DESTINATION lib
-        RUNTIME DESTINATION bin)
-install(DIRECTORY aquila/ DESTINATION include/aquila FILES_MATCHING PATTERN "*.h")
-install(FILES CHANGELOG LICENSE README.md DESTINATION share/aquila)
+# install(TARGETS Aquila
+#         ARCHIVE DESTINATION lib
+#         LIBRARY DESTINATION lib
+#         RUNTIME DESTINATION bin)
+# install(DIRECTORY aquila/ DESTINATION include/aquila FILES_MATCHING PATTERN "*.h")
+# install(FILES CHANGELOG LICENSE README.md DESTINATION share/aquila)
 
 
 ################################################################################
@@ -241,12 +241,12 @@ install(FILES CHANGELOG LICENSE README.md DESTINATION share/aquila)
 #
 ################################################################################
 
-configure_file(
-    "${CMAKE_CURRENT_SOURCE_DIR}/uninstall.cmake.in"
-    "${CMAKE_CURRENT_BINARY_DIR}/uninstall.cmake"
-    IMMEDIATE @ONLY
-)
+# configure_file(
+#     "${CMAKE_CURRENT_SOURCE_DIR}/uninstall.cmake.in"
+#     "${CMAKE_CURRENT_BINARY_DIR}/uninstall.cmake"
+#     IMMEDIATE @ONLY
+# )
 
-add_custom_target(uninstall
-    "${CMAKE_COMMAND}" -P "${CMAKE_CURRENT_BINARY_DIR}/uninstall.cmake"
-)
+# add_custom_target(uninstall
+#     "${CMAKE_COMMAND}" -P "${CMAKE_CURRENT_BINARY_DIR}/uninstall.cmake"
+# )
