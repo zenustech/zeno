@@ -1,0 +1,5 @@
+*.user*
+*.pyc
+*~
+*.swp
+doc/
