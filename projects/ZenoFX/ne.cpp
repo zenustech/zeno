@@ -111,7 +111,7 @@ struct NumericEval : zeno::INode {
 
         //开始编译
         if (code.find("@result") == std::string::npos)
-            code = "@result = (" + code + ")";
+            code = "@result = ( " + code + " )";
         auto prog = compiler.compile(code, opts);
         auto exec = assembler.assemble(prog->assembly);
 
