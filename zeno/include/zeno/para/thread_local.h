@@ -22,11 +22,11 @@ public:
 
 private:
     MapT m_lut;
-    std::mutex m_mtx;
+    std::mutex m_lut_mtx;
 
 public:
     reference local() {
-        std::lock_guard lck(m_mtx);
+        std::lock_guard lck(m_lut_mtx);
         return m_lut[std::this_thread::get_id()];
     }
 
@@ -45,6 +45,23 @@ thread_local_storage<vector<int>> poses;
 
 parallel_for(0, 100, [&] (int index) {
     auto &pos = poses.local();
+    pos.push_back(index);
+});
+
+vector<int> zspos;
+for (auto const &pos: poses) {
+    zspos.insert(zspos.end(), pos.begin(), pos.end());
+}
+
+ * alternative:
+
+static auto last_id = std::this_thread::get_id();
+assert(std::this_thread::get_id() == last_id);
+
+static thread_local_storage<vector<int>> poses;
+
+parallel_for(0, 100, [&] (int index) {
+    thread_local auto &pos = poses.local();
     pos.push_back(index);
 });
 
