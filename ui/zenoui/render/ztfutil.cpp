@@ -117,7 +117,7 @@ Component ZtfUtil::_parseComponent(rapidxml::xml_node<>* node)
 	auto child = node->first_node("text");
 	comp.text = _parseText(child);
 	comp.id = node->first_attribute("id")->value();
-    qreal x, y, w, h;
+    qreal x{}, y{}, w{}, h{};
 	if (auto attr = node->first_attribute("x"))		x = QString(attr->value()).toFloat();
 	if (auto attr = node->first_attribute("y"))		y = QString(attr->value()).toFloat();
 	if (auto attr = node->first_attribute("w"))		w = QString(attr->value()).toFloat();
@@ -137,7 +137,7 @@ BackgroundComponent ZtfUtil::_parseBackground(rapidxml::xml_node<>* node)
         return comp;
 
     comp.bApplyImage = false;
-    qreal x, y, w, h;
+    qreal x{}, y{}, w{}, h{};
     if (auto attr = node->first_attribute("id")) comp.id = QString(attr->value());
     if (auto attr = node->first_attribute("x")) x = QString(attr->value()).toInt();
     if (auto attr = node->first_attribute("y")) y = QString(attr->value()).toInt();
@@ -196,7 +196,7 @@ TextElement ZtfUtil::_parseText(rapidxml::xml_node<>* node)
 	if (!node)
 		return elem;
 
-    qreal x, y, w, h;
+    qreal x{}, y{}, w{}, h{};
     QString fontFamily;
 	if (auto attr = node->first_attribute("id")) elem.id = QString(attr->value());
 	if (auto attr = node->first_attribute("x"))	x = QString(attr->value()).toInt();
