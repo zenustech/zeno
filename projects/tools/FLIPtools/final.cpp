@@ -21,11 +21,10 @@ ZENO_DEFNODE(GenericFLIPSolver)({
         {"", "EmitVelGrid", ""},
         {"vec3f", "EmitVelValue", "0,0,0"},
         {"bool", "EmitEnabled", "0"},
-        {"", "DynamicCollidePrim", ""},
         {"", "StaticCollideSDF", ""},
+        {"", "DynamicCollidePrim", ""},
         {"", "AbsorbSDF", ""},
         {"bool", "AbsorbEnabled", "0"},
-        {"vec3f", "gray", "0,-9.8,0"},
     },
     {
         {"", "Particles", ""},

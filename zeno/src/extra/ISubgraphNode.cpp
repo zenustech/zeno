@@ -3,24 +3,25 @@
 #include <zeno/core/Session.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/DummyObject.h>
-#include <zeno/utils/zeno_p.h>
+//#include <zeno/utils/zeno_p.h>
 
 namespace zeno {
 
 ZENO_API ISubgraphNode::ISubgraphNode() = default;
 ZENO_API ISubgraphNode::~ISubgraphNode() = default;
 ZENO_API void ISubgraphNode::apply() {
-    auto grap = getThisSession()->createGraph();
-    Graph &gra = *grap;
-    auto json = get_subgraph_json();
-    ZENO_P(json);
-    gra.loadGraph(json);
-        ZENO_P(gra.subOutputNodes.size());
-        ZENO_P(gra.subInputNodes.size());
-    for (auto const &[key, nodename]: gra.subOutputNodes) {
-        //gra.nodes.at(nodename);
-        gra.nodesToExec.insert(nodename);
+    if (!grap) {
+        grap = getThisSession()->createGraph();
+        auto json = get_subgraph_json();
+        grap->loadGraph(json);
+        for (auto const &[key, nodename]: grap->subOutputNodes) {
+            grap->nodesToExec.insert(nodename);
+        }
     }
+    Graph &gra = *grap;
+    //ZENO_P(json);
+        //ZENO_P(gra.subOutputNodes.size());
+        //ZENO_P(gra.subInputNodes.size());
     for (auto const &[key, nodename]: gra.subInputNodes) {
         auto *node = gra.nodes.at(nodename).get();
         bool hasValue = has_input(key);

@@ -78,8 +78,8 @@ ZENO_API void Graph::loadGraph(const char *json) {
         std::string cmd = di[0].GetString();
         const char *maybeNodeName = cmd == "addNode" ? di[2].GetString() : (
             di.Size() >= 1 && di[1].IsString() ? di[1].GetString() : "(not a node)");
-        ZENO_P(cmd);
-        ZENO_P(maybeNodeName);
+        //ZENO_P(cmd);
+        //ZENO_P(maybeNodeName);
         GraphException::translated([&] {
             if (0) {
             } else if (cmd == "addNode") {
@@ -106,6 +106,8 @@ ZENO_API void Graph::loadGraph(const char *json) {
                 this->beginFrameNumber = di[1].GetInt();
             } else if (cmd == "setEndFrameNumber") {
                 this->endFrameNumber = di[1].GetInt();
+            } else if (cmd == "setNodeOption") {
+                // skip this for compatibility
             } else {
                 log_warn("got unexpected command: {}", cmd);
             }
