@@ -34,6 +34,8 @@ endif()
 #                  POSITION_INDEPENDENT_CODE ON
 #                  CUDA_ARCHITECTURES OFF
 #    )
+
+#[=[
 add_library(zeno_inst SHARED)
 target_sources(zeno_inst PRIVATE
   Inst.cu
@@ -42,6 +44,7 @@ target_link_libraries(zeno_inst PRIVATE zshelper)
 target_compile_options(zeno_inst
   PRIVATE        $<$<COMPILE_LANGUAGE:CUDA>:-Xcudafe --display_error_number,--diag_suppress=implicit_return_from_non_void_function,--diag_suppress=2642,--diag_suppress=554>
 )
+#]=]
 
 # zeno_zsfluid
 add_library(zeno_zsfluid SHARED)

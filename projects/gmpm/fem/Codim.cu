@@ -633,8 +633,11 @@ struct CodimStepping : INode {
       })(models.getElasticModel());
       // contacts
       findCollisionConstraints(pol, dHat, xi, false);
+      auto prevKappa = kappa;
+      kappa = 1;
       computeBarrierGradientAndHessian(pol, "q", false);
       computeBoundaryBarrierGradientAndHessian(pol, "q", false);
+      kappa = prevKappa;
 
       auto gsum = dot(pol, vtemp, "p", "q");
       auto gsnorm = dot(pol, vtemp, "q", "q");
@@ -728,18 +731,18 @@ struct CodimStepping : INode {
         auto edgeBvs = retrieve_bounding_volumes(pol, vtemp, "xn", seInds,
                                                  zs::wrapv<2>{}, 0);
         seBvh.refit(pol, edgeBvs);
+        findCollisionConstraintsImpl(pol, dHat, xi, false, record);
       }
-      findCollisionConstraintsImpl(pol, dHat, xi, false, record);
 
-      {
+      if (coVerts.size()) {
         auto triBvs = retrieve_bounding_volumes(pol, vtemp, "xn", coEles,
                                                 zs::wrapv<3>{}, coOffset);
         bouStBvh.refit(pol, triBvs);
         auto edgeBvs = retrieve_bounding_volumes(pol, vtemp, "xn", coEdges,
                                                  zs::wrapv<2>{}, coOffset);
         bouSeBvh.refit(pol, edgeBvs);
+        findCollisionConstraintsImpl(pol, dHat, xi, true, record);
       }
-      findCollisionConstraintsImpl(pol, dHat, xi, true, record);
 
       if (record) {
         prevNumPP = nPP.getVal();
@@ -1201,7 +1204,7 @@ struct CodimStepping : INode {
       }
       findCCDConstraintsImpl(pol, alpha, xi, false);
 
-      {
+      if (coVerts.size()) {
         auto triBvs =
             retrieve_bounding_volumes(pol, vtemp, "xn", coEles, zs::wrapv<3>{},
                                       vtemp, "dir", alpha, coOffset);
@@ -1210,8 +1213,8 @@ struct CodimStepping : INode {
             retrieve_bounding_volumes(pol, vtemp, "xn", coEdges, zs::wrapv<2>{},
                                       vtemp, "dir", alpha, coOffset);
         bouSeBvh.refit(pol, edgeBvs);
+        findCCDConstraintsImpl(pol, alpha, xi, true);
       }
-      findCCDConstraintsImpl(pol, alpha, xi, true);
     }
     void findCCDConstraintsImpl(zs::CudaExecutionPolicy &pol, T alpha, T xi,
                                 bool withBoundary = false) {
@@ -3687,7 +3690,7 @@ struct CodimStepping : INode {
                                                    zs::wrapv<2>{}, 0);
           seBvh.build(cudaPol, edgeBvs);
         }
-        {
+        if (coVerts.size()) {
           auto triBvs = retrieve_bounding_volumes(cudaPol, vtemp, "xn", coEles,
                                                   zs::wrapv<3>{}, coOffset);
           bouStBvh.build(cudaPol, triBvs);
