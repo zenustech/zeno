@@ -6,6 +6,7 @@
 #include <zeno/extra/GraphException.h>
 #include <zeno/utils/logger.h>
 #include <zeno/utils/vec.h>
+#include <zeno/utils/zeno_p.h>
 #include <zeno/zeno.h>
 #include <stack>
 
@@ -75,7 +76,10 @@ ZENO_API void Graph::loadGraph(const char *json) {
     for (int i = 0; i < d.Size(); i++) {
         Value const &di = d[i];
         std::string cmd = di[0].GetString();
-        const char *maybeNodeName = di.Size() >= 1 && di[1].IsString() ? di[1].GetString() : "(not a node)";
+        const char *maybeNodeName = cmd == "addNode" ? di[2].GetString() : (
+            di.Size() >= 1 && di[1].IsString() ? di[1].GetString() : "(not a node)");
+        ZENO_P(cmd);
+        ZENO_P(maybeNodeName);
         GraphException::translated([&] {
             if (0) {
             } else if (cmd == "addNode") {

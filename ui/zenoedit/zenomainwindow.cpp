@@ -422,17 +422,15 @@ void ZenoMainWindow::exportGraph() {
 
     QString content;
     {
-        rapidjson::StringBuffer s;
-        RAPIDJSON_WRITER writer(s);
         IGraphsModel *pModel = zenoApp->graphsManagment()->currentModel();
         GraphsModel *model = (GraphsModel *)pModel;
-        {
+        if (path.endsWith(".cpp")) {
+            content = serializeSceneCpp(model);
+        } else {
+            rapidjson::StringBuffer s;
+            RAPIDJSON_WRITER writer(s);
             JsonArrayBatch batch(writer);
             serializeScene(model, writer);
-        }
-        if (path.endsWith(".cpp")) {
-            content = translateGraphToCpp(s.GetString(), s.GetLength(), model);
-        } else {
             content = QString(s.GetString());
         }
     }
