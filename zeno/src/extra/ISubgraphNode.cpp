@@ -1,16 +1,20 @@
 #include <zeno/extra/ISubgraphNode.h>
 #include <zeno/core/Graph.h>
+#include <zeno/core/Session.h>
+#include <zeno/utils/zeno_p.h>
 
 namespace zeno {
 
 ZENO_API ISubgraphNode::ISubgraphNode() = default;
 ZENO_API ISubgraphNode::~ISubgraphNode() = default;
 ZENO_API void ISubgraphNode::apply() {
+    auto grap = getThisSession()->createGraph();
+    Graph &gra = *grap;
     auto json = get_subgraph_json();
-    Graph gra;
     gra.loadGraph(json);
     for (auto const &[key, nodename]: gra.subOutputNodes) {
-        gra.nodesToExec.insert(key);
+        //gra.nodes.at(nodename);
+        gra.nodesToExec.insert(nodename);
     }
     for (auto const &[key, nodename]: gra.subInputNodes) {
         auto *node = gra.nodes.at(nodename).get();
