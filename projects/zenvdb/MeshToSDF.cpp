@@ -86,7 +86,7 @@ struct PrimitiveToSDF : zeno::INode{
     std::vector<openvdb::Vec4I> quads;
     points.resize(mesh->verts.size());
     triangles.resize(mesh->tris.size());
-    quads.resize(0);
+    quads.resize(mesh->quads.size());
 #pragma omp parallel for
     for(int i=0;i<points.size();i++)
     {
@@ -96,6 +96,11 @@ struct PrimitiveToSDF : zeno::INode{
     for(int i=0;i<triangles.size();i++)
     {
         triangles[i] = openvdb::Vec3I(mesh->tris[i][0], mesh->tris[i][1], mesh->tris[i][2]);
+    }
+#pragma omp parallel for
+    for(int i=0;i<quads.size();i++)
+    {
+        quads[i] = openvdb::Vec4I(mesh->quads[i][0], mesh->quads[i][1], mesh->quads[i][2], mesh->quads[i][3]);
     }
     auto vdbtransform = openvdb::math::Transform::createLinearTransform(h);
     if(get_param<std::string>(("type"))==std::string("vertex"))
