@@ -74,7 +74,7 @@ ZENDEFNODE(ParticleAsVoxels, {
                         });
 struct VDBVoxelAsParticles : INode {
   virtual void apply() override {
-    auto valToAttr = get_input2<std::string>("valToAttr");
+    auto valToAttr = has_input("valToAttr") ? get_input2<std::string>("valToAttr") : std::string();
     if (valToAttr.empty())
     {
         auto type = get_input<VDBGrid>("vdbGrid")->getType();

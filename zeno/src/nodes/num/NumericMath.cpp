@@ -38,7 +38,7 @@ ZENDEFNODE(MakeOrthonormalBase, {
     {{"vec3f", "normal", "0,0,1"}, {"vec3f", "tangent", "0,1,0"}},
     {{"vec3f", "normal"}, {"vec3f", "tangent"}, {"vec3f", "bitangent"}},
     {},
-    {"axis"},
+    {"math"},
 });
 
 
@@ -64,7 +64,7 @@ ZENDEFNODE(OrthonormalBase, {
     {{"vec3f", "normal", "0,0,1"}, {"vec3f", "tangent", "0,1,0"}},
     {{"vec3f", "normal"}, {"vec3f", "tangent"}, {"vec3f", "bitangent"}},
     {},
-    {"axis"},
+    {"math"},
 });
 
 
@@ -114,7 +114,7 @@ ZENDEFNODE(AABBCollideDetect, {
     {{"vec3f", "bminA"}, {"vec3f", "bmaxA"}, {"vec3f", "bminB"}, {"vec3f", "bmaxB"}},
     {{"bool", "overlap"}, {"bool", "AinsideB"}, {"bool", "BinsideA"}},
     {},
-    {"axis"},
+    {"math"},
 });
 
 struct ProjectAndNormalize : INode {
@@ -177,7 +177,7 @@ ZENDEFNODE(ProjectAndNormalize, {
     {"float", "phase"},
     },
     {},
-    {"axis"},
+    {"math"},
 });
 
 struct CalcDirectionFromAngle : INode {

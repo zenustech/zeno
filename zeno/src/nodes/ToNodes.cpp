@@ -89,7 +89,7 @@ ZENDEFNODE(HelperMute, {
     {},
     {},
     {{"string", "NOTE", "Dont-use-this-node-directly"}},
-    {"layout"},
+    {"deprecated"}, // internal
 });
 
 struct HelperOnce : zeno::INode {
@@ -114,7 +114,7 @@ ZENDEFNODE(HelperOnce, {
     {},
     {},
     {{"string", "NOTE", "Dont-use-this-node-directly"}},
-    {"layout"},
+    {"deprecated"}, // internal
 });
 
 struct MakeDummy : zeno::INode {

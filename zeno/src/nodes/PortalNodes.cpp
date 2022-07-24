@@ -25,7 +25,7 @@ ZENDEFNODE(PortalIn, {
     {"port"},
     {},
     {{"string", "name", "RenameMe!"}},
-    {"portal"},
+    {"layout"},
 });
 
 struct PortalOut : zeno::INode {
@@ -42,7 +42,7 @@ ZENDEFNODE(PortalOut, {
     {},
     {"port"},
     {{"string", "name", "RenameMe!"}},
-    {"portal"},
+    {"layout"},
 });
 
 
@@ -61,7 +61,7 @@ ZENDEFNODE(Route, {
     {"input"},
     {"output"},
     {},
-    {"portal"},
+    {"layout"},
 });
 
 
@@ -81,7 +81,7 @@ ZENDEFNODE(Clone, {
     {"object"},
     {"newObject"},
     {},
-    {"portal"},
+    {"lifecycle"},
 });
 
 
@@ -102,7 +102,7 @@ ZENDEFNODE(Assign, {
     {"dst", "src"},
     {"dst"},
     {},
-    {"portal"},
+    {"lifecycle"},
 });
 
 
@@ -122,7 +122,7 @@ ZENDEFNODE(MoveClone, {
     {"object"},
     {"newObject"},
     {},
-    {"portal"},
+    {"lifecycle"},
 });
 
 
@@ -142,7 +142,7 @@ ZENDEFNODE(MoveDelete, {
     {"object"},
     {},
     {},
-    {"portal"},
+    {"lifecycle"},
 });
 
 
@@ -163,7 +163,7 @@ ZENDEFNODE(MoveAssign, {
     {"dst", "src"},
     {"dst"},
     {},
-    {"portal"},
+    {"lifecycle"},
 });
 
 
@@ -180,7 +180,7 @@ ZENDEFNODE(SetUserData, {
     {"object", "data"},
     {"object"},
     {{"string", "key", ""}},
-    {"portal"},
+    {"lifecycle"},
 });
 
 
@@ -199,7 +199,7 @@ ZENDEFNODE(GetUserData, {
     {"object"},
     {"data", {"bool", "hasValue"}},
     {{"string", "key", ""}},
-    {"portal"},
+    {"lifecycle"},
 });
 
 
@@ -215,7 +215,7 @@ ZENDEFNODE(DelUserData, {
     {"object"},
     {},
     {{"string", "key", ""}},
-    {"portal"},
+    {"lifecycle"},
 });
 
 
@@ -232,7 +232,7 @@ ZENDEFNODE(CopyAllUserData, {
     {"dst", "src"},
     {"dst"},
     {},
-    {"portal"},
+    {"lifecycle"},
 });
 
 

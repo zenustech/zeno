@@ -31,7 +31,7 @@ ZENDEFNODE(FuncBegin, {
     {"extraArgs"},
     {"args", "FUNC"},
     {},
-    {"functional"},
+    {"control"},
 });
 
 
@@ -74,7 +74,7 @@ ZENDEFNODE(FuncEnd, {
     {"rets", "FUNC"},
     {"function"},
     {},
-    {"functional"},
+    {"control"},
 });
 
 
@@ -101,7 +101,7 @@ ZENDEFNODE(FuncCall, {
     {"function", "args"},
     {"rets"},
     {},
-    {"functional"},
+    {"control"},
 });
 
 
@@ -129,7 +129,7 @@ ZENDEFNODE(FuncCall, {
 //     {"function", "args"},
 //     {"task"},
 //     {},
-//     {"functional"},
+//     {"control"},
 // });
 // struct ParallelTask : zeno::INode{
 //     virtual void apply() override {
