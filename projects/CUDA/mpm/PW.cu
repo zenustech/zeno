@@ -26,7 +26,7 @@ static zfx::cuda::Assembler assembler;
 struct ZSParticlesWrangler : zeno::INode {
   ~ZSParticlesWrangler() {
     if (this->_cuModule)
-      zs::cudri::unloadModuleData(this->_cuModule);
+      cuModuleUnload((CUmodule)this->_cuModule);
   }
   void apply() override {
     using namespace zs;
@@ -113,24 +113,26 @@ struct ZSParticlesWrangler : zeno::INode {
       if (_cuModule == nullptr) {
         auto wrangleKernelPtxs = cudri::load_all_ptx_files_at();
         void *state;
-        cudri::linkCreate(0, nullptr, nullptr, &state);
+        cuLinkCreate(0, nullptr, nullptr, (CUlinkState *)&state);
 
         auto jitSrc = cudri::compile_cuda_source_to_ptx(jitCode);
-        cudri::linkAddData(state, CU_JIT_INPUT_PTX, (void *)jitSrc.data(),
-                           (size_t)jitSrc.size(), "script", 0, NULL, NULL);
+        cuLinkAddData((CUlinkState)state, CU_JIT_INPUT_PTX,
+                      (void *)jitSrc.data(), (size_t)jitSrc.size(), "script", 0,
+                      NULL, NULL);
 
         int no = 0;
         for (auto const &ptx : wrangleKernelPtxs) {
           auto str = std::string("wrangler") + std::to_string(no++);
-          cudri::linkAddData(state, CU_JIT_INPUT_PTX, (char *)ptx.data(),
-                             ptx.size(), str.data(), 0, NULL, NULL);
+          cuLinkAddData((CUlinkState)state, CU_JIT_INPUT_PTX,
+                        (char *)ptx.data(), ptx.size(), str.data(), 0, NULL,
+                        NULL);
         }
         void *cubin;
         size_t cubinSize;
-        cudri::linkComplete(state, &cubin, &cubinSize);
+        cuLinkComplete((CUlinkState)state, &cubin, &cubinSize);
 
-        cudri::loadModuleData(&_cuModule, cubin);
-        cudri::linkDestroy{state};
+        cuModuleLoadData((CUmodule *)&_cuModule, cubin);
+        cuLinkDestroy((CUlinkState)state);
       }
 
       zs::Vector<AccessorAoSoA> haccessors{prog->symbols.size()};
@@ -178,8 +180,8 @@ struct ZSParticlesWrangler : zeno::INode {
       zs::Vector<zs::f32> dparams = hparams.clone({zs::memsrc_e::device, 0});
 
       void *function;
-      cudri::getModuleFunc(&function, _cuModule,
-                           "zpc_particle_wrangler_kernel");
+      cuModuleGetFunction((CUfunction *)&function, (CUmodule)_cuModule,
+                          "zpc_particle_wrangler_kernel");
 
       // begin kernel launch
       std::size_t cnt = pars.size();
@@ -189,11 +191,11 @@ struct ZSParticlesWrangler : zeno::INode {
       void *args[4] = {(void *)&cnt, (void *)&d_params, (void *)&nchns,
                        (void *)&addr};
 
-      cudri::launchCuKernel(function, (cnt + 127) / 128, 1, 1, 128, 1, 1, 0,
-                            currentContext.streamSpare(0), args,
-                            (void **)nullptr);
+      cuLaunchKernel((CUfunction)function, (cnt + 127) / 128, 1, 1, 128, 1, 1,
+                     0, (CUstream)currentContext.streamSpare(0), args,
+                     (void **)nullptr);
       // end kernel launch
-      cudri::syncContext();
+      cuCtxSynchronize();
     }
 
     set_output("ZSParticles", get_input("ZSParticles"));
