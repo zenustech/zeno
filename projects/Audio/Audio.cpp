@@ -1,9 +1,11 @@
+#include <zeno/utils/nowarn.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/StringObject.h>
 #include <zeno/utils/string.h>
 #include <zeno/utils/vec.h>
 #include <zeno/zeno.h>
 #include "zeno/utils/logger.h"
+#include "zeno/types/UserData.h"
 #include "zeno/types/StringObject.h"
 #include "zeno/types/NumericObject.h"
 #include "aquila/aquila/aquila.h"
@@ -29,10 +31,10 @@ namespace zeno {
                 t[i] = float(i);
             }
 
-            result->userData.set("SampleRate", zeno::NumericObject((int)wav.getSampleRate()));
-            result->userData.set("BitDepth", zeno::NumericObject((int)wav.getBitDepth()));
-            result->userData.set("NumSamplesPerChannel", zeno::NumericObject((int)wav.getNumSamplesPerChannel()));
-            result->userData.set("LengthInSeconds", zeno::NumericObject((float)wav.getLengthInSeconds()));
+            result->userData().set("SampleRate", std::make_shared<zeno::NumericObject>((int)wav.getSampleRate()));
+            result->userData().set("BitDepth", std::make_shared<zeno::NumericObject>((int)wav.getBitDepth()));
+            result->userData().set("NumSamplesPerChannel", std::make_shared<zeno::NumericObject>((int)wav.getNumSamplesPerChannel()));
+            result->userData().set("LengthInSeconds", std::make_shared<zeno::NumericObject>((float)wav.getLengthInSeconds()));
 
             set_output("wave",result);
         }
@@ -56,7 +58,7 @@ namespace zeno {
             auto wave = get_input<PrimitiveObject>("wave");
             float threshold = get_input<NumericObject>("threshold")->get<float>();
             auto start_time = get_input<NumericObject>("time")->get<float>();
-            float sampleFrequency = wave->userData.get<zeno::NumericObject>("SampleRate").get<float>();
+            float sampleFrequency = wave->userData().get<zeno::NumericObject>("SampleRate")->get<float>();
             int start_index = int(sampleFrequency * start_time);
             int duration_count = 1024;
             auto fft = Aquila::FftFactory::getFft(duration_count);

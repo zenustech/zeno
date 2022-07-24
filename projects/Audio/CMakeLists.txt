@@ -1,4 +1,4 @@
-add_library(zeno SHARED Audio.cpp AudioFile.h)
+target_sources(zeno PRIVATE Audio.cpp AudioFile.h)
 
 #if("${CMAKE_BUILD_TYPE}" STREQUAL "Release" AND MSVC)
     #set_property(TARGET zeno_Audio PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreadedDLL")
@@ -7,4 +7,3 @@ add_library(zeno SHARED Audio.cpp AudioFile.h)
 add_subdirectory(aquila)
 
 target_link_libraries(zeno PRIVATE Aquila)
-target_link_libraries(zeno PRIVATE zeno)
