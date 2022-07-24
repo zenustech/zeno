@@ -3,9 +3,9 @@
 
 #include <QtWidgets>
 
-class GraphsModel;
+class IGraphsModel;
 
-void launchProgram(GraphsModel* pModel, int beginFrame, int endFrame);
+void launchProgram(IGraphsModel* pModel, int beginFrame, int endFrame);
 void killProgram();
 
 #endif

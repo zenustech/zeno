@@ -83,6 +83,15 @@ void ZenoDockTitleWidget::updateByType(DOCK_TYPE type)
 
 }
 
+QAction* ZenoDockTitleWidget::createAction(const QString& text)
+{
+	QAction* pAction = new QAction(text);
+	connect(pAction, &QAction::triggered, this, [=]() {
+		emit actionTriggered(pAction);
+		});
+	return pAction;
+}
+
 void ZenoDockTitleWidget::onDockSwitchClicked()
 {
 	QMenu* menu = new QMenu(this);
@@ -157,15 +166,6 @@ void ZenoEditorDockTitleWidget::initTitleContent(QHBoxLayout* pHLayout)
 
     pHLayout->addWidget(m_lblTitle);
     pHLayout->addStretch();
-}
-
-QAction* ZenoEditorDockTitleWidget::createAction(const QString& text)
-{
-	QAction* pAction = new QAction(text);
-	connect(pAction, &QAction::triggered, this, [=]() {
-		emit actionTriggered(qobject_cast<QAction*>(sender()));
-		});
-	return pAction;
 }
 
 QMenuBar* ZenoEditorDockTitleWidget::initMenu()
@@ -409,7 +409,7 @@ QMenuBar* ZenoViewDockTitle::initMenu()
             int nsamples = 16;
             Zenovis::GetInstance().getSession()->do_screenshot(path.toStdString(), ext.toStdString(), nsamples);
         });
-        pAction = new QAction(tr("Record Video"), this); // TODO: luzh make this work
+		pAction = createAction(tr("Record Video"));
         pAction->setShortcut(QKeySequence(("Shift+F12")));
         pRecord->addAction(pAction);
     }
@@ -471,16 +471,6 @@ QMenuBar* ZenoViewDockTitle::initMenu()
 
     return pMenuBar;
 }
-
-QAction* ZenoViewDockTitle::createAction(const QString& text)
-{
-    QAction* pAction = new QAction(text);
-    connect(pAction, &QAction::triggered, this, [=]() {
-        emit actionTriggered(qobject_cast<QAction*>(sender()));
-        });
-    return pAction;
-}
-
 
 
 ZenoPropDockTitleWidget::ZenoPropDockTitleWidget(QWidget* parent)

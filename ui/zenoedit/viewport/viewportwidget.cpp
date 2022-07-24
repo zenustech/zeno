@@ -8,6 +8,7 @@
 #include "launch/corelaunch.h"
 #include "zenoapplication.h"
 #include "zenomainwindow.h"
+#include "dialog/zrecorddlg.h"
 #include <zeno/utils/log.h>
 #include <zenovis/ObjectsManager.h>
 #include <zenovis/Scene.h>
@@ -19,6 +20,7 @@
 #include <cmath>
 #include <algorithm>
 #include <optional>
+
 
 static std::optional<float> ray_sphere_intersect(
     zeno::vec3f const &ray_pos,
@@ -331,16 +333,30 @@ void ViewportWidget::resizeGL(int nx, int ny)
     m_camera->updatePerspective();
 }
 
+void ViewportWidget::setRecordPath(const QString& path)
+{
+    record_path = path.toStdString();
+}
+
 void ViewportWidget::paintGL()
 {
+    rendering();
+}
+
+void ViewportWidget::recordCurrFrame()
+{
+	if (!record_path.empty() /*&& f <= frame_end*/) //py has bug: frame_end not initialized.
+	{
+		int f = Zenovis::GetInstance().getCurrentFrameId();
+		auto record_file = zeno::format("{}/{:06d}.png", record_path, f);
+		int nsamples = 16;
+		checkRecord(record_file, record_res, nsamples);
+	}
+}
+
+void ViewportWidget::rendering()
+{
     Zenovis::GetInstance().paintGL();
-    if (!record_path.empty() /*&& f <= frame_end*/) //py has bug: frame_end not initialized.
-    {
-        int f = Zenovis::GetInstance().getCurrentFrameId();
-        auto record_file = zeno::format("{}/{:06d}.png", record_path, f);
-        int nsamples = 16;
-        checkRecord(record_file, record_res, nsamples);
-    }
 }
 
 void ViewportWidget::checkRecord(std::string a_record_file, QVector2D a_record_res, int a_nsamples)
@@ -454,6 +470,7 @@ DisplayWidget::DisplayWidget(ZenoMainWindow* pMainWin)
     , m_timeline(nullptr)
     , m_mainWin(pMainWin)
     , m_pTimer(nullptr)
+    , m_bRecording(false)
 {
     QVBoxLayout* pLayout = new QVBoxLayout;
     pLayout->setContentsMargins(0, 0, 0, 0);
@@ -513,10 +530,25 @@ QSize DisplayWidget::sizeHint() const
     return ZenoStyle::dpiScaledSize(QSize(12, 400));
 }
 
+bool DisplayWidget::isRecording() const
+{
+    return m_bRecording;
+}
+
 void DisplayWidget::updateFrame(const QString &action)
 {
     if (m_mainWin && m_mainWin->inDlgEventLoop())
         return;
+
+    if (m_bRecording)
+    {
+        if (action == "finishFrame")
+        {
+            m_view->rendering();
+            m_view->recordCurrFrame();
+        }
+        return;
+    }
 
     if (action == "newFrame") {
         m_pTimer->stop();
@@ -581,13 +613,51 @@ void DisplayWidget::onRun()
         IGraphsModel* pModel = pGraphsMgr->currentModel();
         if (!pModel)
             return;
-        GraphsModel* pLegacy = qobject_cast<GraphsModel*>(pModel);
-        launchProgram(pLegacy, beginFrame, endFrame);
+        launchProgram(pModel, beginFrame, endFrame);
     }
     else
     {
 
     }
+}
+
+void DisplayWidget::onRecord()
+{
+    m_bRecording = true;
+    zeno::scope_exit sp([=]() { clearRecordVis(); });
+
+    ZRecordVideoDlg dlg(this);
+    int ret = dlg.exec();
+    if (ret == QDialog::Accepted)
+    {
+        int frameStart = 0, frameEnd = 0, fps = 0, bitrate = 0, width = 0, height = 0;
+        QString presets, path;
+        dlg.getInfo(frameStart, frameEnd, fps, bitrate, presets, width, height, path);
+        //validation.
+        if (frameEnd >= frameStart && frameStart >= 0)
+        {
+			auto pGraphsMgr = zenoApp->graphsManagment();
+			IGraphsModel* pModel = pGraphsMgr->currentModel();
+			if (!pModel)
+				return;
+
+            launchProgram(pModel, frameStart, frameEnd);
+
+            Zenovis::GetInstance().startPlay(true);
+            m_view->setRecordPath(path);
+
+            QDialog dlgProgress;
+            dlgProgress.exec();
+        }
+    }
+}
+
+void DisplayWidget::clearRecordVis()
+{
+    m_bRecording = false;
+    Zenovis::GetInstance().startPlay(false);
+    m_view->setRecordPath("");
+    //clear cache
 }
 
 void DisplayWidget::onKill()

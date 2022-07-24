@@ -64,6 +64,9 @@ public:
     void initializeGL() override;
     void resizeGL(int nx, int ny) override;
     void paintGL() override;
+    void rendering();
+    void setRecordPath(const QString& path);
+    void recordCurrFrame();
     void checkRecord(std::string a_record_file, QVector2D a_record_res, int a_nsamples);
 
 protected:
@@ -88,10 +91,12 @@ public:
     ~DisplayWidget();
     void init();
     QSize sizeHint() const override;
+    bool isRecording() const;
 
 public slots:
     void updateFrame(const QString& action = "");
     void onRun();
+    void onRecord();
     void onKill();
     void onModelDataChanged();
     void onPlayClicked(bool);
@@ -101,11 +106,14 @@ signals:
     void frameUpdated(int new_frame);
 
 private:
+    void clearRecordVis();
+
     ViewportWidget* m_view;
     ZTimeline* m_timeline;
     ZenoMainWindow* m_mainWin;
     CameraKeyframeWidget* m_camera_keyframe;
     QTimer* m_pTimer;
+    bool m_bRecording;
     static const int m_updateFeq = 16;
     static const int m_sliderFeq = 16;
 };
