@@ -156,7 +156,7 @@ ZENDEFNODE(addRigid, {
     {{"", "Primitive", ""}, {"", "Transform", ""}, {"", "mass", ""}},
     {{"", "RigidObject", ""}},
     {},
-    {"subgraph"},
+    {"Rigid"},
 });
 struct ReCenterPrim : zeno::ISerialSubgraphNode {
     virtual const char *get_subgraph_json() override {
@@ -182,7 +182,7 @@ ZENDEFNODE(GetRigidSamplePos, {
     {{"", "RigidObject", ""}, {"", "localGeo", ""}},
     {{"", "wsPrim", ""}, {"", "MassCenter", ""}, {"", "Rotation", ""}},
     {},
-    {"subgraph"},
+    {"Rigid"},
 });
 
 static std::string ISerialSubgraphNode_info;
@@ -204,7 +204,7 @@ ZENDEFNODE(RasterizeRigid, {
     {{"", "RigidList", ""}, {"", "localPrim", ""}, {"", "localPos", ""}},
     {{"", "outSDF", ""}, {"", "outPrim", ""}, {"", "BCVel", ""}, {"", "end", ""}},
     {},
-    {"subgraph"},
+    {"Rigid"},
 });
 struct normalize : zeno::ISerialSubgraphNode {
     virtual const char *get_subgraph_json() override {
@@ -217,7 +217,7 @@ ZENDEFNODE(normalize, {
     {{"", "input1", ""}},
     {{"", "output1", ""}},
     {},
-    {"subgraph"},
+    {"deprecated"},
 });
 struct makeUV : zeno::ISerialSubgraphNode {
     virtual const char *get_subgraph_json() override {
@@ -230,7 +230,7 @@ ZENDEFNODE(makeUV, {
     {},
     {},
     {},
-    {"subgraph"},
+    {"deprecated"},
 });
 struct makeXYZ : zeno::ISerialSubgraphNode {
     virtual const char *get_subgraph_json() override {
@@ -243,7 +243,7 @@ ZENDEFNODE(makeXYZ, {
     {{"", "input1", ""}, {"", "input2", ""}, {"", "input3", ""}},
     {{"", "output1", ""}},
     {},
-    {"subgraph"},
+    {"deprecated"},
 });
 struct RigidGetForce : zeno::ISerialSubgraphNode {
     virtual const char *get_subgraph_json() override {
@@ -256,7 +256,7 @@ ZENDEFNODE(RigidGetForce, {
     {{"", "RigidList", ""}, {"", "Pressure", ""}, {"", "CellFWeight", ""}, {"", "LiquidSDF", ""}, {"", "localPos", ""}, {"", "dt", ""}},
     {{"", "samplePos", ""}},
     {},
-    {"subgraph"},
+    {"Rigid"},
 });
 struct GetAZLetters : zeno::ISerialSubgraphNode {
     virtual const char *get_subgraph_json() override {
