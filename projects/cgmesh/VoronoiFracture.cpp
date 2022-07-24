@@ -161,7 +161,7 @@ ZENO_DEFNODE(AABBVoronoi)({
 });
 
 
-struct VoronoiFractureSingle : AABBVoronoi {
+struct VoronoiFracture : AABBVoronoi {
     virtual void apply() override {
         auto primA = get_input<PrimitiveObject>("meshPrim");
         auto VFA = get_param<bool>("doMeshFix") ? prim_to_eigen_with_fix(primA.get()) : prim_to_eigen(primA.get());
@@ -239,62 +239,6 @@ struct VoronoiFractureSingle : AABBVoronoi {
     }
 };
 
-//ZENO_DEFNODE(VoronoiFractureSingle)({
-        //{ // inputs:
-        //{"PrimitiveObject", "meshPrim"},
-        //{"PrimitiveObject", "particlesPrim"},
-        //},
-        //{ // outputs:
-        //{"ListObject", "primList"},
-        //{"ListObject", "neighList"},
-        //},
-        //{ // params:
-        //{"bool", "doMeshFix", "1"},
-        //{"bool", "doMeshFix2", "1"},
-        //{"int", "numRandPoints", "256"},
-        //{"bool", "periodicX", "0"},
-        //{"bool", "periodicY", "0"},
-        //{"bool", "periodicZ", "0"},
-        //},
-        //{"cgmesh"},
-//});
-
-
-struct VoronoiFracture : VoronoiFractureSingle {
-    virtual void apply() override {
-        if (!get_param<bool>("splitIsland")) {
-            VoronoiFractureSingle::apply();
-            return;
-        }
-        auto prim = get_input<PrimitiveObject>("meshPrim");
-        std::string islandAttr = "**" + std::to_string(wangsrng(prim->size()).next_uint32());
-        primMarkIsland(prim.get(), islandAttr);
-        auto prims = primUnmergeVerts(prim.get(), islandAttr);
-        zeno::log_info("VoronoiFracture split got {} islands", prims.size());
-        prim->verts.erase_attr(islandAttr);
-        auto primfinlst = std::make_shared<ListObject>();
-        auto neighfinlst = std::make_shared<ListObject>();
-        int redprimcount = 0, islandid = 0;
-        for (auto const &prim1: prims) {
-            zeno::log_debug("VoronoiFracture: fracturating island #{}", islandid);
-            inputs["meshPrim"] = prim1;
-            VoronoiFractureSingle::apply();
-            auto *prim1lst = static_cast<ListObject *>(outputs.at("primList").get());
-            auto *neigh1lst = static_cast<ListObject *>(outputs.at("neighList").get());
-            for (auto const &nei1li: neigh1lst->getLiterial<vec2i>()) {
-                neighfinlst->arr.push_back(std::make_shared<NumericObject>(nei1li + redprimcount));
-            }
-            for (auto const &prim1li: prim1lst->get<PrimitiveObject>()) {
-                primfinlst->arr.push_back(prim1li);
-                redprimcount++;
-            }
-            islandid++;
-        }
-        set_output("primList", std::move(primfinlst));
-        set_output("neighList", std::move(neighfinlst));
-    }
-};
-
 ZENO_DEFNODE(VoronoiFracture)({
         { // inputs:
         {"PrimitiveObject", "meshPrim"},
@@ -305,7 +249,6 @@ ZENO_DEFNODE(VoronoiFracture)({
         {"ListObject", "neighList"},
         },
         { // params:
-        {"bool", "splitIsland", "0"},
         {"bool", "doMeshFix", "0"},
         {"bool", "doMeshFix2", "1"},
         {"int", "numRandPoints", "256"},
@@ -315,6 +258,63 @@ ZENO_DEFNODE(VoronoiFracture)({
         },
         {"cgmesh"},
 });
+
+
+//struct VoronoiFracture : VoronoiFractureSingle {
+    //virtual void apply() override {
+        //if (!get_param<bool>("splitIsland")) {
+            //VoronoiFractureSingle::apply();
+            //return;
+        //}
+        //auto prim = get_input<PrimitiveObject>("meshPrim");
+        //std::string islandAttr = "**" + std::to_string(wangsrng(prim->size()).next_uint32());
+        //primMarkIsland(prim.get(), islandAttr);
+        //auto prims = primUnmergeVerts(prim.get(), islandAttr);
+        //zeno::log_info("VoronoiFracture split got {} islands", prims.size());
+        //prim->verts.erase_attr(islandAttr);
+        //auto primfinlst = std::make_shared<ListObject>();
+        //auto neighfinlst = std::make_shared<ListObject>();
+        //int redprimcount = 0, islandid = 0;
+        //for (auto const &prim1: prims) {
+            //zeno::log_debug("VoronoiFracture: fracturating island #{}", islandid);
+            //inputs["meshPrim"] = prim1;
+            //VoronoiFractureSingle::apply();
+            //auto *prim1lst = static_cast<ListObject *>(outputs.at("primList").get());
+            //auto *neigh1lst = static_cast<ListObject *>(outputs.at("neighList").get());
+            //for (auto const &nei1li: neigh1lst->getLiterial<vec2i>()) {
+                //neighfinlst->arr.push_back(std::make_shared<NumericObject>(nei1li + redprimcount));
+            //}
+            //for (auto const &prim1li: prim1lst->get<PrimitiveObject>()) {
+                //primfinlst->arr.push_back(prim1li);
+                //redprimcount++;
+            //}
+            //islandid++;
+        //}
+        //set_output("primList", std::move(primfinlst));
+        //set_output("neighList", std::move(neighfinlst));
+    //}
+//};
+
+//ZENO_DEFNODE(VoronoiFracture)({
+        //{ // inputs:
+        //{"PrimitiveObject", "meshPrim"},
+        //{"PrimitiveObject", "particlesPrim"},
+        //},
+        //{ // outputs:
+        //{"ListObject", "primList"},
+        //{"ListObject", "neighList"},
+        //},
+        //{ // params:
+        //{"bool", "splitIsland", "0"},
+        //{"bool", "doMeshFix", "0"},
+        //{"bool", "doMeshFix2", "1"},
+        //{"int", "numRandPoints", "256"},
+        //{"bool", "periodicX", "0"},
+        //{"bool", "periodicY", "0"},
+        //{"bool", "periodicZ", "0"},
+        //},
+        //{"cgmesh"},
+//});
 
 
 struct SimplifyVoroNeighborList : INode {
