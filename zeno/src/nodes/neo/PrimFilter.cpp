@@ -4,6 +4,7 @@
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/StringObject.h>
 #include <zeno/utils/vec.h>
+#include <zeno/utils/zeno_p.h>
 #include <cstring>
 #include <cstdlib>
 
@@ -55,6 +56,10 @@ static void primRevampVerts(PrimitiveObject *prim, std::vector<int> const &revam
          )) {
 
         std::vector<int> unrevamp(old_prim_size, -1);
+        for (int i = 0; i < revamp.size(); i++) {
+            unrevamp[revamp[i]] = i;
+        }
+
         auto mock = [&] (int &x) -> bool {
             int loc = unrevamp[x];
             if (loc == -1)
@@ -68,6 +73,10 @@ static void primRevampVerts(PrimitiveObject *prim, std::vector<int> const &revam
             trisrevamp.reserve(prim->tris.size());
             for (int i = 0; i < prim->tris.size(); i++) {
                 auto &tri = prim->tris[i];
+                //ZENO_P(tri);
+                //ZENO_P(unrevamp[tri[0]]);
+                //ZENO_P(unrevamp[tri[1]]);
+                //ZENO_P(unrevamp[tri[2]]);
                 if (mock(tri[0]) && mock(tri[1]) && mock(tri[2]))
                     trisrevamp.emplace_back(i);
             }
