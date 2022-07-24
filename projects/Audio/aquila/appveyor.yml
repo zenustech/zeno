@@ -1,0 +1,27 @@
+version: 3.0.0.{build}
+
+init:
+  - cmd: cmake --version
+  
+environment:
+  matrix:
+    - CMAKE_GENERATOR: "Visual Studio 11"
+    - CMAKE_GENERATOR: "Visual Studio 12"
+
+matrix:
+  allow_failures:
+    - CMAKE_GENERATOR: "Visual Studio 11"
+
+before_build:
+  - cmd: mkdir build
+  - cmd: cd build
+  - cmd: cmake "-G%CMAKE_GENERATOR%" ..
+
+build_script:
+  - cmd: msbuild Aquila.sln /target:Aquila /nologo /verbosity:minimal
+
+before_test:
+  - cmd: msbuild tests\aquila_test.vcxproj /nologo /verbosity:minimal
+  
+test_script:
+  - cmd: msbuild RUN_TESTS.vcxproj /nologo /verbosity:minimal

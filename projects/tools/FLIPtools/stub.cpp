@@ -143,6 +143,6 @@ ZENDEFNODE(FLIPGetEnvironArgs, {
     {{"", "environArgs", ""}},
     {{"", "dt", ""}, {"", "portion", ""}},
     {},
-    {"subgraph"},
+    {"FLIP"},
 });
 }

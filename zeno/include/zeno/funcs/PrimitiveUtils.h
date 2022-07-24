@@ -7,7 +7,7 @@
 namespace zeno {
 
 ZENO_API void primTriangulateQuads(PrimitiveObject *prim);
-ZENO_API void primTriangulate(PrimitiveObject *prim, bool with_uv = true);
+ZENO_API void primTriangulate(PrimitiveObject *prim, bool with_uv = true, bool has_lines = true);
 ZENO_API void primPolygonate(PrimitiveObject *prim, bool with_uv = true);
 
 ZENO_API void primSepTriangles(PrimitiveObject *prim, bool smoothNormal = true, bool keepTriFaces = true);
@@ -29,7 +29,7 @@ ZENO_API void primMarkIsland(PrimitiveObject *prim, std::string tagAttr);
 ZENO_API std::vector<std::shared_ptr<PrimitiveObject>> primUnmergeVerts(PrimitiveObject *prim, std::string tagAttr);
 
 ZENO_API void primSimplifyTag(PrimitiveObject *prim, std::string tagAttr);
-ZENO_API void primColorByTag(PrimitiveObject *prim, std::string tagAttr, std::string clrAttr);
+ZENO_API void primColorByTag(PrimitiveObject *prim, std::string tagAttr, std::string clrAttr, int seed = -1);
 
 ZENO_API void primTranslate(PrimitiveObject *prim, vec3f const &offset);
 ZENO_API void primScale(PrimitiveObject *prim, vec3f const &scale);

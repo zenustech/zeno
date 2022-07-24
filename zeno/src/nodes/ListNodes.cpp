@@ -192,9 +192,9 @@ struct NumericRangeList : zeno::INode {
     virtual void apply() override {
         auto list = std::make_shared<zeno::ListObject>();
         auto start = get_input2<int>("start");
-        auto stop = get_input2<int>("stop");
+        auto end = get_input2<int>("end");
         auto skip = get_input2<int>("skip");
-        for (int i = start; i < stop; i += skip) {
+        for (int i = start; i < end; i += skip) {
             list->arr.emplace_back(std::make_shared<NumericObject>(i));
         }
         set_output("list", std::move(list));

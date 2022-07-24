@@ -179,12 +179,12 @@ struct GetPerlinNoise : INode{
 };
 ZENDEFNODE(GetPerlinNoise,
     { /* inputs: */ {
-    "vec3","seed",{"float", "freq", "1.0"},
+    {"vec3f","vec3"},"seed",{"float", "freq", "1.0"},
     }, /* outputs: */ {
     "noise",
     }, /* params: */ {
     }, /* category: */ {
-    "math",
+    "numeric",
     }});
 
 }

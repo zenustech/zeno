@@ -73,7 +73,7 @@ ZENDEFNODE(ToView, {
     {"object", {"bool", "isStatic", "0"}},
     {"object", {"string", "viewid"}},
     {},
-    {"graphtool"},
+    {"layout"},
 });
 
 struct HelperMute : zeno::INode {
@@ -89,7 +89,7 @@ ZENDEFNODE(HelperMute, {
     {},
     {},
     {{"string", "NOTE", "Dont-use-this-node-directly"}},
-    {"graphtool"},
+    {"deprecated"}, // internal
 });
 
 struct HelperOnce : zeno::INode {
@@ -114,7 +114,7 @@ ZENDEFNODE(HelperOnce, {
     {},
     {},
     {{"string", "NOTE", "Dont-use-this-node-directly"}},
-    {"graphtool"},
+    {"deprecated"}, // internal
 });
 
 struct MakeDummy : zeno::INode {
@@ -127,7 +127,7 @@ ZENDEFNODE(MakeDummy, {
     {},
     {"dummy"},
     {},
-    {"graphtool"},
+    {"layout"},
 });
 
 }

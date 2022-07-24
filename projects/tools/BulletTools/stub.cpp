@@ -156,12 +156,12 @@ ZENDEFNODE(addRigid, {
     {{"", "Primitive", ""}, {"", "Transform", ""}, {"", "mass", ""}},
     {{"", "RigidObject", ""}},
     {},
-    {"subgraph"},
+    {"Rigid"},
 });
 struct ReCenterPrim : zeno::ISerialSubgraphNode {
     virtual const char *get_subgraph_json() override {
         return R"ZSL(
-[["addNode", "SubInput", "8de6abdc-d4cd-11eb-8394-b5a978b884f7-SubInput"], ["setNodeParam", "8de6abdc-d4cd-11eb-8394-b5a978b884f7-SubInput", "name", "PrimIn"], ["setNodeParam", "8de6abdc-d4cd-11eb-8394-b5a978b884f7-SubInput", "type", ""], ["setNodeParam", "8de6abdc-d4cd-11eb-8394-b5a978b884f7-SubInput", "defl", ""], ["completeNode", "8de6abdc-d4cd-11eb-8394-b5a978b884f7-SubInput"], ["addNode", "PrimitiveReduction", "93e6b536-d4cd-11eb-8394-b5a978b884f7-PrimitiveReduction"], ["bindNodeInput", "93e6b536-d4cd-11eb-8394-b5a978b884f7-PrimitiveReduction", "prim", "8de6abdc-d4cd-11eb-8394-b5a978b884f7-SubInput", "port"], ["setNodeParam", "93e6b536-d4cd-11eb-8394-b5a978b884f7-PrimitiveReduction", "attr", "pos"], ["setNodeParam", "93e6b536-d4cd-11eb-8394-b5a978b884f7-PrimitiveReduction", "op", "avg"], ["completeNode", "93e6b536-d4cd-11eb-8394-b5a978b884f7-PrimitiveReduction"], ["addNode", "SubOutput", "9a23d082-d4cd-11eb-8394-b5a978b884f7-SubOutput"], ["bindNodeInput", "9a23d082-d4cd-11eb-8394-b5a978b884f7-SubOutput", "port", "93e6b536-d4cd-11eb-8394-b5a978b884f7-PrimitiveReduction", "result"], ["setNodeParam", "9a23d082-d4cd-11eb-8394-b5a978b884f7-SubOutput", "name", "MassCenter"], ["setNodeParam", "9a23d082-d4cd-11eb-8394-b5a978b884f7-SubOutput", "type", ""], ["setNodeParam", "9a23d082-d4cd-11eb-8394-b5a978b884f7-SubOutput", "defl", ""], ["completeNode", "9a23d082-d4cd-11eb-8394-b5a978b884f7-SubOutput"], ["addNode", "SubOutput", "a72c6870-d4cd-11eb-8394-b5a978b884f7-SubOutput"], ["setNodeParam", "a72c6870-d4cd-11eb-8394-b5a978b884f7-SubOutput", "name", "RecenteredPrim"], ["setNodeParam", "a72c6870-d4cd-11eb-8394-b5a978b884f7-SubOutput", "type", ""], ["setNodeParam", "a72c6870-d4cd-11eb-8394-b5a978b884f7-SubOutput", "defl", ""], ["completeNode", "a72c6870-d4cd-11eb-8394-b5a978b884f7-SubOutput"], ["addNode", "SubCategory", "c465ac21-SubCategory"], ["setNodeParam", "c465ac21-SubCategory", "name", "Utils"], ["completeNode", "c465ac21-SubCategory"], ["addNode", "ParticlesWrangle", "d180cce8-ParticlesWrangle"], ["bindNodeInput", "d180cce8-ParticlesWrangle", "prim", "8de6abdc-d4cd-11eb-8394-b5a978b884f7-SubInput", "port"], ["bindNodeInput", "d180cce8-ParticlesWrangle", "zfxCode", "086a8fcf-MakeMultilineString", "value"], ["bindNodeInput", "d180cce8-ParticlesWrangle", "params", "9dcb38a6-MakeDict", "dict"], ["completeNode", "d180cce8-ParticlesWrangle"], ["addNode", "MakeMultilineString", "086a8fcf-MakeMultilineString"], ["setNodeParam", "086a8fcf-MakeMultilineString", "value", "@pos -= $center"], ["completeNode", "086a8fcf-MakeMultilineString"], ["addNode", "MakeDict", "9dcb38a6-MakeDict"], ["bindNodeInput", "9dcb38a6-MakeDict", "center", "93e6b536-d4cd-11eb-8394-b5a978b884f7-PrimitiveReduction", "result"], ["setNodeParam", "9dcb38a6-MakeDict", "_KEYS", "center\nobj1"], ["completeNode", "9dcb38a6-MakeDict"]]
+[["addNode", "SubInput", "8de6abdc-d4cd-11eb-8394-b5a978b884f7-SubInput"], ["setNodeParam", "8de6abdc-d4cd-11eb-8394-b5a978b884f7-SubInput", "name", "PrimIn"], ["setNodeParam", "8de6abdc-d4cd-11eb-8394-b5a978b884f7-SubInput", "type", ""], ["setNodeParam", "8de6abdc-d4cd-11eb-8394-b5a978b884f7-SubInput", "defl", ""], ["completeNode", "8de6abdc-d4cd-11eb-8394-b5a978b884f7-SubInput"], ["addNode", "PrimitiveReduction", "93e6b536-d4cd-11eb-8394-b5a978b884f7-PrimitiveReduction"], ["bindNodeInput", "93e6b536-d4cd-11eb-8394-b5a978b884f7-PrimitiveReduction", "prim", "8de6abdc-d4cd-11eb-8394-b5a978b884f7-SubInput", "port"], ["setNodeParam", "93e6b536-d4cd-11eb-8394-b5a978b884f7-PrimitiveReduction", "attr", "pos"], ["setNodeParam", "93e6b536-d4cd-11eb-8394-b5a978b884f7-PrimitiveReduction", "op", "avg"], ["completeNode", "93e6b536-d4cd-11eb-8394-b5a978b884f7-PrimitiveReduction"], ["addNode", "SubOutput", "9a23d082-d4cd-11eb-8394-b5a978b884f7-SubOutput"], ["bindNodeInput", "9a23d082-d4cd-11eb-8394-b5a978b884f7-SubOutput", "port", "93e6b536-d4cd-11eb-8394-b5a978b884f7-PrimitiveReduction", "result"], ["setNodeParam", "9a23d082-d4cd-11eb-8394-b5a978b884f7-SubOutput", "name", "MassCenter"], ["setNodeParam", "9a23d082-d4cd-11eb-8394-b5a978b884f7-SubOutput", "type", ""], ["setNodeParam", "9a23d082-d4cd-11eb-8394-b5a978b884f7-SubOutput", "defl", ""], ["completeNode", "9a23d082-d4cd-11eb-8394-b5a978b884f7-SubOutput"], ["addNode", "SubOutput", "a72c6870-d4cd-11eb-8394-b5a978b884f7-SubOutput"], ["setNodeParam", "a72c6870-d4cd-11eb-8394-b5a978b884f7-SubOutput", "name", "RecenteredPrim"], ["setNodeParam", "a72c6870-d4cd-11eb-8394-b5a978b884f7-SubOutput", "type", ""], ["setNodeParam", "a72c6870-d4cd-11eb-8394-b5a978b884f7-SubOutput", "defl", ""], ["completeNode", "a72c6870-d4cd-11eb-8394-b5a978b884f7-SubOutput"], ["addNode", "SubCategory", "c465ac21-SubCategory"], ["setNodeParam", "c465ac21-SubCategory", "name", "primitive"], ["completeNode", "c465ac21-SubCategory"], ["addNode", "ParticlesWrangle", "d180cce8-ParticlesWrangle"], ["bindNodeInput", "d180cce8-ParticlesWrangle", "prim", "8de6abdc-d4cd-11eb-8394-b5a978b884f7-SubInput", "port"], ["bindNodeInput", "d180cce8-ParticlesWrangle", "zfxCode", "086a8fcf-MakeMultilineString", "value"], ["bindNodeInput", "d180cce8-ParticlesWrangle", "params", "9dcb38a6-MakeDict", "dict"], ["completeNode", "d180cce8-ParticlesWrangle"], ["addNode", "MakeMultilineString", "086a8fcf-MakeMultilineString"], ["setNodeParam", "086a8fcf-MakeMultilineString", "value", "@pos -= $center"], ["completeNode", "086a8fcf-MakeMultilineString"], ["addNode", "MakeDict", "9dcb38a6-MakeDict"], ["bindNodeInput", "9dcb38a6-MakeDict", "center", "93e6b536-d4cd-11eb-8394-b5a978b884f7-PrimitiveReduction", "result"], ["setNodeParam", "9dcb38a6-MakeDict", "_KEYS", "center\nobj1"], ["completeNode", "9dcb38a6-MakeDict"]]
 )ZSL";
     }
 };
@@ -169,7 +169,7 @@ ZENDEFNODE(ReCenterPrim, {
     {{"", "PrimIn", ""}},
     {{"", "MassCenter", ""}, {"", "RecenteredPrim", ""}},
     {},
-    {"Utils"},
+    {"primitive"},
 });
 struct GetRigidSamplePos : zeno::ISerialSubgraphNode {
     virtual const char *get_subgraph_json() override {
@@ -182,7 +182,7 @@ ZENDEFNODE(GetRigidSamplePos, {
     {{"", "RigidObject", ""}, {"", "localGeo", ""}},
     {{"", "wsPrim", ""}, {"", "MassCenter", ""}, {"", "Rotation", ""}},
     {},
-    {"subgraph"},
+    {"Rigid"},
 });
 
 static std::string ISerialSubgraphNode_info;
@@ -204,7 +204,7 @@ ZENDEFNODE(RasterizeRigid, {
     {{"", "RigidList", ""}, {"", "localPrim", ""}, {"", "localPos", ""}},
     {{"", "outSDF", ""}, {"", "outPrim", ""}, {"", "BCVel", ""}, {"", "end", ""}},
     {},
-    {"subgraph"},
+    {"Rigid"},
 });
 struct normalize : zeno::ISerialSubgraphNode {
     virtual const char *get_subgraph_json() override {
@@ -217,7 +217,7 @@ ZENDEFNODE(normalize, {
     {{"", "input1", ""}},
     {{"", "output1", ""}},
     {},
-    {"subgraph"},
+    {"deprecated"},
 });
 struct makeUV : zeno::ISerialSubgraphNode {
     virtual const char *get_subgraph_json() override {
@@ -230,7 +230,7 @@ ZENDEFNODE(makeUV, {
     {},
     {},
     {},
-    {"subgraph"},
+    {"deprecated"},
 });
 struct makeXYZ : zeno::ISerialSubgraphNode {
     virtual const char *get_subgraph_json() override {
@@ -243,7 +243,7 @@ ZENDEFNODE(makeXYZ, {
     {{"", "input1", ""}, {"", "input2", ""}, {"", "input3", ""}},
     {{"", "output1", ""}},
     {},
-    {"subgraph"},
+    {"deprecated"},
 });
 struct RigidGetForce : zeno::ISerialSubgraphNode {
     virtual const char *get_subgraph_json() override {
@@ -256,7 +256,7 @@ ZENDEFNODE(RigidGetForce, {
     {{"", "RigidList", ""}, {"", "Pressure", ""}, {"", "CellFWeight", ""}, {"", "LiquidSDF", ""}, {"", "localPos", ""}, {"", "dt", ""}},
     {{"", "samplePos", ""}},
     {},
-    {"subgraph"},
+    {"Rigid"},
 });
 struct GetAZLetters : zeno::ISerialSubgraphNode {
     virtual const char *get_subgraph_json() override {

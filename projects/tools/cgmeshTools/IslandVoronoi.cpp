@@ -13,6 +13,6 @@ ZENDEFNODE(IslandVoronoi, {
     {{"", "prim", ""}},
     {{"", "primList", ""}, {"", "neighList", ""}},
     {},
-    {"subgraph"},
+    {"deprecated"},
 });
 }
