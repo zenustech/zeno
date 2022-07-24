@@ -311,6 +311,14 @@ struct AttrVector {
         return attr<T>(name);
     }
 
+    // deprecated:
+    template <class T>
+    auto &add_attr(std::string const &name, T const &val) {
+        if (!attr_is<T>(name))
+            attrs[name] = std::vector<T>(size(), val);
+        return attr<T>(name);
+    }
+
     //template <class T>
     //auto &add_attr(std::string const &name, T const &value) {
         //if (!attr_is<T>(name))
