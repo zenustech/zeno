@@ -38,7 +38,7 @@ static int defRandomParticles = zeno::defNodeClass<RandomParticles>("RandomParti
     {"float", "Prange", "1 0"},
     {"float", "Vrange", "1 0"},
     }, /* category: */ {
-    "particles",
+    "deprecated",
     }});
 
 }

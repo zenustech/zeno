@@ -58,7 +58,7 @@ static int defReadParticles = zeno::defNodeClass<ReadParticles>("ReadParticles",
     }, /* params: */ {
     {"readpath", "path", ""},
     }, /* category: */ {
-    "particles",
+    "deprecated",
     }});
 
 
@@ -78,7 +78,7 @@ static int defImportParticles = zeno::defNodeClass<ImportParticles>("ImportParti
     "pars",
     }, /* params: */ {
     }, /* category: */ {
-    "particles",
+    "deprecated",
     }});
 
 }
