@@ -78,9 +78,9 @@ struct PrimFloatAttrToInt : INode {
             for (size_t i = 0; i < inArr.size(); i++) {
                 outArr[i] = std::rint(inArr[i] + 0.5f);
             }
+            prim->verts.attrs.erase(attrOut);
             prim->verts.add_attr<int>(attrOut) = std::move(outArr);
         } else {
-            prim->verts.attrs.erase(attrOut);
             auto &outArr = prim->verts.add_attr<int>(attrOut);
             for (size_t i = 0; i < inArr.size(); i++) {
                 outArr[i] = std::rint(inArr[i] + 0.5f);
@@ -91,6 +91,43 @@ struct PrimFloatAttrToInt : INode {
 };
 
 ZENDEFNODE(PrimFloatAttrToInt, {
+    {
+    {"PrimitiveObject", "prim"},
+    {"string", "attr", "tag"},
+    {"string", "attrOut", "tag"},
+    },
+    {
+    {"PrimitiveObject", "prim"},
+    },
+    {
+    },
+    {"primitive"},
+});
+
+struct PrimIntAttrToFloat : INode {
+    virtual void apply() override {
+        auto prim = get_input<PrimitiveObject>("prim");
+        auto attr = get_input2<std::string>("attr");
+        auto attrOut = get_input2<std::string>("attrOut");
+        auto &inArr = prim->verts.attr<int>(attr);
+        if (attrOut == attr) {
+            std::vector<float> outArr;
+            for (size_t i = 0; i < inArr.size(); i++) {
+                outArr[i] = float(inArr[i]);
+            }
+            prim->verts.attrs.erase(attrOut);
+            prim->verts.add_attr<float>(attrOut) = std::move(outArr);
+        } else {
+            auto &outArr = prim->verts.add_attr<float>(attrOut);
+            for (size_t i = 0; i < inArr.size(); i++) {
+                outArr[i] = float(inArr[i]);
+            }
+        }
+        set_output("prim", std::move(prim));
+    }
+};
+
+ZENDEFNODE(PrimIntAttrToFloat, {
     {
     {"PrimitiveObject", "prim"},
     {"string", "attr", "tag"},
