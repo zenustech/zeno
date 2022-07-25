@@ -4,14 +4,6 @@
 
 namespace zeno {
 
-template <class F>
-auto _defNodeClassHelper(F const &func, std::string const &name) {
-    return [=] (zeno::Descriptor const &desc) -> int {
-        getSession().defNodeClass(func, name, desc);
-        return 1;
-    };
-}
-
 // deprecated
 //template <class F>
 //auto _defOverloadNodeClassHelper(F const &func, std::string const &name, std::vector<std::string> const &types) {
@@ -22,8 +14,13 @@ auto _defNodeClassHelper(F const &func, std::string const &name) {
 //}
 
 #define ZENO_DEFNODE(Class) \
-    static int _def##Class = ::zeno::_defNodeClassHelper(std::make_unique<Class>, #Class)
+    static struct _Def##Class { \
+        _Def##Class(::zeno::Descriptor const &desc) { \
+            ::zeno::getSession().defNodeClass((std::unique_ptr<::zeno::INode>(*)())std::make_unique<Class>, #Class, desc); \
+        } \
+    } _def##Class
 
+// deprecated:
 template <class T>
 [[deprecated("use ZENO_DEFNODE(T)(...)")]]
 inline int defNodeClass(std::string const &id, Descriptor const &desc = {}) {
@@ -31,12 +28,9 @@ inline int defNodeClass(std::string const &id, Descriptor const &desc = {}) {
     return 1;
 }
 
-[[deprecated("use ZENO_DEFNODE(T)(...)")]]
-static int _deprecated_ZENDEFNODE_helper() { return 1; }
-
 // deprecated:
 #define ZENDEFNODE(Class, ...) \
-    ZENO_DEFNODE(Class)(__VA_ARGS__), _deprecatedDef##Class = ::zeno::_deprecated_ZENDEFNODE_helper();
+    ZENO_DEFNODE(Class)(__VA_ARGS__);
 
 // deprecated:
 #define ZENO_DEFOVERLOADNODE(Class, PostFix, ...) \
