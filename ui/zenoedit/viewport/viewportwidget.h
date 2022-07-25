@@ -23,6 +23,17 @@ public:
 };
 #endif
 
+struct VideoRecInfo
+{
+    QString record_path;
+    QVector2D res;
+    QPair<int, int> frameRange;
+    VideoRecInfo() {
+        res = { 0,0 };
+        frameRange = { -1, -1 };
+    }
+};
+
 class CameraControl : public QWidget
 {
     Q_OBJECT
@@ -57,6 +68,7 @@ private:
 
 class ViewportWidget : public QOpenGLWidget
 {
+    Q_OBJECT
     typedef QOpenGLWidget _base;
 public:
     ViewportWidget(QWidget* parent = nullptr);
@@ -65,9 +77,12 @@ public:
     void resizeGL(int nx, int ny) override;
     void paintGL() override;
     void rendering();
-    void setRecordPath(const QString& path);
+    void setRecordInfo(bool bRecording, const VideoRecInfo& info);
     void recordCurrFrame();
-    void checkRecord(std::string a_record_file, QVector2D a_record_res, int a_nsamples);
+    bool isRecording() const;
+
+signals:
+    void frameRecorded(int);
 
 protected:
     void mousePressEvent(QMouseEvent* event) override;
@@ -77,8 +92,8 @@ protected:
 
 private:
     std::shared_ptr<CameraControl> m_camera;
-    std::string record_path;
-    QVector2D record_res;
+    VideoRecInfo m_recordInfo;
+    bool m_bRecording;
 };
 
 class CameraKeyframeWidget;
@@ -106,14 +121,11 @@ signals:
     void frameUpdated(int new_frame);
 
 private:
-    void clearRecordVis();
-
     ViewportWidget* m_view;
     ZTimeline* m_timeline;
     ZenoMainWindow* m_mainWin;
     CameraKeyframeWidget* m_camera_keyframe;
     QTimer* m_pTimer;
-    bool m_bRecording;
     static const int m_updateFeq = 16;
     static const int m_sliderFeq = 16;
 };
