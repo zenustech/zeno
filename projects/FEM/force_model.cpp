@@ -1,3 +1,4 @@
+#include <zeno/utils/nowarn.h>
 #include "declares.h"
 
 namespace zeno {
