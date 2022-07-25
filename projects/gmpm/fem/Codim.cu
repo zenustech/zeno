@@ -127,10 +127,10 @@ struct CodimStepping : INode {
   inline static T avgNodeMass = 0;
   inline static T targetGRes = 1e-2;
 #define s_enableAdaptiveSetting 1
-#define s_enableMollification 1
 // static constexpr bool s_enableAdaptiveSetting = false;
 #define s_enableContact 1
-  // static constexpr bool s_enableContact = true;
+#define s_enableMollification 1
+#define s_enableFriction 0
   inline static bool s_enableGround = false;
 #define s_enableDCDCheck 0
 #define s_enableDebugCheck 0
@@ -144,6 +144,7 @@ struct CodimStepping : INode {
   inline static T kappaMin = 1e4;
   inline static T kappa0 = 1e4;
   inline static T kappa = kappa0;
+  inline static T fricMu = 0;
   inline static T &boundaryKappa = kappa;
   inline static T xi = 0; // 1e-2; // 2e-3;
   inline static T dHat = 0.0025;
@@ -762,7 +763,6 @@ struct CodimStepping : INode {
                                       bool record = false) {
       using namespace zs;
       constexpr auto space = execspace_e::cuda;
-      const auto dHat2 = dHat * dHat;
 
       record = false; //
       /// pt
@@ -1100,6 +1100,36 @@ struct CodimStepping : INode {
           }
         });
       });
+    }
+    void precomputeFrictions(zs::CudaExecutionPolicy &pol, T dHat, T xi = 0) {
+      using namespace zs;
+      constexpr auto space = execspace_e::cuda;
+      T activeGap2 = dHat * dHat + (T)2.0 * xi * dHat;
+
+      nFPP = nPP;
+      nFPE = nPE;
+      nFPT = nPT;
+      nFEE = nEE;
+
+      FPP = PP;
+      FPE = PE;
+      FPT = PT;
+      FEE = EE;
+
+      auto numFPP = nFPP.getVal();
+      pol(range(numFPP),
+          [vtemp = proxy<space>({}, vtemp), fricPP = proxy<space>({}, fricPP),
+           FPP = proxy<space>(FPP), xi2 = xi * xi, dHat = dHat, activeGap2,
+           kappa = kappa] __device__(int fppi) mutable {
+            auto fpp = FPP[fppi];
+            auto x0 = vtemp.pack<3>("xn", fpp[0]);
+            auto x1 = vtemp.pack<3>("xn", fpp[1]);
+            auto dist2 = dist2_pp(x0, x1);
+            auto bGrad = barrier_gradient(dist2 - xi2, activeGap2, kappa);
+            fricPP("fn", fppi) = -bGrad * 2 * dHat * zs::sqrt(dist2);
+
+            // fricPP.tuple<6>("basis", fppi) = ;
+          });
     }
     bool checkSelfIntersection(zs::CudaExecutionPolicy &pol) {
       using namespace zs;
@@ -3725,8 +3755,30 @@ struct CodimStepping : INode {
           EEM{estNumCps, zs::memsrc_e::um, 0},
           nEEM{zsprims[0]->getParticles<true>().get_allocator(), 1},
           tempEEM{{{"H", 144}}, estNumCps, zs::memsrc_e::um, 0},
+          // friction
+          FPP{estNumCps, zs::memsrc_e::um, 0},
+          nFPP{zsprims[0]->getParticles<true>().get_allocator(), 1},
+          fricPP{{{"basis", 6}, {"fn", 1}}, estNumCps, zs::memsrc_e::um, 0},
+          FPE{estNumCps, zs::memsrc_e::um, 0},
+          nFPE{zsprims[0]->getParticles<true>().get_allocator(), 1},
+          fricPE{{{"basis", 6}, {"fn", 1}, {"yita", 1}},
+                 estNumCps,
+                 zs::memsrc_e::um,
+                 0},
+          FPT{estNumCps, zs::memsrc_e::um, 0},
+          nFPT{zsprims[0]->getParticles<true>().get_allocator(), 1},
+          fricPT{{{"basis", 6}, {"fn", 1}, {"beta", 2}},
+                 estNumCps,
+                 zs::memsrc_e::um,
+                 0},
+          FEE{estNumCps, zs::memsrc_e::um, 0},
+          nFEE{zsprims[0]->getParticles<true>().get_allocator(), 1},
+          fricEE{{{"basis", 6}, {"fn", 1}, {"gamma", 2}},
+                 estNumCps,
+                 zs::memsrc_e::um,
+                 0},
           //
-          temp{5000000, zs::memsrc_e::um,
+          temp{estNumCps, zs::memsrc_e::um,
                zsprims[0]->getParticles<true>().devid()},
           csPT{estNumCps, zs::memsrc_e::um, 0}, csEE{estNumCps,
                                                      zs::memsrc_e::um, 0},
@@ -3832,7 +3884,7 @@ struct CodimStepping : INode {
     zs::Vector<pair4_t> EE;
     zs::Vector<int> nEE;
     dtiles_t tempEE;
-    //
+    // mollifier
     zs::Vector<pair4_t> PPM;
     zs::Vector<int> nPPM;
     dtiles_t tempPPM;
@@ -3842,6 +3894,19 @@ struct CodimStepping : INode {
     zs::Vector<pair4_t> EEM;
     zs::Vector<int> nEEM;
     dtiles_t tempEEM;
+    // friction
+    zs::Vector<pair_t> FPP;
+    zs::Vector<int> nFPP;
+    dtiles_t fricPP;
+    zs::Vector<pair3_t> FPE;
+    zs::Vector<int> nFPE;
+    dtiles_t fricPE;
+    zs::Vector<pair4_t> FPT;
+    zs::Vector<int> nFPT;
+    dtiles_t fricPT;
+    zs::Vector<pair4_t> FEE;
+    zs::Vector<int> nFEE;
+    dtiles_t fricEE;
     //
 
     zs::Vector<T> temp;
@@ -3887,6 +3952,7 @@ struct CodimStepping : INode {
     auto input_withGround = get_input2<int>("with_ground");
     auto input_dHat = get_input2<float>("dHat");
     auto input_kappa0 = get_input2<float>("kappa0");
+    auto input_fric_mu = get_input2<float>("fric_mu");
     auto input_aug_coeff = get_input2<float>("aug_coeff");
     auto input_pn_rel = get_input2<float>("pn_rel");
     auto input_cg_rel = get_input2<float>("cg_rel");
@@ -3899,6 +3965,7 @@ struct CodimStepping : INode {
 
     s_enableGround = input_withGround;
     kappa0 = input_kappa0;
+    fricMu = input_fric_mu;
     augLagCoeff = input_aug_coeff;
     pnRel = input_pn_rel;
     cgRel = input_cg_rel;
@@ -4041,9 +4108,14 @@ struct CodimStepping : INode {
                      newtonIter, cr);
         }
 
-        if constexpr (s_enableContact)
+        if constexpr (s_enableContact) {
           A.findCollisionConstraints(cudaPol, dHat, xi,
                                      s_enableAdaptiveSetting);
+          if constexpr (s_enableFriction)
+            if (fricMu > 0) {
+              A.precomputeFrictions(cudaPol, dHat, xi);
+            }
+        }
         // construct gradient, prepare hessian, prepare preconditioner
         cudaPol(zs::range(numDofs),
                 [vtemp = proxy<space>({}, vtemp)] __device__(int i) mutable {
@@ -4298,6 +4370,7 @@ ZENDEFNODE(CodimStepping, {{
                                {"float", "dt", "0.01"},
                                {"float", "dHat", "0.001"},
                                {"float", "kappa0", "1e3"},
+                               {"float", "fric_mu", "0.0"},
                                {"float", "aug_coeff", "1e3"},
                                {"float", "pn_rel", "0.01"},
                                {"float", "cg_rel", "0.0001"},
