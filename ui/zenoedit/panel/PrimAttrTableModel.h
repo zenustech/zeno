@@ -24,6 +24,14 @@ public:
 private:
     std::shared_ptr<zeno::PrimitiveObject> m_prim = nullptr;
     std::string sel_attr = "Vertex";
+
+    QVariant vertexData(const QModelIndex &index) const;
+    QVariant trisData(const QModelIndex &index) const;
+    QVariant pointsData(const QModelIndex &index) const;
+    QVariant linesData(const QModelIndex &index) const;
+    QVariant quadsData(const QModelIndex &index) const;
+    QVariant polysData(const QModelIndex &index) const;
+    QVariant loopsData(const QModelIndex &index) const;
 };
 
 
