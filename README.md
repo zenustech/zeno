@@ -91,9 +91,12 @@ To build ZENO from source, you need:
 
 - GCC 9+ or MSVC 19.28+, and CMake 3.16+ to build ZENO.
 - Qt 5.12+ to build the ZENO Qt editor.
+- (Optional) TBB for parallel support.
 - (Optional) OpenVDB for volume nodes.
 - (Optional) Eigen3 for solver nodes.
-- (Optional) CUDA 11 for GPU nodes.
+- (Optional) CGAL for geometry nodes.
+- (Optional) SFML for audio nodes.
+- (Optional) CUDA 11.6 for GPU nodes.
 
 > Hint: WSL is not recommended because of its limited GUI and OpenGL support.
 

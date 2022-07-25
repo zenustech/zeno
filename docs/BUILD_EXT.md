@@ -132,9 +132,9 @@ NVIDIA users may additionally specify `-DZENO_WITH_CUDA:BOOL=ON -DZENO_ENABLE_OP
 
 > This will also builds the OptiX real-time ray-tracing for the Zeno renderer (RTX20xx above required).
 
-Notice that **CUDA 11.6 requried, CUDA 11.7 will fail to compile for now**, thanks to @littlemine's modern-fancy-cuda skills :(
+Notice that **CUDA 11.6 (or above) is requried**, thanks to @littlemine's modern-fancy-cuda skills :(
 
-> But if you only use the OptiX part, Simply CUDA 11.0 or above is enough, thanks to @zhxx1987 not using modern-fancy-cuda features :)
+> But if you only use the OptiX part, Simply CUDA 11 is enough, thanks to @zhxx1987 not using modern-fancy-cuda features :)
 
 > NOTE: The CUDA extension is work in progress, may not work.
 > NOTE: ZenoFX must be enabled when CUDA is enabled, because CUDA depends on ZenoFX.
