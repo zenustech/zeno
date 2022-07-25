@@ -651,6 +651,7 @@ struct CodimStepping : INode {
     bool updateKappaRequired(zs::CudaExecutionPolicy &pol) {
       using namespace zs;
       constexpr auto space = execspace_e::cuda;
+      return false; // disable this mechanism
       Vector<int> requireUpdate{vtemp.get_allocator(), 1};
       requireUpdate.setVal(0);
       // contacts
@@ -758,6 +759,7 @@ struct CodimStepping : INode {
       constexpr auto space = execspace_e::cuda;
       const auto dHat2 = dHat * dHat;
 
+      record = false; //
       /// pt
       pol(Collapse{svInds.size()},
           [svInds = proxy<space>({}, svInds),
@@ -3604,28 +3606,16 @@ struct CodimStepping : INode {
         : coVerts{coVerts}, coEdges{coEdges}, coEles{coEles},
           PP{estNumCps, zs::memsrc_e::um, 0},
           nPP{zsprims[0]->getParticles<true>().get_allocator(), 1},
-          tempPP{{{"H", 36}, {"inds_pre", 2}, {"dist2_pre", 1}},
-                 estNumCps,
-                 zs::memsrc_e::um,
-                 0},
+          tempPP{{{"H", 36}}, estNumCps, zs::memsrc_e::um, 0},
           PE{estNumCps, zs::memsrc_e::um, 0},
           nPE{zsprims[0]->getParticles<true>().get_allocator(), 1},
-          tempPE{{{"H", 81}, {"inds_pre", 3}, {"dist2_pre", 1}},
-                 estNumCps,
-                 zs::memsrc_e::um,
-                 0},
+          tempPE{{{"H", 81}}, estNumCps, zs::memsrc_e::um, 0},
           PT{estNumCps, zs::memsrc_e::um, 0},
           nPT{zsprims[0]->getParticles<true>().get_allocator(), 1},
-          tempPT{{{"H", 144}, {"inds_pre", 4}, {"dist2_pre", 1}},
-                 estNumCps,
-                 zs::memsrc_e::um,
-                 0},
+          tempPT{{{"H", 144}}, estNumCps, zs::memsrc_e::um, 0},
           EE{estNumCps, zs::memsrc_e::um, 0},
           nEE{zsprims[0]->getParticles<true>().get_allocator(), 1},
-          tempEE{{{"H", 144}, {"inds_pre", 4}, {"dist2_pre", 1}},
-                 estNumCps,
-                 zs::memsrc_e::um,
-                 0},
+          tempEE{{{"H", 144}}, estNumCps, zs::memsrc_e::um, 0},
           temp{5000000, zs::memsrc_e::um,
                zsprims[0]->getParticles<true>().devid()},
           csPT{estNumCps, zs::memsrc_e::um, 0}, csEE{estNumCps,
@@ -3868,34 +3858,39 @@ struct CodimStepping : INode {
       dHat = input_dHat * std::sqrt(boxDiagSize2);
       /// grad pn residual tolerance
       targetGRes = pnRel * std::sqrt(boxDiagSize2);
-      /// kappaMin
-      A.initKappa(cudaPol);
-      /// adaptive kappa
-      { // tet-oriented
-        T H_b = computeHb((T)1e-16 * boxDiagSize2, dHat * dHat);
-        kappa = 1e11 * avgNodeMass / (4e-16 * boxDiagSize2 * H_b);
-        kappaMax = 100 * kappa;
-        if (kappa < kappaMin)
-          kappa = kappaMin;
-        if (kappa > kappaMax)
-          kappa = kappaMax;
-      }
-      { // surf oriented (use framedt here)
-        auto kappaSurf = dt * dt * A.meanSurfaceArea / 3 * dHat * A.largestMu();
-        fmt::print("kappaSurf: {}, auto kappa: {}\n", kappaSurf, kappa);
-        if (kappaSurf > kappa && kappaSurf < kappaMax) {
-          kappa = kappaSurf;
+      if (input_kappa0 == 0) {
+        /// kappaMin
+        A.initKappa(cudaPol);
+        /// adaptive kappa
+        { // tet-oriented
+          T H_b = computeHb((T)1e-16 * boxDiagSize2, dHat * dHat);
+          kappa = 1e11 * avgNodeMass / (4e-16 * boxDiagSize2 * H_b);
+          kappaMax = 100 * kappa;
+          if (kappa < kappaMin)
+            kappa = kappaMin;
+          if (kappa > kappaMax)
+            kappa = kappaMax;
         }
+        { // surf oriented (use framedt here)
+          auto kappaSurf =
+              dt * dt * A.meanSurfaceArea / 3 * dHat * A.largestMu();
+          fmt::print("kappaSurf: {}, auto kappa: {}\n", kappaSurf, kappa);
+          if (kappaSurf > kappa && kappaSurf < kappaMax) {
+            kappa = kappaSurf;
+          }
+        }
+        // boundaryKappa = kappa;
+        fmt::print("average node mass: {}, auto kappa: {} ({} - {})\n",
+                   avgNodeMass, kappa, kappaMin, kappaMax);
+      } else {
+        fmt::print("manual kappa: {}\n", kappa);
       }
-      // boundaryKappa = kappa;
-      fmt::print("average node mass: {}, auto kappa: {} ({} - {})\n",
-                 avgNodeMass, kappa, kappaMin, kappaMax);
       // getchar();
     }
 #endif
     // extForce here means gravity acceleration (not actually force)
-    targetGRes = std::min(targetGRes, extForce.norm() * dt * dt * (T)0.5 /
-                                          nSubsteps / nSubsteps);
+    // targetGRes = std::min(targetGRes, extForce.norm() * dt * dt * (T)0.5 /
+    //                                      nSubsteps / nSubsteps);
     fmt::print("auto dHat: {}, targetGRes: {}\n", dHat, targetGRes);
 
     for (int subi = 0; subi != nSubsteps; ++subi) {
