@@ -38,11 +38,12 @@ ZENO_API Session::Session()
 
 ZENO_API Session::~Session() = default;
 
-ZENO_API void Session::defNodeClass(std::unique_ptr<INode>(*ctor)(), std::string const &id, Descriptor const &desc) {
+ZENO_API void Session::defNodeClass(void *ctor, std::string const &id, Descriptor const &desc) {
     if (nodeClasses.find(id) != nodeClasses.end()) {
         log_error("node class redefined: `{}`\n", id);
     }
-    auto cls = std::make_unique<ImplNodeClass<std::unique_ptr<INode>(*)()>>(ctor, desc);
+    auto cls = std::make_unique<ImplNodeClass<std::unique_ptr<INode>(*)()>>(
+        reinterpret_cast<std::unique_ptr<INode>(*)()>(ctor), desc);
     nodeClasses.emplace(id, std::move(cls));
 }
 

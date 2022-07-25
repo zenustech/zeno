@@ -9,6 +9,16 @@ struct ForwardPass : INode {
 };
 
 ZENO_DEFNODE(ForwardPass)({
+    {
+        {"list", "objects"},
+        {"list", "lights"},
+        {"list", "materials"},
+    },
+    {
+        {"image", "image"},
+    },
+    {},
+    {"pass"},
 });
 
 }
