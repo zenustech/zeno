@@ -127,6 +127,8 @@ struct UpdateCurveControlPoint : zeno::INode {
             data.cpoints[i].left_handler = get_input2<vec2f>("left_handler");
         if (has_input("right_handler"))
             data.cpoints[i].right_handler = get_input2<vec2f>("right_handler");
+
+        set_output("curve", std::move(curve));
     }
 };
 
