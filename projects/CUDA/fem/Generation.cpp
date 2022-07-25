@@ -302,56 +302,58 @@ struct ToBoundaryPrimitive : INode {
         eles("inds", i, ei) = reinterpret_bits<float>(tri[i]);
     });
 
-    /// surface edges
-    zs::HashTable<int, 2, int> edgeTable{0};
-    constexpr auto space = zs::execspace_e::openmp;
+    /// extract surface edges
+    if constexpr (true) {
+      constexpr auto space = zs::execspace_e::openmp;
+      zs::HashTable<int, 2, int> surfEdgeTable{0};
+      surfEdgeTable.resize(ompExec, 3 * tris.size());
+      surfEdgeTable.reset(ompExec, true);
 
-    edgeTable.resize(ompExec, numEles);
-    edgeTable.reset(ompExec, true);
-    ompExec(range(numEles), [table = proxy<space>(edgeTable),
-                             &tris](int ei) mutable {
-      using table_t = RM_CVREF_T(table);
+      auto seTable = proxy<space>(surfEdgeTable);
+      using table_t = RM_CVREF_T(seTable);
+      using vec3i = zs::vec<int, 3>;
       using vec2i = zs::vec<int, 2>;
-      auto record = [&table, ei](const vec2i &edgeInds) mutable {
-        if (auto sno = table.insert(edgeInds); sno != table_t::sentinel_v)
-          ;
-        else
-          printf("ridiculous, more than one surf tri share the same edge!");
-      };
-      auto inds = tris[ei];
-      record(vec2i{inds[0], inds[1]});
-      record(vec2i{inds[1], inds[2]});
-      record(vec2i{inds[2], inds[0]});
-    });
-    //
-    Vector<int> edgeCnt{1, memsrc_e::host};
-    edgeCnt.setVal(0);
-
-    // Vector<zs::vec<int, 2>> surfEdges{(std::size_t)edgeTable.size()};
-    auto &surfEdges = (*zsbou)[ZenoParticles::s_surfEdgeTag];
-    surfEdges = typename ZenoParticles::particles_t(
-        {{"inds", 2}}, edgeTable.size(), zs::memsrc_e::host);
-
-    ompExec(range(edgeTable.size()), [table = proxy<space>(edgeTable),
-                                      edgeCnt = edgeCnt.data(),
-                                      surfEdges = proxy<space>({}, surfEdges)](
-                                         int ei) mutable {
-      using vec2i = zs::vec<int, 2>;
-      auto edgeInds = table._activeKeys[ei];
-      using table_t = RM_CVREF_T(table);
-      if (table.query(vec2i{edgeInds[1], edgeInds[0]}) == table_t::sentinel_v) {
-        auto no = atomic_add(exec_omp, edgeCnt, 1);
-        surfEdges.tuple<2>("inds", no) =
-            edgeInds.template reinterpret_bits<float>();
-      }
-    });
-    auto secnt = edgeCnt.getVal();
-    surfEdges.resize(secnt);
-    fmt::print("{} surface edges\n", secnt);
+      ompExec(range(tris.size()), [&](int ei) {
+        auto tri = tris[ei];
+        seTable.insert(vec2i{tri[0], tri[1]});
+        seTable.insert(vec2i{tri[1], tri[2]});
+        seTable.insert(vec2i{tri[2], tri[0]});
+      });
+      Vector<int> surfEdgeCnt{1, memsrc_e::host};
+      surfEdgeCnt.setVal(0);
+      auto &surfEdges = (*zsbou)[ZenoParticles::s_surfEdgeTag];
+      surfEdges = typename ZenoParticles::particles_t(
+          {{"inds", 2}}, tris.size() * 3, zs::memsrc_e::host);
+      ompExec(range(seTable.size()),
+              [&, edges = proxy<space>({}, surfEdges),
+               cnt = proxy<space>(surfEdgeCnt)](int i) mutable {
+                auto edgeInds = seTable._activeKeys[i];
+                if (auto no = seTable.query(vec2i{edgeInds[1], edgeInds[0]});
+                    no == table_t::sentinel_v ||
+                    (no != table_t::sentinel_v && edgeInds[0] < edgeInds[1])) {
+                  auto id = atomic_add(exec_omp, &cnt[0], 1);
+                  edges("inds", 0, id) = reinterpret_bits<float>(edgeInds[0]);
+                  edges("inds", 1, id) = reinterpret_bits<float>(edgeInds[1]);
+                }
+              });
+      auto seCnt = surfEdgeCnt.getVal();
+      surfEdges.resize(seCnt);
+      surfEdges = surfEdges.clone({zs::memsrc_e::device, 0});
+      // surface vert indices
+      auto &surfVerts = (*zsbou)[ZenoParticles::s_surfVertTag];
+      surfVerts = typename ZenoParticles::particles_t({{"inds", 1}}, pos.size(),
+                                                      zs::memsrc_e::host);
+      ompExec(
+          zs::range(pos.size()),
+          [&, surfVerts = proxy<space>({}, surfVerts)](int pointNo) mutable {
+            surfVerts("inds", pointNo) = zs::reinterpret_bits<float>(pointNo);
+          });
+      // surface info
+      surfVerts = surfVerts.clone({zs::memsrc_e::device, 0});
+    }
 
     eles = eles.clone({memsrc_e::device, 0});
     pars = pars.clone({memsrc_e::device, 0});
-    surfEdges = surfEdges.clone({memsrc_e::device, 0});
 
     set_output("ZSParticles", zsbou);
   }
@@ -601,9 +603,9 @@ struct ToZSTriMesh : INode {
   using tiles_t = typename ZenoParticles::particles_t;
   using vec3 = zs::vec<T, 3>;
 
-  constexpr T area(T a,T b,T c) {
-      T s = (a + b + c)/2;
-      return zs::sqrt(s*(s-a)*(s-b)*(s-c));
+  constexpr T area(T a, T b, T c) {
+    T s = (a + b + c) / 2;
+    return zs::sqrt(s * (s - a) * (s - b) * (s - c));
   }
 
   void apply() override {
@@ -625,11 +627,10 @@ struct ToZSTriMesh : INode {
     zstris->category = ZenoParticles::surface;
     zstris->sprayedOffset = pos.size();
 
-
     bool include_customed_properties = get_param<int>("add_customed_attr");
 
     std::vector<zs::PropertyTag> tags{{"x", 3}};
-    std::vector<zs::PropertyTag> eleTags{{"inds", 3},{"area",1}};
+    std::vector<zs::PropertyTag> eleTags{{"inds", 3}, {"area", 1}};
 
     std::vector<zs::PropertyTag> auxVertAttribs{};
     std::vector<zs::PropertyTag> auxElmAttribs{};
@@ -685,51 +686,51 @@ struct ToZSTriMesh : INode {
       }
     }
 
-
     tags.insert(std::end(tags), std::begin(auxVertAttribs),
                 std::end(auxVertAttribs));
-    eleTags.insert(std::end(eleTags),std::begin(auxElmAttribs),
-                std::end(auxElmAttribs));
+    eleTags.insert(std::end(eleTags), std::begin(auxElmAttribs),
+                   std::end(auxElmAttribs));
 
     constexpr auto space = zs::execspace_e::openmp;
     zstris->particles =
         std::make_shared<tiles_t>(tags, pos.size(), zs::memsrc_e::host);
     auto &pars = zstris->getParticles();
-    ompExec(Collapse{pars.size()},
-            [pars = proxy<space>({}, pars), &pos,prim,&auxVertAttribs](int vi) mutable {
-              pars.tuple<3>("x", vi) = vec3{pos[vi][0], pos[vi][1], pos[vi][2]};
+    ompExec(Collapse{pars.size()}, [pars = proxy<space>({}, pars), &pos, prim,
+                                    &auxVertAttribs](int vi) mutable {
+      pars.tuple<3>("x", vi) = vec3{pos[vi][0], pos[vi][1], pos[vi][2]};
 
-              for (auto &prop : auxVertAttribs) {
-                if (prop.numChannels == 3)
-                  pars.tuple<3>(prop.name, vi) =
-                      prim->attr<vec3f>(std::string{prop.name})[vi];
-                else // prop.numChannles == 1
-                  pars(prop.name, vi) =
-                      prim->attr<float>(std::string{prop.name})[vi];
-              }
-
-            });
+      for (auto &prop : auxVertAttribs) {
+        if (prop.numChannels == 3)
+          pars.tuple<3>(prop.name, vi) =
+              prim->attr<vec3f>(std::string{prop.name})[vi];
+        else // prop.numChannles == 1
+          pars(prop.name, vi) = prim->attr<float>(std::string{prop.name})[vi];
+      }
+    });
 
     zstris->elements = typename ZenoParticles::particles_t(eleTags, tris.size(),
                                                            zs::memsrc_e::host);
     auto &eles = zstris->getQuadraturePoints();
-    ompExec(Collapse{tris.size()},
-            [this,eles = proxy<space>({}, eles),pars = proxy<space>({},pars), &tris,&auxElmAttribs](int ei) mutable {
-              T l[3] = {};
-              for (size_t i = 0; i < 3; ++i){
-                eles("inds", i, ei) = zs::reinterpret_bits<float>(tris[ei][i]);
-                l[i] = (pars.pack<3>("x",tris[ei][i]) - pars.pack<3>("x",tris[ei][(i+1)%3])).length();
-              }
-              eles("area",ei) = area(l[0],l[1],l[2]);
+    ompExec(Collapse{tris.size()}, [this, eles = proxy<space>({}, eles),
+                                    pars = proxy<space>({}, pars), &tris,
+                                    &auxElmAttribs](int ei) mutable {
+      T l[3] = {};
+      for (size_t i = 0; i < 3; ++i) {
+        eles("inds", i, ei) = zs::reinterpret_bits<float>(tris[ei][i]);
+        l[i] = (pars.pack<3>("x", tris[ei][i]) -
+                pars.pack<3>("x", tris[ei][(i + 1) % 3]))
+                   .length();
+      }
+      eles("area", ei) = area(l[0], l[1], l[2]);
 
-              for (auto &prop : auxElmAttribs) {
-                if (prop.numChannels == 3)
-                  eles.tuple<3>(prop.name, ei) =
-                      tris.attr<vec3f>(std::string{prop.name})[ei];
-                else
-                  eles(prop.name, ei) = tris.attr<float>(std::string{prop.name})[ei];
-              }
-            });
+      for (auto &prop : auxElmAttribs) {
+        if (prop.numChannels == 3)
+          eles.tuple<3>(prop.name, ei) =
+              tris.attr<vec3f>(std::string{prop.name})[ei];
+        else
+          eles(prop.name, ei) = tris.attr<float>(std::string{prop.name})[ei];
+      }
+    });
 
     pars = pars.clone({zs::memsrc_e::device, 0});
     eles = eles.clone({zs::memsrc_e::device, 0});
@@ -756,7 +757,8 @@ struct ToZSSurfaceMesh : INode {
     const auto &pos = prim->attr<zeno::vec3f>("pos");
     const auto &points = prim->points;
     const auto &lines = prim->lines;
-    const auto &tris = prim->tris;
+    const std::vector<vec3i> &tris = prim->tris;
+    // const auto &tris = prim->tris;
 
     auto ompExec = zs::omp_exec();
     const auto numVerts = pos.size();
@@ -836,7 +838,15 @@ struct ToZSSurfaceMesh : INode {
               B(0, 1) = ds[0].dot(ds[1]) / B(0, 0);
               B(1, 1) = ds[0].cross(ds[1]).norm() / B(0, 0);
 #endif
+              auto IB = inverse(B);
               eles.template tuple<4>("IB", ei) = inverse(B);
+              if (ei < 100) {
+                fmt::print("{}-th ele <{}, {}, {}> IB [{}, {}; {}, {}], B [{}, {}; {}, {}], ds <{}, {}, {}>, <{}, {}, {}>, xs <{}, {}, {}>, <{}, {}, {}>, <{}, {}, {}>\n", ei, tri[0], tri[1], tri[2], (float)IB(0, 0), (float)IB(0, 1),
+                                           (float)IB(1, 0), (float)IB(1, 1), B(0, 0), B(0, 1),
+                                           B(1, 0), B(1, 1), ds[0][0], ds[0][1], ds[0][2], ds[1][0], ds[1][1], ds[1][2], 
+                                           xs[0][0], xs[0][1], xs[0][2], xs[1][0], xs[1][1], xs[1][2], xs[2][0], xs[2][1], xs[2][2]
+                                           );
+              }
 
               auto vol = ds[0].cross(ds[1]).norm() / 2 * zsmodel->dx;
               eles("vol", ei) = vol;
@@ -892,6 +902,9 @@ struct ToZSSurfaceMesh : INode {
     eles = eles.clone({zs::memsrc_e::device, 0});
     surfEdges = surfEdges.clone({zs::memsrc_e::device, 0});
     surfVerts = surfVerts.clone({zs::memsrc_e::device, 0});
+
+    fmt::print("tozssurfacemesh: -> [{}]\n", (void *)zstris.get());
+    getchar();
 
     set_output("ZSParticles", std::move(zstris));
   }

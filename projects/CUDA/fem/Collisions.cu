@@ -107,28 +107,27 @@ ZENDEFNODE(MaintainSpatialAccelerator,
            });
 
 struct VisualizeBvh : INode {
-  void apply() override {
-    auto zstets = get_input<ZenoParticles>("ZSParticles");
-    auto thickness = get_input2<float>("thickness");
-    auto level = get_input2<int>("level");
-    auto target = get_param<std::string>("target");
-
+  template <typename Tiles>
+  std::shared_ptr<PrimitiveObject>
+  convert(std::shared_ptr<ZenoParticles> zstets, const Tiles &verts) {
     using namespace zs;
     using bv_t = typename ZenoParticles::lbvh_t::Box;
     constexpr auto space = execspace_e::cuda;
 
+    auto thickness = get_input2<float>("thickness");
+    auto level = get_input2<int>("level");
+    auto target = get_param<std::string>("target");
+
     auto cudaPol = cuda_exec().device(0);
-
     auto prim = std::make_shared<PrimitiveObject>();
-
-    const auto &verts = zstets->getParticles();
-
     Vector<bv_t> extractedBvs{verts.get_allocator(), 1};
     Vector<int> bvCnt{verts.get_allocator(), 1};
     bvCnt.setVal(0);
 
     if (target == "surface") {
-      const auto &surfaces = (*zstets)[ZenoParticles::s_surfTriTag];
+      const auto &surfaces = zstets->category == ZenoParticles::surface
+                                 ? zstets->getQuadraturePoints()
+                                 : (*zstets)[ZenoParticles::s_surfTriTag];
       auto bvs = retrieve_bounding_volumes(cudaPol, verts, surfaces, wrapv<3>{},
                                            thickness, "x");
       if (!zstets->hasBvh(ZenoParticles::s_surfTriTag)) {
@@ -138,7 +137,7 @@ struct VisualizeBvh : INode {
         auto &surfBvh = zstets->bvh(ZenoParticles::s_surfTriTag);
         surfBvh.refit(cudaPol, bvs);
       }
-      auto &surfBvh = zstets->bvh(ZenoParticles::s_surfTriTag);
+      const auto &surfBvh = zstets->bvh(ZenoParticles::s_surfTriTag);
 
       extractedBvs.resize(surfaces.size());
       cudaPol(range(surfaces.size()),
@@ -316,8 +315,20 @@ struct VisualizeBvh : INode {
                                       (void *)dLines.data()},
                      sizeof(zeno::vec2i) * lines.size());
     }
+    return prim;
+  }
+  void apply() override {
+    auto zstets = get_input<ZenoParticles>("ZSParticles");
 
-    set_output("prim", prim);
+    if (zstets->hasImage(ZenoParticles::s_particleTag)) {
+      const auto &verts = zstets->getParticles<true>();
+      auto prim = convert(zstets, verts);
+      set_output("prim", prim);
+    } else {
+      const auto &verts = zstets->getParticles();
+      auto prim = convert(zstets, verts);
+      set_output("prim", prim);
+    }
   }
 };
 
