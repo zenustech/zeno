@@ -1578,8 +1578,8 @@ struct ToBoundaryParticles : INode {
             surfVerts("inds", pointNo) = zs::reinterpret_bits<float>(pointNo);
           });
       // surface info
-      surfEdges = surfEdges.clone({zs::memsrc_e::um, 0});
-      surfVerts = surfVerts.clone({zs::memsrc_e::um, 0});
+      surfEdges = surfEdges.clone({zs::memsrc_e::device, 0});
+      surfVerts = surfVerts.clone({zs::memsrc_e::device, 0});
     }
 
     eles = eles.clone({memsrc_e::device, 0});
@@ -1664,18 +1664,18 @@ struct ToZSLevelSet : INode {
       // pass in FloatGrid::Ptr
       zs::OpenVDBStruct gridPtr = get_input<VDBFloatGrid>("VDBGrid")->m_grid;
       ls->getLevelSet() = basic_ls_t{zs::convert_floatgrid_to_sparse_levelset(
-          gridPtr, zs::MemoryProperty{zs::memsrc_e::um, 0})};
+          gridPtr, zs::MemoryProperty{zs::memsrc_e::device, 0})};
     } else if (has_input<VDBFloat3Grid>("VDBGrid")) {
       // pass in FloatGrid::Ptr
       zs::OpenVDBStruct gridPtr = get_input<VDBFloat3Grid>("VDBGrid")->m_grid;
       ls->getLevelSet() =
           basic_ls_t{zs::convert_vec3fgrid_to_sparse_staggered_grid(
-              gridPtr, zs::MemoryProperty{zs::memsrc_e::um, 0})};
+              gridPtr, zs::MemoryProperty{zs::memsrc_e::device, 0})};
     } else {
       auto path = get_param<std::string>("path");
       auto gridPtr = zs::load_vec3fgrid_from_vdb_file(path);
       ls->getLevelSet() = basic_ls_t{zs::convert_vec3fgrid_to_sparse_levelset(
-          gridPtr, zs::MemoryProperty{zs::memsrc_e::um, 0})};
+          gridPtr, zs::MemoryProperty{zs::memsrc_e::device, 0})};
     }
 
     fmt::print(fg(fmt::color::cyan), "done executing ToZSLevelSet\n");

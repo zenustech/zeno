@@ -129,8 +129,8 @@ struct CodimStepping : INode {
 #define s_enableAdaptiveSetting 1
 // static constexpr bool s_enableAdaptiveSetting = false;
 #define s_enableContact 1
-// static constexpr bool s_enableContact = true;
-#define s_enableGround 1
+  // static constexpr bool s_enableContact = true;
+  inline static bool s_enableGround = false;
 #define s_enableDCDCheck 0
 #define s_enableDebugCheck 0
   // static constexpr bool s_enableDCDCheck = false;
@@ -1938,26 +1938,26 @@ struct CodimStepping : INode {
           Es.push_back(reduce(pol, es) * kappa);
         }
 #endif
-#if s_enableGround
-        // boundary
-        es.resize(count_warps(coOffset));
-        es.reset(0);
-        pol(range(coOffset),
-            [vtemp = proxy<space>({}, vtemp), es = proxy<space>(es),
-             gn = s_groundNormal, dHat2 = dHat * dHat,
-             n = coOffset] ZS_LAMBDA(int vi) mutable {
-              auto x = vtemp.pack<3>("xn", vi);
-              auto dist = gn.dot(x);
-              auto dist2 = dist * dist;
-              T E;
-              if (dist2 < dHat2)
-                E = -zs::sqr(dist2 - dHat2) * zs::log(dist2 / dHat2);
-              else
-                E = 0;
-              reduce_to(vi, n, E, es[vi / 32]);
-            });
-        Es.push_back(reduce(pol, es) * kappa);
-#endif
+        if (s_enableGround) {
+          // boundary
+          es.resize(count_warps(coOffset));
+          es.reset(0);
+          pol(range(coOffset),
+              [vtemp = proxy<space>({}, vtemp), es = proxy<space>(es),
+               gn = s_groundNormal, dHat2 = dHat * dHat,
+               n = coOffset] ZS_LAMBDA(int vi) mutable {
+                auto x = vtemp.pack<3>("xn", vi);
+                auto dist = gn.dot(x);
+                auto dist2 = dist * dist;
+                T E;
+                if (dist2 < dHat2)
+                  E = -zs::sqr(dist2 - dHat2) * zs::log(dist2 / dHat2);
+                else
+                  E = 0;
+                reduce_to(vi, n, E, es[vi / 32]);
+              });
+          Es.push_back(reduce(pol, es) * kappa);
+        }
       }
       // constraints
       if (includeAugLagEnergy) {
@@ -2225,25 +2225,25 @@ struct CodimStepping : INode {
           }
         }
 #endif
-#if s_enableGround
-        // boundary
-        pol(range(coOffset),
-            [vtemp = proxy<space>({}, vtemp), res = proxy<space>(res),
-             gn = s_groundNormal, dHat2 = dHat * dHat,
-             kappa = kappa] ZS_LAMBDA(int vi) mutable {
-              auto x = vtemp.pack<3>("xn", vi);
-              auto dist = gn.dot(x);
-              auto dist2 = dist * dist;
-              if (dist2 < dHat2) {
-                auto temp = -(dist2 - dHat2) * (dist2 - dHat2) *
-                            zs::log(dist2 / dHat2) * kappa;
-                atomic_add(exec_cuda, &res[0], temp);
-              }
-            });
-        if constexpr (s_enableDebugCheck) {
-          checkE("ground_E");
+        if (s_enableGround) {
+          // boundary
+          pol(range(coOffset),
+              [vtemp = proxy<space>({}, vtemp), res = proxy<space>(res),
+               gn = s_groundNormal, dHat2 = dHat * dHat,
+               kappa = kappa] ZS_LAMBDA(int vi) mutable {
+                auto x = vtemp.pack<3>("xn", vi);
+                auto dist = gn.dot(x);
+                auto dist2 = dist * dist;
+                if (dist2 < dHat2) {
+                  auto temp = -(dist2 - dHat2) * (dist2 - dHat2) *
+                              zs::log(dist2 / dHat2) * kappa;
+                  atomic_add(exec_cuda, &res[0], temp);
+                }
+              });
+          if constexpr (s_enableDebugCheck) {
+            checkE("ground_E");
+          }
         }
-#endif
       }
       // constraints
       if (includeAugLagEnergy) {
@@ -3188,18 +3188,18 @@ struct CodimStepping : INode {
 #endif
         }
 #endif
-#if s_enableGround
-        // boundary
-        pol(range(coOffset), [execTag, vtemp = proxy<space>({}, vtemp),
-                              tempPB = proxy<space>({}, tempPB), dxTag,
-                              bTag] ZS_LAMBDA(int vi) mutable {
-          auto dx = vtemp.template pack<3>(dxTag, vi);
-          auto pbHess = tempPB.template pack<3, 3>("H", vi);
-          dx = pbHess * dx;
-          for (int d = 0; d != 3; ++d)
-            atomic_add(execTag, &vtemp(bTag, d, vi), dx(d));
-        });
-#endif
+        if (s_enableGround) {
+          // boundary
+          pol(range(coOffset), [execTag, vtemp = proxy<space>({}, vtemp),
+                                tempPB = proxy<space>({}, tempPB), dxTag,
+                                bTag] ZS_LAMBDA(int vi) mutable {
+            auto dx = vtemp.template pack<3>(dxTag, vi);
+            auto pbHess = tempPB.template pack<3, 3>("H", vi);
+            dx = pbHess * dx;
+            for (int d = 0; d != 3; ++d)
+              atomic_add(execTag, &vtemp(bTag, d, vi), dx(d));
+          });
+        }
       } // end contacts
 
       // constraint hessian
@@ -3353,12 +3353,18 @@ struct CodimStepping : INode {
           break;
 #endif
 
+        if (alpha < 1e-3) {
+          fmt::print(fg(fmt::color::light_yellow),
+                     "linesearch early exit with alpha {}\n", alpha);
+          break;
+        }
+
         alpha /= 2;
         if (++lsIter > 30) {
           auto cr = constraintResidual(cudaPol);
-          fmt::print(
-              "too small stepsize at iteration [{}]! alpha: {}, cons res: {}\n",
-              lsIter, alpha, cr);
+          fmt::print("too small stepsize at iteration [{}]! alpha: {}, cons "
+                     "res: {}\n",
+                     lsIter, alpha, cr);
 #if 1
           // now pause at all small steps
           // if (!useGD && !CCDfiltered)
@@ -3767,6 +3773,7 @@ struct CodimStepping : INode {
 
     /// solver parameters
     auto input_est_num_cps = get_input2<int>("est_num_cps");
+    auto input_withGround = get_input2<int>("with_ground");
     auto input_dHat = get_input2<float>("dHat");
     auto input_kappa0 = get_input2<float>("kappa0");
     auto input_aug_coeff = get_input2<float>("aug_coeff");
@@ -3779,6 +3786,7 @@ struct CodimStepping : INode {
 
     int nSubsteps = get_input2<int>("num_substeps");
 
+    s_enableGround = input_withGround;
     kappa0 = input_kappa0;
     augLagCoeff = input_aug_coeff;
     pnRel = input_pn_rel;
@@ -3874,20 +3882,22 @@ struct CodimStepping : INode {
       }
       { // surf oriented (use framedt here)
         auto kappaSurf = dt * dt * A.meanSurfaceArea / 3 * dHat * A.largestMu();
-        fmt::print("kappaSurf: {}, kappa: {}\n", kappaSurf, kappa);
+        fmt::print("kappaSurf: {}, auto kappa: {}\n", kappaSurf, kappa);
         if (kappaSurf > kappa && kappaSurf < kappaMax) {
           kappa = kappaSurf;
         }
       }
       // boundaryKappa = kappa;
-      fmt::print("auto dHat: {}, targetGRes: {}\n", dHat, targetGRes);
-      fmt::print("average node mass: {}, kappa: {} ({} - {})\n", avgNodeMass,
-                 kappa, kappaMin, kappaMax);
+      fmt::print("average node mass: {}, auto kappa: {} ({} - {})\n",
+                 avgNodeMass, kappa, kappaMin, kappaMax);
       // getchar();
     }
 #endif
+    // extForce here means gravity acceleration (not actually force)
+    targetGRes = std::min(targetGRes, extForce.norm() * dt * dt * (T)0.5 /
+                                          nSubsteps / nSubsteps);
+    fmt::print("auto dHat: {}, targetGRes: {}\n", dHat, targetGRes);
 
-    // nSubsteps = 1;
     for (int subi = 0; subi != nSubsteps; ++subi) {
       fmt::print("processing substep {}\n", subi);
 
@@ -3928,9 +3938,8 @@ struct CodimStepping : INode {
         match([&](auto &elasticModel) {
           A.computeElasticGradientAndHessian(cudaPol, elasticModel);
         })(models.getElasticModel());
-#if s_enableGround
-        A.computeBoundaryBarrierGradientAndHessian(cudaPol);
-#endif
+        if (s_enableGround)
+          A.computeBoundaryBarrierGradientAndHessian(cudaPol);
         if constexpr (s_enableContact)
           A.computeBarrierGradientAndHessian(cudaPol);
 
@@ -4039,10 +4048,10 @@ struct CodimStepping : INode {
           }
 #endif
         }
-#if s_enableGround
-        A.groundIntersectionFreeStepsize(cudaPol, alpha);
-        fmt::print("\tstepsize after ground: {}\n", alpha);
-#endif
+        if (s_enableGround) {
+          A.groundIntersectionFreeStepsize(cudaPol, alpha);
+          fmt::print("\tstepsize after ground: {}\n", alpha);
+        }
 #if s_enableContact
         {
           // A.intersectionFreeStepsize(cudaPol, xi, alpha);
@@ -4168,6 +4177,7 @@ ZENDEFNODE(CodimStepping, {{
                                "ZSParticles",
                                "ZSBoundaryPrimitives",
                                {"int", "est_num_cps", "0"},
+                               {"int", "with_ground", "0"},
                                {"float", "dt", "0.01"},
                                {"float", "dHat", "0.001"},
                                {"float", "kappa0", "1e3"},
