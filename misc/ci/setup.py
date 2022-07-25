@@ -10,7 +10,7 @@ if sys.platform == 'linux':
     ])
     subprocess.check_call([
         'sudo', 'apt-get', 'install', '-y',
-        'autoconf-archive', 'libcgal-dev', 'libsfml-dev',
+        'autoconf-archive', 'libcgal-dev',
     ])
 elif sys.platform == 'win32':
     print('windows detected, nothing to do')

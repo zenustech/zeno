@@ -42,15 +42,6 @@
         "hdf5"
       ]
     },
-    "audio": {
-      "description": "Enable Audio nodes, for .wav format support",
-      "dependencies": [
-        {
-            "name": "sfml",
-            "platform": "!linux"
-        }
-      ]
-    },
     "cuda": {
       "description": "Enable CUDA nodes, for MPM simulation algorithm",
       "dependencies": [
@@ -62,6 +53,6 @@
     }
   },
   "default-features": [
-      "openvdb", "cgmesh", "alembic", "audio"
+      "openvdb", "cgmesh", "alembic"
   ]
 }

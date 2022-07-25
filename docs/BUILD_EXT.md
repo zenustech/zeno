@@ -56,8 +56,7 @@ pacman -S tbb blosc boost zlib eigen cgal lapack openblas hdf5
 
 ```bash
 sudo apt-get install -y libblosc-dev libboost-iostreams-dev zlib1g-dev libtbb-dev
-sudo apt-get install -y libeigen3-dev libcgal-dev liblapack-dev libopenblas-dev
-sudo apt-get install -y libhdf5-dev libsfml-dev
+sudo apt-get install -y libeigen3-dev libcgal-dev liblapack-dev libopenblas-dev libhdf5-dev
 ```
 
 > It's highly recommended to use **Ubuntu 20.04 or above** for getting latest version of libraries.

@@ -32,13 +32,14 @@ set(CMAKE_MODULE_PATH "${Aquila_SOURCE_DIR}/cmake")
 
 # SFML - if available
 #set(SFML_STATIC true)
-find_package(SFML COMPONENTS System Audio)
+#find_package(SFML COMPONENTS System Audio)
+set(SFML_FOUND FALSE)
 if(SFML_FOUND)
     message("SFML was found, wrappers and examples using SFML will be built.")
     include_directories(${SFML_INCLUDE_DIR})
     list(APPEND Aquila_LIBRARIES_TO_LINK_WITH ${SFML_LIBRARY})
 else()
-    message(WARNING "SFML was not found, wrappers and examples using SFML will not be built.")
+    message(STATUS "SFML was not found, wrappers and examples using SFML will not be built.")
 endif()
 
 
@@ -204,7 +205,8 @@ endif()
 #
 ################################################################################
 
-find_package(Doxygen)
+#find_package(Doxygen)
+set(DOXYGEN_FOUND FALSE)
 if(DOXYGEN_FOUND)
     configure_file(
         "${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in"
@@ -216,7 +218,7 @@ if(DOXYGEN_FOUND)
         "${CMAKE_CURRENT_BINARY_DIR}/Doxyfile"
     )
 else()
-    message(WARNING "Doxygen not found, documentation will not be built")
+    message(STATUS "Doxygen not found, documentation will not be built")
 endif()
 
 

@@ -95,7 +95,6 @@ To build ZENO from source, you need:
 - (Optional) OpenVDB for volume nodes.
 - (Optional) Eigen3 for solver nodes.
 - (Optional) CGAL for geometry nodes.
-- (Optional) SFML for audio nodes.
 - (Optional) CUDA 11.6 for GPU nodes.
 
 > Hint: WSL is not recommended because of its limited GUI and OpenGL support.
