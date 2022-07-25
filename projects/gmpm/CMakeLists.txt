@@ -24,16 +24,18 @@ endif()
 #add_library(zeno_zstest SHARED test.cpp)
 #target_link_libraries(zeno_zstest PRIVATE zensim)
 
-#add_library(zeno_cutest SHARED test.cu)
-#target_link_libraries(zeno_cutest PRIVATE zshelper)
+#[=[
+add_library(zeno_cutest SHARED test.cu)
+target_link_libraries(zeno_cutest PRIVATE zshelper)
 
-#set_target_properties(zeno_cutest
-#      PROPERTIES  #CUDA_EXTENSIONS ON
-#                  CUDA_SEPARABLE_COMPILATION ON
-#                  LINKER_LANGUAGE CUDA
-#                  POSITION_INDEPENDENT_CODE ON
-#                  CUDA_ARCHITECTURES OFF
-#    )
+set_target_properties(zeno_cutest
+      PROPERTIES  #CUDA_EXTENSIONS ON
+                  CUDA_SEPARABLE_COMPILATION ON
+                  LINKER_LANGUAGE CUDA
+                  POSITION_INDEPENDENT_CODE ON
+                  CUDA_ARCHITECTURES OFF
+    )
+#]=]
 
 #[=[
 add_library(zeno_inst SHARED)

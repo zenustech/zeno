@@ -1,4 +1,3 @@
-
 namespace zeno {
 
 void CodimStepping::IPCSystem::computeBarrierGradientAndHessian(
@@ -266,6 +265,292 @@ void CodimStepping::IPCSystem::computeBarrierGradientAndHessian(
             for (int j = 0; j != 3; ++j) {
               atomic_add(exec_cuda, &vtemp("P", i * 3 + j, ee[vi]),
                          eeHess(vi * 3 + i, vi * 3 + j));
+            }
+        }
+      });
+
+  using Vec12View = zs::vec_view<T, zs::integer_seq<int, 12>>;
+  using Vec9View = zs::vec_view<T, zs::integer_seq<int, 9>>;
+  using Vec6View = zs::vec_view<T, zs::integer_seq<int, 6>>;
+  auto get_mollifier = [] __device__(const auto &ea0Rest, const auto &ea1Rest,
+                                     const auto &eb0Rest, const auto &eb1Rest,
+                                     const auto &ea0, const auto &ea1,
+                                     const auto &eb0, const auto &eb1) {
+    T epsX = mollifier_threshold_ee(ea0Rest, ea1Rest, eb0Rest, eb1Rest);
+    return zs::make_tuple(mollifier_ee(ea0, ea1, eb0, eb1, epsX),
+                          mollifier_grad_ee(ea0, ea1, eb0, eb1, epsX),
+                          mollifier_hess_ee(ea0, ea1, eb0, eb1, epsX));
+  };
+  auto numEEM = nEEM.getVal();
+  pol(range(numEEM),
+      [vtemp = proxy<space>({}, vtemp), tempEEM = proxy<space>({}, tempEEM),
+       EEM = proxy<space>(EEM), gTag, xi2 = xi * xi, dHat = dHat, activeGap2,
+       kappa = kappa, projectDBC = projectDBC, includeHessian,
+       get_mollifier] __device__(int eemi) mutable {
+        auto eem = EEM[eemi]; // <x, y, z, w>
+        auto ea0Rest = vtemp.pack<3>("x0", eem[0]);
+        auto ea1Rest = vtemp.pack<3>("x0", eem[1]);
+        auto eb0Rest = vtemp.pack<3>("x0", eem[2]);
+        auto eb1Rest = vtemp.pack<3>("x0", eem[3]);
+        auto ea0 = vtemp.pack<3>("xn", eem[0]);
+        auto ea1 = vtemp.pack<3>("xn", eem[1]);
+        auto eb0 = vtemp.pack<3>("xn", eem[2]);
+        auto eb1 = vtemp.pack<3>("xn", eem[3]);
+#if 1
+        auto eeGrad = dist_grad_ee(ea0, ea1, eb0, eb1);
+        auto dist2 = dist2_ee(ea0, ea1, eb0, eb1);
+        if (dist2 < xi2)
+          printf("dist already smaller than xi!\n");
+        auto barrierDist2 = barrier(dist2 - xi2, activeGap2, kappa);
+        auto barrierDistGrad = barrier_gradient(dist2 - xi2, activeGap2, kappa);
+        auto barrierDistHess = barrier_hessian(dist2 - xi2, activeGap2, kappa);
+        auto [mollifierEE, mollifierGradEE, mollifierHessEE] = get_mollifier(
+            ea0Rest, ea1Rest, eb0Rest, eb1Rest, ea0, ea1, eb0, eb1);
+
+        auto scaledMollifierGrad = barrierDist2 * mollifierGradEE;
+        auto scaledEEGrad = mollifierEE * barrierDistGrad * eeGrad;
+        for (int d = 0; d != 3; ++d) {
+          atomic_add(exec_cuda, &vtemp(gTag, d, eem[0]),
+                     -(scaledMollifierGrad(0, d) + scaledEEGrad(0, d)));
+          atomic_add(exec_cuda, &vtemp(gTag, d, eem[1]),
+                     -(scaledMollifierGrad(1, d) + scaledEEGrad(1, d)));
+          atomic_add(exec_cuda, &vtemp(gTag, d, eem[2]),
+                     -(scaledMollifierGrad(2, d) + scaledEEGrad(2, d)));
+          atomic_add(exec_cuda, &vtemp(gTag, d, eem[3]),
+                     -(scaledMollifierGrad(3, d) + scaledEEGrad(3, d)));
+        }
+
+        if (!includeHessian)
+          return;
+        // hessian
+        auto eeGrad_ = Vec12View{eeGrad.data()};
+        auto eemHess =
+            barrierDist2 * mollifierHessEE +
+            barrierDistGrad *
+                (dyadic_prod(Vec12View{mollifierGradEE.data()}, eeGrad_) +
+                 dyadic_prod(eeGrad_, Vec12View{mollifierGradEE.data()}));
+
+        auto eeHess = dist_hess_ee(ea0, ea1, eb0, eb1);
+        eeHess = (barrierDistHess * dyadic_prod(eeGrad_, eeGrad_) +
+                  barrierDistGrad * eeHess);
+        eemHess += mollifierEE * eeHess;
+        // make pd
+        make_pd(eemHess);
+#else
+#endif
+        // rotate and project
+        mat3 BCbasis[4];
+        int BCorder[4];
+        int BCfixed[4];
+        for (int i = 0; i != 4; ++i) {
+          BCbasis[i] = vtemp.pack<3, 3>("BCbasis", eem[i]);
+          BCorder[i] = vtemp("BCorder", eem[i]);
+          BCfixed[i] = vtemp("BCfixed", eem[i]);
+        }
+        rotate_hessian(eemHess, BCbasis, BCorder, BCfixed, projectDBC);
+        // ee[0], ee[1], ee[2], ee[3]
+        tempEEM.tuple<144>("H", eemi) = eemHess;
+        /// construct P
+        for (int vi = 0; vi != 4; ++vi) {
+          for (int i = 0; i != 3; ++i)
+            for (int j = 0; j != 3; ++j) {
+              atomic_add(exec_cuda, &vtemp("P", i * 3 + j, eem[vi]),
+                         eemHess(vi * 3 + i, vi * 3 + j));
+            }
+        }
+      });
+  auto numPPM = nPPM.getVal();
+  pol(range(numPPM),
+      [vtemp = proxy<space>({}, vtemp), tempPPM = proxy<space>({}, tempPPM),
+       PPM = proxy<space>(PPM), gTag, xi2 = xi * xi, dHat = dHat, activeGap2,
+       kappa = kappa, projectDBC = projectDBC, includeHessian,
+       get_mollifier] __device__(int ppmi) mutable {
+        auto ppm = PPM[ppmi]; // <x, z, y, w>, <0, 2, 1, 3>
+        auto ea0 = vtemp.pack<3>("xn", ppm[0]);
+        auto ea1 = vtemp.pack<3>("xn", ppm[1]);
+        auto eb0 = vtemp.pack<3>("xn", ppm[2]);
+        auto eb1 = vtemp.pack<3>("xn", ppm[3]);
+#if 1
+        auto ppGrad = dist_grad_pp(ea0, eb0);
+        auto dist2 = dist2_pp(ea0, eb0);
+        if (dist2 < xi2) {
+          printf("dist already smaller than xi!\n");
+        }
+        auto barrierDist2 = barrier(dist2 - xi2, activeGap2, kappa);
+        auto barrierDistGrad = barrier_gradient(dist2 - xi2, activeGap2, kappa);
+        auto barrierDistHess = barrier_hessian(dist2 - xi2, activeGap2, kappa);
+        auto ea0Rest = vtemp.pack<3>("x0", ppm[0]);
+        auto ea1Rest = vtemp.pack<3>("x0", ppm[1]);
+        auto eb0Rest = vtemp.pack<3>("x0", ppm[2]);
+        auto eb1Rest = vtemp.pack<3>("x0", ppm[3]);
+        auto [mollifierEE, mollifierGradEE, mollifierHessEE] = get_mollifier(
+            ea0Rest, ea1Rest, eb0Rest, eb1Rest, ea0, ea1, eb0, eb1);
+
+        auto scaledMollifierGrad = barrierDist2 * mollifierGradEE;
+        auto scaledPPGrad = mollifierEE * barrierDistGrad * ppGrad;
+        for (int d = 0; d != 3; ++d) {
+          atomic_add(exec_cuda, &vtemp(gTag, d, ppm[0]),
+                     -(scaledMollifierGrad(0, d) + scaledPPGrad(0, d)));
+          atomic_add(exec_cuda, &vtemp(gTag, d, ppm[1]),
+                     -(scaledMollifierGrad(1, d)));
+          atomic_add(exec_cuda, &vtemp(gTag, d, ppm[2]),
+                     -(scaledMollifierGrad(2, d) + scaledPPGrad(1, d)));
+          atomic_add(exec_cuda, &vtemp(gTag, d, ppm[3]),
+                     -(scaledMollifierGrad(3, d)));
+        }
+
+        if (!includeHessian)
+          return;
+
+        // hessian
+        using GradT = zs::vec<T, 12>;
+        auto extendedPPGrad = GradT::zeros();
+        for (int d = 0; d != 3; ++d) {
+          extendedPPGrad(d) = barrierDistGrad * ppGrad(0, d);
+          extendedPPGrad(6 + d) = barrierDistGrad * ppGrad(1, d);
+        }
+        auto ppmHess =
+            barrierDist2 * mollifierHessEE +
+            dyadic_prod(Vec12View{mollifierGradEE.data()}, extendedPPGrad) +
+            dyadic_prod(extendedPPGrad, Vec12View{mollifierGradEE.data()});
+
+        auto ppHess = dist_hess_pp(ea0, eb0);
+        auto ppGrad_ = Vec6View{ppGrad.data()};
+
+        ppHess = (barrierDistHess * dyadic_prod(ppGrad_, ppGrad_) +
+                  barrierDistGrad * ppHess);
+        for (int i = 0; i != 3; ++i)
+          for (int j = 0; j != 3; ++j) {
+            ppmHess(0 + i, 0 + j) += mollifierEE * ppHess(0 + i, 0 + j);
+            ppmHess(0 + i, 6 + j) += mollifierEE * ppHess(0 + i, 3 + j);
+            ppmHess(6 + i, 0 + j) += mollifierEE * ppHess(3 + i, 0 + j);
+            ppmHess(6 + i, 6 + j) += mollifierEE * ppHess(3 + i, 3 + j);
+          }
+        // make pd
+        make_pd(ppmHess);
+#else
+#endif
+        // rotate and project
+        mat3 BCbasis[4];
+        int BCorder[4];
+        int BCfixed[4];
+        for (int i = 0; i != 4; ++i) {
+          BCbasis[i] = vtemp.pack<3, 3>("BCbasis", ppm[i]);
+          BCorder[i] = vtemp("BCorder", ppm[i]);
+          BCfixed[i] = vtemp("BCfixed", ppm[i]);
+        }
+        rotate_hessian(ppmHess, BCbasis, BCorder, BCfixed, projectDBC);
+        // ee[0], ee[1], ee[2], ee[3]
+        tempPPM.tuple<144>("H", ppmi) = ppmHess;
+        /// construct P
+        for (int vi = 0; vi != 4; ++vi) {
+          for (int i = 0; i != 3; ++i)
+            for (int j = 0; j != 3; ++j) {
+              atomic_add(exec_cuda, &vtemp("P", i * 3 + j, ppm[vi]),
+                         ppmHess(vi * 3 + i, vi * 3 + j));
+            }
+        }
+      });
+  auto numPEM = nPEM.getVal();
+  pol(range(numPEM),
+      [vtemp = proxy<space>({}, vtemp), tempPEM = proxy<space>({}, tempPEM),
+       PEM = proxy<space>(PEM), gTag, xi2 = xi * xi, dHat = dHat, activeGap2,
+       kappa = kappa, projectDBC = projectDBC, includeHessian,
+       get_mollifier] __device__(int pemi) mutable {
+        auto pem = PEM[pemi]; // <x, w, y, z>, <0, 2, 3, 1>
+        auto ea0Rest = vtemp.pack<3>("x0", pem[0]);
+        auto ea1Rest = vtemp.pack<3>("x0", pem[1]);
+        auto eb0Rest = vtemp.pack<3>("x0", pem[2]);
+        auto eb1Rest = vtemp.pack<3>("x0", pem[3]);
+        auto ea0 = vtemp.pack<3>("xn", pem[0]);
+        auto ea1 = vtemp.pack<3>("xn", pem[1]);
+        auto eb0 = vtemp.pack<3>("xn", pem[2]);
+        auto eb1 = vtemp.pack<3>("xn", pem[3]);
+#if 1
+        auto peGrad = dist_grad_pe(ea0, eb0, eb1);
+        auto dist2 = dist2_pe(ea0, eb0, eb1);
+        if (dist2 < xi2) {
+          printf("dist already smaller than xi!\n");
+        }
+        auto barrierDist2 = barrier(dist2 - xi2, activeGap2, kappa);
+        auto barrierDistGrad = barrier_gradient(dist2 - xi2, activeGap2, kappa);
+        auto barrierDistHess = barrier_hessian(dist2 - xi2, activeGap2, kappa);
+        auto [mollifierEE, mollifierGradEE, mollifierHessEE] = get_mollifier(
+            ea0Rest, ea1Rest, eb0Rest, eb1Rest, ea0, ea1, eb0, eb1);
+
+        auto scaledMollifierGrad = barrierDist2 * mollifierGradEE;
+        auto scaledPEGrad = mollifierEE * barrierDistGrad * peGrad;
+
+        for (int d = 0; d != 3; ++d) {
+          atomic_add(exec_cuda, &vtemp(gTag, d, pem[0]),
+                     -(scaledMollifierGrad(0, d) + scaledPEGrad(0, d)));
+          atomic_add(exec_cuda, &vtemp(gTag, d, pem[1]),
+                     -(scaledMollifierGrad(1, d)));
+          atomic_add(exec_cuda, &vtemp(gTag, d, pem[2]),
+                     -(scaledMollifierGrad(2, d) + scaledPEGrad(1, d)));
+          atomic_add(exec_cuda, &vtemp(gTag, d, pem[3]),
+                     -(scaledMollifierGrad(3, d) + scaledPEGrad(2, d)));
+        }
+
+        if (!includeHessian)
+          return;
+
+        // hessian
+        using GradT = zs::vec<T, 12>;
+        auto extendedPEGrad = GradT::zeros();
+        for (int d = 0; d != 3; ++d) {
+          extendedPEGrad(d) = barrierDistGrad * peGrad(0, d);
+          extendedPEGrad(6 + d) = barrierDistGrad * peGrad(1, d);
+          extendedPEGrad(9 + d) = barrierDistGrad * peGrad(2, d);
+        }
+        auto pemHess =
+            barrierDist2 * mollifierHessEE +
+            dyadic_prod(Vec12View{mollifierGradEE.data()}, extendedPEGrad) +
+            dyadic_prod(extendedPEGrad, Vec12View{mollifierGradEE.data()});
+
+        auto peHess = dist_hess_pe(ea0, eb0, eb1);
+        auto peGrad_ = Vec9View{peGrad.data()};
+
+        peHess = (barrierDistHess * dyadic_prod(peGrad_, peGrad_) +
+                  barrierDistGrad * peHess);
+        for (int i = 0; i != 3; ++i)
+          for (int j = 0; j != 3; ++j) {
+            pemHess(0 + i, 0 + j) += mollifierEE * peHess(0 + i, 0 + j);
+            //
+            pemHess(0 + i, 6 + j) += mollifierEE * peHess(0 + i, 3 + j);
+            pemHess(0 + i, 9 + j) += mollifierEE * peHess(0 + i, 6 + j);
+            //
+            pemHess(6 + i, 0 + j) += mollifierEE * peHess(3 + i, 0 + j);
+            pemHess(9 + i, 0 + j) += mollifierEE * peHess(6 + i, 0 + j);
+            //
+            pemHess(6 + i, 6 + j) += mollifierEE * peHess(3 + i, 3 + j);
+            pemHess(6 + i, 9 + j) += mollifierEE * peHess(3 + i, 6 + j);
+            pemHess(9 + i, 6 + j) += mollifierEE * peHess(6 + i, 3 + j);
+            pemHess(9 + i, 9 + j) += mollifierEE * peHess(6 + i, 6 + j);
+          }
+
+        // make pd
+        make_pd(pemHess);
+#else
+#endif
+        // rotate and project
+        mat3 BCbasis[4];
+        int BCorder[4];
+        int BCfixed[4];
+        for (int i = 0; i != 4; ++i) {
+          BCbasis[i] = vtemp.pack<3, 3>("BCbasis", pem[i]);
+          BCorder[i] = vtemp("BCorder", pem[i]);
+          BCfixed[i] = vtemp("BCfixed", pem[i]);
+        }
+        rotate_hessian(pemHess, BCbasis, BCorder, BCfixed, projectDBC);
+        // ee[0], ee[1], ee[2], ee[3]
+        tempPEM.tuple<144>("H", pemi) = pemHess;
+        /// construct P
+        for (int vi = 0; vi != 4; ++vi) {
+          for (int i = 0; i != 3; ++i)
+            for (int j = 0; j != 3; ++j) {
+              atomic_add(exec_cuda, &vtemp("P", i * 3 + j, pem[vi]),
+                         pemHess(vi * 3 + i, vi * 3 + j));
             }
         }
       });

@@ -17,7 +17,9 @@ namespace zeno {
 
 __global__ void test(int *a) {
   int id = blockIdx.x * blockDim.x + threadIdx.x;
-  printf("[%d]: %d\n", id, a[id]);
+  constexpr auto pi = 3.1415926535897932384626433832795028841972L;
+  printf("[%d]: %d, pi: %f, sqrt_pi: %f\n", id, a[id], (float)zs::g_pi, (float)zs::sqrt(pi));
+
 }
 
 struct ZSCULinkTest : INode {

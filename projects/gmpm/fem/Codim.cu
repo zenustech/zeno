@@ -127,6 +127,7 @@ struct CodimStepping : INode {
   inline static T avgNodeMass = 0;
   inline static T targetGRes = 1e-2;
 #define s_enableAdaptiveSetting 1
+#define s_enableMollification 1
 // static constexpr bool s_enableAdaptiveSetting = false;
 #define s_enableContact 1
   // static constexpr bool s_enableContact = true;
@@ -485,7 +486,8 @@ struct CodimStepping : INode {
     ///
     auto getCnts() const {
       return zs::make_tuple(nPP.getVal(), nPE.getVal(), nPT.getVal(),
-                            nEE.getVal(), ncsPT.getVal(), ncsEE.getVal());
+                            nEE.getVal(), nPPM.getVal(), nPEM.getVal(),
+                            nEEM.getVal(), ncsPT.getVal(), ncsEE.getVal());
     }
     void computeConstraints(zs::CudaExecutionPolicy &pol,
                             const zs::SmallString &tag) {
@@ -722,6 +724,9 @@ struct CodimStepping : INode {
       nPE.setVal(0);
       nPT.setVal(0);
       nEE.setVal(0);
+      nPPM.setVal(0);
+      nPEM.setVal(0);
+      nEEM.setVal(0);
 
       ncsPT.setVal(0);
       ncsEE.setVal(0);
@@ -800,12 +805,6 @@ struct CodimStepping : INode {
                   PP[no] = pair_t{vi, tri[0]};
                   csPT[atomic_add(exec_cuda, &ncsPT[0], 1)] =
                       pair4_t{vi, tri[0], tri[1], tri[2]};
-
-                  if (record) {
-                    vtemp.template pack<2>("inds_pre", no) =
-                        dpair_t{vi, tri[0]}.reinterpret_bits<T>();
-                    vtemp("dist2_pre", no) = d2;
-                  }
                 }
                 break;
               }
@@ -815,12 +814,6 @@ struct CodimStepping : INode {
                   PP[no] = pair_t{vi, tri[1]};
                   csPT[atomic_add(exec_cuda, &ncsPT[0], 1)] =
                       pair4_t{vi, tri[0], tri[1], tri[2]};
-
-                  if (record) {
-                    vtemp.template pack<2>("inds_pre", no) =
-                        dpair_t{vi, tri[1]}.reinterpret_bits<T>();
-                    vtemp("dist2_pre", no) = d2;
-                  }
                 }
                 break;
               }
@@ -830,12 +823,6 @@ struct CodimStepping : INode {
                   PP[no] = pair_t{vi, tri[2]};
                   csPT[atomic_add(exec_cuda, &ncsPT[0], 1)] =
                       pair4_t{vi, tri[0], tri[1], tri[2]};
-
-                  if (record) {
-                    vtemp.template pack<2>("inds_pre", no) =
-                        dpair_t{vi, tri[2]}.reinterpret_bits<T>();
-                    vtemp("dist2_pre", no) = d2;
-                  }
                 }
                 break;
               }
@@ -845,11 +832,6 @@ struct CodimStepping : INode {
                   PE[no] = pair3_t{vi, tri[0], tri[1]};
                   csPT[atomic_add(exec_cuda, &ncsPT[0], 1)] =
                       pair4_t{vi, tri[0], tri[1], tri[2]};
-                  if (record) {
-                    vtemp.template pack<3>("inds_pre", no) =
-                        dpair3_t{vi, tri[0], tri[1]}.reinterpret_bits<T>();
-                    vtemp("dist2_pre", no) = d2;
-                  }
                 }
                 break;
               }
@@ -859,11 +841,6 @@ struct CodimStepping : INode {
                   PE[no] = pair3_t{vi, tri[1], tri[2]};
                   csPT[atomic_add(exec_cuda, &ncsPT[0], 1)] =
                       pair4_t{vi, tri[0], tri[1], tri[2]};
-                  if (record) {
-                    vtemp.template pack<3>("inds_pre", no) =
-                        dpair3_t{vi, tri[1], tri[2]}.reinterpret_bits<T>();
-                    vtemp("dist2_pre", no) = d2;
-                  }
                 }
                 break;
               }
@@ -873,11 +850,6 @@ struct CodimStepping : INode {
                   PE[no] = pair3_t{vi, tri[2], tri[0]};
                   csPT[atomic_add(exec_cuda, &ncsPT[0], 1)] =
                       pair4_t{vi, tri[0], tri[1], tri[2]};
-                  if (record) {
-                    vtemp.template pack<3>("inds_pre", no) =
-                        dpair3_t{vi, tri[2], tri[0]}.reinterpret_bits<T>();
-                    vtemp("dist2_pre", no) = d2;
-                  }
                 }
                 break;
               }
@@ -887,12 +859,6 @@ struct CodimStepping : INode {
                   PT[no] = pair4_t{vi, tri[0], tri[1], tri[2]};
                   csPT[atomic_add(exec_cuda, &ncsPT[0], 1)] =
                       pair4_t{vi, tri[0], tri[1], tri[2]};
-                  if (record) {
-                    vtemp.template pack<4>("inds_pre", no) =
-                        dpair4_t{vi, tri[0], tri[1], tri[2]}
-                            .reinterpret_bits<T>();
-                    vtemp("dist2_pre", no) = d2;
-                  }
                 }
                 break;
               }
@@ -914,6 +880,16 @@ struct CodimStepping : INode {
                                     nPE = proxy<space>(nPE),
                                     EE = proxy<space>(EE),
                                     nEE = proxy<space>(nEE),
+#if s_enableMollification
+                                    // mollifier
+                                    PPM = proxy<space>(PPM),
+                                    nPPM = proxy<space>(nPPM),
+                                    PEM = proxy<space>(PEM),
+                                    nPEM = proxy<space>(nPEM),
+                                    EEM = proxy<space>(EEM),
+                                    nEEM = proxy<space>(nEEM),
+#endif
+                                    //
                                     csEE = proxy<space>(csEE),
                                     ncsEE = proxy<space>(ncsEE), dHat, xi,
                                     thickness = xi + dHat,
@@ -949,152 +925,172 @@ struct CodimStepping : INode {
           auto rv2 = vtemp.template pack<3>("x0", ejInds[0]);
           auto rv3 = vtemp.template pack<3>("x0", ejInds[1]);
 
+#if s_enableMollification
+          // IPC (24)
+          T c = cn2_ee(v0, v1, v2, v3);
+          T epsX = mollifier_threshold_ee(rv0, rv1, rv2, rv3);
+          bool mollify = c < epsX;
+#endif
+
           switch (ee_distance_type(v0, v1, v2, v3)) {
           case 0: {
             if (auto d2 = dist2_pp(v0, v2); d2 < dHat2) {
+              csEE[atomic_add(exec_cuda, &ncsEE[0], 1)] =
+                  pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]};
+#if s_enableMollification
+              if (mollify) {
+                auto no = atomic_add(exec_cuda, &nPPM[0], 1);
+                PPM[no] = pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]};
+                break;
+              }
+#endif
               {
                 auto no = atomic_add(exec_cuda, &nPP[0], 1);
                 PP[no] = pair_t{eiInds[0], ejInds[0]};
-                csEE[atomic_add(exec_cuda, &ncsEE[0], 1)] =
-                    pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]};
-                if (record) {
-                  vtemp.template pack<2>("inds_pre", no) =
-                      dpair_t{eiInds[0], ejInds[0]}.reinterpret_bits<T>();
-                  vtemp("dist2_pre", no) = d2;
-                }
               }
             }
             break;
           }
           case 1: {
             if (auto d2 = dist2_pp(v0, v3); d2 < dHat2) {
+              csEE[atomic_add(exec_cuda, &ncsEE[0], 1)] =
+                  pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]};
+#if s_enableMollification
+              if (mollify) {
+                auto no = atomic_add(exec_cuda, &nPPM[0], 1);
+                PPM[no] = pair4_t{eiInds[0], eiInds[1], ejInds[1], ejInds[0]};
+                break;
+              }
+#endif
               {
                 auto no = atomic_add(exec_cuda, &nPP[0], 1);
                 PP[no] = pair_t{eiInds[0], ejInds[1]};
-                csEE[atomic_add(exec_cuda, &ncsEE[0], 1)] =
-                    pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]};
-                if (record) {
-                  vtemp.template pack<2>("inds_pre", no) =
-                      dpair_t{eiInds[0], ejInds[1]}.reinterpret_bits<T>();
-                  vtemp("dist2_pre", no) = d2;
-                }
               }
             }
             break;
           }
           case 2: {
             if (auto d2 = dist2_pe(v0, v2, v3); d2 < dHat2) {
+              csEE[atomic_add(exec_cuda, &ncsEE[0], 1)] =
+                  pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]};
+#if s_enableMollification
+              if (mollify) {
+                auto no = atomic_add(exec_cuda, &nPEM[0], 1);
+                PEM[no] = pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]};
+                break;
+              }
+#endif
               {
                 auto no = atomic_add(exec_cuda, &nPE[0], 1);
                 PE[no] = pair3_t{eiInds[0], ejInds[0], ejInds[1]};
-                csEE[atomic_add(exec_cuda, &ncsEE[0], 1)] =
-                    pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]};
-                if (record) {
-                  vtemp.template pack<3>("inds_pre", no) =
-                      dpair3_t{eiInds[0], ejInds[0], ejInds[1]}
-                          .reinterpret_bits<T>();
-                  vtemp("dist2_pre", no) = d2;
-                }
               }
             }
             break;
           }
           case 3: {
             if (auto d2 = dist2_pp(v1, v2); d2 < dHat2) {
+              csEE[atomic_add(exec_cuda, &ncsEE[0], 1)] =
+                  pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]};
+#if s_enableMollification
+              if (mollify) {
+                auto no = atomic_add(exec_cuda, &nPPM[0], 1);
+                PPM[no] = pair4_t{eiInds[1], eiInds[0], ejInds[0], ejInds[1]};
+                break;
+              }
+#endif
               {
                 auto no = atomic_add(exec_cuda, &nPP[0], 1);
                 PP[no] = pair_t{eiInds[1], ejInds[0]};
-                csEE[atomic_add(exec_cuda, &ncsEE[0], 1)] =
-                    pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]};
-                if (record) {
-                  vtemp.template pack<2>("inds_pre", no) =
-                      dpair_t{eiInds[1], ejInds[0]}.reinterpret_bits<T>();
-                  vtemp("dist2_pre", no) = d2;
-                }
               }
             }
             break;
           }
           case 4: {
             if (auto d2 = dist2_pp(v1, v3); d2 < dHat2) {
+              csEE[atomic_add(exec_cuda, &ncsEE[0], 1)] =
+                  pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]};
+#if s_enableMollification
+              if (mollify) {
+                auto no = atomic_add(exec_cuda, &nPPM[0], 1);
+                PPM[no] = pair4_t{eiInds[1], eiInds[0], ejInds[1], ejInds[0]};
+                break;
+              }
+#endif
               {
                 auto no = atomic_add(exec_cuda, &nPP[0], 1);
                 PP[no] = pair_t{eiInds[1], ejInds[1]};
-                csEE[atomic_add(exec_cuda, &ncsEE[0], 1)] =
-                    pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]};
-                if (record) {
-                  vtemp.template pack<2>("inds_pre", no) =
-                      dpair_t{eiInds[1], ejInds[1]}.reinterpret_bits<T>();
-                  vtemp("dist2_pre", no) = d2;
-                }
               }
             }
             break;
           }
           case 5: {
             if (auto d2 = dist2_pe(v1, v2, v3); d2 < dHat2) {
+              csEE[atomic_add(exec_cuda, &ncsEE[0], 1)] =
+                  pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]};
+#if s_enableMollification
+              if (mollify) {
+                auto no = atomic_add(exec_cuda, &nPEM[0], 1);
+                PEM[no] = pair4_t{eiInds[1], eiInds[0], ejInds[0], ejInds[1]};
+                break;
+              }
+#endif
               {
                 auto no = atomic_add(exec_cuda, &nPE[0], 1);
                 PE[no] = pair3_t{eiInds[1], ejInds[0], ejInds[1]};
-                csEE[atomic_add(exec_cuda, &ncsEE[0], 1)] =
-                    pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]};
-                if (record) {
-                  vtemp.template pack<3>("inds_pre", no) =
-                      dpair3_t{eiInds[1], ejInds[0], ejInds[1]}
-                          .reinterpret_bits<T>();
-                  vtemp("dist2_pre", no) = d2;
-                }
               }
             }
             break;
           }
           case 6: {
             if (auto d2 = dist2_pe(v2, v0, v1); d2 < dHat2) {
+              csEE[atomic_add(exec_cuda, &ncsEE[0], 1)] =
+                  pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]};
+#if s_enableMollification
+              if (mollify) {
+                auto no = atomic_add(exec_cuda, &nPEM[0], 1);
+                PEM[no] = pair4_t{ejInds[0], ejInds[1], eiInds[0], eiInds[1]};
+                break;
+              }
+#endif
               {
                 auto no = atomic_add(exec_cuda, &nPE[0], 1);
                 PE[no] = pair3_t{ejInds[0], eiInds[0], eiInds[1]};
-                csEE[atomic_add(exec_cuda, &ncsEE[0], 1)] =
-                    pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]};
-                if (record) {
-                  vtemp.template pack<3>("inds_pre", no) =
-                      dpair3_t{ejInds[0], eiInds[0], eiInds[1]}
-                          .reinterpret_bits<T>();
-                  vtemp("dist2_pre", no) = d2;
-                }
               }
             }
             break;
           }
           case 7: {
             if (auto d2 = dist2_pe(v3, v0, v1); d2 < dHat2) {
+              csEE[atomic_add(exec_cuda, &ncsEE[0], 1)] =
+                  pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]};
+#if s_enableMollification
+              if (mollify) {
+                auto no = atomic_add(exec_cuda, &nPEM[0], 1);
+                PEM[no] = pair4_t{ejInds[1], ejInds[0], eiInds[0], eiInds[1]};
+                break;
+              }
+#endif
               {
                 auto no = atomic_add(exec_cuda, &nPE[0], 1);
                 PE[no] = pair3_t{ejInds[1], eiInds[0], eiInds[1]};
-                csEE[atomic_add(exec_cuda, &ncsEE[0], 1)] =
-                    pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]};
-                if (record) {
-                  vtemp.template pack<3>("inds_pre", no) =
-                      dpair3_t{ejInds[1], eiInds[0], eiInds[1]}
-                          .reinterpret_bits<T>();
-                  vtemp("dist2_pre", no) = d2;
-                }
               }
             }
             break;
           }
           case 8: {
             if (auto d2 = dist2_ee(v0, v1, v2, v3); d2 < dHat2) {
+              csEE[atomic_add(exec_cuda, &ncsEE[0], 1)] =
+                  pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]};
+#if s_enableMollification
+              if (mollify) {
+                auto no = atomic_add(exec_cuda, &nEEM[0], 1);
+                EEM[no] = pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]};
+                break;
+              }
+#endif
               {
                 auto no = atomic_add(exec_cuda, &nEE[0], 1);
                 EE[no] = pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]};
-                csEE[atomic_add(exec_cuda, &ncsEE[0], 1)] =
-                    pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]};
-                if (record) {
-                  vtemp.template pack<4>("inds_pre", no) =
-                      dpair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]}
-                          .reinterpret_bits<T>();
-                  vtemp("dist2_pre", no) = d2;
-                }
               }
             }
             break;
@@ -1835,8 +1831,7 @@ struct CodimStepping : INode {
           es.resize(count_warps(numPP));
           es.reset(0);
           pol(range(numPP),
-              [vtemp = proxy<space>({}, vtemp),
-               tempPP = proxy<space>({}, tempPP), PP = proxy<space>(PP),
+              [vtemp = proxy<space>({}, vtemp), PP = proxy<space>(PP),
                es = proxy<space>(es), xi2 = xi * xi, dHat = dHat, activeGap2,
                n = numPP] __device__(int ppi) mutable {
                 auto pp = PP[ppi];
@@ -1860,8 +1855,7 @@ struct CodimStepping : INode {
           es.resize(count_warps(numPE));
           es.reset(0);
           pol(range(numPE),
-              [vtemp = proxy<space>({}, vtemp),
-               tempPE = proxy<space>({}, tempPE), PE = proxy<space>(PE),
+              [vtemp = proxy<space>({}, vtemp), PE = proxy<space>(PE),
                es = proxy<space>(es), xi2 = xi * xi, dHat = dHat, activeGap2,
                n = numPE] __device__(int pei) mutable {
                 auto pe = PE[pei];
@@ -1887,8 +1881,7 @@ struct CodimStepping : INode {
           es.resize(count_warps(numPT));
           es.reset(0);
           pol(range(numPT),
-              [vtemp = proxy<space>({}, vtemp),
-               tempPT = proxy<space>({}, tempPT), PT = proxy<space>(PT),
+              [vtemp = proxy<space>({}, vtemp), PT = proxy<space>(PT),
                es = proxy<space>(es), xi2 = xi * xi, dHat = dHat, activeGap2,
                n = numPT] __device__(int pti) mutable {
                 auto pt = PT[pti];
@@ -1915,8 +1908,7 @@ struct CodimStepping : INode {
           es.resize(count_warps(numEE));
           es.reset(0);
           pol(range(numEE),
-              [vtemp = proxy<space>({}, vtemp),
-               tempEE = proxy<space>({}, tempEE), EE = proxy<space>(EE),
+              [vtemp = proxy<space>({}, vtemp), EE = proxy<space>(EE),
                es = proxy<space>(es), xi2 = xi * xi, dHat = dHat, activeGap2,
                n = numEE] __device__(int eei) mutable {
                 auto ee = EE[eei];
@@ -1938,6 +1930,112 @@ struct CodimStepping : INode {
                 reduce_to(eei, n, E, es[eei / 32]);
               });
           Es.push_back(reduce(pol, es) * kappa);
+
+#if s_enableMollification
+          auto numEEM = nEEM.getVal();
+          es.resize(count_warps(numEEM));
+          es.reset(0);
+          pol(range(numEEM),
+              [vtemp = proxy<space>({}, vtemp), EEM = proxy<space>(EEM),
+               es = proxy<space>(es), xi2 = xi * xi, dHat = dHat, activeGap2,
+               n = numEEM] __device__(int eemi) mutable {
+                auto eem = EEM[eemi];
+                auto ea0 = vtemp.pack<3>("xn", eem[0]);
+                auto ea1 = vtemp.pack<3>("xn", eem[1]);
+                auto eb0 = vtemp.pack<3>("xn", eem[2]);
+                auto eb1 = vtemp.pack<3>("xn", eem[3]);
+
+                auto v0 = ea1 - ea0;
+                auto v1 = eb1 - eb0;
+                auto c = v0.cross(v1).norm();
+                auto I1 = c * c;
+                T E = 0;
+                if (I1 != 0) {
+                  auto dist2 = dist2_ee(ea0, ea1, eb0, eb1);
+                  if (dist2 < xi2)
+                    printf("dist already smaller than xi!\n");
+                  auto I2 = dist2 / activeGap2;
+
+                  auto rv0 = vtemp.pack<3>("x0", eem[0]);
+                  auto rv1 = vtemp.pack<3>("x0", eem[1]);
+                  auto rv2 = vtemp.pack<3>("x0", eem[2]);
+                  auto rv3 = vtemp.pack<3>("x0", eem[3]);
+                  T epsX = mollifier_threshold_ee(rv0, rv1, rv2, rv3);
+                  E = (2 - I1 / epsX) * (I1 / epsX) *
+                      -zs::sqr(activeGap2 - activeGap2 * I2) * zs::log(I2);
+                }
+                reduce_to(eemi, n, E, es[eemi / 32]);
+              });
+          Es.push_back(reduce(pol, es) * kappa);
+
+          auto numPPM = nPPM.getVal();
+          es.resize(count_warps(numPPM));
+          es.reset(0);
+          pol(range(numPPM), [vtemp = proxy<space>({}, vtemp),
+                              PPM = proxy<space>(PPM), es = proxy<space>(es),
+                              xi2 = xi * xi, dHat = dHat, activeGap2,
+                              n = numPPM] __device__(int ppmi) mutable {
+            auto ppm = PPM[ppmi];
+
+            auto v0 = vtemp.pack<3>("xn", ppm[1]) - vtemp.pack<3>("xn", ppm[0]);
+            auto v1 = vtemp.pack<3>("xn", ppm[3]) - vtemp.pack<3>("xn", ppm[2]);
+            auto c = v0.cross(v1).norm();
+            auto I1 = c * c;
+            T E = 0;
+            if (I1 != 0) {
+              auto dist2 = dist2_pp(vtemp.pack<3>("xn", ppm[0]),
+                                    vtemp.pack<3>("xn", ppm[2]));
+              if (dist2 < xi2)
+                printf("dist already smaller than xi!\n");
+              auto I2 = dist2 / activeGap2;
+
+              auto rv0 = vtemp.pack<3>("x0", ppm[0]);
+              auto rv1 = vtemp.pack<3>("x0", ppm[1]);
+              auto rv2 = vtemp.pack<3>("x0", ppm[2]);
+              auto rv3 = vtemp.pack<3>("x0", ppm[3]);
+              T epsX = mollifier_threshold_ee(rv0, rv1, rv2, rv3);
+              E = (2 - I1 / epsX) * (I1 / epsX) *
+                  -zs::sqr(activeGap2 - activeGap2 * I2) * zs::log(I2);
+            }
+            reduce_to(ppmi, n, E, es[ppmi / 32]);
+          });
+          Es.push_back(reduce(pol, es) * kappa);
+
+          auto numPEM = nPEM.getVal();
+          es.resize(count_warps(numPEM));
+          es.reset(0);
+          pol(range(numPEM),
+              [vtemp = proxy<space>({}, vtemp), PEM = proxy<space>(PEM),
+               es = proxy<space>(es), xi2 = xi * xi, dHat = dHat, activeGap2,
+               n = numPEM] __device__(int pemi) mutable {
+                auto pem = PEM[pemi];
+
+                auto p = vtemp.pack<3>("xn", pem[0]);
+                auto e0 = vtemp.pack<3>("xn", pem[2]);
+                auto e1 = vtemp.pack<3>("xn", pem[3]);
+                auto v0 = vtemp.pack<3>("xn", pem[1]) - p;
+                auto v1 = e1 - e0;
+                auto c = v0.cross(v1).norm();
+                auto I1 = c * c;
+                T E = 0;
+                if (I1 != 0) {
+                  auto dist2 = dist2_pe(p, e0, e1);
+                  if (dist2 < xi2)
+                    printf("dist already smaller than xi!\n");
+                  auto I2 = dist2 / activeGap2;
+
+                  auto rv0 = vtemp.pack<3>("x0", pem[0]);
+                  auto rv1 = vtemp.pack<3>("x0", pem[1]);
+                  auto rv2 = vtemp.pack<3>("x0", pem[2]);
+                  auto rv3 = vtemp.pack<3>("x0", pem[3]);
+                  T epsX = mollifier_threshold_ee(rv0, rv1, rv2, rv3);
+                  E = (2 - I1 / epsX) * (I1 / epsX) *
+                      -zs::sqr(activeGap2 - activeGap2 * I2) * zs::log(I2);
+                }
+                reduce_to(pemi, n, E, es[pemi / 32]);
+              });
+          Es.push_back(reduce(pol, es) * kappa);
+#endif
         }
 #endif
         if (s_enableGround) {
@@ -3265,14 +3363,15 @@ struct CodimStepping : INode {
         int iter = 0;
 
         //
-        auto [npp, npe, npt, nee, ncspt, ncsee] = getCnts();
+        auto [npp, npe, npt, nee, nppm, npem, neem, ncspt, ncsee] = getCnts();
 
         for (; iter != CGCap; ++iter) {
           if (iter % 25 == 0)
             fmt::print("cg iter: {}, norm2: {} (zTrk: {}) npp: {}, npe: {}, "
-                       "npt: {}, nee: {}, ncspt: {}, ncsee: {}\n",
+                       "npt: {}, nee: {}, nppm: {}, npem: {}, neem: {}, ncspt: "
+                       "{}, ncsee: {}\n",
                        iter, residualPreconditionedNorm2, zTrk, npp, npe, npt,
-                       nee, ncspt, ncsee);
+                       nee, nppm, npem, neem, ncspt, ncsee);
 
           if (residualPreconditionedNorm2 <= localTol2)
             break;
@@ -3616,6 +3715,17 @@ struct CodimStepping : INode {
           EE{estNumCps, zs::memsrc_e::um, 0},
           nEE{zsprims[0]->getParticles<true>().get_allocator(), 1},
           tempEE{{{"H", 144}}, estNumCps, zs::memsrc_e::um, 0},
+          // mollify
+          PPM{estNumCps, zs::memsrc_e::um, 0},
+          nPPM{zsprims[0]->getParticles<true>().get_allocator(), 1},
+          tempPPM{{{"H", 144}}, estNumCps, zs::memsrc_e::um, 0},
+          PEM{estNumCps, zs::memsrc_e::um, 0},
+          nPEM{zsprims[0]->getParticles<true>().get_allocator(), 1},
+          tempPEM{{{"H", 144}}, estNumCps, zs::memsrc_e::um, 0},
+          EEM{estNumCps, zs::memsrc_e::um, 0},
+          nEEM{zsprims[0]->getParticles<true>().get_allocator(), 1},
+          tempEEM{{{"H", 144}}, estNumCps, zs::memsrc_e::um, 0},
+          //
           temp{5000000, zs::memsrc_e::um,
                zsprims[0]->getParticles<true>().devid()},
           csPT{estNumCps, zs::memsrc_e::um, 0}, csEE{estNumCps,
@@ -3722,6 +3832,17 @@ struct CodimStepping : INode {
     zs::Vector<pair4_t> EE;
     zs::Vector<int> nEE;
     dtiles_t tempEE;
+    //
+    zs::Vector<pair4_t> PPM;
+    zs::Vector<int> nPPM;
+    dtiles_t tempPPM;
+    zs::Vector<pair4_t> PEM;
+    zs::Vector<int> nPEM;
+    dtiles_t tempPEM;
+    zs::Vector<pair4_t> EEM;
+    zs::Vector<int> nEEM;
+    dtiles_t tempEEM;
+    //
 
     zs::Vector<T> temp;
 
@@ -4052,7 +4173,8 @@ struct CodimStepping : INode {
           // A.intersectionFreeStepsize(cudaPol, xi, alpha);
           // fmt::print("\tstepsize after intersection-free: {}\n", alpha);
           A.findCCDConstraints(cudaPol, alpha, xi);
-          auto [npp, npe, npt, nee, ncspt, ncsee] = A.getCnts();
+          auto [npp, npe, npt, nee, nppm, npem, neem, ncspt, ncsee] =
+              A.getCnts();
           A.intersectionFreeStepsize(cudaPol, xi, alpha);
           fmt::print("\tstepsize after ccd: {}. (ncspt: {}, ncsee: {})\n",
                      alpha, ncspt, ncsee);
