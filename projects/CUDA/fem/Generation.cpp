@@ -764,15 +764,6 @@ struct ToZSSurfaceMesh : INode {
     const auto numVerts = pos.size();
     const auto numTris = tris.size();
 
-const int *ptr = &tris[0][0];
-for (int i = 0; i != 12; ++i) {
-  fmt::print("{} -> ", ptr[i]);
-}
-fmt::print("\naddrs: {} - {} - {}, ({}) - ({}), 3 int occupies {} bytes\n", (void*)&tris[0][0], (void*)&tris[1][0], (void*)&tris[2][0], (intptr_t)&tris[1] - (intptr_t)&tris[0], (intptr_t)&tris[2] - (intptr_t)&tris[0], sizeof(int) * 3);
-    for (int i = 0; i != numTris && i != 100; ++i) {
-      fmt::print("{}-th <{}, {}, {}>\n", i, tris[i][0], tris[i][1], tris[i][2]);
-    }
-
     auto zstris = std::make_shared<ZenoParticles>();
     zstris->prim = prim;
     zstris->getModel() = *zsmodel;
