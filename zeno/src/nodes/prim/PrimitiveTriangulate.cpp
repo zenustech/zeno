@@ -27,9 +27,9 @@ ZENO_API void primTriangulate(PrimitiveObject *prim, bool with_uv, bool has_line
     auto redsum = parallel_exclusive_scan_sum(prim->polys.begin(), prim->polys.end(),
                                            scansum.begin(), [&] (auto &ind) {
                                                if constexpr (has_lines.value) {
-                                                   return vec2i(ind[1] >= 3 ? ind[1] : 0, ind[1] == 2 ? 1 : 0);
+                                                   return vec2i(ind[1] >= 3 ? ind[1] - 2 : 0, ind[1] == 2 ? 1 : 0);
                                                } else {
-                                                   return ind[1] >= 3 ? ind[1] : 0;
+                                                   return ind[1] >= 3 ? ind[1] - 2 : 0;
                                                }
                                            });
     int tribase = prim->tris.size();
