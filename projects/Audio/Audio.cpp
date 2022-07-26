@@ -11,6 +11,10 @@
 #include <zeno/types/ListObject.h>
 #include "AudioFile.h"
 
+#define MINIMP3_IMPLEMENTATION
+#define MINIMP3_FLOAT_OUTPUT
+#include "minimp3.h"
+
 namespace zeno {
     struct ReadWavFile : zeno::INode {
         virtual void apply() override {
@@ -49,6 +53,67 @@ namespace zeno {
             "audio"
         },
     });
+
+    struct ReadMp3File : zeno::INode {
+        virtual void apply() override {
+            auto path = get_input<StringObject>("path")->get(); // std::string
+
+            // open the file:
+            std::ifstream file(path, std::ios::binary);
+            // read the data:
+            auto data = std::vector<uint8_t>((std::istreambuf_iterator<char>(file)),
+                                     std::istreambuf_iterator<char>());
+//            auto data_ptr = std::make_shared<std::vector<uint8_t>>(data);
+            static mp3dec_t mp3d;
+            mp3dec_init(&mp3d);
+
+            mp3dec_frame_info_t info;
+            float pcm[MINIMP3_MAX_SAMPLES_PER_FRAME];
+            int mp3len = 0;
+            int sample_len = 0;
+
+            std::vector<float> decoded_data;
+            decoded_data.reserve(44100 * 30);
+            while (true) {
+                int samples = mp3dec_decode_frame(&mp3d, data.data() + mp3len, data.size() - mp3len, pcm, &info);
+                if (samples == 0) {
+                    break;
+                }
+                sample_len += samples;
+                mp3len += info.frame_bytes;
+                for (auto i = 0; i < samples * info.channels; i += info.channels) {
+                    decoded_data.push_back(pcm[i]);
+                }
+            }
+            auto result = std::make_shared<PrimitiveObject>(); // std::shared_ptr<PrimitiveObject>
+            result->resize(sample_len);
+            auto &value = result->add_attr<float>("value"); //std::vector<float>
+            auto &t = result->add_attr<float>("t");
+            for (std::size_t i = 0; i < result->verts.size(); ++i) {
+                value[i] = decoded_data[i];
+                t[i] = float(i);
+            }
+            result->userData.set("SampleRate", zeno::NumericObject((int)info.hz));
+            result->userData.set("NumSamplesPerChannel", zeno::NumericObject((int)sample_len));
+            // zeno::log_info("SampleRate: {}", (int)info.hz);
+            // zeno::log_info("NumSamplesPerChannel: {}", sample_len);
+
+            set_output("wave", result);
+        }
+    };
+    ZENDEFNODE(ReadMp3File, {
+        {
+            {"readpath", "path"},
+        },
+        {
+            "wave",
+        },
+        {},
+        {
+            "audio"
+        },
+    });
+
 
     struct AudioBeats : zeno::INode {
         std::deque<double> H;
