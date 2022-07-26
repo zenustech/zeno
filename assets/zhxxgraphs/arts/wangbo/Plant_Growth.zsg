@@ -3417,10 +3417,10 @@
     }
    },
    "view_rect": {
-    "x": -7189.326965124414,
-    "y": -1690.5351990519885,
-    "width": 11175.870895385735,
-    "height": 5681.06770515441
+    "x": -6607.668429663981,
+    "y": -2505.961570103153,
+    "width": 8940.696716308588,
+    "height": 4544.854164123528
    }
   },
   "LineCreate": {
@@ -11538,6 +11538,56 @@
     "Hercules"
    ]
   },
+  "BVHNearestPos": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "points",
+     ""
+    ],
+    [
+     "string",
+     "bvhIdTag",
+     "bvh_id"
+    ],
+    [
+     "string",
+     "bvhWeightTag",
+     "bvh_ws"
+    ],
+    [
+     "string",
+     "bvhPosTag",
+     "bvh_pos"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "oPoints",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
   "BackupField": {
    "inputs": [
     [
@@ -17302,7 +17352,7 @@
     ],
     [
      "",
-     "half_fov",
+     "focal_length",
      ""
     ],
     [
@@ -22840,6 +22890,128 @@
     "primitive"
    ]
   },
+  "PrimDomainWarpingV1Attr": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "float",
+     "fbmH",
+     "1.0"
+    ],
+    [
+     "float",
+     "fbmFrequence",
+     "1.0"
+    ],
+    [
+     "float",
+     "fbmAmplitude",
+     "1.0"
+    ],
+    [
+     "int",
+     "fbmNumOctaves",
+     "4"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "attrName",
+     "fnoise"
+    ],
+    [
+     "enum float float3",
+     "attrType",
+     "float3"
+    ]
+   ],
+   "categories": [
+    "noise"
+   ]
+  },
+  "PrimDomainWarpingV2Attr": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "float",
+     "fbmH",
+     "1.0"
+    ],
+    [
+     "float",
+     "fbmFrequence",
+     "1.0"
+    ],
+    [
+     "float",
+     "fbmAmplitude",
+     "1.0"
+    ],
+    [
+     "int",
+     "fbmNumOctaves",
+     "4"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "attrName",
+     "fnoise"
+    ],
+    [
+     "enum float float3",
+     "attrType",
+     "float3"
+    ]
+   ],
+   "categories": [
+    "noise"
+   ]
+  },
   "PrimFilter": {
    "inputs": [
     [
@@ -23125,6 +23297,47 @@
     "primitive"
    ]
   },
+  "PrimSimplexNoiseAttr": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "attrName",
+     "snoise"
+    ],
+    [
+     "enum float float3",
+     "attrType",
+     "float3"
+    ]
+   ],
+   "categories": [
+    "noise"
+   ]
+  },
   "PrimSimplifyTag": {
    "inputs": [
     [
@@ -23275,6 +23488,47 @@
     "primitive"
    ]
   },
+  "PrimVoronoiAttr": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "featurePrim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "attrName",
+     "voronoi"
+    ]
+   ],
+   "categories": [
+    "noise"
+   ]
+  },
   "PrimWeld": {
    "inputs": [
     [
@@ -23313,6 +23567,62 @@
    "params": [],
    "categories": [
     "primitive"
+   ]
+  },
+  "PrimWorleyNoiseAttr": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "seed",
+     ""
+    ],
+    [
+     "enum Euclidean Chebyshev Manhattan",
+     "distType",
+     "Euclidean"
+    ],
+    [
+     "enum F1 F2-F1",
+     "fType",
+     "F1"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "attrName",
+     "wnoise"
+    ],
+    [
+     "enum float float3",
+     "attrType",
+     "float"
+    ]
+   ],
+   "categories": [
+    "noise"
    ]
   },
   "PrimitiveAddAttr": {
@@ -31354,6 +31664,46 @@
     "openvdb"
    ]
   },
+  "TracePositionOneStep": {
+   "inputs": [
+    [
+     "",
+     "primData",
+     ""
+    ],
+    [
+     "",
+     "primEmpty",
+     ""
+    ],
+    [
+     "string",
+     "lineTag",
+     "id"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "primVis",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "visualize"
+   ]
+  },
   "TraceVec3FieldOneStep": {
    "inputs": [
     [
@@ -31381,41 +31731,6 @@
     [
      "",
      "prim",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "visualize"
-   ]
-  },
-  "TraceVec3FieldOneStep_v2": {
-   "inputs": [
-    [
-     "",
-     "primData",
-     ""
-    ],
-    [
-     "",
-     "primEmpty",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "primVis",
      ""
     ],
     [
@@ -33582,6 +33897,51 @@
    "params": [],
    "categories": [
     "primitive"
+   ]
+  },
+  "WBPrimToSDF": {
+   "inputs": [
+    [
+     "",
+     "Prim",
+     ""
+    ],
+    [
+     "float",
+     "Dx/VoxelSize",
+     "0.1"
+    ],
+    [
+     "float",
+     "ExBandVoxels",
+     "3"
+    ],
+    [
+     "float",
+     "InBandVoxels",
+     "3"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "sdf",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "openvdb"
    ]
   },
   "WriteAlembic": {
