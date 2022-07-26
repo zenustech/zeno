@@ -1,3 +1,4 @@
+#include <zeno/utils/nowarn.h>
 #include <cubicBspline.h>
 
 UniformCubicBasisSpline::UniformCubicBasisSpline(){

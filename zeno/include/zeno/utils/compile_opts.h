@@ -50,6 +50,7 @@
     _Pragma("GCC diagnostic ignored \"-Wextra\"") \
     _Pragma("GCC diagnostic ignored \"-Wsuggest-override\"")
     _Pragma("GCC diagnostic ignored \"-Wnon-virtual-dtor\"")
+    _Pragma("GCC diagnostic ignored \"-Wmaybe-uninitialized\"")
     _Pragma("GCC diagnostic ignored \"-Wformat=\"")
 #define ZENO_NOWARN_END \
     _Pragma("clang diagnostic pop")
@@ -60,6 +61,7 @@
     _Pragma("GCC diagnostic ignored \"-Wextra\"") \
     _Pragma("GCC diagnostic ignored \"-Wnon-virtual-dtor\"")
     _Pragma("GCC diagnostic ignored \"-Wsuggest-override\"")
+    _Pragma("GCC diagnostic ignored \"-Wmaybe-uninitialized\"")
     _Pragma("GCC diagnostic ignored \"-Wformat=\"")
 #define ZENO_NOWARN_END \
     _Pragma("GCC diagnostic pop")

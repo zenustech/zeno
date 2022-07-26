@@ -27,6 +27,7 @@ set(ZENO_EXTENSIONS
     CalcGeometryUV
     MeshSubdiv
     Audio
+    Pass
     CUDA
     )
 

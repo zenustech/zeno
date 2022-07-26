@@ -1,3 +1,4 @@
+#include <zeno/utils/nowarn.h>
 #include <quasi_static_solver.h>
 #include "base_elastic_model.h"
 
