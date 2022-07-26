@@ -67,14 +67,17 @@ struct PassImageGL : IObject {
         }
     };
 
-    copiable_unique_ptr<Impl> impl = std::make_unique<Impl>();
+    copiable_unique_ptr<Impl> impl;
+    
+    template <class ...Ts>
+    void emplace(Ts &&...ts) {
+        impl = std::make_unique<Impl>(std::forward<Ts>(ts));
+    }
 };
 
 struct ForwardPass : INode {
     virtual void apply() override {
-        auto image = has_input("image")
-            ? get_input<PassImageGL>("image")
-            : std::make_shared<PassImageGL>();
+        auto image = get_input<PassImageGL>("image");
         auto objects = has_input("objects")
             ? get_input<ListObject>("objects")
             : std::make_shared<ListObject>();

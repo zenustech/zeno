@@ -36,6 +36,12 @@ ZenoSpreadsheet::ZenoSpreadsheet(QWidget *parent) : QWidget(parent) {
 
     ZComboBox* pMode = new ZComboBox();
     pMode->addItem("Vertex");
+    pMode->addItem("Tris");
+    pMode->addItem("Points");
+    pMode->addItem("Lines");
+    pMode->addItem("Quads");
+    pMode->addItem("Polys");
+    pMode->addItem("Loops");
     pMode->addItem("UserData");
     pMode->setProperty("cssClass", "proppanel");
     pTitleLayout->addWidget(pMode);

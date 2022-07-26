@@ -51,6 +51,7 @@
         "ZENO_WITH_FBX": "ON",
         "ZENO_WITH_DemBones": "ON",
         "ZENO_WITH_SampleModel": "ON",
+        "ZENO_WITH_MeshSubdiv": "ON",
         "ZENO_WITH_CalcGeometryUV": "ON",
         "ZENO_WITH_TOOL_cgmeshTools": "ON",
         "ZENO_WITH_TOOL_HerculesTools": "ON"
