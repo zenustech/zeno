@@ -7,6 +7,7 @@
 #include "zensim/cuda/execution/ExecutionPolicy.cuh"
 #include "zensim/execution/ExecutionPolicy.hpp"
 #include "zensim/geometry/Distance.hpp"
+#include "zensim/geometry/Friction.hpp"
 #include "zensim/geometry/PoissonDisk.hpp"
 #include "zensim/geometry/SpatialQuery.hpp"
 #include "zensim/geometry/VdbLevelSet.h"
@@ -130,7 +131,7 @@ struct CodimStepping : INode {
 // static constexpr bool s_enableAdaptiveSetting = false;
 #define s_enableContact 1
 #define s_enableMollification 1
-#define s_enableFriction 0
+#define s_enableFriction 1
   inline static bool s_enableGround = false;
 #define s_enableDCDCheck 0
 #define s_enableDebugCheck 0
@@ -1119,16 +1120,67 @@ struct CodimStepping : INode {
       auto numFPP = nFPP.getVal();
       pol(range(numFPP),
           [vtemp = proxy<space>({}, vtemp), fricPP = proxy<space>({}, fricPP),
-           FPP = proxy<space>(FPP), xi2 = xi * xi, dHat = dHat, activeGap2,
+           FPP = proxy<space>(FPP), xi2 = xi * xi, activeGap2,
            kappa = kappa] __device__(int fppi) mutable {
             auto fpp = FPP[fppi];
             auto x0 = vtemp.pack<3>("xn", fpp[0]);
             auto x1 = vtemp.pack<3>("xn", fpp[1]);
             auto dist2 = dist2_pp(x0, x1);
             auto bGrad = barrier_gradient(dist2 - xi2, activeGap2, kappa);
-            fricPP("fn", fppi) = -bGrad * 2 * dHat * zs::sqrt(dist2);
-
-            // fricPP.tuple<6>("basis", fppi) = ;
+            fricPP("fn", fppi) = -bGrad * 2 * zs::sqrt(dist2);
+            fricPP.tuple<6>("basis", fppi) = point_point_tangent_basis(x0, x1);
+          });
+      auto numFPE = nFPE.getVal();
+      pol(range(numFPE),
+          [vtemp = proxy<space>({}, vtemp), fricPE = proxy<space>({}, fricPE),
+           FPE = proxy<space>(FPE), xi2 = xi * xi, activeGap2,
+           kappa = kappa] __device__(int fpei) mutable {
+            auto fpe = FPE[fpei];
+            auto p = vtemp.pack<3>("xn", fpe[0]);
+            auto e0 = vtemp.pack<3>("xn", fpe[1]);
+            auto e1 = vtemp.pack<3>("xn", fpe[2]);
+            auto dist2 = dist2_pe(p, e0, e1);
+            auto bGrad = barrier_gradient(dist2 - xi2, activeGap2, kappa);
+            fricPE("fn", fpei) = -bGrad * 2 * zs::sqrt(dist2);
+            fricPE("yita", fpei) = point_edge_closest_point(p, e0, e1);
+            fricPE.tuple<6>("basis", fpei) =
+                point_edge_tangent_basis(p, e0, e1);
+          });
+      auto numFPT = nFPT.getVal();
+      pol(range(numFPT),
+          [vtemp = proxy<space>({}, vtemp), fricPT = proxy<space>({}, fricPT),
+           FPT = proxy<space>(FPT), xi2 = xi * xi, activeGap2,
+           kappa = kappa] __device__(int fpti) mutable {
+            auto fpt = FPT[fpti];
+            auto p = vtemp.pack<3>("xn", fpt[0]);
+            auto t0 = vtemp.pack<3>("xn", fpt[1]);
+            auto t1 = vtemp.pack<3>("xn", fpt[2]);
+            auto t2 = vtemp.pack<3>("xn", fpt[3]);
+            auto dist2 = dist2_pt(p, t0, t1, t2);
+            auto bGrad = barrier_gradient(dist2 - xi2, activeGap2, kappa);
+            fricPT("fn", fpti) = -bGrad * 2 * zs::sqrt(dist2);
+            fricPT.tuple<2>("beta", fpti) =
+                point_triangle_closest_point(p, t0, t1, t2);
+            fricPT.tuple<6>("basis", fpti) =
+                point_triangle_tangent_basis(p, t0, t1, t2);
+          });
+      auto numFEE = nFEE.getVal();
+      pol(range(numFEE),
+          [vtemp = proxy<space>({}, vtemp), fricEE = proxy<space>({}, fricEE),
+           FEE = proxy<space>(FEE), xi2 = xi * xi, activeGap2,
+           kappa = kappa] __device__(int feei) mutable {
+            auto fee = FEE[feei];
+            auto ea0 = vtemp.pack<3>("xn", fee[0]);
+            auto ea1 = vtemp.pack<3>("xn", fee[1]);
+            auto eb0 = vtemp.pack<3>("xn", fee[2]);
+            auto eb1 = vtemp.pack<3>("xn", fee[3]);
+            auto dist2 = dist2_ee(ea0, ea1, eb0, eb1);
+            auto bGrad = barrier_gradient(dist2 - xi2, activeGap2, kappa);
+            fricEE("fn", feei) = -bGrad * 2 * zs::sqrt(dist2);
+            fricEE.tuple<2>("gamma", feei) =
+                edge_edge_closest_point(ea0, ea1, eb0, eb1);
+            fricEE.tuple<6>("basis", feei) =
+                edge_edge_tangent_basis(ea0, ea1, eb0, eb1);
           });
     }
     bool checkSelfIntersection(zs::CudaExecutionPolicy &pol) {
@@ -4128,8 +4180,13 @@ struct CodimStepping : INode {
         })(models.getElasticModel());
         if (s_enableGround)
           A.computeBoundaryBarrierGradientAndHessian(cudaPol);
-        if constexpr (s_enableContact)
+        if constexpr (s_enableContact) {
           A.computeBarrierGradientAndHessian(cudaPol);
+          if constexpr (s_enableFriction)
+            if (fricMu > 0) {
+              ; // grad, hess
+            }
+        }
 
         // rotate gradient
         // here we assume boundary dofs are all STICKY, thus BCbasis is I
