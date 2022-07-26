@@ -131,7 +131,7 @@ struct CodimStepping : INode {
 // static constexpr bool s_enableAdaptiveSetting = false;
 #define s_enableContact 1
 #define s_enableMollification 1
-#define s_enableFriction 1
+#define s_enableFriction 0
   inline static bool s_enableGround = false;
 #define s_enableDCDCheck 0
 #define s_enableDebugCheck 0
@@ -149,6 +149,7 @@ struct CodimStepping : INode {
   inline static T &boundaryKappa = kappa;
   inline static T xi = 0; // 1e-2; // 2e-3;
   inline static T dHat = 0.0025;
+  inline static T epsv = 0.0;
   inline static vec3 extForce;
 
   template <typename T> static inline T computeHb(const T d2, const T dHat2) {
@@ -1131,21 +1132,20 @@ struct CodimStepping : INode {
             fricPP.tuple<6>("basis", fppi) = point_point_tangent_basis(x0, x1);
           });
       auto numFPE = nFPE.getVal();
-      pol(range(numFPE),
-          [vtemp = proxy<space>({}, vtemp), fricPE = proxy<space>({}, fricPE),
-           FPE = proxy<space>(FPE), xi2 = xi * xi, activeGap2,
-           kappa = kappa] __device__(int fpei) mutable {
-            auto fpe = FPE[fpei];
-            auto p = vtemp.pack<3>("xn", fpe[0]);
-            auto e0 = vtemp.pack<3>("xn", fpe[1]);
-            auto e1 = vtemp.pack<3>("xn", fpe[2]);
-            auto dist2 = dist2_pe(p, e0, e1);
-            auto bGrad = barrier_gradient(dist2 - xi2, activeGap2, kappa);
-            fricPE("fn", fpei) = -bGrad * 2 * zs::sqrt(dist2);
-            fricPE("yita", fpei) = point_edge_closest_point(p, e0, e1);
-            fricPE.tuple<6>("basis", fpei) =
-                point_edge_tangent_basis(p, e0, e1);
-          });
+      pol(range(numFPE), [vtemp = proxy<space>({}, vtemp),
+                          fricPE = proxy<space>({}, fricPE),
+                          FPE = proxy<space>(FPE), xi2 = xi * xi, activeGap2,
+                          kappa = kappa] __device__(int fpei) mutable {
+        auto fpe = FPE[fpei];
+        auto p = vtemp.pack<3>("xn", fpe[0]);
+        auto e0 = vtemp.pack<3>("xn", fpe[1]);
+        auto e1 = vtemp.pack<3>("xn", fpe[2]);
+        auto dist2 = dist2_pe(p, e0, e1);
+        auto bGrad = barrier_gradient(dist2 - xi2, activeGap2, kappa);
+        fricPE("fn", fpei) = -bGrad * 2 * zs::sqrt(dist2);
+        fricPE("yita", fpei) = point_edge_closest_point(p, e0, e1);
+        fricPE.tuple<6>("basis", fpei) = point_edge_tangent_basis(p, e0, e1);
+      });
       auto numFPT = nFPT.getVal();
       pol(range(numFPT),
           [vtemp = proxy<space>({}, vtemp), fricPT = proxy<space>({}, fricPT),
@@ -1380,6 +1380,9 @@ struct CodimStepping : INode {
     void computeBarrierGradientAndHessian(zs::CudaExecutionPolicy &pol,
                                           const zs::SmallString &gTag = "grad",
                                           bool includeHessian = true);
+    void computeFrictionBarrierGradientAndHessian(
+        zs::CudaExecutionPolicy &pol, const zs::SmallString &gTag = "grad",
+        bool includeHessian = true);
 
     void intersectionFreeStepsize(zs::CudaExecutionPolicy &pol, T xi,
                                   T &stepSize) {
@@ -3596,6 +3599,7 @@ struct CodimStepping : INode {
               vtemp.tuple<3>("xtilde", voffset + i) = x + v * dt;
               vtemp.tuple<3>("lambda", voffset + i) = vec3::zeros();
               vtemp.tuple<3>("xn", voffset + i) = x;
+              vtemp.tuple<3>("xhat", vOffset + i) = x;
               if (BCorder > 0) {
                 // recover original BCtarget
                 BCtarget = BCbasis * BCtarget;
@@ -3682,6 +3686,7 @@ struct CodimStepping : INode {
               vtemp.tuple<3>("xn", coOffset + i) = x;
               vtemp.tuple<3>("vn", coOffset + i) = (newX - x) / dt;
               vtemp.tuple<3>("xt", coOffset + i) = x;
+              vtemp.tuple<3>("xhat", coOffset + i) = x;
               vtemp.tuple<3>("x0", coOffset + i) = coverts.pack<3>("x0", i);
             });
     }
@@ -3705,6 +3710,7 @@ struct CodimStepping : INode {
             };
             auto xt = vtemp.template pack<3>("xt", vi);
             auto xn = vtemp.template pack<3>("xn", vi);
+            vtemp.template tuple<3>("xhat", vi) = xn;
             auto deltaX = vtemp.template pack<3>("vn", vi) * dt;
             if (BCorder > 0)
               projVec(deltaX);
@@ -3728,6 +3734,7 @@ struct CodimStepping : INode {
                                curRatio = curRatio] __device__(int i) mutable {
           auto xt = vtemp.template pack<3>("xt", coOffset + i);
           auto xn = vtemp.template pack<3>("xn", coOffset + i);
+          vtemp.template tuple<3>("xhat", coOffset + i) = xn;
           vec3 newX{};
           if (coverts.hasProperty("BCtarget"))
             newX = coverts.pack<3>("BCtarget", i);
@@ -3810,22 +3817,25 @@ struct CodimStepping : INode {
           // friction
           FPP{estNumCps, zs::memsrc_e::um, 0},
           nFPP{zsprims[0]->getParticles<true>().get_allocator(), 1},
-          fricPP{{{"basis", 6}, {"fn", 1}}, estNumCps, zs::memsrc_e::um, 0},
+          fricPP{{{"H", 36}, {"basis", 6}, {"fn", 1}},
+                 estNumCps,
+                 zs::memsrc_e::um,
+                 0},
           FPE{estNumCps, zs::memsrc_e::um, 0},
           nFPE{zsprims[0]->getParticles<true>().get_allocator(), 1},
-          fricPE{{{"basis", 6}, {"fn", 1}, {"yita", 1}},
+          fricPE{{{"H", 81}, {"basis", 6}, {"fn", 1}, {"yita", 1}},
                  estNumCps,
                  zs::memsrc_e::um,
                  0},
           FPT{estNumCps, zs::memsrc_e::um, 0},
           nFPT{zsprims[0]->getParticles<true>().get_allocator(), 1},
-          fricPT{{{"basis", 6}, {"fn", 1}, {"beta", 2}},
+          fricPT{{{"H", 144}, {"basis", 6}, {"fn", 1}, {"beta", 2}},
                  estNumCps,
                  zs::memsrc_e::um,
                  0},
           FEE{estNumCps, zs::memsrc_e::um, 0},
           nFEE{zsprims[0]->getParticles<true>().get_allocator(), 1},
-          fricEE{{{"basis", 6}, {"fn", 1}, {"gamma", 2}},
+          fricEE{{{"H", 144}, {"basis", 6}, {"fn", 1}, {"gamma", 2}},
                  estNumCps,
                  zs::memsrc_e::um,
                  0},
@@ -3866,9 +3876,10 @@ struct CodimStepping : INode {
            {"xn", 3},
            {"vn", 3},
            {"x0", 3}, // initial positions
-           {"xt", 3}, // initial positions at the current timestep
+           {"xt", 3}, // for constraint + ext force ref
            {"xn0", 3},
            {"xtilde", 3},
+           {"xhat", 3}, // initial positions at the current substep
            {"temp", 3},
            {"r", 3},
            {"p", 3},
@@ -4005,6 +4016,7 @@ struct CodimStepping : INode {
     auto input_dHat = get_input2<float>("dHat");
     auto input_kappa0 = get_input2<float>("kappa0");
     auto input_fric_mu = get_input2<float>("fric_mu");
+    auto input_epsv = get_input2<float>("epsv");
     auto input_aug_coeff = get_input2<float>("aug_coeff");
     auto input_pn_rel = get_input2<float>("pn_rel");
     auto input_cg_rel = get_input2<float>("cg_rel");
@@ -4018,6 +4030,7 @@ struct CodimStepping : INode {
     s_enableGround = input_withGround;
     kappa0 = input_kappa0;
     fricMu = input_fric_mu;
+    epsv = input_epsv;
     augLagCoeff = input_aug_coeff;
     pnRel = input_pn_rel;
     cgRel = input_cg_rel;
@@ -4128,10 +4141,15 @@ struct CodimStepping : INode {
       // getchar();
     }
 #endif
+    if constexpr (s_enableFriction)
+      if (epsv == 0) {
+        epsv = dHat;
+      }
     // extForce here means gravity acceleration (not actually force)
     // targetGRes = std::min(targetGRes, extForce.norm() * dt * dt * (T)0.5 /
     //                                      nSubsteps / nSubsteps);
-    fmt::print("auto dHat: {}, targetGRes: {}\n", dHat, targetGRes);
+    fmt::print("auto dHat: {}, targetGRes: {}, epsv (friction): {}\n", dHat,
+               targetGRes, epsv);
 
     for (int subi = 0; subi != nSubsteps; ++subi) {
       fmt::print("processing substep {}\n", subi);
@@ -4181,10 +4199,10 @@ struct CodimStepping : INode {
         if (s_enableGround)
           A.computeBoundaryBarrierGradientAndHessian(cudaPol);
         if constexpr (s_enableContact) {
-          A.computeBarrierGradientAndHessian(cudaPol);
+          A.computeBarrierGradientAndHessian(cudaPol, "grad");
           if constexpr (s_enableFriction)
             if (fricMu > 0) {
-              ; // grad, hess
+              A.computeFrictionBarrierGradientAndHessian(cudaPol, "grad");
             }
         }
 
@@ -4426,6 +4444,7 @@ ZENDEFNODE(CodimStepping, {{
                                {"int", "with_ground", "0"},
                                {"float", "dt", "0.01"},
                                {"float", "dHat", "0.001"},
+                               {"float", "epsv", "0.0"},
                                {"float", "kappa0", "1e3"},
                                {"float", "fric_mu", "0.0"},
                                {"float", "aug_coeff", "1e3"},
@@ -4443,4 +4462,5 @@ ZENDEFNODE(CodimStepping, {{
 
 } // namespace zeno
 
+#include "FricIpc.inl"
 #include "Ipc.inl"
