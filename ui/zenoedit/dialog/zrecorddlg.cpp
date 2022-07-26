@@ -5,16 +5,16 @@
 #include "zenomainwindow.h"
 
 
-ZRecordVideoDlg::ZRecordVideoDlg(QWidget* parent)
+ZRecordVideoDlg::ZRecordVideoDlg(int frameStart, int frameEnd, QWidget* parent)
 	: QDialog(parent)
 {
 	m_ui = new Ui::RecordVideoDlg;
 	m_ui->setupUi(this);
 
 	m_ui->frameStart->setValidator(new QIntValidator);
-	m_ui->frameStart->setText("0");
+	m_ui->frameStart->setText(QString::number(frameStart));
 	m_ui->frameEnd->setValidator(new QIntValidator);
-	m_ui->frameEnd->setText("10");
+	m_ui->frameEnd->setText(QString::number(frameEnd));
 	m_ui->fps->setValidator(new QIntValidator);
 	m_ui->fps->setText("30");
 	m_ui->bitrate->setValidator(new QIntValidator);
@@ -34,6 +34,7 @@ ZRecordVideoDlg::ZRecordVideoDlg(QWidget* parent)
 			return;
 		m_ui->linePath->setText(path);
 	});
+	//debug: m_ui->linePath->setText("C:/zeno/record");
 
 	connect(m_ui->btnGroup, SIGNAL(accepted()), this, SLOT(accept()));
 	connect(m_ui->btnGroup, SIGNAL(rejected()), this, SLOT(reject()));

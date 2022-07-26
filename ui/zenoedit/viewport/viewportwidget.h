@@ -77,9 +77,8 @@ public:
     void resizeGL(int nx, int ny) override;
     void paintGL() override;
     void rendering();
-    void setRecordInfo(bool bRecording, const VideoRecInfo& info);
+    void setRecordInfo(const VideoRecInfo& info);
     void recordCurrFrame();
-    bool isRecording() const;
 
 signals:
     void frameRecorded(int);
@@ -93,7 +92,6 @@ protected:
 private:
     std::shared_ptr<CameraControl> m_camera;
     VideoRecInfo m_recordInfo;
-    bool m_bRecording;
 };
 
 class CameraKeyframeWidget;
@@ -106,7 +104,6 @@ public:
     ~DisplayWidget();
     void init();
     QSize sizeHint() const override;
-    bool isRecording() const;
 
 public slots:
     void updateFrame(const QString& action = "");

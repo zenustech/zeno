@@ -21,6 +21,9 @@
 #include <cmath>
 #include <algorithm>
 #include <optional>
+#include <zeno/core/Session.h>
+#include <zeno/extra/GlobalState.h>
+#include <zeno/extra/GlobalComm.h>
 
 
 static std::optional<float> ray_sphere_intersect(
@@ -334,20 +337,14 @@ void ViewportWidget::resizeGL(int nx, int ny)
     m_camera->updatePerspective();
 }
 
-void ViewportWidget::setRecordInfo(bool bRecording, const VideoRecInfo& info)
+void ViewportWidget::setRecordInfo(const VideoRecInfo& info)
 {
     m_recordInfo = info;
-    m_bRecording = bRecording;
 }
 
 void ViewportWidget::paintGL()
 {
     rendering();
-}
-
-bool ViewportWidget::isRecording() const
-{
-    return m_bRecording;
 }
 
 void ViewportWidget::recordCurrFrame()
@@ -368,8 +365,7 @@ void ViewportWidget::recordCurrFrame()
         emit frameRecorded(frame);
         if (frame == m_recordInfo.frameRange.second)
         {
-            Zenovis::GetInstance().startPlay(false);
-            setRecordInfo(false, VideoRecInfo());
+            setRecordInfo(VideoRecInfo());
         }
 	}
 }
@@ -533,25 +529,10 @@ QSize DisplayWidget::sizeHint() const
     return ZenoStyle::dpiScaledSize(QSize(12, 400));
 }
 
-bool DisplayWidget::isRecording() const
-{
-    return m_view && m_view->isRecording();
-}
-
 void DisplayWidget::updateFrame(const QString &action)
 {
     if (m_mainWin && m_mainWin->inDlgEventLoop())
         return;
-
-    if (isRecording())
-    {
-        if (action == "finishFrame")
-        {
-            m_view->rendering();
-            m_view->recordCurrFrame();
-        }
-        return;
-    }
 
     if (action == "newFrame") {
         m_pTimer->stop();
@@ -626,34 +607,34 @@ void DisplayWidget::onRun()
 
 void DisplayWidget::onRecord()
 {
-    ZRecordVideoDlg dlg(this);
+    auto& inst = Zenovis::GetInstance();
+
+    int frameLeft = zeno::getSession().globalComm->beginFrameNumber;
+    int frameRight = zeno::getSession().globalComm->endFrameNumber;
+
+    ZRecordVideoDlg dlg(frameLeft, frameRight, this);
     if (QDialog::Accepted == dlg.exec())
     {
         int frameStart = 0, frameEnd = 0, fps = 0, bitrate = 0, width = 0, height = 0;
         QString presets, path;
         dlg.getInfo(frameStart, frameEnd, fps, bitrate, presets, width, height, path);
         //validation.
-        if (frameEnd >= frameStart && frameStart >= 0)
+
+        VideoRecInfo recInfo;
+        recInfo.record_path = path;
+        recInfo.frameRange = { frameStart, frameEnd };
+        recInfo.res = { (float)width, (float)height };
+        m_view->setRecordInfo(recInfo);
+
+        //ZRecordProgressDlg* dlgProc = new ZRecordProgressDlg(recInfo);
+        //connect(m_view, SIGNAL(frameRecorded(int)), dlgProc, SLOT(onFrameFinished(int)));
+        //dlgProc->show();
+
+        for (int frame = frameStart; frame <= frameEnd; frame++)
         {
-			auto pGraphsMgr = zenoApp->graphsManagment();
-			IGraphsModel* pModel = pGraphsMgr->currentModel();
-			if (!pModel)
-				return;
-
-            //zeno::scope_exit sp([=]() { clearRecordVis(); });
-
-            VideoRecInfo recInfo;
-            recInfo.record_path = path;
-            recInfo.frameRange = { frameStart, frameEnd };
-            recInfo.res = { (float)width, (float)height };
-
-            //m_view->setRecordInfo(true, recInfo);
-            //launchProgram(pModel, frameStart, frameEnd);
-            //Zenovis::GetInstance().startPlay(true);
-
-            ZRecordProgressDlg* dlgProc = new ZRecordProgressDlg(recInfo);
-            connect(m_view, SIGNAL(frameRecorded(int)), dlgProc, SLOT(onFrameFinished(int)));
-            dlgProc->exec();
+            Zenovis::GetInstance().setCurrentFrameId(frame);
+            m_view->rendering();
+            m_view->recordCurrFrame();
         }
     }
 }
