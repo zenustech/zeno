@@ -24,6 +24,7 @@
 #include <zeno/core/Session.h>
 #include <zeno/extra/GlobalState.h>
 #include <zeno/extra/GlobalComm.h>
+#include "recordvideomgr.h"
 
 
 static std::optional<float> ray_sphere_intersect(
@@ -337,42 +338,47 @@ void ViewportWidget::resizeGL(int nx, int ny)
     m_camera->updatePerspective();
 }
 
-void ViewportWidget::setRecordInfo(const VideoRecInfo& info)
+QVector2D ViewportWidget::cameraRes() const
 {
-    m_recordInfo = info;
+    return m_camera->res();
+}
+
+void ViewportWidget::setCameraRes(const QVector2D& res)
+{
+    m_camera->setRes(res);
+}
+
+void ViewportWidget::updatePerspective()
+{
+    m_camera->updatePerspective();
 }
 
 void ViewportWidget::paintGL()
 {
-    rendering();
+    Zenovis::GetInstance().paintGL();
+    if (!record_path.empty() /*&& f <= frame_end*/) //py has bug: frame_end not initialized.
+    {
+        int f = Zenovis::GetInstance().getCurrentFrameId();
+        auto record_file = zeno::format("{}/{:06d}.png", record_path, f);
+        int nsamples = 16;
+        checkRecord(record_file, record_res, nsamples);
+    }
 }
 
-void ViewportWidget::recordCurrFrame()
+void ViewportWidget::checkRecord(std::string a_record_file, QVector2D a_record_res, int a_nsamples)
 {
-    int frame = Zenovis::GetInstance().getCurrentFrameId();
-	if (!m_recordInfo.record_path.isEmpty() && frame <= m_recordInfo.frameRange.second)
-	{
-		auto record_file = zeno::format("{}/{:06d}.png", m_recordInfo.record_path.toStdString(), frame);
-		int nsamples = 16;
-
+    if (!record_path.empty() /*&& f <= frame_end*/) //py has bug: frame_end not initialized.
+    {
         QVector2D oldRes = m_camera->res();
-        m_camera->setRes(m_recordInfo.res);
+        m_camera->setRes(a_record_res);
         m_camera->updatePerspective();
-        auto extname = QFileInfo(QString::fromStdString(record_file)).suffix().toStdString();
-        Zenovis::GetInstance().getSession()->do_screenshot(record_file, extname, nsamples);
+        auto extname = QFileInfo(QString::fromStdString(a_record_file)).suffix().toStdString();
+        Zenovis::GetInstance().getSession()->do_screenshot(a_record_file, extname, a_nsamples);
         m_camera->setRes(oldRes);
         m_camera->updatePerspective();
-        emit frameRecorded(frame);
-        if (frame == m_recordInfo.frameRange.second)
-        {
-            setRecordInfo(VideoRecInfo());
-        }
-	}
-}
-
-void ViewportWidget::rendering()
-{
-    Zenovis::GetInstance().paintGL();
+        //if f == self.frame_end:
+        //    self.parent_widget.record_video.finish_record()
+    }
 }
 
 void ViewportWidget::mousePressEvent(QMouseEvent* event)
@@ -624,17 +630,18 @@ void DisplayWidget::onRecord()
         recInfo.record_path = path;
         recInfo.frameRange = { frameStart, frameEnd };
         recInfo.res = { (float)width, (float)height };
-        m_view->setRecordInfo(recInfo);
 
-        //ZRecordProgressDlg* dlgProc = new ZRecordProgressDlg(recInfo);
-        //connect(m_view, SIGNAL(frameRecorded(int)), dlgProc, SLOT(onFrameFinished(int)));
-        //dlgProc->show();
-
-        for (int frame = frameStart; frame <= frameEnd; frame++)
+        RecordVideoMgr recordMgr(m_view, recInfo, nullptr);
+        ZRecordProgressDlg dlgProc(recInfo);
+        connect(&recordMgr, SIGNAL(frameFinished(int)), &dlgProc, SLOT(onFrameFinished(int)));
+        connect(&recordMgr, SIGNAL(recordFinished()), &dlgProc, SLOT(onRecordFinished()));
+        if (QDialog::Accepted == dlgProc.exec())
         {
-            Zenovis::GetInstance().setCurrentFrameId(frame);
-            m_view->rendering();
-            m_view->recordCurrFrame();
+            //todo: ui hint for opening record path.
+        }
+        else
+        {
+            recordMgr.cancelRecord();
         }
     }
 }

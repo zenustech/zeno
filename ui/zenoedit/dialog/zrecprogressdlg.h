@@ -16,11 +16,15 @@ public:
     ZRecordProgressDlg(const VideoRecInfo& info, QWidget* parent = nullptr);
     ~ZRecordProgressDlg();
 
+signals:
+    void cancelTriggered();
+
 protected:
     void paintEvent(QPaintEvent* event) override;
 
 public slots:
     void onFrameFinished(int frame);
+    void onRecordFinished();
 
 private:
     VideoRecInfo m_info;

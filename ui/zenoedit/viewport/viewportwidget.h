@@ -76,9 +76,10 @@ public:
     void initializeGL() override;
     void resizeGL(int nx, int ny) override;
     void paintGL() override;
-    void rendering();
-    void setRecordInfo(const VideoRecInfo& info);
-    void recordCurrFrame();
+    void checkRecord(std::string a_record_file, QVector2D a_record_res, int a_nsamples);
+    QVector2D cameraRes() const;
+    void setCameraRes(const QVector2D& res);
+    void updatePerspective();
 
 signals:
     void frameRecorded(int);
@@ -91,7 +92,8 @@ protected:
 
 private:
     std::shared_ptr<CameraControl> m_camera;
-    VideoRecInfo m_recordInfo;
+    std::string record_path;
+    QVector2D record_res;
 };
 
 class CameraKeyframeWidget;
@@ -123,6 +125,7 @@ private:
     ZenoMainWindow* m_mainWin;
     CameraKeyframeWidget* m_camera_keyframe;
     QTimer* m_pTimer;
+    QThread m_recThread;
     static const int m_updateFeq = 16;
     static const int m_sliderFeq = 16;
 };
