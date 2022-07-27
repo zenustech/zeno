@@ -12,6 +12,7 @@ public:
     static QString nthSerialNumName(QString name);
     static QLinearGradient colorString2Grad(const QString& colorStr);
     static QString gradient2colorString(const QLinearGradient& grad);
+    static INPUT_SOCKET getInputSocket(const QPersistentModelIndex& index, const QString& inSock, bool& exist);
 };
 
 

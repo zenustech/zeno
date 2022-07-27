@@ -10,6 +10,9 @@
 #include <zenoui/model/modelrole.h>
 #include "util/log.h"
 #include "panel/zenospreadsheet.h"
+#include "viewport/viewportwidget.h"
+#include "viewport/zenovis.h"
+#include <zenovis/ObjectsManager.h>
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -60,6 +63,15 @@ void ZenoDockWidget::setWidget(DOCK_TYPE type, QWidget* widget)
         ZenoViewDockTitle* pViewTitle = new ZenoViewDockTitle;
         pViewTitle->setupUi();
         pTitleWidget = pViewTitle;
+        if (DisplayWidget* pViewWid = qobject_cast<DisplayWidget*>(widget))
+        {
+            connect(pViewTitle, &ZenoDockTitleWidget::actionTriggered, this, [=](QAction* action) {
+                //TODO: unify the tr specification.
+                if (action->text() == ZenoViewDockTitle::tr("Record Video")) {
+                    pViewWid->onRecord();
+                }
+            });
+        }
     }
 	else
 	{
@@ -75,25 +87,46 @@ void ZenoDockWidget::setWidget(DOCK_TYPE type, QWidget* widget)
 
 void ZenoDockWidget::onNodesSelected(const QModelIndex& subgIdx, const QModelIndexList& nodes, bool select)
 {
-    if (m_type != DOCK_NODE_PARAMS)
-        return;
+    if (m_type == DOCK_NODE_PARAMS) {
+        ZenoPropPanel* panel = qobject_cast<ZenoPropPanel*>(widget());
+        ZASSERT_EXIT(panel);
 
-    ZenoPropPanel* panel = qobject_cast<ZenoPropPanel*>(widget());
-    ZASSERT_EXIT(panel);
+        IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+        ZenoPropDockTitleWidget* pPropTitle = qobject_cast<ZenoPropDockTitleWidget*>(titleBarWidget());
+        if (select) {
+            const QModelIndex& idx = nodes[0];
+            QString nodeName = pModel->data2(subgIdx, idx, ROLE_OBJNAME).toString();
+            pPropTitle->setTitle(nodeName);
+        }
+        else {
+            pPropTitle->setTitle(tr("property"));
+        }
+        panel->reset(pModel, subgIdx, nodes, select);
+    }
+    else if (m_type == DOCK_NODE_DATA) {
+        ZenoSpreadsheet* panel = qobject_cast<ZenoSpreadsheet*>(widget());
+        ZASSERT_EXIT(panel);
 
-    IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
-    ZenoPropDockTitleWidget* pPropTitle = qobject_cast<ZenoPropDockTitleWidget*>(titleBarWidget());
-    if (select)
-    {
-        const QModelIndex& idx = nodes[0];
-        QString nodeName = pModel->data2(subgIdx, idx, ROLE_OBJNAME).toString();
-        pPropTitle->setTitle(nodeName);
+        IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+        if (select) {
+            const QModelIndex& idx = nodes[0];
+            QString nodeId = pModel->data2(subgIdx, idx, ROLE_OBJID).toString();
+            auto scene = Zenovis::GetInstance().getSession()->get_scene();
+            scene->selected.clear();
+            std::string nodeid = nodeId.toStdString();
+            for (auto const &[key, ptr]: scene->objectsMan->pairs()) {
+                if (nodeid == key.substr(0, key.find_first_of(':'))) {
+                    scene->selected.insert(key);
+                }
+            }
+            ZenoMainWindow* mainWin = zenoApp->getMainWindow();
+            mainWin->onPrimitiveSelected(scene->selected);
+            zenoApp->getMainWindow()->updateViewport();
+        }
+        else {
+            panel->clear();
+        }
     }
-    else
-    {
-        pPropTitle->setTitle(tr("property"));
-    }
-    panel->reset(pModel, subgIdx, nodes, select);
 }
 
 DOCK_TYPE ZenoDockWidget::type() const

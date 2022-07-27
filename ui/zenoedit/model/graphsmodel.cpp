@@ -1369,10 +1369,46 @@ void GraphsModel::updateParamInfo(const QString& id, PARAM_UPDATE_INFO info, con
                     updateInfo.updateWay = SOCKET_UPDATE_TYPE;
                     updateInfo.oldInfo.type = info.oldValue.toString();
                     updateInfo.newInfo.type = info.newValue.toString();
+                    updateInfo.newInfo.defaultValue = deflVal;
+
+                    pGraph->updateParam(id, info.name, info.newValue);
+
+                    if (updateInfo.newInfo.type == "string")
+                    {
+                        updateInfo.newInfo.defaultValue = "";
+                    }
+                    else if (updateInfo.newInfo.type == "float")
+                    {
+                        if (updateInfo.oldInfo.type == "int") {
+                            updateInfo.newInfo.defaultValue = deflVal.toFloat();
+                        }
+                        else {
+                            updateInfo.newInfo.defaultValue = QVariant((float)0.);
+                        }
+                    }
+                    else if (updateInfo.newInfo.type == "int")
+                    {
+                        if (updateInfo.oldInfo.type == "float") {
+                            updateInfo.newInfo.defaultValue = deflVal.toInt();
+                        }
+                        else {
+                            updateInfo.newInfo.defaultValue = QVariant((int)0);
+                        }
+                    }
+                    else if (updateInfo.newInfo.type == "vec3f")
+                    {
+                        updateInfo.newInfo.defaultValue = QVariant::fromValue(QVector<qreal>());
+                    }
+                    else
+                    {
+                        //other unknown or unregister type.
+                        updateInfo.newInfo.defaultValue = QVariant();
+                    }
+                    //update defl type and value on SubInput/SubOutput, when type changes.
+                    pGraph->updateParam(id, "defl", updateInfo.newInfo.defaultValue);
+
                     updateInfo.oldInfo.control = UiHelper::getControlType(updateInfo.oldInfo.type);
                     updateInfo.newInfo.control = UiHelper::getControlType(updateInfo.newInfo.type);
-                    updateInfo.newInfo.defaultValue = deflVal;
-                    updateInfo.oldInfo.defaultValue = deflVal;
                     updateDescInfo(pGraph->name(), updateInfo);
                 }
             }
@@ -1605,7 +1641,18 @@ void GraphsModel::updateDescInfo(const QString& descName, const SOCKET_UPDATE_IN
         }
         case SOCKET_UPDATE_DEFL:
         {
-            break;
+            const QString& name = updateInfo.newInfo.name;
+            if (updateInfo.bInput)
+			{
+				ZASSERT_EXIT(desc.inputs.find(name) != desc.inputs.end());
+				desc.inputs[name].info.defaultValue = updateInfo.newInfo.defaultValue;
+            }
+            else
+            {
+                ZASSERT_EXIT(desc.outputs.find(name) != desc.outputs.end());
+                desc.outputs[name].info.defaultValue = updateInfo.newInfo.defaultValue;
+            }
+            break;   // if break, the default value will be sync to all subnet nodes. otherwise(if return), will not sync to outside subnet nodes.
         }
         case SOCKET_UPDATE_TYPE:
         {
@@ -1617,12 +1664,14 @@ void GraphsModel::updateDescInfo(const QString& descName, const SOCKET_UPDATE_IN
                 ZASSERT_EXIT(desc.inputs.find(name) != desc.inputs.end());
                 desc.inputs[name].info.type = socketType;
                 desc.inputs[name].info.control = ctrl;
+                desc.inputs[name].info.defaultValue = updateInfo.newInfo.defaultValue;
             }
             else
             {
                 ZASSERT_EXIT(desc.outputs.find(name) != desc.outputs.end());
                 desc.outputs[name].info.type = socketType;
                 desc.outputs[name].info.control = ctrl;
+                desc.outputs[name].info.defaultValue = updateInfo.newInfo.defaultValue;
             }
             break;
         }

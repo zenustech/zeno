@@ -174,3 +174,18 @@ QString AppHelper::gradient2colorString(const QLinearGradient& grad)
     }
     return colorStr;
 }
+
+INPUT_SOCKET AppHelper::getInputSocket(const QPersistentModelIndex& index, const QString& inSock, bool& exist)
+{
+    INPUT_SOCKETS inputs = index.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
+    //assuming inSock is valid...
+    INPUT_SOCKET _inSocket;
+    if (inputs.find(inSock) == inputs.end())
+    {
+        exist = false;
+        return _inSocket;
+    }
+    _inSocket = inputs[inSock];
+    exist = true;
+    return _inSocket;
+}

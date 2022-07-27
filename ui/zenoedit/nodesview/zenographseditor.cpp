@@ -273,11 +273,11 @@ void ZenoGraphsEditor::onSubnetOptionClicked()
 
 		});
 	connect(pImpFromFile, &QAction::triggered, this, [=]() {
-
-		});
+        m_mainWin->importGraph();
+    });
 	connect(pImpFromSys, &QAction::triggered, this, [=]() {
 
-		});
+	});
 
     pOptionsMenu->exec(QCursor::pos());
     pOptionsMenu->deleteLater();
