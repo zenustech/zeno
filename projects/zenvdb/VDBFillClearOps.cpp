@@ -6,6 +6,7 @@
 #include <openvdb/points/PointCount.h>
 #include <openvdb/points/PointAdvect.h>
 #include <openvdb/tools/Interpolation.h>
+#include <openvdb/tools/ChangeBackground.h>
 
 namespace {
 

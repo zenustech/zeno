@@ -5,12 +5,15 @@
 #include <zeno/utils/variantswitch.h>
 #include <zeno/extra/GlobalState.h>
 #include <zeno/core/Graph.h>
+#include <openvdb/tools/Prune.h>
+#include <openvdb/tools/ChangeBackground.h>
 #include <zeno/VDBGrid.h>
 #include <zfx/zfx.h>
 #include <zfx/x64.h>
 #include <cassert>
 #include "dbg_printf.h"
 #include <zeno/StringObject.h>
+//#include <zeno/utils/zeno_p.h>
 
 namespace zeno {
 namespace {
@@ -28,7 +31,8 @@ struct Buffer {
 
 
 template <class GridPtr>
-void vdb_wrangle(zfx::x64::Executable *exec, GridPtr &grid, bool modifyActive) {
+void vdb_wrangle(zfx::x64::Executable *exec, GridPtr &grid, bool modifyActive, bool changeBackground) {
+    //ZENO_P(grid->background());
     auto wrangler = [&](auto &leaf, openvdb::Index leafpos) {
         for (auto iter = leaf.beginValueOn(); iter != leaf.endValueOn(); ++iter) {
             iter.modifyValue([&](auto &v) {
@@ -72,6 +76,27 @@ void vdb_wrangle(zfx::x64::Executable *exec, GridPtr &grid, bool modifyActive) {
     };
     auto velman = openvdb::tree::LeafManager<std::decay_t<decltype(grid->tree())>>(grid->tree());
     velman.foreach(wrangler);
+    if (changeBackground) {
+        auto v = grid->background();
+        {
+            auto ctx = exec->make_context();
+            if constexpr (std::is_same_v<std::decay_t<decltype(v)>, openvdb::Vec3f>) {
+                ctx.channel(0)[0] = v[0];
+                ctx.channel(1)[0] = v[1];
+                ctx.channel(2)[0] = v[2];
+                ctx.execute();
+                v[0] = ctx.channel(0)[0];
+                v[1] = ctx.channel(1)[0];
+                v[2] = ctx.channel(2)[0];
+
+            } else {
+                ctx.channel(0)[0] = v;
+                ctx.execute();
+                v = ctx.channel(0)[0];
+            }
+        }
+        openvdb::tools::changeBackground(grid->tree(), v);
+    }
     openvdb::tools::prune(grid->tree());
 }
 
@@ -164,18 +189,23 @@ struct VDBWrangle : zeno::INode {
             dbg_printf("(valued %f)\n", value);
             exec->parameter(prog->param_id(name, dimid)) = value;
         }
-        auto modifyActive = (get_input<zeno::StringObject>("ModifyActive")->get())=="true";
+        auto modifyActive = has_input("ModifyActive") ?
+            (get_input<zeno::StringObject>("ModifyActive")->get())=="true" : false;
+        auto changeBackground = has_input("ChangeBackground") ?
+            (get_input<zeno::StringObject>("ChangeBackground")->get())=="true" : false;
         if (auto p = std::dynamic_pointer_cast<zeno::VDBFloatGrid>(grid); p)
-            vdb_wrangle(exec, p->m_grid, modifyActive);
+            vdb_wrangle(exec, p->m_grid, modifyActive, changeBackground);
         else if (auto p = std::dynamic_pointer_cast<zeno::VDBFloat3Grid>(grid); p)
-            vdb_wrangle(exec, p->m_grid, modifyActive);
+            vdb_wrangle(exec, p->m_grid, modifyActive, changeBackground);
 
         set_output("grid", std::move(grid));
     }
 };
 
 ZENDEFNODE(VDBWrangle, {
-    {{"VDBGrid", "grid"}, {"string", "zfxCode"},{"enum true false","ModifyActive","false"},
+    {{"VDBGrid", "grid"}, {"string", "zfxCode"},
+     {"enum true false","ModifyActive","false"},
+     {"enum true false","ChangeBackground","false"},
      {"DictObject:NumericObject", "params"}},
     {{"VDBGrid", "grid"}},
     {},
