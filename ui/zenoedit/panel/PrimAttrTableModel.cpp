@@ -123,6 +123,14 @@ QVariant PrimAttrTableModel::data(const QModelIndex& index, int role) const
                 auto v = zeno::objectToLiterial<int>(it->second);
                 return v;
             }
+            else if (zeno::objectIsLiterial<zeno::vec2f>(it->second)) {
+                auto v = zeno::objectToLiterial<zeno::vec2f>(it->second);
+                return QString("%1, %2").arg(v[0]).arg(v[1]);
+            }
+            else if (zeno::objectIsLiterial<zeno::vec2i>(it->second)) {
+                auto v = zeno::objectToLiterial<zeno::vec2i>(it->second);
+                return QString("%1, %2").arg(v[0]).arg(v[1]);
+            }
             else if (zeno::objectIsLiterial<zeno::vec3f>(it->second)) {
                 auto v = zeno::objectToLiterial<zeno::vec3f>(it->second);
                 return QString("%1, %2, %3").arg(v[0]).arg(v[1]).arg(v[2]);
@@ -130,6 +138,18 @@ QVariant PrimAttrTableModel::data(const QModelIndex& index, int role) const
             else if (zeno::objectIsLiterial<zeno::vec3i>(it->second)) {
                 auto v = zeno::objectToLiterial<zeno::vec3i>(it->second);
                 return QString("%1, %2, %3").arg(v[0]).arg(v[1]).arg(v[2]);
+            }
+            else if (zeno::objectIsLiterial<zeno::vec4f>(it->second)) {
+                auto v = zeno::objectToLiterial<zeno::vec4f>(it->second);
+                return QString("%1, %2, %3, %4").arg(v[0]).arg(v[1]).arg(v[2]).arg(v[3]);
+            }
+            else if (zeno::objectIsLiterial<zeno::vec4i>(it->second)) {
+                auto v = zeno::objectToLiterial<zeno::vec4i>(it->second);
+                return QString("%1, %2, %3, %4").arg(v[0]).arg(v[1]).arg(v[2]).arg(v[3]);
+            }
+            else if (zeno::objectIsLiterial<std::string>(it->second)) {
+                auto v = zeno::objectToLiterial<std::string>(it->second);
+                return QString(v.c_str());
             }
         }
         return "-";
