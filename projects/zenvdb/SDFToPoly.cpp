@@ -70,7 +70,7 @@ static int defSDFToPoly = zeno::defNodeClass<SDFToPoly>("SDFToPoly",
         {"float", "adaptivity", "0"},
         {"bool", "allowQuads", "0"},
     }, /* category: */ {
-    "openvdb",
+    "deprecated",
     }});
 
 

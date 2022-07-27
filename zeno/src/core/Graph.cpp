@@ -111,7 +111,8 @@ ZENO_API void Graph::setNodeInput(std::string const &id, std::string const &par,
 
 ZENO_API std::map<std::string, zany> Graph::callTempNode(std::string const &id,
         std::map<std::string, zany> inputs) const {
-    auto se = session->nodeClasses.at(id)->new_instance();
+    auto cl = safe_at(session->nodeClasses, id, "node class name").get();
+    auto se = cl->new_instance();
     se->graph = const_cast<Graph *>(this);
     se->inputs = std::move(inputs);
     se->doApply();

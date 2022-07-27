@@ -107,3 +107,12 @@ sudo cmake --build build --target install
 ```
 
 This will install Zeno **globally in your system**.
+
+## Install via AUR (experimental)
+
+Arch Linux users may install Zeno from [AUR](https://aur.archlinux.org):
+```bash
+yay -S zeno
+```
+The package is maintained by @archibate.
+

@@ -4,6 +4,7 @@
 #include <type_traits>
 #include <typeinfo>
 #include <algorithm>
+#include <tuple>
 
 namespace zeno {
 inline namespace variantswitch_h {
@@ -107,6 +108,14 @@ struct variant_index<std::variant<T0, Ts...>, T> : variant_index<std::variant<Ts
 template <class Enum, class Variant, class T>
 struct variant_enum : std::integral_constant<Enum, Enum{std::underlying_type_t<Enum>(variant_index<Variant, T>::value)}> {
 };
+
+template <class ...Fs>
+std::variant<std::invoke_result_t<Fs>...> functor_variant(std::size_t index, Fs const &...fs) {
+    return index_switch<sizeof...(Fs)>(index, [fstup = std::tuple<Fs const &...>(fs...)] (auto index)
+                                        -> std::variant<std::invoke_result_t<Fs>...> {
+        return std::get<index.value>(fstup)();
+    });
+}
 
 #if 0
 template <class Variant, bool HasMono = false, class Table, std::size_t N>

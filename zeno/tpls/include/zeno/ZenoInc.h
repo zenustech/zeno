@@ -11,3 +11,5 @@
 #include <zeno/ListObject.h>
 #include <zeno/FunctionObject.h>
 #include <zeno/DictObject.h>
+#include <zeno/types/DummyObject.h>
+#include <zeno/core/Graph.h>

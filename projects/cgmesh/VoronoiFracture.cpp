@@ -5,7 +5,8 @@
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/PrimitiveTools.h>
-#include <zeno/utils/random.h>
+#include <zeno/funcs/PrimitiveUtils.h>
+#include <zeno/utils/wangsrng.h>
 #include <zeno/utils/vec.h>
 #include <voro++/voro++.hh>
 #include "EigenUtils.h"
@@ -51,8 +52,9 @@ struct AABBVoronoi : INode {
                 }
             } else {
                 auto numParticles = get_param<int>("numRandPoints");
+                wangsrng rng(numParticles);
                 for (int i = 0; i < numParticles; i++) {
-                    vec3f p(frand(),frand(),frand());
+                    vec3f p(rng.next_float(),rng.next_float(),rng.next_float());
                     p = p * (bmax - bmin) + bmin;
                     pcon.put(i + 1, p[0], p[1], p[2]);
                 }
@@ -186,7 +188,7 @@ struct VoronoiFracture : AABBVoronoi {
 
         #pragma omp parallel for
         for (int i = 0; i < listB.size(); i++) {
-            log_info("VoronoiFracture: processing fragment #{}...", i);
+            log_debug("VoronoiFracture: processing fragment #{}...", i);
             auto const &primB = listB[i];
             auto [VB, FB] = get_param<bool>("doMeshFix2") ? prim_to_eigen_with_fix(primB.get()) : prim_to_eigen(primB.get());
             Eigen::MatrixXd VC;
@@ -247,7 +249,7 @@ ZENO_DEFNODE(VoronoiFracture)({
         {"ListObject", "neighList"},
         },
         { // params:
-        {"bool", "doMeshFix", "1"},
+        {"bool", "doMeshFix", "0"},
         {"bool", "doMeshFix2", "1"},
         {"int", "numRandPoints", "256"},
         {"bool", "periodicX", "0"},
@@ -256,6 +258,63 @@ ZENO_DEFNODE(VoronoiFracture)({
         },
         {"cgmesh"},
 });
+
+
+//struct VoronoiFracture : VoronoiFractureSingle {
+    //virtual void apply() override {
+        //if (!get_param<bool>("splitIsland")) {
+            //VoronoiFractureSingle::apply();
+            //return;
+        //}
+        //auto prim = get_input<PrimitiveObject>("meshPrim");
+        //std::string islandAttr = "**" + std::to_string(wangsrng(prim->size()).next_uint32());
+        //primMarkIsland(prim.get(), islandAttr);
+        //auto prims = primUnmergeVerts(prim.get(), islandAttr);
+        //zeno::log_info("VoronoiFracture split got {} islands", prims.size());
+        //prim->verts.erase_attr(islandAttr);
+        //auto primfinlst = std::make_shared<ListObject>();
+        //auto neighfinlst = std::make_shared<ListObject>();
+        //int redprimcount = 0, islandid = 0;
+        //for (auto const &prim1: prims) {
+            //zeno::log_debug("VoronoiFracture: fracturating island #{}", islandid);
+            //inputs["meshPrim"] = prim1;
+            //VoronoiFractureSingle::apply();
+            //auto *prim1lst = static_cast<ListObject *>(outputs.at("primList").get());
+            //auto *neigh1lst = static_cast<ListObject *>(outputs.at("neighList").get());
+            //for (auto const &nei1li: neigh1lst->getLiterial<vec2i>()) {
+                //neighfinlst->arr.push_back(std::make_shared<NumericObject>(nei1li + redprimcount));
+            //}
+            //for (auto const &prim1li: prim1lst->get<PrimitiveObject>()) {
+                //primfinlst->arr.push_back(prim1li);
+                //redprimcount++;
+            //}
+            //islandid++;
+        //}
+        //set_output("primList", std::move(primfinlst));
+        //set_output("neighList", std::move(neighfinlst));
+    //}
+//};
+
+//ZENO_DEFNODE(VoronoiFracture)({
+        //{ // inputs:
+        //{"PrimitiveObject", "meshPrim"},
+        //{"PrimitiveObject", "particlesPrim"},
+        //},
+        //{ // outputs:
+        //{"ListObject", "primList"},
+        //{"ListObject", "neighList"},
+        //},
+        //{ // params:
+        //{"bool", "splitIsland", "0"},
+        //{"bool", "doMeshFix", "0"},
+        //{"bool", "doMeshFix2", "1"},
+        //{"int", "numRandPoints", "256"},
+        //{"bool", "periodicX", "0"},
+        //{"bool", "periodicY", "0"},
+        //{"bool", "periodicZ", "0"},
+        //},
+        //{"cgmesh"},
+//});
 
 
 struct SimplifyVoroNeighborList : INode {

@@ -66,11 +66,19 @@ struct PrimMarkIndex : INode {
         auto tagAttr = get_input<StringObject>("tagAttr")->get();
         int base = get_input<NumericObject>("base")->get<int>();
         int step = get_input<NumericObject>("step")->get<int>();
+        auto type = get_input<StringObject>("type")->get();
 
-        auto &tag = prim->verts.add_attr<int>(tagAttr);
-        parallel_for((size_t)0, tag.size(), [&] (size_t i) {
-            tag[i] = base + i * step;
-        });
+        if (type == "float") {
+            auto &tag = prim->verts.add_attr<float>(tagAttr);
+            parallel_for((size_t)0, tag.size(), [&] (size_t i) {
+                tag[i] = float(base + i * step);
+            });
+        } else {
+            auto &tag = prim->verts.add_attr<int>(tagAttr);
+            parallel_for((size_t)0, tag.size(), [&] (size_t i) {
+                tag[i] = base + i * step;
+            });
+        }
 
         set_output("prim", std::move(prim));
     }
@@ -81,6 +89,7 @@ ZENDEFNODE(PrimMarkIndex, {
     {
     {"PrimitiveObject", "prim"},
     {"string", "tagAttr", "tag"},
+    {"enum int float", "type", "int"},
     {"int", "base", "0"},
     {"int", "step", "1"},
     },

@@ -164,16 +164,26 @@ static std::string_view lutRandTypes[] = {
 
 }
 
-ZENO_API void primRandomize(PrimitiveObject *prim, std::string attr, std::string dirAttr, std::string randType, float base, float scale, int seed) {
+ZENO_API void primRandomize(PrimitiveObject *prim, std::string attr, std::string dirAttr, std::string seedAttr, std::string randType, float base, float scale, int seed) {
     auto randty = enum_variant<RandTypes>(array_index_safe(lutRandTypes, randType, "randType"));
+    auto seedSel = functor_variant(seedAttr.empty() ? 0 : 1, [&] {
+        return [] (int i) {
+            return i;
+        };
+    }, [&] {
+        auto &seedArr = prim->verts.attr<int>(seedAttr);
+        return [&] (int i) {
+            return seedArr[i];
+        };
+    });
     auto hasDirArr = boolean_variant(!dirAttr.empty());
     if (seed == -1) seed = std::random_device{}();
-    std::visit([&] (auto const &randty, auto hasDirArr) {
+    std::visit([&] (auto const &randty, auto const &seedSel, auto hasDirArr) {
         using T = std::invoke_result_t<decltype(randty), wangsrng &>;
-        auto &arr = prim->add_attr<T>(attr);
+        auto &arr = prim->verts.add_attr<T>(attr);
         auto const &dirArr = hasDirArr ? prim->attr<vec3f>(dirAttr) : std::vector<vec3f>();
         parallel_for((size_t)0, arr.size(), [&] (size_t i) {
-            wangsrng rng(seed, i);
+            wangsrng rng(seed, seedSel(i));
             T offs = base + randty(rng) * scale;
 
             if constexpr (hasDirArr.value && std::is_same_v<T, vec3f>) {
@@ -184,7 +194,7 @@ ZENO_API void primRandomize(PrimitiveObject *prim, std::string attr, std::string
 
             arr[i] = offs;
         });
-    }, randty, hasDirArr);
+    }, randty, seedSel, hasDirArr);
 }
 
 namespace {
@@ -197,8 +207,9 @@ struct PrimRandomize : INode {
         auto seed = get_input2<int>("seed");
         auto attr = get_input2<std::string>("attr");
         auto dirAttr = get_input2<std::string>("dirAttr");
+        auto seedAttr = get_input2<std::string>("seedAttr");
         auto randType = get_input2<std::string>("randType");
-        primRandomize(prim.get(), attr, dirAttr, randType, base, scale, seed);
+        primRandomize(prim.get(), attr, dirAttr, seedAttr, randType, base, scale, seed);
         set_output("prim", get_input("prim"));
     }
 };
@@ -208,6 +219,7 @@ ZENDEFNODE(PrimRandomize, {
     {"PrimitiveObject", "prim"},
     {"string", "attr", "tmp"},
     {"string", "dirAttr", ""},
+    {"string", "seedAttr", ""},
     {"float", "base", "0"},
     {"float", "scale", "1"},
     {"int", "seed", "-1"},

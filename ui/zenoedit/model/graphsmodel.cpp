@@ -1524,7 +1524,7 @@ bool GraphsModel::updateSocketNameNotDesc(const QString& id, SOCKET_UPDATE_INFO 
     {
         if (info.updateWay == SOCKET_UPDATE_NAME)
         {
-            //especially for MakeDict£¬we update the name of socket which are not registerd by descriptors.
+            //especially for MakeDictï¼Œwe update the name of socket which are not registerd by descriptors.
             const QString& newSockName = info.newInfo.name;
             const QString& oldSockName = info.oldInfo.name;
 

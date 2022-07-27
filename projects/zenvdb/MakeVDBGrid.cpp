@@ -19,7 +19,9 @@ struct MakeVDBGrid : zeno::INode {
     auto name = get_param<std::string>(("name"));
     std::shared_ptr<VDBGrid> data;
     if (type == "float") {
-      auto tmp = zeno::IObject::make<VDBFloatGrid>();
+      auto tmp = !has_input("background") ? zeno::IObject::make<VDBFloatGrid>()
+          : std::make_shared<VDBFloatGrid>(openvdb::FloatGrid::create(
+                  get_input("background")->as<NumericObject>()->get<float>()));
       auto transform = openvdb::math::Transform::createLinearTransform(dx);
       if(structure==std::string("vertex"))
         transform->postTranslate(openvdb::Vec3d{ -0.5,-0.5,-0.5 }*double(dx));
@@ -27,7 +29,10 @@ struct MakeVDBGrid : zeno::INode {
       tmp->m_grid->setName(name);
       data = std::move(tmp);
     } else if (type == "float3") {
-      auto tmp = zeno::IObject::make<VDBFloat3Grid>();
+      auto tmp = !has_input("background") ? zeno::IObject::make<VDBFloat3Grid>()
+          : std::make_shared<VDBFloat3Grid>(openvdb::Vec3fGrid::create(
+                  zeno::vec_to_other<openvdb::Vec3f>(get_input("background")
+                                                     ->as<NumericObject>()->get<vec3f>())));
       tmp->m_grid->setTransform(openvdb::math::Transform::createLinearTransform(dx));
       tmp->m_grid->setName(name);
       if (structure == "Staggered") {
@@ -58,7 +63,7 @@ struct MakeVDBGrid : zeno::INode {
 };
 
 static int defMakeVDBGrid = zeno::defNodeClass<MakeVDBGrid>(
-    "MakeVDBGrid", {/* inputs: */ {{"float","Dx","0.08"},}, /* outputs: */
+    "MakeVDBGrid", {/* inputs: */ {{"float","Dx","0.08"},{"float","background","0"}}, /* outputs: */
                     {
                         "data",
                     },

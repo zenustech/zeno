@@ -1,5 +1,6 @@
 #include <zeno/zeno.h>
 #include <zeno/core/Graph.h>
+#include <zeno/types/DummyObject.h>
 //#include <zeno/types/ConditionObject.h>
 //#include <zeno/utils/safe_at.h>
 //#include <cassert>
@@ -188,11 +189,8 @@ struct SubInput : zeno::INode {
     }
 
     virtual void apply() override {
-        if (has_input("_IN_port")) {
-            set_output("port", get_input("_IN_port")); 
-        } else {
-            set_output("port", get_input("defl:"));
-        }
+        //printf("!!! %s\n", typeid(*get_input("_IN_port")).name());
+        set_output("port", get_input("_IN_port")); 
         set_output("hasValue", get_input("_IN_hasValue"));
     }
 };

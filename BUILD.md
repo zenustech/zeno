@@ -128,6 +128,8 @@ Please replace the `C:/Qt/Qt5.14.2` by your custom Qt install location. And make
 
 > Also, Windows doesn't support `--parallel` argument, which means MSBuild is a single-threaded build system, you have to wait.
 
+> If you want parallel build on Windows, you have to install [Ninja](https://github.com/ninja-build/ninja/releases), and use `cmake -G Ninja -B build` in the first step instead.
+
 > If the second command (`cmake --build build --config Release`) failed with `cannot find compiler 'cc1.exe'`: Please open the `build/zeno.sln` with Visual Studio, select `Release` configuration in the UI, click the `Build` button. (Yes, MSPigs prefer GUI than CLI... They never expose `cc1` to `PATH`... After `Build` complete, simply exit Visual Studio, and continue edit files with your favorite IDE :)
 
 ### Linux

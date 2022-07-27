@@ -1361,6 +1361,7 @@ QSizeF ZenoNode::sizeHint(Qt::SizeHint which, const QSizeF &constraint) const
 void ZenoNode::markError(bool isError)
 {
     m_bError = isError;
+    ZASSERT_EXIT(m_headerWidget);
     if (m_bError)
         m_headerWidget->setColors(false, QColor(200, 84, 79), QColor(), QColor());
     else

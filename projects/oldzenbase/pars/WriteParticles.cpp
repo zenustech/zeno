@@ -41,7 +41,7 @@ static int defWriteParticles = zeno::defNodeClass<WriteParticles>("WriteParticle
     }, /* params: */ {
     {"writepath", "path", ""},
     }, /* category: */ {
-    "particles",
+    "deprecated",
     }});
 
 
@@ -60,7 +60,7 @@ static int defExportParticles = zeno::defNodeClass<ExportParticles>("ExportParti
     }, /* outputs: */ {
     }, /* params: */ {
     }, /* category: */ {
-    "particles",
+    "deprecated",
     }});
 
 }

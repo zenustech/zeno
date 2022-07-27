@@ -37,7 +37,6 @@ struct IObject;
 struct GlobalState;
 struct GlobalComm;
 struct GlobalStatus;
-struct Translator;
 struct EventCallbacks;
 
 struct Session {
@@ -46,7 +45,6 @@ struct Session {
     std::unique_ptr<GlobalState> const globalState;
     std::unique_ptr<GlobalComm> const globalComm;
     std::unique_ptr<GlobalStatus> const globalStatus;
-    std::unique_ptr<Translator> const translator;
     std::unique_ptr<EventCallbacks> const eventCallbacks;
 
     ZENO_API Session();
@@ -59,7 +57,7 @@ struct Session {
 
     ZENO_API std::unique_ptr<Graph> createGraph();
     ZENO_API std::string dumpDescriptors() const;
-    ZENO_API void defNodeClass(std::string const &id, std::unique_ptr<INodeClass> &&cls);
+    ZENO_API void defNodeClass(std::string const &id, std::unique_ptr<INodeClass> cls);
     //ZENO_API void defOverloadNodeClass(std::string const &id, std::vector<std::string> const &types,
             //std::unique_ptr<INodeClass> &&cls);
     //ZENO_API std::unique_ptr<INode> getOverloadNode(

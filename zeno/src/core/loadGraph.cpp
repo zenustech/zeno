@@ -4,9 +4,9 @@
 #include <zeno/funcs/LiterialConverter.h>
 #include <zeno/funcs/ParseObjectFromUi.h>
 #include <zeno/extra/GraphException.h>
-#include <zeno/utils/Translator.h>
 #include <zeno/utils/logger.h>
 #include <zeno/utils/vec.h>
+#include <zeno/utils/zeno_p.h>
 #include <zeno/zeno.h>
 #include <stack>
 
@@ -70,37 +70,32 @@ ZENO_API void Graph::loadGraph(const char *json) {
     Document d;
     d.Parse(json);
 
-    auto tno = [&] (auto const &s) -> decltype(auto) {
-#if 0
-        return session->translator->ut(s);
-#else
-        return s;
-#endif
-    };
-
     Graph *g = this;
     std::stack<Graph *> gStack;
 
     for (int i = 0; i < d.Size(); i++) {
         Value const &di = d[i];
         std::string cmd = di[0].GetString();
-        const char *maybeNodeName = di.Size() >= 1 && di[1].IsString() ? di[1].GetString() : "(not a node)";
+        const char *maybeNodeName = cmd == "addNode" ? di[2].GetString() : (
+            di.Size() >= 1 && di[1].IsString() ? di[1].GetString() : "(not a node)");
+        //ZENO_P(cmd);
+        //ZENO_P(maybeNodeName);
         GraphException::translated([&] {
             if (0) {
             } else if (cmd == "addNode") {
-                g->addNode(tno(di[1].GetString()), di[2].GetString());
+                g->addNode(di[1].GetString(), di[2].GetString());
             } else if (cmd == "setNodeInput") {
-                g->setNodeInput(di[1].GetString(), tno(di[2].GetString()), generic_get<zany>(di[3]));
+                g->setNodeInput(di[1].GetString(), di[2].GetString(), generic_get<zany>(di[3]));
             } else if (cmd == "setNodeParam") {
-                g->setNodeParam(di[1].GetString(), tno(di[2].GetString()), generic_get<std::variant<int, float, std::string, zany>, false>(di[3]));
+                g->setNodeParam(di[1].GetString(), di[2].GetString(), generic_get<std::variant<int, float, std::string, zany>, false>(di[3]));
             } else if (cmd == "bindNodeInput") {
-                g->bindNodeInput(di[1].GetString(), tno(di[2].GetString()), di[3].GetString(), tno(di[4].GetString()));
+                g->bindNodeInput(di[1].GetString(), di[2].GetString(), di[3].GetString(), di[4].GetString());
             } else if (cmd == "completeNode") {
                 g->completeNode(di[1].GetString());
             } else if (cmd == "addSubnetNode") {
                 g->addSubnetNode(di[1].GetString(), di[2].GetString());
             } else if (cmd == "addNodeOutput") {
-                g->addNodeOutput(di[1].GetString(), tno(di[2].GetString()));
+                g->addNodeOutput(di[1].GetString(), di[2].GetString());
             } else if (cmd == "pushSubnetScope") {
                 gStack.push(g);
                 g = g->getSubnetGraph(di[1].GetString());
@@ -111,6 +106,8 @@ ZENO_API void Graph::loadGraph(const char *json) {
                 this->beginFrameNumber = di[1].GetInt();
             } else if (cmd == "setEndFrameNumber") {
                 this->endFrameNumber = di[1].GetInt();
+            } else if (cmd == "setNodeOption") {
+                // skip this for compatibility
             } else {
                 log_warn("got unexpected command: {}", cmd);
             }

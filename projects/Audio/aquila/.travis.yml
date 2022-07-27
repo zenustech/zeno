@@ -1,0 +1,33 @@
+language: cpp
+compiler:
+  - clang
+  - gcc
+env:
+  global:
+    - secure: "XoOzIjgTrJOPQXTWzB4MpPSjvvWpwMvWo39GlmVJZjU61VvcFXB/uWZy6Y4jxhtXCx37A6Xf+otHV1ThuscF5KPAQqUdrGQGYIB47Z+6T2HHk8Bzn0vNL3Rubr2WNL3vsKmiYdUaz6Pb79YY/rab8peOlqzSTuEoqj/YG/Nmvhg="
+before_install:
+  - sudo apt-add-repository ppa:sonkun/sfml-stable -y
+  - sudo apt-add-repository ppa:kalakris/cmake -y
+  - sudo apt-get update -q
+  - sudo apt-get install cmake libsfml-dev lcov
+  - sudo pip install cpp-coveralls
+script:
+  - cmake --version
+  - mkdir -p build
+  - cd build
+  - cmake -DCMAKE_BUILD_TYPE="Debug" ..
+  - make aquila_test
+  - make coverage
+  - ctest
+after_success:
+  - coveralls --exclude examples --exclude lib --exclude tests --root .. --build-root . --gcov-options '\-lp'
+addons:
+  coverity_scan:
+    project:
+      name: zsiciarz/aquila
+      version: 3.0.0-dev
+      description: "Digital signal processing library for C++11"
+    notification_email: zbigniew@aquila-dsp.org
+    build_command_prepend: "mkdir -p build && cd build && cmake -DCMAKE_BUILD_TYPE='Debug' .."
+    build_command: make
+    branch_pattern: coverity_scan

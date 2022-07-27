@@ -57,6 +57,7 @@ target_sources(zeno PRIVATE
   volume/VolumeTopology.cu
   volume/VolumeOperator.cu
   volume/Transfer.cu
+  volume/Conversion.cu
 )
 # mpm
 target_sources(zeno PRIVATE
@@ -73,7 +74,7 @@ target_sources(zeno PRIVATE
 target_sources(zeno PRIVATE
   fem/BoundaryCondition.cu
   fem/Collisions.cu
-  fem/TimeStepping.cu
+  #fem/TimeStepping.cu
   fem/Check.cu
   fem/Generation.cpp
   fem/test.cpp
@@ -83,17 +84,31 @@ target_sources(zeno PRIVATE
   fem/QuasiStaticStepping.cu
   fem/BaryCentricInterpolator.cu
   fem/Codim.cu
-  fem/TestAugLag.cu
+  #fem/TestAugLag.cu
   fem/FastQuasiStaticStepping.cu
+
+  #fem/FleshQuasiStepping.cu
 )
 # geometry
 target_sources(zeno PRIVATE
+  #geometry/file_parser/read_vtk_mesh.hpp
+  geometry/linear_system/mfcg.hpp
+  geometry/linear_system/active_set.hpp
   geometry/kernel/laplace_matrix.hpp
   geometry/kernel/gradient_field.hpp
-  geometry/laplace_equation.cu
-  geometry/gradient_field.cu
-  geometry/update_zs_skinning_weight.cu
-  geometry/zs_do_skinning.cu
+  geometry/kernel/bary_centric_weights.hpp
+  #geometry/SolveLaplacian.cu
+  #geometry/VectorField.cu
+  #geometry/SetupSkinningWeight.cu
+  #geometry/Skinning.cu
+  #geometry/BaryCentricInterpolator.cu
+  #geometry/BiharmonicBoundedWeight.cu
+  #geometry/MeshIO.cu  geometry/kernel/laplace_matrix.hpp
+  #geometry/kernel/gradient_field.hpp
+  #geometry/laplace_equation.cu
+  #geometry/gradient_field.cu
+  #geometry/update_zs_skinning_weight.cu
+  #geometry/zs_do_skinning.cu
 )
 # ocean
 #target_sources(zeno PRIVATE

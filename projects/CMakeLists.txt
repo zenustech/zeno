@@ -26,6 +26,7 @@ set(ZENO_EXTENSIONS
     TreeSketch
     CalcGeometryUV
     MeshSubdiv
+    Audio
     CUDA
     )
 

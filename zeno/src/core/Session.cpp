@@ -3,7 +3,6 @@
 #include <zeno/extra/GlobalState.h>
 #include <zeno/extra/GlobalComm.h>
 #include <zeno/extra/GlobalStatus.h>
-#include <zeno/utils/Translator.h>
 #include <zeno/extra/EventCallbacks.h>
 #include <zeno/core/Graph.h>
 #include <zeno/core/INode.h>
@@ -17,14 +16,13 @@ ZENO_API Session::Session()
     : globalState(std::make_unique<GlobalState>())
     , globalComm(std::make_unique<GlobalComm>())
     , globalStatus(std::make_unique<GlobalStatus>())
-    , translator(std::make_unique<Translator>())
     , eventCallbacks(std::make_unique<EventCallbacks>())
     {
 }
 
 ZENO_API Session::~Session() = default;
 
-ZENO_API void Session::defNodeClass(std::string const &id, std::unique_ptr<INodeClass> &&cls) {
+ZENO_API void Session::defNodeClass(std::string const &id, std::unique_ptr<INodeClass> cls) {
     if (nodeClasses.find(id) != nodeClasses.end()) {
         log_error("node class redefined: `{}`\n", id);
     }

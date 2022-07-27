@@ -1533,11 +1533,12 @@ struct ToBoundaryParticles : INode {
 
     /// extract surface edges
     {
+      constexpr auto space = zs::execspace_e::openmp;
       zs::HashTable<int, 2, int> surfEdgeTable{0};
       surfEdgeTable.resize(ompExec, 3 * tris.size());
       surfEdgeTable.reset(ompExec, true);
 
-      auto seTable = proxy<execspace_e::openmp>(surfEdgeTable);
+      auto seTable = proxy<space>(surfEdgeTable);
       using table_t = RM_CVREF_T(seTable);
       using vec3i = zs::vec<int, 3>;
       using vec2i = zs::vec<int, 2>;
@@ -1553,8 +1554,8 @@ struct ToBoundaryParticles : INode {
       surfEdges = typename ZenoParticles::particles_t(
           {{"inds", 2}}, tris.size() * 3, zs::memsrc_e::host);
       ompExec(range(seTable.size()),
-              [&, edges = proxy<execspace_e::openmp>({}, surfEdges),
-               cnt = proxy<execspace_e::openmp>(surfEdgeCnt)](int i) mutable {
+              [&, edges = proxy<space>({}, surfEdges),
+               cnt = proxy<space>(surfEdgeCnt)](int i) mutable {
                 auto edgeInds = seTable._activeKeys[i];
                 if (auto no = seTable.query(vec2i{edgeInds[1], edgeInds[0]});
                     no == table_t::sentinel_v ||
@@ -1566,7 +1567,19 @@ struct ToBoundaryParticles : INode {
               });
       auto seCnt = surfEdgeCnt.getVal();
       surfEdges.resize(seCnt);
+
+      // surface vert indices
+      auto &surfVerts = (*outParticles)[ZenoParticles::s_surfVertTag];
+      surfVerts = typename ZenoParticles::particles_t({{"inds", 1}}, pos.size(),
+                                                      zs::memsrc_e::host);
+      ompExec(
+          zs::range(pos.size()),
+          [&, surfVerts = proxy<space>({}, surfVerts)](int pointNo) mutable {
+            surfVerts("inds", pointNo) = zs::reinterpret_bits<float>(pointNo);
+          });
+      // surface info
       surfEdges = surfEdges.clone({zs::memsrc_e::device, 0});
+      surfVerts = surfVerts.clone({zs::memsrc_e::device, 0});
     }
 
     eles = eles.clone({memsrc_e::device, 0});
@@ -1651,18 +1664,18 @@ struct ToZSLevelSet : INode {
       // pass in FloatGrid::Ptr
       zs::OpenVDBStruct gridPtr = get_input<VDBFloatGrid>("VDBGrid")->m_grid;
       ls->getLevelSet() = basic_ls_t{zs::convert_floatgrid_to_sparse_levelset(
-          gridPtr, zs::MemoryProperty{zs::memsrc_e::um, 0})};
+          gridPtr, zs::MemoryProperty{zs::memsrc_e::device, 0})};
     } else if (has_input<VDBFloat3Grid>("VDBGrid")) {
       // pass in FloatGrid::Ptr
       zs::OpenVDBStruct gridPtr = get_input<VDBFloat3Grid>("VDBGrid")->m_grid;
       ls->getLevelSet() =
           basic_ls_t{zs::convert_vec3fgrid_to_sparse_staggered_grid(
-              gridPtr, zs::MemoryProperty{zs::memsrc_e::um, 0})};
+              gridPtr, zs::MemoryProperty{zs::memsrc_e::device, 0})};
     } else {
       auto path = get_param<std::string>("path");
       auto gridPtr = zs::load_vec3fgrid_from_vdb_file(path);
       ls->getLevelSet() = basic_ls_t{zs::convert_vec3fgrid_to_sparse_levelset(
-          gridPtr, zs::MemoryProperty{zs::memsrc_e::um, 0})};
+          gridPtr, zs::MemoryProperty{zs::memsrc_e::device, 0})};
     }
 
     fmt::print(fg(fmt::color::cyan), "done executing ToZSLevelSet\n");

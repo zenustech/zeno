@@ -46,7 +46,7 @@ static void pixarONB(vec3f const &n, vec3f /*out*/ &b1, vec3f /*out*/ &b2) {
 
 static void guidedONB(vec3f const &n, vec3f /*inout*/ &b1, vec3f /*out*/ &b2) {
     b2 = normalize(cross(n, b1));
-    b1 = cross(n, b2);
+    b1 = cross(b2, n);
 }
 
 static void guidedPixarONB(vec3f const &n, vec3f /*inout*/ &b1, vec3f /*out*/ &b2) {

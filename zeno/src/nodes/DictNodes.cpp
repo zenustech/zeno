@@ -142,6 +142,24 @@ ZENDEFNODE(ExtractDict, {
 });
 
 
+struct ExtractLegacyDict : ExtractDict {
+    virtual void apply() override {
+        auto dict = get_input<zeno::DictObject>("dict");
+        for (auto const &[key, val]: dict->lut) {
+            outputs[key];
+        }
+        ExtractDict::apply();
+    }
+};
+
+ZENDEFNODE(ExtractLegacyDict, {
+    {{"DictObject", "dict"}},
+    {},
+    {},
+    {"deprecated"},
+});
+
+
 struct DictGetKeyList : zeno::INode {
     virtual void apply() override {
         auto dict = get_input<zeno::DictObject>("dict");

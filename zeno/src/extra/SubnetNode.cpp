@@ -17,6 +17,7 @@ ZENO_API void SubnetNode::apply() {
         //zeno::log_warn("input {} {}", key, nodeid);
         auto node = safe_at(subgraph->nodes, nodeid, "node name").get();
         if (has_input(key)) {
+            //printf("??? %s %s\n", key.c_str(), typeid(*get_input(key)).name());
             node->inputs["_IN_port"] = get_input(key);
             node->inputs["_IN_hasValue"] = std::make_shared<NumericObject>(true);
         } else {

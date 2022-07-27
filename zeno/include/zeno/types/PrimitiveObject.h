@@ -80,7 +80,13 @@ struct PrimitiveObject : IObjectClone<PrimitiveObject> {
             if (name == "pos") throw makeError<TypeError>(
                 typeid(vec3f), typeid(T), "attribute 'pos' must be vec3f");
         }
-        return verts.add_attr<T>(name, value);
+        if (verts.attr_is<T>(name)) {
+            return verts.attr<T>(name);
+        } else {
+            auto &ret = verts.add_attr<T>(name);
+            ret.assign(size(), value);
+            return ret;
+        }
     }
 
     // deprecated:

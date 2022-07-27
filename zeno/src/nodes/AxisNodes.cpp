@@ -6,7 +6,7 @@ namespace {
 
 struct ExtractAxis : zeno::INode {
     virtual void apply() override {
-        auto p = get_input<AxisObject>("axis");
+        auto p = get_input<AxisObject>("math");
         set_output2("origin", p->origin);
         set_output2("axisX", p->axisX);
         set_output2("axisY", p->axisY);
@@ -16,7 +16,7 @@ struct ExtractAxis : zeno::INode {
 
 ZENDEFNODE(ExtractAxis, {
     {
-    {"AxisObject", "axis"},
+    {"AxisObject", "math"},
     },
     {
     {"vec3f", "origin"},
@@ -25,7 +25,7 @@ ZENDEFNODE(ExtractAxis, {
     {"vec3f", "axisZ"},
     },
     {},
-    {"axis"},
+    {"math"},
 });
 
 struct MakeAxis : zeno::INode {
@@ -42,7 +42,7 @@ struct MakeAxis : zeno::INode {
             p->renormalizeByY();
         else if (by == "Z")
             p->renormalizeByZ();
-        set_output("axis", std::move(p));
+        set_output("math", std::move(p));
     }
 };
 
@@ -54,12 +54,12 @@ ZENDEFNODE(MakeAxis, {
     {"vec3f", "axisZ"},
     },
     {
-    {"AxisObject", "axis"},
+    {"AxisObject", "math"},
     },
     {
     {"enum off X Y Z", "normalize", "off"},
     },
-    {"axis"},
+    {"math"},
 });
 
 }

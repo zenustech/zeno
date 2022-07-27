@@ -2792,7 +2792,7 @@ void FLIP_vdb::emit_liquid(
       loopend.z());
 
   float dx = in_out_particles->transform().voxelSize()[0];
-  printf("%f\n", dx);
+  //printf("%f\n", dx);
   auto mark_active_point_leaves =
       [&](const tbb::blocked_range3d<int, int, int> &r) {
         auto solid_axr{in_sdf->getConstUnsafeAccessor()};
