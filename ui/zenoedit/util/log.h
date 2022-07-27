@@ -15,7 +15,7 @@
 #define ZASSERT_EXIT(cond, ...)                    \
     if (!(cond))                                   \
     {                                              \
-        zeno::log_error("Assert failed: ", #cond); \
+        zeno::log_error("Assert failed: " #cond);  \
         return __VA_ARGS__;                        \
     }
 #endif

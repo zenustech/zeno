@@ -627,7 +627,7 @@ void ZenoMainWindow::clearErrorMark()
 
 void ZenoMainWindow::saveAs() {
     DlgInEventLoopScope;
-    QString path = QFileDialog::getSaveFileName(this, "Path to Save", "", "Zensim Graph File(*.zsg);; All Files(*);;");
+    QString path = QFileDialog::getSaveFileName(this, "Path to Save", "", "Zeno Graph File(*.zsg);; All Files(*);;");
     if (!path.isEmpty()) {
         saveFile(path);
     }
@@ -636,7 +636,7 @@ void ZenoMainWindow::saveAs() {
 QString ZenoMainWindow::getOpenFileByDialog() {
     DlgInEventLoopScope;
     const QString &initialPath = ".";
-    QFileDialog fileDialog(this, tr("Open"), initialPath, "Zensim Graph File (*.zsg)\nAll Files (*)");
+    QFileDialog fileDialog(this, tr("Open"), initialPath, "Zeno Graph File (*.zsg)\nAll Files (*)");
     fileDialog.setAcceptMode(QFileDialog::AcceptOpen);
     fileDialog.setFileMode(QFileDialog::ExistingFile);
     fileDialog.setDirectory(initialPath);

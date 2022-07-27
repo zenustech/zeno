@@ -54,7 +54,7 @@ bool ZsgReader::openFile(const QString& fn, IAcceptor* pAcceptor)
     QFile file(fn);
     bool ret = file.open(QIODevice::ReadOnly | QIODevice::Text);
     if (!ret) {
-        zeno::log_error("canot open zsg file: {} ({})", fn.toStdString(),
+        zeno::log_error("cannot open zsg file: {} ({})", fn.toStdString(),
                        file.errorString().toStdString());
         return false;
     }

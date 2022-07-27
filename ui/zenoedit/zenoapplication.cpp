@@ -21,11 +21,6 @@ ZenoApplication::ZenoApplication(int &argc, char **argv)
     m_errSteam.registerMsgHandler();
     verifyVersion();
 
-#if defined(ZENO_MULTIPROCESS) && defined(ZENO_IPC_USE_TCP)
-    m_server = new ZTcpServer(this);
-    m_server->init(QHostAddress::LocalHost);
-#endif
-
     QStringList locations;
     locations = QStandardPaths::standardLocations(QStandardPaths::AppDataLocation);
 #ifdef Q_OS_WIN
@@ -104,6 +99,10 @@ bool ZenoApplication::IsIOProcessing() const
 #if defined(ZENO_MULTIPROCESS) && defined(ZENO_IPC_USE_TCP)
 ZTcpServer* ZenoApplication::getServer()
 {
+    if (!m_server) {
+        m_server = new ZTcpServer(this);
+        m_server->init(QHostAddress::LocalHost);
+    }
     return m_server;
 }
 #endif

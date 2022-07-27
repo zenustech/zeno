@@ -3,11 +3,14 @@
 #include <zeno/core/Session.h>
 #include <zeno/utils/log.h>
 #include "zstartup.h"
+#include <QApplication>
 #include <QSettings>
 #include <algorithm>
 
 void startUp()
 {
+    zeno::setExecutableDir(QCoreApplication::applicationDirPath().toStdString());
+
     QSettings settings("ZenusTech", "Zeno");
     QVariant nas_loc_v = settings.value("nas_loc");
     if (!nas_loc_v.isNull()) {
