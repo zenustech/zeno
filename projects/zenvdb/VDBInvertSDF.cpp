@@ -5,9 +5,6 @@
 #include <openvdb/tools/Prune.h>
 #include <openvdb/tools/ChangeBackground.h>
 #include <zeno/VDBGrid.h>
-#include <zfx/zfx.h>
-#include <zfx/x64.h>
-#include <cassert>
 
 namespace zeno {
 namespace {
