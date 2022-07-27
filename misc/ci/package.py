@@ -26,7 +26,7 @@ if sys.platform == 'win32':
             for line in f.readlines():
                 line = line.strip()
                 if line:
-                    dest = os.path.join(outpath, 'assets') + '\\' + line.replace(':', '_pan')
+                    dest = os.path.join(outpath, 'assets') + '\\' + line.replace(':', '_')
                     shutil.copytree(line, dest, dirs_exist_ok=True)
     shutil.copytree(os.path.join('misc', 'graphs'), os.path.join(outpath, 'graphs'), dirs_exist_ok=True)
     shutil.make_archive(outpath, 'zip', outpath, verbose=True)

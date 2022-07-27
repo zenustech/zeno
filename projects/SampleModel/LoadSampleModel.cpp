@@ -14,10 +14,12 @@ namespace {
 struct LoadSampleModel : INode {
     virtual void apply() override {
         auto name = get_input2<std::string>("name");
+        auto dir = getAssetDir(MODELS_DIR, name + ".obj");
+        log_info("found sample model path [{}]", dir);
         set_output("prim", getThisGraph()->callTempNode("ReadObjPrim", {
             {"triangulate:", objectFromLiterial(get_input2<bool>("triangulate"))},
             {"decodeUVs:", objectFromLiterial(get_input2<bool>("decodeUVs"))},
-            {"path", objectFromLiterial(getAssetDir(MODELS_DIR, name + ".obj"))},
+            {"path", objectFromLiterial(dir)},
         }).at("prim"));
     }
 };

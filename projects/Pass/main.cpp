@@ -71,7 +71,7 @@ struct PassImageGL : IObject {
     
     template <class ...Ts>
     void emplace(Ts &&...ts) {
-        impl = std::make_unique<Impl>(std::forward<Ts>(ts));
+        impl = std::make_unique<Impl>(std::forward<Ts>(ts)...);
     }
 };
 
