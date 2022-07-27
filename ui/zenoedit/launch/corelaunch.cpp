@@ -205,7 +205,7 @@ void launchProgramJSON(std::string progJson)
 #else
     std::unique_lock lck(ProgramRunData::g_mtx, std::try_to_lock);
     if (!lck.owns_lock()) {
-        zeno::log_warn("A program is already running! Please kill first");
+        zeno::log_info("background process already running");
         return;
     }
 
