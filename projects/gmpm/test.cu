@@ -1,23 +1,30 @@
 // #include "zensim/container/Vector.hpp"
 // #include "zensim/geometry/VdbLevelSet.h"
+#include "zensim/cuda/Cuda.h"
+#include "zensim/cuda/memory/MemOps.hpp"
+#include "zensim/math/Vec.h"
+#include "zensim/memory/Allocator.h"
 #include <cassert>
+#include <cuda.h>
 #include <cuda_runtime.h>
 #include <nvrtc.h>
-#include <cuda.h>
 #include <zeno/types/DictObject.h>
 #include <zeno/types/ListObject.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/StringObject.h>
 #include <zeno/zeno.h>
-#include "zensim/cuda/memory/MemOps.hpp"
-#include "zensim/memory/Allocator.h"
-#include "zensim/cuda/Cuda.h"
 namespace zeno {
 
 __global__ void test(int *a) {
   int id = blockIdx.x * blockDim.x + threadIdx.x;
-  printf("[%d]: %d\n", id, a[id]);
+  constexpr auto pi = 3.1415926535897932384626433832795028841972L;
+  printf("[%d]: %d, pi: %f, sqrt_pi: %f\n", id, a[id], (float)zs::g_pi,
+         (float)zs::sqrt(pi));
+  auto testfunc = []() { return zs::vec<double, 3>::ones(); };
+  auto t = testfunc();
+  t = zs::vec<double, 3>::zeros();
+  //(void)(testfunc() = zs::vec<double, 3>::zeros());
 }
 
 struct ZSCULinkTest : INode {
@@ -28,7 +35,7 @@ struct ZSCULinkTest : INode {
     puts("1");
     int *a = nullptr;
     // cudaMalloc((void **)&a, n * sizeof(int));
-    a = (int*)zs::allocate(zs::mem_um, n * sizeof(int), sizeof(int));
+    a = (int *)zs::allocate(zs::mem_um, n * sizeof(int), sizeof(int));
     puts("2");
 
 #if 1
@@ -46,7 +53,8 @@ struct ZSCULinkTest : INode {
     puts("4");
     // cudaFree(a);
     // zs::deallocate(zs::mem_um, a, );
-    zs::raw_memory_resource<zs::um_mem_tag>::instance().deallocate(a, n * sizeof(int));
+    zs::raw_memory_resource<zs::um_mem_tag>::instance().deallocate(
+        a, n * sizeof(int));
     puts("5");
 
     nvrtcProgram prog;
@@ -58,10 +66,10 @@ struct ZSCULinkTest : INode {
 };
 
 ZENDEFNODE(ZSCULinkTest, {
-                           {},
-                           {},
-                           {},
-                           {"ZPCTest"},
-                       });
+                             {},
+                             {},
+                             {},
+                             {"ZPCTest"},
+                         });
 
 } // namespace zeno

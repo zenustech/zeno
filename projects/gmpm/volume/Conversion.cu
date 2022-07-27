@@ -17,9 +17,9 @@
 #include <openvdb/tools/Interpolation.h>
 #include <openvdb/tools/LevelSetAdvect.h>
 #include <openvdb/tools/VolumeAdvect.h>
-#include <zeno/NumericObject.h>
-#include <zeno/StringObject.h>
 #include <zeno/VDBGrid.h>
+#include <zeno/types/NumericObject.h>
+#include <zeno/types/StringObject.h>
 #include <zeno/zeno.h>
 
 namespace zeno {

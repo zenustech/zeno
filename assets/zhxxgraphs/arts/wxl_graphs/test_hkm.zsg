@@ -32,8 +32,8 @@
        null
       ],
       "ZSBoundaryPrimitives": [
-       "a39b27cb-MoveTowards",
-       "ZSBoundaryPrimitive",
+       null,
+       null,
        null
       ],
       "est_num_cps": [
@@ -49,7 +49,7 @@
       "dHat": [
        null,
        null,
-       0.0005
+       0.0002
       ],
       "kappa0": [
        null,
@@ -74,7 +74,7 @@
       "pn_iter_cap": [
        null,
        null,
-       1000
+       500
       ],
       "cg_iter_cap": [
        null,
@@ -94,7 +94,7 @@
       "num_substeps": [
        null,
        null,
-       1
+       5
       ],
       "SRC": [
        "a39b27cb-MoveTowards",
@@ -122,8 +122,8 @@
       "value": 0.01
      },
      "uipos": [
-      3225.75870244491,
-      -135.1788438282895
+      3378.139375371358,
+      -188.99535400043337
      ],
      "options": []
     },
@@ -143,12 +143,10 @@
      },
      "params": {},
      "uipos": [
-      4610.880814490376,
-      395.4078707933162
+      4497.147197510721,
+      337.60881954136016
      ],
-     "options": [
-      "VIEW"
-     ]
+     "options": []
     },
     "bfcf0529-ToBoundaryParticles": {
      "name": "ToBoundaryParticles",
@@ -176,8 +174,8 @@
      },
      "params": {},
      "uipos": [
-      3104.0708256868006,
-      418.54733568540144
+      2981.163939927801,
+      318.3125939013641
      ],
      "options": [
       "ONCE"
@@ -209,8 +207,8 @@
      },
      "params": {},
      "uipos": [
-      3129.2611946066436,
-      671.6687599522268
+      3114.9419457803524,
+      582.1734547879076
      ],
      "options": []
     },
@@ -233,15 +231,15 @@
        null
       ],
       "SRC": [
-       null,
-       null,
+       "26e608f9-MakeList",
+       "DST",
        null
       ]
      },
      "params": {},
      "uipos": [
-      3543.673477425475,
-      162.37325226234208
+      3668.071951603879,
+      107.18448074434528
      ],
      "options": []
     },
@@ -326,8 +324,8 @@
      },
      "params": {},
      "uipos": [
-      2501.485046504814,
-      13.843018075669434
+      2498.621196739555,
+      7.16070195673359
      ],
      "options": [
       "ONCE",
@@ -380,12 +378,11 @@
       "triangulate": true
      },
      "uipos": [
-      2828.50495395281,
-      396.77378673427086
+      2723.497129226675,
+      394.3872452632224
      ],
      "options": [
-      "ONCE",
-      "VIEW"
+      "ONCE"
      ]
     },
     "6af38151-ReadObjPrim": {
@@ -406,8 +403,8 @@
       "triangulate": true
      },
      "uipos": [
-      2848.526102028141,
-      651.5256363824493
+      2828.2404995242287,
+      608.5678899035762
      ],
      "options": []
     },
@@ -427,7 +424,7 @@
       "density": [
        null,
        null,
-       100.0
+       400.0
       ],
       "type": [
        null,
@@ -447,12 +444,12 @@
       "E": [
        null,
        null,
-       100000.0
+       800000.0
       ],
       "nu": [
        null,
        null,
-       0.49
+       0.48
       ],
       "params": [
        null,
@@ -467,8 +464,8 @@
      },
      "params": {},
      "uipos": [
-      2564.284975165558,
-      -408.3130691225159
+      2520.5516027085937,
+      -359.2099783556928
      ],
      "options": []
     },
@@ -476,8 +473,8 @@
      "name": "MakeList",
      "inputs": {
       "SRC": [
-       null,
-       null,
+       "bfcf0529-ToBoundaryParticles",
+       "DST",
        null
       ],
       "obj0": [
@@ -486,32 +483,71 @@
        null
       ],
       "obj1": [
+       "bfcf0529-ToBoundaryParticles",
+       "ZSParticles",
+       null
+      ],
+      "obj2": [
        null,
        null,
        null
       ]
      },
      "params": {
-      "_KEYS": "obj0\nobj1"
+      "_KEYS": "obj0\nobj1\nobj2"
      },
      "uipos": [
-      3073.196916390724,
-      114.4065604304634
+      3319.01068790872,
+      14.470136330307042
      ],
      "options": [
       "ONCE"
      ],
      "socket_keys": [
       "obj0",
-      "obj1"
+      "obj1",
+      "obj2"
+     ]
+    },
+    "11b28f69-ParticlesWrangle": {
+     "name": "ParticlesWrangle",
+     "inputs": {
+      "prim": [
+       "f2d8381a-ReadObjPrim",
+       "prim",
+       null
+      ],
+      "zfxCode": [
+       null,
+       null,
+       ""
+      ],
+      "params": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       "14d809b6-UpdatePrimitiveFromZSParticles",
+       "DST",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      4821.634145148661,
+      389.9161287167444
+     ],
+     "options": [
+      "VIEW"
      ]
     }
    },
    "view_rect": {
-    "x": 2008.1050487449588,
-    "y": -596.1773768698416,
-    "width": 2929.6874999999895,
-    "height": 1489.2578124999977
+    "x": 2885.673652389243,
+    "y": -280.01562634399846,
+    "width": 1199.999999999995,
+    "height": 609.9999999999991
    }
   }
  },
@@ -1751,6 +1787,36 @@
     "math"
    ]
   },
+  "CalculateResidual2": {
+   "inputs": [
+    [
+     "",
+     "args",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "rets",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Zentricle"
+   ]
+  },
   "ChkIpcSystem": {
    "inputs": [
     [
@@ -2019,7 +2085,7 @@
      "1"
     ],
     [
-     "enum CSGUnion CSGIntersection CSGDifference Add Replace",
+     "enum CSGUnion CSGIntersection CSGDifference Add Mul Replace A_Sample_B",
      "OpType",
      "CSGUnion"
     ],
@@ -3265,41 +3331,6 @@
     "MPM"
    ]
   },
-  "ExplicitTimeStepping": {
-   "inputs": [
-    [
-     "",
-     "ZSParticles",
-     ""
-    ],
-    [
-     "float",
-     "dt",
-     "0.01"
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "ZSParticles",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "FEM"
-   ]
-  },
   "ExportObjMesh": {
    "inputs": [
     [
@@ -4293,6 +4324,82 @@
     "subgraph"
    ]
   },
+  "FleshQuasiStaticStepping": {
+   "inputs": [
+    [
+     "",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "",
+     "driven_bones",
+     ""
+    ],
+    [
+     "",
+     "gravity",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "float",
+     "armijo",
+     "0.1"
+    ],
+    [
+     "float",
+     "wolfe",
+     "0.9"
+    ],
+    [
+     "float",
+     "cg_res",
+     "0.1"
+    ],
+    [
+     "float",
+     "btl_res",
+     "0.0001"
+    ],
+    [
+     "float",
+     "newton_res",
+     "0.001"
+    ],
+    [
+     "string",
+     "driven_tag",
+     "bone_bw"
+    ],
+    [
+     "float",
+     "bone_driven_weight",
+     "0.0"
+    ]
+   ],
+   "categories": [
+    "FEM"
+   ]
+  },
   "FluidReseed": {
    "inputs": [
     [
@@ -5136,46 +5243,6 @@
     "control"
    ]
   },
-  "ImplicitTimeStepping": {
-   "inputs": [
-    [
-     "",
-     "ZSParticles",
-     ""
-    ],
-    [
-     "",
-     "ZSBoundaryPrimitives",
-     ""
-    ],
-    [
-     "float",
-     "dt",
-     "0.01"
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "ZSParticles",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "FEM"
-   ]
-  },
   "ImportObjMesh": {
    "inputs": [
     [
@@ -5463,7 +5530,13 @@
      ""
     ]
    ],
-   "params": [],
+   "params": [
+    [
+     "enum KEEP DEL",
+     "OpType",
+     "KEEP"
+    ]
+   ],
    "categories": [
     "FLIPSolver"
    ]
@@ -6441,6 +6514,31 @@
     "shader"
    ]
   },
+  "MakeJFNKSolver2": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "JFNKSolverObject2",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Zentricle"
+   ]
+  },
   "MakeLSysGenerator": {
    "inputs": [
     [
@@ -6616,6 +6714,36 @@
    "params": [],
    "categories": [
     "control"
+   ]
+  },
+  "MakeNonlinearProblemObject2": {
+   "inputs": [
+    [
+     "",
+     "function",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "NonlinearProblemObject2",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Zentricle"
    ]
   },
   "MakeOrthonormalBase": {
@@ -12852,6 +12980,36 @@
     "openvdb"
    ]
   },
+  "ReadVTKMesh": {
+   "inputs": [
+    [
+     "readpath",
+     "path",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "primitive",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
   "ReadVtkMesh": {
    "inputs": [
     [
@@ -14837,6 +14995,41 @@
    "params": [],
    "categories": [
     "FLIP"
+   ]
+  },
+  "SolveNonlinearProblem2": {
+   "inputs": [
+    [
+     "",
+     "JFNKSolverObject2",
+     ""
+    ],
+    [
+     "",
+     "NonlinearProblemObject2",
+     ""
+    ],
+    [
+     "",
+     "function",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Zentricle"
    ]
   },
   "SpdlogErrorMessage": {
@@ -17239,6 +17432,36 @@
     "openvdb"
    ]
   },
+  "VDBDeactivate": {
+   "inputs": [
+    [
+     "",
+     "Field",
+     ""
+    ],
+    [
+     "",
+     "Mask",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "openvdb"
+   ]
+  },
   "VDBDilateTopo": {
    "inputs": [
     [
@@ -17633,6 +17856,41 @@
      "Use VDBSmooth Instead"
     ]
    ],
+   "categories": [
+    "openvdb"
+   ]
+  },
+  "VDBTopoCopy": {
+   "inputs": [
+    [
+     "",
+     "grid",
+     ""
+    ],
+    [
+     "",
+     "topo",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "grid",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
    "categories": [
     "openvdb"
    ]
@@ -18354,6 +18612,41 @@
    ],
    "categories": [
     "openvdb"
+   ]
+  },
+  "WriteZSLevelSetToVDBGrid": {
+   "inputs": [
+    [
+     "ZSLevelSet",
+     "vdbGrid",
+     ""
+    ],
+    [
+     "string",
+     "Attr",
+     "sdf"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "vdbGrid",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Volume"
    ]
   },
   "WriteZSParticles": {
@@ -19668,7 +19961,8 @@
  "viewport": {
   "camera_record": {},
   "lights": {
-   "0": "14 DirX 1 0 1.0 align -5.0 0.0 5.0 0.0 DirY 1 0 1.0 align -5.0 0.0 5.0 0.0 DirZ 1 0 0.0 align -5.0 0.0 5.0 0.0 Height 1 0 1000.0 align -5.0 0.0 5.0 0.0 Softness 1 0 1.0 align -5.0 0.0 5.0 0.0 ShadowR 1 0 0.2 align -5.0 0.0 5.0 0.0 ShadowG 1 0 0.2 align -5.0 0.0 5.0 0.0 ShadowB 1 0 0.2 align -5.0 0.0 5.0 0.0 ColorR 1 0 1.0 align -5.0 0.0 5.0 0.0 ColorG 1 0 1.0 align -5.0 0.0 5.0 0.0 ColorB 1 0 1.0 align -5.0 0.0 5.0 0.0 Intensity 1 0 10.0 align -5.0 0.0 5.0 0.0 Scale 1 0 1.0 align -5.0 0.0 5.0 0.0 Enable 1 0 1.0 constant -5.0 0.0 5.0 0.0"
+   "0": "14 DirX 1 0 1.0 align -5.0 0.0 5.0 0.0 DirY 1 0 1.0 align -5.0 0.0 5.0 0.0 DirZ 1 0 0.0 align -5.0 0.0 5.0 0.0 Height 1 0 1000.0 align -5.0 0.0 5.0 0.0 Softness 1 0 1.0 align -5.0 0.0 5.0 0.0 ShadowR 1 0 0.2 align -5.0 0.0 5.0 0.0 ShadowG 1 0 0.2 align -5.0 0.0 5.0 0.0 ShadowB 1 0 0.2 align -5.0 0.0 5.0 0.0 ColorR 1 0 1.0 align -5.0 0.0 5.0 0.0 ColorG 1 0 1.0 align -5.0 0.0 5.0 0.0 ColorB 1 0 1.0 align -5.0 0.0 5.0 0.0 Intensity 1 0 10.0 align -5.0 0.0 5.0 0.0 Scale 1 0 1.0 align -5.0 0.0 5.0 0.0 Enable 1 0 1.0 constant -5.0 0.0 5.0 0.0",
+   "1": "14 DirX 1 0 0.51545865972193 align -5.0 0.0 5.0 0.0 DirY 1 0 0.7071067811865475 align -5.0 0.0 5.0 0.0 DirZ 1 0 0.4840479006438016 align -5.0 0.0 5.0 0.0 Height 1 0 1000.0 align -5.0 0.0 5.0 0.0 Softness 1 0 2.0 align -5.0 0.0 5.0 0.0 ShadowR 1 0 0.1 align -5.0 0.0 5.0 0.0 ShadowG 1 0 0.1 align -5.0 0.0 5.0 0.0 ShadowB 1 0 0.1 align -5.0 0.0 5.0 0.0 ColorR 1 0 1.0 align -5.0 0.0 5.0 0.0 ColorG 1 0 1.0 align -5.0 0.0 5.0 0.0 ColorB 1 0 1.0 align -5.0 0.0 5.0 0.0 Intensity 1 0 1.0 align -5.0 0.0 5.0 0.0 Scale 1 0 20.0 align -5.0 0.0 5.0 0.0 Enable 1 0 1.0 constant -5.0 0.0 5.0 0.0"
   }
  }
 }

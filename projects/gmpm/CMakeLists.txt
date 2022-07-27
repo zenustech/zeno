@@ -24,16 +24,29 @@ endif()
 #add_library(zeno_zstest SHARED test.cpp)
 #target_link_libraries(zeno_zstest PRIVATE zensim)
 
-#add_library(zeno_cutest SHARED test.cu)
-#target_link_libraries(zeno_cutest PRIVATE zshelper)
+#[=[
+add_library(zeno_cutest SHARED test.cu)
+target_link_libraries(zeno_cutest PRIVATE zshelper)
 
-#set_target_properties(zeno_cutest
-#      PROPERTIES  #CUDA_EXTENSIONS ON
-#                  CUDA_SEPARABLE_COMPILATION ON
-#                  LINKER_LANGUAGE CUDA
-#                  POSITION_INDEPENDENT_CODE ON
-#                  CUDA_ARCHITECTURES OFF
-#    )
+set_target_properties(zeno_cutest
+      PROPERTIES  #CUDA_EXTENSIONS ON
+                  CUDA_SEPARABLE_COMPILATION ON
+                  LINKER_LANGUAGE CUDA
+                  POSITION_INDEPENDENT_CODE ON
+                  CUDA_ARCHITECTURES OFF
+    )
+#]=]
+
+#[=[
+add_library(zeno_inst SHARED)
+target_sources(zeno_inst PRIVATE
+  Inst.cu
+)
+target_link_libraries(zeno_inst PRIVATE zshelper)
+target_compile_options(zeno_inst
+  PRIVATE        $<$<COMPILE_LANGUAGE:CUDA>:-Xcudafe --display_error_number,--diag_suppress=implicit_return_from_non_void_function,--diag_suppress=2642,--diag_suppress=554>
+)
+#]=]
 
 # zeno_zsfluid
 add_library(zeno_zsfluid SHARED)
@@ -140,6 +153,7 @@ target_sources(zeno_zsfem PRIVATE
   fem/Codim.cu
   # fem/TestAugLag.cu
   fem/FastQuasiStaticStepping.cu
+  fem/FleshQuasiStepping.cu
 )
 
 if (${ZS_ENABLE_CUDA})
@@ -201,3 +215,4 @@ if (${ZS_ENABLE_CUDA})
 endif()
 
 target_link_libraries(zeno_geometry PRIVATE zshelper)
+

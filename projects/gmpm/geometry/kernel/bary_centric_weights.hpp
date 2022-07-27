@@ -5,6 +5,37 @@
 #include "zensim/container/Bvh.hpp"
 
 namespace zeno {
+
+    template <typename TileVecT, int codim = 3>
+    zs::Vector<zs::AABBBox<3, typename TileVecT::value_type>>
+    get_bounding_volumes(zs::CudaExecutionPolicy &pol, const TileVecT &vtemp,
+                            const zs::SmallString &xTag,
+                            const typename ZenoParticles::particles_t &eles,
+                            zs::wrapv<codim>, int voffset) {
+        using namespace zs;
+        using T = typename TileVecT::value_type;
+        using bv_t = AABBBox<3, T>;
+        static_assert(codim >= 1 && codim <= 4, "invalid co-dimension!\n");
+        constexpr auto space = execspace_e::cuda;
+        zs::Vector<bv_t> ret{eles.get_allocator(), eles.size()};
+        pol(range(eles.size()), [eles = proxy<space>({}, eles),
+                                bvs = proxy<space>(ret),
+                                vtemp = proxy<space>({}, vtemp),
+                                codim_v = wrapv<codim>{}, xTag,
+                                voffset] ZS_LAMBDA(int ei) mutable {
+            constexpr int dim = RM_CVREF_T(codim_v)::value;
+            auto inds =
+                eles.template pack<dim>("inds", ei).template reinterpret_bits<int>() +
+                voffset;
+            auto x0 = vtemp.template pack<3>(xTag, inds[0]);
+            bv_t bv{x0, x0};
+            for (int d = 1; d != dim; ++d)
+            merge(bv, vtemp.template pack<3>(xTag, inds[d]));
+            bvs[ei] = bv;
+        });
+        return ret;
+    }
+
     template<typename T>
     constexpr T compute_dist_2_facet(const zs::vec<T,3>& vp,const zs::vec<T,3>& v0,const zs::vec<T,3>& v1,const zs::vec<T,3>& v2){
         auto v012 = (v0 + v1 + v2) / 3;

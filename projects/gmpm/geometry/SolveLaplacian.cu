@@ -30,17 +30,21 @@ struct ZSSolveLaplacian : zeno::INode {
         auto zspars = get_input<ZenoParticles>("ZSParticles");
         // specify the name of a nodal attribute
         auto attr = get_param<std::string>("tag");
+        auto btag = get_param<std::string>("btag");
         auto& verts = zspars->getParticles();
         auto accuracy = get_param<float>("accuracy");
         auto degree = get_param<int>("degree");
         //  make sure the input zspars has specified attributes
+
+        // fmt::print("input tag {},{}\n",attr,btag);
+
         if(!verts.hasProperty(attr)){
-            fmt::print("the input zspars does not contain specified channel:{}\n",attr);
+            fmt::print("problem:the input zspars does not contain specified channel:{}\n",attr);
             throw std::runtime_error("the input zspars does not contain specified channel");
         }
 
-        if(!verts.hasProperty("btag")){
-            fmt::print("the input zspars does not contain 'btag' channel\n");
+        if(!verts.hasProperty(btag)){
+            fmt::print("the input zspars does not contain {} channel\n",btag);
             throw std::runtime_error("the input zspars does not contain specified channel");
         }
 
@@ -93,9 +97,9 @@ struct ZSSolveLaplacian : zeno::INode {
         }
         // initial guess
         cudaPol(zs::range(vtemp.size()),
-            [vtemp = proxy<space>({},vtemp),verts = proxy<space>({},verts),tag = zs::SmallString(attr)] ZS_LAMBDA(int vi) mutable {
+            [vtemp = proxy<space>({},vtemp),verts = proxy<space>({},verts),tag = zs::SmallString(attr),btag = zs::SmallString(btag)] ZS_LAMBDA(int vi) mutable {
                 vtemp("x",vi) = verts(tag,vi);
-                vtemp("btag",vi) = verts("btag",vi);
+                vtemp("btag",vi) = verts(btag,vi);
                 vtemp("b",vi) = (T)0.0;
             }
         );
@@ -127,10 +131,12 @@ ZENDEFNODE(ZSSolveLaplacian, {
                                     {"ZSParticles"},
                                     {"ZSParticles"},
                                     {
-                                        {"string","tag","T"},{"float","accuracy","1e-6"},{"int","degree","1"}
+                                        {"string","tag","T"},{"string","btag","btag"},{"float","accuracy","1e-6"},{"int","degree","1"}
                                     },
                                     {"ZSGeometry"}
 });
+
+
 
 
 // the biharmonic hessian can be eval as LML, where M is a diagonal matrix with diagonal entries the inverse of nodal volume

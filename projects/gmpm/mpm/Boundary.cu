@@ -1,6 +1,7 @@
 #include "../Structures.hpp"
 #include "../Utils.hpp"
 
+#include "zensim/Reflection.h"
 #include "zensim/cuda/execution/ExecutionPolicy.cuh"
 #include "zensim/io/ParticleIO.hpp"
 #include "zensim/math/matrix/QRSVD.hpp"
