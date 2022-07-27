@@ -12,10 +12,9 @@
 #include <zeno/extra/GlobalState.h>
 #include <zeno/utils/logger.h>
 #include <zeno/core/Graph.h>
-#include <zeno/utils/fileio.h>
 
 static int offline_start(const char *progJson) {
-    zeno::log_debug("program JSON: {}", progJson);
+    zeno::log_trace("program JSON: {}", progJson);
 
     auto session = &zeno::getSession();
     session->globalComm->clearState();
@@ -61,7 +60,6 @@ static int offline_start(const char *progJson) {
 int offline_main(const char *zsgfile, int beginFrame, int endFrame);
 int offline_main(const char *zsgfile, int beginFrame, int endFrame) {
     zeno::log_info("running in offline mode, file=[{}], begin={}, end={}", zsgfile, beginFrame, endFrame);
-    auto zsgcontent = zeno::file_get_binary(zsgfile);
 
     GraphsManagment gman;
     gman.openZsgFile(zsgfile);

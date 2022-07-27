@@ -93,7 +93,7 @@ void ZTcpServer::onNewConnection()
     }
     else
     {
-        zeno::log_info("tcp connection succeed");
+        zeno::log_debug("tcp connection succeed");
 
     }
     connect(m_tcpSocket, SIGNAL(readyRead()), this, SLOT(onReadyRead()));

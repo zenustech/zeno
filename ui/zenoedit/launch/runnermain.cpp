@@ -76,7 +76,7 @@ static void send_packet(std::string_view info, const char *buf, size_t len) {
 }
 
 static void runner_start(std::string const &progJson, int sessionid) {
-    zeno::log_debug("runner got program JSON: {}", progJson);
+    zeno::log_trace("runner got program JSON: {}", progJson);
     //MessageBox(0, "runner", "runner", MB_OK);           //convient to attach process by debugger, at windows.
     zeno::scope_exit sp([=]() { std::cout.flush(); });
     //zeno::TimerAtexitHelper timerHelper;
@@ -151,22 +151,23 @@ static void runner_start(std::string const &progJson, int sessionid) {
 
 int runner_main(int sessionid, int port);
 int runner_main(int sessionid, int port) {
-    printf("(stdout ping test)\n");
+    zeno::set_log_stream(std::cout);
 
 #ifdef ZENO_IPC_USE_TCP
+    zeno::log_debug("connecting to port {}", port);
     clientSocket = std::make_unique<QTcpSocket>();
     clientSocket->connectToHost(QHostAddress::LocalHost, port);
     if (!clientSocket->waitForConnected(10000)) {
-        zeno::log_error("tcp client connection fail.");
+        zeno::log_error("tcp client connection fail");
         return 0;
     } else {
-        zeno::log_info("connect succeed!");
+        zeno::log_info("tcp connection succeed");
     }
 #else
+    zeno::log_info("start IPC in pipe mode");
     ourfp = stdout;
 #endif
 
-    zeno::set_log_stream(std::cout);
     zeno::log_debug("runner started on sessionid={}", sessionid);
 
 #if 0
