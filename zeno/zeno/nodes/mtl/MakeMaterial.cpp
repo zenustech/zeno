@@ -5,7 +5,7 @@
 
 namespace zeno
 {
-  /*struct MakeMaterial
+/*struct MakeMaterial
       : zeno::INode
   {
     virtual void apply() override
@@ -95,47 +95,67 @@ void main()
 struct ExtractMaterialShader : zeno::INode
 {
     virtual void apply() override {
-      auto mtl = get_input<zeno::MaterialObject>("mtl");
-      auto s = [] (std::string const &s) { auto p = std::make_shared<StringObject>(); p->set(s); return p; };
-      set_output("vert", s(mtl->vert));
-      set_output("frag", s(mtl->frag));
-      set_output("common", s(mtl->common));
-      set_output("extensions", s(mtl->extensions));
+        auto mtl = get_input<zeno::MaterialObject>("mtl");
+        auto s = [] (std::string const &s) { auto p = std::make_shared<StringObject>(); p->set(s); return p; };
+        set_output("vert", s(mtl->vert));
+        set_output("frag", s(mtl->frag));
+        set_output("common", s(mtl->common));
+        set_output("extensions", s(mtl->extensions));
     }
 };
 
-  struct SetMaterial
-      : zeno::INode
-  {
+struct SetMaterial
+    : zeno::INode
+{
     virtual void apply() override
     {
-      auto prim = get_input<zeno::PrimitiveObject>("prim");
-      auto mtl = get_input<zeno::MaterialObject>("mtl");
-      prim->mtl = mtl;
-      if(mtl->ufloat.size() != 0){
-          auto& uf = prim->add_attr<float>("ufloat");
-          uf.resize(mtl->ufloat.size());
-          printf("set material size: %d %d\n",mtl->ufloat.size(), uf.size());
-          uf = mtl->ufloat;
-      }
-      set_output("prim", std::move(prim));
+        auto prim = get_input<zeno::PrimitiveObject>("prim");
+        auto mtl = get_input<zeno::MaterialObject>("mtl");
+        prim->mtl = mtl;
+        if(mtl->ufloat.size() != 0){
+            auto& tmp= prim->add_attr<float>("ufloat");
+            tmp.resize(mtl->ufloat.size());
+            printf("set material size: %d %d\n",mtl->ufloat.size(), tmp.size());
+            tmp = mtl->ufloat;
+        }
+        // master branch support along
+        /*if(mtl->uv2f.size() != 0){
+          auto& tmp = prim->add_attr<zeno::vec2f>("uv2f");
+          tmp.resize(mtl->vec2f.size());
+          printf("set material size: %d %d\n",mtl->vec2f.size(), tmp.size());
+          tmp = mtl->vec2f;
+      }*/
+        if(mtl->uv3f.size() != 0){
+            auto& tmp = prim->add_attr<zeno::vec3f>("uv3f");
+            tmp.resize(mtl->uv3f.size());
+            printf("set material size: %d %d\n",mtl->uv3f.size(), tmp.size());
+            tmp = mtl->uv3f;
+        }
+        // master branch support
+        /*if(mtl->uv4f.size() != 0){
+          auto& tmp = prim->add_attr<zeno::vec4f>("uv4f");
+          tmp.resize(mtl->vec4f.size());
+          printf("set material size: %d %d\n",mtl->vec4f.size(), tmp.size());
+          tmp = mtl->vec4f;
+      }*/
+        set_output("prim", std::move(prim));
     }
-  };
+};
 
-  ZENDEFNODE(
-      SetMaterial,
-      {
-          {
-              {"primitive", "prim"},
-              {"material", "mtl"},
-          },
-          {
-              {"primitive", "prim"},
-          },
-          {},
-          {
-              "shader",
-          },
-      });
+ZENDEFNODE(
+    SetMaterial,
+    {
+        {
+            {"primitive", "prim"},
+            {"material", "mtl"},
+        },
+        {
+            {"primitive", "prim"},
+        },
+        {},
+        {
+            "shader",
+        },
+    });
 
 } // namespace zeno

@@ -92,13 +92,13 @@ struct ShaderFinalize : INode {
             get_input<IObject>("isCamera", std::make_shared<NumericObject>(float(0))),
             get_input<IObject>("isVoxelDomain", std::make_shared<NumericObject>(float(0))),
 
-            
+
         });
         auto commonCode = em.getCommonCode();
 
         auto mtl = std::make_shared<MaterialObject>();
 
-        zeno::log_info("------> code  {}", code);
+        zeno::log_info("------> code \n {}", code);
 //        zeno::log_info("------> commonCode  {}", commonCode);
         mtl->frag = std::move(code);
         mtl->common = std::move(commonCode);
@@ -118,15 +118,58 @@ struct ShaderFinalize : INode {
         }
         if (has_input("u_float_list"))
         {
-            auto u_float_list = get_input<ListObject>("u_float_list")->get<float>();
-            int count = 0;
-            for (const auto &u_f: u_float_list)
+            auto u_tmpList = get_input<ListObject>("u_float_list")->get<float>();
+            for (const auto &u_p: u_tmpList)
             {
-                auto texCode = "uniform float ufloat" + std::to_string(count) + ";\n";
-                mtl->common.insert(0, texCode);
-                zeno::log_info("========== value {} code {}\n",u_f, texCode);
-                mtl->ufloat.push_back(u_f);
-                count++;
+                auto tmpId = mtl->ufloat.size();
+                auto tmpCode = "uniform float ufloat" + std::to_string(tmpId) + ";\n";
+                zeno::log_info("------> mtl  {}", tmpCode);
+                mtl->ufloat.push_back(u_p);
+                mtl->common.insert(0, tmpCode);
+            }
+        }
+        if (has_input("u_vec2_list"))
+        {
+            auto u_tmpList = get_input<ListObject>("u_vec2_list")->get<zeno::vec2f>();
+            for (const auto &u_p: u_tmpList)
+            {
+                auto tmpId = mtl->uv2f.size();
+                zeno::log_info("------> mtl uv2f size  {}", tmpId);
+                auto tmpCode = "uniform vector uv2f" + std::to_string(tmpId) + ";\n";
+                zeno::log_info("------> mtl {}", tmpCode);
+                mtl->uv2f.push_back(u_p);
+                mtl->common.insert(0, tmpCode);
+            }
+        }
+        if (has_input("u_vec3_list"))
+        {
+            zeno::log_info("------> mtl uv3f");
+            auto ptrs = get_input<ListObject>("u_vec3_list")->get<std::shared_ptr<zeno::NumericObject>>();
+            //auto u_tmpList = ->get<zeno::vec3f>();
+            zeno::log_info("------> mtl uv3f");
+            for (const auto &u_p_: ptrs)
+            //for (auto const &u_p: u_tmpList->get<zeno::vec3f>())
+            {
+                auto u_p = u_p_->get<zeno::vec3f>();
+                zeno::log_info("------> mtl uv3f");
+                auto tmpId = mtl->uv3f.size();
+                zeno::log_info("------> mtl uv3f size {}", tmpId);
+                auto tmpCode = "uniform vector uv3f" + std::to_string(tmpId) + ";\n";
+                zeno::log_info("------> mtl uv3f size {}", tmpCode);
+                mtl->uv3f.push_back(u_p);
+                mtl->common.insert(0, tmpCode);
+
+            }
+        }
+        if (has_input("u_vec4_list"))
+        {
+            auto u_tmpList = get_input<ListObject>("u_vec4_list")->get<zeno::vec4f>();
+            for (const auto &u_p: u_tmpList)
+            {
+                auto tmpId = mtl->uv4f.size();
+                auto tmpCode = "uniform float uv4f" + std::to_string(tmpId) + ";\n";
+                mtl->uv4f.push_back(u_p);
+                mtl->common.insert(0, tmpCode);
             }
         }
 

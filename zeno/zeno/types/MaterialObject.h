@@ -18,10 +18,10 @@ namespace zeno
         std::string common;
         std::string extensions;
         std::vector<std::shared_ptr<Texture2DObject>> tex2Ds;
-        std::vector<float> ufloat{};
-        std::vector<zeno::vec2f> uv2f{};
-        std::vector<zeno::vec3f> uv3f{};
-        std::vector<zeno::vec4f> uv4f{};
+        std::vector<float> ufloat;
+        std::vector<zeno::vec2f> uv2f;
+        std::vector<zeno::vec3f> uv3f;
+        std::vector<zeno::vec4f> uv4f;
 
         size_t serializeSize()
         {
@@ -51,6 +51,12 @@ namespace zeno
                 size += sizeof(tex2DStrSize);
                 size += tex2DStrSize;
             }
+
+            size += 4 * sizeof(size_t);
+            size += ufloat.size() * sizeof(float);
+            size += uv2f.size() * sizeof(vec2f);
+            size += uv3f.size() * sizeof(vec3f);
+            size += uv4f.size() * sizeof(vec4f);
 
             return size;
         }
@@ -105,6 +111,39 @@ namespace zeno
                 i += tex2DStrSize;
             }
 
+            {
+                size_t s = ufloat.size();
+                memcpy(str.data() + i, &s, sizeof(s));
+                i += sizeof(s);
+                //ufloat.resize(s);
+                memcpy(str.data() + i, &ufloat[0], sizeof(ufloat[0]) * s);
+                i += s * sizeof(ufloat[0]);
+            }
+            {
+                size_t s = uv2f.size();
+                memcpy(str.data() + i, &s, sizeof(s));
+                i += sizeof(s);
+                //uv2f.resize(s);
+                memcpy(str.data() + i, &uv2f[0], sizeof(uv2f[0]) * s);
+                i += s * sizeof(uv2f[0]);
+            }
+            {
+                size_t s = uv3f.size();
+                memcpy(str.data() + i, &s, sizeof(s));
+                i += sizeof(s);
+                //uv3f.resize(s);
+                memcpy(str.data() + i, &uv3f[0], sizeof(uv3f[0]) * s);
+                i += s * sizeof(uv3f[0]);
+            }
+            {
+                size_t s = uv4f.size();
+                memcpy(str.data() + i, &s, sizeof(s));
+                i += sizeof(s);
+                //uv4f.resize(s);
+                memcpy(str.data() + i, &uv4f[0], sizeof(uv4f[0]) * s);
+                i += s * sizeof(uv4f[0]);
+            }
+
             return str;
         }
 
@@ -148,7 +187,6 @@ namespace zeno
             mtl.tex2Ds.resize(tex2DsSize);
 
             for (size_t j{0}; j < tex2DsSize; ++j)
-
             {
                 size_t tex2DStrSize;
                 memcpy(&tex2DStrSize, str.data() + i, sizeof(tex2DStrSize));
@@ -162,6 +200,39 @@ namespace zeno
                 auto tex2D = std::make_shared<Texture2DObject>(
                     Texture2DObject::deserialize(tex2DStr));
                 mtl.tex2Ds[j] = tex2D;
+            }
+
+            {
+                size_t s = 0;
+                memcpy(&s, str.data() + i, sizeof(s));
+                i += sizeof(s);
+                mtl.ufloat.resize(s);
+                memcpy(&mtl.ufloat[0], str.data() + i, sizeof(mtl.ufloat[0]) * s);
+                i += s * sizeof(mtl.ufloat[0]);
+            }
+            {
+                size_t s = 0;
+                memcpy(&s, str.data() + i, sizeof(s));
+                i += sizeof(s);
+                mtl.uv2f.resize(s);
+                memcpy(&mtl.uv2f[0], str.data() + i, sizeof(mtl.uv2f[0]) * s);
+                i += s * sizeof(mtl.uv2f[0]);
+            }
+            {
+                size_t s = 0;
+                memcpy(&s, str.data() + i, sizeof(s));
+                i += sizeof(s);
+                mtl.uv3f.resize(s);
+                memcpy(&mtl.uv3f[0], str.data() + i, sizeof(mtl.uv3f[0]) * s);
+                i += s * sizeof(mtl.uv3f[0]);
+            }
+            {
+                size_t s = 0;
+                memcpy(&s, str.data() + i, sizeof(s));
+                i += sizeof(s);
+                mtl.uv4f.resize(s);
+                memcpy(&mtl.uv4f[0], str.data() + i, sizeof(mtl.uv4f[0]) * s);
+                i += s * sizeof(mtl.uv4f[0]);
             }
 
             return mtl;
