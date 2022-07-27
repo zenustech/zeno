@@ -18,8 +18,8 @@ void CodimStepping::IPCSystem::computeFrictionBarrierGradientAndHessian(
         auto p0 = vtemp.pack<3>("xn", fpp[0]) - vtemp.pack<3>("xhat", fpp[0]);
         auto p1 = vtemp.pack<3>("xn", fpp[1]) - vtemp.pack<3>("xhat", fpp[1]);
 #if 1
-        auto basis = vtemp.pack<3, 2>("basis", fppi);
-        auto fn = vtemp("fn", fppi);
+        auto basis = fricPP.pack<3, 2>("basis", fppi);
+        auto fn = fricPP("fn", fppi);
         auto relDX3D = point_point_rel_dx(p0, p1);
         auto relDX = basis.transpose() * relDX3D;
         auto relDXNorm2 = relDX.l2NormSqr();
@@ -93,9 +93,9 @@ void CodimStepping::IPCSystem::computeFrictionBarrierGradientAndHessian(
         auto e0 = vtemp.pack<3>("xn", fpe[1]) - vtemp.pack<3>("xhat", fpe[1]);
         auto e1 = vtemp.pack<3>("xn", fpe[2]) - vtemp.pack<3>("xhat", fpe[2]);
 #if 1
-        auto basis = vtemp.pack<3, 2>("basis", fpei);
-        auto fn = vtemp("fn", fpei);
-        auto yita = vtemp("yita", fpei);
+        auto basis = fricPE.pack<3, 2>("basis", fpei);
+        auto fn = fricPE("fn", fpei);
+        auto yita = fricPE("yita", fpei);
         auto relDX3D = point_edge_rel_dx(p, e0, e1, yita);
         auto relDX = basis.transpose() * relDX3D;
         auto relDXNorm2 = relDX.l2NormSqr();
@@ -171,9 +171,9 @@ void CodimStepping::IPCSystem::computeFrictionBarrierGradientAndHessian(
         auto v1 = vtemp.pack<3>("xn", fpt[2]) - vtemp.pack<3>("xhat", fpt[2]);
         auto v2 = vtemp.pack<3>("xn", fpt[3]) - vtemp.pack<3>("xhat", fpt[3]);
 #if 1
-        auto basis = vtemp.pack<3, 2>("basis", fpti);
-        auto fn = vtemp("fn", fpti);
-        auto betas = vtemp.pack<2>("beta", fpti);
+        auto basis = fricPT.pack<3, 2>("basis", fpti);
+        auto fn = fricPT("fn", fpti);
+        auto betas = fricPT.pack<2>("beta", fpti);
         auto relDX3D = point_triangle_rel_dx(p, v0, v1, v2, betas[0], betas[1]);
         auto relDX = basis.transpose() * relDX3D;
         auto relDXNorm2 = relDX.l2NormSqr();
@@ -251,9 +251,9 @@ void CodimStepping::IPCSystem::computeFrictionBarrierGradientAndHessian(
         auto e2 = vtemp.pack<3>("xn", fee[2]) - vtemp.pack<3>("xhat", fee[2]);
         auto e3 = vtemp.pack<3>("xn", fee[3]) - vtemp.pack<3>("xhat", fee[3]);
 #if 1
-        auto basis = vtemp.pack<3, 2>("basis", feei);
-        auto fn = vtemp("fn", feei);
-        auto gammas = vtemp.pack<2>("gamma", feei);
+        auto basis = fricEE.pack<3, 2>("basis", feei);
+        auto fn = fricEE("fn", feei);
+        auto gammas = fricEE.pack<2>("gamma", feei);
         auto relDX3D = edge_edge_rel_dx(e0, e1, e2, e3, gammas[0], gammas[1]);
         auto relDX = basis.transpose() * relDX3D;
         auto relDXNorm2 = relDX.l2NormSqr();
