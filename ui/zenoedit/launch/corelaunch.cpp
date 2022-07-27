@@ -230,7 +230,7 @@ void killProgramJSON()
 
 }
 
-void launchProgram(GraphsModel* pModel, int beginFrame, int endFrame)
+void launchProgram(IGraphsModel* pModel, int beginFrame, int endFrame)
 {
 	rapidjson::StringBuffer s;
 	RAPIDJSON_WRITER writer(s);

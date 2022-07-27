@@ -23,6 +23,17 @@ public:
 };
 #endif
 
+struct VideoRecInfo
+{
+    QString record_path;
+    QVector2D res;
+    QPair<int, int> frameRange;
+    VideoRecInfo() {
+        res = { 0,0 };
+        frameRange = { -1, -1 };
+    }
+};
+
 class CameraControl : public QWidget
 {
     Q_OBJECT
@@ -57,6 +68,7 @@ private:
 
 class ViewportWidget : public QOpenGLWidget
 {
+    Q_OBJECT
     typedef QOpenGLWidget _base;
 public:
     ViewportWidget(QWidget* parent = nullptr);
@@ -64,7 +76,12 @@ public:
     void initializeGL() override;
     void resizeGL(int nx, int ny) override;
     void paintGL() override;
-    void checkRecord(std::string a_record_file, QVector2D a_record_res, int a_nsamples);
+    void rendering();
+    void setRecordInfo(const VideoRecInfo& info);
+    void recordCurrFrame();
+
+signals:
+    void frameRecorded(int);
 
 protected:
     void mousePressEvent(QMouseEvent* event) override;
@@ -74,8 +91,7 @@ protected:
 
 private:
     std::shared_ptr<CameraControl> m_camera;
-    std::string record_path;
-    QVector2D record_res;
+    VideoRecInfo m_recordInfo;
 };
 
 class CameraKeyframeWidget;
@@ -92,6 +108,7 @@ public:
 public slots:
     void updateFrame(const QString& action = "");
     void onRun();
+    void onRecord();
     void onKill();
     void onModelDataChanged();
     void onPlayClicked(bool);

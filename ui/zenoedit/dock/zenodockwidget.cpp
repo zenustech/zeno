@@ -10,6 +10,7 @@
 #include <zenoui/model/modelrole.h>
 #include "util/log.h"
 #include "panel/zenospreadsheet.h"
+#include "viewport/viewportwidget.h"
 #include "viewport/zenovis.h"
 #include <zenovis/ObjectsManager.h>
 
@@ -62,6 +63,15 @@ void ZenoDockWidget::setWidget(DOCK_TYPE type, QWidget* widget)
         ZenoViewDockTitle* pViewTitle = new ZenoViewDockTitle;
         pViewTitle->setupUi();
         pTitleWidget = pViewTitle;
+        if (DisplayWidget* pViewWid = qobject_cast<DisplayWidget*>(widget))
+        {
+            connect(pViewTitle, &ZenoDockTitleWidget::actionTriggered, this, [=](QAction* action) {
+                //TODO: unify the tr specification.
+                if (action->text() == ZenoViewDockTitle::tr("Record Video")) {
+                    pViewWid->onRecord();
+                }
+            });
+        }
     }
 	else
 	{

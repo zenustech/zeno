@@ -17,11 +17,13 @@ signals:
 	void dockOptionsClicked();
 	void dockSwitchClicked(DOCK_TYPE);
     void doubleClicked();
+	void actionTriggered(QAction* action);
 
 protected:
 	void paintEvent(QPaintEvent* event) override;
 	void mouseDoubleClickEvent(QMouseEvent* event) override;
 	virtual void initTitleContent(QHBoxLayout* pHLayout);
+	QAction* createAction(const QString& text);
 
 private slots:
 	void onDockSwitchClicked();
@@ -37,9 +39,6 @@ public:
 	~ZenoEditorDockTitleWidget();
 	void initModel();
 
-signals:
-	void actionTriggered(QAction* action);
-
 public slots:
 	void setTitle(const QString& title);
 	void onModelInited(IGraphsModel* pModel);
@@ -53,7 +52,6 @@ protected:
 
 private:
 	QMenuBar* initMenu();
-	QAction* createAction(const QString& text);
 
 	QLabel* m_lblTitle;
 };
@@ -65,15 +63,11 @@ public:
 	ZenoViewDockTitle(QWidget* parent = nullptr);
 	~ZenoViewDockTitle();
 
-signals:
-	void actionTriggered(QAction* action);
-
 protected:
 	void initTitleContent(QHBoxLayout* pHLayout) override;
 
 private:
 	QMenuBar* initMenu();
-	QAction* createAction(const QString& text);
 };
 
 class ZenoPropDockTitleWidget : public ZenoDockTitleWidget
