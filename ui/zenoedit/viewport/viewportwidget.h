@@ -26,10 +26,14 @@ public:
 struct VideoRecInfo
 {
     QString record_path;
+    QString videoname;
     QVector2D res;
     QPair<int, int> frameRange;
+    int fps;
+    int bitrate;
     VideoRecInfo() {
         res = { 0,0 };
+        fps = bitrate = 0;
         frameRange = { -1, -1 };
     }
 };

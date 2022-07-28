@@ -40,7 +40,7 @@ ZRecordVideoDlg::ZRecordVideoDlg(int frameStart, int frameEnd, QWidget* parent)
 	connect(m_ui->btnGroup, SIGNAL(rejected()), this, SLOT(reject()));
 }
 
-bool ZRecordVideoDlg::getInfo(int& frameStart, int& frameEnd, int& fps, int& bitrate, QString& presets, int& width, int& height, QString& path)
+bool ZRecordVideoDlg::getInfo(int& frameStart, int& frameEnd, int& fps, int& bitrate, QString& presets, int& width, int& height, QString& path, QString& fn)
 {
 	frameStart = m_ui->frameStart->text().toInt();
 	frameEnd = m_ui->frameEnd->text().toInt();
@@ -50,5 +50,16 @@ bool ZRecordVideoDlg::getInfo(int& frameStart, int& frameEnd, int& fps, int& bit
 	width = m_ui->lineWidth->text().toInt();
 	height = m_ui->lineHeight->text().toInt();
 	path = m_ui->linePath->text();
+	if (path.isEmpty())
+	{
+		QTemporaryDir dir;
+		dir.setAutoRemove(false);
+		path = dir.path();
+	}
+	fn = m_ui->lineName->text();
+	if (fn.isEmpty())
+	{
+		fn = "capture.mp4";
+	}
 	return true;
 }

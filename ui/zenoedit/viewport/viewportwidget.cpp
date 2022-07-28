@@ -622,19 +622,23 @@ void DisplayWidget::onRecord()
     if (QDialog::Accepted == dlg.exec())
     {
         int frameStart = 0, frameEnd = 0, fps = 0, bitrate = 0, width = 0, height = 0;
-        QString presets, path;
-        dlg.getInfo(frameStart, frameEnd, fps, bitrate, presets, width, height, path);
+        QString presets, path, filename;
+        dlg.getInfo(frameStart, frameEnd, fps, bitrate, presets, width, height, path, filename);
         //validation.
 
         VideoRecInfo recInfo;
         recInfo.record_path = path;
         recInfo.frameRange = { frameStart, frameEnd };
         recInfo.res = { (float)width, (float)height };
+        recInfo.bitrate = bitrate;
+        recInfo.fps = fps;
+        recInfo.videoname = filename;
 
         RecordVideoMgr recordMgr(m_view, recInfo, nullptr);
         ZRecordProgressDlg dlgProc(recInfo);
         connect(&recordMgr, SIGNAL(frameFinished(int)), &dlgProc, SLOT(onFrameFinished(int)));
         connect(&recordMgr, SIGNAL(recordFinished()), &dlgProc, SLOT(onRecordFinished()));
+        connect(&recordMgr, SIGNAL(recordFailed(QString)), &dlgProc, SLOT(onRecordFailed(QString)));
         if (QDialog::Accepted == dlgProc.exec())
         {
             //todo: ui hint for opening record path.

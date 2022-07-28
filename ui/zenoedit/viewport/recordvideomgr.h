@@ -19,10 +19,12 @@ public slots:
 signals:
     void frameFinished(int);
     void recordFinished();
+    void recordFailed(QString);
 
 private:
     VideoRecInfo m_recordInfo;
     ViewportWidget* m_view;     //should find specific view by mainwindow.
+    QStringList m_pics;
     QTimer* m_timer;
     int m_currFrame;
 };
