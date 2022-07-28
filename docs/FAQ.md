@@ -59,10 +59,33 @@ when running `build\bin\zenoedit.exe`.
 
 Suppose you have installed `Qt5` in `C:\Qt\Qt5.14.2`.
 Then this file may be located in `C:\Qt\Qt5.14.2\msvc2017_64\bin\Qt5Core.dll`.
-You have two solutions:
+You have three solutions:
 
 1. Manually copy the `Qt5Core.dll`, `Qt5Gui.dll`, and etc. to the `build\bin` directory (same directory as `zenoedit.exe` is).
 2. Add the path `C:\Qt\Qt5.14.2\msvc2017_64\bin` (where `Qt5Core.dll` is located in) to the environment variable `PATH`.
+3. Execute this in `cmd`: `C:\Qt\Qt5.14.2\msvc2017_64\bin\windeployqt.exe build\bin\zenoedit.exe`.
+
+### Q
+
+```
+This application failed to start because it could not find or load the Qt platfo
+rm plugin "windows".
+
+Available platform plugins are: minimal, offscreen, windows
+s).
+
+Reinstalling the application may fix this problem.
+```
+
+### A
+
+Also three solutions:
+
+1. Manually copy the directory `C:\Qt\Qt5.14.2\msvc2017_64\plugins\platforms` to `build\bin\platforms`.
+2. Add an environment variable `QT_QPA_PLATFORM_PLUGIN_PATH` with content `C:\Qt\Qt5.14.2\msvc2017_64\plugins\platforms`.
+3. Execute this in `cmd`: `C:\Qt\Qt5.14.2\msvc2017_64\bin\windeployqt.exe build\bin\zenoedit.exe`.
+
+See: https://stackoverflow.com/questions/34948960/qt-platform-plugin-windows-is-not-found-on-one-computer
 
 ### Q
 

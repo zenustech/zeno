@@ -66,7 +66,7 @@ sudo pacman -S ninja
 pip install ninja
 ```
 
-Then use `-GNinja` parameter in cmake configuration step:
+Then use `-G Ninja` parameter in cmake configuration step:
 
 ```bash
 cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
@@ -106,7 +106,7 @@ cmake --build build
 sudo cmake --build build --target install
 ```
 
-This will install Zeno **globally in your system**.
+This will install Zeno globally in your system.
 
 ## Install via AUR (experimental)
 
