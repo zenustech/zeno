@@ -128,17 +128,19 @@ static int defPrimitiveToSDF = zeno::defNodeClass<PrimitiveToSDF>("PrimitiveToSD
 struct SDFToFog : INode 
 {
     virtual void apply() override {
-        auto sdf = get_input("SDF")->as<VDBFloatGrid>();
-        auto result = zeno::IObject::make<VDBFloatGrid>();
-        auto dx = sdf->m_grid->voxelSize()[0];
-        result->m_grid = sdf->m_grid->deepCopy();
-        openvdb::tools::sdfToFogVolume(*(result->m_grid));
-        set_output("oSDF", result);
+        auto sdf = get_input<VDBFloatGrid>("SDF");
+        if (!has_input("inplace") || !get_input2<bool>("inplace")) {
+            sdf = std::make_shared<VDBFloatGrid>(sdf->m_grid->deepCopy());
+        }
+        //auto dx = sdf->m_grid->voxelSize()[0];
+        openvdb::tools::sdfToFogVolume(*(sdf->m_grid));
+        set_output("oSDF", std::move(sdf));
     }
 };
 static int defSDFToFog = zeno::defNodeClass<SDFToFog>("SDFToFog",
     { /* inputs: */ {
         "SDF",
+        {"bool", "inplace", "0"},
     }, /* outputs: */ {
         "oSDF",
     }, /* params: */ {

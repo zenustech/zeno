@@ -12,7 +12,7 @@
 
 ZenoApplication::ZenoApplication(int &argc, char **argv)
     : QApplication(argc, argv)
-    , m_pGraphs(new GraphsManagment(this))
+    , m_pGraphs(new GraphsManagment())
     , m_bIOProcessing(false)
     , m_errSteam(std::clog)
     , m_server(nullptr)
@@ -33,6 +33,7 @@ ZenoApplication::ZenoApplication(int &argc, char **argv)
 
 ZenoApplication::~ZenoApplication()
 {
+    delete m_pGraphs;
 }
 
 QString ZenoApplication::readQss(const QString& qssPath)
