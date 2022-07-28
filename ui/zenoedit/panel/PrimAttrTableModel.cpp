@@ -252,34 +252,34 @@ void PrimAttrTableModel::setSelAttr(std::string sel_attr_) {
 template<typename T>
 QVariant attrData(const zeno::AttrVector<T> &attr, const QModelIndex &index) {
     std::string attr_name = attr.attr_keys()[index.column() - 1];
-    if (attr.attr_is<float>(attr_name)) {
-        return attr.attr<float>(attr_name)[index.row()];
+    if (attr.template attr_is<float>(attr_name)) {
+        return attr.template attr<float>(attr_name)[index.row()];
     }
-    else if (attr.attr_is<zeno::vec2f>(attr_name)) {
-        auto v = attr.attr<zeno::vec2f>(attr_name)[index.row()];
+    else if (attr.template attr_is<zeno::vec2f>(attr_name)) {
+        auto v = attr.template attr<zeno::vec2f>(attr_name)[index.row()];
         return QString("%1, %2").arg(v[0]).arg(v[1]);
     }
-    else if (attr.attr_is<zeno::vec3f>(attr_name)) {
-        auto v = attr.attr<zeno::vec3f>(attr_name)[index.row()];
+    else if (attr.template attr_is<zeno::vec3f>(attr_name)) {
+        auto v = attr.template attr<zeno::vec3f>(attr_name)[index.row()];
         return QString("%1, %2, %3").arg(v[0]).arg(v[1]).arg(v[2]);
     }
-    else if (attr.attr_is<zeno::vec4f>(attr_name)) {
-        auto v = attr.attr<zeno::vec4f>(attr_name)[index.row()];
+    else if (attr.template attr_is<zeno::vec4f>(attr_name)) {
+        auto v = attr.template attr<zeno::vec4f>(attr_name)[index.row()];
         return QString("%1, %2, %3, %4").arg(v[0]).arg(v[1]).arg(v[2]).arg(v[3]);
     }
-    else if (attr.attr_is<int>(attr_name)) {
-        return attr.attr<int>(attr_name)[index.row()];
+    else if (attr.template attr_is<int>(attr_name)) {
+        return attr.template attr<int>(attr_name)[index.row()];
     }
-    else if (attr.attr_is<zeno::vec2i>(attr_name)) {
-        auto v = attr.attr<zeno::vec2i>(attr_name)[index.row()];
+    else if (attr.template attr_is<zeno::vec2i>(attr_name)) {
+        auto v = attr.template attr<zeno::vec2i>(attr_name)[index.row()];
         return QString("%1, %2").arg(v[0]).arg(v[1]);
     }
-    else if (attr.attr_is<zeno::vec3i>(attr_name)) {
-        auto v = attr.attr<zeno::vec3i>(attr_name)[index.row()];
+    else if (attr.template attr_is<zeno::vec3i>(attr_name)) {
+        auto v = attr.template attr<zeno::vec3i>(attr_name)[index.row()];
         return QString("%1, %2, %3").arg(v[0]).arg(v[1]).arg(v[2]);
     }
-    else if (attr.attr_is<zeno::vec4i>(attr_name)) {
-        auto v = attr.attr<zeno::vec4i>(attr_name)[index.row()];
+    else if (attr.template attr_is<zeno::vec4i>(attr_name)) {
+        auto v = attr.template attr<zeno::vec4i>(attr_name)[index.row()];
         return QString("%1, %2, %3, %4").arg(v[0]).arg(v[1]).arg(v[2]).arg(v[3]);
     }
     else {
