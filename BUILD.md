@@ -119,7 +119,7 @@ Quickly recall our CMake knowledge in [my parallel course](github.com/parallel10
 ### Windows
 
 ```bash
-cmake -B build -DQt5_DIR="C:/Qt/Qt5.14.2/msvc2017_64/lib/cmake/Qt5"
+cmake -B build -DCMAKE_BUILD_TYPE=Release -DQt5_DIR="C:/Qt/Qt5.14.2/msvc2017_64/lib/cmake/Qt5"
 cmake --build build --config Release
 "C:\Qt\Qt5.14.2\msvc2017_64\bin\windeployqt.exe" "build\bin\zenoedit.exe"
 ```
@@ -127,9 +127,10 @@ cmake --build build --config Release
 Please replace the `C:/Qt/Qt5.14.2` by your custom Qt install location. And make sure you use `/` instead of `\\`, since CMake doesn't recognize `\\`.
 
 > The `--config Release` argument is **only required on Windows**, thank to the fact that MSBuild is a multi-config generator.
-> If you use `-DCMAKE_BUILD_TYPE=Debug` in the *configure* phase, then you should also `--config Debug` in the *build* phase.
+> If you are using Visual Studio as an IDE, you must select the `Release` configuration in the UI combobox (it is `x64-Debug` by default).
+> If you wanna debug and used `-DCMAKE_BUILD_TYPE=Debug` in the *configure* phase, then you should also `--config Debug` in the *build* phase.
 
-> Also, Windows doesn't support `--parallel` argument, which means MSBuild is a single-threaded build system, you have to wait. If you really want parallel build on Windows, you have to install [Ninja](https://github.com/ninja-build/ninja/releases), and use `cmake -G Ninja -B build -DQt5_DIR=...` in the first step instead.
+> Also, Windows doesn't support `--parallel` argument, which means MSBuild is a single-threaded build system, you have to wait. If you really want parallel build on Windows, you have to install [Ninja](https://github.com/ninja-build/ninja/releases), and use `cmake -G Ninja -B build` in the first step instead.
 
 > If the second command (`cmake --build build --config Release`) failed with `cannot find compiler 'cc1.exe'`: Please open the `build/zeno.sln` with Visual Studio, select `Release` configuration in the UI, click the `Build` button. (Yes, MSPigs prefer GUI than CLI... They never expose `cc1` to `PATH`... After `Build` complete, simply exit Visual Studio, and continue edit files with your favorite IDE :)
 
@@ -144,7 +145,8 @@ cmake -B build
 cmake --build build --parallel 4
 ```
 
-> `--parallel 4` here means using 4 CPU threads.
+> `--parallel 4` here means using 4 CPU threads. So if you have 8 CPU cores, may use `--parallel 8` instead.
+> The default `CMAKE_BUILD_TYPE` is `Release` on Linux, no worry about performance :)
 
 ## Run Zeno
 
@@ -163,6 +165,8 @@ build/bin/zenoedit
 ```
 
 This should shows up an node editor window if everything is working well.
+
+If you have any trouble, see [docs/FAQ.md](docs/FAQ.md) for troubleshooting.
 
 ## Building Zeno extensions (optional)
 
