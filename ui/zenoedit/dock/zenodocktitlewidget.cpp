@@ -148,7 +148,7 @@ void ZenoEditorDockTitleWidget::initModel()
 		setTitle(pModel->fileName());
 
 	auto graphsMgr = zenoApp->graphsManagment();
-	connect(graphsMgr.get(), SIGNAL(modelInited(IGraphsModel*)), this, SLOT(onModelInited(IGraphsModel*)));
+	connect(&*graphsMgr, SIGNAL(modelInited(IGraphsModel*)), this, SLOT(onModelInited(IGraphsModel*)));
 }
 
 void ZenoEditorDockTitleWidget::initTitleContent(QHBoxLayout* pHLayout)

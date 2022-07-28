@@ -508,7 +508,7 @@ DisplayWidget::DisplayWidget(ZenoMainWindow* pMainWin)
     connect(m_timeline, SIGNAL(kill()), this, SLOT(onKill()));
 
     auto graphs = zenoApp->graphsManagment();
-    connect(graphs.get(), SIGNAL(modelDataChanged()), this, SLOT(onModelDataChanged()));
+    connect(&*graphs, SIGNAL(modelDataChanged()), this, SLOT(onModelDataChanged()));
 
 	m_pTimer = new QTimer(this);
     connect(m_pTimer, SIGNAL(timeout()), this, SLOT(updateFrame()));

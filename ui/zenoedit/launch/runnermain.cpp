@@ -75,7 +75,7 @@ static void send_packet(std::string_view info, const char *buf, size_t len) {
 #endif
 }
 
-static void runner_start(std::string const &progJson, int sessionid) {
+static int runner_start(std::string const &progJson, int sessionid) {
     zeno::log_trace("runner got program JSON: {}", progJson);
     //MessageBox(0, "runner", "runner", MB_OK);           //convient to attach process by debugger, at windows.
     zeno::scope_exit sp([=]() { std::cout.flush(); });
@@ -91,6 +91,7 @@ static void runner_start(std::string const &progJson, int sessionid) {
     auto onfail = [&] {
         auto statJson = session->globalStatus->toJson();
         send_packet("{\"action\":\"reportStatus\"}", statJson.data(), statJson.size());
+        return 1;
     };
 
     zeno::GraphException::catched([&] {
@@ -145,6 +146,7 @@ static void runner_start(std::string const &progJson, int sessionid) {
         if (session->globalStatus->failed())
             return onfail();
     }
+    return 0;
 }
 
 }
@@ -182,7 +184,6 @@ int runner_main(int sessionid, int port) {
     std::back_insert_iterator<std::string> sit(progJson);
     std::copy(iit, eiit, sit);
 
-    runner_start(progJson, sessionid);
-    return 0;
+    return runner_start(progJson, sessionid);
 }
 #endif

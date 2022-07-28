@@ -88,7 +88,7 @@ void ZenoGraphsEditor::initModel()
 void ZenoGraphsEditor::initSignals()
 {
 	auto graphsMgr = zenoApp->graphsManagment();
-	connect(graphsMgr.get(), SIGNAL(modelInited(IGraphsModel*)), this, SLOT(resetModel(IGraphsModel*)));
+	connect(&*graphsMgr, SIGNAL(modelInited(IGraphsModel*)), this, SLOT(resetModel(IGraphsModel*)));
     connect(graphsMgr->logModel(), &QStandardItemModel::rowsInserted, this, &ZenoGraphsEditor::onLogInserted);
 
     connect(m_ui->subnetBtn, &ZenoCheckButton::toggled, this, &ZenoGraphsEditor::sideButtonToggled);

@@ -3,9 +3,10 @@
 #include <zeno/PrimitiveObject.h>
 #include <zeno/VDBGrid.h>
 #include <zeno/utils/log.h>
-#include "tbb/concurrent_vector.h"
-#include "tbb/parallel_for.h"
-#include "tbb/scalable_allocator.h"
+//#include <zeno/utils/zeno_p.h>
+#include <tbb/concurrent_vector.h>
+#include <tbb/parallel_for.h>
+#include <tbb/scalable_allocator.h>
 namespace zeno {
 
 struct GetVDBPoints : zeno::INode {
@@ -88,7 +89,7 @@ struct VDBPointsToPrimitive : zeno::INode {
     auto ret = zeno::IObject::make<zeno::PrimitiveObject>();
     auto &retpos = ret->add_attr<zeno::vec3f>("pos");
 
-    auto hasVel = !leafs.size() || leafs[0]->hasAttribute("v");
+    auto hasVel = !leafs.size() || leafs[0]->hasAttribute("v") && leafs[0]->hasAttribute("P");
 
     //tbb::concurrent_vector<std::tuple<zeno::vec3f,zeno::vec3f>> data(0);
     if (hasVel) {
@@ -164,12 +165,14 @@ struct VDBPointsToPrimitive : zeno::INode {
       //attributes
       // Attribute reader
       // Extract the position attribute from the leaf by name (P is position).
-      openvdb::points::AttributeArray& positionArray =
-        leaf->attributeArray("P");
+      if (leaf->attributeSet().size() < 1) return;
+      openvdb::points::AttributeArray& positionArray = leaf->attributeArray(0);
+      //ZENO_P(positionArray.type());
+      //ZENO_P(positionArray.codecType());
 
-      using PositionCodec = openvdb::points::FixedPointCodec</*one byte*/false>;
+      //using PositionCodec = openvdb::points::FixedPointCodec<[>one byte<]false>;
       // Create read handles for position and velocity
-      openvdb::points::AttributeHandle<openvdb::Vec3f, PositionCodec> positionHandle(positionArray);
+      openvdb::points::AttributeHandle<openvdb::Vec3s> positionHandle(positionArray);
 
       for (auto iter = leaf->beginIndexOn(); iter; ++iter) {
         openvdb::Vec3R p = positionHandle.get(*iter);

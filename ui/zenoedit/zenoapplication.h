@@ -18,7 +18,7 @@ class ZenoApplication : public QApplication
 public:
     ZenoApplication(int &argc, char **argv);
     ~ZenoApplication();
-    QSharedPointer<GraphsManagment> graphsManagment() const;
+    GraphsManagment *graphsManagment() const;
     void initFonts();
     void initStyleSheets();
     void setIOProcessing(bool bIOProcessing);
@@ -32,7 +32,7 @@ public:
 private:
     QString readQss(const QString& qssPath);
 
-    QSharedPointer<GraphsManagment> m_pGraphs;
+    GraphsManagment *m_pGraphs;
     ZWidgetErrStream m_errSteam;
 #if defined(ZENO_MULTIPROCESS) && defined(ZENO_IPC_USE_TCP)
     ZTcpServer* m_server;
