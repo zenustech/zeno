@@ -45,9 +45,12 @@ static void drawText(QPainter* painter, qreal x, qreal y, Qt::Alignment flags,
 
 void ZSlider::setSliderValue(int value)
 {
-    m_value = qMin(qMax(m_from, value), m_to);
+    int newVal = qMin(qMax(m_from, value), m_to);
+    if (newVal == m_value)
+        return;
+    m_value = newVal;
     update();
-    emit sliderValueChange(value);
+    emit sliderValueChange(m_value);
 }
 
 int ZSlider::_posToFrame(int x)

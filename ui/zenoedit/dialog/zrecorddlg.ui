@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>415</width>
-    <height>325</height>
+    <height>357</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -19,6 +19,13 @@
      <property name="verticalSpacing">
       <number>10</number>
      </property>
+     <item row="5" column="0">
+      <widget class="QLabel" name="label_6">
+       <property name="text">
+        <string>Width:</string>
+       </property>
+      </widget>
+     </item>
      <item row="2" column="0">
       <widget class="QLabel" name="label_3">
        <property name="text">
@@ -26,18 +33,46 @@
        </property>
       </widget>
      </item>
-     <item row="6" column="1">
-      <widget class="QLineEdit" name="lineHeight"/>
+     <item row="3" column="0">
+      <widget class="QLabel" name="label_4">
+       <property name="text">
+        <string>Bit Rate:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="1">
+      <widget class="QLineEdit" name="frameEnd"/>
      </item>
      <item row="4" column="1">
       <widget class="QComboBox" name="cbPresets"/>
      </item>
-     <item row="5" column="0">
-      <widget class="QLabel" name="label_6">
+     <item row="0" column="1">
+      <widget class="QLineEdit" name="frameStart"/>
+     </item>
+     <item row="4" column="0">
+      <widget class="QLabel" name="label_5">
        <property name="text">
-        <string>Width:</string>
+        <string>Presets:</string>
        </property>
       </widget>
+     </item>
+     <item row="7" column="1">
+      <layout class="QHBoxLayout" name="horizontalLayout">
+       <item>
+        <widget class="QLineEdit" name="linePath">
+         <property name="placeholderText">
+          <string>(Option)</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="btnOpen">
+         <property name="text">
+          <string>...</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
      </item>
      <item row="6" column="0">
       <widget class="QLabel" name="label_7">
@@ -53,25 +88,6 @@
        </property>
       </widget>
      </item>
-     <item row="3" column="0">
-      <widget class="QLabel" name="label_4">
-       <property name="text">
-        <string>Bit Rate:</string>
-       </property>
-      </widget>
-     </item>
-     <item row="0" column="1">
-      <widget class="QLineEdit" name="frameStart"/>
-     </item>
-     <item row="5" column="1">
-      <widget class="QLineEdit" name="lineWidth"/>
-     </item>
-     <item row="2" column="1">
-      <widget class="QLineEdit" name="fps"/>
-     </item>
-     <item row="1" column="1">
-      <widget class="QLineEdit" name="frameEnd"/>
-     </item>
      <item row="3" column="1">
       <widget class="QLineEdit" name="bitrate"/>
      </item>
@@ -82,12 +98,14 @@
        </property>
       </widget>
      </item>
-     <item row="4" column="0">
-      <widget class="QLabel" name="label_5">
-       <property name="text">
-        <string>Presets:</string>
-       </property>
-      </widget>
+     <item row="6" column="1">
+      <widget class="QLineEdit" name="lineHeight"/>
+     </item>
+     <item row="5" column="1">
+      <widget class="QLineEdit" name="lineWidth"/>
+     </item>
+     <item row="2" column="1">
+      <widget class="QLineEdit" name="fps"/>
      </item>
      <item row="7" column="0">
       <widget class="QLabel" name="label_8">
@@ -96,19 +114,19 @@
        </property>
       </widget>
      </item>
-     <item row="7" column="1">
-      <layout class="QHBoxLayout" name="horizontalLayout">
-       <item>
-        <widget class="QLineEdit" name="linePath"/>
-       </item>
-       <item>
-        <widget class="QPushButton" name="btnOpen">
-         <property name="text">
-          <string>...</string>
-         </property>
-        </widget>
-       </item>
-      </layout>
+     <item row="8" column="0">
+      <widget class="QLabel" name="filename">
+       <property name="text">
+        <string>filename</string>
+       </property>
+      </widget>
+     </item>
+     <item row="8" column="1">
+      <widget class="QLineEdit" name="lineName">
+       <property name="placeholderText">
+        <string>(Option)</string>
+       </property>
+      </widget>
      </item>
     </layout>
    </item>
@@ -138,38 +156,5 @@
   </layout>
  </widget>
  <resources/>
- <connections>
-  <connection>
-   <sender>btnGroup</sender>
-   <signal>accepted()</signal>
-   <receiver>Dialog</receiver>
-   <slot>accept()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>248</x>
-     <y>254</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>157</x>
-     <y>274</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>btnGroup</sender>
-   <signal>rejected()</signal>
-   <receiver>Dialog</receiver>
-   <slot>reject()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>316</x>
-     <y>260</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>286</x>
-     <y>274</y>
-    </hint>
-   </hints>
-  </connection>
- </connections>
+ <connections/>
 </ui>
