@@ -31,48 +31,78 @@ struct Buffer {
 
 
 template <class GridPtr>
-void vdb_wrangle(zfx::x64::Executable *exec, GridPtr &grid, bool modifyActive, bool changeBackground) {
+void vdb_wrangle(zfx::x64::Executable *exec, GridPtr &grid, bool modifyActive, bool changeBackground, bool hasPos) {
     //ZENO_P(grid->background());
     auto wrangler = [&](auto &leaf, openvdb::Index leafpos) {
-        for (auto iter = leaf.beginValueOn(); iter != leaf.endValueOn(); ++iter) {
-            iter.modifyValue([&](auto &v) {
-                auto ctx = exec->make_context();
-                if constexpr (std::is_same_v<std::decay_t<decltype(v)>, openvdb::Vec3f>) {
-                    ctx.channel(0)[0] = v[0];
-                    ctx.channel(1)[0] = v[1];
-                    ctx.channel(2)[0] = v[2];
-                    ctx.execute();
-                    v[0] = ctx.channel(0)[0];
-                    v[1] = ctx.channel(1)[0];
-                    v[2] = ctx.channel(2)[0];
-    
-                } else {
-                    ctx.channel(0)[0] = v;
-                    ctx.execute();
-                    v = ctx.channel(0)[0];
+        boolean_switch(hasPos, [&] (auto hasPos) {
+            for (auto iter = leaf.beginValueOn(); iter != leaf.endValueOn(); ++iter) {
+                iter.modifyValue([&](auto &v) {
+                    auto ctx = exec->make_context();
+                    if constexpr (std::is_same_v<std::decay_t<decltype(v)>, openvdb::Vec3f>) {
+                        if constexpr (hasPos.value) {
+                            ctx.channel(0)[0] = p[0];
+                            ctx.channel(1)[0] = p[1];
+                            ctx.channel(2)[0] = p[2];
+                            ctx.channel(3)[0] = v[0];
+                            ctx.channel(4)[0] = v[1];
+                            ctx.channel(5)[0] = v[2];
+                            ctx.execute();
+                            p[0] = ctx.channel(0)[0];
+                            p[1] = ctx.channel(1)[0];
+                            p[2] = ctx.channel(2)[0];
+                            v[0] = ctx.channel(3)[0];
+                            v[1] = ctx.channel(4)[0];
+                            v[2] = ctx.channel(5)[0];
+                        } else {
+                            ctx.channel(0)[0] = v[0];
+                            ctx.channel(1)[0] = v[1];
+                            ctx.channel(2)[0] = v[2];
+                            ctx.execute();
+                            v[0] = ctx.channel(0)[0];
+                            v[1] = ctx.channel(1)[0];
+                            v[2] = ctx.channel(2)[0];
+                        }
+        
+                    } else {
+                        if constexpr (hasPos.value) {
+                            ctx.channel(0)[0] = v;
+                            ctx.execute();
+                            v = ctx.channel(0)[0];
+                        } else {
+                            ctx.channel(0)[0] = p[0];
+                            ctx.channel(1)[0] = p[1];
+                            ctx.channel(2)[0] = p[2];
+                            ctx.channel(3)[0] = v;
+                            ctx.execute();
+                            p[0] = ctx.channel(0)[0];
+                            p[1] = ctx.channel(1)[0];
+                            p[2] = ctx.channel(2)[0];
+                            v = ctx.channel(3)[0];
+                        }
+                        
+                    }
                     
-                }
-                
-            });
+                });
 
-            if(modifyActive){
-                float testv;
-                auto v = iter.getValue();
-                if constexpr (std::is_same_v<std::decay_t<decltype(v)>, openvdb::Vec3f>)
-                {
-                    testv = std::sqrt(v[0]*v[0]+v[1]*v[1]+v[2]*v[2]);
-                } else {
-                    testv = std::abs(v);
-                }
-                if(testv<1e-5)
-                {
-                    iter.setValueOn(false);
-                }
-                else{
-                    iter.setValueOn(true);
+                if(modifyActive){
+                    float testv;
+                    auto v = iter.getValue();
+                    if constexpr (std::is_same_v<std::decay_t<decltype(v)>, openvdb::Vec3f>)
+                    {
+                        testv = std::sqrt(v[0]*v[0]+v[1]*v[1]+v[2]*v[2]);
+                    } else {
+                        testv = std::abs(v);
+                    }
+                    if(testv<1e-5)
+                    {
+                        iter.setValueOn(false);
+                    }
+                    else{
+                        iter.setValueOn(true);
+                    }
                 }
             }
-        }
+        });
     };
     auto velman = openvdb::tree::LeafManager<std::decay_t<decltype(grid->tree())>>(grid->tree());
     velman.foreach(wrangler);
@@ -80,20 +110,50 @@ void vdb_wrangle(zfx::x64::Executable *exec, GridPtr &grid, bool modifyActive, b
         auto v = grid->background();
         {
             auto ctx = exec->make_context();
-            if constexpr (std::is_same_v<std::decay_t<decltype(v)>, openvdb::Vec3f>) {
-                ctx.channel(0)[0] = v[0];
-                ctx.channel(1)[0] = v[1];
-                ctx.channel(2)[0] = v[2];
-                ctx.execute();
-                v[0] = ctx.channel(0)[0];
-                v[1] = ctx.channel(1)[0];
-                v[2] = ctx.channel(2)[0];
-
-            } else {
-                ctx.channel(0)[0] = v;
-                ctx.execute();
-                v = ctx.channel(0)[0];
-            }
+            openvdb::Vec3f p(0, 0, 0);
+                    if constexpr (std::is_same_v<std::decay_t<decltype(v)>, openvdb::Vec3f>) {
+                        if (hasPos) {
+                            ctx.channel(0)[0] = p[0];
+                            ctx.channel(1)[0] = p[1];
+                            ctx.channel(2)[0] = p[2];
+                            ctx.channel(3)[0] = v[0];
+                            ctx.channel(4)[0] = v[1];
+                            ctx.channel(5)[0] = v[2];
+                            ctx.execute();
+                            p[0] = ctx.channel(0)[0];
+                            p[1] = ctx.channel(1)[0];
+                            p[2] = ctx.channel(2)[0];
+                            v[0] = ctx.channel(3)[0];
+                            v[1] = ctx.channel(4)[0];
+                            v[2] = ctx.channel(5)[0];
+                        } else {
+                            ctx.channel(0)[0] = v[0];
+                            ctx.channel(1)[0] = v[1];
+                            ctx.channel(2)[0] = v[2];
+                            ctx.execute();
+                            v[0] = ctx.channel(0)[0];
+                            v[1] = ctx.channel(1)[0];
+                            v[2] = ctx.channel(2)[0];
+                        }
+        
+                    } else {
+                        if (hasPos) {
+                            ctx.channel(0)[0] = v;
+                            ctx.execute();
+                            v = ctx.channel(0)[0];
+                        } else {
+                            ctx.channel(0)[0] = p[0];
+                            ctx.channel(1)[0] = p[1];
+                            ctx.channel(2)[0] = p[2];
+                            ctx.channel(3)[0] = v;
+                            ctx.execute();
+                            p[0] = ctx.channel(0)[0];
+                            p[1] = ctx.channel(1)[0];
+                            p[2] = ctx.channel(2)[0];
+                            v = ctx.channel(3)[0];
+                        }
+                        
+                    }
         }
         openvdb::tools::changeBackground(grid->tree(), v);
     }
@@ -105,7 +165,11 @@ struct VDBWrangle : zeno::INode {
         auto grid = get_input<zeno::VDBGrid>("grid");
         auto code = get_input<zeno::StringObject>("zfxCode")->get();
 
+        auto hasPos = code.find("@pos") != code.npos;
+
         zfx::Options opts(zfx::Options::for_x64);
+        if (hasPos)
+            opts.define_symbol("@pos", 3);
         if (std::dynamic_pointer_cast<zeno::VDBFloatGrid>(grid))
             opts.define_symbol("@val", 1);
         else if (std::dynamic_pointer_cast<zeno::VDBFloat3Grid>(grid))
@@ -194,9 +258,9 @@ struct VDBWrangle : zeno::INode {
         auto changeBackground = has_input("ChangeBackground") ?
             (get_input<zeno::StringObject>("ChangeBackground")->get())=="true" : false;
         if (auto p = std::dynamic_pointer_cast<zeno::VDBFloatGrid>(grid); p)
-            vdb_wrangle(exec, p->m_grid, modifyActive, changeBackground);
+            vdb_wrangle(exec, p->m_grid, modifyActive, changeBackground, hasPos);
         else if (auto p = std::dynamic_pointer_cast<zeno::VDBFloat3Grid>(grid); p)
-            vdb_wrangle(exec, p->m_grid, modifyActive, changeBackground);
+            vdb_wrangle(exec, p->m_grid, modifyActive, changeBackground, hasPos);
 
         set_output("grid", std::move(grid));
     }
