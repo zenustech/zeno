@@ -40,6 +40,8 @@ Push it, then GitHub CI will do the depolyment automatically for you.
 
 It will create a release with tag, for example, `v2022.4.19` (today's date).
 
+# CMake tricks & tips
+
 ## Accelerate compile process
 
 You may install `ccache` to compile faster on Linux.
@@ -83,11 +85,15 @@ If you wish to use the system-wide pre-installed OpenVDB (for faster compile spe
 cmake -B build -DZENO_WITH_zenvdb:BOOL=ON -DZENO_SYSTEM_OPENVDB:BOOL=ON
 ```
 
-The same to Alembic:
+> NOTE: the pre-installed OpenVDB might cause error in @littlemine's CUDA extension, use `-DZENO_SYSTEM_OPENVDB:BOOL=OFF` if you got error.
+
+The same applies to Alembic (required for `.abc` format support):
 
 ```bash
 cmake -B build -DZENO_WITH_Alembic:BOOL=ON -DZENO_SYSTEM_ALEMBIC:BOOL=ON
 ```
+
+# Alternative installation
 
 ## Install Zeno globally (not recommended)
 
