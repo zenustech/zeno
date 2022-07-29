@@ -87,6 +87,7 @@ void ZenoWelcomePage::initRecentFiles()
             ZTextLabel *pLabel = new ZTextLabel(fn);
             pLabel->setTextColor(QColor(133, 130, 128));
             pLabel->setFont(QFont("HarmonyOS Sans", 11));
+            pLabel->setToolTip(path);
 
             m_ui->layoutFiles->addWidget(pLabel);
 

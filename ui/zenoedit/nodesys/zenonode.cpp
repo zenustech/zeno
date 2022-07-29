@@ -442,7 +442,6 @@ QGraphicsLayout* ZenoNode::initParam(PARAM_CONTROL ctrl, const QString& paramNam
 	    case CONTROL_READPATH:
 	    {
 		    ZenoParamLineEdit* pFileWidget = new ZenoParamLineEdit(value, param.control, m_renderParams.lineEditParam);
-            pFileWidget->setValidator(validateForParams(param));
 
 			ImageElement elem;
 			elem.image = ":/icons/ic_openfile.svg";
@@ -472,7 +471,6 @@ QGraphicsLayout* ZenoNode::initParam(PARAM_CONTROL ctrl, const QString& paramNam
 	    case CONTROL_WRITEPATH:
 	    {
 		    ZenoParamLineEdit* pFileWidget = new ZenoParamLineEdit(value, param.control, m_renderParams.lineEditParam);
-            pFileWidget->setValidator(validateForParams(param));
 
             ImageElement elem;
 			elem.image = ":/icons/ic_openfile.svg";
@@ -943,7 +941,6 @@ ZenoParamWidget* ZenoNode::initSocketWidget(const INPUT_SOCKET inSocket, ZenoTex
         {
             const QString& path = UiHelper::variantToString(inSocket.info.defaultValue);
             ZenoParamPathEdit *pPathEditor = new ZenoParamPathEdit(path, ctrl, m_renderParams.lineEditParam);
-            pPathEditor->setValidator(validateForSockets(inSocket));
             bool isRead = ctrl == CONTROL_READPATH;
 
             connect(pPathEditor, &ZenoParamPathEdit::clicked, this, [=]() {

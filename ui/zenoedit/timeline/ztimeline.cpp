@@ -125,6 +125,11 @@ void ZTimeline::setSliderValue(int frameid)
     m_ui->timeliner->setSliderValue(frameid);
 }
 
+void ZTimeline::setPlayButtonToggle(bool bToggle)
+{
+    m_ui->btnPlay->setChecked(bToggle);
+}
+
 void ZTimeline::onFrameEditted()
 {
     if (m_ui->editFrom->text().isEmpty() || m_ui->editTo->text().isEmpty())
