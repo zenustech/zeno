@@ -5,6 +5,7 @@
 #include "PrimAttrTableModel.h"
 #include <zeno/types/PrimitiveObject.h>
 #include "zeno/types/UserData.h"
+#include <zeno/types/AttrVector.h>
 #include <zeno/funcs/LiterialConverter.h>
 
 PrimAttrTableModel::PrimAttrTableModel(QObject* parent)
@@ -123,6 +124,14 @@ QVariant PrimAttrTableModel::data(const QModelIndex& index, int role) const
                 auto v = zeno::objectToLiterial<int>(it->second);
                 return v;
             }
+            else if (zeno::objectIsLiterial<zeno::vec2f>(it->second)) {
+                auto v = zeno::objectToLiterial<zeno::vec2f>(it->second);
+                return QString("%1, %2").arg(v[0]).arg(v[1]);
+            }
+            else if (zeno::objectIsLiterial<zeno::vec2i>(it->second)) {
+                auto v = zeno::objectToLiterial<zeno::vec2i>(it->second);
+                return QString("%1, %2").arg(v[0]).arg(v[1]);
+            }
             else if (zeno::objectIsLiterial<zeno::vec3f>(it->second)) {
                 auto v = zeno::objectToLiterial<zeno::vec3f>(it->second);
                 return QString("%1, %2, %3").arg(v[0]).arg(v[1]).arg(v[2]);
@@ -130,6 +139,18 @@ QVariant PrimAttrTableModel::data(const QModelIndex& index, int role) const
             else if (zeno::objectIsLiterial<zeno::vec3i>(it->second)) {
                 auto v = zeno::objectToLiterial<zeno::vec3i>(it->second);
                 return QString("%1, %2, %3").arg(v[0]).arg(v[1]).arg(v[2]);
+            }
+            else if (zeno::objectIsLiterial<zeno::vec4f>(it->second)) {
+                auto v = zeno::objectToLiterial<zeno::vec4f>(it->second);
+                return QString("%1, %2, %3, %4").arg(v[0]).arg(v[1]).arg(v[2]).arg(v[3]);
+            }
+            else if (zeno::objectIsLiterial<zeno::vec4i>(it->second)) {
+                auto v = zeno::objectToLiterial<zeno::vec4i>(it->second);
+                return QString("%1, %2, %3, %4").arg(v[0]).arg(v[1]).arg(v[2]).arg(v[3]);
+            }
+            else if (zeno::objectIsLiterial<std::string>(it->second)) {
+                auto v = zeno::objectToLiterial<std::string>(it->second);
+                return QString(v.c_str());
             }
         }
         return "-";
@@ -227,39 +248,53 @@ void PrimAttrTableModel::setSelAttr(std::string sel_attr_) {
     sel_attr = sel_attr_;
     endResetModel();
 }
+
+template<typename T>
+QVariant attrData(const zeno::AttrVector<T> &attr, const QModelIndex &index) {
+    std::string attr_name = attr.attr_keys()[index.column() - 1];
+    if (attr.template attr_is<float>(attr_name)) {
+        return attr.template attr<float>(attr_name)[index.row()];
+    }
+    else if (attr.template attr_is<zeno::vec2f>(attr_name)) {
+        auto v = attr.template attr<zeno::vec2f>(attr_name)[index.row()];
+        return QString("%1, %2").arg(v[0]).arg(v[1]);
+    }
+    else if (attr.template attr_is<zeno::vec3f>(attr_name)) {
+        auto v = attr.template attr<zeno::vec3f>(attr_name)[index.row()];
+        return QString("%1, %2, %3").arg(v[0]).arg(v[1]).arg(v[2]);
+    }
+    else if (attr.template attr_is<zeno::vec4f>(attr_name)) {
+        auto v = attr.template attr<zeno::vec4f>(attr_name)[index.row()];
+        return QString("%1, %2, %3, %4").arg(v[0]).arg(v[1]).arg(v[2]).arg(v[3]);
+    }
+    else if (attr.template attr_is<int>(attr_name)) {
+        return attr.template attr<int>(attr_name)[index.row()];
+    }
+    else if (attr.template attr_is<zeno::vec2i>(attr_name)) {
+        auto v = attr.template attr<zeno::vec2i>(attr_name)[index.row()];
+        return QString("%1, %2").arg(v[0]).arg(v[1]);
+    }
+    else if (attr.template attr_is<zeno::vec3i>(attr_name)) {
+        auto v = attr.template attr<zeno::vec3i>(attr_name)[index.row()];
+        return QString("%1, %2, %3").arg(v[0]).arg(v[1]).arg(v[2]);
+    }
+    else if (attr.template attr_is<zeno::vec4i>(attr_name)) {
+        auto v = attr.template attr<zeno::vec4i>(attr_name)[index.row()];
+        return QString("%1, %2, %3, %4").arg(v[0]).arg(v[1]).arg(v[2]).arg(v[3]);
+    }
+    else {
+        return QVariant();
+    }
+}
+
 QVariant PrimAttrTableModel::vertexData(const QModelIndex &index) const {
-    std::string attr_name = m_prim->attr_keys()[index.column()];
-    if (m_prim->attr_is<float>(attr_name)) {
-        return m_prim->attr<float>(attr_name)[index.row()];
-    }
-    else if (m_prim->attr_is<zeno::vec2f>(attr_name)) {
-        auto v = m_prim->attr<zeno::vec2f>(attr_name)[index.row()];
-        return QString("%1, %2").arg(v[0]).arg(v[1]);
-    }
-    else if (m_prim->attr_is<zeno::vec3f>(attr_name)) {
-        auto v = m_prim->attr<zeno::vec3f>(attr_name)[index.row()];
+    if (index.column() == 0) {
+        auto v = m_prim->verts.at(index.row());
         return QString("%1, %2, %3").arg(v[0]).arg(v[1]).arg(v[2]);
     }
-    else if (m_prim->attr_is<zeno::vec4f>(attr_name)) {
-        auto v = m_prim->attr<zeno::vec4f>(attr_name)[index.row()];
-        return QString("%1, %2, %3, %4").arg(v[0]).arg(v[1]).arg(v[2]).arg(v[3]);
+    else {
+        return attrData(m_prim->verts, index);
     }
-    else if (m_prim->attr_is<int>(attr_name)) {
-        return m_prim->attr<int>(attr_name)[index.row()];
-    }
-    else if (m_prim->attr_is<zeno::vec2i>(attr_name)) {
-        auto v = m_prim->attr<zeno::vec2i>(attr_name)[index.row()];
-        return QString("%1, %2").arg(v[0]).arg(v[1]);
-    }
-    else if (m_prim->attr_is<zeno::vec3i>(attr_name)) {
-        auto v = m_prim->attr<zeno::vec3i>(attr_name)[index.row()];
-        return QString("%1, %2, %3").arg(v[0]).arg(v[1]).arg(v[2]);
-    }
-    else if (m_prim->attr_is<zeno::vec4i>(attr_name)) {
-        auto v = m_prim->attr<zeno::vec4i>(attr_name)[index.row()];
-        return QString("%1, %2, %3, %4").arg(v[0]).arg(v[1]).arg(v[2]).arg(v[3]);
-    }
-    return QVariant();
 }
 
 QVariant PrimAttrTableModel::trisData(const QModelIndex &index) const {
@@ -268,39 +303,8 @@ QVariant PrimAttrTableModel::trisData(const QModelIndex &index) const {
         return QString("%1, %2, %3").arg(v[0]).arg(v[1]).arg(v[2]);
     }
     else {
-        std::string attr_name = m_prim->tris.attr_keys()[index.column() - 1];
-        if (m_prim->tris.attr_is<float>(attr_name)) {
-            return m_prim->tris.attr<float>(attr_name)[index.row()];
-        }
-        else if (m_prim->tris.attr_is<zeno::vec2f>(attr_name)) {
-            auto v = m_prim->tris.attr<zeno::vec2f>(attr_name)[index.row()];
-            return QString("%1, %2").arg(v[0]).arg(v[1]);
-        }
-        else if (m_prim->tris.attr_is<zeno::vec3f>(attr_name)) {
-            auto v = m_prim->tris.attr<zeno::vec3f>(attr_name)[index.row()];
-            return QString("%1, %2, %3").arg(v[0]).arg(v[1]).arg(v[2]);
-        }
-        else if (m_prim->tris.attr_is<zeno::vec4f>(attr_name)) {
-            auto v = m_prim->tris.attr<zeno::vec4f>(attr_name)[index.row()];
-            return QString("%1, %2, %3, %4").arg(v[0]).arg(v[1]).arg(v[2]).arg(v[3]);
-        }
-        else if (m_prim->tris.attr_is<int>(attr_name)) {
-            return m_prim->tris.attr<int>(attr_name)[index.row()];
-        }
-        else if (m_prim->tris.attr_is<zeno::vec2i>(attr_name)) {
-            auto v = m_prim->tris.attr<zeno::vec2i>(attr_name)[index.row()];
-            return QString("%1, %2").arg(v[0]).arg(v[1]);
-        }
-        else if (m_prim->tris.attr_is<zeno::vec3i>(attr_name)) {
-            auto v = m_prim->tris.attr<zeno::vec3i>(attr_name)[index.row()];
-            return QString("%1, %2, %3").arg(v[0]).arg(v[1]).arg(v[2]);
-        }
-        else if (m_prim->tris.attr_is<zeno::vec4i>(attr_name)) {
-            auto v = m_prim->tris.attr<zeno::vec4i>(attr_name)[index.row()];
-            return QString("%1, %2, %3, %4").arg(v[0]).arg(v[1]).arg(v[2]).arg(v[3]);
-        }
+        return attrData(m_prim->tris, index);
     }
-    return QVariant();
 }
 QVariant PrimAttrTableModel::pointsData(const QModelIndex &index) const {
     if (index.column() == 0) {
@@ -308,39 +312,8 @@ QVariant PrimAttrTableModel::pointsData(const QModelIndex &index) const {
         return v;
     }
     else {
-        std::string attr_name = m_prim->points.attr_keys()[index.column() - 1];
-        if (m_prim->points.attr_is<float>(attr_name)) {
-            return m_prim->points.attr<float>(attr_name)[index.row()];
-        }
-        else if (m_prim->points.attr_is<zeno::vec2f>(attr_name)) {
-            auto v = m_prim->points.attr<zeno::vec2f>(attr_name)[index.row()];
-            return QString("%1, %2").arg(v[0]).arg(v[1]);
-        }
-        else if (m_prim->points.attr_is<zeno::vec3f>(attr_name)) {
-            auto v = m_prim->points.attr<zeno::vec3f>(attr_name)[index.row()];
-            return QString("%1, %2, %3").arg(v[0]).arg(v[1]).arg(v[2]);
-        }
-        else if (m_prim->points.attr_is<zeno::vec4f>(attr_name)) {
-            auto v = m_prim->points.attr<zeno::vec4f>(attr_name)[index.row()];
-            return QString("%1, %2, %3, %4").arg(v[0]).arg(v[1]).arg(v[2]).arg(v[3]);
-        }
-        else if (m_prim->points.attr_is<int>(attr_name)) {
-            return m_prim->points.attr<int>(attr_name)[index.row()];
-        }
-        else if (m_prim->points.attr_is<zeno::vec2i>(attr_name)) {
-            auto v = m_prim->points.attr<zeno::vec2i>(attr_name)[index.row()];
-            return QString("%1, %2").arg(v[0]).arg(v[1]);
-        }
-        else if (m_prim->points.attr_is<zeno::vec3i>(attr_name)) {
-            auto v = m_prim->points.attr<zeno::vec3i>(attr_name)[index.row()];
-            return QString("%1, %2, %3").arg(v[0]).arg(v[1]).arg(v[2]);
-        }
-        else if (m_prim->points.attr_is<zeno::vec4i>(attr_name)) {
-            auto v = m_prim->points.attr<zeno::vec4i>(attr_name)[index.row()];
-            return QString("%1, %2, %3, %4").arg(v[0]).arg(v[1]).arg(v[2]).arg(v[3]);
-        }
+        return attrData(m_prim->points, index);
     }
-    return QVariant();
 }
 QVariant PrimAttrTableModel::linesData(const QModelIndex &index) const {
     if (index.column() == 0) {
@@ -348,39 +321,8 @@ QVariant PrimAttrTableModel::linesData(const QModelIndex &index) const {
         return QString("%1, %2").arg(v[0]).arg(v[1]);
     }
     else {
-        std::string attr_name = m_prim->lines.attr_keys()[index.column() - 1];
-        if (m_prim->lines.attr_is<float>(attr_name)) {
-            return m_prim->lines.attr<float>(attr_name)[index.row()];
-        }
-        else if (m_prim->lines.attr_is<zeno::vec2f>(attr_name)) {
-            auto v = m_prim->lines.attr<zeno::vec2f>(attr_name)[index.row()];
-            return QString("%1, %2").arg(v[0]).arg(v[1]);
-        }
-        else if (m_prim->lines.attr_is<zeno::vec3f>(attr_name)) {
-            auto v = m_prim->lines.attr<zeno::vec3f>(attr_name)[index.row()];
-            return QString("%1, %2, %3").arg(v[0]).arg(v[1]).arg(v[2]);
-        }
-        else if (m_prim->lines.attr_is<zeno::vec4f>(attr_name)) {
-            auto v = m_prim->lines.attr<zeno::vec4f>(attr_name)[index.row()];
-            return QString("%1, %2, %3, %4").arg(v[0]).arg(v[1]).arg(v[2]).arg(v[3]);
-        }
-        else if (m_prim->lines.attr_is<int>(attr_name)) {
-            return m_prim->lines.attr<int>(attr_name)[index.row()];
-        }
-        else if (m_prim->lines.attr_is<zeno::vec2i>(attr_name)) {
-            auto v = m_prim->lines.attr<zeno::vec2i>(attr_name)[index.row()];
-            return QString("%1, %2").arg(v[0]).arg(v[1]);
-        }
-        else if (m_prim->lines.attr_is<zeno::vec3i>(attr_name)) {
-            auto v = m_prim->lines.attr<zeno::vec3i>(attr_name)[index.row()];
-            return QString("%1, %2, %3").arg(v[0]).arg(v[1]).arg(v[2]);
-        }
-        else if (m_prim->lines.attr_is<zeno::vec4i>(attr_name)) {
-            auto v = m_prim->lines.attr<zeno::vec4i>(attr_name)[index.row()];
-            return QString("%1, %2, %3, %4").arg(v[0]).arg(v[1]).arg(v[2]).arg(v[3]);
-        }
+        return attrData(m_prim->lines, index);
     }
-    return QVariant();
 }
 QVariant PrimAttrTableModel::quadsData(const QModelIndex &index) const {
     if (index.column() == 0) {
@@ -388,39 +330,8 @@ QVariant PrimAttrTableModel::quadsData(const QModelIndex &index) const {
         return QString("%1, %2, %3, %4").arg(v[0]).arg(v[1]).arg(v[2]).arg(v[3]);
     }
     else {
-        std::string attr_name = m_prim->quads.attr_keys()[index.column() - 1];
-        if (m_prim->quads.attr_is<float>(attr_name)) {
-            return m_prim->quads.attr<float>(attr_name)[index.row()];
-        }
-        else if (m_prim->quads.attr_is<zeno::vec2f>(attr_name)) {
-            auto v = m_prim->quads.attr<zeno::vec2f>(attr_name)[index.row()];
-            return QString("%1, %2").arg(v[0]).arg(v[1]);
-        }
-        else if (m_prim->quads.attr_is<zeno::vec3f>(attr_name)) {
-            auto v = m_prim->quads.attr<zeno::vec3f>(attr_name)[index.row()];
-            return QString("%1, %2, %3").arg(v[0]).arg(v[1]).arg(v[2]);
-        }
-        else if (m_prim->quads.attr_is<zeno::vec4f>(attr_name)) {
-            auto v = m_prim->quads.attr<zeno::vec4f>(attr_name)[index.row()];
-            return QString("%1, %2, %3, %4").arg(v[0]).arg(v[1]).arg(v[2]).arg(v[3]);
-        }
-        else if (m_prim->quads.attr_is<int>(attr_name)) {
-            return m_prim->quads.attr<int>(attr_name)[index.row()];
-        }
-        else if (m_prim->quads.attr_is<zeno::vec2i>(attr_name)) {
-            auto v = m_prim->quads.attr<zeno::vec2i>(attr_name)[index.row()];
-            return QString("%1, %2").arg(v[0]).arg(v[1]);
-        }
-        else if (m_prim->quads.attr_is<zeno::vec3i>(attr_name)) {
-            auto v = m_prim->quads.attr<zeno::vec3i>(attr_name)[index.row()];
-            return QString("%1, %2, %3").arg(v[0]).arg(v[1]).arg(v[2]);
-        }
-        else if (m_prim->quads.attr_is<zeno::vec4i>(attr_name)) {
-            auto v = m_prim->quads.attr<zeno::vec4i>(attr_name)[index.row()];
-            return QString("%1, %2, %3, %4").arg(v[0]).arg(v[1]).arg(v[2]).arg(v[3]);
-        }
+        return attrData(m_prim->quads, index);
     }
-    return QVariant();
 }
 QVariant PrimAttrTableModel::polysData(const QModelIndex &index) const {
     if (index.column() == 0) {
@@ -428,39 +339,8 @@ QVariant PrimAttrTableModel::polysData(const QModelIndex &index) const {
         return QString("%1, %2, %3, %4").arg(v[0]).arg(v[1]).arg(v[2]).arg(v[3]);
     }
     else {
-        std::string attr_name = m_prim->polys.attr_keys()[index.column() - 1];
-        if (m_prim->polys.attr_is<float>(attr_name)) {
-            return m_prim->polys.attr<float>(attr_name)[index.row()];
-        }
-        else if (m_prim->polys.attr_is<zeno::vec2f>(attr_name)) {
-            auto v = m_prim->polys.attr<zeno::vec2f>(attr_name)[index.row()];
-            return QString("%1, %2").arg(v[0]).arg(v[1]);
-        }
-        else if (m_prim->polys.attr_is<zeno::vec3f>(attr_name)) {
-            auto v = m_prim->polys.attr<zeno::vec3f>(attr_name)[index.row()];
-            return QString("%1, %2, %3").arg(v[0]).arg(v[1]).arg(v[2]);
-        }
-        else if (m_prim->polys.attr_is<zeno::vec4f>(attr_name)) {
-            auto v = m_prim->polys.attr<zeno::vec4f>(attr_name)[index.row()];
-            return QString("%1, %2, %3, %4").arg(v[0]).arg(v[1]).arg(v[2]).arg(v[3]);
-        }
-        else if (m_prim->polys.attr_is<int>(attr_name)) {
-            return m_prim->polys.attr<int>(attr_name)[index.row()];
-        }
-        else if (m_prim->polys.attr_is<zeno::vec2i>(attr_name)) {
-            auto v = m_prim->polys.attr<zeno::vec2i>(attr_name)[index.row()];
-            return QString("%1, %2").arg(v[0]).arg(v[1]);
-        }
-        else if (m_prim->polys.attr_is<zeno::vec3i>(attr_name)) {
-            auto v = m_prim->polys.attr<zeno::vec3i>(attr_name)[index.row()];
-            return QString("%1, %2, %3").arg(v[0]).arg(v[1]).arg(v[2]);
-        }
-        else if (m_prim->polys.attr_is<zeno::vec4i>(attr_name)) {
-            auto v = m_prim->polys.attr<zeno::vec4i>(attr_name)[index.row()];
-            return QString("%1, %2, %3, %4").arg(v[0]).arg(v[1]).arg(v[2]).arg(v[3]);
-        }
+        return attrData(m_prim->polys, index);
     }
-    return QVariant();
 }
 QVariant PrimAttrTableModel::loopsData(const QModelIndex &index) const {
     if (index.column() == 0) {
@@ -468,37 +348,6 @@ QVariant PrimAttrTableModel::loopsData(const QModelIndex &index) const {
         return v;
     }
     else {
-        std::string attr_name = m_prim->loops.attr_keys()[index.column() - 1];
-        if (m_prim->loops.attr_is<float>(attr_name)) {
-            return m_prim->loops.attr<float>(attr_name)[index.row()];
-        }
-        else if (m_prim->loops.attr_is<zeno::vec2f>(attr_name)) {
-            auto v = m_prim->loops.attr<zeno::vec2f>(attr_name)[index.row()];
-            return QString("%1, %2").arg(v[0]).arg(v[1]);
-        }
-        else if (m_prim->loops.attr_is<zeno::vec3f>(attr_name)) {
-            auto v = m_prim->loops.attr<zeno::vec3f>(attr_name)[index.row()];
-            return QString("%1, %2, %3").arg(v[0]).arg(v[1]).arg(v[2]);
-        }
-        else if (m_prim->loops.attr_is<zeno::vec4f>(attr_name)) {
-            auto v = m_prim->loops.attr<zeno::vec4f>(attr_name)[index.row()];
-            return QString("%1, %2, %3, %4").arg(v[0]).arg(v[1]).arg(v[2]).arg(v[3]);
-        }
-        else if (m_prim->loops.attr_is<int>(attr_name)) {
-            return m_prim->loops.attr<int>(attr_name)[index.row()];
-        }
-        else if (m_prim->loops.attr_is<zeno::vec2i>(attr_name)) {
-            auto v = m_prim->loops.attr<zeno::vec2i>(attr_name)[index.row()];
-            return QString("%1, %2").arg(v[0]).arg(v[1]);
-        }
-        else if (m_prim->loops.attr_is<zeno::vec3i>(attr_name)) {
-            auto v = m_prim->loops.attr<zeno::vec3i>(attr_name)[index.row()];
-            return QString("%1, %2, %3").arg(v[0]).arg(v[1]).arg(v[2]);
-        }
-        else if (m_prim->loops.attr_is<zeno::vec4i>(attr_name)) {
-            auto v = m_prim->loops.attr<zeno::vec4i>(attr_name)[index.row()];
-            return QString("%1, %2, %3, %4").arg(v[0]).arg(v[1]).arg(v[2]).arg(v[3]);
-        }
+        return attrData(m_prim->loops, index);
     }
-    return QVariant();
 }

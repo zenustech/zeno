@@ -340,7 +340,7 @@ void ModelAcceptor::setInputSocket(
         }
         else
         {
-            zeno::log_warn("no such input socket {}", inSock.toStdString());
+            zeno::log_warn("{}: no such input socket {}", nodeCls.toStdString(), inSock.toStdString());
         }
     }
 }
