@@ -615,8 +615,17 @@ void DisplayWidget::onRecord()
 {
     auto& inst = Zenovis::GetInstance();
 
-    int frameLeft = zeno::getSession().globalComm->beginFrameNumber;
-    int frameRight = zeno::getSession().globalComm->endFrameNumber;
+    auto& ptr = zeno::getSession().globalComm;
+    ZASSERT_EXIT(ptr);
+
+    if (ptr->maxPlayFrames() == 0) {
+        //run.
+        QMessageBox::information(nullptr, "Zeno", tr("run the graph before recording"), QMessageBox::Ok);
+        return;
+    }
+
+    int frameLeft = ptr->beginFrameNumber;
+    int frameRight = ptr->endFrameNumber;
 
     ZRecordVideoDlg dlg(frameLeft, frameRight, this);
     if (QDialog::Accepted == dlg.exec())
@@ -641,7 +650,6 @@ void DisplayWidget::onRecord()
         connect(&recordMgr, SIGNAL(recordFailed(QString)), &dlgProc, SLOT(onRecordFailed(QString)));
         if (QDialog::Accepted == dlgProc.exec())
         {
-            //todo: ui hint for opening record path.
         }
         else
         {

@@ -34,7 +34,7 @@ void ZRecordProgressDlg::onRecordFinished()
     m_ui->btn->setText(tr("Open file location"));
 }
 
-void ZRecordProgressDlg::onRecordFailed(QString)
+void ZRecordProgressDlg::onRecordFailed(QString msg)
 {
     reject();
 }

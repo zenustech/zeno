@@ -11,9 +11,9 @@ ZRecordVideoDlg::ZRecordVideoDlg(int frameStart, int frameEnd, QWidget* parent)
 	m_ui = new Ui::RecordVideoDlg;
 	m_ui->setupUi(this);
 
-	m_ui->frameStart->setValidator(new QIntValidator);
+	m_ui->frameStart->setValidator(new QIntValidator(frameStart, frameEnd));
 	m_ui->frameStart->setText(QString::number(frameStart));
-	m_ui->frameEnd->setValidator(new QIntValidator);
+	m_ui->frameEnd->setValidator(new QIntValidator(frameStart, frameEnd));
 	m_ui->frameEnd->setText(QString::number(frameEnd));
 	m_ui->fps->setValidator(new QIntValidator);
 	m_ui->fps->setText("30");
@@ -34,7 +34,6 @@ ZRecordVideoDlg::ZRecordVideoDlg(int frameStart, int frameEnd, QWidget* parent)
 			return;
 		m_ui->linePath->setText(path);
 	});
-	//debug: m_ui->linePath->setText("C:/zeno/record");
 
 	connect(m_ui->btnGroup, SIGNAL(accepted()), this, SLOT(accept()));
 	connect(m_ui->btnGroup, SIGNAL(rejected()), this, SLOT(reject()));
@@ -59,7 +58,15 @@ bool ZRecordVideoDlg::getInfo(int& frameStart, int& frameEnd, int& fps, int& bit
 	fn = m_ui->lineName->text();
 	if (fn.isEmpty())
 	{
-		fn = "capture.mp4";
+		fn = "capture";
+		const QString& suffix = ".mp4";
+		int idx = 1;
+		while (QFileInfo(path + "/" + fn + suffix).exists())
+		{
+			fn = "capture_" + QString::number(idx);
+			idx++;
+		}
+		fn += suffix;
 	}
 	return true;
 }

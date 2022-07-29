@@ -52,6 +52,7 @@ void RecordVideoMgr::recordFrame()
         }
         else
         {
+            //todo get the error string from QProcess.
             emit recordFailed(QString());
         }
         return;

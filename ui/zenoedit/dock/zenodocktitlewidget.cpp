@@ -407,7 +407,9 @@ QMenuBar* ZenoViewDockTitle::initMenu()
             QString path = QFileDialog::getSaveFileName(nullptr, tr("Path to Save"), "", tr("PNG images(*.png);;JPEG images(*.jpg);;BMP images(*.bmp);;EXR images(*.exr);;HDR images(*.hdr);;"));
             QString ext = QFileInfo(path).suffix();
             int nsamples = 16;
-            Zenovis::GetInstance().getSession()->do_screenshot(path.toStdString(), ext.toStdString(), nsamples);
+			if (!path.isEmpty()) {
+				Zenovis::GetInstance().getSession()->do_screenshot(path.toStdString(), ext.toStdString(), nsamples);
+			}
         });
 		pAction = createAction(tr("Record Video"));
         pAction->setShortcut(QKeySequence(("Shift+F12")));
