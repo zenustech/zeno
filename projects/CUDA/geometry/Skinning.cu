@@ -129,13 +129,13 @@ struct ZSDoSkinning : INode {
     virtual void apply() override {
         using namespace zs;
         auto zspars = get_input<ZenoParticles>("ZSParticles");
-        auto algorithm = std::get<std::string>(get_param("algorithm"));
+        auto algorithm = get_param<std::string>("algorithm");
         auto prefix = get_param<std::string>("weight_channel");
         auto inAttr = get_param<std::string>("inAttr");
         auto outAttr = get_param<std::string>("outAttr");
 
-        auto qs_ = get_input<zeno::ListObject>("Qs")->get<std::shared_ptr<NumericObject>>();
-        auto ts_ = get_input<zeno::ListObject>("Ts")->get<std::shared_ptr<NumericObject>>();
+        auto qs_ = get_input<zeno::ListObject>("Qs")->getLiterial<zeno::vec4f>();
+        auto ts_ = get_input<zeno::ListObject>("Ts")->getLiterial<zeno::vec3f>();
 
         if(qs_.size() != ts_.size())
             throw std::runtime_error("the size of qs and ts do not match");
@@ -167,8 +167,8 @@ struct ZSDoSkinning : INode {
         // transform the quaternion + trans into quaternion + dual quaternion pairs
         ompExec(zs::Collapse(nm_handles),
             [this,qs_,ts_,pose_buffer = proxy<space>({},pose_buffer)] (int hi) mutable{
-                auto zq = qs_[hi]->get<zeno::vec4f>();
-                auto zt = ts_[hi]->get<zeno::vec3f>();
+                auto zq = qs_[hi];
+                auto zt = ts_[hi];
                 pose_buffer.tuple<4>("q",hi) = vec4{zq[0],zq[1],zq[2],zq[3]};
                 pose_buffer.tuple<4>("dq",hi) = dual_quat(vec4{zq[0],zq[1],zq[2],zq[3]},vec3{zt[0],zt[1],zt[2]});
         });
