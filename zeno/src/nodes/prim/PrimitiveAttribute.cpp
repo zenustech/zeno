@@ -77,18 +77,17 @@ struct PrimitiveGetAttrValue : zeno::INode {
         auto index = get_input<zeno::NumericObject>("index")->get<int>();
 
         auto value = std::make_shared<zeno::NumericObject>();
-        auto &it = prim->attr(name);
 
         if (type == "float") {
             value->set<float>(0);
-                std::vector<float>& attr_arr = std::get<std::vector<float>>(it);
+                std::vector<float>& attr_arr = prim->attr<float>();
                 if (index < attr_arr.size()) {
                     value->set<float>(attr_arr[index]);
                 }
         }
         else if (type == "float3") {
             value->set<vec3f>(vec3f(0, 0, 0));
-                std::vector<vec3f>& attr_arr = std::get<std::vector<vec3f>>(it);
+                std::vector<vec3f>& attr_arr = prim->attr<vec3f>();
                 if (index < attr_arr.size()) {
                     value->set<vec3f>(attr_arr[index]);
                 }
@@ -118,18 +117,17 @@ struct PrimitiveSetAttrValue : zeno::INode {
         auto name = get_param<std::string>(("name"));
         auto type = get_param<std::string>(("type"));
         auto index = get_input<zeno::NumericObject>("index")->get<int>();
-        auto &it = prim->attr(name);
 
         if (type == "float") {
             auto value = get_input<zeno::NumericObject>("value")->get<float>();
-                std::vector<float>& attr_arr = std::get<std::vector<float>>(it);
+                std::vector<float>& attr_arr = prim->add_attr<float>(name);
                 if (index < attr_arr.size()) {
                     attr_arr[index] = value;
                 }
         }
         else if (type == "float3") {
             auto value = get_input<zeno::NumericObject>("value")->get<vec3f>();
-                std::vector<vec3f>& attr_arr = std::get<std::vector<vec3f>>(it);
+                std::vector<vec3f>& attr_arr = prim->add_attr<vec3f>(name);
                 if (index < attr_arr.size()) {
                     attr_arr[index] = value;
                 }
