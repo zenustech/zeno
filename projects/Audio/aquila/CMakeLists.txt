@@ -97,35 +97,35 @@ set(Aquila_HEADERS
 
 # library sources
 set(Aquila_SOURCES
-    aquila/filter/MelFilter.cpp
-    aquila/filter/MelFilterBank.cpp
-    aquila/ml/Dtw.cpp
-    aquila/source/SignalSource.cpp
-    aquila/source/Frame.cpp
-    aquila/source/FramesCollection.cpp
-    aquila/source/PlainTextFile.cpp
-    aquila/source/WaveFile.cpp
-    aquila/source/WaveFileHandler.cpp
-    aquila/source/generator/Generator.cpp
-    aquila/source/generator/SineGenerator.cpp
-    aquila/source/generator/SquareGenerator.cpp
-    aquila/source/generator/TriangleGenerator.cpp
-    aquila/source/generator/PinkNoiseGenerator.cpp
-    aquila/source/generator/WhiteNoiseGenerator.cpp
-    aquila/source/window/BarlettWindow.cpp
-    aquila/source/window/BlackmanWindow.cpp
-    aquila/source/window/FlattopWindow.cpp
-    aquila/source/window/GaussianWindow.cpp
-    aquila/source/window/HammingWindow.cpp
-    aquila/source/window/HannWindow.cpp
+#    aquila/filter/MelFilter.cpp
+#    aquila/filter/MelFilterBank.cpp
+#    aquila/ml/Dtw.cpp
+#    aquila/source/SignalSource.cpp
+#    aquila/source/Frame.cpp
+#    aquila/source/FramesCollection.cpp
+#    aquila/source/PlainTextFile.cpp
+#    aquila/source/WaveFile.cpp
+#    aquila/source/WaveFileHandler.cpp
+#    aquila/source/generator/Generator.cpp
+#    aquila/source/generator/SineGenerator.cpp
+#    aquila/source/generator/SquareGenerator.cpp
+#    aquila/source/generator/TriangleGenerator.cpp
+#    aquila/source/generator/PinkNoiseGenerator.cpp
+#    aquila/source/generator/WhiteNoiseGenerator.cpp
+#    aquila/source/window/BarlettWindow.cpp
+#    aquila/source/window/BlackmanWindow.cpp
+#    aquila/source/window/FlattopWindow.cpp
+#    aquila/source/window/GaussianWindow.cpp
+#    aquila/source/window/HammingWindow.cpp
+#    aquila/source/window/HannWindow.cpp
     aquila/transform/Dft.cpp
     aquila/transform/AquilaFft.cpp
     aquila/transform/OouraFft.cpp
     aquila/transform/FftFactory.cpp
-    aquila/transform/Dct.cpp
-    aquila/transform/Mfcc.cpp
-    aquila/transform/Spectrogram.cpp
-    aquila/tools/TextPlot.cpp
+#    aquila/transform/Dct.cpp
+#    aquila/transform/Mfcc.cpp
+#    aquila/transform/Spectrogram.cpp
+#    aquila/tools/TextPlot.cpp
 )
 
 # SFML wrappers
