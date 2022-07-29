@@ -456,6 +456,12 @@ void ZenoMainWindow::recordRecentFile(const QString& filePath)
     QStringList paths;
     for (QString key : keys) {
         QString path = settings.value(key).toString();
+        if (path == filePath)
+        {
+            //remove the old record.
+            settings.remove(key);
+            continue;
+        }
         paths.append(path);
     }
 
@@ -578,6 +584,7 @@ bool ZenoMainWindow::saveFile(QString filePath) {
     saveContent(strContent, filePath);
     pModel->setFilePath(filePath);
     pModel->clearDirty();
+    recordRecentFile(filePath);
     return true;
 }
 
