@@ -391,6 +391,7 @@ namespace zeno {
     bool read_structure_points(FILE *fp,std::shared_ptr<zeno::PrimitiveObject>& prim,int& line_count){
         // char *bufferp;
         // char line[INPUTLINESIZE];
+        return false;
     }
 
     // DATASET STRUCTURED_GRID
@@ -404,6 +405,7 @@ namespace zeno {
     bool read_structured_grid(FILE *fp,std::shared_ptr<zeno::PrimitiveObject>& prim,int& line_count){
         // char *bufferp;
         // char line[INPUTLINESIZE];
+        return false;
     }
 
     // DATASET RECTILINEAR_GRID
@@ -418,6 +420,7 @@ namespace zeno {
     bool read_rectilinear_grid(FILE *fp,std::shared_ptr<zeno::PrimitiveObject>& prim,int& line_count){
         // char *bufferp;
         // char line[INPUTLINESIZE];
+        return false;
     }
 
     // DATASET POLYDATA
