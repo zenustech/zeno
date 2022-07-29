@@ -140,7 +140,7 @@ struct SDFToPrim : zeno::INode{
         auto mesh = IObject::make<PrimitiveObject>();
         auto adaptivity = get_input2<float>(("adaptivity"));
         auto isoValue = get_input2<float>(("isoValue"));
-        auto allowQuads = get_param<bool>("allowQuads");
+        auto allowQuads = get_input2<bool>("allowQuads");
         std::vector<openvdb::Vec3s> points(0);
         std::vector<openvdb::Vec3I> tris(0);
         std::vector<openvdb::Vec4I> quads(0);
@@ -188,12 +188,12 @@ ZENDEFNODE(SDFToPrim, {
         "SDF",
         {"float", "isoValue", "0"},
         {"float", "adaptivity", "0"},
+        {"bool", "allowQuads", "0"},
     },
     {
         "prim",
     },
     {
-        {"bool", "allowQuads", "0"},
     },
     {
         "openvdb"
