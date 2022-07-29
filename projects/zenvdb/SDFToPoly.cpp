@@ -91,7 +91,7 @@ static int defSDFToPrimitive = zeno::defNodeClass<SDFToPrimitive>("SDFToPrimitiv
         {"float", "adaptivity", "0"},
         {"bool", "allowQuads", "0"},
     }, /* category: */ {
-    "openvdb",
+    "deprecated",
     }});
 
 
@@ -133,5 +133,70 @@ ZENO_DEFOVERLOADNODE(ToVisualize, _VDBFloatGrid, typeid(VDBFloatGrid).name())({
         {"primitive"},
 });
 #endif
- 
+
+struct SDFToPrim : zeno::INode{
+    virtual void apply() override {
+        auto sdf = get_input("SDF")->as<VDBFloatGrid>();
+        auto mesh = IObject::make<PrimitiveObject>();
+        auto adaptivity = get_input2<float>(("adaptivity"));
+        auto isoValue = get_input2<float>(("isoValue"));
+        auto allowQuads = get_param<bool>("allowQuads");
+        std::vector<openvdb::Vec3s> points(0);
+        std::vector<openvdb::Vec3I> tris(0);
+        std::vector<openvdb::Vec4I> quads(0);
+        openvdb::tools::volumeToMesh(*(sdf->m_grid), points, tris, quads, isoValue, adaptivity, true);
+        mesh->resize(points.size());
+        auto &meshpos = mesh->add_attr<zeno::vec3f>("pos");
+#pragma omp parallel for
+        for(int i=0;i<points.size();i++)
+        {
+            meshpos[i] = zeno::vec3f(points[i][0],points[i][1],points[i][2]);
+        }
+        if (allowQuads) {
+            mesh->tris.resize(tris.size());
+            mesh->quads.resize(quads.size());
+#pragma omp parallel for
+            for(int i=0;i<tris.size();i++)
+            {
+                mesh->tris[i] = zeno::vec3i(tris[i][0],tris[i][1],tris[i][2]);
+            }
+#pragma omp parallel for
+            for(int i=0;i<quads.size();i++)
+            {
+                mesh->quads[i] = zeno::vec4i(quads[i][0],quads[i][1],quads[i][2],quads[i][3]);
+            }
+        } else {
+            mesh->tris.resize(tris.size() + 2*quads.size());
+#pragma omp parallel for
+            for(int i=0;i<tris.size();i++)
+            {
+                mesh->tris[i] = zeno::vec3i(tris[i][0],tris[i][1],tris[i][2]);
+            }
+#pragma omp parallel for
+            for(int i=0;i<quads.size();i++)
+            {
+                mesh->tris[i*2+tris.size()] = zeno::vec3i(quads[i][0],quads[i][1],quads[i][2]);
+                mesh->tris[i*2+1+tris.size()] = zeno::vec3i(quads[i][2],quads[i][3],quads[i][0]);
+            }
+        }
+
+        set_output("Mesh", mesh);
+    }
+};
+ZENDEFNODE(SDFToPrim, {
+    {
+        "SDF",
+        {"float", "isoValue", "0"},
+        {"float", "adaptivity", "0"},
+    },
+    {
+        "prim",
+    },
+    {
+        {"bool", "allowQuads", "0"},
+    },
+    {
+        "openvdb"
+    },
+});
 }
