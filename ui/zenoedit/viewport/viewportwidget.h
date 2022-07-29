@@ -124,6 +124,8 @@ signals:
     void frameUpdated(int new_frame);
 
 private:
+    bool isOptxRendering() const;
+
     ViewportWidget* m_view;
     ZTimeline* m_timeline;
     ZenoMainWindow* m_mainWin;

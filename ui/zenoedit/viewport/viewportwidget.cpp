@@ -545,17 +545,8 @@ void DisplayWidget::updateFrame(const QString &action)
         //zeno::log_warn("stop");
         return;
     } else if (action == "finishFrame") {
-        auto& inst = Zenovis::GetInstance();
-        auto sess = inst.getSession();
-        ZASSERT_EXIT(sess);
-        auto scene = sess->get_scene();
-        ZASSERT_EXIT(scene);
-        if (scene->renderMan)
-        {
-            if (scene->renderMan->getDefaultEngineName() == "optx") {
-                m_pTimer->start(m_updateFeq);
-                //zeno::log_warn("start");
-            }
+        if (isOptxRendering()) {
+            m_pTimer->start(m_updateFeq);
         }
     } else if (!action.isEmpty()) {
         if (action == "optx") {
@@ -565,6 +556,19 @@ void DisplayWidget::updateFrame(const QString &action)
         }
     }
     m_view->update();
+}
+
+bool DisplayWidget::isOptxRendering() const
+{
+    auto& inst = Zenovis::GetInstance();
+    auto sess = inst.getSession();
+    if (!sess)
+        return false;
+    auto scene = sess->get_scene();
+    if (!scene)
+        return false;
+
+    return (scene->renderMan && scene->renderMan->getDefaultEngineName() == "optx");
 }
 
 void DisplayWidget::onModelDataChanged()
@@ -578,9 +582,14 @@ void DisplayWidget::onModelDataChanged()
 void DisplayWidget::onPlayClicked(bool bChecked)
 {
     if (bChecked)
+    {
         m_pTimer->start(m_sliderFeq);
+    }
     else
-        m_pTimer->stop();
+    {
+        if (!isOptxRendering())
+            m_pTimer->stop();
+    }
     Zenovis::GetInstance().startPlay(bChecked);
 }
 
