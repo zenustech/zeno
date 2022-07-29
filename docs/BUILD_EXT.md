@@ -203,7 +203,7 @@ cmake -B build -DZENO_BUILD_EDITOR:BOOL=OFF
 
 ## What's next?
 
-If you are the project maintainer, you may also checkout [`docs/MAINTAINERS.md`](docs/MAINTAINERS.md) for even more advanced skills.
+If you are the project maintainer, you may also checkout [`docs/MAINTAINERS.md`](/docs/MAINTAINERS.md) for even more advanced skills.
 
 <!-- deprecated, see misc/ci/CMakePresets.json, now only used by CI
 ### Using CMake presets (experimental)
