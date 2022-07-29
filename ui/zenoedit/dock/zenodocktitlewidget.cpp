@@ -10,6 +10,7 @@
 #include "viewport/zenovis.h"
 #include "util/log.h"
 #include <QFileDialog>
+#include "../../../zenovis/xinxinoptix/xinxinoptixapi.h"
 
 
 ZenoDockTitleWidget::ZenoDockTitleWidget(QWidget* parent)
@@ -355,6 +356,12 @@ QMenuBar* ZenoViewDockTitle::initMenu()
                 Zenovis::GetInstance().getSession()->set_show_grid(pAction->isChecked());
                 //todo: need a notify mechanism from zenovis/session.
                 zenoApp->getMainWindow()->updateViewport();
+                if (xinxinoptix::getRayTraceSPP() == 1) {
+                    xinxinoptix::setRayTraceSPP(1024);
+                }
+                else {
+                    xinxinoptix::setRayTraceSPP(1);
+                }
             });
 
         pAction = new QAction(tr("Background Color"), this);

@@ -15,7 +15,8 @@ void optixupdatemesh(std::map<std::string, int> const &mtlidlut);
 void optixupdatematerial(std::vector<std::string> const &shaders, std::vector<std::vector<std::string>> &texs);
 void optixupdatelight();
 void optixupdateend();
-
+void setRayTraceSPP(int _spp);
+int getRayTraceSPP();
 void set_window_size(int nx, int ny);
 void set_perspective(float const *U, float const *V, float const *W, float const *E, float aspect, float fov);
 

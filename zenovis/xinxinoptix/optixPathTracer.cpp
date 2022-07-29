@@ -1572,17 +1572,27 @@ void set_perspective(float const *U, float const *V, float const *W, float const
     //camera.setFovY(fov * aspect * (float)M_PI / 180.0f);
 }
 
+static int g_NumSamplesPerPixel = 1;
+void setRayTraceSPP(int _spp)
+{
+    zeno::log_info("setting spp:{}", _spp);
+    g_NumSamplesPerPixel = _spp;
+}
+int getRayTraceSPP() {
+    return g_NumSamplesPerPixel;
+}
 
 void optixrender(int fbo) {
     zeno::log_trace("[optix] rendering subframe {}", state.params.subframe_index);
     if (!output_buffer_o) throw sutil::Exception("no output_buffer_o");
     if (!gl_display_o) throw sutil::Exception("no gl_display_o");
     updateState( *output_buffer_o, state.params );
-    //for(int f=0;f<1;f++){
+    zeno::log_info("current samples per pixel:{}", g_NumSamplesPerPixel);
+    for(int f=0;f<g_NumSamplesPerPixel;f++){
     // edit samples_per_launch instead!
         launchSubframe( *output_buffer_o, state );
         state.params.subframe_index++;
-    //}
+    }
     displaySubframe( *output_buffer_o, *gl_display_o, state, fbo );
                     
 }
