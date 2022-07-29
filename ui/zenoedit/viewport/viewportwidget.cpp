@@ -24,6 +24,7 @@
 #include <zeno/core/Session.h>
 #include <zeno/extra/GlobalState.h>
 #include <zeno/extra/GlobalComm.h>
+#include <zenoui/util/uihelper.h>
 #include "recordvideomgr.h"
 
 
@@ -597,6 +598,9 @@ void DisplayWidget::onSliderValueChanged(int value)
 {
     Zenovis::GetInstance().setCurrentFrameId(value);
     updateFrame();
+    onPlayClicked(false);
+    BlockSignalScope scope(m_timeline);
+    m_timeline->setPlayButtonToggle(false);
 }
 
 void DisplayWidget::onRun()
