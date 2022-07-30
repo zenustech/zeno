@@ -148,9 +148,62 @@ Enabling them you will find our well-packaged high-level nodes like `FLIPSimTemp
 they were exported from another subgraph file using Ctrl-Shfit-E by the way, see the
 source code of `FLIPtools` for the original graph file name.
 
+## Advanced build configuration (optional)
+
+Here we introduce some CMake options that professional users may need.
+
+1. To enable *stack traceback* in Zeno when fault encountered (OFF by default):
+
+```bash
+cmake -B build -DZENO_ENABLE_BACKWARD:BOOL=ON
+```
+
+2. To enable *parallel STL* in Zeno for better performance (OFF by default):
+
+```bash
+cmake -B build -DZENO_PARALLEL_STL:BOOL=ON
+```
+
+> This would require `apt-get install libtbb-dev` on Linux (GCC), while Windows (MSVC) doesn't need to do anything.
+
+3. To disable *OpenMP* in Zeno to prevent multi-threading (ON by default):
+
+```bash
+cmake -B build -DZENO_ENABLE_OPENMP:BOOL=OFF
+```
+
+4. To enable `-march=native` in Zeno to utilize native instruction set (OFF by default):
+
+```bash
+cmake -B build -DZENO_MARCH_NATIVE:BOOL=ON
+```
+
+> WARN: This would make the binary unable to deploy to other machine lower than yours.
+> Suppose you have AVX512, but your customer doesn't have AVX512. Then if you copy your binary to them, they will get `Illegal Instruction`.
+
+5. To enable `-ffast-math` in Zeno for fast but non-IEEE-compatibile math (OFF by default):
+
+```bash
+cmake -B build -DZENO_FAST_MATH:BOOL=ON
+```
+
+> WARN: May have inpredictible behavior when dealing with NaN and Infinity.
+
+6. To disable *multi-processing* in Zeno editor to make it easier to debug (ON by default):
+
+```bash
+cmake -B build -DZENO_MULTIPROCESS:BOOL=OFF
+```
+
+7. To not build the *Zeno editor* (which requires Qt), but only the *Zeno core* (ON by default):
+
+```bash
+cmake -B build -DZENO_BUILD_EDITOR:BOOL=OFF
+```
+
 ## What's next?
 
-If you are the project maintainer, you may also checkout [`docs/MAINTAINERS.md`](docs/MAINTAINERS.md) for advanced skills.
+If you are the project maintainer, you may also checkout [`docs/MAINTAINERS.md`](/docs/MAINTAINERS.md) for even more advanced skills.
 
 <!-- deprecated, see misc/ci/CMakePresets.json, now only used by CI
 ### Using CMake presets (experimental)

@@ -90,6 +90,7 @@ struct ForwardPass : INode {
         auto camera = get_input<CameraObject>("camera");
         auto bgcolor = get_input2<vec3f>("bgcolor");
         auto bgalpha = get_input2<float>("bgalpha");
+        auto nsamples = get_input2<int>("nsamples");
 
         image->impl->draw_body([&] {
             CHECK_GL(glClearColor(bgcolor[0], bgcolor[1], bgcolor[2], bgalpha));
@@ -110,6 +111,7 @@ ZENO_DEFNODE(ForwardPass)({
         {"camera", "camera"},
         {"vec3f", "bgcolor", "0,0,0"},
         {"float", "bgalpha", "0"},
+        {"int", "nsamples", "1"},
     },
     {
         {"image", "image"},

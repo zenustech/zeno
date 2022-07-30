@@ -304,7 +304,7 @@ struct VDBVoxelAsParticles : INode {
             auto prim = std::make_shared<zeno::PrimitiveObject>();
             prim->resize(zspos.size());
             auto &primPos = prim->add_attr<vec3f>("pos");
-            auto &primVal = prim->add_attr<vec3f>(valToAttr);
+            auto &primVal = prim->add_attr<float>(valToAttr);
             // wxl
             //primPos = zspos;
 //#if 1
