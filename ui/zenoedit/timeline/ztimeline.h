@@ -33,6 +33,7 @@ public slots:
     void onTimelineUpdate(int frameid);
     void onFrameEditted();
     void setSliderValue(int frameid);
+    void setPlayButtonToggle(bool bToggle);
 
 private:
     void initStyleSheet();
