@@ -1575,11 +1575,10 @@ void set_perspective(float const *U, float const *V, float const *W, float const
 static int g_NumSamplesPerPixel = 1;
 void setRayTraceSPP(int _spp)
 {
-    zeno::log_info("setting spp:{}", _spp);
-    g_NumSamplesPerPixel = _spp;
+    state.params.samples_per_launch = _spp;
 }
 int getRayTraceSPP() {
-    return g_NumSamplesPerPixel;
+    return state.params.samples_per_launch;
 }
 
 void optixrender(int fbo) {
@@ -1587,12 +1586,10 @@ void optixrender(int fbo) {
     if (!output_buffer_o) throw sutil::Exception("no output_buffer_o");
     if (!gl_display_o) throw sutil::Exception("no gl_display_o");
     updateState( *output_buffer_o, state.params );
-    zeno::log_info("current samples per pixel:{}", g_NumSamplesPerPixel);
-    for(int f=0;f<g_NumSamplesPerPixel;f++){
+    zeno::log_info("samples per pixel: {}", state.params.samples_per_launch);
     // edit samples_per_launch instead!
         launchSubframe( *output_buffer_o, state );
         state.params.subframe_index++;
-    }
     displaySubframe( *output_buffer_o, *gl_display_o, state, fbo );
                     
 }
