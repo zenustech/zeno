@@ -10,7 +10,6 @@
 #include "viewport/zenovis.h"
 #include "util/log.h"
 #include <QFileDialog>
-#include "../../../zenovis/xinxinoptix/xinxinoptixapi.h"
 
 
 ZenoDockTitleWidget::ZenoDockTitleWidget(QWidget* parent)
