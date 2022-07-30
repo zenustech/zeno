@@ -1572,7 +1572,6 @@ void set_perspective(float const *U, float const *V, float const *W, float const
     //camera.setFovY(fov * aspect * (float)M_PI / 180.0f);
 }
 
-static int g_NumSamplesPerPixel = 1;
 void setRayTraceSPP(int _spp)
 {
     state.params.samples_per_launch = _spp;
