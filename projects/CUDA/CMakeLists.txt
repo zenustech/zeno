@@ -92,6 +92,8 @@ target_sources(zeno PRIVATE
 # geometry
 target_sources(zeno PRIVATE
   geometry/file_parser/read_vtk_mesh.hpp
+  geometry/file_parser/write_vtk_unstructured_mesh.hpp
+  geometry/file_parser/vtk_types.hpp  
   geometry/linear_system/mfcg.hpp
   geometry/linear_system/active_set.hpp
   geometry/kernel/laplace_matrix.hpp
