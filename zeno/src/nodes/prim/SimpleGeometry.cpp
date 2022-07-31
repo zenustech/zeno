@@ -534,8 +534,8 @@ struct CreatePlane : zeno::INode {
                 int i3 = fi+(columns+1);
                 int i4 = i3+1;
 
-                tris.emplace_back(i1, i3, i2);
-                tris.emplace_back(i2, i3, i4);
+                tris.emplace_back(i1, i4, i2);
+                tris.emplace_back(i3, i4, i1);
 
                 fi += 1;
             }
@@ -958,11 +958,11 @@ struct CreateSphere : zeno::INode {
 
                 uvw1=zeno::vec3f(u1,v1,0);uvw2=zeno::vec3f(u2,v2,0);uvw3=zeno::vec3f(u3,v3,0);uvw4=zeno::vec3f(u4,v4,0);
 
-                uv1.push_back(uvw1);uv2.push_back(uvw2);uv3.push_back(uvw3);
-                uv1.push_back(uvw2);uv2.push_back(uvw4);uv3.push_back(uvw3);
+                uv1.push_back(uvw1);uv2.push_back(uvw4);uv3.push_back(uvw3);
+                uv1.push_back(uvw2);uv2.push_back(uvw4);uv3.push_back(uvw1);
 
-                tris.emplace_back(i0,i1,i2);
-                tris.emplace_back(i1,i3,i2);
+                tris.emplace_back(i0,i3,i2);
+                tris.emplace_back(i1,i3,i0);
             }
         }
 
