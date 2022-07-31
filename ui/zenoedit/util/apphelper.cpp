@@ -189,3 +189,21 @@ INPUT_SOCKET AppHelper::getInputSocket(const QPersistentModelIndex& index, const
     exist = true;
     return _inSocket;
 }
+
+void AppHelper::ensureSRCDSTlastKey(INPUT_SOCKETS& inputs, OUTPUT_SOCKETS& outputs)
+{
+    if (inputs.lastKey() != "SRC")
+    {
+        //ensure that the "SRC" is the last key in sockets.
+        INPUT_SOCKET srcSocket = inputs["SRC"];
+        inputs.remove("SRC");
+        inputs.insert("SRC", srcSocket);
+    }
+    if (outputs.lastKey() != "DST")
+    {
+        //ensure that the "DST" is the last key in sockets.
+        OUTPUT_SOCKET dstSocket = outputs["DST"];
+        outputs.remove("DST");
+        outputs.insert("DST", dstSocket);
+    }
+}

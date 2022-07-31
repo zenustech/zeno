@@ -350,7 +350,7 @@ void SubGraphModel::updateSocket(const QString& nodeid, const SOCKET_UPDATE_INFO
             {
                 INPUT_SOCKET newSock;
                 newSock.info = info.newInfo;
-                inputs[newName] = newSock;
+                inputs.push_front(newName, newSock);    //ensure SRC is the last socket in layout and serialization.
                 setData(idx, QVariant::fromValue(inputs), ROLE_INPUTS);
                 break;
             }
@@ -431,7 +431,7 @@ void SubGraphModel::updateSocket(const QString& nodeid, const SOCKET_UPDATE_INFO
             {
 				OUTPUT_SOCKET newSock;
 				newSock.info = info.newInfo;
-				outputs[newName] = newSock;
+                outputs.push_front(newName, newSock);    //ensure SRC is the last socket in layout and serialization.
 				setData(idx, QVariant::fromValue(outputs), ROLE_OUTPUTS);
 				break;
             }

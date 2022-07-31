@@ -316,8 +316,8 @@ struct FleshQuasiStaticStepping : INode {
     auto volf = vec3::from_array(gravity * models.density);
 
     auto nm_acts = get_input<zeno::ListObject>("Acts")->arr.size();
-    fmt::print("number of activations : {}\n",nm_acts);
-    auto act_ = get_input<zeno::ListObject>("Acts")->get<std::shared_ptr<NumericObject>>();
+    // fmt::print("number of activations : {}\n",nm_acts);
+    auto act_ = get_input<zeno::ListObject>("Acts")->getLiterial<float>();
     // initialize on host qs[i] = qs_[i]->get<zeno::vec4f>();
 
     constexpr auto host_space = zs::execspace_e::openmp;
@@ -325,7 +325,7 @@ struct FleshQuasiStaticStepping : INode {
     auto act_buffer = dtiles_t{{{"act",1}},nm_acts,zs::memsrc_e::host};
     ompExec(range(act_buffer.size()),
         [act_buffer = proxy<host_space>({},act_buffer),act_] (int i) mutable{
-            act_buffer("act",i) = act_[i]->get<float>();
+            act_buffer("act",i) = act_[i];
             // fmt::print("act<{}> : {}\n",i,act_buffer("act",i));
     });
     act_buffer = act_buffer.clone({zs::memsrc_e::device, 0});
@@ -414,27 +414,27 @@ struct FleshQuasiStaticStepping : INode {
 
             Act = R * Act * R.transpose();
 
-            if(ei == 0) {
-                printf("Act : \n%f\t%f\t%f\n%f\t%f\t%f\n%f\t%f\t%f\n",
-                    (float)Act(0,0),(float)Act(0,1),(float)Act(0,2),
-                    (float)Act(1,0),(float)Act(1,1),(float)Act(1,2),
-                    (float)Act(2,0),(float)Act(2,1),(float)Act(2,2));                        
-            }
+            // if(ei == 0) {
+            //     printf("Act : \n%f\t%f\t%f\n%f\t%f\t%f\n%f\t%f\t%f\n",
+            //         (float)Act(0,0),(float)Act(0,1),(float)Act(0,2),
+            //         (float)Act(1,0),(float)Act(1,1),(float)Act(1,2),
+            //         (float)Act(2,0),(float)Act(2,1),(float)Act(2,2));                        
+            // }
 
 
             etemp.template tuple<9>("ActInv",ei) = zs::inverse(Act);
 
-            if(ei == 0) {
-                Act = etemp.template pack<3,3>("ActInv",ei);
-                printf("Act : \n%f\t%f\t%f\n%f\t%f\t%f\n%f\t%f\t%f\n",
-                    (float)Act(0,0),(float)Act(0,1),(float)Act(0,2),
-                    (float)Act(1,0),(float)Act(1,1),(float)Act(1,2),
-                    (float)Act(2,0),(float)Act(2,1),(float)Act(2,2));  
+            // if(ei == 0) {
+            //     Act = etemp.template pack<3,3>("ActInv",ei);
+            //     printf("Act : \n%f\t%f\t%f\n%f\t%f\t%f\n%f\t%f\t%f\n",
+            //         (float)Act(0,0),(float)Act(0,1),(float)Act(0,2),
+            //         (float)Act(1,0),(float)Act(1,1),(float)Act(1,2),
+            //         (float)Act(2,0),(float)Act(2,1),(float)Act(2,2));  
 
-                // auto dFActdF = dFAdF(eles.template pack<3,3>("ActInv",ei));
-                // printf("dFActdF : \n%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\")
+            //     // auto dFActdF = dFAdF(eles.template pack<3,3>("ActInv",ei));
+            //     // printf("dFActdF : \n%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\")
 
-            }
+            // }
 
     });
 
