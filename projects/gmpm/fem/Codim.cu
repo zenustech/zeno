@@ -4,6 +4,7 @@
 #include "Ccds.hpp"
 // #include "GIPC.cuh"
 #include "zensim/Logger.hpp"
+#include "zensim/container/Bvh.hpp"
 #include "zensim/container/Bvs.hpp"
 #include "zensim/cuda/execution/ExecutionPolicy.cuh"
 #include "zensim/execution/ExecutionPolicy.hpp"
@@ -584,25 +585,18 @@ struct CodimStepping : INode {
     void updateWholeBoundingBoxSize(zs::CudaExecutionPolicy &pol) const {
       using namespace zs;
       constexpr auto space = execspace_e::cuda;
-#if 0
-      Vector<bv_t> box{vtemp.get_allocator(), 1};
-      pol(Collapse{1},
-          [bvh = proxy<space>(stBvs), box = proxy<space>(box)] __device__(
-              int vi) mutable { box[0] = bvh.getNodeBV(0); });
-      bv_t bv = box.getVal();
+#if 1
+      bv_t bv = stBvh.getTotalBox(pol);
       if (coVerts.size()) {
-        pol(Collapse{1},
-            [bvh = proxy<space>(bouStBvs), box = proxy<space>(box)] __device__(
-                int vi) mutable { box[0] = bvh.getNodeBV(0); });
-        bv_t boubv = box.getVal();
-        merge(bv, boubv._min);
-        merge(bv, boubv._max);
+        auto bouBv = bouStBvh.getTotalBox(pol);
+        merge(bv, bouBv._min);
+        merge(bv, bouBv._max);
       }
 #else
-      bv_t bv = stBvs.gbv;
+      bv_t bv = stBvh.gbv;
       if (coVerts.size()) {
-        merge(bv, bouStBvs.gbv._min);
-        merge(bv, bouStBvs.gbv._max);
+        merge(bv, bouStBvh.gbv._min);
+        merge(bv, bouStBvh.gbv._max);
       }
 #endif
       boxDiagSize2 = (bv._max - bv._min).l2NormSqr();
@@ -745,20 +739,20 @@ struct CodimStepping : INode {
       {
         auto triBvs = retrieve_bounding_volumes(pol, vtemp, "xn", stInds,
                                                 zs::wrapv<3>{}, 0);
-        stBvs.refit(pol, triBvs);
+        stBvh.refit(pol, triBvs);
         auto edgeBvs = retrieve_bounding_volumes(pol, vtemp, "xn", seInds,
                                                  zs::wrapv<2>{}, 0);
-        seBvs.refit(pol, edgeBvs);
+        seBvh.refit(pol, edgeBvs);
         findCollisionConstraintsImpl(pol, dHat, xi, false, record);
       }
 
       if (coVerts.size()) {
         auto triBvs = retrieve_bounding_volumes(pol, vtemp, "xn", coEles,
                                                 zs::wrapv<3>{}, coOffset);
-        bouStBvs.refit(pol, triBvs);
+        bouStBvh.refit(pol, triBvs);
         auto edgeBvs = retrieve_bounding_volumes(pol, vtemp, "xn", coEdges,
                                                  zs::wrapv<2>{}, coOffset);
-        bouSeBvs.refit(pol, edgeBvs);
+        bouSeBvh.refit(pol, edgeBvs);
         findCollisionConstraintsImpl(pol, dHat, xi, true, record);
       }
 
@@ -781,7 +775,7 @@ struct CodimStepping : INode {
           [svInds = proxy<space>({}, svInds),
            eles = proxy<space>({}, withBoundary ? coEles : stInds),
            vtemp = proxy<space>({}, vtemp),
-           bvh = proxy<space>(withBoundary ? bouStBvs : stBvs),
+           bvh = proxy<space>(withBoundary ? bouStBvh : stBvh),
            PP = proxy<space>(PP), nPP = proxy<space>(nPP),
            PE = proxy<space>(PE), nPE = proxy<space>(nPE),
            PT = proxy<space>(PT), nPT = proxy<space>(nPT),
@@ -883,8 +877,8 @@ struct CodimStepping : INode {
                                     sedges = proxy<space>(
                                         {}, withBoundary ? coEdges : seInds),
                                     vtemp = proxy<space>({}, vtemp),
-                                    bvh = proxy<space>(withBoundary ? bouSeBvs
-                                                                    : seBvs),
+                                    bvh = proxy<space>(withBoundary ? bouSeBvh
+                                                                    : seBvh),
                                     PP = proxy<space>(PP),
                                     nPP = proxy<space>(nPP),
                                     PE = proxy<space>(PE),
@@ -1202,13 +1196,13 @@ struct CodimStepping : INode {
       {
         auto edgeBvs = retrieve_bounding_volumes(pol, vtemp, "xn", seInds,
                                                  zs::wrapv<2>{}, 0);
-        bvh_t seBvs;
-        seBvs.build(pol, edgeBvs);
+        bvh_t seBvh;
+        seBvh.refit(pol, edgeBvs);
         pol(Collapse{stInds.size()},
             [stInds = proxy<space>({}, stInds),
              seInds = proxy<space>({}, seInds), vtemp = proxy<space>({}, vtemp),
              intersected = proxy<space>(intersected),
-             bvh = proxy<space>(seBvs)] __device__(int sti) mutable {
+             bvh = proxy<space>(seBvh)] __device__(int sti) mutable {
               auto tri = stInds.template pack<3>("inds", sti)
                              .template reinterpret_bits<int>();
               auto t0 = vtemp.pack<3>("xn", tri[0]);
@@ -1243,13 +1237,13 @@ struct CodimStepping : INode {
       {
         auto edgeBvs = retrieve_bounding_volumes(pol, vtemp, "xn", coEdges,
                                                  zs::wrapv<2>{}, coOffset);
-        bvh_t seBvs;
-        seBvs.build(pol, edgeBvs);
+        bvh_t seBvh;
+        seBvh.refit(pol, edgeBvs);
         pol(Collapse{stInds.size()},
             [stInds = proxy<space>({}, stInds),
              coEdges = proxy<space>({}, coEdges),
              vtemp = proxy<space>({}, vtemp),
-             intersected = proxy<space>(intersected), bvh = proxy<space>(seBvs),
+             intersected = proxy<space>(intersected), bvh = proxy<space>(seBvh),
              coOffset = coOffset] __device__(int sti) mutable {
               auto tri = stInds.template pack<3>("inds", sti)
                              .template reinterpret_bits<int>();
@@ -1286,10 +1280,10 @@ struct CodimStepping : INode {
       {
         auto triBvs = retrieve_bounding_volumes(
             pol, vtemp, "xn", stInds, zs::wrapv<3>{}, vtemp, "dir", alpha, 0);
-        stBvs.refit(pol, triBvs);
+        stBvh.refit(pol, triBvs);
         auto edgeBvs = retrieve_bounding_volumes(
             pol, vtemp, "xn", seInds, zs::wrapv<2>{}, vtemp, "dir", alpha, 0);
-        seBvs.refit(pol, edgeBvs);
+        seBvh.refit(pol, edgeBvs);
       }
       findCCDConstraintsImpl(pol, alpha, xi, false);
 
@@ -1297,11 +1291,11 @@ struct CodimStepping : INode {
         auto triBvs =
             retrieve_bounding_volumes(pol, vtemp, "xn", coEles, zs::wrapv<3>{},
                                       vtemp, "dir", alpha, coOffset);
-        bouStBvs.refit(pol, triBvs);
+        bouStBvh.refit(pol, triBvs);
         auto edgeBvs =
             retrieve_bounding_volumes(pol, vtemp, "xn", coEdges, zs::wrapv<2>{},
                                       vtemp, "dir", alpha, coOffset);
-        bouSeBvs.refit(pol, edgeBvs);
+        bouSeBvh.refit(pol, edgeBvs);
         findCCDConstraintsImpl(pol, alpha, xi, true);
       }
     }
@@ -1316,7 +1310,7 @@ struct CodimStepping : INode {
           [svInds = proxy<space>({}, svInds),
            eles = proxy<space>({}, withBoundary ? coEles : stInds),
            vtemp = proxy<space>({}, vtemp),
-           bvh = proxy<space>(withBoundary ? bouStBvs : stBvs),
+           bvh = proxy<space>(withBoundary ? bouStBvh : stBvh),
            PP = proxy<space>(PP), nPP = proxy<space>(nPP),
            PE = proxy<space>(PE), nPE = proxy<space>(nPE),
            PT = proxy<space>(PT), nPT = proxy<space>(nPT),
@@ -1348,7 +1342,7 @@ struct CodimStepping : INode {
           [seInds = proxy<space>({}, seInds),
            sedges = proxy<space>({}, withBoundary ? coEdges : seInds),
            vtemp = proxy<space>({}, vtemp),
-           bvh = proxy<space>(withBoundary ? bouSeBvs : seBvs),
+           bvh = proxy<space>(withBoundary ? bouSeBvh : seBvh),
            PP = proxy<space>(PP), nPP = proxy<space>(nPP),
            PE = proxy<space>(PE), nPE = proxy<space>(nPE),
            EE = proxy<space>(PT), nEE = proxy<space>(nPT),
@@ -4262,18 +4256,18 @@ struct CodimStepping : INode {
         {
           auto triBvs = retrieve_bounding_volumes(cudaPol, vtemp, "xn", stInds,
                                                   zs::wrapv<3>{}, 0);
-          stBvs.build(cudaPol, triBvs);
+          stBvh.build(cudaPol, triBvs);
           auto edgeBvs = retrieve_bounding_volumes(cudaPol, vtemp, "xn", seInds,
                                                    zs::wrapv<2>{}, 0);
-          seBvs.build(cudaPol, edgeBvs);
+          seBvh.build(cudaPol, edgeBvs);
         }
         if (coVerts.size()) {
           auto triBvs = retrieve_bounding_volumes(cudaPol, vtemp, "xn", coEles,
                                                   zs::wrapv<3>{}, coOffset);
-          bouStBvs.build(cudaPol, triBvs);
+          bouStBvh.build(cudaPol, triBvs);
           auto edgeBvs = retrieve_bounding_volumes(
               cudaPol, vtemp, "xn", coEdges, zs::wrapv<2>{}, coOffset);
-          bouSeBvs.build(cudaPol, edgeBvs);
+          bouSeBvh.build(cudaPol, edgeBvs);
         }
       }
     }
