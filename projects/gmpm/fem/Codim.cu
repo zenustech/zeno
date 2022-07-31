@@ -4,6 +4,7 @@
 #include "Ccds.hpp"
 // #include "GIPC.cuh"
 #include "zensim/Logger.hpp"
+#include "zensim/container/Bvs.hpp"
 #include "zensim/cuda/execution/ExecutionPolicy.cuh"
 #include "zensim/execution/ExecutionPolicy.hpp"
 #include "zensim/geometry/Distance.hpp"
@@ -16,7 +17,6 @@
 #include "zensim/math/bit/Bits.h"
 #include "zensim/physics/ConstitutiveModel.hpp"
 #include "zensim/types/Property.h"
-#include "zensim/container/Bvs.hpp"
 #include <atomic>
 #include <thrust/device_vector.h>
 #include <thrust/reduce.h>
@@ -131,8 +131,8 @@ struct CodimStepping : INode {
 #define s_enableAdaptiveSetting 1
 // static constexpr bool s_enableAdaptiveSetting = false;
 #define s_enableContact 1
-#define s_enableMollification 0
-#define s_enableFriction 0
+#define s_enableMollification 1
+#define s_enableFriction 1
   inline static bool s_enableGround = false;
 #define s_enableDCDCheck 0
 #define s_enableDebugCheck 0
@@ -1122,17 +1122,13 @@ struct CodimStepping : INode {
       nFPT = nPT;
       nFEE = nEE;
 
-      FPP = PP;
-      FPE = PE;
-      FPT = PT;
-      FEE = EE;
-
       auto numFPP = nFPP.getVal();
       pol(range(numFPP),
           [vtemp = proxy<space>({}, vtemp), fricPP = proxy<space>({}, fricPP),
-           FPP = proxy<space>(FPP), xi2 = xi * xi, activeGap2,
-           kappa = kappa] __device__(int fppi) mutable {
-            auto fpp = FPP[fppi];
+           PP = proxy<space>(PP), FPP = proxy<space>(FPP), xi2 = xi * xi,
+           activeGap2, kappa = kappa] __device__(int fppi) mutable {
+            auto fpp = PP[fppi];
+            FPP[fppi] = fpp;
             auto x0 = vtemp.pack<3>("xn", fpp[0]);
             auto x1 = vtemp.pack<3>("xn", fpp[1]);
             auto dist2 = dist2_pp(x0, x1);
@@ -1141,26 +1137,29 @@ struct CodimStepping : INode {
             fricPP.tuple<6>("basis", fppi) = point_point_tangent_basis(x0, x1);
           });
       auto numFPE = nFPE.getVal();
-      pol(range(numFPE), [vtemp = proxy<space>({}, vtemp),
-                          fricPE = proxy<space>({}, fricPE),
-                          FPE = proxy<space>(FPE), xi2 = xi * xi, activeGap2,
-                          kappa = kappa] __device__(int fpei) mutable {
-        auto fpe = FPE[fpei];
-        auto p = vtemp.pack<3>("xn", fpe[0]);
-        auto e0 = vtemp.pack<3>("xn", fpe[1]);
-        auto e1 = vtemp.pack<3>("xn", fpe[2]);
-        auto dist2 = dist2_pe(p, e0, e1);
-        auto bGrad = barrier_gradient(dist2 - xi2, activeGap2, kappa);
-        fricPE("fn", fpei) = -bGrad * 2 * zs::sqrt(dist2);
-        fricPE("yita", fpei) = point_edge_closest_point(p, e0, e1);
-        fricPE.tuple<6>("basis", fpei) = point_edge_tangent_basis(p, e0, e1);
-      });
+      pol(range(numFPE),
+          [vtemp = proxy<space>({}, vtemp), fricPE = proxy<space>({}, fricPE),
+           PE = proxy<space>(PE), FPE = proxy<space>(FPE), xi2 = xi * xi,
+           activeGap2, kappa = kappa] __device__(int fpei) mutable {
+            auto fpe = PE[fpei];
+            FPE[fpei] = fpe;
+            auto p = vtemp.pack<3>("xn", fpe[0]);
+            auto e0 = vtemp.pack<3>("xn", fpe[1]);
+            auto e1 = vtemp.pack<3>("xn", fpe[2]);
+            auto dist2 = dist2_pe(p, e0, e1);
+            auto bGrad = barrier_gradient(dist2 - xi2, activeGap2, kappa);
+            fricPE("fn", fpei) = -bGrad * 2 * zs::sqrt(dist2);
+            fricPE("yita", fpei) = point_edge_closest_point(p, e0, e1);
+            fricPE.tuple<6>("basis", fpei) =
+                point_edge_tangent_basis(p, e0, e1);
+          });
       auto numFPT = nFPT.getVal();
       pol(range(numFPT),
           [vtemp = proxy<space>({}, vtemp), fricPT = proxy<space>({}, fricPT),
-           FPT = proxy<space>(FPT), xi2 = xi * xi, activeGap2,
-           kappa = kappa] __device__(int fpti) mutable {
-            auto fpt = FPT[fpti];
+           PT = proxy<space>(PT), FPT = proxy<space>(FPT), xi2 = xi * xi,
+           activeGap2, kappa = kappa] __device__(int fpti) mutable {
+            auto fpt = PT[fpti];
+            FPT[fpti] = fpt;
             auto p = vtemp.pack<3>("xn", fpt[0]);
             auto t0 = vtemp.pack<3>("xn", fpt[1]);
             auto t1 = vtemp.pack<3>("xn", fpt[2]);
@@ -1176,9 +1175,10 @@ struct CodimStepping : INode {
       auto numFEE = nFEE.getVal();
       pol(range(numFEE),
           [vtemp = proxy<space>({}, vtemp), fricEE = proxy<space>({}, fricEE),
-           FEE = proxy<space>(FEE), xi2 = xi * xi, activeGap2,
-           kappa = kappa] __device__(int feei) mutable {
-            auto fee = FEE[feei];
+           EE = proxy<space>(EE), FEE = proxy<space>(FEE), xi2 = xi * xi,
+           activeGap2, kappa = kappa] __device__(int feei) mutable {
+            auto fee = EE[feei];
+            FEE[feei] = fee;
             auto ea0 = vtemp.pack<3>("xn", fee[0]);
             auto ea1 = vtemp.pack<3>("xn", fee[1]);
             auto eb0 = vtemp.pack<3>("xn", fee[2]);
@@ -2129,116 +2129,118 @@ struct CodimStepping : INode {
                 reduce_to(pemi, n, E, es[pemi / 32]);
               });
           Es.push_back(reduce(pol, es) * kappa);
-#endif
+#endif // mollification
 
 #if s_enableFriction
-          auto numFPP = nFPP.getVal();
-          es.resize(count_warps(numFPP));
-          es.reset(0);
-          pol(range(numFPP),
-              [vtemp = proxy<space>({}, vtemp),
-               fricPP = proxy<space>({}, fricPP), FPP = proxy<space>(FPP),
-               es = proxy<space>(es), epsvh = epsv * dt,
-               n = numFPP] __device__(int fppi) mutable {
-                auto fpp = FPP[fppi];
-                auto p0 =
-                    vtemp.pack<3>("xn", fpp[0]) - vtemp.pack<3>("xhat", fpp[0]);
-                auto p1 =
-                    vtemp.pack<3>("xn", fpp[1]) - vtemp.pack<3>("xhat", fpp[1]);
-                auto basis = fricPP.pack<3, 2>("basis", fppi);
-                auto fn = fricPP("fn", fppi);
-                auto relDX3D = point_point_rel_dx(p0, p1);
-                auto relDX = basis.transpose() * relDX3D;
-                auto relDXNorm2 = relDX.l2NormSqr();
-                auto E = f0_SF(relDXNorm2, epsvh) * fn;
-                reduce_to(fppi, n, E, es[fppi / 32]);
-              });
-          Es.push_back(reduce(pol, es) * fricMu);
+          if (fricMu != 0) {
+            auto numFPP = nFPP.getVal();
+            es.resize(count_warps(numFPP));
+            es.reset(0);
+            pol(range(numFPP), [vtemp = proxy<space>({}, vtemp),
+                                fricPP = proxy<space>({}, fricPP),
+                                FPP = proxy<space>(FPP), es = proxy<space>(es),
+                                epsvh = epsv * dt,
+                                n = numFPP] __device__(int fppi) mutable {
+              auto fpp = FPP[fppi];
+              auto p0 =
+                  vtemp.pack<3>("xn", fpp[0]) - vtemp.pack<3>("xhat", fpp[0]);
+              auto p1 =
+                  vtemp.pack<3>("xn", fpp[1]) - vtemp.pack<3>("xhat", fpp[1]);
+              auto basis = fricPP.pack<3, 2>("basis", fppi);
+              auto fn = fricPP("fn", fppi);
+              auto relDX3D = point_point_rel_dx(p0, p1);
+              auto relDX = basis.transpose() * relDX3D;
+              auto relDXNorm2 = relDX.l2NormSqr();
+              auto E = f0_SF(relDXNorm2, epsvh) * fn;
+              reduce_to(fppi, n, E, es[fppi / 32]);
+            });
+            Es.push_back(reduce(pol, es) * fricMu);
 
-          auto numFPE = nFPE.getVal();
-          es.resize(count_warps(numFPE));
-          es.reset(0);
-          pol(range(numFPE),
-              [vtemp = proxy<space>({}, vtemp),
-               fricPE = proxy<space>({}, fricPE), FPE = proxy<space>(FPE),
-               es = proxy<space>(es), epsvh = epsv * dt,
-               n = numFPE] __device__(int fpei) mutable {
-                auto fpe = FPE[fpei];
-                auto p =
-                    vtemp.pack<3>("xn", fpe[0]) - vtemp.pack<3>("xhat", fpe[0]);
-                auto e0 =
-                    vtemp.pack<3>("xn", fpe[1]) - vtemp.pack<3>("xhat", fpe[1]);
-                auto e1 =
-                    vtemp.pack<3>("xn", fpe[2]) - vtemp.pack<3>("xhat", fpe[2]);
-                auto basis = fricPE.pack<3, 2>("basis", fpei);
-                auto fn = fricPE("fn", fpei);
-                auto yita = fricPE("yita", fpei);
-                auto relDX3D = point_edge_rel_dx(p, e0, e1, yita);
-                auto relDX = basis.transpose() * relDX3D;
-                auto relDXNorm2 = relDX.l2NormSqr();
-                auto E = f0_SF(relDXNorm2, epsvh) * fn;
-                reduce_to(fpei, n, E, es[fpei / 32]);
-              });
-          Es.push_back(reduce(pol, es) * fricMu);
+            auto numFPE = nFPE.getVal();
+            es.resize(count_warps(numFPE));
+            es.reset(0);
+            pol(range(numFPE), [vtemp = proxy<space>({}, vtemp),
+                                fricPE = proxy<space>({}, fricPE),
+                                FPE = proxy<space>(FPE), es = proxy<space>(es),
+                                epsvh = epsv * dt,
+                                n = numFPE] __device__(int fpei) mutable {
+              auto fpe = FPE[fpei];
+              auto p =
+                  vtemp.pack<3>("xn", fpe[0]) - vtemp.pack<3>("xhat", fpe[0]);
+              auto e0 =
+                  vtemp.pack<3>("xn", fpe[1]) - vtemp.pack<3>("xhat", fpe[1]);
+              auto e1 =
+                  vtemp.pack<3>("xn", fpe[2]) - vtemp.pack<3>("xhat", fpe[2]);
+              auto basis = fricPE.pack<3, 2>("basis", fpei);
+              auto fn = fricPE("fn", fpei);
+              auto yita = fricPE("yita", fpei);
+              auto relDX3D = point_edge_rel_dx(p, e0, e1, yita);
+              auto relDX = basis.transpose() * relDX3D;
+              auto relDXNorm2 = relDX.l2NormSqr();
+              auto E = f0_SF(relDXNorm2, epsvh) * fn;
+              reduce_to(fpei, n, E, es[fpei / 32]);
+            });
+            Es.push_back(reduce(pol, es) * fricMu);
 
-          auto numFPT = nFPT.getVal();
-          es.resize(count_warps(numFPT));
-          es.reset(0);
-          pol(range(numFPT),
-              [vtemp = proxy<space>({}, vtemp),
-               fricPT = proxy<space>({}, fricPT), FPT = proxy<space>(FPT),
-               es = proxy<space>(es), epsvh = epsv * dt,
-               n = numFPT] __device__(int fpti) mutable {
-                auto fpt = FPT[fpti];
-                auto p =
-                    vtemp.pack<3>("xn", fpt[0]) - vtemp.pack<3>("xhat", fpt[0]);
-                auto v0 =
-                    vtemp.pack<3>("xn", fpt[1]) - vtemp.pack<3>("xhat", fpt[1]);
-                auto v1 =
-                    vtemp.pack<3>("xn", fpt[2]) - vtemp.pack<3>("xhat", fpt[2]);
-                auto v2 =
-                    vtemp.pack<3>("xn", fpt[3]) - vtemp.pack<3>("xhat", fpt[3]);
-                auto basis = fricPT.pack<3, 2>("basis", fpti);
-                auto fn = fricPT("fn", fpti);
-                auto betas = fricPT.pack<2>("beta", fpti);
-                auto relDX3D =
-                    point_triangle_rel_dx(p, v0, v1, v2, betas[0], betas[1]);
-                auto relDX = basis.transpose() * relDX3D;
-                auto relDXNorm2 = relDX.l2NormSqr();
-                auto E = f0_SF(relDXNorm2, epsvh) * fn;
-                reduce_to(fpti, n, E, es[fpti / 32]);
-              });
-          Es.push_back(reduce(pol, es) * fricMu);
+            auto numFPT = nFPT.getVal();
+            es.resize(count_warps(numFPT));
+            es.reset(0);
+            pol(range(numFPT), [vtemp = proxy<space>({}, vtemp),
+                                fricPT = proxy<space>({}, fricPT),
+                                FPT = proxy<space>(FPT), es = proxy<space>(es),
+                                epsvh = epsv * dt,
+                                n = numFPT] __device__(int fpti) mutable {
+              auto fpt = FPT[fpti];
+              auto p =
+                  vtemp.pack<3>("xn", fpt[0]) - vtemp.pack<3>("xhat", fpt[0]);
+              auto v0 =
+                  vtemp.pack<3>("xn", fpt[1]) - vtemp.pack<3>("xhat", fpt[1]);
+              auto v1 =
+                  vtemp.pack<3>("xn", fpt[2]) - vtemp.pack<3>("xhat", fpt[2]);
+              auto v2 =
+                  vtemp.pack<3>("xn", fpt[3]) - vtemp.pack<3>("xhat", fpt[3]);
+              auto basis = fricPT.pack<3, 2>("basis", fpti);
+              auto fn = fricPT("fn", fpti);
+              auto betas = fricPT.pack<2>("beta", fpti);
+              auto relDX3D =
+                  point_triangle_rel_dx(p, v0, v1, v2, betas[0], betas[1]);
+              auto relDX = basis.transpose() * relDX3D;
+              auto relDXNorm2 = relDX.l2NormSqr();
+              auto E = f0_SF(relDXNorm2, epsvh) * fn;
+              reduce_to(fpti, n, E, es[fpti / 32]);
+            });
+            Es.push_back(reduce(pol, es) * fricMu);
 
-          auto numFEE = nFEE.getVal();
-          es.resize(count_warps(numFEE));
-          es.reset(0);
-          pol(range(numFEE),
-              [vtemp = proxy<space>({}, vtemp),
-               fricEE = proxy<space>({}, fricEE), FEE = proxy<space>(FEE),
-               es = proxy<space>(es), epsvh = epsv * dt,
-               n = numFEE] __device__(int feei) mutable {
-                auto fee = FEE[feei];
-                auto e0 =
-                    vtemp.pack<3>("xn", fee[0]) - vtemp.pack<3>("xhat", fee[0]);
-                auto e1 =
-                    vtemp.pack<3>("xn", fee[1]) - vtemp.pack<3>("xhat", fee[1]);
-                auto e2 =
-                    vtemp.pack<3>("xn", fee[2]) - vtemp.pack<3>("xhat", fee[2]);
-                auto e3 =
-                    vtemp.pack<3>("xn", fee[3]) - vtemp.pack<3>("xhat", fee[3]);
-                auto basis = fricEE.pack<3, 2>("basis", feei);
-                auto fn = fricEE("fn", feei);
-                auto gammas = fricEE.pack<2>("gamma", feei);
-                auto relDX3D =
-                    edge_edge_rel_dx(e0, e1, e2, e3, gammas[0], gammas[1]);
-                auto relDX = basis.transpose() * relDX3D;
-                auto relDXNorm2 = relDX.l2NormSqr();
-                auto E = f0_SF(relDXNorm2, epsvh) * fn;
-                reduce_to(feei, n, E, es[feei / 32]);
-              });
-          Es.push_back(reduce(pol, es) * fricMu);
-#endif
+            auto numFEE = nFEE.getVal();
+            es.resize(count_warps(numFEE));
+            es.reset(0);
+            pol(range(numFEE), [vtemp = proxy<space>({}, vtemp),
+                                fricEE = proxy<space>({}, fricEE),
+                                FEE = proxy<space>(FEE), es = proxy<space>(es),
+                                epsvh = epsv * dt,
+                                n = numFEE] __device__(int feei) mutable {
+              auto fee = FEE[feei];
+              auto e0 =
+                  vtemp.pack<3>("xn", fee[0]) - vtemp.pack<3>("xhat", fee[0]);
+              auto e1 =
+                  vtemp.pack<3>("xn", fee[1]) - vtemp.pack<3>("xhat", fee[1]);
+              auto e2 =
+                  vtemp.pack<3>("xn", fee[2]) - vtemp.pack<3>("xhat", fee[2]);
+              auto e3 =
+                  vtemp.pack<3>("xn", fee[3]) - vtemp.pack<3>("xhat", fee[3]);
+              auto basis = fricEE.pack<3, 2>("basis", feei);
+              auto fn = fricEE("fn", feei);
+              auto gammas = fricEE.pack<2>("gamma", feei);
+              auto relDX3D =
+                  edge_edge_rel_dx(e0, e1, e2, e3, gammas[0], gammas[1]);
+              auto relDX = basis.transpose() * relDX3D;
+              auto relDXNorm2 = relDX.l2NormSqr();
+              auto E = f0_SF(relDXNorm2, epsvh) * fn;
+              reduce_to(feei, n, E, es[feei / 32]);
+            });
+            Es.push_back(reduce(pol, es) * fricMu);
+          }
+#endif // fric
         }
 #endif
         if (s_enableGround) {
@@ -3582,130 +3584,150 @@ struct CodimStepping : INode {
                 atomic_add(execTag, &vtemp(bTag, rowid % 3, pem[rowid / 3]),
                            entryG);
             });
-#endif
+#endif // end mollification
 
 #if s_enableFriction
-        auto numFPP = nFPP.getVal();
-        pol(Collapse{numFPP, 32},
-            [execTag, fricPP = proxy<space>({}, fricPP),
-             vtemp = proxy<space>({}, vtemp), dxTag, bTag,
-             FPP = proxy<space>(FPP)] ZS_LAMBDA(int fppi, int tid) mutable {
-              int rowid = tid / 5;
-              int colid = tid % 5;
-              ;
-              auto fpp = FPP[fppi];
-              T entryH = 0, entryDx = 0, entryG = 0;
-              if (tid < 30) {
-                entryH = fricPP("H", rowid * 6 + colid, fppi);
-                entryDx = vtemp(dxTag, colid % 3, fpp[colid / 3]);
-                entryG = entryH * entryDx;
-                if (colid == 0) {
-                  entryG += fricPP("H", rowid * 6 + 5, fppi) *
-                            vtemp(dxTag, 2, fpp[1]);
-                }
-              }
-              for (int iter = 1; iter <= 4; iter <<= 1) {
-                T tmp = __shfl_down_sync(0xFFFFFFFF, entryG, iter);
-                if (colid + iter < 5 && tid < 30)
-                  entryG += tmp;
-              }
-              if (colid == 0 && rowid < 6)
-                atomic_add(execTag, &vtemp(bTag, rowid % 3, fpp[rowid / 3]),
-                           entryG);
-            });
-        auto numFPE = nFPE.getVal();
-        {
-          auto numRows = numFPE * 9;
-          auto numWarps = (numRows + 3) / 4; // 8 threads per row
-          pol(Collapse{numWarps * 32},
-              [execTag, fricPE = proxy<space>({}, fricPE),
+        if (fricMu != 0) {
+          auto numFPP = nFPP.getVal();
+          pol(Collapse{numFPP, 32},
+              [execTag, fricPP = proxy<space>({}, fricPP),
                vtemp = proxy<space>({}, vtemp), dxTag, bTag,
-               FPE = proxy<space>(FPE), numRows] ZS_LAMBDA(int tid) mutable {
-                int growid = tid / 8;
-                int rowid = growid % 9;
-                int fpei = growid / 9;
-                int colid = tid % 8;
+               FPP = proxy<space>(FPP)] ZS_LAMBDA(int fppi, int tid) mutable {
+                int rowid = tid / 5;
+                int colid = tid % 5;
                 ;
-                auto fpe = FPE[fpei];
-                T entryG = 0;
-                if (growid < numRows) {
-                  entryG = fricPE("H", rowid * 9 + colid, fpei) *
-                           vtemp(dxTag, colid % 3, fpe[colid / 3]);
+                auto fpp = FPP[fppi];
+                T entryH = 0, entryDx = 0, entryG = 0;
+                if (tid < 30) {
+                  entryH = fricPP("H", rowid * 6 + colid, fppi);
+                  entryDx = vtemp(dxTag, colid % 3, fpp[colid / 3]);
+                  entryG = entryH * entryDx;
                   if (colid == 0) {
-                    auto cid = colid + 8;
-                    entryG += fricPE("H", rowid * 9 + cid, fpei) *
-                              vtemp(dxTag, cid % 3, fpe[cid / 3]);
+                    entryG += fricPP("H", rowid * 6 + 5, fppi) *
+                              vtemp(dxTag, 2, fpp[1]);
                   }
                 }
                 for (int iter = 1; iter <= 4; iter <<= 1) {
                   T tmp = __shfl_down_sync(0xFFFFFFFF, entryG, iter);
-                  if (colid + iter < 8 && growid < numRows)
+                  if (colid + iter < 5 && tid < 30)
                     entryG += tmp;
                 }
-                if (colid == 0 && growid < numRows)
-                  atomic_add(execTag, &vtemp(bTag, rowid % 3, fpe[rowid / 3]),
+                if (colid == 0 && rowid < 6)
+                  atomic_add(execTag, &vtemp(bTag, rowid % 3, fpp[rowid / 3]),
+                             entryG);
+              });
+
+          auto numFPE = nFPE.getVal();
+          pol(range(numFPE * 81), [execTag, fricPE = proxy<space>({}, fricPE),
+                                   vtemp = proxy<space>({}, vtemp), dxTag, bTag,
+                                   FPE = proxy<space>(FPE),
+                                   n = numFPE * 81] ZS_LAMBDA(int idx) mutable {
+            constexpr int dim = 3;
+            __shared__ int offset;
+            // directly use PCG_Solve_AX9_b2 from kemeng huang
+            int Hid = idx / 81;
+            int entryId = idx % 81;
+            int MRid = entryId / 9;
+            int MCid = entryId % 9;
+            int vId = MCid / dim;
+            int axisId = MCid % dim;
+            int GRtid = idx % 9;
+
+            auto inds = FPE[Hid];
+            T rdata =
+                fricPE("H", entryId, Hid) * vtemp(dxTag, axisId, inds[vId]);
+
+            if (threadIdx.x == 0)
+              offset = 9 - GRtid;
+            __syncthreads();
+
+            int BRid = (threadIdx.x - offset + 9) / 9;
+            int landidx = (threadIdx.x - offset) % 9;
+            if (BRid == 0) {
+              landidx = threadIdx.x;
+            }
+
+            auto [mask, numValid] = warp_mask(idx, n);
+            int laneId = threadIdx.x & 0x1f;
+            bool bBoundary = (landidx == 0) || (laneId == 0);
+
+            unsigned int mark = __ballot_sync(mask, bBoundary); // a bit-mask
+            mark = __brev(mark);
+            unsigned int interval =
+                zs::math::min(__clz(mark << (laneId + 1)), 31 - laneId);
+
+            for (int iter = 1; iter < 9; iter <<= 1) {
+              T tmp = __shfl_down_sync(mask, rdata, iter);
+              if (interval >= iter && laneId + iter < numValid)
+                rdata += tmp;
+            }
+
+            if (bBoundary)
+              atomic_add(exec_cuda, &vtemp(bTag, MRid % 3, inds[MRid / 3]),
+                         rdata);
+          });
+
+          auto numFPT = nFPT.getVal();
+          pol(Collapse{numFPT, 32 * 3},
+              [execTag, fricPT = proxy<space>({}, fricPT),
+               vtemp = proxy<space>({}, vtemp), dxTag, bTag,
+               FPT = proxy<space>(FPT)] ZS_LAMBDA(int fpti, int tid) mutable {
+                int rowid = tid / 8;
+                int colid = tid % 8;
+                ;
+                auto fpt = FPT[fpti];
+                T entryH = 0, entryDx = 0, entryG = 0;
+                {
+                  entryH = fricPT("H", rowid * 12 + colid, fpti);
+                  entryDx = vtemp(dxTag, colid % 3, fpt[colid / 3]);
+                  entryG = entryH * entryDx;
+                  if (colid < 4) {
+                    auto cid = colid + 8;
+                    entryG += fricPT("H", rowid * 12 + cid, fpti) *
+                              vtemp(dxTag, cid % 3, fpt[cid / 3]);
+                  }
+                }
+                for (int iter = 1; iter <= 4; iter <<= 1) {
+                  T tmp = __shfl_down_sync(0xFFFFFFFF, entryG, iter);
+                  if (colid + iter < 8)
+                    entryG += tmp;
+                }
+                if (colid == 0)
+                  atomic_add(execTag, &vtemp(bTag, rowid % 3, fpt[rowid / 3]),
+                             entryG);
+              });
+
+          auto numFEE = nFEE.getVal();
+          pol(Collapse{numFEE, 32 * 3},
+              [execTag, fricEE = proxy<space>({}, fricEE),
+               vtemp = proxy<space>({}, vtemp), dxTag, bTag,
+               FEE = proxy<space>(FEE)] ZS_LAMBDA(int feei, int tid) mutable {
+                int rowid = tid / 8;
+                int colid = tid % 8;
+                ;
+                auto fee = FEE[feei];
+                T entryH = 0, entryDx = 0, entryG = 0;
+                {
+                  entryH = fricEE("H", rowid * 12 + colid, feei);
+                  entryDx = vtemp(dxTag, colid % 3, fee[colid / 3]);
+                  entryG = entryH * entryDx;
+                  if (colid < 4) {
+                    auto cid = colid + 8;
+                    entryG += fricEE("H", rowid * 12 + cid, feei) *
+                              vtemp(dxTag, cid % 3, fee[cid / 3]);
+                  }
+                }
+                for (int iter = 1; iter <= 4; iter <<= 1) {
+                  T tmp = __shfl_down_sync(0xFFFFFFFF, entryG, iter);
+                  if (colid + iter < 8)
+                    entryG += tmp;
+                }
+                if (colid == 0)
+                  atomic_add(execTag, &vtemp(bTag, rowid % 3, fee[rowid / 3]),
                              entryG);
               });
         }
-        auto numFPT = nFPT.getVal();
-        pol(Collapse{numFPT, 32 * 3},
-            [execTag, fricPT = proxy<space>({}, fricPT),
-             vtemp = proxy<space>({}, vtemp), dxTag, bTag,
-             FPT = proxy<space>(FPT)] ZS_LAMBDA(int fpti, int tid) mutable {
-              int rowid = tid / 8;
-              int colid = tid % 8;
-              ;
-              auto fpt = FPT[fpti];
-              T entryH = 0, entryDx = 0, entryG = 0;
-              {
-                entryH = fricPT("H", rowid * 12 + colid, fpti);
-                entryDx = vtemp(dxTag, colid % 3, fpt[colid / 3]);
-                entryG = entryH * entryDx;
-                if (colid < 4) {
-                  auto cid = colid + 8;
-                  entryG += fricPT("H", rowid * 12 + cid, fpti) *
-                            vtemp(dxTag, cid % 3, fpt[cid / 3]);
-                }
-              }
-              for (int iter = 1; iter <= 4; iter <<= 1) {
-                T tmp = __shfl_down_sync(0xFFFFFFFF, entryG, iter);
-                if (colid + iter < 8)
-                  entryG += tmp;
-              }
-              if (colid == 0)
-                atomic_add(execTag, &vtemp(bTag, rowid % 3, fpt[rowid / 3]),
-                           entryG);
-            });
-        auto numFEE = nFEE.getVal();
-        pol(Collapse{numFEE, 32 * 3},
-            [execTag, fricEE = proxy<space>({}, fricEE),
-             vtemp = proxy<space>({}, vtemp), dxTag, bTag,
-             FEE = proxy<space>(FEE)] ZS_LAMBDA(int feei, int tid) mutable {
-              int rowid = tid / 8;
-              int colid = tid % 8;
-              ;
-              auto fee = FEE[feei];
-              T entryH = 0, entryDx = 0, entryG = 0;
-              {
-                entryH = fricEE("H", rowid * 12 + colid, feei);
-                entryDx = vtemp(dxTag, colid % 3, fee[colid / 3]);
-                entryG = entryH * entryDx;
-                if (colid < 4) {
-                  auto cid = colid + 8;
-                  entryG += fricEE("H", rowid * 12 + cid, feei) *
-                            vtemp(dxTag, cid % 3, fee[cid / 3]);
-                }
-              }
-              for (int iter = 1; iter <= 4; iter <<= 1) {
-                T tmp = __shfl_down_sync(0xFFFFFFFF, entryG, iter);
-                if (colid + iter < 8)
-                  entryG += tmp;
-              }
-              if (colid == 0)
-                atomic_add(execTag, &vtemp(bTag, rowid % 3, fee[rowid / 3]),
-                           entryG);
-            });
-#endif
+#endif // end fric
 #endif
         if (s_enableGround) {
           // boundary
@@ -4519,7 +4541,7 @@ struct CodimStepping : INode {
           A.findCollisionConstraints(cudaPol, dHat, xi,
                                      s_enableAdaptiveSetting);
           if constexpr (s_enableFriction)
-            if (fricMu > 0) {
+            if (fricMu != 0) {
               A.precomputeFrictions(cudaPol, dHat, xi);
             }
         }
@@ -4538,7 +4560,7 @@ struct CodimStepping : INode {
         if constexpr (s_enableContact) {
           A.computeBarrierGradientAndHessian(cudaPol, "grad");
           if constexpr (s_enableFriction)
-            if (fricMu > 0) {
+            if (fricMu != 0) {
               A.computeFrictionBarrierGradientAndHessian(cudaPol, "grad");
             }
         }
@@ -4783,7 +4805,7 @@ ZENDEFNODE(CodimStepping, {{
                                {"float", "dHat", "0.001"},
                                {"float", "epsv", "0.0"},
                                {"float", "kappa0", "1e3"},
-                               {"float", "fric_mu", "0.0"},
+                               {"float", "fric_mu", "0"},
                                {"float", "aug_coeff", "1e3"},
                                {"float", "pn_rel", "0.01"},
                                {"float", "cg_rel", "0.0001"},
