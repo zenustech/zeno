@@ -345,6 +345,11 @@ void ModelAcceptor::setInputSocket(
     }
 }
 
+void ModelAcceptor::endInputs()
+{
+    //todo
+}
+
 void ModelAcceptor::setParamValue(const QString& id, const QString& nodeCls, const QString& name, const rapidjson::Value& value)
 {
     if (!m_currentGraph)

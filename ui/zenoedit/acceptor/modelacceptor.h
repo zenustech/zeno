@@ -40,6 +40,7 @@ public:
         const QVector<QPointF>& pts,
         const QVector<QPair<QPointF, QPointF>>& hdls) override;
 	QObject* currGraphObj() override;
+	void endInputs() override;
 
 private:
     void generateLink(const QModelIndex& idx);
