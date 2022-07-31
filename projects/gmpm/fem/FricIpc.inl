@@ -35,6 +35,7 @@ void CodimStepping::IPCSystem::computeFrictionBarrierGradientAndHessian(
         // hessian
         if (!includeHessian)
           return;
+        relDX = basis.transpose() * relDX3D;
         auto TT = point_point_TT(basis); // 2x6
         auto f2_term = f2_SF_term(relDXNorm2, epsvh);
         using HessT = zs::vec<T, 6, 6>;
@@ -112,6 +113,7 @@ void CodimStepping::IPCSystem::computeFrictionBarrierGradientAndHessian(
         // hessian
         if (!includeHessian)
           return;
+        relDX = basis.transpose() * relDX3D;
         auto TT = point_edge_TT(basis, yita); // 2x9
         auto f2_term = f2_SF_term(relDXNorm2, epsvh);
         using HessT = zs::vec<T, 9, 9>;
@@ -192,6 +194,7 @@ void CodimStepping::IPCSystem::computeFrictionBarrierGradientAndHessian(
         // hessian
         if (!includeHessian)
           return;
+        relDX = basis.transpose() * relDX3D;
         auto TT = point_triangle_TT(basis, betas[0], betas[1]); // 2x12
         auto f2_term = f2_SF_term(relDXNorm2, epsvh);
         using HessT = zs::vec<T, 12, 12>;
@@ -272,6 +275,7 @@ void CodimStepping::IPCSystem::computeFrictionBarrierGradientAndHessian(
         // hessian
         if (!includeHessian)
           return;
+        relDX = basis.transpose() * relDX3D;
         auto TT = edge_edge_TT(basis, gammas[0], gammas[1]); // 2x12
         auto f2_term = f2_SF_term(relDXNorm2, epsvh);
         using HessT = zs::vec<T, 12, 12>;
