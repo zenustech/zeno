@@ -55,8 +55,8 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
 
         bool bSubgNode = subgNodes.indexOf(idx) != -1;
 
-        const INPUT_SOCKETS &inputs = idx.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
-        const OUTPUT_SOCKETS &outputs = idx.data(ROLE_OUTPUTS).value<OUTPUT_SOCKETS>();
+        INPUT_SOCKETS inputs = idx.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
+        OUTPUT_SOCKETS outputs = idx.data(ROLE_OUTPUTS).value<OUTPUT_SOCKETS>();
 
         if (opts & OPT_MUTE) {
             AddStringList({ "addNode", "HelperMute", ident }, writer);
@@ -80,6 +80,9 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
         }
 
         auto outputIt = outputs.begin();
+
+        //sort for inputs and outputs, ensure that the SRC/DST key is the last key to serialize.
+        AppHelper::ensureSRCDSTlastKey(inputs, outputs);
 
         for (INPUT_SOCKET input : inputs)
         {

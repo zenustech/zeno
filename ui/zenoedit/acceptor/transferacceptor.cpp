@@ -338,6 +338,11 @@ QObject* TransferAcceptor::currGraphObj()
     return nullptr;
 }
 
+void TransferAcceptor::endInputs()
+{
+
+}
+
 QMap<QString, NODE_DATA> TransferAcceptor::nodes() const
 {
     return m_nodes;

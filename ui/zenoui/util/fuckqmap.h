@@ -57,9 +57,9 @@ public:
     bool operator==(const FuckQMap<K, T> &other) const { return mother == other.mother; }
     inline bool operator!=(const FuckQMap<K, T> &other) const { return !(*this == other); }
 
-    inline int size() const { return mother->size(); }
+    inline int size() const { return mother.size(); }
 
-    inline bool isEmpty() const { return mother->size() == 0; }
+    inline bool isEmpty() const { return mother.size() == 0; }
 
     void clear() { mother.clear(); }
 
@@ -99,8 +99,8 @@ public:
     typedef typename QList<FuckQPair>::const_iterator const_iterator;
 
 
-    inline const K &firstKey() const { Q_ASSERT(!isEmpty()); return constBegin().key(); }
-    inline const K &lastKey() const { Q_ASSERT(!isEmpty()); return (constEnd() - 1).key(); }
+    inline const K &firstKey() const { Q_ASSERT(!isEmpty()); return constBegin()->key(); }
+    inline const K &lastKey() const { Q_ASSERT(!isEmpty()); return (constEnd() - 1)->key(); }
 
     inline T &first() { Q_ASSERT(!isEmpty()); return *begin(); }
     inline const T &first() const { Q_ASSERT(!isEmpty()); return *constBegin(); }
@@ -286,6 +286,7 @@ public:
     auto find(const K &key) { return std::find_if(mother.begin(), mother.end(), [&] (auto &&a) { return a.first == key; }); }
     auto find(const K &key) const { return std::find_if(mother.begin(), mother.end(), [&] (auto &&a) { return a.first == key; }); }
     iterator insert(const K &key, const T &value) { mother.push_back(FuckQPair{key, value}); return mother.end()-1; }
+    iterator push_front(const K &key, const T &value) { mother.push_front(FuckQPair{key, value}); return mother.begin(); }
     //iterator insert(const K &key, const T &value) const { mother.push_back(FuckQPair{key, value}); return mother.end()-1; }
     void insert(const FuckQMap<K, T> &map) {
         for (auto const &[k, v]: map) {

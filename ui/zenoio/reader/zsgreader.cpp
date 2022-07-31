@@ -433,6 +433,7 @@ void ZsgReader::_parseInputs(const QString& id, const QString& nodeName, const N
             Q_ASSERT(false);
         }
     }
+    pAcceptor->endInputs();
 }
 
 void ZsgReader::_parseParams(const QString& id, const QString& nodeName, const rapidjson::Value& jsonParams, IAcceptor* pAcceptor)

@@ -726,12 +726,18 @@ bool ZenoNode::renameDictKey(bool bInput, const INPUT_SOCKETS& inputs, const OUT
     }
 }
 
-void ZenoNode::onSocketsUpdate(bool bInput)
+void ZenoNode::onSocketsUpdate(bool bInput, bool bInit)
 {
     const QString &nodeid = nodeId();
+    const QString& nodeName = m_index.data(ROLE_OBJNAME).toString();
+
+    IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+    ZASSERT_EXIT(pModel);
+
     if (bInput)
     {
         INPUT_SOCKETS inputs = m_index.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
+
         if (renameDictKey(true, inputs, OUTPUT_SOCKETS()))
         {
             return;
@@ -774,8 +780,18 @@ void ZenoNode::onSocketsUpdate(bool bInput)
                 socket_ctrl.socket_text = pSocketItem;
                 socket_ctrl.socket_control = pSocketControl;
                 socket_ctrl.ctrl_layout = pMiniLayout;
+
                 m_inSockets.insert(inSock, socket_ctrl);
-                m_pInSocketsLayout->addItem(pMiniLayout);
+
+                if (!bInit && pModel->IsSubGraphNode(m_index))
+                {
+                    //dynamic socket added, ensure that the key is above the SRC key.
+                    m_pInSocketsLayout->insertItem(0, pMiniLayout);
+                }
+                else
+                {
+                    m_pInSocketsLayout->addItem(pMiniLayout);
+                }
                 updateWhole();
             }
             else
@@ -858,7 +874,17 @@ void ZenoNode::onSocketsUpdate(bool bInput)
 
                 QGraphicsLinearLayout *pMiniLayout = new QGraphicsLinearLayout(Qt::Horizontal);
                 pMiniLayout->addItem(sock.socket_text);
-                m_pOutSocketsLayout->addItem(pMiniLayout);
+
+				if (!bInit && pModel->IsSubGraphNode(m_index))
+				{
+					//dynamic socket added, ensure that the key is above the DST key.
+                    m_pOutSocketsLayout->insertItem(0, pMiniLayout);
+				}
+				else
+				{
+                    m_pOutSocketsLayout->addItem(pMiniLayout);
+				}
+
                 updateWhole();
             }
         }
@@ -1244,8 +1270,8 @@ QGraphicsLayout* ZenoNode::initSockets()
     m_pSocketsLayout = new QGraphicsLinearLayout(Qt::Vertical);
     m_pInSocketsLayout = new QGraphicsLinearLayout(Qt::Vertical);
     m_pOutSocketsLayout = new QGraphicsLinearLayout(Qt::Vertical);
-    onSocketsUpdate(true);
-    onSocketsUpdate(false);
+    onSocketsUpdate(true, true);
+    onSocketsUpdate(false, true);
     m_pSocketsLayout->addItem(m_pInSocketsLayout);
     m_pSocketsLayout->addItem(m_pOutSocketsLayout);
 
