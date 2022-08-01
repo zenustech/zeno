@@ -15,7 +15,9 @@ ZenoApplication::ZenoApplication(int &argc, char **argv)
     , m_pGraphs(new GraphsManagment())
     , m_bIOProcessing(false)
     , m_errSteam(std::clog)
+#if defined(ZENO_MULTIPROCESS) && defined(ZENO_IPC_USE_TCP)
     , m_server(nullptr)
+#endif
 {
     initFonts();
     initStyleSheets();
