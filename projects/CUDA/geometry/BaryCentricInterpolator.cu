@@ -47,7 +47,15 @@ struct ZSComputeBaryCentricWeights : INode {
 
         constexpr auto space = zs::execspace_e::cuda;
 
-        compute_barycentric_weights(cudaExec,verts,eles,everts,"x",bcw,"inds","w",fitting_in);
+        compute_barycentric_weights(cudaExec,verts,eles,everts,"x",bcw,"inds","w",thickness,fitting_in);
+
+        cudaExec(zs::range(numEmbedVerts),
+            [bcw = proxy<space>({},bcw),fitting_in] ZS_LAMBDA(int vi) mutable {
+                auto idx = reinterpret_bits<int>(bcw("inds",vi));
+                if(fitting_in && idx < 0)
+                    printf("Unbind vert %d under fitting-in mode\n",vi);
+            }
+        );
 
         auto e_dim = e_eles.getChannelSize("inds");
 
