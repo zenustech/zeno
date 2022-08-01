@@ -1,7 +1,7 @@
 
 
 #include "file_parser/read_vtk_mesh.hpp"
-// #include "file_parser/write_vtk_unstructured_mesh.hpp"
+#include "file_parser/write_vtk_unstructured_mesh.hpp"
 #include "zensim/omp/execution/ExecutionPolicy.hpp"
 
 #include "zensim/math/bit/Bits.h"
@@ -62,37 +62,38 @@ ZENDEFNODE(ReadVTKMesh, {/* inputs: */ {
                         }});
 
 
-// struct WriteVTKMesh : INode {
-//     void apply() override {
-//         auto path = get_input<StringObject>("path")->get();
-//         auto prim = get_input<PrimitiveObject>("prim");
-//         int out_customed_nodal = get_param<int>("outVertAttr");
-//         int out_customed_cell = get_param<int>("outCellAttr");
-//         bool ret = write_vtk_data(path,prim,out_customed_nodal,out_customed_cell);
-//         if(!ret){
-//             throw std::runtime_error("FAILED OUTPUT VTK MESH");
-//         }
+struct WriteVTKMesh : INode {
+    void apply() override {
+        auto path = get_input<StringObject>("path")->get();
+        auto prim = get_input<PrimitiveObject>("prim");
+        int out_customed_nodal = get_param<int>("outVertAttr");
+        int out_customed_cell = get_param<int>("outCellAttr");
+        bool ret = write_vtk_data(path,prim,out_customed_nodal,out_customed_cell);
+        if(!ret){
+            throw std::runtime_error("FAILED OUTPUT VTK MESH");
+        }
 
-//         set_output("prim",std::move(prim));
-//     }
-// };
+        set_output("prim",std::move(prim));
+    }
+};
 
-// ZENDEFNODE(WriteVTKMesh, {/* inputs: */ {
-//                             {"readpath", "path"},
-//                         },
-//                         /* outputs: */
-//                         {
-//                             {"primitive", "prim"},
-//                         },
-//                         /* params: */
-//                         {
-//                             {"int","outVertAttr","0"},
-//                             {"int","outCellAttr","0"}
-//                         },
-//                         /* category: */
-//                         {
-//                             "primitive",
-//                         }});
+ZENDEFNODE(WriteVTKMesh, {/* inputs: */ {
+                            {"primitive", "prim"},
+                            {"readpath", "path"},
+                        },
+                        /* outputs: */
+                        {
+                            {"primitive", "prim"},
+                        },
+                        /* params: */
+                        {
+                            {"int","outVertAttr","0"},
+                            {"int","outCellAttr","0"}
+                        },
+                        /* category: */
+                        {
+                            "primitive",
+                        }});
 
 
 }
