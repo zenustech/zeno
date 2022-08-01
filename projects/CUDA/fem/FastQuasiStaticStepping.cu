@@ -180,7 +180,7 @@ struct FastQuasiStaticStepping : INode {
                 auto DmInv = eles.template pack<3, 3>("IB", ei);
                 auto dFdX = dFdXMatrix(DmInv);
                 auto vol = eles("vol",ei);
-                etemp.pack<12,12>(Htag,ei) = stiffness * vol * dFdX.transpose() * dFdX;            
+                etemp.template tuple<12*12>(Htag,ei) = stiffness * vol * dFdX.transpose() * dFdX;            
             });   
 
             cudaPol(zs::range(b_bcws.size()),
@@ -413,7 +413,7 @@ struct FastQuasiStaticStepping : INode {
                 A.multiply(cudaPol,xtag,"temp","L",vtemp,etemp);
                 cudaPol(zs::range(vtemp.size()),
                     [vtemp = proxy<space>({},vtemp),btag] ZS_LAMBDA(int vi) mutable {
-                        vtemp.pack<3>("r",vi) = vtemp.pack<3>(btag,vi) - vtemp.pack<3>("temp",vi);
+                        vtemp.template tuple<3>("r",vi) = vtemp.pack<3>(btag,vi) - vtemp.pack<3>("temp",vi);
                     });
             }   
 
@@ -699,7 +699,7 @@ struct FastQuasiStaticStepping : INode {
         }
         cudaPol(zs::range(vtemp.size()),
             [vtemp = proxy<space>({},vtemp),verts = proxy<space>({},verts)] ZS_LAMBDA(int vi) mutable {
-                verts.pack<3>("x",vi) = vtemp.pack<3>("xn",vi);
+                verts.template tuple<3>("x",vi) = vtemp.pack<3>("xn",vi);
         });
 
         set_output("ZSParticles", zstets);

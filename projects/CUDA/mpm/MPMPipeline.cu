@@ -435,6 +435,7 @@ struct SpringSystemTimeStepping : INode {
       }
     });
   }
+#if 0
   void computeCollisionForce(zs::CudaExecutionPolicy &cudaPol,
                              const tiles_t &springs, tiles_t &vertData,
                              const zs::SmallString vtag,
@@ -723,12 +724,13 @@ struct SpringSystemTimeStepping : INode {
       }
     });
   }
+#endif
   void SAp(zs::CudaExecutionPolicy &cudaPol, const tiles_t &verts,
            const tiles_t &springs, tiles_t &vertData, float dt, float eps) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
     computeSpringForce(cudaPol, springs, vertData, "p", "f", dt, eps, true);
-    computeCollisionForce(cudaPol, springs, vertData, "p", "f", dt, eps);
+    // computeCollisionForce(cudaPol, springs, vertData, "p", "f", dt, eps);
     cudaPol(range(vertData.size()),
             [verts = proxy<space>({}, verts), data = proxy<space>({}, vertData),
              dt, eps] __device__(int pi) mutable {
@@ -789,11 +791,11 @@ struct SpringSystemTimeStepping : INode {
     fmt::print("initial eps: {}\n", eps);
 #if 1
     computeSpringForce(cudaPol, springs, vertData, "v", "f0", 0, 0, true);
-    computeCollisionForce(cudaPol, springs, vertData, "v", "f0", 0, 0);
+    //computeCollisionForce(cudaPol, springs, vertData, "v", "f0", 0, 0);
 
     // f_forward(v0)
     computeSpringForce(cudaPol, springs, vertData, "v", "f", dt, eps, true);
-    computeCollisionForce(cudaPol, springs, vertData, "v", "f", dt, eps);
+    //computeCollisionForce(cudaPol, springs, vertData, "v", "f", dt, eps);
 
     // compute b
     cudaPol(range(numVerts),

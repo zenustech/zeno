@@ -4,9 +4,12 @@
 #include "Ccds.hpp"
 // #include "GIPC.cuh"
 #include "zensim/Logger.hpp"
+#include "zensim/container/Bvh.hpp"
+#include "zensim/container/Bvs.hpp"
 #include "zensim/cuda/execution/ExecutionPolicy.cuh"
 #include "zensim/execution/ExecutionPolicy.hpp"
 #include "zensim/geometry/Distance.hpp"
+#include "zensim/geometry/Friction.hpp"
 #include "zensim/geometry/PoissonDisk.hpp"
 #include "zensim/geometry/SpatialQuery.hpp"
 #include "zensim/geometry/VdbLevelSet.h"
@@ -129,7 +132,8 @@ struct CodimStepping : INode {
 #define s_enableAdaptiveSetting 1
 // static constexpr bool s_enableAdaptiveSetting = false;
 #define s_enableContact 1
-  // static constexpr bool s_enableContact = true;
+#define s_enableMollification 1
+#define s_enableFriction 1
   inline static bool s_enableGround = false;
 #define s_enableDCDCheck 0
 #define s_enableDebugCheck 0
@@ -143,9 +147,11 @@ struct CodimStepping : INode {
   inline static T kappaMin = 1e4;
   inline static T kappa0 = 1e4;
   inline static T kappa = kappa0;
+  inline static T fricMu = 0;
   inline static T &boundaryKappa = kappa;
   inline static T xi = 0; // 1e-2; // 2e-3;
   inline static T dHat = 0.0025;
+  inline static T epsv = 0.0;
   inline static vec3 extForce;
 
   template <typename T> static inline T computeHb(const T d2, const T dHat2) {
@@ -485,7 +491,8 @@ struct CodimStepping : INode {
     ///
     auto getCnts() const {
       return zs::make_tuple(nPP.getVal(), nPE.getVal(), nPT.getVal(),
-                            nEE.getVal(), ncsPT.getVal(), ncsEE.getVal());
+                            nEE.getVal(), nPPM.getVal(), nPEM.getVal(),
+                            nEEM.getVal(), ncsPT.getVal(), ncsEE.getVal());
     }
     void computeConstraints(zs::CudaExecutionPolicy &pol,
                             const zs::SmallString &tag) {
@@ -578,19 +585,20 @@ struct CodimStepping : INode {
     void updateWholeBoundingBoxSize(zs::CudaExecutionPolicy &pol) const {
       using namespace zs;
       constexpr auto space = execspace_e::cuda;
-      Vector<bv_t> box{vtemp.get_allocator(), 1};
-      pol(Collapse{1},
-          [bvh = proxy<space>(stBvh), box = proxy<space>(box)] __device__(
-              int vi) mutable { box[0] = bvh.getNodeBV(0); });
-      bv_t bv = box.getVal();
+#if 1
+      bv_t bv = stBvh.getTotalBox(pol);
       if (coVerts.size()) {
-        pol(Collapse{1},
-            [bvh = proxy<space>(bouStBvh), box = proxy<space>(box)] __device__(
-                int vi) mutable { box[0] = bvh.getNodeBV(0); });
-        bv_t boubv = box.getVal();
-        merge(bv, boubv._min);
-        merge(bv, boubv._max);
+        auto bouBv = bouStBvh.getTotalBox(pol);
+        merge(bv, bouBv._min);
+        merge(bv, bouBv._max);
       }
+#else
+      bv_t bv = stBvh.gbv;
+      if (coVerts.size()) {
+        merge(bv, bouStBvh.gbv._min);
+        merge(bv, bouStBvh.gbv._max);
+      }
+#endif
       boxDiagSize2 = (bv._max - bv._min).l2NormSqr();
     }
 
@@ -651,6 +659,7 @@ struct CodimStepping : INode {
     bool updateKappaRequired(zs::CudaExecutionPolicy &pol) {
       using namespace zs;
       constexpr auto space = execspace_e::cuda;
+      return false; // disable this mechanism
       Vector<int> requireUpdate{vtemp.get_allocator(), 1};
       requireUpdate.setVal(0);
       // contacts
@@ -721,6 +730,9 @@ struct CodimStepping : INode {
       nPE.setVal(0);
       nPT.setVal(0);
       nEE.setVal(0);
+      nPPM.setVal(0);
+      nPEM.setVal(0);
+      nEEM.setVal(0);
 
       ncsPT.setVal(0);
       ncsEE.setVal(0);
@@ -756,9 +768,8 @@ struct CodimStepping : INode {
                                       bool record = false) {
       using namespace zs;
       constexpr auto space = execspace_e::cuda;
-      const auto dHat2 = dHat * dHat;
 
-      record = false; // 
+      record = false; //
       /// pt
       pol(Collapse{svInds.size()},
           [svInds = proxy<space>({}, svInds),
@@ -799,12 +810,6 @@ struct CodimStepping : INode {
                   PP[no] = pair_t{vi, tri[0]};
                   csPT[atomic_add(exec_cuda, &ncsPT[0], 1)] =
                       pair4_t{vi, tri[0], tri[1], tri[2]};
-
-                  if (record) {
-                    vtemp.template pack<2>("inds_pre", no) =
-                        dpair_t{vi, tri[0]}.reinterpret_bits<T>();
-                    vtemp("dist2_pre", no) = d2;
-                  }
                 }
                 break;
               }
@@ -814,12 +819,6 @@ struct CodimStepping : INode {
                   PP[no] = pair_t{vi, tri[1]};
                   csPT[atomic_add(exec_cuda, &ncsPT[0], 1)] =
                       pair4_t{vi, tri[0], tri[1], tri[2]};
-
-                  if (record) {
-                    vtemp.template pack<2>("inds_pre", no) =
-                        dpair_t{vi, tri[1]}.reinterpret_bits<T>();
-                    vtemp("dist2_pre", no) = d2;
-                  }
                 }
                 break;
               }
@@ -829,12 +828,6 @@ struct CodimStepping : INode {
                   PP[no] = pair_t{vi, tri[2]};
                   csPT[atomic_add(exec_cuda, &ncsPT[0], 1)] =
                       pair4_t{vi, tri[0], tri[1], tri[2]};
-
-                  if (record) {
-                    vtemp.template pack<2>("inds_pre", no) =
-                        dpair_t{vi, tri[2]}.reinterpret_bits<T>();
-                    vtemp("dist2_pre", no) = d2;
-                  }
                 }
                 break;
               }
@@ -844,11 +837,6 @@ struct CodimStepping : INode {
                   PE[no] = pair3_t{vi, tri[0], tri[1]};
                   csPT[atomic_add(exec_cuda, &ncsPT[0], 1)] =
                       pair4_t{vi, tri[0], tri[1], tri[2]};
-                  if (record) {
-                    vtemp.template pack<3>("inds_pre", no) =
-                        dpair3_t{vi, tri[0], tri[1]}.reinterpret_bits<T>();
-                    vtemp("dist2_pre", no) = d2;
-                  }
                 }
                 break;
               }
@@ -858,11 +846,6 @@ struct CodimStepping : INode {
                   PE[no] = pair3_t{vi, tri[1], tri[2]};
                   csPT[atomic_add(exec_cuda, &ncsPT[0], 1)] =
                       pair4_t{vi, tri[0], tri[1], tri[2]};
-                  if (record) {
-                    vtemp.template pack<3>("inds_pre", no) =
-                        dpair3_t{vi, tri[1], tri[2]}.reinterpret_bits<T>();
-                    vtemp("dist2_pre", no) = d2;
-                  }
                 }
                 break;
               }
@@ -872,11 +855,6 @@ struct CodimStepping : INode {
                   PE[no] = pair3_t{vi, tri[2], tri[0]};
                   csPT[atomic_add(exec_cuda, &ncsPT[0], 1)] =
                       pair4_t{vi, tri[0], tri[1], tri[2]};
-                  if (record) {
-                    vtemp.template pack<3>("inds_pre", no) =
-                        dpair3_t{vi, tri[2], tri[0]}.reinterpret_bits<T>();
-                    vtemp("dist2_pre", no) = d2;
-                  }
                 }
                 break;
               }
@@ -886,12 +864,6 @@ struct CodimStepping : INode {
                   PT[no] = pair4_t{vi, tri[0], tri[1], tri[2]};
                   csPT[atomic_add(exec_cuda, &ncsPT[0], 1)] =
                       pair4_t{vi, tri[0], tri[1], tri[2]};
-                  if (record) {
-                    vtemp.template pack<4>("inds_pre", no) =
-                        dpair4_t{vi, tri[0], tri[1], tri[2]}
-                            .reinterpret_bits<T>();
-                    vtemp("dist2_pre", no) = d2;
-                  }
                 }
                 break;
               }
@@ -913,6 +885,16 @@ struct CodimStepping : INode {
                                     nPE = proxy<space>(nPE),
                                     EE = proxy<space>(EE),
                                     nEE = proxy<space>(nEE),
+#if s_enableMollification
+                                    // mollifier
+                                    PPM = proxy<space>(PPM),
+                                    nPPM = proxy<space>(nPPM),
+                                    PEM = proxy<space>(PEM),
+                                    nPEM = proxy<space>(nPEM),
+                                    EEM = proxy<space>(EEM),
+                                    nEEM = proxy<space>(nEEM),
+#endif
+                                    //
                                     csEE = proxy<space>(csEE),
                                     ncsEE = proxy<space>(ncsEE), dHat, xi,
                                     thickness = xi + dHat,
@@ -948,152 +930,172 @@ struct CodimStepping : INode {
           auto rv2 = vtemp.template pack<3>("x0", ejInds[0]);
           auto rv3 = vtemp.template pack<3>("x0", ejInds[1]);
 
+#if s_enableMollification
+          // IPC (24)
+          T c = cn2_ee(v0, v1, v2, v3);
+          T epsX = mollifier_threshold_ee(rv0, rv1, rv2, rv3);
+          bool mollify = c < epsX;
+#endif
+
           switch (ee_distance_type(v0, v1, v2, v3)) {
           case 0: {
             if (auto d2 = dist2_pp(v0, v2); d2 < dHat2) {
+              csEE[atomic_add(exec_cuda, &ncsEE[0], 1)] =
+                  pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]};
+#if s_enableMollification
+              if (mollify) {
+                auto no = atomic_add(exec_cuda, &nPPM[0], 1);
+                PPM[no] = pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]};
+                break;
+              }
+#endif
               {
                 auto no = atomic_add(exec_cuda, &nPP[0], 1);
                 PP[no] = pair_t{eiInds[0], ejInds[0]};
-                csEE[atomic_add(exec_cuda, &ncsEE[0], 1)] =
-                    pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]};
-                if (record) {
-                  vtemp.template pack<2>("inds_pre", no) =
-                      dpair_t{eiInds[0], ejInds[0]}.reinterpret_bits<T>();
-                  vtemp("dist2_pre", no) = d2;
-                }
               }
             }
             break;
           }
           case 1: {
             if (auto d2 = dist2_pp(v0, v3); d2 < dHat2) {
+              csEE[atomic_add(exec_cuda, &ncsEE[0], 1)] =
+                  pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]};
+#if s_enableMollification
+              if (mollify) {
+                auto no = atomic_add(exec_cuda, &nPPM[0], 1);
+                PPM[no] = pair4_t{eiInds[0], eiInds[1], ejInds[1], ejInds[0]};
+                break;
+              }
+#endif
               {
                 auto no = atomic_add(exec_cuda, &nPP[0], 1);
                 PP[no] = pair_t{eiInds[0], ejInds[1]};
-                csEE[atomic_add(exec_cuda, &ncsEE[0], 1)] =
-                    pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]};
-                if (record) {
-                  vtemp.template pack<2>("inds_pre", no) =
-                      dpair_t{eiInds[0], ejInds[1]}.reinterpret_bits<T>();
-                  vtemp("dist2_pre", no) = d2;
-                }
               }
             }
             break;
           }
           case 2: {
             if (auto d2 = dist2_pe(v0, v2, v3); d2 < dHat2) {
+              csEE[atomic_add(exec_cuda, &ncsEE[0], 1)] =
+                  pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]};
+#if s_enableMollification
+              if (mollify) {
+                auto no = atomic_add(exec_cuda, &nPEM[0], 1);
+                PEM[no] = pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]};
+                break;
+              }
+#endif
               {
                 auto no = atomic_add(exec_cuda, &nPE[0], 1);
                 PE[no] = pair3_t{eiInds[0], ejInds[0], ejInds[1]};
-                csEE[atomic_add(exec_cuda, &ncsEE[0], 1)] =
-                    pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]};
-                if (record) {
-                  vtemp.template pack<3>("inds_pre", no) =
-                      dpair3_t{eiInds[0], ejInds[0], ejInds[1]}
-                          .reinterpret_bits<T>();
-                  vtemp("dist2_pre", no) = d2;
-                }
               }
             }
             break;
           }
           case 3: {
             if (auto d2 = dist2_pp(v1, v2); d2 < dHat2) {
+              csEE[atomic_add(exec_cuda, &ncsEE[0], 1)] =
+                  pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]};
+#if s_enableMollification
+              if (mollify) {
+                auto no = atomic_add(exec_cuda, &nPPM[0], 1);
+                PPM[no] = pair4_t{eiInds[1], eiInds[0], ejInds[0], ejInds[1]};
+                break;
+              }
+#endif
               {
                 auto no = atomic_add(exec_cuda, &nPP[0], 1);
                 PP[no] = pair_t{eiInds[1], ejInds[0]};
-                csEE[atomic_add(exec_cuda, &ncsEE[0], 1)] =
-                    pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]};
-                if (record) {
-                  vtemp.template pack<2>("inds_pre", no) =
-                      dpair_t{eiInds[1], ejInds[0]}.reinterpret_bits<T>();
-                  vtemp("dist2_pre", no) = d2;
-                }
               }
             }
             break;
           }
           case 4: {
             if (auto d2 = dist2_pp(v1, v3); d2 < dHat2) {
+              csEE[atomic_add(exec_cuda, &ncsEE[0], 1)] =
+                  pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]};
+#if s_enableMollification
+              if (mollify) {
+                auto no = atomic_add(exec_cuda, &nPPM[0], 1);
+                PPM[no] = pair4_t{eiInds[1], eiInds[0], ejInds[1], ejInds[0]};
+                break;
+              }
+#endif
               {
                 auto no = atomic_add(exec_cuda, &nPP[0], 1);
                 PP[no] = pair_t{eiInds[1], ejInds[1]};
-                csEE[atomic_add(exec_cuda, &ncsEE[0], 1)] =
-                    pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]};
-                if (record) {
-                  vtemp.template pack<2>("inds_pre", no) =
-                      dpair_t{eiInds[1], ejInds[1]}.reinterpret_bits<T>();
-                  vtemp("dist2_pre", no) = d2;
-                }
               }
             }
             break;
           }
           case 5: {
             if (auto d2 = dist2_pe(v1, v2, v3); d2 < dHat2) {
+              csEE[atomic_add(exec_cuda, &ncsEE[0], 1)] =
+                  pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]};
+#if s_enableMollification
+              if (mollify) {
+                auto no = atomic_add(exec_cuda, &nPEM[0], 1);
+                PEM[no] = pair4_t{eiInds[1], eiInds[0], ejInds[0], ejInds[1]};
+                break;
+              }
+#endif
               {
                 auto no = atomic_add(exec_cuda, &nPE[0], 1);
                 PE[no] = pair3_t{eiInds[1], ejInds[0], ejInds[1]};
-                csEE[atomic_add(exec_cuda, &ncsEE[0], 1)] =
-                    pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]};
-                if (record) {
-                  vtemp.template pack<3>("inds_pre", no) =
-                      dpair3_t{eiInds[1], ejInds[0], ejInds[1]}
-                          .reinterpret_bits<T>();
-                  vtemp("dist2_pre", no) = d2;
-                }
               }
             }
             break;
           }
           case 6: {
             if (auto d2 = dist2_pe(v2, v0, v1); d2 < dHat2) {
+              csEE[atomic_add(exec_cuda, &ncsEE[0], 1)] =
+                  pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]};
+#if s_enableMollification
+              if (mollify) {
+                auto no = atomic_add(exec_cuda, &nPEM[0], 1);
+                PEM[no] = pair4_t{ejInds[0], ejInds[1], eiInds[0], eiInds[1]};
+                break;
+              }
+#endif
               {
                 auto no = atomic_add(exec_cuda, &nPE[0], 1);
                 PE[no] = pair3_t{ejInds[0], eiInds[0], eiInds[1]};
-                csEE[atomic_add(exec_cuda, &ncsEE[0], 1)] =
-                    pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]};
-                if (record) {
-                  vtemp.template pack<3>("inds_pre", no) =
-                      dpair3_t{ejInds[0], eiInds[0], eiInds[1]}
-                          .reinterpret_bits<T>();
-                  vtemp("dist2_pre", no) = d2;
-                }
               }
             }
             break;
           }
           case 7: {
             if (auto d2 = dist2_pe(v3, v0, v1); d2 < dHat2) {
+              csEE[atomic_add(exec_cuda, &ncsEE[0], 1)] =
+                  pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]};
+#if s_enableMollification
+              if (mollify) {
+                auto no = atomic_add(exec_cuda, &nPEM[0], 1);
+                PEM[no] = pair4_t{ejInds[1], ejInds[0], eiInds[0], eiInds[1]};
+                break;
+              }
+#endif
               {
                 auto no = atomic_add(exec_cuda, &nPE[0], 1);
                 PE[no] = pair3_t{ejInds[1], eiInds[0], eiInds[1]};
-                csEE[atomic_add(exec_cuda, &ncsEE[0], 1)] =
-                    pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]};
-                if (record) {
-                  vtemp.template pack<3>("inds_pre", no) =
-                      dpair3_t{ejInds[1], eiInds[0], eiInds[1]}
-                          .reinterpret_bits<T>();
-                  vtemp("dist2_pre", no) = d2;
-                }
               }
             }
             break;
           }
           case 8: {
             if (auto d2 = dist2_ee(v0, v1, v2, v3); d2 < dHat2) {
+              csEE[atomic_add(exec_cuda, &ncsEE[0], 1)] =
+                  pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]};
+#if s_enableMollification
+              if (mollify) {
+                auto no = atomic_add(exec_cuda, &nEEM[0], 1);
+                EEM[no] = pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]};
+                break;
+              }
+#endif
               {
                 auto no = atomic_add(exec_cuda, &nEE[0], 1);
                 EE[no] = pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]};
-                csEE[atomic_add(exec_cuda, &ncsEE[0], 1)] =
-                    pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]};
-                if (record) {
-                  vtemp.template pack<4>("inds_pre", no) =
-                      dpair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]}
-                          .reinterpret_bits<T>();
-                  vtemp("dist2_pre", no) = d2;
-                }
               }
             }
             break;
@@ -1103,6 +1105,86 @@ struct CodimStepping : INode {
           }
         });
       });
+    }
+    void precomputeFrictions(zs::CudaExecutionPolicy &pol, T dHat, T xi = 0) {
+      using namespace zs;
+      constexpr auto space = execspace_e::cuda;
+      T activeGap2 = dHat * dHat + (T)2.0 * xi * dHat;
+
+      nFPP = nPP;
+      nFPE = nPE;
+      nFPT = nPT;
+      nFEE = nEE;
+
+      auto numFPP = nFPP.getVal();
+      pol(range(numFPP),
+          [vtemp = proxy<space>({}, vtemp), fricPP = proxy<space>({}, fricPP),
+           PP = proxy<space>(PP), FPP = proxy<space>(FPP), xi2 = xi * xi,
+           activeGap2, kappa = kappa] __device__(int fppi) mutable {
+            auto fpp = PP[fppi];
+            FPP[fppi] = fpp;
+            auto x0 = vtemp.pack<3>("xn", fpp[0]);
+            auto x1 = vtemp.pack<3>("xn", fpp[1]);
+            auto dist2 = dist2_pp(x0, x1);
+            auto bGrad = barrier_gradient(dist2 - xi2, activeGap2, kappa);
+            fricPP("fn", fppi) = -bGrad * 2 * zs::sqrt(dist2);
+            fricPP.tuple<6>("basis", fppi) = point_point_tangent_basis(x0, x1);
+          });
+      auto numFPE = nFPE.getVal();
+      pol(range(numFPE),
+          [vtemp = proxy<space>({}, vtemp), fricPE = proxy<space>({}, fricPE),
+           PE = proxy<space>(PE), FPE = proxy<space>(FPE), xi2 = xi * xi,
+           activeGap2, kappa = kappa] __device__(int fpei) mutable {
+            auto fpe = PE[fpei];
+            FPE[fpei] = fpe;
+            auto p = vtemp.pack<3>("xn", fpe[0]);
+            auto e0 = vtemp.pack<3>("xn", fpe[1]);
+            auto e1 = vtemp.pack<3>("xn", fpe[2]);
+            auto dist2 = dist2_pe(p, e0, e1);
+            auto bGrad = barrier_gradient(dist2 - xi2, activeGap2, kappa);
+            fricPE("fn", fpei) = -bGrad * 2 * zs::sqrt(dist2);
+            fricPE("yita", fpei) = point_edge_closest_point(p, e0, e1);
+            fricPE.tuple<6>("basis", fpei) =
+                point_edge_tangent_basis(p, e0, e1);
+          });
+      auto numFPT = nFPT.getVal();
+      pol(range(numFPT),
+          [vtemp = proxy<space>({}, vtemp), fricPT = proxy<space>({}, fricPT),
+           PT = proxy<space>(PT), FPT = proxy<space>(FPT), xi2 = xi * xi,
+           activeGap2, kappa = kappa] __device__(int fpti) mutable {
+            auto fpt = PT[fpti];
+            FPT[fpti] = fpt;
+            auto p = vtemp.pack<3>("xn", fpt[0]);
+            auto t0 = vtemp.pack<3>("xn", fpt[1]);
+            auto t1 = vtemp.pack<3>("xn", fpt[2]);
+            auto t2 = vtemp.pack<3>("xn", fpt[3]);
+            auto dist2 = dist2_pt(p, t0, t1, t2);
+            auto bGrad = barrier_gradient(dist2 - xi2, activeGap2, kappa);
+            fricPT("fn", fpti) = -bGrad * 2 * zs::sqrt(dist2);
+            fricPT.tuple<2>("beta", fpti) =
+                point_triangle_closest_point(p, t0, t1, t2);
+            fricPT.tuple<6>("basis", fpti) =
+                point_triangle_tangent_basis(p, t0, t1, t2);
+          });
+      auto numFEE = nFEE.getVal();
+      pol(range(numFEE),
+          [vtemp = proxy<space>({}, vtemp), fricEE = proxy<space>({}, fricEE),
+           EE = proxy<space>(EE), FEE = proxy<space>(FEE), xi2 = xi * xi,
+           activeGap2, kappa = kappa] __device__(int feei) mutable {
+            auto fee = EE[feei];
+            FEE[feei] = fee;
+            auto ea0 = vtemp.pack<3>("xn", fee[0]);
+            auto ea1 = vtemp.pack<3>("xn", fee[1]);
+            auto eb0 = vtemp.pack<3>("xn", fee[2]);
+            auto eb1 = vtemp.pack<3>("xn", fee[3]);
+            auto dist2 = dist2_ee(ea0, ea1, eb0, eb1);
+            auto bGrad = barrier_gradient(dist2 - xi2, activeGap2, kappa);
+            fricEE("fn", feei) = -bGrad * 2 * zs::sqrt(dist2);
+            fricEE.tuple<2>("gamma", feei) =
+                edge_edge_closest_point(ea0, ea1, eb0, eb1);
+            fricEE.tuple<6>("basis", feei) =
+                edge_edge_tangent_basis(ea0, ea1, eb0, eb1);
+          });
     }
     bool checkSelfIntersection(zs::CudaExecutionPolicy &pol) {
       using namespace zs;
@@ -1115,7 +1197,7 @@ struct CodimStepping : INode {
         auto edgeBvs = retrieve_bounding_volumes(pol, vtemp, "xn", seInds,
                                                  zs::wrapv<2>{}, 0);
         bvh_t seBvh;
-        seBvh.build(pol, edgeBvs);
+        seBvh.refit(pol, edgeBvs);
         pol(Collapse{stInds.size()},
             [stInds = proxy<space>({}, stInds),
              seInds = proxy<space>({}, seInds), vtemp = proxy<space>({}, vtemp),
@@ -1156,7 +1238,7 @@ struct CodimStepping : INode {
         auto edgeBvs = retrieve_bounding_volumes(pol, vtemp, "xn", coEdges,
                                                  zs::wrapv<2>{}, coOffset);
         bvh_t seBvh;
-        seBvh.build(pol, edgeBvs);
+        seBvh.refit(pol, edgeBvs);
         pol(Collapse{stInds.size()},
             [stInds = proxy<space>({}, stInds),
              coEdges = proxy<space>({}, coEdges),
@@ -1301,6 +1383,9 @@ struct CodimStepping : INode {
     void computeBarrierGradientAndHessian(zs::CudaExecutionPolicy &pol,
                                           const zs::SmallString &gTag = "grad",
                                           bool includeHessian = true);
+    void computeFrictionBarrierGradientAndHessian(
+        zs::CudaExecutionPolicy &pol, const zs::SmallString &gTag = "grad",
+        bool includeHessian = true);
 
     void intersectionFreeStepsize(zs::CudaExecutionPolicy &pol, T xi,
                                   T &stepSize) {
@@ -1834,8 +1919,7 @@ struct CodimStepping : INode {
           es.resize(count_warps(numPP));
           es.reset(0);
           pol(range(numPP),
-              [vtemp = proxy<space>({}, vtemp),
-               tempPP = proxy<space>({}, tempPP), PP = proxy<space>(PP),
+              [vtemp = proxy<space>({}, vtemp), PP = proxy<space>(PP),
                es = proxy<space>(es), xi2 = xi * xi, dHat = dHat, activeGap2,
                n = numPP] __device__(int ppi) mutable {
                 auto pp = PP[ppi];
@@ -1859,8 +1943,7 @@ struct CodimStepping : INode {
           es.resize(count_warps(numPE));
           es.reset(0);
           pol(range(numPE),
-              [vtemp = proxy<space>({}, vtemp),
-               tempPE = proxy<space>({}, tempPE), PE = proxy<space>(PE),
+              [vtemp = proxy<space>({}, vtemp), PE = proxy<space>(PE),
                es = proxy<space>(es), xi2 = xi * xi, dHat = dHat, activeGap2,
                n = numPE] __device__(int pei) mutable {
                 auto pe = PE[pei];
@@ -1886,8 +1969,7 @@ struct CodimStepping : INode {
           es.resize(count_warps(numPT));
           es.reset(0);
           pol(range(numPT),
-              [vtemp = proxy<space>({}, vtemp),
-               tempPT = proxy<space>({}, tempPT), PT = proxy<space>(PT),
+              [vtemp = proxy<space>({}, vtemp), PT = proxy<space>(PT),
                es = proxy<space>(es), xi2 = xi * xi, dHat = dHat, activeGap2,
                n = numPT] __device__(int pti) mutable {
                 auto pt = PT[pti];
@@ -1914,8 +1996,7 @@ struct CodimStepping : INode {
           es.resize(count_warps(numEE));
           es.reset(0);
           pol(range(numEE),
-              [vtemp = proxy<space>({}, vtemp),
-               tempEE = proxy<space>({}, tempEE), EE = proxy<space>(EE),
+              [vtemp = proxy<space>({}, vtemp), EE = proxy<space>(EE),
                es = proxy<space>(es), xi2 = xi * xi, dHat = dHat, activeGap2,
                n = numEE] __device__(int eei) mutable {
                 auto ee = EE[eei];
@@ -1937,6 +2018,223 @@ struct CodimStepping : INode {
                 reduce_to(eei, n, E, es[eei / 32]);
               });
           Es.push_back(reduce(pol, es) * kappa);
+
+#if s_enableMollification
+          auto numEEM = nEEM.getVal();
+          es.resize(count_warps(numEEM));
+          es.reset(0);
+          pol(range(numEEM),
+              [vtemp = proxy<space>({}, vtemp), EEM = proxy<space>(EEM),
+               es = proxy<space>(es), xi2 = xi * xi, dHat = dHat, activeGap2,
+               n = numEEM] __device__(int eemi) mutable {
+                auto eem = EEM[eemi];
+                auto ea0 = vtemp.pack<3>("xn", eem[0]);
+                auto ea1 = vtemp.pack<3>("xn", eem[1]);
+                auto eb0 = vtemp.pack<3>("xn", eem[2]);
+                auto eb1 = vtemp.pack<3>("xn", eem[3]);
+
+                auto v0 = ea1 - ea0;
+                auto v1 = eb1 - eb0;
+                auto c = v0.cross(v1).norm();
+                auto I1 = c * c;
+                T E = 0;
+                if (I1 != 0) {
+                  auto dist2 = dist2_ee(ea0, ea1, eb0, eb1);
+                  if (dist2 < xi2)
+                    printf("dist already smaller than xi!\n");
+                  auto I2 = dist2 / activeGap2;
+
+                  auto rv0 = vtemp.pack<3>("x0", eem[0]);
+                  auto rv1 = vtemp.pack<3>("x0", eem[1]);
+                  auto rv2 = vtemp.pack<3>("x0", eem[2]);
+                  auto rv3 = vtemp.pack<3>("x0", eem[3]);
+                  T epsX = mollifier_threshold_ee(rv0, rv1, rv2, rv3);
+                  E = (2 - I1 / epsX) * (I1 / epsX) *
+                      -zs::sqr(activeGap2 - activeGap2 * I2) * zs::log(I2);
+                }
+                reduce_to(eemi, n, E, es[eemi / 32]);
+              });
+          Es.push_back(reduce(pol, es) * kappa);
+
+          auto numPPM = nPPM.getVal();
+          es.resize(count_warps(numPPM));
+          es.reset(0);
+          pol(range(numPPM), [vtemp = proxy<space>({}, vtemp),
+                              PPM = proxy<space>(PPM), es = proxy<space>(es),
+                              xi2 = xi * xi, dHat = dHat, activeGap2,
+                              n = numPPM] __device__(int ppmi) mutable {
+            auto ppm = PPM[ppmi];
+
+            auto v0 = vtemp.pack<3>("xn", ppm[1]) - vtemp.pack<3>("xn", ppm[0]);
+            auto v1 = vtemp.pack<3>("xn", ppm[3]) - vtemp.pack<3>("xn", ppm[2]);
+            auto c = v0.cross(v1).norm();
+            auto I1 = c * c;
+            T E = 0;
+            if (I1 != 0) {
+              auto dist2 = dist2_pp(vtemp.pack<3>("xn", ppm[0]),
+                                    vtemp.pack<3>("xn", ppm[2]));
+              if (dist2 < xi2)
+                printf("dist already smaller than xi!\n");
+              auto I2 = dist2 / activeGap2;
+
+              auto rv0 = vtemp.pack<3>("x0", ppm[0]);
+              auto rv1 = vtemp.pack<3>("x0", ppm[1]);
+              auto rv2 = vtemp.pack<3>("x0", ppm[2]);
+              auto rv3 = vtemp.pack<3>("x0", ppm[3]);
+              T epsX = mollifier_threshold_ee(rv0, rv1, rv2, rv3);
+              E = (2 - I1 / epsX) * (I1 / epsX) *
+                  -zs::sqr(activeGap2 - activeGap2 * I2) * zs::log(I2);
+            }
+            reduce_to(ppmi, n, E, es[ppmi / 32]);
+          });
+          Es.push_back(reduce(pol, es) * kappa);
+
+          auto numPEM = nPEM.getVal();
+          es.resize(count_warps(numPEM));
+          es.reset(0);
+          pol(range(numPEM),
+              [vtemp = proxy<space>({}, vtemp), PEM = proxy<space>(PEM),
+               es = proxy<space>(es), xi2 = xi * xi, dHat = dHat, activeGap2,
+               n = numPEM] __device__(int pemi) mutable {
+                auto pem = PEM[pemi];
+
+                auto p = vtemp.pack<3>("xn", pem[0]);
+                auto e0 = vtemp.pack<3>("xn", pem[2]);
+                auto e1 = vtemp.pack<3>("xn", pem[3]);
+                auto v0 = vtemp.pack<3>("xn", pem[1]) - p;
+                auto v1 = e1 - e0;
+                auto c = v0.cross(v1).norm();
+                auto I1 = c * c;
+                T E = 0;
+                if (I1 != 0) {
+                  auto dist2 = dist2_pe(p, e0, e1);
+                  if (dist2 < xi2)
+                    printf("dist already smaller than xi!\n");
+                  auto I2 = dist2 / activeGap2;
+
+                  auto rv0 = vtemp.pack<3>("x0", pem[0]);
+                  auto rv1 = vtemp.pack<3>("x0", pem[1]);
+                  auto rv2 = vtemp.pack<3>("x0", pem[2]);
+                  auto rv3 = vtemp.pack<3>("x0", pem[3]);
+                  T epsX = mollifier_threshold_ee(rv0, rv1, rv2, rv3);
+                  E = (2 - I1 / epsX) * (I1 / epsX) *
+                      -zs::sqr(activeGap2 - activeGap2 * I2) * zs::log(I2);
+                }
+                reduce_to(pemi, n, E, es[pemi / 32]);
+              });
+          Es.push_back(reduce(pol, es) * kappa);
+#endif // mollification
+
+#if s_enableFriction
+          if (fricMu != 0) {
+            auto numFPP = nFPP.getVal();
+            es.resize(count_warps(numFPP));
+            es.reset(0);
+            pol(range(numFPP), [vtemp = proxy<space>({}, vtemp),
+                                fricPP = proxy<space>({}, fricPP),
+                                FPP = proxy<space>(FPP), es = proxy<space>(es),
+                                epsvh = epsv * dt,
+                                n = numFPP] __device__(int fppi) mutable {
+              auto fpp = FPP[fppi];
+              auto p0 =
+                  vtemp.pack<3>("xn", fpp[0]) - vtemp.pack<3>("xhat", fpp[0]);
+              auto p1 =
+                  vtemp.pack<3>("xn", fpp[1]) - vtemp.pack<3>("xhat", fpp[1]);
+              auto basis = fricPP.pack<3, 2>("basis", fppi);
+              auto fn = fricPP("fn", fppi);
+              auto relDX3D = point_point_rel_dx(p0, p1);
+              auto relDX = basis.transpose() * relDX3D;
+              auto relDXNorm2 = relDX.l2NormSqr();
+              auto E = f0_SF(relDXNorm2, epsvh) * fn;
+              reduce_to(fppi, n, E, es[fppi / 32]);
+            });
+            Es.push_back(reduce(pol, es) * fricMu);
+
+            auto numFPE = nFPE.getVal();
+            es.resize(count_warps(numFPE));
+            es.reset(0);
+            pol(range(numFPE), [vtemp = proxy<space>({}, vtemp),
+                                fricPE = proxy<space>({}, fricPE),
+                                FPE = proxy<space>(FPE), es = proxy<space>(es),
+                                epsvh = epsv * dt,
+                                n = numFPE] __device__(int fpei) mutable {
+              auto fpe = FPE[fpei];
+              auto p =
+                  vtemp.pack<3>("xn", fpe[0]) - vtemp.pack<3>("xhat", fpe[0]);
+              auto e0 =
+                  vtemp.pack<3>("xn", fpe[1]) - vtemp.pack<3>("xhat", fpe[1]);
+              auto e1 =
+                  vtemp.pack<3>("xn", fpe[2]) - vtemp.pack<3>("xhat", fpe[2]);
+              auto basis = fricPE.pack<3, 2>("basis", fpei);
+              auto fn = fricPE("fn", fpei);
+              auto yita = fricPE("yita", fpei);
+              auto relDX3D = point_edge_rel_dx(p, e0, e1, yita);
+              auto relDX = basis.transpose() * relDX3D;
+              auto relDXNorm2 = relDX.l2NormSqr();
+              auto E = f0_SF(relDXNorm2, epsvh) * fn;
+              reduce_to(fpei, n, E, es[fpei / 32]);
+            });
+            Es.push_back(reduce(pol, es) * fricMu);
+
+            auto numFPT = nFPT.getVal();
+            es.resize(count_warps(numFPT));
+            es.reset(0);
+            pol(range(numFPT), [vtemp = proxy<space>({}, vtemp),
+                                fricPT = proxy<space>({}, fricPT),
+                                FPT = proxy<space>(FPT), es = proxy<space>(es),
+                                epsvh = epsv * dt,
+                                n = numFPT] __device__(int fpti) mutable {
+              auto fpt = FPT[fpti];
+              auto p =
+                  vtemp.pack<3>("xn", fpt[0]) - vtemp.pack<3>("xhat", fpt[0]);
+              auto v0 =
+                  vtemp.pack<3>("xn", fpt[1]) - vtemp.pack<3>("xhat", fpt[1]);
+              auto v1 =
+                  vtemp.pack<3>("xn", fpt[2]) - vtemp.pack<3>("xhat", fpt[2]);
+              auto v2 =
+                  vtemp.pack<3>("xn", fpt[3]) - vtemp.pack<3>("xhat", fpt[3]);
+              auto basis = fricPT.pack<3, 2>("basis", fpti);
+              auto fn = fricPT("fn", fpti);
+              auto betas = fricPT.pack<2>("beta", fpti);
+              auto relDX3D =
+                  point_triangle_rel_dx(p, v0, v1, v2, betas[0], betas[1]);
+              auto relDX = basis.transpose() * relDX3D;
+              auto relDXNorm2 = relDX.l2NormSqr();
+              auto E = f0_SF(relDXNorm2, epsvh) * fn;
+              reduce_to(fpti, n, E, es[fpti / 32]);
+            });
+            Es.push_back(reduce(pol, es) * fricMu);
+
+            auto numFEE = nFEE.getVal();
+            es.resize(count_warps(numFEE));
+            es.reset(0);
+            pol(range(numFEE), [vtemp = proxy<space>({}, vtemp),
+                                fricEE = proxy<space>({}, fricEE),
+                                FEE = proxy<space>(FEE), es = proxy<space>(es),
+                                epsvh = epsv * dt,
+                                n = numFEE] __device__(int feei) mutable {
+              auto fee = FEE[feei];
+              auto e0 =
+                  vtemp.pack<3>("xn", fee[0]) - vtemp.pack<3>("xhat", fee[0]);
+              auto e1 =
+                  vtemp.pack<3>("xn", fee[1]) - vtemp.pack<3>("xhat", fee[1]);
+              auto e2 =
+                  vtemp.pack<3>("xn", fee[2]) - vtemp.pack<3>("xhat", fee[2]);
+              auto e3 =
+                  vtemp.pack<3>("xn", fee[3]) - vtemp.pack<3>("xhat", fee[3]);
+              auto basis = fricEE.pack<3, 2>("basis", feei);
+              auto fn = fricEE("fn", feei);
+              auto gammas = fricEE.pack<2>("gamma", feei);
+              auto relDX3D =
+                  edge_edge_rel_dx(e0, e1, e2, e3, gammas[0], gammas[1]);
+              auto relDX = basis.transpose() * relDX3D;
+              auto relDXNorm2 = relDX.l2NormSqr();
+              auto E = f0_SF(relDXNorm2, epsvh) * fn;
+              reduce_to(feei, n, E, es[feei / 32]);
+            });
+            Es.push_back(reduce(pol, es) * fricMu);
+          }
+#endif // fric
         }
 #endif
         if (s_enableGround) {
@@ -2902,37 +3200,39 @@ struct CodimStepping : INode {
               }
           });
 #elif 1
-          auto numRows = numPE * 9;
-          auto numWarps = (numRows + 3) / 4; // 8 threads per row
-          pol(Collapse{numWarps * 32},
-              [execTag, tempPE = proxy<space>({}, tempPE),
-               vtemp = proxy<space>({}, vtemp), dxTag, bTag,
-               PE = proxy<space>(PE), numRows] ZS_LAMBDA(int tid) mutable {
-                int growid = tid / 8;
-                int rowid = growid % 9;
-                int pei = growid / 9;
-                int colid = tid % 8;
-                ;
-                auto pe = PE[pei];
-                T entryG = 0;
-                if (growid < numRows) {
-                  entryG = tempPE("H", rowid * 9 + colid, pei) *
-                           vtemp(dxTag, colid % 3, pe[colid / 3]);
-                  if (colid == 0) {
-                    auto cid = colid + 8;
-                    entryG += tempPE("H", rowid * 9 + cid, pei) *
-                              vtemp(dxTag, cid % 3, pe[cid / 3]);
+          {
+            auto numRows = numPE * 9;
+            auto numWarps = (numRows + 3) / 4; // 8 threads per row
+            pol(Collapse{numWarps * 32},
+                [execTag, tempPE = proxy<space>({}, tempPE),
+                 vtemp = proxy<space>({}, vtemp), dxTag, bTag,
+                 PE = proxy<space>(PE), numRows] ZS_LAMBDA(int tid) mutable {
+                  int growid = tid / 8;
+                  int rowid = growid % 9;
+                  int pei = growid / 9;
+                  int colid = tid % 8;
+                  ;
+                  auto pe = PE[pei];
+                  T entryG = 0;
+                  if (growid < numRows) {
+                    entryG = tempPE("H", rowid * 9 + colid, pei) *
+                             vtemp(dxTag, colid % 3, pe[colid / 3]);
+                    if (colid == 0) {
+                      auto cid = colid + 8;
+                      entryG += tempPE("H", rowid * 9 + cid, pei) *
+                                vtemp(dxTag, cid % 3, pe[cid / 3]);
+                    }
                   }
-                }
-                for (int iter = 1; iter <= 4; iter <<= 1) {
-                  T tmp = __shfl_down_sync(0xFFFFFFFF, entryG, iter);
-                  if (colid + iter < 8 && growid < numRows)
-                    entryG += tmp;
-                }
-                if (colid == 0 && growid < numRows)
-                  atomic_add(execTag, &vtemp(bTag, rowid % 3, pe[rowid / 3]),
-                             entryG);
-              });
+                  for (int iter = 1; iter <= 4; iter <<= 1) {
+                    T tmp = __shfl_down_sync(0xFFFFFFFF, entryG, iter);
+                    if (colid + iter < 8 && growid < numRows)
+                      entryG += tmp;
+                  }
+                  if (colid == 0 && growid < numRows)
+                    atomic_add(execTag, &vtemp(bTag, rowid % 3, pe[rowid / 3]),
+                               entryG);
+                });
+          }
 #else
           pol(range(numPE * 81), [execTag, tempPE = proxy<space>({}, tempPE),
                                   vtemp = proxy<space>({}, vtemp), dxTag, bTag,
@@ -3188,6 +3488,240 @@ struct CodimStepping : INode {
           });
 #endif
         }
+#if s_enableMollification
+        auto numEEM = nEEM.getVal();
+        pol(Collapse{numEEM, 32 * 3},
+            [execTag, tempEEM = proxy<space>({}, tempEEM),
+             vtemp = proxy<space>({}, vtemp), dxTag, bTag,
+             EEM = proxy<space>(EEM)] ZS_LAMBDA(int eemi, int tid) mutable {
+              int rowid = tid / 8;
+              int colid = tid % 8;
+
+              auto eem = EEM[eemi];
+              T entryH = 0, entryDx = 0, entryG = 0;
+              {
+                entryH = tempEEM("H", rowid * 12 + colid, eemi);
+                entryDx = vtemp(dxTag, colid % 3, eem[colid / 3]);
+                entryG = entryH * entryDx;
+                if (colid < 4) {
+                  auto cid = colid + 8;
+                  entryG += tempEEM("H", rowid * 12 + cid, eemi) *
+                            vtemp(dxTag, cid % 3, eem[cid / 3]);
+                }
+              }
+              for (int iter = 1; iter <= 4; iter <<= 1) {
+                T tmp = __shfl_down_sync(0xFFFFFFFF, entryG, iter);
+                if (colid + iter < 8)
+                  entryG += tmp;
+              }
+              if (colid == 0)
+                atomic_add(execTag, &vtemp(bTag, rowid % 3, eem[rowid / 3]),
+                           entryG);
+            });
+
+        auto numPPM = nPPM.getVal();
+        pol(Collapse{numPPM, 32 * 3},
+            [execTag, tempPPM = proxy<space>({}, tempPPM),
+             vtemp = proxy<space>({}, vtemp), dxTag, bTag,
+             PPM = proxy<space>(PPM)] ZS_LAMBDA(int ppmi, int tid) mutable {
+              int rowid = tid / 8;
+              int colid = tid % 8;
+
+              auto ppm = PPM[ppmi];
+              T entryH = 0, entryDx = 0, entryG = 0;
+              {
+                entryH = tempPPM("H", rowid * 12 + colid, ppmi);
+                entryDx = vtemp(dxTag, colid % 3, ppm[colid / 3]);
+                entryG = entryH * entryDx;
+                if (colid < 4) {
+                  auto cid = colid + 8;
+                  entryG += tempPPM("H", rowid * 12 + cid, ppmi) *
+                            vtemp(dxTag, cid % 3, ppm[cid / 3]);
+                }
+              }
+              for (int iter = 1; iter <= 4; iter <<= 1) {
+                T tmp = __shfl_down_sync(0xFFFFFFFF, entryG, iter);
+                if (colid + iter < 8)
+                  entryG += tmp;
+              }
+              if (colid == 0)
+                atomic_add(execTag, &vtemp(bTag, rowid % 3, ppm[rowid / 3]),
+                           entryG);
+            });
+
+        auto numPEM = nPEM.getVal();
+        pol(Collapse{numPEM, 32 * 3},
+            [execTag, tempPEM = proxy<space>({}, tempPEM),
+             vtemp = proxy<space>({}, vtemp), dxTag, bTag,
+             PEM = proxy<space>(PEM)] ZS_LAMBDA(int pemi, int tid) mutable {
+              int rowid = tid / 8;
+              int colid = tid % 8;
+
+              auto pem = PEM[pemi];
+              T entryH = 0, entryDx = 0, entryG = 0;
+              {
+                entryH = tempPEM("H", rowid * 12 + colid, pemi);
+                entryDx = vtemp(dxTag, colid % 3, pem[colid / 3]);
+                entryG = entryH * entryDx;
+                if (colid < 4) {
+                  auto cid = colid + 8;
+                  entryG += tempPEM("H", rowid * 12 + cid, pemi) *
+                            vtemp(dxTag, cid % 3, pem[cid / 3]);
+                }
+              }
+              for (int iter = 1; iter <= 4; iter <<= 1) {
+                T tmp = __shfl_down_sync(0xFFFFFFFF, entryG, iter);
+                if (colid + iter < 8)
+                  entryG += tmp;
+              }
+              if (colid == 0)
+                atomic_add(execTag, &vtemp(bTag, rowid % 3, pem[rowid / 3]),
+                           entryG);
+            });
+#endif // end mollification
+
+#if s_enableFriction
+        if (fricMu != 0) {
+          auto numFPP = nFPP.getVal();
+          pol(Collapse{numFPP, 32},
+              [execTag, fricPP = proxy<space>({}, fricPP),
+               vtemp = proxy<space>({}, vtemp), dxTag, bTag,
+               FPP = proxy<space>(FPP)] ZS_LAMBDA(int fppi, int tid) mutable {
+                int rowid = tid / 5;
+                int colid = tid % 5;
+                ;
+                auto fpp = FPP[fppi];
+                T entryH = 0, entryDx = 0, entryG = 0;
+                if (tid < 30) {
+                  entryH = fricPP("H", rowid * 6 + colid, fppi);
+                  entryDx = vtemp(dxTag, colid % 3, fpp[colid / 3]);
+                  entryG = entryH * entryDx;
+                  if (colid == 0) {
+                    entryG += fricPP("H", rowid * 6 + 5, fppi) *
+                              vtemp(dxTag, 2, fpp[1]);
+                  }
+                }
+                for (int iter = 1; iter <= 4; iter <<= 1) {
+                  T tmp = __shfl_down_sync(0xFFFFFFFF, entryG, iter);
+                  if (colid + iter < 5 && tid < 30)
+                    entryG += tmp;
+                }
+                if (colid == 0 && rowid < 6)
+                  atomic_add(execTag, &vtemp(bTag, rowid % 3, fpp[rowid / 3]),
+                             entryG);
+              });
+
+          auto numFPE = nFPE.getVal();
+          pol(range(numFPE * 81), [execTag, fricPE = proxy<space>({}, fricPE),
+                                   vtemp = proxy<space>({}, vtemp), dxTag, bTag,
+                                   FPE = proxy<space>(FPE),
+                                   n = numFPE * 81] ZS_LAMBDA(int idx) mutable {
+            constexpr int dim = 3;
+            __shared__ int offset;
+            // directly use PCG_Solve_AX9_b2 from kemeng huang
+            int Hid = idx / 81;
+            int entryId = idx % 81;
+            int MRid = entryId / 9;
+            int MCid = entryId % 9;
+            int vId = MCid / dim;
+            int axisId = MCid % dim;
+            int GRtid = idx % 9;
+
+            auto inds = FPE[Hid];
+            T rdata =
+                fricPE("H", entryId, Hid) * vtemp(dxTag, axisId, inds[vId]);
+
+            if (threadIdx.x == 0)
+              offset = 9 - GRtid;
+            __syncthreads();
+
+            int BRid = (threadIdx.x - offset + 9) / 9;
+            int landidx = (threadIdx.x - offset) % 9;
+            if (BRid == 0) {
+              landidx = threadIdx.x;
+            }
+
+            auto [mask, numValid] = warp_mask(idx, n);
+            int laneId = threadIdx.x & 0x1f;
+            bool bBoundary = (landidx == 0) || (laneId == 0);
+
+            unsigned int mark = __ballot_sync(mask, bBoundary); // a bit-mask
+            mark = __brev(mark);
+            unsigned int interval =
+                zs::math::min(__clz(mark << (laneId + 1)), 31 - laneId);
+
+            for (int iter = 1; iter < 9; iter <<= 1) {
+              T tmp = __shfl_down_sync(mask, rdata, iter);
+              if (interval >= iter && laneId + iter < numValid)
+                rdata += tmp;
+            }
+
+            if (bBoundary)
+              atomic_add(exec_cuda, &vtemp(bTag, MRid % 3, inds[MRid / 3]),
+                         rdata);
+          });
+
+          auto numFPT = nFPT.getVal();
+          pol(Collapse{numFPT, 32 * 3},
+              [execTag, fricPT = proxy<space>({}, fricPT),
+               vtemp = proxy<space>({}, vtemp), dxTag, bTag,
+               FPT = proxy<space>(FPT)] ZS_LAMBDA(int fpti, int tid) mutable {
+                int rowid = tid / 8;
+                int colid = tid % 8;
+                ;
+                auto fpt = FPT[fpti];
+                T entryH = 0, entryDx = 0, entryG = 0;
+                {
+                  entryH = fricPT("H", rowid * 12 + colid, fpti);
+                  entryDx = vtemp(dxTag, colid % 3, fpt[colid / 3]);
+                  entryG = entryH * entryDx;
+                  if (colid < 4) {
+                    auto cid = colid + 8;
+                    entryG += fricPT("H", rowid * 12 + cid, fpti) *
+                              vtemp(dxTag, cid % 3, fpt[cid / 3]);
+                  }
+                }
+                for (int iter = 1; iter <= 4; iter <<= 1) {
+                  T tmp = __shfl_down_sync(0xFFFFFFFF, entryG, iter);
+                  if (colid + iter < 8)
+                    entryG += tmp;
+                }
+                if (colid == 0)
+                  atomic_add(execTag, &vtemp(bTag, rowid % 3, fpt[rowid / 3]),
+                             entryG);
+              });
+
+          auto numFEE = nFEE.getVal();
+          pol(Collapse{numFEE, 32 * 3},
+              [execTag, fricEE = proxy<space>({}, fricEE),
+               vtemp = proxy<space>({}, vtemp), dxTag, bTag,
+               FEE = proxy<space>(FEE)] ZS_LAMBDA(int feei, int tid) mutable {
+                int rowid = tid / 8;
+                int colid = tid % 8;
+                ;
+                auto fee = FEE[feei];
+                T entryH = 0, entryDx = 0, entryG = 0;
+                {
+                  entryH = fricEE("H", rowid * 12 + colid, feei);
+                  entryDx = vtemp(dxTag, colid % 3, fee[colid / 3]);
+                  entryG = entryH * entryDx;
+                  if (colid < 4) {
+                    auto cid = colid + 8;
+                    entryG += fricEE("H", rowid * 12 + cid, feei) *
+                              vtemp(dxTag, cid % 3, fee[cid / 3]);
+                  }
+                }
+                for (int iter = 1; iter <= 4; iter <<= 1) {
+                  T tmp = __shfl_down_sync(0xFFFFFFFF, entryG, iter);
+                  if (colid + iter < 8)
+                    entryG += tmp;
+                }
+                if (colid == 0)
+                  atomic_add(execTag, &vtemp(bTag, rowid % 3, fee[rowid / 3]),
+                             entryG);
+              });
+        }
+#endif // end fric
 #endif
         if (s_enableGround) {
           // boundary
@@ -3264,14 +3798,15 @@ struct CodimStepping : INode {
         int iter = 0;
 
         //
-        auto [npp, npe, npt, nee, ncspt, ncsee] = getCnts();
+        auto [npp, npe, npt, nee, nppm, npem, neem, ncspt, ncsee] = getCnts();
 
         for (; iter != CGCap; ++iter) {
           if (iter % 25 == 0)
             fmt::print("cg iter: {}, norm2: {} (zTrk: {}) npp: {}, npe: {}, "
-                       "npt: {}, nee: {}, ncspt: {}, ncsee: {}\n",
+                       "npt: {}, nee: {}, nppm: {}, npem: {}, neem: {}, ncspt: "
+                       "{}, ncsee: {}\n",
                        iter, residualPreconditionedNorm2, zTrk, npp, npe, npt,
-                       nee, ncspt, ncsee);
+                       nee, nppm, npem, neem, ncspt, ncsee);
 
           if (residualPreconditionedNorm2 <= localTol2)
             break;
@@ -3414,6 +3949,7 @@ struct CodimStepping : INode {
               vtemp.tuple<3>("xtilde", voffset + i) = x + v * dt;
               vtemp.tuple<3>("lambda", voffset + i) = vec3::zeros();
               vtemp.tuple<3>("xn", voffset + i) = x;
+              vtemp.tuple<3>("xhat", voffset + i) = x;
               if (BCorder > 0) {
                 // recover original BCtarget
                 BCtarget = BCbasis * BCtarget;
@@ -3500,6 +4036,7 @@ struct CodimStepping : INode {
               vtemp.tuple<3>("xn", coOffset + i) = x;
               vtemp.tuple<3>("vn", coOffset + i) = (newX - x) / dt;
               vtemp.tuple<3>("xt", coOffset + i) = x;
+              vtemp.tuple<3>("xhat", coOffset + i) = x;
               vtemp.tuple<3>("x0", coOffset + i) = coverts.pack<3>("x0", i);
             });
     }
@@ -3523,6 +4060,7 @@ struct CodimStepping : INode {
             };
             auto xt = vtemp.template pack<3>("xt", vi);
             auto xn = vtemp.template pack<3>("xn", vi);
+            vtemp.template tuple<3>("xhat", vi) = xn;
             auto deltaX = vtemp.template pack<3>("vn", vi) * dt;
             if (BCorder > 0)
               projVec(deltaX);
@@ -3546,6 +4084,7 @@ struct CodimStepping : INode {
                                curRatio = curRatio] __device__(int i) mutable {
           auto xt = vtemp.template pack<3>("xt", coOffset + i);
           auto xn = vtemp.template pack<3>("xn", coOffset + i);
+          vtemp.template tuple<3>("xhat", coOffset + i) = xn;
           vec3 newX{};
           if (coverts.hasProperty("BCtarget"))
             newX = coverts.pack<3>("BCtarget", i);
@@ -3615,7 +4154,43 @@ struct CodimStepping : INode {
           EE{estNumCps, zs::memsrc_e::um, 0},
           nEE{zsprims[0]->getParticles<true>().get_allocator(), 1},
           tempEE{{{"H", 144}}, estNumCps, zs::memsrc_e::um, 0},
-          temp{5000000, zs::memsrc_e::um,
+          // mollify
+          PPM{estNumCps, zs::memsrc_e::um, 0},
+          nPPM{zsprims[0]->getParticles<true>().get_allocator(), 1},
+          tempPPM{{{"H", 144}}, estNumCps, zs::memsrc_e::um, 0},
+          PEM{estNumCps, zs::memsrc_e::um, 0},
+          nPEM{zsprims[0]->getParticles<true>().get_allocator(), 1},
+          tempPEM{{{"H", 144}}, estNumCps, zs::memsrc_e::um, 0},
+          EEM{estNumCps, zs::memsrc_e::um, 0},
+          nEEM{zsprims[0]->getParticles<true>().get_allocator(), 1},
+          tempEEM{{{"H", 144}}, estNumCps, zs::memsrc_e::um, 0},
+          // friction
+          FPP{estNumCps, zs::memsrc_e::um, 0},
+          nFPP{zsprims[0]->getParticles<true>().get_allocator(), 1},
+          fricPP{{{"H", 36}, {"basis", 6}, {"fn", 1}},
+                 estNumCps,
+                 zs::memsrc_e::um,
+                 0},
+          FPE{estNumCps, zs::memsrc_e::um, 0},
+          nFPE{zsprims[0]->getParticles<true>().get_allocator(), 1},
+          fricPE{{{"H", 81}, {"basis", 6}, {"fn", 1}, {"yita", 1}},
+                 estNumCps,
+                 zs::memsrc_e::um,
+                 0},
+          FPT{estNumCps, zs::memsrc_e::um, 0},
+          nFPT{zsprims[0]->getParticles<true>().get_allocator(), 1},
+          fricPT{{{"H", 144}, {"basis", 6}, {"fn", 1}, {"beta", 2}},
+                 estNumCps,
+                 zs::memsrc_e::um,
+                 0},
+          FEE{estNumCps, zs::memsrc_e::um, 0},
+          nFEE{zsprims[0]->getParticles<true>().get_allocator(), 1},
+          fricEE{{{"H", 144}, {"basis", 6}, {"fn", 1}, {"gamma", 2}},
+                 estNumCps,
+                 zs::memsrc_e::um,
+                 0},
+          //
+          temp{estNumCps, zs::memsrc_e::um,
                zsprims[0]->getParticles<true>().devid()},
           csPT{estNumCps, zs::memsrc_e::um, 0}, csEE{estNumCps,
                                                      zs::memsrc_e::um, 0},
@@ -3651,9 +4226,10 @@ struct CodimStepping : INode {
            {"xn", 3},
            {"vn", 3},
            {"x0", 3}, // initial positions
-           {"xt", 3}, // initial positions at the current timestep
+           {"xt", 3}, // for constraint + ext force ref
            {"xn0", 3},
            {"xtilde", 3},
+           {"xhat", 3}, // initial positions at the current substep
            {"temp", 3},
            {"r", 3},
            {"p", 3},
@@ -3721,6 +4297,30 @@ struct CodimStepping : INode {
     zs::Vector<pair4_t> EE;
     zs::Vector<int> nEE;
     dtiles_t tempEE;
+    // mollifier
+    zs::Vector<pair4_t> PPM;
+    zs::Vector<int> nPPM;
+    dtiles_t tempPPM;
+    zs::Vector<pair4_t> PEM;
+    zs::Vector<int> nPEM;
+    dtiles_t tempPEM;
+    zs::Vector<pair4_t> EEM;
+    zs::Vector<int> nEEM;
+    dtiles_t tempEEM;
+    // friction
+    zs::Vector<pair_t> FPP;
+    zs::Vector<int> nFPP;
+    dtiles_t fricPP;
+    zs::Vector<pair3_t> FPE;
+    zs::Vector<int> nFPE;
+    dtiles_t fricPE;
+    zs::Vector<pair4_t> FPT;
+    zs::Vector<int> nFPT;
+    dtiles_t fricPT;
+    zs::Vector<pair4_t> FEE;
+    zs::Vector<int> nFEE;
+    dtiles_t fricEE;
+    //
 
     zs::Vector<T> temp;
 
@@ -3739,11 +4339,14 @@ struct CodimStepping : INode {
     // end contacts
     const ZenoConstitutiveModel &models;
     // auxiliary data (spatial acceleration)
+    using bvs_t = zs::LBvs<3, int, T>;
     bvh_t stBvh, seBvh; // for simulated objects
+    bvs_t stBvs, seBvs; // STQ
     tiles_t stInds, seInds, svInds;
     std::size_t coOffset, numDofs;
     std::size_t sfOffset, seOffset, svOffset;
     bvh_t bouStBvh, bouSeBvh; // for collision objects
+    bvs_t bouStBvs, bouSeBvs; // STQ
     T meanEdgeLength, meanSurfaceArea, dt, framedt, curRatio;
   };
 
@@ -3765,6 +4368,8 @@ struct CodimStepping : INode {
     auto input_withGround = get_input2<int>("with_ground");
     auto input_dHat = get_input2<float>("dHat");
     auto input_kappa0 = get_input2<float>("kappa0");
+    auto input_fric_mu = get_input2<float>("fric_mu");
+    auto input_epsv = get_input2<float>("epsv");
     auto input_aug_coeff = get_input2<float>("aug_coeff");
     auto input_pn_rel = get_input2<float>("pn_rel");
     auto input_cg_rel = get_input2<float>("cg_rel");
@@ -3777,6 +4382,8 @@ struct CodimStepping : INode {
 
     s_enableGround = input_withGround;
     kappa0 = input_kappa0;
+    fricMu = input_fric_mu;
+    epsv = input_epsv;
     augLagCoeff = input_aug_coeff;
     pnRel = input_pn_rel;
     cgRel = input_cg_rel;
@@ -3887,10 +4494,15 @@ struct CodimStepping : INode {
       // getchar();
     }
 #endif
+    if constexpr (s_enableFriction)
+      if (epsv == 0) {
+        epsv = dHat;
+      }
     // extForce here means gravity acceleration (not actually force)
-    targetGRes = std::min(targetGRes, extForce.norm() * dt * dt * (T)0.5 /
-                                          nSubsteps / nSubsteps);
-    fmt::print("auto dHat: {}, targetGRes: {}\n", dHat, targetGRes);
+    // targetGRes = std::min(targetGRes, extForce.norm() * dt * dt * (T)0.5 /
+    //                                      nSubsteps / nSubsteps);
+    fmt::print("auto dHat: {}, targetGRes: {}, epsv (friction): {}\n", dHat,
+               targetGRes, epsv);
 
     for (int subi = 0; subi != nSubsteps; ++subi) {
       fmt::print("processing substep {}\n", subi);
@@ -3919,9 +4531,14 @@ struct CodimStepping : INode {
                      newtonIter, cr);
         }
 
-        if constexpr (s_enableContact)
+        if constexpr (s_enableContact) {
           A.findCollisionConstraints(cudaPol, dHat, xi,
                                      s_enableAdaptiveSetting);
+          if constexpr (s_enableFriction)
+            if (fricMu != 0) {
+              A.precomputeFrictions(cudaPol, dHat, xi);
+            }
+        }
         // construct gradient, prepare hessian, prepare preconditioner
         cudaPol(zs::range(numDofs),
                 [vtemp = proxy<space>({}, vtemp)] __device__(int i) mutable {
@@ -3934,8 +4551,13 @@ struct CodimStepping : INode {
         })(models.getElasticModel());
         if (s_enableGround)
           A.computeBoundaryBarrierGradientAndHessian(cudaPol);
-        if constexpr (s_enableContact)
-          A.computeBarrierGradientAndHessian(cudaPol);
+        if constexpr (s_enableContact) {
+          A.computeBarrierGradientAndHessian(cudaPol, "grad");
+          if constexpr (s_enableFriction)
+            if (fricMu != 0) {
+              A.computeFrictionBarrierGradientAndHessian(cudaPol, "grad");
+            }
+        }
 
         // rotate gradient
         // here we assume boundary dofs are all STICKY, thus BCbasis is I
@@ -4051,7 +4673,8 @@ struct CodimStepping : INode {
           // A.intersectionFreeStepsize(cudaPol, xi, alpha);
           // fmt::print("\tstepsize after intersection-free: {}\n", alpha);
           A.findCCDConstraints(cudaPol, alpha, xi);
-          auto [npp, npe, npt, nee, ncspt, ncsee] = A.getCnts();
+          auto [npp, npe, npt, nee, nppm, npem, neem, ncspt, ncsee] =
+              A.getCnts();
           A.intersectionFreeStepsize(cudaPol, xi, alpha);
           fmt::print("\tstepsize after ccd: {}. (ncspt: {}, ncsee: {})\n",
                      alpha, ncspt, ncsee);
@@ -4174,7 +4797,9 @@ ZENDEFNODE(CodimStepping, {{
                                {"int", "with_ground", "0"},
                                {"float", "dt", "0.01"},
                                {"float", "dHat", "0.001"},
+                               {"float", "epsv", "0.0"},
                                {"float", "kappa0", "1e3"},
+                               {"float", "fric_mu", "0"},
                                {"float", "aug_coeff", "1e3"},
                                {"float", "pn_rel", "0.01"},
                                {"float", "cg_rel", "0.0001"},
@@ -4190,4 +4815,5 @@ ZENDEFNODE(CodimStepping, {{
 
 } // namespace zeno
 
+#include "FricIpc.inl"
 #include "Ipc.inl"
