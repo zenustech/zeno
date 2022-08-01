@@ -130,8 +130,8 @@ ZENO_API std::shared_ptr<PrimitiveObject> primitive_merge(std::shared_ptr<zeno::
         }
         size_t sub_poly_len = 0;
         for (auto const &poly: prim->polys) {
-            sub_poly_len = std::max(sub_poly_len, (size_t)(poly.first + poly.second));
-            outprim->polys.emplace_back(poly.first + poly_len, poly.second);
+            sub_poly_len = std::max(sub_poly_len, (size_t)(poly[0] + poly[1]));
+            outprim->polys.emplace_back(poly[0] + poly_len, poly[1]);
         }
         poly_len += sub_poly_len;
 #endif

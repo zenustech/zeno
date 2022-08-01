@@ -180,7 +180,7 @@ struct SDFToPrim : zeno::INode{
             }
         }
 
-        set_output("Mesh", mesh);
+        set_output("prim", std::move(mesh));
     }
 };
 ZENDEFNODE(SDFToPrim, {

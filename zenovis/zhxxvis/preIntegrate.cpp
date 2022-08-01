@@ -1,3 +1,4 @@
+#include <zeno/utils/nowarn.h>
 #include "MyShader.hpp"
 #include "stdafx.hpp"
 #include "main.hpp"

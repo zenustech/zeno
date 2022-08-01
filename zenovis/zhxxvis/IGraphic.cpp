@@ -1,3 +1,4 @@
+#include <zeno/utils/nowarn.h>
 #include "main.hpp"
 #include "IGraphic.hpp"
 #include "zenvisapi.hpp"

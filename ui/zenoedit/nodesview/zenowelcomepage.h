@@ -1,6 +1,8 @@
 #ifndef __ZENO_WELCOME_PAGE_H__
 #define __ZENO_WELCOME_PAGE_H__
 
+#include <QWidget>
+
 namespace Ui
 {
 	class WelcomePage;
