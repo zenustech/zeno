@@ -24,9 +24,12 @@ void CodimStepping::IPCSystem::computeFrictionBarrierGradientAndHessian(
         auto relDX = basis.transpose() * relDX3D;
         auto relDXNorm2 = relDX.l2NormSqr();
         auto relDXNorm = zs::sqrt(relDXNorm2);
-        auto f1_div_relDXNorm = zs::f1_SF_div_rel_dx_norm(relDXNorm2, epsvh);
-        relDX *= f1_div_relDXNorm * fricMu * fn;
+        if (relDXNorm > epsvh) 
+          relDX /= relDXNorm;
+        else
+          relDX *= zs::f1_SF_div_rel_dx_norm(relDXNorm2, epsvh);
         auto TTTDX = -point_point_rel_dx_tan_to_mesh(relDX, basis);
+        TTTDX *= fricMu * fn;
         // gradient
         for (int d = 0; d != 3; ++d) {
           atomic_add(exec_cuda, &vtemp(gTag, d, fpp[0]), TTTDX(0, d));
@@ -37,30 +40,22 @@ void CodimStepping::IPCSystem::computeFrictionBarrierGradientAndHessian(
           return;
         relDX = basis.transpose() * relDX3D;
         auto TT = point_point_TT(basis); // 2x6
-        auto f2_term = f2_SF_term(relDXNorm2, epsvh);
         using HessT = zs::vec<T, 6, 6>;
         auto hess = HessT::zeros();
-        if (relDXNorm2 >= epsvh * epsvh) {
-          zs::vec<T, 2> ubar{-relDX[1], relDX[0]};
-          hess = dyadic_prod(
-              TT.transpose() *
-                  ((fricMu * fn * f1_div_relDXNorm / relDXNorm2) * ubar),
-              ubar * TT);
+        auto innerMtr = zs::vec<T, 2, 2>::identity();
+        if (relDXNorm2 > epsvh * epsvh) {
+          innerMtr /= relDXNorm;
+          innerMtr -= dyadic_prod(relDX, relDX) / (relDXNorm2 * relDXNorm);
         } else {
-          if (relDXNorm == 0) {
-            if (fn > 0)
-              hess = fricMu * fn * f1_div_relDXNorm * TT.transpose() * TT;
-            // or ignored
-          } else {
-            auto innerMtr = dyadic_prod((f2_term / relDXNorm) * relDX, relDX);
-            innerMtr(0, 0) += f1_div_relDXNorm;
-            innerMtr(1, 1) += f1_div_relDXNorm;
-            innerMtr *= fricMu * fn;
-            //
-            make_pd(innerMtr);
-            hess = TT.transpose() * innerMtr * TT;
+          auto f1_div_relDXNorm = zs::f1_SF_div_rel_dx_norm(relDXNorm2, epsvh);
+          auto f2_term = f2_SF_term(relDXNorm2, epsvh);
+          innerMtr *= f1_div_relDXNorm;
+          if (f2_term != f1_div_relDXNorm && relDXNorm2) {
+            innerMtr -= dyadic_prod(relDX, relDX) * ((f1_div_relDXNorm - f2_term) / relDXNorm2);
           }
         }
+        make_pd(innerMtr);
+        hess = fricMu * fn * TT.transpose() * innerMtr * TT;
 #else
 #endif
         // rotate and project
@@ -101,9 +96,12 @@ void CodimStepping::IPCSystem::computeFrictionBarrierGradientAndHessian(
         auto relDX = basis.transpose() * relDX3D;
         auto relDXNorm2 = relDX.l2NormSqr();
         auto relDXNorm = zs::sqrt(relDXNorm2);
-        auto f1_div_relDXNorm = zs::f1_SF_div_rel_dx_norm(relDXNorm2, epsvh);
-        relDX *= f1_div_relDXNorm * fricMu * fn;
+        if (relDXNorm > epsvh) 
+          relDX /= relDXNorm;
+        else
+          relDX *= zs::f1_SF_div_rel_dx_norm(relDXNorm2, epsvh);
         auto TTTDX = -point_edge_rel_dx_tan_to_mesh(relDX, basis, yita);
+        TTTDX *= fricMu * fn;
         // gradient
         for (int d = 0; d != 3; ++d) {
           atomic_add(exec_cuda, &vtemp(gTag, d, fpe[0]), TTTDX(0, d));
@@ -115,30 +113,22 @@ void CodimStepping::IPCSystem::computeFrictionBarrierGradientAndHessian(
           return;
         relDX = basis.transpose() * relDX3D;
         auto TT = point_edge_TT(basis, yita); // 2x9
-        auto f2_term = f2_SF_term(relDXNorm2, epsvh);
         using HessT = zs::vec<T, 9, 9>;
         auto hess = HessT::zeros();
-        if (relDXNorm2 >= epsvh * epsvh) {
-          zs::vec<T, 2> ubar{-relDX[1], relDX[0]};
-          hess = dyadic_prod(
-              TT.transpose() *
-                  ((fricMu * fn * f1_div_relDXNorm / relDXNorm2) * ubar),
-              ubar * TT);
+        auto innerMtr = zs::vec<T, 2, 2>::identity();
+        if (relDXNorm2 > epsvh * epsvh) {
+          innerMtr /= relDXNorm;
+          innerMtr -= dyadic_prod(relDX, relDX) / (relDXNorm2 * relDXNorm);
         } else {
-          if (relDXNorm == 0) {
-            if (fn > 0)
-              hess = fricMu * fn * f1_div_relDXNorm * TT.transpose() * TT;
-            // or ignored
-          } else {
-            auto innerMtr = dyadic_prod((f2_term / relDXNorm) * relDX, relDX);
-            innerMtr(0, 0) += f1_div_relDXNorm;
-            innerMtr(1, 1) += f1_div_relDXNorm;
-            innerMtr *= fricMu * fn;
-            //
-            make_pd(innerMtr);
-            hess = TT.transpose() * innerMtr * TT;
+          auto f1_div_relDXNorm = zs::f1_SF_div_rel_dx_norm(relDXNorm2, epsvh);
+          auto f2_term = f2_SF_term(relDXNorm2, epsvh);
+          innerMtr *= f1_div_relDXNorm;
+          if (f2_term != f1_div_relDXNorm && relDXNorm2) {
+            innerMtr -= dyadic_prod(relDX, relDX) * ((f1_div_relDXNorm - f2_term) / relDXNorm2);
           }
         }
+        make_pd(innerMtr);
+        hess = fricMu * fn * TT.transpose() * innerMtr * TT;
 #else
 #endif
         // rotate and project
@@ -180,10 +170,13 @@ void CodimStepping::IPCSystem::computeFrictionBarrierGradientAndHessian(
         auto relDX = basis.transpose() * relDX3D;
         auto relDXNorm2 = relDX.l2NormSqr();
         auto relDXNorm = zs::sqrt(relDXNorm2);
-        auto f1_div_relDXNorm = zs::f1_SF_div_rel_dx_norm(relDXNorm2, epsvh);
-        relDX *= f1_div_relDXNorm * fricMu * fn;
+        if (relDXNorm > epsvh) 
+          relDX /= relDXNorm;
+        else
+          relDX *= zs::f1_SF_div_rel_dx_norm(relDXNorm2, epsvh);
         auto TTTDX = -point_triangle_rel_dx_tan_to_mesh(relDX, basis, betas[0],
                                                         betas[1]);
+        TTTDX *= fricMu * fn;
         // gradient
         for (int d = 0; d != 3; ++d) {
           atomic_add(exec_cuda, &vtemp(gTag, d, fpt[0]), TTTDX(0, d));
@@ -196,30 +189,22 @@ void CodimStepping::IPCSystem::computeFrictionBarrierGradientAndHessian(
           return;
         relDX = basis.transpose() * relDX3D;
         auto TT = point_triangle_TT(basis, betas[0], betas[1]); // 2x12
-        auto f2_term = f2_SF_term(relDXNorm2, epsvh);
         using HessT = zs::vec<T, 12, 12>;
         auto hess = HessT::zeros();
-        if (relDXNorm2 >= epsvh * epsvh) {
-          zs::vec<T, 2> ubar{-relDX[1], relDX[0]};
-          hess = dyadic_prod(
-              TT.transpose() *
-                  ((fricMu * fn * f1_div_relDXNorm / relDXNorm2) * ubar),
-              ubar * TT);
+        auto innerMtr = zs::vec<T, 2, 2>::identity();
+        if (relDXNorm2 > epsvh * epsvh) {
+          innerMtr /= relDXNorm;
+          innerMtr -= dyadic_prod(relDX, relDX) / (relDXNorm2 * relDXNorm);
         } else {
-          if (relDXNorm == 0) {
-            if (fn > 0)
-              hess = fricMu * fn * f1_div_relDXNorm * TT.transpose() * TT;
-            // or ignored
-          } else {
-            auto innerMtr = dyadic_prod((f2_term / relDXNorm) * relDX, relDX);
-            innerMtr(0, 0) += f1_div_relDXNorm;
-            innerMtr(1, 1) += f1_div_relDXNorm;
-            innerMtr *= fricMu * fn;
-            //
-            make_pd(innerMtr);
-            hess = TT.transpose() * innerMtr * TT;
+          auto f1_div_relDXNorm = zs::f1_SF_div_rel_dx_norm(relDXNorm2, epsvh);
+          auto f2_term = f2_SF_term(relDXNorm2, epsvh);
+          innerMtr *= f1_div_relDXNorm;
+          if (f2_term != f1_div_relDXNorm && relDXNorm2) {
+            innerMtr -= dyadic_prod(relDX, relDX) * ((f1_div_relDXNorm - f2_term) / relDXNorm2);
           }
         }
+        make_pd(innerMtr);
+        hess = fricMu * fn * TT.transpose() * innerMtr * TT;
 #else
 #endif
         // rotate and project
@@ -261,10 +246,13 @@ void CodimStepping::IPCSystem::computeFrictionBarrierGradientAndHessian(
         auto relDX = basis.transpose() * relDX3D;
         auto relDXNorm2 = relDX.l2NormSqr();
         auto relDXNorm = zs::sqrt(relDXNorm2);
-        auto f1_div_relDXNorm = zs::f1_SF_div_rel_dx_norm(relDXNorm2, epsvh);
-        relDX *= f1_div_relDXNorm * fricMu * fn;
+        if (relDXNorm > epsvh) 
+          relDX /= relDXNorm;
+        else
+          relDX *= zs::f1_SF_div_rel_dx_norm(relDXNorm2, epsvh);
         auto TTTDX =
             -edge_edge_rel_dx_tan_to_mesh(relDX, basis, gammas[0], gammas[1]);
+        TTTDX *= fricMu * fn;
         // gradient
         for (int d = 0; d != 3; ++d) {
           atomic_add(exec_cuda, &vtemp(gTag, d, fee[0]), TTTDX(0, d));
@@ -277,30 +265,22 @@ void CodimStepping::IPCSystem::computeFrictionBarrierGradientAndHessian(
           return;
         relDX = basis.transpose() * relDX3D;
         auto TT = edge_edge_TT(basis, gammas[0], gammas[1]); // 2x12
-        auto f2_term = f2_SF_term(relDXNorm2, epsvh);
         using HessT = zs::vec<T, 12, 12>;
         auto hess = HessT::zeros();
-        if (relDXNorm2 >= epsvh * epsvh) {
-          zs::vec<T, 2> ubar{-relDX[1], relDX[0]};
-          hess = dyadic_prod(
-              TT.transpose() *
-                  ((fricMu * fn * f1_div_relDXNorm / relDXNorm2) * ubar),
-              ubar * TT);
+        auto innerMtr = zs::vec<T, 2, 2>::identity();
+        if (relDXNorm2 > epsvh * epsvh) {
+          innerMtr /= relDXNorm;
+          innerMtr -= dyadic_prod(relDX, relDX) / (relDXNorm2 * relDXNorm);
         } else {
-          if (relDXNorm == 0) {
-            if (fn > 0)
-              hess = fricMu * fn * f1_div_relDXNorm * TT.transpose() * TT;
-            // or ignored
-          } else {
-            auto innerMtr = dyadic_prod((f2_term / relDXNorm) * relDX, relDX);
-            innerMtr(0, 0) += f1_div_relDXNorm;
-            innerMtr(1, 1) += f1_div_relDXNorm;
-            innerMtr *= fricMu * fn;
-            //
-            make_pd(innerMtr);
-            hess = TT.transpose() * innerMtr * TT;
+          auto f1_div_relDXNorm = zs::f1_SF_div_rel_dx_norm(relDXNorm2, epsvh);
+          auto f2_term = f2_SF_term(relDXNorm2, epsvh);
+          innerMtr *= f1_div_relDXNorm;
+          if (f2_term != f1_div_relDXNorm && relDXNorm2) {
+            innerMtr -= dyadic_prod(relDX, relDX) * ((f1_div_relDXNorm - f2_term) / relDXNorm2);
           }
         }
+        make_pd(innerMtr);
+        hess = fricMu * fn * TT.transpose() * innerMtr * TT;
 #else
 #endif
         // rotate and project
