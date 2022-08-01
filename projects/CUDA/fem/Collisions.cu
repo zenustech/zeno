@@ -106,6 +106,7 @@ ZENDEFNODE(MaintainSpatialAccelerator,
                {"FEM"},
            });
 
+#if 0
 struct VisualizeBvh : INode {
   template <typename Tiles>
   std::shared_ptr<PrimitiveObject>
@@ -341,5 +342,6 @@ ZENDEFNODE(VisualizeBvh, {
                              {{"enum point edge surface", "target", "surface"}},
                              {"FEM"},
                          });
+#endif
 
 } // namespace zeno
