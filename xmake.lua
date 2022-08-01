@@ -1,12 +1,11 @@
 add_requires("openmp")
-
 add_rules("mode.release", "mode.debug")
+add_rules("qt.console")
 
 target("zenoedit")
 set_kind("binary")
 set_languages("c99", "c++17")
 
-add_rules("qt.console")
 add_files("ui/zenoedit/**.cpp")
 add_files("ui/zenoedit/**.h")
 add_files("ui/zenoedit/**.ui")

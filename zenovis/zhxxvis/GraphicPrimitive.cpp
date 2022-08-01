@@ -1,3 +1,4 @@
+#include <zeno/utils/nowarn.h>
 #include "glad/glad.h"
 #include "stdafx.hpp"
 #include "IGraphic.hpp"

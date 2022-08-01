@@ -1,4 +1,5 @@
 #ifdef ZENVIS_WITH_OPENVDB
+#include <zeno/utils/nowarn.h>
 #include "stdafx.hpp"
 #include "IGraphic.hpp"
 #include "MyShader.hpp"
