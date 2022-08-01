@@ -48,25 +48,25 @@ int PrimAttrTableModel::rowCount(const QModelIndex &parent) const {
 int PrimAttrTableModel::columnCount(const QModelIndex &parent) const {
     if (m_prim) {
         if (sel_attr == "Vertex") {
-            return (int)m_prim->num_attrs();
+            return (int)m_prim->num_attrs<AttrAcceptAll>();
         }
         else if (sel_attr == "Tris") {
-            return 1 + (int)m_prim->tris.num_attrs();
+            return 1 + (int)m_prim->tris.num_attrs<AttrAcceptAll>();
         }
         else if (sel_attr == "Points") {
-            return 1 + (int)m_prim->points.num_attrs();
+            return 1 + (int)m_prim->points.num_attrs<AttrAcceptAll>();
         }
         else if (sel_attr == "Lines") {
-            return 1 + (int)m_prim->lines.num_attrs();
+            return 1 + (int)m_prim->lines.num_attrs<AttrAcceptAll>();
         }
         else if (sel_attr == "Quads") {
-            return 1 + (int)m_prim->quads.num_attrs();
+            return 1 + (int)m_prim->quads.num_attrs<AttrAcceptAll>();
         }
         else if (sel_attr == "Polys") {
-            return 1 + (int)m_prim->polys.num_attrs();
+            return 1 + (int)m_prim->polys.num_attrs<AttrAcceptAll>();
         }
         else if (sel_attr == "Loops") {
-            return 1 + (int)m_prim->loops.num_attrs();
+            return 1 + (int)m_prim->loops.num_attrs<AttrAcceptAll>();
         }
         else {
             return m_prim->userData().size();

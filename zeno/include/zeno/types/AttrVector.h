@@ -279,7 +279,7 @@ struct AttrVector {
 
     template <class Accept = std::variant<vec3f, float>>
     size_t num_attrs() const {
-        if constexpr (std::is_void_v<Accept>) {
+        if constexpr (std::is_same_v<Accept, AttrAcceptAll>) {
             return attrs.size();
         } else {
             size_t count = 0;
