@@ -15,7 +15,6 @@ target_include_directories(zenovis PUBLIC
 option(ZENO_ENABLE_ZHXXVIS "Enable Zhxx Real-time Rendering Engine" ON)
 if (ZENO_ENABLE_ZHXXVIS)
     add_subdirectory(zhxxvis)
-    target_link_libraries(zenovis PRIVATE zhxxvis)
     target_compile_definitions(zenovis PRIVATE -DZENO_ENABLE_ZHXXVIS)
 endif()
 

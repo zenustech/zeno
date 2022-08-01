@@ -1,5 +1,7 @@
 add_requires("openmp")
 
+add_rules("mode.release", "mode.debug")
+
 target("zenoedit")
 set_kind("binary")
 set_languages("c99", "c++17")
@@ -29,8 +31,6 @@ add_files("zenovis/stbi/src/**.cpp")
 add_includedirs("zenovis/stbi/include")
 add_files("zenovis/glad/src/**.c")
 add_includedirs("zenovis/glad/include")
-add_files("zenovis/zhxxvis/**.cpp")
-add_includedirs("zenovis/zhxxvis")
 
 add_files("zeno/src/**.cpp")
 add_includedirs("zeno/include")
