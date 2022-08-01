@@ -1,3 +1,4 @@
+#include "zeno/core/INode.h"
 #include <atomic>
 #include <functional>
 #include <limits>
@@ -46,9 +47,36 @@ static float tri_intersect(Cond cond, vec3f const &ro, vec3f const &rd, vec3f co
     return std::numeric_limits<float>::infinity();
 }
 
+/// ref: An Efficient and Robust Ray-Box Intersection Algorithm, 2005
+static bool ray_box_intersect(vec3f const &ro, vec3f const &rd, std::pair<vec3f, vec3f> const &box) {
+    vec3f invd{1 / rd[0], 1 / rd[1], 1 / rd[2]};
+    int sign[3] = {invd[0] < 0, invd[1] < 0, invd[2] < 0};
+    float tmin, tmax, tymin, tymax, tzmin, tzmax;
+
+    tmin = ((sign[0] ? box.second : box.first)[0] - ro[0]) * invd[0];
+    tmax = ((sign[0] ? box.first : box.second)[0] - ro[0]) * invd[0];
+    tymin = ((sign[1] ? box.second : box.first)[1] - ro[1]) * invd[1];
+    tymax = ((sign[1] ? box.first : box.second)[1] - ro[1]) * invd[1];
+    if (tmin > tymax || tymin > tmax)
+        return false;
+    if (tymin > tmin)
+        tmin = tymin;
+    if (tymax < tmax)
+        tmax = tymax;
+    tzmin = ((sign[2] ? box.second : box.first)[2] - ro[2]) * invd[2];
+    tzmax = ((sign[2] ? box.first : box.second)[2] - ro[2]) * invd[2];
+    if (tmin > tzmax || tzmin > tmax)
+        return false;
+    if (tzmin > tmin)
+        tmin = tzmin;
+    if (tzmax < tmax)
+        tmax = tzmax;
+    return tmax >= 0.f;
+}
+
 struct BVH { // TODO: WXL please complete this to accel up
     PrimitiveObject const *prim{};
-#define WXL 0
+#define WXL 1
 #if WXL
     using TV = vec3f;
     using Box = std::pair<TV, TV>;
@@ -328,7 +356,7 @@ struct BVH { // TODO: WXL please complete this to accel up
                 Ti level = levels[node];
                 // level and node are always in sync
                 for (; level; --level, ++node)
-                    if (auto d = ray_box_distance(sortedBvs[node], ro, rd); std::abs(d) > std::abs(ret))
+                    if (!ray_box_intersect(ro, rd, sortedBvs[node]))
                         break;
                 // leaf node check
                 if (level == 0) {
@@ -444,6 +472,31 @@ ZENDEFNODE(PrimProject, {
                             {},
                             {"primitive"},
                         });
+
+struct TestRayBox : INode {
+    void apply() override {
+        auto origin = get_input2<vec3f>("ray_origin");
+        auto dir = get_input2<vec3f>("ray_dir");
+        auto bmin = get_input2<vec3f>("box_min");
+        auto bmax = get_input2<vec3f>("box_max");
+        set_output("predicate",
+                   std::make_shared<NumericObject>((int)ray_box_intersect(origin, dir, std::make_pair(bmin, bmax))));
+    }
+};
+
+ZENDEFNODE(TestRayBox, {
+                           {
+                               {"ray_origin"},
+                               {"ray_dir"},
+                               {"box_min"},
+                               {"box_max"},
+                           },
+                           {
+                               {"predicate"},
+                           },
+                           {},
+                           {"primitive"},
+                       });
 
 } // namespace
 } // namespace zeno
