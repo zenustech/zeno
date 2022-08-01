@@ -102,7 +102,7 @@ struct variant_index<std::variant<T, Ts...>, T> : std::integral_constant<std::si
 };
 
 template <class T, class T0, class ...Ts>
-struct variant_index<std::variant<T0, Ts...>, T> : variant_index<std::variant<Ts...>, T> {
+struct variant_index<std::variant<T0, Ts...>, T> : std::integral_constant<std::size_t, 1 + variant_index<std::variant<Ts...>, T>::value> {
 };
 
 template <class Enum, class Variant, class T>

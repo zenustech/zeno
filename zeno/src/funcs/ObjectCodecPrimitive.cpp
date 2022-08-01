@@ -3,6 +3,7 @@
 #include <zeno/types/MaterialObject.h>
 #include <zeno/utils/variantswitch.h>
 #include <zeno/utils/log.h>
+//#include <zeno/utils/zeno_p.h>
 #include <algorithm>
 #include <cstring>
 namespace zeno {
@@ -12,7 +13,7 @@ namespace _implObjectCodec {
 namespace {
 
 struct AttributeHeader {
-    uint8_t type;
+    size_t type;
     size_t size;
     size_t namelen;
     char name[128];
@@ -33,17 +34,17 @@ void decodeAttrVector(AttrVector<T0> &arr, It &it) {
     it += sizeof(T0) * header.size;
 
     for (int a = 0; a < header.nattrs; a++) {
-        AttributeHeader header;
-        std::copy_n(it, sizeof(header), (char *)&header);
-        it += sizeof(header);
-        std::string key{header.name, header.namelen};
-        index_switch<std::variant_size_v<AttrAcceptAll>>((size_t)header.type, [&] (auto type) {
+        AttributeHeader h;
+        std::copy_n(it, sizeof(h), (char *)&h);
+        it += sizeof(h);
+        std::string key{h.name, h.namelen};
+        index_switch<std::variant_size_v<AttrAcceptAll>>((size_t)h.type, [&] (auto type) {
             using T = std::variant_alternative_t<type.value, AttrAcceptAll>;
             auto &attr = arr.template add_attr<T>(key);
             attr.clear();
-            attr.reserve(header.size);
-            std::copy_n((T const *)it, header.size, std::back_inserter(attr));
-            it += sizeof(T) * header.size;
+            attr.reserve(h.size);
+            std::copy_n((T const *)it, h.size, std::back_inserter(attr));
+            it += sizeof(T) * h.size;
         });
     }
     arr.update();
@@ -53,19 +54,19 @@ template <class T0, class It>
 void encodeAttrVector(AttrVector<T0> const &arr, It &it) {
     AttrVectorHeader header;
     header.size = arr.size();
-    header.nattrs = arr.num_attrs();
-    it = std::copy_n((char *)&header, sizeof(header), it);
-    it = std::copy_n((char *)arr.data(), sizeof(T0) * arr.size(), it);
+    header.nattrs = arr.template num_attrs<AttrAcceptAll>();
+    it = std::copy_n((char const *)&header, sizeof(header), it);
+    it = std::copy_n((char const *)arr.data(), sizeof(T0) * arr.size(), it);
 
-    arr.foreach_attr([&] (auto const &key, auto const &attr) {
-        AttributeHeader header;
+    arr.template foreach_attr<AttrAcceptAll>([&] (auto const &key, auto const &attr) {
+        AttributeHeader h;
         using T = std::decay_t<decltype(attr[0])>;
-        header.type = static_cast<uint8_t>(variant_index<AttrAcceptAll, T>::value);
-        header.size = attr.size();
-        header.namelen = key.size();
-        std::strncpy(header.name, key.c_str(), sizeof(header.name));
-        it = std::copy_n((char *)&header, sizeof(header), it);
-        it = std::copy_n((char *)attr.data(), sizeof(T) * attr.size(), it);
+        h.type = variant_index<AttrAcceptAll, T>::value;
+        h.size = attr.size();
+        h.namelen = key.size();
+        std::strncpy(h.name, key.c_str(), sizeof(h.name));
+        it = std::copy_n((char const *)&h, sizeof(h), it);
+        it = std::copy_n((char const *)attr.data(), sizeof(T) * attr.size(), it);
     });
 }
 
