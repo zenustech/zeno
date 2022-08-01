@@ -1,6 +1,8 @@
 #ifndef __CURVES_ITEM_H__
 #define __CURVES_ITEM_H__
 
+#include <QGraphicsObject>
+
 class CurveMapView;
 class CurveNodeItem;
 class CurvePathItem;
