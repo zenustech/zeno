@@ -226,6 +226,9 @@ struct ZSSampleQuadratureAttr2Vert : zeno::INode {
         auto attr = get_param<std::string>("attr");
         auto weight = get_param<std::string>("wtag");
 
+        auto skip_bou = get_param<int>("skip_bou");
+        auto bou_tag = get_param<std::string>("bou_tag");
+
         if(!quads.hasProperty(attr)){
             fmt::print("the input quadrature does not have specified attribute : {}\n",attr);
             throw std::runtime_error("the input quadrature does not have specified attribute");
@@ -251,12 +254,15 @@ struct ZSSampleQuadratureAttr2Vert : zeno::INode {
         });
 
         cudaPol(range(quads.size()),
-            [verts = proxy<space>({},verts),quads = proxy<space>({},quads),attr_dim,attr = SmallString(attr),simplex_size,weight = SmallString(weight),execTag = wrapv<space>{}]
+            [verts = proxy<space>({},verts),quads = proxy<space>({},quads),attr_dim,attr = SmallString(attr),simplex_size,weight = SmallString(weight),execTag = wrapv<space>{},skip_bou,bou_tag = zs::SmallString(bou_tag)]
                 __device__(int ei) mutable {
                     float w = quads(weight,ei);
                     // w = 1.0;// cancel out the specified weight info
                     for(int i = 0;i != simplex_size;++i){
                         auto idx = reinterpret_bits<int>(quads("inds",i,ei));
+                        auto bou = verts(bou_tag,idx);
+                        if(bou && skip_bou)
+                            continue;
                         for(int j = 0;j != attr_dim;++j) {
                             // verts(attr,j,idx) += w * quads(attr,j,ei) / (float)simplex_size;
                             auto alpha = w * quads(attr,j,ei) / (float)simplex_size;
@@ -273,7 +279,7 @@ ZENDEFNODE(ZSSampleQuadratureAttr2Vert,{
     {"ZSParticles"},
     {"ZSParticles"},
     {
-        {"string","attr","attr"},{"string","wtag","vol"}
+        {"string","attr","attr"},{"string","wtag","vol"},{"int","skip_bou","0"},{"string","bou_tag","btag"}
     },
     {"ZSGeometry"}
 });
