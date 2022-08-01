@@ -11,15 +11,8 @@ namespace _implObjectCodec {
 
 namespace {
 
-enum class AttributeType {
-    Vec3f,
-    Float,
-};
-
-using AttrTypesTuple = std::tuple<vec3f, float>;
-
 struct AttributeHeader {
-    AttributeType type;
+    uint8_t type;
     size_t size;
     size_t namelen;
     char name[128];
@@ -44,8 +37,8 @@ void decodeAttrVector(AttrVector<T0> &arr, It &it) {
         std::copy_n(it, sizeof(header), (char *)&header);
         it += sizeof(header);
         std::string key{header.name, header.namelen};
-        index_switch<std::tuple_size_v<AttrTypesTuple>>((size_t)header.type, [&] (auto type) {
-            using T = std::tuple_element_t<type.value, AttrTypesTuple>;
+        index_switch<std::variant_size_v<AttrAcceptAll>>((size_t)header.type, [&] (auto type) {
+            using T = std::variant_alternative_t<type.value, AttrAcceptAll>;
             auto &attr = arr.template add_attr<T>(key);
             attr.clear();
             attr.reserve(header.size);
@@ -67,13 +60,7 @@ void encodeAttrVector(AttrVector<T0> const &arr, It &it) {
     arr.foreach_attr([&] (auto const &key, auto const &attr) {
         AttributeHeader header;
         using T = std::decay_t<decltype(attr[0])>;
-        if constexpr (std::is_same_v<T, float>) {
-            header.type = AttributeType::Float;
-        } else if constexpr (std::is_same_v<T, vec3f>) {
-            header.type = AttributeType::Vec3f;
-        } else {
-            static_assert(std::is_void_v<std::is_void<T>>);
-        }
+        header.type = static_cast<uint8_t>(variant_index<AttrAcceptAll, T>::value);
         header.size = attr.size();
         header.namelen = key.size();
         std::strncpy(header.name, key.c_str(), sizeof(header.name));
