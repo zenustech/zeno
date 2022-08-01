@@ -26,14 +26,10 @@ set(ZENO_EXTENSIONS
     TreeSketch
     CalcGeometryUV
     MeshSubdiv
-<<<<<<< HEAD
 	CUDA
 	BezierCurve
-=======
     Audio
     Pass
-    CUDA
->>>>>>> master
     )
 
 foreach (name IN ITEMS ${ZENO_EXTENSIONS})

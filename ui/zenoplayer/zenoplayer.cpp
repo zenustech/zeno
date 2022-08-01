@@ -53,18 +53,17 @@ QMenuBar *ZenoPlayer::initMenu()
     connect(pAction, SIGNAL(triggered()), this, SLOT(slot_OpenFileDialog()));
     pFile->addAction(pAction);
 
-    QMenu* pDisplay = new QMenu(tr("Display"));
+    QMenu *pDisplay = new QMenu(tr("Display"));
     {
-        QAction* pAction = new QAction(tr("Show Grid"), this);
+        QAction *pAction = new QAction(tr("Show Grid"), this);
         pAction->setCheckable(true);
         pAction->setChecked(true);
         pDisplay->addAction(pAction);
-        connect(pAction, &QAction::triggered, this,
-            [=]() {
-                Zenovis::GetInstance().getSession()->set_show_grid(pAction->isChecked());
-                //todo: need a notify mechanism from zenovis/session.
-                ((ZenoPlayer*)zenoApp->getWindow("ZenoPlayer"))->updateFrame();
-            });
+        connect(pAction, &QAction::triggered, this, [=]() {
+            Zenovis::GetInstance().getSession()->set_show_grid(pAction->isChecked());
+            //todo: need a notify mechanism from zenovis/session.
+            ((ZenoPlayer *)zenoApp->getWindow("ZenoPlayer"))->updateFrame();
+        });
 
         pAction = new QAction(tr("Background Color"), this);
         pDisplay->addAction(pAction);
@@ -74,9 +73,9 @@ QMenuBar *ZenoPlayer::initMenu()
             c = QColorDialog::getColor(c);
             if (c.isValid()) {
                 Zenovis::GetInstance().getSession()->set_background_color(c.redF(), c.greenF(), c.blueF());
-                ((ZenoPlayer*)zenoApp->getWindow("ZenoPlayer"))->updateFrame();
+                ((ZenoPlayer *)zenoApp->getWindow("ZenoPlayer"))->updateFrame();
             }
-            });
+        });
 
         pDisplay->addSeparator();
 
@@ -84,31 +83,28 @@ QMenuBar *ZenoPlayer::initMenu()
         pAction->setCheckable(true);
         pAction->setChecked(false);
         pDisplay->addAction(pAction);
-        connect(pAction, &QAction::triggered, this,
-            [=]() {
-                Zenovis::GetInstance().getSession()->set_smooth_shading(pAction->isChecked());
-                ((ZenoPlayer*)zenoApp->getWindow("ZenoPlayer"))->updateFrame();
-            });
+        connect(pAction, &QAction::triggered, this, [=]() {
+            Zenovis::GetInstance().getSession()->set_smooth_shading(pAction->isChecked());
+            ((ZenoPlayer *)zenoApp->getWindow("ZenoPlayer"))->updateFrame();
+        });
 
         pAction = new QAction(tr("Normal Check"), this);
         pAction->setCheckable(true);
         pAction->setChecked(false);
         pDisplay->addAction(pAction);
-        connect(pAction, &QAction::triggered, this,
-            [=]() {
-                Zenovis::GetInstance().getSession()->set_normal_check(pAction->isChecked());
-                ((ZenoPlayer*)zenoApp->getWindow("ZenoPlayer"))->updateFrame();
-            });
+        connect(pAction, &QAction::triggered, this, [=]() {
+            Zenovis::GetInstance().getSession()->set_normal_check(pAction->isChecked());
+            ((ZenoPlayer *)zenoApp->getWindow("ZenoPlayer"))->updateFrame();
+        });
 
         pAction = new QAction(tr("Wireframe"), this);
         pAction->setCheckable(true);
         pAction->setChecked(false);
         pDisplay->addAction(pAction);
-        connect(pAction, &QAction::triggered, this,
-            [=]() {
-                Zenovis::GetInstance().getSession()->set_render_wireframe(pAction->isChecked());
-                ((ZenoPlayer*)zenoApp->getWindow("ZenoPlayer"))->updateFrame();
-            });
+        connect(pAction, &QAction::triggered, this, [=]() {
+            Zenovis::GetInstance().getSession()->set_render_wireframe(pAction->isChecked());
+            ((ZenoPlayer *)zenoApp->getWindow("ZenoPlayer"))->updateFrame();
+        });
 
         pDisplay->addSeparator();
         pAction = new QAction(tr("Solid"), this);
@@ -116,7 +112,7 @@ QMenuBar *ZenoPlayer::initMenu()
         connect(pAction, &QAction::triggered, this, [=]() {
             const char *e = "bate";
             Zenovis::GetInstance().getSession()->set_render_engine(e);
-            ((ZenoPlayer*)zenoApp->getWindow("ZenoPlayer"))->updateFrame(QString::fromLatin1(e));
+            ((ZenoPlayer *)zenoApp->getWindow("ZenoPlayer"))->updateFrame(QString::fromLatin1(e));
         });
         pAction = new QAction(tr("Shading"), this);
         pDisplay->addAction(pAction);
@@ -124,7 +120,7 @@ QMenuBar *ZenoPlayer::initMenu()
             const char *e = "zhxx";
             Zenovis::GetInstance().getSession()->set_render_engine(e);
             Zenovis::GetInstance().getSession()->set_enable_gi(false);
-            ((ZenoPlayer*)zenoApp->getWindow("ZenoPlayer"))->updateFrame(QString::fromLatin1(e));
+            ((ZenoPlayer *)zenoApp->getWindow("ZenoPlayer"))->updateFrame(QString::fromLatin1(e));
         });
         pAction = new QAction(tr("VXGI"), this);
         pDisplay->addAction(pAction);
@@ -132,14 +128,14 @@ QMenuBar *ZenoPlayer::initMenu()
             const char *e = "zhxx";
             Zenovis::GetInstance().getSession()->set_render_engine(e);
             Zenovis::GetInstance().getSession()->set_enable_gi(true);
-            ((ZenoPlayer*)zenoApp->getWindow("ZenoPlayer"))->updateFrame(QString::fromLatin1(e));
+            ((ZenoPlayer *)zenoApp->getWindow("ZenoPlayer"))->updateFrame(QString::fromLatin1(e));
         });
         pAction = new QAction(tr("Optix"), this);
         pDisplay->addAction(pAction);
         connect(pAction, &QAction::triggered, this, [=]() {
             const char *e = "optx";
             Zenovis::GetInstance().getSession()->set_render_engine(e);
-            ((ZenoPlayer*)zenoApp->getWindow("ZenoPlayer"))->updateFrame(QString::fromLatin1(e));
+            ((ZenoPlayer *)zenoApp->getWindow("ZenoPlayer"))->updateFrame(QString::fromLatin1(e));
         });
         pDisplay->addSeparator();
 
@@ -154,29 +150,29 @@ QMenuBar *ZenoPlayer::initMenu()
         pDisplay->addAction(pAction);
     }
 
-    QMenu* pRecord = new QMenu(tr("Record"));
+    QMenu *pRecord = new QMenu(tr("Record"));
     {
-        QAction* pAction = new QAction(tr("Screenshot"), this);
+        QAction *pAction = new QAction(tr("Screenshot"), this);
         pAction->setShortcut(QKeySequence("F12"));
         pRecord->addAction(pAction);
         connect(pAction, &QAction::triggered, this, [=]() {
-            auto s = QDateTime::currentDateTime().toString(QString("yyyy-dd-MM_hh-mm-ss.png"));
-            Zenovis::GetInstance().getSession()->do_screenshot(s.toStdString(), "png");
-        });
-        pAction = new QAction(tr("Screenshot EXR"), this);
-        pRecord->addAction(pAction);
-        connect(pAction, &QAction::triggered, this, [=]() {
-            auto s = QDateTime::currentDateTime().toString(QString("yyyy-dd-MM_hh-mm-ss.exr"));
-            Zenovis::GetInstance().getSession()->do_screenshot(s.toStdString(), "exr");
+            QString path = QFileDialog::getSaveFileName(
+                nullptr, tr("Path to Save"), "",
+                tr("PNG images(*.png);;JPEG images(*.jpg);;BMP images(*.bmp);;EXR images(*.exr);;HDR images(*.hdr);;"));
+            QString ext = QFileInfo(path).suffix();
+            int nsamples = 16;
+            if (!path.isEmpty()) {
+                Zenovis::GetInstance().getSession()->do_screenshot(path.toStdString(), ext.toStdString(), nsamples);
+            }
         });
         pAction = new QAction(tr("Record Video"), this);
         pAction->setShortcut(QKeySequence(tr("Shift+F12")));
         pRecord->addAction(pAction);
     }
 
-    QMenu* pEnvText = new QMenu(tr("EnvTex"));
+    QMenu *pEnvText = new QMenu(tr("EnvTex"));
     {
-        QAction* pAction = new QAction(tr("BlackWhite"), this);
+        QAction *pAction = new QAction(tr("BlackWhite"), this);
         connect(pAction, &QAction::triggered, this, [=]() {
             //todo
         });

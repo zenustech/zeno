@@ -46,10 +46,10 @@ NODE_DATA NodesMgr::createPointNode(IGraphsModel *pModel, QModelIndex subgIdx, c
     node[ROLE_OBJID] = nodeid;
     node[ROLE_OBJNAME] = descName;
     node[ROLE_NODETYPE] = nodeType(descName);
-    initInputSocks(pModel, desc.inputs);
+    initInputSocks(pModel, nodeid, desc.inputs);
     node[ROLE_INPUTS] = QVariant::fromValue(desc.inputs);
     node[ROLE_OUTPUTS] = QVariant::fromValue(desc.outputs);
-    initParams(pModel, desc.params);
+    initParams(descName, pModel, desc.params);
 	(desc.params["x"]).value = param.x();
     (desc.params["y"]).value = param.y();
     node[ROLE_PARAMETERS] = QVariant::fromValue(desc.params);
