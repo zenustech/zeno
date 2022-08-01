@@ -119,19 +119,21 @@ namespace zeno {
     constexpr void compute_barycentric_weights(Pol& pol,const VTileVec& verts,
         const ETileVec& quads,const EmbedTileVec& everts,
         const zs::SmallString& x_tag,BCWTileVec& bcw,
-        const zs::SmallString& elm_tag,const zs::SmallString& weight_tag,int fitting_in) {
+        const zs::SmallString& elm_tag,const zs::SmallString& weight_tag,
+        float bvh_thickness,
+        int fitting_in) {
 
         static_assert(zs::is_same_v<typename BCWTileVec::value_type,typename EmbedTileVec::value_type>,"precision not match");
         static_assert(zs::is_same_v<typename VTileVec::value_type,typename ETileVec::value_type>,"precision not match");        
         static_assert(zs::is_same_v<typename VTileVec::value_type,typename BCWTileVec::value_type>,"precision not match"); 
         using T = typename VTileVec::value_type; 
+        using bv_t = zs::AABBBox<3, T>;
         
         using namespace zs;
 
         auto cudaExec = zs::cuda_exec();
         constexpr auto space = zs::execspace_e::cuda;
 
-        T bvh_thickness = 0;
         auto bvs = retrieve_bounding_volumes(cudaExec,verts,quads,wrapv<4>{},bvh_thickness,x_tag);
         auto tetsBvh = LBvh<3,32, int,T>{};
         tetsBvh.build(cudaExec,bvs);
@@ -144,13 +146,20 @@ namespace zeno {
 
         cudaExec(zs::range(numEmbedVerts),
             [verts = proxy<space>({},verts),eles = proxy<space>({},quads),bcw = proxy<space>({},bcw),
-                    everts = proxy<space>({},everts),tetsBvh = proxy<space>(tetsBvh),x_tag,elm_tag,weight_tag,fitting_in] ZS_LAMBDA (int vi) mutable {
+                    everts = proxy<space>({},everts),tetsBvh = proxy<space>(tetsBvh),
+                    x_tag,elm_tag,weight_tag,fitting_in] ZS_LAMBDA (int vi) mutable {
                 const auto& p = everts.pack<3>(x_tag,vi);
                 T closest_dist = 1e6;
                 bool found = false;
+                // if(vi == 10820)
+                //     printf("check to locate vert %d using bvh\n",vi);
+
+                // auto dst_bv = bv_t{get_bounding_box(dst )}
                 tetsBvh.iter_neighbors(p,[&](int ei){
                     if(found)
                         return;
+                    // if(vi == 10820)
+                    //     printf("test neighbor element %d ei\n",ei);
                     auto inds = eles.template pack<4>(elm_tag, ei).template reinterpret_bits<int>();
                     auto p0 = verts.pack<3>(x_tag,inds[0]);
                     auto p1 = verts.pack<3>(x_tag,inds[1]);
