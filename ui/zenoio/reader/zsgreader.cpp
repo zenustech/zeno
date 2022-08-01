@@ -54,7 +54,7 @@ bool ZsgReader::openFile(const QString& fn, IAcceptor* pAcceptor)
     QFile file(fn);
     bool ret = file.open(QIODevice::ReadOnly | QIODevice::Text);
     if (!ret) {
-        zeno::log_error("canot open zsg file: {} ({})", fn.toStdString(),
+        zeno::log_error("cannot open zsg file: {} ({})", fn.toStdString(),
                        file.errorString().toStdString());
         return false;
     }
@@ -433,6 +433,7 @@ void ZsgReader::_parseInputs(const QString& id, const QString& nodeName, const N
             Q_ASSERT(false);
         }
     }
+    pAcceptor->endInputs();
 }
 
 void ZsgReader::_parseParams(const QString& id, const QString& nodeName, const rapidjson::Value& jsonParams, IAcceptor* pAcceptor)

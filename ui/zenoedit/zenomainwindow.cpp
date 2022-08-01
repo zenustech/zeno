@@ -23,6 +23,7 @@
 #include <zenoui/util/uihelper.h>
 #include "util/log.h"
 #include "dialog/zfeedbackdlg.h"
+#include "startup/zstartup.h"
 
 
 ZenoMainWindow::ZenoMainWindow(QWidget *parent, Qt::WindowFlags flags)
@@ -34,7 +35,7 @@ ZenoMainWindow::ZenoMainWindow(QWidget *parent, Qt::WindowFlags flags)
 {
     init();
     setContextMenuPolicy(Qt::NoContextMenu);
-    setWindowTitle("Zeno Editor (" __DATE__ ")");
+    setWindowTitle("Zeno Editor (" + QString::fromStdString(getZenoVersion()) + ")");
 //#ifdef __linux__
     if (char *p = zeno::envconfig::get("OPEN")) {
         zeno::log_info("ZENO_OPEN: {}", p);
@@ -58,19 +59,6 @@ void ZenoMainWindow::init()
     pal.setColor(QPalette::Window, QColor(11, 11, 11));
     setAutoFillBackground(true);
     setPalette(pal);
-
-    QString qss = "\
-        QMainWindow::separator {\
-            background: black;\
-            width: 3px;\
-            height: 3px;\
-        }\
-        \
-        QMainWindow::separator:hover {\
-            background: rgb(0,127,212);\
-        }\
-    ";
-    setStyleSheet(qss);
 }
 
 void ZenoMainWindow::initMenu() {
@@ -434,17 +422,15 @@ void ZenoMainWindow::exportGraph() {
 
     QString content;
     {
-        rapidjson::StringBuffer s;
-        RAPIDJSON_WRITER writer(s);
         IGraphsModel *pModel = zenoApp->graphsManagment()->currentModel();
         GraphsModel *model = (GraphsModel *)pModel;
-        {
+        if (path.endsWith(".cpp")) {
+            content = serializeSceneCpp(model);
+        } else {
+            rapidjson::StringBuffer s;
+            RAPIDJSON_WRITER writer(s);
             JsonArrayBatch batch(writer);
             serializeScene(model, writer);
-        }
-        if (path.endsWith(".cpp")) {
-            content = translateGraphToCpp(s.GetString(), s.GetLength(), model);
-        } else {
             content = QString(s.GetString());
         }
     }
@@ -470,6 +456,12 @@ void ZenoMainWindow::recordRecentFile(const QString& filePath)
     QStringList paths;
     for (QString key : keys) {
         QString path = settings.value(key).toString();
+        if (path == filePath)
+        {
+            //remove the old record.
+            settings.remove(key);
+            continue;
+        }
         paths.append(path);
     }
 
@@ -592,6 +584,7 @@ bool ZenoMainWindow::saveFile(QString filePath) {
     saveContent(strContent, filePath);
     pModel->setFilePath(filePath);
     pModel->clearDirty();
+    recordRecentFile(filePath);
     return true;
 }
 
@@ -641,7 +634,7 @@ void ZenoMainWindow::clearErrorMark()
 
 void ZenoMainWindow::saveAs() {
     DlgInEventLoopScope;
-    QString path = QFileDialog::getSaveFileName(this, "Path to Save", "", "Zensim Graph File(*.zsg);; All Files(*);;");
+    QString path = QFileDialog::getSaveFileName(this, "Path to Save", "", "Zeno Graph File(*.zsg);; All Files(*);;");
     if (!path.isEmpty()) {
         saveFile(path);
     }
@@ -650,7 +643,7 @@ void ZenoMainWindow::saveAs() {
 QString ZenoMainWindow::getOpenFileByDialog() {
     DlgInEventLoopScope;
     const QString &initialPath = ".";
-    QFileDialog fileDialog(this, tr("Open"), initialPath, "Zensim Graph File (*.zsg)\nAll Files (*)");
+    QFileDialog fileDialog(this, tr("Open"), initialPath, "Zeno Graph File (*.zsg)\nAll Files (*)");
     fileDialog.setAcceptMode(QFileDialog::AcceptOpen);
     fileDialog.setFileMode(QFileDialog::ExistingFile);
     fileDialog.setDirectory(initialPath);

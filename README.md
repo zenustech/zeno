@@ -91,9 +91,11 @@ To build ZENO from source, you need:
 
 - GCC 9+ or MSVC 19.28+, and CMake 3.16+ to build ZENO.
 - Qt 5.12+ to build the ZENO Qt editor.
+- (Optional) TBB for parallel support.
 - (Optional) OpenVDB for volume nodes.
 - (Optional) Eigen3 for solver nodes.
-- (Optional) CUDA 11 for GPU nodes.
+- (Optional) CGAL for geometry nodes.
+- (Optional) CUDA 11.6 for GPU nodes.
 
 > Hint: WSL is not recommended because of its limited GUI and OpenGL support.
 
@@ -119,14 +121,6 @@ See [`projects/FBX`](https://github.com/zenustech/zeno/projects/FBX) for an exam
 Currently the [`master`](https://github.com/zenustech/tree/master) branch is for Zeno 2.0.
 You may find Zeno 1.0 in the [`zeno_old_stable`](https://github.com/zenustech/tree/zeno_old_stable) branch.
 
-## Install via AUR (experimental)
-
-Arch Linux users may install Zeno from [AUR](https://aur.archlinux.org):
-```bash
-yay -S zeno
-```
-The package is maintained by @archibate.
-
 ## License
 
 ZENO is licensed under the Mozilla Public License Version 2.0, see [LICENSE](LICENSE) for more information.
@@ -144,3 +138,5 @@ You may contact us via WeChat:
 ... or sending E-mail:
 
 * @archibate: pengyb@zenustech.com
+
+Jobs offering: zenustech.com/jobs

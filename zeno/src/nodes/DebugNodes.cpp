@@ -1,17 +1,36 @@
 #include <zeno/zeno.h>
 #include <zeno/types/NumericObject.h>
+#include <zeno/types/PrimitiveObject.h>
 #include <zeno/utils/logger.h>
 #include <cstdio>
 
 namespace {
 
-struct GCTest : zeno::NumericObject {
+struct GCTest : zeno::IObjectClone<GCTest, zeno::NumericObject> {
     GCTest() {
-        printf("GCTest()\n");
+        printf("%d GCTest()\n", this->get<int>());
+    }
+
+    GCTest(GCTest const &) {
+        printf("%d GCTest(GCTest const &)\n", this->get<int>());
+    }
+
+    GCTest &operator=(GCTest const &) {
+        printf("%d GCTest &operator=(GCTest const &)\n", this->get<int>());
+        return *this;
+    }
+
+    GCTest(GCTest &&) {
+        printf("%d GCTest(GCTest &&)\n", this->get<int>());
+    }
+
+    GCTest &operator=(GCTest &&) {
+        printf("%d GCTest &operator=(GCTest &&)\n", this->get<int>());
+        return *this;
     }
 
     ~GCTest() {
-        printf("~GCTest()\n");
+        printf("%d ~GCTest()\n", this->get<int>());
     }
 };
 
@@ -62,14 +81,14 @@ ZENDEFNODE(PrintMessageStdErr, {
 });
 
 
-struct ExitProcess : zeno::INode {
+struct TriggerExitProcess : zeno::INode {
     virtual void apply() override {
         int status = get_param<int>("status");
         exit(status);
     }
 };
 
-ZENDEFNODE(ExitProcess, {
+ZENDEFNODE(TriggerExitProcess, {
     {},
     {},
     {{"int", "status", "-1"}},
@@ -94,7 +113,7 @@ ZENDEFNODE(TriggerSegFault, {
 struct TriggerDivideZero : zeno::INode {
     virtual void apply() override {
         volatile int x = 0;
-        x /= x;
+        x = x / x;
     }
 };
 
@@ -159,6 +178,21 @@ ZENDEFNODE(TriggerException, {
     {},
     {},
     {{"string", "message", "exception occurred!"}},
+    {"debug"},
+});
+
+struct TriggerViewportFault : zeno::INode {
+    virtual void apply() override {
+        auto prim = std::make_shared<zeno::PrimitiveObject>();
+        prim->tris.resize(1);
+        set_output("prim", std::move(prim));
+    }
+};
+
+ZENDEFNODE(TriggerViewportFault, {
+    {},
+    {"prim"},
+    {},
     {"debug"},
 });
 

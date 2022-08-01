@@ -38,7 +38,7 @@ void SubnetItemDelegated::paint(QPainter* painter, const QStyleOptionViewItem& o
 	int iconSize = opt.decorationSize.height();
 	int textMargin = ZenoStyle::dpiScaled(5);
 	QTextLayout textLayout2(opt.text, opt.font);
-	const int maxLineWidth = 8388607; //²ÎÕÕQCommonStylePrivate::viewItemSize
+	const int maxLineWidth = 8388607; //å‚ç…§QCommonStylePrivate::viewItemSize
 	QSizeF szText = UiHelper::viewItemTextLayout(textLayout2, maxLineWidth);
 
 	int icon_xoffset = icon_center_xoffset - iconSize / 2;
@@ -77,9 +77,9 @@ void SubnetItemDelegated::paint(QPainter* painter, const QStyleOptionViewItem& o
 	painter->setPen(QPen(borderColor));
 	painter->drawRect(opt.rect.adjusted(0, 0, -1, -1));
 
-	//TODO: Õ¹¿ªÏîÔÚÊÕËõÊ±Ò²ÄÜ³ÊÏÖ±»Ñ¡ÖÐµÄ×´Ì¬¡£
+	//TODO: å±•å¼€é¡¹åœ¨æ”¶ç¼©æ—¶ä¹Ÿèƒ½å‘ˆçŽ°è¢«é€‰ä¸­çš„çŠ¶æ€ã€‚
 
-	//Õ¹¿ªÊÕËõ¼ýÍ·¡£
+	//å±•å¼€æ”¶ç¼©ç®­å¤´ã€‚
 	if (index.model()->hasChildren(index))
 		drawExpandArrow(painter, opt);
 
@@ -87,7 +87,7 @@ void SubnetItemDelegated::paint(QPainter* painter, const QStyleOptionViewItem& o
 	QIcon::State state = opt.state & QStyle::State_Open ? QIcon::On : QIcon::Off;
 	//opt.icon.paint(painter, iconRect, opt.decorationAlignment, QIcon::Normal, state);
 
-	// Ìí¼Ó°´Å¥
+	// æ·»åŠ æŒ‰é’®
 	/*
 	if (isExpandable && (opt.state & QStyle::State_MouseOver))
 	{

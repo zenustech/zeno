@@ -75,23 +75,32 @@ struct PrimitiveToSDF : zeno::INode{
     //}
     auto h = get_input2<float>("Dx");
     //auto h = get_input("Dx")->as<NumericObject>()->get<float>();
+    if (auto p = dynamic_cast<VDBFloatGrid *>(get_input("PrimitiveMesh").get())) {
+        set_output("sdf", get_input("PrimitiveMesh"));
+        return;
+    }
     auto mesh = get_input("PrimitiveMesh")->as<PrimitiveObject>();
     auto result = zeno::IObject::make<VDBFloatGrid>();
     std::vector<openvdb::Vec3s> points;
     std::vector<openvdb::Vec3I> triangles;
     std::vector<openvdb::Vec4I> quads;
-    points.resize(mesh->attr<zeno::vec3f>("pos").size());
+    points.resize(mesh->verts.size());
     triangles.resize(mesh->tris.size());
-    quads.resize(0);
+    quads.resize(mesh->quads.size());
 #pragma omp parallel for
     for(int i=0;i<points.size();i++)
     {
-        points[i] = openvdb::Vec3s(mesh->attr<zeno::vec3f>("pos")[i][0], mesh->attr<zeno::vec3f>("pos")[i][1], mesh->attr<zeno::vec3f>("pos")[i][2]);
+        points[i] = openvdb::Vec3s(mesh->verts[i][0], mesh->verts[i][1], mesh->verts[i][2]);
     }
 #pragma omp parallel for
     for(int i=0;i<triangles.size();i++)
     {
         triangles[i] = openvdb::Vec3I(mesh->tris[i][0], mesh->tris[i][1], mesh->tris[i][2]);
+    }
+#pragma omp parallel for
+    for(int i=0;i<quads.size();i++)
+    {
+        quads[i] = openvdb::Vec4I(mesh->quads[i][0], mesh->quads[i][1], mesh->quads[i][2], mesh->quads[i][3]);
     }
     auto vdbtransform = openvdb::math::Transform::createLinearTransform(h);
     if(get_param<std::string>(("type"))==std::string("vertex"))
@@ -119,17 +128,19 @@ static int defPrimitiveToSDF = zeno::defNodeClass<PrimitiveToSDF>("PrimitiveToSD
 struct SDFToFog : INode 
 {
     virtual void apply() override {
-        auto sdf = get_input("SDF")->as<VDBFloatGrid>();
-        auto result = zeno::IObject::make<VDBFloatGrid>();
-        auto dx = sdf->m_grid->voxelSize()[0];
-        result->m_grid = sdf->m_grid->deepCopy();
-        openvdb::tools::sdfToFogVolume(*(result->m_grid));
-        set_output("oSDF", result);
+        auto sdf = get_input<VDBFloatGrid>("SDF");
+        if (!has_input("inplace") || !get_input2<bool>("inplace")) {
+            sdf = std::make_shared<VDBFloatGrid>(sdf->m_grid->deepCopy());
+        }
+        //auto dx = sdf->m_grid->voxelSize()[0];
+        openvdb::tools::sdfToFogVolume(*(sdf->m_grid));
+        set_output("oSDF", std::move(sdf));
     }
 };
 static int defSDFToFog = zeno::defNodeClass<SDFToFog>("SDFToFog",
     { /* inputs: */ {
         "SDF",
+        {"bool", "inplace", "0"},
     }, /* outputs: */ {
         "oSDF",
     }, /* params: */ {

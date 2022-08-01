@@ -91,7 +91,9 @@ ptccd(VecT p, VecT t0, VecT t1, VecT t2, VecT dp, VecT dt0, VecT dt1, VecT dt2,
   T gap = eta * (dist2_cur - thickness * thickness) / (dist_cur + thickness);
   T toc_prev = toc;
   toc = tStart;
-  while (true) {
+  int iter = 0;
+  while (++iter < 20000) {
+    // while (true) {
     T tocLowerBound = (1 - eta) * (dist2_cur - thickness * thickness) /
                       ((dist_cur + thickness) * maxDispMag);
     if (tocLowerBound < 0)
@@ -119,7 +121,8 @@ template <typename VecT>
 constexpr bool
 eeccd(VecT ea0, VecT ea1, VecT eb0, VecT eb1, VecT dea0, VecT dea1, VecT deb0,
       VecT deb1, typename VecT::value_type eta,
-      typename VecT::value_type thickness, typename VecT::value_type &toc) {
+      typename VecT::value_type thickness, typename VecT::value_type &toc,
+      typename VecT::value_type tStart = 0) {
   using T = typename VecT::value_type;
   auto mov = (dea0 + dea1 + deb0 + deb1) / 4;
   dea0 -= mov;
@@ -150,8 +153,10 @@ eeccd(VecT ea0, VecT ea1, VecT eb0, VecT eb1, VecT dea0, VecT dea1, VecT deb0,
   T dist_cur = zs::sqrt(dist2_cur);
   T gap = eta * dFunc / (dist_cur + thickness);
   T toc_prev = toc;
-  toc = 0;
-  while (true) {
+  toc = tStart;
+  int iter = 0;
+  while (++iter < 20000) {
+    // while (true) {
     T tocLowerBound = (1 - eta) * dFunc / ((dist_cur + thickness) * maxDispMag);
     if (tocLowerBound < 0)
       printf("damn ee!\n");
@@ -206,14 +211,17 @@ ptccd(const VecT &p, const VecT &t0, const VecT &t1, const VecT &t2,
   auto t2end = t2 + t * dt2;
 
   constexpr zs::vec<double, 3> err(-1, -1, -1);
+  bool earlyTerminate = false;
   double ms = 1e-8;
   double toi{};
   const double tolerance = 1e-6;
   const double t_max = 1;
-  const int max_itr = 1e6;
+  const int max_itr = 3e5;
   double output_tolerance = 1e-6;
   while (vertexFaceCCD(p, t0, t1, t2, pend, t0end, t1end, t2end, err, ms, toi,
-                       tolerance, t_max, max_itr, output_tolerance, true)) {
+                       tolerance, t_max, max_itr, output_tolerance,
+                       earlyTerminate, true) &&
+         !earlyTerminate) {
     t = zs::min(t / 2, toi);
     pend = p + t * dp;
     t0end = t0 + t * dt0;
@@ -221,6 +229,12 @@ ptccd(const VecT &p, const VecT &t0, const VecT &t1, const VecT &t2,
     t2end = t2 + t * dt2;
   }
 
+  if (earlyTerminate) {
+    toc = t;
+    if (accd::ptccd(p, t0, t1, t2, dp, dt0, dt1, dt2, eta, thickness, toc)) {
+      return true;
+    }
+  }
   if (t == toc) {
     return false;
   } else {
@@ -243,21 +257,30 @@ eeccd(const VecT &ea0, const VecT &ea1, const VecT &eb0, const VecT &eb1,
   auto eb1end = eb1 + t * deb1;
 
   constexpr zs::vec<double, 3> err(-1, -1, -1);
+  bool earlyTerminate = false;
   double ms = 1e-8;
   double toi{};
   const double tolerance = 1e-6;
   const double t_max = 1;
-  const int max_itr = 1e6;
+  const int max_itr = 3e5;
   double output_tolerance = 1e-6;
   while (edgeEdgeCCD(ea0, ea1, eb0, eb1, ea0end, ea1end, eb0end, eb1end, err,
                      ms, toi, tolerance, t_max, max_itr, output_tolerance,
-                     true)) {
+                     earlyTerminate, true) &&
+         !earlyTerminate) {
     t = zs::min(t / 2, toi);
-    // t /= 2;
     ea0end = ea0 + t * dea0;
     ea1end = ea1 + t * dea1;
     eb0end = eb0 + t * deb0;
     eb1end = eb1 + t * deb1;
+  }
+
+  if (earlyTerminate) {
+    toc = t;
+    if (accd::eeccd(ea0, ea1, eb0, eb1, dea0, dea1, deb0, deb1, eta, thickness,
+                    toc)) {
+      return true;
+    }
   }
 
   if (t == toc) {

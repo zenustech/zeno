@@ -101,6 +101,18 @@ struct ParticlesWrangle : zeno::INode {
             }
         }
         // END心欣你也可以把这段代码加到其他wrangle节点去，这样这些wrangle也可以自动引用portal做参数
+        // BEGIN伺候心欣伺候懒得extract出变量了
+        std::vector<std::string> keys;
+        for (auto const &[key, val]: params->lut) {
+            keys.push_back(key);
+        }
+        for (auto const &key: keys) {
+            if (!dynamic_cast<zeno::NumericObject*>(params->lut.at(key).get())) {
+                dbg_printf("ignored non-numeric %s\n", key.c_str());
+                params->lut.erase(key);
+            }
+        }
+        // END伺候心欣伺候懒得extract出变量了
         }
         std::vector<float> parvals;
         std::vector<std::pair<std::string, int>> parnames;
@@ -189,36 +201,16 @@ ZENDEFNODE(ParticlesWrangle, {
     {"zenofx"},
 });
 
+//struct PrimWrangle : ParticlesWrangle {
+//};
 
-struct SyncPrimitiveAttributes : zeno::INode {
-    virtual void apply() override {
-        auto prim1 = get_input<zeno::PrimitiveObject>("prim1");
-        auto prim2 = get_input<zeno::PrimitiveObject>("prim2");
-
-        prim1->verts.foreach_attr([&] (auto const &key, auto const &attr) {
-            using T = std::decay_t<decltype(attr[0])>;
-            prim2->add_attr<T>(key);
-        });
-
-        prim2->verts.foreach_attr([&] (auto const &key, auto const &attr) {
-            using T = std::decay_t<decltype(attr[0])>;
-            prim1->add_attr<T>(key);
-        });
-
-        // prim1->resize(prim1->size());
-        // prim2->resize(prim2->size());
-
-        set_output("prim1",prim1);
-        set_output("prim2",prim2);
-    }
-};
-
-ZENDEFNODE(SyncPrimitiveAttributes, {
-    {"prim1", "prim2"},
-    {"prim1", "prim2"},
-    {},
-    {"zenofx"},
-});
+//ZENDEFNODE(PrimWrangle, {
+    //{{"PrimitiveObject", "prim"},
+     //{"string", "zfxCode"}, {"DictObject:NumericObject", "params"}},
+    //{{"PrimitiveObject", "prim"}},
+    //{},
+    //{"zenofx"},
+//});
 
 
 }

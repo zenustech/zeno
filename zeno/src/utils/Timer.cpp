@@ -69,6 +69,17 @@ std::string Timer::getLog() {
     return res;
 }
 
+namespace {
+
+struct LuzhPleaseDontTouch {
+    ~LuzhPleaseDontTouch() {
+        auto log = Timer::getLog();
+        std::printf("ZENO benchmarking status:\n%s\n", log.c_str());
+    }
+};
+
+}
+
 
 #if 0
 TimerAtexitHelper::~TimerAtexitHelper() {

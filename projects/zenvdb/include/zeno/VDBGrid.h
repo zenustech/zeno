@@ -51,6 +51,12 @@ struct VDBGrid : zeno::IObject {
   virtual void output(std::string path) = 0;
   virtual void input(std::string path) = 0;
   virtual void setTransform(openvdb::math::Transform::Ptr const &trans) = 0;
+  virtual std::string method_node(std::string const &op) override {
+      if (op == "view") {
+          return "INTERN_PreViewVDB";
+      }
+      return {};
+  }
 
   // using GeneralVdbGrid = variant<typename SomeGrid::Ptr, >;
   // virtual GeneralVdbGrid getGrid() = 0;
@@ -76,11 +82,15 @@ struct VDBGridWrapper : zeno::IObjectClone<VDBGridWrapper<GridT>, VDBGrid> {
   VDBGridWrapper(typename GridT::Ptr &&ptr) { m_grid = std::move(ptr); }
 
   VDBGridWrapper(VDBGridWrapper const &other) {
-      m_grid = other.m_grid->deepCopy();
+      if (other.m_grid)
+          m_grid = other.m_grid->deepCopy();
   }
 
   VDBGridWrapper &operator=(VDBGridWrapper const &other) {
-      m_grid = other.m_grid->deepCopy();
+      if (other.m_grid)
+          m_grid = other.m_grid->deepCopy();
+      else
+          m_grid = nullptr;
       return *this;
   }
 

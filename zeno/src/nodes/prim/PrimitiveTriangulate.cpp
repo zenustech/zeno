@@ -3,6 +3,7 @@
 #include <zeno/funcs/PrimitiveUtils.h>
 #include <zeno/para/parallel_for.h>
 #include <zeno/para/parallel_scan.h>
+#include <zeno/utils/variantswitch.h>
 
 namespace zeno {
 
@@ -18,30 +19,56 @@ ZENO_API void primTriangulateQuads(PrimitiveObject *prim) {
     prim->quads.clear();
 }
 
-ZENO_API void primTriangulate(PrimitiveObject *prim, bool with_uv) {
-    prim->tris.reserve(prim->tris.size() + prim->polys.size());
+ZENO_API void primTriangulate(PrimitiveObject *prim, bool with_uv, bool has_lines) {
+    //prim->tris.reserve(prim->tris.size() + prim->polys.size());
 
-    std::vector<int> scansum(prim->polys.size());
+  boolean_switch(has_lines, [&] (auto has_lines) {
+    std::vector<std::conditional_t<has_lines.value, vec2i, int>> scansum(prim->polys.size());
     auto redsum = parallel_exclusive_scan_sum(prim->polys.begin(), prim->polys.end(),
                                            scansum.begin(), [&] (auto &ind) {
-                                               return ind[1] >= 3 ? ind[1] : 0;
+                                               if constexpr (has_lines.value) {
+                                                   return vec2i(ind[1] >= 3 ? ind[1] - 2 : 0, ind[1] == 2 ? 1 : 0);
+                                               } else {
+                                                   return ind[1] >= 3 ? ind[1] - 2 : 0;
+                                               }
                                            });
-    auto tribase = prim->tris.size();
-    prim->tris.resize(tribase + redsum);
+    int tribase = prim->tris.size();
+    int linebase = prim->lines.size();
+    if constexpr (has_lines.value) {
+        prim->tris.resize(tribase + redsum[0]);
+        prim->lines.resize(linebase + redsum[1]);
+    } else {
+        prim->tris.resize(tribase + redsum);
+    }
 
     if (!prim->loops.has_attr("uv") || !with_uv) {
         parallel_for(prim->polys.size(), [&] (size_t i) {
             auto [start, len] = prim->polys[i];
-            int scanbase = scansum[i] + tribase;
-            prim->tris[scanbase++] = vec3f(
-                    prim->loops[start],
-                    prim->loops[start + 1],
-                    prim->loops[start + 2]);
-            for (int j = 3; j < len; j++) {
+            if (len >= 3) {
+                int scanbase;
+                if constexpr (has_lines.value) {
+                    scanbase = scansum[i][0] + tribase;
+                } else {
+                    scanbase = scansum[i] + tribase;
+                }
                 prim->tris[scanbase++] = vec3f(
                         prim->loops[start],
-                        prim->loops[start + j - 1],
-                        prim->loops[start + j]);
+                        prim->loops[start + 1],
+                        prim->loops[start + 2]);
+                for (int j = 3; j < len; j++) {
+                    prim->tris[scanbase++] = vec3f(
+                            prim->loops[start],
+                            prim->loops[start + j - 1],
+                            prim->loops[start + j]);
+                }
+            }
+            if constexpr (has_lines.value) {
+                if (len == 2) {
+                    int scanbase = scansum[i][1] + linebase;
+                    prim->lines[scanbase] = vec2f(
+                        prim->loops[start],
+                        prim->loops[start + 1]);
+                }
             }
         });
 
@@ -53,28 +80,44 @@ ZENO_API void primTriangulate(PrimitiveObject *prim, bool with_uv) {
 
         parallel_for(prim->polys.size(), [&] (size_t i) {
             auto [start, len] = prim->polys[i];
-            int scanbase = scansum[i] + tribase;
-            uv0[scanbase] = loop_uv[start];
-            uv1[scanbase] = loop_uv[start + 1];
-            uv2[scanbase] = loop_uv[start + 2];
-            prim->tris[scanbase++] = vec3f(
-                    prim->loops[start],
-                    prim->loops[start + 1],
-                    prim->loops[start + 2]);
-            for (int j = 3; j < len; j++) {
+            if (len >= 3) {
+                int scanbase;
+                if constexpr (has_lines.value) {
+                    scanbase = scansum[i][0] + tribase;
+                } else {
+                    scanbase = scansum[i] + tribase;
+                }
                 uv0[scanbase] = loop_uv[start];
-                uv1[scanbase] = loop_uv[start + j - 1];
-                uv2[scanbase] = loop_uv[start + j];
+                uv1[scanbase] = loop_uv[start + 1];
+                uv2[scanbase] = loop_uv[start + 2];
                 prim->tris[scanbase++] = vec3f(
                         prim->loops[start],
-                        prim->loops[start + j - 1],
-                        prim->loops[start + j]);
+                        prim->loops[start + 1],
+                        prim->loops[start + 2]);
+                for (int j = 3; j < len; j++) {
+                    uv0[scanbase] = loop_uv[start];
+                    uv1[scanbase] = loop_uv[start + j - 1];
+                    uv2[scanbase] = loop_uv[start + j];
+                    prim->tris[scanbase++] = vec3f(
+                            prim->loops[start],
+                            prim->loops[start + j - 1],
+                            prim->loops[start + j]);
+                }
+            }
+            if constexpr (has_lines.value) {
+                if (len == 2) {
+                    int scanbase = scansum[i][1] + linebase;
+                    prim->lines[scanbase] = vec2f(
+                        prim->loops[start],
+                        prim->loops[start + 1]);
+                }
             }
         });
 
     }
     prim->loops.clear();
     prim->polys.clear();
+  });
 }
 
 namespace {
@@ -83,7 +126,7 @@ struct PrimitiveTriangulate : INode {
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
         if (get_param<bool>("from_poly")) {
-            primTriangulate(prim.get(), get_param<bool>("with_uv"));
+            primTriangulate(prim.get(), get_param<bool>("with_uv"), get_param<bool>("has_lines"));
         }
         if (get_param<bool>("from_quads")) {
             primTriangulateQuads(prim.get());
@@ -101,6 +144,7 @@ ZENDEFNODE(PrimitiveTriangulate,
         {"bool", "from_poly", "1"},
         {"bool", "with_uv", "1"},
         {"bool", "from_quads", "1"},
+        {"bool", "has_lines", "1"},
         }, /* category: */ {
         "primitive",
         }});

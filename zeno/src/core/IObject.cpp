@@ -26,6 +26,10 @@ ZENO_API bool IObject::move_assign(IObject const *other) {
     return false;
 }
 
+ZENO_API std::string IObject::method_node(std::string const &op) {
+    return {};
+}
+
 ZENO_API UserData &IObject::userData() const {
     if (!m_userData.has_value())
         m_userData.emplace<UserData>();

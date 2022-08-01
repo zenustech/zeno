@@ -306,17 +306,25 @@ struct AttrVector {
 
     template <class T>
     auto &add_attr(std::string const &name) {
-        if (!has_attr(name))
+        if (!attr_is<T>(name))
             attrs[name] = std::vector<T>(size());
         return attr<T>(name);
     }
 
+    // deprecated:
     template <class T>
-    auto &add_attr(std::string const &name, T const &value) {
-        if (!has_attr(name))
-            attrs[name] = std::vector<T>(size(), value);
+    auto &add_attr(std::string const &name, T const &val) {
+        if (!attr_is<T>(name))
+            attrs[name] = std::vector<T>(size(), val);
         return attr<T>(name);
     }
+
+    //template <class T>
+    //auto &add_attr(std::string const &name, T const &value) {
+        //if (!attr_is<T>(name))
+            //attrs[name] = std::vector<T>(size(), value);
+        //return attr<T>(name);
+    //}
 
     template <class T>
     auto const &attr(std::string const &name) const {
@@ -384,7 +392,9 @@ struct AttrVector {
 
     template <class T>
     bool attr_is(std::string const &name) const {
-        return std::holds_alternative<std::vector<T>>(attr(name));
+        if (name == "pos") return std::is_same_v<T, ValT>;
+        auto it = attrs.find(name);
+        return it != attrs.end() && std::holds_alternative<std::vector<T>>(it->second);
     }
 
     void clear_attrs() {

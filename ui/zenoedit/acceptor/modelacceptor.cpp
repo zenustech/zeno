@@ -340,9 +340,14 @@ void ModelAcceptor::setInputSocket(
         }
         else
         {
-            zeno::log_warn("no such input socket {}", inSock.toStdString());
+            zeno::log_warn("{}: no such input socket {}", nodeCls.toStdString(), inSock.toStdString());
         }
     }
+}
+
+void ModelAcceptor::endInputs()
+{
+    //todo
 }
 
 void ModelAcceptor::setParamValue(const QString& id, const QString& nodeCls, const QString& name, const rapidjson::Value& value)

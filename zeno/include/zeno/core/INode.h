@@ -76,7 +76,7 @@ protected:
 
     template <class T>
     T get_input2(std::string const &id) const {
-        return objectToLiterial<T>(get_input(id));
+        return objectToLiterial<T>(get_input(id), "input socket `" + id + "`");
     }
 
     template <class T>

@@ -88,7 +88,7 @@ void ZenoGraphsEditor::initModel()
 void ZenoGraphsEditor::initSignals()
 {
 	auto graphsMgr = zenoApp->graphsManagment();
-	connect(graphsMgr.get(), SIGNAL(modelInited(IGraphsModel*)), this, SLOT(resetModel(IGraphsModel*)));
+	connect(&*graphsMgr, SIGNAL(modelInited(IGraphsModel*)), this, SLOT(resetModel(IGraphsModel*)));
     connect(graphsMgr->logModel(), &QStandardItemModel::rowsInserted, this, &ZenoGraphsEditor::onLogInserted);
 
     connect(m_ui->subnetBtn, &ZenoCheckButton::toggled, this, &ZenoGraphsEditor::sideButtonToggled);
@@ -257,6 +257,14 @@ void ZenoGraphsEditor::onSubnetOptionClicked()
         bool bOk = false;
         QString newSubgName = QInputDialog::getText(this, tr("create subnet"), tr("new subgraph name:")
             , QLineEdit::Normal, "SubgraphName", &bOk);
+
+        if (newSubgName.compare("main", Qt::CaseInsensitive) == 0)
+        {
+            QMessageBox msg(QMessageBox::Warning, tr("Zeno"), tr("main graph is not allowed to be created"));
+            msg.exec();
+            return;
+        }
+
         if (bOk) {
             m_model->newSubgraph(newSubgName);
         }
@@ -265,11 +273,11 @@ void ZenoGraphsEditor::onSubnetOptionClicked()
 
 		});
 	connect(pImpFromFile, &QAction::triggered, this, [=]() {
-
-		});
+        m_mainWin->importGraph();
+    });
 	connect(pImpFromSys, &QAction::triggered, this, [=]() {
 
-		});
+	});
 
     pOptionsMenu->exec(QCursor::pos());
     pOptionsMenu->deleteLater();

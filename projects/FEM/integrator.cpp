@@ -1,3 +1,4 @@
+#include <zeno/utils/nowarn.h>
 #include "declares.h"
 
 namespace zeno {
@@ -8,7 +9,7 @@ struct MakeFEMIntegrator : zeno::INode {
         auto muscle = get_input<MuscleModelObject>("elasto");
         auto damp = get_input<DampingForceModel>("visco");
         auto dt = get_input2<float>("dt");
-        auto inttype = get_param<std::string>("integType");
+        auto inttype = get_param<std::string>(("integType"));
 
         auto res = std::make_shared<FEMIntegrator>();
         // if(inttype == "BE"){

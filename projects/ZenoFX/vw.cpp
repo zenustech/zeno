@@ -5,12 +5,15 @@
 #include <zeno/utils/variantswitch.h>
 #include <zeno/extra/GlobalState.h>
 #include <zeno/core/Graph.h>
+#include <openvdb/tools/Prune.h>
+#include <openvdb/tools/ChangeBackground.h>
 #include <zeno/VDBGrid.h>
 #include <zfx/zfx.h>
 #include <zfx/x64.h>
 #include <cassert>
 #include "dbg_printf.h"
 #include <zeno/StringObject.h>
+#include <zeno/utils/zeno_p.h>
 
 namespace zeno {
 namespace {
@@ -18,55 +21,99 @@ namespace {
 static zfx::Compiler compiler;
 static zfx::x64::Assembler assembler;
 
-struct Buffer {
-    float *base = nullptr;
-    size_t count = 0;
-    size_t stride = 0;
-    int which = 0;
-};
-
-
-
 template <class GridPtr>
-void vdb_wrangle(zfx::x64::Executable *exec, GridPtr &grid, bool modifyActive) {
-    auto velman = openvdb::tree::LeafManager<std::decay_t<decltype(grid->tree())>>(grid->tree());
-    zeno::boolean_switch(modifyActive, [&] (auto modifyActive) {
+void vdb_wrangle(zfx::x64::Executable *exec, GridPtr &grid, bool modifyActive, bool changeBackground, bool hasPos) {
+    //ZENO_P(grid->background());
     auto wrangler = [&](auto &leaf, openvdb::Index leafpos) {
-        for (auto iter = leaf.beginValueOn(); iter != leaf.endValueOn(); ++iter) {
-            iter.modifyValue([&](auto &v) {
-                auto ctx = exec->make_context();
-                if constexpr (std::is_same_v<std::decay_t<decltype(v)>, openvdb::Vec3f>) {
-                    ctx.channel(0)[0] = v[0];
-                    ctx.channel(1)[0] = v[1];
-                    ctx.channel(2)[0] = v[2];
-                    ctx.execute();
-                    v[0] = ctx.channel(0)[0];
-                    v[1] = ctx.channel(1)[0];
-                    v[2] = ctx.channel(2)[0];
-    
-                } else {
-                    ctx.channel(0)[0] = v;
-                    ctx.execute();
-                    v = ctx.channel(0)[0];
-                    
-                }
-                
-            });
+        std::visit([&] (auto hasPos) {
+            for (auto iter = leaf.beginValueOn(); iter != leaf.endValueOn(); ++iter) {
+                iter.modifyValue([&](auto &v) {
+                    auto ctx = exec->make_context();
+                    if constexpr (std::is_same_v<std::decay_t<decltype(v)>, openvdb::Vec3f>) {
+                        ctx.channel(0)[0] = v[0];
+                        ctx.channel(1)[0] = v[1];
+                        ctx.channel(2)[0] = v[2];
+                        if (hasPos) {
+                            openvdb::Vec3f p = grid->transformPtr()->indexToWorld(iter.getCoord());
+                            ctx.channel(3)[0] = p[0];
+                            ctx.channel(4)[0] = p[1];
+                            ctx.channel(5)[0] = p[2];
+                        }
+                        ctx.execute();
+                        v[0] = ctx.channel(0)[0];
+                        v[1] = ctx.channel(1)[0];
+                        v[2] = ctx.channel(2)[0];
+        
+                    } else {
+                        ctx.channel(0)[0] = v;
+                        if (hasPos) {
+                            openvdb::Vec3f p = grid->transformPtr()->indexToWorld(iter.getCoord());
+                            ctx.channel(1)[0] = p[0];
+                            ctx.channel(2)[0] = p[1];
+                            ctx.channel(3)[0] = p[2];
+                        }
+                        ctx.execute();
+                        v = ctx.channel(0)[0];
 
-            if constexpr(modifyActive.value){
-                float testv;
-                auto v = iter.getValue();
-                if constexpr (std::is_same_v<std::decay_t<decltype(v)>, openvdb::Vec3f>) {
-                    testv = std::sqrt(v[0]*v[0]+v[1]*v[1]+v[2]*v[2]);
-                } else {
-                    testv = std::abs(v);
+                    }
+                    
+                });
+
+                if(modifyActive){
+                    float testv;
+                    auto v = iter.getValue();
+                    if constexpr (std::is_same_v<std::decay_t<decltype(v)>, openvdb::Vec3f>)
+                    {
+                        testv = std::sqrt(v[0]*v[0]+v[1]*v[1]+v[2]*v[2]);
+                    } else {
+                        testv = std::abs(v);
+                    }
+                    if(testv<1e-5)
+                    {
+                        iter.setValueOn(false);
+                    }
+                    else{
+                        iter.setValueOn(true);
+                    }
                 }
-                iter.setValueOn(testv<1e-5);
             }
-        }
+        }, boolean_variant(hasPos));
     };
+    auto velman = openvdb::tree::LeafManager<std::decay_t<decltype(grid->tree())>>(grid->tree());
     velman.foreach(wrangler);
-    });
+    if (changeBackground) {
+        auto v = grid->background();
+        {
+            auto ctx = exec->make_context();
+            openvdb::Vec3f p(0, 0, 0);
+                    if constexpr (std::is_same_v<std::decay_t<decltype(v)>, openvdb::Vec3f>) {
+                        ctx.channel(0)[0] = v[0];
+                        ctx.channel(1)[0] = v[1];
+                        ctx.channel(2)[0] = v[2];
+                        if (hasPos) {
+                            ctx.channel(3)[0] = p[0];
+                            ctx.channel(4)[0] = p[1];
+                            ctx.channel(5)[0] = p[2];
+                        }
+                        ctx.execute();
+                        v[0] = ctx.channel(0)[0];
+                        v[1] = ctx.channel(1)[0];
+                        v[2] = ctx.channel(2)[0];
+        
+                    } else {
+                        ctx.channel(0)[0] = v;
+                        if (hasPos) {
+                            ctx.channel(1)[0] = p[0];
+                            ctx.channel(2)[0] = p[1];
+                            ctx.channel(3)[0] = p[2];
+                        }
+                        ctx.execute();
+                        v = ctx.channel(0)[0];
+
+                    }
+        }
+        openvdb::tools::changeBackground(grid->tree(), v);
+    }
     openvdb::tools::prune(grid->tree());
 }
 
@@ -75,6 +122,8 @@ struct VDBWrangle : zeno::INode {
         auto grid = get_input<zeno::VDBGrid>("grid");
         auto code = get_input<zeno::StringObject>("zfxCode")->get();
 
+        auto hasPos = code.find("@pos") != code.npos;
+
         zfx::Options opts(zfx::Options::for_x64);
         if (std::dynamic_pointer_cast<zeno::VDBFloatGrid>(grid))
             opts.define_symbol("@val", 1);
@@ -82,6 +131,8 @@ struct VDBWrangle : zeno::INode {
             opts.define_symbol("@val", 3);
         else
             dbg_printf("unexpected vdb grid type");
+        if (hasPos)
+            opts.define_symbol("@pos", 3);
         opts.reassign_channels = false;
 
         auto params = has_input("params") ?
@@ -109,6 +160,18 @@ struct VDBWrangle : zeno::INode {
             }
         }
         // END心欣你也可以把这段代码加到其他wrangle节点去，这样这些wrangle也可以自动引用portal做参数
+        // BEGIN伺候心欣伺候懒得extract出变量了
+        std::vector<std::string> keys;
+        for (auto const &[key, val]: params->lut) {
+            keys.push_back(key);
+        }
+        for (auto const &key: keys) {
+            if (!dynamic_cast<zeno::NumericObject*>(params->lut.at(key).get())) {
+                dbg_printf("ignored non-numeric %s\n", key.c_str());
+                params->lut.erase(key);
+            }
+        }
+        // END伺候心欣伺候懒得extract出变量了
         }
         std::vector<float> parvals;
         std::vector<std::pair<std::string, int>> parnames;
@@ -147,18 +210,23 @@ struct VDBWrangle : zeno::INode {
             dbg_printf("(valued %f)\n", value);
             exec->parameter(prog->param_id(name, dimid)) = value;
         }
-        auto modifyActive = (get_input<zeno::StringObject>("ModifyActive")->get())=="true";
+        auto modifyActive = has_input("ModifyActive") ?
+            (get_input<zeno::StringObject>("ModifyActive")->get())=="true" : false;
+        auto changeBackground = has_input("ChangeBackground") ?
+            (get_input<zeno::StringObject>("ChangeBackground")->get())=="true" : false;
         if (auto p = std::dynamic_pointer_cast<zeno::VDBFloatGrid>(grid); p)
-            vdb_wrangle(exec, p->m_grid, modifyActive);
+            vdb_wrangle(exec, p->m_grid, modifyActive, changeBackground, hasPos);
         else if (auto p = std::dynamic_pointer_cast<zeno::VDBFloat3Grid>(grid); p)
-            vdb_wrangle(exec, p->m_grid, modifyActive);
+            vdb_wrangle(exec, p->m_grid, modifyActive, changeBackground, hasPos);
 
         set_output("grid", std::move(grid));
     }
 };
 
 ZENDEFNODE(VDBWrangle, {
-    {{"VDBGrid", "grid"}, {"string", "zfxCode"},{"enum true false","ModifyActive","false"},
+    {{"VDBGrid", "grid"}, {"string", "zfxCode"},
+     {"enum true false","ModifyActive","false"},
+     {"enum true false","ChangeBackground","false"},
      {"DictObject:NumericObject", "params"}},
     {{"VDBGrid", "grid"}},
     {},

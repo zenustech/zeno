@@ -33,7 +33,7 @@ ZENO_DEFNODE(MakeCamera)({
     },
     {
     },
-    {"scenevis"},
+    {"shader"},
 });
 
 
@@ -68,7 +68,7 @@ ZENO_DEFNODE(MakeLight)({
     },
     {
     },
-    {"scenevis"},
+    {"shader"},
 });
 
 };

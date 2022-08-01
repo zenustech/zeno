@@ -40,6 +40,8 @@ Push it, then GitHub CI will do the depolyment automatically for you.
 
 It will create a release with tag, for example, `v2022.4.19` (today's date).
 
+# CMake tricks & tips
+
 ## Accelerate compile process
 
 You may install `ccache` to compile faster on Linux.
@@ -66,7 +68,7 @@ sudo pacman -S ninja
 pip install ninja
 ```
 
-Then use `-GNinja` parameter in cmake configuration step:
+Then use `-G Ninja` parameter in cmake configuration step:
 
 ```bash
 cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
@@ -83,11 +85,15 @@ If you wish to use the system-wide pre-installed OpenVDB (for faster compile spe
 cmake -B build -DZENO_WITH_zenvdb:BOOL=ON -DZENO_SYSTEM_OPENVDB:BOOL=ON
 ```
 
-The same to Alembic:
+> NOTE: the pre-installed OpenVDB might cause error in @littlemine's CUDA extension, use `-DZENO_SYSTEM_OPENVDB:BOOL=OFF` if you got error.
+
+The same applies to Alembic (required for `.abc` format support):
 
 ```bash
 cmake -B build -DZENO_WITH_Alembic:BOOL=ON -DZENO_SYSTEM_ALEMBIC:BOOL=ON
 ```
+
+# Alternative installation
 
 ## Install Zeno globally (not recommended)
 
@@ -106,4 +112,13 @@ cmake --build build
 sudo cmake --build build --target install
 ```
 
-This will install Zeno **globally in your system**.
+This will install Zeno globally in your system.
+
+## Install via AUR (experimental)
+
+Arch Linux users may install Zeno from [AUR](https://aur.archlinux.org):
+```bash
+yay -S zeno
+```
+The package is maintained by @archibate.
+

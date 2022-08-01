@@ -1,0 +1,69 @@
+=Changes=
+
+==3.0.0==
+  * Some C++11 features
+  * still hell of a work to do ;)
+
+==2.5.3==
+  * optimized Mel filtering, resulting in a huge performance increase with MFCC
+
+==2.5.2==
+  * started to introduce Boost C++ libraries in some places
+  * added a console textual progress indicator using boost
+
+==2.5.1==
+  * added slight optimization in FFT (5-20% faster, depending on frame size)
+  * added HFCC features
+
+==2.5.0==
+  * slightly optimized WaveFile load() method
+  * major optimization in DCT calculations (40-50% faster computation!)
+
+==2.4.3==
+  * optimized DTW calculation
+  * added DTW lowest-cost path recovery
+  * added two different DTW pass types - neighbors and diagonals
+
+==2.4.2==
+  * added different distance functions to DTW
+
+==2.4.1==
+  * fixed a nasty bug in MfccExtractor concerning enabling Mel filters
+
+==2.4.0==
+  * ported DTW calculation from 1.3.1
+  * allowed for different DTW distance normalizations
+
+==2.3.2==
+  * added MelFiltersBank::setEnabledFilters() to allow mass enabling/disabling Mel filters
+  * added FeatureReader::readHeader()
+
+==2.3.1==
+  * added WaveFile::recalculate() method for quick frame recalculating without the need to reload whole file
+
+==2.3.0==
+  * redesigned reading/writing of feature objects
+  * created FeatureReader and FeatureWriter interfaces
+
+==2.2.1==
+  * added sample by sample access to WaveFile class
+  * Transform class is non-static (again :-P)
+
+==2.2.0==
+  * ported MFCC feature extraction from 1.3.1
+
+==2.1.0==
+  * ported Mel-scale filters
+
+==2.0.2==
+  * optimized FFT calculations
+
+==2.0.1==
+  * sample preparing and Fourier transform is handled by the Transform class
+  * Frame and WaveFile now do not depend on any other classes
+
+==2.0.0==
+  * ported some of old classes from 1.3.1 to new project
+  * huge refactoring of old code
+  * reduced dependency between objects
+  * separated configuration from calculation

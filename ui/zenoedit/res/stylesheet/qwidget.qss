@@ -12,10 +12,3 @@ QWidget[cssClass="ZTimeline"]
 {
     background: rgb(42,42,42);
 }
-
-QMainWindow::separator
-{
-    width: 2px;
-    height: 0px;
-    padding: 0px;
-}

@@ -1,6 +1,7 @@
+#include <zeno/utils/nowarn.h>
 #include "declares.h"
-#include "LBFGS.h"
-#include "LBFGSB.h"
+#include <LBFGS.h>
+#include <ctime>
 
 namespace zeno{
 
@@ -25,7 +26,7 @@ struct Jiggle : zeno::INode {
             auto& ppjiggle =  prim->attr<zeno::vec3f>("prepreJiggle");
 
             #pragma omp parallel for
-            for(intptr_t i = 0;i < prim->size();++i){
+            for(size_t i = 0;i < prim->size();++i){
                 cjiggle[i] = ppos_vec[i];
                 pjiggle[i] = ppos_vec[i];
                 ppjiggle[i] = ppos_vec[i];
@@ -51,7 +52,7 @@ struct Jiggle : zeno::INode {
 
 //  try explicit integrator first
         #pragma omp parallel for
-        for(intptr_t i = 0;i < prim->size();++i){
+        for(size_t i = 0;i < prim->size();++i){
             const auto& cpos = cpos_vec[i];
             const auto& ppos = ppos_vec[i];
             const auto& pppos = pppos_vec[i];
@@ -96,15 +97,15 @@ struct Jiggle2 : zeno::INode {
         auto jprim = get_input<zeno::PrimitiveObject>("jprim");
 
         const auto& cpos_vec =  prim->attr<zeno::vec3f>("curPos");
-        const auto& ppos_vec =  prim->attr<zeno::vec3f>("prePos");
-        const auto& pppos_vec = prim->attr<zeno::vec3f>("preprePos");
+        // const auto& ppos_vec =  prim->attr<zeno::vec3f>("prePos");
+        // const auto& pppos_vec = prim->attr<zeno::vec3f>("preprePos");
 
         auto& j_cpos_vec = jprim->attr<zeno::vec3f>("curJiggle");
         auto& j_ppos_vec = jprim->attr<zeno::vec3f>("preJiggle");
         auto& j_pppos_vec= jprim->attr<zeno::vec3f>("prepreJiggle");
 
         auto jiggleStiffness = get_input2<float>("jiggleRate");
-        auto characterLen = get_input2<float>("characterLen");
+        // auto characterLen = get_input2<float>("characterLen");
         auto jiggleScale = get_input2<float>("jiggleScale");
         // jiggleStiffness /= characterLen;
 
@@ -126,8 +127,8 @@ struct Jiggle2 : zeno::INode {
         #pragma omp parallel for
         for(size_t i = 0;i < prim->size();++i){
             const auto& cpos = cpos_vec[i];
-            const auto& ppos = ppos_vec[i];
-            const auto& pppos= pppos_vec[i];
+            // const auto& ppos = ppos_vec[i];
+            // const auto& pppos= pppos_vec[i];
             
             j_pppos_vec[i] = j_ppos_vec[i];
             j_ppos_vec[i] = j_cpos_vec[i];
@@ -158,7 +159,7 @@ ZENDEFNODE(Jiggle2, {
         // {"float","jiggleWeight","1"},
         {"float","jiggleDamping","0.5"},
         {"float","jiggleRate","5"},
-        {"float","characterLen","1"},
+        // {"float","characterLen","1"},
         {"float","jiggleScale","1"},
     },
     {"jprim"},
@@ -183,7 +184,7 @@ struct BuildLapaceOperator : zeno::INode {
                 interpPs[i].clear();
                 interpWs[i].clear();
             }
-            // std::cout << "TRY ASSIGN INTERP SHAPE" << std::endl;
+            std::cout << "TRY ASSIGN INTERP SHAPE" << std::endl;
             if(interpShape && interpShape->has_attr("embed_id") && interpShape->has_attr("embed_w")){
                 // std::cout << "ASSIGN ATTRIBUTES" << std::endl;
                 const auto& elm_ids = interpShape->attr<float>("embed_id");
@@ -192,7 +193,9 @@ struct BuildLapaceOperator : zeno::INode {
 
                 // #pragma omp parallel for 
                 for(size_t i = 0;i < interpShape->size();++i){
-                    auto elm_id = elm_ids[i];
+                    auto elm_id = (int)elm_ids[i];
+                    if(elm_id < 0)
+                        continue;
                     const auto& pos = interpShape->verts[i];
                     const auto& w = elm_ws[i];
                     interpPs[elm_id].emplace_back(pos[0],pos[1],pos[2]);
@@ -222,8 +225,13 @@ struct BuildLapaceOperator : zeno::INode {
 
         std::vector<std::vector<Vec3d>> interpPs;
         std::vector<std::vector<Vec3d>> interpWs;
+
+        // std::cout << "checkout_0" << std::endl;
+
         AssignElmInterpShape(prim->quads.size(),interpShape,interpPs,interpWs);
 
+
+        // std::cout << "checkout_1" << std::endl;
         #pragma omp parallel for
         for(size_t elm_id = 0;elm_id < prim->quads.size();++elm_id){
             const auto& elm = prim->quads[elm_id];
@@ -271,6 +279,8 @@ struct BuildLapaceOperator : zeno::INode {
             elm_stiffness[elm_id] = 2.0066 * mu + 1.0122 * lambda;       
         }
 
+        // std::cout << "checkout_2" << std::endl;
+
         const auto& vols = elmView->attr<float>("V");
 
 
@@ -296,7 +306,7 @@ struct BuildLapaceOperator : zeno::INode {
 
                     for(size_t j = 0;j < 4;++j)
                         for(size_t k = 0;k < 4;++k){
-                            FEM_Scaler alpha = interpPenalty * iw[j] * iw[k] / interpPs[elm_id].size();
+                            FEM_Scaler alpha = elm_stiffness[elm_id] * interpPenalty * iw[j] * iw[k] / interpPs[elm_id].size();
                             elm_H.block(j * 3,k*3,3,3).diagonal() += Vec3d::Constant(alpha);
                         }                    
                 }
@@ -314,6 +324,8 @@ struct BuildLapaceOperator : zeno::INode {
                 
 
         }
+        // std::cout << "checkout_3" << std::endl;
+
         L.setZero();
         L.setFromTriplets(triplets.begin(),triplets.end());
         res->laplace_solver.compute(L);
@@ -329,6 +341,7 @@ ZENDEFNODE(BuildLapaceOperator,{
     {},
     {"FEM"},
 });
+
 
 
 
@@ -356,6 +369,10 @@ struct SolveFEMFast : zeno::INode {
                 cpos[i] = shape->attr<zeno::vec3f>("init_guess")[i];
         }
 
+        // std::cout << "return skinning result" << std::endl;
+        // set_output("shape",shape); 
+        
+
         auto elmView = get_input<PrimitiveObject>("elmView");
 
         std::shared_ptr<PrimitiveObject> interpShape = has_input("skin") ? get_input<PrimitiveObject>("skin") : nullptr;
@@ -381,7 +398,6 @@ struct SolveFEMFast : zeno::INode {
         param.check_param();
 
 
-        using namespace LBFGSpp;
         LBFGSSolver<FEM_Scaler> solver(param);
 
         Eigen::VectorXd _x(shape->size() * 3);
@@ -499,12 +515,14 @@ struct SolveFEM : zeno::INode {
         FEM_Scaler stop_error = 0;
 
         // std::cout << "BEGIN LOOP" << std::endl;
-
+        FEM_Scaler e0,e1,eg0;
         do{
-            FEM_Scaler e0,e1,eg0;
 
             e0 = integrator->EvalObjDerivHessian(shape,elmView,interpShape,r,HBuffer,true);
             // std::cout << "FINISH EVAL A X B" << std::endl;
+            
+            if(iter_idx == 0)
+                std::cout << "initial energy : " << e0 << std::endl;
             // break;
             if(iter_idx == 0)
                 r0 = r.norm();
@@ -619,10 +637,12 @@ struct SolveFEM : zeno::INode {
                     break;
                 }
             }
-            // std::cout << "SOLVE TIME : " << (float)(end_solve - begin_solve)/CLOCKS_PER_SEC << "\t" << r0 << "\t" << r.norm() << "\t" << eg0 << "\t" << search_idx << "\t" << e_start << "\t" << e0 << "\t" << e1 << std::endl;
+            std::cout << "SOLVE TIME : " << (float)(end_solve - begin_solve)/CLOCKS_PER_SEC << "\t" << r0 << "\t" << r.norm() << "\t" << eg0 << "\t" << search_idx << "\t" << e_start << "\t" << e0 << "\t" << e1 << std::endl;
 
             ++iter_idx;
         }while(iter_idx < max_iters);
+
+        std::cout << "finish energy : " << e1 << std::endl; 
 
         if(iter_idx == max_iters){
             std::cout << "MAX NEWTON ITERS EXCEED" << std::endl;

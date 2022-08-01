@@ -12,7 +12,6 @@
 #include <zeno/types/StringObject.h>
 #include "zenoapplication.h"
 #include "zenomainwindow.h"
-#include "ztcpserver.h"
 #include "graphsmanagment.h"
 #include "serialize.h"
 #if !defined(ZENO_MULTIPROCESS) || !defined(ZENO_IPC_USE_TCP)
@@ -23,6 +22,9 @@
 #ifdef ZENO_MULTIPROCESS
 #include <QProcess>
 #include "viewdecode.h"
+#ifdef ZENO_IPC_USE_TCP
+#include "ztcpserver.h"
+#endif
 #endif
 
 //#define DEBUG_SERIALIZE
@@ -64,7 +66,7 @@ struct ProgramRunData {
 
     void reportStatus(zeno::GlobalStatus const &stat) const {
         if (!stat.failed()) return;
-        zeno::log_error("reportStatus: error in {}, message {}", stat.nodeName, stat.error->message);
+        zeno::log_error("error in {}, message {}", stat.nodeName, stat.error->message);
         auto nodeName = stat.nodeName.substr(0, stat.nodeName.find(':'));
         zenoApp->graphsManagment()->appendErr(QString::fromStdString(nodeName),
                                               QString::fromStdString(stat.error->message));
@@ -205,7 +207,7 @@ void launchProgramJSON(std::string progJson)
 #else
     std::unique_lock lck(ProgramRunData::g_mtx, std::try_to_lock);
     if (!lck.owns_lock()) {
-        zeno::log_warn("A program is already running! Please kill first");
+        zeno::log_info("background process already running");
         return;
     }
 
@@ -232,7 +234,7 @@ void killProgramJSON()
 
 }
 
-void launchProgram(GraphsModel* pModel, int beginFrame, int endFrame)
+void launchProgram(IGraphsModel* pModel, int beginFrame, int endFrame)
 {
 	rapidjson::StringBuffer s;
 	RAPIDJSON_WRITER writer(s);

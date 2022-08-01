@@ -79,7 +79,7 @@ public slots:
     void onOptionsUpdated(int options);
     void onParamUpdated(const QString &paramName, const QVariant &val);
     void onSocketLinkChanged(const QString& sockName, bool bInput, bool bAdded);
-    void onSocketsUpdate(bool bInput);
+    void onSocketsUpdate(bool bInput, bool bInit);
     void updateSocketDeflValue(const QString& nodeid, const QString& inSock, const INPUT_SOCKET& inSocket, const QVariant& textValue);
     void onNameUpdated(const QString& newName);
 
@@ -97,7 +97,7 @@ protected:
 	void hoverLeaveEvent(QGraphicsSceneHoverEvent* event) override;
     QSizeF sizeHint(Qt::SizeHint which, const QSizeF& constraint = QSizeF()) const override;
     //ZenoNode:
-    virtual void onParamEditFinished(PARAM_CONTROL editCtrl, const QString& paramName, const QVariant& value);
+    virtual void onParamEditFinished(const QString& paramName, const QVariant& value);
     QPersistentModelIndex subGraphIndex() const;
     virtual ZenoBackgroundWidget *initBodyWidget();
     virtual ZenoBackgroundWidget *initHeaderStyle();

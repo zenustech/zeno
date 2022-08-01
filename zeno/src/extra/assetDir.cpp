@@ -44,7 +44,7 @@ ZENO_API std::string getAssetDir(std::string dir) {
         return dir;
 #ifdef _WIN32
     if (auto i = dir.find(':'); i != std::string::npos)
-        dir.replace(i, 1, "_pan");
+        dir[i] = '_';
 #endif
     if (auto edir = g_assetRoot + dir; fs::exists(edir))
         return edir;
@@ -52,7 +52,6 @@ ZENO_API std::string getAssetDir(std::string dir) {
 }
 
 ZENO_API std::string getAssetDir(std::string dir, std::string extra) {
-    extra.insert(extra.begin(), '/');
     cihouWinPath(extra);
     return getAssetDir(dir) + extra;
 }

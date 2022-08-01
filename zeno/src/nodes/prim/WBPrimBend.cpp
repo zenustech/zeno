@@ -257,7 +257,7 @@ ZENDEFNODE(CreateCircle,
                    "prim",
                }, /* params: */ {
                }, /* category: */ {
-                   "primitive",
+                   "create",
                }});
 
 
@@ -547,7 +547,7 @@ struct VisVec3Attribute : INode {
             visColor[i] = color;
             ++i; // primVis
             auto a=attr[iPrim];
-            if (useNormalize) a = normalize(a);
+            if (useNormalize) a = normalizeSafe(a);
             primVis->verts[i] = prim->verts[iPrim] + a * lengthScale;
             visColor[i] = color * 0.25;
             primVis->lines[i/2][0] = i-1;  // 线
@@ -707,7 +707,7 @@ ZENDEFNODE(PrimCreatOrSetAttr,
                    "prim",
                }, /* params: */ {
                }, /* category: */ {
-                   "primitive",
+                   "deprecated",
                } });
 
 }

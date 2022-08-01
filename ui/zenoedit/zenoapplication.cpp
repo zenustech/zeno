@@ -7,23 +7,20 @@
 #include "util/log.h"
 #include "launch/ztcpserver.h"
 #include "launch/corelaunch.h"
+#include "startup/zstartup.h"
 
 
 ZenoApplication::ZenoApplication(int &argc, char **argv)
     : QApplication(argc, argv)
-    , m_pGraphs(new GraphsManagment(this))
+    , m_pGraphs(new GraphsManagment())
     , m_bIOProcessing(false)
     , m_errSteam(std::clog)
+    , m_server(nullptr)
 {
     initFonts();
     initStyleSheets();
     m_errSteam.registerMsgHandler();
-    zeno::log_info("build date: {} {}", __DATE__, __TIME__);
-
-#if defined(ZENO_MULTIPROCESS) && defined(ZENO_IPC_USE_TCP)
-    m_server = new ZTcpServer(this);
-    m_server->init(QHostAddress::LocalHost);
-#endif
+    verifyVersion();
 
     QStringList locations;
     locations = QStandardPaths::standardLocations(QStandardPaths::AppDataLocation);
@@ -36,6 +33,7 @@ ZenoApplication::ZenoApplication(int &argc, char **argv)
 
 ZenoApplication::~ZenoApplication()
 {
+    delete m_pGraphs;
 }
 
 QString ZenoApplication::readQss(const QString& qssPath)
@@ -59,6 +57,7 @@ void ZenoApplication::initStyleSheets()
     qss += readQss(":/stylesheet/pushbutton.qss");
     qss += readQss(":/stylesheet/scrollbar.qss");
     qss += readQss(":/stylesheet/spinbox.qss");
+    qss += readQss(":/stylesheet/mainwindow.qss");
     setStyleSheet(qss);
 }
 
@@ -79,7 +78,7 @@ void ZenoApplication::initFonts()
     //QFontDatabase::addApplicationFont(":/font/HarmonyOS_Sans_SC/HarmonyOS_Sans_SC_Thin.ttf");
 }
 
-QSharedPointer<GraphsManagment> ZenoApplication::graphsManagment() const
+GraphsManagment *ZenoApplication::graphsManagment() const
 {
     return m_pGraphs;
 }
@@ -99,9 +98,13 @@ bool ZenoApplication::IsIOProcessing() const
     return m_bIOProcessing;
 }
 
-#ifdef ZENO_MULTIPROCESS
+#if defined(ZENO_MULTIPROCESS) && defined(ZENO_IPC_USE_TCP)
 ZTcpServer* ZenoApplication::getServer()
 {
+    if (!m_server) {
+        m_server = new ZTcpServer(this);
+        m_server->init(QHostAddress::LocalHost);
+    }
     return m_server;
 }
 #endif

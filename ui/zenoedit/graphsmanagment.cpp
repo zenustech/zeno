@@ -8,6 +8,7 @@
 #include <zenoui/util/uihelper.h>
 #include "nodesys/zenosubgraphscene.h"
 #include <zeno/utils/log.h>
+#include <zenoui/util/cihou.h>
 #include "zenoapplication.h"
 
 
@@ -159,7 +160,11 @@ void GraphsManagment::appendMsgStream(const QByteArray& arr)
     QList<QByteArray> lst = arr.split('\n');
     for (QByteArray line : lst)
     {
-        std::cout << line.data() << std::endl;
+        if (!line.isEmpty())
+        {
+            std::cout << line.data() << std::endl;
+            ZWidgetErrStream::appendFormatMsg(line.toStdString());
+        }
     }
 }
 

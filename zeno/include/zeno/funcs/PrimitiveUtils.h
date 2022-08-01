@@ -7,7 +7,7 @@
 namespace zeno {
 
 ZENO_API void primTriangulateQuads(PrimitiveObject *prim);
-ZENO_API void primTriangulate(PrimitiveObject *prim, bool with_uv = true);
+ZENO_API void primTriangulate(PrimitiveObject *prim, bool with_uv = true, bool has_lines = true);
 ZENO_API void primPolygonate(PrimitiveObject *prim, bool with_uv = true);
 
 ZENO_API void primSepTriangles(PrimitiveObject *prim, bool smoothNormal = true, bool keepTriFaces = true);
@@ -29,14 +29,14 @@ ZENO_API void primMarkIsland(PrimitiveObject *prim, std::string tagAttr);
 ZENO_API std::vector<std::shared_ptr<PrimitiveObject>> primUnmergeVerts(PrimitiveObject *prim, std::string tagAttr);
 
 ZENO_API void primSimplifyTag(PrimitiveObject *prim, std::string tagAttr);
-ZENO_API void primColorByTag(PrimitiveObject *prim, std::string tagAttr, std::string clrAttr);
+ZENO_API void primColorByTag(PrimitiveObject *prim, std::string tagAttr, std::string clrAttr, int seed = -1);
 
 ZENO_API void primTranslate(PrimitiveObject *prim, vec3f const &offset);
 ZENO_API void primScale(PrimitiveObject *prim, vec3f const &scale);
 
 ZENO_API std::pair<vec3f, vec3f> primBoundingBox(PrimitiveObject *prim);
 
-ZENO_API void primRandomize(PrimitiveObject *prim, std::string attr, std::string dirAttr, std::string randType, float base, float scale, int seed);
+ZENO_API void primRandomize(PrimitiveObject *prim, std::string attr, std::string dirAttr, std::string seedAttr, std::string randType, float base, float scale, int seed);
 ZENO_API void primPerlinNoise(PrimitiveObject *prim, std::string inAttr, std::string outAttr, std::string outType, float scale, float detail, float roughness, float disortion, vec3f offset, float average, float strength);
 
 ZENO_API std::shared_ptr<PrimitiveObject> primScatter(

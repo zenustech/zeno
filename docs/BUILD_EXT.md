@@ -92,6 +92,7 @@ cd vcpkg
 .\vcpkg install lapack:x64-windows
 .\vcpkg install openblas:x64-windows
 .\vcpkg install hdf5:x64-windows
+.\vcpkg install sfml:x64-windows
 ```
 
 > Notice that you must install the `English Pack` for VS2019 for vcpkg to work. This can be done by clicking the `Language` panel in the VS2019 installer. (JOKE: the maintainer of vcpkg speaks Chinese too..)
@@ -119,7 +120,7 @@ cmake -B build -DCMAKE_TOOLCHAIN_FILE="C:/vcpkg/scripts/buildsystems/vcpkg.cmake
 The full-featured version of Zeno can be built as follows:
 
 ```bash
-cmake -B build -DCMAKE_BUILD_TYPE=Release -DZENO_WITH_ZenoFX:BOOL=ON -DZENOFX_ENABLE_OPENVDB:BOOL=ON -DZENOFX_ENABLE_LBVH:BOOL=ON -DZENO_WITH_zenvdb:BOOL=ON -DZENO_WITH_FastFLIP:BOOL=ON -DZENO_WITH_FEM:BOOL=ON -DZENO_WITH_Rigid:BOOL=ON -DZENO_WITH_cgmesh:BOOL=ON -DZENO_WITH_oldzenbase:BOOL=ON -DZENO_WITH_TreeSketch:BOOL=ON -DZENO_WITH_Skinning:BOOL=ON -DZENO_WITH_Euler:BOOL=ON -DZENO_WITH_Functional:BOOL=ON -DZENO_WITH_LSystem:BOOL=ON -DZENO_WITH_mesher:BOOL=ON -DZENO_WITH_Alembic:BOOL=ON -DZENO_WITH_FBX:BOOL=ON -DZENO_WITH_DemBones:BOOL=ON -DZENO_WITH_SampleModel:BOOL=ON -DZENO_WITH_CalcGeometryUV:BOOL=ON -DZENO_WITH_MeshSubdiv:BOOL=ON
+cmake -B build -DCMAKE_BUILD_TYPE=Release -DZENO_WITH_ZenoFX:BOOL=ON -DZENOFX_ENABLE_OPENVDB:BOOL=ON -DZENOFX_ENABLE_LBVH:BOOL=ON -DZENO_WITH_zenvdb:BOOL=ON -DZENO_WITH_FastFLIP:BOOL=ON -DZENO_WITH_FEM:BOOL=ON -DZENO_WITH_Rigid:BOOL=ON -DZENO_WITH_cgmesh:BOOL=ON -DZENO_WITH_oldzenbase:BOOL=ON -DZENO_WITH_TreeSketch:BOOL=ON -DZENO_WITH_Skinning:BOOL=ON -DZENO_WITH_Euler:BOOL=ON -DZENO_WITH_Functional:BOOL=ON -DZENO_WITH_LSystem:BOOL=ON -DZENO_WITH_mesher:BOOL=ON -DZENO_WITH_Alembic:BOOL=ON -DZENO_WITH_FBX:BOOL=ON -DZENO_WITH_DemBones:BOOL=ON -DZENO_WITH_SampleModel:BOOL=ON -DZENO_WITH_CalcGeometryUV:BOOL=ON -DZENO_WITH_MeshSubdiv:BOOL=ON -DZENO_WITH_Audio:BOOL=ON
 ```
 
 > See also `misc/run.sh` (you can use this script instead for the full-featured build on Linux).
@@ -130,9 +131,9 @@ NVIDIA users may additionally specify `-DZENO_WITH_CUDA:BOOL=ON -DZENO_ENABLE_OP
 
 > This will also builds the OptiX real-time ray-tracing for the Zeno renderer (RTX20xx above required).
 
-Notice that **CUDA 11.6 requried, CUDA 11.7 will fail to compile for now**, thanks to @littlemine's modern-fancy-cuda skills :(
+Notice that **CUDA 11.6 (or above) is requried**, thanks to @littlemine's modern-fancy-cuda skills :(
 
-> But if you only use the OptiX part, Simply CUDA 11.0 or above is enough, thanks to @zhxx1987 not using modern-fancy-cuda features :)
+> But if you only use the OptiX part, Simply CUDA 11 is enough, thanks to @zhxx1987 not using modern-fancy-cuda features :)
 
 > NOTE: The CUDA extension is work in progress, may not work.
 > NOTE: ZenoFX must be enabled when CUDA is enabled, because CUDA depends on ZenoFX.
@@ -147,9 +148,62 @@ Enabling them you will find our well-packaged high-level nodes like `FLIPSimTemp
 they were exported from another subgraph file using Ctrl-Shfit-E by the way, see the
 source code of `FLIPtools` for the original graph file name.
 
+## Advanced build configuration (optional)
+
+Here we introduce some CMake options that professional users may need.
+
+1. To enable *stack traceback* in Zeno when fault encountered (OFF by default):
+
+```bash
+cmake -B build -DZENO_ENABLE_BACKWARD:BOOL=ON
+```
+
+2. To enable *parallel STL* in Zeno for better performance (OFF by default):
+
+```bash
+cmake -B build -DZENO_PARALLEL_STL:BOOL=ON
+```
+
+> This would require `apt-get install libtbb-dev` on Linux (GCC), while Windows (MSVC) doesn't need to do anything.
+
+3. To disable *OpenMP* in Zeno to prevent multi-threading (ON by default):
+
+```bash
+cmake -B build -DZENO_ENABLE_OPENMP:BOOL=OFF
+```
+
+4. To enable `-march=native` in Zeno to utilize native instruction set (OFF by default):
+
+```bash
+cmake -B build -DZENO_MARCH_NATIVE:BOOL=ON
+```
+
+> WARN: This would make the binary unable to deploy to other machine lower than yours.
+> Suppose you have AVX512, but your customer doesn't have AVX512. Then if you copy your binary to them, they will get `Illegal Instruction`.
+
+5. To enable `-ffast-math` in Zeno for fast but non-IEEE-compatibile math (OFF by default):
+
+```bash
+cmake -B build -DZENO_FAST_MATH:BOOL=ON
+```
+
+> WARN: May have inpredictible behavior when dealing with NaN and Infinity.
+
+6. To disable *multi-processing* in Zeno editor to make it easier to debug (ON by default):
+
+```bash
+cmake -B build -DZENO_MULTIPROCESS:BOOL=OFF
+```
+
+7. To not build the *Zeno editor* (which requires Qt), but only the *Zeno core* (ON by default):
+
+```bash
+cmake -B build -DZENO_BUILD_EDITOR:BOOL=OFF
+```
+
 ## What's next?
 
-If you are the project maintainer, you may also checkout [`docs/MAINTAINERS.md`](docs/MAINTAINERS.md) for advanced skills.
+If you are the project maintainer, you may also checkout [`docs/MAINTAINERS.md`](/docs/MAINTAINERS.md) for even more advanced skills.
 
 <!-- deprecated, see misc/ci/CMakePresets.json, now only used by CI
 ### Using CMake presets (experimental)

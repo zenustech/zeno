@@ -234,7 +234,7 @@ void TransferAcceptor::setInputSocket(
         }
         else
         {
-            zeno::log_warn("no such input socket {}", inSock.toStdString());
+            zeno::log_warn("{}: no such input socket {}", nodeCls.toStdString(), inSock.toStdString());
         }
     }
 }
@@ -336,6 +336,11 @@ void TransferAcceptor::setLegacyCurve(
 QObject* TransferAcceptor::currGraphObj()
 {
     return nullptr;
+}
+
+void TransferAcceptor::endInputs()
+{
+
 }
 
 QMap<QString, NODE_DATA> TransferAcceptor::nodes() const

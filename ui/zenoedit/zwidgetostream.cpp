@@ -33,13 +33,13 @@ std::streamsize ZWidgetErrStream::xsputn(const char* p, std::streamsize n)
         //if (m_linebuffer.size() >= 4 && std::equal(m_linebuffer.end() - 4, m_linebuffer.end(), "\033[0m")) {
             //m_linebuffer.erase(m_linebuffer.size() - 4);
         //}
-        luzhPutString(m_linebuffer);
+        appendFormatMsg(m_linebuffer);
         m_linebuffer.assign(it + 1, p + n - (it + 1));
     }
     return n;
 }
 
-void ZWidgetErrStream::luzhPutString(std::string const &str) {
+void ZWidgetErrStream::appendFormatMsg(std::string const &str) {
     //format like:
     //"[I 14:15:11.810] (unknown:0) begin frame 89"
 

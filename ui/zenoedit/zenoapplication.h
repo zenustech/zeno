@@ -7,7 +7,7 @@
 
 class GraphsManagment;
 class ZenoMainWindow;
-#ifdef ZENO_MULTIPROCESS
+#if defined(ZENO_MULTIPROCESS) && defined(ZENO_IPC_USE_TCP)
 class ZTcpServer;
 #endif
 class GraphsModel;
@@ -18,14 +18,14 @@ class ZenoApplication : public QApplication
 public:
     ZenoApplication(int &argc, char **argv);
     ~ZenoApplication();
-    QSharedPointer<GraphsManagment> graphsManagment() const;
+    GraphsManagment *graphsManagment() const;
     void initFonts();
     void initStyleSheets();
     void setIOProcessing(bool bIOProcessing);
     bool IsIOProcessing() const;
     ZenoMainWindow* getMainWindow();
-    QWidget* getWindow(const QString& objName);
-#ifdef ZENO_MULTIPROCESS
+	QWidget* getWindow(const QString& objName);
+#if defined(ZENO_MULTIPROCESS) && defined(ZENO_IPC_USE_TCP)
     ZTcpServer* getServer();
 #endif
     QStandardItemModel* logModel() const;
@@ -33,9 +33,9 @@ public:
 private:
     QString readQss(const QString& qssPath);
 
-    QSharedPointer<GraphsManagment> m_pGraphs;
+    GraphsManagment *m_pGraphs;
     ZWidgetErrStream m_errSteam;
-#ifdef ZENO_MULTIPROCESS
+#if defined(ZENO_MULTIPROCESS) && defined(ZENO_IPC_USE_TCP)
     ZTcpServer* m_server;
 #endif
     bool m_bIOProcessing;

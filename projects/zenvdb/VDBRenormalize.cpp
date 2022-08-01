@@ -122,7 +122,7 @@ static int defVDBSmoothSDF = zeno::defNodeClass<VDBSmoothSDF>("VDBSmoothSDF",
          {"int", "iterations", "1"},
          {"string", "DEPRECATED", "Use VDBSmooth Instead"},
      }, /* category: */ {
-     "openvdb",
+     "deprecated",
      }});
 
 struct  VDBDilateTopo : zeno::INode {
@@ -131,7 +131,7 @@ struct  VDBDilateTopo : zeno::INode {
     auto inoutSDF = get_input<zeno::VDBGrid>("inField");
     auto layers = get_input("layers")->as<zeno::NumericObject>()->get<int>();
 
-    inoutSDF->dilateTopo(std::max(layers,16));
+    inoutSDF->dilateTopo(layers);
     set_output("oField", std::move(inoutSDF));
   }
 };

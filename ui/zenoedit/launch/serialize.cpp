@@ -16,7 +16,7 @@ static QString nameMangling(const QString& prefix, const QString& ident) {
         return prefix + "/" + ident;
 }
 
-static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgIdx, QString const &graphIdPrefix, bool bView, RAPIDJSON_WRITER& writer)
+static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgIdx, QString const &graphIdPrefix, bool bView, RAPIDJSON_WRITER& writer, bool bNestedSubg = true)
 {
     ZASSERT_EXIT(pGraphsModel && subgIdx.isValid());
 
@@ -41,6 +41,10 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
         QString ident = idx.data(ROLE_OBJID).toString();
         ident = nameMangling(graphIdPrefix, ident);
         const QString& name = idx.data(ROLE_OBJNAME).toString();
+        //temp: need a node type or flag to mark this case.
+        if (name == "Blackboard") {
+            continue;
+        }
 
 		int opts = idx.data(ROLE_OPTIONS).toInt();
         QString noOnceIdent;
@@ -51,13 +55,13 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
 
         bool bSubgNode = subgNodes.indexOf(idx) != -1;
 
-        const INPUT_SOCKETS &inputs = idx.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
-        const OUTPUT_SOCKETS &outputs = idx.data(ROLE_OUTPUTS).value<OUTPUT_SOCKETS>();
+        INPUT_SOCKETS inputs = idx.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
+        OUTPUT_SOCKETS outputs = idx.data(ROLE_OUTPUTS).value<OUTPUT_SOCKETS>();
 
         if (opts & OPT_MUTE) {
             AddStringList({ "addNode", "HelperMute", ident }, writer);
         } else {
-            if (!bSubgNode) {
+            if (!bSubgNode || !bNestedSubg) {
                 AddStringList({"addNode", name, ident}, writer);
             } else {
                 AddStringList({"addSubnetNode", name, ident}, writer);
@@ -76,6 +80,9 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
         }
 
         auto outputIt = outputs.begin();
+
+        //sort for inputs and outputs, ensure that the SRC/DST key is the last key to serialize.
+        AppHelper::ensureSRCDSTlastKey(inputs, outputs);
 
         for (INPUT_SOCKET input : inputs)
         {
@@ -208,6 +215,11 @@ void serializeScene(IGraphsModel* pModel, RAPIDJSON_WRITER& writer)
     serializeGraph(pModel, pModel->index("main"), "", true, writer);
 }
 
+static void serializeSceneOneGraph(IGraphsModel* pModel, RAPIDJSON_WRITER& writer, QString subgName)
+{
+    serializeGraph(pModel, pModel->index(subgName), "", true, writer, false);
+}
+
 
 static void appendSerializedCharArray(QString &res, const char *buf, size_t len) {
     for (auto p = buf; p < buf + len; p++) {
@@ -217,8 +229,10 @@ static void appendSerializedCharArray(QString &res, const char *buf, size_t len)
     res.append('0');
 }
 
-QString translateGraphToCpp(const char *subgJson, size_t subgJsonLen, IGraphsModel *model)
+QString serializeSceneCpp(IGraphsModel* pModel)
 {
+
+    auto *model = pModel;
     QString res = R"RAW(/* auto generated from: )RAW";
     res.append(model->filePath());
     res.append(R"RAW( */
@@ -241,7 +255,16 @@ namespace {
 struct )RAW");
         res.append(key);
         res.append(R"RAW( final : zeno::ISerialSubgraphNode {
-    static const uint8_t mydata[] = {)RAW");
+    static inline const unsigned char mydata[] = {)RAW");
+            rapidjson::StringBuffer s;
+            RAPIDJSON_WRITER writer(s);
+            {
+                JsonArrayBatch batch(writer);
+                serializeSceneOneGraph(pModel, writer, key);
+            }
+            auto subgJson = s.GetString();
+            auto subgJsonLen = s.GetLength();
+        ZENO_P(std::string(subgJson, subgJsonLen));
         appendSerializedCharArray(res, subgJson, subgJsonLen);
         res.append(R"RAW(};
 
@@ -256,6 +279,7 @@ ZENO_DEFNODE()RAW");
         res.append(R"RAW()({
     {)RAW");
         for (auto const &[_, entry] : desc.inputs) {
+            if (entry.info.name == "SRC") continue;
             res.append(R"RAW({")RAW");
             res.append(entry.info.type);
             res.append(R"RAW(", ")RAW");
@@ -267,6 +291,8 @@ ZENO_DEFNODE()RAW");
         res.append(R"RAW(},
     {)RAW");
         for (auto const &[_, entry] : desc.outputs) {
+            if (entry.info.name == "DST") continue;
+            res.append(R"RAW({")RAW");
             res.append(R"RAW({")RAW");
             res.append(entry.info.type);
             res.append(R"RAW(", ")RAW");

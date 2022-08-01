@@ -14,7 +14,6 @@ struct IObject {
     using polymorphic_base_type = IObject;
 
     mutable std::any m_userData;
-    //std::string nodeid;
 
 #ifndef ZENO_APIFREE
     ZENO_API IObject();
@@ -28,6 +27,7 @@ struct IObject {
     ZENO_API virtual std::shared_ptr<IObject> move_clone();
     ZENO_API virtual bool assign(IObject const *other);
     ZENO_API virtual bool move_assign(IObject const *other);
+    ZENO_API virtual std::string method_node(std::string const &op);
 
     ZENO_API UserData &userData() const;
 #else
@@ -36,6 +36,7 @@ struct IObject {
     virtual std::shared_ptr<IObject> move_clone() { return nullptr; }
     virtual bool assign(IObject const *other) { return false; }
     virtual bool move_assign(IObject const *other) { return false; }
+    ZENO_API virtual std::string method_node(std::string name) { return {}; }
 
     UserData &userData() { return *reinterpret_cast<UserData *>(0); }
 #endif

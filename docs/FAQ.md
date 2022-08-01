@@ -59,10 +59,33 @@ when running `build\bin\zenoedit.exe`.
 
 Suppose you have installed `Qt5` in `C:\Qt\Qt5.14.2`.
 Then this file may be located in `C:\Qt\Qt5.14.2\msvc2017_64\bin\Qt5Core.dll`.
-You have two solutions:
+You have three solutions:
 
 1. Manually copy the `Qt5Core.dll`, `Qt5Gui.dll`, and etc. to the `build\bin` directory (same directory as `zenoedit.exe` is).
 2. Add the path `C:\Qt\Qt5.14.2\msvc2017_64\bin` (where `Qt5Core.dll` is located in) to the environment variable `PATH`.
+3. Execute this in `cmd`: `C:\Qt\Qt5.14.2\msvc2017_64\bin\windeployqt.exe build\bin\zenoedit.exe`.
+
+### Q
+
+```
+This application failed to start because it could not find or load the Qt platfo
+rm plugin "windows".
+
+Available platform plugins are: minimal, offscreen, windows
+s).
+
+Reinstalling the application may fix this problem.
+```
+
+### A
+
+Also three solutions:
+
+1. Manually copy the directory `C:\Qt\Qt5.14.2\msvc2017_64\plugins\platforms` to `build\bin\platforms`.
+2. Add an environment variable `QT_QPA_PLATFORM_PLUGIN_PATH` with content `C:\Qt\Qt5.14.2\msvc2017_64\plugins\platforms`.
+3. Execute this in `cmd`: `C:\Qt\Qt5.14.2\msvc2017_64\bin\windeployqt.exe build\bin\zenoedit.exe`.
+
+See: https://stackoverflow.com/questions/34948960/qt-platform-plugin-windows-is-not-found-on-one-computer
 
 ### Q
 
@@ -84,6 +107,16 @@ Both `-DCMAKE_BUILD_TYPE=Release` and `--config Release` are required.
 > Delete the `build` directory completely (see CMake problem) whenever you restart the build.
 
 > If the second step (`--config Release`) doesn't work, you need to open the `zeno.sln` in Visual Studio, and **select the `Release` configuration in the UI**, and click `Build`.
+
+### Q
+
+The compiler complains about encoding errors (GB2312 vs UTF-8).
+
+### A
+
+This is because Windows (Chinese edition) use GB2312 by default, but we use UTF-8 (for writing Chinese comments) in our code.
+
+Please either add `add_compile_options("/utf-8")` at the head of `CMakeLists.txt` to make MSVC happy, or delete these useless comments that contains UTF-8 characters (related article: https://blog.csdn.net/u014671962/article/details/101525645).
 
 ## WSL problem
 
@@ -172,6 +205,14 @@ sudo strip --remove-section=.note.ABI-tag /usr/lib64/libQt5Core.so.5
 ```
 
 Reference: https://askubuntu.com/questions/1034313/ubuntu-18-4-libqt5core-so-5-cannot-open-shared-object-file-no-such-file-or-dir
+
+### Q
+
+Any error around TBB.
+
+### A
+
+Consider uninstall OneAPI (`/opt/intel/oneapi`), OpenVDB requires the old version of TBB, not the stupid OneTBB.
 
 ## CUDA problem
 

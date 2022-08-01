@@ -91,7 +91,7 @@ ZENO_API std::shared_ptr<PrimitiveObject> primDuplicate(PrimitiveObject *parsPri
             }
         };
         if constexpr (hasRadAttr)
-            meshPrim->verts.attr_visit(radAttr, func);
+            parsPrim->verts.attr_visit(radAttr, func);
         else
             func(std::array<int, 0>{});
     }, hasDirAttr, hasRadius, hasRadAttr, hasOnbType);
@@ -185,7 +185,6 @@ ZENDEFNODE(PrimDuplicate, {
     {"string", "radAttr", ""},
     {"enum XYZ YXZ YZX ZYX ZXY XZY", "onbType", "XYZ"},
     {"float", "radius", "1"},
-    {"int", "seed", "0"},
     },
     {
     {"PrimitiveObject", "prim"},

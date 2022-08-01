@@ -90,14 +90,15 @@ struct BreakFor : zeno::INode {
         if (!fore) {
             throw Exception("BreakFor::FOR must be conn to BeginFor::FOR!\n");
         }
-        fore->is_break = true;  // will still keep going the rest of loop body?
+        if (!has_input("breaks") || get_input2<bool>("breaks"))
+            fore->is_break = true;  // will still keep going the rest of loop body?
     }
 
     virtual void apply() override {}
 };
 
 ZENDEFNODE(BreakFor, {
-    {"FOR"},
+    {"FOR", {"bool", "breaks", "1"}},
     {},
     {},
     {"control"},

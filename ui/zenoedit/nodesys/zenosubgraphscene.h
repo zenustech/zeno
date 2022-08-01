@@ -68,7 +68,7 @@ private:
     NodeUtilParam m_nodeParams;
     QPersistentModelIndex m_subgIdx;      //index to the subgraphmodel or node in "graphsModel"
     std::map<QString, ZenoNode*> m_nodes;
-    QList<ZenoNode*> m_errNodes;        //the nodes which have been marked "error" at run time.
+    QStringList m_errNodes;        //the nodes which have been marked "error" at run time.
     QMap<QString, ZenoFullLink*> m_links;
     ZenoTempLink* m_tempLink;
 };

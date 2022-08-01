@@ -308,7 +308,7 @@ ZENDEFNODE(SubLine,
     {"enum cmpgt cmplt cmpge cmple cmpeq cmpne", "acceptIf", "cmpgt"},
     {"enum any all", "vecSelType", "all"},
     }, /* category: */ {
-    "primitive",
+    "deprecated",
     }});
 
 

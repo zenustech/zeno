@@ -5,6 +5,7 @@
 #include <zenovis/ShaderManager.h>
 #include <zenovis/opengl/buffer.h>
 #include <zenovis/opengl/shader.h>
+#include <zenovis/opengl/scope.h>
 
 namespace zenovis {
 namespace {
@@ -105,7 +106,13 @@ struct GraphicAxis final : IGraphicDraw {
 
         lines_prog->use();
         scene->camera->set_program_uniforms(lines_prog);
-        CHECK_GL(glDrawArrays(GL_LINES, 0, vertex_count));
+
+        float lwidth = 2.f;
+        {
+            //auto _1 = opengl::scopeGLEnable(GL_LINE_SMOOTH);
+            //auto _2 = opengl::scopeGLLineWidth(lwidth);
+            CHECK_GL(glDrawArrays(GL_LINES, 0, vertex_count));
+        }
 
         vbo->disable_attribute(0);
         vbo->disable_attribute(1);
