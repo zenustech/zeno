@@ -243,6 +243,7 @@ struct VDBVoxelAsParticles : INode {
     else
     {
         auto type = get_input<VDBGrid>("vdbGrid")->getType();
+        zeno::log_info("VDBVoxelAsParticles got vdbGrid type: {}", type);
         if(type == "FloatGrid"){
             auto ingrid = get_input<VDBFloatGrid>("vdbGrid");
             auto const &grid = ingrid->m_grid;

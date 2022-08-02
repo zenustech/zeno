@@ -47,6 +47,7 @@ int PrimAttrTableModel::rowCount(const QModelIndex &parent) const {
 
 int PrimAttrTableModel::columnCount(const QModelIndex &parent) const {
     if (m_prim) {
+        using zeno::AttrAcceptAll;
         if (sel_attr == "Vertex") {
             return (int)m_prim->verts.num_attrs<AttrAcceptAll>();
         }
