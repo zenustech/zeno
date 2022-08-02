@@ -247,7 +247,8 @@ PARAM_CONTROL UiHelper::getControlType(const QString &type)
         return CONTROL_FLOAT;
     } else if (type == "string") {
         return CONTROL_STRING;
-    } else if (type == "vec3f" || type == "vec3f" || type == "vec3i") {
+    } else if (type == "vec3f" || type == "vec3" || type == "vec3i") {
+        // support legacy type "vec3"
         return CONTROL_VEC3;
     } else if (type == "writepath") {
         return CONTROL_WRITEPATH;
@@ -305,9 +306,11 @@ QString UiHelper::variantToString(const QVariant& var)
         if (vec.isEmpty()) {
             zeno::log_warn("unexpected qt variant {}", var.typeName());
         } else {
-            QString res = QString::number(vec[0]);
-            for (size_t i = 1; i < vec.size(); i++) {
+            QString res;
+            for (int i = 0; i < vec.size(); i++) {
                 res.append(QString::number(vec[i]));
+                if (i < vec.size() - 1)
+                    res.append(",");
             }
             return res;
         }

@@ -1396,8 +1396,7 @@ void GraphsModel::updateParamInfo(const QString& id, PARAM_UPDATE_INFO info, con
                         }
                     }
                     else if (updateInfo.newInfo.type == "vec3f" ||
-                             updateInfo.newInfo.type == "vec3i" ||
-                             updateInfo.newInfo.type == "vec3")
+                             updateInfo.newInfo.type == "vec3i")
                     {
                         updateInfo.newInfo.defaultValue = QVariant::fromValue(UI_VECTYPE(3, 0));
                     }
