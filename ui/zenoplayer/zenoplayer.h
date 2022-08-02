@@ -4,14 +4,25 @@
 class ViewportWidget;
 class CameraKeyframeWidget;
 
+typedef struct __tagZenoPlayerInitParam {
+    QString sZsgPath;
+    bool bRecord;
+    int iFrame;
+    QString sPath;
+    void init() {
+        sZsgPath = "";
+        bRecord = false;
+        iFrame = 0;
+        sPath = "";
+    }
+}ZENO_PLAYER_INIT_PARAM;
+
 class ZenoPlayer : public QWidget
 {
  Q_OBJECT
 public:
-    ZenoPlayer(QWidget* parent = nullptr);
+    ZenoPlayer(ZENO_PLAYER_INIT_PARAM param, QWidget *parent = nullptr);
     ~ZenoPlayer();
-
-
 
 private:
     void initUI();
@@ -20,6 +31,7 @@ private:
 private slots:
     void slot_OpenFileDialog();
     void updateFrame(const QString& action = "");
+    void startView(QString filePath);
 
 private:
     QTimer* m_pTimerUpVIew;
@@ -31,4 +43,6 @@ private:
     int m_iMaxFrameCount = 10;
     int m_iFrameCount = 0;
     int m_iUpdateFeq = 160;
+
+    ZENO_PLAYER_INIT_PARAM m_InitParam;
 };

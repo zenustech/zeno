@@ -1573,16 +1573,21 @@ void set_perspective(float const *U, float const *V, float const *W, float const
 }
 
 
-void optixrender(int fbo) {
+void optixrender(int fbo, bool bRecord = false) {
     zeno::log_trace("[optix] rendering subframe {}", state.params.subframe_index);
     if (!output_buffer_o) throw sutil::Exception("no output_buffer_o");
     if (!gl_display_o) throw sutil::Exception("no gl_display_o");
     updateState( *output_buffer_o, state.params );
-    //for(int f=0;f<1;f++){
+    int forCount = 1;
+    if (bRecord == true) {
+        forCount = 1024;
+    }
+    zeno::log_info("[optix] rendering subframe count {}", forCount);
+    for (int f = 0; f < forCount; f++) {
     // edit samples_per_launch instead!
         launchSubframe( *output_buffer_o, state );
         state.params.subframe_index++;
-    //}
+    }
     displaySubframe( *output_buffer_o, *gl_display_o, state, fbo );
                     
 }

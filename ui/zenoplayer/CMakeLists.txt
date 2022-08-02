@@ -1,7 +1,7 @@
 find_package(Qt5 COMPONENTS Widgets OpenGL REQUIRED)
 message(STATUS "Found Qt5 version ${Qt5_VERSION}: ${Qt5_DIR}")
 
-option(ZENO_MULTIPROCESS "Enable multiprocessing for ZENO" OFF)
+option(ZENO_MULTIPROCESS "Enable multiprocessing for ZENO" ON)
 
 file(GLOB_RECURSE source CONFIGURE_DEPENDS *.h *.cpp *.ui ../zenoedit/*)
 file(GLOB_RECURSE resource CONFIGURE_DEPENDS *.qrc)

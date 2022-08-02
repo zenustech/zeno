@@ -9,8 +9,8 @@
 #include <graphsmanagment.h>
 #include <viewport/zenovis.h>
 
-ZenoPlayer::ZenoPlayer(QWidget* parent)
-    : QWidget(parent)
+ZenoPlayer::ZenoPlayer(ZENO_PLAYER_INIT_PARAM param, QWidget *parent) 
+    : QWidget(parent), m_InitParam(param) 
 {
     setObjectName("ZenoPlayer");
     resize(1000, 680);
@@ -19,7 +19,16 @@ ZenoPlayer::ZenoPlayer(QWidget* parent)
     move((QApplication::desktop()->width() - width())/2,(QApplication::desktop()->height() - height())/2);
     QTimer::singleShot(10,this,[=]{showMaximized();});
     m_pTimerUpVIew = new QTimer;
+
+    if (m_InitParam.bRecord == true) {
+        m_iMaxFrameCount = m_InitParam.iFrame;
+    }
+
     connect(m_pTimerUpVIew, SIGNAL(timeout()), this, SLOT(updateFrame()));
+
+    if (!m_InitParam.sZsgPath.isEmpty()) {
+        startView(m_InitParam.sZsgPath);
+    }
 }
 
 ZenoPlayer::~ZenoPlayer()
@@ -234,6 +243,33 @@ void ZenoPlayer::slot_OpenFileDialog()
     if (filePath.isEmpty())
         return;
 
+    startView(filePath);
+}
+
+void ZenoPlayer::updateFrame(const QString &action)
+{
+    if(m_iFrameCount >= m_iMaxFrameCount)
+    {
+        m_iFrameCount = 0;
+        Zenovis::GetInstance().setCurrentFrameId(m_iFrameCount);    
+        m_InitParam.bRecord = false;
+    }
+
+    m_pView->update();
+
+    if (m_InitParam.bRecord == true) {
+        QString path = QString("%1/frame%2.jpg").arg(m_InitParam.sPath).arg(m_iFrameCount);
+        QString ext = QFileInfo(path).suffix();
+        int nsamples = 16;
+        if (!path.isEmpty()) {
+            Zenovis::GetInstance().getSession()->do_screenshot(path.toStdString(), ext.toStdString(), nsamples);
+        }
+    }
+
+    m_iFrameCount++;
+}
+
+void ZenoPlayer::startView(QString filePath) {
     Zenovis::GetInstance().startPlay(false);
     m_pTimerUpVIew->stop();
     m_iFrameCount = 0;
@@ -241,50 +277,23 @@ void ZenoPlayer::slot_OpenFileDialog()
     auto pGraphs = zenoApp->graphsManagment();
     pGraphs->clear();
     IGraphsModel *pModel = pGraphs->openZsgFile(filePath);
-    if (!pModel){
-        QMessageBox::warning(this,tr("Error"),QString(tr("Open %1 error!")).arg(filePath));
+    if (!pModel) {
+        QMessageBox::warning(this, tr("Error"), QString(tr("Open %1 error!")).arg(filePath));
         return;
     }
-    GraphsModel* pLegacy = qobject_cast<GraphsModel*>(pModel);
+    auto &inst = Zenovis::GetInstance();
+    auto sess = inst.getSession();
+    if (sess) {
+        auto scene = sess->get_scene();
+        if (scene) {
+            scene->bRecord = m_InitParam.bRecord;            
+        }            
+    }
+
+    GraphsModel *pLegacy = qobject_cast<GraphsModel *>(pModel);
 
     launchProgram(pLegacy, 0, m_iMaxFrameCount);
 
     Zenovis::GetInstance().startPlay(true);
     m_pTimerUpVIew->start(m_iUpdateFeq);
-
-}
-
-void ZenoPlayer::updateFrame(const QString &action)
-{
-//    if (action == "newFrame") {
-//        m_pTimer->stop();
-//        return;
-//    } else if (action == "finishFrame") {
-//        auto& inst = Zenovis::GetInstance();
-//        auto sess = inst.getSession();
-//        ZASSERT_EXIT(sess);
-//        auto scene = sess->get_scene();
-//        ZASSERT_EXIT(scene);
-//        if (scene->renderMan)
-//        {
-//            std::string name = scene->renderMan->getDefaultName();
-//            if (name == "optx") {
-//                m_pTimer->start(m_updateFeq);
-//            }
-//        }
-//    } else if (!action.isEmpty()) {
-//        if (action == "optx") {
-//            m_pTimer->start(m_updateFeq);
-//        } else {
-//            m_pTimer->stop();
-//        }
-//    }
-
-    if(m_iFrameCount >= m_iMaxFrameCount)
-    {
-        m_iFrameCount = 0;
-        Zenovis::GetInstance().setCurrentFrameId(m_iFrameCount);
-    }
-    m_pView->update();
-    m_iFrameCount++;
 }
