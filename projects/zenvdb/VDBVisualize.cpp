@@ -7,6 +7,7 @@
 #include <zeno/PrimitiveObject.h>
 #include <zeno/StringObject.h>
 #include <zeno/VDBGrid.h>
+#include <zeno/utils/log.h>
 #include <zeno/utils/vec.h>
 #include <zeno/zeno.h>
 #include <zeno/ZenoInc.h>

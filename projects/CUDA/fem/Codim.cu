@@ -2145,7 +2145,11 @@ struct CodimStepping : INode {
               auto relDX3D = point_point_rel_dx(p0, p1);
               auto relDX = basis.transpose() * relDX3D;
               auto relDXNorm2 = relDX.l2NormSqr();
-              auto E = f0_SF(relDXNorm2, epsvh) * fn;
+              T E = 0;
+              if (relDXNorm2 > epsvh * epsvh)
+                E = fn * zs::sqrt(relDXNorm2);
+              else
+                E = fn * f0_SF(relDXNorm2, epsvh);
               reduce_to(fppi, n, E, es[fppi / 32]);
             });
             Es.push_back(reduce(pol, es) * fricMu);
@@ -2171,7 +2175,11 @@ struct CodimStepping : INode {
               auto relDX3D = point_edge_rel_dx(p, e0, e1, yita);
               auto relDX = basis.transpose() * relDX3D;
               auto relDXNorm2 = relDX.l2NormSqr();
-              auto E = f0_SF(relDXNorm2, epsvh) * fn;
+              T E = 0;
+              if (relDXNorm2 > epsvh * epsvh)
+                E = fn * zs::sqrt(relDXNorm2);
+              else
+                E = fn * f0_SF(relDXNorm2, epsvh);
               reduce_to(fpei, n, E, es[fpei / 32]);
             });
             Es.push_back(reduce(pol, es) * fricMu);
@@ -2200,7 +2208,11 @@ struct CodimStepping : INode {
                   point_triangle_rel_dx(p, v0, v1, v2, betas[0], betas[1]);
               auto relDX = basis.transpose() * relDX3D;
               auto relDXNorm2 = relDX.l2NormSqr();
-              auto E = f0_SF(relDXNorm2, epsvh) * fn;
+              T E = 0;
+              if (relDXNorm2 > epsvh * epsvh)
+                E = fn * zs::sqrt(relDXNorm2);
+              else
+                E = fn * f0_SF(relDXNorm2, epsvh);
               reduce_to(fpti, n, E, es[fpti / 32]);
             });
             Es.push_back(reduce(pol, es) * fricMu);
@@ -2229,7 +2241,11 @@ struct CodimStepping : INode {
                   edge_edge_rel_dx(e0, e1, e2, e3, gammas[0], gammas[1]);
               auto relDX = basis.transpose() * relDX3D;
               auto relDXNorm2 = relDX.l2NormSqr();
-              auto E = f0_SF(relDXNorm2, epsvh) * fn;
+              T E = 0;
+              if (relDXNorm2 > epsvh * epsvh)
+                E = fn * zs::sqrt(relDXNorm2);
+              else
+                E = fn * f0_SF(relDXNorm2, epsvh);
               reduce_to(feei, n, E, es[feei / 32]);
             });
             Es.push_back(reduce(pol, es) * fricMu);
@@ -4497,7 +4513,8 @@ struct CodimStepping : INode {
     if constexpr (s_enableFriction)
       if (epsv == 0) {
         epsv = dHat;
-      }
+      } else
+        epsv *= dHat;
     // extForce here means gravity acceleration (not actually force)
     // targetGRes = std::min(targetGRes, extForce.norm() * dt * dt * (T)0.5 /
     //                                      nSubsteps / nSubsteps);
