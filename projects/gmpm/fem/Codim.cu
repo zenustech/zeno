@@ -1933,7 +1933,7 @@ struct CodimStepping : INode {
                 // es[ppi] = zs::barrier(dist2 - xi2, activeGap2, (T)1);
 
                 auto I5 = dist2 / activeGap2;
-                auto lenE = (activeGap2 * I5 - activeGap2);
+                auto lenE = (dist2 - activeGap2);
                 auto E = -lenE * lenE * zs::log(I5);
                 reduce_to(ppi, n, E, es[ppi / 32]);
               });
@@ -1959,7 +1959,7 @@ struct CodimStepping : INode {
                 // es[pei] = zs::barrier(dist2 - xi2, activeGap2, (T)1);
 
                 auto I5 = dist2 / activeGap2;
-                auto lenE = (activeGap2 * I5 - activeGap2);
+                auto lenE = (dist2 - activeGap2);
                 auto E = -lenE * lenE * zs::log(I5);
                 reduce_to(pei, n, E, es[pei / 32]);
               });
@@ -1986,7 +1986,7 @@ struct CodimStepping : INode {
                 // es[pti] = zs::barrier(dist2 - xi2, activeGap2, (T)1);
 
                 auto I5 = dist2 / activeGap2;
-                auto lenE = (activeGap2 * I5 - activeGap2);
+                auto lenE = (dist2 - activeGap2);
                 auto E = -lenE * lenE * zs::log(I5);
                 reduce_to(pti, n, E, es[pti / 32]);
               });
@@ -2013,7 +2013,7 @@ struct CodimStepping : INode {
                 // es[eei] = zs::barrier(dist2 - xi2, activeGap2, (T)1);
 
                 auto I5 = dist2 / activeGap2;
-                auto lenE = (activeGap2 * I5 - activeGap2);
+                auto lenE = (dist2 - activeGap2);
                 auto E = -lenE * lenE * zs::log(I5);
                 reduce_to(eei, n, E, es[eei / 32]);
               });
@@ -2437,7 +2437,7 @@ struct CodimStepping : INode {
                 //           zs::barrier(dist2 - xi2, activeGap2, kappa));
 
                 auto I5 = dist2 / activeGap2;
-                auto lenE = (activeGap2 * I5 - activeGap2);
+                auto lenE = (dist2 - activeGap2);
                 auto E = -kappa * lenE * lenE * zs::log(I5);
                 reduce_to(ppi, numPP, E, res[0]);
               });
@@ -2462,7 +2462,7 @@ struct CodimStepping : INode {
                 //           zs::barrier(dist2 - xi2, activeGap2, kappa));
 
                 auto I5 = dist2 / activeGap2;
-                auto lenE = (activeGap2 * I5 - activeGap2);
+                auto lenE = (dist2 - activeGap2);
                 auto E = -kappa * lenE * lenE * zs::log(I5);
                 reduce_to(pei, numPE, E, res[0]);
               });
@@ -2488,7 +2488,7 @@ struct CodimStepping : INode {
                 //           zs::barrier(dist2 - xi2, activeGap2, kappa));
 
                 auto I5 = dist2 / activeGap2;
-                auto lenE = (activeGap2 * I5 - activeGap2);
+                auto lenE = (dist2 - activeGap2);
                 auto E = -kappa * lenE * lenE * zs::log(I5);
                 reduce_to(pti, numPT, E, res[0]);
               });
@@ -2514,7 +2514,7 @@ struct CodimStepping : INode {
                 //           zs::barrier(dist2 - xi2, activeGap2, kappa));
 
                 auto I5 = dist2 / activeGap2;
-                auto lenE = (activeGap2 * I5 - activeGap2);
+                auto lenE = (dist2 - activeGap2);
                 auto E = -kappa * lenE * lenE * zs::log(I5);
 
                 reduce_to(eei, numEE, E, res[0]);
