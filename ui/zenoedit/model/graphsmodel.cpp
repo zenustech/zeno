@@ -456,7 +456,7 @@ void GraphsModel::setDescriptors(const NODE_DESCS& nodeDescs)
     }
 }
 
-void GraphsModel::appendDescriptors(const QList<NODE_DESC>& descs)
+void GraphsModel::appendSubnetDescsFromZsg(const QList<NODE_DESC>& descs)
 {
     for (NODE_DESC desc : descs)
     {
@@ -1395,9 +1395,11 @@ void GraphsModel::updateParamInfo(const QString& id, PARAM_UPDATE_INFO info, con
                             updateInfo.newInfo.defaultValue = QVariant((int)0);
                         }
                     }
-                    else if (updateInfo.newInfo.type == "vec3f")
+                    else if (updateInfo.newInfo.type == "vec3f" ||
+                             updateInfo.newInfo.type == "vec3i" ||
+                             updateInfo.newInfo.type == "vec3")
                     {
-                        updateInfo.newInfo.defaultValue = QVariant::fromValue(QVector<qreal>());
+                        updateInfo.newInfo.defaultValue = QVariant::fromValue(UI_VECTYPE(3, 0));
                     }
                     else
                     {

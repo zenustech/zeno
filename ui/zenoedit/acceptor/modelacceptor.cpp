@@ -32,7 +32,7 @@ void ModelAcceptor::setLegacyDescs(const rapidjson::Value& graphObj, const NODE_
         ZASSERT_EXIT(legacyDescs.find(name) != legacyDescs.end());
         subnetDescs.append(legacyDescs[name]);
     }
-    m_pModel->appendDescriptors(subnetDescs);
+    m_pModel->appendSubnetDescsFromZsg(subnetDescs);
 }
 
 void ModelAcceptor::BeginSubgraph(const QString& name)

@@ -22,12 +22,14 @@ namespace JsonHelper
         writer.EndArray();
     }
 
-    void AddVariantList(const QVariantList& list, const QString& type, RAPIDJSON_WRITER& writer, bool fillInvalid)
+    void AddVariantList(const QVariantList& list, const QString& valType, RAPIDJSON_WRITER& writer, bool fillInvalid)
     {
         writer.StartArray();
         for (const QVariant& value : list)
         {
-            AddVariant(value, type, writer, fillInvalid);
+            //the valType is only availble for "value", for example, in phrase ["setNodeInput", "xxx-cube", "pos", (variant value)],
+            // valType is only used for value, and the other phrases are parsed as string.
+            AddVariant(value, valType, writer, fillInvalid);
 		}
         writer.EndArray();
     }
@@ -52,13 +54,11 @@ namespace JsonHelper
         {
             writer.Bool(value.toBool());
         }
-        //todo: qlineargradient.
-        else if (varType != QVariant::Invalid)
+        else if (varType == QVariant::UserType)
         {
-            if (varType == QVariant::UserType)
+            if (value.userType() == QMetaTypeId<UI_VECTYPE>::qt_metatype_id())
             {
-                //todo: declare a custom metatype
-                QVector<qreal> vec = value.value<QVector<qreal>>();
+                UI_VECTYPE vec = value.value<UI_VECTYPE>();
                 if (!vec.isEmpty())
                 {
                     writer.StartArray();
@@ -71,7 +71,11 @@ namespace JsonHelper
                     writer.EndArray();
                 }
             }
-            else if (varType == QMetaType::VoidStar)
+        }
+        //todo: qlineargradient.
+        else if (varType != QVariant::Invalid)
+        {
+            if (varType == QMetaType::VoidStar)
             {
                 // TODO: use qobject_cast<CurveModel *>(QVariantPtr<IModel>::asPtr(value))
                 // also btw luzh, will this have a memory leakage? no, we make sure that curvemodel is child of subgraphmodel.
@@ -119,7 +123,7 @@ namespace JsonHelper
             }
             else 
             {
-                if (varType != QVariant::Invalid)  // FIXME: so many QVector<qreal>??? i will give a typedef later, and declare a qt meta type.
+                if (varType != QVariant::Invalid)
                     zeno::log_trace("bad param info qvariant type {}", value.typeName() ? value.typeName() : "(null)");
                 writer.String("");
             }

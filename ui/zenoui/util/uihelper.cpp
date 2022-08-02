@@ -131,9 +131,9 @@ QVariant UiHelper::_parseDefaultValue(const QString &defaultValue, const QString
     case CONTROL_CURVE:
     case CONTROL_ENUM:
         return defaultValue;
-    case CONTROL_VEC3F:
+    case CONTROL_VEC3:
     {
-        QVector<qreal> vec;
+        UI_VECTYPE vec;
         if (!defaultValue.isEmpty())
         {
             QStringList L = defaultValue.split(",");
@@ -247,8 +247,8 @@ PARAM_CONTROL UiHelper::getControlType(const QString &type)
         return CONTROL_FLOAT;
     } else if (type == "string") {
         return CONTROL_STRING;
-    } else if (type == "vec3f") {
-        return CONTROL_VEC3F;
+    } else if (type == "vec3f" || type == "vec3f" || type == "vec3i") {
+        return CONTROL_VEC3;
     } else if (type == "writepath") {
         return CONTROL_WRITEPATH;
     } else if (type == "readpath") {
@@ -301,7 +301,7 @@ QString UiHelper::variantToString(const QVariant& var)
 	}
 	else if (var.type() == QVariant::UserType)
     {
-        QVector<qreal> vec = var.value<QVector<qreal>>();
+        UI_VECTYPE vec = var.value<UI_VECTYPE>();
         if (vec.isEmpty()) {
             zeno::log_warn("unexpected qt variant {}", var.typeName());
         } else {
