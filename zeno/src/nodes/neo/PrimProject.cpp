@@ -1,4 +1,3 @@
-#include <atomic>
 #include <functional>
 #include <limits>
 #include <unordered_map>
@@ -10,6 +9,17 @@
 #include <zeno/utils/arrayindex.h>
 #include <zeno/utils/variantswitch.h>
 #include <zeno/zeno.h>
+#if defined(_OPENMP)
+#define WXL 0//1
+#else
+#define WXL 0
+#endif
+#if WXL
+#if defined(_OPENMP)
+#include <omp.h>
+#endif
+#include <atomic>
+#endif
 
 namespace zeno {
 namespace {
@@ -48,7 +58,6 @@ static float tri_intersect(Cond cond, vec3f const &ro, vec3f const &rd, vec3f co
 
 struct BVH { // TODO: WXL please complete this to accel up
     PrimitiveObject const *prim{};
-#define WXL 0
 #if WXL
     using TV = vec3f;
     using Box = std::pair<TV, TV>;

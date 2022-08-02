@@ -48,7 +48,7 @@ int PrimAttrTableModel::rowCount(const QModelIndex &parent) const {
 int PrimAttrTableModel::columnCount(const QModelIndex &parent) const {
     if (m_prim) {
         if (sel_attr == "Vertex") {
-            return (int)m_prim->num_attrs<AttrAcceptAll>();
+            return (int)m_prim->verts.num_attrs<AttrAcceptAll>();
         }
         else if (sel_attr == "Tris") {
             return 1 + (int)m_prim->tris.num_attrs<AttrAcceptAll>();
