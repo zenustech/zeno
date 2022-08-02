@@ -3,8 +3,10 @@ import sys
 import subprocess
 
 def process(path):
-    with open(path, 'r', encoding='gbk') as f:
+    with open(path, 'r', encoding='utf-8') as f:
         dat = f.read()
+    if dat.startswith('\ufeff'):
+        dat = dat[1:]
     with open(path, 'w', encoding='utf-8') as f:
         f.write(dat)
 
