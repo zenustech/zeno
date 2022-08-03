@@ -222,31 +222,31 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
     if (event->button() == Qt::LeftButton) {
 
         
-        if (Zenovis::GetInstance().m_bAddPoint == true) {
-            float x = (float)event->x() / m_res.x();
-            float y = (float)event->y() / m_res.y();
-            auto rdir = screenToWorldRay(x, y);
-            auto pos = realPos();
-            float t = (0 - pos.y()) / rdir.y();
-            auto p = pos + rdir * t;
+        //if (Zenovis::GetInstance().m_bAddPoint == true) {
+            //float x = (float)event->x() / m_res.x();
+            //float y = (float)event->y() / m_res.y();
+            //auto rdir = screenToWorldRay(x, y);
+            //auto pos = realPos();
+            //float t = (0 - pos.y()) / rdir.y();
+            //auto p = pos + rdir * t;
 
-            float cos_t = std::cos(m_theta);
-            float sin_t = std::sin(m_theta);
-            float cos_p = std::cos(m_phi);
-            float sin_p = std::sin(m_phi);
-            QVector3D back(cos_t * sin_p, sin_t, -cos_t * cos_p);
-            QVector3D up(-sin_t * sin_p, cos_t, sin_t * cos_p);
-            QVector3D right = QVector3D::crossProduct(up, back).normalized();
-            up = QVector3D::crossProduct(right, back).normalized();
-            QVector3D delta = right * x + up * y;
+            //float cos_t = std::cos(m_theta);
+            //float sin_t = std::sin(m_theta);
+            //float cos_p = std::cos(m_phi);
+            //float sin_p = std::sin(m_phi);
+            //QVector3D back(cos_t * sin_p, sin_t, -cos_t * cos_p);
+            //QVector3D up(-sin_t * sin_p, cos_t, sin_t * cos_p);
+            //QVector3D right = QVector3D::crossProduct(up, back).normalized();
+            //up = QVector3D::crossProduct(right, back).normalized();
+            //QVector3D delta = right * x + up * y;
                 
             
-            zeno::log_info("create point at x={} y={}", p[0], p[1]);
+            //zeno::log_info("create point at x={} y={}", p[0], p[1]);
 
-            createPointNode(QPointF(p[0], p[1]));
+            ////createPointNode(QPointF(p[0], p[1]));
 
-            Zenovis::GetInstance().m_bAddPoint = false;
-        }
+            //Zenovis::GetInstance().m_bAddPoint = false;
+        //}
 
         auto cam_pos = realPos();
         auto scene = Zenovis::GetInstance().getSession()->get_scene();
@@ -450,7 +450,6 @@ void ViewportWidget::mouseReleaseEvent(QMouseEvent *event) {
     _base::mouseReleaseEvent(event);
     m_camera->fakeMouseReleaseEvent(event); 
     update();
-    emit sig_Draw();
 }
 
 /*

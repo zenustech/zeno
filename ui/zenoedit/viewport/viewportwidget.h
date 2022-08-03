@@ -57,9 +57,6 @@ public:
     QVector3D screenToWorldRay(float x, float y) const;
     QVariant hitOnFloor(float x, float y) const;
 
-private:
-    void createPointNode(QPointF pnt);
-
 
 private:
     bool m_mmb_pressed;
@@ -100,9 +97,6 @@ protected:
     void mouseReleaseEvent(QMouseEvent* event) override;
     void mouseMoveEvent(QMouseEvent* event) override;
     void wheelEvent(QWheelEvent* event) override;
-
-signals:
-    void sig_Draw();
 
 private:
     std::shared_ptr<CameraControl> m_camera;

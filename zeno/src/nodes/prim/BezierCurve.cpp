@@ -93,9 +93,10 @@ struct CreatePoint : zeno::INode {
         //auto point = get_input<zeno::NumericObject>("Point")->get<zeno::vec2f>();
         auto x = get_param<float>("x");
         auto y = get_param<float>("y");
+        auto z = get_param<float>("z");
         auto outprim = std::make_shared<zeno::PrimitiveObject>();
         outprim->verts.resize(1);
-        outprim->verts[0] = zeno::vec3f(x, y, 0);
+        outprim->verts[0] = zeno::vec3f(x, y, z);
 
         set_output("prim", std::move(outprim));
     }
@@ -111,6 +112,7 @@ ZENDEFNODE(CreatePoint, {/*输入*/
                          {
                              {"float", "x", "0"},
                              {"float", "y", "0"},
+                             {"float", "z", "0"},
                          },
                          /*类别*/
                          {"create"}});
