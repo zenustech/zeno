@@ -1,6 +1,6 @@
 [+]
 build_type=RelWithDebInfo
-build_target=zenoplayer
+build_target=zenoedit
 run_environ=ZENO_LOGLEVEL=info ZENO_OPEN=/tmp/a.zsg
 ;run_environ=ZENO_LOGLEVEL=info ZENO_OPEN=/tmp/a.zsg ZENO_ALWAYS=1 ZENO_OPTX=1
 build_dir=/tmp/zeno-build
