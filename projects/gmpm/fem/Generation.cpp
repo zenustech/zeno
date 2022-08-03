@@ -80,6 +80,7 @@ struct ExtractMeshSurface : INode {
     std::vector<vec2i> lines;
     std::vector<float> lineAreas;
     std::vector<vec3i> tris;
+#if 0
     {
       using namespace zs;
       zs::HashTable<int, 3, int> surfTable{0};
@@ -212,6 +213,62 @@ struct ExtractMeshSurface : INode {
                 }
               });
     }
+#else
+    {
+      /// surfaces
+      auto comp_v3 = [](const vec3i &x, const vec3i &y) {
+        for (int d = 0; d != 3; ++d) {
+          if (x[d] < y[d]) return 1;
+          else if (x[d] > y[d]) return 0;
+        }
+        return 1;
+      };
+      std::set<vec3i, RM_CVREF_T(comp_v3)> surfs(comp_v3);
+      auto hastri = [&surfs](const vec3i &tri, int i, int j, int k) {
+        return surfs.find(vec3i{tri[i], tri[j], tri[k]}) != surfs.end();
+      };
+      for (auto &&quad : quads) {
+        surfs.insert(vec3i{quad[0], quad[2], quad[1]});
+        surfs.insert(vec3i{quad[0], quad[3], quad[2]});
+        surfs.insert(vec3i{quad[0], quad[1], quad[3]});
+        surfs.insert(vec3i{quad[1], quad[2], quad[3]});
+      }
+      for (auto &&tri : surfs) {
+        if (!hastri(tri, 2, 1, 0) && !hastri(tri, 1, 0, 2) && !hastri(tri, 0, 2, 1)) 
+          tris.push_back(vec3i{tri[0], tri[1], tri[2]});
+      }
+
+      /// surf edge
+      auto comp_v2 = [](const vec2i &x, const vec2i &y) {
+          return x[0] < y[0] ? 1 : (x[0] == y[0] && x[1] < y[1] ? 1 : 0);
+      };
+      std::set<vec2i, RM_CVREF_T(comp_v2)> sedges(comp_v2);
+      auto ist2 = [&sedges, &lines](int i, int j) {
+        if (sedges.find(vec2i{i, j}) == sedges.end() && sedges.find(vec2i{j, i}) == sedges.end()) {
+          sedges.insert(vec2i{i, j});
+          lines.push_back(vec2i{i, j});
+        }
+      };
+      for (auto &&tri : tris) {
+        ist2(tri[0], tri[1]);
+        ist2(tri[1], tri[2]);
+        ist2(tri[2], tri[0]);
+      }
+
+      /// surf verts
+      std::set<int> spoints;
+      auto ist = [&spoints, &points](int i) {
+        if (spoints.find(i) == spoints.end()) {
+          spoints.insert(i);
+          points.push_back(i);
+        }
+      };
+      for (auto &&line : lines) {
+        ist(line[0]);
+        ist(line[1]);
+      }
+    }
+#endif
     if (includeTris)
       prim->tris.values = tris; // surfaces
     if (includeLines) {
@@ -305,40 +362,90 @@ struct ToBoundaryPrimitive : INode {
     /// extract surface edges
     if constexpr (true) {
       constexpr auto space = zs::execspace_e::openmp;
-      zs::HashTable<int, 2, int> surfEdgeTable{0};
-      surfEdgeTable.resize(ompExec, 3 * tris.size());
-      surfEdgeTable.reset(ompExec, true);
 
-      auto seTable = proxy<space>(surfEdgeTable);
-      using table_t = RM_CVREF_T(seTable);
       using vec3i = zs::vec<int, 3>;
       using vec2i = zs::vec<int, 2>;
-      ompExec(range(tris.size()), [&](int ei) {
-        auto tri = tris[ei];
-        seTable.insert(vec2i{tri[0], tri[1]});
-        seTable.insert(vec2i{tri[1], tri[2]});
-        seTable.insert(vec2i{tri[2], tri[0]});
+#if 0
+      for (int i = 0; i != 10; ++i) {
+        auto tri = tris[i];
+        fmt::print("checking tri! {}-th tri<{}, {}, {}>\n", i, tri[0], tri[1], tri[2]);
+        auto ii = tris.size() - 1 - i;
+        tri = tris[ii];
+        fmt::print("checking tri! {}-th tri<{}, {}, {}>\n", ii, tri[0], tri[1], tri[2]);
+      }
+#endif
+#if 0
+      zs::HashTable<int, 2, int> surfEdgeTable{3 * tris.size(), memsrc_e::host, -1};
+      surfEdgeTable.resize(ompExec, 3 * tris.size());
+      surfEdgeTable.reset(ompExec, true);
+      ompExec(range(tris.size()), [&, seTable =
+                                          proxy<space>(surfEdgeTable)](int ei) mutable {
+          using table_t = RM_CVREF_T(seTable);
+          auto tri = tris[ei];
+          if (tri[0] == tri[1] || tri[0] == tri[2] || tri[1] == tri[2] ||
+              tri[0] < 0 || tri[1] < 0 || tri[2] < 0) {
+              fmt::print("what the fuck ? {}-th tri<{}, {}, {}>\n", ei, tri[0],
+                         tri[1], tri[2]);
+          }
+          seTable.insert(vec2i{tri[0], tri[1]});
+          seTable.insert(vec2i{tri[1], tri[2]});
+          seTable.insert(vec2i{tri[2], tri[0]});
       });
       Vector<int> surfEdgeCnt{1, memsrc_e::host};
       surfEdgeCnt.setVal(0);
       auto &surfEdges = (*zsbou)[ZenoParticles::s_surfEdgeTag];
       surfEdges = typename ZenoParticles::particles_t(
           {{"inds", 2}}, tris.size() * 3, zs::memsrc_e::host);
-      ompExec(range(seTable.size()),
-              [&, edges = proxy<space>({}, surfEdges),
-               cnt = proxy<space>(surfEdgeCnt)](int i) mutable {
-                auto edgeInds = seTable._activeKeys[i];
-                if (auto no = seTable.query(vec2i{edgeInds[1], edgeInds[0]});
-                    no == table_t::sentinel_v ||
-                    (no != table_t::sentinel_v && edgeInds[0] < edgeInds[1])) {
+      ompExec(
+          range(surfEdgeTable.size()), [&, edges = proxy<space>({}, surfEdges),
+                                        cnt = proxy<space>(surfEdgeCnt),
+                                        seTable = proxy<space>(surfEdgeTable),
+           n = surfEdgeTable.size()](int i) mutable {
+           using table_t = RM_CVREF_T(seTable);
+              auto edgeInds = seTable._activeKeys[i];
+              if (auto no = seTable.query(vec2i{edgeInds[1], edgeInds[0]});
+                  no == table_t::sentinel_v ||
+                  (no != table_t::sentinel_v && edgeInds[0] < edgeInds[1])) {
                   auto id = atomic_add(exec_omp, &cnt[0], 1);
                   edges("inds", 0, id) = reinterpret_bits<float>(edgeInds[0]);
                   edges("inds", 1, id) = reinterpret_bits<float>(edgeInds[1]);
-                }
-              });
+                  if (i < 10 || i > n - 10) {
+                      fmt::print("surf edge [{}] inds <{}, {}> (<{}, {}>)\n", i,
+                                 edgeInds[0], edgeInds[1],
+                                 reinterpret_bits<int>(edges("inds", 0, id)),
+                                 reinterpret_bits<int>(edges("inds", 1, id)));
+                  }
+              }
+          });
       auto seCnt = surfEdgeCnt.getVal();
       surfEdges.resize(seCnt);
       surfEdges = surfEdges.clone({zs::memsrc_e::device, 0});
+#else
+      auto comp = [](const auto &x, const auto &y) {
+          return x[0] < y[0] ? 1 : (x[0] == y[0] && x[1] < y[1] ? 1 : 0);
+      };
+      std::set<vec2i, RM_CVREF_T(comp)> sedges(comp);
+      auto ist = [&sedges](int i, int j) {
+        if (sedges.find(vec2i{i, j}) == sedges.end() && sedges.find(vec2i{j, i}) == sedges.end())
+          sedges.insert(vec2i{i, j});
+      };
+      for (auto &&tri : tris) {
+        ist(tri[0], tri[1]);
+        ist(tri[1], tri[2]);
+        ist(tri[2], tri[0]);
+      }
+      auto &surfEdges = (*zsbou)[ZenoParticles::s_surfEdgeTag];
+      surfEdges = typename ZenoParticles::particles_t(
+          {{"inds", 2}}, sedges.size(), zs::memsrc_e::host);
+          int no = 0;
+      auto sv = proxy<execspace_e::host>({} , surfEdges);
+          for (auto &&edge : sedges) {
+              sv("inds", 0, no) = reinterpret_bits<float>(edge[0]);
+              sv("inds", 1, no) = reinterpret_bits<float>(edge[1]);
+              no++;
+          }
+      surfEdges = surfEdges.clone({zs::memsrc_e::device, 0});
+#endif
       // surface vert indices
       auto &surfVerts = (*zsbou)[ZenoParticles::s_surfVertTag];
       surfVerts = typename ZenoParticles::particles_t({{"inds", 1}}, pos.size(),
@@ -847,6 +954,7 @@ struct ToZSSurfaceMesh : INode {
                 atomic_add(zs::exec_omp, &pars("m", tri[d]), vmass);
             });
 
+#if 0
     zs::HashTable<int, 2, int> surfEdgeTable{0};
     surfEdgeTable.resize(ompExec, 3 * tris.size());
     surfEdgeTable.reset(ompExec, true);
@@ -880,6 +988,56 @@ struct ToZSSurfaceMesh : INode {
             });
     auto seCnt = surfEdgeCnt.getVal();
     surfEdges.resize(seCnt);
+    surfEdges = surfEdges.clone({zs::memsrc_e::device, 0});
+#else
+    auto comp = [](const auto &x, const auto &y) {
+          return x[0] < y[0] ? 1 : (x[0] == y[0] && x[1] < y[1] ? 1 : 0);
+      };
+      std::set<vec2i, RM_CVREF_T(comp)> sedges(comp);
+      auto ist = [&sedges](int i, int j) {
+        if (sedges.find(vec2i{i, j}) == sedges.end() && sedges.find(vec2i{j, i}) == sedges.end())
+          sedges.insert(vec2i{i, j});
+      };
+      for (auto &&tri : tris) {
+        ist(tri[0], tri[1]);
+        ist(tri[1], tri[2]);
+        ist(tri[2], tri[0]);
+      }
+      auto &surfEdges = (*zstris)[ZenoParticles::s_surfEdgeTag];
+      surfEdges = typename ZenoParticles::particles_t(
+          {{"inds", 2}}, sedges.size(), zs::memsrc_e::host);
+          int no = 0;
+      auto sv = proxy<execspace_e::host>({} , surfEdges);
+          for (auto &&edge : sedges) {
+              sv("inds", 0, no) = reinterpret_bits<float>(edge[0]);
+              sv("inds", 1, no) = reinterpret_bits<float>(edge[1]);
+
+              if (no < 10 || no > sedges.size() - 10) {
+                  fmt::print("surf edge [{}] inds <{}, {}> (<{}, {}>)\n", no,
+                             edge[0], edge[1],
+                             reinterpret_bits<int>(sv("inds", 0, no)),
+                             reinterpret_bits<int>(sv("inds", 1, no)));
+              }
+              no++;
+          }
+      surfEdges = surfEdges.clone({zs::memsrc_e::device, 0});
+      #if 0
+      fmt::print("surf edge (addr: {}) sizes: {} (correct) - {} (actual)\n", (void*)&surfEdges, sedges.size(), surfEdges.size());
+          {
+          auto sv = proxy<execspace_e::host>({}, surfEdges);
+              for (int i = 0; i != 10; ++i) {
+                auto se = sv.template pack<2>("inds", i).template reinterpret_bits<int>();
+                fmt::print("checking surf edge! {}-th se<{}, {}>\n", i, se[0],
+                         se[1]);
+                  auto ii = sedges.size() - 1 - i;
+                  se = sv.template pack<2>("inds", ii)
+                            .template reinterpret_bits<int>();
+                  fmt::print("checking surf edge! {}-th se<{}, {}>\n", ii,
+                             se[0], se[1]);
+              }
+          }
+          #endif
+#endif
     // surface vert indices
     auto &surfVerts = (*zstris)[ZenoParticles::s_surfVertTag];
     surfVerts = typename ZenoParticles::particles_t({{"inds", 1}}, pos.size(),

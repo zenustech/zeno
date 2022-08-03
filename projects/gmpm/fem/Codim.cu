@@ -1913,329 +1913,334 @@ struct CodimStepping : INode {
       // contacts
       {
 #if s_enableContact
-        {
-          auto activeGap2 = dHat * dHat + 2 * xi * dHat;
-          auto numPP = nPP.getVal();
-          es.resize(count_warps(numPP));
-          es.reset(0);
-          pol(range(numPP),
-              [vtemp = proxy<space>({}, vtemp), PP = proxy<space>(PP),
-               es = proxy<space>(es), xi2 = xi * xi, dHat = dHat, activeGap2,
-               n = numPP] __device__(int ppi) mutable {
-                auto pp = PP[ppi];
-                auto x0 = vtemp.pack<3>("xn", pp[0]);
-                auto x1 = vtemp.pack<3>("xn", pp[1]);
-                auto dist2 = dist2_pp(x0, x1);
-                if (dist2 < xi2)
-                  printf("dist already smaller than xi!\n");
-                // atomic_add(exec_cuda, &res[0],
-                //           zs::barrier(dist2 - xi2, activeGap2, kappa));
-                // es[ppi] = zs::barrier(dist2 - xi2, activeGap2, (T)1);
+          {
+              auto activeGap2 = dHat * dHat + 2 * xi * dHat;
+              auto numPP = nPP.getVal();
+              es.resize(count_warps(numPP));
+              es.reset(0);
+              pol(range(numPP),
+                  [vtemp = proxy<space>({}, vtemp), PP = proxy<space>(PP),
+                   es = proxy<space>(es), xi2 = xi * xi, dHat = dHat,
+                   activeGap2, n = numPP] __device__(int ppi) mutable {
+                      auto pp = PP[ppi];
+                      auto x0 = vtemp.pack<3>("xn", pp[0]);
+                      auto x1 = vtemp.pack<3>("xn", pp[1]);
+                      auto dist2 = dist2_pp(x0, x1);
+                      if (dist2 < xi2)
+                          printf("dist already smaller than xi!\n");
+                      // atomic_add(exec_cuda, &res[0],
+                      //           zs::barrier(dist2 - xi2, activeGap2, kappa));
+                      // es[ppi] = zs::barrier(dist2 - xi2, activeGap2, (T)1);
 
-                auto I5 = dist2 / activeGap2;
-                auto lenE = (dist2 - activeGap2);
-                auto E = -lenE * lenE * zs::log(I5);
-                reduce_to(ppi, n, E, es[ppi / 32]);
-              });
-          Es.push_back(reduce(pol, es) * kappa);
+                      auto I5 = dist2 / activeGap2;
+                      auto lenE = (dist2 - activeGap2);
+                      auto E = -lenE * lenE * zs::log(I5);
+                      reduce_to(ppi, n, E, es[ppi / 32]);
+                  });
+              Es.push_back(reduce(pol, es) * kappa);
 
-          auto numPE = nPE.getVal();
-          es.resize(count_warps(numPE));
-          es.reset(0);
-          pol(range(numPE),
-              [vtemp = proxy<space>({}, vtemp), PE = proxy<space>(PE),
-               es = proxy<space>(es), xi2 = xi * xi, dHat = dHat, activeGap2,
-               n = numPE] __device__(int pei) mutable {
-                auto pe = PE[pei];
-                auto p = vtemp.pack<3>("xn", pe[0]);
-                auto e0 = vtemp.pack<3>("xn", pe[1]);
-                auto e1 = vtemp.pack<3>("xn", pe[2]);
+              auto numPE = nPE.getVal();
+              es.resize(count_warps(numPE));
+              es.reset(0);
+              pol(range(numPE),
+                  [vtemp = proxy<space>({}, vtemp), PE = proxy<space>(PE),
+                   es = proxy<space>(es), xi2 = xi * xi, dHat = dHat,
+                   activeGap2, n = numPE] __device__(int pei) mutable {
+                      auto pe = PE[pei];
+                      auto p = vtemp.pack<3>("xn", pe[0]);
+                      auto e0 = vtemp.pack<3>("xn", pe[1]);
+                      auto e1 = vtemp.pack<3>("xn", pe[2]);
 
-                auto dist2 = dist2_pe(p, e0, e1);
-                if (dist2 < xi2)
-                  printf("dist already smaller than xi!\n");
-                // atomic_add(exec_cuda, &res[0],
-                //           zs::barrier(dist2 - xi2, activeGap2, kappa));
-                // es[pei] = zs::barrier(dist2 - xi2, activeGap2, (T)1);
+                      auto dist2 = dist2_pe(p, e0, e1);
+                      if (dist2 < xi2)
+                          printf("dist already smaller than xi!\n");
+                      // atomic_add(exec_cuda, &res[0],
+                      //           zs::barrier(dist2 - xi2, activeGap2, kappa));
+                      // es[pei] = zs::barrier(dist2 - xi2, activeGap2, (T)1);
 
-                auto I5 = dist2 / activeGap2;
-                auto lenE = (dist2 - activeGap2);
-                auto E = -lenE * lenE * zs::log(I5);
-                reduce_to(pei, n, E, es[pei / 32]);
-              });
-          Es.push_back(reduce(pol, es) * kappa);
+                      auto I5 = dist2 / activeGap2;
+                      auto lenE = (dist2 - activeGap2);
+                      auto E = -lenE * lenE * zs::log(I5);
+                      reduce_to(pei, n, E, es[pei / 32]);
+                  });
+              Es.push_back(reduce(pol, es) * kappa);
 
-          auto numPT = nPT.getVal();
-          es.resize(count_warps(numPT));
-          es.reset(0);
-          pol(range(numPT),
-              [vtemp = proxy<space>({}, vtemp), PT = proxy<space>(PT),
-               es = proxy<space>(es), xi2 = xi * xi, dHat = dHat, activeGap2,
-               n = numPT] __device__(int pti) mutable {
-                auto pt = PT[pti];
-                auto p = vtemp.pack<3>("xn", pt[0]);
-                auto t0 = vtemp.pack<3>("xn", pt[1]);
-                auto t1 = vtemp.pack<3>("xn", pt[2]);
-                auto t2 = vtemp.pack<3>("xn", pt[3]);
+              auto numPT = nPT.getVal();
+              es.resize(count_warps(numPT));
+              es.reset(0);
+              pol(range(numPT),
+                  [vtemp = proxy<space>({}, vtemp), PT = proxy<space>(PT),
+                   es = proxy<space>(es), xi2 = xi * xi, dHat = dHat,
+                   activeGap2, n = numPT] __device__(int pti) mutable {
+                      auto pt = PT[pti];
+                      auto p = vtemp.pack<3>("xn", pt[0]);
+                      auto t0 = vtemp.pack<3>("xn", pt[1]);
+                      auto t1 = vtemp.pack<3>("xn", pt[2]);
+                      auto t2 = vtemp.pack<3>("xn", pt[3]);
 
-                auto dist2 = dist2_pt(p, t0, t1, t2);
-                if (dist2 < xi2)
-                  printf("dist already smaller than xi!\n");
-                // atomic_add(exec_cuda, &res[0],
-                //           zs::barrier(dist2 - xi2, activeGap2, kappa));
-                // es[pti] = zs::barrier(dist2 - xi2, activeGap2, (T)1);
+                      auto dist2 = dist2_pt(p, t0, t1, t2);
+                      if (dist2 < xi2)
+                          printf("dist already smaller than xi!\n");
+                      // atomic_add(exec_cuda, &res[0],
+                      //           zs::barrier(dist2 - xi2, activeGap2, kappa));
+                      // es[pti] = zs::barrier(dist2 - xi2, activeGap2, (T)1);
 
-                auto I5 = dist2 / activeGap2;
-                auto lenE = (dist2 - activeGap2);
-                auto E = -lenE * lenE * zs::log(I5);
-                reduce_to(pti, n, E, es[pti / 32]);
-              });
-          Es.push_back(reduce(pol, es) * kappa);
+                      auto I5 = dist2 / activeGap2;
+                      auto lenE = (dist2 - activeGap2);
+                      auto E = -lenE * lenE * zs::log(I5);
+                      reduce_to(pti, n, E, es[pti / 32]);
+                  });
+              Es.push_back(reduce(pol, es) * kappa);
 
-          auto numEE = nEE.getVal();
-          es.resize(count_warps(numEE));
-          es.reset(0);
-          pol(range(numEE),
-              [vtemp = proxy<space>({}, vtemp), EE = proxy<space>(EE),
-               es = proxy<space>(es), xi2 = xi * xi, dHat = dHat, activeGap2,
-               n = numEE] __device__(int eei) mutable {
-                auto ee = EE[eei];
-                auto ea0 = vtemp.pack<3>("xn", ee[0]);
-                auto ea1 = vtemp.pack<3>("xn", ee[1]);
-                auto eb0 = vtemp.pack<3>("xn", ee[2]);
-                auto eb1 = vtemp.pack<3>("xn", ee[3]);
+              auto numEE = nEE.getVal();
+              es.resize(count_warps(numEE));
+              es.reset(0);
+              pol(range(numEE),
+                  [vtemp = proxy<space>({}, vtemp), EE = proxy<space>(EE),
+                   es = proxy<space>(es), xi2 = xi * xi, dHat = dHat,
+                   activeGap2, n = numEE] __device__(int eei) mutable {
+                      auto ee = EE[eei];
+                      auto ea0 = vtemp.pack<3>("xn", ee[0]);
+                      auto ea1 = vtemp.pack<3>("xn", ee[1]);
+                      auto eb0 = vtemp.pack<3>("xn", ee[2]);
+                      auto eb1 = vtemp.pack<3>("xn", ee[3]);
 
-                auto dist2 = dist2_ee(ea0, ea1, eb0, eb1);
-                if (dist2 < xi2)
-                  printf("dist already smaller than xi!\n");
-                // atomic_add(exec_cuda, &res[0],
-                //           zs::barrier(dist2 - xi2, activeGap2, kappa));
-                // es[eei] = zs::barrier(dist2 - xi2, activeGap2, (T)1);
+                      auto dist2 = dist2_ee(ea0, ea1, eb0, eb1);
+                      if (dist2 < xi2)
+                          printf("dist already smaller than xi!\n");
+                      // atomic_add(exec_cuda, &res[0],
+                      //           zs::barrier(dist2 - xi2, activeGap2, kappa));
+                      // es[eei] = zs::barrier(dist2 - xi2, activeGap2, (T)1);
 
-                auto I5 = dist2 / activeGap2;
-                auto lenE = (dist2 - activeGap2);
-                auto E = -lenE * lenE * zs::log(I5);
-                reduce_to(eei, n, E, es[eei / 32]);
-              });
-          Es.push_back(reduce(pol, es) * kappa);
+                      auto I5 = dist2 / activeGap2;
+                      auto lenE = (dist2 - activeGap2);
+                      auto E = -lenE * lenE * zs::log(I5);
+                      reduce_to(eei, n, E, es[eei / 32]);
+                  });
+              Es.push_back(reduce(pol, es) * kappa);
 
 #if s_enableMollification
-          auto numEEM = nEEM.getVal();
-          es.resize(count_warps(numEEM));
-          es.reset(0);
-          pol(range(numEEM),
-              [vtemp = proxy<space>({}, vtemp), EEM = proxy<space>(EEM),
-               es = proxy<space>(es), xi2 = xi * xi, dHat = dHat, activeGap2,
-               n = numEEM] __device__(int eemi) mutable {
-                auto eem = EEM[eemi];
-                auto ea0 = vtemp.pack<3>("xn", eem[0]);
-                auto ea1 = vtemp.pack<3>("xn", eem[1]);
-                auto eb0 = vtemp.pack<3>("xn", eem[2]);
-                auto eb1 = vtemp.pack<3>("xn", eem[3]);
+              auto numEEM = nEEM.getVal();
+              es.resize(count_warps(numEEM));
+              es.reset(0);
+              pol(range(numEEM),
+                  [vtemp = proxy<space>({}, vtemp), EEM = proxy<space>(EEM),
+                   es = proxy<space>(es), xi2 = xi * xi, dHat = dHat,
+                   activeGap2, n = numEEM] __device__(int eemi) mutable {
+                      auto eem = EEM[eemi];
+                      auto ea0 = vtemp.pack<3>("xn", eem[0]);
+                      auto ea1 = vtemp.pack<3>("xn", eem[1]);
+                      auto eb0 = vtemp.pack<3>("xn", eem[2]);
+                      auto eb1 = vtemp.pack<3>("xn", eem[3]);
 
-                auto v0 = ea1 - ea0;
-                auto v1 = eb1 - eb0;
-                auto c = v0.cross(v1).norm();
-                auto I1 = c * c;
-                T E = 0;
-                if (I1 != 0) {
-                  auto dist2 = dist2_ee(ea0, ea1, eb0, eb1);
-                  if (dist2 < xi2)
-                    printf("dist already smaller than xi!\n");
-                  auto I2 = dist2 / activeGap2;
+                      auto v0 = ea1 - ea0;
+                      auto v1 = eb1 - eb0;
+                      auto c = v0.cross(v1).norm();
+                      auto I1 = c * c;
+                      T E = 0;
+                      if (I1 != 0) {
+                          auto dist2 = dist2_ee(ea0, ea1, eb0, eb1);
+                          if (dist2 < xi2)
+                              printf("dist already smaller than xi!\n");
+                          auto I2 = dist2 / activeGap2;
 
-                  auto rv0 = vtemp.pack<3>("x0", eem[0]);
-                  auto rv1 = vtemp.pack<3>("x0", eem[1]);
-                  auto rv2 = vtemp.pack<3>("x0", eem[2]);
-                  auto rv3 = vtemp.pack<3>("x0", eem[3]);
-                  T epsX = mollifier_threshold_ee(rv0, rv1, rv2, rv3);
-                  E = (2 - I1 / epsX) * (I1 / epsX) *
-                      -zs::sqr(activeGap2 - activeGap2 * I2) * zs::log(I2);
-                }
-                reduce_to(eemi, n, E, es[eemi / 32]);
-              });
-          Es.push_back(reduce(pol, es) * kappa);
+                          auto rv0 = vtemp.pack<3>("x0", eem[0]);
+                          auto rv1 = vtemp.pack<3>("x0", eem[1]);
+                          auto rv2 = vtemp.pack<3>("x0", eem[2]);
+                          auto rv3 = vtemp.pack<3>("x0", eem[3]);
+                          T epsX = mollifier_threshold_ee(rv0, rv1, rv2, rv3);
+                          E = (2 - I1 / epsX) * (I1 / epsX) *
+                              -zs::sqr(activeGap2 - activeGap2 * I2) *
+                              zs::log(I2);
+                      }
+                      reduce_to(eemi, n, E, es[eemi / 32]);
+                  });
+              Es.push_back(reduce(pol, es) * kappa);
 
-          auto numPPM = nPPM.getVal();
-          es.resize(count_warps(numPPM));
-          es.reset(0);
-          pol(range(numPPM), [vtemp = proxy<space>({}, vtemp),
-                              PPM = proxy<space>(PPM), es = proxy<space>(es),
-                              xi2 = xi * xi, dHat = dHat, activeGap2,
-                              n = numPPM] __device__(int ppmi) mutable {
-            auto ppm = PPM[ppmi];
+              auto numPPM = nPPM.getVal();
+              es.resize(count_warps(numPPM));
+              es.reset(0);
+              pol(range(numPPM),
+                  [vtemp = proxy<space>({}, vtemp), PPM = proxy<space>(PPM),
+                   es = proxy<space>(es), xi2 = xi * xi, dHat = dHat,
+                   activeGap2, n = numPPM] __device__(int ppmi) mutable {
+                      auto ppm = PPM[ppmi];
 
-            auto v0 = vtemp.pack<3>("xn", ppm[1]) - vtemp.pack<3>("xn", ppm[0]);
-            auto v1 = vtemp.pack<3>("xn", ppm[3]) - vtemp.pack<3>("xn", ppm[2]);
-            auto c = v0.cross(v1).norm();
-            auto I1 = c * c;
-            T E = 0;
-            if (I1 != 0) {
-              auto dist2 = dist2_pp(vtemp.pack<3>("xn", ppm[0]),
-                                    vtemp.pack<3>("xn", ppm[2]));
-              if (dist2 < xi2)
-                printf("dist already smaller than xi!\n");
-              auto I2 = dist2 / activeGap2;
+                      auto v0 = vtemp.pack<3>("xn", ppm[1]) -
+                                vtemp.pack<3>("xn", ppm[0]);
+                      auto v1 = vtemp.pack<3>("xn", ppm[3]) -
+                                vtemp.pack<3>("xn", ppm[2]);
+                      auto c = v0.cross(v1).norm();
+                      auto I1 = c * c;
+                      T E = 0;
+                      if (I1 != 0) {
+                          auto dist2 = dist2_pp(vtemp.pack<3>("xn", ppm[0]),
+                                                vtemp.pack<3>("xn", ppm[2]));
+                          if (dist2 < xi2)
+                              printf("dist already smaller than xi!\n");
+                          auto I2 = dist2 / activeGap2;
 
-              auto rv0 = vtemp.pack<3>("x0", ppm[0]);
-              auto rv1 = vtemp.pack<3>("x0", ppm[1]);
-              auto rv2 = vtemp.pack<3>("x0", ppm[2]);
-              auto rv3 = vtemp.pack<3>("x0", ppm[3]);
-              T epsX = mollifier_threshold_ee(rv0, rv1, rv2, rv3);
-              E = (2 - I1 / epsX) * (I1 / epsX) *
-                  -zs::sqr(activeGap2 - activeGap2 * I2) * zs::log(I2);
-            }
-            reduce_to(ppmi, n, E, es[ppmi / 32]);
-          });
-          Es.push_back(reduce(pol, es) * kappa);
+                          auto rv0 = vtemp.pack<3>("x0", ppm[0]);
+                          auto rv1 = vtemp.pack<3>("x0", ppm[1]);
+                          auto rv2 = vtemp.pack<3>("x0", ppm[2]);
+                          auto rv3 = vtemp.pack<3>("x0", ppm[3]);
+                          T epsX = mollifier_threshold_ee(rv0, rv1, rv2, rv3);
+                          E = (2 - I1 / epsX) * (I1 / epsX) *
+                              -zs::sqr(activeGap2 - activeGap2 * I2) *
+                              zs::log(I2);
+                      }
+                      reduce_to(ppmi, n, E, es[ppmi / 32]);
+                  });
+              Es.push_back(reduce(pol, es) * kappa);
 
-          auto numPEM = nPEM.getVal();
-          es.resize(count_warps(numPEM));
-          es.reset(0);
-          pol(range(numPEM),
-              [vtemp = proxy<space>({}, vtemp), PEM = proxy<space>(PEM),
-               es = proxy<space>(es), xi2 = xi * xi, dHat = dHat, activeGap2,
-               n = numPEM] __device__(int pemi) mutable {
-                auto pem = PEM[pemi];
+              auto numPEM = nPEM.getVal();
+              es.resize(count_warps(numPEM));
+              es.reset(0);
+              pol(range(numPEM),
+                  [vtemp = proxy<space>({}, vtemp), PEM = proxy<space>(PEM),
+                   es = proxy<space>(es), xi2 = xi * xi, dHat = dHat,
+                   activeGap2, n = numPEM] __device__(int pemi) mutable {
+                      auto pem = PEM[pemi];
 
-                auto p = vtemp.pack<3>("xn", pem[0]);
-                auto e0 = vtemp.pack<3>("xn", pem[2]);
-                auto e1 = vtemp.pack<3>("xn", pem[3]);
-                auto v0 = vtemp.pack<3>("xn", pem[1]) - p;
-                auto v1 = e1 - e0;
-                auto c = v0.cross(v1).norm();
-                auto I1 = c * c;
-                T E = 0;
-                if (I1 != 0) {
-                  auto dist2 = dist2_pe(p, e0, e1);
-                  if (dist2 < xi2)
-                    printf("dist already smaller than xi!\n");
-                  auto I2 = dist2 / activeGap2;
+                      auto p = vtemp.pack<3>("xn", pem[0]);
+                      auto e0 = vtemp.pack<3>("xn", pem[2]);
+                      auto e1 = vtemp.pack<3>("xn", pem[3]);
+                      auto v0 = vtemp.pack<3>("xn", pem[1]) - p;
+                      auto v1 = e1 - e0;
+                      auto c = v0.cross(v1).norm();
+                      auto I1 = c * c;
+                      T E = 0;
+                      if (I1 != 0) {
+                          auto dist2 = dist2_pe(p, e0, e1);
+                          if (dist2 < xi2)
+                              printf("dist already smaller than xi!\n");
+                          auto I2 = dist2 / activeGap2;
 
-                  auto rv0 = vtemp.pack<3>("x0", pem[0]);
-                  auto rv1 = vtemp.pack<3>("x0", pem[1]);
-                  auto rv2 = vtemp.pack<3>("x0", pem[2]);
-                  auto rv3 = vtemp.pack<3>("x0", pem[3]);
-                  T epsX = mollifier_threshold_ee(rv0, rv1, rv2, rv3);
-                  E = (2 - I1 / epsX) * (I1 / epsX) *
-                      -zs::sqr(activeGap2 - activeGap2 * I2) * zs::log(I2);
-                }
-                reduce_to(pemi, n, E, es[pemi / 32]);
-              });
-          Es.push_back(reduce(pol, es) * kappa);
+                          auto rv0 = vtemp.pack<3>("x0", pem[0]);
+                          auto rv1 = vtemp.pack<3>("x0", pem[1]);
+                          auto rv2 = vtemp.pack<3>("x0", pem[2]);
+                          auto rv3 = vtemp.pack<3>("x0", pem[3]);
+                          T epsX = mollifier_threshold_ee(rv0, rv1, rv2, rv3);
+                          E = (2 - I1 / epsX) * (I1 / epsX) *
+                              -zs::sqr(activeGap2 - activeGap2 * I2) *
+                              zs::log(I2);
+                      }
+                      reduce_to(pemi, n, E, es[pemi / 32]);
+                  });
+              Es.push_back(reduce(pol, es) * kappa);
 #endif // mollification
 
 #if s_enableFriction
-          if (fricMu != 0) {
-            auto numFPP = nFPP.getVal();
-            es.resize(count_warps(numFPP));
-            es.reset(0);
-            pol(range(numFPP), [vtemp = proxy<space>({}, vtemp),
-                                fricPP = proxy<space>({}, fricPP),
-                                FPP = proxy<space>(FPP), es = proxy<space>(es),
-                                epsvh = epsv * dt,
-                                n = numFPP] __device__(int fppi) mutable {
-              auto fpp = FPP[fppi];
-              auto p0 =
-                  vtemp.pack<3>("xn", fpp[0]) - vtemp.pack<3>("xhat", fpp[0]);
-              auto p1 =
-                  vtemp.pack<3>("xn", fpp[1]) - vtemp.pack<3>("xhat", fpp[1]);
-              auto basis = fricPP.pack<3, 2>("basis", fppi);
-              auto fn = fricPP("fn", fppi);
-              auto relDX3D = point_point_rel_dx(p0, p1);
-              auto relDX = basis.transpose() * relDX3D;
-              auto relDXNorm2 = relDX.l2NormSqr();
-              auto E = f0_SF(relDXNorm2, epsvh) * fn;
-              reduce_to(fppi, n, E, es[fppi / 32]);
-            });
-            Es.push_back(reduce(pol, es) * fricMu);
+              if (fricMu != 0) {
+                  auto numFPP = nFPP.getVal();
+                  es.resize(count_warps(numFPP));
+                  es.reset(0);
+                  pol(range(numFPP), [vtemp = proxy<space>({}, vtemp),
+                                      fricPP = proxy<space>({}, fricPP),
+                                      FPP = proxy<space>(FPP),
+                                      es = proxy<space>(es), epsvh = epsv * dt,
+                                      n = numFPP] __device__(int fppi) mutable {
+                      auto fpp = FPP[fppi];
+                      auto p0 = vtemp.pack<3>("xn", fpp[0]) -
+                                vtemp.pack<3>("xhat", fpp[0]);
+                      auto p1 = vtemp.pack<3>("xn", fpp[1]) -
+                                vtemp.pack<3>("xhat", fpp[1]);
+                      auto basis = fricPP.template pack<3, 2>("basis", fppi);
+                      auto fn = fricPP("fn", fppi);
+                      auto relDX3D = point_point_rel_dx(p0, p1);
+                      auto relDX = basis.transpose() * relDX3D;
+                      auto relDXNorm2 = relDX.l2NormSqr();
+                      auto E = f0_SF(relDXNorm2, epsvh) * fn;
+                      reduce_to(fppi, n, E, es[fppi / 32]);
+                  });
+                  Es.push_back(reduce(pol, es) * fricMu);
 
-            auto numFPE = nFPE.getVal();
-            es.resize(count_warps(numFPE));
-            es.reset(0);
-            pol(range(numFPE), [vtemp = proxy<space>({}, vtemp),
-                                fricPE = proxy<space>({}, fricPE),
-                                FPE = proxy<space>(FPE), es = proxy<space>(es),
-                                epsvh = epsv * dt,
-                                n = numFPE] __device__(int fpei) mutable {
-              auto fpe = FPE[fpei];
-              auto p =
-                  vtemp.pack<3>("xn", fpe[0]) - vtemp.pack<3>("xhat", fpe[0]);
-              auto e0 =
-                  vtemp.pack<3>("xn", fpe[1]) - vtemp.pack<3>("xhat", fpe[1]);
-              auto e1 =
-                  vtemp.pack<3>("xn", fpe[2]) - vtemp.pack<3>("xhat", fpe[2]);
-              auto basis = fricPE.pack<3, 2>("basis", fpei);
-              auto fn = fricPE("fn", fpei);
-              auto yita = fricPE("yita", fpei);
-              auto relDX3D = point_edge_rel_dx(p, e0, e1, yita);
-              auto relDX = basis.transpose() * relDX3D;
-              auto relDXNorm2 = relDX.l2NormSqr();
-              auto E = f0_SF(relDXNorm2, epsvh) * fn;
-              reduce_to(fpei, n, E, es[fpei / 32]);
-            });
-            Es.push_back(reduce(pol, es) * fricMu);
+                  auto numFPE = nFPE.getVal();
+                  es.resize(count_warps(numFPE));
+                  es.reset(0);
+                  pol(range(numFPE), [vtemp = proxy<space>({}, vtemp),
+                                      fricPE = proxy<space>({}, fricPE),
+                                      FPE = proxy<space>(FPE),
+                                      es = proxy<space>(es), epsvh = epsv * dt,
+                                      n = numFPE] __device__(int fpei) mutable {
+                      auto fpe = FPE[fpei];
+                      auto p = vtemp.pack<3>("xn", fpe[0]) -
+                               vtemp.pack<3>("xhat", fpe[0]);
+                      auto e0 = vtemp.pack<3>("xn", fpe[1]) -
+                                vtemp.pack<3>("xhat", fpe[1]);
+                      auto e1 = vtemp.pack<3>("xn", fpe[2]) -
+                                vtemp.pack<3>("xhat", fpe[2]);
+                      auto basis = fricPE.template pack<3, 2>("basis", fpei);
+                      auto fn = fricPE("fn", fpei);
+                      auto yita = fricPE("yita", fpei);
+                      auto relDX3D = point_edge_rel_dx(p, e0, e1, yita);
+                      auto relDX = basis.transpose() * relDX3D;
+                      auto relDXNorm2 = relDX.l2NormSqr();
+                      auto E = f0_SF(relDXNorm2, epsvh) * fn;
+                      reduce_to(fpei, n, E, es[fpei / 32]);
+                  });
+                  Es.push_back(reduce(pol, es) * fricMu);
 
-            auto numFPT = nFPT.getVal();
-            es.resize(count_warps(numFPT));
-            es.reset(0);
-            pol(range(numFPT), [vtemp = proxy<space>({}, vtemp),
-                                fricPT = proxy<space>({}, fricPT),
-                                FPT = proxy<space>(FPT), es = proxy<space>(es),
-                                epsvh = epsv * dt,
-                                n = numFPT] __device__(int fpti) mutable {
-              auto fpt = FPT[fpti];
-              auto p =
-                  vtemp.pack<3>("xn", fpt[0]) - vtemp.pack<3>("xhat", fpt[0]);
-              auto v0 =
-                  vtemp.pack<3>("xn", fpt[1]) - vtemp.pack<3>("xhat", fpt[1]);
-              auto v1 =
-                  vtemp.pack<3>("xn", fpt[2]) - vtemp.pack<3>("xhat", fpt[2]);
-              auto v2 =
-                  vtemp.pack<3>("xn", fpt[3]) - vtemp.pack<3>("xhat", fpt[3]);
-              auto basis = fricPT.pack<3, 2>("basis", fpti);
-              auto fn = fricPT("fn", fpti);
-              auto betas = fricPT.pack<2>("beta", fpti);
-              auto relDX3D =
-                  point_triangle_rel_dx(p, v0, v1, v2, betas[0], betas[1]);
-              auto relDX = basis.transpose() * relDX3D;
-              auto relDXNorm2 = relDX.l2NormSqr();
-              auto E = f0_SF(relDXNorm2, epsvh) * fn;
-              reduce_to(fpti, n, E, es[fpti / 32]);
-            });
-            Es.push_back(reduce(pol, es) * fricMu);
+                  auto numFPT = nFPT.getVal();
+                  es.resize(count_warps(numFPT));
+                  es.reset(0);
+                  pol(range(numFPT), [vtemp = proxy<space>({}, vtemp),
+                                      fricPT = proxy<space>({}, fricPT),
+                                      FPT = proxy<space>(FPT),
+                                      es = proxy<space>(es), epsvh = epsv * dt,
+                                      n = numFPT] __device__(int fpti) mutable {
+                      auto fpt = FPT[fpti];
+                      auto p = vtemp.pack<3>("xn", fpt[0]) -
+                               vtemp.pack<3>("xhat", fpt[0]);
+                      auto v0 = vtemp.pack<3>("xn", fpt[1]) -
+                                vtemp.pack<3>("xhat", fpt[1]);
+                      auto v1 = vtemp.pack<3>("xn", fpt[2]) -
+                                vtemp.pack<3>("xhat", fpt[2]);
+                      auto v2 = vtemp.pack<3>("xn", fpt[3]) -
+                                vtemp.pack<3>("xhat", fpt[3]);
+                      auto basis = fricPT.template pack<3, 2>("basis", fpti);
+                      auto fn = fricPT("fn", fpti);
+                      auto betas = fricPT.template pack<2>("beta", fpti);
+                      auto relDX3D = point_triangle_rel_dx(p, v0, v1, v2,
+                                                           betas[0], betas[1]);
+                      auto relDX = basis.transpose() * relDX3D;
+                      auto relDXNorm2 = relDX.l2NormSqr();
+                      auto E = f0_SF(relDXNorm2, epsvh) * fn;
+                      reduce_to(fpti, n, E, es[fpti / 32]);
+                  });
+                  Es.push_back(reduce(pol, es) * fricMu);
 
-            auto numFEE = nFEE.getVal();
-            es.resize(count_warps(numFEE));
-            es.reset(0);
-            pol(range(numFEE), [vtemp = proxy<space>({}, vtemp),
-                                fricEE = proxy<space>({}, fricEE),
-                                FEE = proxy<space>(FEE), es = proxy<space>(es),
-                                epsvh = epsv * dt,
-                                n = numFEE] __device__(int feei) mutable {
-              auto fee = FEE[feei];
-              auto e0 =
-                  vtemp.pack<3>("xn", fee[0]) - vtemp.pack<3>("xhat", fee[0]);
-              auto e1 =
-                  vtemp.pack<3>("xn", fee[1]) - vtemp.pack<3>("xhat", fee[1]);
-              auto e2 =
-                  vtemp.pack<3>("xn", fee[2]) - vtemp.pack<3>("xhat", fee[2]);
-              auto e3 =
-                  vtemp.pack<3>("xn", fee[3]) - vtemp.pack<3>("xhat", fee[3]);
-              auto basis = fricEE.pack<3, 2>("basis", feei);
-              auto fn = fricEE("fn", feei);
-              auto gammas = fricEE.pack<2>("gamma", feei);
-              auto relDX3D =
-                  edge_edge_rel_dx(e0, e1, e2, e3, gammas[0], gammas[1]);
-              auto relDX = basis.transpose() * relDX3D;
-              auto relDXNorm2 = relDX.l2NormSqr();
-              auto E = f0_SF(relDXNorm2, epsvh) * fn;
-              reduce_to(feei, n, E, es[feei / 32]);
-            });
-            Es.push_back(reduce(pol, es) * fricMu);
-          }
+                  auto numFEE = nFEE.getVal();
+                  es.resize(count_warps(numFEE));
+                  es.reset(0);
+                  pol(range(numFEE), [vtemp = proxy<space>({}, vtemp),
+                                      fricEE = proxy<space>({}, fricEE),
+                                      FEE = proxy<space>(FEE),
+                                      es = proxy<space>(es), epsvh = epsv * dt,
+                                      n = numFEE] __device__(int feei) mutable {
+                      auto fee = FEE[feei];
+                      auto e0 = vtemp.pack<3>("xn", fee[0]) -
+                                vtemp.pack<3>("xhat", fee[0]);
+                      auto e1 = vtemp.pack<3>("xn", fee[1]) -
+                                vtemp.pack<3>("xhat", fee[1]);
+                      auto e2 = vtemp.pack<3>("xn", fee[2]) -
+                                vtemp.pack<3>("xhat", fee[2]);
+                      auto e3 = vtemp.pack<3>("xn", fee[3]) -
+                                vtemp.pack<3>("xhat", fee[3]);
+                      auto basis = fricEE.template pack<3, 2>("basis", feei);
+                      auto fn = fricEE("fn", feei);
+                      auto gammas = fricEE.template pack<2>("gamma", feei);
+                      auto relDX3D = edge_edge_rel_dx(e0, e1, e2, e3, gammas[0],
+                                                      gammas[1]);
+                      auto relDX = basis.transpose() * relDX3D;
+                      auto relDXNorm2 = relDX.l2NormSqr();
+                      auto E = f0_SF(relDXNorm2, epsvh) * fn;
+                      reduce_to(feei, n, E, es[feei / 32]);
+                  });
+                  Es.push_back(reduce(pol, es) * fricMu);
+              }
 #endif // fric
-        }
+          }
 #endif
         if (s_enableGround) {
           // boundary
