@@ -8,8 +8,8 @@
 #include <vector>
 #include <cmath>
 
-// #include "../../Structures.hpp"
-// #include "../../Utils.hpp"
+#include "../../Structures.hpp"
+#include "../../Utils.hpp"
 
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/zeno.h>
@@ -38,7 +38,7 @@ namespace zeno {
     template<int CELL_SIZE>
     bool write_cells_topology(FILE* fp,const std::vector<vec<CELL_SIZE,int>>& cells_topo){
         int numberofcells = cells_topo.size();
-        fprintf(fp,"CELLS %d %d\n",numberofcells,CELL_SIZE);
+        fprintf(fp,"CELLS %d %d\n",numberofcells,numberofcells * (CELL_SIZE + 1));
         for(int i = 0;i < numberofcells;++i){
             fprintf(fp,"%d",CELL_SIZE);
             for(int j = 0;j < CELL_SIZE;++j)
@@ -90,20 +90,20 @@ namespace zeno {
         return true;
     }
 
-    template<int COLOR_DIM = 3>
-    bool write_colors(FILE* fp,const std::string& data_name,const std::vector<zeno::vec<COLOR_DIM,float>>& clr) {
-        int numberofcolors = clr.size();
-        fprintf(fp,"COLORS_SCALARS %s %d\n",data_name.c_str(),numberofcolors);
-        for(int i = 0;i < numberofcolors;++i){
-            for(int j = 0;j < COLOR_DIM;++j){
-                unsigned char d = (unsigned char) (round(clr[i]*255) % 256);
-                fprintf(fp,"%u ",d);
-            }
-            fprintf(fp,"\n");
-        }
+    // template<int COLOR_DIM = 3>
+    // bool write_colors(FILE* fp,const std::string& data_name,const std::vector<zeno::vec<COLOR_DIM,float>>& clr) {
+    //     int numberofcolors = clr.size();
+    //     fprintf(fp,"COLORS_SCALARS %s %d\n",data_name.c_str(),numberofcolors);
+    //     for(int i = 0;i < numberofcolors;++i){
+    //         for(int j = 0;j < COLOR_DIM;++j){
+    //             auto d = round(clr[i][j]*255.) % 256;
+    //             fprintf(fp,"%d ",d);
+    //         }
+    //         fprintf(fp,"\n");
+    //     }
 
-        return true;
-    }
+    //     return true;
+    // }
 
     template<int TEX_DIM = 2>
     bool write_tex_coords(FILE* fp,const std::string& data_name,const std::vector<zeno::vec<TEX_DIM,float>>& tex,bool use_double) {
@@ -139,7 +139,7 @@ namespace zeno {
                     fprintf(fp,"%f ",(float)array[i][j]);
                 }
             }
-            fprinttf(fp,"\n");
+            fprintf(fp,"\n");
         }
 
         return true;
@@ -193,7 +193,7 @@ namespace zeno {
         fprintf(fp,"ASCII\n");
         fprintf(fp,"DATASET UNSTRUCTURED_GRID\n"  );
 
-        if(write_verts_coord(fp,prim->attr<zeno::vec3f>("pos"),use_double)){
+        if(!write_verts_coord(fp,prim->attr<zeno::vec3f>("pos"),use_double)){
             printf("Failed writing verts to %s\n",outfilename);
             return return_and_close_file(fp,false);
         }
@@ -205,6 +205,11 @@ namespace zeno {
                 printf("Failed writing quad topos to %s\n",outfilename);
                 return return_and_close_file(fp,false);
             }
+            success = write_cell_types<VTK_TETRA>(fp,prim->quads.size());
+            if(!success) {
+                printf("Failed writing cell types to %s\n",outfilename);
+                return return_and_close_file(fp,false);
+            }
         }
         if(!has_quads && has_tris){
             bool success = write_cells_topology<3>(fp,prim->tris.values);
@@ -212,6 +217,11 @@ namespace zeno {
                 printf("Failed writing tris topos %s\n",outfilename);
                 return return_and_close_file(fp,false);
             }
+            success = write_cell_types<VTK_TRIANGLE>(fp,prim->quads.size());
+            if(!success) {
+                printf("Failed writing cell types to %s\n",outfilename);
+                return return_and_close_file(fp,false);
+            }            
         }
         if(!has_quads && !has_tris){
             printf("the primitive has no tris or tets topo\n");
@@ -220,50 +230,52 @@ namespace zeno {
 
 
         // WRITING POINT DATA
-        fprintf(fp,"POINT_DATA %d\n",prim->size());
-        if(prim->has_attr("nrm")){
-            bool success = write_normals(fp,"nodal_normals",prim->attr<zeno::vec3f>("nrm"),use_double);
-            if(!success){
-                printf("Failed writing nodal normals to %s\n",outfilename);
-                return return_and_close_file(fp,false);
-            }
-        }
-        if(prim->has_attr("clr")){
-            bool success = write_colors<3>(fp,"nodal_colors",prim->attr<zeno::vec3f>("clr"));
-            if(!success){
-                printf("Failed writing nodal colors to %s\n",outfilename);
-                return return_and_close_file(fp,false);
-            }
-        }
+
+        // if(prim->has_attr("nrm")){
+        //     bool success = write_normals(fp,"nodal_normals",prim->attr<zeno::vec3f>("nrm"),use_double);
+        //     if(!success){
+        //         printf("Failed writing nodal normals to %s\n",outfilename);
+        //         return return_and_close_file(fp,false);
+        //     }
+        // }
+        // if(prim->has_attr("clr")){
+        //     bool success = write_colors<3>(fp,"nodal_colors",prim->attr<zeno::vec3f>("clr"));
+        //     if(!success){
+        //         printf("Failed writing nodal colors to %s\n",outfilename);
+        //         return return_and_close_file(fp,false);
+        //     }
+        // }
 
         if(out_customed_nodal_attributes) {
             int numberoffielddata = 0;
             for(auto &&[key,attr] : prim->verts.attrs) {
-                if(key == "pos" || key == "nrm" || key == "clr")
+                if(key == "pos"/* || key == "nrm" || key == "clr"*/)
                     continue;
                 numberoffielddata++;
+                printf("detect nodal attribute : %s\n",key.c_str());
             }
             printf("number of customed nodal attributes %d \n",numberoffielddata);
             if(numberoffielddata > 0){
+                fprintf(fp,"POINT_DATA %d\n",prim->size());
                 write_field_header(fp,"nodal_field",numberoffielddata);
-                // for(auto &&[key,arr] : prim->verts.attrs) {
-                //     if(key == "pos" || key == "nrm" || key == "clr")
-                //         continue;
-                //     const auto& k{key};
-                //     // zs::match(
-                //     //     [&k,&fp,&use_double] (const std::vector<zeno::vec3f>& vals) {
-                //     //         write_array<3>(fp,k,vals,use_double);
-                //     //     },
-                //     //     [&k,&fp,&use_double] (const std::vector<zeno::vec2f>& vals) {
-                //     //         write_array<2>(fp,k,vals,use_double);
-                //     //     },
-                //     //     [&k,&fp,&use_double] (const std::vector<float>& vals) {
-                //     //         write_array(fp,k,vals,use_double);
-                //     //     },
-                //     //     [](...) {
-                //     //         throw std::runtime_error("what the heck is this type of attribute!");
-                //     //     })(arr);
-                // }
+                for(auto &&[key,arr] : prim->verts.attrs) {
+                    if(key == "pos"/* || key == "nrm" || key == "clr"*/)
+                        continue;
+                    const auto& k{key};
+                    zs::match(
+                        [&k,&fp,&use_double] (const std::vector<zeno::vec3f>& vals) {
+                            write_array<3>(fp,k,vals,use_double);
+                        },
+                        [&k,&fp,&use_double] (const std::vector<zeno::vec2f>& vals) {
+                            write_array<2>(fp,k,vals,use_double);
+                        },
+                        [&k,&fp,&use_double] (const std::vector<float>& vals) {
+                            write_array(fp,k,vals,use_double);
+                        },
+                        [](...) {
+                            throw std::runtime_error("what the heck is this type of attribute!");
+                        })(arr);
+                }
             }
 
 
@@ -271,96 +283,97 @@ namespace zeno {
 
         // WRITING QUAD-WISE ATTRIBUTES
         if(has_quads){
-            fprintf(fp,"CELL_DATA %d\n",prim->quads.size());
-            if(prim->quads.has_attr("nrm")){
-                bool success = write_normals(fp,"elm_normals",prim->quads.attr<zeno::vec3f>("nrm"),use_double);
-                if(!success){
-                    printf("Failed writing nodal normals to %s\n",outfilename);
-                    return return_and_close_file(fp,false);
-                }
-            }
-            if(prim->quads.has_attr("clr")){
-                bool success = write_colors<3>(fp,"elm_colors",prim->quads.attr<zeno::vec3f>("clr"));
-                if(!success){
-                    printf("Failed writing nodal colors to %s\n",outfilename);
-                    return return_and_close_file(fp,false);
-                }
+            // if(prim->quads.has_attr("nrm")){
+            //     bool success = write_normals(fp,"elm_normals",prim->quads.attr<zeno::vec3f>("nrm"),use_double);
+            //     if(!success){
+            //         printf("Failed writing nodal normals to %s\n",outfilename);
+            //         return return_and_close_file(fp,false);
+            //     }
+            // }
+            // if(prim->quads.has_attr("clr")){
+            //     bool success = write_colors<3>(fp,"elm_colors",prim->quads.attr<zeno::vec3f>("clr"));
+            //     if(!success){
+            //         printf("Failed writing nodal colors to %s\n",outfilename);
+            //         return return_and_close_file(fp,false);
+            //     }
+            // }
 
             if(out_customed_cell_attributes) {
                 int numberoffielddata = 0;
                 for(auto &&[key,attr] : prim->verts.attrs) {
-                    if(key == "nrm" || key == "clr")
-                        continue;
+                    // if(key == "nrm" || key == "clr")
+                    //     continue;
                     numberoffielddata++;
                 }
                 printf("number of customed cell attributes %d \n",numberoffielddata);
                 if(numberoffielddata > 0){
+                    fprintf(fp,"CELL_DATA %d\n",prim->quads.size());
                     write_field_header(fp,"elm_field",numberoffielddata);
-                    // for(auto &&[key,arr] : prim->quads.attrs) {
-                    //     if(key == "nrm" || key == "clr")
-                    //         continue;
-                    //     const auto& k{key};
-                    //     // zs::match(
-                    //     //     [&k,&fp,&use_double] (const std::vector<zeno::vec3f>& vals) {
-                    //     //         write_array<3>(fp,k,vals,use_double);
-                    //     //     },
-                    //     //     [&k,&fp,&use_double] (const std::vector<zeno::vec2f>& vals) {
-                    //     //         write_array<2>(fp,k,vals,use_double);
-                    //     //     },
-                    //     //     [&k,&fp,&use_double] (const std::vector<float>& vals) {
-                    //     //         write_array(fp,k,vals,use_double);
-                    //     //     },
-                    //     //     [](...) {
-                    //     //         throw std::runtime_error("what the heck is this type of attribute!");
-                    //     //     })(arr);
-                    // }
+                    for(auto &&[key,arr] : prim->quads.attrs) {
+                        // if(key == "nrm" || key == "clr")
+                        //     continue;
+                        const auto& k{key};
+                        zs::match(
+                            [&k,&fp,&use_double] (const std::vector<zeno::vec3f>& vals) {
+                                write_array<3>(fp,k,vals,use_double);
+                            },
+                            [&k,&fp,&use_double] (const std::vector<zeno::vec2f>& vals) {
+                                write_array<2>(fp,k,vals,use_double);
+                            },
+                            [&k,&fp,&use_double] (const std::vector<float>& vals) {
+                                write_array(fp,k,vals,use_double);
+                            },
+                            [](...) {
+                                throw std::runtime_error("what the heck is this type of attribute!");
+                            })(arr);
+                    }
                 }
             }   
         }else if(has_tris) {
             fprintf(fp,"CELL_DATA %d\n",prim->tris.size());
-            if(prim->tris.has_attr("nrm")){
-                bool success = write_normals(fp,"elm_normals",prim->tris.attr<zeno::vec3f>("nrm"),use_double);
-                if(!success){
-                    printf("Failed writing nodal normals to %s\n",outfilename);
-                    return return_and_close_file(fp,false);
-                }
-            }
-            if(prim->tris.has_attr("clr")){
-                bool success = write_colors<3>(fp,"elm_colors",prim->tris.attr<zeno::vec3f>("clr"));
-                if(!success){
-                    printf("Failed writing nodal colors to %s\n",outfilename);
-                    return return_and_close_file(fp,false);
-                }
-            }
+            // if(prim->tris.has_attr("nrm")){
+            //     bool success = write_normals(fp,"elm_normals",prim->tris.attr<zeno::vec3f>("nrm"),use_double);
+            //     if(!success){
+            //         printf("Failed writing nodal normals to %s\n",outfilename);
+            //         return return_and_close_file(fp,false);
+            //     }
+            // }
+            // if(prim->tris.has_attr("clr")){
+            //     bool success = write_colors<3>(fp,"elm_colors",prim->tris.attr<zeno::vec3f>("clr"));
+            //     if(!success){
+            //         printf("Failed writing nodal colors to %s\n",outfilename);
+            //         return return_and_close_file(fp,false);
+            //     }
+            // }
 
             if(out_customed_cell_attributes) {
                 int numberoffielddata = 0;
                 for(auto &&[key,attr] : prim->verts.attrs) {
-                    if(key == "nrm" || key == "clr")
-                        continue;
+                    // if(key == "nrm" || key == "clr")
+                    //     continue;
                     numberoffielddata++;
                 }
                 printf("number of customed cell attributes %d \n",numberoffielddata);
                 if(numberoffielddata > 0){
                     write_field_header(fp,"elm_field",numberoffielddata);
-                    // for(auto &&[key,arr] : prim->quads.attrs) {
-                    //     if(key == "nrm" || key == "clr")
-                    //         continue;
-                    //     const auto& k{key};
-                    //     // zs::match(
-                    //     //     [&k,&fp,&use_double] (const std::vector<zeno::vec3f>& vals) {
-                    //     //         write_array<3>(fp,k,vals,use_double);
-                    //     //     },
-                    //     //     [&k,&fp,&use_double] (const std::vector<zeno::vec2f>& vals) {
-                    //     //         write_array<2>(fp,k,vals,use_double);
-                    //     //     },
-                    //     //     [&k,&fp,&use_double] (const std::vector<float>& vals) {
-                    //     //         write_array(fp,k,vals,use_double);
-                    //     //     },
-                    //     //     [](...) {
-                    //     //         throw std::runtime_error("what the heck is this type of attribute!");
-                    //     //     })(arr);
-                    // }
+                    for(auto &&[key,arr] : prim->quads.attrs) {
+                        // if(key == "nrm" || key == "clr")
+                        //     continue;
+                        const auto& k{key};
+                        zs::match(
+                            [&k,&fp,&use_double] (const std::vector<zeno::vec3f>& vals) {
+                                write_array<3>(fp,k,vals,use_double);
+                            },
+                            [&k,&fp,&use_double] (const std::vector<zeno::vec2f>& vals) {
+                                write_array<2>(fp,k,vals,use_double);
+                            },
+                            [&k,&fp,&use_double] (const std::vector<float>& vals) {
+                                write_array(fp,k,vals,use_double);
+                            },
+                            [](...) {
+                                throw std::runtime_error("what the heck is this type of attribute!");
+                            })(arr);
+                    }
                 }
             }              
         }
@@ -368,4 +381,5 @@ namespace zeno {
         return return_and_close_file(fp,true);
     }
     
+
 }

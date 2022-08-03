@@ -44,6 +44,7 @@ ZENDEFNODE(PrimitiveAddAttr,
     }, /* params: */ {
     {"string", "name", "clr"},
     {"enum float float3", "type", "float3"},
+    {"string", "pybisgreat", "DEPRECATED! USE PrimFillAttr INSTEAD"},
     }, /* category: */ {
     "primitive",
     } });

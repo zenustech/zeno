@@ -312,13 +312,13 @@ ZExpandableSection* ZenoPropPanel::inputsBox(IGraphsModel* pModel, const QModelI
 				pLayout->addWidget(pCheckbox, r++, 1);
 				break;
 			}
-			case CONTROL_VEC3F:
+			case CONTROL_VEC3:
 			{
 				QLabel* pNameItem = new QLabel(inputSock);
 				pNameItem->setProperty("cssClass", "proppanel");
 				pLayout->addWidget(pNameItem, r, 0, Qt::AlignLeft);
 
-				QVector<qreal> vec = input.info.defaultValue.value<QVector<qreal>>();
+				UI_VECTYPE vec = input.info.defaultValue.value<UI_VECTYPE>();
 				ZVecEditor* pVecEdit = new ZVecEditor(vec, true, 3, "proppanel");
 				pVecEdit->setObjectName(inputSock);
 				connect(pVecEdit, &ZVecEditor::editingFinished, this, &ZenoPropPanel::onInputEditFinish);
@@ -392,7 +392,7 @@ void ZenoPropPanel::onInputEditFinish()
 	}
 	else if (ZVecEditor* pVecEdit = qobject_cast<ZVecEditor*>(pSender))
 	{
-		QVector<qreal> vec = pVecEdit->vec();
+		UI_VECTYPE vec = pVecEdit->vec();
 		info.newValue = QVariant::fromValue(vec);
 	}
 	else if (QComboBox* pComboBox = qobject_cast<QComboBox*>(pSender))
@@ -569,13 +569,13 @@ void ZenoPropPanel::onDataChanged(const QModelIndex& subGpIdx, const QModelIndex
 					}
 					break;
 				}
-				case CONTROL_VEC3F:
+				case CONTROL_VEC3:
 				{
 					auto lst = findChildren<ZVecEditor*>(inSock, Qt::FindChildrenRecursively);
 					if (lst.size() == 1)
 					{
 						ZVecEditor* pEdit = lst[0];
-						pEdit->onValueChanged(inSocket.info.defaultValue.value<QVector<qreal>>());
+						pEdit->onValueChanged(inSocket.info.defaultValue.value<UI_VECTYPE>());
 					}
 					break;
 				}

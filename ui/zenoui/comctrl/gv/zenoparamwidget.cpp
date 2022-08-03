@@ -178,7 +178,7 @@ void ZenoParamCheckBox::setCheckState(Qt::CheckState state)
 
 
 ///////////////////////////////////////////////////////////////////////////
-ZenoVecEditWidget::ZenoVecEditWidget(const QVector<qreal>& vec, QGraphicsItem* parent)
+ZenoVecEditWidget::ZenoVecEditWidget(const UI_VECTYPE& vec, QGraphicsItem* parent)
     : ZenoParamWidget(parent)
     , m_pEdit(nullptr)
 {
@@ -187,12 +187,12 @@ ZenoVecEditWidget::ZenoVecEditWidget(const QVector<qreal>& vec, QGraphicsItem* p
 	connect(m_pEdit, SIGNAL(editingFinished()), this, SIGNAL(editingFinished()));
 }
 
-QVector<qreal> ZenoVecEditWidget::vec() const
+UI_VECTYPE ZenoVecEditWidget::vec() const
 {
     return m_pEdit->vec();
 }
 
-void ZenoVecEditWidget::setVec(const QVector<qreal>& vec)
+void ZenoVecEditWidget::setVec(const UI_VECTYPE& vec)
 {
     m_pEdit->onValueChanged(vec);
 }

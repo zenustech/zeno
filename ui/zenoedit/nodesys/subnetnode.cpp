@@ -23,6 +23,7 @@ public:
             input == "float" ||
             input == "bool" ||
             input == "vec3f" ||
+            input == "vec3i" ||
             input == "curve" ||
             input == "heatmap")
         {

@@ -757,8 +757,7 @@ struct ToZSSurfaceMesh : INode {
     const auto &pos = prim->attr<zeno::vec3f>("pos");
     const auto &points = prim->points;
     const auto &lines = prim->lines;
-    const std::vector<vec3i> &tris = prim->tris;
-    // const auto &tris = prim->tris;
+    const auto &tris = prim->tris;
 
     auto ompExec = zs::omp_exec();
     const auto numVerts = pos.size();
@@ -838,15 +837,7 @@ struct ToZSSurfaceMesh : INode {
               B(0, 1) = ds[0].dot(ds[1]) / B(0, 0);
               B(1, 1) = ds[0].cross(ds[1]).norm() / B(0, 0);
 #endif
-              auto IB = inverse(B);
               eles.template tuple<4>("IB", ei) = inverse(B);
-              if (ei < 100) {
-                fmt::print("{}-th ele <{}, {}, {}> IB [{}, {}; {}, {}], B [{}, {}; {}, {}], ds <{}, {}, {}>, <{}, {}, {}>, xs <{}, {}, {}>, <{}, {}, {}>, <{}, {}, {}>\n", ei, tri[0], tri[1], tri[2], (float)IB(0, 0), (float)IB(0, 1),
-                                           (float)IB(1, 0), (float)IB(1, 1), B(0, 0), B(0, 1),
-                                           B(1, 0), B(1, 1), ds[0][0], ds[0][1], ds[0][2], ds[1][0], ds[1][1], ds[1][2], 
-                                           xs[0][0], xs[0][1], xs[0][2], xs[1][0], xs[1][1], xs[1][2], xs[2][0], xs[2][1], xs[2][2]
-                                           );
-              }
 
               auto vol = ds[0].cross(ds[1]).norm() / 2 * zsmodel->dx;
               eles("vol", ei) = vol;
@@ -902,9 +893,6 @@ struct ToZSSurfaceMesh : INode {
     eles = eles.clone({zs::memsrc_e::device, 0});
     surfEdges = surfEdges.clone({zs::memsrc_e::device, 0});
     surfVerts = surfVerts.clone({zs::memsrc_e::device, 0});
-
-    fmt::print("tozssurfacemesh: -> [{}]\n", (void *)zstris.get());
-    getchar();
 
     set_output("ZSParticles", std::move(zstris));
   }

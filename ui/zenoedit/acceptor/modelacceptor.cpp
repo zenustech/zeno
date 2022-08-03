@@ -32,7 +32,7 @@ void ModelAcceptor::setLegacyDescs(const rapidjson::Value& graphObj, const NODE_
         ZASSERT_EXIT(legacyDescs.find(name) != legacyDescs.end());
         subnetDescs.append(legacyDescs[name]);
     }
-    m_pModel->appendDescriptors(subnetDescs);
+    m_pModel->appendSubnetDescsFromZsg(subnetDescs);
 }
 
 void ModelAcceptor::BeginSubgraph(const QString& name)
@@ -408,6 +408,17 @@ void ModelAcceptor::setParamValue(const QString& id, const QString& nodeCls, con
         {
             PARAM_INFO paramData;
             paramData.control = CONTROL_COLOR;
+            paramData.name = name;
+            paramData.bEnableConnect = false;
+            paramData.value = var;
+            params[name] = paramData;
+            m_currentGraph->setData(idx, QVariant::fromValue(params), ROLE_PARAMETERS);
+            return;
+        }
+        if (nodeCls == "DynamicNumber" && (name == "_CONTROL_POINTS" || name == "_TMP"))
+        {
+            PARAM_INFO paramData;
+            paramData.control = CONTROL_NONVISIBLE;
             paramData.name = name;
             paramData.bEnableConnect = false;
             paramData.value = var;
