@@ -1011,13 +1011,14 @@ struct ToZSSurfaceMesh : INode {
           for (auto &&edge : sedges) {
               sv("inds", 0, no) = reinterpret_bits<float>(edge[0]);
               sv("inds", 1, no) = reinterpret_bits<float>(edge[1]);
-
+#if 0
               if (no < 10 || no > sedges.size() - 10) {
                   fmt::print("surf edge [{}] inds <{}, {}> (<{}, {}>)\n", no,
                              edge[0], edge[1],
                              reinterpret_bits<int>(sv("inds", 0, no)),
                              reinterpret_bits<int>(sv("inds", 1, no)));
               }
+#endif
               no++;
           }
       surfEdges = surfEdges.clone({zs::memsrc_e::device, 0});
