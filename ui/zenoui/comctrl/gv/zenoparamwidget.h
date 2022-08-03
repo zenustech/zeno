@@ -115,9 +115,9 @@ class ZenoVecEditWidget : public ZenoParamWidget
 {
     Q_OBJECT
 public:
-    ZenoVecEditWidget(const QVector<qreal>& vec, QGraphicsItem* parent = nullptr);
-    QVector<qreal> vec() const;
-    void setVec(const QVector<qreal>& vec);
+    ZenoVecEditWidget(const UI_VECTYPE& vec, QGraphicsItem* parent = nullptr);
+    UI_VECTYPE vec() const;
+    void setVec(const UI_VECTYPE& vec);
 
 signals:
     void editingFinished();

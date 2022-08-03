@@ -456,11 +456,16 @@ void GraphsModel::setDescriptors(const NODE_DESCS& nodeDescs)
     }
 }
 
-void GraphsModel::appendDescriptors(const QList<NODE_DESC>& descs)
+void GraphsModel::appendSubnetDescsFromZsg(const QList<NODE_DESC>& zsgSubnets)
 {
-    for (NODE_DESC desc : descs)
+    for (NODE_DESC desc : zsgSubnets)
     {
-        if (!desc.name.isEmpty() && m_nodesDesc.find(desc.name) == m_nodesDesc.end())
+        if (m_nodesDesc.find(desc.name) != m_nodesDesc.end())
+        {
+            // keep legacy subnet when meet "internal" node whose name is same with this subnet.
+            m_nodesDesc.remove(desc.name);
+        }
+        if (!desc.name.isEmpty())
         {
             m_nodesDesc.insert(desc.name, desc);
             for (auto cate : desc.categories)
@@ -1395,9 +1400,10 @@ void GraphsModel::updateParamInfo(const QString& id, PARAM_UPDATE_INFO info, con
                             updateInfo.newInfo.defaultValue = QVariant((int)0);
                         }
                     }
-                    else if (updateInfo.newInfo.type == "vec3f")
+                    else if (updateInfo.newInfo.type == "vec3f" ||
+                             updateInfo.newInfo.type == "vec3i")
                     {
-                        updateInfo.newInfo.defaultValue = QVariant::fromValue(QVector<qreal>());
+                        updateInfo.newInfo.defaultValue = QVariant::fromValue(UI_VECTYPE(3, 0));
                     }
                     else
                     {
