@@ -41,8 +41,8 @@ namespace zeno {
             for(auto key:src->attr_keys())
             {
                 if (key != "pos") {
-                    src->attr_visit(key, [i, j, c] (auto &&src) {
-                    dst->attr_visit(key, [i, j, c] (auto &&src) {
+                    src->attr_visit(key, [&] (auto &&src) {
+                    dst->attr_visit(key, [&] (auto &&dst) {
                 //std::visit([i, j, c](auto &&dst, auto &&src) {
                     using DstT = std::remove_cv_t<std::remove_reference_t<decltype(dst)>>;
                     using SrcT = std::remove_cv_t<std::remove_reference_t<decltype(src)>>;

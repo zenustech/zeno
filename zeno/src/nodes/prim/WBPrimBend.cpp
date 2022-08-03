@@ -670,7 +670,7 @@ struct PrimCreatOrSetAttr : zeno::INode {
                     prim->add_attr<vec3f>(name, fillvalue);
                 } else {
                     // 如果这个属性已经存在，拿到存放这个属性的值的容器，
-                    auto &attr_arr = prim->attr<float>(name);
+                    auto &attr_arr = prim->attr<vec3f>(name);
 
                     // 重新设置这个容器中的数据
 #pragma omp parallel for
