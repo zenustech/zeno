@@ -7,7 +7,7 @@
 namespace xinxinoptix {
 
 void optixcleanup();
-void optixrender(int fbo = 0);
+void optixrender(int fbo = 0, int samples = 16);
 void *optixgetimg(int &w, int &h);
 void optixinit(int argc, char* argv[]);
 void optixupdatebegin();

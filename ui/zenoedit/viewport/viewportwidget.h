@@ -57,6 +57,7 @@ public:
     QVector3D screenToWorldRay(float x, float y) const;
     QVariant hitOnFloor(float x, float y) const;
 
+
 private:
     bool m_mmb_pressed;
     float m_theta;
