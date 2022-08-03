@@ -12,7 +12,7 @@ struct DrawOptions {
     bool enable_gi = false;
     bool smooth_shading = false;
     bool normal_check = false;
-    bool num_samples = 1;
+    bool num_samples = 16;
 
     glm::vec3 bgcolor{0.23f, 0.23f, 0.23f};
 };

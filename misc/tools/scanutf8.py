@@ -18,7 +18,7 @@ def check(path):
                         print('{}:{}: (U+{:04X}) {}'.format(path, n + 1, b, chr(b)))
                         break
     except UnicodeDecodeError:
-        print('{}{}: failed to decode as {}'.format(path, locale.getdefaultlocale()))
+        print('{}: failed to decode as {}'.format(path, locale.getdefaultlocale()))
         failed = 3
 
 def escape(path):
