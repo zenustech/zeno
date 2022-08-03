@@ -1,5 +1,12 @@
+/*
 QMainWindow::separator {
-    background: black;
-    width: 1px;
+    background: #1B1D21;
+    width: 6px;
     height: 0px;
 }
+
+
+QMainWindow::separator:hover {
+    background: rgb(242,103,34);
+}
+*/

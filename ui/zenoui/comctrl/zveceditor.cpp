@@ -2,7 +2,7 @@
 #include <zenoui/style/zenostyle.h>
 
 
-ZVecEditor::ZVecEditor(const QVector<qreal>& vec, bool bFloat, int deflSize, QString styleCls, QWidget* parent)
+ZVecEditor::ZVecEditor(const UI_VECTYPE& vec, bool bFloat, int deflSize, QString styleCls, QWidget* parent)
 	: QWidget(parent)
 	, m_bFloat(bFloat)
 {
@@ -29,9 +29,9 @@ ZVecEditor::ZVecEditor(const QVector<qreal>& vec, bool bFloat, int deflSize, QSt
 	setStyleSheet("ZVecEditor { background: transparent; } ");
 }
 
-QVector<qreal> ZVecEditor::vec() const
+UI_VECTYPE ZVecEditor::vec() const
 {
-	QVector<qreal> v;
+	UI_VECTYPE v;
 	for (int i = 0; i < m_editors.size(); i++)
 	{
 		v.append(m_editors[i]->text().toDouble());
@@ -39,7 +39,7 @@ QVector<qreal> ZVecEditor::vec() const
 	return v;
 }
 
-void ZVecEditor::onValueChanged(const QVector<qreal>& vec)
+void ZVecEditor::onValueChanged(const UI_VECTYPE& vec)
 {
 	//todo: some vector without init is a empty vec, need to unify later.
 	if (vec.size() != m_editors.size())
