@@ -25,6 +25,10 @@ QGraphicsLayout* DynamicNumberNode::initParam(PARAM_CONTROL ctrl, const QString&
 
 QGraphicsLinearLayout* DynamicNumberNode::initCustomParamWidgets()
 {
+    return nullptr;
+
+    //don't support editting legacy curve node.
+    /*
     QGraphicsLinearLayout *pHLayout = new QGraphicsLinearLayout(Qt::Horizontal);
 
     ZenoTextLayoutItem *pNameItem = new ZenoTextLayoutItem("curve", m_renderParams.paramFont, m_renderParams.paramClr.color());
@@ -35,6 +39,7 @@ QGraphicsLinearLayout* DynamicNumberNode::initCustomParamWidgets()
     connect(pEditBtn, SIGNAL(clicked()), this, SLOT(onEditClicked()));
 
     return pHLayout;
+    */
 }
 
 void DynamicNumberNode::onEditClicked()

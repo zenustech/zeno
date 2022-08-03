@@ -65,6 +65,31 @@ void ZenoStyle::drawPrimitive(PrimitiveElement pe, const QStyleOption* option, Q
             }
             return base::drawPrimitive(pe, option, painter, w);
         }
+        case PE_IndicatorDockWidgetResizeHandle:
+        {
+            QRect r = option->rect;
+            bool bHor = option->state & QStyle::State_Horizontal;
+            bool mouseOver = option->state & QStyle::State_MouseOver;
+            QRect buttonRc;
+            int btnW = 0, btnH = 0;
+            if (bHor) {
+                painter->fillRect(r, QColor("#1B1D21"));
+                btnW = dpiScaled(30), btnH = dpiScaled(3);
+            }
+            else {
+                painter->fillRect(r, QColor("#1B1D21"));
+                btnW = dpiScaled(3), btnH = dpiScaled(30);
+            }
+
+            buttonRc = QRect(r.center() - QPoint(btnW / 2, btnH / 2), QSize(btnW, btnH));
+            painter->fillRect(buttonRc, QColor("#2E3138"));
+
+            if (mouseOver) {
+                painter->fillRect(r, QColor(242, 103, 34, 64));
+            }
+
+            return;
+        }
     }
     return base::drawPrimitive(pe, option, painter, w);
 }
@@ -235,12 +260,11 @@ int ZenoStyle::pixelMetric(PixelMetric m, const QStyleOption* option, const QWid
             return dpiScaled(10);
         }
         /* only way to change the splitter between dock widgets. but ZenoStyle has conflict with qss. -> po an le:
-        *  actually, when there is not specific style selector, the qt will choose base style for the result.
+        *  actually, when there is not specific style selector, the qt will choose base style for the result.*/
         case QStyle::PM_DockWidgetHandleExtent:
         case QStyle::PM_DockWidgetSeparatorExtent: {
-            return dpiScaled(5);
+            return dpiScaled(7);
         }
-        */
     }
     return base::pixelMetric(m, option, widget);
 }

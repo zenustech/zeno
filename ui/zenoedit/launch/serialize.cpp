@@ -103,7 +103,6 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
                 if (!defl.isNull())
                 {
                     AddVariantList({"setNodeInput", ident, inputName, defl}, input.info.type, writer);
-                    //todo: for subgraph node. but now there is not edit control on subgraphnode.
                 }
             }
             else
