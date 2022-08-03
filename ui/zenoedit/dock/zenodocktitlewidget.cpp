@@ -467,9 +467,19 @@ QMenuBar* ZenoViewDockTitle::initMenu()
         pEnvText->addAction(pAction);
     }
 
+    QMenu* pOperation = new QMenu(tr("Operation"));
+    {
+		QAction* pAction = new QAction(tr("Create Point"), this);
+		connect(pAction, &QAction::triggered, this, [=]() {
+            Zenovis::GetInstance().m_bAddPoint = true;
+		});
+		pOperation->addAction(pAction);
+    }
+
     pMenuBar->addMenu(pDisplay);
     pMenuBar->addMenu(pRecord);
     pMenuBar->addMenu(pEnvText);
+    pMenuBar->addMenu(pOperation);
 
     return pMenuBar;
 }
