@@ -18,9 +18,8 @@
 #include <viewport/zenovis.h>
 #include <util/log.h>
 #include <zenoui/style/zenostyle.h>
-#include <zeno/utils/zeno_p.h>
-#include <nodesys/nodesmgr.h>
-
+//#include <zeno/utils/zeno_p.h>
+//#include <nodesys/nodesmgr.h>
 #include <cmath>
 #include <algorithm>
 #include <optional>
@@ -326,18 +325,18 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
     }
 }
 
-void CameraControl::createPointNode(QPointF pnt) {
-    auto pModel = zenoApp->graphsManagment()->currentModel();
-	ZASSERT_EXIT(pModel);
-    //todo luzh: select specific subgraph to add node.
-    const QModelIndex &subgIdx = pModel->index("main");
-    NODE_DATA tmpNodeInfo = NodesMgr::createPointNode(pModel, subgIdx, "CreatePoint", {10, 10}, pnt);        
+//void CameraControl::createPointNode(QPointF pnt) {
+    //auto pModel = zenoApp->graphsManagment()->currentModel();
+	//ZASSERT_EXIT(pModel);
+    ////todo luzh: select specific subgraph to add node.
+    //const QModelIndex &subgIdx = pModel->index("main");
+    //NODE_DATA tmpNodeInfo = NodesMgr::createPointNode(pModel, subgIdx, "CreatePoint", {10, 10}, pnt);        
 
-    STATUS_UPDATE_INFO info;
-    info.role = ROLE_OPTIONS;
-    info.newValue = OPT_VIEW;
-    pModel->updateNodeStatus(tmpNodeInfo[ROLE_OBJID].toString(), info, subgIdx, true);
-}
+    //STATUS_UPDATE_INFO info;
+    //info.role = ROLE_OPTIONS;
+    //info.newValue = OPT_VIEW;
+    //pModel->updateNodeStatus(tmpNodeInfo[ROLE_OBJID].toString(), info, subgIdx, true);
+//}
 
 ViewportWidget::ViewportWidget(QWidget* parent)
     : QOpenGLWidget(parent)

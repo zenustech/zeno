@@ -470,7 +470,6 @@ QMenuBar* ZenoViewDockTitle::initMenu()
     pMenuBar->addMenu(pDisplay);
     pMenuBar->addMenu(pRecord);
     pMenuBar->addMenu(pEnvText);
-    pMenuBar->addMenu(pOperation);
 
     return pMenuBar;
 }

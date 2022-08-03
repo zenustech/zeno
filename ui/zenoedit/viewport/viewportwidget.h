@@ -89,9 +89,6 @@ public:
 signals:
     void frameRecorded(int);
 
-    private:
-    void createPointNode(QPointF pnt);
-
 protected:
     void mousePressEvent(QMouseEvent* event) override;
     void mouseReleaseEvent(QMouseEvent* event) override;
