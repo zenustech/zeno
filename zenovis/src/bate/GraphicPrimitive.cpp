@@ -293,9 +293,12 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
     ZhxxDrawObject lineObj;
     ZhxxDrawObject triObj;
     std::vector<std::unique_ptr<Texture>> textures;
+    std::unique_ptr<zeno::PrimitiveObject> primUnique;
+    zeno::PrimitiveObject *prim;
 
-    explicit ZhxxGraphicPrimitive(Scene *scene_, zeno::PrimitiveObject *prim)
-        : scene(scene_) {
+    explicit ZhxxGraphicPrimitive(Scene *scene_, zeno::PrimitiveObject *primArg)
+        : scene(scene_), primUnique(std::make_unique<zeno::PrimitiveObject>(*primArg)) {
+        prim = primUnique.get();
         zeno::log_trace("rendering primitive size {}", prim->size());
 
         if (!prim->attr_is<zeno::vec3f>("pos")) {

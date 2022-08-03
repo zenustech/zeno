@@ -20,20 +20,19 @@ using AttrAcceptAll = std::variant
     , vec4i
     >;
 
-using AttrVectorVariant = std::variant
-    < std::vector<vec3f>
-    , std::vector<float>
-    , std::vector<vec3i>
-    , std::vector<int>
-    , std::vector<vec2f>
-    , std::vector<vec2i>
-    , std::vector<vec4f>
-    , std::vector<vec4i>
-    >;
-
 
 template <class ValT>
 struct AttrVector {
+    using AttrVectorVariant = std::variant
+        < std::vector<vec3f>
+        , std::vector<float>
+        , std::vector<vec3i>
+        , std::vector<int>
+        , std::vector<vec2f>
+        , std::vector<vec2i>
+        , std::vector<vec4f>
+        , std::vector<vec4i>
+        >;
 
     using value_type = ValT;
     using iterator = typename std::vector<ValT>::iterator;

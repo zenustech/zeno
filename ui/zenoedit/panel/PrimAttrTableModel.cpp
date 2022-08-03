@@ -49,7 +49,7 @@ int PrimAttrTableModel::columnCount(const QModelIndex &parent) const {
     if (m_prim) {
         using zeno::AttrAcceptAll;
         if (sel_attr == "Vertex") {
-            return (int)m_prim->verts.num_attrs<AttrAcceptAll>();
+            return 1 + (int)m_prim->verts.num_attrs<AttrAcceptAll>();
         }
         else if (sel_attr == "Tris") {
             return 1 + (int)m_prim->tris.num_attrs<AttrAcceptAll>();
@@ -166,55 +166,61 @@ QVariant PrimAttrTableModel::headerData(int section, Qt::Orientation orientation
 
     if (orientation == Qt::Horizontal)
     {
+        using zeno::AttrAcceptAll;
         if (sel_attr == "Vertex") {
-            return QString(m_prim->attr_keys()[section].c_str());
+            if (section == 0) {
+                return QString("pos");
+            }
+            else {
+                return QString(m_prim->verts.attr_keys<AttrAcceptAll>()[section - 1].c_str());
+            }
         }
         else if (sel_attr == "Tris") {
             if (section == 0) {
-                return QString("value");
+                return QString("pos");
             }
             else {
-                return QString(m_prim->tris.attr_keys()[section - 1].c_str());
+                return QString(m_prim->tris.attr_keys<AttrAcceptAll>()[section - 1].c_str());
             }
         }
         else if (sel_attr == "Points") {
             if (section == 0) {
-                return QString("value");
+                return QString("pos");
             }
             else {
-                return QString(m_prim->points.attr_keys()[section - 1].c_str());
+                return QString(m_prim->points.attr_keys<AttrAcceptAll>()[section - 1].c_str());
             }
         }
         else if (sel_attr == "Lines") {
             if (section == 0) {
-                return QString("value");
+                return QString("pos");
             }
             else {
-                return QString(m_prim->lines.attr_keys()[section - 1].c_str());
+                return QString(m_prim->lines.attr_keys<AttrAcceptAll>()[section - 1].c_str());
             }
         }
         else if (sel_attr == "Quads") {
             if (section == 0) {
-                return QString("value");
+                return QString("pos");
             }
             else {
-                return QString(m_prim->quads.attr_keys()[section - 1].c_str());
+                return QString(m_prim->quads.attr_keys<AttrAcceptAll>()[section - 1].c_str());
             }
         }
         else if (sel_attr == "Polys") {
             if (section == 0) {
-                return QString("value");
+                return QString("pos");
             }
             else {
-                return QString(m_prim->polys.attr_keys()[section - 1].c_str());
+                return QString(m_prim->polys.attr_keys<AttrAcceptAll>()[section - 1].c_str());
             }
         }
         else if (sel_attr == "Loops") {
             if (section == 0) {
-                return QString("value");
+                return QString("pos");
             }
             else {
-                return QString(m_prim->loops.attr_keys()[section - 1].c_str());
+                return QString(m_prim->loops.attr_keys<AttrAcceptAll>()[section - 1].c_str());
             }
         }
         else {
