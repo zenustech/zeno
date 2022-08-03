@@ -326,19 +326,15 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
 
 void CameraControl::createPointNode(QPointF pnt) {
     auto pModel = zenoApp->graphsManagment()->currentModel();
-    if (pModel == nullptr) {
-        QMessageBox::warning(this, qApp->applicationName(), QStringLiteral("请先新建或加载项目！"));
-        //pModel = (GraphsModel *)zenoApp->graphsManagment()->newFile();
-    } else {
-        //todo luzh: select specific subgraph to add node.
-        const QModelIndex &subgIdx = pModel->index("main");
-        NODE_DATA tmpNodeInfo = NodesMgr::createPointNode(pModel, subgIdx, "CreatePoint", {10, 10}, pnt);        
+	ZASSERT_EXIT(pModel);
+    //todo luzh: select specific subgraph to add node.
+    const QModelIndex &subgIdx = pModel->index("main");
+    NODE_DATA tmpNodeInfo = NodesMgr::createPointNode(pModel, subgIdx, "CreatePoint", {10, 10}, pnt);        
 
-        STATUS_UPDATE_INFO info;
-        info.role = ROLE_OPTIONS;
-        info.newValue = OPT_VIEW;
-        pModel->updateNodeStatus(tmpNodeInfo[ROLE_OBJID].toString(), info, subgIdx, true);
-    }
+    STATUS_UPDATE_INFO info;
+    info.role = ROLE_OPTIONS;
+    info.newValue = OPT_VIEW;
+    pModel->updateNodeStatus(tmpNodeInfo[ROLE_OBJID].toString(), info, subgIdx, true);
 }
 
 ViewportWidget::ViewportWidget(QWidget* parent)

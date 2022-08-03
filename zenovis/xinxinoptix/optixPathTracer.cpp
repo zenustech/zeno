@@ -65,7 +65,7 @@ sutil::Trackball trackball;
 int32_t mouse_button = -1;
 
 //int32_t samples_per_launch = 16;
-int32_t samples_per_launch = 16;
+//int32_t samples_per_launch = 16;
 
 //------------------------------------------------------------------------------
 //
@@ -358,7 +358,7 @@ static void initLaunchParams( PathTracerState& state )
     
     state.params.frame_buffer = nullptr;  // Will be set when output buffer is mapped
 
-    state.params.samples_per_launch = samples_per_launch;
+    //state.params.samples_per_launch = samples_per_launch;
     state.params.subframe_index     = 0u;
 }
 
@@ -990,7 +990,7 @@ void optixinit( int argc, char* argv[] )
         {
             if( i >= argc - 1 )
                 printUsageAndExit( argv[0] );
-            samples_per_launch = atoi( argv[++i] );
+            //samples_per_launch = atoi( argv[++i] );
         }
         else
         {
@@ -1573,18 +1573,18 @@ void set_perspective(float const *U, float const *V, float const *W, float const
 }
 
 
-void optixrender(int fbo) {
-    zeno::log_trace("[optix] rendering subframe {}", state.params.subframe_index);
+void optixrender(int fbo, int samples) {
     if (!output_buffer_o) throw sutil::Exception("no output_buffer_o");
     if (!gl_display_o) throw sutil::Exception("no gl_display_o");
     updateState( *output_buffer_o, state.params );
-    int forCount = 1;
-    zeno::log_info("[optix] rendering subframe count {}", forCount);
-    //for (int f = 0; f < forCount; f++) {
-    // 大哥：能不能看一下 state.params.samples_per_launch = 16
-        launchSubframe( *output_buffer_o, state );
-        state.params.subframe_index++;
-    //}
+    const int max_samples_once = 16;
+    for (int f = 0; f < samples; f += max_samples_once) {
+        state.params.samples_per_launch = std::min(samples - f, max_samples_once);
+    zeno::log_info("[optix] rendering subframe {} at {} samples",
+                   state.params.subframe_index, state.params.samples_per_launch);
+    launchSubframe( *output_buffer_o, state );
+    state.params.subframe_index++;
+    }
     displaySubframe( *output_buffer_o, *gl_display_o, state, fbo );
                     
 }

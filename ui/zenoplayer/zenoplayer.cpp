@@ -5,6 +5,7 @@
 #include "../zenoedit/launch/corelaunch.h"
 #include "../zenoedit/launch/serialize.h"
 #include "../zenoedit/model/graphsmodel.h"
+#include <zenovis/DrawOptions.h>
 #include <zenoui/util/jsonhelper.h>
 #include <graphsmanagment.h>
 #include <viewport/zenovis.h>
@@ -286,7 +287,7 @@ void ZenoPlayer::startView(QString filePath) {
     if (sess) {
         auto scene = sess->get_scene();
         if (scene) {
-            scene->bRecord = m_InitParam.bRecord;            
+            scene->drawOptions->num_samples = m_InitParam.bRecord ? 1024 : 16;            
         }            
     }
 
