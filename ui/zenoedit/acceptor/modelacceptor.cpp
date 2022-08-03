@@ -415,6 +415,17 @@ void ModelAcceptor::setParamValue(const QString& id, const QString& nodeCls, con
             m_currentGraph->setData(idx, QVariant::fromValue(params), ROLE_PARAMETERS);
             return;
         }
+        if (nodeCls == "DynamicNumber" && (name == "_CONTROL_POINTS" || name == "_TMP"))
+        {
+            PARAM_INFO paramData;
+            paramData.control = CONTROL_NONVISIBLE;
+            paramData.name = name;
+            paramData.bEnableConnect = false;
+            paramData.value = var;
+            params[name] = paramData;
+            m_currentGraph->setData(idx, QVariant::fromValue(params), ROLE_PARAMETERS);
+            return;
+        }
         zeno::log_warn("not found param name {}", name.toStdString());
     }
 }
