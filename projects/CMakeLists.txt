@@ -26,8 +26,8 @@ set(ZENO_EXTENSIONS
     TreeSketch
     CalcGeometryUV
     MeshSubdiv
-	CUDA
-	BezierCurve
+    CUDA
+    BezierCurve
     Audio
     Pass
     )

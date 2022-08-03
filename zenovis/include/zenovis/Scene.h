@@ -27,8 +27,6 @@ struct Scene : zeno::disable_copy {
     std::unique_ptr<ObjectsManager> objectsMan;
     std::unique_ptr<RenderManager> renderMan;
 
-    bool bRecord = false;
-
     Scene();
     ~Scene();
 
