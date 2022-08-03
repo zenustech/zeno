@@ -18,6 +18,7 @@
 #include <viewport/zenovis.h>
 #include <util/log.h>
 #include <zenoui/style/zenostyle.h>
+#include <zeno/utils/zeno_p.h>
 #include <nodesys/nodesmgr.h>
 
 #include <cmath>
@@ -222,17 +223,17 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
 
         
         if (Zenovis::GetInstance().m_bAddPoint == true) {
-            float x = (float)event->x(); // / m_res.x();
-            float y = (float)event->y(); // / m_res.y();
+            float x = (float)event->x() / m_res.x();
+            float y = (float)event->y() / m_res.y();
             auto rdir = screenToWorldRay(x, y);
             auto pos = realPos();
             float t = (0 - pos.y()) / rdir.y();
             auto p = pos + rdir * t;
 
-            float cos_t = cos(m_theta);
-            float sin_t = sin(m_theta);
-            float cos_p = cos(m_phi);
-            float sin_p = sin(m_phi);
+            float cos_t = std::cos(m_theta);
+            float sin_t = std::sin(m_theta);
+            float cos_p = std::cos(m_phi);
+            float sin_p = std::sin(m_phi);
             QVector3D back(cos_t * sin_p, sin_t, -cos_t * cos_p);
             QVector3D up(-sin_t * sin_p, cos_t, sin_t * cos_p);
             QVector3D right = QVector3D::crossProduct(up, back).normalized();
@@ -240,6 +241,7 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
             QVector3D delta = right * x + up * y;
                 
             
+            zeno::log_info("create point at x={} y={}", p[0], p[1]);
 
             createPointNode(QPointF(p[0], p[1]));
 

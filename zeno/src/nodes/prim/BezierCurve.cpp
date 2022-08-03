@@ -4,6 +4,7 @@
 #include <zeno/types/StringObject.h>
 #include <zeno/utils/logger.h>
 #include <zeno/zeno.h>
+#include <vector>
 
 
 /**
@@ -12,14 +13,11 @@
  * @param dest 目的贝塞尔曲线点
  * @param precision 生成精度
  */
-void CreateNBezierCurve(const std::vector<zeno::vec2f> src, std::vector<zeno::vec2f> &dest, double precision) {
+static void CreateNBezierCurve(const std::vector<zeno::vec2f> src, std::vector<zeno::vec2f> &dest, double precision) {
     int size = src.size();
     std::vector<double> coff(size, 0);
 
-    int** a = new int*[size];
-    for(int i=0;i<size;++i){
-        a[i] = new int[size];
-    }
+    std::vector<std::vector<int>> a(size, std::vector<int>(size)); // javabean
     {
         for(int i=0;i<size;++i)
         {
@@ -50,10 +48,6 @@ void CreateNBezierCurve(const std::vector<zeno::vec2f> src, std::vector<zeno::ve
         }
         dest.push_back(ret);
     }
-
-    for(int i = 0; i < size; i ++)
-        delete [] a[i];
-    delete [] a;
 }
 
 struct CreateBezierCurve : zeno::INode {
@@ -99,11 +93,11 @@ struct CreatePoint : zeno::INode {
         //auto point = get_input<zeno::NumericObject>("Point")->get<zeno::vec2f>();
         auto x = get_param<float>("x");
         auto y = get_param<float>("y");
-        auto outprim = new zeno::PrimitiveObject;
+        auto outprim = std::make_shared<zeno::PrimitiveObject>();
         outprim->verts.resize(1);
         outprim->verts[0] = zeno::vec3f(x, y, 0);
 
-        set_output("prim", std::move(std::shared_ptr<zeno::PrimitiveObject>(outprim)));
+        set_output("prim", std::move(outprim));
     }
 };
 
