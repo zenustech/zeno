@@ -139,7 +139,7 @@ struct PrimWeld : INode {
 ZENDEFNODE(PrimWeld, {
     {
     {"PrimitiveObject", "prim"},
-    {"string", "tagAttr", "tag"},
+    {"string", "tagAttr", "weldtag"},
     {"enum oneof average", "method", "oneof"},
     },
     {

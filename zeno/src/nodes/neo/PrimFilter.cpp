@@ -12,7 +12,7 @@ namespace zeno {
 
 static void primRevampVerts(PrimitiveObject *prim, std::vector<int> const &revamp);
 
-ZENO_API void primFilterVerts(PrimitiveObject *prim, std::string tagAttr, int tagValue, bool isInversed) {
+ZENO_API void primFilterVerts(PrimitiveObject *prim, std::string tagAttr, int tagValue, bool isInversed, std::string revampAttrO) {
     std::vector<int> revamp;
     revamp.reserve(prim->size());
     auto const &tagArr = prim->verts.attr<int>(tagAttr);
@@ -27,8 +27,10 @@ ZENO_API void primFilterVerts(PrimitiveObject *prim, std::string tagAttr, int ta
                 revamp.emplace_back(i);
         }
     }
-
     primRevampVerts(prim, revamp);
+    if (!revampAttrO.empty()) {
+        prim->add_attr<int>(revampAttrO) = std::move(revamp);
+    }
 }
 
 template <class T>
@@ -41,7 +43,7 @@ static void revamp_vector(std::vector<T> &arr, std::vector<int> const &revamp) {
 }
 
 static void primRevampVerts(PrimitiveObject *prim, std::vector<int> const &revamp) {
-    prim->foreach_attr([&] (auto const &key, auto &arr) {
+    prim->foreach_attr<AttrAcceptAll>([&] (auto const &key, auto &arr) {
         revamp_vector(arr, revamp);
     });
     auto old_prim_size = prim->size();
@@ -83,7 +85,7 @@ static void primRevampVerts(PrimitiveObject *prim, std::vector<int> const &revam
             for (int i = 0; i < trisrevamp.size(); i++) {
                 prim->tris[i] = prim->tris[trisrevamp[i]];
             }
-            prim->tris.foreach_attr([&] (auto const &key, auto &arr) {
+            prim->tris.foreach_attr<AttrAcceptAll>([&] (auto const &key, auto &arr) {
                 revamp_vector(arr, trisrevamp);
             });
             prim->tris.resize(trisrevamp.size());
@@ -100,7 +102,7 @@ static void primRevampVerts(PrimitiveObject *prim, std::vector<int> const &revam
             for (int i = 0; i < quadsrevamp.size(); i++) {
                 prim->quads[i] = prim->quads[quadsrevamp[i]];
             }
-            prim->quads.foreach_attr([&] (auto const &key, auto &arr) {
+            prim->quads.foreach_attr<AttrAcceptAll>([&] (auto const &key, auto &arr) {
                 revamp_vector(arr, quadsrevamp);
             });
             prim->quads.resize(quadsrevamp.size());
@@ -117,7 +119,7 @@ static void primRevampVerts(PrimitiveObject *prim, std::vector<int> const &revam
             for (int i = 0; i < linesrevamp.size(); i++) {
                 prim->lines[i] = prim->lines[linesrevamp[i]];
             }
-            prim->lines.foreach_attr([&] (auto const &key, auto &arr) {
+            prim->lines.foreach_attr<AttrAcceptAll>([&] (auto const &key, auto &arr) {
                 revamp_vector(arr, linesrevamp);
             });
             prim->lines.resize(linesrevamp.size());
@@ -140,7 +142,7 @@ static void primRevampVerts(PrimitiveObject *prim, std::vector<int> const &revam
             for (int i = 0; i < polysrevamp.size(); i++) {
                 prim->polys[i] = prim->polys[polysrevamp[i]];
             }
-            prim->polys.foreach_attr([&] (auto const &key, auto &arr) {
+            prim->polys.foreach_attr<AttrAcceptAll>([&] (auto const &key, auto &arr) {
                 revamp_vector(arr, polysrevamp);
             });
             prim->polys.resize(polysrevamp.size());
@@ -157,7 +159,7 @@ static void primRevampVerts(PrimitiveObject *prim, std::vector<int> const &revam
             for (int i = 0; i < pointsrevamp.size(); i++) {
                 prim->points[i] = prim->points[pointsrevamp[i]];
             }
-            prim->points.foreach_attr([&] (auto const &key, auto &arr) {
+            prim->points.foreach_attr<AttrAcceptAll>([&] (auto const &key, auto &arr) {
                 revamp_vector(arr, pointsrevamp);
             });
             prim->points.resize(pointsrevamp.size());
@@ -172,10 +174,11 @@ struct PrimFilter : INode {
   virtual void apply() override {
     auto prim = get_input<PrimitiveObject>("prim");
     auto tagAttr = get_input<StringObject>("tagAttr")->get();
+    auto revampAttrO = get_input<StringObject>("revampAttrO")->get();
     auto tagValue = get_input<NumericObject>("tagValue")->get<int>();
     auto isInversed = get_input<NumericObject>("isInversed")->get<bool>();
     auto method = get_input<StringObject>("method")->get();
-    primFilterVerts(prim.get(), tagAttr, tagValue, isInversed);
+    primFilterVerts(prim.get(), tagAttr, tagValue, isInversed, revampAttrO);
     set_output("prim", get_input("prim"));
   }
 };
@@ -184,6 +187,7 @@ ZENDEFNODE(PrimFilter, {
     {
     {"PrimitiveObject", "prim"},
     {"string", "tagAttr", "tag"},
+    {"string", "revampAttrO", ""},
     {"int", "tagValue", "1"},
     {"bool", "isInversed", "0"},
     {"enum verts faces", "method", "verts"},

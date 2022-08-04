@@ -29,8 +29,8 @@ struct CachePrimitive : zeno::INode {
         }
         char buf[512];
         sprintf(buf, "%s%06d.zpm", prefix.c_str(), fno);
-        auto path = (fs::path(dir) / buf).generic_string();
-        if (ignore || !fs::exists(path)) {
+        auto path = (std::filesystem::path(dir) / buf).generic_string();
+        if (ignore || !std::filesystem::exists(path)) {
             requireInput("inPrim");
             auto prim = get_input<PrimitiveObject>("inPrim");
             printf("dumping cache to [%s]\n", path.c_str());

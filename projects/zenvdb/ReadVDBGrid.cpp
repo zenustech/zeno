@@ -12,6 +12,7 @@
 // openvdb::io::File(filename).write({grid});
 
 namespace zeno {
+namespace {
 
 static std::shared_ptr<VDBGrid> readGenericVDBGrid(const std::string &fn) {
   using GridTypes = std::tuple
@@ -174,5 +175,4 @@ static int defImportVDBGrid = zeno::defNodeClass<ImportVDBGrid>("ImportVDBGrid",
 
 
 }
-
 } // namespace zeno
