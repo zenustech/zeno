@@ -17,8 +17,15 @@ ZenoPlayer::ZenoPlayer(ZENO_PLAYER_INIT_PARAM param, QWidget *parent)
     resize(1000, 680);
     setMinimumSize(1000, 680);
     initUI();
-    m_pView->setCameraRes(QVector2D(1080, 720));
-    m_pView->updatePerspective();
+
+    if(!m_InitParam.sPixel.isEmpty())
+    {
+        QStringList tmpsPix = m_InitParam.sPixel.split("x");
+        QVector2D tmpPix(tmpsPix.at(0).toInt(),tmpsPix.at(1).toInt());
+        m_pView->setCameraRes(QVector2D(1080, 720));
+        m_pView->updatePerspective();
+    }
+    
     move((QApplication::desktop()->width() - width())/2,(QApplication::desktop()->height() - height())/2);
     QTimer::singleShot(10,this,[=]{showMaximized();});
     m_pTimerUpVIew = new QTimer;
