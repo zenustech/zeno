@@ -5,6 +5,8 @@
 #include "zenoapplication.h"
 #include "style/zenostyle.h"
 
+int calcFrameCountByAudio(std::string path, int fps);
+
 int main(int argc, char *argv[]) 
 {
     ZenoApplication a(argc, argv);
@@ -27,6 +29,7 @@ int main(int argc, char *argv[])
             {"sample", "sample", "sample count"},
             {"pixel", "pixel", "set record image pixel"},
             {"path", "path", "record dir"},
+            {"audio", "audio", "audio path"},
         });
         cmdParser.process(a);
         if (cmdParser.isSet("zsg"))
@@ -42,7 +45,14 @@ int main(int argc, char *argv[])
         if (cmdParser.isSet("pixel"))
             param.sPixel = cmdParser.value("pixel");
         if (cmdParser.isSet("path"))
-            param.sPath = cmdParser.value("path");        
+            param.sPath = cmdParser.value("path");
+        if (cmdParser.isSet("audio")) {
+            param.audioPath = cmdParser.value("audio");
+            if(!cmdParser.isSet("frame")) {
+                int count = calcFrameCountByAudio(param.audioPath.toStdString(), 24);
+                param.iFrame = count;
+            }
+        }
     }
     qDebug() << param.sPath << param.bRecord << param.iFrame << param.iSample << param.sPixel << param.sPath;
 	ZenoPlayer w(param);
