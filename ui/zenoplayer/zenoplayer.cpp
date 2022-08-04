@@ -17,19 +17,9 @@ ZenoPlayer::ZenoPlayer(ZENO_PLAYER_INIT_PARAM param, QWidget *parent)
     // resize(1000, 680);
     // setMinimumSize(1000, 680);
     initUI();
-
-    if(!m_InitParam.sPixel.isEmpty())
-    {
-        QStringList tmpsPix = m_InitParam.sPixel.split("x");
-        int pixw = tmpsPix.at(0).toInt();
-        int pixh = tmpsPix.at(1).toInt();
-        resize(pixw, pixh);
-        m_pView->setCameraRes(QVector2D(pixw, pixh));
-        m_pView->updatePerspective();
-    }
     
     move((QApplication::desktop()->width() - width())/2,(QApplication::desktop()->height() - height())/2);
-    QTimer::singleShot(10,this,[=]{showMaximized();});
+    // QTimer::singleShot(10,this,[=]{showMaximized();});
     m_pTimerUpVIew = new QTimer;
 
     if (m_InitParam.bRecord == true) {
@@ -51,7 +41,20 @@ ZenoPlayer::~ZenoPlayer()
 void ZenoPlayer::initUI()
 {
     m_pMenuBar = initMenu();
+
+    
+
     m_pView = new ViewportWidget;
+
+    if(!m_InitParam.sPixel.isEmpty())
+    {
+        QStringList tmpsPix = m_InitParam.sPixel.split("x");
+        int pixw = tmpsPix.at(0).toInt();
+        int pixh = tmpsPix.at(1).toInt();
+        resize(pixw, pixh+m_pMenuBar->height());
+        m_pView->setCameraRes(QVector2D(pixw, pixh));
+        m_pView->updatePerspective();
+    }
 
     m_pCamera_keyframe = new CameraKeyframeWidget;
     Zenovis::GetInstance().m_camera_keyframe = m_pCamera_keyframe;
