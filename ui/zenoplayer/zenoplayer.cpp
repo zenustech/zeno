@@ -249,6 +249,16 @@ void ZenoPlayer::slot_OpenFileDialog()
 
 void ZenoPlayer::updateFrame(const QString &action)
 {
+    auto &inst = Zenovis::GetInstance();
+    auto sess = inst.getSession();
+    if (sess) {
+        auto scene = sess->get_scene();
+        if (scene) {
+            scene->bRecord = m_InitParam.bRecord;
+            scene->drawOptions->num_samples = m_InitParam.bRecord ? 1024 : 16;
+        }
+    }
+
     if(m_iFrameCount >= m_iMaxFrameCount)
     {
         m_iFrameCount = 0;
@@ -282,14 +292,14 @@ void ZenoPlayer::startView(QString filePath) {
         QMessageBox::warning(this, tr("Error"), QString(tr("Open %1 error!")).arg(filePath));
         return;
     }
-    auto &inst = Zenovis::GetInstance();
-    auto sess = inst.getSession();
-    if (sess) {
-        auto scene = sess->get_scene();
-        if (scene) {
-            scene->drawOptions->num_samples = m_InitParam.bRecord ? 1024 : 16;            
-        }            
-    }
+//    auto &inst = Zenovis::GetInstance();
+//    auto sess = inst.getSession();
+//    if (sess) {
+//        auto scene = sess->get_scene();
+//        if (scene) {
+//            scene->drawOptions->num_samples = m_InitParam.bRecord ? 1024 : 16;
+//        }
+//    }
 
     GraphsModel *pLegacy = qobject_cast<GraphsModel *>(pModel);
 

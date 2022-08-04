@@ -451,7 +451,10 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         CHECK_GL(glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &targetFBO));
         {
             auto bindVao = opengl::scopeGLBindVertexArray(vao->vao);
-            xinxinoptix::optixrender(targetFBO);
+            int num_samples = 1;
+            if(scene->bRecord==true)
+                num_samples = 1024;
+            xinxinoptix::optixrender(targetFBO, num_samples);
         }
         CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, targetFBO));
     }
