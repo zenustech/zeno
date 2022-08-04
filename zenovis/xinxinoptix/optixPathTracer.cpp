@@ -1146,8 +1146,8 @@ void optixupdatemesh(std::map<std::string, int> const &mtlidlut) {
                 ) );
 
     splitMesh(g_vertices, g_mat_indices, g_meshPieces);
-    std::cout<<"split mesh done\n";
-    std::cout<<"mesh pieces:"<<g_meshPieces.size()<<std::endl;
+    //std::cout<<"split mesh done\n";
+    //std::cout<<"mesh pieces:"<<g_meshPieces.size()<<std::endl;
     for(int i=0;i<g_meshPieces.size();i++)
     {
         buildMeshAccelSplitMesh(state, g_meshPieces[i]);

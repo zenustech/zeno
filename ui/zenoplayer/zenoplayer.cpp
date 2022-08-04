@@ -9,18 +9,31 @@
 #include <zenoui/util/jsonhelper.h>
 #include <graphsmanagment.h>
 #include <viewport/zenovis.h>
+#include <zeno/core/Session.h>
+#include <zeno/extra/GlobalState.h>
+#include <zeno/extra/GlobalComm.h>
+#include <zeno/extra/GlobalStatus.h>
 
 ZenoPlayer::ZenoPlayer(ZENO_PLAYER_INIT_PARAM param, QWidget *parent) 
     : QWidget(parent), m_InitParam(param) 
 {
     setObjectName("ZenoPlayer");
-    resize(1000, 680);
-    setMinimumSize(1000, 680);
+    // resize(1000, 680);
+    // setMinimumSize(1000, 680);
     initUI();
-    m_pView->setCameraRes(QVector2D(1080, 720));
-    m_pView->updatePerspective();
+
+    if(!m_InitParam.sPixel.isEmpty())
+    {
+        QStringList tmpsPix = m_InitParam.sPixel.split("x");
+        int pixw = tmpsPix.at(0).toInt();
+        int pixh = tmpsPix.at(1).toInt();
+        resize(pixw, pixh + m_pMenuBar->height() + 6);  // +6 UI interval
+        m_pView->setCameraRes(QVector2D(pixw, pixh));
+        m_pView->updatePerspective();
+    }
+
     move((QApplication::desktop()->width() - width())/2,(QApplication::desktop()->height() - height())/2);
-    QTimer::singleShot(10,this,[=]{showMaximized();});
+    // QTimer::singleShot(10,this,[=]{showMaximized();});
     m_pTimerUpVIew = new QTimer;
 
     if (m_InitParam.bRecord == true) {
@@ -42,6 +55,7 @@ ZenoPlayer::~ZenoPlayer()
 void ZenoPlayer::initUI()
 {
     m_pMenuBar = initMenu();
+
     m_pView = new ViewportWidget;
 
     m_pCamera_keyframe = new CameraKeyframeWidget;
@@ -256,7 +270,7 @@ void ZenoPlayer::updateFrame(const QString &action)
     if (sess) {
         auto scene = sess->get_scene();
         if (scene) {
-            scene->drawOptions->num_samples = m_InitParam.bRecord ? 1024 : 16;
+            scene->drawOptions->num_samples = m_InitParam.bRecord ? m_InitParam.iSample : 16;
         }
     }
 
@@ -267,12 +281,14 @@ void ZenoPlayer::updateFrame(const QString &action)
         m_InitParam.bRecord = false;
     }
 
+    Zenovis::GetInstance().setCurrentFrameId(m_iFrameCount);
     m_pView->update();
-
+    if(zeno::getSession().globalComm->maxPlayFrames()<=m_iFrameCount)
+        return;
     if (m_InitParam.bRecord == true) {
         QString path = QString("%1/frame%2.jpg").arg(m_InitParam.sPath).arg(m_iFrameCount);
         QString ext = QFileInfo(path).suffix();
-        int nsamples = 16;
+        int nsamples = m_InitParam.iSample;
         if (!path.isEmpty()) {
             Zenovis::GetInstance().getSession()->do_screenshot(path.toStdString(), ext.toStdString(), nsamples);
         }

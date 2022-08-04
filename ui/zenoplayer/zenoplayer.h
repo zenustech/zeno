@@ -8,11 +8,14 @@ typedef struct __tagZenoPlayerInitParam {
     QString sZsgPath;
     bool bRecord;
     int iFrame;
+    int iSample;
+    QString sPixel;
     QString sPath;
     void init() {
         sZsgPath = "";
         bRecord = false;
         iFrame = 0;
+        sPixel = "";
         sPath = "";
     }
 }ZENO_PLAYER_INIT_PARAM;
