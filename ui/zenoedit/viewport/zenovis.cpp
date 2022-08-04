@@ -38,6 +38,8 @@ void Zenovis::paintGL()
 {
     doFrameUpdate();
     session->new_frame();
+    int frameid = session->get_curr_frameid();
+    emit frameDrawn(frameid);
 }
 
 //void Zenovis::recordGL(const std::string& record_path, int nsamples)
