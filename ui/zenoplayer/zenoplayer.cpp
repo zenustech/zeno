@@ -22,7 +22,7 @@ ZenoPlayer::ZenoPlayer(ZENO_PLAYER_INIT_PARAM param, QWidget *parent)
     {
         QStringList tmpsPix = m_InitParam.sPixel.split("x");
         QVector2D tmpPix(tmpsPix.at(0).toInt(),tmpsPix.at(1).toInt());
-        m_pView->setCameraRes(QVector2D(1080, 720));
+        m_pView->setCameraRes(tmpPix);
         m_pView->updatePerspective();
     }
     
