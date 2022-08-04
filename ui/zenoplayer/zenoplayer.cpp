@@ -14,9 +14,12 @@ ZenoPlayer::ZenoPlayer(ZENO_PLAYER_INIT_PARAM param, QWidget *parent)
     : QWidget(parent), m_InitParam(param) 
 {
     setObjectName("ZenoPlayer");
-    resize(1000, 680);
-    setMinimumSize(1000, 680);
+//    resize(1000, 680);
+//    setMinimumSize(1000, 680);
+    setFixedSize(1080, 761);  // 720 + 41(menus res)
     initUI();
+    m_pView->setCameraRes(QVector2D(1080, 720));
+    m_pView->updatePerspective();
     move((QApplication::desktop()->width() - width())/2,(QApplication::desktop()->height() - height())/2);
     QTimer::singleShot(10,this,[=]{showMaximized();});
     m_pTimerUpVIew = new QTimer;
