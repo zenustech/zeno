@@ -14,9 +14,8 @@ ZenoPlayer::ZenoPlayer(ZENO_PLAYER_INIT_PARAM param, QWidget *parent)
     : QWidget(parent), m_InitParam(param) 
 {
     setObjectName("ZenoPlayer");
-//    resize(1000, 680);
-//    setMinimumSize(1000, 680);
-    setFixedSize(1080, 761);  // 720 + 41(menus res)
+    resize(1000, 680);
+    setMinimumSize(1000, 680);
     initUI();
     m_pView->setCameraRes(QVector2D(1080, 720));
     m_pView->updatePerspective();
@@ -257,7 +256,6 @@ void ZenoPlayer::updateFrame(const QString &action)
     if (sess) {
         auto scene = sess->get_scene();
         if (scene) {
-            scene->bRecord = m_InitParam.bRecord;
             scene->drawOptions->num_samples = m_InitParam.bRecord ? 1024 : 16;
         }
     }
