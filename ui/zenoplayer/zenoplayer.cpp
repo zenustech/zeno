@@ -9,6 +9,10 @@
 #include <zenoui/util/jsonhelper.h>
 #include <graphsmanagment.h>
 #include <viewport/zenovis.h>
+#include <zeno/core/Session.h>
+#include <zeno/extra/GlobalState.h>
+#include <zeno/extra/GlobalComm.h>
+#include <zeno/extra/GlobalStatus.h>
 
 ZenoPlayer::ZenoPlayer(ZENO_PLAYER_INIT_PARAM param, QWidget *parent) 
     : QWidget(parent), m_InitParam(param) 
@@ -17,7 +21,17 @@ ZenoPlayer::ZenoPlayer(ZENO_PLAYER_INIT_PARAM param, QWidget *parent)
     // resize(1000, 680);
     // setMinimumSize(1000, 680);
     initUI();
-    
+
+    if(!m_InitParam.sPixel.isEmpty())
+    {
+        QStringList tmpsPix = m_InitParam.sPixel.split("x");
+        int pixw = tmpsPix.at(0).toInt();
+        int pixh = tmpsPix.at(1).toInt();
+        resize(pixw, pixh + m_pMenuBar->height() + 6);  // +6 UI interval
+        m_pView->setCameraRes(QVector2D(pixw, pixh));
+        m_pView->updatePerspective();
+    }
+
     move((QApplication::desktop()->width() - width())/2,(QApplication::desktop()->height() - height())/2);
     // QTimer::singleShot(10,this,[=]{showMaximized();});
     m_pTimerUpVIew = new QTimer;
@@ -42,19 +56,7 @@ void ZenoPlayer::initUI()
 {
     m_pMenuBar = initMenu();
 
-    
-
     m_pView = new ViewportWidget;
-
-    if(!m_InitParam.sPixel.isEmpty())
-    {
-        QStringList tmpsPix = m_InitParam.sPixel.split("x");
-        int pixw = tmpsPix.at(0).toInt();
-        int pixh = tmpsPix.at(1).toInt();
-        resize(pixw, pixh+m_pMenuBar->height());
-        m_pView->setCameraRes(QVector2D(pixw, pixh));
-        m_pView->updatePerspective();
-    }
 
     m_pCamera_keyframe = new CameraKeyframeWidget;
     Zenovis::GetInstance().m_camera_keyframe = m_pCamera_keyframe;
@@ -279,12 +281,14 @@ void ZenoPlayer::updateFrame(const QString &action)
         m_InitParam.bRecord = false;
     }
 
+    Zenovis::GetInstance().setCurrentFrameId(m_iFrameCount);
     m_pView->update();
-
+    if(zeno::getSession().globalComm->maxPlayFrames()<=m_iFrameCount)
+        return;
     if (m_InitParam.bRecord == true) {
         QString path = QString("%1/frame%2.jpg").arg(m_InitParam.sPath).arg(m_iFrameCount);
         QString ext = QFileInfo(path).suffix();
-        int nsamples = 16;
+        int nsamples = 1024;
         if (!path.isEmpty()) {
             Zenovis::GetInstance().getSession()->do_screenshot(path.toStdString(), ext.toStdString(), nsamples);
         }
