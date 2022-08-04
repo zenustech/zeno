@@ -1,22 +1,10 @@
-#ifndef __PBD_h__
-#define __PBD_h__
+#pragma once
 
 #if defined (_MSC_VER)
 #undef max
 #undef min
 #define NOMINMAX
 #endif
-
-#include <iostream>
-#include <vector>
-#include <cassert>
-#include <string>
-#include <cstring>
-#include <fstream>
-#include <unordered_map>
-#include <iterator>
-#include <algorithm>
-#include <limits>
 
 // disable some warnings on Windows
 #if defined (_MSC_VER)
@@ -38,25 +26,11 @@
 class PBD
 {
 public:
-    //=============================================================
-    /** Constructor */
     PBD();
-
-private:
-    
 };
-
-
-//=============================================================
-/* IMPLEMENTATION */
-//=============================================================
-
-
 
 #if defined (_MSC_VER)
     __pragma(warning (pop))
 #elif defined (__GNUC__)
     _Pragma("GCC diagnostic pop")
 #endif
-
-#endif /* __PBD_h__ */

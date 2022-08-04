@@ -29,6 +29,7 @@ set(ZENO_EXTENSIONS
     Audio
     Pass
     CUDA
+    PBD
     )
 
 foreach (name IN ITEMS ${ZENO_EXTENSIONS})
