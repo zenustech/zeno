@@ -29,11 +29,8 @@ void ModelAcceptor::setLegacyDescs(const rapidjson::Value& graphObj, const NODE_
     QList<NODE_DESC> subnetDescs;
     for (QString name : subgraphs)
     {
-//        ZASSERT_EXIT(legacyDescs.find(name) != legacyDescs.end());
-        if (legacyDescs.find(name) != legacyDescs.end())
-        {
-            subnetDescs.append(legacyDescs[name]);
-        }
+        ZASSERT_EXIT(legacyDescs.find(name) != legacyDescs.end());
+        subnetDescs.append(legacyDescs[name]);
     }
     m_pModel->appendSubnetDescsFromZsg(subnetDescs);
 }
