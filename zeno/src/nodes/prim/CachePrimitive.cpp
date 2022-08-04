@@ -2,7 +2,7 @@
 #include <zeno/types/PrimitiveIO.h>
 #include <zeno/types/StringObject.h>
 #include <zeno/types/NumericObject.h>
-#include <zeno/utils/filesystem.h>
+#include <filesystem>
 
 namespace zeno {
 
@@ -19,8 +19,8 @@ struct CachePrimitive : zeno::INode {
         auto dir = get_param<std::string>("dir");
         auto prefix = get_param<std::string>("prefix");
         bool ignore = get_param<bool>("ignore");
-        if (!fs::is_directory(dir)) {
-            fs::create_directory(dir);
+        if (!std::filesystem::is_directory(dir)) {
+            std::filesystem::create_directory(dir);
         }
         int fno = m_framecounter++;
         if (has_input("frameNum")) {
