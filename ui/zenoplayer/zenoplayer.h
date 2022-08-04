@@ -9,11 +9,13 @@ typedef struct __tagZenoPlayerInitParam {
     bool bRecord;
     int iFrame;
     QString sPath;
+    QString audioPath;
     void init() {
         sZsgPath = "";
         bRecord = false;
         iFrame = 0;
         sPath = "";
+        audioPath = "";
     }
 }ZENO_PLAYER_INIT_PARAM;
 

@@ -17,6 +17,14 @@
 #define MINIMP3_FLOAT_OUTPUT
 #include "minimp3.h"
 
+int calcFrameCountByAudio(std::string path, int fps) {
+    AudioFile<float> wav;
+    wav.load (path);
+    uint64_t ret = wav.getNumSamplesPerChannel();
+    ret = ret * fps / wav.getSampleRate();
+    return ret + 1;
+}
+
 namespace zeno {
     struct ReadWavFile : zeno::INode {
         virtual void apply() override {

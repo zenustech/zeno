@@ -9,6 +9,7 @@
 #include <zenoui/util/jsonhelper.h>
 #include <graphsmanagment.h>
 #include <viewport/zenovis.h>
+#include <cstdlib>
 
 ZenoPlayer::ZenoPlayer(ZENO_PLAYER_INIT_PARAM param, QWidget *parent) 
     : QWidget(parent), m_InitParam(param) 
@@ -253,13 +254,28 @@ void ZenoPlayer::updateFrame(const QString &action)
     {
         m_iFrameCount = 0;
         Zenovis::GetInstance().setCurrentFrameId(m_iFrameCount);    
-        m_InitParam.bRecord = false;
+        if (m_InitParam.bRecord) {
+            m_InitParam.bRecord = false;
+            std::string cmd;
+            cmd = QString("ffmpeg -r 24 -i %1 -c:v mpeg4 output.mp4")
+                    .arg(m_InitParam.sPath+"/%07d.jpg").toStdString();
+            std::puts(cmd.c_str());
+            std::system(cmd.c_str());
+            if (!m_InitParam.audioPath.isEmpty()) {
+                cmd = QString("ffmpeg -i output.mp4 -i %1 -c:v copy -c:a aac output_av.mp4")
+                        .arg(m_InitParam.audioPath).toStdString();
+                std::puts(cmd.c_str());
+                std::system(cmd.c_str());
+            }
+
+            QMessageBox::information(this, "Info","Video saved!");
+        }
     }
 
     m_pView->update();
 
     if (m_InitParam.bRecord == true) {
-        QString path = QString("%1/frame%2.jpg").arg(m_InitParam.sPath).arg(m_iFrameCount);
+        QString path = QString("%1/%2.jpg").arg(m_InitParam.sPath).arg(m_iFrameCount, 7, 10, QLatin1Char('0'));
         QString ext = QFileInfo(path).suffix();
         int nsamples = 16;
         if (!path.isEmpty()) {
