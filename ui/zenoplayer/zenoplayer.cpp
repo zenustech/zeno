@@ -14,15 +14,17 @@ ZenoPlayer::ZenoPlayer(ZENO_PLAYER_INIT_PARAM param, QWidget *parent)
     : QWidget(parent), m_InitParam(param) 
 {
     setObjectName("ZenoPlayer");
-    resize(1000, 680);
-    setMinimumSize(1000, 680);
+    // resize(1000, 680);
+    // setMinimumSize(1000, 680);
     initUI();
 
     if(!m_InitParam.sPixel.isEmpty())
     {
         QStringList tmpsPix = m_InitParam.sPixel.split("x");
-        QVector2D tmpPix(tmpsPix.at(0).toInt(),tmpsPix.at(1).toInt());
-        m_pView->setCameraRes(tmpPix);
+        int pixw = tmpsPix.at(0).toInt();
+        int pixh = tmpsPix.at(1).toInt();
+        resize(pixw, pixh);
+        m_pView->setCameraRes(QVector2D(pixw, pixh));
         m_pView->updatePerspective();
     }
     
