@@ -24,7 +24,7 @@ int main(int argc, char *argv[])
             {"zsg", "zsg", "zsg file path"},
             {"record", "record", "Record frame"},
             {"frame", "frame", "frame count"},
-            {"pixel", "pixel", "set record image pixel"}
+            {"pixel", "pixel", "set record image pixel"},
             {"path", "path", "record dir"},
         });
         cmdParser.process(a);
