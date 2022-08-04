@@ -10,6 +10,7 @@
 
 
 namespace zeno {
+namespace {
 
 using DefaultValue = std::variant<
         int,
@@ -77,7 +78,7 @@ struct ParamFormat : zeno::INode {
             );
         }
         else if (format->_type == "vec4f") {
-            format->defaultValue = vec3f(
+            format->defaultValue = vec4f(
                     std::stof(items[0]),
                     std::stof(items[1]),
                     std::stof(items[2]),
@@ -258,4 +259,5 @@ ZENDEFNODE(ParamFileParser, {
     {"layout"},
 });
 
+}
 }
