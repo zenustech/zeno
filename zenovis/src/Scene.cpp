@@ -39,7 +39,7 @@ Scene::Scene()
     else if (zeno::envconfig::get("ZHXX"))
         switchRenderEngine("zhxx");
     else
-        switchRenderEngine("optx");
+        switchRenderEngine("bate");
 }
 
 void Scene::switchRenderEngine(std::string const &name) {
