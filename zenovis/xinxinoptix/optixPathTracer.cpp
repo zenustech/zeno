@@ -1146,8 +1146,8 @@ void optixupdatemesh(std::map<std::string, int> const &mtlidlut) {
                 ) );
 
     splitMesh(g_vertices, g_mat_indices, g_meshPieces);
-    std::cout<<"split mesh done\n";
-    std::cout<<"mesh pieces:"<<g_meshPieces.size()<<std::endl;
+    //std::cout<<"split mesh done\n";
+    //std::cout<<"mesh pieces:"<<g_meshPieces.size()<<std::endl;
     for(int i=0;i<g_meshPieces.size();i++)
     {
         buildMeshAccelSplitMesh(state, g_meshPieces[i]);
@@ -1578,12 +1578,11 @@ void optixrender(int fbo, int samples) {
     if (!gl_display_o) throw sutil::Exception("no gl_display_o");
     updateState( *output_buffer_o, state.params );
     const int max_samples_once = 16;
+    //std::cout<<"samples"<<samples<<std::endl;
     for (int f = 0; f < samples; f += max_samples_once) {
         state.params.samples_per_launch = std::min(samples - f, max_samples_once);
-    zeno::log_info("[optix] rendering subframe {} at {} samples",
-                   state.params.subframe_index, state.params.samples_per_launch);
-    launchSubframe( *output_buffer_o, state );
-    state.params.subframe_index++;
+        launchSubframe( *output_buffer_o, state );
+        state.params.subframe_index++;
     }
     displaySubframe( *output_buffer_o, *gl_display_o, state, fbo );
                     
