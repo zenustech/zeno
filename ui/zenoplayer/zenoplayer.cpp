@@ -270,7 +270,7 @@ void ZenoPlayer::updateFrame(const QString &action)
     if (sess) {
         auto scene = sess->get_scene();
         if (scene) {
-            scene->drawOptions->num_samples = m_InitParam.bRecord ? 1024 : 16;
+            scene->drawOptions->num_samples = m_InitParam.bRecord ? m_InitParam.iSample : 16;
         }
     }
 
@@ -288,7 +288,7 @@ void ZenoPlayer::updateFrame(const QString &action)
     if (m_InitParam.bRecord == true) {
         QString path = QString("%1/frame%2.jpg").arg(m_InitParam.sPath).arg(m_iFrameCount);
         QString ext = QFileInfo(path).suffix();
-        int nsamples = 1024;
+        int nsamples = m_InitParam.iSample;
         if (!path.isEmpty()) {
             Zenovis::GetInstance().getSession()->do_screenshot(path.toStdString(), ext.toStdString(), nsamples);
         }
