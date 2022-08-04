@@ -17,6 +17,8 @@ ZenoPlayer::ZenoPlayer(ZENO_PLAYER_INIT_PARAM param, QWidget *parent)
     resize(1000, 680);
     setMinimumSize(1000, 680);
     initUI();
+    m_pView->setCameraRes(QVector2D(1080, 720));
+    m_pView->updatePerspective();
     move((QApplication::desktop()->width() - width())/2,(QApplication::desktop()->height() - height())/2);
     QTimer::singleShot(10,this,[=]{showMaximized();});
     m_pTimerUpVIew = new QTimer;
@@ -249,6 +251,15 @@ void ZenoPlayer::slot_OpenFileDialog()
 
 void ZenoPlayer::updateFrame(const QString &action)
 {
+    auto &inst = Zenovis::GetInstance();
+    auto sess = inst.getSession();
+    if (sess) {
+        auto scene = sess->get_scene();
+        if (scene) {
+            scene->drawOptions->num_samples = m_InitParam.bRecord ? 1024 : 16;
+        }
+    }
+
     if(m_iFrameCount >= m_iMaxFrameCount)
     {
         m_iFrameCount = 0;
@@ -282,14 +293,14 @@ void ZenoPlayer::startView(QString filePath) {
         QMessageBox::warning(this, tr("Error"), QString(tr("Open %1 error!")).arg(filePath));
         return;
     }
-    auto &inst = Zenovis::GetInstance();
-    auto sess = inst.getSession();
-    if (sess) {
-        auto scene = sess->get_scene();
-        if (scene) {
-            scene->drawOptions->num_samples = m_InitParam.bRecord ? 1024 : 16;            
-        }            
-    }
+//    auto &inst = Zenovis::GetInstance();
+//    auto sess = inst.getSession();
+//    if (sess) {
+//        auto scene = sess->get_scene();
+//        if (scene) {
+//            scene->drawOptions->num_samples = m_InitParam.bRecord ? 1024 : 16;
+//        }
+//    }
 
     GraphsModel *pLegacy = qobject_cast<GraphsModel *>(pModel);
 
