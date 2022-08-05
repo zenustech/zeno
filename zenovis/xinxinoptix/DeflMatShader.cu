@@ -244,6 +244,11 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     auto clearcoat = mats.clearcoat;
     auto clearcoatGloss = mats.clearcoatGloss;
     auto opacity = mats.opacity;
+    auto flatness = mats.flatness;
+    auto specTrans = mats.specTrans;
+    auto scatterDistance = mats.scatterDistance;
+    auto ior = mats.ior;
+    auto thin = mats.thin;
     unsigned short isLight = rt_data->lightMark[inst_idx * 1024 + prim_idx];
 
     // Stochastic alpha test to get an alpha blend effect.
@@ -255,9 +260,17 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     {
 
         //roll a dice
-        const float p = rnd(prd->seed);
-        if (p < opacity)
+        float p = rnd(prd->seed);
+        if (p < opacity){
             optixIgnoreIntersection();
+        }
+        p = rnd(prd->seed);
+        float useless;
+        float pSpecTrans;
+        DisneyBSDF::pdf(metallic, specTrans, clearcoat,useless ,useless , useless, pSpecTrans);
+        if( p < pSpecTrans){
+            optixIgnoreIntersection();
+        }
         prd->flags |= 1;
         optixTerminateRay();
     }
@@ -495,39 +508,12 @@ extern "C" __global__ void __closesthit__radiance()
         }
     pdf = rPdf;
 
-float3 f = DisneyBSDF::EvaluateDisney(
-        basecolor,
-        metallic,
-        subsurface,
-        specular,
-        roughness,
-        specularTint,
-        anisotropic,
-        sheen,
-        sheenTint,
-        clearcoat,
-        clearcoatGloss,
-        specTrans,
-        scatterDistance,
-        ior,
-        flatness,
-        wi,
-        -normalize(ray_dir),
-        T,
-        B,
-        N,
-        thin>0.5f,
-        prd->is_inside,
-        ffPdf,
-        rrPdf
-        );
     if(opacity<=0.99)
     {
         //we have some simple transparent thing
         //roll a dice to see if just pass
         if(rnd(prd->seed)<opacity)
         {
-            
             prd->passed = true;
             //you shall pass!
             prd->radiance = make_float3(0.0f);
@@ -542,20 +528,16 @@ float3 f = DisneyBSDF::EvaluateDisney(
 
     }
     
-    if(flag == DisneyBSDF::transmissionEvent || prd->is_inside){
-        prd->prob *= 1.0f;
-        prd->origin = P;
-        prd->direction = wi;
-        prd->countEmitted = false;
-        prd->attenuation *= reflectance;
-        return;
-    }
+    //prd->passed = (flag == DisneyBSDF::transmissionEvent) ;
 
     prd->prob *= 1.0f;
     prd->origin = P;
     prd->direction = wi;
     prd->countEmitted = false;
     prd->attenuation *= reflectance;
+    //if(flag == DisneyBSDF::transmissionEvent || prd->is_inside){
+    //    return;
+    //}
     //}
 
     // {
@@ -600,8 +582,6 @@ float3 f = DisneyBSDF::EvaluateDisney(
             }
         }
 
-        //float3 lbrdf = DisneyBRDF::eval(basecolor, metallic, subsurface, specular, roughness, specularTint, anisotropic,
-        //                                sheen, sheenTint, clearcoat, clearcoatGloss, N, make_float3(0, 0, 0),
         //                                make_float3(0, 0, 0), L, -normalize(inDir));
         float3 lbrdf = DisneyBSDF::EvaluateDisney(
                 basecolor,

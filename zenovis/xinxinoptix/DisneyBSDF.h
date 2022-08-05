@@ -85,7 +85,7 @@ namespace DisneyBSDF{
         float diffuseW       = dielectricBRDF;
         float clearcoatW     = 1.0f * clamp(clearCoat, 0.0f, 1.0f);
 
-        float norm = 1.0f/(specularW + transmissionW + diffuseW + clearcoatW);
+        float norm = 1.0f/(specularW + transmissionW + diffuseW + clearcoatW + 1e-6);
 
         pSpecular  = specularW      * norm;
         pSpecTrans = transmissionW  * norm;
@@ -612,7 +612,7 @@ namespace DisneyBSDF{
                     extinction = CalculateExtinction(transmiianceColor, scatterDistance);
                     is_inside = !is_inside;
                 }else{
-                    flag = transmissionEvent;
+                    flag = scatterEvent;
                     wi = normalize(reflect(-wo,wm));
                 }
                 reflectance = G1v * baseColor;    
