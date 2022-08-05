@@ -67,6 +67,11 @@ MatInput const &attrs) {
     float mat_clearcoat = 0.0;
     float mat_clearcoatGloss = 0.0;
     float mat_opacity = 0.0;
+    float mat_specTrans = 0.0;
+    float mat_ior = 1.0;
+    float mat_scatterDistance = 0.0;
+    float mat_flatness = 0.0;
+    float mat_thin = 0.0;
     vec3  mat_normal = vec3(0.0f, 0.0f, 1.0f);
     vec3 mat_emission = vec3(0.0f, 0.0f,0.0f);
     //GENERATED_END_MARK
@@ -87,6 +92,12 @@ MatInput const &attrs) {
     mats.opacity = mat_opacity;
     mats.nrm = mat_normal;
     mats.emission = mat_emission;
+    mats.specTrans = mat_specTrans;
+    mats.ior = mat_ior;
+    mats.scatterDistance = mat_scatterDistance;
+    mats.flatness = mat_flatness;
+    mats.thin = mat_thin;
+
     return mats;
 }
 __forceinline__ __device__ float3 interp(float2 barys, float3 a, float3 b, float3 c)
@@ -389,6 +400,11 @@ extern "C" __global__ void __closesthit__radiance()
     auto clearcoat = mats.clearcoat;
     auto clearcoatGloss = mats.clearcoatGloss;
     auto opacity = mats.opacity;
+    auto flatness = mats.flatness;
+    auto specTrans = mats.specTrans;
+    auto scatterDistance = mats.scatterDistance;
+    auto ior = mats.ior;
+    auto thin = mats.thin;
 
     //discard fully opacity pixels
     prd->opacity = opacity;
@@ -438,13 +454,7 @@ extern "C" __global__ void __closesthit__radiance()
     DisneyBSDF::SurfaceEventFlags flag;
     DisneyBSDF::PhaseFuncions phaseFuncion;
     vec3 extinction;
-    vec3 reflectance;
-    
-    float flatness = 0.0f;
-    float specTrans = 0.9f;
-    float scatterDistance = 0.0f;
-    float ior = 1.5f;
-    bool thin = false;
+    vec3 reflectance = vec3(1.0f);
 
     while(DisneyBSDF::SampleDisney(
                 prd->seed,
@@ -468,7 +478,7 @@ extern "C" __global__ void __closesthit__radiance()
                 B,
                 N,
                 -normalize(ray_dir),
-                thin,
+                thin>0.5f,
                 prd->is_inside,
                 wi,
                 reflectance,
@@ -481,65 +491,10 @@ extern "C" __global__ void __closesthit__radiance()
         {
             rPdf = 1.0f;
             fPdf = 1.0f;
+            reflectance = vec3(1.0f);
         }
     pdf = rPdf;
 
-    
-//    float is_refl;
-//    float3 inDir = ray_dir;
-//    float3 wi = DisneyBRDF::sample_f(
-//                                prd->seed,
-//                                basecolor,
-//                                metallic,
-//                                subsurface,
-//                                specular,
-//                                roughness,
-//                                specularTint,
-//                                anisotropic,
-//                                sheen,
-//                                sheenTint,
-//                                clearcoat,
-//                                clearcoatGloss,
-//                                N,
-//                                make_float3(0,0,0),
-//                                make_float3(0,0,0),
-//                                -normalize(ray_dir),
-//                                is_refl);
-//
-//    float pdf = DisneyBRDF::pdf(basecolor,
-//                                metallic,
-//                                subsurface,
-//                                specular,
-//                                roughness,
-//                                specularTint,
-//                                anisotropic,
-//                                sheen,
-//                                sheenTint,
-//                                clearcoat,
-//                                clearcoatGloss,
-//                                N,
-//                                make_float3(0,0,0),
-//                                make_float3(0,0,0),
-//                                wi,
-//                                -normalize(ray_dir)
-//                                );
-//float3 f = DisneyBRDF::eval(basecolor,
-//                            metallic,
-//                            subsurface,
-//                            specular,
-//                            roughness,
-//                            specularTint,
-//                            anisotropic,
-//                            sheen,
-//                            sheenTint,
-//                            clearcoat,
-//                            clearcoatGloss,
-//                            N,
-//                            make_float3(0,0,0),
-//                            make_float3(0,0,0),
-//                            wi,
-//                            -normalize(ray_dir)
-//                            );
 float3 f = DisneyBSDF::EvaluateDisney(
         basecolor,
         metallic,
@@ -561,7 +516,7 @@ float3 f = DisneyBSDF::EvaluateDisney(
         T,
         B,
         N,
-        thin,
+        thin>0.5f,
         prd->is_inside,
         ffPdf,
         rrPdf
@@ -587,11 +542,20 @@ float3 f = DisneyBSDF::EvaluateDisney(
 
     }
     
-    prd->prob *= pdf/clamp(dot(make_float3(wi.x,wi.y,wi.z), N),0.0f,1.0f);
+    if(flag == DisneyBSDF::transmissionEvent || prd->is_inside){
+        prd->prob *= 1.0f;
+        prd->origin = P;
+        prd->direction = wi;
+        prd->countEmitted = false;
+        prd->attenuation *= reflectance;
+        return;
+    }
+
+    prd->prob *= 1.0f;
     prd->origin = P;
     prd->direction = wi;
     prd->countEmitted = false;
-    prd->attenuation *= f;
+    prd->attenuation *= reflectance;
     //}
 
     // {
@@ -660,7 +624,7 @@ float3 f = DisneyBSDF::EvaluateDisney(
                 T,
                 B,
                 N,
-                thin,
+                thin>0.5f,
                 false,
                 ffPdf,
                 rrPdf

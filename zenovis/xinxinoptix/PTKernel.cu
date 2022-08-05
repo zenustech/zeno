@@ -51,6 +51,7 @@ extern "C" __global__ void __raygen__rg()
         prd.seed         = seed;
         prd.opacity      = 0;
         prd.flags        = 0;
+        prd.is_inside    = false;
         int depth = 0;
         for( ;; )
         {
