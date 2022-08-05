@@ -36,6 +36,7 @@ private:
 private slots:
     void slot_OpenFileDialog();
     void updateFrame(const QString& action = "");
+    void onFrameDrawn(int frameid);
     void startView(QString filePath);
 
 private:

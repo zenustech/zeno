@@ -14,6 +14,7 @@
 #include <zeno/extra/GlobalState.h>
 #include <zeno/extra/GlobalComm.h>
 #include <zeno/extra/GlobalStatus.h>
+#include <zeno/utils/logger.h>
 
 
 ZenoPlayer::ZenoPlayer(ZENO_PLAYER_INIT_PARAM param, QWidget *parent) 
@@ -43,6 +44,9 @@ ZenoPlayer::ZenoPlayer(ZENO_PLAYER_INIT_PARAM param, QWidget *parent)
     }
 
     connect(m_pTimerUpVIew, SIGNAL(timeout()), this, SLOT(updateFrame()));
+
+    auto& inst = Zenovis::GetInstance();
+    bool ret = connect(&inst, SIGNAL(frameDrawn(int)), this, SLOT(onFrameDrawn(int)));
 
     if (!m_InitParam.sZsgPath.isEmpty()) {
         startView(m_InitParam.sZsgPath);
@@ -279,7 +283,7 @@ void ZenoPlayer::updateFrame(const QString &action)
     if(m_iFrameCount >= m_iMaxFrameCount)
     {
         m_iFrameCount = 0;
-        Zenovis::GetInstance().setCurrentFrameId(m_iFrameCount);    
+        Zenovis::GetInstance().setCurrentFrameId(m_iFrameCount);
         if (m_InitParam.bRecord) {
             m_InitParam.bRecord = false;
             std::string cmd;
@@ -302,6 +306,22 @@ void ZenoPlayer::updateFrame(const QString &action)
     m_pView->update();
     if(zeno::getSession().globalComm->maxPlayFrames()<=m_iFrameCount)
         return;
+    //if (m_InitParam.bRecord == true) {
+    //    QString path = QString("%1/%2.jpg").arg(m_InitParam.sPath).arg(m_iFrameCount, 7, 10, QLatin1Char('0'));
+    //    QString ext = QFileInfo(path).suffix();
+    //    int nsamples = m_InitParam.iSample;
+    //    if (!path.isEmpty()) {
+    //        //Zenovis::GetInstance().getSession()->do_screenshot(path.toStdString(), ext.toStdString(), nsamples);
+    //    }
+    //}
+
+    m_iFrameCount++;
+}
+
+void ZenoPlayer::onFrameDrawn(int frameid)
+{
+    //zeno::log_info("onFrameDrawn is {}", frameid);
+
     if (m_InitParam.bRecord == true) {
         QString path = QString("%1/%2.jpg").arg(m_InitParam.sPath).arg(m_iFrameCount, 7, 10, QLatin1Char('0'));
         QString ext = QFileInfo(path).suffix();
@@ -310,8 +330,6 @@ void ZenoPlayer::updateFrame(const QString &action)
             Zenovis::GetInstance().getSession()->do_screenshot(path.toStdString(), ext.toStdString(), nsamples);
         }
     }
-
-    m_iFrameCount++;
 }
 
 void ZenoPlayer::startView(QString filePath) {

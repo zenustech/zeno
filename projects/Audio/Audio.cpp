@@ -135,17 +135,22 @@ namespace zeno {
             std::vector<double> samples;
             samples.resize(duration_count);
             for (auto i = 0; i < duration_count; i++) {
-                if (start_index + i >= wave->size()) {
-                    break;
-                }
-                samples[i] = wave->attr<float>("value")[start_index + i];
+//                if (start_index + i >= wave->size()) {
+//                    break;
+//                }
+                samples[i] = wave->attr<float>("value")[min((start_index + i), wave->size()-1)];
+                
+                //if (start_index + i >= wave->size()) {
+                //    break;
+                //}
+                //samples[i] = wave->attr<float>("value")[start_index + i];
             }
             Aquila::SpectrumType spectrums = fft->fft(samples.data());
 
             {
                 double E = 0;
                 for (const auto& spectrum: spectrums) {
-                    E += spectrum.real();
+                    E += spectrum.real() * spectrum.real() + spectrum.imag() * spectrum.imag();
                 }
                 E /= duration_count;
                 H.push_back(E);
