@@ -127,8 +127,8 @@ public:
     bool updateSocketNameNotDesc(const QString &id, SOCKET_UPDATE_INFO info, const QModelIndex &subGpIdx, bool enableTransaction = false) override;
 
     bool hasDescriptor(const QString& nodeName) const;
-    void beginTransaction(const QString& name);
-	void endTransaction();
+    void beginTransaction(const QString& name) override;
+	void endTransaction() override;
     void removeLinks(const QList<QPersistentModelIndex>& info, const QModelIndex& subGpIdx, bool enableTransaction = false);
     void updateSocket(const QString& id, SOCKET_UPDATE_INFO info, const QModelIndex& subGpIdx, bool enableTransaction = false);
     void updateLinkInfo(const QPersistentModelIndex& linkIdx, const LINK_UPDATE_INFO& info, bool enableTransaction = false);
