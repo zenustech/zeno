@@ -1,4 +1,4 @@
-﻿#include "../style/zenostyle.h"
+#include "../style/zenostyle.h"
 #include "../style/zstyleoption.h"
 #include "ztoolbutton.h"
 

@@ -583,8 +583,7 @@ struct TraceVec3FieldOneStep : INode {
         // 获取 name 属性值的引用
         auto prim = get_input<PrimitiveObject>("prim");
         auto name = get_input2<std::string>("name");
-        auto &it = prim->attr(name);
-        std::vector<vec3f>& attr = std::get<std::vector<vec3f>>(it);
+        auto &attr = prim->attr<vec3f>(name);
 
         // OneStep 之前点和线的数量
         int oldVertsCount = prim->size();
@@ -647,8 +646,7 @@ struct PrimCreatOrSetAttr : zeno::INode {
                     prim->add_attr<float>(name, fillvalue);
                 } else {
                     // 如果这个属性已经存在，拿到存放这个属性的值的容器，
-                    auto &val = prim->attr(name);
-                    std::vector<float>& attr_arr = std::get<std::vector<float>>(val);
+                    auto &attr_arr = prim->attr<float>(name);
 
                     // 重新设置这个容器中的数据
 #pragma omp parallel for
@@ -672,8 +670,7 @@ struct PrimCreatOrSetAttr : zeno::INode {
                     prim->add_attr<vec3f>(name, fillvalue);
                 } else {
                     // 如果这个属性已经存在，拿到存放这个属性的值的容器，
-                    auto &val = prim->attr(name);
-                    std::vector<vec3f>& attr_arr = std::get<std::vector<vec3f>>(val);
+                    auto &attr_arr = prim->attr<vec3f>(name);
 
                     // 重新设置这个容器中的数据
 #pragma omp parallel for

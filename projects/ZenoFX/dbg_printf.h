@@ -8,5 +8,5 @@
 //#endif
 
 
-#define dbg_printf(...) printf("[ZenoFX] " __VA_ARGS__)
-#define err_printf(...) do { printf("[ZenoFX] " __VA_ARGS__); throw ::zeno::makeError("ZFX error, please see error message above!"); } while (0)
+#define dbg_printf(...) //printf("[ZenoFX] " __VA_ARGS__)
+#define err_printf(...) //do { printf("[ZenoFX] " __VA_ARGS__); throw ::zeno::makeError("ZFX error, please see error message above!"); } while (0)
