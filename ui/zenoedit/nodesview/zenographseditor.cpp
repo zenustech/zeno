@@ -598,8 +598,28 @@ void ZenoGraphsEditor::onMenuActionTriggered(QAction* pAction)
         if (ok) {
             text.replace('\\', '/');
             settings.setValue("nas_loc", text);
-            // refresh settings, needed in single-process mode
+            // refresh settings (zeno::setConfigVariable), only needed in single-process mode
             startUp();
+        }
+    }
+    else if (text == tr("Set ZENCACHE"))
+    {
+        //QSettings settings(QSettings::UserScope, "Zenus Inc.", "zeno2");
+        QSettings settings("ZenusTech", "Zeno");
+        QString v = settings.value("zencachedir").toString();
+        QString v2 = settings.value("zencachenum").toString();
+
+        bool ok;
+        QString text = QInputDialog::getText(this, tr("Set ZENCACHE directory"),
+                                             tr("ZENCACHEDIR"), QLineEdit::Normal,
+                                             v, &ok);
+        QString text2 = QInputDialog::getText(this, tr("Set ZENCACHE count"),
+                                             tr("ZENCACHENUM"), QLineEdit::Normal,
+                                             v2, &ok);
+        if (ok) {
+            text.replace('\\', '/');
+            settings.setValue("zencachedir", text);
+            settings.setValue("zencachenum", text2);
         }
     }
 }

@@ -581,7 +581,7 @@ QSize DisplayWidget::sizeHint() const
     return ZenoStyle::dpiScaledSize(QSize(12, 400));
 }
 
-void DisplayWidget::updateFrame(const QString &action)
+void DisplayWidget::updateFrame(const QString &action) // cihou optix
 {
     if (m_mainWin && m_mainWin->inDlgEventLoop())
         return;
@@ -678,7 +678,7 @@ void DisplayWidget::onRecord()
 
     if (ptr->maxPlayFrames() == 0) {
         //run.
-        QMessageBox::information(nullptr, "Zeno", tr("run the graph before recording"), QMessageBox::Ok);
+        QMessageBox::information(nullptr, "Zeno", tr("Run the graph before recording"), QMessageBox::Ok);
         return;
     }
 

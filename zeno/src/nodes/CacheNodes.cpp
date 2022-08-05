@@ -112,7 +112,7 @@ ZENO_DEFNODE(CacheLastFrameBegin)(
         "lastFrame",
     }, /* params: */ {
     }, /* category: */ {
-        "control",
+        "deprecated",
     } }
 );
 
@@ -146,7 +146,7 @@ ZENO_DEFNODE(CacheLastFrameEnd)(
         "output",
     }, /* params: */ {
     }, /* category: */ {
-        "control",
+        "deprecated",
     } }
 );
 
