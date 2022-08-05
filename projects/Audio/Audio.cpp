@@ -139,6 +139,11 @@ namespace zeno {
 //                    break;
 //                }
                 samples[i] = wave->attr<float>("value")[min((start_index + i), wave->size()-1)];
+                
+                //if (start_index + i >= wave->size()) {
+                //    break;
+                //}
+                //samples[i] = wave->attr<float>("value")[start_index + i];
             }
             Aquila::SpectrumType spectrums = fft->fft(samples.data());
 
