@@ -30,6 +30,7 @@ struct RadiancePRD
     float3       origin;
     float3       direction;
     bool         passed;
+    bool         is_inside;
     float        opacity;
     float        prob;
     float        prob2;
