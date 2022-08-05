@@ -30,6 +30,7 @@ class Zenovis : public QObject
 
 signals:
     void frameUpdated(int);
+    void frameDrawn(int);
     void perspectiveUpdated(PerspectiveInfo);
 
 public slots:
