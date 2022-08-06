@@ -459,16 +459,30 @@ void ZenoGraphsEditor::onLogInserted(const QModelIndex& parent, int first, int l
                 const SEARCH_RESULT& res = results[i];
                 const QString &subgName = res.subgIdx.data(ROLE_OBJNAME).toString();
                 const QString &objId = res.targetIdx.data(ROLE_OBJID).toString();
-                activateTab(subgName, "", objId, true);
 
-                if (i == results.length() - 1)
-                    break;
+                static bool bFocusOnError = false;
+                if (bFocusOnError)
+                {
+                    activateTab(subgName, "", objId, true);
+                    if (i == results.length() - 1)
+                        break;
 
-                QMessageBox msgbox(QMessageBox::Question, "", tr("next one?"), QMessageBox::Yes | QMessageBox::No);
-                int ret = msgbox.exec();
-                if (ret & QMessageBox::Yes) {
-                } else {
-                    break;
+                    QMessageBox msgbox(QMessageBox::Question, "", tr("next one?"), QMessageBox::Yes | QMessageBox::No);
+                    int ret = msgbox.exec();
+                    if (ret & QMessageBox::Yes) {
+                    }
+                    else {
+                        break;
+                    }
+                }
+                else
+                {
+                    const QModelIndex& subgIdx = m_model->index(subgName);
+                    ZenoSubGraphScene* pScene = qobject_cast<ZenoSubGraphScene*>(m_model->scene(subgIdx));
+                    if (pScene)
+                    {
+                        pScene->markError(objId);
+                    }
                 }
             }
         }

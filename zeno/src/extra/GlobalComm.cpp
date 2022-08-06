@@ -163,6 +163,7 @@ ZENO_API GlobalComm::ViewObjects const &GlobalComm::getViewObjects() {
 }
 
 ZENO_API bool GlobalComm::isFrameCompleted(int frameid) const {
+    frameid -= beginFrameNumber;
     if (frameid < 0 || frameid >= m_frames.size())
         return false;
     return m_frames[frameid].b_frame_completed;

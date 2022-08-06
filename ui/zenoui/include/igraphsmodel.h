@@ -89,6 +89,8 @@ public:
 	virtual void clearDirty() = 0;
 	virtual void collaspe(const QModelIndex& subgIdx) = 0;
 	virtual void expand(const QModelIndex& subgIdx) = 0;
+    virtual void beginTransaction(const QString& name) = 0;
+    virtual void endTransaction() = 0;
 
 signals:
 	void clearLayout2();

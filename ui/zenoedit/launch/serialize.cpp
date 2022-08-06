@@ -163,9 +163,9 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
         if (opts & OPT_ONCE) {
             AddStringList({ "addNode", "HelperOnce", noOnceIdent }, writer);
             for (OUTPUT_SOCKET output : outputs) {
-                //if (output.info.name == "DST" && output.linkIndice.isEmpty()) continue;
                 AddStringList({ "bindNodeInput", noOnceIdent, output.info.name, ident, output.info.name }, writer);
             }
+
             AddStringList({ "completeNode", ident }, writer);
             ident = noOnceIdent;//must before OPT_VIEW branch
         }

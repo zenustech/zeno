@@ -93,6 +93,16 @@ QPointF ZenoTempLink::getDstPos() const
     return m_bfixInput ? m_fixedPos : m_floatingPos;
 }
 
+void ZenoTempLink::setOldLink(const QPersistentModelIndex& link)
+{
+    m_oldLink = link;
+}
+
+QPersistentModelIndex ZenoTempLink::oldLink() const
+{
+    return m_oldLink;
+}
+
 void ZenoTempLink::paint(QPainter* painter, QStyleOptionGraphicsItem const* styleOptions, QWidget* widget)
 {
     painter->save();
@@ -174,6 +184,8 @@ ZenoFullLink::ZenoFullLink(const QPersistentModelIndex& idx, ZenoNode* outNode, 
 
 void ZenoFullLink::onInSocketPosChanged()
 {
+    if (!m_index.isValid())
+        return;
     ZenoNode* pNode = qobject_cast<ZenoNode*>(sender());
     ZASSERT_EXIT(pNode);
     const QString& inSock = m_index.data(ROLE_INSOCK).toString();
@@ -182,6 +194,8 @@ void ZenoFullLink::onInSocketPosChanged()
 
 void ZenoFullLink::onOutSocketPosChanged()
 {
+    if (!m_index.isValid())
+        return;
     ZenoNode* pNode = qobject_cast<ZenoNode *>(sender());
     ZASSERT_EXIT(pNode);
     const QString& outSock = m_index.data(ROLE_OUTSOCK).toString();
