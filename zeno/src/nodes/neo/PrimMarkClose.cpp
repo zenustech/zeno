@@ -49,7 +49,7 @@ ZENDEFNODE(PrimMarkClose, {
     {
     {"PrimitiveObject", "prim"},
     {"float", "distance", "0.00001"},
-    {"string", "tagAttr", "tag"},
+    {"string", "tagAttr", "weldtag"},
     },
     {
     {"PrimitiveObject", "prim"},
@@ -88,10 +88,49 @@ struct PrimMarkIndex : INode {
 ZENDEFNODE(PrimMarkIndex, {
     {
     {"PrimitiveObject", "prim"},
-    {"string", "tagAttr", "tag"},
+    {"string", "tagAttr", "index"},
     {"enum int float", "type", "int"},
     {"int", "base", "0"},
     {"int", "step", "1"},
+    },
+    {
+    {"PrimitiveObject", "prim"},
+    },
+    {
+    },
+    {"primitive"},
+});
+
+struct PrimCheckTagInRange : INode {
+    virtual void apply() override {
+        auto prim = get_input<PrimitiveObject>("prim");
+        auto tagAttr = get_input2<std::string>("tagAttr");
+        int beg = get_input2<int>("beg");
+        int end = get_input2<int>("end");
+        int trueVal = get_input2<int>("trueVal");
+        int falseVal = get_input2<int>("falseVal");
+        bool endExcluded = get_input2<bool>("endExcluded");
+        if (endExcluded) end -= 1;
+
+        auto &tag = prim->verts.attr<int>(tagAttr);
+        parallel_for((size_t)0, tag.size(), [&] (size_t i) {
+            tag[i] = beg <= tag[i] && tag[i] <= end ? trueVal : falseVal;
+        });
+
+        set_output("prim", std::move(prim));
+    }
+};
+
+
+ZENDEFNODE(PrimCheckTagInRange, {
+    {
+    {"PrimitiveObject", "prim"},
+    {"string", "tagAttr", "index"},
+    {"int", "beg", "0"},
+    {"int", "end", "100"},
+    {"bool", "endExcluded", "0"},
+    {"int", "trueVal", "1"},
+    {"int", "falseVal", "0"},
     },
     {
     {"PrimitiveObject", "prim"},

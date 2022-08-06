@@ -35,6 +35,9 @@ struct PacketProc {
     int globalCommNeedClean = 0;
     int globalCommNeedNewFrame = 0;
 
+    std::string fcPath = {};
+    int fcMax = 0;
+
     void onStart() {
         globalCommNeedClean = 1;
         globalCommNeedNewFrame = 0;
@@ -50,12 +53,13 @@ struct PacketProc {
 
     void clearGlobalIfNeeded() {
         if (globalCommNeedClean) {
-            zeno::log_debug("PacketProc::clearGlobalStateIfNeeded: globalStateNeedClean");
+            //zeno::log_debug("PacketProc::clearGlobalStateIfNeeded: globalStateNeedClean");
             zeno::getSession().globalComm->clearState();
+            zeno::getSession().globalComm->frameCache(fcPath, fcMax);
             globalCommNeedClean = 0;
         }
         if (globalCommNeedNewFrame) {
-            zeno::log_debug("PacketProc::clearGlobalStateIfNeeded: globalCommNeedNewFrame");
+            //zeno::log_debug("PacketProc::clearGlobalStateIfNeeded: globalCommNeedNewFrame");
             zeno::getSession().globalComm->newFrame();
             globalCommNeedNewFrame = 0;
         }
@@ -83,6 +87,14 @@ struct PacketProc {
             zeno::getSession().globalComm->finishFrame();
             //need to notify the GL to update.
             zenoApp->getMainWindow()->updateViewport(QString::fromStdString(action));
+
+        //} else if (action == "frameCache") {
+            //auto pos = objKey.find('!');
+            //if (pos != std::string::npos) {
+                //int maxCachedFrames = std::stoi(objKey.substr(0, pos));
+                //std::string path = objKey.substr(pos + 1);
+                //zeno::getSession().globalComm->frameCache(path, maxCachedFrames);
+            //}
 
         } else if (action == "frameRange") {
             auto pos = objKey.find(':');
@@ -262,6 +274,12 @@ void viewDecodeFinish()
 {
     viewDecodeData.finish();
     packetProc.onFinish();
+}
+
+void viewDecodeSetFrameCache(const char *path, int gcmax)
+{
+    packetProc.fcPath = std::string(path);
+    packetProc.fcMax = gcmax;
 }
 
 void viewDecodeClear()

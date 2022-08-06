@@ -185,7 +185,7 @@ ZENDEFNODE(PrimitiveLineSimpleLink, {
 });
 
 
-struct PrimitiveSplitEdges : zeno::INode {
+struct PrimitiveSplitEdges : zeno::INode { // TODO: use PrimSplitFaces to replace this node
   virtual void apply() override {
     auto prim = get_input<PrimitiveObject>("prim");
 
@@ -252,9 +252,30 @@ ZENDEFNODE(PrimitiveFaceToEdges,
     }, /* params: */ {
     {"bool", "clearFaces", "1"},
     }, /* category: */ {
-    "primitive",
+    "deprecated",
     }});
 
+
+struct PrimitiveFlipPoly : zeno::INode {
+    virtual void apply() override {
+        auto surfIn = get_input<zeno::PrimitiveObject>("prim");
+        for(size_t i = 0;i < surfIn->tris.size();++i){
+            auto& tri = surfIn->tris[i];
+            size_t tri_idx_tmp = tri[1];
+            tri[1] = tri[2];
+            tri[2] = tri_idx_tmp;
+        }
+
+        set_output("primOut",surfIn);
+    }
+};
+
+ZENDEFNODE(PrimitiveFlipPoly,{
+    {{"prim"}},
+    {"primOut"},
+    {},
+    {"deprecated"},
+});
 
 
 }

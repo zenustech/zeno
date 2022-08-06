@@ -14,6 +14,7 @@ ZENO_API void primSepTriangles(PrimitiveObject *prim, bool smoothNormal = true, 
 //ZENO_API void primSmoothNormal(PrimitiveObject *prim, bool isFlipped = false);
 
 ZENO_API void primCalcNormal(PrimitiveObject *prim, float flip = 1.0f, std::string nrmAttr = "nrm");
+ZENO_API void primFlipFaces(PrimitiveObject *prim);
 ZENO_API void primDecodeUVs(PrimitiveObject *prim);
 ZENO_API void primLoopUVsToVerts(PrimitiveObject *prim);
 
@@ -23,7 +24,7 @@ ZENO_API std::shared_ptr<PrimitiveObject> primDuplicate(PrimitiveObject *parsPri
 ZENO_API void primLineSort(PrimitiveObject *prim, bool reversed = false);
 ZENO_API void primLineDistance(PrimitiveObject *prim, std::string resAttr, int start = 0);
 
-ZENO_API void primFilterVerts(PrimitiveObject *prim, std::string tagAttr, int tagValue, bool isInversed = false);
+ZENO_API void primFilterVerts(PrimitiveObject *prim, std::string tagAttr, int tagValue, bool isInversed = false, std::string revampAttrO = {});
 
 ZENO_API void primMarkIsland(PrimitiveObject *prim, std::string tagAttr);
 ZENO_API std::vector<std::shared_ptr<PrimitiveObject>> primUnmergeVerts(PrimitiveObject *prim, std::string tagAttr);

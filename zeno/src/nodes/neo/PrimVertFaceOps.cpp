@@ -179,7 +179,7 @@ struct PrimFacesAttrToVerts : INode {
         auto attr = get_input2<std::string>("faceAttr");
         auto attrOut = get_input2<std::string>("vertAttr");
         auto method = get_input2<std::string>("method");
-        auto deflVal = get_input2<float>("deflVal");
+        auto deflValPtr = get_input<NumericObject>("deflVal");
 
         std::visit([&] (auto faceTy) {
             auto &prim_faces = faceTy.from_prim(prim.get());
@@ -189,16 +189,17 @@ struct PrimFacesAttrToVerts : INode {
                 auto &vertsArr = prim->verts.add_attr<T>(attrOut);
 
                 std::vector<std::vector<int>> v2f(prim->verts.size());
-                for (int i = 0; i < prim_faces.size(); i++) {
+                for (int i = 0; i < prim_faces.size(); i++) { // todo: parallel_push_back_multi
                     faceTy.foreach_ind(prim.get(), prim_faces[i], [&] (int ind) {
                         v2f[ind].push_back(i);
                     });
                 }
 
+                auto deflVal = deflValPtr->get<T>();
                 std::visit([&] (auto reducerTy) {
                     for (int i = 0; i < prim->verts.size(); i++) {
                         if (v2f[i].empty()) {
-                            vertsArr[i] = T(deflVal);
+                            vertsArr[i] = deflVal;
                         } else {
                             decltype(reducerTy) reducer;
                             for (auto l: v2f[i]) {

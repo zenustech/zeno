@@ -98,6 +98,19 @@ void ZTcpServer::onNewConnection()
     }
     connect(m_tcpSocket, SIGNAL(readyRead()), this, SLOT(onReadyRead()));
     connect(m_tcpSocket, SIGNAL(disconnected()), this, SLOT(onDisconnect()));
+
+    QSettings settings("ZenusTech", "Zeno");
+    auto cachedir = settings.value("zencachedir").toString();
+    auto cachenum = settings.value("zencachenum").toString();
+    int cnum = 0;
+    if (!cachenum.isEmpty()) {  // set from zhouhang-style panel, by QSettings
+        bool ok = false;
+        int t = cachenum.toInt(&ok);
+        if (ok) cnum = t;
+        else zeno::log_warn("failed to parse ZENCACHENUM: {}", cachenum.toStdString());
+    }
+    auto cdir = cachedir.toStdString();
+    viewDecodeSetFrameCache(cdir.c_str(), cnum);
     viewDecodeClear();
 }
 

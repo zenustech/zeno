@@ -1,6 +1,6 @@
 #include <zeno/extra/assetDir.h>
-#include <zeno/utils/filesystem.h>
 #include <zeno/utils/Error.h>
+#include <filesystem>
 #include <iostream>
 #include <map>
 
@@ -38,15 +38,15 @@ ZENO_API void setExecutableDir(std::string dir) {
 }
 
 ZENO_API std::string getAssetDir(std::string dir) {
-    //dir = fs::absolute(dir).string();
+    //dir = std::filesystem::absolute(dir).string();
     cihouWinPath(dir);
-    if (fs::exists(dir))
+    if (std::filesystem::exists(dir))
         return dir;
 #ifdef _WIN32
     if (auto i = dir.find(':'); i != std::string::npos)
         dir[i] = '_';
 #endif
-    if (auto edir = g_assetRoot + dir; fs::exists(edir))
+    if (auto edir = g_assetRoot + dir; std::filesystem::exists(edir))
         return edir;
     throw makeError("cannot find asset directory: " + dir);
 }

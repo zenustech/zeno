@@ -17,6 +17,7 @@ struct INodeClass;
 struct Scene;
 struct Session;
 struct GlobalState;
+struct TempNodeCaller;
 
 struct INode {
 public:
@@ -58,7 +59,7 @@ protected:
     template <class T>
     std::shared_ptr<T> get_input(std::string const &id) const {
         auto obj = get_input(id);
-        return safe_dynamic_cast<T>(std::move(obj), "input socket `" + id + "`");
+        return safe_dynamic_cast<T>(std::move(obj), "input socket `" + id + "` of node `" + myname + "`");
     }
 
     template <class T>
@@ -76,7 +77,7 @@ protected:
 
     template <class T>
     T get_input2(std::string const &id) const {
-        return objectToLiterial<T>(get_input(id), "input socket `" + id + "`");
+        return objectToLiterial<T>(get_input(id), "input socket `" + id + "` of node `" + myname + "`");
     }
 
     template <class T>
@@ -102,6 +103,8 @@ protected:
     T get_input2(std::string const &id, T const &defl) const {
         return has_input(id) ? get_input2<T>(id) : defl;
     }
+
+    ZENO_API TempNodeCaller temp_node(std::string const &id);
 };
 
 }
