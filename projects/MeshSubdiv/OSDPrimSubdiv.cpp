@@ -132,7 +132,7 @@ static void osdPrimSubdiv(PrimitiveObject *prim, int levels, std::string edgeCre
     const int maxlevel=levels;
     if (maxlevel <= 0 || !prim->verts.size()) return;
 
-    if (prim->loops.size() && prim->loop_uvs.size() <= prim->loops.size())
+    if (prim->loops.size() && prim->loop_uvs.size())
         hasLoopUVs = false;
 
         //nCoarseVerts=0,

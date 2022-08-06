@@ -8,13 +8,13 @@ namespace zeno {
 
 // 'smart loop_uvs' to 'qianqiang loop.attr(uv)'
 ZENO_API void primDecodeUVs(PrimitiveObject *prim) {
-    if (prim->loops.size() && prim->loop_uvs.size() <= prim->loops.size()) {
+    if (prim->loops.size() && prim->loop_uvs.size()) {
         auto &loop_uvs = prim->loop_uvs;
         auto &attr_uv = prim->loops.add_attr<vec3f>("uv"); // todo: support vec2f in attr...
         /*attr_uv.resize(prim->loop_uvs.size());*/
         size_t n = std::min(loop_uvs.size(), attr_uv.size());
         if (n == 0) zeno::log_warn("primDecodeUVs: no loops but have loop_uvs");
-        if (prim->uvs.size() == 0) zeno::log_error("primDecodeUVs: no uvs but have loop_uvs");
+        else if (prim->uvs.size() == 0) zeno::log_error("primDecodeUVs: no uvs but have loop_uvs");
         parallel_for(n, [&] (size_t i) {
             auto uv = prim->uvs[loop_uvs[i]];
             attr_uv[i] = {uv[0], uv[1], 0};
@@ -27,7 +27,7 @@ ZENO_API void primDecodeUVs(PrimitiveObject *prim) {
 
 // 'smart loop_uvs' to 'veryqianqiang vert.attr(uv)'
 ZENO_API void primLoopUVsToVerts(PrimitiveObject *prim) {
-    if (prim->loops.size() && prim->loop_uvs.size() <= prim->loops.size()) {
+    if (prim->loops.size() && prim->loop_uvs.size()) {
         auto &loop_uvs = prim->loop_uvs;
         auto &vert_uv = prim->verts.add_attr<vec3f>("uv"); // todo: support vec2f in attr...
         /*attr_uv.resize(prim->loop_uvs.size());*/

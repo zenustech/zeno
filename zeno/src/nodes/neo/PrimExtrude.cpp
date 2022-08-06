@@ -8,6 +8,7 @@
 #include <zeno/extra/TempNode.h>
 #include <zeno/core/INode.h>
 #include <zeno/zeno.h>
+#include <numeric>
 #include <set>
 
 namespace zeno {
@@ -24,9 +25,12 @@ struct PrimExtrude : INode {
         auto sourceMaskAttrO = get_input2<std::string>("sourceMaskAttrO");
         auto autoFlipFace = get_input2<bool>("autoFlipFace");
         auto autoFindEdges = get_input2<bool>("autoFindEdges");
+        auto averagedExtrude = get_input2<bool>("averagedExtrude");
 
         auto prim2 = std::make_shared<PrimitiveObject>(*prim);
 
+        bool flipNewFace = autoFlipFace && extrude < 0;
+        bool flipOldFace = autoFlipFace && extrude > 0;
         if (autoFindEdges && !maskAttr.empty()) {
             AttrVector<vec2i> oldlines = std::move(prim2->lines);
             primWireframe(prim2.get(), false);
@@ -64,6 +68,13 @@ struct PrimExtrude : INode {
             std::string tmpNormAttr = "%%extrude2";
             primCalcNormal(prim2.get(), 1.0f, tmpNormAttr);
             p2norms = std::move(prim2->verts.attr<vec3f>(tmpNormAttr));
+            if (averagedExtrude) {
+                auto avgdir = std::reduce(p2norms.begin(), p2norms.end(), vec3f(0));
+                avgdir = normalizeSafe(avgdir);
+                offset += extrude * avgdir;
+                extrude = 0;
+                p2norms.clear();
+            }
             prim2->verts.erase_attr(tmpNormAttr);
         }
 
@@ -76,8 +87,6 @@ struct PrimExtrude : INode {
             //prim2->verts.erase_attr(tmpInsetAttr);
         }
 
-        bool flipNewFace = autoFlipFace && extrude < 0;
-        bool flipOldFace = autoFlipFace && extrude > 0;
         if (flipNewFace) {
             primFlipFaces(prim2.get());
         }
@@ -202,6 +211,7 @@ ZENDEFNODE(PrimExtrude, {
     {"string", "sourceMaskAttrO", ""},
     {"bool", "autoFlipFace", "1"},
     {"bool", "autoFindEdges", "1"},
+    {"bool", "averagedExtrude", "0"},
     },
     {
     {"PrimitiveObject", "prim"},
