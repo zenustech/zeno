@@ -46,7 +46,7 @@ struct PrimForceTrail : INode {
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
         auto trailPrim = get_input<PrimitiveObject>("trailPrim");
-        auto forceAttr = get_input2<std::string>("forceAttr");
+        auto forceAttr = get_input2<std::string>("forceAttrO");
         auto attractForce = get_input2<float>("attractForce");
         auto driftForce = get_input2<float>("driftForce");
 
@@ -113,7 +113,7 @@ ZENDEFNODE(PrimForceTrail, {
     {
     {"PrimitiveObject", "prim"},
     {"PrimitiveObject", "trailPrim"},
-    {"string", "forceAttr", "force"},
+    {"string", "forceAttrO", "force"},
     {"float", "attractForce", "0.5"},
     {"float", "driftForce", "1"},
     {"", "attractUDFCurve", ""},
