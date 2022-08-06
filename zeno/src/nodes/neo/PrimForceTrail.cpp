@@ -8,7 +8,6 @@
 #include <zeno/utils/variantswitch.h>
 #include <zeno/extra/TempNode.h>
 #include <zeno/core/INode.h>
-#include <zeno/utils/zeno_p.h>
 #include <zeno/zeno.h>
 #include <limits>
 
@@ -46,7 +45,7 @@ struct PrimForceTrail : INode {
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
         auto trailPrim = get_input<PrimitiveObject>("trailPrim");
-        auto forceAttr = get_input2<std::string>("forceAttrO");
+        auto forceAttr = get_input2<std::string>("forceAttr");
         auto attractForce = get_input2<float>("attractForce");
         auto driftForce = get_input2<float>("driftForce");
 
@@ -113,7 +112,7 @@ ZENDEFNODE(PrimForceTrail, {
     {
     {"PrimitiveObject", "prim"},
     {"PrimitiveObject", "trailPrim"},
-    {"string", "forceAttrO", "force"},
+    {"string", "forceAttr", "force"},
     {"float", "attractForce", "0.5"},
     {"float", "driftForce", "1"},
     {"", "attractUDFCurve", ""},

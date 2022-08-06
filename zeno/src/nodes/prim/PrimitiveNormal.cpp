@@ -122,7 +122,7 @@ ZENO_API void primCalcNormal(zeno::PrimitiveObject* prim, float flip, std::strin
 #pragma omp parallel for
 #endif
     for (size_t i = 0; i < nrm.size(); i++) {
-        nrm[i] = flip * normalize(nrm[i]);
+        nrm[i] = flip * normalizeSafe(nrm[i]);
     }
 }
 struct PrimitiveCalcNormal : zeno::INode {

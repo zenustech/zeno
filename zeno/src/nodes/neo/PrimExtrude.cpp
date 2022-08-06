@@ -23,22 +23,59 @@ struct PrimExtrude : INode {
         auto bridgeMaskAttrO = get_input2<std::string>("bridgeMaskAttrO");
         auto sourceMaskAttrO = get_input2<std::string>("sourceMaskAttrO");
         auto autoFlipFace = get_input2<bool>("autoFlipFace");
+        auto autoFindEdges = get_input2<bool>("autoFindEdges");
 
         auto prim2 = std::make_shared<PrimitiveObject>(*prim);
+
+        if (autoFindEdges && !maskAttr.empty()) {
+            AttrVector<vec2i> oldlines = std::move(prim2->lines);
+            primWireframe(prim2.get(), false);
+            prim2->edges = std::move(prim2->lines);
+            prim2->lines = std::move(oldlines);
+        }
+
         std::vector<int> oldinds;
-        std::vector<vec3f> p2norms;
         if (!maskAttr.empty()) {
             std::string tmpOldindAttr = "%%extrude1";
             primFilterVerts(prim2.get(), maskAttr, 0, true, tmpOldindAttr);
             oldinds.swap(prim2->verts.attr<int>(tmpOldindAttr));
             prim2->verts.erase_attr(tmpOldindAttr);
         }
+
+        //{
+            //std::vector<int> wirelinesrevamp;
+            //linesrevamp.reserve(wirelines.size());
+            //for (int i = 0; i < wirelines.size(); i++) {
+                //auto &line = wirelines[i];
+                //if (mock(line[0]) && mock(line[1]))
+                    //wirelinesrevamp.emplace_back(i);
+            //}
+            //for (int i = 0; i < wirelinesrevamp.size(); i++) {
+                //wirelines[i] = wirelines[wirelinesrevamp[i]];
+            //}
+            //wirelines.foreach_attr<AttrAcceptAll>([&] (auto const &key, auto &arr) {
+                //revamp_vector(arr, wirelinesrevamp);
+            //});
+            //wirelines.resize(linesrevamp.size());
+        //}
+
+        std::vector<vec3f> p2norms;
         if (extrude != 0) {
             std::string tmpNormAttr = "%%extrude2";
             primCalcNormal(prim2.get(), 1.0f, tmpNormAttr);
-            p2norms.swap(prim2->verts.attr<vec3f>(tmpNormAttr));
+            p2norms = std::move(prim2->verts.attr<vec3f>(tmpNormAttr));
             prim2->verts.erase_attr(tmpNormAttr);
         }
+
+        std::vector<vec3f> p2inset;
+        if (inset != 0) {
+            p2inset.resize(prim2->verts.size());
+            //std::string tmpInsetAttr = "%%extrude3";
+            //primCalcInsetDir(prim2.get(), 1.0f, tmpInsetAttr);
+            //p2inset = std::move(prim2->verts.attr<vec3f>(tmpInsetAttr));
+            //prim2->verts.erase_attr(tmpInsetAttr);
+        }
+
         bool flipNewFace = autoFlipFace && extrude < 0;
         bool flipOldFace = autoFlipFace && extrude > 0;
         if (flipNewFace) {
@@ -81,6 +118,9 @@ struct PrimExtrude : INode {
                 append(prim2->loops[i - 1], prim2->loops[i]);
             }
             append(prim2->loops[start + len - 1], prim2->loops[start]);
+        }
+        for (auto const &ind: prim2->edges) {
+            segments.emplace(vec2i(ind[0], ind[1]), false); // if fail then just let it fail
         }
 
         //if (avgoffset != 0) {
@@ -129,9 +169,17 @@ struct PrimExtrude : INode {
             prim->quads.push_back(quad);
         }
 
-        if (extrude != 0) {
+        if (extrude != 0 && inset != 0) {
+            for (int i = 0; i < p2size; i++) {
+                prim->verts[i + p1size] += p2norms[i] * extrude + p2inset[i] * inset + offset;
+            }
+        } else if (extrude != 0) {
             for (int i = 0; i < p2size; i++) {
                 prim->verts[i + p1size] += p2norms[i] * extrude + offset;
+            }
+        } else if (inset != 0) {
+            for (int i = 0; i < p2size; i++) {
+                prim->verts[i + p1size] += p2inset[i] * inset + offset;
             }
         } else if (offset[0] != 0 || offset[1] != 0 || offset[2] != 0) {
             for (int i = 0; i < p2size; i++) {
@@ -153,6 +201,7 @@ ZENDEFNODE(PrimExtrude, {
     {"string", "bridgeMaskAttrO", ""},
     {"string", "sourceMaskAttrO", ""},
     {"bool", "autoFlipFace", "1"},
+    {"bool", "autoFindEdges", "1"},
     },
     {
     {"PrimitiveObject", "prim"},

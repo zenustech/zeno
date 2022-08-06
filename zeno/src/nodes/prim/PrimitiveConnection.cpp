@@ -135,11 +135,19 @@ struct PrimitiveClearConnect : zeno::INode {
     auto prim = get_input<PrimitiveObject>("prim");
     auto type = get_input<StringObject>("type")->value;
     
+    if(type=="points" || type=="all")
+      prim->points.clear();
     if(type=="edges" || type=="all")
       prim->lines.clear();
-    if(type=="faces" || type=="all"){
+    if(type=="faces" || type=="tris" || type=="all"){
       prim->tris.clear();
+    }
+    if(type=="faces" || type=="quads" || type=="all"){
       prim->quads.clear();
+    }
+    if(type=="faces" || type=="polys" || type=="all"){
+      prim->polys.clear();
+      prim->loops.clear();
     }
 
     set_output("prim", get_input("prim"));
@@ -148,7 +156,7 @@ struct PrimitiveClearConnect : zeno::INode {
 
 ZENDEFNODE(PrimitiveClearConnect,
     { /* inputs: */ {
-    "prim", {"enum edges faces all","type", "all"}
+    "prim", {"enum edges faces tris quads polys points all","type", "all"}
     }, /* outputs: */ {
     "prim",
     }, /* params: */ {

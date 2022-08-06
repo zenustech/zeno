@@ -86,7 +86,7 @@ ZENO_API std::shared_ptr<zeno::PrimitiveObject> primMerge(std::vector<zeno::Prim
 #endif
             };
             core(std::true_type{}, prim->verts.values);
-            prim->verts.foreach_attr(core);
+            prim->verts.foreach_attr<AttrAcceptAll>(core);
             if (tagAttr.size()) {
                 auto &outarr = outprim->verts.add_attr<int>(tagAttr);
                 for (size_t i = 0; i < prim->verts.size(); i++) {
@@ -134,7 +134,7 @@ ZENO_API std::shared_ptr<zeno::PrimitiveObject> primMerge(std::vector<zeno::Prim
 #endif
             };
             core(std::true_type{}, prim->points.values);
-            prim->points.foreach_attr(core);
+            prim->points.foreach_attr<AttrAcceptAll>(core);
             if (tagAttr.size()) {
                 auto &outarr = outprim->points.add_attr<int>(tagAttr);
                 for (size_t i = 0; i < prim->points.size(); i++) {
@@ -182,7 +182,7 @@ ZENO_API std::shared_ptr<zeno::PrimitiveObject> primMerge(std::vector<zeno::Prim
 #endif
             };
             core(std::true_type{}, prim->lines.values);
-            prim->lines.foreach_attr(core);
+            prim->lines.foreach_attr<AttrAcceptAll>(core);
             if (tagAttr.size()) {
                 auto &outarr = outprim->lines.add_attr<int>(tagAttr);
                 for (size_t i = 0; i < prim->lines.size(); i++) {
@@ -230,7 +230,7 @@ ZENO_API std::shared_ptr<zeno::PrimitiveObject> primMerge(std::vector<zeno::Prim
 #endif
             };
             core(std::true_type{}, prim->tris.values);
-            prim->tris.foreach_attr(core);
+            prim->tris.foreach_attr<AttrAcceptAll>(core);
             if (tagAttr.size()) {
                 auto &outarr = outprim->tris.add_attr<int>(tagAttr);
                 for (size_t i = 0; i < prim->tris.size(); i++) {
@@ -278,7 +278,7 @@ ZENO_API std::shared_ptr<zeno::PrimitiveObject> primMerge(std::vector<zeno::Prim
 #endif
             };
             core(std::true_type{}, prim->quads.values);
-            prim->quads.foreach_attr(core);
+            prim->quads.foreach_attr<AttrAcceptAll>(core);
             if (tagAttr.size()) {
                 auto &outarr = outprim->quads.add_attr<int>(tagAttr);
                 for (size_t i = 0; i < prim->quads.size(); i++) {
@@ -326,7 +326,7 @@ ZENO_API std::shared_ptr<zeno::PrimitiveObject> primMerge(std::vector<zeno::Prim
 #endif
             };
             core(std::true_type{}, prim->loops.values);
-            prim->loops.foreach_attr(core);
+            prim->loops.foreach_attr<AttrAcceptAll>(core);
             if (tagAttr.size()) {
                 auto &outarr = outprim->loops.add_attr<int>(tagAttr);
                 for (size_t i = 0; i < prim->loops.size(); i++) {
@@ -374,7 +374,7 @@ ZENO_API std::shared_ptr<zeno::PrimitiveObject> primMerge(std::vector<zeno::Prim
 #endif
             };
             core(std::true_type{}, prim->polys.values);
-            prim->polys.foreach_attr(core);
+            prim->polys.foreach_attr<AttrAcceptAll>(core);
             if (tagAttr.size()) {
                 auto &outarr = outprim->polys.add_attr<int>(tagAttr);
                 for (size_t i = 0; i < prim->polys.size(); i++) {

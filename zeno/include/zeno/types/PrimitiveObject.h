@@ -25,8 +25,10 @@ struct PrimitiveObject : IObjectClone<PrimitiveObject> {
 
     AttrVector<int> loops;
     AttrVector<vec2i> polys;
+    AttrVector<vec2i> edges;
 
-    AttrVector<vec2f> uvs;
+    std::vector<vec2f> uvs;
+    std::vector<int> loop_uvs;
 
     std::shared_ptr<MaterialObject> mtl;
     std::shared_ptr<InstancingObject> inst;
