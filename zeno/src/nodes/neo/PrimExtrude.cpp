@@ -28,9 +28,9 @@ struct PrimExtrude : INode {
         auto averagedExtrude = get_input2<bool>("averagedExtrude");
 
         auto prim2 = std::make_shared<PrimitiveObject>(*prim);
-
         bool flipNewFace = autoFlipFace && extrude < 0;
         bool flipOldFace = autoFlipFace && extrude > 0;
+
         if (autoFindEdges && !maskAttr.empty()) {
             AttrVector<vec2i> oldlines = std::move(prim2->lines);
             primWireframe(prim2.get(), false);
@@ -64,27 +64,77 @@ struct PrimExtrude : INode {
         //}
 
         std::vector<vec3f> p2norms;
-        if (extrude != 0) {
+        if (extrude != 0 || inset != 0) {
             std::string tmpNormAttr = "%%extrude2";
             primCalcNormal(prim2.get(), 1.0f, tmpNormAttr);
             p2norms = std::move(prim2->verts.attr<vec3f>(tmpNormAttr));
-            if (averagedExtrude) {
-                auto avgdir = std::reduce(p2norms.begin(), p2norms.end(), vec3f(0));
-                avgdir = normalizeSafe(avgdir);
-                offset += extrude * avgdir;
-                extrude = 0;
-                p2norms.clear();
-            }
             prim2->verts.erase_attr(tmpNormAttr);
         }
 
         std::vector<vec3f> p2inset;
-        if (inset != 0) {
+        if (inset != 0) {//havebug
             p2inset.resize(prim2->verts.size());
             //std::string tmpInsetAttr = "%%extrude3";
             //primCalcInsetDir(prim2.get(), 1.0f, tmpInsetAttr);
+            auto &out = p2inset;
+            for (size_t i = 0; i < prim->tris.size(); i++) {
+                auto ind = prim->tris[i];
+                auto a = prim->verts[ind[0]];
+                auto b = prim->verts[ind[1]];
+                auto c = prim->verts[ind[2]];
+                auto &oa = out[ind[0]];
+                auto &ob = out[ind[1]];
+                auto &oc = out[ind[2]];
+                oa += normalizeSafe(b + c - a - a);
+                ob += normalizeSafe(a + c - b - b);
+                oc += normalizeSafe(a + b - c - c);
+            }
+            for (size_t i = 0; i < prim->quads.size(); i++) {
+                auto ind = prim->quads[i];
+                auto a = prim->verts[ind[0]];
+                auto b = prim->verts[ind[1]];
+                auto c = prim->verts[ind[2]];
+                auto d = prim->verts[ind[3]];
+                auto &oa = out[ind[0]];
+                auto &ob = out[ind[1]];
+                auto &oc = out[ind[2]];
+                auto &od = out[ind[3]];
+                oa += normalizeSafe(b + c + d - a - a - a);
+                ob += normalizeSafe(a + c + d - b - b - b);
+                oc += normalizeSafe(a + b + d - c - c - c);
+                od += normalizeSafe(a + b + c - d - d - d);
+            }
+            for (size_t i = 0; i < prim->polys.size(); i++) {
+                auto [start, len] = prim->polys[i];
+                for (int j = start; j < start + len; j++) {
+                    auto curr = prim->verts[prim->loops[j]];
+                    vec3f accum = -(len - 1) * curr;
+                    for (int k = start; k < start + len; k++) {
+                        if (k == j) continue;
+                        accum += prim->verts[prim->loops[k]];
+                    }
+                    out[prim->loops[j]] += normalizeSafe(accum);
+                }
+            }
+            for (size_t i = 0; i < out.size(); i++) {
+                auto insd = out[i];
+                auto norm = p2norms[i];
+                insd -= dot(insd, norm) * norm;
+                out[i] = normalizeSafe(insd);
+            }
             //p2inset = std::move(prim2->verts.attr<vec3f>(tmpInsetAttr));
             //prim2->verts.erase_attr(tmpInsetAttr);
+
+            if (!(extrude != 0))
+                p2norms.clear();
+        }
+
+        if (extrude != 0 && averagedExtrude) {
+            auto avgdir = std::reduce(p2norms.begin(), p2norms.end());
+            avgdir = normalizeSafe(avgdir);
+            offset += extrude * avgdir;
+            extrude = 0;
+            p2norms.clear();
         }
 
         if (flipNewFace) {
@@ -211,7 +261,7 @@ ZENDEFNODE(PrimExtrude, {
     {"string", "sourceMaskAttrO", ""},
     {"bool", "autoFlipFace", "1"},
     {"bool", "autoFindEdges", "1"},
-    {"bool", "averagedExtrude", "0"},
+    {"bool", "averagedExtrude", "1"},
     },
     {
     {"PrimitiveObject", "prim"},
