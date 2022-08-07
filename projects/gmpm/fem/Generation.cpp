@@ -1068,6 +1068,30 @@ ZENDEFNODE(ToZSSurfaceMesh, {{{"ZSModel"}, {"surf (tri) mesh", "prim"}},
                              {},
                              {"FEM"}});
 
+struct MakeSample1dLine : INode {
+  void apply() override {
+    auto n = get_input2<int>("n");
+    auto scale = get_input2<float>("scale");
+    vec3f p{0, 0, 0};
+    auto seg = scale / n;
+    auto prim = std::make_shared<PrimitiveObject>();
+    auto &verts = prim->attr<vec3f>("pos");
+    auto &lines = prim->lines.values;
+    int no = 0;
+    verts.push_back(p);
+    for (int i = 0; i != n; ++i) {
+      p[1] += seg;
+      verts.push_back(p);
+      lines.push_back(vec2i{i, i + 1});
+    }
+    set_output("prim", prim);
+  }
+};
+ZENDEFNODE(MakeSample1dLine, {{{"int", "n", "1"}, {"float", "scale", "1"}},
+                              {{"line", "prim"}},
+                              {},
+                              {"FEM"}});
+
 struct ToZSStrands : INode {
   using T = float;
   using dtiles_t = typename ZenoParticles::dtiles_t;
