@@ -528,7 +528,7 @@ extern "C" __global__ void __closesthit__radiance()
 
     }
     
-    prd->passed = (flag == DisneyBSDF::transmissionEvent) ;
+    //prd->passed = (flag == DisneyBSDF::transmissionEvent) ;
 
     prd->prob *= 1.0f;
     prd->origin = P;

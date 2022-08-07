@@ -724,7 +724,7 @@ namespace DisneyBSDF{
 
         reflectance = sheen + color * (diff / (pdf));
         fPdf = abs(NoL) * pdf;
-        rPdf = abs(NoL) * pdf;
+        rPdf = abs(NoV) * pdf;
         Onb  tbn = Onb(N);
         tbn.inverse_transform(wi);
         wi = normalize(wi);

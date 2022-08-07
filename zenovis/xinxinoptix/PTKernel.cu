@@ -66,10 +66,20 @@ extern "C" __global__ void __raygen__rg()
             //result += prd.emitted;
             if(prd.countEmitted==false || depth>0)
                 result += prd.radiance * prd.attenuation2/(prd.prob2+1e-5);
-            if(prd.countEmitted==true && depth>0)
+            if(prd.countEmitted==true && depth>0){
                 prd.done = true;
-            if( prd.done  || depth >= 5 ) // TODO RR, variable for depth
+            }
+            if( prd.done ){ // TODO RR, variable for depth
                 break;
+            }
+            
+            float RRprob = clamp(length(prd.attenuation),0.1f,0.9f);
+            if(rnd(prd.seed) > RRprob){
+                prd.attenuation = make_float3(1.0f);
+                break;
+            }
+            prd.attenuation = prd.attenuation / RRprob;
+
             if(prd.countEmitted == true)
                 prd.passed = true;
             ray_origin    = prd.origin;
