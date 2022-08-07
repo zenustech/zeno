@@ -1611,7 +1611,7 @@ struct CodimStepping : INode {
 #endif
 
                 // gradient
-                auto vfdt2 = gij * (dt * dt);
+                auto vfdt2 = gij * (dt * dt) * vole;
                 for (int d = 0; d != 3; ++d) {
                   atomic_add(exec_cuda, &vtemp(gTag, d, inds[0]), (T)vfdt2(d));
                   atomic_add(exec_cuda, &vtemp(gTag, d, inds[1]), (T)-vfdt2(d));
@@ -1643,7 +1643,7 @@ struct CodimStepping : INode {
                     H(3 + i, j) = -K(i, j);
                     H(3 + i, 3 + j) = K(i, j);
                   }
-                H *= dt * dt;
+                H *= dt * dt * vole;
 
                 // rotate and project
                 rotate_hessian(H, BCbasis, BCorder, BCfixed, projectDBC);
@@ -1972,7 +1972,7 @@ struct CodimStepping : INode {
                 int BCorder[2];
                 for (int i = 0; i != 2; ++i)
                   BCorder[i] = vtemp("BCorder", inds[i]);
-                T E = 0;
+                T E;
                 if (BCorder[0] == 3 && BCorder[1] == 3)
                   E = 0;
                 else {
@@ -1985,8 +1985,7 @@ struct CodimStepping : INode {
                   auto xij = xs[1] - xs[0];
                   auto lij = xij.norm();
 
-                  // E = (T)0.5 * k * zs::sqr(lij - rl) * vole;
-                  E = (T)0.5 * k * zs::sqr(lij - rl);
+                  E = (T)0.5 * k * zs::sqr(lij - rl) * vole;
                 }
                 // atomic_add(exec_cuda, &res[0], E);
                 // es[ei] = E;
@@ -3078,7 +3077,7 @@ struct CodimStepping : INode {
         if (primHandle.category == ZenoParticles::curve) {
           if (primHandle.isBoundary())
             continue;
-#if 1
+#if 0
           pol(range(eles.size()),
               [execTag, etemp = proxy<space>({}, primHandle.etemp),
                vtemp = proxy<space>({}, vtemp), eles = proxy<space>({}, eles),
@@ -3104,6 +3103,36 @@ struct CodimStepping : INode {
                   }
               });
 #else
+          pol(Collapse{eles.size(), 32},
+              [execTag, etemp = proxy<space>({}, primHandle.etemp),
+               vtemp = proxy<space>({}, vtemp), eles = proxy<space>({}, eles),
+               dxTag, bTag,
+               vOffset = primHandle.vOffset] ZS_LAMBDA(int ei,
+                                                       int tid) mutable {
+                int rowid = tid / 5;
+                int colid = tid % 5;
+                auto inds = eles.template pack<2>("inds", ei)
+                                .template reinterpret_bits<int>() +
+                            vOffset;
+                T entryH = 0, entryDx = 0, entryG = 0;
+                if (tid < 30) {
+                  entryH = etemp("He", rowid * 6 + colid, ei);
+                  entryDx = vtemp(dxTag, colid % 3, inds[colid / 3]);
+                  entryG = entryH * entryDx;
+                  if (colid == 0) {
+                    entryG += etemp("He", rowid * 6 + 5, ei) *
+                              vtemp(dxTag, 2, inds[1]);
+                  }
+                }
+                for (int iter = 1; iter <= 4; iter <<= 1) {
+                  T tmp = __shfl_down_sync(0xFFFFFFFF, entryG, iter);
+                  if (colid + iter < 5 && tid < 30)
+                    entryG += tmp;
+                }
+                if (colid == 0 && rowid < 6)
+                  atomic_add(execTag, &vtemp(bTag, rowid % 3, inds[rowid / 3]),
+                             entryG);
+              });
 #endif
         } else if (primHandle.category == ZenoParticles::surface) {
           if (primHandle.isBoundary())
