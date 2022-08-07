@@ -562,7 +562,7 @@ struct CodimStepping : INode {
               auto BCbasis = vtemp.pack<3, 3>("BCbasis", vi);
               auto BCtarget = vtemp.pack<3>("BCtarget", vi);
               auto cons = vtemp.pack<3>("cons", vi);
-              auto xt = vtemp.pack<3>("xt", vi);
+              auto xt = vtemp.pack<3>("xhat", vi);
               auto x = vtemp.pack<3>("xn", vi);
               printf("%d-th vert (order [%d]): cur (%f, %f, %f) xt (%f, %f, %f)"
                      "\n\ttar(%f, %f, %f) cons (%f, %f, %f)\n",
@@ -588,7 +588,7 @@ struct CodimStepping : INode {
             auto BCtarget = vtemp.pack<3>("BCtarget", vi);
             int BCorder = vtemp("BCorder", vi);
             auto cons = vtemp.pack<3>("cons", vi);
-            auto xt = vtemp.pack<3>("xt", vi);
+            auto xt = vtemp.pack<3>("xhat", vi);
             T n = 0, d_ = 0;
             // https://ipc-sim.github.io/file/IPC-supplement-A-technical.pdf Eq5
             for (int d = 0; d != BCorder; ++d) {
@@ -1627,7 +1627,7 @@ struct CodimStepping : INode {
 #else
                 auto K = k * mat3::identity();
 #endif
-                make_pd(K);
+            // make_pd(K);  // symmetric semi-definite positive, not necessary
 #if 0
 
                 if (ei < 10 || ei > n - 10)
@@ -1936,7 +1936,7 @@ struct CodimStepping : INode {
            n = coOffset] __device__(int vi) mutable {
             auto m = zs::sqr(vtemp("ws", vi));
             auto x = vtemp.pack<3>(tag, vi);
-            auto xt = vtemp.pack<3>("xt", vi);
+            auto xt = vtemp.pack<3>("xhat", vi);
             int BCorder = vtemp("BCorder", vi);
             T E = 0;
             if (BCorder != 3) {
@@ -2476,7 +2476,7 @@ struct CodimStepping : INode {
               auto m = verts("m", vi);
               vi += vOffset;
               auto x = vtemp.pack<3>(tag, vi);
-              auto xt = vtemp.pack<3>("xt", vi);
+              auto xt = vtemp.pack<3>("xhat", vi);
               int BCorder = vtemp("BCorder", vi);
               T E = 0;
               if (BCorder != 3) {
@@ -4182,7 +4182,7 @@ struct CodimStepping : INode {
               } else {
                 vtemp.tuple<3>("vn", voffset + i) = v;
               }
-              vtemp.tuple<3>("xt", voffset + i) = x;
+              // vtemp.tuple<3>("xt", voffset + i) = x;
               vtemp.tuple<3>("x0", voffset + i) = verts.pack<3>("x0", i);
             });
         // record surface (tri) indices
@@ -4262,7 +4262,7 @@ struct CodimStepping : INode {
               vtemp.tuple<3>("lambda", coOffset + i) = vec3::zeros();
               vtemp.tuple<3>("xn", coOffset + i) = x;
               vtemp.tuple<3>("vn", coOffset + i) = (newX - x) / dt;
-              vtemp.tuple<3>("xt", coOffset + i) = x;
+              // vtemp.tuple<3>("xt", coOffset + i) = x;
               vtemp.tuple<3>("xhat", coOffset + i) = x;
               vtemp.tuple<3>("x0", coOffset + i) = coverts.pack<3>("x0", i);
             });
@@ -4285,7 +4285,6 @@ struct CodimStepping : INode {
                 dx[d] = 0;
               dx = BCbasis * dx;
             };
-            auto xt = vtemp.template pack<3>("xt", vi);
             auto xn = vtemp.template pack<3>("xn", vi);
             vtemp.template tuple<3>("xhat", vi) = xn;
             auto deltaX = vtemp.template pack<3>("vn", vi) * dt;
@@ -4300,16 +4299,18 @@ struct CodimStepping : INode {
                   BCbasis.transpose() * newX;
               vtemp("BCfixed", vi) = deltaX.l2NormSqr() == 0 ? 1 : 0;
             }
+#if 0
             if (BCorder != 3) { // only for free moving dofs
               vtemp.template tuple<3>("xt", vi) = xn;
             }
+#endif
           });
       if (auto coSize = coVerts.size(); coSize)
         pol(Collapse(coSize), [vtemp = proxy<space>({}, vtemp),
                                coverts = proxy<space>({}, coVerts),
                                coOffset = coOffset, framedt = framedt,
                                curRatio = curRatio] __device__(int i) mutable {
-          auto xt = vtemp.template pack<3>("xt", coOffset + i);
+          auto xhat = vtemp.template pack<3>("xhat", coOffset + i);
           auto xn = vtemp.template pack<3>("xn", coOffset + i);
           vtemp.template tuple<3>("xhat", coOffset + i) = xn;
           vec3 newX{};
@@ -4317,10 +4318,10 @@ struct CodimStepping : INode {
             newX = coverts.pack<3>("BCtarget", i);
           else {
             auto v = coverts.pack<3>("v", i);
-            newX = xt + v * framedt;
+            newX = xhat + v * framedt;
           }
-          // auto xk = xt + (newX - xt) * curRatio;
-          auto xk = newX * curRatio + (1 - curRatio) * xt;
+          // auto xk = xhat + (newX - xhat) * curRatio;
+          auto xk = newX * curRatio + (1 - curRatio) * xhat;
           vtemp.template tuple<3>("BCtarget", coOffset + i) = xk;
           vtemp("BCfixed", coOffset + i) = (xk - xn).l2NormSqr() == 0 ? 1 : 0;
           vtemp.template tuple<3>("xtilde", coOffset + i) = xk;
@@ -4456,10 +4457,10 @@ struct CodimStepping : INode {
            {"xn", 3},
            {"vn", 3},
            {"x0", 3}, // initial positions
-           {"xt", 3}, // for constraint + ext force ref
            {"xn0", 3},
            {"xtilde", 3},
-           {"xhat", 3}, // initial positions at the current substep
+           {"xhat", 3}, // initial positions at the current substep (constraint,
+                        // extforce)
            {"temp", 3},
            {"r", 3},
            {"p", 3},
