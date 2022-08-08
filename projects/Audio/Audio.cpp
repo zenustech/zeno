@@ -17,6 +17,8 @@
 #define MINIMP3_FLOAT_OUTPUT
 #include "minimp3.h"
 
+#include <algorithm>
+
 int calcFrameCountByAudio(std::string path, int fps) {
     AudioFile<float> wav;
     wav.load (path);
@@ -204,6 +206,91 @@ ZENDEFNODE(AudioBeats, {
             "var_H",
             "H",
             "E",
+        },
+        {},
+        {
+            "audio"
+        },
+    });
+
+struct AudioEnergy : zeno::INode {
+    double minE = std::numeric_limits<double>::max();
+    double maxE = std::numeric_limits<double>::min();
+    std::vector<double> init;
+    virtual void apply() override {
+        auto wave = get_input<PrimitiveObject>("wave");
+        int duration_count = 1024;
+        if (init.empty()) {
+            auto fft = Aquila::FftFactory::getFft(duration_count);
+            int clip_count = wave->size() / duration_count;
+            init.reserve(clip_count);
+            for (auto i = 0; i < clip_count; i++) {
+                std::vector<double> samples;
+                samples.resize(duration_count);
+                for (auto j = 0; j < duration_count; j++) {
+                    samples[j] = wave->attr<float>("value")[min(duration_count * i + j, wave->size()-1)];
+                }
+                Aquila::SpectrumType spectrums = fft->fft(samples.data());
+                {
+                    double E = 0;
+                    for (const auto& spectrum: spectrums) {
+                        E += spectrum.real() * spectrum.real() + spectrum.imag() * spectrum.imag();
+                    }
+                    E /= duration_count;
+                    minE = min(minE, E);
+                    maxE = max(maxE, E);
+                    init.push_back(E);
+                }
+            }
+//            for (auto i = 0; i < clip_count; i++) {
+//                init[i] = init[i] / maxE;
+//            }
+        }
+
+//        auto vis = std::make_shared<PrimitiveObject>();
+//        vis->resize(init.size());
+//        auto &index = vis->add_attr<float>("index");
+//        auto &listE = vis->add_attr<float>("E");
+//        for (auto i = 0; i < init.size(); i++) {
+//            index[i] = i;
+//            listE[i] = init[i];
+//        }
+//        set_output("vis", vis);
+
+        set_output("minE", std::make_shared<NumericObject>((float)minE));
+        set_output("maxE", std::make_shared<NumericObject>((float)maxE));
+
+        auto start_time = get_input2<float>("time");
+        float sampleFrequency = wave->userData().get<zeno::NumericObject>("SampleRate")->get<float>();
+        int start_index = int(sampleFrequency * start_time);
+        auto fft = Aquila::FftFactory::getFft(duration_count);
+        std::vector<double> samples;
+        samples.resize(duration_count);
+        for (auto i = 0; i < duration_count; i++) {
+            samples[i] = wave->attr<float>("value")[min((start_index + i), wave->size()-1)];
+        }
+        Aquila::SpectrumType spectrums = fft->fft(samples.data());
+        double E = 0;
+        for (const auto& spectrum: spectrums) {
+            E += spectrum.real() * spectrum.real() + spectrum.imag() * spectrum.imag();
+        }
+        E /= duration_count;
+        set_output("E", std::make_shared<NumericObject>((float)E));
+        double uniE = (E - minE) / (maxE - minE);
+        set_output("uniE", std::make_shared<NumericObject>((float)E));
+    }
+};
+    ZENDEFNODE(AudioEnergy, {
+        {
+            "wave",
+            {"float", "time", "0"},
+        },
+        {
+            "E",
+            "uniE",
+            "minE",
+            "maxE",
+//            "vis",
         },
         {},
         {

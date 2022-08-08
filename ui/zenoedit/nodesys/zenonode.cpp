@@ -31,14 +31,18 @@ static QString getOpenFileName(
     const QString &filter
 ) {
     QString path = QFileDialog::getOpenFileName(nullptr, caption, dir, filter);
+#if 0 // cannot work for now, wait for StringEval to be integrated into string param edit (luzh job)
     QSettings settings("ZenusTech", "Zeno");
     QVariant nas_loc_v = settings.value("nas_loc");
     path.replace('\\', '/');
     if (!nas_loc_v.isNull()) {
         QString nas = nas_loc_v.toString();
-        nas.replace('\\', '/');
-        path.replace(nas, "$NASLOC");
+        if (!nas.isEmpty()) {
+            nas.replace('\\', '/');
+            path.replace(nas, "$NASLOC");
+        }
     }
+#endif
     return path;
 }
 
@@ -48,14 +52,18 @@ static QString getSaveFileName(
     const QString &filter
 ) {
     QString path = QFileDialog::getSaveFileName(nullptr, caption, dir, filter);
+#if 0 // cannot work for now, wait for StringEval to be integrated into string param edit (luzh job)
     QSettings settings("ZenusTech", "Zeno");
     QVariant nas_loc_v = settings.value("nas_loc");
     path.replace('\\', '/');
     if (!nas_loc_v.isNull()) {
         QString nas = nas_loc_v.toString();
-        nas.replace('\\', '/');
-        path.replace(nas, "$NASLOC");
+        if (!nas.isEmpty()) {
+            nas.replace('\\', '/');
+            path.replace(nas, "$NASLOC");
+        }
     }
+#endif
     return path;
 }
 

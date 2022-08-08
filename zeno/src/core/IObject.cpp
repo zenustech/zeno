@@ -22,7 +22,7 @@ ZENO_API bool IObject::assign(IObject const *other) {
     return false;
 }
 
-ZENO_API bool IObject::move_assign(IObject const *other) {
+ZENO_API bool IObject::move_assign(IObject *other) {
     return false;
 }
 

@@ -1,10 +1,10 @@
 #include <zeno/zeno.h>
 #include <zeno/core/Graph.h>
 #include <zeno/extra/assetDir.h>
-#include <zeno/utils/filesystem.h>
 #include <zeno/funcs/PrimitiveUtils.h>
 #include <zeno/utils/log.h>
 #include <zeno_SampleModel_config.h>
+#include <filesystem>
 #include <sstream>
 #include <cctype>
 
@@ -51,7 +51,7 @@ struct LoadStringPrim : INode {
             ss << "ascii/" << std::setw(3) << std::setfill('0') << c << ".obj";
             //printf("asdasd %s\n", ss.str().c_str());
             auto path = getAssetDir(MODELS_DIR, ss.str());
-            if (!fs::exists(path)) {
+            if (!std::filesystem::exists(path)) {
                 zeno::log_warn("LoadStringPrim got ASCII char not printable: {}", c);
                 continue;
             }

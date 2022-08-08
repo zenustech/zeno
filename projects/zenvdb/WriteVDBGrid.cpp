@@ -42,7 +42,7 @@ static int defExportVDBGrid = zeno::defNodeClass<ExportVDBGrid>("ExportVDBGrid",
     }, /* outputs: */ {
     }, /* params: */ {
     }, /* category: */ {
-    "openvdb",
+    "deprecated",
     }});
 
 }

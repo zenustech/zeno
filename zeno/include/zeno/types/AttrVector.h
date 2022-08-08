@@ -35,10 +35,16 @@ struct AttrVector {
         >;
 
     using value_type = ValT;
-    using iterator = typename std::vector<ValT>::iterator;
-    using const_iterator = typename std::vector<ValT>::const_iterator;
+    using BaseVector = std::vector<ValT>;
+    using size_type = typename BaseVector::size_type;
+    using pointer = typename BaseVector::pointer;
+    using reference = typename BaseVector::reference;
+    using const_pointer = typename BaseVector::const_pointer;
+    using const_reference = typename BaseVector::const_reference;
+    using iterator = typename BaseVector::iterator;
+    using const_iterator = typename BaseVector::const_iterator;
 
-    std::vector<ValT> values;
+    BaseVector values;
     std::map<std::string, AttrVectorVariant> attrs;
 
     AttrVector() = default;

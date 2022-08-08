@@ -6,6 +6,7 @@
 #include "TraceStuff.h"
 #include "zxxglslvec.h"
 #include "DisneyBRDF.h"
+#include "DisneyBSDF.h"
 #include "IOMat.h"
 
 //COMMON_CODE
@@ -66,6 +67,11 @@ MatInput const &attrs) {
     float mat_clearcoat = 0.0;
     float mat_clearcoatGloss = 0.0;
     float mat_opacity = 0.0;
+    float mat_specTrans = 0.0;
+    float mat_ior = 1.0;
+    float mat_scatterDistance = 0.0;
+    float mat_flatness = 0.0;
+    float mat_thin = 0.0;
     vec3  mat_normal = vec3(0.0f, 0.0f, 1.0f);
     vec3 mat_emission = vec3(0.0f, 0.0f,0.0f);
     //GENERATED_END_MARK
@@ -73,19 +79,25 @@ MatInput const &attrs) {
     MatOutput mats;
     /* MODME */
     mats.basecolor = mat_basecolor;
-    mats.metallic = mat_metallic;
-    mats.roughness = mat_roughness;
+    mats.metallic = clamp(mat_metallic,0.0f,1.0f);
+    mats.roughness = clamp(mat_roughness,0.01,0.99);
     mats.subsurface = mat_subsurface;
     mats.specular = mat_specular;
     mats.specularTint = mat_specularTint;
-    mats.anisotropic = mat_anisotropic;
+    mats.anisotropic = clamp(mat_anisotropic,0.0f,1.0f);
     mats.sheen = mat_sheen;
     mats.sheenTint = mat_sheenTint;
-    mats.clearcoat = mat_clearcoat;
+    mats.clearcoat = clamp(mat_clearcoat,0.0f,1.0f);
     mats.clearcoatGloss = mat_clearcoatGloss;
     mats.opacity = mat_opacity;
     mats.nrm = mat_normal;
     mats.emission = mat_emission;
+    mats.specTrans = clamp(mat_specTrans,0.0f,1.0f);
+    mats.ior = mat_ior;
+    mats.scatterDistance = mat_scatterDistance;
+    mats.flatness = mat_flatness;
+    mats.thin = mat_thin;
+
     return mats;
 }
 __forceinline__ __device__ float3 interp(float2 barys, float3 a, float3 b, float3 c)
@@ -216,7 +228,7 @@ extern "C" __global__ void __anyhit__shadow_cutout()
         N = mats.nrm.x * attrs.tang + mats.nrm.y * b + mats.nrm.z * attrs.nrm;
     }
     //end of material computation
-    mats.metallic = clamp(mats.metallic,0.01, 0.99);
+    //mats.metallic = clamp(mats.metallic,0.01, 0.99);
     mats.roughness = clamp(mats.roughness, 0.01,0.99);
 
     /* MODME */
@@ -232,6 +244,11 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     auto clearcoat = mats.clearcoat;
     auto clearcoatGloss = mats.clearcoatGloss;
     auto opacity = mats.opacity;
+    auto flatness = mats.flatness;
+    auto specTrans = mats.specTrans;
+    auto scatterDistance = mats.scatterDistance;
+    auto ior = mats.ior;
+    auto thin = mats.thin;
     unsigned short isLight = rt_data->lightMark[inst_idx * 1024 + prim_idx];
 
     // Stochastic alpha test to get an alpha blend effect.
@@ -243,9 +260,17 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     {
 
         //roll a dice
-        const float p = rnd(prd->seed);
-        if (p < opacity)
+        float p = rnd(prd->seed);
+        if (p < opacity){
             optixIgnoreIntersection();
+        }
+        p = rnd(prd->seed);
+        float useless;
+        float pSpecTrans;
+        DisneyBSDF::pdf(metallic, specTrans, clearcoat,useless ,useless , useless, pSpecTrans);
+        if( p < pSpecTrans){
+            optixIgnoreIntersection();
+        }
         prd->flags |= 1;
         optixTerminateRay();
     }
@@ -365,7 +390,7 @@ extern "C" __global__ void __closesthit__radiance()
                                 zenotex30, 
                                 zenotex31,attrs);
     //end of material computation
-    mats.metallic = clamp(mats.metallic,0.01, 0.99);
+    //mats.metallic = clamp(mats.metallic,0.01, 0.99);
     mats.roughness = clamp(mats.roughness, 0.01,0.99);
     if(length(attrs.tang)>0)
     {
@@ -388,6 +413,11 @@ extern "C" __global__ void __closesthit__radiance()
     auto clearcoat = mats.clearcoat;
     auto clearcoatGloss = mats.clearcoatGloss;
     auto opacity = mats.opacity;
+    auto flatness = mats.flatness;
+    auto specTrans = mats.specTrans;
+    auto scatterDistance = mats.scatterDistance;
+    auto ior = mats.ior;
+    auto thin = mats.thin;
 
     //discard fully opacity pixels
     prd->opacity = opacity;
@@ -423,71 +453,67 @@ extern "C" __global__ void __closesthit__radiance()
     }
 
     
-    
-
-    
     float is_refl;
     float3 inDir = ray_dir;
-    float3 wi = DisneyBRDF::sample_f(
-                                prd->seed,
-                                basecolor,
-                                metallic,
-                                subsurface,
-                                specular,
-                                roughness,
-                                specularTint,
-                                anisotropic,
-                                sheen,
-                                sheenTint,
-                                clearcoat,
-                                clearcoatGloss,
-                                N,
-                                make_float3(0,0,0),
-                                make_float3(0,0,0),
-                                -normalize(ray_dir),
-                                is_refl);
+    vec3 wi = vec3(0.0f);
+    float pdf = 0.0f;
+    float rPdf = 1.0f;
+    float fPdf = 1.0f;
+    float rrPdf = 0.0f;
+    float ffPdf = 0.0f;
+    float3 T = attrs.tang;
+    float3 B = cross(N, T);
+    vec3 transmittanceColor = basecolor;
+    DisneyBSDF::SurfaceEventFlags flag;
+    DisneyBSDF::PhaseFuncions phaseFuncion;
+    vec3 extinction;
+    vec3 reflectance = vec3(1.0f);
 
-    float pdf = DisneyBRDF::pdf(basecolor,
-                                metallic,
-                                subsurface,
-                                specular,
-                                roughness,
-                                specularTint,
-                                anisotropic,
-                                sheen,
-                                sheenTint,
-                                clearcoat,
-                                clearcoatGloss,
-                                N,
-                                make_float3(0,0,0),
-                                make_float3(0,0,0),
-                                wi,
-                                -normalize(ray_dir)
-                                );
-    float3 f = DisneyBRDF::eval(basecolor,
-                                metallic,
-                                subsurface,
-                                specular,
-                                roughness,
-                                specularTint,
-                                anisotropic,
-                                sheen,
-                                sheenTint,
-                                clearcoat,
-                                clearcoatGloss,
-                                N,
-                                make_float3(0,0,0),
-                                make_float3(0,0,0),
-                                wi,
-                                -normalize(ray_dir)
-                                );
+    while(DisneyBSDF::SampleDisney(
+                prd->seed,
+                basecolor,
+                transmittanceColor,
+                metallic,
+                subsurface,
+                specular,
+                roughness,
+                specularTint,
+                anisotropic,
+                sheen,
+                sheenTint,
+                clearcoat,
+                clearcoatGloss,
+                flatness,
+                specTrans,
+                scatterDistance,
+                ior,
+                T,
+                B,
+                N,
+                -normalize(ray_dir),
+                thin>0.5f,
+                prd->is_inside,
+                wi,
+                reflectance,
+                rPdf,
+                fPdf,
+                flag,
+                phaseFuncion,
+                extinction
+                )  == false)
+        {
+            rPdf = 1.0f;
+            fPdf = 1.0f;
+            reflectance = vec3(1.0f);
+        }
+    pdf = rPdf;
+
     if(opacity<=0.99)
     {
         //we have some simple transparent thing
         //roll a dice to see if just pass
         if(rnd(prd->seed)<opacity)
         {
-            
             prd->passed = true;
             //you shall pass!
             prd->radiance = make_float3(0.0f);
@@ -502,11 +528,16 @@ extern "C" __global__ void __closesthit__radiance()
 
     }
     
-    prd->prob *= pdf/clamp(dot(wi, N),0.0f,1.0f);
+    prd->passed = (flag == DisneyBSDF::transmissionEvent) ;
+
+    prd->prob *= 1.0f;
     prd->origin = P;
     prd->direction = wi;
     prd->countEmitted = false;
-    prd->attenuation *= f;
+    prd->attenuation *= reflectance;
+    //if(flag == DisneyBSDF::transmissionEvent || prd->is_inside){
+    //    return;
+    //}
     //}
 
     // {
@@ -551,9 +582,33 @@ extern "C" __global__ void __closesthit__radiance()
             }
         }
 
-        float3 lbrdf = DisneyBRDF::eval(basecolor, metallic, subsurface, specular, roughness, specularTint, anisotropic,
-                                        sheen, sheenTint, clearcoat, clearcoatGloss, N, make_float3(0, 0, 0),
-                                        make_float3(0, 0, 0), L, -normalize(inDir));
+        //                                make_float3(0, 0, 0), L, -normalize(inDir));
+        float3 lbrdf = DisneyBSDF::EvaluateDisney(
+                basecolor,
+                metallic,
+                subsurface,
+                specular,
+                roughness,
+                specularTint,
+                anisotropic,
+                sheen,
+                sheenTint,
+                clearcoat,
+                clearcoatGloss,
+                specTrans,
+                scatterDistance,
+                ior,
+                flatness,
+                L,
+                -normalize(inDir),
+                T,
+                B,
+                N,
+                thin>0.5f,
+                false,
+                ffPdf,
+                rrPdf
+                );
         prd->radiance += light.emission * weight * lbrdf + float3(mats.emission);
     }
 }

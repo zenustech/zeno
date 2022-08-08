@@ -26,7 +26,7 @@ static __inline__ __device__ float SchlickWeight(float u)
 }
 static __inline__ __device__ float fresnelSchlickR0(float eta)
 {
-    return pow(eta - 1.0f, 2.0f) / pow(eta + 1.0f, 2.0f);
+    return pow(eta - 1.0f, 2.0f) /  (pow(eta + 1.0f, 2.0f) );
 }
 static __inline__ __device__ float SchlickDielectic(float cosThetaI, float relativeIor)
 {
@@ -46,7 +46,7 @@ static __inline__ __device__ float fresnelDielectric(float cosThetaI, float ni, 
     }
 
     float sinThetaI = sqrtf(max(0.0f, 1.0f - cosThetaI * cosThetaI));
-    float sinThetaT = ni / nt * sinThetaI;
+    float sinThetaT = ni / (nt + 1e-5) * sinThetaI;
 
     if(sinThetaT >= 1)
     {
@@ -55,23 +55,23 @@ static __inline__ __device__ float fresnelDielectric(float cosThetaI, float ni, 
 
     float cosThetaT = sqrtf(max(0.0f, 1.0f - sinThetaT * sinThetaT));
 
-    float rParallel     = ((nt * cosThetaI) - (ni * cosThetaT)) / ((nt * cosThetaI) + (ni * cosThetaT));
-    float rPerpendicuar = ((ni * cosThetaI) - (nt * cosThetaT)) / ((ni * cosThetaI) + (nt * cosThetaT));
+    float rParallel     = ((nt * cosThetaI) - (ni * cosThetaT)) / ((nt * cosThetaI) + (ni * cosThetaT) + 1e-5);
+    float rPerpendicuar = ((ni * cosThetaI) - (nt * cosThetaT)) / ((ni * cosThetaI) + (nt * cosThetaT) + 1e-5);
     return (rParallel * rParallel + rPerpendicuar * rPerpendicuar) / 2;
 }
 static __inline__ __device__  float GTR1(float cosT,float a){
     if(a >= 1.0f) return 1/M_PIf;
     float t = (1+(a*a-1)*cosT*cosT);
-    return (a*a-1.0f) / (M_PIf*logf(a*a)*t);
+    return (a*a-1.0f) / (M_PIf*logf(a*a)*t  + 1e-5);
 }
 static __inline__ __device__  float GTR2(float cosT,float a){
     float t = (1+(a*a-1)*cosT*cosT);
-    return (a*a) / (M_PIf*t*t);
+    return (a*a) / (M_PIf*t*t  + 1e-5);
 }
 static __inline__ __device__  float GGX(float cosT, float a){
     float a2 = a*a;
     float b = cosT*cosT;
-    return 2.0f/ (1.0f + sqrtf(a2 + b - a2*b));
+    return 2.0f/ (1.0f  + sqrtf(a2 + b - a2*b));
 }
 static __inline__ __device__  vec3 sampleOnHemisphere(unsigned int &seed, float roughness)
 {
@@ -115,7 +115,7 @@ static __inline__ __device__
 void CalculateAnisotropicParams(float roughness, float anisotropic, float &ax, float &ay)
 {
     float aspect = sqrtf(1.0f - 0.9f * anisotropic);
-    ax = max(0.001f, roughness*roughness / aspect);
+    ax = max(0.001f, roughness*roughness / (aspect));
     ay = max(0.001f, roughness*roughness * aspect);
 }
 static __inline__ __device__
@@ -127,14 +127,14 @@ vec3 CalculateTint(vec3 baseColor)
 static __inline__ __device__ float  SeparableSmithGGXG1(vec3 w, vec3 wm, float ax, float ay)
 {
 
-    if(abs(w.z)<1e-7) {
+    if(abs(w.z)<1e-5) {
         return 0.0f;
     }
     float sinTheta = sqrtf(1.0f - w.z * w.z);
     float absTanTheta = abs( sinTheta / w.z);
-    float Cos2Phi = (sinTheta == 0.0f)? 1.0f:clamp(w.x / sinTheta, -1.0f, 1.0f);
+    float Cos2Phi = (sinTheta == 0.0f)? 1.0f:clamp(w.x / (sinTheta + 1e-5), -1.0f, 1.0f);
     Cos2Phi *= Cos2Phi;
-    float Sin2Phi = (sinTheta == 0.0f)? 1.0f:clamp(w.y / sinTheta, -1.0f, 1.0f);
+    float Sin2Phi = (sinTheta == 0.0f)? 1.0f:clamp(w.y / (sinTheta + 1e-5), -1.0f, 1.0f);
     Sin2Phi *= Sin2Phi;
     float a = sqrtf(Cos2Phi * ax * ax + Sin2Phi * ay * ay);
     float a2Tan2Theta = pow(a * absTanTheta, 2.0f);
@@ -150,7 +150,7 @@ static __inline__ __device__ float GgxAnisotropicD(vec3 wm, float ax, float ay)
     float ax2 = ax * ax;
     float ay2 = ay * ay;
 
-    return 1.0f / (M_PIf * ax * ay * powf(dotHX2 / ax2 + dotHY2 / ay2 + cos2Theta, 2.0f));
+    return 1.0f / (M_PIf * ax * ay * powf(dotHX2 / ax2 + dotHY2 / ay2 + cos2Theta, 2.0f) + 1e-5);
 }
 
 static __inline__ __device__ void GgxVndfAnisotropicPdf(vec3 wi, vec3 wm, vec3 wo, float ax, float ay,
@@ -161,35 +161,37 @@ static __inline__ __device__ void GgxVndfAnisotropicPdf(vec3 wi, vec3 wm, vec3 w
     float absDotNL = abs(wi.z);
     float absDotHL = abs(dot(wm, wi));
     float G1v = SeparableSmithGGXG1(wo, wm, ax, ay);
-    forwardPdfW = G1v * absDotHL * D / absDotNL;
+    forwardPdfW = G1v * absDotHL * D / (absDotNL);
 
     float absDotNV = abs(wo.z);
     float absDotHV = abs(dot(wm, wo));
     float G1l = SeparableSmithGGXG1(wi, wm, ax, ay);
-    reversePdfW = G1l * absDotHV * D / absDotNV;
+    reversePdfW = G1l * absDotHV * D / (absDotNV);
 }
 static __inline__ __device__ 
 vec3 SampleGgxVndfAnisotropic(vec3 wo, float ax, float ay, float u1, float u2)
 {
     // -- Stretch the view vector so we are sampling as though roughness==1
-    vec3 v = normalize(vec3(wo.x * ax, wo.y * ay,  wo.z));
+    vec3 Vh = normalize(vec3(ax * wo.x, ay * wo.y, wo.z));
 
-    // -- Build an orthonormal basis with v, t1, and t2
-    vec3 t1 = (v.z < 0.9999f) ? normalize(cross(v, vec3(0,0,1))) : vec3(1,0,0);
-    vec3 t2 = cross(t1, v);
+    // Section 4.1: orthonormal basis (with special case if cross product is zero)
+    float lensq = Vh.x * Vh.x + Vh.y * Vh.y;
+    vec3 T1 = lensq > 0.0f ? vec3(-Vh.y, Vh.x, 0.0f) / sqrt(lensq) : vec3(1.0f, 0.0f, 0.0f);
+    vec3 T2 = cross(Vh, T1);
 
-    // -- Choose a point on a disk with each half of the disk weighted proportionally to its projection onto direction v
-    float a = 1.0f / (1.0f + v.z);
-    float r = sqrtf(u1);
-    float phi = (u2 < a) ? (u2 / a) * M_PIf : M_PIf + (u2 - a) / (1.0f - a) * M_PIf;
-    float p1 = r * cos(phi);
-    float p2 = r * sin(phi) * ((u2 < a) ? 1.0f : v.z);
+    // Section 4.2: parameterization of the projected area
+    float r = sqrt(u1);
+    float phi = M_PIf * 2.0 * u2;
+    float t1 = r * cos(phi);
+    float t2 = r * sin(phi);
+    float s = 0.5f * (1.0f + Vh.z);
+    t2 = mix(sqrt(1.0f - t1 * t1), t2, s);
 
-    // -- Calculate the normal in this stretched tangent space
-    vec3 n = p1 * t1 + p2 * t2 + sqrtf(max(0.0f, 1.0f - p1 * p1 - p2 * p2)) * v;
+    // Section 4.3: reprojection onto hemisphere
+    vec3 Nh = t1 * T1 + t2 * T2 + sqrt(max(0.0f, 1.0f - t1 * t1 - t2 * t2)) * Vh;
 
-    // -- unstretch and normalize the normal
-    return normalize(vec3(ax * n.x, ay * n.y, n.z));
+    // Section 3.4: transforming the normal back to the ellipsoid configuration
+    return normalize(vec3(ax * Nh.x, ay * Nh.y, max(0.0f, Nh.z)));
 }
 }
 namespace DisneyBRDF

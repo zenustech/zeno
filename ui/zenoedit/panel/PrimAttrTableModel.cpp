@@ -8,6 +8,8 @@
 #include <zeno/types/AttrVector.h>
 #include <zeno/funcs/LiterialConverter.h>
 
+using zeno::AttrAcceptAll;
+
 PrimAttrTableModel::PrimAttrTableModel(QObject* parent)
     : QAbstractTableModel(parent)
 {
@@ -47,7 +49,6 @@ int PrimAttrTableModel::rowCount(const QModelIndex &parent) const {
 
 int PrimAttrTableModel::columnCount(const QModelIndex &parent) const {
     if (m_prim) {
-        using zeno::AttrAcceptAll;
         if (sel_attr == "Vertex") {
             return 1 + (int)m_prim->verts.num_attrs<AttrAcceptAll>();
         }
@@ -166,7 +167,6 @@ QVariant PrimAttrTableModel::headerData(int section, Qt::Orientation orientation
 
     if (orientation == Qt::Horizontal)
     {
-        using zeno::AttrAcceptAll;
         if (sel_attr == "Vertex") {
             if (section == 0) {
                 return QString("pos");
@@ -258,7 +258,7 @@ void PrimAttrTableModel::setSelAttr(std::string sel_attr_) {
 
 template<typename T>
 QVariant attrData(const zeno::AttrVector<T> &attr, const QModelIndex &index) {
-    std::string attr_name = attr.attr_keys()[index.column() - 1];
+    std::string attr_name = attr.template attr_keys<AttrAcceptAll>()[index.column() - 1];
     if (attr.template attr_is<float>(attr_name)) {
         return attr.template attr<float>(attr_name)[index.row()];
     }
