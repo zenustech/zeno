@@ -675,38 +675,6 @@ void ZenoMainWindow::onlyEditorLayout()
     }
 }
 
-void ZenoMainWindow::writeHoudiniStyleLayout() {
-    QSettings settings("Zeno Inc.", "zeno2 ui1");
-    settings.beginGroup("mainWindow");
-    settings.setValue("geometry", saveGeometry());
-    settings.setValue("state", saveState());
-    settings.endGroup();
-}
-
-void ZenoMainWindow::writeSettings2() {
-    QSettings settings("Zeno Inc.", "zeno2 ui2");
-    settings.beginGroup("mainWindow");
-    settings.setValue("geometry", saveGeometry());
-    settings.setValue("state", saveState());
-    settings.endGroup();
-}
-
-void ZenoMainWindow::readHoudiniStyleLayout() {
-    QSettings settings("Zeno Inc.", "zeno2 ui1");
-    settings.beginGroup("mainWindow");
-    restoreGeometry(settings.value("geometry").toByteArray());
-    restoreState(settings.value("state").toByteArray());
-    settings.endGroup();
-}
-
-void ZenoMainWindow::readSettings2() {
-    QSettings settings("Zeno Inc.", "zeno2 ui2");
-    settings.beginGroup("mainWindow");
-    restoreGeometry(settings.value("geometry").toByteArray());
-    restoreState(settings.value("state").toByteArray());
-    settings.endGroup();
-}
-
 void ZenoMainWindow::onRunClicked(int beginFrame, int endFrame) {
     auto pGraphsMgr = zenoApp->graphsManagment();
     IGraphsModel *pModel = pGraphsMgr->currentModel();
