@@ -58,7 +58,7 @@ namespace DisneyBSDF{
         vec3 alpha = vec3(1.0f) - exp(-5.09406f * a + 2.61188f * a2 - 4.31805f * a3);
         vec3 s = vec3(1.9f) - a + 3.5f * (a - vec3(0.8f)) * (a - vec3(0.8f));
 
-        return 1.0f / dot(s , scatterDistance);
+        return vec3(1.0f / dot(s, vec3(scatterDistance)));
     }
 
     static __inline__ __device__
@@ -85,7 +85,7 @@ namespace DisneyBSDF{
         float diffuseW       = dielectricBRDF;
         float clearcoatW     = 1.0f * clamp(clearCoat, 0.0f, 1.0f);
 
-        float norm = 1.0f/(specularW + transmissionW + diffuseW + clearcoatW + 1e-6);
+        float norm = 1.0f/(specularW + transmissionW + diffuseW + clearcoatW);
 
         pSpecular  = specularW      * norm;
         pSpecTrans = transmissionW  * norm;
@@ -511,7 +511,7 @@ namespace DisneyBSDF{
 
         fPdf = d / (4.0f * dot(wo,wm));
         rPdf = d /(4.0f * LoH);
-        reflectance = vec3(0.25f * clearCoat * g * f *d ) / rPdf; 
+        reflectance = vec3(0.25f * clearCoat * g * f *d ) / rPdf;
 
         Onb  tbn = Onb(N);
         tbn.inverse_transform(wi);
@@ -596,7 +596,7 @@ namespace DisneyBSDF{
             reflectance = G1v * baseColor;
 
             //fPdf *= (1.0f / (4 * abs(dot(wo, wm))));
-            float jacobian = 4 * abs(VoH);
+            float jacobian = 4 * abs(VoH)  + 1e-5;
             pdf = F / jacobian;
 
         }else{
@@ -618,7 +618,7 @@ namespace DisneyBSDF{
                 reflectance = G1v * baseColor;    
             }
             float LoH = abs(dot(wi,wm));
-            float jacobian = LoH  / (pow(LoH + relativeIOR * VoH, 2.0f));
+            float jacobian = LoH  / (pow(LoH + relativeIOR * VoH, 2.0f) + 1e-5) + 1e-5;
             pdf = (1.0f - F) / jacobian;
 
         }
@@ -681,19 +681,13 @@ namespace DisneyBSDF{
 
             )
     {
-        float si;
-        if(wo.z != 0.0f){
-            si = wo.z > 0.0f ? 1.0f : -1.0f;
-        }else{
-            si = 0.0f;
-        }
 
         float r0 = rnd(seed);
         float r1 = rnd(seed);
-        wi =  normalize(si * BRDFBasics::sampleOnHemisphere(seed, 1.0f));
+        wi =  normalize(BRDFBasics::sampleOnHemisphere(seed, 1.0f));
         vec3 wm = normalize(wi+wo);
         float NoL = wi.z;
-        if(NoL == 0.0f){
+        if(abs(NoL)<1e-6 ){
             fPdf = 0.0f;
             rPdf = 0.0f;
             reflectance = vec3(0.0f);
@@ -701,7 +695,7 @@ namespace DisneyBSDF{
             return false;
         }
 
-        float NoV = NoL;
+        float NoV = wo.z;
 
         vec3 color = baseColor;
         float pdf;
@@ -728,7 +722,7 @@ namespace DisneyBSDF{
         vec3 sheenTerm = EvaluateSheen(baseColor, sheen, sheenTint, HoL);
         float diff = EvaluateDisneyDiffuse(roughness, flatness, wi, wo, wm, thin);
 
-        reflectance = sheen + color * (diff / pdf);
+        reflectance = sheen + color * (diff / (pdf));
         fPdf = abs(NoL) * pdf;
         rPdf = abs(NoL) * pdf;
         Onb  tbn = Onb(N);
@@ -816,7 +810,9 @@ namespace DisneyBSDF{
             fPdf = 0.000000001f;
             rPdf = 0.000000001f;
         }
+        reflectance = clamp(reflectance, vec3(0,0,0), vec3(1,1,1));
         if(pLobe > 0.0f){
+            pLobe = clamp(pLobe, 0.001f, 0.999f);
             reflectance = reflectance * (1.0f/pLobe);
             rPdf *= pLobe;
             fPdf *= pLobe;

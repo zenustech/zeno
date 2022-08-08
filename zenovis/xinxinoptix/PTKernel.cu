@@ -65,7 +65,7 @@ extern "C" __global__ void __raygen__rg()
 
             //result += prd.emitted;
             if(prd.countEmitted==false || depth>0)
-                result += prd.radiance * prd.attenuation2/(prd.prob2+1e-6);
+                result += prd.radiance * prd.attenuation2/(prd.prob2+1e-5);
             if(prd.countEmitted==true && depth>0)
                 prd.done = true;
             if( prd.done  || depth >= 5 ) // TODO RR, variable for depth

@@ -79,20 +79,20 @@ MatInput const &attrs) {
     MatOutput mats;
     /* MODME */
     mats.basecolor = mat_basecolor;
-    mats.metallic = mat_metallic;
-    mats.roughness = mat_roughness;
+    mats.metallic = clamp(mat_metallic,0.0f,1.0f);
+    mats.roughness = clamp(mat_roughness,0.01,0.99);
     mats.subsurface = mat_subsurface;
     mats.specular = mat_specular;
     mats.specularTint = mat_specularTint;
-    mats.anisotropic = mat_anisotropic;
+    mats.anisotropic = clamp(mat_anisotropic,0.0f,1.0f);
     mats.sheen = mat_sheen;
     mats.sheenTint = mat_sheenTint;
-    mats.clearcoat = mat_clearcoat;
+    mats.clearcoat = clamp(mat_clearcoat,0.0f,1.0f);
     mats.clearcoatGloss = mat_clearcoatGloss;
     mats.opacity = mat_opacity;
     mats.nrm = mat_normal;
     mats.emission = mat_emission;
-    mats.specTrans = mat_specTrans;
+    mats.specTrans = clamp(mat_specTrans,0.0f,1.0f);
     mats.ior = mat_ior;
     mats.scatterDistance = mat_scatterDistance;
     mats.flatness = mat_flatness;
@@ -228,7 +228,7 @@ extern "C" __global__ void __anyhit__shadow_cutout()
         N = mats.nrm.x * attrs.tang + mats.nrm.y * b + mats.nrm.z * attrs.nrm;
     }
     //end of material computation
-    mats.metallic = clamp(mats.metallic,0.01, 0.99);
+    //mats.metallic = clamp(mats.metallic,0.01, 0.99);
     mats.roughness = clamp(mats.roughness, 0.01,0.99);
 
     /* MODME */
@@ -390,7 +390,7 @@ extern "C" __global__ void __closesthit__radiance()
                                 zenotex30, 
                                 zenotex31,attrs);
     //end of material computation
-    mats.metallic = clamp(mats.metallic,0.01, 0.99);
+    //mats.metallic = clamp(mats.metallic,0.01, 0.99);
     mats.roughness = clamp(mats.roughness, 0.01,0.99);
     if(length(attrs.tang)>0)
     {
@@ -528,7 +528,7 @@ extern "C" __global__ void __closesthit__radiance()
 
     }
     
-    //prd->passed = (flag == DisneyBSDF::transmissionEvent) ;
+    prd->passed = (flag == DisneyBSDF::transmissionEvent) ;
 
     prd->prob *= 1.0f;
     prd->origin = P;
