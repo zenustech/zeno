@@ -40,14 +40,12 @@ file(GLOB NOSYS_SOURCE nosys/*.cpp nosys/*.h)
 
 target_sources(zeno PRIVATE ${FLIP_SOURCE} ${NOSYS_SOURCE})
 
-#[=[
 #simd compiler flags
 if (MSVC)
-    target_compile_options(zeno PRIVATE "/arch:AVX")
+    target_compile_options(zeno PRIVATE $<IF:$<COMPILE_LANGUAGE:CXX>, /arch:AVX, >)
 else()
-    target_compile_options(zeno PRIVATE -mavx -mfma)
+    target_compile_options(zeno PRIVATE $<IF:$<COMPILE_LANGUAGE:CXX>, -mavx -mfma, >)
 endif()
-#]=]
 
 
 target_include_directories(zeno PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
