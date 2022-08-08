@@ -430,13 +430,6 @@ struct ToBoundaryPrimitive : INode {
                             reinterpret_bits<float>(edgeInds[0]);
                         edges("inds", 1, id) =
                             reinterpret_bits<float>(edgeInds[1]);
-                        if (i < 10 || i > n - 10) {
-                            fmt::print(
-                                "surf edge [{}] inds <{}, {}> (<{}, {}>)\n", i,
-                                edgeInds[0], edgeInds[1],
-                                reinterpret_bits<int>(edges("inds", 0, id)),
-                                reinterpret_bits<int>(edges("inds", 1, id)));
-                        }
                     }
                 });
             auto seCnt = surfEdgeCnt.getVal();
