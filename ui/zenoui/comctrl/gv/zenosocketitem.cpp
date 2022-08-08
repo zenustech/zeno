@@ -41,7 +41,7 @@ void ZenoSocketItem::socketNamePosition(const QPointF& nameScenePos)
 
 QRectF ZenoSocketItem::boundingRect() const
 {
-    static int sLargeMargin = ZenoStyle::dpiScaled(20);
+    static int sLargeMargin = ZenoStyle::dpiScaled(40);
     static int sSmallMargin = ZenoStyle::dpiScaled(10);
 
     QRectF rc = ZenoImageItem::boundingRect();

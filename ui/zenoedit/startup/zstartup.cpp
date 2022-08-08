@@ -6,12 +6,13 @@
 #include <QApplication>
 #include <QSettings>
 #include <algorithm>
+#include "settings/zsettings.h"
 
 void startUp()
 {
     zeno::setExecutableDir(QCoreApplication::applicationDirPath().toStdString());
 
-    QSettings settings("ZenusTech", "Zeno");
+    QSettings settings(zsCompanyName, zsEditor);
     QVariant nas_loc_v = settings.value("nas_loc");
     if (!nas_loc_v.isNull()) {
         zeno::setConfigVariable("NASLOC", nas_loc_v.toString().toStdString());

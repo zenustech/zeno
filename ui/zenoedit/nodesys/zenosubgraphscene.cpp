@@ -557,6 +557,7 @@ void ZenoSubGraphScene::onSocketAbsorted(const QPointF mousePos)
     QPointF pos = mousePos;
     QList<QGraphicsItem *> catchedItems = items(pos);
     QList<ZenoNode *> catchNodes;
+    QList<ZenoSocketItem* > catchSocks;
     for (QGraphicsItem *item : catchedItems)
     {
         if (ZenoNode *pNode = qgraphicsitem_cast<ZenoNode *>(item))
@@ -566,8 +567,30 @@ void ZenoSubGraphScene::onSocketAbsorted(const QPointF mousePos)
                 catchNodes.append(pNode);
             }
         }
+        else if (ZenoSocketItem* sock = qgraphicsitem_cast<ZenoSocketItem*>(item))
+        {
+            catchSocks.append(sock);
+        }
     }
     //adsorption
+    if (!catchSocks.isEmpty())
+    {
+        ZenoSocketItem* pSocket = catchSocks[0];
+        if (pSocket)
+        {
+            bool bInput = false;
+            QString nodeid2, sockName2;
+            pSocket->getSocketInfo(bInput, nodeid2, sockName2);
+            if (bInput != bFixedInput && nodeid2 != nodeId)
+            {
+                pos = pSocket->sceneBoundingRect().center();
+                m_tempLink->setAdsortedSocket(pSocket);
+                m_tempLink->setFloatingPos(pos);
+                return;
+            }
+        }
+    }
+    
     if (!catchNodes.isEmpty())
     {
         ZenoNode *pTarget = nullptr;
