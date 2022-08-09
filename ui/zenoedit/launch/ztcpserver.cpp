@@ -152,7 +152,7 @@ void ZTcpServer::onProcFinished(int exitCode, QProcess::ExitStatus exitStatus)
         if (m_proc)
             m_proc->terminate();
         m_proc= nullptr;
-        zeno::log_info("runner process crashed with code {}", exitCode);
+        zeno::log_error("runner process crashed with code {}", exitCode);
     }
     viewDecodeFinish();
 }
