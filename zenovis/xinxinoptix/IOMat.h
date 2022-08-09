@@ -20,6 +20,7 @@ struct MatOutput {
     float specTrans;
     float scatterDistance;
     float thin;
+    vec3  sssColor;
 
 
     vec3 nrm;

@@ -12,7 +12,7 @@ static __inline__ __device__  float fresnel(float cosT){
 static __inline__ __device__ vec3 fresnelSchlick(vec3 r0, float radians)
 {
     float exponential = powf( 1.0f - radians, 5.0f);
-    return r0 + (vec3(1.0f) - r0) * exponential;
+    return clamp(r0 + (vec3(1.0f) - r0) * exponential,r0,vec3(1,1,1));
 }
 static __inline__ __device__ float fresnelSchlick(float r0, float radians)
 {

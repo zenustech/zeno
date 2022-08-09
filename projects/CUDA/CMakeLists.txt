@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.19)
 
-if (NOT ZENO_WITH_zenvdb OR NOT ZENO_WITH_ZenoFX)
-    message(FATAL_ERROR "zenvdb and ZenoFX must be ON when CUDA is ON! "
-        "Please specify: -DZENO_WITH_zenvdb:BOOL=ON -DZENO_WITH_ZenoFX:BOOL=ON")
+if (NOT ZENO_WITH_zenvdb OR NOT ZENO_WITH_ZenoFX OR NOT ZENO_SYSTEM_OPENVDB)
+    message(FATAL_ERROR "zenvdb, ZenoFX and system OpenVDB must be ON when CUDA is ON! "
+        "Please specify: -DZENO_WITH_zenvdb:BOOL=ON -DZENO_WITH_ZenoFX:BOOL=ON -DZENO_SYSTEM_OPENVDB:BOOL=ON")
 endif()
 
 # assume cuda
@@ -19,29 +19,22 @@ add_subdirectory(zpc)
 
 add_library(zshelper INTERFACE)
 target_link_libraries(zshelper INTERFACE zensim ZFX)
-target_compile_features(zshelper INTERFACE cxx_std_17 cuda_std_17)
-
-if(WIN32)
-else()
-  # BATE: nono wxl stop using -march=native!
-  # the GitHub CI machine has AVX512, but most people doesn't have it
-  # this would cause one who doesn't have AVX512 cannot start zeno at all!
-  # so this is anti-deployment, please stop.
-  #target_compile_options(zshelper
-    #INTERFACE $<$<COMPILE_LANGUAGE:CXX>:-march=native>
-  #)
-endif()
 
 target_compile_features(zeno PRIVATE cuda_std_17)
+#[=[
 target_compile_options(zeno
-  PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:${CMAKE_CUDA_FLAGS} --expt-extended-lambda --expt-relaxed-constexpr --default-stream=per-thread -lineinfo --ptxas-options=-allow-expensive-optimizations=true -Xcudafe --display_error_number,--diag_suppress=implicit_return_from_non_void_function,--diag_suppress=2642,--diag_suppress=554>
+  PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:${CMAKE_CUDA_FLAGS} --extended-lambda --expt-relaxed-constexpr --default-stream=per-thread -lineinfo --ptxas-options=-allow-expensive-optimizations=true -Xcudafe --display_error_number,--diag_suppress=implicit_return_from_non_void_function,--diag_suppress=2642,--diag_suppress=554>
 )
+#]=]
 target_link_options(zeno
   PUBLIC $<$<LINK_LANGUAGE:CUDA>:-dlto>
 )
 target_link_libraries(zeno PRIVATE zshelper CUDA::cufft)
 
 #[=[
+target_sources(zeno PRIVATE
+  test1.cu
+)
 set_target_properties(zeno
   PROPERTIES  CUDA_EXTENSIONS ON
   CUDA_SEPARABLE_COMPILATION ON
@@ -50,7 +43,6 @@ set_target_properties(zeno
 # CUDA_ARCHITECTURES OFF
 )
 #]=]
-
 
 # fluid
 target_sources(zeno PRIVATE
