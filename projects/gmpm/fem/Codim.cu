@@ -1564,6 +1564,8 @@ struct CodimStepping : INode {
         if (primHandle.category == ZenoParticles::curve) {
           if (primHandle.isBoundary())
             continue;
+          /// ref: Fast Simulation of Mass-Spring Systems
+          /// credits: Tiantian Liu
           cudaPol(
               zs::range(primHandle.getEles().size()),
               [vtemp = proxy<space>({}, vtemp),
@@ -1599,16 +1601,6 @@ struct CodimStepping : INode {
                 auto lij = xij.norm();
                 auto dij = xij / lij;
                 auto gij = k * (lij - rl) * dij;
-#if 0
-                if (ei < 10 || ei > n - 10)
-                  printf(
-                      "%d-th string k: %f (model %f), rest length: %f, vol: "
-                      "%f, inds: <%d, %d>, gij(%f, %f, %f), dij(%f, %f, %f)\n",
-                      ei, (float)k, (float)model.mu, (float)rl, (float)vole,
-                      (int)(inds[0] - vOffset), (int)(inds[1] - vOffset),
-                      (float)gij(0), (float)gij(1), (float)gij(2),
-                      (float)dij(0), (float)dij(1), (float)dij(2));
-#endif
 
                 // gradient
                 auto vfdt2 = gij * (dt * dt) * vole;
@@ -1620,22 +1612,12 @@ struct CodimStepping : INode {
                 if (!includeHessian)
                   return;
                 auto H = zs::vec<T, 6, 6>::zeros();
-#if 1
                 auto K =
                     k * (mat3::identity() -
                          rl / lij * (mat3::identity() - dyadic_prod(dij, dij)));
-#else
-                auto K = k * mat3::identity();
-#endif
-            // make_pd(K);  // symmetric semi-definite positive, not necessary
-#if 0
+                // make_pd(K);  // symmetric semi-definite positive, not
+                // necessary
 
-                if (ei < 10 || ei > n - 10)
-                  printf("%d-th string: [%f, %f, %f; %f, %f, %f; %f, %f, %f]\n",
-                         ei, (float)K(0, 0), (float)K(0, 1), (float)K(0, 2),
-                         (float)K(1, 0), (float)K(1, 1), (float)K(1, 2),
-                         (float)K(2, 0), (float)K(2, 1), (float)K(2, 2));
-#endif
                 for (int i = 0; i != 3; ++i)
                   for (int j = 0; j != 3; ++j) {
                     H(i, j) = K(i, j);
