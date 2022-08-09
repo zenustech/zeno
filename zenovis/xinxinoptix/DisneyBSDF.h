@@ -58,7 +58,7 @@ namespace DisneyBSDF{
         vec3 alpha = vec3(1.0f) - exp(-5.09406f * a + 2.61188f * a2 - 4.31805f * a3);
         vec3 s = vec3(1.9f) - a + 3.5f * (a - vec3(0.8f)) * (a - vec3(0.8f));
 
-        return vec3(1.0f / dot(s, vec3(scatterDistance)));
+        return vec3(1.0f / (s*scatterDistance));
     }
 
     static __inline__ __device__
@@ -655,7 +655,7 @@ namespace DisneyBSDF{
     bool SampleDisneyDiffuse(
         unsigned int& seed,
         vec3 baseColor,
-        vec3 transmiianceColor,
+        vec3 transmitanceColor,
         float scatterDistance,
         float sheen,
         float sheenTint,
@@ -708,7 +708,7 @@ namespace DisneyBSDF{
             }else{
                 flag = transmissionEvent;
                 phaseFuncion = (!is_inside)  ? isotropic : vacuum;
-                extinction = CalculateExtinction(transmiianceColor, scatterDistance);
+                extinction = CalculateExtinction(transmitanceColor, scatterDistance);
             }
         }else{
             pdf = 1.0 - subsurface;
@@ -729,7 +729,8 @@ namespace DisneyBSDF{
     static __inline__ __device__
     float SampleDistance(unsigned int &seed, vec3 extinction, float &pdf)
     {
-        if(length(extinction)<1e-3){
+        if(length(extinction)<1e-5){
+            pdf=1.0;
             return 1e16;
         }
         float ps = dot(extinction, vec3(1));
@@ -771,7 +772,7 @@ namespace DisneyBSDF{
         float norm = sqrtf(max(0.0f, 1.0f - u * u));
         float theta = 2.0f * M_PIf * r0;
 
-        return normalize(vec3(norm * cos(theta), u, norm * sin(theta)));
+        return normalize(vec3(norm * cos(theta), norm * sin(theta), u));
     }
 
     static __inline__ __device__

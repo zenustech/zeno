@@ -129,6 +129,7 @@ extern "C" __global__ void __miss__radiance()
     prd->direction = DisneyBSDF::SampleScatterDirection(prd->seed);
     float tmpPDF;
     prd->maxDistance = DisneyBSDF::SampleDistance(prd->seed,prd->extinction,tmpPDF);
+    prd->scatterPDF= tmpPDF;
 
     if(length(prd->attenuation)<1e-5f){
         prd->done = true;

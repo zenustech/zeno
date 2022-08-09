@@ -273,6 +273,11 @@ extern "C" __global__ void __anyhit__shadow_cutout()
                 optixTerminateRay();
             }
             if(specTrans > 0.0f){
+                if(rnd(prd->seed)<1-specTrans)
+                {
+                    prd->shadowAttanuation = vec3(0,0,0);
+                    optixTerminateRay();
+                }
                 float nDi = fabs(dot(N,ray_dir));
                 vec3 tmp = prd->shadowAttanuation;
                 tmp = tmp * (vec3(1)-BRDFBasics::fresnelSchlick(vec3(1)-basecolor,nDi));
@@ -548,11 +553,13 @@ extern "C" __global__ void __closesthit__radiance()
             prd->transColor = transmittanceColor;
             float tmpPDF;
             prd->maxDistance = DisneyBSDF::SampleDistance(prd->seed,prd->extinction,tmpPDF);
+            prd->scatterPDF = tmpPDF;
         }
         if(!prd->is_inside){
             prd->attenuation *= DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
             prd->maxDistance = 1e16f;
             prd->medium = DisneyBSDF::PhaseFunctions::vacuum;
+            prd->scatterPDF = 1.0;
         }
     }
 
