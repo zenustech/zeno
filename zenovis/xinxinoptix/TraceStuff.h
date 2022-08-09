@@ -19,6 +19,10 @@ static __forceinline__ __device__ void  packPointer( void* ptr, unsigned int& i0
     i1 = uptr & 0x00000000ffffffff;
 }
 
+enum medium{
+    vacum,
+    isotropicScatter
+};
 
 struct RadiancePRD
 {
@@ -39,10 +43,18 @@ struct RadiancePRD
     int          countEmitted;
     int          done;
     int          pad;
+    float3       shadowAttanuation;
+    int          medium;
+    float        scatterDistance;
+    vec3         transColor;
+    vec3         extinction;
+    float        scatterPDF;
+    float        maxDistance;
+    
 };
 
 
-static __forceinline__ __device__ void traceRadiance(
+static __forceinline__ __device__ void  traceRadiance(
         OptixTraversableHandle handle,
         float3                 ray_origin,
         float3                 ray_direction,
@@ -76,10 +88,12 @@ static __forceinline__ __device__ bool traceOcclusion(
         float3                 ray_origin,
         float3                 ray_direction,
         float                  tmin,
-        float                  tmax
+        float                  tmax,
+        RadiancePRD*           prd
         )
 {
-    unsigned int occluded = 0u;
+    unsigned int u0, u1;
+    packPointer( prd, u0, u1 );
     optixTrace(
             handle,
             ray_origin,
@@ -91,9 +105,9 @@ static __forceinline__ __device__ bool traceOcclusion(
             OPTIX_RAY_FLAG_NONE,
             RAY_TYPE_OCCLUSION,      // SBT offset
             RAY_TYPE_COUNT,          // SBT stride
-            RAY_TYPE_OCCLUSION       // missSBTIndex
-            );
-        return occluded;//???
+            RAY_TYPE_OCCLUSION,       // missSBTIndex
+            u0,u1);
+        return false;//???
 }
 
 static __forceinline__ __device__ RadiancePRD* getPRD()
