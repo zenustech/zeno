@@ -917,6 +917,7 @@ static void cleanupState( PathTracerState& state )
         state.d_gas_output_buffer.reset();
         state.accum_buffer_p.reset();
         state.d_params.reset();
+    state = {};
 }
 
 static void detectHuangrenxunHappiness() {
@@ -1605,9 +1606,23 @@ void *optixgetimg(int &w, int &h) {
 //}
 
 void optixcleanup() {
-    return;             // other wise will crasu
-    CUDA_SYNC_CHECK();
-    cleanupState( state );
+    using namespace OptixUtil;
+    try {
+        CUDA_SYNC_CHECK();
+        cleanupState( state );
+        rtMaterialShaders.clear();
+    } catch (sutil::Exception const &e) {
+        std::cout << "OptixCleanupError: " << e.what() << std::endl;
+        std::memset((void *)&state, 0, sizeof(state));
+        std::memset((void *)&rtMaterialShaders[0], 0, sizeof(rtMaterialShaders[0]) * rtMaterialShaders.size());
+
+             context                  .handle=0;
+pipeline                 .handle=0;
+ray_module               .handle=0;
+raygen_prog_group        .handle=0;
+radiance_miss_group      .handle=0;
+occlusion_miss_group     .handle=0;
+    }
 }
 #if 0
         if( outfile.empty() )
