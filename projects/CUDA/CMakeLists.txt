@@ -98,6 +98,7 @@ target_sources(zeno PRIVATE
   geometry/BaryCentricInterpolator.cu
   geometry/BiharmonicBoundedWeight.cu
   geometry/MeshIO.cu
+  geometry/Jiggle.cu
 )
 # ocean
 #target_sources(zeno PRIVATE
