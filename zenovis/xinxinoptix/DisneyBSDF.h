@@ -58,7 +58,7 @@ namespace DisneyBSDF{
         vec3 alpha = vec3(1.0f) - exp(-5.09406f * a + 2.61188f * a2 - 4.31805f * a3);
         vec3 s = vec3(1.9f) - a + 3.5f * (a - vec3(0.8f)) * (a - vec3(0.8f));
 
-        return vec3(1.0f / (s*scatterDistance));
+        return vec3(1.0f / (a*scatterDistance));
     }
 
     static __inline__ __device__
