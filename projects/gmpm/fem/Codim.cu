@@ -2482,28 +2482,31 @@ struct CodimStepping : INode {
           Es.push_back(reduce(pol, es) * kappa);
 
 #if s_enableFriction
-          es.resize(count_warps(coOffset));
-          es.reset(0);
-          pol(range(coOffset),
-              [vtemp = proxy<space>({}, vtemp), es = proxy<space>(es),
-               gn = s_groundNormal, dHat2 = dHat * dHat, epsvh = epsv * dt,
-               fricMu = fricMu, n = coOffset] ZS_LAMBDA(int vi) mutable {
-                auto fn = vtemp("fn", vi);
-                T E = 0;
-                if (fn != 0) {
-                  auto dx = vtemp.pack<3>("xn", vi) - vtemp.pack<3>("xhat", vi);
-                  auto relDX = dx - gn.dot(dx) * gn;
-                  auto relDXNorm2 = relDX.l2NormSqr();
-                  auto relDXNorm = zs::sqrt(relDXNorm2);
-                  if (relDXNorm2 >= epsvh * epsvh) {
-                    E = fn * (relDXNorm - epsvh / 2);
-                  } else {
-                    E = fn * relDXNorm2 / epsvh / 2;
+          if (fricMu != 0) {
+            es.resize(count_warps(coOffset));
+            es.reset(0);
+            pol(range(coOffset),
+                [vtemp = proxy<space>({}, vtemp), es = proxy<space>(es),
+                 gn = s_groundNormal, dHat2 = dHat * dHat, epsvh = epsv * dt,
+                 fricMu = fricMu, n = coOffset] ZS_LAMBDA(int vi) mutable {
+                  auto fn = vtemp("fn", vi);
+                  T E = 0;
+                  if (fn != 0) {
+                    auto dx =
+                        vtemp.pack<3>("xn", vi) - vtemp.pack<3>("xhat", vi);
+                    auto relDX = dx - gn.dot(dx) * gn;
+                    auto relDXNorm2 = relDX.l2NormSqr();
+                    auto relDXNorm = zs::sqrt(relDXNorm2);
+                    if (relDXNorm2 >= epsvh * epsvh) {
+                      E = fn * (relDXNorm - epsvh / 2);
+                    } else {
+                      E = fn * relDXNorm2 / epsvh / 2;
+                    }
                   }
-                }
-                reduce_to(vi, n, E, es[vi / 32]);
-              });
-          Es.push_back(reduce(pol, es));
+                  reduce_to(vi, n, E, es[vi / 32]);
+                });
+            Es.push_back(reduce(pol, es));
+          }
 #endif
         }
       }
