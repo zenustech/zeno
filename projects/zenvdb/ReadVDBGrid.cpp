@@ -150,7 +150,7 @@ static int defReadVDBGrid = zeno::defNodeClass<ReadVDBGrid>(
                     },
                     /* category: */
                     {
-                        "openvdb",
+                        "deprecated",
                     }});
 
 struct ImportVDBGrid : zeno::INode {
@@ -171,6 +171,19 @@ static int defImportVDBGrid = zeno::defNodeClass<ImportVDBGrid>("ImportVDBGrid",
     {"string", "type", ""},
     }, /* category: */ {
     "deprecated",
+    }});
+
+struct ReadVDB : ImportVDBGrid {
+};
+static int defReadVDB = zeno::defNodeClass<ReadVDB>("ReadVDB",
+    { /* inputs: */ {
+    "path",
+    }, /* outputs: */ {
+    "data",
+    }, /* params: */ {
+    {"string", "type", ""},
+    }, /* category: */ {
+    "openvdb",
     }});
 
 

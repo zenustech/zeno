@@ -79,7 +79,7 @@ struct PrimColorByTag : INode {
         auto clrAttr = get_input<StringObject>("clrAttr")->get();
         auto seed = get_input<NumericObject>("seed")->get<int>();
 
-        primColorByTag(prim.get(), tagAttr, clrAttr);
+        primColorByTag(prim.get(), tagAttr, clrAttr, seed);
 
         set_output("prim", std::move(prim));
     }

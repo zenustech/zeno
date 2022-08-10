@@ -132,7 +132,7 @@ static void osdPrimSubdiv(PrimitiveObject *prim, int levels, std::string edgeCre
     const int maxlevel=levels;
     if (maxlevel <= 0 || !prim->verts.size()) return;
 
-    if (!(prim->loops.size() && prim->loops.has_attr("uvi")))
+    if (prim->loops.size() && prim->loop_uvs.size())
         hasLoopUVs = false;
 
         //nCoarseVerts=0,
@@ -200,7 +200,7 @@ static void osdPrimSubdiv(PrimitiveObject *prim, int levels, std::string edgeCre
             /*auto &loopsInd = loopsIndTab.emplace_back();*/
             uvsInd.resize(polysInd.size());
             int offsetred = prim->tris.size() * 3 + prim->quads.size() * 4;
-            auto &loop_uvs = prim->loops.attr<int>("uvi");
+            auto &loop_uvs = prim->loop_uvs;
             for (int i = 0; i < prim->polys.size(); i++) {
                 auto [base, len] = prim->polys[i];
                 if (len <= 2) continue;
@@ -558,7 +558,7 @@ static void osdPrimSubdiv(PrimitiveObject *prim, int levels, std::string edgeCre
             }
 
             if (hasLoopUVs) {
-                auto &loop_uvs = prim->loops.attr<int>("uvi");
+                auto &loop_uvs = prim->loop_uvs;
                 loop_uvs.resize(nfaces * 4);
 
                 for (int face = 0; face < nfaces; ++face) {

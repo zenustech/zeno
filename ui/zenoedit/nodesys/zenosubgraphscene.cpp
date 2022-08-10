@@ -321,7 +321,7 @@ void ZenoSubGraphScene::markError(const QString& nodeid)
     ZASSERT_EXIT(m_nodes.find(nodeid) != m_nodes.end());
     ZenoNode *pNode = m_nodes[nodeid];
     pNode->markError(true);
-    pNode->setSelected(true);
+    //pNode->setSelected(true);
     m_errNodes.append(nodeid);
 }
 

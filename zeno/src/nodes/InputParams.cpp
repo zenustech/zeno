@@ -101,7 +101,7 @@ ZENDEFNODE(ParamFormat, {
     },
     {"format"},
     {},
-    {"layout"},
+    {"string"},
 });
 
 struct ParamFileParser : zeno::INode {
@@ -256,7 +256,7 @@ ZENDEFNODE(ParamFileParser, {
         {"DictObject", "params"},
     },
     {},
-    {"layout"},
+    {"string"},
 });
 
 }
