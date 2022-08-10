@@ -218,6 +218,8 @@ int ZenoStyle::styleHint(StyleHint sh, const QStyleOption* opt, const QWidget* w
 {
 	//if (QStyle::SH_ItemView_PaintAlternatingRowColorsForEmptyArea == sh)
 	//	return 1;
+    if (QStyle::SH_MenuBar_AltKeyNavigation == sh)
+        return 0;
     return QProxyStyle::styleHint(sh, opt, w, shret);
 }
 

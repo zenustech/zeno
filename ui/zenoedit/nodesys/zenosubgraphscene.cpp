@@ -61,7 +61,7 @@ void ZenoSubGraphScene::initModel(const QModelIndex& index)
         const QModelIndex& idx = pGraphsModel->index(r, m_subgIdx);
         ZenoNode* pNode = createNode(idx, m_nodeParams);
         connect(pNode, &ZenoNode::socketClicked, this, &ZenoSubGraphScene::onSocketClicked);
-        pNode->initUI(m_subgIdx, idx);
+        pNode->initUI(this, m_subgIdx, idx);
         addItem(pNode);
         const QString& nodeid = pNode->nodeId();
         m_nodes[nodeid] = pNode;
@@ -180,7 +180,7 @@ void ZenoSubGraphScene::onDataChanged(const QModelIndex& subGpIdx, const QModelI
         //now we choose the second.
         if (m_nodes.find(id) != m_nodes.end())
         {
-            m_nodes[id]->onSocketsUpdate(role == ROLE_INPUTS, false);
+            m_nodes[id]->onSocketsUpdate(this, role == ROLE_INPUTS, false);
         }
 	}
     if (role == ROLE_OPTIONS)
@@ -787,7 +787,7 @@ void ZenoSubGraphScene::onRowsInserted(const QModelIndex& subgIdx, const QModelI
     QModelIndex idx = pGraphsModel->index(first, m_subgIdx);
     ZenoNode *pNode = createNode(idx, m_nodeParams);
     connect(pNode, &ZenoNode::socketClicked, this, &ZenoSubGraphScene::onSocketClicked);
-    pNode->initUI(m_subgIdx, idx);
+    pNode->initUI(this, m_subgIdx, idx);
     addItem(pNode);
     QString id = pNode->nodeId();
     m_nodes[id] = pNode;

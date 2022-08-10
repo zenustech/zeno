@@ -34,7 +34,7 @@ void BlackboardNode::onUpdateParamsNotDesc()
     }
 }
 
-ZenoBackgroundWidget* BlackboardNode::initBodyWidget()
+ZenoBackgroundWidget* BlackboardNode::initBodyWidget(ZenoSubGraphScene* pScene)
 {
     ZenoBackgroundWidget *bodyWidget = new ZenoBackgroundWidget(this);
 

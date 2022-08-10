@@ -2,6 +2,7 @@
 #include "zenosocketitem.h"
 #include <zenoui/render/common_id.h>
 #include <zenoui/style/zenostyle.h>
+#include <zeno/utils/log.h>
 
 
 ZenoParamWidget::ZenoParamWidget(QGraphicsItem* parent, Qt::WindowFlags wFlags)
@@ -83,8 +84,9 @@ void ZenoGvLineEdit::paintEvent(QPaintEvent* e)
 ////////////////////////////////////////////////////////////////////////////////
 ZenoParamLineEdit::ZenoParamLineEdit(const QString &text, PARAM_CONTROL ctrl, LineEditParam param, QGraphicsItem *parent)
     : ZenoParamWidget(parent)
+    , m_pSlider(nullptr)
 {
-    m_pLineEdit = new QLineEdit;
+    m_pLineEdit = new ZLineEdit;
     m_pLineEdit->setText(text);
     m_pLineEdit->setTextMargins(param.margins);
     m_pLineEdit->setPalette(param.palette);
@@ -99,6 +101,16 @@ void ZenoParamLineEdit::setValidator(const QValidator* pValidator)
     m_pLineEdit->setValidator(pValidator);
 }
 
+void ZenoParamLineEdit::setScalesSlider(QGraphicsScene* pScene, const QVector<qreal>& scales)
+{
+    m_pSlider = new ZenoGvScaleSlider(scales, nullptr);
+    if (pScene)
+        pScene->addItem(m_pSlider);
+    m_pSlider->setWindowFlags(Qt::Window | Qt::FramelessWindowHint);
+    m_pSlider->setZValue(1000);
+    m_pSlider->hide();
+}
+
 QString ZenoParamLineEdit::text() const
 {
     return m_pLineEdit->text();
@@ -107,6 +119,31 @@ QString ZenoParamLineEdit::text() const
 void ZenoParamLineEdit::setText(const QString &text)
 {
     m_pLineEdit->setText(text);
+}
+
+void ZenoParamLineEdit::keyPressEvent(QKeyEvent* event)
+{
+    if (event->key() == Qt::Key_Alt)
+    {
+        if (m_pSlider)
+        {
+            m_pSlider->setPos(this->scenePos());
+            m_pSlider->show();
+        }
+    }
+    ZenoParamWidget::keyPressEvent(event);
+}
+
+void ZenoParamLineEdit::keyReleaseEvent(QKeyEvent* event)
+{
+    if (event->key() == Qt::Key_Alt)
+    {
+        if (m_pSlider)
+        {
+            //m_pSlider->hide();
+        }
+    }
+    ZenoParamWidget::keyReleaseEvent(event);
 }
 
 
@@ -433,12 +470,29 @@ bool ZenoParamBlackboard::eventFilter(QObject* object, QEvent* event)
 }
 
 
+/////////////////////////////////////////////////////////////////////////////////////
+ZenoGvScaleSlider::ZenoGvScaleSlider(const QVector<qreal>& scales, QGraphicsItem* parent)
+    : ZenoParamWidget(parent)
+    , m_pSlider(nullptr)
+{
+    m_pSlider = new ZScaleSlider(scales);
+    setWidget(m_pSlider);
+    setAcceptHoverEvents(true);
+    setFlags(ItemIsMovable | ItemIsSelectable | ItemIsFocusable);
+}
+
+ZenoGvScaleSlider::~ZenoGvScaleSlider()
+{
+}
+
+
 //////////////////////////////////////////////////////////////////////////////////////
 ZenoTextLayoutItem::ZenoTextLayoutItem(const QString &text, const QFont &font, const QColor &color, QGraphicsItem *parent)
     : QGraphicsLayoutItem()
     , QGraphicsTextItem(text, parent)
     , m_text(text)
     , m_bRight(false)
+    , m_pSlider(nullptr)
 {
     setZValue(ZVALUE_ELEMENT);
     setFont(font);
@@ -505,6 +559,11 @@ void ZenoTextLayoutItem::setMargins(qreal leftM, qreal topM, qreal rightM, qreal
     frame->setFrameFormat(format);
 }
 
+void ZenoTextLayoutItem::setBackground(const QColor& clr)
+{
+    m_bg = clr;
+}
+
 QRectF ZenoTextLayoutItem::boundingRect() const
 {
     QRectF rc = QRectF(QPointF(0, 0), geometry().size());
@@ -516,6 +575,12 @@ void ZenoTextLayoutItem::paint(QPainter *painter, const QStyleOptionGraphicsItem
     QStyleOptionGraphicsItem myOption(*option);
     myOption.state &= ~QStyle::State_Selected;
     myOption.state &= ~QStyle::State_HasFocus;
+    if (m_bg.isValid())
+    {
+        painter->setPen(Qt::NoPen);
+        painter->setBrush(m_bg);
+        painter->drawRect(boundingRect());
+    }
     QGraphicsTextItem::paint(painter, &myOption, widget);
 }
 
@@ -524,6 +589,16 @@ QPainterPath ZenoTextLayoutItem::shape() const
     QPainterPath path;
     path.addRect(boundingRect());
     return path;
+}
+
+void ZenoTextLayoutItem::setScalesSlider(QGraphicsScene* pScene, const QVector<qreal>& scales)
+{
+    m_scales = scales;
+    m_pSlider = new ZenoGvScaleSlider(scales, nullptr);
+    if (pScene)
+        pScene->addItem(m_pSlider);
+    m_pSlider->setZValue(1000);
+    m_pSlider->hide();
 }
 
 QSizeF ZenoTextLayoutItem::sizeHint(Qt::SizeHint which, const QSizeF &constraint) const
@@ -573,6 +648,31 @@ void ZenoTextLayoutItem::hoverLeaveEvent(QGraphicsSceneHoverEvent* event)
     QGraphicsTextItem::hoverLeaveEvent(event);
     if (textInteractionFlags() & Qt::TextEditorInteraction)
         setCursor(QCursor(Qt::ArrowCursor));
+}
+
+void ZenoTextLayoutItem::keyPressEvent(QKeyEvent* event)
+{
+    if (event->key() == Qt::Key_Alt)
+    {
+        if (m_pSlider)
+        {
+            m_pSlider->setPos(this->scenePos());
+            m_pSlider->show();
+        }
+    }
+    QGraphicsTextItem::keyPressEvent(event);
+}
+
+void ZenoTextLayoutItem::keyReleaseEvent(QKeyEvent* event)
+{
+    if (event->key() == Qt::Key_Alt)
+    {
+        if (m_pSlider)
+        {
+            m_pSlider->hide();
+        }
+    }
+    QGraphicsTextItem::keyReleaseEvent(event);
 }
 
 

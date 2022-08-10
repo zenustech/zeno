@@ -8,6 +8,8 @@
 #include <zenoui/comctrl/zcombobox.h>
 #include <zenoui/comctrl/zveceditor.h>
 #include <zenoui/comctrl/zcheckboxbar.h>
+#include <zenoui/comctrl/zlineedit.h>
+#include <zenoui/comctrl/zscaleslider.h>
 
 
 class ZenoParamWidget : public QGraphicsProxyWidget
@@ -56,6 +58,18 @@ protected:
     void paintEvent(QPaintEvent *e) override;
 };
 
+class ZenoGvScaleSlider : public ZenoParamWidget
+{
+    Q_OBJECT
+public:
+    ZenoGvScaleSlider(const QVector<qreal>& scales, QGraphicsItem* parent = nullptr);
+    ~ZenoGvScaleSlider();
+
+private:
+    ZScaleSlider* m_pSlider;
+};
+
+
 
 class ZenoParamLineEdit : public ZenoParamWidget
 {
@@ -65,12 +79,18 @@ public:
     QString text() const;
     void setText(const QString& text);
     void setValidator(const QValidator* pValidator);
+    void setScalesSlider(QGraphicsScene* pScene, const QVector<qreal>& scales);
+
+protected:
+    void keyPressEvent(QKeyEvent* event);
+    void keyReleaseEvent(QKeyEvent* event);
 
 signals:
     void editingFinished();
 
 private:
-    QLineEdit *m_pLineEdit;
+    ZLineEdit *m_pLineEdit;
+    ZenoGvScaleSlider* m_pSlider;
 };
 
 class ZenoSvgLayoutItem;
@@ -270,9 +290,11 @@ public:
     void setRight(bool right);
     void setText(const QString& text);
     void setMargins(qreal leftM, qreal topM, qreal rightM, qreal bottomM);
+    void setBackground(const QColor& clr);
     QRectF boundingRect() const override;
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) override;
     QPainterPath shape() const override;
+    void setScalesSlider(QGraphicsScene* pScene, const QVector<qreal>& scales);
 
 signals:
     void editingFinished();
@@ -284,11 +306,16 @@ protected:
     void hoverEnterEvent(QGraphicsSceneHoverEvent *event) override;
     void hoverMoveEvent(QGraphicsSceneHoverEvent *event) override;
     void hoverLeaveEvent(QGraphicsSceneHoverEvent *event) override;
+    void keyPressEvent(QKeyEvent* event) override;
+    void keyReleaseEvent(QKeyEvent* event) override;
 
 private:
     void initAlignment(qreal textWidth);
 
     QString m_text;
+    QColor m_bg;
+    ZenoGvScaleSlider* m_pSlider;
+    QVector<qreal> m_scales;
     bool m_bRight;
 };
 
