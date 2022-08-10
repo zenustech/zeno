@@ -277,7 +277,7 @@ struct AudioEnergy : zeno::INode {
         E /= duration_count;
         set_output("E", std::make_shared<NumericObject>((float)E));
         double uniE = (E - minE) / (maxE - minE);
-        set_output("uniE", std::make_shared<NumericObject>((float)E));
+        set_output("uniE", std::make_shared<NumericObject>((float)uniE));
     }
 };
     ZENDEFNODE(AudioEnergy, {
