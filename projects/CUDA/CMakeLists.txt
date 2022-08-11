@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.19)
 
-if (NOT ZENO_WITH_zenvdb OR NOT ZENO_WITH_ZenoFX OR NOT ZENO_SYSTEM_OPENVDB)
-    message(FATAL_ERROR "zenvdb, ZenoFX and system OpenVDB must be ON when CUDA is ON! "
-        "Please specify: -DZENO_WITH_zenvdb:BOOL=ON -DZENO_WITH_ZenoFX:BOOL=ON -DZENO_SYSTEM_OPENVDB:BOOL=ON")
+if (NOT ZENO_WITH_zenvdb OR NOT ZENO_WITH_ZenoFX)
+    message(FATAL_ERROR "zenvdb and ZenoFX must be ON when CUDA is ON! "
+        "Please specify: -DZENO_WITH_zenvdb:BOOL=ON -DZENO_WITH_ZenoFX:BOOL=ON")
 endif()
 
 # assume cuda
