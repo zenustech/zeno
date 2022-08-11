@@ -329,7 +329,7 @@ struct BindVerticesOnBoundary : INode {
   }
   static constexpr auto dist_pt(const TV &p, const TV &t0, const TV &t1,
                                 const TV &t2, TV &ws) {
-    return std::sqrt(dist_pt_sqr(p, t0, t1, t2, ws));
+    return zs::sqrt(dist_pt_sqr(p, t0, t1, t2, ws));
   }
 
   template <typename LsView>
