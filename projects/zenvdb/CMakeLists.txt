@@ -11,7 +11,7 @@ if (MSVC)  # must use this to make msvc linker happy
     # 节数超过对象文件格式限制: 请使用 /bigobj 进行编译 
     target_compile_options(zeno
         PRIVATE
-        $<$<CXX_COMPILER_ID:MSVC>:/bigobj>
+        $<IF:$<COMPILE_LANGUAGE:CXX>, /bigobj, >
     )
 endif()
 ####################################################

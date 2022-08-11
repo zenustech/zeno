@@ -23,7 +23,7 @@ static int defWriteVDBGrid = zeno::defNodeClass<WriteVDBGrid>("WriteVDBGrid",
     }, /* params: */ {
     {"writepath", "path", ""},
     }, /* category: */ {
-    "openvdb",
+    "deprecated",
     }});
 
 
@@ -43,6 +43,18 @@ static int defExportVDBGrid = zeno::defNodeClass<ExportVDBGrid>("ExportVDBGrid",
     }, /* params: */ {
     }, /* category: */ {
     "deprecated",
+    }});
+struct WriteVDB : ExportVDBGrid {
+};
+
+static int defWriteVDB = zeno::defNodeClass<WriteVDB>("WriteVDB",
+    { /* inputs: */ {
+    "data",
+    "path",
+    }, /* outputs: */ {
+    }, /* params: */ {
+    }, /* category: */ {
+    "openvdb",
     }});
 
 }
