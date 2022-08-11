@@ -390,7 +390,6 @@ struct AudioEnergy : zeno::INode {
             }
             auto fbank = std::make_shared<PrimitiveObject>();
             fbank->resize(count);
-            auto& index = fbank->add_attr<float>("i");
             auto& fbank_v = fbank->add_attr<float>("fbank");
             for (auto i = 1; i <= count; i++) {
                 int s = bin[i-1];
@@ -407,13 +406,24 @@ struct AudioEnergy : zeno::INode {
                     float cof = 1 - (float)(m - i) / (float)(e - m);
                     total += power[i] * cof;
                 }
-                index[i-1] = (float)(i-1);
                 if (total == 0) {
                     fbank_v[i-1] = std::numeric_limits<float>::min();
                 }
                 else {
                     fbank_v[i-1] = log(total);
                 }
+            }
+            auto indexType = get_input2<std::string>("indexType");
+            if (indexType == "index") {
+                auto& index = fbank->add_attr<float>("i");
+                for (auto i = 1; i <= count; i++) {
+                    index[i-1] = (float)(i-1);
+                };
+            } else if (indexType == "indexdivcount") {
+                auto& index = fbank->add_attr<float>("i");
+                for (auto i = 1; i <= count; i++) {
+                    index[i-1] = (float)(i-1) /count;
+                };
             }
             set_output("FilterBank", fbank);
         }
@@ -424,6 +434,7 @@ struct AudioEnergy : zeno::INode {
             {"int", "count", "15"},
             {"float", "sampleFreq", "44100"},
             {"float", "rangePerFilter", "1"},
+            {"enum none index indexdivcount", "indexType", "index"},
         },
         {
             "FilterBank",
