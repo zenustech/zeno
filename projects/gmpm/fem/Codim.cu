@@ -1222,15 +1222,14 @@ struct CodimStepping : INode {
       if (s_enableGround) {
         pol(range(coOffset),
             [vtemp = proxy<space>({}, vtemp), tempPB = proxy<space>({}, tempPB),
-             kappa = kappa, dHat2 = dHat * dHat,
+             kappa = kappa, xi2 = xi * xi, activeGap2,
              gn = s_groundNormal] ZS_LAMBDA(int vi) mutable {
               auto x = vtemp.pack<3>("xn", vi);
               auto dist = gn.dot(x);
               auto dist2 = dist * dist;
-              if (dist2 < dHat2) {
-                auto t = dist2 - dHat2;
-                auto gb = t * zs::log(dist2 / dHat2) * -2 - (t * t) / dist2;
-                tempPB("fn", vi) = -kappa * 2 * dist * gb;
+              if (dist2 < activeGap2) {
+                auto bGrad = barrier_gradient(dist2 - xi2, activeGap2, kappa);
+                tempPB("fn", vi) = -bGrad * 2 * dist;
               } else
                 tempPB("fn", vi) = 0;
             });
