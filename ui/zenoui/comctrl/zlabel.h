@@ -44,6 +44,7 @@ public:
     void setBackgroundColor(const QColor& clr);
     void setUnderline(bool bUnderline);
     void setUnderlineOnHover(bool bUnderline);
+    void setTransparent(bool btransparent);
 
 protected:
     void enterEvent(QEvent* event) override;

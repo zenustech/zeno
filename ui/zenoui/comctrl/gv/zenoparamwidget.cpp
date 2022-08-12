@@ -1,7 +1,9 @@
 #include "zenoparamwidget.h"
 #include "zenosocketitem.h"
+#include "zgraphicsnumslideritem.h"
 #include <zenoui/render/common_id.h>
 #include <zenoui/style/zenostyle.h>
+#include <zeno/utils/log.h>
 
 
 ZenoParamWidget::ZenoParamWidget(QGraphicsItem* parent, Qt::WindowFlags wFlags)
@@ -83,8 +85,9 @@ void ZenoGvLineEdit::paintEvent(QPaintEvent* e)
 ////////////////////////////////////////////////////////////////////////////////
 ZenoParamLineEdit::ZenoParamLineEdit(const QString &text, PARAM_CONTROL ctrl, LineEditParam param, QGraphicsItem *parent)
     : ZenoParamWidget(parent)
+    , m_pSlider(nullptr)
 {
-    m_pLineEdit = new QLineEdit;
+    m_pLineEdit = new ZLineEdit;
     m_pLineEdit->setText(text);
     m_pLineEdit->setTextMargins(param.margins);
     m_pLineEdit->setPalette(param.palette);
@@ -99,6 +102,30 @@ void ZenoParamLineEdit::setValidator(const QValidator* pValidator)
     m_pLineEdit->setValidator(pValidator);
 }
 
+void ZenoParamLineEdit::setNumSlider(QGraphicsScene* pScene, const QVector<qreal>& steps)
+{
+    if (!pScene)
+        return;
+
+    m_pSlider = new ZGraphicsNumSliderItem(steps, nullptr);
+    connect(m_pSlider, &ZGraphicsNumSliderItem::numSlided, this, [=](qreal val) {
+        bool bOk = false;
+        qreal num = this->text().toFloat(&bOk);
+        if (bOk)
+        {
+            num = num + val;
+            QString newText = QString::number(num);
+            setText(newText);
+        }
+    });
+    connect(m_pSlider, &ZGraphicsNumSliderItem::slideFinished, this, [=]() {
+        //emit editingFinished();
+    });
+    m_pSlider->setZValue(1000);
+    m_pSlider->hide();
+    pScene->addItem(m_pSlider);
+}
+
 QString ZenoParamLineEdit::text() const
 {
     return m_pLineEdit->text();
@@ -107,6 +134,34 @@ QString ZenoParamLineEdit::text() const
 void ZenoParamLineEdit::setText(const QString &text)
 {
     m_pLineEdit->setText(text);
+}
+
+void ZenoParamLineEdit::keyPressEvent(QKeyEvent* event)
+{
+    if (event->key() == Qt::Key_Alt)
+    {
+        if (m_pSlider)
+        {
+            QPointF pos = this->sceneBoundingRect().center();
+            QSizeF sz = m_pSlider->boundingRect().size();
+            pos -= QPointF(sz.width() / 2., sz.height() / 2.);
+            m_pSlider->setPos(pos);
+            m_pSlider->show();
+        }
+    }
+    ZenoParamWidget::keyPressEvent(event);
+}
+
+void ZenoParamLineEdit::keyReleaseEvent(QKeyEvent* event)
+{
+    if (event->key() == Qt::Key_Alt)
+    {
+        if (m_pSlider)
+        {
+            m_pSlider->hide();
+        }
+    }
+    ZenoParamWidget::keyReleaseEvent(event);
 }
 
 
@@ -439,6 +494,7 @@ ZenoTextLayoutItem::ZenoTextLayoutItem(const QString &text, const QFont &font, c
     , QGraphicsTextItem(text, parent)
     , m_text(text)
     , m_bRight(false)
+    , m_pSlider(nullptr)
 {
     setZValue(ZVALUE_ELEMENT);
     setFont(font);
@@ -505,6 +561,11 @@ void ZenoTextLayoutItem::setMargins(qreal leftM, qreal topM, qreal rightM, qreal
     frame->setFrameFormat(format);
 }
 
+void ZenoTextLayoutItem::setBackground(const QColor& clr)
+{
+    m_bg = clr;
+}
+
 QRectF ZenoTextLayoutItem::boundingRect() const
 {
     QRectF rc = QRectF(QPointF(0, 0), geometry().size());
@@ -516,6 +577,12 @@ void ZenoTextLayoutItem::paint(QPainter *painter, const QStyleOptionGraphicsItem
     QStyleOptionGraphicsItem myOption(*option);
     myOption.state &= ~QStyle::State_Selected;
     myOption.state &= ~QStyle::State_HasFocus;
+    if (m_bg.isValid())
+    {
+        painter->setPen(Qt::NoPen);
+        painter->setBrush(m_bg);
+        painter->drawRect(boundingRect());
+    }
     QGraphicsTextItem::paint(painter, &myOption, widget);
 }
 
@@ -524,6 +591,16 @@ QPainterPath ZenoTextLayoutItem::shape() const
     QPainterPath path;
     path.addRect(boundingRect());
     return path;
+}
+
+void ZenoTextLayoutItem::setScalesSlider(QGraphicsScene* pScene, const QVector<qreal>& scales)
+{
+    m_scales = scales;
+    m_pSlider = new ZGraphicsNumSliderItem(scales, nullptr);
+    if (pScene)
+        pScene->addItem(m_pSlider);
+    m_pSlider->setZValue(1000);
+    m_pSlider->hide();
 }
 
 QSizeF ZenoTextLayoutItem::sizeHint(Qt::SizeHint which, const QSizeF &constraint) const
@@ -573,6 +650,31 @@ void ZenoTextLayoutItem::hoverLeaveEvent(QGraphicsSceneHoverEvent* event)
     QGraphicsTextItem::hoverLeaveEvent(event);
     if (textInteractionFlags() & Qt::TextEditorInteraction)
         setCursor(QCursor(Qt::ArrowCursor));
+}
+
+void ZenoTextLayoutItem::keyPressEvent(QKeyEvent* event)
+{
+    if (event->key() == Qt::Key_Alt)
+    {
+        if (m_pSlider)
+        {
+            m_pSlider->setPos(this->scenePos());
+            m_pSlider->show();
+        }
+    }
+    QGraphicsTextItem::keyPressEvent(event);
+}
+
+void ZenoTextLayoutItem::keyReleaseEvent(QKeyEvent* event)
+{
+    if (event->key() == Qt::Key_Alt)
+    {
+        if (m_pSlider)
+        {
+            m_pSlider->hide();
+        }
+    }
+    QGraphicsTextItem::keyReleaseEvent(event);
 }
 
 
