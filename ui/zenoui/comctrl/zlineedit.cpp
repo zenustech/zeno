@@ -1,5 +1,5 @@
 #include "zlineedit.h"
-#include "zscaleslider.h"
+#include "znumslider.h"
 
 
 ZLineEdit::ZLineEdit(QWidget* parent)
@@ -14,14 +14,14 @@ ZLineEdit::ZLineEdit(const QString& text, QWidget* parent)
 {
 }
 
-void ZLineEdit::setScalesSlider(QVector<qreal> scales)
+void ZLineEdit::setNumSlider(const QVector<qreal>& steps)
 {
-    m_scales = scales;
-    m_pSlider = new ZScaleSlider(m_scales, this);
+    m_steps = steps;
+    m_pSlider = new ZNumSlider(m_steps, this);
     m_pSlider->setWindowFlags(Qt::Window | Qt::FramelessWindowHint);
     m_pSlider->hide();
 
-    connect(m_pSlider, &ZScaleSlider::numSlided, this, [=](qreal val) {
+    connect(m_pSlider, &ZNumSlider::numSlided, this, [=](qreal val) {
         bool bOk = false;
         qreal num = this->text().toFloat(&bOk);
         if (bOk)
@@ -31,7 +31,7 @@ void ZLineEdit::setScalesSlider(QVector<qreal> scales)
             setText(newText);
         }
     });
-    connect(m_pSlider, &ZScaleSlider::slideFinished, this, [=]() {
+    connect(m_pSlider, &ZNumSlider::slideFinished, this, [=]() {
         emit editingFinished();
     });
 }
@@ -43,32 +43,21 @@ void ZLineEdit::mouseReleaseEvent(QMouseEvent* event)
 
 void ZLineEdit::popup()
 {
-    QRect rect = geometry();
-    QPoint bottomLeft = this->mapToGlobal(rect.bottomLeft());
-    QPoint pt = this->cursor().pos();
-
-    QObject* parent = this->parent();
-    QWidget* parentWid = this->parentWidget();
-
-    m_pSlider->move(pt);
+    QPoint pos;
+    if (QWidget* pWid = parentWidget())
+    {
+        pos = pWid->mapToGlobal(geometry().center());
+        QSize sz = m_pSlider->size();
+        pos -= QPoint(sz.width() / 2, sz.height() / 2);
+    }
+    else
+    {
+        pos = this->cursor().pos();
+    }
+    m_pSlider->move(pos);
     m_pSlider->show();
     m_pSlider->activateWindow();
     m_pSlider->raise();
-    //m_pSlider->setGeometry(QRect(bottomLeft, QSize(rect.width(), 200)));
-    //m_pSlider->setFocus();
-}
-
-bool ZLineEdit::eventFilter(QObject* watched, QEvent* event)
-{
-    if (watched == qApp)
-    {
-        if (event->type() == QEvent::KeyRelease)
-        {
-            int j;
-            j = 0;
-        }
-    }
-    return QLineEdit::eventFilter(watched, event);
 }
 
 bool ZLineEdit::event(QEvent* event)

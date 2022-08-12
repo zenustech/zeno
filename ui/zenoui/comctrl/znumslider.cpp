@@ -1,13 +1,12 @@
-#include "zscaleslider.h"
+#include "znumslider.h"
 #include "style/zenostyle.h"
 #include <zenoui/comctrl/zlabel.h>
 #include <zeno/utils/log.h>
 
 
-ZScaleSlider::ZScaleSlider(QVector<qreal> scales, QWidget* parent)
+ZNumSlider::ZNumSlider(QVector<qreal> scales, QWidget* parent)
     : QWidget(parent)
     , m_scales(scales)
-    , m_currScale(-1)
     , m_currLabel(nullptr)
 {
     QVBoxLayout* pLayout = new QVBoxLayout;
@@ -15,11 +14,15 @@ ZScaleSlider::ZScaleSlider(QVector<qreal> scales, QWidget* parent)
     {
         ZTextLabel* pLabel = new ZTextLabel(QString::number(scale));
         pLabel->setTextColor(QColor(80, 80, 80));
-        pLabel->setFixedSize(ZenoStyle::dpiScaledSize(QSize(56, 45)));
+        pLabel->setProperty("cssClass", "numslider");
+        pLabel->setAlignment(Qt::AlignCenter);
         pLayout->addWidget(pLabel);
         pLabel->installEventFilter(this);
+        pLabel->setAttribute(Qt::WA_TranslucentBackground, true);
+        m_labels.append(pLabel);
     }
     pLayout->setMargin(0);
+    pLayout->setSpacing(0);
     setLayout(pLayout);
 
     QPalette pal = this->palette();
@@ -27,17 +30,17 @@ ZScaleSlider::ZScaleSlider(QVector<qreal> scales, QWidget* parent)
     setPalette(pal);
 }
 
-ZScaleSlider::~ZScaleSlider()
+ZNumSlider::~ZNumSlider()
 {
 
 }
 
-void ZScaleSlider::paintEvent(QPaintEvent* event)
+void ZNumSlider::paintEvent(QPaintEvent* event)
 {
     QWidget::paintEvent(event);
 }
 
-void ZScaleSlider::keyReleaseEvent(QKeyEvent* event)
+void ZNumSlider::keyReleaseEvent(QKeyEvent* event)
 {
     int k = event->key();
     if (event->modifiers() == Qt::AltModifier)
@@ -53,7 +56,7 @@ void ZScaleSlider::keyReleaseEvent(QKeyEvent* event)
     event->accept();
 }
 
-bool ZScaleSlider::eventFilter(QObject* watched, QEvent* event)
+bool ZNumSlider::eventFilter(QObject* watched, QEvent* event)
 {
     if (event->type() == QEvent::Enter)
     {
@@ -64,7 +67,6 @@ bool ZScaleSlider::eventFilter(QObject* watched, QEvent* event)
             qreal scale = pLabel->text().toFloat(&bOK);
             if (bOK)
             {
-                m_currScale = scale;
                 m_currLabel = pLabel;
             }
         }
@@ -72,13 +74,18 @@ bool ZScaleSlider::eventFilter(QObject* watched, QEvent* event)
     return QWidget::eventFilter(watched, event);
 }
 
-void ZScaleSlider::mousePressEvent(QMouseEvent* event)
+void ZNumSlider::mousePressEvent(QMouseEvent* event)
 {
     QWidget::mousePressEvent(event);
     m_lastPos = event->pos();
+    for (auto label : m_labels)
+    {
+        if (label != m_currLabel)
+            label->setTransparent(true);
+    }
 }
 
-void ZScaleSlider::mouseMoveEvent(QMouseEvent* event)
+void ZNumSlider::mouseMoveEvent(QMouseEvent* event)
 {
     QPointF pos = event->pos();
     if (m_currLabel)
@@ -91,4 +98,13 @@ void ZScaleSlider::mouseMoveEvent(QMouseEvent* event)
     }
     m_lastPos = event->pos();
     QWidget::mouseMoveEvent(event);
+}
+
+void ZNumSlider::mouseReleaseEvent(QMouseEvent* event)
+{
+	for (auto label : m_labels)
+	{
+		if (label != m_currLabel)
+			label->setTransparent(false);
+	}
 }

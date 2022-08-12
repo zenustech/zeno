@@ -5,18 +5,19 @@
 
 class ZTextLabel;
 
-class ZScaleSlider : public QWidget
+class ZNumSlider : public QWidget
 {
     Q_OBJECT
 public:
-    ZScaleSlider(QVector<qreal> scales, QWidget* parent = nullptr);
-    ~ZScaleSlider();
+    ZNumSlider(QVector<qreal> scales, QWidget* parent = nullptr);
+    ~ZNumSlider();
 
 protected:
     void paintEvent(QPaintEvent* event);
     void keyReleaseEvent(QKeyEvent* event);
     void mousePressEvent(QMouseEvent* event) override;
     void mouseMoveEvent(QMouseEvent* event) override;
+    void mouseReleaseEvent(QMouseEvent* event) override;
     bool eventFilter(QObject* watched, QEvent* event) override;
 
 signals:
@@ -28,6 +29,7 @@ private:
     QPoint m_lastPos;
     bool m_currScale;
     ZTextLabel* m_currLabel;
+    QVector<ZTextLabel*> m_labels;
 };
 
 

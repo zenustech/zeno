@@ -118,6 +118,19 @@ void ZTextLabel::setUnderlineOnHover(bool bUnderline)
     m_bUnderlineHover = bUnderline;
 }
 
+void ZTextLabel::setTransparent(bool btransparent)
+{
+    //setAttribute(Qt::WA_OpaquePaintEvent);
+    //todo: transparent
+    //if (btransparent) {
+    //    setStyleSheet("background-color: rgba(0,0,0,0%)");
+    //}
+    //else {
+    //    setStyleSheet("background-color: rgba(0,0,0,100%)");
+    //}
+    //QWidget::setAttribute(Qt::WA_TranslucentBackground, btransparent);
+}
+
 void ZTextLabel::setTextColor(const QColor& clr)
 {
     m_normal = clr;

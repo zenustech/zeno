@@ -3,7 +3,7 @@
 
 #include <QtWidgets>
 
-class ZScaleSlider;
+class ZNumSlider;
 
 class ZLineEdit : public QLineEdit
 {
@@ -11,11 +11,10 @@ class ZLineEdit : public QLineEdit
 public:
     explicit ZLineEdit(QWidget* parent = nullptr);
     explicit ZLineEdit(const QString& text, QWidget* parent = nullptr);
-    void setScalesSlider(QVector<qreal> scales);
+    void setNumSlider(const QVector<qreal>& steps);
 
 protected:
     bool event(QEvent* event) override;
-    bool eventFilter(QObject* watched, QEvent* event) override;
     void mouseReleaseEvent(QMouseEvent* event);
     void keyPressEvent(QKeyEvent* event);
     void keyReleaseEvent(QKeyEvent* event);
@@ -23,8 +22,8 @@ protected:
 private:
     void popup();
 
-    QVector<qreal> m_scales;
-    ZScaleSlider* m_pSlider;
+    QVector<qreal> m_steps;
+    ZNumSlider* m_pSlider;
 };
 
 #endif

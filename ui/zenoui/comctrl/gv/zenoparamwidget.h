@@ -5,12 +5,16 @@
 #include <zenoui/model/modelrole.h>
 #include "../../nodesys/nodesys_common.h"
 #include "zenosocketitem.h"
+#include "zgraphicstextitem.h"
 #include <zenoui/comctrl/zcombobox.h>
 #include <zenoui/comctrl/zveceditor.h>
 #include <zenoui/comctrl/zcheckboxbar.h>
 #include <zenoui/comctrl/zlineedit.h>
-#include <zenoui/comctrl/zscaleslider.h>
+#include <zenoui/comctrl/znumslider.h>
 
+
+class ZenoTextLayoutItem;
+class ZGraphicsNumSliderItem;
 
 class ZenoParamWidget : public QGraphicsProxyWidget
 {
@@ -58,18 +62,6 @@ protected:
     void paintEvent(QPaintEvent *e) override;
 };
 
-class ZenoGvScaleSlider : public ZenoParamWidget
-{
-    Q_OBJECT
-public:
-    ZenoGvScaleSlider(const QVector<qreal>& scales, QGraphicsItem* parent = nullptr);
-    ~ZenoGvScaleSlider();
-
-private:
-    ZScaleSlider* m_pSlider;
-};
-
-
 
 class ZenoParamLineEdit : public ZenoParamWidget
 {
@@ -79,7 +71,7 @@ public:
     QString text() const;
     void setText(const QString& text);
     void setValidator(const QValidator* pValidator);
-    void setScalesSlider(QGraphicsScene* pScene, const QVector<qreal>& scales);
+    void setNumSlider(QGraphicsScene* pScene, const QVector<qreal>& steps);
 
 protected:
     void keyPressEvent(QKeyEvent* event);
@@ -90,8 +82,9 @@ signals:
 
 private:
     ZLineEdit *m_pLineEdit;
-    ZenoGvScaleSlider* m_pSlider;
+    ZGraphicsNumSliderItem* m_pSlider;
 };
+
 
 class ZenoSvgLayoutItem;
 
@@ -314,7 +307,7 @@ private:
 
     QString m_text;
     QColor m_bg;
-    ZenoGvScaleSlider* m_pSlider;
+    ZGraphicsNumSliderItem* m_pSlider;
     QVector<qreal> m_scales;
     bool m_bRight;
 };

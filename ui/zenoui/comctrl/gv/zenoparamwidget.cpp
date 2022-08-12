@@ -1,5 +1,6 @@
 #include "zenoparamwidget.h"
 #include "zenosocketitem.h"
+#include "zgraphicsnumslideritem.h"
 #include <zenoui/render/common_id.h>
 #include <zenoui/style/zenostyle.h>
 #include <zeno/utils/log.h>
@@ -101,14 +102,28 @@ void ZenoParamLineEdit::setValidator(const QValidator* pValidator)
     m_pLineEdit->setValidator(pValidator);
 }
 
-void ZenoParamLineEdit::setScalesSlider(QGraphicsScene* pScene, const QVector<qreal>& scales)
+void ZenoParamLineEdit::setNumSlider(QGraphicsScene* pScene, const QVector<qreal>& steps)
 {
-    m_pSlider = new ZenoGvScaleSlider(scales, nullptr);
-    if (pScene)
-        pScene->addItem(m_pSlider);
-    m_pSlider->setWindowFlags(Qt::Window | Qt::FramelessWindowHint);
+    if (!pScene)
+        return;
+
+    m_pSlider = new ZGraphicsNumSliderItem(steps, nullptr);
+    connect(m_pSlider, &ZGraphicsNumSliderItem::numSlided, this, [=](qreal val) {
+        bool bOk = false;
+        qreal num = this->text().toFloat(&bOk);
+        if (bOk)
+        {
+            num = num + val;
+            QString newText = QString::number(num);
+            setText(newText);
+        }
+    });
+    connect(m_pSlider, &ZGraphicsNumSliderItem::slideFinished, this, [=]() {
+        //emit editingFinished();
+    });
     m_pSlider->setZValue(1000);
     m_pSlider->hide();
+    pScene->addItem(m_pSlider);
 }
 
 QString ZenoParamLineEdit::text() const
@@ -127,7 +142,10 @@ void ZenoParamLineEdit::keyPressEvent(QKeyEvent* event)
     {
         if (m_pSlider)
         {
-            m_pSlider->setPos(this->scenePos());
+            QPointF pos = this->sceneBoundingRect().center();
+            QSizeF sz = m_pSlider->boundingRect().size();
+            pos -= QPointF(sz.width() / 2., sz.height() / 2.);
+            m_pSlider->setPos(pos);
             m_pSlider->show();
         }
     }
@@ -140,7 +158,7 @@ void ZenoParamLineEdit::keyReleaseEvent(QKeyEvent* event)
     {
         if (m_pSlider)
         {
-            //m_pSlider->hide();
+            m_pSlider->hide();
         }
     }
     ZenoParamWidget::keyReleaseEvent(event);
@@ -470,22 +488,6 @@ bool ZenoParamBlackboard::eventFilter(QObject* object, QEvent* event)
 }
 
 
-/////////////////////////////////////////////////////////////////////////////////////
-ZenoGvScaleSlider::ZenoGvScaleSlider(const QVector<qreal>& scales, QGraphicsItem* parent)
-    : ZenoParamWidget(parent)
-    , m_pSlider(nullptr)
-{
-    m_pSlider = new ZScaleSlider(scales);
-    setWidget(m_pSlider);
-    setAcceptHoverEvents(true);
-    setFlags(ItemIsMovable | ItemIsSelectable | ItemIsFocusable);
-}
-
-ZenoGvScaleSlider::~ZenoGvScaleSlider()
-{
-}
-
-
 //////////////////////////////////////////////////////////////////////////////////////
 ZenoTextLayoutItem::ZenoTextLayoutItem(const QString &text, const QFont &font, const QColor &color, QGraphicsItem *parent)
     : QGraphicsLayoutItem()
@@ -594,7 +596,7 @@ QPainterPath ZenoTextLayoutItem::shape() const
 void ZenoTextLayoutItem::setScalesSlider(QGraphicsScene* pScene, const QVector<qreal>& scales)
 {
     m_scales = scales;
-    m_pSlider = new ZenoGvScaleSlider(scales, nullptr);
+    m_pSlider = new ZGraphicsNumSliderItem(scales, nullptr);
     if (pScene)
         pScene->addItem(m_pSlider);
     m_pSlider->setZValue(1000);
