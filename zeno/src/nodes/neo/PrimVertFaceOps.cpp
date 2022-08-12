@@ -246,34 +246,42 @@ struct PrimFacesCenterAsVerts : INode {
         auto prim = get_input<PrimitiveObject>("prim");
         auto faceType = get_input2<std::string>("faceType");
         auto copyFaceAttrs = get_input2<bool>("copyFaceAttrs");
-
         auto outprim = std::make_shared<PrimitiveObject>();
-        std::visit([&] (auto faceTy) {
 
+        auto process = [&] (size_t base, auto faceTy) {
             auto &prim_faces = faceTy.from_prim(prim.get());
-            outprim->verts.resize(prim_faces.size());
+            //outprim->verts.resize(base + prim_faces.size());
 
-            for (int i = 0; i < prim_faces.size(); i++) {
+            for (size_t i = 0; i < prim_faces.size(); i++) {
                 meth_average<vec3f> reducer;
                 faceTy.foreach_ind(prim.get(), prim_faces[i], [&] (int ind) {
                     reducer.add(prim->verts[ind]);
                 });
-                outprim->verts[i] = reducer.get();
+                outprim->verts[base + i] = reducer.get();
             }
 
             if (copyFaceAttrs) {
                 prim_faces.template foreach_attr<AttrAcceptAll>([&] (auto const &key, auto const &facesArr) {
                     using T = std::decay_t<decltype(facesArr[0])>;
                     auto &vertsArr = outprim->verts.add_attr<T>(key);
-                    vertsArr = facesArr;
+                    for (size_t i = 0; i < facesArr.size(); i++) {
+                        vertsArr[base + i] = facesArr[i];
+                    }
                 });
             }
+        };
 
-        }, enum_variant<std::variant<
-            face_lines, face_tris, face_quads, face_polys
-        >>(array_index({
-            "lines", "tris", "quads", "polys"
-        }, faceType)));
+        if (faceType == "faces") {
+            outprim->verts.resize(prim->tris.size() + prim->quads.size() + prim->polys.size());
+            process(0, face_tris{});
+            process(prim->tris.size(), face_quads{});
+            process(prim->tris.size() + prim->quads.size(), face_polys{});
+        } else if (faceType == "lines") {
+            outprim->verts.resize(prim->lines.size());
+            process(0, face_lines{});
+        } else {
+            throw makeError("invalid faceType: " + faceType);
+        }
 
         set_output("prim", std::move(outprim));
     }
@@ -282,7 +290,7 @@ struct PrimFacesCenterAsVerts : INode {
 ZENDEFNODE(PrimFacesCenterAsVerts, {
     {
     {"PrimitiveObject", "prim"},
-    {"enum lines tris quads polys", "faceType", "tris"},
+    {"enum faces lines", "faceType", "faces"},
     {"bool", "copyFaceAttrs", "1"},
     },
     {
