@@ -91,8 +91,11 @@ extern "C" __global__ void __raygen__rg()
                 prd.passed = true;
             ray_origin    = prd.origin;
             ray_direction = prd.direction;
-            if(prd.passed == false)
+            if(prd.passed == false){
                 ++depth;
+            }else{
+                prd.passed = false;
+            }
         }
     }
     while( --i );

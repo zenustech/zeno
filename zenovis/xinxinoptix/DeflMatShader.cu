@@ -272,6 +272,8 @@ extern "C" __global__ void __anyhit__shadow_cutout()
                 prd->shadowAttanuation = vec3(0);
                 optixTerminateRay();
             }
+            prd->shadowAttanuation = vec3(0);
+            optixTerminateRay();
             if(specTrans > 0.0f){
                 if(rnd(prd->seed)<1-specTrans)
                 {
@@ -476,8 +478,8 @@ extern "C" __global__ void __closesthit__radiance()
     float pdf = 0.0f;
     float rPdf = 1.0f;
     float fPdf = 1.0f;
-    float rrPdf = 0.0f;
-    float ffPdf = 0.0f;
+    float rrPdf = 1.0f;
+    float ffPdf = 1.0f;
     float3 T = attrs.tang;
     float3 B = cross(N, T);
 
@@ -574,23 +576,10 @@ extern "C" __global__ void __closesthit__radiance()
     prd->direction = wi;
     prd->countEmitted = false;
     prd->attenuation *= reflectance;
+    if(flag==DisneyBSDF::transmissionEvent && ( !prd->is_inside)){
+        return;
+    }
 
-    //}
-
-    // {
-    //     const float z1 = rnd(seed);
-    //     const float z2 = rnd(seed);
-
-    //     float3 w_in;
-    //     cosine_sample_hemisphere( z1, z2, w_in );
-    //     Onb onb( N );
-    //     onb.inverse_transform( w_in );
-    //     prd->direction = w_in;
-    //     prd->origin    = P;
-
-    //     prd->attenuation *= rt_data->diffuse_color;
-    //     prd->countEmitted = false;
-    // }
 
     prd->radiance = make_float3(0.0f,0.0f,0.0f);
     float3 light_attenuation = make_float3(1.0f,1.0f,1.0f);
@@ -650,7 +639,8 @@ extern "C" __global__ void __closesthit__radiance()
                 ffPdf,
                 rrPdf
                 );
-        prd->radiance += light.emission * light_attenuation * weight * lbrdf + float3(mats.emission);
+        //prd->radiance += float3(mats.emission);
+        prd->radiance += light.emission * light_attenuation * weight * lbrdf * ffPdf + float3(mats.emission);
     }
 }
 
