@@ -16,7 +16,7 @@ struct UVProjectFromPlane : zeno::INode {
         }
         auto originPos = refPlane->verts[2];
         auto xOffset = refPlane->verts[0];
-        auto yOffset = refPlane->verts[1];
+        auto yOffset = refPlane->verts[3];
 //        zeno::log_info("xOffset:{}, originPos: {}", xOffset, originPos);
         auto uDir = zeno::normalize(xOffset - originPos);
         auto vDir = zeno::normalize(yOffset - originPos);
