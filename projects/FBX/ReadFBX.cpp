@@ -36,6 +36,8 @@
 
 #include "Definition.h"
 
+namespace {
+
 using Path = std::filesystem::path;
 
 void readFBXFile(
@@ -997,3 +999,5 @@ ZENDEFNODE(ReadFBXPrim,
                    "FBX",
                }
            });
+
+}

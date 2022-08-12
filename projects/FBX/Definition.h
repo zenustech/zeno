@@ -1,8 +1,13 @@
-#ifndef ZENO_DEFINITION_H
-#define ZENO_DEFINITION_H
+#ifndef ZENO_FBX_DEFINITION_H
+#define ZENO_FBX_DEFINITION_H
 
 #include <iostream>
 #include <algorithm>
+#include <zeno/utils/log.h>
+#include <zeno/utils/vec.h>
+#include <zeno/core/IObject.h>
+
+inline namespace ZenoFBXDefinition {
 
 #define COMMON_DEFAULT_basecolor aiColor4D(0.0f, 0.0f, 0.0f, 1.0f)
 #define COMMON_DEFAULT_metallic aiColor4D(0.0f, 0.0f, 0.0f, 1.0f)
@@ -501,4 +506,6 @@ struct Helper{
     }
 };
 
-#endif //ZENO_DEFINITION_H
+}
+
+#endif //ZENO_FBX_DEFINITION_H

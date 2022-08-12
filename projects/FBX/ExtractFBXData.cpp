@@ -14,6 +14,8 @@
 #include <glm/vec4.hpp>
 #include <glm/mat4x4.hpp>
 
+namespace {
+
 struct ExtractFBXData : zeno::INode {
 
     virtual void apply() override {
@@ -223,3 +225,5 @@ ZENDEFNODE(ExtractCameraData,
                    "FBX",
                }
            });
+
+}
