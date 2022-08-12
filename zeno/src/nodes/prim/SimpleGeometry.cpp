@@ -595,8 +595,8 @@ ZENDEFNODE(CreatePlane, {
         ROTATE_PARM
         NORMUV_PARM
         {"float", "size", "1"},
-        {"int", "rows", "2"},
-        {"int", "columns", "2"},
+        {"int", "rows", "1"},
+        {"int", "columns", "1"},
     },
     {"prim"},
     {},
