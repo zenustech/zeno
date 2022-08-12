@@ -11,8 +11,8 @@ struct UVProjectFromPlane : zeno::INode {
         auto &uv = prim->verts.add_attr<vec3f>("uv");
         auto refPlane = get_input<PrimitiveObject>("refPlane");
         if (refPlane->verts.size() != 4) {
-            zeno::log_error("refPlane must 1 * 1 plane!");
-            throw std::runtime_error("");
+            zeno::log_error("refPlane must be 1 * 1 plane!");
+            throw zeno::makeError("refPlane must be 1 * 1 plane!");
         }
         auto originPos = refPlane->verts[2];
         auto xOffset = refPlane->verts[0];
