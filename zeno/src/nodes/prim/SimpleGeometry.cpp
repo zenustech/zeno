@@ -89,13 +89,16 @@ struct CreateCube : zeno::INode {
         auto &indis = prim->tris;
         auto &quads = prim->quads;
         auto &nors = prim->verts.add_attr<zeno::vec3f>("nrm");
-        auto &uv1 = prim->tris.add_attr<zeno::vec3f>("uv0");
-        auto &uv2 = prim->tris.add_attr<zeno::vec3f>("uv1");
-        auto &uv3 = prim->tris.add_attr<zeno::vec3f>("uv2");
-        auto &quv1 = prim->quads.add_attr<zeno::vec3f>("uv0");
-        auto &quv2 = prim->quads.add_attr<zeno::vec3f>("uv1");
-        auto &quv3 = prim->quads.add_attr<zeno::vec3f>("uv2");
-        auto &quv4 = prim->quads.add_attr<zeno::vec3f>("uv2");
+
+        std::vector<zeno::vec3f> dummy;
+        auto &uv1 = !quad ?  prim->tris.add_attr<vec3f>("uv0") : dummy;
+        auto &uv2 = !quad ?  prim->tris.add_attr<vec3f>("uv1") : dummy;
+        auto &uv3 = !quad ?  prim->tris.add_attr<vec3f>("uv2") : dummy;
+
+        auto &quv1 = quad ?  prim->quads.add_attr<vec3f>("uv0") : dummy;
+        auto &quv2 = quad ?  prim->quads.add_attr<vec3f>("uv1") : dummy;
+        auto &quv3 = quad ?  prim->quads.add_attr<vec3f>("uv2") : dummy;
+        auto &quv4 = quad ?  prim->quads.add_attr<vec3f>("uv3") : dummy;
 
         if(div_w <= 2)
             div_w = 2;
@@ -918,10 +921,12 @@ struct CreateSphere : zeno::INode {
         auto &uv1 = prim->tris.add_attr<zeno::vec3f>("uv0");
         auto &uv2 = prim->tris.add_attr<zeno::vec3f>("uv1");
         auto &uv3 = prim->tris.add_attr<zeno::vec3f>("uv2");
-        auto &quv1 = prim->quads.add_attr<zeno::vec3f>("uv0");
-        auto &quv2 = prim->quads.add_attr<zeno::vec3f>("uv1");
-        auto &quv3 = prim->quads.add_attr<zeno::vec3f>("uv2");
-        auto &quv4 = prim->quads.add_attr<zeno::vec3f>("uv3");
+
+        std::vector<zeno::vec3f> dummy;
+        auto &quv1 = quad ?  prim->quads.add_attr<vec3f>("uv0") : dummy;
+        auto &quv2 = quad ?  prim->quads.add_attr<vec3f>("uv1") : dummy;
+        auto &quv3 = quad ?  prim->quads.add_attr<vec3f>("uv2") : dummy;
+        auto &quv4 = quad ?  prim->quads.add_attr<vec3f>("uv3") : dummy;
 
         if(rows <= 3)
             rows = 3;
