@@ -579,7 +579,7 @@ struct CreatePlane : zeno::INode {
         auto &uv = prim->verts.add_attr<zeno::vec3f>("uv");
         auto &norm = prim->verts.add_attr<zeno::vec3f>("nrm");
         for(int i=0; i<verts.size(); i++){
-            uv[i] = uvs[i];
+            uv[i] = zeno::vec3f(1 - uvs[i][0], 1 - uvs[i][1], 0);
             norm[i] = normal;
         }
 
@@ -595,8 +595,8 @@ ZENDEFNODE(CreatePlane, {
         ROTATE_PARM
         NORMUV_PARM
         {"float", "size", "1"},
-        {"int", "rows", "2"},
-        {"int", "columns", "2"},
+        {"int", "rows", "1"},
+        {"int", "columns", "1"},
     },
     {"prim"},
     {},
