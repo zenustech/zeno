@@ -36,7 +36,6 @@ ZENO_DEFNODE(MakeCamera)({
     {"shader"},
 });
 
-
 struct MakeLight : INode {
     virtual void apply() override {
         auto light = std::make_unique<LightObject>();
