@@ -16,6 +16,7 @@ endif()
 
 file (GLOB ZEN_MESHER_SOURCE *.cpp)
 target_sources(zeno PRIVATE ${ZEN_MESHER_SOURCE})
+zeno_disable_warning(${ZEN_MESHER_SOURCE})
 target_include_directories(zeno PRIVATE mpmmeshing/)
 
 

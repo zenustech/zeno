@@ -1,4 +1,3 @@
-#include <zeno/utils/nowarn.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/StringObject.h>
 #include <zeno/utils/string.h>
@@ -19,7 +18,8 @@
 
 #include <algorithm>
 
-int calcFrameCountByAudio(std::string path, int fps) {
+namespace {
+static int calcFrameCountByAudio(std::string path, int fps) {
     AudioFile<float> wav;
     wav.load (path);
     uint64_t ret = wav.getNumSamplesPerChannel();
@@ -29,6 +29,7 @@ int calcFrameCountByAudio(std::string path, int fps) {
 
 static float lerp(float start, float end, float value) {
     return start + (end - start) * value;
+}
 }
 namespace zeno {
     struct ReadWavFile : zeno::INode {
