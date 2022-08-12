@@ -241,5 +241,57 @@ ZENDEFNODE(PrimFacesAttrToVerts, {
     {"primitive"},
 });
 
+struct PrimFacesCenterAsVerts : INode {
+    virtual void apply() override {
+        auto prim = get_input<PrimitiveObject>("prim");
+        auto faceType = get_input2<std::string>("faceType");
+        auto copyFaceAttrs = get_input2<bool>("copyFaceAttrs");
+
+        auto outprim = std::make_shared<PrimitiveObject>();
+        std::visit([&] (auto faceTy) {
+
+            auto &prim_faces = faceTy.from_prim(prim.get());
+            outprim->verts.resize(prim_faces.size());
+
+            for (int i = 0; i < prim_faces.size(); i++) {
+                meth_average<vec3f> reducer;
+                faceTy.foreach_ind(prim.get(), prim_faces[i], [&] (int ind) {
+                    reducer.add(prim->verts[ind]);
+                });
+                outprim->verts[i] = reducer.get();
+            }
+
+            if (copyFaceAttrs) {
+                prim_faces.template foreach_attr<AttrAcceptAll>([&] (auto const &key, auto const &facesArr) {
+                    using T = std::decay_t<decltype(facesArr[0])>;
+                    auto &vertsArr = outprim->verts.add_attr<T>(key);
+                    vertsArr = facesArr;
+                });
+            }
+
+        }, enum_variant<std::variant<
+            face_lines, face_tris, face_quads, face_polys
+        >>(array_index({
+            "lines", "tris", "quads", "polys"
+        }, faceType)));
+
+        set_output("prim", std::move(outprim));
+    }
+};
+
+ZENDEFNODE(PrimFacesCenterAsVerts, {
+    {
+    {"PrimitiveObject", "prim"},
+    {"enum lines tris quads polys", "faceType", "tris"},
+    {"bool", "copyFaceAttrs", "1"},
+    },
+    {
+    {"PrimitiveObject", "prim"},
+    },
+    {
+    },
+    {"primitive"},
+});
+
 }
 }
