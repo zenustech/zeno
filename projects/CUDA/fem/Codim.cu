@@ -1219,6 +1219,21 @@ struct CodimStepping : INode {
             fricEE.tuple<6>("basis", feei) =
                 edge_edge_tangent_basis(ea0, ea1, eb0, eb1);
           });
+      if (s_enableGround) {
+        pol(range(coOffset),
+            [vtemp = proxy<space>({}, vtemp), tempPB = proxy<space>({}, tempPB),
+             kappa = kappa, xi2 = xi * xi, activeGap2,
+             gn = s_groundNormal] ZS_LAMBDA(int vi) mutable {
+              auto x = vtemp.pack<3>("xn", vi);
+              auto dist = gn.dot(x);
+              auto dist2 = dist * dist;
+              if (dist2 < activeGap2) {
+                auto bGrad = barrier_gradient(dist2 - xi2, activeGap2, kappa);
+                tempPB("fn", vi) = -bGrad * 2 * dist;
+              } else
+                tempPB("fn", vi) = 0;
+            });
+      }
     }
     bool checkSelfIntersection(zs::CudaExecutionPolicy &pol) {
       using namespace zs;
@@ -1551,6 +1566,67 @@ struct CodimStepping : INode {
                 atomic_add(exec_cuda, &vtemp("P", i * 3 + j, vi), hess(i, j));
               }
           });
+
+#if s_enableFriction
+      if (fricMu != 0) {
+        pol(range(coOffset),
+            [vtemp = proxy<space>({}, vtemp), tempPB = proxy<space>({}, tempPB),
+             gTag, epsvh = epsv * dt, gn = s_groundNormal, fricMu = fricMu,
+             projectDBC = projectDBC,
+             includeHessian] ZS_LAMBDA(int vi) mutable {
+              auto dx = vtemp.pack<3>("xn", vi) - vtemp.pack<3>("xhat", vi);
+              auto fn = tempPB("fn", vi);
+              if (fn == 0) {
+                return;
+              }
+              auto coeff = fn * fricMu;
+              auto relDX = dx - gn.dot(dx) * gn;
+              auto relDXNorm2 = relDX.l2NormSqr();
+              auto relDXNorm = zs::sqrt(relDXNorm2);
+
+              vec3 grad{};
+              if (relDXNorm2 >= epsvh * epsvh)
+                grad = -relDX * (coeff / relDXNorm);
+              else
+                grad = -relDX * (coeff / epsvh);
+              for (int d = 0; d != 3; ++d)
+                atomic_add(exec_cuda, &vtemp(gTag, d, vi), grad(d));
+
+              if (!includeHessian)
+                return;
+
+              auto hess = mat3::zeros();
+              if (relDXNorm2 >= epsvh * epsvh) {
+                zs::vec<T, 2, 2> mat{
+                    relDX[0] * relDX[0] * -coeff / relDXNorm2 / relDXNorm +
+                        coeff / relDXNorm,
+                    relDX[0] * relDX[2] * -coeff / relDXNorm2 / relDXNorm,
+                    relDX[0] * relDX[2] * -coeff / relDXNorm2 / relDXNorm,
+                    relDX[2] * relDX[2] * -coeff / relDXNorm2 / relDXNorm +
+                        coeff / relDXNorm};
+                make_pd(mat);
+                hess(0, 0) = mat(0, 0);
+                hess(0, 2) = mat(0, 1);
+                hess(2, 0) = mat(1, 0);
+                hess(2, 2) = mat(1, 1);
+              } else {
+                hess(0, 0) = coeff / epsvh;
+                hess(2, 2) = coeff / epsvh;
+              }
+
+              mat3 BCbasis[1] = {vtemp.pack<3, 3>("BCbasis", vi)};
+              int BCorder[1] = {(int)vtemp("BCorder", vi)};
+              int BCfixed[1] = {(int)vtemp("BCfixed", vi)};
+              rotate_hessian(hess, BCbasis, BCorder, BCfixed, projectDBC);
+              tempPB.template tuple<9>("H", vi) =
+                  tempPB.template pack<3, 3>("H", vi) + hess;
+              for (int i = 0; i != 3; ++i)
+                for (int j = 0; j != 3; ++j) {
+                  atomic_add(exec_cuda, &vtemp("P", i * 3 + j, vi), hess(i, j));
+                }
+            });
+      }
+#endif
       return;
     }
     template <typename Model>
@@ -1564,6 +1640,8 @@ struct CodimStepping : INode {
         if (primHandle.category == ZenoParticles::curve) {
           if (primHandle.isBoundary())
             continue;
+          /// ref: Fast Simulation of Mass-Spring Systems
+          /// credits: Tiantian Liu
           cudaPol(
               zs::range(primHandle.getEles().size()),
               [vtemp = proxy<space>({}, vtemp),
@@ -1599,16 +1677,6 @@ struct CodimStepping : INode {
                 auto lij = xij.norm();
                 auto dij = xij / lij;
                 auto gij = k * (lij - rl) * dij;
-#if 0
-                if (ei < 10 || ei > n - 10)
-                  printf(
-                      "%d-th string k: %f (model %f), rest length: %f, vol: "
-                      "%f, inds: <%d, %d>, gij(%f, %f, %f), dij(%f, %f, %f)\n",
-                      ei, (float)k, (float)model.mu, (float)rl, (float)vole,
-                      (int)(inds[0] - vOffset), (int)(inds[1] - vOffset),
-                      (float)gij(0), (float)gij(1), (float)gij(2),
-                      (float)dij(0), (float)dij(1), (float)dij(2));
-#endif
 
                 // gradient
                 auto vfdt2 = gij * (dt * dt) * vole;
@@ -1620,22 +1688,12 @@ struct CodimStepping : INode {
                 if (!includeHessian)
                   return;
                 auto H = zs::vec<T, 6, 6>::zeros();
-#if 1
                 auto K =
                     k * (mat3::identity() -
                          rl / lij * (mat3::identity() - dyadic_prod(dij, dij)));
-#else
-                auto K = k * mat3::identity();
-#endif
-            // make_pd(K);  // symmetric semi-definite positive, not necessary
-#if 0
+                // make_pd(K);  // symmetric semi-definite positive, not
+                // necessary
 
-                if (ei < 10 || ei > n - 10)
-                  printf("%d-th string: [%f, %f, %f; %f, %f, %f; %f, %f, %f]\n",
-                         ei, (float)K(0, 0), (float)K(0, 1), (float)K(0, 2),
-                         (float)K(1, 0), (float)K(1, 1), (float)K(1, 2),
-                         (float)K(2, 0), (float)K(2, 1), (float)K(2, 2));
-#endif
                 for (int i = 0; i != 3; ++i)
                   for (int j = 0; j != 3; ++j) {
                     H(i, j) = K(i, j);
@@ -2421,6 +2479,34 @@ struct CodimStepping : INode {
                 reduce_to(vi, n, E, es[vi / 32]);
               });
           Es.push_back(reduce(pol, es) * kappa);
+
+#if s_enableFriction
+          if (fricMu != 0) {
+            es.resize(count_warps(coOffset));
+            es.reset(0);
+            pol(range(coOffset),
+                [vtemp = proxy<space>({}, vtemp), es = proxy<space>(es),
+                 gn = s_groundNormal, dHat2 = dHat * dHat, epsvh = epsv * dt,
+                 fricMu = fricMu, n = coOffset] ZS_LAMBDA(int vi) mutable {
+                  auto fn = vtemp("fn", vi);
+                  T E = 0;
+                  if (fn != 0) {
+                    auto dx =
+                        vtemp.pack<3>("xn", vi) - vtemp.pack<3>("xhat", vi);
+                    auto relDX = dx - gn.dot(dx) * gn;
+                    auto relDXNorm2 = relDX.l2NormSqr();
+                    auto relDXNorm = zs::sqrt(relDXNorm2);
+                    if (relDXNorm2 >= epsvh * epsvh) {
+                      E = fn * (relDXNorm - epsvh / 2);
+                    } else {
+                      E = fn * relDXNorm2 / epsvh / 2;
+                    }
+                  }
+                  reduce_to(vi, n, E, es[vi / 32]);
+                });
+            Es.push_back(reduce(pol, es));
+          }
+#endif
         }
       }
       // constraints
@@ -4467,7 +4553,8 @@ struct CodimStepping : INode {
            {"q", 3}},
           numDofs};
       // ground + inertial hessian
-      tempPB = dtiles_t{vtemp.get_allocator(), {{"H", 9}, {"Hi", 9}}, coOffset};
+      tempPB = dtiles_t{
+          vtemp.get_allocator(), {{"H", 9}, {"Hi", 9}, {"fn", 1}}, coOffset};
       nPP.setVal(0);
       nPE.setVal(0);
       nPT.setVal(0);
