@@ -79,6 +79,7 @@ ZSimpleTextItem::ZSimpleTextItem(const QString& text, QGraphicsItem* parent)
     , m_alignment(Qt::AlignLeft)
 {
     setAcceptHoverEvents(true);
+    updateBoundingRect();
 }
 
 ZSimpleTextItem::~ZSimpleTextItem()
@@ -260,7 +261,10 @@ ZSimpleTextLayoutItem::ZSimpleTextLayoutItem(const QString& text, QGraphicsItem*
     : QGraphicsLayoutItem()
     , ZSimpleTextItem(text, parent)
 {
-
+    setZValue(3);
+    setGraphicsItem(this);
+    setFlags(ItemSendsScenePositionChanges);
+    setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
 }
 
 void ZSimpleTextLayoutItem::setGeometry(const QRectF& rect)
@@ -272,7 +276,7 @@ void ZSimpleTextLayoutItem::setGeometry(const QRectF& rect)
 
 QRectF ZSimpleTextLayoutItem::boundingRect() const
 {
-    QRectF rc(QPointF(0, 0), geometry().size());
+    QRectF rc = QRectF(QPointF(0, 0), geometry().size());
     return rc;
 }
 
