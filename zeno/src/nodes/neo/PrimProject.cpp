@@ -1,5 +1,3 @@
-#include "zeno/core/INode.h"
-#include <atomic>
 #include <functional>
 #include <limits>
 #include <unordered_map>
@@ -10,7 +8,19 @@
 #include <zeno/types/StringObject.h>
 #include <zeno/utils/arrayindex.h>
 #include <zeno/utils/variantswitch.h>
+#include <zeno/core/INode.h>
 #include <zeno/zeno.h>
+#if defined(_OPENMP)
+#define WXL 1
+#else
+#define WXL 0
+#endif
+#if WXL
+#if defined(_OPENMP)
+#include <omp.h>
+#endif
+#include <atomic>
+#endif
 
 namespace zeno {
 namespace {
@@ -76,7 +86,6 @@ static bool ray_box_intersect(vec3f const &ro, vec3f const &rd, std::pair<vec3f,
 
 struct BVH { // TODO: WXL please complete this to accel up
     PrimitiveObject const *prim{};
-#define WXL 1
 #if WXL
     using TV = vec3f;
     using Box = std::pair<TV, TV>;

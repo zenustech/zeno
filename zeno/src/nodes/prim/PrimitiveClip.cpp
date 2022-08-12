@@ -40,8 +40,10 @@ namespace zeno {
         {
             for(auto key:src->attr_keys())
             {
-                if (key != "pos")
-                std::visit([i, j, c](auto &&dst, auto &&src) {
+                if (key != "pos") {
+                    src->attr_visit(key, [&] (auto &&src) {
+                    dst->attr_visit(key, [&] (auto &&dst) {
+                //std::visit([i, j, c](auto &&dst, auto &&src) {
                     using DstT = std::remove_cv_t<std::remove_reference_t<decltype(dst)>>;
                     using SrcT = std::remove_cv_t<std::remove_reference_t<decltype(src)>>;
                     if constexpr (std::is_same_v<DstT, SrcT>) {
@@ -52,8 +54,10 @@ namespace zeno {
                     } else  {
                         throw std::runtime_error("the same attr of both primitives are of different types.");
                     }
-                }, dst->attr(key), src->attr(key));
-                else {
+                //}, dst->attr(key), src->attr(key));
+                    });
+                    });
+                } else {
                     const auto &srcs = src->attr<vec3f>(key);
                     auto val1 = srcs[i];
                     auto val2 = srcs[j];

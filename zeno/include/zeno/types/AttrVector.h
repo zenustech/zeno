@@ -20,26 +20,31 @@ using AttrAcceptAll = std::variant
     , vec4i
     >;
 
-using AttrVectorVariant = std::variant
-    < std::vector<vec3f>
-    , std::vector<float>
-    , std::vector<vec3i>
-    , std::vector<int>
-    , std::vector<vec2f>
-    , std::vector<vec2i>
-    , std::vector<vec4f>
-    , std::vector<vec4i>
-    >;
-
 
 template <class ValT>
 struct AttrVector {
+    using AttrVectorVariant = std::variant
+        < std::vector<vec3f>
+        , std::vector<float>
+        , std::vector<vec3i>
+        , std::vector<int>
+        , std::vector<vec2f>
+        , std::vector<vec2i>
+        , std::vector<vec4f>
+        , std::vector<vec4i>
+        >;
 
     using value_type = ValT;
-    using iterator = typename std::vector<ValT>::iterator;
-    using const_iterator = typename std::vector<ValT>::const_iterator;
+    using BaseVector = std::vector<ValT>;
+    using size_type = typename BaseVector::size_type;
+    using pointer = typename BaseVector::pointer;
+    using reference = typename BaseVector::reference;
+    using const_pointer = typename BaseVector::const_pointer;
+    using const_reference = typename BaseVector::const_reference;
+    using iterator = typename BaseVector::iterator;
+    using const_iterator = typename BaseVector::const_iterator;
 
-    std::vector<ValT> values;
+    BaseVector values;
     std::map<std::string, AttrVectorVariant> attrs;
 
     AttrVector() = default;
@@ -279,7 +284,7 @@ struct AttrVector {
 
     template <class Accept = std::variant<vec3f, float>>
     size_t num_attrs() const {
-        if constexpr (std::is_void_v<Accept>) {
+        if constexpr (std::is_same_v<Accept, AttrAcceptAll>) {
             return attrs.size();
         } else {
             size_t count = 0;

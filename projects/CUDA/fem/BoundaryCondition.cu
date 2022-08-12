@@ -1,4 +1,5 @@
 #include "../Structures.hpp"
+#include "../Utils.hpp"
 #include "zensim/Logger.hpp"
 #include "zensim/cuda/execution/ExecutionPolicy.cuh"
 #include "zensim/types/Property.h"
@@ -151,6 +152,313 @@ ZENDEFNODE(ApplyBoundaryOnVertices,
                {},
                {"FEM"},
            });
+
+struct BindVerticesOnBoundary : INode {
+  using tiles_t = typename ZenoParticles::particles_t;
+  using dtiles_t = typename ZenoParticles::dtiles_t;
+  using T = typename tiles_t::value_type;
+  using Ti = int;
+  static_assert(sizeof(Ti) == sizeof(T) && std::is_signed_v<Ti>,
+                "T and Ti should have the same size");
+  using TV = zs::vec<T, 3>;
+  using IV = zs::vec<Ti, 3>;
+  using bvh_t = zs::LBvh<3, 32, int, T>;
+  using bv_t = zs::AABBBox<3, T>;
+
+  zs::Vector<bv_t> retrieve_bounding_volumes(zs::CudaExecutionPolicy &pol,
+                                             const tiles_t &vtemp,
+                                             const zs::SmallString &xTag,
+                                             const tiles_t &eles) {
+    using namespace zs;
+    using bv_t = AABBBox<3, T>;
+    constexpr auto space = execspace_e::cuda;
+    zs::Vector<bv_t> ret{eles.get_allocator(), eles.size()};
+    pol(range(eles.size()), [eles = proxy<space>({}, eles),
+                             bvs = proxy<space>(ret),
+                             vtemp = proxy<space>({}, vtemp),
+                             xTag] ZS_LAMBDA(int ei) mutable {
+      constexpr int dim = 3;
+      auto inds =
+          eles.template pack<dim>("inds", ei).template reinterpret_bits<int>();
+      auto x0 = vtemp.template pack<3>(xTag, inds[0]);
+      bv_t bv{x0, x0};
+      for (int d = 1; d != dim; ++d)
+        merge(bv, vtemp.template pack<3>(xTag, inds[d]));
+      bvs[ei] = bv;
+    });
+    return ret;
+  }
+
+  static constexpr T distance(const bv_t &bv, const TV &x) {
+    const auto &[mi, ma] = bv;
+    TV center = (mi + ma) / 2;
+    TV point = (x - center).abs() - (ma - mi) / 2;
+    T max = zs::limits<T>::lowest();
+    for (int d = 0; d != 3; ++d) {
+      if (point[d] > max)
+        max = point[d];
+      if (point[d] < 0)
+        point[d] = 0;
+    }
+    return (max < 0 ? max : (T)0) + point.norm();
+  }
+
+  // ref: https://www.geometrictools.com/GTE/Mathematics/DistPointTriangle.h
+  static constexpr auto dist_pt_sqr(const TV &p, const TV &t0, const TV &t1,
+                                    const TV &t2, TV &ws) noexcept {
+    TV diff = t0 - p;
+    TV e0 = t1 - t0;
+    TV e1 = t2 - t0;
+    T a00 = dot(e0, e0);
+    T a01 = dot(e0, e1);
+    T a11 = dot(e1, e1);
+    T b0 = dot(diff, e0);
+    T b1 = dot(diff, e1);
+    T det = std::max(a00 * a11 - a01 * a01, (T)0);
+    T s = a01 * b1 - a11 * b0;
+    T t = a01 * b0 - a00 * b1;
+
+    if (s + t <= det) {
+      if (s < (T)0) {
+        if (t < (T)0) { // region 4
+          if (b0 < (T)0) {
+            t = (T)0;
+            if (-b0 >= a00)
+              s = (T)1;
+            else
+              s = -b0 / a00;
+          } else {
+            s = (T)0;
+            if (b1 >= (T)0)
+              t = (T)0;
+            else if (-b1 >= a11)
+              t = (T)1;
+            else
+              t = -b1 / a11;
+          }
+        } else { // region 3
+          s = (T)0;
+          if (b1 >= (T)0)
+            t = (T)0;
+          else if (-b1 >= a11)
+            t = (T)1;
+          else
+            t = -b1 / a11;
+        }
+      } else if (t < (T)0) { // region 5
+        t = (T)0;
+        if (b0 >= (T)0)
+          s = (T)0;
+        else if (-b0 >= a00)
+          s = (T)1;
+        else
+          s = -b0 / a00;
+      } else { // region 0
+               // minimum at interior point
+        s /= det;
+        t /= det;
+      }
+    } else {
+      T tmp0{}, tmp1{}, numer{}, denom{};
+      if (s < (T)0) { // region 2
+        tmp0 = a01 + b0;
+        tmp1 = a11 + b1;
+        if (tmp1 > tmp0) {
+          numer = tmp1 - tmp0;
+          denom = a00 - (a01 + a01) + a11;
+          if (numer >= denom) {
+            s = (T)1;
+            t = (T)0;
+          } else {
+            s = numer / denom;
+            t = (T)1 - s;
+          }
+        } else {
+          s = (T)0;
+          if (tmp1 <= (T)0)
+            t = (T)1;
+          else if (b1 >= (T)0)
+            t = (T)0;
+          else
+            t = -b1 / a11;
+        }
+      } else if (t < (T)0) { // region 6
+        tmp0 = a01 + b1;
+        tmp1 = a00 + b0;
+        if (tmp1 > tmp0) {
+          numer = tmp1 - tmp0;
+          denom = a00 - (a01 + a01) + a11;
+          if (numer >= denom) {
+            t = (T)1;
+            s = (T)0;
+          } else {
+            t = numer / denom;
+            s = (T)1 - t;
+          }
+        } else {
+          t = (T)0;
+          if (tmp1 <= (T)0)
+            s = (T)1;
+          else if (b0 >= (T)0)
+            s = (T)0;
+          else
+            s = -b0 / a00;
+        }
+      } else { // region 1
+        numer = a11 + b1 - a01 - b0;
+        if (numer <= (T)0) {
+          s = (T)0;
+          t = (T)1;
+        } else {
+          denom = a00 - (a01 + a01) + a11;
+          if (numer >= denom) {
+            s = (T)1;
+            t = (T)0;
+          } else {
+            s = numer / denom;
+            t = (T)1 - s;
+          }
+        }
+      }
+    }
+    auto hitpoint = t0 + s * e0 + t * e1;
+    ws[0] = 1 - s - t;
+    ws[1] = s;
+    ws[2] = t;
+    return (p - hitpoint).l2NormSqr();
+  }
+  static constexpr auto dist_pt(const TV &p, const TV &t0, const TV &t1,
+                                const TV &t2, TV &ws) {
+    return zs::sqrt(dist_pt_sqr(p, t0, t1, t2, ws));
+  }
+
+  template <typename LsView>
+  void bindBoundary(zs::CudaExecutionPolicy &cudaPol, LsView lsv,
+                    dtiles_t &verts, const bvh_t &bvh, const tiles_t &bouverts,
+                    const tiles_t &boueles, T distCap) {
+    using namespace zs;
+    constexpr auto space = execspace_e::cuda;
+    cudaPol(Collapse{verts.size()}, [verts = proxy<space>({}, verts),
+                                     bouverts = proxy<space>({}, bouverts),
+                                     boueles = proxy<space>({}, boueles),
+                                     bvh = proxy<space>(bvh), lsv,
+                                     distCap] __device__(int vi) mutable {
+      auto x = verts.template pack<3>("x", vi).template cast<T>();
+      for (int d = 0; d != 3; ++d) {
+        verts("inds_tri", d, vi) = reinterpret_bits<T>((Ti)-1);
+        verts("ws", d, vi) = 0;
+      }
+      if (lsv.getSignedDistance(x) <
+          0) { // only operate those within the levelset
+        // int id = -1;
+        T dist = distCap;
+        IV triInds{};
+        TV ws{0, 0, 0}, tmpWs{};
+        /// iterate
+        int node = 0;
+        int numNodes = bvh.numNodes();
+        while (node != -1 && node != numNodes) {
+          auto level = bvh._levels[node];
+          for (; level; --level, ++node)
+            if (auto d = distance(bvh.getNodeBV(node), x); d > dist)
+              break;
+          // leaf node check
+          if (level == 0) {
+            auto tri_id = bvh._auxIndices[node];
+            auto tri = boueles.template pack<3>("inds", tri_id)
+                           .template reinterpret_bits<int>();
+            auto d = dist_pt(x, bouverts.template pack<3>("x", tri[0]),
+                             bouverts.template pack<3>("x", tri[1]),
+                             bouverts.template pack<3>("x", tri[2]), tmpWs);
+            if (d < dist) {
+              // id = tri_id;
+              dist = d;
+              triInds = tri;
+              ws = tmpWs;
+            }
+            node++;
+          } else
+            node = bvh._auxIndices[node];
+        }
+        if (dist != distCap) {
+          verts.template tuple<3>("inds_tri", vi) =
+              triInds.template reinterpret_bits<T>();
+          verts.template tuple<3>("ws", vi) = ws;
+          { //
+            auto t0 = bouverts.template pack<3>("x", triInds[0]);
+            auto t1 = bouverts.template pack<3>("x", triInds[1]);
+            auto t2 = bouverts.template pack<3>("x", triInds[2]);
+            verts.template tuple<3>("x", vi) =
+                t0 * ws[0] + t1 * ws[1] + t2 * ws[2];
+          }
+        }
+      }
+    });
+  }
+  void apply() override {
+    using namespace zs;
+    // auto zsverts = get_input<ZenoParticles>("ZSParticles");
+    // auto &verts = zsverts->getParticles<true>();
+    auto zsobjs = RETRIEVE_OBJECT_PTRS(ZenoParticles, "ZSParticles");
+    auto zsls = get_input<ZenoLevelSet>("ZSLevelSet");
+    auto zsbou = get_input<ZenoParticles>("ZSBoundaryPrimitive");
+    const auto &bouVerts = zsbou->getParticles();
+    const auto &tris = zsbou->getQuadraturePoints();
+    auto dist_cap = get_input2<float>("dist_cap");
+    if (dist_cap == 0)
+      dist_cap = limits<T>::max();
+
+    constexpr auto space = execspace_e::cuda;
+    auto cudaPol = cuda_exec().device(0);
+    auto triBvs = retrieve_bounding_volumes(cudaPol, bouVerts, "x", tris);
+    bvh_t stBvh;
+    stBvh.build(cudaPol, triBvs);
+
+    for (auto &&obj : zsobjs) {
+      auto &verts = obj->getParticles<true>();
+      verts.append_channels(cudaPol, {{"inds_tri", 3}, {"ws", 3}});
+      using basic_ls_t = typename ZenoLevelSet::basic_ls_t;
+      using const_sdf_vel_ls_t = typename ZenoLevelSet::const_sdf_vel_ls_t;
+      using const_transition_ls_t =
+          typename ZenoLevelSet::const_transition_ls_t;
+      match([&](const auto &ls) {
+        if constexpr (is_same_v<RM_CVREF_T(ls), basic_ls_t>) {
+          match([&](const auto &lsPtr) {
+            auto lsv = get_level_set_view<execspace_e::cuda>(lsPtr);
+            bindBoundary(cudaPol, lsv, verts, stBvh, bouVerts, tris, dist_cap);
+          })(ls._ls);
+        } else if constexpr (is_same_v<RM_CVREF_T(ls), const_sdf_vel_ls_t>) {
+          match([&](auto lsv) {
+            bindBoundary(cudaPol, SdfVelFieldView{lsv}, verts, stBvh, bouVerts,
+                         tris, dist_cap);
+          })(ls.template getView<execspace_e::cuda>());
+        } else if constexpr (is_same_v<RM_CVREF_T(ls), const_transition_ls_t>) {
+          match([&](auto fieldPair) {
+            auto &fvSrc = std::get<0>(fieldPair);
+            auto &fvDst = std::get<1>(fieldPair);
+            bindBoundary(cudaPol,
+                         TransitionLevelSetView{SdfVelFieldView{fvSrc},
+                                                SdfVelFieldView{fvDst},
+                                                ls._stepDt, ls._alpha},
+                         verts, stBvh, bouVerts, tris, dist_cap);
+          })(ls.template getView<zs::execspace_e::cuda>());
+        }
+      })(zsls->getLevelSet());
+    }
+
+    set_output("ZSParticles", get_input("ZSParticles"));
+  }
+};
+
+ZENDEFNODE(BindVerticesOnBoundary, {
+                                       {"ZSParticles",
+                                        "ZSLevelSet",
+                                        "ZSBoundaryPrimitive",
+                                        {"float", "dist_cap", "0"}},
+                                       {"ZSParticles"},
+                                       {},
+                                       {"FEM"},
+                                   });
 
 struct MoveTowards : INode {
   template <typename VertsT>

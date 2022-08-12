@@ -187,7 +187,7 @@ ZENDEFNODE(WriteObjPrimitive,
         }, /* outputs: */ {
         }, /* params: */ {
         }, /* category: */ {
-        "primitive",
+        "deprecated",
         }});
 
 struct ExportObjPrimitive : WriteObjPrimitive {

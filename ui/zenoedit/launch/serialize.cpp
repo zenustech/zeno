@@ -103,7 +103,6 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
                 if (!defl.isNull())
                 {
                     AddVariantList({"setNodeInput", ident, inputName, defl}, input.info.type, writer);
-                    //todo: for subgraph node. but now there is not edit control on subgraphnode.
                 }
             }
             else
@@ -164,9 +163,9 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
         if (opts & OPT_ONCE) {
             AddStringList({ "addNode", "HelperOnce", noOnceIdent }, writer);
             for (OUTPUT_SOCKET output : outputs) {
-                if (output.info.name == "DST") continue;
                 AddStringList({ "bindNodeInput", noOnceIdent, output.info.name, ident, output.info.name }, writer);
             }
+
             AddStringList({ "completeNode", ident }, writer);
             ident = noOnceIdent;//must before OPT_VIEW branch
         }

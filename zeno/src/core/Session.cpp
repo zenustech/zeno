@@ -14,11 +14,10 @@ namespace zeno {
 
 namespace {
 
-template <class F>
 struct ImplNodeClass : INodeClass {
-    F ctor;
+    std::unique_ptr<INode>(*ctor)();
 
-    ImplNodeClass(F const &ctor, Descriptor const &desc)
+    ImplNodeClass(std::unique_ptr<INode>(*ctor)(), Descriptor const &desc)
         : INodeClass(desc), ctor(ctor) {}
 
     virtual std::unique_ptr<INode> new_instance() const override {
@@ -42,7 +41,7 @@ ZENO_API void Session::defNodeClass(std::unique_ptr<INode>(*ctor)(), std::string
     if (nodeClasses.find(id) != nodeClasses.end()) {
         log_error("node class redefined: `{}`\n", id);
     }
-    auto cls = std::make_unique<ImplNodeClass<std::unique_ptr<INode>(*)()>>(ctor, desc);
+    auto cls = std::make_unique<ImplNodeClass>(ctor, desc);
     nodeClasses.emplace(id, std::move(cls));
 }
 

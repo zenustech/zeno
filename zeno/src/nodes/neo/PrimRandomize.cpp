@@ -179,7 +179,7 @@ ZENO_API void primRandomize(PrimitiveObject *prim, std::string attr, std::string
     auto hasDirArr = boolean_variant(!dirAttr.empty());
     if (seed == -1) seed = std::random_device{}();
     std::visit([&] (auto const &randty, auto const &seedSel, auto hasDirArr) {
-        using T = std::invoke_result_t<decltype(randty), wangsrng &>;
+        using T = std::invoke_result_t<std::decay_t<decltype(randty)>, wangsrng &>;
         auto &arr = prim->verts.add_attr<T>(attr);
         auto const &dirArr = hasDirArr ? prim->attr<vec3f>(dirAttr) : std::vector<vec3f>();
         parallel_for((size_t)0, arr.size(), [&] (size_t i) {

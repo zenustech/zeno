@@ -4,6 +4,8 @@
 #include "zensim/omp/execution/ExecutionPolicy.hpp"
 #include "zensim/container/Bvh.hpp"
 
+#include <iostream>
+
 namespace zeno {
 
     template <typename TileVecT, int codim = 3>
@@ -123,6 +125,8 @@ namespace zeno {
         float bvh_thickness,
         int fitting_in) {
 
+        // std::cout << "COMPUTE BARYCENTRIC_WEIGHTS BEGIN" << std::endl;
+
         static_assert(zs::is_same_v<typename BCWTileVec::value_type,typename EmbedTileVec::value_type>,"precision not match");
         static_assert(zs::is_same_v<typename VTileVec::value_type,typename ETileVec::value_type>,"precision not match");        
         static_assert(zs::is_same_v<typename VTileVec::value_type,typename BCWTileVec::value_type>,"precision not match"); 
@@ -131,20 +135,46 @@ namespace zeno {
         
         using namespace zs;
 
-        auto cudaExec = zs::cuda_exec();
+        // auto cudaExec = zs::cuda_exec();
         constexpr auto space = zs::execspace_e::cuda;
 
-        auto bvs = retrieve_bounding_volumes(cudaExec,verts,quads,wrapv<4>{},bvh_thickness,x_tag);
+        // std::cout << "TRY RETRIEVE BOUNDING VOLUMES" << std::endl;
+
+        // std::cout << "QUADS : " << quads.getChannelSize(elm_tag) << "\t" << quads.size() << std::endl;
+        const int mem = (int)quads.memspace();
+        const int did = quads.devid();
+        // std::cout << "check location: " << mem << ", " << did << std::endl;
+
+        // check quads
+        // pol(zs::range(100),
+        //     [elm_tag] __device__(int ei) {
+        //         // auto quad = quads.template pack<4>(elm_tag, ei).template reinterpret_bits<int>();
+        //         // if(quad[0] < 0 || quad[1] < 0 || quad[2] < 0 || quad[3] < 0)
+        //         //     printf("invalid quad : %d %d %d %d\n",quad[0],quad[1],quad[2],quad[3]);
+        //         // if(quad[0] > 13572 || quad[1] > 13572 || quad[2] > 13572 || quad[3] > 13572)
+        //         //     printf("invalid quad : %d %d %d %d\n",quad[0],quad[1],quad[2],quad[3]);
+        // });
+
+        // std::cout << "VERTS : " << verts.size() << "\t" << "QUADS : " << quads.size() << std::endl;
+
+        // return;
+
+        auto bvs = retrieve_bounding_volumes(pol,verts,quads,wrapv<4>{},bvh_thickness,x_tag);
+        // std::cout << "TRY BUILDING TETS BVH" << std::endl;
+
         auto tetsBvh = LBvh<3,32, int,T>{};
-        tetsBvh.build(cudaExec,bvs);
+
+
+        tetsBvh.build(pol,bvs);
+        // std::cout << "FINISH BUILDING TETS BVG" << std::endl;
 
         int numEmbedVerts = everts.size();
-        cudaExec(zs::range(numEmbedVerts),
+        pol(zs::range(numEmbedVerts),
             [bcw = proxy<space>({},bcw),elm_tag] ZS_LAMBDA(int vi) mutable {
                 bcw(elm_tag,vi) = reinterpret_bits<T>(int(-1));
             });
 
-        cudaExec(zs::range(numEmbedVerts),
+        pol(zs::range(numEmbedVerts),
             [verts = proxy<space>({},verts),eles = proxy<space>({},quads),bcw = proxy<space>({},bcw),
                     everts = proxy<space>({},everts),tetsBvh = proxy<space>(tetsBvh),
                     x_tag,elm_tag,weight_tag,fitting_in] ZS_LAMBDA (int vi) mutable {

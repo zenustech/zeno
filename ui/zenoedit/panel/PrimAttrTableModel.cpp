@@ -8,6 +8,8 @@
 #include <zeno/types/AttrVector.h>
 #include <zeno/funcs/LiterialConverter.h>
 
+using zeno::AttrAcceptAll;
+
 PrimAttrTableModel::PrimAttrTableModel(QObject* parent)
     : QAbstractTableModel(parent)
 {
@@ -48,25 +50,25 @@ int PrimAttrTableModel::rowCount(const QModelIndex &parent) const {
 int PrimAttrTableModel::columnCount(const QModelIndex &parent) const {
     if (m_prim) {
         if (sel_attr == "Vertex") {
-            return (int)m_prim->num_attrs();
+            return 1 + (int)m_prim->verts.num_attrs<AttrAcceptAll>();
         }
         else if (sel_attr == "Tris") {
-            return 1 + (int)m_prim->tris.num_attrs();
+            return 1 + (int)m_prim->tris.num_attrs<AttrAcceptAll>();
         }
         else if (sel_attr == "Points") {
-            return 1 + (int)m_prim->points.num_attrs();
+            return 1 + (int)m_prim->points.num_attrs<AttrAcceptAll>();
         }
         else if (sel_attr == "Lines") {
-            return 1 + (int)m_prim->lines.num_attrs();
+            return 1 + (int)m_prim->lines.num_attrs<AttrAcceptAll>();
         }
         else if (sel_attr == "Quads") {
-            return 1 + (int)m_prim->quads.num_attrs();
+            return 1 + (int)m_prim->quads.num_attrs<AttrAcceptAll>();
         }
         else if (sel_attr == "Polys") {
-            return 1 + (int)m_prim->polys.num_attrs();
+            return 1 + (int)m_prim->polys.num_attrs<AttrAcceptAll>();
         }
         else if (sel_attr == "Loops") {
-            return 1 + (int)m_prim->loops.num_attrs();
+            return 1 + (int)m_prim->loops.num_attrs<AttrAcceptAll>();
         }
         else {
             return m_prim->userData().size();
@@ -166,54 +168,59 @@ QVariant PrimAttrTableModel::headerData(int section, Qt::Orientation orientation
     if (orientation == Qt::Horizontal)
     {
         if (sel_attr == "Vertex") {
-            return QString(m_prim->attr_keys()[section].c_str());
+            if (section == 0) {
+                return QString("pos");
+            }
+            else {
+                return QString(m_prim->verts.attr_keys<AttrAcceptAll>()[section - 1].c_str());
+            }
         }
         else if (sel_attr == "Tris") {
             if (section == 0) {
-                return QString("value");
+                return QString("pos");
             }
             else {
-                return QString(m_prim->tris.attr_keys()[section - 1].c_str());
+                return QString(m_prim->tris.attr_keys<AttrAcceptAll>()[section - 1].c_str());
             }
         }
         else if (sel_attr == "Points") {
             if (section == 0) {
-                return QString("value");
+                return QString("pos");
             }
             else {
-                return QString(m_prim->points.attr_keys()[section - 1].c_str());
+                return QString(m_prim->points.attr_keys<AttrAcceptAll>()[section - 1].c_str());
             }
         }
         else if (sel_attr == "Lines") {
             if (section == 0) {
-                return QString("value");
+                return QString("pos");
             }
             else {
-                return QString(m_prim->lines.attr_keys()[section - 1].c_str());
+                return QString(m_prim->lines.attr_keys<AttrAcceptAll>()[section - 1].c_str());
             }
         }
         else if (sel_attr == "Quads") {
             if (section == 0) {
-                return QString("value");
+                return QString("pos");
             }
             else {
-                return QString(m_prim->quads.attr_keys()[section - 1].c_str());
+                return QString(m_prim->quads.attr_keys<AttrAcceptAll>()[section - 1].c_str());
             }
         }
         else if (sel_attr == "Polys") {
             if (section == 0) {
-                return QString("value");
+                return QString("pos");
             }
             else {
-                return QString(m_prim->polys.attr_keys()[section - 1].c_str());
+                return QString(m_prim->polys.attr_keys<AttrAcceptAll>()[section - 1].c_str());
             }
         }
         else if (sel_attr == "Loops") {
             if (section == 0) {
-                return QString("value");
+                return QString("pos");
             }
             else {
-                return QString(m_prim->loops.attr_keys()[section - 1].c_str());
+                return QString(m_prim->loops.attr_keys<AttrAcceptAll>()[section - 1].c_str());
             }
         }
         else {
@@ -251,7 +258,7 @@ void PrimAttrTableModel::setSelAttr(std::string sel_attr_) {
 
 template<typename T>
 QVariant attrData(const zeno::AttrVector<T> &attr, const QModelIndex &index) {
-    std::string attr_name = attr.attr_keys()[index.column() - 1];
+    std::string attr_name = attr.template attr_keys<AttrAcceptAll>()[index.column() - 1];
     if (attr.template attr_is<float>(attr_name)) {
         return attr.template attr<float>(attr_name)[index.row()];
     }

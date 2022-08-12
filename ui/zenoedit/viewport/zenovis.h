@@ -30,6 +30,7 @@ class Zenovis : public QObject
 
 signals:
     void frameUpdated(int);
+    void frameDrawn(int);
     void perspectiveUpdated(PerspectiveInfo);
 
 public slots:
@@ -62,6 +63,8 @@ public:
     CameraKeyframeWidget* m_camera_keyframe{};
     CameraControl* m_camera_control{};
     //QList<FRAME_FILE> m_frame_files;
+
+    //bool m_bAddPoint = false;
 };
 
 #endif

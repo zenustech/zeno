@@ -61,6 +61,7 @@ set(FILE_LIST
     ${CMAKE_CURRENT_SOURCE_DIR}/@PTKernel.cu
     ${CMAKE_CURRENT_SOURCE_DIR}/@DeflMatShader.cu
     ${CMAKE_CURRENT_SOURCE_DIR}/@DisneyBRDF.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/@DisneyBSDF.h
     ${CMAKE_CURRENT_SOURCE_DIR}/@zxxglslvec.h
     ${CMAKE_CURRENT_SOURCE_DIR}/@IOMat.h
     )

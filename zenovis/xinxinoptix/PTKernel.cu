@@ -4,6 +4,7 @@
 #include <cuda/helpers.h>
 #include "optixPathTracer.h"
 #include "TraceStuff.h"
+#include "DisneyBSDF.h"
 
 extern "C" {
 __constant__ Params params;
@@ -51,6 +52,9 @@ extern "C" __global__ void __raygen__rg()
         prd.seed         = seed;
         prd.opacity      = 0;
         prd.flags        = 0;
+        prd.is_inside    = false;
+        prd.maxDistance  = 1e16f;
+        prd.medium       = DisneyBSDF::PhaseFunctions::vacuum;
         int depth = 0;
         for( ;; )
         {
@@ -59,21 +63,34 @@ extern "C" __global__ void __raygen__rg()
                     ray_origin,
                     ray_direction,
                     1e-5f,  // tmin       // TODO: smarter offset
-                    1e16f,  // tmax
+                    prd.maxDistance,  // tmax
                     &prd );
 
             //result += prd.emitted;
             if(prd.countEmitted==false || depth>0)
-                result += prd.radiance * prd.attenuation2/prd.prob2;
-            if(prd.countEmitted==true && depth>0)
+                result += prd.radiance * prd.attenuation2/(prd.prob2+1e-5);
+            if(prd.countEmitted==true && depth>0){
                 prd.done = true;
-            if( prd.done  || depth >= 5 ) // TODO RR, variable for depth
+            }
+            if( prd.done ){ 
                 break;
+            }
+            if(depth>5){
+                float RRprob = clamp(length((prd.attenuation)/1.732f),0.01f,0.99f);
+                    // float RRprob = prd.prob;
+                if(rnd(prd.seed) < RRprob){
+                    //prd.attenuation = make_float3(0.0f);
+                    break;
+                }
+                prd.attenuation = prd.attenuation / RRprob;
+            }
+
+
             if(prd.countEmitted == true)
                 prd.passed = true;
             ray_origin    = prd.origin;
             ray_direction = prd.direction;
-            if(prd.passed == false )
+            if(prd.passed == false)
                 ++depth;
         }
     }
@@ -103,6 +120,19 @@ extern "C" __global__ void __miss__radiance()
     MissData* rt_data  = reinterpret_cast<MissData*>( optixGetSbtDataPointer() );
     RadiancePRD* prd = getPRD();
 
-    prd->radiance = make_float3( rt_data->bg_color );
-    prd->done      = true;
+    if(prd->medium != DisneyBSDF::isotropic){
+        prd->radiance = make_float3( rt_data->bg_color );
+        prd->done      = true;
+    }
+    prd->attenuation *= DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
+    prd->origin += prd->direction * optixGetRayTmax();
+    prd->direction = DisneyBSDF::SampleScatterDirection(prd->seed);
+    float tmpPDF;
+    prd->maxDistance = DisneyBSDF::SampleDistance(prd->seed,prd->extinction,tmpPDF);
+    prd->scatterPDF= tmpPDF;
+
+    if(length(prd->attenuation)<1e-5f){
+        prd->done = true;
+    }
+
 }

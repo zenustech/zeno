@@ -51,7 +51,7 @@ struct raii_traits {
     }
 
     static void deallocate(CUdeviceptr p) {
-        CUDA_CHECK(cudaFree((void *)p));
+       CUDA_CHECK(cudaFree((void *)p));
     }
 };
 
