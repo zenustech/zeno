@@ -1,10 +1,6 @@
 #include <zeno/zeno.h>
 #include <zeno/types/CameraObject.h>
 #include <zeno/types/LightObject.h>
-#include <zeno/types/ListObject.h>
-#include <zeno/utils/logger.h>
-#include <zeno/extra/GlobalState.h>
-#include <zeno/types/CurveObject.h>
 
 namespace zeno {
 
