@@ -17,7 +17,7 @@ ZENO_API void primCalcNormal(PrimitiveObject *prim, float flip = 1.0f, std::stri
 //ZENO_API void primCalcInsetDir(PrimitiveObject *prim, float flip = 1.0f, std::string nrmAttr = "nrm");
 
 ZENO_API void primFlipFaces(PrimitiveObject *prim);
-ZENO_API void primWireframe(PrimitiveObject *prim, bool removeFaces = false);
+ZENO_API void primWireframe(PrimitiveObject *prim, bool removeFaces = false, bool toEdges = false);
 
 ZENO_API void primDecodeUVs(PrimitiveObject *prim);
 ZENO_API void primLoopUVsToVerts(PrimitiveObject *prim);

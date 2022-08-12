@@ -13,7 +13,7 @@
 
 namespace zeno {
 
-ZENO_API void primWireframe(PrimitiveObject *prim, bool removeFaces) {
+ZENO_API void primWireframe(PrimitiveObject *prim, bool removeFaces, bool toEdges) {
     std::set<vec2i, tuple_less> segments;
     auto append = [&] (int i, int j) {
         segments.emplace(std::min(i, j), std::max(i, j));
@@ -47,9 +47,15 @@ ZENO_API void primWireframe(PrimitiveObject *prim, bool removeFaces) {
         //prim->lines.values.insert(prim->lines.values.end(), segments.begin(), segments.end());
         //prim->lines.update();
     //} else {
+    if (toEdges) {
         prim->lines.attrs.clear();
         prim->lines.values.assign(segments.begin(), segments.end());
         prim->lines.update();
+    } else {
+        prim->edges.attrs.clear();
+        prim->edges.values.assign(segments.begin(), segments.end());
+        prim->edges.update();
+    }
     //}
     if (removeFaces) {
         prim->tris.clear();
