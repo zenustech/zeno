@@ -14,9 +14,9 @@ struct UVProjectFromPlane : zeno::INode {
             zeno::log_error("refPlane must 1 * 1 plane!");
             throw std::runtime_error("");
         }
-        auto originPos = refPlane->verts[1];
-        auto xOffset = refPlane->verts[2];
-        auto yOffset = refPlane->verts[0];
+        auto originPos = refPlane->verts[2];
+        auto xOffset = refPlane->verts[0];
+        auto yOffset = refPlane->verts[1];
 //        zeno::log_info("xOffset:{}, originPos: {}", xOffset, originPos);
         auto uDir = zeno::normalize(xOffset - originPos);
         auto vDir = zeno::normalize(yOffset - originPos);
@@ -28,8 +28,8 @@ struct UVProjectFromPlane : zeno::INode {
             auto &vert = prim->verts[i];
             auto offset = vert - originPos;
             auto proj = offset - zeno::dot(offset, n) * n;
-            auto u = zeno::clamp(1 - zeno::dot(proj, uDir) / uLength, 0, 1);
-            auto v = zeno::clamp(1 - zeno::dot(proj, vDir) / vLength, 0, 1);
+            auto u = zeno::clamp(zeno::dot(proj, uDir) / uLength, 0, 1);
+            auto v = zeno::clamp(zeno::dot(proj, vDir) / vLength, 0, 1);
             uv[i] = zeno::vec3f(u,  v, 0);
         }
 
