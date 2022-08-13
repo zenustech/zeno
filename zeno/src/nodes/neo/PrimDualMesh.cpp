@@ -102,7 +102,7 @@ struct PrimDualMesh : INode {
             primPolygonate(prim.get());
         }
 
-        std::optional<scope_exit<>> revertoldpolysize;
+        scope_exit<> revertoldpolysize;
         if (keepBounds) {
             std::map<std::pair<int, int>, int> bounde2f;
             {
@@ -128,7 +128,7 @@ struct PrimDualMesh : INode {
                     bounde2f.erase(nbk);
             }
             auto oldpolysize = prim->polys.size();
-            revertoldpolysize.emplace([prim, oldpolysize] {
+            revertoldpolysize = scope_exit<>([prim, oldpolysize] {
                 prim->polys.resize(oldpolysize);
             });
             for (auto const &[ev, f]: bounde2f) {
@@ -176,10 +176,11 @@ struct PrimDualMesh : INode {
                     log_warn("cannot find vertex {} in face {}", vid, f);
                     return;
                 }
-                auto vprev = prim->loops[start + (resl - 1 + len) % len];
                 auto vnext = prim->loops[start + (resl + 1) % len];
+                auto vprev = prim->loops[start + (resl - 1 + len) % len];
                 lut[vnext].push_back(vprev);
-                lut[vprev].push_back(vnext);
+                if (vnext != vprev)
+                    lut[vprev].push_back(vnext);
                 vid2f.emplace(vnext, f);
             }
             //ZENO_P(lut);
@@ -189,10 +190,7 @@ struct PrimDualMesh : INode {
                 if (visited.count(vv0)) return;
                 visited.insert(vv0);
                 auto vid2fit = vid2f.find(vv0);
-                if (vid2fit == vid2f.end()) {
-                    log_warn("vid2f lookup failed at {}", vv0);
-                    return;
-                }
+                if (vid2fit == vid2f.end()) return;
                 auto f0 = vid2fit->second;
                 //ZENO_P(f0);
                 outprim->loops.push_back(f0);
@@ -202,8 +200,9 @@ struct PrimDualMesh : INode {
                     return;
                 }
                 auto const &ffs = lutit->second;
-                if (ffs.size() != 2) {
-                    log_warn("edge shared by {} faces != 2", ffs.size());
+                if (ffs.size() < 2) return;
+                if (ffs.size() > 2) {
+                    log_warn("edge shared by {} faces > 2", ffs.size());
                     return;
                 }
                 int vv1 = ffs[0];

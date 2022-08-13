@@ -52,6 +52,7 @@ public:
             that.enabled = false;
             func = std::move(that.func);
         }
+        return *this;
     }
 };
 
