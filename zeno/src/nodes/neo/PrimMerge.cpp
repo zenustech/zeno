@@ -31,6 +31,7 @@ ZENO_API std::shared_ptr<zeno::PrimitiveObject> primMerge(std::vector<zeno::Prim
         for (size_t primIdx = 0; primIdx < primList.size(); primIdx++) {
             auto prim = primList[primIdx];
             total += prim->verts.size();
+            pointtotal += prim->points.size();
             linetotal += prim->lines.size();
             tritotal += prim->tris.size();
             quadtotal += prim->quads.size();
