@@ -921,10 +921,6 @@ struct CreateSphere : zeno::INode {
         auto &uv1 = prim->tris.add_attr<zeno::vec3f>("uv0");
         auto &uv2 = prim->tris.add_attr<zeno::vec3f>("uv1");
         auto &uv3 = prim->tris.add_attr<zeno::vec3f>("uv2");
-        auto &quv1 = prim->quads.add_attr<zeno::vec3f>("uv0");
-        auto &quv2 = prim->quads.add_attr<zeno::vec3f>("uv1");
-        auto &quv3 = prim->quads.add_attr<zeno::vec3f>("uv2");
-        auto &quv4 = prim->quads.add_attr<zeno::vec3f>("uv3");
 
         std::vector<zeno::vec3f> dummy;
         auto &quv1 = quad ?  prim->quads.add_attr<vec3f>("uv0") : dummy;
