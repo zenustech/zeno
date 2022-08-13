@@ -92,6 +92,7 @@ ZenoParamLineEdit::ZenoParamLineEdit(const QString &text, PARAM_CONTROL ctrl, Li
     m_pLineEdit->setTextMargins(param.margins);
     m_pLineEdit->setPalette(param.palette);
     m_pLineEdit->setFont(param.font);
+    m_pLineEdit->setProperty("cssClass", "proppanel");
     m_pLineEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     setWidget(m_pLineEdit);
     connect(m_pLineEdit, SIGNAL(editingFinished()), this, SIGNAL(editingFinished()));
@@ -119,7 +120,8 @@ void ZenoParamLineEdit::setNumSlider(QGraphicsScene* pScene, const QVector<qreal
         }
     });
     connect(m_pSlider, &ZGraphicsNumSliderItem::slideFinished, this, [=]() {
-        //emit editingFinished();
+        m_pLineEdit->setShowingSlider(false);
+        emit editingFinished();
     });
     m_pSlider->setZValue(1000);
     m_pSlider->hide();
@@ -147,6 +149,7 @@ void ZenoParamLineEdit::keyPressEvent(QKeyEvent* event)
             pos -= QPointF(sz.width() / 2., sz.height() / 2.);
             m_pSlider->setPos(pos);
             m_pSlider->show();
+            m_pLineEdit->setShowingSlider(true);
         }
     }
     ZenoParamWidget::keyPressEvent(event);
@@ -159,6 +162,7 @@ void ZenoParamLineEdit::keyReleaseEvent(QKeyEvent* event)
         if (m_pSlider)
         {
             m_pSlider->hide();
+            m_pLineEdit->setShowingSlider(false);
         }
     }
     ZenoParamWidget::keyReleaseEvent(event);

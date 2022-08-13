@@ -5,13 +5,20 @@
 ZLineEdit::ZLineEdit(QWidget* parent)
     : QLineEdit(parent)
     , m_pSlider(nullptr)
+    , m_bShowingSlider(false)
 {
 }
 
 ZLineEdit::ZLineEdit(const QString& text, QWidget* parent)
     : QLineEdit(text, parent)
     , m_pSlider(nullptr)
+    , m_bShowingSlider(false)
 {
+}
+
+void ZLineEdit::setShowingSlider(bool bShow)
+{
+    m_bShowingSlider = bShow;
 }
 
 void ZLineEdit::setNumSlider(const QVector<qreal>& steps)
@@ -32,6 +39,7 @@ void ZLineEdit::setNumSlider(const QVector<qreal>& steps)
         }
     });
     connect(m_pSlider, &ZNumSlider::slideFinished, this, [=]() {
+        setShowingSlider(false);
         emit editingFinished();
     });
 }
@@ -57,7 +65,9 @@ void ZLineEdit::popup()
     m_pSlider->move(pos);
     m_pSlider->show();
     m_pSlider->activateWindow();
+    m_pSlider->setFocus();
     m_pSlider->raise();
+    setShowingSlider(true);
 }
 
 bool ZLineEdit::event(QEvent* event)
@@ -65,14 +75,11 @@ bool ZLineEdit::event(QEvent* event)
     if (event->type() == QEvent::KeyPress)
     {
         QKeyEvent* k = (QKeyEvent*)event;
-        if (k->key() == Qt::Key_Alt)
+        if (m_pSlider && k->key() == Qt::Key_Alt)
         {
-            if (m_pSlider)
-            {
-                popup();
-                k->accept();
-                return true;
-            }
+            popup();
+            k->accept();
+            return true;
         }
     }
     return QLineEdit::event(event);
@@ -86,10 +93,23 @@ void ZLineEdit::keyPressEvent(QKeyEvent* event)
 void ZLineEdit::keyReleaseEvent(QKeyEvent* event)
 {
     int k = event->key();
-    if (k == Qt::Key_Alt)
+    if (k == Qt::Key_Alt && m_pSlider)
     {
-        if (m_pSlider)
-            m_pSlider->hide();
+        m_pSlider->hide();
+        setShowingSlider(false);
     }
     QLineEdit::keyReleaseEvent(event);
+}
+
+void ZLineEdit::paintEvent(QPaintEvent* event)
+{
+    QLineEdit::paintEvent(event);
+    if (m_bShowingSlider)
+    {
+        QPainter p(this);
+        QRect rc = rect();
+        p.setPen(QColor("#4B9EF4"));
+        p.setRenderHint(QPainter::Antialiasing, false);
+        p.drawRect(rc.adjusted(0,0,-1,-1));
+    }
 }

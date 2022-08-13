@@ -47,7 +47,7 @@ ZGraphicsNumSliderItem::~ZGraphicsNumSliderItem()
 void ZGraphicsNumSliderItem::mousePressEvent(QGraphicsSceneMouseEvent* event)
 {
     _base::mousePressEvent(event);
-    m_lastPos = event->pos();
+    m_lastPos = event->screenPos();
     //todo:transparent.
 }
 
@@ -59,7 +59,7 @@ void ZGraphicsNumSliderItem::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
     {
         if (label->isHovered())
         {
-            QPointF pos = event->pos();
+            QPointF pos = event->screenPos();
             qreal dx = pos.x() - m_lastPos.x();
             qreal scale = label->text().toFloat();
             int pieces = dx;
@@ -68,7 +68,7 @@ void ZGraphicsNumSliderItem::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
             emit numSlided(Dx);
         }
     }
-    m_lastPos = event->pos();
+    m_lastPos = event->screenPos();
 }
 
 void ZGraphicsNumSliderItem::keyPressEvent(QKeyEvent* event)
@@ -85,6 +85,13 @@ void ZGraphicsNumSliderItem::keyReleaseEvent(QKeyEvent* event)
         event->accept();
         emit slideFinished();
     }
+}
+
+void ZGraphicsNumSliderItem::focusOutEvent(QFocusEvent* event)
+{
+    _base::focusOutEvent(event);
+    hide();
+    emit slideFinished();
 }
 
 QRectF ZGraphicsNumSliderItem::boundingRect() const

@@ -40,14 +40,15 @@ void ZNumSlider::paintEvent(QPaintEvent* event)
     QWidget::paintEvent(event);
 }
 
+void ZNumSlider::focusOutEvent(QFocusEvent* event)
+{
+    QWidget::focusOutEvent(event);
+    hide();
+    emit slideFinished();
+}
+
 void ZNumSlider::keyReleaseEvent(QKeyEvent* event)
 {
-    int k = event->key();
-    if (event->modifiers() == Qt::AltModifier)
-    {
-        int j;
-        j = 0;
-    }
     if (isVisible())
     {
         hide();

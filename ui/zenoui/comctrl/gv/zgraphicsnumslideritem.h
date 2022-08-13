@@ -17,6 +17,7 @@ public:
     void mouseMoveEvent(QGraphicsSceneMouseEvent* event);
     void keyPressEvent(QKeyEvent* event);
     void keyReleaseEvent(QKeyEvent* event);
+    void focusOutEvent(QFocusEvent* event);
     QRectF boundingRect() const override;
     QPainterPath shape() const override;
     void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget /* = nullptr */);
