@@ -48,13 +48,13 @@ ZENO_API void primWireframe(PrimitiveObject *prim, bool removeFaces, bool toEdge
         //prim->lines.update();
     //} else {
     if (toEdges) {
-        prim->lines.attrs.clear();
-        prim->lines.values.assign(segments.begin(), segments.end());
-        prim->lines.update();
-    } else {
         prim->edges.attrs.clear();
         prim->edges.values.assign(segments.begin(), segments.end());
         prim->edges.update();
+    } else {
+        prim->lines.attrs.clear();
+        prim->lines.values.assign(segments.begin(), segments.end());
+        prim->lines.update();
     }
     //}
     if (removeFaces) {
@@ -68,7 +68,7 @@ ZENO_API void primWireframe(PrimitiveObject *prim, bool removeFaces, bool toEdge
 struct PrimitiveWireframe : INode {
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
-        primWireframe(prim.get(), get_param<bool>("removeFaces"));
+        primWireframe(prim.get(), get_param<bool>("removeFaces"), false);
         set_output("prim", std::move(prim));
     }
 };
