@@ -93,10 +93,11 @@ struct PrimDualMesh : INode {
         //auto faceType = get_input2<std::string>("faceType");
         //auto copyFaceAttrs = get_input2<bool>("copyFaceAttrs");
         auto outprim = std::make_shared<PrimitiveObject>();
+        bool keepBounds = get_input2<bool>("keepBounds");
 
-        if (get_input2<bool>("polygonate") && (prim->tris.size() || prim->quads.size())) {
-            prim = std::make_shared<PrimitiveObject>(*prim);
-            prim->lines.clear();
+        if (get_input2<bool>("polygonate")/* && (prim->tris.size() || prim->quads.size())*/) {
+            //prim = std::make_shared<PrimitiveObject>(*prim);
+            //prim->lines.clear();
             primPolygonate(prim.get());
         }
 
@@ -121,7 +122,7 @@ struct PrimDualMesh : INode {
             //}
         //}
         //if (hasOverlappedEdge)
-            //log_warn("PrimDualMesh: got overlapped edge");
+            //log_warn("got overlapped edge");
 
         std::map<int, std::vector<int>> v2f;
         outprim->verts.resize(prim->polys.size());
@@ -145,7 +146,7 @@ struct PrimDualMesh : INode {
                 int f = faceids[ff];
                 auto [start, len] = prim->polys[f];
                 if (len <= 2) {
-                    zeno::log_warn("PrimDualMesh: polygon has {} edges <= 2", len);
+                    zeno::log_warn("polygon has {} edges <= 2", len);
                     return;
                 }
                 int resl = -1;
@@ -156,7 +157,7 @@ struct PrimDualMesh : INode {
                     }
                 }
                 if (resl == -1) {
-                    zeno::log_warn("PrimDualMesh: cannot find vertex {} in face {}", vid, f);
+                    zeno::log_warn("cannot find vertex {} in face {}", vid, f);
                     return;
                 }
                 auto vprev = prim->loops[start + (resl - 1 + len) % len];
@@ -165,22 +166,32 @@ struct PrimDualMesh : INode {
                 lut[vprev].push_back(vnext);
                 vid2f.emplace(vnext, f);
             }
-            ZENO_P(lut);
+            //ZENO_P(lut);
 
             std::set<int> visited;
             auto dfs = [&] (auto &dfs, int vv0) -> void {
                 if (visited.count(vv0)) return;
                 visited.insert(vv0);
-                auto f0 = vid2f.at(vv0);
-                ZENO_P(f0);
-                outprim->loops.push_back(f0);
-                auto const &ffs = lut.at(vv0);
-                if (ffs.size() != 2) {
-                    zeno::log_warn("PrimDualMesh: edge shared by {} faces != 2", ffs.size());
+                auto vid2fit = vid2f.find(vv0);
+                if (vid2fit == vid2f.end()) {
+                    zeno::log_warn("vid2f lookup failed at {}", vv0);
                     return;
                 }
-                int vv1 = *ffs.begin();
-                int vv2 = *ffs.rbegin();
+                auto f0 = vid2fit->second;
+                //ZENO_P(f0);
+                outprim->loops.push_back(f0);
+                auto lutit = lut.find(vv0);
+                if (lutit == lut.end()) {
+                    zeno::log_warn("lut lookup failed at {}", vv0);
+                    return;
+                }
+                auto const &ffs = lutit->second;
+                if (ffs.size() != 2) {
+                    zeno::log_warn("edge shared by {} faces != 2", ffs.size());
+                    return;
+                }
+                int vv1 = ffs[0];
+                int vv2 = ffs[1];
                 dfs(dfs, vv1);
                 dfs(dfs, vv2);
             };
@@ -197,6 +208,7 @@ ZENDEFNODE(PrimDualMesh, {
     {
     {"PrimitiveObject", "prim"},
     {"bool", "polygonate", "1"},
+    {"bool", "keepBounds", "0"},
     //{"enum faces lines", "faceType", "faces"},
     //{"bool", "copyFaceAttrs", "1"},
     },
