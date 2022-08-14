@@ -92,6 +92,10 @@ ZENO_API bool INode::requireInput(std::string const &ds) {
     return true;
 }
 
+ZENO_API void INode::doOnlyApply() {
+    apply();
+}
+
 ZENO_API void INode::doApply() {
     //if (checkApplyCondition()) {
     log_trace("--> enter {}", myname);
