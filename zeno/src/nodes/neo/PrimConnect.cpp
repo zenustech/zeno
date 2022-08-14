@@ -3,6 +3,7 @@
 #include <zeno/funcs/PrimitiveUtils.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/StringObject.h>
+#include <zeno/types/ListObject.h>
 #include <zeno/para/parallel_push_back.h>
 #include <zeno/utils/vec.h>
 #include <algorithm>
@@ -120,6 +121,54 @@ ZENDEFNODE(PrimConnectBridge, {
     {
     {"PrimitiveObject", "prim"},
     {"string", "edgeIndAttr", "tag"},
+    },
+    {
+    {"PrimitiveObject", "prim"},
+    },
+    {
+    },
+    {"primitive"},
+});
+
+struct PrimConnectSkin : INode {
+    virtual void apply() override {
+        auto primList = get_input<ListObject>("primList")->getRaw<PrimitiveObject>();
+        auto isCloseRing = get_input2<bool>("isCloseRing");
+        if (primList.size() == 0) {
+            set_output("prim", std::make_shared<PrimitiveObject>());
+            return;
+        }
+        auto outprim = primMerge(primList);
+        outprim->lines.clear();
+        for (size_t j = 1; j < primList.size(); j++) {
+            if (primList[j]->lines.size() != primList[0]->lines.size())
+                throw makeError("PrimConnectSkin: topology of all input primitives must be the same, got "
+                                + std::to_string(j) + "-th lines size mismatch");
+            if (primList[j]->verts.size() != primList[0]->verts.size())
+                throw makeError("PrimConnectSkin: topology of all input primitives must be the same, got "
+                                + std::to_string(j) + "-th verts size mismatch");
+        }
+        outprim->quads.reserve(primList[0]->lines.size() * (primList.size() - (int)isCloseRing));
+        for (size_t i = 0; i < primList[0]->lines.size(); i++) {
+            for (size_t j = 0; j < primList.size() - 1; j++) {
+                auto a = primList[j]->lines[i] + j * primList[0]->verts.size();
+                auto b = primList[j + 1]->lines[i] + (j + 1) * primList[0]->verts.size();
+                outprim->quads.emplace_back(a[0], a[1], b[1], b[0]);
+            }
+            if (isCloseRing) {
+                auto a = primList.back()->lines[i];
+                auto b = primList.front()->lines[i] + (primList.size() - 1) * primList[0]->verts.size();
+                outprim->quads.emplace_back(a[0], a[1], b[1], b[0]);
+            }
+        }
+        set_output("prim", std::move(outprim));
+    }
+};
+
+ZENDEFNODE(PrimConnectSkin, {
+    {
+    {"ListObject", "primList"},
+    {"bool", "isCloseRing", "0"},
     },
     {
     {"PrimitiveObject", "prim"},
