@@ -121,8 +121,13 @@ void CalculateAnisotropicParams(float roughness, float anisotropic, float &ax, f
 static __inline__ __device__
 vec3 CalculateTint(vec3 baseColor)
 {
-    float luminance = dot(vec3(0.3f, 0.6f,1.0f), baseColor);
+    float luminance = dot(vec3(0.3f, 0.6f,0.1f), baseColor);
     return luminance>0.0f?baseColor * (1.0f/luminance) : vec3(1.0f);
+}
+static __inline__ __device__
+vec3 mon2lin(vec3 c)
+{
+    return pow(c, 2.2);
 }
 static __inline__ __device__ float  SeparableSmithGGXG1(vec3 w, vec3 wm, float ax, float ay)
 {

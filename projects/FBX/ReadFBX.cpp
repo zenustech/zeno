@@ -58,6 +58,7 @@ struct Mesh{
     std::unordered_map<std::string, std::string> m_LoadedMeshName;
     std::unordered_map<std::string, aiMatrix4x4> m_TransMatrix;
     std::unordered_map<std::string, SMaterial> m_loadedMat;
+    std::unordered_map<std::string, float> m_MatUdimSize;
     unsigned int m_VerticesIncrease = 0;
     unsigned int m_IndicesIncrease = 0;
     unsigned int m_MeshNameIncrease = 0;
@@ -390,6 +391,8 @@ struct Mesh{
 
         if(m_loadedMat.find(matName) != m_loadedMat.end()){
             fbxData.iMaterial.value[relMeshName] = m_loadedMat[matName];
+
+            *uvscale = m_MatUdimSize[matName];
             return;
         }
 
@@ -492,6 +495,7 @@ struct Mesh{
                                 if(std::filesystem::exists(merged_path)){
                                     c = merged_path.string();
                                     *uvscale = float(size);
+                                    m_MatUdimSize[matName] = float(size);
 
                                 }else{
 
@@ -540,6 +544,7 @@ struct Mesh{
 
                                         c = merged_path.string();
                                         *uvscale = float(size);
+                                        m_MatUdimSize[matName] = float(size);
                                     }
                                 }
                             }
