@@ -101,7 +101,7 @@ ZENO_DEFNODE(VisPrimAttrValue)({
         {"string", "attrName", "pos"},
         {"float", "scale", "0.05"},
         {"int", "precision", "3"},
-        {"bool", "includeSelf", "1"},
+        {"bool", "includeSelf", "0"},
         {"bool", "dotDecoration", "1"},
     },
     {
