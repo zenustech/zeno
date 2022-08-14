@@ -92,12 +92,17 @@ void ZNumSlider::mouseMoveEvent(QMouseEvent* event)
     if (m_currLabel)
     {
         qreal dx = pos.x() - m_lastPos.x();
-        qreal scale = m_currLabel->text().toFloat();
-        int pieces = dx;
-        qreal Dx = pieces * scale;
-        emit numSlided(Dx);
+        static const int speed_factor = 10;
+        if (std::abs(dx) > speed_factor)
+        {
+            zeno::log_critical("dx: {}", dx);
+            qreal scale = m_currLabel->text().toFloat();
+            int pieces = dx / speed_factor;
+            qreal Dx = (pieces * scale);
+            emit numSlided(Dx);
+            m_lastPos = event->pos();
+        }
     }
-    m_lastPos = event->pos();
     QWidget::mouseMoveEvent(event);
 }
 

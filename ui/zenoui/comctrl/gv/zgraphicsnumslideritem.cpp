@@ -61,14 +61,17 @@ void ZGraphicsNumSliderItem::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
         {
             QPointF pos = event->screenPos();
             qreal dx = pos.x() - m_lastPos.x();
-            qreal scale = label->text().toFloat();
-            int pieces = dx;
-            qreal Dx = pieces * scale;
-            //zeno::log_critical("Dx: {}", Dx);
-            emit numSlided(Dx);
+            static const int speed_factor = 10;
+            if (std::abs(dx) > speed_factor)
+            {
+                qreal scale = label->text().toFloat();
+                int pieces = dx / speed_factor;;
+                qreal Dx = pieces * scale;
+                emit numSlided(Dx);
+                m_lastPos = event->screenPos();
+            }
         }
     }
-    m_lastPos = event->screenPos();
 }
 
 void ZGraphicsNumSliderItem::keyPressEvent(QKeyEvent* event)
