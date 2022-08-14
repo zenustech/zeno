@@ -118,11 +118,28 @@ QVariant UiHelper::_parseDefaultValue(const QString &defaultValue, const QString
     auto control = getControlType(type);
     switch (control) {
     case CONTROL_INT:
-        return defaultValue.toInt();
+    {
+        bool bOk = false;
+        int val = defaultValue.toInt(&bOk);
+        if (!bOk) {
+            val = defaultValue.toFloat(&bOk);
+            //may be failed but convert to zeno, like null.
+        }
+        return val;
+    }
     case CONTROL_BOOL:
+    {
         return (bool)defaultValue.toInt();
+    }
     case CONTROL_FLOAT:
-        return defaultValue.toDouble();
+    {
+        bool bOk = false;
+        float val = defaultValue.toFloat(&bOk);
+        if (!bOk) {
+            val = defaultValue.toInt(&bOk);
+        }
+        return val;
+    }
     case CONTROL_STRING:
     case CONTROL_WRITEPATH:
     case CONTROL_READPATH:

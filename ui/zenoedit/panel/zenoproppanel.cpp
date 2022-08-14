@@ -149,6 +149,14 @@ ZExpandableSection* ZenoPropPanel::paramsBox(IGraphsModel* pModel, const QModelI
 				ZLineEdit* pLineEdit = new ZLineEdit(param.value.toString());
 				pLineEdit->setProperty("cssClass", "proppanel");
 				pLineEdit->setNumSlider({ 0.1, 1, 10 });
+				if (param.control == CONTROL_FLOAT)
+				{
+					pLineEdit->setValidator(new QDoubleValidator);
+				}
+				else if (param.control == CONTROL_INT)
+				{
+					pLineEdit->setValidator(new QIntValidator);
+				}
 				pLineEdit->setObjectName(paramName);
 				pLineEdit->setProperty("control", param.control);
 				connect(pLineEdit, &ZLineEdit::editingFinished, this, &ZenoPropPanel::onParamEditFinish);
@@ -295,6 +303,14 @@ ZExpandableSection* ZenoPropPanel::inputsBox(IGraphsModel* pModel, const QModelI
 				ZLineEdit* pLineEdit = new ZLineEdit(UiHelper::variantToString(input.info.defaultValue));
 				pLineEdit->setProperty("cssClass", "proppanel");
 				pLineEdit->setNumSlider({ 0.1, 1, 10 });
+				if (input.info.control == CONTROL_FLOAT)
+				{
+					pLineEdit->setValidator(new QDoubleValidator);
+				}
+				else if (input.info.control == CONTROL_INT)
+				{
+					pLineEdit->setValidator(new QIntValidator);
+				}
 				pLineEdit->setObjectName(inputSock);
 				pLineEdit->setProperty("control", input.info.control);
 				connect(pLineEdit, &ZLineEdit::editingFinished, this, &ZenoPropPanel::onInputEditFinish);
