@@ -375,7 +375,7 @@ namespace DisneyBSDF{
             fPdf += pDiffuse * forwardDiffusePdfW;
             rPdf += pDiffuse * reverseDiffusePdfW;
 
-            reflectance += diffuseW * (diffuse * baseColor + sheen);
+            reflectance += diffuseW * (diffuse * baseColor + lobeOfSheen);
         }
         // Transsmission
         if(transmissionW > 0.0f) {
@@ -864,7 +864,7 @@ namespace DisneyBSDF{
             fPdf = 0.000000001f;
             rPdf = 0.000000001f;
         }
-        reflectance = clamp(reflectance, vec3(0,0,0), vec3(1,1,1));
+        //reflectance = clamp(reflectance, vec3(0,0,0), vec3(1,1,1));
         if(pLobe > 0.0f){
             pLobe = clamp(pLobe, 0.001f, 0.999f);
             reflectance = reflectance * (1.0f/pLobe);

@@ -55,7 +55,7 @@ MatInput const &attrs) {
     /** generated code here beg **/
     //GENERATED_BEGIN_MARK
     /* MODME */
-    vec3 mat_basecolor = vec3(1.0, 0.0, 1.0);
+    vec3 mat_basecolor = vec3(1.0, 1.0, 1.0);
     float mat_metallic = 0.0;
     float mat_roughness = 0.5;
     float mat_subsurface = 0.0;
