@@ -47,7 +47,8 @@ void readFBXFile(
     const char *fbx_path,
     bool enable_udim,
     std::shared_ptr<zeno::PrimitiveObject>& prim,
-    bool make_prim);
+    bool make_prim,
+    std::shared_ptr<zeno::DictObject>& prims);
 
 struct Mesh{
     FBXData fbxData;
@@ -652,7 +653,8 @@ struct Mesh{
 
     void processTrans(std::unordered_map<std::string, std::vector<SKeyMorph>>& morph,
                       std::unordered_map<std::string, SAnimBone>& bones,
-                      std::shared_ptr<zeno::DictObject>& datas) {
+                      std::shared_ptr<zeno::DictObject>& datas,
+                      std::shared_ptr<zeno::DictObject>& prims) {
         for(auto& iter: m_VerticesSlice) {
             std::string meshName = iter.first;
             std::string relMeshName = m_MeshCorsName[iter.first];
@@ -690,7 +692,7 @@ struct Mesh{
             }
 
             // Sub-prims (applied node transform)
-            //auto sub_prim = std::make_shared<zeno::PrimitiveObject>();
+            auto sub_prim = std::make_shared<zeno::PrimitiveObject>();
             auto sub_data = std::make_shared<FBXData>();
             std::vector<SVertex> sub_vertices;
             std::vector<unsigned int> sub_indices;
@@ -700,15 +702,15 @@ struct Mesh{
                 auto i2 = fbxData.iIndices.value[i+1]-verStart;
                 auto i3 = fbxData.iIndices.value[i+2]-verStart;
                 zeno::vec3i incs(i1, i2, i3);
-                //sub_prim->tris.push_back(incs);
+                sub_prim->tris.push_back(incs);
                 sub_indices.push_back(i1);
                 sub_indices.push_back(i2);
                 sub_indices.push_back(i3);
             }
             for(unsigned int i=verStart; i< verEnd; i++){
-                //sub_prim->verts.emplace_back(fbxData.iVertices.value[i].position.x,
-                //                             fbxData.iVertices.value[i].position.y,
-                //                             fbxData.iVertices.value[i].position.z);
+                sub_prim->verts.emplace_back(fbxData.iVertices.value[i].position.x,
+                                             fbxData.iVertices.value[i].position.y,
+                                             fbxData.iVertices.value[i].position.z);
                 sub_vertices.push_back(fbxData.iVertices.value[i]);
             }
 
@@ -722,7 +724,7 @@ struct Mesh{
             sub_data->iKeyMorph.value = morph;
             sub_data->iMeshInfo.value_corsName = m_MeshCorsName;
 
-            //prims->lut[meshName] = sub_prim;
+            prims->lut[meshName] = sub_prim;
             datas->lut[meshName] = sub_data;
         }
     }
@@ -867,7 +869,8 @@ void readFBXFile(
         const char *fbx_path,
         bool enable_udim,
         std::shared_ptr<zeno::PrimitiveObject>& prim,
-        bool make_prim)
+        bool make_prim,
+        std::shared_ptr<zeno::DictObject>& prims)
 {
     Assimp::Importer importer;
     aiScene const* scene;
@@ -928,7 +931,7 @@ void readFBXFile(
 
     mesh.initMesh(scene);
     anim.initAnim(scene, &mesh);
-    mesh.processTrans(anim.m_Morph, anim.m_Bones.AnimBoneMap, datas);
+    mesh.processTrans(anim.m_Morph, anim.m_Bones.AnimBoneMap, datas, prims);
     if(make_prim)
         mesh.processPrim(prim);
 
@@ -956,6 +959,7 @@ struct ReadFBXPrim : zeno::INode {
         auto data = std::make_shared<FBXData>();
         auto boneTree = std::make_shared<BoneTree>();
         auto prim = std::make_shared<zeno::PrimitiveObject>();
+        std::shared_ptr<zeno::DictObject> prims = std::make_shared<zeno::DictObject>();
 
         zeno::log_info("FBX: File path {}", path);
 
@@ -972,7 +976,7 @@ struct ReadFBXPrim : zeno::INode {
 
         readFBXFile(datas,
                     nodeTree, data, boneTree, animInfo,
-                    path.c_str(), enable_udim, prim, make_prim);
+                    path.c_str(), enable_udim, prim, make_prim, prims);
 
         set_output("data", std::move(data));
         set_output("datas", std::move(datas));
@@ -980,6 +984,7 @@ struct ReadFBXPrim : zeno::INode {
         set_output("nodetree", std::move(nodeTree));
         set_output("bonetree", std::move(boneTree));
         set_output("prim", std::move(prim));
+        set_output("prims", std::move(prims));
     }
 };
 
@@ -989,7 +994,7 @@ ZENDEFNODE(ReadFBXPrim,
                    {"readpath", "path"},
                },  /* outputs: */
                {
-                   "prim", "data", "datas",
+                   "prim", "prims", "data", "datas",
                    {"AnimInfo", "animinfo"},
                    {"NodeTree", "nodetree"},
                    {"BoneTree", "bonetree"},
