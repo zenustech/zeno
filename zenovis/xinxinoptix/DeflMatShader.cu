@@ -641,7 +641,7 @@ extern "C" __global__ void __closesthit__radiance()
                 ffPdf,
                 rrPdf
                 );
-        prd->radiance += light.emission * light_attenuation * weight * lbrdf  * 0.1f+ float3(mats.emission);
+        prd->radiance += light.emission * light_attenuation * weight * lbrdf  + float3(mats.emission);
     }
 }
 

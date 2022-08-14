@@ -434,7 +434,7 @@ namespace DisneyBSDF{
         vec3 wm = BRDFBasics::SampleGgxVndfAnisotropic(wo, ax, ay, r0, r1);
 
         wi = normalize(reflect(-wo, wm)); 
-        if(wi.z<0.0f)
+        if(wi.z<0.0f || abs(wi.z) < 1e-5)
         {
             fPdf = 0.0f;
             rPdf = 0.0f;

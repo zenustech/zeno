@@ -77,18 +77,12 @@ extern "C" __global__ void __raygen__rg()
             }
             if(depth>5){
                 float RRprob = clamp(length(prd.attenuation)/1.732f,0.01f,0.99f); 
-                    // float RRprob = prd.prob;
-                //float RRprob = 0.5;
                 if(rnd(prd.seed) > RRprob || depth>15){
                     prd.attenuation = make_float3(0.0f);
-                    //result = make_float3(0.0f);
-
                     break;
                 }
                 prd.attenuation = prd.attenuation / RRprob;
             }
-
-
             if(prd.countEmitted == true)
                 prd.passed = true;
             ray_origin    = prd.origin;
