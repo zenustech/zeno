@@ -1,1 +1,1 @@
-target_sources(zeno PRIVATE PBD.cpp)
+target_sources(zeno PRIVATE PBD.cpp bunnyMesh.h)
