@@ -78,8 +78,10 @@ extern "C" __global__ void __raygen__rg()
             if(depth>5){
                 float RRprob = clamp(length(prd.attenuation)/1.732f,0.01f,0.99f); 
                     // float RRprob = prd.prob;
-                if(rnd(prd.seed) > RRprob || depth>16){
-                    //prd.attenuation = make_float3(0.0f);
+                //float RRprob = 0.5;
+                if(rnd(prd.seed) > RRprob || depth>15){
+                    prd.attenuation = make_float3(0.0f);
+                    //result = make_float3(0.0f);
 
                     break;
                 }
