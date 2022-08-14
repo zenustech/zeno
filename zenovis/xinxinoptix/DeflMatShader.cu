@@ -266,13 +266,14 @@ extern "C" __global__ void __anyhit__shadow_cutout()
             optixIgnoreIntersection();
         }else{
             if(length(prd->shadowAttanuation) < 0.01){
+                prd->shadowAttanuation = vec3(0.0f);
                 optixTerminateRay();
             }
             if(specTrans==0.0f){
-                prd->shadowAttanuation = vec3(0);
+                prd->shadowAttanuation = vec3(0.0f);
                 optixTerminateRay();
             }
-            prd->shadowAttanuation = vec3(0);
+            prd->shadowAttanuation = vec3(0.0f);
             optixTerminateRay();
             if(specTrans > 0.0f){
                 if(rnd(prd->seed)<1-specTrans)
@@ -290,6 +291,7 @@ extern "C" __global__ void __anyhit__shadow_cutout()
 
 
 
+        prd->shadowAttanuation = vec3(0.0f);
         optixTerminateRay();
     }
 }
@@ -478,8 +480,8 @@ extern "C" __global__ void __closesthit__radiance()
     float pdf = 0.0f;
     float rPdf = 1.0f;
     float fPdf = 1.0f;
-    float rrPdf = 1.0f;
-    float ffPdf = 1.0f;
+    float rrPdf = 0.0f;
+    float ffPdf = 0.0f;
     float3 T = attrs.tang;
     float3 B = cross(N, T);
 
@@ -571,14 +573,14 @@ extern "C" __global__ void __closesthit__radiance()
 
     
     //prd->passed = (flag == DisneyBSDF::transmissionEvent) ;
-    prd->prob *= 1.0f;
+    prd->prob *= 1;
     prd->origin = P;
     prd->direction = wi;
     prd->countEmitted = false;
     prd->attenuation *= reflectance;
-    if(flag==DisneyBSDF::transmissionEvent && ( !prd->is_inside)){
-        return;
-    }
+    //if(flag==DisneyBSDF::transmissionEvent && ( !prd->is_inside)){
+    //    return;
+    //}
 
 
     prd->radiance = make_float3(0.0f,0.0f,0.0f);
@@ -611,8 +613,18 @@ extern "C" __global__ void __closesthit__radiance()
                 weight = nDl * LnDl * A / (M_PIf * Ldist * Ldist);
             }
         }
+        bool shadow_is_inside  = false;
+        if(flag==DisneyBSDF::transmissionEvent && prd->is_inside){
+            shadow_is_inside = false;
+        }
+        if(flag==DisneyBSDF::transmissionEvent && (!prd->is_inside)){
+            shadow_is_inside = true;
+        }
+        if(flag==DisneyBSDF::scatterEvent && prd->is_inside){
+            shadow_is_inside = true;
+        }
 
-        //                                make_float3(0, 0, 0), L, -normalize(inDir));
+
         float3 lbrdf = DisneyBSDF::EvaluateDisney(
                 basecolor,
                 metallic,
@@ -635,12 +647,11 @@ extern "C" __global__ void __closesthit__radiance()
                 B,
                 N,
                 thin>0.5f,
-                false,
+                shadow_is_inside,
                 ffPdf,
                 rrPdf
                 );
-        //prd->radiance += float3(mats.emission);
-        prd->radiance += light.emission * light_attenuation * weight * lbrdf * ffPdf + float3(mats.emission);
+        prd->radiance += light.emission * light_attenuation * weight * lbrdf * rrPdf + float3(mats.emission);
     }
 }
 

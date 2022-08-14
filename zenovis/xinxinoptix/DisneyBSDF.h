@@ -52,13 +52,9 @@ namespace DisneyBSDF{
     vec3 CalculateExtinction(vec3 apparantColor, float scatterDistance)
     {
         vec3 a = apparantColor;
-        vec3 a2 = a * a;
-        vec3 a3 = a2 * a;
-
-        vec3 alpha = vec3(1.0f) - exp(-5.09406f * a + 2.61188f * a2 - 4.31805f * a3);
         vec3 s = vec3(1.9f) - a + 3.5f * (a - vec3(0.8f)) * (a - vec3(0.8f));
 
-        return vec3(1.0f / (a*scatterDistance));
+        return vec3(1.0f / (s*scatterDistance));
     }
 
     static __inline__ __device__
@@ -83,7 +79,7 @@ namespace DisneyBSDF{
         float specularW      = metallicBRDF + dielectricBRDF;
         float transmissionW  = specularBSDF;
         float diffuseW       = dielectricBRDF;
-        float clearcoatW     = 1.0f * clamp(clearCoat, 0.0f, 1.0f);
+        float clearcoatW     = clearCoat;
 
         float norm = 1.0f/(specularW + transmissionW + diffuseW + clearcoatW);
 
@@ -193,9 +189,9 @@ namespace DisneyBSDF{
         float gv = BRDFBasics::SeparableSmithGGXG1(wo, wm, ax, ay);
 
         vec3 f = DisneyFresnel(baseColor, metallic, ior, specularTint, HoV, HoL, is_inside);
-        //BRDFBasics::GgxVndfAnisotropicPdf(wi, wm, wo, ax, ay, fPdf, rPdf);
-        fPdf = abs(NoL) * gv * d / abs(NoL);
-        rPdf = abs(NoV) * gl * d / abs(NoV);
+        BRDFBasics::GgxVndfAnisotropicPdf(wi, wm, wo, ax, ay, fPdf, rPdf);
+        //fPdf = abs(NoL) * gv * d / abs(NoL);
+        //rPdf = abs(NoV) * gl * d / abs(NoV);
         fPdf *= (1.0f / (4 * abs(HoV)));
         rPdf *= (1.0f / (4 * abs(HoL)));
 
@@ -866,8 +862,8 @@ namespace DisneyBSDF{
         }
         reflectance = clamp(reflectance, vec3(0,0,0), vec3(1,1,1));
         if(pLobe > 0.0f){
-            pLobe = clamp(pLobe, 0.001f, 0.999f);
-            reflectance = reflectance * (1.0f/pLobe);
+            //pLobe = clamp(pLobe, 0.001f, 0.999f);
+            reflectance = reflectance * (1.0f/(pLobe + 1e-5));
             rPdf *= pLobe;
             fPdf *= pLobe;
         }
