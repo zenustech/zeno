@@ -604,6 +604,19 @@ void DisplayWidget::updateFrame(const QString &action) // cihou optix
     m_view->update();
 }
 
+void DisplayWidget::onFinished()
+{
+    int frameid_ui = m_timeline->value();
+    if (frameid_ui != Zenovis::GetInstance().getCurrentFrameId())
+    {
+        Zenovis::GetInstance().setCurrentFrameId(frameid_ui);
+        updateFrame();
+        onPlayClicked(false);
+        BlockSignalScope scope(m_timeline);
+        m_timeline->setPlayButtonToggle(false);
+    }
+}
+
 bool DisplayWidget::isOptxRendering() const
 {
     auto& inst = Zenovis::GetInstance();
@@ -639,13 +652,26 @@ void DisplayWidget::onPlayClicked(bool bChecked)
     Zenovis::GetInstance().startPlay(bChecked);
 }
 
-void DisplayWidget::onSliderValueChanged(int value)
+void DisplayWidget::onSliderValueChanged(int frame)
 {
-    Zenovis::GetInstance().setCurrentFrameId(value);
-    updateFrame();
-    onPlayClicked(false);
-    BlockSignalScope scope(m_timeline);
-    m_timeline->setPlayButtonToggle(false);
+    m_mainWin->clearErrorMark();
+
+    if (m_timeline->isAlways())
+    {
+        auto pGraphsMgr = zenoApp->graphsManagment();
+        IGraphsModel* pModel = pGraphsMgr->currentModel();
+        if (!pModel)
+            return;
+        launchProgram(pModel, frame, frame);
+    }
+    else
+    {
+        Zenovis::GetInstance().setCurrentFrameId(frame);
+        updateFrame();
+        onPlayClicked(false);
+        BlockSignalScope scope(m_timeline);
+        m_timeline->setPlayButtonToggle(false);
+    }
 }
 
 void DisplayWidget::onRun()

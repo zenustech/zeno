@@ -93,7 +93,8 @@ int Zenovis::setCurrentFrameId(int frameid)
                 m_camera_control->updatePerspective();
             }
         }
-        emit frameUpdated(frameid);
+        if (m_playing)
+            emit frameUpdated(frameid);
     }
     return frameid;
 }

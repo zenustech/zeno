@@ -51,10 +51,11 @@ namespace DisneyBSDF{
     static __inline__ __device__ 
     vec3 CalculateExtinction(vec3 apparantColor, float scatterDistance)
     {
-        vec3 a = apparantColor;
-        vec3 s = vec3(1.9f) - a + 3.5f * (a - vec3(0.8f)) * (a - vec3(0.8f));
+        //vec3 a = apparantColor;
+        //vec3 s = vec3(1.9f) - a + 3.5f * (a - vec3(0.8f)) * (a - vec3(0.8f));
+        vec3 s = clamp(apparantColor, vec3(0.000001, 0.000001,0.000001), vec3(0.99999));
 
-        return vec3(1.0f / (s*scatterDistance));
+        return vec3(1.0f / ((vec3(1.0f) - s)*scatterDistance));
     }
 
     static __inline__ __device__

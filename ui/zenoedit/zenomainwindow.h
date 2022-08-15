@@ -19,7 +19,6 @@ public:
     void setInDlgEventLoop(bool bOn);
 
 public slots:
-    void onRunClicked(int beginFrame, int endFrame);
     void openFileDialog();
     void onNewFile();
     bool openFile(QString filePath);
@@ -36,6 +35,7 @@ public slots:
     void onNodesSelected(const QModelIndex& subgIdx, const QModelIndexList& nodes, bool select);
     void onPrimitiveSelected(const std::unordered_set<std::string>& primids);
     void updateViewport(const QString& action = "");
+    void onRunFinished();
     void onFeedBack();
     void clearErrorMark();
 
