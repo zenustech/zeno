@@ -343,7 +343,7 @@ QVariant PrimAttrTableModel::quadsData(const QModelIndex &index) const {
 QVariant PrimAttrTableModel::polysData(const QModelIndex &index) const {
     if (index.column() == 0) {
         auto v = m_prim->polys.at(index.row());
-        return QString("%1, %2, %3, %4").arg(v[0]).arg(v[1]).arg(v[2]).arg(v[3]);
+        return QString("%1, %2").arg(v[0]).arg(v[1]);
     }
     else {
         return attrData(m_prim->polys, index);
