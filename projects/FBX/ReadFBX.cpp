@@ -405,7 +405,7 @@ struct Mesh{
 
 
         std::string tmpMatName = matName;
-        std::replace(matName.begin(), matName.end(), ':', '_');
+        std::replace(tmpMatName.begin(), tmpMatName.end(), ':', '_');
         std::string vmPath = createTexDir("valueTex/" + tmpMatName);
 
         zeno::log_info("FBX: Mesh name {} Mat name {}", relMeshName, matName);
