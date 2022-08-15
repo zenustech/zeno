@@ -5,7 +5,9 @@
 #include "zenoapplication.h"
 #include "style/zenostyle.h"
 
+namespace zaudio {
 int calcFrameCountByAudio(std::string path, int fps);
+}
 
 int main(int argc, char *argv[]) 
 {
@@ -30,10 +32,12 @@ int main(int argc, char *argv[])
             {"pixel", "pixel", "set record image pixel"},
             {"path", "path", "record dir"},
             {"audio", "audio", "audio path"},
+            {"bitrate", "bitrate", "bitrate"},
+            {"fps", "fps", "fps"},
         });
         cmdParser.process(a);
         if (cmdParser.isSet("zsg"))
-            param.sZsgPath = cmdParser.value("zsg"); 
+            param.sZsgPath = cmdParser.value("zsg");
         if (cmdParser.isSet("record"))
             param.bRecord = cmdParser.value("record").toLower() == "true" ? true : false;
         if (cmdParser.isSet("frame"))
@@ -49,7 +53,7 @@ int main(int argc, char *argv[])
         if (cmdParser.isSet("audio")) {
             param.audioPath = cmdParser.value("audio");
             if(!cmdParser.isSet("frame")) {
-                int count = calcFrameCountByAudio(param.audioPath.toStdString(), 24);
+                int count = zaudio::calcFrameCountByAudio(param.audioPath.toStdString(), 24);
                 param.iFrame = count;
             }
         }

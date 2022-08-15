@@ -18,8 +18,8 @@
 
 #include <algorithm>
 
-namespace {
-static int calcFrameCountByAudio(std::string path, int fps) {
+namespace zaudio {
+int calcFrameCountByAudio(std::string path, int fps) {
     AudioFile<float> wav;
     wav.load (path);
     uint64_t ret = wav.getNumSamplesPerChannel();
@@ -396,8 +396,8 @@ struct AudioEnergy : zeno::INode {
                 int s = bin[i-1];
                 int m = bin[i];
                 int e = bin[i+1];
-                s = (int) lerp(m, s, rangePerFilter);
-                e = (int) lerp(m, e, rangePerFilter);
+                s = (int) zaudio::lerp(m, s, rangePerFilter);
+                e = (int) zaudio::lerp(m, e, rangePerFilter);
                 float total = 0;
                 for (auto i = s; i < m; i++) {
                     float cof = (float)(m - i) / (float)(m - s);
