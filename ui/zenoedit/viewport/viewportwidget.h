@@ -120,6 +120,7 @@ public slots:
     void onModelDataChanged();
     void onPlayClicked(bool);
     void onSliderValueChanged(int);
+    void onFinished();
 
 signals:
     void frameUpdated(int new_frame);
