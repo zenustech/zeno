@@ -61,8 +61,8 @@ struct LoadStringPrim : INode {
                     continue;
                 }
                 prim = std::static_pointer_cast<PrimitiveObject>(getThisGraph()->callTempNode("ReadObjPrim", {
-                    {"triangulate:", objectFromLiterial(bool(0))},
-                    {"decodeUVs:", objectFromLiterial(bool(0))},
+                    {"triangulate:", objectFromLiterial(int(0))},
+                    {"decodeUVs:", objectFromLiterial(int(0))},
                     {"path", objectFromLiterial(path)},
                 }).at("prim"));
                 cache[c] = std::make_shared<PrimitiveObject>(*prim);
