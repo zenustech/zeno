@@ -93,7 +93,7 @@ MatInput const &attrs) {
     mats.opacity = mat_opacity;
     mats.nrm = mat_normal;
     mats.emission = mat_emission;
-    mats.specTrans = clamp(mat_specTrans,0.0f,1.0f);
+    mats.specTrans = clamp(mat_specTrans,0.0f,0.99f);
     mats.ior = mat_ior;
     mats.scatterDistance = mat_scatterDistance;
     mats.flatness = mat_flatness;
