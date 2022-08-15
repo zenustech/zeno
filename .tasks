@@ -1,5 +1,5 @@
 [+]
-build_type=Debug
+build_type=Release
 ;build_type=RelWithDebInfo
 build_target=zenoedit
 run_environ=ZENO_LOGLEVEL=info ZENO_OPEN=/tmp/a.zsg
