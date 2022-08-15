@@ -53,6 +53,7 @@ ZenoSpreadsheet::ZenoSpreadsheet(QWidget *parent) : QWidget(parent) {
     pMainLayout->addLayout(pTitleLayout);
 
     QTableView *prim_attr_view = new QTableView();
+    prim_attr_view->setAlternatingRowColors(true);
     prim_attr_view->setProperty("cssClass", "proppanel");
     prim_attr_view->setModel(dataModel);
     pMainLayout->addWidget(prim_attr_view);
