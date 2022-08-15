@@ -119,13 +119,7 @@ QVariant UiHelper::_parseDefaultValue(const QString &defaultValue, const QString
     switch (control) {
     case CONTROL_INT:
     {
-        bool bOk = false;
-        int val = defaultValue.toInt(&bOk);
-        if (!bOk) {
-            val = defaultValue.toFloat(&bOk);
-            //may be failed but convert to zeno, like null.
-        }
-        return val;
+        return defaultValue.toInt();
     }
     case CONTROL_BOOL:
     {
@@ -133,12 +127,7 @@ QVariant UiHelper::_parseDefaultValue(const QString &defaultValue, const QString
     }
     case CONTROL_FLOAT:
     {
-        bool bOk = false;
-        float val = defaultValue.toFloat(&bOk);
-        if (!bOk) {
-            val = defaultValue.toInt(&bOk);
-        }
-        return val;
+        return defaultValue.toDouble();
     }
     case CONTROL_STRING:
     case CONTROL_WRITEPATH:
@@ -300,6 +289,10 @@ QString UiHelper::variantToString(const QVariant& var)
 	{
 		value = QString::number(var.toDouble());
 	}
+    else if (var.type() == QMetaType::Float)
+    {
+        value = QString::number(var.toFloat());
+    }
 	else if (var.type() == QVariant::Int)
 	{
 		value = QString::number(var.toInt());
