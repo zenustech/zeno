@@ -56,6 +56,12 @@ ZENO_API std::shared_ptr<zeno::PrimitiveObject> primMerge(std::vector<zeno::Prim
 
         if (tagAttr.size()) {
             outprim->verts.add_attr<int>(tagAttr);
+            outprim->points.add_attr<int>(tagAttr);
+            outprim->lines.add_attr<int>(tagAttr);
+            outprim->tris.add_attr<int>(tagAttr);
+            outprim->quads.add_attr<int>(tagAttr);
+            outprim->loops.add_attr<int>(tagAttr);
+            outprim->polys.add_attr<int>(tagAttr);
         }
         for (size_t primIdx = 0; primIdx < primList.size(); primIdx++) {
             auto const &prim = primList[primIdx];
