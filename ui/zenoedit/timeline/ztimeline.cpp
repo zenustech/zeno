@@ -4,6 +4,7 @@
 #include <zenoui/style/zenostyle.h>
 #include <zenoui/comctrl/effect/innershadoweffect.h>
 #include <zeno/utils/envconfig.h>
+#include <zenoui/util/uihelper.h>
 #include "ui_ztimeline.h"
 
 
@@ -114,10 +115,10 @@ void ZTimeline::initBtnIcons()
 void ZTimeline::onTimelineUpdate(int frameid)
 {
     bool blocked = m_ui->timeliner->signalsBlocked();
-    m_ui->timeliner->blockSignals(true);
+    BlockSignalScope scope(m_ui->timeliner);
+    BlockSignalScope scope2(m_ui->editFrame);
     m_ui->timeliner->setSliderValue(frameid);
     m_ui->editFrame->setText(QString::number(frameid));
-    m_ui->timeliner->blockSignals(blocked);
 }
 
 void ZTimeline::setSliderValue(int frameid)
@@ -156,4 +157,9 @@ bool ZTimeline::isAlways() const
 void ZTimeline::resetSlider()
 {
     m_ui->timeliner->setSliderValue(0);
+}
+
+int ZTimeline::value() const
+{
+    return m_ui->timeliner->value();
 }
