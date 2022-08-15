@@ -1,7 +1,10 @@
-#include<string>
-#include<vector>
-#include <zeno/zeno.h>
+# pragma once
 
+#include<string>
+#include <iostream>
+#include<vector>
+#include <zeno/types/PrimitiveObject.h>
+#include <zeno/zeno.h>
 //store the original tet mesh data as a  structure
 struct
 { 
@@ -596,7 +599,6 @@ struct bunnyMesh : zeno::INode
 	virtual void apply() override 
     {
 	    auto prim = std::make_shared<zeno::PrimitiveObject>();
-		// auto &pos = prim->attr<vec3f>("pos");
 
         auto &pos = prim->verts;
         auto &tet = prim->quads;
@@ -629,11 +631,11 @@ struct bunnyMesh : zeno::INode
 			for (int j = 0; j < 3; j++)
 				surf[i][j] = theBunnyMesh.surf[i * 3 + j];
 
-		std::cout << "created a bunny tetrahedron mesh!" << std::endl;
-		std::cout << "numParticles:" << numParticles<< std::endl;
-		std::cout << "numEdges:" << numEdges<< std::endl;
-		std::cout << "numTets:" << numTets<< std::endl;
-		std::cout << "numSurfs:" << numSurfs<< std::endl;
+		// std::cout << "created a bunny tetrahedron mesh!" << std::endl;
+		// std::cout << "numParticles:" << numParticles<< std::endl;
+		// std::cout << "numEdges:" << numEdges<< std::endl;
+		// std::cout << "numTets:" << numTets<< std::endl;
+		// std::cout << "numSurfs:" << numSurfs<< std::endl;
 
         set_output("prim", std::move(prim));
 	};
