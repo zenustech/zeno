@@ -287,7 +287,7 @@ void ZenoPlayer::updateFrame(const QString &action)
         if (m_InitParam.bRecord) {
             m_InitParam.bRecord = false;
             std::string cmd;
-            cmd = QString("ffmpeg -r %1 -i %2 -b:v %3 -c:v mpeg4 output.mp4")
+            cmd = QString("ffmpeg -y -r %1 -i %2 -b:v %3 -c:v mpeg4 output.mp4")
                     .arg(m_InitParam.iFps)
                     .arg(m_InitParam.sPath+"/%07d.jpg")
                     .arg(m_InitParam.iBitrate)
@@ -295,7 +295,7 @@ void ZenoPlayer::updateFrame(const QString &action)
             std::puts(cmd.c_str());
             std::system(cmd.c_str());
             if (!m_InitParam.audioPath.isEmpty()) {
-                cmd = QString("ffmpeg -i output.mp4 -i %1 -c:v copy -c:a aac output_av.mp4")
+                cmd = QString("ffmpeg -y -i output.mp4 -i %1 -c:v copy -c:a aac output_av.mp4")
                         .arg(m_InitParam.audioPath).toStdString();
                 std::puts(cmd.c_str());
                 std::system(cmd.c_str());
