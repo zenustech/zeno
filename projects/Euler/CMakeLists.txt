@@ -11,6 +11,7 @@ endif()
 find_package(TBB CONFIG REQUIRED COMPONENTS tbb tbbmalloc)
 find_package(Eigen3 REQUIRED)
 target_sources(zeno PRIVATE nodesys.cpp)
+zeno_disable_warning(nodesys.cpp)
 
 #simd compiler flags
 #if (WIN32)

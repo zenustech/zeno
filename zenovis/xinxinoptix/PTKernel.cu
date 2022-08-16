@@ -82,6 +82,7 @@ extern "C" __global__ void __raygen__rg()
                 float RRprob = 0.9;
                 if(rnd(prd.seed) > RRprob || prd.depth>8){
                     prd.done=true;
+
                 }
                 prd.attenuation = prd.attenuation / RRprob;
             }

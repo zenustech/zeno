@@ -24,7 +24,7 @@ static void toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects &o
     keys.push_back('\a');
 
     auto path = std::filesystem::path(cachedir) / (std::to_string(1000000 + frameid).substr(1) + ".zencache");
-    log_debug("dump cache to disk {}", path);
+    log_critical("dump cache to disk {}", path);
     std::ofstream ofs(path);
     std::ostreambuf_iterator<char> oit(ofs);
     std::copy(keys.begin(), keys.end(), oit);
@@ -37,7 +37,7 @@ static void fromDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects 
     if (cachedir.empty()) return;
     objs.clear();
     auto path = std::filesystem::path(cachedir) / (std::to_string(1000000 + frameid).substr(1) + ".zencache");
-    log_debug("load cache from disk {}", path);
+    log_critical("load cache from disk {}", path);
     std::ifstream ifs(path);
     std::istreambuf_iterator<char> iit(ifs), iite;
     std::vector<char> dat;
@@ -111,8 +111,6 @@ ZENO_API void GlobalComm::clearState() {
     m_frames.clear();
     m_inCacheFrames.clear();
     m_maxPlayFrame = 0;
-    beginFrameNumber = 0;
-    beginFrameNumber = 0;
     maxCachedFrames = 1;
     cacheFramePath = {};
 }

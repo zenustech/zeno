@@ -5,6 +5,7 @@
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/ListObject.h>
 #include <zeno/types/DictObject.h>
+#include <zeno/types/CameraObject.h>
 
 #include "assimp/scene.h"
 
@@ -12,6 +13,8 @@
 
 #include <glm/vec4.hpp>
 #include <glm/mat4x4.hpp>
+
+namespace {
 
 struct EvalAnim{
     double m_Duration;
@@ -324,3 +327,4 @@ ZENDEFNODE(EvalFBXAnim,
                }
            });
 
+}

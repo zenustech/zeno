@@ -147,9 +147,11 @@ struct AttrVector {
 
     template <class Accept = std::variant<vec3f, float>, class F>
     void attr_visit(std::string const &name, F const &f) {
-        if (name == "pos") {
-            f(values);
-            return;
+        if constexpr (variant_contains<ValT, Accept>::value) {
+            if (name == "pos") {
+                f(values);
+                return;
+            }
         }
         auto it = attrs.find(name);
         if (it == attrs.end())

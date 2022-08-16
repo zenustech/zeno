@@ -111,7 +111,7 @@ void ZenoDockWidget::onNodesSelected(const QModelIndex& subgIdx, const QModelInd
         if (select) {
             const QModelIndex& idx = nodes[0];
             QString nodeId = pModel->data2(subgIdx, idx, ROLE_OBJID).toString();
-            auto scene = Zenovis::GetInstance().getSession()->get_scene();
+            auto *scene = Zenovis::GetInstance().getSession()->get_scene();
             scene->selected.clear();
             std::string nodeid = nodeId.toStdString();
             for (auto const &[key, ptr]: scene->objectsMan->pairs()) {

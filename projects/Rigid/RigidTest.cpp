@@ -2,7 +2,6 @@
 #include <vector>
 
 // zeno basics
-#include <zeno/utils/nowarn.h>
 #include <zeno/ListObject.h>
 #include <zeno/DictObject.h>
 #include <zeno/NumericObject.h>
@@ -855,22 +854,43 @@ struct BulletMakeConstraint : zeno::INode {
     virtual void apply() override {
         auto constraintType = get_param<std::string>("constraintType");
         auto obj1 = get_input<BulletObject>("obj1");
+        auto iter = get_input2<int>("iternum");
+                std::shared_ptr<BulletConstraint> cons;
 		if (has_input("obj2")) {
 			auto obj2 = get_input<BulletObject>("obj2");
-			auto cons = std::make_shared<BulletConstraint>(obj1->body.get(), obj2->body.get(), constraintType);
-			set_output("constraint", std::move(cons));
+			cons = std::make_shared<BulletConstraint>(obj1->body.get(), obj2->body.get(), constraintType);
 		}
 		else{
-			auto cons = std::make_shared<BulletConstraint>(obj1->body.get(), constraintType);
-			set_output("constraint", std::move(cons));
+			cons = std::make_shared<BulletConstraint>(obj1->body.get(), constraintType);
 		}
+                cons->constraint->setOverrideNumSolverIterations(iter);
+                set_output("constraint", std::move(cons));
     }
 };
 
 ZENDEFNODE(BulletMakeConstraint, {
-    {"obj1", "obj2"},
+    {"obj1", "obj2", {"int", "iternum", "100"}},
     {"constraint"},
     {{"enum ConeTwist Fixed Gear Generic6Dof Generic6DofSpring Generic6DofSpring2 Hinge Hinge2 Point2Point Slider Universal", "constraintType", "Fixed"}},
+    {"Bullet"},
+});
+
+struct BulletConstraintDisplay: zeno::INode{
+    virtual void apply() override {
+        auto prim = get_input<zeno::PrimitiveObject>("prim");
+        auto nlist = get_input<zeno::ListObject>("nlist")->getLiterial<zeno::vec2i>();
+        for(int i=0; i<nlist.size(); i++){
+            auto const& n = nlist[i];
+            prim->lines.push_back(zeno::vec2i(n[0], n[1]));
+        }
+        set_output("prim", std::move(prim));
+    }
+};
+
+ZENDEFNODE(BulletConstraintDisplay, {
+    {"prim", "nlist"},
+    {"prim"},
+    {},
     {"Bullet"},
 });
 

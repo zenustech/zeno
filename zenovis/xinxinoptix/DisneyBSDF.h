@@ -51,11 +51,9 @@ namespace DisneyBSDF{
     static __inline__ __device__ 
     vec3 CalculateExtinction(vec3 apparantColor, float scatterDistance)
     {
-        //vec3 a = apparantColor;
-        //vec3 s = vec3(1.9f) - a + 3.5f * (a - vec3(0.8f)) * (a - vec3(0.8f));
 
-        //return vec3(1.0f / (a*scatterDistance));
         return 1/apparantColor;
+
     }
 
     static __inline__ __device__
@@ -372,7 +370,7 @@ namespace DisneyBSDF{
             fPdf += pDiffuse * forwardDiffusePdfW;
             rPdf += pDiffuse * reverseDiffusePdfW;
 
-            reflectance += diffuseW * (diffuse * baseColor + sheen);
+            reflectance += diffuseW * (diffuse * baseColor + lobeOfSheen);
         }
         // Transsmission
         if(transmissionW > 0.0f) {

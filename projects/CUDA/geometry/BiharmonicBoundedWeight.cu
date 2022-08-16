@@ -73,7 +73,7 @@ struct SolveBBW : zeno::INode {
             pol(range(numEles),[execTag,etemp = proxy<space>({},etemp),vtemp = proxy<space>({},vtemp),eles = proxy<space>({},eles),dxTag,bTag,wdim]
                 ZS_LAMBDA(int ei) mutable {
                     constexpr int cdim = 4;
-                    auto inds = eles.pack<cdim>("inds",ei).reinterpret_bits<int>();
+                    auto inds = eles.template pack<cdim>("inds",ei).template reinterpret_bits<int>();
                     zs::vec<T,cdim> temp{};
                     for(size_t d = 0;d != wdim;++d){
                         for(int vi = 0;vi != cdim;++vi)
@@ -96,7 +96,7 @@ struct SolveBBW : zeno::INode {
             pol(range(numEles),[execTag,etemp = proxy<space>({},etemp),vtemp = proxy<space>({},vtemp),eles = proxy<space>({},eles),dxTag,bTag,wdim]
                 ZS_LAMBDA(int ei) mutable {
                     constexpr int cdim = 4;
-                    auto inds = eles.pack<cdim>("inds",ei).reinterpret_bits<int>();
+                    auto inds = eles.template pack<cdim>("inds",ei).template reinterpret_bits<int>();
                     zs::vec<T,cdim> temp{};
                     for(size_t d = 0;d != wdim;++d){
                         for(int vi = 0;vi != cdim;++vi)

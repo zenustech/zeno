@@ -1,4 +1,3 @@
-#include <zeno/utils/nowarn.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/StringObject.h>
 #include <zeno/utils/string.h>
@@ -17,8 +16,7 @@
 #define MINIMP3_FLOAT_OUTPUT
 #include "minimp3.h"
 
-#include <algorithm>
-
+namespace zaudio {
 int calcFrameCountByAudio(std::string path, int fps) {
     AudioFile<float> wav;
     wav.load (path);
@@ -27,6 +25,10 @@ int calcFrameCountByAudio(std::string path, int fps) {
     return ret + 1;
 }
 
+static float lerp(float start, float end, float value) {
+    return start + (end - start) * value;
+}
+}
 namespace zeno {
     struct ReadWavFile : zeno::INode {
         virtual void apply() override {
@@ -277,7 +279,7 @@ struct AudioEnergy : zeno::INode {
         E /= duration_count;
         set_output("E", std::make_shared<NumericObject>((float)E));
         double uniE = (E - minE) / (maxE - minE);
-        set_output("uniE", std::make_shared<NumericObject>((float)E));
+        set_output("uniE", std::make_shared<NumericObject>((float)uniE));
     }
 };
     ZENDEFNODE(AudioEnergy, {
@@ -298,4 +300,147 @@ struct AudioEnergy : zeno::INode {
         },
     });
 
+    struct AudioFFT : zeno::INode {
+        virtual void apply() override {
+            auto wave = get_input<PrimitiveObject>("wave");
+            int duration_count = 1024;
+            auto start_time = get_input2<float>("time");
+            float sampleFrequency = wave->userData().get<zeno::NumericObject>("SampleRate")->get<float>();
+            int start_index = int(sampleFrequency * start_time);
+            std::vector<double> samples;
+            samples.resize(duration_count+1);
+            for (auto i = 0; i < duration_count+1; i++) {
+                samples[i] = wave->attr<float>("value")[min((start_index + i), wave->size()-1)];
+            }
+            auto pre_emphasis = get_input2<int>("preEmphasis");
+            if (pre_emphasis) {
+                auto alpha = get_input2<float>("preEmphasisAlpha");
+                for (auto i = 0; i < duration_count; i++) {
+                    samples[i] = samples[i+1] - alpha * samples[i];
+                }
+            }
+            samples.pop_back();
+            auto hamming_window = get_input2<int>("hammingWindow");
+            if (hamming_window) {
+                for (auto i = 0; i < duration_count; i++) {
+                    double i_value = 0.54 - 0.46 * std::cos(2.0 * M_PI * i / (duration_count - 1));
+                    samples[i] = samples[i] * i_value;
+                }
+            }
+
+            auto fft = Aquila::FftFactory::getFft(duration_count);
+            Aquila::SpectrumType spectrums = fft->fft(samples.data());
+
+            auto fft_prim = std::make_shared<PrimitiveObject>();
+            fft_prim->resize(duration_count / 2 + 1);
+            auto &freq = fft_prim->add_attr<float>("freq");
+            auto &real = fft_prim->add_attr<float>("real");
+            auto &image = fft_prim->add_attr<float>("image");
+            auto &square = fft_prim->add_attr<float>("square");
+            auto &power = fft_prim->add_attr<float>("power");
+            for (std::size_t i = 0; i < fft_prim->verts.size(); ++i) {
+                float r = spectrums[i].real();
+                float im = spectrums[i].imag();
+                freq[i] = float(i);
+                real[i] = r;
+                image[i] = im;
+                float square_v = r * r + im * im;
+                square[i] = square_v;
+                power[i] = square_v / duration_count;
+            }
+            set_output("FFTPrim", fft_prim);
+        }
+    };
+    ZENDEFNODE(AudioFFT, {
+        {
+            "wave",
+            {"float", "time", "0"},
+            {"bool", "preEmphasis", "0"},
+            {"float", "preEmphasisAlpha", "0.97"},
+            {"bool", "hammingWindow", "1"},
+        },
+        {
+            "FFTPrim",
+        },
+        {},
+        {
+            "audio"
+        },
+    });
+    struct MelFilter : zeno::INode {
+        virtual void apply() override {
+            auto fftPrim = get_input<PrimitiveObject>("FFTPrim");
+            auto &power = fftPrim->attr<float>("power");
+            auto sampleFreq = get_input2<float>("sampleFreq");
+            auto rangePerFilter = get_input2<float>("rangePerFilter");
+            float halfFreq = sampleFreq / 2;
+            auto count = get_input2<int>("count");
+            std::vector<float> hz_points;
+            float mel_fh = 2595.0 * log10(1+halfFreq/700.0);
+            for (int i = 0; i <= count + 1; i++) {
+                float mel = mel_fh * i / (count + 1);
+                float hz = 700.0 * (pow(10.0, mel / 2595.0) - 1);
+                hz_points.push_back(hz);
+            }
+            std::vector<int> bin;
+            for (const auto& hz: hz_points) {
+                int index = (1024.0+1.0) * hz / sampleFreq;
+                bin.push_back(index);
+            }
+            auto fbank = std::make_shared<PrimitiveObject>();
+            fbank->resize(count);
+            auto& fbank_v = fbank->add_attr<float>("fbank");
+            for (auto i = 1; i <= count; i++) {
+                int s = bin[i-1];
+                int m = bin[i];
+                int e = bin[i+1];
+                s = (int) zaudio::lerp(m, s, rangePerFilter);
+                e = (int) zaudio::lerp(m, e, rangePerFilter);
+                float total = 0;
+                for (auto i = s; i < m; i++) {
+                    float cof = (float)(m - i) / (float)(m - s);
+                    total += power[i] * cof;
+                }
+                for (auto i = m; i < e; i++) {
+                    float cof = 1 - (float)(m - i) / (float)(e - m);
+                    total += power[i] * cof;
+                }
+                if (total == 0) {
+                    fbank_v[i-1] = std::numeric_limits<float>::min();
+                }
+                else {
+                    fbank_v[i-1] = log(total);
+                }
+            }
+            auto indexType = get_input2<std::string>("indexType");
+            if (indexType == "index") {
+                auto& index = fbank->add_attr<float>("i");
+                for (auto i = 1; i <= count; i++) {
+                    index[i-1] = (float)(i-1);
+                };
+            } else if (indexType == "indexdivcount") {
+                auto& index = fbank->add_attr<float>("i");
+                for (auto i = 1; i <= count; i++) {
+                    index[i-1] = (float)(i-1) /count;
+                };
+            }
+            set_output("FilterBank", fbank);
+        }
+    };
+    ZENDEFNODE(MelFilter, {
+        {
+            "FFTPrim",
+            {"int", "count", "15"},
+            {"float", "sampleFreq", "44100"},
+            {"float", "rangePerFilter", "1"},
+            {"enum none index indexdivcount", "indexType", "index"},
+        },
+        {
+            "FilterBank",
+        },
+        {},
+        {
+            "audio",
+        },
+    });
 } // namespace zeno

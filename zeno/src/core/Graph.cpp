@@ -115,7 +115,7 @@ ZENO_API std::map<std::string, zany> Graph::callTempNode(std::string const &id,
     auto se = cl->new_instance();
     se->graph = const_cast<Graph *>(this);
     se->inputs = std::move(inputs);
-    se->doApply();
+    se->doOnlyApply();
     return std::move(se->outputs);
 }
 

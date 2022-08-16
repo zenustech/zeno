@@ -74,16 +74,16 @@ struct PrimFloatAttrToInt : INode {
         auto attrOut = get_input2<std::string>("attrOut");
         auto &inArr = prim->verts.attr<float>(attr);
         if (attrOut == attr) {
-            std::vector<int> outArr;
+            std::vector<int> outArr(inArr.size());
             for (size_t i = 0; i < inArr.size(); i++) {
-                outArr[i] = std::rint(inArr[i] + 0.5f);
+                outArr[i] = std::rint(inArr[i]);
             }
             prim->verts.attrs.erase(attrOut);
             prim->verts.add_attr<int>(attrOut) = std::move(outArr);
         } else {
             auto &outArr = prim->verts.add_attr<int>(attrOut);
             for (size_t i = 0; i < inArr.size(); i++) {
-                outArr[i] = std::rint(inArr[i] + 0.5f);
+                outArr[i] = std::rint(inArr[i]);
             }
         }
         set_output("prim", std::move(prim));
@@ -111,7 +111,7 @@ struct PrimIntAttrToFloat : INode {
         auto attrOut = get_input2<std::string>("attrOut");
         auto &inArr = prim->verts.attr<int>(attr);
         if (attrOut == attr) {
-            std::vector<float> outArr;
+            std::vector<float> outArr(inArr.size());
             for (size_t i = 0; i < inArr.size(); i++) {
                 outArr[i] = float(inArr[i]);
             }

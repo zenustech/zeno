@@ -8,7 +8,6 @@
 #include <zeno/utils/variantswitch.h>
 #include <zeno/extra/TempNode.h>
 #include <zeno/core/INode.h>
-#include <zeno/utils/zeno_p.h>
 #include <zeno/zeno.h>
 #include <limits>
 

@@ -53,6 +53,7 @@ static void primRevampVerts(PrimitiveObject *prim, std::vector<int> const &revam
             || prim->tris.size()
             || prim->quads.size()
             || prim->lines.size()
+            || prim->edges.size()
             || prim->polys.size()
             || prim->points.size()
          )) {
@@ -125,6 +126,23 @@ static void primRevampVerts(PrimitiveObject *prim, std::vector<int> const &revam
             prim->lines.resize(linesrevamp.size());
         }
 
+        if (prim->edges.size()) {
+            std::vector<int> edgesrevamp;
+            edgesrevamp.reserve(prim->edges.size());
+            for (int i = 0; i < prim->edges.size(); i++) {
+                auto &edge = prim->edges[i];
+                if (mock(edge[0]) && mock(edge[1]))
+                    edgesrevamp.emplace_back(i);
+            }
+            for (int i = 0; i < edgesrevamp.size(); i++) {
+                prim->edges[i] = prim->edges[edgesrevamp[i]];
+            }
+            prim->edges.foreach_attr<AttrAcceptAll>([&] (auto const &key, auto &arr) {
+                revamp_vector(arr, edgesrevamp);
+            });
+            prim->edges.resize(edgesrevamp.size());
+        }
+
         if (prim->polys.size()) {
             std::vector<int> polysrevamp;
             polysrevamp.reserve(prim->polys.size());
@@ -188,8 +206,8 @@ ZENDEFNODE(PrimFilter, {
     {"PrimitiveObject", "prim"},
     {"string", "tagAttr", "tag"},
     {"string", "revampAttrO", ""},
-    {"int", "tagValue", "1"},
-    {"bool", "isInversed", "0"},
+    {"int", "tagValue", "0"},
+    {"bool", "isInversed", "1"},
     {"enum verts faces", "method", "verts"},
     },
     {

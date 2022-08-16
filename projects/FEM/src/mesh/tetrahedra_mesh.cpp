@@ -1,4 +1,3 @@
-#include <zeno/utils/nowarn.h>
 #include "tetrahedra_mesh.h"
 #include <fstream>
 #include <algorithm>

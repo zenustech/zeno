@@ -10,9 +10,9 @@ endif()
 ####################################################
 if (MSVC)  # must use this to make msvc linker happy
     target_compile_options(zeno PRIVATE
-            $<$<CONFIG:>:/bigobj>
-            $<$<CONFIG:Debug>:/bigobj>
-            $<$<CONFIG:Release>:/bigobj>
+            $<$<CONFIG:>:$<IF:$<COMPILE_LANGUAGE:CXX>, /bigobj, >>
+            $<$<CONFIG:Debug>:$<IF:$<COMPILE_LANGUAGE:CXX>, /bigobj, >>
+            $<$<CONFIG:Release>:$<IF:$<COMPILE_LANGUAGE:CXX>, /bigobj, >>
     )  # 节数超过对象文件格式限制: 请使用 /bigobj 进行编译 
 endif()
 ####################################################
@@ -42,9 +42,9 @@ target_sources(zeno PRIVATE ${FLIP_SOURCE} ${NOSYS_SOURCE})
 
 #simd compiler flags
 if (MSVC)
-    target_compile_options(zeno PRIVATE "/arch:AVX")
+    target_compile_options(zeno PRIVATE $<IF:$<COMPILE_LANGUAGE:CXX>, /arch:AVX, >)
 else()
-    target_compile_options(zeno PRIVATE -mavx -mfma)
+    target_compile_options(zeno PRIVATE $<IF:$<COMPILE_LANGUAGE:CXX>, -mavx -mfma, >)
 endif()
 
 

@@ -9,6 +9,8 @@
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/StringObject.h>
 
+#include <iostream>
+
 namespace zeno{
 
 using T = float;
@@ -20,6 +22,10 @@ using mat4 = zs::vec<T,4,4>;
 struct ZSComputeBaryCentricWeights : INode {
     void apply() override {
         using namespace zs;
+
+        // fmt::print("ENTERING NODES\n");
+        // std::cout << "ENTERING NODES" << std::endl;
+
         auto zsvolume = get_input<ZenoParticles>("zsvolume");
         auto zssurf = get_input<ZenoParticles>("zssurf");
         // the bvh of zstets
@@ -44,10 +50,26 @@ struct ZSComputeBaryCentricWeights : INode {
         const auto numFEMEles = eles.size();
         const auto numEmbedVerts = bcw.size();
         const auto numEmbedEles = e_eles.size();
-
         constexpr auto space = zs::execspace_e::cuda;
 
+        // fmt::print("TRY COMPUTE BARYCENTRIC WEIGHTS\n");
+
+        // std::cout << "TRY COMPUTE BARYCENTRIC WEIGHTS" << std::endl;
+
+
+        // cudaExec(zs::range(eles.size()),
+        //     [eles = proxy<space>({},eles)] __device__(int ei) mutable {
+        //         auto quad = eles.template pack<4>("inds", ei).template reinterpret_bits<int>();
+        //         if(quad[0] < 0 || quad[1] < 0 || quad[2] < 0 || quad[3] < 0)
+        //             printf("invalid quad : %d %d %d %d\n",quad[0],quad[1],quad[2],quad[3]);
+        //         if(quad[0] > 13572 || quad[1] > 13572 || quad[2] > 13572 || quad[3] > 13572)
+        //             printf("invalid quad : %d %d %d %d\n",quad[0],quad[1],quad[2],quad[3]);
+        // });
+
         compute_barycentric_weights(cudaExec,verts,eles,everts,"x",bcw,"inds","w",thickness,fitting_in);
+        // set_output("zsvolume", zsvolume);return;
+
+        // fmt::print("FINISH COMPUTING BARYCENTRIC WEIGHTS\n");
 
         cudaExec(zs::range(numEmbedVerts),
             [bcw = proxy<space>({},bcw),fitting_in] ZS_LAMBDA(int vi) mutable {
@@ -146,19 +168,19 @@ struct ZSSampleEmbedVectorField : zeno::INode {
                 sample_attr = zs::SmallString(sample_attr),out_attr = zs::SmallString(out_attr),default_val,on_elm] ZS_LAMBDA(int vi) mutable {
                     auto ei = reinterpret_bits<int>(sample_bcw("inds",vi));
                     if(ei < 0){
-                        verts.tuple<3>(out_attr,vi) = default_val;
+                        verts.template tuple<3>(out_attr,vi) = default_val;
                         return;
                     }
                     if(on_elm){
-                        verts.tuple<3>(out_attr,vi) = sample_eles.pack<3>(sample_attr,ei);
+                        verts.template tuple<3>(out_attr,vi) = sample_eles.template pack<3>(sample_attr,ei);
                         return;
                     }
 
                     const auto& w = sample_bcw.pack<4>("w",vi);
-                    verts.tuple<3>(out_attr,vi) = vec3::zeros();
+                    verts.template tuple<3>(out_attr,vi) = vec3::zeros();
                     for(int i = 0;i < 4;++i){
-                        auto idx = sample_eles.pack<4>("inds",ei).reinterpret_bits<int>()[i];
-                        verts.tuple<3>(out_attr,vi) = verts.pack<3>(out_attr,vi) + w[i] * sample_verts.pack<3>(sample_attr,idx);
+                        auto idx = sample_eles.template pack<4>("inds",ei).template reinterpret_bits<int>()[i];
+                        verts.template tuple<3>(out_attr,vi) = verts.template pack<3>(out_attr,vi) + w[i] * sample_verts.template pack<3>(sample_attr,idx);
                     }
         });
 
@@ -245,6 +267,7 @@ struct ZSInterpolateEmbedPrim : zeno::INode {
         auto zssurf = get_input<ZenoParticles>("zssurf");
 
         auto tag = get_param<std::string>("tag");
+        auto inAttr = get_param<std::string>("inAttr");
         auto outAttr = get_param<std::string>("outAttr");
 
         auto cudaExec = zs::cuda_exec();
@@ -266,7 +289,7 @@ struct ZSInterpolateEmbedPrim : zeno::INode {
         constexpr auto space = zs::execspace_e::cuda;
 
         cudaExec(zs::range(nmEmbedVerts),
-            [outAttr = zs::SmallString{outAttr},verts = proxy<space>({},verts),eles = proxy<space>({},eles),bcw = proxy<space>({},bcw),everts = proxy<space>({},everts)] ZS_LAMBDA (int vi) mutable {
+            [inAttr = zs::SmallString{inAttr},outAttr = zs::SmallString{outAttr},verts = proxy<space>({},verts),eles = proxy<space>({},eles),bcw = proxy<space>({},bcw),everts = proxy<space>({},everts)] ZS_LAMBDA (int vi) mutable {
                 const auto& ei = bcw.pack<1>("inds",vi).reinterpret_bits<int>()[0];
                 if(ei < 0)
                     return;
@@ -277,7 +300,7 @@ struct ZSInterpolateEmbedPrim : zeno::INode {
                 for(size_t i = 0;i < 4;++i){
                     // const auto& idx = eles.pack<4>("inds",ei).reinterpret_bits<int>()[i];
                     const auto idx = reinterpret_bits<int>(eles("inds", i, ei));
-                    everts.tuple<3>(outAttr,vi) = everts.pack<3>(outAttr,vi) + w[i] * verts.pack<3>("x", idx);
+                    everts.tuple<3>(outAttr,vi) = everts.pack<3>(outAttr,vi) + w[i] * verts.pack<3>(inAttr, idx);
                 }
 #if 0
                 if(vi == 100){
@@ -292,7 +315,7 @@ struct ZSInterpolateEmbedPrim : zeno::INode {
 
 ZENDEFNODE(ZSInterpolateEmbedPrim, {{{"zsvolume"}, {"embed primitive", "zssurf"}},
                             {{"embed primitive", "zssurf"}},
-                            {{"string","outAttr","x"},{"string","tag","skin_bw"}},
+                            {{"string","inAttr","x"},{"string","outAttr","x"},{"string","tag","skin_bw"}},
                             {"ZSGeometry"}});
 
 

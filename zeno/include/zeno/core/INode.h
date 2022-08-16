@@ -40,6 +40,7 @@ public:
 
     ZENO_API void doComplete();
     ZENO_API void doApply();
+    ZENO_API void doOnlyApply();
 
 protected:
     ZENO_API bool requireInput(std::string const &ds);

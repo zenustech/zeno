@@ -9,6 +9,7 @@ add_subdirectory(bullet3/HACD)
 
 file (GLOB ZEN_RIGID_SOURCE *.cpp *.h)
 target_sources(zeno PRIVATE ${ZEN_RIGID_SOURCE})
+zeno_disable_warning(${ZEN_RIGID_SOURCE})
 target_include_directories(zeno PRIVATE .)
 target_include_directories(zeno PRIVATE bullet3/src)
 
