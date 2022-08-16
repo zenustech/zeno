@@ -11,6 +11,8 @@
 
 #include <string>
 
+namespace {
+
 struct ExportFBX : zeno::INode {
 
     virtual void apply() override {
@@ -69,3 +71,5 @@ ZENDEFNODE(ExportFBX,
                    "FBX",
                }
            });
+
+}

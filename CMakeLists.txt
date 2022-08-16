@@ -96,6 +96,14 @@ if (ZENO_NO_WARNING)  # Use our customized warning flags
     endif()
 endif()
 
+## --- begin cihou pyb nowarn
+macro (zeno_disable_warning)
+    if (CMAKE_CXX_COMPILER_ID MATCHES "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        set_source_files_properties(${ARGV} DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} TARGET_DIRECTORY zeno PROPERTIES COMPILE_OPTIONS $<IF:$<COMPILE_LANGUAGE:CXX>,-w,>)
+    endif()
+endmacro()
+## --- end cihou pyb nowarn
+
 ## --- begin cihou wxl cuda
 if (ZENO_WITH_CUDA)        # must move enable_language ahead to here
     enable_language(CUDA)  # otherwise projects/CUDA will fail to compile

@@ -92,7 +92,7 @@ ptccd(VecT p, VecT t0, VecT t1, VecT t2, VecT dp, VecT dt0, VecT dt1, VecT dt2,
   T toc_prev = toc;
   toc = tStart;
   int iter = 0;
-  while (++iter < 20000) {
+  while (++iter < 1000000) {
     // while (true) {
     T tocLowerBound = (1 - eta) * (dist2_cur - thickness * thickness) /
                       ((dist_cur + thickness) * maxDispMag);
@@ -155,7 +155,7 @@ eeccd(VecT ea0, VecT ea1, VecT eb0, VecT eb1, VecT dea0, VecT dea1, VecT deb0,
   T toc_prev = toc;
   toc = tStart;
   int iter = 0;
-  while (++iter < 20000) {
+  while (++iter < 1000000) {
     // while (true) {
     T tocLowerBound = (1 - eta) * dFunc / ((dist_cur + thickness) * maxDispMag);
     if (tocLowerBound < 0)

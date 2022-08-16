@@ -76,14 +76,14 @@ struct PrimFloatAttrToInt : INode {
         if (attrOut == attr) {
             std::vector<int> outArr(inArr.size());
             for (size_t i = 0; i < inArr.size(); i++) {
-                outArr[i] = std::rint(inArr[i] + 0.5f);
+                outArr[i] = std::rint(inArr[i]);
             }
             prim->verts.attrs.erase(attrOut);
             prim->verts.add_attr<int>(attrOut) = std::move(outArr);
         } else {
             auto &outArr = prim->verts.add_attr<int>(attrOut);
             for (size_t i = 0; i < inArr.size(); i++) {
-                outArr[i] = std::rint(inArr[i] + 0.5f);
+                outArr[i] = std::rint(inArr[i]);
             }
         }
         set_output("prim", std::move(prim));

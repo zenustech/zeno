@@ -331,6 +331,13 @@ void ZenoMainWindow::updateViewport(const QString& action)
         view->updateFrame(action);
 }
 
+void ZenoMainWindow::onRunFinished()
+{
+    DisplayWidget* view = qobject_cast<DisplayWidget*>(m_viewDock->widget());
+    if (view)
+        view->onFinished();
+}
+
 void ZenoMainWindow::onSplitDock(bool bHorzontal)
 {
     ZenoDockWidget *pDockWidget = qobject_cast<ZenoDockWidget *>(sender());
@@ -622,7 +629,9 @@ void ZenoMainWindow::clearErrorMark()
     auto docks = findChildren<ZenoDockWidget*>(QString(), Qt::FindDirectChildrenOnly);
 
     IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
-    ZASSERT_EXIT(pModel);
+    if (!pModel) {
+        return;
+    }
     const QModelIndexList& lst = pModel->subgraphsIndice();
     for (const QModelIndex& idx : lst)
     {
@@ -674,13 +683,6 @@ void ZenoMainWindow::onlyEditorLayout()
             dock->close();
         }
     }
-}
-
-void ZenoMainWindow::onRunClicked(int beginFrame, int endFrame) {
-    auto pGraphsMgr = zenoApp->graphsManagment();
-    IGraphsModel *pModel = pGraphsMgr->currentModel();
-    GraphsModel *pLegacy = qobject_cast<GraphsModel *>(pModel);
-    launchProgram(pLegacy, beginFrame, endFrame);
 }
 
 void ZenoMainWindow::onNodesSelected(const QModelIndex &subgIdx, const QModelIndexList &nodes, bool select) {

@@ -4,6 +4,7 @@
 #include <zeno/funcs/PrimitiveUtils.h>
 #include <zeno/types/ListObject.h>
 #include <zeno/types/StringObject.h>
+#include <zeno/para/parallel_for.h>
 
 namespace zeno {
 
@@ -31,6 +32,7 @@ ZENO_API std::shared_ptr<zeno::PrimitiveObject> primMerge(std::vector<zeno::Prim
         for (size_t primIdx = 0; primIdx < primList.size(); primIdx++) {
             auto prim = primList[primIdx];
             total += prim->verts.size();
+            pointtotal += prim->points.size();
             linetotal += prim->lines.size();
             tritotal += prim->tris.size();
             quadtotal += prim->quads.size();
@@ -52,7 +54,48 @@ ZENO_API std::shared_ptr<zeno::PrimitiveObject> primMerge(std::vector<zeno::Prim
         outprim->loops.resize(looptotal);
         outprim->polys.resize(polytotal);
 
+        if (tagAttr.size()) {
+            outprim->verts.add_attr<int>(tagAttr);
+            outprim->points.add_attr<int>(tagAttr);
+            outprim->lines.add_attr<int>(tagAttr);
+            outprim->tris.add_attr<int>(tagAttr);
+            outprim->quads.add_attr<int>(tagAttr);
+            outprim->loops.add_attr<int>(tagAttr);
+            outprim->polys.add_attr<int>(tagAttr);
+        }
         for (size_t primIdx = 0; primIdx < primList.size(); primIdx++) {
+            auto const &prim = primList[primIdx];
+            prim->verts.foreach_attr<AttrAcceptAll>([&] (auto const &key, auto const &arr) {
+                using T = std::decay_t<decltype(arr[0])>;
+                outprim->verts.add_attr<T>(key);
+            });
+            prim->points.foreach_attr<AttrAcceptAll>([&] (auto const &key, auto const &arr) {
+                using T = std::decay_t<decltype(arr[0])>;
+                outprim->points.add_attr<T>(key);
+            });
+            prim->lines.foreach_attr<AttrAcceptAll>([&] (auto const &key, auto const &arr) {
+                using T = std::decay_t<decltype(arr[0])>;
+                outprim->lines.add_attr<T>(key);
+            });
+            prim->tris.foreach_attr<AttrAcceptAll>([&] (auto const &key, auto const &arr) {
+                using T = std::decay_t<decltype(arr[0])>;
+                outprim->tris.add_attr<T>(key);
+            });
+            prim->quads.foreach_attr<AttrAcceptAll>([&] (auto const &key, auto const &arr) {
+                using T = std::decay_t<decltype(arr[0])>;
+                outprim->quads.add_attr<T>(key);
+            });
+            prim->loops.foreach_attr<AttrAcceptAll>([&] (auto const &key, auto const &arr) {
+                using T = std::decay_t<decltype(arr[0])>;
+                outprim->loops.add_attr<T>(key);
+            });
+            prim->polys.foreach_attr<AttrAcceptAll>([&] (auto const &key, auto const &arr) {
+                using T = std::decay_t<decltype(arr[0])>;
+                outprim->polys.add_attr<T>(key);
+            });
+        }
+
+        parallel_for(primList.size(), [&] (size_t primIdx) {
             auto prim = primList[primIdx];
             auto base = bases[primIdx];
             auto core = [&] (auto key, auto const &arr) {
@@ -62,7 +105,7 @@ ZENO_API std::shared_ptr<zeno::PrimitiveObject> primMerge(std::vector<zeno::Prim
                     if constexpr (std::is_same_v<decltype(key), std::true_type>) {
                         return outprim->verts.values;
                     } else {
-                        return outprim->verts.add_attr<T>(key);
+                        return outprim->verts.attr<T>(key);
                     }
                 }();
                 size_t n = std::min(arr.size(), prim->verts.size());
@@ -77,7 +120,7 @@ ZENO_API std::shared_ptr<zeno::PrimitiveObject> primMerge(std::vector<zeno::Prim
                         outarr[base + i] = arr[i];
                     }
                 } else {
-                    auto &outarr = outprim->verts.add_attr<T>(key);
+                    auto &outarr = outprim->verts.attr<T>(key);
                     size_t n = std::min(arr.size(), prim->verts.size());
                     for (size_t i = 0; i < n; i++) {
                         outarr[base + i] = arr[i];
@@ -88,14 +131,14 @@ ZENO_API std::shared_ptr<zeno::PrimitiveObject> primMerge(std::vector<zeno::Prim
             core(std::true_type{}, prim->verts.values);
             prim->verts.foreach_attr<AttrAcceptAll>(core);
             if (tagAttr.size()) {
-                auto &outarr = outprim->verts.add_attr<int>(tagAttr);
+                auto &outarr = outprim->verts.attr<int>(tagAttr);
                 for (size_t i = 0; i < prim->verts.size(); i++) {
                     outarr[base + i] = primIdx;
                 }
             }
-        }
+        });
 
-        for (size_t primIdx = 0; primIdx < primList.size(); primIdx++) {
+        parallel_for(primList.size(), [&] (size_t primIdx) {
             auto prim = primList[primIdx];
             auto vbase = bases[primIdx];
             auto base = linebases[primIdx];
@@ -106,7 +149,7 @@ ZENO_API std::shared_ptr<zeno::PrimitiveObject> primMerge(std::vector<zeno::Prim
                     if constexpr (std::is_same_v<decltype(key), std::true_type>) {
                         return outprim->points.values;
                     } else {
-                        return outprim->points.add_attr<T>(key);
+                        return outprim->points.attr<T>(key);
                     }
                 }();
                 size_t n = std::min(arr.size(), prim->points.size());
@@ -125,7 +168,7 @@ ZENO_API std::shared_ptr<zeno::PrimitiveObject> primMerge(std::vector<zeno::Prim
                         outarr[base + i] = vbase + arr[i];
                     }
                 } else {
-                    auto &outarr = outprim->points.add_attr<T>(key);
+                    auto &outarr = outprim->points.attr<T>(key);
                     size_t n = std::min(arr.size(), prim->points.size());
                     for (size_t i = 0; i < n; i++) {
                         outarr[base + i] = arr[i];
@@ -136,14 +179,14 @@ ZENO_API std::shared_ptr<zeno::PrimitiveObject> primMerge(std::vector<zeno::Prim
             core(std::true_type{}, prim->points.values);
             prim->points.foreach_attr<AttrAcceptAll>(core);
             if (tagAttr.size()) {
-                auto &outarr = outprim->points.add_attr<int>(tagAttr);
+                auto &outarr = outprim->points.attr<int>(tagAttr);
                 for (size_t i = 0; i < prim->points.size(); i++) {
                     outarr[base + i] = primIdx;
                 }
             }
-        }
+        });
 
-        for (size_t primIdx = 0; primIdx < primList.size(); primIdx++) {
+        parallel_for(primList.size(), [&] (size_t primIdx) {
             auto prim = primList[primIdx];
             auto vbase = bases[primIdx];
             auto base = linebases[primIdx];
@@ -154,7 +197,7 @@ ZENO_API std::shared_ptr<zeno::PrimitiveObject> primMerge(std::vector<zeno::Prim
                     if constexpr (std::is_same_v<decltype(key), std::true_type>) {
                         return outprim->lines.values;
                     } else {
-                        return outprim->lines.add_attr<T>(key);
+                        return outprim->lines.attr<T>(key);
                     }
                 }();
                 size_t n = std::min(arr.size(), prim->lines.size());
@@ -173,7 +216,7 @@ ZENO_API std::shared_ptr<zeno::PrimitiveObject> primMerge(std::vector<zeno::Prim
                         outarr[base + i] = vbase + arr[i];
                     }
                 } else {
-                    auto &outarr = outprim->lines.add_attr<T>(key);
+                    auto &outarr = outprim->lines.attr<T>(key);
                     size_t n = std::min(arr.size(), prim->lines.size());
                     for (size_t i = 0; i < n; i++) {
                         outarr[base + i] = arr[i];
@@ -184,14 +227,14 @@ ZENO_API std::shared_ptr<zeno::PrimitiveObject> primMerge(std::vector<zeno::Prim
             core(std::true_type{}, prim->lines.values);
             prim->lines.foreach_attr<AttrAcceptAll>(core);
             if (tagAttr.size()) {
-                auto &outarr = outprim->lines.add_attr<int>(tagAttr);
+                auto &outarr = outprim->lines.attr<int>(tagAttr);
                 for (size_t i = 0; i < prim->lines.size(); i++) {
                     outarr[base + i] = primIdx;
                 }
             }
-        }
+        });
 
-        for (size_t primIdx = 0; primIdx < primList.size(); primIdx++) {
+        parallel_for(primList.size(), [&] (size_t primIdx) {
             auto prim = primList[primIdx];
             auto vbase = bases[primIdx];
             auto base = tribases[primIdx];
@@ -202,7 +245,7 @@ ZENO_API std::shared_ptr<zeno::PrimitiveObject> primMerge(std::vector<zeno::Prim
                     if constexpr (std::is_same_v<decltype(key), std::true_type>) {
                         return outprim->tris.values;
                     } else {
-                        return outprim->tris.add_attr<T>(key);
+                        return outprim->tris.attr<T>(key);
                     }
                 }();
                 size_t n = std::min(arr.size(), prim->tris.size());
@@ -221,7 +264,7 @@ ZENO_API std::shared_ptr<zeno::PrimitiveObject> primMerge(std::vector<zeno::Prim
                         outarr[base + i] = vbase + arr[i];
                     }
                 } else {
-                    auto &outarr = outprim->tris.add_attr<T>(key);
+                    auto &outarr = outprim->tris.attr<T>(key);
                     size_t n = std::min(arr.size(), prim->tris.size());
                     for (size_t i = 0; i < n; i++) {
                         outarr[base + i] = arr[i];
@@ -232,14 +275,14 @@ ZENO_API std::shared_ptr<zeno::PrimitiveObject> primMerge(std::vector<zeno::Prim
             core(std::true_type{}, prim->tris.values);
             prim->tris.foreach_attr<AttrAcceptAll>(core);
             if (tagAttr.size()) {
-                auto &outarr = outprim->tris.add_attr<int>(tagAttr);
+                auto &outarr = outprim->tris.attr<int>(tagAttr);
                 for (size_t i = 0; i < prim->tris.size(); i++) {
                     outarr[base + i] = primIdx;
                 }
             }
-        }
+        });
 
-        for (size_t primIdx = 0; primIdx < primList.size(); primIdx++) {
+        parallel_for(primList.size(), [&] (size_t primIdx) {
             auto prim = primList[primIdx];
             auto vbase = bases[primIdx];
             auto base = quadbases[primIdx];
@@ -250,7 +293,7 @@ ZENO_API std::shared_ptr<zeno::PrimitiveObject> primMerge(std::vector<zeno::Prim
                     if constexpr (std::is_same_v<decltype(key), std::true_type>) {
                         return outprim->quads.values;
                     } else {
-                        return outprim->quads.add_attr<T>(key);
+                        return outprim->quads.attr<T>(key);
                     }
                 }();
                 size_t n = std::min(arr.size(), prim->quads.size());
@@ -269,7 +312,7 @@ ZENO_API std::shared_ptr<zeno::PrimitiveObject> primMerge(std::vector<zeno::Prim
                         outarr[base + i] = vbase + arr[i];
                     }
                 } else {
-                    auto &outarr = outprim->quads.add_attr<T>(key);
+                    auto &outarr = outprim->quads.attr<T>(key);
                     size_t n = std::min(arr.size(), prim->quads.size());
                     for (size_t i = 0; i < n; i++) {
                         outarr[base + i] = arr[i];
@@ -280,14 +323,14 @@ ZENO_API std::shared_ptr<zeno::PrimitiveObject> primMerge(std::vector<zeno::Prim
             core(std::true_type{}, prim->quads.values);
             prim->quads.foreach_attr<AttrAcceptAll>(core);
             if (tagAttr.size()) {
-                auto &outarr = outprim->quads.add_attr<int>(tagAttr);
+                auto &outarr = outprim->quads.attr<int>(tagAttr);
                 for (size_t i = 0; i < prim->quads.size(); i++) {
                     outarr[base + i] = primIdx;
                 }
             }
-        }
+        });
 
-        for (size_t primIdx = 0; primIdx < primList.size(); primIdx++) {
+        parallel_for(primList.size(), [&] (size_t primIdx) {
             auto prim = primList[primIdx];
             auto vbase = bases[primIdx];
             auto base = loopbases[primIdx];
@@ -298,7 +341,7 @@ ZENO_API std::shared_ptr<zeno::PrimitiveObject> primMerge(std::vector<zeno::Prim
                     if constexpr (std::is_same_v<decltype(key), std::true_type>) {
                         return outprim->loops.values;
                     } else {
-                        return outprim->loops.add_attr<T>(key);
+                        return outprim->loops.attr<T>(key);
                     }
                 }();
                 size_t n = std::min(arr.size(), prim->loops.size());
@@ -317,7 +360,7 @@ ZENO_API std::shared_ptr<zeno::PrimitiveObject> primMerge(std::vector<zeno::Prim
                         outarr[base + i] = vbase + arr[i];
                     }
                 } else {
-                    auto &outarr = outprim->loops.add_attr<T>(key);
+                    auto &outarr = outprim->loops.attr<T>(key);
                     size_t n = std::min(arr.size(), prim->loops.size());
                     for (size_t i = 0; i < n; i++) {
                         outarr[base + i] = arr[i];
@@ -328,14 +371,14 @@ ZENO_API std::shared_ptr<zeno::PrimitiveObject> primMerge(std::vector<zeno::Prim
             core(std::true_type{}, prim->loops.values);
             prim->loops.foreach_attr<AttrAcceptAll>(core);
             if (tagAttr.size()) {
-                auto &outarr = outprim->loops.add_attr<int>(tagAttr);
+                auto &outarr = outprim->loops.attr<int>(tagAttr);
                 for (size_t i = 0; i < prim->loops.size(); i++) {
                     outarr[base + i] = primIdx;
                 }
             }
-        }
+        });
 
-        for (size_t primIdx = 0; primIdx < primList.size(); primIdx++) {
+        parallel_for(primList.size(), [&] (size_t primIdx) {
             auto prim = primList[primIdx];
             auto lbase = loopbases[primIdx];
             auto base = polybases[primIdx];
@@ -346,7 +389,7 @@ ZENO_API std::shared_ptr<zeno::PrimitiveObject> primMerge(std::vector<zeno::Prim
                     if constexpr (std::is_same_v<decltype(key), std::true_type>) {
                         return outprim->polys.values;
                     } else {
-                        return outprim->polys.add_attr<T>(key);
+                        return outprim->polys.attr<T>(key);
                     }
                 }();
                 size_t n = std::min(arr.size(), prim->polys.size());
@@ -376,12 +419,12 @@ ZENO_API std::shared_ptr<zeno::PrimitiveObject> primMerge(std::vector<zeno::Prim
             core(std::true_type{}, prim->polys.values);
             prim->polys.foreach_attr<AttrAcceptAll>(core);
             if (tagAttr.size()) {
-                auto &outarr = outprim->polys.add_attr<int>(tagAttr);
+                auto &outarr = outprim->polys.attr<int>(tagAttr);
                 for (size_t i = 0; i < prim->polys.size(); i++) {
                     outarr[base + i] = primIdx;
                 }
             }
-        }
+        });
     }
 
     return outprim;

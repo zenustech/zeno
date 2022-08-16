@@ -3,6 +3,7 @@
 #include "subnetnode.h"
 #include "heatmapnode.h"
 #include "curvenode.h"
+#include "cameranode.h"
 #include "dynamicnumbernode.h"
 #include "zenolink.h"
 #include <zenoui/model/modelrole.h>
@@ -143,6 +144,10 @@ ZenoNode* ZenoSubGraphScene::createNode(const QModelIndex& idx, const NodeUtilPa
     else if (descName == "Blackboard")
     {
         return new BlackboardNode(params);
+    }
+    else if (descName == "CameraNode")
+    {
+        return new CameraNode(params);
     }
     else
     {

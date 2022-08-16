@@ -1,4 +1,3 @@
-#include <zeno/utils/nowarn.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/StringObject.h>
 #include <zeno/utils/string.h>
@@ -17,8 +16,7 @@
 #define MINIMP3_FLOAT_OUTPUT
 #include "minimp3.h"
 
-#include <algorithm>
-
+namespace zaudio {
 int calcFrameCountByAudio(std::string path, int fps) {
     AudioFile<float> wav;
     wav.load (path);
@@ -29,6 +27,7 @@ int calcFrameCountByAudio(std::string path, int fps) {
 
 static float lerp(float start, float end, float value) {
     return start + (end - start) * value;
+}
 }
 namespace zeno {
     struct ReadWavFile : zeno::INode {
@@ -390,14 +389,13 @@ struct AudioEnergy : zeno::INode {
             }
             auto fbank = std::make_shared<PrimitiveObject>();
             fbank->resize(count);
-            auto& index = fbank->add_attr<float>("i");
             auto& fbank_v = fbank->add_attr<float>("fbank");
             for (auto i = 1; i <= count; i++) {
                 int s = bin[i-1];
                 int m = bin[i];
                 int e = bin[i+1];
-                s = (int) lerp(m, s, rangePerFilter);
-                e = (int) lerp(m, e, rangePerFilter);
+                s = (int) zaudio::lerp(m, s, rangePerFilter);
+                e = (int) zaudio::lerp(m, e, rangePerFilter);
                 float total = 0;
                 for (auto i = s; i < m; i++) {
                     float cof = (float)(m - i) / (float)(m - s);
@@ -407,13 +405,24 @@ struct AudioEnergy : zeno::INode {
                     float cof = 1 - (float)(m - i) / (float)(e - m);
                     total += power[i] * cof;
                 }
-                index[i-1] = (float)(i-1);
                 if (total == 0) {
                     fbank_v[i-1] = std::numeric_limits<float>::min();
                 }
                 else {
                     fbank_v[i-1] = log(total);
                 }
+            }
+            auto indexType = get_input2<std::string>("indexType");
+            if (indexType == "index") {
+                auto& index = fbank->add_attr<float>("i");
+                for (auto i = 1; i <= count; i++) {
+                    index[i-1] = (float)(i-1);
+                };
+            } else if (indexType == "indexdivcount") {
+                auto& index = fbank->add_attr<float>("i");
+                for (auto i = 1; i <= count; i++) {
+                    index[i-1] = (float)(i-1) /count;
+                };
             }
             set_output("FilterBank", fbank);
         }
@@ -424,6 +433,7 @@ struct AudioEnergy : zeno::INode {
             {"int", "count", "15"},
             {"float", "sampleFreq", "44100"},
             {"float", "rangePerFilter", "1"},
+            {"enum none index indexdivcount", "indexType", "index"},
         },
         {
             "FilterBank",

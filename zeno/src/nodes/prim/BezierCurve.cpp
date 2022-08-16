@@ -70,12 +70,12 @@ struct CreateBezierCurve : zeno::INode {
         zeno::log_info("input point size: {}", inputPoint.size());
         zeno::log_info("output point size: {}", cPoints.size());
         zeno::log_info("precision : {}", precision);
-        auto outprim = new zeno::PrimitiveObject;
+        auto outprim = std::make_shared<zeno::PrimitiveObject>();
         outprim->verts.resize(cPoints.size());
         for (int i = 0; i < cPoints.size(); i++) {
             outprim->verts[i] = {cPoints[i][0], cPoints[i][1], 0};
         }
-        set_output("prim", std::move(std::shared_ptr<zeno::PrimitiveObject>(outprim)));
+        set_output("prim", std::move(outprim));
     }
 };
 

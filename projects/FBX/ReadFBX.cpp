@@ -1,4 +1,3 @@
-#include <zeno/utils/nowarn.h>
 //#define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
@@ -23,6 +22,7 @@
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/DictObject.h>
+#include <zeno/types/ListObject.h>
 #include <zeno/utils/logger.h>
 #include <zeno/extra/GlobalState.h>
 
@@ -30,11 +30,14 @@
 #include <string>
 #include <unordered_map>
 #include <filesystem>
+#include <fstream>
 
 #include <glm/vec4.hpp>
 #include <glm/mat4x4.hpp>
 
 #include "Definition.h"
+
+namespace {
 
 using Path = std::filesystem::path;
 
@@ -47,7 +50,8 @@ void readFBXFile(
     const char *fbx_path,
     bool enable_udim,
     std::shared_ptr<zeno::PrimitiveObject>& prim,
-    bool make_prim);
+    bool make_prim,
+    std::shared_ptr<zeno::DictObject>& prims);
 
 struct Mesh{
     FBXData fbxData;
@@ -58,6 +62,7 @@ struct Mesh{
     std::unordered_map<std::string, std::string> m_LoadedMeshName;
     std::unordered_map<std::string, aiMatrix4x4> m_TransMatrix;
     std::unordered_map<std::string, SMaterial> m_loadedMat;
+    std::unordered_map<std::string, float> m_MatUdimSize;
     unsigned int m_VerticesIncrease = 0;
     unsigned int m_IndicesIncrease = 0;
     unsigned int m_MeshNameIncrease = 0;
@@ -390,13 +395,18 @@ struct Mesh{
 
         if(m_loadedMat.find(matName) != m_loadedMat.end()){
             fbxData.iMaterial.value[relMeshName] = m_loadedMat[matName];
+
+            *uvscale = m_MatUdimSize[matName];
             return;
         }
 
         SMaterial mat;
         mat.matName = matName;
 
-        std::string vmPath = createTexDir("valueTex/" + matName);
+
+        std::string tmpMatName = matName;
+        std::replace(tmpMatName.begin(), tmpMatName.end(), ':', '_');
+        std::string vmPath = createTexDir("valueTex/" + tmpMatName);
 
         zeno::log_info("FBX: Mesh name {} Mat name {}", relMeshName, matName);
 
@@ -492,6 +502,7 @@ struct Mesh{
                                 if(std::filesystem::exists(merged_path)){
                                     c = merged_path.string();
                                     *uvscale = float(size);
+                                    m_MatUdimSize[matName] = float(size);
 
                                 }else{
 
@@ -540,6 +551,7 @@ struct Mesh{
 
                                         c = merged_path.string();
                                         *uvscale = float(size);
+                                        m_MatUdimSize[matName] = float(size);
                                     }
                                 }
                             }
@@ -647,7 +659,8 @@ struct Mesh{
 
     void processTrans(std::unordered_map<std::string, std::vector<SKeyMorph>>& morph,
                       std::unordered_map<std::string, SAnimBone>& bones,
-                      std::shared_ptr<zeno::DictObject>& datas) {
+                      std::shared_ptr<zeno::DictObject>& datas,
+                      std::shared_ptr<zeno::DictObject>& prims) {
         for(auto& iter: m_VerticesSlice) {
             std::string meshName = iter.first;
             std::string relMeshName = m_MeshCorsName[iter.first];
@@ -685,7 +698,7 @@ struct Mesh{
             }
 
             // Sub-prims (applied node transform)
-            //auto sub_prim = std::make_shared<zeno::PrimitiveObject>();
+            auto sub_prim = std::make_shared<zeno::PrimitiveObject>();
             auto sub_data = std::make_shared<FBXData>();
             std::vector<SVertex> sub_vertices;
             std::vector<unsigned int> sub_indices;
@@ -695,15 +708,15 @@ struct Mesh{
                 auto i2 = fbxData.iIndices.value[i+1]-verStart;
                 auto i3 = fbxData.iIndices.value[i+2]-verStart;
                 zeno::vec3i incs(i1, i2, i3);
-                //sub_prim->tris.push_back(incs);
+                sub_prim->tris.push_back(incs);
                 sub_indices.push_back(i1);
                 sub_indices.push_back(i2);
                 sub_indices.push_back(i3);
             }
             for(unsigned int i=verStart; i< verEnd; i++){
-                //sub_prim->verts.emplace_back(fbxData.iVertices.value[i].position.x,
-                //                             fbxData.iVertices.value[i].position.y,
-                //                             fbxData.iVertices.value[i].position.z);
+                sub_prim->verts.emplace_back(fbxData.iVertices.value[i].position.x,
+                                             fbxData.iVertices.value[i].position.y,
+                                             fbxData.iVertices.value[i].position.z);
                 sub_vertices.push_back(fbxData.iVertices.value[i]);
             }
 
@@ -717,7 +730,7 @@ struct Mesh{
             sub_data->iKeyMorph.value = morph;
             sub_data->iMeshInfo.value_corsName = m_MeshCorsName;
 
-            //prims->lut[meshName] = sub_prim;
+            prims->lut[meshName] = sub_prim;
             datas->lut[meshName] = sub_data;
         }
     }
@@ -862,7 +875,8 @@ void readFBXFile(
         const char *fbx_path,
         bool enable_udim,
         std::shared_ptr<zeno::PrimitiveObject>& prim,
-        bool make_prim)
+        bool make_prim,
+        std::shared_ptr<zeno::DictObject>& prims)
 {
     Assimp::Importer importer;
     aiScene const* scene;
@@ -923,7 +937,7 @@ void readFBXFile(
 
     mesh.initMesh(scene);
     anim.initAnim(scene, &mesh);
-    mesh.processTrans(anim.m_Morph, anim.m_Bones.AnimBoneMap, datas);
+    mesh.processTrans(anim.m_Morph, anim.m_Bones.AnimBoneMap, datas, prims);
     if(make_prim)
         mesh.processPrim(prim);
 
@@ -951,6 +965,7 @@ struct ReadFBXPrim : zeno::INode {
         auto data = std::make_shared<FBXData>();
         auto boneTree = std::make_shared<BoneTree>();
         auto prim = std::make_shared<zeno::PrimitiveObject>();
+        std::shared_ptr<zeno::DictObject> prims = std::make_shared<zeno::DictObject>();
 
         zeno::log_info("FBX: File path {}", path);
 
@@ -967,7 +982,7 @@ struct ReadFBXPrim : zeno::INode {
 
         readFBXFile(datas,
                     nodeTree, data, boneTree, animInfo,
-                    path.c_str(), enable_udim, prim, make_prim);
+                    path.c_str(), enable_udim, prim, make_prim, prims);
 
         set_output("data", std::move(data));
         set_output("datas", std::move(datas));
@@ -975,6 +990,7 @@ struct ReadFBXPrim : zeno::INode {
         set_output("nodetree", std::move(nodeTree));
         set_output("bonetree", std::move(boneTree));
         set_output("prim", std::move(prim));
+        set_output("prims", std::move(prims));
     }
 };
 
@@ -984,7 +1000,7 @@ ZENDEFNODE(ReadFBXPrim,
                    {"readpath", "path"},
                },  /* outputs: */
                {
-                   "prim", "data", "datas",
+                   "prim", "prims", "data", "datas",
                    {"AnimInfo", "animinfo"},
                    {"NodeTree", "nodetree"},
                    {"BoneTree", "bonetree"},
@@ -997,3 +1013,78 @@ ZENDEFNODE(ReadFBXPrim,
                    "FBX",
                }
            });
+
+struct ReadLightFromFile : zeno::INode {
+    virtual void apply() override {
+        auto path = get_input<zeno::StringObject>("path")->get();
+        zeno::log_info("Light: File path {}", path);
+
+       auto posList = std::make_shared<zeno::ListObject>();
+       auto rotList = std::make_shared<zeno::ListObject>();
+       auto sclList = std::make_shared<zeno::ListObject>();
+       auto colList = std::make_shared<zeno::ListObject>();
+       auto intList = std::make_shared<zeno::ListObject>();
+
+       std::ifstream infile(path);
+       if (infile.is_open()) {
+           std::string line;
+           int num = 0;
+           while (std::getline(infile, line)) {
+               // using printf() in all tests for consistency
+               std::string l = line.c_str();
+               printf("Light: Processing %s\n", l.c_str());
+               if(num%6==0){
+                   LIGHT_STR_SPLIT_V3F
+                   //printf("Light: Pos %.2f %.2f %.2f\n", tmp[0], tmp[1], tmp[2]);
+                   posList->arr.push_back(no);
+               }
+               if(num%6==1){
+                   LIGHT_STR_SPLIT_V3F
+                   //printf("Light: Rot %.2f %.2f %.2f\n", tmp[0], tmp[1], tmp[2]);
+                   rotList->arr.push_back(no);
+               }
+               if(num%6==2){
+                   LIGHT_STR_SPLIT_V3F
+                   //printf("Light: Scl %.2f %.2f %.2f\n", tmp[0], tmp[1], tmp[2]);
+                   sclList->arr.push_back(no);
+               }
+               if(num%6==3){
+                   LIGHT_STR_SPLIT_V3F
+                   //printf("Light: Col %.2f %.2f %.2f\n", tmp[0], tmp[1], tmp[2]);
+                   colList->arr.push_back(no);
+               }
+               if(num%6==4){
+                   auto no = std::make_shared<zeno::NumericObject>();
+                   float tmp = (float)atof(l.c_str());
+                   no->set(tmp);
+                   //printf("Light: Int %.2f\n", tmp);
+                   intList->arr.push_back(no);
+               }
+
+               num++;
+           }
+           infile.close();
+       }
+
+       set_output("posList", std::move(posList));
+       set_output("rotList", std::move(rotList));
+       set_output("sclList", std::move(sclList));
+       set_output("colList", std::move(colList));
+       set_output("intList", std::move(intList));
+    }
+};
+ZENDEFNODE(ReadLightFromFile,
+           {       /* inputs: */
+            {
+                {"readpath", "path"},
+            },  /* outputs: */
+            {
+                "posList", "rotList", "sclList", "colList", "intList"
+            },  /* params: */
+            {
+            },  /* category: */
+            {
+                "FBX",
+            }
+           });
+}

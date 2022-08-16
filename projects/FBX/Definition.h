@@ -1,8 +1,13 @@
-#ifndef ZENO_DEFINITION_H
-#define ZENO_DEFINITION_H
+#ifndef ZENO_FBX_DEFINITION_H
+#define ZENO_FBX_DEFINITION_H
 
 #include <iostream>
 #include <algorithm>
+#include <zeno/utils/log.h>
+#include <zeno/utils/vec.h>
+#include <zeno/core/IObject.h>
+
+inline namespace ZenoFBXDefinition {
 
 #define COMMON_DEFAULT_basecolor aiColor4D(0.0f, 0.0f, 0.0f, 1.0f)
 #define COMMON_DEFAULT_metallic aiColor4D(0.0f, 0.0f, 0.0f, 1.0f)
@@ -33,6 +38,15 @@
 #define COMMON_DEFAULT_shad aiColor4D(0.0f, 0.0f, 0.0f, 1.0f)
 #define COMMON_DEFAULT_strokeTint aiColor4D(0.0f, 0.0f, 0.0f, 1.0f)
 #define COMMON_DEFAULT_opacity aiColor4D(0.0f, 0.0f, 0.0f, 1.0f)
+
+#define LIGHT_STR_SPLIT_V3F                             \
+    auto sl = Helper::splitStr(l, ',');                 \
+    zeno::vec3f tmp{                                    \
+        (float)atof(sl[0].c_str()),                     \
+        (float)atof(sl[1].c_str()),                     \
+        (float)atof(sl[2].c_str())};                    \
+    auto no = std::make_shared<zeno::NumericObject>();  \
+    no->set(tmp);
 
 struct SKeyPosition {
     aiVector3D position;
@@ -499,6 +513,20 @@ struct Helper{
             std::cout << "\t";
         std::cout << root->name <<"\n";
     }
+
+    static std::vector<std::string> splitStr(std::string str, char c){
+        std::stringstream test(str);
+        std::string segment;
+        std::vector<std::string> seglist;
+
+        while(std::getline(test, segment, c))
+        {
+            seglist.push_back(segment);
+        }
+        return seglist;
+    }
 };
 
-#endif //ZENO_DEFINITION_H
+}
+
+#endif //ZENO_FBX_DEFINITION_H

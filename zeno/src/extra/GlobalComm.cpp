@@ -111,8 +111,6 @@ ZENO_API void GlobalComm::clearState() {
     m_frames.clear();
     m_inCacheFrames.clear();
     m_maxPlayFrame = 0;
-    beginFrameNumber = 0;
-    beginFrameNumber = 0;
     maxCachedFrames = 1;
     cacheFramePath = {};
 }

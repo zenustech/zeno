@@ -1,6 +1,7 @@
 file(GLOB FBX_SOURCE *.cpp *.h)
 
 target_sources(zeno PRIVATE ${FBX_SOURCE})
+zeno_disable_warning(${FBX_SOURCE})
 target_include_directories(zeno PRIVATE .)
 target_include_directories(zeno PRIVATE ../../zenovis/stbi/include)
 

@@ -349,8 +349,13 @@ QGraphicsLayout* ZenoNode::initParams()
         }
     }
     QGraphicsLinearLayout* pCustomParams = initCustomParamWidgets();
-    if (pParamsLayout && pCustomParams)
+    if (pCustomParams)
+    {
+        if (!pParamsLayout)
+            pParamsLayout = new QGraphicsLinearLayout(Qt::Vertical);
+        ZASSERT_EXIT(pParamsLayout, nullptr);
         pParamsLayout->addItem(pCustomParams);
+    }
     return pParamsLayout;
 }
 

@@ -80,40 +80,41 @@ struct ExtractMeshSurface : INode {
     std::vector<vec2i> lines;
     std::vector<float> lineAreas;
     std::vector<vec3i> tris;
-#if 1
-    {
-      using namespace zs;
-      zs::HashTable<int, 3, int> surfTable{0};
-      constexpr auto space = zs::execspace_e::openmp;
+#if 0
+        {
+            using namespace zs;
+            zs::HashTable<int, 3, int> surfTable{0};
+            constexpr auto space = zs::execspace_e::openmp;
 
-      surfTable.resize(ompExec, 4 * numEles);
-      surfTable.reset(ompExec, true);
-      // compute getsurface
-      // std::vector<int> tri2tet(4 * numEles);
-      ompExec(range(numEles), [table = proxy<space>(surfTable),
-                               &quads](int ei) mutable {
-        using table_t = RM_CVREF_T(table);
-        using vec3i = zs::vec<int, 3>;
-        auto record = [&table, ei](const vec3i &triInds) mutable {
-          if (auto sno = table.insert(triInds); sno != table_t::sentinel_v)
-            ; // tri2tet[sno] = ei;
-          else
-            printf("ridiculous, more than one tet share the same "
-                   "surface!");
-        };
-        auto inds = quads[ei];
-        record(vec3i{inds[0], inds[2], inds[1]});
-        record(vec3i{inds[0], inds[3], inds[2]});
-        record(vec3i{inds[0], inds[1], inds[3]});
-        record(vec3i{inds[1], inds[2], inds[3]});
-      });
-      //
-      tris.resize(numEles * 4);
-      Vector<int> surfCnt{1, memsrc_e::host};
-      surfCnt.setVal(0);
-      ompExec(range(surfTable.size()),
-              [table = proxy<space>(surfTable), surfCnt = surfCnt.data(),
-               &tris](int i) mutable {
+            surfTable.resize(ompExec, 4 * numEles);
+            surfTable.reset(ompExec, true);
+            // compute getsurface
+            // std::vector<int> tri2tet(4 * numEles);
+            ompExec(range(numEles), [table = proxy<space>(surfTable),
+                                     &quads](int ei) mutable {
+                using table_t = RM_CVREF_T(table);
+                using vec3i = zs::vec<int, 3>;
+                auto record = [&table, ei](const vec3i &triInds) mutable {
+                    if (auto sno = table.insert(triInds);
+                        sno != table_t::sentinel_v)
+                        ; // tri2tet[sno] = ei;
+                    else
+                        printf("ridiculous, more than one tet share the same "
+                               "surface!");
+                };
+                auto inds = quads[ei];
+                record(vec3i{inds[0], inds[2], inds[1]});
+                record(vec3i{inds[0], inds[3], inds[2]});
+                record(vec3i{inds[0], inds[1], inds[3]});
+                record(vec3i{inds[1], inds[2], inds[3]});
+            });
+            //
+            tris.resize(numEles * 4);
+            Vector<int> surfCnt{1, memsrc_e::host};
+            surfCnt.setVal(0);
+            ompExec(range(surfTable.size()), [table = proxy<space>(surfTable),
+                                              surfCnt = surfCnt.data(),
+                                              &tris](int i) mutable {
                 using vec3i = zs::vec<int, 3>;
                 auto triInds = table._activeKeys[i];
                 using table_t = RM_CVREF_T(table);
@@ -123,78 +124,80 @@ struct ExtractMeshSurface : INode {
                         table_t::sentinel_v &&
                     table.query(vec3i{triInds[0], triInds[2], triInds[1]}) ==
                         table_t::sentinel_v)
-                  tris[atomic_add(exec_omp, surfCnt, 1)] =
-                      zeno::vec3i{triInds[0], triInds[1], triInds[2]};
-              });
-      auto scnt = surfCnt.getVal();
-      tris.resize(scnt);
-      fmt::print("{} surfaces\n", scnt);
+                    tris[atomic_add(exec_omp, surfCnt, 1)] =
+                        zeno::vec3i{triInds[0], triInds[1], triInds[2]};
+            });
+            auto scnt = surfCnt.getVal();
+            tris.resize(scnt);
+            fmt::print("{} surfaces\n", scnt);
 
-      // surface points
-      HashTable<int, 1, int> vertTable{numVerts};
-      HashTable<int, 2, int> edgeTable{3 * numEles};
-      vertTable.reset(ompExec, true);
-      edgeTable.reset(ompExec, true);
-      ompExec(tris,
-              [vertTable = proxy<space>(vertTable),
-               edgeTable = proxy<space>(edgeTable)](vec3i triInds) mutable {
+            // surface points
+            HashTable<int, 1, int> vertTable{numVerts};
+            HashTable<int, 2, int> edgeTable{3 * numEles};
+            vertTable.reset(ompExec, true);
+            edgeTable.reset(ompExec, true);
+            ompExec(tris, [vertTable = proxy<space>(vertTable),
+                           edgeTable =
+                               proxy<space>(edgeTable)](vec3i triInds) mutable {
                 using vec1i = zs::vec<int, 1>;
                 using vec2i = zs::vec<int, 2>;
                 for (int d = 0; d != 3; ++d) {
-                  vertTable.insert(vec1i{triInds[d]});
-                  edgeTable.insert(vec2i{triInds[d], triInds[(d + 1) % 3]});
+                    vertTable.insert(vec1i{triInds[d]});
+                    edgeTable.insert(vec2i{triInds[d], triInds[(d + 1) % 3]});
                 }
-              });
-      auto svcnt = vertTable.size();
-      points.resize(svcnt);
-      pointAreas.resize(svcnt, 0.f);
-      copy(mem_host, points.data(), vertTable._activeKeys.data(),
-           sizeof(int) * svcnt);
-      fmt::print("{} surface verts\n", svcnt);
+            });
+            auto svcnt = vertTable.size();
+            points.resize(svcnt);
+            pointAreas.resize(svcnt, 0.f);
+            copy(mem_host, points.data(), vertTable._activeKeys.data(),
+                 sizeof(int) * svcnt);
+            fmt::print("{} surface verts\n", svcnt);
 
-      // surface edges
-      Vector<int> surfEdgeCnt{1};
-      surfEdgeCnt.setVal(0);
-      auto dupEdgeCnt = edgeTable.size();
-      std::vector<int> dupEdgeToSurfEdge(dupEdgeCnt, -1);
-      lines.resize(dupEdgeCnt);
-      ompExec(range(dupEdgeCnt), [edgeTable = proxy<space>(edgeTable), &lines,
-                                  surfEdgeCnt = surfEdgeCnt.data(),
-                                  &dupEdgeToSurfEdge](int edgeNo) mutable {
-        using vec2i = zs::vec<int, 2>;
-        vec2i edge = edgeTable._activeKeys[edgeNo];
-        using table_t = RM_CVREF_T(edgeTable);
-        if (auto eno = edgeTable.query(vec2i{edge[1], edge[0]});
-            eno == table_t::sentinel_v || // opposite edge not exists
-            (eno != table_t::sentinel_v &&
-             edge[0] < edge[1])) { // opposite edge does exist
-          auto no = atomic_add(exec_omp, surfEdgeCnt, 1);
-          lines[no] = zeno::vec2i{edge[0], edge[1]};
-          dupEdgeToSurfEdge[edgeNo] = no;
-        }
-      });
-      auto secnt = surfEdgeCnt.getVal();
-      lines.resize(secnt);
-      lineAreas.resize(secnt, 0.f);
-      fmt::print("{} surface edges\n", secnt);
+            // surface edges
+            Vector<int> surfEdgeCnt{1};
+            surfEdgeCnt.setVal(0);
+            auto dupEdgeCnt = edgeTable.size();
+            std::vector<int> dupEdgeToSurfEdge(dupEdgeCnt, -1);
+            lines.resize(dupEdgeCnt);
+            ompExec(
+                range(dupEdgeCnt), [edgeTable = proxy<space>(edgeTable), &lines,
+                                    surfEdgeCnt = surfEdgeCnt.data(),
+                                    &dupEdgeToSurfEdge](int edgeNo) mutable {
+                    using vec2i = zs::vec<int, 2>;
+                    vec2i edge = edgeTable._activeKeys[edgeNo];
+                    using table_t = RM_CVREF_T(edgeTable);
+                    if (auto eno = edgeTable.query(vec2i{edge[1], edge[0]});
+                        eno ==
+                            table_t::sentinel_v || // opposite edge not exists
+                        (eno != table_t::sentinel_v &&
+                         edge[0] < edge[1])) { // opposite edge does exist
+                        auto no = atomic_add(exec_omp, surfEdgeCnt, 1);
+                        lines[no] = zeno::vec2i{edge[0], edge[1]};
+                        dupEdgeToSurfEdge[edgeNo] = no;
+                    }
+                });
+            auto secnt = surfEdgeCnt.getVal();
+            lines.resize(secnt);
+            lineAreas.resize(secnt, 0.f);
+            fmt::print("{} surface edges\n", secnt);
 
-      ompExec(tris,
-              [&, vertTable = proxy<space>(vertTable),
-               edgeTable = proxy<space>(edgeTable)](vec3i triInds) mutable {
+            ompExec(tris, [&, vertTable = proxy<space>(vertTable),
+                           edgeTable =
+                               proxy<space>(edgeTable)](vec3i triInds) mutable {
                 using vec3 = zs::vec<float, 3>;
                 using vec1i = zs::vec<int, 1>;
                 using vec2i = zs::vec<int, 2>;
                 for (int d = 0; d != 3; ++d) {
-                  auto p0 = vec3::from_array(pos[triInds[0]]);
-                  auto p1 = vec3::from_array(pos[triInds[1]]);
-                  auto p2 = vec3::from_array(pos[triInds[2]]);
-                  float area = (p1 - p0).cross(p2 - p0).norm() / 2;
-                  // surface vert
-                  using vtable_t = RM_CVREF_T(vertTable);
-                  auto vno = vertTable.query(vec1i{triInds[d]});
-                  atomic_add(exec_omp, &pointAreas[vno], area / 3);
-                  // surface edge
-                  using etable_t = RM_CVREF_T(edgeTable);
+                    auto p0 = vec3::from_array(pos[triInds[0]]);
+                    auto p1 = vec3::from_array(pos[triInds[1]]);
+                    auto p2 = vec3::from_array(pos[triInds[2]]);
+                    float area = (p1 - p0).cross(p2 - p0).norm() / 2;
+                    // surface vert
+                    using vtable_t = RM_CVREF_T(vertTable);
+                    auto vno = vertTable.query(vec1i{triInds[d]});
+                    atomic_add(exec_omp, &pointAreas[vno], area / 3);
+                    // surface edge
+                    using etable_t = RM_CVREF_T(edgeTable);
 #if 0
           auto eno = edgeTable.query(vec2i{triInds[d], triInds[(d + 1) % 3]});
           if (eno == etable_t::sentinel_v)
@@ -212,8 +215,8 @@ struct ExtractMeshSurface : INode {
             atomic_add(exec_omp, &lineAreas[seNo], area / 3);
 #endif
                 }
-              });
-    }
+            });
+        }
 #else
     {
       /// surfaces
@@ -379,7 +382,7 @@ struct ToBoundaryPrimitive : INode {
         fmt::print("checking tri! {}-th tri<{}, {}, {}>\n", ii, tri[0], tri[1], tri[2]);
       }
 #endif
-#if 1
+#if 0
       zs::HashTable<int, 2, int> surfEdgeTable{3 * tris.size(), memsrc_e::host,
                                                -1};
       surfEdgeTable.resize(ompExec, 3 * tris.size());
@@ -957,43 +960,43 @@ struct ToZSSurfaceMesh : INode {
                 atomic_add(zs::exec_omp, &pars("m", tri[d]), vmass);
             });
 
-#if 1
-    zs::HashTable<int, 2, int> surfEdgeTable{0};
-    surfEdgeTable.resize(ompExec, 3 * tris.size());
-    surfEdgeTable.reset(ompExec, true);
+#if 0
+      zs::HashTable<int, 2, int> surfEdgeTable{0};
+      surfEdgeTable.resize(ompExec, 3 * tris.size());
+      surfEdgeTable.reset(ompExec, true);
 
-    auto seTable = proxy<space>(surfEdgeTable);
-    using table_t = RM_CVREF_T(seTable);
-    using vec3i = zs::vec<int, 3>;
-    using vec2i = zs::vec<int, 2>;
-    ompExec(range(tris.size()), [&](int ei) {
-      auto tri = tris[ei];
-      seTable.insert(vec2i{tri[0], tri[1]});
-      seTable.insert(vec2i{tri[1], tri[2]});
-      seTable.insert(vec2i{tri[2], tri[0]});
-    });
-    Vector<int> surfEdgeCnt{1, memsrc_e::host};
-    surfEdgeCnt.setVal(0);
-    auto &surfEdges = (*zstris)[ZenoParticles::s_surfEdgeTag];
-    surfEdges = typename ZenoParticles::particles_t({{ "inds",
-                                                       2 }},
-                                                    tris.size() * 3,
-                                                    zs::memsrc_e::host);
-    ompExec(range(seTable.size()),
-            [&, edges = proxy<space>({}, surfEdges),
-             cnt = proxy<space>(surfEdgeCnt)](int i) mutable {
-              auto edgeInds = seTable._activeKeys[i];
-              if (auto no = seTable.query(vec2i{edgeInds[1], edgeInds[0]});
-                  no == table_t::sentinel_v ||
-                  (no != table_t::sentinel_v && edgeInds[0] < edgeInds[1])) {
-                auto id = atomic_add(exec_omp, &cnt[0], 1);
-                edges("inds", 0, id) = reinterpret_bits<float>(edgeInds[0]);
-                edges("inds", 1, id) = reinterpret_bits<float>(edgeInds[1]);
-              }
-            });
-    auto seCnt = surfEdgeCnt.getVal();
-    surfEdges.resize(seCnt);
-    surfEdges = surfEdges.clone({zs::memsrc_e::device, 0});
+      auto seTable = proxy<space>(surfEdgeTable);
+      using table_t = RM_CVREF_T(seTable);
+      using vec3i = zs::vec<int, 3>;
+      using vec2i = zs::vec<int, 2>;
+      ompExec(range(tris.size()), [&](int ei) {
+          auto tri = tris[ei];
+          seTable.insert(vec2i{tri[0], tri[1]});
+          seTable.insert(vec2i{tri[1], tri[2]});
+          seTable.insert(vec2i{tri[2], tri[0]});
+      });
+      Vector<int> surfEdgeCnt{1, memsrc_e::host};
+      surfEdgeCnt.setVal(0);
+      auto &surfEdges = (*zstris)[ZenoParticles::s_surfEdgeTag];
+      surfEdges = typename ZenoParticles::particles_t({{ "inds",
+                                                         2 }},
+                                                      tris.size() * 3,
+                                                      zs::memsrc_e::host);
+      ompExec(range(seTable.size()), [&, edges = proxy<space>({}, surfEdges),
+                                      cnt = proxy<space>(surfEdgeCnt)](
+                                         int i) mutable {
+          auto edgeInds = seTable._activeKeys[i];
+          if (auto no = seTable.query(vec2i{edgeInds[1], edgeInds[0]});
+              no == table_t::sentinel_v ||
+              (no != table_t::sentinel_v && edgeInds[0] < edgeInds[1])) {
+              auto id = atomic_add(exec_omp, &cnt[0], 1);
+              edges("inds", 0, id) = reinterpret_bits<float>(edgeInds[0]);
+              edges("inds", 1, id) = reinterpret_bits<float>(edgeInds[1]);
+          }
+      });
+      auto seCnt = surfEdgeCnt.getVal();
+      surfEdges.resize(seCnt);
+      surfEdges = surfEdges.clone({zs::memsrc_e::device, 0});
 #else
     auto comp = [](const auto &x, const auto &y) {
       return x[0] < y[0] ? 1 : (x[0] == y[0] && x[1] < y[1] ? 1 : 0);

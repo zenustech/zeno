@@ -81,6 +81,29 @@ ZENDEFNODE(PrimitiveFarSimpleLines,
     "primitive",
     }});
 
+struct PrimitiveNearSimpleLines : zeno::INode {
+  virtual void apply() override {
+    auto prim = get_input<PrimitiveObject>("prim");
+    size_t lines_count = prim->size() ? prim->size() - 1 : 0;
+    prim->lines.resize(lines_count);
+    for (int i = 0; i < lines_count; i++) {
+      prim->lines[i] = zeno::vec2i(i, i + 1);
+    }
+
+    set_output("prim", get_input("prim"));
+  }
+};
+
+ZENDEFNODE(PrimitiveNearSimpleLines,
+    { /* inputs: */ {
+    "prim",
+    }, /* outputs: */ {
+    "prim",
+    }, /* params: */ {
+    }, /* category: */ {
+    "primitive",
+    }});
+
 
 struct PrimitiveSimpleTris : zeno::INode {
   virtual void apply() override {
