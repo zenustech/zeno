@@ -449,7 +449,7 @@ extern "C" __global__ void __closesthit__radiance()
     {
         prd->countEmitted = true;
         //hit light, emit
-        float dist = length(P - optixGetWorldRayOrigin());
+        float dist = length(P - optixGetWorldRayOrigin()) + 1e-5;
         float3 lv1 = v1-v0;
         float3 lv2 = v2-v0;
         float A = 0.5 * length(cross(lv1, lv2));
@@ -526,7 +526,7 @@ extern "C" __global__ void __closesthit__radiance()
             rPdf = 0.0f;
             fPdf = 0.0f;
             reflectance = vec3(0.0f);
-            flag == DisneyBSDF::scatterEvent;
+            flag = DisneyBSDF::scatterEvent;
         }
     pdf = fPdf;
 
@@ -578,6 +578,7 @@ extern "C" __global__ void __closesthit__radiance()
     prd->origin = P; prd->direction = wi;
     prd->countEmitted = false;
     prd->attenuation *= reflectance;
+    prd->depth++;
     //if(flag==DisneyBSDF::transmissionEvent && ( !prd->is_inside)){
     //    return;
     //}

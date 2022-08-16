@@ -50,6 +50,7 @@ struct RadiancePRD
     vec3         extinction;
     float        scatterPDF;
     float        maxDistance;
+    int          depth;
     
 };
 
