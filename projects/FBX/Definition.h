@@ -310,25 +310,27 @@ struct SMaterial : zeno::IObjectClone<SMaterial>{
         // FIXME (aiTextureType_BASE_COLOR 12 basecolor `aiStandardSurface`)
         //      or (aiTextureType_DIFFUSE 1 diffuse `lambert`)
         // aiTextureType_NORMALS or aiTextureType_NORMAL_CAMERA
+        // TODO trick - We use some unused tex properties to set some tex
+        //
         val.emplace("basecolor", SMaterialProp{0,       false, aiColor4D(), {aiTextureType_BASE_COLOR, aiTextureType_DIFFUSE}, {"$ai.base", "$clr.diffuse"}}); // texOk
         val.emplace("metallic", SMaterialProp{1,        false, aiColor4D(), {aiTextureType_METALNESS}, {"$ai.metalness"}}); // texOk
         val.emplace("roughness", SMaterialProp{2,       false, aiColor4D(), {aiTextureType_DIFFUSE_ROUGHNESS}, {"$ai.specularRoughness", "$ai.diffuseRoughness"}});
         val.emplace("specular", SMaterialProp{3,        false, aiColor4D(), {aiTextureType_SPECULAR}, {"$ai.specular", "$clr.specular"}});
-        val.emplace("subsurface", SMaterialProp{4,      true, aiColor4D(), {aiTextureType_NONE}, {"$ai.subsurface"}});
+        val.emplace("subsurface", SMaterialProp{4,      false, aiColor4D(), {aiTextureType_NONE}, {"$ai.subsurfaceFactor"}});
         val.emplace("thinkness", SMaterialProp{5,       true, aiColor4D(), {aiTextureType_NONE}, {"", /*"$ai.thinFilmThickness"*/}});
         val.emplace("sssParam", SMaterialProp{6,        false, aiColor4D(), {aiTextureType_NONE}, {""}});
-        val.emplace("sssColor", SMaterialProp{7,        false, aiColor4D(), {aiTextureType_NONE}, {""}});
+        val.emplace("sssColor", SMaterialProp{7,        false, aiColor4D(), {aiTextureType_REFLECTION}, {"$ai.subsurface"}});
         val.emplace("foliage", SMaterialProp{8,         false, aiColor4D(), {aiTextureType_NONE}, {""}});
         val.emplace("skin", SMaterialProp{9,            false, aiColor4D(), {aiTextureType_NONE}, {""}});
         val.emplace("curvature", SMaterialProp{10,      false, aiColor4D(), {aiTextureType_NONE}, {""}});
         val.emplace("specularTint", SMaterialProp{11,   false, aiColor4D(), {aiTextureType_NONE}, {""}});
         val.emplace("anisotropic", SMaterialProp{12,    false, aiColor4D(), {aiTextureType_NONE}, {""}});
-        val.emplace("sheen", SMaterialProp{13,          true, aiColor4D(), {aiTextureType_SHININESS}, {"$ai.sheen"}});
+        val.emplace("sheen", SMaterialProp{13,          false, aiColor4D(), {aiTextureType_SHININESS}, {"$ai.sheen"}});
         val.emplace("sheenTint", SMaterialProp{14,      false, aiColor4D(), {aiTextureType_NONE}, {""}});
         val.emplace("clearcoat", SMaterialProp{15,      false, aiColor4D(), {aiTextureType_NONE}, {"$ai.coat"}});
         val.emplace("clearcoatGloss", SMaterialProp{16, true, aiColor4D(), {aiTextureType_NONE}, {""}});
         val.emplace("normal", SMaterialProp{17,         false, aiColor4D(), {aiTextureType_NORMAL_CAMERA, aiTextureType_NORMALS}, {"",}}); // texOk
-        val.emplace("emission", SMaterialProp{18,       true, aiColor4D(), {aiTextureType_EMISSIVE, aiTextureType_EMISSION_COLOR}, {"$ai.emission", "$clr.emissive"}});
+        val.emplace("emission", SMaterialProp{18,       false, aiColor4D(), {aiTextureType_EMISSIVE, aiTextureType_EMISSION_COLOR}, {"$ai.emission", "$clr.emissive"}});
         val.emplace("exposure", SMaterialProp{19,       false, aiColor4D(), {aiTextureType_NONE}, {""}});
         val.emplace("ao", SMaterialProp{20,             false, aiColor4D(), {aiTextureType_AMBIENT_OCCLUSION}, {""}});
         val.emplace("toon", SMaterialProp{21,           false, aiColor4D(), {aiTextureType_NONE}, {""}});
