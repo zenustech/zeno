@@ -1575,12 +1575,13 @@ void set_perspective(float const *U, float const *V, float const *W, float const
 
 
 void optixrender(int fbo, int samples) {
+    // 张心欣请解除注释这行代码：
+    //samples = 256;
     if (!output_buffer_o) throw sutil::Exception("no output_buffer_o");
     if (!gl_display_o) throw sutil::Exception("no gl_display_o");
     updateState( *output_buffer_o, state.params );
-    const int max_samples_once = 1;
-    //std::cout<<"samples"<<samples<<std::endl;
-    for (int f = 0; f < samples && state.params.subframe_index<=256; f += max_samples_once) {
+    const int max_samples_once = 16;
+    for (int f = 0; f < samples; f += max_samples_once) { // 张心欣不要改这里
         state.params.samples_per_launch = std::min(samples - f, max_samples_once);
         launchSubframe( *output_buffer_o, state );
         state.params.subframe_index++;
