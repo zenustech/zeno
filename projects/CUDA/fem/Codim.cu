@@ -331,6 +331,9 @@ struct CodimStepping : INode {
             surfEdges{
                 zsprim.getQuadraturePoints()}, // all elements are surface edges
             surfVerts{zsprim[ZenoParticles::s_surfVertTag]}, vOffset{vOffset},
+            svtemp{zsprim.getQuadraturePoints().get_allocator(),
+                   {{"H", 3 * 3}, {"fn", 1}},
+                   zsprim[ZenoParticles::s_surfVertTag].size()},
             sfOffset{sfOffset}, seOffset{seOffset}, svOffset{svOffset},
             category{zsprim.category} {
         if (category != ZenoParticles::curve)
@@ -351,6 +354,9 @@ struct CodimStepping : INode {
             surfTris{zsprim.getQuadraturePoints()},
             surfEdges{zsprim[ZenoParticles::s_surfEdgeTag]},
             surfVerts{zsprim[ZenoParticles::s_surfVertTag]}, vOffset{vOffset},
+            svtemp{zsprim.getQuadraturePoints().get_allocator(),
+                   {{"H", 3 * 3}, {"fn", 1}},
+                   zsprim[ZenoParticles::s_surfVertTag].size()},
             sfOffset{sfOffset}, seOffset{seOffset}, svOffset{svOffset},
             category{zsprim.category} {
         if (category != ZenoParticles::surface)
@@ -371,6 +377,9 @@ struct CodimStepping : INode {
             surfTris{zsprim[ZenoParticles::s_surfTriTag]},
             surfEdges{zsprim[ZenoParticles::s_surfEdgeTag]},
             surfVerts{zsprim[ZenoParticles::s_surfVertTag]}, vOffset{vOffset},
+            svtemp{zsprim.getQuadraturePoints().get_allocator(),
+                   {{"H", 3 * 3}, {"fn", 1}},
+                   zsprim[ZenoParticles::s_surfVertTag].size()},
             sfOffset{sfOffset}, seOffset{seOffset}, svOffset{svOffset},
             category{zsprim.category} {
         if (category != ZenoParticles::tet)
@@ -465,6 +474,7 @@ struct CodimStepping : INode {
       typename ZenoParticles::particles_t &surfEdges;
       // not required for codim obj
       typename ZenoParticles::particles_t &surfVerts;
+      typename ZenoParticles::dtiles_t svtemp;
       const std::size_t vOffset, sfOffset, seOffset, svOffset;
       ZenoParticles::category_e category;
     };
@@ -1220,19 +1230,27 @@ struct CodimStepping : INode {
                 edge_edge_tangent_basis(ea0, ea1, eb0, eb1);
           });
       if (s_enableGround) {
-        pol(range(coOffset),
-            [vtemp = proxy<space>({}, vtemp), tempPB = proxy<space>({}, tempPB),
-             kappa = kappa, xi2 = xi * xi, activeGap2,
-             gn = s_groundNormal] ZS_LAMBDA(int vi) mutable {
-              auto x = vtemp.pack<3>("xn", vi);
-              auto dist = gn.dot(x);
-              auto dist2 = dist * dist;
-              if (dist2 < activeGap2) {
-                auto bGrad = barrier_gradient(dist2 - xi2, activeGap2, kappa);
-                tempPB("fn", vi) = -bGrad * 2 * dist;
-              } else
-                tempPB("fn", vi) = 0;
-            });
+        for (auto &primHandle : prims) {
+          if (primHandle.isBoundary()) // skip soft boundary
+            continue;
+          const auto &svs = primHandle.getSurfVerts();
+          pol(range(svs.size()),
+              [vtemp = proxy<space>({}, vtemp), svs = proxy<space>({}, svs),
+               svtemp = proxy<space>({}, primHandle.svtemp), kappa = kappa,
+               xi2 = xi * xi, activeGap2, gn = s_groundNormal,
+               svOffset = primHandle.svOffset] ZS_LAMBDA(int svi) mutable {
+                const auto vi =
+                    reinterpret_bits<int>(svs("inds", svi)) + svOffset;
+                auto x = vtemp.pack<3>("xn", vi);
+                auto dist = gn.dot(x);
+                auto dist2 = dist * dist;
+                if (dist2 < activeGap2) {
+                  auto bGrad = barrier_gradient(dist2 - xi2, activeGap2, kappa);
+                  svtemp("fn", svi) = -bGrad * 2 * dist;
+                } else
+                  svtemp("fn", svi) = 0;
+              });
+        }
       }
     }
     bool checkSelfIntersection(zs::CudaExecutionPolicy &pol) {
@@ -1529,104 +1547,119 @@ struct CodimStepping : INode {
         bool includeHessian = true) {
       using namespace zs;
       constexpr auto space = execspace_e::cuda;
-      pol(range(coOffset),
-          [vtemp = proxy<space>({}, vtemp), tempPB = proxy<space>({}, tempPB),
-           gTag, gn = s_groundNormal, dHat2 = dHat * dHat, kappa = kappa,
-           projectDBC = projectDBC, includeHessian] ZS_LAMBDA(int vi) mutable {
-            auto x = vtemp.pack<3>("xn", vi);
-            auto dist = gn.dot(x);
-            auto dist2 = dist * dist;
-            auto t = dist2 - dHat2;
-            auto g_b = t * zs::log(dist2 / dHat2) * -2 - (t * t) / dist2;
-            auto H_b = (zs::log(dist2 / dHat2) * -2.0 - t * 4.0 / dist2) +
-                       1.0 / (dist2 * dist2) * (t * t);
-            if (dist2 < dHat2) {
-              auto grad = -gn * (kappa * g_b * 2 * dist);
-              for (int d = 0; d != 3; ++d)
-                atomic_add(exec_cuda, &vtemp(gTag, d, vi), grad(d));
-            }
-
-            if (!includeHessian)
-              return;
-            auto param = 4 * H_b * dist2 + 2 * g_b;
-            auto hess = mat3::zeros();
-            if (dist2 < dHat2 && param > 0) {
-              auto nn = dyadic_prod(gn, gn);
-              hess = (kappa * param) * nn;
-            }
-
-            // make_pd(hess);
-            mat3 BCbasis[1] = {vtemp.pack<3, 3>("BCbasis", vi)};
-            int BCorder[1] = {(int)vtemp("BCorder", vi)};
-            int BCfixed[1] = {(int)vtemp("BCfixed", vi)};
-            rotate_hessian(hess, BCbasis, BCorder, BCfixed, projectDBC);
-            tempPB.tuple<9>("H", vi) = hess;
-            for (int i = 0; i != 3; ++i)
-              for (int j = 0; j != 3; ++j) {
-                atomic_add(exec_cuda, &vtemp("P", i * 3 + j, vi), hess(i, j));
+      for (auto &primHandle : prims) {
+        if (primHandle.isBoundary()) // skip soft boundary
+          continue;
+        const auto &svs = primHandle.getSurfVerts();
+        pol(range(svs.size()),
+            [vtemp = proxy<space>({}, vtemp),
+             svtemp = proxy<space>({}, primHandle.svtemp),
+             svs = proxy<space>({}, svs), gTag, gn = s_groundNormal,
+             dHat2 = dHat * dHat, kappa = kappa, projectDBC = projectDBC,
+             includeHessian,
+             svOffset = primHandle.svOffset] ZS_LAMBDA(int svi) mutable {
+              const auto vi =
+                  reinterpret_bits<int>(svs("inds", svi)) + svOffset;
+              auto x = vtemp.pack<3>("xn", vi);
+              auto dist = gn.dot(x);
+              auto dist2 = dist * dist;
+              auto t = dist2 - dHat2;
+              auto g_b = t * zs::log(dist2 / dHat2) * -2 - (t * t) / dist2;
+              auto H_b = (zs::log(dist2 / dHat2) * -2.0 - t * 4.0 / dist2) +
+                         1.0 / (dist2 * dist2) * (t * t);
+              if (dist2 < dHat2) {
+                auto grad = -gn * (kappa * g_b * 2 * dist);
+                for (int d = 0; d != 3; ++d)
+                  atomic_add(exec_cuda, &vtemp(gTag, d, vi), grad(d));
               }
-          });
-
-#if s_enableFriction
-      if (fricMu != 0) {
-        pol(range(coOffset),
-            [vtemp = proxy<space>({}, vtemp), tempPB = proxy<space>({}, tempPB),
-             gTag, epsvh = epsv * dt, gn = s_groundNormal, fricMu = fricMu,
-             projectDBC = projectDBC,
-             includeHessian] ZS_LAMBDA(int vi) mutable {
-              auto dx = vtemp.pack<3>("xn", vi) - vtemp.pack<3>("xhat", vi);
-              auto fn = tempPB("fn", vi);
-              if (fn == 0) {
-                return;
-              }
-              auto coeff = fn * fricMu;
-              auto relDX = dx - gn.dot(dx) * gn;
-              auto relDXNorm2 = relDX.l2NormSqr();
-              auto relDXNorm = zs::sqrt(relDXNorm2);
-
-              vec3 grad{};
-              if (relDXNorm2 >= epsvh * epsvh)
-                grad = -relDX * (coeff / relDXNorm);
-              else
-                grad = -relDX * (coeff / epsvh);
-              for (int d = 0; d != 3; ++d)
-                atomic_add(exec_cuda, &vtemp(gTag, d, vi), grad(d));
 
               if (!includeHessian)
                 return;
-
+              auto param = 4 * H_b * dist2 + 2 * g_b;
               auto hess = mat3::zeros();
-              if (relDXNorm2 >= epsvh * epsvh) {
-                zs::vec<T, 2, 2> mat{
-                    relDX[0] * relDX[0] * -coeff / relDXNorm2 / relDXNorm +
-                        coeff / relDXNorm,
-                    relDX[0] * relDX[2] * -coeff / relDXNorm2 / relDXNorm,
-                    relDX[0] * relDX[2] * -coeff / relDXNorm2 / relDXNorm,
-                    relDX[2] * relDX[2] * -coeff / relDXNorm2 / relDXNorm +
-                        coeff / relDXNorm};
-                make_pd(mat);
-                hess(0, 0) = mat(0, 0);
-                hess(0, 2) = mat(0, 1);
-                hess(2, 0) = mat(1, 0);
-                hess(2, 2) = mat(1, 1);
-              } else {
-                hess(0, 0) = coeff / epsvh;
-                hess(2, 2) = coeff / epsvh;
+              if (dist2 < dHat2 && param > 0) {
+                auto nn = dyadic_prod(gn, gn);
+                hess = (kappa * param) * nn;
               }
 
+              // make_pd(hess);
               mat3 BCbasis[1] = {vtemp.pack<3, 3>("BCbasis", vi)};
               int BCorder[1] = {(int)vtemp("BCorder", vi)};
               int BCfixed[1] = {(int)vtemp("BCfixed", vi)};
               rotate_hessian(hess, BCbasis, BCorder, BCfixed, projectDBC);
-              tempPB.template tuple<9>("H", vi) =
-                  tempPB.template pack<3, 3>("H", vi) + hess;
+              svtemp.tuple<9>("H", svi) = hess;
               for (int i = 0; i != 3; ++i)
                 for (int j = 0; j != 3; ++j) {
                   atomic_add(exec_cuda, &vtemp("P", i * 3 + j, vi), hess(i, j));
                 }
             });
-      }
+
+#if s_enableFriction
+        if (fricMu != 0) {
+          pol(range(svs.size()),
+              [vtemp = proxy<space>({}, vtemp),
+               svtemp = proxy<space>({}, primHandle.svtemp),
+               svs = proxy<space>({}, svs), gTag, epsvh = epsv * dt,
+               gn = s_groundNormal, fricMu = fricMu, projectDBC = projectDBC,
+               includeHessian,
+               svOffset = primHandle.svOffset] ZS_LAMBDA(int svi) mutable {
+                const auto vi =
+                    reinterpret_bits<int>(svs("inds", svi)) + svOffset;
+                auto dx = vtemp.pack<3>("xn", vi) - vtemp.pack<3>("xhat", vi);
+                auto fn = svtemp("fn", svi);
+                if (fn == 0) {
+                  return;
+                }
+                auto coeff = fn * fricMu;
+                auto relDX = dx - gn.dot(dx) * gn;
+                auto relDXNorm2 = relDX.l2NormSqr();
+                auto relDXNorm = zs::sqrt(relDXNorm2);
+
+                vec3 grad{};
+                if (relDXNorm2 >= epsvh * epsvh)
+                  grad = -relDX * (coeff / relDXNorm);
+                else
+                  grad = -relDX * (coeff / epsvh);
+                for (int d = 0; d != 3; ++d)
+                  atomic_add(exec_cuda, &vtemp(gTag, d, vi), grad(d));
+
+                if (!includeHessian)
+                  return;
+
+                auto hess = mat3::zeros();
+                if (relDXNorm2 >= epsvh * epsvh) {
+                  zs::vec<T, 2, 2> mat{
+                      relDX[0] * relDX[0] * -coeff / relDXNorm2 / relDXNorm +
+                          coeff / relDXNorm,
+                      relDX[0] * relDX[2] * -coeff / relDXNorm2 / relDXNorm,
+                      relDX[0] * relDX[2] * -coeff / relDXNorm2 / relDXNorm,
+                      relDX[2] * relDX[2] * -coeff / relDXNorm2 / relDXNorm +
+                          coeff / relDXNorm};
+                  make_pd(mat);
+                  hess(0, 0) = mat(0, 0);
+                  hess(0, 2) = mat(0, 1);
+                  hess(2, 0) = mat(1, 0);
+                  hess(2, 2) = mat(1, 1);
+                } else {
+                  hess(0, 0) = coeff / epsvh;
+                  hess(2, 2) = coeff / epsvh;
+                }
+
+                mat3 BCbasis[1] = {vtemp.pack<3, 3>("BCbasis", vi)};
+                int BCorder[1] = {(int)vtemp("BCorder", vi)};
+                int BCfixed[1] = {(int)vtemp("BCfixed", vi)};
+                rotate_hessian(hess, BCbasis, BCorder, BCfixed, projectDBC);
+                svtemp.template tuple<9>("H", svi) =
+                    svtemp.template pack<3, 3>("H", svi) + hess;
+                for (int i = 0; i != 3; ++i)
+                  for (int j = 0; j != 3; ++j) {
+                    atomic_add(exec_cuda, &vtemp("P", i * 3 + j, vi),
+                               hess(i, j));
+                  }
+              });
+        }
 #endif
+      }
       return;
     }
     template <typename Model>
@@ -2461,52 +2494,66 @@ struct CodimStepping : INode {
         }
 #endif
         if (s_enableGround) {
-          // boundary
-          es.resize(count_warps(coOffset));
-          es.reset(0);
-          pol(range(coOffset),
-              [vtemp = proxy<space>({}, vtemp), es = proxy<space>(es),
-               gn = s_groundNormal, dHat2 = dHat * dHat,
-               n = coOffset] ZS_LAMBDA(int vi) mutable {
-                auto x = vtemp.pack<3>("xn", vi);
-                auto dist = gn.dot(x);
-                auto dist2 = dist * dist;
-                T E;
-                if (dist2 < dHat2)
-                  E = -zs::sqr(dist2 - dHat2) * zs::log(dist2 / dHat2);
-                else
-                  E = 0;
-                reduce_to(vi, n, E, es[vi / 32]);
-              });
-          Es.push_back(reduce(pol, es) * kappa);
+          for (auto &primHandle : prims) {
+            if (primHandle.isBoundary()) // skip soft boundary
+              continue;
+            const auto &svs = primHandle.getSurfVerts();
+            // boundary
+            es.resize(count_warps(svs.size()));
+            es.reset(0);
+            pol(range(svs.size()),
+                [vtemp = proxy<space>({}, vtemp), svs = proxy<space>({}, svs),
+                 es = proxy<space>(es), gn = s_groundNormal,
+                 dHat2 = dHat * dHat, n = svs.size(),
+                 svOffset = primHandle.svOffset] ZS_LAMBDA(int svi) mutable {
+                  const auto vi =
+                      reinterpret_bits<int>(svs("inds", svi)) + svOffset;
+                  auto x = vtemp.pack<3>("xn", vi);
+                  auto dist = gn.dot(x);
+                  auto dist2 = dist * dist;
+                  T E;
+                  if (dist2 < dHat2)
+                    E = -zs::sqr(dist2 - dHat2) * zs::log(dist2 / dHat2);
+                  else
+                    E = 0;
+                  reduce_to(svi, n, E, es[svi / 32]);
+                });
+            Es.push_back(reduce(pol, es) * kappa);
 
 #if s_enableFriction
-          if (fricMu != 0) {
-            es.resize(count_warps(coOffset));
-            es.reset(0);
-            pol(range(coOffset),
-                [vtemp = proxy<space>({}, vtemp), es = proxy<space>(es),
-                 gn = s_groundNormal, dHat2 = dHat * dHat, epsvh = epsv * dt,
-                 fricMu = fricMu, n = coOffset] ZS_LAMBDA(int vi) mutable {
-                  auto fn = vtemp("fn", vi);
-                  T E = 0;
-                  if (fn != 0) {
-                    auto dx =
-                        vtemp.pack<3>("xn", vi) - vtemp.pack<3>("xhat", vi);
-                    auto relDX = dx - gn.dot(dx) * gn;
-                    auto relDXNorm2 = relDX.l2NormSqr();
-                    auto relDXNorm = zs::sqrt(relDXNorm2);
-                    if (relDXNorm2 >= epsvh * epsvh) {
-                      E = fn * (relDXNorm - epsvh / 2);
-                    } else {
-                      E = fn * relDXNorm2 / epsvh / 2;
+            if (fricMu != 0) {
+              es.resize(count_warps(svs.size()));
+              es.reset(0);
+              pol(range(svs.size()),
+                  [vtemp = proxy<space>({}, vtemp),
+                   svtemp = proxy<space>({}, primHandle.svtemp),
+                   svs = proxy<space>({}, svs), es = proxy<space>(es),
+                   gn = s_groundNormal, dHat = dHat, epsvh = epsv * dt,
+                   fricMu = fricMu, n = svs.size(),
+                   svOffset = primHandle.svOffset] ZS_LAMBDA(int svi) mutable {
+                    const auto vi =
+                        reinterpret_bits<int>(svs("inds", svi)) + svOffset;
+                    auto fn = svtemp("fn", svi);
+                    auto x = vtemp.pack<3>("xn", vi);
+                    auto dist = gn.dot(x);
+                    T E = 0;
+                    if (fn != 0 && dist < dHat) {
+                      auto dx = x - vtemp.pack<3>("xhat", vi);
+                      auto relDX = dx - gn.dot(dx) * gn;
+                      auto relDXNorm2 = relDX.l2NormSqr();
+                      auto relDXNorm = zs::sqrt(relDXNorm2);
+                      if (relDXNorm2 >= epsvh * epsvh) {
+                        E = fn * (relDXNorm - epsvh / 2);
+                      } else {
+                        E = fn * relDXNorm2 / epsvh / 2;
+                      }
                     }
-                  }
-                  reduce_to(vi, n, E, es[vi / 32]);
-                });
-            Es.push_back(reduce(pol, es));
-          }
+                    reduce_to(svi, n, E, es[svi / 32]);
+                  });
+              Es.push_back(reduce(pol, es));
+            }
 #endif
+          }
         }
       }
       // constraints
@@ -4036,15 +4083,24 @@ struct CodimStepping : INode {
 #endif
         if (s_enableGround) {
           // boundary
-          pol(range(coOffset), [execTag, vtemp = proxy<space>({}, vtemp),
-                                tempPB = proxy<space>({}, tempPB), dxTag,
-                                bTag] ZS_LAMBDA(int vi) mutable {
-            auto dx = vtemp.template pack<3>(dxTag, vi);
-            auto pbHess = tempPB.template pack<3, 3>("H", vi);
-            dx = pbHess * dx;
-            for (int d = 0; d != 3; ++d)
-              atomic_add(execTag, &vtemp(bTag, d, vi), dx(d));
-          });
+          for (auto &primHandle : prims) {
+            if (primHandle.isBoundary()) // skip soft boundary
+              continue;
+            const auto &svs = primHandle.getSurfVerts();
+            pol(range(svs.size()),
+                [execTag, vtemp = proxy<space>({}, vtemp), dxTag, bTag,
+                 svtemp = proxy<space>({}, primHandle.svtemp),
+                 svs = proxy<space>({}, svs),
+                 svOffset = primHandle.svOffset] ZS_LAMBDA(int svi) mutable {
+                  const auto vi =
+                      reinterpret_bits<int>(svs("inds", svi)) + svOffset;
+                  auto dx = vtemp.template pack<3>(dxTag, vi);
+                  auto pbHess = svtemp.template pack<3, 3>("H", svi);
+                  dx = pbHess * dx;
+                  for (int d = 0; d != 3; ++d)
+                    atomic_add(execTag, &vtemp(bTag, d, vi), dx(d));
+                });
+          }
         }
       } // end contacts
 
@@ -4552,9 +4608,8 @@ struct CodimStepping : INode {
            {"p", 3},
            {"q", 3}},
           numDofs};
-      // ground + inertial hessian
-      tempPB = dtiles_t{
-          vtemp.get_allocator(), {{"H", 9}, {"Hi", 9}, {"fn", 1}}, coOffset};
+      // inertial hessian
+      tempPB = dtiles_t{vtemp.get_allocator(), {{"Hi", 9}}, coOffset};
       nPP.setVal(0);
       nPE.setVal(0);
       nPT.setVal(0);
