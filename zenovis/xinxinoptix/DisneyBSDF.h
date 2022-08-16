@@ -51,10 +51,11 @@ namespace DisneyBSDF{
     static __inline__ __device__ 
     vec3 CalculateExtinction(vec3 apparantColor, float scatterDistance)
     {
-        vec3 a = apparantColor;
-        vec3 s = vec3(1.9f) - a + 3.5f * (a - vec3(0.8f)) * (a - vec3(0.8f));
+        //vec3 a = apparantColor;
+        //vec3 s = vec3(1.9f) - a + 3.5f * (a - vec3(0.8f)) * (a - vec3(0.8f));
 
-        return vec3(1.0f / (s*scatterDistance));
+        //return vec3(1.0f / (a*scatterDistance));
+        return 1/apparantColor;
     }
 
     static __inline__ __device__
@@ -820,7 +821,7 @@ namespace DisneyBSDF{
 
         float pLobe = 0.0f;
         float p = rnd(seed);
-        if(  p<= pSpecular){
+        if( p<= pSpecular){
             success = SampleDisneyBRDF(
                     seed, 
                     baseColor,
@@ -840,19 +841,15 @@ namespace DisneyBSDF{
                     rPdf);
             pLobe = pSpecular;
 
-        }else if(pClearcoat >0.001f&& p <= (pSpecular + pClearcoat)){
+        }else if(pClearcoat >0.001f && p <= (pSpecular + pClearcoat)){
             success = SampleDisneyClearCoat(seed, clearCoat, clearcoatGloss, T, B, N, wo, wi, reflectance, fPdf, rPdf);
             pLobe = pClearcoat;
-        }else if(  p <= (pSpecular + pClearcoat + pDiffuse)){
-            success = SampleDisneyDiffuse(seed, baseColor, transmiianceColor, scatterDistance, sheen, sheenTint, roughness, flatness, subsurface, thin, wo, T, B, N, wi, fPdf, rPdf, reflectance, flag, phaseFuncion, extinction,is_inside);
-            pLobe = pDiffuse;
-        }else if(  pSpecTrans > 0.0f){
+        }else if(pSpecTrans > 0.001f && p <= (pSpecular + pClearcoat + pSpecTrans)){
             success = SampleDisneySpecTransmission(seed, ior, roughness, anisotropic, baseColor, transmiianceColor, scatterDistance, wo, wi, rPdf, fPdf, reflectance, flag, phaseFuncion, extinction, thin, is_inside, T, B, N);
             pLobe = pSpecTrans;
-        }else{
-            reflectance = vec3(100000.0f,0.0f,0.0f);
-            fPdf = 0.000000001f;
-            rPdf = 0.000000001f;
+        }else {
+            success = SampleDisneyDiffuse(seed, baseColor, transmiianceColor, scatterDistance, sheen, sheenTint, roughness, flatness, subsurface, thin, wo, T, B, N, wi, fPdf, rPdf, reflectance, flag, phaseFuncion, extinction,is_inside);
+            pLobe = pDiffuse;
         }
         //reflectance = clamp(reflectance, vec3(0,0,0), vec3(1,1,1));
         if(pLobe > 0.0f){

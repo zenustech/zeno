@@ -1577,7 +1577,7 @@ void optixrender(int fbo, int samples) {
     if (!output_buffer_o) throw sutil::Exception("no output_buffer_o");
     if (!gl_display_o) throw sutil::Exception("no gl_display_o");
     updateState( *output_buffer_o, state.params );
-    const int max_samples_once = 16;
+    const int max_samples_once = 1;
     //std::cout<<"samples"<<samples<<std::endl;
     for (int f = 0; f < samples; f += max_samples_once) {
         state.params.samples_per_launch = std::min(samples - f, max_samples_once);
