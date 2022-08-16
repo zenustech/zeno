@@ -932,7 +932,7 @@ ZenoParamWidget* ZenoNode::initSocketWidget(ZenoSubGraphScene* scene, const INPU
                 inSocket.info.control,
                 m_renderParams.lineEditParam);
             pSocketEditor->setValidator(validateForSockets(inSocket));
-            pSocketEditor->setNumSlider(scene, {0.1, 1, 10});
+            pSocketEditor->setNumSlider(scene, AppHelper::getSlideStep(inSock, ctrl));
             //todo: allow to edit path directly?
             connect(pSocketEditor, &ZenoParamLineEdit::editingFinished, this, [=]() {
 

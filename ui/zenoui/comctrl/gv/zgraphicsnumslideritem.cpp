@@ -27,8 +27,9 @@ ZGraphicsNumSliderItem::ZGraphicsNumSliderItem(const QVector<qreal>& steps, QGra
         pLabel->setFixedWidth(maxWidth);
         pLabel->setAlignment(Qt::AlignCenter);
         pLabel->setBrush(QColor(80, 80, 80));
-        pLabel->setBackground(QColor(0, 0, 0));
+        pLabel->setBackground(QColor(21, 21, 21));
         pLabel->setFont(QFont("HarmonyOS Sans", 16));
+        pLabel->setHoverCursor(Qt::SizeHorCursor);
         pLabel->setPadding(padding, padding, padding, padding);
 
         QRectF rc = pLabel->boundingRect();
@@ -36,7 +37,6 @@ ZGraphicsNumSliderItem::ZGraphicsNumSliderItem(const QVector<qreal>& steps, QGra
         m_labels.append(pLabel);
     }
 
-    //setAcceptHoverEvents(true);
     setFlags(ItemIsMovable | ItemIsFocusable);
 }
 

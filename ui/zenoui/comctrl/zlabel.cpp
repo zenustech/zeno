@@ -96,6 +96,7 @@ ZTextLabel::ZTextLabel(QWidget* parent)
     : QLabel(parent)
     , m_bUnderlineHover(false)
     , m_bUnderline(false)
+    , m_hoverCursor(Qt::PointingHandCursor)
 {
     setMouseTracking(true);
 }
@@ -104,6 +105,7 @@ ZTextLabel::ZTextLabel(const QString& text, QWidget* parent)
     : QLabel(text, parent)
     , m_bUnderlineHover(false)
     , m_bUnderline(false)
+    , m_hoverCursor(Qt::PointingHandCursor)
 {
     setMouseTracking(true);
 }
@@ -129,6 +131,11 @@ void ZTextLabel::setTransparent(bool btransparent)
     //    setStyleSheet("background-color: rgba(0,0,0,100%)");
     //}
     //QWidget::setAttribute(Qt::WA_TranslucentBackground, btransparent);
+}
+
+void ZTextLabel::setEnterCursor(Qt::CursorShape shape)
+{
+    m_hoverCursor = shape;
 }
 
 void ZTextLabel::setTextColor(const QColor& clr)
@@ -160,7 +167,7 @@ void ZTextLabel::enterEvent(QEvent* event)
         setFont(fnt);    
     }
 
-    setCursor(Qt::PointingHandCursor);
+    setCursor(m_hoverCursor);
 }
 
 void ZTextLabel::leaveEvent(QEvent* event)

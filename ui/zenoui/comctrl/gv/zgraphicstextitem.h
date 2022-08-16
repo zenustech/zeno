@@ -54,6 +54,7 @@ public:
     void setPadding(int left, int top, int right, int bottom);
     void setAlignment(Qt::Alignment align);
     void setFixedWidth(qreal fixedWidth);
+    void setHoverCursor(Qt::CursorShape cursor);
     bool isHovered() const;
     void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget);
 
@@ -75,9 +76,10 @@ private:
     QRectF m_boundingRect;
     _padding m_padding;
     Qt::Alignment m_alignment;
+    qreal m_fixedWidth;
+    Qt::CursorShape m_hoverCursor;
     bool m_bRight;
     bool m_bHovered;
-    qreal m_fixedWidth;
 };
 
 class ZSimpleTextLayoutItem : public ZSimpleTextItem, public QGraphicsLayoutItem

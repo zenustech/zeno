@@ -16,6 +16,7 @@ ZNumSlider::ZNumSlider(QVector<qreal> scales, QWidget* parent)
         pLabel->setTextColor(QColor(80, 80, 80));
         pLabel->setProperty("cssClass", "numslider");
         pLabel->setAlignment(Qt::AlignCenter);
+        pLabel->setEnterCursor(Qt::SizeHorCursor);
         pLayout->addWidget(pLabel);
         pLabel->installEventFilter(this);
         pLabel->setAttribute(Qt::WA_TranslucentBackground, true);
@@ -95,7 +96,6 @@ void ZNumSlider::mouseMoveEvent(QMouseEvent* event)
         static const int speed_factor = 10;
         if (std::abs(dx) > speed_factor)
         {
-            zeno::log_critical("dx: {}", dx);
             qreal scale = m_currLabel->text().toFloat();
             int pieces = dx / speed_factor;
             qreal Dx = (pieces * scale);

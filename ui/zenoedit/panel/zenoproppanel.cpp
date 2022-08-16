@@ -13,6 +13,7 @@
 #include <zenoui/comctrl/zlinewidget.h>
 #include <zenoui/comctrl/zlineedit.h>
 #include "util/log.h"
+#include "util/apphelper.h"
 
 
 ZenoPropPanel::ZenoPropPanel(QWidget* parent)
@@ -148,7 +149,7 @@ ZExpandableSection* ZenoPropPanel::paramsBox(IGraphsModel* pModel, const QModelI
 			{
 				ZLineEdit* pLineEdit = new ZLineEdit(param.value.toString());
 				pLineEdit->setProperty("cssClass", "proppanel");
-				pLineEdit->setNumSlider({ 0.1, 1, 10 });
+				pLineEdit->setNumSlider(AppHelper::getSlideStep(param.name, param.control));
 				if (param.control == CONTROL_FLOAT)
 				{
 					pLineEdit->setValidator(new QDoubleValidator);
@@ -302,7 +303,8 @@ ZExpandableSection* ZenoPropPanel::inputsBox(IGraphsModel* pModel, const QModelI
 
 				ZLineEdit* pLineEdit = new ZLineEdit(UiHelper::variantToString(input.info.defaultValue));
 				pLineEdit->setProperty("cssClass", "proppanel");
-				pLineEdit->setNumSlider({ 0.1, 1, 10 });
+				pLineEdit->setNumSlider(AppHelper::getSlideStep(inputSock, input.info.control));
+
 				if (input.info.control == CONTROL_FLOAT)
 				{
 					pLineEdit->setValidator(new QDoubleValidator);

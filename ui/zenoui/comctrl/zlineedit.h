@@ -22,7 +22,7 @@ protected:
     void paintEvent(QPaintEvent* event);
 
 private:
-    void popup();
+    void popupSlider();
 
     QVector<qreal> m_steps;
     ZNumSlider* m_pSlider;

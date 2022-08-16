@@ -45,6 +45,7 @@ public:
     void setUnderline(bool bUnderline);
     void setUnderlineOnHover(bool bUnderline);
     void setTransparent(bool btransparent);
+    void setEnterCursor(Qt::CursorShape shape);
 
 protected:
     void enterEvent(QEvent* event) override;
@@ -57,6 +58,7 @@ signals:
 
 private:
     QColor m_normal;
+    Qt::CursorShape m_hoverCursor;
     bool m_bUnderlineHover;
     bool m_bUnderline;
 };

@@ -207,3 +207,17 @@ void AppHelper::ensureSRCDSTlastKey(INPUT_SOCKETS& inputs, OUTPUT_SOCKETS& outpu
         outputs.insert("DST", dstSocket);
     }
 }
+
+QVector<qreal> AppHelper::getSlideStep(const QString& name, PARAM_CONTROL ctrl)
+{
+    QVector<qreal> steps;
+    if (ctrl == CONTROL_INT)
+    {
+        steps = {1, 10, 100};
+    }
+    else if (ctrl == CONTROL_FLOAT)
+    {
+        steps = {.0001, .001, .01, .1, 1, 10, 100};
+    }
+    return steps;
+}

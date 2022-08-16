@@ -66,6 +66,7 @@ ZSimpleTextItem::ZSimpleTextItem(QGraphicsItem* parent)
     , m_bRight(false)
     , m_bHovered(false)
     , m_alignment(Qt::AlignLeft)
+    , m_hoverCursor(Qt::ArrowCursor)
 {
     setFlags(ItemIsFocusable | ItemIsSelectable);
     setAcceptHoverEvents(true);
@@ -162,6 +163,11 @@ void ZSimpleTextItem::setBackground(const QColor& clr)
     m_bg = clr;
 }
 
+void ZSimpleTextItem::setHoverCursor(Qt::CursorShape cursor)
+{
+    m_hoverCursor = cursor;
+}
+
 void ZSimpleTextItem::setRight(bool right)
 {
     m_bRight = right;
@@ -183,6 +189,7 @@ void ZSimpleTextItem::hoverEnterEvent(QGraphicsSceneHoverEvent* event)
 {
     m_bHovered = true;
     base::hoverEnterEvent(event);
+    setCursor(m_hoverCursor);
 }
 
 void ZSimpleTextItem::hoverMoveEvent(QGraphicsSceneHoverEvent* event)
@@ -194,6 +201,7 @@ void ZSimpleTextItem::hoverLeaveEvent(QGraphicsSceneHoverEvent* event)
 {
     base::hoverLeaveEvent(event);
     m_bHovered = false;
+    setCursor(Qt::ArrowCursor);
 }
 
 void ZSimpleTextItem::mousePressEvent(QGraphicsSceneMouseEvent* event)

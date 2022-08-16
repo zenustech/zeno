@@ -1,5 +1,6 @@
 #include "zlineedit.h"
 #include "znumslider.h"
+#include "style/zenostyle.h"
 
 
 ZLineEdit::ZLineEdit(QWidget* parent)
@@ -23,6 +24,9 @@ void ZLineEdit::setShowingSlider(bool bShow)
 
 void ZLineEdit::setNumSlider(const QVector<qreal>& steps)
 {
+    if (steps.isEmpty())
+        return;
+
     m_steps = steps;
     m_pSlider = new ZNumSlider(m_steps, this);
     m_pSlider->setWindowFlags(Qt::Window | Qt::FramelessWindowHint);
@@ -49,19 +53,19 @@ void ZLineEdit::mouseReleaseEvent(QMouseEvent* event)
     QLineEdit::mouseReleaseEvent(event);
 }
 
-void ZLineEdit::popup()
+void ZLineEdit::popupSlider()
 {
-    QPoint pos;
-    if (QWidget* pWid = parentWidget())
-    {
-        pos = pWid->mapToGlobal(geometry().center());
-        QSize sz = m_pSlider->size();
-        pos -= QPoint(sz.width() / 2, sz.height() / 2);
-    }
-    else
-    {
-        pos = this->cursor().pos();
-    }
+    if (!m_pSlider)
+        return;
+
+    QSize sz = m_pSlider->size();
+    QRect rc = QApplication::desktop()->screenGeometry();
+    static const int _yOffset = ZenoStyle::dpiScaled(20);
+
+    QPoint pos = this->cursor().pos();
+    pos.setY(std::min(pos.y(), rc.bottom() - sz.height() / 2 - _yOffset));
+    pos -= QPoint(0, sz.height() / 2);
+
     m_pSlider->move(pos);
     m_pSlider->show();
     m_pSlider->activateWindow();
@@ -77,7 +81,7 @@ bool ZLineEdit::event(QEvent* event)
         QKeyEvent* k = (QKeyEvent*)event;
         if (m_pSlider && k->key() == Qt::Key_Alt)
         {
-            popup();
+            popupSlider();
             k->accept();
             return true;
         }

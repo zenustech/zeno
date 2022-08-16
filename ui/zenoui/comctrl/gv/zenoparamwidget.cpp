@@ -146,7 +146,27 @@ void ZenoParamLineEdit::keyPressEvent(QKeyEvent* event)
         {
             QPointF pos = this->sceneBoundingRect().center();
             QSizeF sz = m_pSlider->boundingRect().size();
+
+            /* FIXME: how to find specific viewport when meet multiply views.
+            * 
+            static QRect screen = QApplication::desktop()->screenGeometry();
+            static const int _yOffset = ZenoStyle::dpiScaled(20);
+
+            QPointF cursorPos = this->cursor().pos();
+            const auto views = scene()->views();
+            Q_ASSERT(!views.isEmpty());
+            auto view = views[0];
+            QPoint viewPoint = view->mapFromGlobal(this->cursor().pos());
+            const QPointF sceneCursor = view->mapToScene(viewPoint);
+            QPointF screenBR = view->mapToScene(view->mapFromGlobal(screen.bottomRight()));
+            cursorPos = mapToScene(cursorPos);
+
+            pos.setX(sceneCursor.x());
+            pos.setY(std::min(pos.y(), screenBR.y() - sz.height() / 2 - _yOffset) - sz.height() / 2.);
+            
+            */
             pos -= QPointF(sz.width() / 2., sz.height() / 2.);
+
             m_pSlider->setPos(pos);
             m_pSlider->show();
             m_pLineEdit->setShowingSlider(true);
