@@ -1303,7 +1303,7 @@ void ZenoNode::getSocketInfoByItem(ZenoSocketItem* pSocketItem, QString& sockNam
         {
             bInput = true;
             sockName = name;
-            scenePos = pSocketItem->sceneBoundingRect().center();
+            scenePos = pSocketItem->center();
             INPUT_SOCKETS inputs = m_index.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
             if (!inputs[name].linkIndice.isEmpty())
                 linkIdx = inputs[name].linkIndice[0];
@@ -1317,7 +1317,7 @@ void ZenoNode::getSocketInfoByItem(ZenoSocketItem* pSocketItem, QString& sockNam
         {
             bInput = false;
             sockName = name;
-            scenePos = pSocketItem->sceneBoundingRect().center();
+            scenePos = pSocketItem->center();
             OUTPUT_SOCKETS outputs = m_index.data(ROLE_OUTPUTS).value<OUTPUT_SOCKETS>();
             if (!outputs[name].linkIndice.isEmpty())
                 linkIdx = outputs[name].linkIndice[0];
@@ -1424,7 +1424,7 @@ ZenoSocketItem* ZenoNode::getNearestSocket(const QPointF& pos, bool bInput)
     auto socks = bInput ? m_inSockets : m_outSockets;
     for (_socket_ctrl ctrl : socks)
     {
-        QPointF sockPos = ctrl.socket->sceneBoundingRect().center();
+        QPointF sockPos = ctrl.socket->center();
         QPointF offset = sockPos - pos;
         float dist = std::sqrt(offset.x() * offset.x() + offset.y() * offset.y());
         if (dist < minDist)
@@ -1462,11 +1462,11 @@ QPointF ZenoNode::getPortPos(bool bInput, const QString &portName)
             QString id = nodeId();
             if (bInput) {
                 ZASSERT_EXIT(m_inSockets.find(portName) != m_inSockets.end(), QPointF());
-                QPointF pos = m_inSockets[portName].socket->sceneBoundingRect().center();
+                QPointF pos = m_inSockets[portName].socket->center();
                 return pos;
             } else {
                 ZASSERT_EXIT(m_outSockets.find(portName) != m_outSockets.end(), QPointF());
-                QPointF pos = m_outSockets[portName].socket->sceneBoundingRect().center();
+                QPointF pos = m_outSockets[portName].socket->center();
                 return pos;
             }
         }

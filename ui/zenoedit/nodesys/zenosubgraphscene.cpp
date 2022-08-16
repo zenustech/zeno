@@ -588,7 +588,7 @@ void ZenoSubGraphScene::onSocketAbsorted(const QPointF mousePos)
             pSocket->getSocketInfo(bInput, nodeid2, sockName2);
             if (bInput != bFixedInput && nodeid2 != nodeId)
             {
-                pos = pSocket->sceneBoundingRect().center();
+                pos = pSocket->center();
                 m_tempLink->setAdsortedSocket(pSocket);
                 m_tempLink->setFloatingPos(pos);
                 return;
@@ -619,7 +619,7 @@ void ZenoSubGraphScene::onSocketAbsorted(const QPointF mousePos)
         ZenoSocketItem *pSocket = pTarget->getNearestSocket(pos, !bFixedInput);
         if (pSocket)
         {
-            pos = pSocket->sceneBoundingRect().center();
+            pos = pSocket->center();
         }
         m_tempLink->setAdsortedSocket(pSocket);
         m_tempLink->setFloatingPos(pos);
