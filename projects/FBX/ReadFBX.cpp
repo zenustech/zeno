@@ -22,6 +22,7 @@
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/DictObject.h>
+#include <zeno/types/ListObject.h>
 #include <zeno/utils/logger.h>
 #include <zeno/extra/GlobalState.h>
 
@@ -29,6 +30,7 @@
 #include <string>
 #include <unordered_map>
 #include <filesystem>
+#include <fstream>
 
 #include <glm/vec4.hpp>
 #include <glm/mat4x4.hpp>
@@ -401,7 +403,10 @@ struct Mesh{
         SMaterial mat;
         mat.matName = matName;
 
-        std::string vmPath = createTexDir("valueTex/" + matName);
+
+        std::string tmpMatName = matName;
+        std::replace(tmpMatName.begin(), tmpMatName.end(), ':', '_');
+        std::string vmPath = createTexDir("valueTex/" + tmpMatName);
 
         zeno::log_info("FBX: Mesh name {} Mat name {}", relMeshName, matName);
 
@@ -1009,4 +1014,87 @@ ZENDEFNODE(ReadFBXPrim,
                }
            });
 
+struct ReadLightFromFile : zeno::INode {
+    virtual void apply() override {
+        auto path = get_input<zeno::StringObject>("path")->get();
+        zeno::log_info("Light: File path {}", path);
+
+       auto posList = std::make_shared<zeno::ListObject>();
+       auto rotList = std::make_shared<zeno::ListObject>();
+       auto sclList = std::make_shared<zeno::ListObject>();
+       auto colList = std::make_shared<zeno::ListObject>();
+       auto intList = std::make_shared<zeno::ListObject>();
+       auto expList = std::make_shared<zeno::ListObject>();
+
+       std::ifstream infile(path);
+       if (infile.is_open()) {
+           std::string line;
+           int num = 0;
+           int dl = 7;
+           while (std::getline(infile, line)) {
+               // using printf() in all tests for consistency
+               std::string l = line.c_str();
+               printf("Light: Processing %s\n", l.c_str());
+               if(num%dl==0){
+                   LIGHT_STR_SPLIT_V3F
+                   //printf("Light: Pos %.2f %.2f %.2f\n", tmp[0], tmp[1], tmp[2]);
+                   posList->arr.push_back(no);
+               }
+               if(num%dl==1){
+                   LIGHT_STR_SPLIT_V3F
+                   //printf("Light: Rot %.2f %.2f %.2f\n", tmp[0], tmp[1], tmp[2]);
+                   rotList->arr.push_back(no);
+               }
+               if(num%dl==2){
+                   LIGHT_STR_SPLIT_V3F
+                   //printf("Light: Scl %.2f %.2f %.2f\n", tmp[0], tmp[1], tmp[2]);
+                   sclList->arr.push_back(no);
+               }
+               if(num%dl==3){
+                   LIGHT_STR_SPLIT_V3F
+                   //printf("Light: Col %.2f %.2f %.2f\n", tmp[0], tmp[1], tmp[2]);
+                   colList->arr.push_back(no);
+               }
+               if(num%dl==4){
+                   auto no = std::make_shared<zeno::NumericObject>();
+                   float tmp = (float)atof(l.c_str());
+                   no->set(tmp);
+                   //printf("Light: Int %.2f\n", tmp);
+                   intList->arr.push_back(no);
+               }
+               if(num%dl==5){
+                   auto no = std::make_shared<zeno::NumericObject>();
+                   float tmp = (float)atof(l.c_str());
+                   no->set(tmp);
+                   //printf("Light: Exp %.2f\n", tmp);
+                   expList->arr.push_back(no);
+               }
+
+               num++;
+           }
+           infile.close();
+       }
+
+       set_output("posList", std::move(posList));
+       set_output("rotList", std::move(rotList));
+       set_output("sclList", std::move(sclList));
+       set_output("colList", std::move(colList));
+       set_output("intList", std::move(intList));
+       set_output("expList", std::move(expList));
+    }
+};
+ZENDEFNODE(ReadLightFromFile,
+           {       /* inputs: */
+            {
+                {"readpath", "path"},
+            },  /* outputs: */
+            {
+                "posList", "rotList", "sclList", "colList", "intList", "expList"
+            },  /* params: */
+            {
+            },  /* category: */
+            {
+                "FBX",
+            }
+           });
 }
