@@ -39,6 +39,15 @@ inline namespace ZenoFBXDefinition {
 #define COMMON_DEFAULT_strokeTint aiColor4D(0.0f, 0.0f, 0.0f, 1.0f)
 #define COMMON_DEFAULT_opacity aiColor4D(0.0f, 0.0f, 0.0f, 1.0f)
 
+#define LIGHT_STR_SPLIT_V3F                             \
+    auto sl = Helper::splitStr(l, ',');                 \
+    zeno::vec3f tmp{                                    \
+        (float)atof(sl[0].c_str()),                     \
+        (float)atof(sl[1].c_str()),                     \
+        (float)atof(sl[2].c_str())};                    \
+    auto no = std::make_shared<zeno::NumericObject>();  \
+    no->set(tmp);
+
 struct SKeyPosition {
     aiVector3D position;
     float timeStamp;
@@ -503,6 +512,18 @@ struct Helper{
         for (int i = c; i < space; i++)
             std::cout << "\t";
         std::cout << root->name <<"\n";
+    }
+
+    static std::vector<std::string> splitStr(std::string str, char c){
+        std::stringstream test(str);
+        std::string segment;
+        std::vector<std::string> seglist;
+
+        while(std::getline(test, segment, c))
+        {
+            seglist.push_back(segment);
+        }
+        return seglist;
     }
 };
 

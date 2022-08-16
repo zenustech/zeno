@@ -274,6 +274,9 @@ void viewDecodeFinish()
 {
     viewDecodeData.finish();
     packetProc.onFinish();
+    auto mainWin = zenoApp->getMainWindow();
+    if (mainWin)
+        mainWin->onRunFinished();
 }
 
 void viewDecodeSetFrameCache(const char *path, int gcmax)

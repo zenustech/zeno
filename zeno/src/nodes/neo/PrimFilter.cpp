@@ -206,8 +206,8 @@ ZENDEFNODE(PrimFilter, {
     {"PrimitiveObject", "prim"},
     {"string", "tagAttr", "tag"},
     {"string", "revampAttrO", ""},
-    {"int", "tagValue", "1"},
-    {"bool", "isInversed", "0"},
+    {"int", "tagValue", "0"},
+    {"bool", "isInversed", "1"},
     {"enum verts faces", "method", "verts"},
     },
     {

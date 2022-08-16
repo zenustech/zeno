@@ -23,19 +23,19 @@ struct PrimExtrude : INode {
         auto offset = get_input2<vec3f>("offset");
         auto bridgeMaskAttrO = get_input2<std::string>("bridgeMaskAttrO");
         auto sourceMaskAttrO = get_input2<std::string>("sourceMaskAttrO");
-        auto autoFlipFace = get_input2<bool>("autoFlipFace");
+        //auto autoFlipFace = get_input2<bool>("autoFlipFace");
         auto autoFindEdges = get_input2<bool>("autoFindEdges");
         auto averagedExtrude = get_input2<bool>("averagedExtrude");
 
         auto prim2 = std::make_shared<PrimitiveObject>(*prim);
-        bool flipNewFace = autoFlipFace && extrude < 0;
-        bool flipOldFace = autoFlipFace && extrude > 0;
+        //bool flipNewFace = autoFlipFace && extrude < 0;
+        //bool flipOldFace = autoFlipFace && extrude > 0;
 
         if (autoFindEdges && !maskAttr.empty()) {
-            AttrVector<vec2i> oldlines = std::move(prim2->lines);
-            primWireframe(prim2.get(), false);
-            prim2->edges = std::move(prim2->lines);
-            prim2->lines = std::move(oldlines);
+            //AttrVector<vec2i> oldlines = std::move(prim2->lines);
+            primWireframe(prim2.get(), false, true);
+            //prim2->edges = std::move(prim2->lines);
+            //prim2->lines = std::move(oldlines);
         }
 
         std::vector<int> oldinds;
@@ -137,12 +137,12 @@ struct PrimExtrude : INode {
             p2norms.clear();
         }
 
-        if (flipNewFace) {
-            primFlipFaces(prim2.get());
-        }
-        if (flipOldFace) {
-            primFlipFaces(prim.get());
-        }
+        //if (flipNewFace) {
+            //primFlipFaces(prim2.get());
+        //}
+        //if (flipOldFace) {
+            //primFlipFaces(prim.get());
+        //}
 
         struct segment_less {
             bool operator()(vec2i const &a, vec2i const &b) const {
@@ -259,7 +259,7 @@ ZENDEFNODE(PrimExtrude, {
     {"vec3f", "offset", "0,0,0"},
     {"string", "bridgeMaskAttrO", ""},
     {"string", "sourceMaskAttrO", ""},
-    {"bool", "autoFlipFace", "1"},
+    //{"bool", "autoFlipFace", "1"},
     {"bool", "autoFindEdges", "1"},
     {"bool", "averagedExtrude", "1"},
     },

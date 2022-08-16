@@ -46,6 +46,21 @@ void Scene::switchRenderEngine(std::string const &name) {
     renderMan->switchDefaultEngine(name);
 }
 
+std::vector<float> Scene::getCameraProp(){
+    std::vector<float> camProp;
+    camProp.push_back(this->camera->m_lodcenter.x);
+    camProp.push_back(this->camera->m_lodcenter.y);
+    camProp.push_back(this->camera->m_lodcenter.z);
+    camProp.push_back(this->camera->m_lodfront.x);
+    camProp.push_back(this->camera->m_lodfront.y);
+    camProp.push_back(this->camera->m_lodfront.z);
+    camProp.push_back(this->camera->m_lodup.x);
+    camProp.push_back(this->camera->m_lodup.y);
+    camProp.push_back(this->camera->m_lodup.z);
+
+    return camProp;
+}
+
 bool Scene::cameraFocusOnNode(std::string const &nodeid, zeno::vec3f &center, float &radius) {
     for (auto const &[key, ptr]: this->objectsMan->pairs()) {
         if (nodeid == key.substr(0, key.find_first_of(':'))) {

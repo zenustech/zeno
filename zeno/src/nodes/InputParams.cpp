@@ -7,6 +7,7 @@
 #include "zeno/utils/string.h"
 #include <cstdio>
 #include <fstream>
+#include <set>
 
 
 namespace zeno {
@@ -109,9 +110,8 @@ struct ParamFileParser : zeno::INode {
         auto formatList = get_input<zeno::ListObject>("formatList");
         auto params = std::make_shared<zeno::DictObject>();
         auto path = get_input2<std::string>("configFilePath");
+        std::set<std::string> saved_names;
         if (std::filesystem::exists(path)) {
-
-            zeno::log_info("exists");
             auto is = std::ifstream(path);
             while (!is.eof()) {
                 std::string line;
@@ -184,16 +184,21 @@ struct ParamFileParser : zeno::INode {
                     value = std::make_shared<StringObject>(items[2]);
                 }
                 params->lut[items[0]] = value;
+                saved_names.insert(items[0]);
             }
+            is.close();
         }
-        else {
-            FILE *fp = fopen(path.c_str(), "w");
+        {
+            FILE *fp = fopen(path.c_str(), "a");
             if (!fp) {
                 perror(path.c_str());
                 abort();
             }
             for (auto &ptr: formatList->arr) {
                 auto p = std::static_pointer_cast<ParamFormatInfo>(ptr);
+                if (saved_names.count(p->name)) {
+                    continue;
+                }
                 zany value;
                 if (std::holds_alternative<int>(p->defaultValue)) {
                     auto v = std::get<int>(p->defaultValue);
@@ -242,6 +247,7 @@ struct ParamFileParser : zeno::INode {
                 }
                 params->lut[p->name] = value;
             }
+            fclose(fp);
         }
         set_output("params", std::move(params));
     }

@@ -71,7 +71,16 @@ void ZSlider::setFromTo(int from, int to)
 {
     m_from = from;
     m_to = to;
-    m_value = m_from;
+    if (m_value < m_from)
+    {
+        m_value = m_from;
+        emit sliderValueChange(m_value);
+    }
+    else if (m_value > m_to)
+    {
+        m_value = m_to;
+        emit sliderValueChange(m_value);
+    }
     update();
 }
 

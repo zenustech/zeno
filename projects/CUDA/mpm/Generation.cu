@@ -1409,7 +1409,7 @@ struct MakeZSLevelSet : INode {
       tmp.reset(zs::cuda_exec(), 0);
       ls->getLevelSet() = std::move(tmp);
     } else if (cateStr == "const_velocity") {
-      auto v = get_input<zeno::NumericObject>("aux")->get<zeno::vec3f>();
+      auto v = get_input2<zeno::vec3f>("aux");
       ls->getLevelSet() = typename ZenoLevelSet::uniform_vel_ls_t{
           zs::vec<float, 3>{v[0], v[1], v[2]}};
     } else

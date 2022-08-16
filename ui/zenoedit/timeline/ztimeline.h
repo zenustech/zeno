@@ -19,6 +19,7 @@ public:
     QPair<int, int> fromTo() const;
     bool isAlways() const;
     void resetSlider();
+    int value() const;
 
 signals:
     void playForward(bool bPlaying);
