@@ -86,6 +86,7 @@ void ZenoGvLineEdit::paintEvent(QPaintEvent* e)
 ZenoParamLineEdit::ZenoParamLineEdit(const QString &text, PARAM_CONTROL ctrl, LineEditParam param, QGraphicsItem *parent)
     : ZenoParamWidget(parent)
     , m_pSlider(nullptr)
+    , m_pLineEdit(nullptr)
 {
     m_pLineEdit = new ZLineEdit;
     m_pLineEdit->setText(text);
@@ -138,6 +139,25 @@ void ZenoParamLineEdit::setText(const QString &text)
     m_pLineEdit->setText(text);
 }
 
+QGraphicsView* ZenoParamLineEdit::_getFocusViewByCursor()
+{
+    QPointF cursorPos = this->cursor().pos();
+    const auto views = scene()->views();
+    Q_ASSERT(!views.isEmpty());
+    for (auto view : views)
+    {
+        QRect rc = view->viewport()->geometry();
+        QPoint tl = view->mapToGlobal(rc.topLeft());
+        QPoint br = view->mapToGlobal(rc.bottomRight());
+        rc = QRect(tl, br);
+        if (rc.contains(cursorPos.toPoint()))
+        {
+            return view;
+        }
+    }
+    return nullptr;
+}
+
 void ZenoParamLineEdit::keyPressEvent(QKeyEvent* event)
 {
     if (event->key() == Qt::Key_Alt)
@@ -147,25 +167,27 @@ void ZenoParamLineEdit::keyPressEvent(QKeyEvent* event)
             QPointF pos = this->sceneBoundingRect().center();
             QSizeF sz = m_pSlider->boundingRect().size();
 
-            /* FIXME: how to find specific viewport when meet multiply views.
-            * 
-            static QRect screen = QApplication::desktop()->screenGeometry();
-            static const int _yOffset = ZenoStyle::dpiScaled(20);
+            auto view =  _getFocusViewByCursor();
+            if (view)
+            {
+                // it's very difficult to get current viewport, so we get it by current cursor.
+                // but when we move the cursor out of the view, we can't get the current view.
 
-            QPointF cursorPos = this->cursor().pos();
-            const auto views = scene()->views();
-            Q_ASSERT(!views.isEmpty());
-            auto view = views[0];
-            QPoint viewPoint = view->mapFromGlobal(this->cursor().pos());
-            const QPointF sceneCursor = view->mapToScene(viewPoint);
-            QPointF screenBR = view->mapToScene(view->mapFromGlobal(screen.bottomRight()));
-            cursorPos = mapToScene(cursorPos);
+                static QRect screen = QApplication::desktop()->screenGeometry();
+                static const int _yOffset = ZenoStyle::dpiScaled(20);
+                QPointF cursorPos = this->cursor().pos();
+                QPoint viewPoint = view->mapFromGlobal(this->cursor().pos());
+                const QPointF sceneCursor = view->mapToScene(viewPoint);
+                QPointF screenBR = view->mapToScene(view->mapFromGlobal(screen.bottomRight()));
+                cursorPos = mapToScene(cursorPos);
 
-            pos.setX(sceneCursor.x());
-            pos.setY(std::min(pos.y(), screenBR.y() - sz.height() / 2 - _yOffset) - sz.height() / 2.);
-            
-            */
-            pos -= QPointF(sz.width() / 2., sz.height() / 2.);
+                pos.setX(sceneCursor.x());
+                pos.setY(std::min(pos.y(), screenBR.y() - sz.height() / 2 - _yOffset) - sz.height() / 2.);
+            }
+            else
+            {
+                pos -= QPointF(sz.width() / 2., sz.height() / 2.);
+            }
 
             m_pSlider->setPos(pos);
             m_pSlider->show();

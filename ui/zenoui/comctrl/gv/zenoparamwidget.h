@@ -81,7 +81,9 @@ signals:
     void editingFinished();
 
 private:
-    ZLineEdit *m_pLineEdit;
+    QGraphicsView* _getFocusViewByCursor();
+
+    ZLineEdit* m_pLineEdit;
     ZGraphicsNumSliderItem* m_pSlider;
 };
 
