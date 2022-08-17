@@ -825,7 +825,8 @@ void ZenoSubGraphScene::updateLinkPos(ZenoNode* pNode, QPointF newPos)
 
 void ZenoSubGraphScene::keyPressEvent(QKeyEvent* event)
 {
-    if (event->key() == Qt::Key_Delete)
+    QGraphicsScene::keyPressEvent(event);
+    if (!event->isAccepted() && event->key() == Qt::Key_Delete)
     {
         QList<QGraphicsItem*> selItems = this->selectedItems();
         QList<QPersistentModelIndex> nodes;
@@ -848,5 +849,4 @@ void ZenoSubGraphScene::keyPressEvent(QKeyEvent* event)
             pGraphsModel->removeNodeLinks(nodes, links, m_subgIdx);
         }
     }
-    QGraphicsScene::keyPressEvent(event);
 }
