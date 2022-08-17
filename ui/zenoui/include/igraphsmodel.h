@@ -62,7 +62,6 @@ public:
 	virtual void replaceSubGraphNode(const QString& oldName, const QString& newName, const QModelIndex& subGpIdx) = 0;
 	virtual NODES_DATA nodes(const QModelIndex& subGpIdx) = 0;
 	virtual NODE_DESCS descriptors() const = 0;
-	virtual void setDescriptors(const NODE_DESCS& nodesParams) = 0;
     virtual void appendSubnetDescsFromZsg(const QList<NODE_DESC>& descs) = 0;
 	virtual bool getDescriptor(const QString& descName, NODE_DESC& desc) = 0;
 	virtual void clearSubGraph(const QModelIndex& subGpIdx) = 0;

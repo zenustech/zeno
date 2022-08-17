@@ -44,7 +44,6 @@ public:
     void renameSubGraph(const QString& oldName, const QString& newName) override;
     QItemSelectionModel* selectionModel() const;
     NODE_DESCS descriptors() const override;
-    void setDescriptors(const NODE_DESCS& nodesParams) override;
     void appendSubnetDescsFromZsg(const QList<NODE_DESC>& descs) override;
     bool getDescriptor(const QString& descName, NODE_DESC& desc) override;
     //NODE_DESC
@@ -160,6 +159,7 @@ private:
     void importNodeLinks(const QList<NODE_DATA> &nodes, const QModelIndex &subGpIdx);
     void resolveLinks(const QModelIndex& idx, SubGraphModel* pCurrentGraph);
     void initDescriptors();
+    NODE_DESC getSubgraphDesc(SubGraphModel* pModel);
     NODE_DATA _fork(const QModelIndex& subgIdx, const QModelIndex& subnetNodeIdx);
     QString uniqueSubgraph(QString orginName);
 
