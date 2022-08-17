@@ -2,9 +2,7 @@
 #include "zenonode.h"
 #include "subnetnode.h"
 #include "heatmapnode.h"
-#include "curvenode.h"
 #include "cameranode.h"
-#include "dynamicnumbernode.h"
 #include "zenolink.h"
 #include <zenoui/model/modelrole.h>
 #include <zenoio/reader/zsgreader.h>
@@ -17,7 +15,6 @@
 #include "graphsmanagment.h"
 #include <zeno/utils/log.h>
 #include "util/log.h"
-#include "makelistnode.h"
 #include "blackboardnode.h"
 #include "acceptor/modelacceptor.h"
 #include "acceptor/transferacceptor.h"
@@ -128,18 +125,6 @@ ZenoNode* ZenoSubGraphScene::createNode(const QModelIndex& idx, const NodeUtilPa
     else if (descName == "MakeHeatmap")
     {
         return new MakeHeatMapNode(params);
-    }
-    else if (descName == "MakeCurve")
-    {
-        return new MakeCurveNode(params);
-    }
-    else if (descName == "DynamicNumber")
-    {
-        return new DynamicNumberNode(params);
-    }
-    else if (descName == "MakeList")
-    {
-        return new MakeListNode(params);
     }
     else if (descName == "Blackboard")
     {

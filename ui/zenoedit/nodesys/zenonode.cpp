@@ -301,7 +301,7 @@ ZenoBackgroundWidget* ZenoNode::initBodyWidget(ZenoSubGraphScene* pScene)
     QGraphicsLinearLayout *pVLayout = new QGraphicsLinearLayout(Qt::Vertical);
     pVLayout->setContentsMargins(0, ZenoStyle::dpiScaled(5), 0, ZenoStyle::dpiScaled(5));
 
-    if (QGraphicsLayout* pParamsLayout = initParams())
+    if (QGraphicsLayout* pParamsLayout = initParams(pScene))
     {
         pParamsLayout->setContentsMargins(
             ZenoStyle::dpiScaled(m_renderParams.distParam.paramsLPadding),
@@ -324,7 +324,7 @@ ZenoBackgroundWidget* ZenoNode::initBodyWidget(ZenoSubGraphScene* pScene)
     return bodyWidget;
 }
 
-QGraphicsLayout* ZenoNode::initParams()
+QGraphicsLayout* ZenoNode::initParams(ZenoSubGraphScene* pScene)
 {
     const PARAMS_INFO &params = m_index.data(ROLE_PARAMETERS).value<PARAMS_INFO>();
     QList<QString> names = params.keys();
@@ -341,7 +341,7 @@ QGraphicsLayout* ZenoNode::initParams()
             if (param.bEnableConnect)
                 continue;
 
-            QGraphicsLayout* pParamLayout = initParam(param.control, paramName, param);
+            QGraphicsLayout* pParamLayout = initParam(param.control, paramName, param, pScene);
             if (pParamLayout)
             {
                 pParamsLayout->addItem(pParamLayout);
@@ -364,7 +364,7 @@ QGraphicsLinearLayout* ZenoNode::initCustomParamWidgets()
     return nullptr;
 }
 
-QGraphicsLayout* ZenoNode::initParam(PARAM_CONTROL ctrl, const QString& paramName, const PARAM_INFO& param)
+QGraphicsLayout* ZenoNode::initParam(PARAM_CONTROL ctrl, const QString& paramName, const PARAM_INFO& param, ZenoSubGraphScene* pScene)
 {
     if (ctrl == CONTROL_NONVISIBLE)
         return nullptr;
@@ -381,7 +381,7 @@ QGraphicsLayout* ZenoNode::initParam(PARAM_CONTROL ctrl, const QString& paramNam
 	    case CONTROL_INT:
 	    case CONTROL_FLOAT:
 	    {
-		    ZenoParamLineEdit* pLineEdit = new ZenoParamLineEdit(value, param.control,  m_renderParams.lineEditParam);
+		    ZenoParamLineEdit* pLineEdit = new ZenoParamLineEdit(value, param.control, m_renderParams.lineEditParam);
             pLineEdit->setValidator(validateForParams(param));
 		    pParamLayout->addItem(pLineEdit);
 		    connect(pLineEdit, &ZenoParamLineEdit::editingFinished, this, [=]() {
@@ -431,7 +431,8 @@ QGraphicsLayout* ZenoNode::initParam(PARAM_CONTROL ctrl, const QString& paramNam
         case CONTROL_VEC3:
         {
             UI_VECTYPE vec = param.value.value<UI_VECTYPE>();
-            ZenoVecEditWidget* pVecEditor = new ZenoVecEditWidget(vec);
+            bool bFloat = param.typeDesc != "vec3i";
+            ZenoVecEditWidget* pVecEditor = new ZenoVecEditWidget(vec, bFloat, m_renderParams.lineEditParam, pScene);
             pParamLayout->addItem(pVecEditor);
 			connect(pVecEditor, &ZenoVecEditWidget::editingFinished, this, [=]() {
 				
@@ -937,7 +938,7 @@ ZenoParamWidget* ZenoNode::initSocketWidget(ZenoSubGraphScene* scene, const INPU
                 inSocket.info.control,
                 m_renderParams.lineEditParam);
             pSocketEditor->setValidator(validateForSockets(inSocket));
-            pSocketEditor->setNumSlider(scene, AppHelper::getSlideStep(inSock, ctrl));
+            pSocketEditor->setNumSlider(scene, UiHelper::getSlideStep(inSock, ctrl));
             //todo: allow to edit path directly?
             connect(pSocketEditor, &ZenoParamLineEdit::editingFinished, this, [=]() {
 
@@ -1058,7 +1059,8 @@ ZenoParamWidget* ZenoNode::initSocketWidget(ZenoSubGraphScene* scene, const INPU
         case CONTROL_VEC3:
         {
             UI_VECTYPE vec = inSocket.info.defaultValue.value<UI_VECTYPE>();
-            ZenoVecEditWidget *pVecEditor = new ZenoVecEditWidget(vec);
+            bool bFloat = inSocket.info.type != "vec3i";;
+            ZenoVecEditWidget *pVecEditor = new ZenoVecEditWidget(vec, bFloat,  m_renderParams.lineEditParam, scene);
             connect(pVecEditor, &ZenoVecEditWidget::editingFinished, this, [=]() {
                 UI_VECTYPE vec = pVecEditor->vec();
                 const QVariant &newValue = QVariant::fromValue(vec);

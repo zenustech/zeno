@@ -14,7 +14,6 @@ public:
     static QString gradient2colorString(const QLinearGradient& grad);
     static INPUT_SOCKET getInputSocket(const QPersistentModelIndex& index, const QString& inSock, bool& exist);
     static void ensureSRCDSTlastKey(INPUT_SOCKETS& inputs, OUTPUT_SOCKETS& outputs);
-    static QVector<qreal> getSlideStep(const QString& name, PARAM_CONTROL ctrl);
 };
 
 

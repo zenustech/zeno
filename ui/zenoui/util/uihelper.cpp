@@ -557,3 +557,16 @@ QPainterPath UiHelper::getRoundPath(QRectF r, int lt_radius, int rt_radius, int 
     return path;
 }
 
+QVector<qreal> UiHelper::getSlideStep(const QString& name, PARAM_CONTROL ctrl)
+{
+    QVector<qreal> steps;
+    if (ctrl == CONTROL_INT)
+    {
+        steps = { 1, 10, 100 };
+    }
+    else if (ctrl == CONTROL_FLOAT)
+    {
+        steps = { .0001, .001, .01, .1, 1, 10, 100 };
+    }
+    return steps;
+}

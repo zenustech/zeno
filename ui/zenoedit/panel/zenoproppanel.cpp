@@ -149,7 +149,7 @@ ZExpandableSection* ZenoPropPanel::paramsBox(IGraphsModel* pModel, const QModelI
 			{
 				ZLineEdit* pLineEdit = new ZLineEdit(param.value.toString());
 				pLineEdit->setProperty("cssClass", "proppanel");
-				pLineEdit->setNumSlider(AppHelper::getSlideStep(param.name, param.control));
+				pLineEdit->setNumSlider(UiHelper::getSlideStep(param.name, param.control));
 				if (param.control == CONTROL_FLOAT)
 				{
 					pLineEdit->setValidator(new QDoubleValidator);
@@ -303,7 +303,7 @@ ZExpandableSection* ZenoPropPanel::inputsBox(IGraphsModel* pModel, const QModelI
 
 				ZLineEdit* pLineEdit = new ZLineEdit(UiHelper::variantToString(input.info.defaultValue));
 				pLineEdit->setProperty("cssClass", "proppanel");
-				pLineEdit->setNumSlider(AppHelper::getSlideStep(inputSock, input.info.control));
+				pLineEdit->setNumSlider(UiHelper::getSlideStep(inputSock, input.info.control));
 
 				if (input.info.control == CONTROL_FLOAT)
 				{
@@ -340,7 +340,8 @@ ZExpandableSection* ZenoPropPanel::inputsBox(IGraphsModel* pModel, const QModelI
 				pLayout->addWidget(pNameItem, r, 0, Qt::AlignLeft);
 
 				UI_VECTYPE vec = input.info.defaultValue.value<UI_VECTYPE>();
-				ZVecEditor* pVecEdit = new ZVecEditor(vec, true, 3, "proppanel");
+				bool bFloat = (input.info.type != "vec3i");
+				ZVecEditor* pVecEdit = new ZVecEditor(vec, bFloat, 3, "proppanel");
 				pVecEdit->setObjectName(inputSock);
 				connect(pVecEdit, &ZVecEditor::editingFinished, this, &ZenoPropPanel::onInputEditFinish);
 

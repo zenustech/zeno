@@ -130,7 +130,7 @@ class ZenoVecEditWidget : public ZenoParamWidget
 {
     Q_OBJECT
 public:
-    ZenoVecEditWidget(const UI_VECTYPE& vec, QGraphicsItem* parent = nullptr);
+    ZenoVecEditWidget(const UI_VECTYPE& vec, bool bFloat, LineEditParam param, QGraphicsScene* pScene, QGraphicsItem* parent = nullptr);
     UI_VECTYPE vec() const;
     void setVec(const UI_VECTYPE& vec);
 
@@ -138,7 +138,8 @@ signals:
     void editingFinished();
 
 private:
-    ZVecEditor* m_pEdit;
+    QVector<ZenoParamLineEdit*> m_editors;
+    bool m_bFloatVec;
 };
 
 class ZenoParamLabel : public ZenoParamWidget

@@ -4,6 +4,7 @@
 #include <zenoui/render/common_id.h>
 #include <zenoui/style/zenostyle.h>
 #include <zeno/utils/log.h>
+#include "util/uihelper.h"
 
 
 ZenoParamWidget::ZenoParamWidget(QGraphicsItem* parent, Qt::WindowFlags wFlags)
@@ -279,23 +280,49 @@ void ZenoParamCheckBox::setCheckState(Qt::CheckState state)
 
 
 ///////////////////////////////////////////////////////////////////////////
-ZenoVecEditWidget::ZenoVecEditWidget(const UI_VECTYPE& vec, QGraphicsItem* parent)
+ZenoVecEditWidget::ZenoVecEditWidget(const UI_VECTYPE& vec, bool bFloat, LineEditParam param, QGraphicsScene* pScene, QGraphicsItem* parent)
     : ZenoParamWidget(parent)
-    , m_pEdit(nullptr)
+    , m_bFloatVec(bFloat)
 {
-    m_pEdit = new ZVecEditor(vec, true, 3, "zenonode");
-	setWidget(m_pEdit);
-	connect(m_pEdit, SIGNAL(editingFinished()), this, SIGNAL(editingFinished()));
+    QGraphicsLinearLayout* pLayout = new QGraphicsLinearLayout(Qt::Horizontal);
+    pLayout->setContentsMargins(0, 0, 0, 0);
+    pLayout->setSpacing(6);
+    for (int i = 0; i < vec.size(); i++)
+    {
+        const QString& numText = QString::number(vec[i]);
+        ZenoParamLineEdit* pLineEdit = new ZenoParamLineEdit(numText, CONTROL_FLOAT, param);
+        pLineEdit->setNumSlider(pScene, UiHelper::getSlideStep("", bFloat ? CONTROL_FLOAT : CONTROL_INT));
+        pLayout->addItem(pLineEdit);
+        m_editors.append(pLineEdit);
+        connect(pLineEdit, SIGNAL(editingFinished()), this, SIGNAL(editingFinished()));
+    }
+    setLayout(pLayout);
 }
 
 UI_VECTYPE ZenoVecEditWidget::vec() const
 {
-    return m_pEdit->vec();
+    UI_VECTYPE vec;
+    for (auto editor : m_editors)
+    {
+        if (m_bFloatVec)
+        {
+            vec.append(editor->text().toFloat());
+        }
+        else
+        {
+            vec.append(editor->text().toInt());
+        }
+    }
+    return vec;
 }
 
 void ZenoVecEditWidget::setVec(const UI_VECTYPE& vec)
 {
-    m_pEdit->onValueChanged(vec);
+    Q_ASSERT(vec.size() == m_editors.size());
+    for (int i = 0; i < vec.size(); i++)
+    {
+        m_editors[i]->setText(QString::number(vec[i]));
+    }
 }
 
 
