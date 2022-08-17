@@ -1,7 +1,6 @@
 #include <iostream>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/zeno.h>
-#include "bunnyMesh.h"
 namespace zeno {
 struct PBD : zeno::INode {
 private:
@@ -168,9 +167,16 @@ public:
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
 
+        auto external_force = get_input<zeno::NumericObject>("external_force")->get<zeno::vec3f>();
+
+        g = external_force;
+
         static bool firstTime = true;
         if(firstTime)
         {
+            std::cout<<g[0]<<std::endl;
+            std::cout<<g[1]<<std::endl;
+            std::cout<<g[2]<<std::endl;
             initGeo(prim.get());
             initPos(prim.get());
             firstTime = false;
@@ -197,11 +203,14 @@ public:
 };
 
 ZENDEFNODE(PBD, {// inputs:
-                 {"prim"},
+                 {
+                    {"PrimitiveObject", "prim"},
+                    {"vec3f", "external_force", "0.0, -1.0, 0.0"}
+                },
                  // outputs:
                  {"prim"},
                  // params:
-                 {{"vec3f", "external_force", "0, -9.8, 0"}},
+                 {},
                  //category
                  {"PBD"}});
 
