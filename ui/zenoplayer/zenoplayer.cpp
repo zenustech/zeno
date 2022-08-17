@@ -18,8 +18,6 @@ ZenoPlayer::ZenoPlayer(ZENO_PLAYER_INIT_PARAM param, QWidget *parent)
     : QWidget(parent), m_InitParam(param) 
 {
     setObjectName("ZenoPlayer");
-    // resize(1000, 680);
-    // setMinimumSize(1000, 680);
     initUI();
 
     if(!m_InitParam.sPixel.isEmpty())
@@ -27,13 +25,13 @@ ZenoPlayer::ZenoPlayer(ZENO_PLAYER_INIT_PARAM param, QWidget *parent)
         QStringList tmpsPix = m_InitParam.sPixel.split("x");
         int pixw = tmpsPix.at(0).toInt();
         int pixh = tmpsPix.at(1).toInt();
-        resize(pixw, pixh + m_pMenuBar->height() + 6);  // +6 UI interval
+        m_pView->setFixedSize(pixw, pixh);
         m_pView->setCameraRes(QVector2D(pixw, pixh));
         m_pView->updatePerspective();
+    } else {
+         setMinimumSize(1000, 680);
     }
-
-    move((QApplication::desktop()->width() - width())/2,(QApplication::desktop()->height() - height())/2);
-    // QTimer::singleShot(10,this,[=]{showMaximized();});
+        
     m_pTimerUpVIew = new QTimer;
 
     if (m_InitParam.bRecord == true) {
@@ -45,6 +43,10 @@ ZenoPlayer::ZenoPlayer(ZENO_PLAYER_INIT_PARAM param, QWidget *parent)
     if (!m_InitParam.sZsgPath.isEmpty()) {
         startView(m_InitParam.sZsgPath);
     }
+
+    QTimer::singleShot(10, this, [=] {
+        move((QApplication::desktop()->width() - width()) / 2, (QApplication::desktop()->height() - height()) / 2);
+    });
 }
 
 ZenoPlayer::~ZenoPlayer()
