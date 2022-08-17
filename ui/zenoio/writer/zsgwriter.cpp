@@ -33,7 +33,7 @@ void ZsgWriter::dumpToClipboard(const QMap<QString, NODE_DATA>& nodes)
         }
     }
 
-    strJson = QString::fromLatin1(s.GetString());
+    strJson = QString::fromUtf8(s.GetString());
     QMimeData* pMimeData = new QMimeData;
     pMimeData->setText(strJson);
     QApplication::clipboard()->setMimeData(pMimeData);
@@ -77,7 +77,7 @@ QString ZsgWriter::dumpProgramStr(IGraphsModel* pModel)
 		writer.String("v2");
 	}
 
-	strJson = QString::fromLatin1(s.GetString());
+	strJson = QString::fromUtf8(s.GetString());
 	return strJson;
 }
 
