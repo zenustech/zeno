@@ -22,7 +22,7 @@ void startUp()
     if (!scalefac_v.isNull()) {
         float scalefac = scalefac_v.toFloat();
         if (scalefac >= 1.0f)
-            qputenv("QT_SCALE_FACTOR", QString::number(scalefac).toLatin1());
+            qputenv("QT_SCALE_FACTOR", QString::number(scalefac).toUtf8());
     }
 #endif
 

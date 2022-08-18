@@ -80,7 +80,7 @@ void ZWidgetErrStream::appendFormatMsg(std::string const &str) {
     {
         logger.warning().noquote() << msg;
         //crash when use logger.fatal.
-        //logger.fatal(msg.toLatin1());
+        //logger.fatal(msg.toUtf8());
     }
 }
 
@@ -92,7 +92,7 @@ void ZWidgetErrStream::registerMsgHandler()
 void ZWidgetErrStream::customMsgHandler(QtMsgType type, const QMessageLogContext& context, const QString& msg)
 {
     if (!zenoApp) return;
-    QString fileName = QString::fromLatin1(context.file);
+    QString fileName = QString::fromUtf8(context.file);
     int ln = context.line;
     if (msg.startsWith("[E "))
     {

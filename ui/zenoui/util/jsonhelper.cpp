@@ -115,7 +115,7 @@ namespace JsonHelper
             }
             else if (varType == QVariant::String)
             {
-                writer.String(value.toString().toLatin1());
+                writer.String(value.toString().toUtf8());
             }
             else if (varType == QVariant::Bool)
             {

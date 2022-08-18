@@ -27,13 +27,13 @@ void ZsgWriter::dumpToClipboard(const QMap<QString, NODE_DATA>& nodes)
 	    for (const QString& nodeId : nodes.keys())
 	    {
                 const NODE_DATA& nodeData = nodes[nodeId];
-                writer.Key(nodeId.toLatin1());
+                writer.Key(nodeId.toUtf8());
                 dumpNode(nodeData, writer);
 	    }
         }
     }
 
-    strJson = QString::fromLatin1(s.GetString());
+    strJson = QString::fromUtf8(s.GetString());
     QMimeData* pMimeData = new QMimeData;
     pMimeData->setText(strJson);
     QApplication::clipboard()->setMimeData(pMimeData);
@@ -58,7 +58,7 @@ QString ZsgWriter::dumpProgramStr(IGraphsModel* pModel)
 			{
 				const QModelIndex& subgIdx = pModel->index(i, 0);
 				const QString& subgName = pModel->name(subgIdx);
-				writer.Key(subgName.toLatin1());
+				writer.Key(subgName.toUtf8());
 				_dumpSubGraph(pModel, subgIdx, writer);
 			}
 		}
@@ -77,7 +77,7 @@ QString ZsgWriter::dumpProgramStr(IGraphsModel* pModel)
 		writer.String("v2");
 	}
 
-	strJson = QString::fromLatin1(s.GetString());
+	strJson = QString::fromUtf8(s.GetString());
 	return strJson;
 }
 
@@ -94,7 +94,7 @@ void ZsgWriter::_dumpSubGraph(IGraphsModel* pModel, const QModelIndex& subgIdx, 
 		for (const NODE_DATA& node : nodes)
 		{
 			const QString& id = node[ROLE_OBJID].toString();
-			writer.Key(id.toLatin1());
+			writer.Key(id.toUtf8());
 			dumpNode(node, writer);
 		}
 	}
@@ -118,7 +118,7 @@ void ZsgWriter::dumpNode(const NODE_DATA& data, RAPIDJSON_WRITER& writer)
 
 	writer.Key("name");
 	const QString& name = data[ROLE_OBJNAME].toString();
-	writer.String(name.toLatin1());
+	writer.String(name.toUtf8());
 
 	const INPUT_SOCKETS& inputs = data[ROLE_INPUTS].value<INPUT_SOCKETS>();
 	const OUTPUT_SOCKETS& outputs = data[ROLE_OUTPUTS].value<OUTPUT_SOCKETS>();
@@ -129,7 +129,7 @@ void ZsgWriter::dumpNode(const NODE_DATA& data, RAPIDJSON_WRITER& writer)
 		JsonObjBatch _batch(writer);
 		for (const INPUT_SOCKET& inSock : inputs)
 		{
-			writer.Key(inSock.info.name.toLatin1());
+			writer.Key(inSock.info.name.toUtf8());
 
 			QVariant deflVal = inSock.info.defaultValue;
 			if (!inSock.linkIndice.isEmpty())
@@ -152,7 +152,7 @@ void ZsgWriter::dumpNode(const NODE_DATA& data, RAPIDJSON_WRITER& writer)
 		JsonObjBatch _batch(writer);
 		for (const PARAM_INFO& info : params)
 		{
-			writer.Key(info.name.toLatin1());
+			writer.Key(info.name.toUtf8());
 			AddVariant(info.value, info.typeDesc, writer, true);
 		}
 	}
@@ -252,7 +252,7 @@ void ZsgWriter::_dumpDescriptors(const NODE_DESCS& descs, RAPIDJSON_WRITER& writ
 	{
 		const NODE_DESC& desc = descs[name];
 
-		writer.Key(name.toLatin1());
+		writer.Key(name.toUtf8());
 		JsonObjBatch _batch(writer);
 
 		{
