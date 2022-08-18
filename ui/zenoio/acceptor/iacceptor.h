@@ -9,7 +9,7 @@ class IGraphsModel;
 class IAcceptor
 {
 public:
-    virtual void setLegacyDescs(const rapidjson::Value& graphObj, const NODE_DESCS &legacyDescs) = 0;
+    virtual bool setLegacyDescs(const rapidjson::Value& graphObj, const NODE_DESCS &legacyDescs) = 0;
     virtual void BeginSubgraph(const QString& name) = 0;
     virtual void EndSubgraph() = 0;
     virtual bool setCurrentSubGraph(IGraphsModel* pModel, const QModelIndex& subgIdx) = 0;

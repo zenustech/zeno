@@ -12,7 +12,7 @@ public:
 	ModelAcceptor(GraphsModel* pModel, bool bImport);
 
 	//IAcceptor
-	void setLegacyDescs(const rapidjson::Value& graphObj, const NODE_DESCS& nodesParams) override;
+	bool setLegacyDescs(const rapidjson::Value& graphObj, const NODE_DESCS& nodesParams) override;
 	void BeginSubgraph(const QString& name) override;
 	bool setCurrentSubGraph(IGraphsModel* pModel, const QModelIndex& subgIdx) override;
 	void EndSubgraph() override;
