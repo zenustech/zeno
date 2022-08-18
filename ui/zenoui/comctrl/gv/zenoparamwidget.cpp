@@ -260,6 +260,61 @@ void ZenoParamLineEdit::keyReleaseEvent(QKeyEvent* event)
 }
 #endif
 
+///////////////////////////////////////////////////////////////////////////
+ZenoParamNumEdit::ZenoParamNumEdit(const QString& num, PARAM_CONTROL ctrl, LineEditParam param, QGraphicsItem* parent)
+    : ZenoParamWidget(parent)
+{
+    QGraphicsLinearLayout *pLayout = new QGraphicsLinearLayout(Qt::Horizontal);
+    m_pLineEdit = new ZenoParamLineEdit(num, ctrl, param);
+    pLayout->addItem(m_pLineEdit);
+
+    ImageElement elem;
+    elem.image = ":/icons/ic_pop_down.svg";
+    elem.imageHovered = ":/icons/ic_pop_down-on.svg";
+    elem.imageOn = ":/icons/ic_pop_down-on.svg";
+    m_openBtn = new ZenoSvgLayoutItem(elem, ZenoStyle::dpiScaledSize(QSize(30, 30)));
+    bool isInt = (ctrl == CONTROL_INT);
+    pLayout->addItem(m_openBtn);
+    pLayout->setItemSpacing(0, 0);
+    pLayout->setItemSpacing(0, 0);
+
+    this->setLayout(pLayout);
+
+    //connect slot.
+    connect(m_pLineEdit, &ZenoParamLineEdit::editingFinished, this, [=]() {
+        emit editingFinished();
+        emit numValueChanged(m_pLineEdit->text());
+    });
+    connect(m_openBtn, &ZenoImageItem::clicked, m_pLineEdit, [=] {
+        m_pLineEdit->toggleSlider();
+    });
+}
+
+void ZenoParamNumEdit::setNumSlider(QGraphicsScene* pScene, const QVector<qreal>& steps)
+{
+    m_pLineEdit->setNumSlider(pScene, steps);
+}
+
+void ZenoParamNumEdit::setValidator(QValidator* pValidator)
+{
+    //will override the original.
+    m_pLineEdit->setValidator(pValidator);
+}
+
+QString ZenoParamNumEdit::num() const
+{
+    return m_pLineEdit->text();
+}
+
+void ZenoParamNumEdit::setNum(const QString& num)
+{
+    if (m_pLineEdit->text() != num)
+    {
+        m_pLineEdit->setText(num);
+        emit numValueChanged(num);
+    }
+}
+
 
 ///////////////////////////////////////////////////////////////////////////
 ZenoParamPathEdit::ZenoParamPathEdit(const QString& path, PARAM_CONTROL ctrl, LineEditParam param, QGraphicsItem* parent)
