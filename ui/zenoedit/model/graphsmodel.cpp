@@ -456,11 +456,16 @@ void GraphsModel::setDescriptors(const NODE_DESCS& nodeDescs)
     }
 }
 
-void GraphsModel::appendDescriptors(const QList<NODE_DESC>& descs)
+void GraphsModel::appendSubnetDescsFromZsg(const QList<NODE_DESC>& zsgSubnets)
 {
-    for (NODE_DESC desc : descs)
+    for (NODE_DESC desc : zsgSubnets)
     {
-        if (!desc.name.isEmpty() && m_nodesDesc.find(desc.name) == m_nodesDesc.end())
+        if (m_nodesDesc.find(desc.name) != m_nodesDesc.end())
+        {
+            // keep legacy subnet when meet "internal" node whose name is same with this subnet.
+            m_nodesDesc.remove(desc.name);
+        }
+        if (!desc.name.isEmpty())
         {
             m_nodesDesc.insert(desc.name, desc);
             for (auto cate : desc.categories)
@@ -1395,9 +1400,10 @@ void GraphsModel::updateParamInfo(const QString& id, PARAM_UPDATE_INFO info, con
                             updateInfo.newInfo.defaultValue = QVariant((int)0);
                         }
                     }
-                    else if (updateInfo.newInfo.type == "vec3f")
+                    else if (updateInfo.newInfo.type == "vec3f" ||
+                             updateInfo.newInfo.type == "vec3i")
                     {
-                        updateInfo.newInfo.defaultValue = QVariant::fromValue(QVector<qreal>());
+                        updateInfo.newInfo.defaultValue = QVariant::fromValue(UI_VECTYPE(3, 0));
                     }
                     else
                     {
@@ -1768,7 +1774,53 @@ void GraphsModel::onModelInited()
 QModelIndexList GraphsModel::searchInSubgraph(const QString& objName, const QModelIndex& subgIdx)
 {
     SubGraphModel* pModel = subGraph(subgIdx.row());
-    return pModel->match(pModel->index(0, 0), ROLE_OBJNAME, objName, -1, Qt::MatchContains);
+    QModelIndexList list;
+    auto count = pModel->rowCount();
+
+    for (auto i = 0; i < count; i++) {
+        auto index = pModel->index(i, 0);
+        auto item = pModel->itemData(index);
+        if (item[ROLE_OBJID].toString().contains(objName)) {
+            list.append(index);
+        }
+        else {
+            QString _type("string");
+            bool inserted = false;
+            {
+                auto params = item[ROLE_PARAMETERS].value<PARAMS_INFO>();
+                auto iter = params.begin();
+                while (iter != params.end()) {
+                    if (iter.value().typeDesc == _type) {
+                        if (iter.value().value.toString().contains(objName)) {
+                            list.append(index);
+                            inserted = true;
+                            break;
+                        }
+                    }
+                    ++iter;
+                }
+            }
+            if (inserted) {
+                continue;
+            }
+            {
+                auto inputs = item[ROLE_INPUTS].value<INPUT_SOCKETS>();
+                auto iter = inputs.begin();
+                while (iter != inputs.end()) {
+                    if (iter->value().info.type == _type) {
+                        if (iter->value().info.defaultValue.toString().contains(objName)) {
+                            list.append(index);
+                            inserted = true;
+                            break;
+                        }
+                    }
+                    ++iter;
+                }
+
+            }
+        }
+    }
+    return list;
 }
 
 QModelIndexList GraphsModel::subgraphsIndice() const

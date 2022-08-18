@@ -9,10 +9,37 @@
 namespace zeno {
 
 struct IBeginFor : zeno::INode {
-    bool is_break = false;
+private:
+    bool m_is_break = false;
+    //bool m_updated = false;
 
+protected:
     virtual bool isContinue() const = 0;
     virtual void update() = 0;
+    virtual void execute() = 0;
+
+public:
+    void breakThisFor() {
+        m_is_break = true;
+    }
+
+    bool checkIsContinue() const {
+        return !m_is_break && isContinue();
+    }
+
+    void doUpdate() {
+        //m_updated = true;
+        update();
+    }
+
+    virtual void apply() override final {
+        //if (!m_updated)
+            //throw makeError("BeginFor and EndFor not enclosed! "
+                            //"Don't VIEW any nodes between BeginFor and EndFor, "
+                            //"VIEW the EndFor node instead");
+        m_is_break = false;
+        execute();
+    }
 };
 
 
@@ -20,18 +47,17 @@ struct BeginFor : IBeginFor {
     int m_index = 0;
     int m_count = 0;
     
-    virtual bool isContinue() const override {
-        return m_index < m_count && !is_break;
+    virtual bool isContinue() const override final {
+        return m_index < m_count;
     }
 
-    virtual void apply() override {
+    virtual void execute() override final {
         m_index = 0;
-        is_break = false;
         m_count = get_input<zeno::NumericObject>("count")->get<int>();
         set_output("FOR", std::make_shared<zeno::DummyObject>());
     }
 
-    virtual void update() override {
+    virtual void update() override final {
         auto ret = std::make_shared<zeno::NumericObject>();
         ret->set(m_index);
         set_output("index", std::move(ret));
@@ -58,8 +84,8 @@ struct EndFor : zeno::ContextManagedNode {
         }
         graph->applyNode(sn);
         std::unique_ptr<zeno::Context> old_ctx = nullptr;
-        while (fore->isContinue()) {
-            fore->update();
+        while (fore->checkIsContinue()) {
+            fore->doUpdate();
             push_context();
             INode::preApply();
             post_do_apply();
@@ -91,7 +117,7 @@ struct BreakFor : zeno::INode {
             throw Exception("BreakFor::FOR must be conn to BeginFor::FOR!\n");
         }
         if (!has_input("breaks") || get_input2<bool>("breaks"))
-            fore->is_break = true;  // will still keep going the rest of loop body?
+            fore->breakThisFor();  // will still keep going the rest of loop body?
     }
 
     virtual void apply() override {}
@@ -109,20 +135,19 @@ struct BeginForEach : IBeginFor {
     std::shared_ptr<zeno::ListObject> m_list;
     zany m_accumate;
 
-    virtual bool isContinue() const override {
-        return m_index < m_list->arr.size() && !is_break;
+    virtual bool isContinue() const override final {
+        return m_index < m_list->arr.size();
     }
 
-    virtual void apply() override {
+    virtual void execute() override final {
         m_index = 0;
-        is_break = false;
         m_list = get_input<zeno::ListObject>("list");
         if (has_input("accumate"))
             m_accumate = get_input("accumate");
         set_output("FOR", std::make_shared<zeno::DummyObject>());
     }
 
-    virtual void update() override {
+    virtual void update() override final {
         auto ret = std::make_shared<zeno::NumericObject>();
         ret->set(m_index);
         set_output("index", std::move(ret));
@@ -225,13 +250,12 @@ struct BeginSubstep : IBeginFor {
     float m_elapsed = 0;
     bool m_ever_called = false;
 
-    virtual bool isContinue() const override {
-        return m_elapsed < m_total && !is_break;
+    virtual bool isContinue() const override final {
+        return m_elapsed < m_total;
     }
 
-    virtual void apply() override {
+    virtual void execute() override final {
         m_elapsed = 0;
-        is_break = false;
         m_ever_called = false;
         m_total = get_input<zeno::NumericObject>("total_dt")->get<float>();
         auto min_scale = has_input("min_scale") ?
@@ -240,7 +264,7 @@ struct BeginSubstep : IBeginFor {
         set_output("FOR", std::make_shared<zeno::DummyObject>());
     }
 
-    virtual void update() override {
+    virtual void update() override final {
         auto ret = std::make_shared<zeno::NumericObject>();
         ret->set(m_elapsed);
         set_output("elapsed_time", std::move(ret));

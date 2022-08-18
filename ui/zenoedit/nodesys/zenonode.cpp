@@ -31,14 +31,18 @@ static QString getOpenFileName(
     const QString &filter
 ) {
     QString path = QFileDialog::getOpenFileName(nullptr, caption, dir, filter);
+#if 0 // cannot work for now, wait for StringEval to be integrated into string param edit (luzh job)
     QSettings settings("ZenusTech", "Zeno");
     QVariant nas_loc_v = settings.value("nas_loc");
     path.replace('\\', '/');
     if (!nas_loc_v.isNull()) {
         QString nas = nas_loc_v.toString();
-        nas.replace('\\', '/');
-        path.replace(nas, "$NASLOC");
+        if (!nas.isEmpty()) {
+            nas.replace('\\', '/');
+            path.replace(nas, "$NASLOC");
+        }
     }
+#endif
     return path;
 }
 
@@ -48,14 +52,18 @@ static QString getSaveFileName(
     const QString &filter
 ) {
     QString path = QFileDialog::getSaveFileName(nullptr, caption, dir, filter);
+#if 0 // cannot work for now, wait for StringEval to be integrated into string param edit (luzh job)
     QSettings settings("ZenusTech", "Zeno");
     QVariant nas_loc_v = settings.value("nas_loc");
     path.replace('\\', '/');
     if (!nas_loc_v.isNull()) {
         QString nas = nas_loc_v.toString();
-        nas.replace('\\', '/');
-        path.replace(nas, "$NASLOC");
+        if (!nas.isEmpty()) {
+            nas.replace('\\', '/');
+            path.replace(nas, "$NASLOC");
+        }
     }
+#endif
     return path;
 }
 
@@ -341,8 +349,13 @@ QGraphicsLayout* ZenoNode::initParams()
         }
     }
     QGraphicsLinearLayout* pCustomParams = initCustomParamWidgets();
-    if (pParamsLayout && pCustomParams)
+    if (pCustomParams)
+    {
+        if (!pParamsLayout)
+            pParamsLayout = new QGraphicsLinearLayout(Qt::Vertical);
+        ZASSERT_EXIT(pParamsLayout, nullptr);
         pParamsLayout->addItem(pCustomParams);
+    }
     return pParamsLayout;
 }
 
@@ -415,9 +428,9 @@ QGraphicsLayout* ZenoNode::initParam(PARAM_CONTROL ctrl, const QString& paramNam
             m_paramControls[paramName] = pSocketCheckbox;
             break;
         }
-        case CONTROL_VEC3F:
+        case CONTROL_VEC3:
         {
-            QVector<qreal> vec = param.value.value<QVector<qreal>>();
+            UI_VECTYPE vec = param.value.value<UI_VECTYPE>();
             ZenoVecEditWidget* pVecEditor = new ZenoVecEditWidget(vec);
             pParamLayout->addItem(pVecEditor);
 			connect(pVecEditor, &ZenoVecEditWidget::editingFinished, this, [=]() {
@@ -624,7 +637,7 @@ void ZenoNode::onParamUpdated(const QString &paramName, const QVariant &val)
         }
         else if (ZenoVecEditWidget* pVecEdit = qobject_cast<ZenoVecEditWidget*>(pWidget))
         {
-            pVecEdit->setVec(val.value<QVector<qreal>>());
+            pVecEdit->setVec(val.value<UI_VECTYPE>());
         }
         else if (ZenoParamCheckBox* pCheckbox = qobject_cast<ZenoParamCheckBox*>(pWidget))
         {
@@ -1041,12 +1054,12 @@ ZenoParamWidget* ZenoNode::initSocketWidget(const INPUT_SOCKET inSocket, ZenoTex
             });
             return nullptr; //no control expect key editor.
         }
-        case CONTROL_VEC3F:
+        case CONTROL_VEC3:
         {
-            QVector<qreal> vec = inSocket.info.defaultValue.value<QVector<qreal>>();
+            UI_VECTYPE vec = inSocket.info.defaultValue.value<UI_VECTYPE>();
             ZenoVecEditWidget *pVecEditor = new ZenoVecEditWidget(vec);
             connect(pVecEditor, &ZenoVecEditWidget::editingFinished, this, [=]() {
-                QVector<qreal> vec = pVecEditor->vec();
+                UI_VECTYPE vec = pVecEditor->vec();
                 const QVariant &newValue = QVariant::fromValue(vec);
 
                 bool bOk = false;
@@ -1157,7 +1170,7 @@ void ZenoNode::updateSocketWidget(const INPUT_SOCKET inSocket)
             pSocketCheckbox->setCheckState(bChecked ? Qt::Checked : Qt::Unchecked);
             break;
         }
-        case CONTROL_VEC3F:
+        case CONTROL_VEC3:
         {
             ZenoVecEditWidget *pVecEdit = qobject_cast<ZenoVecEditWidget *>(ctrl.socket_control);
             if (!pVecEdit) {
@@ -1168,7 +1181,7 @@ void ZenoNode::updateSocketWidget(const INPUT_SOCKET inSocket)
                 m_inSockets[inSocket.info.name].socket_control = pVecEdit;
                 bUpdateLayout = true;
             }
-            const QVector<qreal> &vec = inSocket.info.defaultValue.value<QVector<qreal>>();
+            const UI_VECTYPE& vec = inSocket.info.defaultValue.value<UI_VECTYPE>();
             pVecEdit->setVec(vec);
             break;
         }

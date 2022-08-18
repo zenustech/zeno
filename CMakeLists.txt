@@ -28,6 +28,7 @@ endif()
 
 option(ZENO_BUILD_EDITOR "Build ZENO editor" ON)
 option(ZENO_BUILD_DESIGNER "Build ZENO designer" OFF)
+option(ZENO_BUILD_PLAYER "Build ZENO player" OFF)
 option(ZENO_MULTIPROCESS "Enable multiprocessing for ZENO" ON)
 option(ZENO_IPC_USE_TCP "Use TCP for inter-process communication" ON)
 option(ZENO_OUT_TO_BIN "Output all target files to build/bin" ON)
@@ -95,6 +96,14 @@ if (ZENO_NO_WARNING)  # Use our customized warning flags
     endif()
 endif()
 
+## --- begin cihou pyb nowarn
+macro (zeno_disable_warning)
+    if (CMAKE_CXX_COMPILER_ID MATCHES "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        set_source_files_properties(${ARGV} DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} TARGET_DIRECTORY zeno PROPERTIES COMPILE_OPTIONS $<IF:$<COMPILE_LANGUAGE:CXX>,-w,>)
+    endif()
+endmacro()
+## --- end cihou pyb nowarn
+
 ## --- begin cihou wxl cuda
 if (ZENO_WITH_CUDA)        # must move enable_language ahead to here
     enable_language(CUDA)  # otherwise projects/CUDA will fail to compile
@@ -152,6 +161,11 @@ endif()
 if (ZENO_BUILD_DESIGNER)
     message(STATUS "Building Zeno Designer")
     add_subdirectory(ui/zenodesign)
+endif()
+
+if (ZENO_BUILD_PLAYER)
+    message(STATUS "Building Zeno Player")
+    add_subdirectory(ui/zenoplayer)
 endif()
 
 if (ZENO_INSTALL_TARGET)

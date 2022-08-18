@@ -46,7 +46,7 @@ ZENDEFNODE(PrimitiveAddAttr,
     {"enum float float3", "type", "float3"},
     {"string", "pybisgreat", "DEPRECATED! USE PrimFillAttr INSTEAD"},
     }, /* category: */ {
-    "primitive",
+    "deprecated",
     } });
 
 struct PrimitiveDelAttr : zeno::INode {

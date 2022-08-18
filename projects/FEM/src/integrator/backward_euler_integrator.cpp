@@ -1,4 +1,3 @@
-#include <zeno/utils/nowarn.h>
 #include "backward_euler_integrator.h"
 #include <iostream>
 #include <ctime>

@@ -18,6 +18,8 @@
 #include <viewport/zenovis.h>
 #include <util/log.h>
 #include <zenoui/style/zenostyle.h>
+//#include <zeno/utils/zeno_p.h>
+//#include <nodesys/nodesmgr.h>
 #include <cmath>
 #include <algorithm>
 #include <optional>
@@ -217,6 +219,34 @@ QVariant CameraControl::hitOnFloor(float x, float y) const {
 }
 void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
     if (event->button() == Qt::LeftButton) {
+
+        
+        //if (Zenovis::GetInstance().m_bAddPoint == true) {
+            //float x = (float)event->x() / m_res.x();
+            //float y = (float)event->y() / m_res.y();
+            //auto rdir = screenToWorldRay(x, y);
+            //auto pos = realPos();
+            //float t = (0 - pos.y()) / rdir.y();
+            //auto p = pos + rdir * t;
+
+            //float cos_t = std::cos(m_theta);
+            //float sin_t = std::sin(m_theta);
+            //float cos_p = std::cos(m_phi);
+            //float sin_p = std::sin(m_phi);
+            //QVector3D back(cos_t * sin_p, sin_t, -cos_t * cos_p);
+            //QVector3D up(-sin_t * sin_p, cos_t, sin_t * cos_p);
+            //QVector3D right = QVector3D::crossProduct(up, back).normalized();
+            //up = QVector3D::crossProduct(right, back).normalized();
+            //QVector3D delta = right * x + up * y;
+                
+            
+            //zeno::log_info("create point at x={} y={}", p[0], p[1]);
+
+            ////createPointNode(QPointF(p[0], p[1]));
+
+            //Zenovis::GetInstance().m_bAddPoint = false;
+        //}
+
         auto cam_pos = realPos();
         auto scene = Zenovis::GetInstance().getSession()->get_scene();
         scene->select_box = std::nullopt;
@@ -294,6 +324,19 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
         mainWin->onPrimitiveSelected(scene->selected);
     }
 }
+
+//void CameraControl::createPointNode(QPointF pnt) {
+    //auto pModel = zenoApp->graphsManagment()->currentModel();
+	//ZASSERT_EXIT(pModel);
+    ////todo luzh: select specific subgraph to add node.
+    //const QModelIndex &subgIdx = pModel->index("main");
+    //NODE_DATA tmpNodeInfo = NodesMgr::createPointNode(pModel, subgIdx, "CreatePoint", {10, 10}, pnt);        
+
+    //STATUS_UPDATE_INFO info;
+    //info.role = ROLE_OPTIONS;
+    //info.newValue = OPT_VIEW;
+    //pModel->updateNodeStatus(tmpNodeInfo[ROLE_OBJID].toString(), info, subgIdx, true);
+//}
 
 ViewportWidget::ViewportWidget(QWidget* parent)
     : QOpenGLWidget(parent)
@@ -402,9 +445,9 @@ void ViewportWidget::wheelEvent(QWheelEvent* event)
     m_camera->fakeWheelEvent(event);
     update();
 }
-void ViewportWidget::mouseReleaseEvent(QMouseEvent *event) {
+void ViewportWidget::mouseReleaseEvent(QMouseEvent *event) {    
     _base::mouseReleaseEvent(event);
-    m_camera->fakeMouseReleaseEvent(event);
+    m_camera->fakeMouseReleaseEvent(event); 
     update();
 }
 
@@ -514,6 +557,8 @@ DisplayWidget::DisplayWidget(ZenoMainWindow* pMainWin)
     connect(m_timeline, SIGNAL(alwaysChecked()), this, SLOT(onRun()));
     connect(m_timeline, SIGNAL(kill()), this, SLOT(onKill()));
 
+    //connect(m_view, SIGNAL(sig_Draw()), this, SLOT(onRun()));
+
     auto graphs = zenoApp->graphsManagment();
     connect(&*graphs, SIGNAL(modelDataChanged()), this, SLOT(onModelDataChanged()));
 
@@ -536,7 +581,7 @@ QSize DisplayWidget::sizeHint() const
     return ZenoStyle::dpiScaledSize(QSize(12, 400));
 }
 
-void DisplayWidget::updateFrame(const QString &action)
+void DisplayWidget::updateFrame(const QString &action) // cihou optix
 {
     if (m_mainWin && m_mainWin->inDlgEventLoop())
         return;
@@ -557,6 +602,19 @@ void DisplayWidget::updateFrame(const QString &action)
         }
     }
     m_view->update();
+}
+
+void DisplayWidget::onFinished()
+{
+    int frameid_ui = m_timeline->value();
+    if (frameid_ui != Zenovis::GetInstance().getCurrentFrameId())
+    {
+        Zenovis::GetInstance().setCurrentFrameId(frameid_ui);
+        updateFrame();
+        onPlayClicked(false);
+        BlockSignalScope scope(m_timeline);
+        m_timeline->setPlayButtonToggle(false);
+    }
 }
 
 bool DisplayWidget::isOptxRendering() const
@@ -594,13 +652,26 @@ void DisplayWidget::onPlayClicked(bool bChecked)
     Zenovis::GetInstance().startPlay(bChecked);
 }
 
-void DisplayWidget::onSliderValueChanged(int value)
+void DisplayWidget::onSliderValueChanged(int frame)
 {
-    Zenovis::GetInstance().setCurrentFrameId(value);
-    updateFrame();
-    onPlayClicked(false);
-    BlockSignalScope scope(m_timeline);
-    m_timeline->setPlayButtonToggle(false);
+    m_mainWin->clearErrorMark();
+
+    if (m_timeline->isAlways())
+    {
+        auto pGraphsMgr = zenoApp->graphsManagment();
+        IGraphsModel* pModel = pGraphsMgr->currentModel();
+        if (!pModel)
+            return;
+        launchProgram(pModel, frame, frame);
+    }
+    else
+    {
+        Zenovis::GetInstance().setCurrentFrameId(frame);
+        updateFrame();
+        onPlayClicked(false);
+        BlockSignalScope scope(m_timeline);
+        m_timeline->setPlayButtonToggle(false);
+    }
 }
 
 void DisplayWidget::onRun()
@@ -633,7 +704,7 @@ void DisplayWidget::onRecord()
 
     if (ptr->maxPlayFrames() == 0) {
         //run.
-        QMessageBox::information(nullptr, "Zeno", tr("run the graph before recording"), QMessageBox::Ok);
+        QMessageBox::information(nullptr, "Zeno", tr("Run the graph before recording"), QMessageBox::Ok);
         return;
     }
 

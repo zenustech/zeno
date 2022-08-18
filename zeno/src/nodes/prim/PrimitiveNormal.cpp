@@ -122,7 +122,7 @@ ZENO_API void primCalcNormal(zeno::PrimitiveObject* prim, float flip, std::strin
 #pragma omp parallel for
 #endif
     for (size_t i = 0; i < nrm.size(); i++) {
-        nrm[i] = flip * normalize(nrm[i]);
+        nrm[i] = flip * normalizeSafe(nrm[i]);
     }
 }
 struct PrimitiveCalcNormal : zeno::INode {
@@ -145,5 +145,52 @@ ZENDEFNODE(PrimitiveCalcNormal, {
     {},
     {"primitive"},
 });
+
+//ZENO_API void primCalcInsetDir(zeno::PrimitiveObject* prim, float flip, std::string insetAttr)
+//{
+    //auto &out = prim->verts.add_attr<vec3f>(insetAttr);
+    //for (size_t i = 0; i < prim->tris.size(); i++) {
+        //auto ind = prim->tris[i];
+        //auto a = prim->verts[ind[0]];
+        //auto b = prim->verts[ind[1]];
+        //auto c = prim->verts[ind[2]];
+        //auto &oa = out[ind[0]];
+        //auto &ob = out[ind[1]];
+        //auto &oc = out[ind[2]];
+        //oa += normalizeSafe(b + c - a - a);
+        //ob += normalizeSafe(a + c - b - b);
+        //oc += normalizeSafe(a + b - c - c);
+    //}
+    //for (size_t i = 0; i < prim->quads.size(); i++) {
+        //auto ind = prim->quads[i];
+        //auto a = prim->verts[ind[0]];
+        //auto b = prim->verts[ind[1]];
+        //auto c = prim->verts[ind[2]];
+        //auto d = prim->verts[ind[3]];
+        //auto &oa = out[ind[0]];
+        //auto &ob = out[ind[1]];
+        //auto &oc = out[ind[2]];
+        //auto &od = out[ind[3]];
+        //oa += normalizeSafe(b + c + d - a - a - a);
+        //ob += normalizeSafe(a + c + d - b - b - b);
+        //oc += normalizeSafe(a + b + d - c - c - c);
+        //od += normalizeSafe(a + b + c - d - d - d);
+    //}
+    //for (size_t i = 0; i < prim->polys.size(); i++) {
+        //auto [start, len] = prim->polys[i];
+        //for (int j = start; j < start + len; j++) {
+            //auto curr = prim->verts[prim->loops[j]];
+            //vec3f accum = -(len - 1) * curr;
+            //for (int k = start; k < start + len; k++) {
+                //if (k == j) continue;
+                //accum += prim->verts[prim->loops[k]];
+            //}
+            //out[prim->loops[j]] += normalizeSafe(accum);
+        //}
+    //}
+    //for (size_t i = 0; i < out.size(); i++) {
+        //out[i] = flip * normalizeSafe(out[i]);
+    //}
+//}
 
 }

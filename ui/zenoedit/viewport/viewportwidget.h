@@ -57,6 +57,7 @@ public:
     QVector3D screenToWorldRay(float x, float y) const;
     QVariant hitOnFloor(float x, float y) const;
 
+
 private:
     bool m_mmb_pressed;
     float m_theta;
@@ -119,6 +120,7 @@ public slots:
     void onModelDataChanged();
     void onPlayClicked(bool);
     void onSliderValueChanged(int);
+    void onFinished();
 
 signals:
     void frameUpdated(int new_frame);

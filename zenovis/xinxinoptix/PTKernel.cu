@@ -4,6 +4,7 @@
 #include <cuda/helpers.h>
 #include "optixPathTracer.h"
 #include "TraceStuff.h"
+#include "DisneyBSDF.h"
 
 extern "C" {
 __constant__ Params params;
@@ -51,7 +52,11 @@ extern "C" __global__ void __raygen__rg()
         prd.seed         = seed;
         prd.opacity      = 0;
         prd.flags        = 0;
-        int depth = 0;
+        prd.is_inside    = false;
+        prd.maxDistance  = 1e16f;
+        prd.medium       = DisneyBSDF::PhaseFunctions::vacuum;
+
+        prd.depth = 0;
         for( ;; )
         {
             traceRadiance(
@@ -59,22 +64,37 @@ extern "C" __global__ void __raygen__rg()
                     ray_origin,
                     ray_direction,
                     1e-5f,  // tmin       // TODO: smarter offset
-                    1e16f,  // tmax
+                    prd.maxDistance,  // tmax
                     &prd );
 
             //result += prd.emitted;
-            if(prd.countEmitted==false || depth>0)
-                result += prd.radiance * prd.attenuation2/prd.prob2;
-            if(prd.countEmitted==true && depth>0)
+            if(prd.countEmitted==false || prd.depth>0)
+                result += prd.radiance * prd.attenuation2/(prd.prob2);
+            if(prd.countEmitted==true && prd.depth>0){
                 prd.done = true;
-            if( prd.done  || depth >= 5 ) // TODO RR, variable for depth
+            }
+            if( prd.done ){
+                
                 break;
+            }
+            if(prd.depth>4){
+               //float RRprob = clamp(length(prd.attenuation)/1.732f,0.01f,0.9f); 
+                float RRprob = 0.9;
+                if(rnd(prd.seed) > RRprob || prd.depth>8){
+                    prd.done=true;
+
+                }
+                prd.attenuation = prd.attenuation / RRprob;
+            }
             if(prd.countEmitted == true)
                 prd.passed = true;
             ray_origin    = prd.origin;
             ray_direction = prd.direction;
-            if(prd.passed == false )
-                ++depth;
+            // if(prd.passed == false)
+            //     ++depth;        
+            //}else{
+                //prd.passed = false;
+            //}
         }
     }
     while( --i );
@@ -103,6 +123,23 @@ extern "C" __global__ void __miss__radiance()
     MissData* rt_data  = reinterpret_cast<MissData*>( optixGetSbtDataPointer() );
     RadiancePRD* prd = getPRD();
 
-    prd->radiance = make_float3( rt_data->bg_color );
-    prd->done      = true;
+    prd->passed = false;
+    prd->countEmitted = false;
+
+    if(prd->medium != DisneyBSDF::isotropic){
+        prd->radiance = make_float3( rt_data->bg_color );
+        prd->done      = true;
+    }
+    prd->attenuation *= DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
+    prd->origin += prd->direction * optixGetRayTmax();
+    prd->direction = DisneyBSDF::SampleScatterDirection(prd->seed);
+    float tmpPDF;
+    prd->maxDistance = DisneyBSDF::SampleDistance(prd->seed,prd->extinction,tmpPDF);
+    prd->scatterPDF= tmpPDF;
+    prd->depth++;
+
+    if(length(prd->attenuation)<1e-4f){
+        prd->done = true;
+    }
+
 }

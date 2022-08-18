@@ -2,18 +2,21 @@
 
 #include <utility>
 #include <type_traits>
+#include <functional>
 
 namespace zeno {
 
-template <class Func>
+template <class Func = std::function<void()>>
 class scope_exit {
     static_assert(std::is_same_v<std::decay_t<Func>, Func>);
 
     Func func;
-    bool enabled;
+    bool enabled{false};
 
 public:
-    explicit scope_exit(Func &&func) noexcept : func(std::move(func)), enabled(true) {
+    scope_exit() = default;
+
+    scope_exit(Func &&func) noexcept : func(std::move(func)), enabled(true) {
     }
 
     bool has_value() const noexcept {
@@ -49,6 +52,7 @@ public:
             that.enabled = false;
             func = std::move(that.func);
         }
+        return *this;
     }
 };
 

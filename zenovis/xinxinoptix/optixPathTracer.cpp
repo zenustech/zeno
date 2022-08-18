@@ -65,7 +65,7 @@ sutil::Trackball trackball;
 int32_t mouse_button = -1;
 
 //int32_t samples_per_launch = 16;
-int32_t samples_per_launch = 16;
+//int32_t samples_per_launch = 16;
 
 //------------------------------------------------------------------------------
 //
@@ -358,7 +358,7 @@ static void initLaunchParams( PathTracerState& state )
     
     state.params.frame_buffer = nullptr;  // Will be set when output buffer is mapped
 
-    state.params.samples_per_launch = samples_per_launch;
+    //state.params.samples_per_launch = samples_per_launch;
     state.params.subframe_index     = 0u;
 }
 
@@ -917,6 +917,7 @@ static void cleanupState( PathTracerState& state )
         state.d_gas_output_buffer.reset();
         state.accum_buffer_p.reset();
         state.d_params.reset();
+    state = {};
 }
 
 static void detectHuangrenxunHappiness() {
@@ -990,7 +991,7 @@ void optixinit( int argc, char* argv[] )
         {
             if( i >= argc - 1 )
                 printUsageAndExit( argv[0] );
-            samples_per_launch = atoi( argv[++i] );
+            //samples_per_launch = atoi( argv[++i] );
         }
         else
         {
@@ -1146,8 +1147,8 @@ void optixupdatemesh(std::map<std::string, int> const &mtlidlut) {
                 ) );
 
     splitMesh(g_vertices, g_mat_indices, g_meshPieces);
-    std::cout<<"split mesh done\n";
-    std::cout<<"mesh pieces:"<<g_meshPieces.size()<<std::endl;
+    //std::cout<<"split mesh done\n";
+    //std::cout<<"mesh pieces:"<<g_meshPieces.size()<<std::endl;
     for(int i=0;i<g_meshPieces.size();i++)
     {
         buildMeshAccelSplitMesh(state, g_meshPieces[i]);
@@ -1573,16 +1574,18 @@ void set_perspective(float const *U, float const *V, float const *W, float const
 }
 
 
-void optixrender(int fbo) {
-    zeno::log_trace("[optix] rendering subframe {}", state.params.subframe_index);
+void optixrender(int fbo, int samples) {
+    // 张心欣请解除注释这行代码：
+    //samples = 256;
     if (!output_buffer_o) throw sutil::Exception("no output_buffer_o");
     if (!gl_display_o) throw sutil::Exception("no gl_display_o");
     updateState( *output_buffer_o, state.params );
-    //for(int f=0;f<1;f++){
-    // edit samples_per_launch instead!
+    const int max_samples_once = 16;
+    for (int f = 0; f < samples; f += max_samples_once) { // 张心欣不要改这里
+        state.params.samples_per_launch = std::min(samples - f, max_samples_once);
         launchSubframe( *output_buffer_o, state );
         state.params.subframe_index++;
-    //}
+    }
     displaySubframe( *output_buffer_o, *gl_display_o, state, fbo );
                     
 }
@@ -1604,9 +1607,23 @@ void *optixgetimg(int &w, int &h) {
 //}
 
 void optixcleanup() {
-    return;             // other wise will crasu
-    CUDA_SYNC_CHECK();
-    cleanupState( state );
+    using namespace OptixUtil;
+    try {
+        CUDA_SYNC_CHECK();
+        cleanupState( state );
+        rtMaterialShaders.clear();
+    } catch (sutil::Exception const &e) {
+        std::cout << "OptixCleanupError: " << e.what() << std::endl;
+        std::memset((void *)&state, 0, sizeof(state));
+        std::memset((void *)&rtMaterialShaders[0], 0, sizeof(rtMaterialShaders[0]) * rtMaterialShaders.size());
+
+             context                  .handle=0;
+pipeline                 .handle=0;
+ray_module               .handle=0;
+raygen_prog_group        .handle=0;
+radiance_miss_group      .handle=0;
+occlusion_miss_group     .handle=0;
+    }
 }
 #if 0
         if( outfile.empty() )

@@ -22,8 +22,8 @@ void dump_obj(PrimitiveObject *prim, std::ostream &fout) {
     for (auto const &[x, y, z]: prim->verts) {
         fout << "v " << x << ' ' << y << ' ' << z << '\n';
     }
-    if (prim->loops.size() && prim->loops.has_attr("uvi")) {
-        auto &loop_uvs = prim->loops.attr<int>("uvi");
+    if (prim->loops.size() && prim->loop_uvs.size()) {
+        auto &loop_uvs = prim->loop_uvs;
         for (auto const &[x, y]: prim->uvs) {
             fout << "vt " << x << ' ' << y << '\n';
         }

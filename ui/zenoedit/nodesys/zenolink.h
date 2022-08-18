@@ -50,6 +50,8 @@ public:
     ZenoSocketItem* getAdsorbedSocket() const;
     void setAdsortedSocket(ZenoSocketItem* pSocket);
     void paint(QPainter *painter, QStyleOptionGraphicsItem const *styleOptions, QWidget *widget) override;
+    void setOldLink(const QPersistentModelIndex& link);
+    QPersistentModelIndex oldLink() const;
 
 protected:
     void mouseMoveEvent(QGraphicsSceneMouseEvent *event) override;
@@ -67,6 +69,7 @@ private:
     QPointF m_fixedPos;
     ZenoSocketItem* m_adsortedSocket;
     ZenoSocketItem* m_fixedSocket;
+    QPersistentModelIndex m_oldLink;    //the link which belongs to
     bool m_bfixInput;
 };
 

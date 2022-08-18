@@ -69,6 +69,9 @@ SEARCH_RECORD ZenoSearchBar::_getRecord()
 
 void ZenoSearchBar::onSearchExec(const QString& content)
 {
+    if (content.isEmpty()) {
+        return;
+    }
     IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
 
     m_results = pGraphsModel->searchInSubgraph(content, m_index);

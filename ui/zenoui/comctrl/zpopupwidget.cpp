@@ -1,4 +1,4 @@
-﻿#include "zpopupwidget.h"
+#include "zpopupwidget.h"
 
 
 ZPopupWidget::ZPopupWidget(QWidget* parent)

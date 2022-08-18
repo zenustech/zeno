@@ -15,6 +15,14 @@ struct MatOutput {
     float clearcoat;
     float clearcoatGloss;
     float opacity;
+    float ior;
+    float flatness;
+    float specTrans;
+    float scatterDistance;
+    float thin;
+    vec3  sssColor;
+
+
     vec3 nrm;
     vec3 emission;
 };

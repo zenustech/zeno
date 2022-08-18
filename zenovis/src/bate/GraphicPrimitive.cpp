@@ -293,9 +293,12 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
     ZhxxDrawObject lineObj;
     ZhxxDrawObject triObj;
     std::vector<std::unique_ptr<Texture>> textures;
+    std::unique_ptr<zeno::PrimitiveObject> primUnique;
+    zeno::PrimitiveObject *prim;
 
-    explicit ZhxxGraphicPrimitive(Scene *scene_, zeno::PrimitiveObject *prim)
-        : scene(scene_) {
+    explicit ZhxxGraphicPrimitive(Scene *scene_, zeno::PrimitiveObject *primArg)
+        : scene(scene_), primUnique(std::make_unique<zeno::PrimitiveObject>(*primArg)) {
+        prim = primUnique.get();
         zeno::log_trace("rendering primitive size {}", prim->size());
 
         if (!prim->attr_is<zeno::vec3f>("pos")) {
@@ -332,7 +335,7 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
         }
         if (thePrmHasFaces) {
             zeno::log_trace("demoting faces");
-            if (prim->loops.size() && prim->loops.has_attr("uvi")) {
+            if (prim->loops.size() && prim->loop_uvs.size()) {
                 zeno::primDecodeUVs(&*prim);//loop_uvs to loop.attr("uv")
             }
             zeno::primTriangulateQuads(&*prim);

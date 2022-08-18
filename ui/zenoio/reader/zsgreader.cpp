@@ -275,7 +275,7 @@ QVariant ZsgReader::_parseToVariant(const QString& type, const rapidjson::Value&
     }
     else if (val.GetType() == rapidjson::kArrayType)
     {
-        QVector<qreal> vec;
+        UI_VECTYPE vec;
         auto values = val.GetArray();
         for (int i = 0; i < values.Size(); i++)
         {

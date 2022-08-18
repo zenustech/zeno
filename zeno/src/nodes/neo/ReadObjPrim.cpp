@@ -100,7 +100,7 @@ std::shared_ptr<PrimitiveObject> parse_obj(std::vector<char> &&bin) {
     }
 
     if (loop_uvs.size() == prim->loops.size()) {
-        prim->loops.add_attr<int>("uvi") = std::move(loop_uvs);
+        prim->loop_uvs = std::move(loop_uvs);
     }
 
     return prim;

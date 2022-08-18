@@ -179,7 +179,7 @@ struct PrimFacesAttrToVerts : INode {
         auto attr = get_input2<std::string>("faceAttr");
         auto attrOut = get_input2<std::string>("vertAttr");
         auto method = get_input2<std::string>("method");
-        auto deflVal = get_input2<float>("deflVal");
+        auto deflValPtr = get_input<NumericObject>("deflVal");
 
         std::visit([&] (auto faceTy) {
             auto &prim_faces = faceTy.from_prim(prim.get());
@@ -189,16 +189,17 @@ struct PrimFacesAttrToVerts : INode {
                 auto &vertsArr = prim->verts.add_attr<T>(attrOut);
 
                 std::vector<std::vector<int>> v2f(prim->verts.size());
-                for (int i = 0; i < prim_faces.size(); i++) {
+                for (int i = 0; i < prim_faces.size(); i++) { // todo: parallel_push_back_multi
                     faceTy.foreach_ind(prim.get(), prim_faces[i], [&] (int ind) {
                         v2f[ind].push_back(i);
                     });
                 }
 
+                auto deflVal = deflValPtr->get<T>();
                 std::visit([&] (auto reducerTy) {
                     for (int i = 0; i < prim->verts.size(); i++) {
                         if (v2f[i].empty()) {
-                            vertsArr[i] = T(deflVal);
+                            vertsArr[i] = deflVal;
                         } else {
                             decltype(reducerTy) reducer;
                             for (auto l: v2f[i]) {
@@ -231,6 +232,66 @@ ZENDEFNODE(PrimFacesAttrToVerts, {
     {"string", "vertAttr", "tmp"},
     {"float", "deflVal", "0"},
     {"enum sum average min max", "method", "average"},
+    },
+    {
+    {"PrimitiveObject", "prim"},
+    },
+    {
+    },
+    {"primitive"},
+});
+
+struct PrimFacesCenterAsVerts : INode {
+    virtual void apply() override {
+        auto prim = get_input<PrimitiveObject>("prim");
+        auto faceType = get_input2<std::string>("faceType");
+        auto copyFaceAttrs = get_input2<bool>("copyFaceAttrs");
+        auto outprim = std::make_shared<PrimitiveObject>();
+
+        auto process = [&] (size_t base, auto faceTy) {
+            auto &prim_faces = faceTy.from_prim(prim.get());
+            //outprim->verts.resize(base + prim_faces.size());
+
+            for (size_t i = 0; i < prim_faces.size(); i++) {
+                meth_average<vec3f> reducer;
+                faceTy.foreach_ind(prim.get(), prim_faces[i], [&] (int ind) {
+                    reducer.add(prim->verts[ind]);
+                });
+                outprim->verts[base + i] = reducer.get();
+            }
+
+            if (copyFaceAttrs) {
+                prim_faces.template foreach_attr<AttrAcceptAll>([&] (auto const &key, auto const &facesArr) {
+                    using T = std::decay_t<decltype(facesArr[0])>;
+                    auto &vertsArr = outprim->verts.add_attr<T>(key);
+                    for (size_t i = 0; i < facesArr.size(); i++) {
+                        vertsArr[base + i] = facesArr[i];
+                    }
+                });
+            }
+        };
+
+        if (faceType == "faces") {
+            outprim->verts.resize(prim->tris.size() + prim->quads.size() + prim->polys.size());
+            process(0, face_tris{});
+            process(prim->tris.size(), face_quads{});
+            process(prim->tris.size() + prim->quads.size(), face_polys{});
+        } else if (faceType == "lines") {
+            outprim->verts.resize(prim->lines.size());
+            process(0, face_lines{});
+        } else {
+            throw makeError("invalid faceType: " + faceType);
+        }
+
+        set_output("prim", std::move(outprim));
+    }
+};
+
+ZENDEFNODE(PrimFacesCenterAsVerts, {
+    {
+    {"PrimitiveObject", "prim"},
+    {"enum faces lines", "faceType", "faces"},
+    {"bool", "copyFaceAttrs", "1"},
     },
     {
     {"PrimitiveObject", "prim"},

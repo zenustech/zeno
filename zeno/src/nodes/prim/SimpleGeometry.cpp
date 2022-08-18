@@ -80,16 +80,25 @@ struct CreateCube : zeno::INode {
         auto div_w = get_input2<int>("div_w");
         auto div_h = get_input2<int>("div_h");
         auto div_d = get_input2<int>("div_d");
+        auto quad = get_input2<bool>("quads");
         auto position = get_input2<zeno::vec3f>("position");
         auto scale = get_input2<zeno::vec3f>("scaleSize");
         ROTATE_MATRIX
 
         auto &verts = prim->verts;
         auto &indis = prim->tris;
+        auto &quads = prim->quads;
         auto &nors = prim->verts.add_attr<zeno::vec3f>("nrm");
-        auto &uv1 = prim->tris.add_attr<zeno::vec3f>("uv0");
-        auto &uv2 = prim->tris.add_attr<zeno::vec3f>("uv1");
-        auto &uv3 = prim->tris.add_attr<zeno::vec3f>("uv2");
+
+        std::vector<zeno::vec3f> dummy;
+        auto &uv1 = !quad ?  prim->tris.add_attr<vec3f>("uv0") : dummy;
+        auto &uv2 = !quad ?  prim->tris.add_attr<vec3f>("uv1") : dummy;
+        auto &uv3 = !quad ?  prim->tris.add_attr<vec3f>("uv2") : dummy;
+
+        auto &quv1 = quad ?  prim->quads.add_attr<vec3f>("uv0") : dummy;
+        auto &quv2 = quad ?  prim->quads.add_attr<vec3f>("uv1") : dummy;
+        auto &quv3 = quad ?  prim->quads.add_attr<vec3f>("uv2") : dummy;
+        auto &quv4 = quad ?  prim->quads.add_attr<vec3f>("uv3") : dummy;
 
         if(div_w <= 2)
             div_w = 2;
@@ -110,7 +119,7 @@ struct CreateCube : zeno::INode {
                 for (int k = 0; k < div_d; k++)
                 {
                     auto p = zeno::vec3f(
-                        0.5-i*sw, -0.5+j*sh, 0.5-k*sd);
+                        0.5f-i*sw, -0.5f+j*sh, 0.5f-k*sd);
 
                     if(j == 0 || j == div_h-1 || i == 0 || i == div_w-1 || k == 0 || k == div_d-1){
                         verts.push_back(p);
@@ -159,10 +168,15 @@ struct CreateCube : zeno::INode {
 
 
                 // Left
-                indis.emplace_back(i1,i3,i2);
-                indis.emplace_back(i4,i2,i3);
-                uv1.push_back(uvw1);uv2.push_back(uvw3);uv3.push_back(uvw2);
-                uv1.push_back(uvw4);uv2.push_back(uvw2);uv3.push_back(uvw3);
+                if(quad){
+                    quads.emplace_back(i3,i4,i2,i1);
+                    quv1.push_back(uvw3);quv2.push_back(uvw4);quv3.push_back(uvw2);quv4.push_back(uvw1);
+                }else{
+                    indis.emplace_back(i1,i3,i2);
+                    indis.emplace_back(i4,i2,i3);
+                    uv1.push_back(uvw1);uv2.push_back(uvw3);uv3.push_back(uvw2);
+                    uv1.push_back(uvw4);uv2.push_back(uvw2);uv3.push_back(uvw3);
+                }
 
                 uvw1=zeno::vec3f((1.0f-u1)*sc+0.625f,v1*sc,0);
                 uvw2=zeno::vec3f((1.0f-u2)*sc+0.625f,v2*sc,0);
@@ -177,10 +191,15 @@ struct CreateCube : zeno::INode {
                 }
 
                 // Right
-                indis.emplace_back(i1_,i2_,i3_);
-                indis.emplace_back(i4_,i3_,i2_);
-                uv1.push_back(uvw1);uv2.push_back(uvw2);uv3.push_back(uvw3);
-                uv1.push_back(uvw4);uv2.push_back(uvw3);uv3.push_back(uvw2);
+                if(quad){
+                    quads.emplace_back(i1_,i2_,i4_,i3_);
+                    quv1.push_back(uvw1);quv2.push_back(uvw2);quv3.push_back(uvw4);quv4.push_back(uvw3);
+                }else{
+                    indis.emplace_back(i1_,i2_,i3_);
+                    indis.emplace_back(i4_,i3_,i2_);
+                    uv1.push_back(uvw1);uv2.push_back(uvw2);uv3.push_back(uvw3);
+                    uv1.push_back(uvw4);uv2.push_back(uvw3);uv3.push_back(uvw2);
+                }
             }
         }
 
@@ -215,10 +234,15 @@ struct CreateCube : zeno::INode {
                 uvw4=zeno::vec3f(0.375f+u4*sc,v4*sc,0);
 
                 // Bottom
-                indis.emplace_back(i1,i3,i2);
-                indis.emplace_back(i4,i2,i3);
-                uv1.push_back(uvw1);uv2.push_back(uvw3);uv3.push_back(uvw2);
-                uv1.push_back(uvw4);uv2.push_back(uvw2);uv3.push_back(uvw3);
+                if(quad){
+                    quads.emplace_back(i3,i4,i2,i1);
+                    quv1.push_back(uvw3);quv2.push_back(uvw4);quv3.push_back(uvw2);quv4.push_back(uvw1);
+                }else{
+                    indis.emplace_back(i1,i3,i2);
+                    indis.emplace_back(i4,i2,i3);
+                    uv1.push_back(uvw1);uv2.push_back(uvw3);uv3.push_back(uvw2);
+                    uv1.push_back(uvw4);uv2.push_back(uvw2);uv3.push_back(uvw3);
+                }
 
                 int i1_,i2_,i3_,i4_;
                 i1_=pp+i+(j+1)*pcircle;
@@ -239,10 +263,15 @@ struct CreateCube : zeno::INode {
                 }
 
                 // Top
-                indis.emplace_back(i1_,i2_,i3_);
-                indis.emplace_back(i4_,i3_,i2_);
-                uv1.push_back(uvw1);uv2.push_back(uvw2);uv3.push_back(uvw3);
-                uv1.push_back(uvw4);uv2.push_back(uvw3);uv3.push_back(uvw2);
+                if(quad){
+                    quads.emplace_back(i1_,i2_,i4_,i3_);
+                    quv1.push_back(uvw1);quv2.push_back(uvw2);quv3.push_back(uvw4);quv4.push_back(uvw3);
+                }else{
+                    indis.emplace_back(i1_,i2_,i3_);
+                    indis.emplace_back(i4_,i3_,i2_);
+                    uv1.push_back(uvw1);uv2.push_back(uvw2);uv3.push_back(uvw3);
+                    uv1.push_back(uvw4);uv2.push_back(uvw3);uv3.push_back(uvw2);
+                }
             }
         }
 
@@ -309,10 +338,15 @@ struct CreateCube : zeno::INode {
                 uvw4=zeno::vec3f(0.375f+u4*sc,0.25f+v4*sc,0);
 
                 // Back
-                indis.emplace_back(i1,i3,i2);
-                indis.emplace_back(i4,i2,i3);
-                uv1.push_back(uvw1);uv2.push_back(uvw3);uv3.push_back(uvw2);
-                uv1.push_back(uvw4);uv2.push_back(uvw2);uv3.push_back(uvw3);
+                if(quad){
+                    quads.emplace_back(i3,i4,i2,i1);
+                    quv1.push_back(uvw3);quv2.push_back(uvw4);quv3.push_back(uvw2);quv4.push_back(uvw1);
+                }else{
+                    indis.emplace_back(i1,i3,i2);
+                    indis.emplace_back(i4,i2,i3);
+                    uv1.push_back(uvw1);uv2.push_back(uvw3);uv3.push_back(uvw2);
+                    uv1.push_back(uvw4);uv2.push_back(uvw2);uv3.push_back(uvw3);
+                }
 
                 uvw1=zeno::vec3f(0.375f+u1*sc,0.75f+(1.0f-v1)*sc,0);
                 uvw2=zeno::vec3f(0.375f+u2*sc,0.75f+(1.0f-v2)*sc,0);
@@ -325,10 +359,15 @@ struct CreateCube : zeno::INode {
                 }
 
                 // Front
-                indis.emplace_back(i1_,i2_,i3_);
-                indis.emplace_back(i4_,i3_,i2_);
-                uv1.push_back(uvw1);uv2.push_back(uvw2);uv3.push_back(uvw3);
-                uv1.push_back(uvw4);uv2.push_back(uvw3);uv3.push_back(uvw2);
+                if(quad){
+                    quads.emplace_back(i1_,i2_,i4_,i3_);
+                    quv1.push_back(uvw1);quv2.push_back(uvw2);quv3.push_back(uvw4);quv4.push_back(uvw3);
+                }else{
+                    indis.emplace_back(i1_,i2_,i3_);
+                    indis.emplace_back(i4_,i3_,i2_);
+                    uv1.push_back(uvw1);uv2.push_back(uvw2);uv3.push_back(uvw3);
+                    uv1.push_back(uvw4);uv2.push_back(uvw3);uv3.push_back(uvw2);
+                }
             }
         }
 
@@ -411,6 +450,7 @@ ZENDEFNODE(CreateCube, {
         {"int", "div_h", "2"},
         {"int", "div_d", "2"},
         {"float", "size", "1"},
+        {"bool", "quads", "0"},
     },
     {"prim"},
     {},
@@ -487,10 +527,12 @@ struct CreatePlane : zeno::INode {
         auto size = get_input2<float>("size");
         auto rows = get_input2<int>("rows");;
         auto columns = get_input2<int>("columns");;
+        auto quad = get_input2<bool>("quads");;
 
         ROTATE_MATRIX
 
         auto &verts = prim->verts;
+        auto &quads = prim->quads;
         auto &tris = prim->tris;
         std::vector<zeno::vec3f> uvs;
         std::vector<zeno::vec3f> nors;
@@ -504,8 +546,8 @@ struct CreatePlane : zeno::INode {
         auto gscale = glm::vec3(scale[0], scale[1], scale[2]);
         auto gposition = glm::vec3(position[0], position[1], position[2]);
         zeno::vec3f normal(0.0f);
-        float rm = 1.0 / rows;
-        float cm = 1.0 / columns;
+        float rm = 1.0f / rows;
+        float cm = 1.0f / columns;
         int fi = 0;
 
         // Vertices & UV
@@ -534,8 +576,12 @@ struct CreatePlane : zeno::INode {
                 int i3 = fi+(columns+1);
                 int i4 = i3+1;
 
-                tris.emplace_back(i1, i4, i2);
-                tris.emplace_back(i3, i4, i1);
+                if(quad){
+                    quads.emplace_back(i3, i4, i2, i1);
+                }else{
+                    tris.emplace_back(i1, i4, i2);
+                    tris.emplace_back(i3, i4, i1);
+                }
 
                 fi += 1;
             }
@@ -544,7 +590,13 @@ struct CreatePlane : zeno::INode {
 
         // Normal
         for(int i=0; i<1; i++){
-            auto ind = tris[i];
+            vec3i ind;
+            if(quad){
+                ind = vec3i(quads[i][0], quads[i][1], quads[i][2]);
+            }
+            else{
+                ind = tris[i];
+            }
             // 0,3,1
             auto pos1 = verts[int(ind[0])];
             auto pos2 = verts[int(ind[1])];
@@ -579,7 +631,7 @@ struct CreatePlane : zeno::INode {
         auto &uv = prim->verts.add_attr<zeno::vec3f>("uv");
         auto &norm = prim->verts.add_attr<zeno::vec3f>("nrm");
         for(int i=0; i<verts.size(); i++){
-            uv[i] = uvs[i];
+            uv[i] = zeno::vec3f(1 - uvs[i][0], 1 - uvs[i][1], 0);
             norm[i] = normal;
         }
 
@@ -595,8 +647,9 @@ ZENDEFNODE(CreatePlane, {
         ROTATE_PARM
         NORMUV_PARM
         {"float", "size", "1"},
-        {"int", "rows", "2"},
-        {"int", "columns", "2"},
+        {"int", "rows", "1"},
+        {"int", "columns", "1"},
+        {"bool", "quads", "0"},
     },
     {"prim"},
     {},
@@ -849,6 +902,7 @@ struct CreateSphere : zeno::INode {
         auto rows = get_input2<int>("rows");
         auto columns = get_input2<int>("columns");
         auto radius = get_input2<float>("radius");
+        auto quad = get_input2<bool>("quads");
 
         ROTATE_MATRIX
 
@@ -863,9 +917,16 @@ struct CreateSphere : zeno::INode {
         auto &nors = prim->verts.add_attr<zeno::vec3f>("nrm");
         auto &verts = prim->verts;
         auto &tris = prim->tris;
+        auto &quads = prim->quads;
         auto &uv1 = prim->tris.add_attr<zeno::vec3f>("uv0");
         auto &uv2 = prim->tris.add_attr<zeno::vec3f>("uv1");
         auto &uv3 = prim->tris.add_attr<zeno::vec3f>("uv2");
+
+        std::vector<zeno::vec3f> dummy;
+        auto &quv1 = quad ?  prim->quads.add_attr<vec3f>("uv0") : dummy;
+        auto &quv2 = quad ?  prim->quads.add_attr<vec3f>("uv1") : dummy;
+        auto &quv3 = quad ?  prim->quads.add_attr<vec3f>("uv2") : dummy;
+        auto &quv4 = quad ?  prim->quads.add_attr<vec3f>("uv3") : dummy;
 
         if(rows <= 3)
             rows = 3;
@@ -888,12 +949,10 @@ struct CreateSphere : zeno::INode {
                 // position
                 auto p = zeno::vec3f(cos(rad) * r, h, sin(rad) * r);
 
-                ROTATE_COMPUTE
-
-                auto op = p*scale*radius+position;
+                auto op = p;
                 verts.push_back(op);
                 auto n = op - zeno::vec3f(0,0,0);
-                nors.push_back(zeno::normalize(n/scale));
+                nors.push_back(zeno::normalize(n));
                 if(i == 0 || i == (rows-1))
                     break;
             }
@@ -911,8 +970,6 @@ struct CreateSphere : zeno::INode {
                 i1-=columns;
             }
 
-            tris.emplace_back(fi,i1,i0);
-
             float u1,v1,u2,v2,u3,v3;
             float u_ = float(i0-1)/(columns);
             v1=0; v2=vinc; v3=vinc;
@@ -926,6 +983,7 @@ struct CreateSphere : zeno::INode {
             auto uvw2 = zeno::vec3f(u2,v2,0);
             auto uvw3 = zeno::vec3f(u3,v3,0);
 
+            tris.emplace_back(fi,i1,i0);
             uv1.push_back(uvw1);uv2.push_back(uvw2);uv3.push_back(uvw3);
         }
 
@@ -958,11 +1016,15 @@ struct CreateSphere : zeno::INode {
 
                 uvw1=zeno::vec3f(u1,v1,0);uvw2=zeno::vec3f(u2,v2,0);uvw3=zeno::vec3f(u3,v3,0);uvw4=zeno::vec3f(u4,v4,0);
 
-                uv1.push_back(uvw1);uv2.push_back(uvw4);uv3.push_back(uvw3);
-                uv1.push_back(uvw4);uv2.push_back(uvw1);uv3.push_back(uvw2);
-
-                tris.emplace_back(i0,i3,i2);
-                tris.emplace_back(i3,i0,i1);
+                if(quad){
+                    quads.emplace_back(i0, i1, i3, i2);
+                    quv1.push_back(uvw1);quv2.push_back(uvw2);quv3.push_back(uvw4);quv4.push_back(uvw3);
+                }else{
+                    uv1.push_back(uvw1);uv2.push_back(uvw4);uv3.push_back(uvw3);
+                    uv1.push_back(uvw4);uv2.push_back(uvw1);uv3.push_back(uvw2);
+                    tris.emplace_back(i0,i3,i2);
+                    tris.emplace_back(i3,i0,i1);
+                }
             }
         }
 
@@ -990,11 +1052,24 @@ struct CreateSphere : zeno::INode {
             auto uvw3 = zeno::vec3f(u3,v3,0);
 
             uv1.push_back(uvw1);uv2.push_back(uvw2);uv3.push_back(uvw3);
-
             tris.emplace_back(li,i3,i2);
         }
 
-        // FIXME Lead to calculation of normal and uv errors
+        for (int i = 0; i < verts->size(); i++)
+        {
+            auto p = verts[i];
+            auto n = nors[i];
+
+            ROTATE_COMPUTE
+
+            auto gn = glm::vec3(n[0], n[1], n[2]);
+            gn = mz * my * mx * gn;
+            n = zeno::vec3f(gn.x, gn.y, gn.z);
+
+            verts[i] = p * scale * radius + position;
+            nors[i] = n;
+        }
+
         NORMUV_CIHOU
         set_output("prim", std::move(prim));
     }
@@ -1009,6 +1084,7 @@ ZENDEFNODE(CreateSphere, {
         NORMUV_PARM
         {"int", "rows", "13"},
         {"int", "columns", "24"},
+        {"bool", "quads", "0"},
     },
     {"prim"},
     {},

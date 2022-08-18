@@ -23,7 +23,7 @@ static void outputBgeo(std::string path, const std::vector<T> &pos,
     _v[1] = vel[i][1];
     _v[2] = vel[i][2];
   }
-  printf("writing particles to %s\n", path);
+  printf("writing particles to %s\n", path.c_str());
   Partio::write(path.c_str(), *parts, /*force compresse*/ false);
   parts->release();
 }

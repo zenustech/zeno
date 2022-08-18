@@ -3,6 +3,7 @@
 #include "subnetnode.h"
 #include "heatmapnode.h"
 #include "curvenode.h"
+#include "cameranode.h"
 #include "dynamicnumbernode.h"
 #include "zenolink.h"
 #include <zenoui/model/modelrole.h>
@@ -144,6 +145,10 @@ ZenoNode* ZenoSubGraphScene::createNode(const QModelIndex& idx, const NodeUtilPa
     {
         return new BlackboardNode(params);
     }
+    else if (descName == "CameraNode")
+    {
+        return new CameraNode(params);
+    }
     else
     {
         return new ZenoNode(params);
@@ -232,21 +237,25 @@ void ZenoSubGraphScene::onLinkInserted(const QModelIndex& subGpIdx, const QModel
 
     IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
     QModelIndex linkIdx = pGraphsModel->linkIndex(first);
+    viewAddLink(linkIdx);
+}
 
-	const QString& linkId = linkIdx.data(ROLE_OBJID).toString();
+void ZenoSubGraphScene::viewAddLink(const QModelIndex& linkIdx)
+{
+    const QString& linkId = linkIdx.data(ROLE_OBJID).toString();
 
     const QString& inId = linkIdx.data(ROLE_INNODE).toString();
     const QString& inSock = linkIdx.data(ROLE_INSOCK).toString();
-	const QString& outId = linkIdx.data(ROLE_OUTNODE).toString();
-	const QString& outSock = linkIdx.data(ROLE_OUTSOCK).toString();
+    const QString& outId = linkIdx.data(ROLE_OUTNODE).toString();
+    const QString& outSock = linkIdx.data(ROLE_OUTSOCK).toString();
 
     ZenoNode* pNode = m_nodes[inId];
     const QPointF& inSockPos = pNode->getPortPos(true, inSock);
-	const QPointF& outSockPos = m_nodes[outId]->getPortPos(false, outSock);
+    const QPointF& outSockPos = m_nodes[outId]->getPortPos(false, outSock);
 
-    ZenoFullLink *pEdge = new ZenoFullLink(QPersistentModelIndex(linkIdx), m_nodes[outId], m_nodes[inId]);
-	addItem(pEdge);
-	m_links[linkId] = pEdge;
+    ZenoFullLink* pEdge = new ZenoFullLink(QPersistentModelIndex(linkIdx), m_nodes[outId], m_nodes[inId]);
+    addItem(pEdge);
+    m_links[linkId] = pEdge;
 
     pNode->onSocketLinkChanged(inSock, true, true);
     m_nodes[outId]->onSocketLinkChanged(outSock, false, true);
@@ -260,12 +269,18 @@ void ZenoSubGraphScene::onLinkAboutToBeRemoved(const QModelIndex& subGpIdx, cons
 	IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
 	QModelIndex linkIdx = pGraphsModel->linkIndex(first);
 	ZASSERT_EXIT(linkIdx.isValid());
+    viewRemoveLink(linkIdx);
+}
 
+void ZenoSubGraphScene::viewRemoveLink(const QModelIndex& linkIdx)
+{
     const QString& linkId = linkIdx.data(ROLE_OBJID).toString();
-    ZASSERT_EXIT(m_links.find(linkId) != m_links.end());
-
-    delete m_links[linkId];
-	m_links.remove(linkId);
+    if (m_links.find(linkId) != m_links.end())
+    {
+        ZenoFullLink* pLink = m_links[linkId];
+        m_links.remove(linkId);
+        delete pLink;
+    }
 
 	const QString& inId = linkIdx.data(ROLE_INNODE).toString();
 	const QString& inSock = linkIdx.data(ROLE_INSOCK).toString();
@@ -311,7 +326,7 @@ void ZenoSubGraphScene::markError(const QString& nodeid)
     ZASSERT_EXIT(m_nodes.find(nodeid) != m_nodes.end());
     ZenoNode *pNode = m_nodes[nodeid];
     pNode->markError(true);
-    pNode->setSelected(true);
+    //pNode->setSelected(true);
     m_errNodes.append(nodeid);
 }
 
@@ -520,11 +535,13 @@ void ZenoSubGraphScene::onSocketClicked(QString nodeid, bool bInput, QString soc
         const QString &outNode = linkIdx.data(ROLE_OUTNODE).toString();
         const QString &outSock = linkIdx.data(ROLE_OUTSOCK).toString();
 
-        pGraphsModel->removeLink(linkIdx, m_subgIdx, true);
+        //remove current link at view.
+        viewRemoveLink(linkIdx);
 
         socketPos = m_nodes[outNode]->getPortPos(false, outSock);
         ZenoSocketItem *pSocketItem = m_nodes[outNode]->getSocketItem(false, outSock);
         m_tempLink = new ZenoTempLink(pSocketItem, outNode, outSock, socketPos, false);
+        m_tempLink->setOldLink(linkIdx);
         addItem(m_tempLink);
     }
     else
@@ -593,6 +610,10 @@ void ZenoSubGraphScene::onSocketAbsorted(const QPointF mousePos)
 
 void ZenoSubGraphScene::onTempLinkClosed()
 {
+    if (!m_tempLink)
+        return;
+
+    IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
     if (ZenoSocketItem *targetSock = m_tempLink->getAdsorbedSocket())
     {
         IGraphsModel *pGraphsModel = zenoApp->graphsManagment()->currentModel();
@@ -632,6 +653,26 @@ void ZenoSubGraphScene::onTempLinkClosed()
                 inPos = socketPos;
             }
 
+            const QPersistentModelIndex& oldLink = m_tempLink->oldLink();
+            if (oldLink.isValid())
+            {
+                //same link?
+                if (oldLink.data(ROLE_INNODE).toString() == inNode &&
+                    oldLink.data(ROLE_INSOCK).toString() == inSock &&
+                    oldLink.data(ROLE_OUTNODE).toString() == outNode &&
+                    oldLink.data(ROLE_OUTSOCK).toString() == outSock)
+                {
+                    viewAddLink(oldLink);
+                    return;
+                }
+            }
+
+            pGraphsModel->beginTransaction(tr("add Link"));
+
+            //remove the old Link first.
+            if (oldLink.isValid())
+                pGraphsModel->removeLink(oldLink, m_subgIdx, true);
+
             //remove the edge in inNode:inSock, if exists.
             if (bTargetInput)
             {
@@ -645,7 +686,17 @@ void ZenoSubGraphScene::onTempLinkClosed()
 
             EdgeInfo info(outNode, inNode, outSock, inSock);
             pGraphsModel->addLink(info, m_subgIdx, true, true);
+
+            pGraphsModel->endTransaction();
+
+            return;
         }
+    }
+
+    const QPersistentModelIndex& oldLink = m_tempLink->oldLink();
+    if (oldLink.isValid())
+    {
+        pGraphsModel->removeLink(oldLink, m_subgIdx, true);
     }
 }
 

@@ -131,9 +131,9 @@ QVariant UiHelper::_parseDefaultValue(const QString &defaultValue, const QString
     case CONTROL_CURVE:
     case CONTROL_ENUM:
         return defaultValue;
-    case CONTROL_VEC3F:
+    case CONTROL_VEC3:
     {
-        QVector<qreal> vec;
+        UI_VECTYPE vec;
         if (!defaultValue.isEmpty())
         {
             QStringList L = defaultValue.split(",");
@@ -247,8 +247,9 @@ PARAM_CONTROL UiHelper::getControlType(const QString &type)
         return CONTROL_FLOAT;
     } else if (type == "string") {
         return CONTROL_STRING;
-    } else if (type == "vec3f") {
-        return CONTROL_VEC3F;
+    } else if (type == "vec3f" || type == "vec3" || type == "vec3i") {
+        // support legacy type "vec3"
+        return CONTROL_VEC3;
     } else if (type == "writepath") {
         return CONTROL_WRITEPATH;
     } else if (type == "readpath") {
@@ -301,13 +302,15 @@ QString UiHelper::variantToString(const QVariant& var)
 	}
 	else if (var.type() == QVariant::UserType)
     {
-        QVector<qreal> vec = var.value<QVector<qreal>>();
+        UI_VECTYPE vec = var.value<UI_VECTYPE>();
         if (vec.isEmpty()) {
             zeno::log_warn("unexpected qt variant {}", var.typeName());
         } else {
-            QString res = QString::number(vec[0]);
-            for (size_t i = 1; i < vec.size(); i++) {
+            QString res;
+            for (int i = 0; i < vec.size(); i++) {
                 res.append(QString::number(vec[i]));
+                if (i < vec.size() - 1)
+                    res.append(",");
             }
             return res;
         }

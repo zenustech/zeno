@@ -81,6 +81,29 @@ ZENDEFNODE(PrimitiveFarSimpleLines,
     "primitive",
     }});
 
+struct PrimitiveNearSimpleLines : zeno::INode {
+  virtual void apply() override {
+    auto prim = get_input<PrimitiveObject>("prim");
+    size_t lines_count = prim->size() ? prim->size() - 1 : 0;
+    prim->lines.resize(lines_count);
+    for (int i = 0; i < lines_count; i++) {
+      prim->lines[i] = zeno::vec2i(i, i + 1);
+    }
+
+    set_output("prim", get_input("prim"));
+  }
+};
+
+ZENDEFNODE(PrimitiveNearSimpleLines,
+    { /* inputs: */ {
+    "prim",
+    }, /* outputs: */ {
+    "prim",
+    }, /* params: */ {
+    }, /* category: */ {
+    "primitive",
+    }});
+
 
 struct PrimitiveSimpleTris : zeno::INode {
   virtual void apply() override {
@@ -135,11 +158,19 @@ struct PrimitiveClearConnect : zeno::INode {
     auto prim = get_input<PrimitiveObject>("prim");
     auto type = get_input<StringObject>("type")->value;
     
+    if(type=="points" || type=="all")
+      prim->points.clear();
     if(type=="edges" || type=="all")
       prim->lines.clear();
-    if(type=="faces" || type=="all"){
+    if(type=="faces" || type=="tris" || type=="all"){
       prim->tris.clear();
+    }
+    if(type=="faces" || type=="quads" || type=="all"){
       prim->quads.clear();
+    }
+    if(type=="faces" || type=="polys" || type=="all"){
+      prim->polys.clear();
+      prim->loops.clear();
     }
 
     set_output("prim", get_input("prim"));
@@ -148,7 +179,7 @@ struct PrimitiveClearConnect : zeno::INode {
 
 ZENDEFNODE(PrimitiveClearConnect,
     { /* inputs: */ {
-    "prim", {"enum edges faces all","type", "all"}
+    "prim", {"enum edges faces tris quads polys points all","type", "all"}
     }, /* outputs: */ {
     "prim",
     }, /* params: */ {
@@ -185,7 +216,7 @@ ZENDEFNODE(PrimitiveLineSimpleLink, {
 });
 
 
-struct PrimitiveSplitEdges : zeno::INode {
+struct PrimitiveSplitEdges : zeno::INode { // TODO: use PrimSplitFaces to replace this node
   virtual void apply() override {
     auto prim = get_input<PrimitiveObject>("prim");
 
@@ -252,9 +283,30 @@ ZENDEFNODE(PrimitiveFaceToEdges,
     }, /* params: */ {
     {"bool", "clearFaces", "1"},
     }, /* category: */ {
-    "primitive",
+    "deprecated",
     }});
 
+
+struct PrimitiveFlipPoly : zeno::INode {
+    virtual void apply() override {
+        auto surfIn = get_input<zeno::PrimitiveObject>("prim");
+        for(size_t i = 0;i < surfIn->tris.size();++i){
+            auto& tri = surfIn->tris[i];
+            size_t tri_idx_tmp = tri[1];
+            tri[1] = tri[2];
+            tri[2] = tri_idx_tmp;
+        }
+
+        set_output("primOut",surfIn);
+    }
+};
+
+ZENDEFNODE(PrimitiveFlipPoly,{
+    {{"prim"}},
+    {"primOut"},
+    {},
+    {"deprecated"},
+});
 
 
 }

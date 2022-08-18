@@ -2,7 +2,6 @@
 #include "Stmts.h"
 #include <sstream>
 #include "StmHelper.h"
-#include "iostream"
 namespace zfx {
 
 #define ERROR_IF(x) do { \
@@ -38,7 +37,6 @@ struct ExpandFunctions : Visitor<ExpandFunctions> {
             int dim = name[3] - '0';
             int argdim = 0;
             for (auto const &arg: args) {
-                std::cout<<arg->dim<<std::endl;
                 argdim += arg->dim;
             }
             if (argdim != 1 && argdim != dim) {
