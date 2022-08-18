@@ -1,5 +1,4 @@
 #include "zgraphicstextitem.h"
-#include <QtGui/private/qtextengine_p.h>
 
 
 ZGraphicsTextItem::ZGraphicsTextItem(const QString& text, const QFont& font, const QColor& color, QGraphicsItem* parent)
