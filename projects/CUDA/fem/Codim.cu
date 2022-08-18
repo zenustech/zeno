@@ -1155,6 +1155,7 @@ struct CodimStepping : INode {
       using namespace zs;
       constexpr auto space = execspace_e::cuda;
       T activeGap2 = dHat * dHat + (T)2.0 * xi * dHat;
+#if s_enableContact
 #if s_enableSelfFriction 
       nFPP = nPP;
       nFPE = nPE;
@@ -1230,6 +1231,7 @@ struct CodimStepping : INode {
             fricEE.tuple<6>("basis", feei) =
                 edge_edge_tangent_basis(ea0, ea1, eb0, eb1);
           });
+#endif
 #endif
       if (s_enableGround) {
         for (auto &primHandle : prims) {
@@ -1618,7 +1620,7 @@ struct CodimStepping : INode {
                 auto relDXNorm = zs::sqrt(relDXNorm2);
 
                 vec3 grad{};
-                if (relDXNorm2 >= epsvh * epsvh)
+                if (relDXNorm2 > epsvh * epsvh)
                   grad = -relDX * (coeff / relDXNorm);
                 else
                   grad = -relDX * (coeff / epsvh);
@@ -1629,7 +1631,7 @@ struct CodimStepping : INode {
                   return;
 
                 auto hess = mat3::zeros();
-                if (relDXNorm2 >= epsvh * epsvh) {
+                if (relDXNorm2 > epsvh * epsvh) {
                   zs::vec<T, 2, 2> mat{
                       relDX[0] * relDX[0] * -coeff / relDXNorm2 / relDXNorm +
                           coeff / relDXNorm,
@@ -2538,15 +2540,14 @@ struct CodimStepping : INode {
                     const auto vi =
                         reinterpret_bits<int>(svs("inds", svi)) + svOffset;
                     auto fn = svtemp("fn", svi);
-                    auto x = vtemp.pack<3>("xn", vi);
-                    auto dist = gn.dot(x);
                     T E = 0;
-                    if (fn != 0 && dist < dHat) {
+                    if (fn != 0) {
+                      auto x = vtemp.pack<3>("xn", vi);
                       auto dx = x - vtemp.pack<3>("xhat", vi);
                       auto relDX = dx - gn.dot(dx) * gn;
                       auto relDXNorm2 = relDX.l2NormSqr();
                       auto relDXNorm = zs::sqrt(relDXNorm2);
-                      if (relDXNorm2 >= epsvh * epsvh) {
+                      if (relDXNorm > epsvh) {
                         E = fn * (relDXNorm - epsvh / 2);
                       } else {
                         E = fn * relDXNorm2 / epsvh / 2;
@@ -2554,7 +2555,7 @@ struct CodimStepping : INode {
                     }
                     reduce_to(svi, n, E, es[svi / 32]);
                   });
-              Es.push_back(reduce(pol, es));
+              Es.push_back(reduce(pol, es) * fricMu);
             }
 #endif
           }
@@ -4915,11 +4916,11 @@ struct CodimStepping : INode {
 
         if constexpr (s_enableContact) {
           A.findCollisionConstraints(cudaPol, dHat, xi);
-          if constexpr (s_enableFriction)
-            if (fricMu != 0) {
-              A.precomputeFrictions(cudaPol, dHat, xi);
-            }
         }
+        if constexpr (s_enableFriction)
+          if (fricMu != 0) {
+            A.precomputeFrictions(cudaPol, dHat, xi);
+          }
         // construct gradient, prepare hessian, prepare preconditioner
         cudaPol(zs::range(numDofs),
                 [vtemp = proxy<space>({}, vtemp)] __device__(int i) mutable {
