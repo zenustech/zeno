@@ -134,6 +134,7 @@ struct CodimStepping : INode {
 #define s_enableContact 1
 #define s_enableMollification 1
 #define s_enableFriction 1
+#define s_enableSelfFriction 1
   inline static bool s_enableGround = false;
 #define s_enableDCDCheck 0
 #define s_enableDebugCheck 0
@@ -1154,7 +1155,7 @@ struct CodimStepping : INode {
       using namespace zs;
       constexpr auto space = execspace_e::cuda;
       T activeGap2 = dHat * dHat + (T)2.0 * xi * dHat;
-
+#if s_enableSelfFriction 
       nFPP = nPP;
       nFPE = nPE;
       nFPT = nPT;
@@ -1229,6 +1230,7 @@ struct CodimStepping : INode {
             fricEE.tuple<6>("basis", feei) =
                 edge_edge_tangent_basis(ea0, ea1, eb0, eb1);
           });
+#endif
       if (s_enableGround) {
         for (auto &primHandle : prims) {
           if (primHandle.isBoundary()) // skip soft boundary
@@ -2030,11 +2032,11 @@ struct CodimStepping : INode {
             auto xt = vtemp.pack<3>("xhat", vi);
             int BCorder = vtemp("BCorder", vi);
             T E = 0;
-            if (BCorder != 3) {
+            {
               // inertia
               E += (T)0.5 * m * (x - vtemp.pack<3>("xtilde", vi)).l2NormSqr();
               // external force
-              if (vtemp("BCsoft", vi) == 0) {
+              if (vtemp("BCsoft", vi) == 0 && vtemp("BCorder", vi) != 3) {
                 E += -m * extForce.dot(x - xt) * dt * dt;
               }
             }
@@ -2383,6 +2385,7 @@ struct CodimStepping : INode {
 
 #if s_enableFriction
           if (fricMu != 0) {
+#if s_enableSelfFriction 
             auto numFPP = nFPP.getVal();
             es.resize(count_warps(numFPP));
             es.reset(0);
@@ -2489,6 +2492,7 @@ struct CodimStepping : INode {
               reduce_to(feei, n, E, es[feei / 32]);
             });
             Es.push_back(reduce(pol, es) * fricMu);
+#endif
           }
 #endif // fric
         }
@@ -3940,6 +3944,7 @@ struct CodimStepping : INode {
 
 #if s_enableFriction
         if (fricMu != 0) {
+#if s_enableSelfFriction 
           auto numFPP = nFPP.getVal();
           pol(Collapse{numFPP, 32},
               [execTag, fricPP = proxy<space>({}, fricPP),
@@ -4078,6 +4083,7 @@ struct CodimStepping : INode {
                   atomic_add(execTag, &vtemp(bTag, rowid % 3, fee[rowid / 3]),
                              entryG);
               });
+#endif
         }
 #endif // end fric
 #endif
