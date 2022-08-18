@@ -101,6 +101,14 @@ void GraphsModel::newSubgraph(const QString &graphName)
 {
     if (graphName.compare("main", Qt::CaseInsensitive) == 0)
     {
+        zeno::log_error("main graph is not allowed to be created or removed");
+        return;
+    }
+
+    if (m_nodesDesc.find(graphName) != m_nodesDesc.end() ||
+        m_subgsDesc.find(graphName) != m_subgsDesc.end())
+    {
+        zeno::log_error("Already has a graph or node called \"{}\"", graphName.toStdString());
         return;
     }
 
@@ -141,6 +149,12 @@ void GraphsModel::reloadSubGraph(const QString& graphName)
 
 void GraphsModel::renameSubGraph(const QString& oldName, const QString& newName)
 {
+    if (oldName == newName || oldName.compare("main", Qt::CaseInsensitive) == 0)
+        return;
+
+    ZASSERT_EXIT(m_subgsDesc.find(oldName) != m_subgsDesc.end() &&
+        m_subgsDesc.find(newName) == m_subgsDesc.end());
+
     //todo: transaction.
     SubGraphModel* pSubModel = subGraph(oldName);
     ZASSERT_EXIT(pSubModel);
@@ -156,7 +170,17 @@ void GraphsModel::renameSubGraph(const QString& oldName, const QString& newName)
             pModel->replaceSubGraphNode(oldName, newName);
         }
     }
-    initDescriptors();
+
+    NODE_DESC desc = m_subgsDesc[oldName];
+    m_subgsDesc[newName] = desc;
+    m_subgsDesc.remove(oldName);
+
+    for (QString cate : desc.categories)
+    {
+        m_nodesCate[cate].nodes.removeAll(oldName);
+        m_nodesCate[cate].nodes.append(newName);
+    }
+
     emit graphRenamed(oldName, newName);
 }
 
@@ -242,12 +266,6 @@ bool GraphsModel::setData(const QModelIndex& index, const QVariant& value, int r
 			if (!oldName.isEmpty())
 			{
 				renameSubGraph(oldName, newName);
-			}
-			else
-			{
-                //new subgraph.
-                pModel->setName(newName);
-                initDescriptors();
 			}
 		}
 	}
@@ -337,6 +355,7 @@ NODE_DESCS GraphsModel::getCoreDescs()
 				desc.params[name] = paramInfo;
 			}
 			desc.categories = z_categories;
+            desc.name = z_name;
 
 			descs.insert(z_name, desc);
 		}
@@ -346,144 +365,148 @@ NODE_DESCS GraphsModel::getCoreDescs()
 
 void GraphsModel::initDescriptors()
 {
-    NODE_DESCS descs = getCoreDescs();
-    NODE_DESCS subgDescs = getSubgraphDescs();
-    for (QString key : subgDescs.keys())
-    {
-        ZASSERT_EXIT(descs.find(key) == descs.end());
-        descs.insert(key, subgDescs[key]);
-    }
+    m_nodesDesc = getCoreDescs();
+
     //add Blackboard
     NODE_DESC desc;
     desc.categories.push_back("layout");
-    descs.insert("Blackboard", desc);
+    m_nodesDesc.insert("Blackboard", desc);
 
-    setDescriptors(descs);
-}
-
-NODE_DESCS GraphsModel::getSubgraphDescs()
-{
-    NODE_DESCS descs;
-    for (int r = 0; r < this->rowCount(); r++)
-    {
-        QModelIndex index = this->index(r, 0);
-        ZASSERT_EXIT(index.isValid(), descs);
-        SubGraphModel *pModel = subGraph(r);
-        const QString& graphName = pModel->name();
-        if (graphName == "main" || graphName.isEmpty())
-            continue;
-
-        QString subcategory = "subgraph";
-        INPUT_SOCKETS subInputs;
-        OUTPUT_SOCKETS subOutputs;
-        for (int i = 0; i < pModel->rowCount(); i++)
-        {
-            QModelIndex idx = pModel->index(i, 0);
-            const QString& nodeName = idx.data(ROLE_OBJNAME).toString();
-            PARAMS_INFO params = idx.data(ROLE_PARAMETERS).value<PARAMS_INFO>();
-            if (nodeName == "SubInput")
-            {
-                QString n_type = params["type"].value.toString();
-                QString n_name = params["name"].value.toString();
-                auto n_defl = params["defl"].value;
-
-                SOCKET_INFO info;
-                info.name = n_name;
-                info.type = n_type;
-                info.defaultValue = n_defl; 
-
-                INPUT_SOCKET inputSock;
-                inputSock.info = info;
-                subInputs.insert(n_name, inputSock);
-            }
-            else if (nodeName == "SubOutput")
-            {
-                auto n_type = params["type"].value.toString();
-                auto n_name = params["name"].value.toString();
-                auto n_defl = params["defl"].value;
-
-                SOCKET_INFO info;
-                info.name = n_name;
-                info.type = n_type;
-                info.defaultValue = n_defl; 
-
-                OUTPUT_SOCKET outputSock;
-                outputSock.info = info;
-                subOutputs.insert(n_name, outputSock);
-            }
-            else if (nodeName == "SubCategory")
-            {
-                subcategory = params["name"].value.toString();
-            }
-        }
-
-        INPUT_SOCKET srcSock;
-        srcSock.info.name = "SRC";
-        OUTPUT_SOCKET dstSock;
-        dstSock.info.name = "DST";
-
-        subInputs.insert("SRC", srcSock);
-        subOutputs.insert("DST", dstSock);
-
-        NODE_DESC desc;
-        desc.inputs = subInputs;
-        desc.outputs = subOutputs;
-        desc.categories.push_back(subcategory);
-        desc.is_subgraph = true;
-        descs[graphName] = desc;
-    }
-    return descs;
-}
-
-NODE_DESCS GraphsModel::descriptors() const
-{
-    return m_nodesDesc;
-}
-
-void GraphsModel::setDescriptors(const NODE_DESCS& nodeDescs)
-{
-    m_nodesDesc = nodeDescs;
     m_nodesCate.clear();
     for (auto it = m_nodesDesc.constBegin(); it != m_nodesDesc.constEnd(); it++)
     {
         const QString& name = it.key();
         const NODE_DESC& desc = it.value();
-        for (auto cate : desc.categories)
-        {
-            m_nodesCate[cate].name = cate;
-            m_nodesCate[cate].nodes.push_back(name);
-        }
+        registerCate(desc);
     }
 }
 
-void GraphsModel::appendSubnetDescsFromZsg(const QList<NODE_DESC>& zsgSubnets)
+NODE_DESC GraphsModel::getSubgraphDesc(SubGraphModel* pModel)
+{
+    const QString& graphName = pModel->name();
+    if (graphName == "main" || graphName.isEmpty())
+        return NODE_DESC();
+
+    QString subcategory = "subgraph";
+    INPUT_SOCKETS subInputs;
+    OUTPUT_SOCKETS subOutputs;
+    for (int i = 0; i < pModel->rowCount(); i++)
+    {
+        QModelIndex idx = pModel->index(i, 0);
+        const QString& nodeName = idx.data(ROLE_OBJNAME).toString();
+        PARAMS_INFO params = idx.data(ROLE_PARAMETERS).value<PARAMS_INFO>();
+        if (nodeName == "SubInput")
+        {
+            QString n_type = params["type"].value.toString();
+            QString n_name = params["name"].value.toString();
+            auto n_defl = params["defl"].value;
+
+            SOCKET_INFO info;
+            info.name = n_name;
+            info.type = n_type;
+            info.defaultValue = n_defl; 
+
+            INPUT_SOCKET inputSock;
+            inputSock.info = info;
+            subInputs.insert(n_name, inputSock);
+        }
+        else if (nodeName == "SubOutput")
+        {
+            auto n_type = params["type"].value.toString();
+            auto n_name = params["name"].value.toString();
+            auto n_defl = params["defl"].value;
+
+            SOCKET_INFO info;
+            info.name = n_name;
+            info.type = n_type;
+            info.defaultValue = n_defl; 
+
+            OUTPUT_SOCKET outputSock;
+            outputSock.info = info;
+            subOutputs.insert(n_name, outputSock);
+        }
+        else if (nodeName == "SubCategory")
+        {
+            subcategory = params["name"].value.toString();
+        }
+    }
+
+    INPUT_SOCKET srcSock;
+    srcSock.info.name = "SRC";
+    OUTPUT_SOCKET dstSock;
+    dstSock.info.name = "DST";
+
+    subInputs.insert("SRC", srcSock);
+    subOutputs.insert("DST", dstSock);
+
+    NODE_DESC desc;
+    desc.inputs = subInputs;
+    desc.outputs = subOutputs;
+    desc.categories.push_back(subcategory);
+    desc.is_subgraph = true;
+    desc.name = graphName;
+
+    return desc;
+}
+
+NODE_DESCS GraphsModel::descriptors() const
+{
+    NODE_DESCS descs;
+    descs.insert(m_subgsDesc);
+    for (auto iter = m_nodesDesc.constKeyValueBegin(); iter != m_nodesDesc.constKeyValueEnd(); iter++)
+    {
+        const QString& nodeName = iter->first;
+        //subgraph node has high priority than core node.
+        if (descs.find(nodeName) == descs.end())
+        {
+            descs.insert(nodeName, iter->second);
+        }
+    }
+    return descs;
+}
+
+bool GraphsModel::appendSubnetDescsFromZsg(const QList<NODE_DESC>& zsgSubnets)
 {
     for (NODE_DESC desc : zsgSubnets)
     {
-        if (m_nodesDesc.find(desc.name) != m_nodesDesc.end())
+        if (m_subgsDesc.find(desc.name) == m_subgsDesc.end())
         {
-            // keep legacy subnet when meet "internal" node whose name is same with this subnet.
-            m_nodesDesc.remove(desc.name);
+            desc.is_subgraph = true;
+            m_subgsDesc.insert(desc.name, desc);
+            registerCate(desc);
         }
-        if (!desc.name.isEmpty())
+        else
         {
-            m_nodesDesc.insert(desc.name, desc);
-            for (auto cate : desc.categories)
-            {
-                m_nodesCate[cate].name = cate;
-                m_nodesCate[cate].nodes.push_back(desc.name);
-            }
+            zeno::log_error("The graph \"{}\" exists!", desc.name.toStdString());
+            return false;
         }
+    }
+    return true;
+}
+
+void GraphsModel::registerCate(const NODE_DESC& desc)
+{
+    for (auto cate : desc.categories)
+    {
+        m_nodesCate[cate].name = cate;
+        m_nodesCate[cate].nodes.push_back(desc.name);
     }
 }
 
 bool GraphsModel::getDescriptor(const QString& descName, NODE_DESC& desc)
 {
-    if (m_nodesDesc.find(descName) == m_nodesDesc.end())
-        return false;
-
-    desc = m_nodesDesc[descName];
-    return true;
+    //internal node or subgraph node? if same name.
+    if (m_subgsDesc.find(descName) != m_subgsDesc.end())
+    {
+        desc = m_subgsDesc[descName];
+        return true;
+    }
+    if (m_nodesDesc.find(descName) != m_nodesDesc.end())
+    {
+        desc = m_nodesDesc[descName];
+        return true;
+    }
+    return false;
 }
 
 void GraphsModel::appendSubGraph(SubGraphModel* pGraph)
@@ -496,14 +519,32 @@ void GraphsModel::appendSubGraph(SubGraphModel* pGraph)
 	endInsertRows();
     //the subgraph desc has been inited when processing io.
     if (!zenoApp->IsIOProcessing())
-        initDescriptors();
+    {
+        NODE_DESC desc = getSubgraphDesc(pGraph);
+        if (!desc.name.isEmpty() && m_subgsDesc.find(desc.name) == m_subgsDesc.end())
+        {
+            m_subgsDesc.insert(desc.name, desc);
+            registerCate(desc);
+        }
+    }
 }
 
 void GraphsModel::removeGraph(int idx)
 {
     beginRemoveRows(QModelIndex(), idx, idx);
+    const QString& descName = m_subGraphs[idx].pModel->name();
     m_subGraphs.remove(idx);
     endRemoveRows();
+
+    //if there is a core node shared the same name with this subgraph,
+    // it will not be exported because it was omitted at begin.
+    ZASSERT_EXIT(m_subgsDesc.find(descName) != m_subgsDesc.end());
+    NODE_DESC desc = m_subgsDesc[descName];
+    m_subgsDesc.remove(descName);
+    for (QString cate : desc.categories)
+    {
+        m_nodesCate[cate].nodes.removeAll(descName);
+    }
     markDirty();
 }
 
@@ -1583,8 +1624,8 @@ bool GraphsModel::updateSocketNameNotDesc(const QString& id, SOCKET_UPDATE_INFO 
 
 void GraphsModel::updateDescInfo(const QString& descName, const SOCKET_UPDATE_INFO& updateInfo)
 {
-    ZASSERT_EXIT(m_nodesDesc.find(descName) != m_nodesDesc.end());
-	NODE_DESC& desc = m_nodesDesc[descName];
+    ZASSERT_EXIT(m_subgsDesc.find(descName) != m_subgsDesc.end());
+	NODE_DESC& desc = m_subgsDesc[descName];
 	switch (updateInfo.updateWay)
 	{
 		case SOCKET_INSERT:
@@ -2063,7 +2104,8 @@ void GraphsModel::getNodeIndices(const QModelIndex& subGpIdx, QModelIndexList& s
 
 bool GraphsModel::hasDescriptor(const QString& nodeName) const
 {
-    return m_nodesDesc.find(nodeName) != m_nodesDesc.end();
+    return m_nodesDesc.find(nodeName) != m_nodesDesc.end() ||
+        m_subgsDesc.find(nodeName) != m_subgsDesc.end();
 }
 
 void GraphsModel::resolveLinks(const QModelIndex& idx, SubGraphModel* pCurrentGraph)

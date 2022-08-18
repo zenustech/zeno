@@ -9,7 +9,7 @@ public:
     TransferAcceptor(IGraphsModel* pModel);
 
     //IAcceptor
-    void setLegacyDescs(const rapidjson::Value &graphObj, const NODE_DESCS &legacyDescs) override;
+    bool setLegacyDescs(const rapidjson::Value &graphObj, const NODE_DESCS &legacyDescs) override;
     void BeginSubgraph(const QString &name) override;
     void EndSubgraph() override;
     bool setCurrentSubGraph(IGraphsModel *pModel, const QModelIndex &subgIdx) override;
