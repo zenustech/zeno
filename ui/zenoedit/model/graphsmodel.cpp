@@ -452,14 +452,16 @@ NODE_DESC GraphsModel::getSubgraphDesc(SubGraphModel* pModel)
 NODE_DESCS GraphsModel::descriptors() const
 {
     NODE_DESCS descs;
-    descs.insert(m_subgsDesc);
-    for (auto iter = m_nodesDesc.constKeyValueBegin(); iter != m_nodesDesc.constKeyValueEnd(); iter++)
+    for (QString descName : m_subgsDesc.keys())
     {
-        const QString& nodeName = iter->first;
+        descs.insert(descName, m_subgsDesc[descName]);
+    }
+    for (QString nodeName : m_nodesDesc.keys())
+    {
         //subgraph node has high priority than core node.
         if (descs.find(nodeName) == descs.end())
         {
-            descs.insert(nodeName, iter->second);
+            descs.insert(nodeName, m_nodesDesc[nodeName]);
         }
     }
     return descs;
