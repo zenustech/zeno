@@ -88,8 +88,6 @@ private:
     QGraphicsView* _getFocusViewByCursor();
 
     ZLineEdit* m_pLineEdit;
-    QPushButton* m_pZfxButton;
-    QPushButton* m_pSliderButton;
     ZGraphicsNumSliderItem* m_pSlider;
 };
 

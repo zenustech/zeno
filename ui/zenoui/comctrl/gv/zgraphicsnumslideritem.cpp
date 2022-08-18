@@ -10,7 +10,7 @@ ZGraphicsNumSliderItem::ZGraphicsNumSliderItem(const QVector<qreal>& steps, QGra
     , m_bHasPressed(false)
 {
     qreal maxWidth = 0, maxHeight = 0;
-    QFont font("HarmonyOS Sans", 10);
+    QFont font("HarmonyOS Sans", 12);
     int padding = ZenoStyle::dpiScaled(4);
 
     for (int i = 0; i < m_steps.length(); i++)

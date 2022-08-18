@@ -387,6 +387,20 @@ QGraphicsLayout* ZenoNode::initParam(PARAM_CONTROL ctrl, const QString& paramNam
 		    connect(pLineEdit, &ZenoParamLineEdit::editingFinished, this, [=]() {
 			    onParamEditFinished(paramName, pLineEdit->text());
 			    });
+            {
+                // pyb cihou slider
+                ImageElement elem;
+                elem.image = ":/icons/ic_openfile.svg";
+                elem.imageHovered = ":/icons/ic_openfile-on.svg";
+                elem.imageOn = ":/icons/ic_openfile-on.svg";
+                ZenoSvgLayoutItem* slideBtn = new ZenoSvgLayoutItem(elem, QSizeF(30, 30));
+
+                pParamLayout->addItem(slideBtn);
+                pParamLayout->setItemSpacing(1, 0);
+                pParamLayout->setItemSpacing(2, 0);
+
+                connect(slideBtn, SIGNAL(clicked()), pLineEdit, SLOT(toggleSlider()));
+            }
 		    m_paramControls[paramName] = pLineEdit;
 		    break;
 	    }
