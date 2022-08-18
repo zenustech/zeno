@@ -13,11 +13,12 @@ class ZGraphicsNumSliderItem : public QGraphicsObject
 public:
     ZGraphicsNumSliderItem(const QVector<qreal>& steps, QGraphicsItem* parent = nullptr);
     ~ZGraphicsNumSliderItem();
-    void mousePressEvent(QGraphicsSceneMouseEvent* event);
-    void mouseMoveEvent(QGraphicsSceneMouseEvent* event);
-    void keyPressEvent(QKeyEvent* event);
-    void keyReleaseEvent(QKeyEvent* event);
-    void focusOutEvent(QFocusEvent* event);
+    void mousePressEvent(QGraphicsSceneMouseEvent* event) override;
+    void mouseMoveEvent(QGraphicsSceneMouseEvent* event) override;
+    void mouseReleaseEvent(QGraphicsSceneMouseEvent* event) override;
+    void keyPressEvent(QKeyEvent* event) override;
+    void keyReleaseEvent(QKeyEvent* event) override;
+    void focusOutEvent(QFocusEvent* event) override;
     QRectF boundingRect() const override;
     QPainterPath shape() const override;
     void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget /* = nullptr */) override;
@@ -27,6 +28,7 @@ signals:
     void slideFinished();
 
 private:
+    bool m_bHasPressed;
     QPointF m_lastPos;
     QVector<qreal> m_steps;
     QVector<ZSimpleTextItem*> m_labels;
