@@ -118,11 +118,17 @@ QVariant UiHelper::_parseDefaultValue(const QString &defaultValue, const QString
     auto control = getControlType(type);
     switch (control) {
     case CONTROL_INT:
+    {
         return defaultValue.toInt();
+    }
     case CONTROL_BOOL:
+    {
         return (bool)defaultValue.toInt();
+    }
     case CONTROL_FLOAT:
+    {
         return defaultValue.toDouble();
+    }
     case CONTROL_STRING:
     case CONTROL_WRITEPATH:
     case CONTROL_READPATH:
@@ -283,6 +289,10 @@ QString UiHelper::variantToString(const QVariant& var)
 	{
 		value = QString::number(var.toDouble());
 	}
+    else if (var.type() == QMetaType::Float)
+    {
+        value = QString::number(var.toFloat());
+    }
 	else if (var.type() == QVariant::Int)
 	{
 		value = QString::number(var.toInt());
@@ -547,3 +557,16 @@ QPainterPath UiHelper::getRoundPath(QRectF r, int lt_radius, int rt_radius, int 
     return path;
 }
 
+QVector<qreal> UiHelper::getSlideStep(const QString& name, PARAM_CONTROL ctrl)
+{
+    QVector<qreal> steps;
+    if (ctrl == CONTROL_INT)
+    {
+        steps = { 1, 10, 100 };
+    }
+    else if (ctrl == CONTROL_FLOAT)
+    {
+        steps = { .0001, .001, .01, .1, 1, 10, 100 };
+    }
+    return steps;
+}

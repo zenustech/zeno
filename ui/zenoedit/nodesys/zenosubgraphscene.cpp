@@ -2,9 +2,7 @@
 #include "zenonode.h"
 #include "subnetnode.h"
 #include "heatmapnode.h"
-#include "curvenode.h"
 #include "cameranode.h"
-#include "dynamicnumbernode.h"
 #include "zenolink.h"
 #include <zenoui/model/modelrole.h>
 #include <zenoio/reader/zsgreader.h>
@@ -17,7 +15,6 @@
 #include "graphsmanagment.h"
 #include <zeno/utils/log.h>
 #include "util/log.h"
-#include "makelistnode.h"
 #include "blackboardnode.h"
 #include "acceptor/modelacceptor.h"
 #include "acceptor/transferacceptor.h"
@@ -62,7 +59,7 @@ void ZenoSubGraphScene::initModel(const QModelIndex& index)
         const QModelIndex& idx = pGraphsModel->index(r, m_subgIdx);
         ZenoNode* pNode = createNode(idx, m_nodeParams);
         connect(pNode, &ZenoNode::socketClicked, this, &ZenoSubGraphScene::onSocketClicked);
-        pNode->initUI(m_subgIdx, idx);
+        pNode->initUI(this, m_subgIdx, idx);
         addItem(pNode);
         const QString& nodeid = pNode->nodeId();
         m_nodes[nodeid] = pNode;
@@ -129,18 +126,6 @@ ZenoNode* ZenoSubGraphScene::createNode(const QModelIndex& idx, const NodeUtilPa
     {
         return new MakeHeatMapNode(params);
     }
-    else if (descName == "MakeCurve")
-    {
-        return new MakeCurveNode(params);
-    }
-    else if (descName == "DynamicNumber")
-    {
-        return new DynamicNumberNode(params);
-    }
-    else if (descName == "MakeList")
-    {
-        return new MakeListNode(params);
-    }
     else if (descName == "Blackboard")
     {
         return new BlackboardNode(params);
@@ -185,7 +170,7 @@ void ZenoSubGraphScene::onDataChanged(const QModelIndex& subGpIdx, const QModelI
         //now we choose the second.
         if (m_nodes.find(id) != m_nodes.end())
         {
-            m_nodes[id]->onSocketsUpdate(role == ROLE_INPUTS, false);
+            m_nodes[id]->onSocketsUpdate(this, role == ROLE_INPUTS, false);
         }
 	}
     if (role == ROLE_OPTIONS)
@@ -562,6 +547,7 @@ void ZenoSubGraphScene::onSocketAbsorted(const QPointF mousePos)
     QPointF pos = mousePos;
     QList<QGraphicsItem *> catchedItems = items(pos);
     QList<ZenoNode *> catchNodes;
+    QList<ZenoSocketItem* > catchSocks;
     for (QGraphicsItem *item : catchedItems)
     {
         if (ZenoNode *pNode = qgraphicsitem_cast<ZenoNode *>(item))
@@ -571,8 +557,30 @@ void ZenoSubGraphScene::onSocketAbsorted(const QPointF mousePos)
                 catchNodes.append(pNode);
             }
         }
+        else if (ZenoSocketItem* sock = qgraphicsitem_cast<ZenoSocketItem*>(item))
+        {
+            catchSocks.append(sock);
+        }
     }
     //adsorption
+    if (!catchSocks.isEmpty())
+    {
+        ZenoSocketItem* pSocket = catchSocks[0];
+        if (pSocket)
+        {
+            bool bInput = false;
+            QString nodeid2, sockName2;
+            pSocket->getSocketInfo(bInput, nodeid2, sockName2);
+            if (bInput != bFixedInput && nodeid2 != nodeId)
+            {
+                pos = pSocket->center();
+                m_tempLink->setAdsortedSocket(pSocket);
+                m_tempLink->setFloatingPos(pos);
+                return;
+            }
+        }
+    }
+    
     if (!catchNodes.isEmpty())
     {
         ZenoNode *pTarget = nullptr;
@@ -596,7 +604,7 @@ void ZenoSubGraphScene::onSocketAbsorted(const QPointF mousePos)
         ZenoSocketItem *pSocket = pTarget->getNearestSocket(pos, !bFixedInput);
         if (pSocket)
         {
-            pos = pSocket->sceneBoundingRect().center();
+            pos = pSocket->center();
         }
         m_tempLink->setAdsortedSocket(pSocket);
         m_tempLink->setFloatingPos(pos);
@@ -769,7 +777,7 @@ void ZenoSubGraphScene::onRowsInserted(const QModelIndex& subgIdx, const QModelI
     QModelIndex idx = pGraphsModel->index(first, m_subgIdx);
     ZenoNode *pNode = createNode(idx, m_nodeParams);
     connect(pNode, &ZenoNode::socketClicked, this, &ZenoSubGraphScene::onSocketClicked);
-    pNode->initUI(m_subgIdx, idx);
+    pNode->initUI(this, m_subgIdx, idx);
     addItem(pNode);
     QString id = pNode->nodeId();
     m_nodes[id] = pNode;
@@ -817,7 +825,8 @@ void ZenoSubGraphScene::updateLinkPos(ZenoNode* pNode, QPointF newPos)
 
 void ZenoSubGraphScene::keyPressEvent(QKeyEvent* event)
 {
-    if (event->key() == Qt::Key_Delete)
+    QGraphicsScene::keyPressEvent(event);
+    if (!event->isAccepted() && event->key() == Qt::Key_Delete)
     {
         QList<QGraphicsItem*> selItems = this->selectedItems();
         QList<QPersistentModelIndex> nodes;
@@ -840,5 +849,4 @@ void ZenoSubGraphScene::keyPressEvent(QKeyEvent* event)
             pGraphsModel->removeNodeLinks(nodes, links, m_subgIdx);
         }
     }
-    QGraphicsScene::keyPressEvent(event);
 }

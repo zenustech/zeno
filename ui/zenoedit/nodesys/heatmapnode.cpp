@@ -17,12 +17,7 @@ MakeHeatMapNode::~MakeHeatMapNode()
 
 }
 
-QGraphicsLayout* MakeHeatMapNode::initParams()
-{
-    return ZenoNode::initParams();
-}
-
-QGraphicsLayout* MakeHeatMapNode::initParam(PARAM_CONTROL ctrl, const QString& name, const PARAM_INFO& param)
+QGraphicsLayout* MakeHeatMapNode::initParam(PARAM_CONTROL ctrl, const QString& name, const PARAM_INFO& param, ZenoSubGraphScene* pScene)
 {
     if (param.control == CONTROL_COLOR)
     {
@@ -39,7 +34,7 @@ QGraphicsLayout* MakeHeatMapNode::initParam(PARAM_CONTROL ctrl, const QString& n
     }
     else
     {
-        return ZenoNode::initParam(ctrl, name, param);
+        return ZenoNode::initParam(ctrl, name, param, pScene);
     }
 }
 

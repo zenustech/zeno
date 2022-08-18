@@ -31,6 +31,7 @@ public:
     int type() const override;
     void setOffsetToName(const QPointF& offsetToName);
     QRectF boundingRect() const override;
+    QPointF center() const;
     bool getSocketInfo(bool& bInput, QString& nodeid, QString& sockName);
     void updateSockName(const QString& sockName);
     void setSockStatus(SOCK_STATUS status);
@@ -58,6 +59,12 @@ private:
 
     const QPersistentModelIndex m_index;
     QString m_name;         //should update when meet dynamic socket.
+
+    const int sHorLargeMargin;
+    const int sTopMargin;
+    const int sHorSmallMargin;
+    const int sBottomMargin;
+
     const bool m_bInput;
 };
 

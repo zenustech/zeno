@@ -24,6 +24,7 @@
 #include "util/log.h"
 #include "dialog/zfeedbackdlg.h"
 #include "startup/zstartup.h"
+#include "settings/zsettings.h"
 
 
 ZenoMainWindow::ZenoMainWindow(QWidget *parent, Qt::WindowFlags flags)
@@ -188,7 +189,7 @@ void ZenoMainWindow::initMenu() {
             QString name = QInputDialog::getText(this, tr("Save Layout"), tr("layout name:"),
                                                         QLineEdit::Normal, "layout_1", &bOk);
             if (bOk) {
-                QSettings settings(QSettings::UserScope, "Zenus Inc.", "zeno2");
+                QSettings settings(QSettings::UserScope, zsCompanyName, zsEditor);
                 settings.beginGroup("layout");
                 if (settings.childGroups().indexOf(name) != -1) {
                     QMessageBox msg(QMessageBox::Warning, "", tr("alreday has same layout"));
@@ -207,7 +208,7 @@ void ZenoMainWindow::initMenu() {
         pView->addAction(pSaveLayout);
 
         //check user saved layout.
-        QSettings settings(QSettings::UserScope, "Zenus Inc.", "zeno2");
+        QSettings settings(QSettings::UserScope, zsCompanyName, zsEditor);
         settings.beginGroup("layout");
         QStringList lst = settings.childGroups();
         if (!lst.isEmpty())
@@ -218,7 +219,7 @@ void ZenoMainWindow::initMenu() {
             {
                 QAction *pCustomLayout_ = new QAction(name);
                 connect(pCustomLayout_, &QAction::triggered, this, [=]() {
-                    QSettings settings(QSettings::UserScope, "Zenus Inc.", "zeno2");
+                    QSettings settings(QSettings::UserScope, zsCompanyName, zsEditor);
                     settings.beginGroup("layout");
                     settings.beginGroup(name);
                     restoreGeometry(settings.value("geometry").toByteArray());
@@ -245,13 +246,13 @@ void ZenoMainWindow::initMenu() {
         pAction = new QAction(tr("English / Chinese"), this);
         pAction->setCheckable(true);
         {
-            QSettings settings("ZenusTech", "Zeno");
+            QSettings settings(zsCompanyName, zsEditor);
             QVariant use_chinese = settings.value("use_chinese");
             pAction->setChecked(use_chinese.isNull() || use_chinese.toBool());
         }
         pHelp->addAction(pAction);
         connect(pAction, &QAction::triggered, this, [=]() {
-            QSettings settings("ZenusTech", "Zeno");
+            QSettings settings(zsCompanyName, zsEditor);
             settings.setValue("use_chinese", pAction->isChecked());
             QMessageBox msg(QMessageBox::Information, "Language",
                         tr("Please restart Zeno to apply changes."),
@@ -456,7 +457,7 @@ bool ZenoMainWindow::openFile(QString filePath)
 
 void ZenoMainWindow::recordRecentFile(const QString& filePath)
 {
-    QSettings settings(QSettings::UserScope, "Zenus Inc.", "zeno2");
+    QSettings settings(QSettings::UserScope, zsCompanyName, zsEditor);
     settings.beginGroup("Recent File List");
 
     QStringList keys = settings.childKeys();
@@ -682,38 +683,6 @@ void ZenoMainWindow::onlyEditorLayout()
             dock->close();
         }
     }
-}
-
-void ZenoMainWindow::writeHoudiniStyleLayout() {
-    QSettings settings("Zeno Inc.", "zeno2 ui1");
-    settings.beginGroup("mainWindow");
-    settings.setValue("geometry", saveGeometry());
-    settings.setValue("state", saveState());
-    settings.endGroup();
-}
-
-void ZenoMainWindow::writeSettings2() {
-    QSettings settings("Zeno Inc.", "zeno2 ui2");
-    settings.beginGroup("mainWindow");
-    settings.setValue("geometry", saveGeometry());
-    settings.setValue("state", saveState());
-    settings.endGroup();
-}
-
-void ZenoMainWindow::readHoudiniStyleLayout() {
-    QSettings settings("Zeno Inc.", "zeno2 ui1");
-    settings.beginGroup("mainWindow");
-    restoreGeometry(settings.value("geometry").toByteArray());
-    restoreState(settings.value("state").toByteArray());
-    settings.endGroup();
-}
-
-void ZenoMainWindow::readSettings2() {
-    QSettings settings("Zeno Inc.", "zeno2 ui2");
-    settings.beginGroup("mainWindow");
-    restoreGeometry(settings.value("geometry").toByteArray());
-    restoreState(settings.value("state").toByteArray());
-    settings.endGroup();
 }
 
 void ZenoMainWindow::onNodesSelected(const QModelIndex &subgIdx, const QModelIndexList &nodes, bool select) {

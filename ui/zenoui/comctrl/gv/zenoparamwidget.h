@@ -5,10 +5,16 @@
 #include <zenoui/model/modelrole.h>
 #include "../../nodesys/nodesys_common.h"
 #include "zenosocketitem.h"
+#include "zgraphicstextitem.h"
 #include <zenoui/comctrl/zcombobox.h>
 #include <zenoui/comctrl/zveceditor.h>
 #include <zenoui/comctrl/zcheckboxbar.h>
+#include <zenoui/comctrl/zlineedit.h>
+#include <zenoui/comctrl/znumslider.h>
 
+
+class ZenoTextLayoutItem;
+class ZGraphicsNumSliderItem;
 
 class ZenoParamWidget : public QGraphicsProxyWidget
 {
@@ -65,13 +71,22 @@ public:
     QString text() const;
     void setText(const QString& text);
     void setValidator(const QValidator* pValidator);
+    void setNumSlider(QGraphicsScene* pScene, const QVector<qreal>& steps);
+
+protected:
+    void keyPressEvent(QKeyEvent* event);
+    void keyReleaseEvent(QKeyEvent* event);
 
 signals:
     void editingFinished();
 
 private:
-    QLineEdit *m_pLineEdit;
+    QGraphicsView* _getFocusViewByCursor();
+
+    ZLineEdit* m_pLineEdit;
+    ZGraphicsNumSliderItem* m_pSlider;
 };
+
 
 class ZenoSvgLayoutItem;
 
@@ -115,7 +130,7 @@ class ZenoVecEditWidget : public ZenoParamWidget
 {
     Q_OBJECT
 public:
-    ZenoVecEditWidget(const UI_VECTYPE& vec, QGraphicsItem* parent = nullptr);
+    ZenoVecEditWidget(const UI_VECTYPE& vec, bool bFloat, LineEditParam param, QGraphicsScene* pScene, QGraphicsItem* parent = nullptr);
     UI_VECTYPE vec() const;
     void setVec(const UI_VECTYPE& vec);
 
@@ -123,7 +138,8 @@ signals:
     void editingFinished();
 
 private:
-    ZVecEditor* m_pEdit;
+    QVector<ZenoParamLineEdit*> m_editors;
+    bool m_bFloatVec;
 };
 
 class ZenoParamLabel : public ZenoParamWidget
@@ -270,9 +286,11 @@ public:
     void setRight(bool right);
     void setText(const QString& text);
     void setMargins(qreal leftM, qreal topM, qreal rightM, qreal bottomM);
+    void setBackground(const QColor& clr);
     QRectF boundingRect() const override;
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) override;
     QPainterPath shape() const override;
+    void setScalesSlider(QGraphicsScene* pScene, const QVector<qreal>& scales);
 
 signals:
     void editingFinished();
@@ -284,11 +302,16 @@ protected:
     void hoverEnterEvent(QGraphicsSceneHoverEvent *event) override;
     void hoverMoveEvent(QGraphicsSceneHoverEvent *event) override;
     void hoverLeaveEvent(QGraphicsSceneHoverEvent *event) override;
+    void keyPressEvent(QKeyEvent* event) override;
+    void keyReleaseEvent(QKeyEvent* event) override;
 
 private:
     void initAlignment(qreal textWidth);
 
     QString m_text;
+    QColor m_bg;
+    ZGraphicsNumSliderItem* m_pSlider;
+    QVector<qreal> m_scales;
     bool m_bRight;
 };
 

@@ -4,6 +4,7 @@
 #include <zenoui/comctrl/zlabel.h>
 #include "zenoapplication.h"
 #include "zenomainwindow.h"
+#include "settings/zsettings.h"
 
 
 ZenoWelcomePage::ZenoWelcomePage(QWidget* parent)
@@ -67,7 +68,7 @@ void ZenoWelcomePage::initSignals()
 
 void ZenoWelcomePage::initRecentFiles()
 {
-    QSettings settings(QSettings::UserScope, "Zenus Inc.", "zeno2");
+    QSettings settings(QSettings::UserScope, zsCompanyName, zsEditor);
     settings.beginGroup("Recent File List");
     QStringList lst = settings.childKeys();
 
@@ -97,7 +98,7 @@ void ZenoWelcomePage::initRecentFiles()
                     int flag = QMessageBox::question(nullptr, "", "the file does not exies, do you want to remove it?", QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
                     if (flag & QMessageBox::Yes)
                     {
-                        QSettings _settings(QSettings::UserScope, "Zenus Inc.", "zeno2");
+                        QSettings _settings(QSettings::UserScope, zsCompanyName, zsEditor);
                         _settings.beginGroup("Recent File List");
                         _settings.remove(key);
                         m_ui->layoutFiles->removeWidget(pLabel);
@@ -111,7 +112,7 @@ void ZenoWelcomePage::initRecentFiles()
                 QAction *pDelete = new QAction(tr("Remove"));
                 pMenu->addAction(pDelete);
                 connect(pDelete, &QAction::triggered, this, [=]() {
-                    QSettings _settings(QSettings::UserScope, "Zenus Inc.", "zeno2");
+                    QSettings _settings(QSettings::UserScope, zsCompanyName, zsEditor);
                     _settings.beginGroup("Recent File List");
                     _settings.remove(key);
                     m_ui->layoutFiles->removeWidget(pLabel);
