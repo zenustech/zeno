@@ -122,7 +122,7 @@ extern "C" __global__ void __miss__radiance()
 {
     MissData* rt_data  = reinterpret_cast<MissData*>( optixGetSbtDataPointer() );
     RadiancePRD* prd = getPRD();
-    
+
     prd->passed = false;
     prd->countEmitted = false;
 

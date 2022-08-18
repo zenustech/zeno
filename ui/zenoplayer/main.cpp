@@ -32,6 +32,8 @@ int main(int argc, char *argv[])
             {"pixel", "pixel", "set record image pixel"},
             {"path", "path", "record dir"},
             {"audio", "audio", "audio path"},
+            {"bitrate", "bitrate", "bitrate"},
+            {"fps", "fps", "fps"},
         });
         cmdParser.process(a);
         if (cmdParser.isSet("zsg"))
@@ -55,6 +57,8 @@ int main(int argc, char *argv[])
                 param.iFrame = count;
             }
         }
+        param.iBitrate = cmdParser.isSet("bitrate")? cmdParser.value("bitrate").toInt(): 20000;
+        param.iFps = cmdParser.isSet("fps")? cmdParser.value("fps").toInt(): 24;
     }
     qDebug() << param.sPath << param.bRecord << param.iFrame << param.iSample << param.sPixel << param.sPath;
 	ZenoPlayer w(param);

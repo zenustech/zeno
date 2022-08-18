@@ -552,6 +552,7 @@ extern "C" __global__ void __closesthit__radiance()
     if(flag == DisneyBSDF::transmissionEvent){
         prd->is_inside = !prd->is_inside;
         if( prd->is_inside && prd->medium == DisneyBSDF::PhaseFunctions::isotropic){
+            prd->attenuation *= transmittanceColor;
             prd->extinction = extinction;
             prd->scatterDistance = scatterDistance;
             prd->transColor = transmittanceColor;

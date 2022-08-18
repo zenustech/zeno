@@ -52,7 +52,7 @@ namespace DisneyBSDF{
     vec3 CalculateExtinction(vec3 apparantColor, float scatterDistance)
     {
 
-        return 1/apparantColor;
+        return vec3(0.69314718056/scatterDistance);
 
     }
 
@@ -719,10 +719,10 @@ namespace DisneyBSDF{
     static __inline__ __device__
     float SampleDistance(unsigned int &seed, vec3 extinction, float &pdf)
     {
-        if(length(extinction)<1e-5){
-            pdf=1.0;
-            return 1e16;
-        }
+//        if(length(extinction)<1e-5){
+//            pdf=1.0;
+//            return 1e16;
+//        }
         float ps = dot(extinction, vec3(1));
 
         float pr = extinction.x / ps;
