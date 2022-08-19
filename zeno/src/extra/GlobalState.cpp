@@ -39,7 +39,7 @@ ZENO_API void GlobalState::clearState() {
     working = false;
     frameid = 0;
     substepid = 0;
-    frame_time = 0.03f;
+    frame_time = 1.f / 60.f;
     frame_time_elapsed = 0;
     has_frame_completed = false;
     has_substep_executed = false;

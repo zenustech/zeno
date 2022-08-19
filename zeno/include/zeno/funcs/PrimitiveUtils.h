@@ -13,11 +13,13 @@ ZENO_API void primPolygonate(PrimitiveObject *prim, bool with_uv = true);
 ZENO_API void primSepTriangles(PrimitiveObject *prim, bool smoothNormal = true, bool keepTriFaces = true);
 //ZENO_API void primSmoothNormal(PrimitiveObject *prim, bool isFlipped = false);
 
+ZENO_API void primFlipFaces(PrimitiveObject *prim);
 ZENO_API void primCalcNormal(PrimitiveObject *prim, float flip = 1.0f, std::string nrmAttr = "nrm");
 //ZENO_API void primCalcInsetDir(PrimitiveObject *prim, float flip = 1.0f, std::string nrmAttr = "nrm");
 
-ZENO_API void primFlipFaces(PrimitiveObject *prim);
 ZENO_API void primWireframe(PrimitiveObject *prim, bool removeFaces = false, bool toEdges = false);
+ZENO_API void primEdgeBound(PrimitiveObject *prim, bool removeFaces = false, bool toEdges = false);
+ZENO_API void primKillDeadVerts(PrimitiveObject *prim);
 
 ZENO_API void primDecodeUVs(PrimitiveObject *prim);
 ZENO_API void primLoopUVsToVerts(PrimitiveObject *prim);

@@ -42,6 +42,67 @@ static void revamp_vector(std::vector<T> &arr, std::vector<int> const &revamp) {
     std::swap(arr, newarr);
 }
 
+ZENO_API void primKillDeadVerts(PrimitiveObject *prim) {
+    std::set<int> reached(prim->points.begin(), prim->points.end());
+    for (auto const &ind: prim->lines) {
+        reached.insert(ind[0]);
+        reached.insert(ind[1]);
+    }
+    for (auto const &ind: prim->tris) {
+        reached.insert(ind[0]);
+        reached.insert(ind[1]);
+        reached.insert(ind[2]);
+    }
+    for (auto const &ind: prim->quads) {
+        reached.insert(ind[0]);
+        reached.insert(ind[1]);
+        reached.insert(ind[2]);
+        reached.insert(ind[3]);
+    }
+    for (auto const &[start, len]: prim->polys) {
+        for (int i = start; i < start + len; i++) {
+            reached.insert(prim->loops[i]);
+        }
+    }
+    std::vector<int> revamp(reached.begin(), reached.end());
+    auto old_prim_size = prim->verts.size();
+    prim->verts.forall_attr<AttrAcceptAll>([&] (auto const &key, auto &arr) {
+        revamp_vector(arr, revamp);
+    });
+
+    std::vector<int> unrevamp(old_prim_size);
+    for (int i = 0; i < revamp.size(); i++) {
+        unrevamp[revamp[i]] = i;
+    }
+
+    auto mock = [&] (int &ind) {
+        ind = unrevamp[ind];
+    };
+    for (auto const &ind: prim->points) {
+        mock(ind);
+    }
+    for (auto const &ind: prim->lines) {
+        mock(ind[0]);
+        mock(ind[1]);
+    }
+    for (auto const &ind: prim->tris) {
+        mock(ind[0]);
+        mock(ind[1]);
+        mock(ind[2]);
+    }
+    for (auto const &ind: prim->quads) {
+        mock(ind[0]);
+        mock(ind[1]);
+        mock(ind[2]);
+        mock(ind[3]);
+    }
+    for (auto const &[start, len]: prim->polys) {
+        for (int i = start; i < start + len; i++) {
+            mock(prim->loops[i]);
+        }
+    }
+}
+
 static void primRevampVerts(PrimitiveObject *prim, std::vector<int> const &revamp) {
     prim->foreach_attr<AttrAcceptAll>([&] (auto const &key, auto &arr) {
         revamp_vector(arr, revamp);
