@@ -9,8 +9,8 @@ ZGraphicsNumSliderItem::ZGraphicsNumSliderItem(const QVector<qreal>& steps, QGra
     , m_steps(steps)
 {
     qreal maxWidth = 0, maxHeight = 0;
-    QFont font("HarmonyOS Sans", 16);
-    int padding = ZenoStyle::dpiScaled(15);
+    QFont font("HarmonyOS Sans", 12);
+    int padding = ZenoStyle::dpiScaled(5);
 
     for (int i = 0; i < m_steps.length(); i++)
     {
@@ -28,7 +28,7 @@ ZGraphicsNumSliderItem::ZGraphicsNumSliderItem(const QVector<qreal>& steps, QGra
         pLabel->setAlignment(Qt::AlignCenter);
         pLabel->setBrush(QColor(80, 80, 80));
         pLabel->setBackground(QColor(21, 21, 21));
-        pLabel->setFont(QFont("HarmonyOS Sans", 16));
+        pLabel->setFont(font);
         pLabel->setHoverCursor(Qt::SizeHorCursor);
         pLabel->setPadding(padding, padding, padding, padding);
 
@@ -57,7 +57,10 @@ void ZGraphicsNumSliderItem::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
     //_base::mouseMoveEvent(event);
     for (auto label : m_labels)
     {
-        if (label->isHovered())
+        bool bHovered = label->sceneBoundingRect().contains(
+            QPointF(label->sceneBoundingRect().center().x(), event->scenePos().y()));
+        //bool bHovered = label->isHovered();
+        if (bHovered)
         {
             QPointF pos = event->screenPos();
             qreal dx = pos.x() - m_lastPos.x();

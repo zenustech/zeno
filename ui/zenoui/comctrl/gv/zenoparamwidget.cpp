@@ -161,7 +161,7 @@ QGraphicsView* ZenoParamLineEdit::_getFocusViewByCursor()
 
 void ZenoParamLineEdit::keyPressEvent(QKeyEvent* event)
 {
-    if (event->key() == Qt::Key_Alt)
+    if (event->key() == Qt::Key_Shift)
     {
         if (m_pSlider)
         {
@@ -200,7 +200,7 @@ void ZenoParamLineEdit::keyPressEvent(QKeyEvent* event)
 
 void ZenoParamLineEdit::keyReleaseEvent(QKeyEvent* event)
 {
-    if (event->key() == Qt::Key_Alt)
+    if (event->key() == Qt::Key_Shift)
     {
         if (m_pSlider)
         {
@@ -739,7 +739,7 @@ void ZenoTextLayoutItem::hoverLeaveEvent(QGraphicsSceneHoverEvent* event)
 
 void ZenoTextLayoutItem::keyPressEvent(QKeyEvent* event)
 {
-    if (event->key() == Qt::Key_Alt)
+    if (event->key() == Qt::Key_Shift)
     {
         if (m_pSlider)
         {
@@ -752,7 +752,7 @@ void ZenoTextLayoutItem::keyPressEvent(QKeyEvent* event)
 
 void ZenoTextLayoutItem::keyReleaseEvent(QKeyEvent* event)
 {
-    if (event->key() == Qt::Key_Alt)
+    if (event->key() == Qt::Key_Shift)
     {
         if (m_pSlider)
         {
