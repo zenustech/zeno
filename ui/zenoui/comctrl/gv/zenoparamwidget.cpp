@@ -120,6 +120,7 @@ void ZenoParamLineEdit::setNumSlider(QGraphicsScene* pScene, const QVector<qreal
             QString newText = QString::number(num);
             setText(newText);
         }
+        emit editingFinished();
     });
     connect(m_pSlider, &ZGraphicsNumSliderItem::slideFinished, this, [=]() {
         m_pLineEdit->setShowingSlider(false);

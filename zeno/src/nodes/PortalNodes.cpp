@@ -189,7 +189,7 @@ struct GetUserData : zeno::INode {
         auto object = get_input("object");
         auto key = get_param<std::string>("key");
         auto hasValue = object->userData().has(key);
-        auto data = object->userData().get(key);
+        auto data = hasValue ? object->userData().get(key) : std::make_shared<DummyObject>();
         set_output2("hasValue", hasValue);
         set_output("data", std::move(data));
     }
