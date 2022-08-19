@@ -12,8 +12,12 @@ public:
     ~ZComboBox();
     QSize sizeHint() const override;
     void initStyleOption(ZStyleOptionComboBox* option);
+    void showPopup() override;
+    void hidePopup() override;
 
 signals:
+    void beforeShowPopup();
+    void afterHidePopup();
     void _textActivated(const QString&);
 
 protected:

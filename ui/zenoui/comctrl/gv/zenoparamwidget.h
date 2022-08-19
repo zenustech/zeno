@@ -190,6 +190,8 @@ signals:
 
 private slots:
     void onComboItemActivated(int index);
+    void onBeforeShowPopup();
+    void onAfterHidePopup();
 
 private:
     ZComboBox* m_combobox;

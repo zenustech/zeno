@@ -414,8 +414,20 @@ ZenoParamComboBox::ZenoParamComboBox(const QStringList &items, ComboBoxParam par
     m_combobox->setItemDelegate(new ZComboBoxItemDelegate(m_combobox));
     setWidget(m_combobox);
 
-    setZValue(ZVALUE_POPUPWIDGET);
+    setZValue(ZVALUE_ELEMENT);
     connect(m_combobox, SIGNAL(activated(int)), this, SLOT(onComboItemActivated(int)));
+    connect(m_combobox, SIGNAL(beforeShowPopup()), this, SLOT(onBeforeShowPopup()));
+    connect(m_combobox, SIGNAL(afterHidePopup()), this, SLOT(onAfterHidePopup()));
+}
+
+void ZenoParamComboBox::onBeforeShowPopup()
+{
+    setZValue(ZVALUE_POPUPWIDGET);
+}
+
+void ZenoParamComboBox::onAfterHidePopup()
+{
+    setZValue(ZVALUE_ELEMENT);
 }
 
 void ZenoParamComboBox::setText(const QString& text)
