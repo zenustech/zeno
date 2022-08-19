@@ -117,3 +117,13 @@ void ZLineEdit::paintEvent(QPaintEvent* event)
         p.drawRect(rc.adjusted(0,0,-1,-1));
     }
 }
+
+void ZLineEdit::focusInEvent(QFocusEvent* event)
+{
+    QLineEdit::focusInEvent(event);
+}
+
+void ZLineEdit::focusOutEvent(QFocusEvent* event)
+{
+    QLineEdit::focusOutEvent(event);
+}

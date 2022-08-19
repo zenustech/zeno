@@ -20,6 +20,8 @@ protected:
     void keyPressEvent(QKeyEvent* event);
     void keyReleaseEvent(QKeyEvent* event);
     void paintEvent(QPaintEvent* event);
+    void focusInEvent(QFocusEvent* event);
+    void focusOutEvent(QFocusEvent* event);
 
 private:
     void popupSlider();

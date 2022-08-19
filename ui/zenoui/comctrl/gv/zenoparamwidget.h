@@ -15,6 +15,7 @@
 
 class ZenoTextLayoutItem;
 class ZGraphicsNumSliderItem;
+class ZSliderButtonItem;
 
 class ZenoParamWidget : public QGraphicsProxyWidget
 {
@@ -76,6 +77,7 @@ public:
 protected:
     void keyPressEvent(QKeyEvent* event);
     void keyReleaseEvent(QKeyEvent* event);
+    bool eventFilter(QObject* object, QEvent* event);
 
 signals:
     void editingFinished();
@@ -85,6 +87,7 @@ private:
 
     ZLineEdit* m_pLineEdit;
     ZGraphicsNumSliderItem* m_pSlider;
+    ZSliderButtonItem* m_pSlideBtn;
 };
 
 

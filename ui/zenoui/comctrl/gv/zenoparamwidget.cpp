@@ -88,6 +88,7 @@ ZenoParamLineEdit::ZenoParamLineEdit(const QString &text, PARAM_CONTROL ctrl, Li
     : ZenoParamWidget(parent)
     , m_pSlider(nullptr)
     , m_pLineEdit(nullptr)
+    , m_pSlideBtn(nullptr)
 {
     m_pLineEdit = new ZLineEdit;
     m_pLineEdit->setText(text);
@@ -96,8 +97,26 @@ ZenoParamLineEdit::ZenoParamLineEdit(const QString &text, PARAM_CONTROL ctrl, Li
     m_pLineEdit->setFont(param.font);
     m_pLineEdit->setProperty("cssClass", "proppanel");
     m_pLineEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    m_pLineEdit->installEventFilter(this);
     setWidget(m_pLineEdit);
     connect(m_pLineEdit, SIGNAL(editingFinished()), this, SIGNAL(editingFinished()));
+}
+
+bool ZenoParamLineEdit::eventFilter(QObject* object, QEvent* event)
+{
+    if (object == m_pLineEdit)
+    {
+        if (event->type() == QEvent::FocusIn)
+        {
+            m_pSlideBtn->show();
+        }
+        else if (event->type() == QEvent::FocusOut)
+        {
+            //zeno::log_critical("line edit focusout");
+            m_pSlideBtn->autoHide();
+        }
+    }
+    return ZenoParamWidget::eventFilter(object, event);
 }
 
 void ZenoParamLineEdit::setValidator(const QValidator* pValidator)
@@ -110,6 +129,11 @@ void ZenoParamLineEdit::setNumSlider(QGraphicsScene* pScene, const QVector<qreal
     if (!pScene)
         return;
 
+#if 1
+    m_pSlideBtn = new ZSliderButtonItem(steps, this);
+    m_pSlideBtn->setPos(-m_pSlideBtn->boundingRect().width(), 0);
+    m_pSlideBtn->hide();
+#else
     m_pSlider = new ZGraphicsNumSliderItem(steps, nullptr);
     connect(m_pSlider, &ZGraphicsNumSliderItem::numSlided, this, [=](qreal val) {
         bool bOk = false;
@@ -128,6 +152,7 @@ void ZenoParamLineEdit::setNumSlider(QGraphicsScene* pScene, const QVector<qreal
     m_pSlider->setZValue(1000);
     m_pSlider->hide();
     pScene->addItem(m_pSlider);
+#endif
 }
 
 QString ZenoParamLineEdit::text() const

@@ -4,6 +4,67 @@
 #include "zgraphicstextitem.h"
 
 
+ZSliderButtonItem::ZSliderButtonItem(const QVector<qreal>& steps, QGraphicsItem* parent)
+    : QGraphicsObject(parent)
+    , m_slider(nullptr)
+{
+    connect(&m_timer, &QTimer::timeout, this, [=]() {
+        hide();
+        m_timer.stop();
+    });
+    setFlags(ItemIsFocusable | ItemIsMovable);
+    m_slider = new ZGraphicsNumSliderItem(steps, this);
+    m_slider->hide();
+}
+
+ZSliderButtonItem::~ZSliderButtonItem()
+{
+
+}
+
+QRectF ZSliderButtonItem::boundingRect() const
+{
+    static const qreal sz = ZenoStyle::dpiScaled(24);
+    return QRectF(0, 0, sz, sz);
+}
+
+QPainterPath ZSliderButtonItem::shape() const
+{
+    QPainterPath path;
+    path.addRect(boundingRect());
+    return path;
+}
+
+void ZSliderButtonItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
+{
+    painter->fillRect(boundingRect(), QColor(255, 0, 0, 128));
+}
+
+void ZSliderButtonItem::autoHide()
+{
+    m_timer.start(1000);
+}
+
+void ZSliderButtonItem::mousePressEvent(QGraphicsSceneMouseEvent* event)
+{
+    //zeno::log_critical("sliderbutton press");
+    m_timer.stop();
+    _base::mousePressEvent(event);
+    m_slider->show();
+}
+
+void ZSliderButtonItem::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
+{
+    _base::mouseMoveEvent(event);
+}
+
+void ZSliderButtonItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
+{
+    _base::mouseReleaseEvent(event);
+    hide();
+}
+
+
 ZGraphicsNumSliderItem::ZGraphicsNumSliderItem(const QVector<qreal>& steps, QGraphicsItem* parent)
     : _base(parent)
     , m_steps(steps)

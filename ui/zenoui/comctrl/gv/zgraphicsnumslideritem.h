@@ -4,6 +4,28 @@
 #include <QtWidgets>
 
 class ZSimpleTextItem;
+class ZGraphicsNumSliderItem;
+
+class ZSliderButtonItem : public QGraphicsObject
+{
+    Q_OBJECT
+    typedef QGraphicsObject _base;
+public:
+    ZSliderButtonItem(const QVector<qreal>& steps, QGraphicsItem* parent = nullptr);
+    ~ZSliderButtonItem();
+    QRectF boundingRect() const override;
+    QPainterPath shape() const override;
+    void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget);
+    void autoHide();
+
+    void mousePressEvent(QGraphicsSceneMouseEvent* event);
+    void mouseMoveEvent(QGraphicsSceneMouseEvent* event);
+    void mouseReleaseEvent(QGraphicsSceneMouseEvent* event);
+
+private:
+    QTimer m_timer;
+    ZGraphicsNumSliderItem* m_slider;
+};
 
 class ZGraphicsNumSliderItem : public QGraphicsObject
 {
