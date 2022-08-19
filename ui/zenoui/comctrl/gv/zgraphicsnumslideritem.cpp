@@ -7,11 +7,10 @@
 ZGraphicsNumSliderItem::ZGraphicsNumSliderItem(const QVector<qreal>& steps, QGraphicsItem* parent)
     : _base(parent)
     , m_steps(steps)
-    , m_bHasPressed(false)
 {
     qreal maxWidth = 0, maxHeight = 0;
-    QFont font("HarmonyOS Sans", 10);
-    int padding = ZenoStyle::dpiScaled(4);
+    QFont font("HarmonyOS Sans", 16);
+    int padding = ZenoStyle::dpiScaled(15);
 
     for (int i = 0; i < m_steps.length(); i++)
     {
@@ -29,7 +28,7 @@ ZGraphicsNumSliderItem::ZGraphicsNumSliderItem(const QVector<qreal>& steps, QGra
         pLabel->setAlignment(Qt::AlignCenter);
         pLabel->setBrush(QColor(80, 80, 80));
         pLabel->setBackground(QColor(21, 21, 21));
-        pLabel->setFont(font);
+        pLabel->setFont(QFont("HarmonyOS Sans", 16));
         pLabel->setHoverCursor(Qt::SizeHorCursor);
         pLabel->setPadding(padding, padding, padding, padding);
 
@@ -49,22 +48,16 @@ void ZGraphicsNumSliderItem::mousePressEvent(QGraphicsSceneMouseEvent* event)
 {
     _base::mousePressEvent(event);
     m_lastPos = event->screenPos();
-    m_bHasPressed = true;
     //todo:transparent.
 }
 
 void ZGraphicsNumSliderItem::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
 {
-    if (!m_bHasPressed) return;
     //disable move obj.
     //_base::mouseMoveEvent(event);
     for (auto label : m_labels)
     {
-        //qWarning() << label->sceneBoundingRect().center() << event->scenePos();
-        bool bHovered = label->sceneBoundingRect().contains(
-            QPointF(label->sceneBoundingRect().center().x(), event->scenePos().y()));
-        //bool bHovered = label->isHovered();
-        if (bHovered)
+        if (label->isHovered())
         {
             QPointF pos = event->screenPos();
             qreal dx = pos.x() - m_lastPos.x();
@@ -78,15 +71,6 @@ void ZGraphicsNumSliderItem::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
                 m_lastPos = event->screenPos();
             }
         }
-    }
-}
-
-void ZGraphicsNumSliderItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
-{
-    _base::mouseReleaseEvent(event);
-    if (m_bHasPressed) {
-        this->hide();
-        m_bHasPressed = false;
     }
 }
 

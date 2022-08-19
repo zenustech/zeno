@@ -103,20 +103,14 @@ ZenoParamLineEdit::ZenoParamLineEdit(const QString &text, PARAM_CONTROL ctrl, Li
     m_pLineEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     pHLayout->addWidget(m_pLineEdit);
 
-    const int h = ZenoStyle::dpiScaled(20);
+    const int h = 18;
     m_pZfxButton = new QPushButton;
     m_pZfxButton->setText("F");
     m_pZfxButton->setPalette(param.palette);
     m_pZfxButton->setFont(param.font);
     m_pZfxButton->setProperty("cssClass", "proppanel");
     m_pZfxButton->setFixedSize(h, h);
-    m_pZfxButton->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    //m_pZfxButton->setAlignment(Qt::AlignCenter);
-    //m_pZfxButton->setBrush(QColor(80, 80, 80));
-    //m_pZfxButton->setBackground(QColor(21, 21, 21));
     pHLayout->addWidget(m_pZfxButton);
-
-    m_pZfxButton->hide();
 
     m_pSliderButton = new QPushButton;
     m_pSliderButton->setText("S");
@@ -124,10 +118,6 @@ ZenoParamLineEdit::ZenoParamLineEdit(const QString &text, PARAM_CONTROL ctrl, Li
     m_pSliderButton->setFont(param.font);
     m_pSliderButton->setProperty("cssClass", "proppanel");
     m_pSliderButton->setFixedSize(h, h);
-    m_pSliderButton->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    //m_pSliderButton->setAlignment(Qt::AlignCenter);
-    //m_pSliderButton->setBrush(QColor(80, 80, 80));
-    //m_pSliderButton->setBackground(QColor(21, 21, 21));
     pHLayout->addWidget(m_pSliderButton);
 
     connect(m_pSliderButton, SIGNAL(clicked()), this, SLOT(toggleSlider()));
@@ -161,11 +151,11 @@ void ZenoParamLineEdit::toggleSlider()
 
             static QRect screen = QApplication::desktop()->screenGeometry();
             static const int _yOffset = ZenoStyle::dpiScaled(20);
-            QPoint cursorPos = this->cursor().pos() + QPoint(ZenoStyle::dpiScaled(20), 0);
-            QPoint viewPoint = view->mapFromGlobal(cursorPos);
+            QPointF cursorPos = this->cursor().pos();
+            QPoint viewPoint = view->mapFromGlobal(this->cursor().pos());
             const QPointF sceneCursor = view->mapToScene(viewPoint);
             QPointF screenBR = view->mapToScene(view->mapFromGlobal(screen.bottomRight()));
-            QPointF newCursorPos = mapToScene(cursorPos);
+            cursorPos = mapToScene(cursorPos);
 
             pos.setX(sceneCursor.x());
             pos.setY(std::min(pos.y(), screenBR.y() - sz.height() / 2 - _yOffset) - sz.height() / 2.);
