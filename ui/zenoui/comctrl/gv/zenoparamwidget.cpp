@@ -88,7 +88,12 @@ ZenoParamLineEdit::ZenoParamLineEdit(const QString &text, PARAM_CONTROL ctrl, Li
     : ZenoParamWidget(parent)
     , m_pSlider(nullptr)
     , m_pLineEdit(nullptr)
+    , m_pZfxButton(nullptr)
+    , m_pSliderButton(nullptr)
 {
+    QHBoxLayout *pHLayout = new QHBoxLayout;
+    pHLayout->setContentsMargins(0, 0, 0, 0);
+
     m_pLineEdit = new ZLineEdit;
     m_pLineEdit->setText(text);
     m_pLineEdit->setTextMargins(param.margins);
@@ -96,7 +101,41 @@ ZenoParamLineEdit::ZenoParamLineEdit(const QString &text, PARAM_CONTROL ctrl, Li
     m_pLineEdit->setFont(param.font);
     m_pLineEdit->setProperty("cssClass", "proppanel");
     m_pLineEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    setWidget(m_pLineEdit);
+    pHLayout->addWidget(m_pLineEdit);
+
+    const int h = ZenoStyle::dpiScaled(20);
+    m_pZfxButton = new QPushButton;
+    m_pZfxButton->setText("F");
+    m_pZfxButton->setPalette(param.palette);
+    m_pZfxButton->setFont(param.font);
+    m_pZfxButton->setProperty("cssClass", "proppanel");
+    m_pZfxButton->setFixedSize(h, h);
+    m_pZfxButton->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    //m_pZfxButton->setAlignment(Qt::AlignCenter);
+    //m_pZfxButton->setBrush(QColor(80, 80, 80));
+    //m_pZfxButton->setBackground(QColor(21, 21, 21));
+    pHLayout->addWidget(m_pZfxButton);
+
+    m_pZfxButton->hide();
+
+    m_pSliderButton = new QPushButton;
+    m_pSliderButton->setText("S");
+    m_pSliderButton->setPalette(param.palette);
+    m_pSliderButton->setFont(param.font);
+    m_pSliderButton->setProperty("cssClass", "proppanel");
+    m_pSliderButton->setFixedSize(h, h);
+    m_pSliderButton->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    //m_pSliderButton->setAlignment(Qt::AlignCenter);
+    //m_pSliderButton->setBrush(QColor(80, 80, 80));
+    //m_pSliderButton->setBackground(QColor(21, 21, 21));
+    pHLayout->addWidget(m_pSliderButton);
+
+    connect(m_pSliderButton, SIGNAL(clicked()), this, SLOT(toggleSlider()));
+    connect(m_pZfxButton, SIGNAL(clicked()), this, SLOT(toggleZfx()));
+
+    QWidget *pWidget = new QWidget;
+    pWidget->setLayout(pHLayout);
+    setWidget(pWidget);
 
     connect(m_pLineEdit, SIGNAL(editingFinished()), this, SIGNAL(editingFinished()));
 }
