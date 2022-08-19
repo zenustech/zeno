@@ -11,7 +11,7 @@ struct GraphicString final : IGraphic {
     Scene *scene;
 
     explicit GraphicString(Scene *scene_, zeno::StringObject *str) : scene(scene_) {
-        zeno::log_info("ToView got StringObject with content: {}", str->get());
+        zeno::log_critical("ToView got StringObject with content: {}", str->get());
     }
 };
 
