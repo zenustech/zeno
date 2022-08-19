@@ -28,9 +28,14 @@ ZENDEFNODE(MakePointPrimitive,
     "primitive",
     }});
 
+static size_t makepositive(int i) {
+    if (i < 0) return 0;
+    else return (size_t)i;
+}
+
 struct Make1DLinePrimitive : INode {
     virtual void apply() override {
-        size_t nx = get_input<NumericObject>("n")->get<int>();
+        size_t nx = makepositive(get_input<NumericObject>("n")->get<int>());
         float dx = 1.f / std::max(nx - 1, (size_t)1);
         
         vec3f o = has_input("origin") ?
@@ -98,7 +103,7 @@ struct Make2DGridPrimitive : INode {
     virtual void apply() override {
         size_t nx = get_input<NumericObject>("nx")->get<int>();
         size_t ny = has_input("ny") ?
-            get_input<NumericObject>("ny")->get<int>() : 0;
+            makepositive(get_input<NumericObject>("ny")->get<int>()) : 0;
         if (!ny) ny = nx;
         float dx = 1.f / std::max(nx - 1, (size_t)1);
         float dy = 1.f / std::max(ny - 1, (size_t)1);
@@ -182,10 +187,10 @@ struct Make3DGridPrimitive : INode {
     virtual void apply() override {
         size_t nx = get_input<NumericObject>("nx")->get<int>();
         size_t ny = has_input("ny") ?
-            get_input<NumericObject>("ny")->get<int>() : 0;
+            makepositive(get_input<NumericObject>("ny")->get<int>()) : 0;
         if (!ny) ny = nx;
         size_t nz = has_input("nz") ?
-            get_input<NumericObject>("nz")->get<int>() : 0;
+            makepositive(get_input<NumericObject>("nz")->get<int>()) : 0;
         if (!nz) nz = nx;
         float dx = 1.f / std::max(nx - 1, (size_t)1);
         float dy = 1.f / std::max(ny - 1, (size_t)1);
