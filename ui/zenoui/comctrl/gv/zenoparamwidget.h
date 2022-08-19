@@ -74,8 +74,8 @@ public:
     void setNumSlider(QGraphicsScene* pScene, const QVector<qreal>& steps);
 
 protected:
-    void keyPressEvent(QKeyEvent* event);
-    void keyReleaseEvent(QKeyEvent* event);
+    void keyPressEvent(QKeyEvent* event) override;
+    void keyReleaseEvent(QKeyEvent* event) override;
 
 signals:
     void editingFinished();

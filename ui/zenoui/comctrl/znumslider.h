@@ -13,8 +13,8 @@ public:
     ~ZNumSlider();
 
 protected:
-    void paintEvent(QPaintEvent* event);
-    void keyReleaseEvent(QKeyEvent* event);
+    void paintEvent(QPaintEvent* event) override;
+    void keyReleaseEvent(QKeyEvent* event) override;
     void mousePressEvent(QMouseEvent* event) override;
     void mouseMoveEvent(QMouseEvent* event) override;
     void mouseReleaseEvent(QMouseEvent* event) override;

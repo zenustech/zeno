@@ -14,7 +14,7 @@ struct GenericFLIPSolver final : zeno::ISerialSubgraphNode {
 ZENO_DEFNODE(GenericFLIPSolver)({
     {
         {"float", "dt", "0.017"},
-        {"float", "dx", "0.04"},
+        {"float", "dx", "0.08"},
         {"vec3f", "gravity", "0,-9.8,0"},
         {"", "InitSDF", ""},
         {"", "EmitSDF", ""},
