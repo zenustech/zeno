@@ -387,20 +387,20 @@ QGraphicsLayout* ZenoNode::initParam(PARAM_CONTROL ctrl, const QString& paramNam
 		    connect(pLineEdit, &ZenoParamLineEdit::editingFinished, this, [=]() {
 			    onParamEditFinished(paramName, pLineEdit->text());
 			    });
-            //{
-                //// pyb cihou slider
-                //ImageElement elem;
-                //elem.image = ":/icons/ic_openfile.svg";
-                //elem.imageHovered = ":/icons/ic_openfile-on.svg";
-                //elem.imageOn = ":/icons/ic_openfile-on.svg";
-                //ZenoSvgLayoutItem* slideBtn = new ZenoSvgLayoutItem(elem, QSizeF(30, 30));
+            {
+                // pyb cihou slider
+                ImageElement elem;
+                elem.image = ":/icons/ic_openfile.svg";
+                elem.imageHovered = ":/icons/ic_openfile-on.svg";
+                elem.imageOn = ":/icons/ic_openfile-on.svg";
+                ZenoSvgLayoutItem* slideBtn = new ZenoSvgLayoutItem(elem, QSizeF(30, 30));
 
-                //pParamLayout->addItem(slideBtn);
-                //pParamLayout->setItemSpacing(1, 0);
-                //pParamLayout->setItemSpacing(2, 0);
+                pParamLayout->addItem(slideBtn);
+                pParamLayout->setItemSpacing(1, 0);
+                pParamLayout->setItemSpacing(2, 0);
 
-                //connect(slideBtn, SIGNAL(clicked()), pLineEdit, SLOT(toggleSlider()));
-            //}
+                connect(slideBtn, SIGNAL(clicked()), pLineEdit, SLOT(toggleSlider()));
+            }
 		    m_paramControls[paramName] = pLineEdit;
 		    break;
 	    }
@@ -943,6 +943,8 @@ ZenoParamWidget* ZenoNode::initSocketWidget(ZenoSubGraphScene* scene, const INPU
     PARAM_CONTROL ctrl = inSocket.info.control;
     switch (ctrl)
     {
+        case CONTROL_INT:
+        case CONTROL_FLOAT:
         case CONTROL_STRING:
         {
             ZenoParamLineEdit *pSocketEditor = new ZenoParamLineEdit(
@@ -959,27 +961,6 @@ ZenoParamWidget* ZenoNode::initSocketWidget(ZenoSubGraphScene* scene, const INPU
                 ZASSERT_EXIT(bOk);
 
                 const QVariant &newValue = UiHelper::_parseDefaultValue(pSocketEditor->text(), _inSocket.info.type);
-                updateSocketDeflValue(nodeid, inSock, _inSocket, newValue);
-            });
-            return pSocketEditor;
-        }
-        case CONTROL_INT:
-        case CONTROL_FLOAT:
-        {
-            ZenoParamNumEdit *pSocketEditor = new ZenoParamNumEdit(
-                UiHelper::variantToString(inSocket.info.defaultValue),
-                inSocket.info.control,
-                m_renderParams.lineEditParam);
-            pSocketEditor->setValidator(validateForSockets(inSocket));
-            pSocketEditor->setNumSlider(scene, UiHelper::getSlideStep(inSock, ctrl));
-            //todo: allow to edit path directly?
-            connect(pSocketEditor, &ZenoParamNumEdit::editingFinished, this, [=]() {
-
-                bool bOk = false;
-                INPUT_SOCKET _inSocket = AppHelper::getInputSocket(m_index, inSock, bOk);
-                ZASSERT_EXIT(bOk);
-
-                const QVariant &newValue = UiHelper::_parseDefaultValue(pSocketEditor->num(), _inSocket.info.type);
                 updateSocketDeflValue(nodeid, inSock, _inSocket, newValue);
             });
             return pSocketEditor;

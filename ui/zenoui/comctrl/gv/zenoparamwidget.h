@@ -72,8 +72,6 @@ public:
     void setText(const QString& text);
     void setValidator(const QValidator* pValidator);
     void setNumSlider(QGraphicsScene* pScene, const QVector<qreal>& steps);
-    void toggleSlider();
-    void toggleZfx();
 
 //protected:
     //void keyPressEvent(QKeyEvent* event) override;
@@ -81,6 +79,10 @@ public:
 
 signals:
     void editingFinished();
+
+private slots:
+    void toggleSlider();
+    void toggleZfx();
 
 private:
     QGraphicsView* _getFocusViewByCursor();
@@ -91,26 +93,6 @@ private:
 
 
 class ZenoSvgLayoutItem;
-
-class ZenoParamNumEdit : public ZenoParamWidget
-{
-    Q_OBJECT
-public:
-    ZenoParamNumEdit(const QString& num, PARAM_CONTROL ctrl, LineEditParam param, QGraphicsItem *parent = nullptr);
-    QString num() const;
-    void setNum(const QString& num);
-    void setValidator(QValidator*);
-    void setNumSlider(QGraphicsScene* pScene, const QVector<qreal>& steps);
-
-signals:
-    void numValueChanged(QString);
-    void editingFinished();
-    void clicked();     //due the bug of rendering when open dialog, we have to move out this signal.
-
-private:
-    ZenoParamLineEdit* m_pLineEdit;
-    ZenoSvgLayoutItem* m_openBtn;
-};
 
 class ZenoParamPathEdit : public ZenoParamWidget
 {
