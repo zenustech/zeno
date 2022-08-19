@@ -4,7 +4,7 @@
 <context>
     <name>DisplayWidget</name>
     <message>
-        <location filename="../../viewport/viewportwidget.cpp" line="681"/>
+        <location filename="../../viewport/viewportwidget.cpp" line="707"/>
         <source>Run the graph before recording</source>
         <translation>开始录制前请先点一下“运行”按钮</translation>
     </message>
@@ -12,79 +12,91 @@
 <context>
     <name>FCurveDlg</name>
     <message>
-        <location filename="../../curvemap/zcurvemapeditor.ui" line="17"/>
         <source>F-Curve</source>
-        <translation type="unfinished"></translation>
+        <translation type="vanished">F-曲线</translation>
+    </message>
+    <message>
+        <location filename="../../curvemap/zcurvemapeditor.ui" line="17"/>
+        <source>Curve Editor</source>
+        <translation>曲线编辑器</translation>
     </message>
     <message>
         <location filename="../../curvemap/zcurvemapeditor.ui" line="150"/>
         <source>Tangent    Left X</source>
-        <translation type="unfinished"></translation>
+        <translation>切线左侧X</translation>
     </message>
     <message>
         <location filename="../../curvemap/zcurvemapeditor.ui" line="174"/>
         <source>Right X</source>
-        <translation type="unfinished"></translation>
+        <translation>右侧X</translation>
     </message>
     <message>
         <location filename="../../curvemap/zcurvemapeditor.ui" line="205"/>
         <source>Tangent    Left Y</source>
-        <translation type="unfinished"></translation>
+        <translation>切线左侧Y</translation>
     </message>
     <message>
         <location filename="../../curvemap/zcurvemapeditor.ui" line="229"/>
         <source>Right Y</source>
-        <translation type="unfinished"></translation>
+        <translation>右侧Y</translation>
     </message>
     <message>
         <location filename="../../curvemap/zcurvemapeditor.ui" line="255"/>
         <source>Point X</source>
-        <translation type="unfinished"></translation>
+        <translation>中心点X</translation>
     </message>
     <message>
         <location filename="../../curvemap/zcurvemapeditor.ui" line="337"/>
         <source>Point Y</source>
-        <translation type="unfinished"></translation>
+        <translation>中心点Y</translation>
     </message>
     <message>
         <location filename="../../curvemap/zcurvemapeditor.ui" line="351"/>
         <source>Handle type</source>
-        <translation type="unfinished"></translation>
+        <translation>把手类型</translation>
     </message>
     <message>
         <location filename="../../curvemap/zcurvemapeditor.ui" line="360"/>
         <source>Load Preset</source>
-        <translation type="unfinished"></translation>
+        <translation>加载预设</translation>
     </message>
     <message>
         <location filename="../../curvemap/zcurvemapeditor.ui" line="367"/>
         <source>Save Preset</source>
-        <translation type="unfinished"></translation>
+        <translation>保存预设</translation>
     </message>
     <message>
         <location filename="../../curvemap/zcurvemapeditor.ui" line="420"/>
         <source>Frame</source>
-        <translation type="unfinished"></translation>
+        <translation>帧</translation>
     </message>
     <message>
         <location filename="../../curvemap/zcurvemapeditor.ui" line="470"/>
         <source>Value</source>
-        <translation type="unfinished"></translation>
+        <translation>值</translation>
     </message>
     <message>
         <location filename="../../curvemap/zcurvemapeditor.ui" line="507"/>
-        <source>X</source>
-        <translation type="unfinished"></translation>
+        <source>X Range</source>
+        <translation>X范围</translation>
     </message>
     <message>
         <location filename="../../curvemap/zcurvemapeditor.ui" line="620"/>
+        <source>Y Range</source>
+        <translation>Y范围</translation>
+    </message>
+    <message>
+        <source>X</source>
+        <translation type="vanished">X</translation>
+    </message>
+    <message>
         <source>Y</source>
-        <translation type="unfinished"></translation>
+        <translation type="vanished">Y</translation>
     </message>
     <message>
         <location filename="../../curvemap/zcurvemapeditor.ui" line="770"/>
         <source>timeline</source>
-        <translation type="unfinished"></translation>
+        <translation>时间轴</translation>
     </message>
 </context>
 <context>
@@ -300,8 +312,12 @@
     </message>
     <message>
         <location filename="../../dialog/zrecorddlg.ui" line="120"/>
-        <source>filename</source>
+        <source>File Name:</source>
         <translation>文件名：</translation>
+    </message>
+    <message>
+        <source>filename</source>
+        <translation type="vanished">文件名：</translation>
     </message>
 </context>
 <context>
@@ -328,8 +344,12 @@
     </message>
     <message>
         <location filename="../../timeline/ztimeline.ui" line="215"/>
+        <source>60 fpbs</source>
+        <translation>60 帧/秒</translation>
+    </message>
+    <message>
         <source>30 fpbs</source>
-        <translation>30帧/秒</translation>
+        <translation type="vanished">30帧/秒</translation>
     </message>
 </context>
 <context>
@@ -593,116 +613,116 @@
 <context>
     <name>ZenoGraphsEditor</name>
     <message>
-        <location filename="../../nodesview/zenographseditor.cpp" line="188"/>
+        <location filename="../../nodesview/zenographseditor.cpp" line="189"/>
         <source>Node</source>
         <translation>节点</translation>
     </message>
     <message>
-        <location filename="../../nodesview/zenographseditor.cpp" line="192"/>
+        <location filename="../../nodesview/zenographseditor.cpp" line="193"/>
         <source>Subnet</source>
         <translation>子图</translation>
     </message>
     <message>
-        <location filename="../../nodesview/zenographseditor.cpp" line="196"/>
+        <location filename="../../nodesview/zenographseditor.cpp" line="197"/>
         <source>Annotation</source>
         <translation>编辑</translation>
     </message>
     <message>
-        <location filename="../../nodesview/zenographseditor.cpp" line="200"/>
+        <location filename="../../nodesview/zenographseditor.cpp" line="201"/>
         <source>wrangle snippet</source>
         <translation>修改器模板</translation>
     </message>
     <message>
-        <location filename="../../nodesview/zenographseditor.cpp" line="245"/>
-        <location filename="../../nodesview/zenographseditor.cpp" line="258"/>
-        <location filename="../../nodesview/zenographseditor.cpp" line="572"/>
+        <location filename="../../nodesview/zenographseditor.cpp" line="246"/>
+        <location filename="../../nodesview/zenographseditor.cpp" line="259"/>
+        <location filename="../../nodesview/zenographseditor.cpp" line="587"/>
         <source>create subnet</source>
         <translation>创建子图</translation>
     </message>
     <message>
-        <location filename="../../nodesview/zenographseditor.cpp" line="246"/>
+        <location filename="../../nodesview/zenographseditor.cpp" line="247"/>
         <source>subnet map</source>
         <translation>子图映射</translation>
     </message>
     <message>
-        <location filename="../../nodesview/zenographseditor.cpp" line="247"/>
+        <location filename="../../nodesview/zenographseditor.cpp" line="248"/>
         <source>import from local file</source>
         <translation>从本地文件导入</translation>
     </message>
     <message>
-        <location filename="../../nodesview/zenographseditor.cpp" line="248"/>
+        <location filename="../../nodesview/zenographseditor.cpp" line="249"/>
         <source>import system subnet</source>
         <translation>从內建子图导入</translation>
     </message>
     <message>
-        <location filename="../../nodesview/zenographseditor.cpp" line="258"/>
-        <location filename="../../nodesview/zenographseditor.cpp" line="572"/>
+        <location filename="../../nodesview/zenographseditor.cpp" line="259"/>
+        <location filename="../../nodesview/zenographseditor.cpp" line="587"/>
         <source>new subgraph name:</source>
         <translation>新建子图名称：</translation>
     </message>
     <message>
-        <location filename="../../nodesview/zenographseditor.cpp" line="263"/>
+        <location filename="../../nodesview/zenographseditor.cpp" line="264"/>
         <source>Zeno</source>
         <translation>Zeno</translation>
     </message>
     <message>
-        <location filename="../../nodesview/zenographseditor.cpp" line="263"/>
+        <location filename="../../nodesview/zenographseditor.cpp" line="264"/>
         <source>main graph is not allowed to be created</source>
         <translation>不允许创建名字为main的子图</translation>
     </message>
     <message>
-        <location filename="../../nodesview/zenographseditor.cpp" line="467"/>
+        <location filename="../../nodesview/zenographseditor.cpp" line="471"/>
         <source>next one?</source>
         <translation>下一个？</translation>
     </message>
     <message>
-        <location filename="../../nodesview/zenographseditor.cpp" line="550"/>
+        <location filename="../../nodesview/zenographseditor.cpp" line="565"/>
         <source>Collaspe</source>
         <translation>折叠</translation>
     </message>
     <message>
-        <location filename="../../nodesview/zenographseditor.cpp" line="557"/>
+        <location filename="../../nodesview/zenographseditor.cpp" line="572"/>
         <source>Expand</source>
         <translation>展开</translation>
     </message>
     <message>
-        <location filename="../../nodesview/zenographseditor.cpp" line="564"/>
+        <location filename="../../nodesview/zenographseditor.cpp" line="579"/>
         <source>Easy Subgraph</source>
         <translation>简易子图</translation>
     </message>
     <message>
-        <location filename="../../nodesview/zenographseditor.cpp" line="588"/>
-        <location filename="../../nodesview/zenographseditor.cpp" line="595"/>
+        <location filename="../../nodesview/zenographseditor.cpp" line="603"/>
+        <location filename="../../nodesview/zenographseditor.cpp" line="609"/>
         <source>Set NASLOC</source>
         <translation>设置NASLOC</translation>
     </message>
     <message>
-        <location filename="../../nodesview/zenographseditor.cpp" line="596"/>
+        <location filename="../../nodesview/zenographseditor.cpp" line="610"/>
         <source>NASLOC</source>
         <translation>NASLOC</translation>
     </message>
     <message>
-        <location filename="../../nodesview/zenographseditor.cpp" line="605"/>
+        <location filename="../../nodesview/zenographseditor.cpp" line="619"/>
         <source>Set ZENCACHE</source>
         <translation>设置ZENCACHE</translation>
     </message>
     <message>
-        <location filename="../../nodesview/zenographseditor.cpp" line="613"/>
+        <location filename="../../nodesview/zenographseditor.cpp" line="626"/>
         <source>Set ZENCACHE directory</source>
         <translation>设置ZENCACHE缓存目录</translation>
     </message>
     <message>
-        <location filename="../../nodesview/zenographseditor.cpp" line="614"/>
+        <location filename="../../nodesview/zenographseditor.cpp" line="627"/>
         <source>ZENCACHEDIR</source>
         <translation>ZENCACHE目录</translation>
     </message>
     <message>
-        <location filename="../../nodesview/zenographseditor.cpp" line="616"/>
+        <location filename="../../nodesview/zenographseditor.cpp" line="629"/>
         <source>Set ZENCACHE count</source>
         <translation>设置ZENCACHE缓存上限</translation>
     </message>
     <message>
-        <location filename="../../nodesview/zenographseditor.cpp" line="617"/>
+        <location filename="../../nodesview/zenographseditor.cpp" line="630"/>
         <source>ZENCACHENUM</source>
         <translation>ZENCACHE上限</translation>
     </message>
@@ -710,73 +730,73 @@
 <context>
     <name>ZenoMainWindow</name>
     <message>
-        <location filename="../../zenomainwindow.cpp" line="69"/>
+        <location filename="../../zenomainwindow.cpp" line="70"/>
         <source>File</source>
         <translation>文件</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.cpp" line="71"/>
+        <location filename="../../zenomainwindow.cpp" line="72"/>
         <source>New</source>
         <translation>新建</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.cpp" line="82"/>
-        <location filename="../../zenomainwindow.cpp" line="646"/>
+        <location filename="../../zenomainwindow.cpp" line="83"/>
+        <location filename="../../zenomainwindow.cpp" line="656"/>
         <source>Open</source>
         <translation>打开</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.cpp" line="88"/>
+        <location filename="../../zenomainwindow.cpp" line="89"/>
         <source>Save</source>
         <translation>保存</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.cpp" line="94"/>
+        <location filename="../../zenomainwindow.cpp" line="95"/>
         <source>Save As</source>
         <translation>另存为</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.cpp" line="100"/>
+        <location filename="../../zenomainwindow.cpp" line="101"/>
         <source>Import</source>
         <translation>导入</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.cpp" line="106"/>
+        <location filename="../../zenomainwindow.cpp" line="107"/>
         <source>Export</source>
         <translation>导出</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.cpp" line="112"/>
+        <location filename="../../zenomainwindow.cpp" line="113"/>
         <source>Close</source>
         <translation>关闭</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.cpp" line="117"/>
+        <location filename="../../zenomainwindow.cpp" line="118"/>
         <source>Edit</source>
         <translation>编辑</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.cpp" line="119"/>
+        <location filename="../../zenomainwindow.cpp" line="120"/>
         <source>Undo</source>
         <translation>撤销</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.cpp" line="123"/>
+        <location filename="../../zenomainwindow.cpp" line="124"/>
         <source>Redo</source>
         <translation>重做</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.cpp" line="127"/>
+        <location filename="../../zenomainwindow.cpp" line="128"/>
         <source>Cut</source>
         <translation>剪切</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.cpp" line="131"/>
+        <location filename="../../zenomainwindow.cpp" line="132"/>
         <source>Copy</source>
         <translation>复制</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.cpp" line="135"/>
+        <location filename="../../zenomainwindow.cpp" line="136"/>
         <source>Paste</source>
         <translation>粘贴</translation>
     </message>
@@ -785,58 +805,58 @@
         <translation type="vanished">渲染</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.cpp" line="142"/>
+        <location filename="../../zenomainwindow.cpp" line="143"/>
         <source>View</source>
         <translation>视图</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.cpp" line="144"/>
+        <location filename="../../zenomainwindow.cpp" line="145"/>
         <source>view</source>
         <translation>视图</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.cpp" line="150"/>
+        <location filename="../../zenomainwindow.cpp" line="151"/>
         <source>editor</source>
         <translation>编辑器</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.cpp" line="156"/>
+        <location filename="../../zenomainwindow.cpp" line="157"/>
         <source>property</source>
         <translation>属性</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.cpp" line="162"/>
+        <location filename="../../zenomainwindow.cpp" line="163"/>
         <source>logger</source>
         <translation>日志</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.cpp" line="185"/>
-        <location filename="../../zenomainwindow.cpp" line="188"/>
+        <location filename="../../zenomainwindow.cpp" line="186"/>
+        <location filename="../../zenomainwindow.cpp" line="189"/>
         <source>Save Layout</source>
         <translation>保存布局</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.cpp" line="188"/>
+        <location filename="../../zenomainwindow.cpp" line="189"/>
         <source>layout name:</source>
         <translation>布局名称：</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.cpp" line="194"/>
+        <location filename="../../zenomainwindow.cpp" line="195"/>
         <source>alreday has same layout</source>
         <translation>已经有同名布局了</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.cpp" line="215"/>
+        <location filename="../../zenomainwindow.cpp" line="216"/>
         <source>Custom Layout</source>
         <translation>自定义布局</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.cpp" line="245"/>
+        <location filename="../../zenomainwindow.cpp" line="246"/>
         <source>English / Chinese</source>
         <translation>中英文切换</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.cpp" line="257"/>
+        <location filename="../../zenomainwindow.cpp" line="258"/>
         <source>Please restart Zeno to apply changes.</source>
         <translation>请重启Zeno以应用更改。</translation>
     </message>
@@ -845,12 +865,12 @@
         <translation type="vanished">窗口</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.cpp" line="237"/>
+        <location filename="../../zenomainwindow.cpp" line="238"/>
         <source>Help</source>
         <translation>帮助</translation>
     </message>
     <message>
-        <location filename="../../zenomainwindow.cpp" line="239"/>
+        <location filename="../../zenomainwindow.cpp" line="240"/>
         <source>Send this File</source>
         <translation>发送当前文件</translation>
     </message>
@@ -858,19 +878,19 @@
 <context>
     <name>ZenoNode</name>
     <message>
-        <location filename="../../nodesys/zenonode.cpp" line="499"/>
-        <location filename="../../nodesys/zenonode.cpp" line="986"/>
+        <location filename="../../nodesys/zenonode.cpp" line="505"/>
+        <location filename="../../nodesys/zenonode.cpp" line="993"/>
         <source>Path to Save</source>
         <translation>文件保存路径</translation>
     </message>
     <message>
-        <location filename="../../nodesys/zenonode.cpp" line="984"/>
+        <location filename="../../nodesys/zenonode.cpp" line="991"/>
         <source>File to Open</source>
         <translation>要打开的文件</translation>
     </message>
     <message>
-        <location filename="../../nodesys/zenonode.cpp" line="984"/>
-        <location filename="../../nodesys/zenonode.cpp" line="986"/>
+        <location filename="../../nodesys/zenonode.cpp" line="991"/>
+        <location filename="../../nodesys/zenonode.cpp" line="993"/>
         <source>All Files(*);;</source>
         <translation>所有文件(*);;</translation>
     </message>
@@ -886,7 +906,7 @@
 <context>
     <name>ZenoPropPanel</name>
     <message>
-        <location filename="../../panel/zenoproppanel.cpp" line="92"/>
+        <location filename="../../panel/zenoproppanel.cpp" line="94"/>
         <source>Wiki</source>
         <translation>文档</translation>
     </message>
@@ -897,6 +917,14 @@
         <location filename="../../panel/zenospreadsheet.cpp" line="29"/>
         <source>Prim: </source>
         <translation>图元对象： </translation>
+    </message>
+</context>
+<context>
+    <name>ZenoSubGraphScene</name>
+    <message>
+        <location filename="../../nodesys/zenosubgraphscene.cpp" line="678"/>
+        <source>add Link</source>
+        <translation>添加连接</translation>
     </message>
 </context>
 <context>
@@ -1049,32 +1077,32 @@
 <context>
     <name>ZenoWelcomePage</name>
     <message>
-        <location filename="../../nodesview/zenowelcomepage.cpp" line="18"/>
+        <location filename="../../nodesview/zenowelcomepage.cpp" line="19"/>
         <source>ZENO Manual</source>
         <translation>ZENO手册</translation>
     </message>
     <message>
-        <location filename="../../nodesview/zenowelcomepage.cpp" line="23"/>
+        <location filename="../../nodesview/zenowelcomepage.cpp" line="24"/>
         <source>ZENO Video Tutorials</source>
         <translation>ZENO视频教程</translation>
     </message>
     <message>
-        <location filename="../../nodesview/zenowelcomepage.cpp" line="28"/>
+        <location filename="../../nodesview/zenowelcomepage.cpp" line="29"/>
         <source>Zenus Official Web</source>
         <translation>泽森科工官网</translation>
     </message>
     <message>
-        <location filename="../../nodesview/zenowelcomepage.cpp" line="33"/>
+        <location filename="../../nodesview/zenowelcomepage.cpp" line="34"/>
         <source>Forum</source>
         <translation>论坛</translation>
     </message>
     <message>
-        <location filename="../../nodesview/zenowelcomepage.cpp" line="38"/>
+        <location filename="../../nodesview/zenowelcomepage.cpp" line="39"/>
         <source>Project on GitHub</source>
         <translation>GitHub上的源码</translation>
     </message>
     <message>
-        <location filename="../../nodesview/zenowelcomepage.cpp" line="111"/>
+        <location filename="../../nodesview/zenowelcomepage.cpp" line="112"/>
         <source>Remove</source>
         <translation>移除</translation>
     </message>
