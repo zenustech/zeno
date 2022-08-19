@@ -16,7 +16,7 @@ ModelAcceptor::ModelAcceptor(GraphsModel* pModel, bool bImport)
 {
 }
 
-void ModelAcceptor::setLegacyDescs(const rapidjson::Value& graphObj, const NODE_DESCS& legacyDescs)
+bool ModelAcceptor::setLegacyDescs(const rapidjson::Value& graphObj, const NODE_DESCS& legacyDescs)
 {
     //discard legacy desc except subnet desc.
     QStringList subgraphs;
@@ -29,10 +29,15 @@ void ModelAcceptor::setLegacyDescs(const rapidjson::Value& graphObj, const NODE_
     QList<NODE_DESC> subnetDescs;
     for (QString name : subgraphs)
     {
-        ZASSERT_EXIT(legacyDescs.find(name) != legacyDescs.end());
+        if (legacyDescs.find(name) == legacyDescs.end())
+        {
+            zeno::log_warn("subgraph {} isn't described by the file descs.", name.toStdString());
+            continue;
+        }
         subnetDescs.append(legacyDescs[name]);
     }
-    m_pModel->appendSubnetDescsFromZsg(subnetDescs);
+    bool ret = m_pModel->appendSubnetDescsFromZsg(subnetDescs);
+    return ret;
 }
 
 void ModelAcceptor::BeginSubgraph(const QString& name)

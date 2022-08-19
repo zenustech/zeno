@@ -38,6 +38,7 @@ set(FEM_MUSCLE_SOURCE_FILES
 )
 
 target_sources(zeno PRIVATE ${FEM_MUSCLE_SOURCE_FILES})
+zeno_disable_warning(${FEM_MUSCLE_SOURCE_FILES})
 target_link_libraries(zeno PRIVATE Eigen3::Eigen)
 target_link_libraries(zeno PRIVATE OpenMP::OpenMP_CXX)
 

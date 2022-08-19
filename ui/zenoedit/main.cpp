@@ -3,6 +3,7 @@
 #include "zenoapplication.h"
 #include "zenomainwindow.h"
 #include "startup/zstartup.h"
+#include "settings/zsettings.h"
 
 
 int main(int argc, char *argv[]) 
@@ -39,7 +40,7 @@ int main(int argc, char *argv[])
 
 
     QTranslator t;
-    QSettings settings("ZenusTech", "Zeno");
+    QSettings settings(zsCompanyName, zsEditor);
     QVariant use_chinese = settings.value("use_chinese");
 
     if (use_chinese.isNull() || use_chinese.toBool()) {

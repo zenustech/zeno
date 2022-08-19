@@ -45,6 +45,7 @@ public:
     static QMap<QString, NODE_DATA> dumpItems(IGraphsModel* pGraphsModel, const QPersistentModelIndex& subgIdx,
         const QModelIndexList& nodesIndice, const QModelIndexList& linkIndice);
     static int getMaxObjId(const QList<QString>& lst);
+    static QVector<qreal> getSlideStep(const QString& name, PARAM_CONTROL ctrl);
 
 private:
     static std::pair<qreal, qreal> getRxx2(QRectF r, qreal xRadius, qreal yRadius, bool AbsoluteSize);

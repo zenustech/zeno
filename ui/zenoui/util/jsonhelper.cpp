@@ -41,6 +41,10 @@ namespace JsonHelper
         {
             writer.Double(value.toDouble());
         }
+        else if (varType == QMetaType::Float)
+        {
+            writer.Double(value.toFloat());
+        }
         else if (varType == QVariant::Int)
         {
             writer.Int(value.toInt());

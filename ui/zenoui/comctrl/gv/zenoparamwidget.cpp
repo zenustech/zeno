@@ -1,7 +1,10 @@
 #include "zenoparamwidget.h"
 #include "zenosocketitem.h"
+#include "zgraphicsnumslideritem.h"
 #include <zenoui/render/common_id.h>
 #include <zenoui/style/zenostyle.h>
+#include <zeno/utils/log.h>
+#include "util/uihelper.h"
 
 
 ZenoParamWidget::ZenoParamWidget(QGraphicsItem* parent, Qt::WindowFlags wFlags)
@@ -83,12 +86,15 @@ void ZenoGvLineEdit::paintEvent(QPaintEvent* e)
 ////////////////////////////////////////////////////////////////////////////////
 ZenoParamLineEdit::ZenoParamLineEdit(const QString &text, PARAM_CONTROL ctrl, LineEditParam param, QGraphicsItem *parent)
     : ZenoParamWidget(parent)
+    , m_pSlider(nullptr)
+    , m_pLineEdit(nullptr)
 {
-    m_pLineEdit = new QLineEdit;
+    m_pLineEdit = new ZLineEdit;
     m_pLineEdit->setText(text);
     m_pLineEdit->setTextMargins(param.margins);
     m_pLineEdit->setPalette(param.palette);
     m_pLineEdit->setFont(param.font);
+    m_pLineEdit->setProperty("cssClass", "proppanel");
     m_pLineEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     setWidget(m_pLineEdit);
     connect(m_pLineEdit, SIGNAL(editingFinished()), this, SIGNAL(editingFinished()));
@@ -99,6 +105,31 @@ void ZenoParamLineEdit::setValidator(const QValidator* pValidator)
     m_pLineEdit->setValidator(pValidator);
 }
 
+void ZenoParamLineEdit::setNumSlider(QGraphicsScene* pScene, const QVector<qreal>& steps)
+{
+    if (!pScene)
+        return;
+
+    m_pSlider = new ZGraphicsNumSliderItem(steps, nullptr);
+    connect(m_pSlider, &ZGraphicsNumSliderItem::numSlided, this, [=](qreal val) {
+        bool bOk = false;
+        qreal num = this->text().toFloat(&bOk);
+        if (bOk)
+        {
+            num = num + val;
+            QString newText = QString::number(num);
+            setText(newText);
+        }
+    });
+    connect(m_pSlider, &ZGraphicsNumSliderItem::slideFinished, this, [=]() {
+        m_pLineEdit->setShowingSlider(false);
+        emit editingFinished();
+    });
+    m_pSlider->setZValue(1000);
+    m_pSlider->hide();
+    pScene->addItem(m_pSlider);
+}
+
 QString ZenoParamLineEdit::text() const
 {
     return m_pLineEdit->text();
@@ -107,6 +138,77 @@ QString ZenoParamLineEdit::text() const
 void ZenoParamLineEdit::setText(const QString &text)
 {
     m_pLineEdit->setText(text);
+}
+
+QGraphicsView* ZenoParamLineEdit::_getFocusViewByCursor()
+{
+    QPointF cursorPos = this->cursor().pos();
+    const auto views = scene()->views();
+    Q_ASSERT(!views.isEmpty());
+    for (auto view : views)
+    {
+        QRect rc = view->viewport()->geometry();
+        QPoint tl = view->mapToGlobal(rc.topLeft());
+        QPoint br = view->mapToGlobal(rc.bottomRight());
+        rc = QRect(tl, br);
+        if (rc.contains(cursorPos.toPoint()))
+        {
+            return view;
+        }
+    }
+    return nullptr;
+}
+
+void ZenoParamLineEdit::keyPressEvent(QKeyEvent* event)
+{
+    if (event->key() == Qt::Key_Alt)
+    {
+        if (m_pSlider)
+        {
+            QPointF pos = this->sceneBoundingRect().center();
+            QSizeF sz = m_pSlider->boundingRect().size();
+
+            auto view =  _getFocusViewByCursor();
+            if (view)
+            {
+                // it's very difficult to get current viewport, so we get it by current cursor.
+                // but when we move the cursor out of the view, we can't get the current view.
+
+                static QRect screen = QApplication::desktop()->screenGeometry();
+                static const int _yOffset = ZenoStyle::dpiScaled(20);
+                QPointF cursorPos = this->cursor().pos();
+                QPoint viewPoint = view->mapFromGlobal(this->cursor().pos());
+                const QPointF sceneCursor = view->mapToScene(viewPoint);
+                QPointF screenBR = view->mapToScene(view->mapFromGlobal(screen.bottomRight()));
+                cursorPos = mapToScene(cursorPos);
+
+                pos.setX(sceneCursor.x());
+                pos.setY(std::min(pos.y(), screenBR.y() - sz.height() / 2 - _yOffset) - sz.height() / 2.);
+            }
+            else
+            {
+                pos -= QPointF(sz.width() / 2., sz.height() / 2.);
+            }
+
+            m_pSlider->setPos(pos);
+            m_pSlider->show();
+            m_pLineEdit->setShowingSlider(true);
+        }
+    }
+    ZenoParamWidget::keyPressEvent(event);
+}
+
+void ZenoParamLineEdit::keyReleaseEvent(QKeyEvent* event)
+{
+    if (event->key() == Qt::Key_Alt)
+    {
+        if (m_pSlider)
+        {
+            m_pSlider->hide();
+            m_pLineEdit->setShowingSlider(false);
+        }
+    }
+    ZenoParamWidget::keyReleaseEvent(event);
 }
 
 
@@ -178,23 +280,49 @@ void ZenoParamCheckBox::setCheckState(Qt::CheckState state)
 
 
 ///////////////////////////////////////////////////////////////////////////
-ZenoVecEditWidget::ZenoVecEditWidget(const UI_VECTYPE& vec, QGraphicsItem* parent)
+ZenoVecEditWidget::ZenoVecEditWidget(const UI_VECTYPE& vec, bool bFloat, LineEditParam param, QGraphicsScene* pScene, QGraphicsItem* parent)
     : ZenoParamWidget(parent)
-    , m_pEdit(nullptr)
+    , m_bFloatVec(bFloat)
 {
-    m_pEdit = new ZVecEditor(vec, true, 3, "zenonode");
-	setWidget(m_pEdit);
-	connect(m_pEdit, SIGNAL(editingFinished()), this, SIGNAL(editingFinished()));
+    QGraphicsLinearLayout* pLayout = new QGraphicsLinearLayout(Qt::Horizontal);
+    pLayout->setContentsMargins(0, 0, 0, 0);
+    pLayout->setSpacing(6);
+    for (int i = 0; i < vec.size(); i++)
+    {
+        const QString& numText = QString::number(vec[i]);
+        ZenoParamLineEdit* pLineEdit = new ZenoParamLineEdit(numText, CONTROL_FLOAT, param);
+        pLineEdit->setNumSlider(pScene, UiHelper::getSlideStep("", bFloat ? CONTROL_FLOAT : CONTROL_INT));
+        pLayout->addItem(pLineEdit);
+        m_editors.append(pLineEdit);
+        connect(pLineEdit, SIGNAL(editingFinished()), this, SIGNAL(editingFinished()));
+    }
+    setLayout(pLayout);
 }
 
 UI_VECTYPE ZenoVecEditWidget::vec() const
 {
-    return m_pEdit->vec();
+    UI_VECTYPE vec;
+    for (auto editor : m_editors)
+    {
+        if (m_bFloatVec)
+        {
+            vec.append(editor->text().toFloat());
+        }
+        else
+        {
+            vec.append(editor->text().toInt());
+        }
+    }
+    return vec;
 }
 
 void ZenoVecEditWidget::setVec(const UI_VECTYPE& vec)
 {
-    m_pEdit->onValueChanged(vec);
+    Q_ASSERT(vec.size() == m_editors.size());
+    for (int i = 0; i < vec.size(); i++)
+    {
+        m_editors[i]->setText(QString::number(vec[i]));
+    }
 }
 
 
@@ -286,8 +414,20 @@ ZenoParamComboBox::ZenoParamComboBox(const QStringList &items, ComboBoxParam par
     m_combobox->setItemDelegate(new ZComboBoxItemDelegate(m_combobox));
     setWidget(m_combobox);
 
-    setZValue(ZVALUE_POPUPWIDGET);
+    setZValue(ZVALUE_ELEMENT);
     connect(m_combobox, SIGNAL(activated(int)), this, SLOT(onComboItemActivated(int)));
+    connect(m_combobox, SIGNAL(beforeShowPopup()), this, SLOT(onBeforeShowPopup()));
+    connect(m_combobox, SIGNAL(afterHidePopup()), this, SLOT(onAfterHidePopup()));
+}
+
+void ZenoParamComboBox::onBeforeShowPopup()
+{
+    setZValue(ZVALUE_POPUPWIDGET);
+}
+
+void ZenoParamComboBox::onAfterHidePopup()
+{
+    setZValue(ZVALUE_ELEMENT);
 }
 
 void ZenoParamComboBox::setText(const QString& text)
@@ -439,6 +579,7 @@ ZenoTextLayoutItem::ZenoTextLayoutItem(const QString &text, const QFont &font, c
     , QGraphicsTextItem(text, parent)
     , m_text(text)
     , m_bRight(false)
+    , m_pSlider(nullptr)
 {
     setZValue(ZVALUE_ELEMENT);
     setFont(font);
@@ -505,6 +646,11 @@ void ZenoTextLayoutItem::setMargins(qreal leftM, qreal topM, qreal rightM, qreal
     frame->setFrameFormat(format);
 }
 
+void ZenoTextLayoutItem::setBackground(const QColor& clr)
+{
+    m_bg = clr;
+}
+
 QRectF ZenoTextLayoutItem::boundingRect() const
 {
     QRectF rc = QRectF(QPointF(0, 0), geometry().size());
@@ -516,6 +662,12 @@ void ZenoTextLayoutItem::paint(QPainter *painter, const QStyleOptionGraphicsItem
     QStyleOptionGraphicsItem myOption(*option);
     myOption.state &= ~QStyle::State_Selected;
     myOption.state &= ~QStyle::State_HasFocus;
+    if (m_bg.isValid())
+    {
+        painter->setPen(Qt::NoPen);
+        painter->setBrush(m_bg);
+        painter->drawRect(boundingRect());
+    }
     QGraphicsTextItem::paint(painter, &myOption, widget);
 }
 
@@ -524,6 +676,16 @@ QPainterPath ZenoTextLayoutItem::shape() const
     QPainterPath path;
     path.addRect(boundingRect());
     return path;
+}
+
+void ZenoTextLayoutItem::setScalesSlider(QGraphicsScene* pScene, const QVector<qreal>& scales)
+{
+    m_scales = scales;
+    m_pSlider = new ZGraphicsNumSliderItem(scales, nullptr);
+    if (pScene)
+        pScene->addItem(m_pSlider);
+    m_pSlider->setZValue(1000);
+    m_pSlider->hide();
 }
 
 QSizeF ZenoTextLayoutItem::sizeHint(Qt::SizeHint which, const QSizeF &constraint) const
@@ -573,6 +735,31 @@ void ZenoTextLayoutItem::hoverLeaveEvent(QGraphicsSceneHoverEvent* event)
     QGraphicsTextItem::hoverLeaveEvent(event);
     if (textInteractionFlags() & Qt::TextEditorInteraction)
         setCursor(QCursor(Qt::ArrowCursor));
+}
+
+void ZenoTextLayoutItem::keyPressEvent(QKeyEvent* event)
+{
+    if (event->key() == Qt::Key_Alt)
+    {
+        if (m_pSlider)
+        {
+            m_pSlider->setPos(this->scenePos());
+            m_pSlider->show();
+        }
+    }
+    QGraphicsTextItem::keyPressEvent(event);
+}
+
+void ZenoTextLayoutItem::keyReleaseEvent(QKeyEvent* event)
+{
+    if (event->key() == Qt::Key_Alt)
+    {
+        if (m_pSlider)
+        {
+            m_pSlider->hide();
+        }
+    }
+    QGraphicsTextItem::keyReleaseEvent(event);
 }
 
 
