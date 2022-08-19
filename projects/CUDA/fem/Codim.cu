@@ -4392,6 +4392,8 @@ struct CodimStepping : INode {
             useGD = false;
             A.advanceSubstep(cudaPol, (T)1 / nSubsteps);
 
+            int numFricSolve = s_enableFriction ? 2 : 1;
+        for_fric:
             /// optimizer
             for (int newtonIter = 0; newtonIter != PNCap; ++newtonIter) {
                 // check constraints
@@ -4619,6 +4621,8 @@ struct CodimStepping : INode {
                     }
                 }
             } // end newton step
+            if (--numFricSolve > 0)
+                goto for_fric;
 
             A.updateVelocities(cudaPol);
         }
