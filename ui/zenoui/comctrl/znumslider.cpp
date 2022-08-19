@@ -93,7 +93,7 @@ void ZNumSlider::mouseMoveEvent(QMouseEvent* event)
     if (m_currLabel)
     {
         qreal dx = pos.x() - m_lastPos.x();
-        static const int speed_factor = 10;
+        static const int speed_factor = 15;
         if (std::abs(dx) > speed_factor)
         {
             qreal scale = m_currLabel->text().toFloat();
