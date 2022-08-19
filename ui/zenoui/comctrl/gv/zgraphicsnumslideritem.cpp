@@ -57,9 +57,12 @@ void ZGraphicsNumSliderItem::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
     //_base::mouseMoveEvent(event);
     for (auto label : m_labels)
     {
+#if 0
         bool bHovered = label->sceneBoundingRect().contains(
             QPointF(label->sceneBoundingRect().center().x(), event->scenePos().y()));
-        //bool bHovered = label->isHovered();
+#else
+        bool bHovered = label->isHovered();
+#endif
         if (bHovered)
         {
             QPointF pos = event->screenPos();
