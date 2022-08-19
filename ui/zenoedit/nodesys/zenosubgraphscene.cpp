@@ -828,25 +828,34 @@ void ZenoSubGraphScene::keyPressEvent(QKeyEvent* event)
     QGraphicsScene::keyPressEvent(event);
     if (!event->isAccepted() && event->key() == Qt::Key_Delete)
     {
-        QList<QGraphicsItem*> selItems = this->selectedItems();
-        QList<QPersistentModelIndex> nodes;
-        QList<QPersistentModelIndex> links;
-        for (auto item : selItems)
+        if (m_tempLink)
         {
-            if (ZenoNode *pNode = qgraphicsitem_cast<ZenoNode *>(item))
-            {
-                nodes.append(pNode->index());
-            }
-            else if (ZenoFullLink *pLink = qgraphicsitem_cast<ZenoFullLink *>(item))
-            {
-                links.append(pLink->linkInfo());
-            }
+            removeItem(m_tempLink);
+            delete m_tempLink;
+            m_tempLink = nullptr;
         }
-        if (!nodes.isEmpty() || !links.isEmpty())
+        else
         {
-            IGraphsModel *pGraphsModel = zenoApp->graphsManagment()->currentModel();
-            ZASSERT_EXIT(pGraphsModel);
-            pGraphsModel->removeNodeLinks(nodes, links, m_subgIdx);
+            QList<QGraphicsItem*> selItems = this->selectedItems();
+            QList<QPersistentModelIndex> nodes;
+            QList<QPersistentModelIndex> links;
+            for (auto item : selItems)
+            {
+                if (ZenoNode* pNode = qgraphicsitem_cast<ZenoNode*>(item))
+                {
+                    nodes.append(pNode->index());
+                }
+                else if (ZenoFullLink* pLink = qgraphicsitem_cast<ZenoFullLink*>(item))
+                {
+                    links.append(pLink->linkInfo());
+                }
+            }
+            if (!nodes.isEmpty() || !links.isEmpty())
+            {
+                IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
+                ZASSERT_EXIT(pGraphsModel);
+                pGraphsModel->removeNodeLinks(nodes, links, m_subgIdx);
+            }
         }
     }
 }
