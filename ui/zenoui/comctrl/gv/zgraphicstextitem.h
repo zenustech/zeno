@@ -20,9 +20,9 @@ signals:
     void contentsChanged(QString oldText, QString newText);
 
 protected:
-    void mousePressEvent(QGraphicsSceneMouseEvent* event) override;
-    void mouseMoveEvent(QGraphicsSceneMouseEvent* event) override;
-    void mouseReleaseEvent(QGraphicsSceneMouseEvent* event) override;
+    void mousePressEvent(QGraphicsSceneMouseEvent* event);
+    void mouseMoveEvent(QGraphicsSceneMouseEvent* event);
+    void mouseReleaseEvent(QGraphicsSceneMouseEvent* event);
 
 private:
     QString m_text;
@@ -56,7 +56,7 @@ public:
     void setFixedWidth(qreal fixedWidth);
     void setHoverCursor(Qt::CursorShape cursor);
     bool isHovered() const;
-    void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) override;
+    void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget);
 
     static QSizeF size(const QString& text, const QFont& font, int pleft, int pTop, int pRight, int pBottom);
 

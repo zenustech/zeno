@@ -73,23 +73,17 @@ public:
     void setValidator(const QValidator* pValidator);
     void setNumSlider(QGraphicsScene* pScene, const QVector<qreal>& steps);
 
-//protected:
-    //void keyPressEvent(QKeyEvent* event) override;
-    //void keyReleaseEvent(QKeyEvent* event) override;
+protected:
+    void keyPressEvent(QKeyEvent* event);
+    void keyReleaseEvent(QKeyEvent* event);
 
 signals:
     void editingFinished();
-
-private slots:
-    void toggleSlider();
-    void toggleZfx();
 
 private:
     QGraphicsView* _getFocusViewByCursor();
 
     ZLineEdit* m_pLineEdit;
-    QPushButton* m_pZfxButton;
-    QPushButton* m_pSliderButton;
     ZGraphicsNumSliderItem* m_pSlider;
 };
 

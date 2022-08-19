@@ -88,12 +88,7 @@ ZenoParamLineEdit::ZenoParamLineEdit(const QString &text, PARAM_CONTROL ctrl, Li
     : ZenoParamWidget(parent)
     , m_pSlider(nullptr)
     , m_pLineEdit(nullptr)
-    , m_pZfxButton(nullptr)
-    , m_pSliderButton(nullptr)
 {
-    QHBoxLayout *pHLayout = new QHBoxLayout;
-    pHLayout->setContentsMargins(0, 0, 0, 0);
-
     m_pLineEdit = new ZLineEdit;
     m_pLineEdit->setText(text);
     m_pLineEdit->setTextMargins(param.margins);
@@ -101,79 +96,8 @@ ZenoParamLineEdit::ZenoParamLineEdit(const QString &text, PARAM_CONTROL ctrl, Li
     m_pLineEdit->setFont(param.font);
     m_pLineEdit->setProperty("cssClass", "proppanel");
     m_pLineEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    pHLayout->addWidget(m_pLineEdit);
-
-    const int h = 18;
-    m_pZfxButton = new QPushButton;
-    m_pZfxButton->setText("F");
-    m_pZfxButton->setPalette(param.palette);
-    m_pZfxButton->setFont(param.font);
-    m_pZfxButton->setProperty("cssClass", "proppanel");
-    m_pZfxButton->setFixedSize(h, h);
-    pHLayout->addWidget(m_pZfxButton);
-
-    m_pSliderButton = new QPushButton;
-    m_pSliderButton->setText("S");
-    m_pSliderButton->setPalette(param.palette);
-    m_pSliderButton->setFont(param.font);
-    m_pSliderButton->setProperty("cssClass", "proppanel");
-    m_pSliderButton->setFixedSize(h, h);
-    pHLayout->addWidget(m_pSliderButton);
-
-    connect(m_pSliderButton, SIGNAL(clicked()), this, SLOT(toggleSlider()));
-    connect(m_pZfxButton, SIGNAL(clicked()), this, SLOT(toggleZfx()));
-
-    QWidget *pWidget = new QWidget;
-    pWidget->setLayout(pHLayout);
-    setWidget(pWidget);
-
+    setWidget(m_pLineEdit);
     connect(m_pLineEdit, SIGNAL(editingFinished()), this, SIGNAL(editingFinished()));
-}
-
-void ZenoParamLineEdit::toggleZfx()
-{
-    // todo: support switching to 'green-background' ZFX editor
-}
-
-void ZenoParamLineEdit::toggleSlider()
-{
-    if (!m_pSlider) return;
-    if (!m_pSlider->isVisible())
-    {
-        QPointF pos = this->sceneBoundingRect().center();
-        QSizeF sz = m_pSlider->boundingRect().size();
-
-        auto view =  _getFocusViewByCursor();
-        if (view)
-        {
-            // it's very difficult to get current viewport, so we get it by current cursor.
-            // but when we move the cursor out of the view, we can't get the current view.
-
-            static QRect screen = QApplication::desktop()->screenGeometry();
-            static const int _yOffset = ZenoStyle::dpiScaled(20);
-            QPointF cursorPos = this->cursor().pos();
-            QPoint viewPoint = view->mapFromGlobal(this->cursor().pos());
-            const QPointF sceneCursor = view->mapToScene(viewPoint);
-            QPointF screenBR = view->mapToScene(view->mapFromGlobal(screen.bottomRight()));
-            cursorPos = mapToScene(cursorPos);
-
-            pos.setX(sceneCursor.x());
-            pos.setY(std::min(pos.y(), screenBR.y() - sz.height() / 2 - _yOffset) - sz.height() / 2.);
-        }
-        else
-        {
-            pos -= QPointF(sz.width() / 2., sz.height() / 2.);
-        }
-
-        m_pSlider->setPos(pos);
-        m_pSlider->show();
-        //m_pLineEdit->setShowingSlider(true);//buggy
-    }
-    else
-    {
-        m_pSlider->hide();
-        //m_pLineEdit->setShowingSlider(false);
-    }
 }
 
 void ZenoParamLineEdit::setValidator(const QValidator* pValidator)
@@ -235,10 +159,9 @@ QGraphicsView* ZenoParamLineEdit::_getFocusViewByCursor()
     return nullptr;
 }
 
-#if 0
 void ZenoParamLineEdit::keyPressEvent(QKeyEvent* event)
 {
-    if (event->key() == Qt::Key_Alt)
+    if (event->key() == Qt::Key_Control)
     {
         if (m_pSlider)
         {
@@ -277,7 +200,7 @@ void ZenoParamLineEdit::keyPressEvent(QKeyEvent* event)
 
 void ZenoParamLineEdit::keyReleaseEvent(QKeyEvent* event)
 {
-    if (event->key() == Qt::Key_Alt)
+    if (event->key() == Qt::Key_Control)
     {
         if (m_pSlider)
         {
@@ -287,7 +210,6 @@ void ZenoParamLineEdit::keyReleaseEvent(QKeyEvent* event)
     }
     ZenoParamWidget::keyReleaseEvent(event);
 }
-#endif
 
 
 ///////////////////////////////////////////////////////////////////////////
