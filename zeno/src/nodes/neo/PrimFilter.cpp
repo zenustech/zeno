@@ -78,19 +78,19 @@ ZENO_API void primKillDeadVerts(PrimitiveObject *prim) {
     auto mock = [&] (int &ind) {
         ind = unrevamp[ind];
     };
-    for (auto const &ind: prim->points) {
+    for (auto &ind: prim->points) {
         mock(ind);
     }
-    for (auto const &ind: prim->lines) {
+    for (auto &ind: prim->lines) {
         mock(ind[0]);
         mock(ind[1]);
     }
-    for (auto const &ind: prim->tris) {
+    for (auto &ind: prim->tris) {
         mock(ind[0]);
         mock(ind[1]);
         mock(ind[2]);
     }
-    for (auto const &ind: prim->quads) {
+    for (auto &ind: prim->quads) {
         mock(ind[0]);
         mock(ind[1]);
         mock(ind[2]);
@@ -270,6 +270,26 @@ ZENDEFNODE(PrimFilter, {
     {"int", "tagValue", "0"},
     {"bool", "isInversed", "1"},
     {"enum verts faces", "method", "verts"},
+    },
+    {
+    {"PrimitiveObject", "prim"},
+    },
+    {
+    },
+    {"primitive"},
+});
+
+struct PrimKillDeadVerts : INode {
+    virtual void apply() override {
+        auto prim = get_input<PrimitiveObject>("prim");
+        primKillDeadVerts(prim.get());
+        set_output("prim", std::move(prim));
+    }
+};
+
+ZENDEFNODE(PrimKillDeadVerts, {
+    {
+    {"PrimitiveObject", "prim"},
     },
     {
     {"PrimitiveObject", "prim"},

@@ -115,26 +115,6 @@ ZENO_API void primWireframe(PrimitiveObject *prim, bool removeFaces, bool toEdge
 
 namespace {
 
-struct PrimKillDeadVerts : INode {
-    virtual void apply() override {
-        auto prim = get_input<PrimitiveObject>("prim");
-        primKillDeadVerts(prim.get());
-        set_output("prim", std::move(prim));
-    }
-};
-
-ZENDEFNODE(PrimKillDeadVerts, {
-    {
-    {"PrimitiveObject", "prim"},
-    },
-    {
-    {"PrimitiveObject", "prim"},
-    },
-    {
-    },
-    {"primitive"},
-});
-
 struct PrimEdgeBound : INode {
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");

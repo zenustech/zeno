@@ -49,7 +49,7 @@ ZENDEFNODE(PrimMarkClose, {
     {
     {"PrimitiveObject", "prim"},
     {"float", "distance", "0.00001"},
-    {"string", "tagAttr", "weldtag"},
+    {"string", "tagAttr", "weld"},
     },
     {
     {"PrimitiveObject", "prim"},
