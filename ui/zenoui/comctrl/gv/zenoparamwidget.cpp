@@ -161,7 +161,7 @@ QGraphicsView* ZenoParamLineEdit::_getFocusViewByCursor()
 
 void ZenoParamLineEdit::keyPressEvent(QKeyEvent* event)
 {
-    if (event->key() == Qt::Key_Control)
+    if (event->key() == Qt::Key_Alt)
     {
         if (m_pSlider)
         {
@@ -200,7 +200,7 @@ void ZenoParamLineEdit::keyPressEvent(QKeyEvent* event)
 
 void ZenoParamLineEdit::keyReleaseEvent(QKeyEvent* event)
 {
-    if (event->key() == Qt::Key_Control)
+    if (event->key() == Qt::Key_Alt)
     {
         if (m_pSlider)
         {
