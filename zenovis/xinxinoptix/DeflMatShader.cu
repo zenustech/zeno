@@ -628,16 +628,22 @@ extern "C" __global__ void __closesthit__radiance()
         ParallelogramLight light = params.lights[lidx];
         const float z1 = rnd(prd->seed);
         const float z2 = rnd(prd->seed);
+        float3 light_tpos = light.corner + light.v1 * 0.5 + light.v2 * 0.5;
         float3 light_pos = light.corner + light.v1 * z1 + light.v2 * z2;
 
         // Calculate properties of light sample (for area based pdf)
-        float Ldist = length(light_pos - P);
-        float3 L = normalize(light_pos - P);
-        float nDl = clamp(dot(N, L), 0.0f, 1.0f);
-        float LnDl = clamp(-dot(light.normal, L), 0.0f, 1.0f);
-        float A = length(cross(params.lights[lidx].v1, params.lights[lidx].v2));
-        ppl+= length(light.emission) * nDl * LnDl * A / (M_PIf * Ldist * Ldist)/sum;
+        float tLdist = length(light_tpos - P);
+        float3 tL = normalize(light_tpos - P);
+        float tnDl = clamp(dot(N, tL), 0.0f, 1.0f);
+        float tLnDl = clamp(-dot(light.normal, tL), 0.0f, 1.0f);
+        float tA = length(cross(params.lights[lidx].v1, params.lights[lidx].v2));
+        ppl+= length(light.emission) * tnDl * tLnDl * tA / (M_PIf * tLdist * tLdist)/sum;
         if(ppl>pl) {
+            float Ldist = length(light_pos - P);
+            float3 L = normalize(light_pos - P);
+            float nDl = clamp(dot(N, L), 0.0f, 1.0f);
+            float LnDl = clamp(-dot(light.normal, L), 0.0f, 1.0f);
+            float A = length(cross(params.lights[lidx].v1, params.lights[lidx].v2));
             float weight = 0.0f;
             if (nDl > 0.0f && LnDl > 0.0f) {
                 RadiancePRD shadow_prd;
@@ -650,7 +656,7 @@ extern "C" __global__ void __closesthit__radiance()
                 light_attenuation = shadow_prd.shadowAttanuation;
                 if (fmaxf(light_attenuation) > 0.0f) {
 
-                    weight = sum/length(light.emission);
+                    weight = sum * nDl/tnDl * LnDl/tLnDl * (tLdist * tLdist) / (Ldist * Ldist) / length(light.emission);
                 }
             }
 
