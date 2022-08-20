@@ -296,7 +296,25 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     }
 }
 
-
+static __inline__ __device__
+int GetLightIndex(float p, ParallelogramLight* lightP, int n)
+{
+    int s = 0, e = n-1;
+    while( s < e )
+    {
+        int j = (s+e)/2;
+        float pc = lightP[j].cdf/lightP[n-1].cdf;
+        if(pc<p)
+        {
+            s = j+1;
+        }
+        else
+        {
+            e = j;
+        }
+    }
+    return e;
+}
 extern "C" __global__ void __closesthit__radiance()
 {
     RadiancePRD* prd = getPRD();
@@ -587,7 +605,9 @@ extern "C" __global__ void __closesthit__radiance()
 
     prd->radiance = make_float3(0.0f,0.0f,0.0f);
     float3 light_attenuation = make_float3(1.0f,1.0f,1.0f);
-    for(int lidx=0;lidx<params.num_lights;lidx++) {
+    float pl = rnd(prd->seed);
+    int lidx = GetLightIndex(pl, params.lights, params.num_lights);
+    //for(int lidx=0;lidx<params.num_lights;lidx++) {
         ParallelogramLight light = params.lights[lidx];
         const float z1 = rnd(prd->seed);
         const float z2 = rnd(prd->seed);
@@ -611,7 +631,7 @@ extern "C" __global__ void __closesthit__radiance()
            
             light_attenuation = shadow_prd.shadowAttanuation;
             if (fmaxf(light_attenuation) > 0.0f) {
-                float A = length(cross(light.v1, light.v2));
+                float A = params.lights[params.num_lights-1].cdf;//total area of lights
                 weight = nDl * LnDl * A / (M_PIf * Ldist * Ldist);
             }
         }
@@ -644,7 +664,7 @@ extern "C" __global__ void __closesthit__radiance()
                 rrPdf
                 );
         prd->radiance += light.emission * light_attenuation * weight * lbrdf  + float3(mats.emission);
-    }
+    //}
 }
 
 extern "C" __global__ void __closesthit__occlusion()

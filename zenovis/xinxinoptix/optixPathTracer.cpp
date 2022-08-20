@@ -1239,6 +1239,19 @@ void optixupdatelight() {
         }
     }
 
+    g_lights[0].cdf = length(cross(g_lights[0].v1, g_lights[0].v2));
+    float a = g_lights[0].cdf;
+    for(int l=1;l<g_lights.size();l++)
+    {
+        g_lights[l].cdf = g_lights[l-1].cdf + length(cross(g_lights[l].v1, g_lights[l].v2));
+
+    }
+//    for(int l=0;l<g_lights.size();l++)
+//    {
+//        g_lights[l].cdf /= g_lights[g_lights.size()-1].cdf;
+//
+//    }
+
     CUDA_CHECK( cudaMalloc(
                 reinterpret_cast<void**>( &state.lightsbuf_p.reset() ),
                 sizeof( ParallelogramLight ) * g_lights.size()
