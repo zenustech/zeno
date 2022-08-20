@@ -148,7 +148,7 @@ QMenuBar *ZenoPlayer::initMenu()
         connect(pAction, &QAction::triggered, this, [=]() {
             const char *e = "bate";
             Zenovis::GetInstance().getSession()->set_render_engine(e);
-            ((ZenoPlayer *)zenoApp->getWindow("ZenoPlayer"))->updateFrame(QString::fromLatin1(e));
+            ((ZenoPlayer *)zenoApp->getWindow("ZenoPlayer"))->updateFrame(QString::fromUtf8(e));
         });
         pAction = new QAction(tr("Shading"), this);
         pDisplay->addAction(pAction);
@@ -156,7 +156,7 @@ QMenuBar *ZenoPlayer::initMenu()
             const char *e = "zhxx";
             Zenovis::GetInstance().getSession()->set_render_engine(e);
             Zenovis::GetInstance().getSession()->set_enable_gi(false);
-            ((ZenoPlayer *)zenoApp->getWindow("ZenoPlayer"))->updateFrame(QString::fromLatin1(e));
+            ((ZenoPlayer *)zenoApp->getWindow("ZenoPlayer"))->updateFrame(QString::fromUtf8(e));
         });
         pAction = new QAction(tr("VXGI"), this);
         pDisplay->addAction(pAction);
@@ -164,14 +164,14 @@ QMenuBar *ZenoPlayer::initMenu()
             const char *e = "zhxx";
             Zenovis::GetInstance().getSession()->set_render_engine(e);
             Zenovis::GetInstance().getSession()->set_enable_gi(true);
-            ((ZenoPlayer *)zenoApp->getWindow("ZenoPlayer"))->updateFrame(QString::fromLatin1(e));
+            ((ZenoPlayer *)zenoApp->getWindow("ZenoPlayer"))->updateFrame(QString::fromUtf8(e));
         });
         pAction = new QAction(tr("Optix"), this);
         pDisplay->addAction(pAction);
         connect(pAction, &QAction::triggered, this, [=]() {
             const char *e = "optx";
             Zenovis::GetInstance().getSession()->set_render_engine(e);
-            ((ZenoPlayer *)zenoApp->getWindow("ZenoPlayer"))->updateFrame(QString::fromLatin1(e));
+            ((ZenoPlayer *)zenoApp->getWindow("ZenoPlayer"))->updateFrame(QString::fromUtf8(e));
         });
         pDisplay->addSeparator();
 
