@@ -156,7 +156,7 @@ extern "C" __global__ void __raygen__rg()
     /*}*/
     params.accum_buffer[ image_index ] = make_float4( accum_color, 1.0f);
     vec3 aecs_fitted = ACESFitted(vec3(accum_color), 2.2);
-    float3 out_color = aecs_fitted;
+    float3 out_color = accum_color;
     params.frame_buffer[ image_index ] = make_color ( out_color );
 }
 

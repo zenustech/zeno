@@ -607,7 +607,24 @@ extern "C" __global__ void __closesthit__radiance()
     float3 light_attenuation = make_float3(1.0f,1.0f,1.0f);
     float pl = rnd(prd->seed);
     int lidx = GetLightIndex(pl, params.lights, params.num_lights);
-    //for(int lidx=0;lidx<params.num_lights;lidx++) {
+    float sum = 0.0f;
+    for(int lidx=0;lidx<params.num_lights;lidx++)
+    {
+            ParallelogramLight light = params.lights[lidx];
+            float3 light_pos = light.corner + light.v1 * 0.5 + light.v2 * 0.5;
+
+            // Calculate properties of light sample (for area based pdf)
+            float Ldist = length(light_pos - P);
+            float3 L = normalize(light_pos - P);
+            float nDl = clamp(dot(N, L), 0.0f, 1.0f);
+            float LnDl = clamp(-dot(light.normal, L), 0.0f, 1.0f);
+            float A = length(cross(params.lights[lidx].v1, params.lights[lidx].v2));
+            sum += length(light.emission)  * nDl * LnDl * A / (M_PIf * Ldist * Ldist);
+
+    }
+    bool computed = false;
+    float ppl = 0;
+    for(int lidx=0;lidx<params.num_lights && computed==false;lidx++) {
         ParallelogramLight light = params.lights[lidx];
         const float z1 = rnd(prd->seed);
         const float z2 = rnd(prd->seed);
@@ -618,53 +635,33 @@ extern "C" __global__ void __closesthit__radiance()
         float3 L = normalize(light_pos - P);
         float nDl = clamp(dot(N, L), 0.0f, 1.0f);
         float LnDl = clamp(-dot(light.normal, L), 0.0f, 1.0f);
+        float A = length(cross(params.lights[lidx].v1, params.lights[lidx].v2));
+        ppl+= length(light.emission) * nDl * LnDl * A / (M_PIf * Ldist * Ldist)/sum;
+        if(ppl>pl) {
+            float weight = 0.0f;
+            if (nDl > 0.0f && LnDl > 0.0f) {
+                RadiancePRD shadow_prd;
+                shadow_prd.shadowAttanuation = make_float3(1.0f, 1.0f, 1.0f);
+                traceOcclusion(params.handle, P, L,
+                               1e-5f,         // tmin
+                               Ldist - 1e-5f, // tmax,
+                               &shadow_prd);
 
-        float weight = 0.0f;
-        if (nDl > 0.0f && LnDl > 0.0f) {
-            RadiancePRD shadow_prd;
-            shadow_prd.shadowAttanuation = make_float3(1.0f,1.0f,1.0f);
-            traceOcclusion(params.handle, P, L,
-                           1e-5f,        // tmin
-                           Ldist - 1e-5f, // tmax,
-                            &shadow_prd
-            );
-           
-            light_attenuation = shadow_prd.shadowAttanuation;
-            if (fmaxf(light_attenuation) > 0.0f) {
-                float A = params.lights[params.num_lights-1].cdf;//total area of lights
-                weight = nDl * LnDl * A / (M_PIf * Ldist * Ldist);
+                light_attenuation = shadow_prd.shadowAttanuation;
+                if (fmaxf(light_attenuation) > 0.0f) {
+
+                    weight = sum/length(light.emission);
+                }
             }
+
+            float3 lbrdf = DisneyBSDF::EvaluateDisney(basecolor, metallic, subsurface, specular, roughness,
+                                                      specularTint, anisotropic, sheen, sheenTint, clearcoat,
+                                                      clearcoatGloss, specTrans, scatterDistance, ior, flatness, L,
+                                                      -normalize(inDir), T, B, N, thin > 0.5f, false, ffPdf, rrPdf);
+            prd->radiance += light.emission * light_attenuation * weight * lbrdf + float3(mats.emission);
+            computed = true;
         }
-
-
-        float3 lbrdf = DisneyBSDF::EvaluateDisney(
-                basecolor,
-                metallic,
-                subsurface,
-                specular,
-                roughness,
-                specularTint,
-                anisotropic,
-                sheen,
-                sheenTint,
-                clearcoat,
-                clearcoatGloss,
-                specTrans,
-                scatterDistance,
-                ior,
-                flatness,
-                L,
-                -normalize(inDir),
-                T,
-                B,
-                N,
-                thin>0.5f,
-                false,
-                ffPdf,
-                rrPdf
-                );
-        prd->radiance += light.emission * light_attenuation * weight * lbrdf  + float3(mats.emission);
-    //}
+    }
 }
 
 extern "C" __global__ void __closesthit__occlusion()
