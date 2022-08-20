@@ -119,7 +119,15 @@ QVariant UiHelper::_parseDefaultValue(const QString &defaultValue, const QString
     switch (control) {
     case CONTROL_INT:
     {
-        return defaultValue.toInt();
+        bool bOk = false;
+        int val = defaultValue.toInt(&bOk);
+        if (bOk) {
+            return val;
+        }
+        else {
+            //type dismatch.
+            return defaultValue;
+        }
     }
     case CONTROL_BOOL:
     {
@@ -158,7 +166,7 @@ QVariant UiHelper::_parseDefaultValue(const QString &defaultValue, const QString
         return QVariant::fromValue(vec);
     }
     default:
-        return QVariant();
+        return defaultValue;
     };
 }
 
