@@ -516,7 +516,7 @@ static void buildMeshAccelSplitMesh( PathTracerState& state, std::shared_ptr<sma
     triangle_input.triangleArray.vertexFormat                = OPTIX_VERTEX_FORMAT_FLOAT3;
     triangle_input.triangleArray.vertexStrideInBytes         = sizeof( Vertex );
     triangle_input.triangleArray.numVertices                 = static_cast<uint32_t>( mesh->verts.size() );
-    triangle_input.triangleArray.vertexBuffers               = g_vertices.empty() ? nullptr : & state.d_vertices;
+    triangle_input.triangleArray.vertexBuffers               = g_vertices.empty() ? nullptr : & mesh->dverts;
     triangle_input.triangleArray.flags                       = triangle_input_flags.data();
     triangle_input.triangleArray.numSbtRecords               = g_vertices.empty() ? 1 : g_mtlidlut.size();
     triangle_input.triangleArray.sbtIndexOffsetBuffer        = mesh->dmats;
@@ -593,6 +593,8 @@ static void buildMeshAccelSplitMesh( PathTracerState& state, std::shared_ptr<sma
 }
 static void buildInstanceAccel(PathTracerState& state, int rayTypeCount, std::vector<std::shared_ptr<smallMesh>> m_meshes)
 {
+    //zeno::log_info("build IAS begin");
+    std::cout<<"IAS begin"<<std::endl;
     float mat4x4[12] = {1,0,0,0,0,1,0,0,0,0,1,0};
     const size_t num_instances = m_meshes.size();
     std::vector<OptixInstance> optix_instances( num_instances );
@@ -612,6 +614,7 @@ static void buildInstanceAccel(PathTracerState& state, int rayTypeCount, std::ve
 
         //sbt_offset += static_cast<unsigned int>( mesh->verts.size() ) * rayTypeCount;  // one sbt record per GAS build input per RAY_TYPE
     }
+    std::cout<<"IAS middle\n";
     const size_t instances_size_in_bytes = sizeof( OptixInstance ) * num_instances;
     raii<CUdeviceptr>  d_instances;
     CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &d_instances.reset() ), instances_size_in_bytes ) );
@@ -664,8 +667,8 @@ static void buildInstanceAccel(PathTracerState& state, int rayTypeCount, std::ve
                 nullptr,            // emitted property list
                 0                   // num emitted properties
                 ) );
-
-
+    std::cout<<"IAS end\n";
+    //zeno::log_info("build IAS end");
 }
 static void buildMeshAccel( PathTracerState& state )
 {
@@ -1036,13 +1039,45 @@ void optixinit( int argc, char* argv[] )
               //std::back_inserter(res));
     //return res;
 //}
+static size_t staticMeshNum = 0;
+static size_t staticVertNum = 0;
 void splitMesh(std::vector<Vertex> & verts, 
 std::vector<uint32_t> &mat_idx, 
-std::vector<std::shared_ptr<smallMesh>> &oMeshes);
-
+std::vector<std::shared_ptr<smallMesh>> &oMeshes, int start = 0);
+std::vector<std::shared_ptr<smallMesh>> g_StaticMeshPieces;
 std::vector<std::shared_ptr<smallMesh>> g_meshPieces;
 static void updatedrawobjects();
-void optixupdatemesh(std::map<std::string, int> const &mtlidlut) {
+static void updateStaticDrawObjects();
+void UpdateStaticMesh(std::map<std::string, int> const &mtlidlut) {
+    camera_changed = true;
+    g_mtlidlut = mtlidlut;
+    //update static drawobjects;
+    updateStaticDrawObjects();
+    staticMeshNum = 0;
+    staticVertNum = 0;
+    if(!using20xx) {
+        //static mesh changed, we need rebuild it
+        splitMesh(g_vertices, g_mat_indices, g_meshPieces, 0);
+
+        for(int i=0;i<g_meshPieces.size();i++)
+        {
+            buildMeshAccelSplitMesh(state, g_meshPieces[i]);
+        }
+        staticMeshNum = g_meshPieces.size();
+        //staticVertNum = g_vertices.size();
+        size_t vertSize = 1024 * 3 * g_meshPieces.size();
+        staticVertNum = vertSize;
+        g_vertices.resize(vertSize);
+        g_clr.resize(vertSize);
+        g_nrm.resize(vertSize);
+        g_tan.resize(vertSize);
+        g_uv.resize(vertSize);
+        g_mat_indices.resize(vertSize/3);
+        g_lightMark.resize(vertSize/3);
+
+    }
+}
+void UpdateDynamicMesh(std::map<std::string, int> const &mtlidlut) {
     camera_changed = true;
     g_mtlidlut = mtlidlut;
     updatedrawobjects();
@@ -1098,6 +1133,7 @@ void optixupdatemesh(std::map<std::string, int> const &mtlidlut) {
     buildMeshAccel( state );
 //#else
     } else {
+        std::cout<<"begin copy\n";
     const size_t vertices_size_in_bytes = g_vertices.size() * sizeof( Vertex );
     CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.d_vertices.reset() ), vertices_size_in_bytes ) );
     CUDA_CHECK( cudaMemcpy(
@@ -1145,11 +1181,11 @@ void optixupdatemesh(std::map<std::string, int> const &mtlidlut) {
                 light_mark_size_in_bytes,
                 cudaMemcpyHostToDevice
                 ) );
-
-    splitMesh(g_vertices, g_mat_indices, g_meshPieces);
+    std::cout<<"end copy\n";
+    splitMesh(g_vertices, g_mat_indices, g_meshPieces, staticMeshNum);
     //std::cout<<"split mesh done\n";
     //std::cout<<"mesh pieces:"<<g_meshPieces.size()<<std::endl;
-    for(int i=0;i<g_meshPieces.size();i++)
+    for(int i=staticMeshNum;i<g_meshPieces.size();i++)
     {
         buildMeshAccelSplitMesh(state, g_meshPieces[i]);
     }
@@ -1360,10 +1396,10 @@ struct DrawDat {
 static std::map<std::string, DrawDat> drawdats;
 
 void splitMesh(std::vector<Vertex> & verts, std::vector<uint32_t> &mat_idx, 
-std::vector<std::shared_ptr<smallMesh>> &oMeshes)
+std::vector<std::shared_ptr<smallMesh>> &oMeshes, int start)
 {
-    size_t num_tri = verts.size()/3;
-    oMeshes.resize(0);
+    size_t num_tri = (verts.size()-staticVertNum)/3;
+    oMeshes.resize(start);
     size_t tris_per_mesh = 1024;
     size_t num_iter = num_tri/tris_per_mesh + 1;
     for(int i=0; i<num_iter;i++)
@@ -1373,18 +1409,18 @@ std::vector<std::shared_ptr<smallMesh>> &oMeshes)
         {
             size_t idx = i*tris_per_mesh + j;
             if(idx<num_tri){
-                m->verts.emplace_back(verts[idx*3+0]);
-                m->verts.emplace_back(verts[idx*3+1]);
-                m->verts.emplace_back(verts[idx*3+2]);
-                m->mat_idx.emplace_back(mat_idx[idx]);
-                m->idx.emplace_back(make_uint3(idx*3+0,idx*3+1,idx*3+2));
+                m->verts.emplace_back(verts[staticVertNum + idx*3+0]);
+                m->verts.emplace_back(verts[staticVertNum + idx*3+1]);
+                m->verts.emplace_back(verts[staticVertNum + idx*3+2]);
+                m->mat_idx.emplace_back(mat_idx[staticVertNum/3 + idx]);
+                m->idx.emplace_back(make_uint3(j*3+0,j*3+1,j*3+2));
             }
         }
         if(m->verts.size()>0)
             oMeshes.push_back(std::move(m));
     }
 }
-static void updatedrawobjects() {
+static void updateStaticDrawObjects() {
     g_vertices.clear();
     g_clr.clear();
     g_nrm.clear();
@@ -1394,7 +1430,8 @@ static void updatedrawobjects() {
     g_lightMark.clear();
     size_t n = 0;
     for (auto const &[key, dat]: drawdats) {
-        n += dat.tris.size()/3;
+        if(key.find(":static:")!=key.npos)
+            n += dat.tris.size()/3;
     }
     g_vertices.resize(n * 3);
     g_clr.resize(n*3);
@@ -1405,109 +1442,234 @@ static void updatedrawobjects() {
     g_lightMark.resize(n);
     n = 0;
     for (auto const &[key, dat]: drawdats) {
-        auto it = g_mtlidlut.find(dat.mtlid);
-        int mtlindex = it != g_mtlidlut.end() ? it->second : 0;
-        //zeno::log_error("{} {}", dat.mtlid, mtlindex);
-//#pragma omp parallel for
-        for (size_t i = 0; i < dat.tris.size() / 3; i++) {
-            g_mat_indices[n + i] = mtlindex;
-            g_lightMark[n+i] = 0;
-            g_vertices[(n + i) * 3 + 0] = {
-                dat.verts[dat.tris[i * 3 + 0] * 3 + 0],
-                dat.verts[dat.tris[i * 3 + 0] * 3 + 1],
-                dat.verts[dat.tris[i * 3 + 0] * 3 + 2],
-                0,
-            };
-            g_vertices[(n + i) * 3 + 1] = {
-                dat.verts[dat.tris[i * 3 + 1] * 3 + 0],
-                dat.verts[dat.tris[i * 3 + 1] * 3 + 1],
-                dat.verts[dat.tris[i * 3 + 1] * 3 + 2],
-                0,
-            };
-            g_vertices[(n + i) * 3 + 2] = {
-                dat.verts[dat.tris[i * 3 + 2] * 3 + 0],
-                dat.verts[dat.tris[i * 3 + 2] * 3 + 1],
-                dat.verts[dat.tris[i * 3 + 2] * 3 + 2],
-                0,
-            };
+        if(key.find(":static:")!=key.npos) {
+            auto it = g_mtlidlut.find(dat.mtlid);
+            int mtlindex = it != g_mtlidlut.end() ? it->second : 0;
+            //zeno::log_error("{} {}", dat.mtlid, mtlindex);
+            //#pragma omp parallel for
+            for (size_t i = 0; i < dat.tris.size() / 3; i++) {
+                g_mat_indices[n + i] = mtlindex;
+                g_lightMark[n + i] = 0;
+                g_vertices[(n + i) * 3 + 0] = {
+                    dat.verts[dat.tris[i * 3 + 0] * 3 + 0],
+                    dat.verts[dat.tris[i * 3 + 0] * 3 + 1],
+                    dat.verts[dat.tris[i * 3 + 0] * 3 + 2],
+                    0,
+                };
+                g_vertices[(n + i) * 3 + 1] = {
+                    dat.verts[dat.tris[i * 3 + 1] * 3 + 0],
+                    dat.verts[dat.tris[i * 3 + 1] * 3 + 1],
+                    dat.verts[dat.tris[i * 3 + 1] * 3 + 2],
+                    0,
+                };
+                g_vertices[(n + i) * 3 + 2] = {
+                    dat.verts[dat.tris[i * 3 + 2] * 3 + 0],
+                    dat.verts[dat.tris[i * 3 + 2] * 3 + 1],
+                    dat.verts[dat.tris[i * 3 + 2] * 3 + 2],
+                    0,
+                };
 
-            g_clr[(n + i) * 3 + 0] = {
-                dat.getAttr("clr")[dat.tris[i * 3 + 0] * 3 + 0],
-                dat.getAttr("clr")[dat.tris[i * 3 + 0] * 3 + 1],
-                dat.getAttr("clr")[dat.tris[i * 3 + 0] * 3 + 2],
-                0,
-            };
-            g_clr[(n + i) * 3 + 1] = {
-                dat.getAttr("clr")[dat.tris[i * 3 + 1] * 3 + 0],
-                dat.getAttr("clr")[dat.tris[i * 3 + 1] * 3 + 1],
-                dat.getAttr("clr")[dat.tris[i * 3 + 1] * 3 + 2],
-                0,
-            };
-            g_clr[(n + i) * 3 + 2] = {
-                dat.getAttr("clr")[dat.tris[i * 3 + 2] * 3 + 0],
-                dat.getAttr("clr")[dat.tris[i * 3 + 2] * 3 + 1],
-                dat.getAttr("clr")[dat.tris[i * 3 + 2] * 3 + 2],
-                0,
-            };
+                g_clr[(n + i) * 3 + 0] = {
+                    dat.getAttr("clr")[dat.tris[i * 3 + 0] * 3 + 0],
+                    dat.getAttr("clr")[dat.tris[i * 3 + 0] * 3 + 1],
+                    dat.getAttr("clr")[dat.tris[i * 3 + 0] * 3 + 2],
+                    0,
+                };
+                g_clr[(n + i) * 3 + 1] = {
+                    dat.getAttr("clr")[dat.tris[i * 3 + 1] * 3 + 0],
+                    dat.getAttr("clr")[dat.tris[i * 3 + 1] * 3 + 1],
+                    dat.getAttr("clr")[dat.tris[i * 3 + 1] * 3 + 2],
+                    0,
+                };
+                g_clr[(n + i) * 3 + 2] = {
+                    dat.getAttr("clr")[dat.tris[i * 3 + 2] * 3 + 0],
+                    dat.getAttr("clr")[dat.tris[i * 3 + 2] * 3 + 1],
+                    dat.getAttr("clr")[dat.tris[i * 3 + 2] * 3 + 2],
+                    0,
+                };
 
-            g_nrm[(n + i) * 3 + 0] = {
-                dat.getAttr("nrm")[dat.tris[i * 3 + 0] * 3 + 0],
-                dat.getAttr("nrm")[dat.tris[i * 3 + 0] * 3 + 1],
-                dat.getAttr("nrm")[dat.tris[i * 3 + 0] * 3 + 2],
-                0,
-            };
-            g_nrm[(n + i) * 3 + 1] = {
-                dat.getAttr("nrm")[dat.tris[i * 3 + 1] * 3 + 0],
-                dat.getAttr("nrm")[dat.tris[i * 3 + 1] * 3 + 1],
-                dat.getAttr("nrm")[dat.tris[i * 3 + 1] * 3 + 2],
-                0,
-            };
-            g_nrm[(n + i) * 3 + 2] = {
-                dat.getAttr("nrm")[dat.tris[i * 3 + 2] * 3 + 0],
-                dat.getAttr("nrm")[dat.tris[i * 3 + 2] * 3 + 1],
-                dat.getAttr("nrm")[dat.tris[i * 3 + 2] * 3 + 2],
-                0,
-            };
+                g_nrm[(n + i) * 3 + 0] = {
+                    dat.getAttr("nrm")[dat.tris[i * 3 + 0] * 3 + 0],
+                    dat.getAttr("nrm")[dat.tris[i * 3 + 0] * 3 + 1],
+                    dat.getAttr("nrm")[dat.tris[i * 3 + 0] * 3 + 2],
+                    0,
+                };
+                g_nrm[(n + i) * 3 + 1] = {
+                    dat.getAttr("nrm")[dat.tris[i * 3 + 1] * 3 + 0],
+                    dat.getAttr("nrm")[dat.tris[i * 3 + 1] * 3 + 1],
+                    dat.getAttr("nrm")[dat.tris[i * 3 + 1] * 3 + 2],
+                    0,
+                };
+                g_nrm[(n + i) * 3 + 2] = {
+                    dat.getAttr("nrm")[dat.tris[i * 3 + 2] * 3 + 0],
+                    dat.getAttr("nrm")[dat.tris[i * 3 + 2] * 3 + 1],
+                    dat.getAttr("nrm")[dat.tris[i * 3 + 2] * 3 + 2],
+                    0,
+                };
 
-            g_uv[(n + i) * 3 + 0] = {
-                dat.getAttr("uv")[dat.tris[i * 3 + 0] * 3 + 0],
-                dat.getAttr("uv")[dat.tris[i * 3 + 0] * 3 + 1],
-                dat.getAttr("uv")[dat.tris[i * 3 + 0] * 3 + 2],
-                0,
-            };
-            g_uv[(n + i) * 3 + 1] = {
-                dat.getAttr("uv")[dat.tris[i * 3 + 1] * 3 + 0],
-                dat.getAttr("uv")[dat.tris[i * 3 + 1] * 3 + 1],
-                dat.getAttr("uv")[dat.tris[i * 3 + 1] * 3 + 2],
-                0,
-            };
-            g_uv[(n + i) * 3 + 2] = {
-                dat.getAttr("uv")[dat.tris[i * 3 + 2] * 3 + 0],
-                dat.getAttr("uv")[dat.tris[i * 3 + 2] * 3 + 1],
-                dat.getAttr("uv")[dat.tris[i * 3 + 2] * 3 + 2],
-                0,
-            };
+                g_uv[(n + i) * 3 + 0] = {
+                    dat.getAttr("uv")[dat.tris[i * 3 + 0] * 3 + 0],
+                    dat.getAttr("uv")[dat.tris[i * 3 + 0] * 3 + 1],
+                    dat.getAttr("uv")[dat.tris[i * 3 + 0] * 3 + 2],
+                    0,
+                };
+                g_uv[(n + i) * 3 + 1] = {
+                    dat.getAttr("uv")[dat.tris[i * 3 + 1] * 3 + 0],
+                    dat.getAttr("uv")[dat.tris[i * 3 + 1] * 3 + 1],
+                    dat.getAttr("uv")[dat.tris[i * 3 + 1] * 3 + 2],
+                    0,
+                };
+                g_uv[(n + i) * 3 + 2] = {
+                    dat.getAttr("uv")[dat.tris[i * 3 + 2] * 3 + 0],
+                    dat.getAttr("uv")[dat.tris[i * 3 + 2] * 3 + 1],
+                    dat.getAttr("uv")[dat.tris[i * 3 + 2] * 3 + 2],
+                    0,
+                };
 
-            g_tan[(n + i) * 3 + 0] = {
-                dat.getAttr("tang")[dat.tris[i * 3 + 0] * 3 + 0],
-                dat.getAttr("tang")[dat.tris[i * 3 + 0] * 3 + 1],
-                dat.getAttr("tang")[dat.tris[i * 3 + 0] * 3 + 2],
-                0,
-            };
-            g_tan[(n + i) * 3 + 1] = {
-                dat.getAttr("tang")[dat.tris[i * 3 + 1] * 3 + 0],
-                dat.getAttr("tang")[dat.tris[i * 3 + 1] * 3 + 1],
-                dat.getAttr("tang")[dat.tris[i * 3 + 1] * 3 + 2],
-                0,
-            };
-            g_tan[(n + i) * 3 + 2] = {
-                dat.getAttr("tang")[dat.tris[i * 3 + 2] * 3 + 0],
-                dat.getAttr("tang")[dat.tris[i * 3 + 2] * 3 + 1],
-                dat.getAttr("tang")[dat.tris[i * 3 + 2] * 3 + 2],
-                0,
-            };
+                g_tan[(n + i) * 3 + 0] = {
+                    dat.getAttr("tang")[dat.tris[i * 3 + 0] * 3 + 0],
+                    dat.getAttr("tang")[dat.tris[i * 3 + 0] * 3 + 1],
+                    dat.getAttr("tang")[dat.tris[i * 3 + 0] * 3 + 2],
+                    0,
+                };
+                g_tan[(n + i) * 3 + 1] = {
+                    dat.getAttr("tang")[dat.tris[i * 3 + 1] * 3 + 0],
+                    dat.getAttr("tang")[dat.tris[i * 3 + 1] * 3 + 1],
+                    dat.getAttr("tang")[dat.tris[i * 3 + 1] * 3 + 2],
+                    0,
+                };
+                g_tan[(n + i) * 3 + 2] = {
+                    dat.getAttr("tang")[dat.tris[i * 3 + 2] * 3 + 0],
+                    dat.getAttr("tang")[dat.tris[i * 3 + 2] * 3 + 1],
+                    dat.getAttr("tang")[dat.tris[i * 3 + 2] * 3 + 2],
+                    0,
+                };
+            }
+            n += dat.tris.size() / 3;
         }
-        n += dat.tris.size() / 3;
+    }
+}
+static void updatedrawobjects() {
+    size_t n = 0;
+    for (auto const &[key, dat]: drawdats) {
+        if(key.find(":static:")==key.npos)
+            n += dat.tris.size()/3;
+    }
+
+    g_vertices.resize(staticVertNum + n * 3);
+    g_clr.resize(staticVertNum + n*3);
+    g_nrm.resize(staticVertNum + n*3);
+    g_uv.resize(staticVertNum + n*3);
+    g_tan.resize(staticVertNum + n*3);
+    g_mat_indices.resize(staticVertNum/3 + n);
+    g_lightMark.resize(staticVertNum/3 + n);
+    n = 0;
+    for (auto const &[key, dat]: drawdats) {
+        if(key.find(":static:")==key.npos) {
+            auto it = g_mtlidlut.find(dat.mtlid);
+            int mtlindex = it != g_mtlidlut.end() ? it->second : 0;
+            //zeno::log_error("{} {}", dat.mtlid, mtlindex);
+            //#pragma omp parallel for
+            for (size_t i = 0; i < dat.tris.size() / 3; i++) {
+                g_mat_indices[staticVertNum/3 + n + i] = mtlindex;
+                g_lightMark[staticVertNum/3 + n + i] = 0;
+                g_vertices[staticVertNum + (n + i) * 3 + 0] = {
+                    dat.verts[dat.tris[i * 3 + 0] * 3 + 0],
+                    dat.verts[dat.tris[i * 3 + 0] * 3 + 1],
+                    dat.verts[dat.tris[i * 3 + 0] * 3 + 2],
+                    0,
+                };
+                g_vertices[staticVertNum + (n + i) * 3 + 1] = {
+                    dat.verts[dat.tris[i * 3 + 1] * 3 + 0],
+                    dat.verts[dat.tris[i * 3 + 1] * 3 + 1],
+                    dat.verts[dat.tris[i * 3 + 1] * 3 + 2],
+                    0,
+                };
+                g_vertices[staticVertNum + (n + i) * 3 + 2] = {
+                    dat.verts[dat.tris[i * 3 + 2] * 3 + 0],
+                    dat.verts[dat.tris[i * 3 + 2] * 3 + 1],
+                    dat.verts[dat.tris[i * 3 + 2] * 3 + 2],
+                    0,
+                };
+
+                g_clr[staticVertNum + (n + i) * 3 + 0] = {
+                    dat.getAttr("clr")[dat.tris[i * 3 + 0] * 3 + 0],
+                    dat.getAttr("clr")[dat.tris[i * 3 + 0] * 3 + 1],
+                    dat.getAttr("clr")[dat.tris[i * 3 + 0] * 3 + 2],
+                    0,
+                };
+                g_clr[staticVertNum + (n + i) * 3 + 1] = {
+                    dat.getAttr("clr")[dat.tris[i * 3 + 1] * 3 + 0],
+                    dat.getAttr("clr")[dat.tris[i * 3 + 1] * 3 + 1],
+                    dat.getAttr("clr")[dat.tris[i * 3 + 1] * 3 + 2],
+                    0,
+                };
+                g_clr[staticVertNum + (n + i) * 3 + 2] = {
+                    dat.getAttr("clr")[dat.tris[i * 3 + 2] * 3 + 0],
+                    dat.getAttr("clr")[dat.tris[i * 3 + 2] * 3 + 1],
+                    dat.getAttr("clr")[dat.tris[i * 3 + 2] * 3 + 2],
+                    0,
+                };
+
+                g_nrm[staticVertNum + (n + i) * 3 + 0] = {
+                    dat.getAttr("nrm")[dat.tris[i * 3 + 0] * 3 + 0],
+                    dat.getAttr("nrm")[dat.tris[i * 3 + 0] * 3 + 1],
+                    dat.getAttr("nrm")[dat.tris[i * 3 + 0] * 3 + 2],
+                    0,
+                };
+                g_nrm[staticVertNum + (n + i) * 3 + 1] = {
+                    dat.getAttr("nrm")[dat.tris[i * 3 + 1] * 3 + 0],
+                    dat.getAttr("nrm")[dat.tris[i * 3 + 1] * 3 + 1],
+                    dat.getAttr("nrm")[dat.tris[i * 3 + 1] * 3 + 2],
+                    0,
+                };
+                g_nrm[staticVertNum + (n + i) * 3 + 2] = {
+                    dat.getAttr("nrm")[dat.tris[i * 3 + 2] * 3 + 0],
+                    dat.getAttr("nrm")[dat.tris[i * 3 + 2] * 3 + 1],
+                    dat.getAttr("nrm")[dat.tris[i * 3 + 2] * 3 + 2],
+                    0,
+                };
+
+                g_uv[staticVertNum + (n + i) * 3 + 0] = {
+                    dat.getAttr("uv")[dat.tris[i * 3 + 0] * 3 + 0],
+                    dat.getAttr("uv")[dat.tris[i * 3 + 0] * 3 + 1],
+                    dat.getAttr("uv")[dat.tris[i * 3 + 0] * 3 + 2],
+                    0,
+                };
+                g_uv[staticVertNum + (n + i) * 3 + 1] = {
+                    dat.getAttr("uv")[dat.tris[i * 3 + 1] * 3 + 0],
+                    dat.getAttr("uv")[dat.tris[i * 3 + 1] * 3 + 1],
+                    dat.getAttr("uv")[dat.tris[i * 3 + 1] * 3 + 2],
+                    0,
+                };
+                g_uv[staticVertNum + (n + i) * 3 + 2] = {
+                    dat.getAttr("uv")[dat.tris[i * 3 + 2] * 3 + 0],
+                    dat.getAttr("uv")[dat.tris[i * 3 + 2] * 3 + 1],
+                    dat.getAttr("uv")[dat.tris[i * 3 + 2] * 3 + 2],
+                    0,
+                };
+
+                g_tan[staticVertNum + (n + i) * 3 + 0] = {
+                    dat.getAttr("tang")[dat.tris[i * 3 + 0] * 3 + 0],
+                    dat.getAttr("tang")[dat.tris[i * 3 + 0] * 3 + 1],
+                    dat.getAttr("tang")[dat.tris[i * 3 + 0] * 3 + 2],
+                    0,
+                };
+                g_tan[staticVertNum + (n + i) * 3 + 1] = {
+                    dat.getAttr("tang")[dat.tris[i * 3 + 1] * 3 + 0],
+                    dat.getAttr("tang")[dat.tris[i * 3 + 1] * 3 + 1],
+                    dat.getAttr("tang")[dat.tris[i * 3 + 1] * 3 + 2],
+                    0,
+                };
+                g_tan[staticVertNum + (n + i) * 3 + 2] = {
+                    dat.getAttr("tang")[dat.tris[i * 3 + 2] * 3 + 0],
+                    dat.getAttr("tang")[dat.tris[i * 3 + 2] * 3 + 1],
+                    dat.getAttr("tang")[dat.tris[i * 3 + 2] * 3 + 2],
+                    0,
+                };
+            }
+            n += dat.tris.size() / 3;
+        }
     }
     size_t ltris = g_lightMesh.size()/3;
     for(int l=0;l<ltris;l++)
@@ -1535,6 +1697,8 @@ static void updatedrawobjects() {
         g_mat_indices.push_back(0);
         g_lightMark.push_back(1);
     }
+
+
 }
 
 void load_object(std::string const &key, std::string const &mtlid, float const *verts, size_t numverts, int const *tris, size_t numtris, std::map<std::string, std::pair<float const *, size_t>> const &vtab) {
