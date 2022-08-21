@@ -1178,7 +1178,7 @@ void load_light(std::string const &key, float const*v0,float const*v1,float cons
     ld.v2.assign(v2, v2 + 3);
     ld.normal.assign(nor, nor + 3);
     ld.emission.assign(emi, emi + 3);
-    zeno::log_info("light clr after read: {} {} {}", ld.emission[0],ld.emission[1],ld.emission[2]);
+    //zeno::log_info("light clr after read: {} {} {}", ld.emission[0],ld.emission[1],ld.emission[2]);
     lightdats[key] = ld;
 }
 
@@ -1204,7 +1204,7 @@ static void addLightMesh(float3 corner, float3 v2, float3 v1, float3 normal, flo
 void optixupdatelight() {
     camera_changed = true;
 
-    zeno::log_info("lights size {}", lightdats.size());
+    //zeno::log_info("lights size {}", lightdats.size());
 
     g_lights.clear();
     g_lightMesh.clear();
@@ -1226,18 +1226,31 @@ void optixupdatelight() {
         for (auto const &[key, dat]: lightdats) {
             auto &light = g_lights.emplace_back();
             light.emission = make_float3( (float)(dat.emission[0]), (float)dat.emission[1], (float)dat.emission[2] );
-            zeno::log_info("light clr after read: {} {} {}", light.emission.x,light.emission.y,light.emission.z);
+            //zeno::log_info("light clr after read: {} {} {}", light.emission.x,light.emission.y,light.emission.z);
             light.corner   = make_float3( dat.v0[0], dat.v0[1], dat.v0[2] );
-            zeno::log_info("light clr after read: {} {} {}", light.corner.x,light.corner.y,light.corner.z);
+            //zeno::log_info("light clr after read: {} {} {}", light.corner.x,light.corner.y,light.corner.z);
             light.v1       = make_float3( dat.v1[0], dat.v1[1], dat.v1[2] );
-            zeno::log_info("light clr after read: {} {} {}", light.v1.x,light.v1.y,light.v1.z);
+            //zeno::log_info("light clr after read: {} {} {}", light.v1.x,light.v1.y,light.v1.z);
             light.v2       = make_float3( dat.v2[0], dat.v2[1], dat.v2[2] );
-            zeno::log_info("light clr after read: {} {} {}", light.v2.x,light.v2.y,light.v2.z);
+            //zeno::log_info("light clr after read: {} {} {}", light.v2.x,light.v2.y,light.v2.z);
             light.normal   = make_float3( dat.normal[0], dat.normal[1], dat.normal[2] );
-            zeno::log_info("light clr after read: {} {} {}", light.normal.x,light.normal.y,light.normal.z);
+            //zeno::log_info("light clr after read: {} {} {}", light.normal.x,light.normal.y,light.normal.z);
             addLightMesh(light.corner, light.v2, light.v1, light.normal, light.emission);
         }
     }
+
+    g_lights[0].cdf = length(cross(g_lights[0].v1, g_lights[0].v2));
+    float a = g_lights[0].cdf;
+    for(int l=1;l<g_lights.size();l++)
+    {
+        g_lights[l].cdf = g_lights[l-1].cdf + length(cross(g_lights[l].v1, g_lights[l].v2));
+
+    }
+//    for(int l=0;l<g_lights.size();l++)
+//    {
+//        g_lights[l].cdf /= g_lights[g_lights.size()-1].cdf;
+//
+//    }
 
     CUDA_CHECK( cudaMalloc(
                 reinterpret_cast<void**>( &state.lightsbuf_p.reset() ),
