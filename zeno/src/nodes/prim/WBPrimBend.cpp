@@ -6,9 +6,9 @@
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/MatrixObject.h>
 #include <zeno/utils/orthonormal.h>
-#include <zeno/utils/random.h>
-#include <cmath>
 #include <glm/gtx/quaternion.hpp>
+#include <random>
+#include <cmath>
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -1437,6 +1437,7 @@ struct PrimSimplexNoiseAttr : INode {
                     get_input<PrimitiveObject>("prim") :
                     std::make_shared<PrimitiveObject>();
 
+        float scale = has_input("scale") ? get_input2<float>("scale") : 1.f;
         auto attrName = get_param<std::string>("attrName");
         auto attrType = get_param<std::string>("attrType");
         auto &pos = prim->verts;
@@ -1449,13 +1450,13 @@ struct PrimSimplexNoiseAttr : INode {
 #pragma omp parallel for
           for (int i = 0; i < arr.size(); i++) {
               if constexpr (is_decay_same_v<decltype(arr[i]), vec3f>) {
-                  vec3f p = pos[i];
+                  vec3f p = pos[i] * scale;
                   float x = SimplexNoise3(p[0], p[1],p[2]);
                   float y = SimplexNoise3(p[1], p[2], p[0]);
                   float z = SimplexNoise3(p[2], p[0], p[1]);
                   arr[i] = vec3f(x,y,z);
               } else {
-                  vec3f p = pos[i];
+                  vec3f p = pos[i] * scale;
                   arr[i] = SimplexNoise3(p[0], p[1],p[2]);
               }
           }
@@ -1467,6 +1468,7 @@ struct PrimSimplexNoiseAttr : INode {
 ZENDEFNODE(PrimSimplexNoiseAttr,
            { /* inputs: */ {
                    "prim",
+                   {"float", "scale", "1"},
                }, /* outputs: */ {
                    "prim",
                }, /* params: */ {
@@ -1555,8 +1557,15 @@ struct PrimWorleyNoiseAttr : INode {
     void apply() override {
         auto prim = has_input("prim") ? get_input<PrimitiveObject>("prim") : std::make_shared<PrimitiveObject>();
 
-        auto offset = vec3f(frand(), frand(), frand());
-        if(has_input("seed")) offset = get_input<NumericObject>("seed")->get<vec3f>();
+        float scale = has_input("scale") ? get_input2<float>("scale") : 1.f;
+        vec3f offset{};
+        if(!has_input("seed")) {
+            std::mt19937 gen(std::random_device{}());
+            std::uniform_real_distribution<float> unif(0.f, 1.f);
+            offset = vec3f(unif(gen), unif(gen), unif(gen));
+        } else {
+            offset = get_input<NumericObject>("seed")->get<vec3f>();
+        }
 
         int fType = 0;
         auto fTypeStr = get_input2<std::string>("fType");
@@ -1581,13 +1590,13 @@ struct PrimWorleyNoiseAttr : INode {
 #pragma omp parallel for
           for (int i = 0; i < arr.size(); i++) {
               if constexpr (is_decay_same_v<decltype(arr[i]), vec3f>) {
-                  vec3f p = pos[i];
+                  vec3f p = pos[i] * scale;
                   float x = WorleyNoise3(p[0],p[1],p[2],fType,distType,offset[0],offset[1],offset[2]);
                   float y = WorleyNoise3(p[1],p[2],p[0],fType,distType,offset[0],offset[1],offset[2]);
                   float z = WorleyNoise3(p[2],p[0],p[1],fType,distType,offset[0],offset[1],offset[2]);
                   arr[i] = vec3f(x,y,z);
               } else {
-                  vec3f p = pos[i];
+                  vec3f p = pos[i] * scale;
                   arr[i] = WorleyNoise3(p[0],p[1],p[2],fType,distType,offset[0],offset[1],offset[2]);
               }
           }
@@ -1600,6 +1609,7 @@ ZENDEFNODE(PrimWorleyNoiseAttr,
            { /* inputs: */ {
                    "prim",
                    "seed",
+                   {"float", "scale", "1"},
                    {"enum Euclidean Chebyshev Manhattan", "distType", "Euclidean"},
                    {"enum F1 F2-F1", "fType", "F1"},
                }, /* outputs: */ {

@@ -50,7 +50,7 @@ struct WriteVDB : ExportVDBGrid {
 static int defWriteVDB = zeno::defNodeClass<WriteVDB>("WriteVDB",
     { /* inputs: */ {
     "data",
-    "path",
+    {"writepath", "path"},
     }, /* outputs: */ {
     }, /* params: */ {
     }, /* category: */ {
