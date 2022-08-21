@@ -280,14 +280,42 @@ struct AudioEnergy : zeno::INode {
         set_output("E", std::make_shared<NumericObject>((float)E));
         double uniE = (E - minE) / (maxE - minE);
         set_output("uniE", std::make_shared<NumericObject>((float)uniE));
+        start_index /= duration_count;
+        start_index = min(start_index, init.size() - 1);
+        std::vector<double> _queue;
+        for (int i = max(start_index - 43, 0); i < start_index; i++) {
+            _queue.push_back((init[i] - minE) / (maxE - minE));
+        }
+        if (_queue.size() > 0) {
+            double avg_H = 0;
+            for (const double & e: _queue) {
+                avg_H += e;
+            }
+            avg_H /= _queue.size();
+            double var_H = 0;
+            for (const double & e: _queue) {
+                var_H += (e - avg_H) * (e - avg_H);
+            }
+            var_H /= _queue.size();
+            double std_H = sqrt(var_H);
+//            zeno::log_info("E: {}, avg_H: {}, std_H: {}, var_H: {}", uniE, avg_H, std_H, var_H);
+            float threshold = get_input2<float>("threshold");
+            int beat = uniE > avg_H + std_H * threshold;
+            set_output("beat", std::make_shared<NumericObject>(beat));
+        }
+        else {
+            set_output("beat", std::make_shared<NumericObject>(0));
+        }
     }
 };
     ZENDEFNODE(AudioEnergy, {
         {
             "wave",
             {"float", "time", "0"},
+            {"float", "threshold", "1"},
         },
         {
+            "beat",
             "E",
             "uniE",
             "minE",
