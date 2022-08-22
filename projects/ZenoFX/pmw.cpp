@@ -25,7 +25,7 @@ struct Buffer {
 static void vectors_wrangle
     ( zfx::x64::Executable *exec
     , std::vector<Buffer> const &chs
-    , float *maskarr
+    , int *maskarr
     ) {
     if (chs.size() == 0)
         return;
@@ -192,7 +192,7 @@ struct ParticlesMaskedWrangle : zeno::INode {
             });
             chs[i] = iob;
         }
-        auto &maskarr = prim->attr<float>(get_input2<std::string>("maskAttr"));
+        auto &maskarr = prim->attr<int>(get_input2<std::string>("maskAttr"));
         vectors_wrangle(exec, chs, maskarr.data());
 
         set_output("prim", std::move(prim));

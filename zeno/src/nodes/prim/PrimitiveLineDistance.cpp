@@ -67,11 +67,11 @@ ZENO_API void primLineDistance(PrimitiveObject *prim, std::string resAttr, int s
     
     std::vector<float> dist;
     dijkstra(prim, start, dist);
-    auto &result = prim->verts.add_attr<float>(resAttr);
-    for(size_t i=0;i<result.size();i++)
-    {
-        result[i] = dist[i];
-    }
+    prim->verts.add_attr<float>(resAttr) = std::move(dist);
+    //for(size_t i=0;i<result.size();i++)
+    //{
+        //result[i] = dist[i];
+    //}
     // std::unordered_multimap<int, std::pair<int, float>> neigh;
     // for (int i = 0; i < prim->lines.size(); i++) {
     //     auto line = prim->lines[i];
