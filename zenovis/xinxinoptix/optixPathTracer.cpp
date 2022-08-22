@@ -1671,32 +1671,32 @@ static void updatedrawobjects() {
             n += dat.tris.size() / 3;
         }
     }
-    size_t ltris = g_lightMesh.size()/3;
-    for(int l=0;l<ltris;l++)
-    {
-        g_vertices.push_back(g_lightMesh[l*3+0]);
-        g_vertices.push_back(g_lightMesh[l*3+1]);
-        g_vertices.push_back(g_lightMesh[l*3+2]);
-        auto l1 = g_lightMesh[l*3+1] - g_lightMesh[l*3+0];
-        auto l2 = g_lightMesh[l*3+2] - g_lightMesh[l*3+0];
-        auto zl1= zeno::vec3f(l1.x, l1.y, l1.z);
-        auto zl2= zeno::vec3f(l2.x, l2.y, l2.z);
-        auto normal = zeno::normalize(zeno::cross(zl1,zl2));
-        g_nrm.push_back(make_float4(normal[0], normal[1], normal[2],0));
-        g_nrm.push_back(make_float4(normal[0], normal[1], normal[2],0));
-        g_nrm.push_back(make_float4(normal[0], normal[1], normal[2],0));
-        g_clr.push_back(g_lightColor[l*3+0]);
-        g_clr.push_back(g_lightColor[l*3+1]);
-        g_clr.push_back(g_lightColor[l*3+2]);
-        g_tan.push_back(make_float4(0));
-        g_tan.push_back(make_float4(0));
-        g_tan.push_back(make_float4(0));
-        g_uv.push_back( make_float4(0));
-        g_uv.push_back( make_float4(0));
-        g_uv.push_back( make_float4(0));
-        g_mat_indices.push_back(0);
-        g_lightMark.push_back(1);
-    }
+//    size_t ltris = g_lightMesh.size()/3;
+//    for(int l=0;l<ltris;l++)
+//    {
+//        g_vertices.push_back(g_lightMesh[l*3+0]);
+//        g_vertices.push_back(g_lightMesh[l*3+1]);
+//        g_vertices.push_back(g_lightMesh[l*3+2]);
+//        auto l1 = g_lightMesh[l*3+1] - g_lightMesh[l*3+0];
+//        auto l2 = g_lightMesh[l*3+2] - g_lightMesh[l*3+0];
+//        auto zl1= zeno::vec3f(l1.x, l1.y, l1.z);
+//        auto zl2= zeno::vec3f(l2.x, l2.y, l2.z);
+//        auto normal = zeno::normalize(zeno::cross(zl1,zl2));
+//        g_nrm.push_back(make_float4(normal[0], normal[1], normal[2],0));
+//        g_nrm.push_back(make_float4(normal[0], normal[1], normal[2],0));
+//        g_nrm.push_back(make_float4(normal[0], normal[1], normal[2],0));
+//        g_clr.push_back(g_lightColor[l*3+0]);
+//        g_clr.push_back(g_lightColor[l*3+1]);
+//        g_clr.push_back(g_lightColor[l*3+2]);
+//        g_tan.push_back(make_float4(0));
+//        g_tan.push_back(make_float4(0));
+//        g_tan.push_back(make_float4(0));
+//        g_uv.push_back( make_float4(0));
+//        g_uv.push_back( make_float4(0));
+//        g_uv.push_back( make_float4(0));
+//        g_mat_indices.push_back(0);
+//        g_lightMark.push_back(1);
+//    }
 
 
 }

@@ -467,15 +467,15 @@ extern "C" __global__ void __closesthit__radiance()
     {
         prd->countEmitted = true;
         //hit light, emit
-        float dist = length(P - optixGetWorldRayOrigin()) + 1e-5;
-        float3 lv1 = v1-v0;
-        float3 lv2 = v2-v0;
-        float A = 0.5 * length(cross(lv1, lv2));
-        float3 lnrm = normalize(cross(normalize(lv1), normalize(lv2)));
-        float3 L     = normalize(P - optixGetWorldRayOrigin());
-        float  LnDl  = clamp(-dot( lnrm, L ), 0.0f, 1.0f);
-        float weight = LnDl * A / (M_PIf * dist * dist);
-        prd->radiance = attrs.clr * weight;
+//        float dist = length(P - optixGetWorldRayOrigin()) + 1e-5;
+//        float3 lv1 = v1-v0;
+//        float3 lv2 = v2-v0;
+//        float A = 0.5 * length(cross(lv1, lv2));
+//        float3 lnrm = normalize(cross(normalize(lv1), normalize(lv2)));
+//        float3 L     = normalize(P - optixGetWorldRayOrigin());
+//        float  LnDl  = clamp(-dot( lnrm, L ), 0.0f, 1.0f);
+//        float weight = LnDl * A / (M_PIf * dist * dist);
+//        prd->radiance = attrs.clr * weight;
         prd->origin = P;
         prd->direction = ray_dir;
         return;
