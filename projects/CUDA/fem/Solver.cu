@@ -31,6 +31,13 @@ template <typename T> static __forceinline__ __device__ void reduce_to(int i, in
         zs::atomic_add(zs::exec_cuda, &dst, val);
 }
 
+template <typename T> static inline T computeHb(const T d2, const T dHat2) {
+    if (d2 >= dHat2)
+        return 0;
+    T t2 = d2 - dHat2;
+    return ((std::log(d2 / dHat2) * -2 - t2 * 4 / d2) + (t2 / d2) * (t2 / d2));
+}
+
 template <typename TileVecT, int codim = 3>
 static zs::Vector<zs::AABBBox<3, typename TileVecT::value_type>>
 retrieve_bounding_volumes(zs::CudaExecutionPolicy &pol, const TileVecT &vtemp, const zs::SmallString &xTag,
@@ -282,12 +289,59 @@ typename IPCSystem::T IPCSystem::averageSurfArea(zs::CudaExecutionPolicy &pol) {
     else
         return 0;
 }
+void IPCSystem::updateWholeBoundingBoxSize(zs::CudaExecutionPolicy &pol) {
+    using namespace zs;
+    constexpr auto space = execspace_e::cuda;
+    bv_t bv = seBvh.getTotalBox(pol);
+    if (coVerts.size()) {
+        auto bouBv = bouSeBvh.getTotalBox(pol);
+        merge(bv, bouBv._min);
+        merge(bv, bouBv._max);
+    }
+    boxDiagSize2 = (bv._max - bv._min).l2NormSqr();
+}
+void IPCSystem::initKappa(zs::CudaExecutionPolicy &pol) {
+#if 0
+    // should be called after dHat set
+    if (!s_enableContact)
+        return;
+    using namespace zs;
+    constexpr auto space = execspace_e::cuda;
+    pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp)] __device__(int i) mutable {
+        vtemp.tuple<3>("p", i) = vec3::zeros();
+        vtemp.tuple<3>("q", i) = vec3::zeros();
+    });
+    // inertial + elasticity
+    computeInertialGradient(pol, "p");
+    match([&](auto &elasticModel) { computeElasticGradientAndHessian(pol, elasticModel, "p", false); })(
+        models.getElasticModel());
+    // contacts
+    findCollisionConstraints(pol, dHat, xi);
+    auto prevKappa = kappa;
+    kappa = 1;
+    computeBarrierGradientAndHessian(pol, "q", false);
+    computeBoundaryBarrierGradientAndHessian(pol, "q", false);
+    kappa = prevKappa;
+
+    auto gsum = dot(pol, vtemp, "p", "q");
+    auto gsnorm = dot(pol, vtemp, "q", "q");
+    if (gsnorm < limits<T>::min())
+        kappaMin = 0;
+    else
+        kappaMin = -gsum / gsnorm;
+    fmt::print("kappaMin: {}, gsum: {}, gsnorm: {}\n", kappaMin, gsum, gsnorm);
+#endif
+}
+
 void IPCSystem::initialize(zs::CudaExecutionPolicy &pol) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
     stInds = tiles_t{vtemp.get_allocator(), {{"inds", 3}}, sfOffset};
     seInds = tiles_t{vtemp.get_allocator(), {{"inds", 2}}, seOffset};
     svInds = tiles_t{vtemp.get_allocator(), {{"inds", 1}}, svOffset};
+
+    meanEdgeLength = averageSurfEdgeLength(pol);
+    meanSurfaceArea = averageSurfArea(pol);
     avgNodeMass = averageNodalMass(pol);
     for (auto &primHandle : prims) {
         auto &verts = primHandle.getVerts();
@@ -382,6 +436,22 @@ void IPCSystem::initialize(zs::CudaExecutionPolicy &pol) {
                 vtemp.tuple<3>("xhat", coOffset + i) = x;
                 vtemp.tuple<3>("x0", coOffset + i) = coverts.pack<3>("x0", i);
             });
+
+    // spatial accel structs
+    {
+        {
+            auto triBvs = retrieve_bounding_volumes(pol, vtemp, "xn", stInds, zs::wrapv<3>{}, 0);
+            stBvh.build(pol, triBvs);
+            auto edgeBvs = retrieve_bounding_volumes(pol, vtemp, "xn", seInds, zs::wrapv<2>{}, 0);
+            seBvh.build(pol, edgeBvs);
+        }
+        if (coVerts.size()) {
+            auto triBvs = retrieve_bounding_volumes(pol, vtemp, "xn", coEles, zs::wrapv<3>{}, coOffset);
+            bouStBvh.build(pol, triBvs);
+            auto edgeBvs = retrieve_bounding_volumes(pol, vtemp, "xn", coEdges, zs::wrapv<2>{}, coOffset);
+            bouSeBvh.build(pol, edgeBvs);
+        }
+    }
 }
 
 IPCSystem::IPCSystem(std::vector<ZenoParticles *> zsprims, const typename IPCSystem::dtiles_t &coVerts,
@@ -427,6 +497,8 @@ IPCSystem::IPCSystem(std::vector<ZenoParticles *> zsprims, const typename IPCSys
         else if (primPtr->category == ZenoParticles::category_e::tet)
             prims.emplace_back(*primPtr, coOffset, sfOffset, seOffset, svOffset, zs::wrapv<4>{});
     }
+    fmt::print("num total obj <verts, surfV, surfE, surfT>: {}, {}, {}, {}\n", coOffset, svOffset, seOffset, sfOffset);
+
     numDofs = coOffset + coVerts.size();
     vtemp = dtiles_t{zsprims[0]->getParticles<true>().get_allocator(),
                      {{"grad", 3},
@@ -475,24 +547,57 @@ IPCSystem::IPCSystem(std::vector<ZenoParticles *> zsprims, const typename IPCSys
 
     auto cudaPol = zs::cuda_exec();
     // average edge length (for CCD filtering)
-    meanEdgeLength = averageSurfEdgeLength(cudaPol);
-    meanSurfaceArea = averageSurfArea(cudaPol);
     initialize(cudaPol);
-    fmt::print("num total obj <verts, surfV, surfE, surfT>: {}, {}, {}, {}\n", coOffset, svOffset, seOffset, sfOffset);
+
+    targetGRes = pnRel;
+    projectDBC = false;
+    BCsatisfied = false;
+    useGD = false;
+
+    // adaptive dhat, targetGRes, kappa
     {
-        {
-            auto triBvs = retrieve_bounding_volumes(cudaPol, vtemp, "xn", stInds, zs::wrapv<3>{}, 0);
-            stBvh.build(cudaPol, triBvs);
-            auto edgeBvs = retrieve_bounding_volumes(cudaPol, vtemp, "xn", seInds, zs::wrapv<2>{}, 0);
-            seBvh.build(cudaPol, edgeBvs);
+        updateWholeBoundingBoxSize(cudaPol);
+        fmt::print("box diag size: {}\n", std::sqrt(boxDiagSize2));
+        /// dHat
+        this->dHat = dHat * std::sqrt(boxDiagSize2);
+        /// grad pn residual tolerance
+        targetGRes = pnRel * std::sqrt(boxDiagSize2);
+        if (kappa0 == 0) {
+            /// kappaMin
+            initKappa(cudaPol);
+            /// adaptive kappa
+            { // tet-oriented
+                T H_b = computeHb((T)1e-16 * boxDiagSize2, dHat * dHat);
+                kappa = 1e11 * avgNodeMass / (4e-16 * boxDiagSize2 * H_b);
+                kappaMax = 100 * kappa;
+                if (kappa < kappaMin)
+                    kappa = kappaMin;
+                if (kappa > kappaMax)
+                    kappa = kappaMax;
+            }
+            { // surf oriented (use framedt here)
+                auto kappaSurf = dt * dt * meanSurfaceArea / 3 * dHat * largestMu();
+                fmt::print("kappaSurf: {}, auto kappa: {}\n", kappaSurf, kappa);
+                if (kappaSurf > kappa && kappaSurf < kappaMax) {
+                    kappa = kappaSurf;
+                }
+            }
+            // boundaryKappa = kappa;
+            fmt::print("average node mass: {}, auto kappa: {} ({} - {})\n", avgNodeMass, this->kappa, this->kappaMin,
+                       this->kappaMax);
+        } else {
+            fmt::print("manual kappa: {}\n", this->kappa);
         }
-        if (coVerts.size()) {
-            auto triBvs = retrieve_bounding_volumes(cudaPol, vtemp, "xn", coEles, zs::wrapv<3>{}, coOffset);
-            bouStBvh.build(cudaPol, triBvs);
-            auto edgeBvs = retrieve_bounding_volumes(cudaPol, vtemp, "xn", coEdges, zs::wrapv<2>{}, coOffset);
-            bouSeBvh.build(cudaPol, edgeBvs);
-        }
+        // getchar();
     }
+
+    if (epsv == 0) {
+        this->epsv = this->dHat;
+    } else {
+        this->epsv *= this->dHat;
+    }
+
+    fmt::print("auto dHat: {}, targetGRes: {}, epsv (friction): {}\n", this->dHat, this->targetGRes, this->epsv);
 }
 
 struct MakeIPCSystem : INode {

@@ -92,6 +92,18 @@ struct IPCSystem : IObject {
     T averageNodalMass(zs::CudaExecutionPolicy &pol);
     T averageSurfEdgeLength(zs::CudaExecutionPolicy &pol);
     T averageSurfArea(zs::CudaExecutionPolicy &pol);
+    T largestMu() const {
+        T mu = 0;
+        for (auto &&primHandle : prims) {
+            auto [m, l] = primHandle.getModelLameParams();
+            if (m > mu)
+                mu = m;
+        }
+        return mu;
+    }
+
+    void updateWholeBoundingBoxSize(zs::CudaExecutionPolicy &pol);
+    void initKappa(zs::CudaExecutionPolicy &pol);
     void initialize(zs::CudaExecutionPolicy &pol);
     IPCSystem(std::vector<ZenoParticles *> zsprims, const dtiles_t &coVerts, const tiles_t &coEdges,
               const tiles_t &coEles, T dt, std::size_t ncps, bool withGround, T augLagCoeff, T pnRel, T cgRel,
