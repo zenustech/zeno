@@ -219,12 +219,8 @@ struct GraphicsManager {
     bool load_light_objects(std::vector<std::pair<std::string, zeno::IObject *>> const &objs){
         auto ins = graphics.insertPass();
 
-        bool changelight = false;
-        for (auto const &[key, obj] : objs) {
-            if (ins.may_emplace(key)) {
-                changelight = true;
-            }
-        }
+        bool changelight = need_update_light(objs);
+
         if(changelight){
             xinxinoptix::unload_light();
         }
@@ -238,6 +234,18 @@ struct GraphicsManager {
         return changelight;
     }
 
+    bool need_update_light(std::vector<std::pair<std::string, zeno::IObject *>> const &objs) {
+        auto ins = graphics.insertPass();
+
+        bool changelight = false;
+        for (auto const &[key, obj] : objs) {
+            if (ins.may_emplace(key)) {
+                changelight = true;
+            }
+        }
+
+        return changelight;
+    }
     bool load_light_objects2(std::map<std::string, std::shared_ptr<zeno::IObject>> objs){
         xinxinoptix::unload_light();
 
@@ -321,12 +329,13 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
     }
 
     void update() override {
-//        if(graphicsMan->load_light_objects(scene->objectsMan->pairs())){
-//            lightNeedUpdate = true;
-//        }
 
-        if(graphicsMan->load_light_objects2(scene->objectsMan->lightObjects)){
+        if(graphicsMan->need_update_light(scene->objectsMan->pairs())
+            || scene->objectsMan->needUpdateLight)
+        {
+            graphicsMan->load_light_objects2(scene->objectsMan->lightObjects);
             lightNeedUpdate = true;
+            scene->objectsMan->needUpdateLight = false;
         }
 
         if (graphicsMan->load_static_objects(scene->objectsMan->pairs())) {

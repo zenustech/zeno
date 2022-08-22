@@ -295,6 +295,7 @@ void ZenoLights::modifyLightData() {
     prim_in->userData().setLiterial<zeno::vec3f>("scale", zeno::vec3f(scaleX, scaleY, scaleZ));
     prim_in->userData().setLiterial<zeno::vec3f>("rotate", zeno::vec3f(rotateX, rotateY, rotateZ));
 
+    scene->objectsMan->needUpdateLight = true;
     zenoApp->getMainWindow()->updateViewport();
 }
 

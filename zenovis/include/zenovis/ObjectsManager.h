@@ -16,6 +16,7 @@ struct ObjectsManager : zeno::disable_copy {
         std::string, std::shared_ptr<zeno::IObject>>>> objects;
     // TODO objectsMan needs to classify objects. So we can update the object by the specified type
     std::map<std::string, std::shared_ptr<zeno::IObject>> lightObjects;
+    bool needUpdateLight = true;
 
     template <class T = void>
     auto pairs() const {
