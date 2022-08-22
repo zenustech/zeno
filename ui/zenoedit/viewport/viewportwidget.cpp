@@ -341,6 +341,7 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
 ViewportWidget::ViewportWidget(QWidget* parent)
     : QOpenGLWidget(parent)
     , m_camera(nullptr)
+    , updateLightOnce(true)
 {
     QSurfaceFormat fmt;
     int nsamples = 16;  // TODO: adjust in a zhouhang-panel
@@ -400,6 +401,14 @@ void ViewportWidget::updatePerspective()
 void ViewportWidget::paintGL()
 {
     Zenovis::GetInstance().paintGL();
+    if(updateLightOnce){
+        auto scene = Zenovis::GetInstance().getSession()->get_scene();
+        if(scene->objectsMan->lightObjects.size() > 0){
+            zenoApp->getMainWindow()->updateLightList();
+            updateLightOnce = false;
+        }
+    }
+
     if (!record_path.empty() /*&& f <= frame_end*/) //py has bug: frame_end not initialized.
     {
         int f = Zenovis::GetInstance().getCurrentFrameId();

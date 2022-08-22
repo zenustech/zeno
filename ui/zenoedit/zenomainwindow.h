@@ -38,6 +38,7 @@ public slots:
     void onRunFinished();
     void onFeedBack();
     void clearErrorMark();
+    void updateLightList();
 
 protected:
     void resizeEvent(QResizeEvent* event) override;

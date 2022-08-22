@@ -707,3 +707,10 @@ void ZenoMainWindow::onPrimitiveSelected(const std::unordered_set<std::string>& 
         dock->onPrimitiveSelected(primids);
     }
 }
+
+void ZenoMainWindow::updateLightList() {
+    auto docks = findChildren<ZenoDockWidget *>(QString(), Qt::FindDirectChildrenOnly);
+    for (ZenoDockWidget *dock : docks) {
+        dock->newFrameUpdate();
+    }
+}

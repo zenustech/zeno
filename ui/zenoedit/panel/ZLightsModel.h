@@ -10,6 +10,9 @@
 class ZLightsModel: public QAbstractListModel   {
     int rowCount(const QModelIndex &parent) const override;
     QVariant data(const QModelIndex &index, int role) const override;
+public:
+    std::vector<std::string> light_names;
+    void updateByObjectsMan();
 };
 
 

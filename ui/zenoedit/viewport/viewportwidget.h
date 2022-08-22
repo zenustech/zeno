@@ -98,6 +98,7 @@ protected:
 private:
     std::shared_ptr<CameraControl> m_camera;
     std::string record_path;
+    bool updateLightOnce;
     QVector2D record_res;
 };
 

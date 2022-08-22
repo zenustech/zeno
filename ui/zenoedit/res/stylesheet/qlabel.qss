@@ -55,3 +55,12 @@ QTableView QTableCornerButton::section
     background-color: rgb(39, 39, 39);
     border:1px solid rgb(23, 23, 23);
 }
+
+QListView[cssClass="proppanel"]
+{
+    border:0px solid white;
+    color: rgb(166, 166, 166);
+    gridline-color: rgb(23, 23, 23);
+    background-color: rgb(28, 28, 28);
+    alternate-background-color: rgb(20, 20, 20);
+}

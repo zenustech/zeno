@@ -14,8 +14,6 @@ class ZenoLights : public QWidget {
 
     QLabel* pStatusBar = new QLabel();
     QLabel* pPrimName = new QLabel();
-    QPushButton* pAddLight = new QPushButton("Add");
-    QPushButton* pRemoveLight = new QPushButton("Remove");
     QListView *lights_view = new QListView();
     ZLightsModel* dataModel = new ZLightsModel();
 
@@ -31,8 +29,16 @@ class ZenoLights : public QWidget {
     QLineEdit* rotateYEdit = new QLineEdit();
     QLineEdit* rotateZEdit = new QLineEdit();
 
+    QLineEdit* colorXEdit = new QLineEdit();
+    QLineEdit* colorYEdit = new QLineEdit();
+    QLineEdit* colorZEdit = new QLineEdit();
+
+    void modifyLightData();
+
 public:
     ZenoLights(QWidget* parent = nullptr);
+    void updateLights();
+    std::vector<zeno::vec3f> ZenoLights::computeLightPrim(zeno::vec3f position, zeno::vec3f rotate, zeno::vec3f scale);
 };
 
 

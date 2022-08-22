@@ -31,6 +31,7 @@ public:
     void setWidget(DOCK_TYPE m_type, QWidget* widget);
     void onNodesSelected(const QModelIndex& subgIdx, const QModelIndexList& nodes, bool select);
     void onPrimitiveSelected(const std::unordered_set<std::string>& primids);
+    void newFrameUpdate();
     DOCK_TYPE type() const;
 
 protected:

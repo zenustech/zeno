@@ -4,6 +4,7 @@
 #include <zeno/types/StringObject.h>
 #include <zeno/types/PrimitiveTools.h>
 #include <zeno/types/NumericObject.h>
+#include <zeno/types/UserData.h>
 #include <zeno/utils/string.h>
 #include <zeno/utils/logger.h>
 #include <zeno/utils/vec.h>
@@ -639,6 +640,10 @@ struct CreatePlane : zeno::INode {
             uv[i] = zeno::vec3f(1 - uvs[i][0], 1 - uvs[i][1], 0);
             norm[i] = normal;
         }
+
+        prim->userData().setLiterial("pos", std::move(position));
+        prim->userData().setLiterial("scale", std::move(scale));
+        prim->userData().setLiterial("rotate", std::move(rotate));
 
         NORMUV_CIHOU
         set_output("prim", std::move(prim));
