@@ -60,6 +60,7 @@ template <class T, class traits = raii_traits<T>,
          std::is_void_v<decltype(traits::deallocate(std::declval<T>()))>>>
 struct raii {
     T handle;
+    std::size_t size, capacity;
 
     operator T &() noexcept {
         return handle;
@@ -79,13 +80,35 @@ struct raii {
 
     raii() noexcept {
         handle = 0;
+        size = 0;
+        capacity = 0;
     }
 
     T &reset() noexcept {
         if (handle)
             traits::deallocate(handle);
         handle = 0;
+        size = 0;
+        capacity = 0;
         return handle;
+    }
+
+    void swap(raii &o) {
+        std::swap(handle, o.handle);
+        std::swap(size, o.size);
+        std::swap(capacity, o.capacity);
+    }
+
+    template <typename TT = T, std::enable_if_t<std::is_same_v<TT, CUdeviceptr>> * = nullptr>
+    bool resize(std::size_t newSize) noexcept {
+        if (newSize != size) {  // temporary
+            printf("\n\nreallocating %d bytes (previous %d bytes)\n\n\n", (int)size, (int)newSize);
+            CUDA_CHECK(cudaMalloc(reinterpret_cast<void **>(&reset()), newSize));
+            size = newSize;
+            capacity = newSize;
+            return true;
+        }
+        return false;
     }
 
     raii(raii const &) = delete;
@@ -93,7 +116,11 @@ struct raii {
 
     raii(raii &&that) noexcept {
         handle = that.handle;
+        size = that.size;
+        capacity = that.capacity;
         that.handle = 0;
+        that.size = 0;
+        that.capacity = 0;
     }
 
     raii &operator=(raii &&that) noexcept {
@@ -102,13 +129,20 @@ struct raii {
         if (handle)
             traits::deallocate(handle);
         handle = that.handle;
+        size = that.size;
+        capacity = that.capacity;
         that.handle = 0;
+        that.size = 0;
+        that.capacity = 0;
         return *this;
     }
 
     ~raii() noexcept {
         if (handle)
             traits::deallocate(handle);
+        handle = 0;
+        size = 0;
+        capacity = 0;
     }
 };
 
