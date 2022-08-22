@@ -1044,6 +1044,10 @@ struct CodimStepping : INode {
             using namespace zs;
             constexpr auto space = execspace_e::cuda;
             T activeGap2 = dHat * dHat + (T)2.0 * xi * dHat;
+            nFPP.setVal(0);
+            nFPE.setVal(0);
+            nFPT.setVal(0);
+            nFEE.setVal(0);
 #if s_enableContact
 #if s_enableSelfFriction
             nFPP = nPP;
@@ -1051,6 +1055,7 @@ struct CodimStepping : INode {
             nFPT = nPT;
             nFEE = nEE;
 
+#if 1
             auto numFPP = nFPP.getVal();
             pol(range(numFPP),
                 [vtemp = proxy<space>({}, vtemp), fricPP = proxy<space>({}, fricPP), PP = proxy<space>(PP),
@@ -1064,6 +1069,8 @@ struct CodimStepping : INode {
                     fricPP("fn", fppi) = -bGrad * 2 * zs::sqrt(dist2);
                     fricPP.tuple<6>("basis", fppi) = point_point_tangent_basis(x0, x1);
                 });
+#endif
+#if 1
             auto numFPE = nFPE.getVal();
             pol(range(numFPE),
                 [vtemp = proxy<space>({}, vtemp), fricPE = proxy<space>({}, fricPE), PE = proxy<space>(PE),
@@ -1079,6 +1086,8 @@ struct CodimStepping : INode {
                     fricPE("yita", fpei) = point_edge_closest_point(p, e0, e1);
                     fricPE.tuple<6>("basis", fpei) = point_edge_tangent_basis(p, e0, e1);
                 });
+#endif
+#if 1
             auto numFPT = nFPT.getVal();
             pol(range(numFPT),
                 [vtemp = proxy<space>({}, vtemp), fricPT = proxy<space>({}, fricPT), PT = proxy<space>(PT),
@@ -1095,6 +1104,8 @@ struct CodimStepping : INode {
                     fricPT.tuple<2>("beta", fpti) = point_triangle_closest_point(p, t0, t1, t2);
                     fricPT.tuple<6>("basis", fpti) = point_triangle_tangent_basis(p, t0, t1, t2);
                 });
+#endif
+#if 1
             auto numFEE = nFEE.getVal();
             pol(range(numFEE),
                 [vtemp = proxy<space>({}, vtemp), fricEE = proxy<space>({}, fricEE), EE = proxy<space>(EE),
@@ -1111,6 +1122,7 @@ struct CodimStepping : INode {
                     fricEE.tuple<2>("gamma", feei) = edge_edge_closest_point(ea0, ea1, eb0, eb1);
                     fricEE.tuple<6>("basis", feei) = edge_edge_tangent_basis(ea0, ea1, eb0, eb1);
                 });
+#endif
 #endif
 #endif
             if (s_enableGround) {
@@ -2309,261 +2321,6 @@ struct CodimStepping : INode {
             return E;
         }
 #else
-        template <typename Model>
-        T energy(zs::CudaExecutionPolicy &pol, const Model &model, const zs::SmallString tag,
-                 bool includeAugLagEnergy = false) {
-            using namespace zs;
-            constexpr auto space = execspace_e::cuda;
-            Vector<T> res{vtemp.get_allocator(), 1};
-            res.setVal(0);
-
-            auto checkE = [&res](std::string_view msg = "") {
-                fmt::print("[{}] current energy: {}\n", msg, res.getVal());
-            };
-
-            for (auto &primHandle : prims) {
-                auto &verts = primHandle.getVerts();
-                auto &eles = primHandle.getEles();
-                pol(range(verts.size()),
-                    [verts = proxy<space>({}, verts), vtemp = proxy<space>({}, vtemp), res = proxy<space>(res), tag,
-                     extForce = extForce, dt = this->dt, vOffset = primHandle.vOffset,
-                     numVerts = verts.size()] __device__(int vi) mutable {
-                        // inertia
-                        auto m = verts("m", vi);
-                        vi += vOffset;
-                        auto x = vtemp.pack<3>(tag, vi);
-                        auto xt = vtemp.pack<3>("xhat", vi);
-                        int BCorder = vtemp("BCorder", vi);
-                        T E = 0;
-                        if (BCorder != 3) {
-                            E += (T)0.5 * m * (x - vtemp.pack<3>("xtilde", vi)).l2NormSqr();
-                            // external force
-                            if (vtemp("BCsoft", vi) == 0) {
-                                E += -m * extForce.dot(x - xt) * dt * dt;
-                            }
-                        }
-
-                        // atomic_add(exec_cuda, &res[0], E);
-                        reduce_to(vi, numVerts, E, res[0]);
-                    });
-                if constexpr (s_enableDebugCheck) {
-                    checkE("inertial_extf");
-                }
-                if (primHandle.category == ZenoParticles::surface) {
-                    if (primHandle.isBoundary())
-                        continue;
-                    // elasticity
-                    pol(range(eles.size()), [eles = proxy<space>({}, eles), vtemp = proxy<space>({}, vtemp),
-                                             res = proxy<space>(res), tag, model = model, dt = this->dt,
-                                             vOffset = primHandle.vOffset,
-                                             numEles = eles.size()] __device__(int ei) mutable {
-                        auto IB = eles.template pack<2, 2>("IB", ei);
-                        auto inds = eles.template pack<3>("inds", ei).template reinterpret_bits<int>() + vOffset;
-
-                        T E;
-                        int BCorder[3];
-                        for (int i = 0; i != 3; ++i)
-                            BCorder[i] = vtemp("BCorder", inds[i]);
-                        if (BCorder[0] == 3 && BCorder[1] == 3 && BCorder[2] == 3)
-                            E = 0;
-                        else {
-                            auto vole = eles("vol", ei);
-                            vec3 xs[3] = {vtemp.template pack<3>(tag, inds[0]), vtemp.template pack<3>(tag, inds[1]),
-                                          vtemp.template pack<3>(tag, inds[2])};
-                            auto x1x0 = xs[1] - xs[0];
-                            auto x2x0 = xs[2] - xs[0];
-
-                            zs::vec<T, 3, 2> Ds{x1x0[0], x2x0[0], x1x0[1], x2x0[1], x1x0[2], x2x0[2]};
-                            auto F = Ds * IB;
-                            auto f0 = col(F, 0);
-                            auto f1 = col(F, 1);
-                            auto f0Norm = zs::sqrt(f0.l2NormSqr());
-                            auto f1Norm = zs::sqrt(f1.l2NormSqr());
-                            auto Estretch = model.mu * vole * (zs::sqr(f0Norm - 1) + zs::sqr(f1Norm - 1));
-                            auto Eshear = (model.mu * 0.3) * vole * zs::sqr(f0.dot(f1));
-                            E = Estretch + Eshear;
-                            E *= dt * dt;
-                        }
-
-                        // atomic_add(exec_cuda, &res[0], E);
-                        reduce_to(ei, numEles, E, res[0]);
-                    });
-                    if constexpr (s_enableDebugCheck) {
-                        checkE("cloth_E");
-                    }
-                } else if (primHandle.category == ZenoParticles::tet) {
-                    pol(zs::range(eles.size()), [vtemp = proxy<space>({}, vtemp), eles = proxy<space>({}, eles),
-                                                 res = proxy<space>(res), model, dt = this->dt,
-                                                 vOffset = primHandle.vOffset,
-                                                 numEles = eles.size()] __device__(int ei) mutable {
-                        auto IB = eles.template pack<3, 3>("IB", ei);
-                        auto inds = eles.template pack<4>("inds", ei).template reinterpret_bits<int>() + vOffset;
-                        auto vole = eles("vol", ei);
-                        vec3 xs[4] = {vtemp.pack<3>("xn", inds[0]), vtemp.pack<3>("xn", inds[1]),
-                                      vtemp.pack<3>("xn", inds[2]), vtemp.pack<3>("xn", inds[3])};
-
-                        int BCorder[4];
-                        for (int i = 0; i != 4; ++i)
-                            BCorder[i] = vtemp("BCorder", inds[i]);
-
-                        T E;
-                        if (BCorder[0] == 3 && BCorder[1] == 3 && BCorder[2] == 3 && BCorder[3] == 3)
-                            E = 0;
-                        else {
-                            mat3 F{};
-                            auto x1x0 = xs[1] - xs[0];
-                            auto x2x0 = xs[2] - xs[0];
-                            auto x3x0 = xs[3] - xs[0];
-                            auto Ds =
-                                mat3{x1x0[0], x2x0[0], x3x0[0], x1x0[1], x2x0[1], x3x0[1], x1x0[2], x2x0[2], x3x0[2]};
-                            F = Ds * IB;
-                            E = model.psi(F) * dt * dt * vole;
-                        }
-                        reduce_to(ei, numEles, E, res[0]);
-                    });
-                    if constexpr (s_enableDebugCheck) {
-                        checkE("tet_E");
-                    }
-                }
-            }
-            // contacts
-            {
-#if s_enableContact
-                {
-                    auto activeGap2 = dHat * dHat + 2 * xi * dHat;
-                    auto numPP = nPP.getVal();
-                    pol(range(numPP), [vtemp = proxy<space>({}, vtemp), tempPP = proxy<space>({}, tempPP),
-                                       PP = proxy<space>(PP), res = proxy<space>(res), xi2 = xi * xi, dHat = dHat,
-                                       activeGap2, kappa = kappa, numPP] __device__(int ppi) mutable {
-                        auto pp = PP[ppi];
-                        auto x0 = vtemp.pack<3>("xn", pp[0]);
-                        auto x1 = vtemp.pack<3>("xn", pp[1]);
-                        auto dist2 = dist2_pp(x0, x1);
-                        if (dist2 < xi2)
-                            printf("dist already smaller than xi!\n");
-                        // atomic_add(exec_cuda, &res[0],
-                        //           zs::barrier(dist2 - xi2, activeGap2, kappa));
-
-                        auto I5 = dist2 / activeGap2;
-                        auto lenE = (dist2 - activeGap2);
-                        auto E = -kappa * lenE * lenE * zs::log(I5);
-                        reduce_to(ppi, numPP, E, res[0]);
-                    });
-                    if constexpr (s_enableDebugCheck) {
-                        checkE("pp_E");
-                    }
-                    auto numPE = nPE.getVal();
-                    pol(range(numPE), [vtemp = proxy<space>({}, vtemp), tempPE = proxy<space>({}, tempPE),
-                                       PE = proxy<space>(PE), res = proxy<space>(res), xi2 = xi * xi, dHat = dHat,
-                                       activeGap2, kappa = kappa, numPE] __device__(int pei) mutable {
-                        auto pe = PE[pei];
-                        auto p = vtemp.pack<3>("xn", pe[0]);
-                        auto e0 = vtemp.pack<3>("xn", pe[1]);
-                        auto e1 = vtemp.pack<3>("xn", pe[2]);
-
-                        auto dist2 = dist2_pe(p, e0, e1);
-                        if (dist2 < xi2)
-                            printf("dist already smaller than xi!\n");
-                        // atomic_add(exec_cuda, &res[0],
-                        //           zs::barrier(dist2 - xi2, activeGap2, kappa));
-
-                        auto I5 = dist2 / activeGap2;
-                        auto lenE = (dist2 - activeGap2);
-                        auto E = -kappa * lenE * lenE * zs::log(I5);
-                        reduce_to(pei, numPE, E, res[0]);
-                    });
-                    if constexpr (s_enableDebugCheck) {
-                        checkE("pe_E");
-                    }
-                    auto numPT = nPT.getVal();
-                    pol(range(numPT), [vtemp = proxy<space>({}, vtemp), tempPT = proxy<space>({}, tempPT),
-                                       PT = proxy<space>(PT), res = proxy<space>(res), xi2 = xi * xi, dHat = dHat,
-                                       activeGap2, kappa = kappa, numPT] __device__(int pti) mutable {
-                        auto pt = PT[pti];
-                        auto p = vtemp.pack<3>("xn", pt[0]);
-                        auto t0 = vtemp.pack<3>("xn", pt[1]);
-                        auto t1 = vtemp.pack<3>("xn", pt[2]);
-                        auto t2 = vtemp.pack<3>("xn", pt[3]);
-
-                        auto dist2 = dist2_pt(p, t0, t1, t2);
-                        if (dist2 < xi2)
-                            printf("dist already smaller than xi!\n");
-                        // atomic_add(exec_cuda, &res[0],
-                        //           zs::barrier(dist2 - xi2, activeGap2, kappa));
-
-                        auto I5 = dist2 / activeGap2;
-                        auto lenE = (dist2 - activeGap2);
-                        auto E = -kappa * lenE * lenE * zs::log(I5);
-                        reduce_to(pti, numPT, E, res[0]);
-                    });
-                    if constexpr (s_enableDebugCheck) {
-                        checkE("pt_E");
-                    }
-                    auto numEE = nEE.getVal();
-                    pol(range(numEE), [vtemp = proxy<space>({}, vtemp), tempEE = proxy<space>({}, tempEE),
-                                       EE = proxy<space>(EE), res = proxy<space>(res), xi2 = xi * xi, dHat = dHat,
-                                       activeGap2, kappa = kappa, numEE] __device__(int eei) mutable {
-                        auto ee = EE[eei];
-                        auto ea0 = vtemp.pack<3>("xn", ee[0]);
-                        auto ea1 = vtemp.pack<3>("xn", ee[1]);
-                        auto eb0 = vtemp.pack<3>("xn", ee[2]);
-                        auto eb1 = vtemp.pack<3>("xn", ee[3]);
-
-                        auto dist2 = dist2_ee(ea0, ea1, eb0, eb1);
-                        if (dist2 < xi2)
-                            printf("dist already smaller than xi!\n");
-                        // atomic_add(exec_cuda, &res[0],
-                        //           zs::barrier(dist2 - xi2, activeGap2, kappa));
-
-                        auto I5 = dist2 / activeGap2;
-                        auto lenE = (dist2 - activeGap2);
-                        auto E = -kappa * lenE * lenE * zs::log(I5);
-
-                        reduce_to(eei, numEE, E, res[0]);
-                    });
-                    if constexpr (s_enableDebugCheck) {
-                        checkE("ee_E");
-                    }
-                }
-#endif
-                if (s_enableGround) {
-                    // boundary
-                    pol(range(coOffset), [vtemp = proxy<space>({}, vtemp), res = proxy<space>(res), gn = s_groundNormal,
-                                          dHat2 = dHat * dHat, kappa = kappa] ZS_LAMBDA(int vi) mutable {
-                        auto x = vtemp.pack<3>("xn", vi);
-                        auto dist = gn.dot(x);
-                        auto dist2 = dist * dist;
-                        if (dist2 < dHat2) {
-                            auto temp = -(dist2 - dHat2) * (dist2 - dHat2) * zs::log(dist2 / dHat2) * kappa;
-                            atomic_add(exec_cuda, &res[0], temp);
-                        }
-                    });
-                    if constexpr (s_enableDebugCheck) {
-                        checkE("ground_E");
-                    }
-                }
-            }
-            // constraints
-            if (includeAugLagEnergy) {
-                computeConstraints(pol, tag);
-                pol(range(numDofs), [vtemp = proxy<space>({}, vtemp), res = proxy<space>(res),
-                                     boundaryKappa = boundaryKappa] __device__(int vi) mutable {
-                    // already updated during "xn" update
-                    auto cons = vtemp.template pack<3>("cons", vi);
-                    auto w = vtemp("ws", vi);
-                    auto lambda = vtemp.pack<3>("lambda", vi);
-                    int BCfixed = vtemp("BCfixed", vi);
-                    T E = 0;
-                    if (!BCfixed)
-                        E = (T)(-lambda.dot(cons) * w + 0.5 * w * boundaryKappa * cons.l2NormSqr());
-                    atomic_add(exec_cuda, &res[0], E);
-                });
-                if constexpr (s_enableDebugCheck) {
-                    checkE("cons_E");
-                }
-            }
-            return res.getVal();
-        }
 #endif
         void checkSPD(zs::CudaExecutionPolicy &pol, const zs::SmallString dxTag) const {
             using namespace zs;

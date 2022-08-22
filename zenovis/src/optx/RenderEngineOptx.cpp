@@ -209,7 +209,36 @@ struct GraphicsManager {
 
     explicit GraphicsManager(Scene *scene) : scene(scene) {
     }
+    bool load_static_objects(std::vector<std::pair<std::string, zeno::IObject *>> const &objs) {
+        auto ins = graphics.insertPass();
 
+        bool changelight = false;
+        for (auto const &[key, obj] : objs) {
+            if (ins.may_emplace(key)) {
+                changelight = true;
+            }
+        }
+        if(changelight){
+            xinxinoptix::unload_light();
+        }
+
+        for (auto const &[key, obj] : objs) {
+            if (ins.may_emplace(key) && key.find(":static:")!=key.npos) {
+                zeno::log_info("load_static_object: loading graphics [{}]", key);
+
+                if (auto cam = dynamic_cast<zeno::CameraObject *>(obj))
+                {
+                    scene->camera->setCamera(cam->get());     // pyb fix
+                }
+
+                auto ig = std::make_unique<ZxxGraphic>(key, obj);
+
+                zeno::log_info("load_static_object: loaded graphics to {}", ig.get());
+                ins.try_emplace(key, std::move(ig));
+            }
+        }
+        return ins.has_changed();
+    }
     bool load_objects(std::vector<std::pair<std::string, zeno::IObject *>> const &objs) {
         auto ins = graphics.insertPass();
 
@@ -224,8 +253,8 @@ struct GraphicsManager {
         }
 
         for (auto const &[key, obj] : objs) {
-            if (ins.may_emplace(key)) {
-                zeno::log_info("zxx_load_object: loading graphics [{}]", key);
+            if (ins.may_emplace(key) && key.find(":static:")==key.npos) {
+                zeno::log_info("load_object: loading graphics [{}]", key);
 
                 if (auto cam = dynamic_cast<zeno::CameraObject *>(obj))
                 {
@@ -234,7 +263,7 @@ struct GraphicsManager {
 
                 auto ig = std::make_unique<ZxxGraphic>(key, obj);
 
-                zeno::log_info("zxx_load_object: loaded graphics to {}", ig.get());
+                zeno::log_info("load_object: loaded graphics to {}", ig.get());
                 ins.try_emplace(key, std::move(ig));
             }
         }
@@ -250,6 +279,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
     bool lightNeedUpdate = true;
     bool meshNeedUpdate = true;
     bool matNeedUpdate = true;
+    bool staticNeedUpdate = true;
 
     auto setupState() {
         return std::tuple{
@@ -272,6 +302,9 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
     }
 
     void update() override {
+        if (graphicsMan->load_static_objects(scene->objectsMan->pairs())) {
+            staticNeedUpdate = true;
+        }
         if (graphicsMan->load_objects(scene->objectsMan->pairs())) {
             lightNeedUpdate = meshNeedUpdate = matNeedUpdate = true;
         }
@@ -370,7 +403,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         //xinxinoptix::set_projection(glm::value_ptr(cam.m_proj));
         }
 
-        if (meshNeedUpdate || matNeedUpdate || lightNeedUpdate) {
+        if (meshNeedUpdate || matNeedUpdate || lightNeedUpdate || staticNeedUpdate) {
         //zeno::log_debug("[zeno-optix] updating scene");
             
             
@@ -435,7 +468,9 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
             //zeno::log_debug("[zeno-optix] updating light");
             xinxinoptix::optixupdatelight();
             //zeno::log_debug("[zeno-optix] updating mesh");
-            xinxinoptix::optixupdatemesh(mtlidlut);
+            if(staticNeedUpdate)
+                xinxinoptix::UpdateStaticMesh(mtlidlut);
+            xinxinoptix::UpdateDynamicMesh(mtlidlut);
             
 
             xinxinoptix::optixupdateend();
@@ -445,6 +480,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
             meshNeedUpdate = false;
             matNeedUpdate = false;
             lightNeedUpdate = false;
+            staticNeedUpdate = false;
         }
 
         int targetFBO = 0;
