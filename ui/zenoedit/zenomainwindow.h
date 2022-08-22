@@ -18,6 +18,8 @@ public:
     bool inDlgEventLoop() const;
     void setInDlgEventLoop(bool bOn);
 
+    QLineEdit* selected = nullptr;
+
 public slots:
     void openFileDialog();
     void onNewFile();

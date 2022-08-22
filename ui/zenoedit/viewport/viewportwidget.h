@@ -100,6 +100,7 @@ private:
     std::string record_path;
     bool updateLightOnce;
     QVector2D record_res;
+    QPointF m_lastPos;
 };
 
 class CameraKeyframeWidget;

@@ -17,21 +17,21 @@ class ZenoLights : public QWidget {
     QListView *lights_view = new QListView();
     ZLightsModel* dataModel = new ZLightsModel();
 
-    QLineEdit* posXEdit = new QLineEdit();
-    QLineEdit* posYEdit = new QLineEdit();
-    QLineEdit* posZEdit = new QLineEdit();
+    QLineEdit* posXEdit = new QLineEdit("0");
+    QLineEdit* posYEdit = new QLineEdit("0");
+    QLineEdit* posZEdit = new QLineEdit("0");
 
-    QLineEdit* scaleXEdit = new QLineEdit();
-    QLineEdit* scaleYEdit = new QLineEdit();
-    QLineEdit* scaleZEdit = new QLineEdit();
+    QLineEdit* scaleXEdit = new QLineEdit("1");
+    QLineEdit* scaleYEdit = new QLineEdit("1");
+    QLineEdit* scaleZEdit = new QLineEdit("1");
 
-    QLineEdit* rotateXEdit = new QLineEdit();
-    QLineEdit* rotateYEdit = new QLineEdit();
-    QLineEdit* rotateZEdit = new QLineEdit();
+    QLineEdit* rotateXEdit = new QLineEdit("0");
+    QLineEdit* rotateYEdit = new QLineEdit("0");
+    QLineEdit* rotateZEdit = new QLineEdit("0");
 
-    QLineEdit* colorXEdit = new QLineEdit();
-    QLineEdit* colorYEdit = new QLineEdit();
-    QLineEdit* colorZEdit = new QLineEdit();
+    QLineEdit* colorXEdit = new QLineEdit("1");
+    QLineEdit* colorYEdit = new QLineEdit("1");
+    QLineEdit* colorZEdit = new QLineEdit("1");
 
     void modifyLightData();
 

@@ -443,8 +443,23 @@ void ViewportWidget::mousePressEvent(QMouseEvent* event)
 
 void ViewportWidget::mouseMoveEvent(QMouseEvent* event)
 {
-    _base::mouseMoveEvent(event);
-    m_camera->fakeMouseMoveEvent(event);
+    auto & qle = zenoApp->getMainWindow()->selected;
+    if (qle != nullptr) {
+        float xpos = event->x(), ypos = event->y();
+        float dx = xpos - m_lastPos.x();
+        if (abs(dx) > 20) {
+            dx = 0;
+        }
+        float v = qle->text().toFloat();
+        dx *= 0.3;
+        v += dx;
+        qle->setText(QString::number(v));
+        m_lastPos = QPointF(xpos, ypos);
+    }
+    else {
+        _base::mouseMoveEvent(event);
+        m_camera->fakeMouseMoveEvent(event);
+    }
     update();
 }
 
