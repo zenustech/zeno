@@ -4,6 +4,7 @@
 #include <zeno/types/StringObject.h>
 #include <zeno/types/NumericObject.h>
 #include <unordered_map>
+#include <algorithm>
 
 namespace zeno {
 namespace {
