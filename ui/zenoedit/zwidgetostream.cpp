@@ -80,7 +80,7 @@ void ZWidgetErrStream::appendFormatMsg(std::string const &str) {
     {
         logger.warning().noquote() << msg;
         //crash when use logger.fatal.
-        //logger.fatal(msg.toLatin1());
+        //logger.fatal(msg.toUtf8());
     }
 }
 

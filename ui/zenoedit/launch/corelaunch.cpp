@@ -118,6 +118,7 @@ struct ProgramRunData {
         session->globalComm->frameRange(graph->beginFrameNumber, graph->endFrameNumber);
         for (int frame = graph->beginFrameNumber; frame <= graph->endFrameNumber; frame++) {
             zeno::log_debug("begin frame {}", frame);
+            session->globalState->frameid = frame;
             session->globalComm->newFrame();
             //corresponding to processPacket in viewdecode.cpp
             if (zenoApp->getMainWindow())

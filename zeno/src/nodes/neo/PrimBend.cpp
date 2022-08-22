@@ -80,7 +80,7 @@ struct PrimBend : zeno::INode {
                 auto newdirpos = rad * cosang;
 
                 auto diff = (std::max(0.f, limitMin - fac) + std::min(0.f, limitMax - fac)) * height;
-                newtanpos -= diff * cosang;
+                newtanpos -= diff * cosang + (0.5f - midPoint);
                 newdirpos += diff * sinang;
 
                 newdirpos -= radius;

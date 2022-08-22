@@ -10,9 +10,15 @@
 namespace zeno {
 
 ZENO_API void primEdgeBound(PrimitiveObject *prim, bool removeFaces, bool toEdges) {
-    std::map<vec2i, bool, tuple_less> segments;
+    struct segment_less {
+        bool operator()(vec2i const &a, vec2i const &b) const {
+            return std::make_pair(std::min(a[0], a[1]), std::max(a[0], a[1]))
+                < std::make_pair(std::min(b[0], b[1]), std::max(b[0], b[1]));
+        }
+    };
+    std::map<vec2i, bool, segment_less> segments;
     auto append = [&] (int i, int j) {
-        auto [it, succ] = segments.emplace(vec2i(std::min(i, j), std::max(i, j)), false);
+        auto [it, succ] = segments.emplace(vec2i(i, j), false);
         if (!succ) {
             it->second = true;
         }
@@ -62,9 +68,15 @@ ZENO_API void primEdgeBound(PrimitiveObject *prim, bool removeFaces, bool toEdge
 }
 
 ZENO_API void primWireframe(PrimitiveObject *prim, bool removeFaces, bool toEdges) {
-    std::set<vec2i, tuple_less> segments;
+    struct segment_less {
+        bool operator()(vec2i const &a, vec2i const &b) const {
+            return std::make_pair(std::min(a[0], a[1]), std::max(a[0], a[1]))
+                < std::make_pair(std::min(b[0], b[1]), std::max(b[0], b[1]));
+        }
+    };
+    std::set<vec2i, segment_less> segments;
     auto append = [&] (int i, int j) {
-        segments.emplace(std::min(i, j), std::max(i, j));
+        segments.emplace(i, j);
     };
     for (auto const &ind: prim->lines) {
         append(ind[0], ind[1]);

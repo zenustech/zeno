@@ -377,7 +377,7 @@ QMenuBar* ZenoViewDockTitle::initMenu()
         connect(pAction, &QAction::triggered, this, [=]() {
             const char *e = "bate";
             Zenovis::GetInstance().getSession()->set_render_engine(e);
-            zenoApp->getMainWindow()->updateViewport(QString::fromLatin1(e));
+            zenoApp->getMainWindow()->updateViewport(QString::fromUtf8(e));
         });
         pAction = new QAction(tr("Shading"), this);
         pAction->setShortcut(QKeySequence("Shift+F7"));
@@ -386,7 +386,7 @@ QMenuBar* ZenoViewDockTitle::initMenu()
             const char *e = "zhxx";
             Zenovis::GetInstance().getSession()->set_render_engine(e);
             //Zenovis::GetInstance().getSession()->set_enable_gi(false);
-            zenoApp->getMainWindow()->updateViewport(QString::fromLatin1(e));
+            zenoApp->getMainWindow()->updateViewport(QString::fromUtf8(e));
         });
         pAction = new QAction(tr("Optix"), this);
         pAction->setShortcut(QKeySequence("F8"));
@@ -394,7 +394,7 @@ QMenuBar* ZenoViewDockTitle::initMenu()
         connect(pAction, &QAction::triggered, this, [=]() {
             const char *e = "optx";
             Zenovis::GetInstance().getSession()->set_render_engine(e);
-            zenoApp->getMainWindow()->updateViewport(QString::fromLatin1(e));
+            zenoApp->getMainWindow()->updateViewport(QString::fromUtf8(e));
         });
     }
 

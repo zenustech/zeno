@@ -15,6 +15,7 @@ struct ParallelogramLight
     float3 v1, v2;
     float3 normal;
     float3 emission;
+    float  cdf;
 };
 
 

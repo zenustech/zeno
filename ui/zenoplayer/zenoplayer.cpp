@@ -38,7 +38,9 @@ ZenoPlayer::ZenoPlayer(ZENO_PLAYER_INIT_PARAM param, QWidget *parent)
     m_pTimerUpVIew = new QTimer;
 
     if (m_InitParam.bRecord == true) {
+
         m_iMaxFrameCount = m_InitParam.iFrame;
+        m_iFrameCount = m_InitParam.iSFrame;
     }
 
     connect(m_pTimerUpVIew, SIGNAL(timeout()), this, SLOT(updateFrame()));
@@ -146,7 +148,7 @@ QMenuBar *ZenoPlayer::initMenu()
         connect(pAction, &QAction::triggered, this, [=]() {
             const char *e = "bate";
             Zenovis::GetInstance().getSession()->set_render_engine(e);
-            ((ZenoPlayer *)zenoApp->getWindow("ZenoPlayer"))->updateFrame(QString::fromLatin1(e));
+            ((ZenoPlayer *)zenoApp->getWindow("ZenoPlayer"))->updateFrame(QString::fromUtf8(e));
         });
         pAction = new QAction(tr("Shading"), this);
         pDisplay->addAction(pAction);
@@ -154,7 +156,7 @@ QMenuBar *ZenoPlayer::initMenu()
             const char *e = "zhxx";
             Zenovis::GetInstance().getSession()->set_render_engine(e);
             Zenovis::GetInstance().getSession()->set_enable_gi(false);
-            ((ZenoPlayer *)zenoApp->getWindow("ZenoPlayer"))->updateFrame(QString::fromLatin1(e));
+            ((ZenoPlayer *)zenoApp->getWindow("ZenoPlayer"))->updateFrame(QString::fromUtf8(e));
         });
         pAction = new QAction(tr("VXGI"), this);
         pDisplay->addAction(pAction);
@@ -162,14 +164,14 @@ QMenuBar *ZenoPlayer::initMenu()
             const char *e = "zhxx";
             Zenovis::GetInstance().getSession()->set_render_engine(e);
             Zenovis::GetInstance().getSession()->set_enable_gi(true);
-            ((ZenoPlayer *)zenoApp->getWindow("ZenoPlayer"))->updateFrame(QString::fromLatin1(e));
+            ((ZenoPlayer *)zenoApp->getWindow("ZenoPlayer"))->updateFrame(QString::fromUtf8(e));
         });
         pAction = new QAction(tr("Optix"), this);
         pDisplay->addAction(pAction);
         connect(pAction, &QAction::triggered, this, [=]() {
             const char *e = "optx";
             Zenovis::GetInstance().getSession()->set_render_engine(e);
-            ((ZenoPlayer *)zenoApp->getWindow("ZenoPlayer"))->updateFrame(QString::fromLatin1(e));
+            ((ZenoPlayer *)zenoApp->getWindow("ZenoPlayer"))->updateFrame(QString::fromUtf8(e));
         });
         pDisplay->addSeparator();
 
@@ -311,14 +313,6 @@ void ZenoPlayer::updateFrame(const QString &action)
     m_pView->update();
     if(zeno::getSession().globalComm->maxPlayFrames()<=m_iFrameCount)
         return;
-    //if (m_InitParam.bRecord == true) {
-    //    QString path = QString("%1/%2.jpg").arg(m_InitParam.sPath).arg(m_iFrameCount, 7, 10, QLatin1Char('0'));
-    //    QString ext = QFileInfo(path).suffix();
-    //    int nsamples = m_InitParam.iSample;
-    //    if (!path.isEmpty()) {
-    //        //Zenovis::GetInstance().getSession()->do_screenshot(path.toStdString(), ext.toStdString(), nsamples);
-    //    }
-    //}
 
     m_iFrameCount++;
 }
@@ -340,7 +334,6 @@ void ZenoPlayer::onFrameDrawn(int frameid)
 void ZenoPlayer::startView(QString filePath) {
     Zenovis::GetInstance().startPlay(false);
     m_pTimerUpVIew->stop();
-    m_iFrameCount = 0;
 
     auto pGraphs = zenoApp->graphsManagment();
     pGraphs->clear();
@@ -349,18 +342,10 @@ void ZenoPlayer::startView(QString filePath) {
         QMessageBox::warning(this, tr("Error"), QString(tr("Open %1 error!")).arg(filePath));
         return;
     }
-//    auto &inst = Zenovis::GetInstance();
-//    auto sess = inst.getSession();
-//    if (sess) {
-//        auto scene = sess->get_scene();
-//        if (scene) {
-//            scene->drawOptions->num_samples = m_InitParam.bRecord ? 1024 : 16;
-//        }
-//    }
 
     GraphsModel *pLegacy = qobject_cast<GraphsModel *>(pModel);
 
-    launchProgram(pLegacy, 0, m_iMaxFrameCount);
+    launchProgram(pLegacy, m_iFrameCount, m_iMaxFrameCount);
 
     Zenovis::GetInstance().startPlay(true);
     m_pTimerUpVIew->start(m_iUpdateFeq);

@@ -120,7 +120,7 @@ ZENDEFNODE(PrimitiveDuplicate, {
         {"bool", "attrFromParticles", "1"},
         {"string", "scaleByAttr", ""},
         }, {
-        "primitive",
+        "deprecated",
         }});
 
 
