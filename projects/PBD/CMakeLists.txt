@@ -1,1 +1,1 @@
-target_sources(zeno PRIVATE PBD.cpp bunnyMesh.cpp)
+target_sources(zeno PRIVATE PBD.cpp bunnyMesh.cpp ReadVtkTet.cpp)
