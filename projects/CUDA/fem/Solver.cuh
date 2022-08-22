@@ -109,6 +109,9 @@ struct IPCSystem : IObject {
               const tiles_t &coEles, T dt, std::size_t ncps, bool withGround, T augLagCoeff, T pnRel, T cgRel,
               int PNCap, int CGCap, int CCDCap, T kappa0, T fricMu, T dHat, T epsv, T gravity);
 
+    void reinitialize(zs::CudaExecutionPolicy &pol, T framedt);
+    void advanceSubstep(zs::CudaExecutionPolicy &pol, T ratio);
+
     // sim params
     std::size_t estNumCps = 1000000;
     bool s_enableGround = false;
