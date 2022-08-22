@@ -135,6 +135,14 @@ struct ImplAssembler {
                 builder->addAvxBinaryOp(simdkind, opcode::div,
                     dst, lhs, rhs);
 
+            //} else if (cmd == "mod") {
+                //ERROR_IF(linesep.size() < 3);
+                //auto dst = from_string<int>(linesep[1]);
+                //auto lhs = from_string<int>(linesep[2]);
+                //auto rhs = from_string<int>(linesep[3]);
+                //builder->addAvxBinaryOp(simdkind, opcode::mod,
+                    //dst, lhs, rhs);
+
             } else if (cmd == "min") {
                 ERROR_IF(linesep.size() < 3);
                 auto dst = from_string<int>(linesep[1]);

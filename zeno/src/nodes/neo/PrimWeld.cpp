@@ -96,6 +96,7 @@ struct PrimWeld : INode {
         prim->lines->erase(std::remove_if(prim->lines.begin(), prim->lines.end(), [&] (auto const &ind) {
             return ind[0] == ind[1];
         }), prim->lines.end());
+        prim->lines.update();
 
         for (size_t i = 0; i < prim->tris.size(); i++) {
             auto &ind = prim->tris[i];
@@ -114,21 +115,39 @@ struct PrimWeld : INode {
             repair(ind[2]);
             repair(ind[3]);
         }
+        std::vector<uint8_t> ridquad(prim->quads.size());
+        auto ridquadit = ridquad.begin();
+        for (auto ind: prim->quads) {
+            auto *bit = std::addressof(ind[0]);
+            auto *eit = bit + 4;
+            auto *mit = std::unique(bit, eit);
+            auto len = mit - bit;
+            //if (len != 4) printf("%d\n", len);
+            if (len == 3)
+                prim->tris.emplace_back(ind[0], ind[1], ind[2]);
+            *ridquadit++ = (len <= 3);
+        }
+        prim->tris.update();
         prim->quads->erase(std::remove_if(prim->quads.begin(), prim->quads.end(), [&] (auto const &ind) {
-            return ind[0] == ind[1] || ind[0] == ind[2] || ind[1] == ind[2]
-                || ind[0] == ind[3] || ind[1] == ind[3] || ind[2] == ind[3];
+            return ridquad[std::addressof(ind) - prim->quads.data()];
         }), prim->quads.end());
+        prim->quads.update();
 
         for (size_t i = 0; i < prim->loops.size(); i++) {
             auto &ind = prim->loops[i];
             repair(ind);
         }
+        for (auto &[base, len]: prim->polys) {
+            auto bit = prim->loops.begin() + base;
+            auto eit = prim->loops.begin() + (base + len);
+            auto mit = std::unique(bit, eit);
+            std::fill(mit, eit, 0); // not used anyway...
+            len = mit - bit;
+        }
         prim->polys->erase(std::remove_if(prim->polys.begin(), prim->polys.end(), [&] (auto const &ply) {
-            auto [base, len] = ply;
-            // TODO: fixme
-            std::set<int> uniq(prim->loops.begin() + base, prim->loops.begin() + (base + len));
-            return uniq.size() != len;
+            return ply[1] <= 2;
         }), prim->polys.end());
+        prim->polys.update();
 
         prim->resize(nrevamp);
 

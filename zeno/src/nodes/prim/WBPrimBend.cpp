@@ -670,7 +670,7 @@ ZENDEFNODE(PrimAddVec3fAttr,
                    "prim",
                }, /* params: */ {
                }, /* category: */ {
-                   "primitive",
+                   "deprecated", // PrimFillAttr
                } });
 
 
@@ -710,7 +710,7 @@ ZENDEFNODE(PrimAddFloatAttr,
                    "prim",
                }, /* params: */ {
                }, /* category: */ {
-                   "primitive",
+                   "deprecated", // PrimFillAttr
                } });
 
 
@@ -751,7 +751,7 @@ ZENDEFNODE(PrimSetAttrPerVertByName,
                }, /* outputs: */ {
                }, /* params: */ {
                }, /* category: */ {
-                   "primitive",
+                   "deprecated", // PrimitiveSetAttrValue
                } });
 
 
@@ -795,7 +795,7 @@ ZENDEFNODE(PrimGetAttrPerVertByName,
                    "value",
                }, /* params: */ {
                }, /* category: */ {
-                   "primitive",
+                   "deprecated", // PrimitiveGetAttrValue
                } });
 
 
