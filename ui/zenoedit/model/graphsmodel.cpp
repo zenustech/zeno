@@ -1443,10 +1443,18 @@ void GraphsModel::updateParamInfo(const QString& id, PARAM_UPDATE_INFO info, con
                             updateInfo.newInfo.defaultValue = QVariant((int)0);
                         }
                     }
-                    else if (updateInfo.newInfo.type == "vec3f" ||
-                             updateInfo.newInfo.type == "vec3i")
+                    else if (updateInfo.newInfo.type.startsWith("vec"))
                     {
-                        updateInfo.newInfo.defaultValue = QVariant::fromValue(UI_VECTYPE(3, 0));
+                        int dim = 0;
+                        bool bFloat = false;
+                        if (UiHelper::parseVecType(updateInfo.newInfo.type, dim, bFloat))
+                        {
+                            updateInfo.newInfo.defaultValue = QVariant::fromValue(UI_VECTYPE(dim, 0));
+                        }
+                        else
+                        {
+                            updateInfo.newInfo.defaultValue = QVariant();
+                        }
                     }
                     else
                     {
@@ -1454,7 +1462,7 @@ void GraphsModel::updateParamInfo(const QString& id, PARAM_UPDATE_INFO info, con
                         updateInfo.newInfo.defaultValue = QVariant();
                     }
                     //update defl type and value on SubInput/SubOutput, when type changes.
-                    pGraph->updateParam(id, "defl", updateInfo.newInfo.defaultValue);
+                    pGraph->updateParam(id, "defl", updateInfo.newInfo.defaultValue, &updateInfo.newInfo.type);
 
                     updateInfo.oldInfo.control = UiHelper::getControlType(updateInfo.oldInfo.type);
                     updateInfo.newInfo.control = UiHelper::getControlType(updateInfo.newInfo.type);

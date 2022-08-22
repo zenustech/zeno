@@ -374,6 +374,7 @@ void ModelAcceptor::endParams(const QString& id, const QString& nodeCls)
             {
                 param.control = UiHelper::getControlType(type);
                 param.value = UiHelper::_parseDefaultValue(text, type);
+                param.typeDesc = type;
                 m_currentGraph->setData(idx, QVariant::fromValue(params), ROLE_PARAMETERS);
             }
         }

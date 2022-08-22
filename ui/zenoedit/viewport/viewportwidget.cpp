@@ -445,6 +445,7 @@ void ViewportWidget::wheelEvent(QWheelEvent* event)
     m_camera->fakeWheelEvent(event);
     update();
 }
+
 void ViewportWidget::mouseReleaseEvent(QMouseEvent *event) {    
     _base::mouseReleaseEvent(event);
     m_camera->fakeMouseReleaseEvent(event); 

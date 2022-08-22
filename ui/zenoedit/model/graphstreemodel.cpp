@@ -94,6 +94,7 @@ void GraphsTreeModel::on_subg_rowsInserted(const QModelIndex& parent, int first,
 
 	const QString& subName = pModel->name();
 	QModelIndexList lst = match(index(0, 0), ROLE_OBJNAME, subName, -1, Qt::MatchRecursive);
+	ZASSERT_EXIT(!lst.isEmpty());
 	//Q_ASSERT(lst.size() == 1);
 	//todo: multiple case.
 	QModelIndex subgIdx = lst[0];
