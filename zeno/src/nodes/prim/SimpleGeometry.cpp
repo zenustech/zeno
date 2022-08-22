@@ -558,11 +558,16 @@ struct CreatePlane : zeno::INode {
             for(int j=0; j<=columns; j++){
                 auto p = rp - zeno::vec3f(0, 0, j*cm);
 
-                ROTATE_COMPUTE
+                // S R T
+                p = p * scale * size;
+
+                auto gp = glm::vec3(p[0], p[1], p[2]);
+                gp = mz * my * mx * gp;
+                p = zeno::vec3f(gp.x, gp.y, gp.z);
 
                 auto zcp = zeno::vec3f(p[0], p[1], p[2]);
-                zcp = zcp * scale + position;
-                zcp = zcp * size;
+                zcp = zcp + position;
+
                 verts.push_back(zcp);
                 uvs.emplace_back(i*rm, j*cm*-1+1, 0);
             }
