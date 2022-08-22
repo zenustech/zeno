@@ -39,7 +39,7 @@ template <typename T> static inline T computeHb(const T d2, const T dHat2) {
 }
 
 template <typename TileVecT, int codim = 3>
-static zs::Vector<zs::AABBBox<3, typename TileVecT::value_type>>
+zs::Vector<zs::AABBBox<3, typename TileVecT::value_type>>
 retrieve_bounding_volumes(zs::CudaExecutionPolicy &pol, const TileVecT &vtemp, const zs::SmallString &xTag,
                           const typename ZenoParticles::particles_t &eles, zs::wrapv<codim>, int voffset) {
     using namespace zs;
@@ -61,7 +61,7 @@ retrieve_bounding_volumes(zs::CudaExecutionPolicy &pol, const TileVecT &vtemp, c
     return ret;
 }
 template <typename TileVecT0, typename TileVecT1, int codim = 3>
-static zs::Vector<zs::AABBBox<3, typename TileVecT0::value_type>>
+zs::Vector<zs::AABBBox<3, typename TileVecT0::value_type>>
 retrieve_bounding_volumes(zs::CudaExecutionPolicy &pol, const TileVecT0 &verts, const zs::SmallString &xTag,
                           const typename ZenoParticles::particles_t &eles, zs::wrapv<codim>, const TileVecT1 &vtemp,
                           const zs::SmallString &dirTag, float stepSize, int voffset) {
@@ -98,8 +98,8 @@ static typename IPCSystem::T reduce(zs::CudaExecutionPolicy &cudaPol, const zs::
     zs::reduce(cudaPol, std::begin(res), std::end(res), std::begin(ret), (T)0, op);
     return ret.getVal();
 }
-static typename IPCSystem::T dot(zs::CudaExecutionPolicy &cudaPol, typename IPCSystem::dtiles_t &vertData,
-                                 const zs::SmallString tag0, const zs::SmallString tag1) {
+typename IPCSystem::T dot(zs::CudaExecutionPolicy &cudaPol, typename IPCSystem::dtiles_t &vertData,
+                          const zs::SmallString tag0, const zs::SmallString tag1) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
     // Vector<double> res{vertData.get_allocator(), vertData.size()};
@@ -115,8 +115,8 @@ static typename IPCSystem::T dot(zs::CudaExecutionPolicy &cudaPol, typename IPCS
     });
     return reduce(cudaPol, res, std::plus<double>{});
 }
-static typename IPCSystem::T infNorm(zs::CudaExecutionPolicy &cudaPol, typename IPCSystem::dtiles_t &vertData,
-                                     const zs::SmallString tag = "dir") {
+typename IPCSystem::T infNorm(zs::CudaExecutionPolicy &cudaPol, typename IPCSystem::dtiles_t &vertData,
+                              const zs::SmallString tag = "dir") {
     using namespace zs;
     using T = typename IPCSystem::T;
     constexpr auto space = execspace_e::cuda;
@@ -590,13 +590,13 @@ IPCSystem::IPCSystem(std::vector<ZenoParticles *> zsprims, const typename IPCSys
         }
         // getchar();
     }
-
+    // adaptive epsv
     if (epsv == 0) {
         this->epsv = this->dHat;
     } else {
         this->epsv *= this->dHat;
     }
-
+    // output adaptive setups
     fmt::print("auto dHat: {}, targetGRes: {}, epsv (friction): {}\n", this->dHat, this->targetGRes, this->epsv);
 }
 
@@ -700,5 +700,28 @@ ZENDEFNODE(MakeIPCSystem, {{
                            {"ZSParticles"},
                            {},
                            {"FEM"}});
+
+struct AdvanceIPCSystem : INode {
+    void apply() override {
+        using namespace zs;
+        constexpr auto space = execspace_e::cuda;
+        auto A = get_input<IPCSystem>("ZSIPCSystem");
+
+        auto cudaPol = zs::cuda_exec();
+
+        int nSubsteps = get_input2<int>("num_substeps");
+        auto dt = get_input2<float>("dt");
+
+        set_output("ZSIPCSystem", A);
+    }
+};
+
+ZENDEFNODE(AdvanceIPCSystem, {{
+                                  "ZSIPCSystem",
+                                  {"float", "dt", "0.01"},
+                              },
+                              {"ZSIPCSystem"},
+                              {},
+                              {"FEM"}});
 
 } // namespace zeno
