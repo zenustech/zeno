@@ -14,6 +14,8 @@ namespace zenovis {
 struct ObjectsManager : zeno::disable_copy {
     zeno::MapStablizer<zeno::PolymorphicMap<std::map<
         std::string, std::shared_ptr<zeno::IObject>>>> objects;
+    // TODO objectsMan needs to classify objects. So we can update the object by the specified type
+    std::map<std::string, std::shared_ptr<zeno::IObject>> lightObjects;
 
     template <class T = void>
     auto pairs() const {
