@@ -71,10 +71,5 @@ void SubnetNode::onParamEditFinished(const QString& paramName, const QVariant& t
 
 QValidator* SubnetNode::validateForParams(PARAM_INFO info)
 {
-    if (info.name == "type") {
-        return new TypeValidator;
-    }
-    else {
-        return ZenoNode::validateForParams(info);
-    }
+    return ZenoNode::validateForParams(info);
 }
