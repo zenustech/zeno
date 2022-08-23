@@ -377,16 +377,16 @@ void IPCSystem::initialize(zs::CudaExecutionPolicy &pol) {
 }
 
 IPCSystem::IPCSystem(std::vector<ZenoParticles *> zsprims, const typename IPCSystem::dtiles_t *coVerts,
-                     const typename IPCSystem::tiles_t *coEdges, const tiles_t *coEles, T dt, std::size_t estNumCps,
-                     bool withGround, T augLagCoeff, T pnRel, T cgRel, int PNCap, int CGCap, int CCDCap, T kappa0,
-                     T fricMu, T dHat, T epsv, T gravity)
-    : coVerts{coVerts}, coEdges{coEdges}, coEles{coEles}, PP{estNumCps, zs::memsrc_e::um, 0},
-      nPP{zsprims[0]->getParticles<true>().get_allocator(), 1}, tempPP{{{"H", 36}}, estNumCps, zs::memsrc_e::um, 0},
-      PE{estNumCps, zs::memsrc_e::um, 0}, nPE{zsprims[0]->getParticles<true>().get_allocator(), 1},
-      tempPE{{{"H", 81}}, estNumCps, zs::memsrc_e::um, 0}, PT{estNumCps, zs::memsrc_e::um, 0},
-      nPT{zsprims[0]->getParticles<true>().get_allocator(), 1}, tempPT{{{"H", 144}}, estNumCps, zs::memsrc_e::um, 0},
-      EE{estNumCps, zs::memsrc_e::um, 0}, nEE{zsprims[0]->getParticles<true>().get_allocator(), 1},
-      tempEE{{{"H", 144}}, estNumCps, zs::memsrc_e::um, 0},
+                     const typename IPCSystem::tiles_t *coLowResVerts, const typename IPCSystem::tiles_t *coEdges,
+                     const tiles_t *coEles, T dt, std::size_t estNumCps, bool withGround, T augLagCoeff, T pnRel,
+                     T cgRel, int PNCap, int CGCap, int CCDCap, T kappa0, T fricMu, T dHat, T epsv, T gravity)
+    : coVerts{coVerts}, coLowResVerts{coLowResVerts}, coEdges{coEdges}, coEles{coEles},
+      PP{estNumCps, zs::memsrc_e::um, 0}, nPP{zsprims[0]->getParticles<true>().get_allocator(), 1},
+      tempPP{{{"H", 36}}, estNumCps, zs::memsrc_e::um, 0}, PE{estNumCps, zs::memsrc_e::um, 0},
+      nPE{zsprims[0]->getParticles<true>().get_allocator(), 1}, tempPE{{{"H", 81}}, estNumCps, zs::memsrc_e::um, 0},
+      PT{estNumCps, zs::memsrc_e::um, 0}, nPT{zsprims[0]->getParticles<true>().get_allocator(), 1},
+      tempPT{{{"H", 144}}, estNumCps, zs::memsrc_e::um, 0}, EE{estNumCps, zs::memsrc_e::um, 0},
+      nEE{zsprims[0]->getParticles<true>().get_allocator(), 1}, tempEE{{{"H", 144}}, estNumCps, zs::memsrc_e::um, 0},
       // mollify
       PPM{estNumCps, zs::memsrc_e::um, 0}, nPPM{zsprims[0]->getParticles<true>().get_allocator(), 1},
       tempPPM{{{"H", 144}}, estNumCps, zs::memsrc_e::um, 0}, PEM{estNumCps, zs::memsrc_e::um, 0},
@@ -674,6 +674,55 @@ void IPCSystem::advanceSubstep(zs::CudaExecutionPolicy &pol, typename IPCSystem:
                     vtemp.template tuple<3>("xtilde", coOffset + i) = xk;
                 });
 }
+void IPCSystem::updateVelocities(zs::CudaExecutionPolicy &pol) {
+    using namespace zs;
+    constexpr auto space = execspace_e::cuda;
+    pol(zs::range(coOffset), [vtemp = proxy<space>({}, vtemp), dt = dt] __device__(int vi) mutable {
+        auto newX = vtemp.pack<3>("xn", vi);
+        auto dv = (newX - vtemp.pack<3>("xtilde", vi)) / dt;
+        auto vn = vtemp.pack<3>("vn", vi);
+        vn += dv;
+        int BCorder = vtemp("BCorder", vi);
+        auto BCbasis = vtemp.pack<3, 3>("BCbasis", vi);
+        auto projVec = [&BCbasis, BCorder](auto &dx) {
+            dx = BCbasis.transpose() * dx;
+            for (int d = 0; d != BCorder; ++d)
+                dx[d] = 0;
+            dx = BCbasis * dx;
+        };
+        if (BCorder > 0)
+            projVec(vn);
+        vtemp.tuple<3>("vn", vi) = vn;
+    });
+}
+void IPCSystem::updatePositionsAndVelocities(zs::CudaExecutionPolicy &pol) {
+    using namespace zs;
+    constexpr auto space = execspace_e::cuda;
+    for (auto &primHandle : prims) {
+        auto &verts = primHandle.getVerts();
+        // update velocity and positions
+        pol(zs::range(verts.size()),
+            [vtemp = proxy<space>({}, vtemp), verts = proxy<space>({}, verts), dt = dt, vOffset = primHandle.vOffset,
+             asBoundary = primHandle.isBoundary()] __device__(int vi) mutable {
+                verts.tuple<3>("x", vi) = vtemp.pack<3>("xn", vOffset + vi);
+                if (!asBoundary)
+                    verts.tuple<3>("v", vi) = vtemp.pack<3>("vn", vOffset + vi);
+            });
+    }
+    // not sure if this is necessary for numerical reasons
+    if (coVerts && coLowResVerts)
+        if (auto coSize = coVerts->size(); coSize)
+            pol(Collapse(coSize),
+                [vtemp = proxy<space>({}, vtemp), verts = proxy<space>({}, const_cast<dtiles_t &>(*coVerts)),
+                 loVerts = proxy<space>({}, const_cast<tiles_t &>(*coLowResVerts)),
+                 coOffset = coOffset] ZS_LAMBDA(int vi) mutable {
+                    auto newX = vtemp.template pack<3>("xn", coOffset + vi);
+                    verts.template tuple<3>("x", vi) = newX;
+                    loVerts.template tuple<3>("x", vi) = newX;
+                    // no need to update v here. positions are moved accordingly
+                    // also, boundary velocies are set elsewhere
+                });
+}
 
 struct MakeIPCSystem : INode {
     void apply() override {
@@ -722,6 +771,7 @@ struct MakeIPCSystem : INode {
 
         const typename IPCSystem::dtiles_t *coVerts =
             zsboundary ? &zsboundary->images[ZenoParticles::s_particleTag] : nullptr;
+        const typename IPCSystem::tiles_t *coLowResVerts = zsboundary ? &zsboundary->getParticles() : nullptr;
         const typename IPCSystem::tiles_t *coEdges =
             zsboundary ? &(*zsboundary)[ZenoParticles::s_surfEdgeTag] : nullptr;
         const typename IPCSystem::tiles_t *coEles = zsboundary ? &zsboundary->getQuadraturePoints() : nullptr;
@@ -742,10 +792,11 @@ struct MakeIPCSystem : INode {
         auto input_gravity = get_input2<float>("gravity");
         auto dt = get_input2<float>("dt");
 
-        auto A = std::make_shared<IPCSystem>(
-            zstets, coVerts, coEdges, coEles, dt, (std::size_t)(input_est_num_cps ? input_est_num_cps : 1000000),
-            input_withGround, input_aug_coeff, input_pn_rel, input_cg_rel, input_pn_cap, input_cg_cap, input_ccd_cap,
-            input_kappa0, input_fric_mu, input_dHat, input_epsv, input_gravity);
+        auto A = std::make_shared<IPCSystem>(zstets, coVerts, coLowResVerts, coEdges, coEles, dt,
+                                             (std::size_t)(input_est_num_cps ? input_est_num_cps : 1000000),
+                                             input_withGround, input_aug_coeff, input_pn_rel, input_cg_rel,
+                                             input_pn_cap, input_cg_cap, input_ccd_cap, input_kappa0, input_fric_mu,
+                                             input_dHat, input_epsv, input_gravity);
 
         set_output("ZSIPCSystem", A);
     }
@@ -772,34 +823,5 @@ ZENDEFNODE(MakeIPCSystem, {{
                            {"ZSIPCSystem"},
                            {},
                            {"FEM"}});
-
-struct AdvanceIPCSystem : INode {
-    void apply() override {
-        using namespace zs;
-        constexpr auto space = execspace_e::cuda;
-        auto A = get_input<IPCSystem>("ZSIPCSystem");
-
-        auto cudaPol = zs::cuda_exec();
-
-        int nSubsteps = get_input2<int>("num_substeps");
-        auto dt = get_input2<float>("dt");
-
-        A->reinitialize(cudaPol, dt);
-        for (int subi = 0; subi != nSubsteps; ++subi) {
-            A->advanceSubstep(cudaPol, (typename IPCSystem::T)1 / nSubsteps);
-        }
-
-        set_output("ZSIPCSystem", A);
-    }
-};
-
-ZENDEFNODE(AdvanceIPCSystem, {{
-                                  "ZSIPCSystem",
-                                  {"int", "num_substeps", "1"},
-                                  {"float", "dt", "0.01"},
-                              },
-                              {"ZSIPCSystem"},
-                              {},
-                              {"FEM"}});
 
 } // namespace zeno

@@ -64,7 +64,8 @@ target_sources(zeno PRIVATE
 )
 # fem
 target_sources(zeno PRIVATE
-  fem/Solver.cu
+  fem/SolverInit.cu
+  fem/SolverPipeline.cu
   fem/BoundaryCondition.cu
   fem/Collisions.cu
   #fem/TimeStepping.cu
