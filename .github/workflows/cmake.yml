@@ -28,30 +28,34 @@ jobs:
     strategy:
       matrix:
         include:
-        #- label: x86_64-linux-cpu
-          #os: ubuntu-18.04
-          #triplet: x64-linux
-          #cxx: g++-9
-          #gpu: cpu
-          #pkgext: tar.gz
+        - label: x86_64-linux-cpu
+          os: ubuntu-latest
+          image: ubuntu/18.04
+          triplet: x64-linux
+          cxx: g++-9
+          gpu: cpu
+          pkgext: tar.gz
         - label: x86_64-windows-cpu
-          os: windows-2022
+          os: windows-latest
           triplet: x64-windows
           gpu: cpu
           pkgext: zip
-        #- label: x86_64-linux-cuda
-          #os: ubuntu-18.04
-          #triplet: x64-linux
-          #cxx: g++-10
-          #gpu: cuda
-          #pkgext: tar.gz
+        - label: x86_64-linux-cuda
+          os: ubuntu-latest
+          image: ubuntu/18.04
+          triplet: x64-linux
+          cxx: g++-10
+          gpu: cuda
+          pkgext: tar.gz
         - label: x86_64-windows-cuda
-          os: windows-2022
+          os: windows-latest
           triplet: x64-windows
           gpu: cuda
           pkgext: zip
 
     runs-on: ${{ matrix.os }}
+    container:
+      image: ${{ matrix.image }}
     needs: [check]
 
     env:
@@ -167,12 +171,12 @@ jobs:
     strategy:
       matrix:
         include:
-        #- label: x86_64-linux-cpu
-          #pkgext: tar.gz
+        - label: x86_64-linux-cpu
+          pkgext: tar.gz
         - label: x86_64-windows-cpu
           pkgext: zip
-        #- label: x86_64-linux-cuda
-          #pkgext: tar.gz
+        - label: x86_64-linux-cuda
+          pkgext: tar.gz
         - label: x86_64-windows-cuda
           pkgext: zip
 
