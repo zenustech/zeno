@@ -30,7 +30,7 @@ jobs:
         include:
         - label: x86_64-linux-cpu
           os: ubuntu-latest
-          image: ubuntu/18.04
+          image: ubuntu:18.04
           triplet: x64-linux
           cxx: g++-9
           gpu: cpu
@@ -42,7 +42,7 @@ jobs:
           pkgext: zip
         - label: x86_64-linux-cuda
           os: ubuntu-latest
-          image: ubuntu/18.04
+          image: ubuntu:18.04
           triplet: x64-linux
           cxx: g++-10
           gpu: cuda
