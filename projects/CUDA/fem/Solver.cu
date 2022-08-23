@@ -291,7 +291,6 @@ typename IPCSystem::T IPCSystem::averageSurfArea(zs::CudaExecutionPolicy &pol) {
 }
 void IPCSystem::updateWholeBoundingBoxSize(zs::CudaExecutionPolicy &pol) {
     using namespace zs;
-    constexpr auto space = execspace_e::cuda;
     bv_t bv = seBvh.getTotalBox(pol);
     if (coVerts.size()) {
         auto bouBv = bouSeBvh.getTotalBox(pol);
@@ -525,7 +524,6 @@ void IPCSystem::reinitialize(zs::CudaExecutionPolicy &pol, typename IPCSystem::T
     this->framedt = framedt;
     curRatio = 0;
 
-    targetGRes = pnRel;
     projectDBC = false;
     BCsatisfied = false;
     useGD = false;
@@ -571,7 +569,8 @@ void IPCSystem::reinitialize(zs::CudaExecutionPolicy &pol, typename IPCSystem::T
             vtemp.tuple<3>("x0", voffset + i) = verts.pack<3>("x0", i);
         });
     }
-    if (auto coSize = coVerts.size(); coSize)
+    if (auto coSize = coVerts.size(); coSize) {
+        fmt::print("in IPC solver: coSize is {} \n", coSize);
         pol(Collapse(coSize),
             [vtemp = proxy<space>({}, vtemp), coverts = proxy<space>({}, coVerts), coOffset = coOffset, dt = dt,
              augLagCoeff = augLagCoeff, avgNodeMass = avgNodeMass] __device__(int i) mutable {
@@ -597,22 +596,22 @@ void IPCSystem::reinitialize(zs::CudaExecutionPolicy &pol, typename IPCSystem::T
                 vtemp.tuple<3>("xhat", coOffset + i) = x;
                 vtemp.tuple<3>("x0", coOffset + i) = coverts.pack<3>("x0", i);
             });
+    }
 
     // spatial accel structs
     {
-        {
-            auto triBvs = retrieve_bounding_volumes(pol, vtemp, "xn", stInds, zs::wrapv<3>{}, 0);
-            stBvh.build(pol, triBvs);
-            auto edgeBvs = retrieve_bounding_volumes(pol, vtemp, "xn", seInds, zs::wrapv<2>{}, 0);
-            seBvh.build(pol, edgeBvs);
-        }
-        if (coVerts.size()) {
-            auto triBvs = retrieve_bounding_volumes(pol, vtemp, "xn", coEles, zs::wrapv<3>{}, coOffset);
-            bouStBvh.build(pol, triBvs);
-            auto edgeBvs = retrieve_bounding_volumes(pol, vtemp, "xn", coEdges, zs::wrapv<2>{}, coOffset);
-            bouSeBvh.build(pol, edgeBvs);
-        }
+        auto triBvs = retrieve_bounding_volumes(pol, vtemp, "xn", stInds, zs::wrapv<3>{}, 0);
+        stBvh.build(pol, triBvs);
+        auto edgeBvs = retrieve_bounding_volumes(pol, vtemp, "xn", seInds, zs::wrapv<2>{}, 0);
+        seBvh.build(pol, edgeBvs);
     }
+    if (coVerts.size()) {
+        auto triBvs = retrieve_bounding_volumes(pol, vtemp, "xn", coEles, zs::wrapv<3>{}, coOffset);
+        bouStBvh.build(pol, triBvs);
+        auto edgeBvs = retrieve_bounding_volumes(pol, vtemp, "xn", coEdges, zs::wrapv<2>{}, coOffset);
+        bouSeBvh.build(pol, edgeBvs);
+    }
+    puts("444");
 }
 void IPCSystem::advanceSubstep(zs::CudaExecutionPolicy &pol, typename IPCSystem::T ratio) {
     using namespace zs;
@@ -736,7 +735,6 @@ struct MakeIPCSystem : INode {
         auto input_cg_cap = get_input2<int>("cg_iter_cap");
         auto input_ccd_cap = get_input2<int>("ccd_iter_cap");
         auto input_gravity = get_input2<float>("gravity");
-        int nSubsteps = get_input2<int>("num_substeps");
         auto dt = get_input2<float>("dt");
 
         auto A = std::make_shared<IPCSystem>(
@@ -744,7 +742,7 @@ struct MakeIPCSystem : INode {
             input_withGround, input_aug_coeff, input_pn_rel, input_cg_rel, input_pn_cap, input_cg_cap, input_ccd_cap,
             input_kappa0, input_fric_mu, input_dHat, input_epsv, input_gravity);
 
-        set_output("ZSParticles", A);
+        set_output("ZSIPCSystem", A);
     }
 };
 
@@ -765,9 +763,8 @@ ZENDEFNODE(MakeIPCSystem, {{
                                {"int", "cg_iter_cap", "1000"},
                                {"int", "ccd_iter_cap", "20000"},
                                {"float", "gravity", "-9.8"},
-                               {"int", "num_substeps", "1"},
                            },
-                           {"ZSParticles"},
+                           {"ZSIPCSystem"},
                            {},
                            {"FEM"}});
 
@@ -783,6 +780,7 @@ struct AdvanceIPCSystem : INode {
         auto dt = get_input2<float>("dt");
 
         A->reinitialize(cudaPol, dt);
+        puts("reinitialize");
         for (int subi = 0; subi != nSubsteps; ++subi) {
             fmt::print("processing substep {}\n", subi);
 
@@ -795,6 +793,7 @@ struct AdvanceIPCSystem : INode {
 
 ZENDEFNODE(AdvanceIPCSystem, {{
                                   "ZSIPCSystem",
+                                  {"int", "num_substeps", "1"},
                                   {"float", "dt", "0.01"},
                               },
                               {"ZSIPCSystem"},

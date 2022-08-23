@@ -178,7 +178,7 @@ namespace zeno {
             [verts = proxy<space>({},verts),eles = proxy<space>({},quads),bcw = proxy<space>({},bcw),
                     everts = proxy<space>({},everts),tetsBvh = proxy<space>(tetsBvh),
                     x_tag,elm_tag,weight_tag,fitting_in] ZS_LAMBDA (int vi) mutable {
-                const auto& p = everts.pack<3>(x_tag,vi);
+                const auto& p = everts.template pack<3>(x_tag,vi);
                 T closest_dist = 1e6;
                 bool found = false;
                 // if(vi == 10820)
