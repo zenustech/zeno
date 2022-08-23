@@ -315,22 +315,6 @@ IPCSystem::IPCSystem(std::vector<ZenoParticles *> zsprims, const typename IPCSys
                      numDofs};
     // inertial hessian
     tempPB = dtiles_t{vtemp.get_allocator(), {{"Hi", 9}}, coOffset};
-    nPP.setVal(0);
-    nPE.setVal(0);
-    nPT.setVal(0);
-    nEE.setVal(0);
-
-    nPPM.setVal(0);
-    nPEM.setVal(0);
-    nEEM.setVal(0);
-
-    nFPP.setVal(0);
-    nFPE.setVal(0);
-    nFPT.setVal(0);
-    nFEE.setVal(0);
-
-    ncsPT.setVal(0);
-    ncsEE.setVal(0);
 
     auto cudaPol = zs::cuda_exec();
     // average edge length (for CCD filtering)
@@ -392,7 +376,25 @@ void IPCSystem::reinitialize(zs::CudaExecutionPolicy &pol, typename IPCSystem::T
 
     projectDBC = false;
     BCsatisfied = false;
-    useGD = false;
+
+    if (s_enableContact) {
+        nPP.setVal(0);
+        nPE.setVal(0);
+        nPT.setVal(0);
+        nEE.setVal(0);
+
+        nPPM.setVal(0);
+        nPEM.setVal(0);
+        nEEM.setVal(0);
+
+        nFPP.setVal(0);
+        nFPE.setVal(0);
+        nFPT.setVal(0);
+        nFEE.setVal(0);
+
+        ncsPT.setVal(0);
+        ncsEE.setVal(0);
+    }
 
     for (auto &primHandle : prims) {
         auto &verts = primHandle.getVerts();
@@ -490,7 +492,6 @@ void IPCSystem::advanceSubstep(zs::CudaExecutionPolicy &pol, typename IPCSystem:
 
     projectDBC = false;
     BCsatisfied = false;
-    useGD = false;
     pol(Collapse(coOffset), [vtemp = proxy<space>({}, vtemp), coOffset = coOffset, dt = dt, ratio,
                              localRatio = ratio / (1 - curRatio + ratio)] __device__(int vi) mutable {
         int BCorder = vtemp("BCorder", vi);

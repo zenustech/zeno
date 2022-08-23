@@ -122,17 +122,30 @@ struct IPCSystem : IObject {
     bool areConstraintsSatisfied(zs::CudaExecutionPolicy &pol);
     T constraintResidual(zs::CudaExecutionPolicy &pol, bool maintainFixed = false);
     // contacts
+    auto getCnts() const {
+        return zs::make_tuple(nPP.getVal(), nPE.getVal(), nPT.getVal(), nEE.getVal(), nPPM.getVal(), nPEM.getVal(),
+                              nEEM.getVal(), ncsPT.getVal(), ncsEE.getVal());
+    }
     void findCollisionConstraints(zs::CudaExecutionPolicy &pol, T dHat, T xi = 0);
     void findCollisionConstraintsImpl(zs::CudaExecutionPolicy &pol, T dHat, T xi, bool withBoundary = false);
     void precomputeFrictions(zs::CudaExecutionPolicy &pol, T dHat, T xi = 0);
-    //
+    void findCCDConstraints(zs::CudaExecutionPolicy &pol, T alpha, T xi = 0);
+    void findCCDConstraintsImpl(zs::CudaExecutionPolicy &pol, T alpha, T xi, bool withBoundary = false);
+    // linear system setup
     void computeInertialAndGravityPotentialGradient(zs::CudaExecutionPolicy &cudaPol);
     void computeElasticGradientAndHessian(zs::CudaExecutionPolicy &cudaPol, bool includeHessian = true);
     void computeBoundaryBarrierGradientAndHessian(zs::CudaExecutionPolicy &pol, bool includeHessian = true);
     void computeBarrierGradientAndHessian(zs::CudaExecutionPolicy &pol, bool includeHessian = true);
     void computeFrictionBarrierGradientAndHessian(zs::CudaExecutionPolicy &pol, bool includeHessian = true);
-
+    // krylov solver
     void project(zs::CudaExecutionPolicy &pol, const zs::SmallString tag);
+    void precondition(zs::CudaExecutionPolicy &pol, const zs::SmallString srcTag, const zs::SmallString dstTag);
+    void multiply(zs::CudaExecutionPolicy &pol, const zs::SmallString dxTag, const zs::SmallString bTag);
+    T energy(zs::CudaExecutionPolicy &pol, const zs::SmallString tag, bool includeAugLagEnergy = false);
+    void cgsolve(zs::CudaExecutionPolicy &cudaPol);
+    void groundIntersectionFreeStepsize(zs::CudaExecutionPolicy &pol, T &stepSize);
+    void intersectionFreeStepsize(zs::CudaExecutionPolicy &pol, T xi, T &stepSize);
+    void lineSearch(zs::CudaExecutionPolicy &cudaPol, T &alpha);
 
     // sim params
     std::size_t estNumCps = 1000000;
@@ -165,7 +178,6 @@ struct IPCSystem : IObject {
     T updateZoneTol = 1e-1;
     T consTol = 1e-2;
     T armijoParam = 1e-4;
-    bool useGD = false;
     T boxDiagSize2 = 0;
     T meanEdgeLength = 0, meanSurfaceArea = 0, avgNodeMass = 0;
     T targetGRes = 1e-2;
