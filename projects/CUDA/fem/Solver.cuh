@@ -12,6 +12,12 @@
 
 namespace zeno {
 
+#define s_enableAdaptiveSetting 1
+#define s_enableContact 1
+#define s_enableMollification 1
+#define s_enableFriction 1
+#define s_enableSelfFriction 1
+
 struct IPCSystem : IObject {
     using T = double;
     using Ti = zs::conditional_t<zs::is_same_v<T, double>, zs::i64, zs::i32>;
@@ -105,12 +111,17 @@ struct IPCSystem : IObject {
     void updateWholeBoundingBoxSize(zs::CudaExecutionPolicy &pol);
     void initKappa(zs::CudaExecutionPolicy &pol);
     void initialize(zs::CudaExecutionPolicy &pol);
-    IPCSystem(std::vector<ZenoParticles *> zsprims, const dtiles_t *coVerts, const tiles_t *coEdges,
-              const tiles_t *coEles, T dt, std::size_t ncps, bool withGround, T augLagCoeff, T pnRel, T cgRel,
-              int PNCap, int CGCap, int CCDCap, T kappa0, T fricMu, T dHat, T epsv, T gravity);
+    IPCSystem(std::vector<ZenoParticles *> zsprims, const dtiles_t *coVerts, const tiles_t *coLowResVerts,
+              const tiles_t *coEdges, const tiles_t *coEles, T dt, std::size_t ncps, bool withGround, T augLagCoeff,
+              T pnRel, T cgRel, int PNCap, int CGCap, int CCDCap, T kappa0, T fricMu, T dHat, T epsv, T gravity);
 
     void reinitialize(zs::CudaExecutionPolicy &pol, T framedt);
     void advanceSubstep(zs::CudaExecutionPolicy &pol, T ratio);
+    void updateVelocities(zs::CudaExecutionPolicy &pol);
+    void updatePositionsAndVelocities(zs::CudaExecutionPolicy &pol);
+
+    // pipeline
+    void newtonKrylov(zs::CudaExecutionPolicy &pol);
 
     // sim params
     std::size_t estNumCps = 1000000;
@@ -149,7 +160,7 @@ struct IPCSystem : IObject {
 
     // (scripted) collision objects
     const dtiles_t *coVerts;
-    const tiles_t *coEdges, *coEles;
+    const tiles_t *coLowResVerts, *coEdges, *coEles;
     dtiles_t vtemp;
     dtiles_t tempPB;
 
