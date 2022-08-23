@@ -58,6 +58,8 @@ elif sys.platform == 'linux':
         os.path.join(outpath, 'usr', 'share', 'applications', 'zeno.desktop'),
         #'-executable=' + os.path.join(outpath, 'usr', 'bin', 'zenorunner'),
         '-bundle-non-qt-libs',
+        # '-unsupported-allow-new-glibc',
+        '-unsupported-bundle-everything',
     ])
     subprocess.check_call([
         'chmod',
