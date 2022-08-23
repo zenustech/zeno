@@ -8,6 +8,7 @@
 #include <unordered_map>
 #include <typeinfo>
 #include <type_traits>
+#include <fstream>
 #include "MeshIO.hpp"
 
 #include "BunnyMeshData.h"
@@ -174,7 +175,6 @@ void ReadVtkTet::extractSurf()
     /*                            extract the surfaces                            */
     /* -------------------------------------------------------------------------- */
     int numSurfs = face.size();
-    surf.resize(numSurfs);
     std::cout<<"numFaces: "<<numFaces<<std::endl;
     std::cout<<"numSurfs: "<<numSurfs<<std::endl;
     
@@ -185,6 +185,16 @@ void ReadVtkTet::extractSurf()
 
     printPrim(surf[1],1);
     printPrim(quads[1],1);
+
+    std::ofstream fout;
+    fout.open("surf.txt");
+    for(const auto& f:surf)
+    {
+        for(const auto& x:f)
+            fout<<x<<"\t";
+        fout<<"\n";
+    }
+    fout.close();
 }
 
 
