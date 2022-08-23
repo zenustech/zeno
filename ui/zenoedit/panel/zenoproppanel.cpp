@@ -64,6 +64,9 @@ void ZenoPropPanel::clearLayout()
 
 void ZenoPropPanel::reset(IGraphsModel* pModel, const QModelIndex& subgIdx, const QModelIndexList& nodes, bool select)
 {
+	//if (!nodes.isEmpty() && nodes[0] == m_idx)
+	//	return;
+
     clearLayout();
     QVBoxLayout *pMainLayout = qobject_cast<QVBoxLayout *>(this->layout());
 
@@ -114,296 +117,212 @@ void ZenoPropPanel::reset(IGraphsModel* pModel, const QModelIndex& subgIdx, cons
 	pMainLayout->addStretch();
 	pMainLayout->setSpacing(0);
 
+	onInputsCheckUpdate();
+	onParamsCheckUpdate();
+
 	update();
 }
 
 ZExpandableSection* ZenoPropPanel::paramsBox(IGraphsModel* pModel, const QModelIndex& subgIdx, const QModelIndexList& nodes)
 {
-	PARAMS_INFO params = pModel->data2(subgIdx, nodes[0], ROLE_PARAMETERS).value<PARAMS_INFO>();
+	ZASSERT_EXIT(m_idx.isValid(), nullptr);
+
+	PARAMS_INFO params = m_idx.data(ROLE_PARAMETERS).value<PARAMS_INFO>();
 	if (params.isEmpty())
 		return nullptr;
 
-	ZExpandableSection* pParamsBox = new ZExpandableSection("NODE PARAMETERS");
+	ZExpandableSection* pParamsBox = new ZExpandableSection(tr("NODE PARAMETERS"));
+	pParamsBox->setObjectName(tr("NODE PARAMETERS"));
 	QGridLayout* pLayout = new QGridLayout;
 	pLayout->setContentsMargins(0, 15, 0, 15);
 	pLayout->setColumnStretch(0, 1);
 	pLayout->setColumnStretch(1, 3);
 	pLayout->setSpacing(5);
-
-	int r = 0;
-	for (auto paramName : params.keys())
-	{
-		const PARAM_INFO& param = params[paramName];
-		if (param.control == CONTROL_NONE)
-			continue;
-
-		QLabel* pNameItem = new QLabel(paramName);
-		pNameItem->setProperty("cssClass", "proppanel-itemname");
-		pLayout->addWidget(pNameItem, r, 0, Qt::AlignLeft);
-
-		switch (param.control)
-		{
-			case CONTROL_STRING:
-			case CONTROL_INT:
-			case CONTROL_FLOAT:
-			{
-				ZLineEdit* pLineEdit = new ZLineEdit(param.value.toString());
-				pLineEdit->setProperty("cssClass", "proppanel");
-				pLineEdit->setNumSlider(UiHelper::getSlideStep(param.name, param.control));
-				if (param.control == CONTROL_FLOAT)
-				{
-					pLineEdit->setValidator(new QDoubleValidator);
-				}
-				else if (param.control == CONTROL_INT)
-				{
-					pLineEdit->setValidator(new QIntValidator);
-				}
-				pLineEdit->setObjectName(paramName);
-				pLineEdit->setProperty("control", param.control);
-				connect(pLineEdit, &ZLineEdit::editingFinished, this, &ZenoPropPanel::onParamEditFinish);
-
-				pLayout->addWidget(pLineEdit, r++, 1);
-				break;
-			}
-			case CONTROL_BOOL:
-			{
-				ZCheckBoxBar *pCheckbox = new ZCheckBoxBar;
-				pCheckbox->setObjectName(paramName);
-				pCheckbox->setCheckState(param.value.toBool()?Qt::Checked:Qt::Unchecked);
-				connect(pCheckbox, &ZCheckBoxBar::stateChanged, this, &ZenoPropPanel::onParamEditFinish);
-
-				pLayout->addWidget(pCheckbox, r++, 1);
-				break;
-			}
-			case CONTROL_ENUM:
-			{
-				QStringList items = param.typeDesc.mid(QString("enum ").length()).split(QRegExp("\\s+"));
-				QComboBox* pComboBox = new QComboBox;
-				pComboBox->setProperty("cssClass", "proppanel");
-				pComboBox->addItems(items);
-				pComboBox->setItemDelegate(new ZComboBoxItemDelegate(pComboBox));
-				pComboBox->setObjectName(paramName);
-				pComboBox->setProperty("control", param.control);
-				pComboBox->setCurrentText(param.value.toString());
-
-				//todo: unify
-#if QT_VERSION >= QT_VERSION_CHECK(5, 15, 0)
-				connect(pComboBox, &QComboBox::textActivated, this, &ZenoPropPanel::onParamEditFinish);
-#else
-				connect(pComboBox, SIGNAL(activated(const QString&)), this, SLOT(onParamEditFinish()));
-#endif
-
-				pLayout->addWidget(pComboBox, r++, 1);
-				break;
-			}
-			case CONTROL_READPATH:
-			{
-				ZLineEdit* pathLineEdit = new ZLineEdit(param.value.toString());
-				pathLineEdit->setProperty("cssClass", "proppanel");
-				pathLineEdit->setObjectName(paramName);
-				pathLineEdit->setProperty("control", param.control);
-				pLayout->addWidget(pathLineEdit, r, 1);
-				connect(pathLineEdit, &ZLineEdit::editingFinished, this, &ZenoPropPanel::onParamEditFinish);
-
-				ZIconLabel* openBtn = new ZIconLabel;
-				openBtn->setIcons(ZenoStyle::dpiScaledSize(QSize(28, 28)), ":/icons/ic_openfile.svg", ":/icons/ic_openfile-on.svg", ":/icons/ic_openfile-on.svg");
-				pLayout->addWidget(openBtn, r++, 2);
-				break;
-			}
-			case CONTROL_WRITEPATH:
-			{
-				ZLineEdit* pathLineEdit = new ZLineEdit(param.value.toString());
-				pathLineEdit->setProperty("cssClass", "proppanel");
-				pathLineEdit->setObjectName(paramName);
-				pathLineEdit->setProperty("control", param.control);
-				pLayout->addWidget(pathLineEdit, r, 1);
-				connect(pathLineEdit, &ZLineEdit::editingFinished, this, &ZenoPropPanel::onParamEditFinish);
-
-				ZIconLabel* openBtn = new ZIconLabel;
-				openBtn->setIcons(ZenoStyle::dpiScaledSize(QSize(28, 28)), ":/icons/ic_openfile.svg", ":/icons/ic_openfile-on.svg", ":/icons/ic_openfile-on.svg");
-				pLayout->addWidget(openBtn, r++, 2);
-				break;
-			}
-            case CONTROL_VEC:
-            {
-                UI_VECTYPE vec = param.value.value<UI_VECTYPE>();
-
-                int dim = -1;
-                bool bFloat = false;
-                UiHelper::parseVecType(param.typeDesc, dim, bFloat);
-
-                ZVecEditor* pVecEdit = new ZVecEditor(vec, bFloat, 3, "proppanel");
-                pVecEdit->setObjectName(paramName);
-				pVecEdit->setProperty("control", param.control);
-                connect(pVecEdit, &ZVecEditor::editingFinished, this, &ZenoPropPanel::onInputEditFinish);
-
-                pLayout->addWidget(pVecEdit, r++, 1);
-                break;
-            }
-			case CONTROL_MULTILINE_STRING:
-			{
-				QTextEdit* pTextEdit = new QTextEdit;
-				pTextEdit->setFrameShape(QFrame::NoFrame);
-				pTextEdit->setProperty("cssClass", "proppanel");
-				pTextEdit->setObjectName(paramName);
-				pTextEdit->setProperty("control", param.control);
-				pTextEdit->setFont(QFont("HarmonyOS Sans", 12));
-
-				//todo: ztextedit impl.
-
-				QTextCharFormat format;
-				QFont font("HarmonyOS Sans", 12);
-				format.setFont(font);
-				pTextEdit->setCurrentFont(font);
-				pTextEdit->setText(param.value.toString());
-
-				QPalette pal = pTextEdit->palette();
-				pal.setColor(QPalette::Base, QColor(37, 37, 37));
-				pTextEdit->setPalette(pal);
-
-				pLayout->addWidget(pTextEdit, r++, 1);
-				break;
-			}
-			case CONTROL_COLOR:
-			{
-				QPushButton* pBtn = new QPushButton("Edit Heatmap");
-				pBtn->setObjectName("grayButton");
-                pBtn->setProperty("cssClass", "grayButton");
-				pLayout->addWidget(pBtn, r++, 1);
-				break;
-			}
-			case CONTROL_CURVE:
-            {
-				QPushButton* pBtn = new QPushButton("Edit Curve");
-				pBtn->setObjectName("grayButton");
-                pBtn->setProperty("cssClass", "grayButton");
-				pLayout->addWidget(pBtn, r++, 1);
-                break;
-            }
-			default:
-			{
-				break;
-			}
-		}
-	}
-
 	pParamsBox->setContentLayout(pLayout);
 	return pParamsBox;
 }
 
 ZExpandableSection* ZenoPropPanel::inputsBox(IGraphsModel* pModel, const QModelIndex& subgIdx, const QModelIndexList& nodes)
 {
-	INPUT_SOCKETS inputs = pModel->data2(subgIdx, nodes[0], ROLE_INPUTS).value<INPUT_SOCKETS>();
-	if (inputs.keys().isEmpty())
-		return nullptr;
+	ZASSERT_EXIT(m_idx.isValid(), nullptr);
 
+    INPUT_SOCKETS inputs = m_idx.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
+    if (inputs.isEmpty())
+        return nullptr;
+
+	const QString& groupName = tr("SOCKET IN");
+	ZExpandableSection* pInputsBox = new ZExpandableSection(groupName);
+	pInputsBox->setObjectName(groupName);
 	QGridLayout* pLayout = new QGridLayout;
-	pLayout->setContentsMargins(0, 15, 0, 15);
-	pLayout->setSpacing(5);
-
-	int r = 0;
-	for (QString inputSock : inputs.keys())
-	{
-		ZASSERT_EXIT(inputs.find(inputSock) != inputs.end(), nullptr);
-		INPUT_SOCKET input = inputs[inputSock];
-
-		switch (input.info.control)
-		{
-			case CONTROL_STRING:
-			case CONTROL_FLOAT:
-			case CONTROL_INT:
-			{
-				QLabel* pNameItem = new QLabel(inputSock);
-				pNameItem->setProperty("cssClass", "proppanel");
-				pLayout->addWidget(pNameItem, r, 0, Qt::AlignLeft);
-
-				ZLineEdit* pLineEdit = new ZLineEdit(UiHelper::variantToString(input.info.defaultValue));
-				pLineEdit->setProperty("cssClass", "proppanel");
-				pLineEdit->setNumSlider(UiHelper::getSlideStep(inputSock, input.info.control));
-
-				if (input.info.control == CONTROL_FLOAT)
-				{
-					pLineEdit->setValidator(new QDoubleValidator);
-				}
-				else if (input.info.control == CONTROL_INT)
-				{
-					pLineEdit->setValidator(new QIntValidator);
-				}
-				pLineEdit->setObjectName(inputSock);
-				pLineEdit->setProperty("control", input.info.control);
-				connect(pLineEdit, &ZLineEdit::editingFinished, this, &ZenoPropPanel::onInputEditFinish);
-
-				pLayout->addWidget(pLineEdit, r++, 1);
-				break;
-			}
-			case CONTROL_BOOL:
-			{
-				QLabel *pNameItem = new QLabel(inputSock);
-				pNameItem->setProperty("cssClass", "proppanel");
-				pLayout->addWidget(pNameItem, r, 0, Qt::AlignLeft);
-
-				ZCheckBoxBar *pCheckbox = new ZCheckBoxBar;
-				pCheckbox->setObjectName(inputSock);
-				pCheckbox->setCheckState(input.info.defaultValue.toBool() ? Qt::Checked : Qt::Unchecked);
-				connect(pCheckbox, &ZCheckBoxBar::stateChanged, this, &ZenoPropPanel::onInputEditFinish);
-				pLayout->addWidget(pCheckbox, r++, 1);
-				break;
-			}
-			case CONTROL_VEC:
-			{
-				QLabel* pNameItem = new QLabel(inputSock);
-				pNameItem->setProperty("cssClass", "proppanel");
-				pLayout->addWidget(pNameItem, r, 0, Qt::AlignLeft);
-
-				UI_VECTYPE vec = input.info.defaultValue.value<UI_VECTYPE>();
-
-                int dim = -1;
-                bool bFloat = false;
-                UiHelper::parseVecType(input.info.type, dim, bFloat);
-
-				ZVecEditor* pVecEdit = new ZVecEditor(vec, bFloat, 3, "proppanel");
-				pVecEdit->setObjectName(inputSock);
-				connect(pVecEdit, &ZVecEditor::editingFinished, this, &ZenoPropPanel::onInputEditFinish);
-
-				pLayout->addWidget(pVecEdit, r++, 1);
-				break;
-			}
-			case CONTROL_ENUM:
-			{
-				QLabel* pNameItem = new QLabel(inputSock);
-				pNameItem->setProperty("cssClass", "proppanel");
-				pLayout->addWidget(pNameItem, r, 0, Qt::AlignLeft);
-
-				QString descStr = input.info.type;
-				QStringList items = descStr.mid(QString("enum ").length()).split(QRegExp("\\s+"));
-
-				ZComboBox *pComboBox = new ZComboBox(false);
-				pComboBox->addItems(items);
-				pComboBox->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-				pComboBox->setItemDelegate(new ZComboBoxItemDelegate(pComboBox));
-				pComboBox->setObjectName(inputSock);
-                connect(pComboBox, &QComboBox::currentTextChanged, this, &ZenoPropPanel::onInputEditFinish);
-
-				QString val = input.info.defaultValue.toString();
-				if (items.indexOf(val) != -1)
-				{
-					pComboBox->setCurrentText(val);
-				}
-				pLayout->addWidget(pComboBox, r++, 1);
-				break;
-			}
-		}
-	}
-
-	if (pLayout->count() == 0)
-	{
-		delete pLayout;
-		return nullptr;
-	}
-
-	ZExpandableSection* pInputsBox = new ZExpandableSection("SOCKET IN");
 	pInputsBox->setContentLayout(pLayout);
 	return pInputsBox;
+}
+
+QWidget* ZenoPropPanel::initControl(CONTROL_DATA ctrlData)
+{
+	PARAM_CONTROL ctrl = ctrlData.ctrl;
+	const QString& name = ctrlData.name;
+	const QVariant& value = ctrlData.value;
+	const QString& typeDesc = ctrlData.typeDesc;
+
+    switch (ctrl)
+    {
+		case CONTROL_STRING:
+		case CONTROL_FLOAT:
+		case CONTROL_INT:
+		{
+			ZLineEdit* pLineEdit = new ZLineEdit(UiHelper::variantToString(value));
+			pLineEdit->setProperty("cssClass", "proppanel");
+			pLineEdit->setNumSlider(UiHelper::getSlideStep(name, ctrl));
+			pLineEdit->setObjectName(name);
+			//todo: validator.
+			connect(pLineEdit, &ZLineEdit::editingFinished, this, ctrlData.fSlot);
+			return pLineEdit;
+		}
+		case CONTROL_BOOL:
+		{
+			ZCheckBoxBar* pCheckbox = new ZCheckBoxBar;
+			pCheckbox->setCheckState(value.toBool() ? Qt::Checked : Qt::Unchecked);
+			pCheckbox->setObjectName(name);
+			connect(pCheckbox, &ZCheckBoxBar::stateChanged, this, ctrlData.fSlot);
+			return pCheckbox;
+		}
+		case CONTROL_VEC:
+		{
+			UI_VECTYPE vec = value.value<UI_VECTYPE>();
+			int dim = -1;
+			bool bFloat = false;
+			UiHelper::parseVecType(typeDesc, dim, bFloat);
+
+			ZVecEditor* pVecEdit = new ZVecEditor(vec, bFloat, 3, "proppanel");
+			pVecEdit->setObjectName(name);
+			connect(pVecEdit, &ZVecEditor::editingFinished, this, ctrlData.fSlot);
+			return pVecEdit;
+		}
+		case CONTROL_ENUM:
+		{
+			QStringList items = typeDesc.mid(QString("enum ").length()).split(QRegExp("\\s+"));
+			QComboBox* pComboBox = new QComboBox;
+			pComboBox->setProperty("cssClass", "proppanel");
+			pComboBox->setObjectName(name);
+			pComboBox->addItems(items);
+			pComboBox->setItemDelegate(new ZComboBoxItemDelegate(pComboBox));
+			pComboBox->setObjectName(name);
+			pComboBox->setProperty("control", ctrl);
+			pComboBox->setCurrentText(value.toString());
+
+			//todo: unify
+	#if QT_VERSION >= QT_VERSION_CHECK(5, 15, 0)
+			connect(pComboBox, &QComboBox::textActivated, this, ctrlData.fSlot);
+	#else
+			connect(pComboBox, &QComboBox::activated, this, ctrlData.fSlot);
+	#endif
+			return pComboBox;
+		}
+		case CONTROL_READPATH:
+		case CONTROL_WRITEPATH:
+		{
+			QWidget* pPathWidget = new QWidget;
+			pPathWidget->setObjectName(name);
+
+			QHBoxLayout* pPathLayout = new QHBoxLayout;
+			pPathLayout->setContentsMargins(0, 0, 0, 0);
+			pPathLayout->setSpacing(0);
+
+			ZLineEdit* pathLineEdit = new ZLineEdit(value.toString());
+			pathLineEdit->setProperty("cssClass", "proppanel");
+			pathLineEdit->setObjectName(name);
+			pathLineEdit->setProperty("control", ctrl);
+			pPathLayout->addWidget(pathLineEdit);
+			connect(pathLineEdit, &ZLineEdit::editingFinished, this, ctrlData.fSlot);
+
+			ZIconLabel* openBtn = new ZIconLabel;
+			openBtn->setIcons(ZenoStyle::dpiScaledSize(QSize(28, 28)), ":/icons/ic_openfile.svg", ":/icons/ic_openfile-on.svg", ":/icons/ic_openfile-on.svg");
+			pPathLayout->addWidget(openBtn);
+
+			return pPathWidget;
+		}
+		case CONTROL_MULTILINE_STRING:
+		{
+			QTextEdit* pTextEdit = new QTextEdit;
+			pTextEdit->setFrameShape(QFrame::NoFrame);
+			pTextEdit->setProperty("cssClass", "proppanel");
+			pTextEdit->setObjectName(name);
+			pTextEdit->setProperty("control", ctrl);
+			pTextEdit->setFont(QFont("HarmonyOS Sans", 12));
+
+			//todo: ztextedit impl.
+			QTextCharFormat format;
+			QFont font("HarmonyOS Sans", 12);
+			format.setFont(font);
+			pTextEdit->setCurrentFont(font);
+			pTextEdit->setText(value.toString());
+
+			QPalette pal = pTextEdit->palette();
+			pal.setColor(QPalette::Base, QColor(37, 37, 37));
+			pTextEdit->setPalette(pal);
+
+			//todo: slot
+
+			return pTextEdit;
+		}
+		case CONTROL_COLOR:
+		{
+			QPushButton* pBtn = new QPushButton("Edit Heatmap");
+			pBtn->setObjectName(name);
+			pBtn->setProperty("cssClass", "grayButton");
+			return pBtn;
+		}
+		case CONTROL_CURVE:
+		{
+			QPushButton* pBtn = new QPushButton("Edit Curve");
+			pBtn->setObjectName(name);
+			pBtn->setProperty("cssClass", "grayButton");
+			return pBtn;
+		}
+		default:
+		{
+			return nullptr;
+		}
+    }
+}
+
+void ZenoPropPanel::onInputsCheckUpdate()
+{
+	ZASSERT_EXIT(m_idx.isValid());
+    INPUT_SOCKETS inputs = m_idx.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
+    QMap<QString, CONTROL_DATA> ctrls;
+    for (const QString& inSock : inputs.keys())
+    {
+        const INPUT_SOCKET& inSocket = inputs[inSock];
+        CONTROL_DATA ctrl;
+        ctrl.ctrl = inSocket.info.control;
+        ctrl.name = inSock;
+        ctrl.typeDesc = inSocket.info.type;
+        ctrl.value = inSocket.info.defaultValue;
+		ctrl.fSlot = std::bind(&ZenoPropPanel::onInputEditFinish, this);
+        ctrls.insert(inSock, ctrl);
+    }
+    onGroupCheckUpdated(tr("SOCKET IN"), ctrls);
+}
+
+void ZenoPropPanel::onParamsCheckUpdate()
+{
+	ZASSERT_EXIT(m_idx.isValid());
+	PARAMS_INFO params = m_idx.data(ROLE_PARAMETERS).value<PARAMS_INFO>();
+	QMap<QString, CONTROL_DATA> ctrls;
+	for (const QString& name : params.keys())
+	{
+		const PARAM_INFO& param = params[name];
+        CONTROL_DATA ctrl;
+        ctrl.ctrl = param.control;
+        ctrl.name = name;
+        ctrl.typeDesc = param.typeDesc;
+        ctrl.value = param.value;
+		ctrl.fSlot = std::bind(&ZenoPropPanel::onParamEditFinish, this);
+        ctrls.insert(name, ctrl);
+	}
+	onGroupCheckUpdated(tr("NODE PARAMETERS"), ctrls);
 }
 
 void ZenoPropPanel::mousePressEvent(QMouseEvent* event)
@@ -502,6 +421,49 @@ void ZenoPropPanel::onParamEditFinish()
 	model->updateParamInfo(nodeid, info, m_subgIdx, true);
 }
 
+void ZenoPropPanel::onGroupCheckUpdated(const QString& groupName, const QMap<QString, CONTROL_DATA>& ctrls)
+{
+	if (ctrls.isEmpty())
+		return;
+
+	ZExpandableSection* pExpand = findChild<ZExpandableSection*>(groupName);
+	ZASSERT_EXIT(pExpand);
+
+	QGridLayout* pLayout = qobject_cast<QGridLayout*>(pExpand->contentLayout());
+	ZASSERT_EXIT(pLayout);
+	for (CONTROL_DATA ctrldata : ctrls)
+	{
+		QLabel* pNameItem = nullptr;
+        QWidget* pControl = pExpand->findChild<QWidget*>(ctrldata.name);
+		if (!isMatchControl(ctrldata.ctrl, pControl))
+		{
+			if (pControl)
+			{
+				//remove the dismatch control
+				pLayout->removeWidget(pControl);
+				delete pControl;
+				pControl = nullptr;
+			}
+
+            pControl = initControl(ctrldata);
+            if (!pControl)
+                continue;
+
+			int n = pLayout->rowCount();
+			const QString& lblObjName = "label-" + ctrldata.name;
+			if (!pExpand->findChild<QLabel*>(lblObjName))
+			{
+                pNameItem = new QLabel(ctrldata.name);
+				pNameItem->setObjectName(lblObjName);
+                pNameItem->setProperty("cssClass", "proppanel");
+				pLayout->addWidget(pNameItem, n, 0, Qt::AlignLeft);
+			}
+            pLayout->addWidget(pControl, n, 1);
+		}
+		updateControlValue(pControl, ctrldata.ctrl, ctrldata.value);
+	}
+}
+
 void ZenoPropPanel::onDataChanged(const QModelIndex& subGpIdx, const QModelIndex& idx, int role)
 {
 	//may be called frequently
@@ -514,124 +476,79 @@ void ZenoPropPanel::onDataChanged(const QModelIndex& subGpIdx, const QModelIndex
 
 	if (role == ROLE_PARAMETERS)
 	{
-		const PARAMS_INFO& params = pModel->data2(m_subgIdx, m_idx, role).value<PARAMS_INFO>();
-		for (PARAM_INFO param : params)
-		{
-			switch (param.control)
-			{
-				case CONTROL_STRING:
-				case CONTROL_INT:
-				case CONTROL_FLOAT:
-				case CONTROL_READPATH:
-				case CONTROL_WRITEPATH:
-				{
-					//update lineedit
-					auto lst = findChildren<ZLineEdit*>(param.name, Qt::FindChildrenRecursively);
-					if (lst.size() == 1)
-					{
-						ZLineEdit* pEdit = lst[0];
-						pEdit->setText(param.value.toString());
-					}
-					break;
-				}
-				case CONTROL_BOOL:
-				{
-					//update lineedit
-					auto lst = findChildren<ZCheckBoxBar*>(param.name, Qt::FindChildrenRecursively);
-					if (lst.size() == 1) {
-						ZCheckBoxBar *pEdit = lst[0];
-						pEdit->setCheckState(param.value.toBool() ? Qt::Checked : Qt::Unchecked);
-					}
-					break;
-				}
-				case CONTROL_ENUM:
-				{
-					auto lst = findChildren<QComboBox*>(param.name, Qt::FindChildrenRecursively);
-					if (lst.size() == 1)
-					{
-						QComboBox* pCombo = lst[0];
-						pCombo->setCurrentText(param.value.toString());
-					}
-					break;
-				}
-				case CONTROL_MULTILINE_STRING:
-				{
-					auto lst = findChildren<QTextEdit*>(param.name, Qt::FindChildrenRecursively);
-					if (lst.size() == 1)
-					{
-						QTextEdit* pTextEdit = lst[0];
-						pTextEdit->setText(param.value.toString());
-					}
-					break;
-				}
-				case CONTROL_COLOR:
-                case CONTROL_CURVE:  //TODO(bate): find the QPushButton
-				{
-					//update lineedit
-					auto lst = findChildren<ZLineEdit*>(param.name, Qt::FindChildrenRecursively);
-					if (lst.size() == 1)
-					{
-						ZLineEdit* pEdit = lst[0];
-						pEdit->setText(param.value.toString());
-					}
-					break;
-				}
-			}
-		}
+		onParamsCheckUpdate();
 	}
 	else if (role == ROLE_INPUTS)
 	{
-		const INPUT_SOCKETS& inSocks = pModel->data2(m_subgIdx, m_idx, role).value<INPUT_SOCKETS>();
-		for (QString inSock : inSocks.keys())
-		{
-			const INPUT_SOCKET& inSocket = inSocks[inSock];
-			switch (inSocket.info.control)
-			{
-				case CONTROL_STRING:
-				case CONTROL_INT:
-				case CONTROL_FLOAT:
-				case CONTROL_READPATH:
-				case CONTROL_WRITEPATH:
-				{
-					//update lineedit
-					auto lst = findChildren<ZLineEdit*>(inSock, Qt::FindChildrenRecursively);
-					if (lst.size() == 1)
-					{
-						ZLineEdit* pEdit = lst[0];
-						pEdit->setText(inSocket.info.defaultValue.toString());
-					}
-					break;
-				}
-				case CONTROL_BOOL:
-				{
-					auto lst = findChildren<ZCheckBoxBar*>(inSock, Qt::FindChildrenRecursively);
-					if (lst.size() == 1) {
-						ZCheckBoxBar *pEdit = lst[0];
-						pEdit->setCheckState(inSocket.info.defaultValue.toBool() ? Qt::Checked : Qt::Unchecked);
-					}
-					break;
-				}
-				case CONTROL_VEC:
-				{
-					auto lst = findChildren<ZVecEditor*>(inSock, Qt::FindChildrenRecursively);
-					if (lst.size() == 1)
-					{
-						ZVecEditor* pEdit = lst[0];
-						pEdit->onValueChanged(inSocket.info.defaultValue.value<UI_VECTYPE>());
-					}
-					break;
-				}
-				case CONTROL_ENUM:
-				{
-					auto lst = findChildren<QComboBox*>(inSock, Qt::FindChildrenRecursively);
-					if (lst.size() == 1)
-					{
-						QComboBox* pComboBox = lst[0];
-						pComboBox->setCurrentText(inSocket.info.defaultValue.toString());
-					}
-					break;
-				}
-			}
-		}
+		onInputsCheckUpdate();
 	}
+}
+
+bool ZenoPropPanel::isMatchControl(PARAM_CONTROL ctrl, QWidget* pControl)
+{
+	if (!pControl)
+		return false;
+
+	switch (ctrl)
+	{
+    case CONTROL_STRING:
+    case CONTROL_INT:
+    case CONTROL_FLOAT:	return qobject_cast<ZLineEdit*>(pControl) != nullptr;
+	case CONTROL_READPATH:
+	case CONTROL_WRITEPATH:
+		//todo:
+		return false;
+	case CONTROL_BOOL:	return qobject_cast<ZCheckBoxBar*>(pControl) != nullptr;
+	case CONTROL_VEC:	return qobject_cast<ZVecEditor*>(pControl) != nullptr;
+	case CONTROL_ENUM:	return qobject_cast<QComboBox*>(pControl) != nullptr;
+	case CONTROL_COLOR:
+		return false;
+	}
+}
+
+void ZenoPropPanel::updateControlValue(QWidget* pControl, PARAM_CONTROL ctrl, const QVariant& value)
+{
+	ZASSERT_EXIT(pControl);
+    switch (ctrl)
+    {
+		case CONTROL_STRING:
+		case CONTROL_INT:
+		case CONTROL_FLOAT:
+		{
+			ZLineEdit* pLineEdit = qobject_cast<ZLineEdit*>(pControl);
+			pLineEdit->setText(value.toString());
+			//todo: validator.
+			break;
+		}
+		case CONTROL_READPATH:
+		case CONTROL_WRITEPATH:
+		{
+			//update lineedit
+			//todo
+			break;
+		}
+		case CONTROL_BOOL:
+		{
+			ZCheckBoxBar* pCheckBox = qobject_cast<ZCheckBoxBar*>(pControl);
+			pCheckBox->setCheckState(value.toBool() ? Qt::Checked : Qt::Unchecked);
+			break;
+		}
+		case CONTROL_VEC:
+		{
+			ZVecEditor* pVecEdit = qobject_cast<ZVecEditor*>(pControl);
+			pVecEdit->setVec(value.value<UI_VECTYPE>(), pVecEdit->isFloat());
+			break;
+		}
+		case CONTROL_ENUM:
+		{
+			QComboBox* pComboBox = qobject_cast<QComboBox*>(pControl);
+			pComboBox->setCurrentText(value.toString());
+			break;
+		}
+		case CONTROL_COLOR:
+		{
+			//todo:
+			break;
+		}
+    }
 }

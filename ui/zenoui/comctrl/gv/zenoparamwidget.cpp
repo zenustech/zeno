@@ -282,7 +282,7 @@ void ZenoParamCheckBox::setCheckState(Qt::CheckState state)
 
 
 ///////////////////////////////////////////////////////////////////////////
-ZenoVecEditWidget::ZenoVecEditWidget(const UI_VECTYPE& vec, bool bFloat, LineEditParam param, QGraphicsScene* pScene, QGraphicsItem* parent)
+ZenoVecEditItem::ZenoVecEditItem(const UI_VECTYPE& vec, bool bFloat, LineEditParam param, QGraphicsScene* pScene, QGraphicsItem* parent)
     : ZenoParamWidget(parent)
     , m_bFloatVec(bFloat)
     , m_param(param)
@@ -290,7 +290,7 @@ ZenoVecEditWidget::ZenoVecEditWidget(const UI_VECTYPE& vec, bool bFloat, LineEdi
     initUI(vec, bFloat, pScene);
 }
 
-void ZenoVecEditWidget::initUI(const UI_VECTYPE& vec, bool bFloat, QGraphicsScene* pScene)
+void ZenoVecEditItem::initUI(const UI_VECTYPE& vec, bool bFloat, QGraphicsScene* pScene)
 {
     for (int i = 0; i < m_editors.size(); i++)
     {
@@ -313,12 +313,12 @@ void ZenoVecEditWidget::initUI(const UI_VECTYPE& vec, bool bFloat, QGraphicsScen
     setLayout(pLayout);
 }
 
-bool ZenoVecEditWidget::isFloatType() const
+bool ZenoVecEditItem::isFloatType() const
 {
     return m_bFloatVec;
 }
 
-UI_VECTYPE ZenoVecEditWidget::vec() const
+UI_VECTYPE ZenoVecEditItem::vec() const
 {
     UI_VECTYPE vec;
     for (auto editor : m_editors)
@@ -335,7 +335,7 @@ UI_VECTYPE ZenoVecEditWidget::vec() const
     return vec;
 }
 
-void ZenoVecEditWidget::setVec(const UI_VECTYPE& vec, bool bFloat, QGraphicsScene* pScene)
+void ZenoVecEditItem::setVec(const UI_VECTYPE& vec, bool bFloat, QGraphicsScene* pScene)
 {
     if (bFloat != m_bFloatVec || vec.size() != m_editors.size())
     {

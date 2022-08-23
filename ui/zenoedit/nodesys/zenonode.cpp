@@ -467,8 +467,8 @@ ZenoParamWidget* ZenoNode::initParamWidget(ZenoSubGraphScene* scene, const PARAM
             int dim = -1;
             UiHelper::parseVecType(param.typeDesc, dim, bFloat);
 
-            ZenoVecEditWidget* pVecEditor = new ZenoVecEditWidget(vec, bFloat, m_renderParams.lineEditParam, scene);
-            connect(pVecEditor, &ZenoVecEditWidget::editingFinished, this, [=]() {
+            ZenoVecEditItem* pVecEditor = new ZenoVecEditItem(vec, bFloat, m_renderParams.lineEditParam, scene);
+            connect(pVecEditor, &ZenoVecEditItem::editingFinished, this, [=]() {
                 UI_VECTYPE vec = pVecEditor->vec();
                 const QVariant& newValue = QVariant::fromValue(vec);
                 onParamEditFinished(paramName, newValue);
@@ -667,9 +667,9 @@ void ZenoNode::onParamUpdated(ZenoSubGraphScene* pScene, const QString& paramNam
                 bool bFloat = false;
                 UiHelper::parseVecType(params[paramName].typeDesc, dim, bFloat);
 
-                ZenoVecEditWidget* pVecEdit = qobject_cast<ZenoVecEditWidget*>(pWidget);
+                ZenoVecEditItem* pVecEdit = qobject_cast<ZenoVecEditItem*>(pWidget);
                 if (!pVecEdit || pVecEdit->isFloatType() != bFloat) {
-                    pVecEdit = qobject_cast<ZenoVecEditWidget*>(createNewWidget(pWidget, pParamLayout, pScene, param));
+                    pVecEdit = qobject_cast<ZenoVecEditItem*>(createNewWidget(pWidget, pParamLayout, pScene, param));
                     bUpdateLayout = true;
                 }
                 pVecEdit->setVec(val.value<UI_VECTYPE>(), bFloat, pScene);
@@ -1125,8 +1125,8 @@ ZenoParamWidget* ZenoNode::initSocketWidget(ZenoSubGraphScene* scene, const INPU
             bool bFloat = false;
             UiHelper::parseVecType(inSocket.info.type, dim, bFloat);
 
-            ZenoVecEditWidget *pVecEditor = new ZenoVecEditWidget(vec, bFloat,  m_renderParams.lineEditParam, scene);
-            connect(pVecEditor, &ZenoVecEditWidget::editingFinished, this, [=]() {
+            ZenoVecEditItem *pVecEditor = new ZenoVecEditItem(vec, bFloat,  m_renderParams.lineEditParam, scene);
+            connect(pVecEditor, &ZenoVecEditItem::editingFinished, this, [=]() {
                 UI_VECTYPE vec = pVecEditor->vec();
                 const QVariant &newValue = QVariant::fromValue(vec);
 
@@ -1245,10 +1245,10 @@ void ZenoNode::updateSocketWidget(ZenoSubGraphScene* pScene, const INPUT_SOCKET 
             bool bFloat = false;
             UiHelper::parseVecType(inSocket.info.type, dim, bFloat);
 
-            ZenoVecEditWidget *pVecEdit = qobject_cast<ZenoVecEditWidget *>(ctrl.socket_control);
+            ZenoVecEditItem *pVecEdit = qobject_cast<ZenoVecEditItem *>(ctrl.socket_control);
             if (!pVecEdit || pVecEdit->isFloatType() != bFloat) {
                 clearInSocketControl(inSocket.info.name);
-                pVecEdit = qobject_cast<ZenoVecEditWidget *>(initSocketWidget(pScene, inSocket, ctrl.socket_text));
+                pVecEdit = qobject_cast<ZenoVecEditItem *>(initSocketWidget(pScene, inSocket, ctrl.socket_text));
                 ZASSERT_EXIT(pVecEdit);
                 pControlLayout->addItem(pVecEdit);
                 m_inSockets[inSocket.info.name].socket_control = pVecEdit;

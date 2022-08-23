@@ -74,6 +74,13 @@ void ZExpandableSection::setContentLayout(QLayout* contentLayout)
 	update();
 }
 
+QLayout* ZExpandableSection::contentLayout() const
+{
+	QWidget* pContentWid = m_contentArea->widget();
+	if (!pContentWid) return nullptr;
+	return pContentWid->layout();
+}
+
 void ZExpandableSection::toggle(bool collasped)
 {
     m_contentArea->setVisible(!m_contentArea->isVisible());

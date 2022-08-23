@@ -21,6 +21,7 @@ class ZExpandableSection : public QWidget
 public:
 	explicit ZExpandableSection(const QString& title, QWidget* parent = nullptr);
 	void setContentLayout(QLayout* layout);
+	QLayout* contentLayout() const;
 	virtual QSize sizeHint() const override;
     virtual QSize minimumSizeHint() const override;
 

@@ -126,11 +126,11 @@ private:
 };
 
 
-class ZenoVecEditWidget : public ZenoParamWidget
+class ZenoVecEditItem : public ZenoParamWidget
 {
     Q_OBJECT
 public:
-    ZenoVecEditWidget(const UI_VECTYPE& vec, bool bFloat, LineEditParam param, QGraphicsScene* pScene, QGraphicsItem* parent = nullptr);
+    ZenoVecEditItem(const UI_VECTYPE& vec, bool bFloat, LineEditParam param, QGraphicsScene* pScene, QGraphicsItem* parent = nullptr);
     UI_VECTYPE vec() const;
     void setVec(const UI_VECTYPE& vec, bool bFloat, QGraphicsScene* pScene);
     bool isFloatType() const;
