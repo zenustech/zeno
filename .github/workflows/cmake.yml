@@ -167,12 +167,12 @@ jobs:
     strategy:
       matrix:
         include:
-        - label: x86_64-linux-cpu
-          pkgext: tar.gz
+        #- label: x86_64-linux-cpu
+          #pkgext: tar.gz
         - label: x86_64-windows-cpu
           pkgext: zip
-        - label: x86_64-linux-cuda
-          pkgext: tar.gz
+        #- label: x86_64-linux-cuda
+          #pkgext: tar.gz
         - label: x86_64-windows-cuda
           pkgext: zip
 
