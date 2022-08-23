@@ -2284,7 +2284,7 @@ struct AdvanceIPCSystem : INode {
             A->updateVelocities(cudaPol);
         }
         // update velocity and positions
-        // A->writebackPositionsAndVelocities(cudaPol);
+        A->writebackPositionsAndVelocities(cudaPol);
 
         set_output("ZSIPCSystem", A);
     }
