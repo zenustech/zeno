@@ -425,9 +425,10 @@ struct CreateCube : zeno::INode {
             auto p = verts[i];
             auto n = nors[i];
 
-            p = p * scale * size + position;
+            p = p * scale * size ;
 
             ROTATE_COMPUTE
+                p+= position;
 
             auto gn = glm::vec3(n[0], n[1], n[2]);
             gn = mz * my * mx * gn;
@@ -487,9 +488,10 @@ struct CreateDisk : zeno::INode {
             auto p = zeno::vec3f(cos(rad) * radius, 0,
                            -sin(rad) * radius);
             auto p4uv = p * scaleSize;
-            p = p4uv + position;
+            p = p4uv;
 
             ROTATE_COMPUTE
+                p+= position;
 
             verts.emplace_back(p);
             tris.emplace_back(i+1, 0, i+2);
@@ -558,9 +560,10 @@ struct CreatePlane : zeno::INode {
 
             for(int j=0; j<=columns; j++){
                 auto p = rp - zeno::vec3f(0, 0, j*cm);
-                p = p * scale * size + position;
+                p = p * scale * size;
 
                 ROTATE_COMPUTE
+                    p +=position;
 
                 auto zcp = zeno::vec3f(p[0], p[1], p[2]);
                 verts.push_back(zcp);
@@ -863,9 +866,10 @@ struct CreateTube : zeno::INode {
             auto n = nors[i];
 
 
-            p = p * scale + position;
+            p = p * scale ;
 
             ROTATE_COMPUTE
+                p+=position;
 
             auto gn = glm::vec3(n[0], n[1], n[2]);
             gn = mz * my * mx * gn;
@@ -1063,9 +1067,11 @@ struct CreateSphere : zeno::INode {
             auto p = verts[i];
             auto n = nors[i];
 
-            p = p * scale * radius + position;
+            p = p * scale * radius ;
 
             ROTATE_COMPUTE
+
+                p+= position;
 
             auto gn = glm::vec3(n[0], n[1], n[2]);
             gn = mz * my * mx * gn;
