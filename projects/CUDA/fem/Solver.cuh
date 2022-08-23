@@ -12,12 +12,6 @@
 
 namespace zeno {
 
-#define s_enableAdaptiveSetting 1
-#define s_enableContact 1
-#define s_enableMollification 1
-#define s_enableFriction 1
-#define s_enableSelfFriction 1
-
 struct IPCSystem : IObject {
     using T = double;
     using Ti = zs::conditional_t<zs::is_same_v<T, double>, zs::i64, zs::i32>;
@@ -40,6 +34,7 @@ struct IPCSystem : IObject {
     inline static const char s_meanMassTag[] = "MeanMass";
     inline static const char s_meanSurfEdgeLengthTag[] = "MeanSurfEdgeLength";
     inline static const char s_meanSurfAreaTag[] = "MeanSurfArea";
+    static constexpr T s_constraint_residual = 1e-2;
 
     struct PrimitiveHandle {
         PrimitiveHandle(ZenoParticles &zsprim, std::size_t &vOffset, std::size_t &sfOffset, std::size_t &seOffset,
@@ -118,14 +113,36 @@ struct IPCSystem : IObject {
     void reinitialize(zs::CudaExecutionPolicy &pol, T framedt);
     void advanceSubstep(zs::CudaExecutionPolicy &pol, T ratio);
     void updateVelocities(zs::CudaExecutionPolicy &pol);
-    void updatePositionsAndVelocities(zs::CudaExecutionPolicy &pol);
+    void writebackPositionsAndVelocities(zs::CudaExecutionPolicy &pol);
 
-    // pipeline
+    /// pipeline
     void newtonKrylov(zs::CudaExecutionPolicy &pol);
+    // constraint
+    void computeConstraints(zs::CudaExecutionPolicy &pol);
+    bool areConstraintsSatisfied(zs::CudaExecutionPolicy &pol);
+    T constraintResidual(zs::CudaExecutionPolicy &pol, bool maintainFixed = false);
+    // contacts
+    void findCollisionConstraints(zs::CudaExecutionPolicy &pol, T dHat, T xi = 0);
+    void findCollisionConstraintsImpl(zs::CudaExecutionPolicy &pol, T dHat, T xi, bool withBoundary = false);
+    void precomputeFrictions(zs::CudaExecutionPolicy &pol, T dHat, T xi = 0);
+    //
+    void computeInertialAndGravityPotentialGradient(zs::CudaExecutionPolicy &cudaPol);
+    void computeElasticGradientAndHessian(zs::CudaExecutionPolicy &cudaPol, bool includeHessian = true);
+    void computeBoundaryBarrierGradientAndHessian(zs::CudaExecutionPolicy &pol, bool includeHessian = true);
+    void computeBarrierGradientAndHessian(zs::CudaExecutionPolicy &pol, bool includeHessian = true);
+    void computeFrictionBarrierGradientAndHessian(zs::CudaExecutionPolicy &pol, bool includeHessian = true);
+
+    void project(zs::CudaExecutionPolicy &pol, const zs::SmallString tag);
 
     // sim params
     std::size_t estNumCps = 1000000;
     bool s_enableGround = false;
+    bool s_enableAdaptiveSetting = true;
+    bool s_enableContact = true;
+    bool s_enableMollification = true;
+    bool s_enableFriction = true;
+    bool s_enableSelfFriction = true;
+    vec3 s_groundNormal{0, 1, 0};
     T augLagCoeff = 1e4;
     T pnRel = 1e-2;
     T cgRel = 1e-2;
@@ -221,3 +238,5 @@ struct IPCSystem : IObject {
 };
 
 } // namespace zeno
+
+#include "SolverUtils.cuh"
