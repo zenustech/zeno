@@ -71,19 +71,21 @@ bool Scene::cameraFocusOnNode(std::string const &nodeid, zeno::vec3f &center, fl
     return false;
 }
 
-void Scene::loadFrameObjects(int frameid) {
+bool Scene::loadFrameObjects(int frameid) {
+    bool inserted = false;
     if (!zeno::getSession().globalComm->isFrameCompleted(frameid))
-        return;
+        return inserted;
 
     auto const *viewObjs = zeno::getSession().globalComm->getViewObjects(frameid);
     if (viewObjs) {
         zeno::log_trace("load_objects: {} objects at frame {}", viewObjs->size(), frameid);
-        this->objectsMan->load_objects(viewObjs->m_curr);
+        inserted = this->objectsMan->load_objects(viewObjs->m_curr);
     } else {
         zeno::log_trace("load_objects: no objects at frame {}", frameid);
-        this->objectsMan->load_objects({});
+        inserted = this->objectsMan->load_objects({});
     }
     renderMan->getEngine()->update();
+    return inserted;
 }
 
 void Scene::draw() {

@@ -8,14 +8,17 @@ namespace zenovis {
 ObjectsManager::ObjectsManager() = default;
 ObjectsManager::~ObjectsManager() = default;
 
-void ObjectsManager::load_objects(std::map<std::string, std::shared_ptr<zeno::IObject>> const &objs) {
+bool ObjectsManager::load_objects(std::map<std::string, std::shared_ptr<zeno::IObject>> const &objs) {
+    bool inserted = false;
     auto ins = objects.insertPass();
     for (auto const &[key, obj] : objs) {
         if (ins.may_emplace(key)) {
             zeno::log_debug("load_objects: loading object [{}] at {}", key, obj.get());
             ins.try_emplace(key, std::move(obj));
+            inserted = true;
         }
     }
+    return inserted;
 }
 
 void ObjectsManager::clear_objects() {
