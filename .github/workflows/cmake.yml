@@ -30,32 +30,33 @@ jobs:
         include:
         - label: x86_64-linux-cpu
           os: ubuntu-latest
-          image: ubuntu:18.04
+          container: {'image': 'ubuntu:18.04'}
           triplet: x64-linux
           cxx: g++-9
           gpu: cpu
           pkgext: tar.gz
         - label: x86_64-windows-cpu
           os: windows-latest
+          container: {}
           triplet: x64-windows
           gpu: cpu
           pkgext: zip
         - label: x86_64-linux-cuda
           os: ubuntu-latest
-          image: ubuntu:18.04
+          container: {'image': 'ubuntu:18.04'}
           triplet: x64-linux
           cxx: g++-10
           gpu: cuda
           pkgext: tar.gz
         - label: x86_64-windows-cuda
           os: windows-latest
+          container: {}
           triplet: x64-windows
           gpu: cuda
           pkgext: zip
 
     runs-on: ${{ matrix.os }}
-    container:
-      image: ${{ matrix.image }}
+    container: ${{ matrix.container }}
     needs: [check]
 
     env:
