@@ -46,11 +46,11 @@ struct bunnyMesh : zeno::INode
 			for (int j = 0; j < 3; j++)
 				surf[i][j] = theBunnyMesh.surf[i * 3 + j];
 
-		// std::cout << "created a bunny tetrahedron mesh!" << std::endl;
-		// std::cout << "numParticles:" << numParticles<< std::endl;
-		// std::cout << "numEdges:" << numEdges<< std::endl;
-		// std::cout << "numTets:" << numTets<< std::endl;
-		// std::cout << "numSurfs:" << numSurfs<< std::endl;
+		std::cout << "created a bunny tetrahedron mesh!" << std::endl;
+		std::cout << "numParticles:" << numParticles<< std::endl;
+		std::cout << "numEdges:" << numEdges<< std::endl;
+		std::cout << "numTets:" << numTets<< std::endl;
+		std::cout << "numSurfs:" << numSurfs<< std::endl;
 
         set_output("prim", std::move(prim));
 	};
