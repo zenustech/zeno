@@ -2,44 +2,45 @@
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/funcs/PrimitiveUtils.h>
 #include <zeno/types/StringObject.h>
+#include <zeno/utils/variantswitch.h>
+#include <zeno/utils/arrayindex.h>
 #include <zeno/utils/string.h>
-#include <zeno/utils/fileio.h>
-#include <zeno/utils/logger.h>
+#include <zeno/utils/log.h>
 #include <zeno/utils/vec.h>
-#include <string_view>
 #include <fstream>
 
 namespace zeno {
 namespace {
 
-void dump_obj(PrimitiveObject *prim, std::ostream &fout) {
-    fout << "# https://github.com/zenustech/zeno\n";
-    for (auto const &[x, y, z]: prim->verts) {
-        fout << "v " << x << ' ' << y << ' ' << z << '\n';
-    }
-    if (prim->loops.size() && prim->loop_uvs.size()) {
-        auto &loop_uvs = prim->loop_uvs;
-        for (auto const &[x, y]: prim->uvs) {
-            fout << "vt " << x << ' ' << y << '\n';
-        }
-        for (auto const &[base, len]: prim->polys) {
-            fout << 'f';
-            for (int j = base; j < base + len; j++) {
-                auto l = prim->loops[j] + 1;
-                auto lt = loop_uvs[j] + 1;
-                fout << ' ' << l << '/' << lt;
-            }
-            fout << '\n';
-        }
-    } else {
-        for (auto const &[base, len]: prim->polys) {
-            fout << 'f';
-            for (int j = base; j < base + len; j++) {
-                auto l = prim->loops[j] + 1;
-                fout << ' ' << l;
-            }
-            fout << '\n';
-        }
+static void dump(int const &v, std::ostream &fout) {
+    fout << v;
+}
+
+static void dump(float const &v, std::ostream &fout) {
+    fout << v;
+}
+
+template <size_t N, class T>
+static void dump(vec<N, T> const &v, std::ostream &fout) {
+    fout << v[0];
+    for (int i = 1; i < N; i++)
+        fout << ' ' << v[i];
+}
+
+template <class T>
+void dump_csv(AttrVector<T> avec, std::ostream &fout) {
+    fout << "pos";
+    avec.template foreach_attr<AttrAcceptAll>([&] (auto const &key, auto &arr) {
+        fout << ',' << key;
+    });
+    fout << '\n';
+    for (int i = 0; i < avec.size(); i++) {
+        dump(avec[i], fout);
+        avec.template foreach_attr<AttrAcceptAll>([&] (auto const &key, auto &arr) {
+            fout << ',';
+            dump(arr[i], fout);
+        });
+        fout << '\n';
     }
 }
 
@@ -47,23 +48,32 @@ struct WritePrimToCSV : INode {
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
         auto path = get_input<StringObject>("path")->get();
-        if (get_param<bool>("polygonate")) {
-            primPolygonate(prim.get());
-        }
         std::ofstream fout(path);
-        dump_obj(prim.get(), fout);
+        auto mbr = funcalt_variant(array_index(
+                {"verts", "points", "lines", "tris", "quads", "loops", "polys"},
+                get_input2<std::string>("type")),
+            &PrimitiveObject::verts,
+            &PrimitiveObject::points,
+            &PrimitiveObject::lines,
+            &PrimitiveObject::tris,
+            &PrimitiveObject::quads,
+            &PrimitiveObject::loops,
+            &PrimitiveObject::polys);
+        std::visit([&] (auto const &mbr) {
+            dump_csv(mbr(*prim), fout);
+        }, mbr);
         set_output("prim", std::move(prim));
     }
 };
 
-ZENDEFNODE(WriteObjPrim,
+ZENDEFNODE(WritePrimToCSV,
         { /* inputs: */ {
         {"primitive", "prim"},
         {"writepath", "path"},
+        {"enum verts points lines tris quads loops polys", "type", "verts"},
         }, /* outputs: */ {
         {"primitive", "prim"},
         }, /* params: */ {
-        {"bool", "polygonate", "1"},
         }, /* category: */ {
         "primitive",
         }});
