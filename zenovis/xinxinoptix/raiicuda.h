@@ -100,7 +100,7 @@ struct raii {
     }
 
     template <typename TT = T, std::enable_if_t<std::is_same_v<TT, CUdeviceptr>> * = nullptr>
-    bool resize(std::size_t newSize) noexcept {
+    bool resize(std::size_t newSize) {
         if (newSize != size) {  // temporary
             printf("\n\nreallocating %d bytes (previous %d bytes)\n\n\n", (int)size, (int)newSize);
             CUDA_CHECK(cudaMalloc(reinterpret_cast<void **>(&reset()), newSize));
