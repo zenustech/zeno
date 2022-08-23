@@ -105,8 +105,8 @@ struct IPCSystem : IObject {
     void updateWholeBoundingBoxSize(zs::CudaExecutionPolicy &pol);
     void initKappa(zs::CudaExecutionPolicy &pol);
     void initialize(zs::CudaExecutionPolicy &pol);
-    IPCSystem(std::vector<ZenoParticles *> zsprims, const dtiles_t &coVerts, const tiles_t &coEdges,
-              const tiles_t &coEles, T dt, std::size_t ncps, bool withGround, T augLagCoeff, T pnRel, T cgRel,
+    IPCSystem(std::vector<ZenoParticles *> zsprims, const dtiles_t *coVerts, const tiles_t *coEdges,
+              const tiles_t *coEles, T dt, std::size_t ncps, bool withGround, T augLagCoeff, T pnRel, T cgRel,
               int PNCap, int CGCap, int CCDCap, T kappa0, T fricMu, T dHat, T epsv, T gravity);
 
     void reinitialize(zs::CudaExecutionPolicy &pol, T framedt);
@@ -148,8 +148,8 @@ struct IPCSystem : IObject {
     std::size_t sfOffset, seOffset, svOffset;
 
     // (scripted) collision objects
-    const dtiles_t &coVerts;
-    const tiles_t &coEdges, &coEles;
+    const dtiles_t *coVerts;
+    const tiles_t *coEdges, *coEles;
     dtiles_t vtemp;
     dtiles_t tempPB;
 
