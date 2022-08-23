@@ -168,6 +168,20 @@ ZenoLights::ZenoLights(QWidget *parent) : QWidget(parent) {
         pMainLayout->addLayout(pColorLayout);
     }
 
+    {
+        QHBoxLayout* pMouseSenLayout = new QHBoxLayout();
+        QLabel* mouseSen = new QLabel("MouseSensitive: ");
+        mouseSen->setProperty("cssClass", "proppanel");
+        pMouseSenLayout->addWidget(mouseSen);
+        QLabel* mouseSenValue = new QLabel(" v: ");
+        mouseSenValue->setProperty("cssClass", "proppanel");
+        pMouseSenLayout->addWidget(mouseSenValue);
+        mouseSenEdit->setProperty("cssClass", "proppanel");
+        pMouseSenLayout->addWidget(mouseSenEdit);
+
+        pMainLayout->addLayout(pMouseSenLayout);
+    }
+
     pStatusBar->setProperty("cssClass", "proppanel");
     pMainLayout->addWidget(pStatusBar);
 
@@ -218,6 +232,8 @@ ZenoLights::ZenoLights(QWidget *parent) : QWidget(parent) {
     connect(colorXEdit, &QLineEdit::editingFinished, this, [&](){ zenoApp->getMainWindow()->selected = nullptr; });
     connect(colorYEdit, &QLineEdit::editingFinished, this, [&](){ zenoApp->getMainWindow()->selected = nullptr; });
     connect(colorZEdit, &QLineEdit::editingFinished, this, [&](){ zenoApp->getMainWindow()->selected = nullptr; });
+
+    connect(mouseSenEdit, &QLineEdit::editingFinished, this, [&](){ zenoApp->getMainWindow()->mouseSen = mouseSenEdit->text().toFloat(); });
 }
 
 void ZenoLights::updateLights() {

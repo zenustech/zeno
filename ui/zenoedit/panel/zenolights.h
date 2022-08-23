@@ -33,6 +33,7 @@ class ZenoLights : public QWidget {
     QLineEdit* colorYEdit = new QLineEdit("1");
     QLineEdit* colorZEdit = new QLineEdit("1");
 
+    QLineEdit* mouseSenEdit = new QLineEdit("0.2");
     void modifyLightData();
 
 public:

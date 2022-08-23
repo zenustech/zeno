@@ -451,7 +451,7 @@ void ViewportWidget::mouseMoveEvent(QMouseEvent* event)
             dx = 0;
         }
         float v = qle->text().toFloat();
-        dx *= 0.3;
+        dx *= zenoApp->getMainWindow()->mouseSen;
         v += dx;
         qle->setText(QString::number(v));
         m_lastPos = QPointF(xpos, ypos);

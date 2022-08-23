@@ -19,6 +19,7 @@ public:
     void setInDlgEventLoop(bool bOn);
 
     QLineEdit* selected = nullptr;
+    float mouseSen = 0.2;
 
 public slots:
     void openFileDialog();
