@@ -39,7 +39,7 @@ public:
     {
         pos[i] = tet.nodes[i];
     }
-    for (int i = 0; i < numVerts; i++)
+    for (int i = 0; i < numEles; i++)
     {
         quads[i] = tet.elems[i];
     }
@@ -49,10 +49,7 @@ public:
 
     prim->tris.clear();
 
-    echo(prim->tris.size());
-
     extractSurf();
-
 
     set_output("outPrim", std::move(prim));
   }
@@ -74,60 +71,110 @@ ZENDEFNODE(ReadVtkTet, {/* inputs: */
                              "PBD",
                          }});
 
-
+   
 void ReadVtkTet::extractSurf()
 {
     const auto &quads = prim->quads;
     auto &surfs = prim->tris;
+
     int numTets = quads.size();
     int numFaces = quads.size()*4;
-    // /* -------------------------------------------------------------------------- */
-    // /*                               list faces and remove shared                 */
-    // /* -------------------------------------------------------------------------- */
-    std::map<std::set<int>, zeno::vec3i> faces; //key is the sorted face, value is the original face
-    std::vector<int> dup_index; //to record the index of tet with duplicated face
-    std::vector<zeno::vec3i> dup_face; //to record the original data of duplicated face
+    
+    using vec4i = std::array<int,4>;
+
+    //list_faces
+    std::vector<vec4i> faces;
     for (int i = 0; i < quads.size(); i++)
     {
-        zeno::vec3i f0{quads[i][0], quads[i][2], quads[i][1]};
-        zeno::vec3i f1{quads[i][0], quads[i][3], quads[i][2]};
-        zeno::vec3i f2{quads[i][0], quads[i][1], quads[i][3]};
-        zeno::vec3i f3{quads[i][1], quads[i][2], quads[i][3]};
+        std::array<int,4> tet=quads[i];
 
-        std::list<zeno::vec3i> list{f0,f1,f2,f3};
-        for(auto& f:list)
+        std::sort(tet.begin(),tet.end());
+        
+        int t0 = tet[0];
+        int t1 = tet[1];
+        int t2 = tet[2];
+        int t3 = tet[3];
+
+        vec4i f0{t0, t1, t2, i};
+        vec4i f1{t0, t1, t3, i};
+        vec4i f2{t0, t2, t3, i};
+        vec4i f3{t1, t2, t3, i};
+
+        faces.push_back(f0);
+        faces.push_back(f1);
+        faces.push_back(f2);
+        faces.push_back(f3);
+    }
+
+    auto myLess = [](auto a, auto b){
+        return std::tie(a[0], a[1], a[2]) < std::tie(b[0], b[1], b[2]);
+    };
+
+    //sort faces
+    std::sort(faces.begin(),faces.end(), myLess);
+
+
+    /* -------------------------------------------------------------------------- */
+    /*                       use list to remove shared faces                      */
+    /* -------------------------------------------------------------------------- */
+    auto myEqual = [](auto a, auto b){
+        if((a[0]==b[0])&&(a[1]==b[1])&&(a[2]==b[2])) return true; 
+        else return false;};
+    //copy to a list
+    std::list<vec4i> facelist;
+    for(auto it:faces)
+        facelist.push_back(it);
+    
+    //remove shared faces from the list
+    auto f_prev = facelist.begin();
+    auto f = facelist.begin();  f++;
+    for(;f!=facelist.end();)
+    {
+        if(myEqual(*f, *f_prev))
         {
-            std::set<int> fset(f.begin(), f.end()); //use set to get sorted face, which servers as the key
-
-            auto it = faces.find(fset);
-            if(it!=faces.end())  
+            f++; //move to the next
+            if(f==facelist.end())//if f move to the end(), should break
             {
-                faces.erase(it);     //erase the shared faces
-                dup_index.push_back(i);     //record the tet index
-                dup_face.push_back(it->second); //record the original face data
+                facelist.erase(f_prev,f);
+                break;
             }
-            else 
-            {
-                faces[fset] = f;
-            }
+            f_prev = facelist.erase(f_prev,f); //return the next
+            f++; // move f to the next of next
+        }
+        else
+        {
+            f_prev = f;
+            f++;
         }
     }
 
-    for(const auto& f:faces)
-        surfs.push_back(f.second);
+    //recontruct the surf with orders
+    for(auto x:facelist)
+    {
+        int tetId = x[3];
+        std::array<int, 4> vert = quads[tetId];
+        std::array<bool, 4> hasVert={false, false, false, false};
+        
+        for (int j = 0; j < 4; j++)
+            for (int k = 0; k < 3; k++)
+                if(x[k] == vert[j])
+                    hasVert[j] = true;
+            
+        if (hasVert[0] &&  hasVert[2] && hasVert[1])
+            surfs.push_back(vec3i{vert[0],vert[2],vert[1]}); 
+
+        if (hasVert[0] &&  hasVert[3] && hasVert[2])
+            surfs.push_back(vec3i{vert[0],vert[3],vert[2]});
+
+        if (hasVert[0] &&  hasVert[1] && hasVert[3])
+            surfs.push_back(vec3i{vert[0],vert[1],vert[3]});
+
+        if (hasVert[1] &&  hasVert[2] && hasVert[3])
+            surfs.push_back(vec3i{vert[1],vert[2],vert[3]});
+    }
 
     std::cout<<"before extractSurf numFaces: "<<numFaces<<std::endl;
     std::cout<<"after extractSurf numSurfs: "<<surfs.size()<<std::endl;
-    
-    std::ofstream fout;
-    fout.open("surf.txt");
-    for(const auto& f:surfs)
-    {
-        for(const auto& x:f)
-            fout<<x<<"\t";
-        fout<<"\n";
-    }
-    fout.close();
 }
 
 } // namespace zeno

@@ -2,9 +2,10 @@
 #pragma once
 #include <fstream>
 #include <iostream>
+#include <string>
 
 template<typename T>
-void print(T contents, int maxTimes=20, bool toFile=false)
+void print(T contents, int maxTimes=20, bool toFile=false, std::string msg="")
 {
     static int times = 0;
     times++;
@@ -13,6 +14,7 @@ void print(T contents, int maxTimes=20, bool toFile=false)
     
     if(!toFile)
     {
+        std::cout<<msg;
         for(auto x:contents)
             std::cout<<x<<"\t";
         std::cout<<"\n";
@@ -22,6 +24,7 @@ void print(T contents, int maxTimes=20, bool toFile=false)
     {
         static std::ofstream fout;
         fout.open("debugOutput.txt", std::ios::app);
+        fout<<msg;
         for(const auto& x:contents)
             fout<<x<<"\t";
         fout<<"\n";
