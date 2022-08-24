@@ -48,6 +48,9 @@ public slots:
     void onDataChanged(const QModelIndex& subGpIdx, const QModelIndex& idx, int role);
     void onParamEditFinish();
     void onInputEditFinish();
+    void onParamColorEdited(const QString& paramName);
+    void onInputColorEdited(const QString& inSock);
+    void onCurveModelEdit(bool bInputSock, const QString& name);
 
 private:
     ZExpandableSection* paramsBox(IGraphsModel* pModel, const QModelIndex& subgIdx, const QModelIndexList& nodes);

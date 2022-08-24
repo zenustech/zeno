@@ -3,6 +3,8 @@
 #include "zenomainwindow.h"
 #include "graphsmanagment.h"
 #include <zenoui/model/modelrole.h>
+#include <zenoui/model/curvemodel.h>
+#include <zenoui/model/variantptr.h>
 #include <zenoui/include/igraphsmodel.h>
 #include <zenoui/comctrl/zcombobox.h>
 #include <zenoui/comctrl/zlabel.h>
@@ -13,8 +15,12 @@
 #include <zenoui/comctrl/zexpandablesection.h>
 #include <zenoui/comctrl/zlinewidget.h>
 #include <zenoui/comctrl/zlineedit.h>
+#include <zenoui/comctrl/ztextedit.h>
 #include "util/log.h"
 #include "util/apphelper.h"
+#include "curvemap/curveutil.h"
+#include "curvemap/zcurvemapeditor.h"
+#include "panel/zenoheatmapeditor.h"
 
 
 ZenoPropPanel::ZenoPropPanel(QWidget* parent)
@@ -249,14 +255,13 @@ QWidget* ZenoPropPanel::initControl(CONTROL_DATA ctrlData)
 		}
 		case CONTROL_MULTILINE_STRING:
 		{
-			QTextEdit* pTextEdit = new QTextEdit;
+			ZTextEdit* pTextEdit = new ZTextEdit;
 			pTextEdit->setFrameShape(QFrame::NoFrame);
 			pTextEdit->setProperty("cssClass", "proppanel");
 			pTextEdit->setObjectName(name);
 			pTextEdit->setProperty("control", ctrl);
 			pTextEdit->setFont(QFont("HarmonyOS Sans", 12));
 
-			//todo: ztextedit impl.
 			QTextCharFormat format;
 			QFont font("HarmonyOS Sans", 12);
 			format.setFont(font);
@@ -267,8 +272,7 @@ QWidget* ZenoPropPanel::initControl(CONTROL_DATA ctrlData)
 			pal.setColor(QPalette::Base, QColor(37, 37, 37));
 			pTextEdit->setPalette(pal);
 
-			//todo: slot
-
+			connect(pTextEdit, &ZTextEdit::editFinished, this, ctrlData.fSlot);
 			return pTextEdit;
 		}
 		case CONTROL_COLOR:
@@ -276,6 +280,7 @@ QWidget* ZenoPropPanel::initControl(CONTROL_DATA ctrlData)
 			QPushButton* pBtn = new QPushButton("Edit Heatmap");
 			pBtn->setObjectName(name);
 			pBtn->setProperty("cssClass", "grayButton");
+			connect(pBtn, &QPushButton::clicked, this, ctrlData.fSlot);
 			return pBtn;
 		}
 		case CONTROL_CURVE:
@@ -283,6 +288,7 @@ QWidget* ZenoPropPanel::initControl(CONTROL_DATA ctrlData)
 			QPushButton* pBtn = new QPushButton("Edit Curve");
 			pBtn->setObjectName(name);
 			pBtn->setProperty("cssClass", "grayButton");
+			connect(pBtn, &QPushButton::clicked, this, ctrlData.fSlot);
 			return pBtn;
 		}
 		default:
@@ -305,7 +311,26 @@ void ZenoPropPanel::onInputsCheckUpdate()
         ctrl.name = inSock;
         ctrl.typeDesc = inSocket.info.type;
         ctrl.value = inSocket.info.defaultValue;
-		ctrl.fSlot = std::bind(&ZenoPropPanel::onInputEditFinish, this);
+        if (ctrl.ctrl == CONTROL_COLOR)
+        {
+            ctrl.fSlot = [this]() {
+                QPushButton* pSender = qobject_cast<QPushButton*>(sender());
+                QString inSock = pSender->objectName();
+				onInputColorEdited(inSock);
+            };
+        }
+        else if (ctrl.ctrl == CONTROL_CURVE)
+        {
+            ctrl.fSlot = [this]() {
+                QPushButton* pSender = qobject_cast<QPushButton*>(sender());
+                QString paramName = pSender->objectName();
+                onCurveModelEdit(true, paramName);
+            };
+        }
+		else
+		{
+			ctrl.fSlot = std::bind(&ZenoPropPanel::onInputEditFinish, this);
+		}
         ctrls.insert(inSock, ctrl);
     }
     onGroupCheckUpdated(tr("SOCKET IN"), ctrls);
@@ -324,7 +349,26 @@ void ZenoPropPanel::onParamsCheckUpdate()
         ctrl.name = name;
         ctrl.typeDesc = param.typeDesc;
         ctrl.value = param.value;
-		ctrl.fSlot = std::bind(&ZenoPropPanel::onParamEditFinish, this);
+		if (ctrl.ctrl == CONTROL_COLOR)
+		{
+			ctrl.fSlot = [this]() {
+				QPushButton* pSender = qobject_cast<QPushButton*>(sender());
+				QString paramName = pSender->objectName();
+				onParamColorEdited(paramName);
+			};
+		}
+		else if (ctrl.ctrl == CONTROL_CURVE)
+		{
+			ctrl.fSlot = [this]() {
+				QPushButton* pSender = qobject_cast<QPushButton*>(sender());
+				QString paramName = pSender->objectName();
+				onCurveModelEdit(false, paramName);
+			};
+		}
+		else
+		{
+			ctrl.fSlot = std::bind(&ZenoPropPanel::onParamEditFinish, this);
+		}
         ctrls.insert(name, ctrl);
 	}
 	onGroupCheckUpdated(tr("NODE PARAMETERS"), ctrls);
@@ -369,6 +413,10 @@ void ZenoPropPanel::onInputEditFinish()
 	{
 		info.newValue = pCheckbox->checkState() == Qt::Checked;
 	}
+	else if (ZTextEdit* pTextEdit = qobject_cast<ZTextEdit*>(pSender))
+	{
+		info.newValue = pTextEdit->toPlainText();
+	}
 
 	if (info.oldValue != info.newValue)
 	{
@@ -400,10 +448,10 @@ void ZenoPropPanel::onParamEditFinish()
 	{
 		textValue = pCombobox->currentText();
 	}
-	else if (QTextEdit* pTextEdit = qobject_cast<QTextEdit*>(pSender))
-	{
-		textValue = pTextEdit->toPlainText();
-	}
+    else if (ZTextEdit* pTextEdit = qobject_cast<ZTextEdit*>(pSender))
+    {
+        textValue = pTextEdit->toPlainText();
+    }
 	else if (ZCheckBoxBar *pCheckbox = qobject_cast<ZCheckBoxBar *>(pSender))
 	{
 		PARAM_UPDATE_INFO info;
@@ -426,6 +474,82 @@ void ZenoPropPanel::onParamEditFinish()
 	info.newValue = UiHelper::parseTextValue(ctrl, textValue);;
 	info.name = paramName;
 	model->updateParamInfo(nodeid, info, m_subgIdx, true);
+}
+
+void ZenoPropPanel::onCurveModelEdit(bool bInputSock, const QString& name)
+{
+    IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
+    ZASSERT_EXIT(pGraphsModel);
+    const QString& nodeid = m_idx.data(ROLE_OBJID).toString();
+	QVariant val;
+	if (bInputSock) {
+		INPUT_SOCKETS inputs = m_idx.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
+		ZASSERT_EXIT(inputs.find(name) != inputs.end());
+		val = inputs[name].info.defaultValue;
+	}
+	else {
+		val = pGraphsModel->getParamValue(nodeid, name, m_subgIdx);
+    }
+    CurveModel* pModel = QVariantPtr<CurveModel>::asPtr(val);
+    ZASSERT_EXIT(pModel);	//the param has been inited as curve model.
+    ZCurveMapEditor* pEditor = new ZCurveMapEditor(true);
+    pEditor->setAttribute(Qt::WA_DeleteOnClose);
+    pEditor->addCurve(pModel);
+    pEditor->show();
+}
+
+void ZenoPropPanel::onInputColorEdited(const QString& inSock)
+{
+	INPUT_SOCKETS inputs = m_idx.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
+	ZASSERT_EXIT(inputs.find(inSock) != inputs.end());
+	INPUT_SOCKET input = inputs[inSock];
+	const QString& oldColor = input.info.defaultValue.toString();
+    QLinearGradient grad = AppHelper::colorString2Grad(oldColor);
+
+    ZenoHeatMapEditor editor(grad);
+    editor.exec();
+
+    QLinearGradient newGrad = editor.colorRamps();
+    QString colorText = AppHelper::gradient2colorString(newGrad);
+    if (colorText != oldColor)
+    {
+        PARAM_UPDATE_INFO info;
+        info.name = "_RAMPS";
+        info.oldValue = oldColor;
+        info.newValue = colorText;
+        IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+        ZASSERT_EXIT(pModel);
+        zeno::scope_exit se([this]() { m_bReentry = false; });
+        m_bReentry = true;
+		pModel->updateSocketDefl(m_idx.data(ROLE_OBJID).toString(), info, m_subgIdx, true);
+    }
+}
+
+void ZenoPropPanel::onParamColorEdited(const QString& paramName)
+{
+	PARAMS_INFO params = m_idx.data(ROLE_PARAMETERS).value<PARAMS_INFO>();
+	ZASSERT_EXIT(params.find(paramName) != params.end());
+    PARAM_INFO& param = params[paramName];
+    const QString& oldColor = param.value.toString();
+    QLinearGradient grad = AppHelper::colorString2Grad(oldColor);
+
+    ZenoHeatMapEditor editor(grad);
+    editor.exec();
+
+    QLinearGradient newGrad = editor.colorRamps();
+    QString colorText = AppHelper::gradient2colorString(newGrad);
+    if (colorText != oldColor)
+    {
+        PARAM_UPDATE_INFO info;
+        info.name = "_RAMPS";
+        info.oldValue = oldColor;
+        info.newValue = colorText;
+        IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+		ZASSERT_EXIT(pModel);
+        zeno::scope_exit se([this]() { m_bReentry = false; });
+        m_bReentry = true;
+        pModel->updateParamInfo(m_idx.data(ROLE_OBJID).toString(), info, m_subgIdx, true);
+    }
 }
 
 void ZenoPropPanel::onGroupCheckUpdated(const QString& groupName, const QMap<QString, CONTROL_DATA>& ctrls)
@@ -515,8 +639,9 @@ bool ZenoPropPanel::isMatchControl(PARAM_CONTROL ctrl, QWidget* pControl)
 	case CONTROL_BOOL:	return qobject_cast<ZCheckBoxBar*>(pControl) != nullptr;
 	case CONTROL_VEC:	return qobject_cast<ZVecEditor*>(pControl) != nullptr;
 	case CONTROL_ENUM:	return qobject_cast<QComboBox*>(pControl) != nullptr;
-	case CONTROL_COLOR:
-		return false;
+	case CONTROL_MULTILINE_STRING:	return qobject_cast<ZTextEdit*>(pControl) != nullptr;
+	case CONTROL_CURVE: 
+	case CONTROL_COLOR:	return qobject_cast<QPushButton*>(pControl) != nullptr;
 	}
 }
 
@@ -553,6 +678,12 @@ void ZenoPropPanel::updateControlValue(QWidget* pControl, PARAM_CONTROL ctrl, co
 			pVecEdit->setVec(value.value<UI_VECTYPE>(), pVecEdit->isFloat());
 			break;
 		}
+		case CONTROL_MULTILINE_STRING:
+		{
+			ZTextEdit* pTextEdit = qobject_cast<ZTextEdit*>(pControl);
+			pTextEdit->setText(value.toString());
+			break;
+		}
 		case CONTROL_ENUM:
 		{
 			QComboBox* pComboBox = qobject_cast<QComboBox*>(pControl);
@@ -560,8 +691,9 @@ void ZenoPropPanel::updateControlValue(QWidget* pControl, PARAM_CONTROL ctrl, co
 			break;
 		}
 		case CONTROL_COLOR:
+		case CONTROL_CURVE:
 		{
-			//todo:
+			//just a button, no need to update.
 			break;
 		}
     }
