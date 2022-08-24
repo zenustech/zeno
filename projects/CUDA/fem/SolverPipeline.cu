@@ -194,11 +194,9 @@ void IPCSystem::findCollisionConstraintsImpl(zs::CudaExecutionPolicy &pol, T dHa
          vtemp = proxy<space>({}, vtemp), bvh = proxy<space>(withBoundary ? bouSeBvh : seBvh), PP = proxy<space>(PP),
          nPP = proxy<space>(nPP), PE = proxy<space>(PE), nPE = proxy<space>(nPE), EE = proxy<space>(EE),
          nEE = proxy<space>(nEE),
-#if s_enableMollification
          // mollifier
          PPM = proxy<space>(PPM), nPPM = proxy<space>(nPPM), PEM = proxy<space>(PEM), nPEM = proxy<space>(nPEM),
-         EEM = proxy<space>(EEM), nEEM = proxy<space>(nEEM),
-#endif
+         EEM = proxy<space>(EEM), nEEM = proxy<space>(nEEM), enableMollification = enableMollification,
          //
          csEE = proxy<space>(csEE), ncsEE = proxy<space>(ncsEE), dHat, xi, thickness = xi + dHat,
          voffset = withBoundary ? coOffset : 0] __device__(int sei) mutable {
@@ -227,24 +225,23 @@ void IPCSystem::findCollisionConstraintsImpl(zs::CudaExecutionPolicy &pol, T dHa
                 auto rv2 = vtemp.template pack<3>("x0", ejInds[0]);
                 auto rv3 = vtemp.template pack<3>("x0", ejInds[1]);
 
-#if s_enableMollification
-                // IPC (24)
-                T c = cn2_ee(v0, v1, v2, v3);
-                T epsX = mollifier_threshold_ee(rv0, rv1, rv2, rv3);
-                bool mollify = c < epsX;
-#endif
+                bool mollify = false;
+                if (enableMollification) {
+                    // IPC (24)
+                    T c = cn2_ee(v0, v1, v2, v3);
+                    T epsX = mollifier_threshold_ee(rv0, rv1, rv2, rv3);
+                    mollify = c < epsX;
+                }
 
                 switch (ee_distance_type(v0, v1, v2, v3)) {
                 case 0: {
                     if (auto d2 = dist2_pp(v0, v2); d2 < dHat2) {
                         csEE[atomic_add(exec_cuda, &ncsEE[0], 1)] = pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]};
-#if s_enableMollification
                         if (mollify) {
                             auto no = atomic_add(exec_cuda, &nPPM[0], 1);
                             PPM[no] = pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]};
                             break;
                         }
-#endif
                         {
                             auto no = atomic_add(exec_cuda, &nPP[0], 1);
 #if 0
@@ -262,13 +259,11 @@ void IPCSystem::findCollisionConstraintsImpl(zs::CudaExecutionPolicy &pol, T dHa
                 case 1: {
                     if (auto d2 = dist2_pp(v0, v3); d2 < dHat2) {
                         csEE[atomic_add(exec_cuda, &ncsEE[0], 1)] = pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]};
-#if s_enableMollification
                         if (mollify) {
                             auto no = atomic_add(exec_cuda, &nPPM[0], 1);
                             PPM[no] = pair4_t{eiInds[0], eiInds[1], ejInds[1], ejInds[0]};
                             break;
                         }
-#endif
                         {
                             auto no = atomic_add(exec_cuda, &nPP[0], 1);
                             PP[no] = pair_t{eiInds[0], ejInds[1]};
@@ -279,13 +274,11 @@ void IPCSystem::findCollisionConstraintsImpl(zs::CudaExecutionPolicy &pol, T dHa
                 case 2: {
                     if (auto d2 = dist2_pe(v0, v2, v3); d2 < dHat2) {
                         csEE[atomic_add(exec_cuda, &ncsEE[0], 1)] = pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]};
-#if s_enableMollification
                         if (mollify) {
                             auto no = atomic_add(exec_cuda, &nPEM[0], 1);
                             PEM[no] = pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]};
                             break;
                         }
-#endif
                         {
                             auto no = atomic_add(exec_cuda, &nPE[0], 1);
                             PE[no] = pair3_t{eiInds[0], ejInds[0], ejInds[1]};
@@ -296,13 +289,11 @@ void IPCSystem::findCollisionConstraintsImpl(zs::CudaExecutionPolicy &pol, T dHa
                 case 3: {
                     if (auto d2 = dist2_pp(v1, v2); d2 < dHat2) {
                         csEE[atomic_add(exec_cuda, &ncsEE[0], 1)] = pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]};
-#if s_enableMollification
                         if (mollify) {
                             auto no = atomic_add(exec_cuda, &nPPM[0], 1);
                             PPM[no] = pair4_t{eiInds[1], eiInds[0], ejInds[0], ejInds[1]};
                             break;
                         }
-#endif
                         {
                             auto no = atomic_add(exec_cuda, &nPP[0], 1);
                             PP[no] = pair_t{eiInds[1], ejInds[0]};
@@ -313,13 +304,11 @@ void IPCSystem::findCollisionConstraintsImpl(zs::CudaExecutionPolicy &pol, T dHa
                 case 4: {
                     if (auto d2 = dist2_pp(v1, v3); d2 < dHat2) {
                         csEE[atomic_add(exec_cuda, &ncsEE[0], 1)] = pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]};
-#if s_enableMollification
                         if (mollify) {
                             auto no = atomic_add(exec_cuda, &nPPM[0], 1);
                             PPM[no] = pair4_t{eiInds[1], eiInds[0], ejInds[1], ejInds[0]};
                             break;
                         }
-#endif
                         {
                             auto no = atomic_add(exec_cuda, &nPP[0], 1);
                             PP[no] = pair_t{eiInds[1], ejInds[1]};
@@ -330,13 +319,11 @@ void IPCSystem::findCollisionConstraintsImpl(zs::CudaExecutionPolicy &pol, T dHa
                 case 5: {
                     if (auto d2 = dist2_pe(v1, v2, v3); d2 < dHat2) {
                         csEE[atomic_add(exec_cuda, &ncsEE[0], 1)] = pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]};
-#if s_enableMollification
                         if (mollify) {
                             auto no = atomic_add(exec_cuda, &nPEM[0], 1);
                             PEM[no] = pair4_t{eiInds[1], eiInds[0], ejInds[0], ejInds[1]};
                             break;
                         }
-#endif
                         {
                             auto no = atomic_add(exec_cuda, &nPE[0], 1);
                             PE[no] = pair3_t{eiInds[1], ejInds[0], ejInds[1]};
@@ -347,13 +334,11 @@ void IPCSystem::findCollisionConstraintsImpl(zs::CudaExecutionPolicy &pol, T dHa
                 case 6: {
                     if (auto d2 = dist2_pe(v2, v0, v1); d2 < dHat2) {
                         csEE[atomic_add(exec_cuda, &ncsEE[0], 1)] = pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]};
-#if s_enableMollification
                         if (mollify) {
                             auto no = atomic_add(exec_cuda, &nPEM[0], 1);
                             PEM[no] = pair4_t{ejInds[0], ejInds[1], eiInds[0], eiInds[1]};
                             break;
                         }
-#endif
                         {
                             auto no = atomic_add(exec_cuda, &nPE[0], 1);
                             PE[no] = pair3_t{ejInds[0], eiInds[0], eiInds[1]};
@@ -364,13 +349,11 @@ void IPCSystem::findCollisionConstraintsImpl(zs::CudaExecutionPolicy &pol, T dHa
                 case 7: {
                     if (auto d2 = dist2_pe(v3, v0, v1); d2 < dHat2) {
                         csEE[atomic_add(exec_cuda, &ncsEE[0], 1)] = pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]};
-#if s_enableMollification
                         if (mollify) {
                             auto no = atomic_add(exec_cuda, &nPEM[0], 1);
                             PEM[no] = pair4_t{ejInds[1], ejInds[0], eiInds[0], eiInds[1]};
                             break;
                         }
-#endif
                         {
                             auto no = atomic_add(exec_cuda, &nPE[0], 1);
                             PE[no] = pair3_t{ejInds[1], eiInds[0], eiInds[1]};
@@ -381,13 +364,11 @@ void IPCSystem::findCollisionConstraintsImpl(zs::CudaExecutionPolicy &pol, T dHa
                 case 8: {
                     if (auto d2 = dist2_ee(v0, v1, v2, v3); d2 < dHat2) {
                         csEE[atomic_add(exec_cuda, &ncsEE[0], 1)] = pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]};
-#if s_enableMollification
                         if (mollify) {
                             auto no = atomic_add(exec_cuda, &nEEM[0], 1);
                             EEM[no] = pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]};
                             break;
                         }
-#endif
                         {
                             auto no = atomic_add(exec_cuda, &nEE[0], 1);
                             EE[no] = pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]};
@@ -491,7 +472,7 @@ void IPCSystem::precomputeFrictions(zs::CudaExecutionPolicy &pol, T dHat, T xi) 
     nFPE.setVal(0);
     nFPT.setVal(0);
     nFEE.setVal(0);
-    if (s_enableContact) {
+    if (enableContact) {
         if (s_enableSelfFriction) {
             nFPP = nPP;
             nFPE = nPE;
@@ -560,7 +541,7 @@ void IPCSystem::precomputeFrictions(zs::CudaExecutionPolicy &pol, T dHat, T xi) 
                 });
         }
     }
-    if (s_enableGround) {
+    if (enableGround) {
         for (auto &primHandle : prims) {
             if (primHandle.isBoundary()) // skip soft boundary
                 continue;
@@ -795,7 +776,7 @@ void IPCSystem::multiply(zs::CudaExecutionPolicy &pol, const zs::SmallString dxT
     }
 
     // contacts
-    if (s_enableContact) {
+    if (enableContact) {
         auto numPP = nPP.getVal();
 #if 0
           pol(range(numPP), [execTag, tempPP = proxy<space>({}, tempPP),
@@ -1170,7 +1151,7 @@ void IPCSystem::multiply(zs::CudaExecutionPolicy &pol, const zs::SmallString dxT
                 atomic_add(exec_cuda, &vtemp(bTag, MRid % 3, inds[MRid / 3]), rdata);
         });
 #endif
-        if (s_enableMollification) {
+        if (enableMollification) {
             auto numEEM = nEEM.getVal();
             pol(Collapse{numEEM, 32 * 3},
                 [execTag, tempEEM = proxy<space>({}, tempEEM), vtemp = proxy<space>({}, vtemp), dxTag, bTag,
@@ -1387,7 +1368,7 @@ void IPCSystem::multiply(zs::CudaExecutionPolicy &pol, const zs::SmallString dxT
     }             //enable contact
 
     // ground contact
-    if (s_enableGround) {
+    if (enableGround) {
         for (auto &primHandle : prims) {
             if (primHandle.isBoundary()) // skip soft boundary
                 continue;
@@ -1570,7 +1551,7 @@ typename IPCSystem::T IPCSystem::energy(zs::CudaExecutionPolicy &pol, const zs::
     }
     // contacts
     {
-        if (s_enableContact) {
+        if (enableContact) {
             auto activeGap2 = dHat * dHat + 2 * xi * dHat;
             auto numPP = nPP.getVal();
             es.resize(count_warps(numPP));
@@ -1668,7 +1649,7 @@ typename IPCSystem::T IPCSystem::energy(zs::CudaExecutionPolicy &pol, const zs::
             });
             Es.push_back(reduce(pol, es) * kappa);
 
-            if (s_enableMollification) {
+            if (enableMollification) {
                 auto numEEM = nEEM.getVal();
                 es.resize(count_warps(numEEM));
                 es.reset(0);
@@ -1854,7 +1835,7 @@ typename IPCSystem::T IPCSystem::energy(zs::CudaExecutionPolicy &pol, const zs::
                 }
             } // fric
         }
-        if (s_enableGround) {
+        if (enableGround) {
             for (auto &primHandle : prims) {
                 if (primHandle.isBoundary()) // skip soft boundary
                     continue;
@@ -1948,11 +1929,12 @@ void IPCSystem::cgsolve(zs::CudaExecutionPolicy &cudaPol) {
         vtemp.tuple<3>("temp", i) = vec3::zeros();
     });
     // initial guess for hard boundary constraints
-    cudaPol(zs::range(coVerts->size()),
-            [vtemp = proxy<space>({}, vtemp), coOffset = coOffset, dt = dt] ZS_LAMBDA(int i) mutable {
-                i += coOffset;
-                vtemp.tuple<3>("dir", i) = (vtemp.pack<3>("xtilde", i) - vtemp.pack<3>("xn", i)) * dt;
-            });
+    if (coVerts)
+        cudaPol(zs::range(coVerts->size()),
+                [vtemp = proxy<space>({}, vtemp), coOffset = coOffset, dt = dt] ZS_LAMBDA(int i) mutable {
+                    i += coOffset;
+                    vtemp.tuple<3>("dir", i) = (vtemp.pack<3>("xtilde", i) - vtemp.pack<3>("xn", i)) * dt;
+                });
     // temp = A * dir
     multiply(cudaPol, "dir", "temp");
     // r = grad - temp
@@ -2096,7 +2078,7 @@ void IPCSystem::lineSearch(zs::CudaExecutionPolicy &cudaPol, T &alpha) {
             vtemp.tuple<3>("xn", i) = vtemp.pack<3>("xn0", i) + alpha * vtemp.pack<3>("dir", i);
         });
 
-        if (s_enableContact)
+        if (enableContact)
             findCollisionConstraints(cudaPol, dHat, xi);
 
         E = energy(cudaPol, "xn", !BCsatisfied); // must be "xn", cuz elasticity is hardcoded
@@ -2138,7 +2120,7 @@ void IPCSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
             fmt::print(fg(fmt::color::alice_blue), "newton iter {} cons residual: {}\n", newtonIter, cr);
         }
         // PRECOMPUTE
-        if (s_enableContact) {
+        if (enableContact) {
             findCollisionConstraints(pol, dHat, xi);
         }
         if (s_enableFriction)
@@ -2152,9 +2134,9 @@ void IPCSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
         });
         computeInertialAndGravityPotentialGradient(pol);
         computeElasticGradientAndHessian(pol);
-        if (s_enableGround)
+        if (enableGround)
             computeBoundaryBarrierGradientAndHessian(pol);
-        if (s_enableContact) {
+        if (enableContact) {
             computeBarrierGradientAndHessian(pol);
             if (s_enableFriction)
                 if (fricMu != 0) {
@@ -2216,11 +2198,11 @@ void IPCSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
             vtemp.tuple<3>("xn0", i) = vtemp.pack<3>("xn", i);
         });
         T alpha = 1.;
-        if (s_enableGround) {
+        if (enableGround) {
             groundIntersectionFreeStepsize(pol, alpha);
             fmt::print("\tstepsize after ground: {}\n", alpha);
         }
-        if (s_enableContact) {
+        if (enableContact) {
             // A.intersectionFreeStepsize(cudaPol, xi, alpha);
             // fmt::print("\tstepsize after intersection-free: {}\n", alpha);
             findCCDConstraints(pol, alpha, xi);
