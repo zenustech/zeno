@@ -222,9 +222,11 @@ struct GraphicsManager {
             xinxinoptix::unload_light();
         }
 
+        bool changed = false;
         for (auto const &[key, obj] : objs) {
             if (ins.may_emplace(key) && key.find(":static:")!=key.npos) {
                 zeno::log_info("load_static_object: loading graphics [{}]", key);
+                changed = true;
 
                 if (auto cam = dynamic_cast<zeno::CameraObject *>(obj))
                 {
@@ -237,7 +239,8 @@ struct GraphicsManager {
                 ins.try_emplace(key, std::move(ig));
             }
         }
-        return ins.has_changed();
+        // return ins.has_changed();
+        return changed;
     }
     bool load_objects(std::vector<std::pair<std::string, zeno::IObject *>> const &objs) {
         auto ins = graphics.insertPass();
@@ -252,9 +255,11 @@ struct GraphicsManager {
             xinxinoptix::unload_light();
         }
 
+        bool changed = false;
         for (auto const &[key, obj] : objs) {
             if (ins.may_emplace(key) && key.find(":static:")==key.npos) {
                 zeno::log_info("load_object: loading graphics [{}]", key);
+                changed = true;
 
                 if (auto cam = dynamic_cast<zeno::CameraObject *>(obj))
                 {
@@ -267,7 +272,8 @@ struct GraphicsManager {
                 ins.try_emplace(key, std::move(ig));
             }
         }
-        return ins.has_changed();
+        // return ins.has_changed();
+        return changed;
     }
 };
 

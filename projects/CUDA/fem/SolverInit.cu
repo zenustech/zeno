@@ -166,7 +166,7 @@ void IPCSystem::updateWholeBoundingBoxSize(zs::CudaExecutionPolicy &pol) {
 void IPCSystem::initKappa(zs::CudaExecutionPolicy &pol) {
 #if 0
     // should be called after dHat set
-    if (!s_enableContact)
+    if (!enableContact)
         return;
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
@@ -241,8 +241,9 @@ void IPCSystem::initialize(zs::CudaExecutionPolicy &pol) {
 
 IPCSystem::IPCSystem(std::vector<ZenoParticles *> zsprims, const typename IPCSystem::dtiles_t *coVerts,
                      const typename IPCSystem::tiles_t *coLowResVerts, const typename IPCSystem::tiles_t *coEdges,
-                     const tiles_t *coEles, T dt, std::size_t estNumCps, bool withGround, T augLagCoeff, T pnRel,
-                     T cgRel, int PNCap, int CGCap, int CCDCap, T kappa0, T fricMu, T dHat, T epsv, T gravity)
+                     const tiles_t *coEles, T dt, std::size_t estNumCps, bool withGround, bool withContact,
+                     bool withMollification, T augLagCoeff, T pnRel, T cgRel, int PNCap, int CGCap, int CCDCap,
+                     T kappa0, T fricMu, T dHat, T epsv, zeno::vec3f gn, T gravity)
     : coVerts{coVerts}, coLowResVerts{coLowResVerts}, coEdges{coEdges}, coEles{coEles},
       PP{estNumCps, zs::memsrc_e::um, 0}, nPP{zsprims[0]->getParticles<true>().get_allocator(), 1},
       tempPP{{{"H", 36}}, estNumCps, zs::memsrc_e::um, 0}, PE{estNumCps, zs::memsrc_e::um, 0},
@@ -269,7 +270,8 @@ IPCSystem::IPCSystem(std::vector<ZenoParticles *> zsprims, const typename IPCSys
       temp{estNumCps, zs::memsrc_e::um, zsprims[0]->getParticles<true>().devid()}, csPT{estNumCps, zs::memsrc_e::um, 0},
       csEE{estNumCps, zs::memsrc_e::um, 0}, ncsPT{zsprims[0]->getParticles<true>().get_allocator(), 1},
       ncsEE{zsprims[0]->getParticles<true>().get_allocator(), 1}, dt{dt}, framedt{dt}, curRatio{0},
-      estNumCps{estNumCps}, s_enableGround{withGround},
+      estNumCps{estNumCps}, enableGround{withGround}, enableContact{withContact},
+      enableMollification{withMollification}, s_groundNormal{gn[0], gn[1], gn[2]},
       augLagCoeff{augLagCoeff}, pnRel{pnRel}, cgRel{cgRel}, PNCap{PNCap}, CGCap{CGCap}, CCDCap{CCDCap}, kappa{kappa0},
       kappa0{kappa0}, kappaMin{0}, kappaMax{kappa0}, fricMu{fricMu}, dHat{dHat}, epsv{epsv}, extForce{0, gravity, 0} {
     coOffset = sfOffset = seOffset = svOffset = 0;
@@ -377,7 +379,7 @@ void IPCSystem::reinitialize(zs::CudaExecutionPolicy &pol, typename IPCSystem::T
     projectDBC = false;
     BCsatisfied = false;
 
-    if (s_enableContact) {
+    if (enableContact) {
         nPP.setVal(0);
         nPE.setVal(0);
         nPT.setVal(0);
@@ -577,8 +579,8 @@ void IPCSystem::writebackPositionsAndVelocities(zs::CudaExecutionPolicy &pol) {
     if (coVerts && coLowResVerts)
         if (auto coSize = coVerts->size(); coSize)
             pol(Collapse(coSize),
-                [vtemp = proxy<space>({}, vtemp), verts = proxy<space>({}, const_cast<dtiles_t &>(*coVerts)),
-                 loVerts = proxy<space>({}, const_cast<tiles_t &>(*coLowResVerts)),
+                [vtemp = proxy<space>({}, vtemp), verts = proxy<space>({}, *const_cast<dtiles_t *>(coVerts)),
+                 loVerts = proxy<space>({}, *const_cast<tiles_t *>(coLowResVerts)),
                  coOffset = coOffset] ZS_LAMBDA(int vi) mutable {
                     auto newX = vtemp.template pack<3>("xn", coOffset + vi);
                     verts.template tuple<3>("x", vi) = newX;
@@ -642,7 +644,9 @@ struct MakeIPCSystem : INode {
 
         /// solver parameters
         auto input_est_num_cps = get_input2<int>("est_num_cps");
-        auto input_withGround = get_input2<int>("with_ground");
+        auto input_withGround = get_input2<bool>("with_ground");
+        auto input_withContact = get_input2<bool>("with_contact");
+        auto input_withMollification = get_input2<bool>("with_mollification");
         auto input_dHat = get_input2<float>("dHat");
         auto input_epsv = get_input2<float>("epsv");
         auto input_kappa0 = get_input2<float>("kappa0");
@@ -655,12 +659,18 @@ struct MakeIPCSystem : INode {
         auto input_ccd_cap = get_input2<int>("ccd_iter_cap");
         auto input_gravity = get_input2<float>("gravity");
         auto dt = get_input2<float>("dt");
+        auto groundNormal = get_input<zeno::NumericObject>("ground_normal")->get<zeno::vec3f>();
+        if (auto len2 = lengthSquared(groundNormal); len2 > limits<float>::epsilon() * 10) {
+            auto len = std::sqrt(len2);
+            groundNormal /= len;
+        } else
+            groundNormal = zeno::vec3f{0, 1, 0}; // fallback to default up direction when degenerated
 
-        auto A = std::make_shared<IPCSystem>(zstets, coVerts, coLowResVerts, coEdges, coEles, dt,
-                                             (std::size_t)(input_est_num_cps ? input_est_num_cps : 1000000),
-                                             input_withGround, input_aug_coeff, input_pn_rel, input_cg_rel,
-                                             input_pn_cap, input_cg_cap, input_ccd_cap, input_kappa0, input_fric_mu,
-                                             input_dHat, input_epsv, input_gravity);
+        auto A = std::make_shared<IPCSystem>(
+            zstets, coVerts, coLowResVerts, coEdges, coEles, dt,
+            (std::size_t)(input_est_num_cps ? input_est_num_cps : 1000000), input_withGround, input_withContact,
+            input_withMollification, input_aug_coeff, input_pn_rel, input_cg_rel, input_pn_cap, input_cg_cap,
+            input_ccd_cap, input_kappa0, input_fric_mu, input_dHat, input_epsv, groundNormal, input_gravity);
 
         set_output("ZSIPCSystem", A);
     }
@@ -670,9 +680,12 @@ ZENDEFNODE(MakeIPCSystem, {{
                                "ZSParticles",
                                "ZSBoundaryPrimitives",
                                {"int", "est_num_cps", "1000000"},
-                               {"int", "with_ground", "0"},
+                               {"bool", "with_ground", "0"},
+                               {"bool", "with_contact", "1"},
+                               {"bool", "with_mollification", "1"},
                                {"float", "dt", "0.01"},
                                {"float", "dHat", "0.001"},
+                               {"vec3f", "ground_normal", "0,1,0"},
                                {"float", "epsv", "0.0"},
                                {"float", "kappa0", "0"},
                                {"float", "fric_mu", "0"},
