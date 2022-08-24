@@ -10,7 +10,8 @@ namespace zenovis {
 ObjectsManager::ObjectsManager() = default;
 ObjectsManager::~ObjectsManager() = default;
 
-void ObjectsManager::load_objects(std::map<std::string, std::shared_ptr<zeno::IObject>> const &objs) {
+bool ObjectsManager::load_objects(std::map<std::string, std::shared_ptr<zeno::IObject>> const &objs) {
+    bool inserted = false;
     auto ins = objects.insertPass();
 
     bool changed_light = false;
@@ -32,8 +33,10 @@ void ObjectsManager::load_objects(std::map<std::string, std::shared_ptr<zeno::IO
                 }
             }
             ins.try_emplace(key, std::move(obj));
+            inserted = true;
         }
     }
+    return inserted;
 }
 
 void ObjectsManager::clear_objects() {

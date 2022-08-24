@@ -142,7 +142,7 @@ struct PrimWeld : INode {
             auto bit = prim->loops.begin() + base;
             auto eit = prim->loops.begin() + (base + len);
             auto mit = std::unique(bit, eit);
-            std::fill(mit, eit, 0); // not used anyway...
+            std::fill(mit, eit, 0); // not used anyway... prune later
             len = mit - bit;
         }
         prim->polys->erase(std::remove_if(prim->polys.begin(), prim->polys.end(), [&] (auto const &ply) {
