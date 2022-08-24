@@ -7,6 +7,8 @@
 #include "magic_enum.hpp"
 #include "util/log.h"
 #include <zenoio/reader/zsgreader.h>
+#include "zenoapplication.h"
+#include "zenomainwindow.h"
 
 
 ModelAcceptor::ModelAcceptor(GraphsModel* pModel, bool bImport)
@@ -38,6 +40,13 @@ bool ModelAcceptor::setLegacyDescs(const rapidjson::Value& graphObj, const NODE_
     }
     bool ret = m_pModel->appendSubnetDescsFromZsg(subnetDescs);
     return ret;
+}
+
+void ModelAcceptor::setTimeInfo(const TIMELINE_INFO& info)
+{
+    auto mainWin = zenoApp->getMainWindow();
+    if (mainWin)
+        mainWin->setTimelineInfo(info);
 }
 
 void ModelAcceptor::BeginSubgraph(const QString& name)

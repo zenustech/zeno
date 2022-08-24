@@ -4,6 +4,7 @@
 #include <unordered_set>
 #include <QtWidgets>
 #include "dock/zenodockwidget.h"
+#include "common.h"
 
 class ZenoDockWidget;
 class ZenoGraphsEditor;
@@ -17,6 +18,8 @@ public:
     ZenoGraphsEditor* editor() const { return m_pEditor; }
     bool inDlgEventLoop() const;
     void setInDlgEventLoop(bool bOn);
+    TIMELINE_INFO timelineInfo();
+    void setTimelineInfo(TIMELINE_INFO info);
 
 public slots:
     void openFileDialog();

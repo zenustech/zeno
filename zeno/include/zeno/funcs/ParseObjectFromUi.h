@@ -24,6 +24,14 @@ namespace iotags {
         constexpr const char *key_lockX = "lockX";
         constexpr const char *key_lockY = "lockY";
     }
+
+    namespace timeline {
+        constexpr const char* start_frame = "start-frame";
+        constexpr const char* end_frame = "end-frame";
+        constexpr const char* curr_frame = "curr-frame";
+        constexpr const char* always = "always";
+    }
+
 }
 
 }
