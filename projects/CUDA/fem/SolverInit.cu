@@ -579,8 +579,8 @@ void IPCSystem::writebackPositionsAndVelocities(zs::CudaExecutionPolicy &pol) {
     if (coVerts && coLowResVerts)
         if (auto coSize = coVerts->size(); coSize)
             pol(Collapse(coSize),
-                [vtemp = proxy<space>({}, vtemp), verts = proxy<space>({}, const_cast<dtiles_t &>(*coVerts)),
-                 loVerts = proxy<space>({}, const_cast<tiles_t &>(*coLowResVerts)),
+                [vtemp = proxy<space>({}, vtemp), verts = proxy<space>({}, *const_cast<dtiles_t *>(coVerts)),
+                 loVerts = proxy<space>({}, *const_cast<tiles_t *>(coLowResVerts)),
                  coOffset = coOffset] ZS_LAMBDA(int vi) mutable {
                     auto newX = vtemp.template pack<3>("xn", coOffset + vi);
                     verts.template tuple<3>("x", vi) = newX;

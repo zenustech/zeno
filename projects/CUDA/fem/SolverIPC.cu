@@ -273,7 +273,7 @@ void IPCSystem::computeBarrierGradientAndHessian(zs::CudaExecutionPolicy &pol, b
             }
         });
 
-    if (s_enableMollification) {
+    if (enableMollification) {
         auto get_mollifier = [] ZS_LAMBDA(const auto &ea0Rest, const auto &ea1Rest, const auto &eb0Rest,
                                           const auto &eb1Rest, const auto &ea0, const auto &ea1, const auto &eb0,
                                           const auto &eb1) {
