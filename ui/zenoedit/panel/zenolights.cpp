@@ -74,6 +74,8 @@ ZenoLights::ZenoLights(QWidget *parent) : QWidget(parent) {
             colorZEdit->setText(QString::number(clr[2]));
 
             zenoApp->getMainWindow()->selected = nullptr;
+        }else{
+            zeno::log_info("connect item not found {}", name);
         }
     });
 
@@ -274,7 +276,7 @@ std::vector<zeno::vec3f> ZenoLights::computeLightPrim(zeno::vec3f position, zeno
 
 void ZenoLights::modifyLightData() {
     auto index = this->lights_view->currentIndex();
-    zeno::log_info("modifyLightData {}", index.row());
+    printf("modifyLightData %d\n", index.row());
     if (index.row() == -1) {
         return;
     }
@@ -302,18 +304,22 @@ void ZenoLights::modifyLightData() {
     std::shared_ptr<zeno::IObject> obj = scene->objectsMan->lightObjects[name];
     auto prim_in = dynamic_cast<zeno::PrimitiveObject *>(obj.get());
 
-    auto &prim_verts = prim_in->verts;
-    prim_verts[0] = verts[0];
-    prim_verts[1] = verts[1];
-    prim_verts[2] = verts[2];
-    prim_verts[3] = verts[3];
-    prim_in->verts.attr<zeno::vec3f>("clr")[0] = zeno::vec3f(r,g,b);
+    if(prim_in){
+        auto &prim_verts = prim_in->verts;
+        prim_verts[0] = verts[0];
+        prim_verts[1] = verts[1];
+        prim_verts[2] = verts[2];
+        prim_verts[3] = verts[3];
+        prim_in->verts.attr<zeno::vec3f>("clr")[0] = zeno::vec3f(r,g,b);
 
-    prim_in->userData().setLiterial<zeno::vec3f>("pos", zeno::vec3f(posX, posY, posZ));
-    prim_in->userData().setLiterial<zeno::vec3f>("scale", zeno::vec3f(scaleX, scaleY, scaleZ));
-    prim_in->userData().setLiterial<zeno::vec3f>("rotate", zeno::vec3f(rotateX, rotateY, rotateZ));
+        prim_in->userData().setLiterial<zeno::vec3f>("pos", zeno::vec3f(posX, posY, posZ));
+        prim_in->userData().setLiterial<zeno::vec3f>("scale", zeno::vec3f(scaleX, scaleY, scaleZ));
+        prim_in->userData().setLiterial<zeno::vec3f>("rotate", zeno::vec3f(rotateX, rotateY, rotateZ));
 
-    scene->objectsMan->needUpdateLight = true;
-    zenoApp->getMainWindow()->updateViewport();
+        scene->objectsMan->needUpdateLight = true;
+        zenoApp->getMainWindow()->updateViewport();
+    }else{
+        zeno::log_info("modifyLightData not found {}", name);
+    }
 }
 

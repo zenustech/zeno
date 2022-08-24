@@ -28,7 +28,7 @@ bool ObjectsManager::load_objects(std::map<std::string, std::shared_ptr<zeno::IO
             if (auto prim_in = dynamic_cast<zeno::PrimitiveObject *>(obj.get())) {
                 auto isLight = prim_in->userData().getLiterial<int>("isL", 0);
                 if(isLight){
-                    printf("loading light object\n");
+                    //printf("loading light object %s\n", key.c_str());
                     lightObjects[key] = obj;
                 }
             }

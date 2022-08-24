@@ -403,6 +403,7 @@ void ViewportWidget::paintGL()
     Zenovis::GetInstance().paintGL();
     if(updateLightOnce){
         auto scene = Zenovis::GetInstance().getSession()->get_scene();
+
         if(scene->objectsMan->lightObjects.size() > 0){
             zenoApp->getMainWindow()->updateLightList();
             updateLightOnce = false;
@@ -719,6 +720,8 @@ void DisplayWidget::onRun()
     }
 
     m_view->updateLightOnce = true;
+    auto scene = Zenovis::GetInstance().getSession()->get_scene();
+    scene->objectsMan->lightObjects.clear();
 }
 
 void DisplayWidget::onRecord()

@@ -27,14 +27,9 @@ void ZLightsModel::updateByObjectsMan() {
     beginResetModel();
     light_names.clear();
     auto scene = Zenovis::GetInstance().getSession()->get_scene();
-    for (auto const &[key, ptr]: scene->objectsMan->objects.pairs()) {
-
-        if (auto prim_in = dynamic_cast<zeno::PrimitiveObject *>(ptr)) {
-            auto isL = prim_in->userData().getLiterial<int>("isL", 0);
-            if(isL == 1){
-                light_names.push_back(key);
-            }
-        }
+    for (auto const &[key, ptr]: scene->objectsMan->lightObjects) {
+        //printf("updateByObjectsMan\n");
+        light_names.push_back(key);
     }
     endResetModel();
 }

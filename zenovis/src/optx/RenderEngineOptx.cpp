@@ -181,7 +181,7 @@ struct GraphicsManager {
         if (auto prim_in = dynamic_cast<zeno::PrimitiveObject *>(obj)) {
             auto isL = prim_in->userData().getLiterial<int>("isL", 0);
             if (isL == 1) {
-                zeno::log_info("processing light key {}", key.c_str());
+                //zeno::log_info("processing light key {}", key.c_str());
                 auto ivD = prim_in->userData().getLiterial<int>("ivD", 0);
 
                 auto prim = std::make_shared<zeno::PrimitiveObject>();
