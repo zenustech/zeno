@@ -7,19 +7,39 @@ ZLineEdit::ZLineEdit(QWidget* parent)
     : QLineEdit(parent)
     , m_pSlider(nullptr)
     , m_bShowingSlider(false)
+    , m_bHasRightBtn(false)
 {
+    init();
 }
 
 ZLineEdit::ZLineEdit(const QString& text, QWidget* parent)
     : QLineEdit(text, parent)
     , m_pSlider(nullptr)
     , m_bShowingSlider(false)
+    , m_bHasRightBtn(false)
 {
+    init();
+}
+
+void ZLineEdit::init()
+{
+    connect(this, SIGNAL(editingFinished()), this, SIGNAL(textEditFinished()));
 }
 
 void ZLineEdit::setShowingSlider(bool bShow)
 {
     m_bShowingSlider = bShow;
+}
+
+void ZLineEdit::setIcons(const QString& icNormal, const QString& icHover)
+{
+    QAction* pAction = new QAction;
+    QIcon icon;
+    icon.addPixmap(QPixmap(icNormal), QIcon::Normal, QIcon::Off);
+    icon.addPixmap(QPixmap(icHover), QIcon::Active, QIcon::Off);
+    pAction->setIcon(icon);
+    addAction(pAction, TrailingPosition);
+    connect(pAction, SIGNAL(triggered()), this, SIGNAL(btnClicked()));
 }
 
 void ZLineEdit::setNumSlider(const QVector<qreal>& steps)

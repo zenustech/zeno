@@ -1,5 +1,6 @@
 #include "zenoproppanel.h"
 #include "zenoapplication.h"
+#include "zenomainwindow.h"
 #include "graphsmanagment.h"
 #include <zenoui/model/modelrole.h>
 #include <zenoui/include/igraphsmodel.h>
@@ -18,6 +19,7 @@
 
 ZenoPropPanel::ZenoPropPanel(QWidget* parent)
     : QWidget(parent)
+	, m_bReentry(false)
 {
 	QVBoxLayout* pVLayout = new QVBoxLayout;
 	pVLayout->setContentsMargins(QMargins(0, 0, 0, 0));
@@ -222,25 +224,28 @@ QWidget* ZenoPropPanel::initControl(CONTROL_DATA ctrlData)
 		case CONTROL_READPATH:
 		case CONTROL_WRITEPATH:
 		{
-			QWidget* pPathWidget = new QWidget;
-			pPathWidget->setObjectName(name);
-
-			QHBoxLayout* pPathLayout = new QHBoxLayout;
-			pPathLayout->setContentsMargins(0, 0, 0, 0);
-			pPathLayout->setSpacing(0);
-
 			ZLineEdit* pathLineEdit = new ZLineEdit(value.toString());
+			pathLineEdit->setIcons(":/icons/ic_openfile.svg", ":/icons/ic_openfile-on.svg");
 			pathLineEdit->setProperty("cssClass", "proppanel");
 			pathLineEdit->setObjectName(name);
 			pathLineEdit->setProperty("control", ctrl);
-			pPathLayout->addWidget(pathLineEdit);
-			connect(pathLineEdit, &ZLineEdit::editingFinished, this, ctrlData.fSlot);
-
-			ZIconLabel* openBtn = new ZIconLabel;
-			openBtn->setIcons(ZenoStyle::dpiScaledSize(QSize(28, 28)), ":/icons/ic_openfile.svg", ":/icons/ic_openfile-on.svg", ":/icons/ic_openfile-on.svg");
-			pPathLayout->addWidget(openBtn);
-
-			return pPathWidget;
+			pathLineEdit->setFocusPolicy(Qt::ClickFocus);
+			connect(pathLineEdit, &ZLineEdit::btnClicked, this, [=]() {
+				bool bRead = ctrl == CONTROL_READPATH;
+				QString path;
+				DlgInEventLoopScope;
+				if (bRead) {
+					path = QFileDialog::getOpenFileName(nullptr, tr("File to Open"), "", tr("All Files(*);;"));
+				}
+				else {
+					path = QFileDialog::getSaveFileName(nullptr, tr("Path to Save"), "", tr("All Files(*);;"));
+				}
+				pathLineEdit->setText(path);
+				emit pathLineEdit->textEditFinished();
+				pathLineEdit->clearFocus();
+			});
+			connect(pathLineEdit, &ZLineEdit::textEditFinished, this, ctrlData.fSlot);
+			return pathLineEdit;
 		}
 		case CONTROL_MULTILINE_STRING:
 		{
@@ -369,6 +374,8 @@ void ZenoPropPanel::onInputEditFinish()
 	{
 		IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
 		ZASSERT_EXIT(pGraphsModel);
+		zeno::scope_exit se([this]() { m_bReentry = false; });
+		m_bReentry = true;
 		pGraphsModel->updateSocketDefl(nodeid, info, m_subgIdx, true);
 	}
 }
@@ -467,7 +474,11 @@ void ZenoPropPanel::onGroupCheckUpdated(const QString& groupName, const QMap<QSt
 void ZenoPropPanel::onDataChanged(const QModelIndex& subGpIdx, const QModelIndex& idx, int role)
 {
 	//may be called frequently
-	if (m_subgIdx != subGpIdx || m_idx != idx)
+	if (m_subgIdx != subGpIdx || m_idx != idx || m_bReentry)
+		return;
+
+	QLayout* pLayout = this->layout();
+	if (!pLayout || pLayout->isEmpty())
 		return;
 
 	IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
@@ -482,6 +493,11 @@ void ZenoPropPanel::onDataChanged(const QModelIndex& subGpIdx, const QModelIndex
 	{
 		onInputsCheckUpdate();
 	}
+	else
+	{
+		//other custom ui role.
+		//onCustomUiUpdate();
+	}
 }
 
 bool ZenoPropPanel::isMatchControl(PARAM_CONTROL ctrl, QWidget* pControl)
@@ -495,9 +511,7 @@ bool ZenoPropPanel::isMatchControl(PARAM_CONTROL ctrl, QWidget* pControl)
     case CONTROL_INT:
     case CONTROL_FLOAT:	return qobject_cast<ZLineEdit*>(pControl) != nullptr;
 	case CONTROL_READPATH:
-	case CONTROL_WRITEPATH:
-		//todo:
-		return false;
+	case CONTROL_WRITEPATH: return qobject_cast<ZLineEdit*>(pControl) != nullptr;
 	case CONTROL_BOOL:	return qobject_cast<ZCheckBoxBar*>(pControl) != nullptr;
 	case CONTROL_VEC:	return qobject_cast<ZVecEditor*>(pControl) != nullptr;
 	case CONTROL_ENUM:	return qobject_cast<QComboBox*>(pControl) != nullptr;
@@ -523,8 +537,8 @@ void ZenoPropPanel::updateControlValue(QWidget* pControl, PARAM_CONTROL ctrl, co
 		case CONTROL_READPATH:
 		case CONTROL_WRITEPATH:
 		{
-			//update lineedit
-			//todo
+			ZLineEdit* pPathEdit = qobject_cast<ZLineEdit*>(pControl);
+			pPathEdit->setText(value.toString());
 			break;
 		}
 		case CONTROL_BOOL:

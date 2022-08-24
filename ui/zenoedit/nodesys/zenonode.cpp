@@ -1279,6 +1279,12 @@ void ZenoNode::updateSocketWidget(ZenoSubGraphScene* pScene, const INPUT_SOCKET 
             }
             break;
         }
+        case CONTROL_WRITEPATH:
+        case CONTROL_READPATH: {
+            ZenoParamPathEdit* pVecEdit = qobject_cast<ZenoParamPathEdit*>(ctrl.socket_control);
+            pVecEdit->setPath(inSocket.info.defaultValue.toString());
+            break;
+        }
     }
     if (bUpdateLayout) {
         updateWhole();

@@ -67,6 +67,8 @@ private:
 
     QMap<QString, _PANEL_CONTROL> m_inputsCtrl;
     QMap<QString, _PANEL_CONTROL> m_paramsCtrl;
+
+    bool m_bReentry;
 };
 
 #endif
