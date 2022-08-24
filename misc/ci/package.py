@@ -53,14 +53,20 @@ elif sys.platform == 'linux':
     for target in os.listdir(binpath):
         if 'so' in target.split('.'):
             shutil.move(os.path.join(binpath, target), os.path.join(outpath, 'usr', 'lib', target))
-    subprocess.check_call([
-        '../linuxdeployqt',
-        os.path.join(outpath, 'usr', 'share', 'applications', 'zeno.desktop'),
-        #'-executable=' + os.path.join(outpath, 'usr', 'bin', 'zenorunner'),
-        '-bundle-non-qt-libs',
-        # '-unsupported-allow-new-glibc',
-        '-unsupported-bundle-everything',
-    ])
+    try:
+        subprocess.check_call([
+            '../linuxdeployqt',
+            os.path.join(outpath, 'usr', 'share', 'applications', 'zeno.desktop'),
+            #'-executable=' + os.path.join(outpath, 'usr', 'bin', 'zenorunner'),
+            '-bundle-non-qt-libs',
+            # '-unsupported-allow-new-glibc',
+            '-unsupported-bundle-everything',
+        ])
+    except subprocess.CalledProcessError as e:
+        if e.returncode != 1:
+            raise e from e
+        else:
+            print('ignored exit code 1 due to -unsupported flags')
     subprocess.check_call([
         'chmod',
         '+x',
