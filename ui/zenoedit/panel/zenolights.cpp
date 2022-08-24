@@ -73,6 +73,7 @@ ZenoLights::ZenoLights(QWidget *parent) : QWidget(parent) {
             colorYEdit->setText(QString::number(clr[1]));
             colorZEdit->setText(QString::number(clr[2]));
 
+            zenoApp->getMainWindow()->selected = nullptr;
         }
     });
 
@@ -273,6 +274,7 @@ std::vector<zeno::vec3f> ZenoLights::computeLightPrim(zeno::vec3f position, zeno
 
 void ZenoLights::modifyLightData() {
     auto index = this->lights_view->currentIndex();
+    zeno::log_info("modifyLightData {}", index.row());
     if (index.row() == -1) {
         return;
     }

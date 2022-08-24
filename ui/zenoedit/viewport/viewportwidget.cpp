@@ -717,6 +717,8 @@ void DisplayWidget::onRun()
     {
 
     }
+
+    m_view->updateLightOnce = true;
 }
 
 void DisplayWidget::onRecord()
