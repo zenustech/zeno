@@ -111,7 +111,10 @@ void Zenovis::doFrameUpdate()
     frameid = setCurrentFrameId(frameid);
     //zenvis::auto_gc_frame_data(m_cache_frames);
 
-    session->load_objects();
+    bool inserted = session->load_objects();
+    if (inserted) {
+        emit objectsUpdated(frameid);
+    }
 }
 
 /*
