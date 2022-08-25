@@ -29,8 +29,9 @@ public slots:
 	void toggle(bool collasped);
 
 private:
-	QGridLayout* m_mainLayout;
-	ZIconLabel* m_collaspBtn;
+	QWidget* initTitleWidget(const QString& title/* other ui params*/);
+
+	QVBoxLayout* m_mainLayout;
 	QScrollArea* m_contentArea;
 	QWidget* m_contentWidget;
 };

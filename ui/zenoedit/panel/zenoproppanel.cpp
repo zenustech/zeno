@@ -33,11 +33,9 @@ ZenoPropPanel::ZenoPropPanel(QWidget* parent)
 	setFocusPolicy(Qt::ClickFocus);
 
 	QPalette palette = this->palette();
-	palette.setBrush(QPalette::Window, QColor(37, 37, 38));
+	palette.setBrush(QPalette::Window, QColor(44, 51, 58));
 	setPalette(palette);
 	setAutoFillBackground(true);
-
-	setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Expanding);
 }
 
 ZenoPropPanel::~ZenoPropPanel()
@@ -96,29 +94,27 @@ void ZenoPropPanel::reset(IGraphsModel* pModel, const QModelIndex& subgIdx, cons
 	m_idx = nodes[0];
 
 	//title
-	QHBoxLayout* pTitleLayout = new QHBoxLayout;
-	pTitleLayout->setContentsMargins(15, 15, 15, 15);
-	QLabel* pLabel = new QLabel(m_idx.data(ROLE_OBJNAME).toString());
-	pLabel->setProperty("cssClass", "proppanel-nodename");
-	pTitleLayout->addWidget(pLabel);
-	pTitleLayout->addStretch();
-	QLabel* pWiki = new QLabel(tr("Wiki"));
-	pWiki->setProperty("cssClass", "proppanel");
-	pTitleLayout->addWidget(pWiki);
+	//QHBoxLayout* pTitleLayout = new QHBoxLayout;
+	//pTitleLayout->setContentsMargins(15, 15, 15, 15);
+	//QLabel* pLabel = new QLabel(m_idx.data(ROLE_OBJNAME).toString());
+	//pLabel->setProperty("cssClass", "proppanel-nodename");
+	//pTitleLayout->addWidget(pLabel);
+	//pTitleLayout->addStretch();
+	//QLabel* pWiki = new QLabel(tr("Wiki"));
+	//pWiki->setProperty("cssClass", "proppanel");
+	//pTitleLayout->addWidget(pWiki);
 
-	pMainLayout->addLayout(pTitleLayout);
+	//pMainLayout->addLayout(pTitleLayout);
 
 	auto box = inputsBox(pModel, subgIdx, nodes);
 	if (box)
 	{
-		pMainLayout->addWidget(new ZLineWidget(true, QColor(37, 37, 37)));
 		pMainLayout->addWidget(box);
 	}
 
 	box = paramsBox(pModel, subgIdx, nodes);
 	if (box)
 	{
-		pMainLayout->addWidget(new ZLineWidget(true, QColor(37, 37, 37)));
 		pMainLayout->addWidget(box);
 	}
 
@@ -142,10 +138,10 @@ ZExpandableSection* ZenoPropPanel::paramsBox(IGraphsModel* pModel, const QModelI
 	ZExpandableSection* pParamsBox = new ZExpandableSection(tr("NODE PARAMETERS"));
 	pParamsBox->setObjectName(tr("NODE PARAMETERS"));
 	QGridLayout* pLayout = new QGridLayout;
-	pLayout->setContentsMargins(0, 15, 0, 15);
+	pLayout->setContentsMargins(10, 15, 0, 15);
 	pLayout->setColumnStretch(0, 1);
 	pLayout->setColumnStretch(1, 3);
-	pLayout->setSpacing(5);
+	pLayout->setSpacing(10);
 	pParamsBox->setContentLayout(pLayout);
 	return pParamsBox;
 }
@@ -162,6 +158,10 @@ ZExpandableSection* ZenoPropPanel::inputsBox(IGraphsModel* pModel, const QModelI
 	ZExpandableSection* pInputsBox = new ZExpandableSection(groupName);
 	pInputsBox->setObjectName(groupName);
 	QGridLayout* pLayout = new QGridLayout;
+    pLayout->setContentsMargins(10, 15, 0, 15);
+    pLayout->setColumnStretch(0, 1);
+    pLayout->setColumnStretch(1, 3);
+    pLayout->setSpacing(10);
 	pInputsBox->setContentLayout(pLayout);
 	return pInputsBox;
 }
