@@ -152,10 +152,15 @@ void CameraControl::fakeWheelEvent(QWheelEvent* event)
     int dy = event->angleDelta().y();
     float scale = (dy >= 0) ? 0.89 : 1 / 0.89;
     bool shift_pressed = event->modifiers() & Qt::ShiftModifier;
-    if (shift_pressed)
+    if (shift_pressed){
         m_fov /= scale;
-    else
+        if(m_fov > 170){
+            m_fov = 170;
+        }
+    }
+    else{
         m_radius *= scale;
+    }
     updatePerspective();
 }
 
