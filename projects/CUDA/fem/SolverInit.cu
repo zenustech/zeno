@@ -320,16 +320,12 @@ IPCSystem::IPCSystem(std::vector<ZenoParticles *> zsprims, const typename IPCSys
 
     auto cudaPol = zs::cuda_exec();
     // average edge length (for CCD filtering)
-    initialize(cudaPol);
+    initialize(cudaPol); // update vtemp, bvh, boxsize, targetGRes
 
     // adaptive dhat, targetGRes, kappa
     {
-        updateWholeBoundingBoxSize(cudaPol);
-        fmt::print("box diag size: {}\n", std::sqrt(boxDiagSize2));
         /// dHat
-        this->dHat = dHat * std::sqrt(boxDiagSize2);
-        /// grad pn residual tolerance
-        targetGRes = pnRel * std::sqrt(boxDiagSize2);
+        this->dHat = dHat * std::sqrt(boxDiagSize2); // remain static since
         if (kappa0 == 0) {
             /// kappaMin
             initKappa(cudaPol);
@@ -483,6 +479,11 @@ void IPCSystem::reinitialize(zs::CudaExecutionPolicy &pol, typename IPCSystem::T
             auto edgeBvs = retrieve_bounding_volumes(pol, vtemp, "xn", *coEdges, zs::wrapv<2>{}, coOffset);
             bouSeBvh.build(pol, edgeBvs);
         }
+
+    updateWholeBoundingBoxSize(pol);
+    fmt::print("box diag size: {}\n", std::sqrt(boxDiagSize2));
+    /// update grad pn residual tolerance
+    targetGRes = pnRel * std::sqrt(boxDiagSize2);
 }
 void IPCSystem::advanceSubstep(zs::CudaExecutionPolicy &pol, typename IPCSystem::T ratio) {
     using namespace zs;
