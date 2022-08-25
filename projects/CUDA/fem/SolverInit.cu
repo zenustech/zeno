@@ -164,7 +164,6 @@ void IPCSystem::updateWholeBoundingBoxSize(zs::CudaExecutionPolicy &pol) {
     boxDiagSize2 = (bv._max - bv._min).l2NormSqr();
 }
 void IPCSystem::initKappa(zs::CudaExecutionPolicy &pol) {
-#if 0
     // should be called after dHat set
     if (!enableContact)
         return;
@@ -175,25 +174,22 @@ void IPCSystem::initKappa(zs::CudaExecutionPolicy &pol) {
         vtemp.tuple<3>("q", i) = vec3::zeros();
     });
     // inertial + elasticity
-    computeInertialGradient(pol, "p");
-    match([&](auto &elasticModel) { computeElasticGradientAndHessian(pol, elasticModel, "p", false); })(
-        models.getElasticModel());
+    computeInertialPotentialGradient(pol, "p");
+    computeElasticGradientAndHessian(pol, "p", false);
     // contacts
     findCollisionConstraints(pol, dHat, xi);
     auto prevKappa = kappa;
     kappa = 1;
     computeBarrierGradientAndHessian(pol, "q", false);
-    computeBoundaryBarrierGradientAndHessian(pol, "q", false);
+    // computeBoundaryBarrierGradientAndHessian(pol, "q", false);
     kappa = prevKappa;
-
     auto gsum = dot(pol, vtemp, "p", "q");
     auto gsnorm = dot(pol, vtemp, "q", "q");
-    if (gsnorm < limits<T>::min())
+    if (gsnorm < limits<T>::epsilon() * 10)
         kappaMin = 0;
     else
         kappaMin = -gsum / gsnorm;
-    fmt::print("kappaMin: {}, gsum: {}, gsnorm: {}\n", kappaMin, gsum, gsnorm);
-#endif
+    zeno::log_info("kappaMin: {}, gsum: {}, gsnorm: {}\n", kappaMin, gsum, gsnorm);
 }
 
 void IPCSystem::initialize(zs::CudaExecutionPolicy &pol) {
@@ -341,16 +337,16 @@ IPCSystem::IPCSystem(std::vector<ZenoParticles *> zsprims, const typename IPCSys
             }
             { // surf oriented (use framedt here)
                 auto kappaSurf = dt * dt * meanSurfaceArea / 3 * dHat * largestMu();
-                fmt::print("kappaSurf: {}, auto kappa: {}\n", kappaSurf, kappa);
+                zeno::log_info("kappaSurf: {}, auto kappa: {}\n", kappaSurf, kappa);
                 if (kappaSurf > kappa && kappaSurf < kappaMax) {
                     kappa = kappaSurf;
                 }
             }
             // boundaryKappa = kappa;
-            fmt::print("average node mass: {}, auto kappa: {} ({} - {})\n", avgNodeMass, this->kappa, this->kappaMin,
-                       this->kappaMax);
+            zeno::log_info("average node mass: {}, auto kappa: {} ({} - {})\n", avgNodeMass, this->kappa,
+                           this->kappaMin, this->kappaMax);
         } else {
-            fmt::print("manual kappa: {}\n", this->kappa);
+            zeno::log_info("manual kappa: {}\n", this->kappa);
         }
         // getchar();
     }
@@ -361,7 +357,7 @@ IPCSystem::IPCSystem(std::vector<ZenoParticles *> zsprims, const typename IPCSys
         this->epsv *= this->dHat;
     }
     // output adaptive setups
-    fmt::print("auto dHat: {}, targetGRes: {}, epsv (friction): {}\n", this->dHat, this->targetGRes, this->epsv);
+    zeno::log_info("auto dHat: {}, epsv (friction): {}\n", this->dHat, this->epsv);
 }
 
 void IPCSystem::reinitialize(zs::CudaExecutionPolicy &pol, typename IPCSystem::T framedt) {
@@ -437,7 +433,6 @@ void IPCSystem::reinitialize(zs::CudaExecutionPolicy &pol, typename IPCSystem::T
     }
     if (coVerts)
         if (auto coSize = coVerts->size(); coSize) {
-            fmt::print("in IPC solver: coSize is {} \n", coSize);
             pol(Collapse(coSize),
                 [vtemp = proxy<space>({}, vtemp), coverts = proxy<space>({}, *coVerts), coOffset = coOffset, dt = dt,
                  augLagCoeff = augLagCoeff, avgNodeMass = avgNodeMass] __device__(int i) mutable {
@@ -481,9 +476,9 @@ void IPCSystem::reinitialize(zs::CudaExecutionPolicy &pol, typename IPCSystem::T
         }
 
     updateWholeBoundingBoxSize(pol);
-    fmt::print("box diag size: {}\n", std::sqrt(boxDiagSize2));
     /// update grad pn residual tolerance
     targetGRes = pnRel * std::sqrt(boxDiagSize2);
+    zeno::log_info("box diag size: {}, targetGRes: {}\n", std::sqrt(boxDiagSize2), targetGRes);
 }
 void IPCSystem::advanceSubstep(zs::CudaExecutionPolicy &pol, typename IPCSystem::T ratio) {
     using namespace zs;

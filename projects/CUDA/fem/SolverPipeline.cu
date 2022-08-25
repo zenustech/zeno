@@ -2133,14 +2133,14 @@ void IPCSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
             vtemp.tuple<3>("grad", i) = vec3::zeros();
         });
         computeInertialAndGravityPotentialGradient(pol);
-        computeElasticGradientAndHessian(pol);
+        computeElasticGradientAndHessian(pol, "grad");
         if (enableGround)
             computeBoundaryBarrierGradientAndHessian(pol);
         if (enableContact) {
-            computeBarrierGradientAndHessian(pol);
+            computeBarrierGradientAndHessian(pol, "grad");
             if (s_enableFriction)
                 if (fricMu != 0) {
-                    computeFrictionBarrierGradientAndHessian(pol);
+                    computeFrictionBarrierGradientAndHessian(pol, "grad");
                 }
         }
         // ROTATE GRAD, APPLY CONSTRAINTS, PROJ GRADIENT

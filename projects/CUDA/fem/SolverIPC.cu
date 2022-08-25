@@ -53,7 +53,8 @@ __forceinline__ __device__ void rotate_hessian(zs::VecInterface<VecT> &H, const 
     return;
 }
 
-void IPCSystem::computeBarrierGradientAndHessian(zs::CudaExecutionPolicy &pol, bool includeHessian) {
+void IPCSystem::computeBarrierGradientAndHessian(zs::CudaExecutionPolicy &pol, const zs::SmallString &gTag,
+                                                 bool includeHessian) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
     T activeGap2 = dHat * dHat + (T)2.0 * xi * dHat;
@@ -64,7 +65,7 @@ void IPCSystem::computeBarrierGradientAndHessian(zs::CudaExecutionPolicy &pol, b
     using Vec6View = zs::vec_view<T, zs::integer_seq<int, 6>>;
     auto numPP = nPP.getVal();
     pol(range(numPP),
-        [vtemp = proxy<space>({}, vtemp), tempPP = proxy<space>({}, tempPP), PP = proxy<space>(PP), xi2 = xi * xi,
+        [vtemp = proxy<space>({}, vtemp), tempPP = proxy<space>({}, tempPP), PP = proxy<space>(PP), gTag, xi2 = xi * xi,
          dHat = dHat, activeGap2, kappa = kappa, projectDBC = projectDBC, includeHessian] __device__(int ppi) mutable {
             auto pp = PP[ppi];
             auto x0 = vtemp.pack<3>("xn", pp[0]);
@@ -78,8 +79,8 @@ void IPCSystem::computeBarrierGradientAndHessian(zs::CudaExecutionPolicy &pol, b
             auto grad = ppGrad * (-barrierDistGrad);
             // gradient
             for (int d = 0; d != 3; ++d) {
-                atomic_add(exec_cuda, &vtemp("grad", d, pp[0]), grad(0, d));
-                atomic_add(exec_cuda, &vtemp("grad", d, pp[1]), grad(1, d));
+                atomic_add(exec_cuda, &vtemp(gTag, d, pp[0]), grad(0, d));
+                atomic_add(exec_cuda, &vtemp(gTag, d, pp[1]), grad(1, d));
             }
             // hessian
             if (!includeHessian)
@@ -114,7 +115,7 @@ void IPCSystem::computeBarrierGradientAndHessian(zs::CudaExecutionPolicy &pol, b
         });
     auto numPE = nPE.getVal();
     pol(range(numPE),
-        [vtemp = proxy<space>({}, vtemp), tempPE = proxy<space>({}, tempPE), PE = proxy<space>(PE), xi2 = xi * xi,
+        [vtemp = proxy<space>({}, vtemp), tempPE = proxy<space>({}, tempPE), PE = proxy<space>(PE), gTag, xi2 = xi * xi,
          dHat = dHat, activeGap2, kappa = kappa, projectDBC = projectDBC, includeHessian] __device__(int pei) mutable {
             auto pe = PE[pei];
             auto p = vtemp.pack<3>("xn", pe[0]);
@@ -129,9 +130,9 @@ void IPCSystem::computeBarrierGradientAndHessian(zs::CudaExecutionPolicy &pol, b
             auto grad = peGrad * (-barrierDistGrad);
             // gradient
             for (int d = 0; d != 3; ++d) {
-                atomic_add(exec_cuda, &vtemp("grad", d, pe[0]), grad(0, d));
-                atomic_add(exec_cuda, &vtemp("grad", d, pe[1]), grad(1, d));
-                atomic_add(exec_cuda, &vtemp("grad", d, pe[2]), grad(2, d));
+                atomic_add(exec_cuda, &vtemp(gTag, d, pe[0]), grad(0, d));
+                atomic_add(exec_cuda, &vtemp(gTag, d, pe[1]), grad(1, d));
+                atomic_add(exec_cuda, &vtemp(gTag, d, pe[2]), grad(2, d));
             }
             // hessian
             if (!includeHessian)
@@ -166,7 +167,7 @@ void IPCSystem::computeBarrierGradientAndHessian(zs::CudaExecutionPolicy &pol, b
         });
     auto numPT = nPT.getVal();
     pol(range(numPT),
-        [vtemp = proxy<space>({}, vtemp), tempPT = proxy<space>({}, tempPT), PT = proxy<space>(PT), xi2 = xi * xi,
+        [vtemp = proxy<space>({}, vtemp), tempPT = proxy<space>({}, tempPT), PT = proxy<space>(PT), gTag, xi2 = xi * xi,
          dHat = dHat, activeGap2, kappa = kappa, projectDBC = projectDBC, includeHessian] __device__(int pti) mutable {
             auto pt = PT[pti];
             auto p = vtemp.pack<3>("xn", pt[0]);
@@ -182,10 +183,10 @@ void IPCSystem::computeBarrierGradientAndHessian(zs::CudaExecutionPolicy &pol, b
             auto grad = ptGrad * (-barrierDistGrad);
             // gradient
             for (int d = 0; d != 3; ++d) {
-                atomic_add(exec_cuda, &vtemp("grad", d, pt[0]), grad(0, d));
-                atomic_add(exec_cuda, &vtemp("grad", d, pt[1]), grad(1, d));
-                atomic_add(exec_cuda, &vtemp("grad", d, pt[2]), grad(2, d));
-                atomic_add(exec_cuda, &vtemp("grad", d, pt[3]), grad(3, d));
+                atomic_add(exec_cuda, &vtemp(gTag, d, pt[0]), grad(0, d));
+                atomic_add(exec_cuda, &vtemp(gTag, d, pt[1]), grad(1, d));
+                atomic_add(exec_cuda, &vtemp(gTag, d, pt[2]), grad(2, d));
+                atomic_add(exec_cuda, &vtemp(gTag, d, pt[3]), grad(3, d));
             }
             // hessian
             if (!includeHessian)
@@ -220,7 +221,7 @@ void IPCSystem::computeBarrierGradientAndHessian(zs::CudaExecutionPolicy &pol, b
         });
     auto numEE = nEE.getVal();
     pol(range(numEE),
-        [vtemp = proxy<space>({}, vtemp), tempEE = proxy<space>({}, tempEE), EE = proxy<space>(EE), xi2 = xi * xi,
+        [vtemp = proxy<space>({}, vtemp), tempEE = proxy<space>({}, tempEE), EE = proxy<space>(EE), gTag, xi2 = xi * xi,
          dHat = dHat, activeGap2, kappa = kappa, projectDBC = projectDBC, includeHessian] __device__(int eei) mutable {
             auto ee = EE[eei];
             auto ea0 = vtemp.pack<3>("xn", ee[0]);
@@ -236,10 +237,10 @@ void IPCSystem::computeBarrierGradientAndHessian(zs::CudaExecutionPolicy &pol, b
             auto grad = eeGrad * (-barrierDistGrad);
             // gradient
             for (int d = 0; d != 3; ++d) {
-                atomic_add(exec_cuda, &vtemp("grad", d, ee[0]), grad(0, d));
-                atomic_add(exec_cuda, &vtemp("grad", d, ee[1]), grad(1, d));
-                atomic_add(exec_cuda, &vtemp("grad", d, ee[2]), grad(2, d));
-                atomic_add(exec_cuda, &vtemp("grad", d, ee[3]), grad(3, d));
+                atomic_add(exec_cuda, &vtemp(gTag, d, ee[0]), grad(0, d));
+                atomic_add(exec_cuda, &vtemp(gTag, d, ee[1]), grad(1, d));
+                atomic_add(exec_cuda, &vtemp(gTag, d, ee[2]), grad(2, d));
+                atomic_add(exec_cuda, &vtemp(gTag, d, ee[3]), grad(3, d));
             }
             // hessian
             if (!includeHessian)
@@ -283,7 +284,7 @@ void IPCSystem::computeBarrierGradientAndHessian(zs::CudaExecutionPolicy &pol, b
         };
         auto numEEM = nEEM.getVal();
         pol(range(numEEM), [vtemp = proxy<space>({}, vtemp), tempEEM = proxy<space>({}, tempEEM),
-                            EEM = proxy<space>(EEM), xi2 = xi * xi, dHat = dHat, activeGap2, kappa = kappa,
+                            EEM = proxy<space>(EEM), gTag, xi2 = xi * xi, dHat = dHat, activeGap2, kappa = kappa,
                             projectDBC = projectDBC, includeHessian, get_mollifier] __device__(int eemi) mutable {
             auto eem = EEM[eemi]; // <x, y, z, w>
             auto ea0Rest = vtemp.pack<3>("x0", eem[0]);
@@ -308,10 +309,10 @@ void IPCSystem::computeBarrierGradientAndHessian(zs::CudaExecutionPolicy &pol, b
             auto scaledMollifierGrad = barrierDist2 * mollifierGradEE;
             auto scaledEEGrad = mollifierEE * barrierDistGrad * eeGrad;
             for (int d = 0; d != 3; ++d) {
-                atomic_add(exec_cuda, &vtemp("grad", d, eem[0]), -(scaledMollifierGrad(0, d) + scaledEEGrad(0, d)));
-                atomic_add(exec_cuda, &vtemp("grad", d, eem[1]), -(scaledMollifierGrad(1, d) + scaledEEGrad(1, d)));
-                atomic_add(exec_cuda, &vtemp("grad", d, eem[2]), -(scaledMollifierGrad(2, d) + scaledEEGrad(2, d)));
-                atomic_add(exec_cuda, &vtemp("grad", d, eem[3]), -(scaledMollifierGrad(3, d) + scaledEEGrad(3, d)));
+                atomic_add(exec_cuda, &vtemp(gTag, d, eem[0]), -(scaledMollifierGrad(0, d) + scaledEEGrad(0, d)));
+                atomic_add(exec_cuda, &vtemp(gTag, d, eem[1]), -(scaledMollifierGrad(1, d) + scaledEEGrad(1, d)));
+                atomic_add(exec_cuda, &vtemp(gTag, d, eem[2]), -(scaledMollifierGrad(2, d) + scaledEEGrad(2, d)));
+                atomic_add(exec_cuda, &vtemp(gTag, d, eem[3]), -(scaledMollifierGrad(3, d) + scaledEEGrad(3, d)));
             }
 
             if (!includeHessian)
@@ -351,7 +352,7 @@ void IPCSystem::computeBarrierGradientAndHessian(zs::CudaExecutionPolicy &pol, b
         });
         auto numPPM = nPPM.getVal();
         pol(range(numPPM), [vtemp = proxy<space>({}, vtemp), tempPPM = proxy<space>({}, tempPPM),
-                            PPM = proxy<space>(PPM), xi2 = xi * xi, dHat = dHat, activeGap2, kappa = kappa,
+                            PPM = proxy<space>(PPM), gTag, xi2 = xi * xi, dHat = dHat, activeGap2, kappa = kappa,
                             projectDBC = projectDBC, includeHessian, get_mollifier] __device__(int ppmi) mutable {
             auto ppm = PPM[ppmi]; // <x, z, y, w>, <0, 2, 1, 3>
             auto ea0Rest = vtemp.pack<3>("x0", ppm[0]);
@@ -377,10 +378,10 @@ void IPCSystem::computeBarrierGradientAndHessian(zs::CudaExecutionPolicy &pol, b
             auto scaledMollifierGrad = barrierDist2 * mollifierGradEE;
             auto scaledPPGrad = mollifierEE * barrierDistGrad * ppGrad;
             for (int d = 0; d != 3; ++d) {
-                atomic_add(exec_cuda, &vtemp("grad", d, ppm[0]), -(scaledMollifierGrad(0, d) + scaledPPGrad(0, d)));
-                atomic_add(exec_cuda, &vtemp("grad", d, ppm[1]), -(scaledMollifierGrad(1, d)));
-                atomic_add(exec_cuda, &vtemp("grad", d, ppm[2]), -(scaledMollifierGrad(2, d) + scaledPPGrad(1, d)));
-                atomic_add(exec_cuda, &vtemp("grad", d, ppm[3]), -(scaledMollifierGrad(3, d)));
+                atomic_add(exec_cuda, &vtemp(gTag, d, ppm[0]), -(scaledMollifierGrad(0, d) + scaledPPGrad(0, d)));
+                atomic_add(exec_cuda, &vtemp(gTag, d, ppm[1]), -(scaledMollifierGrad(1, d)));
+                atomic_add(exec_cuda, &vtemp(gTag, d, ppm[2]), -(scaledMollifierGrad(2, d) + scaledPPGrad(1, d)));
+                atomic_add(exec_cuda, &vtemp(gTag, d, ppm[3]), -(scaledMollifierGrad(3, d)));
             }
 
             if (!includeHessian)
@@ -434,7 +435,7 @@ void IPCSystem::computeBarrierGradientAndHessian(zs::CudaExecutionPolicy &pol, b
         });
         auto numPEM = nPEM.getVal();
         pol(range(numPEM), [vtemp = proxy<space>({}, vtemp), tempPEM = proxy<space>({}, tempPEM),
-                            PEM = proxy<space>(PEM), xi2 = xi * xi, dHat = dHat, activeGap2, kappa = kappa,
+                            PEM = proxy<space>(PEM), gTag, xi2 = xi * xi, dHat = dHat, activeGap2, kappa = kappa,
                             projectDBC = projectDBC, includeHessian, get_mollifier] __device__(int pemi) mutable {
             auto pem = PEM[pemi]; // <x, w, y, z>, <0, 2, 3, 1>
             auto ea0Rest = vtemp.pack<3>("x0", pem[0]);
@@ -461,10 +462,10 @@ void IPCSystem::computeBarrierGradientAndHessian(zs::CudaExecutionPolicy &pol, b
             auto scaledPEGrad = mollifierEE * barrierDistGrad * peGrad;
 
             for (int d = 0; d != 3; ++d) {
-                atomic_add(exec_cuda, &vtemp("grad", d, pem[0]), -(scaledMollifierGrad(0, d) + scaledPEGrad(0, d)));
-                atomic_add(exec_cuda, &vtemp("grad", d, pem[1]), -(scaledMollifierGrad(1, d)));
-                atomic_add(exec_cuda, &vtemp("grad", d, pem[2]), -(scaledMollifierGrad(2, d) + scaledPEGrad(1, d)));
-                atomic_add(exec_cuda, &vtemp("grad", d, pem[3]), -(scaledMollifierGrad(3, d) + scaledPEGrad(2, d)));
+                atomic_add(exec_cuda, &vtemp(gTag, d, pem[0]), -(scaledMollifierGrad(0, d) + scaledPEGrad(0, d)));
+                atomic_add(exec_cuda, &vtemp(gTag, d, pem[1]), -(scaledMollifierGrad(1, d)));
+                atomic_add(exec_cuda, &vtemp(gTag, d, pem[2]), -(scaledMollifierGrad(2, d) + scaledPEGrad(1, d)));
+                atomic_add(exec_cuda, &vtemp(gTag, d, pem[3]), -(scaledMollifierGrad(3, d) + scaledPEGrad(2, d)));
             }
 
             if (!includeHessian)
@@ -530,7 +531,8 @@ void IPCSystem::computeBarrierGradientAndHessian(zs::CudaExecutionPolicy &pol, b
     return;
 }
 
-void IPCSystem::computeFrictionBarrierGradientAndHessian(zs::CudaExecutionPolicy &pol, bool includeHessian) {
+void IPCSystem::computeFrictionBarrierGradientAndHessian(zs::CudaExecutionPolicy &pol, const zs::SmallString &gTag,
+                                                         bool includeHessian) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
     T activeGap2 = dHat * dHat + (T)2.0 * xi * dHat;
@@ -539,8 +541,8 @@ void IPCSystem::computeFrictionBarrierGradientAndHessian(zs::CudaExecutionPolicy
     using Vec6View = zs::vec_view<T, zs::integer_seq<int, 6>>;
     auto numFPP = nFPP.getVal();
     pol(range(numFPP),
-        [vtemp = proxy<space>({}, vtemp), fricPP = proxy<space>({}, fricPP), FPP = proxy<space>(FPP), epsvh = epsv * dt,
-         fricMu = fricMu, projectDBC = projectDBC, includeHessian] __device__(int fppi) mutable {
+        [vtemp = proxy<space>({}, vtemp), fricPP = proxy<space>({}, fricPP), FPP = proxy<space>(FPP), gTag,
+         epsvh = epsv * dt, fricMu = fricMu, projectDBC = projectDBC, includeHessian] __device__(int fppi) mutable {
             auto fpp = FPP[fppi];
             auto p0 = vtemp.pack<3>("xn", fpp[0]) - vtemp.pack<3>("xhat", fpp[0]);
             auto p1 = vtemp.pack<3>("xn", fpp[1]) - vtemp.pack<3>("xhat", fpp[1]);
@@ -555,8 +557,8 @@ void IPCSystem::computeFrictionBarrierGradientAndHessian(zs::CudaExecutionPolicy
             auto TTTDX = -point_point_rel_dx_tan_to_mesh(relDX, basis);
             // gradient
             for (int d = 0; d != 3; ++d) {
-                atomic_add(exec_cuda, &vtemp("grad", d, fpp[0]), TTTDX(0, d));
-                atomic_add(exec_cuda, &vtemp("grad", d, fpp[1]), TTTDX(1, d));
+                atomic_add(exec_cuda, &vtemp(gTag, d, fpp[0]), TTTDX(0, d));
+                atomic_add(exec_cuda, &vtemp(gTag, d, fpp[1]), TTTDX(1, d));
             }
             // hessian
             if (!includeHessian)
@@ -606,8 +608,8 @@ void IPCSystem::computeFrictionBarrierGradientAndHessian(zs::CudaExecutionPolicy
         });
     auto numFPE = nFPE.getVal();
     pol(range(numFPE),
-        [vtemp = proxy<space>({}, vtemp), fricPE = proxy<space>({}, fricPE), FPE = proxy<space>(FPE), epsvh = epsv * dt,
-         fricMu = fricMu, projectDBC = projectDBC, includeHessian] __device__(int fpei) mutable {
+        [vtemp = proxy<space>({}, vtemp), fricPE = proxy<space>({}, fricPE), FPE = proxy<space>(FPE), gTag,
+         epsvh = epsv * dt, fricMu = fricMu, projectDBC = projectDBC, includeHessian] __device__(int fpei) mutable {
             auto fpe = FPE[fpei];
             auto p = vtemp.pack<3>("xn", fpe[0]) - vtemp.pack<3>("xhat", fpe[0]);
             auto e0 = vtemp.pack<3>("xn", fpe[1]) - vtemp.pack<3>("xhat", fpe[1]);
@@ -624,9 +626,9 @@ void IPCSystem::computeFrictionBarrierGradientAndHessian(zs::CudaExecutionPolicy
             auto TTTDX = -point_edge_rel_dx_tan_to_mesh(relDX, basis, yita);
             // gradient
             for (int d = 0; d != 3; ++d) {
-                atomic_add(exec_cuda, &vtemp("grad", d, fpe[0]), TTTDX(0, d));
-                atomic_add(exec_cuda, &vtemp("grad", d, fpe[1]), TTTDX(1, d));
-                atomic_add(exec_cuda, &vtemp("grad", d, fpe[2]), TTTDX(2, d));
+                atomic_add(exec_cuda, &vtemp(gTag, d, fpe[0]), TTTDX(0, d));
+                atomic_add(exec_cuda, &vtemp(gTag, d, fpe[1]), TTTDX(1, d));
+                atomic_add(exec_cuda, &vtemp(gTag, d, fpe[2]), TTTDX(2, d));
             }
             // hessian
             if (!includeHessian)
@@ -676,8 +678,8 @@ void IPCSystem::computeFrictionBarrierGradientAndHessian(zs::CudaExecutionPolicy
         });
     auto numFPT = nFPT.getVal();
     pol(range(numFPT),
-        [vtemp = proxy<space>({}, vtemp), fricPT = proxy<space>({}, fricPT), FPT = proxy<space>(FPT), epsvh = epsv * dt,
-         fricMu = fricMu, projectDBC = projectDBC, includeHessian] __device__(int fpti) mutable {
+        [vtemp = proxy<space>({}, vtemp), fricPT = proxy<space>({}, fricPT), FPT = proxy<space>(FPT), gTag,
+         epsvh = epsv * dt, fricMu = fricMu, projectDBC = projectDBC, includeHessian] __device__(int fpti) mutable {
             auto fpt = FPT[fpti];
             auto p = vtemp.pack<3>("xn", fpt[0]) - vtemp.pack<3>("xhat", fpt[0]);
             auto v0 = vtemp.pack<3>("xn", fpt[1]) - vtemp.pack<3>("xhat", fpt[1]);
@@ -695,10 +697,10 @@ void IPCSystem::computeFrictionBarrierGradientAndHessian(zs::CudaExecutionPolicy
             auto TTTDX = -point_triangle_rel_dx_tan_to_mesh(relDX, basis, betas[0], betas[1]);
             // gradient
             for (int d = 0; d != 3; ++d) {
-                atomic_add(exec_cuda, &vtemp("grad", d, fpt[0]), TTTDX(0, d));
-                atomic_add(exec_cuda, &vtemp("grad", d, fpt[1]), TTTDX(1, d));
-                atomic_add(exec_cuda, &vtemp("grad", d, fpt[2]), TTTDX(2, d));
-                atomic_add(exec_cuda, &vtemp("grad", d, fpt[3]), TTTDX(3, d));
+                atomic_add(exec_cuda, &vtemp(gTag, d, fpt[0]), TTTDX(0, d));
+                atomic_add(exec_cuda, &vtemp(gTag, d, fpt[1]), TTTDX(1, d));
+                atomic_add(exec_cuda, &vtemp(gTag, d, fpt[2]), TTTDX(2, d));
+                atomic_add(exec_cuda, &vtemp(gTag, d, fpt[3]), TTTDX(3, d));
             }
             // hessian
             if (!includeHessian)
@@ -748,8 +750,8 @@ void IPCSystem::computeFrictionBarrierGradientAndHessian(zs::CudaExecutionPolicy
         });
     auto numFEE = nFEE.getVal();
     pol(range(numFEE),
-        [vtemp = proxy<space>({}, vtemp), fricEE = proxy<space>({}, fricEE), FEE = proxy<space>(FEE), epsvh = epsv * dt,
-         fricMu = fricMu, projectDBC = projectDBC, includeHessian] __device__(int feei) mutable {
+        [vtemp = proxy<space>({}, vtemp), fricEE = proxy<space>({}, fricEE), FEE = proxy<space>(FEE), gTag,
+         epsvh = epsv * dt, fricMu = fricMu, projectDBC = projectDBC, includeHessian] __device__(int feei) mutable {
             auto fee = FEE[feei];
             auto e0 = vtemp.pack<3>("xn", fee[0]) - vtemp.pack<3>("xhat", fee[0]);
             auto e1 = vtemp.pack<3>("xn", fee[1]) - vtemp.pack<3>("xhat", fee[1]);
@@ -767,10 +769,10 @@ void IPCSystem::computeFrictionBarrierGradientAndHessian(zs::CudaExecutionPolicy
             auto TTTDX = -edge_edge_rel_dx_tan_to_mesh(relDX, basis, gammas[0], gammas[1]);
             // gradient
             for (int d = 0; d != 3; ++d) {
-                atomic_add(exec_cuda, &vtemp("grad", d, fee[0]), TTTDX(0, d));
-                atomic_add(exec_cuda, &vtemp("grad", d, fee[1]), TTTDX(1, d));
-                atomic_add(exec_cuda, &vtemp("grad", d, fee[2]), TTTDX(2, d));
-                atomic_add(exec_cuda, &vtemp("grad", d, fee[3]), TTTDX(3, d));
+                atomic_add(exec_cuda, &vtemp(gTag, d, fee[0]), TTTDX(0, d));
+                atomic_add(exec_cuda, &vtemp(gTag, d, fee[1]), TTTDX(1, d));
+                atomic_add(exec_cuda, &vtemp(gTag, d, fee[2]), TTTDX(2, d));
+                atomic_add(exec_cuda, &vtemp(gTag, d, fee[3]), TTTDX(3, d));
             }
             // hessian
             if (!includeHessian)
