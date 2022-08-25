@@ -16,6 +16,11 @@ ModelAcceptor::ModelAcceptor(GraphsModel* pModel, bool bImport)
     , m_currentGraph(nullptr)
     , m_bImport(bImport)
 {
+    auto mainWin = zenoApp->getMainWindow();
+    //init.
+    TIMELINE_INFO info;
+    if (mainWin)
+        mainWin->setTimelineInfo(info);
 }
 
 bool ModelAcceptor::setLegacyDescs(const rapidjson::Value& graphObj, const NODE_DESCS& legacyDescs)

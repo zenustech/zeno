@@ -572,6 +572,8 @@ void ZenoMainWindow::saveQuit() {
         }
     }
     pGraphsMgm->clear();
+    //clear timeline info.
+    setTimelineInfo(TIMELINE_INFO());
 }
 
 void ZenoMainWindow::save() {
