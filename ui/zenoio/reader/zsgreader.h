@@ -31,6 +31,8 @@ private:
     void _parseCurveHandlers(const QString& id, const rapidjson::Value& jsonHandlers, IAcceptor* pAcceptor);
     void _parseLegacyCurves(const QString &id, const rapidjson::Value &jsonPoints, const rapidjson::Value &jsonHandlers,
                             IAcceptor *pAcceptor);
+    void _parseViews(const rapidjson::Value& jsonViews, IAcceptor* pAcceptor);
+    void _parseTimeline(const rapidjson::Value& jsonTimeline, IAcceptor* pAcceptor);
     void _parseBySocketKeys(const QString& id, const rapidjson::Value& objValue, IAcceptor* pAcceptor);
     void _parseDictKeys(const QString& id, const rapidjson::Value& objValue, IAcceptor* pAcceptor);
     QVariant _parseDefaultValue(const QString& val, const QString &type);
