@@ -98,40 +98,7 @@ struct GraphicsManager {
             if (auto prim_in = dynamic_cast<zeno::PrimitiveObject *>(obj))
             {
                 auto isL = prim_in->userData().getLiterial<int>("isL", 0);
-                if(isL == 1){
-                    zeno::log_info("processing light key {}", key);
-                    auto ivD = prim_in->userData().getLiterial<int>("ivD", 0);
-
-                    auto prim = std::make_shared<zeno::PrimitiveObject>();
-                    prim->verts.resize(5);
-
-                    auto p0 = prim_in->verts[prim_in->tris[0][0]];
-                    auto p1 = prim_in->verts[prim_in->tris[0][1]];
-                    auto p2 = prim_in->verts[prim_in->tris[0][2]];
-                    auto e1 = p0-p1;
-                    auto e2 = p2-p1;
-                    auto g_e1 = glm::vec3(e1[0], e1[1], e1[2]);
-                    auto g_e2 = glm::vec3(e2[0], e2[1], e2[2]);
-                    glm::vec3 g_nor;
-
-                    g_nor = glm::normalize(glm::cross(g_e1, g_e2));
-                    auto nor = zeno::vec3f(g_nor.x, g_nor.y, g_nor.z);
-                    zeno::vec3f clr;
-                    if(prim_in->verts.has_attr("clr")){
-                        clr = prim_in->verts.attr<zeno::vec3f>("clr")[0];
-                    }else{
-                        clr = zeno::vec3f(30000.0f, 30000.0f, 30000.0f);
-                    }
-                    prim->verts[0] = p1;
-                    prim->verts[1] = e1;
-                    prim->verts[2] = e2;
-                    prim->verts[3] = nor;
-                    prim->verts[4] = clr;
-
-                    xinxinoptix::load_light(key, prim->verts[0].data(), prim->verts[1].data(), prim->verts[2].data(),
-                                            prim->verts[3].data(), prim->verts[4].data());
-
-                }else{
+                if(isL != 1){
                     prim_in->add_attr<zeno::vec3f>("uv");
                     bool primNormalCorrect = prim_in->has_attr("nrm") && length(prim_in->attr<zeno::vec3f>("nrm")[0])>1e-5;
                     bool need_computeNormal = !primNormalCorrect || !(prim_in->has_attr("nrm"));
@@ -209,7 +176,47 @@ struct GraphicsManager {
 
     explicit GraphicsManager(Scene *scene) : scene(scene) {
     }
-    bool load_static_objects(std::vector<std::pair<std::string, zeno::IObject *>> const &objs) {
+
+    void load_lights(std::string key, zeno::IObject *obj){
+        if (auto prim_in = dynamic_cast<zeno::PrimitiveObject *>(obj)) {
+            auto isL = prim_in->userData().getLiterial<int>("isL", 0);
+            if (isL == 1) {
+                //zeno::log_info("processing light key {}", key.c_str());
+                auto ivD = prim_in->userData().getLiterial<int>("ivD", 0);
+
+                auto prim = std::make_shared<zeno::PrimitiveObject>();
+                prim->verts.resize(5);
+
+                auto p0 = prim_in->verts[prim_in->tris[0][0]];
+                auto p1 = prim_in->verts[prim_in->tris[0][1]];
+                auto p2 = prim_in->verts[prim_in->tris[0][2]];
+                auto e1 = p0 - p1;
+                auto e2 = p2 - p1;
+                auto g_e1 = glm::vec3(e1[0], e1[1], e1[2]);
+                auto g_e2 = glm::vec3(e2[0], e2[1], e2[2]);
+                glm::vec3 g_nor;
+
+                g_nor = glm::normalize(glm::cross(g_e1, g_e2));
+                auto nor = zeno::vec3f(g_nor.x, g_nor.y, g_nor.z);
+                zeno::vec3f clr;
+                if (prim_in->verts.has_attr("clr")) {
+                    clr = prim_in->verts.attr<zeno::vec3f>("clr")[0];
+                } else {
+                    clr = zeno::vec3f(30000.0f, 30000.0f, 30000.0f);
+                }
+                prim->verts[0] = p1;
+                prim->verts[1] = e1;
+                prim->verts[2] = e2;
+                prim->verts[3] = nor;
+                prim->verts[4] = clr;
+
+                xinxinoptix::load_light(key, prim->verts[0].data(), prim->verts[1].data(), prim->verts[2].data(),
+                                        prim->verts[3].data(), prim->verts[4].data());
+            }
+        }
+    }
+
+    bool need_update_light(std::vector<std::pair<std::string, zeno::IObject *>> const &objs) {
         auto ins = graphics.insertPass();
 
         bool changelight = false;
@@ -218,13 +225,28 @@ struct GraphicsManager {
                 changelight = true;
             }
         }
-        if(changelight){
-            xinxinoptix::unload_light();
+
+        return changelight;
+    }
+    bool load_light_objects(std::map<std::string, std::shared_ptr<zeno::IObject>> objs){
+        xinxinoptix::unload_light();
+
+        for (auto const &[key, obj] : objs) {
+            load_lights(key, obj.get());
         }
+
+        return true;
+    }
+
+    bool load_static_objects(std::vector<std::pair<std::string, zeno::IObject *>> const &objs) {
+        auto ins = graphics.insertPass();
+
+        bool changed = false;
 
         for (auto const &[key, obj] : objs) {
             if (ins.may_emplace(key) && key.find(":static:")!=key.npos) {
                 zeno::log_info("load_static_object: loading graphics [{}]", key);
+                changed = true;
 
                 if (auto cam = dynamic_cast<zeno::CameraObject *>(obj))
                 {
@@ -237,24 +259,17 @@ struct GraphicsManager {
                 ins.try_emplace(key, std::move(ig));
             }
         }
-        return ins.has_changed();
+        // return ins.has_changed();
+        return changed;
     }
     bool load_objects(std::vector<std::pair<std::string, zeno::IObject *>> const &objs) {
         auto ins = graphics.insertPass();
 
-        bool changelight = false;
-        for (auto const &[key, obj] : objs) {
-            if (ins.may_emplace(key)) {
-                changelight = true;
-            }
-        }
-        if(changelight){
-            xinxinoptix::unload_light();
-        }
-
+        bool changed = false;
         for (auto const &[key, obj] : objs) {
             if (ins.may_emplace(key) && key.find(":static:")==key.npos) {
                 zeno::log_info("load_object: loading graphics [{}]", key);
+                changed = true;
 
                 if (auto cam = dynamic_cast<zeno::CameraObject *>(obj))
                 {
@@ -267,7 +282,8 @@ struct GraphicsManager {
                 ins.try_emplace(key, std::move(ig));
             }
         }
-        return ins.has_changed();
+        // return ins.has_changed();
+        return changed;
     }
 };
 
@@ -302,11 +318,20 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
     }
 
     void update() override {
+
+        if(graphicsMan->need_update_light(scene->objectsMan->pairs())
+            || scene->objectsMan->needUpdateLight)
+        {
+            graphicsMan->load_light_objects(scene->objectsMan->lightObjects);
+            lightNeedUpdate = true;
+            scene->objectsMan->needUpdateLight = false;
+        }
+
         if (graphicsMan->load_static_objects(scene->objectsMan->pairs())) {
             staticNeedUpdate = true;
         }
         if (graphicsMan->load_objects(scene->objectsMan->pairs())) {
-            lightNeedUpdate = meshNeedUpdate = matNeedUpdate = true;
+            meshNeedUpdate = matNeedUpdate = true;
         }
     }
 
@@ -403,7 +428,14 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         //xinxinoptix::set_projection(glm::value_ptr(cam.m_proj));
         }
 
-        if (meshNeedUpdate || matNeedUpdate || lightNeedUpdate || staticNeedUpdate) {
+        if(lightNeedUpdate){
+            //zeno::log_debug("[zeno-optix] updating light");
+            xinxinoptix::optixupdatelight();
+
+            lightNeedUpdate = false;
+        }
+
+        if (meshNeedUpdate || matNeedUpdate || staticNeedUpdate) {
         //zeno::log_debug("[zeno-optix] updating scene");
             
             
@@ -465,8 +497,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
             }
             std::cout<<"shaders size "<<shaders.size()<<" shader tex name size "<<shader_tex_names.size()<<std::endl;
             xinxinoptix::optixupdatematerial(shaders, shader_tex_names);
-            //zeno::log_debug("[zeno-optix] updating light");
-            xinxinoptix::optixupdatelight();
+
             //zeno::log_debug("[zeno-optix] updating mesh");
             if(staticNeedUpdate)
                 xinxinoptix::UpdateStaticMesh(mtlidlut);
@@ -479,7 +510,6 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
             
             meshNeedUpdate = false;
             matNeedUpdate = false;
-            lightNeedUpdate = false;
             staticNeedUpdate = false;
         }
 

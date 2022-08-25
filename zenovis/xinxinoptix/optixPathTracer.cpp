@@ -49,6 +49,31 @@
 #define M_PI 3.14159265358979323846
 #endif
 
+#include <string_view>
+struct CppTimer {
+    void tick() {
+        struct timespec t;
+        std::timespec_get(&t, TIME_UTC);
+        last = t.tv_sec * 1e3 + t.tv_nsec * 1e-6;
+    }
+    void tock() {
+        struct timespec t;
+        std::timespec_get(&t, TIME_UTC);
+        cur = t.tv_sec * 1e3 + t.tv_nsec * 1e-6;
+    }
+    float elapsed() const noexcept {
+        return cur - last;
+    }
+    void tock(std::string_view tag) {
+        tock();
+        printf("%s: %f ms\n", tag.data(), elapsed());
+    }
+
+  private:
+    double last, cur;
+};
+static CppTimer timer, localTimer;
+
 namespace xinxinoptix {
 
 
@@ -595,6 +620,7 @@ static void buildInstanceAccel(PathTracerState& state, int rayTypeCount, std::ve
 {
     //zeno::log_info("build IAS begin");
     std::cout<<"IAS begin"<<std::endl;
+    timer.tick();
     float mat4x4[12] = {1,0,0,0,0,1,0,0,0,0,1,0};
     const size_t num_instances = m_meshes.size();
     std::vector<OptixInstance> optix_instances( num_instances );
@@ -614,7 +640,9 @@ static void buildInstanceAccel(PathTracerState& state, int rayTypeCount, std::ve
 
         //sbt_offset += static_cast<unsigned int>( mesh->verts.size() ) * rayTypeCount;  // one sbt record per GAS build input per RAY_TYPE
     }
+    timer.tock("done IAS middle");
     std::cout<<"IAS middle\n";
+    timer.tick();
     const size_t instances_size_in_bytes = sizeof( OptixInstance ) * num_instances;
     raii<CUdeviceptr>  d_instances;
     CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &d_instances.reset() ), instances_size_in_bytes ) );
@@ -667,6 +695,7 @@ static void buildInstanceAccel(PathTracerState& state, int rayTypeCount, std::ve
                 nullptr,            // emitted property list
                 0                   // num emitted properties
                 ) );
+    timer.tock("done IAS build");
     std::cout<<"IAS end\n";
     //zeno::log_info("build IAS end");
 }
@@ -1052,17 +1081,24 @@ void UpdateStaticMesh(std::map<std::string, int> const &mtlidlut) {
     camera_changed = true;
     g_mtlidlut = mtlidlut;
     //update static drawobjects;
+    //timer.tick();
     updateStaticDrawObjects();
+    //timer.tock("STATIC: updateStaticDrawObjects");
     staticMeshNum = 0;
     staticVertNum = 0;
     if(!using20xx) {
         //static mesh changed, we need rebuild it
+        //timer.tick();
         splitMesh(g_vertices, g_mat_indices, g_meshPieces, 0);
+        //timer.tock("STATIC: splitMesh");
 
+        //timer.tick();
         for(int i=0;i<g_meshPieces.size();i++)
         {
             buildMeshAccelSplitMesh(state, g_meshPieces[i]);
         }
+        //timer.tock("STATIC: buildMeshAccelSplitMesh");
+        //printf("%d mesh pieces\n", (int)g_meshPieces.size());
         staticMeshNum = g_meshPieces.size();
         //staticVertNum = g_vertices.size();
         size_t vertSize = 1024 * 3 * g_meshPieces.size();
@@ -1133,63 +1169,80 @@ void UpdateDynamicMesh(std::map<std::string, int> const &mtlidlut) {
     buildMeshAccel( state );
 //#else
     } else {
-        std::cout<<"begin copy\n";
-    const size_t vertices_size_in_bytes = g_vertices.size() * sizeof( Vertex );
-    CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.d_vertices.reset() ), vertices_size_in_bytes ) );
-    CUDA_CHECK( cudaMemcpy(
-                reinterpret_cast<void*>( (CUdeviceptr&)state.d_vertices ),
-                g_vertices.data(), vertices_size_in_bytes,
-                cudaMemcpyHostToDevice
-                ) );
-    CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.d_clr.reset() ), vertices_size_in_bytes ) );
-    CUDA_CHECK( cudaMemcpy(
-                reinterpret_cast<void*>( (CUdeviceptr&)state.d_clr ),
-                g_clr.data(), vertices_size_in_bytes,
-                cudaMemcpyHostToDevice
-                ) );
-    CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.d_uv.reset() ), vertices_size_in_bytes ) );
-    CUDA_CHECK( cudaMemcpy(
-                reinterpret_cast<void*>( (CUdeviceptr&)state.d_uv ),
-                g_uv.data(), vertices_size_in_bytes,
-                cudaMemcpyHostToDevice
-                ) );
-    CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.d_nrm.reset() ), vertices_size_in_bytes ) );
-    CUDA_CHECK( cudaMemcpy(
-                reinterpret_cast<void*>( (CUdeviceptr&)state.d_nrm ),
-                g_nrm.data(), vertices_size_in_bytes,
-                cudaMemcpyHostToDevice
-                ) );
-    CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.d_tan.reset() ), vertices_size_in_bytes ) );
-    CUDA_CHECK( cudaMemcpy(
-                reinterpret_cast<void*>( (CUdeviceptr&)state.d_tan ),
-                g_tan.data(), vertices_size_in_bytes,
-                cudaMemcpyHostToDevice
-                ) );
-    const size_t mat_indices_size_in_bytes = g_mat_indices.size() * sizeof( uint32_t );
-    CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.d_mat_indices.reset() ), mat_indices_size_in_bytes ) );
-    CUDA_CHECK( cudaMemcpy(
-                reinterpret_cast<void*>( (CUdeviceptr)state.d_mat_indices ),
-                g_mat_indices.data(),
-                mat_indices_size_in_bytes,
-                cudaMemcpyHostToDevice
-                ) );
-    const size_t light_mark_size_in_bytes = g_lightMark.size() * sizeof( unsigned short );
-    CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.d_lightMark.reset() ), light_mark_size_in_bytes ) );
-    CUDA_CHECK( cudaMemcpy(
-                reinterpret_cast<void*>( (CUdeviceptr)state.d_lightMark ),
-                g_lightMark.data(),
-                light_mark_size_in_bytes,
-                cudaMemcpyHostToDevice
-                ) );
-    std::cout<<"end copy\n";
-    splitMesh(g_vertices, g_mat_indices, g_meshPieces, staticMeshNum);
-    //std::cout<<"split mesh done\n";
-    //std::cout<<"mesh pieces:"<<g_meshPieces.size()<<std::endl;
-    for(int i=staticMeshNum;i<g_meshPieces.size();i++)
-    {
-        buildMeshAccelSplitMesh(state, g_meshPieces[i]);
-    }
-    buildInstanceAccel(state, 2, g_meshPieces);
+#define WXL 1
+        std::cout << "begin copy\n";
+        timer.tick();
+        size_t vertices_size_in_bytes = g_vertices.size() * sizeof(Vertex);
+        size_t static_vertices_size_in_bytes = staticVertNum * sizeof(Vertex);
+        size_t dynamic_vertices_size_in_bytes = vertices_size_in_bytes - static_vertices_size_in_bytes;
+        bool realloced;
+        size_t offset = 0;
+        size_t numBytes = vertices_size_in_bytes;
+        auto updateRange = [&vertices_size_in_bytes, &dynamic_vertices_size_in_bytes, &realloced, &offset,
+                            &numBytes]() {
+            if (!realloced && WXL) {
+                offset = staticVertNum * sizeof(Vertex);
+                numBytes = dynamic_vertices_size_in_bytes;
+            } else {
+                offset = 0;
+                numBytes = vertices_size_in_bytes;
+            }
+        };
+#if WXL
+        realloced = state.d_vertices.resize(vertices_size_in_bytes, dynamic_vertices_size_in_bytes);
+        state.d_clr.resize(vertices_size_in_bytes, dynamic_vertices_size_in_bytes);
+        state.d_uv.resize(vertices_size_in_bytes, dynamic_vertices_size_in_bytes);
+        state.d_nrm.resize(vertices_size_in_bytes, dynamic_vertices_size_in_bytes);
+        state.d_tan.resize(vertices_size_in_bytes, dynamic_vertices_size_in_bytes);
+        size_t reservedCap = state.d_vertices.capacity - vertices_size_in_bytes;
+        if (reservedCap) {
+            CUDA_CHECK(cudaMemset((char *)((CUdeviceptr &)state.d_vertices) + vertices_size_in_bytes, 0, reservedCap));
+            CUDA_CHECK(cudaMemset((char *)((CUdeviceptr &)state.d_clr) + vertices_size_in_bytes, 0, reservedCap));
+            CUDA_CHECK(cudaMemset((char *)((CUdeviceptr &)state.d_uv) + vertices_size_in_bytes, 0, reservedCap));
+            CUDA_CHECK(cudaMemset((char *)((CUdeviceptr &)state.d_nrm) + vertices_size_in_bytes, 0, reservedCap));
+            CUDA_CHECK(cudaMemset((char *)((CUdeviceptr &)state.d_tan) + vertices_size_in_bytes, 0, reservedCap));
+        }
+#else
+        CUDA_CHECK(cudaMalloc(reinterpret_cast<void **>(&state.d_vertices.reset()), vertices_size_in_bytes));
+        CUDA_CHECK(cudaMalloc(reinterpret_cast<void **>(&state.d_clr.reset()), vertices_size_in_bytes));
+        CUDA_CHECK(cudaMalloc(reinterpret_cast<void **>(&state.d_uv.reset()), vertices_size_in_bytes));
+        CUDA_CHECK(cudaMalloc(reinterpret_cast<void **>(&state.d_nrm.reset()), vertices_size_in_bytes));
+        CUDA_CHECK(cudaMalloc(reinterpret_cast<void **>(&state.d_tan.reset()), vertices_size_in_bytes));
+#endif
+        updateRange();
+        CUDA_CHECK(cudaMemcpy(reinterpret_cast<void *>((CUdeviceptr &)state.d_vertices),
+                              (char *)g_vertices.data() + offset, numBytes, cudaMemcpyHostToDevice));
+        CUDA_CHECK(cudaMemcpy(reinterpret_cast<void *>((CUdeviceptr &)state.d_clr), (char *)g_clr.data() + offset,
+                              numBytes, cudaMemcpyHostToDevice));
+        CUDA_CHECK(cudaMemcpy(reinterpret_cast<void *>((CUdeviceptr &)state.d_uv), (char *)g_uv.data() + offset,
+                              numBytes, cudaMemcpyHostToDevice));
+        CUDA_CHECK(cudaMemcpy(reinterpret_cast<void *>((CUdeviceptr &)state.d_nrm), (char *)g_nrm.data() + offset,
+                              numBytes, cudaMemcpyHostToDevice));
+        CUDA_CHECK(cudaMemcpy(reinterpret_cast<void *>((CUdeviceptr &)state.d_tan), (char *)g_tan.data() + offset,
+                              numBytes, cudaMemcpyHostToDevice));
+
+        const size_t mat_indices_size_in_bytes = g_mat_indices.size() * sizeof(uint32_t);
+        const size_t light_mark_size_in_bytes = g_lightMark.size() * sizeof(unsigned short);
+#if WXL
+        state.d_mat_indices.resize(mat_indices_size_in_bytes);
+        state.d_lightMark.resize(light_mark_size_in_bytes);
+#else
+        CUDA_CHECK(cudaMalloc(reinterpret_cast<void **>(&state.d_mat_indices.reset()), mat_indices_size_in_bytes));
+        CUDA_CHECK(cudaMalloc(reinterpret_cast<void **>(&state.d_lightMark.reset()), light_mark_size_in_bytes));
+#endif
+        CUDA_CHECK(cudaMemcpy(reinterpret_cast<void *>((CUdeviceptr)state.d_mat_indices), g_mat_indices.data(),
+                              mat_indices_size_in_bytes, cudaMemcpyHostToDevice));
+        CUDA_CHECK(cudaMemcpy(reinterpret_cast<void *>((CUdeviceptr)state.d_lightMark), g_lightMark.data(),
+                              light_mark_size_in_bytes, cudaMemcpyHostToDevice));
+        timer.tock("done dynamic mesh update");
+        std::cout << "end copy\n";
+        splitMesh(g_vertices, g_mat_indices, g_meshPieces, staticMeshNum);
+        //std::cout<<"split mesh done\n";
+        //std::cout<<"mesh pieces:"<<g_meshPieces.size()<<std::endl;
+        for (int i = staticMeshNum; i < g_meshPieces.size(); i++) {
+            buildMeshAccelSplitMesh(state, g_meshPieces[i]);
+        }
+        buildInstanceAccel(state, 2, g_meshPieces);
     }
 //#endif
 }

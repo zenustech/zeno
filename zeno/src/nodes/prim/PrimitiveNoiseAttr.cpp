@@ -157,7 +157,7 @@ ZENDEFNODE(PrimitivePerlinNoiseAttr,
     {"string", "attrName", "noise"},
     {"enum float float3", "attrType", "float3"},
     }, /* category: */ {
-    "primitive",
+    "noise",
     }});
 
 struct GetPerlinNoise : INode{
@@ -184,7 +184,7 @@ ZENDEFNODE(GetPerlinNoise,
     "noise",
     }, /* params: */ {
     }, /* category: */ {
-    "numeric",
+    "noise",
     }});
 
 }

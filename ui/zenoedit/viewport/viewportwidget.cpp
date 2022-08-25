@@ -158,7 +158,7 @@ void CameraControl::fakeWheelEvent(QWheelEvent* event)
             m_fov = 170;
         }
     }
-    else{
+    else {
         m_radius *= scale;
     }
     updatePerspective();
@@ -347,6 +347,7 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
 ViewportWidget::ViewportWidget(QWidget* parent)
     : QOpenGLWidget(parent)
     , m_camera(nullptr)
+    , updateLightOnce(true)
 {
     QSurfaceFormat fmt;
     int nsamples = 16;  // TODO: adjust in a zhouhang-panel
@@ -406,6 +407,15 @@ void ViewportWidget::updatePerspective()
 void ViewportWidget::paintGL()
 {
     Zenovis::GetInstance().paintGL();
+    if(updateLightOnce){
+        auto scene = Zenovis::GetInstance().getSession()->get_scene();
+
+        if(scene->objectsMan->lightObjects.size() > 0){
+            zenoApp->getMainWindow()->updateLightList();
+            updateLightOnce = false;
+        }
+    }
+
     if (!record_path.empty() /*&& f <= frame_end*/) //py has bug: frame_end not initialized.
     {
         int f = Zenovis::GetInstance().getCurrentFrameId();
@@ -440,8 +450,25 @@ void ViewportWidget::mousePressEvent(QMouseEvent* event)
 
 void ViewportWidget::mouseMoveEvent(QMouseEvent* event)
 {
-    _base::mouseMoveEvent(event);
-    m_camera->fakeMouseMoveEvent(event);
+    auto & qle = zenoApp->getMainWindow()->selected;
+    if (qle != nullptr) {
+        float xpos = event->x(), ypos = event->y();
+        float dx = xpos - m_lastPos.x();
+        if (abs(dx) > 20) {
+            dx = 0;
+        }
+        float v = qle->text().toFloat();
+        dx *= zenoApp->getMainWindow()->mouseSen;
+        v += dx;
+        qle->setText(QString::number(v));
+        if(zenoApp->getMainWindow()->lightPanel != nullptr)
+            zenoApp->getMainWindow()->lightPanel->modifyLightData();
+        m_lastPos = QPointF(xpos, ypos);
+    }
+    else {
+        _base::mouseMoveEvent(event);
+        m_camera->fakeMouseMoveEvent(event);
+    }
     update();
 }
 
@@ -582,6 +609,21 @@ void DisplayWidget::init()
     //m_camera->installEventFilter(this);
 }
 
+TIMELINE_INFO DisplayWidget::timelineInfo()
+{
+    TIMELINE_INFO info;
+    info.bAlways = m_timeline->isAlways();
+    info.beginFrame = m_timeline->fromTo().first;
+    info.endFrame = m_timeline->fromTo().second;
+    return info;
+}
+
+void DisplayWidget::setTimelineInfo(TIMELINE_INFO info)
+{
+    m_timeline->setAlways(info.bAlways);
+    m_timeline->setFromTo(info.beginFrame, info.endFrame);
+}
+
 QSize DisplayWidget::sizeHint() const
 {
     return ZenoStyle::dpiScaledSize(QSize(12, 400));
@@ -699,6 +741,10 @@ void DisplayWidget::onRun()
     {
 
     }
+
+    m_view->updateLightOnce = true;
+    auto scene = Zenovis::GetInstance().getSession()->get_scene();
+    scene->objectsMan->lightObjects.clear();
 }
 
 void DisplayWidget::onRecord()

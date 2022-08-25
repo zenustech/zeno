@@ -20,7 +20,7 @@
 
 namespace zeno {
 
-ZENO_API std::shared_ptr<PrimitiveObject> primDuplicate(PrimitiveObject *parsPrim, PrimitiveObject *meshPrim, std::string dirAttr, std::string tanAttr, std::string radAttr, std::string onbType, float radius) {
+ZENO_API std::shared_ptr<PrimitiveObject> primDuplicate(PrimitiveObject *parsPrim, PrimitiveObject *meshPrim, std::string dirAttr, std::string tanAttr, std::string radAttr, std::string onbType, float radius, bool copyParsAttr, bool copyMeshAttr) {
     auto prim = std::make_shared<PrimitiveObject>();
     auto hasDirAttr = boolean_variant(!dirAttr.empty());
     auto indOnbType = array_index({"XYZ", "YXZ", "YZX", "ZYX", "ZXY", "XZY"}, onbType);
@@ -97,38 +97,42 @@ ZENO_API std::shared_ptr<PrimitiveObject> primDuplicate(PrimitiveObject *parsPri
     }, hasDirAttr, hasRadius, hasRadAttr, hasOnbType);
 
     auto copyattr = [&] (auto &primAttrs, auto &meshAttrs, auto &parsAttrs) {
-        meshAttrs.foreach_attr([&] (auto const &key, auto const &arrMesh) {
-            using T = std::decay_t<decltype(arrMesh[0])>;
-            primAttrs.template add_attr<T>(key);
-            tg.add([&] {
-                auto &arrOut = primAttrs.template attr<T>(key);
-                parallel_for((size_t)0, parsAttrs.size(), [&] (size_t i) {
-                    for (size_t j = 0; j < meshAttrs.size(); j++) {
-                        arrOut[i * meshAttrs.size() + j] = arrMesh[j];
-                    }
+        if (copyMeshAttr) {
+            meshAttrs.template foreach_attr<AttrAcceptAll>([&] (auto const &key, auto const &arrMesh) {
+                using T = std::decay_t<decltype(arrMesh[0])>;
+                primAttrs.template add_attr<T>(key);
+                tg.add([&] {
+                    auto &arrOut = primAttrs.template attr<T>(key);
+                    parallel_for((size_t)0, parsAttrs.size(), [&] (size_t i) {
+                        for (size_t j = 0; j < meshAttrs.size(); j++) {
+                            arrOut[i * meshAttrs.size() + j] = arrMesh[j];
+                        }
+                    });
                 });
             });
-        });
-        parsAttrs.foreach_attr([&] (auto const &key, auto const &arrPars) {
-            if (meshAttrs.has_attr(key)) return;
-            using T = std::decay_t<decltype(arrPars[0])>;
-            primAttrs.template add_attr<T>(key);
-            tg.add([&] {
-                auto &arrOut = primAttrs.template attr<T>(key);
-                parallel_for((size_t)0, arrPars.size(), [&] (size_t i) {
-                    auto value = arrPars[i];
-                    for (size_t j = 0; j < meshAttrs.size(); j++) {
-                        arrOut[i * meshAttrs.size() + j] = value;
-                    }
+        }
+        if (copyParsAttr) {
+            parsAttrs.template foreach_attr<AttrAcceptAll>([&] (auto const &key, auto const &arrPars) {
+                if (meshAttrs.has_attr(key)) return;
+                using T = std::decay_t<decltype(arrPars[0])>;
+                primAttrs.template add_attr<T>(key);
+                tg.add([&] {
+                    auto &arrOut = primAttrs.template attr<T>(key);
+                    parallel_for((size_t)0, arrPars.size(), [&] (size_t i) {
+                        auto value = arrPars[i];
+                        for (size_t j = 0; j < meshAttrs.size(); j++) {
+                            arrOut[i * meshAttrs.size() + j] = value;
+                        }
+                    });
                 });
             });
-        });
+        }
     };
     copyattr(prim->verts, meshPrim->verts, parsPrim->verts);
-    auto advanceinds = [&] (auto &primAttrs, auto &meshAttrs, auto &parsAttrs, size_t meshVertsSize) {
+    auto advanceinds = [&] (auto &primAttrs, auto &meshAttrs, auto &parsAttrs, size_t parsVertsSize, size_t meshVertsSize) {
         copyattr(primAttrs, meshAttrs, parsAttrs);
         tg.add([&] {
-            parallel_for((size_t)0, parsAttrs.size(), [&] (size_t i) {
+            parallel_for((size_t)0, parsVertsSize, [&] (size_t i) {
                 overloaded fixpairadd{
                     [] (auto &x, size_t y) {
                         x += y;
@@ -146,12 +150,13 @@ ZENO_API std::shared_ptr<PrimitiveObject> primDuplicate(PrimitiveObject *parsPri
             });
         });
     };
-    advanceinds(prim->points, meshPrim->points, parsPrim->verts, meshPrim->verts.size());
-    advanceinds(prim->lines, meshPrim->lines, parsPrim->verts, meshPrim->verts.size());
-    advanceinds(prim->tris, meshPrim->tris, parsPrim->verts, meshPrim->verts.size());
-    advanceinds(prim->quads, meshPrim->quads, parsPrim->verts, meshPrim->verts.size());
-    advanceinds(prim->polys, meshPrim->polys, parsPrim->verts, meshPrim->loops.size());
-    advanceinds(prim->loops, meshPrim->loops, parsPrim->verts, meshPrim->verts.size());
+    AttrVector<vec3f> dummyVec;
+    advanceinds(prim->points, meshPrim->points, parsPrim->verts, parsPrim->verts.size(), meshPrim->verts.size());
+    advanceinds(prim->lines, meshPrim->lines, dummyVec, parsPrim->verts.size(), meshPrim->verts.size());
+    advanceinds(prim->tris, meshPrim->tris, dummyVec, parsPrim->verts.size(), meshPrim->verts.size());
+    advanceinds(prim->quads, meshPrim->quads, dummyVec, parsPrim->verts.size(), meshPrim->verts.size());
+    advanceinds(prim->polys, meshPrim->polys, dummyVec, parsPrim->verts.size(), meshPrim->loops.size());
+    advanceinds(prim->loops, meshPrim->loops, dummyVec, parsPrim->verts.size(), meshPrim->verts.size());
 
     tg.run();
 
@@ -169,9 +174,11 @@ struct PrimDuplicate : INode {
         auto radAttr = get_input2<std::string>("radAttr");
         auto onbType = get_input2<std::string>("onbType");
         auto radius = get_input2<float>("radius");
+        auto copyParsAttr = get_input2<bool>("copyParsAttr");
+        auto copyMeshAttr = get_input2<bool>("copyMeshAttr");
         auto prim = primDuplicate(parsPrim.get(), meshPrim.get(),
                                   dirAttr, tanAttr, radAttr, onbType,
-                                  radius);
+                                  radius, copyParsAttr, copyMeshAttr);
         set_output("prim", prim);
     }
 };
@@ -185,6 +192,57 @@ ZENDEFNODE(PrimDuplicate, {
     {"string", "radAttr", ""},
     {"enum XYZ YXZ YZX ZYX ZXY XZY", "onbType", "XYZ"},
     {"float", "radius", "1"},
+    {"bool", "copyParsAttr", "1"},
+    {"bool", "copyMeshAttr", "1"},
+    },
+    {
+    {"PrimitiveObject", "prim"},
+    },
+    {
+    },
+    {"primitive"},
+});
+
+struct PrimDuplicateConnLines : INode {
+    virtual void apply() override {
+        auto profPrim = get_input<PrimitiveObject>("parsPrim");
+        auto prim = get_input<PrimitiveObject>("meshPrim");
+        auto tanAttr = get_input2<std::string>("tanAttr");
+        auto dirAttr = get_input2<std::string>("dirAttr");
+        auto radAttr = get_input2<std::string>("radAttr");
+        auto onbType = get_input2<std::string>("onbType");
+        auto radius = get_input2<float>("radius");
+        auto copyParsAttr = get_input2<bool>("copyParsAttr");
+        auto copyMeshAttr = get_input2<bool>("copyMeshAttr");
+        auto outprim = primDuplicate(profPrim.get(), prim.get(),
+                                  dirAttr, tanAttr, radAttr, onbType,
+                                  radius, copyParsAttr, copyMeshAttr);
+        outprim->lines.clear();
+        outprim->quads.reserve(prim->lines.size() * profPrim->lines.size());
+        for (size_t i = 0; i < prim->lines.size(); i++) {
+            for (size_t j = 0; j < profPrim->lines.size(); j++) {
+                auto [k1, k2] = profPrim->lines[j];
+                auto a = prim->lines[i] + k1 * prim->verts.size();
+                auto b = prim->lines[i] + k2 * prim->verts.size();
+                outprim->quads.emplace_back(a[0], a[1], b[1], b[0]);
+            }
+        }
+        outprim->quads.update();
+        set_output("prim", std::move(outprim));
+    }
+};
+
+ZENDEFNODE(PrimDuplicateConnLines, {
+    {
+    {"PrimitiveObject", "parsPrim"},
+    {"PrimitiveObject", "meshPrim"},
+    {"string", "dirAttr", ""},
+    {"string", "tanAttr", ""},
+    {"string", "radAttr", ""},
+    {"enum XYZ YXZ YZX ZYX ZXY XZY", "onbType", "XYZ"},
+    {"float", "radius", "1"},
+    {"bool", "copyParsAttr", "1"},
+    {"bool", "copyMeshAttr", "1"},
     },
     {
     {"PrimitiveObject", "prim"},

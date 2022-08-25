@@ -14,4 +14,4 @@ target_link_libraries(zenoui PUBLIC Qt5::Widgets Qt5::Svg)
 target_link_libraries(zenoui PUBLIC zeno)
 
 target_include_directories(zenoui PRIVATE ${Qt5Widgets_PRIVATE_INCLUDE_DIRS})
-target_include_directories(zenoui PRIVATE . ..)
+target_include_directories(zenoui PRIVATE . .. ../include)

@@ -91,7 +91,7 @@ struct ExpandFunctions : Visitor<ExpandFunctions> {
             ERROR_IF(args.size() != 2);
             auto a = make_stm(args[0]);
             auto b = make_stm(args[1]);
-            auto d = make_stm(args[1]);
+            //auto d = make_stm(args[1]);
             if (a->dim != b->dim) {
                 error("dimension mismatch for function `%s`: %d != %d",
                     name.c_str(), a->dim, b->dim);
