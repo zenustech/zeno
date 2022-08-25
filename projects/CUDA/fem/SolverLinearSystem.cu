@@ -3,6 +3,7 @@
 #include "zensim/geometry/Distance.hpp"
 #include "zensim/geometry/Friction.hpp"
 #include "zensim/geometry/SpatialQuery.hpp"
+#include "zensim/types/SmallVector.hpp"
 
 namespace zeno {
 
@@ -88,10 +89,20 @@ void IPCSystem::computeInertialAndGravityPotentialGradient(zs::CudaExecutionPoli
         });
     }
 }
+void IPCSystem::computeInertialPotentialGradient(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString &gTag) {
+    using namespace zs;
+    constexpr auto space = execspace_e::cuda;
+    // inertial
+    cudaPol(zs::range(coOffset), [vtemp = proxy<space>({}, vtemp), gTag, dt = dt] ZS_LAMBDA(int i) mutable {
+        auto m = zs::sqr(vtemp("ws", i));
+        vtemp.tuple<3>(gTag, i) = vtemp.pack<3>(gTag, i) - m * (vtemp.pack<3>("xn", i) - vtemp.pack<3>("xtilde", i));
+    });
+}
 
 /// elasticity
 template <typename Model>
-void computeElasticGradientAndHessianImpl(zs::CudaExecutionPolicy &cudaPol, typename IPCSystem::dtiles_t &vtemp,
+void computeElasticGradientAndHessianImpl(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString &gTag,
+                                          typename IPCSystem::dtiles_t &vtemp,
                                           typename IPCSystem::PrimitiveHandle &primHandle, const Model &model,
                                           typename IPCSystem::T dt, bool projectDBC, bool includeHessian) {
     using namespace zs;
@@ -106,7 +117,7 @@ void computeElasticGradientAndHessianImpl(zs::CudaExecutionPolicy &cudaPol, type
         /// credits: Tiantian Liu
         cudaPol(zs::range(primHandle.getEles().size()),
                 [vtemp = proxy<space>({}, vtemp), etemp = proxy<space>({}, primHandle.etemp),
-                 eles = proxy<space>({}, primHandle.getEles()), model, dt = dt, projectDBC = projectDBC,
+                 eles = proxy<space>({}, primHandle.getEles()), model, gTag, dt = dt, projectDBC = projectDBC,
                  vOffset = primHandle.vOffset, includeHessian,
                  n = primHandle.getEles().size()] __device__(int ei) mutable {
                     auto inds = eles.template pack<2>("inds", ei).template reinterpret_bits<int>() + vOffset;
@@ -137,8 +148,8 @@ void computeElasticGradientAndHessianImpl(zs::CudaExecutionPolicy &cudaPol, type
                     // gradient
                     auto vfdt2 = gij * (dt * dt) * vole;
                     for (int d = 0; d != 3; ++d) {
-                        atomic_add(exec_cuda, &vtemp("grad", d, inds[0]), (T)vfdt2(d));
-                        atomic_add(exec_cuda, &vtemp("grad", d, inds[1]), (T)-vfdt2(d));
+                        atomic_add(exec_cuda, &vtemp(gTag, d, inds[0]), (T)vfdt2(d));
+                        atomic_add(exec_cuda, &vtemp(gTag, d, inds[1]), (T)-vfdt2(d));
                     }
 
                     if (!includeHessian)
@@ -172,7 +183,7 @@ void computeElasticGradientAndHessianImpl(zs::CudaExecutionPolicy &cudaPol, type
             return;
         cudaPol(zs::range(primHandle.getEles().size()),
                 [vtemp = proxy<space>({}, vtemp), etemp = proxy<space>({}, primHandle.etemp),
-                 eles = proxy<space>({}, primHandle.getEles()), model, dt = dt, projectDBC = projectDBC,
+                 eles = proxy<space>({}, primHandle.getEles()), model, gTag, dt = dt, projectDBC = projectDBC,
                  vOffset = primHandle.vOffset, includeHessian] __device__(int ei) mutable {
                     auto IB = eles.template pack<2, 2>("IB", ei);
                     auto inds = eles.template pack<3>("inds", ei).template reinterpret_bits<int>() + vOffset;
@@ -219,7 +230,7 @@ void computeElasticGradientAndHessianImpl(zs::CudaExecutionPolicy &cudaPol, type
                     for (int i = 0; i != 3; ++i) {
                         auto vi = inds[i];
                         for (int d = 0; d != 3; ++d)
-                            atomic_add(exec_cuda, &vtemp("grad", d, vi), (T)vfdt2(i * 3 + d));
+                            atomic_add(exec_cuda, &vtemp(gTag, d, vi), (T)vfdt2(i * 3 + d));
                     }
 
                     if (!includeHessian)
@@ -303,7 +314,7 @@ void computeElasticGradientAndHessianImpl(zs::CudaExecutionPolicy &cudaPol, type
     } else if (primHandle.category == ZenoParticles::tet)
         cudaPol(zs::range(primHandle.getEles().size()),
                 [vtemp = proxy<space>({}, vtemp), etemp = proxy<space>({}, primHandle.etemp),
-                 eles = proxy<space>({}, primHandle.getEles()), model, dt = dt, projectDBC = projectDBC,
+                 eles = proxy<space>({}, primHandle.getEles()), model, gTag, dt = dt, projectDBC = projectDBC,
                  vOffset = primHandle.vOffset, includeHessian] __device__(int ei) mutable {
                     auto IB = eles.template pack<3, 3>("IB", ei);
                     auto inds = eles.template pack<4>("inds", ei).template reinterpret_bits<int>() + vOffset;
@@ -341,7 +352,7 @@ void computeElasticGradientAndHessianImpl(zs::CudaExecutionPolicy &cudaPol, type
                     for (int i = 0; i != 4; ++i) {
                         auto vi = inds[i];
                         for (int d = 0; d != 3; ++d)
-                            atomic_add(exec_cuda, &vtemp("grad", d, vi), (T)vfdt2(i * 3 + d));
+                            atomic_add(exec_cuda, &vtemp(gTag, d, vi), (T)vfdt2(i * 3 + d));
                     }
 
                     if (!includeHessian)
@@ -361,12 +372,13 @@ void computeElasticGradientAndHessianImpl(zs::CudaExecutionPolicy &cudaPol, type
                 });
 }
 
-void IPCSystem::computeElasticGradientAndHessian(zs::CudaExecutionPolicy &cudaPol, bool includeHessian) {
+void IPCSystem::computeElasticGradientAndHessian(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString &gTag,
+                                                 bool includeHessian) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
     for (auto &primHandle : prims) {
         match([&](auto &elasticModel) {
-            computeElasticGradientAndHessianImpl(cudaPol, vtemp, primHandle, elasticModel, dt, projectDBC,
+            computeElasticGradientAndHessianImpl(cudaPol, gTag, vtemp, primHandle, elasticModel, dt, projectDBC,
                                                  includeHessian);
         })(primHandle.models.getElasticModel());
     }

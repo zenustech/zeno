@@ -326,6 +326,10 @@ void TransferAcceptor::setBlackboard(const QString& id, const BLACKBOARD_INFO& b
     //todO
 }
 
+void TransferAcceptor::setTimeInfo(const TIMELINE_INFO& info)
+{
+}
+
 void TransferAcceptor::setLegacyCurve(
     const QString& id,
     const QVector<QPointF>& pts,

@@ -28,7 +28,7 @@ set(ZENO_EXTENSIONS
     MeshSubdiv
     CUDA
     Audio
-    Pass
+    GUI
     )
 
 foreach (name IN ITEMS ${ZENO_EXTENSIONS})

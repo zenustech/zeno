@@ -154,6 +154,19 @@ bool ZTimeline::isAlways() const
     return m_ui->btnAlways->isChecked();
 }
 
+void ZTimeline::setFromTo(int frameFrom, int frameTo)
+{
+    m_ui->editFrame->setText(QString::number(frameFrom));
+    m_ui->editTo->setText(QString::number(frameTo));
+    if (frameTo >= frameFrom)
+        m_ui->timeliner->setFromTo(frameFrom, frameTo);
+}
+
+void ZTimeline::setAlways(bool bOn)
+{
+    m_ui->btnAlways->setChecked(bOn);
+}
+
 void ZTimeline::resetSlider()
 {
     m_ui->timeliner->setSliderValue(0);

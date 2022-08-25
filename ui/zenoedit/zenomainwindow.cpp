@@ -579,6 +579,8 @@ void ZenoMainWindow::saveQuit() {
         }
     }
     pGraphsMgm->clear();
+    //clear timeline info.
+    setTimelineInfo(TIMELINE_INFO());
 }
 
 void ZenoMainWindow::save() {
@@ -595,7 +597,11 @@ void ZenoMainWindow::save() {
 
 bool ZenoMainWindow::saveFile(QString filePath) {
     IGraphsModel *pModel = zenoApp->graphsManagment()->currentModel();
-    QString strContent = ZsgWriter::getInstance().dumpProgramStr(pModel);
+
+    APP_SETTINGS settings;
+    settings.timeline = timelineInfo();
+
+    QString strContent = ZsgWriter::getInstance().dumpProgramStr(pModel, settings);
     saveContent(strContent, filePath);
     pModel->setFilePath(filePath);
     pModel->clearDirty();
@@ -611,8 +617,29 @@ void ZenoMainWindow::setInDlgEventLoop(bool bOn) {
     m_bInDlgEventloop = bOn;
 }
 
+TIMELINE_INFO ZenoMainWindow::timelineInfo()
+{
+    DisplayWidget* view = qobject_cast<DisplayWidget*>(m_viewDock->widget());
+    TIMELINE_INFO info;
+    if (view)
+    {
+        info = view->timelineInfo();
+    }
+    return info;
+}
+
+void ZenoMainWindow::setTimelineInfo(TIMELINE_INFO info)
+{
+    DisplayWidget* view = qobject_cast<DisplayWidget*>(m_viewDock->widget());
+    if (view)
+    {
+        view->setTimelineInfo(info);
+    }
+}
+
 void ZenoMainWindow::onFeedBack()
 {
+    /*
     ZFeedBackDlg dlg(this);
     if (dlg.exec() == QDialog::Accepted)
     {
@@ -628,6 +655,7 @@ void ZenoMainWindow::onFeedBack()
             dlg.sendEmail("bug feedback", content, strContent);
         }
     }
+    */
 }
 
 void ZenoMainWindow::clearErrorMark()

@@ -601,6 +601,21 @@ void DisplayWidget::init()
     //m_camera->installEventFilter(this);
 }
 
+TIMELINE_INFO DisplayWidget::timelineInfo()
+{
+    TIMELINE_INFO info;
+    info.bAlways = m_timeline->isAlways();
+    info.beginFrame = m_timeline->fromTo().first;
+    info.endFrame = m_timeline->fromTo().second;
+    return info;
+}
+
+void DisplayWidget::setTimelineInfo(TIMELINE_INFO info)
+{
+    m_timeline->setAlways(info.bAlways);
+    m_timeline->setFromTo(info.beginFrame, info.endFrame);
+}
+
 QSize DisplayWidget::sizeHint() const
 {
     return ZenoStyle::dpiScaledSize(QSize(12, 400));

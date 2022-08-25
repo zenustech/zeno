@@ -1,4 +1,5 @@
 #pragma once
+#include <zeno/utils/logger.h>
 #include "../Structures.hpp"
 #include "zensim/container/Bvh.hpp"
 #include "zensim/container/Bvs.hpp"
@@ -107,8 +108,9 @@ struct IPCSystem : IObject {
     void initKappa(zs::CudaExecutionPolicy &pol);
     void initialize(zs::CudaExecutionPolicy &pol);
     IPCSystem(std::vector<ZenoParticles *> zsprims, const dtiles_t *coVerts, const tiles_t *coLowResVerts,
-              const tiles_t *coEdges, const tiles_t *coEles, T dt, std::size_t ncps, bool withGround, T augLagCoeff,
-              T pnRel, T cgRel, int PNCap, int CGCap, int CCDCap, T kappa0, T fricMu, T dHat, T epsv, T gravity);
+              const tiles_t *coEdges, const tiles_t *coEles, T dt, std::size_t ncps, bool withGround, bool withContact,
+              bool withMollification, T augLagCoeff, T pnRel, T cgRel, int PNCap, int CGCap, int CCDCap, T kappa0,
+              T fricMu, T dHat, T epsv, zeno::vec3f gn, T gravity);
 
     void reinitialize(zs::CudaExecutionPolicy &pol, T framedt);
     void advanceSubstep(zs::CudaExecutionPolicy &pol, T ratio);
@@ -133,10 +135,15 @@ struct IPCSystem : IObject {
     void findCCDConstraintsImpl(zs::CudaExecutionPolicy &pol, T alpha, T xi, bool withBoundary = false);
     // linear system setup
     void computeInertialAndGravityPotentialGradient(zs::CudaExecutionPolicy &cudaPol);
-    void computeElasticGradientAndHessian(zs::CudaExecutionPolicy &cudaPol, bool includeHessian = true);
+    void computeInertialPotentialGradient(zs::CudaExecutionPolicy &cudaPol,
+                                          const zs::SmallString &gTag); // for kappaMin
+    void computeElasticGradientAndHessian(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString &gTag,
+                                          bool includeHessian = true);
     void computeBoundaryBarrierGradientAndHessian(zs::CudaExecutionPolicy &pol, bool includeHessian = true);
-    void computeBarrierGradientAndHessian(zs::CudaExecutionPolicy &pol, bool includeHessian = true);
-    void computeFrictionBarrierGradientAndHessian(zs::CudaExecutionPolicy &pol, bool includeHessian = true);
+    void computeBarrierGradientAndHessian(zs::CudaExecutionPolicy &pol, const zs::SmallString &gTag,
+                                          bool includeHessian = true);
+    void computeFrictionBarrierGradientAndHessian(zs::CudaExecutionPolicy &pol, const zs::SmallString &gTag,
+                                                  bool includeHessian = true);
     // krylov solver
     void project(zs::CudaExecutionPolicy &pol, const zs::SmallString tag);
     void precondition(zs::CudaExecutionPolicy &pol, const zs::SmallString srcTag, const zs::SmallString dstTag);
@@ -149,10 +156,9 @@ struct IPCSystem : IObject {
 
     // sim params
     std::size_t estNumCps = 1000000;
-    bool s_enableGround = false;
-    bool s_enableAdaptiveSetting = true;
-    bool s_enableContact = true;
-    bool s_enableMollification = true;
+    bool enableGround = false;
+    bool enableContact = true;
+    bool enableMollification = true;
     bool s_enableFriction = true;
     bool s_enableSelfFriction = true;
     vec3 s_groundNormal{0, 1, 0};

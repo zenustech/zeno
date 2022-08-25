@@ -10,7 +10,14 @@
 #include "viewport/zenovis.h"
 #include "util/log.h"
 #include <QFileDialog>
+#include <zenovis/ObjectsManager.h>
+#include <zeno/types/CameraObject.h>
 
+namespace zenovis {
+    struct Camera {
+        void setCamera(zeno::CameraData const &cam);
+    };
+} // namespace zenovis
 
 ZenoDockTitleWidget::ZenoDockTitleWidget(QWidget* parent)
 	: QWidget(parent)
@@ -473,9 +480,27 @@ QMenuBar* ZenoViewDockTitle::initMenu()
         pEnvText->addAction(pAction);
     }
 
+    QMenu* pCamera = new QMenu(tr("Camera"));
+    {
+		QAction* pAction = new QAction(tr("Node Camera"), this);
+		connect(pAction, &QAction::triggered, this, [=]() {
+            int frameid = Zenovis::GetInstance().getSession()->get_curr_frameid();
+            auto *scene = Zenovis::GetInstance().getSession()->get_scene();
+            for (auto const &[key, ptr]: scene->objectsMan->pairs()) {
+                if (key.find("MakeCamera") != std::string::npos && key.find(zeno::format(":{}:", frameid)) != std::string::npos) {
+                    auto cam = dynamic_cast<zeno::CameraObject*>(ptr)->get();
+                    scene->camera->setCamera(cam);
+                    zenoApp->getMainWindow()->updateViewport();
+                }
+            }
+        });
+        pCamera->addAction(pAction);
+    }
+
     pMenuBar->addMenu(pDisplay);
     pMenuBar->addMenu(pRecord);
     pMenuBar->addMenu(pEnvText);
+    pMenuBar->addMenu(pCamera);
 
     return pMenuBar;
 }

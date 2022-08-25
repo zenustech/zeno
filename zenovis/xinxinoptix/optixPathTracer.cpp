@@ -1189,11 +1189,19 @@ void UpdateDynamicMesh(std::map<std::string, int> const &mtlidlut) {
             }
         };
 #if WXL
-        realloced = state.d_vertices.resize(vertices_size_in_bytes);
-        state.d_clr.resize(vertices_size_in_bytes);
-        state.d_uv.resize(vertices_size_in_bytes);
-        state.d_nrm.resize(vertices_size_in_bytes);
-        state.d_tan.resize(vertices_size_in_bytes);
+        realloced = state.d_vertices.resize(vertices_size_in_bytes, dynamic_vertices_size_in_bytes);
+        state.d_clr.resize(vertices_size_in_bytes, dynamic_vertices_size_in_bytes);
+        state.d_uv.resize(vertices_size_in_bytes, dynamic_vertices_size_in_bytes);
+        state.d_nrm.resize(vertices_size_in_bytes, dynamic_vertices_size_in_bytes);
+        state.d_tan.resize(vertices_size_in_bytes, dynamic_vertices_size_in_bytes);
+        size_t reservedCap = state.d_vertices.capacity - vertices_size_in_bytes;
+        if (reservedCap) {
+            CUDA_CHECK(cudaMemset((char *)((CUdeviceptr &)state.d_vertices) + vertices_size_in_bytes, 0, reservedCap));
+            CUDA_CHECK(cudaMemset((char *)((CUdeviceptr &)state.d_clr) + vertices_size_in_bytes, 0, reservedCap));
+            CUDA_CHECK(cudaMemset((char *)((CUdeviceptr &)state.d_uv) + vertices_size_in_bytes, 0, reservedCap));
+            CUDA_CHECK(cudaMemset((char *)((CUdeviceptr &)state.d_nrm) + vertices_size_in_bytes, 0, reservedCap));
+            CUDA_CHECK(cudaMemset((char *)((CUdeviceptr &)state.d_tan) + vertices_size_in_bytes, 0, reservedCap));
+        }
 #else
         CUDA_CHECK(cudaMalloc(reinterpret_cast<void **>(&state.d_vertices.reset()), vertices_size_in_bytes));
         CUDA_CHECK(cudaMalloc(reinterpret_cast<void **>(&state.d_clr.reset()), vertices_size_in_bytes));
