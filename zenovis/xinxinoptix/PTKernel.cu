@@ -66,8 +66,8 @@ extern "C" __global__ void __raygen__rg()
     const CameraInfo cam = params.cam;
 
     unsigned int seed = tea<4>( idx.y*w + idx.x, subframe_index );
-    float focalPlaneDistance = 1.0f;
-    float aperture = 0.01f;
+    float focalPlaneDistance = 2.0f;
+    float aperture = 0.1f;
 
     float3 result = make_float3( 0.0f );
     int i = params.samples_per_launch;
@@ -81,7 +81,10 @@ extern "C" __global__ void __raygen__rg()
                 ( static_cast<float>( idx.y ) + subpixel_jitter.y ) / static_cast<float>( h )
                 ) - 1.0f;
         //float3 ray_direction = normalize(cam.right * d.x + cam.up * d.y + cam.front);
-        float3 ray_origin    = cam.eye + aperture * rnd(seed)*cam.right + aperture *rnd(seed) *cam.up;
+        float r0 = rnd(seed)*2.0f* M_PIf;
+        float r1 = rnd(seed) * aperture * aperture;
+        r1 = sqrt(r1);
+        float3 ray_origin    = cam.eye + r1 * ( cosf(r0)* cam.right + sinf(r0)* cam.up);
         float3 ray_direction = cam.eye + focalPlaneDistance *(cam.right * d.x + cam.up * d.y + cam.front) - ray_origin;
 
         RadiancePRD prd;
