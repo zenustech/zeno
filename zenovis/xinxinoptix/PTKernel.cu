@@ -66,8 +66,9 @@ extern "C" __global__ void __raygen__rg()
     const CameraInfo cam = params.cam;
 
     unsigned int seed = tea<4>( idx.y*w + idx.x, subframe_index );
-    float focalPlaneDistance = 2.0f;
-    float aperture = 0.1f;
+    float focalPlaneDistance = cam.focalPlaneDistance;
+    float aperture = cam.aperture;
+    aperture/=10;
 
     float3 result = make_float3( 0.0f );
     int i = params.samples_per_launch;

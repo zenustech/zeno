@@ -391,7 +391,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         //xinxinoptix::set_render_wireframe(opt.render_wireframe);
         //xinxinoptix::set_background_color(opt.bgcolor.r, opt.bgcolor.g, opt.bgcolor.b);
         //xinxinoptix::setDOF(cam.m_dof);
-        //xinxinoptix::setAperature(cam.m_aperature);
+        //xinxinoptix::setAperature(cam.m_aperture);
         auto lodright = glm::normalize(glm::cross(cam.m_lodfront, cam.m_lodup));
         auto lodup = glm::normalize(glm::cross(lodright, cam.m_lodfront));
         //zeno::log_warn("lodup = {}", zeno::other_to_vec<3>(cam.m_lodup));
@@ -399,7 +399,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         //zeno::log_warn("lodright = {}", zeno::other_to_vec<3>(lodright));
         xinxinoptix::set_perspective(glm::value_ptr(lodright), glm::value_ptr(lodup),
                                      glm::value_ptr(cam.m_lodfront), glm::value_ptr(cam.m_lodcenter),
-                                     cam.getAspect(), cam.m_fov);
+                                     cam.getAspect(), cam.m_fov, cam.focalPlaneDistance, cam.m_aperture);
         //xinxinoptix::set_projection(glm::value_ptr(cam.m_proj));
         }
 
