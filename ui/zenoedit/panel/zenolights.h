@@ -39,7 +39,7 @@ public:
 public:
     ZenoLights(QWidget* parent = nullptr);
     void updateLights();
-    std::vector<zeno::vec3f> ZenoLights::computeLightPrim(zeno::vec3f position, zeno::vec3f rotate, zeno::vec3f scale);
+    std::vector<zeno::vec3f> computeLightPrim(zeno::vec3f position, zeno::vec3f rotate, zeno::vec3f scale);
 };
 
 
