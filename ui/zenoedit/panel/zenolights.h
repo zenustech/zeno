@@ -11,7 +11,7 @@
 
 class ZenoLights : public QWidget {
     Q_OBJECT
-
+public:
     QLabel* pStatusBar = new QLabel();
     QLabel* pPrimName = new QLabel();
     QListView *lights_view = new QListView();

@@ -4,6 +4,7 @@
 #include <unordered_set>
 #include <QtWidgets>
 #include "dock/zenodockwidget.h"
+#include "panel/zenolights.h"
 #include "common.h"
 
 class ZenoDockWidget;
@@ -22,6 +23,7 @@ public:
     void setTimelineInfo(TIMELINE_INFO info);
 
     QLineEdit* selected = nullptr;
+    ZenoLights* lightPanel = nullptr;
     float mouseSen = 0.2;
 
 public slots:

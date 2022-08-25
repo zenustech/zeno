@@ -74,6 +74,7 @@ ZenoLights::ZenoLights(QWidget *parent) : QWidget(parent) {
             colorZEdit->setText(QString::number(clr[2]));
 
             zenoApp->getMainWindow()->selected = nullptr;
+            zenoApp->getMainWindow()->lightPanel = this;
         }else{
             zeno::log_info("connect item not found {}", name);
         }
@@ -188,21 +189,21 @@ ZenoLights::ZenoLights(QWidget *parent) : QWidget(parent) {
     pStatusBar->setProperty("cssClass", "proppanel");
     pMainLayout->addWidget(pStatusBar);
 
-    connect(posXEdit, &QLineEdit::textChanged, this, [&](){ modifyLightData(); });
-    connect(posYEdit, &QLineEdit::textChanged, this, [&](){ modifyLightData(); });
-    connect(posZEdit, &QLineEdit::textChanged, this, [&](){ modifyLightData(); });
+    connect(posXEdit, &QLineEdit::textEdited, this, [&](){ modifyLightData(); });
+    connect(posYEdit, &QLineEdit::textEdited, this, [&](){ modifyLightData(); });
+    connect(posZEdit, &QLineEdit::textEdited, this, [&](){ modifyLightData(); });
 
-    connect(rotateXEdit, &QLineEdit::textChanged, this, [&](){ modifyLightData(); });
-    connect(rotateYEdit, &QLineEdit::textChanged, this, [&](){ modifyLightData(); });
-    connect(rotateZEdit, &QLineEdit::textChanged, this, [&](){ modifyLightData(); });
+    connect(rotateXEdit, &QLineEdit::textEdited, this, [&](){ modifyLightData(); });
+    connect(rotateYEdit, &QLineEdit::textEdited, this, [&](){ modifyLightData(); });
+    connect(rotateZEdit, &QLineEdit::textEdited, this, [&](){ modifyLightData(); });
 
-    connect(scaleXEdit, &QLineEdit::textChanged, this, [&](){ modifyLightData(); });
-    connect(scaleYEdit, &QLineEdit::textChanged, this, [&](){ modifyLightData(); });
-    connect(scaleZEdit, &QLineEdit::textChanged, this, [&](){ modifyLightData(); });
+    connect(scaleXEdit, &QLineEdit::textEdited, this, [&](){ modifyLightData(); });
+    connect(scaleYEdit, &QLineEdit::textEdited, this, [&](){ modifyLightData(); });
+    connect(scaleZEdit, &QLineEdit::textEdited, this, [&](){ modifyLightData(); });
 
-    connect(colorXEdit, &QLineEdit::textChanged, this, [&](){ modifyLightData(); });
-    connect(colorYEdit, &QLineEdit::textChanged, this, [&](){ modifyLightData(); });
-    connect(colorZEdit, &QLineEdit::textChanged, this, [&](){ modifyLightData(); });
+    connect(colorXEdit, &QLineEdit::textEdited, this, [&](){ modifyLightData(); });
+    connect(colorYEdit, &QLineEdit::textEdited, this, [&](){ modifyLightData(); });
+    connect(colorZEdit, &QLineEdit::textEdited, this, [&](){ modifyLightData(); });
 
     connect(posXEdit, &QLineEdit::cursorPositionChanged, this, [&](){ zenoApp->getMainWindow()->selected = posXEdit; });
     connect(posYEdit, &QLineEdit::cursorPositionChanged, this, [&](){ zenoApp->getMainWindow()->selected = posYEdit; });
@@ -276,7 +277,7 @@ std::vector<zeno::vec3f> ZenoLights::computeLightPrim(zeno::vec3f position, zeno
 
 void ZenoLights::modifyLightData() {
     auto index = this->lights_view->currentIndex();
-    printf("modifyLightData %d\n", index.row());
+    //printf("modifyLightData %d\n", index.row());
     if (index.row() == -1) {
         return;
     }

@@ -455,6 +455,8 @@ void ViewportWidget::mouseMoveEvent(QMouseEvent* event)
         dx *= zenoApp->getMainWindow()->mouseSen;
         v += dx;
         qle->setText(QString::number(v));
+        if(zenoApp->getMainWindow()->lightPanel != nullptr)
+            zenoApp->getMainWindow()->lightPanel->modifyLightData();
         m_lastPos = QPointF(xpos, ypos);
     }
     else {
