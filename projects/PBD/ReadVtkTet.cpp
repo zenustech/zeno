@@ -44,12 +44,12 @@ public:
         quads[i] = tet.elems[i];
     }
 
+    prim->tris.clear();
+    extractSurf();
+    
     if(has_input<PrimitiveObject>("prim"))
         prim = get_input<PrimitiveObject>("prim");
 
-    prim->tris.clear();
-
-    extractSurf();
 
     set_output("outPrim", std::move(prim));
   }
