@@ -2113,7 +2113,7 @@ void IPCSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
             computeConstraints(pol);
             auto cr = constraintResidual(pol, true);
             if (cr < s_constraint_residual) {
-                fmt::print("satisfied cons res [{}] at newton iter [{}]\n", cr, newtonIter);
+                zeno::log_info("satisfied cons res [{}] at newton iter [{}]\n", cr, newtonIter);
                 projectDBC = true;
                 BCsatisfied = true;
             }
@@ -2186,13 +2186,14 @@ void IPCSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
         T res = infNorm(pol, vtemp, "dir") / dt;
         T cons_res = constraintResidual(pol);
         if (res < targetGRes && cons_res == 0) {
-            fmt::print("\t# newton optimizer ends in {} iters with residual {}\n", newtonIter, res);
+            zeno::log_info("\t# substep {} newton optimizer ends in {} iters with residual {}\n", substep, newtonIter,
+                           res);
             break;
         }
         fmt::print(fg(fmt::color::aquamarine),
-                   "newton iter {}: direction residual(/dt) {}, "
+                   "substep {} newton iter {}: direction residual(/dt) {}, "
                    "grad residual {}\n",
-                   newtonIter, res, infNorm(pol, vtemp, "grad"));
+                   substep, newtonIter, res, infNorm(pol, vtemp, "grad"));
         // LINESEARCH
         pol(zs::range(vtemp.size()), [vtemp = proxy<space>({}, vtemp)] ZS_LAMBDA(int i) mutable {
             vtemp.tuple<3>("xn0", i) = vtemp.pack<3>("xn", i);
@@ -2251,6 +2252,7 @@ struct AdvanceIPCSystem : INode {
         auto dt = get_input2<float>("dt");
 
         A->reinitialize(cudaPol, dt);
+        A->suggestKappa(cudaPol);
 
         for (int subi = 0; subi != nSubsteps; ++subi) {
             A->advanceSubstep(cudaPol, (typename IPCSystem::T)1 / nSubsteps);

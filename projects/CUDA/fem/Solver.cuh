@@ -113,6 +113,7 @@ struct IPCSystem : IObject {
               T fricMu, T dHat, T epsv, zeno::vec3f gn, T gravity);
 
     void reinitialize(zs::CudaExecutionPolicy &pol, T framedt);
+    void suggestKappa(zs::CudaExecutionPolicy &pol);
     void advanceSubstep(zs::CudaExecutionPolicy &pol, T ratio);
     void updateVelocities(zs::CudaExecutionPolicy &pol);
     void writebackPositionsAndVelocities(zs::CudaExecutionPolicy &pol);
@@ -155,6 +156,7 @@ struct IPCSystem : IObject {
     void lineSearch(zs::CudaExecutionPolicy &cudaPol, T &alpha);
 
     // sim params
+    int substep = -1;
     std::size_t estNumCps = 1000000;
     bool enableGround = false;
     bool enableContact = true;

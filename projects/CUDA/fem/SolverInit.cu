@@ -239,7 +239,7 @@ IPCSystem::IPCSystem(std::vector<ZenoParticles *> zsprims, const typename IPCSys
                      const typename IPCSystem::tiles_t *coLowResVerts, const typename IPCSystem::tiles_t *coEdges,
                      const tiles_t *coEles, T dt, std::size_t estNumCps, bool withGround, bool withContact,
                      bool withMollification, T augLagCoeff, T pnRel, T cgRel, int PNCap, int CGCap, int CCDCap,
-                     T kappa0, T fricMu, T dHat, T epsv, zeno::vec3f gn, T gravity)
+                     T kappa0, T fricMu, T dHat_, T epsv_, zeno::vec3f gn, T gravity)
     : coVerts{coVerts}, coLowResVerts{coLowResVerts}, coEdges{coEdges}, coEles{coEles},
       PP{estNumCps, zs::memsrc_e::um, 0}, nPP{zsprims[0]->getParticles<true>().get_allocator(), 1},
       tempPP{{{"H", 36}}, estNumCps, zs::memsrc_e::um, 0}, PE{estNumCps, zs::memsrc_e::um, 0},
@@ -269,7 +269,7 @@ IPCSystem::IPCSystem(std::vector<ZenoParticles *> zsprims, const typename IPCSys
       estNumCps{estNumCps}, enableGround{withGround}, enableContact{withContact},
       enableMollification{withMollification}, s_groundNormal{gn[0], gn[1], gn[2]},
       augLagCoeff{augLagCoeff}, pnRel{pnRel}, cgRel{cgRel}, PNCap{PNCap}, CGCap{CGCap}, CCDCap{CCDCap}, kappa{kappa0},
-      kappa0{kappa0}, kappaMin{0}, kappaMax{kappa0}, fricMu{fricMu}, dHat{dHat}, epsv{epsv}, extForce{0, gravity, 0} {
+      kappa0{kappa0}, kappaMin{0}, kappaMax{kappa0}, fricMu{fricMu}, dHat{dHat_}, epsv{epsv_}, extForce{0, gravity, 0} {
     coOffset = sfOffset = seOffset = svOffset = 0;
     prevNumPP = prevNumPE = prevNumPT = prevNumEE = 0;
     for (auto primPtr : zsprims) {
@@ -320,42 +320,22 @@ IPCSystem::IPCSystem(std::vector<ZenoParticles *> zsprims, const typename IPCSys
 
     // adaptive dhat, targetGRes, kappa
     {
-        /// dHat
-        this->dHat = dHat * std::sqrt(boxDiagSize2); // remain static since
-        if (kappa0 == 0) {
-            /// kappaMin
-            initKappa(cudaPol);
-            /// adaptive kappa
-            { // tet-oriented
-                T H_b = computeHb((T)1e-16 * boxDiagSize2, dHat * dHat);
-                kappa = 1e11 * avgNodeMass / (4e-16 * boxDiagSize2 * H_b);
-                kappaMax = 100 * kappa;
-                if (kappa < kappaMin)
-                    kappa = kappaMin;
-                if (kappa > kappaMax)
-                    kappa = kappaMax;
-            }
-            { // surf oriented (use framedt here)
-                auto kappaSurf = dt * dt * meanSurfaceArea / 3 * dHat * largestMu();
-                zeno::log_info("kappaSurf: {}, auto kappa: {}\n", kappaSurf, kappa);
-                if (kappaSurf > kappa && kappaSurf < kappaMax) {
-                    kappa = kappaSurf;
-                }
-            }
-            // boundaryKappa = kappa;
-            zeno::log_info("average node mass: {}, auto kappa: {} ({} - {})\n", avgNodeMass, this->kappa,
-                           this->kappaMin, this->kappaMax);
+        // remain static since
+        // dHat
+        this->dHat = dHat_ * std::sqrt(boxDiagSize2);
+        // adaptive epsv
+        if (epsv_ == 0) {
+            this->epsv = this->dHat;
         } else {
+            this->epsv = epsv_ * this->dHat;
+        }
+        // kappa
+        suggestKappa(cudaPol);
+        if (kappa0 != 0) {
             zeno::log_info("manual kappa: {}\n", this->kappa);
         }
-        // getchar();
     }
-    // adaptive epsv
-    if (epsv == 0) {
-        this->epsv = this->dHat;
-    } else {
-        this->epsv *= this->dHat;
-    }
+
     // output adaptive setups
     zeno::log_info("auto dHat: {}, epsv (friction): {}\n", this->dHat, this->epsv);
 }
@@ -368,6 +348,7 @@ void IPCSystem::reinitialize(zs::CudaExecutionPolicy &pol, typename IPCSystem::T
     this->framedt = framedt;
     curRatio = 0;
 
+    substep = -1;
     projectDBC = false;
     BCsatisfied = false;
 
@@ -480,11 +461,41 @@ void IPCSystem::reinitialize(zs::CudaExecutionPolicy &pol, typename IPCSystem::T
     targetGRes = pnRel * std::sqrt(boxDiagSize2);
     zeno::log_info("box diag size: {}, targetGRes: {}\n", std::sqrt(boxDiagSize2), targetGRes);
 }
+void IPCSystem::suggestKappa(zs::CudaExecutionPolicy &pol) {
+    using namespace zs;
+    constexpr auto space = execspace_e::cuda;
+    auto cudaPol = zs::cuda_exec();
+    if (kappa0 == 0) {
+        /// kappaMin
+        initKappa(cudaPol);
+        /// adaptive kappa
+        { // tet-oriented
+            T H_b = computeHb((T)1e-16 * boxDiagSize2, this->dHat * this->dHat);
+            kappa = 1e11 * avgNodeMass / (4e-16 * boxDiagSize2 * H_b);
+            kappaMax = 100 * kappa;
+            if (kappa < kappaMin)
+                kappa = kappaMin;
+            if (kappa > kappaMax)
+                kappa = kappaMax;
+        }
+        { // surf oriented (use framedt here)
+            auto kappaSurf = dt * dt * meanSurfaceArea / 3 * this->dHat * largestMu();
+            zeno::log_info("kappaSurf: {}, auto kappa: {}\n", kappaSurf, kappa);
+            if (kappaSurf > kappa && kappaSurf < kappaMax) {
+                kappa = kappaSurf;
+            }
+        }
+        // boundaryKappa = kappa;
+        zeno::log_info("average node mass: {}, auto kappa: {} ({} - {})\n", avgNodeMass, this->kappa, this->kappaMin,
+                       this->kappaMax);
+    }
+}
 void IPCSystem::advanceSubstep(zs::CudaExecutionPolicy &pol, typename IPCSystem::T ratio) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
 
     // setup substep dt
+    ++substep;
     dt = framedt * ratio;
     curRatio += ratio;
 
