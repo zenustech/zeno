@@ -101,6 +101,10 @@ private:
     std::shared_ptr<CameraControl> m_camera;
     std::string record_path;
     QVector2D record_res;
+    QPointF m_lastPos;
+
+public:
+    bool updateLightOnce;
 };
 
 class CameraKeyframeWidget;
