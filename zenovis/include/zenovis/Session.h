@@ -28,7 +28,7 @@ struct Session : zeno::disable_copy {
     void set_show_grid(bool flag);
     void look_perspective(float cx, float cy, float cz, float theta,
                           float phi, float radius, float fov,
-                          bool ortho_mode);
+                          bool ortho_mode, float aperture, float focalPlaneDistance);
     void do_screenshot(std::string path, std::string type, int nsamples);
     //void new_frame_offline(std::string path, int nsamples);
     void set_background_color(float r, float g, float b);
