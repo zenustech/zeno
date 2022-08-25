@@ -104,7 +104,7 @@ struct RenderEngineZhxx : RenderEngine, zeno::disable_copy {
         zenvis::set_render_wireframe(opt.render_wireframe);
         zenvis::set_background_color(opt.bgcolor.r, opt.bgcolor.g, opt.bgcolor.b);
         zenvis::setDOF(cam.m_dof);
-        zenvis::setAperature(cam.m_aperature);
+        zenvis::setAperature(cam.m_aperture);
         zenvis::set_window_size(cam.m_nx, cam.m_ny);
         zenvis::look_perspective(zxx.cx, zxx.cy, zxx.cz, zxx.theta,
                 zxx.phi, zxx.radius, zxx.fov, zxx.ortho_mode);
