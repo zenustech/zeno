@@ -3,76 +3,96 @@
 
 namespace zeno {
 
+IPCSystem::PrimitiveHandle::PrimitiveHandle(dtiles_t &vtemp, std::shared_ptr<tiles_t> elesPtr_)
+    : zsprimPtr{nullptr, [](void *) {}}, models{ZenoConstitutiveModel{}}, vertsPtr{&vtemp, [](void *) {}},
+      elesPtr{elesPtr_}, etemp{elesPtr_->get_allocator(), {{"He", 6 * 6}}, elesPtr_->size()}, surfTrisPtr{},
+      surfEdgesPtr{},
+      surfVertsPtr{}, svtemp{}, vOffset{0}, sfOffset{0}, seOffset{0}, svOffset{0}, category{ZenoParticles::curve} {
+    ;
+}
 IPCSystem::PrimitiveHandle::PrimitiveHandle(ZenoParticles &zsprim, std::size_t &vOffset, std::size_t &sfOffset,
                                             std::size_t &seOffset, std::size_t &svOffset, zs::wrapv<2>)
-    : zsprim{zsprim}, models{zsprim.getModel()}, verts{zsprim.getParticles<true>()}, eles{zsprim.getQuadraturePoints()},
-      etemp{zsprim.getQuadraturePoints().get_allocator(), {{"He", 6 * 6}}, zsprim.numElements()},
-      surfTris{zsprim.getQuadraturePoints()},  // this is fake!
-      surfEdges{zsprim.getQuadraturePoints()}, // all elements are surface edges
-      surfVerts{zsprim[ZenoParticles::s_surfVertTag]}, vOffset{vOffset},
+    : zsprimPtr{&zsprim, [](void *) {}}, models{zsprim.getModel()}, vertsPtr{&zsprim.getParticles<true>(),
+                                                                             [](void *) {}},
+      elesPtr{&zsprim.getQuadraturePoints(), [](void *) {}}, etemp{zsprim.getQuadraturePoints().get_allocator(),
+                                                                   {{"He", 6 * 6}},
+                                                                   zsprim.numElements()},
+      surfTrisPtr{&zsprim.getQuadraturePoints(), [](void *) {}},  // this is fake!
+      surfEdgesPtr{&zsprim.getQuadraturePoints(), [](void *) {}}, // all elements are surface edges
+      surfVertsPtr{&zsprim[ZenoParticles::s_surfVertTag], [](void *) {}}, vOffset{vOffset},
       svtemp{zsprim.getQuadraturePoints().get_allocator(),
              {{"H", 3 * 3}, {"fn", 1}},
              zsprim[ZenoParticles::s_surfVertTag].size()},
       sfOffset{sfOffset}, seOffset{seOffset}, svOffset{svOffset}, category{zsprim.category} {
     if (category != ZenoParticles::curve)
         throw std::runtime_error("dimension of 2 but is not curve");
-    vOffset += verts.size();
+    vOffset += getVerts().size();
     // sfOffset += 0; // no surface triangles
-    seOffset += surfEdges.size();
-    svOffset += surfVerts.size();
+    seOffset += getSurfEdges().size();
+    svOffset += getSurfVerts().size();
 }
 IPCSystem::PrimitiveHandle::PrimitiveHandle(ZenoParticles &zsprim, std::size_t &vOffset, std::size_t &sfOffset,
                                             std::size_t &seOffset, std::size_t &svOffset, zs::wrapv<3>)
-    : zsprim{zsprim}, models{zsprim.getModel()}, verts{zsprim.getParticles<true>()}, eles{zsprim.getQuadraturePoints()},
-      etemp{zsprim.getQuadraturePoints().get_allocator(), {{"He", 9 * 9}}, zsprim.numElements()},
-      surfTris{zsprim.getQuadraturePoints()}, surfEdges{zsprim[ZenoParticles::s_surfEdgeTag]},
-      surfVerts{zsprim[ZenoParticles::s_surfVertTag]}, vOffset{vOffset},
+    : zsprimPtr{&zsprim, [](void *) {}}, models{zsprim.getModel()}, vertsPtr{&zsprim.getParticles<true>(),
+                                                                             [](void *) {}},
+      elesPtr{&zsprim.getQuadraturePoints(), [](void *) {}}, etemp{zsprim.getQuadraturePoints().get_allocator(),
+                                                                   {{"He", 9 * 9}},
+                                                                   zsprim.numElements()},
+      surfTrisPtr{&zsprim.getQuadraturePoints(), [](void *) {}}, surfEdgesPtr{&zsprim[ZenoParticles::s_surfEdgeTag],
+                                                                              [](void *) {}},
+      surfVertsPtr{&zsprim[ZenoParticles::s_surfVertTag], [](void *) {}}, vOffset{vOffset},
       svtemp{zsprim.getQuadraturePoints().get_allocator(),
              {{"H", 3 * 3}, {"fn", 1}},
              zsprim[ZenoParticles::s_surfVertTag].size()},
       sfOffset{sfOffset}, seOffset{seOffset}, svOffset{svOffset}, category{zsprim.category} {
     if (category != ZenoParticles::surface)
         throw std::runtime_error("dimension of 3 but is not surface");
-    vOffset += verts.size();
-    sfOffset += surfTris.size();
-    seOffset += surfEdges.size();
-    svOffset += surfVerts.size();
+    vOffset += getVerts().size();
+    sfOffset += getSurfTris().size();
+    seOffset += getSurfEdges().size();
+    svOffset += getSurfVerts().size();
 }
 IPCSystem::PrimitiveHandle::PrimitiveHandle(ZenoParticles &zsprim, std::size_t &vOffset, std::size_t &sfOffset,
                                             std::size_t &seOffset, std::size_t &svOffset, zs::wrapv<4>)
-    : zsprim{zsprim}, models{zsprim.getModel()}, verts{zsprim.getParticles<true>()}, eles{zsprim.getQuadraturePoints()},
-      etemp{zsprim.getQuadraturePoints().get_allocator(), {{"He", 12 * 12}}, zsprim.numElements()},
-      surfTris{zsprim[ZenoParticles::s_surfTriTag]}, surfEdges{zsprim[ZenoParticles::s_surfEdgeTag]},
-      surfVerts{zsprim[ZenoParticles::s_surfVertTag]}, vOffset{vOffset},
+    : zsprimPtr{&zsprim, [](void *) {}}, models{zsprim.getModel()}, vertsPtr{&zsprim.getParticles<true>(),
+                                                                             [](void *) {}},
+      elesPtr{&zsprim.getQuadraturePoints(), [](void *) {}}, etemp{zsprim.getQuadraturePoints().get_allocator(),
+                                                                   {{"He", 12 * 12}},
+                                                                   zsprim.numElements()},
+      surfTrisPtr{&zsprim[ZenoParticles::s_surfTriTag], [](void *) {}},
+      surfEdgesPtr{&zsprim[ZenoParticles::s_surfEdgeTag], [](void *) {}},
+      surfVertsPtr{&zsprim[ZenoParticles::s_surfVertTag], [](void *) {}}, vOffset{vOffset},
       svtemp{zsprim.getQuadraturePoints().get_allocator(),
              {{"H", 3 * 3}, {"fn", 1}},
              zsprim[ZenoParticles::s_surfVertTag].size()},
       sfOffset{sfOffset}, seOffset{seOffset}, svOffset{svOffset}, category{zsprim.category} {
     if (category != ZenoParticles::tet)
         throw std::runtime_error("dimension of 4 but is not tetrahedra");
-    vOffset += verts.size();
-    sfOffset += surfTris.size();
-    seOffset += surfEdges.size();
-    svOffset += surfVerts.size();
+    vOffset += getVerts().size();
+    sfOffset += getSurfTris().size();
+    seOffset += getSurfEdges().size();
+    svOffset += getSurfVerts().size();
 }
 typename IPCSystem::T IPCSystem::PrimitiveHandle::averageNodalMass(zs::CudaExecutionPolicy &pol) const {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
-    if (zsprim.hasMeta(s_meanMassTag))
-        return zsprim.readMeta(s_meanMassTag, zs::wrapt<T>{});
+    if (zsprimPtr->hasMeta(s_meanMassTag))
+        return zsprimPtr->readMeta(s_meanMassTag, zs::wrapt<T>{});
+    auto &verts = getVerts();
     Vector<T> masses{verts.get_allocator(), verts.size()};
     pol(Collapse{verts.size()}, [verts = proxy<space>({}, verts), masses = proxy<space>(masses)] ZS_LAMBDA(
                                     int vi) mutable { masses[vi] = verts("m", vi); });
     auto tmp = reduce(pol, masses) / masses.size();
-    zsprim.setMeta(s_meanMassTag, tmp);
+    zsprimPtr->setMeta(s_meanMassTag, tmp);
     return tmp;
 }
 typename IPCSystem::T IPCSystem::PrimitiveHandle::averageSurfEdgeLength(zs::CudaExecutionPolicy &pol) const {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
-    if (zsprim.hasMeta(s_meanSurfEdgeLengthTag))
-        return zsprim.readMeta(s_meanSurfEdgeLengthTag, zs::wrapt<T>{});
-    auto &edges = surfEdges;
+    if (zsprimPtr->hasMeta(s_meanSurfEdgeLengthTag))
+        return zsprimPtr->readMeta(s_meanSurfEdgeLengthTag, zs::wrapt<T>{});
+    auto &verts = getVerts();
+    auto &edges = getSurfEdges();
     Vector<T> edgeLengths{edges.get_allocator(), edges.size()};
     pol(Collapse{edges.size()}, [edges = proxy<space>({}, edges), verts = proxy<space>({}, verts),
                                  edgeLengths = proxy<space>(edgeLengths)] ZS_LAMBDA(int ei) mutable {
@@ -80,17 +100,18 @@ typename IPCSystem::T IPCSystem::PrimitiveHandle::averageSurfEdgeLength(zs::Cuda
         edgeLengths[ei] = (verts.pack<3>("x0", inds[0]) - verts.pack<3>("x0", inds[1])).norm();
     });
     auto tmp = reduce(pol, edgeLengths) / edges.size();
-    zsprim.setMeta(s_meanSurfEdgeLengthTag, tmp);
+    zsprimPtr->setMeta(s_meanSurfEdgeLengthTag, tmp);
     return tmp;
 }
 typename IPCSystem::T IPCSystem::PrimitiveHandle::averageSurfArea(zs::CudaExecutionPolicy &pol) const {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
-    if (zsprim.category == ZenoParticles::curve)
+    if (zsprimPtr->category == ZenoParticles::curve)
         return (T)0;
-    if (zsprim.hasMeta(s_meanSurfAreaTag))
-        return zsprim.readMeta(s_meanSurfAreaTag, zs::wrapt<T>{});
-    auto &tris = surfTris;
+    if (zsprimPtr->hasMeta(s_meanSurfAreaTag))
+        return zsprimPtr->readMeta(s_meanSurfAreaTag, zs::wrapt<T>{});
+    auto &verts = getVerts();
+    auto &tris = getSurfTris();
     Vector<T> surfAreas{tris.get_allocator(), tris.size()};
     pol(Collapse{surfAreas.size()}, [tris = proxy<space>({}, tris), verts = proxy<space>({}, verts),
                                      surfAreas = proxy<space>(surfAreas)] ZS_LAMBDA(int ei) mutable {
@@ -101,7 +122,7 @@ typename IPCSystem::T IPCSystem::PrimitiveHandle::averageSurfArea(zs::CudaExecut
                         2;
     });
     auto tmp = reduce(pol, surfAreas) / tris.size();
-    zsprim.setMeta(s_meanSurfAreaTag, tmp);
+    zsprimPtr->setMeta(s_meanSurfAreaTag, tmp);
     return tmp;
 }
 
@@ -271,7 +292,6 @@ IPCSystem::IPCSystem(std::vector<ZenoParticles *> zsprims, const typename IPCSys
       augLagCoeff{augLagCoeff}, pnRel{pnRel}, cgRel{cgRel}, PNCap{PNCap}, CGCap{CGCap}, CCDCap{CCDCap}, kappa{kappa0},
       kappa0{kappa0}, kappaMin{0}, kappaMax{kappa0}, fricMu{fricMu}, dHat{dHat_}, epsv{epsv_}, extForce{0, gravity, 0} {
     coOffset = sfOffset = seOffset = svOffset = 0;
-    prevNumPP = prevNumPE = prevNumPT = prevNumEE = 0;
     for (auto primPtr : zsprims) {
         if (primPtr->category == ZenoParticles::category_e::curve) {
             prims.emplace_back(*primPtr, coOffset, sfOffset, seOffset, svOffset, zs::wrapv<2>{});
@@ -312,7 +332,7 @@ IPCSystem::IPCSystem(std::vector<ZenoParticles *> zsprims, const typename IPCSys
                       {"q", 3}},
                      numDofs};
     // inertial hessian
-    tempPB = dtiles_t{vtemp.get_allocator(), {{"Hi", 9}}, coOffset};
+    tempI = dtiles_t{vtemp.get_allocator(), {{"Hi", 9}}, coOffset};
 
     auto cudaPol = zs::cuda_exec();
     // average edge length (for CCD filtering)
@@ -320,18 +340,18 @@ IPCSystem::IPCSystem(std::vector<ZenoParticles *> zsprims, const typename IPCSys
 
     // adaptive dhat, targetGRes, kappa
     {
-        // remain static since
-        // dHat
+        // dHat (static)
         this->dHat = dHat_ * std::sqrt(boxDiagSize2);
-        // adaptive epsv
+        // adaptive epsv (static)
         if (epsv_ == 0) {
             this->epsv = this->dHat;
         } else {
             this->epsv = epsv_ * this->dHat;
         }
-        // kappa
+        // kappa (dynamic)
         suggestKappa(cudaPol);
         if (kappa0 != 0) {
+            this->kappa = kappa0;
             zeno::log_info("manual kappa: {}\n", this->kappa);
         }
     }
@@ -697,7 +717,7 @@ ZENDEFNODE(MakeIPCSystem, {{
                                {"float", "kappa0", "0"},
                                {"float", "fric_mu", "0"},
                                {"float", "aug_coeff", "1e2"},
-                               {"float", "pn_rel", "0.01"},
+                               {"float", "pn_rel", "0.005"},
                                {"float", "cg_rel", "0.0001"},
                                {"int", "pn_iter_cap", "1000"},
                                {"int", "cg_iter_cap", "1000"},
