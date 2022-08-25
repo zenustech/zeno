@@ -69,6 +69,8 @@ private:
     bool m_ortho_mode;
     float m_fov;
     float m_radius;
+    float m_aperture;
+    float m_focalPlaneDistance;
     QVector2D m_res;
 };
 
