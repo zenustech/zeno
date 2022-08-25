@@ -5,7 +5,7 @@
 #ifndef ZENO_ZLIGHTSMODEL_H
 #define ZENO_ZLIGHTSMODEL_H
 
-#include <QAbstractListModel  >
+#include <QAbstractListModel>
 
 class ZLightsModel: public QAbstractListModel   {
     int rowCount(const QModelIndex &parent) const override;
