@@ -154,7 +154,8 @@ void CameraControl::fakeWheelEvent(QWheelEvent* event)
     bool shift_pressed = event->modifiers() & Qt::ShiftModifier;
     if (shift_pressed)
         m_fov /= scale;
-    m_radius *= scale;
+    else
+        m_radius *= scale;
     updatePerspective();
 }
 
