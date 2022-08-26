@@ -17,9 +17,11 @@ struct PerspectiveInfo
     double radius;
     double fov;
     bool ortho_mode;
-    PerspectiveInfo() : cx(0), cy(0), cz(0), theta(0), phi(0), radius(0), fov(0), ortho_mode(0) {}
-    PerspectiveInfo(double cx, double cy, double cz, double theta, double phi, double radius, double fov, bool ortho_mode)
-        : cx(cx), cy(cy), cz(cz), theta(theta), phi(phi), radius(radius), fov(fov), ortho_mode(ortho_mode) {}
+    double aperture;
+    double focalPlaneDistance;
+    PerspectiveInfo() : cx(0), cy(0), cz(0), theta(0), phi(0), radius(0), fov(0), ortho_mode(0), aperture(0), focalPlaneDistance(0) {}
+    PerspectiveInfo(double cx, double cy, double cz, double theta, double phi, double radius, double fov, bool ortho_mode, double aperture, double focalPlaneDistance)
+        : cx(cx), cy(cy), cz(cz), theta(theta), phi(phi), radius(radius), fov(fov), ortho_mode(ortho_mode), aperture(aperture), focalPlaneDistance(focalPlaneDistance) {}
 };
 
 class Zenovis : public QObject

@@ -59,7 +59,7 @@ void IPCSystem::computeInertialAndGravityPotentialGradient(zs::CudaExecutionPoli
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
     // inertial
-    cudaPol(zs::range(coOffset), [tempPB = proxy<space>({}, tempPB), vtemp = proxy<space>({}, vtemp), dt = dt,
+    cudaPol(zs::range(coOffset), [tempI = proxy<space>({}, tempI), vtemp = proxy<space>({}, vtemp), dt = dt,
                                   projectDBC = projectDBC] ZS_LAMBDA(int i) mutable {
         auto m = zs::sqr(vtemp("ws", i));
         vtemp.tuple<3>("grad", i) =
@@ -70,7 +70,7 @@ void IPCSystem::computeInertialAndGravityPotentialGradient(zs::CudaExecutionPoli
         int BCorder[1] = {(int)vtemp("BCorder", i)};
         int BCfixed[1] = {(int)vtemp("BCfixed", i)};
         rotate_hessian(M, BCbasis, BCorder, BCfixed, projectDBC);
-        tempPB.template tuple<9>("Hi", i) = M;
+        tempI.template tuple<9>("Hi", i) = M;
         // prepare preconditioner
         for (int r = 0; r != 3; ++r)
             for (int c = 0; c != 3; ++c)

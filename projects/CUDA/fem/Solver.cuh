@@ -1,5 +1,4 @@
 #pragma once
-#include <zeno/utils/logger.h>
 #include "../Structures.hpp"
 #include "zensim/container/Bvh.hpp"
 #include "zensim/container/Bvs.hpp"
@@ -9,6 +8,7 @@
 #include "zensim/cuda/execution/ExecutionPolicy.cuh"
 #include "zensim/math/Vec.h"
 #include <zeno/types/PrimitiveObject.h>
+#include <zeno/utils/logger.h>
 #include <zeno/zeno.h>
 
 namespace zeno {
@@ -44,6 +44,8 @@ struct IPCSystem : IObject {
                         std::size_t &svOffset, zs::wrapv<3>);
         PrimitiveHandle(ZenoParticles &zsprim, std::size_t &vOffset, std::size_t &sfOffset, std::size_t &seOffset,
                         std::size_t &svOffset, zs::wrapv<4>);
+        // soft springs: only elasticity matters
+        PrimitiveHandle(dtiles_t &vtemp, std::shared_ptr<tiles_t> elesPtr);
         T averageNodalMass(zs::CudaExecutionPolicy &pol) const;
         T averageSurfEdgeLength(zs::CudaExecutionPolicy &pol) const;
         T averageSurfArea(zs::CudaExecutionPolicy &pol) const;
@@ -53,39 +55,37 @@ struct IPCSystem : IObject {
             zs::match([&](const auto &model) {
                 mu = model.mu;
                 lam = model.lam;
-            })(zsprim.getModel().getElasticModel());
+            })(models.getElasticModel());
             return zs::make_tuple(mu, lam);
         }
 
         decltype(auto) getVerts() const {
-            return verts;
+            return *vertsPtr;
         }
         decltype(auto) getEles() const {
-            return eles;
+            return *elesPtr;
         }
         decltype(auto) getSurfTris() const {
-            return surfTris;
+            return *surfTrisPtr;
         }
         decltype(auto) getSurfEdges() const {
-            return surfEdges;
+            return *surfEdgesPtr;
         }
         decltype(auto) getSurfVerts() const {
-            return surfVerts;
+            return *surfVertsPtr;
         }
         bool isBoundary() const noexcept {
-            return zsprim.asBoundary;
+            return zsprimPtr->asBoundary;
         }
 
-        ZenoParticles &zsprim;
-
+        std::shared_ptr<ZenoParticles> zsprimPtr{}; // nullptr if it is an auxiliary
         const ZenoConstitutiveModel &models;
-        typename ZenoParticles::dtiles_t &verts;
-        typename ZenoParticles::particles_t &eles;
+        std::shared_ptr<ZenoParticles::dtiles_t> vertsPtr;
+        std::shared_ptr<ZenoParticles::particles_t> elesPtr;
         typename ZenoParticles::dtiles_t etemp;
-        typename ZenoParticles::particles_t &surfTris;
-        typename ZenoParticles::particles_t &surfEdges;
-        // not required for codim obj
-        typename ZenoParticles::particles_t &surfVerts;
+        std::shared_ptr<ZenoParticles::particles_t> surfTrisPtr;
+        std::shared_ptr<ZenoParticles::particles_t> surfEdgesPtr;
+        std::shared_ptr<ZenoParticles::particles_t> surfVertsPtr;
         typename ZenoParticles::dtiles_t svtemp;
         const std::size_t vOffset, sfOffset, seOffset, svOffset;
         ZenoParticles::category_e category;
@@ -199,7 +199,7 @@ struct IPCSystem : IObject {
     const dtiles_t *coVerts;
     const tiles_t *coLowResVerts, *coEdges, *coEles;
     dtiles_t vtemp;
-    dtiles_t tempPB;
+    dtiles_t tempI;
 
     // self contacts
     zs::Vector<pair_t> PP;
@@ -240,8 +240,6 @@ struct IPCSystem : IObject {
     // end contacts
 
     zs::Vector<T> temp;
-
-    int prevNumPP, prevNumPE, prevNumPT, prevNumEE;
 
     zs::Vector<pair4_t> csPT, csEE;
     zs::Vector<int> ncsPT, ncsEE;

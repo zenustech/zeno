@@ -80,6 +80,8 @@ CameraControl::CameraControl(QWidget* parent)
     , m_fov(45.)
     , m_radius(5.0)
     , m_res(1, 1)
+    , m_aperture(0.1f)
+    , m_focalPlaneDistance(2.0f)
 {
     updatePerspective();
 }
@@ -144,18 +146,36 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent* event)
 void CameraControl::updatePerspective()
 {
     float cx = m_center[0], cy = m_center[1], cz = m_center[2];
-    Zenovis::GetInstance().updatePerspective(m_res, PerspectiveInfo(cx, cy, cz, m_theta, m_phi, m_radius, m_fov, m_ortho_mode));
+    Zenovis::GetInstance().updatePerspective(m_res, PerspectiveInfo(cx, cy, cz, m_theta, m_phi, m_radius, m_fov, m_ortho_mode, m_aperture, m_focalPlaneDistance));
 }
 
 void CameraControl::fakeWheelEvent(QWheelEvent* event)
 {
     int dy = event->angleDelta().y();
     float scale = (dy >= 0) ? 0.89 : 1 / 0.89;
-    bool shift_pressed = event->modifiers() & Qt::ShiftModifier;
-    if (shift_pressed)
+    bool shift_pressed = (event->modifiers() & Qt::ShiftModifier) && !(event->modifiers() & Qt::ControlModifier);
+    bool aperture_pressed = (event->modifiers() & Qt::ControlModifier) && !(event->modifiers() & Qt::ShiftModifier);
+    bool focalPlaneDistance_pressed = (event->modifiers() & Qt::ControlModifier) && (event->modifiers() & Qt::ShiftModifier);
+    float delta = dy > 0? 1: -1;
+    if (shift_pressed){
         m_fov /= scale;
-    else
+        if(m_fov > 170){
+            m_fov = 170;
+        }
+    }
+    else if (aperture_pressed) {
+        if (m_aperture < 0) {
+            m_aperture = 0;
+        }
+        m_aperture += delta * 0.01;
+
+    }
+    else if (focalPlaneDistance_pressed) {
+        m_focalPlaneDistance = m_focalPlaneDistance + delta*0.05 > 0.05 ? m_focalPlaneDistance + delta*0.05 : 0.05;
+    }
+    else {
         m_radius *= scale;
+    }
     updatePerspective();
 }
 

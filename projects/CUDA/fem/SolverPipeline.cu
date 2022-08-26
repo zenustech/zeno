@@ -595,9 +595,9 @@ void IPCSystem::multiply(zs::CudaExecutionPolicy &pol, const zs::SmallString dxT
         vtemp.template tuple<3>(bTag, vi) = vec3::zeros();
     });
     // inertial
-    pol(zs::range(coOffset), [execTag, tempPB = proxy<space>({}, tempPB), vtemp = proxy<space>({}, vtemp), dxTag,
+    pol(zs::range(coOffset), [execTag, tempI = proxy<space>({}, tempI), vtemp = proxy<space>({}, vtemp), dxTag,
                               bTag] __device__(int i) mutable {
-        auto Hi = tempPB.template pack<3, 3>("Hi", i);
+        auto Hi = tempI.template pack<3, 3>("Hi", i);
         auto dx = vtemp.template pack<3>(dxTag, i);
         dx = Hi * dx;
         for (int d = 0; d != 3; ++d)
@@ -2282,4 +2282,54 @@ ZENDEFNODE(AdvanceIPCSystem, {{
                               {"ZSIPCSystem"},
                               {},
                               {"FEM"}});
+
+struct IPCSystemClothBinding : INode { // usually called after 'MoveTorwards' zsboundary
+    void apply() override {
+        using namespace zs;
+        constexpr auto space = execspace_e::cuda;
+        auto A = get_input<IPCSystem>("ZSIPCSystem");
+        auto zsls = get_input<ZenoLevelSet>("ZSLevelSet");
+        bool ifHardCons = get_input2<bool>("hard_constraint");
+
+        auto cudaPol = zs::cuda_exec();
+        using basic_ls_t = typename ZenoLevelSet::basic_ls_t;
+        using const_sdf_vel_ls_t = typename ZenoLevelSet::const_sdf_vel_ls_t;
+        using const_transition_ls_t = typename ZenoLevelSet::const_transition_ls_t;
+#if 0
+        match([&](const auto &ls) {
+            if constexpr (is_same_v<RM_CVREF_T(ls), basic_ls_t>) {
+                match([&](const auto &lsPtr) {
+                    auto lsv = get_level_set_view<execspace_e::cuda>(lsPtr);
+                    bindBoundary(cudaPol, lsv, verts, stBvh, bouVerts, tris, dist_cap);
+                })(ls._ls);
+            } else if constexpr (is_same_v<RM_CVREF_T(ls), const_sdf_vel_ls_t>) {
+                match([&](auto lsv) {
+                    bindBoundary(cudaPol, SdfVelFieldView{lsv}, verts, stBvh, bouVerts, tris, dist_cap);
+                })(ls.template getView<execspace_e::cuda>());
+            } else if constexpr (is_same_v<RM_CVREF_T(ls), const_transition_ls_t>) {
+                match([&](auto fieldPair) {
+                    auto &fvSrc = std::get<0>(fieldPair);
+                    auto &fvDst = std::get<1>(fieldPair);
+                    bindBoundary(
+                        cudaPol,
+                        TransitionLevelSetView{SdfVelFieldView{fvSrc}, SdfVelFieldView{fvDst}, ls._stepDt, ls._alpha},
+                        verts, stBvh, bouVerts, tris, dist_cap);
+                })(ls.template getView<zs::execspace_e::cuda>());
+            }
+        })(zsls->getLevelSet());
+#endif
+
+        set_output("ZSIPCSystem", A);
+    }
+};
+
+ZENDEFNODE(IPCSystemClothBinding, {{
+                                       "ZSIPCSystem",
+                                       "ZSLevelSet",
+                                       {"bool", "hard_constraint", "1"},
+                                   },
+                                   {"ZSIPCSystem"},
+                                   {},
+                                   {"FEM"}});
+
 } // namespace zeno

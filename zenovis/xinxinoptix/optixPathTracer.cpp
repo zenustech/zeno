@@ -1777,7 +1777,7 @@ void set_window_size(int nx, int ny) {
     resize_dirty = true;
 }
 
-void set_perspective(float const *U, float const *V, float const *W, float const *E, float aspect, float fov) {
+void set_perspective(float const *U, float const *V, float const *W, float const *E, float aspect, float fov, float fpd, float aperture) {
     auto &cam = state.params.cam;
     //float c_aspect = fw/fh;
     //float u_aspect = aspect;
@@ -1801,6 +1801,9 @@ void set_perspective(float const *U, float const *V, float const *W, float const
     //camera.setZxxViewMatrix(U, V, W);
     //camera.setAspectRatio(aspect);
     //camera.setFovY(fov * aspect * (float)M_PI / 180.0f);
+
+    cam.focalPlaneDistance = fpd;
+    cam.aperture = aperture;
 }
 
 

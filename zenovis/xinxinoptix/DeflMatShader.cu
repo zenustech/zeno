@@ -93,7 +93,7 @@ MatInput const &attrs) {
     mats.opacity = mat_opacity;
     mats.nrm = mat_normal;
     mats.emission = mat_emission;
-    mats.specTrans = clamp(mat_specTrans,0.0f,0.99f);
+    mats.specTrans = clamp(mat_specTrans,0.0f,1.0f);
     mats.ior = mat_ior;
     mats.scatterDistance = mat_scatterDistance;
     mats.flatness = mat_flatness;
@@ -570,12 +570,13 @@ extern "C" __global__ void __closesthit__radiance()
     if(flag == DisneyBSDF::transmissionEvent){
         prd->is_inside = !prd->is_inside;
         if( prd->is_inside && prd->medium == DisneyBSDF::PhaseFunctions::isotropic){
-            prd->attenuation *= transmittanceColor;
+            //prd->attenuation *= transmittanceColor;
             prd->extinction = extinction;
             prd->scatterDistance = scatterDistance;
             prd->transColor = transmittanceColor;
-            float tmpPDF;
-            prd->maxDistance = DisneyBSDF::SampleDistance(prd->seed,prd->extinction,tmpPDF);
+            float tmpPDF = 1.0f;
+            prd->maxDistance = DisneyBSDF::SampleDistance(prd->seed,prd->scatterDistance,tmpPDF);
+            //prd->maxDistance = scatterDistance;
             prd->scatterPDF = tmpPDF;
         }
         if(!prd->is_inside){
