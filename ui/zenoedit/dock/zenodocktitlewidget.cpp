@@ -419,9 +419,8 @@ QMenuBar* ZenoViewDockTitle::initMenu()
             //QString path = QDateTime::currentDateTime().toString(QString("yyyy-dd-MM_hh-mm-ss.png"));
             QString path = QFileDialog::getSaveFileName(nullptr, tr("Path to Save"), "", tr("PNG images(*.png);;JPEG images(*.jpg);;BMP images(*.bmp);;EXR images(*.exr);;HDR images(*.hdr);;"));
             QString ext = QFileInfo(path).suffix();
-            int nsamples = 16;
 			if (!path.isEmpty()) {
-				Zenovis::GetInstance().getSession()->do_screenshot(path.toStdString(), ext.toStdString(), nsamples);
+				Zenovis::GetInstance().getSession()->do_screenshot(path.toStdString(), ext.toStdString());
 			}
         });
 		pAction = createAction(tr("Record Video"));

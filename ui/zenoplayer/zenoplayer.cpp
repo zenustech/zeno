@@ -196,9 +196,8 @@ QMenuBar *ZenoPlayer::initMenu()
                 nullptr, tr("Path to Save"), "",
                 tr("PNG images(*.png);;JPEG images(*.jpg);;BMP images(*.bmp);;EXR images(*.exr);;HDR images(*.hdr);;"));
             QString ext = QFileInfo(path).suffix();
-            int nsamples = 16;
             if (!path.isEmpty()) {
-                Zenovis::GetInstance().getSession()->do_screenshot(path.toStdString(), ext.toStdString(), nsamples);
+                Zenovis::GetInstance().getSession()->do_screenshot(path.toStdString(), ext.toStdString());
             }
         });
         pAction = new QAction(tr("Record Video"), this);
@@ -326,7 +325,7 @@ void ZenoPlayer::onFrameDrawn(int frameid)
         QString ext = QFileInfo(path).suffix();
         int nsamples = m_InitParam.iSample;
         if (!path.isEmpty()) {
-            Zenovis::GetInstance().getSession()->do_screenshot(path.toStdString(), ext.toStdString(), nsamples);
+            Zenovis::GetInstance().getSession()->do_screenshot(path.toStdString(), ext.toStdString());
         }
     }
 }

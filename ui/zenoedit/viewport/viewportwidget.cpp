@@ -435,12 +435,11 @@ void ViewportWidget::paintGL()
     {
         int f = Zenovis::GetInstance().getCurrentFrameId();
         auto record_file = zeno::format("{}/{:06d}.png", record_path, f);
-        int nsamples = 16;
-        checkRecord(record_file, record_res, nsamples);
+        checkRecord(record_file, record_res);
     }
 }
 
-void ViewportWidget::checkRecord(std::string a_record_file, QVector2D a_record_res, int a_nsamples)
+void ViewportWidget::checkRecord(std::string a_record_file, QVector2D a_record_res)
 {
     if (!record_path.empty() /*&& f <= frame_end*/) //py has bug: frame_end not initialized.
     {
@@ -448,7 +447,7 @@ void ViewportWidget::checkRecord(std::string a_record_file, QVector2D a_record_r
         m_camera->setRes(a_record_res);
         m_camera->updatePerspective();
         auto extname = QFileInfo(QString::fromStdString(a_record_file)).suffix().toStdString();
-        Zenovis::GetInstance().getSession()->do_screenshot(a_record_file, extname, a_nsamples);
+        Zenovis::GetInstance().getSession()->do_screenshot(a_record_file, extname);
         m_camera->setRes(oldRes);
         m_camera->updatePerspective();
         //if f == self.frame_end:
@@ -793,6 +792,8 @@ void DisplayWidget::onRecord()
         recInfo.bitrate = bitrate;
         recInfo.fps = fps;
         recInfo.videoname = filename;
+
+        Zenovis::GetInstance().startPlay(true);
 
         RecordVideoMgr recordMgr(m_view, recInfo, nullptr);
         ZRecordProgressDlg dlgProc(recInfo);

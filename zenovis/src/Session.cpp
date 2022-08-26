@@ -80,7 +80,7 @@ void Session::new_frame() {
     ////});
 //}
 
-void Session::do_screenshot(std::string path, std::string type, int nsamples) {
+void Session::do_screenshot(std::string path, std::string type) {
     auto hdrSize = std::map<std::string, int>{
         {"png", 1},
         {"jpg", 1},
@@ -92,7 +92,7 @@ void Session::do_screenshot(std::string path, std::string type, int nsamples) {
     auto ny = impl->scene->camera->m_ny;
 
     zeno::log_info("saving screenshot {}x{} to {}", nx, ny, path);
-    std::vector<char> pixels = impl->scene->record_frame_offline(nsamples, hdrSize, 3);
+    std::vector<char> pixels = impl->scene->record_frame_offline(hdrSize, 3);
 
     std::map<std::string, std::function<void()>>{
     {"png", [&] {
