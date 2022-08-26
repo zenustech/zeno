@@ -132,8 +132,8 @@ private:
     QPersistentModelIndex m_index;
     QPersistentModelIndex m_subGpIndex;
 
-    QMap<QString, _socket_ctrl> m_inSockets;
-    QMap<QString, _socket_ctrl> m_outSockets;
+    FuckQMap<QString, _socket_ctrl> m_inSockets;
+    FuckQMap<QString, _socket_ctrl> m_outSockets;
 
     QMap<QString, ZenoParamWidget*> m_paramControls;
     ZenoTextLayoutItem* m_NameItem;

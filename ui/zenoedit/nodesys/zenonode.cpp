@@ -747,9 +747,11 @@ bool ZenoNode::renameDictKey(bool bInput, const INPUT_SOCKETS& inputs, const OUT
             //rename.
             QString oldName = *uiNewSet.begin();
             QString newName = *coreNewSet.begin();
-            ZASSERT_EXIT(oldName != newName, false);
 
-            _socket_ctrl ctrl = m_inSockets[oldName];
+            auto it = m_inSockets.find(oldName);
+            ZASSERT_EXIT(oldName != newName && it != m_inSockets.end(), false);
+
+            _socket_ctrl ctrl = it->second;
             ctrl.socket_text->setText(newName);
             ctrl.socket->updateSockName(newName);
 
@@ -759,8 +761,7 @@ bool ZenoNode::renameDictKey(bool bInput, const INPUT_SOCKETS& inputs, const OUT
             format.setBackground(QColor(37, 37, 37));
             frame->setFrameFormat(format);
 
-            m_inSockets[newName] = ctrl;
-            m_inSockets.remove(oldName);
+            it->first = newName;
 
             updateWhole();
             return true;
@@ -1419,10 +1420,10 @@ void ZenoNode::switchView(bool bPreview)
     m_pStatusWidgets->setVisible(!bPreview);
 
     for (auto p : m_inSockets) {
-        p.socket->setVisible(!bPreview);
+        p.second.socket->setVisible(!bPreview);
     }
     for (auto p : m_outSockets) {
-        p.socket->setVisible(!bPreview);
+        p.second.socket->setVisible(!bPreview);
     }
     adjustPreview(bPreview);
 }
@@ -1770,10 +1771,10 @@ void ZenoNode::onCollaspeUpdated(bool collasped)
         m_bodyWidget->hide();
         //socket icon item is out of the layout.
         for (auto p : m_inSockets) {
-            p.socket->hide();
+            p.second.socket->hide();
         }
         for (auto p : m_outSockets) {
-            p.socket->hide();
+            p.second.socket->hide();
         }
         m_pMainLayout->setSpacing(0);
     }
@@ -1781,10 +1782,10 @@ void ZenoNode::onCollaspeUpdated(bool collasped)
     {
 		m_bodyWidget->show();
         for (auto p : m_inSockets) {
-            p.socket->show();
+            p.second.socket->show();
         }
         for (auto p : m_outSockets) {
-            p.socket->show();
+            p.second.socket->show();
         }
         m_pMainLayout->setSpacing(1);
     }

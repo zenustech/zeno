@@ -327,6 +327,7 @@ void SubGraphModel::updateSocket(const QString& nodeid, const SOCKET_UPDATE_INFO
         QModelIndex idx = index(nodeid);
         ZASSERT_EXIT(idx.isValid());
         INPUT_SOCKETS inputs = data(idx, ROLE_INPUTS).value<INPUT_SOCKETS>();
+        const QString& nodeName = idx.data(ROLE_OBJNAME).toString();
         const QString& oldName = info.oldInfo.name;
         const QString& newName = info.newInfo.name;
         switch (info.updateWay)
@@ -335,7 +336,15 @@ void SubGraphModel::updateSocket(const QString& nodeid, const SOCKET_UPDATE_INFO
             {
                 INPUT_SOCKET newSock;
                 newSock.info = info.newInfo;
-                inputs.push_front(newName, newSock);    //ensure SRC is the last socket in layout and serialization.
+                if (nodeName == "MakeDict" || nodeName == "ExtractDict")
+                {
+                    //dynamic socket in dict grows by bottom direction.
+                    inputs.insert(newName, newSock);
+                }
+                else
+                {
+                    inputs.push_front(newName, newSock);    //ensure SRC is the last socket in layout and serialization.
+                }
                 setData(idx, QVariant::fromValue(inputs), ROLE_INPUTS);
                 break;
             }
