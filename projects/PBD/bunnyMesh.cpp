@@ -3,6 +3,7 @@
 #include <vector>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/zeno.h>
+#include <zeno/utils/log.h>
 
 #include "BunnyMeshData.h"
 
@@ -10,7 +11,7 @@ namespace zeno{
 
 struct bunnyMesh : zeno::INode
 {
-	BunnyMeshData theBunnyMesh;
+	inline static const BunnyMeshData theBunnyMesh;
 	virtual void apply() override 
     {
 	    auto prim = std::make_shared<zeno::PrimitiveObject>();
@@ -20,10 +21,10 @@ struct bunnyMesh : zeno::INode
         auto &edge = prim->lines;
         auto &surf = prim->tris;
 
-		int numParticles = theBunnyMesh.pos.size()/3;
-		int numTets = theBunnyMesh.tet.size()/4;
-		int numEdges = theBunnyMesh.edge.size()/2;
-		int numSurfs = theBunnyMesh.surf.size()/3;
+		int numParticles = std::size(theBunnyMesh.pos)/3;
+		int numTets = std::size(theBunnyMesh.tet)/4;
+		int numEdges = std::size(theBunnyMesh.edge)/2;
+		int numSurfs = std::size(theBunnyMesh.surf)/3;
 
 		pos.resize(numParticles);
 		tet.resize(numTets);
@@ -46,11 +47,11 @@ struct bunnyMesh : zeno::INode
 			for (int j = 0; j < 3; j++)
 				surf[i][j] = theBunnyMesh.surf[i * 3 + j];
 
-		std::cout << "created a bunny tetrahedron mesh!" << std::endl;
-		std::cout << "numParticles:" << numParticles<< std::endl;
-		std::cout << "numEdges:" << numEdges<< std::endl;
-		std::cout << "numTets:" << numTets<< std::endl;
-		std::cout << "numSurfs:" << numSurfs<< std::endl;
+		log_info("created a bunny tetrahedron mesh");
+		log_info("numParticles: {}", numParticles);
+		log_info("numEdges: {}", numEdges);
+		log_info("numTets: {}", numTets);
+		log_info("numSurfs: {}", numSurfs);
 
         set_output("prim", std::move(prim));
 	};
