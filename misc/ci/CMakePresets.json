@@ -21,17 +21,17 @@
       "displayName": "OpenVDB configuration",
       "description": "Additionally build the OpenVDB extensions",
       "cacheVariables": {
-        "ZENO_PARALLEL_STL": "ON",
-        "ZENO_WITH_ZenoFX": "ON",
-        "ZENOFX_ENABLE_OPENVDB": "ON",
-        "ZENOFX_ENABLE_LBVH": "ON",
-        "ZENO_WITH_zenvdb": "ON",
-        "ZENO_WITH_FastFLIP": "ON",
-        "ZENO_WITH_Rigid": "ON",
-        "ZENO_WITH_oldzenbase": "ON",
-        "ZENO_WITH_Audio": "ON",
-        "ZENO_WITH_PBD": "ON",
-        "ZENO_WITH_SampleModel": "ON",
+        "ZENO_PARALLEL_STL": "OFF",
+        "ZENO_WITH_ZenoFX": "OFF",
+        "ZENOFX_ENABLE_OPENVDB": "OFF",
+        "ZENOFX_ENABLE_LBVH": "OFF",
+        "ZENO_WITH_zenvdb": "OFF",
+        "ZENO_WITH_FastFLIP": "OFF",
+        "ZENO_WITH_Rigid": "OFF",
+        "ZENO_WITH_oldzenbase": "OFF",
+        "ZENO_WITH_Audio": "OFF",
+        "ZENO_WITH_PBD": "OFF",
+        "ZENO_WITH_SampleModel": "OFF",
         "ZENO_WITH_TOOL_FLIPtools": "OFF",
         "ZENO_WITH_TOOL_BulletTools": "OFF"
       }
@@ -42,22 +42,22 @@
       "displayName": "Default configuration",
       "description": "Build all extension modules that are CPU-only",
       "cacheVariables": {
-        "ZENO_WITH_FEM": "ON",
-        "ZENO_WITH_cgmesh": "ON",
-        "ZENO_WITH_TreeSketch": "ON",
-        "ZENO_WITH_Skinning": "ON",
-        "ZENO_WITH_Euler": "ON",
-        "ZENO_WITH_Functional": "ON",
-        "ZENO_WITH_LSystem": "ON",
-        "ZENO_WITH_mesher": "ON",
-        "ZENO_WITH_Alembic": "ON",
-        "ZENO_WITH_FBX": "ON",
-        "ZENO_WITH_DemBones": "ON",
-        "ZENO_WITH_MeshSubdiv": "ON",
-        "ZENO_WITH_CalcGeometryUV": "ON",
+        "ZENO_WITH_FEM": "OFF",
+        "ZENO_WITH_cgmesh": "OFF",
+        "ZENO_WITH_TreeSketch": "OFF",
+        "ZENO_WITH_Skinning": "OFF",
+        "ZENO_WITH_Euler": "OFF",
+        "ZENO_WITH_Functional": "OFF",
+        "ZENO_WITH_LSystem": "OFF",
+        "ZENO_WITH_mesher": "OFF",
+        "ZENO_WITH_Alembic": "OFF",
+        "ZENO_WITH_FBX": "OFF",
+        "ZENO_WITH_DemBones": "OFF",
+        "ZENO_WITH_MeshSubdiv": "OFF",
+        "ZENO_WITH_CalcGeometryUV": "OFF",
         "ZENO_WITH_python": "ON",
-        "ZENO_WITH_TOOL_cgmeshTools": "ON",
-        "ZENO_WITH_TOOL_HerculesTools": "ON"
+        "ZENO_WITH_TOOL_cgmeshTools": "OFF",
+        "ZENO_WITH_TOOL_HerculesTools": "OFF"
       }
     },
     {
@@ -67,7 +67,7 @@
       "description": "Additionally build with CUDA extension modules",
       "cacheVariables": {
         "ZENO_WITH_CUDA": "OFF",
-        "ZENO_ENABLE_OPTIX": "ON"
+        "ZENO_ENABLE_OPTIX": "OFF"
       }
     }
   ],
