@@ -4,6 +4,7 @@
 #include <type_traits>
 #include <typeinfo>
 #include <algorithm>
+#include <functional>
 #include <tuple>
 
 namespace zeno {
