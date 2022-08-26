@@ -351,7 +351,6 @@ IPCSystem::IPCSystem(std::vector<ZenoParticles *> zsprims, const typename IPCSys
         // kappa (dynamic)
         suggestKappa(cudaPol);
         if (kappa0 != 0) {
-            this->kappa = kappa0;
             zeno::log_info("manual kappa: {}\n", this->kappa);
         }
     }
@@ -717,7 +716,7 @@ ZENDEFNODE(MakeIPCSystem, {{
                                {"float", "kappa0", "0"},
                                {"float", "fric_mu", "0"},
                                {"float", "aug_coeff", "1e2"},
-                               {"float", "pn_rel", "0.005"},
+                               {"float", "pn_rel", "0.01"},
                                {"float", "cg_rel", "0.0001"},
                                {"int", "pn_iter_cap", "1000"},
                                {"int", "cg_iter_cap", "1000"},
