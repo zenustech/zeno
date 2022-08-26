@@ -368,9 +368,9 @@ void GraphsModel::initDescriptors()
     m_nodesDesc = getCoreDescs();
 
     //add Blackboard
-    NODE_DESC desc;
-    desc.categories.push_back("layout");
-    m_nodesDesc.insert("Blackboard", desc);
+    //NODE_DESC desc;
+    //desc.categories.push_back("layout");
+    //m_nodesDesc.insert("Blackboard", desc);
 
     m_nodesCate.clear();
     for (auto it = m_nodesDesc.constBegin(); it != m_nodesDesc.constEnd(); it++)

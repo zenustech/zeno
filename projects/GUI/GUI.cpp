@@ -2,6 +2,7 @@
 #include <zeno/zeno.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/extra/MethodCaller.h>
+#include <zeno/extra/TempNode.h>
 #include <zeno/utils/log.h>
 #include <zeno/utils/zeno_p.h>
 #include <glad/glad.h>
@@ -10,17 +11,38 @@
 namespace zeno {
 namespace {
 
-struct ZGL_PrimAsTriBuff : INode {
+struct ZGL_PrimAsBuff : INode {
     void apply() override {
-        throw "TODO";
+        auto mode = get_input2<std::string>("mode");
+        if (mode == "POINTS") {
+            auto buff = get_input<PrimitiveObject>("prim");
+            set_output2("count", (int)buff->verts.size());
+            set_output("buff", std::move(buff));
+        } else if (mode == "TRIANGLES") {
+            auto buff = temp_node("PrimSepTriangles")
+                .set("prim", get_input<PrimitiveObject>("prim"))
+                .set2("smoothNormal", get_input2<bool>("smoothNormal"))
+                .set2("keepTriFaces", false)
+                .get<PrimitiveObject>("prim");
+                ;
+            set_output2("count", (int)buff->verts.size());
+            set_output("buff", std::move(buff));
+        } else if (mode == "LINES") {
+            throw makeError<UnimplError>();
+        } else {
+            throw makeError<KeyError>(mode, "mode");
+        }
     }
 };
-ZENO_DEFNODE(ZGL_PrimAsTriBuff)({
+ZENO_DEFNODE(ZGL_PrimAsBuff)({
     {
         {"PrimitiveObject", "prim"},
+        {"enum ALL TRIANGLES LINES POINTS", "mode", "POINTS"},
+        {"bool", "smoothNormal"},
     },
     {
         {"PrimitiveObject", "buff"},
+        {"int", "count"},
     },
     {},
     {"GUI"},
@@ -81,12 +103,20 @@ ZENO_DEFNODE(ZGL_VboFromBuff)({
 struct ZGL_SetPointSize : INode {
     void apply() override {
         auto size = get_input2<float>("size");
-        CHECK_GL(glPointSize(size));
+        auto mode = get_input2<std::string>("mode");
+        if (mode == "PointSize") {
+            CHECK_GL(glPointSize(size));
+        } else if (mode == "LineWidth") {
+            CHECK_GL(glLineWidth(size));
+        } else {
+            throw makeError<KeyError>(mode, "mode");
+        }
     }
 };
 ZENO_DEFNODE(ZGL_SetPointSize)({
     {
         {"float", "size", "1.0"},
+        {"enum PointSize LineWidth", "mode", "PointSize"},
     },
     {},
     {},
@@ -162,7 +192,7 @@ struct ZGL_Main : INode {
             while (SDL_PollEvent(&event)) {
                 if (event.type == SDL_KEYDOWN) {
                     std::string key = SDL_GetKeyName(event.key.keysym.sym);
-                    log_info("key pressed {}", key);
+                    log_info("key pressed [{}]", key);
                     MethodCaller(callbacks, "on_keydown", {}).set2("key", key).call();
                 } else if (event.type == SDL_QUIT) {
                     quit = true;
