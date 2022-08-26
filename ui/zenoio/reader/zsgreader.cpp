@@ -5,6 +5,7 @@
 #include "zenoedit/util/log.h"
 #include <zenoui/model/variantptr.h>
 #include <zenoui/model/curvemodel.h>
+#include "common.h"
 
 using namespace zeno::iotags;
 using namespace zeno::iotags::curve;
@@ -76,7 +77,10 @@ bool ZsgReader::openFile(const QString& fn, IAcceptor* pAcceptor)
 
     ZASSERT_EXIT(doc.HasMember("descs"), false);
     NODE_DESCS nodesDescs = _parseDescs(doc["descs"]);
-    pAcceptor->setLegacyDescs(graph, nodesDescs);
+    ret = pAcceptor->setLegacyDescs(graph, nodesDescs);
+    if (!ret) {
+        return false;
+    }
 
     for (const auto& subgraph : graph.GetObject())
     {
@@ -85,6 +89,12 @@ bool ZsgReader::openFile(const QString& fn, IAcceptor* pAcceptor)
             return false;
     }
     pAcceptor->switchSubGraph("main");
+
+    if (doc.HasMember("views"))
+    {
+        _parseViews(doc["views"], pAcceptor);
+    }
+
     return true;
 }
 
@@ -225,6 +235,30 @@ bool ZsgReader::_parseNode(const QString& nodeid, const rapidjson::Value& nodeOb
         pAcceptor->setBlackboard(nodeid, blackboard);
     }
     return true;
+}
+
+void ZsgReader::_parseViews(const rapidjson::Value& jsonViews, IAcceptor* pAcceptor)
+{
+    if (jsonViews.HasMember("timeline"))
+    {
+        _parseTimeline(jsonViews["timeline"], pAcceptor);
+    }
+}
+
+void ZsgReader::_parseTimeline(const rapidjson::Value& jsonTimeline, IAcceptor* pAcceptor)
+{
+    ZASSERT_EXIT(jsonTimeline.HasMember(timeline::start_frame) && jsonTimeline[timeline::start_frame].IsInt());
+    ZASSERT_EXIT(jsonTimeline.HasMember(timeline::end_frame) && jsonTimeline[timeline::end_frame].IsInt());
+    ZASSERT_EXIT(jsonTimeline.HasMember(timeline::curr_frame) && jsonTimeline[timeline::curr_frame].IsInt());
+    ZASSERT_EXIT(jsonTimeline.HasMember(timeline::always) && jsonTimeline[timeline::always].IsBool());
+
+    TIMELINE_INFO info;
+    info.beginFrame = jsonTimeline[timeline::start_frame].GetInt();
+    info.endFrame = jsonTimeline[timeline::end_frame].GetInt();
+    info.currFrame = jsonTimeline[timeline::curr_frame].GetInt();
+    info.bAlways = jsonTimeline[timeline::always].GetBool();
+
+    pAcceptor->setTimeInfo(info);
 }
 
 QVariant ZsgReader::_parseDefaultValue(const QString& defaultValue, const QString& type)
@@ -680,3 +714,5 @@ NODE_DESCS ZsgReader::_parseDescs(const rapidjson::Value& jsonDescs)
     }
     return _descs;
 }
+
+

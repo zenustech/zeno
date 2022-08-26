@@ -15,6 +15,7 @@ struct ParallelogramLight
     float3 v1, v2;
     float3 normal;
     float3 emission;
+    float  cdf;
 };
 
 
@@ -24,6 +25,8 @@ struct CameraInfo
     float3 right, up, front;
     //float aspect;
     //float fov;
+    float focalPlaneDistance;
+    float aperture;
 };
 
 

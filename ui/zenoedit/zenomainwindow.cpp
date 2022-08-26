@@ -24,6 +24,8 @@
 #include "util/log.h"
 #include "dialog/zfeedbackdlg.h"
 #include "startup/zstartup.h"
+#include "settings/zsettings.h"
+#include "panel/zenolights.h"
 
 
 ZenoMainWindow::ZenoMainWindow(QWidget *parent, Qt::WindowFlags flags)
@@ -188,7 +190,7 @@ void ZenoMainWindow::initMenu() {
             QString name = QInputDialog::getText(this, tr("Save Layout"), tr("layout name:"),
                                                         QLineEdit::Normal, "layout_1", &bOk);
             if (bOk) {
-                QSettings settings(QSettings::UserScope, "Zenus Inc.", "zeno2");
+                QSettings settings(QSettings::UserScope, zsCompanyName, zsEditor);
                 settings.beginGroup("layout");
                 if (settings.childGroups().indexOf(name) != -1) {
                     QMessageBox msg(QMessageBox::Warning, "", tr("alreday has same layout"));
@@ -207,7 +209,7 @@ void ZenoMainWindow::initMenu() {
         pView->addAction(pSaveLayout);
 
         //check user saved layout.
-        QSettings settings(QSettings::UserScope, "Zenus Inc.", "zeno2");
+        QSettings settings(QSettings::UserScope, zsCompanyName, zsEditor);
         settings.beginGroup("layout");
         QStringList lst = settings.childGroups();
         if (!lst.isEmpty())
@@ -218,7 +220,7 @@ void ZenoMainWindow::initMenu() {
             {
                 QAction *pCustomLayout_ = new QAction(name);
                 connect(pCustomLayout_, &QAction::triggered, this, [=]() {
-                    QSettings settings(QSettings::UserScope, "Zenus Inc.", "zeno2");
+                    QSettings settings(QSettings::UserScope, zsCompanyName, zsEditor);
                     settings.beginGroup("layout");
                     settings.beginGroup(name);
                     restoreGeometry(settings.value("geometry").toByteArray());
@@ -245,13 +247,13 @@ void ZenoMainWindow::initMenu() {
         pAction = new QAction(tr("English / Chinese"), this);
         pAction->setCheckable(true);
         {
-            QSettings settings("ZenusTech", "Zeno");
+            QSettings settings(zsCompanyName, zsEditor);
             QVariant use_chinese = settings.value("use_chinese");
             pAction->setChecked(use_chinese.isNull() || use_chinese.toBool());
         }
         pHelp->addAction(pAction);
         connect(pAction, &QAction::triggered, this, [=]() {
-            QSettings settings("ZenusTech", "Zeno");
+            QSettings settings(zsCompanyName, zsEditor);
             settings.setValue("use_chinese", pAction->isChecked());
             QMessageBox msg(QMessageBox::Information, "Language",
                         tr("Please restart Zeno to apply changes."),
@@ -456,7 +458,7 @@ bool ZenoMainWindow::openFile(QString filePath)
 
 void ZenoMainWindow::recordRecentFile(const QString& filePath)
 {
-    QSettings settings(QSettings::UserScope, "Zenus Inc.", "zeno2");
+    QSettings settings(QSettings::UserScope, zsCompanyName, zsEditor);
     settings.beginGroup("Recent File List");
 
     QStringList keys = settings.childKeys();
@@ -514,6 +516,7 @@ QString ZenoMainWindow::uniqueDockObjName(DOCK_TYPE type)
     case DOCK_NODE_DATA: return UiHelper::generateUuid("dock_data_");
     case DOCK_VIEW: return UiHelper::generateUuid("dock_view_");
     case DOCK_NODE_PARAMS: return UiHelper::generateUuid("dock_parameter_");
+    case DOCK_LIGHTS: return UiHelper::generateUuid("dock_lights_");
     default:
         return UiHelper::generateUuid("dock_empty_");
     }
@@ -551,6 +554,11 @@ void ZenoMainWindow::onDockSwitched(DOCK_TYPE type)
             pDock->setWidget(type, pPanel);
             break;
         }
+        case DOCK_LIGHTS: {
+            ZenoLights* pPanel = new ZenoLights;
+            pDock->setWidget(type, pPanel);
+            break;
+        }
     }
     pDock->setObjectName(uniqueDockObjName(type));
 }
@@ -571,6 +579,8 @@ void ZenoMainWindow::saveQuit() {
         }
     }
     pGraphsMgm->clear();
+    //clear timeline info.
+    setTimelineInfo(TIMELINE_INFO());
 }
 
 void ZenoMainWindow::save() {
@@ -587,7 +597,11 @@ void ZenoMainWindow::save() {
 
 bool ZenoMainWindow::saveFile(QString filePath) {
     IGraphsModel *pModel = zenoApp->graphsManagment()->currentModel();
-    QString strContent = ZsgWriter::getInstance().dumpProgramStr(pModel);
+
+    APP_SETTINGS settings;
+    settings.timeline = timelineInfo();
+
+    QString strContent = ZsgWriter::getInstance().dumpProgramStr(pModel, settings);
     saveContent(strContent, filePath);
     pModel->setFilePath(filePath);
     pModel->clearDirty();
@@ -603,8 +617,29 @@ void ZenoMainWindow::setInDlgEventLoop(bool bOn) {
     m_bInDlgEventloop = bOn;
 }
 
+TIMELINE_INFO ZenoMainWindow::timelineInfo()
+{
+    DisplayWidget* view = qobject_cast<DisplayWidget*>(m_viewDock->widget());
+    TIMELINE_INFO info;
+    if (view)
+    {
+        info = view->timelineInfo();
+    }
+    return info;
+}
+
+void ZenoMainWindow::setTimelineInfo(TIMELINE_INFO info)
+{
+    DisplayWidget* view = qobject_cast<DisplayWidget*>(m_viewDock->widget());
+    if (view)
+    {
+        view->setTimelineInfo(info);
+    }
+}
+
 void ZenoMainWindow::onFeedBack()
 {
+    /*
     ZFeedBackDlg dlg(this);
     if (dlg.exec() == QDialog::Accepted)
     {
@@ -620,6 +655,7 @@ void ZenoMainWindow::onFeedBack()
             dlg.sendEmail("bug feedback", content, strContent);
         }
     }
+    */
 }
 
 void ZenoMainWindow::clearErrorMark()
@@ -684,38 +720,6 @@ void ZenoMainWindow::onlyEditorLayout()
     }
 }
 
-void ZenoMainWindow::writeHoudiniStyleLayout() {
-    QSettings settings("Zeno Inc.", "zeno2 ui1");
-    settings.beginGroup("mainWindow");
-    settings.setValue("geometry", saveGeometry());
-    settings.setValue("state", saveState());
-    settings.endGroup();
-}
-
-void ZenoMainWindow::writeSettings2() {
-    QSettings settings("Zeno Inc.", "zeno2 ui2");
-    settings.beginGroup("mainWindow");
-    settings.setValue("geometry", saveGeometry());
-    settings.setValue("state", saveState());
-    settings.endGroup();
-}
-
-void ZenoMainWindow::readHoudiniStyleLayout() {
-    QSettings settings("Zeno Inc.", "zeno2 ui1");
-    settings.beginGroup("mainWindow");
-    restoreGeometry(settings.value("geometry").toByteArray());
-    restoreState(settings.value("state").toByteArray());
-    settings.endGroup();
-}
-
-void ZenoMainWindow::readSettings2() {
-    QSettings settings("Zeno Inc.", "zeno2 ui2");
-    settings.beginGroup("mainWindow");
-    restoreGeometry(settings.value("geometry").toByteArray());
-    restoreState(settings.value("state").toByteArray());
-    settings.endGroup();
-}
-
 void ZenoMainWindow::onNodesSelected(const QModelIndex &subgIdx, const QModelIndexList &nodes, bool select) {
     //dispatch to all property panel.
     auto docks = findChildren<ZenoDockWidget *>(QString(), Qt::FindDirectChildrenOnly);
@@ -729,5 +733,12 @@ void ZenoMainWindow::onPrimitiveSelected(const std::unordered_set<std::string>& 
     auto docks = findChildren<ZenoDockWidget *>(QString(), Qt::FindDirectChildrenOnly);
     for (ZenoDockWidget *dock : docks) {
         dock->onPrimitiveSelected(primids);
+    }
+}
+
+void ZenoMainWindow::updateLightList() {
+    auto docks = findChildren<ZenoDockWidget *>(QString(), Qt::FindDirectChildrenOnly);
+    for (ZenoDockWidget *dock : docks) {
+        dock->newFrameUpdate();
     }
 }

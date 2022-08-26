@@ -12,7 +12,7 @@ public:
 	ModelAcceptor(GraphsModel* pModel, bool bImport);
 
 	//IAcceptor
-	void setLegacyDescs(const rapidjson::Value& graphObj, const NODE_DESCS& nodesParams) override;
+	bool setLegacyDescs(const rapidjson::Value& graphObj, const NODE_DESCS& nodesParams) override;
 	void BeginSubgraph(const QString& name) override;
 	bool setCurrentSubGraph(IGraphsModel* pModel, const QModelIndex& subgIdx) override;
 	void EndSubgraph() override;
@@ -35,6 +35,7 @@ public:
 	void setOptions(const QString& id, const QStringList& options) override;
 	void setColorRamps(const QString& id, const COLOR_RAMPS& colorRamps) override;
 	void setBlackboard(const QString& id, const BLACKBOARD_INFO& blackboard) override;
+	void setTimeInfo(const TIMELINE_INFO& info) override;
 	void setLegacyCurve(
         const QString& id,
         const QVector<QPointF>& pts,

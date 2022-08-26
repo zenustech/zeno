@@ -7,6 +7,8 @@
 #include "magic_enum.hpp"
 #include "util/log.h"
 #include <zenoio/reader/zsgreader.h>
+#include "zenoapplication.h"
+#include "zenomainwindow.h"
 
 
 ModelAcceptor::ModelAcceptor(GraphsModel* pModel, bool bImport)
@@ -14,9 +16,14 @@ ModelAcceptor::ModelAcceptor(GraphsModel* pModel, bool bImport)
     , m_currentGraph(nullptr)
     , m_bImport(bImport)
 {
+    auto mainWin = zenoApp->getMainWindow();
+    //init.
+    TIMELINE_INFO info;
+    if (mainWin)
+        mainWin->setTimelineInfo(info);
 }
 
-void ModelAcceptor::setLegacyDescs(const rapidjson::Value& graphObj, const NODE_DESCS& legacyDescs)
+bool ModelAcceptor::setLegacyDescs(const rapidjson::Value& graphObj, const NODE_DESCS& legacyDescs)
 {
     //discard legacy desc except subnet desc.
     QStringList subgraphs;
@@ -29,10 +36,22 @@ void ModelAcceptor::setLegacyDescs(const rapidjson::Value& graphObj, const NODE_
     QList<NODE_DESC> subnetDescs;
     for (QString name : subgraphs)
     {
-        ZASSERT_EXIT(legacyDescs.find(name) != legacyDescs.end());
+        if (legacyDescs.find(name) == legacyDescs.end())
+        {
+            zeno::log_warn("subgraph {} isn't described by the file descs.", name.toStdString());
+            continue;
+        }
         subnetDescs.append(legacyDescs[name]);
     }
-    m_pModel->appendSubnetDescsFromZsg(subnetDescs);
+    bool ret = m_pModel->appendSubnetDescsFromZsg(subnetDescs);
+    return ret;
+}
+
+void ModelAcceptor::setTimeInfo(const TIMELINE_INFO& info)
+{
+    auto mainWin = zenoApp->getMainWindow();
+    if (mainWin)
+        mainWin->setTimelineInfo(info);
 }
 
 void ModelAcceptor::BeginSubgraph(const QString& name)

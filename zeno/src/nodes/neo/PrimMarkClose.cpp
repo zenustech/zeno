@@ -49,7 +49,45 @@ ZENDEFNODE(PrimMarkClose, {
     {
     {"PrimitiveObject", "prim"},
     {"float", "distance", "0.00001"},
-    {"string", "tagAttr", "weldtag"},
+    {"string", "tagAttr", "weld"},
+    },
+    {
+    {"PrimitiveObject", "prim"},
+    },
+    {
+    },
+    {"primitive"},
+});
+
+struct PrimMarkSameIf : INode {
+    virtual void apply() override {
+        auto prim = get_input<PrimitiveObject>("prim");
+        auto tagValueIs = get_input2<int>("tagValueIs");
+        auto tagAttrIn = get_input2<std::string>("tagAttrIn");
+        auto tagAttrOut = get_input2<std::string>("tagAttrOut");
+        auto const &tagArrIn = tagAttrIn != tagAttrOut ?
+            prim->verts.attr<int>(tagAttrIn) :
+            std::vector<int>(prim->verts.attr<int>(tagAttrIn));
+        auto &tagArrOut = prim->verts.add_attr<int>(tagAttrOut);
+        tagArrOut.resize(tagArrIn.size());
+        int nout = 1;
+        for (int i = 0; i < tagArrOut.size(); i++) {
+            if (tagArrIn[i] == tagValueIs) {
+                tagArrOut[i] = 0;
+            } else {
+                tagArrOut[i] = nout++;
+            }
+        }
+        set_output("prim", std::move(prim));
+    }
+};
+
+ZENDEFNODE(PrimMarkSameIf, {
+    {
+    {"PrimitiveObject", "prim"},
+    {"string", "tagAttrIn", "index"},
+    {"int", "tagValueIs", "0"},
+    {"string", "tagAttrOut", "weld"},
     },
     {
     {"PrimitiveObject", "prim"},
@@ -109,13 +147,23 @@ struct PrimCheckTagInRange : INode {
         int end = get_input2<int>("end");
         int trueVal = get_input2<int>("trueVal");
         int falseVal = get_input2<int>("falseVal");
+        int modularBy = get_input2<int>("modularBy");
         bool endExcluded = get_input2<bool>("endExcluded");
         if (endExcluded) end -= 1;
 
         auto &tag = prim->verts.attr<int>(tagAttr);
-        parallel_for((size_t)0, tag.size(), [&] (size_t i) {
-            tag[i] = beg <= tag[i] && tag[i] <= end ? trueVal : falseVal;
-        });
+        if (modularBy <= 0) {
+            parallel_for((size_t)0, tag.size(), [&] (size_t i) {
+                int t = tag[i];
+                tag[i] = beg <= t && t <= end ? trueVal : falseVal;
+            });
+        } else {
+            parallel_for((size_t)0, tag.size(), [&] (size_t i) {
+                int t = tag[i];
+                t = t < 0 ? -(-t % modularBy) : t % modularBy;
+                tag[i] = beg <= t && t <= end ? trueVal : falseVal;
+            });
+        }
 
         set_output("prim", std::move(prim));
     }
@@ -129,6 +177,7 @@ ZENDEFNODE(PrimCheckTagInRange, {
     {"int", "beg", "0"},
     {"int", "end", "100"},
     {"bool", "endExcluded", "0"},
+    {"int", "modularBy", "0"},
     {"int", "trueVal", "1"},
     {"int", "falseVal", "0"},
     },

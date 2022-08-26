@@ -6,12 +6,13 @@
 #include <QApplication>
 #include <QSettings>
 #include <algorithm>
+#include "settings/zsettings.h"
 
 void startUp()
 {
     zeno::setExecutableDir(QCoreApplication::applicationDirPath().toStdString());
 
-    QSettings settings("ZenusTech", "Zeno");
+    QSettings settings(zsCompanyName, zsEditor);
     QVariant nas_loc_v = settings.value("nas_loc");
     if (!nas_loc_v.isNull()) {
         zeno::setConfigVariable("NASLOC", nas_loc_v.toString().toStdString());
@@ -22,7 +23,7 @@ void startUp()
     if (!scalefac_v.isNull()) {
         float scalefac = scalefac_v.toFloat();
         if (scalefac >= 1.0f)
-            qputenv("QT_SCALE_FACTOR", QString::number(scalefac).toLatin1());
+            qputenv("QT_SCALE_FACTOR", QString::number(scalefac).toUtf8());
     }
 #endif
 

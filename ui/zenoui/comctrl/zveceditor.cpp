@@ -1,5 +1,7 @@
 #include "zveceditor.h"
 #include <zenoui/style/zenostyle.h>
+#include "util/uihelper.h"
+#include "zlineedit.h"
 
 
 ZVecEditor::ZVecEditor(const UI_VECTYPE& vec, bool bFloat, int deflSize, QString styleCls, QWidget* parent)
@@ -15,13 +17,14 @@ ZVecEditor::ZVecEditor(const UI_VECTYPE& vec, bool bFloat, int deflSize, QString
 	m_editors.resize(n);
 	for (int i = 0; i < m_editors.size(); i++)
 	{
-		m_editors[i] = new QLineEdit;
+		m_editors[i] = new ZLineEdit;
+		m_editors[i]->setNumSlider(UiHelper::getSlideStep("", bFloat ? CONTROL_FLOAT : CONTROL_INT));
         //m_editors[i]->setFixedWidth(ZenoStyle::dpiScaled(64));
 		m_editors[i]->setProperty("cssClass", styleCls);
 		if (!vec.isEmpty())
 			m_editors[i]->setText(QString::number(vec[i]));
 		pLayout->addWidget(m_editors[i]);
-		connect(m_editors[i], &QLineEdit::editingFinished, this, [=]() {
+		connect(m_editors[i], &ZLineEdit::editingFinished, this, [=]() {
 			emit editingFinished();
 		});
 	}

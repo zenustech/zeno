@@ -9,7 +9,8 @@ void Camera::setCamera(zeno::CameraData const &cam) {
             glm::vec3(cam.up[0], cam.up[1], cam.up[2]),
             cam.fov, cam.fnear, cam.ffar);
     //this->m_dof = cam.dof;
-    //this->m_aperature = cam.aperature;
+    this->m_aperture = cam.aperture;
+    this->focalPlaneDistance = cam.focalPlaneDistance;
 }
 
 void Camera::placeCamera(glm::vec3 pos, glm::vec3 front, glm::vec3 up, float fov, float fnear, float ffar) {
@@ -42,8 +43,7 @@ void Camera::focusCamera(float cx, float cy, float cz, float radius) {
     auto center = glm::vec3(cx, cy, cz);
     placeCamera(center - m_lodfront * radius, m_lodfront, m_lodup, m_fov, m_near, m_far);
 }
-
-void Camera::lookCamera(float cx, float cy, float cz, float theta, float phi, float radius, float fov) {
+void Camera::lookCamera(float cx, float cy, float cz, float theta, float phi, float radius, float fov, float aperture, float focalPlaneDistance) {
     m_zxx.cx = cx;
     m_zxx.cy = cy;
     m_zxx.cz = cz;
@@ -52,6 +52,8 @@ void Camera::lookCamera(float cx, float cy, float cz, float theta, float phi, fl
     m_zxx.radius = radius;
     m_zxx.fov = fov;
     m_zxx.ortho_mode = fov <= 0.0f;
+    m_zxx.aperture = aperture;
+    m_zxx.focalPlaneDistance = focalPlaneDistance;
 
     auto center = glm::vec3(cx, cy, cz);
 
@@ -67,6 +69,8 @@ void Camera::lookCamera(float cx, float cy, float cz, float theta, float phi, fl
     } else {
         placeCamera(center - front * radius, front, up, 0.f, -100.f, 100.f);
     }
+    m_aperture = aperture;
+    this->focalPlaneDistance = focalPlaneDistance;
 }
 
 void Camera::set_program_uniforms(opengl::Program *pro) {

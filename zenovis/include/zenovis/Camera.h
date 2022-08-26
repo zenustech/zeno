@@ -17,7 +17,8 @@ struct Camera {
     float m_far = 20000.0f;
     float m_fov = 45.f;
 
-    float m_aperature = 0.05f;
+    float m_aperture = 0.1f;
+    float focalPlaneDistance = 2.0f;
     float m_dof = -1.f;
 
     glm::vec3 m_lodcenter{0, 0, -1};
@@ -33,6 +34,8 @@ struct Camera {
         float radius = 0;
         float fov = 0;
         bool ortho_mode = false;
+        float aperture = 0;
+        float focalPlaneDistance = 0;
     } m_zxx;
 
     float getAspect() const {
@@ -41,7 +44,7 @@ struct Camera {
 
     void setCamera(zeno::CameraData const &cam);
     void placeCamera(glm::vec3 pos, glm::vec3 front, glm::vec3 up, float fov, float fnear, float ffar);
-    void lookCamera(float cx, float cy, float cz, float theta, float phi, float radius, float fov);
+    void lookCamera(float cx, float cy, float cz, float theta, float phi, float radius, float fov, float aperture, float focalPlaneDistance);
     void focusCamera(float cx, float cy, float cz, float radius);
     void set_program_uniforms(opengl::Program *pro);
 };

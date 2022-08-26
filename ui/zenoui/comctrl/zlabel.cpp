@@ -96,6 +96,7 @@ ZTextLabel::ZTextLabel(QWidget* parent)
     : QLabel(parent)
     , m_bUnderlineHover(false)
     , m_bUnderline(false)
+    , m_hoverCursor(Qt::PointingHandCursor)
 {
     setMouseTracking(true);
 }
@@ -104,6 +105,7 @@ ZTextLabel::ZTextLabel(const QString& text, QWidget* parent)
     : QLabel(text, parent)
     , m_bUnderlineHover(false)
     , m_bUnderline(false)
+    , m_hoverCursor(Qt::PointingHandCursor)
 {
     setMouseTracking(true);
 }
@@ -116,6 +118,24 @@ void ZTextLabel::setUnderline(bool bUnderline)
 void ZTextLabel::setUnderlineOnHover(bool bUnderline)
 {
     m_bUnderlineHover = bUnderline;
+}
+
+void ZTextLabel::setTransparent(bool btransparent)
+{
+    //setAttribute(Qt::WA_OpaquePaintEvent);
+    //todo: transparent
+    //if (btransparent) {
+    //    setStyleSheet("background-color: rgba(0,0,0,0%)");
+    //}
+    //else {
+    //    setStyleSheet("background-color: rgba(0,0,0,100%)");
+    //}
+    //QWidget::setAttribute(Qt::WA_TranslucentBackground, btransparent);
+}
+
+void ZTextLabel::setEnterCursor(Qt::CursorShape shape)
+{
+    m_hoverCursor = shape;
 }
 
 void ZTextLabel::setTextColor(const QColor& clr)
@@ -147,7 +167,7 @@ void ZTextLabel::enterEvent(QEvent* event)
         setFont(fnt);    
     }
 
-    setCursor(Qt::PointingHandCursor);
+    setCursor(m_hoverCursor);
 }
 
 void ZTextLabel::leaveEvent(QEvent* event)

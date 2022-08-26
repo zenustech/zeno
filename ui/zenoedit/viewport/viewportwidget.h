@@ -5,6 +5,7 @@
 #include <QtOpenGL>
 #include "comctrl/zmenubar.h"
 #include "comctrl/zmenu.h"
+#include "common.h"
 
 class ZTimeline;
 class ZenoMainWindow;
@@ -68,6 +69,8 @@ private:
     bool m_ortho_mode;
     float m_fov;
     float m_radius;
+    float m_aperture;
+    float m_focalPlaneDistance;
     QVector2D m_res;
 };
 
@@ -86,6 +89,7 @@ public:
     void setCameraRes(const QVector2D& res);
     void updatePerspective();
 
+
 signals:
     void frameRecorded(int);
 
@@ -99,6 +103,10 @@ private:
     std::shared_ptr<CameraControl> m_camera;
     std::string record_path;
     QVector2D record_res;
+    QPointF m_lastPos;
+
+public:
+    bool updateLightOnce;
 };
 
 class CameraKeyframeWidget;
@@ -111,6 +119,8 @@ public:
     ~DisplayWidget();
     void init();
     QSize sizeHint() const override;
+    TIMELINE_INFO timelineInfo();
+    void setTimelineInfo(TIMELINE_INFO info);
 
 public slots:
     void updateFrame(const QString& action = "");

@@ -4,6 +4,7 @@
 #include <zeno/types/StringObject.h>
 #include <zeno/types/PrimitiveTools.h>
 #include <zeno/types/NumericObject.h>
+#include <zeno/types/UserData.h>
 #include <zeno/utils/string.h>
 #include <zeno/utils/logger.h>
 #include <zeno/utils/vec.h>
@@ -425,13 +426,16 @@ struct CreateCube : zeno::INode {
             auto p = verts[i];
             auto n = nors[i];
 
+            p = p * scale * size ;
+
             ROTATE_COMPUTE
+                p+= position;
 
             auto gn = glm::vec3(n[0], n[1], n[2]);
             gn = mz * my * mx * gn;
             n = zeno::vec3f(gn.x, gn.y, gn.z);
 
-            verts[i] = p * scale * size + position;
+            verts[i] = p;
             nors[i] = n;
         }
 
@@ -484,11 +488,11 @@ struct CreateDisk : zeno::INode {
             float rad = 2 * M_PI * i / divisions;
             auto p = zeno::vec3f(cos(rad) * radius, 0,
                            -sin(rad) * radius);
+            auto p4uv = p * scaleSize;
+            p = p4uv;
 
             ROTATE_COMPUTE
-
-            auto p4uv = p * scaleSize;
-            p = p4uv + position;
+                p+= position;
 
             verts.emplace_back(p);
             tris.emplace_back(i+1, 0, i+2);
@@ -557,12 +561,12 @@ struct CreatePlane : zeno::INode {
 
             for(int j=0; j<=columns; j++){
                 auto p = rp - zeno::vec3f(0, 0, j*cm);
+                p = p * scale * size;
 
                 ROTATE_COMPUTE
+                    p +=position;
 
                 auto zcp = zeno::vec3f(p[0], p[1], p[2]);
-                zcp = zcp * scale + position;
-                zcp = zcp * size;
                 verts.push_back(zcp);
                 uvs.emplace_back(i*rm, j*cm*-1+1, 0);
             }
@@ -634,6 +638,10 @@ struct CreatePlane : zeno::INode {
             uv[i] = zeno::vec3f(1 - uvs[i][0], 1 - uvs[i][1], 0);
             norm[i] = normal;
         }
+
+        prim->userData().setLiterial("pos", std::move(position));
+        prim->userData().setLiterial("scale", std::move(scale));
+        prim->userData().setLiterial("rotate", std::move(rotate));
 
         NORMUV_CIHOU
         set_output("prim", std::move(prim));
@@ -862,13 +870,17 @@ struct CreateTube : zeno::INode {
             auto p = verts[i];
             auto n = nors[i];
 
+
+            p = p * scale ;
+
             ROTATE_COMPUTE
+                p+=position;
 
             auto gn = glm::vec3(n[0], n[1], n[2]);
             gn = mz * my * mx * gn;
             n = zeno::vec3f(gn.x, gn.y, gn.z);
 
-            verts[i] = p * scale + position;
+            verts[i] = p;
             nors[i] = n;
         }
 
@@ -1060,13 +1072,17 @@ struct CreateSphere : zeno::INode {
             auto p = verts[i];
             auto n = nors[i];
 
+            p = p * scale * radius ;
+
             ROTATE_COMPUTE
+
+                p+= position;
 
             auto gn = glm::vec3(n[0], n[1], n[2]);
             gn = mz * my * mx * gn;
             n = zeno::vec3f(gn.x, gn.y, gn.z);
 
-            verts[i] = p * scale * radius + position;
+            verts[i] = p;
             nors[i] = n;
         }
 

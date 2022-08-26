@@ -8,6 +8,7 @@
 #include "util/log.h"
 #include "zenoapplication.h"
 #include "graphsmanagment.h"
+#include "settings/zsettings.h"
 
 
 ZTcpServer::ZTcpServer(QObject *parent)
@@ -99,7 +100,7 @@ void ZTcpServer::onNewConnection()
     connect(m_tcpSocket, SIGNAL(readyRead()), this, SLOT(onReadyRead()));
     connect(m_tcpSocket, SIGNAL(disconnected()), this, SLOT(onDisconnect()));
 
-    QSettings settings("ZenusTech", "Zeno");
+    QSettings settings(zsCompanyName, zsEditor);
     auto cachedir = settings.value("zencachedir").toString();
     auto cachenum = settings.value("zencachenum").toString();
     int cnum = 0;

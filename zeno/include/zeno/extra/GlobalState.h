@@ -13,7 +13,7 @@ struct GlobalState {
     bool working = false;
     int frameid = 0;
     int substepid = 0;
-    float frame_time = 0.03f;
+    float frame_time = 1.f / 60.f;
     float frame_time_elapsed = 0;
     bool has_frame_completed = false;
     bool has_substep_executed = false;

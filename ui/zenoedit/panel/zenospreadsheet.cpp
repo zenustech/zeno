@@ -6,6 +6,7 @@
 #include "PrimAttrTableModel.h"
 #include "viewport/zenovis.h"
 #include "zenovis/ObjectsManager.h"
+#include "zeno/utils/format.h"
 #include <zeno/types/UserData.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zenoui/comctrl/zcombobox.h>
@@ -61,6 +62,16 @@ ZenoSpreadsheet::ZenoSpreadsheet(QWidget *parent) : QWidget(parent) {
 //    pStatusBar->setAlignment(Qt::AlignRight);
     pStatusBar->setProperty("cssClass", "proppanel");
     pMainLayout->addWidget(pStatusBar);
+    auto * zenovis = &Zenovis::GetInstance();
+    connect(zenovis, &Zenovis::objectsUpdated, this, [&](int frame) {
+        std::string prim_name = pPrimName->text().toStdString();
+        auto scene = Zenovis::GetInstance().getSession()->get_scene();
+        for (auto const &[key, ptr]: scene->objectsMan->pairs()) {
+            if (key.find(prim_name) == 0 && key.find(zeno::format(":{}:", frame)) != std::string::npos) {
+                setPrim(key);
+            }
+        }
+    });
 }
 
 void ZenoSpreadsheet::clear() {

@@ -15,9 +15,9 @@ TransferAcceptor::TransferAcceptor(IGraphsModel* pModel)
 
 }
 
-void TransferAcceptor::setLegacyDescs(const rapidjson::Value& graphObj, const NODE_DESCS& legacyDescs)
+bool TransferAcceptor::setLegacyDescs(const rapidjson::Value& graphObj, const NODE_DESCS& legacyDescs)
 {
-
+    return false;
 }
 
 void TransferAcceptor::BeginSubgraph(const QString &name)
@@ -324,6 +324,10 @@ void TransferAcceptor::setBlackboard(const QString& id, const BLACKBOARD_INFO& b
     NODE_DATA &data = m_nodes[id];
 
     //todO
+}
+
+void TransferAcceptor::setTimeInfo(const TIMELINE_INFO& info)
+{
 }
 
 void TransferAcceptor::setLegacyCurve(

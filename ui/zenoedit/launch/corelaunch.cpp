@@ -82,7 +82,7 @@ struct ProgramRunData {
     }
 
     void start() const {
-        zeno::log_info("launching program...");
+        zeno::log_debug("launching program...");
         zeno::log_debug("program JSON: {}", progJson);
 
 #ifndef ZENO_MULTIPROCESS
@@ -118,6 +118,7 @@ struct ProgramRunData {
         session->globalComm->frameRange(graph->beginFrameNumber, graph->endFrameNumber);
         for (int frame = graph->beginFrameNumber; frame <= graph->endFrameNumber; frame++) {
             zeno::log_debug("begin frame {}", frame);
+            session->globalState->frameid = frame;
             session->globalComm->newFrame();
             //corresponding to processPacket in viewdecode.cpp
             if (zenoApp->getMainWindow())
@@ -142,7 +143,7 @@ struct ProgramRunData {
         if (session->globalStatus->failed()) {
             reportStatus(*session->globalStatus);
         }
-        zeno::log_info("program finished");
+        zeno::log_debug("program finished");
 #else
         //auto execDir = QCoreApplication::applicationDirPath().toStdString();
 //#if defined(Q_OS_WIN)
@@ -207,7 +208,7 @@ void launchProgramJSON(std::string progJson)
 #else
     std::unique_lock lck(ProgramRunData::g_mtx, std::try_to_lock);
     if (!lck.owns_lock()) {
-        zeno::log_info("background process already running");
+        zeno::log_debug("background process already running, give up");
         return;
     }
 

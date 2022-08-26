@@ -132,8 +132,8 @@ void Session::do_screenshot(std::string path, std::string type, int nsamples) {
 
 void Session::look_perspective(float cx, float cy, float cz, float theta,
                                float phi, float radius, float fov,
-                               bool ortho_mode) {
-    impl->scene->camera->lookCamera(cx, cy, cz, theta, phi, radius, ortho_mode ? 0.f : fov);
+                               bool ortho_mode, float aperture, float focalPlaneDistance) {
+    impl->scene->camera->lookCamera(cx, cy, cz, theta, phi, radius, ortho_mode ? 0.f : fov, aperture, focalPlaneDistance);
 }
 
 void Session::set_background_color(float r, float g, float b) {
@@ -157,8 +157,8 @@ int Session::get_curr_frameid() {
     return impl->curr_frameid;
 }
 
-void Session::load_objects() {
-    impl->scene->loadFrameObjects(impl->curr_frameid);
+bool Session::load_objects() {
+    return impl->scene->loadFrameObjects(impl->curr_frameid);
 }
 
 void Session::set_render_engine(std::string const &name) {

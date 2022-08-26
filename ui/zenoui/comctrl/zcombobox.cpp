@@ -28,6 +28,18 @@ void ZComboBox::onComboItemActivated(int index)
     emit _textActivated(text);
 }
 
+void ZComboBox::showPopup()
+{
+    emit beforeShowPopup();
+    QComboBox::showPopup();
+}
+
+void ZComboBox::hidePopup()
+{
+    QComboBox::hidePopup();
+    emit afterHidePopup();
+}
+
 void ZComboBox::initStyleOption(ZStyleOptionComboBox* option)
 {
     QStyleOptionComboBox opt;

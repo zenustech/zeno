@@ -37,7 +37,7 @@ struct TempNodeCaller {
             params = graph->callTempNode(nodety, params);
             called = true;
         }
-        return safe_at(params, sockid, "output socket of temp node `" + nodety + "`");
+        return safe_at(params, sockid, "output socket `" + sockid + "` of temp node `" + nodety + "`");
     }
 
     template <class T>

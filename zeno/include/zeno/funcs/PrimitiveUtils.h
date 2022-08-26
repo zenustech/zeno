@@ -13,17 +13,19 @@ ZENO_API void primPolygonate(PrimitiveObject *prim, bool with_uv = true);
 ZENO_API void primSepTriangles(PrimitiveObject *prim, bool smoothNormal = true, bool keepTriFaces = true);
 //ZENO_API void primSmoothNormal(PrimitiveObject *prim, bool isFlipped = false);
 
+ZENO_API void primFlipFaces(PrimitiveObject *prim);
 ZENO_API void primCalcNormal(PrimitiveObject *prim, float flip = 1.0f, std::string nrmAttr = "nrm");
 //ZENO_API void primCalcInsetDir(PrimitiveObject *prim, float flip = 1.0f, std::string nrmAttr = "nrm");
 
-ZENO_API void primFlipFaces(PrimitiveObject *prim);
 ZENO_API void primWireframe(PrimitiveObject *prim, bool removeFaces = false, bool toEdges = false);
+ZENO_API void primEdgeBound(PrimitiveObject *prim, bool removeFaces = false, bool toEdges = false);
+ZENO_API void primKillDeadVerts(PrimitiveObject *prim);
 
 ZENO_API void primDecodeUVs(PrimitiveObject *prim);
 ZENO_API void primLoopUVsToVerts(PrimitiveObject *prim);
 
 ZENO_API std::shared_ptr<zeno::PrimitiveObject> primMerge(std::vector<zeno::PrimitiveObject *> const &primList, std::string const &tagAttr = {});
-ZENO_API std::shared_ptr<PrimitiveObject> primDuplicate(PrimitiveObject *parsPrim, PrimitiveObject *meshPrim, std::string dirAttr, std::string tanAttr, std::string radAttr, std::string onbType, float radius);
+ZENO_API std::shared_ptr<PrimitiveObject> primDuplicate(PrimitiveObject *parsPrim, PrimitiveObject *meshPrim, std::string dirAttr = {}, std::string tanAttr = {}, std::string radAttr = {}, std::string onbType = "XYZ", float radius = 1.f, bool copyParsAttr = true, bool copyMeshAttr = true);
 
 ZENO_API void primLineSort(PrimitiveObject *prim, bool reversed = false);
 ZENO_API void primLineDistance(PrimitiveObject *prim, std::string resAttr, int start = 0);

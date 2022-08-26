@@ -212,7 +212,7 @@
 }</string>
        </property>
        <property name="text">
-        <string>30 fpbs</string>
+        <string>60 fpbs</string>
        </property>
       </widget>
      </item>

@@ -80,6 +80,8 @@ CameraControl::CameraControl(QWidget* parent)
     , m_fov(45.)
     , m_radius(5.0)
     , m_res(1, 1)
+    , m_aperture(0.1f)
+    , m_focalPlaneDistance(2.0f)
 {
     updatePerspective();
 }
@@ -144,17 +146,36 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent* event)
 void CameraControl::updatePerspective()
 {
     float cx = m_center[0], cy = m_center[1], cz = m_center[2];
-    Zenovis::GetInstance().updatePerspective(m_res, PerspectiveInfo(cx, cy, cz, m_theta, m_phi, m_radius, m_fov, m_ortho_mode));
+    Zenovis::GetInstance().updatePerspective(m_res, PerspectiveInfo(cx, cy, cz, m_theta, m_phi, m_radius, m_fov, m_ortho_mode, m_aperture, m_focalPlaneDistance));
 }
 
 void CameraControl::fakeWheelEvent(QWheelEvent* event)
 {
     int dy = event->angleDelta().y();
     float scale = (dy >= 0) ? 0.89 : 1 / 0.89;
-    bool shift_pressed = event->modifiers() & Qt::ShiftModifier;
-    if (shift_pressed)
+    bool shift_pressed = (event->modifiers() & Qt::ShiftModifier) && !(event->modifiers() & Qt::ControlModifier);
+    bool aperture_pressed = (event->modifiers() & Qt::ControlModifier) && !(event->modifiers() & Qt::ShiftModifier);
+    bool focalPlaneDistance_pressed = (event->modifiers() & Qt::ControlModifier) && (event->modifiers() & Qt::ShiftModifier);
+    float delta = dy > 0? 1: -1;
+    if (shift_pressed){
         m_fov /= scale;
-    m_radius *= scale;
+        if(m_fov > 170){
+            m_fov = 170;
+        }
+    }
+    else if (aperture_pressed) {
+        if (m_aperture < 0) {
+            m_aperture = 0;
+        }
+        m_aperture += delta * 0.01;
+
+    }
+    else if (focalPlaneDistance_pressed) {
+        m_focalPlaneDistance = m_focalPlaneDistance + delta*0.05 > 0.05 ? m_focalPlaneDistance + delta*0.05 : 0.05;
+    }
+    else {
+        m_radius *= scale;
+    }
     updatePerspective();
 }
 
@@ -341,6 +362,7 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
 ViewportWidget::ViewportWidget(QWidget* parent)
     : QOpenGLWidget(parent)
     , m_camera(nullptr)
+    , updateLightOnce(true)
 {
     QSurfaceFormat fmt;
     int nsamples = 16;  // TODO: adjust in a zhouhang-panel
@@ -400,6 +422,15 @@ void ViewportWidget::updatePerspective()
 void ViewportWidget::paintGL()
 {
     Zenovis::GetInstance().paintGL();
+    if(updateLightOnce){
+        auto scene = Zenovis::GetInstance().getSession()->get_scene();
+
+        if(scene->objectsMan->lightObjects.size() > 0){
+            zenoApp->getMainWindow()->updateLightList();
+            updateLightOnce = false;
+        }
+    }
+
     if (!record_path.empty() /*&& f <= frame_end*/) //py has bug: frame_end not initialized.
     {
         int f = Zenovis::GetInstance().getCurrentFrameId();
@@ -434,8 +465,25 @@ void ViewportWidget::mousePressEvent(QMouseEvent* event)
 
 void ViewportWidget::mouseMoveEvent(QMouseEvent* event)
 {
-    _base::mouseMoveEvent(event);
-    m_camera->fakeMouseMoveEvent(event);
+    auto & qle = zenoApp->getMainWindow()->selected;
+    if (qle != nullptr) {
+        float xpos = event->x(), ypos = event->y();
+        float dx = xpos - m_lastPos.x();
+        if (abs(dx) > 20) {
+            dx = 0;
+        }
+        float v = qle->text().toFloat();
+        dx *= zenoApp->getMainWindow()->mouseSen;
+        v += dx;
+        qle->setText(QString::number(v));
+        if(zenoApp->getMainWindow()->lightPanel != nullptr)
+            zenoApp->getMainWindow()->lightPanel->modifyLightData();
+        m_lastPos = QPointF(xpos, ypos);
+    }
+    else {
+        _base::mouseMoveEvent(event);
+        m_camera->fakeMouseMoveEvent(event);
+    }
     update();
 }
 
@@ -576,6 +624,21 @@ void DisplayWidget::init()
     //m_camera->installEventFilter(this);
 }
 
+TIMELINE_INFO DisplayWidget::timelineInfo()
+{
+    TIMELINE_INFO info;
+    info.bAlways = m_timeline->isAlways();
+    info.beginFrame = m_timeline->fromTo().first;
+    info.endFrame = m_timeline->fromTo().second;
+    return info;
+}
+
+void DisplayWidget::setTimelineInfo(TIMELINE_INFO info)
+{
+    m_timeline->setAlways(info.bAlways);
+    m_timeline->setFromTo(info.beginFrame, info.endFrame);
+}
+
 QSize DisplayWidget::sizeHint() const
 {
     return ZenoStyle::dpiScaledSize(QSize(12, 400));
@@ -693,6 +756,10 @@ void DisplayWidget::onRun()
     {
 
     }
+
+    m_view->updateLightOnce = true;
+    auto scene = Zenovis::GetInstance().getSession()->get_scene();
+    scene->objectsMan->lightObjects.clear();
 }
 
 void DisplayWidget::onRecord()

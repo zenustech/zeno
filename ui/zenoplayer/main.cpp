@@ -4,6 +4,7 @@
 
 #include "zenoapplication.h"
 #include "style/zenostyle.h"
+#include <zeno/utils/logger.h>
 
 namespace zaudio {
 int calcFrameCountByAudio(std::string path, int fps);
@@ -28,6 +29,7 @@ int main(int argc, char *argv[])
             {"zsg", "zsg", "zsg file path"},
             {"record", "record", "Record frame"},
             {"frame", "frame", "frame count"},
+            {"sframe", "sframe", "start frame"},
             {"sample", "sample", "sample count"},
             {"pixel", "pixel", "set record image pixel"},
             {"path", "path", "record dir"},
@@ -42,10 +44,10 @@ int main(int argc, char *argv[])
             param.bRecord = cmdParser.value("record").toLower() == "true" ? true : false;
         if (cmdParser.isSet("frame"))
             param.iFrame = cmdParser.value("frame").toInt();
+        if (cmdParser.isSet("sframe"))
+            param.iSFrame = cmdParser.value("sframe").toInt();
         if (cmdParser.isSet("sample"))
             param.iSample = cmdParser.value("sample").toInt();
-        else
-            param.iSample = 256;
         if (cmdParser.isSet("pixel"))
             param.sPixel = cmdParser.value("pixel");
         if (cmdParser.isSet("path"))
@@ -60,7 +62,9 @@ int main(int argc, char *argv[])
         param.iBitrate = cmdParser.isSet("bitrate")? cmdParser.value("bitrate").toInt(): 20000;
         param.iFps = cmdParser.isSet("fps")? cmdParser.value("fps").toInt(): 24;
     }
-    qDebug() << param.sPath << param.bRecord << param.iFrame << param.iSample << param.sPixel << param.sPath;
+    zeno::log_info("ZsgPath {} Record {} Frame {} SFrame {} Sample {} Pixel {} Path {}",
+                   param.sZsgPath.toStdString(), param.bRecord, param.iFrame, param.iSFrame, param.iSample,
+                   param.sPixel.toStdString(), param.sPath.toStdString());
 	ZenoPlayer w(param);
 	w.show();
 	return a.exec();

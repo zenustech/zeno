@@ -18,6 +18,10 @@ ZenoSocketItem::ZenoSocketItem(
     , m_svgHover(nullptr)
     , m_hoverSvg(elem.imageHovered)
     , m_noHoverSvg(elem.image)
+    , sHorLargeMargin(ZenoStyle::dpiScaled(40))
+    , sTopMargin(ZenoStyle::dpiScaled(10))
+    , sHorSmallMargin(ZenoStyle::dpiScaled(5))
+    , sBottomMargin(ZenoStyle::dpiScaled(10))
 {
     setCheckable(true);
     setSockStatus(STATUS_NOCONN);
@@ -39,17 +43,33 @@ void ZenoSocketItem::socketNamePosition(const QPointF& nameScenePos)
     setPos(namePos + m_offsetToName);
 }
 
+QPointF ZenoSocketItem::center() const
+{
+    QRectF rcImage = ZenoImageItem::boundingRect();
+    QRectF br = boundingRect();
+    QPointF cen = br.topLeft();
+    if (m_bInput)
+    {
+        cen += QPointF(sHorLargeMargin + rcImage.width() / 2., sTopMargin + rcImage.height() / 2);
+        QPointF c = mapToScene(cen);
+        return c;
+    }
+    else
+    {
+        cen += QPointF(sHorSmallMargin + rcImage.width() / 2., sTopMargin + rcImage.height() / 2);
+        QPointF c = mapToScene(cen);
+        return c;
+    }
+}
+
 QRectF ZenoSocketItem::boundingRect() const
 {
-    static int sLargeMargin = ZenoStyle::dpiScaled(20);
-    static int sSmallMargin = ZenoStyle::dpiScaled(10);
-
     QRectF rc = ZenoImageItem::boundingRect();
     if (m_bInput) {
-        rc = rc.adjusted(-sLargeMargin, -sSmallMargin, sLargeMargin, sSmallMargin);
+        rc = rc.adjusted(-sHorLargeMargin, -sTopMargin, sHorSmallMargin, sBottomMargin);
     }
     else {
-        rc = rc.adjusted(-sLargeMargin, -sSmallMargin, sLargeMargin, sSmallMargin);
+        rc = rc.adjusted(-sHorSmallMargin, -sTopMargin, sHorLargeMargin, sBottomMargin);
     }
     return rc;
 }

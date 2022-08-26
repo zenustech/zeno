@@ -21,4 +21,5 @@ target_include_directories(zeno PRIVATE mpmmeshing/)
 
 
 target_sources(zeno PRIVATE  mpmmeshing/help.cpp mpmmeshing/Mesh3D.cpp mpmmeshing/Render.cpp)
+zeno_disable_warning(mpmmeshing/help.cpp mpmmeshing/Mesh3D.cpp mpmmeshing/Render.cpp)
 target_link_libraries(zeno PRIVATE Eigen3::Eigen)
