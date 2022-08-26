@@ -26,6 +26,7 @@
 #include "startup/zstartup.h"
 #include "settings/zsettings.h"
 #include "panel/zenolights.h"
+#include "panel/ZenoObjectList.h"
 
 
 ZenoMainWindow::ZenoMainWindow(QWidget *parent, Qt::WindowFlags flags)
@@ -517,6 +518,7 @@ QString ZenoMainWindow::uniqueDockObjName(DOCK_TYPE type)
     case DOCK_VIEW: return UiHelper::generateUuid("dock_view_");
     case DOCK_NODE_PARAMS: return UiHelper::generateUuid("dock_parameter_");
     case DOCK_LIGHTS: return UiHelper::generateUuid("dock_lights_");
+    case DOCK_OBJECT_LIST: return UiHelper::generateUuid("dock_object_list_");
     default:
         return UiHelper::generateUuid("dock_empty_");
     }
@@ -556,6 +558,11 @@ void ZenoMainWindow::onDockSwitched(DOCK_TYPE type)
         }
         case DOCK_LIGHTS: {
             ZenoLights* pPanel = new ZenoLights;
+            pDock->setWidget(type, pPanel);
+            break;
+        }
+        case DOCK_OBJECT_LIST: {
+            ZenoObjectList* pPanel = new ZenoObjectList();
             pDock->setWidget(type, pPanel);
             break;
         }

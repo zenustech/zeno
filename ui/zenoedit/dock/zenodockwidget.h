@@ -15,6 +15,7 @@ enum DOCK_TYPE
 	DOCK_NODE_DATA,
     DOCK_LOG,
     DOCK_LIGHTS,
+    DOCK_OBJECT_LIST,
 };
 
 class ZenoDockWidget : public QDockWidget

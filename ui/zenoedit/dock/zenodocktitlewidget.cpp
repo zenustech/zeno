@@ -111,12 +111,14 @@ void ZenoDockTitleWidget::onDockSwitchClicked()
 	QAction* pSwitchNodeData = new QAction("data");
 	QAction *pSwitchLog = new QAction("logger");
 	QAction *pSwitchLights = new QAction("lights");
+	QAction *pObjectList = new QAction("ObjectList");
 	menu->addAction(pSwitchEditor);
 	menu->addAction(pSwitchView);
 	menu->addAction(pSwitchNodeParam);
 	menu->addAction(pSwitchNodeData);
 	menu->addAction(pSwitchLog);
 	menu->addAction(pSwitchLights);
+	menu->addAction(pObjectList);
 	connect(pSwitchEditor, &QAction::triggered, this, [=]() {
 		emit dockSwitchClicked(DOCK_EDITOR);
 		});
@@ -134,6 +136,9 @@ void ZenoDockTitleWidget::onDockSwitchClicked()
 	});
     connect(pSwitchLights, &QAction::triggered, this, [=]() {
 		emit dockSwitchClicked(DOCK_LIGHTS);
+	});
+    connect(pObjectList, &QAction::triggered, this, [=]() {
+		emit dockSwitchClicked(DOCK_OBJECT_LIST);
 	});
 
 	menu->exec(QCursor::pos());
