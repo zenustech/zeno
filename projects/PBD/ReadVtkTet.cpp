@@ -83,7 +83,8 @@ void ReadVtkTet::extractSurf()
     using vec4i = std::array<int,4>;
 
     //put all faces(exterior and interior)
-    std::vector<vec4i> faces(numFaces);
+    std::vector<vec4i> faces;
+    faces.reserve(numFaces);
     for (int i = 0; i < quads.size(); i++)
     {
         std::array<int,4> tet=quads[i];
