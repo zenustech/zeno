@@ -1,3 +1,4 @@
+#include "../Utils.hpp"
 #include "PBD.cuh"
 
 namespace zeno {
@@ -124,5 +125,32 @@ PBDSystem::PBDSystem(std::vector<ZenoParticles *> zsprims, vec3 extForce, T dt, 
     auto cudaPol = zs::cuda_exec();
     initialize(cudaPol);
 }
+
+struct MakePBDSystem : INode {
+    void apply() override {
+        using namespace zs;
+        constexpr auto space = execspace_e::cuda;
+        auto zstets = RETRIEVE_OBJECT_PTRS(ZenoParticles, "ZSParticles");
+        /// solver parameters
+        auto input_cap = get_input2<int>("iter_cap");
+        auto dt = get_input2<float>("dt");
+        auto extForce = get_input<zeno::NumericObject>("ext_force")->get<zeno::vec3f>();
+
+        auto A = std::make_shared<PBDSystem>(zstets, zs::vec<float, 3>{extForce[0], extForce[1], extForce[2]}, dt,
+                                             input_cap);
+
+        set_output("ZSPBDSystem", A);
+    }
+};
+
+ZENDEFNODE(MakePBDSystem, {{
+                               "ZSParticles",
+                               {"float", "dt", "0.01"},
+                               {"vec3f", "ext_force", "0,-9,0"},
+                               {"int", "iter_cap", "100"},
+                           },
+                           {"ZSPBDSystem"},
+                           {},
+                           {"PBD"}});
 
 } // namespace zeno

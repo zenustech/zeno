@@ -79,27 +79,10 @@ struct PBDSystem : IObject {
     void writebackPositionsAndVelocities(zs::CudaExecutionPolicy &pol);
 
     /// pipeline
-    void newtonKrylov(zs::CudaExecutionPolicy &pol);
-    // linear system setup
-    void computeInertialAndGravityPotentialGradient(zs::CudaExecutionPolicy &cudaPol);
-    void computeInertialPotentialGradient(zs::CudaExecutionPolicy &cudaPol,
-                                          const zs::SmallString &gTag); // for kappaMin
-    void computeElasticGradientAndHessian(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString &gTag,
-                                          bool includeHessian = true);
-    void computeBoundaryBarrierGradientAndHessian(zs::CudaExecutionPolicy &pol, bool includeHessian = true);
-    void computeBarrierGradientAndHessian(zs::CudaExecutionPolicy &pol, const zs::SmallString &gTag,
-                                          bool includeHessian = true);
-    void computeFrictionBarrierGradientAndHessian(zs::CudaExecutionPolicy &pol, const zs::SmallString &gTag,
-                                                  bool includeHessian = true);
-    // krylov solver
-    void project(zs::CudaExecutionPolicy &pol, const zs::SmallString tag);
-    void precondition(zs::CudaExecutionPolicy &pol, const zs::SmallString srcTag, const zs::SmallString dstTag);
-    void multiply(zs::CudaExecutionPolicy &pol, const zs::SmallString dxTag, const zs::SmallString bTag);
-    T energy(zs::CudaExecutionPolicy &pol, const zs::SmallString tag, bool includeAugLagEnergy = false);
-    void cgsolve(zs::CudaExecutionPolicy &cudaPol);
-    void groundIntersectionFreeStepsize(zs::CudaExecutionPolicy &pol, T &stepSize);
-    void intersectionFreeStepsize(zs::CudaExecutionPolicy &pol, T xi, T &stepSize);
-    void lineSearch(zs::CudaExecutionPolicy &cudaPol, T &alpha);
+    void preSolve(zs::CudaExecutionPolicy &pol);
+    void solveEdge(zs::CudaExecutionPolicy &pol);
+    void solveVolume(zs::CudaExecutionPolicy &pol);
+    void postSolve(zs::CudaExecutionPolicy &pol);
 
     // sim params
     vec3 extForce;
