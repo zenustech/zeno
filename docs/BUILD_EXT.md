@@ -139,7 +139,7 @@ Notice that **CUDA 11.6 (or above) is requried**, thanks to @littlemine's modern
 > NOTE: ZenoFX must be enabled when CUDA is enabled, because CUDA depends on ZenoFX.
 > NOTE: Windows user must install the `CUDA Visual Studio integration`, otherwise CMake will complains `No CUDA toolset found`.
 
-### Enabling subgraph extensions
+### Enabling tool extensions
 
 Some of the extensions are purely made with Zeno subgraphs, they lays in the directory
 `projects/tools` and their contents are basically hard-encoded subgraph JSON strings.
@@ -147,6 +147,22 @@ To enable them, just additionally specify `-DZENO_WITH_TOOL_FLIPtools:BOOL=ON -D
 Enabling them you will find our well-packaged high-level nodes like `FLIPSimTemplate`,
 they were exported from another subgraph file using Ctrl-Shfit-E by the way, see the
 source code of `FLIPtools` for the original graph file name.
+
+## Enabling the Python extension
+
+You may optionally enable the embedded Python interpreter extension for Zeno by specifying `-DZENO_WITH_python:BOOL=ON` in arguments.
+
+> Note that we already embed a modified version CPython (https://github.com/zenustech/python-cmake-buildsystem) in this repository, you don't need to pre-install Python in your system at all.
+
+> The default version is 3.9.10, you may specify e.g. `-DPYTHON_VERSION=3.9.9` for using different version.
+
+### Ubuntu
+
+These packages are required to build the Python extension on Ubuntu:
+
+```bash
+sudo apt-get install -y build-essential zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev wget libbz2-dev
+```
 
 ## Advanced build configuration (optional)
 
@@ -204,30 +220,3 @@ cmake -B build -DZENO_BUILD_EDITOR:BOOL=OFF
 ## What's next?
 
 If you are the project maintainer, you may also checkout [`docs/MAINTAINERS.md`](/docs/MAINTAINERS.md) for even more advanced skills.
-
-<!-- deprecated, see misc/ci/CMakePresets.json, now only used by CI
-### Using CMake presets (experimental)
-
-Latest version of CMake supports `CMakePresets.json` and `--preset`, so you may use the following command instead of above huge command lines:
-
-```bash
-cmake --preset default
-cmake --build --preset default
-```
-
-And for people who would like to build with CUDA support:
-
-```bash
-cmake --preset cuda
-cmake --build --preset cuda
-```
-
-The `default` or `cuda` here is called the preset name, see `CMakePresets.json` at the root of project directory for more presets and their details.
-
-Note that you may still specify extra arguments under preset mode, for example:
-
-```bash
-cmake --preset default -G Ninja -DCMAKE_INSTALL_PREFIX:BOOL=/opt/zeno
-cmake --build --preset default --parallel
-```
--->
