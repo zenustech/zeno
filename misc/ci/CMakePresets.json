@@ -30,6 +30,7 @@
         "ZENO_WITH_Rigid": "ON",
         "ZENO_WITH_oldzenbase": "ON",
         "ZENO_WITH_Audio": "ON",
+        "ZENO_WITH_PBD": "ON",
         "ZENO_WITH_TOOL_FLIPtools": "OFF",
         "ZENO_WITH_TOOL_BulletTools": "OFF"
       }
@@ -51,6 +52,7 @@
         "ZENO_WITH_Alembic": "ON",
         "ZENO_WITH_FBX": "ON",
         "ZENO_WITH_DemBones": "ON",
+        "ZENO_WITH_python": "ON",
         "ZENO_WITH_SampleModel": "ON",
         "ZENO_WITH_MeshSubdiv": "ON",
         "ZENO_WITH_CalcGeometryUV": "ON",
