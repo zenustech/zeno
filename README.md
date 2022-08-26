@@ -44,7 +44,7 @@ Fig.1 - Cloth simulation
 
 Fig.2 - Fluid simulation
 
-<img src="https://zenustech.oss-cn-beijing.aliyuncs.com/Place-in-Github/202208/Fluid.gif" width="640" position="left">
+<img src="https://zenustech.oss-cn-beijing.aliyuncs.com/Place-in-Github/202208/Fluid.webp" width="640" position="left">
 
 Fig.3 - Rigid simulation
 
