@@ -9,7 +9,12 @@
 #include <fstream>
 #include <set>
 
-
+namespace zeno_config {
+    std::string configFilePath;
+    void setConfigFilePath(std::string path) {
+        configFilePath = std::move(path);
+    }
+}
 namespace zeno {
 namespace {
 
@@ -110,6 +115,9 @@ struct ParamFileParser : zeno::INode {
         auto formatList = get_input<zeno::ListObject>("formatList");
         auto params = std::make_shared<zeno::DictObject>();
         auto path = get_input2<std::string>("configFilePath");
+        if (!zeno_config::configFilePath.empty()) {
+            path = zeno_config::configFilePath;
+        }
         std::set<std::string> saved_names;
         if (std::filesystem::exists(path)) {
             auto is = std::ifstream(path);
