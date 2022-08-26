@@ -365,20 +365,20 @@ NODE_DESCS GraphsModel::getCoreDescs()
 
 void GraphsModel::initDescriptors()
 {
-    m_nodesDesc = getCoreDescs();
-
-    //add Blackboard
-    //NODE_DESC desc;
-    //desc.categories.push_back("layout");
-    //m_nodesDesc.insert("Blackboard", desc);
-
-    m_nodesCate.clear();
+    m_nodesDesc = getCoreDescs();    m_nodesCate.clear();
     for (auto it = m_nodesDesc.constBegin(); it != m_nodesDesc.constEnd(); it++)
     {
         const QString& name = it.key();
         const NODE_DESC& desc = it.value();
         registerCate(desc);
     }
+
+    //add Blackboard
+    NODE_DESC desc;
+    desc.name = "Blackboard";
+    desc.categories.push_back("layout");
+    m_nodesDesc.insert(desc.name, desc);
+    registerCate(desc);
 }
 
 NODE_DESC GraphsModel::getSubgraphDesc(SubGraphModel* pModel)
