@@ -1267,7 +1267,8 @@ QModelIndex GraphsModel::addLink(const EdgeInfo& info, const QModelIndex& subGpI
                 if (maxObjId == -1)
                     maxObjId = 0;
                 QString maxObjSock = QString("obj%1").arg(maxObjId);
-                if (info.inputSock == maxObjSock)
+                QString lastKey = inputs.lastKey();
+                if (info.inputSock == lastKey)
                 {
                     //add a new
                     const QString &newObjName = QString("obj%1").arg(maxObjId + 1);
@@ -1589,20 +1590,19 @@ bool GraphsModel::updateSocketNameNotDesc(const QString& id, SOCKET_UPDATE_INFO 
             INPUT_SOCKETS inputs = pSubg->data(idx, ROLE_INPUTS).value<INPUT_SOCKETS>();
             if (info.bInput && newSockName != oldSockName && inputs.find(newSockName) == inputs.end())
             {
-                INPUT_SOCKET& newInput = inputs[newSockName];
-                const INPUT_SOCKET& oldInput = inputs[oldSockName];
-                newInput = oldInput;
-                newInput.info.name = newSockName;
+                auto iter = inputs.find(oldSockName);
+                ZASSERT_EXIT(iter != inputs.end(), false);
+
+                iter->first = newSockName;
 
                 //update all link connect with oldInfo.
                 m_linkModel->blockSignals(true);
-                for (auto idx : oldInput.linkIndice)
+                for (auto idx : iter->second.linkIndice)
                 {
                     m_linkModel->setData(idx, newSockName, ROLE_INSOCK);
                 }
                 m_linkModel->blockSignals(false);
 
-                inputs.remove(oldSockName);
                 pSubg->setData(idx, QVariant::fromValue(inputs), ROLE_INPUTS);
                 ret = true;
             }
