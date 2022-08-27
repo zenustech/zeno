@@ -72,6 +72,7 @@ namespace {
     LUT<Graph> lutGraph;
     LUT<IObject> lutObject;
     LastError lastError;
+    std::map<std::string, std::shared_ptr<IObject>> tempNodeRes;
 }
 
 #ifdef __cplusplus
@@ -105,19 +106,24 @@ ZENO_CAPI Zeno_Error Zeno_GraphLoadJson(Zeno_Graph graph_, const char *jsonStr_)
     });
 }
 
-ZENO_CAPI Zeno_Error Zeno_GraphCallTempNode(Zeno_Graph graph_, const char *nodeType_, const char *const *inputKeys_, const Zeno_Object *inputObjects_, size_t inputCount_, const char *const *outputKeys_, Zeno_Object *outputObjects_, size_t outputCount_) ZENO_CAPI_NOEXCEPT {
+ZENO_CAPI Zeno_Error Zeno_GraphCallTempNode(Zeno_Graph graph_, const char *nodeType_, const char *const *inputKeys_, const Zeno_Object *inputObjects_, size_t inputCount_, size_t *outputCountRet_) ZENO_CAPI_NOEXCEPT {
     return lastError.catched([=] {
-        std::map<std::string, std::shared_ptr<IObject>> params;
+        std::map<std::string, std::shared_ptr<IObject>> inputs;
         for (size_t i = 0; i < inputCount_; i++) {
-            params.emplace(inputKeys_[i], lutObject.access(inputObjects_[i]));
+            inputs.emplace(inputKeys_[i], lutObject.access(inputObjects_[i]));
         }
-        params = lutGraph.access(graph_)->callTempNode(nodeType_, params);
-        for (size_t i = 0; i < outputCount_; i++) {
-            auto it = params.find(inputKeys_[i]);
-            if (ZENO_UNLIKELY(it == params.end())) {
-                throw makeError<KeyError>(inputKeys_[i], "output socket name");
-            }
+        tempNodeRes = lutGraph.access(graph_)->callTempNode(nodeType_, inputs);
+        *outputCountRet_ = tempNodeRes.size();
+    });
+}
+
+ZENO_CAPI Zeno_Error Zeno_GetLastTempNodeResult(const char **outputKeys_, Zeno_Object *outputObjects_) ZENO_CAPI_NOEXCEPT {
+    return lastError.catched([=] {
+        auto it = tempNodeRes.begin();
+        for (size_t i = 0; i < tempNodeRes.size(); i++) {
+            outputKeys_[i] = it->first.c_str();
             outputObjects_[i] = lutObject.create(std::move(it->second));
+            ++it;
         }
     });
 }
