@@ -24,7 +24,6 @@ void PBDSystem::preSolve(zs::CudaExecutionPolicy &pol) {
 }
 
 void PBDSystem::solveEdge(zs::CudaExecutionPolicy &pol) {
-    constexpr T edgeCompliance = 0.001;
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
     T alpha = edgeCompliance / dt / dt;
@@ -55,7 +54,6 @@ void PBDSystem::solveEdge(zs::CudaExecutionPolicy &pol) {
     }
 }
 void PBDSystem::solveVolume(zs::CudaExecutionPolicy &pol) {
-    constexpr T volumeCompliance = 0.001;
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
     float alphaVol = volumeCompliance / dt / dt;
@@ -75,14 +73,17 @@ void PBDSystem::solveVolume(zs::CudaExecutionPolicy &pol) {
             ms[1] = 1 / vtemp("m", id[1]);
             ms[2] = 1 / vtemp("m", id[2]);
             ms[3] = 1 / vtemp("m", id[3]);
-            gradsVol[0] = (x3 - x1).cross(x2 - x1);
+
+	    // ref: https://github.com/InteractiveComputerGraphics/PositionBasedDynamics
+	    // XPBD.cpp:solve_VolumeConstraint
+            gradsVol[0] = (x1 - x2).cross(x3 - x2);
             gradsVol[1] = (x2 - x0).cross(x3 - x0);
-            gradsVol[2] = (x3 - x0).cross(x1 - x0);
+            gradsVol[2] = (x0 - x1).cross(x3 - x1);
             gradsVol[3] = (x1 - x0).cross(x2 - x0);
 
             T w = 0;
             for (int j = 0; j != 4; ++j)
-                w += zs::sqr(gradsVol[j].length()) * ms[j];
+                w += gradsVol[j].l2NormSqr() * ms[j];
 
             T vol = zs::abs((x1 - x0).cross(x2 - x0).dot(x3 - x0)) / 6;
             T C = (vol - eles("rv", ei)) * 6;

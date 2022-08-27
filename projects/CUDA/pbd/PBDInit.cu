@@ -125,9 +125,9 @@ void PBDSystem::reinitialize(zs::CudaExecutionPolicy &pol, T framedt) {
     }
 }
 
-PBDSystem::PBDSystem(std::vector<ZenoParticles *> zsprims, vec3 extForce, T dt, int numSolveIters)
-    : extForce{extForce}, solveIterCap{numSolveIters}, prims{}, coOffset{0}, numDofs{0}, sfOffset{0}, seOffset{0},
-      svOffset{0}, vtemp{}, temp{}, stInds{}, seInds{}, svInds{}, dt{dt} {
+PBDSystem::PBDSystem(std::vector<ZenoParticles *> zsprims, vec3 extForce, T dt, int numSolveIters, T ec, T vc)
+    : extForce{extForce}, solveIterCap{numSolveIters}, edgeCompliance{ec}, volumeCompliance{vc}, prims{}, coOffset{0},
+      numDofs{0}, sfOffset{0}, seOffset{0}, svOffset{0}, vtemp{}, temp{}, stInds{}, seInds{}, svInds{}, dt{dt} {
     for (auto primPtr : zsprims) {
         if (primPtr->category == ZenoParticles::category_e::tet) {
             prims.emplace_back(*primPtr, coOffset, sfOffset, seOffset, svOffset, zs::wrapv<4>{});
@@ -201,10 +201,12 @@ struct MakePBDSystem : INode {
         /// solver parameters
         auto input_cap = get_input2<int>("iter_cap");
         auto dt = get_input2<float>("dt");
+        auto ec = get_input2<float>("edge_compliance");
+        auto vc = get_input2<float>("edge_compliance");
         auto extForce = get_input<zeno::NumericObject>("ext_force")->get<zeno::vec3f>();
 
         auto A = std::make_shared<PBDSystem>(zstets, zs::vec<float, 3>{extForce[0], extForce[1], extForce[2]}, dt,
-                                             input_cap);
+                                             input_cap, ec, vc);
 
         set_output("ZSPBDSystem", A);
     }
@@ -215,6 +217,8 @@ ZENDEFNODE(MakePBDSystem, {{
                                {"float", "dt", "0.01"},
                                {"vec3f", "ext_force", "0,-9,0"},
                                {"int", "iter_cap", "100"},
+                               {"float", "edge_compliance", "0.001"},
+                               {"float", "volume_compliance", "0.001"},
                            },
                            {"ZSPBDSystem"},
                            {},

@@ -77,7 +77,7 @@ struct PBDSystem : IObject {
     };
 
     void initialize(zs::CudaExecutionPolicy &pol);
-    PBDSystem(std::vector<ZenoParticles *> zsprims, vec3 extForce, T dt, int numSolveIters);
+    PBDSystem(std::vector<ZenoParticles *> zsprims, vec3 extForce, T dt, int numSolveIters, T ec, T vc);
 
     void reinitialize(zs::CudaExecutionPolicy &pol, T framedt);
     void writebackPositionsAndVelocities(zs::CudaExecutionPolicy &pol);
@@ -91,6 +91,7 @@ struct PBDSystem : IObject {
     // sim params
     vec3 extForce;
     int solveIterCap = 50;
+    T edgeCompliance = 0.001, volumeCompliance = 0.001;
 
     //
     std::vector<PrimitiveHandle> prims;
