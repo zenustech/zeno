@@ -16,6 +16,7 @@ projects/CalcGeometryUV/calcUVCore
 projects/MeshSubdiv/OpenSubdiv
 projects/ZenoFX/ZFX/x64/vectorclass
 projects/Euler/Libs
+projects/Python/CPython
 projects/.unusedTools
 projects/tools
 zenovis/xinxinoptix/include

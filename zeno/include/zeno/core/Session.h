@@ -26,6 +26,7 @@ struct GlobalState;
 struct GlobalComm;
 struct GlobalStatus;
 struct EventCallbacks;
+struct UserData;
 
 struct Session {
     std::map<std::string, std::unique_ptr<INodeClass>> nodeClasses;
@@ -34,6 +35,7 @@ struct Session {
     std::unique_ptr<GlobalComm> const globalComm;
     std::unique_ptr<GlobalStatus> const globalStatus;
     std::unique_ptr<EventCallbacks> const eventCallbacks;
+    std::unique_ptr<UserData> const m_userData;
 
     ZENO_API Session();
     ZENO_API ~Session();
@@ -43,6 +45,7 @@ struct Session {
     Session(Session &&) = delete;
     Session &operator=(Session &&) = delete;
 
+    ZENO_API UserData &userData() const;
     ZENO_API std::unique_ptr<Graph> createGraph();
     ZENO_API std::string dumpDescriptors() const;
     ZENO_API void defNodeClass(std::unique_ptr<INode>(*ctor)(), std::string const &id, Descriptor const &desc = {});
