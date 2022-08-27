@@ -75,16 +75,6 @@ private:
         numSurfs = prim->tris.size();
     }
 
-    void initPos(PrimitiveObject *prim)
-    {
-        auto &pos = prim->verts;
-
-        for (int i = 0; i < pos.size(); i++) 
-            pos[i] += vec3f(0.5,1,0);
-    }
-    
-
-
     void preSolve(  zeno::AttrVector<zeno::vec3f> &pos,
                     std::vector<zeno::vec3f> &prevPos,
                     std::vector<zeno::vec3f> &vel)
@@ -171,6 +161,10 @@ public:
 
         g = external_force;
 
+        numSubsteps = get_input<zeno::NumericObject>("numSubsteps")->get<int>();
+        edgeCompliance = get_input<zeno::NumericObject>("edgeCompliance")->get<float>();
+        volumeCompliance = get_input<zeno::NumericObject>("volumeCompliance")->get<float>();
+
         static bool firstTime = true;
         if(firstTime)
         {
@@ -178,7 +172,6 @@ public:
             std::cout<<g[1]<<std::endl;
             std::cout<<g[2]<<std::endl;
             initGeo(prim.get());
-            initPos(prim.get());
             firstTime = false;
         }
 
@@ -205,7 +198,10 @@ public:
 ZENDEFNODE(PBD, {// inputs:
                  {
                     {"PrimitiveObject", "prim"},
-                    {"vec3f", "external_force", "0.0, -1.0, 0.0"}
+                    {"vec3f", "external_force", "0.0, -9.8, 0.0"},
+                    {"int", "numSubsteps", "10"},
+                    {"float", "edgeCompliance", "100.0"},
+                    {"float", "volumeCompliance", "0.0"}
                 },
                  // outputs:
                  {"prim"},

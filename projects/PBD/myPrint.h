@@ -33,4 +33,18 @@ void print(T contents, int maxTimes=20, bool toFile=false, std::string msg="")
     }
 }
 
+template<typename T>
+void printToFile(T content, std::string fileName)
+{
+    std::ofstream f;
+    f.open(fileName);
+    for(const auto& x:content)
+    {
+        for(const auto& xx:x)
+            f<<xx<<"\t";
+        f<<"\n";
+    }
+    f.close();
+}
+
 #define echo(content) {std::cout<<(#content)<<": "<<content<<std::endl;}

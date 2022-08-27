@@ -12,6 +12,7 @@
 #include "MeshIO.hpp"
 #include "myPrint.h"
 #include "BunnyMeshData.h"
+#include <zeno/utils/log.h>
 namespace zeno {
 
 BunnyMeshData bunny;
@@ -21,6 +22,7 @@ struct ReadVtkTet : INode {
 private:
     std::shared_ptr<PrimitiveObject> prim;
     void extractSurf();
+    void extractEdge();
 public:
   void apply() override {
     auto path = get_input<StringObject>("path")->get();
@@ -46,10 +48,12 @@ public:
 
     prim->tris.clear();
     extractSurf();
-    
-    if(has_input<PrimitiveObject>("prim"))
-        prim = get_input<PrimitiveObject>("prim");
 
+    prim->lines.clear();
+    extractEdge();
+
+    printToFile(pos,"pos.txt");
+    printToFile(quads,"tet.txt");
 
     set_output("outPrim", std::move(prim));
   }
@@ -58,7 +62,6 @@ public:
 ZENDEFNODE(ReadVtkTet, {/* inputs: */ 
                          {
                             {"readpath", "path"},
-                            {"primitive", "prim"}
                          },
                          /* outputs: */
                          {
@@ -175,6 +178,49 @@ void ReadVtkTet::extractSurf()
 
     std::cout<<"before extractSurf numFaces: "<<numFaces<<std::endl;
     std::cout<<"after extractSurf numSurfs: "<<surfs.size()<<std::endl;
+}
+
+
+void ReadVtkTet::extractEdge()
+{   
+    auto & quads = prim->quads;
+    auto & edges = prim->lines;
+
+    //use the std::set to maintain the uniqueness of edges
+    std::set<std::set<int>> edgeSet;
+    for (int i = 0; i < quads.size(); i++)
+    {
+        std::array<int,4> tet=quads[i];
+        
+        int t0 = tet[0];
+        int t1 = tet[1];
+        int t2 = tet[2];
+        int t3 = tet[3];
+
+        std::set<int> l0{t0, t1}, l1{t0, t2}, l2{t0, t3},
+                      l3{t1, t2}, l4{t1, t3}, l5{t2, t3};
+        
+        edgeSet.insert(l0);
+        edgeSet.insert(l1);
+        edgeSet.insert(l2);
+        edgeSet.insert(l3);
+        edgeSet.insert(l4);
+        edgeSet.insert(l5);
+    }
+
+    //copy back from set
+    size_t numEdges = edgeSet.size();
+    edges.reserve(numEdges);
+    for(auto &&line : edgeSet)
+    {
+        vec2i to;
+        std::copy(line.begin(), line.end(), to.begin());
+        edges.push_back(to);
+    }
+
+    log_info("after extractEdges numEdges: ", edges.size());
+    
+
 }
 
 } // namespace zeno

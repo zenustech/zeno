@@ -6,7 +6,7 @@
 #include <zeno/utils/log.h>
 
 #include "BunnyMeshData.h"
-
+#include "myPrint.h"
 namespace zeno{
 
 struct bunnyMesh : zeno::INode
@@ -52,6 +52,11 @@ struct bunnyMesh : zeno::INode
 		log_info("numEdges: {}", numEdges);
 		log_info("numTets: {}", numTets);
 		log_info("numSurfs: {}", numSurfs);
+
+		printToFile(edge,"edge.txt");
+		printToFile(pos,"pos.txt");
+		printToFile(tet,"tet.txt");
+		printToFile(surf,"surf.txt");
 
         set_output("prim", std::move(prim));
 	};
