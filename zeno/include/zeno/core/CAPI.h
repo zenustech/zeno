@@ -34,6 +34,7 @@ ZENO_CAPI Zeno_Error Zeno_DestroyObject(Zeno_Object object_) ZENO_CAPI_NOEXCEPT;
 ZENO_CAPI Zeno_Error Zeno_GetObjectInt(Zeno_Object object_, int *value_, size_t dim_) ZENO_CAPI_NOEXCEPT;
 ZENO_CAPI Zeno_Error Zeno_GetObjectFloat(Zeno_Object object_, float *value_, size_t dim_) ZENO_CAPI_NOEXCEPT;
 ZENO_CAPI Zeno_Error Zeno_GetObjectString(Zeno_Object object_, char *strBuf_, size_t *strLenRet_) ZENO_CAPI_NOEXCEPT;
+ZENO_CAPI Zeno_Object Zeno_LoadObjectSharedPtr(const void *sharedPtrPtr_) ZENO_CAPI_NOEXCEPT;  // do not use
 
 #ifdef __cplusplus
 }

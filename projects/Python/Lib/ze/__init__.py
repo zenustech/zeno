@@ -104,7 +104,7 @@ class ZenoGraph:
         outputKeys_ = (ctypes.c_char_p * outputCount_.value)()
         outputObjects_ = (ctypes.c_uint64 * outputCount_.value)()
         api.Zeno_GetLastTempNodeResult(outputKeys_, outputObjects_)
-        outputs: dict[str, int] = dict(zip(outputKeys_, outputObjects_))
+        outputs: dict[str, int] = dict(zip(map(lambda x: x.decode(), outputKeys_), outputObjects_))
         return outputs
 
     def __del__(self):

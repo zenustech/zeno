@@ -78,9 +78,7 @@ namespace {
     std::map<std::string, std::shared_ptr<IObject>> tempNodeRes;
 }
 
-#ifdef __cplusplus
 extern "C" {
-#endif
 
 ZENO_CAPI Zeno_Error Zeno_GetLastErrorCode() ZENO_CAPI_NOEXCEPT {
     return lastError.code();
@@ -238,6 +236,16 @@ ZENO_CAPI Zeno_Error Zeno_GetObjectString(Zeno_Object object_, char *strBuf_, si
     });
 }
 
-#ifdef __cplusplus
 }
-#endif
+
+namespace zeno {
+
+ZENO_API Zeno_Object capiLoadObjectSharedPtr(std::shared_ptr<IObject> const &objPtr_) {
+    return lutObject.create(objPtr_);
+}
+
+ZENO_API Zeno_Object capiEraseObjectSharedPtr(Zeno_Object object_) {
+    return lutObject.destroy(object_);
+}
+
+}
