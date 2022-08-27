@@ -6,9 +6,14 @@
 #include "style/zenostyle.h"
 #include "zeno/extra/assetDir.h"
 #include <zeno/utils/logger.h>
+#include "AudioFile.h"
 
-namespace zaudio {
-int calcFrameCountByAudio(std::string path, int fps);
+static int calcFrameCountByAudio(std::string path, int fps) {
+    AudioFile<float> wav;
+    wav.load (path);
+    uint64_t ret = wav.getNumSamplesPerChannel();
+    ret = ret * fps / wav.getSampleRate();
+    return ret + 1;
 }
 
 int main(int argc, char *argv[]) 
@@ -63,7 +68,7 @@ int main(int argc, char *argv[])
         if (cmdParser.isSet("audio")) {
             param.audioPath = cmdParser.value("audio");
             if(!cmdParser.isSet("frame")) {
-                int count = zaudio::calcFrameCountByAudio(param.audioPath.toStdString(), 24);
+                int count = calcFrameCountByAudio(param.audioPath.toStdString(), 24);
                 param.iFrame = count;
             }
         }
