@@ -23,5 +23,5 @@
 	path = projects/CUDA/zpc
 	url = https://github.com/zenustech/zpc.git
 [submodule "projects/python/CPython"]
-	path = projects/python/CPython
+	path = projects/Python/CPython
 	url = https://github.com/zenustech/python-cmake-buildsystem.git
