@@ -85,8 +85,9 @@ void ReadVtkTet::extractSurf()
     
     using vec4i = std::array<int,4>;
 
-    //list_faces
+    //put all faces(exterior and interior)
     std::vector<vec4i> faces;
+    faces.reserve(numFaces);
     for (int i = 0; i < quads.size(); i++)
     {
         std::array<int,4> tet=quads[i];
@@ -109,6 +110,9 @@ void ReadVtkTet::extractSurf()
         faces.push_back(f3);
     }
 
+    /* -------------------------------------------------------------------------- */
+    /*                       remove interior faces                                */
+    /* -------------------------------------------------------------------------- */
     auto myLess = [](auto a, auto b){
         return std::tie(a[0], a[1], a[2]) < std::tie(b[0], b[1], b[2]);
     };
@@ -116,13 +120,10 @@ void ReadVtkTet::extractSurf()
     //sort faces
     std::sort(faces.begin(),faces.end(), myLess);
 
-
-    /* -------------------------------------------------------------------------- */
-    /*                       use list to remove shared faces                      */
-    /* -------------------------------------------------------------------------- */
     auto myEqual = [](auto a, auto b){
         if((a[0]==b[0])&&(a[1]==b[1])&&(a[2]==b[2])) return true; 
         else return false;};
+    
     //copy to a list
     std::list<vec4i> facelist;
     for(auto it:faces)
