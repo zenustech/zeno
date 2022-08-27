@@ -9,44 +9,53 @@ void PBDSystem::preSolve(zs::CudaExecutionPolicy &pol) {
     pol(range(numDofs), [vtemp = proxy<space>({}, vtemp), extForce = extForce, dt = dt] ZS_LAMBDA(int i) mutable {
         auto x = vtemp.template pack<3>("x", i);
         auto v = vtemp.template pack<3>("v", i);
-        vtemp.template tuple<3>("xpre", i) = x;
-        v += extForce * dt; //extForce here is actually accel
         auto xpre = x;
+        v += extForce * dt; //extForce here is actually accel
         x += v * dt;
         // project
         if (x[1] < 0) {
             x = xpre;
             x[1] = 0;
         }
+        vtemp.template tuple<3>("xpre", i) = xpre;
         vtemp.template tuple<3>("x", i) = x;
+        vtemp.template tuple<3>("v", i) = v;
     });
 }
 
 void PBDSystem::solveEdge(zs::CudaExecutionPolicy &pol) {
-    constexpr T edgeCompliance = 100;
+    constexpr T edgeCompliance = 0.001;
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
     T alpha = edgeCompliance / dt / dt;
     zeno::vec3f grads{0, 0, 0};
-#if 0
-    for (int i = 0; i < numEdges; i++) {
-        int id0 = edge[i][0];
-        int id1 = edge[i][1];
+    for (auto &&prim : prims) {
+        auto &edges = prim.getEdges();
+        pol(range(edges.size()), [vtemp = proxy<space>({}, vtemp), edges = proxy<space>({}, edges),
+                                  vOffset = prim.vOffset, alpha] ZS_LAMBDA(int ei) mutable {
+            auto id = edges.template pack<2>("inds", ei).template reinterpret_bits<int>() + vOffset;
+            T ms[2];
+            ms[0] = 1 / vtemp("m", id[0]);
+            ms[1] = 1 / vtemp("m", id[1]);
+            vec3 grads;
+            auto x0 = vtemp.template pack<3>("x", id[0]);
+            auto x1 = vtemp.template pack<3>("x", id[1]);
+            grads = x0 - x1;
+            auto len = grads.length();
+            grads /= len;
+            T C = len - edges("rl", ei);
+            T w = ms[0] + ms[1];
+            T s = -C / (w + alpha);
 
-        grads = pos[id0] - pos[id1];
-        float Len = sqrt(grads[0] * grads[0] + grads[1] * grads[1] + grads[2] * grads[2]);
-        grads /= Len;
-        float C = Len - restLen[i];
-        float w = invMass[id0] + invMass[id1];
-        float s = -C / (w + alpha);
-
-        pos[id0] += grads * s * invMass[id0];
-        pos[id1] += grads * (-s * invMass[id1]);
+            for (int d = 0; d != 3; ++d) {
+                atomic_add(exec_cuda, &vtemp("x", d, id[0]), grads[d] * s * ms[0]);
+                atomic_add(exec_cuda, &vtemp("x", d, id[1]), grads[d] * -s * ms[1]);
+            }
+        });
     }
-#endif
 }
 void PBDSystem::solveVolume(zs::CudaExecutionPolicy &pol) {
-    constexpr T volumeCompliance = 0;
+    constexpr T volumeCompliance = 0.001;
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
     float alphaVol = volumeCompliance / dt / dt;
@@ -54,7 +63,7 @@ void PBDSystem::solveVolume(zs::CudaExecutionPolicy &pol) {
     for (auto &&prim : prims) {
         auto &eles = prim.getEles();
         pol(range(eles.size()), [vtemp = proxy<space>({}, vtemp), eles = proxy<space>({}, eles), vOffset = prim.vOffset,
-                                 dt = dt, alphaVol] ZS_LAMBDA(int ei) mutable {
+                                 alphaVol] ZS_LAMBDA(int ei) mutable {
             auto id = eles.template pack<4>("inds", ei).template reinterpret_bits<int>() + vOffset;
             vec3 gradsVol[4];
             T ms[4];

@@ -46,6 +46,9 @@ struct PBDSystem : IObject {
         decltype(auto) getEles() const {
             return *elesPtr;
         }
+        decltype(auto) getEdges() const {
+            return *edgesPtr;
+        }
         decltype(auto) getSurfTris() const {
             return *surfTrisPtr;
         }
@@ -63,6 +66,7 @@ struct PBDSystem : IObject {
         const ZenoConstitutiveModel &models;
         std::shared_ptr<dtiles_t> vertsPtr;
         std::shared_ptr<ZenoParticles::particles_t> elesPtr;
+        std::shared_ptr<ZenoParticles::particles_t> edgesPtr;
         std::shared_ptr<ZenoParticles::particles_t> surfTrisPtr;
         std::shared_ptr<ZenoParticles::particles_t> surfEdgesPtr;
         std::shared_ptr<ZenoParticles::particles_t> surfVertsPtr;

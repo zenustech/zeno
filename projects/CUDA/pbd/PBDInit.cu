@@ -27,9 +27,9 @@ void PBDSystem::PrimitiveHandle::initGeo() {
 #endif
                 eles("rv", ei) = vol;
             });
-    surfEdgesPtr->append_channels(cudaPol, {{"rl", 1}});
-    cudaPol(zs::Collapse{surfEdgesPtr->size()},
-            [ses = proxy<space>({}, *surfEdgesPtr), verts = proxy<space>({}, *vertsPtr)] ZS_LAMBDA(int sei) mutable {
+    edgesPtr->append_channels(cudaPol, {{"rl", 1}});
+    cudaPol(zs::Collapse{edgesPtr->size()},
+            [ses = proxy<space>({}, *edgesPtr), verts = proxy<space>({}, *vertsPtr)] ZS_LAMBDA(int sei) mutable {
                 auto line = ses.template pack<2>("inds", sei).template reinterpret_bits<int>();
                 vec3 xs[2];
                 for (int d = 0; d != 2; ++d)
@@ -41,8 +41,8 @@ void PBDSystem::PrimitiveHandle::initGeo() {
 PBDSystem::PrimitiveHandle::PrimitiveHandle(ZenoParticles &zsprim, std::size_t &vOffset, std::size_t &sfOffset,
                                             std::size_t &seOffset, std::size_t &svOffset, zs::wrapv<4>)
     : zsprimPtr{&zsprim, [](void *) {}}, models{zsprim.getModel()}, vertsPtr{&zsprim.getParticles(), [](void *) {}},
-      elesPtr{&zsprim.getQuadraturePoints(), [](void *) {}}, surfTrisPtr{&zsprim[ZenoParticles::s_surfTriTag],
-                                                                         [](void *) {}},
+      elesPtr{&zsprim.getQuadraturePoints(), [](void *) {}}, edgesPtr{&zsprim[ZenoParticles::s_edgeTag], [](void *) {}},
+      surfTrisPtr{&zsprim[ZenoParticles::s_surfTriTag], [](void *) {}},
       surfEdgesPtr{&zsprim[ZenoParticles::s_surfEdgeTag], [](void *) {}},
       surfVertsPtr{&zsprim[ZenoParticles::s_surfVertTag], [](void *) {}}, vOffset{vOffset}, sfOffset{sfOffset},
       seOffset{seOffset}, svOffset{svOffset}, category{zsprim.category} {
@@ -141,6 +141,57 @@ PBDSystem::PBDSystem(std::vector<ZenoParticles *> zsprims, vec3 extForce, T dt, 
     auto cudaPol = zs::cuda_exec();
     initialize(cudaPol);
 }
+
+struct ExtractTetEdges : INode {
+    void apply() override {
+        using namespace zs;
+
+        auto zstets = RETRIEVE_OBJECT_PTRS(ZenoParticles, "ZSParticles");
+        for (auto tet : zstets) {
+            using ivec2 = zs::vec<int, 2>;
+            auto comp_v2 = [](const ivec2 &x, const ivec2 &y) {
+                return x[0] < y[0] ? 1 : (x[0] == y[0] && x[1] < y[1] ? 1 : 0);
+            };
+            std::set<ivec2, RM_CVREF_T(comp_v2)> sedges(comp_v2);
+            std::vector<ivec2> lines(0);
+            auto ist2 = [&sedges, &lines](int i, int j) {
+                if (sedges.find(ivec2{i, j}) == sedges.end() && sedges.find(ivec2{j, i}) == sedges.end()) {
+                    sedges.insert(ivec2{i, j});
+                    lines.push_back(ivec2{i, j});
+                }
+            };
+            const auto &elements = tet->getQuadraturePoints().clone({memsrc_e::host, -1});
+            constexpr auto space = execspace_e::host;
+            auto eles = proxy<space>({}, elements);
+            for (int ei = 0; ei != eles.size(); ++ei) {
+                auto inds = eles.template pack<4>("inds", ei).template reinterpret_bits<int>();
+                ist2(inds[0], inds[1]);
+                ist2(inds[0], inds[2]);
+                ist2(inds[0], inds[3]);
+                ist2(inds[1], inds[2]);
+                ist2(inds[1], inds[3]);
+                ist2(inds[2], inds[3]);
+            }
+            auto &edges = (*tet)[ZenoParticles::s_edgeTag];
+            edges = typename ZenoParticles::particles_t{{{"inds", 2}}, lines.size(), memsrc_e::host, -1};
+            auto ev = proxy<space>({}, edges);
+            for (int i = 0; i != lines.size(); ++i) {
+                ev("inds", 0, i) = reinterpret_bits<float>((int)lines[i][0]);
+                ev("inds", 1, i) = reinterpret_bits<float>((int)lines[i][1]);
+            }
+            edges = edges.clone(tet->getParticles().get_allocator());
+        }
+
+        set_output("ZSParticles", get_input("ZSParticles"));
+    }
+};
+
+ZENDEFNODE(ExtractTetEdges, {{
+                                 "ZSParticles",
+                             },
+                             {"ZSParticles"},
+                             {},
+                             {"PBD"}});
 
 struct MakePBDSystem : INode {
     void apply() override {
