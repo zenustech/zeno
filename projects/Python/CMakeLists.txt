@@ -12,5 +12,7 @@ target_link_libraries(zeno PRIVATE libpython3-shared)
 set(PYINCDIR
     ${CMAKE_CURRENT_BINARY_DIR}/Python-${PYTHON_VERSION}/Include   # Python.h
     ${CMAKE_CURRENT_BINARY_DIR}/CPython/bin   # pyconfig.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/Python-${PYTHON_VERSION}/Include   # Python.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/CPython/bin   # pyconfig.h
     )
 target_include_directories(zeno PRIVATE ${PYINCDIR})
