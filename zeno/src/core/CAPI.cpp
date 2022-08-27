@@ -3,6 +3,7 @@
 #include <zeno/utils/memory.h>
 #include <zeno/utils/cppdemangle.h>
 #include <zeno/utils/compile_opts.h>
+#include <zeno/utils/log.h>
 #include <zeno/core/Session.h>
 #include <zeno/core/Graph.h>
 #include <set>
@@ -52,9 +53,11 @@ namespace {
             } catch (std::exception const &e) {
                 errcode = 1;
                 message = e.what();
+                log_error("Zeno API catched error: {}", message);
             } catch (...) {
                 errcode = 1;
                 message = "(unknown)";
+                log_error("Zeno API catched unknown error");
             }
             return errcode;
         }

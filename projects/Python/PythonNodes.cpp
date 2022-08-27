@@ -28,20 +28,23 @@ struct PythonScript : INode {
     void apply() override {
         auto args = has_input("args") ? get_input<DictObject>("args") : std::make_shared<DictObject>();
         auto path = get_input2<std::string>("path");
+        int ret;
         if (path.empty()) {
             auto code = get_input2<std::string>("code");
-            PyRun_SimpleString(code.c_str());
+            ret = PyRun_SimpleString(code.c_str());
         } else {
             FILE *fp = fopen(path.c_str(), "r");
             if (!fp) {
                 perror(path.c_str());
                 throw makeError("cannot open file for read: " + path);
             } else {
-                PyRun_SimpleFile(fp, path.c_str());
-                fclose(fp);
+                ret = PyRun_SimpleFile(fp, path.c_str());  // will do fclose for us
             }
         }
-        Py_Finalize();
+        if (ret != 0) {
+            PyErr_Print();
+            throw makeError("Python exception occurred, see log for more details");
+        }
         auto rets = std::make_shared<DictObject>();
         set_output("rets", std::move(rets));
     }

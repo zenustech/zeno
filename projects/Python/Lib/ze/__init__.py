@@ -11,9 +11,11 @@ def initDLLPath(path: str):
     global api
     api = ctypes.cdll.LoadLibrary(path)
 
+    getlasterrstr = api.Zeno_GetLastErrorStr
     def chkerr(ret):
         if ret != 0:
-            raise RuntimeError(str(api.Zeno_GetLastErrorStr()))
+            raise RuntimeError('(Zeno error) ' + ctypes.string_at(getlasterrstr()).decode())
+            # raise RuntimeError(getlasterrstr())
 
     def wrapchkerr(func):
         @functools.wraps(func)
@@ -41,7 +43,7 @@ def initDLLPath(path: str):
     define(ctypes.c_uint32, 'Zeno_GetObjectInt', ctypes.c_uint64, ctypes.POINTER(ctypes.c_int), ctypes.c_size_t)
     define(ctypes.c_uint32, 'Zeno_GetObjectFloat', ctypes.c_uint64, ctypes.POINTER(ctypes.c_float), ctypes.c_size_t)
     define(ctypes.c_uint32, 'Zeno_GetObjectString', ctypes.c_uint64, ctypes.POINTER(ctypes.c_char), ctypes.POINTER(ctypes.c_size_t))
-    define(ctypes.c_uint32, 'Zeno_GetObjectLiterialType', ctypes.c_uint64, ctypes.POINTER(ctypes.c_int))
+    # define(ctypes.c_uint32, 'Zeno_GetObjectLiterialType', ctypes.c_uint64, ctypes.POINTER(ctypes.c_int))
 
 
 class ZenoObject:
@@ -77,7 +79,7 @@ class ZenoObject:
 
     @staticmethod
     def makeString(value: str) -> int:
-        arr = list(value.encode())
+        arr = value.encode()
         n = len(arr)
         object_ = ctypes.c_uint64(0)
         value_ = (ctypes.c_char * n)(*arr)
@@ -95,12 +97,12 @@ class ZenoGraph:
 
     def callTempNode(self, nodeType: str, inputs: dict[str, int]) -> dict[str, int]:
         inputCount_ = len(inputs)
-        inputKeys_ = (ctypes.c_char_p * inputCount_)(*inputs.keys())
+        inputKeys_ = (ctypes.c_char_p * inputCount_)(*map(lambda x: x.encode(), inputs.keys()))
         inputObjects_ = (ctypes.c_uint64 * inputCount_)(*inputs.values())
         outputCount_ = ctypes.c_size_t(0)
         api.Zeno_GraphCallTempNode(ctypes.c_uint64(self._handle), ctypes.c_char_p(nodeType.encode()), inputKeys_, inputObjects_, ctypes.c_size_t(inputCount_), ctypes.pointer(outputCount_))
-        outputKeys_ = (ctypes.c_char_p * outputCount_.value)(*inputs.keys())
-        outputObjects_ = (ctypes.c_uint64 * outputCount_.value)(*inputs.values())
+        outputKeys_ = (ctypes.c_char_p * outputCount_.value)()
+        outputObjects_ = (ctypes.c_uint64 * outputCount_.value)()
         api.Zeno_GetLastTempNodeResult(outputKeys_, outputObjects_)
         outputs: dict[str, int] = dict(zip(outputKeys_, outputObjects_))
         return outputs
