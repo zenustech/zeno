@@ -61,7 +61,7 @@ struct PBDSystem : IObject {
 
         std::shared_ptr<ZenoParticles> zsprimPtr{}; // nullptr if it is an auxiliary object
         const ZenoConstitutiveModel &models;
-        std::shared_ptr<ZenoParticles::dtiles_t> vertsPtr;
+        std::shared_ptr<dtiles_t> vertsPtr;
         std::shared_ptr<ZenoParticles::particles_t> elesPtr;
         std::shared_ptr<ZenoParticles::particles_t> surfTrisPtr;
         std::shared_ptr<ZenoParticles::particles_t> surfEdgesPtr;

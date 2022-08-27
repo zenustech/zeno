@@ -16,12 +16,16 @@ void PBDSystem::PrimitiveHandle::initGeo() {
                 for (int d = 0; d != 4; ++d)
                     xs[d] = verts.template pack<3>("x", quad[d]);
                 vec3 ds[3] = {xs[1] - xs[0], xs[2] - xs[0], xs[3] - xs[0]};
+#if 0
                 mat3 D{};
                 for (int d = 0; d != 3; ++d)
                     for (int i = 0; i != 3; ++i)
                         D(d, i) = ds[i][d];
-
-                eles("rv", ei) = zs::abs(zs::determinant(D)) / 6;
+                T vol = zs::abs(zs::determinant(D)) / 6;
+#else
+                T vol = zs::abs((ds[0]).cross(ds[1]).dot(ds[2])) / 6;
+#endif
+                eles("rv", ei) = vol;
             });
     surfEdgesPtr->append_channels(cudaPol, {{"rl", 1}});
     cudaPol(zs::Collapse{surfEdgesPtr->size()},
@@ -36,8 +40,7 @@ void PBDSystem::PrimitiveHandle::initGeo() {
 
 PBDSystem::PrimitiveHandle::PrimitiveHandle(ZenoParticles &zsprim, std::size_t &vOffset, std::size_t &sfOffset,
                                             std::size_t &seOffset, std::size_t &svOffset, zs::wrapv<4>)
-    : zsprimPtr{&zsprim, [](void *) {}}, models{zsprim.getModel()}, vertsPtr{&zsprim.getParticles<true>(),
-                                                                             [](void *) {}},
+    : zsprimPtr{&zsprim, [](void *) {}}, models{zsprim.getModel()}, vertsPtr{&zsprim.getParticles(), [](void *) {}},
       elesPtr{&zsprim.getQuadraturePoints(), [](void *) {}}, surfTrisPtr{&zsprim[ZenoParticles::s_surfTriTag],
                                                                          [](void *) {}},
       surfEdgesPtr{&zsprim[ZenoParticles::s_surfEdgeTag], [](void *) {}},
@@ -87,6 +90,19 @@ void PBDSystem::initialize(zs::CudaExecutionPolicy &pol) {
                     reinterpret_bits<float>(reinterpret_bits<int>(points("inds", i)) + (int)voffset);
             });
     }
+    // init mass
+    pol(Collapse(numDofs), [vtemp = proxy<space>({}, vtemp)] __device__(int i) mutable { vtemp("m", i) = 0; });
+    for (auto &primHandle : prims) {
+        auto density = primHandle.models.density;
+        auto &eles = primHandle.getEles();
+        pol(Collapse(eles.size()), [vtemp = proxy<space>({}, vtemp), eles = proxy<space>({}, eles),
+                                    vOffset = primHandle.vOffset, density] __device__(int ei) mutable {
+            auto m = eles("rv", ei) * density;
+            auto inds = eles.template pack<4>("inds", ei).template reinterpret_bits<int>() + vOffset;
+            for (int d = 0; d != 4; ++d)
+                atomic_add(exec_cuda, &vtemp("m", inds[d]), m / 4);
+        });
+    }
     reinitialize(pol, dt);
 }
 
@@ -120,7 +136,7 @@ PBDSystem::PBDSystem(std::vector<ZenoParticles *> zsprims, vec3 extForce, T dt, 
     zeno::log_info("num total obj <verts, surfV, surfE, surfT>: {}, {}, {}, {}\n", coOffset, svOffset, seOffset,
                    sfOffset);
     numDofs = coOffset; // if there are boundaries, then updated
-    vtemp = dtiles_t{zsprims[0]->getParticles().get_allocator(), {{"x", 3}, {"xpre", 3}, {"v", 3}}, numDofs};
+    vtemp = dtiles_t{zsprims[0]->getParticles().get_allocator(), {{"m", 1}, {"x", 3}, {"xpre", 3}, {"v", 3}}, numDofs};
 
     auto cudaPol = zs::cuda_exec();
     initialize(cudaPol);
