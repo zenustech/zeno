@@ -65,6 +65,12 @@ target_sources(zeno PRIVATE
   mpm/Temp.cu
 )
 
+# pbd
+target_sources(zeno PRIVATE
+  pbd/PBDInit.cu
+  pbd/PBDPipeline.cu
+)
+
 # fem
 target_sources(zeno PRIVATE
   fem/SolverInit.cu
