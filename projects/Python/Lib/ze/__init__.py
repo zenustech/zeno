@@ -6,7 +6,6 @@ Zeno Python API module
 import ctypes
 import functools
 from typing import Union
-from typing_extensions import Self
 
 
 Literial = Union[int, float, tuple[int], tuple[float], str]
@@ -45,10 +44,12 @@ def initDLLPath(path: str):
     define(ctypes.c_uint32, 'Zeno_CreateObjectInt', ctypes.POINTER(ctypes.c_uint64), ctypes.POINTER(ctypes.c_int), ctypes.c_size_t)
     define(ctypes.c_uint32, 'Zeno_CreateObjectFloat', ctypes.POINTER(ctypes.c_uint64), ctypes.POINTER(ctypes.c_float), ctypes.c_size_t)
     define(ctypes.c_uint32, 'Zeno_CreateObjectString', ctypes.POINTER(ctypes.c_uint64), ctypes.POINTER(ctypes.c_char), ctypes.c_size_t)
+    define(ctypes.c_uint32, 'Zeno_DestroyObject', ctypes.c_uint64)
+    define(ctypes.c_uint32, 'Zeno_ObjectIncReference', ctypes.c_uint64)
     define(ctypes.c_uint32, 'Zeno_GetObjectInt', ctypes.c_uint64, ctypes.POINTER(ctypes.c_int), ctypes.c_size_t)
     define(ctypes.c_uint32, 'Zeno_GetObjectFloat', ctypes.c_uint64, ctypes.POINTER(ctypes.c_float), ctypes.c_size_t)
     define(ctypes.c_uint32, 'Zeno_GetObjectString', ctypes.c_uint64, ctypes.POINTER(ctypes.c_char), ctypes.POINTER(ctypes.c_size_t))
-    # define(ctypes.c_uint32, 'Zeno_GetObjectLiterialType', ctypes.c_uint64, ctypes.POINTER(ctypes.c_int))
+    define(ctypes.c_uint32, 'Zeno_GetObjectLiterialType', ctypes.c_uint64, ctypes.POINTER(ctypes.c_int))
 
 
 class ZenoObject:
@@ -66,14 +67,14 @@ class ZenoObject:
 
     @classmethod
     def fromHandle(cls, handle: int):
-        api.Zeno_ObjectIncreaseReference(ctypes.c_uint64(handle))
+        api.Zeno_ObjectIncReference(ctypes.c_uint64(handle))
         return cls(cls.__create_key, handle)
 
     def toHandle(self) -> int:
         return self._handle
 
     @classmethod
-    def fromLiterial(cls, value: Literial) -> Self:
+    def fromLiterial(cls, value: Literial):
         return cls(cls.__create_key, cls._makeLiterial(value))
 
     def toLiterial(self) -> Literial:
@@ -101,7 +102,21 @@ class ZenoObject:
 
     @classmethod
     def _fetchLiterial(cls, handle: int) -> Literial:
-        return cls._fetchInt(handle)  # TODO: complete switching with Zeno_GetObjectLiterialType
+        litType_ = ctypes.c_int(0)
+        api.Zeno_GetObjectLiterialType(ctypes.c_uint64(handle), ctypes.pointer(litType_))
+        ty = litType_.value
+        if ty == 1:
+            return cls._fetchString(handle)
+        elif ty == 11:
+            return cls._fetchInt(handle)
+        elif 12 <= ty <= 14:
+            return cls._fetchVecInt(handle, ty - 10)
+        elif ty == 21:
+            return cls._fetchFloat(handle)
+        elif 22 <= ty <= 24:
+            return cls._fetchVecFloat(handle, ty - 20)
+        else:
+            return '[zeno object at {}]'.format(handle)
 
     @staticmethod
     def _makeInt(value: int) -> int:
@@ -160,15 +175,23 @@ class ZenoObject:
     def _fetchVecInt(handle: int, dim: int) -> tuple[int]:
         assert 1 <= dim <= 4
         value_ = (ctypes.c_int * dim)()
-        api.Zeno_GetObjectVecInt(ctypes.c_uint64(handle), value_, ctypes.c_size_t(dim))
+        api.Zeno_GetObjectInt(ctypes.c_uint64(handle), value_, ctypes.c_size_t(dim))
         return tuple(value_)
 
     @staticmethod
     def _fetchVecFloat(handle: int, dim: int) -> tuple[float]:
         assert 1 <= dim <= 4
         value_ = (ctypes.c_float * dim)()
-        api.Zeno_GetObjectVecFloat(ctypes.c_uint64(handle), value_, ctypes.c_size_t(dim))
+        api.Zeno_GetObjectFloat(ctypes.c_uint64(handle), value_, ctypes.c_size_t(dim))
         return tuple(value_)
+
+    @staticmethod
+    def _fetchString(handle: int) -> str:
+        strLen_ = ctypes.c_size_t(0)
+        api.Zeno_CreateObjectString(ctypes.c_uint64(handle), ctypes.c_void_p(0), ctypes.pointer(strLen_))
+        value_ = (ctypes.c_char * strLen_.value)()
+        api.Zeno_CreateObjectString(ctypes.c_uint64(handle), value_, ctypes.pointer(strLen_))
+        return bytes(value_).decode()
 
 
 class ZenoGraph:

@@ -173,6 +173,42 @@ ZENO_CAPI Zeno_Error Zeno_DestroyObject(Zeno_Object object_) ZENO_CAPI_NOEXCEPT 
     });
 }
 
+ZENO_CAPI Zeno_Error Zeno_ObjectIncReference(Zeno_Object object_) ZENO_CAPI_NOEXCEPT {
+    return lastError.catched([=] {
+        lutObject.create(lutObject.access(object_));
+    });
+}
+
+ZENO_CAPI Zeno_Error Zeno_GetObjectLiterialType(Zeno_Object object_, int *typeRet_) ZENO_CAPI_NOEXCEPT {
+    return lastError.catched([=] {
+        *typeRet_ = [&] {
+            auto optr = lutObject.access(object_).get();
+            if (auto strptr = dynamic_cast<StringObject *>(optr)) {
+                return 1;
+            }
+            if (auto numptr = dynamic_cast<NumericObject *>(optr)) {
+                if (numptr->is<int>())
+                    return 11;
+                if (numptr->is<vec2i>())
+                    return 12;
+                if (numptr->is<vec3i>())
+                    return 13;
+                if (numptr->is<vec4i>())
+                    return 14;
+                if (numptr->is<float>())
+                    return 21;
+                if (numptr->is<vec2f>())
+                    return 22;
+                if (numptr->is<vec3f>())
+                    return 23;
+                if (numptr->is<vec4f>())
+                    return 24;
+            }
+            return 0;
+        }();
+    });
+}
+
 ZENO_CAPI Zeno_Error Zeno_GetObjectInt(Zeno_Object object_, int *value_, size_t dim_) ZENO_CAPI_NOEXCEPT {
     return lastError.catched([=] {
         auto optr = lutObject.access(object_).get();
