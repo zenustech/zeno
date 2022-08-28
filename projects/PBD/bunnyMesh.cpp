@@ -46,17 +46,16 @@ struct bunnyMesh : zeno::INode
 		for(int i = 0; i < numSurfs; i++)
 			for (int j = 0; j < 3; j++)
 				surf[i][j] = theBunnyMesh.surf[i * 3 + j];
+		
+		//move above to test the dropping scence
+		for(int i = 0; i < numParticles; i++)
+			pos[i][1] += 1.0;
 
 		log_info("created a bunny tetrahedron mesh");
 		log_info("numParticles: {}", numParticles);
 		log_info("numEdges: {}", numEdges);
 		log_info("numTets: {}", numTets);
 		log_info("numSurfs: {}", numSurfs);
-
-		printToFile(edge,"edge.txt");
-		printToFile(pos,"pos.txt");
-		printToFile(tet,"tet.txt");
-		printToFile(surf,"surf.txt");
 
         set_output("prim", std::move(prim));
 	};

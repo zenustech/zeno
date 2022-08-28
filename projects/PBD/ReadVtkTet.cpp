@@ -52,9 +52,6 @@ public:
     prim->lines.clear();
     extractEdge();
 
-    printToFile(pos,"pos.txt");
-    printToFile(quads,"tet.txt");
-
     set_output("outPrim", std::move(prim));
   }
 };
