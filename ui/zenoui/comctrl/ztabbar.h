@@ -41,6 +41,9 @@ signals:
     void tabMoved(int from, int to);
     void tabBarClicked(int index);
 
+protected:
+    void paintEvent(QPaintEvent*) override;
+
 private:
     inline bool validIndex(int index) const { return index >= 0 && index < m_tabList.count(); }
     void refresh();

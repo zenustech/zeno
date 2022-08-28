@@ -3,6 +3,7 @@
 #include "../comctrl/ztoolbutton.h"
 #include "../comctrl/zobjectbutton.h"
 #include "../comctrl/gv/zenoparamwidget.h"
+#include "../comctrl/zdocktabwidget.h"
 #include <QScreen>
 #include <QtSvg/QSvgRenderer>
 
@@ -89,6 +90,25 @@ void ZenoStyle::drawPrimitive(PrimitiveElement pe, const QStyleOption* option, Q
             }
 
             return;
+        }
+        case PE_FrameTabBarBase:
+        {
+            if (qobject_cast<ZDockTabWidget*>(w->parentWidget()))
+            {
+                if (const QStyleOptionTabBarBase* tbb
+                    = qstyleoption_cast<const QStyleOptionTabBarBase*>(option))
+                {
+                    switch (tbb->shape) {
+                    case QTabBar::RoundedNorth:
+                        painter->save();
+                        painter->setPen(QPen(tbb->palette.dark(), 0));
+                        painter->drawLine(tbb->rect.bottomLeft(), tbb->rect.bottomRight());
+                        painter->restore();
+                        return;
+                    }
+                }
+            }
+            return base::drawPrimitive(pe, option, painter, w);
         }
     }
     return base::drawPrimitive(pe, option, painter, w);
@@ -280,6 +300,24 @@ QRect ZenoStyle::subElementRect(SubElement element, const QStyleOption* option, 
             QRect rc = base::subElementRect(element, option, widget);
             rc.adjust(10, 0, 10, 0);
             return rc;
+        }
+        case SE_TabWidgetRightCorner:
+        {
+            if (qobject_cast<ZDockTabWidget*>(const_cast<QWidget*>(widget)))
+            {
+                if (const QStyleOptionTabWidgetFrame* twf = qstyleoption_cast<const QStyleOptionTabWidgetFrame*>(option)) {
+                    QRect paneRect = subElementRect(SE_TabWidgetTabPane, twf, widget);
+                    switch (twf->shape)
+                    {
+                        case QTabBar::RoundedNorth:
+                        {
+                            int w = paneRect.y();
+                            QRect rc = QRect(QPoint(paneRect.width() - w, 0), QSize(w, w));
+                            return rc;
+                        }
+                    }
+                }
+            }
         }
     }
     return base::subElementRect(element, option, widget);

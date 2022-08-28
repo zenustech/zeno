@@ -285,9 +285,11 @@ void ZenoMainWindow::initDocks() {
     DisplayWidget *view = new DisplayWidget(this);
     m_viewDock->setWidget(DOCK_VIEW, view);
 
-    m_parameter = new ZenoDockWidget("parameter", this);
+    m_parameter = new ZenoDockWidget(this);
     m_parameter->setObjectName(uniqueDockObjName(DOCK_NODE_PARAMS));
     m_parameter->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetFloatable);
+    //QWidget* titleWidget = new QWidget(this);
+    //m_parameter->setTitleBarWidget(titleWidget);
     m_parameter->setWidget(DOCK_NODE_PARAMS, new ZenoPropPanel);
 
     m_editor = new ZenoDockWidget("", this);

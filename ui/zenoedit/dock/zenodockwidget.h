@@ -5,6 +5,7 @@
 #include <QtWidgets>
 
 class ZenoMainWindow;
+class ZDockTabWidget;
 
 enum DOCK_TYPE
 {
@@ -55,6 +56,7 @@ private:
     DOCK_TYPE m_type;
     Qt::WindowFlags m_oldFlags;
     Qt::WindowFlags m_newFlags;
+    ZDockTabWidget* m_tabWidget;
 };
 
 

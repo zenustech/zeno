@@ -24,7 +24,7 @@ void ZIconLabel::setIcons(const QSize& sz, const QString& iconEnable, const QStr
         m_bToggleable = true;
 
     setPixmap(m_icon.pixmap(m_iconSz, QIcon::Normal));
-    setFixedSize(m_iconSz);
+    //setFixedSize(m_iconSz);
 }
 
 void ZIconLabel::toggle(bool bToggle)

@@ -1,5 +1,7 @@
 <!DOCTYPE RCC><RCC version="1.0">
 <qresource>
+    <file>icons/add.svg</file>
+    <file>icons/add-on.svg</file>
 	<file>icons/body_bg.svg</file>
 	<file>icons/collaspe.svg</file>
 	<file>icons/collaspe-hovered.svg</file>
