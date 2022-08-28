@@ -212,32 +212,39 @@ namespace DisneyBSDF{
         vec3 wo,
         vec3 wi)
     {
+
+
         float n2 = ior * ior;
-        vec3 wm = normalize(wo + wi);
+
+        vec3 wm = normalize(wi + ior*wo);
+
         float NoL = abs(wi.z);
         float NoV = abs(wo.z);
         float HoL = abs(dot(wm, wi));
-        //float HoL = abs(dot(wm, wo));
-        float HoV = HoL;
+        float HoV = abs(dot(wm, wo));
 
         float d  = BRDFBasics::GgxAnisotropicD(wm, ax, ay);
+
+        
         float gl = BRDFBasics::SeparableSmithGGXG1(wi, wm, ax, ay);
         float gv = BRDFBasics::SeparableSmithGGXG1(wo, wm, ax, ay);
 
-        float F = BRDFBasics::fresnelDielectric(HoV, 1.0f, ior, is_inside);
+        
+        float F = BRDFBasics::fresnelDielectric(dot(wm, wo), 1.0f, ior, false);
         vec3 color;
         if(thin)
             color = sqrt(baseColor);
         else
             color = baseColor;
 
-        //float c = (HoL * HoV) / (NoL * NoV);
-        float c = (HoL * HoL) / (NoL * NoV);
-        float t = (n2 / pow(dot(wm, wi) + ior * dot(wm, wo), 2.0f));
+        float c = (HoL * HoV) / (NoL * NoV);
+        float t = (1 / pow(dot(wm, wi) + ior * dot(wm, wo), 2.0f));
         //if(length(wm) < 1e-5){
         //    return color * (1.0f - F);
         //}
+        
         return color * c * t *  (1.0f - F) * gl * gv * d; 
+        //return color ;
     }
 
     static __inline__ __device__
@@ -350,6 +357,7 @@ namespace DisneyBSDF{
         // Clearcoat
      
         bool upperHemisphere = NoL > 0.0f && NoV > 0.0f;
+
         if(upperHemisphere && clearCoat > 0.0f) {
             float forwardClearcoatPdfW;
             float reverseClearcoatPdfW;
