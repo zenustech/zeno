@@ -6,10 +6,11 @@
 #include <zeno/utils/log.h>
 
 #include "BunnyMeshData.h"
-#include "myPrint.h"
+#include "../myPrint.h"
+
 namespace zeno{
 
-struct bunnyMesh : zeno::INode
+struct BunnyMesh : zeno::INode
 {
 	inline static const BunnyMeshData theBunnyMesh;
 	virtual void apply() override 
@@ -61,7 +62,7 @@ struct bunnyMesh : zeno::INode
 	};
 };
 
-ZENDEFNODE(bunnyMesh, {
+ZENDEFNODE(BunnyMesh, {
     {},
     {"prim"},
     {},

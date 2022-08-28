@@ -168,9 +168,6 @@ public:
         static bool firstTime = true;
         if(firstTime)
         {
-            std::cout<<g[0]<<std::endl;
-            std::cout<<g[1]<<std::endl;
-            std::cout<<g[2]<<std::endl;
             initGeo(prim.get());
             firstTime = false;
         }
@@ -191,7 +188,7 @@ public:
             postSolve(pos, prevPos, vel);
         }
 
-        set_output("prim", std::move(prim));
+        set_output("outPrim", std::move(prim));
     };
 };
 
@@ -204,7 +201,7 @@ ZENDEFNODE(PBD, {// inputs:
                     {"float", "volumeCompliance", "0.0"}
                 },
                  // outputs:
-                 {"prim"},
+                 {"outPrim"},
                  // params:
                  {},
                  //category

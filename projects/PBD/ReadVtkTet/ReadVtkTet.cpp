@@ -10,13 +10,10 @@
 #include <type_traits>
 #include <fstream>
 #include "MeshIO.hpp"
-#include "myPrint.h"
-#include "BunnyMeshData.h"
+#include "../myPrint.h"
 #include <zeno/utils/log.h>
+
 namespace zeno {
-
-BunnyMeshData bunny;
-
 
 struct ReadVtkTet : INode {
 private:
