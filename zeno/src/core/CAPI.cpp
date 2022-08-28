@@ -17,25 +17,31 @@ namespace {
 
     template <class T>
     class LUT {
-        std::set<std::shared_ptr<T>> lut;
+        std::map<std::shared_ptr<T>, uint32_t> lut;
 
     public:
         uint64_t create(std::shared_ptr<T> p) {
-            return static_cast<uint64_t>(reinterpret_cast<uintptr_t>(lut.insert(std::move(p)).first->get()));
+            T *raw_p = p.get();
+            auto [it, succ] = lut.emplace(std::move(p), 0);
+            ++it->second;
+            return static_cast<uint64_t>(reinterpret_cast<uintptr_t>(raw_p));
         }
 
         std::shared_ptr<T> const &access(uint64_t key) const {
-            auto it = lut.find(make_stale_shared(reinterpret_cast<T *>(static_cast<uint64_t>(key))));
+            T *raw_p = reinterpret_cast<T *>(static_cast<uint64_t>(key));
+            auto it = lut.find(make_stale_shared(raw_p));
             if (ZENO_UNLIKELY(it == lut.end()))
                 throw makeError<KeyError>(std::to_string(key), cppdemangle(typeid(T)));
-            return *it;
+            return it->first;
         }
 
         void destroy(uint64_t key) {
-            auto it = lut.find(make_stale_shared(reinterpret_cast<T *>(static_cast<uint64_t>(key))));
+            T *raw_p = reinterpret_cast<T *>(static_cast<uint64_t>(key));
+            auto it = lut.find(make_stale_shared(raw_p));
             if (ZENO_UNLIKELY(it == lut.end()))
                 throw makeError<KeyError>(std::to_string(key), cppdemangle(typeid(T)));
-            lut.erase(it);
+            if (--it->second <= 0)
+                lut.erase(it);
         }
     };
 
@@ -244,8 +250,8 @@ ZENO_API Zeno_Object capiLoadObjectSharedPtr(std::shared_ptr<IObject> const &obj
     return lutObject.create(objPtr_);
 }
 
-ZENO_API Zeno_Object capiEraseObjectSharedPtr(Zeno_Object object_) {
-    return lutObject.destroy(object_);
+ZENO_API void capiEraseObjectSharedPtr(Zeno_Object object_) {
+    lutObject.destroy(object_);
 }
 
 }
