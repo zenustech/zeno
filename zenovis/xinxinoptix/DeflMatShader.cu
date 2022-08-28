@@ -590,11 +590,21 @@ extern "C" __global__ void __closesthit__radiance()
         else{
             outToIn = false;
             inToOut = true;
+            prd->attenuation2 *= DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
             prd->attenuation *= DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
             prd->maxDistance = 1e16f;
             prd->medium = DisneyBSDF::PhaseFunctions::vacuum;
             prd->scatterPDF = 1.0;
         }
+    }else{
+	if(prd->medium == DisneyBSDF::PhaseFunctions::isotropic){
+            prd->attenuation2 *= DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
+            prd->attenuation *= DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
+            float tmpPDF = 1.0f;
+            prd->maxDistance = DisneyBSDF::SampleDistance(prd->seed,prd->scatterDistance,tmpPDF);
+            prd->scatterPDF = tmpPDF;
+
+	}
     }
 
 
