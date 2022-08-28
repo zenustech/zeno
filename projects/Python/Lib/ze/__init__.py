@@ -76,7 +76,7 @@ class ZenoObject:
     def fromLiterial(cls, value: Literial) -> Self:
         return cls(cls.__create_key, cls._makeLiterial(value))
 
-    def toLiterial(self) -> Self:
+    def toLiterial(self) -> Literial:
         return self._fetchLiterial(self._handle)
 
     @classmethod
@@ -120,6 +120,7 @@ class ZenoObject:
     @staticmethod
     def _makeVecInt(value: tuple[int]) -> int:
         n = len(value)
+        assert 1 <= n <= 4
         object_ = ctypes.c_uint64(0)
         value_ = (ctypes.c_int * n)(*value)
         api.Zeno_CreateObjectInt(ctypes.pointer(object_), value_, ctypes.c_size_t(n))
@@ -128,6 +129,7 @@ class ZenoObject:
     @staticmethod
     def _makeVecFloat(value: tuple[float]) -> int:
         n = len(value)
+        assert 1 <= n <= 4
         object_ = ctypes.c_uint64(0)
         value_ = (ctypes.c_float * n)(*value)
         api.Zeno_CreateObjectFloat(ctypes.pointer(object_), value_, ctypes.c_size_t(n))
@@ -147,6 +149,26 @@ class ZenoObject:
         value_ = ctypes.c_int(0)
         api.Zeno_GetObjectInt(ctypes.c_uint64(handle), ctypes.pointer(value_), ctypes.c_size_t(1))
         return value_.value
+
+    @staticmethod
+    def _fetchFloat(handle: int) -> float:
+        value_ = ctypes.c_float(0)
+        api.Zeno_GetObjectFloat(ctypes.c_uint64(handle), ctypes.pointer(value_), ctypes.c_size_t(1))
+        return value_.value
+
+    @staticmethod
+    def _fetchVecInt(handle: int, dim: int) -> tuple[int]:
+        assert 1 <= dim <= 4
+        value_ = (ctypes.c_int * dim)()
+        api.Zeno_GetObjectVecInt(ctypes.c_uint64(handle), value_, ctypes.c_size_t(dim))
+        return tuple(value_)
+
+    @staticmethod
+    def _fetchVecFloat(handle: int, dim: int) -> tuple[float]:
+        assert 1 <= dim <= 4
+        value_ = (ctypes.c_float * dim)()
+        api.Zeno_GetObjectVecFloat(ctypes.c_uint64(handle), value_, ctypes.c_size_t(dim))
+        return tuple(value_)
 
 
 class ZenoGraph:
