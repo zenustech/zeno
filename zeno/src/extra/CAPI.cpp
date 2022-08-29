@@ -286,3 +286,23 @@ ZENO_CAPI Zeno_Error Zeno_GetObjectString(Zeno_Object object_, char *strBuf_, si
 }
 
 }
+
+namespace zeno {
+
+ZENO_API Zeno_Object capiLoadObjectSharedPtr(std::shared_ptr<IObject> const &objPtr_) {
+    return lutObject.create(objPtr_);
+}
+
+ZENO_API void capiEraseObjectSharedPtr(Zeno_Object object_) {
+    lutObject.destroy(object_);
+}
+
+ZENO_API Zeno_Graph capiLoadGraphSharedPtr(std::shared_ptr<Graph> const &graPtr_) {
+    return lutGraph.create(graPtr_);
+}
+
+ZENO_API void capiEraseGraphSharedPtr(Zeno_Graph graph_) {
+    lutGraph.destroy(graph_);
+}
+
+}

@@ -6,6 +6,7 @@ Zeno Python API module
 import ctypes
 import functools
 from typing import Union, Optional
+from types import MappingProxyType
 
 
 Literial = Union[int, float, tuple[int], tuple[float], str]
@@ -15,10 +16,9 @@ def initDLLPath(path: str):
     global api
     api = ctypes.cdll.LoadLibrary(path)
 
-    getlasterrstr = api.Zeno_GetLastErrorStr
     def chkerr(ret):
         if ret != 0:
-            raise RuntimeError('[Zeno Internal Error] {}'.format(ctypes.string_at(getlasterrstr()).decode()))
+            raise RuntimeError('[zeno internal error] {}'.format(ctypes.string_at(api.Zeno_GetLastErrorStr()).decode()))
 
     def wrapchkerr(func):
         @functools.wraps(func)
@@ -26,15 +26,16 @@ def initDLLPath(path: str):
             chkerr(func(*args))
         return wrapped
 
-    def define(rettype, funcname, *argtypes):
+    def define(rettype, funcname, *argtypes, do_checks=True):
         func = getattr(api, funcname)
         func.rettype = rettype
         func.argtypes = argtypes
-        func = wrapchkerr(func)
+        if do_checks:
+            func = wrapchkerr(func)
         setattr(api, funcname, func)
 
-    define(ctypes.c_uint32, 'Zeno_GetLastErrorCode')
-    define(ctypes.c_char_p, 'Zeno_GetLastErrorStr')
+    define(ctypes.c_uint32, 'Zeno_GetLastErrorCode', do_checks=False)
+    define(ctypes.c_char_p, 'Zeno_GetLastErrorStr', do_checks=False)
     define(ctypes.c_uint32, 'Zeno_CreateGraph', ctypes.POINTER(ctypes.c_uint64))
     define(ctypes.c_uint32, 'Zeno_DestroyGraph', ctypes.c_uint64)
     define(ctypes.c_uint32, 'Zeno_GraphIncReference', ctypes.c_uint64)
@@ -65,6 +66,9 @@ class ZenoObject:
         api.Zeno_DestroyObject(ctypes.c_uint64(self._handle))
         self._handle = 0
 
+    def __repr__(self):
+        return '[zeno object at {}]'.format(self._handle)
+
     @classmethod
     def fromHandle(cls, handle: int):
         api.Zeno_ObjectIncReference(ctypes.c_uint64(handle))
@@ -74,11 +78,18 @@ class ZenoObject:
         return self._handle
 
     @classmethod
-    def fromLiterial(cls, value: Literial):
-        return cls(cls.__create_key, cls._makeLiterial(value))
+    def fromLiterial(cls, value: Union[Literial, 'ZenoObject']) -> 'ZenoObject':
+        if isinstance(value, ZenoObject):
+            return value
+        else:
+            return cls(cls.__create_key, cls._makeLiterial(value))
 
-    def toLiterial(self) -> Literial:
-        return self._fetchLiterial(self._handle)
+    def toLiterial(self) -> Union[Literial, 'ZenoObject']:
+        ret = self._fetchLiterial(self._handle)
+        if ret is None:
+            return self
+        else:
+            return ret
 
     @classmethod
     def _makeLiterial(cls, value: Literial) -> int:
@@ -101,7 +112,7 @@ class ZenoObject:
             raise TypeError('expect value type to be int, float, tuple of int or float, or str, got {}'.format(type(value)))
 
     @classmethod
-    def _fetchLiterial(cls, handle: int) -> Literial:
+    def _fetchLiterial(cls, handle: int) -> Optional[Literial]:
         litType_ = ctypes.c_int(0)
         api.Zeno_GetObjectLiterialType(ctypes.c_uint64(handle), ctypes.pointer(litType_))
         ty = litType_.value
@@ -116,7 +127,7 @@ class ZenoObject:
         elif 22 <= ty <= 24:
             return cls._fetchVecFloat(handle, ty - 20)
         else:
-            return '[zeno object at {}]'.format(handle)
+            return None
 
     @staticmethod
     def _makeInt(value: int) -> int:
@@ -203,11 +214,14 @@ class ZenoGraph:
         assert create_key is self.__create_key, 'ZenoGraph has a private constructor'
         self._handle = handle
 
+    def __repr__(self):
+        return '[zeno graph at {}]'.format(self._handle)
+
     @classmethod
     def new(cls):
         graph_ = ctypes.c_uint64(0)
         api.Zeno_CreateGraph(ctypes.pointer(graph_))
-        cls(cls.__create_key, graph_.value)
+        return cls(cls.__create_key, graph_.value)
 
     @classmethod
     def current(cls):
@@ -215,7 +229,7 @@ class ZenoGraph:
         if handle == 0:
             raise RuntimeError('no current graph')
         api.Zeno_GraphIncReference(ctypes.c_uint64(handle))
-        cls(cls.__create_key, handle)
+        return cls(cls.__create_key, handle)
 
     def callTempNode(self, nodeType: str, inputs: dict[str, int]) -> dict[str, int]:
         inputCount_ = len(inputs)
@@ -253,12 +267,41 @@ def set_output(key: str, value: ZenoObject):
     _rets[key] = ZenoObject.toHandle(value)
 
 
-def get_input2(key: str) -> Literial:
+def get_input2(key: str) -> Union[Literial, 'ZenoObject']:
     return ZenoObject.toLiterial(get_input(key))
 
 
-def set_output2(key: str, value: Literial):
+def set_output2(key: str, value: Union[Literial, 'ZenoObject']):
     set_output(key, ZenoObject.fromLiterial(value))
+
+
+class _TempNodeWrapper:
+    class _MappingProxyWrapper:
+        _prox: MappingProxyType
+
+        def __init__(self, lut: dict[str, Union[Literial, ZenoObject]]):
+            self._prox = MappingProxyType(lut)
+
+        def __getattr__(self, key: str) -> Union[Literial, ZenoObject]:
+            return self._prox[key]
+
+        def __getitem__(self, key: str) -> Union[Literial, ZenoObject]:
+            return self._prox[key]
+
+    def __getattr__(self, key: str):
+        def wrapped(**args: dict[str, Union[Literial, ZenoObject]]):
+            currGraph = ZenoGraph.current()
+            store_args : dict[str, ZenoObject] = {k: ZenoObject.fromLiterial(v) for k, v in args.items()}  # type: ignore
+            inputs : dict[str, int] = {k: ZenoObject.toHandle(v) for k, v in store_args.items()}
+            outputs : dict[str, int] = currGraph.callTempNode(key, inputs)
+            rets : dict[str, Union[Literial, ZenoObject]] = {k: ZenoObject.toLiterial(ZenoObject.fromHandle(v)) for k, v in outputs.items()}
+            return self._MappingProxyWrapper(rets)
+        wrapped.__name__ = key
+        wrapped.__qualname__ = __name__ + '.no.' + key
+        setattr(self, key, wrapped)
+        return wrapped
+
+no = _TempNodeWrapper()
 
 
 __all__ = [
@@ -269,4 +312,5 @@ __all__ = [
         'set_output',
         'get_input2',
         'set_output2',
+        'no',
         ]
