@@ -75,15 +75,17 @@ extern "C" __global__ void __raygen__rg()
     do
     {
         // The center of each pixel is at fraction (0.5,0.5)
-        float2 subpixel_jitter = make_float2( rnd( seed ), rnd( seed ) );
+        float2 subpixel_jitter = sobolRnd(seed);
 
         float2 d = 2.0f * make_float2(
                 ( static_cast<float>( idx.x ) + subpixel_jitter.x ) / static_cast<float>( w ),
                 ( static_cast<float>( idx.y ) + subpixel_jitter.y ) / static_cast<float>( h )
                 ) - 1.0f;
         //float3 ray_direction = normalize(cam.right * d.x + cam.up * d.y + cam.front);
-        float r0 = rnd(seed)*2.0f* M_PIf;
-        float r1 = rnd(seed) * aperture * aperture;
+        float2 r01 = sobolRnd(seed);
+        
+        float r0 = r01.x * 2.0f* M_PIf;
+        float r1 = r01.y * aperture * aperture;
         r1 = sqrt(r1);
         float3 ray_origin    = cam.eye + r1 * ( cosf(r0)* cam.right + sinf(r0)* cam.up);
         float3 ray_direction = cam.eye + focalPlaneDistance *(cam.right * d.x + cam.up * d.y + cam.front) - ray_origin;
@@ -181,6 +183,7 @@ extern "C" __global__ void __miss__radiance()
         prd->done      = true;
     }
     prd->attenuation *= DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
+    prd->attenuation2 *= DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
     prd->origin += prd->direction * optixGetRayTmax();
     prd->direction = DisneyBSDF::SampleScatterDirection(prd->seed);
     float tmpPDF;

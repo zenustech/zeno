@@ -70,3 +70,58 @@ static __host__ __device__ __inline__ unsigned int rot_seed( unsigned int seed, 
 {
     return seed ^ frame;
 }
+
+static __device__ __inline__
+uint2 Sobol(unsigned int n) {
+    uint2 p = make_uint2(0u,0u);
+    uint2 d = make_uint2(0x80000000u,0x80000000u);
+
+    for(; n != 0u; n >>= 1u) {
+        if((n & 1u) != 0u){
+            p.x ^= d.x;
+            p.y ^= d.y;
+        }
+        
+        d.x >>= 1u; // 1st dimension Sobol matrix, is same as base 2 Van der Corput
+        d.y ^= d.y >> 1u; // 2nd dimension Sobol matrix
+    }
+    return p;
+}
+
+
+// adapted from: https://www.shadertoy.com/view/3lcczS
+static __device__ __inline__
+unsigned int ReverseBits(unsigned int x) {
+    x = ((x & 0xaaaaaaaau) >> 1) | ((x & 0x55555555u) << 1);
+    x = ((x & 0xccccccccu) >> 2) | ((x & 0x33333333u) << 2);
+    x = ((x & 0xf0f0f0f0u) >> 4) | ((x & 0x0f0f0f0fu) << 4);
+    x = ((x & 0xff00ff00u) >> 8) | ((x & 0x00ff00ffu) << 8);
+    return (x >> 16) | (x << 16);
+}
+
+// EDIT: updated with a new hash that fixes an issue with the old one.
+// details in the post linked at the top.
+static __device__ __inline__
+unsigned int OwenHash(unsigned int x, unsigned int seed) { // works best with random seeds
+    x ^= x * 0x3d20adeau;
+    x += seed;
+    x *= (seed >> 16) | 1u;
+    x ^= x * 0x05526c56u;
+    x ^= x * 0x53a22864u;
+    return x;
+}
+static __device__ __inline__
+unsigned int OwenScramble(unsigned int p, unsigned int seed) {
+    p = ReverseBits(p);
+    p = OwenHash(p, seed);
+    return ReverseBits(p);
+}
+static __device__ __inline__
+float2 sobolRnd(unsigned int & seed)
+{
+    uint2 ip = Sobol(seed);
+    ip.x = OwenScramble(ip.x, 0xe7843fbfu);
+    ip.y = OwenScramble(ip.y, 0x8d8fb1e0u);
+    seed++;
+    return make_float2(float(ip.x)/float(0xffffffffu), float(ip.y)/float(0xffffffffu));
+}

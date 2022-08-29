@@ -212,32 +212,39 @@ namespace DisneyBSDF{
         vec3 wo,
         vec3 wi)
     {
+
+
         float n2 = ior * ior;
-        vec3 wm = normalize(wo + wi);
+
+        vec3 wm = normalize(wi + ior*wo);
+
         float NoL = abs(wi.z);
         float NoV = abs(wo.z);
         float HoL = abs(dot(wm, wi));
-        //float HoL = abs(dot(wm, wo));
-        float HoV = HoL;
+        float HoV = abs(dot(wm, wo));
 
         float d  = BRDFBasics::GgxAnisotropicD(wm, ax, ay);
+
+        
         float gl = BRDFBasics::SeparableSmithGGXG1(wi, wm, ax, ay);
         float gv = BRDFBasics::SeparableSmithGGXG1(wo, wm, ax, ay);
 
-        float F = BRDFBasics::fresnelDielectric(HoV, 1.0f, ior, is_inside);
+        
+        float F = BRDFBasics::fresnelDielectric(dot(wm, wo), 1.0f, ior, false);
         vec3 color;
         if(thin)
             color = sqrt(baseColor);
         else
             color = baseColor;
 
-        //float c = (HoL * HoV) / (NoL * NoV);
-        float c = (HoL * HoL) / (NoL * NoV);
-        float t = (n2 / pow(dot(wm, wi) + ior * dot(wm, wo), 2.0f));
+        float c = (HoL * HoV) / (NoL * NoV);
+        float t = (1 / pow(dot(wm, wi) + ior * dot(wm, wo), 2.0f));
         //if(length(wm) < 1e-5){
         //    return color * (1.0f - F);
         //}
+        
         return color * c * t *  (1.0f - F) * gl * gv * d; 
+        //return color ;
     }
 
     static __inline__ __device__
@@ -350,6 +357,7 @@ namespace DisneyBSDF{
         // Clearcoat
      
         bool upperHemisphere = NoL > 0.0f && NoV > 0.0f;
+
         if(upperHemisphere && clearCoat > 0.0f) {
             float forwardClearcoatPdfW;
             float reverseClearcoatPdfW;
@@ -428,8 +436,9 @@ namespace DisneyBSDF{
         Onb  tbn = Onb(N);
         float ax, ay;
         BRDFBasics::CalculateAnisotropicParams(roughness, anisotropic, ax, ay);
-        float r0 = rnd(seed);
-        float r1 = rnd(seed);
+        float2 r01 = sobolRnd(seed);
+        float r0 = r01.x;//rnd(seed);
+        float r1 = r01.y;//rnd(seed);
         vec3 wm = BRDFBasics::SampleGgxVndfAnisotropic(wo, ax, ay, r0, r1);
 
         wi = normalize(reflect(-wo, wm)); 
@@ -476,8 +485,9 @@ namespace DisneyBSDF{
     {
         float a2 = 0.0625; //0.25 * 0.25
 
-        float r0 = rnd(seed);
-        float r1 = rnd(seed);
+        float2 r01 = sobolRnd(seed);
+        float r0 = r01.x;//rnd(seed);
+        float r1 = r01.y;//rnd(seed);
 
         float cosTheta = sqrt( max(0.0f, (1.0f - pow(a2, 1.0f - r0) ) / (1.0f -a2) ) );
         float sinTheta = sqrt( max(0.0f, 1.0f - cosTheta * cosTheta) );
@@ -569,8 +579,9 @@ namespace DisneyBSDF{
         float tax,tay;
         BRDFBasics::CalculateAnisotropicParams(rscaled,anisotropic,tax,tay);
 
-        float r0 = rnd(seed);
-        float r1 = rnd(seed);
+        float2 r01 = sobolRnd(seed);
+        float r0 = r01.x;//rnd(seed);
+        float r1 = r01.y;//rnd(seed);
         vec3 wm = BRDFBasics::SampleGgxVndfAnisotropic(wo, tax, tay, r0, r1);
 
         float VoH = dot(wm,wo);
@@ -669,8 +680,9 @@ namespace DisneyBSDF{
             )
     {
 
-        float r0 = rnd(seed);
-        float r1 = rnd(seed);
+        // float2 r01 = sobolRnd(seed);
+        // float r0 = r01.x;//rnd(seed);
+        // float r1 = r01.y;//rnd(seed);
         wi =  normalize(BRDFBasics::sampleOnHemisphere(seed, 1.0f));
         vec3 wm = normalize(wi+wo);
         float NoL = wi.z;
@@ -731,8 +743,9 @@ namespace DisneyBSDF{
     static __inline__ __device__
     vec3 SampleScatterDirection(unsigned int &seed)
     {
-        float r0 = rnd(seed);
-        float r1 = rnd(seed);
+        float2 r01 = sobolRnd(seed);
+        float r0 = r01.x;//rnd(seed);
+        float r1 = r01.y;//rnd(seed);
 
         float u = 2.0f * r1 - 1.0f;
         float norm = sqrtf(max(0.0f, 1.0f - u * u));
