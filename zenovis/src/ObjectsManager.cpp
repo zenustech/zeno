@@ -11,7 +11,6 @@ ObjectsManager::ObjectsManager() = default;
 ObjectsManager::~ObjectsManager() = default;
 
 bool ObjectsManager::load_objects(std::map<std::string, std::shared_ptr<zeno::IObject>> const &objs) {
-    bool inserted = false;
     auto ins = objects.insertPass();
 
     bool changed_light = false;
@@ -33,10 +32,9 @@ bool ObjectsManager::load_objects(std::map<std::string, std::shared_ptr<zeno::IO
                 }
             }
             ins.try_emplace(key, std::move(obj));
-            inserted = true;
         }
     }
-    return inserted;
+    return ins.has_changed();
 }
 
 void ObjectsManager::clear_objects() {

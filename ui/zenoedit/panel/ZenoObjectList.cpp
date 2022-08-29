@@ -31,4 +31,5 @@ ZenoObjectList::ZenoObjectList(QWidget *parent) {
     connect(zenovis, &Zenovis::objectsUpdated, this, [&](int frame) {
         this->dataModel->updateByObjectsMan();
     });
+    this->dataModel->updateByObjectsMan();
 }

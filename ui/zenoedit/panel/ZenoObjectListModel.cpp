@@ -15,7 +15,7 @@ QVariant ZenoObjectListModel::data(const QModelIndex &index, int role) const {
         return {};
     }
     if (role == Qt::DisplayRole) {
-        return QString(obj_list.at(index.row()).first.c_str());
+        return QString(obj_list.at(index.row()).first.c_str()).split(':').first();
     }
     return {};
 }
