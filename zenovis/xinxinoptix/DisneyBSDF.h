@@ -436,8 +436,9 @@ namespace DisneyBSDF{
         Onb  tbn = Onb(N);
         float ax, ay;
         BRDFBasics::CalculateAnisotropicParams(roughness, anisotropic, ax, ay);
-        float r0 = rnd(seed);
-        float r1 = rnd(seed);
+        float2 r01 = sobolRnd(seed);
+        float r0 = r01.x;//rnd(seed);
+        float r1 = r01.y;//rnd(seed);
         vec3 wm = BRDFBasics::SampleGgxVndfAnisotropic(wo, ax, ay, r0, r1);
 
         wi = normalize(reflect(-wo, wm)); 
@@ -484,8 +485,9 @@ namespace DisneyBSDF{
     {
         float a2 = 0.0625; //0.25 * 0.25
 
-        float r0 = rnd(seed);
-        float r1 = rnd(seed);
+        float2 r01 = sobolRnd(seed);
+        float r0 = r01.x;//rnd(seed);
+        float r1 = r01.y;//rnd(seed);
 
         float cosTheta = sqrt( max(0.0f, (1.0f - pow(a2, 1.0f - r0) ) / (1.0f -a2) ) );
         float sinTheta = sqrt( max(0.0f, 1.0f - cosTheta * cosTheta) );
@@ -577,8 +579,9 @@ namespace DisneyBSDF{
         float tax,tay;
         BRDFBasics::CalculateAnisotropicParams(rscaled,anisotropic,tax,tay);
 
-        float r0 = rnd(seed);
-        float r1 = rnd(seed);
+        float2 r01 = sobolRnd(seed);
+        float r0 = r01.x;//rnd(seed);
+        float r1 = r01.y;//rnd(seed);
         vec3 wm = BRDFBasics::SampleGgxVndfAnisotropic(wo, tax, tay, r0, r1);
 
         float VoH = dot(wm,wo);
@@ -677,8 +680,9 @@ namespace DisneyBSDF{
             )
     {
 
-        float r0 = rnd(seed);
-        float r1 = rnd(seed);
+        // float2 r01 = sobolRnd(seed);
+        // float r0 = r01.x;//rnd(seed);
+        // float r1 = r01.y;//rnd(seed);
         wi =  normalize(BRDFBasics::sampleOnHemisphere(seed, 1.0f));
         vec3 wm = normalize(wi+wo);
         float NoL = wi.z;
@@ -739,8 +743,9 @@ namespace DisneyBSDF{
     static __inline__ __device__
     vec3 SampleScatterDirection(unsigned int &seed)
     {
-        float r0 = rnd(seed);
-        float r1 = rnd(seed);
+        float2 r01 = sobolRnd(seed);
+        float r0 = r01.x;//rnd(seed);
+        float r1 = r01.y;//rnd(seed);
 
         float u = 2.0f * r1 - 1.0f;
         float norm = sqrtf(max(0.0f, 1.0f - u * u));

@@ -431,6 +431,7 @@ extern "C" __global__ void __closesthit__radiance()
     //end of material computation
     //mats.metallic = clamp(mats.metallic,0.01, 0.99);
     mats.roughness = clamp(mats.roughness, 0.01,0.99);
+    
     if(length(attrs.tang)>0)
     {
         vec3 b = cross(attrs.tang, attrs.nrm);
@@ -443,6 +444,12 @@ extern "C" __global__ void __closesthit__radiance()
     auto basecolor = mats.basecolor;
     auto metallic = mats.metallic;
     auto roughness = mats.roughness;
+    if(prd->depth>=1)
+        roughness = clamp(roughness, 0.1,0.99);
+    if(prd->depth>=2)
+        roughness = clamp(roughness, 0.3,0.99);
+    if(prd->depth>=3)
+        roughness = clamp(roughness, 0.5,0.99);
     auto subsurface = mats.subsurface;
     auto specular = mats.specular;
     auto specularTint = mats.specularTint;
@@ -647,8 +654,9 @@ extern "C" __global__ void __closesthit__radiance()
     float ppl = 0;
     for(int lidx=0;lidx<params.num_lights && computed==false;lidx++) {
         ParallelogramLight light = params.lights[lidx];
-        const float z1 = rnd(prd->seed);
-        const float z2 = rnd(prd->seed);
+        float2 z = sobolRnd(prd->seed);
+        const float z1 = z.x;
+        const float z2 = z.y;
         float3 light_tpos = light.corner + light.v1 * 0.5 + light.v2 * 0.5;
         float3 light_pos = light.corner + light.v1 * z1 + light.v2 * z2;
 
