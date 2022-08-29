@@ -82,6 +82,7 @@ namespace {
     LUT<IObject> lutObject;
     LastError lastError;
     std::map<std::string, std::shared_ptr<IObject>> tempNodeRes;
+    std::shared_ptr<Graph> currentGraph;
 }
 
 extern "C" {
@@ -96,7 +97,7 @@ ZENO_CAPI const char *Zeno_GetLastErrorStr() ZENO_CAPI_NOEXCEPT {
 
 ZENO_CAPI Zeno_Error Zeno_CreateGraph(Zeno_Graph *graphRet_) ZENO_CAPI_NOEXCEPT {
     return lastError.catched([=] {
-        std::shared_ptr<Graph> graph(getSession().createGraph().release());
+        auto graph = getSession().createGraph();
         *graphRet_ = lutGraph.create(std::move(graph));
     });
 }
@@ -104,6 +105,12 @@ ZENO_CAPI Zeno_Error Zeno_CreateGraph(Zeno_Graph *graphRet_) ZENO_CAPI_NOEXCEPT 
 ZENO_CAPI Zeno_Error Zeno_DestroyGraph(Zeno_Graph graph_) ZENO_CAPI_NOEXCEPT {
     return lastError.catched([=] {
         lutGraph.destroy(graph_);
+    });
+}
+
+ZENO_CAPI Zeno_Error Zeno_GraphIncReference(Zeno_Graph graph_) ZENO_CAPI_NOEXCEPT {
+    return lastError.catched([=] {
+        lutGraph.create(lutGraph.access(graph_));
     });
 }
 

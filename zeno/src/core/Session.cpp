@@ -96,8 +96,8 @@ ZENO_API INodeClass::INodeClass(Descriptor const &desc)
 
 ZENO_API INodeClass::~INodeClass() = default;
 
-ZENO_API std::unique_ptr<Graph> Session::createGraph() {
-    auto graph = std::make_unique<Graph>();
+ZENO_API std::shared_ptr<Graph> Session::createGraph() {
+    auto graph = std::make_shared<Graph>();
     graph->session = const_cast<Session *>(this);
     return graph;
 }

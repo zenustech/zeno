@@ -8,7 +8,7 @@ struct Graph;
 
 struct ISubgraphNode : INode {
     virtual const char *get_subgraph_json() = 0;
-    std::unique_ptr<Graph> grap;
+    std::shared_ptr<Graph> grap;
 
     ZENO_API ISubgraphNode();
     ZENO_API virtual ~ISubgraphNode() override;

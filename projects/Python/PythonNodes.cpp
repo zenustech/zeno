@@ -12,6 +12,8 @@ namespace zeno {
 
 ZENO_API Zeno_Object capiLoadObjectSharedPtr(std::shared_ptr<IObject> const &objPtr_);
 ZENO_API void capiEraseObjectSharedPtr(Zeno_Object object_);
+ZENO_API Zeno_Graph capiLoadGraphSharedPtr(std::shared_ptr<IGraph> const &graPtr_);
+ZENO_API void capiEraseGraphSharedPtr(Zeno_Graph graph_);
 
 namespace {
 
@@ -20,7 +22,10 @@ static int defPythonInit = getSession().eventCallbacks->hookEvent("init", [] {
     Py_Initialize();
     std::string libpath = getAssetDir(ZENO_PYTHON_LIB_DIR);
     std::string dllfile = ZENO_PYTHON_DLL_FILE;
-    PyRun_SimpleString(("__import__('sys').path.insert(0, '" + libpath + "'); import ze; ze.initDLLPath('" + dllfile + "')").c_str());
+    if (PyRun_SimpleString(("__import__('sys').path.insert(0, '" + libpath + "'); import ze; ze.initDLLPath('" + dllfile + "')").c_str()) < 0) {
+        log_warn("Failed to initialize Python module");
+        return;
+    }
     log_debug("Initialized Python successfully!");
 });
 
@@ -44,6 +49,11 @@ struct PythonScript : INode {
             Py_DECREF(retsDict);
         };
         std::vector<Zeno_Object> needToDel;
+        scope_exit needToDelEraser = [&] {
+            for (auto handle: needToDel) {
+                capiEraseObjectSharedPtr(handle);
+            }
+        };
         for (auto const &[k, v]: args->lut) {
             auto handle = capiLoadObjectSharedPtr(v);
             needToDel.push_back(handle);
@@ -68,21 +78,41 @@ struct PythonScript : INode {
             throw makeError("failed to set ze._rets");
         if (PyDict_SetItemString(zenoModDict, "_args", argsDict) < 0)
             throw makeError("failed to set ze._args");
+        std::shared_ptr<Graph> currGraphSP = getThisGraph()->shared_from_this();  // TODO
+        Zeno_Graph currGraphHandle = capiLoadGraphSharedPtr(currGraphSP);
+        scope_exit currGraphEraser = [=] {
+            capiEraseGraphSharedPtr(currGraphHandle);
+        };
+        {
+            PyObject *currGraphLong = PyLong_FromUnsignedLongLong(currGraphHandle);
+            scope_exit currGraphLongDel = [=] {
+                Py_DECREF(currGraphLong);
+            };
+            if (PyDict_SetItemString(zenoModDict, "_currgraph", currGraphLong) < 0)
+                throw makeError("failed to set ze._currgraph");
+        }
+        scope_exit currGraphLongReset = [=] {
+            PyObject *currGraphLongZero = PyLong_FromUnsignedLongLong(0);
+            scope_exit currGraphLongZeroDel = [=] {
+                Py_DECREF(currGraphLongZero);
+            };
+            (void)PyDict_SetItemString(zenoModDict, "_currgraph", currGraphLongZero);
+        };
         if (path.empty()) {
             auto code = get_input2<std::string>("code");
-            mainMod = PyRun_StringFlags(code.c_str(), Py_single_input, globals, locals, NULL);
+            mainMod = PyRun_StringFlags(code.c_str(), Py_file_input, globals, locals, NULL);
         } else {
             FILE *fp = fopen(path.c_str(), "r");
             if (!fp) {
                 perror(path.c_str());
                 throw makeError("cannot open file for read: " + path);
             } else {
-                mainMod = PyRun_FileExFlags(fp, path.c_str(), Py_single_input, globals, locals, 1, NULL);
+                mainMod = PyRun_FileExFlags(fp, path.c_str(), Py_file_input, globals, locals, 1, NULL);
             }
         }
-        for (auto handle: needToDel) {
-            capiEraseObjectSharedPtr(handle);
-        }
+        currGraphLongReset.reset();
+        currGraphEraser.reset();
+        needToDelEraser.reset();
         if (!mainMod) {
             PyErr_Print();
             throw makeError("Python exception occurred, see console for more details");

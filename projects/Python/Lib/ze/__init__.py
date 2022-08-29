@@ -5,7 +5,7 @@ Zeno Python API module
 
 import ctypes
 import functools
-from typing import Union
+from typing import Union, Optional
 
 
 Literial = Union[int, float, tuple[int], tuple[float], str]
@@ -18,8 +18,7 @@ def initDLLPath(path: str):
     getlasterrstr = api.Zeno_GetLastErrorStr
     def chkerr(ret):
         if ret != 0:
-            raise RuntimeError('(Zeno error) {}'.format(ctypes.string_at(getlasterrstr()).decode()))
-            # raise RuntimeError(getlasterrstr())
+            raise RuntimeError('[Zeno Internal Error] {}'.format(ctypes.string_at(getlasterrstr()).decode()))
 
     def wrapchkerr(func):
         @functools.wraps(func)
@@ -38,6 +37,7 @@ def initDLLPath(path: str):
     define(ctypes.c_char_p, 'Zeno_GetLastErrorStr')
     define(ctypes.c_uint32, 'Zeno_CreateGraph', ctypes.POINTER(ctypes.c_uint64))
     define(ctypes.c_uint32, 'Zeno_DestroyGraph', ctypes.c_uint64)
+    define(ctypes.c_uint32, 'Zeno_GraphIncReference', ctypes.c_uint64)
     define(ctypes.c_uint32, 'Zeno_GraphLoadJson', ctypes.c_uint64, ctypes.c_char_p)
     define(ctypes.c_uint32, 'Zeno_GraphCallTempNode', ctypes.c_uint64, ctypes.c_char_p, ctypes.POINTER(ctypes.c_char_p), ctypes.POINTER(ctypes.c_uint64), ctypes.c_size_t, ctypes.POINTER(ctypes.c_size_t))
     define(ctypes.c_uint32, 'Zeno_GetLastTempNodeResult', ctypes.POINTER(ctypes.c_char_p), ctypes.POINTER(ctypes.c_uint64))
@@ -197,10 +197,25 @@ class ZenoObject:
 class ZenoGraph:
     _handle: int
 
-    def __init__(self):
+    __create_key = object()
+
+    def __init__(self, create_key: object, handle: int):
+        assert create_key is self.__create_key, 'ZenoGraph has a private constructor'
+        self._handle = handle
+
+    @classmethod
+    def new(cls):
         graph_ = ctypes.c_uint64(0)
         api.Zeno_CreateGraph(ctypes.pointer(graph_))
-        self._handle = graph_.value
+        cls(cls.__create_key, graph_.value)
+
+    @classmethod
+    def current(cls):
+        handle = _currgraph
+        if handle == 0:
+            raise RuntimeError('no current graph')
+        api.Zeno_GraphIncReference(ctypes.c_uint64(handle))
+        cls(cls.__create_key, handle)
 
     def callTempNode(self, nodeType: str, inputs: dict[str, int]) -> dict[str, int]:
         inputCount_ = len(inputs)
@@ -221,6 +236,7 @@ class ZenoGraph:
 
 _args : dict[str, int] = {}
 _rets : dict[str, int] = {}
+_currgraph : int = 0
 
 
 def has_input(key: str) -> bool:
