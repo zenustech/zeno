@@ -327,7 +327,8 @@ namespace DisneyBSDF{
         bool thin,
         bool is_inside,
         float& fPdf,
-        float& rPdf)
+        float& rPdf,
+        float nDL)
     {
         Onb tbn = Onb(N);
         world2local(wi, tbn.m_tangent ,tbn.m_binormal, N);
@@ -376,7 +377,10 @@ namespace DisneyBSDF{
             vec3 lobeOfSheen =  EvaluateSheen(baseColor,sheen,sheenTint, HoL);
 
             fPdf += pDiffuse * forwardDiffusePdfW;
-            rPdf += pDiffuse * reverseDiffusePdfW;
+            rPdf += pDiffuse * reverseDiffusePdfW;\
+            if(!thin && nDL <0){
+                diffuse = 0.0f;
+            }
 
             reflectance += diffuseW * (diffuse * baseColor + lobeOfSheen);
         }
