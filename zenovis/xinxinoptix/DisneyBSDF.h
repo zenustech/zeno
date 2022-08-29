@@ -328,7 +328,8 @@ namespace DisneyBSDF{
         bool is_inside,
         float& fPdf,
         float& rPdf,
-        float nDL)
+        float nDl)
+
     {
         Onb tbn = Onb(N);
         world2local(wi, tbn.m_tangent ,tbn.m_binormal, N);
@@ -377,11 +378,9 @@ namespace DisneyBSDF{
             vec3 lobeOfSheen =  EvaluateSheen(baseColor,sheen,sheenTint, HoL);
 
             fPdf += pDiffuse * forwardDiffusePdfW;
-            rPdf += pDiffuse * reverseDiffusePdfW;\
-            if(!thin && nDL <0){
-                diffuse = 0.0f;
-            }
-
+            rPdf += pDiffuse * reverseDiffusePdfW;
+            if(!thin && nDl<=0.0f)
+                diffuse = 0;
             reflectance += diffuseW * (diffuse * baseColor + lobeOfSheen);
         }
         // Transsmission
@@ -690,7 +689,7 @@ namespace DisneyBSDF{
         wi =  normalize(BRDFBasics::sampleOnHemisphere(seed, 1.0f));
         vec3 wm = normalize(wi+wo);
         float NoL = wi.z;
-        if(abs(NoL)<1e-6 ){
+        if(abs(NoL)<1e-5 ){
             fPdf = 0.0f;
             rPdf = 0.0f;
             reflectance = vec3(0.0f);
@@ -725,7 +724,7 @@ namespace DisneyBSDF{
         vec3 sheenTerm = EvaluateSheen(baseColor, sheen, sheenTint, HoL);
         float diff = EvaluateDisneyDiffuse(roughness, flatness, wi, wo, wm, thin);
 
-        reflectance = sheen + color * (diff / (pdf+1e-6));
+        reflectance = sheen + color * (diff / (pdf+1e-5));
         fPdf = abs(NoL) * pdf;
         rPdf = abs(NoV) * pdf;
         Onb  tbn = Onb(N);
@@ -836,6 +835,7 @@ namespace DisneyBSDF{
         }else if(pClearcoat >0.001f && p <= (pSpecular + pClearcoat)){
             success = SampleDisneyClearCoat(seed, clearCoat, clearcoatGloss, T, B, N, wo, wi, reflectance, fPdf, rPdf);
             pLobe = pClearcoat;
+            isDiff = true;
         }else if(pSpecTrans > 0.001f && p <= (pSpecular + pClearcoat + pSpecTrans)){
             success = SampleDisneySpecTransmission(seed, ior, roughness, anisotropic, baseColor, transmiianceColor, scatterDistance, wo, wi, rPdf, fPdf, reflectance, flag, phaseFuncion, extinction, thin, is_inside, T, B, N);
             pLobe = pSpecTrans;

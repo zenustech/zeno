@@ -445,13 +445,13 @@ extern "C" __global__ void __closesthit__radiance()
     auto metallic = mats.metallic;
     auto roughness = mats.roughness;
     if(prd->diffDepth>=1)
-        roughness = clamp(roughness, 0.2,0.99);
+        roughness = clamp(roughness, 0.1,0.99);
     if(prd->diffDepth>=2)
         roughness = clamp(roughness, 0.3,0.99);
     if(prd->diffDepth>=3)
         roughness = clamp(roughness, 0.5,0.99);
-    if(prd->depth>=3)
-        roughness = clamp(roughness, 0.3,0.99);
+    if(prd->diffDepth>=1&&prd->depth>=2)
+        roughness = clamp(roughness, 0.2,0.99);
     auto subsurface = mats.subsurface;
     auto specular = mats.specular;
     auto specularTint = mats.specularTint;
@@ -552,14 +552,15 @@ extern "C" __global__ void __closesthit__radiance()
                 isDiff
                 )  == false)
         {
+            isDiff = false;
             rPdf = 0.0f;
             fPdf = 0.0f;
             reflectance = vec3(0.0f);
             flag = DisneyBSDF::scatterEvent;
         }
     pdf = fPdf;
-    if(isDiff){
-        prd->diffDepth ++;
+    if(isDiff || roughness>0.4){
+        prd->diffDepth++;
     }
 
     if(opacity<=0.99)
@@ -695,11 +696,13 @@ extern "C" __global__ void __closesthit__radiance()
                 }
             }
             
-
+            if(prd->diffDepth>=1&&prd->depth>=2)
+                roughness = clamp(roughness, 0.2,0.99);
             float3 lbrdf = DisneyBSDF::EvaluateDisney(basecolor, metallic, subsurface, specular, roughness,
                                                       specularTint, anisotropic, sheen, sheenTint, clearcoat,
                                                       clearcoatGloss, specTrans, scatterDistance, ior, flatness, L,
                                                       -normalize(inDir), T, B, N, thin > 0.5f, flag == DisneyBSDF::transmissionEvent ? inToOut : prd->is_inside, ffPdf, rrPdf,dot(N, L));
+
             prd->radiance += light.emission * light_attenuation * weight * lbrdf;
             computed = true;
         }
