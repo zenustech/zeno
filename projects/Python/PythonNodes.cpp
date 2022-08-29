@@ -4,16 +4,12 @@
 #include <zeno/extra/assetDir.h>
 #include <zeno/extra/EventCallbacks.h>
 #include <zeno/utils/log.h>
+#include <zeno/core/Graph.h>
 #include <zeno/utils/scope_exit.h>
-#include <zeno/core/CAPI.h>
+#include <zeno/extra/CAPIInternals.h>
 #include <zeno_Python_config.h>
 
 namespace zeno {
-
-ZENO_API Zeno_Object capiLoadObjectSharedPtr(std::shared_ptr<IObject> const &objPtr_);
-ZENO_API void capiEraseObjectSharedPtr(Zeno_Object object_);
-ZENO_API Zeno_Graph capiLoadGraphSharedPtr(std::shared_ptr<IGraph> const &graPtr_);
-ZENO_API void capiEraseGraphSharedPtr(Zeno_Graph graph_);
 
 namespace {
 

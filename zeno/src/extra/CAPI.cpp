@@ -1,5 +1,5 @@
 #include <zeno/zeno.h>
-#include <zeno/core/CAPI.h>
+#include <zeno/extra/CAPI.h>
 #include <zeno/utils/memory.h>
 #include <zeno/utils/cppdemangle.h>
 #include <zeno/utils/compile_opts.h>
@@ -283,18 +283,6 @@ ZENO_CAPI Zeno_Error Zeno_GetObjectString(Zeno_Object object_, char *strBuf_, si
             memcpy(strBuf_, str.data(), std::min(str.size(), *strLenRet_));
         *strLenRet_ = str.size();
     });
-}
-
-}
-
-namespace zeno {
-
-ZENO_API Zeno_Object capiLoadObjectSharedPtr(std::shared_ptr<IObject> const &objPtr_) {
-    return lutObject.create(objPtr_);
-}
-
-ZENO_API void capiEraseObjectSharedPtr(Zeno_Object object_) {
-    lutObject.destroy(object_);
 }
 
 }
