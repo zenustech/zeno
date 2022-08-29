@@ -107,6 +107,7 @@ extern "C" __global__ void __raygen__rg()
         prd.medium       = DisneyBSDF::PhaseFunctions::vacuum;
 
         prd.depth = 0;
+        prd.diffDepth = 0;
         for( ;; )
         {
             traceRadiance(
