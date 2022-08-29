@@ -529,6 +529,30 @@ struct Helper{
     }
 };
 
+struct BezierCompute{
+    template <class T>
+    static T compute(T p1, T p2, float t){
+        return (1-t)*p1+t*p2;
+    }
+
+    template <class T>
+    static T bezier( std::vector<T> const&p, float t ){
+        std::vector<T> ps = p;
+        auto iter = ps.size();
+        for(int z=0; z<iter; z++){
+            auto n=ps.size();
+            std::vector<T> tmp;
+            for(int i=0;i<n-1;i++){
+                auto cr = T(compute(ps[i], ps[i+1], t));
+                tmp.push_back(cr);
+            }
+            ps=tmp;
+            iter--;
+        }
+        return compute(ps[0], ps[1], t);
+    }
+};
+
 }
 
 #endif //ZENO_FBX_DEFINITION_H

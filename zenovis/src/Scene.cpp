@@ -57,7 +57,9 @@ std::vector<float> Scene::getCameraProp(){
     camProp.push_back(this->camera->m_lodup.x);
     camProp.push_back(this->camera->m_lodup.y);
     camProp.push_back(this->camera->m_lodup.z);
-
+    camProp.push_back(this->camera->m_fov);
+    camProp.push_back(this->camera->m_aperture);
+    camProp.push_back(this->camera->focalPlaneDistance);
     return camProp;
 }
 
