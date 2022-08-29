@@ -444,12 +444,14 @@ extern "C" __global__ void __closesthit__radiance()
     auto basecolor = mats.basecolor;
     auto metallic = mats.metallic;
     auto roughness = mats.roughness;
-    if(prd->depth>=1)
-        roughness = clamp(roughness, 0.1,0.99);
-    if(prd->depth>=2)
+    if(prd->diffDepth>=1)
+        roughness = clamp(roughness, 0.2,0.99);
+    if(prd->diffDepth>=2)
         roughness = clamp(roughness, 0.3,0.99);
-    if(prd->depth>=3)
+    if(prd->diffDepth>=3)
         roughness = clamp(roughness, 0.5,0.99);
+    if(prd->depth>=3)
+        roughness = clamp(roughness, 0.3,0.99);
     auto subsurface = mats.subsurface;
     auto specular = mats.specular;
     auto specularTint = mats.specularTint;
@@ -515,7 +517,7 @@ extern "C" __global__ void __closesthit__radiance()
     DisneyBSDF::PhaseFunctions phaseFuncion;
     vec3 extinction;
     vec3 reflectance = vec3(0.0f);
-
+    bool isDiff = false;
     while(DisneyBSDF::SampleDisney(
                 prd->seed,
                 basecolor,
@@ -546,7 +548,8 @@ extern "C" __global__ void __closesthit__radiance()
                 fPdf,
                 flag,
                 prd->medium,
-                extinction
+                extinction,
+                isDiff
                 )  == false)
         {
             rPdf = 0.0f;
@@ -555,6 +558,9 @@ extern "C" __global__ void __closesthit__radiance()
             flag = DisneyBSDF::scatterEvent;
         }
     pdf = fPdf;
+    if(isDiff){
+        prd->diffDepth ++;
+    }
 
     if(opacity<=0.99)
     {
@@ -604,14 +610,14 @@ extern "C" __global__ void __closesthit__radiance()
             prd->scatterPDF = 1.0;
         }
     }else{
-	if(prd->medium == DisneyBSDF::PhaseFunctions::isotropic){
-            prd->attenuation2 *= DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
-            prd->attenuation *= DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
-            float tmpPDF = 1.0f;
-            prd->maxDistance = DisneyBSDF::SampleDistance(prd->seed,prd->scatterDistance,tmpPDF);
-            prd->scatterPDF = tmpPDF;
+	    if(prd->medium == DisneyBSDF::PhaseFunctions::isotropic){
+                prd->attenuation2 *= DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
+                prd->attenuation *= DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
+                float tmpPDF = 1.0f;
+                prd->maxDistance = DisneyBSDF::SampleDistance(prd->seed,prd->scatterDistance,tmpPDF);
+                prd->scatterPDF = tmpPDF;
 
-	}
+	    }
     }
 
 

@@ -795,7 +795,8 @@ namespace DisneyBSDF{
         float& fPdf,
         SurfaceEventFlags& flag,
         int& phaseFuncion,
-        vec3& extinction
+        vec3& extinction,
+        bool& isDiff
             )
     {
         Onb  tbn = Onb(N);
@@ -805,7 +806,7 @@ namespace DisneyBSDF{
         pdf(metallic, specTrans, clearCoat, pSpecular, pDiffuse, pClearcoat, pSpecTrans);
 
         bool success = false;
-
+        isDiff = false;
         float pLobe = 0.0f;
         float p = rnd(seed);
         if( p<= pSpecular){
@@ -835,6 +836,7 @@ namespace DisneyBSDF{
             success = SampleDisneySpecTransmission(seed, ior, roughness, anisotropic, baseColor, transmiianceColor, scatterDistance, wo, wi, rPdf, fPdf, reflectance, flag, phaseFuncion, extinction, thin, is_inside, T, B, N);
             pLobe = pSpecTrans;
         }else {
+            isDiff = true;
             success = SampleDisneyDiffuse(seed, baseColor, transmiianceColor, scatterDistance, sheen, sheenTint, roughness, flatness, subsurface, thin, wo, T, B, N, wi, fPdf, rPdf, reflectance, flag, phaseFuncion, extinction,is_inside);
             pLobe = pDiffuse;
         }
