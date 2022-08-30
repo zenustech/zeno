@@ -238,7 +238,7 @@ namespace DisneyBSDF{
             color = baseColor;
 
         float c = (HoL * HoV) / (NoL * NoV);
-        float t = (1 / pow(dot(wm, wi) + ior * dot(wm, wo), 2.0f));
+        float t = (n2 / pow(dot(wm, wi) + ior * dot(wm, wo), 2.0f));
         //if(length(wm) < 1e-5){
         //    return color * (1.0f - F);
         //}
@@ -373,7 +373,7 @@ namespace DisneyBSDF{
         if(diffuseW > 0.0f){
             float forwardDiffusePdfW = abs(wi.z);
             float reverseDiffusePdfW = abs(wo.z);
-            float diffuse = EvaluateDisneyDiffuse(roughness,flatness, wi, wo, wm, thin);
+            float diffuse = EvaluateDisneyDiffuse(1.0,flatness, wi, wo, wm, thin);
 
             vec3 lobeOfSheen =  EvaluateSheen(baseColor,sheen,sheenTint, HoL);
 
@@ -683,7 +683,8 @@ namespace DisneyBSDF{
         SurfaceEventFlags& flag,
         int& phaseFuncion,
         vec3& extinction,
-        bool is_inside
+        bool is_inside,
+        bool &isSS
 
             )
     {
@@ -712,7 +713,7 @@ namespace DisneyBSDF{
         if(rnd(seed) <= subsurface && subsurface > 0.001f){
             wi = -wi;
             pdf = subsurface;
-
+            isSS = true;
             if(thin){
                 color = sqrt(transmittanceColor);
             }else{
@@ -720,6 +721,7 @@ namespace DisneyBSDF{
                 phaseFuncion = (!is_inside)  ? isotropic : vacuum;
                 extinction = CalculateExtinction(transmittanceColor, scatterDistance);
                 color = vec3(1.0f);
+
             }
         }else{
             pdf = 1.0 - subsurface;
@@ -727,9 +729,9 @@ namespace DisneyBSDF{
 
         float HoL = dot(wm,wo);
         vec3 sheenTerm = EvaluateSheen(baseColor, sheen, sheenTint, HoL);
-        float diff = EvaluateDisneyDiffuse(roughness, flatness, wi, wo, wm, thin);
+        float diff = EvaluateDisneyDiffuse(1.0, flatness, wi, wo, wm, thin);
 
-        reflectance = sheen + color * (diff / (pdf+1e-5));
+        reflectance = sheen + color * diff;
         fPdf = abs(NoL) * pdf;
         rPdf = abs(NoV) * pdf;
         Onb  tbn = Onb(N);
@@ -804,7 +806,8 @@ namespace DisneyBSDF{
         SurfaceEventFlags& flag,
         int& phaseFuncion,
         vec3& extinction,
-        bool& isDiff
+        bool& isDiff,
+        bool& isSS
             )
     {
         Onb  tbn = Onb(N);
@@ -846,7 +849,7 @@ namespace DisneyBSDF{
             pLobe = pSpecTrans;
         }else {
             isDiff = true;
-            success = SampleDisneyDiffuse(seed, baseColor, transmiianceColor, scatterDistance, sheen, sheenTint, roughness, flatness, subsurface, thin, wo, T, B, N, wi, fPdf, rPdf, reflectance, flag, phaseFuncion, extinction,is_inside);
+            success = SampleDisneyDiffuse(seed, baseColor, transmiianceColor, scatterDistance, sheen, sheenTint, roughness, flatness, subsurface, thin, wo, T, B, N, wi, fPdf, rPdf, reflectance, flag, phaseFuncion, extinction,is_inside, isSS);
             pLobe = pDiffuse;
         }
         //reflectance = clamp(reflectance, vec3(0,0,0), vec3(1,1,1));

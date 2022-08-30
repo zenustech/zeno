@@ -462,6 +462,8 @@ extern "C" __global__ void __closesthit__radiance()
         roughness = clamp(roughness, 0.5,0.99);
     if(prd->diffDepth>=1&&prd->depth>=2)
         roughness = clamp(roughness, 0.2,0.99);
+    if(prd->isSS == true)
+        roughness = clamp(roughness, 0.99,0.99);
     auto subsurface = mats.subsurface;
     auto specular = mats.specular;
     auto specularTint = mats.specularTint;
@@ -528,6 +530,7 @@ extern "C" __global__ void __closesthit__radiance()
     vec3 extinction;
     vec3 reflectance = vec3(0.0f);
     bool isDiff = false;
+    bool isSS = false;
     while(DisneyBSDF::SampleDisney(
                 prd->seed,
                 basecolor,
@@ -559,15 +562,18 @@ extern "C" __global__ void __closesthit__radiance()
                 flag,
                 prd->medium,
                 extinction,
-                isDiff
+                isDiff,
+                isSS
                 )  == false)
         {
+            isSS = false;
             isDiff = false;
             rPdf = 0.0f;
             fPdf = 0.0f;
             reflectance = vec3(0.0f);
             flag = DisneyBSDF::scatterEvent;
         }
+    prd->isSS = isSS;
     pdf = fPdf;
     if(isDiff || roughness>0.4){
         prd->diffDepth++;
