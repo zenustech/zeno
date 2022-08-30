@@ -530,16 +530,19 @@ namespace DisneyBSDF{
         
     }
     static __inline__ __device__ 
-    bool Transmit(vec3 wm, vec3 wi, float n, vec3& wo)
+    bool Transmit(vec3 wm, vec3 wo, float n, vec3& wi)
     {
-        float c = dot(wi, wm);
-
+        float c = dot(wo, wm);
+        if(c < 0.0f) {
+            c = -c;
+            wm = -wm;
+        }
         float root = 1.0f - n * n * (1.0f - c * c);
         if(root <= 0){
             return false;
         }
 
-        wo = normalize((n * c -sqrt(root)) * wm - n * wi);
+        wi = normalize((n * c -sqrt(root)) * wm - n * wo);
         return true;
     }
 
@@ -592,7 +595,9 @@ namespace DisneyBSDF{
             VoH = -VoH;
         }
 
-        float relativeIOR = is_inside ?  ior : (1.0f / ior);
+        float ni = wo.z > 0.0f ? 1.0f : ior;
+        float nt = wo.z > 0.0f ? ior : 1.0f;
+        float relativeIOR = ni / nt;
 
         float F = BRDFBasics::fresnelDielectric(VoH, 1.0f, ior, is_inside);
 
