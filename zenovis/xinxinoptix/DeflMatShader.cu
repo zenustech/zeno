@@ -393,7 +393,7 @@ extern "C" __global__ void __closesthit__radiance()
     float3 tan2 = make_float3(rt_data->tan[ vert_idx_offset+2 ] );
     
     N_0 = normalize(interp(barys, n0, n1, n2));
-    float3 N = faceforward( N_0, -ray_dir, N_0 );
+    float3 N = N_0;//faceforward( N_0, -ray_dir, N_0 );
     P = interp(barys, v0, v1, v2);
     attrs.pos = vec3(P.x, P.y, P.z);
     attrs.nrm = N;
@@ -434,6 +434,10 @@ extern "C" __global__ void __closesthit__radiance()
                                 zenotex29, 
                                 zenotex30, 
                                 zenotex31,attrs);
+
+    if(mats.doubleSide>0.5||mats.thin>0.5)
+        N = faceforward( N_0, -ray_dir, N_0 );
+    attrs.nrm = N;
     //end of material computation
     //mats.metallic = clamp(mats.metallic,0.01, 0.99);
     mats.roughness = clamp(mats.roughness, 0.01,0.99);
