@@ -1823,7 +1823,7 @@ QModelIndexList GraphsModel::searchInSubgraph(const QString& objName, const QMod
     for (auto i = 0; i < count; i++) {
         auto index = pModel->index(i, 0);
         auto item = pModel->itemData(index);
-        if (item[ROLE_OBJID].toString().contains(objName)) {
+        if (item[ROLE_OBJID].toString().contains(objName, Qt::CaseInsensitive)) {
             list.append(index);
         }
         else {
@@ -1834,7 +1834,7 @@ QModelIndexList GraphsModel::searchInSubgraph(const QString& objName, const QMod
                 auto iter = params.begin();
                 while (iter != params.end()) {
                     if (iter.value().typeDesc == _type) {
-                        if (iter.value().value.toString().contains(objName)) {
+                        if (iter.value().value.toString().contains(objName, Qt::CaseInsensitive)) {
                             list.append(index);
                             inserted = true;
                             break;
@@ -1851,7 +1851,7 @@ QModelIndexList GraphsModel::searchInSubgraph(const QString& objName, const QMod
                 auto iter = inputs.begin();
                 while (iter != inputs.end()) {
                     if (iter->value().info.type == _type) {
-                        if (iter->value().info.defaultValue.toString().contains(objName)) {
+                        if (iter->value().info.defaultValue.toString().contains(objName, Qt::CaseInsensitive)) {
                             list.append(index);
                             inserted = true;
                             break;
