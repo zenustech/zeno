@@ -238,19 +238,19 @@ struct CameraEval: zeno::INode {
                             //BEZIER_VEC3_COMPUTE(view)
                             //auto v = BezierCompute::bezier(tp_view, factor);
 
-                            BEZIER_VEC3_COMPUTE2(pos)
-                            BEZIER_VEC3_COMPUTE2(up)
-                            BEZIER_VEC3_COMPUTE2(view)
-                            BEZIER_FLOAT_COMPUTE(aperture)
-                            BEZIER_FLOAT_COMPUTE(fov)
-                            BEZIER_FLOAT_COMPUTE(focalPlaneDistance)
+                            //BEZIER_VEC3_COMPUTE2(pos)
+                            //BEZIER_VEC3_COMPUTE2(up)
+                            //BEZIER_VEC3_COMPUTE2(view)
+                            //BEZIER_FLOAT_COMPUTE(aperture)
+                            //BEZIER_FLOAT_COMPUTE(fov)
+                            //BEZIER_FLOAT_COMPUTE(focalPlaneDistance)
 
-                            pos = b_pos;
-                            up = b_up;
-                            view = b_view;
-                            fov = b_fov;
-                            aperture = b_aperture;
-                            focalPlaneDistance = b_focalPlaneDistance;
+                            pos = BezierCompute::compute(c1of, c2of, factor, n->pos, nm->pos);
+                            up = BezierCompute::compute(c1of, c2of, factor, n->up, nm->up);
+                            view = BezierCompute::compute(c1of, c2of, factor, n->view, nm->view);
+                            fov = BezierCompute::compute(c1of, c2of, factor, n->fov, nm->fov);
+                            aperture = BezierCompute::compute(c1of, c2of, factor, n->aperture, nm->aperture);
+                            focalPlaneDistance = BezierCompute::compute(c1of, c2of, factor, n->focalPlaneDistance, nm->focalPlaneDistance);
                         }
 
                         //zeno::log_info("Inter Pos {} {} {}", pos[0], pos[1], pos[2]);

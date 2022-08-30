@@ -531,7 +531,7 @@ struct Helper{
 
 struct BezierCompute{
     template <class T>
-    static T compute(T p1, T p2, float t){
+    static T interpolation(T p1, T p2, float t){
         return (1-t)*p1+t*p2;
     }
 
@@ -543,14 +543,50 @@ struct BezierCompute{
             auto n=ps.size();
             std::vector<T> tmp;
             for(int i=0;i<n-1;i++){
-                auto cr = T(compute(ps[i], ps[i+1], t));
+                auto cr = T(interpolation(ps[i], ps[i+1], t));
                 tmp.push_back(cr);
             }
             ps=tmp;
             iter--;
         }
-        return compute(ps[0], ps[1], t);
+        return interpolation(ps[0], ps[1], t);
     }
+
+    static zeno::vec3f compute(float c1of, float c2of, float factor, zeno::vec3f n, zeno::vec3f nm){
+        std::vector<zeno::vec3f> v_x;
+        std::vector<zeno::vec3f> v_y;
+        std::vector<zeno::vec3f> v_z;
+        v_x.push_back(zeno::vec3f(0.0f, nm[0], 0.0f));
+        v_x.push_back(zeno::vec3f(c1of, nm[0], 0.0f));
+        v_x.push_back(zeno::vec3f(c2of, n[0], 0.0f));
+        v_x.push_back(zeno::vec3f(1.0f, n[0], 0.0f));
+        v_y.push_back(zeno::vec3f(0.0f, nm[1], 0.0f));
+        v_y.push_back(zeno::vec3f(c1of, nm[1], 0.0f));
+        v_y.push_back(zeno::vec3f(c2of, n[1], 0.0f));
+        v_y.push_back(zeno::vec3f(1.0f, n[1], 0.0f));
+        v_z.push_back(zeno::vec3f(0.0f, nm[2], 0.0f));
+        v_z.push_back(zeno::vec3f(c1of, nm[2], 0.0f));
+        v_z.push_back(zeno::vec3f(c2of, n[2], 0.0f));
+        v_z.push_back(zeno::vec3f(1.0f, n[2], 0.0f));
+        auto b_pos_x = BezierCompute::bezier(v_x, factor);
+        auto b_pos_y = BezierCompute::bezier(v_y, factor);
+        auto b_pos_z = BezierCompute::bezier(v_z, factor);
+        auto result = zeno::vec3f(b_pos_x[1], b_pos_y[1], b_pos_z[1]);
+
+        return result;
+    }
+
+    static float compute(float c1of, float c2of, float factor, float n, float nm){
+        std::vector<zeno::vec3f> tp_v;
+        tp_v.push_back(zeno::vec3f(0.0f, nm, 0.0f));
+        tp_v.push_back(zeno::vec3f(c1of, nm, 0.0f));
+        tp_v.push_back(zeno::vec3f(c2of, n, 0.0f));
+        tp_v.push_back(zeno::vec3f(1.0f, n, 0.0f));
+        auto b_v = BezierCompute::bezier(tp_v, factor);
+
+        return b_v[1];
+    }
+
 };
 
 }
