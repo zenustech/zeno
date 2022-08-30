@@ -33,7 +33,7 @@ ZenoPropPanel::ZenoPropPanel(QWidget* parent)
 	setFocusPolicy(Qt::ClickFocus);
 
 	QPalette palette = this->palette();
-	palette.setBrush(QPalette::Window, QColor(44, 51, 58));
+	palette.setBrush(QPalette::Window, QColor("#2D3239"));
 	setPalette(palette);
 	setAutoFillBackground(true);
 }
@@ -180,7 +180,7 @@ QWidget* ZenoPropPanel::initControl(CONTROL_DATA ctrlData)
 		case CONTROL_INT:
 		{
 			ZLineEdit* pLineEdit = new ZLineEdit(UiHelper::variantToString(value));
-			pLineEdit->setProperty("cssClass", "proppanel");
+			pLineEdit->setProperty("cssClass", "zeno2_2_lineedit");
 			pLineEdit->setNumSlider(UiHelper::getSlideStep(name, ctrl));
 			pLineEdit->setObjectName(name);
 			//todo: validator.
@@ -189,10 +189,22 @@ QWidget* ZenoPropPanel::initControl(CONTROL_DATA ctrlData)
 		}
 		case CONTROL_BOOL:
 		{
-			ZCheckBoxBar* pCheckbox = new ZCheckBoxBar;
+			QCheckBox* pCheckbox = new QCheckBox;
+			pCheckbox->setStyleSheet("\
+				QCheckBox::indicator{\
+					width: 16px;\
+					height: 16px;\
+				}\
+				QCheckBox::indicator:unchecked {\
+					image: url(:/icons/checkbox-idle.svg);\
+				}\
+				QCheckBox::indicator:checked {\
+					image: url(:/icons/checkbox-light.svg);\
+				}\
+				");
 			pCheckbox->setCheckState(value.toBool() ? Qt::Checked : Qt::Unchecked);
 			pCheckbox->setObjectName(name);
-			connect(pCheckbox, &ZCheckBoxBar::stateChanged, this, ctrlData.fSlot);
+			connect(pCheckbox, &QCheckBox::stateChanged, this, ctrlData.fSlot);
 			return pCheckbox;
 		}
 		case CONTROL_VEC:
@@ -202,7 +214,7 @@ QWidget* ZenoPropPanel::initControl(CONTROL_DATA ctrlData)
 			bool bFloat = false;
 			UiHelper::parseVecType(typeDesc, dim, bFloat);
 
-			ZVecEditor* pVecEdit = new ZVecEditor(vec, bFloat, 3, "proppanel");
+			ZVecEditor* pVecEdit = new ZVecEditor(vec, bFloat, 3, "zeno2_2_lineedit");
 			pVecEdit->setObjectName(name);
 			connect(pVecEdit, &ZVecEditor::editingFinished, this, ctrlData.fSlot);
 			return pVecEdit;
@@ -231,8 +243,8 @@ QWidget* ZenoPropPanel::initControl(CONTROL_DATA ctrlData)
 		case CONTROL_WRITEPATH:
 		{
 			ZLineEdit* pathLineEdit = new ZLineEdit(value.toString());
-			pathLineEdit->setIcons(":/icons/ic_openfile.svg", ":/icons/ic_openfile-on.svg");
-			pathLineEdit->setProperty("cssClass", "proppanel");
+			pathLineEdit->setIcons(":/icons/file-loader.svg", ":/icons/file-loader-on.svg");
+			pathLineEdit->setProperty("cssClass", "zeno2_2_lineedit");
 			pathLineEdit->setObjectName(name);
 			pathLineEdit->setProperty("control", ctrl);
 			pathLineEdit->setFocusPolicy(Qt::ClickFocus);
@@ -279,7 +291,7 @@ QWidget* ZenoPropPanel::initControl(CONTROL_DATA ctrlData)
 		{
 			QPushButton* pBtn = new QPushButton("Edit Heatmap");
 			pBtn->setObjectName(name);
-			pBtn->setProperty("cssClass", "grayButton");
+			pBtn->setProperty("cssClass", "proppanel");
 			connect(pBtn, &QPushButton::clicked, this, ctrlData.fSlot);
 			return pBtn;
 		}
@@ -287,7 +299,7 @@ QWidget* ZenoPropPanel::initControl(CONTROL_DATA ctrlData)
 		{
 			QPushButton* pBtn = new QPushButton("Edit Curve");
 			pBtn->setObjectName(name);
-			pBtn->setProperty("cssClass", "grayButton");
+			pBtn->setProperty("cssClass", "proppanel");
 			connect(pBtn, &QPushButton::clicked, this, ctrlData.fSlot);
 			return pBtn;
 		}
@@ -349,6 +361,7 @@ void ZenoPropPanel::onParamsCheckUpdate()
         ctrl.name = name;
         ctrl.typeDesc = param.typeDesc;
         ctrl.value = param.value;
+		ctrl.bkFrame = (CONTROL_INT == ctrl.ctrl || CONTROL_FLOAT == ctrl.ctrl || CONTROL_VEC == ctrl.ctrl); //temp: todo: kframe.
 		if (ctrl.ctrl == CONTROL_COLOR)
 		{
 			ctrl.fSlot = [this]() {
@@ -409,7 +422,7 @@ void ZenoPropPanel::onInputEditFinish()
 	{
 		info.newValue = pComboBox->currentText();
 	}
-	else if (ZCheckBoxBar* pCheckbox = qobject_cast<ZCheckBoxBar*>(pSender))
+	else if (QCheckBox* pCheckbox = qobject_cast<QCheckBox*>(pSender))
 	{
 		info.newValue = pCheckbox->checkState() == Qt::Checked;
 	}
@@ -452,7 +465,7 @@ void ZenoPropPanel::onParamEditFinish()
     {
         textValue = pTextEdit->toPlainText();
     }
-	else if (ZCheckBoxBar *pCheckbox = qobject_cast<ZCheckBoxBar *>(pSender))
+	else if (QCheckBox *pCheckbox = qobject_cast<QCheckBox*>(pSender))
 	{
 		PARAM_UPDATE_INFO info;
 		info.oldValue = model->getParamValue(nodeid, paramName, m_subgIdx);
@@ -636,7 +649,7 @@ bool ZenoPropPanel::isMatchControl(PARAM_CONTROL ctrl, QWidget* pControl)
     case CONTROL_FLOAT:	return qobject_cast<ZLineEdit*>(pControl) != nullptr;
 	case CONTROL_READPATH:
 	case CONTROL_WRITEPATH: return qobject_cast<ZLineEdit*>(pControl) != nullptr;
-	case CONTROL_BOOL:	return qobject_cast<ZCheckBoxBar*>(pControl) != nullptr;
+	case CONTROL_BOOL:	return qobject_cast<QCheckBox*>(pControl) != nullptr;
 	case CONTROL_VEC:	return qobject_cast<ZVecEditor*>(pControl) != nullptr;
 	case CONTROL_ENUM:	return qobject_cast<QComboBox*>(pControl) != nullptr;
 	case CONTROL_MULTILINE_STRING:	return qobject_cast<ZTextEdit*>(pControl) != nullptr;
@@ -668,8 +681,9 @@ void ZenoPropPanel::updateControlValue(QWidget* pControl, PARAM_CONTROL ctrl, co
 		}
 		case CONTROL_BOOL:
 		{
-			ZCheckBoxBar* pCheckBox = qobject_cast<ZCheckBoxBar*>(pControl);
-			pCheckBox->setCheckState(value.toBool() ? Qt::Checked : Qt::Unchecked);
+			QCheckBox* pCheckBox = qobject_cast<QCheckBox*>(pControl);
+			if (pCheckBox)
+				pCheckBox->setCheckState(value.toBool() ? Qt::Checked : Qt::Unchecked);
 			break;
 		}
 		case CONTROL_VEC:

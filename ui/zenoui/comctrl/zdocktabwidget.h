@@ -10,9 +10,6 @@ public:
     explicit ZDockTabWidget(QWidget* parent = nullptr);
     ~ZDockTabWidget();
 
-    int addTab(QWidget* widget, const QString&);
-    int addTab(QWidget* widget, const QIcon& icon, const QString& label);
-
 protected:
     void paintEvent(QPaintEvent* e) override;
     void enterEvent(QEvent* event) override;
@@ -24,12 +21,10 @@ protected:
 
 signals:
     void addClicked();
+    void layoutBtnClicked();
 
 private:
     void initStyleSheet();
-    QRect buttonRect();
-
-    bool m_bHovered;
 };
 
 #endif

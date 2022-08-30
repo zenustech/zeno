@@ -18,6 +18,7 @@ class ZenoPropPanel : public QWidget
         PARAM_CONTROL ctrl;
         QVariant value;
         QString typeDesc;
+        bool bkFrame;
         std::function<void()> fSlot;
     };
 

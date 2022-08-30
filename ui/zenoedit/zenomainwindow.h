@@ -3,10 +3,7 @@
 
 #include <unordered_set>
 #include <QtWidgets>
-#include "dock/zenodockwidget.h"
-
-class ZenoDockWidget;
-class ZenoGraphsEditor;
+#include "dock/ztabdockwidget.h"
 
 class ZenoMainWindow : public QMainWindow
 {
@@ -14,7 +11,6 @@ class ZenoMainWindow : public QMainWindow
 public:
     ZenoMainWindow(QWidget* parent = nullptr, Qt::WindowFlags flags = Qt::WindowFlags());
     ~ZenoMainWindow();
-    ZenoGraphsEditor* editor() const { return m_pEditor; }
     bool inDlgEventLoop() const;
     void setInDlgEventLoop(bool bOn);
 
@@ -48,22 +44,11 @@ private:
     void initDocks();
     void verticalLayout();
     void onlyEditorLayout();
-    void writeHoudiniStyleLayout();
-    void writeSettings2();
-    void readHoudiniStyleLayout();
-    void readSettings2();
     void adjustDockSize();
     void recordRecentFile(const QString& filePath);
     QString getOpenFileByDialog();
     QString uniqueDockObjName(DOCK_TYPE type);
 
-    ZenoDockWidget *m_viewDock;
-    ZenoDockWidget *m_editor;
-    ZenoDockWidget *m_data;
-    ZenoDockWidget *m_parameter;
-    ZenoDockWidget *m_logger;
-
-    ZenoGraphsEditor* m_pEditor;
     bool m_bInDlgEventloop;
 };
 

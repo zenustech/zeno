@@ -5,6 +5,7 @@
 #include "launch/serialize.h"
 #include "model/graphsmodel.h"
 #include "nodesview/zenographseditor.h"
+#include "dock/ztabdockwidget.h"
 #include "panel/zenodatapanel.h"
 #include "panel/zenoproppanel.h"
 #include "panel/zenospreadsheet.h"
@@ -29,10 +30,7 @@
 
 ZenoMainWindow::ZenoMainWindow(QWidget *parent, Qt::WindowFlags flags)
     : QMainWindow(parent, flags)
-    , m_pEditor(nullptr)
-    , m_viewDock(nullptr)
     , m_bInDlgEventloop(false)
-    , m_logger(nullptr)
 {
     init();
     setContextMenuPolicy(Qt::NoContextMenu);
@@ -53,8 +51,6 @@ void ZenoMainWindow::init()
 {
     initMenu();
     initDocks();
-    verticalLayout();
-    //onlyEditorLayout();
 
     QPalette pal = palette();
     pal.setColor(QPalette::Window, QColor(11, 11, 11));
@@ -272,51 +268,34 @@ void ZenoMainWindow::initMenu() {
     setMenuBar(pMenuBar);
 }
 
-void ZenoMainWindow::initDocks() {
-    QWidget *p = takeCentralWidget();
-    if (p)
-        delete p;
+void ZenoMainWindow::initDocks()
+{
+    //setDockNestingEnabled(true);
 
-    setDockNestingEnabled(true);
+    ZTabDockWidget* viewDock = new ZTabDockWidget(this);
+    viewDock->setCurrentWidget(PANEL_VIEW);
 
-    m_viewDock = new ZenoDockWidget("view", this);
-    m_viewDock->setObjectName(uniqueDockObjName(DOCK_VIEW));
-    m_viewDock->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetFloatable);
-    DisplayWidget *view = new DisplayWidget(this);
-    m_viewDock->setWidget(DOCK_VIEW, view);
+    ZTabDockWidget* paramDock = new ZTabDockWidget(this);
+    paramDock->setCurrentWidget(PANEL_NODE_PARAMS);
 
-    m_parameter = new ZenoDockWidget(this);
-    m_parameter->setObjectName(uniqueDockObjName(DOCK_NODE_PARAMS));
-    m_parameter->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetFloatable);
-    //QWidget* titleWidget = new QWidget(this);
-    //m_parameter->setTitleBarWidget(titleWidget);
-    m_parameter->setWidget(DOCK_NODE_PARAMS, new ZenoPropPanel);
+    ZTabDockWidget* editorDock = new ZTabDockWidget(this);
+    editorDock->setCurrentWidget(PANEL_EDITOR);
 
-    m_editor = new ZenoDockWidget("", this);
-    m_editor->setObjectName(uniqueDockObjName(DOCK_EDITOR));
-    m_editor->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetFloatable);
-    m_editor->setWidget(DOCK_EDITOR, new ZenoGraphsEditor(this));
+    ZTabDockWidget* logDock = new ZTabDockWidget(this);
+    logDock->setCurrentWidget(PANEL_LOG);
 
-    m_logger = new ZenoDockWidget("logger", this);
-    m_logger->setObjectName(uniqueDockObjName(DOCK_LOG));
-    m_logger->setObjectName(QString::fromUtf8("dock_logger"));
-    m_logger->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetFloatable);
-    m_logger->setWidget(DOCK_LOG, new ZlogPanel);
-
-    auto docks = findChildren<ZenoDockWidget *>(QString(), Qt::FindDirectChildrenOnly);
-    for (ZenoDockWidget *pDock : docks)
-    {
-        connect(pDock, SIGNAL(maximizeTriggered()), this, SLOT(onMaximumTriggered()));
-        connect(pDock, SIGNAL(splitRequest(bool)), this, SLOT(onSplitDock(bool)));
-    }
+    addDockWidget(Qt::TopDockWidgetArea, viewDock);
+    splitDockWidget(viewDock, editorDock, Qt::Vertical);
+    splitDockWidget(editorDock, paramDock, Qt::Horizontal);
+    splitDockWidget(viewDock, logDock, Qt::Horizontal);
 }
+
 
 void ZenoMainWindow::onMaximumTriggered()
 {
-    ZenoDockWidget *pDockWidget = qobject_cast<ZenoDockWidget *>(sender());
-
-    auto docks = findChildren<ZenoDockWidget *>(QString(), Qt::FindDirectChildrenOnly);
-    for (ZenoDockWidget *pDock : docks)
+    ZTabDockWidget* pDockWidget = qobject_cast<ZTabDockWidget*>(sender());
+    auto docks = findChildren<ZTabDockWidget*>(QString(), Qt::FindDirectChildrenOnly);
+    for (ZTabDockWidget* pDock : docks)
     {
         if (pDock != pDockWidget)
         {
@@ -327,39 +306,28 @@ void ZenoMainWindow::onMaximumTriggered()
 
 void ZenoMainWindow::updateViewport(const QString& action)
 {
-    //todo: temp code for single view.
-    DisplayWidget* view = qobject_cast<DisplayWidget*>(m_viewDock->widget());
-    if (view)
-        view->updateFrame(action);
+    auto docks2 = findChildren<ZTabDockWidget*>(QString(), Qt::FindDirectChildrenOnly);
+    for (auto dock : docks2)
+    {
+        dock->onUpdateViewport(action);
+    }
 }
 
 void ZenoMainWindow::onRunFinished()
 {
-    DisplayWidget* view = qobject_cast<DisplayWidget*>(m_viewDock->widget());
-    if (view)
-        view->onFinished();
+    auto docks2 = findChildren<ZTabDockWidget*>(QString(), Qt::FindDirectChildrenOnly);
+    for (auto dock : docks2)
+    {
+        dock->onRunFinished();
+    }
 }
 
 void ZenoMainWindow::onSplitDock(bool bHorzontal)
 {
-    ZenoDockWidget *pDockWidget = qobject_cast<ZenoDockWidget *>(sender());
-    ZenoDockWidget *pDock = new ZenoDockWidget("", this);
+    ZTabDockWidget*pDockWidget = qobject_cast<ZTabDockWidget*>(sender());
+    ZTabDockWidget*pDock = new ZTabDockWidget(this);
     pDock->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetFloatable);
-
-    if (ZenoGraphsEditor *pEditor = qobject_cast<ZenoGraphsEditor *>(pDockWidget->widget()))
-    {
-        ZenoGraphsEditor *pEditor2 = new ZenoGraphsEditor(this);
-        pDock->setWidget(DOCK_EDITOR, pEditor2);
-        //only one model.
-        pEditor2->resetModel(zenoApp->graphsManagment()->currentModel());
-        splitDockWidget(pDockWidget, pDock, bHorzontal ? Qt::Horizontal : Qt::Vertical);
-    }
-    else
-    {
-        splitDockWidget(pDockWidget, pDock, bHorzontal ? Qt::Horizontal : Qt::Vertical);
-    }
-    connect(pDock, SIGNAL(maximizeTriggered()), this, SLOT(onMaximumTriggered()));
-    connect(pDock, SIGNAL(splitRequest(bool)), this, SLOT(onSplitDock(bool)));
+    splitDockWidget(pDockWidget, pDock, bHorzontal ? Qt::Horizontal : Qt::Vertical);
 }
 
 void ZenoMainWindow::openFileDialog() {
@@ -377,21 +345,21 @@ void ZenoMainWindow::onNewFile() {
     zenoApp->graphsManagment()->newFile();
 }
 
-void ZenoMainWindow::resizeEvent(QResizeEvent *event) {
+void ZenoMainWindow::resizeEvent(QResizeEvent *event)
+{
     QMainWindow::resizeEvent(event);
-
-    adjustDockSize();
+    //adjustDockSize();
 }
 
 void ZenoMainWindow::adjustDockSize() {
     //temp: different layout
-    float height = size().height();
-    int dockHeightA = 0.50 * height;
-    int dockHeightB = 0.50 * height;
+    //float height = size().height();
+    //int dockHeightA = 0.50 * height;
+    //int dockHeightB = 0.50 * height;
 
-    QList<QDockWidget *> docks = {m_viewDock, m_editor};
-    QList<int> dockSizes = {dockHeightA, dockHeightB};
-    resizeDocks(docks, dockSizes, Qt::Vertical);
+    //QList<QDockWidget *> docks = {m_viewDock, m_editor};
+    //QList<int> dockSizes = {dockHeightA, dockHeightB};
+    //resizeDocks(docks, dockSizes, Qt::Vertical);
 }
 
 void ZenoMainWindow::importGraph() {
@@ -628,8 +596,6 @@ void ZenoMainWindow::onFeedBack()
 void ZenoMainWindow::clearErrorMark()
 {
     //clear all error mark at every scene.
-    auto docks = findChildren<ZenoDockWidget*>(QString(), Qt::FindDirectChildrenOnly);
-
     IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
     if (!pModel) {
         return;
@@ -668,10 +634,10 @@ QString ZenoMainWindow::getOpenFileByDialog() {
 
 void ZenoMainWindow::verticalLayout()
 {
-    addDockWidget(Qt::TopDockWidgetArea, m_viewDock);
-    splitDockWidget(m_viewDock, m_editor, Qt::Vertical);
-    splitDockWidget(m_editor, m_parameter, Qt::Horizontal);
-    splitDockWidget(m_viewDock, m_logger, Qt::Horizontal);
+    //addDockWidget(Qt::TopDockWidgetArea, m_viewDock);
+    //splitDockWidget(m_viewDock, m_editor, Qt::Vertical);
+    //splitDockWidget(m_editor, m_parameter, Qt::Horizontal);
+    //splitDockWidget(m_viewDock, m_logger, Qt::Horizontal);
 }
 
 void ZenoMainWindow::onlyEditorLayout()
@@ -689,8 +655,8 @@ void ZenoMainWindow::onlyEditorLayout()
 
 void ZenoMainWindow::onNodesSelected(const QModelIndex &subgIdx, const QModelIndexList &nodes, bool select) {
     //dispatch to all property panel.
-    auto docks = findChildren<ZenoDockWidget *>(QString(), Qt::FindDirectChildrenOnly);
-    for (ZenoDockWidget *dock : docks) {
+    auto docks2 = findChildren<ZTabDockWidget*>(QString(), Qt::FindDirectChildrenOnly);
+    for (ZTabDockWidget* dock : docks2) {
         dock->onNodesSelected(subgIdx, nodes, select);
     }
 }

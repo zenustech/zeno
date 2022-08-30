@@ -915,6 +915,11 @@ ZenoMinStatusBtnItem::ZenoMinStatusBtnItem(const StatusComponent& statusComp, QG
         ":/icons/VIEW_light.svg",
         ZenoStyle::dpiScaledSize(QSize(50, 42)),
         this);
+
+    //m_once->setFlag(QGraphicsItem::ItemIgnoresTransformations);
+    //m_mute->setFlag(QGraphicsItem::ItemIgnoresTransformations);
+    //m_view->setFlag(QGraphicsItem::ItemIgnoresTransformations);
+
     m_minMute->setCheckable(true);
     m_minView->setCheckable(true);
     m_minOnce->setCheckable(true);

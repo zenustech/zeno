@@ -1,37 +1,37 @@
-#ifndef __ZENO_DOCKWIDGET_H__
-#define __ZENO_DOCKWIDGET_H__
+#ifndef __ZTAB_DOCKWIDGET_H__
+#define __ZTAB_DOCKWIDGET_H__
 
 #include <unordered_set>
 #include <QtWidgets>
+#include "zenodockwidget.h"
 
 class ZenoMainWindow;
-class ZDockTabWidget;
 
-enum DOCK_TYPE
+class ZDockTabWidget;   //may confuse with ZTabDockWidget...
+
+enum PANEL_TYPE
 {
-    DOCK_EMPTY,
-	DOCK_VIEW,
-	DOCK_EDITOR,
-	DOCK_NODE_PARAMS,
-	DOCK_NODE_DATA,
-    DOCK_LOG,
+    PANEL_EMPTY,
+    PANEL_VIEW,
+    PANEL_EDITOR,
+    PANEL_NODE_PARAMS,
+    PANEL_NODE_DATA,
+    PANEL_LOG,
 };
 
-class ZenoDockWidget : public QDockWidget
+class ZTabDockWidget : public QDockWidget
 {
     Q_OBJECT
     typedef QDockWidget _base;
-
 public:
-    explicit ZenoDockWidget(const QString &title, QWidget *parent = nullptr,
-                         Qt::WindowFlags flags = Qt::WindowFlags());
-    explicit ZenoDockWidget(QWidget *parent = nullptr, Qt::WindowFlags flags = Qt::WindowFlags());
-    ~ZenoDockWidget();
+    explicit ZTabDockWidget(ZenoMainWindow* parent, Qt::WindowFlags flags = Qt::WindowFlags());
+    ~ZTabDockWidget();
 
-    void setWidget(DOCK_TYPE m_type, QWidget* widget);
+    void setCurrentWidget(PANEL_TYPE type);
     void onNodesSelected(const QModelIndex& subgIdx, const QModelIndexList& nodes, bool select);
     void onPrimitiveSelected(const std::unordered_set<std::string>& primids);
-    DOCK_TYPE type() const;
+    void onUpdateViewport(const QString& action);
+    void onRunFinished();
 
 protected:
     void paintEvent(QPaintEvent* event) override;
@@ -41,7 +41,6 @@ signals:
     void maximizeTriggered();
     void floatTriggered();
     void splitRequest(bool bHorzonal);
-    void dockSwitchClicked(DOCK_TYPE);
     void nodesSelected(const QModelIndex& subgIdx, const QModelIndexList& nodes);
 
 private slots:
@@ -53,13 +52,15 @@ private slots:
 private:
     void init(ZenoMainWindow* pMainWin);
     bool isTopLevelWin();
+    QWidget* createTabWidget(PANEL_TYPE type);
+    QString type2Title(PANEL_TYPE type);
+    PANEL_TYPE title2Type(const QString& title);
 
-    DOCK_TYPE m_type;
     Qt::WindowFlags m_oldFlags;
     Qt::WindowFlags m_newFlags;
     ZDockTabWidget* m_tabWidget;
+    QLabel* m_plblName;
+    QLineEdit* m_pLineEdit;
 };
-
-
 
 #endif

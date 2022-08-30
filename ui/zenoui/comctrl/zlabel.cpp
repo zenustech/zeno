@@ -24,7 +24,19 @@ void ZIconLabel::setIcons(const QSize& sz, const QString& iconEnable, const QStr
         m_bToggleable = true;
 
     setPixmap(m_icon.pixmap(m_iconSz, QIcon::Normal));
-    //setFixedSize(m_iconSz);
+    setFixedSize(m_iconSz);
+}
+
+void ZIconLabel::setIcons(const QString& iconIdle, const QString& iconLight)
+{
+    QIcon ic(iconIdle);
+    QPixmap px(iconIdle);
+    m_iconSz = px.size();
+    m_icon.addFile(iconIdle, QSize(), QIcon::Normal, QIcon::Off);
+    m_icon.addFile(iconLight, QSize(), QIcon::Active, QIcon::Off);
+    m_bToggleable = false;
+    setPixmap(m_icon.pixmap(m_iconSz, QIcon::Normal));
+    setFixedSize(m_iconSz);
 }
 
 void ZIconLabel::toggle(bool bToggle)

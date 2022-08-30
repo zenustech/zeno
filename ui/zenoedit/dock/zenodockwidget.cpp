@@ -16,6 +16,11 @@
 #include <zenoui/comctrl/zlabel.h>
 #include <zenoui/style/zenostyle.h>
 #include <zenoui/comctrl/zdocktabwidget.h>
+#include "nodesview/zenographseditor.h"
+#include "../panel/zenodatapanel.h"
+#include "panel/zenoproppanel.h"
+#include "../panel/zenospreadsheet.h"
+#include "../panel/zlogpanel.h"
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -63,6 +68,8 @@ void ZenoDockWidget::setWidget(DOCK_TYPE type, QWidget* widget)
         m_tabWidget->addTab(pWidget2, "Parameter");
         _base::setWidget(m_tabWidget);
         setTitleBarWidget(new QWidget(this));
+
+        connect(m_tabWidget, SIGNAL(addClicked()), this, SLOT(onAddTabClicked()));
 
         return;
     }
@@ -232,12 +239,52 @@ void ZenoDockWidget::init(ZenoMainWindow* pMainWin)
     connect(this, SIGNAL(dockSwitchClicked(DOCK_TYPE)), pMainWin, SLOT(onDockSwitched(DOCK_TYPE)));
 }
 
+void ZenoDockWidget::onAddTabClicked()
+{
+    QMenu* menu = new QMenu(this);
+    QFont font("HarmonyOS Sans", 12);
+    font.setBold(false);
+    menu->setFont(font);
+
+    static QList<QString> panels = { tr("Parameter"), tr("View"), tr("Editor"), tr("Data"), tr("Logger") };
+    for (QString name : panels)
+    {
+        QAction* pAction = new QAction(name);
+        connect(pAction, &QAction::triggered, this, [=]() {
+            if (name == tr("Parameter")) {
+                int idx = m_tabWidget->addTab(new ZenoPropPanel, name);
+                m_tabWidget->setCurrentIndex(idx);
+            }
+            else if (name == tr("View")) {
+                int idx = m_tabWidget->addTab(new DisplayWidget, name);
+                m_tabWidget->setCurrentIndex(idx);
+            }
+            else if (name == tr("Editor")) {
+                ZenoMainWindow* pMainWin = zenoApp->getMainWindow();
+                int idx = m_tabWidget->addTab(new ZenoGraphsEditor(pMainWin), name);
+                m_tabWidget->setCurrentIndex(idx);
+            }
+            else if (name == tr("Data")) {
+                int idx = m_tabWidget->addTab(new ZenoSpreadsheet, name);
+                m_tabWidget->setCurrentIndex(idx);
+            }
+            else if (name == tr("Logger")) {
+                int idx = m_tabWidget->addTab(new ZlogPanel, name);
+                m_tabWidget->setCurrentIndex(idx);
+            }
+        });
+        menu->addAction(pAction);
+    }
+    menu->exec(QCursor::pos());
+}
+
 void ZenoDockWidget::onDockOptionsClicked()
 {
     QMenu* menu = new QMenu(this);
     QFont font("HarmonyOS Sans", 12);
     font.setBold(false);
     menu->setFont(font);
+
     QAction* pSplitHor = new QAction("Split Left/Right");
     QAction* pSplitVer = new QAction("Split Top/Bottom");
     QAction* pMaximize = new QAction("Maximize");

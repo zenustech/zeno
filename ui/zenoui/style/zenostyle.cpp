@@ -73,41 +73,48 @@ void ZenoStyle::drawPrimitive(PrimitiveElement pe, const QStyleOption* option, Q
             bool mouseOver = option->state & QStyle::State_MouseOver;
             QRect buttonRc;
             int btnW = 0, btnH = 0;
-            if (bHor) {
-                painter->fillRect(r, QColor("#1B1D21"));
-                btnW = dpiScaled(30), btnH = dpiScaled(3);
-            }
-            else {
-                painter->fillRect(r, QColor("#1B1D21"));
-                btnW = dpiScaled(3), btnH = dpiScaled(30);
-            }
+            
+            //if (bHor) {
+            //    painter->fillRect(r, QColor("#1B1D21"));
+            //    btnW = dpiScaled(30), btnH = dpiScaled(3);
+            //}
+            //else {
+            //    painter->fillRect(r, QColor("#1B1D21"));
+            //    btnW = dpiScaled(3), btnH = dpiScaled(30);
+            //}
 
             buttonRc = QRect(r.center() - QPoint(btnW / 2, btnH / 2), QSize(btnW, btnH));
-            painter->fillRect(buttonRc, QColor("#2E3138"));
+            //painter->fillRect(buttonRc, QColor("#191D21"));
 
             if (mouseOver) {
-                painter->fillRect(r, QColor(242, 103, 34, 64));
+                painter->setPen(QColor("#4B9EF4"));
+                painter->fillRect(r, QColor("#4B9EF4"));
+            }
+            else {
+                painter->setPen(QColor("#121416"));
+                painter->fillRect(r, QColor("#191D21"));
             }
 
+            painter->drawRect(r.adjusted(0,0,-1,-1));
             return;
         }
         case PE_FrameTabBarBase:
         {
-            if (qobject_cast<ZDockTabWidget*>(w->parentWidget()))
-            {
-                if (const QStyleOptionTabBarBase* tbb
-                    = qstyleoption_cast<const QStyleOptionTabBarBase*>(option))
-                {
-                    switch (tbb->shape) {
-                    case QTabBar::RoundedNorth:
-                        painter->save();
-                        painter->setPen(QPen(tbb->palette.dark(), 0));
-                        painter->drawLine(tbb->rect.bottomLeft(), tbb->rect.bottomRight());
-                        painter->restore();
-                        return;
-                    }
-                }
-            }
+            //if (qobject_cast<ZDockTabWidget*>(w->parentWidget()))
+            //{
+            //    if (const QStyleOptionTabBarBase* tbb
+            //        = qstyleoption_cast<const QStyleOptionTabBarBase*>(option))
+            //    {
+            //        switch (tbb->shape) {
+            //        case QTabBar::RoundedNorth:
+            //            painter->save();
+            //            painter->setPen(QPen(QColor(24,29,33), /*tbb->palette.dark(),*/ 0));
+            //            painter->drawLine(tbb->rect.bottomLeft(), tbb->rect.bottomRight());
+            //            painter->restore();
+            //            return;
+            //        }
+            //    }
+            //}
             return base::drawPrimitive(pe, option, painter, w);
         }
     }
@@ -285,7 +292,7 @@ int ZenoStyle::pixelMetric(PixelMetric m, const QStyleOption* option, const QWid
         *  actually, when there is not specific style selector, the qt will choose base style for the result.*/
         case QStyle::PM_DockWidgetHandleExtent:
         case QStyle::PM_DockWidgetSeparatorExtent: {
-            return dpiScaled(7);
+            return dpiScaled(4);
         }
     }
     return base::pixelMetric(m, option, widget);
@@ -300,24 +307,6 @@ QRect ZenoStyle::subElementRect(SubElement element, const QStyleOption* option, 
             QRect rc = base::subElementRect(element, option, widget);
             rc.adjust(10, 0, 10, 0);
             return rc;
-        }
-        case SE_TabWidgetRightCorner:
-        {
-            if (qobject_cast<ZDockTabWidget*>(const_cast<QWidget*>(widget)))
-            {
-                if (const QStyleOptionTabWidgetFrame* twf = qstyleoption_cast<const QStyleOptionTabWidgetFrame*>(option)) {
-                    QRect paneRect = subElementRect(SE_TabWidgetTabPane, twf, widget);
-                    switch (twf->shape)
-                    {
-                        case QTabBar::RoundedNorth:
-                        {
-                            int w = paneRect.y();
-                            QRect rc = QRect(QPoint(paneRect.width() - w, 0), QSize(w, w));
-                            return rc;
-                        }
-                    }
-                }
-            }
         }
     }
     return base::subElementRect(element, option, widget);

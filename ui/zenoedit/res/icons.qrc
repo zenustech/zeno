@@ -2,6 +2,8 @@
 <qresource>
     <file>icons/add.svg</file>
     <file>icons/add-on.svg</file>
+    <file>icons/addpanel.svg</file>
+    <file>icons/addpanel-on.svg</file>
 	<file>icons/body_bg.svg</file>
 	<file>icons/collaspe.svg</file>
 	<file>icons/collaspe-hovered.svg</file>
@@ -140,5 +142,21 @@
     <file>icons/ic_parameter_checkbox_check.svg</file>
     <file>icons/ic_parameter_checkbox_uncheck.svg</file>
     <file>icons/ic_parameter_checkbox_check_on.svg</file>
+    <file>icons/layout.svg</file>
+    <file>icons/layout-on.svg</file>
+    <file>icons/nodeclr-blue.svg</file>
+    <file>icons/nodeclr-empty.svg</file>
+    <file>icons/nodeclr-red.svg</file>
+    <file>icons/nodeclr-yellow.svg</file>
+    <file>icons/settings.svg</file>
+    <file>icons/settings-on.svg</file>
+    <file>icons/fixpanel.svg</file>
+    <file>icons/fixpanel-on.svg</file>
+    <file>icons/wiki.svg</file>
+    <file>icons/wiki-on.svg</file>
+    <file>icons/checkbox-idle.svg</file>
+    <file>icons/checkbox-light.svg</file>
+    <file>icons/file-loader.svg</file>
+    <file>icons/file-loader-on.svg</file>
 </qresource>
 </RCC>
