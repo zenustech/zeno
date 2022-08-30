@@ -92,7 +92,6 @@ cd vcpkg
 .\vcpkg install lapack:x64-windows
 .\vcpkg install openblas:x64-windows
 .\vcpkg install hdf5:x64-windows
-.\vcpkg install sfml:x64-windows
 ```
 
 > Notice that you must install the `English Pack` for VS2019 for vcpkg to work. This can be done by clicking the `Language` panel in the VS2019 installer. (JOKE: the maintainer of vcpkg speaks Chinese too..)
@@ -152,7 +151,7 @@ source code of `FLIPtools` for the original graph file name.
 
 You may optionally enable the embedded Python interpreter extension for Zeno by specifying `-DZENO_WITH_python:BOOL=ON` in arguments.
 
-> Note that we already embed a modified version CPython (https://github.com/zenustech/python-cmake-buildsystem) in this repository, you don't need to pre-install Python in your system at all.
+> Note that we already embed a [modified version CPython](https://github.com/zenustech/python-cmake-buildsystem) in this repository (as a submodule), you don't need to pre-install Python in your system at all.
 
 > The default version is 3.9.10, you may specify e.g. `-DPYTHON_VERSION=3.9.9` for using different version.
 
