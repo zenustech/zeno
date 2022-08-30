@@ -573,123 +573,30 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
 
         if (transformer->isTransforming()) {
             if (m_boundRectStartPos != event->pos()) {
-                // todo create/modify transform primitive node
+                // create/modify transform primitive node
                 IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
                 for (const auto &obj_name : scene->selected) {
                     QString node_id(obj_name.substr(0, obj_name.find_first_of(':')).c_str());
                     auto search_result = pModel->search(node_id, SEARCH_NODEID);
-                    const auto subgraph_index = search_result[0].subgIdx;
+                    auto subgraph_index = search_result[0].subgIdx;
                     auto node_index = search_result[0].targetIdx;
                     auto inputs = node_index.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
-                    if (obj_name.find("TransformPrimitive") != std::string::npos &&
+                    if (node_id.contains("TransformPrimitive")  &&
                         inputs["translation"].linkIndice.empty() &&
                         inputs["eulerXYZ"].linkIndice.empty() &&
                         inputs["scaling"].linkIndice.empty()) {
-                        auto translate_old = inputs["translation"].info.defaultValue.value<UI_VECTYPE>();
-                        QVector<double> translate_new(translate_old);
-                        auto translate_offset = transformer->getTranslateVec();
-                        for (int i=0; i<3; i++) {
-                            translate_new[i] += translate_offset[i];
-                        }
-                        PARAM_UPDATE_INFO translate_info = {
-                            "translation",
-                            QVariant::fromValue(translate_old),
-                            QVariant::fromValue(translate_new)
-                        };
-                        pModel->updateSocketDefl(node_id, translate_info, subgraph_index, true);
-                        // update scaling
-                        auto scaling_old = inputs["scaling"].info.defaultValue.value<UI_VECTYPE>();
-                        QVector<double> scaling_new(scaling_old);
-                        auto scaling_offset = transformer->getScaleVec();
-                        for (int i=0; i<3; i++) {
-                            scaling_new[i] *= scaling_offset[i];
-                        }
-                        PARAM_UPDATE_INFO scaling_info = {
-                            "scaling",
-                            QVariant::fromValue(scaling_old),
-                            QVariant::fromValue(scaling_new)
-                        };
-                        pModel->updateSocketDefl(node_id, scaling_info, subgraph_index, true);
-                        // update rotate
-                        auto rotate_old = inputs["eulerXYZ"].info.defaultValue.value<UI_VECTYPE>();
-                        QVector<double> rotate_new(rotate_old);
-                        auto rotate_offset = transformer->getRotateEulerVec();
-                        for (int i=0; i<3; i++) {
-                            rotate_new[i] += rotate_offset[i];
-                        }
-                        PARAM_UPDATE_INFO rotate_info = {
-                            "eulerXYZ",
-                            QVariant::fromValue(rotate_old),
-                            QVariant::fromValue(rotate_new)
-                        };
-                        pModel->updateSocketDefl(node_id, rotate_info, subgraph_index, true);
+                        transformer->syncToTransformNode(node_id, pModel, node_index, subgraph_index);
                     }
                     else {
-                        auto pos = node_index.data(ROLE_OBJPOS).toPointF();
-                        pos.setX(pos.x() + 10);
-                        auto new_node_id = NodesMgr::createNewNode(pModel, subgraph_index, "TransformPrimitive", pos);
-                        EdgeInfo edge = {
-                            node_id,
-                            new_node_id,
-                            "prim",
-                            "prim"
-                        };
-                        pModel->addLink(edge, subgraph_index, false);
-
-                        auto translate_vec3 = transformer->getTranslateVec();
-                        QVector<double> translate = {
-                            translate_vec3[0],
-                            translate_vec3[1],
-                            translate_vec3[2]
-                        };
-                        PARAM_UPDATE_INFO translate_info = {
-                            "translation",
-                            QVariant::fromValue(QVector<double>{0, 0, 0}),
-                            QVariant::fromValue(translate)
-                        };
-                        pModel->updateSocketDefl(new_node_id, translate_info, subgraph_index, true);
-                        auto scaling_vec3 = transformer->getScaleVec();
-                        QVector<double> scaling = {
-                            scaling_vec3[0],
-                            scaling_vec3[1],
-                            scaling_vec3[2]
-                        };
-                        PARAM_UPDATE_INFO scaling_info = {
-                            "scaling",
-                            QVariant::fromValue(QVector<double>{1, 1, 1}),
-                            QVariant::fromValue(scaling)
-                        };
-                        pModel->updateSocketDefl(new_node_id, scaling_info, subgraph_index, true);
-                        auto rotate_vec3 = transformer->getRotateEulerVec();
-                        QVector<double> rotate = {
-                            rotate_vec3[0],
-                            rotate_vec3[1],
-                            rotate_vec3[2]
-                        };
-                        PARAM_UPDATE_INFO rotate_info = {
-                            "eulerXYZ",
-                            QVariant::fromValue(QVector<double>{0, 0, 0}),
-                            QVariant::fromValue(rotate)
-                        };
-                        pModel->updateSocketDefl(new_node_id, rotate_info, subgraph_index, true);
-
-                        int old_option = node_index.data(ROLE_OPTIONS).toInt();
-                        int new_option = old_option;
-                        new_option ^= OPT_VIEW;
-                        STATUS_UPDATE_INFO status_info = {
-                            old_option,
-                            new_option,
-                            ROLE_OPTIONS
-                        };
-                        pModel->updateNodeStatus(node_id, status_info, subgraph_index, true);
-
-                        old_option = 0;
-                        new_option = 0 | OPT_VIEW;
-                        status_info.oldValue = old_option;
-                        status_info.newValue = new_option;
-                        pModel->updateNodeStatus(new_node_id, status_info, subgraph_index, true);
+                        auto linked_transform_node_index =
+                            transformer->linkedToVisibleTransformNode(node_index, pModel).value<QModelIndex>();
+                        if (linked_transform_node_index.isValid()) {
+                            auto linked_transform_node_id = linked_transform_node_index.data(ROLE_OBJID).toString();
+                            transformer->syncToTransformNode(linked_transform_node_id, pModel, linked_transform_node_index, subgraph_index);
+                        }
+                        else
+                            transformer->createNewTransformNode(node_id, pModel, node_index, subgraph_index);
                     }
-
                 }
             }
             transformer->endTransform();
@@ -1195,6 +1102,8 @@ void DisplayWidget::onSliderValueChanged(int frame)
 void DisplayWidget::onRun()
 {
     m_mainWin->clearErrorMark();
+
+    Zenovis::GetInstance().getSession()->get_scene()->selected.clear();
 
     QPair<int, int> fromTo = m_timeline->fromTo();
     int beginFrame = fromTo.first;
