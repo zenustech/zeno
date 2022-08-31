@@ -25,6 +25,8 @@ struct PrimitiveLineSolidify : zeno::INode {
         auto radiusAttr = get_input<zeno::StringObject>("radiusAttr")->get();
         bool isTri = get_input2<bool>("isTri");
         bool sealEnd = get_input2<bool>("sealEnd");
+        bool closeRing = get_input2<bool>("closeRing");
+        if (closeRing) sealEnd = false;
 
         intptr_t n = prim->verts.size();
         if (n >= 2 && count >= 2) {
@@ -122,10 +124,10 @@ struct PrimitiveLineSolidify : zeno::INode {
 
                 if constexpr (isTri.value) {
                     if (sealEnd) prim->tris.reserve(n * count * 2);
-                    prim->tris.resize((n - 1) * count * 2);
+                    prim->tris.resize((n - !closeRing) * count * 2);
                 } else {
                     if (sealEnd) prim->tris.reserve(count * 2);
-                    prim->quads.resize((n - 1) * count);
+                    prim->quads.resize((n - !closeRing) * count);
                 }
 
 #pragma omp parallel for
@@ -153,6 +155,30 @@ struct PrimitiveLineSolidify : zeno::INode {
                         prim->quads[i * count + count-1] = {p1, p2, p3, p4};
                     }
                 }
+                if (closeRing) {
+                    for (int a = 0; a < count - 1; a++) {
+                        int p1 = n-1 + n * a;
+                        int p2 = n-1 + n * (a+1);
+                        int p3 = 0 + n * (a+1);
+                        int p4 = 0 + n * a;
+                        if constexpr (isTri.value) {
+                            prim->tris[((n-1) * count + a)*2] = {p1, p2, p3};
+                            prim->tris[((n-1) * count + a)*2+1] = {p1, p3, p4};
+                        } else {
+                            prim->quads[(n-1) * count + a] = {p1, p2, p3, p4};
+                        }
+                    }
+                    int p1 = n-1 + n * (count-1);
+                    int p2 = n-1 + n * 0;
+                    int p3 = 0 + n * 0;
+                    int p4 = 0 + n * (count-1);
+                    if constexpr (isTri.value) {
+                        prim->tris[((n-1) * count + count-1)*2] = {p1, p2, p3};
+                        prim->tris[((n-1) * count + count-1)*2+1] = {p1, p3, p4};
+                    } else {
+                        prim->quads[(n-1) * count + count-1] = {p1, p2, p3, p4};
+                    }
+                }
 
             });
             //TOCK(emitfaces);
@@ -161,7 +187,7 @@ struct PrimitiveLineSolidify : zeno::INode {
             if (sealEnd) {
                 for (int a = 0; a < count - 1; a++) {
                     prim->tris.emplace_back(count * n, n * a, n * (a+1));
-                    prim->tris.emplace_back(count *  1, n-1 + n * a, n-1 + n * (a+1));
+                    prim->tris.emplace_back(count * n + 1, n-1 + n * a, n-1 + n * (a+1));
                 }
                 prim->tris.emplace_back(count * n, n * (count-1), 0);
                 prim->tris.emplace_back(count * n + 1, n-1 + n * (count-1), n-1);
@@ -199,6 +225,7 @@ ZENDEFNODE(PrimitiveLineSolidify, {
     {"string", "radiusAttr", ""},
     {"bool", "isTri", "1"},
     {"bool", "sealEnd", "1"},
+    {"bool", "closeRing", "0"},
     {"bool", "lineSort", "1"},
     },
     {

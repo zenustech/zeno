@@ -160,7 +160,7 @@ ZExpandableSection* ZenoPropPanel::paramsBox(IGraphsModel* pModel, const QModelI
 				}
 				pLineEdit->setObjectName(paramName);
 				pLineEdit->setProperty("control", param.control);
-				connect(pLineEdit, &ZLineEdit::editingFinished, this, &ZenoPropPanel::onParamEditFinish);
+				connect(pLineEdit, &ZLineEdit::textChanged, this, &ZenoPropPanel::onParamEditFinish);
 
 				pLayout->addWidget(pLineEdit, r++, 1);
 				break;
@@ -235,7 +235,7 @@ ZExpandableSection* ZenoPropPanel::paramsBox(IGraphsModel* pModel, const QModelI
                 ZVecEditor* pVecEdit = new ZVecEditor(vec, bFloat, 3, "proppanel");
                 pVecEdit->setObjectName(paramName);
 				pVecEdit->setProperty("control", param.control);
-                connect(pVecEdit, &ZVecEditor::editingFinished, this, &ZenoPropPanel::onInputEditFinish);
+                connect(pVecEdit, &ZVecEditor::valueChanged, this, &ZenoPropPanel::onInputEditFinish);
 
                 pLayout->addWidget(pVecEdit, r++, 1);
                 break;
@@ -331,7 +331,7 @@ ZExpandableSection* ZenoPropPanel::inputsBox(IGraphsModel* pModel, const QModelI
 				}
 				pLineEdit->setObjectName(inputSock);
 				pLineEdit->setProperty("control", input.info.control);
-				connect(pLineEdit, &ZLineEdit::editingFinished, this, &ZenoPropPanel::onInputEditFinish);
+				connect(pLineEdit, &ZLineEdit::textChanged, this, &ZenoPropPanel::onInputEditFinish);
 
 				pLayout->addWidget(pLineEdit, r++, 1);
 				break;
@@ -363,7 +363,7 @@ ZExpandableSection* ZenoPropPanel::inputsBox(IGraphsModel* pModel, const QModelI
 
 				ZVecEditor* pVecEdit = new ZVecEditor(vec, bFloat, 3, "proppanel");
 				pVecEdit->setObjectName(inputSock);
-				connect(pVecEdit, &ZVecEditor::editingFinished, this, &ZenoPropPanel::onInputEditFinish);
+				connect(pVecEdit, &ZVecEditor::valueChanged, this, &ZenoPropPanel::onInputEditFinish);
 
 				pLayout->addWidget(pVecEdit, r++, 1);
 				break;
