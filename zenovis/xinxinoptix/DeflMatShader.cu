@@ -479,7 +479,7 @@ extern "C" __global__ void __closesthit__radiance()
     auto ior = mats.ior;
     auto thin = mats.thin;
     auto transmittanceColor = mats.sssColor;
-
+    auto sssColor = mats.sssParam;
     //discard fully opacity pixels
     prd->opacity = opacity;
 
@@ -535,6 +535,7 @@ extern "C" __global__ void __closesthit__radiance()
                 prd->seed,
                 basecolor,
                 transmittanceColor,
+                sssColor,
                 metallic,
                 subsurface,
                 specular,
@@ -573,7 +574,7 @@ extern "C" __global__ void __closesthit__radiance()
             reflectance = vec3(0.0f);
             flag = DisneyBSDF::scatterEvent;
         }
-    prd->isSS = isSS;
+    prd->isSS |= isSS;
     pdf = fPdf;
     if(isDiff || roughness>0.4){
         prd->diffDepth++;

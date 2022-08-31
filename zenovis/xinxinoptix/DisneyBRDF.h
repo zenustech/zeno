@@ -217,7 +217,7 @@ vec3 SampleGgxVndfAnisotropic(vec3 wo, float ax, float ay, float u1, float u2)
     float3 n = p1 * t1 + p2 * t2 + sqrt(max(0.0f, 1.0f - p1 * p1 - p2 * p2)) * v;
 
     // -- unstretch and normalize the normal
-    return normalize(vec3(ax * n.x, ay * n.z, n.y));
+    return normalize(vec3(ax * n.x, ay * n.z, max(0.0f,n.y)));
 
 
 }
