@@ -22,6 +22,29 @@
 #include <zeno/types/PrimitiveTools.h>
 namespace zenovis::optx {
 
+struct CppTimer {
+    void tick() {
+        struct timespec t;
+        std::timespec_get(&t, TIME_UTC);
+        last = t.tv_sec * 1e3 + t.tv_nsec * 1e-6;
+    }
+    void tock() {
+        struct timespec t;
+        std::timespec_get(&t, TIME_UTC);
+        cur = t.tv_sec * 1e3 + t.tv_nsec * 1e-6;
+    }
+    float elapsed() const noexcept {return cur-last;}
+    void tock(std::string_view tag) {
+        tock();
+        printf("%s: %f ms\n", tag.data(), elapsed());
+    }
+
+  private:
+    double last, cur;
+};
+
+static CppTimer timer, localTimer;
+
 struct GraphicsManager {
     Scene *scene;
 
@@ -499,11 +522,14 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
             xinxinoptix::optixupdatematerial(shaders, shader_tex_names);
 
             //zeno::log_debug("[zeno-optix] updating mesh");
+            // timer.tick();
             if(staticNeedUpdate)
                 xinxinoptix::UpdateStaticMesh(mtlidlut);
-            xinxinoptix::UpdateDynamicMesh(mtlidlut);
+            // timer.tock("done static mesh update");
+            // timer.tick();
+            xinxinoptix::UpdateDynamicMesh(mtlidlut, staticNeedUpdate);
+            // timer.tock("done dynamic mesh update");
             
-
             xinxinoptix::optixupdateend();
             
             

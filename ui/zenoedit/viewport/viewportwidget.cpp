@@ -158,20 +158,18 @@ void CameraControl::fakeWheelEvent(QWheelEvent* event)
     bool focalPlaneDistance_pressed = (event->modifiers() & Qt::ControlModifier) && (event->modifiers() & Qt::ShiftModifier);
     float delta = dy > 0? 1: -1;
     if (shift_pressed){
-        m_fov /= scale;
-        if(m_fov > 170){
-            m_fov = 170;
-        }
+        float temp = m_fov / scale;
+        m_fov = temp < 170 ? temp : 170;
+
     }
     else if (aperture_pressed) {
-        if (m_aperture < 0) {
-            m_aperture = 0;
-        }
-        m_aperture += delta * 0.01;
+        float temp = m_aperture += delta * 0.01;
+        m_aperture = temp >= 0 ? temp : 0;  
 
     }
     else if (focalPlaneDistance_pressed) {
-        m_focalPlaneDistance = m_focalPlaneDistance + delta*0.05 > 0.05 ? m_focalPlaneDistance + delta*0.05 : 0.05;
+        float temp = m_focalPlaneDistance + delta*0.05;
+        m_focalPlaneDistance = temp >= 0.05 ? temp : 0.05;
     }
     else {
         m_radius *= scale;

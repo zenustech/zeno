@@ -1113,7 +1113,7 @@ void UpdateStaticMesh(std::map<std::string, int> const &mtlidlut) {
 
     }
 }
-void UpdateDynamicMesh(std::map<std::string, int> const &mtlidlut) {
+void UpdateDynamicMesh(std::map<std::string, int> const &mtlidlut, bool staticNeedUpdate) {
     camera_changed = true;
     g_mtlidlut = mtlidlut;
     updatedrawobjects();
@@ -1195,12 +1195,17 @@ void UpdateDynamicMesh(std::map<std::string, int> const &mtlidlut) {
         state.d_nrm.resize(vertices_size_in_bytes, dynamic_vertices_size_in_bytes);
         state.d_tan.resize(vertices_size_in_bytes, dynamic_vertices_size_in_bytes);
         size_t reservedCap = state.d_vertices.capacity - vertices_size_in_bytes;
-        if (reservedCap) {
-            CUDA_CHECK(cudaMemset((char *)((CUdeviceptr &)state.d_vertices) + vertices_size_in_bytes, 0, reservedCap));
-            CUDA_CHECK(cudaMemset((char *)((CUdeviceptr &)state.d_clr) + vertices_size_in_bytes, 0, reservedCap));
-            CUDA_CHECK(cudaMemset((char *)((CUdeviceptr &)state.d_uv) + vertices_size_in_bytes, 0, reservedCap));
-            CUDA_CHECK(cudaMemset((char *)((CUdeviceptr &)state.d_nrm) + vertices_size_in_bytes, 0, reservedCap));
-            CUDA_CHECK(cudaMemset((char *)((CUdeviceptr &)state.d_tan) + vertices_size_in_bytes, 0, reservedCap));
+        if (reservedCap > 0) {
+            CUDA_CHECK(cudaMemset(reinterpret_cast<char *>((CUdeviceptr &)state.d_vertices) +
+                                      vertices_size_in_bytes, 0, reservedCap));
+            CUDA_CHECK(cudaMemset(reinterpret_cast<char *>((CUdeviceptr &)state.d_clr) +
+                                      vertices_size_in_bytes, 0, reservedCap));
+            CUDA_CHECK(cudaMemset(reinterpret_cast<char *>((CUdeviceptr &)state.d_uv) +
+                                      vertices_size_in_bytes, 0, reservedCap));
+            CUDA_CHECK(cudaMemset(reinterpret_cast<char *>((CUdeviceptr &)state.d_nrm) +
+                                      vertices_size_in_bytes, 0, reservedCap));
+            CUDA_CHECK(cudaMemset(reinterpret_cast<char *>((CUdeviceptr &)state.d_tan) +
+                                      vertices_size_in_bytes, 0, reservedCap));
         }
 #else
         CUDA_CHECK(cudaMalloc(reinterpret_cast<void **>(&state.d_vertices.reset()), vertices_size_in_bytes));
@@ -1210,16 +1215,28 @@ void UpdateDynamicMesh(std::map<std::string, int> const &mtlidlut) {
         CUDA_CHECK(cudaMalloc(reinterpret_cast<void **>(&state.d_tan.reset()), vertices_size_in_bytes));
 #endif
         updateRange();
-        CUDA_CHECK(cudaMemcpy(reinterpret_cast<void *>((CUdeviceptr &)state.d_vertices),
+        CUDA_CHECK(cudaMemcpy(reinterpret_cast<char *>((CUdeviceptr &)state.d_vertices) + offset,
                               (char *)g_vertices.data() + offset, numBytes, cudaMemcpyHostToDevice));
-        CUDA_CHECK(cudaMemcpy(reinterpret_cast<void *>((CUdeviceptr &)state.d_clr), (char *)g_clr.data() + offset,
+        CUDA_CHECK(cudaMemcpy(reinterpret_cast<char *>((CUdeviceptr &)state.d_clr) + offset, (char *)g_clr.data() + offset,
                               numBytes, cudaMemcpyHostToDevice));
-        CUDA_CHECK(cudaMemcpy(reinterpret_cast<void *>((CUdeviceptr &)state.d_uv), (char *)g_uv.data() + offset,
+        CUDA_CHECK(cudaMemcpy(reinterpret_cast<char *>((CUdeviceptr &)state.d_uv) + offset, (char *)g_uv.data() + offset,
                               numBytes, cudaMemcpyHostToDevice));
-        CUDA_CHECK(cudaMemcpy(reinterpret_cast<void *>((CUdeviceptr &)state.d_nrm), (char *)g_nrm.data() + offset,
+        CUDA_CHECK(cudaMemcpy(reinterpret_cast<char *>((CUdeviceptr &)state.d_nrm) + offset, (char *)g_nrm.data() + offset,
                               numBytes, cudaMemcpyHostToDevice));
-        CUDA_CHECK(cudaMemcpy(reinterpret_cast<void *>((CUdeviceptr &)state.d_tan), (char *)g_tan.data() + offset,
+        CUDA_CHECK(cudaMemcpy(reinterpret_cast<char *>((CUdeviceptr &)state.d_tan) + offset, (char *)g_tan.data() + offset,
                               numBytes, cudaMemcpyHostToDevice));
+        if (staticNeedUpdate && offset != 0) {
+            CUDA_CHECK(cudaMemcpy(reinterpret_cast<char *>((CUdeviceptr &)state.d_vertices),
+                                  (char *)g_vertices.data(), static_vertices_size_in_bytes, cudaMemcpyHostToDevice));
+            CUDA_CHECK(cudaMemcpy(reinterpret_cast<char *>((CUdeviceptr &)state.d_clr), (char *)g_clr.data(),
+                                  static_vertices_size_in_bytes, cudaMemcpyHostToDevice));
+            CUDA_CHECK(cudaMemcpy(reinterpret_cast<char *>((CUdeviceptr &)state.d_uv), (char *)g_uv.data(),
+                                  static_vertices_size_in_bytes, cudaMemcpyHostToDevice));
+            CUDA_CHECK(cudaMemcpy(reinterpret_cast<char *>((CUdeviceptr &)state.d_nrm), (char *)g_nrm.data(),
+                                  static_vertices_size_in_bytes, cudaMemcpyHostToDevice));
+            CUDA_CHECK(cudaMemcpy(reinterpret_cast<char *>((CUdeviceptr &)state.d_tan), (char *)g_tan.data(),
+                                  static_vertices_size_in_bytes, cudaMemcpyHostToDevice));
+        }
 
         const size_t mat_indices_size_in_bytes = g_mat_indices.size() * sizeof(uint32_t);
         const size_t light_mark_size_in_bytes = g_lightMark.size() * sizeof(unsigned short);

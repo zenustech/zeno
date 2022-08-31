@@ -72,7 +72,9 @@ MatInput const &attrs) {
     float mat_scatterDistance = 0.0;
     float mat_flatness = 0.0;
     float mat_thin = 0.0;
+    float mat_doubleSide= 0.0;
     vec3  mat_sssColor = vec3(0.0f,0.0f,0.0f);
+    vec3  mat_sssParam = vec3(0.0f,0.0f,0.0f);
     vec3  mat_normal = vec3(0.0f, 0.0f, 1.0f);
     vec3 mat_emission = vec3(0.0f, 0.0f,0.0f);
     //GENERATED_END_MARK
@@ -98,7 +100,9 @@ MatInput const &attrs) {
     mats.scatterDistance = mat_scatterDistance;
     mats.flatness = mat_flatness;
     mats.thin = mat_thin;
+    mats.doubleSide = mat_doubleSide;
     mats.sssColor = mat_sssColor;
+    mats.sssParam = mat_sssParam;
     return mats;
 }
 __forceinline__ __device__ float3 interp(float2 barys, float3 a, float3 b, float3 c)
@@ -181,7 +185,7 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     float3 tan2 = make_float3(rt_data->tan[ vert_idx_offset+2 ] );
     
     N_0 = normalize(interp(barys, n0, n1, n2));
-    float3 N    = faceforward( N_0, -ray_dir, N_0 );
+    float3 N = faceforward( N_0, -ray_dir, N_0 );
 
     attrs.pos = vec3(P.x, P.y, P.z);
     attrs.nrm = N;
@@ -250,6 +254,8 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     auto scatterDistance = mats.scatterDistance;
     auto ior = mats.ior;
     auto thin = mats.thin;
+    auto doubleSide = mats.doubleSide;
+    auto sssParam = mats.sssParam;
     unsigned short isLight = rt_data->lightMark[inst_idx * 1024 + prim_idx];
 
     // Stochastic alpha test to get an alpha blend effect.
@@ -273,8 +279,9 @@ extern "C" __global__ void __anyhit__shadow_cutout()
                 prd->shadowAttanuation = vec3(0.0f);
                 optixTerminateRay();
             }
-                prd->shadowAttanuation = vec3(0,0,0);
-                optixTerminateRay();
+            prd->shadowAttanuation = vec3(0,0,0);
+            optixTerminateRay();
+            
             if(specTrans > 0.0f){
                 if(rnd(prd->seed)<1-specTrans)
                 {
@@ -386,7 +393,7 @@ extern "C" __global__ void __closesthit__radiance()
     float3 tan2 = make_float3(rt_data->tan[ vert_idx_offset+2 ] );
     
     N_0 = normalize(interp(barys, n0, n1, n2));
-    float3 N    = faceforward( N_0, -ray_dir, N_0 );
+    float3 N = N_0;//faceforward( N_0, -ray_dir, N_0 );
     P = interp(barys, v0, v1, v2);
     attrs.pos = vec3(P.x, P.y, P.z);
     attrs.nrm = N;
@@ -427,9 +434,14 @@ extern "C" __global__ void __closesthit__radiance()
                                 zenotex29, 
                                 zenotex30, 
                                 zenotex31,attrs);
+
+    if(mats.doubleSide>0.5||mats.thin>0.5)
+        N = faceforward( N_0, -ray_dir, N_0 );
+    attrs.nrm = N;
     //end of material computation
     //mats.metallic = clamp(mats.metallic,0.01, 0.99);
     mats.roughness = clamp(mats.roughness, 0.01,0.99);
+    
     if(length(attrs.tang)>0)
     {
         vec3 b = cross(attrs.tang, attrs.nrm);
@@ -442,6 +454,16 @@ extern "C" __global__ void __closesthit__radiance()
     auto basecolor = mats.basecolor;
     auto metallic = mats.metallic;
     auto roughness = mats.roughness;
+    if(prd->diffDepth>=1)
+        roughness = clamp(roughness, 0.1,0.99);
+    if(prd->diffDepth>=2)
+        roughness = clamp(roughness, 0.3,0.99);
+    if(prd->diffDepth>=3)
+        roughness = clamp(roughness, 0.5,0.99);
+    if(prd->diffDepth>=1&&prd->depth>=2)
+        roughness = clamp(roughness, 0.2,0.99);
+    if(prd->isSS == true)
+        roughness = clamp(roughness, 0.99,0.99);
     auto subsurface = mats.subsurface;
     auto specular = mats.specular;
     auto specularTint = mats.specularTint;
@@ -457,7 +479,7 @@ extern "C" __global__ void __closesthit__radiance()
     auto ior = mats.ior;
     auto thin = mats.thin;
     auto transmittanceColor = mats.sssColor;
-
+    auto sssColor = mats.sssParam;
     //discard fully opacity pixels
     prd->opacity = opacity;
 
@@ -507,11 +529,13 @@ extern "C" __global__ void __closesthit__radiance()
     DisneyBSDF::PhaseFunctions phaseFuncion;
     vec3 extinction;
     vec3 reflectance = vec3(0.0f);
-
+    bool isDiff = false;
+    bool isSS = false;
     while(DisneyBSDF::SampleDisney(
                 prd->seed,
                 basecolor,
                 transmittanceColor,
+                sssColor,
                 metallic,
                 subsurface,
                 specular,
@@ -538,15 +562,23 @@ extern "C" __global__ void __closesthit__radiance()
                 fPdf,
                 flag,
                 prd->medium,
-                extinction
+                extinction,
+                isDiff,
+                isSS
                 )  == false)
         {
+            isSS = false;
+            isDiff = false;
             rPdf = 0.0f;
             fPdf = 0.0f;
             reflectance = vec3(0.0f);
             flag = DisneyBSDF::scatterEvent;
         }
+    prd->isSS |= isSS;
     pdf = fPdf;
+    if(isDiff || roughness>0.4){
+        prd->diffDepth++;
+    }
 
     if(opacity<=0.99)
     {
@@ -567,24 +599,43 @@ extern "C" __global__ void __closesthit__radiance()
         }
 
     }
+    bool inToOut = false;
+    bool outToIn = false;
+
     if(flag == DisneyBSDF::transmissionEvent){
         prd->is_inside = !prd->is_inside;
-        if( prd->is_inside && prd->medium == DisneyBSDF::PhaseFunctions::isotropic){
-            //prd->attenuation *= transmittanceColor;
-            prd->extinction = extinction;
-            prd->scatterDistance = scatterDistance;
-            prd->transColor = transmittanceColor;
-            float tmpPDF = 1.0f;
-            prd->maxDistance = DisneyBSDF::SampleDistance(prd->seed,prd->scatterDistance,tmpPDF);
-            //prd->maxDistance = scatterDistance;
-            prd->scatterPDF = tmpPDF;
+        if(prd->is_inside){
+            outToIn = true;
+            inToOut = false;
+            if(prd->medium == DisneyBSDF::PhaseFunctions::isotropic){
+                //prd->attenuation *= transmittanceColor;
+                prd->extinction = extinction;
+                prd->scatterDistance = scatterDistance;
+                prd->transColor = transmittanceColor;
+                float tmpPDF = 1.0f;
+                prd->maxDistance = DisneyBSDF::SampleDistance(prd->seed,prd->scatterDistance,tmpPDF);
+                //prd->maxDistance = scatterDistance;
+                prd->scatterPDF = tmpPDF;
+            }
         }
-        if(!prd->is_inside){
+        else{
+            outToIn = false;
+            inToOut = true;
+            prd->attenuation2 *= DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
             prd->attenuation *= DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
             prd->maxDistance = 1e16f;
             prd->medium = DisneyBSDF::PhaseFunctions::vacuum;
             prd->scatterPDF = 1.0;
         }
+    }else{
+	    if(prd->medium == DisneyBSDF::PhaseFunctions::isotropic){
+                prd->attenuation2 *= DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
+                prd->attenuation *= DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
+                float tmpPDF = 1.0f;
+                prd->maxDistance = DisneyBSDF::SampleDistance(prd->seed,prd->scatterDistance,tmpPDF);
+                prd->scatterPDF = tmpPDF;
+
+	    }
     }
 
 
@@ -617,7 +668,7 @@ extern "C" __global__ void __closesthit__radiance()
             // Calculate properties of light sample (for area based pdf)
             float Ldist = length(light_pos - P);
             float3 L = normalize(light_pos - P);
-            float nDl = clamp(dot(N, L), 0.0f, 1.0f);
+            float nDl = 1.0f;//clamp(dot(N, L), 0.0f, 1.0f);
             float LnDl = clamp(-dot(light.normal, L), 0.0f, 1.0f);
             float A = length(cross(params.lights[lidx].v1, params.lights[lidx].v2));
             sum += length(light.emission)  * nDl * LnDl * A / (M_PIf * Ldist * Ldist);
@@ -627,22 +678,23 @@ extern "C" __global__ void __closesthit__radiance()
     float ppl = 0;
     for(int lidx=0;lidx<params.num_lights && computed==false;lidx++) {
         ParallelogramLight light = params.lights[lidx];
-        const float z1 = rnd(prd->seed);
-        const float z2 = rnd(prd->seed);
+        float2 z = sobolRnd(prd->seed);
+        const float z1 = z.x;
+        const float z2 = z.y;
         float3 light_tpos = light.corner + light.v1 * 0.5 + light.v2 * 0.5;
         float3 light_pos = light.corner + light.v1 * z1 + light.v2 * z2;
 
         // Calculate properties of light sample (for area based pdf)
         float tLdist = length(light_tpos - P);
         float3 tL = normalize(light_tpos - P);
-        float tnDl = clamp(dot(N, tL), 0.0f, 1.0f);
+        float tnDl = 1.0f;//clamp(dot(N, tL), 0.0f, 1.0f);
         float tLnDl = clamp(-dot(light.normal, tL), 0.0f, 1.0f);
         float tA = length(cross(params.lights[lidx].v1, params.lights[lidx].v2));
         ppl+= length(light.emission) * tnDl * tLnDl * tA / (M_PIf * tLdist * tLdist)/sum;
         if(ppl>pl) {
             float Ldist = length(light_pos - P);
             float3 L = normalize(light_pos - P);
-            float nDl = clamp(dot(N, L), 0.0f, 1.0f);
+            float nDl = 1.0f;//clamp(dot(N, L), 0.0f, 1.0f);
             float LnDl = clamp(-dot(light.normal, L), 0.0f, 1.0f);
             float A = length(cross(params.lights[lidx].v1, params.lights[lidx].v2));
             float weight = 0.0f;
@@ -660,15 +712,20 @@ extern "C" __global__ void __closesthit__radiance()
                     weight = sum * nDl/tnDl * LnDl/tLnDl * (tLdist * tLdist) / (Ldist * Ldist) / length(light.emission);
                 }
             }
-
+            
+            if(prd->diffDepth>=1&&prd->depth>=2)
+                roughness = clamp(roughness, 0.2,0.99);
             float3 lbrdf = DisneyBSDF::EvaluateDisney(basecolor, metallic, subsurface, specular, roughness,
                                                       specularTint, anisotropic, sheen, sheenTint, clearcoat,
                                                       clearcoatGloss, specTrans, scatterDistance, ior, flatness, L,
-                                                      -normalize(inDir), T, B, N, thin > 0.5f, false, ffPdf, rrPdf);
-            prd->radiance += light.emission * light_attenuation * weight * lbrdf + float3(mats.emission);
+                                                      -normalize(inDir), T, B, N, thin > 0.5f, flag == DisneyBSDF::transmissionEvent ? inToOut : prd->is_inside, ffPdf, rrPdf,dot(N, L));
+
+            prd->radiance += light.emission * light_attenuation * weight * lbrdf;
             computed = true;
         }
+
     }
+    prd->radiance +=  float3(mats.emission);
 }
 
 extern "C" __global__ void __closesthit__occlusion()

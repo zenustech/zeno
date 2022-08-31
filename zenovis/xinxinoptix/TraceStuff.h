@@ -51,6 +51,8 @@ struct RadiancePRD
     float        scatterPDF;
     float        maxDistance;
     int          depth;
+    int          diffDepth;
+    bool         isSS;
     
 };
 
