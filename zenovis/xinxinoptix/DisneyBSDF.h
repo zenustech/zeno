@@ -851,7 +851,7 @@ namespace DisneyBSDF{
             pLobe = pSpecTrans;
         }else {
             isDiff = true;
-            success = SampleDisneyDiffuse(seed, baseColor, transmiianceColor, scatterDistance, sheen, sheenTint, roughness, flatness, subsurface, thin, wo, T, B, N, wi, fPdf, rPdf, reflectance, flag, phaseFuncion, extinction,is_inside, isSS);
+            success = SampleDisneyDiffuse(seed, baseColor, transmiianceColor, sssColor, scatterDistance, sheen, sheenTint, roughness, flatness, subsurface, thin, wo, T, B, N, wi, fPdf, rPdf, reflectance, flag, phaseFuncion, extinction,is_inside, isSS);
             pLobe = pDiffuse;
         }
         //reflectance = clamp(reflectance, vec3(0,0,0), vec3(1,1,1));
