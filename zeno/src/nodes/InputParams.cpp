@@ -2,13 +2,12 @@
 #include <zeno/types/DictObject.h>
 #include <zeno/types/NumericObject.h>
 #include <filesystem>
-#include "zeno/utils/log.h"
 #include "zeno/types/ListObject.h"
 #include "zeno/utils/string.h"
+#include "zeno/extra/assetDir.h"
 #include <cstdio>
 #include <fstream>
 #include <set>
-
 
 namespace zeno {
 namespace {
@@ -110,6 +109,10 @@ struct ParamFileParser : zeno::INode {
         auto formatList = get_input<zeno::ListObject>("formatList");
         auto params = std::make_shared<zeno::DictObject>();
         auto path = get_input2<std::string>("configFilePath");
+        std::string configFilePath = zeno::getConfigVariable("configFilePath");
+        if (!configFilePath.empty()) {
+            path = configFilePath;
+        }
         std::set<std::string> saved_names;
         if (std::filesystem::exists(path)) {
             auto is = std::ifstream(path);
