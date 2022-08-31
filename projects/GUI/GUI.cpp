@@ -83,7 +83,7 @@ struct ZGL_VboFromBuff : INode {
         CHECK_GL(glBindBuffer(GL_ARRAY_BUFFER, vbo->handle()));
         CHECK_GL(glBufferData(GL_ARRAY_BUFFER, arr.size() * sizeof(arr[0]), arr.data(), GL_STATIC_DRAW));
         CHECK_GL(glEnableVertexAttribArray(0));
-        CHECK_GL(glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, reinterpret_cast<void *>(static_cast<uintptr_t>(0))));
+        CHECK_GL(glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void *)0));
         CHECK_GL(glBindBuffer(GL_ARRAY_BUFFER, 0));
 
         set_output("vbo", std::move(vbo));
@@ -183,7 +183,9 @@ struct ZGL_Main : INode {
                                               resx, resy, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN);
         SDL_GL_CreateContext(window);
         SDL_GL_SetSwapInterval(1);
-        gladLoadGL();
+        if (gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress) < 0) {
+            throw makeError("failed to initialize glad from SDL OpenGL context");
+        }
         MethodCaller(callbacks, "on_init", {}).call();
 
         bool quit = false;
@@ -202,7 +204,7 @@ struct ZGL_Main : INode {
             SDL_GL_SwapWindow(window);
             float dt = MethodCaller(callbacks, "calc_dt", {}).get2<float>("ret", 1.f / 60.f);
             if (dt > 0)
-                SDL_Delay(static_cast<unsigned int>(dt * 1000));
+                SDL_Delay((unsigned int)(dt * 1000));
         }
 
         MethodCaller(callbacks, "on_exit", {}).call();

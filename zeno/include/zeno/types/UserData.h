@@ -51,12 +51,24 @@ struct UserData {
     }
 
     template <class T>
+    [[deprecated("use get2<T>(name)")]]
     T getLiterial(std::string const &name) const {
+        return get2<T>(name);
+    }
+
+    template <class T>
+    [[deprecated("use get2<T>(name, value)")]]
+    T getLiterial(std::string const &name, T defl) const {
+        return get2<T>(name, std::move(defl));
+    }
+
+    template <class T>
+    T get2(std::string const &name) const {
         return objectToLiterial<T>(get(name));
     }
 
     template <class T>
-    T getLiterial(std::string const &name, T defl) const {
+    T get2(std::string const &name, T defl) const {
         return has(name) ? getLiterial<T>(name) : defl;
     }
 
@@ -65,7 +77,13 @@ struct UserData {
     }
 
     template <class T>
+    [[deprecated("use set2(name, value)")]]
     void setLiterial(std::string const &name, T &&value) {
+        return set2(name, std::forward<T>(value));
+    }
+
+    template <class T>
+    void set2(std::string const &name, T &&value) {
         m_data[name] = objectFromLiterial(std::forward<T>(value));
     }
 

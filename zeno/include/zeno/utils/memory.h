@@ -64,4 +64,33 @@ template <class T>
 copiable_unique_ptr(std::unique_ptr<T> &&o) -> copiable_unique_ptr<T>;
 
 
+template <class T>
+struct stale_unique_ptr : public std::unique_ptr<T> {
+    explicit stale_unique_ptr(T *ptr) : std::unique_ptr<T>(ptr) {}
+
+    operator std::unique_ptr<T> const &() const & {
+        return *this;
+    }
+
+    stale_unique_ptr() = delete;
+    stale_unique_ptr(stale_unique_ptr const &) = delete;
+    stale_unique_ptr(stale_unique_ptr &&) = delete;
+    stale_unique_ptr &operator=(stale_unique_ptr const &) = delete;
+    stale_unique_ptr &operator=(stale_unique_ptr &&) = delete;
+
+    ~stale_unique_ptr() {
+        std::unique_ptr<T>::release();
+    }
+};
+
+template <class T>
+std::shared_ptr<T> make_stale_shared(T *ptr) {
+    return std::shared_ptr<T>(ptr, [] (T *) {});
+}
+
+template <class T>
+stale_unique_ptr<T> make_stale_unique(T *ptr) {
+    return stale_unique_ptr<T>(ptr);
+}
+
 }
