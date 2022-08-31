@@ -66,7 +66,7 @@ public:
     void removeNode(int row, bool enableTransaction = false);
     void removeNodeByDescName(const QString& descName);
 
-    void updateParam(const QString& nodeid, const QString& paramName, const QVariant& var);
+    void updateParam(const QString& nodeid, const QString& paramName, const QVariant& var, QString* newType = nullptr);
     void updateParamNotDesc(const QString& nodeid, const QString& paramName, const QVariant& var);
     QVariant getParamValue(const QString& nodeid, const QString& paramName);
 

@@ -220,6 +220,7 @@ ZenoParamPathEdit::ZenoParamPathEdit(const QString& path, PARAM_CONTROL ctrl, Li
     QGraphicsLinearLayout *pLayout = new QGraphicsLinearLayout(Qt::Horizontal);
     m_pLineEdit = new ZenoParamLineEdit(path, ctrl, param);
     pLayout->addItem(m_pLineEdit);
+    pLayout->setContentsMargins(0, 0, 0, 0);
 
     ImageElement elem;
     elem.image = ":/icons/ic_openfile.svg";
@@ -284,20 +285,37 @@ void ZenoParamCheckBox::setCheckState(Qt::CheckState state)
 ZenoVecEditWidget::ZenoVecEditWidget(const UI_VECTYPE& vec, bool bFloat, LineEditParam param, QGraphicsScene* pScene, QGraphicsItem* parent)
     : ZenoParamWidget(parent)
     , m_bFloatVec(bFloat)
+    , m_param(param)
 {
+    initUI(vec, bFloat, pScene);
+}
+
+void ZenoVecEditWidget::initUI(const UI_VECTYPE& vec, bool bFloat, QGraphicsScene* pScene)
+{
+    for (int i = 0; i < m_editors.size(); i++)
+    {
+        delete m_editors[i];
+    }
+    m_editors.clear();
+
     QGraphicsLinearLayout* pLayout = new QGraphicsLinearLayout(Qt::Horizontal);
     pLayout->setContentsMargins(0, 0, 0, 0);
     pLayout->setSpacing(6);
     for (int i = 0; i < vec.size(); i++)
     {
         const QString& numText = QString::number(vec[i]);
-        ZenoParamLineEdit* pLineEdit = new ZenoParamLineEdit(numText, CONTROL_FLOAT, param);
+        ZenoParamLineEdit* pLineEdit = new ZenoParamLineEdit(numText, CONTROL_FLOAT, m_param);
         pLineEdit->setNumSlider(pScene, UiHelper::getSlideStep("", bFloat ? CONTROL_FLOAT : CONTROL_INT));
         pLayout->addItem(pLineEdit);
         m_editors.append(pLineEdit);
         connect(pLineEdit, SIGNAL(editingFinished()), this, SIGNAL(editingFinished()));
     }
     setLayout(pLayout);
+}
+
+bool ZenoVecEditWidget::isFloatType() const
+{
+    return m_bFloatVec;
 }
 
 UI_VECTYPE ZenoVecEditWidget::vec() const
@@ -317,12 +335,18 @@ UI_VECTYPE ZenoVecEditWidget::vec() const
     return vec;
 }
 
-void ZenoVecEditWidget::setVec(const UI_VECTYPE& vec)
+void ZenoVecEditWidget::setVec(const UI_VECTYPE& vec, bool bFloat, QGraphicsScene* pScene)
 {
-    Q_ASSERT(vec.size() == m_editors.size());
-    for (int i = 0; i < vec.size(); i++)
+    if (bFloat != m_bFloatVec || vec.size() != m_editors.size())
     {
-        m_editors[i]->setText(QString::number(vec[i]));
+        initUI(vec, bFloat, pScene);
+    }
+    else
+    {
+        for (int i = 0; i < vec.size(); i++)
+        {
+            m_editors[i]->setText(QString::number(vec[i]));
+        }
     }
 }
 

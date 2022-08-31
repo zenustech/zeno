@@ -365,20 +365,20 @@ NODE_DESCS GraphsModel::getCoreDescs()
 
 void GraphsModel::initDescriptors()
 {
-    m_nodesDesc = getCoreDescs();
-
-    //add Blackboard
-    //NODE_DESC desc;
-    //desc.categories.push_back("layout");
-    //m_nodesDesc.insert("Blackboard", desc);
-
-    m_nodesCate.clear();
+    m_nodesDesc = getCoreDescs();    m_nodesCate.clear();
     for (auto it = m_nodesDesc.constBegin(); it != m_nodesDesc.constEnd(); it++)
     {
         const QString& name = it.key();
         const NODE_DESC& desc = it.value();
         registerCate(desc);
     }
+
+    //add Blackboard
+    NODE_DESC desc;
+    desc.name = "Blackboard";
+    desc.categories.push_back("layout");
+    m_nodesDesc.insert(desc.name, desc);
+    registerCate(desc);
 }
 
 NODE_DESC GraphsModel::getSubgraphDesc(SubGraphModel* pModel)
@@ -1266,7 +1266,8 @@ QModelIndex GraphsModel::addLink(const EdgeInfo& info, const QModelIndex& subGpI
                 if (maxObjId == -1)
                     maxObjId = 0;
                 QString maxObjSock = QString("obj%1").arg(maxObjId);
-                if (info.inputSock == maxObjSock)
+                QString lastKey = inputs.lastKey();
+                if (info.inputSock == lastKey)
                 {
                     //add a new
                     const QString &newObjName = QString("obj%1").arg(maxObjId + 1);
@@ -1443,10 +1444,18 @@ void GraphsModel::updateParamInfo(const QString& id, PARAM_UPDATE_INFO info, con
                             updateInfo.newInfo.defaultValue = QVariant((int)0);
                         }
                     }
-                    else if (updateInfo.newInfo.type == "vec3f" ||
-                             updateInfo.newInfo.type == "vec3i")
+                    else if (updateInfo.newInfo.type.startsWith("vec"))
                     {
-                        updateInfo.newInfo.defaultValue = QVariant::fromValue(UI_VECTYPE(3, 0));
+                        int dim = 0;
+                        bool bFloat = false;
+                        if (UiHelper::parseVecType(updateInfo.newInfo.type, dim, bFloat))
+                        {
+                            updateInfo.newInfo.defaultValue = QVariant::fromValue(UI_VECTYPE(dim, 0));
+                        }
+                        else
+                        {
+                            updateInfo.newInfo.defaultValue = QVariant();
+                        }
                     }
                     else
                     {
@@ -1454,7 +1463,7 @@ void GraphsModel::updateParamInfo(const QString& id, PARAM_UPDATE_INFO info, con
                         updateInfo.newInfo.defaultValue = QVariant();
                     }
                     //update defl type and value on SubInput/SubOutput, when type changes.
-                    pGraph->updateParam(id, "defl", updateInfo.newInfo.defaultValue);
+                    pGraph->updateParam(id, "defl", updateInfo.newInfo.defaultValue, &updateInfo.newInfo.type);
 
                     updateInfo.oldInfo.control = UiHelper::getControlType(updateInfo.oldInfo.type);
                     updateInfo.newInfo.control = UiHelper::getControlType(updateInfo.newInfo.type);
@@ -1580,20 +1589,19 @@ bool GraphsModel::updateSocketNameNotDesc(const QString& id, SOCKET_UPDATE_INFO 
             INPUT_SOCKETS inputs = pSubg->data(idx, ROLE_INPUTS).value<INPUT_SOCKETS>();
             if (info.bInput && newSockName != oldSockName && inputs.find(newSockName) == inputs.end())
             {
-                INPUT_SOCKET& newInput = inputs[newSockName];
-                const INPUT_SOCKET& oldInput = inputs[oldSockName];
-                newInput = oldInput;
-                newInput.info.name = newSockName;
+                auto iter = inputs.find(oldSockName);
+                ZASSERT_EXIT(iter != inputs.end(), false);
+
+                iter->first = newSockName;
 
                 //update all link connect with oldInfo.
                 m_linkModel->blockSignals(true);
-                for (auto idx : oldInput.linkIndice)
+                for (auto idx : iter->second.linkIndice)
                 {
                     m_linkModel->setData(idx, newSockName, ROLE_INSOCK);
                 }
                 m_linkModel->blockSignals(false);
 
-                inputs.remove(oldSockName);
                 pSubg->setData(idx, QVariant::fromValue(inputs), ROLE_INPUTS);
                 ret = true;
             }

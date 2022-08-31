@@ -189,7 +189,7 @@ void ZenoSubGraphScene::onDataChanged(const QModelIndex& subGpIdx, const QModelI
     {
         ZASSERT_EXIT(m_nodes.find(id) != m_nodes.end());
         PARAM_INFO info = idx.data(ROLE_MODIFY_PARAM).value<PARAM_INFO>();
-        m_nodes[id]->onParamUpdated(info.name, info.value);
+        m_nodes[id]->onParamUpdated(this, info.name, info.value);
     }
     if (role == ROLE_OBJNAME)
     {
