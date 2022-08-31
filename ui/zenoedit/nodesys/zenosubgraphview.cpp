@@ -378,13 +378,13 @@ void _ZenoSubGraphView::drawGrid(QPainter* painter, const QRectF& rect)
 		innerLines.append(QLineF(rect.left(), y, rect.right(), y));
 	}
 
-	painter->fillRect(rect, QColor(30, 29, 33));
+	painter->fillRect(rect, QColor(24, 29, 33));
 
 	QPen pen;
 	pen.setColor(QColor(20, 20, 20));
 	pen.setWidthF(pen.widthF() / scale);
-	painter->setPen(pen);
-	painter->drawLines(innerLines.data(), innerLines.size());
+	//painter->setPen(pen);
+	//painter->drawLines(innerLines.data(), innerLines.size());
 }
 
 void _ZenoSubGraphView::drawBackground(QPainter* painter, const QRectF& rect)

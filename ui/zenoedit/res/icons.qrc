@@ -174,5 +174,7 @@
     <file>icons/subnet-mgr-on.svg</file>
     <file>icons/blackboard.svg</file>
     <file>icons/blackboard-on.svg</file>
+    <file>icons/subnet-main.svg</file>
+    <file>icons/subnet-general.svg</file>
 </qresource>
 </RCC>

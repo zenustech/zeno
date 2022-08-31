@@ -41,27 +41,17 @@ void ZenoGraphsEditor::initUI()
 	m_ui = new Ui::GraphsEditor;
 	m_ui->setupUi(this);
 
-    m_ui->subnetBtn->setIcons(QIcon(":/icons/ic_sidemenu_subnet.svg"), QIcon(":/icons/ic_sidemenu_subnet_on.svg"));
-    m_ui->treeviewBtn->setIcons(QIcon(":/icons/ic_sidemenu_tree.svg"), QIcon(":/icons/ic_sidemenu_tree_on.svg"));
-    m_ui->searchBtn->setIcons(QIcon(":/icons/ic_sidemenu_search.svg"), QIcon(":/icons/ic_sidemenu_search_on.svg"));
-
     int _margin = ZenoStyle::dpiScaled(10);
     QMargins margins(_margin, _margin, _margin, _margin);
     QSize szIcons = ZenoStyle::dpiScaledSize(QSize(20, 20));
 
-    m_ui->moreBtn->setIcons(szIcons, ":/icons/more.svg", ":/icons/more_on.svg");
-    m_ui->btnSearchOpt->setIcons(szIcons, ":/icons/more.svg", ":/icons/more_on.svg");
-
-    m_ui->subnetBtn->setSize(szIcons, margins);
-    m_ui->treeviewBtn->setSize(szIcons, margins);
-    m_ui->searchBtn->setSize(szIcons, margins);
-
-    //m_ui->stackedWidget->hide();
     m_ui->splitter->setStretchFactor(1, 5);
 
     m_ui->mainStackedWidget->setCurrentWidget(m_ui->welcomePage);
+    m_ui->stackedWidget->setCurrentIndex(0);
 
     m_ui->graphsViewTab->setFont(QFont("HarmonyOS Sans", 12));  //bug in qss font setting.
+    m_ui->graphsViewTab->tabBar()->setDrawBase(false);
     m_ui->searchEdit->setProperty("cssClass", "searchEditor");
 
     initRecentFiles();
@@ -91,10 +81,6 @@ void ZenoGraphsEditor::initSignals()
 	auto graphsMgr = zenoApp->graphsManagment();
 	connect(&*graphsMgr, SIGNAL(modelInited(IGraphsModel*)), this, SLOT(resetModel(IGraphsModel*)));
     connect(graphsMgr->logModel(), &QStandardItemModel::rowsInserted, this, &ZenoGraphsEditor::onLogInserted);
-
-    connect(m_ui->subnetBtn, &ZenoCheckButton::toggled, this, &ZenoGraphsEditor::sideButtonToggled);
-    connect(m_ui->treeviewBtn, &ZenoCheckButton::toggled, this, &ZenoGraphsEditor::sideButtonToggled);
-    connect(m_ui->searchBtn, &ZenoCheckButton::toggled, this, &ZenoGraphsEditor::sideButtonToggled);
 
     connect(m_selection, &QItemSelectionModel::selectionChanged, this, &ZenoGraphsEditor::onSideBtnToggleChanged);
     connect(m_selection, &QItemSelectionModel::currentChanged, this, &ZenoGraphsEditor::onCurrentChanged);
@@ -289,6 +275,7 @@ void ZenoGraphsEditor::sideButtonToggled(bool bToggled)
     QObject* pBtn = sender();
 
     QModelIndex idx;
+    /*
     if (pBtn == m_ui->subnetBtn)
     {
         idx = m_sideBarModel->match(m_sideBarModel->index(0, 0), Qt::UserRole + 1, Side_Subnet)[0];
@@ -301,6 +288,7 @@ void ZenoGraphsEditor::sideButtonToggled(bool bToggled)
     {
         idx = m_sideBarModel->match(m_sideBarModel->index(0, 0), Qt::UserRole + 1, Side_Search)[0];
     }
+    */
 
     if (bToggled)
         m_selection->setCurrentIndex(idx, QItemSelectionModel::SelectCurrent);
@@ -319,9 +307,11 @@ void ZenoGraphsEditor::onCurrentChanged(const QModelIndex& current, const QModel
         int sideBar = current.data(Qt::UserRole + 1).toInt();
 		switch (previous.data(Qt::UserRole + 1).toInt())
 		{
+        /*
 		case Side_Subnet: m_ui->subnetBtn->setChecked(false); break;
 		case Side_Tree: m_ui->treeviewBtn->setChecked(false); break;
 		case Side_Search: m_ui->searchBtn->setChecked(false); break;
+        */
 		}
 	}
 
@@ -333,19 +323,19 @@ void ZenoGraphsEditor::onCurrentChanged(const QModelIndex& current, const QModel
         {
             case Side_Subnet:
             {
-                m_ui->subnetBtn->setChecked(true);
+                //m_ui->subnetBtn->setChecked(true);
                 m_ui->stackedWidget->setCurrentWidget(m_ui->subnetPage);
                 break;
             }
             case Side_Tree:
             {
-                m_ui->treeviewBtn->setChecked(true);
+                //m_ui->treeviewBtn->setChecked(true);
                 m_ui->stackedWidget->setCurrentWidget(m_ui->treePage);
                 break;
             }
             case Side_Search:
             {
-                m_ui->searchBtn->setChecked(true);
+                //m_ui->searchBtn->setChecked(true);
                 m_ui->stackedWidget->setCurrentWidget(m_ui->searchPage);
                 break;
             }

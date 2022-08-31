@@ -66,10 +66,10 @@ void ZSubnetListItemDelegate::paint(QPainter* painter, const QStyleOptionViewIte
     int text_xmargin = 12;
 
     QColor bgColor, borderColor, textColor;
-    textColor = QColor(134, 130, 128);
+    textColor = QColor("#C3D2DF");
     if (opt.state & QStyle::State_Selected)
     {
-        bgColor = QColor(49, 49, 49);
+        bgColor = QColor(59, 64, 73);
         borderColor = QColor(27, 145, 225);
 
         painter->fillRect(rc, bgColor);
@@ -117,11 +117,11 @@ void ZSubnetListItemDelegate::initStyleOption(QStyleOptionViewItem* option, cons
 
 	if (option->text.compare("main", Qt::CaseInsensitive) == 0)
 	{
-		option->icon = QIcon(":/icons/home.svg");
+		option->icon = QIcon(":/icons/subnet-main.svg");
 	}
 	else
 	{
-        option->icon = QIcon(":/icons/subnet.svg");
+        option->icon = QIcon(":/icons/subnet-general.svg");
 	}
 }
 
