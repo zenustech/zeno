@@ -56,14 +56,14 @@ void ZSubnetListItemDelegate::paint(QPainter* painter, const QStyleOptionViewIte
     QRect rc = option.rect;
 
     //draw icon
-    int icon_xmargin = 20;
-    int icon_sz = 20;
+    int icon_xmargin = ZenoStyle::dpiScaled(20);
+    int icon_sz = rc.height() * 0.8;
     int icon_ymargin = (rc.height() - icon_sz) / 2;
-    int icon2text_xoffset = 12;
-    int button_rightmargin = 10;
-    int button_button = 12;
-    int text_yoffset = 12;
-    int text_xmargin = 12;
+    int icon2text_xoffset = ZenoStyle::dpiScaled(7);
+    int button_rightmargin = ZenoStyle::dpiScaled(10);
+    int button_button = ZenoStyle::dpiScaled(12);
+    int text_yoffset = ZenoStyle::dpiScaled(8);
+    int text_xmargin = ZenoStyle::dpiScaled(12);
 
     QColor bgColor, borderColor, textColor;
     textColor = QColor("#C3D2DF");
@@ -89,7 +89,7 @@ void ZSubnetListItemDelegate::paint(QPainter* painter, const QStyleOptionViewIte
     }
 
     //draw text
-    QFont font("HarmonyOS Sans", 11);
+    QFont font("Segoe UI", 11);
     font.setBold(false);
     QFontMetricsF fontMetrics(font);
     int w = fontMetrics.horizontalAdvance(opt.text);

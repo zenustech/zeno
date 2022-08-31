@@ -589,22 +589,23 @@ void ZenoMainWindow::setInDlgEventLoop(bool bOn) {
 
 TIMELINE_INFO ZenoMainWindow::timelineInfo()
 {
-    DisplayWidget* view = qobject_cast<DisplayWidget*>(m_viewDock->widget());
+    //todo: time panel.
+    //DisplayWidget* view = qobject_cast<DisplayWidget*>(m_viewDock->widget());
     TIMELINE_INFO info;
-    if (view)
-    {
-        info = view->timelineInfo();
-    }
+    //if (view)
+    //{
+    //    info = view->timelineInfo();
+    //}
     return info;
 }
 
 void ZenoMainWindow::setTimelineInfo(TIMELINE_INFO info)
 {
-    DisplayWidget* view = qobject_cast<DisplayWidget*>(m_viewDock->widget());
-    if (view)
-    {
-        view->setTimelineInfo(info);
-    }
+    //DisplayWidget* view = qobject_cast<DisplayWidget*>(m_viewDock->widget());
+    //if (view)
+    //{
+    //    view->setTimelineInfo(info);
+    //}
 }
 
 void ZenoMainWindow::onFeedBack()

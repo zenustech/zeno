@@ -44,14 +44,16 @@ void ZenoGraphsEditor::initUI()
     int _margin = ZenoStyle::dpiScaled(10);
     QMargins margins(_margin, _margin, _margin, _margin);
     QSize szIcons = ZenoStyle::dpiScaledSize(QSize(20, 20));
+    m_ui->moreBtn->setIcons(szIcons, ":/icons/more.svg", ":/icons/more_on.svg");
 
     m_ui->splitter->setStretchFactor(1, 5);
 
     m_ui->mainStackedWidget->setCurrentWidget(m_ui->welcomePage);
     m_ui->stackedWidget->setCurrentIndex(0);
 
-    m_ui->graphsViewTab->setFont(QFont("HarmonyOS Sans", 12));  //bug in qss font setting.
+    m_ui->graphsViewTab->setFont(QFont("Segoe UI", 12));  //bug in qss font setting.
     m_ui->graphsViewTab->tabBar()->setDrawBase(false);
+    m_ui->graphsViewTab->setIconSize(ZenoStyle::dpiScaledSize(QSize(20,20)));
     m_ui->searchEdit->setProperty("cssClass", "searchEditor");
 
     initRecentFiles();
@@ -384,6 +386,13 @@ void ZenoGraphsEditor::activateTab(const QString& subGraphName, const QString& p
 		pView->initScene(pScene);
 
 		idx = m_ui->graphsViewTab->addTab(pView, subGraphName);
+
+        QString tabIcon;
+        if (subGraphName.compare("main", Qt::CaseInsensitive) == 0)
+            tabIcon = ":/icons/subnet-main.svg";
+        else
+            tabIcon = ":/icons/subnet-general.svg";
+        m_ui->graphsViewTab->setTabIcon(idx, QIcon(tabIcon));
 
         connect(pView, &ZenoSubGraphView::zoomed, pScene, &ZenoSubGraphScene::onZoomed);
 

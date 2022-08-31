@@ -110,10 +110,10 @@
                <widget class="QLabel" name="label">
                 <property name="styleSheet">
                  <string notr="true">color: #737B85;
-font: 12pt 'Segoe UI';</string>
+font: 12pt 'Segoe UI Bold';</string>
                 </property>
                 <property name="text">
-                 <string>SUBNET</string>
+                 <string>Subnet</string>
                 </property>
                </widget>
               </item>
@@ -404,8 +404,7 @@ QTabBar::tab {
     background: #2D3239;
 	color:  #737B85;
 	border-right: 1px solid rgb(24, 29, 33);
-	font: 16px 'HarmonyOS Sans';
-	/*margin-right: 1px;*/
+	font: 12pt 'Segoe UI';
 }
 
 QTabBar::tab:first {
@@ -413,8 +412,7 @@ QTabBar::tab:first {
 }
 
 QTabBar::tab:top {
-	/*margin-right: 1px;*/
-    padding: 7px 16px 7px 16px;
+    padding: 4px 12px 4px 12px;
 }
 
 QTabBar::tab:top:first {
