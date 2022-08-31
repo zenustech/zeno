@@ -22,14 +22,12 @@ ZDockTabWidget::ZDockTabWidget(QWidget* parent)
     connect(pTabbar, SIGNAL(addBtnClicked()), this, SIGNAL(addClicked()));
     connect(pTabbar, SIGNAL(layoutBtnClicked()), this, SIGNAL(layoutBtnClicked()));
 
-    //ZIconToolButton* pMoreBtn = new ZIconToolButton(":/icons/layout.svg", ":/icons/layout-on.svg");
-    //setCornerWidget(pMoreBtn);
-    pal = tabBar()->palette();
-    pal.setBrush(QPalette::Dark, QColor(255,0,0));
-    tabBar()->setPalette(pal);
-
     setDocumentMode(true);
     setMouseTracking(true);
+
+    QFont font("Segoe UI Bold", 10);
+    tabBar()->setFont(font);
+    tabBar()->setDrawBase(false);
     tabBar()->setMouseTracking(true);
     tabBar()->installEventFilter(this);
 }
@@ -72,15 +70,9 @@ void ZDockTabWidget::initStyleSheet()
 {
     setStyleSheet("\
             QTabBar {\
-	            font-weight: bold;\
                 background-color: #22252C;\
                 border-bottom: 1px solid rgb(24, 29, 33);\
                 border-right: 0px;\
-            }\
-            \
-            QTabWidget::pane { /* The tab widget frame */\
-                border: 1px;\
-                background-color: rgb(255,255,255);\
             }\
             \
             QTabBar::tab {\
@@ -89,30 +81,15 @@ void ZDockTabWidget::initStyleSheet()
                 border-top: 0px solid rgb(24,29,33);\
                 border-right: 1px solid rgb(24, 29, 33);\
                 border-bottom: 1px solid rgb(24, 29, 33);\
-                font: 10pt 'Segoe UI Bold';\
-                /*margin-right: 1px;*/\
-            }\
-            \
-            QTabBar::tab:first {\
-                border-left: 0px solid rgb(24, 29, 33);\
             }\
             \
             QTabBar::tab:top {\
-                /*margin-right: 1px;*/\
                 padding: 2px 16px 3px 16px;\
             }\
-            \
-            QTabBar::tab:top:first {\
-                margin-left: 0px;\
-            }\
-            \
-            QTabBar::tab:!selected { font-weight: normal; }\
             \
             QTabBar::tab:selected {\
                 background: #2D3239;\
 	            color: #C3D2DF;\
-                border-right: 1px solid rgb(24, 29, 33);\
-                border-top: 0px solid rgb(24, 29, 33);\
                 border-bottom: 0px;\
             }\
             \

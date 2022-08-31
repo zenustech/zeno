@@ -13,6 +13,8 @@ ZAddTabBar::ZAddTabBar(QWidget* parent)
     m_pLayoutBtn = new ZIconLabel(this);
     m_pLayoutBtn->setIcons(":/icons/layout.svg", ":/icons/layout-on.svg");
 
+    setDrawBase(false);
+
     connect(m_pAddBtn, SIGNAL(clicked()), this, SIGNAL(addBtnClicked()));
     connect(m_pLayoutBtn, SIGNAL(clicked()), this, SIGNAL(layoutBtnClicked()));
 }

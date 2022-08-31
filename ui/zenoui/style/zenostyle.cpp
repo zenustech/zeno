@@ -98,25 +98,6 @@ void ZenoStyle::drawPrimitive(PrimitiveElement pe, const QStyleOption* option, Q
             painter->drawRect(r.adjusted(0,0,-1,-1));
             return;
         }
-        case PE_FrameTabBarBase:
-        {
-            //if (qobject_cast<ZDockTabWidget*>(w->parentWidget()))
-            //{
-            //    if (const QStyleOptionTabBarBase* tbb
-            //        = qstyleoption_cast<const QStyleOptionTabBarBase*>(option))
-            //    {
-            //        switch (tbb->shape) {
-            //        case QTabBar::RoundedNorth:
-            //            painter->save();
-            //            painter->setPen(QPen(QColor(24,29,33), /*tbb->palette.dark(),*/ 0));
-            //            painter->drawLine(tbb->rect.bottomLeft(), tbb->rect.bottomRight());
-            //            painter->restore();
-            //            return;
-            //        }
-            //    }
-            //}
-            return base::drawPrimitive(pe, option, painter, w);
-        }
     }
     return base::drawPrimitive(pe, option, painter, w);
 }
