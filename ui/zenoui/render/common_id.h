@@ -36,8 +36,8 @@ enum ZVALUE_ORDER
 	ZVALUE_GRID_BACKGROUND,
 	ZVALUE_GRID_SMALL,
 	ZVALUE_GRID_BIG,
-	ZVALUE_LINK = -8,	//numeric value influence the actual effect...
-	ZVALUE_BLACKBOARD,
+	ZVALUE_BLACKBOARD = -8,
+	ZVALUE_LINK,	//numeric value influence the actual effect...
 	ZVALUE_CORE_ITEM,
 	ZVALUE_LOCKED_BG,
 	ZVALUE_LOCKED_CP,

@@ -467,7 +467,7 @@ void ZsgReader::_parseInputs(const QString& id, const QString& nodeName, const N
             Q_ASSERT(false);
         }
     }
-    pAcceptor->endInputs();
+    pAcceptor->endInputs(id, nodeName);
 }
 
 void ZsgReader::_parseParams(const QString& id, const QString& nodeName, const rapidjson::Value& jsonParams, IAcceptor* pAcceptor)
@@ -480,6 +480,7 @@ void ZsgReader::_parseParams(const QString& id, const QString& nodeName, const r
             const rapidjson::Value& val = paramObj.value;
             pAcceptor->setParamValue(id, nodeName, name, val);
         }
+        pAcceptor->endParams(id, nodeName);
     } else {
         if (nodeName == "Blackboard" && jsonParams.IsArray())
         {

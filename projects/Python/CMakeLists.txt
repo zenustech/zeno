@@ -1,0 +1,32 @@
+if (NOT ZENO_BUILD_SHARED)
+    message(FATAL_ERROR "ZENO_BUILD_SHARED must be ON when ZENO_WITH_Python is ON! Please specify: -DZENO_BUILD_SHARED:BOOL=ON")
+endif()
+
+file(GLOB_RECURSE sources CONFIGURE_DEPENDS *.cpp *.h)
+target_sources(zeno PRIVATE ${sources})
+
+set(BUILD_LIBPYTHON_SHARED ON CACHE BOOL "ZENOCIHOUPYTHON" FORCE)
+if (NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/CPython/CMakeLists.txt)
+    message(FATAL_ERROR "CPython submodule not found! Please run: git submodule update --init --recursive")
+endif()
+add_subdirectory(CPython)
+
+target_link_libraries(zeno PRIVATE libpython3-shared)
+
+target_include_directories(zeno PRIVATE
+    ${CMAKE_CURRENT_BINARY_DIR}/Python-${PYTHON_VERSION}/Include   # Python.h (unix)
+    ${CMAKE_CURRENT_BINARY_DIR}/CPython/bin   # pyconfig.h (unix)
+    ${CMAKE_CURRENT_SOURCE_DIR}/Python-${PYTHON_VERSION}/Include   # Python.h (win)
+    ${CMAKE_CURRENT_SOURCE_DIR}/CPython/bin   # pyconfig.h (win)
+    )
+set(ZENO_PYTHON_LIB_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Lib)
+if (WIN32)
+    set(ZENO_PYTHON_DLL_FILE zeno.dll)
+elseif (APPLE)
+    set(ZENO_PYTHON_DLL_FILE libzeno.dylib)
+else()
+    set(ZENO_PYTHON_DLL_FILE libzeno.so)
+endif()
+configure_file(zeno_Python_config.h.in ${CMAKE_CURRENT_BINARY_DIR}/confinc/zeno_Python_config.h @ONLY)
+target_include_directories(zeno PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/confinc)
+zeno_add_asset_dir(${ZENO_PYTHON_LIB_DIR})

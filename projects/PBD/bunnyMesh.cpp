@@ -1,5 +1,4 @@
 #include <string>
-#include <iostream>
 #include <vector>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/zeno.h>

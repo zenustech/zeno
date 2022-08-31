@@ -52,7 +52,7 @@ namespace DisneyBSDF{
     vec3 CalculateExtinction(vec3 apparantColor, float scatterDistance)
     {
 
-        return 1.0f-apparantColor;
+        return -log(clamp(apparantColor, vec3(0.00001), vec3(0.99999)))/scatterDistance;
 
     }
 
@@ -238,7 +238,7 @@ namespace DisneyBSDF{
             color = baseColor;
 
         float c = (HoL * HoV) / (NoL * NoV);
-        float t = (1 / pow(dot(wm, wi) + ior * dot(wm, wo), 2.0f));
+        float t = (n2 / pow(dot(wm, wi) + ior * dot(wm, wo), 2.0f));
         //if(length(wm) < 1e-5){
         //    return color * (1.0f - F);
         //}
@@ -530,16 +530,19 @@ namespace DisneyBSDF{
         
     }
     static __inline__ __device__ 
-    bool Transmit(vec3 wm, vec3 wi, float n, vec3& wo)
+    bool Transmit(vec3 wm, vec3 wo, float n, vec3& wi)
     {
-        float c = dot(wi, wm);
-
+        float c = dot(wo, wm);
+        if(c < 0.0f) {
+            c = -c;
+            wm = -wm;
+        }
         float root = 1.0f - n * n * (1.0f - c * c);
         if(root <= 0){
             return false;
         }
 
-        wo = normalize((n * c -sqrt(root)) * wm - n * wi);
+        wi = normalize((n * c -sqrt(root)) * wm - n * wo);
         return true;
     }
 
@@ -592,7 +595,9 @@ namespace DisneyBSDF{
             VoH = -VoH;
         }
 
-        float relativeIOR = is_inside ?  ior : (1.0f / ior);
+        float ni = wo.z > 0.0f ? 1.0f : ior;
+        float nt = wo.z > 0.0f ? ior : 1.0f;
+        float relativeIOR = ni / nt;
 
         float F = BRDFBasics::fresnelDielectric(VoH, 1.0f, ior, is_inside);
 
@@ -660,6 +665,7 @@ namespace DisneyBSDF{
         unsigned int& seed,
         vec3 baseColor,
         vec3 transmittanceColor,
+        vec3 sssColor,
         float scatterDistance,
         float sheen,
         float sheenTint,
@@ -678,7 +684,8 @@ namespace DisneyBSDF{
         SurfaceEventFlags& flag,
         int& phaseFuncion,
         vec3& extinction,
-        bool is_inside
+        bool is_inside,
+        bool &isSS
 
             )
     {
@@ -707,14 +714,15 @@ namespace DisneyBSDF{
         if(rnd(seed) <= subsurface && subsurface > 0.001f){
             wi = -wi;
             pdf = subsurface;
-
+            isSS = true;
             if(thin){
                 color = sqrt(transmittanceColor);
             }else{
                 flag = transmissionEvent;
                 phaseFuncion = (!is_inside)  ? isotropic : vacuum;
-                extinction = CalculateExtinction(transmittanceColor, scatterDistance);
-                color = vec3(1.0f);
+                extinction = CalculateExtinction(sssColor, scatterDistance);
+                color = transmittanceColor;
+
             }
         }else{
             pdf = 1.0 - subsurface;
@@ -724,7 +732,7 @@ namespace DisneyBSDF{
         vec3 sheenTerm = EvaluateSheen(baseColor, sheen, sheenTint, HoL);
         float diff = EvaluateDisneyDiffuse(roughness, flatness, wi, wo, wm, thin);
 
-        reflectance = sheen + color * (diff / (pdf+1e-5));
+        reflectance = sheen + color * diff;
         fPdf = abs(NoL) * pdf;
         rPdf = abs(NoV) * pdf;
         Onb  tbn = Onb(N);
@@ -771,6 +779,7 @@ namespace DisneyBSDF{
         unsigned int& seed,
         vec3 baseColor,
         vec3 transmiianceColor,
+        vec3 sssColor,
         float metallic,
         float subsurface,
         float specular,
@@ -799,7 +808,8 @@ namespace DisneyBSDF{
         SurfaceEventFlags& flag,
         int& phaseFuncion,
         vec3& extinction,
-        bool& isDiff
+        bool& isDiff,
+        bool& isSS
             )
     {
         Onb  tbn = Onb(N);
@@ -841,7 +851,7 @@ namespace DisneyBSDF{
             pLobe = pSpecTrans;
         }else {
             isDiff = true;
-            success = SampleDisneyDiffuse(seed, baseColor, transmiianceColor, scatterDistance, sheen, sheenTint, roughness, flatness, subsurface, thin, wo, T, B, N, wi, fPdf, rPdf, reflectance, flag, phaseFuncion, extinction,is_inside);
+            success = SampleDisneyDiffuse(seed, baseColor, transmiianceColor, sssColor, scatterDistance, sheen, sheenTint, roughness, flatness, subsurface, thin, wo, T, B, N, wi, fPdf, rPdf, reflectance, flag, phaseFuncion, extinction,is_inside, isSS);
             pLobe = pDiffuse;
         }
         //reflectance = clamp(reflectance, vec3(0,0,0), vec3(1,1,1));

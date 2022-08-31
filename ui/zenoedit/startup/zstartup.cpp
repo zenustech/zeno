@@ -46,19 +46,49 @@ std::string getZenoVersion() {
 void verifyVersion()
 {
     auto ver = getZenoVersion();
+    const char *plat =
+#if defined(Q_OS_WIN)
+                   "windows"
+#elif defined(Q_OS_LINUX)
+                   "linux"
+#else
+                   "unknown"
+#endif
+#if defined(NDEBUG)
+                   " release"
+#else
+                   " debug"
+#endif
+                   ;
+    const char *feat =
+#if defined(__INTEL_COMPILER)
+                   "icc"
+#elif defined(__clang__)
+                   "clang"
+#elif defined(__GNUC__)
+                   "gcc"
+#elif defined(_MSC_VER)
+                   "msvc"
+#else
+                   "unknown"
+#endif
+#if defined(ZENO_MULTIPROCESS)
+#if defined(ZENO_IPC_USE_TCP)
+                   "+tcp"
+#else
+                   "+pipe"
+#endif
+#endif
+#if defined(ZENO_ENABLE_OPENMP)
+                   "+omp"
+#endif
+#if defined(ZENO_PARALLEL_STL)
+                   "+pstl"
+#endif
+#if defined(ZENO_ENABLE_BACKWARD)
+                   "+bt"
+#endif
+                   ;
     // TODO: luzh, may check the internet latest version and compare, if not latest hint the user to update..
-    zeno::log_info("{} {} {} {}",
-#if defined Q_OS_WIN
-                   "windows",
-#elif defined Q_OS_LINUX
-                   "linux",
-#else
-                   "unknown",
-#endif
-#ifdef NDEBUG
-                   "release",
-#else
-                   "debug",
-#endif
-                   ver, __TIME__);
+    zeno::log_info("zeno {} {} {} {}", plat, ver, __TIME__, feat);
 }

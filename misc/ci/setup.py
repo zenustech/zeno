@@ -12,6 +12,12 @@ if sys.platform == 'linux':
         'sudo', 'apt-get', 'install', '-y',
         'autoconf-archive', 'libcgal-dev',
     ])
+    subprocess.check_call([
+        'sudo', 'apt-get', 'install', '-y',
+        'zlib1g-dev', 'libncurses5-dev', 'libgdbm-dev',
+        'libnss3-dev', 'libssl-dev', 'libreadline-dev', 
+        'libffi-dev', 'libsqlite3-dev', 'libbz2-dev',
+    ])
 elif sys.platform == 'win32':
     print('windows detected, nothing to do')
 else:

@@ -342,7 +342,12 @@ QObject* TransferAcceptor::currGraphObj()
     return nullptr;
 }
 
-void TransferAcceptor::endInputs()
+void TransferAcceptor::endInputs(const QString& id, const QString& nodeCls)
+{
+
+}
+
+void TransferAcceptor::endParams(const QString& id, const QString& nodeCls)
 {
 
 }

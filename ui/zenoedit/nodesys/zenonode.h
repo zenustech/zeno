@@ -78,7 +78,7 @@ public slots:
     void onCollaspeUpdated(bool);
     void onOptionsBtnToggled(STATUS_BTN btn, bool toggled);
     void onOptionsUpdated(int options);
-    void onParamUpdated(const QString &paramName, const QVariant &val);
+    void onParamUpdated(ZenoSubGraphScene* pScene, const QString &paramName, const QVariant &val);
     void onSocketLinkChanged(const QString& sockName, bool bInput, bool bAdded);
     void onSocketsUpdate(ZenoSubGraphScene* pScene, bool bInput, bool bInit);
     void updateSocketDeflValue(const QString& nodeid, const QString& inSock, const INPUT_SOCKET& inSocket, const QVariant& textValue);
@@ -124,6 +124,7 @@ private:
     void _drawBorderWangStyle(QPainter* painter);
     ZenoGraphsEditor* getEditorViewByViewport(QWidget* pWidget);
     ZenoParamWidget* initSocketWidget(ZenoSubGraphScene* scene, const INPUT_SOCKET inSocket, ZenoTextLayoutItem* pSocketText);
+    ZenoParamWidget* initParamWidget(ZenoSubGraphScene* scene, const PARAM_INFO& param);
     bool renameDictKey(bool bInput, const INPUT_SOCKETS& inputs, const OUTPUT_SOCKETS& outputs);
     void updateSocketWidget(ZenoSubGraphScene* pScene, const INPUT_SOCKET inSocket);
     void clearInSocketControl(const QString& sockName);
@@ -131,8 +132,8 @@ private:
     QPersistentModelIndex m_index;
     QPersistentModelIndex m_subGpIndex;
 
-    QMap<QString, _socket_ctrl> m_inSockets;
-    QMap<QString, _socket_ctrl> m_outSockets;
+    FuckQMap<QString, _socket_ctrl> m_inSockets;
+    FuckQMap<QString, _socket_ctrl> m_outSockets;
 
     QMap<QString, ZenoParamWidget*> m_paramControls;
     ZenoTextLayoutItem* m_NameItem;

@@ -72,7 +72,9 @@ MatInput const &attrs) {
     float mat_scatterDistance = 0.0;
     float mat_flatness = 0.0;
     float mat_thin = 0.0;
+    float mat_doubleSide= 0.0;
     vec3  mat_sssColor = vec3(0.0f,0.0f,0.0f);
+    vec3  mat_sssParam = vec3(0.0f,0.0f,0.0f);
     vec3  mat_normal = vec3(0.0f, 0.0f, 1.0f);
     vec3 mat_emission = vec3(0.0f, 0.0f,0.0f);
     //GENERATED_END_MARK
@@ -98,7 +100,9 @@ MatInput const &attrs) {
     mats.scatterDistance = mat_scatterDistance;
     mats.flatness = mat_flatness;
     mats.thin = mat_thin;
+    mats.doubleSide = mat_doubleSide;
     mats.sssColor = mat_sssColor;
+    mats.sssParam = mat_sssParam;
     return mats;
 }
 __forceinline__ __device__ float3 interp(float2 barys, float3 a, float3 b, float3 c)
@@ -250,6 +254,8 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     auto scatterDistance = mats.scatterDistance;
     auto ior = mats.ior;
     auto thin = mats.thin;
+    auto doubleSide = mats.doubleSide;
+    auto sssParam = mats.sssParam;
     unsigned short isLight = rt_data->lightMark[inst_idx * 1024 + prim_idx];
 
     // Stochastic alpha test to get an alpha blend effect.
@@ -387,7 +393,7 @@ extern "C" __global__ void __closesthit__radiance()
     float3 tan2 = make_float3(rt_data->tan[ vert_idx_offset+2 ] );
     
     N_0 = normalize(interp(barys, n0, n1, n2));
-    float3 N = faceforward( N_0, -ray_dir, N_0 );
+    float3 N = N_0;//faceforward( N_0, -ray_dir, N_0 );
     P = interp(barys, v0, v1, v2);
     attrs.pos = vec3(P.x, P.y, P.z);
     attrs.nrm = N;
@@ -428,6 +434,10 @@ extern "C" __global__ void __closesthit__radiance()
                                 zenotex29, 
                                 zenotex30, 
                                 zenotex31,attrs);
+
+    if(mats.doubleSide>0.5||mats.thin>0.5)
+        N = faceforward( N_0, -ray_dir, N_0 );
+    attrs.nrm = N;
     //end of material computation
     //mats.metallic = clamp(mats.metallic,0.01, 0.99);
     mats.roughness = clamp(mats.roughness, 0.01,0.99);
@@ -452,6 +462,8 @@ extern "C" __global__ void __closesthit__radiance()
         roughness = clamp(roughness, 0.5,0.99);
     if(prd->diffDepth>=1&&prd->depth>=2)
         roughness = clamp(roughness, 0.2,0.99);
+    if(prd->isSS == true)
+        roughness = clamp(roughness, 0.99,0.99);
     auto subsurface = mats.subsurface;
     auto specular = mats.specular;
     auto specularTint = mats.specularTint;
@@ -467,7 +479,7 @@ extern "C" __global__ void __closesthit__radiance()
     auto ior = mats.ior;
     auto thin = mats.thin;
     auto transmittanceColor = mats.sssColor;
-
+    auto sssColor = mats.sssParam;
     //discard fully opacity pixels
     prd->opacity = opacity;
 
@@ -518,10 +530,12 @@ extern "C" __global__ void __closesthit__radiance()
     vec3 extinction;
     vec3 reflectance = vec3(0.0f);
     bool isDiff = false;
+    bool isSS = false;
     while(DisneyBSDF::SampleDisney(
                 prd->seed,
                 basecolor,
                 transmittanceColor,
+                sssColor,
                 metallic,
                 subsurface,
                 specular,
@@ -549,15 +563,18 @@ extern "C" __global__ void __closesthit__radiance()
                 flag,
                 prd->medium,
                 extinction,
-                isDiff
+                isDiff,
+                isSS
                 )  == false)
         {
+            isSS = false;
             isDiff = false;
             rPdf = 0.0f;
             fPdf = 0.0f;
             reflectance = vec3(0.0f);
             flag = DisneyBSDF::scatterEvent;
         }
+    prd->isSS |= isSS;
     pdf = fPdf;
     if(isDiff || roughness>0.4){
         prd->diffDepth++;
