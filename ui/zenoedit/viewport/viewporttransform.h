@@ -59,9 +59,6 @@ class FakeTransformer {
     }
 
     void addObject(const std::string& name) {
-        auto nm = name.substr(0, name.find_first_of(':'));
-        // printf(nm.c_str());
-        // printf("\n");
         auto scene = Zenovis::GetInstance().getSession()->get_scene();
         auto object = dynamic_cast<PrimitiveObject*>(scene->objectsMan->get(name).value());
         objects_center *= objects.size();
