@@ -20,6 +20,62 @@
 #include <glm/vec4.hpp>
 #include <glm/mat4x4.hpp>
 
+#define SET_CAMERA_DATA                         \
+    out_pos->set(n->pos);                       \
+    out_up->set(n->up);                         \
+    out_view->set(n->view);                     \
+    out_fov->set(n->fov);                       \
+    out_aperture->set(n->aperture);             \
+    out_focalPlaneDistance->set(n->focalPlaneDistance); \
+
+#define BEZIER_VEC3_COMPUTE(VAR_NAME) \
+        float VAR_NAME##_x_diff = std::abs(n->##VAR_NAME[0] - nm->##VAR_NAME[0]);        \
+        float VAR_NAME##_y_diff = std::abs(n->##VAR_NAME[1] - nm->##VAR_NAME[1]);        \
+        float VAR_NAME##_z_diff = std::abs(n->##VAR_NAME[2] - nm->##VAR_NAME[2]);        \
+        float VAR_NAME##_xs = (n->##VAR_NAME[0] - nm->##VAR_NAME[0]) > 0?1.0f:-1.0f;     \
+        float VAR_NAME##_ys = (n->##VAR_NAME[1] - nm->##VAR_NAME[1]) > 0?1.0f:-1.0f;     \
+        float VAR_NAME##_zs = (n->##VAR_NAME[2] - nm->##VAR_NAME[2]) > 0?1.0f:-1.0f;     \
+        std::vector<zeno::vec3f> tp_##VAR_NAME;                                          \
+        zeno::vec3f diff_##VAR_NAME = {                                                  \
+                            percent*VAR_NAME##_x_diff*VAR_NAME##_xs,                    \
+                            percent*VAR_NAME##_y_diff*VAR_NAME##_ys,                    \
+                            percent*VAR_NAME##_z_diff*VAR_NAME##_zs };                  \
+        tp_##VAR_NAME.push_back(nm->##VAR_NAME);                                           \
+        tp_##VAR_NAME.push_back(nm->##VAR_NAME + diff_##VAR_NAME);                         \
+        tp_##VAR_NAME.push_back(n->##VAR_NAME);                                            \
+        tp_##VAR_NAME.push_back(n->##VAR_NAME - diff_##VAR_NAME);
+
+
+#define BEZIER_VEC3_COMPUTE2(VAR_NAME)      \
+    std::vector<zeno::vec3f> tp_##VAR_NAME##_x;      \
+    std::vector<zeno::vec3f> tp_##VAR_NAME##_y;      \
+    std::vector<zeno::vec3f> tp_##VAR_NAME##_z;      \
+    tp_##VAR_NAME##_x.push_back(zeno::vec3f(0.0f, nm->##VAR_NAME[0], 0.0f));        \
+    tp_##VAR_NAME##_x.push_back(zeno::vec3f(c1of, nm->##VAR_NAME[0], 0.0f));         \
+    tp_##VAR_NAME##_x.push_back(zeno::vec3f(c2of, n->##VAR_NAME[0], 0.0f));          \
+    tp_##VAR_NAME##_x.push_back(zeno::vec3f(1.0f, n->##VAR_NAME[0], 0.0f));         \
+    tp_##VAR_NAME##_y.push_back(zeno::vec3f(0.0f, nm->##VAR_NAME[1], 0.0f));        \
+    tp_##VAR_NAME##_y.push_back(zeno::vec3f(c1of, nm->##VAR_NAME[1], 0.0f));         \
+    tp_##VAR_NAME##_y.push_back(zeno::vec3f(c2of, n->##VAR_NAME[1], 0.0f));          \
+    tp_##VAR_NAME##_y.push_back(zeno::vec3f(1.0f, n->##VAR_NAME[1], 0.0f));         \
+    tp_##VAR_NAME##_z.push_back(zeno::vec3f(0.0f, nm->##VAR_NAME[2], 0.0f));        \
+    tp_##VAR_NAME##_z.push_back(zeno::vec3f(c1of, nm->##VAR_NAME[2], 0.0f));         \
+    tp_##VAR_NAME##_z.push_back(zeno::vec3f(c2of, n->##VAR_NAME[2], 0.0f));          \
+    tp_##VAR_NAME##_z.push_back(zeno::vec3f(1.0f, n->##VAR_NAME[2], 0.0f));         \
+    auto b_##VAR_NAME##_x = BezierCompute::bezier(tp_##VAR_NAME##_x, factor);         \
+    auto b_##VAR_NAME##_y = BezierCompute::bezier(tp_##VAR_NAME##_y, factor);         \
+    auto b_##VAR_NAME##_z = BezierCompute::bezier(tp_##VAR_NAME##_z, factor);         \
+    auto b_##VAR_NAME = zeno::vec3f(b_##VAR_NAME##_x[1], b_##VAR_NAME##_y[1], b_##VAR_NAME##_z[1]);
+
+#define BEZIER_FLOAT_COMPUTE(VAR_NAME)              \
+    std::vector<zeno::vec3f> tp_##VAR_NAME;                                 \
+    tp_##VAR_NAME.push_back(zeno::vec3f(0.0f, nm->##VAR_NAME, 0.0f));    \
+    tp_##VAR_NAME.push_back(zeno::vec3f(c1of, nm->##VAR_NAME, 0.0f));    \
+    tp_##VAR_NAME.push_back(zeno::vec3f(c2of, n->##VAR_NAME, 0.0f));     \
+    tp_##VAR_NAME.push_back(zeno::vec3f(1.0f, n->##VAR_NAME, 0.0f));     \
+    auto b_##VAR_NAME##_v = BezierCompute::bezier(tp_##VAR_NAME, factor);   \
+    auto b_##VAR_NAME = b_##VAR_NAME##_v[1];
+
 namespace zeno {
 namespace {
 
@@ -71,6 +127,9 @@ struct CameraNode: zeno::INode{
         camera->up = get_input2<zeno::vec3f>("up");
         camera->view = get_input2<zeno::vec3f>("view");
         camera->fnear = get_input2<float>("frame");
+        camera->fov = get_input2<float>("fov");
+        camera->aperture = get_input2<float>("aperture");
+        camera->focalPlaneDistance = get_input2<float>("focalPlaneDistance");
 
         set_output("camera", std::move(camera));
     }
@@ -81,6 +140,9 @@ ZENO_DEFNODE(CameraNode)({
         {"vec3f", "pos", "0,0,5"},
         {"vec3f", "up", "0,1,0"},
         {"vec3f", "view", "0,0,-1"},
+        {"float", "fov", "45"},
+        {"float", "aperture", "0.1"},
+        {"float", "focalPlaneDistance", "2.0"},
         {"int", "frame", "0"},
     },
     {
@@ -105,6 +167,9 @@ struct CameraEval: zeno::INode {
         auto out_pos = std::make_unique<zeno::NumericObject>();
         auto out_up = std::make_unique<zeno::NumericObject>();
         auto out_view = std::make_unique<zeno::NumericObject>();
+        auto out_fov = std::make_unique<zeno::NumericObject>();
+        auto out_aperture = std::make_unique<zeno::NumericObject>();
+        auto out_focalPlaneDistance = std::make_unique<zeno::NumericObject>();
         std::string inter_mode;
         auto inter = get_param<std::string>("inter");
         if (inter == "Bezier"){
@@ -119,32 +184,33 @@ struct CameraEval: zeno::INode {
 
         if(nodelist.size() == 1){
             auto n = nodelist[0];
-            out_pos->set(n->pos);
-            out_up->set(n->up);
-            out_view->set(n->view);
+            SET_CAMERA_DATA
             //zeno::log_info("CameraEval size 1");
         }else{
-            auto fn = nodelist[0];
-            auto en = nodelist[nodelist.size()-1];
-            if(frameid <= (int)fn->fnear){
-                out_pos->set(fn->pos);
-                out_up->set(fn->up);
-                out_view->set(fn->view);
+            int ff = (int)nodelist[0]->fnear;
+            int lf = (int)nodelist[nodelist.size()-1]->fnear;
+            if(frameid <= ff){
+                auto n = nodelist[0];
+                SET_CAMERA_DATA
                 //zeno::log_info("CameraEval first frame");
-            }else if(frameid >= (int)en->fnear) {
-                out_pos->set(en->pos);
-                out_up->set(en->up);
-                out_view->set(en->view);
+            }else if(frameid >= lf) {
+                auto n = nodelist[nodelist.size()-1];
+                SET_CAMERA_DATA
                 //zeno::log_info("CameraEval last frame");
             }else{
                 for(int i=1;i<nodelist.size();i++){
                     auto const & n = nodelist[i];
                     auto const & nm = nodelist[i-1];
-                    if(frameid < (int)n->fnear){
+                    int cf = (int)n->fnear;
+                    if(frameid < cf){
                         zeno::vec3f pos;
                         zeno::vec3f up;
                         zeno::vec3f view;
-                        float factor = (float)(frameid - (int)nm->fnear) / ((int)n->fnear - (int)nm->fnear);
+                        float fov;
+                        float aperture;
+                        float focalPlaneDistance;
+
+                        float factor = (float)(frameid - (int)nm->fnear) / (float)((int)n->fnear - (int)nm->fnear);
 
                         //zeno::log_info("CameraEval Interval {} {} factor {}", (int)nm->fnear, (int)n->fnear, factor);
 
@@ -153,84 +219,38 @@ struct CameraEval: zeno::INode {
                             pos = n->pos * factor + nm->pos*(1.0f-factor);
                             up = n->up * factor + nm->up*(1.0f-factor);
                             view = n->view * factor + nm->view*(1.0f-factor);
+                            fov = n->fov * factor + nm->fov*(1.0f-factor);
+                            aperture = n->aperture * factor + nm->aperture*(1.0f-factor);
+                            focalPlaneDistance = n->focalPlaneDistance * factor + nm->focalPlaneDistance*(1.0f-factor);
 
                         }
                         // Bezier interpolation
                         else if(inter_mode == "Bezier"){
-                            struct BezierCompute{
-                                static zeno::vec3f compute(zeno::vec3f p1, zeno::vec3f p2, float t){
-                                    return (1-t)*p1+t*p2;
-                                }
-
-                                static zeno::vec3f bezier( std::vector<zeno::vec3f> const&p, float t ){
-                                    std::vector<zeno::vec3f> ps = p;
-                                    auto iter = ps.size();
-                                    for(int z=0; z<iter; z++){
-                                        auto n=ps.size();
-                                        std::vector<zeno::vec3f> tmp;
-                                        for(int i=0;i<n-1;i++){
-                                            auto cr = zeno::vec3f(compute(ps[i], ps[i+1], t));
-                                            tmp.push_back(cr);
-                                        }
-                                        ps=tmp;
-                                        iter--;
-                                    }
-                                    return compute(ps[0], ps[1], t);
-                                }
-                            };
-
-                            int frame_diff = std::abs((int)n->fnear - (int)nm->fnear);
-                            float percent = frame_diff <= 2 ? 0.5f : 2.0f/frame_diff;
-
-                            float pos_x_diff = std::abs(n->pos[0] - nm->pos[0]);
-                            float pos_y_diff = std::abs(n->pos[1] - nm->pos[1]);
-                            float pos_z_diff = std::abs(n->pos[2] - nm->pos[2]);
-                            float pxs = (n->pos[0] - nm->pos[0]) > 0?1.0f:-1.0f;
-                            float pys = (n->pos[1] - nm->pos[1]) > 0?1.0f:-1.0f;
-                            float pzs = (n->pos[2] - nm->pos[2]) > 0?1.0f:-1.0f;
-                            float up_x_diff = std::abs(n->up[0] - nm->up[0]);
-                            float up_y_diff = std::abs(n->up[1] - nm->up[1]);
-                            float up_z_diff = std::abs(n->up[2] - nm->up[2]);
-                            float uxs = (n->up[0] - nm->up[0]) > 0?1.0f:-1.0f;
-                            float uys = (n->up[1] - nm->up[1]) > 0?1.0f:-1.0f;
-                            float uzs = (n->up[2] - nm->up[2]) > 0?1.0f:-1.0f;
-                            float view_x_diff = std::abs(n->view[0] - nm->view[0]);
-                            float view_y_diff = std::abs(n->view[1] - nm->view[1]);
-                            float view_z_diff = std::abs(n->view[2] - nm->view[2]);
-                            float vxs = (n->view[0] - nm->view[0]) > 0?1.0f:-1.0f;
-                            float vys = (n->view[1] - nm->view[1]) > 0?1.0f:-1.0f;
-                            float vzs = (n->view[2] - nm->view[2]) > 0?1.0f:-1.0f;
-
                             // TODO The control points consider the front and back frame trends
-                            std::vector<zeno::vec3f> tp_pos;
-                            std::vector<zeno::vec3f> tp_up;
-                            std::vector<zeno::vec3f> tp_view;
-                            zeno::vec3f diff_pos = {percent*pos_x_diff*pxs, percent*pos_y_diff*pys, percent*pos_z_diff*pzs};
-                            zeno::vec3f diff_up = {percent*up_x_diff*uxs, percent*up_y_diff*uys, percent*up_z_diff*uzs};
-                            zeno::vec3f diff_view = {percent*view_x_diff*vxs, percent*view_y_diff*vys, percent*view_z_diff*vzs};
 
-                            tp_pos.push_back(nm->pos);
-                            tp_pos.push_back(nm->pos + diff_pos);
-                            tp_pos.push_back(n->pos);
-                            tp_pos.push_back(n->pos - diff_pos);
-                            auto p = BezierCompute::bezier(tp_pos, factor);
-                            tp_up.push_back(nm->up);
-                            tp_up.push_back(nm->up + diff_up);
-                            tp_up.push_back(n->up);
-                            tp_up.push_back(n->up - diff_up);
-                            auto u = BezierCompute::bezier(tp_up, factor);
-                            tp_view.push_back(nm->view);
-                            tp_view.push_back(nm->view + diff_view);
-                            tp_view.push_back(n->view);
-                            tp_view.push_back(n->view - diff_view);
-                            auto v = BezierCompute::bezier(tp_view, factor);
-                            //zeno::log_info("Inter FrameDiff {} Percent {}", frame_diff, percent);
-                            //zeno::log_info("DiffPos {} {} {}", diff_pos[0], diff_pos[1], diff_pos[2]);
-                            //zeno::log_info("DiffUp {} {} {}", diff_up[0], diff_up[1], diff_up[2]);
-                            //zeno::log_info("DiffView {} {} {}", diff_view[0], diff_view[1], diff_view[2]);
-                            pos = p;
-                            up = u;
-                            view = v;
+                            float c1of = 0.4f;
+                            float c2of = 0.6f;
+
+                            //BEZIER_VEC3_COMPUTE(pos)
+                            //auto p = BezierCompute::bezier(tp_pos, factor);
+                            //BEZIER_VEC3_COMPUTE(up)
+                            //auto u = BezierCompute::bezier(tp_up, factor);
+                            //BEZIER_VEC3_COMPUTE(view)
+                            //auto v = BezierCompute::bezier(tp_view, factor);
+
+                            //BEZIER_VEC3_COMPUTE2(pos)
+                            //BEZIER_VEC3_COMPUTE2(up)
+                            //BEZIER_VEC3_COMPUTE2(view)
+                            //BEZIER_FLOAT_COMPUTE(aperture)
+                            //BEZIER_FLOAT_COMPUTE(fov)
+                            //BEZIER_FLOAT_COMPUTE(focalPlaneDistance)
+
+                            pos = BezierCompute::compute(c1of, c2of, factor, n->pos, nm->pos);
+                            up = BezierCompute::compute(c1of, c2of, factor, n->up, nm->up);
+                            view = BezierCompute::compute(c1of, c2of, factor, n->view, nm->view);
+                            fov = BezierCompute::compute(c1of, c2of, factor, n->fov, nm->fov);
+                            aperture = BezierCompute::compute(c1of, c2of, factor, n->aperture, nm->aperture);
+                            focalPlaneDistance = BezierCompute::compute(c1of, c2of, factor, n->focalPlaneDistance, nm->focalPlaneDistance);
                         }
 
                         //zeno::log_info("Inter Pos {} {} {}", pos[0], pos[1], pos[2]);
@@ -240,7 +260,9 @@ struct CameraEval: zeno::INode {
                         out_pos->set(pos);
                         out_up->set(up);
                         out_view->set(view);
-
+                        out_fov->set(fov);
+                        out_aperture->set(aperture);
+                        out_focalPlaneDistance->set(focalPlaneDistance);
                         break;
                     }
                 }
@@ -250,6 +272,9 @@ struct CameraEval: zeno::INode {
         set_output("pos", std::move(out_pos));
         set_output("up", std::move(out_up));
         set_output("view", std::move(out_view));
+        set_output("fov", std::move(out_fov));
+        set_output("aperture", std::move(out_aperture));
+        set_output("focalPlaneDistance", std::move(out_focalPlaneDistance));
     }
 };
 
@@ -262,6 +287,9 @@ ZENO_DEFNODE(CameraEval)({
         {"vec3f", "pos"},
         {"vec3f", "up"},
         {"vec3f", "view"},
+        {"float", "fov"},
+        {"float", "aperture"},
+        {"float", "focalPlaneDistance"},
     },
     {
         {"enum Bezier Linear ", "inter", "Bezier"},
