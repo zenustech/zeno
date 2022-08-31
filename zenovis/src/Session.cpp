@@ -80,7 +80,7 @@ void Session::new_frame() {
     ////});
 //}
 
-void Session::do_screenshot(std::string path, std::string type, int nsamples) {
+void Session::do_screenshot(std::string path, std::string type) {
     auto hdrSize = std::map<std::string, int>{
         {"png", 1},
         {"jpg", 1},
@@ -92,7 +92,7 @@ void Session::do_screenshot(std::string path, std::string type, int nsamples) {
     auto ny = impl->scene->camera->m_ny;
 
     zeno::log_info("saving screenshot {}x{} to {}", nx, ny, path);
-    std::vector<char> pixels = impl->scene->record_frame_offline(nsamples, hdrSize, 3);
+    std::vector<char> pixels = impl->scene->record_frame_offline(hdrSize, 3);
 
     std::map<std::string, std::function<void()>>{
     {"png", [&] {
@@ -132,8 +132,8 @@ void Session::do_screenshot(std::string path, std::string type, int nsamples) {
 
 void Session::look_perspective(float cx, float cy, float cz, float theta,
                                float phi, float radius, float fov,
-                               bool ortho_mode) {
-    impl->scene->camera->lookCamera(cx, cy, cz, theta, phi, radius, ortho_mode ? 0.f : fov);
+                               bool ortho_mode, float aperture, float focalPlaneDistance) {
+    impl->scene->camera->lookCamera(cx, cy, cz, theta, phi, radius, ortho_mode ? 0.f : fov, aperture, focalPlaneDistance);
 }
 
 void Session::set_background_color(float r, float g, float b) {
@@ -157,12 +157,28 @@ int Session::get_curr_frameid() {
     return impl->curr_frameid;
 }
 
-void Session::load_objects() {
-    impl->scene->loadFrameObjects(impl->curr_frameid);
+bool Session::load_objects() {
+    return impl->scene->loadFrameObjects(impl->curr_frameid);
 }
 
 void Session::set_render_engine(std::string const &name) {
     impl->scene->switchRenderEngine(name);
+}
+
+void Session::set_interactive(bool interactive) {
+    impl->scene->drawOptions->interactive = interactive;
+}
+
+void Session::set_hovered_graphic(std::string hovered_graphic_id) {
+    impl->scene->drawOptions->hovered_graphic_id = std::move(hovered_graphic_id);
+}
+
+void Session::set_interactive_graphics(std::map<std::string, std::unique_ptr<IGraphicInteractDraw>> &interactGraphics) {
+    std::swap(impl->scene->drawOptions->interactGraphics, interactGraphics);
+}
+
+void Session::set_interacting_graphics(std::set<std::unique_ptr<IGraphicDraw>> &interactingGraphics) {
+    std::swap(impl->scene->drawOptions->interactingGraphics, interactingGraphics);
 }
 
 void Session::load_opengl_api(void *procaddr) {

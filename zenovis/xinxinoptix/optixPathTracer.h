@@ -25,6 +25,8 @@ struct CameraInfo
     float3 right, up, front;
     //float aspect;
     //float fov;
+    float focalPlaneDistance;
+    float aperture;
 };
 
 

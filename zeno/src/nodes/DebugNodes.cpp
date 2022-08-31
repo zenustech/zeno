@@ -196,5 +196,17 @@ ZENDEFNODE(TriggerViewportFault, {
     {"debug"},
 });
 
+struct Blackboard : zeno::INode {
+    virtual void apply() override {
+    }
+};
+
+ZENDEFNODE(Blackboard, {
+    {},
+    {},
+    {},
+    {"layout"},
+});
+
 
 }

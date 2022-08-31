@@ -1,4 +1,4 @@
-target_sources(zeno PRIVATE Audio.cpp AudioFile.h)
+target_sources(zeno PRIVATE Audio.cpp)
 
 zeno_disable_warning(Audio.cpp)
 

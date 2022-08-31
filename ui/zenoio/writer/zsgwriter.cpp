@@ -1,6 +1,10 @@
 #include "zsgwriter.h"
 #include <zenoui/model/modelrole.h>
 #include <zeno/utils/logger.h>
+#include <zeno/funcs/ParseObjectFromUi.h>
+#include <zenoui/util/uihelper.h>
+
+using namespace zeno::iotags;
 
 
 ZsgWriter::ZsgWriter()
@@ -24,12 +28,12 @@ void ZsgWriter::dumpToClipboard(const QMap<QString, NODE_DATA>& nodes)
         writer.Key("nodes");
         {
             JsonObjBatch _batch(writer);
-	    for (const QString& nodeId : nodes.keys())
-	    {
+            for (const QString& nodeId : nodes.keys())
+            {
                 const NODE_DATA& nodeData = nodes[nodeId];
                 writer.Key(nodeId.toUtf8());
                 dumpNode(nodeData, writer);
-	    }
+            }
         }
     }
 
@@ -39,7 +43,7 @@ void ZsgWriter::dumpToClipboard(const QMap<QString, NODE_DATA>& nodes)
     QApplication::clipboard()->setMimeData(pMimeData);
 }
 
-QString ZsgWriter::dumpProgramStr(IGraphsModel* pModel)
+QString ZsgWriter::dumpProgramStr(IGraphsModel* pModel, APP_SETTINGS settings)
 {
 	QString strJson;
 	if (!pModel)
@@ -66,6 +70,7 @@ QString ZsgWriter::dumpProgramStr(IGraphsModel* pModel)
 		writer.Key("views");
 		{
 			writer.StartObject();
+			dumpTimeline(settings.timeline, writer);
 			writer.EndObject();
 		}
 
@@ -132,18 +137,22 @@ void ZsgWriter::dumpNode(const NODE_DATA& data, RAPIDJSON_WRITER& writer)
 			writer.Key(inSock.info.name.toUtf8());
 
 			QVariant deflVal = inSock.info.defaultValue;
+			const QString& sockType = inSock.info.type;
+			bool bValid = UiHelper::validateVariant(deflVal, sockType);
 			if (!inSock.linkIndice.isEmpty())
 			{
 				for (QPersistentModelIndex linkIdx : inSock.linkIndice)
 				{
 					QString outNode = linkIdx.data(ROLE_OUTNODE).toString();
 					QString outSock = linkIdx.data(ROLE_OUTSOCK).toString();
-					AddVariantList({ outNode, outSock, deflVal }, inSock.info.type, writer, true);
+					AddVariantList({ outNode, outSock, deflVal }, sockType, writer, true);
 				}
 			}
 			else
 			{
-				AddVariantList({ QVariant(), QVariant(), deflVal}, inSock.info.type, writer, true);
+				if (!bValid)
+					deflVal = QVariant();
+				AddVariantList({ QVariant(), QVariant(), deflVal}, sockType, writer, true);
 			}
 		}
 	}
@@ -241,6 +250,22 @@ void ZsgWriter::dumpNode(const NODE_DATA& data, RAPIDJSON_WRITER& writer)
 			writer.Key("content");
 			writer.String(info.content.toUtf8());
 		}
+	}
+}
+
+void ZsgWriter::dumpTimeline(TIMELINE_INFO info, RAPIDJSON_WRITER& writer)
+{
+	writer.Key("timeline");
+	{
+		JsonObjBatch _batch(writer);
+		writer.Key(timeline::start_frame);
+		writer.Int(info.beginFrame);
+		writer.Key(timeline::end_frame);
+		writer.Int(info.endFrame);
+		writer.Key(timeline::curr_frame);
+		writer.Int(info.currFrame);
+		writer.Key(timeline::always);
+		writer.Bool(info.bAlways);
 	}
 }
 

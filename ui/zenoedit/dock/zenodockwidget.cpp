@@ -12,6 +12,7 @@
 #include "panel/zenospreadsheet.h"
 #include "viewport/viewportwidget.h"
 #include "viewport/zenovis.h"
+#include "panel/zenolights.h"
 #include <zenovis/ObjectsManager.h>
 #include <zenoui/comctrl/zlabel.h>
 #include <zenoui/style/zenostyle.h>
@@ -382,5 +383,12 @@ void ZenoDockWidget::onPrimitiveSelected(const std::unordered_set <std::string> 
     }
     else {
         panel->clear();
+    }
+}
+
+void ZenoDockWidget::newFrameUpdate() {
+    if (m_type == DOCK_LIGHTS) {
+        ZenoLights* panel = qobject_cast<ZenoLights*>(widget());
+        panel->updateLights();
     }
 }

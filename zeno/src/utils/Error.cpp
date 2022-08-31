@@ -75,4 +75,12 @@ ZENO_API KeyError::KeyError(std::string_view key, std::string_view hint) noexcep
 
 ZENO_API KeyError::~KeyError() noexcept = default;
 
+ZENO_API UnimplError::UnimplError(std::string_view hint) noexcept
+    : Error(format("[UnimplError] unimplemented feature [{}]", hint))
+    , hint(hint)
+{
+}
+
+ZENO_API UnimplError::~UnimplError() noexcept = default;
+
 }

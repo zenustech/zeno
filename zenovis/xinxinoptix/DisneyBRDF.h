@@ -38,11 +38,13 @@ static __inline__ __device__ float fresnelDielectric(float cosThetaI, float ni, 
 {
     cosThetaI = clamp(cosThetaI, -1.0f, 1.0f);
 
-    if(is_inside)
+    if(cosThetaI<0.0f)
     {
         float temp = ni;
         ni = nt;
         nt = temp;
+
+        cosThetaI = -cosThetaI;
     }
 
     float sinThetaI = sqrtf(max(0.0f, 1.0f - cosThetaI * cosThetaI));
@@ -75,8 +77,9 @@ static __inline__ __device__  float GGX(float cosT, float a){
 }
 static __inline__ __device__  vec3 sampleOnHemisphere(unsigned int &seed, float roughness)
 {
-    const float x = rnd(seed);
-    const float y = rnd(seed);
+    float2 xy = sobolRnd(seed);
+    const float x = xy.x;
+    const float y = xy.y;
 
     float a = roughness*roughness;
 
@@ -176,27 +179,47 @@ static __inline__ __device__ void GgxVndfAnisotropicPdf(vec3 wi, vec3 wm, vec3 w
 static __inline__ __device__ 
 vec3 SampleGgxVndfAnisotropic(vec3 wo, float ax, float ay, float u1, float u2)
 {
-    // -- Stretch the view vector so we are sampling as though roughness==1
-    vec3 Vh = normalize(vec3(ax * wo.x, ay * wo.y, wo.z));
+    // // -- Stretch the view vector so we are sampling as though roughness==1
+    // vec3 Vh = normalize(vec3(ax * wo.x, ay * wo.y, wo.z));
 
-    // Section 4.1: orthonormal basis (with special case if cross product is zero)
-    float lensq = Vh.x * Vh.x + Vh.y * Vh.y;
-    vec3 T1 = lensq > 0.0f ? vec3(-Vh.y, Vh.x, 0.0f) / sqrt(lensq) : vec3(1.0f, 0.0f, 0.0f);
-    vec3 T2 = cross(Vh, T1);
+    // // Section 4.1: orthonormal basis (with special case if cross product is zero)
+    // float lensq = Vh.x * Vh.x + Vh.y * Vh.y;
+    // vec3 T1 = lensq > 0.0f ? vec3(-Vh.y, Vh.x, 0.0f) / sqrt(lensq) : vec3(1.0f, 0.0f, 0.0f);
+    // vec3 T2 = cross(Vh, T1);
 
-    // Section 4.2: parameterization of the projected area
+    // // Section 4.2: parameterization of the projected area
+    // float r = sqrt(u1);
+    // float phi = M_PIf * 2.0 * u2;
+    // float t1 = r * cos(phi);
+    // float t2 = r * sin(phi);
+    // float s = 0.5f * (1.0f + Vh.z);
+    // t2 = mix(sqrt(1.0f - t1 * t1), t2, s);
+
+    // // Section 4.3: reprojection onto hemisphere
+    // vec3 Nh = t1 * T1 + t2 * T2 + sqrt(max(0.0f, 1.0f - t1 * t1 - t2 * t2)) * Vh;
+
+    // // Section 3.4: transforming the normal back to the ellipsoid configuration
+    // return normalize(vec3(ax * Nh.x, ay * Nh.y, max(0.0f, Nh.z)));
+    vec3 v = normalize(vec3(wo.x * ax, wo.z, wo.y * ay));
+
+    // -- Build an orthonormal basis with v, t1, and t2
+    vec3 t1 = (v.y < 0.9999f) ? normalize(cross(v, vec3(0,1,0))) : vec3(1,0,0);
+    vec3 t2 = cross(t1, v);
+
+    // -- Choose a point on a disk with each half of the disk weighted proportionally to its projection onto direction v
+    float a = 1.0f / (1.0f + v.y);
     float r = sqrt(u1);
-    float phi = M_PIf * 2.0 * u2;
-    float t1 = r * cos(phi);
-    float t2 = r * sin(phi);
-    float s = 0.5f * (1.0f + Vh.z);
-    t2 = mix(sqrt(1.0f - t1 * t1), t2, s);
+    float phi = (u2 < a) ? (u2 / a) * M_PIf : M_PIf + (u2 - a) / (1.0f - a) * M_PIf;
+    float p1 = r * cos(phi);
+    float p2 = r * sin(phi) * ((u2 < a) ? 1.0f : v.y);
 
-    // Section 4.3: reprojection onto hemisphere
-    vec3 Nh = t1 * T1 + t2 * T2 + sqrt(max(0.0f, 1.0f - t1 * t1 - t2 * t2)) * Vh;
+    // -- Calculate the normal in this stretched tangent space
+    float3 n = p1 * t1 + p2 * t2 + sqrt(max(0.0f, 1.0f - p1 * p1 - p2 * p2)) * v;
 
-    // Section 3.4: transforming the normal back to the ellipsoid configuration
-    return normalize(vec3(ax * Nh.x, ay * Nh.y, max(0.0f, Nh.z)));
+    // -- unstretch and normalize the normal
+    return normalize(vec3(ax * n.x, ay * n.z, max(0.0f,n.y)));
+
+
 }
 }
 namespace DisneyBRDF

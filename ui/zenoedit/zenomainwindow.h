@@ -4,6 +4,8 @@
 #include <unordered_set>
 #include <QtWidgets>
 #include "dock/ztabdockwidget.h"
+#include "panel/zenolights.h"
+#include "common.h"
 
 class ZenoMainWindow : public QMainWindow
 {
@@ -13,6 +15,12 @@ public:
     ~ZenoMainWindow();
     bool inDlgEventLoop() const;
     void setInDlgEventLoop(bool bOn);
+    TIMELINE_INFO timelineInfo();
+    void setTimelineInfo(TIMELINE_INFO info);
+
+    QLineEdit* selected = nullptr;
+    ZenoLights* lightPanel = nullptr;
+    float mouseSen = 0.2;
 
 public slots:
     void openFileDialog();
@@ -34,6 +42,7 @@ public slots:
     void onRunFinished();
     void onFeedBack();
     void clearErrorMark();
+    void updateLightList();
 
 protected:
     void resizeEvent(QResizeEvent* event) override;

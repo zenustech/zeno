@@ -3,6 +3,7 @@
 
 #include <zenoui/model/modeldata.h>
 #include <rapidjson/document.h>
+#include "common.h"
 
 class IGraphsModel;
 
@@ -35,6 +36,7 @@ public:
     virtual void setOptions(const QString& id, const QStringList& options) = 0;
     virtual void setColorRamps(const QString& id, const COLOR_RAMPS& colorRamps) = 0;
     virtual void setBlackboard(const QString& id, const BLACKBOARD_INFO& blackboard) = 0;
+    virtual void setTimeInfo(const TIMELINE_INFO& info) = 0;
     virtual void setLegacyCurve(
         const QString& id,
         const QVector<QPointF>& pts,

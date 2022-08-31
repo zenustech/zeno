@@ -15,6 +15,9 @@ struct ObjectsManager : zeno::disable_copy {
     zeno::MapStablizer<zeno::PolymorphicMap<std::map<
         std::string, std::shared_ptr<zeno::IObject>>>> objects;
 
+    std::map<std::string, std::shared_ptr<zeno::IObject>> lightObjects;
+    bool needUpdateLight = true;
+
     template <class T = void>
     auto pairs() const {
         return objects.pairs<T>();
@@ -28,7 +31,7 @@ struct ObjectsManager : zeno::disable_copy {
     ObjectsManager();
     ~ObjectsManager();
     void clear_objects();
-    void load_objects(std::map<std::string, std::shared_ptr<zeno::IObject>> const &objs);
+    bool load_objects(std::map<std::string, std::shared_ptr<zeno::IObject>> const &objs);
 
     std::optional<zeno::IObject*> get(std::string nid);
 };

@@ -173,6 +173,12 @@ struct ExtractMaterialShader : zeno::INode
 
             auto prim = dynamic_cast<zeno::PrimitiveObject *>(obj.get());
 
+            zeno::vec3f clr;
+            if (! prim->verts.has_attr("clr")) {
+                auto &clr = prim->verts.add_attr<zeno::vec3f>("clr");
+                clr[0] = zeno::vec3f(30000.0f, 30000.0f, 30000.0f);
+            }
+
             if(inverdir){
                 for(int i=0;i<prim->tris.size(); i++){
                     int tmp = prim->tris[i][2];

@@ -69,6 +69,7 @@ ZENO_API void primKillDeadVerts(PrimitiveObject *prim) {
     prim->verts.forall_attr<AttrAcceptAll>([&] (auto const &key, auto &arr) {
         revamp_vector(arr, revamp);
     });
+    prim->verts.resize(revamp.size());
 
     std::vector<int> unrevamp(old_prim_size);
     for (int i = 0; i < revamp.size(); i++) {

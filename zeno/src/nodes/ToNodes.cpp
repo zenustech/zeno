@@ -22,13 +22,13 @@ struct ToView : zeno::INode {
     virtual void apply() override {
         auto p = get_input("object");
         bool isStatic = has_input("isStatic") ? get_input2<bool>("isStatic") : false;
-        auto pp = isStatic && hasViewed ? std::make_shared<DummyObject>() : p->clone();
+        //auto pp = isStatic && hasViewed ? std::make_shared<DummyObject>() : p->clone();
         auto addtoview = [&] (auto const &addtoview, zany const &p, std::string const &postfix) -> void {
             if (auto *lst = dynamic_cast<ListObject *>(p.get())) {
                 log_info("ToView got ListObject (size={}), expanding", lst->arr.size());
                 for (size_t i = 0; i < lst->arr.size(); i++) {
                     zany const &lp = lst->arr[i];
-                    addtoview(addtoview, lp, postfix + "-list" + std::to_string(i));
+                    addtoview(addtoview, lp, postfix + ":LIST" + std::to_string(i));
                 }
                 return;
             }
@@ -44,12 +44,11 @@ struct ToView : zeno::INode {
                 log_error("ToView: given object is nullptr");
             } else {
                 auto pp = isStatic && hasViewed ? std::make_shared<DummyObject>() : previewclone(p);
-                hasViewed = true;
                 if (!pp) {
                     log_error("ToView: given object doesn't support clone, giving up");
                 } else {
-                    log_debug("ToView: added view object of type {}", cppdemangle(typeid(*p)));
                     auto key = this->myname;
+                    key.append(postfix);
                     key.push_back(':');
                     if (isStatic)
                         key.append("static");
@@ -57,7 +56,7 @@ struct ToView : zeno::INode {
                         key.append(std::to_string(getThisSession()->globalState->frameid));
                     key.push_back(':');
                     key.append(std::to_string(getThisSession()->globalState->sessionid));
-                    key.append(postfix);
+                    log_debug("ToView: add view object [{}] of type {}", key, cppdemangle(typeid(*p)));
                     getThisSession()->globalComm->addViewObject(key, std::move(pp));
                     set_output2("viewid", std::move(key));
                 }
@@ -65,6 +64,7 @@ struct ToView : zeno::INode {
         };
 
         addtoview(addtoview, p, {});
+        hasViewed = true;
         set_output("object", std::move(p));
     }
 };

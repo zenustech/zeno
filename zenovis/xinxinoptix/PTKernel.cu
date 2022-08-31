@@ -66,20 +66,29 @@ extern "C" __global__ void __raygen__rg()
     const CameraInfo cam = params.cam;
 
     unsigned int seed = tea<4>( idx.y*w + idx.x, subframe_index );
+    float focalPlaneDistance = cam.focalPlaneDistance>0.1? cam.focalPlaneDistance : 0.1;
+    float aperture = clamp(cam.aperture,0.0f,100.0f);
+    aperture/=10;
 
     float3 result = make_float3( 0.0f );
     int i = params.samples_per_launch;
     do
     {
         // The center of each pixel is at fraction (0.5,0.5)
-        float2 subpixel_jitter = make_float2( rnd( seed ), rnd( seed ) );
+        float2 subpixel_jitter = sobolRnd2(seed);
 
         float2 d = 2.0f * make_float2(
                 ( static_cast<float>( idx.x ) + subpixel_jitter.x ) / static_cast<float>( w ),
                 ( static_cast<float>( idx.y ) + subpixel_jitter.y ) / static_cast<float>( h )
                 ) - 1.0f;
-        float3 ray_direction = normalize(cam.right * d.x + cam.up * d.y + cam.front);
-        float3 ray_origin    = cam.eye;
+        //float3 ray_direction = normalize(cam.right * d.x + cam.up * d.y + cam.front);
+        float2 r01 = sobolRnd2(seed);
+        
+        float r0 = r01.x * 2.0f* M_PIf;
+        float r1 = r01.y * aperture * aperture;
+        r1 = sqrt(r1);
+        float3 ray_origin    = cam.eye + r1 * ( cosf(r0)* cam.right + sinf(r0)* cam.up);
+        float3 ray_direction = cam.eye + focalPlaneDistance *(cam.right * d.x + cam.up * d.y + cam.front) - ray_origin;
 
         RadiancePRD prd;
         prd.emitted      = make_float3(0.f);
@@ -98,6 +107,8 @@ extern "C" __global__ void __raygen__rg()
         prd.medium       = DisneyBSDF::PhaseFunctions::vacuum;
 
         prd.depth = 0;
+        prd.diffDepth = 0;
+        prd.isSS = false;
         for( ;; )
         {
             traceRadiance(
@@ -120,7 +131,7 @@ extern "C" __global__ void __raygen__rg()
             }
             if(prd.depth>4){
                //float RRprob = clamp(length(prd.attenuation)/1.732f,0.01f,0.9f); 
-                float RRprob = 0.9;
+                float RRprob = clamp(length(prd.attenuation),0.1, 1.0);
                 if(rnd(prd.seed) > RRprob || prd.depth>8){
                     prd.done=true;
 
@@ -174,10 +185,11 @@ extern "C" __global__ void __miss__radiance()
         prd->done      = true;
     }
     prd->attenuation *= DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
+    prd->attenuation2 *= DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
     prd->origin += prd->direction * optixGetRayTmax();
     prd->direction = DisneyBSDF::SampleScatterDirection(prd->seed);
     float tmpPDF;
-    prd->maxDistance = DisneyBSDF::SampleDistance(prd->seed,prd->extinction,tmpPDF);
+    prd->maxDistance = DisneyBSDF::SampleDistance(prd->seed,prd->scatterStep,tmpPDF);
     prd->scatterPDF= tmpPDF;
     prd->depth++;
 

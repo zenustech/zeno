@@ -1,4 +1,5 @@
-cuda-version need cuda driver 11.5:
+You need to install cuda driver 11.5:
+
 https://developer.download.nvidia.com/compute/cuda/11.5.1/local_installers/cuda_11.5.1_496.13_windows.exe
 
-if houdini cannot display, upgrade your nvidia-gpu driver >=511.79.
+If zeno cannot display, upgrade your nvidia-gpu driver to >= 511.79.

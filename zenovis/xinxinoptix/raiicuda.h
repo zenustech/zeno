@@ -9,6 +9,7 @@
 
 #include <sampleConfig.h>
 
+#include <optix_stack_size.h>
 #include <sutil/CUDAOutputBuffer.h>
 #include <sutil/Camera.h>
 #include <sutil/Exception.h>
@@ -17,17 +18,15 @@
 #include <sutil/Trackball.h>
 #include <sutil/sutil.h>
 #include <sutil/vec_math.h>
-#include <optix_stack_size.h>
 
 #include <type_traits>
 #include <utility>
 
 namespace xinxinoptix {
 
-template <class T>
-struct raii_traits {
+template <class T> struct raii_traits {
     static void deallocate(OptixDeviceContext p) {
-        OPTIX_CHECK( optixDeviceContextDestroy( p ) );
+        OPTIX_CHECK(optixDeviceContextDestroy(p));
     }
 
     static void deallocate(OptixModule p) {
@@ -51,7 +50,7 @@ struct raii_traits {
     }
 
     static void deallocate(CUdeviceptr p) {
-       CUDA_CHECK(cudaFree((void *)p));
+        CUDA_CHECK(cudaFree((void *)p));
     }
 };
 
@@ -100,7 +99,8 @@ struct raii {
     }
 
     template <typename TT = T, std::enable_if_t<std::is_same_v<TT, CUdeviceptr>> * = nullptr>
-    bool resize(std::size_t newSize) noexcept {
+    bool resize(std::size_t newSize, std::size_t incSize = 0) noexcept {
+#if 0
         if (newSize != size) {  // temporary
             printf("\n\nreallocating %d bytes (previous %d bytes)\n\n\n", (int)size, (int)newSize);
             CUDA_CHECK(cudaMalloc(reinterpret_cast<void **>(&reset()), newSize));
@@ -108,6 +108,16 @@ struct raii {
             capacity = newSize;
             return true;
         }
+#else
+        if (newSize > capacity) {
+            auto newCapacity = newSize + std::min(incSize * 4ull, 128ull * 1024 * 1024);
+            //printf("\n\nreallocating %d bytes (previous %d bytes)\n\n\n", (int)size, (int)newCapacity);
+            CUDA_CHECK(cudaMalloc(reinterpret_cast<void **>(&reset()), newCapacity));
+            size = newSize;
+            capacity = newCapacity;
+            return true;
+        }
+#endif
         return false;
     }
 
@@ -172,4 +182,4 @@ struct raii<T, traits, std::void_t<decltype(traits::allocate)>> : raii<T, traits
 };
 #endif
 
-}
+} // namespace xinxinoptix

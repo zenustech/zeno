@@ -11,14 +11,14 @@ void optixrender(int fbo = 0, int samples = 16);
 void *optixgetimg(int &w, int &h);
 void optixinit(int argc, char* argv[]);
 void optixupdatebegin();
-void UpdateDynamicMesh(std::map<std::string, int> const &mtlidlut);
+void UpdateDynamicMesh(std::map<std::string, int> const &mtlidlut, bool staticNeedUpdate);
 void UpdateStaticMesh(std::map<std::string, int> const &mtlidlut);
 void optixupdatematerial(std::vector<std::string> const &shaders, std::vector<std::vector<std::string>> &texs);
 void optixupdatelight();
 void optixupdateend();
 
 void set_window_size(int nx, int ny);
-void set_perspective(float const *U, float const *V, float const *W, float const *E, float aspect, float fov);
+void set_perspective(float const *U, float const *V, float const *W, float const *E, float aspect, float fov, float fpd, float aperture);
 
 void load_object(std::string const &key, std::string const &mtlid, float const *verts, size_t numverts, int const *tris, size_t numtris, std::map<std::string, std::pair<float const *, size_t>> const &vtab);
 void unload_object(std::string const &key);

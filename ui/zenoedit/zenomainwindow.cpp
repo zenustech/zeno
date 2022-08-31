@@ -26,6 +26,7 @@
 #include "dialog/zfeedbackdlg.h"
 #include "startup/zstartup.h"
 #include "settings/zsettings.h"
+#include "panel/zenolights.h"
 
 
 ZenoMainWindow::ZenoMainWindow(QWidget *parent, Qt::WindowFlags flags)
@@ -485,6 +486,7 @@ QString ZenoMainWindow::uniqueDockObjName(DOCK_TYPE type)
     case DOCK_NODE_DATA: return UiHelper::generateUuid("dock_data_");
     case DOCK_VIEW: return UiHelper::generateUuid("dock_view_");
     case DOCK_NODE_PARAMS: return UiHelper::generateUuid("dock_parameter_");
+    case DOCK_LIGHTS: return UiHelper::generateUuid("dock_lights_");
     default:
         return UiHelper::generateUuid("dock_empty_");
     }
@@ -522,6 +524,11 @@ void ZenoMainWindow::onDockSwitched(DOCK_TYPE type)
             pDock->setWidget(type, pPanel);
             break;
         }
+        case DOCK_LIGHTS: {
+            ZenoLights* pPanel = new ZenoLights;
+            pDock->setWidget(type, pPanel);
+            break;
+        }
     }
     pDock->setObjectName(uniqueDockObjName(type));
 }
@@ -542,6 +549,8 @@ void ZenoMainWindow::saveQuit() {
         }
     }
     pGraphsMgm->clear();
+    //clear timeline info.
+    setTimelineInfo(TIMELINE_INFO());
 }
 
 void ZenoMainWindow::save() {
@@ -558,7 +567,11 @@ void ZenoMainWindow::save() {
 
 bool ZenoMainWindow::saveFile(QString filePath) {
     IGraphsModel *pModel = zenoApp->graphsManagment()->currentModel();
-    QString strContent = ZsgWriter::getInstance().dumpProgramStr(pModel);
+
+    APP_SETTINGS settings;
+    settings.timeline = timelineInfo();
+
+    QString strContent = ZsgWriter::getInstance().dumpProgramStr(pModel, settings);
     saveContent(strContent, filePath);
     pModel->setFilePath(filePath);
     pModel->clearDirty();
@@ -574,8 +587,29 @@ void ZenoMainWindow::setInDlgEventLoop(bool bOn) {
     m_bInDlgEventloop = bOn;
 }
 
+TIMELINE_INFO ZenoMainWindow::timelineInfo()
+{
+    DisplayWidget* view = qobject_cast<DisplayWidget*>(m_viewDock->widget());
+    TIMELINE_INFO info;
+    if (view)
+    {
+        info = view->timelineInfo();
+    }
+    return info;
+}
+
+void ZenoMainWindow::setTimelineInfo(TIMELINE_INFO info)
+{
+    DisplayWidget* view = qobject_cast<DisplayWidget*>(m_viewDock->widget());
+    if (view)
+    {
+        view->setTimelineInfo(info);
+    }
+}
+
 void ZenoMainWindow::onFeedBack()
 {
+    /*
     ZFeedBackDlg dlg(this);
     if (dlg.exec() == QDialog::Accepted)
     {
@@ -591,6 +625,7 @@ void ZenoMainWindow::onFeedBack()
             dlg.sendEmail("bug feedback", content, strContent);
         }
     }
+    */
 }
 
 void ZenoMainWindow::clearErrorMark()
@@ -666,5 +701,12 @@ void ZenoMainWindow::onPrimitiveSelected(const std::unordered_set<std::string>& 
     auto docks = findChildren<ZenoDockWidget *>(QString(), Qt::FindDirectChildrenOnly);
     for (ZenoDockWidget *dock : docks) {
         dock->onPrimitiveSelected(primids);
+    }
+}
+
+void ZenoMainWindow::updateLightList() {
+    auto docks = findChildren<ZenoDockWidget *>(QString(), Qt::FindDirectChildrenOnly);
+    for (ZenoDockWidget *dock : docks) {
+        dock->newFrameUpdate();
     }
 }

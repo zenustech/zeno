@@ -3,6 +3,7 @@ file(GLOB DEM_SOURCE *.cpp *.h)
 find_package(Eigen3 REQUIRED)
 
 target_sources(zeno PRIVATE ${DEM_SOURCE})
+zeno_disable_warning(${DEM_SOURCE})
 
 target_include_directories(zeno PRIVATE .)
 target_include_directories(zeno PRIVATE ./include)
