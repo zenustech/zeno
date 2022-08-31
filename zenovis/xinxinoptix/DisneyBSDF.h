@@ -743,8 +743,8 @@ namespace DisneyBSDF{
     static __inline__ __device__
     float SampleDistance(unsigned int &seed, float scatterDistance, float &pdf)
     {
-        if(scatterDistance > 99){
-            return 1e6f;
+        if(scatterDistance == 0.0f){
+            return 1e16f;
         }
         float s = -log(rnd(seed)) * scatterDistance;
         pdf = 1.0f;
