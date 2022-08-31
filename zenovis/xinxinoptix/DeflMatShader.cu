@@ -73,6 +73,7 @@ MatInput const &attrs) {
     float mat_flatness = 0.0;
     float mat_thin = 0.0;
     float mat_doubleSide= 0.0;
+    float mat_scatterStep = 0.0f;
     vec3  mat_sssColor = vec3(0.0f,0.0f,0.0f);
     vec3  mat_sssParam = vec3(0.0f,0.0f,0.0f);
     vec3  mat_normal = vec3(0.0f, 0.0f, 1.0f);
@@ -103,6 +104,7 @@ MatInput const &attrs) {
     mats.doubleSide = mat_doubleSide;
     mats.sssColor = mat_sssColor;
     mats.sssParam = mat_sssParam;
+    mats.scatterStep = mat_scatterStep;
     return mats;
 }
 __forceinline__ __device__ float3 interp(float2 barys, float3 a, float3 b, float3 c)
@@ -256,6 +258,7 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     auto thin = mats.thin;
     auto doubleSide = mats.doubleSide;
     auto sssParam = mats.sssParam;
+    auto scatterStep = mats.scatterStep;
     unsigned short isLight = rt_data->lightMark[inst_idx * 1024 + prim_idx];
 
     // Stochastic alpha test to get an alpha blend effect.
@@ -480,6 +483,7 @@ extern "C" __global__ void __closesthit__radiance()
     auto thin = mats.thin;
     auto transmittanceColor = mats.sssColor;
     auto sssColor = mats.sssParam;
+    auto scatterStep = mats.scatterStep;
     //discard fully opacity pixels
     prd->opacity = opacity;
 
@@ -612,8 +616,9 @@ extern "C" __global__ void __closesthit__radiance()
                 prd->extinction = extinction;
                 prd->scatterDistance = scatterDistance;
                 prd->transColor = transmittanceColor;
+                prd->scatterStep = scatterStep;
                 float tmpPDF = 1.0f;
-                prd->maxDistance = DisneyBSDF::SampleDistance(prd->seed,prd->scatterDistance,tmpPDF);
+                prd->maxDistance = DisneyBSDF::SampleDistance(prd->seed,prd->scatterStep,tmpPDF);
                 //prd->maxDistance = scatterDistance;
                 prd->scatterPDF = tmpPDF;
             }
@@ -632,7 +637,7 @@ extern "C" __global__ void __closesthit__radiance()
                 prd->attenuation2 *= DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
                 prd->attenuation *= DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
                 float tmpPDF = 1.0f;
-                prd->maxDistance = DisneyBSDF::SampleDistance(prd->seed,prd->scatterDistance,tmpPDF);
+                prd->maxDistance = DisneyBSDF::SampleDistance(prd->seed,prd->scatterStep,tmpPDF);
                 prd->scatterPDF = tmpPDF;
 
 	    }

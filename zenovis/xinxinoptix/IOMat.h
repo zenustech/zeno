@@ -21,6 +21,7 @@ struct MatOutput {
     float scatterDistance;
     float thin;
     float doubleSide;
+    float scatterStep;
     vec3  sssColor;
     vec3  sssParam;
 
