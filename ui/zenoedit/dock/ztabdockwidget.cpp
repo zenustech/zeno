@@ -11,6 +11,7 @@
 #include "zenomainwindow.h"
 #include "zenoapplication.h"
 #include "graphsmanagment.h"
+#include "docktabcontent.h"
 #include <zenoui/style/zenostyle.h>
 #include <zenoui/comctrl/zicontoolbutton.h>
 #include <zenoui/model/modelrole.h>
@@ -55,48 +56,7 @@ QWidget* ZTabDockWidget::createTabWidget(PANEL_TYPE type)
     {
         case PANEL_NODE_PARAMS:
         {
-            QWidget* wid = new QWidget;
-
-            QHBoxLayout* pToolLayout = new QHBoxLayout;
-            pToolLayout->setContentsMargins(ZenoStyle::dpiScaled(8), ZenoStyle::dpiScaled(4),
-                ZenoStyle::dpiScaled(4), ZenoStyle::dpiScaled(4));
-
-            ZIconLabel* pIcon = new ZIconLabel();
-            pIcon->setIcons(ZenoStyle::dpiScaledSize(QSize(20, 20)), ":/icons/nodeclr-yellow.svg", "");
-
-            m_plblName = new QLabel("");
-            m_plblName->setFont(QFont("Segoe UI Bold", 10));
-            m_plblName->setMinimumWidth(ZenoStyle::dpiScaled(128));
-            QPalette palette = m_plblName->palette();
-            palette.setColor(m_plblName->foregroundRole(), QColor("#A3B1C0"));
-            m_plblName->setPalette(palette);
-
-            m_pLineEdit = new QLineEdit;
-            m_pLineEdit->setText("");
-            m_pLineEdit->setProperty("cssClass", "zeno2_2_lineedit");
-            m_pLineEdit->setReadOnly(true);
-
-            ZIconToolButton* pFixBtn = new ZIconToolButton(":/icons/fixpanel.svg", ":/icons/fixpanel-on.svg");
-            ZIconToolButton* pWikiBtn = new ZIconToolButton(":/icons/wiki.svg", ":/icons/wiki-on.svg");
-            ZIconToolButton* pSettingBtn = new ZIconToolButton(":/icons/settings.svg", ":/icons/settings-on.svg");
-
-            pToolLayout->addWidget(pIcon);
-            pToolLayout->addWidget(m_plblName);
-            pToolLayout->addWidget(m_pLineEdit);
-            pToolLayout->addStretch();
-            pToolLayout->addWidget(pFixBtn);
-            pToolLayout->addWidget(pWikiBtn);
-            pToolLayout->addWidget(pSettingBtn);
-            pToolLayout->setSpacing(9);
-
-            QVBoxLayout* pVLayout = new QVBoxLayout;
-            pVLayout->addLayout(pToolLayout);
-            pVLayout->setContentsMargins(0, 0, 0, 0);
-            pVLayout->setSpacing(0);
-
-            ZenoPropPanel* prop = new ZenoPropPanel;
-            pVLayout->addWidget(prop);
-            wid->setLayout(pVLayout);
+            DockContent_Parameter* wid = new DockContent_Parameter;
             return wid;
         }
         case PANEL_VIEW:
@@ -105,7 +65,7 @@ QWidget* ZTabDockWidget::createTabWidget(PANEL_TYPE type)
         }
         case PANEL_EDITOR:
         {
-            return new ZenoGraphsEditor(pMainWin);
+            return new DockContent_Editor;
         }
         case PANEL_NODE_DATA:
         {
@@ -159,23 +119,9 @@ void ZTabDockWidget::onNodesSelected(const QModelIndex& subgIdx, const QModelInd
     for (int i = 0; i < m_tabWidget->count(); i++)
     {
         QWidget* wid = m_tabWidget->widget(i);
-        if (ZenoPropPanel* prop = wid->findChild<ZenoPropPanel*>())
+        if (DockContent_Parameter* prop = qobject_cast<DockContent_Parameter*>(wid))
         {
-            IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
-            prop->reset(pModel, subgIdx, nodes, select);
-
-            if (!nodes.isEmpty())
-            {
-                const QModelIndex& idx = nodes[0];
-                if (select) {
-                    m_plblName->setText(idx.data(ROLE_OBJNAME).toString());
-                    m_pLineEdit->setText(idx.data(ROLE_OBJID).toString());
-                }
-                else{
-                    m_plblName->setText("");
-                    m_pLineEdit->setText("");
-                }
-            }
+            prop->onNodesSelected(subgIdx, nodes, select);
         }
     }
 }

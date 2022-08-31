@@ -56,7 +56,7 @@ void ZenoGraphsEditor::initUI()
     m_ui->treeviewBtn->setSize(szIcons, margins);
     m_ui->searchBtn->setSize(szIcons, margins);
 
-    m_ui->stackedWidget->hide();
+    //m_ui->stackedWidget->hide();
     m_ui->splitter->setStretchFactor(1, 5);
 
     m_ui->mainStackedWidget->setCurrentWidget(m_ui->welcomePage);

@@ -158,5 +158,21 @@
     <file>icons/checkbox-light.svg</file>
     <file>icons/file-loader.svg</file>
     <file>icons/file-loader-on.svg</file>
+    <file>icons/node-fold.svg</file>
+    <file>icons/node-fold-on.svg</file>
+    <file>icons/node-unfold.svg</file>
+    <file>icons/node-unfold-on.svg</file>
+    <file>icons/snapgrid.svg</file>
+    <file>icons/snapgrid-on.svg</file>
+    <file>icons/full-panel.svg</file>
+    <file>icons/full-panel-on.svg</file>
+    <file>icons/subnet-treeview.svg</file>
+    <file>icons/subnet-treeview-on.svg</file>
+    <file>icons/subnet-listview.svg</file>
+    <file>icons/subnet-listview-on.svg</file>
+    <file>icons/subnet-mgr.svg</file>
+    <file>icons/subnet-mgr-on.svg</file>
+    <file>icons/blackboard.svg</file>
+    <file>icons/blackboard-on.svg</file>
 </qresource>
 </RCC>
