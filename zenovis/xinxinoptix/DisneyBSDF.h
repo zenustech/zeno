@@ -52,7 +52,7 @@ namespace DisneyBSDF{
     vec3 CalculateExtinction(vec3 apparantColor, float scatterDistance)
     {
 
-        return 1.0f-apparantColor;
+        return -log(clamp(apparantColor, vec3(0.00001), vec3(0.99999)))/scatterDistance;
 
     }
 
@@ -373,7 +373,7 @@ namespace DisneyBSDF{
         if(diffuseW > 0.0f){
             float forwardDiffusePdfW = abs(wi.z);
             float reverseDiffusePdfW = abs(wo.z);
-            float diffuse = EvaluateDisneyDiffuse(1.0,flatness, wi, wo, wm, thin);
+            float diffuse = EvaluateDisneyDiffuse(roughness,flatness, wi, wo, wm, thin);
 
             vec3 lobeOfSheen =  EvaluateSheen(baseColor,sheen,sheenTint, HoL);
 
@@ -665,6 +665,7 @@ namespace DisneyBSDF{
         unsigned int& seed,
         vec3 baseColor,
         vec3 transmittanceColor,
+        vec3 sssColor,
         float scatterDistance,
         float sheen,
         float sheenTint,
@@ -719,8 +720,8 @@ namespace DisneyBSDF{
             }else{
                 flag = transmissionEvent;
                 phaseFuncion = (!is_inside)  ? isotropic : vacuum;
-                extinction = CalculateExtinction(transmittanceColor, scatterDistance);
-                color = vec3(1.0f);
+                extinction = CalculateExtinction(sssColor, scatterDistance);
+                color = transmittanceColor;
 
             }
         }else{
@@ -729,7 +730,7 @@ namespace DisneyBSDF{
 
         float HoL = dot(wm,wo);
         vec3 sheenTerm = EvaluateSheen(baseColor, sheen, sheenTint, HoL);
-        float diff = EvaluateDisneyDiffuse(1.0, flatness, wi, wo, wm, thin);
+        float diff = EvaluateDisneyDiffuse(roughness, flatness, wi, wo, wm, thin);
 
         reflectance = sheen + color * diff;
         fPdf = abs(NoL) * pdf;
@@ -778,6 +779,7 @@ namespace DisneyBSDF{
         unsigned int& seed,
         vec3 baseColor,
         vec3 transmiianceColor,
+        vec3 sssColor,
         float metallic,
         float subsurface,
         float specular,
