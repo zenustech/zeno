@@ -79,7 +79,7 @@ void verifyVersion()
                    "+pipe"
 #endif
 #endif
-#if defined(ZENO_ENABLE_OPENMP)
+#if defined(_OPENMP)
                    "+omp"
 #endif
 #if defined(ZENO_PARALLEL_STL)
