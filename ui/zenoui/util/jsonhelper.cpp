@@ -5,6 +5,8 @@
 #include <zenoui/model/curvemodel.h>
 #include <zenoui/model/variantptr.h>
 #include <zeno/funcs/ParseObjectFromUi.h>
+#include <zenoui/util/uihelper.h>
+
 
 using namespace zeno::iotags;
 using namespace zeno::iotags::curve;
@@ -66,8 +68,13 @@ namespace JsonHelper
                 if (!vec.isEmpty())
                 {
                     writer.StartArray();
+
+                    int dim = -1;
+                    bool bFloat = false;
+                    UiHelper::parseVecType(type, dim, bFloat);
+
                     for (int i = 0; i < vec.size(); i++) {
-                        if (type == "vec3i")
+                        if (!bFloat)
                             writer.Int(vec[i]);
                         else
                             writer.Double(vec[i]);

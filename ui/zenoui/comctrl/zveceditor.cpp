@@ -37,7 +37,7 @@ UI_VECTYPE ZVecEditor::vec() const
 	UI_VECTYPE v;
 	for (int i = 0; i < m_editors.size(); i++)
 	{
-		v.append(m_editors[i]->text().toDouble());
+		v.append(m_editors[i]->text().toFloat());
 	}
 	return v;
 }
