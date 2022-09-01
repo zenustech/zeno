@@ -39,9 +39,6 @@ public:
 	 */
 	virtual QModelIndex fork(const QModelIndex& subgIdx, const QModelIndex& subnetNodeIdx) = 0;
 
-	/* get the corresponding scene by model item*/
-	virtual QGraphicsScene* scene(const QModelIndex& subgIdx) = 0;
-
 	virtual void getNodeIndices(const QModelIndex& subGpIdx, QModelIndexList& subgNodes, QModelIndexList& normNodes) = 0;
 
 	//virtual QModelIndex clone()
@@ -88,6 +85,8 @@ public:
 	virtual void clearDirty() = 0;
 	virtual void collaspe(const QModelIndex& subgIdx) = 0;
 	virtual void expand(const QModelIndex& subgIdx) = 0;
+    virtual void setIOProcessing(bool bIOProcessing) = 0;
+	virtual bool IsIOProcessing() const = 0;
     virtual void beginTransaction(const QString& name) = 0;
     virtual void endTransaction() = 0;
 

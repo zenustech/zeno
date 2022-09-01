@@ -13,7 +13,6 @@
 ZenoApplication::ZenoApplication(int &argc, char **argv)
     : QApplication(argc, argv)
     , m_pGraphs(new GraphsManagment())
-    , m_bIOProcessing(false)
     , m_errSteam(std::clog)
 #if defined(ZENO_MULTIPROCESS) && defined(ZENO_IPC_USE_TCP)
     , m_server(nullptr)
@@ -88,16 +87,6 @@ GraphsManagment *ZenoApplication::graphsManagment() const
 QStandardItemModel* ZenoApplication::logModel() const
 {
     return m_pGraphs->logModel();
-}
-
-void ZenoApplication::setIOProcessing(bool bIOProcessing)
-{
-    m_bIOProcessing = bIOProcessing;
-}
-
-bool ZenoApplication::IsIOProcessing() const
-{
-    return m_bIOProcessing;
 }
 
 #if defined(ZENO_MULTIPROCESS) && defined(ZENO_IPC_USE_TCP)

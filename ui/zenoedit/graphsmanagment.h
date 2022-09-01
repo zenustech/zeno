@@ -28,6 +28,7 @@ public:
     void appendLog(QtMsgType type, QString fileName, int ln, const QString &msg);
     void appendErr(const QString& nodeName, const QString& msg);
     void appendMsgStream(const QByteArray& arr);
+    ZenoSubGraphScene* gvScene(const QModelIndex& subgIdx);
 
 signals:
     void modelInited(IGraphsModel*);
@@ -35,6 +36,7 @@ signals:
 
 private slots:
     void onModelDataChanged(const QModelIndex& subGpIdx, const QModelIndex& idx, int role);
+    void onRowsAboutToBeRemoved(const QModelIndex& parent, int first, int last);
 
 private:
     IGraphsModel *m_model;
@@ -42,6 +44,7 @@ private:
     QStandardItemModel* m_logModel;     //connection with scene.
     mutable QMutex m_mutex;
     QString m_currFile;
+    QMap<QString, ZenoSubGraphScene*> m_scenes;
 };
 
 #endif

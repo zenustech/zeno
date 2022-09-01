@@ -26,6 +26,7 @@
 #include "startup/zstartup.h"
 #include "settings/zsettings.h"
 #include "panel/zenolights.h"
+#include "nodesys/zenosubgraphscene.h"
 
 
 ZenoMainWindow::ZenoMainWindow(QWidget *parent, Qt::WindowFlags flags)
@@ -663,14 +664,15 @@ void ZenoMainWindow::clearErrorMark()
     //clear all error mark at every scene.
     auto docks = findChildren<ZenoDockWidget*>(QString(), Qt::FindDirectChildrenOnly);
 
-    IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+    auto graphsMgm = zenoApp->graphsManagment();
+    IGraphsModel* pModel = graphsMgm->currentModel();
     if (!pModel) {
         return;
     }
     const QModelIndexList& lst = pModel->subgraphsIndice();
     for (const QModelIndex& idx : lst)
     {
-        ZenoSubGraphScene* pScene = qobject_cast<ZenoSubGraphScene*>(pModel->scene(idx));
+        ZenoSubGraphScene* pScene = graphsMgm->gvScene(idx);
         if (pScene) {
             pScene->clearMark();
         }

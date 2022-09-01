@@ -21,8 +21,6 @@ public:
     GraphsManagment *graphsManagment() const;
     void initFonts();
     void initStyleSheets();
-    void setIOProcessing(bool bIOProcessing);
-    bool IsIOProcessing() const;
     ZenoMainWindow* getMainWindow();
 	QWidget* getWindow(const QString& objName);
 #if defined(ZENO_MULTIPROCESS) && defined(ZENO_IPC_USE_TCP)
@@ -38,7 +36,6 @@ private:
 #if defined(ZENO_MULTIPROCESS) && defined(ZENO_IPC_USE_TCP)
     ZTcpServer* m_server;
 #endif
-    bool m_bIOProcessing;
     QDir m_appDataPath;
 };
 

@@ -5,7 +5,6 @@
 #include <QItemSelectionModel>
 
 #include <zenoui/include/igraphsmodel.h>
-#include "../nodesys/zenosubgraphscene.h"
 #include "subgraphmodel.h"
 #include <zenoui/model/modeldata.h>
 #include <stack>
@@ -24,13 +23,6 @@ class GraphsModel : public IGraphsModel
 {
     Q_OBJECT
     typedef IGraphsModel _base;
-
-    struct SUBMODEL_SCENE
-    {
-        SubGraphModel* pModel;
-        ZenoSubGraphScene* pScene;
-        SUBMODEL_SCENE() : pModel(nullptr), pScene(nullptr) {}
-    };
 
 public:
     GraphsModel(QObject* parent = nullptr);
@@ -117,7 +109,6 @@ public:
     QModelIndexList subgraphsIndice() const override;
     QStandardItemModel* linkModel() const;
     QModelIndex getSubgraphIndex(const QModelIndex& linkIdx);
-    QGraphicsScene* scene(const QModelIndex& subgIdx) override;
     QRectF viewRect(const QModelIndex& subgIdx) override;
     QList<SEARCH_RESULT> search(const QString& content, int searchOpts) override;
 	void collaspe(const QModelIndex& subgIdx) override;
@@ -131,6 +122,8 @@ public:
     void removeLinks(const QList<QPersistentModelIndex>& info, const QModelIndex& subGpIdx, bool enableTransaction = false);
     void updateSocket(const QString& id, SOCKET_UPDATE_INFO info, const QModelIndex& subGpIdx, bool enableTransaction = false);
     void updateLinkInfo(const QPersistentModelIndex& linkIdx, const LINK_UPDATE_INFO& info, bool enableTransaction = false);
+    void setIOProcessing(bool bIOProcessing) override;
+    bool IsIOProcessing() const override;
 
 signals:
     void graphRenamed(const QString& oldName, const QString& newName);
@@ -167,7 +160,7 @@ private:
     void endApiLevel();
     void onApiBatchFinished();
 
-    QVector<SUBMODEL_SCENE> m_subGraphs;
+    QVector<SubGraphModel*> m_subGraphs;
     QItemSelectionModel* m_selection;
     QStandardItemModel* m_linkModel;
     NODE_DESCS m_nodesDesc;
@@ -179,6 +172,7 @@ private:
     std::stack<bool> m_retStack;
     int m_apiLevel;
     bool m_dirty;
+    bool m_bIOProcessing;
 
     friend class ApiLevelScope;
 };

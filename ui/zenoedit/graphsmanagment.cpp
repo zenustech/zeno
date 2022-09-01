@@ -15,13 +15,18 @@
 class IOBreakingBatch
 {
 public:
-    IOBreakingBatch() {
-        zenoApp->setIOProcessing(true);
+    IOBreakingBatch(IGraphsModel* model) : m_model(model) {
+        if (m_model)
+            m_model->setIOProcessing(true);
     }
 
     ~IOBreakingBatch() {
-        zenoApp->setIOProcessing(false);
+        if (m_model)
+            m_model->setIOProcessing(false);
     }
+
+private:
+    IGraphsModel* m_model;
 };
 
 
@@ -49,8 +54,18 @@ void GraphsManagment::setCurrentModel(IGraphsModel* model)
     m_model = model;
     m_pTreeModel = new GraphsTreeModel(this);
     m_pTreeModel->init(model);
+
+    for (int i = 0; i < m_model->rowCount(); i++)
+    {
+        const QModelIndex& subgIdx = m_model->index(i, 0);
+        const QString& subgName = subgIdx.data(ROLE_OBJNAME).toString();
+        m_scenes[subgName] = nullptr;
+    }
+
     emit modelInited(m_model);
     connect(m_model, SIGNAL(apiBatchFinished()), this, SIGNAL(modelDataChanged()));
+    connect(m_model, SIGNAL(rowsAboutToBeRemoved(const QModelIndex&, int, int)),
+        this, SLOT(onRowsAboutToBeRemoved(const QModelIndex&, int, int)));
 }
 
 GraphsTreeModel* GraphsManagment::treeModel()
@@ -63,10 +78,10 @@ IGraphsModel* GraphsManagment::openZsgFile(const QString& fn)
     GraphsModel* pModel = new GraphsModel(this);
 
     {
-        IOBreakingBatch batch;
-		ModelAcceptor acceptor(pModel, false);
-		if (!ZsgReader::getInstance().openFile(fn, &acceptor))
-			return nullptr;
+        IOBreakingBatch batch(pModel);
+        ModelAcceptor acceptor(pModel, false);
+        if (!ZsgReader::getInstance().openFile(fn, &acceptor))
+            return nullptr;
     }
 
     pModel->clearDirty();
@@ -132,6 +147,26 @@ void GraphsManagment::clear()
 
         delete m_pTreeModel;
         m_pTreeModel = nullptr;
+
+        for (auto scene : m_scenes)
+        {
+            delete scene;
+        }
+        m_scenes.clear();
+    }
+}
+
+void GraphsManagment::onRowsAboutToBeRemoved(const QModelIndex& parent, int first, int last)
+{
+    const QModelIndex& idx = m_model->index(first, 0);
+    if (idx.isValid())
+    {
+        const QString& subgName = idx.data(ROLE_OBJNAME).toString();
+        if (m_scenes.find(subgName) != m_scenes.end())
+        {
+            delete m_scenes[subgName];
+            m_scenes.remove(subgName);
+        }
     }
 }
 
@@ -166,6 +201,20 @@ void GraphsManagment::appendMsgStream(const QByteArray& arr)
             ZWidgetErrStream::appendFormatMsg(line.toStdString());
         }
     }
+}
+
+ZenoSubGraphScene* GraphsManagment::gvScene(const QModelIndex& subgIdx)
+{
+    if (!subgIdx.isValid())
+        return nullptr;
+
+    const QString& subgName = subgIdx.data(ROLE_OBJNAME).toString();
+    if (m_scenes[subgName] == nullptr)
+    {
+        m_scenes[subgName] = new ZenoSubGraphScene(this);
+        m_scenes[subgName]->initModel(subgIdx);
+    }
+    return m_scenes[subgName];
 }
 
 void GraphsManagment::appendErr(const QString& nodeName, const QString& msg)

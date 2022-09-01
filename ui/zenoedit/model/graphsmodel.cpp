@@ -8,7 +8,6 @@
 #include <zenoui/util/cihou.h>
 #include <zeno/utils/scope_exit.h>
 #include "zenoapplication.h"
-#include "acceptor/transferacceptor.h"
 
 
 class ApiLevelScope
@@ -34,6 +33,7 @@ GraphsModel::GraphsModel(QObject *parent)
     , m_linkModel(new QStandardItemModel(this))
     , m_stack(new QUndoStack(this))
     , m_apiLevel(0)
+    , m_bIOProcessing(false)
 {
     m_selection = new QItemSelectionModel(this);
 
@@ -67,8 +67,8 @@ SubGraphModel* GraphsModel::subGraph(const QString& name) const
 {
     for (int i = 0; i < m_subGraphs.size(); i++)
     {
-        if (m_subGraphs[i].pModel->name() == name)
-            return m_subGraphs[i].pModel;
+        if (m_subGraphs[i]->name() == name)
+            return m_subGraphs[i];
     }
     return nullptr;
 }
@@ -77,7 +77,7 @@ SubGraphModel* GraphsModel::subGraph(int idx) const
 {
     if (idx >= 0 && idx < m_subGraphs.count())
     {
-        return m_subGraphs[idx].pModel;
+        return m_subGraphs[idx];
     }
     return nullptr;
 }
@@ -196,7 +196,7 @@ QModelIndex GraphsModel::index(const QString& subGraphName) const
 {
 	for (int row = 0; row < m_subGraphs.size(); row++)
 	{
-		if (m_subGraphs[row].pModel->name() == subGraphName)
+		if (m_subGraphs[row]->name() == subGraphName)
 		{
             return createIndex(row, 0, nullptr);
 		}
@@ -208,7 +208,7 @@ QModelIndex GraphsModel::indexBySubModel(SubGraphModel* pSubModel) const
 {
     for (int row = 0; row < m_subGraphs.size(); row++)
     {
-        if (m_subGraphs[row].pModel == pSubModel)
+        if (m_subGraphs[row] == pSubModel)
             return createIndex(row, 0, nullptr);
     }
     return QModelIndex();
@@ -234,7 +234,7 @@ QVariant GraphsModel::data(const QModelIndex& index, int role) const
     case Qt::DisplayRole:
     case Qt::EditRole:
     case ROLE_OBJNAME:
-        return m_subGraphs[index.row()].pModel->name();
+        return m_subGraphs[index.row()]->name();
     }
     return QVariant();
 }
@@ -515,12 +515,10 @@ void GraphsModel::appendSubGraph(SubGraphModel* pGraph)
 {
     int row = m_subGraphs.size();
 	beginInsertRows(QModelIndex(), row, row);
-    SUBMODEL_SCENE info;
-    info.pModel = pGraph;
-    m_subGraphs.append(info);
+    m_subGraphs.append(pGraph);
 	endInsertRows();
     //the subgraph desc has been inited when processing io.
-    if (!zenoApp->IsIOProcessing())
+    if (!IsIOProcessing())
     {
         NODE_DESC desc = getSubgraphDesc(pGraph);
         if (!desc.name.isEmpty() && m_subgsDesc.find(desc.name) == m_subgsDesc.end())
@@ -534,7 +532,7 @@ void GraphsModel::appendSubGraph(SubGraphModel* pGraph)
 void GraphsModel::removeGraph(int idx)
 {
     beginRemoveRows(QModelIndex(), idx, idx);
-    const QString& descName = m_subGraphs[idx].pModel->name();
+    const QString& descName = m_subGraphs[idx]->name();
     m_subGraphs.remove(idx);
     endRemoveRows();
 
@@ -716,7 +714,7 @@ void GraphsModel::endTransaction()
 
 void GraphsModel::beginApiLevel()
 {
-    if (zenoApp->IsIOProcessing())
+    if (IsIOProcessing())
         return;
 
     //todo: Thread safety
@@ -725,7 +723,7 @@ void GraphsModel::beginApiLevel()
 
 void GraphsModel::endApiLevel()
 {
-    if (zenoApp->IsIOProcessing())
+    if (IsIOProcessing())
         return;
 
     m_apiLevel--;
@@ -785,7 +783,7 @@ int GraphsModel::itemCount(const QModelIndex& subGpIdx) const
 void GraphsModel::addNode(const NODE_DATA& nodeData, const QModelIndex& subGpIdx, bool enableTransaction)
 {
     //TODO: add this at the beginning of all apis?
-    bool bEnableIOProc = zenoApp->IsIOProcessing();
+    bool bEnableIOProc = IsIOProcessing();
     if (bEnableIOProc)
         enableTransaction = false;
 
@@ -873,7 +871,7 @@ void GraphsModel::removeNode(const QString& nodeid, const QModelIndex& subGpIdx,
 	SubGraphModel* pGraph = subGraph(subGpIdx.row());
     ZASSERT_EXIT(pGraph);
 
-    bool bEnableIOProc = zenoApp->IsIOProcessing();
+    bool bEnableIOProc = IsIOProcessing();
     if (bEnableIOProc)
         enableTransaction = false;
 
@@ -1331,6 +1329,16 @@ void GraphsModel::updateLinkInfo(const QPersistentModelIndex& linkIdx, const LIN
     }
 }
 
+void GraphsModel::setIOProcessing(bool bIOProcessing)
+{
+    m_bIOProcessing = bIOProcessing;
+}
+
+bool GraphsModel::IsIOProcessing() const
+{
+    return m_bIOProcessing;
+}
+
 void GraphsModel::removeSubGraph(const QString& name)
 {
     if (name.compare("main", Qt::CaseInsensitive) == 0)
@@ -1338,13 +1346,13 @@ void GraphsModel::removeSubGraph(const QString& name)
 
     for (int i = 0; i < m_subGraphs.size(); i++)
     {
-        if (m_subGraphs[i].pModel->name() == name)
+        if (m_subGraphs[i]->name() == name)
         {
             removeGraph(i);
         }
         else
         {
-            m_subGraphs[i].pModel->removeNodeByDescName(name);
+            m_subGraphs[i]->removeNodeByDescName(name);
         }
     }
 }
@@ -1736,7 +1744,7 @@ void GraphsModel::updateDescInfo(const QString& descName, const SOCKET_UPDATE_IN
 
     for (int i = 0; i < m_subGraphs.size(); i++)
     {
-        SubGraphModel* pModel = m_subGraphs[i].pModel;
+        SubGraphModel* pModel = m_subGraphs[i];
         if (pModel->name() != descName)
         {
             QModelIndexList results = pModel->match(index(0, 0), ROLE_OBJNAME, descName, -1, Qt::MatchContains);
@@ -1932,25 +1940,13 @@ QModelIndex GraphsModel::getSubgraphIndex(const QModelIndex& linkIdx)
 	const QString& inNode = linkIdx.data(ROLE_INNODE).toString();
     for (int r = 0; r < m_subGraphs.size(); r++)
     {
-        SubGraphModel* pSubModel = m_subGraphs[r].pModel;
+        SubGraphModel* pSubModel = m_subGraphs[r];
 		if (pSubModel->index(inNode).isValid())
 		{
             return index(r, 0);
 		}
     }
     return QModelIndex();
-}
-
-QGraphicsScene* GraphsModel::scene(const QModelIndex& subgIdx)
-{
-    ZenoSubGraphScene* pScene = m_subGraphs[subgIdx.row()].pScene;
-    if (pScene == nullptr)
-    {
-        pScene = new ZenoSubGraphScene(this);
-        pScene->initModel(subgIdx);
-        m_subGraphs[subgIdx.row()].pScene = pScene;
-    }
-    return pScene;
 }
 
 QRectF GraphsModel::viewRect(const QModelIndex& subgIdx)
@@ -2044,7 +2040,7 @@ QList<SEARCH_RESULT> GraphsModel::search(const QString& content, int searchOpts)
     {
         for (auto subgInfo : m_subGraphs)
         {
-            SubGraphModel* pModel = subgInfo.pModel;
+            SubGraphModel* pModel = subgInfo;
             QModelIndex subgIdx = indexBySubModel(pModel);
             //todo: searching by key.
             QModelIndexList lst = pModel->match(pModel->index(0, 0), ROLE_OBJNAME, content, -1, Qt::MatchContains);
@@ -2062,7 +2058,7 @@ QList<SEARCH_RESULT> GraphsModel::search(const QString& content, int searchOpts)
     {
         for (auto subgInfo : m_subGraphs)
         {
-            SubGraphModel* pModel = subgInfo.pModel;
+            SubGraphModel* pModel = subgInfo;
             QModelIndex subgIdx = indexBySubModel(pModel);
             QModelIndexList lst = pModel->match(pModel->index(0, 0), ROLE_OBJID, content, -1, Qt::MatchContains);
             if (!lst.isEmpty())

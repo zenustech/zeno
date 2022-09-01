@@ -2,6 +2,7 @@
 #include "zenosubnetlistview.h"
 #include <comctrl/ztoolbutton.h>
 #include "zenoapplication.h"
+#include "../nodesys/zenosubgraphscene.h"
 #include "zenowelcomepage.h"
 #include "graphsmanagment.h"
 #include "model/graphsmodel.h"
@@ -387,7 +388,8 @@ void ZenoGraphsEditor::activateTab(const QString& subGraphName, const QString& p
 	if (idx == -1)
 	{
 		const QModelIndex& subgIdx = pModel->index(subGraphName);
-		ZenoSubGraphScene* pScene = qobject_cast<ZenoSubGraphScene*>(pModel->scene(subgIdx));
+
+        ZenoSubGraphScene* pScene = graphsMgm->gvScene(subgIdx);
 		ZASSERT_EXIT(pScene);
 
         ZenoSubGraphView* pView = new ZenoSubGraphView;
@@ -479,7 +481,8 @@ void ZenoGraphsEditor::onLogInserted(const QModelIndex& parent, int first, int l
                 else
                 {
                     const QModelIndex& subgIdx = m_model->index(subgName);
-                    ZenoSubGraphScene* pScene = qobject_cast<ZenoSubGraphScene*>(m_model->scene(subgIdx));
+                    auto graphsMgm = zenoApp->graphsManagment();
+                    ZenoSubGraphScene* pScene = graphsMgm->gvScene(subgIdx);
                     if (pScene)
                     {
                         pScene->markError(objId);
