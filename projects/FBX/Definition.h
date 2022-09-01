@@ -461,6 +461,7 @@ struct IKeyMorph : zeno::IObjectClone<IKeyMorph>{
 struct IMeshName : zeno::IObjectClone<IMeshName>{
     std::string value;
     std::string value_relName;
+    std::string value_matName;
 };
 
 struct IMeshInfo : zeno::IObjectClone<IMeshInfo>{
@@ -474,10 +475,24 @@ struct FBXData : zeno::IObjectClone<FBXData>{
     IIndices iIndices;
     IBlendSData iBlendSData;
     IKeyMorph iKeyMorph;
-    IMaterial iMaterial;
     IBoneOffset iBoneOffset;
+
+    IMaterial iMaterial;
     ICamera iCamera;
     ILight iLight;
+};
+
+struct IFBXData : zeno::IObjectClone<IFBXData>{
+    std::unordered_map<std::string, std::shared_ptr<FBXData>> value;
+};
+
+struct MatData : zeno::IObjectClone<MatData>{
+    IFBXData iFbxData;
+    SMaterial sMaterial;
+};
+
+struct IMatData : zeno::IObjectClone<IMatData>{
+    std::unordered_map<std::string, MatData> value;
 };
 
 struct Helper{

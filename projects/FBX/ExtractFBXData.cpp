@@ -161,6 +161,47 @@ ZENDEFNODE(ExtractMatDict,
             }
            });
 
+struct ExtractMatData : zeno::INode {
+
+    virtual void apply() override {
+        auto data = get_input<MatData>("data");
+        auto datas = std::make_shared<zeno::ListObject>();
+        auto matName = std::make_shared<zeno::StringObject>();
+
+        for(auto [k, v]: data->iFbxData.value){
+            datas->arr.push_back(v);
+        }
+        matName->set(data->sMaterial.matName);
+
+        auto texLists = std::make_shared<zeno::ListObject>();
+        auto tl = data->sMaterial.getTexList();
+        for(auto&p: tl){
+            auto s = std::make_shared<zeno::StringObject>();
+            s->value = p;
+            texLists->arr.emplace_back(s);
+        }
+
+        set_output("datas", std::move(datas));
+        set_output("matName", std::move(matName));
+        set_output("texLists", std::move(texLists));
+    }
+};
+ZENDEFNODE(ExtractMatData,
+           {       /* inputs: */
+            {
+                "data"
+            },  /* outputs: */
+            {
+                "datas", "matName", "texLists"
+            },  /* params: */
+            {
+
+            },  /* category: */
+            {
+                "FBX",
+            }
+           });
+
 struct ExtractCameraData : zeno::INode {
 
     virtual void apply() override {

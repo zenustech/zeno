@@ -41,7 +41,6 @@ struct EvalAnim{
 
         m_Vertices = fbxData->iVertices.value;
         m_Indices = fbxData->iIndices.value;
-        //m_MeshCorsName = fbxData->iMeshInfo.value_corsName;
 
         m_RootNode = *nodeTree;
         m_AnimBones = boneTree->AnimBoneMap;
@@ -240,6 +239,8 @@ struct EvalFBXAnim : zeno::INode {
         auto scaleDict = std::make_shared<zeno::DictObject>();
         auto iCamera = std::make_shared<ICamera>();
         auto iLight = std::make_shared<ILight>();
+        auto matName = std::make_shared<zeno::StringObject>();
+        auto outMeshName = std::make_shared<zeno::StringObject>();
 
         EvalAnim anim;
         anim.initAnim(nodeTree, boneTree, fbxData, animInfo);
@@ -249,6 +250,10 @@ struct EvalFBXAnim : zeno::INode {
 
         auto prims = std::make_shared<zeno::ListObject>();
         auto& meshName = fbxData->iMeshName.value_relName;
+
+        matName->set(fbxData->iMeshName.value_matName);
+        outMeshName->set(meshName);
+
         auto& kmValue = fbxData->iKeyMorph.value;
         auto& bsValue = fbxData->iBlendSData.value;
 
@@ -301,6 +306,8 @@ struct EvalFBXAnim : zeno::INode {
         set_output("bsPrims", std::move(prims));
         set_output("camera", std::move(iCamera));
         set_output("light", std::move(iLight));
+        set_output("matName", std::move(matName));
+        set_output("meshName", std::move(outMeshName));
         set_output("transDict", std::move(transDict));
         set_output("quatDict", std::move(quatDict));
         set_output("scaleDict", std::move(scaleDict));
@@ -317,7 +324,7 @@ ZENDEFNODE(EvalFBXAnim,
                    {"BoneTree", "bonetree"},
                },  /* outputs: */
                {
-                   "prim", "camera", "light", "bsPrims", "transDict", "quatDict", "scaleDict"
+                   "prim", "camera", "light", "matName", "meshName", "bsPrims", "transDict", "quatDict", "scaleDict"
                },  /* params: */
                {
                    {"enum FROM_MAYA DEFAULT", "unit", "FROM_MAYA"},
