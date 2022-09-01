@@ -10,7 +10,6 @@ class ZenoMainWindow;
 #if defined(ZENO_MULTIPROCESS) && defined(ZENO_IPC_USE_TCP)
 class ZTcpServer;
 #endif
-class GraphsModel;
 
 class ZenoApplication : public QApplication
 {

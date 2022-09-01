@@ -1,5 +1,4 @@
 #include "subnetnode.h"
-#include "model/graphsmodel.h"
 #include "zenoapplication.h"
 #include "graphsmanagment.h"
 #include <zenoui/util/uihelper.h>

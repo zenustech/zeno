@@ -1,5 +1,4 @@
 #include "zenonewmenu.h"
-#include "model/subgraphmodel.h"
 #include "../graphsmanagment.h"
 #include "zenoapplication.h"
 #include "nodesmgr.h"

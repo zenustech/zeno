@@ -5,8 +5,6 @@
 #include "../nodesys/zenosubgraphscene.h"
 #include "zenowelcomepage.h"
 #include "graphsmanagment.h"
-#include "model/graphsmodel.h"
-#include <model/graphstreemodel.h>
 #include <zenoui/model/modelrole.h>
 #include <comctrl/zenocheckbutton.h>
 #include <comctrl/ziconbutton.h>
@@ -134,8 +132,7 @@ void ZenoGraphsEditor::resetModel(IGraphsModel* pModel)
     m_model = pModel;
     ZASSERT_EXIT(m_model);
 
-    GraphsTreeModel* pTreeModel = mgr->treeModel();
-    m_ui->subnetTree->setModel(pTreeModel);
+    m_ui->subnetTree->setModel(mgr->treeModel());
     m_ui->subnetList->setModel(pModel);
 
     m_ui->subnetList->setItemDelegate(new ZSubnetListItemDelegate(m_model, this));

@@ -69,6 +69,7 @@ public:
 	virtual void redo() = 0;
 	virtual void switchSubGraph(const QString& graphName) {}
 	virtual void newSubgraph(const QString& graphName) = 0;
+	virtual void initMainGraph() = 0;
 	virtual void reloadSubGraph(const QString& graphName) = 0;
 	virtual void renameSubGraph(const QString& oldName, const QString& newName) = 0;
 	virtual bool isDirty() const = 0;

@@ -1,7 +1,6 @@
 #include "zenonode.h"
 #include "zenosubgraphscene.h"
 #include <zenoui/model/modelrole.h>
-#include "model/subgraphmodel.h"
 #include <zenoui/render/common_id.h>
 #include <zenoui/comctrl/gv/zenoparamnameitem.h>
 #include <zenoui/comctrl/gv/zenoparamwidget.h>

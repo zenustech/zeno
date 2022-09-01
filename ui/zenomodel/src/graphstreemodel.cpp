@@ -1,7 +1,7 @@
 #include "graphstreemodel.h"
 #include "graphsmodel.h"
 #include <zenoui/model/modelrole.h>
-#include "util/log.h"
+#include "zassert.h"
 
 
 GraphsTreeModel::GraphsTreeModel(QObject* parent)

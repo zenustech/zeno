@@ -3,7 +3,6 @@
 #include "graphsmanagment.h"
 #include "launch/corelaunch.h"
 #include "launch/serialize.h"
-#include "model/graphsmodel.h"
 #include "nodesview/zenographseditor.h"
 #include "panel/zenodatapanel.h"
 #include "panel/zenoproppanel.h"
@@ -433,14 +432,13 @@ void ZenoMainWindow::exportGraph() {
     QString content;
     {
         IGraphsModel *pModel = zenoApp->graphsManagment()->currentModel();
-        GraphsModel *model = (GraphsModel *)pModel;
         if (path.endsWith(".cpp")) {
-            content = serializeSceneCpp(model);
+            content = serializeSceneCpp(pModel);
         } else {
             rapidjson::StringBuffer s;
             RAPIDJSON_WRITER writer(s);
             JsonArrayBatch batch(writer);
-            serializeScene(model, writer);
+            serializeScene(pModel, writer);
             content = QString(s.GetString());
         }
     }

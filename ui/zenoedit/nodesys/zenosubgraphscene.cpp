@@ -16,7 +16,6 @@
 #include <zeno/utils/log.h>
 #include "util/log.h"
 #include "blackboardnode.h"
-#include "acceptor/modelacceptor.h"
 #include "acceptor/transferacceptor.h"
 
 

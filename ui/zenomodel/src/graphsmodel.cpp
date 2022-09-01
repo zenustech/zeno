@@ -2,12 +2,10 @@
 #include "graphsmodel.h"
 #include <zenoui/model/modelrole.h>
 #include <zenoui/util/uihelper.h>
-#include "util/apphelper.h"
-#include "util/log.h"
+#include "zassert.h"
 #include <zeno/zeno.h>
 #include <zenoui/util/cihou.h>
 #include <zeno/utils/scope_exit.h>
-#include "zenoapplication.h"
 
 
 class ApiLevelScope
@@ -95,6 +93,13 @@ void GraphsModel::switchSubGraph(const QString& graphName)
     {
         m_selection->setCurrentIndex(lst[0], QItemSelectionModel::Current);
     }
+}
+
+void GraphsModel::initMainGraph()
+{
+    SubGraphModel* subGraphModel = new SubGraphModel(this);
+    subGraphModel->setName("main");
+    appendSubGraph(subGraphModel);
 }
 
 void GraphsModel::newSubgraph(const QString &graphName)
@@ -607,7 +612,7 @@ NODE_DATA GraphsModel::_fork(const QModelIndex& subgIdx, const QModelIndex& subn
     SubGraphModel* pForkModel = new SubGraphModel(this);
     pForkModel->setName(forkName);
     appendSubGraph(pForkModel);
-    AppHelper::reAllocIdents(nodes, links);
+    UiHelper::reAllocIdents(nodes, links);
 
     QModelIndex newSubgIdx = indexBySubModel(pForkModel);
 
@@ -642,7 +647,7 @@ QString GraphsModel::uniqueSubgraph(QString orginName)
 {
     QString newSubName = orginName;
     while (subGraph(newSubName)) {
-        newSubName = AppHelper::nthSerialNumName(newSubName);
+        newSubName = UiHelper::nthSerialNumName(newSubName);
     }
     return newSubName;
 }
@@ -808,7 +813,7 @@ void GraphsModel::addNode(const NODE_DATA& nodeData, const QModelIndex& subGpIdx
             ZASSERT_EXIT(params.find("name") != params.end());
             PARAM_INFO& param = params["name"];
             QString newSockName =
-                AppHelper::correctSubIOName(this, pGraph->name(), param.value.toString(), descName == "SubInput");
+                UiHelper::correctSubIOName(this, pGraph->name(), param.value.toString(), descName == "SubInput");
             param.value = newSockName;
             nodeData2[ROLE_PARAMETERS] = QVariant::fromValue(params);
             pGraph->appendItem(nodeData2);
@@ -1374,7 +1379,7 @@ void GraphsModel::updateParamInfo(const QString& id, PARAM_UPDATE_INFO info, con
         if (info.name == "name" && (nodeName == "SubInput" || nodeName == "SubOutput"))
         {
             const QString& subgName = subGpIdx.data(ROLE_OBJNAME).toString();
-            QString correctName = AppHelper::correctSubIOName(this, subgName, info.newValue.toString(), nodeName == "SubInput");
+            QString correctName = UiHelper::correctSubIOName(this, subgName, info.newValue.toString(), nodeName == "SubInput");
             info.newValue = correctName;
         }
 

@@ -330,6 +330,11 @@ void TransferAcceptor::setTimeInfo(const TIMELINE_INFO& info)
 {
 }
 
+TIMELINE_INFO TransferAcceptor::timeInfo() const
+{
+    return TIMELINE_INFO();
+}
+
 void TransferAcceptor::setLegacyCurve(
     const QString& id,
     const QVector<QPointF>& pts,

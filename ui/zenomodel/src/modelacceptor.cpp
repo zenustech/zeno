@@ -1,14 +1,10 @@
 #include "modelacceptor.h"
-#include "model/graphsmodel.h"
+#include "graphsmodel.h"
 #include <zenoui/model/modelrole.h>
-#include "../nodesys/nodesmgr.h"
 #include <zeno/utils/logger.h>
-#include "nodesys/zenosubgraphscene.h"
 #include "magic_enum.hpp"
-#include "util/log.h"
+#include "zassert.h"
 #include <zenoio/reader/zsgreader.h>
-#include "zenoapplication.h"
-#include "zenomainwindow.h"
 #include <zenoui/util/uihelper.h>
 
 
@@ -17,11 +13,6 @@ ModelAcceptor::ModelAcceptor(GraphsModel* pModel, bool bImport)
     , m_currentGraph(nullptr)
     , m_bImport(bImport)
 {
-    auto mainWin = zenoApp->getMainWindow();
-    //init.
-    TIMELINE_INFO info;
-    if (mainWin)
-        mainWin->setTimelineInfo(info);
 }
 
 bool ModelAcceptor::setLegacyDescs(const rapidjson::Value& graphObj, const NODE_DESCS& legacyDescs)
@@ -50,9 +41,12 @@ bool ModelAcceptor::setLegacyDescs(const rapidjson::Value& graphObj, const NODE_
 
 void ModelAcceptor::setTimeInfo(const TIMELINE_INFO& info)
 {
-    auto mainWin = zenoApp->getMainWindow();
-    if (mainWin)
-        mainWin->setTimelineInfo(info);
+    m_timeInfo = info;
+}
+
+TIMELINE_INFO ModelAcceptor::timeInfo() const
+{
+    return m_timeInfo;
 }
 
 void ModelAcceptor::BeginSubgraph(const QString& name)
@@ -158,7 +152,7 @@ bool ModelAcceptor::addNode(const QString& nodeid, const QString& name, const NO
     data[ROLE_OBJID] = nodeid;
     data[ROLE_OBJNAME] = name;
     data[ROLE_COLLASPED] = false;
-    data[ROLE_NODETYPE] = NodesMgr::nodeType(name);
+    data[ROLE_NODETYPE] = UiHelper::nodeType(name);
 
     //zeno::log_warn("zsg has Inputs {}", data.find(ROLE_PARAMETERS) != data.end());
     m_currentGraph->appendItem(data, false);

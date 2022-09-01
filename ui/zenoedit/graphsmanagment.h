@@ -1,8 +1,6 @@
 #ifndef __GRAPHS_MANAGMENT_H__
 #define __GRAPHS_MANAGMENT_H__
 
-class GraphsModel;
-class GraphsTreeModel;
 class ZenoSubGraphScene;
 
 #include <QtWidgets>
@@ -16,7 +14,7 @@ public:
     GraphsManagment(QObject *parent = nullptr);
     void setCurrentModel(IGraphsModel* model);
     IGraphsModel* currentModel();
-    GraphsTreeModel* treeModel();
+    QAbstractItemModel* treeModel();
     QStandardItemModel* logModel() const;
     IGraphsModel* openZsgFile(const QString &fn);
     IGraphsModel* newFile();
@@ -40,7 +38,7 @@ private slots:
 
 private:
     IGraphsModel *m_model;
-    GraphsTreeModel* m_pTreeModel;
+    QAbstractItemModel* m_pTreeModel;
     QStandardItemModel* m_logModel;     //connection with scene.
     mutable QMutex m_mutex;
     QString m_currFile;

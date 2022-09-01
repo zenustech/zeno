@@ -1,10 +1,7 @@
 #include "graphsmanagment.h"
-#include "model/graphsmodel.h"
+#include <zenomodel/include/zenomodel.h>
 #include <zenoui/model/modelrole.h>
-#include "model/graphstreemodel.h"
-#include "model/graphsplainmodel.h"
 #include <zenoio/reader/zsgreader.h>
-#include "acceptor/modelacceptor.h"
 #include <zenoui/util/uihelper.h>
 #include "nodesys/zenosubgraphscene.h"
 #include <zeno/utils/log.h>
@@ -12,15 +9,15 @@
 #include "zenoapplication.h"
 
 
-class IOBreakingBatch
+class IOBreakingScope
 {
 public:
-    IOBreakingBatch(IGraphsModel* model) : m_model(model) {
+    IOBreakingScope(IGraphsModel* model) : m_model(model) {
         if (m_model)
             m_model->setIOProcessing(true);
     }
 
-    ~IOBreakingBatch() {
+    ~IOBreakingScope() {
         if (m_model)
             m_model->setIOProcessing(false);
     }
@@ -52,8 +49,7 @@ QStandardItemModel* GraphsManagment::logModel() const
 void GraphsManagment::setCurrentModel(IGraphsModel* model)
 {
     m_model = model;
-    m_pTreeModel = new GraphsTreeModel(this);
-    m_pTreeModel->init(model);
+    m_pTreeModel = zeno_model::treeModel(m_model, this);
 
     for (int i = 0; i < m_model->rowCount(); i++)
     {
@@ -68,19 +64,19 @@ void GraphsManagment::setCurrentModel(IGraphsModel* model)
         this, SLOT(onRowsAboutToBeRemoved(const QModelIndex&, int, int)));
 }
 
-GraphsTreeModel* GraphsManagment::treeModel()
+QAbstractItemModel* GraphsManagment::treeModel()
 {
     return m_pTreeModel;
 }
 
 IGraphsModel* GraphsManagment::openZsgFile(const QString& fn)
 {
-    GraphsModel* pModel = new GraphsModel(this);
+    IGraphsModel* pModel = zeno_model::createModel(this);
 
     {
-        IOBreakingBatch batch(pModel);
-        ModelAcceptor acceptor(pModel, false);
-        if (!ZsgReader::getInstance().openFile(fn, &acceptor))
+        IOBreakingScope batch(pModel);
+        std::shared_ptr<IAcceptor> acceptor(zeno_model::createIOAcceptor(pModel, false));
+        if (!ZsgReader::getInstance().openFile(fn, acceptor.get()))
             return nullptr;
     }
 
@@ -91,10 +87,8 @@ IGraphsModel* GraphsManagment::openZsgFile(const QString& fn)
 
 IGraphsModel* GraphsManagment::newFile()
 {
-    GraphsModel* pModel = new GraphsModel(this);
-    SubGraphModel* pSubModel = new SubGraphModel(pModel);
-    pSubModel->setName("main");
-    pModel->appendSubGraph(pSubModel);
+    IGraphsModel* pModel = zeno_model::createModel(this);
+    pModel->initMainGraph();
     setCurrentModel(pModel);
     return pModel;
 }
@@ -104,10 +98,9 @@ void GraphsManagment::importGraph(const QString& fn)
     if (!m_model)
         return;
 
-	ModelAcceptor acceptor(qobject_cast<GraphsModel*>(m_model), true);
-    //todo
-	bool ret = ZsgReader::getInstance().openFile(fn, &acceptor);
-	if (!ret)
+    IOBreakingScope batch(m_model);
+    std::shared_ptr<IAcceptor> acceptor(zeno_model::createIOAcceptor(m_model, false));
+	if (!ZsgReader::getInstance().openFile(fn, acceptor.get()))
 	{
 		zeno::log_error("failed to open zsg file: {}", fn.toStdString());
 		return;

@@ -4,8 +4,7 @@
 #include <zenoui/model/modeldata.h>
 #include <zeno/utils/log.h>
 #include <zenoui/util/uihelper.h>
-#include "util/apphelper.h"
-#include "util/log.h"
+#include "zassert.h"
 
 
 SubGraphModel::SubGraphModel(GraphsModel* pGraphsModel, QObject *parent)

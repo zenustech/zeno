@@ -42,12 +42,16 @@ public:
     static QString variantToString(const QVariant& var);
     static qreal parseNumeric(const rapidjson::Value& val, bool& bSucceed);
     static QPointF parsePoint(const rapidjson::Value& ptObj, bool& bSucceed);
+    static NODE_TYPE nodeType(const QString& name);
 
     //todo: place at other helper.
     static QMap<QString, NODE_DATA> dumpItems(IGraphsModel* pGraphsModel, const QPersistentModelIndex& subgIdx,
         const QModelIndexList& nodesIndice, const QModelIndexList& linkIndice);
     static int getMaxObjId(const QList<QString>& lst);
     static QVector<qreal> getSlideStep(const QString& name, PARAM_CONTROL ctrl);
+    static void reAllocIdents(QMap<QString, NODE_DATA>& nodes, QList<EdgeInfo>& links);
+    static QString nthSerialNumName(QString name);
+    static QString correctSubIOName(IGraphsModel* pModel, const QString& subgName, const QString& newName, bool bInput);
 
 private:
     static std::pair<qreal, qreal> getRxx2(QRectF r, qreal xRadius, qreal yRadius, bool AbsoluteSize);

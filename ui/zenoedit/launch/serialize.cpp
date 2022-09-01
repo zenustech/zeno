@@ -1,5 +1,4 @@
 #include "serialize.h"
-#include <model/graphsmodel.h>
 #include <zeno/utils/logger.h>
 #include <model/modeldata.h>
 #include <model/modelrole.h>

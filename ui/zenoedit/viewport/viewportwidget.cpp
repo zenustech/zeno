@@ -4,7 +4,6 @@
 #include "camerakeyframe.h"
 #include "timeline/ztimeline.h"
 #include "graphsmanagment.h"
-#include "model/graphsmodel.h"
 #include "launch/corelaunch.h"
 #include "zenoapplication.h"
 #include "zenomainwindow.h"

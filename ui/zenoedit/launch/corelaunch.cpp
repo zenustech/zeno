@@ -1,5 +1,4 @@
 #include "corelaunch.h"
-#include "model/graphsmodel.h"
 #include <zenoui/model/modelrole.h>
 #include <zenoui/util/jsonhelper.h>
 #include <zeno/extra/GlobalState.h>
