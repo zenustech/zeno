@@ -17,14 +17,6 @@
 #include "minimp3.h"
 
 namespace zaudio {
-int calcFrameCountByAudio(std::string path, int fps) {
-    AudioFile<float> wav;
-    wav.load (path);
-    uint64_t ret = wav.getNumSamplesPerChannel();
-    ret = ret * fps / wav.getSampleRate();
-    return ret + 1;
-}
-
 static float lerp(float start, float end, float value) {
     return start + (end - start) * value;
 }

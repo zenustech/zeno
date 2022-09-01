@@ -304,6 +304,10 @@ void ZenoPlayer::updateFrame(const QString &action)
                 std::system(cmd.c_str());
             }
 
+            if (m_InitParam.exitWhenRecordFinish) {
+                std::puts("exitWhenRecordFinish");
+                std::exit(0);
+            }
             QMessageBox::information(this, "Info","Video saved!");
         }
     }

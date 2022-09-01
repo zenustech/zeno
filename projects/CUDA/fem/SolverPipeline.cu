@@ -392,6 +392,13 @@ void IPCSystem::findCCDConstraints(zs::CudaExecutionPolicy &pol, T alpha, T xi) 
     }
     findCCDConstraintsImpl(pol, alpha, xi, false);
 
+    auto checkSize = [this](const auto &cnt, std::string_view msg) {
+        if (auto c = cnt.getVal(); c >= estNumCps)
+            throw std::runtime_error(fmt::format("[{}] cp queue of size {} not enough for {} cps!", msg, estNumCps, c));
+    };
+    checkSize(ncsPT, "PT");
+    checkSize(ncsEE, "EE");
+
     if (coVerts)
         if (coVerts->size()) {
             auto triBvs =
@@ -401,6 +408,9 @@ void IPCSystem::findCCDConstraints(zs::CudaExecutionPolicy &pol, T alpha, T xi) 
                 retrieve_bounding_volumes(pol, vtemp, "xn", *coEdges, zs::wrapv<2>{}, vtemp, "dir", alpha, coOffset);
             bouSeBvh.refit(pol, edgeBvs);
             findCCDConstraintsImpl(pol, alpha, xi, true);
+
+            checkSize(ncsPT, "PT");
+            checkSize(ncsEE, "EE");
         }
 }
 void IPCSystem::findCCDConstraintsImpl(zs::CudaExecutionPolicy &pol, T alpha, T xi, bool withBoundary) {
