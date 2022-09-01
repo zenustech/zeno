@@ -445,7 +445,7 @@ namespace DisneyBSDF{
         vec3 wm = BRDFBasics::SampleGgxVndfAnisotropic(wo, ax, ay, r0, r1);
 
         wi = normalize(reflect(-wo, wm)); 
-        if(wi.z<0.0f || abs(wi.z) < 1e-5)
+        if(wi.z<=0.0f)
         {
             fPdf = 0.0f;
             rPdf = 0.0f;
@@ -573,7 +573,7 @@ namespace DisneyBSDF{
 
             )
     {
-        if(abs(wo.z) <= 1e-6){
+        if(wo.z == 0.0f){
             fPdf = 0.0f;
             rPdf = 0.0f;
             reflectance = vec3(0.0f);
@@ -638,7 +638,7 @@ namespace DisneyBSDF{
 
         }
 
-        if(abs(wi.z) <= 1e-6){
+        if(wi.z == 0.0f){
             fPdf = 0.0f;
             rPdf = 0.0f;
             reflectance = vec3(0.0f);
@@ -696,7 +696,7 @@ namespace DisneyBSDF{
         wi =  normalize(BRDFBasics::sampleOnHemisphere(seed, 1.0f));
         vec3 wm = normalize(wi+wo);
         float NoL = wi.z;
-        if(abs(NoL)<1e-5 ){
+        if(NoL==0.0f ){
             fPdf = 0.0f;
             rPdf = 0.0f;
             reflectance = vec3(0.0f);

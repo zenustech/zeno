@@ -284,11 +284,11 @@ extern "C" __global__ void __anyhit__shadow_cutout()
                 prd->shadowAttanuation = vec3(0.0f);
                 optixTerminateRay();
             }
-            prd->shadowAttanuation = vec3(0,0,0);
-            optixTerminateRay();
+            //prd->shadowAttanuation = vec3(0,0,0);
+            //optixTerminateRay();
             
             if(specTrans > 0.0f){
-                if(rnd(prd->seed)<1-specTrans)
+                if(rnd(prd->seed)<1-specTrans||thin==false)
                 {
                     prd->shadowAttanuation = vec3(0,0,0);
                     optixTerminateRay();
@@ -466,7 +466,7 @@ extern "C" __global__ void __closesthit__radiance()
     auto metallic = mats.metallic;
     auto roughness = mats.roughness;
     if(prd->diffDepth>=1)
-        roughness = clamp(roughness, 0.1,0.99);
+        roughness = clamp(roughness, 0.2,0.99);
     if(prd->diffDepth>=2)
         roughness = clamp(roughness, 0.3,0.99);
     if(prd->diffDepth>=3)
