@@ -4,6 +4,7 @@
 #include <zeno/funcs/PrimitiveUtils.h>
 #include <zeno/utils/variantswitch.h>
 #include <zeno/utils/arrayindex.h>
+#include <zeno/para/parallel_for.h>
 #include <cmath>
 
 namespace zeno {
@@ -75,16 +76,16 @@ struct PrimFloatAttrToInt : INode {
         auto &inArr = prim->verts.attr<float>(attr);
         if (attrOut == attr) {
             std::vector<int> outArr(inArr.size());
-            for (size_t i = 0; i < inArr.size(); i++) {
+            parallel_for(inArr.size(), [&] (size_t i) {
                 outArr[i] = std::rint(inArr[i]);
-            }
+            });
             prim->verts.attrs.erase(attrOut);
             prim->verts.add_attr<int>(attrOut) = std::move(outArr);
         } else {
             auto &outArr = prim->verts.add_attr<int>(attrOut);
-            for (size_t i = 0; i < inArr.size(); i++) {
+            parallel_for(inArr.size(), [&] (size_t i) {
                 outArr[i] = std::rint(inArr[i]);
-            }
+            });
         }
         set_output("prim", std::move(prim));
     }
@@ -112,16 +113,16 @@ struct PrimIntAttrToFloat : INode {
         auto &inArr = prim->verts.attr<int>(attr);
         if (attrOut == attr) {
             std::vector<float> outArr(inArr.size());
-            for (size_t i = 0; i < inArr.size(); i++) {
+            parallel_for(inArr.size(), [&] (size_t i) {
                 outArr[i] = float(inArr[i]);
-            }
+            });
             prim->verts.attrs.erase(attrOut);
             prim->verts.add_attr<float>(attrOut) = std::move(outArr);
         } else {
             auto &outArr = prim->verts.add_attr<float>(attrOut);
-            for (size_t i = 0; i < inArr.size(); i++) {
+            parallel_for(inArr.size(), [&] (size_t i) {
                 outArr[i] = float(inArr[i]);
-            }
+            });
         }
         set_output("prim", std::move(prim));
     }
@@ -132,6 +133,65 @@ ZENDEFNODE(PrimIntAttrToFloat, {
     {"PrimitiveObject", "prim"},
     {"string", "attr", "tag"},
     {"string", "attrOut", "tag"},
+    },
+    {
+    {"PrimitiveObject", "prim"},
+    },
+    {
+    },
+    {"primitive"},
+});
+
+struct PrimAttrInterp : INode {
+    virtual void apply() override {
+        auto prim = get_input<PrimitiveObject>("prim");
+        auto prim2 = get_input<PrimitiveObject>("prim2");
+        auto attr = get_input2<std::string>("attr");
+        auto factor = get_input2<float>("factor");
+        auto facAttr = get_input2<std::string>("facAttr");
+        auto facAcc = functor_variant(facAttr.empty() ? 1 : 0,
+                                      [&] {
+                                          auto &facArr = prim->verts.attr<float>(facAttr);
+                                          return [&] (size_t i) {
+                                              return facArr[i];
+                                          };
+                                      },
+                                      [&] {
+                                          return [&] (size_t i) {
+                                              return factor;
+                                          };
+                                      });
+        auto process = [&] (std::string const &key, auto &arr) {
+            using T = std::decay_t<decltype(arr[0])>;
+            auto &arr2 = prim2->add_attr<T>(key);
+            std::visit([&] (auto const &facAcc) {
+                parallel_for(std::min(arr.size(), arr2.size()), [&] (size_t i) {
+                    arr[i] = (T)mix(arr[i], arr2[i], facAcc(i));
+                });
+            }, facAcc);
+        };
+        if (attr.empty()) {
+            prim->foreach_attr<AttrAcceptAll>([&] (auto const &key, auto &arr) {
+                if (!facAttr.empty() && key == facAttr)
+                    return;
+                process(key, arr);
+            });
+        } else {
+            prim->attr_visit<AttrAcceptAll>(attr, [&] (auto &arr) {
+                process(attr, arr);
+            });
+        }
+        set_output("prim", std::move(prim));
+    }
+};
+
+ZENDEFNODE(PrimAttrInterp, {
+    {
+    {"PrimitiveObject", "prim"},
+    {"PrimitiveObject", "prim2"},
+    {"string", "attr", ""},
+    {"float", "factor", "0.5"},
+    {"string", "facAttr", ""},
     },
     {
     {"PrimitiveObject", "prim"},

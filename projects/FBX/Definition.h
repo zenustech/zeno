@@ -310,25 +310,27 @@ struct SMaterial : zeno::IObjectClone<SMaterial>{
         // FIXME (aiTextureType_BASE_COLOR 12 basecolor `aiStandardSurface`)
         //      or (aiTextureType_DIFFUSE 1 diffuse `lambert`)
         // aiTextureType_NORMALS or aiTextureType_NORMAL_CAMERA
+        // TODO trick - We use some unused tex properties to set some tex
+        //
         val.emplace("basecolor", SMaterialProp{0,       false, aiColor4D(), {aiTextureType_BASE_COLOR, aiTextureType_DIFFUSE}, {"$ai.base", "$clr.diffuse"}}); // texOk
         val.emplace("metallic", SMaterialProp{1,        false, aiColor4D(), {aiTextureType_METALNESS}, {"$ai.metalness"}}); // texOk
         val.emplace("roughness", SMaterialProp{2,       false, aiColor4D(), {aiTextureType_DIFFUSE_ROUGHNESS}, {"$ai.specularRoughness", "$ai.diffuseRoughness"}});
         val.emplace("specular", SMaterialProp{3,        false, aiColor4D(), {aiTextureType_SPECULAR}, {"$ai.specular", "$clr.specular"}});
-        val.emplace("subsurface", SMaterialProp{4,      true, aiColor4D(), {aiTextureType_NONE}, {"$ai.subsurface"}});
+        val.emplace("subsurface", SMaterialProp{4,      false, aiColor4D(), {aiTextureType_NONE}, {"$ai.subsurfaceFactor"}});
         val.emplace("thinkness", SMaterialProp{5,       true, aiColor4D(), {aiTextureType_NONE}, {"", /*"$ai.thinFilmThickness"*/}});
         val.emplace("sssParam", SMaterialProp{6,        false, aiColor4D(), {aiTextureType_NONE}, {""}});
-        val.emplace("sssColor", SMaterialProp{7,        false, aiColor4D(), {aiTextureType_NONE}, {""}});
+        val.emplace("sssColor", SMaterialProp{7,        false, aiColor4D(), {aiTextureType_REFLECTION}, {"$ai.subsurface"}});
         val.emplace("foliage", SMaterialProp{8,         false, aiColor4D(), {aiTextureType_NONE}, {""}});
         val.emplace("skin", SMaterialProp{9,            false, aiColor4D(), {aiTextureType_NONE}, {""}});
         val.emplace("curvature", SMaterialProp{10,      false, aiColor4D(), {aiTextureType_NONE}, {""}});
         val.emplace("specularTint", SMaterialProp{11,   false, aiColor4D(), {aiTextureType_NONE}, {""}});
         val.emplace("anisotropic", SMaterialProp{12,    false, aiColor4D(), {aiTextureType_NONE}, {""}});
-        val.emplace("sheen", SMaterialProp{13,          true, aiColor4D(), {aiTextureType_SHININESS}, {"$ai.sheen"}});
+        val.emplace("sheen", SMaterialProp{13,          false, aiColor4D(), {aiTextureType_SHININESS}, {"$ai.sheen"}});
         val.emplace("sheenTint", SMaterialProp{14,      false, aiColor4D(), {aiTextureType_NONE}, {""}});
         val.emplace("clearcoat", SMaterialProp{15,      false, aiColor4D(), {aiTextureType_NONE}, {"$ai.coat"}});
         val.emplace("clearcoatGloss", SMaterialProp{16, true, aiColor4D(), {aiTextureType_NONE}, {""}});
         val.emplace("normal", SMaterialProp{17,         false, aiColor4D(), {aiTextureType_NORMAL_CAMERA, aiTextureType_NORMALS}, {"",}}); // texOk
-        val.emplace("emission", SMaterialProp{18,       true, aiColor4D(), {aiTextureType_EMISSIVE, aiTextureType_EMISSION_COLOR}, {"$ai.emission", "$clr.emissive"}});
+        val.emplace("emission", SMaterialProp{18,       false, aiColor4D(), {aiTextureType_EMISSIVE, aiTextureType_EMISSION_COLOR}, {"$ai.emission", "$clr.emissive"}});
         val.emplace("exposure", SMaterialProp{19,       false, aiColor4D(), {aiTextureType_NONE}, {""}});
         val.emplace("ao", SMaterialProp{20,             false, aiColor4D(), {aiTextureType_AMBIENT_OCCLUSION}, {""}});
         val.emplace("toon", SMaterialProp{21,           false, aiColor4D(), {aiTextureType_NONE}, {""}});
@@ -525,6 +527,66 @@ struct Helper{
         }
         return seglist;
     }
+};
+
+struct BezierCompute{
+    template <class T>
+    static T interpolation(T p1, T p2, float t){
+        return (1-t)*p1+t*p2;
+    }
+
+    template <class T>
+    static T bezier( std::vector<T> const&p, float t ){
+        std::vector<T> ps = p;
+        auto iter = ps.size();
+        for(int z=0; z<iter; z++){
+            auto n=ps.size();
+            std::vector<T> tmp;
+            for(int i=0;i<n-1;i++){
+                auto cr = T(interpolation(ps[i], ps[i+1], t));
+                tmp.push_back(cr);
+            }
+            ps=tmp;
+            iter--;
+        }
+        return interpolation(ps[0], ps[1], t);
+    }
+
+    static zeno::vec3f compute(float c1of, float c2of, float factor, zeno::vec3f n, zeno::vec3f nm){
+        std::vector<zeno::vec3f> v_x;
+        std::vector<zeno::vec3f> v_y;
+        std::vector<zeno::vec3f> v_z;
+        v_x.push_back(zeno::vec3f(0.0f, nm[0], 0.0f));
+        v_x.push_back(zeno::vec3f(c1of, nm[0], 0.0f));
+        v_x.push_back(zeno::vec3f(c2of, n[0], 0.0f));
+        v_x.push_back(zeno::vec3f(1.0f, n[0], 0.0f));
+        v_y.push_back(zeno::vec3f(0.0f, nm[1], 0.0f));
+        v_y.push_back(zeno::vec3f(c1of, nm[1], 0.0f));
+        v_y.push_back(zeno::vec3f(c2of, n[1], 0.0f));
+        v_y.push_back(zeno::vec3f(1.0f, n[1], 0.0f));
+        v_z.push_back(zeno::vec3f(0.0f, nm[2], 0.0f));
+        v_z.push_back(zeno::vec3f(c1of, nm[2], 0.0f));
+        v_z.push_back(zeno::vec3f(c2of, n[2], 0.0f));
+        v_z.push_back(zeno::vec3f(1.0f, n[2], 0.0f));
+        auto b_pos_x = BezierCompute::bezier(v_x, factor);
+        auto b_pos_y = BezierCompute::bezier(v_y, factor);
+        auto b_pos_z = BezierCompute::bezier(v_z, factor);
+        auto result = zeno::vec3f(b_pos_x[1], b_pos_y[1], b_pos_z[1]);
+
+        return result;
+    }
+
+    static float compute(float c1of, float c2of, float factor, float n, float nm){
+        std::vector<zeno::vec3f> tp_v;
+        tp_v.push_back(zeno::vec3f(0.0f, nm, 0.0f));
+        tp_v.push_back(zeno::vec3f(c1of, nm, 0.0f));
+        tp_v.push_back(zeno::vec3f(c2of, n, 0.0f));
+        tp_v.push_back(zeno::vec3f(1.0f, n, 0.0f));
+        auto b_v = BezierCompute::bezier(tp_v, factor);
+
+        return b_v[1];
+    }
+
 };
 
 }

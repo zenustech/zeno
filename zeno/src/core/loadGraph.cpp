@@ -54,9 +54,9 @@ static T generic_get(Value const &x) {
                     }
                 } else if (a.Size() == 4) {
                     if (a[0].IsInt()) {
-                        return cast(vec4i(a[0].GetInt(), a[1].GetInt(), a[2].GetInt(), a[4].GetInt()));
+                        return cast(vec4i(a[0].GetInt(), a[1].GetInt(), a[2].GetInt(), a[3].GetInt()));
                     } else if (a[0].IsDouble()) {
-                        return cast(vec4f(a[0].GetDouble(), a[1].GetDouble(), a[2].GetDouble(), a[4].GetDouble()));
+                        return cast(vec4f(a[0].GetDouble(), a[1].GetDouble(), a[2].GetDouble(), a[3].GetDouble()));
                     }
                 }
             }

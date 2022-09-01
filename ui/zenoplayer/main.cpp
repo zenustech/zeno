@@ -4,9 +4,16 @@
 
 #include "zenoapplication.h"
 #include "style/zenostyle.h"
+#include "zeno/extra/assetDir.h"
+#include <zeno/utils/logger.h>
+#include "AudioFile.h"
 
-namespace zaudio {
-int calcFrameCountByAudio(std::string path, int fps);
+static int calcFrameCountByAudio(std::string path, int fps) {
+    AudioFile<float> wav;
+    wav.load (path);
+    uint64_t ret = wav.getNumSamplesPerChannel();
+    ret = ret * fps / wav.getSampleRate();
+    return ret + 1;
 }
 
 int main(int argc, char *argv[]) 
@@ -19,7 +26,6 @@ int main(int argc, char *argv[])
     //QMessageBox::information(NULL, "debug", "debug");
 	
     ZENO_PLAYER_INIT_PARAM param;
-    param.init();
     if (argc > 1)
     {
         QCommandLineParser cmdParser;
@@ -28,35 +34,50 @@ int main(int argc, char *argv[])
             {"zsg", "zsg", "zsg file path"},
             {"record", "record", "Record frame"},
             {"frame", "frame", "frame count"},
+            {"sframe", "sframe", "start frame"},
             {"sample", "sample", "sample count"},
             {"pixel", "pixel", "set record image pixel"},
             {"path", "path", "record dir"},
             {"audio", "audio", "audio path"},
+            {"bitrate", "bitrate", "bitrate"},
+            {"fps", "fps", "fps"},
+            {"configFilePath", "configFilePath", "configFilePath"},
+            {"exitWhenRecordFinish", "exitWhenRecordFinish", "exitWhenRecordFinish"},
         });
         cmdParser.process(a);
         if (cmdParser.isSet("zsg"))
             param.sZsgPath = cmdParser.value("zsg"); 
         if (cmdParser.isSet("record"))
-            param.bRecord = cmdParser.value("record").toLower() == "true" ? true : false;
+            param.bRecord = cmdParser.value("record").toLower() == "true";
         if (cmdParser.isSet("frame"))
             param.iFrame = cmdParser.value("frame").toInt();
+        if (cmdParser.isSet("sframe"))
+            param.iSFrame = cmdParser.value("sframe").toInt();
         if (cmdParser.isSet("sample"))
             param.iSample = cmdParser.value("sample").toInt();
-        else
-            param.iSample = 256;
         if (cmdParser.isSet("pixel"))
             param.sPixel = cmdParser.value("pixel");
         if (cmdParser.isSet("path"))
             param.sPath = cmdParser.value("path");
+        if (cmdParser.isSet("configFilePath")) {
+            param.configFilePath = cmdParser.value("configFilePath");
+            zeno::setConfigVariable("configFilePath", param.configFilePath.toStdString());
+        }
+        if (cmdParser.isSet("exitWhenRecordFinish"))
+            param.exitWhenRecordFinish = cmdParser.value("exitWhenRecordFinish").toLower() == "true";
         if (cmdParser.isSet("audio")) {
             param.audioPath = cmdParser.value("audio");
             if(!cmdParser.isSet("frame")) {
-                int count = zaudio::calcFrameCountByAudio(param.audioPath.toStdString(), 24);
+                int count = calcFrameCountByAudio(param.audioPath.toStdString(), 24);
                 param.iFrame = count;
             }
         }
+        param.iBitrate = cmdParser.isSet("bitrate")? cmdParser.value("bitrate").toInt(): 20000;
+        param.iFps = cmdParser.isSet("fps")? cmdParser.value("fps").toInt(): 24;
     }
-    qDebug() << param.sPath << param.bRecord << param.iFrame << param.iSample << param.sPixel << param.sPath;
+    zeno::log_info("ZsgPath {} Record {} Frame {} SFrame {} Sample {} Pixel {} Path {}",
+                   param.sZsgPath.toStdString(), param.bRecord, param.iFrame, param.iSFrame, param.iSample,
+                   param.sPixel.toStdString(), param.sPath.toStdString());
 	ZenoPlayer w(param);
 	w.show();
 	return a.exec();

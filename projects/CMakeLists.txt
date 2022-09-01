@@ -30,6 +30,9 @@ set(ZENO_EXTENSIONS
     Audio
     Try_OpenVDB
     Pass
+    GUI
+    PBD
+    Python
     )
 
 foreach (name IN ITEMS ${ZENO_EXTENSIONS})

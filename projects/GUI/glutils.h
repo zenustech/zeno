@@ -37,11 +37,15 @@ static void _check_opengl_error(const char *file, int line, const char *hint) {
     }
 }
 
+#ifndef __clang__
 #define CHECK_GL(x)                                                          \
     do {                                                                     \
         (x);                                                                 \
         ::zeno::opengl_details::_check_opengl_error(__FILE__, __LINE__, #x); \
     } while (0)
+#else
+#define CHECK_GL
+#endif
 
 }
 }

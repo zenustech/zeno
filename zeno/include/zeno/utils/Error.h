@@ -45,6 +45,13 @@ struct KeyError : Error {
     ZENO_API ~KeyError() noexcept override;
 };
 
+struct UnimplError : Error {
+    std::string hint;
+
+    ZENO_API explicit UnimplError(std::string_view hint = {}) noexcept;
+    ZENO_API ~UnimplError() noexcept override;
+};
+
 class ErrorException : public std::exception {
     std::shared_ptr<Error> const err;
 

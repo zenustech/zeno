@@ -161,6 +161,9 @@ struct PrimUnmerge : INode {
         auto tagAttr = get_input<StringObject>("tagAttr")->get();
         auto method = get_input<StringObject>("method")->get();
 
+        if (get_input2<bool>("preSimplify")) {
+            primSimplifyTag(prim.get(), tagAttr);
+        }
         auto primList = primUnmergeVerts(prim.get(), tagAttr);
 
         auto listPrim = std::make_shared<ListObject>();
@@ -175,6 +178,7 @@ ZENDEFNODE(PrimUnmerge, {
     {
         {"primitive", "prim"},
         {"string", "tagAttr", "tag"},
+        {"bool", "preSimplify", "0"},
         {"enum verts faces", "method", "verts"},
     },
     {

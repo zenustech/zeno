@@ -1,6 +1,7 @@
 #include "recordvideomgr.h"
 #include <viewport/zenovis.h>
 #include <viewport/viewportwidget.h>
+#include <zenovis/DrawOptions.h>
 #include <zeno/utils/format.h>
 #include <zeno/utils/log.h>
 #include <util/log.h>
@@ -45,6 +46,9 @@ void RecordVideoMgr::recordFrame()
         QString path = m_recordInfo.record_path + "/P/%06d.png";
         QString outPath = m_recordInfo.record_path + "/" + m_recordInfo.videoname;
         QStringList cmd = { "ffmpeg", "-y", "-r", QString::number(m_recordInfo.fps), "-i", path, "-c:v", "mpeg4", "-b:v", QString::number(m_recordInfo.bitrate) + "k", outPath};
+
+        //zeno::log_info("record cmd {}", cmd.join(" ").toStdString());
+
         int ret = QProcess::execute(cmd.join(" "));
         if (ret == 0)
         {
@@ -64,16 +68,16 @@ void RecordVideoMgr::recordFrame()
     inst.paintGL();
 
     auto record_file = zeno::format("{}/P/{:06d}.png", m_recordInfo.record_path.toStdString(), m_currFrame);
-    int nsamples = 16;
+
+    auto scene = Zenovis::GetInstance().getSession()->get_scene();
+    scene->drawOptions->num_samples = 64;
 
     QVector2D oldRes = m_view->cameraRes();
-    m_view->setCameraRes(m_recordInfo.res);
-    m_view->updatePerspective();
+    //m_view->setCameraRes(m_recordInfo.res);
+    //m_view->setCameraRes(QVector2D(1280,720));
 
     auto extname = QFileInfo(QString::fromStdString(record_file)).suffix().toStdString();
-    Zenovis::GetInstance().getSession()->do_screenshot(record_file, extname, nsamples);
-    m_view->setCameraRes(oldRes);
-    m_view->updatePerspective();
+    Zenovis::GetInstance().getSession()->do_screenshot(record_file, extname);
 
     m_pics.append(QString::fromStdString(record_file));
 

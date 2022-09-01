@@ -57,7 +57,9 @@ std::vector<float> Scene::getCameraProp(){
     camProp.push_back(this->camera->m_lodup.x);
     camProp.push_back(this->camera->m_lodup.y);
     camProp.push_back(this->camera->m_lodup.z);
-
+    camProp.push_back(this->camera->m_fov);
+    camProp.push_back(this->camera->m_aperture);
+    camProp.push_back(this->camera->focalPlaneDistance);
     return camProp;
 }
 
@@ -71,19 +73,21 @@ bool Scene::cameraFocusOnNode(std::string const &nodeid, zeno::vec3f &center, fl
     return false;
 }
 
-void Scene::loadFrameObjects(int frameid) {
+bool Scene::loadFrameObjects(int frameid) {
+    bool inserted = false;
     if (!zeno::getSession().globalComm->isFrameCompleted(frameid))
-        return;
+        return inserted;
 
     auto const *viewObjs = zeno::getSession().globalComm->getViewObjects(frameid);
     if (viewObjs) {
         zeno::log_trace("load_objects: {} objects at frame {}", viewObjs->size(), frameid);
-        this->objectsMan->load_objects(viewObjs->m_curr);
+        inserted = this->objectsMan->load_objects(viewObjs->m_curr);
     } else {
         zeno::log_trace("load_objects: no objects at frame {}", frameid);
-        this->objectsMan->load_objects({});
+        inserted = this->objectsMan->load_objects({});
     }
     renderMan->getEngine()->update();
+    return inserted;
 }
 
 void Scene::draw() {
@@ -95,7 +99,7 @@ void Scene::draw() {
     renderMan->getEngine()->draw();
 }
 
-std::vector<char> Scene::record_frame_offline(int nsamples, int hdrSize, int rgbComps) {
+std::vector<char> Scene::record_frame_offline(int hdrSize, int rgbComps) {
     zeno::log_trace("offline draw {}x{}x{}x{}", camera->m_nx, camera->m_ny, rgbComps, hdrSize);
     auto hdrType = std::map<int, int>{
         {1, GL_UNSIGNED_BYTE},
@@ -125,15 +129,9 @@ std::vector<char> Scene::record_frame_offline(int nsamples, int hdrSize, int rgb
         auto bindFbo = opengl::scopeGLBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
 
         CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, rbo1));
-        //if (nsamples > 1)//TODO: will crash!
-            //CHECK_GL(glRenderbufferStorageMultisample(GL_RENDERBUFFER, nsamples, GL_RGBA, camera->m_nx, camera->m_ny));
-        //else
-            CHECK_GL(glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA, camera->m_nx, camera->m_ny));
+        CHECK_GL(glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA, camera->m_nx, camera->m_ny));
         CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, rbo2));
-        //if (nsamples > 1)
-            //CHECK_GL(glRenderbufferStorageMultisample(GL_RENDERBUFFER, nsamples, GL_DEPTH_COMPONENT32F, camera->m_nx, camera->m_ny));
-        //else
-            CHECK_GL(glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT32F, camera->m_nx, camera->m_ny));
+        CHECK_GL(glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT32F, camera->m_nx, camera->m_ny));
         CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, 0));
 
         CHECK_GL(glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, rbo1));

@@ -30,7 +30,7 @@ struct Context {
     ZENO_API ~Context();
 };
 
-struct Graph {
+struct Graph : std::enable_shared_from_this<Graph> {
     Session *session = nullptr;
     SubgraphNode *subgraphNode = nullptr;
 

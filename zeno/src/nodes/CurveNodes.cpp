@@ -4,6 +4,7 @@
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/para/parallel_for.h>
 #include <zeno/utils/safe_at.h>
+#include <zeno/utils/arrayindex.h>
 
 namespace zeno {
 
@@ -141,6 +142,30 @@ ZENO_DEFNODE(UpdateCurveControlPoint)({
         {"optional float", "point_y"},
         {"optional vec2f", "left_handler"},
         {"optional vec2f", "right_handler"},
+    },
+    {
+        {"curve", "curve"},
+    },
+    {},
+    {"curve"},
+});
+
+struct UpdateCurveCycleType : zeno::INode {
+    virtual void apply() override {
+        auto curve = get_input<CurveObject>("curve");
+        auto type = get_input2<std::string>("type");
+        auto typeIndex = array_index_safe({"CLAMP", "CYCLE", "MIRROR"}, type, "CycleType");
+        for (auto &[k, v]: curve->keys) {
+            v.cycleType = static_cast<CurveData::CycleType>(typeIndex); 
+        }
+        set_output("curve", std::move(curve));
+    }
+};
+
+ZENO_DEFNODE(UpdateCurveCycleType)({
+    {
+        {"curve", "curve"},
+        {"enum CLAMP CYCLE MIRROR", "type", "CLAMP"},
     },
     {
         {"curve", "curve"},

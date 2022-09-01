@@ -18,6 +18,7 @@
 #include <zenoui/util/cihou.h>
 #include "startup/zstartup.h"
 #include "util/log.h"
+#include "settings/zsettings.h"
 
 
 ZenoGraphsEditor::ZenoGraphsEditor(ZenoMainWindow* pMainWin)
@@ -601,8 +602,7 @@ void ZenoGraphsEditor::onMenuActionTriggered(QAction* pAction)
     }
     else if (text == tr("Set NASLOC"))
     {
-        //QSettings settings(QSettings::UserScope, "Zenus Inc.", "zeno2");
-        QSettings settings("ZenusTech", "Zeno");
+        QSettings settings(zsCompanyName, zsEditor);
         QString v = settings.value("nas_loc").toString();
 
         bool ok;
@@ -618,8 +618,7 @@ void ZenoGraphsEditor::onMenuActionTriggered(QAction* pAction)
     }
     else if (text == tr("Set ZENCACHE"))
     {
-        //QSettings settings(QSettings::UserScope, "Zenus Inc.", "zeno2");
-        QSettings settings("ZenusTech", "Zeno");
+        QSettings settings(zsCompanyName, zsEditor);
         QString v = settings.value("zencachedir").toString();
         QString v2 = settings.value("zencachenum").toString();
 

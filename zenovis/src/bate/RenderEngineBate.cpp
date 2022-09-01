@@ -35,6 +35,7 @@ struct RenderEngineBate : RenderEngine {
     }
 
     void update() override {
+        if (scene->drawOptions->interactive) graphicsMan->graphics.clear();
         graphicsMan->load_objects(scene->objectsMan->pairsShared());
     }
 
@@ -51,6 +52,21 @@ struct RenderEngineBate : RenderEngine {
         if (scene->drawOptions->show_grid) {
             for (auto const &hudgra : hudGraphics) {
                 hudgra->draw();
+            }
+        }
+        if (!scene->selected.empty() && !scene->drawOptions->interactive) {
+            CHECK_GL(glClear(GL_DEPTH_BUFFER_BIT));
+            for (auto const &[intgraid, intgra] : scene->drawOptions->interactGraphics) {
+                intgra->setHovered(false);
+                if (intgraid == scene->drawOptions->hovered_graphic_id)
+                    intgra->setHovered(true);
+                intgra->draw();
+            }
+        }
+        if (!scene->selected.empty() && scene->drawOptions->interactive) {
+            CHECK_GL(glClear(GL_DEPTH_BUFFER_BIT));
+            for (auto const &intgra : scene->drawOptions->interactingGraphics) {
+                intgra->draw();
             }
         }
     }

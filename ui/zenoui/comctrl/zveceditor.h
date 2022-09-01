@@ -4,6 +4,8 @@
 #include <QtWidgets>
 #include "../model/modeldata.h"
 
+class ZLineEdit;
+
 class ZVecEditor : public QWidget
 {
 	Q_OBJECT
@@ -19,7 +21,7 @@ public slots:
 	void onValueChanged(const UI_VECTYPE&);
 
 private:
-	QVector<QLineEdit*> m_editors;
+	QVector<ZLineEdit*> m_editors;
 	bool m_bFloat;
 };
 

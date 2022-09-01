@@ -114,7 +114,7 @@ struct BuildPrimitiveBvh : zeno::INode {
 
 ZENDEFNODE(BuildPrimitiveBvh,
            {
-               {{"PrimitiveObject", "prim"}, {"numeric:float", "thickness"}},
+               {{"PrimitiveObject", "prim"}, {"float", "thickness", "0"}},
                {{"LBvh", "lbvh"}},
                {{"enum auto point line tri quad", "prim_type", "auto"}},
                {"zenofx"},

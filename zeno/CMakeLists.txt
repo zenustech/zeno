@@ -62,7 +62,6 @@ if (ZENO_ENABLE_BACKWARD)
     add_backward(zeno)
 endif()
 
-# we are not using shared libraries now, so no need for this:
 if (ZENO_BUILD_SHARED)
     target_compile_definitions(zeno PRIVATE -DZENO_DLLEXPORT INTERFACE -DZENO_DLLIMPORT)
 endif()

@@ -29,24 +29,24 @@ jobs:
       matrix:
         include:
         - label: x86_64-linux-cpu
-          os: ubuntu-18.04
+          os: ubuntu-20.04
           triplet: x64-linux
           cxx: g++-9
           gpu: cpu
           pkgext: tar.gz
         - label: x86_64-windows-cpu
-          os: windows-2022
+          os: windows-latest
           triplet: x64-windows
           gpu: cpu
           pkgext: zip
         - label: x86_64-linux-cuda
-          os: ubuntu-18.04
+          os: ubuntu-20.04
           triplet: x64-linux
           cxx: g++-10
           gpu: cuda
           pkgext: tar.gz
         - label: x86_64-windows-cuda
-          os: windows-2022
+          os: windows-latest
           triplet: x64-windows
           gpu: cuda
           pkgext: zip

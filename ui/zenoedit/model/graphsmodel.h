@@ -44,8 +44,7 @@ public:
     void renameSubGraph(const QString& oldName, const QString& newName) override;
     QItemSelectionModel* selectionModel() const;
     NODE_DESCS descriptors() const override;
-    void setDescriptors(const NODE_DESCS& nodesParams) override;
-    void appendSubnetDescsFromZsg(const QList<NODE_DESC>& descs) override;
+    bool appendSubnetDescsFromZsg(const QList<NODE_DESC>& descs) override;
     bool getDescriptor(const QString& descName, NODE_DESC& desc) override;
     //NODE_DESC
     void appendSubGraph(SubGraphModel* pGraph);
@@ -153,13 +152,14 @@ public slots:
 	void on_linkRemoved(const QModelIndex& parent, int first, int last);
 
 private:
-    NODE_DESCS getSubgraphDescs();
     NODE_DESCS getCoreDescs();
     void onSubInfoChanged(SubGraphModel* pSubModel, const QModelIndex& idx, bool bInput, bool bInsert);
     void updateDescInfo(const QString& descName, const SOCKET_UPDATE_INFO& updateInfo);
     void importNodeLinks(const QList<NODE_DATA> &nodes, const QModelIndex &subGpIdx);
     void resolveLinks(const QModelIndex& idx, SubGraphModel* pCurrentGraph);
     void initDescriptors();
+    NODE_DESC getSubgraphDesc(SubGraphModel* pModel);
+    void registerCate(const NODE_DESC& desc);
     NODE_DATA _fork(const QModelIndex& subgIdx, const QModelIndex& subnetNodeIdx);
     QString uniqueSubgraph(QString orginName);
 
@@ -171,6 +171,7 @@ private:
     QItemSelectionModel* m_selection;
     QStandardItemModel* m_linkModel;
     NODE_DESCS m_nodesDesc;
+    NODE_DESCS m_subgsDesc;
     NODE_CATES m_nodesCate;
     QString m_filePath;
     QMutex m_mutex;

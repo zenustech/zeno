@@ -5,6 +5,10 @@
 #include <QtOpenGL>
 #include "comctrl/zmenubar.h"
 #include "comctrl/zmenu.h"
+#include "common.h"
+#include "viewporttransform.h"
+
+#include <glm/glm.hpp>
 
 class ZTimeline;
 class ZenoMainWindow;
@@ -56,6 +60,11 @@ public:
     QVector3D realPos() const;
     QVector3D screenToWorldRay(float x, float y) const;
     QVariant hitOnFloor(float x, float y) const;
+    QVariant hitOnPlane(float x, float y, QVector3D n, QVector3D p) const;
+    QVector2D qtCoordToGLCoord(int x, int y);
+    bool mouseEnteredRing(int x, int y);
+    void addPressedKey(int key);
+    void rmvPressedKey(int key);
 
 
 private:
@@ -68,7 +77,12 @@ private:
     bool m_ortho_mode;
     float m_fov;
     float m_radius;
+    float m_aperture;
+    float m_focalPlaneDistance;
     QVector2D m_res;
+
+    QSet<int> m_pressedKeys;
+    std::unique_ptr<zeno::FakeTransformer> transformer;
 };
 
 class ViewportWidget : public QOpenGLWidget
@@ -81,10 +95,13 @@ public:
     void initializeGL() override;
     void resizeGL(int nx, int ny) override;
     void paintGL() override;
-    void checkRecord(std::string a_record_file, QVector2D a_record_res, int a_nsamples);
+    void checkRecord(std::string a_record_file, QVector2D a_record_res);
     QVector2D cameraRes() const;
     void setCameraRes(const QVector2D& res);
     void updatePerspective();
+    void addPressedKey(int key);
+    void rmvPressedKey(int key);
+
 
 signals:
     void frameRecorded(int);
@@ -99,6 +116,10 @@ private:
     std::shared_ptr<CameraControl> m_camera;
     std::string record_path;
     QVector2D record_res;
+    QPointF m_lastPos;
+
+public:
+    bool updateLightOnce;
 };
 
 class CameraKeyframeWidget;
@@ -111,6 +132,8 @@ public:
     ~DisplayWidget();
     void init();
     QSize sizeHint() const override;
+    TIMELINE_INFO timelineInfo();
+    void setTimelineInfo(TIMELINE_INFO info);
 
 public slots:
     void updateFrame(const QString& action = "");
@@ -124,6 +147,10 @@ public slots:
 
 signals:
     void frameUpdated(int new_frame);
+
+  protected:
+    void keyPressEvent(QKeyEvent* event) override;
+    void keyReleaseEvent(QKeyEvent* event) override;
 
 private:
     bool isOptxRendering() const;

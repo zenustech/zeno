@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.19)
 
-if (NOT ZENO_WITH_zenvdb OR NOT ZENO_WITH_ZenoFX)
-    message(FATAL_ERROR "zenvdb and ZenoFX must be ON when CUDA is ON! "
-        "Please specify: -DZENO_WITH_zenvdb:BOOL=ON -DZENO_WITH_ZenoFX:BOOL=ON")
+if(NOT ZENO_WITH_zenvdb OR NOT ZENO_WITH_ZenoFX)
+  message(FATAL_ERROR "zenvdb and ZenoFX must be ON when CUDA is ON! "
+    "Please specify: -DZENO_WITH_zenvdb:BOOL=ON -DZENO_WITH_ZenoFX:BOOL=ON")
 endif()
 
 # assume cuda
@@ -21,6 +21,7 @@ add_library(zshelper INTERFACE)
 target_link_libraries(zshelper INTERFACE zensim ZFX)
 
 target_compile_features(zeno PRIVATE cuda_std_17)
+
 #[=[
 target_compile_options(zeno
   PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:${CMAKE_CUDA_FLAGS} --extended-lambda --expt-relaxed-constexpr --default-stream=per-thread -lineinfo --ptxas-options=-allow-expensive-optimizations=true -Xcudafe --display_error_number,--diag_suppress=implicit_return_from_non_void_function,--diag_suppress=2642,--diag_suppress=554>
@@ -51,6 +52,7 @@ target_sources(zeno PRIVATE
   volume/Transfer.cu
   volume/Conversion.cu
 )
+
 # mpm
 target_sources(zeno PRIVATE
   utils/IndexBuckets.cu
@@ -62,11 +64,23 @@ target_sources(zeno PRIVATE
   mpm/Maintenance.cu
   mpm/Temp.cu
 )
+
+# pbd
+target_sources(zeno PRIVATE
+  pbd/PBDInit.cu
+  pbd/PBDPipeline.cu
+)
+
 # fem
 target_sources(zeno PRIVATE
+  fem/SolverInit.cu
+  fem/SolverPipeline.cu
+  fem/SolverLinearSystem.cu
+  fem/SolverIPC.cu
   fem/BoundaryCondition.cu
   fem/Collisions.cu
-  #fem/TimeStepping.cu
+
+  # fem/TimeStepping.cu
   fem/Check.cu
   fem/Generation.cpp
   fem/test.cpp
@@ -74,18 +88,21 @@ target_sources(zeno PRIVATE
   fem/Fiber.cpp
   fem/Integrator.cpp
   fem/QuasiStaticStepping.cu
+
   # fem/BaryCentricInterpolator.cu
   fem/Codim.cu
-  #fem/TestAugLag.cu
+
+  # fem/TestAugLag.cu
   fem/FastQuasiStaticStepping.cu
 
   fem/FleshQuasiStepping.cu
 )
+
 # geometry
 target_sources(zeno PRIVATE
   geometry/file_parser/read_vtk_mesh.hpp
   geometry/file_parser/write_vtk_unstructured_mesh.hpp
-  geometry/file_parser/vtk_types.hpp  
+  geometry/file_parser/vtk_types.hpp
   geometry/linear_system/mfcg.hpp
   geometry/linear_system/active_set.hpp
   geometry/kernel/laplace_matrix.hpp
@@ -100,10 +117,11 @@ target_sources(zeno PRIVATE
   geometry/MeshIO.cu
   geometry/Jiggle.cu
 )
+
 # ocean
-#target_sources(zeno PRIVATE
-#  oceanfft/Ocean.cu
-#)
+# target_sources(zeno PRIVATE
+# oceanfft/Ocean.cu
+# )
 
 # wrangler
 if(NOT MSVC)

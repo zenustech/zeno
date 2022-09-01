@@ -1,6 +1,10 @@
 #include "zsgwriter.h"
 #include <zenoui/model/modelrole.h>
 #include <zeno/utils/logger.h>
+#include <zeno/funcs/ParseObjectFromUi.h>
+#include <zenoui/util/uihelper.h>
+
+using namespace zeno::iotags;
 
 
 ZsgWriter::ZsgWriter()
@@ -24,22 +28,22 @@ void ZsgWriter::dumpToClipboard(const QMap<QString, NODE_DATA>& nodes)
         writer.Key("nodes");
         {
             JsonObjBatch _batch(writer);
-	    for (const QString& nodeId : nodes.keys())
-	    {
+            for (const QString& nodeId : nodes.keys())
+            {
                 const NODE_DATA& nodeData = nodes[nodeId];
-                writer.Key(nodeId.toLatin1());
+                writer.Key(nodeId.toUtf8());
                 dumpNode(nodeData, writer);
-	    }
+            }
         }
     }
 
-    strJson = QString::fromLatin1(s.GetString());
+    strJson = QString::fromUtf8(s.GetString());
     QMimeData* pMimeData = new QMimeData;
     pMimeData->setText(strJson);
     QApplication::clipboard()->setMimeData(pMimeData);
 }
 
-QString ZsgWriter::dumpProgramStr(IGraphsModel* pModel)
+QString ZsgWriter::dumpProgramStr(IGraphsModel* pModel, APP_SETTINGS settings)
 {
 	QString strJson;
 	if (!pModel)
@@ -58,7 +62,7 @@ QString ZsgWriter::dumpProgramStr(IGraphsModel* pModel)
 			{
 				const QModelIndex& subgIdx = pModel->index(i, 0);
 				const QString& subgName = pModel->name(subgIdx);
-				writer.Key(subgName.toLatin1());
+				writer.Key(subgName.toUtf8());
 				_dumpSubGraph(pModel, subgIdx, writer);
 			}
 		}
@@ -66,6 +70,7 @@ QString ZsgWriter::dumpProgramStr(IGraphsModel* pModel)
 		writer.Key("views");
 		{
 			writer.StartObject();
+			dumpTimeline(settings.timeline, writer);
 			writer.EndObject();
 		}
 
@@ -77,7 +82,7 @@ QString ZsgWriter::dumpProgramStr(IGraphsModel* pModel)
 		writer.String("v2");
 	}
 
-	strJson = QString::fromLatin1(s.GetString());
+	strJson = QString::fromUtf8(s.GetString());
 	return strJson;
 }
 
@@ -94,7 +99,7 @@ void ZsgWriter::_dumpSubGraph(IGraphsModel* pModel, const QModelIndex& subgIdx, 
 		for (const NODE_DATA& node : nodes)
 		{
 			const QString& id = node[ROLE_OBJID].toString();
-			writer.Key(id.toLatin1());
+			writer.Key(id.toUtf8());
 			dumpNode(node, writer);
 		}
 	}
@@ -118,7 +123,7 @@ void ZsgWriter::dumpNode(const NODE_DATA& data, RAPIDJSON_WRITER& writer)
 
 	writer.Key("name");
 	const QString& name = data[ROLE_OBJNAME].toString();
-	writer.String(name.toLatin1());
+	writer.String(name.toUtf8());
 
 	const INPUT_SOCKETS& inputs = data[ROLE_INPUTS].value<INPUT_SOCKETS>();
 	const OUTPUT_SOCKETS& outputs = data[ROLE_OUTPUTS].value<OUTPUT_SOCKETS>();
@@ -129,21 +134,25 @@ void ZsgWriter::dumpNode(const NODE_DATA& data, RAPIDJSON_WRITER& writer)
 		JsonObjBatch _batch(writer);
 		for (const INPUT_SOCKET& inSock : inputs)
 		{
-			writer.Key(inSock.info.name.toLatin1());
+			writer.Key(inSock.info.name.toUtf8());
 
 			QVariant deflVal = inSock.info.defaultValue;
+			const QString& sockType = inSock.info.type;
+			bool bValid = UiHelper::validateVariant(deflVal, sockType);
 			if (!inSock.linkIndice.isEmpty())
 			{
 				for (QPersistentModelIndex linkIdx : inSock.linkIndice)
 				{
 					QString outNode = linkIdx.data(ROLE_OUTNODE).toString();
 					QString outSock = linkIdx.data(ROLE_OUTSOCK).toString();
-					AddVariantList({ outNode, outSock, deflVal }, inSock.info.type, writer, true);
+					AddVariantList({ outNode, outSock, deflVal }, sockType, writer, true);
 				}
 			}
 			else
 			{
-				AddVariantList({ QVariant(), QVariant(), deflVal}, inSock.info.type, writer, true);
+				if (!bValid)
+					deflVal = QVariant();
+				AddVariantList({ QVariant(), QVariant(), deflVal}, sockType, writer, true);
 			}
 		}
 	}
@@ -152,7 +161,7 @@ void ZsgWriter::dumpNode(const NODE_DATA& data, RAPIDJSON_WRITER& writer)
 		JsonObjBatch _batch(writer);
 		for (const PARAM_INFO& info : params)
 		{
-			writer.Key(info.name.toLatin1());
+			writer.Key(info.name.toUtf8());
 			AddVariant(info.value, info.typeDesc, writer, true);
 		}
 	}
@@ -244,6 +253,22 @@ void ZsgWriter::dumpNode(const NODE_DATA& data, RAPIDJSON_WRITER& writer)
 	}
 }
 
+void ZsgWriter::dumpTimeline(TIMELINE_INFO info, RAPIDJSON_WRITER& writer)
+{
+	writer.Key("timeline");
+	{
+		JsonObjBatch _batch(writer);
+		writer.Key(timeline::start_frame);
+		writer.Int(info.beginFrame);
+		writer.Key(timeline::end_frame);
+		writer.Int(info.endFrame);
+		writer.Key(timeline::curr_frame);
+		writer.Int(info.currFrame);
+		writer.Key(timeline::always);
+		writer.Bool(info.bAlways);
+	}
+}
+
 void ZsgWriter::_dumpDescriptors(const NODE_DESCS& descs, RAPIDJSON_WRITER& writer)
 {
 	JsonObjBatch batch(writer);
@@ -252,7 +277,7 @@ void ZsgWriter::_dumpDescriptors(const NODE_DESCS& descs, RAPIDJSON_WRITER& writ
 	{
 		const NODE_DESC& desc = descs[name];
 
-		writer.Key(name.toLatin1());
+		writer.Key(name.toUtf8());
 		JsonObjBatch _batch(writer);
 
 		{

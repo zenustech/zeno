@@ -10,7 +10,14 @@
 #include "viewport/zenovis.h"
 #include "util/log.h"
 #include <QFileDialog>
+#include <zenovis/ObjectsManager.h>
+#include <zeno/types/CameraObject.h>
 
+namespace zenovis {
+    struct Camera {
+        void setCamera(zeno::CameraData const &cam);
+    };
+} // namespace zenovis
 
 ZenoDockTitleWidget::ZenoDockTitleWidget(QWidget* parent)
 	: QWidget(parent)
@@ -103,11 +110,13 @@ void ZenoDockTitleWidget::onDockSwitchClicked()
 	QAction* pSwitchNodeParam = new QAction("parameter");
 	QAction* pSwitchNodeData = new QAction("data");
 	QAction *pSwitchLog = new QAction("logger");
+	QAction *pSwitchLights = new QAction("lights");
 	menu->addAction(pSwitchEditor);
 	menu->addAction(pSwitchView);
 	menu->addAction(pSwitchNodeParam);
 	menu->addAction(pSwitchNodeData);
 	menu->addAction(pSwitchLog);
+	menu->addAction(pSwitchLights);
 	connect(pSwitchEditor, &QAction::triggered, this, [=]() {
 		emit dockSwitchClicked(DOCK_EDITOR);
 		});
@@ -122,6 +131,9 @@ void ZenoDockTitleWidget::onDockSwitchClicked()
 		});
 	connect(pSwitchLog, &QAction::triggered, this, [=]() {
 		emit dockSwitchClicked(DOCK_LOG);
+	});
+    connect(pSwitchLights, &QAction::triggered, this, [=]() {
+		emit dockSwitchClicked(DOCK_LIGHTS);
 	});
 
 	menu->exec(QCursor::pos());
@@ -377,7 +389,7 @@ QMenuBar* ZenoViewDockTitle::initMenu()
         connect(pAction, &QAction::triggered, this, [=]() {
             const char *e = "bate";
             Zenovis::GetInstance().getSession()->set_render_engine(e);
-            zenoApp->getMainWindow()->updateViewport(QString::fromLatin1(e));
+            zenoApp->getMainWindow()->updateViewport(QString::fromUtf8(e));
         });
         pAction = new QAction(tr("Shading"), this);
         pAction->setShortcut(QKeySequence("Shift+F7"));
@@ -386,7 +398,7 @@ QMenuBar* ZenoViewDockTitle::initMenu()
             const char *e = "zhxx";
             Zenovis::GetInstance().getSession()->set_render_engine(e);
             //Zenovis::GetInstance().getSession()->set_enable_gi(false);
-            zenoApp->getMainWindow()->updateViewport(QString::fromLatin1(e));
+            zenoApp->getMainWindow()->updateViewport(QString::fromUtf8(e));
         });
         pAction = new QAction(tr("Optix"), this);
         pAction->setShortcut(QKeySequence("F8"));
@@ -394,7 +406,7 @@ QMenuBar* ZenoViewDockTitle::initMenu()
         connect(pAction, &QAction::triggered, this, [=]() {
             const char *e = "optx";
             Zenovis::GetInstance().getSession()->set_render_engine(e);
-            zenoApp->getMainWindow()->updateViewport(QString::fromLatin1(e));
+            zenoApp->getMainWindow()->updateViewport(QString::fromUtf8(e));
         });
     }
 
@@ -407,9 +419,8 @@ QMenuBar* ZenoViewDockTitle::initMenu()
             //QString path = QDateTime::currentDateTime().toString(QString("yyyy-dd-MM_hh-mm-ss.png"));
             QString path = QFileDialog::getSaveFileName(nullptr, tr("Path to Save"), "", tr("PNG images(*.png);;JPEG images(*.jpg);;BMP images(*.bmp);;EXR images(*.exr);;HDR images(*.hdr);;"));
             QString ext = QFileInfo(path).suffix();
-            int nsamples = 16;
 			if (!path.isEmpty()) {
-				Zenovis::GetInstance().getSession()->do_screenshot(path.toStdString(), ext.toStdString(), nsamples);
+				Zenovis::GetInstance().getSession()->do_screenshot(path.toStdString(), ext.toStdString());
 			}
         });
 		pAction = createAction(tr("Record Video"));
@@ -468,9 +479,27 @@ QMenuBar* ZenoViewDockTitle::initMenu()
         pEnvText->addAction(pAction);
     }
 
+    QMenu* pCamera = new QMenu(tr("Camera"));
+    {
+		QAction* pAction = new QAction(tr("Node Camera"), this);
+		connect(pAction, &QAction::triggered, this, [=]() {
+            int frameid = Zenovis::GetInstance().getSession()->get_curr_frameid();
+            auto *scene = Zenovis::GetInstance().getSession()->get_scene();
+            for (auto const &[key, ptr]: scene->objectsMan->pairs()) {
+                if (key.find("MakeCamera") != std::string::npos && key.find(zeno::format(":{}:", frameid)) != std::string::npos) {
+                    auto cam = dynamic_cast<zeno::CameraObject*>(ptr)->get();
+                    scene->camera->setCamera(cam);
+                    zenoApp->getMainWindow()->updateViewport();
+                }
+            }
+        });
+        pCamera->addAction(pAction);
+    }
+
     pMenuBar->addMenu(pDisplay);
     pMenuBar->addMenu(pRecord);
     pMenuBar->addMenu(pEnvText);
+    pMenuBar->addMenu(pCamera);
 
     return pMenuBar;
 }

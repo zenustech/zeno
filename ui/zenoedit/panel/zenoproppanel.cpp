@@ -11,7 +11,9 @@
 #include <zenoui/util/uihelper.h>
 #include <zenoui/comctrl/zexpandablesection.h>
 #include <zenoui/comctrl/zlinewidget.h>
+#include <zenoui/comctrl/zlineedit.h>
 #include "util/log.h"
+#include "util/apphelper.h"
 
 
 ZenoPropPanel::ZenoPropPanel(QWidget* parent)
@@ -145,11 +147,20 @@ ZExpandableSection* ZenoPropPanel::paramsBox(IGraphsModel* pModel, const QModelI
 			case CONTROL_INT:
 			case CONTROL_FLOAT:
 			{
-				QLineEdit* pLineEdit = new QLineEdit(param.value.toString());
+				ZLineEdit* pLineEdit = new ZLineEdit(param.value.toString());
 				pLineEdit->setProperty("cssClass", "proppanel");
+				pLineEdit->setNumSlider(UiHelper::getSlideStep(param.name, param.control));
+				if (param.control == CONTROL_FLOAT)
+				{
+					pLineEdit->setValidator(new QDoubleValidator);
+				}
+				else if (param.control == CONTROL_INT)
+				{
+					pLineEdit->setValidator(new QIntValidator);
+				}
 				pLineEdit->setObjectName(paramName);
 				pLineEdit->setProperty("control", param.control);
-				connect(pLineEdit, &QLineEdit::editingFinished, this, &ZenoPropPanel::onParamEditFinish);
+				connect(pLineEdit, &ZLineEdit::textChanged, this, &ZenoPropPanel::onParamEditFinish);
 
 				pLayout->addWidget(pLineEdit, r++, 1);
 				break;
@@ -187,12 +198,12 @@ ZExpandableSection* ZenoPropPanel::paramsBox(IGraphsModel* pModel, const QModelI
 			}
 			case CONTROL_READPATH:
 			{
-				QLineEdit* pathLineEdit = new QLineEdit(param.value.toString());
+				ZLineEdit* pathLineEdit = new ZLineEdit(param.value.toString());
 				pathLineEdit->setProperty("cssClass", "proppanel");
 				pathLineEdit->setObjectName(paramName);
 				pathLineEdit->setProperty("control", param.control);
 				pLayout->addWidget(pathLineEdit, r, 1);
-				connect(pathLineEdit, &QLineEdit::editingFinished, this, &ZenoPropPanel::onParamEditFinish);
+				connect(pathLineEdit, &ZLineEdit::editingFinished, this, &ZenoPropPanel::onParamEditFinish);
 
 				ZIconLabel* openBtn = new ZIconLabel;
 				openBtn->setIcons(ZenoStyle::dpiScaledSize(QSize(28, 28)), ":/icons/ic_openfile.svg", ":/icons/ic_openfile-on.svg", ":/icons/ic_openfile-on.svg");
@@ -201,18 +212,34 @@ ZExpandableSection* ZenoPropPanel::paramsBox(IGraphsModel* pModel, const QModelI
 			}
 			case CONTROL_WRITEPATH:
 			{
-				QLineEdit* pathLineEdit = new QLineEdit(param.value.toString());
+				ZLineEdit* pathLineEdit = new ZLineEdit(param.value.toString());
 				pathLineEdit->setProperty("cssClass", "proppanel");
 				pathLineEdit->setObjectName(paramName);
 				pathLineEdit->setProperty("control", param.control);
 				pLayout->addWidget(pathLineEdit, r, 1);
-				connect(pathLineEdit, &QLineEdit::editingFinished, this, &ZenoPropPanel::onParamEditFinish);
+				connect(pathLineEdit, &ZLineEdit::editingFinished, this, &ZenoPropPanel::onParamEditFinish);
 
 				ZIconLabel* openBtn = new ZIconLabel;
 				openBtn->setIcons(ZenoStyle::dpiScaledSize(QSize(28, 28)), ":/icons/ic_openfile.svg", ":/icons/ic_openfile-on.svg", ":/icons/ic_openfile-on.svg");
 				pLayout->addWidget(openBtn, r++, 2);
 				break;
 			}
+            case CONTROL_VEC:
+            {
+                UI_VECTYPE vec = param.value.value<UI_VECTYPE>();
+
+                int dim = -1;
+                bool bFloat = false;
+                UiHelper::parseVecType(param.typeDesc, dim, bFloat);
+
+                ZVecEditor* pVecEdit = new ZVecEditor(vec, bFloat, 3, "proppanel");
+                pVecEdit->setObjectName(paramName);
+				pVecEdit->setProperty("control", param.control);
+                connect(pVecEdit, &ZVecEditor::valueChanged, this, &ZenoPropPanel::onInputEditFinish);
+
+                pLayout->addWidget(pVecEdit, r++, 1);
+                break;
+            }
 			case CONTROL_MULTILINE_STRING:
 			{
 				QTextEdit* pTextEdit = new QTextEdit;
@@ -290,11 +317,21 @@ ZExpandableSection* ZenoPropPanel::inputsBox(IGraphsModel* pModel, const QModelI
 				pNameItem->setProperty("cssClass", "proppanel");
 				pLayout->addWidget(pNameItem, r, 0, Qt::AlignLeft);
 
-				QLineEdit* pLineEdit = new QLineEdit(UiHelper::variantToString(input.info.defaultValue));
+				ZLineEdit* pLineEdit = new ZLineEdit(UiHelper::variantToString(input.info.defaultValue));
 				pLineEdit->setProperty("cssClass", "proppanel");
+				pLineEdit->setNumSlider(UiHelper::getSlideStep(inputSock, input.info.control));
+
+				if (input.info.control == CONTROL_FLOAT)
+				{
+					pLineEdit->setValidator(new QDoubleValidator);
+				}
+				else if (input.info.control == CONTROL_INT)
+				{
+					pLineEdit->setValidator(new QIntValidator);
+				}
 				pLineEdit->setObjectName(inputSock);
 				pLineEdit->setProperty("control", input.info.control);
-				connect(pLineEdit, &QLineEdit::editingFinished, this, &ZenoPropPanel::onInputEditFinish);
+				connect(pLineEdit, &ZLineEdit::textChanged, this, &ZenoPropPanel::onInputEditFinish);
 
 				pLayout->addWidget(pLineEdit, r++, 1);
 				break;
@@ -312,14 +349,19 @@ ZExpandableSection* ZenoPropPanel::inputsBox(IGraphsModel* pModel, const QModelI
 				pLayout->addWidget(pCheckbox, r++, 1);
 				break;
 			}
-			case CONTROL_VEC3:
+			case CONTROL_VEC:
 			{
 				QLabel* pNameItem = new QLabel(inputSock);
 				pNameItem->setProperty("cssClass", "proppanel");
 				pLayout->addWidget(pNameItem, r, 0, Qt::AlignLeft);
 
 				UI_VECTYPE vec = input.info.defaultValue.value<UI_VECTYPE>();
-				ZVecEditor* pVecEdit = new ZVecEditor(vec, true, 3, "proppanel");
+
+                int dim = -1;
+                bool bFloat = false;
+                UiHelper::parseVecType(input.info.type, dim, bFloat);
+
+				ZVecEditor* pVecEdit = new ZVecEditor(vec, bFloat, 3, "proppanel");
 				pVecEdit->setObjectName(inputSock);
 				connect(pVecEdit, &ZVecEditor::editingFinished, this, &ZenoPropPanel::onInputEditFinish);
 
@@ -385,7 +427,7 @@ void ZenoPropPanel::onInputEditFinish()
 	info.name = inSock;
 	info.oldValue = inSocket.info.defaultValue;
 	
-	if (QLineEdit* pLineEdit = qobject_cast<QLineEdit*>(pSender))
+	if (ZLineEdit* pLineEdit = qobject_cast<ZLineEdit*>(pSender))
 	{
 		QString textValue = pLineEdit->text();
 		info.newValue = UiHelper::_parseDefaultValue(textValue, inSocket.info.type);
@@ -424,7 +466,7 @@ void ZenoPropPanel::onParamEditFinish()
 	const QString& nodeid = m_idx.data(ROLE_OBJID).toString();
 	QString textValue;
 
-	if (QLineEdit* pLineEdit = qobject_cast<QLineEdit*>(pSender))
+	if (ZLineEdit* pLineEdit = qobject_cast<ZLineEdit*>(pSender))
 	{
 		textValue = pLineEdit->text();
 	}
@@ -484,10 +526,10 @@ void ZenoPropPanel::onDataChanged(const QModelIndex& subGpIdx, const QModelIndex
 				case CONTROL_WRITEPATH:
 				{
 					//update lineedit
-					auto lst = findChildren<QLineEdit*>(param.name, Qt::FindChildrenRecursively);
+					auto lst = findChildren<ZLineEdit*>(param.name, Qt::FindChildrenRecursively);
 					if (lst.size() == 1)
 					{
-						QLineEdit* pEdit = lst[0];
+						ZLineEdit* pEdit = lst[0];
 						pEdit->setText(param.value.toString());
 					}
 					break;
@@ -526,10 +568,10 @@ void ZenoPropPanel::onDataChanged(const QModelIndex& subGpIdx, const QModelIndex
                 case CONTROL_CURVE:  //TODO(bate): find the QPushButton
 				{
 					//update lineedit
-					auto lst = findChildren<QLineEdit*>(param.name, Qt::FindChildrenRecursively);
+					auto lst = findChildren<ZLineEdit*>(param.name, Qt::FindChildrenRecursively);
 					if (lst.size() == 1)
 					{
-						QLineEdit* pEdit = lst[0];
+						ZLineEdit* pEdit = lst[0];
 						pEdit->setText(param.value.toString());
 					}
 					break;
@@ -552,10 +594,10 @@ void ZenoPropPanel::onDataChanged(const QModelIndex& subGpIdx, const QModelIndex
 				case CONTROL_WRITEPATH:
 				{
 					//update lineedit
-					auto lst = findChildren<QLineEdit*>(inSock, Qt::FindChildrenRecursively);
+					auto lst = findChildren<ZLineEdit*>(inSock, Qt::FindChildrenRecursively);
 					if (lst.size() == 1)
 					{
-						QLineEdit* pEdit = lst[0];
+						ZLineEdit* pEdit = lst[0];
 						pEdit->setText(inSocket.info.defaultValue.toString());
 					}
 					break;
@@ -569,7 +611,7 @@ void ZenoPropPanel::onDataChanged(const QModelIndex& subGpIdx, const QModelIndex
 					}
 					break;
 				}
-				case CONTROL_VEC3:
+				case CONTROL_VEC:
 				{
 					auto lst = findChildren<ZVecEditor*>(inSock, Qt::FindChildrenRecursively);
 					if (lst.size() == 1)

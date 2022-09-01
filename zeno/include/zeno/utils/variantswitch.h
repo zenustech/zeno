@@ -4,6 +4,7 @@
 #include <type_traits>
 #include <typeinfo>
 #include <algorithm>
+#include <functional>
 #include <tuple>
 
 namespace zeno {
@@ -108,6 +109,31 @@ struct variant_index<std::variant<T0, Ts...>, T> : std::integral_constant<std::s
 template <class Enum, class Variant, class T>
 struct variant_enum : std::integral_constant<Enum, Enum{std::underlying_type_t<Enum>(variant_index<Variant, T>::value)}> {
 };
+
+template <class T, std::size_t I = 0>
+struct _funcalt_wrapper {
+    std::remove_cv_t<std::remove_reference_t<T>> _m_core;
+
+    template <class ...Ts>
+    decltype(auto) operator()(Ts &&...ts) const {
+        return std::invoke(_m_core, std::forward<Ts>(ts)...);
+    }
+};
+
+template <class Tup, std::size_t ...Is>
+auto _impl_funcalt_variant(std::size_t index, Tup const &tstup, std::index_sequence<Is...>) {
+    return index_switch<std::tuple_size_v<Tup>>(index, [&tstup] (auto index)
+            -> std::variant<_funcalt_wrapper<std::tuple_element_t<Is, Tup>, Is>...> {
+        return _funcalt_wrapper<std::tuple_element_t<index.value, Tup>, index.value>{
+            std::get<index.value>(tstup)};
+    });
+}
+
+template <class ...Ts>
+auto funcalt_variant(std::size_t index, Ts const &...ts) {
+    return _impl_funcalt_variant(index, std::tuple<Ts const &...>(ts...),
+                                 std::make_index_sequence<sizeof...(Ts)>{});
+}
 
 template <class ...Fs>
 std::variant<std::invoke_result_t<Fs>...> functor_variant(std::size_t index, Fs const &...fs) {

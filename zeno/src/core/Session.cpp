@@ -4,6 +4,7 @@
 #include <zeno/extra/GlobalComm.h>
 #include <zeno/extra/GlobalStatus.h>
 #include <zeno/extra/EventCallbacks.h>
+#include <zeno/types/UserData.h>
 #include <zeno/core/Graph.h>
 #include <zeno/core/INode.h>
 #include <zeno/utils/safe_at.h>
@@ -32,6 +33,7 @@ ZENO_API Session::Session()
     , globalComm(std::make_unique<GlobalComm>())
     , globalStatus(std::make_unique<GlobalStatus>())
     , eventCallbacks(std::make_unique<EventCallbacks>())
+    , m_userData(std::make_unique<UserData>())
     {
 }
 
@@ -94,8 +96,8 @@ ZENO_API INodeClass::INodeClass(Descriptor const &desc)
 
 ZENO_API INodeClass::~INodeClass() = default;
 
-ZENO_API std::unique_ptr<Graph> Session::createGraph() {
-    auto graph = std::make_unique<Graph>();
+ZENO_API std::shared_ptr<Graph> Session::createGraph() {
+    auto graph = std::make_shared<Graph>();
     graph->session = const_cast<Session *>(this);
     return graph;
 }
@@ -104,32 +106,24 @@ ZENO_API std::string Session::dumpDescriptors() const {
     std::string res = "";
     std::vector<std::string> strs;
 
-    auto tno = [&] (auto const &s) -> decltype(auto) {
-#if 0
-        return translator->t(s);
-#else
-        return s;
-#endif
-    };
-
     for (auto const &[key, cls] : nodeClasses) {
         if (!key.empty() && key.front() == '^') continue; //overload nodes...
-        res += "DESC@" + tno(key) + "@";
+        res += "DESC@" + (key) + "@";
         Descriptor &desc = *cls->desc;
 
         strs.clear();
         for (auto const &[type, name, defl] : desc.inputs) {
-            strs.push_back(type + "@" + tno(name) + "@" + defl);
+            strs.push_back(type + "@" + (name) + "@" + defl);
         }
         res += "{" + join_str(strs, "%") + "}";
         strs.clear();
         for (auto const &[type, name, defl] : desc.outputs) {
-            strs.push_back(type + "@" + tno(name) + "@" + defl);
+            strs.push_back(type + "@" + (name) + "@" + defl);
         }
         res += "{" + join_str(strs, "%") + "}";
         strs.clear();
         for (auto const &[type, name, defl] : desc.params) {
-            strs.push_back(type + "@" + tno(name) + "@" + defl);
+            strs.push_back(type + "@" + (name) + "@" + defl);
         }
         res += "{" + join_str(strs, "%") + "}";
         res += "{" + join_str(desc.categories, "%") + "}";
@@ -137,6 +131,10 @@ ZENO_API std::string Session::dumpDescriptors() const {
         res += "\n";
     }
     return res;
+}
+
+ZENO_API UserData &Session::userData() const {
+    return *m_userData;
 }
 
 ZENO_API Session &getSession() {

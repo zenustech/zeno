@@ -51,11 +51,9 @@ namespace DisneyBSDF{
     static __inline__ __device__ 
     vec3 CalculateExtinction(vec3 apparantColor, float scatterDistance)
     {
-        //vec3 a = apparantColor;
-        //vec3 s = vec3(1.9f) - a + 3.5f * (a - vec3(0.8f)) * (a - vec3(0.8f));
-        vec3 s = clamp(apparantColor, vec3(0.000001, 0.000001,0.000001), vec3(0.99999));
 
-        return vec3(1.0f / ((vec3(1.0f) - s)*scatterDistance));
+        return -log(clamp(apparantColor, vec3(0.00001), vec3(0.99999)))/scatterDistance;
+
     }
 
     static __inline__ __device__
@@ -214,32 +212,39 @@ namespace DisneyBSDF{
         vec3 wo,
         vec3 wi)
     {
+
+
         float n2 = ior * ior;
-        vec3 wm = normalize(wo + wi);
+
+        vec3 wm = normalize(wi + ior*wo);
+
         float NoL = abs(wi.z);
         float NoV = abs(wo.z);
         float HoL = abs(dot(wm, wi));
-        //float HoL = abs(dot(wm, wo));
-        float HoV = HoL;
+        float HoV = abs(dot(wm, wo));
 
         float d  = BRDFBasics::GgxAnisotropicD(wm, ax, ay);
+
+        
         float gl = BRDFBasics::SeparableSmithGGXG1(wi, wm, ax, ay);
         float gv = BRDFBasics::SeparableSmithGGXG1(wo, wm, ax, ay);
 
-        float F = BRDFBasics::fresnelDielectric(HoV, 1.0f, ior, is_inside);
+        
+        float F = BRDFBasics::fresnelDielectric(dot(wm, wo), 1.0f, ior, false);
         vec3 color;
         if(thin)
             color = sqrt(baseColor);
         else
             color = baseColor;
 
-        //float c = (HoL * HoV) / (NoL * NoV);
-        float c = (HoL * HoL) / (NoL * NoV);
+        float c = (HoL * HoV) / (NoL * NoV);
         float t = (n2 / pow(dot(wm, wi) + ior * dot(wm, wo), 2.0f));
         //if(length(wm) < 1e-5){
         //    return color * (1.0f - F);
         //}
+        
         return color * c * t *  (1.0f - F) * gl * gv * d; 
+        //return color ;
     }
 
     static __inline__ __device__
@@ -322,7 +327,9 @@ namespace DisneyBSDF{
         bool thin,
         bool is_inside,
         float& fPdf,
-        float& rPdf)
+        float& rPdf,
+        float nDl)
+
     {
         Onb tbn = Onb(N);
         world2local(wi, tbn.m_tangent ,tbn.m_binormal, N);
@@ -352,6 +359,7 @@ namespace DisneyBSDF{
         // Clearcoat
      
         bool upperHemisphere = NoL > 0.0f && NoV > 0.0f;
+
         if(upperHemisphere && clearCoat > 0.0f) {
             float forwardClearcoatPdfW;
             float reverseClearcoatPdfW;
@@ -371,7 +379,8 @@ namespace DisneyBSDF{
 
             fPdf += pDiffuse * forwardDiffusePdfW;
             rPdf += pDiffuse * reverseDiffusePdfW;
-
+            if(!thin && nDl<=0.0f)
+                diffuse = 0;
             reflectance += diffuseW * (diffuse * baseColor + lobeOfSheen);
         }
         // Transsmission
@@ -430,8 +439,9 @@ namespace DisneyBSDF{
         Onb  tbn = Onb(N);
         float ax, ay;
         BRDFBasics::CalculateAnisotropicParams(roughness, anisotropic, ax, ay);
-        float r0 = rnd(seed);
-        float r1 = rnd(seed);
+        float2 r01 = sobolRnd(seed);
+        float r0 = r01.x;//rnd(seed);
+        float r1 = r01.y;//rnd(seed);
         vec3 wm = BRDFBasics::SampleGgxVndfAnisotropic(wo, ax, ay, r0, r1);
 
         wi = normalize(reflect(-wo, wm)); 
@@ -478,8 +488,9 @@ namespace DisneyBSDF{
     {
         float a2 = 0.0625; //0.25 * 0.25
 
-        float r0 = rnd(seed);
-        float r1 = rnd(seed);
+        float2 r01 = sobolRnd(seed);
+        float r0 = r01.x;//rnd(seed);
+        float r1 = r01.y;//rnd(seed);
 
         float cosTheta = sqrt( max(0.0f, (1.0f - pow(a2, 1.0f - r0) ) / (1.0f -a2) ) );
         float sinTheta = sqrt( max(0.0f, 1.0f - cosTheta * cosTheta) );
@@ -519,16 +530,19 @@ namespace DisneyBSDF{
         
     }
     static __inline__ __device__ 
-    bool Transmit(vec3 wm, vec3 wi, float n, vec3& wo)
+    bool Transmit(vec3 wm, vec3 wo, float n, vec3& wi)
     {
-        float c = dot(wi, wm);
-
+        float c = dot(wo, wm);
+        if(c < 0.0f) {
+            c = -c;
+            wm = -wm;
+        }
         float root = 1.0f - n * n * (1.0f - c * c);
         if(root <= 0){
             return false;
         }
 
-        wo = normalize((n * c -sqrt(root)) * wm - n * wi);
+        wi = normalize((n * c -sqrt(root)) * wm - n * wo);
         return true;
     }
 
@@ -540,7 +554,7 @@ namespace DisneyBSDF{
             float anisotropic,
 
             vec3 baseColor,
-            vec3 transmiianceColor,
+            vec3 transmittanceColor,
 
             float scatterDistance,
             vec3 wo,
@@ -571,8 +585,9 @@ namespace DisneyBSDF{
         float tax,tay;
         BRDFBasics::CalculateAnisotropicParams(rscaled,anisotropic,tax,tay);
 
-        float r0 = rnd(seed);
-        float r1 = rnd(seed);
+        float2 r01 = sobolRnd(seed);
+        float r0 = r01.x;//rnd(seed);
+        float r1 = r01.y;//rnd(seed);
         vec3 wm = BRDFBasics::SampleGgxVndfAnisotropic(wo, tax, tay, r0, r1);
 
         float VoH = dot(wm,wo);
@@ -580,7 +595,9 @@ namespace DisneyBSDF{
             VoH = -VoH;
         }
 
-        float relativeIOR = is_inside ?  ior : (1.0f / ior);
+        float ni = wo.z > 0.0f ? 1.0f : ior;
+        float nt = wo.z > 0.0f ? ior : 1.0f;
+        float relativeIOR = ni / nt;
 
         float F = BRDFBasics::fresnelDielectric(VoH, 1.0f, ior, is_inside);
 
@@ -602,18 +619,18 @@ namespace DisneyBSDF{
             if(thin){
                 wi = normalize(reflect(-wo,wm));
                 wi.z = -wi.z;
-                reflectance = G1v * sqrt(baseColor);
+                reflectance = G1v * sqrt(transmittanceColor);
                 flag = scatterEvent;
             }else{
                 if( Transmit(wm, wo,relativeIOR, wi)){
                     flag = transmissionEvent;
                     phaseFuncion = (!is_inside)  ? isotropic : vacuum;
-                    extinction = CalculateExtinction(transmiianceColor, scatterDistance);
+                    extinction = CalculateExtinction(transmittanceColor, scatterDistance);
                 }else{
                     flag = scatterEvent;
                     wi = normalize(reflect(-wo,wm));
                 }
-                reflectance = G1v * baseColor;    
+                reflectance = G1v * vec3(1.0f);    
             }
             float LoH = abs(dot(wi,wm));
             float jacobian = LoH  / (pow(LoH + relativeIOR * VoH, 2.0f) + 1e-5) + 1e-5;
@@ -647,7 +664,8 @@ namespace DisneyBSDF{
     bool SampleDisneyDiffuse(
         unsigned int& seed,
         vec3 baseColor,
-        vec3 transmitanceColor,
+        vec3 transmittanceColor,
+        vec3 sssColor,
         float scatterDistance,
         float sheen,
         float sheenTint,
@@ -666,17 +684,19 @@ namespace DisneyBSDF{
         SurfaceEventFlags& flag,
         int& phaseFuncion,
         vec3& extinction,
-        bool is_inside
+        bool is_inside,
+        bool &isSS
 
             )
     {
 
-        float r0 = rnd(seed);
-        float r1 = rnd(seed);
+        // float2 r01 = sobolRnd(seed);
+        // float r0 = r01.x;//rnd(seed);
+        // float r1 = r01.y;//rnd(seed);
         wi =  normalize(BRDFBasics::sampleOnHemisphere(seed, 1.0f));
         vec3 wm = normalize(wi+wo);
         float NoL = wi.z;
-        if(abs(NoL)<1e-6 ){
+        if(abs(NoL)<1e-5 ){
             fPdf = 0.0f;
             rPdf = 0.0f;
             reflectance = vec3(0.0f);
@@ -694,13 +714,15 @@ namespace DisneyBSDF{
         if(rnd(seed) <= subsurface && subsurface > 0.001f){
             wi = -wi;
             pdf = subsurface;
-
+            isSS = true;
             if(thin){
-                color = sqrt(color);
+                color = sqrt(transmittanceColor);
             }else{
                 flag = transmissionEvent;
                 phaseFuncion = (!is_inside)  ? isotropic : vacuum;
-                extinction = CalculateExtinction(transmitanceColor, scatterDistance);
+                extinction = CalculateExtinction(sssColor, scatterDistance);
+                color = transmittanceColor;
+
             }
         }else{
             pdf = 1.0 - subsurface;
@@ -710,7 +732,7 @@ namespace DisneyBSDF{
         vec3 sheenTerm = EvaluateSheen(baseColor, sheen, sheenTint, HoL);
         float diff = EvaluateDisneyDiffuse(roughness, flatness, wi, wo, wm, thin);
 
-        reflectance = sheen + color * (diff / (pdf+1e-5));
+        reflectance = sheen + color * diff;
         fPdf = abs(NoL) * pdf;
         rPdf = abs(NoV) * pdf;
         Onb  tbn = Onb(N);
@@ -719,46 +741,22 @@ namespace DisneyBSDF{
         return true;
     }
     static __inline__ __device__
-    float SampleDistance(unsigned int &seed, vec3 extinction, float &pdf)
+    float SampleDistance(unsigned int &seed, float scatterDistance, float &pdf)
     {
-        if(length(extinction)<1e-5){
-            pdf=1.0;
-            return 1e16;
+        if(scatterDistance == 0.0f){
+            return 1e16f;
         }
-        float ps = dot(extinction, vec3(1));
-
-        float pr = extinction.x / ps;
-        float pg = extinction.y / ps;
-        float pb = extinction.z / ps;
-
-        float c;
-        float p;
-
-        float r0 = rnd(seed);
-        if(r0 < pr) {
-            c = extinction.x;
-            p = pr;
-        }
-        else if(r0 < pr + pg) {
-            c = extinction.y;
-            p = pg;
-        }
-        else {
-            c = extinction.z;
-            p = pb;
-        }
-
-        float s = -log(rnd(seed)) / c;
-        pdf = exp(-c * s) / p;
-
+        float s = -log(rnd(seed)) * scatterDistance;
+        pdf = 1.0f;
         return s;
     }
 
     static __inline__ __device__
     vec3 SampleScatterDirection(unsigned int &seed)
     {
-        float r0 = rnd(seed);
-        float r1 = rnd(seed);
+        float2 r01 = sobolRnd(seed);
+        float r0 = r01.x;//rnd(seed);
+        float r1 = r01.y;//rnd(seed);
 
         float u = 2.0f * r1 - 1.0f;
         float norm = sqrtf(max(0.0f, 1.0f - u * u));
@@ -781,6 +779,7 @@ namespace DisneyBSDF{
         unsigned int& seed,
         vec3 baseColor,
         vec3 transmiianceColor,
+        vec3 sssColor,
         float metallic,
         float subsurface,
         float specular,
@@ -808,7 +807,9 @@ namespace DisneyBSDF{
         float& fPdf,
         SurfaceEventFlags& flag,
         int& phaseFuncion,
-        vec3& extinction
+        vec3& extinction,
+        bool& isDiff,
+        bool& isSS
             )
     {
         Onb  tbn = Onb(N);
@@ -818,10 +819,10 @@ namespace DisneyBSDF{
         pdf(metallic, specTrans, clearCoat, pSpecular, pDiffuse, pClearcoat, pSpecTrans);
 
         bool success = false;
-
+        isDiff = false;
         float pLobe = 0.0f;
         float p = rnd(seed);
-        if(  p<= pSpecular){
+        if( p<= pSpecular){
             success = SampleDisneyBRDF(
                     seed, 
                     baseColor,
@@ -841,19 +842,17 @@ namespace DisneyBSDF{
                     rPdf);
             pLobe = pSpecular;
 
-        }else if(pClearcoat >0.001f&& p <= (pSpecular + pClearcoat)){
+        }else if(pClearcoat >0.001f && p <= (pSpecular + pClearcoat)){
             success = SampleDisneyClearCoat(seed, clearCoat, clearcoatGloss, T, B, N, wo, wi, reflectance, fPdf, rPdf);
             pLobe = pClearcoat;
-        }else if(  p <= (pSpecular + pClearcoat + pDiffuse)){
-            success = SampleDisneyDiffuse(seed, baseColor, transmiianceColor, scatterDistance, sheen, sheenTint, roughness, flatness, subsurface, thin, wo, T, B, N, wi, fPdf, rPdf, reflectance, flag, phaseFuncion, extinction,is_inside);
-            pLobe = pDiffuse;
-        }else if(  pSpecTrans > 0.0f){
+            isDiff = true;
+        }else if(pSpecTrans > 0.001f && p <= (pSpecular + pClearcoat + pSpecTrans)){
             success = SampleDisneySpecTransmission(seed, ior, roughness, anisotropic, baseColor, transmiianceColor, scatterDistance, wo, wi, rPdf, fPdf, reflectance, flag, phaseFuncion, extinction, thin, is_inside, T, B, N);
             pLobe = pSpecTrans;
-        }else{
-            reflectance = vec3(100000.0f,0.0f,0.0f);
-            fPdf = 0.000000001f;
-            rPdf = 0.000000001f;
+        }else {
+            isDiff = true;
+            success = SampleDisneyDiffuse(seed, baseColor, transmiianceColor, sssColor, scatterDistance, sheen, sheenTint, roughness, flatness, subsurface, thin, wo, T, B, N, wi, fPdf, rPdf, reflectance, flag, phaseFuncion, extinction,is_inside, isSS);
+            pLobe = pDiffuse;
         }
         //reflectance = clamp(reflectance, vec3(0,0,0), vec3(1,1,1));
         if(pLobe > 0.0f){

@@ -1,4 +1,5 @@
-//#define STB_IMAGE_IMPLEMENTATION
+#define STB_IMAGE_STATIC
+#define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
 #define STB_IMAGE_WRITE_STATIC
@@ -1024,41 +1025,50 @@ struct ReadLightFromFile : zeno::INode {
        auto sclList = std::make_shared<zeno::ListObject>();
        auto colList = std::make_shared<zeno::ListObject>();
        auto intList = std::make_shared<zeno::ListObject>();
+       auto expList = std::make_shared<zeno::ListObject>();
 
        std::ifstream infile(path);
        if (infile.is_open()) {
            std::string line;
            int num = 0;
+           int dl = 7;
            while (std::getline(infile, line)) {
                // using printf() in all tests for consistency
                std::string l = line.c_str();
                printf("Light: Processing %s\n", l.c_str());
-               if(num%6==0){
+               if(num%dl==0){
                    LIGHT_STR_SPLIT_V3F
                    //printf("Light: Pos %.2f %.2f %.2f\n", tmp[0], tmp[1], tmp[2]);
                    posList->arr.push_back(no);
                }
-               if(num%6==1){
+               if(num%dl==1){
                    LIGHT_STR_SPLIT_V3F
                    //printf("Light: Rot %.2f %.2f %.2f\n", tmp[0], tmp[1], tmp[2]);
                    rotList->arr.push_back(no);
                }
-               if(num%6==2){
+               if(num%dl==2){
                    LIGHT_STR_SPLIT_V3F
                    //printf("Light: Scl %.2f %.2f %.2f\n", tmp[0], tmp[1], tmp[2]);
                    sclList->arr.push_back(no);
                }
-               if(num%6==3){
+               if(num%dl==3){
                    LIGHT_STR_SPLIT_V3F
                    //printf("Light: Col %.2f %.2f %.2f\n", tmp[0], tmp[1], tmp[2]);
                    colList->arr.push_back(no);
                }
-               if(num%6==4){
+               if(num%dl==4){
                    auto no = std::make_shared<zeno::NumericObject>();
                    float tmp = (float)atof(l.c_str());
                    no->set(tmp);
                    //printf("Light: Int %.2f\n", tmp);
                    intList->arr.push_back(no);
+               }
+               if(num%dl==5){
+                   auto no = std::make_shared<zeno::NumericObject>();
+                   float tmp = (float)atof(l.c_str());
+                   no->set(tmp);
+                   //printf("Light: Exp %.2f\n", tmp);
+                   expList->arr.push_back(no);
                }
 
                num++;
@@ -1071,6 +1081,7 @@ struct ReadLightFromFile : zeno::INode {
        set_output("sclList", std::move(sclList));
        set_output("colList", std::move(colList));
        set_output("intList", std::move(intList));
+       set_output("expList", std::move(expList));
     }
 };
 ZENDEFNODE(ReadLightFromFile,
@@ -1079,7 +1090,7 @@ ZENDEFNODE(ReadLightFromFile,
                 {"readpath", "path"},
             },  /* outputs: */
             {
-                "posList", "rotList", "sclList", "colList", "intList"
+                "posList", "rotList", "sclList", "colList", "intList", "expList"
             },  /* params: */
             {
             },  /* category: */

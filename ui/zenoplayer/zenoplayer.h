@@ -4,23 +4,20 @@
 class ViewportWidget;
 class CameraKeyframeWidget;
 
-typedef struct __tagZenoPlayerInitParam {
-    QString sZsgPath;
-    bool bRecord;
-    int iFrame;
-    int iSample;
-    QString sPixel;
-    QString sPath;
-    QString audioPath;
-    void init() {
-        sZsgPath = "";
-        bRecord = false;
-        iFrame = 0;
-        sPixel = "";
-        sPath = "";
-        audioPath = "";
-    }
-}ZENO_PLAYER_INIT_PARAM;
+struct ZENO_PLAYER_INIT_PARAM {
+    QString sZsgPath = "";
+    bool bRecord = false;
+    int iFrame = 0;
+    int iSFrame = 0;
+    int iSample = 0;
+    int iBitrate = 0;
+    int iFps = 0;
+    QString sPixel = "";
+    QString sPath = "";
+    QString audioPath = "";
+    QString configFilePath = "";
+    bool exitWhenRecordFinish = false;
+};
 
 class ZenoPlayer : public QWidget
 {
