@@ -620,7 +620,7 @@ void ZenoLBvh<dim, lane_width, Index, Value, Allocator>::refit(zs::CudaExecution
     Vector<int> refitFlags{primBvs.get_allocator(), numNodes};
     refitFlags.reset(0);
 // refit
-#if 1
+#if 0
     policy(orderedBvs, [] ZS_LAMBDA(auto &bv) {
         bv = Box{TV::uniform(limits<value_type>::max()), TV::uniform(limits<value_type>::lowest())};
     });
@@ -635,7 +635,7 @@ void ZenoLBvh<dim, lane_width, Index, Value, Allocator>::refit(zs::CudaExecution
         orderedBvs[node] = bv;
         node = parents[node];
         while (node != -1) {
-#if 1
+#if 0
             for (int d = 0; d != dim; ++d) {
                 atomic_min(exec_cuda, &orderedBvs[node]._min[d], bv._min[d]);
                 atomic_max(exec_cuda, &orderedBvs[node]._max[d], bv._max[d]);
