@@ -178,7 +178,7 @@ namespace zeno {
             [verts = proxy<space>({},verts),eles = proxy<space>({},quads),bcw = proxy<space>({},bcw),
                     everts = proxy<space>({},everts),tetsBvh = proxy<space>(tetsBvh),
                     x_tag,elm_tag,weight_tag,fitting_in] ZS_LAMBDA (int vi) mutable {
-                const auto& p = everts.pack<3>(x_tag,vi);
+                const auto& p = everts.template pack<3>(x_tag,vi);
                 T closest_dist = 1e6;
                 bool found = false;
                 // if(vi == 10820)
@@ -191,10 +191,10 @@ namespace zeno {
                     // if(vi == 10820)
                     //     printf("test neighbor element %d ei\n",ei);
                     auto inds = eles.template pack<4>(elm_tag, ei).template reinterpret_bits<int>();
-                    auto p0 = verts.pack<3>(x_tag,inds[0]);
-                    auto p1 = verts.pack<3>(x_tag,inds[1]);
-                    auto p2 = verts.pack<3>(x_tag,inds[2]);
-                    auto p3 = verts.pack<3>(x_tag,inds[3]);
+                    auto p0 = verts.template pack<3>(x_tag,inds[0]);
+                    auto p1 = verts.template pack<3>(x_tag,inds[1]);
+                    auto p2 = verts.template pack<3>(x_tag,inds[2]);
+                    auto p3 = verts.template pack<3>(x_tag,inds[3]);
 
                     auto ws = compute_barycentric_weights(p,p0,p1,p2,p3);
 
