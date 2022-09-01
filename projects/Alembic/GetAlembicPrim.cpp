@@ -10,6 +10,7 @@
 #include <utility>
 
 namespace zeno {
+ZENO_API void primTriangulate(PrimitiveObject *prim, bool with_uv, bool has_lines);
 namespace {
 
 int count_alembic_prims(std::shared_ptr<zeno::ABCTree> abctree) {
@@ -135,6 +136,9 @@ struct GetAlembicPrim : INode {
         } else {
             prim = get_alembic_prim(abctree, index);
         }
+        if (get_input2<int>("triangulate") == 1) {
+            zeno::primTriangulate(prim.get());
+        }
         set_output("prim", std::move(prim));
     }
 };
@@ -143,7 +147,8 @@ ZENDEFNODE(GetAlembicPrim, {
     {
         {"ABCTree", "abctree"},
         {"int", "index", "0"},
-        {"int", "use_xform", "0"}
+        {"bool", "use_xform", "0"},
+        {"bool", "triangulate", "0"},
     },
     {{"PrimitiveObject", "prim"}},
     {},
@@ -164,6 +169,9 @@ struct AllAlembicPrim : INode {
             });
         }
         auto outprim = prim_merge(prims);
+        if (get_input2<int>("triangulate") == 1) {
+            zeno::primTriangulate(outprim.get());
+        }
         set_output("prim", std::move(outprim));
     }
 };
@@ -171,7 +179,8 @@ struct AllAlembicPrim : INode {
 ZENDEFNODE(AllAlembicPrim, {
     {
         {"ABCTree", "abctree"},
-        {"int", "use_xform", "0"}
+        {"bool", "use_xform", "0"},
+        {"bool", "triangulate", "0"},
     },
     {{"PrimitiveObject", "prim"}},
     {},
