@@ -125,11 +125,13 @@ bool UiHelper::validateVariant(const QVariant& var, const QString& type)
     case CONTROL_STRING:
     case CONTROL_WRITEPATH:
     case CONTROL_READPATH:
+    case CONTROL_ENUM:
+        return (QVariant::String == varType);
+        break;
     case CONTROL_MULTILINE_STRING:
         return var.type() == QVariant::String;
     case CONTROL_COLOR:
     case CONTROL_CURVE:
-    case CONTROL_ENUM:
         return var.isNull();
     case CONTROL_VEC:
     {

@@ -363,7 +363,7 @@ ZExpandableSection* ZenoPropPanel::inputsBox(IGraphsModel* pModel, const QModelI
 
 				ZVecEditor* pVecEdit = new ZVecEditor(vec, bFloat, 3, "proppanel");
 				pVecEdit->setObjectName(inputSock);
-				connect(pVecEdit, &ZVecEditor::valueChanged, this, &ZenoPropPanel::onInputEditFinish);
+				connect(pVecEdit, &ZVecEditor::editingFinished, this, &ZenoPropPanel::onInputEditFinish);
 
 				pLayout->addWidget(pVecEdit, r++, 1);
 				break;
