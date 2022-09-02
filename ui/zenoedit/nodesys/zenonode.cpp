@@ -5,7 +5,7 @@
 #include <zenoui/comctrl/gv/zenoparamnameitem.h>
 #include <zenoui/comctrl/gv/zenoparamwidget.h>
 #include <zenoui/util/uihelper.h>
-#include <zenoui/include/igraphsmodel.h>
+#include <zenomodel/include/igraphsmodel.h>
 #include <zeno/utils/logger.h>
 #include <zeno/utils/scope_exit.h>
 #include <zenoui/style/zenostyle.h>

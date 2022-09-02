@@ -2,7 +2,7 @@
 #define __ZENO_SUBNET_LISTVIEW_H__
 
 #include <QtWidgets>
-#include <zenoui/include/igraphsmodel.h>
+#include <zenomodel/include/igraphsmodel.h>
 
 class ZenoSubnetListView : public QListView
 {

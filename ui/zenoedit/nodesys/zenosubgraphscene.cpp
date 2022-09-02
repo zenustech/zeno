@@ -10,7 +10,7 @@
 #include <zenoui/util/uihelper.h>
 #include <zenoui/nodesys/nodesys_common.h>
 #include <zenoui/nodesys/nodegrid.h>
-#include <zenoui/include/igraphsmodel.h>
+#include <zenomodel/include/igraphsmodel.h>
 #include "zenoapplication.h"
 #include "graphsmanagment.h"
 #include <zeno/utils/log.h>

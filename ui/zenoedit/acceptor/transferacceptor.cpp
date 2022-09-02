@@ -1,6 +1,6 @@
 #include <QtWidgets>
 #include <zenoui/model/modelrole.h>
-#include <zenoui/include/igraphsmodel.h>
+#include <zenomodel/include/igraphsmodel.h>
 #include "transferacceptor.h"
 #include <zeno/utils/logger.h>
 #include "util/log.h"

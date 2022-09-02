@@ -1,8 +1,10 @@
 #include "uihelper.h"
 #include <zeno/utils/logger.h>
-#include <zenoui/model/modelrole.h>
-#include <zenoui/model/curvemodel.h>
+#include "modelrole.h"
 #include "zassert.h"
+#include "curvemodel.h"
+#include "variantptr.h"
+#include "jsonhelper.h"
 #include <QUuid>
 
 
@@ -759,4 +761,58 @@ QString UiHelper::correctSubIOName(IGraphsModel* pModel, const QString& subgName
         }
     }
     return finalName;
+}
+
+QVariant UiHelper::_parseToVariant(const QString& type, const rapidjson::Value& val, QObject* parentRef)
+{
+    if (val.GetType() == rapidjson::kStringType)
+    {
+        return val.GetString();
+    }
+    else if (val.GetType() == rapidjson::kNumberType)
+    {
+        //if (val.IsInt())
+            //zeno::log_critical("happy {}", val.GetInt());
+        if (val.IsDouble())
+            return val.GetDouble();
+        else if (val.IsInt())
+            return val.GetInt();
+        else {
+            zeno::log_warn("bad rapidjson number type {}", val.GetType());
+            return QVariant();
+        }
+    }
+    else if (val.GetType() == rapidjson::kTrueType)
+    {
+        return val.GetBool();
+    }
+    else if (val.GetType() == rapidjson::kFalseType)
+    {
+        return val.GetBool();
+    }
+    else if (val.GetType() == rapidjson::kNullType)
+    {
+        return QVariant();
+    }
+    else if (val.GetType() == rapidjson::kArrayType)
+    {
+        UI_VECTYPE vec;
+        auto values = val.GetArray();
+        for (int i = 0; i < values.Size(); i++)
+        {
+            vec.append(values[i].GetFloat());
+        }
+        return QVariant::fromValue(vec);
+    }
+    else if (val.GetType() == rapidjson::kObjectType)
+    {
+        if (type == "curve")
+        {
+            CurveModel* pModel = JsonHelper::_parseCurveModel(val, parentRef);
+            return QVariantPtr<CurveModel>::asVariant(pModel);
+        }
+    }
+
+    zeno::log_warn("bad rapidjson value type {}", val.GetType());
+    return QVariant();
 }

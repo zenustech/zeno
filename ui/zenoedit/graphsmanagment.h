@@ -5,7 +5,7 @@ class ZenoSubGraphScene;
 
 #include <QtWidgets>
 
-#include <zenoui/include/igraphsmodel.h>
+#include <zenomodel/include/igraphsmodel.h>
 
 class GraphsManagment : public QObject
 {

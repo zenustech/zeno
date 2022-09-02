@@ -3,6 +3,8 @@
 
 #include <zenoio/acceptor/iacceptor.h>
 
+#include "modeldata.h"
+
 class SubGraphModel;
 class GraphsModel;
 

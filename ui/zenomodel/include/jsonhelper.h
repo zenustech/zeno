@@ -1,10 +1,13 @@
 #ifndef __JSON_HELPER_H__
 #define __JSON_HELPER_H__
 
+#include <QObject>
+#include <QtWidgets>
+#include <rapidjson/document.h>
+
 #include <rapidjson/writer.h>
 #include <rapidjson/stringbuffer.h>
 #include <rapidjson/prettywriter.h>
-#include <QtWidgets>
 
 typedef rapidjson::Writer<rapidjson::StringBuffer> RAPIDJSON_WRITER;
 
@@ -48,6 +51,7 @@ namespace JsonHelper
 	void AddVariantList(const QVariantList& list, const QString& type, RAPIDJSON_WRITER& writer, bool fillInvalid = false);
 	void AddVariant(const QVariant& var, const QString& type, RAPIDJSON_WRITER& writer, bool fillInvalid);
 	void AddVariantToStringList(const QVariantList& list, RAPIDJSON_WRITER& writer);
+	CurveModel* _parseCurveModel(const rapidjson::Value& jsonCurve, QObject* parentRef);
 	void dumpCurveModel(const CurveModel* pModel, RAPIDJSON_WRITER& writer);
 }
 

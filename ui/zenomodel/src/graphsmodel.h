@@ -4,9 +4,9 @@
 #include <QStandardItemModel>
 #include <QItemSelectionModel>
 
-#include <zenoui/include/igraphsmodel.h>
+#include <zenomodel/include/igraphsmodel.h>
 #include "subgraphmodel.h"
-#include <zenoui/model/modeldata.h>
+#include "modeldata.h"
 #include <stack>
 
 class SubGraphModel;

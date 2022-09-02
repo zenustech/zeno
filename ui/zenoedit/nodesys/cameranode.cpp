@@ -1,6 +1,6 @@
 #include "cameranode.h"
 #include "util/log.h"
-#include <zenoui/include/igraphsmodel.h>
+#include <zenomodel/include/igraphsmodel.h>
 #include "zenoapplication.h"
 #include "graphsmanagment.h"
 

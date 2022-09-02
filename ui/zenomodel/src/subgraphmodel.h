@@ -5,8 +5,6 @@
 #include <QString>
 #include <QObject>
 #include <memory>
-
-#include <zenoui/model/modeldata.h>
 #include "command.h"
 
 struct PlainNodeItem

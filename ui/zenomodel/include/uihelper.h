@@ -1,9 +1,9 @@
 #ifndef __UI_HELPER_H__
 #define __UI_HELPER_H__
 
-#include "../model/modeldata.h"
+#include <zenomodel/include/modeldata.h>
 #include <rapidjson/document.h>
-#include <zenoui/include/igraphsmodel.h>
+#include <zenomodel/include/igraphsmodel.h>
 
 
 class BlockSignalScope
@@ -52,6 +52,7 @@ public:
     static void reAllocIdents(QMap<QString, NODE_DATA>& nodes, QList<EdgeInfo>& links);
     static QString nthSerialNumName(QString name);
     static QString correctSubIOName(IGraphsModel* pModel, const QString& subgName, const QString& newName, bool bInput);
+    static QVariant _parseToVariant(const QString& type, const rapidjson::Value& val, QObject* parentRef);
 
 private:
     static std::pair<qreal, qreal> getRxx2(QRectF r, qreal xRadius, qreal yRadius, bool AbsoluteSize);

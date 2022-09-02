@@ -1,11 +1,14 @@
+#include <QObject>
+#include <QtWidgets>
+#include <rapidjson/document.h>
+
 #include "modelacceptor.h"
 #include "graphsmodel.h"
-#include <zenoui/model/modelrole.h>
+#include "modelrole.h"
 #include <zeno/utils/logger.h>
 #include "magic_enum.hpp"
 #include "zassert.h"
-#include <zenoio/reader/zsgreader.h>
-#include <zenoui/util/uihelper.h>
+#include "uihelper.h"
 
 
 ModelAcceptor::ModelAcceptor(GraphsModel* pModel, bool bImport)
@@ -312,7 +315,7 @@ void ModelAcceptor::setInputSocket(
         if (desc.inputs.find(inSock) != desc.inputs.end()) {
             descInfo = desc.inputs[inSock].info;
         }
-        defaultValue = ZsgReader::getInstance()._parseToVariant(descInfo.type, defaultVal, m_currentGraph);
+        defaultValue = UiHelper::_parseToVariant(descInfo.type, defaultVal, m_currentGraph);
     }
 
     QModelIndex idx = m_currentGraph->index(id);
@@ -405,7 +408,7 @@ void ModelAcceptor::setParamValue(const QString& id, const QString& nodeCls, con
         if (desc.params.find(name) != desc.params.end()) {
             paramInfo = desc.params[name];
         }
-        var = ZsgReader::getInstance()._parseToVariant(paramInfo.typeDesc, value, m_currentGraph);
+        var = UiHelper::_parseToVariant(paramInfo.typeDesc, value, m_currentGraph);
     }
 
     QModelIndex idx = m_currentGraph->index(id);

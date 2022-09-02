@@ -2,7 +2,7 @@
 #include "zenoapplication.h"
 #include "graphsmanagment.h"
 #include <zenoui/model/modelrole.h>
-#include <zenoui/include/igraphsmodel.h>
+#include <zenomodel/include/igraphsmodel.h>
 #include <zenoui/comctrl/zcombobox.h>
 #include <zenoui/comctrl/zlabel.h>
 #include <zenoui/style/zenostyle.h>

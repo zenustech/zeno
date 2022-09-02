@@ -1,8 +1,8 @@
 #include "zsgwriter.h"
-#include <zenoui/model/modelrole.h>
+#include <zenomodel/include/modelrole.h>
 #include <zeno/utils/logger.h>
 #include <zeno/funcs/ParseObjectFromUi.h>
-#include <zenoui/util/uihelper.h>
+#include <zenomodel/include/uihelper.h>
 
 using namespace zeno::iotags;
 

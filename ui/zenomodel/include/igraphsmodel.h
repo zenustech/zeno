@@ -2,9 +2,8 @@
 #define __IGRAPHMODEL_H__
 
 #include <QtWidgets>
-
-#include "../model/modeldata.h"
 #include "common.h"
+#include "modeldata.h"
 
 class IGraphsModel : public QAbstractItemModel
 {

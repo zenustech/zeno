@@ -1,6 +1,7 @@
 #include "command.h"
 #include "graphsmodel.h"
-#include <zenoui/model/modelrole.h>
+#include "modelrole.h"
+#include "modeldata.h"
 #include "zassert.h"
 
 

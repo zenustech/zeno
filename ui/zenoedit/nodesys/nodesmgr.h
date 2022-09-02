@@ -1,7 +1,7 @@
 #ifndef __NODES_MGR_H__
 #define __NODES_MGR_H__
 
-#include <zenoui/include/igraphsmodel.h>
+#include <zenomodel/include/igraphsmodel.h>
 #include <zenoui/model/modeldata.h>
 #include <zenoui/model/modelrole.h>
 #include <QtWidgets>

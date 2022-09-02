@@ -1,8 +1,7 @@
 #ifndef __ZENO_MODEL_H__
 #define __ZENO_MODEL_H__
 
-#include <zenoui/model/modeldata.h>
-#include <zenoui/include/igraphsmodel.h>
+#include <zenomodel/include/igraphsmodel.h>
 #include <zenoio/acceptor/iacceptor.h>
 
 namespace zeno_model

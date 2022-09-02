@@ -1,9 +1,9 @@
 #ifndef __IACCEPTOR_H__
 #define __IACCEPTOR_H__
 
-#include <zenoui/model/modeldata.h>
 #include <rapidjson/document.h>
 #include "common.h"
+#include <zenomodel/include/modeldata.h>
 
 class IGraphsModel;
 

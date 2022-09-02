@@ -9,5 +9,5 @@ set_property(TARGET zenomodel PROPERTY AUTOMOC ON)
 set_property(TARGET zenomodel PROPERTY AUTORCC ON)
 
 target_link_libraries(zenomodel PUBLIC Qt5::Widgets)
-target_link_libraries(zenomodel PUBLIC zenoui zeno)
-target_include_directories(zenomodel PRIVATE . .. ../include)
+target_link_libraries(zenomodel PUBLIC zeno)
+target_include_directories(zenomodel PRIVATE . .. ../include include)
