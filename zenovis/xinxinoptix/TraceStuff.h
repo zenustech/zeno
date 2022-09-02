@@ -53,6 +53,7 @@ struct RadiancePRD
     int          depth;
     int          diffDepth;
     bool         isSS;
+    float        scatterStep;
     
 };
 

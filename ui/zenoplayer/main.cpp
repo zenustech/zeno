@@ -4,10 +4,16 @@
 
 #include "zenoapplication.h"
 #include "style/zenostyle.h"
+#include "zeno/extra/assetDir.h"
 #include <zeno/utils/logger.h>
+#include "AudioFile.h"
 
-namespace zaudio {
-int calcFrameCountByAudio(std::string path, int fps);
+static int calcFrameCountByAudio(std::string path, int fps) {
+    AudioFile<float> wav;
+    wav.load (path);
+    uint64_t ret = wav.getNumSamplesPerChannel();
+    ret = ret * fps / wav.getSampleRate();
+    return ret + 1;
 }
 
 int main(int argc, char *argv[]) 
@@ -20,7 +26,6 @@ int main(int argc, char *argv[])
     //QMessageBox::information(NULL, "debug", "debug");
 	
     ZENO_PLAYER_INIT_PARAM param;
-    param.init();
     if (argc > 1)
     {
         QCommandLineParser cmdParser;
@@ -36,12 +41,14 @@ int main(int argc, char *argv[])
             {"audio", "audio", "audio path"},
             {"bitrate", "bitrate", "bitrate"},
             {"fps", "fps", "fps"},
+            {"configFilePath", "configFilePath", "configFilePath"},
+            {"exitWhenRecordFinish", "exitWhenRecordFinish", "exitWhenRecordFinish"},
         });
         cmdParser.process(a);
         if (cmdParser.isSet("zsg"))
             param.sZsgPath = cmdParser.value("zsg"); 
         if (cmdParser.isSet("record"))
-            param.bRecord = cmdParser.value("record").toLower() == "true" ? true : false;
+            param.bRecord = cmdParser.value("record").toLower() == "true";
         if (cmdParser.isSet("frame"))
             param.iFrame = cmdParser.value("frame").toInt();
         if (cmdParser.isSet("sframe"))
@@ -52,10 +59,16 @@ int main(int argc, char *argv[])
             param.sPixel = cmdParser.value("pixel");
         if (cmdParser.isSet("path"))
             param.sPath = cmdParser.value("path");
+        if (cmdParser.isSet("configFilePath")) {
+            param.configFilePath = cmdParser.value("configFilePath");
+            zeno::setConfigVariable("configFilePath", param.configFilePath.toStdString());
+        }
+        if (cmdParser.isSet("exitWhenRecordFinish"))
+            param.exitWhenRecordFinish = cmdParser.value("exitWhenRecordFinish").toLower() == "true";
         if (cmdParser.isSet("audio")) {
             param.audioPath = cmdParser.value("audio");
             if(!cmdParser.isSet("frame")) {
-                int count = zaudio::calcFrameCountByAudio(param.audioPath.toStdString(), 24);
+                int count = calcFrameCountByAudio(param.audioPath.toStdString(), 24);
                 param.iFrame = count;
             }
         }

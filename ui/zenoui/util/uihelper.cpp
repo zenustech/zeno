@@ -113,6 +113,42 @@ NODE_DESCS UiHelper::parseDescs(const rapidjson::Value &jsonDescs)
     return _descs;
 }
 
+bool UiHelper::validateVariant(const QVariant& var, const QString& type)
+{
+    PARAM_CONTROL control = getControlType(type);
+    QVariant::Type varType = var.type();
+
+    switch (control) {
+    case CONTROL_INT:   return QVariant::Int == varType;
+    case CONTROL_BOOL:  return (QVariant::Bool == varType || QVariant::Int == varType);
+    case CONTROL_FLOAT: return (QMetaType::Float == varType || QVariant::Double == varType);
+    case CONTROL_STRING:
+    case CONTROL_WRITEPATH:
+    case CONTROL_READPATH:
+    case CONTROL_ENUM:
+        return (QVariant::String == varType);
+        break;
+    case CONTROL_MULTILINE_STRING:
+        return var.type() == QVariant::String;
+    case CONTROL_COLOR:
+    case CONTROL_CURVE:
+        return var.isNull();
+    case CONTROL_VEC:
+    {
+        if (varType == QVariant::UserType &&
+            var.userType() == QMetaTypeId<UI_VECTYPE>::qt_metatype_id())
+        {
+            return true;
+        }
+    }
+    case CONTROL_NONE:
+        return var.isNull();
+    default:
+        break;
+    };
+    return false;
+}
+
 QVariant UiHelper::_parseDefaultValue(const QString &defaultValue, const QString &type)
 {
     auto control = getControlType(type);

@@ -73,6 +73,8 @@ MatInput const &attrs) {
     float mat_flatness = 0.0;
     float mat_thin = 0.0;
     float mat_doubleSide= 0.0;
+    float mat_scatterStep = 0.0f;
+    float mat_smoothness = 0.0f;
     vec3  mat_sssColor = vec3(0.0f,0.0f,0.0f);
     vec3  mat_sssParam = vec3(0.0f,0.0f,0.0f);
     vec3  mat_normal = vec3(0.0f, 0.0f, 1.0f);
@@ -103,6 +105,8 @@ MatInput const &attrs) {
     mats.doubleSide = mat_doubleSide;
     mats.sssColor = mat_sssColor;
     mats.sssParam = mat_sssParam;
+    mats.scatterStep = mat_scatterStep;
+    mats.smoothness = mat_smoothness;
     return mats;
 }
 __forceinline__ __device__ float3 interp(float2 barys, float3 a, float3 b, float3 c)
@@ -256,6 +260,7 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     auto thin = mats.thin;
     auto doubleSide = mats.doubleSide;
     auto sssParam = mats.sssParam;
+    auto scatterStep = mats.scatterStep;
     unsigned short isLight = rt_data->lightMark[inst_idx * 1024 + prim_idx];
 
     // Stochastic alpha test to get an alpha blend effect.
@@ -279,11 +284,11 @@ extern "C" __global__ void __anyhit__shadow_cutout()
                 prd->shadowAttanuation = vec3(0.0f);
                 optixTerminateRay();
             }
-            prd->shadowAttanuation = vec3(0,0,0);
-            optixTerminateRay();
+            //prd->shadowAttanuation = vec3(0,0,0);
+            //optixTerminateRay();
             
             if(specTrans > 0.0f){
-                if(rnd(prd->seed)<1-specTrans)
+                if(rnd(prd->seed)<1-specTrans||thin==false)
                 {
                     prd->shadowAttanuation = vec3(0,0,0);
                     optixTerminateRay();
@@ -373,14 +378,11 @@ extern "C" __global__ void __closesthit__radiance()
     /* MODMA */
     float2       barys    = optixGetTriangleBarycentrics();
     
-    float3 n0 = normalize(make_float3(rt_data->nrm[ vert_idx_offset+0 ] ));
-    n0 = dot(n0, N_0)>0.8?n0:N_0;
-
-    float3 n1 = normalize(make_float3(rt_data->nrm[ vert_idx_offset+1 ] ));
-    n1 = dot(n1, N_0)>0.8?n1:N_0;
-
-    float3 n2 = normalize(make_float3(rt_data->nrm[ vert_idx_offset+2 ] ));
-    n2 = dot(n2, N_0)>0.8?n2:N_0;
+//    float3 n0 = normalize(make_float3(rt_data->nrm[ vert_idx_offset+0 ] ));
+//
+//    float3 n1 = normalize(make_float3(rt_data->nrm[ vert_idx_offset+1 ] ));
+//
+//    float3 n2 = normalize(make_float3(rt_data->nrm[ vert_idx_offset+2 ] ));
 
     float3 uv0 = make_float3(rt_data->uv[ vert_idx_offset+0 ] );
     float3 uv1 = make_float3(rt_data->uv[ vert_idx_offset+1 ] );
@@ -392,7 +394,7 @@ extern "C" __global__ void __closesthit__radiance()
     float3 tan1 = make_float3(rt_data->tan[ vert_idx_offset+1 ] );
     float3 tan2 = make_float3(rt_data->tan[ vert_idx_offset+2 ] );
     
-    N_0 = normalize(interp(barys, n0, n1, n2));
+    //N_0 = normalize(interp(barys, n0, n1, n2));
     float3 N = N_0;//faceforward( N_0, -ray_dir, N_0 );
     P = interp(barys, v0, v1, v2);
     attrs.pos = vec3(P.x, P.y, P.z);
@@ -434,7 +436,16 @@ extern "C" __global__ void __closesthit__radiance()
                                 zenotex29, 
                                 zenotex30, 
                                 zenotex31,attrs);
+    float3 n0 = normalize(make_float3(rt_data->nrm[ vert_idx_offset+0 ] ));
+    n0 = dot(n0, N_0)>(1-mats.smoothness)?n0:N_0;
 
+    float3 n1 = normalize(make_float3(rt_data->nrm[ vert_idx_offset+1 ] ));
+    n1 = dot(n1, N_0)>(1-mats.smoothness)?n1:N_0;
+
+    float3 n2 = normalize(make_float3(rt_data->nrm[ vert_idx_offset+2 ] ));
+    n2 = dot(n2, N_0)>(1-mats.smoothness)?n2:N_0;
+    N_0 = normalize(interp(barys, n0, n1, n2));
+    N = N_0;
     if(mats.doubleSide>0.5||mats.thin>0.5)
         N = faceforward( N_0, -ray_dir, N_0 );
     attrs.nrm = N;
@@ -455,7 +466,7 @@ extern "C" __global__ void __closesthit__radiance()
     auto metallic = mats.metallic;
     auto roughness = mats.roughness;
     if(prd->diffDepth>=1)
-        roughness = clamp(roughness, 0.1,0.99);
+        roughness = clamp(roughness, 0.2,0.99);
     if(prd->diffDepth>=2)
         roughness = clamp(roughness, 0.3,0.99);
     if(prd->diffDepth>=3)
@@ -480,6 +491,7 @@ extern "C" __global__ void __closesthit__radiance()
     auto thin = mats.thin;
     auto transmittanceColor = mats.sssColor;
     auto sssColor = mats.sssParam;
+    auto scatterStep = mats.scatterStep;
     //discard fully opacity pixels
     prd->opacity = opacity;
 
@@ -612,8 +624,9 @@ extern "C" __global__ void __closesthit__radiance()
                 prd->extinction = extinction;
                 prd->scatterDistance = scatterDistance;
                 prd->transColor = transmittanceColor;
+                prd->scatterStep = scatterStep;
                 float tmpPDF = 1.0f;
-                prd->maxDistance = DisneyBSDF::SampleDistance(prd->seed,prd->scatterDistance,tmpPDF);
+                prd->maxDistance = DisneyBSDF::SampleDistance(prd->seed,prd->scatterStep,tmpPDF);
                 //prd->maxDistance = scatterDistance;
                 prd->scatterPDF = tmpPDF;
             }
@@ -632,7 +645,7 @@ extern "C" __global__ void __closesthit__radiance()
                 prd->attenuation2 *= DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
                 prd->attenuation *= DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
                 float tmpPDF = 1.0f;
-                prd->maxDistance = DisneyBSDF::SampleDistance(prd->seed,prd->scatterDistance,tmpPDF);
+                prd->maxDistance = DisneyBSDF::SampleDistance(prd->seed,prd->scatterStep,tmpPDF);
                 prd->scatterPDF = tmpPDF;
 
 	    }

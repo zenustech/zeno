@@ -9,10 +9,6 @@
 #include <zeno/core/Session.h>
 #include <zeno/extra/GlobalState.h>
 
-// FIXME  fatal error C1189: #error:  OpenGL header already included,
-//  remove this include, glad already provides it
-//#include "zenovis/Camera.h"
-
 CameraNode::CameraNode(const NodeUtilParam& params, QGraphicsItem* parent)
     : ZenoNode(params, parent)
 {
@@ -84,6 +80,24 @@ void CameraNode::onEditClicked()
     info.name = "view";
     info.oldValue = view.info.defaultValue;
     info.newValue = QVariant::fromValue(vec);
+    pModel->updateSocketDefl(nodeid, info, this->subgIndex(), true);
+
+    INPUT_SOCKET fov = inputs["fov"];
+    info.name = "fov";
+    info.oldValue = fov.info.defaultValue;
+    info.newValue = QVariant::fromValue(camProp[9]);
+    pModel->updateSocketDefl(nodeid, info, this->subgIndex(), true);
+
+    INPUT_SOCKET aperture = inputs["aperture"];
+    info.name = "aperture";
+    info.oldValue = aperture.info.defaultValue;
+    info.newValue = QVariant::fromValue(camProp[10]);
+    pModel->updateSocketDefl(nodeid, info, this->subgIndex(), true);
+
+    INPUT_SOCKET focalPlaneDistance = inputs["focalPlaneDistance"];
+    info.name = "focalPlaneDistance";
+    info.oldValue = focalPlaneDistance.info.defaultValue;
+    info.newValue = QVariant::fromValue(camProp[11]);
     pModel->updateSocketDefl(nodeid, info, this->subgIndex(), true);
 
     INPUT_SOCKET frame = inputs["frame"];

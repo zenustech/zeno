@@ -75,14 +75,14 @@ extern "C" __global__ void __raygen__rg()
     do
     {
         // The center of each pixel is at fraction (0.5,0.5)
-        float2 subpixel_jitter = sobolRnd(seed);
+        float2 subpixel_jitter = sobolRnd2(seed);
 
         float2 d = 2.0f * make_float2(
                 ( static_cast<float>( idx.x ) + subpixel_jitter.x ) / static_cast<float>( w ),
                 ( static_cast<float>( idx.y ) + subpixel_jitter.y ) / static_cast<float>( h )
                 ) - 1.0f;
         //float3 ray_direction = normalize(cam.right * d.x + cam.up * d.y + cam.front);
-        float2 r01 = sobolRnd(seed);
+        float2 r01 = sobolRnd2(seed);
         
         float r0 = r01.x * 2.0f* M_PIf;
         float r1 = r01.y * aperture * aperture;
@@ -131,7 +131,7 @@ extern "C" __global__ void __raygen__rg()
             }
             if(prd.depth>4){
                //float RRprob = clamp(length(prd.attenuation)/1.732f,0.01f,0.9f); 
-                float RRprob = 0.9;
+                float RRprob = clamp(length(prd.attenuation),0.1, 1.0);
                 if(rnd(prd.seed) > RRprob || prd.depth>8){
                     prd.done=true;
 
@@ -189,7 +189,7 @@ extern "C" __global__ void __miss__radiance()
     prd->origin += prd->direction * optixGetRayTmax();
     prd->direction = DisneyBSDF::SampleScatterDirection(prd->seed);
     float tmpPDF;
-    prd->maxDistance = DisneyBSDF::SampleDistance(prd->seed,prd->scatterDistance,tmpPDF);
+    prd->maxDistance = DisneyBSDF::SampleDistance(prd->seed,prd->scatterStep,tmpPDF);
     prd->scatterPDF= tmpPDF;
     prd->depth++;
 
