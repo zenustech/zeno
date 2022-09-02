@@ -3,30 +3,31 @@
 #include <fstream>
 #include <iostream>
 #include <string>
+#include <iomanip> 
 
 template<typename T>
-void print(T contents, int maxTimes=20, bool toFile=false, std::string msg="")
+void printVectorNohup(T contents, int maxTimes=999, std::string fileName="", int precision=8, std::string msg="")
 {
     static int times = 0;
     times++;
     if (times>maxTimes)
         return;
     
-    if(!toFile)
+    if(fileName=="")
     {
         std::cout<<msg;
         for(auto x:contents)
-            std::cout<<x<<"\t";
+            std::cout<<std::fixed <<std::setprecision(precision)<<x<<"\t";
         std::cout<<"\n";
         return;
     }
-    else if(toFile)
+    else
     {
         static std::ofstream fout;
-        fout.open("debugOutput.txt", std::ios::app);
+        fout.open(fileName, std::ios::app);
         fout<<msg;
         for(const auto& x:contents)
-            fout<<x<<"\t";
+            fout<<std::fixed <<std::setprecision(precision)<<x<<"\t";
         fout<<"\n";
         fout.close();
         return;
@@ -34,16 +35,54 @@ void print(T contents, int maxTimes=20, bool toFile=false, std::string msg="")
 }
 
 template<typename T>
-void printToFile(T content, std::string fileName)
+void printVec(T contents)
+{
+    for(auto x:contents)
+        std::cout<<std::fixed <<std::setprecision(precision)<<x<<"\t";
+    std::cout<<"\n";
+    return;
+}
+
+template<typename T>
+void printScalarNohup(T contents, int maxTimes = 100, std::string fileName="debugOutput.txt",int precision=16)
+{
+    static int times = 0;
+    times++;
+    if (times>maxTimes)
+        return;
+    
+    static std::ofstream fout;
+    fout.open(fileName, std::ios::app);
+    fout<<std::fixed <<std::setprecision(precision)<<contents<<"\n";
+    fout.close();
+    return;
+}
+
+
+template<typename T>
+void printVectorField(T content, std::string fileName, size_t precision=8)
 {
     std::ofstream f;
     f.open(fileName);
     for(const auto& x:content)
     {
         for(const auto& xx:x)
-            f<<xx<<"\t";
+            f<<std::fixed <<std::setprecision(precision)<<xx<<"\t";
         f<<"\n";
-    }
+    } 
+    f.close();
+}
+
+template<typename T>
+void printScalarField(T content, std::string fileName, size_t precision=8)
+{
+    std::ofstream f;
+    f.open(fileName);
+    for(const auto& x:content)
+    {
+        f<<std::fixed <<std::setprecision(precision)<<x<<"\t";
+        f<<"\n";
+    } 
     f.close();
 }
 
