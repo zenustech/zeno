@@ -42,20 +42,6 @@ namespace {
 
 using Path = std::filesystem::path;
 
-void readFBXFile(
-    std::shared_ptr<zeno::DictObject>& datas,
-    std::shared_ptr<NodeTree>& nodeTree,
-    std::shared_ptr<FBXData>& fbxData,
-    std::shared_ptr<BoneTree>& boneTree,
-    std::shared_ptr<AnimInfo>& animInfo,
-    const char *fbx_path,
-    bool enable_udim,
-    std::shared_ptr<zeno::PrimitiveObject>& prim,
-    bool make_prim,
-    std::shared_ptr<zeno::DictObject>& prims,
-    std::shared_ptr<zeno::DictObject>& mats
-    );
-
 struct Mesh{
     FBXData fbxData;
     std::filesystem::path fbxPath;
@@ -963,6 +949,10 @@ void readFBXFile(
     *boneTree = anim.m_Bones;
     animInfo->duration = anim.duration;
     animInfo->tick = anim.tick;
+
+    data->animInfo = animInfo;
+    data->boneTree = boneTree;
+    data->nodeTree = nodeTree;
 
     mesh.processTrans(anim.m_Morph, anim.m_Bones.AnimBoneMap, datas, prims, mats, nodeTree, boneTree, animInfo);
     mesh.fbxData.iKeyMorph.value = anim.m_Morph;

@@ -238,6 +238,10 @@ struct EvalFBXAnim : zeno::INode {
         auto boneTree = u ? fbxData->boneTree : get_input<BoneTree>("bonetree");
         auto animInfo = u ? fbxData->animInfo : get_input<AnimInfo>("animinfo");
 
+        if(nodeTree == nullptr || boneTree == nullptr || animInfo == nullptr){
+            zeno::log_error("FBX: Empty NodeTree, BoneTree or AnimInfo");
+        }
+
         auto prim = std::make_shared<zeno::PrimitiveObject>();
         auto transDict = std::make_shared<zeno::DictObject>();
         auto quatDict = std::make_shared<zeno::DictObject>();
