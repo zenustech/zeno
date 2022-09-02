@@ -3,10 +3,9 @@
 
 namespace zeno {
 
-IPCSystem::PrimitiveHandle::PrimitiveHandle(dtiles_t &vtemp, std::shared_ptr<tiles_t> elesPtr_)
-    : zsprimPtr{nullptr, [](void *) {}}, models{ZenoConstitutiveModel{}}, vertsPtr{&vtemp, [](void *) {}},
-      elesPtr{elesPtr_}, etemp{elesPtr_->get_allocator(), {{"He", 6 * 6}}, elesPtr_->size()}, surfTrisPtr{},
-      surfEdgesPtr{},
+IPCSystem::PrimitiveHandle::PrimitiveHandle(std::shared_ptr<tiles_t> elesPtr_)
+    : zsprimPtr{}, models{ZenoConstitutiveModel{}}, vertsPtr{}, elesPtr{elesPtr_},
+      etemp{elesPtr_->get_allocator(), {{"He", 6 * 6}}, elesPtr_->size()}, surfTrisPtr{}, surfEdgesPtr{},
       surfVertsPtr{}, svtemp{}, vOffset{0}, sfOffset{0}, seOffset{0}, svOffset{0}, category{ZenoParticles::curve} {
     ;
 }
@@ -148,6 +147,8 @@ typename IPCSystem::T IPCSystem::averageSurfEdgeLength(zs::CudaExecutionPolicy &
     T sumSurfEdgeLengths = 0;
     std::size_t sumSE = 0;
     for (auto &&primHandle : prims) {
+        if (primHandle.isAuxiliary())
+            continue;
         auto numSE = primHandle.getSurfEdges().size();
         sumSE += numSE;
         sumSurfEdgeLengths += primHandle.averageSurfEdgeLength(pol) * numSE;
@@ -162,6 +163,8 @@ typename IPCSystem::T IPCSystem::averageSurfArea(zs::CudaExecutionPolicy &pol) {
     T sumSurfArea = 0;
     std::size_t sumSF = 0;
     for (auto &&primHandle : prims) {
+        if (primHandle.isAuxiliary())
+            continue;
         if (primHandle.category == ZenoParticles::curve)
             continue;
         auto numSF = primHandle.getSurfTris().size();
@@ -224,6 +227,8 @@ void IPCSystem::initialize(zs::CudaExecutionPolicy &pol) {
     meanSurfaceArea = averageSurfArea(pol);
     avgNodeMass = averageNodalMass(pol);
     for (auto &primHandle : prims) {
+        if (primHandle.isAuxiliary())
+            continue;
         auto &verts = primHandle.getVerts();
         // record surface (tri) indices
         if (primHandle.category != ZenoParticles::category_e::curve) {
@@ -391,6 +396,8 @@ void IPCSystem::reinitialize(zs::CudaExecutionPolicy &pol, typename IPCSystem::T
     }
 
     for (auto &primHandle : prims) {
+        if (primHandle.isAuxiliary())
+            continue;
         auto &verts = primHandle.getVerts();
         // initialize BC info
         // predict pos, initialize augmented lagrangian, constrain weights
@@ -591,6 +598,8 @@ void IPCSystem::writebackPositionsAndVelocities(zs::CudaExecutionPolicy &pol) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
     for (auto &primHandle : prims) {
+        if (primHandle.isAuxiliary())
+            continue;
         auto &verts = primHandle.getVerts();
         // update velocity and positions
         pol(zs::range(verts.size()),

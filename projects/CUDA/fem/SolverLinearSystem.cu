@@ -111,7 +111,7 @@ void computeElasticGradientAndHessianImpl(zs::CudaExecutionPolicy &cudaPol, cons
     using vec3 = typename IPCSystem::vec3;
     using T = typename IPCSystem::T;
     if (primHandle.category == ZenoParticles::curve) {
-        if (primHandle.isBoundary())
+        if (primHandle.isBoundary() && !primHandle.isAuxiliary())
             return;
         /// ref: Fast Simulation of Mass-Spring Systems
         /// credits: Tiantian Liu
@@ -377,6 +377,13 @@ void IPCSystem::computeElasticGradientAndHessian(zs::CudaExecutionPolicy &cudaPo
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
     for (auto &primHandle : prims) {
+        match([&](auto &elasticModel) {
+            computeElasticGradientAndHessianImpl(cudaPol, gTag, vtemp, primHandle, elasticModel, dt, projectDBC,
+                                                 includeHessian);
+        })(primHandle.models.getElasticModel());
+    }
+    for (auto &primHandle : auxPrims) {
+        continue;
         match([&](auto &elasticModel) {
             computeElasticGradientAndHessianImpl(cudaPol, gTag, vtemp, primHandle, elasticModel, dt, projectDBC,
                                                  includeHessian);
