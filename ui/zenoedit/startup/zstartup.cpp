@@ -88,6 +88,9 @@ void verifyVersion()
 #if defined(ZENO_ENABLE_BACKWARD)
                    "+bt"
 #endif
+#if defined(ZENO_BENCHMARKING)
+                   "+tm"
+#endif
                    ;
     // TODO: luzh, may check the internet latest version and compare, if not latest hint the user to update..
     zeno::log_info("zeno {} {} {} {}", plat, ver, __TIME__, feat);

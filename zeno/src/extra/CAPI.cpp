@@ -1,9 +1,12 @@
 #include <zeno/zeno.h>
 #include <zeno/extra/CAPI.h>
 #include <zeno/utils/memory.h>
+#include <zeno/utils/variantswitch.h>
 #include <zeno/utils/cppdemangle.h>
 #include <zeno/utils/compile_opts.h>
 #include <zeno/utils/log.h>
+#include <zeno/types/StringObject.h>
+#include <zeno/types/PrimitiveObject.h>
 #include <zeno/core/Session.h>
 #include <zeno/core/Graph.h>
 #include <set>
@@ -174,6 +177,12 @@ ZENO_CAPI Zeno_Error Zeno_CreateObjectString(Zeno_Object *objectRet_, const char
     });
 }
 
+ZENO_CAPI Zeno_Error Zeno_CreateObjectPrimitive(Zeno_Object *objectRet_) ZENO_CAPI_NOEXCEPT {
+    return lastError.catched([=] {
+        *objectRet_ = lutObject.create(std::make_shared<PrimitiveObject>());
+    });
+}
+
 ZENO_CAPI Zeno_Error Zeno_DestroyObject(Zeno_Object object_) ZENO_CAPI_NOEXCEPT {
     return lastError.catched([=] {
         lutObject.destroy(object_);
@@ -282,6 +291,85 @@ ZENO_CAPI Zeno_Error Zeno_GetObjectString(Zeno_Object object_, char *strBuf_, si
         if (strBuf_ != nullptr)
             memcpy(strBuf_, str.data(), std::min(str.size(), *strLenRet_));
         *strLenRet_ = str.size();
+    });
+}
+
+ZENO_CAPI Zeno_Error Zeno_GetObjectPrimData(Zeno_Object object_, Zeno_PrimMembType primArrType_, const char *attrName_, void **ptrRet_, size_t *lenRet_, Zeno_PrimDataType *typeRet_) ZENO_CAPI_NOEXCEPT {
+    return lastError.catched([=] {
+        auto optr = lutObject.access(object_).get();
+        auto prim = dynamic_cast<PrimitiveObject *>(optr);
+        if (ZENO_UNLIKELY(prim == nullptr))
+            throw makeError<TypeError>(typeid(PrimitiveObject), typeid(*optr), "get object as primitive");
+        auto memb = invoker_variant(static_cast<size_t>(primArrType_),
+            &PrimitiveObject::verts,
+            &PrimitiveObject::points,
+            &PrimitiveObject::lines,
+            &PrimitiveObject::tris,
+            &PrimitiveObject::quads,
+            &PrimitiveObject::loops,
+            &PrimitiveObject::polys,
+            &PrimitiveObject::uvs,
+            &PrimitiveObject::loop_uvs);
+        std::string attrName = attrName_;
+        std::visit([&] (auto const &memb) {
+            memb(*prim).template attr_visit<AttrAcceptAll>(attrName, [&] (auto &arr) {
+                *ptrRet_ = reinterpret_cast<void *>(arr.data());
+                *lenRet_ = arr.size();
+                using T = std::decay_t<decltype(arr[0])>;
+                *typeRet_ = static_cast<Zeno_PrimDataType>(variant_index<AttrAcceptAll, T>::value);
+            });
+        }, memb);
+    });
+}
+
+ZENO_CAPI Zeno_Error Zeno_GetObjectPrimDataKeys(Zeno_Object object_, Zeno_PrimMembType primArrType_, size_t *lenRet_, const char **keysRet_) ZENO_CAPI_NOEXCEPT {
+    return lastError.catched([=] {
+        auto optr = lutObject.access(object_).get();
+        auto prim = dynamic_cast<PrimitiveObject *>(optr);
+        if (ZENO_UNLIKELY(prim == nullptr))
+            throw makeError<TypeError>(typeid(PrimitiveObject), typeid(*optr), "get object as primitive");
+        auto memb = invoker_variant(static_cast<size_t>(primArrType_),
+            &PrimitiveObject::verts,
+            &PrimitiveObject::points,
+            &PrimitiveObject::lines,
+            &PrimitiveObject::tris,
+            &PrimitiveObject::quads,
+            &PrimitiveObject::loops,
+            &PrimitiveObject::polys,
+            &PrimitiveObject::uvs,
+            &PrimitiveObject::loop_uvs);
+        std::visit([&] (auto const &memb) {
+            auto &attArr = memb(*prim);
+            *lenRet_ = attArr.template num_attrs<AttrAcceptAll>() + 1;
+            if (keysRet_ != nullptr) {
+                size_t index = 0;
+                attArr.template forall_attr<AttrAcceptAll>([&] (auto const &key, auto &arr) {
+                    keysRet_[index++] = key.c_str();
+                });
+            }
+        }, memb);
+    });
+}
+
+ZENO_CAPI Zeno_Error Zeno_ResizeObjectPrimData(Zeno_Object object_, Zeno_PrimMembType primArrType_, size_t newSize_) ZENO_CAPI_NOEXCEPT {
+    return lastError.catched([=] {
+        auto optr = lutObject.access(object_).get();
+        auto prim = dynamic_cast<PrimitiveObject *>(optr);
+        if (ZENO_UNLIKELY(prim == nullptr))
+            throw makeError<TypeError>(typeid(PrimitiveObject), typeid(*optr), "get object as primitive");
+        auto memb = invoker_variant(static_cast<size_t>(primArrType_),
+            &PrimitiveObject::verts,
+            &PrimitiveObject::points,
+            &PrimitiveObject::lines,
+            &PrimitiveObject::tris,
+            &PrimitiveObject::quads,
+            &PrimitiveObject::loops,
+            &PrimitiveObject::polys,
+            &PrimitiveObject::uvs,
+            &PrimitiveObject::loop_uvs);
+        std::visit([&] (auto const &memb) {
+            memb(*prim).resize(newSize_);
+        }, memb);
     });
 }
 

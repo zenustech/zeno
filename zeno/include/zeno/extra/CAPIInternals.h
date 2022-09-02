@@ -2,6 +2,7 @@
 
 #include <zeno/core/IObject.h>
 #include <zeno/utils/api.h>
+#include <zeno/core/Graph.h>
 #include <zeno/extra/CAPI.h>
 
 namespace zeno {
