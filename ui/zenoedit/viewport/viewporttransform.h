@@ -5,6 +5,8 @@
 #ifndef __VIEWPORT_TRANSFORM_H__
 #define __VIEWPORT_TRANSFORM_H__
 #include "zenovis.h"
+#include "zenoapplication.h"
+#include "graphsmanagment.h"
 
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/funcs/PrimitiveTools.h>
@@ -31,29 +33,25 @@ enum {
 class FakeTransformer {
   public:
     FakeTransformer()
-    : transform_matrix(1.0f)
-    , scale_matrix(1.0f)
-    , rotate_matrix(1.0f)
-    , translate_matrix(1.0f)
-    , step_transform_matrix(1.0f)
-    , objects_center(0.0f)
-    , status(false)
-    , rotate_eular_vec(0.0f)
-    , operation(NONE)
+        : m_objects_center(0.0f)
+          , m_trans(0.0f)
+          , m_scale(1.0f)
+          , m_last_scale(1.0f)
+          , m_rotate(0.0f)
+          , m_status(false)
+          , m_operation(NONE)
     {
 
     }
 
     FakeTransformer(const std::unordered_set<std::string>& names)
-    : transform_matrix(1.0f)
-    , scale_matrix(1.0f)
-    , rotate_matrix(1.0f)
-    , translate_matrix(1.0f)
-    , step_transform_matrix(1.0f)
-    , objects_center(0.0f)
-    , status(true)
-    , rotate_eular_vec(0.0f)
-    , operation(NONE)
+        : m_objects_center(0.0f)
+          , m_trans(0.0f)
+          , m_scale(1.0f)
+          , m_last_scale(1.0f)
+          , m_rotate(0.0f)
+          , m_status(true)
+          , m_operation(NONE)
     {
         addObject(names);
     }
@@ -61,8 +59,8 @@ class FakeTransformer {
     void addObject(const std::string& name) {
         auto scene = Zenovis::GetInstance().getSession()->get_scene();
         auto object = dynamic_cast<PrimitiveObject*>(scene->objectsMan->get(name).value());
-        objects_center *= objects.size();
-        auto user_data = object->userData();
+        m_objects_center *= m_objects.size();
+        auto& user_data = object->userData();
         zeno::vec3f bmin, bmax;
         if (user_data.has("_bboxMin") && user_data.has("_bboxMax")) {
             bmin = user_data.getLiterial<zeno::vec3f>("_bboxMin");
@@ -72,11 +70,19 @@ class FakeTransformer {
             user_data.setLiterial("_bboxMin", bmin);
             user_data.setLiterial("_bboxMax", bmax);
         }
+        if (!user_data.has("_translate")) {
+            zeno::vec3f translate = {0, 0, 0};
+            user_data.setLiterial("_translate", translate);
+            zeno::vec3f rotate = {0, 0, 0};
+            user_data.setLiterial("_rotate", rotate);
+            zeno::vec3f scale = {1, 1, 1};
+            user_data.setLiterial("_scale", scale);
+        }
         auto m = zeno::vec_to_other<glm::vec3>(bmax);
         auto n = zeno::vec_to_other<glm::vec3>(bmin);
-        objects_center += (m + n) / 2.0f;
-        objects[name] = object;
-        objects_center /= objects.size();
+        m_objects_center += (m + n) / 2.0f;
+        m_objects[name] = object;
+        m_objects_center /= m_objects.size();
     }
 
     void addObject(const std::unordered_set<std::string>& names) {
@@ -86,12 +92,12 @@ class FakeTransformer {
     }
 
     void removeObject(const std::string& name) {
-        auto p = objects.find(name);
-        if (p == objects.end())
+        auto p = m_objects.find(name);
+        if (p == m_objects.end())
             return ;
         auto object = p->second;
-        objects_center *= objects.size();
-        auto user_data = object->userData();
+        m_objects_center *= m_objects.size();
+        auto& user_data = object->userData();
         zeno::vec3f bmin, bmax;
         if (user_data.has("_bboxMin") && user_data.has("_bboxMax")) {
             bmin = user_data.getLiterial<zeno::vec3f>("_bboxMin");
@@ -103,9 +109,9 @@ class FakeTransformer {
         }
         auto m = zeno::vec_to_other<glm::vec3>(bmax);
         auto n = zeno::vec_to_other<glm::vec3>(bmin);
-        objects_center -= (m + n) / 2.0f;
-        objects.erase(p);
-        objects_center /= objects.size();
+        m_objects_center -= (m + n) / 2.0f;
+        m_objects.erase(p);
+        m_objects_center /= m_objects.size();
     }
 
     void removeObject(const std::unordered_set<std::string>& names) {
@@ -116,22 +122,12 @@ class FakeTransformer {
 
     void translate(QVector3D start, QVector3D end, QVector3D axis) {
         auto diff = end - start;
-        glm::vec3 diff_vec3 = QVec3ToGLMVec3(diff);
-        diff_vec3 *= QVec3ToGLMVec3(axis);
-        step_transform_matrix = glm::translate(diff_vec3);
-        translate_matrix = step_transform_matrix * translate_matrix;
-        transform_matrix = step_transform_matrix * transform_matrix;
+        auto diff_vec3 = QVec3ToGLMVec3(diff);
+        for (int i=0; i<3; i++)
+            diff_vec3[i] *= axis[i];
+        m_trans = diff_vec3;
         doTransform();
-        operation = TRANSLATE;
-    }
-
-    void print_mat4(glm::mat4 mat) const {
-        printf("\n");
-        for (int i=0; i<4; i++) {
-            for (int j=0; j<4; j++)
-                printf("%.2lf ", transform_matrix[i][j]);
-            printf("\n");
-        }
+        m_operation = TRANSLATE;
     }
 
     void scale(QVector3D cur_vec, vec3i axis, float scale_size) {
@@ -139,14 +135,9 @@ class FakeTransformer {
         glm::vec3 scale(1.0f);
         for (int i=0; i<3; i++)
             if (axis[i] == 1) scale[i] = scale_size * 3;
-        auto inv_last_scale = glm::inverse(scale_matrix);
-        scale_matrix = glm::scale(scale);
-        auto translate_to_origin = glm::translate(-objects_center);
-        auto translate_to_center = glm::translate(objects_center);
-        step_transform_matrix = translate_to_center * scale_matrix * inv_last_scale * translate_to_origin;
-        transform_matrix = step_transform_matrix * transform_matrix;
+        m_scale = scale;
         doTransform();
-        operation = SCALE;
+        m_operation = SCALE;
     }
 
     void rotate(QVector3D start_vec, QVector3D end_vec, QVector3D axis) {
@@ -160,30 +151,102 @@ class FakeTransformer {
         if (glm::dot(cross_vec3, axis_vec3) < 0)
             direct = -1.0f;
         float angle = acos(fmin(fmax(glm::dot(start_vec3, end_vec3), -1.0f), 1.0f));
-        rotate_eular_vec += angle * direct * axis_vec3;
-        step_transform_matrix = glm::rotate(angle * direct, axis_vec3);
-        auto translate_to_origin = glm::translate(-objects_center);
-        auto translate_to_center = glm::translate(objects_center);
-        step_transform_matrix = translate_to_center * step_transform_matrix * translate_to_origin;
-        rotate_matrix = step_transform_matrix * rotate_matrix;
-        transform_matrix = step_transform_matrix * transform_matrix;
+        m_rotate = angle * direct * axis_vec3;
         doTransform();
-        operation = ROTATE;
+        m_operation = ROTATE;
     }
 
-    inline glm::vec3 getTranslateVec() const {
-        return {translate_matrix[3][0], translate_matrix[3][1], translate_matrix[3][2]};
+    void startTransform() {
+        m_status = true;
+        Zenovis::GetInstance().getSession()->set_interactive(true);
     }
 
-    inline glm::vec3 getScaleVec() const {
-        return {scale_matrix[0][0], scale_matrix[1][1], scale_matrix[2][2]};
+    void endTransform(bool moved) {
+        for (auto &[obj_name, obj] : m_objects) {
+            auto& user_data = obj->userData();
+            auto scale = user_data.getLiterial<zeno::vec3f>("_scale");
+            for (int i=0; i<3; i++)
+                scale[i] *= m_scale[i];
+            user_data.setLiterial("_scale", scale);
+        }
+
+        if (moved) {
+            IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+            for (auto &[obj_name, obj] : m_objects) {
+                QString node_id(obj_name.substr(0, obj_name.find_first_of(':')).c_str());
+                auto search_result = pModel->search(node_id, SEARCH_NODEID);
+                auto subgraph_index = search_result[0].subgIdx;
+                auto node_index = search_result[0].targetIdx;
+                auto inputs = node_index.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
+                if (node_id.contains("TransformPrimitive")  &&
+                    inputs["translation"].linkIndice.empty() &&
+                    inputs["eulerXYZ"].linkIndice.empty() &&
+                    inputs["scaling"].linkIndice.empty()) {
+                    syncToTransformNode(node_id, obj_name, pModel, node_index, subgraph_index);
+                }
+                else {
+                    auto linked_transform_node_index =
+                        linkedToVisibleTransformNode(node_index, pModel).value<QModelIndex>();
+                    if (linked_transform_node_index.isValid()) {
+                        auto linked_transform_node_id = linked_transform_node_index.data(ROLE_OBJID).toString();
+                        syncToTransformNode(linked_transform_node_id, obj_name, pModel, linked_transform_node_index, subgraph_index);
+                    }
+                    else
+                        createNewTransformNode(node_id, obj_name, pModel, node_index, subgraph_index);
+                }
+            }
+        }
+
+        m_status = false;
+        m_operation = NONE;
+
+        m_trans = {0, 0, 0};
+        m_scale = {1, 1, 1};
+        m_last_scale = {1, 1, 1};
+        m_rotate = {0, 0, 0};
+
+        Zenovis::GetInstance().getSession()->set_interactive(false);
     }
 
-    inline glm::vec3 getRotateEulerVec() const {
-        return rotate_eular_vec;
+    bool isTransforming() const {
+        return m_status;
     }
 
-    void createNewTransformNode(QString& node_id, IGraphsModel* pModel, QModelIndex& node_index, QModelIndex& subgraph_index, bool change_visibility=true) const {
+    int get_operation() const {
+        return m_operation;
+    }
+
+    glm::vec3 getCenter() {
+        return m_objects_center;
+    }
+
+    void clear() {
+        m_objects.clear();
+        m_trans = {0, 0, 0};
+        m_scale = {1, 1, 1};
+        m_last_scale = {1, 1, 1};
+        m_rotate = {0, 0, 0};
+        m_objects_center = {0, 0, 0};
+    }
+
+  private:
+    static glm::vec3 QVec3ToGLMVec3(QVector3D QVec3) {
+        return {QVec3.x(), QVec3.y(), QVec3.z()};
+    }
+
+    void print_mat4(std::string name, glm::mat4 mat) const {
+        qDebug() << name.c_str() << ":";
+        for (int i=0; i<4; i++) {
+            qDebug() << mat[i][0] << " " << mat[i][1] << " " << mat[i][2] << " " << mat[i][3];
+        }
+    }
+
+    template <class T>
+    void print_vec3(std::string name, T& vec) {
+        qDebug() << name.c_str() << ": " << vec[0] << " " << vec[1] << " " << vec[2];
+    }
+
+    void createNewTransformNode(QString& node_id, const std::string& obj_name, IGraphsModel* pModel, QModelIndex& node_index, QModelIndex& subgraph_index, bool change_visibility=true) {
         auto pos = node_index.data(ROLE_OBJPOS).toPointF();
         pos.setX(pos.x() + 10);
         auto new_node_id = NodesMgr::createNewNode(pModel, subgraph_index, "TransformPrimitive", pos);
@@ -198,7 +261,9 @@ class FakeTransformer {
         };
         pModel->addLink(edge, subgraph_index, false);
 
-        auto translate_vec3 = getTranslateVec();
+        auto user_data = m_objects[obj_name]->userData();
+
+        auto translate_vec3 = user_data.getLiterial<zeno::vec3f>("_translate");
         QVector<double> translate = {
             translate_vec3[0],
             translate_vec3[1],
@@ -211,7 +276,7 @@ class FakeTransformer {
         };
         pModel->updateSocketDefl(new_node_id, translate_info, subgraph_index, true);
 
-        auto scaling_vec3 = getScaleVec();
+        auto scaling_vec3 = user_data.getLiterial<zeno::vec3f>("_scale");
         QVector<double> scaling = {
             scaling_vec3[0],
             scaling_vec3[1],
@@ -223,7 +288,7 @@ class FakeTransformer {
             QVariant::fromValue(scaling)
         };
         pModel->updateSocketDefl(new_node_id, scaling_info, subgraph_index, true);
-        auto rotate_vec3 = getRotateEulerVec();
+        auto rotate_vec3 = user_data.getLiterial<zeno::vec3f>("_rotate");
         QVector<double> rotate = {
             rotate_vec3[0],
             rotate_vec3[1],
@@ -270,14 +335,16 @@ class FakeTransformer {
         return {};
     }
 
-    void syncToTransformNode(QString& node_id, IGraphsModel* pModel, QModelIndex& node_index, QModelIndex& subgraph_index) const {
+    void syncToTransformNode(QString& node_id, const std::string& obj_name, IGraphsModel* pModel, QModelIndex& node_index, QModelIndex& subgraph_index) {
         auto inputs = node_index.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
-        auto translate_old = inputs["translation"].info.defaultValue.value<UI_VECTYPE>();
-        QVector<double> translate_new(translate_old);
-        auto translate_offset = getTranslateVec();
-        for (int i=0; i<3; i++) {
-            translate_new[i] += translate_offset[i];
-        }
+        auto user_data = m_objects[obj_name]->userData();
+        auto translate_old = inputs["translation"].info.defaultValue.value<UI_VECTYPE>();;
+        auto translate_vec3 = user_data.getLiterial<zeno::vec3f>("_translate");
+        QVector<double> translate_new = {
+            translate_vec3[0],
+            translate_vec3[1],
+            translate_vec3[2]
+        };
         PARAM_UPDATE_INFO translate_info = {
             "translation",
             QVariant::fromValue(translate_old),
@@ -286,11 +353,12 @@ class FakeTransformer {
         pModel->updateSocketDefl(node_id, translate_info, subgraph_index, true);
         // update scaling
         auto scaling_old = inputs["scaling"].info.defaultValue.value<UI_VECTYPE>();
-        QVector<double> scaling_new(scaling_old);
-        auto scaling_offset = getScaleVec();
-        for (int i=0; i<3; i++) {
-            scaling_new[i] *= scaling_offset[i];
-        }
+        auto scaling_vec3 = user_data.getLiterial<zeno::vec3f>("_scale");
+        QVector<double> scaling_new = {
+            scaling_vec3[0],
+            scaling_vec3[1],
+            scaling_vec3[2]
+        };
         PARAM_UPDATE_INFO scaling_info = {
             "scaling",
             QVariant::fromValue(scaling_old),
@@ -299,11 +367,12 @@ class FakeTransformer {
         pModel->updateSocketDefl(node_id, scaling_info, subgraph_index, true);
         // update rotate
         auto rotate_old = inputs["eulerXYZ"].info.defaultValue.value<UI_VECTYPE>();
-        QVector<double> rotate_new(rotate_old);
-        auto rotate_offset = getRotateEulerVec();
-        for (int i=0; i<3; i++) {
-            rotate_new[i] += rotate_offset[i];
-        }
+        auto rotate_vec3 = user_data.getLiterial<zeno::vec3f>("_rotate");
+        QVector<double> rotate_new = {
+            rotate_vec3[0],
+            rotate_vec3[1],
+            rotate_vec3[2]
+        };
         PARAM_UPDATE_INFO rotate_info = {
             "eulerXYZ",
             QVariant::fromValue(rotate_old),
@@ -312,56 +381,46 @@ class FakeTransformer {
         pModel->updateSocketDefl(node_id, rotate_info, subgraph_index, true);
     }
 
-    void startTransform() {
-        status = true;
-        Zenovis::GetInstance().getSession()->set_interactive(true);
-    }
-
-    void endTransform() {
-        status = false;
-        translate_matrix = glm::mat4(1.0f);
-        scale_matrix = glm::mat4(1.0f);
-        rotate_eular_vec = glm::vec3(0.0f);
-        Zenovis::GetInstance().getSession()->set_interactive(false);
-    }
-
-    bool isTransforming() const {
-        return status;
-    }
-
-    int getOperation() const {
-        return operation;
-    }
-
-    glm::vec3 getCenter() {
-        return objects_center;
-    }
-
-    void clear() {
-        objects.clear();
-        objects_center = {0, 0, 0};
-        transform_matrix = glm::mat4(1.0f);
-        scale_matrix = glm::mat4(1.0f);
-        rotate_matrix = glm::mat4(1.0f);
-        translate_matrix = glm::mat4(1.0f);
-        step_transform_matrix = glm::mat4(1.0f);
-        objects_center = {0, 0, 0};
-        rotate_eular_vec = {0, 0, 0};
-    }
-
-  private:
-    static glm::vec3 QVec3ToGLMVec3(QVector3D QVec3) {
-        return {QVec3.x(), QVec3.y(), QVec3.z()};
-    }
-
     void doTransform() {
-        for (auto &[obj_name, obj] : objects) {
+        m_objects_center = {0, 0, 0};
+        for (auto &[obj_name, obj] : m_objects) {
+            auto& user_data = obj->userData();
+
+            auto translate = zeno::vec_to_other<glm::vec3>(user_data.getLiterial<zeno::vec3f>("_translate"));
+            auto rotate = zeno::vec_to_other<glm::vec3>(user_data.getLiterial<zeno::vec3f>("_rotate"));
+            auto scale = zeno::vec_to_other<glm::vec3>(user_data.getLiterial<zeno::vec3f>("_scale"));
+            auto pre_translate_matrix = glm::translate(translate);
+            auto pre_rotateX_matrix = glm::rotate(rotate[0], glm::vec3({1, 0, 0}));
+            auto pre_rotateY_matrix = glm::rotate(rotate[1], glm::vec3({0, 1, 0}));
+            auto pre_rotateZ_matrix = glm::rotate(rotate[2], glm::vec3({0, 0, 1}));
+            auto pre_scale_matrix = glm::scale(scale * m_last_scale);
+            auto pre_transform_matrix = pre_translate_matrix * pre_rotateZ_matrix * pre_rotateY_matrix * pre_rotateX_matrix * pre_scale_matrix;
+            auto inv_pre_transform = glm::inverse(pre_transform_matrix);
+
+            translate += m_trans;
+            // print_vec3("translate", translate);
+            rotate += m_rotate;
+            scale *= m_scale;
+            print_vec3("scale", scale);
+            m_last_scale = m_scale;
+
+            auto translate_matrix = glm::translate(translate);
+            // print_mat4("translate mat", translate_matrix);
+            auto rotateX_matrix = glm::rotate(rotate[0], glm::vec3({1, 0, 0}));
+            auto rotateY_matrix = glm::rotate(rotate[1], glm::vec3({0, 1, 0}));
+            auto rotateZ_matrix = glm::rotate(rotate[2], glm::vec3({0, 0, 1}));
+            auto rotate_matrix = rotateZ_matrix * rotateY_matrix * rotateX_matrix;
+            // print_mat4("rotate mat", rotate_matrix);
+            auto scale_matrix = glm::scale(scale);
+            // print_mat4("scale mat", scale_matrix);
+            auto transform_matrix = translate_matrix * rotate_matrix * scale_matrix;
+            // print_mat4("transform mat", transform_matrix);
             if (obj->has_attr("pos")) {
                 // transform pos
                 auto &pos = obj->attr<zeno::vec3f>("pos");
                 for (auto &po : pos) {
                     auto p = zeno::vec_to_other<glm::vec3>(po);
-                    auto t = step_transform_matrix * glm::vec4(p, 1.0f);
+                    auto t = transform_matrix * inv_pre_transform * glm::vec4(p, 1.0f);
                     auto pt = glm::vec3(t) / t.w;
                     po = zeno::other_to_vec<3>(pt);
                 }
@@ -369,44 +428,39 @@ class FakeTransformer {
             if (obj->has_attr("nrm")) {
                 // transform nrm
                 auto &nrm = obj->attr<zeno::vec3f>("nrm");
-                for (auto &i : nrm) {
-                    auto n = zeno::vec_to_other<glm::vec3>(i);
-                    glm::mat3 norm_matrix(step_transform_matrix);
+                for (auto &vec : nrm) {
+                    auto n = zeno::vec_to_other<glm::vec3>(vec);
+                    glm::mat3 norm_matrix(transform_matrix);
                     norm_matrix = glm::transpose(glm::inverse(norm_matrix));
                     auto t = glm::normalize(norm_matrix * n);
-                    i = zeno::other_to_vec<3>(n);
+                    vec = zeno::other_to_vec<3>(t);
                 }
             }
-            auto &user_data = obj->userData();
+            vec3f bmin, bmax;
             if (user_data.has("_bboxMin") && user_data.has("_bboxMax")) {
-                vec3f bmin, bmax;
                 std::tie(bmin, bmax) = primBoundingBox(obj);
                 user_data.setLiterial("_bboxMin", bmin);
                 user_data.setLiterial("_bboxMax", bmax);
             }
+            user_data.setLiterial("_translate", zeno::other_to_vec<3>(translate));
+            user_data.setLiterial("_rotate", zeno::other_to_vec<3>(rotate));
+            m_objects_center += (zeno::vec_to_other<glm::vec3>(bmin) + zeno::vec_to_other<glm::vec3>(bmax)) / 2.0f;
         }
-        // update center
-        glm::vec4 center(objects_center, 1);
-        center = step_transform_matrix * center;
-        center /= center[3];
-        objects_center = center;
+        m_objects_center /= m_objects.size();
     }
 
   private:
-    std::unordered_map<std::string, PrimitiveObject*> objects;
+    std::unordered_map<std::string, PrimitiveObject*> m_objects;
 
-    glm::mat4 translate_matrix;
-    glm::mat4 scale_matrix;
-    glm::mat4 rotate_matrix;
-    glm::mat4 transform_matrix;
-    glm::mat4 step_transform_matrix;
+    glm::vec3 m_objects_center;
 
-    glm::vec3 rotate_eular_vec;
+    glm::vec3 m_trans;
+    glm::vec3 m_scale;
+    glm::vec3 m_last_scale;
+    glm::vec3 m_rotate;
 
-    glm::vec3 objects_center;
-
-    bool status;
-    int operation;
+    bool m_status;
+    int m_operation;
 };
 
 }

@@ -570,34 +570,12 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
         auto scene = Zenovis::GetInstance().getSession()->get_scene();
 
         if (transformer->isTransforming()) {
+            bool moved = false;
             if (m_boundRectStartPos != event->pos()) {
                 // create/modify transform primitive node
-                IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
-                for (auto &obj_name : scene->selected) {
-                    QString node_id(obj_name.substr(0, obj_name.find_first_of(':')).c_str());
-                    auto search_result = pModel->search(node_id, SEARCH_NODEID);
-                    auto subgraph_index = search_result[0].subgIdx;
-                    auto node_index = search_result[0].targetIdx;
-                    auto inputs = node_index.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
-                    if (node_id.contains("TransformPrimitive")  &&
-                        inputs["translation"].linkIndice.empty() &&
-                        inputs["eulerXYZ"].linkIndice.empty() &&
-                        inputs["scaling"].linkIndice.empty()) {
-                        transformer->syncToTransformNode(node_id, pModel, node_index, subgraph_index);
-                    }
-                    else {
-                        auto linked_transform_node_index =
-                            transformer->linkedToVisibleTransformNode(node_index, pModel).value<QModelIndex>();
-                        if (linked_transform_node_index.isValid()) {
-                            auto linked_transform_node_id = linked_transform_node_index.data(ROLE_OBJID).toString();
-                            transformer->syncToTransformNode(linked_transform_node_id, pModel, linked_transform_node_index, subgraph_index);
-                        }
-                        else
-                            transformer->createNewTransformNode(node_id, pModel, node_index, subgraph_index);
-                    }
-                }
+                moved = true;
             }
-            transformer->endTransform();
+            transformer->endTransform(moved);
         }
         else {
             auto cam_pos = realPos();
@@ -950,7 +928,7 @@ DisplayWidget::DisplayWidget(ZenoMainWindow* pMainWin)
     m_view = new ViewportWidget;
     // viewport interaction need to set mouse tracking true
     // but it will lead to a light panel edit bug
-    // m_view->setMouseTracking(true);
+    m_view->setMouseTracking(true);
     pLayout->addWidget(m_view);
 
     m_timeline = new ZTimeline;

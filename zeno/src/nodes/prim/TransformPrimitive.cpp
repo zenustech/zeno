@@ -1,12 +1,13 @@
-#include <zeno/zeno.h>
-#include <zeno/types/PrimitiveObject.h>
-#include <zeno/types/NumericObject.h>
-#include <zeno/types/MatrixObject.h>
+#include "zeno/types/UserData.h"
+#include <cstring>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtx/transform.hpp>
 #include <glm/gtx/quaternion.hpp>
-#include <cstring>
+#include <glm/gtx/transform.hpp>
+#include <zeno/types/MatrixObject.h>
+#include <zeno/types/NumericObject.h>
+#include <zeno/types/PrimitiveObject.h>
+#include <zeno/zeno.h>
 
 namespace zeno {
 namespace {
@@ -148,6 +149,11 @@ struct TransformPrimitive : zeno::INode {//zhxx happy node
                 nrm[i] = zeno::other_to_vec<3>(n);
             }
         }
+
+        auto& user_data = outprim->userData();
+        user_data.setLiterial("_translate", translate);
+        user_data.setLiterial("_rotate", eulerXYZ);
+        user_data.setLiterial("_scale", scaling);
         //auto oMat = std::make_shared<MatrixObject>();
         //oMat->m = matrix;
         set_output("outPrim", std::move(outprim));
