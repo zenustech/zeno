@@ -127,12 +127,21 @@ bool UiHelper::validateVariant(const QVariant& var, const QString& type)
     case CONTROL_READPATH:
     case CONTROL_ENUM:
         return (QVariant::String == varType);
-        break;
     case CONTROL_MULTILINE_STRING:
         return var.type() == QVariant::String;
     case CONTROL_COLOR:
+    {
+        if ((var.type() == QVariant::String) ||
+            (varType == QVariant::UserType &&
+             var.userType() == QMetaTypeId<QLinearGradient>::qt_metatype_id()))
+        {
+            return true;
+        }
+    }
     case CONTROL_CURVE:
-        return var.isNull();
+    {
+        return (varType == QMetaType::VoidStar);
+    }
     case CONTROL_VEC:
     {
         if (varType == QVariant::UserType &&
@@ -143,10 +152,12 @@ bool UiHelper::validateVariant(const QVariant& var, const QString& type)
     }
     case CONTROL_NONE:
         return var.isNull();
+    case CONTROL_NONVISIBLE:
+        return true;
     default:
         break;
     };
-    return false;
+    return true;
 }
 
 QVariant UiHelper::_parseDefaultValue(const QString &defaultValue, const QString &type)
