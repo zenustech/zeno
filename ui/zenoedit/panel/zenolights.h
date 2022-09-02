@@ -8,6 +8,7 @@
 #include <QtWidgets>
 #include "PrimAttrTableModel.h"
 #include "ZLightsModel.h"
+#include "comctrl/zlineedit.h"
 
 class ZenoLights : public QWidget {
     Q_OBJECT
@@ -17,23 +18,23 @@ public:
     QListView *lights_view = new QListView();
     ZLightsModel* dataModel = new ZLightsModel();
 
-    QLineEdit* posXEdit = new QLineEdit("0");
-    QLineEdit* posYEdit = new QLineEdit("0");
-    QLineEdit* posZEdit = new QLineEdit("0");
+    ZLineEdit* posXEdit = new ZLineEdit("0");
+    ZLineEdit* posYEdit = new ZLineEdit("0");
+    ZLineEdit* posZEdit = new ZLineEdit("0");
 
-    QLineEdit* scaleXEdit = new QLineEdit("1");
-    QLineEdit* scaleYEdit = new QLineEdit("1");
-    QLineEdit* scaleZEdit = new QLineEdit("1");
+    ZLineEdit* scaleXEdit = new ZLineEdit("1");
+    ZLineEdit* scaleYEdit = new ZLineEdit("1");
+    ZLineEdit* scaleZEdit = new ZLineEdit("1");
 
-    QLineEdit* rotateXEdit = new QLineEdit("0");
-    QLineEdit* rotateYEdit = new QLineEdit("0");
-    QLineEdit* rotateZEdit = new QLineEdit("0");
+    ZLineEdit* rotateXEdit = new ZLineEdit("0");
+    ZLineEdit* rotateYEdit = new ZLineEdit("0");
+    ZLineEdit* rotateZEdit = new ZLineEdit("0");
 
-    QLineEdit* colorXEdit = new QLineEdit("1");
-    QLineEdit* colorYEdit = new QLineEdit("1");
-    QLineEdit* colorZEdit = new QLineEdit("1");
+    ZLineEdit* colorXEdit = new ZLineEdit("1");
+    ZLineEdit* colorYEdit = new ZLineEdit("1");
+    ZLineEdit* colorZEdit = new ZLineEdit("1");
 
-    QLineEdit* mouseSenEdit = new QLineEdit("0.2");
+    ZLineEdit* intensityEdit = new ZLineEdit("1");
     void modifyLightData();
 
 public:
