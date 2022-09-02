@@ -51,6 +51,12 @@ inline namespace ZenoFBXDefinition {
     auto no = std::make_shared<zeno::NumericObject>();  \
     no->set(tmp);
 
+struct SFBXReadOption {
+    bool invertOpacity = false;
+    bool makePrim = false;
+    bool enableUDIM = false;
+};
+
 struct SKeyPosition {
     aiVector3D position;
     float timeStamp;

@@ -55,7 +55,7 @@ struct Mesh{
     unsigned int m_VerticesIncrease = 0;
     unsigned int m_IndicesIncrease = 0;
     unsigned int m_MeshNameIncrease = 0;
-    bool enable_udim = false;
+    SFBXReadOption m_readOption;
 
     std::string createTexDir(std::string subPath){
         auto p = fbxPath;
@@ -378,7 +378,8 @@ struct Mesh{
             return;
         }
 
-
+        // Use the metallic attribute to determine if the material is PBR
+        bool isPbr = false;
 
         SMaterial mat;
         mat.matName = matName;
@@ -436,13 +437,13 @@ struct Mesh{
                             is_udim_tex = true;
 
                             udim_num = std::stoi(filename.substr(index+3, 2));
-                            zeno::log_info("UDIM: Found udim tex num {}, enable {}",udim_num, enable_udim);
+                            zeno::log_info("UDIM: Found udim tex num {}, enable {}",udim_num, m_readOption.enableUDIM);
                             break;  // for check whether is udim
                         }
                         pos = index + 1; //new position is from next element of index
                     }
 
-                    if(is_udim_tex && enable_udim){  // first udim check
+                    if(is_udim_tex && m_readOption.enableUDIM){  // first udim check
                         int max_up=0, max_vp=0;
                         int sw,sh,comp;
                         std::unordered_map<std::string, std::string> udim_texs;
@@ -558,6 +559,8 @@ struct Mesh{
                                                             key.c_str(),0,0,
                                                             &tmp)){
                             found = true;
+                            if(key == "$ai.metalness")
+                                isPbr = true;
                             // override the default value
                             zeno::log_info("FBX: Mat name {}, PropName {}, MatValue {} {} {} {}",matName, com.first,tmp.r, tmp.g,tmp.b,tmp.a);
                             com.second.value = tmp;
@@ -567,6 +570,11 @@ struct Mesh{
                     if(found){
                         break;
                     }
+                }
+
+                if(isPbr && com.first == "opacity" && m_readOption.invertOpacity){
+                    zeno::log_info("FBX: Convert PBR opacity");
+                    com.second.value = std::any_cast<aiColor4D>(com.second.value)*-1.0f+1.0f;
                 }
 
                 auto v = std::any_cast<aiColor4D>(com.second.value);
@@ -877,11 +885,10 @@ void readFBXFile(
         std::shared_ptr<BoneTree>& boneTree,
         std::shared_ptr<AnimInfo>& animInfo,
         const char *fbx_path,
-        bool enable_udim,
         std::shared_ptr<zeno::PrimitiveObject>& prim,
-        bool make_prim,
         std::shared_ptr<zeno::DictObject>& prims,
-        std::shared_ptr<zeno::DictObject>& mats
+        std::shared_ptr<zeno::DictObject>& mats,
+        SFBXReadOption readOption
     )
 {
     Assimp::Importer importer;
@@ -936,7 +943,7 @@ void readFBXFile(
     Mesh mesh;
     Anim anim;
 
-    mesh.enable_udim = enable_udim;
+    mesh.m_readOption = readOption;
 
     std::filesystem::path p(fbx_path);
     mesh.fbxPath = p.remove_filename();
@@ -957,7 +964,7 @@ void readFBXFile(
     mesh.processTrans(anim.m_Morph, anim.m_Bones.AnimBoneMap, datas, prims, mats, nodeTree, boneTree, animInfo);
     mesh.fbxData.iKeyMorph.value = anim.m_Morph;
 
-    if(make_prim)
+    if(readOption.makePrim)
         mesh.processPrim(prim);
 
     zeno::log_info("FBX: Num Animation {}", scene->mNumAnimations);
@@ -980,20 +987,21 @@ struct ReadFBXPrim : zeno::INode {
 
         zeno::log_info("FBX: File path {}", path);
 
-        bool enable_udim = false;
-        bool make_prim = false;
+        SFBXReadOption readOption;
         auto udim = get_param<std::string>("udim");
         auto primitive = get_param<bool>("primitive");
+        auto invOpacity = get_param<bool>("invOpacity");
         if (udim == "ENABLE")
-            enable_udim = true;
+            readOption.enableUDIM = true;
+        if(invOpacity)
+            readOption.invertOpacity = true;
         if(primitive)
-            make_prim = true;
+            readOption.makePrim = true;
 
-        zeno::log_info("FBX: UDIM {} PRIM {}", enable_udim, make_prim);
+        zeno::log_info("FBX: UDIM {} PRIM {} INVERT {}", readOption.enableUDIM,readOption.makePrim,readOption.invertOpacity);
 
         readFBXFile(datas, nodeTree, data, boneTree, animInfo,
-                    path.c_str(), enable_udim, prim, make_prim,
-                    prims, mats);
+                    path.c_str(), prim, prims, mats, readOption);
 
         set_output("data", std::move(data));
         set_output("datas", std::move(datas));
@@ -1017,6 +1025,7 @@ ZENDEFNODE(ReadFBXPrim,
                },  /* params: */
                {
                 {"enum ENABLE DISABLE", "udim", "DISABLE"},
+                {"bool", "invOpacity", "true"},
                 {"bool", "primitive", "false"}
                },  /* category: */
                {
