@@ -11,6 +11,7 @@
 #include "zensim/zpc_tpls/fmt/color.h"
 #include <thrust/device_ptr.h>
 #include <thrust/sort.h>
+#include <zeno/logger.h>
 
 namespace zeno {
 
@@ -74,7 +75,9 @@ struct ZenoLBvh {
         return nl > 2 ? nl * 2 - 1 : nl;
     }
 
-    void build(zs::CudaExecutionPolicy &, const zs::Vector<zs::AABBBox<dim, value_type>> &primBvs);
+    template <bool Refit = true>
+    void build(zs::CudaExecutionPolicy &, const zs::Vector<zs::AABBBox<dim, value_type>> &primBvs,
+               zs::wrapv<Refit> = {});
 
     void refit(zs::CudaExecutionPolicy &, const zs::Vector<zs::AABBBox<dim, value_type>> &primBvs);
 
@@ -179,8 +182,10 @@ constexpr void iter_neighbors(const BvhView &bvh, const BV &bv, F &&f) {
 }
 
 template <int dim, int lane_width, typename Index, typename Value, typename Allocator>
+template <bool Refit>
 void ZenoLBvh<dim, lane_width, Index, Value, Allocator>::build(zs::CudaExecutionPolicy &policy,
-                                                               const zs::Vector<zs::AABBBox<dim, Value>> &primBvs) {
+                                                               const zs::Vector<zs::AABBBox<dim, Value>> &primBvs,
+                                                               zs::wrapv<Refit>) {
     using namespace zs;
     using T = value_type;
     using Ti = index_type;
@@ -253,22 +258,23 @@ void ZenoLBvh<dim, lane_width, Index, Value, Allocator>::build(zs::CudaExecution
         const auto bv = primBvs[id];
         auto c = bv.getBoxCenter();
         // auto unic = (c - bv._min) / (bv._max - bv._min);
-        auto coord = wholeBox.getUniformCoord(c).template cast<zs::f32>(); // this is a vec<T, dim>
-        mcs[id] = morton_code<dim>(coord);
+        auto coord = wholeBox.getUniformCoord(c); // this is a vec<T, dim>
+        mcs[id] = (mc_t)morton_code<dim>(coord);
         // code = morton_code<dim>(unic);
         indices[id] = id;
     });
 
     // sort by morton codes
-    Vector<mc_t> sortedMcs{primBvs.get_allocator(), numLeaves};
-    indices_t sortedIndices{primBvs.get_allocator(), numLeaves};
-    radix_sort_pair(policy, mcs.begin(), indices.begin(), sortedMcs.begin(), sortedIndices.begin(), numLeaves);
 #if 0
-    sortedMcs = mcs;
-    sortedIndices = indices;
+    auto sortedMcs = mcs;
+    auto sortedIndices = indices;
     thrust::sort_by_key(
         thrust::cuda::par.on((cudaStream_t)policy.getStream()), thrust::device_pointer_cast(sortedMcs.data()),
         thrust::device_pointer_cast(sortedMcs.data() + numLeaves), thrust::device_pointer_cast(sortedIndices.data()));
+#else
+    Vector<mc_t> sortedMcs{primBvs.get_allocator(), numLeaves};
+    indices_t sortedIndices{primBvs.get_allocator(), numLeaves};
+    radix_sort_pair(policy, mcs.begin(), indices.begin(), sortedMcs.begin(), sortedIndices.begin(), numLeaves);
 #endif
 
 // build + refit
@@ -278,9 +284,9 @@ void ZenoLBvh<dim, lane_width, Index, Value, Allocator>::build(zs::CudaExecution
     trunkTopo =
         itiles_t{primBvs.get_allocator(), {{"par", 1}, {"lc", 1}, {"rc", 1}, {"l", 1}, {"r", 1}, {"esc", 1}}, numTrunk};
 #endif
-    Vector<int> trunkBuildFlags{primBvs.get_allocator(), numTrunk};
-    trunkBuildFlags.reset(0);
     {
+        Vector<int> trunkBuildFlags{primBvs.get_allocator(), numTrunk};
+        trunkBuildFlags.reset(0);
         policy(range(numLeaves),
                [indices = proxy<space>(sortedIndices), pInds, lDepths, numTrunk] ZS_LAMBDA(Ti idx) mutable {
                    auto ind = indices[idx];
@@ -380,14 +386,7 @@ void ZenoLBvh<dim, lane_width, Index, Value, Allocator>::build(zs::CudaExecution
             if (idx == 0)
                 tPars(0) = -1;
         });
-
-        if constexpr (false) {
-            Vector<Ti> tmp{primBvs.get_allocator(), 1};
-            reduce(policy, std::begin(leafDepths), std::end(leafDepths), std::begin(tmp), (Ti)0);
-            auto chkSum = tmp.getVal();
-            fmt::print("num nodes: {}, caled {}\n", numNodes, chkSum);
-        }
-    };
+    }
 #if 0
     thrust::exclusive_scan(thrust::cuda::par.on((cudaStream_t)policy.getStream()),
                            thrust::device_pointer_cast(leafDepths.data()),
@@ -468,7 +467,7 @@ void ZenoLBvh<dim, lane_width, Index, Value, Allocator>::build(zs::CudaExecution
             parents[dst] = -1;
         // levels for trunk are already set
     });
-    if constexpr (true) {
+    if constexpr (false) {
         // check right childs
         policy(range(numTrunk), [lDepths, lOffsets, tLs, tRs, tLcs, tRcs, tPars, lPars, lLcas, tDst,
                                  auxIndices = proxy<space>(auxIndices), levels = proxy<space>(levels),
@@ -539,7 +538,6 @@ void ZenoLBvh<dim, lane_width, Index, Value, Allocator>::build(zs::CudaExecution
                 printf("<%d, %d> != <%d, %d> + <%d, %d>\n", zs::get<0>(range), zs::get<1>(range), zs::get<0>(lRange),
                        zs::get<1>(lRange), zs::get<0>(rRange), zs::get<1>(rRange));
             auto level = levels[dst];
-#if 1
             // lca
             Ti lcc = lc;
             for (int i = 1; i != level; ++i) {
@@ -591,10 +589,13 @@ void ZenoLBvh<dim, lane_width, Index, Value, Allocator>::build(zs::CudaExecution
                 if (lDst + 1 != rDst)
                     printf("left leaf ch escape not right!.\n");
             }
-#endif
         });
     }
-    refit(policy, primBvs);
+    // zeno::log_info("done bvh build");
+    if constexpr (Refit) {
+        refit(policy, primBvs);
+        // zeno::log_info("done bvh refit after build");
+    }
     return;
 }
 

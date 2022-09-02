@@ -92,6 +92,9 @@ struct IPCSystem : IObject {
         ZenoParticles::category_e category;
     };
 
+    bool hasBoundary() const noexcept {
+        return coVerts != nullptr;
+    }
     T averageNodalMass(zs::CudaExecutionPolicy &pol);
     T averageSurfEdgeLength(zs::CudaExecutionPolicy &pol);
     T averageSurfArea(zs::CudaExecutionPolicy &pol);

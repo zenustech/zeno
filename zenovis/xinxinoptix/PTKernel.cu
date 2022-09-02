@@ -189,7 +189,7 @@ extern "C" __global__ void __miss__radiance()
     prd->origin += prd->direction * optixGetRayTmax();
     prd->direction = DisneyBSDF::SampleScatterDirection(prd->seed);
     float tmpPDF;
-    prd->maxDistance = DisneyBSDF::SampleDistance(prd->seed,prd->scatterStep,tmpPDF);
+    prd->maxDistance = DisneyBSDF::SampleDistance(prd->seed,prd->scatterStep,prd->extinction,tmpPDF);
     prd->scatterPDF= tmpPDF;
     prd->depth++;
 
