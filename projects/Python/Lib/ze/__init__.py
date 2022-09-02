@@ -392,9 +392,6 @@ class _AttrVectorWrapper:
     def __getattr__(self, key: str):
         return self.attr(key)
 
-    def __len__(self) -> int:
-        return self.size()
-
     def size(self) -> int:
         ptrRet_ = ctypes.c_void_p()
         lenRet_ = ctypes.c_size_t()
