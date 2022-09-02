@@ -164,7 +164,8 @@ struct EvalAnim{
             auto& pos = m_Vertices[i].position;
             auto& uvw = m_Vertices[i].texCoord;
             auto& nor = m_Vertices[i].normal;
-
+            auto& vco = m_Vertices[i].vectexColor;
+            auto &clr0 = prim->verts.add_attr<zeno::vec3f>("clr0");
             glm::vec4 tpos(0.0f, 0.0f, 0.0f, 0.0f);
 
             bool infd = false;
@@ -189,6 +190,7 @@ struct EvalAnim{
             posb.emplace_back(0.0f, 0.0f, 0.0f);
             uv.emplace_back(uvw.x, uvw.y, uvw.z);
             norm.emplace_back(nor.x, nor.y, nor.z);
+            clr0.emplace_back(vco.r, vco.g, vco.b);
         }
 
         for(unsigned int i=0; i<m_Indices.size(); i+=3){
