@@ -2293,41 +2293,143 @@ ZENDEFNODE(AdvanceIPCSystem, {{
                               {},
                               {"FEM"}});
 
-struct IPCSystemClothBinding : INode { // usually called after 'MoveTorwards' zsboundary
+struct IPCSystemClothBinding : INode { // usually called once before stepping
+    using tiles_t = typename ZenoParticles::particles_t;
+    using bvh_t = typename IPCSystem::bvh_t;
+    using bv_t = typename IPCSystem::bv_t;
+    template <typename VecT> static constexpr float distance(const bv_t &bv, const zs::VecInterface<VecT> &x) {
+        using namespace zs;
+        const auto &[mi, ma] = bv;
+        auto center = (mi + ma) / 2;
+        auto point = (x - center).abs() - (ma - mi) / 2;
+        float max = limits<float>::lowest();
+        for (int d = 0; d != 3; ++d) {
+            if (point[d] > max)
+                max = point[d];
+            if (point[d] < 0)
+                point[d] = 0;
+        }
+        return (max < 0.f ? max : 0.f) + point.length();
+    }
+    template <typename VTilesT, typename LsView, typename Bvh>
+    std::shared_ptr<tiles_t> bindStrings(zs::CudaExecutionPolicy &cudaPol, VTilesT &vtemp, std::size_t numVerts,
+                                         LsView lsv, const Bvh &bvh, float k, float distCap, float rl) {
+        using namespace zs;
+        constexpr auto space = execspace_e::cuda;
+        // assume all verts
+        Vector<int> nStrings{vtemp.get_allocator(), 1};
+        nStrings.setVal(0);
+        tiles_t strings{vtemp.get_allocator(), {{"inds", 2}, {"vol", 1}, {"k", 1}, {"rl", 1}}, numVerts};
+        cudaPol(range(numVerts), [vtemp = proxy<space>({}, vtemp), eles = proxy<space>({}, strings), lsv, distCap,
+                                  bvh = proxy<space>(bvh), cnt = proxy<space>(nStrings), coOffset = numVerts, k,
+                                  rl] ZS_LAMBDA(int i) mutable {
+            auto x = vtemp.template pack<3>("xn", i);
+            if (lsv.getSignedDistance(x) < 0) {
+                float dist = distCap;
+                int j = -1;
+                int node = 0;
+                int numNodes = bvh.numNodes();
+                while (node != -1 && node != numNodes) {
+                    int level = bvh._levels[node];
+                    for (; level; --level, ++node)
+                        if (auto d = distance(bvh.getNodeBV(node), x); d > dist)
+                            break;
+                    // leaf node check
+                    if (level == 0) {
+                        auto bouId = bvh._auxIndices[node] + coOffset;
+                        auto d = (vtemp.template pack<3>("xn", bouId) - x).length();
+                        if (d < dist) {
+                            dist = d;
+                            j = bouId;
+                        }
+                        node++;
+                    } else // separate at internal nodes
+                        node = bvh._auxIndices[node];
+                }
+                if (j != -1) {
+                    auto no = atomic_add(exec_cuda, &cnt[0], 1);
+                    eles.template tuple<2>("inds", no) = zs::vec<int, 2>{i, j};
+                    eles("vol", no) = 1;
+                    eles("k", no) = k;
+                    eles("rl", no) = zs::min(dist / 4, rl);
+                }
+            }
+        });
+        auto cnt = nStrings.getVal();
+        strings.resize(cnt);
+        return std::make_shared<tiles_t>(std::move(strings));
+    }
     void apply() override {
         using namespace zs;
         constexpr auto space = execspace_e::cuda;
         auto A = get_input<IPCSystem>("ZSIPCSystem");
+        if (!A->hasBoundary()) {
+            set_output("ZSIPCSystem", A);
+            return;
+        }
+        const auto &bouVerts = *A->coVerts;
+        const auto numBouVerts = bouVerts.size();
+        if (numBouVerts == 0) {
+            set_output("ZSIPCSystem", A);
+            return;
+        }
+        auto &vtemp = A->vtemp;
+        const auto numVerts = A->coOffset;
+
         auto zsls = get_input<ZenoLevelSet>("ZSLevelSet");
         bool ifHardCons = get_input2<bool>("hard_constraint");
+        // currently only impl soft bindings
+        ifHardCons = false;
 
-        auto cudaPol = zs::cuda_exec();
-        using basic_ls_t = typename ZenoLevelSet::basic_ls_t;
-        using const_sdf_vel_ls_t = typename ZenoLevelSet::const_sdf_vel_ls_t;
-        using const_transition_ls_t = typename ZenoLevelSet::const_transition_ls_t;
-#if 0
+        auto cudaPol = zs::cuda_exec().sync(true);
+        bvh_t bouBvh;
+        Vector<bv_t> bouVertBvs{vtemp.get_allocator(), numBouVerts};
+        cudaPol(enumerate(bouVertBvs),
+                [vtemp = proxy<space>({}, vtemp), coOffset = numVerts] ZS_LAMBDA(int i, bv_t &bv) {
+                    auto p = vtemp.template pack<3>("xn", i + coOffset);
+                    bv = bv_t{p - limits<float>::epsilon() * 8, p + limits<float>::epsilon() * 8};
+                });
+        puts("done bvs retrieval");
+        bouBvh.build(cudaPol, bouVertBvs, false_c);
+        puts("done bvh build");
+        bouBvh.refit(cudaPol, bouVertBvs);
+        puts("done bvh refit");
+
+        // stiffness
+        float k = get_input2<float>("strength"); // pulling stiffness
+        if (k == 0)                              // auto setup
+            k = A->largestMu() * 100;
+        // dist cap
+        float dist_cap = get_input2<float>("dist_cap"); // only proximity pairs within this range considered
+        if (dist_cap == 0)
+            dist_cap = limits<float>::max();
+        float rl = get_input2<float>("rest_length"); // rest length cap
         match([&](const auto &ls) {
+            using basic_ls_t = typename ZenoLevelSet::basic_ls_t;
+            using const_sdf_vel_ls_t = typename ZenoLevelSet::const_sdf_vel_ls_t;
+            using const_transition_ls_t = typename ZenoLevelSet::const_transition_ls_t;
             if constexpr (is_same_v<RM_CVREF_T(ls), basic_ls_t>) {
                 match([&](const auto &lsPtr) {
                     auto lsv = get_level_set_view<execspace_e::cuda>(lsPtr);
-                    bindBoundary(cudaPol, lsv, verts, stBvh, bouVerts, tris, dist_cap);
+                    A->prims.emplace_back(vtemp, bindStrings(cudaPol, vtemp, numVerts, lsv, bouBvh, k, dist_cap, rl));
                 })(ls._ls);
             } else if constexpr (is_same_v<RM_CVREF_T(ls), const_sdf_vel_ls_t>) {
                 match([&](auto lsv) {
-                    bindBoundary(cudaPol, SdfVelFieldView{lsv}, verts, stBvh, bouVerts, tris, dist_cap);
+                    A->prims.emplace_back(
+                        vtemp, bindStrings(cudaPol, vtemp, numVerts, SdfVelFieldView{lsv}, bouBvh, k, dist_cap, rl));
                 })(ls.template getView<execspace_e::cuda>());
             } else if constexpr (is_same_v<RM_CVREF_T(ls), const_transition_ls_t>) {
                 match([&](auto fieldPair) {
                     auto &fvSrc = std::get<0>(fieldPair);
                     auto &fvDst = std::get<1>(fieldPair);
-                    bindBoundary(
-                        cudaPol,
-                        TransitionLevelSetView{SdfVelFieldView{fvSrc}, SdfVelFieldView{fvDst}, ls._stepDt, ls._alpha},
-                        verts, stBvh, bouVerts, tris, dist_cap);
+                    A->prims.emplace_back(
+                        vtemp, bindStrings(cudaPol, vtemp, numVerts,
+                                           TransitionLevelSetView{SdfVelFieldView{fvSrc}, SdfVelFieldView{fvDst},
+                                                                  ls._stepDt, ls._alpha},
+                                           bouBvh, k, dist_cap, rl));
                 })(ls.template getView<zs::execspace_e::cuda>());
             }
         })(zsls->getLevelSet());
-#endif
 
         set_output("ZSIPCSystem", A);
     }
@@ -2337,6 +2439,9 @@ ZENDEFNODE(IPCSystemClothBinding, {{
                                        "ZSIPCSystem",
                                        "ZSLevelSet",
                                        {"bool", "hard_constraint", "1"},
+                                       {"float", "dist_cap", "0"},
+                                       {"float", "rest_length", "0.1"},
+                                       {"float", "strength", "0"},
                                    },
                                    {"ZSIPCSystem"},
                                    {},
