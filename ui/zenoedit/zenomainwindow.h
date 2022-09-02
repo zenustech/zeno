@@ -8,6 +8,7 @@
 #include "common.h"
 
 class ZenoDockWidget;
+class DisplayWidget;
 class ZenoGraphsEditor;
 
 class ZenoMainWindow : public QMainWindow
@@ -43,6 +44,7 @@ public slots:
     void onNodesSelected(const QModelIndex& subgIdx, const QModelIndexList& nodes, bool select);
     void onPrimitiveSelected(const std::unordered_set<std::string>& primids);
     void updateViewport(const QString& action = "");
+    DisplayWidget* getDisplayWidget();
     void onRunFinished();
     void onFeedBack();
     void clearErrorMark();

@@ -92,6 +92,13 @@ void CameraControl::setRes(QVector2D res)
     m_res = res;
 }
 
+void CameraControl::setAperture(float aperture){
+    m_aperture = aperture;
+}
+void CameraControl::setDisPlane(float disPlane){
+    m_focalPlaneDistance = disPlane;
+}
+
 void CameraControl::fakeMousePressEvent(QMouseEvent* event)
 {
     if (event->buttons() & Qt::MiddleButton) {
@@ -466,6 +473,11 @@ void CameraControl::fakeWheelEvent(QWheelEvent* event)
         m_radius *= scale;
     }
     updatePerspective();
+
+    if(zenoApp->getMainWindow()->lightPanel != nullptr){
+        zenoApp->getMainWindow()->lightPanel->camApertureEdit->setText(QString::number(m_aperture));
+        zenoApp->getMainWindow()->lightPanel->camDisPlaneEdit->setText(QString::number(m_focalPlaneDistance));
+    }
 }
 
 void CameraControl::setKeyFrame()
@@ -861,6 +873,12 @@ void ViewportWidget::rmvPressedKey(int key) {
     m_camera->rmvPressedKey(key);
 }
 
+void ViewportWidget::updateCameraProp(float aperture, float disPlane) {
+    m_camera->setAperture(aperture);
+    m_camera->setDisPlane(disPlane);
+    updatePerspective();
+}
+
 /*
 QDMDisplayMenu::QDMDisplayMenu()r("Show Grid")
 {
@@ -1000,6 +1018,11 @@ void DisplayWidget::setTimelineInfo(TIMELINE_INFO info)
 {
     m_timeline->setAlways(info.bAlways);
     m_timeline->setFromTo(info.beginFrame, info.endFrame);
+}
+
+ViewportWidget* DisplayWidget::getViewportWidget()
+{
+    return m_view;
 }
 
 QSize DisplayWidget::sizeHint() const

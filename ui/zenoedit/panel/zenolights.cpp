@@ -1,5 +1,6 @@
 #include "zenolights.h"
 #include "viewport/zenovis.h"
+#include "viewport/viewportwidget.h"
 #include "zenoapplication.h"
 #include "zenomainwindow.h"
 #include "zeno/utils/log.h"
@@ -41,6 +42,8 @@ ZenoLights::ZenoLights(QWidget *parent) : QWidget(parent) {
     lights_view->setProperty("cssClass", "proppanel");
     lights_view->setModel(this->dataModel);
     pMainLayout->addWidget(lights_view);
+
+    zenoApp->getMainWindow()->lightPanel = this;
 
     connect(lights_view, &QListView::pressed, this, [&](auto & index){
         std::string name = this->dataModel->light_names[index.row()];
@@ -186,6 +189,34 @@ ZenoLights::ZenoLights(QWidget *parent) : QWidget(parent) {
         pMainLayout->addLayout(pMouseSenLayout);
     }
 
+    {
+        QHBoxLayout* pCamAperture = new QHBoxLayout();
+        QLabel* camAperture = new QLabel("CameraAperture: ");
+        camAperture->setProperty("cssClass", "proppanel");
+        pCamAperture->addWidget(camAperture);
+        QLabel* cav = new QLabel(" v: ");
+        cav->setProperty("cssClass", "proppanel");
+        pCamAperture->addWidget(cav);
+        camApertureEdit->setProperty("cssClass", "proppanel");
+        pCamAperture->addWidget(camApertureEdit);
+
+        pMainLayout->addLayout(pCamAperture);
+    }
+
+    {
+        QHBoxLayout* pCamDisPlane = new QHBoxLayout();
+        QLabel* camDisPlane = new QLabel("CameraDistancePlane: ");
+        camDisPlane->setProperty("cssClass", "proppanel");
+        pCamDisPlane->addWidget(camDisPlane);
+        QLabel* cdpv = new QLabel(" v: ");
+        cdpv->setProperty("cssClass", "proppanel");
+        pCamDisPlane->addWidget(cdpv);
+        camDisPlaneEdit->setProperty("cssClass", "proppanel");
+        pCamDisPlane->addWidget(camDisPlaneEdit);
+
+        pMainLayout->addLayout(pCamDisPlane);
+    }
+
     pStatusBar->setProperty("cssClass", "proppanel");
     pMainLayout->addWidget(pStatusBar);
 
@@ -238,6 +269,17 @@ ZenoLights::ZenoLights(QWidget *parent) : QWidget(parent) {
     connect(colorZEdit, &QLineEdit::editingFinished, this, [&](){ zenoApp->getMainWindow()->selected = nullptr; });
 
     connect(mouseSenEdit, &QLineEdit::editingFinished, this, [&](){ zenoApp->getMainWindow()->mouseSen = mouseSenEdit->text().toFloat(); });
+    connect(camApertureEdit, &QLineEdit::editingFinished, this, [&](){
+        zenoApp->getMainWindow()->getDisplayWidget()->getViewportWidget()->updateCameraProp(
+            camApertureEdit->text().toFloat(), camDisPlaneEdit->text().toFloat());
+        zenoApp->getMainWindow()->updateViewport();
+    });
+    connect(camDisPlaneEdit, &QLineEdit::editingFinished, this, [&](){
+        zenoApp->getMainWindow()->getDisplayWidget()->getViewportWidget()->updateCameraProp(
+            camApertureEdit->text().toFloat(), camDisPlaneEdit->text().toFloat());
+        zenoApp->getMainWindow()->updateViewport();
+    });
+
 }
 
 void ZenoLights::updateLights() {

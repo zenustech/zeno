@@ -34,6 +34,8 @@ public:
     QLineEdit* colorZEdit = new QLineEdit("1");
 
     QLineEdit* mouseSenEdit = new QLineEdit("0.2");
+    QLineEdit* camApertureEdit = new QLineEdit("0.2");
+    QLineEdit* camDisPlaneEdit = new QLineEdit("2.0");
     void modifyLightData();
 
 public:
