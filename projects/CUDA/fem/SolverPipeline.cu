@@ -784,7 +784,6 @@ void IPCSystem::multiply(zs::CudaExecutionPolicy &pol, const zs::SmallString dxT
 #endif
     }
     for (auto &primHandle : auxPrims) {
-        continue;
         auto &eles = primHandle.getEles();
         // soft bindings
         if (primHandle.category == ZenoParticles::curve) {
@@ -1589,7 +1588,6 @@ typename IPCSystem::T IPCSystem::energy(zs::CudaExecutionPolicy &pol, const zs::
         })(primHandle.models.getElasticModel());
     }
     for (auto &primHandle : auxPrims) {
-        continue;
         match([&](auto &elasticModel) {
             Es.push_back(elasticityEnergy(pol, vtemp, primHandle, elasticModel, dt, es));
         })(primHandle.models.getElasticModel());
@@ -2385,7 +2383,7 @@ struct IPCSystemClothBinding : INode { // usually called once before stepping
                 }
                 if (j != -1) {
                     auto no = atomic_add(exec_cuda, &cnt[0], 1);
-                    eles.template tuple<2>("inds", no) = zs::vec<int, 2>{i, j};
+                    eles.template tuple<2>("inds", no) = zs::vec<int, 2>{i, j}.template reinterpret_bits<float>();
                     eles("vol", no) = 1;
                     eles("k", no) = k;
                     eles("rl", no) = zs::min(dist / 4, rl);
