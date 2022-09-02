@@ -52,7 +52,7 @@ namespace DisneyBSDF{
     vec3 CalculateExtinction(vec3 apparantColor, float scatterDistance)
     {
 
-        return -log(clamp(apparantColor, vec3(0.00001), vec3(0.99999)))/scatterDistance;
+        return 1.0/(apparantColor * scatterDistance);
 
     }
 
@@ -741,13 +741,34 @@ namespace DisneyBSDF{
         return true;
     }
     static __inline__ __device__
-    float SampleDistance(unsigned int &seed, float scatterDistance, float &pdf)
+    float SampleDistance(unsigned int &seed, float scatterDistance, vec3 extinction, float &pdf)
     {
-        if(scatterDistance == 0.0f){
-            return 1e16f;
+        float ps = dot(extinction, vec3(1.0f));
+
+        float pr = extinction.x / ps;
+        float pg = extinction.y / ps;
+        float pb = extinction.z / ps;
+
+        float c;
+        float p;
+
+        float r0 = rnd(seed);
+        if(r0 < pr) {
+            c = extinction.x;
+            p = pr;
         }
-        float s = -log(rnd(seed)) * scatterDistance;
-        pdf = 1.0f;
+        else if(r0 < pr + pg) {
+            c = extinction.y;
+            p = pg;
+        }
+        else {
+            c = extinction.z;
+            p = pb;
+        }
+
+        float s = -log(rnd(seed)) / c;
+        //*pdf = Math::Expf(-c * s) / p;
+
         return s;
     }
 
