@@ -58,138 +58,6 @@ def initDLLPath(path: str):
     define(ctypes.c_uint32, 'Zeno_ResizeObjectPrimData', ctypes.c_uint64, ctypes.c_int, ctypes.c_size_t)
 
 
-class _MemSpanWrapper:
-    _ptr: int
-    _len: int
-    _type: Any
-    _dim: int
-
-    def __init__(self, ptr_: int, len_: int, type_: Any, dim_: int):
-        self._ptr = ptr_
-        self._len = len_
-        self._type = type_
-        self._dim = dim_
-
-    def __repr__(self) -> str:
-        return '[zeno attribute at {} of len {} with type {} and dim {}]'.format(self._ptr, self._len, self._type, self._dim)
-
-    def __getitem__(self, index: int) -> Numeric:
-        if index < 0 or index >= self._len:
-            raise IndexError('index {} out of range [0, {})'.format(index, self._len))
-        base = ctypes.cast(self._ptr, ctypes.POINTER(self._type))
-        return tuple(base[index * self._dim + i] for i in range(self._dim)) if self._dim != 1 else base[index]
-
-    def __setitem__(self, index: int, value: Numeric):
-        if index < 0 or index >= self._len:
-            raise IndexError('index {} out of range [0, {})'.format(index, self._len))
-        base = ctypes.cast(self._ptr, ctypes.POINTER(self._type))
-        if self._dim != 1:
-            for i in range(self._dim):
-                base[index * self._dim + i] = value[i]  # type: ignore
-        else:
-            base[index] = value
-
-    def to_list(self) -> list[Numeric]:
-        base = ctypes.cast(self._ptr, ctypes.POINTER(self._type))
-        if self._dim != 1:
-            return [tuple(base[index * self._dim + i] for i in range(self._dim)) for index in range(self._len)]
-        else:
-            return [base[index] for index in range(self._len)]
-
-    def from_list(self, lst: list[Numeric]):
-        if len(lst) != self._len:
-            raise ValueError('list length mismatch {} != {}', len(lst), self._len)
-        base = ctypes.cast(self._ptr, ctypes.POINTER(self._type))
-        if self._dim != 1:
-            for index, val in enumerate(lst):
-                for i in range(self._dim):
-                    base[index * self._dim + i] = val[i]  # type: ignore
-        else:
-            for index, val in enumerate(lst):
-                base[index] = val
-
-    def c_data(self) -> tuple[int, int, Any, int]:
-        return (self._ptr, self._len, self._type, self._dim)
-
-    def __len__(self) -> int:
-        return self._len
-
-    def __iter__(self) -> Iterator[Numeric]:
-        return iter(self.to_list())
-
-
-class _AttrVectorWrapper:
-    _handle: int
-    _kind: int
-
-    _typeLut = [
-        ctypes.c_float,
-        ctypes.c_float,
-        ctypes.c_int,
-        ctypes.c_int,
-        ctypes.c_float,
-        ctypes.c_int,
-        ctypes.c_float,
-        ctypes.c_int,
-    ]
-    _dimLut = [
-        3, 1, 3, 1, 2, 2, 4, 4,
-    ]
-
-    def __init__(self, handle: int, kind: int):
-        self._handle = handle
-        self._kind = kind
-
-    def attr(self, attrName: str) -> _MemSpanWrapper:
-        ptrRet_ = ctypes.c_void_p()
-        lenRet_ = ctypes.c_size_t()
-        typeRet_ = ctypes.c_int()
-        api.Zeno_GetObjectPrimData(ctypes.c_uint64(self._handle), ctypes.c_int(self._kind), ctypes.c_char_p(attrName.encode()), ctypes.pointer(ptrRet_), ctypes.pointer(lenRet_), ctypes.pointer(typeRet_))
-        return _MemSpanWrapper(ptrRet_.value, lenRet_.value, self._typeLut[typeRet_.value], self._dimLut[typeRet_.value])  # type: ignore
-
-    def keys(self) -> list[str]:
-        count_ = ctypes.c_size_t(0)
-        api.Zeno_GetObjectPrimDataKeys(ctypes.c_uint64(self._handle), ctypes.c_int(self._kind), ctypes.pointer(count_), ctypes.cast(0, ctypes.POINTER(ctypes.c_char_p)))
-        keys_ = (ctypes.c_char_p * count_.value)()
-        api.Zeno_GetObjectPrimDataKeys(ctypes.c_uint64(self._handle), ctypes.c_int(self._kind), ctypes.pointer(count_), keys_)
-        keys: list[str] = list(map(lambda x: x.decode(), keys_))
-        return keys
-
-    def values(self) -> list[_MemSpanWrapper]:
-        return [self.attr(k) for k in self.keys()]
-
-    def items(self) -> list[tuple[str, _MemSpanWrapper]]:
-        return [(k, self.attr(k)) for k in self.keys()]
-
-    def __iter__(self) -> Iterator[tuple[str, _MemSpanWrapper]]:
-        return iter(self.items())
-
-    def __repr__(self) -> str:
-        return '[zeno attribute collection of primitive at {} of kind {}]'.format(self._handle, self._kind)
-
-    def __contains__(self, key: str) -> bool:
-        return key in self.keys()
-
-    def __getitem__(self, key: str) -> _MemSpanWrapper:
-        return self.attr(key)
-
-    def __getattr__(self, key: str) -> _MemSpanWrapper:
-        return self.attr(key)
-
-    def __len__(self) -> int:
-        return self.size()
-
-    def size(self) -> int:
-        ptrRet_ = ctypes.c_void_p()
-        lenRet_ = ctypes.c_size_t()
-        typeRet_ = ctypes.c_int()
-        api.Zeno_GetObjectPrimData(ctypes.c_uint64(self._handle), ctypes.c_int(self._kind), ctypes.c_char_p('pos'.encode()), ctypes.pointer(ptrRet_), ctypes.pointer(lenRet_), ctypes.pointer(typeRet_))
-        return lenRet_.value
-
-    def resize(self, newSize: int):
-        api.Zeno_ResizeObjectPrimData(ctypes.c_uint64(self._handle), ctypes.c_int(self._kind), ctypes.c_size_t(newSize))
-
-
 class ZenoObject:
     _handle: int
 
@@ -404,6 +272,138 @@ class ZenoPrimitiveObject(ZenoObject):
 
     def asObject(self):
         return ZenoObject.fromHandle(self._handle)
+
+
+class _MemSpanWrapper:
+    _ptr: int
+    _len: int
+    _type: Any
+    _dim: int
+
+    def __init__(self, ptr_: int, len_: int, type_: Any, dim_: int):
+        self._ptr = ptr_
+        self._len = len_
+        self._type = type_
+        self._dim = dim_
+
+    def __repr__(self) -> str:
+        return '[zeno attribute at {} of len {} with type {} and dim {}]'.format(self._ptr, self._len, self._type, self._dim)
+
+    def __getitem__(self, index: int) -> Numeric:
+        if index < 0 or index >= self._len:
+            raise IndexError('index {} out of range [0, {})'.format(index, self._len))
+        base = ctypes.cast(self._ptr, ctypes.POINTER(self._type))
+        return tuple(base[index * self._dim + i] for i in range(self._dim)) if self._dim != 1 else base[index]
+
+    def __setitem__(self, index: int, value: Numeric):
+        if index < 0 or index >= self._len:
+            raise IndexError('index {} out of range [0, {})'.format(index, self._len))
+        base = ctypes.cast(self._ptr, ctypes.POINTER(self._type))
+        if self._dim != 1:
+            for i in range(self._dim):
+                base[index * self._dim + i] = value[i]  # type: ignore
+        else:
+            base[index] = value
+
+    def to_list(self) -> list[Numeric]:
+        base = ctypes.cast(self._ptr, ctypes.POINTER(self._type))
+        if self._dim != 1:
+            return [tuple(base[index * self._dim + i] for i in range(self._dim)) for index in range(self._len)]
+        else:
+            return [base[index] for index in range(self._len)]
+
+    def from_list(self, lst: list[Numeric]):
+        if len(lst) != self._len:
+            raise ValueError('list length mismatch {} != {}', len(lst), self._len)
+        base = ctypes.cast(self._ptr, ctypes.POINTER(self._type))
+        if self._dim != 1:
+            for index, val in enumerate(lst):
+                for i in range(self._dim):
+                    base[index * self._dim + i] = val[i]  # type: ignore
+        else:
+            for index, val in enumerate(lst):
+                base[index] = val
+
+    def raw_data(self) -> tuple[int, int, Any, int]:
+        return (self._ptr, self._len, self._type, self._dim)
+
+    def __len__(self) -> int:
+        return self._len
+
+    def __iter__(self) -> Iterator[Numeric]:
+        return iter(self.to_list())
+
+
+class _AttrVectorWrapper:
+    _handle: int
+    _kind: int
+
+    _typeLut = [
+        ctypes.c_float,
+        ctypes.c_float,
+        ctypes.c_int,
+        ctypes.c_int,
+        ctypes.c_float,
+        ctypes.c_int,
+        ctypes.c_float,
+        ctypes.c_int,
+    ]
+    _dimLut = [
+        3, 1, 3, 1, 2, 2, 4, 4,
+    ]
+
+    def __init__(self, handle: int, kind: int):
+        self._handle = handle
+        self._kind = kind
+
+    def attr(self, attrName: str) -> _MemSpanWrapper:
+        ptrRet_ = ctypes.c_void_p()
+        lenRet_ = ctypes.c_size_t()
+        typeRet_ = ctypes.c_int()
+        api.Zeno_GetObjectPrimData(ctypes.c_uint64(self._handle), ctypes.c_int(self._kind), ctypes.c_char_p(attrName.encode()), ctypes.pointer(ptrRet_), ctypes.pointer(lenRet_), ctypes.pointer(typeRet_))
+        return _MemSpanWrapper(ptrRet_.value, lenRet_.value, self._typeLut[typeRet_.value], self._dimLut[typeRet_.value])  # type: ignore
+
+    def keys(self) -> list[str]:
+        count_ = ctypes.c_size_t(0)
+        api.Zeno_GetObjectPrimDataKeys(ctypes.c_uint64(self._handle), ctypes.c_int(self._kind), ctypes.pointer(count_), ctypes.cast(0, ctypes.POINTER(ctypes.c_char_p)))
+        keys_ = (ctypes.c_char_p * count_.value)()
+        api.Zeno_GetObjectPrimDataKeys(ctypes.c_uint64(self._handle), ctypes.c_int(self._kind), ctypes.pointer(count_), keys_)
+        keys: list[str] = list(map(lambda x: x.decode(), keys_))
+        return keys
+
+    def values(self) -> list[_MemSpanWrapper]:
+        return [self.attr(k) for k in self.keys()]
+
+    def items(self) -> list[tuple[str, _MemSpanWrapper]]:
+        return [(k, self.attr(k)) for k in self.keys()]
+
+    def __iter__(self) -> Iterator[tuple[str, _MemSpanWrapper]]:
+        return iter(self.items())
+
+    def __repr__(self) -> str:
+        return '[zeno attribute collection of primitive at {} of kind {}]'.format(self._handle, self._kind)
+
+    def __contains__(self, key: str) -> bool:
+        return key in self.keys()
+
+    def __getitem__(self, key: str) -> _MemSpanWrapper:
+        return self.attr(key)
+
+    def __getattr__(self, key: str) -> _MemSpanWrapper:
+        return self.attr(key)
+
+    def __len__(self) -> int:
+        return self.size()
+
+    def size(self) -> int:
+        ptrRet_ = ctypes.c_void_p()
+        lenRet_ = ctypes.c_size_t()
+        typeRet_ = ctypes.c_int()
+        api.Zeno_GetObjectPrimData(ctypes.c_uint64(self._handle), ctypes.c_int(self._kind), ctypes.c_char_p('pos'.encode()), ctypes.pointer(ptrRet_), ctypes.pointer(lenRet_), ctypes.pointer(typeRet_))
+        return lenRet_.value
+
+    def resize(self, newSize: int):
+        api.Zeno_ResizeObjectPrimData(ctypes.c_uint64(self._handle), ctypes.c_int(self._kind), ctypes.c_size_t(newSize))
 
 
 class ZenoGraph:
