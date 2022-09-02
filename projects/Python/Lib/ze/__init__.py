@@ -224,7 +224,7 @@ class ZenoObject:
 
 
 class ZenoPrimitiveObject(ZenoObject):
-    def _getArray(self, kind: int) -> _AttrVectorWrapper:
+    def _getArray(self, kind: int):
         return _AttrVectorWrapper(self._handle, kind)
 
     def __repr__(self) -> str:
@@ -356,7 +356,7 @@ class _AttrVectorWrapper:
         self._handle = handle
         self._kind = kind
 
-    def attr(self, attrName: str) -> _MemSpanWrapper:
+    def attr(self, attrName: str):
         ptrRet_ = ctypes.c_void_p()
         lenRet_ = ctypes.c_size_t()
         typeRet_ = ctypes.c_int()
@@ -386,10 +386,10 @@ class _AttrVectorWrapper:
     def __contains__(self, key: str) -> bool:
         return key in self.keys()
 
-    def __getitem__(self, key: str) -> _MemSpanWrapper:
+    def __getitem__(self, key: str):
         return self.attr(key)
 
-    def __getattr__(self, key: str) -> _MemSpanWrapper:
+    def __getattr__(self, key: str):
         return self.attr(key)
 
     def __len__(self) -> int:
