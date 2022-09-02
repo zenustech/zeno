@@ -655,7 +655,10 @@ struct Mesh{
                       std::unordered_map<std::string, SAnimBone>& bones,
                       std::shared_ptr<zeno::DictObject>& datas,
                       std::shared_ptr<zeno::DictObject>& prims,
-                      std::shared_ptr<zeno::DictObject>& mats)
+                      std::shared_ptr<zeno::DictObject>& mats,
+                      std::shared_ptr<NodeTree>& nodeTree,
+                      std::shared_ptr<BoneTree>& boneTree,
+                      std::shared_ptr<AnimInfo>& animInfo)
     {
         std::unordered_map<std::string, std::shared_ptr<FBXData>> tmpFbxData;
 
@@ -728,6 +731,10 @@ struct Mesh{
             sub_data->iBlendSData = fbxData.iBlendSData;
             sub_data->iKeyMorph.value = morph;
             sub_data->iMeshInfo.value_corsName = m_MeshCorsName;
+
+            sub_data->boneTree = boneTree;
+            sub_data->nodeTree = nodeTree;
+            sub_data->animInfo = animInfo;
 
             prims->lut[meshName] = sub_prim;
             datas->lut[meshName] = sub_data;
@@ -950,18 +957,18 @@ void readFBXFile(
 
     mesh.initMesh(scene);
     anim.initAnim(scene, &mesh);
-    mesh.processTrans(anim.m_Morph, anim.m_Bones.AnimBoneMap, datas, prims, mats);
-    if(make_prim)
-        mesh.processPrim(prim);
-
-    mesh.fbxData.iKeyMorph.value = anim.m_Morph;
 
     *data = mesh.fbxData;
     *nodeTree = anim.m_RootNode;
     *boneTree = anim.m_Bones;
-
     animInfo->duration = anim.duration;
     animInfo->tick = anim.tick;
+
+    mesh.processTrans(anim.m_Morph, anim.m_Bones.AnimBoneMap, datas, prims, mats, nodeTree, boneTree, animInfo);
+    mesh.fbxData.iKeyMorph.value = anim.m_Morph;
+
+    if(make_prim)
+        mesh.processPrim(prim);
 
     zeno::log_info("FBX: Num Animation {}", scene->mNumAnimations);
     zeno::log_info("FBX: Total Vertices count {}", mesh.fbxData.iVertices.value.size());
@@ -1016,9 +1023,7 @@ ZENDEFNODE(ReadFBXPrim,
                },  /* outputs: */
                {
                    "prim", "prims", "data", "datas", "mats",
-                   {"AnimInfo", "animinfo"},
-                   {"NodeTree", "nodetree"},
-                   {"BoneTree", "bonetree"},
+                   "animinfo", "nodetree", "bonetree",
                },  /* params: */
                {
                 {"enum ENABLE DISABLE", "udim", "DISABLE"},

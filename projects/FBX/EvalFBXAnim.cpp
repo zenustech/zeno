@@ -220,20 +220,25 @@ struct EvalFBXAnim : zeno::INode {
         } else {
             frameid = getGlobalState()->frameid;
         }
+
+        auto fbxData = get_input<FBXData>("data");
+        auto fps = get_input2<float>("fps");
         float s = 1.0f;
+        bool u = false;
         auto unit = get_param<std::string>("unit");
         if (unit == "FROM_MAYA"){
-            //zeno::log_info("EvalFBXAnim Maya unit");
             s = 0.01f;
         }
+        auto interAnimData = get_param<std::string>("interAnimData");
+        if(interAnimData == "TRUE"){
+            u = true;
+        }
+
+        auto nodeTree = u ? fbxData->nodeTree : get_input<NodeTree>("nodetree");
+        auto boneTree = u ? fbxData->boneTree : get_input<BoneTree>("bonetree");
+        auto animInfo = u ? fbxData->animInfo : get_input<AnimInfo>("animinfo");
 
         auto prim = std::make_shared<zeno::PrimitiveObject>();
-        auto fbxData = get_input<FBXData>("data");
-        auto nodeTree = get_input<NodeTree>("nodetree");
-        auto boneTree = get_input<BoneTree>("bonetree");
-        auto animInfo = get_input<AnimInfo>("animinfo");
-        auto fps = get_input2<float>("fps");
-
         auto transDict = std::make_shared<zeno::DictObject>();
         auto quatDict = std::make_shared<zeno::DictObject>();
         auto scaleDict = std::make_shared<zeno::DictObject>();
@@ -318,16 +323,14 @@ ZENDEFNODE(EvalFBXAnim,
                {
                    {"frameid"},
                    {"float", "fps", "24.0"},
-                   {"FBXData", "data"},
-                   {"AnimInfo", "animinfo"},
-                   {"NodeTree", "nodetree"},
-                   {"BoneTree", "bonetree"},
+                   "data", "animinfo", "nodetree", "bonetree",
                },  /* outputs: */
                {
                    "prim", "camera", "light", "matName", "meshName", "bsPrims", "transDict", "quatDict", "scaleDict"
                },  /* params: */
                {
                    {"enum FROM_MAYA DEFAULT", "unit", "FROM_MAYA"},
+                   {"enum TRUE FALSE", "interAnimData", "FALSE"},
                },  /* category: */
                {
                    "FBX",
