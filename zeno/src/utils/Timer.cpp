@@ -71,7 +71,8 @@ namespace {
 static struct LuzhPleaseDontTouch {
     ~LuzhPleaseDontTouch() {
         auto log = Timer::getLog();
-        std::printf("ZENO benchmark (us):\n%s\n", log.c_str());
+        if (!log.empty())
+            std::printf("ZENO benchmark (us):\n%s\n", log.c_str());
     }
 } luzhPleaseDontTouch;
 

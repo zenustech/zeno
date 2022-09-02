@@ -114,7 +114,23 @@ struct PythonScript : INode {
             throw makeError("Python exception occurred, see console for more details");
         }
         auto rets = std::make_shared<DictObject>();
-        // TODO: enumerate retsDict, send into rets
+        {
+            PyObject *key, *value;
+            Py_ssize_t pos = 0;
+            while (PyDict_Next(retsDict, &pos, &key, &value)) {
+                Py_ssize_t keyLen = 0;
+                const char *keyDat = PyUnicode_AsUTF8AndSize(key, &keyLen);
+                if (keyDat == nullptr) {
+                    throw makeError("failed to cast rets key as string");
+                }
+                std::string keyStr(keyDat, keyLen);
+                Zeno_Object handle = PyLong_AsUnsignedLongLong(value);
+                if (handle == -1 && PyErr_Occurred()) {
+                    throw makeError("failed to cast rets value as integer");
+                }
+                rets->lut.emplace(std::move(keyStr), capiFindObjectSharedPtr(handle));
+            }
+        }
         set_output("rets", std::move(rets));
     }
 };

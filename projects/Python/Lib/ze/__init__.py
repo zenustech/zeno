@@ -79,6 +79,16 @@ class _MemSpanWrapper:
         base = ctypes.cast(self._ptr, ctypes.POINTER(self._type))
         return tuple(base[index * self._dim + i] for i in range(self._dim)) if self._dim != 1 else base[index]
 
+    def __setitem__(self, index: int, value: Numeric):
+        if index < 0 or index >= self._len:
+            raise IndexError('index {} out of range [0, {})'.format(index, self._len))
+        base = ctypes.cast(self._ptr, ctypes.POINTER(self._type))
+        if self._dim != 1:
+            for i in range(self._dim):
+                base[index * self._dim + i] = value[i]  # type: ignore
+        else:
+            base[index] = value
+
     def to_list(self) -> list[Numeric]:
         base = ctypes.cast(self._ptr, ctypes.POINTER(self._type))
         if self._dim != 1:
@@ -180,55 +190,6 @@ class _AttrVectorWrapper:
         api.Zeno_ResizeObjectPrimData(ctypes.c_uint64(self._handle), ctypes.c_int(self._kind), ctypes.c_size_t(newSize))
 
 
-class _PrimitiveWrapper:
-    _handle: int
-
-    def __init__(self, handle: int):
-        self._handle = handle
-
-    def _getArray(self, kind: int) -> _AttrVectorWrapper:
-        return _AttrVectorWrapper(self._handle, kind)
-
-    def __repr__(self) -> str:
-        return '[zeno primitive at {}]'.format(self._handle)
-
-    @property
-    def verts(self):
-        return self._getArray(0)
-
-    @property
-    def points(self):
-        return self._getArray(1)
-
-    @property
-    def lines(self):
-        return self._getArray(2)
-
-    @property
-    def tris(self):
-        return self._getArray(3)
-
-    @property
-    def quads(self):
-        return self._getArray(4)
-
-    @property
-    def polys(self):
-        return self._getArray(5)
-
-    @property
-    def loops(self):
-        return self._getArray(6)
-
-    @property
-    def uvs(self):
-        return self._getArray(7)
-
-    @property
-    def loop_uvs(self):
-        return self._getArray(8)
-
-
 class ZenoObject:
     _handle: int
 
@@ -253,8 +214,8 @@ class ZenoObject:
     def toHandle(self) -> int:
         return self._handle
 
-    def asPrim(self) -> _PrimitiveWrapper:
-        return _PrimitiveWrapper(self._handle)
+    def asPrim(self):
+        return ZenoPrimitiveObject.fromHandle(self._handle)
 
     @classmethod
     def fromLiterial(cls, value: Union[Literial, 'ZenoObject']) -> 'ZenoObject':
@@ -392,6 +353,57 @@ class ZenoObject:
         value_ = (ctypes.c_char * strLen_.value)()
         api.Zeno_CreateObjectString(ctypes.c_uint64(handle), value_, ctypes.pointer(strLen_))
         return bytes(value_).decode()
+
+
+class ZenoPrimitiveObject(ZenoObject):
+    def _getArray(self, kind: int) -> _AttrVectorWrapper:
+        return _AttrVectorWrapper(self._handle, kind)
+
+    def __repr__(self) -> str:
+        return '[zeno primitive at {}]'.format(self._handle)
+
+    @classmethod
+    def new(cls):
+        return cls.newPrim()
+
+    @property
+    def verts(self):
+        return self._getArray(0)
+
+    @property
+    def points(self):
+        return self._getArray(1)
+
+    @property
+    def lines(self):
+        return self._getArray(2)
+
+    @property
+    def tris(self):
+        return self._getArray(3)
+
+    @property
+    def quads(self):
+        return self._getArray(4)
+
+    @property
+    def polys(self):
+        return self._getArray(5)
+
+    @property
+    def loops(self):
+        return self._getArray(6)
+
+    @property
+    def uvs(self):
+        return self._getArray(7)
+
+    @property
+    def loop_uvs(self):
+        return self._getArray(8)
+
+    def asObject(self):
+        return ZenoObject.fromHandle(self._handle)
 
 
 class ZenoGraph:
