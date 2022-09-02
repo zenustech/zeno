@@ -928,7 +928,7 @@ DisplayWidget::DisplayWidget(ZenoMainWindow* pMainWin)
     m_view = new ViewportWidget;
     // viewport interaction need to set mouse tracking true
     // but it will lead to a light panel edit bug
-    m_view->setMouseTracking(true);
+    // m_view->setMouseTracking(true);
     pLayout->addWidget(m_view);
 
     m_timeline = new ZTimeline;
