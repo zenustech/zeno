@@ -10,7 +10,7 @@
 #include "curvemap/curveutil.h"
 
 
-QString NodesMgr::createNewNode(IGraphsModel* pModel, QModelIndex subgIdx, const QString& descName, const QPointF& pt)
+void NodesMgr::createNewNode(IGraphsModel* pModel, QModelIndex subgIdx, const QString& descName, const QPointF& pt)
 {
     zeno::log_debug("onNewNodeCreated");
     NODE_DESCS descs = pModel->descriptors();
@@ -32,8 +32,6 @@ QString NodesMgr::createNewNode(IGraphsModel* pModel, QModelIndex subgIdx, const
     node[ROLE_COLLASPED] = false;
 
     pModel->addNode(node, subgIdx, true);
-
-    return nodeid;
 }
 
 NODE_TYPE NodesMgr::nodeType(const QString& name)

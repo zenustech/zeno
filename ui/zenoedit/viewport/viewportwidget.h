@@ -6,9 +6,6 @@
 #include "comctrl/zmenubar.h"
 #include "comctrl/zmenu.h"
 #include "common.h"
-#include "viewporttransform.h"
-
-#include <glm/glm.hpp>
 
 class ZTimeline;
 class ZenoMainWindow;
@@ -60,11 +57,6 @@ public:
     QVector3D realPos() const;
     QVector3D screenToWorldRay(float x, float y) const;
     QVariant hitOnFloor(float x, float y) const;
-    QVariant hitOnPlane(float x, float y, QVector3D n, QVector3D p) const;
-    QVector2D qtCoordToGLCoord(int x, int y);
-    bool mouseEnteredRing(int x, int y);
-    void addPressedKey(int key);
-    void rmvPressedKey(int key);
 
 
 private:
@@ -80,9 +72,6 @@ private:
     float m_aperture;
     float m_focalPlaneDistance;
     QVector2D m_res;
-
-    QSet<int> m_pressedKeys;
-    std::unique_ptr<zeno::FakeTransformer> transformer;
 };
 
 class ViewportWidget : public QOpenGLWidget
@@ -99,8 +88,6 @@ public:
     QVector2D cameraRes() const;
     void setCameraRes(const QVector2D& res);
     void updatePerspective();
-    void addPressedKey(int key);
-    void rmvPressedKey(int key);
 
 
 signals:
@@ -147,10 +134,6 @@ public slots:
 
 signals:
     void frameUpdated(int new_frame);
-
-  protected:
-    void keyPressEvent(QKeyEvent* event) override;
-    void keyReleaseEvent(QKeyEvent* event) override;
 
 private:
     bool isOptxRendering() const;

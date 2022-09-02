@@ -10,7 +10,7 @@ class NodesMgr : public QObject
 {
 	Q_OBJECT
 public:
-	static QString createNewNode(IGraphsModel* pModel, QModelIndex subgIdx, const QString& descName, const QPointF& pt);
+	static void createNewNode(IGraphsModel* pModel, QModelIndex subgIdx, const QString& descName, const QPointF& pt);
 	static NODE_TYPE nodeType(const QString& name);
     static void initInputSocks(IGraphsModel* pModel, const QString& nodeid, INPUT_SOCKETS& descInputs);
 	static void initOutputSocks(IGraphsModel* pModel, const QString& nodeid, OUTPUT_SOCKETS& descOutputs);
