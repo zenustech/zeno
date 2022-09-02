@@ -95,7 +95,7 @@ public:
         //copy back
         prim->verts.resize(pos.size());
         for (size_t i = 0; i < pos.size(); i++)
-            prim->verts[i] = pos[i];
+            prim->verts[i] = pos[i]/10.0;//scale to show
 
         set_output("outPrim", std::move(prim));
     }
