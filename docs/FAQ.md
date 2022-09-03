@@ -37,6 +37,23 @@ cmake --build build --config Release
 
 > See also my [public course](https://github.com/parallel101/course) for learning CMake (and C++ parallel programming).
 
+### Q
+
+When building with the Python extension:
+```
+CMake Error at projects/Python/CPython/CMakeLists.txt:287 (message):
+  Failed to locate python source.
+
+  If you already downloaded the source, you could try to re-configure this
+  project passing -DSRC_DIR:PATH=/path/to/Python-{PY_VERSION} using cmake or
+  adding an PATH entry named SRC_DIR from cmake-gui.
+```
+
+### A
+
+Your Internet maybe unstable, making us failed to download the Python source code, please fix it via an 'ladder'.
+Delete the `build` directory completely and re-run CMake to try again, i.e. `rm -rf build`.
+
 ## Windows problem
 
 ### Q
@@ -63,7 +80,7 @@ You have three solutions:
 
 1. Manually copy the `Qt5Core.dll`, `Qt5Gui.dll`, and etc. to the `build\bin` directory (same directory as `zenoedit.exe` is).
 2. Add the path `C:\Qt\Qt5.14.2\msvc2017_64\bin` (where `Qt5Core.dll` is located in) to the environment variable `PATH`.
-3. Execute this in `cmd`: `C:\Qt\Qt5.14.2\msvc2017_64\bin\windeployqt.exe build\bin\zenoedit.exe`.
+3. Execute this in `cmd`: `C:\Qt\Qt5.14.2\msvc2017_64\bin\windeployqt.exe build\bin\zenoedit.exe` (recommended).
 
 ### Q
 
@@ -96,6 +113,9 @@ error LNK2038: mismatch detected for 'RuntimeLibrary': value 'MDd_DynamicDebug' 
 ### A
 
 Please always use the `Release` configuration.
+The default configuration is `Debug` which can leads to serious ABI conflict.
+You have to manually switch to `Release` configuration to fix it.
+Yeah, Windows is just so troublesome and we have to make it happy.
 
 ```
 cmake -B build -DCMAKE_BUILD_TYPE=Release
@@ -107,6 +127,18 @@ Both `-DCMAKE_BUILD_TYPE=Release` and `--config Release` are required.
 > Delete the `build` directory completely (see CMake problem) whenever you restart the build.
 
 > If the second step (`--config Release`) doesn't work, you need to open the `zeno.sln` in Visual Studio, and **select the `Release` configuration in the UI**, and click `Build`.
+
+### Q
+
+```
+Cannot find program entry ?qResourceFeatureZlib@YAEXZ in DLL on zenoedit.exe.
+```
+
+when running `build\bin\zenoedit.exe`.
+
+### A
+
+You are having multiple Qt installation in your `PATH` environment variable (e.g. having both Qt 5.12 and Qt 5.14, or having PyQt 5.12 and Qt 5.14). Please only leave a correct version (Qt 5.14) in the `PATH`, delete the wrong version.
 
 ### Q
 
@@ -227,7 +259,8 @@ CMake Error at C:/Program Files/CMake/share/cmake-3.23/Modules/CMakeDetermineCom
 
 ### A
 
-Are you using Windows? Then you must install the **CUDA Visual Studio integration** first. And you cannot use MinGW.
+Are you using Windows? Then you must install the **CUDA Visual Studio integration** first.
+Also you **cannot use MinGW or Clang**, since CUDA sucks MSVC.
 
 ### Q
 
