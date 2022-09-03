@@ -5,12 +5,12 @@
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/StringObject.h>
 #include <zeno/types/NumericObject.h>
+#include <zeno/types/PrimitiveUtils.h>
 #include "ABCTree.h"
 #include <queue>
 #include <utility>
 
 namespace zeno {
-ZENO_API void primTriangulate(PrimitiveObject *prim, bool with_uv, bool has_lines);
 namespace {
 
 int count_alembic_prims(std::shared_ptr<zeno::ABCTree> abctree) {
