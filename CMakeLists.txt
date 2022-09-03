@@ -106,6 +106,7 @@ endmacro()
 
 ## --- begin cihou wxl cuda
 if (ZENO_WITH_CUDA)        # must move enable_language ahead to here
+    message(STATUS "CUDA_PATH: "$ENV{CUDA_PATH})
     enable_language(CUDA)  # otherwise projects/CUDA will fail to compile
 endif()
 ## --- end cihou wxl cuda

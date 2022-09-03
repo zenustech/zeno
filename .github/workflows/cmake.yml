@@ -79,7 +79,7 @@ jobs:
         setup-python: true
 
     - name: Install CUDA toolkit (Windows)
-      if: ${{ matrix.gpu == 'cuda'&& runner.os == 'Windows'  }}
+      if: ${{ matrix.gpu == 'cuda' && runner.os == 'Windows'  }}
       env:
         cuda: 11.6.1
         visual_studio: "Visual Studio 16 2022"
