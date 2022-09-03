@@ -894,9 +894,7 @@ ZENDEFNODE(CreateTube, {
         {"vec3f", "position", "0, 0, 0"},
         {"vec3f", "scaleSize", "1, 1, 1"},
         ROTATE_PARM
-        
-            
-            
+        NORMUV_PARM
         {"float", "radius1", "1"},
         {"float", "radius2", "1"},
         {"float", "height", "2"},
