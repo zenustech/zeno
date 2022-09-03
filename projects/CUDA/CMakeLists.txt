@@ -18,7 +18,7 @@ set(ZS_ENABLE_OPENVDB ON)
 set(ZENSIM_INSTALL OFF)
 set(ZS_BUILD_SHARED_LIBS OFF)
 set(CMAKE_CUDA_RESOLVE_DEVICE_SYMBOLS ON)
-find_package(CUDAToolkit REQUIRED)
+find_package(CUDAToolkit REQUIRED COMPONENTS cufft REQUIRED)
 
 add_subdirectory(zpc)
 

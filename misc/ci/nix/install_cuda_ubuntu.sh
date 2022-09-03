@@ -82,35 +82,35 @@ fi
 ## -------------------------------
 ## Select CUDA packages to install
 ## -------------------------------
-CUDA_PACKAGES=""
-for package in "${CUDA_PACKAGES_IN[@]}"
-do : 
-    # @todo This is not perfect. Should probably provide a separate list for diff versions
-    # cuda-compiler-X-Y if CUDA >= 9.1 else cuda-nvcc-X-Y
-    if [[ "${package}" == "cuda-nvcc" ]] && version_ge "$CUDA_VERSION_MAJOR_MINOR" "9.1" ; then
-        package="cuda-compiler"
-    elif [[ "${package}" == "cuda-compiler" ]] && version_lt "$CUDA_VERSION_MAJOR_MINOR" "9.1" ; then
-        package="cuda-nvcc"
-    # CUB/Thrust  are packages in cuda-thrust in 11.3, but cuda-cccl in 11.4+
-    elif [[ "${package}" == "cuda-thrust" || "${package}" == "cuda-cccl" ]]; then
-        # CUDA cuda-thrust >= 11.4
-        if version_ge "$CUDA_VERSION_MAJOR_MINOR" "11.4" ; then
-            package="cuda-cccl"
-        # Use cuda-thrust > 11.2
-        elif version_ge "$CUDA_VERSION_MAJOR_MINOR" "11.3" ; then
-            package="cuda-thrust"
-        # Do not include this pacakge < 11.3
-        else
-            continue
-        fi
-    fi
-    # CUDA 11+ includes lib* / lib*-dev packages, which if they existed previously where cuda-cu*- / cuda-cu*-dev-
-    if [[ ${package} == libcu* ]] && version_lt "$CUDA_VERSION_MAJOR_MINOR" "11.0" ; then
-        package="${package/libcu/cuda-cu}"
-    fi
-    # Build the full package name and append to the string.
-    CUDA_PACKAGES+=" ${package}-${CUDA_MAJOR}-${CUDA_MINOR}"
-done
+CUDA_PACKAGES="cuda"
+#for package in "${CUDA_PACKAGES_IN[@]}"
+#do : 
+    ## @todo This is not perfect. Should probably provide a separate list for diff versions
+    ## cuda-compiler-X-Y if CUDA >= 9.1 else cuda-nvcc-X-Y
+    #if [[ "${package}" == "cuda-nvcc" ]] && version_ge "$CUDA_VERSION_MAJOR_MINOR" "9.1" ; then
+        #package="cuda-compiler"
+    #elif [[ "${package}" == "cuda-compiler" ]] && version_lt "$CUDA_VERSION_MAJOR_MINOR" "9.1" ; then
+        #package="cuda-nvcc"
+    ## CUB/Thrust  are packages in cuda-thrust in 11.3, but cuda-cccl in 11.4+
+    #elif [[ "${package}" == "cuda-thrust" || "${package}" == "cuda-cccl" ]]; then
+        ## CUDA cuda-thrust >= 11.4
+        #if version_ge "$CUDA_VERSION_MAJOR_MINOR" "11.4" ; then
+            #package="cuda-cccl"
+        ## Use cuda-thrust > 11.2
+        #elif version_ge "$CUDA_VERSION_MAJOR_MINOR" "11.3" ; then
+            #package="cuda-thrust"
+        ## Do not include this pacakge < 11.3
+        #else
+            #continue
+        #fi
+    #fi
+    ## CUDA 11+ includes lib* / lib*-dev packages, which if they existed previously where cuda-cu*- / cuda-cu*-dev-
+    #if [[ ${package} == libcu* ]] && version_lt "$CUDA_VERSION_MAJOR_MINOR" "11.0" ; then
+        #package="${package/libcu/cuda-cu}"
+    #fi
+    ## Build the full package name and append to the string.
+    #CUDA_PACKAGES+=" ${package}-${CUDA_MAJOR}-${CUDA_MINOR}"
+#done
 echo "CUDA_PACKAGES ${CUDA_PACKAGES}"
 
 ## -----------------
