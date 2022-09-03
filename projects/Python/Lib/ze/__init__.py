@@ -5,12 +5,12 @@ Zeno Python API module
 
 import ctypes
 import functools
-from typing import Union, Optional, Any, Iterator
+from typing import Union, Optional, Any, Iterator, Iterable
 from types import MappingProxyType
 
 
-Numeric = Union[int, float, tuple[int], tuple[float]]
-Literial = Union[int, float, tuple[int], tuple[float], str]
+Numeric = Union[int, float, list[int], list[float]]
+Literial = Union[int, float, list[int], list[float], str]
 
 
 def initDLLPath(path: str):
@@ -162,7 +162,7 @@ class ZenoObject:
         return object_.value
 
     @staticmethod
-    def _makeVecInt(value: tuple[int]) -> int:
+    def _makeVecInt(value: Iterable[int]) -> int:
         n = len(value)
         assert 1 <= n <= 4
         object_ = ctypes.c_uint64(0)
@@ -171,7 +171,7 @@ class ZenoObject:
         return object_.value
 
     @staticmethod
-    def _makeVecFloat(value: tuple[float]) -> int:
+    def _makeVecFloat(value: Iterable[float]) -> int:
         n = len(value)
         assert 1 <= n <= 4
         object_ = ctypes.c_uint64(0)
@@ -201,18 +201,18 @@ class ZenoObject:
         return value_.value
 
     @staticmethod
-    def _fetchVecInt(handle: int, dim: int) -> tuple[int]:
+    def _fetchVecInt(handle: int, dim: int) -> list[int]:
         assert 1 <= dim <= 4
         value_ = (ctypes.c_int * dim)()
         api.Zeno_GetObjectInt(ctypes.c_uint64(handle), value_, ctypes.c_size_t(dim))
-        return tuple(value_)
+        return list(value_)
 
     @staticmethod
-    def _fetchVecFloat(handle: int, dim: int) -> tuple[float]:
+    def _fetchVecFloat(handle: int, dim: int) -> list[float]:
         assert 1 <= dim <= 4
         value_ = (ctypes.c_float * dim)()
         api.Zeno_GetObjectFloat(ctypes.c_uint64(handle), value_, ctypes.c_size_t(dim))
-        return tuple(value_)
+        return list(value_)
 
     @staticmethod
     def _fetchString(handle: int) -> str:
@@ -293,7 +293,7 @@ class _MemSpanWrapper:
         if index < 0 or index >= self._len:
             raise IndexError('index {} out of range [0, {})'.format(index, self._len))
         base = ctypes.cast(self._ptr, ctypes.POINTER(self._type))
-        return tuple(base[index * self._dim + i] for i in range(self._dim)) if self._dim != 1 else base[index]
+        return [base[index * self._dim + i] for i in range(self._dim)] if self._dim != 1 else base[index]
 
     def __setitem__(self, index: int, value: Numeric):
         if index < 0 or index >= self._len:
@@ -308,7 +308,7 @@ class _MemSpanWrapper:
     def to_list(self) -> list[Numeric]:
         base = ctypes.cast(self._ptr, ctypes.POINTER(self._type))
         if self._dim != 1:
-            return [tuple(base[index * self._dim + i] for i in range(self._dim)) for index in range(self._len)]
+            return [[base[index * self._dim + i] for i in range(self._dim)] for index in range(self._len)]
         else:
             return [base[index] for index in range(self._len)]
 
@@ -505,6 +505,7 @@ no = _TempNodeWrapper()
 __all__ = [
         'ZenoGraph',
         'ZenoObject',
+        'ZenoPrimitiveObject',
         'has_input',
         'get_input',
         'set_output',
