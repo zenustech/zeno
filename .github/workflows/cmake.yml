@@ -81,7 +81,7 @@ jobs:
     - name: Install CUDA toolkit (Windows)
       if: ${{ matrix.gpu == 'cuda'&& runner.os == 'Windows'  }}
       env:
-        cuda: 11.6
+        cuda: 11.6.1
         visual_studio: "Visual Studio 16 2022"
       shell: powershell
       run: .\misc\ci\win\install_cuda_windows.ps1
@@ -89,7 +89,7 @@ jobs:
     - name: Install CUDA toolkit (Ubuntu)
       if: ${{ matrix.gpu == 'cuda' && runner.os == 'Linux' }}
       env:
-        cuda: 11.6
+        cuda: 11.6.1
       shell: bash
       run: ./misc/ci/nix/install_cuda_ubuntu.sh
 
