@@ -90,9 +90,8 @@ jobs:
       if: ${{ matrix.gpu == 'cuda' && runner.os == 'Linux' }}
       env:
         cuda: 11.6
-      shell: powershell
+      shell: bash
       run: ./misc/ci/nix/install_cuda_ubuntu.sh
-
 
     - name: Setup Dependencies
       if: ${{ needs.check.outputs.vcpkg == 'true' }}
