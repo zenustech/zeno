@@ -5,6 +5,11 @@ if(NOT ZENO_WITH_zenvdb OR NOT ZENO_WITH_ZenoFX)
     "Please specify: -DZENO_WITH_zenvdb:BOOL=ON -DZENO_WITH_ZenoFX:BOOL=ON")
 endif()
 
+if(ZENO_SYSTEM_OPENVDB)
+  message(FATAL_ERROR "ZENO_SYSTEM_OPENVDB must be OFF when CUDA is ON! "
+    "Please specify: -DZENO_SYSTEM_OPENVDB:BOOL=ON")
+endif()
+
 # assume cuda
 SET(CMAKE_CUDA_ARCHITECTURES OFF)
 project(ZENO_CUDA CXX CUDA)
