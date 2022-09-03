@@ -383,7 +383,6 @@ void IPCSystem::computeElasticGradientAndHessian(zs::CudaExecutionPolicy &cudaPo
         })(primHandle.models.getElasticModel());
     }
     for (auto &primHandle : auxPrims) {
-        continue;
         match([&](auto &elasticModel) {
             computeElasticGradientAndHessianImpl(cudaPol, gTag, vtemp, primHandle, elasticModel, dt, projectDBC,
                                                  includeHessian);
