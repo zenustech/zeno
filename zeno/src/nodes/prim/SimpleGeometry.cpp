@@ -48,7 +48,7 @@
 
 #define NORMUV_PARM                             \
     {"bool", "hasNormal", "0"},                 \
-    {"bool", "hasVertUV", "1"},                 \
+    {"bool", "hasVertUV", "0"},                 \
     {"bool", "isFlipFace", "0"},
 
 #define NORMUV_CIHOU                            \
