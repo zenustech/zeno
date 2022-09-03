@@ -273,3 +273,15 @@ OptiX requires RTX20xx and above (hardware accelerated ray-tracing). And make su
 Also check if you have **switched to `High-Performance`** in NVIDIA settings panel.
 Laptop users usually have dual-cards, and Windows use the stupid Intel card by default (so called `Power-Saving`), which is extremely slow.
 You need to switch to the `High-Performance` in the stupid Windows GUI settings, so that Windows will start Zeno with NVIDIA card by default.
+
+### Q
+
+During CMake:
+
+```
+nvlink fatal   : Could not open input file '/usr/lib/librt.a'
+```
+
+### A
+
+Are you using Arch Linux? `pacman -Syu`.
