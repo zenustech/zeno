@@ -84,21 +84,12 @@ jobs:
         cuda: 11.7.1
         visual_studio: "Visual Studio 16 2022"
       shell: powershell
-      run:
-        .\misc\ci\win\install_cuda_windows.ps1
-        ls $env:CUDA_PATH
-        ls $env:CUDA_PATH\lib
-        ls $env:CUDA_PATH\bin
+      run: .\misc\ci\win\install_cuda_windows.ps1
 
     - name: Install CUDA toolkit (Ubuntu)
       if: ${{ matrix.gpu == 'cuda' && runner.os == 'Linux' }}
       shell: bash
-      run:
-        wget https://developer.download.nvidia.com/compute/cuda/11.7.1/local_installers/cuda_11.7.1_515.65.01_linux.run
-        sudo sh cuda_11.7.1_515.65.01_linux.run
-        ls /usr/local/
-        ls $env:CUDA_PATH\lib
-        ls $env:CUDA_PATH\bin
+      run: ./misc/ci/nix/install_cuda_ubuntu.sh
 
     - name: Setup Dependencies
       if: ${{ needs.check.outputs.vcpkg == 'true' }}
