@@ -52,7 +52,7 @@ namespace DisneyBSDF{
     vec3 CalculateExtinction(vec3 apparantColor, float scatterDistance)
     {
 
-        return 1.0/(apparantColor * scatterDistance);
+        return 1.0/(max(apparantColor * scatterDistance,vec3(0.000001)));
 
     }
 
@@ -779,11 +779,13 @@ namespace DisneyBSDF{
         float r0 = r01.x;//rnd(seed);
         float r1 = r01.y;//rnd(seed);
 
-        float u = 2.0f * r1 - 1.0f;
-        float norm = sqrtf(max(0.0f, 1.0f - u * u));
-        float theta = 2.0f * M_PIf * r0;
+        float theta = 2.0 * M_PIf * r0;
+        float phi = acos(1 - 2 * r1);
+        float x = sin(phi) * cos(theta);
+        float y = sin(phi) * sin(theta);
+        float z = cos(phi);
 
-        return normalize(vec3(norm * cos(theta), norm * sin(theta), u));
+        return normalize(vec3(x, y, z));
     }
 
     static __inline__ __device__
