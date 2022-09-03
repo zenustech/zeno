@@ -136,7 +136,7 @@ struct GetAlembicPrim : INode {
         } else {
             prim = get_alembic_prim(abctree, index);
         }
-        if (get_input2<int>("triangulate") == 1) {
+        if (get_input2<bool>("triangulate")) {
             zeno::primTriangulate(prim.get());
         }
         set_output("prim", std::move(prim));
