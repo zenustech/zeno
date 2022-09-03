@@ -1,6 +1,6 @@
 #include "subnettreeitemdelegate.h"
 #include "style/zenostyle.h"
-#include <zenoui/util/uihelper.h>
+#include <zenomodel/include/uihelper.h>
 
 
 SubnetItemDelegated::SubnetItemDelegated(QWidget* parent)

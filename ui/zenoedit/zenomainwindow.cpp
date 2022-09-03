@@ -17,9 +17,9 @@
 #include <zeno/utils/envconfig.h>
 #include <zenoio/reader/zsgreader.h>
 #include <zenoio/writer/zsgwriter.h>
-#include <zenoui/model/modeldata.h>
+#include <zenomodel/include/modeldata.h>
 #include <zenoui/style/zenostyle.h>
-#include <zenoui/util/uihelper.h>
+#include <zenomodel/include/uihelper.h>
 #include "util/log.h"
 #include "dialog/zfeedbackdlg.h"
 #include "startup/zstartup.h"

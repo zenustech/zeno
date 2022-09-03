@@ -1,6 +1,6 @@
 #include "zwidgetostream.h"
 #include "zenoapplication.h"
-#include <zenoui/model/modelrole.h>
+#include <zenomodel/include/modelrole.h>
 #include "graphsmanagment.h"
 #include <cstring>
 

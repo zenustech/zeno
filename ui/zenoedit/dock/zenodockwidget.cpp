@@ -7,7 +7,7 @@
 #include "zenoapplication.h"
 #include "graphsmanagment.h"
 #include "../panel/zenoproppanel.h"
-#include <zenoui/model/modelrole.h>
+#include <zenomodel/include/modelrole.h>
 #include "util/log.h"
 #include "panel/zenospreadsheet.h"
 #include "viewport/viewportwidget.h"

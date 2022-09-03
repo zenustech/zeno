@@ -5,7 +5,8 @@
 
 namespace zenoapi
 {
-    std::unique_ptr<IZApplication> getApplication();
+    void openFile(const std::string& fn);
+    std::string addNode(const std::string& subg, const std::string& nodeCls);
 }
 
 

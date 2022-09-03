@@ -1,14 +1,14 @@
 #include "zenoproppanel.h"
 #include "zenoapplication.h"
 #include "graphsmanagment.h"
-#include <zenoui/model/modelrole.h>
+#include <zenomodel/include/modelrole.h>
 #include <zenomodel/include/igraphsmodel.h>
 #include <zenoui/comctrl/zcombobox.h>
 #include <zenoui/comctrl/zlabel.h>
 #include <zenoui/style/zenostyle.h>
 #include <zenoui/comctrl/gv/zenoparamwidget.h>
 #include <zenoui/comctrl/zveceditor.h>
-#include <zenoui/util/uihelper.h>
+#include <zenomodel/include/uihelper.h>
 #include <zenoui/comctrl/zexpandablesection.h>
 #include <zenoui/comctrl/zlinewidget.h>
 #include <zenoui/comctrl/zlineedit.h>

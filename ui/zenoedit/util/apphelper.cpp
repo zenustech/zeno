@@ -1,8 +1,8 @@
 #include "apphelper.h"
-#include <zenoui/model/modeldata.h>
-#include <zenoui/model/modelrole.h>
+#include <zenomodel/include/modeldata.h>
+#include <zenomodel/include/modelrole.h>
 #include "util/log.h"
-#include <zenoui/util/uihelper.h>
+#include <zenomodel/include/uihelper.h>
 #include <zenoui/util/cihou.h>
 
 

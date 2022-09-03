@@ -3,7 +3,7 @@
 #include "zenosubnetlistview.h"
 #include "graphsmanagment.h"
 #include "zenoapplication.h"
-#include <zenoui/model/modelrole.h>
+#include <zenomodel/include/modelrole.h>
 #include "util/log.h"
 
 

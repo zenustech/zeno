@@ -1,12 +1,12 @@
 #include "nodesmgr.h"
 #include "fuzzy_search.h"
-#include <zenoui/util/uihelper.h>
+#include <zenomodel/include/uihelper.h>
 #include "util/apphelper.h"
 #include <zeno/utils/log.h>
 #include "zenoapplication.h"
 #include "graphsmanagment.h"
-#include <zenoui/model/curvemodel.h>
-#include <zenoui/model/variantptr.h>
+#include <zenomodel/include/curvemodel.h>
+#include <zenomodel/include/variantptr.h>
 #include "curvemap/curveutil.h"
 
 

@@ -1,7 +1,7 @@
 #include "subnetnode.h"
 #include "zenoapplication.h"
 #include "graphsmanagment.h"
-#include <zenoui/util/uihelper.h>
+#include <zenomodel/include/uihelper.h>
 #include "util/log.h"
 
 

@@ -1,6 +1,6 @@
 #include "corelaunch.h"
-#include <zenoui/model/modelrole.h>
-#include <zenoui/util/jsonhelper.h>
+#include <zenomodel/include/modelrole.h>
+#include <zenomodel/include/jsonhelper.h>
 #include <zeno/extra/GlobalState.h>
 #include <zeno/utils/scope_exit.h>
 #include <zeno/extra/GlobalComm.h>

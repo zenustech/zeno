@@ -2,8 +2,8 @@
 #define __NODES_MGR_H__
 
 #include <zenomodel/include/igraphsmodel.h>
-#include <zenoui/model/modeldata.h>
-#include <zenoui/model/modelrole.h>
+#include <zenomodel/include/modeldata.h>
+#include <zenomodel/include/modelrole.h>
 #include <QtWidgets>
 
 class NodesMgr : public QObject

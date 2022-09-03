@@ -1,8 +1,8 @@
 #include "serialize.h"
 #include <zeno/utils/logger.h>
-#include <model/modeldata.h>
-#include <model/modelrole.h>
-#include <zenoui/util/uihelper.h>
+#include <zenomodel/include/modeldata.h>
+#include <zenomodel/include/modelrole.h>
+#include <zenomodel/include/uihelper.h>
 #include "util/log.h"
 #include "util/apphelper.h"
 

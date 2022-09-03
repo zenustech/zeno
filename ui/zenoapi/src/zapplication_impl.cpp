@@ -28,6 +28,12 @@ ZApplication_Impl::ZApplication_Impl()
 {
 }
 
+ZApplication_Impl& ZApplication_Impl::instance()
+{
+    static ZApplication_Impl inst;
+    return inst;
+}
+
 void ZApplication_Impl::clear()
 {
 

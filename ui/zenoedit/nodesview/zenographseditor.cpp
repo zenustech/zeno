@@ -5,7 +5,7 @@
 #include "../nodesys/zenosubgraphscene.h"
 #include "zenowelcomepage.h"
 #include "graphsmanagment.h"
-#include <zenoui/model/modelrole.h>
+#include <zenomodel/include/modelrole.h>
 #include <comctrl/zenocheckbutton.h>
 #include <comctrl/ziconbutton.h>
 #include <zenoui/style/zenostyle.h>

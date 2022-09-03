@@ -1,8 +1,8 @@
 #include "zlogpanel.h"
 #include "ui_zlogpanel.h"
 #include "zenoapplication.h"
-#include <zenoui/model/modelrole.h>
-#include <zenoui/util/uihelper.h>
+#include <zenomodel/include/modelrole.h>
+#include <zenomodel/include/uihelper.h>
 #include <zenoui/style/zenostyle.h>
 
 

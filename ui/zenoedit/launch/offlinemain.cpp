@@ -2,8 +2,8 @@
 #include "serialize.h"
 #include "util/log.h"
 #include "graphsmanagment.h"
-#include <zenoui/util/jsonhelper.h>
-#include <zenoui/model/modelrole.h>
+#include <zenomodel/include/jsonhelper.h>
+#include <zenomodel/include/modelrole.h>
 #include <zeno/core/Session.h>
 #include <zeno/utils/scope_exit.h>
 #include <zeno/extra/GlobalComm.h>

@@ -4,10 +4,10 @@
 #include "heatmapnode.h"
 #include "cameranode.h"
 #include "zenolink.h"
-#include <zenoui/model/modelrole.h>
+#include <zenomodel/include/modelrole.h>
 #include <zenoio/reader/zsgreader.h>
 #include <zenoio/writer/zsgwriter.h>
-#include <zenoui/util/uihelper.h>
+#include <zenomodel/include/uihelper.h>
 #include <zenoui/nodesys/nodesys_common.h>
 #include <zenoui/nodesys/nodegrid.h>
 #include <zenomodel/include/igraphsmodel.h>

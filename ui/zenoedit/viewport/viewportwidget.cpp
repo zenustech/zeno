@@ -25,7 +25,7 @@
 #include <zeno/core/Session.h>
 #include <zeno/extra/GlobalState.h>
 #include <zeno/extra/GlobalComm.h>
-#include <zenoui/util/uihelper.h>
+#include <zenomodel/include/uihelper.h>
 #include "recordvideomgr.h"
 
 

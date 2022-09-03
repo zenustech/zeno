@@ -8,7 +8,7 @@ class IGraphsModel;
 class ZApplication_Impl : public IZApplication
 {
 public:
-    ZApplication_Impl();
+    static ZApplication_Impl& instance();
 
     void clear() override;
     void openFile(const std::string& filePath) override;
@@ -22,6 +22,8 @@ public:
     std::string forkSubgraph(const std::string& name) override;
 
 private:
+    ZApplication_Impl();
+
     IGraphsModel* m_model;
 };
 

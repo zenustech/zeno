@@ -21,7 +21,7 @@ public:
 class IZSubgraph
 {
 public:
-    virtual ~IZSubgraph() = 0;
+    virtual ~IZSubgraph() {} ;
     virtual std::string name() const = 0;
     virtual std::shared_ptr<IZNode> getNode(const std::string& ident) = 0;
     virtual std::shared_ptr<IZNode> addNode(const std::string& nodeCls) = 0;

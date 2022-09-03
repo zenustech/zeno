@@ -4,7 +4,7 @@
 #include "style/zenostyle.h"
 #include "zsubnetlistitemdelegate.h"
 #include <comctrl/zlabel.h>
-#include <zenoui/model/modelrole.h>
+#include <zenomodel/include/modelrole.h>
 #include <zenomodel/include/igraphsmodel.h>
 #include <zeno/utils/logger.h>
 #include "util/log.h"

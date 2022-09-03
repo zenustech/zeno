@@ -1,8 +1,8 @@
 #include "graphsmanagment.h"
 #include <zenomodel/include/zenomodel.h>
-#include <zenoui/model/modelrole.h>
+#include <zenomodel/include/modelrole.h>
 #include <zenoio/reader/zsgreader.h>
-#include <zenoui/util/uihelper.h>
+#include <zenomodel/include/uihelper.h>
 #include "nodesys/zenosubgraphscene.h"
 #include <zeno/utils/log.h>
 #include <zenoui/util/cihou.h>
