@@ -20,6 +20,7 @@ zeno_add_asset_dir(${ZENO_PYTHON_LIB_DIR})
 zeno_add_asset_dir(${ZENO_PYTHON_HOME_DIR})
 
 set(BUILD_LIBPYTHON_SHARED OFF CACHE BOOL "ZENOCIHOUPYTHON" FORCE)
+set(BUILD_EXTENSIONS_AS_BUILTIN ON CACHE BOOL "ZENOCIHOUPYTHON" FORCE)
 if (NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/CPython/CMakeLists.txt)
     message(FATAL_ERROR "CPython submodule not found! Please run: git submodule update --init --recursive")
 endif()
@@ -41,6 +42,7 @@ if (BUILD_LIBPYTHON_SHARED)
 else()
     target_link_libraries(zeno PRIVATE libpython-static)
 endif()
+add_dependencies(zeno python)
 
 target_include_directories(zeno PRIVATE
     ${CMAKE_CURRENT_BINARY_DIR}/Python-${PYTHON_VERSION}/Include   # Python.h (unix)
