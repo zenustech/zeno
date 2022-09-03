@@ -72,6 +72,7 @@ private:
     float m_theta;
     float m_phi;
     QPointF m_lastPos;
+    QPointF m_lastMovePos;
     QPoint m_boundRectStartPos;
     QVector3D  m_center;
     bool m_ortho_mode;
