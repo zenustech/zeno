@@ -10,6 +10,7 @@
 #include <zeno/utils/scope_exit.h>
 #include <zeno/extra/CAPIInternals.h>
 #include <zeno_Python_config.h>
+#include <cwchar>
 
 namespace zeno {
 
@@ -21,6 +22,10 @@ static int subprogram_python_main(int argc, char **argv) {
 
 static int defPythonInit = getSession().eventCallbacks->hookEvent("init", [] {
     log_debug("Initializing Python...");
+    std::string s = getAssetDir(ZENO_PYTHON_HOME_DIR);
+    std::wstring ws(s.size(), L' '); // Overestimate number of code points.
+    ws.resize(std::mbstowcs(ws.data(), s.data(), s.size())); // Shrink to fit.
+    Py_SetPythonHome(ws.c_str());
     Py_Initialize();
     std::string libpath = getAssetDir(ZENO_PYTHON_LIB_DIR);
     std::string dllfile = ZENO_PYTHON_DLL_FILE;
@@ -33,9 +38,7 @@ static int defPythonInit = getSession().eventCallbacks->hookEvent("init", [] {
 });
 
 static int defPythonExit = getSession().eventCallbacks->hookEvent("exit", [] {
-    log_debug("Finalizing Python...");
     Py_Finalize();
-    log_debug("Finalized Python successfully!");
 });
 
 struct PythonScript : INode {

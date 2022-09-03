@@ -78,12 +78,21 @@ jobs:
         cached: ${{ steps.cache-qt.outputs.cache-hit }}
         setup-python: true
 
-    - name: Install CUDA toolkit
-      if: ${{ matrix.gpu == 'cuda' }}
-      uses: Jimver/cuda-toolkit@v0.2.5
-      id: cuda-toolkit
-      with:
-        cuda: 11.5.1
+    - name: Install CUDA toolkit (Windows)
+      if: ${{ matrix.gpu == 'cuda'&& runner.os == 'Windows'  }}
+      env:
+        cuda: 11.6
+        visual_studio: "Visual Studio 16 2022"
+      shell: powershell
+      run: .\misc\ci\win\install_cuda_windows.ps1
+
+    - name: Install CUDA toolkit (Ubuntu)
+      if: ${{ matrix.gpu == 'cuda' && runner.os == 'Linux' }}
+      env:
+        cuda: 11.6
+      shell: powershell
+      run: ./misc/ci/nix/install_cuda_ubuntu.sh
+
 
     - name: Setup Dependencies
       if: ${{ needs.check.outputs.vcpkg == 'true' }}
@@ -114,10 +123,27 @@ jobs:
         #shutil.rmtree(os.path.join('build', 'CMakeFiles'), ignore_errors=True)
 
     - name: Run CMake
+      id: run_cmake
       uses: lukka/run-cmake@v10
       with:
         configurePreset: ${{ (needs.check.outputs.vcpkg == 'true' && (matrix.gpu == 'cuda' && 'cuda' || 'default') || 'basic') }}
         buildPreset: default
+
+    - name: Process CMake Error
+      if: ${{ (failure() && steps.run_cmake.outcome == 'failure') || success() }}
+      working-directory: ${{ env.build_dir }}
+      shell: bash
+      run: |
+          if [[ -f "build/CMakeFiles/CMakeOutput.log" ]]; then
+            echo "---- build/CMakeFiles/CMakeOutput.log"
+            cat build/CMakeFiles/CMakeOutput.log
+            echo "----"
+          fi
+          if [[ -f "build/CMakeFiles/CMakeError.log" ]]; then
+            echo "---- build/CMakeFiles/CMakeError.log"
+            cat build/CMakeFiles/CMakeError.log
+            echo "----"
+          fi
 
     - name: Packaging
       if: ${{ needs.check.outputs.deploy == 'true' }}
