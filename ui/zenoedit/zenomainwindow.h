@@ -23,6 +23,8 @@ public:
     TIMELINE_INFO timelineInfo();
     void setTimelineInfo(TIMELINE_INFO info);
 
+    ZenoLights* lightPanel = nullptr;
+
 public slots:
     void openFileDialog();
     void onNewFile();

@@ -248,6 +248,10 @@ ZenoLights::ZenoLights(QWidget *parent) : QWidget(parent) {
         pCamAperture->addWidget(camApertureEdit);
 
         pMainLayout->addLayout(pCamAperture);
+
+        camApertureEdit->setNumSlider({ .0001, .001, .01, .1, 1, 10, 100 });
+        camApertureEdit->setProperty("cssClass", "proppanel");
+        camApertureEdit->setValidator(new QDoubleValidator);
     }
 
     {
@@ -262,6 +266,10 @@ ZenoLights::ZenoLights(QWidget *parent) : QWidget(parent) {
         pCamDisPlane->addWidget(camDisPlaneEdit);
 
         pMainLayout->addLayout(pCamDisPlane);
+
+        camDisPlaneEdit->setNumSlider({ .0001, .001, .01, .1, 1, 10, 100 });
+        camDisPlaneEdit->setProperty("cssClass", "proppanel");
+        camDisPlaneEdit->setValidator(new QDoubleValidator);
     }
 
     pStatusBar->setProperty("cssClass", "proppanel");

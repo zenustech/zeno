@@ -34,8 +34,8 @@ public:
     ZLineEdit* colorYEdit = new ZLineEdit("1");
     ZLineEdit* colorZEdit = new ZLineEdit("1");
 
-    ZLineEdit* camApertureEdit = new QLineEdit("0.2");
-    ZLineEdit* camDisPlaneEdit = new QLineEdit("2.0");
+    ZLineEdit* camApertureEdit = new ZLineEdit("0.2");
+    ZLineEdit* camDisPlaneEdit = new ZLineEdit("2.0");
     ZLineEdit* intensityEdit = new ZLineEdit("1");
     void modifyLightData();
 
