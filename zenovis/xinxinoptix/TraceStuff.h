@@ -54,6 +54,7 @@ struct RadiancePRD
     int          diffDepth;
     bool         isSS;
     float        scatterStep;
+    int          nonThinTransHit;
     
 };
 

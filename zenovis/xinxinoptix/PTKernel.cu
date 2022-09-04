@@ -177,10 +177,10 @@ extern "C" __global__ void __miss__radiance()
 {
     MissData* rt_data  = reinterpret_cast<MissData*>( optixGetSbtDataPointer() );
     RadiancePRD* prd = getPRD();
-
+    prd->attenuation2 = prd->attenuation;
     prd->passed = false;
     prd->countEmitted = false;
-    prd->attenuation2 = prd->attenuation;
+
     if(prd->medium != DisneyBSDF::isotropic){
         prd->radiance = proceduralSky(normalize(prd->direction));
 
@@ -193,7 +193,7 @@ extern "C" __global__ void __miss__radiance()
     prd->origin += prd->direction * optixGetRayTmax();
     prd->direction = DisneyBSDF::SampleScatterDirection(prd->seed);
     float tmpPDF;
-    prd->maxDistance = DisneyBSDF::SampleDistance(prd->seed,prd->scatterStep,prd->attenuation,tmpPDF);
+    prd->maxDistance = DisneyBSDF::SampleDistance(prd->seed,prd->scatterStep,prd->extinction,tmpPDF);
     prd->scatterPDF= tmpPDF;
     prd->depth++;
 
