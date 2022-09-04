@@ -153,6 +153,7 @@ ZENDEFNODE(ApplyBoundaryOnVertices,
                {"FEM"},
            });
 
+#if 0
 struct BindVerticesOnBoundary : INode {
   using tiles_t = typename ZenoParticles::particles_t;
   using dtiles_t = typename ZenoParticles::dtiles_t;
@@ -459,6 +460,7 @@ ZENDEFNODE(BindVerticesOnBoundary, {
                                        {},
                                        {"FEM"},
                                    });
+#endif
 
 struct MoveTowards : INode {
   template <typename VertsT>
