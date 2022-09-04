@@ -1580,22 +1580,28 @@ typename IPCSystem::T IPCSystem::energy(zs::CudaExecutionPolicy &pol, const zs::
         }
         reduce_to(vi, n, E, es[vi / 32]);
     });
-    pol(range(coOffset), [vtemp = proxy<space>({}, vtemp), es = proxy<space>(es), tag,
-                          dt = this->dt, n = coOffset] ZS_LAMBDA(int vi) mutable {
-        auto x = vtemp.pack<3>(tag, vi);
-        auto xt = vtemp.pack<3>("xhat", vi);
-        int BCorder = vtemp("BCorder", vi);
-        T E = 0;
-        {
-            // external force
-            if (vtemp("BCsoft", vi) == 0 && vtemp("BCorder", vi) != 3) {
-                auto extf = vtemp.template pack<3>("extf", vi);
-                E += -extf.dot(x - xt) * dt * dt;
-            }
-        }
-        reduce_to(vi, n, E, es[vi / 32]);
-    });
     Es.push_back(reduce(pol, es));
+
+    if (vtemp.hasProperty("extf")) {
+        es.resize(count_warps(coOffset));
+        es.reset(0);
+        pol(range(coOffset), [vtemp = proxy<space>({}, vtemp), es = proxy<space>(es), tag,
+                              dt = this->dt, n = coOffset] ZS_LAMBDA(int vi) mutable {
+            auto x = vtemp.pack<3>(tag, vi);
+            auto xt = vtemp.pack<3>("xhat", vi);
+            int BCorder = vtemp("BCorder", vi);
+            T E = 0;
+            {
+                // external force
+                if (vtemp("BCsoft", vi) == 0 && vtemp("BCorder", vi) != 3) {
+                    auto extf = vtemp.template pack<3>("extf", vi);
+                    E += -extf.dot(x - xt) * dt * dt;
+                }
+            }
+            reduce_to(vi, n, E, es[vi / 32]);
+        });
+        Es.push_back(reduce(pol, es));
+    }
 
     for (auto &primHandle : prims) {
         match([&](auto &elasticModel) {
@@ -2544,15 +2550,8 @@ struct IPCSystemForceField : INode {
         vtemp.template tuple<3>("extf", i) = zs::vec<double, 3>::zeros();
     });
 
-    float drag = get_input2<float>("wind_drag");
-    float density = get_input2<float>("wind_density");
-
-    auto velZsField = get_input<ZenoLevelSet>("ZSLevelSet");
-    const auto &velField = velZsField->getBasicLevelSet()._ls;
-
-    auto stepDt = get_input2<float>("dt");
-    auto windDrag = get_input2<float>("windDrag");
-    auto windDensity = get_input2<float>("windDensity");
+    auto windDrag = get_input2<float>("wind_drag");
+    auto windDensity = get_input2<float>("wind_density");
 
     for (auto &primHandle : A->prims) {
         if (primHandle.category != ZenoParticles::category_e::surface) continue;
