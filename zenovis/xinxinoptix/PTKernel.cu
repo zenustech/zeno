@@ -182,7 +182,10 @@ extern "C" __global__ void __miss__radiance()
     prd->countEmitted = false;
 
     if(prd->medium != DisneyBSDF::isotropic){
-        prd->radiance = proceduralSky(normalize(prd->direction));
+        if(prd->depth==0)
+            prd->radiance = proceduralSky(normalize(prd->direction));
+        else
+            prd->radiance = vec3(0,0,0);
         prd->done      = true;
         return;
     }
