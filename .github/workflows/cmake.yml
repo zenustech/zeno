@@ -88,6 +88,8 @@ jobs:
 
     - name: Install CUDA toolkit (Ubuntu)
       if: ${{ matrix.gpu == 'cuda' && runner.os == 'Linux' }}
+      env:
+        cuda: 11.7.1
       shell: bash
       run: ./misc/ci/nix/install_cuda_ubuntu.sh
 
