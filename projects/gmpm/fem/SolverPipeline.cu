@@ -1558,11 +1558,11 @@ typename IPCSystem::T IPCSystem::energy(zs::CudaExecutionPolicy &pol, const zs::
     constexpr auto space = execspace_e::cuda;
     Vector<T> &es = temp;
 
-    es.resize(count_warps(coOffset));
-    es.reset(0);
     std::vector<T> Es(0);
 
     // inertial
+    es.resize(count_warps(coOffset));
+    es.reset(0);
     pol(range(coOffset), [vtemp = proxy<space>({}, vtemp), es = proxy<space>(es), tag, extForce = extForce,
                           dt = this->dt, n = coOffset] __device__(int vi) mutable {
         auto m = zs::sqr(vtemp("ws", vi));
@@ -1573,9 +1573,24 @@ typename IPCSystem::T IPCSystem::energy(zs::CudaExecutionPolicy &pol, const zs::
         {
             // inertia
             E += (T)0.5 * m * (x - vtemp.pack<3>("xtilde", vi)).l2NormSqr();
-            // external force
+            // gravity force
             if (vtemp("BCsoft", vi) == 0 && vtemp("BCorder", vi) != 3) {
                 E += -m * extForce.dot(x - xt) * dt * dt;
+            }
+        }
+        reduce_to(vi, n, E, es[vi / 32]);
+    });
+    pol(range(coOffset), [vtemp = proxy<space>({}, vtemp), es = proxy<space>(es), tag,
+                          dt = this->dt, n = coOffset] ZS_LAMBDA(int vi) mutable {
+        auto x = vtemp.pack<3>(tag, vi);
+        auto xt = vtemp.pack<3>("xhat", vi);
+        int BCorder = vtemp("BCorder", vi);
+        T E = 0;
+        {
+            // external force
+            if (vtemp("BCsoft", vi) == 0 && vtemp("BCorder", vi) != 3) {
+                auto extf = vtemp.template pack<3>("extf", vi);
+                E += -extf.dot(x - xt) * dt * dt;
             }
         }
         reduce_to(vi, n, E, es[vi / 32]);
