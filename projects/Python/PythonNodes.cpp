@@ -5,12 +5,14 @@
 #include <zeno/extra/EventCallbacks.h>
 #include <zeno/utils/log.h>
 #include <zeno/types/GenericObject.h>
+#include <zeno/types/FunctionObject.h>
 #include <zeno/types/UserData.h>
 #include <zeno/core/Graph.h>
 #include <zeno/utils/scope_exit.h>
 #include <zeno/extra/CAPIInternals.h>
 #include <zeno_Python_config.h>
 #include <cwchar>
+#include <utility>
 
 namespace zeno {
 
@@ -40,6 +42,101 @@ static int defPythonInit = getSession().eventCallbacks->hookEvent("init", [] {
 static int defPythonExit = getSession().eventCallbacks->hookEvent("exit", [] {
     Py_Finalize();
 });
+
+struct PythonFunctor {
+    PyObject *pyFunc;
+
+    explicit PythonFunctor(PyObject *pyFunc_) : pyFunc(pyFunc_) {
+        Py_INCREF(pyFunc);
+    }
+
+    PythonFunctor(PythonFunctor const &that) : pyFunc(that.pyFunc) {
+        Py_INCREF(pyFunc);
+    }
+
+    PythonFunctor &operator=(PythonFunctor const &that) {
+        if (std::addressof(that) != this) {
+            Py_DECREF(pyFunc);
+            pyFunc = that.pyFunc;
+            Py_INCREF(pyFunc);
+        }
+        return *this;
+    }
+
+    ~PythonFunctor() {
+        Py_DECREF(pyFunc);
+    }
+
+    std::map<std::string, zany> operator()(std::map<std::string, zany> args) const {
+        std::map<std::string, zany> rets;
+        PyObject *pyKwargs = PyDict_New();
+        scope_exit pyKwargsDel = [=] {
+            Py_DECREF(pyKwargs);
+        };
+        for (auto const &[key, val]: args) {
+            Zeno_Object handle = capiLoadObjectSharedPtr(val);
+            auto valLong = PyLong_FromUnsignedLongLong(handle);
+            scope_exit valLongDel = [=] {
+                Py_DECREF(valLong);
+            };
+            if (PyDict_SetItemString(pyKwargs, key.c_str(), valLong) < 0)
+                throw makeError("failed to set kwargs item " + key);
+        }
+        PyObject *pyArgs = PyList_New(0);
+        scope_exit pyArgsDel = [=] {
+            Py_DECREF(pyArgs);
+        };
+        PyObject *pyRet = PyObject_Call(pyFunc, pyArgs, pyKwargs);
+        scope_exit pyRetDel = [=] {
+            Py_DECREF(pyRet);
+        };
+        if (!PyDict_Check(pyRet)) {
+            Zeno_Object handle = PyLong_AsUnsignedLongLong(pyRet);
+            if (handle == -1 && PyErr_Occurred()) {
+                throw makeError("failed to cast rets value as integer");
+            }
+            rets.emplace("ret", capiFindObjectSharedPtr(handle));
+        } else {
+            PyObject *key, *value;
+            Py_ssize_t pos = 0;
+            while (PyDict_Next(pyRet, &pos, &key, &value)) {
+                Py_ssize_t keyLen = 0;
+                const char *keyDat = PyUnicode_AsUTF8AndSize(key, &keyLen);
+                if (keyDat == nullptr) {
+                    throw makeError("failed to cast rets key as string");
+                }
+                std::string keyStr(keyDat, keyLen);
+                Zeno_Object handle = PyLong_AsUnsignedLongLong(value);
+                if (handle == -1 && PyErr_Occurred()) {
+                    throw makeError("failed to cast rets value as integer");
+                }
+                rets.emplace(std::move(keyStr), capiFindObjectSharedPtr(handle));
+            }
+        }
+        return rets;
+    }
+};
+
+static Zeno_Object factoryFunctionObject(void *inObj_) {
+    PyObject *tmpFunc = reinterpret_cast<PyObject *>(inObj_);
+    auto funcObj = std::make_shared<FunctionObject>(PythonFunctor(tmpFunc));
+    Zeno_Object funcHandle = capiLoadObjectSharedPtr(funcObj);
+    return funcHandle;
+}
+
+static int defFunctionObjectFactory = capiRegisterObjectFactory("FunctionObject", factoryFunctionObject);
+
+//static Zeno_Object dictObjFactory() {
+    //PyObject *zenoMod = PyImport_AddModule("ze");
+    //PyObject *zenoModDict = PyModule_GetDict(zenoMod);
+    //PyObject *tmpFunc = PyDict_GetItemString(zenoModDict, "_tmp");
+    //if (!tmpFunc) throw makeError("cannot access variable ze._tmp");
+    //auto funcObj = std::make_shared<FunctionObject>(PythonFunctor(tmpFunc));
+    //Zeno_Object funcHandle = capiLoadObjectSharedPtr(funcObj);
+    //return funcHandle;
+//}
+
+//static int defDictObjFactory = capiRegisterObjectFactory("DictObject", funcObjFactory);
 
 struct PythonScript : INode {
     void apply() override {

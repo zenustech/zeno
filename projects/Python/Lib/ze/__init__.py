@@ -56,6 +56,8 @@ def initDLLPath(path: str):
     define(ctypes.c_uint32, 'Zeno_GetObjectPrimData', ctypes.c_uint64, ctypes.c_int, ctypes.c_char_p, ctypes.POINTER(ctypes.c_void_p), ctypes.POINTER(ctypes.c_size_t), ctypes.POINTER(ctypes.c_int))
     define(ctypes.c_uint32, 'Zeno_GetObjectPrimDataKeys', ctypes.c_uint64, ctypes.c_int, ctypes.POINTER(ctypes.c_size_t), ctypes.POINTER(ctypes.c_char_p))
     define(ctypes.c_uint32, 'Zeno_ResizeObjectPrimData', ctypes.c_uint64, ctypes.c_int, ctypes.c_size_t)
+    define(ctypes.c_uint32, 'Zeno_InvokeObjectFactory', ctypes.POINTER(ctypes.c_uint64), ctypes.c_char_p, ctypes.c_void_p)
+    define(ctypes.c_uint32, 'Zeno_InvokeObjectDefactory', ctypes.c_uint64, ctypes.c_char_p, ctypes.POINTER(ctypes.c_void_p))
 
 
 class ZenoObject:
@@ -108,6 +110,18 @@ class ZenoObject:
         object_ = ctypes.c_uint64(0)
         api.Zeno_CreateObjectPrimitive(ctypes.pointer(object_))
         return object_.value
+
+    @classmethod
+    def _makeSomeObject(cls, typeName_: str, ffiObj_: Any) -> int:
+        object_ = ctypes.c_uint64(0)
+        api.Zeno_InvokeObjectFactory(ctypes.pointer(object_), ctypes.c_char_p(typeName_.encode()), ctypes.py_object(ffiObj_))
+        return object_.value
+
+    @classmethod
+    def _fetchSomeObject(cls, typeName_: str, handle_: int) -> Any:
+        ffiObjRet_ = ctypes.py_object()
+        api.Zeno_InvokeObjectFactory(ctypes.c_uint64(handle_), ctypes.c_char_p(typeName_.encode()), ctypes.pointer(ffiObjRet_))
+        return ffiObjRet_.value
 
     @classmethod
     def _makeLiterial(cls, value: Literial) -> int:

@@ -86,6 +86,16 @@ namespace {
     LastError lastError;
     std::map<std::string, std::shared_ptr<IObject>> tempNodeRes;
     std::shared_ptr<Graph> currentGraph;
+
+    static auto &getObjFactory() {
+        static std::map<std::string, Zeno_Object (*)(void *)> impl;
+        return impl;
+    }
+
+    static auto &getObjDefactory() {
+        static std::map<std::string, void *(*)(Zeno_Object)> impl;
+        return impl;
+    }
 }
 
 extern "C" {
@@ -373,6 +383,24 @@ ZENO_CAPI Zeno_Error Zeno_ResizeObjectPrimData(Zeno_Object object_, Zeno_PrimMem
     });
 }
 
+ZENO_CAPI Zeno_Error Zeno_InvokeObjectFactory(Zeno_Object *objectRet_, const char *typeName_, void *ffiObj_) ZENO_CAPI_NOEXCEPT {
+    return lastError.catched([=] {
+        auto it = getObjFactory().find(typeName_);
+        if (ZENO_UNLIKELY(it == getObjFactory().end()))
+            throw makeError("invalid typeName [" + (std::string)typeName_ + "]");
+        *objectRet_ = it->second(ffiObj_);
+    });
+}
+
+ZENO_CAPI Zeno_Error Zeno_InvokeObjectDefactory(Zeno_Object object_, const char *typeName_, void **ffiObjRet_) ZENO_CAPI_NOEXCEPT {
+    return lastError.catched([=] {
+        auto it = getObjDefactory().find(typeName_);
+        if (ZENO_UNLIKELY(it == getObjDefactory().end()))
+            throw makeError("invalid typeName [" + (std::string)typeName_ + "]");
+        *ffiObjRet_ = it->second(object_);
+    });
+}
+
 }
 
 namespace zeno {
@@ -399,6 +427,16 @@ ZENO_API void capiEraseGraphSharedPtr(Zeno_Graph graph_) {
 
 ZENO_API std::shared_ptr<Graph> capiFindGraphSharedPtr(Zeno_Graph graph_) {
     return lutGraph.access(graph_);
+}
+
+ZENO_API int capiRegisterObjectFactory(std::string const &typeName_, Zeno_Object (*factory_)(void *)) {
+    getObjFactory().emplace(typeName_, factory_);
+    return 1;
+}
+
+ZENO_API int capiRegisterObjectDefactory(std::string const &typeName_, void *(*factory_)(Zeno_Object)) {
+    getObjDefactory().emplace(typeName_, factory_);
+    return 1;
 }
 
 }
