@@ -573,6 +573,26 @@ void IPCSystem::advanceSubstep(zs::CudaExecutionPolicy &pol, typename IPCSystem:
                     vtemp("BCfixed", coOffset + i) = (xk - xn).l2NormSqr() == 0 ? 1 : 0;
                     vtemp.template tuple<3>("xtilde", coOffset + i) = xk;
                 });
+    for (auto &primHandle : auxPrims) {
+        if (primHandle.category == ZenoParticles::category_e::tracker) {
+            const auto &eles = primHandle.getEles();
+            pol(Collapse(eles.size()),
+                [vtemp = proxy<space>({}, vtemp), eles = proxy<space>({}, eles),
+                 framedt = framedt, curRatio = curRatio] __device__(int ei) mutable {
+                    auto inds = eles.template pack<2>("inds", ei).template reinterpret_bits<int>();
+                    // retrieve motion from associated boundary vert
+                    auto deltaX = vtemp.template pack<3>("BCtarget", inds[1]) - vtemp.template pack<3>("xhat", inds[1]); 
+                    // 
+                    auto xn = vtemp.template pack<3>("xn", inds[0]);
+                    vtemp.template tuple<3>("BCtarget", inds[0]) = xn + deltaX;
+                    vtemp.template tuple<9>("BCbasis", inds[0]) = mat3::identity();
+                    vtemp("BCfixed", inds[0]) = deltaX.l2NormSqr() == 0 ? 1 : 0;
+                    vtemp("BCorder", inds[0]) = 3;
+                    vtemp("BCsoft", inds[0]) = 0;
+                    vtemp.template tuple<3>("xtilde", inds[0]) = xn + deltaX;
+                });
+        }
+    }
 }
 void IPCSystem::updateVelocities(zs::CudaExecutionPolicy &pol) {
     using namespace zs;
