@@ -78,7 +78,7 @@ static __inline__ __device__  float GGX(float cosT, float a){
 
 static __inline__ __device__  vec3 sampleOnHemisphere(unsigned int &seed, float roughness)
 {
-    float2 xy = sobolRnd2(seed);
+    float2 xy = sobolRnd(seed);
     const float x = xy.x;
     const float y = xy.y;
 
