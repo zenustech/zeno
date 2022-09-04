@@ -78,7 +78,7 @@ static __inline__ __device__  float GGX(float cosT, float a){
 
 static __inline__ __device__  vec3 sampleOnHemisphere(unsigned int &seed, float roughness)
 {
-    float2 xy = sobolRnd(seed);
+    float2 xy = sobolRnd2(seed);
     const float x = xy.x;
     const float y = xy.y;
 
@@ -91,10 +91,10 @@ static __inline__ __device__  vec3 sampleOnHemisphere(unsigned int &seed, float 
 
     return vec3(cos(phi) * sinTheta,  sin(phi) * sinTheta, cosTheta);
 }
-static __inline__ __device__  vec3 halfPlaneSample(unsigned int & seed, vec3 N)
+static __inline__ __device__  vec3 halfPlaneSample(unsigned int & seed, vec3 N, float roughness)
 {
     Onb tbn = Onb(N);
-    vec3 P = sampleOnHemisphere(seed, 1.0f);
+    vec3 P = sampleOnHemisphere(seed, roughness);
     auto wi = P;
     tbn.inverse_transform(wi);
     wi = normalize(wi);

@@ -279,24 +279,32 @@ extern "C" __global__ void __anyhit__shadow_cutout()
             if(length(prd->shadowAttanuation) < 0.01){
                 prd->shadowAttanuation = vec3(0.0f);
                 optixTerminateRay();
+                return;
             }
             if(specTrans==0.0f){
                 prd->shadowAttanuation = vec3(0.0f);
                 optixTerminateRay();
+                return;
             }
             //prd->shadowAttanuation = vec3(0,0,0);
             //optixTerminateRay();
             
             if(specTrans > 0.0f){
-                if(rnd(prd->seed)<1-specTrans||thin==false)
+                if(thin == false && ior>1.0f)
+                {
+                    prd->nonThinTransHit++;
+                }
+                if(rnd(prd->seed)<1-specTrans||prd->nonThinTransHit>1)
                 {
                     prd->shadowAttanuation = vec3(0,0,0);
                     optixTerminateRay();
+                    return;
                 }
                 float nDi = fabs(dot(N,ray_dir));
                 vec3 tmp = prd->shadowAttanuation;
                 tmp = tmp * (vec3(1)-BRDFBasics::fresnelSchlick(vec3(1)-basecolor,nDi));
                 prd->shadowAttanuation = tmp;
+
                 optixIgnoreIntersection();
             }
         }
@@ -305,6 +313,7 @@ extern "C" __global__ void __anyhit__shadow_cutout()
 
         prd->shadowAttanuation = vec3(0.0f);
         optixTerminateRay();
+        return;
     }
 }
 
@@ -471,8 +480,8 @@ extern "C" __global__ void __closesthit__radiance()
         roughness = clamp(roughness, 0.3,0.99);
     if(prd->diffDepth>=3)
         roughness = clamp(roughness, 0.5,0.99);
-    if(prd->diffDepth>=1&&prd->depth>=2)
-        roughness = clamp(roughness, 0.2,0.99);
+    if(prd->depth>=2)
+        roughness = clamp(roughness, 0.5,0.99);
 
     auto subsurface = mats.subsurface;
     auto specular = mats.specular;
@@ -604,7 +613,7 @@ extern "C" __global__ void __closesthit__radiance()
         }
     prd->isSS |= isSS;
     pdf = fPdf;
-    if(isDiff || roughness>0.4){
+    if(isDiff || prd->diffDepth>0){
         prd->diffDepth++;
     }
 
@@ -642,7 +651,7 @@ extern "C" __global__ void __closesthit__radiance()
                 prd->transColor = transmittanceColor;
                 prd->scatterStep = scatterStep;
                 float tmpPDF = 1.0f;
-                prd->maxDistance = DisneyBSDF::SampleDistance(prd->seed,prd->scatterStep,prd->attenuation, tmpPDF);
+                prd->maxDistance = DisneyBSDF::SampleDistance(prd->seed,prd->scatterStep,prd->extinction, tmpPDF);
                 //prd->maxDistance = scatterDistance;
                 prd->scatterPDF = tmpPDF;
             }
@@ -661,7 +670,7 @@ extern "C" __global__ void __closesthit__radiance()
                 prd->attenuation2 *= DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
                 prd->attenuation *= DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
                 float tmpPDF = 1.0f;
-                prd->maxDistance = DisneyBSDF::SampleDistance(prd->seed,prd->scatterStep,prd->attenuation,tmpPDF);
+                prd->maxDistance = DisneyBSDF::SampleDistance(prd->seed,prd->scatterStep,prd->extinction,tmpPDF);
                 prd->scatterPDF = tmpPDF;
 
 	    }
@@ -703,6 +712,8 @@ extern "C" __global__ void __closesthit__radiance()
             sum += length(light.emission)  * nDl * LnDl * A / (M_PIf * Ldist * Ldist);
 
     }
+    if(prd->depth>=3)
+        roughness = clamp(roughness, 0.5,0.99);
     bool computed = false;
     float ppl = 0;
     for(int lidx=0;lidx<params.num_lights && computed==false;lidx++) {
@@ -730,6 +741,7 @@ extern "C" __global__ void __closesthit__radiance()
             if (nDl > 0.0f && LnDl > 0.0f) {
                 RadiancePRD shadow_prd;
                 shadow_prd.shadowAttanuation = make_float3(1.0f, 1.0f, 1.0f);
+                shadow_prd.nonThinTransHit = (thin==false && specTrans>0)? 1:0;
                 traceOcclusion(params.handle, P, L,
                                1e-5f,         // tmin
                                Ldist - 1e-5f, // tmax,
@@ -742,8 +754,7 @@ extern "C" __global__ void __closesthit__radiance()
                 }
             }
             
-            if(prd->diffDepth>=1&&prd->depth>=2)
-                roughness = clamp(roughness, 0.2,0.99);
+
             float3 lbrdf = DisneyBSDF::EvaluateDisney(basecolor, metallic, subsurface, specular, roughness,
                                                       specularTint, anisotropic, sheen, sheenTint, clearcoat,
                                                       clearcoatGloss, specTrans, scatterDistance, ior, flatness, L,
@@ -754,14 +765,15 @@ extern "C" __global__ void __closesthit__radiance()
         }
 
     }
-    auto env_dir = BRDFBasics::halfPlaneSample(prd->seed, N);
+    auto env_dir = BRDFBasics::halfPlaneSample(prd->seed, N, 1.0);
     RadiancePRD shadow_prd2;
     shadow_prd2.shadowAttanuation = make_float3(1.0f, 1.0f, 1.0f);
+    shadow_prd2.nonThinTransHit = (thin==false && specTrans>0)? 1:0;
     traceOcclusion(params.handle, P, env_dir,
                    1e-5f,         // tmin
                    1e16f, // tmax,
                    &shadow_prd2);
-    float3 lbrdf = DisneyBSDF::EvaluateDisney(basecolor, metallic, subsurface, specular, roughness,
+    float3 lbrdf = DisneyBSDF::EvaluateDisney(basecolor, metallic, subsurface, specular, clamp(roughness,0.5,0.99),
                                               specularTint, anisotropic, sheen, sheenTint, clearcoat,
                                               clearcoatGloss, specTrans, scatterDistance, ior, flatness, env_dir,
                                               -normalize(inDir), T, B, N, thin > 0.5f, flag == DisneyBSDF::transmissionEvent ? inToOut : prd->is_inside, ffPdf, rrPdf,dot(N, float3(env_dir)));
@@ -769,6 +781,7 @@ extern "C" __global__ void __closesthit__radiance()
 
     auto sun_dir = normalize(vec3(-1.2,.8,0.5));
     shadow_prd2.shadowAttanuation = make_float3(1.0f, 1.0f, 1.0f);
+    shadow_prd2.nonThinTransHit = (thin==false && specTrans>0)? 1:0;
     traceOcclusion(params.handle, P, sun_dir,
                    1e-5f,         // tmin
                    1e16f, // tmax,

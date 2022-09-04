@@ -971,6 +971,6 @@ static __inline__ __device__ vec3 proceduralSky(vec3 dir)
     sunIntensity = 0.2 / sunIntensity;
     sunIntensity = min(sunIntensity, 40000.0);
     sunIntensity = max(0.0, sunIntensity - 3.0);
-    //return vec3(1,1,1);
+    //return vec3(0,0,0);
     return vec3(clouds)*0.5 + sunCol * (sunIntensity*0.0000075);
 }
