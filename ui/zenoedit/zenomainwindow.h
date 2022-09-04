@@ -23,10 +23,6 @@ public:
     TIMELINE_INFO timelineInfo();
     void setTimelineInfo(TIMELINE_INFO info);
 
-    QLineEdit* selected = nullptr;
-    ZenoLights* lightPanel = nullptr;
-    float mouseSen = 0.2;
-
 public slots:
     void openFileDialog();
     void onNewFile();

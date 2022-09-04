@@ -4,17 +4,28 @@
 #include <zeno/extra/assetDir.h>
 #include <zeno/extra/EventCallbacks.h>
 #include <zeno/utils/log.h>
+#include <zeno/types/GenericObject.h>
+#include <zeno/types/UserData.h>
 #include <zeno/core/Graph.h>
 #include <zeno/utils/scope_exit.h>
 #include <zeno/extra/CAPIInternals.h>
 #include <zeno_Python_config.h>
+#include <cwchar>
 
 namespace zeno {
 
 namespace {
 
+static int subprogram_python_main(int argc, char **argv) {
+    return Py_BytesMain(argc, argv);
+}
+
 static int defPythonInit = getSession().eventCallbacks->hookEvent("init", [] {
     log_debug("Initializing Python...");
+    std::string s = getAssetDir(ZENO_PYTHON_HOME_DIR);
+    std::wstring ws(s.size(), L' '); // Overestimate number of code points.
+    ws.resize(std::mbstowcs(ws.data(), s.data(), s.size())); // Shrink to fit.
+    Py_SetPythonHome(ws.c_str());
     Py_Initialize();
     std::string libpath = getAssetDir(ZENO_PYTHON_LIB_DIR);
     std::string dllfile = ZENO_PYTHON_DLL_FILE;
@@ -23,12 +34,11 @@ static int defPythonInit = getSession().eventCallbacks->hookEvent("init", [] {
         return;
     }
     log_debug("Initialized Python successfully!");
+    getSession().userData().set("subprogram_python", std::make_shared<GenericObject<int(*)(int, char **)>>(subprogram_python_main));
 });
 
 static int defPythonExit = getSession().eventCallbacks->hookEvent("exit", [] {
-    log_debug("Finalizing Python...");
     Py_Finalize();
-    log_debug("Finalized Python successfully!");
 });
 
 struct PythonScript : INode {
@@ -114,7 +124,23 @@ struct PythonScript : INode {
             throw makeError("Python exception occurred, see console for more details");
         }
         auto rets = std::make_shared<DictObject>();
-        // TODO: enumerate retsDict, send into rets
+        {
+            PyObject *key, *value;
+            Py_ssize_t pos = 0;
+            while (PyDict_Next(retsDict, &pos, &key, &value)) {
+                Py_ssize_t keyLen = 0;
+                const char *keyDat = PyUnicode_AsUTF8AndSize(key, &keyLen);
+                if (keyDat == nullptr) {
+                    throw makeError("failed to cast rets key as string");
+                }
+                std::string keyStr(keyDat, keyLen);
+                Zeno_Object handle = PyLong_AsUnsignedLongLong(value);
+                if (handle == -1 && PyErr_Occurred()) {
+                    throw makeError("failed to cast rets value as integer");
+                }
+                rets->lut.emplace(std::move(keyStr), capiFindObjectSharedPtr(handle));
+            }
+        }
         set_output("rets", std::move(rets));
     }
 };

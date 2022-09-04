@@ -50,10 +50,7 @@ std::string Timer::getLog() {
         stat.count_rec++;
     }
 
-    std::vector<std::pair<std::string, Statistic>> sortstats;
-    for (auto const &kv: stats) {
-        sortstats.push_back(kv);
-    }
+    std::vector<std::pair<std::string, Statistic>> sortstats(stats.begin(), stats.end());
     std::sort(sortstats.begin(), sortstats.end(),
     [&] (auto const &lhs, auto const &rhs) {
         return lhs.second.total_us > rhs.second.total_us;
@@ -71,12 +68,13 @@ std::string Timer::getLog() {
 
 namespace {
 
-struct LuzhPleaseDontTouch {
+static struct LuzhPleaseDontTouch {
     ~LuzhPleaseDontTouch() {
         auto log = Timer::getLog();
-        std::printf("ZENO benchmarking status:\n%s\n", log.c_str());
+        if (!log.empty())
+            std::printf("ZENO benchmark (us):\n%s\n", log.c_str());
     }
-};
+} luzhPleaseDontTouch;
 
 }
 

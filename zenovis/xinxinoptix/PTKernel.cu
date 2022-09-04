@@ -66,7 +66,7 @@ extern "C" __global__ void __raygen__rg()
     const CameraInfo cam = params.cam;
 
     unsigned int seed = tea<4>( idx.y*w + idx.x, subframe_index );
-    float focalPlaneDistance = cam.focalPlaneDistance>0.1? cam.focalPlaneDistance : 0.1;
+    float focalPlaneDistance = cam.focalPlaneDistance>0.01? cam.focalPlaneDistance : 0.01;
     float aperture = clamp(cam.aperture,0.0f,100.0f);
     aperture/=10;
 
@@ -109,6 +109,7 @@ extern "C" __global__ void __raygen__rg()
         prd.depth = 0;
         prd.diffDepth = 0;
         prd.isSS = false;
+        prd.direction = ray_direction;
         for( ;; )
         {
             traceRadiance(
@@ -181,15 +182,16 @@ extern "C" __global__ void __miss__radiance()
     prd->countEmitted = false;
 
     if(prd->medium != DisneyBSDF::isotropic){
-        prd->radiance = make_float3( rt_data->bg_color );
+        prd->radiance = proceduralSky(normalize(prd->direction));
         prd->done      = true;
+        return;
     }
     prd->attenuation *= DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
     prd->attenuation2 *= DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
     prd->origin += prd->direction * optixGetRayTmax();
     prd->direction = DisneyBSDF::SampleScatterDirection(prd->seed);
     float tmpPDF;
-    prd->maxDistance = DisneyBSDF::SampleDistance(prd->seed,prd->scatterStep,tmpPDF);
+    prd->maxDistance = DisneyBSDF::SampleDistance(prd->seed,prd->scatterStep,prd->attenuation,tmpPDF);
     prd->scatterPDF= tmpPDF;
     prd->depth++;
 

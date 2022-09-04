@@ -52,7 +52,7 @@ namespace DisneyBSDF{
     vec3 CalculateExtinction(vec3 apparantColor, float scatterDistance)
     {
 
-        return -log(clamp(apparantColor, vec3(0.00001), vec3(0.99999)))/scatterDistance;
+        return 1.0/(apparantColor * scatterDistance);
 
     }
 
@@ -331,9 +331,9 @@ namespace DisneyBSDF{
         float nDl)
 
     {
-        Onb tbn = Onb(N);
-        world2local(wi, tbn.m_tangent ,tbn.m_binormal, N);
-        world2local(wo, tbn.m_tangent ,tbn.m_binormal, N);
+        //Onb tbn = Onb(N);
+        world2local(wi, T ,B, N);
+        world2local(wo, T ,B, N);
         vec3 wm = normalize(wo+wi);
 
         float NoL = wi.z;
@@ -437,15 +437,17 @@ namespace DisneyBSDF{
             float &rPdf)
     {
         Onb  tbn = Onb(N);
+        tbn.m_tangent = T;
+        tbn.m_binormal = B;
         float ax, ay;
         BRDFBasics::CalculateAnisotropicParams(roughness, anisotropic, ax, ay);
-        float2 r01 = sobolRnd(seed);
+        float2 r01 = sobolRnd2(seed);
         float r0 = r01.x;//rnd(seed);
         float r1 = r01.y;//rnd(seed);
         vec3 wm = BRDFBasics::SampleGgxVndfAnisotropic(wo, ax, ay, r0, r1);
 
         wi = normalize(reflect(-wo, wm)); 
-        if(wi.z<0.0f || abs(wi.z) < 1e-5)
+        if(wi.z<=0.0f)
         {
             fPdf = 0.0f;
             rPdf = 0.0f;
@@ -488,7 +490,7 @@ namespace DisneyBSDF{
     {
         float a2 = 0.0625; //0.25 * 0.25
 
-        float2 r01 = sobolRnd(seed);
+        float2 r01 = sobolRnd2(seed);
         float r0 = r01.x;//rnd(seed);
         float r1 = r01.y;//rnd(seed);
 
@@ -524,6 +526,8 @@ namespace DisneyBSDF{
         reflectance = vec3(0.25f * clearCoat * g * f *d ) / rPdf;
 
         Onb  tbn = Onb(N);
+        tbn.m_tangent = T;
+        tbn.m_binormal = B;
         tbn.inverse_transform(wi);
         wi = normalize(wi);
         return true;
@@ -573,7 +577,7 @@ namespace DisneyBSDF{
 
             )
     {
-        if(abs(wo.z) <= 1e-6){
+        if(wo.z == 0.0f){
             fPdf = 0.0f;
             rPdf = 0.0f;
             reflectance = vec3(0.0f);
@@ -585,7 +589,7 @@ namespace DisneyBSDF{
         float tax,tay;
         BRDFBasics::CalculateAnisotropicParams(rscaled,anisotropic,tax,tay);
 
-        float2 r01 = sobolRnd(seed);
+        float2 r01 = sobolRnd2(seed);
         float r0 = r01.x;//rnd(seed);
         float r1 = r01.y;//rnd(seed);
         vec3 wm = BRDFBasics::SampleGgxVndfAnisotropic(wo, tax, tay, r0, r1);
@@ -638,7 +642,7 @@ namespace DisneyBSDF{
 
         }
 
-        if(abs(wi.z) <= 1e-6){
+        if(wi.z == 0.0f){
             fPdf = 0.0f;
             rPdf = 0.0f;
             reflectance = vec3(0.0f);
@@ -656,6 +660,8 @@ namespace DisneyBSDF{
 
 
         Onb  tbn = Onb(N);
+        tbn.m_tangent = T;
+        tbn.m_binormal = B;
         tbn.inverse_transform(wi);
         wi = normalize(wi);
         return true;
@@ -696,7 +702,7 @@ namespace DisneyBSDF{
         wi =  normalize(BRDFBasics::sampleOnHemisphere(seed, 1.0f));
         vec3 wm = normalize(wi+wo);
         float NoL = wi.z;
-        if(abs(NoL)<1e-5 ){
+        if(NoL==0.0f ){
             fPdf = 0.0f;
             rPdf = 0.0f;
             reflectance = vec3(0.0f);
@@ -736,25 +742,48 @@ namespace DisneyBSDF{
         fPdf = abs(NoL) * pdf;
         rPdf = abs(NoV) * pdf;
         Onb  tbn = Onb(N);
+        tbn.m_tangent = T;
+        tbn.m_binormal = B;
         tbn.inverse_transform(wi);
         wi = normalize(wi);
         return true;
     }
     static __inline__ __device__
-    float SampleDistance(unsigned int &seed, float scatterDistance, float &pdf)
+    float SampleDistance(unsigned int &seed, float scatterDistance, vec3 extinction, float &pdf)
     {
-        if(scatterDistance == 0.0f){
-            return 1e16f;
+        float ps = dot(extinction, vec3(1.0f));
+
+        float pr = extinction.x / ps;
+        float pg = extinction.y / ps;
+        float pb = extinction.z / ps;
+
+        float c;
+        float p;
+
+        float r0 = rnd(seed);
+        if(r0 < pr) {
+            c = extinction.x;
+            p = pr;
         }
-        float s = -log(rnd(seed)) * scatterDistance;
-        pdf = 1.0f;
+        else if(r0 < pr + pg) {
+            c = extinction.y;
+            p = pg;
+        }
+        else {
+            c = extinction.z;
+            p = pb;
+        }
+
+        float s = -log(rnd(seed)) / c;
+        //*pdf = Math::Expf(-c * s) / p;
+
         return s;
     }
 
     static __inline__ __device__
     vec3 SampleScatterDirection(unsigned int &seed)
     {
-        float2 r01 = sobolRnd(seed);
+        float2 r01 = sobolRnd2(seed);
         float r0 = r01.x;//rnd(seed);
         float r1 = r01.y;//rnd(seed);
 
@@ -812,8 +841,7 @@ namespace DisneyBSDF{
         bool& isSS
             )
     {
-        Onb  tbn = Onb(N);
-        world2local(wo, tbn.m_tangent, tbn.m_binormal, N);
+        world2local(wo, T, B, N);
         float pSpecular,pDiffuse,pClearcoat,pSpecTrans;
 
         pdf(metallic, specTrans, clearCoat, pSpecular, pDiffuse, pClearcoat, pSpecTrans);
@@ -864,4 +892,85 @@ namespace DisneyBSDF{
         return success;
 
     }
+}
+static __inline__ __device__ float saturate(float num)
+{
+    return clamp(num,0.0,1.0);
+}
+
+static __inline__ __device__ float hash( float n )
+{
+    return fract(sin(n)*43758.5453);
+}
+
+
+static __inline__ __device__ float noise( vec3 x )
+{
+    vec3 p = floor(x);
+    vec3 f = fract(x);
+
+    f = f*f*(3.0-2.0*f);
+
+    float n = p.x + p.y*57.0 + 113.0*p.z;
+
+    float res = mix(mix(mix( hash(n+  0.0), hash(n+  1.0),f.x),
+                        mix( hash(n+ 57.0), hash(n+ 58.0),f.x),f.y),
+                    mix(mix( hash(n+113.0), hash(n+114.0),f.x),
+                        mix( hash(n+170.0), hash(n+171.0),f.x),f.y),f.z);
+    return res;
+}
+
+static __inline__ __device__ float fbm( vec3 p )
+{
+    float f = 0.0;
+    mat3 m = mat3( 0.00,  0.80,  0.60,
+                  -0.80,  0.36, -0.48,
+                  -0.60, -0.48,  0.64 );
+    vec3 pp = p;
+    f += 0.5000*noise( pp );
+    pp = m*pp*2.02;
+    f += 0.2500*noise( pp );
+    pp = m*pp*2.03;
+    f += 0.1250*noise( pp );
+    pp = m*pp*2.01;
+    f += 0.0625*noise( pp );
+
+    return f/0.9375;
+}
+static __inline__ __device__
+    mat3 rot(float deg){
+    return mat3(cos(deg),-sin(deg),0,
+                sin(deg), cos(deg),0,
+                0,0,1);
+
+}
+static __inline__ __device__ vec3 proceduralSky(vec3 dir)
+{
+
+    float bright = 1*(1.8-0.55);
+    float color1 = fbm((dir*9)-0.5);  //xz
+    float color2 = fbm((dir*21)-10.5); //yz
+
+    float clouds1 = smoothstep(1.0-0.55,min((1.0-0.55)+0.28*2.0,1.0),color1);
+    float clouds2 = smoothstep(1.0-0.55,min((1.0-0.55)+0.28,1.0),color2);
+
+    float cloudsFormComb = saturate(clouds1+clouds2);
+    vec3 sunCol = vec3(258.0, 208.0, 100.0) / 15.0;
+
+    vec4 skyCol = vec4(0.6,0.8,1.0,1.0);
+    float cloudCol = saturate(saturate(1.0-pow(color1,1.0f)*0.2f)*bright);
+    vec4 clouds1Color = vec4(cloudCol,cloudCol,cloudCol,1.0);
+    vec4 clouds2Color = mix(clouds1Color,skyCol,0.25);
+    vec4 cloudColComb = mix(clouds1Color,clouds2Color,saturate(clouds2-clouds1));
+    vec4 clouds = vec4(0.0);
+    clouds = mix(skyCol,cloudColComb,cloudsFormComb);
+
+    vec3 localRay = normalize(dir);
+    vec3 light = normalize(vec3(1.2,.8,0.5));
+    float sunIntensity = 1.0 - (dot(localRay, light) * 0.5 + 0.5);
+    sunIntensity = 0.2 / sunIntensity;
+    sunIntensity = min(sunIntensity, 40000.0);
+    sunIntensity = max(0.0, sunIntensity - 3.0);
+    return vec3(0,0,0);
+    return vec3(clouds) + sunCol * (sunIntensity*0.00000075);
 }

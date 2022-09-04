@@ -25,6 +25,7 @@ struct vec4{
         return make_float4(x, y, z, w);
     }
 };
+
 struct vec3{
     float x, y, z;
     __forceinline__ __device__ vec3(const float3 &_v)
@@ -817,7 +818,7 @@ __forceinline__ __device__ float smoothstep(float a, float b, float c)
     }
     if(c>a)
     {
-        return mix(a, b, (c-a)/(b-a));
+        return (c-a)/(b-a);
     }
     return 0;
 }
@@ -939,6 +940,20 @@ __forceinline__ __device__ vec4 texture2D(cudaTextureObject_t texObj, vec2 uv)
 }
 /////////////end of geometry math/////////////////////////////////////////////////
 
+////////////matrix operator...////////////////////////////////////////////////////
+struct mat3{
+    vec3 m0, m1, m2;
+    __forceinline__ __device__ mat3(float m00, float m01, float m02, float m10, float m11, float m12, float m20, float m21, float m22)
+    {
+        m0 = vec3(m00, m01, m02);
+        m1 = vec3(m10, m11, m12);
+        m2 = vec3(m20, m21, m22);
+    }
+};
+__forceinline__ __device__ vec3 operator*(mat3 a, vec3 b)
+{
+    return vec3(dot(a.m0, b), dot(a.m1, b), dot(a.m2,b));
+}
 //__forceinline__ __device__ float cudatoglsl(float a) {
     //return a;
 //}

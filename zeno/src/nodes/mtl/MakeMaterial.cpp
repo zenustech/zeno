@@ -198,8 +198,8 @@ struct ExtractMaterialShader : zeno::INode
         {
             {
                 {"object"},
-                {"int", "islight", "1"},// actually string or list
-                {"int", "invertdir", "0"}
+                {"bool", "islight", "1"},// actually string or list
+                {"bool", "invertdir", "0"}
             },
             {
                 {"object"},

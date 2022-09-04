@@ -75,9 +75,10 @@ static __inline__ __device__  float GGX(float cosT, float a){
     float b = cosT*cosT;
     return 2.0f/ (1.0f  + sqrtf(a2 + b - a2*b));
 }
+
 static __inline__ __device__  vec3 sampleOnHemisphere(unsigned int &seed, float roughness)
 {
-    float2 xy = sobolRnd(seed);
+    float2 xy = sobolRnd2(seed);
     const float x = xy.x;
     const float y = xy.y;
 
@@ -89,6 +90,15 @@ static __inline__ __device__  vec3 sampleOnHemisphere(unsigned int &seed, float 
 
 
     return vec3(cos(phi) * sinTheta,  sin(phi) * sinTheta, cosTheta);
+}
+static __inline__ __device__  vec3 halfPlaneSample(unsigned int & seed, vec3 N)
+{
+    Onb tbn = Onb(N);
+    vec3 P = sampleOnHemisphere(seed, 1.0f);
+    auto wi = P;
+    tbn.inverse_transform(wi);
+    wi = normalize(wi);
+    return wi;
 }
 static __inline__ __device__ float pdfDiffuse(vec3 wi, vec3 n)
 {
