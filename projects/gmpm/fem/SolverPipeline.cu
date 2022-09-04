@@ -2547,7 +2547,7 @@ struct IPCSystemForceField : INode {
     float drag = get_input2<float>("wind_drag");
     float density = get_input2<float>("wind_density");
 
-    auto velZsField = get_input<ZenoLevelSet>("ZSVelField");
+    auto velZsField = get_input<ZenoLevelSet>("ZSLevelSet");
     const auto &velField = velZsField->getBasicLevelSet()._ls;
 
     auto stepDt = get_input2<float>("dt");
