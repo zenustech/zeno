@@ -502,6 +502,26 @@ class _TempNodeWrapper:
 no = _TempNodeWrapper()
 
 
+class _GetInputWrapper:
+    def __getattr__(self, key: str) -> Union[Literial, ZenoObject]:
+        return get_input2(key)
+
+    def __getitem__(self, key: str) -> Union[Literial, ZenoObject]:
+        return get_input2(key)
+
+args = _GetInputWrapper()
+
+
+class _SetOutputWrapper:
+    def __setattr__(self, key: str, value: Union[Literial, ZenoObject]):
+        return set_output2(key, value)
+
+    def __setitem__(self, key: str, value: Union[Literial, ZenoObject]):
+        return set_output2(key, value)
+
+rets = _SetOutputWrapper()
+
+
 __all__ = [
         'ZenoGraph',
         'ZenoObject',
@@ -512,4 +532,6 @@ __all__ = [
         'get_input2',
         'set_output2',
         'no',
+        'args',
+        'rets',
         ]
