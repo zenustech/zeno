@@ -6,6 +6,9 @@
 #include <variant>
 
 typedef std::variant<std::string, int, float, double, bool> ZVARIANT;
+typedef uint32_t ZENO_HANDLE;
+typedef uint32_t ZENO_ERROR;
+
 
 class IZNode
 {

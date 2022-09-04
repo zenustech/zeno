@@ -1,11 +1,8 @@
 #ifndef __GRAPHS_MANAGMENT_H__
 #define __GRAPHS_MANAGMENT_H__
 
-class ZenoSubGraphScene;
-
 #include <QtWidgets>
-
-#include <zenomodel/include/igraphsmodel.h>
+#include "igraphsmodel.h"
 
 class GraphsManagment : public QObject
 {
@@ -25,8 +22,8 @@ public:
     void removeCurrent();
     void appendLog(QtMsgType type, QString fileName, int ln, const QString &msg);
     void appendErr(const QString& nodeName, const QString& msg);
-    void appendMsgStream(const QByteArray& arr);
-    ZenoSubGraphScene* gvScene(const QModelIndex& subgIdx);
+    QGraphicsScene* gvScene(const QModelIndex& subgIdx) const;
+    void addScene(const QModelIndex& subgIdx, QGraphicsScene* scene);
 
 signals:
     void modelInited(IGraphsModel*);
@@ -42,7 +39,7 @@ private:
     QStandardItemModel* m_logModel;     //connection with scene.
     mutable QMutex m_mutex;
     QString m_currFile;
-    QMap<QString, ZenoSubGraphScene*> m_scenes;
+    QMap<QString, QGraphicsScene*> m_scenes;
 };
 
 #endif

@@ -5,7 +5,7 @@
 #include <comctrl/ztoolbutton.h>
 #include "nodesview/zenographseditor.h"
 #include "zenoapplication.h"
-#include "graphsmanagment.h"
+#include <zenomodel/include/graphsmanagment.h>
 #include "../panel/zenoproppanel.h"
 #include <zenomodel/include/modelrole.h>
 #include "util/log.h"

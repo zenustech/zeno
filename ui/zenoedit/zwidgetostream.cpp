@@ -1,7 +1,7 @@
 #include "zwidgetostream.h"
 #include "zenoapplication.h"
 #include <zenomodel/include/modelrole.h>
-#include "graphsmanagment.h"
+#include <zenomodel/include/graphsmanagment.h>
 #include <cstring>
 
 

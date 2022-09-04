@@ -1,7 +1,7 @@
 #include "zsubnetlistitemdelegate.h"
 #include "style/zenostyle.h"
 #include "zenosubnetlistview.h"
-#include "graphsmanagment.h"
+#include <zenomodel/include/graphsmanagment.h>
 #include "zenoapplication.h"
 #include <zenomodel/include/modelrole.h>
 #include "util/log.h"

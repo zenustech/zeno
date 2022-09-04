@@ -51,6 +51,8 @@ public:
     QString fileName() const override;
     void setFilePath(const QString& fn) override;
     QModelIndex index(int row, int column, const QModelIndex& parent = QModelIndex()) const override;
+    QModelIndex nodeIndex(uint32_t id, uint32_t sid) override;
+    QModelIndex subgIndex(uint32_t sid) override;
     QModelIndex index(const QString& subGraphName) const override;
     QModelIndex indexBySubModel(SubGraphModel* pSubModel) const;
     QModelIndex linkIndex(int r) override;
@@ -151,6 +153,7 @@ private:
     void updateDescInfo(const QString& descName, const SOCKET_UPDATE_INFO& updateInfo);
     void importNodeLinks(const QList<NODE_DATA> &nodes, const QModelIndex &subGpIdx);
     void resolveLinks(const QModelIndex& idx, SubGraphModel* pCurrentGraph);
+    QModelIndex _createIndex(SubGraphModel* pSubModel) const;
     void initDescriptors();
     NODE_DESC getSubgraphDesc(SubGraphModel* pModel);
     void registerCate(const NODE_DESC& desc);
@@ -162,6 +165,8 @@ private:
     void onApiBatchFinished();
 
     QVector<SubGraphModel*> m_subGraphs;
+    QMap<uint32_t, QString> m_id2name;
+    QMap<QString, uint32_t> m_name2id;
     QItemSelectionModel* m_selection;
     QStandardItemModel* m_linkModel;
     NODE_DESCS m_nodesDesc;

@@ -1,6 +1,6 @@
 #include "zenomainwindow.h"
 #include "dock/zenodockwidget.h"
-#include "graphsmanagment.h"
+#include <zenomodel/include/graphsmanagment.h>
 #include "launch/corelaunch.h"
 #include "launch/serialize.h"
 #include "nodesview/zenographseditor.h"
@@ -670,7 +670,13 @@ void ZenoMainWindow::clearErrorMark()
     const QModelIndexList& lst = pModel->subgraphsIndice();
     for (const QModelIndex& idx : lst)
     {
-        ZenoSubGraphScene* pScene = graphsMgm->gvScene(idx);
+        ZenoSubGraphScene* pScene = qobject_cast<ZenoSubGraphScene*>(graphsMgm->gvScene(idx));
+        if (!pScene) {
+            pScene = new ZenoSubGraphScene(this);
+            graphsMgm->addScene(idx, pScene);
+            pScene->initModel(idx);
+        }
+
         if (pScene) {
             pScene->clearMark();
         }

@@ -1,7 +1,7 @@
 #include "blackboardnode.h"
 #include <zenoui/render/common_id.h>
 #include "zenoapplication.h"
-#include "graphsmanagment.h"
+#include <zenomodel/include/graphsmanagment.h>
 #include "util/log.h"
 
 

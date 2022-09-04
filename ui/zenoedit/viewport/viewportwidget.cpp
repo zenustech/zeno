@@ -3,7 +3,7 @@
 #include "zenovis.h"
 #include "camerakeyframe.h"
 #include "timeline/ztimeline.h"
-#include "graphsmanagment.h"
+#include <zenomodel/include/graphsmanagment.h>
 #include "launch/corelaunch.h"
 #include "zenoapplication.h"
 #include "zenomainwindow.h"

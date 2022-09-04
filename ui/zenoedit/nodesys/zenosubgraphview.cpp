@@ -1,5 +1,5 @@
 #include "zenosubgraphscene.h"
-#include "../graphsmanagment.h"
+#include <zenomodel/include/graphsmanagment.h>
 #include "zenosubgraphview.h"
 #include "zenosearchbar.h"
 #include "zenoapplication.h"

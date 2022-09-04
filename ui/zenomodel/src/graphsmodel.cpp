@@ -180,6 +180,12 @@ void GraphsModel::renameSubGraph(const QString& oldName, const QString& newName)
     m_subgsDesc[newName] = desc;
     m_subgsDesc.remove(oldName);
 
+    uint32_t ident = m_name2id[oldName];
+    m_id2name[ident] = newName;
+    ZASSERT_EXIT(m_name2id.find(oldName) != m_name2id.end());
+    m_name2id.remove(oldName);
+    m_name2id[newName] = ident;
+
     for (QString cate : desc.categories)
     {
         m_nodesCate[cate].nodes.removeAll(oldName);
@@ -189,12 +195,38 @@ void GraphsModel::renameSubGraph(const QString& oldName, const QString& newName)
     emit graphRenamed(oldName, newName);
 }
 
+QModelIndex GraphsModel::nodeIndex(uint32_t id, uint32_t sid)
+{
+    QModelIndex subgIdx = subgIndex(sid);
+    ZASSERT_EXIT(subgIdx.isValid(), QModelIndex());
+    QModelIndex nodeIdx = m_subGraphs[subgIdx.row()]->index(id);
+    return nodeIdx;
+}
+
+QModelIndex GraphsModel::subgIndex(uint32_t sid)
+{
+    ZASSERT_EXIT(m_id2name.find(sid) != m_id2name.end(), QModelIndex());
+    const QString& subgName = m_id2name[sid];
+    return index(subgName);
+}
+
+QModelIndex GraphsModel::_createIndex(SubGraphModel* pSubModel) const
+{
+    if (!pSubModel)
+        return QModelIndex();
+
+    const QString& subgName = pSubModel->name();
+    ZASSERT_EXIT(m_name2id.find(subgName) != m_name2id.end(), QModelIndex());
+    int row = m_subGraphs.indexOf(pSubModel);
+    return createIndex(row, 0, m_name2id[subgName]);
+}
+
 QModelIndex GraphsModel::index(int row, int column, const QModelIndex& parent) const
 {
     if (row < 0 || row >= m_subGraphs.size())
         return QModelIndex();
 
-    return createIndex(row, 0, nullptr);
+    return _createIndex(m_subGraphs[row]);
 }
 
 QModelIndex GraphsModel::index(const QString& subGraphName) const
@@ -203,7 +235,7 @@ QModelIndex GraphsModel::index(const QString& subGraphName) const
 	{
 		if (m_subGraphs[row]->name() == subGraphName)
 		{
-            return createIndex(row, 0, nullptr);
+            return _createIndex(m_subGraphs[row]);
 		}
 	}
     return QModelIndex();
@@ -214,7 +246,7 @@ QModelIndex GraphsModel::indexBySubModel(SubGraphModel* pSubModel) const
     for (int row = 0; row < m_subGraphs.size(); row++)
     {
         if (m_subGraphs[row] == pSubModel)
-            return createIndex(row, 0, nullptr);
+            return _createIndex(pSubModel);
     }
     return QModelIndex();
 }
@@ -521,6 +553,13 @@ void GraphsModel::appendSubGraph(SubGraphModel* pGraph)
     int row = m_subGraphs.size();
 	beginInsertRows(QModelIndex(), row, row);
     m_subGraphs.append(pGraph);
+
+    const QString& name = pGraph->name();
+    QUuid uuid = QUuid::createUuid();
+    uint32_t ident = uuid.data1;
+    m_id2name[ident] = name;
+    m_name2id[name] = ident;
+
 	endInsertRows();
     //the subgraph desc has been inited when processing io.
     if (!IsIOProcessing())
@@ -537,8 +576,16 @@ void GraphsModel::appendSubGraph(SubGraphModel* pGraph)
 void GraphsModel::removeGraph(int idx)
 {
     beginRemoveRows(QModelIndex(), idx, idx);
+
     const QString& descName = m_subGraphs[idx]->name();
     m_subGraphs.remove(idx);
+
+    ZASSERT_EXIT(m_name2id.find(descName) != m_name2id.end());
+    uint32_t ident = m_name2id[descName];
+    m_name2id.remove(descName);
+    ZASSERT_EXIT(m_id2name.find(ident) != m_id2name.end());
+    m_id2name.remove(ident);
+
     endRemoveRows();
 
     //if there is a core node shared the same name with this subgraph,

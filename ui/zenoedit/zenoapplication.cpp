@@ -1,6 +1,6 @@
 #include <zenoio/reader/zsgreader.h>
 #include "zenoapplication.h"
-#include "graphsmanagment.h"
+#include <zenomodel/include/graphsmanagment.h>
 #include "zenomainwindow.h"
 #include <zeno/utils/log.h>
 #include "util/log.h"

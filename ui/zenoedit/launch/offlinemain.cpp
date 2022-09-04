@@ -1,7 +1,7 @@
 #include "corelaunch.h"
 #include "serialize.h"
 #include "util/log.h"
-#include "graphsmanagment.h"
+#include <zenomodel/include/graphsmanagment.h>
 #include <zenomodel/include/jsonhelper.h>
 #include <zenomodel/include/modelrole.h>
 #include <zeno/core/Session.h>

@@ -4,7 +4,7 @@
 #include "util/apphelper.h"
 #include <zeno/utils/log.h>
 #include "zenoapplication.h"
-#include "graphsmanagment.h"
+#include <zenomodel/include/graphsmanagment.h>
 #include <zenomodel/include/curvemodel.h>
 #include <zenomodel/include/variantptr.h>
 #include "curvemap/curveutil.h"

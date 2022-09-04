@@ -7,23 +7,6 @@
 #include <memory>
 #include "command.h"
 
-struct PlainNodeItem
-{
-    void setData(const QVariant &value, int role) {
-        m_datas[role] = value;
-    }
-
-    QVariant data(int role) const {
-        auto it = m_datas.find(role);
-        if (it == m_datas.end())
-            return QVariant();
-        return it.value();
-    }
-
-    NODE_DATA m_datas;
-};
-
-//typedef std::shared_ptr<PlainNodeItem> NODEITEM_PTR;
 
 class GraphsModel;
 
@@ -59,6 +42,7 @@ public:
     //SubGraphModel
     bool insertRow(int row, const NODE_DATA &nodeData, const QModelIndex &parent = QModelIndex());
     QModelIndex index(QString id, const QModelIndex &parent = QModelIndex()) const;
+    QModelIndex index(int id) const;
     void appendItem(const NODE_DATA& nodeData, bool enableTransaction = false);
     void removeNode(const QString& nodeid, bool enableTransaction = false);
     void removeNode(int row, bool enableTransaction = false);
@@ -107,6 +91,9 @@ private:
     QMap<QString, int> m_key2Row;
     QMap<int, QString> m_row2Key;
     QMap<QString, NODE_DATA> m_nodes;
+
+    QMap<uint32_t, QString> m_num2strId;
+    QMap<QString, uint32_t> m_str2numId;
 
     QRectF m_rect;
     GraphsModel* m_pGraphsModel;

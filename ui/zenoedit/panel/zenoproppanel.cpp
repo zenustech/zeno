@@ -1,6 +1,6 @@
 #include "zenoproppanel.h"
 #include "zenoapplication.h"
-#include "graphsmanagment.h"
+#include <zenomodel/include/graphsmanagment.h>
 #include <zenomodel/include/modelrole.h>
 #include <zenomodel/include/igraphsmodel.h>
 #include <zenoui/comctrl/zcombobox.h>

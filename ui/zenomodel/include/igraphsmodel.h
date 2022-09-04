@@ -5,6 +5,7 @@
 #include "common.h"
 #include "modeldata.h"
 
+
 class IGraphsModel : public QAbstractItemModel
 {
 	Q_OBJECT
@@ -14,6 +15,10 @@ public:
 	virtual QModelIndex index(const QString& subGraphName) const = 0;
 	virtual QModelIndex index(const QString& id, const QModelIndex& subGpIdx) = 0;
 	virtual QModelIndex index(int r, const QModelIndex& subGpIdx) = 0;
+
+	virtual QModelIndex nodeIndex(uint32_t id, uint32_t sid) = 0;
+	virtual QModelIndex subgIndex(uint32_t sid) = 0;
+
 	virtual QModelIndex linkIndex(int r) = 0;
 	virtual QVariant data2(const QModelIndex& subGpIdx, const QModelIndex& index, int role) = 0;
 	virtual int itemCount(const QModelIndex& subGpIdx) const = 0;

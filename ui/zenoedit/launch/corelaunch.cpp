@@ -11,7 +11,7 @@
 #include <zeno/types/StringObject.h>
 #include "zenoapplication.h"
 #include "zenomainwindow.h"
-#include "graphsmanagment.h"
+#include <zenomodel/include/graphsmanagment.h>
 #include "serialize.h"
 #if !defined(ZENO_MULTIPROCESS) || !defined(ZENO_IPC_USE_TCP)
 #include <thread>

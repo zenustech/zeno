@@ -1,5 +1,5 @@
 #include "zenonewmenu.h"
-#include "../graphsmanagment.h"
+#include <zenomodel/include/graphsmanagment.h>
 #include "zenoapplication.h"
 #include "nodesmgr.h"
 #include "fuzzy_search.h"

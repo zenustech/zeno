@@ -1,6 +1,6 @@
 #include "zenosubnetlistview.h"
 #include "zenoapplication.h"
-#include "graphsmanagment.h"
+#include <zenomodel/include/graphsmanagment.h>
 #include "style/zenostyle.h"
 #include "zsubnetlistitemdelegate.h"
 #include <comctrl/zlabel.h>

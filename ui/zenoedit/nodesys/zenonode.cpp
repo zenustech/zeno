@@ -14,7 +14,7 @@
 #include "curvemap/zcurvemapeditor.h"
 #include "zenoapplication.h"
 #include "zenomainwindow.h"
-#include "graphsmanagment.h"
+#include <zenomodel/include/graphsmanagment.h>
 #include "../nodesview/zenographseditor.h"
 #include "util/log.h"
 #include "zenosubgraphview.h"

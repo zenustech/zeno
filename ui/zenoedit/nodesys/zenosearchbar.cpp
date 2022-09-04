@@ -3,7 +3,7 @@
 #include <zenomodel/include/modelrole.h>
 #include <zenoui/style/zenostyle.h>
 #include "zenoapplication.h"
-#include "graphsmanagment.h"
+#include <zenomodel/include/graphsmanagment.h>
 
 
 ZenoSearchBar::ZenoSearchBar(const QModelIndex& idx, QWidget *parentWidget)

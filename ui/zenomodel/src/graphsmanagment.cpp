@@ -3,10 +3,9 @@
 #include <zenomodel/include/modelrole.h>
 #include <zenoio/reader/zsgreader.h>
 #include <zenomodel/include/uihelper.h>
-#include "nodesys/zenosubgraphscene.h"
 #include <zeno/utils/log.h>
+#include <zeno/utils/scope_exit.h>
 #include <zenoui/util/cihou.h>
-#include "zenoapplication.h"
 
 
 class IOBreakingScope
@@ -55,7 +54,7 @@ void GraphsManagment::setCurrentModel(IGraphsModel* model)
     {
         const QModelIndex& subgIdx = m_model->index(i, 0);
         const QString& subgName = subgIdx.data(ROLE_OBJNAME).toString();
-        m_scenes[subgName] = nullptr;
+        //m_scenes[subgName] = nullptr;
     }
 
     emit modelInited(m_model);
@@ -183,31 +182,24 @@ void GraphsManagment::removeCurrent()
     }
 }
 
-void GraphsManagment::appendMsgStream(const QByteArray& arr)
-{
-    QList<QByteArray> lst = arr.split('\n');
-    for (QByteArray line : lst)
-    {
-        if (!line.isEmpty())
-        {
-            std::cout << line.data() << std::endl;
-            ZWidgetErrStream::appendFormatMsg(line.toStdString());
-        }
-    }
-}
-
-ZenoSubGraphScene* GraphsManagment::gvScene(const QModelIndex& subgIdx)
+QGraphicsScene* GraphsManagment::gvScene(const QModelIndex& subgIdx) const
 {
     if (!subgIdx.isValid())
         return nullptr;
 
     const QString& subgName = subgIdx.data(ROLE_OBJNAME).toString();
-    if (m_scenes[subgName] == nullptr)
-    {
-        m_scenes[subgName] = new ZenoSubGraphScene(this);
-        m_scenes[subgName]->initModel(subgIdx);
-    }
+    if (m_scenes.find(subgName) == m_scenes.end())
+        return nullptr;
+
     return m_scenes[subgName];
+}
+
+void GraphsManagment::addScene(const QModelIndex& subgIdx, QGraphicsScene* scene)
+{
+    const QString& subgName = subgIdx.data(ROLE_OBJNAME).toString();
+    if (m_scenes.find(subgName) != m_scenes.end() || !scene)
+        return;
+    m_scenes.insert(subgName, scene);
 }
 
 void GraphsManagment::appendErr(const QString& nodeName, const QString& msg)

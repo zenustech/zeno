@@ -6,7 +6,7 @@
 #include "zenoapplication.h"
 #include "zenomainwindow.h"
 #include "viewport/viewportwidget.h"
-#include "graphsmanagment.h"
+#include <zenomodel/include/graphsmanagment.h>
 #include "viewport/zenovis.h"
 #include "util/log.h"
 #include <QFileDialog>

@@ -4,7 +4,7 @@
 #include "zenoapplication.h"
 #include "../nodesys/zenosubgraphscene.h"
 #include "zenowelcomepage.h"
-#include "graphsmanagment.h"
+#include <zenomodel/include/graphsmanagment.h>
 #include <zenomodel/include/modelrole.h>
 #include <comctrl/zenocheckbutton.h>
 #include <comctrl/ziconbutton.h>
@@ -386,13 +386,18 @@ void ZenoGraphsEditor::activateTab(const QString& subGraphName, const QString& p
 	{
 		const QModelIndex& subgIdx = pModel->index(subGraphName);
 
-        ZenoSubGraphScene* pScene = graphsMgm->gvScene(subgIdx);
-		ZASSERT_EXIT(pScene);
+        ZenoSubGraphScene* pScene = qobject_cast<ZenoSubGraphScene*>(graphsMgm->gvScene(subgIdx));
+        if (!pScene)
+        {
+            pScene = new ZenoSubGraphScene(this);
+            graphsMgm->addScene(subgIdx, pScene);
+            pScene->initModel(subgIdx);
+        }
 
         ZenoSubGraphView* pView = new ZenoSubGraphView;
-		pView->initScene(pScene);
+        pView->initScene(pScene);
 
-		idx = m_ui->graphsViewTab->addTab(pView, subGraphName);
+        idx = m_ui->graphsViewTab->addTab(pView, subGraphName);
 
         connect(pView, &ZenoSubGraphView::zoomed, pScene, &ZenoSubGraphScene::onZoomed);
 
@@ -479,11 +484,13 @@ void ZenoGraphsEditor::onLogInserted(const QModelIndex& parent, int first, int l
                 {
                     const QModelIndex& subgIdx = m_model->index(subgName);
                     auto graphsMgm = zenoApp->graphsManagment();
-                    ZenoSubGraphScene* pScene = graphsMgm->gvScene(subgIdx);
-                    if (pScene)
-                    {
-                        pScene->markError(objId);
+                    ZenoSubGraphScene* pScene = qobject_cast<ZenoSubGraphScene*>(graphsMgm->gvScene(subgIdx));
+                    if (!pScene) {
+                        pScene = new ZenoSubGraphScene(this);
+                        graphsMgm->addScene(subgIdx, pScene);
+                        pScene->initModel(subgIdx);
                     }
+                    pScene->markError(objId);
                 }
             }
         }
