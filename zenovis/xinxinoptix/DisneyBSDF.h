@@ -948,8 +948,8 @@ static __inline__ __device__ vec3 proceduralSky(vec3 dir)
 {
 
     float bright = 1*(1.8-0.55);
-    float color1 = fbm((dir*9)-0.5);  //xz
-    float color2 = fbm((dir*21)-10.5); //yz
+    float color1 = fbm((dir*3.5)-0.5);  //xz
+    float color2 = fbm((dir*7.8)-10.5); //yz
 
     float clouds1 = smoothstep(1.0-0.55,min((1.0-0.55)+0.28*2.0,1.0),color1);
     float clouds2 = smoothstep(1.0-0.55,min((1.0-0.55)+0.28,1.0),color2);
@@ -966,11 +966,11 @@ static __inline__ __device__ vec3 proceduralSky(vec3 dir)
     clouds = mix(skyCol,cloudColComb,cloudsFormComb);
 
     vec3 localRay = normalize(dir);
-    vec3 light = normalize(vec3(1.2,.8,0.5));
+    vec3 light = normalize(vec3(-1.2,.8,0.5));
     float sunIntensity = 1.0 - (dot(localRay, light) * 0.5 + 0.5);
     sunIntensity = 0.2 / sunIntensity;
     sunIntensity = min(sunIntensity, 40000.0);
     sunIntensity = max(0.0, sunIntensity - 3.0);
-    return vec3(0,0,0);
-    return vec3(clouds) + sunCol * (sunIntensity*0.00000075);
+    //return vec3(1,1,1);
+    return vec3(clouds)*0.5 + sunCol * (sunIntensity*0.0000075);
 }
