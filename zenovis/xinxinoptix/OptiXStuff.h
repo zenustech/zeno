@@ -18,6 +18,7 @@
 #include <sutil/Trackball.h>
 #include <sutil/sutil.h>
 #include <sutil/vec_math.h>
+#include <sutil/PPMLoader.h>
 #include <optix_stack_size.h>
 #include "raiicuda.h"
 
@@ -205,6 +206,11 @@ struct cuTexture{
         }
     }
 };
+inline sutil::Texture loadCubeMap(const std::string& ppm_filename)
+{
+
+    return loadPPMTexture( ppm_filename, make_float3(1,1,1), nullptr );
+}
 inline std::shared_ptr<cuTexture> makeCudaTexture(unsigned char* img, int nx, int ny, int nc)
 {
     auto texture = std::make_shared<cuTexture>();
