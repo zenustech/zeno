@@ -11,7 +11,7 @@
 #include "zensim/zpc_tpls/fmt/color.h"
 #include <thrust/device_ptr.h>
 #include <thrust/sort.h>
-#include <zeno/logger.h>
+#include <zeno/utils/log.h>
 
 namespace zeno {
 

@@ -11,6 +11,7 @@
 #include <deque>
 #include <zeno/types/ListObject.h>
 #include "AudioFile.h"
+#include<algorithm>
 
 #define MINIMP3_IMPLEMENTATION
 #define MINIMP3_FLOAT_OUTPUT
@@ -22,28 +23,75 @@ static float lerp(float start, float end, float value) {
 }
 }
 namespace zeno {
+static std::shared_ptr<PrimitiveObject> readWav(std::string path){
+    AudioFile<float> wav;
+    wav.load (path);
+    wav.printSummary();
+
+    auto result = std::make_shared<PrimitiveObject>(); // std::shared_ptr<PrimitiveObject>
+    result->resize(wav.getNumSamplesPerChannel());
+    auto &value = result->add_attr<float>("value"); //std::vector<float>
+    auto &t = result->add_attr<float>("t");
+
+    for (std::size_t i = 0; i < result->verts.size(); ++i) {
+        value[i] = wav.samples[0][i];
+        t[i] = float(i);
+    }
+
+    result->userData().set("SampleRate", std::make_shared<zeno::NumericObject>((int)wav.getSampleRate()));
+    result->userData().set("BitDepth", std::make_shared<zeno::NumericObject>((int)wav.getBitDepth()));
+    result->userData().set("NumSamplesPerChannel", std::make_shared<zeno::NumericObject>((int)wav.getNumSamplesPerChannel()));
+    result->userData().set("LengthInSeconds", std::make_shared<zeno::NumericObject>((float)wav.getLengthInSeconds()));
+
+    return std::move(result);
+}
+
+static std::shared_ptr<PrimitiveObject> readMp3(std::string path) {
+
+    // open the file:
+    std::ifstream file(path, std::ios::binary);
+    // read the data:
+    auto data = std::vector<uint8_t>((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+
+    static mp3dec_t mp3d;
+    mp3dec_init(&mp3d);
+
+    mp3dec_frame_info_t info;
+    float pcm[MINIMP3_MAX_SAMPLES_PER_FRAME];
+    int mp3len = 0;
+    int sample_len = 0;
+
+    std::vector<float> decoded_data;
+    decoded_data.reserve(44100 * 30);
+    while (true) {
+        int samples = mp3dec_decode_frame(&mp3d, data.data() + mp3len, data.size() - mp3len, pcm, &info);
+        if (samples == 0) {
+            break;
+        }
+        sample_len += samples;
+        mp3len += info.frame_bytes;
+        for (auto i = 0; i < samples * info.channels; i += info.channels) {
+            decoded_data.push_back(pcm[i]);
+        }
+    }
+    auto result = std::make_shared<PrimitiveObject>(); // std::shared_ptr<PrimitiveObject>
+    result->resize(sample_len);
+    auto &value = result->add_attr<float>("value"); //std::vector<float>
+    auto &t = result->add_attr<float>("t");
+    for (std::size_t i = 0; i < result->verts.size(); ++i) {
+        value[i] = decoded_data[i];
+        t[i] = float(i);
+    }
+    result->userData().set("SampleRate",std::make_shared<zeno::NumericObject>((int)info.hz));
+    result->userData().set("NumSamplesPerChannel", std::make_shared<zeno::NumericObject>((int)sample_len));
+
+    return std::move(result);
+}
+
     struct ReadWavFile : zeno::INode {
         virtual void apply() override {
             auto path = get_input<StringObject>("path")->get(); // std::string
-            AudioFile<float> wav;
-            wav.load (path);
-            wav.printSummary();
-
-            auto result = std::make_shared<PrimitiveObject>(); // std::shared_ptr<PrimitiveObject>
-            result->resize(wav.getNumSamplesPerChannel());
-            auto &value = result->add_attr<float>("value"); //std::vector<float>
-            auto &t = result->add_attr<float>("t");
-
-            for (std::size_t i = 0; i < result->verts.size(); ++i) {
-                value[i] = wav.samples[0][i];
-                t[i] = float(i);
-            }
-
-            result->userData().set("SampleRate", std::make_shared<zeno::NumericObject>((int)wav.getSampleRate()));
-            result->userData().set("BitDepth", std::make_shared<zeno::NumericObject>((int)wav.getBitDepth()));
-            result->userData().set("NumSamplesPerChannel", std::make_shared<zeno::NumericObject>((int)wav.getNumSamplesPerChannel()));
-            result->userData().set("LengthInSeconds", std::make_shared<zeno::NumericObject>((float)wav.getLengthInSeconds()));
-
+            auto result = zeno::readWav(path);
             set_output("wave",result);
         }
     };
@@ -56,55 +104,55 @@ namespace zeno {
         },
         {},
         {
-            "audio"
+            "deprecated"
         },
     });
 
     struct ReadMp3File : zeno::INode {
         virtual void apply() override {
             auto path = get_input<StringObject>("path")->get(); // std::string
-
-            // open the file:
-            std::ifstream file(path, std::ios::binary);
-            // read the data:
-            auto data = std::vector<uint8_t>((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
-
-            static mp3dec_t mp3d;
-            mp3dec_init(&mp3d);
-
-            mp3dec_frame_info_t info;
-            float pcm[MINIMP3_MAX_SAMPLES_PER_FRAME];
-            int mp3len = 0;
-            int sample_len = 0;
-
-            std::vector<float> decoded_data;
-            decoded_data.reserve(44100 * 30);
-            while (true) {
-                int samples = mp3dec_decode_frame(&mp3d, data.data() + mp3len, data.size() - mp3len, pcm, &info);
-                if (samples == 0) {
-                    break;
-                }
-                sample_len += samples;
-                mp3len += info.frame_bytes;
-                for (auto i = 0; i < samples * info.channels; i += info.channels) {
-                    decoded_data.push_back(pcm[i]);
-                }
-            }
-            auto result = std::make_shared<PrimitiveObject>(); // std::shared_ptr<PrimitiveObject>
-            result->resize(sample_len);
-            auto &value = result->add_attr<float>("value"); //std::vector<float>
-            auto &t = result->add_attr<float>("t");
-            for (std::size_t i = 0; i < result->verts.size(); ++i) {
-                value[i] = decoded_data[i];
-                t[i] = float(i);
-            }
-            result->userData().set("SampleRate",std::make_shared<zeno::NumericObject>((int)info.hz));
-            result->userData().set("NumSamplesPerChannel", std::make_shared<zeno::NumericObject>((int)sample_len));
-
+            auto result = zeno::readMp3(path);
             set_output("wave", result);
         }
     };
     ZENDEFNODE(ReadMp3File, {
+        {
+            {"readpath", "path"},
+        },
+        {
+            "wave",
+        },
+        {},
+        {
+            "deprecated"
+        },
+    });
+
+    struct ReadAudioFile : zeno::INode {
+
+        virtual void apply() override {
+            auto path = get_input<StringObject>("path")->get(); // std::string
+            auto lower_path = path;
+            transform(lower_path.begin(), lower_path.end(), lower_path.begin(), ::tolower);
+            zeno::log_info("{} -> {}", path, lower_path);
+            bool isWave = false;
+            auto *pFile = strrchr(path.c_str(),'.');
+
+            if(pFile !=NULL) {
+                if (strcmp(pFile, ".wav") == 0) {
+                    zeno::log_info("is wave");
+                    auto result = zeno::readWav(path);
+                    set_output("wave", result);
+                } else if (strcmp(pFile, ".mp3") == 0) {
+                    zeno::log_info("is mp3");
+                    auto result = zeno::readMp3(path);
+                    set_output("wave", result);
+                }
+            }
+        }
+    };
+
+    ZENDEFNODE(ReadAudioFile, {
         {
             {"readpath", "path"},
         },
@@ -189,7 +237,7 @@ namespace zeno {
         }
     };
 
-ZENDEFNODE(AudioBeats, {
+    ZENDEFNODE(AudioBeats, {
         {
             "wave",
             {"float", "time", "0"},
@@ -207,99 +255,99 @@ ZENDEFNODE(AudioBeats, {
         },
     });
 
-struct AudioEnergy : zeno::INode {
-    double minE = std::numeric_limits<double>::max();
-    double maxE = std::numeric_limits<double>::min();
-    std::vector<double> init;
-    virtual void apply() override {
-        auto wave = get_input<PrimitiveObject>("wave");
-        int duration_count = 1024;
-        if (init.empty()) {
-            auto fft = Aquila::FftFactory::getFft(duration_count);
-            int clip_count = wave->size() / duration_count;
-            init.reserve(clip_count);
-            for (auto i = 0; i < clip_count; i++) {
-                std::vector<double> samples;
-                samples.resize(duration_count);
-                for (auto j = 0; j < duration_count; j++) {
-                    samples[j] = wave->attr<float>("value")[min(duration_count * i + j, wave->size()-1)];
-                }
-                Aquila::SpectrumType spectrums = fft->fft(samples.data());
-                {
-                    double E = 0;
-                    for (const auto& spectrum: spectrums) {
-                        E += spectrum.real() * spectrum.real() + spectrum.imag() * spectrum.imag();
+    struct AudioEnergy : zeno::INode {
+        double minE = std::numeric_limits<double>::max();
+        double maxE = std::numeric_limits<double>::min();
+        std::vector<double> init;
+        virtual void apply() override {
+            auto wave = get_input<PrimitiveObject>("wave");
+            int duration_count = 1024;
+            if (init.empty()) {
+                auto fft = Aquila::FftFactory::getFft(duration_count);
+                int clip_count = wave->size() / duration_count;
+                init.reserve(clip_count);
+                for (auto i = 0; i < clip_count; i++) {
+                    std::vector<double> samples;
+                    samples.resize(duration_count);
+                    for (auto j = 0; j < duration_count; j++) {
+                        samples[j] = wave->attr<float>("value")[min(duration_count * i + j, wave->size()-1)];
                     }
-                    E /= duration_count;
-                    minE = min(minE, E);
-                    maxE = max(maxE, E);
-                    init.push_back(E);
+                    Aquila::SpectrumType spectrums = fft->fft(samples.data());
+                    {
+                        double E = 0;
+                        for (const auto& spectrum: spectrums) {
+                            E += spectrum.real() * spectrum.real() + spectrum.imag() * spectrum.imag();
+                        }
+                        E /= duration_count;
+                        minE = min(minE, E);
+                        maxE = max(maxE, E);
+                        init.push_back(E);
+                    }
                 }
+    //            for (auto i = 0; i < clip_count; i++) {
+    //                init[i] = init[i] / maxE;
+    //            }
             }
-//            for (auto i = 0; i < clip_count; i++) {
-//                init[i] = init[i] / maxE;
-//            }
-        }
 
-//        auto vis = std::make_shared<PrimitiveObject>();
-//        vis->resize(init.size());
-//        auto &index = vis->add_attr<float>("index");
-//        auto &listE = vis->add_attr<float>("E");
-//        for (auto i = 0; i < init.size(); i++) {
-//            index[i] = i;
-//            listE[i] = init[i];
-//        }
-//        set_output("vis", vis);
+    //        auto vis = std::make_shared<PrimitiveObject>();
+    //        vis->resize(init.size());
+    //        auto &index = vis->add_attr<float>("index");
+    //        auto &listE = vis->add_attr<float>("E");
+    //        for (auto i = 0; i < init.size(); i++) {
+    //            index[i] = i;
+    //            listE[i] = init[i];
+    //        }
+    //        set_output("vis", vis);
 
-        set_output("minE", std::make_shared<NumericObject>((float)minE));
-        set_output("maxE", std::make_shared<NumericObject>((float)maxE));
+            set_output("minE", std::make_shared<NumericObject>((float)minE));
+            set_output("maxE", std::make_shared<NumericObject>((float)maxE));
 
-        auto start_time = get_input2<float>("time");
-        float sampleFrequency = wave->userData().get<zeno::NumericObject>("SampleRate")->get<float>();
-        int start_index = int(sampleFrequency * start_time);
-        auto fft = Aquila::FftFactory::getFft(duration_count);
-        std::vector<double> samples;
-        samples.resize(duration_count);
-        for (auto i = 0; i < duration_count; i++) {
-            samples[i] = wave->attr<float>("value")[min((start_index + i), wave->size()-1)];
-        }
-        Aquila::SpectrumType spectrums = fft->fft(samples.data());
-        double E = 0;
-        for (const auto& spectrum: spectrums) {
-            E += spectrum.real() * spectrum.real() + spectrum.imag() * spectrum.imag();
-        }
-        E /= duration_count;
-        set_output("E", std::make_shared<NumericObject>((float)E));
-        double uniE = (E - minE) / (maxE - minE);
-        set_output("uniE", std::make_shared<NumericObject>((float)uniE));
-        start_index /= duration_count;
-        start_index = min(start_index, init.size() - 1);
-        std::vector<double> _queue;
-        for (int i = max(start_index - 43, 0); i < start_index; i++) {
-            _queue.push_back((init[i] - minE) / (maxE - minE));
-        }
-        if (_queue.size() > 0) {
-            double avg_H = 0;
-            for (const double & e: _queue) {
-                avg_H += e;
+            auto start_time = get_input2<float>("time");
+            float sampleFrequency = wave->userData().get<zeno::NumericObject>("SampleRate")->get<float>();
+            int start_index = int(sampleFrequency * start_time);
+            auto fft = Aquila::FftFactory::getFft(duration_count);
+            std::vector<double> samples;
+            samples.resize(duration_count);
+            for (auto i = 0; i < duration_count; i++) {
+                samples[i] = wave->attr<float>("value")[min((start_index + i), wave->size()-1)];
             }
-            avg_H /= _queue.size();
-            double var_H = 0;
-            for (const double & e: _queue) {
-                var_H += (e - avg_H) * (e - avg_H);
+            Aquila::SpectrumType spectrums = fft->fft(samples.data());
+            double E = 0;
+            for (const auto& spectrum: spectrums) {
+                E += spectrum.real() * spectrum.real() + spectrum.imag() * spectrum.imag();
             }
-            var_H /= _queue.size();
-            double std_H = sqrt(var_H);
-//            zeno::log_info("E: {}, avg_H: {}, std_H: {}, var_H: {}", uniE, avg_H, std_H, var_H);
-            float threshold = get_input2<float>("threshold");
-            int beat = uniE > avg_H + std_H * threshold;
-            set_output("beat", std::make_shared<NumericObject>(beat));
+            E /= duration_count;
+            set_output("E", std::make_shared<NumericObject>((float)E));
+            double uniE = (E - minE) / (maxE - minE);
+            set_output("uniE", std::make_shared<NumericObject>((float)uniE));
+            start_index /= duration_count;
+            start_index = min(start_index, init.size() - 1);
+            std::vector<double> _queue;
+            for (int i = max(start_index - 43, 0); i < start_index; i++) {
+                _queue.push_back((init[i] - minE) / (maxE - minE));
+            }
+            if (_queue.size() > 0) {
+                double avg_H = 0;
+                for (const double & e: _queue) {
+                    avg_H += e;
+                }
+                avg_H /= _queue.size();
+                double var_H = 0;
+                for (const double & e: _queue) {
+                    var_H += (e - avg_H) * (e - avg_H);
+                }
+                var_H /= _queue.size();
+                double std_H = sqrt(var_H);
+    //            zeno::log_info("E: {}, avg_H: {}, std_H: {}, var_H: {}", uniE, avg_H, std_H, var_H);
+                float threshold = get_input2<float>("threshold");
+                int beat = uniE > avg_H + std_H * threshold;
+                set_output("beat", std::make_shared<NumericObject>(beat));
+            }
+            else {
+                set_output("beat", std::make_shared<NumericObject>(0));
+            }
         }
-        else {
-            set_output("beat", std::make_shared<NumericObject>(0));
-        }
-    }
-};
+    };
     ZENDEFNODE(AudioEnergy, {
         {
             "wave",

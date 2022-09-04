@@ -616,11 +616,10 @@ void IPCSystem::multiply(zs::CudaExecutionPolicy &pol, const zs::SmallString dxT
 
     // elasticity
     for (auto &primHandle : prims) {
-        auto &verts = primHandle.getVerts();
         auto &eles = primHandle.getEles();
         // elasticity
         if (primHandle.category == ZenoParticles::curve) {
-            if (primHandle.isBoundary())
+            if (primHandle.isBoundary() && !primHandle.isAuxiliary())
                 continue;
             pol(Collapse{eles.size(), 32}, [execTag, etemp = proxy<space>({}, primHandle.etemp),
                                             vtemp = proxy<space>({}, vtemp), eles = proxy<space>({}, eles), dxTag, bTag,
@@ -783,6 +782,35 @@ void IPCSystem::multiply(zs::CudaExecutionPolicy &pol, const zs::SmallString dxT
                         atomic_add(exec_cuda, &vtemp(bTag, MRid % 3, inds[MRid / 3]), rdata);
                 });
 #endif
+    }
+    for (auto &primHandle : auxPrims) {
+        auto &eles = primHandle.getEles();
+        // soft bindings
+        if (primHandle.category == ZenoParticles::curve) {
+            pol(Collapse{eles.size(), 32}, [execTag, etemp = proxy<space>({}, primHandle.etemp),
+                                            vtemp = proxy<space>({}, vtemp), eles = proxy<space>({}, eles), dxTag, bTag,
+                                            vOffset = primHandle.vOffset] ZS_LAMBDA(int ei, int tid) mutable {
+                int rowid = tid / 5;
+                int colid = tid % 5;
+                auto inds = eles.template pack<2>("inds", ei).template reinterpret_bits<int>() + vOffset;
+                T entryH = 0, entryDx = 0, entryG = 0;
+                if (tid < 30) {
+                    entryH = etemp("He", rowid * 6 + colid, ei);
+                    entryDx = vtemp(dxTag, colid % 3, inds[colid / 3]);
+                    entryG = entryH * entryDx;
+                    if (colid == 0) {
+                        entryG += etemp("He", rowid * 6 + 5, ei) * vtemp(dxTag, 2, inds[1]);
+                    }
+                }
+                for (int iter = 1; iter <= 4; iter <<= 1) {
+                    T tmp = __shfl_down_sync(0xFFFFFFFF, entryG, iter);
+                    if (colid + iter < 5 && tid < 30)
+                        entryG += tmp;
+                }
+                if (colid == 0 && rowid < 6)
+                    atomic_add(execTag, &vtemp(bTag, rowid % 3, inds[rowid / 3]), entryG);
+            });
+        }
     }
 
     // contacts
@@ -1428,7 +1456,7 @@ typename IPCSystem::T elasticityEnergy(zs::CudaExecutionPolicy &pol, typename IP
     es.reset(0);
     const zs::SmallString tag = "xn";
     if (primHandle.category == ZenoParticles::curve) {
-        if (primHandle.isBoundary())
+        if (primHandle.isBoundary() && !primHandle.isAuxiliary())
             return 0;
         // elasticity
         pol(range(eles.size()),
@@ -1555,6 +1583,11 @@ typename IPCSystem::T IPCSystem::energy(zs::CudaExecutionPolicy &pol, const zs::
     Es.push_back(reduce(pol, es));
 
     for (auto &primHandle : prims) {
+        match([&](auto &elasticModel) {
+            Es.push_back(elasticityEnergy(pol, vtemp, primHandle, elasticModel, dt, es));
+        })(primHandle.models.getElasticModel());
+    }
+    for (auto &primHandle : auxPrims) {
         match([&](auto &elasticModel) {
             Es.push_back(elasticityEnergy(pol, vtemp, primHandle, elasticModel, dt, es));
         })(primHandle.models.getElasticModel());
@@ -2299,7 +2332,9 @@ struct IPCSystemClothBinding : INode { // usually called once before stepping
     using bv_t = typename IPCSystem::bv_t;
     template <typename VecT> static constexpr float distance(const bv_t &bv, const zs::VecInterface<VecT> &x) {
         using namespace zs;
-        const auto &[mi, ma] = bv;
+        const auto &mi = bv._min;
+        const auto &ma = bv._max;
+        // const auto &[mi, ma] = bv;
         auto center = (mi + ma) / 2;
         auto point = (x - center).abs() - (ma - mi) / 2;
         float max = limits<float>::lowest();
@@ -2348,7 +2383,7 @@ struct IPCSystemClothBinding : INode { // usually called once before stepping
                 }
                 if (j != -1) {
                     auto no = atomic_add(exec_cuda, &cnt[0], 1);
-                    eles.template tuple<2>("inds", no) = zs::vec<int, 2>{i, j};
+                    eles.template tuple<2>("inds", no) = zs::vec<int, 2>{i, j}.template reinterpret_bits<float>();
                     eles("vol", no) = 1;
                     eles("k", no) = k;
                     eles("rl", no) = zs::min(dist / 4, rl);
@@ -2389,11 +2424,7 @@ struct IPCSystemClothBinding : INode { // usually called once before stepping
                     auto p = vtemp.template pack<3>("xn", i + coOffset);
                     bv = bv_t{p - limits<float>::epsilon() * 8, p + limits<float>::epsilon() * 8};
                 });
-        puts("done bvs retrieval");
-        bouBvh.build(cudaPol, bouVertBvs, false_c);
-        puts("done bvh build");
-        bouBvh.refit(cudaPol, bouVertBvs);
-        puts("done bvh refit");
+        bouBvh.build(cudaPol, bouVertBvs);
 
         // stiffness
         float k = get_input2<float>("strength"); // pulling stiffness
@@ -2411,22 +2442,21 @@ struct IPCSystemClothBinding : INode { // usually called once before stepping
             if constexpr (is_same_v<RM_CVREF_T(ls), basic_ls_t>) {
                 match([&](const auto &lsPtr) {
                     auto lsv = get_level_set_view<execspace_e::cuda>(lsPtr);
-                    A->prims.emplace_back(vtemp, bindStrings(cudaPol, vtemp, numVerts, lsv, bouBvh, k, dist_cap, rl));
+                    A->pushBoundarySprings(bindStrings(cudaPol, vtemp, numVerts, lsv, bouBvh, k, dist_cap, rl));
                 })(ls._ls);
             } else if constexpr (is_same_v<RM_CVREF_T(ls), const_sdf_vel_ls_t>) {
                 match([&](auto lsv) {
-                    A->prims.emplace_back(
-                        vtemp, bindStrings(cudaPol, vtemp, numVerts, SdfVelFieldView{lsv}, bouBvh, k, dist_cap, rl));
+                    A->pushBoundarySprings(
+                        bindStrings(cudaPol, vtemp, numVerts, SdfVelFieldView{lsv}, bouBvh, k, dist_cap, rl));
                 })(ls.template getView<execspace_e::cuda>());
             } else if constexpr (is_same_v<RM_CVREF_T(ls), const_transition_ls_t>) {
                 match([&](auto fieldPair) {
                     auto &fvSrc = std::get<0>(fieldPair);
                     auto &fvDst = std::get<1>(fieldPair);
-                    A->prims.emplace_back(
-                        vtemp, bindStrings(cudaPol, vtemp, numVerts,
-                                           TransitionLevelSetView{SdfVelFieldView{fvSrc}, SdfVelFieldView{fvDst},
-                                                                  ls._stepDt, ls._alpha},
-                                           bouBvh, k, dist_cap, rl));
+                    A->pushBoundarySprings(bindStrings(
+                        cudaPol, vtemp, numVerts,
+                        TransitionLevelSetView{SdfVelFieldView{fvSrc}, SdfVelFieldView{fvDst}, ls._stepDt, ls._alpha},
+                        bouBvh, k, dist_cap, rl));
                 })(ls.template getView<zs::execspace_e::cuda>());
             }
         })(zsls->getLevelSet());

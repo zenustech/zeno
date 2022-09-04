@@ -8,9 +8,6 @@
 #include <zenovis/ObjectsManager.h>
 #include <zeno/types/UserData.h>
 #include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
-#include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 
 ZenoLights::ZenoLights(QWidget *parent) : QWidget(parent) {
@@ -52,11 +49,18 @@ ZenoLights::ZenoLights(QWidget *parent) : QWidget(parent) {
             zeno::vec3f scale = ptr->userData().getLiterial<zeno::vec3f>("scale", zeno::vec3f(0.0f));
             zeno::vec3f rotate = ptr->userData().getLiterial<zeno::vec3f>("rotate", zeno::vec3f(0.0f));
             zeno::vec3f clr;
-            if (prim_in->verts.has_attr("clr")) {
-                clr = prim_in->verts.attr<zeno::vec3f>("clr")[0];
-            } else {
-                clr = zeno::vec3f(30000.0f, 30000.0f, 30000.0f);
+            if (ptr->userData().has("color")) {
+                clr = ptr->userData().getLiterial<zeno::vec3f>("color");
             }
+            else {
+                if (prim_in->verts.has_attr("clr")) {
+                    clr = prim_in->verts.attr<zeno::vec3f>("clr")[0];
+                } else {
+                    clr = zeno::vec3f(30000.0f, 30000.0f, 30000.0f);
+                }
+            }
+
+            float intensity = ptr->userData().getLiterial<float>("intensity", 1);
             posXEdit->setText(QString::number(pos[0]));
             posYEdit->setText(QString::number(pos[1]));
             posZEdit->setText(QString::number(pos[2]));
@@ -73,8 +77,7 @@ ZenoLights::ZenoLights(QWidget *parent) : QWidget(parent) {
             colorYEdit->setText(QString::number(clr[1]));
             colorZEdit->setText(QString::number(clr[2]));
 
-            zenoApp->getMainWindow()->selected = nullptr;
-            zenoApp->getMainWindow()->lightPanel = this;
+            intensityEdit->setText(QString::number(intensity));
         }else{
             zeno::log_info("connect item not found {}", name);
         }
@@ -101,6 +104,16 @@ ZenoLights::ZenoLights(QWidget *parent) : QWidget(parent) {
         posZEdit->setProperty("cssClass", "proppanel");
         pPosLayout->addWidget(posZEdit);
         pMainLayout->addLayout(pPosLayout);
+
+        posXEdit->setNumSlider({ .0001, .001, .01, .1, 1, 10, 100 });
+        posXEdit->setProperty("cssClass", "proppanel");
+        posXEdit->setValidator(new QDoubleValidator);
+        posYEdit->setNumSlider({ .0001, .001, .01, .1, 1, 10, 100 });
+        posYEdit->setProperty("cssClass", "proppanel");
+        posYEdit->setValidator(new QDoubleValidator);
+        posZEdit->setNumSlider({ .0001, .001, .01, .1, 1, 10, 100 });
+        posZEdit->setProperty("cssClass", "proppanel");
+        posZEdit->setValidator(new QDoubleValidator);
     }
 
     {
@@ -124,6 +137,16 @@ ZenoLights::ZenoLights(QWidget *parent) : QWidget(parent) {
         scaleZEdit->setProperty("cssClass", "proppanel");
         pScaleLayout->addWidget(scaleZEdit);
         pMainLayout->addLayout(pScaleLayout);
+
+        scaleXEdit->setNumSlider({ .0001, .001, .01, .1, 1, 10, 100 });
+        scaleXEdit->setProperty("cssClass", "proppanel");
+        scaleXEdit->setValidator(new QDoubleValidator);
+        scaleYEdit->setNumSlider({ .0001, .001, .01, .1, 1, 10, 100 });
+        scaleYEdit->setProperty("cssClass", "proppanel");
+        scaleYEdit->setValidator(new QDoubleValidator);
+        scaleZEdit->setNumSlider({ .0001, .001, .01, .1, 1, 10, 100 });
+        scaleZEdit->setProperty("cssClass", "proppanel");
+        scaleZEdit->setValidator(new QDoubleValidator);
     }
 
     {
@@ -147,6 +170,16 @@ ZenoLights::ZenoLights(QWidget *parent) : QWidget(parent) {
         rotateZEdit->setProperty("cssClass", "proppanel");
         pRotateLayout->addWidget(rotateZEdit);
         pMainLayout->addLayout(pRotateLayout);
+
+        rotateXEdit->setNumSlider({ .1, 1, 10, });
+        rotateXEdit->setProperty("cssClass", "proppanel");
+        rotateXEdit->setValidator(new QDoubleValidator);
+        rotateYEdit->setNumSlider({ .1, 1, 10, });
+        rotateYEdit->setProperty("cssClass", "proppanel");
+        rotateYEdit->setValidator(new QDoubleValidator);
+        rotateZEdit->setNumSlider({ .1, 1, 10, });
+        rotateZEdit->setProperty("cssClass", "proppanel");
+        rotateZEdit->setValidator(new QDoubleValidator);
     }
 
     {
@@ -170,74 +203,58 @@ ZenoLights::ZenoLights(QWidget *parent) : QWidget(parent) {
         colorZEdit->setProperty("cssClass", "proppanel");
         pColorLayout->addWidget(colorZEdit);
         pMainLayout->addLayout(pColorLayout);
+
+        colorXEdit->setNumSlider({ .01, .1,});
+        colorXEdit->setProperty("cssClass", "proppanel");
+        colorXEdit->setValidator(new QDoubleValidator);
+        colorYEdit->setNumSlider({ .01, .1, });
+        colorYEdit->setProperty("cssClass", "proppanel");
+        colorYEdit->setValidator(new QDoubleValidator);
+        colorZEdit->setNumSlider({ .01, .1, });
+        colorZEdit->setProperty("cssClass", "proppanel");
+        colorZEdit->setValidator(new QDoubleValidator);
     }
 
     {
         QHBoxLayout* pMouseSenLayout = new QHBoxLayout();
-        QLabel* mouseSen = new QLabel("MouseSensitive: ");
+        QLabel* mouseSen = new QLabel("Intensity: ");
         mouseSen->setProperty("cssClass", "proppanel");
         pMouseSenLayout->addWidget(mouseSen);
         QLabel* mouseSenValue = new QLabel(" v: ");
         mouseSenValue->setProperty("cssClass", "proppanel");
         pMouseSenLayout->addWidget(mouseSenValue);
-        mouseSenEdit->setProperty("cssClass", "proppanel");
-        pMouseSenLayout->addWidget(mouseSenEdit);
+        intensityEdit->setProperty("cssClass", "proppanel");
+        pMouseSenLayout->addWidget(intensityEdit);
 
         pMainLayout->addLayout(pMouseSenLayout);
+
+        intensityEdit->setNumSlider({  1, 10, 100, });
+        intensityEdit->setProperty("cssClass", "proppanel");
+        intensityEdit->setValidator(new QDoubleValidator);
     }
 
     pStatusBar->setProperty("cssClass", "proppanel");
     pMainLayout->addWidget(pStatusBar);
 
-    connect(posXEdit, &QLineEdit::textEdited, this, [&](){ modifyLightData(); });
-    connect(posYEdit, &QLineEdit::textEdited, this, [&](){ modifyLightData(); });
-    connect(posZEdit, &QLineEdit::textEdited, this, [&](){ modifyLightData(); });
+    connect(posXEdit, &QLineEdit::textChanged, this, [&](){ modifyLightData(); });
+    connect(posYEdit, &QLineEdit::textChanged, this, [&](){ modifyLightData(); });
+    connect(posZEdit, &QLineEdit::textChanged, this, [&](){ modifyLightData(); });
 
-    connect(rotateXEdit, &QLineEdit::textEdited, this, [&](){ modifyLightData(); });
-    connect(rotateYEdit, &QLineEdit::textEdited, this, [&](){ modifyLightData(); });
-    connect(rotateZEdit, &QLineEdit::textEdited, this, [&](){ modifyLightData(); });
+    connect(rotateXEdit, &QLineEdit::textChanged, this, [&](){ modifyLightData(); });
+    connect(rotateYEdit, &QLineEdit::textChanged, this, [&](){ modifyLightData(); });
+    connect(rotateZEdit, &QLineEdit::textChanged, this, [&](){ modifyLightData(); });
 
-    connect(scaleXEdit, &QLineEdit::textEdited, this, [&](){ modifyLightData(); });
-    connect(scaleYEdit, &QLineEdit::textEdited, this, [&](){ modifyLightData(); });
-    connect(scaleZEdit, &QLineEdit::textEdited, this, [&](){ modifyLightData(); });
+    connect(scaleXEdit, &QLineEdit::textChanged, this, [&](){ modifyLightData(); });
+    connect(scaleYEdit, &QLineEdit::textChanged, this, [&](){ modifyLightData(); });
+    connect(scaleZEdit, &QLineEdit::textChanged, this, [&](){ modifyLightData(); });
 
-    connect(colorXEdit, &QLineEdit::textEdited, this, [&](){ modifyLightData(); });
-    connect(colorYEdit, &QLineEdit::textEdited, this, [&](){ modifyLightData(); });
-    connect(colorZEdit, &QLineEdit::textEdited, this, [&](){ modifyLightData(); });
+    connect(colorXEdit, &QLineEdit::textChanged, this, [&](){ modifyLightData(); });
+    connect(colorYEdit, &QLineEdit::textChanged, this, [&](){ modifyLightData(); });
+    connect(colorZEdit, &QLineEdit::textChanged, this, [&](){ modifyLightData(); });
 
-    connect(posXEdit, &QLineEdit::cursorPositionChanged, this, [&](){ zenoApp->getMainWindow()->selected = posXEdit; });
-    connect(posYEdit, &QLineEdit::cursorPositionChanged, this, [&](){ zenoApp->getMainWindow()->selected = posYEdit; });
-    connect(posZEdit, &QLineEdit::cursorPositionChanged, this, [&](){ zenoApp->getMainWindow()->selected = posZEdit; });
+    connect(intensityEdit, &QLineEdit::textChanged, this, [&](){ modifyLightData(); });
 
-    connect(rotateXEdit, &QLineEdit::cursorPositionChanged, this, [&](){ zenoApp->getMainWindow()->selected = rotateXEdit; });
-    connect(rotateYEdit, &QLineEdit::cursorPositionChanged, this, [&](){ zenoApp->getMainWindow()->selected = rotateYEdit; });
-    connect(rotateZEdit, &QLineEdit::cursorPositionChanged, this, [&](){ zenoApp->getMainWindow()->selected = rotateZEdit; });
-
-    connect(scaleXEdit, &QLineEdit::cursorPositionChanged, this, [&](){ zenoApp->getMainWindow()->selected = scaleXEdit; });
-    connect(scaleYEdit, &QLineEdit::cursorPositionChanged, this, [&](){ zenoApp->getMainWindow()->selected = scaleYEdit; });
-    connect(scaleZEdit, &QLineEdit::cursorPositionChanged, this, [&](){ zenoApp->getMainWindow()->selected = scaleZEdit; });
-
-    connect(colorXEdit, &QLineEdit::cursorPositionChanged, this, [&](){ zenoApp->getMainWindow()->selected = colorXEdit; });
-    connect(colorYEdit, &QLineEdit::cursorPositionChanged, this, [&](){ zenoApp->getMainWindow()->selected = colorYEdit; });
-    connect(colorZEdit, &QLineEdit::cursorPositionChanged, this, [&](){ zenoApp->getMainWindow()->selected = colorZEdit; });
-
-    connect(posXEdit, &QLineEdit::editingFinished, this, [&](){ zenoApp->getMainWindow()->selected = nullptr; });
-    connect(posYEdit, &QLineEdit::editingFinished, this, [&](){ zenoApp->getMainWindow()->selected = nullptr; });
-    connect(posZEdit, &QLineEdit::editingFinished, this, [&](){ zenoApp->getMainWindow()->selected = nullptr; });
-
-    connect(rotateXEdit, &QLineEdit::editingFinished, this, [&](){ zenoApp->getMainWindow()->selected = nullptr; });
-    connect(rotateYEdit, &QLineEdit::editingFinished, this, [&](){ zenoApp->getMainWindow()->selected = nullptr; });
-    connect(rotateZEdit, &QLineEdit::editingFinished, this, [&](){ zenoApp->getMainWindow()->selected = nullptr; });
-
-    connect(scaleXEdit, &QLineEdit::editingFinished, this, [&](){ zenoApp->getMainWindow()->selected = nullptr; });
-    connect(scaleYEdit, &QLineEdit::editingFinished, this, [&](){ zenoApp->getMainWindow()->selected = nullptr; });
-    connect(scaleZEdit, &QLineEdit::editingFinished, this, [&](){ zenoApp->getMainWindow()->selected = nullptr; });
-
-    connect(colorXEdit, &QLineEdit::editingFinished, this, [&](){ zenoApp->getMainWindow()->selected = nullptr; });
-    connect(colorYEdit, &QLineEdit::editingFinished, this, [&](){ zenoApp->getMainWindow()->selected = nullptr; });
-    connect(colorZEdit, &QLineEdit::editingFinished, this, [&](){ zenoApp->getMainWindow()->selected = nullptr; });
-
-    connect(mouseSenEdit, &QLineEdit::editingFinished, this, [&](){ zenoApp->getMainWindow()->mouseSen = mouseSenEdit->text().toFloat(); });
+    updateLights();
 }
 
 void ZenoLights::updateLights() {
@@ -294,6 +311,8 @@ void ZenoLights::modifyLightData() {
     float r = colorXEdit->text().toFloat();
     float g = colorYEdit->text().toFloat();
     float b = colorZEdit->text().toFloat();
+
+    float intensity = this->intensityEdit->text().toFloat();
     std::string name = this->dataModel->light_names[index.row()];
 
     zeno::vec3f pos = zeno::vec3f(posX, posY, posZ);
@@ -311,11 +330,15 @@ void ZenoLights::modifyLightData() {
         prim_verts[1] = verts[1];
         prim_verts[2] = verts[2];
         prim_verts[3] = verts[3];
-        prim_in->verts.attr<zeno::vec3f>("clr")[0] = zeno::vec3f(r,g,b);
+        prim_in->verts.attr<zeno::vec3f>("clr")[0] = zeno::vec3f(r,g,b) * intensity;
 
         prim_in->userData().setLiterial<zeno::vec3f>("pos", zeno::vec3f(posX, posY, posZ));
         prim_in->userData().setLiterial<zeno::vec3f>("scale", zeno::vec3f(scaleX, scaleY, scaleZ));
         prim_in->userData().setLiterial<zeno::vec3f>("rotate", zeno::vec3f(rotateX, rotateY, rotateZ));
+        if (prim_in->userData().has("intensity")) {
+            prim_in->userData().setLiterial<zeno::vec3f>("color", zeno::vec3f(r, g, b));
+            prim_in->userData().setLiterial<float>("intensity", std::move(intensity));
+        }
 
         scene->objectsMan->needUpdateLight = true;
         zenoApp->getMainWindow()->updateViewport();
