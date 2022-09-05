@@ -43,7 +43,7 @@
       "description": "Build all extension modules that are CPU-only",
       "cacheVariables": {
         "ZENO_WITH_FEM": "ON",
-        "ZENO_WITH_cgmesh": "ON",
+        "ZENO_WITH_cgmesh": "OFF",
         "ZENO_WITH_TreeSketch": "ON",
         "ZENO_WITH_Skinning": "ON",
         "ZENO_WITH_Euler": "ON",
@@ -56,7 +56,7 @@
         "ZENO_WITH_MeshSubdiv": "ON",
         "ZENO_WITH_CalcGeometryUV": "ON",
         "ZENO_WITH_Python": "ON",
-        "ZENO_WITH_TOOL_cgmeshTools": "ON",
+        "ZENO_WITH_TOOL_cgmeshTools": "OFF",
         "ZENO_WITH_TOOL_HerculesTools": "ON"
       }
     },

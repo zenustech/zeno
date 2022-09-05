@@ -28,10 +28,6 @@
     "cgmesh": {
       "description": "Enable mesh processing nodes",
       "dependencies": [
-        {
-          "name": "cgal",
-          "platform": "!linux"
-        },
         "openblas",
         "lapack"
       ]
