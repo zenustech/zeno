@@ -46,7 +46,7 @@ struct IPCSystem : IObject {
         PrimitiveHandle(ZenoParticles &zsprim, std::size_t &vOffset, std::size_t &sfOffset, std::size_t &seOffset,
                         std::size_t &svOffset, zs::wrapv<4>);
         // soft springs: only elasticity matters
-        PrimitiveHandle(std::shared_ptr<tiles_t> elesPtr);
+        PrimitiveHandle(std::shared_ptr<tiles_t> elesPtr, ZenoParticles::category_e);
         T averageNodalMass(zs::CudaExecutionPolicy &pol) const;
         T averageSurfEdgeLength(zs::CudaExecutionPolicy &pol) const;
         T averageSurfArea(zs::CudaExecutionPolicy &pol) const;
@@ -83,7 +83,7 @@ struct IPCSystem : IObject {
             return false;
         }
         bool isBoundary() const noexcept {
-            if (zsprimPtr == nullptr)   // auxiliary primitive for soft binding
+            if (zsprimPtr == nullptr) // auxiliary primitive for soft binding
                 return true;
             return zsprimPtr->asBoundary;
         }
@@ -117,8 +117,8 @@ struct IPCSystem : IObject {
         return mu;
     }
 
-    void pushBoundarySprings(std::shared_ptr<tiles_t> elesPtr) {
-        auxPrims.push_back(std::move(elesPtr));
+    void pushBoundarySprings(std::shared_ptr<tiles_t> elesPtr, ZenoParticles::category_e category) {
+        auxPrims.push_back(PrimitiveHandle{std::move(elesPtr), category});
     }
     void updateWholeBoundingBoxSize(zs::CudaExecutionPolicy &pol);
     void initKappa(zs::CudaExecutionPolicy &pol);
@@ -165,10 +165,10 @@ struct IPCSystem : IObject {
     void project(zs::CudaExecutionPolicy &pol, const zs::SmallString tag);
     void precondition(zs::CudaExecutionPolicy &pol, const zs::SmallString srcTag, const zs::SmallString dstTag);
     void multiply(zs::CudaExecutionPolicy &pol, const zs::SmallString dxTag, const zs::SmallString bTag);
-    T energy(zs::CudaExecutionPolicy &pol, const zs::SmallString tag, bool includeAugLagEnergy = false);
     void cgsolve(zs::CudaExecutionPolicy &cudaPol);
     void groundIntersectionFreeStepsize(zs::CudaExecutionPolicy &pol, T &stepSize);
     void intersectionFreeStepsize(zs::CudaExecutionPolicy &pol, T xi, T &stepSize);
+    T energy(zs::CudaExecutionPolicy &pol, const zs::SmallString tag, bool includeAugLagEnergy = false);
     void lineSearch(zs::CudaExecutionPolicy &cudaPol, T &alpha);
 
     // sim params
