@@ -54,6 +54,8 @@ def initDLLPath(path: str):
     define(ctypes.c_uint32, 'Zeno_GetObjectFloat', ctypes.c_uint64, ctypes.POINTER(ctypes.c_float), ctypes.c_size_t)
     define(ctypes.c_uint32, 'Zeno_GetObjectString', ctypes.c_uint64, ctypes.POINTER(ctypes.c_char), ctypes.POINTER(ctypes.c_size_t))
     define(ctypes.c_uint32, 'Zeno_GetObjectPrimData', ctypes.c_uint64, ctypes.c_int, ctypes.c_char_p, ctypes.POINTER(ctypes.c_void_p), ctypes.POINTER(ctypes.c_size_t), ctypes.POINTER(ctypes.c_int))
+# ZENO_CAPI Zeno_Error Zeno_AddObjectPrimAttr(Zeno_Object object_, Zeno_PrimMembType primArrType_, const char *attrName_, Zeno_PrimDataType dataType_) ZENO_CAPI_NOEXCEPT;
+    define(ctypes.c_uint32, 'Zeno_AddObjectPrimAttr', ctypes.c_uint64, ctypes.c_int, ctypes.c_char_p, ctypes.c_int)
     define(ctypes.c_uint32, 'Zeno_GetObjectPrimDataKeys', ctypes.c_uint64, ctypes.c_int, ctypes.POINTER(ctypes.c_size_t), ctypes.POINTER(ctypes.c_char_p))
     define(ctypes.c_uint32, 'Zeno_ResizeObjectPrimData', ctypes.c_uint64, ctypes.c_int, ctypes.c_size_t)
     define(ctypes.c_uint32, 'Zeno_InvokeObjectFactory', ctypes.POINTER(ctypes.c_uint64), ctypes.c_char_p, ctypes.c_void_p)
@@ -341,6 +343,9 @@ class _MemSpanWrapper:
     def raw_data(self) -> tuple[int, int, Any, int]:
         return (self._ptr, self._len, self._type, self._dim)
 
+    def dtype(self) -> tuple[type, int]:
+        return (type(self._type()), self._dim)
+
     def __len__(self) -> int:
         return self._len
 
@@ -365,10 +370,25 @@ class _AttrVectorWrapper:
     _dimLut = [
         3, 1, 3, 1, 2, 2, 4, 4,
     ]
+    _typeUnlut: dict[tuple[type, int], int] = {
+        (float, 3): 0,
+        (float, 1): 1,
+        (int, 3): 2,
+        (int, 1): 3,
+        (float, 2): 4,
+        (int, 2): 5,
+        (float, 4): 6,
+        (int, 4): 7,
+    }
 
     def __init__(self, handle: int, kind: int):
         self._handle = handle
         self._kind = kind
+
+    def add_attr(self, attrName: str, dataType: tuple[type, int]):
+        dataTypeInd = self._typeUnlut[dataType]
+        api.Zeno_AddObjectPrimAttr(ctypes.c_uint64(self._handle), ctypes.c_int(self._kind), ctypes.c_char_p(attrName.encode()), ctypes.c_int(dataTypeInd))
+        return self.attr(attrName)
 
     def attr(self, attrName: str):
         ptrRet_ = ctypes.c_void_p()

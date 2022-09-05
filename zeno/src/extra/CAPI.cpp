@@ -332,6 +332,32 @@ ZENO_CAPI Zeno_Error Zeno_GetObjectPrimData(Zeno_Object object_, Zeno_PrimMembTy
     });
 }
 
+ZENO_CAPI Zeno_Error Zeno_AddObjectPrimAttr(Zeno_Object object_, Zeno_PrimMembType primArrType_, const char *attrName_, Zeno_PrimDataType dataType_) ZENO_CAPI_NOEXCEPT {
+    return lastError.catched([=] {
+        auto optr = lutObject.access(object_).get();
+        auto prim = dynamic_cast<PrimitiveObject *>(optr);
+        if (ZENO_UNLIKELY(prim == nullptr))
+            throw makeError<TypeError>(typeid(PrimitiveObject), typeid(*optr), "get object as primitive");
+        auto memb = invoker_variant(static_cast<size_t>(primArrType_),
+            &PrimitiveObject::verts,
+            &PrimitiveObject::points,
+            &PrimitiveObject::lines,
+            &PrimitiveObject::tris,
+            &PrimitiveObject::quads,
+            &PrimitiveObject::loops,
+            &PrimitiveObject::polys,
+            &PrimitiveObject::uvs,
+            &PrimitiveObject::loop_uvs);
+        std::string attrName = attrName_;
+        std::visit([&] (auto const &memb) {
+            index_switch<std::variant_size_v<AttrAcceptAll>>(static_cast<size_t>(dataType_), [&] (auto dataType) {
+                using T = std::variant_alternative_t<dataType.value, AttrAcceptAll>;
+                memb(*prim).template add_attr<T>(attrName);
+            });
+        }, memb);
+    });
+}
+
 ZENO_CAPI Zeno_Error Zeno_GetObjectPrimDataKeys(Zeno_Object object_, Zeno_PrimMembType primArrType_, size_t *lenRet_, const char **keysRet_) ZENO_CAPI_NOEXCEPT {
     return lastError.catched([=] {
         auto optr = lutObject.access(object_).get();
