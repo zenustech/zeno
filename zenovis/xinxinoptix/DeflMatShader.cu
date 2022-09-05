@@ -639,7 +639,7 @@ extern "C" __global__ void __closesthit__radiance()
     bool inToOut = false;
     bool outToIn = false;
     if(flag == DisneyBSDF::transmissionEvent) {
-        prd->is_inside = !prd->is_inside;
+        prd->is_inside = dot(vec3(N),vec3(wi))<0;
     }
 
     if(flag == DisneyBSDF::transmissionEvent){
