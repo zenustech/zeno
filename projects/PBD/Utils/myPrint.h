@@ -35,7 +35,7 @@ void printVectorNohup(T contents, int maxTimes=999, std::string fileName="", int
 }
 
 template<typename T>
-void printVec(T contents)
+void printVec(T contents, int precision = 8)
 {
     for(auto x:contents)
         std::cout<<std::fixed <<std::setprecision(precision)<<x<<"\t";
@@ -80,8 +80,7 @@ void printScalarField(T content, std::string fileName, size_t precision=8)
     f.open(fileName);
     for(const auto& x:content)
     {
-        f<<std::fixed <<std::setprecision(precision)<<x<<"\t";
-        f<<"\n";
+        f<<std::fixed <<std::setprecision(precision)<<x<<"\n";
     } 
     f.close();
 }
