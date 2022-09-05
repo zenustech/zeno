@@ -6,7 +6,7 @@
 //io
 ZENO_ERROR Zeno_NewFile();
 ZENO_ERROR Zeno_OpenFile(const std::string &fn);
-ZENO_ERROR Zeno_saveFile(const std::string &fn);
+ZENO_ERROR Zeno_SaveFile(const std::string &fn);
 
 ZENO_HANDLE Zeno_CreateGraph(const std::string& name);
 ZENO_ERROR  Zeno_DeleteGraph(ZENO_HANDLE hSubgraph);
@@ -20,5 +20,11 @@ ZENO_HANDLE Zeno_GetNode(const std::string& ident);
 ZENO_ERROR  Zeno_DeleteNode(ZENO_HANDLE hNode);
 ZENO_ERROR  Zeno_GetName(ZENO_HANDLE hNode, std::string& name);
 ZENO_ERROR  Zeno_GetIdent(ZENO_HANDLE hNode, std::string& ident);
+ZENO_ERROR  Zeno_AddLink(ZENO_HANDLE hOutnode, const std::string& outSock,
+                         ZENO_HANDLE hInnode, const std::string& inSock);
+ZENO_ERROR  Zeno_RemoveLink(ZENO_HANDLE hOutnode, const std::string& outSock,
+                            ZENO_HANDLE hInnode, const std::string& inSock);
+
+
 
 #endif

@@ -280,6 +280,27 @@ QModelIndex GraphsModel::linkIndex(int r)
     return m_linkModel->index(r, 0);
 }
 
+QModelIndex GraphsModel::linkIndex(const QString& outNode,
+                                   const QString& outSock,
+                                   const QString& inNode,
+                                   const QString& inSock)
+{
+    if (m_linkModel == nullptr)
+        return QModelIndex();
+    for (int r = 0; r < m_linkModel->rowCount(); r++)
+    {
+        QModelIndex idx = m_linkModel->index(r, 0);
+        if (outNode == idx.data(ROLE_OUTNODE).toString() &&
+            outSock == idx.data(ROLE_OUTSOCK).toString() &&
+            inNode == idx.data(ROLE_INNODE).toString() &&
+            inSock == idx.data(ROLE_INSOCK).toString())
+        {
+            return idx;
+        }
+    }
+    return QModelIndex();
+}
+
 QModelIndex GraphsModel::parent(const QModelIndex& child) const
 {
     return QModelIndex();

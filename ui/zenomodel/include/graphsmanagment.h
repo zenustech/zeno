@@ -15,6 +15,7 @@ public:
     QAbstractItemModel* treeModel();
     QStandardItemModel* logModel() const;
     IGraphsModel* openZsgFile(const QString &fn);
+    bool saveFile(const QString& filePath, APP_SETTINGS settings);
     IGraphsModel* newFile();
     void importGraph(const QString &fn);
     void reloadGraph(const QString& graphName);

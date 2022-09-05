@@ -6,6 +6,7 @@
 #include <zeno/utils/log.h>
 #include <zeno/utils/scope_exit.h>
 #include <zenoui/util/cihou.h>
+#include <zenoio/writer/zsgwriter.h>
 
 
 class IOBreakingScope
@@ -87,6 +88,32 @@ IGraphsModel* GraphsManagment::openZsgFile(const QString& fn)
     pModel->clearDirty();
     setCurrentModel(pModel);
     return pModel;
+}
+
+bool GraphsManagment::saveFile(const QString& filePath, APP_SETTINGS settings)
+{
+    if (m_model == nullptr) {
+        zeno::log_error("The current model is empty.");
+        return false;
+    }
+
+    QString strContent = ZsgWriter::getInstance().dumpProgramStr(m_model, settings);
+    QFile f(filePath);
+    zeno::log_debug("saving {} chars to file [{}]", strContent.size(), filePath.toStdString());
+    if (!f.open(QIODevice::WriteOnly)) {
+        qWarning() << Q_FUNC_INFO << "Failed to open" << filePath << f.errorString();
+        zeno::log_error("Failed to open file for write: {} ({})", filePath.toStdString(),
+                        f.errorString().toStdString());
+        return false;
+    }
+
+    f.write(strContent.toUtf8());
+    f.close();
+    zeno::log_debug("saved successfully");
+
+    m_model->setFilePath(filePath);
+    m_model->clearDirty();
+    return true;
 }
 
 IGraphsModel* GraphsManagment::newFile()

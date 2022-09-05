@@ -25,6 +25,7 @@ public:
 	virtual QModelIndex subgByNodeId(uint32_t id) = 0;
 
 	virtual QModelIndex linkIndex(int r) = 0;
+	virtual QModelIndex linkIndex(const QString& outNode, const QString& outSock, const QString& inNode, const QString& inSock) = 0;
 	virtual QVariant data2(const QModelIndex& subGpIdx, const QModelIndex& index, int role) = 0;
 	virtual int itemCount(const QModelIndex& subGpIdx) const = 0;
 

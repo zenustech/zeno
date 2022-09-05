@@ -582,7 +582,8 @@ void ZenoMainWindow::saveQuit() {
     setTimelineInfo(TIMELINE_INFO());
 }
 
-void ZenoMainWindow::save() {
+void ZenoMainWindow::save()
+{
     auto pGraphsMgm = zenoApp->graphsManagment();
     ZASSERT_EXIT(pGraphsMgm);
     IGraphsModel *pModel = pGraphsMgm->currentModel();
@@ -594,16 +595,12 @@ void ZenoMainWindow::save() {
     }
 }
 
-bool ZenoMainWindow::saveFile(QString filePath) {
-    IGraphsModel *pModel = zenoApp->graphsManagment()->currentModel();
-
+bool ZenoMainWindow::saveFile(QString filePath)
+{
+    IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
     APP_SETTINGS settings;
     settings.timeline = timelineInfo();
-
-    QString strContent = ZsgWriter::getInstance().dumpProgramStr(pModel, settings);
-    saveContent(strContent, filePath);
-    pModel->setFilePath(filePath);
-    pModel->clearDirty();
+    zenoApp->graphsManagment()->saveFile(filePath, settings);
     recordRecentFile(filePath);
     return true;
 }

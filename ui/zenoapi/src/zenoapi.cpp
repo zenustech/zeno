@@ -124,10 +124,68 @@ ZENO_ERROR Zeno_GetIdent(ZENO_HANDLE hNode, std::string& ident)
 //io
 ZENO_ERROR Zeno_OpenFile(const std::string &fn)
 {
+    IGraphsModel *pModel = GraphsManagment::instance().openZsgFile(QString::fromStdString(fn));
+    if (!pModel)
+        return -1;
     return 0;
 }
 
-ZENO_ERROR Zeno_saveFile(const std::string &fn)
+ZENO_ERROR Zeno_SaveFile(const std::string &fn)
 {
+    APP_SETTINGS settings;
+    bool ret = GraphsManagment::instance().saveFile(QString::fromStdString(fn), settings);
+    return ret ? 0 : -1;
+}
+
+ZENO_ERROR Zeno_AddLink(ZENO_HANDLE hOutnode, const std::string &outSock,
+                        ZENO_HANDLE hInnode, const std::string &inSock)
+{
+    IGraphsModel* pModel = GraphsManagment::instance().currentModel();
+    if (!pModel)
+        return -1;
+
+    QModelIndex outIdx = pModel->nodeIndex(hOutnode);
+    if (!outIdx.isValid())
+        return -1;
+
+    QModelIndex inIdx = pModel->nodeIndex(hInnode);
+    if (!inIdx.isValid())
+        return -1;
+
+    //get subgraph directly from node.
+    QModelIndex subgIdx = pModel->subgByNodeId(hInnode);
+
+    EdgeInfo info;
+    info.inputNode = inIdx.data(ROLE_OBJID).toString();
+    info.inputSock = QString::fromStdString(inSock);
+    info.outputNode = outIdx.data(ROLE_OBJID).toString();
+    info.outputSock = QString::fromStdString(outSock);
+
+    bool bAddDynamicSock = false;
+    pModel->addLink(info, subgIdx, bAddDynamicSock);
     return 0;
 }
+
+ZENO_ERROR Zeno_RemoveLink(ZENO_HANDLE hOutnode, const std::string& outSock,
+                           ZENO_HANDLE hInnode, const std::string &inSock)
+{
+    IGraphsModel* pModel = GraphsManagment::instance().currentModel();
+    if (!pModel)
+        return -1;
+
+    QModelIndex outIdx = pModel->nodeIndex(hOutnode);
+    if (!outIdx.isValid())
+        return -1;
+
+    QModelIndex inIdx = pModel->nodeIndex(hInnode);
+    if (!inIdx.isValid())
+        return -1;
+
+    QModelIndex linkIdx = pModel->linkIndex(outIdx.data(ROLE_OBJID).toString(), QString::fromStdString(outSock),
+                      inIdx.data(ROLE_OBJID).toString(), QString::fromStdString(inSock));
+    QModelIndex subgIdx = pModel->subgByNodeId(hInnode);
+
+    pModel->removeLink(linkIdx, subgIdx);
+    return 0;
+}
+

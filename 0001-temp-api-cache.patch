@@ -1,0 +1,1192 @@
+From e86eb92e97a64750ac3a9f3675a696e2f2fed3bc Mon Sep 17 00:00:00 2001
+From: luzh <luzh16371@gmail.com>
+Date: Mon, 5 Sep 2022 14:26:11 +0800
+Subject: [PATCH] [temp] api cache.
+
+---
+ ui/autotest/CMakeLists.txt                    |   9 +-
+ ui/autotest/main.cpp                          |  10 +
+ ui/zenoapi/include/zenoapi.h                  |  31 ++-
+ ui/zenoapi/src/zapplication_impl.cpp          |  90 --------
+ ui/zenoapi/src/zapplication_impl.h            |  30 ---
+ ui/zenoapi/src/zenoapi.cpp                    | 192 ++++++++++++------
+ ui/zenoapi/src/znode_impl.cpp                 |  68 -------
+ ui/zenoapi/src/znode_impl.h                   |  28 ---
+ ui/zenoapi/src/zsubgraph_impl.cpp             |  70 -------
+ ui/zenoapi/src/zsubgraph_impl.h               |  39 ----
+ ui/zenoedit/acceptor/transferacceptor.cpp     |   2 +-
+ ui/zenoedit/curvemap/curvegrid.cpp            |   2 +-
+ ui/zenoedit/curvemap/curvemapview.cpp         |   2 +-
+ ui/zenoedit/curvemap/curvenodeitem.cpp        |   2 +-
+ ui/zenoedit/curvemap/curvenodeitem.h          |   2 +-
+ ui/zenoedit/curvemap/curvescalaritem.cpp      |   2 +-
+ ui/zenoedit/curvemap/zcurvemapeditor.h        |   2 +-
+ ui/zenoedit/launch/offlinemain.cpp            |   2 +-
+ ui/zenoedit/nodesys/heatmapnode.cpp           |   3 +-
+ ui/zenoedit/nodesys/zenonewmenu.cpp           |   2 +-
+ ui/zenoedit/util/apphelper.cpp                |  20 --
+ ui/zenoedit/util/apphelper.h                  |   1 -
+ ui/zenoedit/viewport/viewporttransform.h      |   2 +-
+ ui/zenoedit/viewport/viewportwidget.cpp       |   2 +-
+ ui/zenoedit/zenoapplication.cpp               |   6 +-
+ ui/zenoedit/zenoapplication.h                 |   1 -
+ .../include}/curveutil.h                      |   0
+ ui/zenomodel/include/graphsmanagment.h        |   7 +-
+ ui/zenomodel/include/igraphsmodel.h           |   7 +-
+ .../nodesys => zenomodel/include}/nodesmgr.h  |   0
+ ui/zenomodel/include/uihelper.h               |   1 +
+ .../curvemap => zenomodel/src}/curveutil.cpp  |   0
+ ui/zenomodel/src/graphsmanagment.cpp          |   5 +
+ ui/zenomodel/src/graphsmodel.cpp              |  34 +++-
+ ui/zenomodel/src/graphsmodel.h                |   4 +-
+ .../nodesys => zenomodel/src}/nodesmgr.cpp    |   7 +-
+ ui/zenomodel/src/subgraphmodel.cpp            |   3 +-
+ ui/zenomodel/src/uihelper.cpp                 |  19 ++
+ 38 files changed, 251 insertions(+), 456 deletions(-)
+ delete mode 100644 ui/zenoapi/src/zapplication_impl.cpp
+ delete mode 100644 ui/zenoapi/src/zapplication_impl.h
+ delete mode 100644 ui/zenoapi/src/znode_impl.cpp
+ delete mode 100644 ui/zenoapi/src/znode_impl.h
+ delete mode 100644 ui/zenoapi/src/zsubgraph_impl.cpp
+ delete mode 100644 ui/zenoapi/src/zsubgraph_impl.h
+ rename ui/{zenoedit/curvemap => zenomodel/include}/curveutil.h (100%)
+ rename ui/{zenoedit/nodesys => zenomodel/include}/nodesmgr.h (100%)
+ rename ui/{zenoedit/curvemap => zenomodel/src}/curveutil.cpp (100%)
+ rename ui/{zenoedit/nodesys => zenomodel/src}/nodesmgr.cpp (96%)
+
+diff --git a/ui/autotest/CMakeLists.txt b/ui/autotest/CMakeLists.txt
+index fe3a8b05f..62090b09a 100644
+--- a/ui/autotest/CMakeLists.txt
++++ b/ui/autotest/CMakeLists.txt
+@@ -1,8 +1,15 @@
+ file(GLOB_RECURSE source CONFIGURE_DEPENDS *.h *.cpp *.ui)
+ 
++#find_package(Qt5 COMPONENTS Widgets OpenGL REQUIRED)
++
+ add_executable(autotest ${source}) 
+ 
+ set_property(TARGET autotest PROPERTY WIN32_EXECUTABLE OFF)
+ 
+-target_link_libraries(autotest PRIVATE zenoapi zenomodel zenoio)
++set_property(TARGET autotest PROPERTY AUTOUIC ON)
++set_property(TARGET autotest PROPERTY AUTOMOC ON)
++set_property(TARGET autotest PROPERTY AUTORCC ON)
++
++target_link_libraries(autotest PUBLIC zenoapi zenomodel zenoio)
++#target_link_libraries(autotest PRIVATE Qt5::Widgets Qt5::OpenGL)
+ target_include_directories(autotest PRIVATE . .. ../zenoui ../include)
+diff --git a/ui/autotest/main.cpp b/ui/autotest/main.cpp
+index 2482663ad..1395326a8 100644
+--- a/ui/autotest/main.cpp
++++ b/ui/autotest/main.cpp
+@@ -2,5 +2,15 @@
+ 
+ int main()
+ {
++    Zeno_NewFile();
++    ZENO_HANDLE hGraph = Zeno_GetGraph("main");
++    ZENO_HANDLE hNode = Zeno_AddNode(hGraph, "CreateCube");
++
++    std::string ident;
++    Zeno_GetIdent(hNode, ident);
++
++    ZENO_HANDLE hNode2 = Zeno_GetNode(ident);
++    ZENO_HANDLE hNode3 = Zeno_GetNode(ident);
++
+     return 0;
+ }
+\ No newline at end of file
+diff --git a/ui/zenoapi/include/zenoapi.h b/ui/zenoapi/include/zenoapi.h
+index 0cbe61688..4b0bfadfd 100644
+--- a/ui/zenoapi/include/zenoapi.h
++++ b/ui/zenoapi/include/zenoapi.h
+@@ -3,23 +3,22 @@
+ 
+ #include "interface.h"
+ 
+-namespace zenoapi
+-{
+-    ZENO_ERROR  NewScene();
+-    ZENO_HANDLE CreateGraph(const std::string& name);
+-    ZENO_ERROR  DeleteGraph(ZENO_HANDLE hSubgraph);
+-    ZENO_HANDLE GetGraph(const std::string& name);
+-    ZENO_ERROR  RenameGraph(ZENO_HANDLE hSubgraph, const std::string& newName);
+-    int GetCount();
+-    ZENO_HANDLE GetItem(int idx);
++//io
++ZENO_ERROR Zeno_NewFile();
++ZENO_ERROR Zeno_OpenFile(const std::string &fn);
++ZENO_ERROR Zeno_saveFile(const std::string &fn);
+ 
+-    ZENO_ERROR  AddNode(ZENO_HANDLE hGraph, const std::string& nodeCls);
+-    ZENO_HANDLE GetNode(const std::string& ident);
+-    ZENO_ERROR  DeleteNode(ZENO_HANDLE hNode);
++ZENO_HANDLE Zeno_CreateGraph(const std::string& name);
++ZENO_ERROR  Zeno_DeleteGraph(ZENO_HANDLE hSubgraph);
++ZENO_HANDLE Zeno_GetGraph(const std::string& name);
++ZENO_ERROR  Zeno_RenameGraph(ZENO_HANDLE hSubgraph, const std::string& newName);
++int Zeno_GetCount();
++ZENO_HANDLE Zeno_GetItem(int idx);
+ 
+-    //io
+-    ZENO_ERROR openFile(const std::string& fn);
+-    ZENO_ERROR saveFile(const std::string& fn);
+-}
++ZENO_HANDLE Zeno_AddNode(ZENO_HANDLE hGraph, const std::string &nodeCls);
++ZENO_HANDLE Zeno_GetNode(const std::string& ident);
++ZENO_ERROR  Zeno_DeleteNode(ZENO_HANDLE hNode);
++ZENO_ERROR  Zeno_GetName(ZENO_HANDLE hNode, std::string& name);
++ZENO_ERROR  Zeno_GetIdent(ZENO_HANDLE hNode, std::string& ident);
+ 
+ #endif
+\ No newline at end of file
+diff --git a/ui/zenoapi/src/zapplication_impl.cpp b/ui/zenoapi/src/zapplication_impl.cpp
+deleted file mode 100644
+index 73b24907b..000000000
+--- a/ui/zenoapi/src/zapplication_impl.cpp
++++ /dev/null
+@@ -1,90 +0,0 @@
+-#include "zapplication_impl.h"
+-#include <zenomodel/include/igraphsmodel.h>
+-#include <zenomodel/include/zenomodel.h>
+-#include <zenoio/reader/zsgreader.h>
+-#include <zassert.h>
+-
+-
+-class IOBreakingScope
+-{
+-public:
+-    IOBreakingScope(IGraphsModel* model) : m_model(model) {
+-        if (m_model)
+-            m_model->setIOProcessing(true);
+-    }
+-
+-    ~IOBreakingScope() {
+-        if (m_model)
+-            m_model->setIOProcessing(false);
+-    }
+-
+-private:
+-    IGraphsModel* m_model;
+-};
+-
+-
+-ZApplication_Impl::ZApplication_Impl()
+-    : m_model(nullptr)
+-{
+-}
+-
+-ZApplication_Impl& ZApplication_Impl::instance()
+-{
+-    static ZApplication_Impl inst;
+-    return inst;
+-}
+-
+-void ZApplication_Impl::clear()
+-{
+-
+-}
+-
+-void ZApplication_Impl::openFile(const std::string& filePath)
+-{
+-    if (m_model)
+-        m_model->clear();
+-
+-    //todo: parent.
+-    m_model = zeno_model::createModel(nullptr);
+-    IOBreakingScope batch(m_model);
+-    std::shared_ptr<IAcceptor> acceptor(zeno_model::createIOAcceptor(m_model, false));
+-    if (!ZsgReader::getInstance().openFile(QString::fromStdString(filePath), acceptor.get()))
+-        return;
+-
+-    m_model->clearDirty();
+-}
+-
+-int ZApplication_Impl::count() const
+-{
+-    return m_model->rowCount();
+-}
+-
+-std::shared_ptr<IZSubgraph> ZApplication_Impl::item(int idx)
+-{
+-    if (idx < 0 || idx >= count())
+-        return nullptr;
+-
+-    QModelIndex& subgIdx = m_model->index(idx, 0);
+-
+-    return nullptr;
+-}
+-
+-std::shared_ptr<IZSubgraph> ZApplication_Impl::getSubgraph(const std::string& name)
+-{
+-    return nullptr;
+-}
+-
+-std::shared_ptr<IZSubgraph> ZApplication_Impl::addSubgraph(const std::string& name)
+-{
+-    return nullptr;
+-}
+-
+-bool ZApplication_Impl::removeSubgraph(const std::string& name)
+-{
+-    return false;
+-}
+-
+-std::string ZApplication_Impl::forkSubgraph(const std::string& name)
+-{
+-    return "";
+-}
+diff --git a/ui/zenoapi/src/zapplication_impl.h b/ui/zenoapi/src/zapplication_impl.h
+deleted file mode 100644
+index 1d91a9a0c..000000000
+--- a/ui/zenoapi/src/zapplication_impl.h
++++ /dev/null
+@@ -1,30 +0,0 @@
+-#ifndef __ZAPPLICATION_IMPL_H__
+-#define __ZAPPLICATION_IMPL_H__
+-
+-#include "../include/interface.h"
+-
+-class IGraphsModel;
+-
+-class ZApplication_Impl : public IZApplication
+-{
+-public:
+-    static ZApplication_Impl& instance();
+-
+-    void clear() override;
+-    void openFile(const std::string& filePath) override;
+-
+-    int count() const override;
+-    std::shared_ptr<IZSubgraph> item(int idx) override;
+-
+-    std::shared_ptr<IZSubgraph> getSubgraph(const std::string& name) override;
+-    std::shared_ptr<IZSubgraph> addSubgraph(const std::string& name) override;
+-    bool removeSubgraph(const std::string& name) override;
+-    std::string forkSubgraph(const std::string& name) override;
+-
+-private:
+-    ZApplication_Impl();
+-
+-    IGraphsModel* m_model;
+-};
+-
+-#endif
+\ No newline at end of file
+diff --git a/ui/zenoapi/src/zenoapi.cpp b/ui/zenoapi/src/zenoapi.cpp
+index 72ef38126..dd9d6e331 100644
+--- a/ui/zenoapi/src/zenoapi.cpp
++++ b/ui/zenoapi/src/zenoapi.cpp
+@@ -1,63 +1,133 @@
+ #include "zenoapi.h"
+-#include "zapplication_impl.h"
+-
+-namespace zenoapi
+-{
+-    ZENO_ERROR NewScene()
+-    {
+-        return 0;
+-    }
+-
+-    ZENO_HANDLE CreateGraph(const std::string &name)
+-    {
+-        return 0;
+-    }
+-
+-    ZENO_ERROR DeleteGraph(ZENO_HANDLE hSubgraph)
+-    {
+-        return 0;
+-    }
+-
+-    ZENO_HANDLE GetGraph(const std::string &name)
+-    {
+-        return 0;
+-    }
+-
+-    ZENO_ERROR RenameGraph(ZENO_HANDLE hSubgraph, const std::string &newName)
+-    {
+-        return 0;
+-    }
+-
+-    int GetCount()
+-    {
+-        return 0;
+-    }
+-
+-    ZENO_HANDLE GetItem(int idx)
+-    {
+-        return 0;
+-    }
+-
+-    ZENO_ERROR AddNode(ZENO_HANDLE hGraph, const std::string &nodeCls)
+-    {
+-        return 0;
+-    }
+-
+-    ZENO_HANDLE GetNode(const std::string &ident)
+-    {
+-        return 0;
+-    }
+-
+-    ZENO_ERROR DeleteNode(ZENO_HANDLE hNode) {
+-        return 0;
+-    }
+-
+-    //io
+-    ZENO_ERROR openFile(const std::string &fn) {
+-        return 0;
+-    }
+-
+-    ZENO_ERROR saveFile(const std::string &fn) {
+-        return 0;
+-    }
++#include <zenomodel/include/graphsmanagment.h>
++#include <zenomodel/include/modelrole.h>
++#include <zenomodel/include/nodesmgr.h>
++
++
++ZENO_ERROR Zeno_NewFile()
++{
++    IGraphsModel* pModel = GraphsManagment::instance().newFile();
++    return pModel != nullptr;
++}
++
++ZENO_HANDLE Zeno_CreateGraph(const std::string& name)
++{
++    IGraphsModel *pModel = GraphsManagment::instance().currentModel();
++    if (!pModel)
++        return -1;
++
++    const QString& qsName = QString::fromStdString(name);
++    pModel->newSubgraph(QString::fromStdString(name));
++    QModelIndex subgIdx = pModel->index(qsName);
++    return subgIdx.internalId();
++}
++
++ZENO_ERROR Zeno_DeleteGraph(ZENO_HANDLE hSubgraph)
++{
++    IGraphsModel* pModel = GraphsManagment::instance().currentModel();
++    if (!pModel)
++        return -1;
++
++    QModelIndex subgIdx = pModel->subgIndex(hSubgraph);
++    pModel->removeSubGraph(subgIdx.data(ROLE_OBJNAME).toString());
++    return 0;
++}
++
++ZENO_HANDLE Zeno_GetGraph(const std::string &name)
++{
++    IGraphsModel *pModel = GraphsManagment::instance().currentModel();
++    if (!pModel)
++        return -1;
++
++    QModelIndex subgIdx = pModel->index(QString::fromStdString(name));
++    return subgIdx.internalId();
++}
++
++ZENO_ERROR Zeno_RenameGraph(ZENO_HANDLE hSubgraph, const std::string& newName)
++{
++    return 0;
++}
++
++int Zeno_GetCount()
++{
++    IGraphsModel* pModel = GraphsManagment::instance().currentModel();
++    if (!pModel)
++        return -1;
++    return pModel->rowCount();
++}
++
++ZENO_HANDLE Zeno_GetItem(int idx)
++{
++    IGraphsModel* pModel = GraphsManagment::instance().currentModel();
++    if (!pModel)
++        return -1;
++
++    QModelIndex subgIdx = pModel->index(idx, 0);
++    return subgIdx.internalId();
++}
++
++ZENO_HANDLE Zeno_AddNode(ZENO_HANDLE hGraph, const std::string& nodeCls)
++{
++    IGraphsModel* pModel = GraphsManagment::instance().currentModel();
++    if (!pModel)
++        return -1;
++
++    QModelIndex subgIdx = pModel->subgIndex(hGraph);
++    if (!subgIdx.isValid())
++        return -1;
++
++    QString ident = NodesMgr::createNewNode(pModel, subgIdx, QString::fromStdString(nodeCls), QPointF(0, 0));
++    return pModel->index(ident, subgIdx).internalId();
++}
++
++ZENO_HANDLE Zeno_GetNode(const std::string& ident)
++{
++    IGraphsModel* pModel = GraphsManagment::instance().currentModel();
++    if (!pModel)
++        return -1;
++
++    return pModel->nodeIndex(QString::fromStdString(ident)).internalId();
++}
++
++ZENO_ERROR Zeno_DeleteNode(ZENO_HANDLE hNode)
++{
++    IGraphsModel *pModel = GraphsManagment::instance().currentModel();
++    if (!pModel)
++        return -1;
++
++    QModelIndex subgIdx = pModel->subgByNodeId(hNode);
++    QModelIndex nodeIdx = pModel->nodeIndex(hNode);
++    pModel->removeNode(nodeIdx.data(ROLE_OBJID).toString(), subgIdx);
++    return 0;
++}
++
++ZENO_ERROR Zeno_GetName(ZENO_HANDLE hNode, std::string& name)
++{
++    IGraphsModel *pModel = GraphsManagment::instance().currentModel();
++    if (!pModel)
++        return -1;
++    QModelIndex idx = pModel->nodeIndex(hNode);
++    name = idx.data(ROLE_OBJNAME).toString().toStdString();
++    return 0;
++}
++
++ZENO_ERROR Zeno_GetIdent(ZENO_HANDLE hNode, std::string& ident)
++{
++    IGraphsModel *pModel = GraphsManagment::instance().currentModel();
++    if (!pModel)
++        return -1;
++    QModelIndex idx = pModel->nodeIndex(hNode);
++    ident = idx.data(ROLE_OBJID).toString().toStdString();
++    return 0;
++}
++
++//io
++ZENO_ERROR Zeno_OpenFile(const std::string &fn)
++{
++    return 0;
++}
++
++ZENO_ERROR Zeno_saveFile(const std::string &fn)
++{
++    return 0;
+ }
+diff --git a/ui/zenoapi/src/znode_impl.cpp b/ui/zenoapi/src/znode_impl.cpp
+deleted file mode 100644
+index 5002dc8c6..000000000
+--- a/ui/zenoapi/src/znode_impl.cpp
++++ /dev/null
+@@ -1,68 +0,0 @@
+-#include "znode_impl.h"
+-#include <zenomodel/include/igraphsmodel.h>
+-#include <zenomodel/include/modeldata.h>
+-#include <zenomodel/include/modelrole.h>
+-#include "apiutil.h"
+-
+-
+-ZNode_Impl::ZNode_Impl(IGraphsModel* pModel, const QModelIndex& idx)
+-    : m_model(pModel)
+-    , m_index(idx)
+-{
+-
+-}
+-
+-ZNode_Impl::~ZNode_Impl()
+-{
+-
+-}
+-
+-std::string ZNode_Impl::getName() const
+-{
+-    if (!m_index.isValid())
+-        return "";
+-    return m_index.data(ROLE_OBJNAME).toString().toStdString();
+-}
+-
+-std::string ZNode_Impl::getIdent() const
+-{
+-    if (!m_index.isValid())
+-        return "";
+-    return m_index.data(ROLE_OBJID).toString().toStdString();
+-}
+-
+-ZVARIANT ZNode_Impl::getSocketDefl(const std::string& sockName)
+-{
+-    ZVARIANT var;
+-
+-    QString qsName = QString::fromStdString(sockName);
+-    INPUT_SOCKETS inputs = m_index.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
+-    if (inputs.find(qsName) == inputs.end())
+-        return var;
+-
+-    INPUT_SOCKET socket = inputs[qsName];
+-    const QVariant& defl = socket.info.defaultValue;
+-    var = ApiUtil::qVarToStdVar(defl);
+-    return var;
+-}
+-
+-void ZNode_Impl::setSocketDefl(const std::string& sockName, const ZVARIANT& value)
+-{
+-    QString qsName = QString::fromStdString(sockName);
+-    INPUT_SOCKETS inputs = m_index.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
+-    if (inputs.find(qsName) == inputs.end())
+-        return;
+-
+-    INPUT_SOCKET socket = inputs[qsName];
+-}
+-
+-ZVARIANT ZNode_Impl::getParam(const std::string& name)
+-{
+-    ZVARIANT var;
+-    return var;
+-}
+-
+-void ZNode_Impl::setParamValue(const std::string& name, const ZVARIANT& value)
+-{
+-
+-}
+\ No newline at end of file
+diff --git a/ui/zenoapi/src/znode_impl.h b/ui/zenoapi/src/znode_impl.h
+deleted file mode 100644
+index b13f72a2b..000000000
+--- a/ui/zenoapi/src/znode_impl.h
++++ /dev/null
+@@ -1,28 +0,0 @@
+-#ifndef __ZNODE_IMPL_H__
+-#define __ZNODE_IMPL_H__
+-
+-#include "interface.h"
+-#include <QAbstractItemModel>
+-
+-class IGraphsModel;
+-
+-class ZNode_Impl : public IZNode
+-{
+-public:
+-    ZNode_Impl(IGraphsModel* pModel, const QModelIndex& idx);
+-    ~ZNode_Impl();
+-
+-    std::string getName() const override;
+-    std::string getIdent() const override;
+-    ZVARIANT getSocketDefl(const std::string& sockName) override;
+-    void setSocketDefl(const std::string& sockName, const ZVARIANT& value) override;
+-    ZVARIANT getParam(const std::string& name) override;
+-    void setParamValue(const std::string& name, const ZVARIANT& value) override;
+-
+-private:
+-    QPersistentModelIndex m_index;
+-    IGraphsModel* m_model;
+-};
+-
+-
+-#endif
+\ No newline at end of file
+diff --git a/ui/zenoapi/src/zsubgraph_impl.cpp b/ui/zenoapi/src/zsubgraph_impl.cpp
+deleted file mode 100644
+index 52cfde33c..000000000
+--- a/ui/zenoapi/src/zsubgraph_impl.cpp
++++ /dev/null
+@@ -1,70 +0,0 @@
+-#include "zsubgraph_impl.h"
+-#include <zenomodel/include/igraphsmodel.h>
+-#include <zenomodel/include/modeldata.h>
+-#include <zenomodel/include/modelrole.h>
+-
+-
+-ZSubGraph_Impl::ZSubGraph_Impl(IGraphsModel* pModel, const QModelIndex& idx)
+-    : m_index(idx)
+-    , m_model(pModel)
+-{
+-}
+-
+-ZSubGraph_Impl::~ZSubGraph_Impl()
+-{
+-
+-}
+-
+-std::string ZSubGraph_Impl::name() const
+-{
+-    if (m_index.isValid())
+-        return m_index.data(ROLE_OBJNAME).toString().toStdString();
+-    else
+-        return "";
+-}
+-
+-std::shared_ptr<IZNode> ZSubGraph_Impl::getNode(const std::string& ident)
+-{
+-    if (!m_index.isValid() || !m_model)
+-        return nullptr;
+-    
+-    QModelIndex idx = m_model->index(QString::fromStdString(ident), m_index);
+-    if (!idx.isValid())
+-        return nullptr;
+-
+-
+-
+-}
+-
+-std::shared_ptr<IZNode> ZSubGraph_Impl::addNode(const std::string& nodeCls)
+-{
+-    return nullptr;
+-}
+-
+-bool ZSubGraph_Impl::addLink(
+-    const std::string& outIdent,
+-    const std::string& outSock,
+-    const std::string& inIdent,
+-    const std::string& inSock)
+-{
+-    return false;
+-}
+-
+-bool ZSubGraph_Impl::removeLink(
+-    const std::string& outIdent,
+-    const std::string& outSock,
+-    const std::string& inIdent,
+-    const std::string& inSock)
+-{
+-    return false;
+-}
+-
+-int ZSubGraph_Impl::count() const
+-{
+-    return 0;
+-}
+-
+-std::shared_ptr<IZNode> ZSubGraph_Impl::item(int idx)
+-{
+-    return nullptr;
+-}
+\ No newline at end of file
+diff --git a/ui/zenoapi/src/zsubgraph_impl.h b/ui/zenoapi/src/zsubgraph_impl.h
+deleted file mode 100644
+index dfccfd715..000000000
+--- a/ui/zenoapi/src/zsubgraph_impl.h
++++ /dev/null
+@@ -1,39 +0,0 @@
+-#ifndef __ZSUBGRAPH_IMPL_H__
+-#define __ZSUBGRAPH_IMPL_H__
+-
+-#include "../include/interface.h"
+-#include <QAbstractItemModel>
+-
+-class IGraphsModel;
+-
+-class ZSubGraph_Impl : public IZSubgraph
+-{
+-public:
+-    ZSubGraph_Impl(IGraphsModel* pModel, const QModelIndex& idx);
+-    ~ZSubGraph_Impl();
+-
+-    std::string name() const override;
+-    std::shared_ptr<IZNode> getNode(const std::string& ident) override;
+-    std::shared_ptr<IZNode> addNode(const std::string& nodeCls) override;
+-
+-    bool addLink(
+-        const std::string& outIdent,
+-        const std::string& outSock,
+-        const std::string& inIdent,
+-        const std::string& inSock) override;
+-
+-    bool removeLink(
+-        const std::string& outIdent,
+-        const std::string& outSock,
+-        const std::string& inIdent,
+-        const std::string& inSock) override;
+-
+-    int count() const override;
+-    std::shared_ptr<IZNode> item(int idx) override;
+-
+-private:
+-    QPersistentModelIndex m_index;
+-    IGraphsModel* m_model;
+-};
+-
+-#endif
+\ No newline at end of file
+diff --git a/ui/zenoedit/acceptor/transferacceptor.cpp b/ui/zenoedit/acceptor/transferacceptor.cpp
+index b7ca74290..5951279d9 100644
+--- a/ui/zenoedit/acceptor/transferacceptor.cpp
++++ b/ui/zenoedit/acceptor/transferacceptor.cpp
+@@ -5,7 +5,7 @@
+ #include <zeno/utils/logger.h>
+ #include "util/log.h"
+ #include <zenoio/reader/zsgreader.h>
+-#include "../nodesys/nodesmgr.h"
++#include <zenomodel/include/nodesmgr.h>
+ #include <zenomodel/include/uihelper.h>
+ 
+ 
+diff --git a/ui/zenoedit/curvemap/curvegrid.cpp b/ui/zenoedit/curvemap/curvegrid.cpp
+index 89671dfae..e34f77b14 100644
+--- a/ui/zenoedit/curvemap/curvegrid.cpp
++++ b/ui/zenoedit/curvemap/curvegrid.cpp
+@@ -1,7 +1,7 @@
+ #include "curvegrid.h"
+ #include "curvemapview.h"
+ #include "curvenodeitem.h"
+-#include "curveutil.h"
++#include <zenomodel/include/curveutil.h>
+ #include <zenomodel/include/uihelper.h>
+ #include "curvesitem.h"
+ #include "util/log.h"
+diff --git a/ui/zenoedit/curvemap/curvemapview.cpp b/ui/zenoedit/curvemap/curvemapview.cpp
+index 3f2b38fa6..6184f7f1d 100644
+--- a/ui/zenoedit/curvemap/curvemapview.cpp
++++ b/ui/zenoedit/curvemap/curvemapview.cpp
+@@ -2,7 +2,7 @@
+ #include "curvescalaritem.h"
+ #include "curvegrid.h"
+ #include "curvenodeitem.h"
+-#include "curveutil.h"
++#include <zenomodel/include/curveutil.h>
+ #include <zenomodel/include/curvemodel.h>
+ #include "../util/log.h"
+ #include <zenoui/style/zenostyle.h>
+diff --git a/ui/zenoedit/curvemap/curvenodeitem.cpp b/ui/zenoedit/curvemap/curvenodeitem.cpp
+index 5aebc5153..3051e24a5 100644
+--- a/ui/zenoedit/curvemap/curvenodeitem.cpp
++++ b/ui/zenoedit/curvemap/curvenodeitem.cpp
+@@ -2,7 +2,7 @@
+ #include "curvemapview.h"
+ #include <zenoui/style/zenostyle.h>
+ #include <zenomodel/include/uihelper.h>
+-#include "curveutil.h"
++#include <zenomodel/include/curveutil.h>
+ #include "curvesitem.h"
+ #include <zenomodel/include/curvemodel.h>
+ 
+diff --git a/ui/zenoedit/curvemap/curvenodeitem.h b/ui/zenoedit/curvemap/curvenodeitem.h
+index b5f0b98d9..83c160ae2 100644
+--- a/ui/zenoedit/curvemap/curvenodeitem.h
++++ b/ui/zenoedit/curvemap/curvenodeitem.h
+@@ -4,7 +4,7 @@
+ #include <QtWidgets>
+ #include <QtSvg/QGraphicsSvgItem>
+ #include "curvegrid.h"
+-#include "curveutil.h"
++#include <zenomodel/include/curveutil.h>
+ #include <zenomodel/include/curvemodel.h>
+ 
+ class CurveNodeItem;
+diff --git a/ui/zenoedit/curvemap/curvescalaritem.cpp b/ui/zenoedit/curvemap/curvescalaritem.cpp
+index c1d2927c1..f43ede5f5 100644
+--- a/ui/zenoedit/curvemap/curvescalaritem.cpp
++++ b/ui/zenoedit/curvemap/curvescalaritem.cpp
+@@ -1,7 +1,7 @@
+ #include <QtWidgets>
+ #include "curvescalaritem.h"
+ #include "curvemapview.h"
+-#include "curveutil.h"
++#include <zenomodel/include/curveutil.h>
+ 
+ 
+ CurveSliderItem::CurveSliderItem(CurveScalarItem *parent)
+diff --git a/ui/zenoedit/curvemap/zcurvemapeditor.h b/ui/zenoedit/curvemap/zcurvemapeditor.h
+index 86539967b..06f387808 100644
+--- a/ui/zenoedit/curvemap/zcurvemapeditor.h
++++ b/ui/zenoedit/curvemap/zcurvemapeditor.h
+@@ -3,7 +3,7 @@
+ 
+ #include <QtWidgets>
+ #include <zenomodel/include/modeldata.h>
+-#include "curveutil.h"
++#include <zenomodel/include/curveutil.h>
+ 
+ using namespace curve_util;
+ 
+diff --git a/ui/zenoedit/launch/offlinemain.cpp b/ui/zenoedit/launch/offlinemain.cpp
+index e5be04001..ce6c74846 100644
+--- a/ui/zenoedit/launch/offlinemain.cpp
++++ b/ui/zenoedit/launch/offlinemain.cpp
+@@ -60,7 +60,7 @@ int offline_main(const char *zsgfile, int beginFrame, int endFrame);
+ int offline_main(const char *zsgfile, int beginFrame, int endFrame) {
+     zeno::log_info("running in offline mode, file=[{}], begin={}, end={}", zsgfile, beginFrame, endFrame);
+ 
+-    GraphsManagment gman;
++    GraphsManagment& gman = GraphsManagment::instance();
+     gman.openZsgFile(zsgfile);
+     IGraphsModel *pModel = gman.currentModel();
+     ZASSERT_EXIT(pModel, 1);
+diff --git a/ui/zenoedit/nodesys/heatmapnode.cpp b/ui/zenoedit/nodesys/heatmapnode.cpp
+index ba82d94c5..42dd292a3 100644
+--- a/ui/zenoedit/nodesys/heatmapnode.cpp
++++ b/ui/zenoedit/nodesys/heatmapnode.cpp
+@@ -4,6 +4,7 @@
+ #include <zenomodel/include/graphsmanagment.h>
+ #include "util/log.h"
+ #include "util/apphelper.h"
++#include <zenomodel/include/uihelper.h>
+ 
+ 
+ MakeHeatMapNode::MakeHeatMapNode(const NodeUtilParam& params, QGraphicsItem* parent)
+@@ -70,7 +71,7 @@ void MakeHeatMapNode::onEditClicked()
+         editor.exec();
+ 
+         QLinearGradient newGrad = editor.colorRamps();
+-        QString colorText = AppHelper::gradient2colorString(newGrad);
++        QString colorText = UiHelper::gradient2colorString(newGrad);
+         if (colorText != oldColor)
+         {
+             PARAM_UPDATE_INFO info;
+diff --git a/ui/zenoedit/nodesys/zenonewmenu.cpp b/ui/zenoedit/nodesys/zenonewmenu.cpp
+index 04b87da18..1c9e51bfa 100644
+--- a/ui/zenoedit/nodesys/zenonewmenu.cpp
++++ b/ui/zenoedit/nodesys/zenonewmenu.cpp
+@@ -1,7 +1,7 @@
+ #include "zenonewmenu.h"
+ #include <zenomodel/include/graphsmanagment.h>
+ #include "zenoapplication.h"
+-#include "nodesmgr.h"
++#include <zenomodel/include/nodesmgr.h>
+ #include "fuzzy_search.h"
+ #include <zenoui/comctrl/gv/zenoparamwidget.h>
+ 
+diff --git a/ui/zenoedit/util/apphelper.cpp b/ui/zenoedit/util/apphelper.cpp
+index cdd0f5f66..706172d4b 100644
+--- a/ui/zenoedit/util/apphelper.cpp
++++ b/ui/zenoedit/util/apphelper.cpp
+@@ -60,26 +60,6 @@ QLinearGradient AppHelper::colorString2Grad(const QString& colorStr)
+     return grad;
+ }
+ 
+-QString AppHelper::gradient2colorString(const QLinearGradient& grad)
+-{
+-    QString colorStr;
+-    const QGradientStops& stops = grad.stops();
+-    colorStr += QString::number(stops.size());
+-    colorStr += "\n";
+-    for (QGradientStop grad : stops)
+-    {
+-        colorStr += QString::number(grad.first);
+-        colorStr += " ";
+-        colorStr += QString::number(grad.second.redF());
+-        colorStr += " ";
+-        colorStr += QString::number(grad.second.greenF());
+-        colorStr += " ";
+-        colorStr += QString::number(grad.second.blueF());
+-        colorStr += "\n";
+-    }
+-    return colorStr;
+-}
+-
+ INPUT_SOCKET AppHelper::getInputSocket(const QPersistentModelIndex& index, const QString& inSock, bool& exist)
+ {
+     INPUT_SOCKETS inputs = index.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
+diff --git a/ui/zenoedit/util/apphelper.h b/ui/zenoedit/util/apphelper.h
+index 18f2a4f08..9083990cf 100644
+--- a/ui/zenoedit/util/apphelper.h
++++ b/ui/zenoedit/util/apphelper.h
+@@ -8,7 +8,6 @@ class AppHelper
+ public:
+     static QModelIndexList getSubInOutNode(IGraphsModel* pModel, const QModelIndex& subgIdx, const QString& sockName, bool bInput);
+     static QLinearGradient colorString2Grad(const QString& colorStr);
+-    static QString gradient2colorString(const QLinearGradient& grad);
+     static INPUT_SOCKET getInputSocket(const QPersistentModelIndex& index, const QString& inSock, bool& exist);
+     static void ensureSRCDSTlastKey(INPUT_SOCKETS& inputs, OUTPUT_SOCKETS& outputs);
+ };
+diff --git a/ui/zenoedit/viewport/viewporttransform.h b/ui/zenoedit/viewport/viewporttransform.h
+index 648eef8fc..377f7b153 100644
+--- a/ui/zenoedit/viewport/viewporttransform.h
++++ b/ui/zenoedit/viewport/viewporttransform.h
+@@ -10,7 +10,7 @@
+ #include <zeno/funcs/PrimitiveTools.h>
+ #include <zeno/types/UserData.h>
+ #include <zenovis/ObjectsManager.h>
+-#include <nodesys/nodesmgr.h>
++#include <zenomodel/include/nodesmgr.h>
+ 
+ #include <QtWidgets>
+ 
+diff --git a/ui/zenoedit/viewport/viewportwidget.cpp b/ui/zenoedit/viewport/viewportwidget.cpp
+index 43f787357..c982b1b80 100644
+--- a/ui/zenoedit/viewport/viewportwidget.cpp
++++ b/ui/zenoedit/viewport/viewportwidget.cpp
+@@ -18,7 +18,7 @@
+ #include <util/log.h>
+ #include <zenoui/style/zenostyle.h>
+ //#include <zeno/utils/zeno_p.h>
+-#include <nodesys/nodesmgr.h>
++#include <zenomodel/include/nodesmgr.h>
+ #include <cmath>
+ #include <algorithm>
+ #include <optional>
+diff --git a/ui/zenoedit/zenoapplication.cpp b/ui/zenoedit/zenoapplication.cpp
+index 8cab90b6d..f194f1f25 100644
+--- a/ui/zenoedit/zenoapplication.cpp
++++ b/ui/zenoedit/zenoapplication.cpp
+@@ -11,7 +11,6 @@
+ 
+ ZenoApplication::ZenoApplication(int &argc, char **argv)
+     : QApplication(argc, argv)
+-    , m_pGraphs(new GraphsManagment())
+     , m_errSteam(std::clog)
+ #if defined(ZENO_MULTIPROCESS) && defined(ZENO_IPC_USE_TCP)
+     , m_server(nullptr)
+@@ -33,7 +32,6 @@ ZenoApplication::ZenoApplication(int &argc, char **argv)
+ 
+ ZenoApplication::~ZenoApplication()
+ {
+-    delete m_pGraphs;
+ }
+ 
+ QString ZenoApplication::readQss(const QString& qssPath)
+@@ -80,12 +78,12 @@ void ZenoApplication::initFonts()
+ 
+ GraphsManagment *ZenoApplication::graphsManagment() const
+ {
+-    return m_pGraphs;
++    return &GraphsManagment::instance();
+ }
+ 
+ QStandardItemModel* ZenoApplication::logModel() const
+ {
+-    return m_pGraphs->logModel();
++    return graphsManagment()->logModel();
+ }
+ 
+ #if defined(ZENO_MULTIPROCESS) && defined(ZENO_IPC_USE_TCP)
+diff --git a/ui/zenoedit/zenoapplication.h b/ui/zenoedit/zenoapplication.h
+index 8a54ed069..052e63aa0 100644
+--- a/ui/zenoedit/zenoapplication.h
++++ b/ui/zenoedit/zenoapplication.h
+@@ -30,7 +30,6 @@ public:
+ private:
+     QString readQss(const QString& qssPath);
+ 
+-    GraphsManagment *m_pGraphs;
+     ZWidgetErrStream m_errSteam;
+ #if defined(ZENO_MULTIPROCESS) && defined(ZENO_IPC_USE_TCP)
+     ZTcpServer* m_server;
+diff --git a/ui/zenoedit/curvemap/curveutil.h b/ui/zenomodel/include/curveutil.h
+similarity index 100%
+rename from ui/zenoedit/curvemap/curveutil.h
+rename to ui/zenomodel/include/curveutil.h
+diff --git a/ui/zenomodel/include/graphsmanagment.h b/ui/zenomodel/include/graphsmanagment.h
+index 72330dca6..2657c0e4c 100644
+--- a/ui/zenomodel/include/graphsmanagment.h
++++ b/ui/zenomodel/include/graphsmanagment.h
+@@ -8,7 +8,8 @@ class GraphsManagment : public QObject
+ {
+     Q_OBJECT
+ public:
+-    GraphsManagment(QObject *parent = nullptr);
++    static GraphsManagment& instance();
++
+     void setCurrentModel(IGraphsModel* model);
+     IGraphsModel* currentModel();
+     QAbstractItemModel* treeModel();
+@@ -34,7 +35,9 @@ private slots:
+     void onRowsAboutToBeRemoved(const QModelIndex& parent, int first, int last);
+ 
+ private:
+-    IGraphsModel *m_model;
++    GraphsManagment(QObject *parent = nullptr);
++
++    IGraphsModel* m_model;
+     QAbstractItemModel* m_pTreeModel;
+     QStandardItemModel* m_logModel;     //connection with scene.
+     mutable QMutex m_mutex;
+diff --git a/ui/zenomodel/include/igraphsmodel.h b/ui/zenomodel/include/igraphsmodel.h
+index 5aa1387bd..c1c0a95d9 100644
+--- a/ui/zenomodel/include/igraphsmodel.h
++++ b/ui/zenomodel/include/igraphsmodel.h
+@@ -13,11 +13,16 @@ public:
+ 	explicit IGraphsModel(QObject* parent = nullptr) : QAbstractItemModel(parent) {}
+ 	virtual QModelIndex index(int row, int column, const QModelIndex& parent = QModelIndex()) const override = 0;
+ 	virtual QModelIndex index(const QString& subGraphName) const = 0;
++
++	/*todo: use nodeIndex(QString) because id is unique in the whole graph*/
+ 	virtual QModelIndex index(const QString& id, const QModelIndex& subGpIdx) = 0;
++
+ 	virtual QModelIndex index(int r, const QModelIndex& subGpIdx) = 0;
+ 
+-	virtual QModelIndex nodeIndex(uint32_t id, uint32_t sid) = 0;
++	virtual QModelIndex nodeIndex(const QString& id) = 0;
++	virtual QModelIndex nodeIndex(uint32_t id) = 0;
+ 	virtual QModelIndex subgIndex(uint32_t sid) = 0;
++	virtual QModelIndex subgByNodeId(uint32_t id) = 0;
+ 
+ 	virtual QModelIndex linkIndex(int r) = 0;
+ 	virtual QVariant data2(const QModelIndex& subGpIdx, const QModelIndex& index, int role) = 0;
+diff --git a/ui/zenoedit/nodesys/nodesmgr.h b/ui/zenomodel/include/nodesmgr.h
+similarity index 100%
+rename from ui/zenoedit/nodesys/nodesmgr.h
+rename to ui/zenomodel/include/nodesmgr.h
+diff --git a/ui/zenomodel/include/uihelper.h b/ui/zenomodel/include/uihelper.h
+index 275e822be..aa25df577 100644
+--- a/ui/zenomodel/include/uihelper.h
++++ b/ui/zenomodel/include/uihelper.h
+@@ -53,6 +53,7 @@ public:
+     static QString nthSerialNumName(QString name);
+     static QString correctSubIOName(IGraphsModel* pModel, const QString& subgName, const QString& newName, bool bInput);
+     static QVariant _parseToVariant(const QString& type, const rapidjson::Value& val, QObject* parentRef);
++    static QString gradient2colorString(const QLinearGradient& grad);
+ 
+ private:
+     static std::pair<qreal, qreal> getRxx2(QRectF r, qreal xRadius, qreal yRadius, bool AbsoluteSize);
+diff --git a/ui/zenoedit/curvemap/curveutil.cpp b/ui/zenomodel/src/curveutil.cpp
+similarity index 100%
+rename from ui/zenoedit/curvemap/curveutil.cpp
+rename to ui/zenomodel/src/curveutil.cpp
+diff --git a/ui/zenomodel/src/graphsmanagment.cpp b/ui/zenomodel/src/graphsmanagment.cpp
+index fc0379a37..597e1869c 100644
+--- a/ui/zenomodel/src/graphsmanagment.cpp
++++ b/ui/zenomodel/src/graphsmanagment.cpp
+@@ -35,6 +35,11 @@ GraphsManagment::GraphsManagment(QObject* parent)
+      m_logModel = new QStandardItemModel(this);
+ }
+ 
++GraphsManagment& GraphsManagment::instance() {
++    static GraphsManagment inst;
++    return inst;
++}
++
+ IGraphsModel* GraphsManagment::currentModel()
+ {
+     return m_model;
+diff --git a/ui/zenomodel/src/graphsmodel.cpp b/ui/zenomodel/src/graphsmodel.cpp
+index 1323286e7..8f8cef762 100644
+--- a/ui/zenomodel/src/graphsmodel.cpp
++++ b/ui/zenomodel/src/graphsmodel.cpp
+@@ -195,12 +195,26 @@ void GraphsModel::renameSubGraph(const QString& oldName, const QString& newName)
+     emit graphRenamed(oldName, newName);
+ }
+ 
+-QModelIndex GraphsModel::nodeIndex(uint32_t id, uint32_t sid)
++QModelIndex GraphsModel::nodeIndex(uint32_t id)
+ {
+-    QModelIndex subgIdx = subgIndex(sid);
+-    ZASSERT_EXIT(subgIdx.isValid(), QModelIndex());
+-    QModelIndex nodeIdx = m_subGraphs[subgIdx.row()]->index(id);
+-    return nodeIdx;
++    for (int row = 0; row < m_subGraphs.size(); row++)
++    {
++        QModelIndex idx = m_subGraphs[row]->index(id);
++        if (idx.isValid())
++            return idx;
++    }
++    return QModelIndex();
++}
++
++QModelIndex GraphsModel::nodeIndex(const QString& id)
++{
++    for (int row = 0; row < m_subGraphs.size(); row++)
++    {
++        QModelIndex idx = m_subGraphs[row]->index(id);
++        if (idx.isValid())
++            return idx;
++    }
++    return QModelIndex();
+ }
+ 
+ QModelIndex GraphsModel::subgIndex(uint32_t sid)
+@@ -210,6 +224,16 @@ QModelIndex GraphsModel::subgIndex(uint32_t sid)
+     return index(subgName);
+ }
+ 
++QModelIndex GraphsModel::subgByNodeId(uint32_t id)
++{
++    for (int row = 0; row < m_subGraphs.size(); row++)
++    {
++        if (m_subGraphs[row]->index(id).isValid())
++            return index(row, 0);
++    }
++    return QModelIndex();
++}
++
+ QModelIndex GraphsModel::_createIndex(SubGraphModel* pSubModel) const
+ {
+     if (!pSubModel)
+diff --git a/ui/zenomodel/src/graphsmodel.h b/ui/zenomodel/src/graphsmodel.h
+index f02b915a3..26ccea1bf 100644
+--- a/ui/zenomodel/src/graphsmodel.h
++++ b/ui/zenomodel/src/graphsmodel.h
+@@ -51,8 +51,10 @@ public:
+     QString fileName() const override;
+     void setFilePath(const QString& fn) override;
+     QModelIndex index(int row, int column, const QModelIndex& parent = QModelIndex()) const override;
+-    QModelIndex nodeIndex(uint32_t id, uint32_t sid) override;
++    QModelIndex nodeIndex(uint32_t id) override;
++    QModelIndex nodeIndex(const QString& id) override;
+     QModelIndex subgIndex(uint32_t sid) override;
++    QModelIndex subgByNodeId(uint32_t id) override;
+     QModelIndex index(const QString& subGraphName) const override;
+     QModelIndex indexBySubModel(SubGraphModel* pSubModel) const;
+     QModelIndex linkIndex(int r) override;
+diff --git a/ui/zenoedit/nodesys/nodesmgr.cpp b/ui/zenomodel/src/nodesmgr.cpp
+similarity index 96%
+rename from ui/zenoedit/nodesys/nodesmgr.cpp
+rename to ui/zenomodel/src/nodesmgr.cpp
+index 15ffd217f..104b29f8a 100644
+--- a/ui/zenoedit/nodesys/nodesmgr.cpp
++++ b/ui/zenomodel/src/nodesmgr.cpp
+@@ -1,13 +1,10 @@
+ #include "nodesmgr.h"
+-#include "fuzzy_search.h"
+ #include <zenomodel/include/uihelper.h>
+-#include "util/apphelper.h"
+ #include <zeno/utils/log.h>
+-#include "zenoapplication.h"
+ #include <zenomodel/include/graphsmanagment.h>
+ #include <zenomodel/include/curvemodel.h>
+ #include <zenomodel/include/variantptr.h>
+-#include "curvemap/curveutil.h"
++#include <zenomodel/include/curveutil.h>
+ 
+ 
+ QString NodesMgr::createNewNode(IGraphsModel* pModel, QModelIndex subgIdx, const QString& descName, const QPointF& pt)
+@@ -130,7 +127,7 @@ void NodesMgr::initParams(const QString& descName, IGraphsModel* pGraphsModel, P
+         QLinearGradient grad;
+         grad.setColorAt(0, QColor::fromRgbF(0., 0., 0.));
+         grad.setColorAt(1, QColor::fromRgbF(1., 1., 1.));
+-        param.value = AppHelper::gradient2colorString(grad);
++        param.value = UiHelper::gradient2colorString(grad);
+         params.insert(param.name, param);
+     }
+ }
+diff --git a/ui/zenomodel/src/subgraphmodel.cpp b/ui/zenomodel/src/subgraphmodel.cpp
+index db647d06a..a97082da2 100644
+--- a/ui/zenomodel/src/subgraphmodel.cpp
++++ b/ui/zenomodel/src/subgraphmodel.cpp
+@@ -141,7 +141,8 @@ QModelIndex SubGraphModel::index(QString id, const QModelIndex& parent) const
+ 
+ QModelIndex SubGraphModel::index(int id) const
+ {
+-    ZASSERT_EXIT(m_num2strId.find(id) != m_num2strId.end(), QModelIndex());
++    if (m_num2strId.find(id) == m_num2strId.end())
++        return QModelIndex();
+     return index(m_num2strId[id]);
+ }
+ 
+diff --git a/ui/zenomodel/src/uihelper.cpp b/ui/zenomodel/src/uihelper.cpp
+index 6524261aa..2d6cac17f 100644
+--- a/ui/zenomodel/src/uihelper.cpp
++++ b/ui/zenomodel/src/uihelper.cpp
+@@ -816,3 +816,22 @@ QVariant UiHelper::_parseToVariant(const QString& type, const rapidjson::Value&
+     zeno::log_warn("bad rapidjson value type {}", val.GetType());
+     return QVariant();
+ }
++
++QString UiHelper::gradient2colorString(const QLinearGradient& grad)
++{
++    QString colorStr;
++    const QGradientStops &stops = grad.stops();
++    colorStr += QString::number(stops.size());
++    colorStr += "\n";
++    for (QGradientStop grad : stops) {
++        colorStr += QString::number(grad.first);
++        colorStr += " ";
++        colorStr += QString::number(grad.second.redF());
++        colorStr += " ";
++        colorStr += QString::number(grad.second.greenF());
++        colorStr += " ";
++        colorStr += QString::number(grad.second.blueF());
++        colorStr += "\n";
++    }
++    return colorStr;
++}
+-- 
+2.33.1.windows.1
+
