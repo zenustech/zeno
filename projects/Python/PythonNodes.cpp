@@ -30,7 +30,7 @@ static int defPythonInit = getSession().eventCallbacks->hookEvent("init", [] {
     ws.resize(std::mbstowcs(ws.data(), s.data(), s.size())); // Shrink to fit.
     Py_SetPythonHome(ws.c_str());
     Py_Initialize();
-    std::string libpath = getAssetDir(ZENO_PYTHON_LIB_DIR);
+    std::string libpath = getAssetDir(ZENO_PYTHON_MODULE_DIR);
     std::string dllfile = ZENO_PYTHON_DLL_FILE;
     if (PyRun_SimpleString(("__import__('sys').path.insert(0, '" + libpath + "'); import ze; ze.initDLLPath('" + dllfile + "')").c_str()) < 0) {
         log_warn("Failed to initialize Python module");

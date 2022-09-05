@@ -85,7 +85,7 @@ jobs:
         cuda: 11.7.1
         visual_studio: "Visual Studio 16 2019"
       shell: powershell
-      run:
+      run: |
         .\misc\ci\win\install_cuda_windows.ps1
         ls $env:CUDA_PATH\
         ls $env:CUDA_PATH\bin
