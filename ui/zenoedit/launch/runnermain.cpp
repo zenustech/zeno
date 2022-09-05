@@ -166,7 +166,7 @@ int runner_main(int sessionid, int port) {
         zeno::log_info("tcp connection succeed");
     }
 #else
-    zeno::log_info("start IPC in pipe mode");
+    zeno::log_debug("started IPC in pipe mode");
     ourfp = stdout;
 #endif
 
@@ -177,6 +177,10 @@ int runner_main(int sessionid, int port) {
     stdout = stderr;
 #endif
     std::cout.rdbuf(std::cerr.rdbuf());
+#endif
+
+#ifndef ZENO_IPC_USE_TCP
+    // TODO: redirect stderr to stdout
 #endif
 
     std::string progJson;

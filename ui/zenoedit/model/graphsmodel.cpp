@@ -1593,6 +1593,7 @@ bool GraphsModel::updateSocketNameNotDesc(const QString& id, SOCKET_UPDATE_INFO 
                 ZASSERT_EXIT(iter != inputs.end(), false);
 
                 iter->first = newSockName;
+                iter->second.info.name = newSockName;
 
                 //update all link connect with oldInfo.
                 m_linkModel->blockSignals(true);

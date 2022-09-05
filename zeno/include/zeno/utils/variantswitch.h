@@ -111,7 +111,7 @@ struct variant_enum : std::integral_constant<Enum, Enum{std::underlying_type_t<E
 };
 
 template <class T, std::size_t I = 0>
-struct _funcalt_wrapper {
+struct _invoker_wrapper {
     std::remove_cv_t<std::remove_reference_t<T>> _m_core;
 
     template <class ...Ts>
@@ -121,17 +121,17 @@ struct _funcalt_wrapper {
 };
 
 template <class Tup, std::size_t ...Is>
-auto _impl_funcalt_variant(std::size_t index, Tup const &tstup, std::index_sequence<Is...>) {
+auto _impl_invoker_variant(std::size_t index, Tup const &tstup, std::index_sequence<Is...>) {
     return index_switch<std::tuple_size_v<Tup>>(index, [&tstup] (auto index)
-            -> std::variant<_funcalt_wrapper<std::tuple_element_t<Is, Tup>, Is>...> {
-        return _funcalt_wrapper<std::tuple_element_t<index.value, Tup>, index.value>{
+            -> std::variant<_invoker_wrapper<std::tuple_element_t<Is, Tup>, Is>...> {
+        return _invoker_wrapper<std::tuple_element_t<index.value, Tup>, index.value>{
             std::get<index.value>(tstup)};
     });
 }
 
 template <class ...Ts>
-auto funcalt_variant(std::size_t index, Ts const &...ts) {
-    return _impl_funcalt_variant(index, std::tuple<Ts const &...>(ts...),
+auto invoker_variant(std::size_t index, Ts const &...ts) {
+    return _impl_invoker_variant(index, std::tuple<Ts const &...>(ts...),
                                  std::make_index_sequence<sizeof...(Ts)>{});
 }
 

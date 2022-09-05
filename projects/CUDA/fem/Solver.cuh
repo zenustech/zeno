@@ -46,17 +46,19 @@ struct IPCSystem : IObject {
         PrimitiveHandle(ZenoParticles &zsprim, std::size_t &vOffset, std::size_t &sfOffset, std::size_t &seOffset,
                         std::size_t &svOffset, zs::wrapv<4>);
         // soft springs: only elasticity matters
-        PrimitiveHandle(dtiles_t &vtemp, std::shared_ptr<tiles_t> elesPtr);
+        PrimitiveHandle(std::shared_ptr<tiles_t> elesPtr);
         T averageNodalMass(zs::CudaExecutionPolicy &pol) const;
         T averageSurfEdgeLength(zs::CudaExecutionPolicy &pol) const;
         T averageSurfArea(zs::CudaExecutionPolicy &pol) const;
 
         auto getModelLameParams() const {
-            T mu, lam;
-            zs::match([&](const auto &model) {
-                mu = model.mu;
-                lam = model.lam;
-            })(models.getElasticModel());
+            T mu = 0, lam = 0;
+            if (!isAuxiliary()) {
+                zs::match([&](const auto &model) {
+                    mu = model.mu;
+                    lam = model.lam;
+                })(models.getElasticModel());
+            }
             return zs::make_tuple(mu, lam);
         }
 
@@ -75,7 +77,14 @@ struct IPCSystem : IObject {
         decltype(auto) getSurfVerts() const {
             return *surfVertsPtr;
         }
+        bool isAuxiliary() const noexcept {
+            if (zsprimPtr == nullptr)
+                return true;
+            return false;
+        }
         bool isBoundary() const noexcept {
+            if (zsprimPtr == nullptr)   // auxiliary primitive for soft binding
+                return true;
             return zsprimPtr->asBoundary;
         }
 
@@ -92,6 +101,9 @@ struct IPCSystem : IObject {
         ZenoParticles::category_e category;
     };
 
+    bool hasBoundary() const noexcept {
+        return coVerts != nullptr;
+    }
     T averageNodalMass(zs::CudaExecutionPolicy &pol);
     T averageSurfEdgeLength(zs::CudaExecutionPolicy &pol);
     T averageSurfArea(zs::CudaExecutionPolicy &pol);
@@ -105,6 +117,9 @@ struct IPCSystem : IObject {
         return mu;
     }
 
+    void pushBoundarySprings(std::shared_ptr<tiles_t> elesPtr) {
+        auxPrims.push_back(std::move(elesPtr));
+    }
     void updateWholeBoundingBoxSize(zs::CudaExecutionPolicy &pol);
     void initKappa(zs::CudaExecutionPolicy &pol);
     void initialize(zs::CudaExecutionPolicy &pol);
@@ -193,6 +208,7 @@ struct IPCSystem : IObject {
 
     //
     std::vector<PrimitiveHandle> prims;
+    std::vector<PrimitiveHandle> auxPrims;
     std::size_t coOffset, numDofs;
     std::size_t sfOffset, seOffset, svOffset;
 
