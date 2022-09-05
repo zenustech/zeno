@@ -43,8 +43,13 @@ void readScalarField(const std::string &absPath, T &saveTo)
     std::ifstream in(absPath);
     std::string line;
 
-    while (std::getline(in, line)) 
-        saveTo.emplace_back(std::stoi(line));
+    using TT = typename T::value_type;
+    TT temp;
 
+    while (std::getline(in, line)) 
+    {
+        std::istringstream ( line ) >> temp;
+        saveTo.emplace_back(temp);
+    }
     in.close();
 }
