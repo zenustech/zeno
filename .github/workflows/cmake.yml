@@ -86,7 +86,7 @@ jobs:
       shell: powershell
       run:
         .\misc\ci\win\install_cuda_windows.ps1
-        cp -r .\visual_studio_integration\CUDAVisualStudioIntegration\extras\visual_studio_integration\MSBuildExtensions C:\Program Files (x86)\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v160\BuildCustomizations
+        cp -r "./visual_studio_integration/CUDAVisualStudioIntegration/extras/visual_studio_integration/MSBuildExtensions" "C:/Program Files (x86)/Microsoft Visual Studio/2022/Community/MSBuild/Microsoft/VC/v160/BuildCustomizations"
 
     - name: Install CUDA toolkit (Ubuntu)
       if: ${{ matrix.gpu == 'cuda' && runner.os == 'Linux' }}
