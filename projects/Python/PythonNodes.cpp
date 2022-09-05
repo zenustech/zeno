@@ -8,6 +8,7 @@
 #include <zeno/types/FunctionObject.h>
 #include <zeno/types/UserData.h>
 #include <zeno/core/Graph.h>
+#include <zeno/utils/zeno_p.h>
 #include <zeno/utils/scope_exit.h>
 #include <zeno/extra/CAPIInternals.h>
 #include <zeno_Python_config.h>
@@ -237,6 +238,10 @@ struct PythonScript : INode {
                 }
                 rets->lut.emplace(std::move(keyStr), capiFindObjectSharedPtr(handle));
             }
+        }
+        {
+            PyObject *retsRAIIDict = PyDict_GetItemString(zenoModDict, "_retsRAII");
+            PyDict_Clear(retsRAIIDict);
         }
         set_output("rets", std::move(rets));
     }

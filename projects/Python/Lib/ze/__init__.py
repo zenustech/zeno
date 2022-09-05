@@ -482,6 +482,7 @@ class ZenoGraph:
 
 _args : dict[str, int] = {}
 _rets : dict[str, int] = {}
+_retsRAII : dict[str, Any] = {}
 _currgraph : int = 0
 
 
@@ -497,6 +498,7 @@ def get_input(key: str) -> ZenoObject:
 
 def set_output(key: str, value: ZenoObject):
     _rets[key] = ZenoObject.toHandle(value)
+    _retsRAII[key] = value
 
 
 def get_input2(key: str) -> Union[Literial, 'ZenoObject']:

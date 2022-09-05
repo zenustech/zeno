@@ -1,5 +1,7 @@
+# -*- coding: utf-8 -*-
+# type: ignore
+
 import ze
 
-prim = ze.args['obj0'].asPrim()
-for i in range(prim.verts.size()):
-    print(prim.verts['pos'][i])
+x = ze.args.obj0 + ze.args.obj1
+ze.rets.obj0 = x
