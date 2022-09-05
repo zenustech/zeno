@@ -638,9 +638,11 @@ extern "C" __global__ void __closesthit__radiance()
     }
     bool inToOut = false;
     bool outToIn = false;
+    if(flag == DisneyBSDF::transmissionEvent) {
+        prd->is_inside = !prd->is_inside;
+    }
 
     if(flag == DisneyBSDF::transmissionEvent){
-        prd->is_inside = !prd->is_inside;
         if(prd->is_inside){
             outToIn = true;
             inToOut = false;
@@ -659,7 +661,7 @@ extern "C" __global__ void __closesthit__radiance()
         else{
             outToIn = false;
             inToOut = true;
-            prd->attenuation2 *= DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
+            //prd->attenuation2 *= DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
             prd->attenuation *= DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
             prd->maxDistance = 1e16f;
             prd->medium = DisneyBSDF::PhaseFunctions::vacuum;
@@ -667,7 +669,7 @@ extern "C" __global__ void __closesthit__radiance()
         }
     }else{
 	    if(prd->medium == DisneyBSDF::PhaseFunctions::isotropic){
-                prd->attenuation2 *= DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
+                //prd->attenuation2 *= DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
                 prd->attenuation *= DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
                 float tmpPDF = 1.0f;
                 prd->maxDistance = DisneyBSDF::SampleDistance(prd->seed,prd->scatterStep,prd->extinction,tmpPDF);
@@ -675,6 +677,7 @@ extern "C" __global__ void __closesthit__radiance()
 
 	    }
     }
+    prd->medium = prd->is_inside?DisneyBSDF::PhaseFunctions::isotropic : DisneyBSDF::PhaseFunctions::vacuum;
 
 
 
@@ -765,19 +768,68 @@ extern "C" __global__ void __closesthit__radiance()
         }
 
     }
-    auto env_dir = BRDFBasics::halfPlaneSample(prd->seed, N, 1.0);
     RadiancePRD shadow_prd2;
-    shadow_prd2.shadowAttanuation = make_float3(1.0f, 1.0f, 1.0f);
-    shadow_prd2.nonThinTransHit = (thin==false && specTrans>0)? 1:0;
-    traceOcclusion(params.handle, P, env_dir,
-                   1e-5f,         // tmin
-                   1e16f, // tmax,
-                   &shadow_prd2);
-    float3 lbrdf = DisneyBSDF::EvaluateDisney(basecolor, metallic, subsurface, specular, clamp(roughness,0.5,0.99),
-                                              specularTint, anisotropic, sheen, sheenTint, clearcoat,
-                                              clearcoatGloss, specTrans, scatterDistance, ior, flatness, env_dir,
-                                              -normalize(inDir), T, B, N, thin > 0.5f, flag == DisneyBSDF::transmissionEvent ? inToOut : prd->is_inside, ffPdf, rrPdf,dot(N, float3(env_dir)));
-    prd->radiance += shadow_prd2.shadowAttanuation * float3(proceduralSky(env_dir)) * lbrdf;
+    float3 lbrdf;
+    vec3 env_dir;
+    bool inside=false;
+
+//    {
+//        while(DisneyBSDF::SampleDisney(
+//                   prd->seed,
+//                   basecolor,
+//                   transmittanceColor,
+//                   sssColor,
+//                   metallic,
+//                   0,
+//                   specular,
+//                   roughness,
+//                   specularTint,
+//                   anisotropic,
+//                   sheen,
+//                   sheenTint,
+//                   clearcoat,
+//                   clearcoatGloss,
+//                   flatness,
+//                   specTrans,
+//                   scatterDistance,
+//                   ior,
+//                   T,
+//                   B,
+//                   N,
+//                   -normalize(ray_dir),
+//                   thin>0.5f,
+//                   inside,
+//                   env_dir,
+//                   reflectance,
+//                   rPdf,
+//                   fPdf,
+//                   flag,
+//                   prd->medium,
+//                   extinction,
+//                   isDiff,
+//                   isSS
+//                   )  == false)
+//        {
+//
+//            rPdf = 0.0f;
+//            fPdf = 0.0f;
+//            reflectance = vec3(0.0f);
+//        }
+//
+//        shadow_prd2;
+//        shadow_prd2.shadowAttanuation = make_float3(1.0f, 1.0f, 1.0f);
+//        shadow_prd2.nonThinTransHit = (thin == false && specTrans > 0) ? 1 : 0;
+//        traceOcclusion(params.handle, P, env_dir,
+//                       1e-5f, // tmin
+//                       1e16f, // tmax,
+//                       &shadow_prd2);
+//        lbrdf = DisneyBSDF::EvaluateDisney(
+//            basecolor, metallic, subsurface, specular, roughness, specularTint, anisotropic, sheen,
+//            sheenTint, clearcoat, clearcoatGloss, specTrans, scatterDistance, ior, flatness, env_dir, -normalize(inDir),
+//            T, B, N, thin > 0.5f, flag == DisneyBSDF::transmissionEvent ? inToOut : prd->is_inside, ffPdf, rrPdf,
+//            dot(N, float3(env_dir)));
+//        prd->radiance += shadow_prd2.shadowAttanuation * float3(proceduralSky(env_dir)) * lbrdf;
+//    }
 
     auto sun_dir = normalize(vec3(-1.2,.8,0.5));
     shadow_prd2.shadowAttanuation = make_float3(1.0f, 1.0f, 1.0f);
