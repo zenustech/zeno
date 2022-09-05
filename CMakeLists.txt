@@ -107,6 +107,9 @@ endmacro()
 ## --- begin cihou wxl cuda
 if (ZENO_WITH_CUDA)        # must move enable_language ahead to here
     message(STATUS "CUDA_PATH: "$ENV{CUDA_PATH})
+    if (NOT DEFINED CUDAToolkit_ROOT AND NOT DEFINED ENV{CUDAToolkit_ROOT})
+        set(CUDAToolkit_ROOT ${CUDA_PATH})
+    endif()
     message(STATUS "CUDAToolkit_ROOT: "${CUDAToolkit_ROOT})
     find_package(CUDAToolkit REQUIRED COMPONENTS cufft REQUIRED)
     message(STATUS "CUDAToolkit_BIN_DIR: "${CUDAToolkit_BIN_DIR})
