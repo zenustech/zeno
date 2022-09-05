@@ -195,12 +195,26 @@ void GraphsModel::renameSubGraph(const QString& oldName, const QString& newName)
     emit graphRenamed(oldName, newName);
 }
 
-QModelIndex GraphsModel::nodeIndex(uint32_t id, uint32_t sid)
+QModelIndex GraphsModel::nodeIndex(uint32_t id)
 {
-    QModelIndex subgIdx = subgIndex(sid);
-    ZASSERT_EXIT(subgIdx.isValid(), QModelIndex());
-    QModelIndex nodeIdx = m_subGraphs[subgIdx.row()]->index(id);
-    return nodeIdx;
+    for (int row = 0; row < m_subGraphs.size(); row++)
+    {
+        QModelIndex idx = m_subGraphs[row]->index(id);
+        if (idx.isValid())
+            return idx;
+    }
+    return QModelIndex();
+}
+
+QModelIndex GraphsModel::nodeIndex(const QString& id)
+{
+    for (int row = 0; row < m_subGraphs.size(); row++)
+    {
+        QModelIndex idx = m_subGraphs[row]->index(id);
+        if (idx.isValid())
+            return idx;
+    }
+    return QModelIndex();
 }
 
 QModelIndex GraphsModel::subgIndex(uint32_t sid)
@@ -208,6 +222,16 @@ QModelIndex GraphsModel::subgIndex(uint32_t sid)
     ZASSERT_EXIT(m_id2name.find(sid) != m_id2name.end(), QModelIndex());
     const QString& subgName = m_id2name[sid];
     return index(subgName);
+}
+
+QModelIndex GraphsModel::subgByNodeId(uint32_t id)
+{
+    for (int row = 0; row < m_subGraphs.size(); row++)
+    {
+        if (m_subGraphs[row]->index(id).isValid())
+            return index(row, 0);
+    }
+    return QModelIndex();
 }
 
 QModelIndex GraphsModel::_createIndex(SubGraphModel* pSubModel) const

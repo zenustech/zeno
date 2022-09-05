@@ -35,6 +35,11 @@ GraphsManagment::GraphsManagment(QObject* parent)
      m_logModel = new QStandardItemModel(this);
 }
 
+GraphsManagment& GraphsManagment::instance() {
+    static GraphsManagment inst;
+    return inst;
+}
+
 IGraphsModel* GraphsManagment::currentModel()
 {
     return m_model;

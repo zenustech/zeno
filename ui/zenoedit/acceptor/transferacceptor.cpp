@@ -5,7 +5,7 @@
 #include <zeno/utils/logger.h>
 #include "util/log.h"
 #include <zenoio/reader/zsgreader.h>
-#include "../nodesys/nodesmgr.h"
+#include <zenomodel/include/nodesmgr.h>
 #include <zenomodel/include/uihelper.h>
 
 

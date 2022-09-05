@@ -60,26 +60,6 @@ QLinearGradient AppHelper::colorString2Grad(const QString& colorStr)
     return grad;
 }
 
-QString AppHelper::gradient2colorString(const QLinearGradient& grad)
-{
-    QString colorStr;
-    const QGradientStops& stops = grad.stops();
-    colorStr += QString::number(stops.size());
-    colorStr += "\n";
-    for (QGradientStop grad : stops)
-    {
-        colorStr += QString::number(grad.first);
-        colorStr += " ";
-        colorStr += QString::number(grad.second.redF());
-        colorStr += " ";
-        colorStr += QString::number(grad.second.greenF());
-        colorStr += " ";
-        colorStr += QString::number(grad.second.blueF());
-        colorStr += "\n";
-    }
-    return colorStr;
-}
-
 INPUT_SOCKET AppHelper::getInputSocket(const QPersistentModelIndex& index, const QString& inSock, bool& exist)
 {
     INPUT_SOCKETS inputs = index.data(ROLE_INPUTS).value<INPUT_SOCKETS>();

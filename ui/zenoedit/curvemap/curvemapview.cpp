@@ -2,7 +2,7 @@
 #include "curvescalaritem.h"
 #include "curvegrid.h"
 #include "curvenodeitem.h"
-#include "curveutil.h"
+#include <zenomodel/include/curveutil.h>
 #include <zenomodel/include/curvemodel.h>
 #include "../util/log.h"
 #include <zenoui/style/zenostyle.h>

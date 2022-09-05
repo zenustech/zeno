@@ -60,7 +60,7 @@ int offline_main(const char *zsgfile, int beginFrame, int endFrame);
 int offline_main(const char *zsgfile, int beginFrame, int endFrame) {
     zeno::log_info("running in offline mode, file=[{}], begin={}, end={}", zsgfile, beginFrame, endFrame);
 
-    GraphsManagment gman;
+    GraphsManagment& gman = GraphsManagment::instance();
     gman.openZsgFile(zsgfile);
     IGraphsModel *pModel = gman.currentModel();
     ZASSERT_EXIT(pModel, 1);

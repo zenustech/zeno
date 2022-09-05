@@ -18,7 +18,7 @@
 #include <util/log.h>
 #include <zenoui/style/zenostyle.h>
 //#include <zeno/utils/zeno_p.h>
-#include <nodesys/nodesmgr.h>
+#include <zenomodel/include/nodesmgr.h>
 #include <cmath>
 #include <algorithm>
 #include <optional>

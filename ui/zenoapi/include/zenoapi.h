@@ -3,23 +3,22 @@
 
 #include "interface.h"
 
-namespace zenoapi
-{
-    ZENO_ERROR  NewScene();
-    ZENO_HANDLE CreateGraph(const std::string& name);
-    ZENO_ERROR  DeleteGraph(ZENO_HANDLE hSubgraph);
-    ZENO_HANDLE GetGraph(const std::string& name);
-    ZENO_ERROR  RenameGraph(ZENO_HANDLE hSubgraph, const std::string& newName);
-    int GetCount();
-    ZENO_HANDLE GetItem(int idx);
+//io
+ZENO_ERROR Zeno_NewFile();
+ZENO_ERROR Zeno_OpenFile(const std::string &fn);
+ZENO_ERROR Zeno_saveFile(const std::string &fn);
 
-    ZENO_ERROR  AddNode(ZENO_HANDLE hGraph, const std::string& nodeCls);
-    ZENO_HANDLE GetNode(const std::string& ident);
-    ZENO_ERROR  DeleteNode(ZENO_HANDLE hNode);
+ZENO_HANDLE Zeno_CreateGraph(const std::string& name);
+ZENO_ERROR  Zeno_DeleteGraph(ZENO_HANDLE hSubgraph);
+ZENO_HANDLE Zeno_GetGraph(const std::string& name);
+ZENO_ERROR  Zeno_RenameGraph(ZENO_HANDLE hSubgraph, const std::string& newName);
+int Zeno_GetCount();
+ZENO_HANDLE Zeno_GetItem(int idx);
 
-    //io
-    ZENO_ERROR openFile(const std::string& fn);
-    ZENO_ERROR saveFile(const std::string& fn);
-}
+ZENO_HANDLE Zeno_AddNode(ZENO_HANDLE hGraph, const std::string &nodeCls);
+ZENO_HANDLE Zeno_GetNode(const std::string& ident);
+ZENO_ERROR  Zeno_DeleteNode(ZENO_HANDLE hNode);
+ZENO_ERROR  Zeno_GetName(ZENO_HANDLE hNode, std::string& name);
+ZENO_ERROR  Zeno_GetIdent(ZENO_HANDLE hNode, std::string& ident);
 
 #endif

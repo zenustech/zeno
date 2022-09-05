@@ -141,7 +141,8 @@ QModelIndex SubGraphModel::index(QString id, const QModelIndex& parent) const
 
 QModelIndex SubGraphModel::index(int id) const
 {
-    ZASSERT_EXIT(m_num2strId.find(id) != m_num2strId.end(), QModelIndex());
+    if (m_num2strId.find(id) == m_num2strId.end())
+        return QModelIndex();
     return index(m_num2strId[id]);
 }
 

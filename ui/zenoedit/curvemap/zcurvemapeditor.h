@@ -3,7 +3,7 @@
 
 #include <QtWidgets>
 #include <zenomodel/include/modeldata.h>
-#include "curveutil.h"
+#include <zenomodel/include/curveutil.h>
 
 using namespace curve_util;
 

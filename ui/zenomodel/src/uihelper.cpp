@@ -816,3 +816,22 @@ QVariant UiHelper::_parseToVariant(const QString& type, const rapidjson::Value& 
     zeno::log_warn("bad rapidjson value type {}", val.GetType());
     return QVariant();
 }
+
+QString UiHelper::gradient2colorString(const QLinearGradient& grad)
+{
+    QString colorStr;
+    const QGradientStops &stops = grad.stops();
+    colorStr += QString::number(stops.size());
+    colorStr += "\n";
+    for (QGradientStop grad : stops) {
+        colorStr += QString::number(grad.first);
+        colorStr += " ";
+        colorStr += QString::number(grad.second.redF());
+        colorStr += " ";
+        colorStr += QString::number(grad.second.greenF());
+        colorStr += " ";
+        colorStr += QString::number(grad.second.blueF());
+        colorStr += "\n";
+    }
+    return colorStr;
+}

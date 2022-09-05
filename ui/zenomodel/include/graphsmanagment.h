@@ -8,7 +8,8 @@ class GraphsManagment : public QObject
 {
     Q_OBJECT
 public:
-    GraphsManagment(QObject *parent = nullptr);
+    static GraphsManagment& instance();
+
     void setCurrentModel(IGraphsModel* model);
     IGraphsModel* currentModel();
     QAbstractItemModel* treeModel();
@@ -34,7 +35,9 @@ private slots:
     void onRowsAboutToBeRemoved(const QModelIndex& parent, int first, int last);
 
 private:
-    IGraphsModel *m_model;
+    GraphsManagment(QObject *parent = nullptr);
+
+    IGraphsModel* m_model;
     QAbstractItemModel* m_pTreeModel;
     QStandardItemModel* m_logModel;     //connection with scene.
     mutable QMutex m_mutex;

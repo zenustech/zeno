@@ -2,7 +2,7 @@
 #include "curvemapview.h"
 #include <zenoui/style/zenostyle.h>
 #include <zenomodel/include/uihelper.h>
-#include "curveutil.h"
+#include <zenomodel/include/curveutil.h>
 #include "curvesitem.h"
 #include <zenomodel/include/curvemodel.h>
 

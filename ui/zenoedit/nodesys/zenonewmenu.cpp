@@ -1,7 +1,7 @@
 #include "zenonewmenu.h"
 #include <zenomodel/include/graphsmanagment.h>
 #include "zenoapplication.h"
-#include "nodesmgr.h"
+#include <zenomodel/include/nodesmgr.h>
 #include "fuzzy_search.h"
 #include <zenoui/comctrl/gv/zenoparamwidget.h>
 

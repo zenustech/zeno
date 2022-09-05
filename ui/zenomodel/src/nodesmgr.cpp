@@ -1,13 +1,10 @@
 #include "nodesmgr.h"
-#include "fuzzy_search.h"
 #include <zenomodel/include/uihelper.h>
-#include "util/apphelper.h"
 #include <zeno/utils/log.h>
-#include "zenoapplication.h"
 #include <zenomodel/include/graphsmanagment.h>
 #include <zenomodel/include/curvemodel.h>
 #include <zenomodel/include/variantptr.h>
-#include "curvemap/curveutil.h"
+#include <zenomodel/include/curveutil.h>
 
 
 QString NodesMgr::createNewNode(IGraphsModel* pModel, QModelIndex subgIdx, const QString& descName, const QPointF& pt)
@@ -130,7 +127,7 @@ void NodesMgr::initParams(const QString& descName, IGraphsModel* pGraphsModel, P
         QLinearGradient grad;
         grad.setColorAt(0, QColor::fromRgbF(0., 0., 0.));
         grad.setColorAt(1, QColor::fromRgbF(1., 1., 1.));
-        param.value = AppHelper::gradient2colorString(grad);
+        param.value = UiHelper::gradient2colorString(grad);
         params.insert(param.name, param);
     }
 }

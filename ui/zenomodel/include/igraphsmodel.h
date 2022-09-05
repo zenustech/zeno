@@ -13,11 +13,16 @@ public:
 	explicit IGraphsModel(QObject* parent = nullptr) : QAbstractItemModel(parent) {}
 	virtual QModelIndex index(int row, int column, const QModelIndex& parent = QModelIndex()) const override = 0;
 	virtual QModelIndex index(const QString& subGraphName) const = 0;
+
+	/*todo: use nodeIndex(QString) because id is unique in the whole graph*/
 	virtual QModelIndex index(const QString& id, const QModelIndex& subGpIdx) = 0;
+
 	virtual QModelIndex index(int r, const QModelIndex& subGpIdx) = 0;
 
-	virtual QModelIndex nodeIndex(uint32_t id, uint32_t sid) = 0;
+	virtual QModelIndex nodeIndex(const QString& id) = 0;
+	virtual QModelIndex nodeIndex(uint32_t id) = 0;
 	virtual QModelIndex subgIndex(uint32_t sid) = 0;
+	virtual QModelIndex subgByNodeId(uint32_t id) = 0;
 
 	virtual QModelIndex linkIndex(int r) = 0;
 	virtual QVariant data2(const QModelIndex& subGpIdx, const QModelIndex& index, int role) = 0;
