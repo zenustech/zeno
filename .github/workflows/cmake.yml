@@ -26,6 +26,7 @@ jobs:
 
   build:
     strategy:
+      fail-fast: false
       matrix:
         include:
         - label: x86_64-linux-cpu
@@ -79,7 +80,7 @@ jobs:
         setup-python: true
 
     - name: Install CUDA toolkit (Windows)
-      if: ${{ matrix.gpu == 'cuda' && runner.os == 'Windows'  }}
+      if: ${{ matrix.gpu == 'cuda' && runner.os == 'Windows' }}
       env:
         cuda: 11.7.1
         visual_studio: "Visual Studio 16 2019"
