@@ -165,6 +165,8 @@ public:
         edgeCompliance = get_input<zeno::NumericObject>("edgeCompliance")->get<float>();
         volumeCompliance = get_input<zeno::NumericObject>("volumeCompliance")->get<float>();
 
+        dt = 1.0/60.0/numSubsteps;
+
         static bool firstTime = true;
         if(firstTime)
         {
