@@ -98,7 +98,6 @@ jobs:
       if: ${{ matrix.gpu == 'cuda' && runner.os == 'Windows' }}
       shell: powershell
       run: |
-        nvcc -V
         ls $env:CUDA_PATH
         ls $env:CUDA_PATH\bin
         ls $env:CUDA_PATH\lib
