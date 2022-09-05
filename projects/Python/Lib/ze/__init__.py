@@ -233,9 +233,9 @@ class ZenoObject:
     @staticmethod
     def _fetchString(handle: int) -> str:
         strLen_ = ctypes.c_size_t(0)
-        api.Zeno_CreateObjectString(ctypes.c_uint64(handle), ctypes.c_void_p(0), ctypes.pointer(strLen_))
+        api.Zeno_GetObjectString(ctypes.c_uint64(handle), ctypes.cast(0, ctypes.POINTER(ctypes.c_char)), ctypes.pointer(strLen_))
         value_ = (ctypes.c_char * strLen_.value)()
-        api.Zeno_CreateObjectString(ctypes.c_uint64(handle), value_, ctypes.pointer(strLen_))
+        api.Zeno_GetObjectString(ctypes.c_uint64(handle), value_, ctypes.pointer(strLen_))
         return bytes(value_).decode()
 
 
@@ -248,7 +248,7 @@ class ZenoPrimitiveObject(ZenoObject):
 
     @classmethod
     def new(cls):
-        return cls.newPrim()
+        return cls.newPrim().asPrim()
 
     @property
     def verts(self):

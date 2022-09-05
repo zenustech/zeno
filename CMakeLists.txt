@@ -108,7 +108,7 @@ endmacro()
 if (ZENO_WITH_CUDA)        # must move enable_language ahead to here
     message(STATUS "CUDA_PATH: "$ENV{CUDA_PATH})
     if (NOT DEFINED CUDAToolkit_ROOT AND NOT DEFINED ENV{CUDAToolkit_ROOT} AND DEFINED ENV{CUDA_PATH})
-        set(CUDAToolkit_ROOT ${CUDA_PATH})
+        set(CUDAToolkit_ROOT $ENV{CUDA_PATH})
     endif()
     message(STATUS "CUDAToolkit_ROOT: "${CUDAToolkit_ROOT})
     find_package(CUDAToolkit REQUIRED COMPONENTS cufft REQUIRED)

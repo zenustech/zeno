@@ -28,7 +28,7 @@ struct GraphicNumeric final : IGraphic {
 
     explicit GraphicNumeric(Scene *scene_, zeno::NumericObject *num) : scene(scene_) {
         std::visit([&] (auto &val) {
-            zeno::log_info("ToView got NumericObject with content: {}", val);
+            zeno::log_critical("ToView got NumericObject with content: {}", val);
         }, num->value);
     }
 };

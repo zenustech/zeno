@@ -322,7 +322,10 @@ ZENO_CAPI Zeno_Error Zeno_GetObjectPrimData(Zeno_Object object_, Zeno_PrimMembTy
             &PrimitiveObject::loop_uvs);
         std::string attrName = attrName_;
         std::visit([&] (auto const &memb) {
-            memb(*prim).template attr_visit<AttrAcceptAll>(attrName, [&] (auto &arr) {
+            auto &attArr = memb(*prim);
+            if (ZENO_UNLIKELY(!attArr.has_attr(attrName)))
+                throw makeError<KeyError>(attrName, "attribute name of primitive");
+            attArr.template attr_visit<AttrAcceptAll>(attrName, [&] (auto &arr) {
                 *ptrRet_ = reinterpret_cast<void *>(arr.data());
                 *lenRet_ = arr.size();
                 using T = std::decay_t<decltype(arr[0])>;

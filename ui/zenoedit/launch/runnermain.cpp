@@ -172,16 +172,10 @@ int runner_main(int sessionid, int port) {
 
     zeno::log_debug("runner started on sessionid={}", sessionid);
 
-#if 0
 #ifdef __linux__
-    stdout = stderr;
+    stderr = freopen("/dev/stdout", "w", stderr);
 #endif
-    std::cout.rdbuf(std::cerr.rdbuf());
-#endif
-
-#ifndef ZENO_IPC_USE_TCP
-    // TODO: redirect stderr to stdout
-#endif
+    std::cerr.rdbuf(std::cout.rdbuf());
 
     std::string progJson;
     std::istreambuf_iterator<char> iit(std::cin.rdbuf()), eiit;
