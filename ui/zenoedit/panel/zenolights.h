@@ -13,6 +13,8 @@
 class ZenoLights : public QWidget {
     Q_OBJECT
 public:
+    QPushButton* write_btn = new QPushButton("Write");
+    QPushButton* write_all_btn = new QPushButton("Write ALL");
     QLabel* pStatusBar = new QLabel();
     QLabel* pPrimName = new QLabel();
     QListView *lights_view = new QListView();
@@ -36,6 +38,7 @@ public:
 
     ZLineEdit* intensityEdit = new ZLineEdit("1");
     void modifyLightData();
+    void write_param_into_node(const QString& primid);
 
 public:
     ZenoLights(QWidget* parent = nullptr);
