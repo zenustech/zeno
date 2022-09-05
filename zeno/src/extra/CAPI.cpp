@@ -7,6 +7,7 @@
 #include <zeno/utils/log.h>
 #include <zeno/types/StringObject.h>
 #include <zeno/types/PrimitiveObject.h>
+#include <zeno/utils/zeno_p.h>
 #include <zeno/core/Session.h>
 #include <zeno/core/Graph.h>
 #include <set>
@@ -62,17 +63,17 @@ namespace {
             } catch (std::exception const &e) {
                 errcode = 1;
                 message = e.what();
-                log_error("Zeno API catched error: {}", message);
+                log_debug("Zeno API catched error: {}", message);
             } catch (...) {
                 errcode = 1;
                 message = "(unknown)";
-                log_error("Zeno API catched unknown error");
+                log_debug("Zeno API catched unknown error");
             }
             return errcode;
         }
 
         const char *what() noexcept {
-            return message.c_str();
+            return message.empty() ? "(success)" : message.c_str();
         }
 
         uint32_t code() noexcept {
@@ -100,12 +101,9 @@ namespace {
 
 extern "C" {
 
-ZENO_CAPI Zeno_Error Zeno_GetLastErrorCode() ZENO_CAPI_NOEXCEPT {
+ZENO_CAPI Zeno_Error Zeno_GetLastError(const char **msgRet_) ZENO_CAPI_NOEXCEPT {
+    *msgRet_ = lastError.what();
     return lastError.code();
-}
-
-ZENO_CAPI const char *Zeno_GetLastErrorStr() ZENO_CAPI_NOEXCEPT {
-    return lastError.what();
 }
 
 ZENO_CAPI Zeno_Error Zeno_CreateGraph(Zeno_Graph *graphRet_) ZENO_CAPI_NOEXCEPT {
@@ -323,8 +321,6 @@ ZENO_CAPI Zeno_Error Zeno_GetObjectPrimData(Zeno_Object object_, Zeno_PrimMembTy
         std::string attrName = attrName_;
         std::visit([&] (auto const &memb) {
             auto &attArr = memb(*prim);
-            if (ZENO_UNLIKELY(!attArr.has_attr(attrName)))
-                throw makeError<KeyError>(attrName, "attribute name of primitive");
             attArr.template attr_visit<AttrAcceptAll>(attrName, [&] (auto &arr) {
                 *ptrRet_ = reinterpret_cast<void *>(arr.data());
                 *lenRet_ = arr.size();

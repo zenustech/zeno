@@ -19,7 +19,9 @@ def initDLLPath(path: str):
 
     def chkerr(ret):
         if ret != 0:
-            raise RuntimeError('[zeno internal error] {}'.format(ctypes.string_at(api.Zeno_GetLastErrorStr()).decode()))
+            msgRet_ = ctypes.c_char_p()
+            api.Zeno_GetLastError(ctypes.pointer(msgRet_))
+            raise RuntimeError('[zeno internal error] {}'.format(msgRet_.value.decode()))  # type: ignore
 
     def wrapchkerr(func):
         @functools.wraps(func)
@@ -33,10 +35,9 @@ def initDLLPath(path: str):
         func.argtypes = argtypes
         if do_checks:
             func = wrapchkerr(func)
-        setattr(api, funcname, func)
+            setattr(api, funcname, func)
 
-    define(ctypes.c_uint32, 'Zeno_GetLastErrorCode', do_checks=False)
-    define(ctypes.c_char_p, 'Zeno_GetLastErrorStr', do_checks=False)
+    define(ctypes.c_uint32, 'Zeno_GetLastError', ctypes.POINTER(ctypes.c_char_p), do_checks=False)
     define(ctypes.c_uint32, 'Zeno_CreateGraph', ctypes.POINTER(ctypes.c_uint64))
     define(ctypes.c_uint32, 'Zeno_DestroyGraph', ctypes.c_uint64)
     define(ctypes.c_uint32, 'Zeno_GraphIncReference', ctypes.c_uint64)
