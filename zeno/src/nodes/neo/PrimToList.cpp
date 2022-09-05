@@ -51,8 +51,6 @@ ZENO_DEFNODE(PrimFlattenTris)({
 struct PrimToList : INode {
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
-        auto type = get_input2<std::string>("type");
-        auto attr = get_input2<std::string>("attr");
         auto lst = std::make_shared<ListObject>();
 
         if (attr.empty()) {
