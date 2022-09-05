@@ -82,11 +82,10 @@ jobs:
       if: ${{ matrix.gpu == 'cuda' && runner.os == 'Windows'  }}
       env:
         cuda: 11.7.1
-        visual_studio: "Visual Studio 16 2022"
+        visual_studio: "Visual Studio 16 2019"
       shell: powershell
       run:
         .\misc\ci\win\install_cuda_windows.ps1
-        cp -r "./visual_studio_integration/CUDAVisualStudioIntegration/extras/visual_studio_integration/MSBuildExtensions" "C:/Program Files (x86)/Microsoft Visual Studio/2022/Community/MSBuild/Microsoft/VC/v160/BuildCustomizations"
 
     - name: Install CUDA toolkit (Ubuntu)
       if: ${{ matrix.gpu == 'cuda' && runner.os == 'Linux' }}
