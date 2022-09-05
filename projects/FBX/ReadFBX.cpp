@@ -42,23 +42,11 @@ namespace {
 
 using Path = std::filesystem::path;
 
-void readFBXFile(
-    std::shared_ptr<zeno::DictObject>& datas,
-    std::shared_ptr<NodeTree>& nodeTree,
-    std::shared_ptr<FBXData>& fbxData,
-    std::shared_ptr<BoneTree>& boneTree,
-    std::shared_ptr<AnimInfo>& animInfo,
-    const char *fbx_path,
-    bool enable_udim,
-    std::shared_ptr<zeno::PrimitiveObject>& prim,
-    bool make_prim,
-    std::shared_ptr<zeno::DictObject>& prims);
-
 struct Mesh{
     FBXData fbxData;
     std::filesystem::path fbxPath;
     std::unordered_map<std::string, std::vector<unsigned int>> m_VerticesSlice;
-    //std::unordered_map<std::string, std::vector<unsigned int>> m_BlendShapeSlice;
+    std::unordered_map<std::string, std::vector<std::string>> m_MatMeshNames;
     std::unordered_map<std::string, std::string> m_MeshCorsName;
     std::unordered_map<std::string, std::string> m_LoadedMeshName;
     std::unordered_map<std::string, aiMatrix4x4> m_TransMatrix;
@@ -67,7 +55,7 @@ struct Mesh{
     unsigned int m_VerticesIncrease = 0;
     unsigned int m_IndicesIncrease = 0;
     unsigned int m_MeshNameIncrease = 0;
-    bool enable_udim = false;
+    SFBXReadOption m_readOption;
 
     std::string createTexDir(std::string subPath){
         auto p = fbxPath;
@@ -108,18 +96,7 @@ struct Mesh{
             // So we can't import aiLight
             // In maya, export `aiAreaLight1` to .fbx -> import the .fbx
             // `aiAreaLight1` -> Changed to a transform-node
-//            zeno::log_info("Light N {} T {} P {} {} {} S {} {}\nD {} {} {} U {} {} {}"
-//                           " AC {} AL {} AQ {} CD {} {} {} CS {} {} {} CA {} {} {}"
-//                           " AI {} AO {}",
-//                           lightName, l->mType, l->mPosition.x, l->mPosition.y, l->mPosition.z,
-//                           l->mSize.x, l->mSize.y,
-//                           l->mDirection.x, l->mDirection.y, l->mDirection.z, l->mUp.x, l->mUp.y, l->mUp.z,
-//                           l->mAttenuationConstant, l->mAttenuationLinear, l->mAttenuationQuadratic,
-//                           l->mColorDiffuse.r, l->mColorDiffuse.g, l->mColorDiffuse.b,
-//                           l->mColorSpecular.r, l->mColorSpecular.g, l->mColorSpecular.b,
-//                           l->mColorAmbient.r, l->mColorAmbient.g, l->mColorAmbient.b,
-//                           l->mAngleInnerCone, l->mAngleOuterCone
-//                           );
+
             SLight sLig{
                 lightName, l->mType, l->mPosition, l->mDirection, l->mUp,
                 l->mAttenuationConstant, l->mAttenuationLinear, l->mAttenuationQuadratic,
@@ -153,6 +130,7 @@ struct Mesh{
 
     void processMesh(aiMesh *mesh, const aiScene *scene) {
         std::string meshName(mesh->mName.data);
+        // Deal with face-mat
         if(m_LoadedMeshName.find(meshName) != m_LoadedMeshName.end()){
             std::string newMeshName = meshName + "_" +std::to_string(m_MeshNameIncrease);
             m_MeshCorsName[newMeshName] = meshName;
@@ -227,8 +205,6 @@ struct Mesh{
             unsigned int bsNumVert = mesh->mAnimMeshes[0]->mNumVertices;
 
             zeno::log_info("BS MeshName {} NumAnim {}", meshName, numAnimMesh);
-
-            //m_BlendShapeSlice[meshName] = std::vector<unsigned int>{};
 
             std::vector<std::vector<SBSVertex>> blendShapeData;
             blendShapeData.resize(numAnimMesh);
@@ -394,12 +370,16 @@ struct Mesh{
         std::string matName = material->GetName().data;
         //std::string meshName = mesh->mName.data;
 
+        m_MatMeshNames[matName].push_back(relMeshName);
+
         if(m_loadedMat.find(matName) != m_loadedMat.end()){
             fbxData.iMaterial.value[relMeshName] = m_loadedMat[matName];
-
             *uvscale = m_MatUdimSize[matName];
             return;
         }
+
+        // Use the metallic attribute to determine if the material is PBR
+        bool isPbr = false;
 
         SMaterial mat;
         mat.matName = matName;
@@ -457,13 +437,13 @@ struct Mesh{
                             is_udim_tex = true;
 
                             udim_num = std::stoi(filename.substr(index+3, 2));
-                            zeno::log_info("UDIM: Found udim tex num {}, enable {}",udim_num, enable_udim);
+                            zeno::log_info("UDIM: Found udim tex num {}, enable {}",udim_num, m_readOption.enableUDIM);
                             break;  // for check whether is udim
                         }
                         pos = index + 1; //new position is from next element of index
                     }
 
-                    if(is_udim_tex && enable_udim){  // first udim check
+                    if(is_udim_tex && m_readOption.enableUDIM){  // first udim check
                         int max_up=0, max_vp=0;
                         int sw,sh,comp;
                         std::unordered_map<std::string, std::string> udim_texs;
@@ -579,6 +559,8 @@ struct Mesh{
                                                             key.c_str(),0,0,
                                                             &tmp)){
                             found = true;
+                            if(key == "$ai.metalness")
+                                isPbr = true;
                             // override the default value
                             zeno::log_info("FBX: Mat name {}, PropName {}, MatValue {} {} {} {}",matName, com.first,tmp.r, tmp.g,tmp.b,tmp.a);
                             com.second.value = tmp;
@@ -588,6 +570,11 @@ struct Mesh{
                     if(found){
                         break;
                     }
+                }
+
+                if(isPbr && com.first == "opacity" && m_readOption.invertOpacity){
+                    zeno::log_info("FBX: Convert PBR opacity");
+                    com.second.value = std::any_cast<aiColor4D>(com.second.value)*-1.0f+1.0f;
                 }
 
                 auto v = std::any_cast<aiColor4D>(com.second.value);
@@ -661,7 +648,14 @@ struct Mesh{
     void processTrans(std::unordered_map<std::string, std::vector<SKeyMorph>>& morph,
                       std::unordered_map<std::string, SAnimBone>& bones,
                       std::shared_ptr<zeno::DictObject>& datas,
-                      std::shared_ptr<zeno::DictObject>& prims) {
+                      std::shared_ptr<zeno::DictObject>& prims,
+                      std::shared_ptr<zeno::DictObject>& mats,
+                      std::shared_ptr<NodeTree>& nodeTree,
+                      std::shared_ptr<BoneTree>& boneTree,
+                      std::shared_ptr<AnimInfo>& animInfo)
+    {
+        std::unordered_map<std::string, std::shared_ptr<FBXData>> tmpFbxData;
+
         for(auto& iter: m_VerticesSlice) {
             std::string meshName = iter.first;
             std::string relMeshName = m_MeshCorsName[iter.first];
@@ -725,15 +719,32 @@ struct Mesh{
             sub_data->iVertices.value = sub_vertices;
             sub_data->iMeshName.value = meshName;
             sub_data->iMeshName.value_relName = relMeshName;
+            sub_data->iMeshName.value_matName = fbxData.iMaterial.value[meshName].matName;
             // TODO Currently it is the sub-data that has all the data
             sub_data->iBoneOffset = fbxData.iBoneOffset;
             sub_data->iBlendSData = fbxData.iBlendSData;
             sub_data->iKeyMorph.value = morph;
             sub_data->iMeshInfo.value_corsName = m_MeshCorsName;
 
+            sub_data->boneTree = boneTree;
+            sub_data->nodeTree = nodeTree;
+            sub_data->animInfo = animInfo;
+
             prims->lut[meshName] = sub_prim;
             datas->lut[meshName] = sub_data;
+            tmpFbxData[meshName] = sub_data;
         }
+
+        for(auto [k, v]:m_loadedMat){
+            auto mat_data = std::make_shared<MatData>();
+
+            mat_data->sMaterial = v;
+            for(auto l: m_MatMeshNames[k]){
+                mat_data->iFbxData.value[l] = tmpFbxData[l];
+            }
+            mats->lut[k] = mat_data;
+        }
+
     }
 
     void processPrim(std::shared_ptr<zeno::PrimitiveObject>& prim){
@@ -874,10 +885,11 @@ void readFBXFile(
         std::shared_ptr<BoneTree>& boneTree,
         std::shared_ptr<AnimInfo>& animInfo,
         const char *fbx_path,
-        bool enable_udim,
         std::shared_ptr<zeno::PrimitiveObject>& prim,
-        bool make_prim,
-        std::shared_ptr<zeno::DictObject>& prims)
+        std::shared_ptr<zeno::DictObject>& prims,
+        std::shared_ptr<zeno::DictObject>& mats,
+        SFBXReadOption readOption
+    )
 {
     Assimp::Importer importer;
     aiScene const* scene;
@@ -931,25 +943,29 @@ void readFBXFile(
     Mesh mesh;
     Anim anim;
 
-    mesh.enable_udim = enable_udim;
+    mesh.m_readOption = readOption;
 
     std::filesystem::path p(fbx_path);
     mesh.fbxPath = p.remove_filename();
 
     mesh.initMesh(scene);
     anim.initAnim(scene, &mesh);
-    mesh.processTrans(anim.m_Morph, anim.m_Bones.AnimBoneMap, datas, prims);
-    if(make_prim)
-        mesh.processPrim(prim);
-
-    mesh.fbxData.iKeyMorph.value = anim.m_Morph;
 
     *data = mesh.fbxData;
     *nodeTree = anim.m_RootNode;
     *boneTree = anim.m_Bones;
-
     animInfo->duration = anim.duration;
     animInfo->tick = anim.tick;
+
+    data->animInfo = animInfo;
+    data->boneTree = boneTree;
+    data->nodeTree = nodeTree;
+
+    mesh.processTrans(anim.m_Morph, anim.m_Bones.AnimBoneMap, datas, prims, mats, nodeTree, boneTree, animInfo);
+    mesh.fbxData.iKeyMorph.value = anim.m_Morph;
+
+    if(readOption.makePrim)
+        mesh.processPrim(prim);
 
     zeno::log_info("FBX: Num Animation {}", scene->mNumAnimations);
     zeno::log_info("FBX: Total Vertices count {}", mesh.fbxData.iVertices.value.size());
@@ -967,23 +983,25 @@ struct ReadFBXPrim : zeno::INode {
         auto boneTree = std::make_shared<BoneTree>();
         auto prim = std::make_shared<zeno::PrimitiveObject>();
         std::shared_ptr<zeno::DictObject> prims = std::make_shared<zeno::DictObject>();
+        std::shared_ptr<zeno::DictObject> mats = std::make_shared<zeno::DictObject>();
 
         zeno::log_info("FBX: File path {}", path);
 
-        bool enable_udim = false;
-        bool make_prim = false;
+        SFBXReadOption readOption;
         auto udim = get_param<std::string>("udim");
         auto primitive = get_param<bool>("primitive");
+        auto invOpacity = get_param<bool>("invOpacity");
         if (udim == "ENABLE")
-            enable_udim = true;
+            readOption.enableUDIM = true;
+        if(invOpacity)
+            readOption.invertOpacity = true;
         if(primitive)
-            make_prim = true;
+            readOption.makePrim = true;
 
-        zeno::log_info("FBX: UDIM {} PRIM {}", enable_udim, make_prim);
+        zeno::log_info("FBX: UDIM {} PRIM {} INVERT {}", readOption.enableUDIM,readOption.makePrim,readOption.invertOpacity);
 
-        readFBXFile(datas,
-                    nodeTree, data, boneTree, animInfo,
-                    path.c_str(), enable_udim, prim, make_prim, prims);
+        readFBXFile(datas, nodeTree, data, boneTree, animInfo,
+                    path.c_str(), prim, prims, mats, readOption);
 
         set_output("data", std::move(data));
         set_output("datas", std::move(datas));
@@ -992,6 +1010,7 @@ struct ReadFBXPrim : zeno::INode {
         set_output("bonetree", std::move(boneTree));
         set_output("prim", std::move(prim));
         set_output("prims", std::move(prims));
+        set_output("mats", std::move(mats));
     }
 };
 
@@ -1001,13 +1020,12 @@ ZENDEFNODE(ReadFBXPrim,
                    {"readpath", "path"},
                },  /* outputs: */
                {
-                   "prim", "prims", "data", "datas",
-                   {"AnimInfo", "animinfo"},
-                   {"NodeTree", "nodetree"},
-                   {"BoneTree", "bonetree"},
+                   "prim", "prims", "data", "datas", "mats",
+                   "animinfo", "nodetree", "bonetree",
                },  /* params: */
                {
                 {"enum ENABLE DISABLE", "udim", "DISABLE"},
+                {"bool", "invOpacity", "true"},
                 {"bool", "primitive", "false"}
                },  /* category: */
                {

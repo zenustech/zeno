@@ -279,24 +279,32 @@ extern "C" __global__ void __anyhit__shadow_cutout()
             if(length(prd->shadowAttanuation) < 0.01){
                 prd->shadowAttanuation = vec3(0.0f);
                 optixTerminateRay();
+                return;
             }
             if(specTrans==0.0f){
                 prd->shadowAttanuation = vec3(0.0f);
                 optixTerminateRay();
+                return;
             }
             //prd->shadowAttanuation = vec3(0,0,0);
             //optixTerminateRay();
             
             if(specTrans > 0.0f){
-                if(rnd(prd->seed)<1-specTrans||thin==false)
+                if(thin == false && ior>1.0f)
+                {
+                    prd->nonThinTransHit++;
+                }
+                if(rnd(prd->seed)<1-specTrans||prd->nonThinTransHit>1)
                 {
                     prd->shadowAttanuation = vec3(0,0,0);
                     optixTerminateRay();
+                    return;
                 }
                 float nDi = fabs(dot(N,ray_dir));
                 vec3 tmp = prd->shadowAttanuation;
                 tmp = tmp * (vec3(1)-BRDFBasics::fresnelSchlick(vec3(1)-basecolor,nDi));
                 prd->shadowAttanuation = tmp;
+
                 optixIgnoreIntersection();
             }
         }
@@ -305,6 +313,7 @@ extern "C" __global__ void __anyhit__shadow_cutout()
 
         prd->shadowAttanuation = vec3(0.0f);
         optixTerminateRay();
+        return;
     }
 }
 
@@ -452,7 +461,7 @@ extern "C" __global__ void __closesthit__radiance()
     //end of material computation
     //mats.metallic = clamp(mats.metallic,0.01, 0.99);
     mats.roughness = clamp(mats.roughness, 0.01,0.99);
-    
+    auto N2 = N;
     if(length(attrs.tang)>0)
     {
         vec3 b = cross(attrs.tang, attrs.nrm);
@@ -471,10 +480,9 @@ extern "C" __global__ void __closesthit__radiance()
         roughness = clamp(roughness, 0.3,0.99);
     if(prd->diffDepth>=3)
         roughness = clamp(roughness, 0.5,0.99);
-    if(prd->diffDepth>=1&&prd->depth>=2)
-        roughness = clamp(roughness, 0.2,0.99);
-    if(prd->isSS == true)
-        roughness = clamp(roughness, 0.99,0.99);
+    if(prd->depth>=2)
+        roughness = clamp(roughness, 0.5,0.99);
+
     auto subsurface = mats.subsurface;
     auto specular = mats.specular;
     auto specularTint = mats.specularTint;
@@ -494,6 +502,14 @@ extern "C" __global__ void __closesthit__radiance()
     auto scatterStep = mats.scatterStep;
     //discard fully opacity pixels
     prd->opacity = opacity;
+    if(prd->isSS == true) {
+        roughness = clamp(roughness, 0.99, 0.99);
+        anisotropic = 0;
+        sheen = 0;
+        clearcoat = 0;
+        specTrans = 0;
+        ior = 1;
+    }
 
     prd->attenuation2 = prd->attenuation;
     prd->countEmitted = false;
@@ -535,7 +551,16 @@ extern "C" __global__ void __closesthit__radiance()
     float rrPdf = 0.0f;
     float ffPdf = 0.0f;
     float3 T = attrs.tang;
-    float3 B = cross(N, T);
+    float3 B;
+    if(length(T)>0)
+    {
+        B = cross(N, T);
+    } else
+    {
+        Onb a(N);
+        T = a.m_tangent;
+        B = a.m_binormal;
+    }
 
     DisneyBSDF::SurfaceEventFlags flag;
     DisneyBSDF::PhaseFunctions phaseFuncion;
@@ -588,7 +613,7 @@ extern "C" __global__ void __closesthit__radiance()
         }
     prd->isSS |= isSS;
     pdf = fPdf;
-    if(isDiff || roughness>0.4){
+    if(isDiff || prd->diffDepth>0){
         prd->diffDepth++;
     }
 
@@ -613,9 +638,11 @@ extern "C" __global__ void __closesthit__radiance()
     }
     bool inToOut = false;
     bool outToIn = false;
+    if(flag == DisneyBSDF::transmissionEvent) {
+        prd->is_inside = !prd->is_inside;
+    }
 
     if(flag == DisneyBSDF::transmissionEvent){
-        prd->is_inside = !prd->is_inside;
         if(prd->is_inside){
             outToIn = true;
             inToOut = false;
@@ -634,7 +661,7 @@ extern "C" __global__ void __closesthit__radiance()
         else{
             outToIn = false;
             inToOut = true;
-            prd->attenuation2 *= DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
+            //prd->attenuation2 *= DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
             prd->attenuation *= DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
             prd->maxDistance = 1e16f;
             prd->medium = DisneyBSDF::PhaseFunctions::vacuum;
@@ -642,7 +669,7 @@ extern "C" __global__ void __closesthit__radiance()
         }
     }else{
 	    if(prd->medium == DisneyBSDF::PhaseFunctions::isotropic){
-                prd->attenuation2 *= DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
+                //prd->attenuation2 *= DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
                 prd->attenuation *= DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
                 float tmpPDF = 1.0f;
                 prd->maxDistance = DisneyBSDF::SampleDistance(prd->seed,prd->scatterStep,prd->extinction,tmpPDF);
@@ -650,6 +677,7 @@ extern "C" __global__ void __closesthit__radiance()
 
 	    }
     }
+    prd->medium = prd->is_inside?DisneyBSDF::PhaseFunctions::isotropic : DisneyBSDF::PhaseFunctions::vacuum;
 
 
 
@@ -687,11 +715,13 @@ extern "C" __global__ void __closesthit__radiance()
             sum += length(light.emission)  * nDl * LnDl * A / (M_PIf * Ldist * Ldist);
 
     }
+    if(prd->depth>=3)
+        roughness = clamp(roughness, 0.5,0.99);
     bool computed = false;
     float ppl = 0;
     for(int lidx=0;lidx<params.num_lights && computed==false;lidx++) {
         ParallelogramLight light = params.lights[lidx];
-        float2 z = sobolRnd(prd->seed);
+        float2 z = sobolRnd2(prd->seed);
         const float z1 = z.x;
         const float z2 = z.y;
         float3 light_tpos = light.corner + light.v1 * 0.5 + light.v2 * 0.5;
@@ -714,6 +744,7 @@ extern "C" __global__ void __closesthit__radiance()
             if (nDl > 0.0f && LnDl > 0.0f) {
                 RadiancePRD shadow_prd;
                 shadow_prd.shadowAttanuation = make_float3(1.0f, 1.0f, 1.0f);
+                shadow_prd.nonThinTransHit = (thin==false && specTrans>0)? 1:0;
                 traceOcclusion(params.handle, P, L,
                                1e-5f,         // tmin
                                Ldist - 1e-5f, // tmax,
@@ -726,8 +757,7 @@ extern "C" __global__ void __closesthit__radiance()
                 }
             }
             
-            if(prd->diffDepth>=1&&prd->depth>=2)
-                roughness = clamp(roughness, 0.2,0.99);
+
             float3 lbrdf = DisneyBSDF::EvaluateDisney(basecolor, metallic, subsurface, specular, roughness,
                                                       specularTint, anisotropic, sheen, sheenTint, clearcoat,
                                                       clearcoatGloss, specTrans, scatterDistance, ior, flatness, L,
@@ -738,6 +768,81 @@ extern "C" __global__ void __closesthit__radiance()
         }
 
     }
+    RadiancePRD shadow_prd2;
+    float3 lbrdf;
+    vec3 env_dir;
+    bool inside=false;
+
+//    {
+//        while(DisneyBSDF::SampleDisney(
+//                   prd->seed,
+//                   basecolor,
+//                   transmittanceColor,
+//                   sssColor,
+//                   metallic,
+//                   0,
+//                   specular,
+//                   roughness,
+//                   specularTint,
+//                   anisotropic,
+//                   sheen,
+//                   sheenTint,
+//                   clearcoat,
+//                   clearcoatGloss,
+//                   flatness,
+//                   specTrans,
+//                   scatterDistance,
+//                   ior,
+//                   T,
+//                   B,
+//                   N,
+//                   -normalize(ray_dir),
+//                   thin>0.5f,
+//                   inside,
+//                   env_dir,
+//                   reflectance,
+//                   rPdf,
+//                   fPdf,
+//                   flag,
+//                   prd->medium,
+//                   extinction,
+//                   isDiff,
+//                   isSS
+//                   )  == false)
+//        {
+//
+//            rPdf = 0.0f;
+//            fPdf = 0.0f;
+//            reflectance = vec3(0.0f);
+//        }
+//
+//        shadow_prd2;
+//        shadow_prd2.shadowAttanuation = make_float3(1.0f, 1.0f, 1.0f);
+//        shadow_prd2.nonThinTransHit = (thin == false && specTrans > 0) ? 1 : 0;
+//        traceOcclusion(params.handle, P, env_dir,
+//                       1e-5f, // tmin
+//                       1e16f, // tmax,
+//                       &shadow_prd2);
+//        lbrdf = DisneyBSDF::EvaluateDisney(
+//            basecolor, metallic, subsurface, specular, roughness, specularTint, anisotropic, sheen,
+//            sheenTint, clearcoat, clearcoatGloss, specTrans, scatterDistance, ior, flatness, env_dir, -normalize(inDir),
+//            T, B, N, thin > 0.5f, flag == DisneyBSDF::transmissionEvent ? inToOut : prd->is_inside, ffPdf, rrPdf,
+//            dot(N, float3(env_dir)));
+//        prd->radiance += shadow_prd2.shadowAttanuation * float3(proceduralSky(env_dir)) * lbrdf;
+//    }
+
+    auto sun_dir = normalize(vec3(-1.2,.8,0.5));
+    shadow_prd2.shadowAttanuation = make_float3(1.0f, 1.0f, 1.0f);
+    shadow_prd2.nonThinTransHit = (thin==false && specTrans>0)? 1:0;
+    traceOcclusion(params.handle, P, sun_dir,
+                   1e-5f,         // tmin
+                   1e16f, // tmax,
+                   &shadow_prd2);
+    lbrdf = DisneyBSDF::EvaluateDisney(basecolor, metallic, subsurface, specular, roughness,
+                                              specularTint, anisotropic, sheen, sheenTint, clearcoat,
+                                              clearcoatGloss, specTrans, scatterDistance, ior, flatness, sun_dir,
+                                              -normalize(inDir), T, B, N, thin > 0.5f, flag == DisneyBSDF::transmissionEvent ? inToOut : prd->is_inside, ffPdf, rrPdf,dot(N, float3(sun_dir)));
+    prd->radiance += shadow_prd2.shadowAttanuation * float3(proceduralSky(sun_dir)) * lbrdf;
     prd->radiance +=  float3(mats.emission);
 }
 
