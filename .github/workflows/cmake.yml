@@ -85,11 +85,7 @@ jobs:
         cuda: 11.7.1
         visual_studio: "Visual Studio 16 2019"
       shell: powershell
-      run: |
-        .\misc\ci\win\install_cuda_windows.ps1
-        ls $env:CUDA_PATH\
-        ls $env:CUDA_PATH\bin
-        ls $env:CUDA_PATH\lib
+      run: .\misc\ci\win\install_cuda_windows.ps1
 
     - name: Install CUDA toolkit (Ubuntu)
       if: ${{ matrix.gpu == 'cuda' && runner.os == 'Linux' }}
@@ -97,6 +93,22 @@ jobs:
         cuda: 11.7.1
       shell: bash
       run: ./misc/ci/nix/install_cuda_ubuntu.sh
+
+    - name: Check CUDA toolkit (Windows)
+      if: ${{ matrix.gpu == 'cuda' && runner.os == 'Windows' }}
+      shell: powershell
+      run: |
+        nvcc -V
+        ls $env:CUDA_PATH
+        ls $env:CUDA_PATH\bin
+        ls $env:CUDA_PATH\lib
+
+    - name: Check CUDA toolkit (Ubuntu)
+      if: ${{ matrix.gpu == 'cuda' && runner.os == 'Linux' }}
+      shell: bash
+      run: |
+        nvcc -V
+        which nvcc
 
     - name: Setup Dependencies
       if: ${{ needs.check.outputs.vcpkg == 'true' }}
