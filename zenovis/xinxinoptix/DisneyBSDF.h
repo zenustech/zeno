@@ -592,7 +592,13 @@ namespace DisneyBSDF{
         float2 r01 = sobolRnd(seed);
         float r0 = r01.x;//rnd(seed);
         float r1 = r01.y;//rnd(seed);
-        vec3 wm = BRDFBasics::SampleGgxVndfAnisotropic(wo, tax, tay, r0, r1);
+        auto wx = wo;
+        if(thin == false && wx.z<0)
+        {
+            wx.z = -wx.z;
+        }
+        vec3 wm = BRDFBasics::SampleGgxVndfAnisotropic(wx, tax, tay, r0, r1);
+
 
         float VoH = dot(wm,wo);
         if(wm.z < 0.0f){
