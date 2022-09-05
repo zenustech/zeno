@@ -1107,8 +1107,8 @@ ZenoParamWidget* ZenoNode::initSocketWidget(ZenoSubGraphScene* scene, const INPU
                 info.newInfo.name = newText;
                 info.oldInfo.name = oldText;
                 info.updateWay = SOCKET_UPDATE_NAME;
-                ZENO_P(info.newInfo.name.toStdString());
-                ZENO_P(info.oldInfo.name.toStdString());
+                //ZENO_P(info.newInfo.name.toStdString());
+                //ZENO_P(info.oldInfo.name.toStdString());
                 bool ret = pGraphsModel->updateSocketNameNotDesc(m_index.data(ROLE_OBJID).toString(), info,
                                                                  m_subGpIndex, true);
                 if (!ret) {

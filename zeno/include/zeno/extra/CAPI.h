@@ -43,8 +43,7 @@ enum Zeno_PrimDataType {
     Zeno_PrimDataType_vec4i,
 };
 
-ZENO_CAPI Zeno_Error Zeno_GetLastErrorCode() ZENO_CAPI_NOEXCEPT;
-ZENO_CAPI const char *Zeno_GetLastErrorStr() ZENO_CAPI_NOEXCEPT;
+ZENO_CAPI Zeno_Error Zeno_GetLastError(const char **msgRet_) ZENO_CAPI_NOEXCEPT;
 ZENO_CAPI Zeno_Error Zeno_CreateGraph(Zeno_Graph *graphRet_) ZENO_CAPI_NOEXCEPT;
 ZENO_CAPI Zeno_Error Zeno_DestroyGraph(Zeno_Graph graph_) ZENO_CAPI_NOEXCEPT;
 ZENO_CAPI Zeno_Error Zeno_GetCurrentGraph(Zeno_Graph *graphRet_) ZENO_CAPI_NOEXCEPT;
@@ -62,6 +61,7 @@ ZENO_CAPI Zeno_Error Zeno_GetObjectInt(Zeno_Object object_, int *value_, size_t 
 ZENO_CAPI Zeno_Error Zeno_GetObjectFloat(Zeno_Object object_, float *value_, size_t dim_) ZENO_CAPI_NOEXCEPT;
 ZENO_CAPI Zeno_Error Zeno_GetObjectString(Zeno_Object object_, char *strBuf_, size_t *strLenRet_) ZENO_CAPI_NOEXCEPT;
 ZENO_CAPI Zeno_Error Zeno_GetObjectPrimData(Zeno_Object object_, Zeno_PrimMembType primArrType_, const char *attrName_, void **ptrRet_, size_t *lenRet_, Zeno_PrimDataType *typeRet_) ZENO_CAPI_NOEXCEPT;
+ZENO_CAPI Zeno_Error Zeno_AddObjectPrimAttr(Zeno_Object object_, Zeno_PrimMembType primArrType_, const char *attrName_, Zeno_PrimDataType dataType_) ZENO_CAPI_NOEXCEPT;
 ZENO_CAPI Zeno_Error Zeno_GetObjectPrimDataKeys(Zeno_Object object_, Zeno_PrimMembType primArrType_, size_t *lenRet_, const char **keysRet_) ZENO_CAPI_NOEXCEPT;
 ZENO_CAPI Zeno_Error Zeno_ResizeObjectPrimData(Zeno_Object object_, Zeno_PrimMembType primArrType_, size_t newSize_) ZENO_CAPI_NOEXCEPT;
 ZENO_CAPI Zeno_Error Zeno_InvokeObjectFactory(Zeno_Object *objectRet_, const char *typeName_, void *ffiObj_) ZENO_CAPI_NOEXCEPT;

@@ -1315,42 +1315,28 @@ void optixupdatelight() {
     g_lights.clear();
     g_lightMesh.clear();
     g_lightColor.clear();
-    if(lightdats.empty())
-    {
-        for (int i = 0; i < 1; i++) {
-            auto &light = g_lights.emplace_back();
-            light.emission = make_float3( 30000.f,30000.f,30000.f );
-            light.corner   = make_float3( 343.0f, 548.5f, 227.0f );
-            light.v2       = make_float3( -10.0f, 0.0f, 0.0f );
-            light.normal   = make_float3( 0.0f, -1.0f, 0.0f );
-            light.v1       = cross( light.v2, light.normal );
-            addLightMesh(light.corner, light.v2, light.v1, light.normal, light.emission);
-        }
-    }
-    else
-    {
-        for (auto const &[key, dat]: lightdats) {
-            auto &light = g_lights.emplace_back();
-            light.emission = make_float3( (float)(dat.emission[0]), (float)dat.emission[1], (float)dat.emission[2] );
-            //zeno::log_info("light clr after read: {} {} {}", light.emission.x,light.emission.y,light.emission.z);
-            light.corner   = make_float3( dat.v0[0], dat.v0[1], dat.v0[2] );
-            //zeno::log_info("light clr after read: {} {} {}", light.corner.x,light.corner.y,light.corner.z);
-            light.v1       = make_float3( dat.v1[0], dat.v1[1], dat.v1[2] );
-            //zeno::log_info("light clr after read: {} {} {}", light.v1.x,light.v1.y,light.v1.z);
-            light.v2       = make_float3( dat.v2[0], dat.v2[1], dat.v2[2] );
-            //zeno::log_info("light clr after read: {} {} {}", light.v2.x,light.v2.y,light.v2.z);
-            light.normal   = make_float3( dat.normal[0], dat.normal[1], dat.normal[2] );
-            //zeno::log_info("light clr after read: {} {} {}", light.normal.x,light.normal.y,light.normal.z);
-            addLightMesh(light.corner, light.v2, light.v1, light.normal, light.emission);
-        }
+
+    for (auto const &[key, dat]: lightdats) {
+        auto &light = g_lights.emplace_back();
+        light.emission = make_float3( (float)(dat.emission[0]), (float)dat.emission[1], (float)dat.emission[2] );
+        //zeno::log_info("light clr after read: {} {} {}", light.emission.x,light.emission.y,light.emission.z);
+        light.corner   = make_float3( dat.v0[0], dat.v0[1], dat.v0[2] );
+        //zeno::log_info("light clr after read: {} {} {}", light.corner.x,light.corner.y,light.corner.z);
+        light.v1       = make_float3( dat.v1[0], dat.v1[1], dat.v1[2] );
+        //zeno::log_info("light clr after read: {} {} {}", light.v1.x,light.v1.y,light.v1.z);
+        light.v2       = make_float3( dat.v2[0], dat.v2[1], dat.v2[2] );
+        //zeno::log_info("light clr after read: {} {} {}", light.v2.x,light.v2.y,light.v2.z);
+        light.normal   = make_float3( dat.normal[0], dat.normal[1], dat.normal[2] );
+        //zeno::log_info("light clr after read: {} {} {}", light.normal.x,light.normal.y,light.normal.z);
+        addLightMesh(light.corner, light.v2, light.v1, light.normal, light.emission);
     }
 
-    g_lights[0].cdf = length(cross(g_lights[0].v1, g_lights[0].v2));
-    float a = g_lights[0].cdf;
-    for(int l=1;l<g_lights.size();l++)
-    {
-        g_lights[l].cdf = g_lights[l-1].cdf + length(cross(g_lights[l].v1, g_lights[l].v2));
-
+    if(g_lights.size()) {
+        g_lights[0].cdf = length(cross(g_lights[0].v1, g_lights[0].v2));
+        float a = g_lights[0].cdf;
+        for (int l = 1; l < g_lights.size(); l++) {
+            g_lights[l].cdf = g_lights[l - 1].cdf + length(cross(g_lights[l].v1, g_lights[l].v2));
+        }
     }
 //    for(int l=0;l<g_lights.size();l++)
 //    {
