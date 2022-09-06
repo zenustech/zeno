@@ -27,12 +27,8 @@ ZenoLights::ZenoLights(QWidget *parent) : QWidget(parent) {
 
     QHBoxLayout* pTitleLayout = new QHBoxLayout;
 
-    QLabel* pPrim = new QLabel(tr("Light: "));
-    pPrim->setProperty("cssClass", "proppanel");
-    pTitleLayout->addWidget(pPrim);
-
-    write_btn->setProperty("cssClass", "proppanel");
-    write_all_btn->setProperty("cssClass", "proppanel");
+    write_btn->setProperty("cssClass", "grayButton");
+    write_all_btn->setProperty("cssClass", "grayButton");
     connect(write_btn, &QPushButton::clicked, this, [&](){
         QModelIndex index = lights_view->currentIndex();
         if (index.row() >= 0) {
@@ -383,8 +379,8 @@ void ZenoLights::write_param_into_node(const QString& primid) {
     }
     auto subgraphIndices = pIGraphsModel->subgraphsIndice();
 
-    for (const auto &index: subgraphIndices) {
-        auto items = pIGraphsModel->nodes(index);
+    for (const auto &subGpIdx: subgraphIndices) {
+        auto items = pIGraphsModel->nodes(subGpIdx);
         for (const auto &item: items) {
             if (item[ROLE_OBJID].toString().contains(primid.split(':').front())) {
                 auto inputs = item[ROLE_INPUTS].value<INPUT_SOCKETS>();
@@ -397,8 +393,8 @@ void ZenoLights::write_param_into_node(const QString& primid) {
                 inputs["rotate"].info.defaultValue.setValue(UI_VECTYPE({r[0], r[1], r[2]}));
                 inputs["color"].info.defaultValue.setValue(UI_VECTYPE({c[0], c[1], c[2]}));
                 inputs["intensity"].info.defaultValue = (double)ud.get2<float>("intensity");
-                auto nodeIndex = pIGraphsModel->index(item[ROLE_OBJID].toString(), index);
-                pIGraphsModel->setNodeData(nodeIndex, index, QVariant::fromValue(inputs), ROLE_INPUTS);
+                auto nodeIndex = pIGraphsModel->index(item[ROLE_OBJID].toString(), subGpIdx);
+                pIGraphsModel->setNodeData(nodeIndex, subGpIdx, QVariant::fromValue(inputs), ROLE_INPUTS);
             }
         }
     }
