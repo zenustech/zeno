@@ -3,7 +3,6 @@
 
 import ze
 import taichi as ti
-print(ti)
 
 ti.init(arch=ti.cpu)
 
