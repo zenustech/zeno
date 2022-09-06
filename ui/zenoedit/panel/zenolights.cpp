@@ -2,7 +2,6 @@
 #include "graphsmanagment.h"
 #include "model/graphsmodel.h"
 #include "model/modelrole.h"
-#include "util/log.h"
 #include "viewport/zenovis.h"
 #include "zenoapplication.h"
 #include "zenomainwindow.h"
@@ -12,7 +11,6 @@
 #include <zenovis/ObjectsManager.h>
 #include <zeno/types/UserData.h>
 #include <glm/glm.hpp>
-#include <glm/vec3.hpp>
 
 ZenoLights::ZenoLights(QWidget *parent) : QWidget(parent) {
     QVBoxLayout* pMainLayout = new QVBoxLayout;
