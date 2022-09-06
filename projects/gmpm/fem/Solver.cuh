@@ -83,7 +83,7 @@ struct IPCSystem : IObject {
             return false;
         }
         bool isBoundary() const noexcept {
-            if (zsprimPtr == nullptr)   // auxiliary primitive for soft binding
+            if (zsprimPtr == nullptr) // auxiliary primitive for soft binding
                 return true;
             return zsprimPtr->asBoundary;
         }

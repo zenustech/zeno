@@ -94,7 +94,8 @@ void IPCSystem::computeInertialAndGravityPotentialGradient(zs::CudaExecutionPoli
             int BCorder = vtemp("BCorder", vi);
             int BCsoft = vtemp("BCsoft", vi);
             if (BCsoft == 0 && BCorder != 3)
-                vtemp.template tuple<3>("grad", vi) = vtemp.template pack<3>("grad", vi) + vtemp.template pack<3>("extf", vi) * dt * dt;
+                vtemp.template tuple<3>("grad", vi) =
+                    vtemp.template pack<3>("grad", vi) + vtemp.template pack<3>("extf", vi) * dt * dt;
         });
     }
 }

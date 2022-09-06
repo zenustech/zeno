@@ -258,7 +258,7 @@ void ZenoLBvh<dim, lane_width, Index, Value, Allocator>::build(zs::CudaExecution
         const auto bv = primBvs[id];
         auto c = bv.getBoxCenter();
         // auto unic = (c - bv._min) / (bv._max - bv._min);
-        auto coord = wholeBox.getUniformCoord(c); // this is a vec<T, dim>
+        auto coord = wholeBox.getUniformCoord(c).template cast<f32>(); // this is a vec<T, dim>
         mcs[id] = (mc_t)morton_code<dim>(coord);
         // code = morton_code<dim>(unic);
         indices[id] = id;
