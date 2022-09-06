@@ -3,7 +3,7 @@
 #include <zeno/zeno.h>
 #include <zeno/types/PrimitiveObject.h>
 #include "../ReadVtkTet/MeshIO.hpp"
-#include "../myPrint.h"
+#include "../Utils/myPrint.h"
 
 using namespace zeno;
 

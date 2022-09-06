@@ -6,7 +6,7 @@
 #include <zeno/utils/log.h>
 
 #include "BunnyMeshData.h"
-#include "../myPrint.h"
+#include "../Utils/myPrint.h"
 
 namespace zeno{
 

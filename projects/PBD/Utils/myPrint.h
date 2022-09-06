@@ -60,7 +60,7 @@ void printScalarNohup(T contents, int maxTimes = 100, std::string fileName="debu
 
 
 template<typename T>
-void printVectorField(T content, std::string fileName, size_t precision=8)
+void printVectorField(std::string fileName, T content,  size_t precision=8)
 {
     std::ofstream f;
     f.open(fileName);
@@ -74,7 +74,7 @@ void printVectorField(T content, std::string fileName, size_t precision=8)
 }
 
 template<typename T>
-void printScalarField(T content, std::string fileName, size_t precision=8)
+void printScalarField(std::string fileName, T content,  size_t precision=8)
 {
     std::ofstream f;
     f.open(fileName);
@@ -86,3 +86,4 @@ void printScalarField(T content, std::string fileName, size_t precision=8)
 }
 
 #define echo(content) {std::cout<<(#content)<<": "<<content<<std::endl;}
+#define echoVec(content,msg) {std::cout<<(#msg)<<(#content)<<": ";  printVec(content);}
