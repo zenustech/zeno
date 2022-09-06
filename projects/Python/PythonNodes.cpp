@@ -23,12 +23,22 @@ static int subprogram_python_main(int argc, char **argv) {
     return Py_BytesMain(argc, argv);
 }
 
-static int defPythonInit = getSession().eventCallbacks->hookEvent("init", [] {
-    log_debug("Initializing Python...");
-    std::string s = getAssetDir(ZENO_PYTHON_HOME_DIR);
+static std::wstring s2ws(std::string const &s) {
     std::wstring ws(s.size(), L' '); // Overestimate number of code points.
     ws.resize(std::mbstowcs(ws.data(), s.data(), s.size())); // Shrink to fit.
-    Py_SetPythonHome(ws.c_str());
+    return ws;
+}
+
+static int defPythonInit = getSession().eventCallbacks->hookEvent("init", [] {
+    log_debug("Initializing Python...");
+    Py_SetPythonHome(s2ws(getAssetDir(ZENO_PYTHON_LIB_DIR, "..")).c_str());
+    static std::string execenvvar = "zenoedit_executable=" + getConfigVariable("EXECFILE") + "\0";
+    putenv(execenvvar.data());
+#ifdef _WIN32
+    Py_SetProgramName(s2ws(getAssetDir(ZENO_PYTHON_MODULE_DIR, "ze/zenobundlepython.bat")).c_str());
+#else
+    Py_SetProgramName(s2ws(getAssetDir(ZENO_PYTHON_MODULE_DIR, "ze/zenobundlepython.sh")).c_str());
+#endif
     Py_Initialize();
     std::string libpath = getAssetDir(ZENO_PYTHON_MODULE_DIR);
     std::string dllfile = ZENO_PYTHON_DLL_FILE;
