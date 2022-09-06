@@ -151,7 +151,6 @@ if (ZENO_BUILD_EDITOR OR ZENO_BUILD_DESIGNER)
     add_subdirectory(ui/zenoui)
     add_subdirectory(ui/zenoio)
     add_subdirectory(ui/zenomodel)
-    add_subdirectory(ui/zenoapi)
     add_subdirectory(ui/autotest)
 endif()
 
