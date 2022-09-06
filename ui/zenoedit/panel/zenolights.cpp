@@ -33,7 +33,9 @@ ZenoLights::ZenoLights(QWidget *parent) : QWidget(parent) {
         QModelIndex index = lights_view->currentIndex();
         if (index.row() >= 0) {
             QString primid = index.data(Qt::DisplayRole).toString();
-            write_param_into_node(primid);
+            if (primid.contains("LightNode")) {
+                write_param_into_node(primid);
+            }
         }
     });
     connect(write_all_btn, &QPushButton::clicked, this, [&](){
