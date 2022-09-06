@@ -2,20 +2,24 @@
 # type: ignore
 
 import ze
-import random
+import math
 
-prim = ze.args.obj0
-prim = prim.asPrim()
+balls = []
 
-n = prim.verts.size()
-# prim.verts.add_attr('rad', (float, 1))
-for i in range(n):
-    p = prim.verts.pos[i]
-    p[0] += random.random() * 0.2 - 0.1
-    p[1] += random.random() * 0.2 - 0.1
-    p[2] += random.random() * 0.2 - 0.1
-    prim.verts.pos[i] = p
-    prim.verts.rad[i] = random.random()
-prim.tris.resize(0)
+n = 64
+for a in range(-n, n + 1):
+    for b in range(max(1, abs(a)), n + 1):
+        if math.gcd(a, b) == 1:
+            rad = 0.5 / b**2
+            px = a / b
+            py = rad
+            balls.append((px, py, 0, rad))
+
+prim = ze.ZenoPrimitiveObject.new()
+prim.verts.add_attr('rad', (float, 1))
+prim.verts.resize(len(balls))
+for i, (px, py, pz, rad) in enumerate(balls):
+    prim.verts.pos[i] = [px, py, pz]
+    prim.verts.rad[i] = rad
 
 ze.rets.obj0 = prim

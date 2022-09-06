@@ -105,7 +105,7 @@ class ZenoObject:
             return ret
 
     @classmethod
-    def newPrim(cls):
+    def _newPrim(cls):
         return cls(cls.__create_key, cls._makePrimitive())
 
     @classmethod
@@ -249,7 +249,7 @@ class ZenoPrimitiveObject(ZenoObject):
 
     @classmethod
     def new(cls):
-        return cls.newPrim().asPrim()
+        return cls._newPrim().asPrim()
 
     @property
     def verts(self):
