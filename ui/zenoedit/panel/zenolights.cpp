@@ -383,17 +383,11 @@ void ZenoLights::write_param_into_node(const QString& primid) {
     if (pIGraphsModel == nullptr) {
         return;
     }
-    GraphsModel* pGraphsModel = dynamic_cast<GraphsModel*>(pIGraphsModel);
-    ZASSERT_EXIT(pGraphsModel);
+    auto subgraphIndices = pIGraphsModel->subgraphsIndice();
 
-    auto l = pGraphsModel->subgraphsIndice();
-    for (const auto& i: l) {
-        SubGraphModel* pModel = pGraphsModel->subGraph(i.row());
-
-        auto count = pModel->rowCount();
-        for (auto i = 0; i < count; i++) {
-            auto index = pModel->index(i, 0);
-            auto item = pModel->itemData(index);
+    for (const auto &index: subgraphIndices) {
+        auto items = pIGraphsModel->nodes(index);
+        for (const auto &item: items) {
             if (item[ROLE_OBJID].toString().contains(primid.split(':').front())) {
                 auto inputs = item[ROLE_INPUTS].value<INPUT_SOCKETS>();
                 auto p = ud.get2<zeno::vec3f>("pos");
@@ -405,7 +399,8 @@ void ZenoLights::write_param_into_node(const QString& primid) {
                 inputs["rotate"].info.defaultValue.setValue(UI_VECTYPE({r[0], r[1], r[2]}));
                 inputs["color"].info.defaultValue.setValue(UI_VECTYPE({c[0], c[1], c[2]}));
                 inputs["intensity"].info.defaultValue = (double)ud.get2<float>("intensity");
-                pModel->setData(index, QVariant::fromValue(inputs), ROLE_INPUTS);
+                auto nodeIndex = pIGraphsModel->index(item[ROLE_OBJID].toString(), index);
+                pIGraphsModel->setNodeData(nodeIndex, index, QVariant::fromValue(inputs), ROLE_INPUTS);
             }
         }
     }
