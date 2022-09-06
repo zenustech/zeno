@@ -1,13 +1,13 @@
 #include "../Utils.hpp"
 #include "Solver.cuh"
+#include <zeno/types/NumericObject.h>
 
 namespace zeno {
 
-IPCSystem::PrimitiveHandle::PrimitiveHandle(dtiles_t &vtemp, std::shared_ptr<tiles_t> elesPtr_)
-    : zsprimPtr{nullptr, [](void *) {}}, models{ZenoConstitutiveModel{}}, vertsPtr{&vtemp, [](void *) {}},
-      elesPtr{elesPtr_}, etemp{elesPtr_->get_allocator(), {{"He", 6 * 6}}, elesPtr_->size()}, surfTrisPtr{},
-      surfEdgesPtr{},
-      surfVertsPtr{}, svtemp{}, vOffset{0}, sfOffset{0}, seOffset{0}, svOffset{0}, category{ZenoParticles::curve} {
+IPCSystem::PrimitiveHandle::PrimitiveHandle(std::shared_ptr<tiles_t> elesPtr_, ZenoParticles::category_e category)
+    : zsprimPtr{}, models{ZenoConstitutiveModel{}}, vertsPtr{}, elesPtr{elesPtr_},
+      etemp{elesPtr_->get_allocator(), {{"He", 6 * 6}}, elesPtr_->size()}, surfTrisPtr{}, surfEdgesPtr{},
+      surfVertsPtr{}, svtemp{}, vOffset{0}, sfOffset{0}, seOffset{0}, svOffset{0}, category{category} {
     ;
 }
 IPCSystem::PrimitiveHandle::PrimitiveHandle(ZenoParticles &zsprim, std::size_t &vOffset, std::size_t &sfOffset,
@@ -148,6 +148,8 @@ typename IPCSystem::T IPCSystem::averageSurfEdgeLength(zs::CudaExecutionPolicy &
     T sumSurfEdgeLengths = 0;
     std::size_t sumSE = 0;
     for (auto &&primHandle : prims) {
+        if (primHandle.isAuxiliary())
+            continue;
         auto numSE = primHandle.getSurfEdges().size();
         sumSE += numSE;
         sumSurfEdgeLengths += primHandle.averageSurfEdgeLength(pol) * numSE;
@@ -162,6 +164,8 @@ typename IPCSystem::T IPCSystem::averageSurfArea(zs::CudaExecutionPolicy &pol) {
     T sumSurfArea = 0;
     std::size_t sumSF = 0;
     for (auto &&primHandle : prims) {
+        if (primHandle.isAuxiliary())
+            continue;
         if (primHandle.category == ZenoParticles::curve)
             continue;
         auto numSF = primHandle.getSurfTris().size();
@@ -210,7 +214,7 @@ void IPCSystem::initKappa(zs::CudaExecutionPolicy &pol) {
         kappaMin = 0;
     else
         kappaMin = -gsum / gsnorm;
-    zeno::log_info("kappaMin: {}, gsum: {}, gsnorm: {}\n", kappaMin, gsum, gsnorm);
+    // zeno::log_info("kappaMin: {}, gsum: {}, gsnorm: {}\n", kappaMin, gsum, gsnorm);
 }
 
 void IPCSystem::initialize(zs::CudaExecutionPolicy &pol) {
@@ -224,6 +228,8 @@ void IPCSystem::initialize(zs::CudaExecutionPolicy &pol) {
     meanSurfaceArea = averageSurfArea(pol);
     avgNodeMass = averageNodalMass(pol);
     for (auto &primHandle : prims) {
+        if (primHandle.isAuxiliary())
+            continue;
         auto &verts = primHandle.getVerts();
         // record surface (tri) indices
         if (primHandle.category != ZenoParticles::category_e::curve) {
@@ -351,12 +357,12 @@ IPCSystem::IPCSystem(std::vector<ZenoParticles *> zsprims, const typename IPCSys
         // kappa (dynamic)
         suggestKappa(cudaPol);
         if (kappa0 != 0) {
-            zeno::log_info("manual kappa: {}\n", this->kappa);
+            // zeno::log_info("manual kappa: {}\n", this->kappa);
         }
     }
 
     // output adaptive setups
-    zeno::log_info("auto dHat: {}, epsv (friction): {}\n", this->dHat, this->epsv);
+    // zeno::log_info("auto dHat: {}, epsv (friction): {}\n", this->dHat, this->epsv);
 }
 
 void IPCSystem::reinitialize(zs::CudaExecutionPolicy &pol, typename IPCSystem::T framedt) {
@@ -391,6 +397,8 @@ void IPCSystem::reinitialize(zs::CudaExecutionPolicy &pol, typename IPCSystem::T
     }
 
     for (auto &primHandle : prims) {
+        if (primHandle.isAuxiliary())
+            continue;
         auto &verts = primHandle.getVerts();
         // initialize BC info
         // predict pos, initialize augmented lagrangian, constrain weights
@@ -478,7 +486,7 @@ void IPCSystem::reinitialize(zs::CudaExecutionPolicy &pol, typename IPCSystem::T
     updateWholeBoundingBoxSize(pol);
     /// update grad pn residual tolerance
     targetGRes = pnRel * std::sqrt(boxDiagSize2);
-    zeno::log_info("box diag size: {}, targetGRes: {}\n", std::sqrt(boxDiagSize2), targetGRes);
+    // zeno::log_info("box diag size: {}, targetGRes: {}\n", std::sqrt(boxDiagSize2), targetGRes);
 }
 void IPCSystem::suggestKappa(zs::CudaExecutionPolicy &pol) {
     using namespace zs;
@@ -499,14 +507,14 @@ void IPCSystem::suggestKappa(zs::CudaExecutionPolicy &pol) {
         }
         { // surf oriented (use framedt here)
             auto kappaSurf = dt * dt * meanSurfaceArea / 3 * this->dHat * largestMu();
-            zeno::log_info("kappaSurf: {}, auto kappa: {}\n", kappaSurf, kappa);
+            // zeno::log_info("kappaSurf: {}, auto kappa: {}\n", kappaSurf, kappa);
             if (kappaSurf > kappa && kappaSurf < kappaMax) {
                 kappa = kappaSurf;
             }
         }
         // boundaryKappa = kappa;
-        zeno::log_info("average node mass: {}, auto kappa: {} ({} - {})\n", avgNodeMass, this->kappa, this->kappaMin,
-                       this->kappaMax);
+        // zeno::log_info("average node mass: {}, auto kappa: {} ({} - {})\n", avgNodeMass, this->kappa, this->kappaMin,
+        //               this->kappaMax);
     }
 }
 void IPCSystem::advanceSubstep(zs::CudaExecutionPolicy &pol, typename IPCSystem::T ratio) {
@@ -565,6 +573,25 @@ void IPCSystem::advanceSubstep(zs::CudaExecutionPolicy &pol, typename IPCSystem:
                     vtemp("BCfixed", coOffset + i) = (xk - xn).l2NormSqr() == 0 ? 1 : 0;
                     vtemp.template tuple<3>("xtilde", coOffset + i) = xk;
                 });
+    for (auto &primHandle : auxPrims) {
+        if (primHandle.category == ZenoParticles::category_e::tracker) {
+            const auto &eles = primHandle.getEles();
+            pol(Collapse(eles.size()), [vtemp = proxy<space>({}, vtemp), eles = proxy<space>({}, eles),
+                                        framedt = framedt, curRatio = curRatio] __device__(int ei) mutable {
+                auto inds = eles.template pack<2>("inds", ei).template reinterpret_bits<int>();
+                // retrieve motion from associated boundary vert
+                auto deltaX = vtemp.template pack<3>("BCtarget", inds[1]) - vtemp.template pack<3>("xhat", inds[1]);
+                //
+                auto xn = vtemp.template pack<3>("xn", inds[0]);
+                vtemp.template tuple<3>("BCtarget", inds[0]) = xn + deltaX;
+                vtemp.template tuple<9>("BCbasis", inds[0]) = mat3::identity();
+                vtemp("BCfixed", inds[0]) = deltaX.l2NormSqr() == 0 ? 1 : 0;
+                vtemp("BCorder", inds[0]) = 3;
+                vtemp("BCsoft", inds[0]) = 0;
+                vtemp.template tuple<3>("xtilde", inds[0]) = xn + deltaX;
+            });
+        }
+    }
 }
 void IPCSystem::updateVelocities(zs::CudaExecutionPolicy &pol) {
     using namespace zs;
@@ -591,6 +618,8 @@ void IPCSystem::writebackPositionsAndVelocities(zs::CudaExecutionPolicy &pol) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
     for (auto &primHandle : prims) {
+        if (primHandle.isAuxiliary())
+            continue;
         auto &verts = primHandle.getVerts();
         // update velocity and positions
         pol(zs::range(verts.size()),

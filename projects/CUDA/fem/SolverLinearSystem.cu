@@ -84,8 +84,18 @@ void IPCSystem::computeInertialAndGravityPotentialGradient(zs::CudaExecutionPoli
                                                           vOffset = primHandle.vOffset] ZS_LAMBDA(int vi) mutable {
             auto m = zs::sqr(vtemp("ws", vOffset + vi));
             int BCorder = vtemp("BCorder", vOffset + vi);
-            if (BCorder != 3)
+            int BCsoft = vtemp("BCsoft", vOffset + vi);
+            if (BCsoft == 0 && BCorder != 3)
                 vtemp.tuple<3>("grad", vOffset + vi) = vtemp.pack<3>("grad", vOffset + vi) + m * extForce * dt * dt;
+        });
+    }
+    if (vtemp.hasProperty("extf")) {
+        cudaPol(zs::range(coOffset), [vtemp = proxy<space>({}, vtemp), dt = dt] ZS_LAMBDA(int vi) mutable {
+            int BCorder = vtemp("BCorder", vi);
+            int BCsoft = vtemp("BCsoft", vi);
+            if (BCsoft == 0 && BCorder != 3)
+                vtemp.template tuple<3>("grad", vi) =
+                    vtemp.template pack<3>("grad", vi) + vtemp.template pack<3>("extf", vi) * dt * dt;
         });
     }
 }
@@ -111,7 +121,7 @@ void computeElasticGradientAndHessianImpl(zs::CudaExecutionPolicy &cudaPol, cons
     using vec3 = typename IPCSystem::vec3;
     using T = typename IPCSystem::T;
     if (primHandle.category == ZenoParticles::curve) {
-        if (primHandle.isBoundary())
+        if (primHandle.isBoundary() && !primHandle.isAuxiliary())
             return;
         /// ref: Fast Simulation of Mass-Spring Systems
         /// credits: Tiantian Liu
@@ -377,6 +387,12 @@ void IPCSystem::computeElasticGradientAndHessian(zs::CudaExecutionPolicy &cudaPo
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
     for (auto &primHandle : prims) {
+        match([&](auto &elasticModel) {
+            computeElasticGradientAndHessianImpl(cudaPol, gTag, vtemp, primHandle, elasticModel, dt, projectDBC,
+                                                 includeHessian);
+        })(primHandle.models.getElasticModel());
+    }
+    for (auto &primHandle : auxPrims) {
         match([&](auto &elasticModel) {
             computeElasticGradientAndHessianImpl(cudaPol, gTag, vtemp, primHandle, elasticModel, dt, projectDBC,
                                                  includeHessian);

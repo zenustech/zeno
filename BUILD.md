@@ -22,6 +22,8 @@ Git >= 2.0 && CMake >= 3.16 && Qt >= 5.14 && (MSVC >= 2019 || GCC >= 9 || Clang 
 
 > If you use VCPKG, you need to select the 'English Language Pack' when install, otherwise VCPKG will fail to work (it doesn't support Chinese characters in path).
 
+> WARN: Do not use MinGW or Clang, we only support MSVC on Windows.
+
 4. Download and install Qt5 via their installer: https://download.qt.io/archive/qt/5.14/5.14.2/qt-opensource-windows-x86-5.14.2.exe
 
 > Hint: Try this Tsinghua mirror if official site too slow: https://mirror.tuna.tsinghua.edu.cn/qt/archive/qt/5.14/5.14.2/qt-opensource-windows-x86-5.14.2.exe

@@ -8,10 +8,6 @@
 extern "C" {
 #endif
 
-typedef uint64_t Zeno_Graph;
-typedef uint64_t Zeno_Object;
-typedef uint32_t Zeno_Error;
-
 #define ZENO_CAPI ZENO_API
 
 #ifdef __cplusplus
@@ -20,8 +16,34 @@ typedef uint32_t Zeno_Error;
 #define ZENO_CAPI_NOEXCEPT
 #endif
 
-ZENO_CAPI Zeno_Error Zeno_GetLastErrorCode() ZENO_CAPI_NOEXCEPT;
-ZENO_CAPI const char *Zeno_GetLastErrorStr() ZENO_CAPI_NOEXCEPT;
+typedef uint64_t Zeno_Graph;
+typedef uint64_t Zeno_Object;
+typedef uint32_t Zeno_Error;
+
+enum Zeno_PrimMembType {
+    Zeno_PrimMembType_verts = 0,
+    Zeno_PrimMembType_points,
+    Zeno_PrimMembType_lines,
+    Zeno_PrimMembType_tris,
+    Zeno_PrimMembType_quads,
+    Zeno_PrimMembType_loops,
+    Zeno_PrimMembType_polys,
+    Zeno_PrimMembType_uvs,
+    Zeno_PrimMembType_loop_uvs,
+};
+
+enum Zeno_PrimDataType {
+    Zeno_PrimDataType_vec3f = 0,
+    Zeno_PrimDataType_float,
+    Zeno_PrimDataType_vec3i,
+    Zeno_PrimDataType_int,
+    Zeno_PrimDataType_vec2f,
+    Zeno_PrimDataType_vec2i,
+    Zeno_PrimDataType_vec4f,
+    Zeno_PrimDataType_vec4i,
+};
+
+ZENO_CAPI Zeno_Error Zeno_GetLastError(const char **msgRet_) ZENO_CAPI_NOEXCEPT;
 ZENO_CAPI Zeno_Error Zeno_CreateGraph(Zeno_Graph *graphRet_) ZENO_CAPI_NOEXCEPT;
 ZENO_CAPI Zeno_Error Zeno_DestroyGraph(Zeno_Graph graph_) ZENO_CAPI_NOEXCEPT;
 ZENO_CAPI Zeno_Error Zeno_GetCurrentGraph(Zeno_Graph *graphRet_) ZENO_CAPI_NOEXCEPT;
@@ -38,7 +60,12 @@ ZENO_CAPI Zeno_Error Zeno_GetObjectLiterialType(Zeno_Object object_, int *typeRe
 ZENO_CAPI Zeno_Error Zeno_GetObjectInt(Zeno_Object object_, int *value_, size_t dim_) ZENO_CAPI_NOEXCEPT;
 ZENO_CAPI Zeno_Error Zeno_GetObjectFloat(Zeno_Object object_, float *value_, size_t dim_) ZENO_CAPI_NOEXCEPT;
 ZENO_CAPI Zeno_Error Zeno_GetObjectString(Zeno_Object object_, char *strBuf_, size_t *strLenRet_) ZENO_CAPI_NOEXCEPT;
-ZENO_CAPI Zeno_Object Zeno_LoadObjectSharedPtr(const void *sharedPtrPtr_) ZENO_CAPI_NOEXCEPT;  // do not use
+ZENO_CAPI Zeno_Error Zeno_GetObjectPrimData(Zeno_Object object_, Zeno_PrimMembType primArrType_, const char *attrName_, void **ptrRet_, size_t *lenRet_, Zeno_PrimDataType *typeRet_) ZENO_CAPI_NOEXCEPT;
+ZENO_CAPI Zeno_Error Zeno_AddObjectPrimAttr(Zeno_Object object_, Zeno_PrimMembType primArrType_, const char *attrName_, Zeno_PrimDataType dataType_) ZENO_CAPI_NOEXCEPT;
+ZENO_CAPI Zeno_Error Zeno_GetObjectPrimDataKeys(Zeno_Object object_, Zeno_PrimMembType primArrType_, size_t *lenRet_, const char **keysRet_) ZENO_CAPI_NOEXCEPT;
+ZENO_CAPI Zeno_Error Zeno_ResizeObjectPrimData(Zeno_Object object_, Zeno_PrimMembType primArrType_, size_t newSize_) ZENO_CAPI_NOEXCEPT;
+ZENO_CAPI Zeno_Error Zeno_InvokeObjectFactory(Zeno_Object *objectRet_, const char *typeName_, void *ffiObj_) ZENO_CAPI_NOEXCEPT;
+ZENO_CAPI Zeno_Error Zeno_InvokeObjectDefactory(Zeno_Object object_, const char *typeName_, void **ffiObjRet_) ZENO_CAPI_NOEXCEPT;
 
 #ifdef __cplusplus
 }

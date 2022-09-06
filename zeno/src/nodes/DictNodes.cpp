@@ -99,6 +99,59 @@ ZENDEFNODE(MakeDict, {
 });
 
 
+struct MakeSmallDict : zeno::INode {
+    virtual void apply() override {
+        auto dict = std::make_shared<zeno::DictObject>();
+        for (int i = 0; i < 6; i++) {
+            auto si = std::to_string(i);
+            if (!has_input("obj" + si)) break;
+            auto obj = get_input("obj" + si);
+            auto key = get_input2<std::string>("key" + si);
+            dict->lut.emplace(std::move(key), std::move(obj));
+        }
+        set_output("dict", std::move(dict));
+    }
+};
+
+ZENDEFNODE(MakeSmallDict, {
+    {
+        {"string", "key0"}, {"IObject", "obj0"},
+        {"string", "key1"}, {"IObject", "obj1"},
+        {"string", "key2"}, {"IObject", "obj2"},
+        {"string", "key3"}, {"IObject", "obj3"},
+        {"string", "key4"}, {"IObject", "obj4"},
+        {"string", "key5"}, {"IObject", "obj5"},
+    },
+    {"dict"},
+    {},
+    {"dict"},
+});
+
+
+struct ZipListAsDict : zeno::INode {
+    virtual void apply() override {
+        auto dict = std::make_shared<zeno::DictObject>();
+        auto keys = get_input<ListObject>("values")->get2<std::string>();
+        auto values = get_input<ListObject>("values")->get();
+        for (int i = 0; i < values.size(); i++) {
+            dict->lut.emplace(i < keys.size() ? keys[i] : std::to_string(i),
+                              std::move(values[i]));
+        }
+        set_output("dict", std::move(dict));
+    }
+};
+
+ZENDEFNODE(ZipListAsDict, {
+    {
+        {"ListObject", "keys"},
+        {"ListObject", "values"},
+    },
+    {{"DictObject", "dict"}},
+    {},
+    {"dict"},
+});
+
+
 struct DictUnion : zeno::INode {
     virtual void apply() override {
         auto dict1 = get_input<zeno::DictObject>("dict1");

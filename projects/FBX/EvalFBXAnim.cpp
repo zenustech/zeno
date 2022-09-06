@@ -41,7 +41,6 @@ struct EvalAnim{
 
         m_Vertices = fbxData->iVertices.value;
         m_Indices = fbxData->iIndices.value;
-        //m_MeshCorsName = fbxData->iMeshInfo.value_corsName;
 
         m_RootNode = *nodeTree;
         m_AnimBones = boneTree->AnimBoneMap;
@@ -165,7 +164,8 @@ struct EvalAnim{
             auto& pos = m_Vertices[i].position;
             auto& uvw = m_Vertices[i].texCoord;
             auto& nor = m_Vertices[i].normal;
-
+            auto& vco = m_Vertices[i].vectexColor;
+            auto &clr0 = prim->verts.add_attr<zeno::vec3f>("clr0");
             glm::vec4 tpos(0.0f, 0.0f, 0.0f, 0.0f);
 
             bool infd = false;
@@ -190,6 +190,7 @@ struct EvalAnim{
             posb.emplace_back(0.0f, 0.0f, 0.0f);
             uv.emplace_back(uvw.x, uvw.y, uvw.z);
             norm.emplace_back(nor.x, nor.y, nor.z);
+            clr0.emplace_back(vco.r, vco.g, vco.b);
         }
 
         for(unsigned int i=0; i<m_Indices.size(); i+=3){
@@ -221,25 +222,36 @@ struct EvalFBXAnim : zeno::INode {
         } else {
             frameid = getGlobalState()->frameid;
         }
+
+        auto fbxData = get_input<FBXData>("data");
+        auto fps = get_input2<float>("fps");
         float s = 1.0f;
+        bool u = false;
         auto unit = get_param<std::string>("unit");
         if (unit == "FROM_MAYA"){
-            //zeno::log_info("EvalFBXAnim Maya unit");
             s = 0.01f;
+        }
+        auto interAnimData = get_param<std::string>("interAnimData");
+        if(interAnimData == "TRUE"){
+            u = true;
+        }
+
+        auto nodeTree = u ? fbxData->nodeTree : get_input<NodeTree>("nodetree");
+        auto boneTree = u ? fbxData->boneTree : get_input<BoneTree>("bonetree");
+        auto animInfo = u ? fbxData->animInfo : get_input<AnimInfo>("animinfo");
+
+        if(nodeTree == nullptr || boneTree == nullptr || animInfo == nullptr){
+            zeno::log_error("FBX: Empty NodeTree, BoneTree or AnimInfo");
         }
 
         auto prim = std::make_shared<zeno::PrimitiveObject>();
-        auto fbxData = get_input<FBXData>("data");
-        auto nodeTree = get_input<NodeTree>("nodetree");
-        auto boneTree = get_input<BoneTree>("bonetree");
-        auto animInfo = get_input<AnimInfo>("animinfo");
-        auto fps = get_input2<float>("fps");
-
         auto transDict = std::make_shared<zeno::DictObject>();
         auto quatDict = std::make_shared<zeno::DictObject>();
         auto scaleDict = std::make_shared<zeno::DictObject>();
         auto iCamera = std::make_shared<ICamera>();
         auto iLight = std::make_shared<ILight>();
+        auto matName = std::make_shared<zeno::StringObject>();
+        auto outMeshName = std::make_shared<zeno::StringObject>();
 
         EvalAnim anim;
         anim.initAnim(nodeTree, boneTree, fbxData, animInfo);
@@ -249,6 +261,10 @@ struct EvalFBXAnim : zeno::INode {
 
         auto prims = std::make_shared<zeno::ListObject>();
         auto& meshName = fbxData->iMeshName.value_relName;
+
+        matName->set(fbxData->iMeshName.value_matName);
+        outMeshName->set(meshName);
+
         auto& kmValue = fbxData->iKeyMorph.value;
         auto& bsValue = fbxData->iBlendSData.value;
 
@@ -301,6 +317,8 @@ struct EvalFBXAnim : zeno::INode {
         set_output("bsPrims", std::move(prims));
         set_output("camera", std::move(iCamera));
         set_output("light", std::move(iLight));
+        set_output("matName", std::move(matName));
+        set_output("meshName", std::move(outMeshName));
         set_output("transDict", std::move(transDict));
         set_output("quatDict", std::move(quatDict));
         set_output("scaleDict", std::move(scaleDict));
@@ -311,16 +329,14 @@ ZENDEFNODE(EvalFBXAnim,
                {
                    {"frameid"},
                    {"float", "fps", "24.0"},
-                   {"FBXData", "data"},
-                   {"AnimInfo", "animinfo"},
-                   {"NodeTree", "nodetree"},
-                   {"BoneTree", "bonetree"},
+                   "data", "animinfo", "nodetree", "bonetree",
                },  /* outputs: */
                {
-                   "prim", "camera", "light", "bsPrims", "transDict", "quatDict", "scaleDict"
+                   "prim", "camera", "light", "matName", "meshName", "bsPrims", "transDict", "quatDict", "scaleDict"
                },  /* params: */
                {
                    {"enum FROM_MAYA DEFAULT", "unit", "FROM_MAYA"},
+                   {"enum TRUE FALSE", "interAnimData", "FALSE"},
                },  /* category: */
                {
                    "FBX",
