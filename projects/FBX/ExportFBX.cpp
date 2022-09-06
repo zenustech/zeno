@@ -19,6 +19,7 @@ struct ExportFBX : zeno::INode {
         auto abcpath = get_input<zeno::StringObject>("abcpath")->get();
         auto fbxpath = get_input<zeno::StringObject>("fbxpath")->get();
         auto outpath = get_input<zeno::StringObject>("outpath")->get();
+        auto extra_param = get_input<zeno::StringObject>("extra_param")->get();
 
         zeno::log_info("----- ABC Path {}", abcpath);
         zeno::log_info("----- FBX Path {}", fbxpath);
@@ -31,19 +32,24 @@ struct ExportFBX : zeno::INode {
         //system("pwd");
 
         auto cmd = (std::string)
-            "\"" + zeno::getAssetDir(DEM_DIR, "DemBones") + "\"" +
-            " -i=\"" + fbxpath + "\"" +
-            " -a=\"" + abcpath + "\"" +
-            " -b=5" +
-            " -o=\"" + outpath + "\"" +
-            "";
+                       "\"" + zeno::getAssetDir(DEM_DIR, "DemBones") + "\"" +
+                   " -i=\"" + fbxpath + "\"" +
+                   " -a=\"" + abcpath + "\"" +
+                   " " + extra_param +
+                   " -o=\"" + outpath + "\"" +
+                   "";
 
 #ifdef _WIN32
         for (auto &c: cmd) {
             if (c == '/') c = '\\';
         }
 #endif
+
+        has_input("custom_command") ? cmd = get_input<zeno::StringObject>("custom_command")->get().c_str()
+                                    : cmd;
+
         int er = std::system(cmd.c_str());
+
         auto result = std::make_shared<zeno::NumericObject>();
         result->set(er);
 
@@ -56,20 +62,22 @@ struct ExportFBX : zeno::INode {
 
 ZENDEFNODE(ExportFBX,
            {       /* inputs: */
-               {
-                   {"string", "abcpath"},
-                   {"string", "fbxpath"},
-                   {"string", "outpath"}
-               },  /* outputs: */
-               {
-                    "result"
-               },  /* params: */
-               {
+            {
+                {"string", "custom_command"},
+                {"string", "extra_param", " -b=5"},
+                {"string", "abcpath"},
+                {"string", "fbxpath"},
+                {"string", "outpath"}
+            },  /* outputs: */
+            {
+                "result"
+            },  /* params: */
+            {
 
-               },  /* category: */
-               {
-                   "FBX",
-               }
+            },  /* category: */
+            {
+                "FBX",
+            }
            });
 
 }
