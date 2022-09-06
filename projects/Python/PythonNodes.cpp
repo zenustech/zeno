@@ -172,10 +172,6 @@ struct PythonScript : INode {
         PyObject *mainMod = PyImport_AddModule("__main__");
         if (!mainMod) throw makeError("failed to get module '__main__'");
         PyObject *globals = PyModule_GetDict(mainMod);
-        PyObject *locals = PyDict_New();
-        scope_exit localsDel = [=] {
-            Py_DECREF(locals);
-        };
         PyObject *zenoMod = PyImport_AddModule("ze");
         PyObject *zenoModDict = PyModule_GetDict(zenoMod);
         if (PyDict_SetItemString(zenoModDict, "_rets", retsDict) < 0)
@@ -204,14 +200,14 @@ struct PythonScript : INode {
         };
         if (path.empty()) {
             auto code = get_input2<std::string>("code");
-            mainMod = PyRun_StringFlags(code.c_str(), Py_file_input, globals, locals, NULL);
+            mainMod = PyRun_StringFlags(code.c_str(), Py_file_input, globals, globals, NULL);
         } else {
             FILE *fp = fopen(path.c_str(), "r");
             if (!fp) {
                 perror(path.c_str());
                 throw makeError("cannot open file for read: " + path);
             } else {
-                mainMod = PyRun_FileExFlags(fp, path.c_str(), Py_file_input, globals, locals, 1, NULL);
+                mainMod = PyRun_FileExFlags(fp, path.c_str(), Py_file_input, globals, globals, 1, NULL);
             }
         }
         currGraphLongReset.reset();
