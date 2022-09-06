@@ -101,6 +101,9 @@ jobs:
         ls $env:CUDA_PATH
         ls $env:CUDA_PATH\bin
         ls $env:CUDA_PATH\lib
+        ls $env:CUDA_PATH\lib\cmake
+        ls $env:CUDA_PATH\lib\x64
+        nvcc -V
 
     - name: Check CUDA toolkit (Ubuntu)
       if: ${{ matrix.gpu == 'cuda' && runner.os == 'Linux' }}
