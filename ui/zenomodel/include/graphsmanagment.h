@@ -9,6 +9,7 @@ class GraphsManagment : public QObject
     Q_OBJECT
 public:
     static GraphsManagment& instance();
+    ~GraphsManagment();
 
     void setCurrentModel(IGraphsModel* model);
     IGraphsModel* currentModel();
@@ -17,15 +18,14 @@ public:
     IGraphsModel* openZsgFile(const QString &fn);
     bool saveFile(const QString& filePath, APP_SETTINGS settings);
     IGraphsModel* newFile();
-    void importGraph(const QString &fn);
-    void reloadGraph(const QString& graphName);
-    bool saveCurrent();
+    void importGraph(const QString& fn);
     void clear();
     void removeCurrent();
     void appendLog(QtMsgType type, QString fileName, int ln, const QString &msg);
     void appendErr(const QString& nodeName, const QString& msg);
     QGraphicsScene* gvScene(const QModelIndex& subgIdx) const;
     void addScene(const QModelIndex& subgIdx, QGraphicsScene* scene);
+    TIMELINE_INFO timeInfo() const;
 
 signals:
     void modelInited(IGraphsModel*);
@@ -43,6 +43,7 @@ private:
     QStandardItemModel* m_logModel;     //connection with scene.
     mutable QMutex m_mutex;
     QString m_currFile;
+    TIMELINE_INFO m_timerInfo;
     QMap<QString, QGraphicsScene*> m_scenes;
 };
 

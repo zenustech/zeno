@@ -36,6 +36,10 @@ GraphsManagment::GraphsManagment(QObject* parent)
      m_logModel = new QStandardItemModel(this);
 }
 
+GraphsManagment::~GraphsManagment()
+{
+}
+
 GraphsManagment& GraphsManagment::instance() {
     static GraphsManagment inst;
     return inst;
@@ -53,15 +57,9 @@ QStandardItemModel* GraphsManagment::logModel() const
 
 void GraphsManagment::setCurrentModel(IGraphsModel* model)
 {
+    clear();
     m_model = model;
     m_pTreeModel = zeno_model::treeModel(m_model, this);
-
-    for (int i = 0; i < m_model->rowCount(); i++)
-    {
-        const QModelIndex& subgIdx = m_model->index(i, 0);
-        const QString& subgName = subgIdx.data(ROLE_OBJNAME).toString();
-        //m_scenes[subgName] = nullptr;
-    }
 
     emit modelInited(m_model);
     connect(m_model, SIGNAL(apiBatchFinished()), this, SIGNAL(modelDataChanged()));
@@ -81,7 +79,9 @@ IGraphsModel* GraphsManagment::openZsgFile(const QString& fn)
     {
         IOBreakingScope batch(pModel);
         std::shared_ptr<IAcceptor> acceptor(zeno_model::createIOAcceptor(pModel, false));
-        if (!ZsgReader::getInstance().openFile(fn, acceptor.get()))
+        bool ret = ZsgReader::getInstance().openFile(fn, acceptor.get());
+        m_timerInfo = acceptor->timeInfo();
+        if (!ret)
             return nullptr;
     }
 
@@ -136,28 +136,6 @@ void GraphsManagment::importGraph(const QString& fn)
 		zeno::log_error("failed to open zsg file: {}", fn.toStdString());
 		return;
 	}
-}
-
-void GraphsManagment::reloadGraph(const QString& graphName)
-{
-    if (m_model)
-        m_model->reloadSubGraph(graphName);
-}
-
-bool GraphsManagment::saveCurrent()
-{
-    if (!m_model || !m_model->isDirty())
-        return false;
-
-    int flag = QMessageBox::question(nullptr, "Save", "Save changes?", QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
-    if (flag & QMessageBox::Yes)
-    {
-        return true;
-    }
-    else
-    {
-        return false;
-    }
 }
 
 void GraphsManagment::clear()
@@ -232,6 +210,11 @@ void GraphsManagment::addScene(const QModelIndex& subgIdx, QGraphicsScene* scene
     if (m_scenes.find(subgName) != m_scenes.end() || !scene)
         return;
     m_scenes.insert(subgName, scene);
+}
+
+TIMELINE_INFO GraphsManagment::timeInfo() const
+{
+    return m_timerInfo;
 }
 
 void GraphsManagment::appendErr(const QString& nodeName, const QString& msg)

@@ -124,8 +124,8 @@ QModelIndex SubGraphModel::index(int row, int column, const QModelIndex& parent)
     auto itItem = m_nodes.find(nodeid);
     ZASSERT_EXIT(itItem != m_nodes.end(), QModelIndex());
 
-    ZASSERT_EXIT(m_str2numId.find(nodeid) != m_str2numId.end(), QModelIndex());
-    return createIndex(row, 0, m_str2numId[nodeid]);
+    uint32_t interlId = (m_str2numId.find(nodeid) != m_str2numId.end()) ? m_str2numId[nodeid] : 0;
+    return createIndex(row, 0, interlId);
 }
 
 QModelIndex SubGraphModel::index(QString id, const QModelIndex& parent) const
@@ -135,8 +135,8 @@ QModelIndex SubGraphModel::index(QString id, const QModelIndex& parent) const
         return QModelIndex();
 
     int row = m_key2Row[id];
-    ZASSERT_EXIT(m_str2numId.find(id) != m_str2numId.end(), QModelIndex());
-    return createIndex(row, 0, m_str2numId[id]);
+    uint32_t interlId = (m_str2numId.find(id) != m_str2numId.end()) ? m_str2numId[id] : 0;
+    return createIndex(row, 0, interlId);
 }
 
 QModelIndex SubGraphModel::index(int id) const

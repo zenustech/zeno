@@ -9,7 +9,7 @@ file(GLOB_RECURSE source CONFIGURE_DEPENDS *.h *.cpp *.ui)
 file(GLOB_RECURSE resource CONFIGURE_DEPENDS *.qrc)
 qt5_add_big_resources(source ${resource})  # cihou msvc: fatal error C1060: compiler is out of heap space
 
-add_executable(zenoedit WIN32 ${source}) 
+add_executable(zenoedit ${source}) 
 
 set_property(TARGET zenoedit PROPERTY AUTOUIC ON)
 set_property(TARGET zenoedit PROPERTY AUTOMOC ON)

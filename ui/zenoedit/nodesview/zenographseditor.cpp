@@ -389,7 +389,7 @@ void ZenoGraphsEditor::activateTab(const QString& subGraphName, const QString& p
         ZenoSubGraphScene* pScene = qobject_cast<ZenoSubGraphScene*>(graphsMgm->gvScene(subgIdx));
         if (!pScene)
         {
-            pScene = new ZenoSubGraphScene(this);
+            pScene = new ZenoSubGraphScene(graphsMgm);
             graphsMgm->addScene(subgIdx, pScene);
             pScene->initModel(subgIdx);
         }
@@ -486,7 +486,7 @@ void ZenoGraphsEditor::onLogInserted(const QModelIndex& parent, int first, int l
                     auto graphsMgm = zenoApp->graphsManagment();
                     ZenoSubGraphScene* pScene = qobject_cast<ZenoSubGraphScene*>(graphsMgm->gvScene(subgIdx));
                     if (!pScene) {
-                        pScene = new ZenoSubGraphScene(this);
+                        pScene = new ZenoSubGraphScene(graphsMgm);
                         graphsMgm->addScene(subgIdx, pScene);
                         pScene->initModel(subgIdx);
                     }

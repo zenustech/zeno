@@ -133,25 +133,6 @@ void GraphsModel::newSubgraph(const QString &graphName)
     }
 }
 
-void GraphsModel::reloadSubGraph(const QString& graphName)
-{
-    initDescriptors();
-    SubGraphModel *pReloadModel = subGraph(graphName);
-    ZASSERT_EXIT(pReloadModel);
-    NODES_DATA datas = pReloadModel->nodes();
-
-    pReloadModel->clear();
-
-    pReloadModel->blockSignals(true);
-    for (auto data : datas)
-    {
-        pReloadModel->appendItem(data);
-    }
-    pReloadModel->blockSignals(false);
-    pReloadModel->reload();
-    markDirty();
-}
-
 void GraphsModel::renameSubGraph(const QString& oldName, const QString& newName)
 {
     if (oldName == newName || oldName.compare("main", Qt::CaseInsensitive) == 0)

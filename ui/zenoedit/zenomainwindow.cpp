@@ -448,9 +448,11 @@ void ZenoMainWindow::exportGraph() {
 bool ZenoMainWindow::openFile(QString filePath)
 {
     auto pGraphs = zenoApp->graphsManagment();
-    IGraphsModel *pModel = pGraphs->openZsgFile(filePath);
+    IGraphsModel* pModel = pGraphs->openZsgFile(filePath);
     if (!pModel)
         return false;
+
+    setTimelineInfo(pGraphs->timeInfo());
     recordRecentFile(filePath);
     return true;
 }
@@ -669,7 +671,7 @@ void ZenoMainWindow::clearErrorMark()
     {
         ZenoSubGraphScene* pScene = qobject_cast<ZenoSubGraphScene*>(graphsMgm->gvScene(idx));
         if (!pScene) {
-            pScene = new ZenoSubGraphScene(this);
+            pScene = new ZenoSubGraphScene(graphsMgm);
             graphsMgm->addScene(idx, pScene);
             pScene->initModel(idx);
         }

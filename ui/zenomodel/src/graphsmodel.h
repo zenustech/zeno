@@ -33,7 +33,6 @@ public:
     void switchSubGraph(const QString& graphName) override;
     void newSubgraph(const QString& graphName) override;
     void initMainGraph() override;
-    void reloadSubGraph(const QString& graphName) override;
     void renameSubGraph(const QString& oldName, const QString& newName) override;
     QItemSelectionModel* selectionModel() const;
     NODE_DESCS descriptors() const override;
