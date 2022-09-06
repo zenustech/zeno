@@ -127,6 +127,8 @@ struct PrimToList : INode {
 ZENO_DEFNODE(PrimToList)({
     {
         {"prim"},
+        {"enum verts points lines tris quads polys loops", "type", "verts"},
+        {"string", "attr", "pos"},
     },
     {
         {"list"},
@@ -221,6 +223,8 @@ struct PrimUpdateFromList : INode {
 ZENO_DEFNODE(PrimUpdateFromList)({
     {
         {"prim"},
+        {"enum verts points lines tris quads polys loops", "type", "verts"},
+        {"string", "attr", "pos"},
         {"list"},
     },
     {

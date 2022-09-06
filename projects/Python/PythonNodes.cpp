@@ -8,6 +8,7 @@
 #include <zeno/types/FunctionObject.h>
 #include <zeno/types/UserData.h>
 #include <zeno/core/Graph.h>
+#include <zeno/utils/zeno_p.h>
 #include <zeno/utils/scope_exit.h>
 #include <zeno/extra/CAPIInternals.h>
 #include <zeno_Python_config.h>
@@ -29,7 +30,7 @@ static int defPythonInit = getSession().eventCallbacks->hookEvent("init", [] {
     ws.resize(std::mbstowcs(ws.data(), s.data(), s.size())); // Shrink to fit.
     Py_SetPythonHome(ws.c_str());
     Py_Initialize();
-    std::string libpath = getAssetDir(ZENO_PYTHON_LIB_DIR);
+    std::string libpath = getAssetDir(ZENO_PYTHON_MODULE_DIR);
     std::string dllfile = ZENO_PYTHON_DLL_FILE;
     if (PyRun_SimpleString(("__import__('sys').path.insert(0, '" + libpath + "'); import ze; ze.initDLLPath('" + dllfile + "')").c_str()) < 0) {
         log_warn("Failed to initialize Python module");
@@ -237,6 +238,10 @@ struct PythonScript : INode {
                 }
                 rets->lut.emplace(std::move(keyStr), capiFindObjectSharedPtr(handle));
             }
+        }
+        {
+            PyObject *retsRAIIDict = PyDict_GetItemString(zenoModDict, "_retsRAII");
+            PyDict_Clear(retsRAIIDict);
         }
         set_output("rets", std::move(rets));
     }
