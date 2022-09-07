@@ -7,7 +7,9 @@ int main()
     ZENO_HANDLE hCube = Zeno_AddNode(hGraph, "CreateCube");
     ZENO_HANDLE hTrans = Zeno_AddNode(hGraph, "TransformPrimitive");
 
+    Zeno_SetInputDefl(hCube, "position", zeno::vec3f(2, 0, 0));
     ZENO_ERROR err = Zeno_AddLink(hCube, "prim", hTrans, "prim");
+
     Zeno_SaveAs("C:/zeno-api/abc.zsg");
 
     return 0;

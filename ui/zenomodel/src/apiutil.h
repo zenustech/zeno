@@ -7,7 +7,7 @@
 class ApiUtil
 {
 public:
-    static ZVARIANT qVarToStdVar(const QVariant& qvar);
+    static ZVARIANT qVarToStdVar(const QVariant& qvar, QString typeDesc = "");
     static QVariant stdVarToQVar(const ZVARIANT& var);
 };
 

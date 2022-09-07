@@ -5,8 +5,11 @@
 #include <string>
 #include <variant>
 #include <vector>
+#include <zeno/utils/vec.h>
 
-typedef std::variant<std::string, int, float, double, bool> ZVARIANT;
+typedef std::variant<std::string, int, float, double, bool,
+    zeno::vec2i, zeno::vec2f, zeno::vec3i, zeno::vec3f, zeno::vec4i, zeno::vec4f> ZVARIANT;
+
 typedef uint32_t ZENO_HANDLE;
 typedef uint32_t ZENO_ERROR;
 
