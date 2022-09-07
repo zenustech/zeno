@@ -578,6 +578,7 @@ ZENO_ERROR Zeno_SetPos(ZENO_HANDLE hNode, const std::pair<float, float>& pt)
     STATUS_UPDATE_INFO info;
     info.newValue = newPos;
     info.oldValue = oldPos;
+    info.role = ROLE_OBJPOS;
 
     pModel->updateNodeStatus(nodeid, info, subgIdx, false);
     return Err_NoError;

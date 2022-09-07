@@ -14,6 +14,7 @@
 #include "viewport/zenovis.h"
 #include "panel/zenolights.h"
 #include <zenovis/ObjectsManager.h>
+#include <zenomodel/include/api.h>
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -194,6 +195,11 @@ void ZenoDockWidget::onDockOptionsClicked()
     QAction* pFloatWin = new QAction("Float Window");
     QAction* pCloseLayout = new QAction("Close Layout");
 
+#ifdef TEST_ZENO_API_TRIGGER
+    QAction* pTestAPI = new QAction("Test API");
+    connect(pTestAPI, SIGNAL(triggered()), this, SLOT(onTestAPI()));
+#endif
+
     connect(pMaximize, SIGNAL(triggered()), this, SIGNAL(maximizeTriggered()));
     connect(pFloatWin, SIGNAL(triggered()), this, SLOT(onFloatTriggered()));
     connect(pCloseLayout, SIGNAL(triggered()), this, SLOT(close()));
@@ -211,8 +217,25 @@ void ZenoDockWidget::onDockOptionsClicked()
     menu->addAction(pFloatWin);
     menu->addSeparator();
     menu->addAction(pCloseLayout);
+    menu->addAction(pTestAPI);
     menu->exec(QCursor::pos());
 }
+
+#ifdef TEST_ZENO_API_TRIGGER
+void ZenoDockWidget::onTestAPI()
+{
+    ZENO_HANDLE hGraph = Zeno_GetGraph("main");
+    if (hGraph != 0)
+    {
+        ZENO_HANDLE hCube = Zeno_AddNode(hGraph, "CreateCube");
+        ZENO_HANDLE hTrans = Zeno_AddNode(hGraph, "TransformPrimitive");
+        Zeno_SetPos(hTrans, std::make_pair(1000, 0));
+
+        Zeno_SetInputDefl(hCube, "position", zeno::vec3f(2, 0, 0));
+        ZENO_ERROR err = Zeno_AddLink(hCube, "prim", hTrans, "prim");
+    }
+}
+#endif
 
 void ZenoDockWidget::onMaximizeTriggered()
 {
