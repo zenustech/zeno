@@ -97,7 +97,7 @@ void ZLineEdit::keyPressEvent(QKeyEvent* event)
 void ZLineEdit::keyReleaseEvent(QKeyEvent* event)
 {
     int k = event->key();
-    if (k == Qt::Key_Alt && m_pSlider)
+    if (k == Qt::Key_Shift && m_pSlider)
     {
         m_pSlider->hide();
         setShowingSlider(false);
