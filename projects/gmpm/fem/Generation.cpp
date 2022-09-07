@@ -90,13 +90,11 @@ struct ExtractMeshSurface : INode {
             surfTable.reset(ompExec, true);
             // compute getsurface
             // std::vector<int> tri2tet(4 * numEles);
-            ompExec(range(numEles), [table = proxy<space>(surfTable),
-                                     &quads](int ei) mutable {
+            ompExec(range(numEles), [table = proxy<space>(surfTable), &quads](int ei) mutable {
                 using table_t = RM_CVREF_T(table);
                 using vec3i = zs::vec<int, 3>;
                 auto record = [&table, ei](const vec3i &triInds) mutable {
-                    if (auto sno = table.insert(triInds);
-                        sno != table_t::sentinel_v)
+                    if (auto sno = table.insert(triInds); sno != table_t::sentinel_v)
                         ; // tri2tet[sno] = ei;
                     else
                         printf("ridiculous, more than one tet share the same "
@@ -112,21 +110,16 @@ struct ExtractMeshSurface : INode {
             tris.resize(numEles * 4);
             Vector<int> surfCnt{1, memsrc_e::host};
             surfCnt.setVal(0);
-            ompExec(range(surfTable.size()), [table = proxy<space>(surfTable),
-                                              surfCnt = surfCnt.data(),
-                                              &tris](int i) mutable {
-                using vec3i = zs::vec<int, 3>;
-                auto triInds = table._activeKeys[i];
-                using table_t = RM_CVREF_T(table);
-                if (table.query(vec3i{triInds[2], triInds[1], triInds[0]}) ==
-                        table_t::sentinel_v &&
-                    table.query(vec3i{triInds[1], triInds[0], triInds[2]}) ==
-                        table_t::sentinel_v &&
-                    table.query(vec3i{triInds[0], triInds[2], triInds[1]}) ==
-                        table_t::sentinel_v)
-                    tris[atomic_add(exec_omp, surfCnt, 1)] =
-                        zeno::vec3i{triInds[0], triInds[1], triInds[2]};
-            });
+            ompExec(range(surfTable.size()),
+                    [table = proxy<space>(surfTable), surfCnt = surfCnt.data(), &tris](int i) mutable {
+                        using vec3i = zs::vec<int, 3>;
+                        auto triInds = table._activeKeys[i];
+                        using table_t = RM_CVREF_T(table);
+                        if (table.query(vec3i{triInds[2], triInds[1], triInds[0]}) == table_t::sentinel_v &&
+                            table.query(vec3i{triInds[1], triInds[0], triInds[2]}) == table_t::sentinel_v &&
+                            table.query(vec3i{triInds[0], triInds[2], triInds[1]}) == table_t::sentinel_v)
+                            tris[atomic_add(exec_omp, surfCnt, 1)] = zeno::vec3i{triInds[0], triInds[1], triInds[2]};
+                    });
             auto scnt = surfCnt.getVal();
             tris.resize(scnt);
             fmt::print("{} surfaces\n", scnt);
@@ -136,21 +129,19 @@ struct ExtractMeshSurface : INode {
             HashTable<int, 2, int> edgeTable{3 * numEles};
             vertTable.reset(ompExec, true);
             edgeTable.reset(ompExec, true);
-            ompExec(tris, [vertTable = proxy<space>(vertTable),
-                           edgeTable =
-                               proxy<space>(edgeTable)](vec3i triInds) mutable {
-                using vec1i = zs::vec<int, 1>;
-                using vec2i = zs::vec<int, 2>;
-                for (int d = 0; d != 3; ++d) {
-                    vertTable.insert(vec1i{triInds[d]});
-                    edgeTable.insert(vec2i{triInds[d], triInds[(d + 1) % 3]});
-                }
-            });
+            ompExec(tris,
+                    [vertTable = proxy<space>(vertTable), edgeTable = proxy<space>(edgeTable)](vec3i triInds) mutable {
+                        using vec1i = zs::vec<int, 1>;
+                        using vec2i = zs::vec<int, 2>;
+                        for (int d = 0; d != 3; ++d) {
+                            vertTable.insert(vec1i{triInds[d]});
+                            edgeTable.insert(vec2i{triInds[d], triInds[(d + 1) % 3]});
+                        }
+                    });
             auto svcnt = vertTable.size();
             points.resize(svcnt);
             pointAreas.resize(svcnt, 0.f);
-            copy(mem_host, points.data(), vertTable._activeKeys.data(),
-                 sizeof(int) * svcnt);
+            copy(mem_host, points.data(), vertTable._activeKeys.data(), sizeof(int) * svcnt);
             fmt::print("{} surface verts\n", svcnt);
 
             // surface edges
@@ -159,31 +150,26 @@ struct ExtractMeshSurface : INode {
             auto dupEdgeCnt = edgeTable.size();
             std::vector<int> dupEdgeToSurfEdge(dupEdgeCnt, -1);
             lines.resize(dupEdgeCnt);
-            ompExec(
-                range(dupEdgeCnt), [edgeTable = proxy<space>(edgeTable), &lines,
-                                    surfEdgeCnt = surfEdgeCnt.data(),
-                                    &dupEdgeToSurfEdge](int edgeNo) mutable {
-                    using vec2i = zs::vec<int, 2>;
-                    vec2i edge = edgeTable._activeKeys[edgeNo];
-                    using table_t = RM_CVREF_T(edgeTable);
-                    if (auto eno = edgeTable.query(vec2i{edge[1], edge[0]});
-                        eno ==
-                            table_t::sentinel_v || // opposite edge not exists
-                        (eno != table_t::sentinel_v &&
-                         edge[0] < edge[1])) { // opposite edge does exist
-                        auto no = atomic_add(exec_omp, surfEdgeCnt, 1);
-                        lines[no] = zeno::vec2i{edge[0], edge[1]};
-                        dupEdgeToSurfEdge[edgeNo] = no;
-                    }
-                });
+            ompExec(range(dupEdgeCnt), [edgeTable = proxy<space>(edgeTable), &lines, surfEdgeCnt = surfEdgeCnt.data(),
+                                        &dupEdgeToSurfEdge](int edgeNo) mutable {
+                using vec2i = zs::vec<int, 2>;
+                vec2i edge = edgeTable._activeKeys[edgeNo];
+                using table_t = RM_CVREF_T(edgeTable);
+                if (auto eno = edgeTable.query(vec2i{edge[1], edge[0]});
+                    eno == table_t::sentinel_v ||                        // opposite edge not exists
+                    (eno != table_t::sentinel_v && edge[0] < edge[1])) { // opposite edge does exist
+                    auto no = atomic_add(exec_omp, surfEdgeCnt, 1);
+                    lines[no] = zeno::vec2i{edge[0], edge[1]};
+                    dupEdgeToSurfEdge[edgeNo] = no;
+                }
+            });
             auto secnt = surfEdgeCnt.getVal();
             lines.resize(secnt);
             lineAreas.resize(secnt, 0.f);
             fmt::print("{} surface edges\n", secnt);
 
             ompExec(tris, [&, vertTable = proxy<space>(vertTable),
-                           edgeTable =
-                               proxy<space>(edgeTable)](vec3i triInds) mutable {
+                           edgeTable = proxy<space>(edgeTable)](vec3i triInds) mutable {
                 using vec3 = zs::vec<float, 3>;
                 using vec1i = zs::vec<int, 1>;
                 using vec2i = zs::vec<int, 2>;

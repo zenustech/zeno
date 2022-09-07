@@ -141,6 +141,11 @@ target_link_libraries(zeno_zsfft PRIVATE zshelper zpc zpcomp OpenMP::OpenMP_CXX 
 add_library(zeno_zsfem SHARED)
 target_sources(zeno_zsfem PRIVATE
   fem/BoundaryCondition.cu
+  fem/SolverInit.cu
+  fem/SolverIPC.cu
+  fem/SolverLinearSystem.cu
+  fem/SolverPipeline.cu
+
   fem/Collisions.cu
   # fem/TimeStepping.cu
   fem/Check.cu
@@ -149,11 +154,11 @@ target_sources(zeno_zsfem PRIVATE
   fem/MeshIO.cpp
   fem/Fiber.cpp
   fem/Integrator.cpp
-  fem/QuasiStaticStepping.cu
+  #fem/QuasiStaticStepping.cu
   fem/Codim.cu
   # fem/TestAugLag.cu
-  fem/FastQuasiStaticStepping.cu
-  fem/FleshQuasiStepping.cu
+  #fem/FastQuasiStaticStepping.cu
+  #fem/FleshQuasiStepping.cu
 )
 
 if (${ZS_ENABLE_CUDA})
