@@ -63,21 +63,33 @@ struct IPCSystem : IObject {
         }
 
         decltype(auto) getModels() const {
+            if (!modelsPtr)
+                throw std::runtime_error("primhandle models not available");
             return *modelsPtr;
         }
         decltype(auto) getVerts() const {
+            if (!vertsPtr)
+                throw std::runtime_error("primhandle verts not available");
             return *vertsPtr;
         }
         decltype(auto) getEles() const {
+            if (!elesPtr)
+                throw std::runtime_error("primhandle eles not available");
             return *elesPtr;
         }
         decltype(auto) getSurfTris() const {
+            if (!surfTrisPtr)
+                throw std::runtime_error("primhandle surf tris not available");
             return *surfTrisPtr;
         }
         decltype(auto) getSurfEdges() const {
+            if (!surfEdgesPtr)
+                throw std::runtime_error("primhandle surf edges not available");
             return *surfEdgesPtr;
         }
         decltype(auto) getSurfVerts() const {
+            if (!surfVertsPtr)
+                throw std::runtime_error("primhandle surf verts not available");
             return *surfVertsPtr;
         }
         bool isAuxiliary() const noexcept {
