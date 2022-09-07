@@ -53,15 +53,18 @@ struct IPCSystem : IObject {
 
         auto getModelLameParams() const {
             T mu = 0, lam = 0;
-            if (!isAuxiliary()) {
+            if (!isAuxiliary() && modelsPtr) {
                 zs::match([&](const auto &model) {
                     mu = model.mu;
                     lam = model.lam;
-                })(models.getElasticModel());
+                })(modelsPtr->getElasticModel());
             }
             return zs::make_tuple(mu, lam);
         }
 
+        decltype(auto) getModels() const {
+            return *modelsPtr;
+        }
         decltype(auto) getVerts() const {
             return *vertsPtr;
         }
@@ -89,7 +92,7 @@ struct IPCSystem : IObject {
         }
 
         std::shared_ptr<ZenoParticles> zsprimPtr{}; // nullptr if it is an auxiliary
-        const ZenoConstitutiveModel &models;
+        std::shared_ptr<const ZenoConstitutiveModel> modelsPtr;
         std::shared_ptr<ZenoParticles::dtiles_t> vertsPtr;
         std::shared_ptr<ZenoParticles::particles_t> elesPtr;
         typename ZenoParticles::dtiles_t etemp;
