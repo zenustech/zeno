@@ -12,11 +12,9 @@ IPCSystem::PrimitiveHandle::PrimitiveHandle(std::shared_ptr<tiles_t> elesPtr_, Z
 }
 IPCSystem::PrimitiveHandle::PrimitiveHandle(ZenoParticles &zsprim, std::size_t &vOffset, std::size_t &sfOffset,
                                             std::size_t &seOffset, std::size_t &svOffset, zs::wrapv<2>)
-    : zsprimPtr{&zsprim, [](void *) {}}, modelsPtr{&zsprim.getModel()}, vertsPtr{&zsprim.getParticles<true>(),
-                                                                                 [](void *) {}},
-      elesPtr{&zsprim.getQuadraturePoints(), [](void *) {}}, etemp{zsprim.getQuadraturePoints().get_allocator(),
-                                                                   {{"He", 6 * 6}},
-                                                                   zsprim.numElements()},
+    : zsprimPtr{&zsprim, [](void *) {}}, modelsPtr{&zsprim.getModel(), [](void *) {}},
+      vertsPtr{&zsprim.getParticles<true>(), [](void *) {}}, elesPtr{&zsprim.getQuadraturePoints(), [](void *) {}},
+      etemp{zsprim.getQuadraturePoints().get_allocator(), {{"He", 6 * 6}}, zsprim.numElements()},
       surfTrisPtr{&zsprim.getQuadraturePoints(), [](void *) {}},  // this is fake!
       surfEdgesPtr{&zsprim.getQuadraturePoints(), [](void *) {}}, // all elements are surface edges
       surfVertsPtr{&zsprim[ZenoParticles::s_surfVertTag], [](void *) {}}, vOffset{vOffset},
@@ -33,11 +31,9 @@ IPCSystem::PrimitiveHandle::PrimitiveHandle(ZenoParticles &zsprim, std::size_t &
 }
 IPCSystem::PrimitiveHandle::PrimitiveHandle(ZenoParticles &zsprim, std::size_t &vOffset, std::size_t &sfOffset,
                                             std::size_t &seOffset, std::size_t &svOffset, zs::wrapv<3>)
-    : zsprimPtr{&zsprim, [](void *) {}}, modelsPtr{&zsprim.getModel()}, vertsPtr{&zsprim.getParticles<true>(),
-                                                                                 [](void *) {}},
-      elesPtr{&zsprim.getQuadraturePoints(), [](void *) {}}, etemp{zsprim.getQuadraturePoints().get_allocator(),
-                                                                   {{"He", 9 * 9}},
-                                                                   zsprim.numElements()},
+    : zsprimPtr{&zsprim, [](void *) {}}, modelsPtr{&zsprim.getModel(), [](void *) {}},
+      vertsPtr{&zsprim.getParticles<true>(), [](void *) {}}, elesPtr{&zsprim.getQuadraturePoints(), [](void *) {}},
+      etemp{zsprim.getQuadraturePoints().get_allocator(), {{"He", 9 * 9}}, zsprim.numElements()},
       surfTrisPtr{&zsprim.getQuadraturePoints(), [](void *) {}}, surfEdgesPtr{&zsprim[ZenoParticles::s_surfEdgeTag],
                                                                               [](void *) {}},
       surfVertsPtr{&zsprim[ZenoParticles::s_surfVertTag], [](void *) {}}, vOffset{vOffset},
@@ -54,11 +50,9 @@ IPCSystem::PrimitiveHandle::PrimitiveHandle(ZenoParticles &zsprim, std::size_t &
 }
 IPCSystem::PrimitiveHandle::PrimitiveHandle(ZenoParticles &zsprim, std::size_t &vOffset, std::size_t &sfOffset,
                                             std::size_t &seOffset, std::size_t &svOffset, zs::wrapv<4>)
-    : zsprimPtr{&zsprim, [](void *) {}}, modelsPtr{&zsprim.getModel()}, vertsPtr{&zsprim.getParticles<true>(),
-                                                                                 [](void *) {}},
-      elesPtr{&zsprim.getQuadraturePoints(), [](void *) {}}, etemp{zsprim.getQuadraturePoints().get_allocator(),
-                                                                   {{"He", 12 * 12}},
-                                                                   zsprim.numElements()},
+    : zsprimPtr{&zsprim, [](void *) {}}, modelsPtr{&zsprim.getModel(), [](void *) {}},
+      vertsPtr{&zsprim.getParticles<true>(), [](void *) {}}, elesPtr{&zsprim.getQuadraturePoints(), [](void *) {}},
+      etemp{zsprim.getQuadraturePoints().get_allocator(), {{"He", 12 * 12}}, zsprim.numElements()},
       surfTrisPtr{&zsprim[ZenoParticles::s_surfTriTag], [](void *) {}},
       surfEdgesPtr{&zsprim[ZenoParticles::s_surfEdgeTag], [](void *) {}},
       surfVertsPtr{&zsprim[ZenoParticles::s_surfVertTag], [](void *) {}}, vOffset{vOffset},
