@@ -101,13 +101,10 @@ struct PythonFunctor {
         scope_exit pyRetDel = [=] {
             Py_DECREF(pyRet);
         };
-        if (!PyDict_Check(pyRet)) {
-            Zeno_Object handle = PyLong_AsUnsignedLongLong(pyRet);
-            if (handle == -1 && PyErr_Occurred()) {
-                throw makeError("failed to cast rets value as integer");
-            }
-            rets.emplace("ret", capiFindObjectSharedPtr(handle));
-        } else {
+        scope_exit pyFuncRetsRAIIDel = [=] {
+            PyObject_DelAttrString(pyFunc, "_retsRAII");
+        };
+        if (PyDict_Check(pyRet)) {
             PyObject *key, *value;
             Py_ssize_t pos = 0;
             while (PyDict_Next(pyRet, &pos, &key, &value)) {
@@ -123,6 +120,12 @@ struct PythonFunctor {
                 }
                 rets.emplace(std::move(keyStr), capiFindObjectSharedPtr(handle));
             }
+        } else if (pyRet != Py_None) {
+            Zeno_Object handle = PyLong_AsUnsignedLongLong(pyRet);
+            if (handle == -1 && PyErr_Occurred()) {
+                throw makeError("failed to cast rets value as integer");
+            }
+            rets.emplace("ret", capiFindObjectSharedPtr(handle));
         }
         return rets;
     }

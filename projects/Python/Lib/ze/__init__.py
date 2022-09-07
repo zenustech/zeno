@@ -5,7 +5,7 @@ Zeno Python API module
 
 import ctypes
 import functools
-from typing import Union, Optional, Any, Iterator, Iterable
+from typing import Union, Optional, Any, Iterator, Iterable, Callable
 from types import MappingProxyType
 
 
@@ -59,8 +59,8 @@ def initDLLPath(path: str):
     define(ctypes.c_uint32, 'Zeno_AddObjectPrimAttr', ctypes.c_uint64, ctypes.c_int, ctypes.c_char_p, ctypes.c_int)
     define(ctypes.c_uint32, 'Zeno_GetObjectPrimDataKeys', ctypes.c_uint64, ctypes.c_int, ctypes.POINTER(ctypes.c_size_t), ctypes.POINTER(ctypes.c_char_p))
     define(ctypes.c_uint32, 'Zeno_ResizeObjectPrimData', ctypes.c_uint64, ctypes.c_int, ctypes.c_size_t)
-    define(ctypes.c_uint32, 'Zeno_InvokeObjectFactory', ctypes.POINTER(ctypes.c_uint64), ctypes.c_char_p, ctypes.c_void_p)
-    define(ctypes.c_uint32, 'Zeno_InvokeObjectDefactory', ctypes.c_uint64, ctypes.c_char_p, ctypes.POINTER(ctypes.c_void_p))
+    define(ctypes.c_uint32, 'Zeno_InvokeObjectFactory', ctypes.POINTER(ctypes.c_uint64), ctypes.c_char_p, ctypes.py_object)
+    define(ctypes.c_uint32, 'Zeno_InvokeObjectDefactory', ctypes.c_uint64, ctypes.c_char_p, ctypes.POINTER(ctypes.py_object))
 
 
 class ZenoObject:
@@ -103,6 +103,23 @@ class ZenoObject:
             return self
         else:
             return ret
+
+    @classmethod
+    def _newFunc(cls, func: Callable):
+        @functools.wraps(func)
+        def wrappedFunc(**kwargs):
+            ret = func(**kwargs)
+            if ret is None:
+                return {}
+            elif isinstance(ret, dict):
+                retObjs = {k: ZenoObject.fromLiterial(v) for k, v in ret}
+                wrappedFunc._retRAII = retObjs
+                return {k: v.toHandle() for k, v in retObjs}
+            else:
+                retObj = ZenoObject.fromLiterial(ret)
+                wrappedFunc._retRAII = retObj
+                return {'ret': retObj.toHandle()}
+        return cls(cls.__create_key, cls._makeSomeObject('FunctionObject', wrappedFunc))
 
     @classmethod
     def _newPrim(cls):
