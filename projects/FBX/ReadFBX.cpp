@@ -964,8 +964,15 @@ void readFBXFile(
     mesh.processTrans(anim.m_Morph, anim.m_Bones.AnimBoneMap, datas, prims, mats, nodeTree, boneTree, animInfo);
     mesh.fbxData.iKeyMorph.value = anim.m_Morph;
 
-    if(readOption.makePrim)
+    if(readOption.makePrim){
         mesh.processPrim(prim);
+        if(prim->verts->empty()){
+            zeno::log_error("empty prim");
+            prim->verts.emplace_back(zeno::vec3f(0.0f, 0.0f, 0.0f));
+            prim->verts.add_attr<zeno::vec3f>("nrm").emplace_back(0.0f, 0.0f, 0.0f);
+            prim->verts.add_attr<zeno::vec3f>("uv").emplace_back(0.0f, 0.0f, 0.0f);
+        }
+    }
 
     zeno::log_info("FBX: Num Animation {}", scene->mNumAnimations);
     zeno::log_info("FBX: Total Vertices count {}", mesh.fbxData.iVertices.value.size());
