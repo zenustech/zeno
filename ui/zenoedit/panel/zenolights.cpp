@@ -1,4 +1,7 @@
 #include "zenolights.h"
+#include "graphsmanagment.h"
+#include "model/graphsmodel.h"
+#include "model/modelrole.h"
 #include "viewport/zenovis.h"
 #include "zenoapplication.h"
 #include "zenomainwindow.h"
@@ -8,7 +11,6 @@
 #include <zenovis/ObjectsManager.h>
 #include <zeno/types/UserData.h>
 #include <glm/glm.hpp>
-#include <glm/vec3.hpp>
 
 ZenoLights::ZenoLights(QWidget *parent) : QWidget(parent) {
     QVBoxLayout* pMainLayout = new QVBoxLayout;
@@ -25,9 +27,28 @@ ZenoLights::ZenoLights(QWidget *parent) : QWidget(parent) {
 
     QHBoxLayout* pTitleLayout = new QHBoxLayout;
 
-    QLabel* pPrim = new QLabel(tr("Light: "));
-    pPrim->setProperty("cssClass", "proppanel");
-    pTitleLayout->addWidget(pPrim);
+    write_btn->setProperty("cssClass", "grayButton");
+    write_all_btn->setProperty("cssClass", "grayButton");
+    connect(write_btn, &QPushButton::clicked, this, [&](){
+        QModelIndex index = lights_view->currentIndex();
+        if (index.row() >= 0) {
+            QString primid = index.data(Qt::DisplayRole).toString();
+            if (primid.contains("LightNode")) {
+                write_param_into_node(primid);
+            }
+        }
+    });
+    connect(write_all_btn, &QPushButton::clicked, this, [&](){
+        auto scene = Zenovis::GetInstance().getSession()->get_scene();
+        for (auto const &[key, ptr]: scene->objectsMan->lightObjects) {
+            if (key.find("LightNode") != std::string::npos) {
+                QString primid = QString(key.c_str());
+                write_param_into_node(primid);
+            }
+        }
+    });
+    pTitleLayout->addWidget(write_btn);
+    pTitleLayout->addWidget(write_all_btn);
 
     pPrimName->setProperty("cssClass", "proppanel");
     pTitleLayout->addWidget(pPrimName);
@@ -347,3 +368,36 @@ void ZenoLights::modifyLightData() {
     }
 }
 
+void ZenoLights::write_param_into_node(const QString& primid) {
+    auto scene = Zenovis::GetInstance().getSession()->get_scene();
+    if (scene->objectsMan->lightObjects.find(primid.toStdString()) == scene->objectsMan->lightObjects.end()) {
+        return;
+    }
+    auto light = scene->objectsMan->lightObjects[primid.toStdString()];
+    auto ud = light->userData();
+    IGraphsModel* pIGraphsModel = zenoApp->graphsManagment()->currentModel();
+    if (pIGraphsModel == nullptr) {
+        return;
+    }
+    auto subgraphIndices = pIGraphsModel->subgraphsIndice();
+
+    for (const auto &subGpIdx: subgraphIndices) {
+        auto items = pIGraphsModel->nodes(subGpIdx);
+        for (const auto &item: items) {
+            if (item[ROLE_OBJID].toString().contains(primid.split(':').front())) {
+                auto inputs = item[ROLE_INPUTS].value<INPUT_SOCKETS>();
+                auto p = ud.get2<zeno::vec3f>("pos");
+                auto s = ud.get2<zeno::vec3f>("scale");
+                auto r = ud.get2<zeno::vec3f>("rotate");
+                auto c = ud.get2<zeno::vec3f>("color");
+                inputs["position"].info.defaultValue.setValue(UI_VECTYPE({p[0], p[1], p[2]}));
+                inputs["scale"].info.defaultValue.setValue(UI_VECTYPE({s[0], s[1], s[2]}));
+                inputs["rotate"].info.defaultValue.setValue(UI_VECTYPE({r[0], r[1], r[2]}));
+                inputs["color"].info.defaultValue.setValue(UI_VECTYPE({c[0], c[1], c[2]}));
+                inputs["intensity"].info.defaultValue = (double)ud.get2<float>("intensity");
+                auto nodeIndex = pIGraphsModel->index(item[ROLE_OBJID].toString(), subGpIdx);
+                pIGraphsModel->setNodeData(nodeIndex, subGpIdx, QVariant::fromValue(inputs), ROLE_INPUTS);
+            }
+        }
+    }
+}
