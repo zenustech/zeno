@@ -2153,3 +2153,9 @@ void GraphsModel::resolveLinks(const QModelIndex& idx, SubGraphModel* pCurrentGr
 		}
 	}
 }
+
+void GraphsModel::setNodeData(const QModelIndex &nodeIndex, const QModelIndex &subGpIdx, const QVariant &value, int role) {
+    SubGraphModel* pModel = this->subGraph(subGpIdx.row());
+    ZASSERT_EXIT(pModel);
+    pModel->setData(nodeIndex, value, role);
+}

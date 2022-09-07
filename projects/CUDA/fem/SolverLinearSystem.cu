@@ -390,13 +390,15 @@ void IPCSystem::computeElasticGradientAndHessian(zs::CudaExecutionPolicy &cudaPo
         match([&](auto &elasticModel) {
             computeElasticGradientAndHessianImpl(cudaPol, gTag, vtemp, primHandle, elasticModel, dt, projectDBC,
                                                  includeHessian);
-        })(primHandle.models.getElasticModel());
+        })(primHandle.getModels().getElasticModel());
     }
     for (auto &primHandle : auxPrims) {
+        using ModelT = RM_CVREF_T(primHandle.getModels().getElasticModel());
+        const ModelT &model = primHandle.modelsPtr ? primHandle.getModels().getElasticModel() : ModelT{};
         match([&](auto &elasticModel) {
             computeElasticGradientAndHessianImpl(cudaPol, gTag, vtemp, primHandle, elasticModel, dt, projectDBC,
                                                  includeHessian);
-        })(primHandle.models.getElasticModel());
+        })(model);
     }
 }
 

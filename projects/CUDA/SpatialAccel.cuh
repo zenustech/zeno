@@ -11,7 +11,7 @@
 #include "zensim/zpc_tpls/fmt/color.h"
 #include <thrust/device_ptr.h>
 #include <thrust/sort.h>
-#include <zeno/utils/log.h>
+// #include <zeno/utils/log.h>
 
 namespace zeno {
 
@@ -361,6 +361,8 @@ void ZenoLBvh<dim, lane_width, Index, Value, Allocator>::build(zs::CudaExecution
                 auto LZ = __clz(lCode ^ rCode);
                 Ti step, len;
                 for (step = (j - i + 1) >> 1, len = 0; true; step = (step + 1) >> 1) {
+                    if (i + len + step > numTrunk)
+                        continue;
                     if (__clz(mcs(i + len + step) ^ lCode) > LZ)
                         len += step;
                     if (step <= 1)

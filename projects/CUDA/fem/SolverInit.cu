@@ -5,15 +5,15 @@
 namespace zeno {
 
 IPCSystem::PrimitiveHandle::PrimitiveHandle(std::shared_ptr<tiles_t> elesPtr_, ZenoParticles::category_e category)
-    : zsprimPtr{}, models{ZenoConstitutiveModel{}}, vertsPtr{}, elesPtr{elesPtr_},
+    : zsprimPtr{}, modelsPtr{}, vertsPtr{}, elesPtr{elesPtr_},
       etemp{elesPtr_->get_allocator(), {{"He", 6 * 6}}, elesPtr_->size()}, surfTrisPtr{}, surfEdgesPtr{},
       surfVertsPtr{}, svtemp{}, vOffset{0}, sfOffset{0}, seOffset{0}, svOffset{0}, category{category} {
     ;
 }
 IPCSystem::PrimitiveHandle::PrimitiveHandle(ZenoParticles &zsprim, std::size_t &vOffset, std::size_t &sfOffset,
                                             std::size_t &seOffset, std::size_t &svOffset, zs::wrapv<2>)
-    : zsprimPtr{&zsprim, [](void *) {}}, models{zsprim.getModel()}, vertsPtr{&zsprim.getParticles<true>(),
-                                                                             [](void *) {}},
+    : zsprimPtr{&zsprim, [](void *) {}}, modelsPtr{&zsprim.getModel()}, vertsPtr{&zsprim.getParticles<true>(),
+                                                                                 [](void *) {}},
       elesPtr{&zsprim.getQuadraturePoints(), [](void *) {}}, etemp{zsprim.getQuadraturePoints().get_allocator(),
                                                                    {{"He", 6 * 6}},
                                                                    zsprim.numElements()},
@@ -33,8 +33,8 @@ IPCSystem::PrimitiveHandle::PrimitiveHandle(ZenoParticles &zsprim, std::size_t &
 }
 IPCSystem::PrimitiveHandle::PrimitiveHandle(ZenoParticles &zsprim, std::size_t &vOffset, std::size_t &sfOffset,
                                             std::size_t &seOffset, std::size_t &svOffset, zs::wrapv<3>)
-    : zsprimPtr{&zsprim, [](void *) {}}, models{zsprim.getModel()}, vertsPtr{&zsprim.getParticles<true>(),
-                                                                             [](void *) {}},
+    : zsprimPtr{&zsprim, [](void *) {}}, modelsPtr{&zsprim.getModel()}, vertsPtr{&zsprim.getParticles<true>(),
+                                                                                 [](void *) {}},
       elesPtr{&zsprim.getQuadraturePoints(), [](void *) {}}, etemp{zsprim.getQuadraturePoints().get_allocator(),
                                                                    {{"He", 9 * 9}},
                                                                    zsprim.numElements()},
@@ -54,8 +54,8 @@ IPCSystem::PrimitiveHandle::PrimitiveHandle(ZenoParticles &zsprim, std::size_t &
 }
 IPCSystem::PrimitiveHandle::PrimitiveHandle(ZenoParticles &zsprim, std::size_t &vOffset, std::size_t &sfOffset,
                                             std::size_t &seOffset, std::size_t &svOffset, zs::wrapv<4>)
-    : zsprimPtr{&zsprim, [](void *) {}}, models{zsprim.getModel()}, vertsPtr{&zsprim.getParticles<true>(),
-                                                                             [](void *) {}},
+    : zsprimPtr{&zsprim, [](void *) {}}, modelsPtr{&zsprim.getModel()}, vertsPtr{&zsprim.getParticles<true>(),
+                                                                                 [](void *) {}},
       elesPtr{&zsprim.getQuadraturePoints(), [](void *) {}}, etemp{zsprim.getQuadraturePoints().get_allocator(),
                                                                    {{"He", 12 * 12}},
                                                                    zsprim.numElements()},
