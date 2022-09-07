@@ -13,6 +13,7 @@
 void startUp()
 {
     zeno::setExecutableDir(QCoreApplication::applicationDirPath().toStdString());
+    zeno::setConfigVariable("EXECFILE", QCoreApplication::applicationFilePath().toStdString());
 
     QSettings settings(zsCompanyName, zsEditor);
     QVariant nas_loc_v = settings.value("nas_loc");

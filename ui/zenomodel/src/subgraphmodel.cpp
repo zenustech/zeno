@@ -350,7 +350,7 @@ void SubGraphModel::updateSocket(const QString& nodeid, const SOCKET_UPDATE_INFO
             {
                 INPUT_SOCKET newSock;
                 newSock.info = info.newInfo;
-                if (nodeName == "MakeDict" || nodeName == "ExtractDict")
+                if (nodeName == "MakeDict" || nodeName == "ExtractDict" || nodeName == "MakeList")
                 {
                     //dynamic socket in dict grows by bottom direction.
                     inputs.insert(newName, newSock);

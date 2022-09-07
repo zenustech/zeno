@@ -2349,8 +2349,14 @@ ZENDEFNODE(StepIPCSystem, {{
 
 struct IPCSystemClothBinding : INode { // usually called once before stepping
     using tiles_t = typename ZenoParticles::particles_t;
+#if 0
+    // unordered version
+    using bvh_t = zs::LBvh<3, 32, int, zs::f32>;
+    using bv_t = typename bvh_t::Box;
+#else
     using bvh_t = typename IPCSystem::bvh_t;
     using bv_t = typename IPCSystem::bv_t;
+#endif
     template <typename VecT> static constexpr float distance(const bv_t &bv, const zs::VecInterface<VecT> &x) {
         using namespace zs;
         const auto &mi = bv._min;
@@ -2383,8 +2389,28 @@ struct IPCSystemClothBinding : INode { // usually called once before stepping
             if (lsv.getSignedDistance(x) < 0) {
                 float dist = distCap;
                 int j = -1;
-                int node = 0;
                 int numNodes = bvh.numNodes();
+#if 0
+                auto nt = bvh.numLeaves() - 1;
+                int node = bvh._root;
+                while (node != -1) {
+                    for (; node < nt; node = bvh._trunkTopo("lc", node))
+                        if (auto d = distance(bvh.getNodeBV(node), x); d > dist)
+                            break;
+                    // leaf node check
+                    if (node >= nt) {
+                        auto bouId = bvh._leafTopo("inds", node - nt) + coOffset;
+                        auto d = (vtemp.template pack<3>("xn", bouId) - x).length();
+                        if (d < dist) {
+                            dist = d;
+                            j = bouId;
+                        }
+                        node = bvh._leafTopo("esc", node - nt);
+                    } else // separate at internal nodes
+                        node = bvh._trunkTopo("esc", node);
+                }
+#else
+                int node = 0;
                 while (node != -1 && node != numNodes) {
                     int level = bvh._levels[node];
                     for (; level; --level, ++node)
@@ -2402,6 +2428,7 @@ struct IPCSystemClothBinding : INode { // usually called once before stepping
                     } else // separate at internal nodes
                         node = bvh._auxIndices[node];
                 }
+#endif
                 if (j != -1) {
                     auto no = atomic_add(exec_cuda, &cnt[0], 1);
                     eles.template tuple<2>("inds", no) = zs::vec<int, 2>{i, j}.template reinterpret_bits<float>();
