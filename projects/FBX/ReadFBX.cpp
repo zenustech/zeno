@@ -22,6 +22,7 @@
 #include <zeno/types/StringObject.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/NumericObject.h>
+#include <zeno/types/UserData.h>
 #include <zeno/types/DictObject.h>
 #include <zeno/types/ListObject.h>
 #include <zeno/utils/logger.h>
@@ -1009,6 +1010,14 @@ struct ReadFBXPrim : zeno::INode {
 
         readFBXFile(datas, nodeTree, data, boneTree, animInfo,
                     path.c_str(), prim, prims, mats, readOption);
+
+        int count = 0;
+        for (auto it = mats->lut.begin(); it != mats->lut.end(); it++) {
+            zeno::log_info("FBX: Setting user data {} {}", count, it->first);
+            prim->userData().setLiterial(std::to_string(count), it->first);
+            count++;
+        }
+        prim->userData().setLiterial("matNum", count);
 
         set_output("data", std::move(data));
         set_output("datas", std::move(datas));

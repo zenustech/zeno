@@ -13,13 +13,6 @@ typedef std::variant<std::string, int, float, double, bool,
 typedef uint32_t ZENO_HANDLE;
 typedef uint32_t ZENO_ERROR;
 
-enum NodeStatus
-{
-    STATUS_VIEW,
-    STATUS_MUTE,
-    STATUS_ONCE,
-};
-
 enum SocketType
 {
     ST_NONE,

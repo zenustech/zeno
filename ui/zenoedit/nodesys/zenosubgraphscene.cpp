@@ -3,6 +3,7 @@
 #include "subnetnode.h"
 #include "heatmapnode.h"
 #include "cameranode.h"
+#include "readfbxprim.h"
 #include "zenolink.h"
 #include <zenomodel/include/modelrole.h>
 #include <zenoio/reader/zsgreader.h>
@@ -132,6 +133,10 @@ ZenoNode* ZenoSubGraphScene::createNode(const QModelIndex& idx, const NodeUtilPa
     else if (descName == "CameraNode")
     {
         return new CameraNode(params);
+    }
+    else if(descName == "ReadFBXPrim")
+    {
+        return new ReadFBXPrim(params);
     }
     else
     {
