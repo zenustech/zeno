@@ -953,7 +953,7 @@ static __inline__ __device__
 
 }
 
-static __inline__ __device__ vec3 proceduralSky2(vec3 dir, vec3 sunLightDir)
+static __inline__ __device__ vec3 proceduralSky2(vec3 dir, vec3 sunLightDir, float t)
 {
 
     float bright = 1*(1.8-0.55);

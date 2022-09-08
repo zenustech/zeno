@@ -449,6 +449,11 @@ static void launchSubframe( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Path
         state.params.sunLightDirY = sin(sunLightDir[1] / 180.f * M_PI);
         state.params.sunLightDirX = cos(sunLightDir[1] / 180.f * M_PI) * sin(sunLightDir[0] / 180.f * M_PI);
         state.params.sunLightDirZ = cos(sunLightDir[1] / 180.f * M_PI) * cos(sunLightDir[0] / 180.f * M_PI);
+
+        float sunSoftness = ud.get2<float>("sunSoftness", 1.0f);
+        state.params.sunSoftness = clamp(sunSoftness, 0.01f, 1.0f);
+
+        state.params.elapsedTime = ud.get2<float>("elapsedTime", 0.0f);
     }
     CUDA_CHECK( cudaMemcpy(
                 reinterpret_cast<void*>( (CUdeviceptr)state.d_params ),
