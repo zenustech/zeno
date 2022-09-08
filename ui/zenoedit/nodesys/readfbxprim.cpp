@@ -70,9 +70,13 @@ void ReadFBXPrim::onEditClicked()
     // Create nodes
     if(findFbxObj) {
         auto matNum = fbxObj->userData().getLiterial<int>("matNum");
+        auto fbxName = fbxObj->userData().getLiterial<std::string>("fbxName");
+        ZENO_HANDLE fbxPartGraph = Zeno_GetGraph("FBXPart");
+        ZASSERT_EXIT(fbxPartGraph);
+
         for (int i = 0; i < matNum; i++) {
             auto matName = fbxObj->userData().getLiterial<std::string>(std::to_string(i));
-            zeno::log_info("Create with mat name {}", matName);
+            zeno::log_info("Create with mat name {}, fbx name {}", matName, fbxName);
 
             ZENO_HANDLE dictNode = Zeno_AddNode(hGraph, "DictGetItem");
             std::pair<float, float> dictNodePos = {fbxNodePos.first + 500.0f, fbxNodePos.second + i * 300.0f};
@@ -81,18 +85,19 @@ void ReadFBXPrim::onEditClicked()
             Zeno_SetInputDefl(dictNode, "key", matName);
             Zeno_AddLink(fbxNode, "mats", dictNode, "dict");
 
-            ZENO_HANDLE forkedSubg;
-            ZENO_HANDLE forkedNode;
-            std::string fbxPartGraphName = "FBXPart_"+matName;
-            ZENO_HANDLE fbxPartGraph = Zeno_GetGraph("FBXPart");
-            Zeno_ForkGraph(fbxPartGraph, "FBXPart", forkedSubg, forkedNode);
+            ZENO_HANDLE forkedSubg = 0;
+            ZENO_HANDLE forkedNode = 0;
+            std::string fbxPartGraphName = fbxName+"_"+matName;
+            ZENO_ERROR ret = Zeno_ForkGraph(hGraph, "FBXPart", forkedSubg, forkedNode);
+            ZASSERT_EXIT(!ret);ZASSERT_EXIT(forkedSubg);ZASSERT_EXIT(forkedNode);
             Zeno_RenameGraph(forkedSubg, fbxPartGraphName);
+
             std::pair<float, float> fbxPartPos = {dictNodePos.first + 500.0f, dictNodePos.second};
             ZENO_HANDLE newFbxPartNode = Zeno_AddNode(hGraph, fbxPartGraphName);
+            ZASSERT_EXIT(newFbxPartNode);
+
             Zeno_SetPos(newFbxPartNode, fbxPartPos);
-
             Zeno_AddLink(dictNode, "object", newFbxPartNode, "data");
-
             Zeno_SetView(newFbxPartNode, true);
         }
 

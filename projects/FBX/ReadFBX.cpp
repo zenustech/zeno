@@ -993,7 +993,12 @@ struct ReadFBXPrim : zeno::INode {
         std::shared_ptr<zeno::DictObject> prims = std::make_shared<zeno::DictObject>();
         std::shared_ptr<zeno::DictObject> mats = std::make_shared<zeno::DictObject>();
 
-        zeno::log_info("FBX: File path {}", path);
+        auto fbxFileName = Path(path)
+                               .replace_extension("")
+                               .filename()
+                               .string();
+        std::replace(fbxFileName.begin(),fbxFileName.end(), ' ', '_');
+        zeno::log_info("FBX: File path {}, Replaced FBXName {}", path,fbxFileName);
 
         SFBXReadOption readOption;
         auto udim = get_param<std::string>("udim");
@@ -1018,6 +1023,7 @@ struct ReadFBXPrim : zeno::INode {
             count++;
         }
         prim->userData().setLiterial("matNum", count);
+        prim->userData().setLiterial("fbxName", fbxFileName);
 
         set_output("data", std::move(data));
         set_output("datas", std::move(datas));
