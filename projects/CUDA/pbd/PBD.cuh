@@ -110,7 +110,7 @@ struct PBDSystem : IObject {
     // bvs_t stBvs, seBvs;       // STQ
     // bvh_t bouStBvh, bouSeBvh; // for collision objects
     // bvs_t bouStBvs, bouSeBvs; // STQ
-    T dt;
+    T dt, framedt;
 };
 // config compliance, num solve iters, edge/volume extforce, dt
 

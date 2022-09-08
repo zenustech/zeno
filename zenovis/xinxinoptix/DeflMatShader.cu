@@ -831,7 +831,17 @@ extern "C" __global__ void __closesthit__radiance()
 //        prd->radiance += shadow_prd2.shadowAttanuation * float3(proceduralSky(env_dir)) * lbrdf;
 //    }
 
-    auto sun_dir = normalize(vec3(-1.2,.8,0.5));
+
+
+
+    vec3 sunLightDir = vec3(
+            params.sunLightDirX,
+            params.sunLightDirY,
+            params.sunLightDirZ
+    );
+    auto sun_dir = BRDFBasics::halfPlaneSample(prd->seed, sunLightDir, 0.2);//perturb the sun to have some softness
+    sun_dir = normalize(sunLightDir);
+
     shadow_prd2.shadowAttanuation = make_float3(1.0f, 1.0f, 1.0f);
     shadow_prd2.nonThinTransHit = (thin==false && specTrans>0)? 1:0;
     traceOcclusion(params.handle, P, sun_dir,
@@ -842,7 +852,7 @@ extern "C" __global__ void __closesthit__radiance()
                                               specularTint, anisotropic, sheen, sheenTint, clearcoat,
                                               clearcoatGloss, specTrans, scatterDistance, ior, flatness, sun_dir,
                                               -normalize(inDir), T, B, N, thin > 0.5f, flag == DisneyBSDF::transmissionEvent ? inToOut : prd->is_inside, ffPdf, rrPdf,dot(N, float3(sun_dir)));
-    prd->radiance += shadow_prd2.shadowAttanuation * float3(proceduralSky(sun_dir)) * lbrdf;
+    prd->radiance += shadow_prd2.shadowAttanuation * float3(proceduralSky2(sun_dir, sunLightDir)) * lbrdf;
     prd->radiance +=  float3(mats.emission);
 }
 
