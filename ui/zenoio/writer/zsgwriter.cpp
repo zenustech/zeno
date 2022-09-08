@@ -61,7 +61,7 @@ QString ZsgWriter::dumpProgramStr(IGraphsModel* pModel, APP_SETTINGS settings)
 			for (int i = 0; i < pModel->rowCount(); i++)
 			{
 				const QModelIndex& subgIdx = pModel->index(i, 0);
-				const QString& subgName = pModel->name(subgIdx);
+				const QString& subgName = subgIdx.data(ROLE_OBJNAME).toString();
 				writer.Key(subgName.toUtf8());
 				_dumpSubGraph(pModel, subgIdx, writer);
 			}
@@ -95,9 +95,12 @@ void ZsgWriter::_dumpSubGraph(IGraphsModel* pModel, const QModelIndex& subgIdx, 
 	{
 		writer.Key("nodes");
 		JsonObjBatch _batch(writer);
-		const NODES_DATA& nodes = pModel->nodes(subgIdx);
-		for (const NODE_DATA& node : nodes)
+
+		int n = pModel->itemCount(subgIdx);
+		for (int i = 0; i < n; i++)
 		{
+			const QModelIndex& idx = pModel->index(i, subgIdx);
+			const NODE_DATA& node = pModel->itemData(idx, subgIdx);
 			const QString& id = node[ROLE_OBJID].toString();
 			writer.Key(id.toUtf8());
 			dumpNode(node, writer);

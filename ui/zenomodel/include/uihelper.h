@@ -54,6 +54,7 @@ public:
     static QString correctSubIOName(IGraphsModel* pModel, const QString& subgName, const QString& newName, bool bInput);
     static QVariant _parseToVariant(const QString& type, const rapidjson::Value& val, QObject* parentRef);
     static QString gradient2colorString(const QLinearGradient& grad);
+    static QVariant getParamValue(const QModelIndex& idx, const QString& name);
 
 private:
     static std::pair<qreal, qreal> getRxx2(QRectF r, qreal xRadius, qreal yRadius, bool AbsoluteSize);

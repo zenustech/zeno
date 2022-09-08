@@ -158,7 +158,7 @@ void ZenoGraphsEditor::onSubGraphsToRemove(const QModelIndex& parent, int first,
 	for (int r = first; r <= last; r++)
 	{
 		QModelIndex subgIdx = m_model->index(r, 0);
-		const QString& name = m_model->name(subgIdx);
+		const QString& name = subgIdx.data(ROLE_OBJNAME).toString();
 		int idx = tabIndexOfName(name);
 		m_ui->graphsViewTab->removeTab(idx);
 	}

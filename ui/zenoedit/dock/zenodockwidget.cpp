@@ -97,7 +97,7 @@ void ZenoDockWidget::onNodesSelected(const QModelIndex& subgIdx, const QModelInd
         ZenoPropDockTitleWidget* pPropTitle = qobject_cast<ZenoPropDockTitleWidget*>(titleBarWidget());
         if (select) {
             const QModelIndex& idx = nodes[0];
-            QString nodeName = pModel->data2(subgIdx, idx, ROLE_OBJNAME).toString();
+            QString nodeName = idx.data(ROLE_OBJNAME).toString();
             pPropTitle->setTitle(nodeName);
         }
         else {
@@ -112,7 +112,7 @@ void ZenoDockWidget::onNodesSelected(const QModelIndex& subgIdx, const QModelInd
         IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
         if (select) {
             const QModelIndex& idx = nodes[0];
-            QString nodeId = pModel->data2(subgIdx, idx, ROLE_OBJID).toString();
+            QString nodeId = idx.data(ROLE_OBJID).toString();
             auto *scene = Zenovis::GetInstance().getSession()->get_scene();
             scene->selected.clear();
             std::string nodeid = nodeId.toStdString();

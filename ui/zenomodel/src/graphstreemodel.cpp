@@ -143,7 +143,7 @@ void GraphsTreeModel::on_graphs_rowsAboutToBeRemoved(const QModelIndex& parent, 
 	QModelIndex subgIdx = m_model->index(first, 0, parent);
 	ZASSERT_EXIT(subgIdx.isValid());
 
-	const QString& subgName = m_model->name(subgIdx);
+	const QString& subgName = subgIdx.data(ROLE_OBJNAME).toString();
 	QModelIndexList lst = match(index(0, 0), ROLE_OBJNAME, subgName, -1, Qt::MatchRecursive);
 	for (QModelIndex idx : lst)
 	{

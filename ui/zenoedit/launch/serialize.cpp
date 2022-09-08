@@ -19,9 +19,6 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
 {
     ZASSERT_EXIT(pGraphsModel && subgIdx.isValid());
 
-    QModelIndexList subgNodes, normNodes;
-    pGraphsModel->getNodeIndices(subgIdx, subgNodes, normNodes);
-
     //scan all the nodes in the subgraph.
     for (int r = 0; r < pGraphsModel->itemCount(subgIdx); r++)
 	{
@@ -34,14 +31,14 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
             continue;
         }
 
-		int opts = idx.data(ROLE_OPTIONS).toInt();
+        int opts = idx.data(ROLE_OPTIONS).toInt();
         QString noOnceIdent;
         if (opts & OPT_ONCE) {
             noOnceIdent = ident;
             ident = ident + ":RUNONCE";
         }
 
-        bool bSubgNode = subgNodes.indexOf(idx) != -1;
+        bool bSubgNode = pGraphsModel->IsSubGraphNode(idx);
 
         INPUT_SOCKETS inputs = idx.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
         OUTPUT_SOCKETS outputs = idx.data(ROLE_OUTPUTS).value<OUTPUT_SOCKETS>();
@@ -199,7 +196,7 @@ namespace {
 
     decltype(auto) descs = model->descriptors();
     for (int i = 0; i < model->rowCount(); i++) {
-        auto key = model->name(model->index(i, 0));
+        auto key = model->index(i, 0).data(ROLE_OBJNAME).toString();
         if (key == "main") continue;
         if (!descs.contains(key)) {
             zeno::log_warn("cannot find subgraph `{}` in descriptors table", key.toStdString());

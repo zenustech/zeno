@@ -24,19 +24,10 @@ int         Zeno_GetCount();
 ZENO_HANDLE Zeno_GetItem(int idx);
 
 ZENO_HANDLE Zeno_AddNode(ZENO_HANDLE hGraph, const std::string &nodeCls);
-ZENO_HANDLE Zeno_GetNode(const std::string& ident);
 
 ZENO_ERROR  Zeno_DeleteNode(ZENO_HANDLE hNode);
 
-ZENO_ERROR  Zeno_GetName(
-        ZENO_HANDLE hNode,
-        std::string& ret
-);
-
-ZENO_ERROR  Zeno_GetIdent(
-        ZENO_HANDLE hNode,
-        std::string &ret
-);
+ZENO_ERROR  Zeno_GetName(ZENO_HANDLE hNode, /*out*/ std::string& ret);
 
 ZENO_ERROR  Zeno_AddLink(
         ZENO_HANDLE hOutnode,
@@ -55,13 +46,13 @@ ZENO_ERROR  Zeno_RemoveLink(
 ZENO_ERROR  Zeno_GetOutNodes(
         ZENO_HANDLE hNode,
         const std::string& outSock,
-        std::vector<std::pair<ZENO_HANDLE, std::string>>& res
+        /*out*/ std::vector<std::pair<ZENO_HANDLE, std::string>>& res
 );
 
 ZENO_ERROR  Zeno_GetInput(
         ZENO_HANDLE hNode,
         const std::string& inSock,
-        std::pair<ZENO_HANDLE, std::string>& ret
+        /*out*/ std::pair<ZENO_HANDLE, std::string>& ret
 );
 
 ZENO_ERROR  Zeno_GetInputDefl(
@@ -74,7 +65,7 @@ ZENO_ERROR  Zeno_GetInputDefl(
 ZENO_ERROR  Zeno_SetInputDefl(
         ZENO_HANDLE hNode,
         const std::string& inSock,
-        ZVARIANT var
+        const ZVARIANT& var
 );
 
 ZENO_ERROR  Zeno_GetParam(
@@ -87,7 +78,7 @@ ZENO_ERROR  Zeno_GetParam(
 ZENO_ERROR  Zeno_SetParam(
         ZENO_HANDLE hNode,
         const std::string& name,
-        ZVARIANT var
+        const ZVARIANT& var
 );
 
 ZENO_ERROR Zeno_IsView(ZENO_HANDLE hNode, bool& ret);

@@ -118,15 +118,6 @@ ZENO_HANDLE Zeno_AddNode(ZENO_HANDLE hGraph, const std::string& nodeCls)
     return pModel->index(ident, subgIdx).internalId();
 }
 
-ZENO_HANDLE Zeno_GetNode(const std::string& ident)
-{
-    IGraphsModel* pModel = GraphsManagment::instance().currentModel();
-    if (!pModel)
-        return Err_ModelNull;
-
-    return pModel->nodeIndex(QString::fromStdString(ident)).internalId();
-}
-
 ZENO_ERROR Zeno_DeleteNode(ZENO_HANDLE hNode)
 {
     IGraphsModel *pModel = GraphsManagment::instance().currentModel();
@@ -150,17 +141,6 @@ ZENO_ERROR Zeno_GetName(ZENO_HANDLE hNode, std::string& name)
     return Err_NoError;
 }
 
-ZENO_ERROR Zeno_GetIdent(ZENO_HANDLE hNode, std::string& ident)
-{
-    IGraphsModel *pModel = GraphsManagment::instance().currentModel();
-    if (!pModel)
-        return Err_ModelNull;
-
-    QModelIndex idx = pModel->nodeIndex(hNode);
-    ident = idx.data(ROLE_OBJID).toString().toStdString();
-    return Err_NoError;
-}
-
 //io
 ZENO_ERROR Zeno_OpenFile(const std::string &fn)
 {
@@ -174,7 +154,7 @@ ZENO_ERROR Zeno_SaveAs(const std::string &fn)
 {
     APP_SETTINGS settings;
     bool ret = GraphsManagment::instance().saveFile(QString::fromStdString(fn), settings);
-    return ret ? 0 : -1;
+    return ret ? Err_NoError : -1;
 }
 
 ZENO_ERROR Zeno_AddLink(ZENO_HANDLE hOutnode, const std::string &outSock,
@@ -221,8 +201,10 @@ ZENO_ERROR Zeno_RemoveLink(ZENO_HANDLE hOutnode, const std::string& outSock,
     if (!inIdx.isValid())
         return Err_NodeNotExist;
 
-    QModelIndex linkIdx = pModel->linkIndex(outIdx.data(ROLE_OBJID).toString(), QString::fromStdString(outSock),
-                      inIdx.data(ROLE_OBJID).toString(), QString::fromStdString(inSock));
+    QModelIndex linkIdx = pModel->linkIndex(outIdx.data(ROLE_OBJID).toString(),
+                                            QString::fromStdString(outSock),
+                                            inIdx.data(ROLE_OBJID).toString(),
+                                            QString::fromStdString(inSock));
     QModelIndex subgIdx = pModel->subgByNodeId(hInnode);
 
     pModel->removeLink(linkIdx, subgIdx);
@@ -337,7 +319,7 @@ ZENO_ERROR Zeno_GetInputDefl(
 ZENO_ERROR Zeno_SetInputDefl(
         ZENO_HANDLE hNode,
         const std::string& inSock,
-        ZVARIANT var)
+        const ZVARIANT& var)
 {
     IGraphsModel *pModel = GraphsManagment::instance().currentModel();
     if (!pModel)
@@ -394,7 +376,7 @@ ZENO_ERROR Zeno_GetParam(
 ZENO_ERROR Zeno_SetParam(
         ZENO_HANDLE hNode,
         const std::string& name,
-        ZVARIANT var)
+        const ZVARIANT& var)
 {
     IGraphsModel *pModel = GraphsManagment::instance().currentModel();
     if (!pModel)

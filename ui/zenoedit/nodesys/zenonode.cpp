@@ -449,7 +449,7 @@ ZenoParamWidget* ZenoNode::initParamWidget(ZenoSubGraphScene* scene, const PARAM
                 const QString& nodeid = m_index.data(ROLE_OBJID).toString();
 
                 PARAM_UPDATE_INFO info;
-                info.oldValue = pGraphsModel->getParamValue(nodeid, paramName, m_subGpIndex);
+                info.oldValue = UiHelper::getParamValue(m_index, paramName);
                 info.newValue = bChecked;
                 info.name = paramName;
                 if (info.oldValue != info.newValue)
@@ -530,7 +530,7 @@ ZenoParamWidget* ZenoNode::initParamWidget(ZenoSubGraphScene* scene, const PARAM
                 IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
                 ZASSERT_EXIT(pGraphsModel);
                 CurveModel* pModel = nullptr;
-                const QVariant& val = pGraphsModel->getParamValue(m_index.data(ROLE_OBJID).toString(), paramName, m_subGpIndex);
+                const QVariant& val = UiHelper::getParamValue(m_index, paramName);
                 pModel = QVariantPtr<CurveModel>::asPtr(val);
                 if (!pModel)
                 {
@@ -1704,7 +1704,7 @@ void ZenoNode::onCollaspeBtnClicked()
 {
 	IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
     ZASSERT_EXIT(pGraphsModel);
-    bool bCollasped = pGraphsModel->data2(m_subGpIndex, m_index, ROLE_COLLASPED).toBool();
+    bool bCollasped = m_index.data(ROLE_COLLASPED).toBool();
 
     STATUS_UPDATE_INFO info;
     info.role = ROLE_COLLASPED;
@@ -1720,7 +1720,7 @@ void ZenoNode::onOptionsBtnToggled(STATUS_BTN btn, bool toggled)
 	IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
 	ZASSERT_EXIT(pGraphsModel);
 
-    int options = pGraphsModel->data2(m_subGpIndex, m_index, ROLE_OPTIONS).toInt();
+    int options = m_index.data(ROLE_OPTIONS).toInt();
     int oldOpts = options;
 
     if (btn == STATUS_MUTE)
@@ -1826,7 +1826,7 @@ QVariant ZenoNode::itemChange(GraphicsItemChange change, const QVariant &value)
     {
         IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
         QPointF newPos = value.toPointF();
-        QPointF oldPos = pGraphsModel->getNodeStatus(nodeId(), ROLE_OBJPOS, m_subGpIndex).toPointF();
+        QPointF oldPos = m_index.data(ROLE_OBJPOS).toPointF();
         if (newPos != oldPos)
         {
             STATUS_UPDATE_INFO info;

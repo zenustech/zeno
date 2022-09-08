@@ -858,7 +858,18 @@ void ZenoSubGraphScene::keyPressEvent(QKeyEvent* event)
             {
                 IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
                 ZASSERT_EXIT(pGraphsModel);
-                pGraphsModel->removeNodeLinks(nodes, links, m_subgIdx);
+
+                pGraphsModel->beginTransaction("remove nodes and links");
+                for (const QModelIndex &linkIdx : links)
+                {
+                    pGraphsModel->removeLink(linkIdx, m_subgIdx, true);
+                }
+                for (const QModelIndex &nodeIdx : nodes)
+                {
+                    QString id = nodeIdx.data(ROLE_OBJID).toString();
+                    pGraphsModel->removeNode(id, m_subgIdx, true);
+                }
+                pGraphsModel->endTransaction();
             }
         }
     }

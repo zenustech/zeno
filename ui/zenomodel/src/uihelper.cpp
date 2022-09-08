@@ -846,3 +846,11 @@ QString UiHelper::gradient2colorString(const QLinearGradient& grad)
     }
     return colorStr;
 }
+
+QVariant UiHelper::getParamValue(const QModelIndex& idx, const QString& name)
+{
+    PARAMS_INFO params = idx.data(ROLE_PARAMETERS).value<PARAMS_INFO>();
+    if (params.find(name) == params.end())
+        return QVariant();
+    return params[name].value;
+}
