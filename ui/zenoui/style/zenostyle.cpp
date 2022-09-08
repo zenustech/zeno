@@ -350,7 +350,13 @@ void ZenoStyle::drawZenoToolButton(const ZStyleOptionToolButton* option, QPainte
         else
             mode = QIcon::Normal;
 
-        option->icon.paint(painter, rcIcon, Qt::AlignCenter, mode);
+        QIcon::State state;
+        if (pToolButton->isChecked())
+            state = QIcon::On;
+        else
+            state = QIcon::Off;
+
+        option->icon.paint(painter, rcIcon, Qt::AlignCenter, mode, state);
     }
 
     //draw text

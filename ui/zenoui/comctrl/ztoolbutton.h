@@ -28,6 +28,13 @@ public:
         const QSize& iconSize = QSize(),
         const QString& text = QString(),
         QWidget* parent = nullptr);
+    ZToolButton(
+        int option,
+        const QString& icon = "",
+        const QString& iconOn = "",
+        const QSize& iconSize = QSize(),
+        const QString& text = QString(),
+        QWidget* parent = nullptr);
     virtual ~ZToolButton();
 
 public:
@@ -84,6 +91,7 @@ private:
     QString m_customTip;
     QSize m_iconSize;
     QIcon m_icon;
+    QIcon m_iconOn;
     QFont m_font;
 
     QColor m_clrBgHover;

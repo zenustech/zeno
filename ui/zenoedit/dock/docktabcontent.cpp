@@ -11,6 +11,7 @@
 #include "graphsmanagment.h"
 #include <zenoui/model/modelrole.h>
 #include <zenoui/comctrl/zlinewidget.h>
+#include <zenoui/comctrl/ztoolbutton.h>
 
 
 DockContent_Parameter::DockContent_Parameter(QWidget* parent)
@@ -93,8 +94,16 @@ DockContent_Editor::DockContent_Editor(QWidget* parent)
     pToolLayout->setContentsMargins(ZenoStyle::dpiScaled(8), ZenoStyle::dpiScaled(4),
         ZenoStyle::dpiScaled(4), ZenoStyle::dpiScaled(4));
 
-    ZIconToolButton* pListViewBtn = new ZIconToolButton(":/icons/subnet-listview.svg", ":/icons/subnet-listview.svg");
-    pListViewBtn->setCheckable(true);
+    //ZIconToolButton* pListViewBtn = new ZIconToolButton(":/icons/subnet-listview.svg", ":/icons/subnet-listview.svg");
+    //pListViewBtn->setCheckable(true);
+    QColor bgOn("#4F5963");
+
+    ZToolButton* pListViewBtn = new ZToolButton(
+        ZToolButton::Opt_HasIcon | ZToolButton::Opt_Checkable,
+        ":/icons/subnet-listview.svg",
+        ":/icons/subnet-listview-on.svg");
+    pListViewBtn->setBackgroundClr(bgOn, bgOn, bgOn);
+
     ZIconToolButton* pTreeViewBtn = new ZIconToolButton(":/icons/subnet-treeview.svg", ":/icons/subnet-treeview-on.svg");
     pTreeViewBtn->setCheckable(true);
     ZIconToolButton* pSubnetMgr = new ZIconToolButton(":/icons/subnet-mgr.svg", ":/icons/subnet-mgr-on.svg");

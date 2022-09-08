@@ -20,6 +20,36 @@ ZToolButton::ZToolButton(int option, const QIcon& icon, const QSize& iconSize, c
     setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
 }
 
+ZToolButton::ZToolButton(int option, const QString& icon, const QString& iconOn, const QSize& iconSize, const QString& text, QWidget* parent)
+    : QWidget(parent)
+    , m_bDown(false)
+    , m_bChecked(false)
+    , m_bPressed(false)
+    , m_bHideText(false)
+    , m_bHovered(false)
+    , m_options(option)
+    , m_text(text)
+    , m_icon(QIcon(icon))
+    , m_iconOn(QIcon(iconOn))
+    , m_iconSize(iconSize)
+    , m_font(QFont("Microsoft YaHei", 9))
+{
+    if (!m_iconSize.isValid())
+    {
+        QPixmap px(icon);
+        m_iconSize = px.size();
+    }
+    m_icon.addFile(icon, m_iconSize, QIcon::Normal, QIcon::Off);
+    m_icon.addFile(iconOn, m_iconSize, QIcon::Active, QIcon::Off);
+    m_icon.addFile(iconOn, m_iconSize, QIcon::Selected, QIcon::Off);
+    m_icon.addFile(iconOn, m_iconSize, QIcon::Normal, QIcon::On);
+    m_icon.addFile(iconOn, m_iconSize, QIcon::Active, QIcon::On);
+    m_icon.addFile(iconOn, m_iconSize, QIcon::Selected, QIcon::On);
+
+    setMouseTracking(true);
+    setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+}
+
 ZToolButton::~ZToolButton()
 {
 }
