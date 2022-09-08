@@ -2,6 +2,7 @@
 #include "graphsmodel.h"
 #include "modelrole.h"
 #include "uihelper.h"
+#include "nodesmgr.h"
 #include "zassert.h"
 #include <zeno/zeno.h>
 #include <zenoui/util/cihou.h>
@@ -615,13 +616,13 @@ void GraphsModel::removeGraph(int idx)
     markDirty();
 }
 
-QModelIndex GraphsModel::fork(const QModelIndex& subgIdx /*the subgraph which subnetNodeIdx lays in*/, const QModelIndex &subnetNodeIdx)
+QModelIndex GraphsModel::fork(const QModelIndex& subgIdx, const QModelIndex &subnetNodeIdx)
 {
     const QString &subnetName = subnetNodeIdx.data(ROLE_OBJNAME).toString();
     SubGraphModel* pModel = subGraph(subnetName);
     ZASSERT_EXIT(pModel, QModelIndex());
 
-    NODE_DATA subnetData = _fork(subgIdx, subnetNodeIdx);
+    NODE_DATA subnetData = _fork(subnetName);
     SubGraphModel *pCurrentModel = subGraph(subgIdx.row());
     pCurrentModel->appendItem(subnetData, false);
 
@@ -629,10 +630,9 @@ QModelIndex GraphsModel::fork(const QModelIndex& subgIdx /*the subgraph which su
     return newForkNodeIdx;
 }
 
-NODE_DATA GraphsModel::_fork(const QModelIndex& subgIdx, const QModelIndex& subnetNodeIdx)
+NODE_DATA GraphsModel::_fork(const QString& forkSubgName)
 {
-    const QString &subnetName = subnetNodeIdx.data(ROLE_OBJNAME).toString();
-    SubGraphModel* pModel = subGraph(subnetName);
+    SubGraphModel* pModel = subGraph(forkSubgName);
     ZASSERT_EXIT(pModel, NODE_DATA());
 
     QMap<QString, NODE_DATA> nodes;
@@ -649,7 +649,7 @@ NODE_DATA GraphsModel::_fork(const QModelIndex& subgIdx, const QModelIndex& subn
             const QString& ssubnetName = idx.data(ROLE_OBJNAME).toString();
             SubGraphModel* psSubModel = subGraph(ssubnetName);
             ZASSERT_EXIT(psSubModel, NODE_DATA());
-            data = _fork(indexBySubModel(pModel), idx);
+            data = _fork(ssubnetName);
             const QString &subgNewNodeId = data[ROLE_OBJID].toString();
 
             nodes.insert(snodeId, pModel->itemData(idx));
@@ -675,7 +675,7 @@ NODE_DATA GraphsModel::_fork(const QModelIndex& subgIdx, const QModelIndex& subn
         }
     }
 
-    const QString& forkName = uniqueSubgraph(subnetName);
+    const QString& forkName = uniqueSubgraph(forkSubgName);
     SubGraphModel* pForkModel = new SubGraphModel(this);
     pForkModel->setName(forkName);
     appendSubGraph(pForkModel);
@@ -687,7 +687,7 @@ NODE_DATA GraphsModel::_fork(const QModelIndex& subgIdx, const QModelIndex& subn
     importNodes(nodes, links, QPointF(), newSubgIdx, false);
 
     //create the new fork subnet node at outter layer.
-    NODE_DATA subnetData = itemData(subnetNodeIdx, subgIdx);
+    NODE_DATA subnetData = NodesMgr::newNodeData(this, forkSubgName);
     subnetData[ROLE_OBJID] = UiHelper::generateUuid(forkName);
     subnetData[ROLE_OBJNAME] = forkName;
     //clear the link.

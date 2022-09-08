@@ -150,7 +150,7 @@ private:
     void initDescriptors();
     NODE_DESC getSubgraphDesc(SubGraphModel* pModel);
     void registerCate(const NODE_DESC& desc);
-    NODE_DATA _fork(const QModelIndex& subgIdx, const QModelIndex& subnetNodeIdx);
+    NODE_DATA _fork(const QString& forkSubgName);
     QString uniqueSubgraph(QString orginName);
 
     void beginApiLevel();

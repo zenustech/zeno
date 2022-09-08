@@ -43,8 +43,7 @@ void ReadFBXPrim::onEditClicked()
 
     // Get ReadFBXPrim ident
     ZENO_HANDLE fbxNode = index().internalId();
-    std::string fbxIdentStr;
-    Zeno_GetIdent(fbxNode, fbxIdentStr);
+    std::string fbxIdentStr = index().data(ROLE_OBJID).toString().toStdString();
 
     // Find corresponding node
     auto &inst = Zenovis::GetInstance();
@@ -93,12 +92,10 @@ void ReadFBXPrim::onEditClicked()
             Zeno_RenameGraph(forkedSubg, fbxPartGraphName);
 
             std::pair<float, float> fbxPartPos = {dictNodePos.first + 500.0f, dictNodePos.second};
-            ZENO_HANDLE newFbxPartNode = Zeno_AddNode(hGraph, fbxPartGraphName);
-            ZASSERT_EXIT(newFbxPartNode);
 
-            Zeno_SetPos(newFbxPartNode, fbxPartPos);
-            Zeno_AddLink(dictNode, "object", newFbxPartNode, "data");
-            Zeno_SetView(newFbxPartNode, true);
+            Zeno_SetPos(forkedNode, fbxPartPos);
+            Zeno_AddLink(dictNode, "object", forkedNode, "data");
+            Zeno_SetView(forkedNode, true);
         }
 
         Zeno_SetView(fbxNode, false);
