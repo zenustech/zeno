@@ -831,12 +831,17 @@ extern "C" __global__ void __closesthit__radiance()
 //        prd->radiance += shadow_prd2.shadowAttanuation * float3(proceduralSky(env_dir)) * lbrdf;
 //    }
 
+
+
+
     vec3 sunLightDir = vec3(
             params.sunLightDirX,
             params.sunLightDirY,
             params.sunLightDirZ
     );
-    auto sun_dir = normalize(sunLightDir);
+    auto sun_dir = BRDFBasics::halfPlaneSample(prd->seed, sunLightDir, 0.2);//perturb the sun to have some softness
+    sun_dir = normalize(sunLightDir);
+
     shadow_prd2.shadowAttanuation = make_float3(1.0f, 1.0f, 1.0f);
     shadow_prd2.nonThinTransHit = (thin==false && specTrans>0)? 1:0;
     traceOcclusion(params.handle, P, sun_dir,
