@@ -445,7 +445,6 @@ static void launchSubframe( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Path
     {
         auto &ud = zeno::getSession().userData();
         auto sunLightDir = ud.get2<zeno::vec2f>("sunLightDir", zeno::vec2f(0, 30));
-        zeno::log_info("fuck: {}", sunLightDir);
         sunLightDir[1] = clamp(sunLightDir[1], -90.f, 90.f);
         state.params.sunLightDirY = sin(sunLightDir[1] / 180.f * M_PI);
         state.params.sunLightDirX = cos(sunLightDir[1] / 180.f * M_PI) * sin(sunLightDir[0] / 180.f * M_PI);

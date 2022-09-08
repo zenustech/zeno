@@ -377,5 +377,8 @@ void ZenoLights::modifySunLightDir() {
     zeno::vec2f sunLightDir = zeno::vec2f(sunLongitudeValue, sunLatitudeValue);
     auto &ud = zeno::getSession().userData();
     ud.set2("sunLightDir", sunLightDir);
+    auto scene = Zenovis::GetInstance().getSession()->get_scene();
+    scene->objectsMan->needUpdateLight = true;
+    zenoApp->getMainWindow()->updateViewport();
 }
 
