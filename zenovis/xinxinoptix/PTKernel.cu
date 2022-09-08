@@ -110,6 +110,7 @@ extern "C" __global__ void __raygen__rg()
         prd.diffDepth = 0;
         prd.isSS = false;
         prd.direction = ray_direction;
+        prd.curMatIdx = 0;
         for( ;; )
         {
             traceRadiance(
