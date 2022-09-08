@@ -646,7 +646,10 @@ extern "C" __global__ void __closesthit__radiance()
         if(prd->is_inside){
             outToIn = true;
             inToOut = false;
-            if(prd->medium == DisneyBSDF::PhaseFunctions::isotropic){
+            //if(prd->medium == DisneyBSDF::PhaseFunctions::isotropic){
+                prd->medium = DisneyBSDF::PhaseFunctions::isotropic;
+                prd->attenuation *= prd->curMatIdx==0? vec3(1) : DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
+                prd->pushMat(extinction);
                 //prd->attenuation *= transmittanceColor;
                 prd->extinction = extinction;
                 prd->scatterDistance = scatterDistance;
@@ -656,16 +659,18 @@ extern "C" __global__ void __closesthit__radiance()
                 prd->maxDistance = DisneyBSDF::SampleDistance(prd->seed,prd->scatterStep,prd->extinction, tmpPDF);
                 //prd->maxDistance = scatterDistance;
                 prd->scatterPDF = tmpPDF;
-            }
+           //}
         }
         else{
             outToIn = false;
             inToOut = true;
             //prd->attenuation2 *= DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
             prd->attenuation *= DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
-            prd->maxDistance = 1e16f;
-            prd->medium = DisneyBSDF::PhaseFunctions::vacuum;
             prd->scatterPDF = 1.0;
+            prd->extinction = prd->popMat();
+            prd->medium = prd->curMatIdx==0?DisneyBSDF::PhaseFunctions::vacuum : DisneyBSDF::PhaseFunctions::isotropic;
+            float tmpPDF = 1.0f;
+            prd->maxDistance = prd->medium==DisneyBSDF::PhaseFunctions::isotropic ? DisneyBSDF::SampleDistance(prd->seed,prd->scatterStep,prd->extinction, tmpPDF) : 1e16;
         }
     }else{
 	    if(prd->medium == DisneyBSDF::PhaseFunctions::isotropic){
@@ -676,8 +681,12 @@ extern "C" __global__ void __closesthit__radiance()
                 prd->scatterPDF = tmpPDF;
 
 	    }
+            else
+            {
+                prd->maxDistance = 1e16f;
+            }
     }
-    prd->medium = prd->is_inside?DisneyBSDF::PhaseFunctions::isotropic : DisneyBSDF::PhaseFunctions::vacuum;
+    prd->medium = prd->is_inside?DisneyBSDF::PhaseFunctions::isotropic : prd->curMatIdx==0?DisneyBSDF::PhaseFunctions::vacuum : DisneyBSDF::PhaseFunctions::isotropic;
 
 
 
