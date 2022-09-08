@@ -31,6 +31,8 @@
 #include <zeno/utils/log.h>
 #include <zeno/utils/zeno_p.h>
 #include <zeno/types/MaterialObject.h>
+#include <zeno/types/UserData.h>
+#include "zeno/core/Session.h"
 #include <array>
 #include <optional>
 #include <cstring>
@@ -440,6 +442,15 @@ static void launchSubframe( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Path
     uchar4* result_buffer_data = output_buffer.map();
     state.params.frame_buffer  = result_buffer_data;
     state.params.num_lights = g_lights.size();
+    {
+        auto &ud = zeno::getSession().userData();
+        auto sunLightDir = ud.get2<zeno::vec2f>("sunLightDir", zeno::vec2f(0, 30));
+        zeno::log_info("fuck: {}", sunLightDir);
+        sunLightDir[1] = clamp(sunLightDir[1], -90.f, 90.f);
+        state.params.sunLightDirY = sin(sunLightDir[1] / 180.f * M_PI);
+        state.params.sunLightDirX = cos(sunLightDir[1] / 180.f * M_PI) * sin(sunLightDir[0] / 180.f * M_PI);
+        state.params.sunLightDirZ = cos(sunLightDir[1] / 180.f * M_PI) * cos(sunLightDir[0] / 180.f * M_PI);
+    }
     CUDA_CHECK( cudaMemcpy(
                 reinterpret_cast<void*>( (CUdeviceptr)state.d_params ),
                 &state.params, sizeof( Params ),
