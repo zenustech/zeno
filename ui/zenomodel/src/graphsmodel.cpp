@@ -636,6 +636,7 @@ NODE_DATA GraphsModel::_fork(const QModelIndex& subgIdx, const QModelIndex& subn
     ZASSERT_EXIT(pModel, NODE_DATA());
 
     QMap<QString, NODE_DATA> nodes;
+    QMap<QString, NODE_DATA> oldGraphsToNew;
     QList<EdgeInfo> links;
     for (int r = 0; r < pModel->rowCount(); r++)
     {
@@ -644,11 +645,15 @@ NODE_DATA GraphsModel::_fork(const QModelIndex& subgIdx, const QModelIndex& subn
         NODE_DATA data;
         if (IsSubGraphNode(idx))
         {
+            const QString& snodeId = idx.data(ROLE_OBJID).toString();
             const QString& ssubnetName = idx.data(ROLE_OBJNAME).toString();
             SubGraphModel* psSubModel = subGraph(ssubnetName);
             ZASSERT_EXIT(psSubModel, NODE_DATA());
             data = _fork(indexBySubModel(pModel), idx);
-            nodes.insert(data[ROLE_OBJID].toString(), data);
+            const QString &subgNewNodeId = data[ROLE_OBJID].toString();
+
+            nodes.insert(snodeId, pModel->itemData(idx));
+            oldGraphsToNew.insert(snodeId, data);
         }
         else
         {
@@ -674,7 +679,7 @@ NODE_DATA GraphsModel::_fork(const QModelIndex& subgIdx, const QModelIndex& subn
     SubGraphModel* pForkModel = new SubGraphModel(this);
     pForkModel->setName(forkName);
     appendSubGraph(pForkModel);
-    UiHelper::reAllocIdents(nodes, links);
+    UiHelper::reAllocIdents(nodes, links, oldGraphsToNew);
 
     QModelIndex newSubgIdx = indexBySubModel(pForkModel);
 

@@ -698,18 +698,34 @@ QString UiHelper::nthSerialNumName(QString name)
     }
 }
 
-void UiHelper::reAllocIdents(QMap<QString, NODE_DATA>& nodes, QList<EdgeInfo>& links)
+void UiHelper::reAllocIdents(
+            QMap<QString, NODE_DATA>& nodes,
+            QList<EdgeInfo>& links,
+            const QMap<QString, NODE_DATA>& oldGraphsToNew)
 {
     QMap<QString, QString> old2new;
     QMap<QString, NODE_DATA> newNodes;
-    for (QString key : nodes.keys()) {
+    for (QString key : nodes.keys())
+    {
         const NODE_DATA data = nodes[key];
         const QString& oldId = data[ROLE_OBJID].toString();
         const QString& name = data[ROLE_OBJNAME].toString();
-        const QString& newId = UiHelper::generateUuid(name);
-        NODE_DATA newData = data;
-        newData[ROLE_OBJID] = newId;
-        newNodes.insert(newId, newData);
+        QString newId;
+
+        if (oldGraphsToNew.find(oldId) != oldGraphsToNew.end())
+        {
+            //fork case.
+            NODE_DATA newData = oldGraphsToNew[oldId];
+            newId = newData[ROLE_OBJID].toString();
+            newNodes.insert(newId, newData);
+        }
+        else
+        {
+            newId = UiHelper::generateUuid(name);
+            NODE_DATA newData = data;
+            newData[ROLE_OBJID] = newId;
+            newNodes.insert(newId, newData);
+        }
         old2new.insert(oldId, newId);
     }
     //replace all the old-id in newNodes.
