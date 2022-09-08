@@ -284,13 +284,12 @@ void ZenoLBvh<dim, lane_width, Index, Value, Allocator>::build(
          });
 
   // sort by morton codes
-#if 1
-  auto sortedMcs = mcs;
-  auto sortedIndices = indices;
-  thrust::sort_by_key(thrust::cuda::par.on((cudaStream_t)policy.getStream()),
-                      thrust::device_pointer_cast(sortedMcs.data()),
-                      thrust::device_pointer_cast(sortedMcs.data() + numLeaves),
-                      thrust::device_pointer_cast(sortedIndices.data()));
+#if 0
+    auto sortedMcs = mcs;
+    auto sortedIndices = indices;
+    thrust::sort_by_key(
+        thrust::cuda::par.on((cudaStream_t)policy.getStream()), thrust::device_pointer_cast(sortedMcs.data()),
+        thrust::device_pointer_cast(sortedMcs.data() + numLeaves), thrust::device_pointer_cast(sortedIndices.data()));
 #else
   Vector<mc_t> sortedMcs{primBvs.get_allocator(), numLeaves};
   indices_t sortedIndices{primBvs.get_allocator(), numLeaves};
@@ -387,6 +386,8 @@ void ZenoLBvh<dim, lane_width, Index, Value, Allocator>::build(
         auto LZ = __clz(lCode ^ rCode);
         Ti step, len;
         for (step = (j - i + 1) >> 1, len = 0; true; step = (step + 1) >> 1) {
+          if (i + len + step > numTrunk)
+            continue;
           if (__clz(mcs(i + len + step) ^ lCode) > LZ)
             len += step;
           if (step <= 1)
@@ -462,8 +463,8 @@ void ZenoLBvh<dim, lane_width, Index, Value, Allocator>::build(
           }
         } else {
           if (int p = lPars[ch - numTrunk]; p != par) {
-            printf("leaf child %d\' parent %d <%d, %d> not %d <%d, %d>!\n", ch,
-                   p, tLs[p], tRs[p], par, tLs[par], tRs[par]);
+            printf("leaf child %d\' parent %d <%d, %d> not %d <%d, %d>!\n",
+                   ch - numTrunk, p, tLs[p], tRs[p], par, tLs[par], tRs[par]);
           }
         }
       };
@@ -505,13 +506,26 @@ void ZenoLBvh<dim, lane_width, Index, Value, Allocator>::build(
         lca = tPars[node];
       }
       lca = node;
-      if (lLcas[lcc] != lca)
+      if (lLcas[lcc] != lca) {
         printf("lca mismatch! leaf %d lca %d (found lca %d)\n", lcc, lLcas[lcc],
                lca);
+        if (idx == 0) {
+          int cnt = 0;
+          int id = idx;
+          int depth = 1;
+          while (id < numTrunk) {
+            int lch = tLcs[id];
+            printf("tk node %d <%d (depth %d), %d> cur depth %d, lch "
+                   "%d\n",
+                   id, tLs[id], lDepths[tLs[id]], tRs[id], depth++, lch);
+            id = lch;
+          }
+        }
+      }
     });
+    puts("done original topo check");
+    getchar();
   }
-  // puts("done original topo check");
-  // getchar();
 
   // reorder leaf
   policy(range(numLeaves),
@@ -553,10 +567,7 @@ void ZenoLBvh<dim, lane_width, Index, Value, Allocator>::build(
     reduce(policy, std::begin(tab), std::end(tab), std::begin(tmp), (u64)0);
     chkSum = tmp.getVal();
     fmt::print("end sum {}\n", chkSum);
-    puts("done mapping check");
-    getchar();
   }
-
   // reorder trunk
   policy(range(numTrunk),
          [lLcas, lOffsets, auxIndices = proxy<space>(auxIndices),
@@ -577,10 +588,7 @@ void ZenoLBvh<dim, lane_width, Index, Value, Allocator>::build(
              parents[dst] = -1;
            // levels for trunk are already set
          });
-
   if constexpr (false) {
-    puts("\ncheck in the end\n");
-    // check right childs
     policy(range(numTrunk), [lDepths, lOffsets, tLs, tRs, tLcs, tRcs, tPars,
                              lPars, lLcas, tDst,
                              auxIndices = proxy<space>(auxIndices),
@@ -717,7 +725,6 @@ void ZenoLBvh<dim, lane_width, Index, Value, Allocator>::build(
           printf("left leaf ch escape not right!.\n");
       }
     });
-    getchar();
   }
   // zeno::log_info("done bvh build");
   if constexpr (Refit) {
