@@ -1,5 +1,6 @@
 #include <zeno/zeno.h>
 #include <zeno/types/ListObject.h>
+#include <zeno/types/DictObject.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/utils/string.h>
 #include <sstream>
@@ -25,10 +26,23 @@ ZENDEFNODE(ListLength, {
 
 struct ListGetItem : zeno::INode {
     virtual void apply() override {
-        auto list = get_input<zeno::ListObject>("list");
+        auto obj_get = get_input("list");
+        auto list_obj = dynamic_cast<zeno::ListObject*>(obj_get.get());
+        auto dict_obj = dynamic_cast<zeno::DictObject*>(obj_get.get());
         auto index = get_input<zeno::NumericObject>("index")->get<int>();
-        auto obj = list->arr.at(index);
-        set_output("object", std::move(obj));
+        if(list_obj != nullptr){
+            auto list = get_input<zeno::ListObject>("list");
+            auto obj = list->arr.at(index);
+            set_output("object", std::move(obj));
+        }else if(dict_obj != nullptr){
+            auto dict = get_input<zeno::DictObject>("list");
+            std::vector<std::string> keys;
+            for (auto it = dict->lut.begin(); it != dict->lut.end(); it++) {
+                keys.push_back(it->first);
+            }
+            auto obj = dict->lut.at(keys[index]);
+            set_output("object", std::move(obj));
+        }
     }
 };
 

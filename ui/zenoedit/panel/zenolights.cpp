@@ -1,5 +1,9 @@
 #include "zenolights.h"
+#include "graphsmanagment.h"
+#include "model/graphsmodel.h"
+#include "model/modelrole.h"
 #include "viewport/zenovis.h"
+#include "viewport/viewportwidget.h"
 #include "zenoapplication.h"
 #include "zenomainwindow.h"
 #include "zeno/utils/log.h"
@@ -9,7 +13,6 @@
 #include <zenovis/ObjectsManager.h>
 #include <zeno/types/UserData.h>
 #include <glm/glm.hpp>
-#include <glm/vec3.hpp>
 
 ZenoLights::ZenoLights(QWidget *parent) : QWidget(parent) {
     QVBoxLayout* pMainLayout = new QVBoxLayout;
@@ -46,9 +49,28 @@ ZenoLights::ZenoLights(QWidget *parent) : QWidget(parent) {
 
     QHBoxLayout* pTitleLayout = new QHBoxLayout;
 
-    QLabel* pPrim = new QLabel(tr("Light: "));
-    pPrim->setProperty("cssClass", "proppanel");
-    pTitleLayout->addWidget(pPrim);
+    write_btn->setProperty("cssClass", "grayButton");
+    write_all_btn->setProperty("cssClass", "grayButton");
+    connect(write_btn, &QPushButton::clicked, this, [&](){
+        QModelIndex index = lights_view->currentIndex();
+        if (index.row() >= 0) {
+            QString primid = index.data(Qt::DisplayRole).toString();
+            if (primid.contains("LightNode")) {
+                write_param_into_node(primid);
+            }
+        }
+    });
+    connect(write_all_btn, &QPushButton::clicked, this, [&](){
+        auto scene = Zenovis::GetInstance().getSession()->get_scene();
+        for (auto const &[key, ptr]: scene->objectsMan->lightObjects) {
+            if (key.find("LightNode") != std::string::npos) {
+                QString primid = QString(key.c_str());
+                write_param_into_node(primid);
+            }
+        }
+    });
+    pTitleLayout->addWidget(write_btn);
+    pTitleLayout->addWidget(write_all_btn);
 
     pPrimName->setProperty("cssClass", "proppanel");
     pTitleLayout->addWidget(pPrimName);
@@ -59,6 +81,8 @@ ZenoLights::ZenoLights(QWidget *parent) : QWidget(parent) {
     lights_view->setProperty("cssClass", "proppanel");
     lights_view->setModel(this->dataModel);
     pMainLayout->addWidget(lights_view);
+
+    zenoApp->getMainWindow()->lightPanel = this;
 
     connect(lights_view, &QListView::pressed, this, [&](auto & index){
         std::string name = this->dataModel->light_names[index.row()];
@@ -254,6 +278,42 @@ ZenoLights::ZenoLights(QWidget *parent) : QWidget(parent) {
         intensityEdit->setValidator(new QDoubleValidator);
     }
 
+    {
+        QHBoxLayout* pCamAperture = new QHBoxLayout();
+        QLabel* camAperture = new QLabel("CameraAperture: ");
+        camAperture->setProperty("cssClass", "proppanel");
+        pCamAperture->addWidget(camAperture);
+        QLabel* cav = new QLabel(" v: ");
+        cav->setProperty("cssClass", "proppanel");
+        pCamAperture->addWidget(cav);
+        camApertureEdit->setProperty("cssClass", "proppanel");
+        pCamAperture->addWidget(camApertureEdit);
+
+        pMainLayout->addLayout(pCamAperture);
+
+        camApertureEdit->setNumSlider({ .0001, .001, .01, .1, 1, 10, 100 });
+        camApertureEdit->setProperty("cssClass", "proppanel");
+        camApertureEdit->setValidator(new QDoubleValidator);
+    }
+
+    {
+        QHBoxLayout* pCamDisPlane = new QHBoxLayout();
+        QLabel* camDisPlane = new QLabel("CameraDistancePlane: ");
+        camDisPlane->setProperty("cssClass", "proppanel");
+        pCamDisPlane->addWidget(camDisPlane);
+        QLabel* cdpv = new QLabel(" v: ");
+        cdpv->setProperty("cssClass", "proppanel");
+        pCamDisPlane->addWidget(cdpv);
+        camDisPlaneEdit->setProperty("cssClass", "proppanel");
+        pCamDisPlane->addWidget(camDisPlaneEdit);
+
+        pMainLayout->addLayout(pCamDisPlane);
+
+        camDisPlaneEdit->setNumSlider({ .0001, .001, .01, .1, 1, 10, 100 });
+        camDisPlaneEdit->setProperty("cssClass", "proppanel");
+        camDisPlaneEdit->setValidator(new QDoubleValidator);
+    }
+
     pStatusBar->setProperty("cssClass", "proppanel");
     pMainLayout->addWidget(pStatusBar);
 
@@ -277,6 +337,17 @@ ZenoLights::ZenoLights(QWidget *parent) : QWidget(parent) {
     connect(colorZEdit, &QLineEdit::textChanged, this, [&](){ modifyLightData(); });
 
     connect(intensityEdit, &QLineEdit::textChanged, this, [&](){ modifyLightData(); });
+
+    connect(camApertureEdit, &QLineEdit::textChanged, this, [&](){
+        zenoApp->getMainWindow()->getDisplayWidget()->getViewportWidget()->updateCameraProp(
+            camApertureEdit->text().toFloat(), camDisPlaneEdit->text().toFloat());
+        zenoApp->getMainWindow()->updateViewport();
+    });
+    connect(camDisPlaneEdit, &QLineEdit::textChanged, this, [&](){
+        zenoApp->getMainWindow()->getDisplayWidget()->getViewportWidget()->updateCameraProp(
+            camApertureEdit->text().toFloat(), camDisPlaneEdit->text().toFloat());
+        zenoApp->getMainWindow()->updateViewport();
+    });
 
     updateLights();
 }
@@ -382,3 +453,36 @@ void ZenoLights::modifySunLightDir() {
     zenoApp->getMainWindow()->updateViewport();
 }
 
+void ZenoLights::write_param_into_node(const QString& primid) {
+    auto scene = Zenovis::GetInstance().getSession()->get_scene();
+    if (scene->objectsMan->lightObjects.find(primid.toStdString()) == scene->objectsMan->lightObjects.end()) {
+        return;
+    }
+    auto light = scene->objectsMan->lightObjects[primid.toStdString()];
+    auto ud = light->userData();
+    IGraphsModel* pIGraphsModel = zenoApp->graphsManagment()->currentModel();
+    if (pIGraphsModel == nullptr) {
+        return;
+    }
+    auto subgraphIndices = pIGraphsModel->subgraphsIndice();
+
+    for (const auto &subGpIdx: subgraphIndices) {
+        auto items = pIGraphsModel->nodes(subGpIdx);
+        for (const auto &item: items) {
+            if (item[ROLE_OBJID].toString().contains(primid.split(':').front())) {
+                auto inputs = item[ROLE_INPUTS].value<INPUT_SOCKETS>();
+                auto p = ud.get2<zeno::vec3f>("pos");
+                auto s = ud.get2<zeno::vec3f>("scale");
+                auto r = ud.get2<zeno::vec3f>("rotate");
+                auto c = ud.get2<zeno::vec3f>("color");
+                inputs["position"].info.defaultValue.setValue(UI_VECTYPE({p[0], p[1], p[2]}));
+                inputs["scale"].info.defaultValue.setValue(UI_VECTYPE({s[0], s[1], s[2]}));
+                inputs["rotate"].info.defaultValue.setValue(UI_VECTYPE({r[0], r[1], r[2]}));
+                inputs["color"].info.defaultValue.setValue(UI_VECTYPE({c[0], c[1], c[2]}));
+                inputs["intensity"].info.defaultValue = (double)ud.get2<float>("intensity");
+                auto nodeIndex = pIGraphsModel->index(item[ROLE_OBJID].toString(), subGpIdx);
+                pIGraphsModel->setNodeData(nodeIndex, subGpIdx, QVariant::fromValue(inputs), ROLE_INPUTS);
+            }
+        }
+    }
+}
