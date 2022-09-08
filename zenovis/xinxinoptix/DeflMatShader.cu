@@ -832,6 +832,7 @@ extern "C" __global__ void __closesthit__radiance()
 //    }
 
     auto sun_dir = normalize(vec3(-1.2,.8,0.5));
+    sun_dir = BRDFBasics::halfPlaneSample(prd->seed, sun_dir, 0.1);//perturb the sun to have some softness
     shadow_prd2.shadowAttanuation = make_float3(1.0f, 1.0f, 1.0f);
     shadow_prd2.nonThinTransHit = (thin==false && specTrans>0)? 1:0;
     traceOcclusion(params.handle, P, sun_dir,

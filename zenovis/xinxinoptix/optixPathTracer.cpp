@@ -1346,7 +1346,7 @@ void optixupdatelight() {
 
     CUDA_CHECK( cudaMalloc(
                 reinterpret_cast<void**>( &state.lightsbuf_p.reset() ),
-                sizeof( ParallelogramLight ) * g_lights.size()
+                sizeof( ParallelogramLight ) * std::max(g_lights.size(),(size_t)1)
                 ) );
     state.params.lights = (ParallelogramLight*)(CUdeviceptr)state.lightsbuf_p;
     if (g_lights.size())
