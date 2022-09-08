@@ -7,6 +7,7 @@
 #include "zenoapplication.h"
 #include "zenomainwindow.h"
 #include "zeno/utils/log.h"
+#include "zeno/core/Session.h"
 #include <zeno/types/PrimitiveObject.h>
 #include <zenoui/comctrl/zcombobox.h>
 #include <zenovis/ObjectsManager.h>
@@ -25,6 +26,26 @@ ZenoLights::ZenoLights(QWidget *parent) : QWidget(parent) {
     setAutoFillBackground(true);
 
     setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Expanding);
+
+    QHBoxLayout* pSunLightLayout = new QHBoxLayout;
+
+    QLabel* sunLongitudeLabel = new QLabel(tr("sunLongitude: "));
+    sunLongitudeLabel->setProperty("cssClass", "proppanel");
+    pSunLightLayout->addWidget(sunLongitudeLabel);
+
+    sunLongitude->setProperty("cssClass", "proppanel");
+    sunLongitude->setNumSlider({ .1, 1, 10 });
+    pSunLightLayout->addWidget(sunLongitude);
+
+    QLabel* sunLatitudeLabel = new QLabel(tr("sunLatitude: "));
+    sunLatitudeLabel->setProperty("cssClass", "proppanel");
+    pSunLightLayout->addWidget(sunLatitudeLabel);
+
+    sunLatitude->setProperty("cssClass", "proppanel");
+    sunLatitude->setNumSlider({ .1, 1, 10 });
+    pSunLightLayout->addWidget(sunLatitude);
+
+    pMainLayout->addLayout(pSunLightLayout);
 
     QHBoxLayout* pTitleLayout = new QHBoxLayout;
 
@@ -296,6 +317,9 @@ ZenoLights::ZenoLights(QWidget *parent) : QWidget(parent) {
     pStatusBar->setProperty("cssClass", "proppanel");
     pMainLayout->addWidget(pStatusBar);
 
+    connect(sunLatitude, &QLineEdit::textChanged, this, [&](){ modifySunLightDir(); });
+    connect(sunLongitude, &QLineEdit::textChanged, this, [&](){ modifySunLightDir(); });
+
     connect(posXEdit, &QLineEdit::textChanged, this, [&](){ modifyLightData(); });
     connect(posYEdit, &QLineEdit::textChanged, this, [&](){ modifyLightData(); });
     connect(posZEdit, &QLineEdit::textChanged, this, [&](){ modifyLightData(); });
@@ -416,6 +440,17 @@ void ZenoLights::modifyLightData() {
     }else{
         zeno::log_info("modifyLightData not found {}", name);
     }
+}
+
+void ZenoLights::modifySunLightDir() {
+    float sunLongitudeValue = sunLongitude->text().toFloat();
+    float sunLatitudeValue = sunLatitude->text().toFloat();
+    zeno::vec2f sunLightDir = zeno::vec2f(sunLongitudeValue, sunLatitudeValue);
+    auto &ud = zeno::getSession().userData();
+    ud.set2("sunLightDir", sunLightDir);
+    auto scene = Zenovis::GetInstance().getSession()->get_scene();
+    scene->objectsMan->needUpdateLight = true;
+    zenoApp->getMainWindow()->updateViewport();
 }
 
 void ZenoLights::write_param_into_node(const QString& primid) {
