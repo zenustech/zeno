@@ -634,7 +634,7 @@ namespace DisneyBSDF{
             }else{
                 if( Transmit(wm, wo,relativeIOR, wi)){
                     flag = transmissionEvent;
-                    phaseFuncion = (!is_inside)  ? isotropic : vacuum;
+                    //phaseFuncion = (!is_inside)  ? isotropic : vacuum;
                     extinction = CalculateExtinction(transmittanceColor, scatterDistance);
                 }else{
                     flag = scatterEvent;
@@ -731,7 +731,7 @@ namespace DisneyBSDF{
                 color = sqrt(transmittanceColor);
             }else{
                 flag = transmissionEvent;
-                phaseFuncion = (!is_inside)  ? isotropic : vacuum;
+                //phaseFuncion = (!is_inside)  ? isotropic : vacuum;
                 extinction = CalculateExtinction(sssColor, scatterDistance);
                 color = transmittanceColor;
 
@@ -952,7 +952,8 @@ static __inline__ __device__
                 0,0,1);
 
 }
-static __inline__ __device__ vec3 proceduralSky(vec3 dir)
+
+static __inline__ __device__ vec3 proceduralSky2(vec3 dir, vec3 sunLightDir)
 {
 
     float bright = 1*(1.8-0.55);
@@ -974,8 +975,7 @@ static __inline__ __device__ vec3 proceduralSky(vec3 dir)
     clouds = mix(skyCol,cloudColComb,cloudsFormComb);
 
     vec3 localRay = normalize(dir);
-    vec3 light = normalize(vec3(-1.2,.8,0.5));
-    float sunIntensity = 1.0 - (dot(localRay, light) * 0.5 + 0.5);
+    float sunIntensity = 1.0 - (dot(localRay, sunLightDir) * 0.5 + 0.5);
     sunIntensity = 0.2 / sunIntensity;
     sunIntensity = min(sunIntensity, 40000.0);
     sunIntensity = max(0.0, sunIntensity - 3.0);
