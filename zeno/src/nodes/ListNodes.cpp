@@ -31,12 +31,12 @@ struct ListGetItem : zeno::INode {
             auto dict = get_input<zeno::DictObject>("list");
             if (index < 0 || index >= dict->lut.size())
                 throw makeError<IndexError>(index, dict->lut.size(), "ListGetItem (for dict)");
-            auto obj = *std::next(dict->lut.begin(), index);
+            auto obj = std::next(dict->lut.begin(), index)->second;
             set_output("object", std::move(obj));
         } else {
             auto list = get_input<zeno::ListObject>("list");
             if (index < 0 || index >= list->arr.size())
-                throw makeError<IndexError>(index, lst->arr.size(), "ListGetItem");
+                throw makeError<IndexError>(index, list->arr.size(), "ListGetItem");
             auto obj = list->arr[index];
             set_output("object", std::move(obj));
         }
