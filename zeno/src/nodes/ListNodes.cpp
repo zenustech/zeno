@@ -26,21 +26,18 @@ ZENDEFNODE(ListLength, {
 
 struct ListGetItem : zeno::INode {
     virtual void apply() override {
-        auto obj_get = get_input("list");
-        auto list_obj = dynamic_cast<zeno::ListObject*>(obj_get.get());
-        auto dict_obj = dynamic_cast<zeno::DictObject*>(obj_get.get());
         auto index = get_input<zeno::NumericObject>("index")->get<int>();
-        if(list_obj != nullptr){
-            auto list = get_input<zeno::ListObject>("list");
-            auto obj = list->arr.at(index);
-            set_output("object", std::move(obj));
-        }else if(dict_obj != nullptr){
+        if (has_input<DictObject>("list")) {
             auto dict = get_input<zeno::DictObject>("list");
-            std::vector<std::string> keys;
-            for (auto it = dict->lut.begin(); it != dict->lut.end(); it++) {
-                keys.push_back(it->first);
-            }
-            auto obj = dict->lut.at(keys[index]);
+            if (index < 0 || index >= dict->lut.size())
+                throw makeError<IndexError>(index, dict->lut.size(), "ListGetItem (for dict)");
+            auto obj = *std::next(dict->lut.begin(), index);
+            set_output("object", std::move(obj));
+        } else {
+            auto list = get_input<zeno::ListObject>("list");
+            if (index < 0 || index >= list->arr.size())
+                throw makeError<IndexError>(index, lst->arr.size(), "ListGetItem");
+            auto obj = list->arr[index];
             set_output("object", std::move(obj));
         }
     }
