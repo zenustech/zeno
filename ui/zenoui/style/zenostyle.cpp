@@ -333,7 +333,11 @@ void ZenoStyle::drawZenoToolButton(const ZStyleOptionToolButton* option, QPainte
         QRect rect = option->rect;
         //todo: round corner
         QBrush bgBrush = option->palette.brush(QPalette::Active, QPalette::Window);
-        painter->fillRect(rect, bgBrush);
+
+        QPainterPath path;
+        path.addRoundedRect(rect, option->bgRadius, option->bgRadius);
+
+        painter->fillPath(path, bgBrush);
     }
 
     //draw icon 

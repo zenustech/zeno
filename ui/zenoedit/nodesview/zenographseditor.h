@@ -41,6 +41,7 @@ public slots:
     void onSearchOptionClicked();
     void onPageActivated(const QPersistentModelIndex& subgIdx, const QPersistentModelIndex& nodeIdx);
     void onLogInserted(const QModelIndex& parent, int first, int last);
+    void onSubnetListPanel(bool bShow);
 
 private slots:
 	void onSubGraphsToRemove(const QModelIndex&, int, int);

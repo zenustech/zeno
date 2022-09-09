@@ -313,11 +313,12 @@ void ZenoMainWindow::updateViewport(const QString& action)
         dock->onUpdateViewport(action);
     }
 }
+
 DisplayWidget* ZenoMainWindow::getDisplayWidget()
 {
-    DisplayWidget* view = qobject_cast<DisplayWidget*>(m_viewDock->widget());
-    if (view)
-        return view;
+    //DisplayWidget* view = qobject_cast<DisplayWidget*>(m_viewDock->widget());
+    //if (view)
+    //    return view;
     return nullptr;
 }
 

@@ -47,34 +47,6 @@ ZenoDockWidget::~ZenoDockWidget()
 
 void ZenoDockWidget::setWidget(DOCK_TYPE type, QWidget* widget)
 {
-    m_type = type;
-    if (m_type == DOCK_NODE_PARAMS)
-    {
-        m_tabWidget = new ZDockTabWidget;
-        m_tabWidget->addTab(widget, "Parameter");
-
-        QWidget* pWidget1 = new QWidget;
-        pWidget1->setAutoFillBackground(true);
-        QPalette pal = pWidget1->palette();
-        pal.setColor(QPalette::Window, QColor(44,51,58));
-        pWidget1->setPalette(pal);
-
-        QWidget* pWidget2 = new QWidget;
-        pWidget2->setAutoFillBackground(true);
-        pal = pWidget2->palette();
-        pal.setColor(QPalette::Window, QColor(44, 51, 58));
-        pWidget2->setPalette(pal);
-
-        m_tabWidget->addTab(pWidget1, "Parameter");
-        m_tabWidget->addTab(pWidget2, "Parameter");
-        _base::setWidget(m_tabWidget);
-        setTitleBarWidget(new QWidget(this));
-
-        connect(m_tabWidget, SIGNAL(addClicked()), this, SLOT(onAddTabClicked()));
-
-        return;
-    }
-
     _base::setWidget(widget);
 	m_type = type;
     ZenoDockTitleWidget* pTitleWidget = nullptr;
@@ -125,34 +97,18 @@ void ZenoDockWidget::setWidget(DOCK_TYPE type, QWidget* widget)
 void ZenoDockWidget::onNodesSelected(const QModelIndex& subgIdx, const QModelIndexList& nodes, bool select)
 {
     if (m_type == DOCK_NODE_PARAMS) {
-        ZenoPropPanel* panel = nullptr;
-        if (QTabWidget* pTabWidget = qobject_cast<QTabWidget*>(widget()))
-        {
-            for (int i = 0; i < pTabWidget->count(); i++)
-            {
-                panel = qobject_cast<ZenoPropPanel*>(pTabWidget->widget(i));
-                if (panel)
-                    break;
-            }
-        }
-        else if (panel = qobject_cast<ZenoPropPanel*>(widget()))
-        {
-        }
-
+        ZenoPropPanel* panel = qobject_cast<ZenoPropPanel*>(widget());
         ZASSERT_EXIT(panel);
 
         IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
         ZenoPropDockTitleWidget* pPropTitle = qobject_cast<ZenoPropDockTitleWidget*>(titleBarWidget());
-        if (pPropTitle)
-        {
-            if (select) {
-                const QModelIndex& idx = nodes[0];
-                QString nodeName = pModel->data2(subgIdx, idx, ROLE_OBJNAME).toString();
-                pPropTitle->setTitle(nodeName);
-            }
-            else {
-                pPropTitle->setTitle(tr("property"));
-            }
+        if (select) {
+            const QModelIndex& idx = nodes[0];
+            QString nodeName = pModel->data2(subgIdx, idx, ROLE_OBJNAME).toString();
+            pPropTitle->setTitle(nodeName);
+        }
+        else {
+            pPropTitle->setTitle(tr("property"));
         }
         panel->reset(pModel, subgIdx, nodes, select);
     }
@@ -226,57 +182,12 @@ void ZenoDockWidget::init(ZenoMainWindow* pMainWin)
     palette.setBrush(QPalette::Window, QColor(38, 38, 38));
     palette.setBrush(QPalette::WindowText, QColor());
     setPalette(palette);
-    if (!windowTitle().isEmpty())
-    {
-        ZenoDockTitleWidget* pTitleWidget = new ZenoDockTitleWidget;
-        pTitleWidget->setupUi();
-        setTitleBarWidget(pTitleWidget);
-        connect(pTitleWidget, SIGNAL(dockOptionsClicked()), this, SLOT(onDockOptionsClicked()));
-        connect(pTitleWidget, SIGNAL(dockSwitchClicked(DOCK_TYPE)), this, SIGNAL(dockSwitchClicked(DOCK_TYPE)));
-    }
-    else {
-        //setTitleBarWidget(new QWidget(this));
-    }
+    ZenoDockTitleWidget *pTitleWidget = new ZenoDockTitleWidget;
+    pTitleWidget->setupUi();
+    setTitleBarWidget(pTitleWidget);
+    connect(pTitleWidget, SIGNAL(dockOptionsClicked()), this, SLOT(onDockOptionsClicked()));
+    connect(pTitleWidget, SIGNAL(dockSwitchClicked(DOCK_TYPE)), this, SIGNAL(dockSwitchClicked(DOCK_TYPE)));
     connect(this, SIGNAL(dockSwitchClicked(DOCK_TYPE)), pMainWin, SLOT(onDockSwitched(DOCK_TYPE)));
-}
-
-void ZenoDockWidget::onAddTabClicked()
-{
-    QMenu* menu = new QMenu(this);
-    QFont font("HarmonyOS Sans", 12);
-    font.setBold(false);
-    menu->setFont(font);
-
-    static QList<QString> panels = { tr("Parameter"), tr("View"), tr("Editor"), tr("Data"), tr("Logger") };
-    for (QString name : panels)
-    {
-        QAction* pAction = new QAction(name);
-        connect(pAction, &QAction::triggered, this, [=]() {
-            if (name == tr("Parameter")) {
-                int idx = m_tabWidget->addTab(new ZenoPropPanel, name);
-                m_tabWidget->setCurrentIndex(idx);
-            }
-            else if (name == tr("View")) {
-                int idx = m_tabWidget->addTab(new DisplayWidget, name);
-                m_tabWidget->setCurrentIndex(idx);
-            }
-            else if (name == tr("Editor")) {
-                ZenoMainWindow* pMainWin = zenoApp->getMainWindow();
-                int idx = m_tabWidget->addTab(new ZenoGraphsEditor(pMainWin), name);
-                m_tabWidget->setCurrentIndex(idx);
-            }
-            else if (name == tr("Data")) {
-                int idx = m_tabWidget->addTab(new ZenoSpreadsheet, name);
-                m_tabWidget->setCurrentIndex(idx);
-            }
-            else if (name == tr("Logger")) {
-                int idx = m_tabWidget->addTab(new ZlogPanel, name);
-                m_tabWidget->setCurrentIndex(idx);
-            }
-        });
-        menu->addAction(pAction);
-    }
-    menu->exec(QCursor::pos());
 }
 
 void ZenoDockWidget::onDockOptionsClicked()
@@ -285,7 +196,6 @@ void ZenoDockWidget::onDockOptionsClicked()
     QFont font("HarmonyOS Sans", 12);
     font.setBold(false);
     menu->setFont(font);
-
     QAction* pSplitHor = new QAction("Split Left/Right");
     QAction* pSplitVer = new QAction("Split Top/Bottom");
     QAction* pMaximize = new QAction("Maximize");

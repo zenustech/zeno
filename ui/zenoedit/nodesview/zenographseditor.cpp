@@ -558,6 +558,11 @@ void ZenoGraphsEditor::onSearchItemClicked(const QModelIndex& index)
     }
 }
 
+void ZenoGraphsEditor::onSubnetListPanel(bool bShow)
+{
+    m_ui->stackedWidget->setVisible(bShow);
+}
+
 void ZenoGraphsEditor::onMenuActionTriggered(QAction* pAction)
 {
     const QString& text = pAction->text();

@@ -11,7 +11,24 @@
 #include "graphsmanagment.h"
 #include <zenoui/model/modelrole.h>
 #include <zenoui/comctrl/zlinewidget.h>
-#include <zenoui/comctrl/ztoolbutton.h>
+
+
+ZToolBarButton::ZToolBarButton(bool bCheckable, const QString& icon, const QString& iconOn)
+    : ZToolButton(ZToolButton::Opt_HasIcon, icon, iconOn)
+{
+    setCheckable(bCheckable);
+
+    QColor bgOn("#4F5963");
+
+    int marginLeft = ZenoStyle::dpiScaled(5);
+    int marginRight = ZenoStyle::dpiScaled(5);
+    int marginTop = ZenoStyle::dpiScaled(2);
+    int marginBottom = ZenoStyle::dpiScaled(2);
+
+    setMargins(QMargins(marginLeft, marginTop, marginRight, marginBottom));
+    setRadius(ZenoStyle::dpiScaled(2));
+    setBackgroundClr(bgOn, bgOn, bgOn);
+}
 
 
 DockContent_Parameter::DockContent_Parameter(QWidget* parent)
@@ -36,9 +53,9 @@ DockContent_Parameter::DockContent_Parameter(QWidget* parent)
     m_pLineEdit->setProperty("cssClass", "zeno2_2_lineedit");
     m_pLineEdit->setReadOnly(true);
 
-    ZIconToolButton* pFixBtn = new ZIconToolButton(":/icons/fixpanel.svg", ":/icons/fixpanel-on.svg");
-    ZIconToolButton* pWikiBtn = new ZIconToolButton(":/icons/wiki.svg", ":/icons/wiki-on.svg");
-    ZIconToolButton* pSettingBtn = new ZIconToolButton(":/icons/settings.svg", ":/icons/settings-on.svg");
+    ZToolBarButton* pFixBtn = new ZToolBarButton(false, ":/icons/fixpanel.svg", ":/icons/fixpanel-on.svg");
+    ZToolBarButton* pWikiBtn = new ZToolBarButton(false, ":/icons/wiki.svg", ":/icons/wiki-on.svg");
+    ZToolBarButton* pSettingBtn = new ZToolBarButton(false, ":/icons/settings.svg", ":/icons/settings-on.svg");
 
     pToolLayout->addWidget(pIcon);
     pToolLayout->addWidget(m_plblName);
@@ -93,29 +110,21 @@ DockContent_Editor::DockContent_Editor(QWidget* parent)
     QHBoxLayout* pToolLayout = new QHBoxLayout;
     pToolLayout->setContentsMargins(ZenoStyle::dpiScaled(8), ZenoStyle::dpiScaled(4),
         ZenoStyle::dpiScaled(4), ZenoStyle::dpiScaled(4));
+    pToolLayout->setSpacing(ZenoStyle::dpiScaled(5));
 
-    //ZIconToolButton* pListViewBtn = new ZIconToolButton(":/icons/subnet-listview.svg", ":/icons/subnet-listview.svg");
-    //pListViewBtn->setCheckable(true);
-    QColor bgOn("#4F5963");
+    ZToolBarButton* pListView = new ZToolBarButton(true, ":/icons/subnet-listview.svg", ":/icons/subnet-listview-on.svg");
+    pListView->setChecked(true);
 
-    ZToolButton* pListViewBtn = new ZToolButton(
-        ZToolButton::Opt_HasIcon | ZToolButton::Opt_Checkable,
-        ":/icons/subnet-listview.svg",
-        ":/icons/subnet-listview-on.svg");
-    pListViewBtn->setBackgroundClr(bgOn, bgOn, bgOn);
+    ZToolBarButton* pTreeView = new ZToolBarButton(true, ":/icons/subnet-treeview.svg", ":/icons/subnet-treeview-on.svg");
+    ZToolBarButton* pSubnetMgr = new ZToolBarButton(false, ":/icons/subnet-mgr.svg", ":/icons/subnet-mgr-on.svg");
+    ZToolBarButton* pFold = new ZToolBarButton(false, ":/icons/node-fold.svg", ":/icons/node-fold-on.svg");
+    ZToolBarButton* pUnfold = new ZToolBarButton(false, ":/icons/node-unfold.svg", ":/icons/node-unfold-on.svg");
+    ZToolBarButton* pSnapGrid = new ZToolBarButton(true, ":/icons/snapgrid.svg", ":/icons/snapgrid-on.svg");
+    ZToolBarButton* pBlackboard = new ZToolBarButton(false, ":/icons/blackboard.svg", ":/icons/blackboard-on.svg");
+    ZToolBarButton* pFullPanel = new ZToolBarButton(false, ":/icons/full-panel.svg", ":/icons/full-panel-on.svg");
 
-    ZIconToolButton* pTreeViewBtn = new ZIconToolButton(":/icons/subnet-treeview.svg", ":/icons/subnet-treeview-on.svg");
-    pTreeViewBtn->setCheckable(true);
-    ZIconToolButton* pSubnetMgr = new ZIconToolButton(":/icons/subnet-mgr.svg", ":/icons/subnet-mgr-on.svg");
-    ZIconToolButton* pFold = new ZIconToolButton(":/icons/node-fold.svg", ":/icons/node-fold-on.svg");
-    ZIconToolButton* pUnfold = new ZIconToolButton(":/icons/node-unfold.svg", ":/icons/node-unfold-on.svg");
-    ZIconToolButton* pSnapGrid = new ZIconToolButton(":/icons/snapgrid.svg", ":/icons/snapgrid-on.svg");
-    pSnapGrid->setCheckable(true);
-    ZIconToolButton* pBlackboard = new ZIconToolButton(":/icons/blackboard.svg", ":/icons/blackboard-on.svg");
-    ZIconToolButton* pFullPanel = new ZIconToolButton(":/icons/full-panel.svg", ":/icons/full-panel-on.svg");
-
-    pToolLayout->addWidget(pListViewBtn);
-    pToolLayout->addWidget(pTreeViewBtn);
+    pToolLayout->addWidget(pListView);
+    pToolLayout->addWidget(pTreeView);
 
     pToolLayout->addSpacing(ZenoStyle::dpiScaled(120));
 
@@ -139,6 +148,9 @@ DockContent_Editor::DockContent_Editor(QWidget* parent)
 
     ZenoMainWindow* pMainWin = zenoApp->getMainWindow();
     ZenoGraphsEditor* pEditor = new ZenoGraphsEditor(pMainWin);
+
+    connect(pListView, &ZToolBarButton::toggled, pEditor, &ZenoGraphsEditor::onSubnetListPanel);
+
     pVLayout->addWidget(pEditor);
     setLayout(pVLayout);
 }

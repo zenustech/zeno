@@ -258,6 +258,8 @@ QWidget* ZenoPropPanel::initControl(CONTROL_DATA ctrlData)
 				else {
 					path = QFileDialog::getSaveFileName(nullptr, tr("Path to Save"), "", tr("All Files(*);;"));
 				}
+				if (path.isEmpty())
+					return;
 				pathLineEdit->setText(path);
 				emit pathLineEdit->textEditFinished();
 				pathLineEdit->clearFocus();

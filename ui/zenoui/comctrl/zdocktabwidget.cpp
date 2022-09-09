@@ -22,6 +22,10 @@ ZDockTabWidget::ZDockTabWidget(QWidget* parent)
     connect(pTabbar, SIGNAL(addBtnClicked()), this, SIGNAL(addClicked()));
     connect(pTabbar, SIGNAL(layoutBtnClicked()), this, SIGNAL(layoutBtnClicked()));
 
+    connect(pTabbar, &ZAddTabBar::tabCloseRequested, this, [=](int index) {
+        removeTab(index);
+    });
+
     setDocumentMode(true);
     setMouseTracking(true);
 
@@ -81,6 +85,7 @@ void ZDockTabWidget::initStyleSheet()
                 border-top: 0px solid rgb(24,29,33);\
                 border-right: 1px solid rgb(24, 29, 33);\
                 border-bottom: 1px solid rgb(24, 29, 33);\
+                padding: 2px 16px 3px 16px;\
             }\
             \
             QTabBar::tab:top {\
@@ -91,6 +96,8 @@ void ZDockTabWidget::initStyleSheet()
                 background: #2D3239;\
 	            color: #C3D2DF;\
                 border-bottom: 0px;\
+                /*only way to disable the padding when selected*/\
+                padding: 0px 16px 3px 16px;\
             }\
             \
             QTabBar::close-button {\

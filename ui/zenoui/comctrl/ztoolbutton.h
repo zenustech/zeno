@@ -50,6 +50,7 @@ public:
     virtual QSize sizeHint() const override;
     void setBackgroundClr(const QColor& hoverClr, const QColor& downClr, const QColor& checkedClr);
     void setMargins(const QMargins& margins);
+    void setRadius(int radius);
 
 public slots:
     void setText(const QString& text);
@@ -64,6 +65,7 @@ public slots:
 
 signals:
     void clicked();
+    void toggled(bool);
     void LButtonClicked();
     void LButtonPressed();
     void RButtonClicked();
@@ -98,6 +100,7 @@ private:
     QColor m_clrBgDown;
     QColor m_clrBgChecked;
 
+    int m_radius;
     int m_options;
     int m_roundCorner;
     bool m_bHideText;

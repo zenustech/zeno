@@ -48,6 +48,31 @@ void ZAddTabBar::mousePressEvent(QMouseEvent* e)
     QTabBar::mousePressEvent(e);
 }
 
+void ZAddTabBar::mouseReleaseEvent(QMouseEvent* event)
+{
+    if (event->button() == Qt::RightButton)
+    {
+        int idx = tabAt(event->pos());
+        if (idx >= 0 && idx < this->count())
+        {
+            QMenu* pMenu = new QMenu(this);
+            QAction *pClose = new QAction(tr("Close"));
+            connect(pClose, &QAction::triggered, this, [=]() {
+                emit tabCloseRequested(idx);
+            });
+            pMenu->addAction(pClose);
+            pMenu->exec(QCursor::pos());
+            pMenu->deleteLater();
+        }
+    }
+    return QTabBar::mouseReleaseEvent(event);
+}
+
+void ZAddTabBar::paintEvent(QPaintEvent* e)
+{
+    QTabBar::paintEvent(e);
+}
+
 void ZAddTabBar::setGeomForAddBtn()
 {
     int nWidth = 0;

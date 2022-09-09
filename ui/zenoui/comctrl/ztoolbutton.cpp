@@ -15,6 +15,7 @@ ZToolButton::ZToolButton(int option, const QIcon& icon, const QSize& iconSize, c
     , m_icon(icon)
     , m_iconSize(iconSize)
     , m_font(QFont("Microsoft YaHei", 9))
+    , m_radius(0)
 {
     setMouseTracking(true);
     setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
@@ -33,6 +34,7 @@ ZToolButton::ZToolButton(int option, const QString& icon, const QString& iconOn,
     , m_iconOn(QIcon(iconOn))
     , m_iconSize(iconSize)
     , m_font(QFont("Microsoft YaHei", 9))
+    , m_radius(0)
 {
     if (!m_iconSize.isValid())
     {
@@ -185,6 +187,7 @@ void ZToolButton::initStyleOption(ZStyleOptionToolButton* option) const
     option->buttonOpts = buttonOption();
     option->bDown = isDown();
     option->font = m_font;
+    option->bgRadius = m_radius;
     option->palette.setBrush(QPalette::All, QPalette::Window, QBrush(backgrondColor(option->state)));
     option->palette.setBrush(QPalette::All, QPalette::WindowText, QColor(160, 160, 160));
 
@@ -248,6 +251,11 @@ void ZToolButton::setIconSize(const QSize& size)
 void ZToolButton::setMargins(const QMargins& margins)
 {
     m_margins = margins;
+}
+
+void ZToolButton::setRadius(int radius)
+{
+    m_radius = radius;
 }
 
 void ZToolButton::showToolTip()
@@ -316,6 +324,7 @@ void ZToolButton::mouseReleaseEvent(QMouseEvent* e)
     if (buttonOption() & Opt_Checkable)
     {
         setChecked(!m_bChecked);
+        emit toggled(m_bChecked);
     }
     emit clicked();
 }

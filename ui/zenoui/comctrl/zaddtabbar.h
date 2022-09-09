@@ -22,6 +22,8 @@ protected:
     void resizeEvent(QResizeEvent* event) override;
     void tabLayoutChange() override;
     void mousePressEvent(QMouseEvent* e) override;
+    void mouseReleaseEvent(QMouseEvent* e) override;
+    void paintEvent(QPaintEvent* e) override;
 
 private:
     void setGeomForAddBtn();

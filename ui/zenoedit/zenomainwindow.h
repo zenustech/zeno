@@ -7,6 +7,8 @@
 #include "panel/zenolights.h"
 #include "common.h"
 
+class DisplayWidget;
+
 class ZenoMainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -17,6 +19,7 @@ public:
     void setInDlgEventLoop(bool bOn);
     TIMELINE_INFO timelineInfo();
     void setTimelineInfo(TIMELINE_INFO info);
+    DisplayWidget *getDisplayWidget();
 
     QLineEdit* selected = nullptr;
     ZenoLights* lightPanel = nullptr;

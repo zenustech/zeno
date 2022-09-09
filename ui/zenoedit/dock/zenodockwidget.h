@@ -50,7 +50,6 @@ private slots:
     void onDockOptionsClicked();
     void onMaximizeTriggered();
     void onFloatTriggered();
-    void onAddTabClicked();
 
 private:
     void init(ZenoMainWindow* pMainWin);

@@ -3,8 +3,17 @@
 
 #include <QtWidgets>
 #include <unordered_set>
+#include <zenoui/comctrl/ztoolbutton.h>
 
 class ZIconToolButton;
+
+class ZToolBarButton : public ZToolButton
+{
+    Q_OBJECT
+public:
+    ZToolBarButton(bool bCheckable, const QString& icon, const QString& iconOn);
+};
+
 
 class DockContent_Parameter : public QWidget
 {

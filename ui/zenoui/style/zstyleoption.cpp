@@ -3,7 +3,7 @@
 
 ZStyleOptionToolButton::ZStyleOptionToolButton()
     : buttonOpts(0)
-    , roundCorner(0)
+    , bgRadius(0)
     , orientation(Qt::Horizontal)
     , hideText(false)
     , buttonEnabled(true)
