@@ -1,7 +1,6 @@
 #include "zenolights.h"
-#include "graphsmanagment.h"
-#include "model/graphsmodel.h"
-#include "model/modelrole.h"
+#include <zenomodel/include/graphsmanagment.h>
+#include <zenomodel/include/modelrole.h>
 #include "viewport/zenovis.h"
 #include "viewport/viewportwidget.h"
 #include "zenoapplication.h"
@@ -466,9 +465,10 @@ void ZenoLights::write_param_into_node(const QString& primid) {
     }
     auto subgraphIndices = pIGraphsModel->subgraphsIndice();
 
-    for (const auto &subGpIdx: subgraphIndices) {
-        auto items = pIGraphsModel->nodes(subGpIdx);
-        for (const auto &item: items) {
+    for (const auto &subGpIdx : subgraphIndices) {
+        int n = pIGraphsModel->itemCount(subGpIdx);
+        for (int i = 0; i < n; i++) {
+            const NODE_DATA& item = pIGraphsModel->itemData(pIGraphsModel->index(i, subGpIdx), subGpIdx);
             if (item[ROLE_OBJID].toString().contains(primid.split(':').front())) {
                 auto inputs = item[ROLE_INPUTS].value<INPUT_SOCKETS>();
                 auto p = ud.get2<zeno::vec3f>("pos");
