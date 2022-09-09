@@ -191,9 +191,38 @@ ZENDEFNODE(StringFormatNumber, {
     },
     {{"string", "str"}},
     {},
-    {"string"},
+    {"deprecated"},
 });
 
+struct StringFormatNumStr : zeno::INode {
+    virtual void apply() override {
+        auto str = get_input2<std::string>("str");
+        auto num_str = get_input<zeno::IObject>("num_str");
+        std::string output;
+
+        std::shared_ptr<zeno::NumericObject> num = std::dynamic_pointer_cast<zeno::NumericObject>(num_str);
+        if (num) {
+            std::visit([&](const auto &v) {
+                output = zeno::format(str, v);
+            }, num->value);
+        }
+        std::shared_ptr<zeno::StringObject> pStr = std::dynamic_pointer_cast<zeno::StringObject>(num_str);
+        if (pStr) {
+            output = zeno::format(str, pStr->get());
+        }
+        set_output2("str", output);
+    }
+};
+
+ZENDEFNODE(StringFormatNumStr, {
+    {
+        {"string", "str", "{}"},
+        {"num_str"},
+    },
+    {{"string", "str"}},
+    {},
+    {"string"},
+});
 /*static int objid = 0;
 
 struct ExportPath : zeno::INode {  // deprecated
