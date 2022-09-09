@@ -11,7 +11,7 @@ void optixrender(int fbo = 0, int samples = 16);
 void *optixgetimg(int &w, int &h);
 void optixinit(int argc, char* argv[]);
 void optixupdatebegin();
-void UpdateDynamicMesh(std::map<std::string, int> const &mtlidlut);
+void UpdateDynamicMesh(std::map<std::string, int> const &mtlidlut, bool staticNeedUpdate);
 void UpdateStaticMesh(std::map<std::string, int> const &mtlidlut);
 void optixupdatematerial(std::vector<std::string> const &shaders, std::vector<std::vector<std::string>> &texs);
 void optixupdatelight();

@@ -112,7 +112,7 @@ inline typename IPCSystem::T dot(zs::CudaExecutionPolicy &cudaPol, typename IPCS
         // res[pi] = v;
         reduce_to(pi, n, v, res[pi / 32]);
     });
-    return reduce(cudaPol, res, std::plus<double>{});
+    return reduce(cudaPol, res, thrust::plus<double>{});
 }
 inline typename IPCSystem::T infNorm(zs::CudaExecutionPolicy &cudaPol, typename IPCSystem::dtiles_t &vertData,
                                      const zs::SmallString tag = "dir") {
@@ -136,7 +136,7 @@ inline typename IPCSystem::T infNorm(zs::CudaExecutionPolicy &cudaPol, typename 
         if (locid == 0)
             res[pi / 32] = val;
     });
-    return reduce(cudaPol, res, getmax<T>{});
+    return reduce(cudaPol, res, thrust::maximum<T>{});
 }
 
 } // namespace zeno

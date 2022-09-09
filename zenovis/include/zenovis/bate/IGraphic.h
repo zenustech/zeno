@@ -3,6 +3,7 @@
 #include <memory>
 #include <zeno/core/IObject.h>
 #include <zeno/types/IObjectXMacro.h>
+#include <zeno/utils/vec.h>
 
 
 namespace zeno {
@@ -27,6 +28,10 @@ struct IGraphicDraw : IGraphic {
     virtual void draw() = 0;
 };
 
+struct IGraphicInteractDraw : IGraphicDraw {
+    virtual void setHovered(bool hovered) = 0;
+};
+
 struct MakeGraphicVisitor {
     Scene *in_scene{};
     std::unique_ptr<IGraphic> out_result;
@@ -42,4 +47,8 @@ std::unique_ptr<IGraphicDraw> makeGraphicAxis(Scene *scene);
 std::unique_ptr<IGraphicDraw> makeGraphicGrid(Scene *scene);
 std::unique_ptr<IGraphicDraw> makeGraphicSelectBox(Scene *scene);
 
+std::unique_ptr<IGraphicInteractDraw> makeGraphicRing(Scene *scene, zeno::vec3f center);
+std::unique_ptr<IGraphicInteractDraw> makeGraphicInteractAxis(Scene *scene, zeno::vec3f center) ;
+
+std::unique_ptr<IGraphicDraw> makeGraphicInteractingAxis(Scene *scene, zeno::vec3f center, zeno::vec3i axis);
 } // namespace zenovis

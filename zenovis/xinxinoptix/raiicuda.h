@@ -55,8 +55,8 @@ template <class T> struct raii_traits {
 };
 
 template <class T, class traits = raii_traits<T>,
-          class = std::enable_if_t<std::is_same_v<std::decay_t<T>, T> &&
-                                   std::is_void_v<decltype(traits::deallocate(std::declval<T>()))>>>
+         class = std::enable_if_t<std::is_same_v<std::decay_t<T>, T> &&
+         std::is_void_v<decltype(traits::deallocate(std::declval<T>()))>>>
 struct raii {
     T handle;
     std::size_t size, capacity;
@@ -110,7 +110,8 @@ struct raii {
         }
 #else
         if (newSize > capacity) {
-            auto newCapacity = newSize + incSize * 4;
+            auto newCapacity = newSize + std::min(incSize * 4ull, 128ull * 1024 * 1024);
+            //printf("\n\nreallocating %d bytes (previous %d bytes)\n\n\n", (int)size, (int)newCapacity);
             CUDA_CHECK(cudaMalloc(reinterpret_cast<void **>(&reset()), newCapacity));
             size = newSize;
             capacity = newCapacity;

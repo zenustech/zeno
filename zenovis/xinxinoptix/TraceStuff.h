@@ -51,6 +51,32 @@ struct RadiancePRD
     float        scatterPDF;
     float        maxDistance;
     int          depth;
+    int          diffDepth;
+    bool         isSS;
+    float        scatterStep;
+    int          nonThinTransHit;
+    vec3         extinctionQ[8];
+    int          curMatIdx;
+    void         pushMat(vec3 extinction)
+    {
+        if(curMatIdx<7)
+        {
+
+            curMatIdx++;
+            extinctionQ[curMatIdx] = extinction;
+        }
+    }
+    vec3        popMat()
+    {
+        if(curMatIdx>0) {
+            curMatIdx--;
+            return extinctionQ[curMatIdx];
+        }
+        else
+        {
+            return extinctionQ[curMatIdx];
+        }
+    }
     
 };
 

@@ -34,7 +34,8 @@ public:
         const QVector<QPointF>& pts,
         const QVector<QPair<QPointF, QPointF>>& hdls) override;
     QObject *currGraphObj() override;
-    void endInputs() override;
+    void endInputs(const QString& id, const QString& nodeCls) override;
+    void endParams(const QString& id, const QString& nodeCls) override;
 
     //TransferAcceptor
     QMap<QString, NODE_DATA> nodes() const;

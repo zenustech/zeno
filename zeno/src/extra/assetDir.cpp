@@ -14,7 +14,7 @@ ZENO_API void cihouWinPath(std::string &s) {
 #endif
 }
 
-static std::string g_assetRoot;
+static std::string g_assetRoot, g_execFile;
 static std::map<std::string, std::string> g_cfgvars;
 
 ZENO_API void setConfigVariable(std::string key, std::string val) {

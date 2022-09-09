@@ -16,21 +16,22 @@
 ![GitHub latest release downloads](https://img.shields.io/github/downloads/zenustech/zeno/latest/total)
 ![Repo stars](https://img.shields.io/github/stars/zenustech/zeno?style=social)
 
-[Download](https://github.com/zenustech/zeno/releases) | [Repo](https://github.com/zenustech/zeno) | [About us](https://zenustech.com) | [Tutorial](https://zenustech.com/tutorial) | [Videos](https://space.bilibili.com/263032155) | [Q&A Forum](https://github.com/zenustech/zeno/discussions) | [Build from source](https://github.com/zenustech/zeno/blob/master/BUILD.md) | [Contributor Guidelines](https://github.com/zenustech/zeno/blob/master/docs/CONTRIBUTING.md) | [Bug report](https://github.com/zenustech/zeno/issues)
+[Download](https://github.com/zenustech/zeno/releases) | [Repo](https://github.com/zenustech/zeno) | [About us](https://zenustech.com) | [Docs](https://doc.zenustech.com/) | [Videos](https://space.bilibili.com/263032155) | [Q&A Forum](https://github.com/zenustech/zeno/discussions) | [Build from source](https://github.com/zenustech/zeno/blob/master/BUILD.md) | [FAQs](https://github.com/zenustech/zeno/blob/master/docs/FAQ.md) | [Contributor Guidelines](https://github.com/zenustech/zeno/blob/master/docs/CONTRIBUTING.md) | [Bug report](https://github.com/zenustech/zeno/issues)
 
-[国内高速下载](https://zenustech.com/d/) | [Gitee 镜像仓库](https://gitee.com/zenustech/zeno) | [公司主页](https://zenustech.com) | [中文教程](https://zenustech.com/tutorial) | [视频教程](https://space.bilibili.com/263032155) | [问答论坛](https://github.com/zenustech/zeno/discussions) | [从源码构建](https://github.com/zenustech/zeno/blob/master/BUILD.md) | [贡献者指南](https://github.com/zenustech/zeno/blob/master/docs/CONTRIBUTING.md) | [BUG 反馈](https://github.com/zenustech/zeno/issues)
+[国内高速下载](https://zenustech.com/d/) | [Gitee 镜像仓库](https://gitee.com/zenustech/zeno) | [公司主页](https://zenustech.com) | [中文文档](https://doc.zenustech.com/) | [视频教程](https://space.bilibili.com/263032155) | [问答论坛](https://github.com/zenustech/zeno/discussions) | [从源码构建](https://github.com/zenustech/zeno/blob/master/BUILD.md) | [常见问题](https://github.com/zenustech/zeno/blob/master/docs/FAQ.md) | [贡献者指南](https://github.com/zenustech/zeno/blob/master/docs/CONTRIBUTING.md) | [BUG 反馈](https://github.com/zenustech/zeno/issues)
 
 Open-source node system framework, to change your algorithmic code into useful tools to create much more complicated simulations!
 
-<img src="http://zenustech.oss-cn-beijing.aliyuncs.com/Place-in-Github/WelcomePic2.jpg" width="640" position="left">
+<img src="https://zenustech.oss-cn-beijing.aliyuncs.com/Place-in-Github/202208/sw.png" width="640" position="left">
 
 ZENO is an open-source, Node based 3D system able to produce cinematic physics effects at High Efficiency, it was designed for large scale simulations and has been tested on complex setups.
 Aside of its simulation Tools, ZENO provides necessary visualization nodes for users to import and run simulations if you feel that the current software you are using is too slow.
 
 - [Contributor guidelines](docs/CONTRIBUTING.md)
 - [How to build from source](BUILD.md)
+- [FAQ & troubleshooting](docs/FAQ.md)
 - [Introduction on Zeno](docs/introduction.md)
-- [Tutorial on the editor (WIP)](docs/node_editor.md)
+- [Video tutorial series](https://space.bilibili.com/263032155)
 
 ## Features
 
@@ -40,28 +41,35 @@ Integrated Toolbox, from volumetric geometry process tools (OpenVDB), to state-o
 
 Fig.1 - Cloth simulation
 
-<img src="https://github.com/Hanswanglin/ZENO_README_SRC/blob/main/gif/Webp/simulation_cloth_1.webp" width="640" position="left">
+<img src="https://zenustech.oss-cn-beijing.aliyuncs.com/Place-in-Github/202208/Cloth.gif" width="640" position="left">
 
 Fig.2 - Fluid simulation
 
-<img src="https://github.com/Hanswanglin/ZENO_README_SRC/blob/main/gif/Webp/simulation_fluid_1.webp" width="640" position="left">
+<img src="https://zenustech.oss-cn-beijing.aliyuncs.com/Place-in-Github/202208/Fluid.webp" width="640" position="left">
 
 Fig.3 - Rigid simulation
 
-<img src="https://github.com/Hanswanglin/ZENO_README_SRC/blob/main/gif/Webp/simulation_rigid_1.webp" width="640" position="left">
+<img src="https://zenustech.oss-cn-beijing.aliyuncs.com/Place-in-Github/202208/Bullet_Simulation.gif" width="640" position="left">
 
 Fig.4 - Biological simulation
 
-<img src="http://zenustech.oss-cn-beijing.aliyuncs.com/Place-in-Github/202204/simulation_biology.webp" width="640" position="left">
+<img src="https://zenustech.oss-cn-beijing.aliyuncs.com/Place-in-Github/202208/Biological_Simulation.gif" width="640" position="left">
 
 Fig.5 - Procedural material
 
-<img src="https://github.com/Hanswanglin/ZENO_README_SRC/blob/main/gif/Webp/procedural_material_1.webp" width="640" position="left">
+<img src="https://zenustech.oss-cn-beijing.aliyuncs.com/Place-in-Github/202208/Procedural_Material.gif" width="640" position="left">
 
 Fig.6 - Procedural modeling
 
-<img src="http://zenustech.oss-cn-beijing.aliyuncs.com/Place-in-Github/202204/procrdural_modeling.webp" width="640" position="left">
+<img src="https://zenustech.oss-cn-beijing.aliyuncs.com/Place-in-Github/202208/Procedural_Modeling.gif" width="640" position="left">
 
+
+Fig.7 - Human rendering
+
+<img src="https://github.com/zenustech/zeno/blob/fuckzhxxdepigu/%E5%BE%AE%E4%BF%A1%E5%9B%BE%E7%89%87_20220907214042.jpg" width="640" position="left">
+<img src="https://github.com/zenustech/zeno/blob/fuckzhxxdepigu/%E5%BE%AE%E4%BF%A1%E5%9B%BE%E7%89%87_20220907214049.jpg" width="640" position="left">
+<img src="https://github.com/zenustech/zeno/blob/fuckzhxxdepigu/%E5%BE%AE%E4%BF%A1%E5%9B%BE%E7%89%87_20220907214053.jpg" width="640" position="left">
+<img src="https://github.com/zenustech/zeno/blob/fuckzhxxdepigu/%E5%BE%AE%E4%BF%A1%E5%9B%BE%E7%89%87_20220907214058.jpg" width="640" position="left">
 
 # End-user Installation
 

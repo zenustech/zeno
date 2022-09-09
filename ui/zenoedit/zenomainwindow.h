@@ -8,6 +8,7 @@
 #include "common.h"
 
 class ZenoDockWidget;
+class DisplayWidget;
 class ZenoGraphsEditor;
 
 class ZenoMainWindow : public QMainWindow
@@ -22,9 +23,7 @@ public:
     TIMELINE_INFO timelineInfo();
     void setTimelineInfo(TIMELINE_INFO info);
 
-    QLineEdit* selected = nullptr;
     ZenoLights* lightPanel = nullptr;
-    float mouseSen = 0.2;
 
 public slots:
     void openFileDialog();
@@ -43,6 +42,7 @@ public slots:
     void onNodesSelected(const QModelIndex& subgIdx, const QModelIndexList& nodes, bool select);
     void onPrimitiveSelected(const std::unordered_set<std::string>& primids);
     void updateViewport(const QString& action = "");
+    DisplayWidget* getDisplayWidget();
     void onRunFinished();
     void onFeedBack();
     void clearErrorMark();

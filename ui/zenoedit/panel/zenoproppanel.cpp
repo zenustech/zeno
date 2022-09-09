@@ -160,7 +160,7 @@ ZExpandableSection* ZenoPropPanel::paramsBox(IGraphsModel* pModel, const QModelI
 				}
 				pLineEdit->setObjectName(paramName);
 				pLineEdit->setProperty("control", param.control);
-				connect(pLineEdit, &ZLineEdit::editingFinished, this, &ZenoPropPanel::onParamEditFinish);
+				connect(pLineEdit, &ZLineEdit::textChanged, this, &ZenoPropPanel::onParamEditFinish);
 
 				pLayout->addWidget(pLineEdit, r++, 1);
 				break;
@@ -224,6 +224,22 @@ ZExpandableSection* ZenoPropPanel::paramsBox(IGraphsModel* pModel, const QModelI
 				pLayout->addWidget(openBtn, r++, 2);
 				break;
 			}
+            case CONTROL_VEC:
+            {
+                UI_VECTYPE vec = param.value.value<UI_VECTYPE>();
+
+                int dim = -1;
+                bool bFloat = false;
+                UiHelper::parseVecType(param.typeDesc, dim, bFloat);
+
+                ZVecEditor* pVecEdit = new ZVecEditor(vec, bFloat, 3, "proppanel");
+                pVecEdit->setObjectName(paramName);
+				pVecEdit->setProperty("control", param.control);
+                connect(pVecEdit, &ZVecEditor::valueChanged, this, &ZenoPropPanel::onInputEditFinish);
+
+                pLayout->addWidget(pVecEdit, r++, 1);
+                break;
+            }
 			case CONTROL_MULTILINE_STRING:
 			{
 				QTextEdit* pTextEdit = new QTextEdit;
@@ -315,7 +331,7 @@ ZExpandableSection* ZenoPropPanel::inputsBox(IGraphsModel* pModel, const QModelI
 				}
 				pLineEdit->setObjectName(inputSock);
 				pLineEdit->setProperty("control", input.info.control);
-				connect(pLineEdit, &ZLineEdit::editingFinished, this, &ZenoPropPanel::onInputEditFinish);
+				connect(pLineEdit, &ZLineEdit::textChanged, this, &ZenoPropPanel::onInputEditFinish);
 
 				pLayout->addWidget(pLineEdit, r++, 1);
 				break;
@@ -333,14 +349,18 @@ ZExpandableSection* ZenoPropPanel::inputsBox(IGraphsModel* pModel, const QModelI
 				pLayout->addWidget(pCheckbox, r++, 1);
 				break;
 			}
-			case CONTROL_VEC3:
+			case CONTROL_VEC:
 			{
 				QLabel* pNameItem = new QLabel(inputSock);
 				pNameItem->setProperty("cssClass", "proppanel");
 				pLayout->addWidget(pNameItem, r, 0, Qt::AlignLeft);
 
 				UI_VECTYPE vec = input.info.defaultValue.value<UI_VECTYPE>();
-				bool bFloat = (input.info.type != "vec3i");
+
+                int dim = -1;
+                bool bFloat = false;
+                UiHelper::parseVecType(input.info.type, dim, bFloat);
+
 				ZVecEditor* pVecEdit = new ZVecEditor(vec, bFloat, 3, "proppanel");
 				pVecEdit->setObjectName(inputSock);
 				connect(pVecEdit, &ZVecEditor::editingFinished, this, &ZenoPropPanel::onInputEditFinish);
@@ -591,7 +611,7 @@ void ZenoPropPanel::onDataChanged(const QModelIndex& subGpIdx, const QModelIndex
 					}
 					break;
 				}
-				case CONTROL_VEC3:
+				case CONTROL_VEC:
 				{
 					auto lst = findChildren<ZVecEditor*>(inSock, Qt::FindChildrenRecursively);
 					if (lst.size() == 1)

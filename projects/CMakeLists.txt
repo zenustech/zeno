@@ -30,6 +30,7 @@ set(ZENO_EXTENSIONS
     Audio
     GUI
     PBD
+    Python
     )
 
 foreach (name IN ITEMS ${ZENO_EXTENSIONS})

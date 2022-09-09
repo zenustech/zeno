@@ -370,7 +370,6 @@ QGraphicsLayout* ZenoNode::initParam(PARAM_CONTROL ctrl, const QString& paramNam
         return nullptr;
 
     QGraphicsLinearLayout* pParamLayout = new QGraphicsLinearLayout(Qt::Horizontal);
-    const QString& value = UiHelper::variantToString(param.value);
 
 	ZenoTextLayoutItem* pNameItem = new ZenoTextLayoutItem(paramName, m_renderParams.paramFont, m_renderParams.paramClr.color());
 	pParamLayout->addItem(pNameItem);
@@ -380,20 +379,55 @@ QGraphicsLayout* ZenoNode::initParam(PARAM_CONTROL ctrl, const QString& paramNam
 	    case CONTROL_STRING:
 	    case CONTROL_INT:
 	    case CONTROL_FLOAT:
+        case CONTROL_BOOL:
+        case CONTROL_VEC:
+	    case CONTROL_ENUM:
+	    case CONTROL_READPATH:
+	    case CONTROL_WRITEPATH:
+	    case CONTROL_MULTILINE_STRING:
+	    case CONTROL_CURVE:
 	    {
-		    ZenoParamLineEdit* pLineEdit = new ZenoParamLineEdit(value, param.control, m_renderParams.lineEditParam);
-            pLineEdit->setValidator(validateForParams(param));
-		    pParamLayout->addItem(pLineEdit);
-		    connect(pLineEdit, &ZenoParamLineEdit::editingFinished, this, [=]() {
-			    onParamEditFinished(paramName, pLineEdit->text());
-			    });
-		    m_paramControls[paramName] = pLineEdit;
+            ZenoParamWidget* pWidget = initParamWidget(pScene, param);
+            pParamLayout->addItem(pWidget);
+            m_paramControls[paramName] = pWidget;
+            break;
+	    }
+	    default:
+	    {
+		    zeno::log_warn("got undefined control type {}", param.control);
+            const QString& value = UiHelper::variantToString(param.value);
+		    ZenoTextLayoutItem* pValueItem = new ZenoTextLayoutItem(value, m_renderParams.paramFont, m_renderParams.paramClr.color());
+		    pParamLayout->addItem(pValueItem);
 		    break;
 	    }
+	}
+    return pParamLayout;
+}
+
+ZenoParamWidget* ZenoNode::initParamWidget(ZenoSubGraphScene* scene, const PARAM_INFO& param)
+{
+    const PARAM_CONTROL ctrl = param.control;
+    const QString& paramName = param.name;
+    if (param.control == CONTROL_NONVISIBLE)
+        return nullptr;
+
+    switch (param.control)
+    {
+        case CONTROL_STRING:
+        case CONTROL_INT:
+        case CONTROL_FLOAT:
+        {
+            const QString& value = UiHelper::variantToString(param.value);
+            ZenoParamLineEdit* pLineEdit = new ZenoParamLineEdit(value, param.control, m_renderParams.lineEditParam);
+            pLineEdit->setValidator(validateForParams(param));
+            connect(pLineEdit, &ZenoParamLineEdit::editingFinished, this, [=]() {
+                onParamEditFinished(paramName, pLineEdit->text());
+                });
+            return pLineEdit;
+        }
         case CONTROL_BOOL:
         {
-            ZenoParamCheckBox *pSocketCheckbox = new ZenoParamCheckBox(paramName);
-            pParamLayout->addItem(pSocketCheckbox);
+            ZenoParamCheckBox* pSocketCheckbox = new ZenoParamCheckBox(paramName);
 
             bool isChecked = param.value.toBool();
             pSocketCheckbox->setCheckState(isChecked ? Qt::Checked : Qt::Unchecked);
@@ -410,8 +444,7 @@ QGraphicsLayout* ZenoNode::initParam(PARAM_CONTROL ctrl, const QString& paramNam
                     Q_ASSERT(false);
                     return;
                 }
-
-                IGraphsModel *pGraphsModel = zenoApp->graphsManagment()->currentModel();
+                IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
                 ZASSERT_EXIT(pGraphsModel);
 
                 const QString& nodeid = m_index.data(ROLE_OBJID).toString();
@@ -422,117 +455,82 @@ QGraphicsLayout* ZenoNode::initParam(PARAM_CONTROL ctrl, const QString& paramNam
                 info.name = paramName;
                 if (info.oldValue != info.newValue)
                     pGraphsModel->updateParamInfo(nodeid, info, m_subGpIndex, true);
-
                 updateWhole();
-            });
-            m_paramControls[paramName] = pSocketCheckbox;
-            break;
+                });
+
+            return pSocketCheckbox;
         }
-        case CONTROL_VEC3:
+        case CONTROL_VEC:
         {
             UI_VECTYPE vec = param.value.value<UI_VECTYPE>();
-            bool bFloat = param.typeDesc != "vec3i";
-            ZenoVecEditWidget* pVecEditor = new ZenoVecEditWidget(vec, bFloat, m_renderParams.lineEditParam, pScene);
-            pParamLayout->addItem(pVecEditor);
-			connect(pVecEditor, &ZenoVecEditWidget::editingFinished, this, [=]() {
-				
-				});
-			m_paramControls[paramName] = pVecEditor;
-            break;
+            bool bFloat = false;
+            int dim = -1;
+            UiHelper::parseVecType(param.typeDesc, dim, bFloat);
+
+            ZenoVecEditWidget* pVecEditor = new ZenoVecEditWidget(vec, bFloat, m_renderParams.lineEditParam, scene);
+            connect(pVecEditor, &ZenoVecEditWidget::editingFinished, this, [=]() {
+                UI_VECTYPE vec = pVecEditor->vec();
+                const QVariant& newValue = QVariant::fromValue(vec);
+                onParamEditFinished(paramName, newValue);
+            });
+            return pVecEditor;
         }
-	    case CONTROL_ENUM:
-	    {
-		    QStringList items = param.typeDesc.mid(QString("enum ").length()).split(QRegExp("\\s+"));
-		    ZenoParamComboBox* pComboBox = new ZenoParamComboBox(items, m_renderParams.comboboxParam);
+        case CONTROL_ENUM:
+        {
+            const QString& value = UiHelper::variantToString(param.value);
+            QStringList items = param.typeDesc.mid(QString("enum ").length()).split(QRegExp("\\s+"));
+            ZenoParamComboBox* pComboBox = new ZenoParamComboBox(items, m_renderParams.comboboxParam);
             pComboBox->setText(value);
-		    pParamLayout->addItem(pComboBox);
 
-		    connect(pComboBox, &ZenoParamComboBox::textActivated, this, [paramName, this](const QString& textValue) {
+            connect(pComboBox, &ZenoParamComboBox::textActivated, this, [paramName, this](const QString& textValue) {
                 onParamEditFinished(paramName, textValue);
-			    });
-		    m_paramControls[paramName] = pComboBox;
-		    break;
-	    }
-	    case CONTROL_READPATH:
-	    {
-		    ZenoParamLineEdit* pFileWidget = new ZenoParamLineEdit(value, param.control, m_renderParams.lineEditParam);
-
-			ImageElement elem;
-			elem.image = ":/icons/ic_openfile.svg";
-            elem.imageHovered = ":/icons/ic_openfile-on.svg";
-			elem.imageOn = ":/icons/ic_openfile-on.svg";
-            ZenoSvgLayoutItem* openBtn = new ZenoSvgLayoutItem(elem, QSizeF(30, 30));
-
-		    pParamLayout->addItem(pFileWidget);
-		    pParamLayout->addItem(openBtn);
-			pParamLayout->setItemSpacing(1, 0);
-			pParamLayout->setItemSpacing(2, 0);
-
-		    connect(pFileWidget, &ZenoParamLineEdit::editingFinished, this, [=]() {
-			    onParamEditFinished(paramName, pFileWidget->text());
-			});
-            connect(openBtn, &ZenoImageItem::clicked, this, [=]() {
+                });
+            return pComboBox;
+        }
+        case CONTROL_WRITEPATH:
+        case CONTROL_READPATH:
+        {
+            const QString& value = UiHelper::variantToString(param.value);
+            ZenoParamPathEdit* pPathEditor = new ZenoParamPathEdit(value, ctrl, m_renderParams.lineEditParam);
+            bool isRead = ctrl == CONTROL_READPATH;
+            connect(pPathEditor, &ZenoParamPathEdit::clicked, this, [=]() {
                 DlgInEventLoopScope;
-                QString path = getOpenFileName("File to Open", "", "All Files(*);;");
+                QString path;
+                if (isRead) {
+                    path = getOpenFileName(tr("File to Open"), "", tr("All Files(*);;"));
+                }
+                else {
+                    path = getSaveFileName(tr("Path to Save"), "", tr("All Files(*);;"));
+                }
                 if (path.isEmpty())
                     return;
-                pFileWidget->setText(path);
-                onParamEditFinished(paramName, path);
+                pPathEditor->setPath(path);
             });
-            m_paramControls[paramName] = pFileWidget;
-		    break;
-	    }
-	    case CONTROL_WRITEPATH:
-	    {
-		    ZenoParamLineEdit* pFileWidget = new ZenoParamLineEdit(value, param.control, m_renderParams.lineEditParam);
-
-            ImageElement elem;
-			elem.image = ":/icons/ic_openfile.svg";
-            elem.imageHovered = ":/icons/ic_openfile-on.svg";
-			elem.imageOn = ":/icons/ic_openfile-on.svg";
-
-            ZenoSvgLayoutItem* openBtn = new ZenoSvgLayoutItem(elem, QSizeF(30, 30));
-
-		    pParamLayout->addItem(pFileWidget);
-		    pParamLayout->addItem(openBtn);
-            pParamLayout->setItemSpacing(1, 0);
-            pParamLayout->setItemSpacing(2, 0);
-		    connect(pFileWidget, &ZenoParamLineEdit::editingFinished, this, [=]() {
-			    onParamEditFinished(paramName, pFileWidget->text());
-			});
-            connect(openBtn, &ZenoImageItem::clicked, this, [=]() {
-                DlgInEventLoopScope;
-                QString path = getSaveFileName(tr("Path to Save"), "", "All Files(*);;");
-                if (path.isEmpty())
-                    return;
-                pFileWidget->setText(path);
-                onParamEditFinished(paramName, path);
+            connect(pPathEditor, &ZenoParamPathEdit::pathValueChanged, this, [=](QString newPath) {
+                onParamEditFinished(paramName, newPath);
             });
-            m_paramControls[paramName] = pFileWidget;
-		    break;
-	    }
-	    case CONTROL_MULTILINE_STRING:
-	    {
-		    ZenoParamMultilineStr* pMultiStrEdit = new ZenoParamMultilineStr(value, m_renderParams.lineEditParam);
-		    pParamLayout->addItem(pMultiStrEdit);
-		    connect(pMultiStrEdit, &ZenoParamMultilineStr::editingFinished, this, [=]() {
-			    onParamEditFinished(paramName, pMultiStrEdit->text());
-			    });
-		    m_paramControls[paramName] = pMultiStrEdit;
-		    break;
-	    }
-	    case CONTROL_COLOR:
+            return pPathEditor;
+        }
+        case CONTROL_MULTILINE_STRING:
+        {
+            const QString& value = UiHelper::variantToString(param.value);
+            ZenoParamMultilineStr* pMultiStrEdit = new ZenoParamMultilineStr(value, m_renderParams.lineEditParam);
+            connect(pMultiStrEdit, &ZenoParamMultilineStr::editingFinished, this, [=]() {
+                onParamEditFinished(paramName, pMultiStrEdit->text());
+                });
+            return pMultiStrEdit;
+        }
+        case CONTROL_COLOR:
         {
             break;
         }
-	    case CONTROL_CURVE:
-	    {
+        case CONTROL_CURVE:
+        {
             ZenoParamPushButton* pEditBtn = new ZenoParamPushButton("Edit", -1, QSizePolicy::Expanding);
-		    pParamLayout->addItem(pEditBtn);
             connect(pEditBtn, &ZenoParamPushButton::clicked, this, [=]() {
-                IGraphsModel *pGraphsModel = zenoApp->graphsManagment()->currentModel();
+                IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
                 ZASSERT_EXIT(pGraphsModel);
-                CurveModel *pModel = nullptr;
+                CurveModel* pModel = nullptr;
                 const QVariant& val = pGraphsModel->getParamValue(m_index.data(ROLE_OBJID).toString(), paramName, m_subGpIndex);
                 pModel = QVariantPtr<CurveModel>::asPtr(val);
                 if (!pModel)
@@ -541,23 +539,15 @@ QGraphicsLayout* ZenoNode::initParam(PARAM_CONTROL ctrl, const QString& paramNam
                     onParamEditFinished(paramName, QVariantPtr<CurveModel>::asVariant(pModel));
                 }
                 ZASSERT_EXIT(pModel);
-                ZCurveMapEditor *pEditor = new ZCurveMapEditor(true);
+                ZCurveMapEditor* pEditor = new ZCurveMapEditor(true);
                 pEditor->setAttribute(Qt::WA_DeleteOnClose);
                 pEditor->addCurve(pModel);
                 pEditor->show();
-            });
-		    m_paramControls[paramName] = pEditBtn;
-		    break;
-	    }
-	    default:
-	    {
-		    zeno::log_warn("got undefined control type {}", param.control);
-		    ZenoTextLayoutItem* pValueItem = new ZenoTextLayoutItem(value, m_renderParams.paramFont, m_renderParams.paramClr.color());
-		    pParamLayout->addItem(pValueItem);
-		    break;
-	    }
-	}
-    return pParamLayout;
+                });
+            return pEditBtn;
+        }
+    }
+    return nullptr;
 }
 
 QPersistentModelIndex ZenoNode::subGraphIndex() const
@@ -609,6 +599,7 @@ void ZenoNode::onParamEditFinished(const QString& paramName, const QVariant& val
     {
     case CONTROL_COLOR:
     case CONTROL_CURVE:
+    case CONTROL_VEC:
         info.newValue = value;
         break;
     default:
@@ -619,30 +610,100 @@ void ZenoNode::onParamEditFinished(const QString& paramName, const QVariant& val
         pGraphsModel->updateParamInfo(nodeid, info, m_subGpIndex, true);
 }
 
-void ZenoNode::onParamUpdated(const QString &paramName, const QVariant &val)
+void ZenoNode::onParamUpdated(ZenoSubGraphScene* pScene, const QString& paramName, const QVariant& val)
 {
+    auto createNewWidget = [this](ZenoParamWidget* pWidget,
+        QGraphicsLinearLayout* pParamLayout,
+        ZenoSubGraphScene* pScene,
+        const PARAM_INFO& param)->ZenoParamWidget*
+    {
+        pParamLayout->removeItem(pWidget);
+        delete pWidget;
+        ZenoParamWidget* pNewWidget = initParamWidget(pScene, param);
+        ZASSERT_EXIT(pNewWidget, nullptr);
+        pParamLayout->addItem(pNewWidget);
+        m_paramControls[param.name] = pNewWidget;
+        return pNewWidget;
+    };
+
     if (m_paramControls.find(paramName) != m_paramControls.end())
     {
         ZenoParamWidget* pWidget = m_paramControls[paramName];
-        if (ZenoParamLineEdit* plineEdit = qobject_cast<ZenoParamLineEdit*>(pWidget))
+        QGraphicsLinearLayout* pParamLayout = static_cast<QGraphicsLinearLayout*>(pWidget->parentLayoutItem());
+
+        PARAMS_INFO params = index().data(ROLE_PARAMETERS).value<PARAMS_INFO>();
+        const PARAM_INFO& param = params[paramName];
+        bool bUpdateLayout = false;
+
+        switch (param.control)
         {
-            plineEdit->setText(val.toString());
+            case CONTROL_STRING:
+            case CONTROL_INT:
+            case CONTROL_FLOAT:
+            {
+                ZenoParamLineEdit* pLineEdit = qobject_cast<ZenoParamLineEdit*>(pWidget);
+                if (!pLineEdit) {
+                    //control type has been changed.
+                    pLineEdit = qobject_cast<ZenoParamLineEdit*>(createNewWidget(pWidget, pParamLayout, pScene, param));
+                    bUpdateLayout = true;
+                }
+                pLineEdit->setValidator(validateForParams(param));
+                pLineEdit->setText(param.value.toString());
+                break;
+            }
+            case CONTROL_BOOL:
+            {
+                ZenoParamCheckBox* pCheckbox = qobject_cast<ZenoParamCheckBox*>(pWidget);
+                if (!pCheckbox) {
+                    pCheckbox = qobject_cast<ZenoParamCheckBox*>(createNewWidget(pWidget, pParamLayout, pScene, param));
+                    bUpdateLayout = true;
+                }
+                pCheckbox->setCheckState(val.toBool() ? Qt::Checked : Qt::Unchecked);
+                break;
+            }
+            case CONTROL_VEC:
+            {
+                int dim = -1;
+                bool bFloat = false;
+                UiHelper::parseVecType(params[paramName].typeDesc, dim, bFloat);
+
+                ZenoVecEditWidget* pVecEdit = qobject_cast<ZenoVecEditWidget*>(pWidget);
+                if (!pVecEdit || pVecEdit->isFloatType() != bFloat) {
+                    pVecEdit = qobject_cast<ZenoVecEditWidget*>(createNewWidget(pWidget, pParamLayout, pScene, param));
+                    bUpdateLayout = true;
+                }
+                pVecEdit->setVec(val.value<UI_VECTYPE>(), bFloat, pScene);
+                break;
+            }
+            case CONTROL_ENUM:
+            {
+                ZenoParamComboBox* pComboBox = qobject_cast<ZenoParamComboBox*>(pWidget);
+                if (!pComboBox) {
+                    //todO:
+                }
+                pComboBox->setText(val.toString());
+                break;
+            }
+            case CONTROL_MULTILINE_STRING:
+            {
+                ZenoParamMultilineStr* pTextEdit = qobject_cast<ZenoParamMultilineStr*>(pWidget);
+                if (!pTextEdit) {
+                    //todO
+                }
+                pTextEdit->setText(val.toString());
+                break;
+            }
+            case CONTROL_READPATH:
+            case CONTROL_WRITEPATH:
+            {
+                ZenoParamPathEdit* pPathWidget = qobject_cast<ZenoParamPathEdit*>(pWidget);
+                bool isRead = param.control == CONTROL_READPATH;
+                pPathWidget->setPath(val.toString());
+                break;
+            }
         }
-        else if (ZenoParamComboBox* pComboBox = qobject_cast<ZenoParamComboBox*>(pWidget))
-        {
-            pComboBox->setText(val.toString());
-        }
-        else if (ZenoParamMultilineStr* pTextEdit = qobject_cast<ZenoParamMultilineStr*>(pWidget))
-        {
-            pTextEdit->setText(val.toString());
-        }
-        else if (ZenoVecEditWidget* pVecEdit = qobject_cast<ZenoVecEditWidget*>(pWidget))
-        {
-            pVecEdit->setVec(val.value<UI_VECTYPE>());
-        }
-        else if (ZenoParamCheckBox* pCheckbox = qobject_cast<ZenoParamCheckBox*>(pWidget))
-        {
-            pCheckbox->setCheckState(val.toBool() ? Qt::Checked : Qt::Unchecked);
+
+        if (bUpdateLayout) {
             updateWhole();
         }
     }
@@ -686,9 +747,11 @@ bool ZenoNode::renameDictKey(bool bInput, const INPUT_SOCKETS& inputs, const OUT
             //rename.
             QString oldName = *uiNewSet.begin();
             QString newName = *coreNewSet.begin();
-            ZASSERT_EXIT(oldName != newName, false);
 
-            _socket_ctrl ctrl = m_inSockets[oldName];
+            auto it = m_inSockets.find(oldName);
+            ZASSERT_EXIT(oldName != newName && it != m_inSockets.end(), false);
+
+            _socket_ctrl ctrl = it->second;
             ctrl.socket_text->setText(newName);
             ctrl.socket->updateSockName(newName);
 
@@ -698,8 +761,7 @@ bool ZenoNode::renameDictKey(bool bInput, const INPUT_SOCKETS& inputs, const OUT
             format.setBackground(QColor(37, 37, 37));
             frame->setFrameFormat(format);
 
-            m_inSockets[newName] = ctrl;
-            m_inSockets.remove(oldName);
+            it->first = newName;
 
             updateWhole();
             return true;
@@ -1045,6 +1107,8 @@ ZenoParamWidget* ZenoNode::initSocketWidget(ZenoSubGraphScene* scene, const INPU
                 info.newInfo.name = newText;
                 info.oldInfo.name = oldText;
                 info.updateWay = SOCKET_UPDATE_NAME;
+                //ZENO_P(info.newInfo.name.toStdString());
+                //ZENO_P(info.oldInfo.name.toStdString());
                 bool ret = pGraphsModel->updateSocketNameNotDesc(m_index.data(ROLE_OBJID).toString(), info,
                                                                  m_subGpIndex, true);
                 if (!ret) {
@@ -1056,10 +1120,14 @@ ZenoParamWidget* ZenoNode::initSocketWidget(ZenoSubGraphScene* scene, const INPU
             });
             return nullptr; //no control expect key editor.
         }
-        case CONTROL_VEC3:
+        case CONTROL_VEC:
         {
             UI_VECTYPE vec = inSocket.info.defaultValue.value<UI_VECTYPE>();
-            bool bFloat = inSocket.info.type != "vec3i";;
+
+            int dim = -1;
+            bool bFloat = false;
+            UiHelper::parseVecType(inSocket.info.type, dim, bFloat);
+
             ZenoVecEditWidget *pVecEditor = new ZenoVecEditWidget(vec, bFloat,  m_renderParams.lineEditParam, scene);
             connect(pVecEditor, &ZenoVecEditWidget::editingFinished, this, [=]() {
                 UI_VECTYPE vec = pVecEditor->vec();
@@ -1173,10 +1241,15 @@ void ZenoNode::updateSocketWidget(ZenoSubGraphScene* pScene, const INPUT_SOCKET 
             pSocketCheckbox->setCheckState(bChecked ? Qt::Checked : Qt::Unchecked);
             break;
         }
-        case CONTROL_VEC3:
+        case CONTROL_VEC:
         {
+            const UI_VECTYPE& vec = inSocket.info.defaultValue.value<UI_VECTYPE>();
+            int dim = -1;
+            bool bFloat = false;
+            UiHelper::parseVecType(inSocket.info.type, dim, bFloat);
+
             ZenoVecEditWidget *pVecEdit = qobject_cast<ZenoVecEditWidget *>(ctrl.socket_control);
-            if (!pVecEdit) {
+            if (!pVecEdit || pVecEdit->isFloatType() != bFloat) {
                 clearInSocketControl(inSocket.info.name);
                 pVecEdit = qobject_cast<ZenoVecEditWidget *>(initSocketWidget(pScene, inSocket, ctrl.socket_text));
                 ZASSERT_EXIT(pVecEdit);
@@ -1184,8 +1257,7 @@ void ZenoNode::updateSocketWidget(ZenoSubGraphScene* pScene, const INPUT_SOCKET 
                 m_inSockets[inSocket.info.name].socket_control = pVecEdit;
                 bUpdateLayout = true;
             }
-            const UI_VECTYPE& vec = inSocket.info.defaultValue.value<UI_VECTYPE>();
-            pVecEdit->setVec(vec);
+            pVecEdit->setVec(vec, bFloat, pScene);
             break;
         }
         case CONTROL_ENUM:
@@ -1350,10 +1422,10 @@ void ZenoNode::switchView(bool bPreview)
     m_pStatusWidgets->setVisible(!bPreview);
 
     for (auto p : m_inSockets) {
-        p.socket->setVisible(!bPreview);
+        p.second.socket->setVisible(!bPreview);
     }
     for (auto p : m_outSockets) {
-        p.socket->setVisible(!bPreview);
+        p.second.socket->setVisible(!bPreview);
     }
     adjustPreview(bPreview);
 }
@@ -1701,10 +1773,10 @@ void ZenoNode::onCollaspeUpdated(bool collasped)
         m_bodyWidget->hide();
         //socket icon item is out of the layout.
         for (auto p : m_inSockets) {
-            p.socket->hide();
+            p.second.socket->hide();
         }
         for (auto p : m_outSockets) {
-            p.socket->hide();
+            p.second.socket->hide();
         }
         m_pMainLayout->setSpacing(0);
     }
@@ -1712,10 +1784,10 @@ void ZenoNode::onCollaspeUpdated(bool collasped)
     {
 		m_bodyWidget->show();
         for (auto p : m_inSockets) {
-            p.socket->show();
+            p.second.socket->show();
         }
         for (auto p : m_outSockets) {
-            p.socket->show();
+            p.second.socket->show();
         }
         m_pMainLayout->setSpacing(1);
     }

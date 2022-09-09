@@ -22,6 +22,29 @@
 #include <zeno/types/PrimitiveTools.h>
 namespace zenovis::optx {
 
+struct CppTimer {
+    void tick() {
+        struct timespec t;
+        std::timespec_get(&t, TIME_UTC);
+        last = t.tv_sec * 1e3 + t.tv_nsec * 1e-6;
+    }
+    void tock() {
+        struct timespec t;
+        std::timespec_get(&t, TIME_UTC);
+        cur = t.tv_sec * 1e3 + t.tv_nsec * 1e-6;
+    }
+    float elapsed() const noexcept {return cur-last;}
+    void tock(std::string_view tag) {
+        tock();
+        printf("%s: %f ms\n", tag.data(), elapsed());
+    }
+
+  private:
+    double last, cur;
+};
+
+static CppTimer timer, localTimer;
+
 struct GraphicsManager {
     Scene *scene;
 
@@ -35,6 +58,32 @@ struct GraphicsManager {
         };
 
     struct ZxxGraphic : zeno::disable_copy {
+        void computeVertexTangent(zeno::PrimitiveObject *prim)
+        {
+            auto &atang = prim->add_attr<zeno::vec3f>("atang");
+            auto &tang = prim->tris.attr<zeno::vec3f>("tang");
+            atang.assign(atang.size(), zeno::vec3f(0));
+            const auto &pos = prim->attr<zeno::vec3f>("pos");
+            for(size_t i=0;i<prim->tris.size();++i)
+            {
+
+                auto vidx = prim->tris[i];
+                zeno::vec3f v0 = pos[vidx[0]];
+                zeno::vec3f v1 = pos[vidx[1]];
+                zeno::vec3f v2 = pos[vidx[2]];
+                auto e1 = v1-v0, e2=v2-v0;
+                float area = zeno::length(zeno::cross(e1, e2)) * 0.5;
+                atang[vidx[0]] += area * tang[i];
+                atang[vidx[1]] += area * tang[i];
+                atang[vidx[2]] += area * tang[i];
+            }
+#pragma omp parallel for
+            for(size_t i=0;i<atang.size();i++)
+            {
+                atang[i] = atang[i]/(length(atang[i])+1e-6);
+
+            }
+        }
         void computeTrianglesTangent(zeno::PrimitiveObject *prim)
         {
             const auto &tris = prim->tris;
@@ -108,6 +157,7 @@ struct GraphicsManager {
                         zeno::primCalcNormal(prim_in,1);
                     }
                     computeTrianglesTangent(prim_in);
+                    computeVertexTangent(prim_in);
                     auto prim = std::make_shared<zeno::PrimitiveObject>();
 
                     prim->verts.resize(prim_in->tris.size()*3);
@@ -120,6 +170,7 @@ struct GraphicsManager {
 
                     std::cout<<"size verts:"<<prim_in->verts.size()<<std::endl;
                     auto &in_pos   = prim_in->verts;
+                    auto &in_tan   = prim_in->attr<zeno::vec3f>("atang");
                     auto &in_clr   = prim_in->add_attr<zeno::vec3f>("clr");
                     auto &in_nrm   = prim_in->add_attr<zeno::vec3f>("nrm");
                     auto &in_uv    = prim_in->attr<zeno::vec3f>("uv");
@@ -140,9 +191,9 @@ struct GraphicsManager {
                               att_uv[vid]          = has_uv?prim_in->tris.attr<zeno::vec3f>("uv0")[tid]:in_uv[prim_in->tris[tid][0]];
                               att_uv[vid+1]        = has_uv?prim_in->tris.attr<zeno::vec3f>("uv1")[tid]:in_uv[prim_in->tris[tid][1]];
                               att_uv[vid+2]        = has_uv?prim_in->tris.attr<zeno::vec3f>("uv2")[tid]:in_uv[prim_in->tris[tid][2]];
-                              att_tan[vid]         = prim_in->tris.attr<zeno::vec3f>("tang")[tid];
-                              att_tan[vid+1]       = prim_in->tris.attr<zeno::vec3f>("tang")[tid];
-                              att_tan[vid+2]       = prim_in->tris.attr<zeno::vec3f>("tang")[tid];
+                              att_tan[vid]         = in_tan[prim_in->tris[tid][0]];
+                              att_tan[vid+1]       = in_tan[prim_in->tris[tid][1]];
+                              att_tan[vid+2]       = in_tan[prim_in->tris[tid][2]];
                              prim->tris[tid]       = zeno::vec3i(vid, vid+1, vid+2);
 
                     }
@@ -499,11 +550,14 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
             xinxinoptix::optixupdatematerial(shaders, shader_tex_names);
 
             //zeno::log_debug("[zeno-optix] updating mesh");
+            // timer.tick();
             if(staticNeedUpdate)
                 xinxinoptix::UpdateStaticMesh(mtlidlut);
-            xinxinoptix::UpdateDynamicMesh(mtlidlut);
+            // timer.tock("done static mesh update");
+            // timer.tick();
+            xinxinoptix::UpdateDynamicMesh(mtlidlut, staticNeedUpdate);
+            // timer.tock("done dynamic mesh update");
             
-
             xinxinoptix::optixupdateend();
             
             

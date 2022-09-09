@@ -113,13 +113,68 @@ NODE_DESCS UiHelper::parseDescs(const rapidjson::Value &jsonDescs)
     return _descs;
 }
 
+bool UiHelper::validateVariant(const QVariant& var, const QString& type)
+{
+    PARAM_CONTROL control = getControlType(type);
+    QVariant::Type varType = var.type();
+
+    switch (control) {
+    case CONTROL_INT:   return QVariant::Int == varType;
+    case CONTROL_BOOL:  return (QVariant::Bool == varType || QVariant::Int == varType);
+    case CONTROL_FLOAT: return (QMetaType::Float == varType || QVariant::Double == varType);
+    case CONTROL_STRING:
+    case CONTROL_WRITEPATH:
+    case CONTROL_READPATH:
+    case CONTROL_ENUM:
+        return (QVariant::String == varType);
+    case CONTROL_MULTILINE_STRING:
+        return var.type() == QVariant::String;
+    case CONTROL_COLOR:
+    {
+        if ((var.type() == QVariant::String) ||
+            (varType == QVariant::UserType &&
+             var.userType() == QMetaTypeId<QLinearGradient>::qt_metatype_id()))
+        {
+            return true;
+        }
+    }
+    case CONTROL_CURVE:
+    {
+        return (varType == QMetaType::VoidStar);
+    }
+    case CONTROL_VEC:
+    {
+        if (varType == QVariant::UserType &&
+            var.userType() == QMetaTypeId<UI_VECTYPE>::qt_metatype_id())
+        {
+            return true;
+        }
+    }
+    case CONTROL_NONE:
+        return var.isNull();
+    case CONTROL_NONVISIBLE:
+        return true;
+    default:
+        break;
+    };
+    return true;
+}
+
 QVariant UiHelper::_parseDefaultValue(const QString &defaultValue, const QString &type)
 {
     auto control = getControlType(type);
     switch (control) {
     case CONTROL_INT:
     {
-        return defaultValue.toInt();
+        bool bOk = false;
+        int val = defaultValue.toInt(&bOk);
+        if (bOk) {
+            return val;
+        }
+        else {
+            //type dismatch.
+            return defaultValue;
+        }
     }
     case CONTROL_BOOL:
     {
@@ -137,13 +192,13 @@ QVariant UiHelper::_parseDefaultValue(const QString &defaultValue, const QString
     case CONTROL_CURVE:
     case CONTROL_ENUM:
         return defaultValue;
-    case CONTROL_VEC3:
+    case CONTROL_VEC:
     {
         UI_VECTYPE vec;
         if (!defaultValue.isEmpty())
         {
             QStringList L = defaultValue.split(",");
-            vec.resize(qMax(L.size(), 3));
+            vec.resize(L.size());
             bool bOK = false;
             for (int i = 0; i < L.size(); i++)
             {
@@ -158,7 +213,7 @@ QVariant UiHelper::_parseDefaultValue(const QString &defaultValue, const QString
         return QVariant::fromValue(vec);
     }
     default:
-        return QVariant();
+        return defaultValue;
     };
 }
 
@@ -241,6 +296,26 @@ QString UiHelper::generateUuid(const QString& name)
     return QString::number(uuid.data1, 16) + "-" + name;
 }
 
+bool UiHelper::parseVecType(const QString& type, int& dim, bool& bFloat)
+{
+    static QRegExp rx("vec(2|3|4)(i|f)?");
+    bool ret = rx.exactMatch(type);
+    if (!ret) return false;
+
+    rx.indexIn(type);
+    QStringList list = rx.capturedTexts();
+    if (list.length() == 3)
+    {
+        dim = list[1].toInt();
+        bFloat = list[2] != 'i';
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
+
 PARAM_CONTROL UiHelper::getControlType(const QString &type)
 {
     if (type.isEmpty()) {
@@ -253,9 +328,16 @@ PARAM_CONTROL UiHelper::getControlType(const QString &type)
         return CONTROL_FLOAT;
     } else if (type == "string") {
         return CONTROL_STRING;
-    } else if (type == "vec3f" || type == "vec3" || type == "vec3i") {
+    } else if (type.startsWith("vec")) {
         // support legacy type "vec3"
-        return CONTROL_VEC3;
+        int dim = 0;
+        bool bFloat = false;
+        if (parseVecType(type, dim, bFloat)) {
+            return CONTROL_VEC;
+        }
+        else {
+            return CONTROL_NONE;
+        }
     } else if (type == "writepath") {
         return CONTROL_WRITEPATH;
     } else if (type == "readpath") {

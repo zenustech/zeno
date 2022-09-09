@@ -2,6 +2,7 @@
 #include <zenoui/model/modelrole.h>
 #include <zeno/utils/logger.h>
 #include <zeno/funcs/ParseObjectFromUi.h>
+#include <zenoui/util/uihelper.h>
 
 using namespace zeno::iotags;
 
@@ -136,18 +137,22 @@ void ZsgWriter::dumpNode(const NODE_DATA& data, RAPIDJSON_WRITER& writer)
 			writer.Key(inSock.info.name.toUtf8());
 
 			QVariant deflVal = inSock.info.defaultValue;
+			const QString& sockType = inSock.info.type;
+			bool bValid = UiHelper::validateVariant(deflVal, sockType);
 			if (!inSock.linkIndice.isEmpty())
 			{
 				for (QPersistentModelIndex linkIdx : inSock.linkIndice)
 				{
 					QString outNode = linkIdx.data(ROLE_OUTNODE).toString();
 					QString outSock = linkIdx.data(ROLE_OUTSOCK).toString();
-					AddVariantList({ outNode, outSock, deflVal }, inSock.info.type, writer, true);
+					AddVariantList({ outNode, outSock, deflVal }, sockType, writer, true);
 				}
 			}
 			else
 			{
-				AddVariantList({ QVariant(), QVariant(), deflVal}, inSock.info.type, writer, true);
+				if (!bValid)
+					deflVal = QVariant();
+				AddVariantList({ QVariant(), QVariant(), deflVal}, sockType, writer, true);
 			}
 		}
 	}

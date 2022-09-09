@@ -30,8 +30,10 @@
         "ZENO_WITH_Rigid": "ON",
         "ZENO_WITH_oldzenbase": "ON",
         "ZENO_WITH_Audio": "ON",
-        "ZENO_WITH_TOOL_FLIPtools": "OFF",
-        "ZENO_WITH_TOOL_BulletTools": "OFF"
+        "ZENO_WITH_PBD": "ON",
+        "ZENO_WITH_SampleModel": "ON",
+        "ZENO_WITH_TOOL_FLIPtools": "ON",
+        "ZENO_WITH_TOOL_BulletTools": "ON"
       }
     },
     {
@@ -51,9 +53,9 @@
         "ZENO_WITH_Alembic": "ON",
         "ZENO_WITH_FBX": "ON",
         "ZENO_WITH_DemBones": "ON",
-        "ZENO_WITH_SampleModel": "ON",
         "ZENO_WITH_MeshSubdiv": "ON",
         "ZENO_WITH_CalcGeometryUV": "ON",
+        "ZENO_WITH_Python": "ON",
         "ZENO_WITH_TOOL_cgmeshTools": "ON",
         "ZENO_WITH_TOOL_HerculesTools": "ON"
       }
@@ -64,7 +66,7 @@
       "displayName": "CUDA configuration",
       "description": "Additionally build with CUDA extension modules",
       "cacheVariables": {
-        "ZENO_WITH_CUDA": "OFF",
+        "ZENO_WITH_CUDA": "ON",
         "ZENO_ENABLE_OPTIX": "ON"
       }
     }

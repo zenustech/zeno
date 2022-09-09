@@ -31,6 +31,8 @@
 #include <zeno/utils/log.h>
 #include <zeno/utils/zeno_p.h>
 #include <zeno/types/MaterialObject.h>
+#include <zeno/types/UserData.h>
+#include "zeno/core/Session.h"
 #include <array>
 #include <optional>
 #include <cstring>
@@ -440,6 +442,14 @@ static void launchSubframe( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Path
     uchar4* result_buffer_data = output_buffer.map();
     state.params.frame_buffer  = result_buffer_data;
     state.params.num_lights = g_lights.size();
+    {
+        auto &ud = zeno::getSession().userData();
+        auto sunLightDir = ud.get2<zeno::vec2f>("sunLightDir", zeno::vec2f(0, 30));
+        sunLightDir[1] = clamp(sunLightDir[1], -90.f, 90.f);
+        state.params.sunLightDirY = sin(sunLightDir[1] / 180.f * M_PI);
+        state.params.sunLightDirX = cos(sunLightDir[1] / 180.f * M_PI) * sin(sunLightDir[0] / 180.f * M_PI);
+        state.params.sunLightDirZ = cos(sunLightDir[1] / 180.f * M_PI) * cos(sunLightDir[0] / 180.f * M_PI);
+    }
     CUDA_CHECK( cudaMemcpy(
                 reinterpret_cast<void*>( (CUdeviceptr)state.d_params ),
                 &state.params, sizeof( Params ),
@@ -1113,7 +1123,7 @@ void UpdateStaticMesh(std::map<std::string, int> const &mtlidlut) {
 
     }
 }
-void UpdateDynamicMesh(std::map<std::string, int> const &mtlidlut) {
+void UpdateDynamicMesh(std::map<std::string, int> const &mtlidlut, bool staticNeedUpdate) {
     camera_changed = true;
     g_mtlidlut = mtlidlut;
     updatedrawobjects();
@@ -1195,12 +1205,17 @@ void UpdateDynamicMesh(std::map<std::string, int> const &mtlidlut) {
         state.d_nrm.resize(vertices_size_in_bytes, dynamic_vertices_size_in_bytes);
         state.d_tan.resize(vertices_size_in_bytes, dynamic_vertices_size_in_bytes);
         size_t reservedCap = state.d_vertices.capacity - vertices_size_in_bytes;
-        if (reservedCap) {
-            CUDA_CHECK(cudaMemset((char *)((CUdeviceptr &)state.d_vertices) + vertices_size_in_bytes, 0, reservedCap));
-            CUDA_CHECK(cudaMemset((char *)((CUdeviceptr &)state.d_clr) + vertices_size_in_bytes, 0, reservedCap));
-            CUDA_CHECK(cudaMemset((char *)((CUdeviceptr &)state.d_uv) + vertices_size_in_bytes, 0, reservedCap));
-            CUDA_CHECK(cudaMemset((char *)((CUdeviceptr &)state.d_nrm) + vertices_size_in_bytes, 0, reservedCap));
-            CUDA_CHECK(cudaMemset((char *)((CUdeviceptr &)state.d_tan) + vertices_size_in_bytes, 0, reservedCap));
+        if (reservedCap > 0) {
+            CUDA_CHECK(cudaMemset(reinterpret_cast<char *>((CUdeviceptr &)state.d_vertices) +
+                                      vertices_size_in_bytes, 0, reservedCap));
+            CUDA_CHECK(cudaMemset(reinterpret_cast<char *>((CUdeviceptr &)state.d_clr) +
+                                      vertices_size_in_bytes, 0, reservedCap));
+            CUDA_CHECK(cudaMemset(reinterpret_cast<char *>((CUdeviceptr &)state.d_uv) +
+                                      vertices_size_in_bytes, 0, reservedCap));
+            CUDA_CHECK(cudaMemset(reinterpret_cast<char *>((CUdeviceptr &)state.d_nrm) +
+                                      vertices_size_in_bytes, 0, reservedCap));
+            CUDA_CHECK(cudaMemset(reinterpret_cast<char *>((CUdeviceptr &)state.d_tan) +
+                                      vertices_size_in_bytes, 0, reservedCap));
         }
 #else
         CUDA_CHECK(cudaMalloc(reinterpret_cast<void **>(&state.d_vertices.reset()), vertices_size_in_bytes));
@@ -1210,16 +1225,28 @@ void UpdateDynamicMesh(std::map<std::string, int> const &mtlidlut) {
         CUDA_CHECK(cudaMalloc(reinterpret_cast<void **>(&state.d_tan.reset()), vertices_size_in_bytes));
 #endif
         updateRange();
-        CUDA_CHECK(cudaMemcpy(reinterpret_cast<void *>((CUdeviceptr &)state.d_vertices),
+        CUDA_CHECK(cudaMemcpy(reinterpret_cast<char *>((CUdeviceptr &)state.d_vertices) + offset,
                               (char *)g_vertices.data() + offset, numBytes, cudaMemcpyHostToDevice));
-        CUDA_CHECK(cudaMemcpy(reinterpret_cast<void *>((CUdeviceptr &)state.d_clr), (char *)g_clr.data() + offset,
+        CUDA_CHECK(cudaMemcpy(reinterpret_cast<char *>((CUdeviceptr &)state.d_clr) + offset, (char *)g_clr.data() + offset,
                               numBytes, cudaMemcpyHostToDevice));
-        CUDA_CHECK(cudaMemcpy(reinterpret_cast<void *>((CUdeviceptr &)state.d_uv), (char *)g_uv.data() + offset,
+        CUDA_CHECK(cudaMemcpy(reinterpret_cast<char *>((CUdeviceptr &)state.d_uv) + offset, (char *)g_uv.data() + offset,
                               numBytes, cudaMemcpyHostToDevice));
-        CUDA_CHECK(cudaMemcpy(reinterpret_cast<void *>((CUdeviceptr &)state.d_nrm), (char *)g_nrm.data() + offset,
+        CUDA_CHECK(cudaMemcpy(reinterpret_cast<char *>((CUdeviceptr &)state.d_nrm) + offset, (char *)g_nrm.data() + offset,
                               numBytes, cudaMemcpyHostToDevice));
-        CUDA_CHECK(cudaMemcpy(reinterpret_cast<void *>((CUdeviceptr &)state.d_tan), (char *)g_tan.data() + offset,
+        CUDA_CHECK(cudaMemcpy(reinterpret_cast<char *>((CUdeviceptr &)state.d_tan) + offset, (char *)g_tan.data() + offset,
                               numBytes, cudaMemcpyHostToDevice));
+        if (staticNeedUpdate && offset != 0) {
+            CUDA_CHECK(cudaMemcpy(reinterpret_cast<char *>((CUdeviceptr &)state.d_vertices),
+                                  (char *)g_vertices.data(), static_vertices_size_in_bytes, cudaMemcpyHostToDevice));
+            CUDA_CHECK(cudaMemcpy(reinterpret_cast<char *>((CUdeviceptr &)state.d_clr), (char *)g_clr.data(),
+                                  static_vertices_size_in_bytes, cudaMemcpyHostToDevice));
+            CUDA_CHECK(cudaMemcpy(reinterpret_cast<char *>((CUdeviceptr &)state.d_uv), (char *)g_uv.data(),
+                                  static_vertices_size_in_bytes, cudaMemcpyHostToDevice));
+            CUDA_CHECK(cudaMemcpy(reinterpret_cast<char *>((CUdeviceptr &)state.d_nrm), (char *)g_nrm.data(),
+                                  static_vertices_size_in_bytes, cudaMemcpyHostToDevice));
+            CUDA_CHECK(cudaMemcpy(reinterpret_cast<char *>((CUdeviceptr &)state.d_tan), (char *)g_tan.data(),
+                                  static_vertices_size_in_bytes, cudaMemcpyHostToDevice));
+        }
 
         const size_t mat_indices_size_in_bytes = g_mat_indices.size() * sizeof(uint32_t);
         const size_t light_mark_size_in_bytes = g_lightMark.size() * sizeof(unsigned short);
@@ -1298,42 +1325,28 @@ void optixupdatelight() {
     g_lights.clear();
     g_lightMesh.clear();
     g_lightColor.clear();
-    if(lightdats.empty())
-    {
-        for (int i = 0; i < 1; i++) {
-            auto &light = g_lights.emplace_back();
-            light.emission = make_float3( 30000.f,30000.f,30000.f );
-            light.corner   = make_float3( 343.0f, 548.5f, 227.0f );
-            light.v2       = make_float3( -10.0f, 0.0f, 0.0f );
-            light.normal   = make_float3( 0.0f, -1.0f, 0.0f );
-            light.v1       = cross( light.v2, light.normal );
-            addLightMesh(light.corner, light.v2, light.v1, light.normal, light.emission);
-        }
-    }
-    else
-    {
-        for (auto const &[key, dat]: lightdats) {
-            auto &light = g_lights.emplace_back();
-            light.emission = make_float3( (float)(dat.emission[0]), (float)dat.emission[1], (float)dat.emission[2] );
-            //zeno::log_info("light clr after read: {} {} {}", light.emission.x,light.emission.y,light.emission.z);
-            light.corner   = make_float3( dat.v0[0], dat.v0[1], dat.v0[2] );
-            //zeno::log_info("light clr after read: {} {} {}", light.corner.x,light.corner.y,light.corner.z);
-            light.v1       = make_float3( dat.v1[0], dat.v1[1], dat.v1[2] );
-            //zeno::log_info("light clr after read: {} {} {}", light.v1.x,light.v1.y,light.v1.z);
-            light.v2       = make_float3( dat.v2[0], dat.v2[1], dat.v2[2] );
-            //zeno::log_info("light clr after read: {} {} {}", light.v2.x,light.v2.y,light.v2.z);
-            light.normal   = make_float3( dat.normal[0], dat.normal[1], dat.normal[2] );
-            //zeno::log_info("light clr after read: {} {} {}", light.normal.x,light.normal.y,light.normal.z);
-            addLightMesh(light.corner, light.v2, light.v1, light.normal, light.emission);
-        }
+
+    for (auto const &[key, dat]: lightdats) {
+        auto &light = g_lights.emplace_back();
+        light.emission = make_float3( (float)(dat.emission[0]), (float)dat.emission[1], (float)dat.emission[2] );
+        //zeno::log_info("light clr after read: {} {} {}", light.emission.x,light.emission.y,light.emission.z);
+        light.corner   = make_float3( dat.v0[0], dat.v0[1], dat.v0[2] );
+        //zeno::log_info("light clr after read: {} {} {}", light.corner.x,light.corner.y,light.corner.z);
+        light.v1       = make_float3( dat.v1[0], dat.v1[1], dat.v1[2] );
+        //zeno::log_info("light clr after read: {} {} {}", light.v1.x,light.v1.y,light.v1.z);
+        light.v2       = make_float3( dat.v2[0], dat.v2[1], dat.v2[2] );
+        //zeno::log_info("light clr after read: {} {} {}", light.v2.x,light.v2.y,light.v2.z);
+        light.normal   = make_float3( dat.normal[0], dat.normal[1], dat.normal[2] );
+        //zeno::log_info("light clr after read: {} {} {}", light.normal.x,light.normal.y,light.normal.z);
+        addLightMesh(light.corner, light.v2, light.v1, light.normal, light.emission);
     }
 
-    g_lights[0].cdf = length(cross(g_lights[0].v1, g_lights[0].v2));
-    float a = g_lights[0].cdf;
-    for(int l=1;l<g_lights.size();l++)
-    {
-        g_lights[l].cdf = g_lights[l-1].cdf + length(cross(g_lights[l].v1, g_lights[l].v2));
-
+    if(g_lights.size()) {
+        g_lights[0].cdf = length(cross(g_lights[0].v1, g_lights[0].v2));
+        float a = g_lights[0].cdf;
+        for (int l = 1; l < g_lights.size(); l++) {
+            g_lights[l].cdf = g_lights[l - 1].cdf + length(cross(g_lights[l].v1, g_lights[l].v2));
+        }
     }
 //    for(int l=0;l<g_lights.size();l++)
 //    {
@@ -1343,7 +1356,7 @@ void optixupdatelight() {
 
     CUDA_CHECK( cudaMalloc(
                 reinterpret_cast<void**>( &state.lightsbuf_p.reset() ),
-                sizeof( ParallelogramLight ) * g_lights.size()
+                sizeof( ParallelogramLight ) * std::max(g_lights.size(),(size_t)1)
                 ) );
     state.params.lights = (ParallelogramLight*)(CUdeviceptr)state.lightsbuf_p;
     if (g_lights.size())

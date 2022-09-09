@@ -2,6 +2,8 @@
 #include <zeno/extra/assetDir.h>
 #include <zeno/core/Session.h>
 #include <zeno/utils/log.h>
+#include <zeno/types/UserData.h>
+#include <zeno/types/GenericObject.h>
 #include "zstartup.h"
 #include <QApplication>
 #include <QSettings>
@@ -11,6 +13,7 @@
 void startUp()
 {
     zeno::setExecutableDir(QCoreApplication::applicationDirPath().toStdString());
+    zeno::setConfigVariable("EXECFILE", QCoreApplication::applicationFilePath().toStdString());
 
     QSettings settings(zsCompanyName, zsEditor);
     QVariant nas_loc_v = settings.value("nas_loc");
@@ -46,19 +49,73 @@ std::string getZenoVersion() {
 void verifyVersion()
 {
     auto ver = getZenoVersion();
+    const char *plat =
+#if defined(Q_OS_WIN)
+                   "windows"
+#elif defined(Q_OS_LINUX)
+                   "linux"
+#else
+                   "unknown"
+#endif
+#if defined(NDEBUG)
+                   " release"
+#else
+                   " debug"
+#endif
+                   ;
+    const char *feat =
+#if defined(__INTEL_COMPILER)
+                   "icc"
+#elif defined(__clang__)
+                   "clang"
+#elif defined(__GNUC__)
+                   "gcc"
+#elif defined(_MSC_VER)
+                   "msvc"
+#else
+                   "unknown"
+#endif
+#if defined(ZENO_MULTIPROCESS)
+#if defined(ZENO_IPC_USE_TCP)
+                   "+tcp"
+#else
+                   "+pipe"
+#endif
+#endif
+#if defined(_OPENMP)
+                   "+omp"
+#endif
+#if defined(ZENO_PARALLEL_STL)
+                   "+pstl"
+#endif
+#if defined(ZENO_ENABLE_BACKWARD)
+                   "+bt"
+#endif
+#if defined(ZENO_BENCHMARKING)
+                   "+tm"
+#endif
+                   ;
     // TODO: luzh, may check the internet latest version and compare, if not latest hint the user to update..
-    zeno::log_info("{} {} {} {}",
-#if defined Q_OS_WIN
-                   "windows",
-#elif defined Q_OS_LINUX
-                   "linux",
-#else
-                   "unknown",
-#endif
-#ifdef NDEBUG
-                   "release",
-#else
-                   "debug",
-#endif
-                   ver, __TIME__);
+    zeno::log_info("zeno {} {} {} {}", plat, ver, __TIME__, feat);
+}
+
+int invoke_main(int argc, char *argv[]);
+int invoke_main(int argc, char *argv[]) {
+    if (argc < 1) {
+        zeno::log_error("no enough arguments to -invoke");
+        return -1;
+    }
+    std::string prog = argv[0];
+    std::vector<char *> newArgv(argv, argv + argc);
+    std::string newProg = QCoreApplication::applicationFilePath().toStdString() + "\0";
+    newArgv[0] = newProg.data();
+    auto &ud = zeno::getSession().userData();
+    if (!ud.has("subprogram_" + prog)) {
+        zeno::log_error("no such sub-program named [{}]", prog);
+        return -1;
+    }
+    zeno::log_info("launching sub-program [{}]", prog);
+    auto alterMain = ud.get<zeno::GenericObject<int(*)(int, char **)>>("subprogram_" + prog)->get();
+    alterMain(newArgv.size(), newArgv.data());
+    return 0;
 }

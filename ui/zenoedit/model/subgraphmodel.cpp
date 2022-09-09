@@ -277,7 +277,7 @@ SubGraphModel* SubGraphModel::clone(GraphsModel* parent)
     return pClone;
 }
 
-void SubGraphModel::updateParam(const QString& nodeid, const QString& paramName, const QVariant& var)
+void SubGraphModel::updateParam(const QString& nodeid, const QString& paramName, const QVariant& var, QString* newType)
 {
     auto it = m_nodes.find(nodeid);
     if (it == m_nodes.end())
@@ -293,25 +293,10 @@ void SubGraphModel::updateParam(const QString& nodeid, const QString& paramName,
 
     const QString& nodeCls = idx.data(ROLE_OBJNAME).toString();
     //correct the control type and desc type according to the type of real value.
-    if (paramName == "defl" && (nodeCls == "SubInput" || nodeCls == "SubOutput"))
+    if (paramName == "defl" && (nodeCls == "SubInput" || nodeCls == "SubOutput") && newType)
     {
-        QVariant::Type varType = var.type();
-        if (varType == QMetaType::Float) {
-            param.typeDesc = "float";
-            param.control = CONTROL_FLOAT;
-        }
-        else if (varType == QMetaType::Int) {
-            param.typeDesc = "int";
-            param.control = CONTROL_INT;
-        }
-        else if (varType == QVariant::String) {
-            param.typeDesc = "string";
-            param.control = CONTROL_STRING;
-        }
-        else if (var.isNull()) {
-            param.typeDesc = "";
-            param.control = CONTROL_NONE;
-        }
+        param.typeDesc = *newType;
+        param.control = UiHelper::getControlType(param.typeDesc);
     }
 
     setData(idx, QVariant::fromValue(params), ROLE_PARAMETERS);
@@ -342,6 +327,7 @@ void SubGraphModel::updateSocket(const QString& nodeid, const SOCKET_UPDATE_INFO
         QModelIndex idx = index(nodeid);
         ZASSERT_EXIT(idx.isValid());
         INPUT_SOCKETS inputs = data(idx, ROLE_INPUTS).value<INPUT_SOCKETS>();
+        const QString& nodeName = idx.data(ROLE_OBJNAME).toString();
         const QString& oldName = info.oldInfo.name;
         const QString& newName = info.newInfo.name;
         switch (info.updateWay)
@@ -350,7 +336,15 @@ void SubGraphModel::updateSocket(const QString& nodeid, const SOCKET_UPDATE_INFO
             {
                 INPUT_SOCKET newSock;
                 newSock.info = info.newInfo;
-                inputs.push_front(newName, newSock);    //ensure SRC is the last socket in layout and serialization.
+                if (nodeName == "MakeDict" || nodeName == "ExtractDict" || nodeName == "MakeList")
+                {
+                    //dynamic socket in dict grows by bottom direction.
+                    inputs.insert(newName, newSock);
+                }
+                else
+                {
+                    inputs.push_front(newName, newSock);    //ensure SRC is the last socket in layout and serialization.
+                }
                 setData(idx, QVariant::fromValue(inputs), ROLE_INPUTS);
                 break;
             }

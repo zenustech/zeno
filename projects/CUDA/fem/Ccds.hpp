@@ -337,7 +337,7 @@ constexpr auto solve_quadratic(const zs::VecInterface<VecT> &c,
 template <typename VecT, typename T,
           zs::enable_if_all<VecT::dim == 1, VecT::extent == 3,
                             std::is_floating_point_v<T>> = 0>
-[[nodiscard("VF coplanarity cubic equation coefficients")]] constexpr auto
+[[nodiscard/*("VF coplanarity cubic equation coefficients")*/]] constexpr auto
 cubic_eqn_VF(const zs::VecInterface<VecT> a0, const zs::VecInterface<VecT> ad,
              const zs::VecInterface<VecT> b0, const zs::VecInterface<VecT> bd,
              const zs::VecInterface<VecT> c0, const zs::VecInterface<VecT> cd,
@@ -361,7 +361,7 @@ cubic_eqn_VF(const zs::VecInterface<VecT> a0, const zs::VecInterface<VecT> ad,
 template <typename VecT, typename T,
           zs::enable_if_all<VecT::dim == 1, VecT::extent == 3,
                             std::is_floating_point_v<T>> = 0>
-[[nodiscard("EE coplanaritycubic equation coefficients")]] constexpr auto
+[[nodiscard/*("EE coplanaritycubic equation coefficients")*/]] constexpr auto
 cubic_eqn_EE(const zs::VecInterface<VecT> a0, const zs::VecInterface<VecT> ad,
              const zs::VecInterface<VecT> b0, const zs::VecInterface<VecT> bd,
              const zs::VecInterface<VecT> c0, const zs::VecInterface<VecT> cd,
