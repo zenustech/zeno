@@ -1594,6 +1594,7 @@ bool GraphsModel::updateSocketNameNotDesc(const QString& id, SOCKET_UPDATE_INFO 
                 ZASSERT_EXIT(iter != inputs.end(), false);
 
                 iter->first = newSockName;
+                iter->second.info.name = newSockName;
 
                 //update all link connect with oldInfo.
                 m_linkModel->blockSignals(true);
@@ -2152,4 +2153,10 @@ void GraphsModel::resolveLinks(const QModelIndex& idx, SubGraphModel* pCurrentGr
 			}
 		}
 	}
+}
+
+void GraphsModel::setNodeData(const QModelIndex &nodeIndex, const QModelIndex &subGpIdx, const QVariant &value, int role) {
+    SubGraphModel* pModel = this->subGraph(subGpIdx.row());
+    ZASSERT_EXIT(pModel);
+    pModel->setData(nodeIndex, value, role);
 }

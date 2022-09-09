@@ -46,41 +46,65 @@ struct IPCSystem : IObject {
         PrimitiveHandle(ZenoParticles &zsprim, std::size_t &vOffset, std::size_t &sfOffset, std::size_t &seOffset,
                         std::size_t &svOffset, zs::wrapv<4>);
         // soft springs: only elasticity matters
-        PrimitiveHandle(dtiles_t &vtemp, std::shared_ptr<tiles_t> elesPtr);
+        PrimitiveHandle(std::shared_ptr<tiles_t> elesPtr, ZenoParticles::category_e);
         T averageNodalMass(zs::CudaExecutionPolicy &pol) const;
         T averageSurfEdgeLength(zs::CudaExecutionPolicy &pol) const;
         T averageSurfArea(zs::CudaExecutionPolicy &pol) const;
 
         auto getModelLameParams() const {
-            T mu, lam;
-            zs::match([&](const auto &model) {
-                mu = model.mu;
-                lam = model.lam;
-            })(models.getElasticModel());
+            T mu = 0, lam = 0;
+            if (!isAuxiliary() && modelsPtr) {
+                zs::match([&](const auto &model) {
+                    mu = model.mu;
+                    lam = model.lam;
+                })(modelsPtr->getElasticModel());
+            }
             return zs::make_tuple(mu, lam);
         }
 
+        decltype(auto) getModels() const {
+            if (!modelsPtr)
+                throw std::runtime_error("primhandle models not available");
+            return *modelsPtr;
+        }
         decltype(auto) getVerts() const {
+            if (!vertsPtr)
+                throw std::runtime_error("primhandle verts not available");
             return *vertsPtr;
         }
         decltype(auto) getEles() const {
+            if (!elesPtr)
+                throw std::runtime_error("primhandle eles not available");
             return *elesPtr;
         }
         decltype(auto) getSurfTris() const {
+            if (!surfTrisPtr)
+                throw std::runtime_error("primhandle surf tris not available");
             return *surfTrisPtr;
         }
         decltype(auto) getSurfEdges() const {
+            if (!surfEdgesPtr)
+                throw std::runtime_error("primhandle surf edges not available");
             return *surfEdgesPtr;
         }
         decltype(auto) getSurfVerts() const {
+            if (!surfVertsPtr)
+                throw std::runtime_error("primhandle surf verts not available");
             return *surfVertsPtr;
         }
+        bool isAuxiliary() const noexcept {
+            if (zsprimPtr == nullptr)
+                return true;
+            return false;
+        }
         bool isBoundary() const noexcept {
+            if (zsprimPtr == nullptr) // auxiliary primitive for soft binding
+                return true;
             return zsprimPtr->asBoundary;
         }
 
         std::shared_ptr<ZenoParticles> zsprimPtr{}; // nullptr if it is an auxiliary
-        const ZenoConstitutiveModel &models;
+        std::shared_ptr<const ZenoConstitutiveModel> modelsPtr;
         std::shared_ptr<ZenoParticles::dtiles_t> vertsPtr;
         std::shared_ptr<ZenoParticles::particles_t> elesPtr;
         typename ZenoParticles::dtiles_t etemp;
@@ -92,6 +116,9 @@ struct IPCSystem : IObject {
         ZenoParticles::category_e category;
     };
 
+    bool hasBoundary() const noexcept {
+        return coVerts != nullptr;
+    }
     T averageNodalMass(zs::CudaExecutionPolicy &pol);
     T averageSurfEdgeLength(zs::CudaExecutionPolicy &pol);
     T averageSurfArea(zs::CudaExecutionPolicy &pol);
@@ -105,6 +132,9 @@ struct IPCSystem : IObject {
         return mu;
     }
 
+    void pushBoundarySprings(std::shared_ptr<tiles_t> elesPtr, ZenoParticles::category_e category) {
+        auxPrims.push_back(PrimitiveHandle{std::move(elesPtr), category});
+    }
     void updateWholeBoundingBoxSize(zs::CudaExecutionPolicy &pol);
     void initKappa(zs::CudaExecutionPolicy &pol);
     void initialize(zs::CudaExecutionPolicy &pol);
@@ -150,10 +180,10 @@ struct IPCSystem : IObject {
     void project(zs::CudaExecutionPolicy &pol, const zs::SmallString tag);
     void precondition(zs::CudaExecutionPolicy &pol, const zs::SmallString srcTag, const zs::SmallString dstTag);
     void multiply(zs::CudaExecutionPolicy &pol, const zs::SmallString dxTag, const zs::SmallString bTag);
-    T energy(zs::CudaExecutionPolicy &pol, const zs::SmallString tag, bool includeAugLagEnergy = false);
     void cgsolve(zs::CudaExecutionPolicy &cudaPol);
     void groundIntersectionFreeStepsize(zs::CudaExecutionPolicy &pol, T &stepSize);
     void intersectionFreeStepsize(zs::CudaExecutionPolicy &pol, T xi, T &stepSize);
+    T energy(zs::CudaExecutionPolicy &pol, const zs::SmallString tag, bool includeAugLagEnergy = false);
     void lineSearch(zs::CudaExecutionPolicy &cudaPol, T &alpha);
 
     // sim params
@@ -193,6 +223,7 @@ struct IPCSystem : IObject {
 
     //
     std::vector<PrimitiveHandle> prims;
+    std::vector<PrimitiveHandle> auxPrims;
     std::size_t coOffset, numDofs;
     std::size_t sfOffset, seOffset, svOffset;
 

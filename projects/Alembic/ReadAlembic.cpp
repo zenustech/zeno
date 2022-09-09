@@ -31,7 +31,7 @@ static int clamp(int i, int _min, int _max) {
     }
 }
 
-static std::shared_ptr<PrimitiveObject> foundABCMesh(Alembic::AbcGeom::IPolyMeshSchema &mesh, int frameid, bool read_done) {
+static std::shared_ptr<PrimitiveObject> foundABCMesh(Alembic::AbcGeom::IPolyMeshSchema &mesh, int frameid, bool read_done, bool flipFrontBack) {
     auto prim = std::make_shared<PrimitiveObject>();
 
     std::shared_ptr<Alembic::AbcCoreAbstract::v12::TimeSampling> time = mesh.getTimeSampling();
@@ -63,20 +63,6 @@ static std::shared_ptr<PrimitiveObject> foundABCMesh(Alembic::AbcGeom::IPolyMesh
             parr.emplace_back(val[0], val[1], val[2]);
         }
     }
-
-    if (auto marr = mesamp.getFaceCounts()) {
-        if (!read_done) {
-            log_info("[alembic] totally {} faces", marr->size());
-        }
-        auto &parr = prim->polys;
-        int base = 0;
-        for (size_t i = 0; i < marr->size(); i++) {
-            int cnt = (*marr)[i];
-            parr.emplace_back(base, cnt);
-            base += cnt;
-        }
-    }
-
     if (auto marr = mesamp.getFaceIndices()) {
         if (!read_done) {
             log_info("[alembic] totally {} face indices", marr->size());
@@ -88,6 +74,25 @@ static std::shared_ptr<PrimitiveObject> foundABCMesh(Alembic::AbcGeom::IPolyMesh
         }
     }
 
+    if (auto marr = mesamp.getFaceCounts()) {
+        if (!read_done) {
+            log_info("[alembic] totally {} faces", marr->size());
+        }
+        auto &loops = prim->loops;
+        auto &parr = prim->polys;
+        int base = 0;
+        for (size_t i = 0; i < marr->size(); i++) {
+            int cnt = (*marr)[i];
+            parr.emplace_back(base, cnt);
+            if (flipFrontBack) {
+                for (int j = 0; j < (cnt / 2); j++) {
+                    std::swap(loops[base + j], loops[base + cnt - 1 - j]);
+                }
+            }
+            base += cnt;
+        }
+    }
+/*
     prim_triangulate(prim.get());
 
     auto &uv0 = prim->tris.add_attr<zeno::vec3f>("uv0");
@@ -157,7 +162,51 @@ static std::shared_ptr<PrimitiveObject> foundABCMesh(Alembic::AbcGeom::IPolyMesh
             }
         }
     }
-
+*/
+    if (auto uv = mesh.getUVsParam()) {
+        auto uvsamp =
+            uv.getIndexedValue(Alembic::Abc::v12::ISampleSelector((Alembic::AbcCoreAbstract::index_t)sample_index));
+        int value_size = (int)uvsamp.getVals()->size();
+        int index_size = (int)uvsamp.getIndices()->size();
+        if (!read_done) {
+            log_info("[alembic] totally {} uv value", value_size);
+            log_info("[alembic] totally {} uv indices", index_size);
+            if (prim->loops.size() == index_size) {
+                log_info("[alembic] uv per face");
+            } else if (prim->verts.size() == index_size) {
+                log_info("[alembic] uv per vertex");
+            } else {
+                log_error("[alembic] error uv indices");
+            }
+        }
+        auto uv_value = std::vector<zeno::vec3f>();
+        {
+            auto marr = uvsamp.getVals();
+            for (size_t i = 0; i < marr->size(); i++) {
+                auto const &val = (*marr)[i];
+                uv_value.emplace_back(val[0], val[1], 0);
+            }
+        }
+        auto &_uv = prim->loops.add_attr<zeno::vec3f>("uv");
+        if (prim->loops.size() == index_size) {
+            for (auto i = 0; i < prim->loops.size(); i++) {
+                _uv[i] = uv_value[(*uvsamp.getIndices())[i]];
+            }
+        }
+        else if (prim->verts.size() == index_size) {
+            for (auto i = 0; i < prim->loops.size(); i++) {
+                _uv[i] = uv_value[prim->loops[i]];
+            }
+        }
+        else {
+            if (!read_done) {
+                log_warn("[alembic] Not found uv, auto fill zero.");
+            }
+            for (auto i = 0; i < prim->loops.size(); i++) {
+                _uv[i] = zeno::vec3f(0, 0, 0);
+            }
+        }
+    }
     ICompoundProperty arbattrs = mesh.getArbGeomParams();
 
     if (arbattrs) {
@@ -233,7 +282,8 @@ static void traverseABC(
     Alembic::AbcGeom::IObject &obj,
     ABCTree &tree,
     int frameid,
-    bool read_done
+    bool read_done,
+    bool flipFrontBack
 ) {
     {
         auto const &md = obj.getMetaData();
@@ -249,7 +299,7 @@ static void traverseABC(
 
             Alembic::AbcGeom::IPolyMesh meshy(obj);
             auto &mesh = meshy.getSchema();
-            tree.prim = foundABCMesh(mesh, frameid, read_done);
+            tree.prim = foundABCMesh(mesh, frameid, read_done, flipFrontBack);
         } else if (Alembic::AbcGeom::IXformSchema::matches(md)) {
             if (!read_done) {
                 log_info("[alembic] found a Xform [{}]", obj.getName());
@@ -281,7 +331,7 @@ static void traverseABC(
         Alembic::AbcGeom::IObject child(obj, name);
 
         auto childTree = std::make_shared<ABCTree>();
-        traverseABC(child, *childTree, frameid, read_done);
+        traverseABC(child, *childTree, frameid, read_done, flipFrontBack);
         tree.children.push_back(std::move(childTree));
     }
 }
@@ -319,6 +369,7 @@ struct ReadAlembic : INode {
         } else {
             frameid = getGlobalState()->frameid;
         }
+        bool flipFrontBack = get_input2<int>("flipFrontBack");
         auto abctree = std::make_shared<ABCTree>();
         {
             auto path = get_input<StringObject>("path")->get();
@@ -330,7 +381,7 @@ struct ReadAlembic : INode {
             // fmt::print("GetArchiveStartAndEndTime: {}\n", start);
             // fmt::print("archive.getNumTimeSamplings: {}\n", archive.getNumTimeSamplings());
             auto obj = archive.getTop();
-            traverseABC(obj, *abctree, frameid, read_done);
+            traverseABC(obj, *abctree, frameid, read_done, flipFrontBack);
             read_done = true;
         }
         set_output("abctree", std::move(abctree));
@@ -341,6 +392,7 @@ ZENDEFNODE(ReadAlembic, {
     {
         {"readpath", "path"},
         {"frameid"},
+        {"bool", "flipFrontBack", "0"},
     },
     {{"ABCTree", "abctree"}},
     {},

@@ -99,7 +99,7 @@ struct raii {
     }
 
     template <typename TT = T, std::enable_if_t<std::is_same_v<TT, CUdeviceptr>> * = nullptr>
-    bool resize(std::size_t newSize, std::size_t incSize = 0) noexcept {
+    bool resize(std::size_t newSize, std::size_t incSize = 0) {
 #if 0
         if (newSize != size) {  // temporary
             printf("\n\nreallocating %d bytes (previous %d bytes)\n\n\n", (int)size, (int)newSize);

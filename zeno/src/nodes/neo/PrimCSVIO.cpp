@@ -49,7 +49,7 @@ struct WritePrimToCSV : INode {
         auto prim = get_input<PrimitiveObject>("prim");
         auto path = get_input<StringObject>("path")->get();
         std::ofstream fout(path);
-        auto mbr = funcalt_variant(array_index(
+        auto memb = invoker_variant(array_index(
                 {"verts", "points", "lines", "tris", "quads", "loops", "polys"},
                 get_input2<std::string>("type")),
             &PrimitiveObject::verts,
@@ -59,9 +59,9 @@ struct WritePrimToCSV : INode {
             &PrimitiveObject::quads,
             &PrimitiveObject::loops,
             &PrimitiveObject::polys);
-        std::visit([&] (auto const &mbr) {
-            dump_csv(mbr(*prim), fout);
-        }, mbr);
+        std::visit([&] (auto const &memb) {
+            dump_csv(memb(*prim), fout);
+        }, memb);
         set_output("prim", std::move(prim));
     }
 };

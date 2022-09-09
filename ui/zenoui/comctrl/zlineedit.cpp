@@ -99,7 +99,7 @@ bool ZLineEdit::event(QEvent* event)
     if (event->type() == QEvent::KeyPress)
     {
         QKeyEvent* k = (QKeyEvent*)event;
-        if (m_pSlider && k->key() == Qt::Key_Alt)
+        if (m_pSlider && k->key() == Qt::Key_Shift)
         {
             popupSlider();
             k->accept();
@@ -117,7 +117,7 @@ void ZLineEdit::keyPressEvent(QKeyEvent* event)
 void ZLineEdit::keyReleaseEvent(QKeyEvent* event)
 {
     int k = event->key();
-    if (k == Qt::Key_Alt && m_pSlider)
+    if (k == Qt::Key_Shift && m_pSlider)
     {
         m_pSlider->hide();
         setShowingSlider(false);

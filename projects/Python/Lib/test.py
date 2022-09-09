@@ -1,5 +1,7 @@
 import ze
 
-graph = ze.ZenoGraph()
-msg = ze.ZenoObject.makeString('hello python')
-print(graph.callTempNode('Route', {'input': msg}))
+def func():
+    print('func called')
+    return 42
+
+ze.rets.obj0 = ze.ZenoObject._newFunc(func)

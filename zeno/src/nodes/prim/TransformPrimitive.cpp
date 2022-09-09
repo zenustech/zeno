@@ -1,12 +1,13 @@
-#include <zeno/zeno.h>
-#include <zeno/types/PrimitiveObject.h>
-#include <zeno/types/NumericObject.h>
-#include <zeno/types/MatrixObject.h>
+#include "zeno/types/UserData.h"
+#include <cstring>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtx/transform.hpp>
 #include <glm/gtx/quaternion.hpp>
-#include <cstring>
+#include <glm/gtx/transform.hpp>
+#include <zeno/types/MatrixObject.h>
+#include <zeno/types/NumericObject.h>
+#include <zeno/types/PrimitiveObject.h>
+#include <zeno/zeno.h>
 
 namespace zeno {
 namespace {
@@ -77,6 +78,7 @@ struct TransformPrimitive : zeno::INode {//zhxx happy node
         zeno::vec4f rotation = {0,0,0,1};
         zeno::vec3f eulerXYZ = {0,0,0};
         zeno::vec3f scaling = {1,1,1};
+        zeno::vec3f shear = {0,0,0};
         zeno::vec3f offset = {0,0,0};
         glm::mat4 pre_mat = glm::mat4(1.0);
         glm::mat4 pre_apply = glm::mat4(1.0);
@@ -91,13 +93,14 @@ struct TransformPrimitive : zeno::INode {//zhxx happy node
             rotation = get_input<zeno::NumericObject>("quatRotation")->get<zeno::vec4f>();
         if (has_input("scaling"))
             scaling = get_input<zeno::NumericObject>("scaling")->get<zeno::vec3f>();
+        if (has_input("shear"))
+            shear = get_input<zeno::NumericObject>("shear")->get<zeno::vec3f>();
         if (has_input("offset"))
             offset = get_input<zeno::NumericObject>("offset")->get<zeno::vec3f>();
         if (has_input("local"))
            local = std::get<glm::mat4>(get_input<zeno::MatrixObject>("local")->m);
         if (has_input("preTransform"))
             pre_apply = std::get<glm::mat4>(get_input<zeno::MatrixObject>("preTransform")->m);
-
 
         glm::mat4 matTrans = glm::translate(glm::vec3(translate[0], translate[1], translate[2]));
         glm::mat4 matRotx  = glm::rotate( eulerXYZ[0], glm::vec3(1,0,0) );
@@ -106,7 +109,23 @@ struct TransformPrimitive : zeno::INode {//zhxx happy node
         glm::quat myQuat(rotation[3], rotation[0], rotation[1], rotation[2]);
         glm::mat4 matQuat  = glm::toMat4(myQuat);
         glm::mat4 matScal  = glm::scale( glm::vec3(scaling[0], scaling[1], scaling[2] ));
-        auto matrix = pre_mat*local*matTrans*matRotz*matRoty*matRotx*matQuat*matScal*glm::translate(glm::vec3(offset[0], offset[1], offset[2]))*glm::inverse(local)*pre_apply;
+        glm::mat4 matShearX = glm::transpose(glm::mat4(
+            1, shear[0], 0, 0,
+            0, 1, 0, 0,
+            0, 0, 1, 0,
+            0, 0, 0, 1));
+        glm::mat4 matShearY = glm::transpose(glm::mat4(
+            1, 0, shear[1], 0,
+            0, 1, 0, 0,
+            0, 0, 1, 0,
+            0, 0, 0, 1));
+        glm::mat4 matShearZ = glm::transpose(glm::mat4(
+            1, 0, 0, 0,
+            0, 1, shear[2], 0,
+            0, 0, 1, 0,
+            0, 0, 0, 1));
+
+        auto matrix = pre_mat*local*matTrans*matRotz*matRoty*matRotx*matQuat*matScal*matShearZ*matShearY*matShearX*glm::translate(glm::vec3(offset[0], offset[1], offset[2]))*glm::inverse(local)*pre_apply;
 
         auto prim = get_input<PrimitiveObject>("prim");
         auto outprim = std::make_unique<PrimitiveObject>(*prim);
@@ -130,6 +149,11 @@ struct TransformPrimitive : zeno::INode {//zhxx happy node
                 nrm[i] = zeno::other_to_vec<3>(n);
             }
         }
+
+        auto& user_data = outprim->userData();
+        user_data.setLiterial("_translate", translate);
+        user_data.setLiterial("_rotate", eulerXYZ);
+        user_data.setLiterial("_scale", scaling);
         //auto oMat = std::make_shared<MatrixObject>();
         //oMat->m = matrix;
         set_output("outPrim", std::move(outprim));
@@ -143,6 +167,7 @@ ZENDEFNODE(TransformPrimitive, {
     {"vec3f", "eulerXYZ", "0,0,0"},
     {"vec4f", "quatRotation", "0,0,0,1"},
     {"vec3f", "scaling", "1,1,1"},
+    {"vec3f", "shear", "0,0,0"},
     {"Matrix"},
     {"preTransform"},
     {"local"},

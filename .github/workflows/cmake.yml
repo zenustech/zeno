@@ -26,6 +26,7 @@ jobs:
 
   build:
     strategy:
+      fail-fast: false
       matrix:
         include:
         - label: x86_64-linux-cpu
@@ -35,7 +36,7 @@ jobs:
           gpu: cpu
           pkgext: tar.gz
         - label: x86_64-windows-cpu
-          os: windows-latest
+          os: windows-2019
           triplet: x64-windows
           gpu: cpu
           pkgext: zip
@@ -46,7 +47,7 @@ jobs:
           gpu: cuda
           pkgext: tar.gz
         - label: x86_64-windows-cuda
-          os: windows-latest
+          os: windows-2019
           triplet: x64-windows
           gpu: cuda
           pkgext: zip
@@ -78,12 +79,38 @@ jobs:
         cached: ${{ steps.cache-qt.outputs.cache-hit }}
         setup-python: true
 
-    - name: Install CUDA toolkit
-      if: ${{ matrix.gpu == 'cuda' }}
-      uses: Jimver/cuda-toolkit@v0.2.5
-      id: cuda-toolkit
-      with:
-        cuda: 11.5.1
+    - name: Install CUDA toolkit (Windows)
+      if: ${{ matrix.gpu == 'cuda' && runner.os == 'Windows' }}
+      env:
+        cuda: 11.7.1
+        visual_studio: "Visual Studio 16 2019"
+      shell: powershell
+      run: .\misc\ci\win\install_cuda_windows.ps1
+
+    - name: Install CUDA toolkit (Ubuntu)
+      if: ${{ matrix.gpu == 'cuda' && runner.os == 'Linux' }}
+      env:
+        cuda: 11.7.1
+      shell: bash
+      run: ./misc/ci/nix/install_cuda_ubuntu.sh
+
+    - name: Check CUDA toolkit (Windows)
+      if: ${{ matrix.gpu == 'cuda' && runner.os == 'Windows' }}
+      shell: powershell
+      run: |
+        ls $env:CUDA_PATH
+        ls $env:CUDA_PATH\bin
+        ls $env:CUDA_PATH\lib
+        ls $env:CUDA_PATH\lib\cmake
+        ls $env:CUDA_PATH\lib\x64
+        nvcc -V
+
+    - name: Check CUDA toolkit (Ubuntu)
+      if: ${{ matrix.gpu == 'cuda' && runner.os == 'Linux' }}
+      shell: bash
+      run: |
+        nvcc -V
+        which nvcc
 
     - name: Setup Dependencies
       if: ${{ needs.check.outputs.vcpkg == 'true' }}
@@ -98,26 +125,33 @@ jobs:
         vcpkgJsonGlob: '**/vcpkg.json'
         runVcpkgInstall: true
 
-    #- name: Cache CMake
-      #if: ${{ needs.check.outputs.deploy != 'true' }}
-      #uses: actions/cache@v3
-      #with:
-        #path: ${{ github.workspace }}/build
-        #key: ${{ matrix.os }}-${{ needs.check.outputs.vcpkg == 'true' && matrix.triplet || 'none' }}-${{ matrix.cxx }}-${{ matrix.gpu }}
-
-    #- name: Clean CMake Cache
-      #shell: python
-      #run: |
-        #import os
-        #import shutil
-        #shutil.rmtree(os.path.join('build', 'CMakeCache.txt'), ignore_errors=True)
-        #shutil.rmtree(os.path.join('build', 'CMakeFiles'), ignore_errors=True)
-
     - name: Run CMake
+      id: run_cmake
       uses: lukka/run-cmake@v10
       with:
         configurePreset: ${{ (needs.check.outputs.vcpkg == 'true' && (matrix.gpu == 'cuda' && 'cuda' || 'default') || 'basic') }}
         buildPreset: default
+
+    - name: Process CMake Error
+      if: ${{ (failure() && steps.run_cmake.outcome == 'failure') || success() }}
+      working-directory: ${{ env.build_dir }}
+      shell: bash
+      run: |
+          if [[ -f "build/CMakeFiles/CMakeOutput.log" ]]; then
+            echo "---- build/CMakeFiles/CMakeOutput.log"
+            cat build/CMakeFiles/CMakeOutput.log
+            echo "----"
+          fi
+          if [[ -f "build/CMakeFiles/CMakeError.log" ]]; then
+            echo "---- build/CMakeFiles/CMakeError.log"
+            cat build/CMakeFiles/CMakeError.log
+            echo "----"
+          fi
+          if [[ -f "build/CMakeCache.txt" ]]; then
+            echo "---- build/CMakeCache.txt"
+            cat build/CMakeCache.txt
+            echo "----"
+          fi
 
     - name: Packaging
       if: ${{ needs.check.outputs.deploy == 'true' }}
@@ -157,7 +191,7 @@ jobs:
         prerelease: false
         tag_name: ${{ steps.versioning.outputs.version }}
         release_name: ${{ steps.versioning.outputs.version }}
-        body: "(Automated Release by Github Actions / 由 GitHub CI/CD 自动发布)\n\n- branch `${{ github.ref }}`\n- commit `${{ github.sha }}`\n- message `${{ github.event.head_commit.message }}`\n- version `${{ steps.versioning.outputs.version }}`\n\n- Windows: After download, extract the zip file to a directory, then double-click the file `000_start.bat` in that directory to start our application. Alternatively you may manually run `zenoedit.exe`. If you encounter bugs, please let us know by submitting a [Github Issue](https://github.com/zenustech/zeno/issues), thank for your support!\n- Linux: Our released binary support Ubuntu 18.04 and above (glibcxx >= 3.4.26, glibc >= 2.14), otherwise please build from source. Extract the downloaded tar.gz to a directory, then run `bash 000_start.sh` in that directory to start our application. Alternatively you may manually run `usr/bin/zenoedit` in there. Try `chmod +x usr/bin/*` if they don't have execute permission.\n- Windows: 下载后，把 zip 文件解压到一个目录，然后双击其中的 `000_start.bat` 这个文件，即可启动我们的程序。此外您也可以找到 `zenoedit.exe` 直接双击运行。如果您遇到了 BUG，请通过提交 [Github Issue](https://github.com/zenustech/zeno/issues) 的方式来反馈给我们, 感谢您的支持！\n- Linux: 我们发布的二进制版支持 Ubuntu 18.04 以上的系统 (glibcxx >= 3.4.26, glibc >= 2.14)，否则请从源码构建。把下载的 tar.gz 文件解压到一个目录，然后在那个目录中运行命令 `bash 000_start.sh` 即可启动我们的程序。此外您也可以直接运行其中的 `usr/bin/zenoedit`。如果遇到没有执行权限的问题可以试试看 `chmod +x usr/bin/*`。"
+        body: "(Automated Release by Github Actions / 由 GitHub CI/CD 自动发布)\n\n- branch `${{ github.ref }}`\n- commit `${{ github.sha }}`\n- message `${{ github.event.head_commit.message }}`\n- version `${{ steps.versioning.outputs.version }}`\n\n- Windows: After download, extract the zip file to a directory, then double-click the file `000_start.bat` in that directory to start our application. Alternatively you may manually run `zenoedit.exe`. If you encounter bugs, please let us know by submitting a [Github Issue](https://github.com/zenustech/zeno/issues), thank for your support!\n- Linux: Our released binary support Ubuntu 20.04 and above, otherwise please build from source. Extract the downloaded tar.gz to a directory, then run `bash 000_start.sh` in that directory to start our application. Alternatively you may manually run `usr/bin/zenoedit` in there. Try `chmod +x usr/bin/*` if they don't have execute permission.\n- Windows: 下载后，把 zip 文件解压到一个目录，然后双击其中的 `000_start.bat` 这个文件，即可启动我们的程序。此外您也可以找到 `zenoedit.exe` 直接双击运行。如果您遇到了 BUG，请通过提交 [Github Issue](https://github.com/zenustech/zeno/issues) 的方式来反馈给我们, 感谢您的支持！\n- Linux: 我们发布的二进制版支持 Ubuntu 20.04 以上的系统，否则请从源码构建。把下载的 tar.gz 文件解压到一个目录，然后在那个目录中运行命令 `bash 000_start.sh` 即可启动我们的程序。此外您也可以直接运行其中的 `usr/bin/zenoedit`。如果遇到没有执行权限的问题可以试试看 `chmod +x usr/bin/*`。"
 
     outputs:
       version: ${{ steps.versioning.outputs.version }}

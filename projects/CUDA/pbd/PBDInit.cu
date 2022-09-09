@@ -109,7 +109,8 @@ void PBDSystem::initialize(zs::CudaExecutionPolicy &pol) {
 void PBDSystem::reinitialize(zs::CudaExecutionPolicy &pol, T framedt) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
-    this->dt = framedt;
+    this->framedt = framedt;
+    this->dt = framedt / solveIterCap; // substep dt
     for (auto &primHandle : prims) {
         auto &verts = primHandle.getVerts();
         // initialize BC info

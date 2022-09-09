@@ -24,6 +24,11 @@ int main(int argc, char *argv[])
     }
 #endif
 
+    if (argc >= 3 && !strcmp(argv[1], "-invoke")) {
+        extern int invoke_main(int argc, char *argv[]);
+        return invoke_main(argc - 2, argv + 2);
+    }
+
     if (argc >= 3 && !strcmp(argv[1], "-offline")) {
         extern int offline_main(const char *zsgfile, int beginFrame, int endFrame);
         int begin = 0, end = 0;

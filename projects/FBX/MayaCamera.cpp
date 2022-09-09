@@ -392,6 +392,8 @@ struct LightNode : INode {
         prim->userData().setLiterial("scale", std::move(scale));
         prim->userData().setLiterial("rotate", std::move(rotate));
         prim->userData().setLiterial("shape", std::move(shape));
+        prim->userData().setLiterial("color", std::move(color));
+        prim->userData().setLiterial("intensity", std::move(intensity));
 
         set_output("prim", std::move(prim));
     }
@@ -404,8 +406,8 @@ ZENO_DEFNODE(LightNode)({
         {"vec3f", "rotate", "0, 0, 0"},
         {"vec3f", "color", "1, 1, 1"},
         {"float", "intensity", "1"},
-        {"int", "islight", "1"},
-        {"int", "invertdir", "1"}
+        {"bool", "islight", "1"},
+        {"bool", "invertdir", "1"}
     },
     {
         "prim"
@@ -413,7 +415,7 @@ ZENO_DEFNODE(LightNode)({
     {
         {"enum Disk Plane", "Shape", "Plane"},
     },
-    {"FBX"},
+    {"shader"},
 });
 
 }

@@ -49,6 +49,8 @@ public:
     CameraControl(QWidget* parent = nullptr);
     void setRes(QVector2D res);
     QVector2D res() const { return m_res; }
+    void setAperture(float aperture);
+    void setDisPlane(float disPlane);
     void updatePerspective();
     void setKeyFrame();
 
@@ -72,6 +74,7 @@ private:
     float m_theta;
     float m_phi;
     QPointF m_lastPos;
+    QPointF m_lastMovePos;
     QPoint m_boundRectStartPos;
     QVector3D  m_center;
     bool m_ortho_mode;
@@ -101,7 +104,7 @@ public:
     void updatePerspective();
     void addPressedKey(int key);
     void rmvPressedKey(int key);
-
+    void updateCameraProp(float aperture, float disPlane);
 
 signals:
     void frameRecorded(int);
@@ -134,6 +137,7 @@ public:
     QSize sizeHint() const override;
     TIMELINE_INFO timelineInfo();
     void setTimelineInfo(TIMELINE_INFO info);
+    ViewportWidget* getViewportWidget();
 
 public slots:
     void updateFrame(const QString& action = "");

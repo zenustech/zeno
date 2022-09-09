@@ -92,6 +92,13 @@ void CameraControl::setRes(QVector2D res)
     m_res = res;
 }
 
+void CameraControl::setAperture(float aperture){
+    m_aperture = aperture;
+}
+void CameraControl::setDisPlane(float disPlane){
+    m_focalPlaneDistance = disPlane;
+}
+
 void CameraControl::fakeMousePressEvent(QMouseEvent* event)
 {
     if (event->buttons() & Qt::MiddleButton) {
@@ -99,7 +106,7 @@ void CameraControl::fakeMousePressEvent(QMouseEvent* event)
     }
     else if (event->buttons() & Qt::LeftButton) {
         m_boundRectStartPos = event->pos();
-        m_lastPos = event->pos();
+        m_lastMovePos = event->pos();
         // check if clicked a selected object
         auto scene = Zenovis::GetInstance().getSession()->get_scene();
         if (!scene->selected.empty() && mouseEnteredRing(event->x(), event->y())) {
@@ -177,7 +184,6 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent* event)
         if (transformer->isTransforming()) {
             bool alt_pressed = event->modifiers() & Qt::AltModifier;
             bool ctrl_pressed = event->modifiers() & Qt::ControlModifier;
-            bool shift_pressed = event->modifiers() & Qt::ShiftModifier;
             glm::mat4 transform_matrix(1.0f);
 
             auto transform_center = transformer->getCenter();
@@ -196,7 +202,7 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent* event)
                 // rotate
                 if (m_pressedKeys.contains(Qt::Key_Z)) {
                     // rotate along x=center_qvec.x plane
-                    start = hitOnPlane((float)m_lastPos.x() / res().x(), (float)m_lastPos.y() / res().y(),
+                    start = hitOnPlane((float)m_lastMovePos.x() / res().x(), (float)m_lastMovePos.y() / res().y(),
                                        x_axis, center_qvec);
                     end = hitOnPlane((float)event->x() / res().x(), (float)event->y() / res().y(),
                                      x_axis, center_qvec);
@@ -210,7 +216,7 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent* event)
                 }
                 else if (m_pressedKeys.contains(Qt::Key_X)) {
                     // rotate along y=center_qvec.y plane
-                    start = hitOnPlane((float)m_lastPos.x() / res().x(), (float)m_lastPos.y() / res().y(),
+                    start = hitOnPlane((float)m_lastMovePos.x() / res().x(), (float)m_lastMovePos.y() / res().y(),
                                        y_axis, center_qvec);
                     end = hitOnPlane((float)event->x() / res().x(), (float)event->y() / res().y(),
                                      y_axis, center_qvec);
@@ -224,7 +230,7 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent* event)
                 }
                 else if (m_pressedKeys.contains(Qt::Key_C)) {
                     // rotate along z=center_qvec.z plane
-                    start = hitOnPlane((float)m_lastPos.x() / res().x(), (float)m_lastPos.y() / res().y(),
+                    start = hitOnPlane((float)m_lastMovePos.x() / res().x(), (float)m_lastMovePos.y() / res().y(),
                                        z_axis, center_qvec);
                     end = hitOnPlane((float)event->x() / res().x(), (float)event->y() / res().y(),
                                      z_axis, center_qvec);
@@ -245,7 +251,6 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent* event)
                 QVector2D screen_center_2d(screen_center[0], screen_center[1]);
                 QVector2D mouse_pos = qtCoordToGLCoord(event->x(), event->y());
                 float scale_size = mouse_pos.distanceToPoint(screen_center_2d);
-                // printf("%.2lf\n", scale_size);
 
                 if (m_pressedKeys.contains(Qt::Key_A)) {
                     // scale along a plane
@@ -319,7 +324,7 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent* event)
                     // translate along a plane
                     if (m_pressedKeys.contains(Qt::Key_Z)) {
                         // translate along x=center_qvec.x plane
-                        start = hitOnPlane((float)m_lastPos.x() / res().x(), (float)m_lastPos.y() / res().y(),
+                        start = hitOnPlane((float)m_lastMovePos.x() / res().x(), (float)m_lastMovePos.y() / res().y(),
                                            x_axis, center_qvec);
                         end = hitOnPlane((float)event->x() / res().x(), (float)event->y() / res().y(),
                                          x_axis, center_qvec);
@@ -332,7 +337,7 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent* event)
                     }
                     else if (m_pressedKeys.contains(Qt::Key_X)) {
                         // translate along y=center_qvec.y plane
-                        start = hitOnPlane((float)m_lastPos.x() / res().x(), (float)m_lastPos.y() / res().y(),
+                        start = hitOnPlane((float)m_lastMovePos.x() / res().x(), (float)m_lastMovePos.y() / res().y(),
                                            y_axis, center_qvec);
                         end = hitOnPlane((float)event->x() / res().x(), (float)event->y() / res().y(),
                                          y_axis, center_qvec);
@@ -345,7 +350,7 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent* event)
                     }
                     else if (m_pressedKeys.contains(Qt::Key_C)) {
                         // translate along z=center_qvec.z plane
-                        start = hitOnPlane((float)m_lastPos.x() / res().x(), (float)m_lastPos.y() / res().y(),
+                        start = hitOnPlane((float)m_lastMovePos.x() / res().x(), (float)m_lastMovePos.y() / res().y(),
                                            z_axis, center_qvec);
                         end = hitOnPlane((float)event->x() / res().x(), (float)event->y() / res().y(),
                                          z_axis, center_qvec);
@@ -362,7 +367,7 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent* event)
                     QVector3D translate_axis;
                     if (m_pressedKeys.contains(Qt::Key_Z)) {
                         // translate along x axis
-                        start = hitOnPlane((float)m_lastPos.x() / res().x(), (float)m_lastPos.y() / res().y(),
+                        start = hitOnPlane((float)m_lastMovePos.x() / res().x(), (float)m_lastMovePos.y() / res().y(),
                                            y_axis, center_qvec);
                         end = hitOnPlane((float)event->x() / res().x(), (float)event->y() / res().y(),
                                          y_axis, center_qvec);
@@ -374,7 +379,7 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent* event)
                     }
                     else if (m_pressedKeys.contains(Qt::Key_X)) {
                         // translate along y=center_qvec.y plane
-                        start = hitOnPlane((float)m_lastPos.x() / res().x(), (float)m_lastPos.y() / res().y(),
+                        start = hitOnPlane((float)m_lastMovePos.x() / res().x(), (float)m_lastMovePos.y() / res().y(),
                                            z_axis, center_qvec);
                         end = hitOnPlane((float)event->x() / res().x(), (float)event->y() / res().y(),
                                          z_axis, center_qvec);
@@ -386,7 +391,7 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent* event)
                     }
                     else if (m_pressedKeys.contains(Qt::Key_C)) {
                         // translate along z=center_qvec.z plane
-                        start = hitOnPlane((float)m_lastPos.x() / res().x(), (float)m_lastPos.y() / res().y(),
+                        start = hitOnPlane((float)m_lastMovePos.x() / res().x(), (float)m_lastMovePos.y() / res().y(),
                                            y_axis, center_qvec);
                         end = hitOnPlane((float)event->x() / res().x(), (float)event->y() / res().y(),
                                          y_axis, center_qvec);
@@ -403,7 +408,7 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent* event)
                 QVector3D camera_front(scene->camera->m_lodfront[0],
                                        scene->camera->m_lodfront[1],
                                        scene->camera->m_lodfront[2]);
-                start = hitOnPlane((float)m_lastPos.x() / res().x(), (float)m_lastPos.y() / res().y(),
+                start = hitOnPlane((float)m_lastMovePos.x() / res().x(), (float)m_lastMovePos.y() / res().y(),
                                    camera_front, center_qvec);
                 end = hitOnPlane((float)event->x() / res().x(), (float)event->y() / res().y(),
                                  camera_front, center_qvec);
@@ -412,7 +417,7 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent* event)
                 }
             }
             session->set_interacting_graphics(interactingGraphics);
-            m_lastPos = event->pos();
+            m_lastMovePos = event->pos();
             zenoApp->getMainWindow()->updateViewport();
         }
         else {
@@ -466,6 +471,11 @@ void CameraControl::fakeWheelEvent(QWheelEvent* event)
         m_radius *= scale;
     }
     updatePerspective();
+
+    if(zenoApp->getMainWindow()->lightPanel != nullptr){
+        zenoApp->getMainWindow()->lightPanel->camApertureEdit->setText(QString::number(m_aperture));
+        zenoApp->getMainWindow()->lightPanel->camDisPlaneEdit->setText(QString::number(m_focalPlaneDistance));
+    }
 }
 
 void CameraControl::setKeyFrame()
@@ -572,34 +582,12 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
         auto scene = Zenovis::GetInstance().getSession()->get_scene();
 
         if (transformer->isTransforming()) {
+            bool moved = false;
             if (m_boundRectStartPos != event->pos()) {
                 // create/modify transform primitive node
-                IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
-                for (const auto &obj_name : scene->selected) {
-                    QString node_id(obj_name.substr(0, obj_name.find_first_of(':')).c_str());
-                    auto search_result = pModel->search(node_id, SEARCH_NODEID);
-                    auto subgraph_index = search_result[0].subgIdx;
-                    auto node_index = search_result[0].targetIdx;
-                    auto inputs = node_index.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
-                    if (node_id.contains("TransformPrimitive")  &&
-                        inputs["translation"].linkIndice.empty() &&
-                        inputs["eulerXYZ"].linkIndice.empty() &&
-                        inputs["scaling"].linkIndice.empty()) {
-                        transformer->syncToTransformNode(node_id, pModel, node_index, subgraph_index);
-                    }
-                    else {
-                        auto linked_transform_node_index =
-                            transformer->linkedToVisibleTransformNode(node_index, pModel).value<QModelIndex>();
-                        if (linked_transform_node_index.isValid()) {
-                            auto linked_transform_node_id = linked_transform_node_index.data(ROLE_OBJID).toString();
-                            transformer->syncToTransformNode(linked_transform_node_id, pModel, linked_transform_node_index, subgraph_index);
-                        }
-                        else
-                            transformer->createNewTransformNode(node_id, pModel, node_index, subgraph_index);
-                    }
-                }
+                moved = true;
             }
-            transformer->endTransform();
+            transformer->endTransform(moved);
         }
         else {
             auto cam_pos = realPos();
@@ -818,25 +806,8 @@ void ViewportWidget::mousePressEvent(QMouseEvent* event)
 
 void ViewportWidget::mouseMoveEvent(QMouseEvent* event)
 {
-    auto & qle = zenoApp->getMainWindow()->selected;
-    if (qle != nullptr) {
-        float xpos = event->x(), ypos = event->y();
-        float dx = xpos - m_lastPos.x();
-        if (abs(dx) > 20) {
-            dx = 0;
-        }
-        float v = qle->text().toFloat();
-        dx *= zenoApp->getMainWindow()->mouseSen;
-        v += dx;
-        qle->setText(QString::number(v));
-        if(zenoApp->getMainWindow()->lightPanel != nullptr)
-            zenoApp->getMainWindow()->lightPanel->modifyLightData();
-        m_lastPos = QPointF(xpos, ypos);
-    }
-    else {
-        _base::mouseMoveEvent(event);
-        m_camera->fakeMouseMoveEvent(event);
-    }
+    _base::mouseMoveEvent(event);
+    m_camera->fakeMouseMoveEvent(event);
     update();
 }
 
@@ -859,6 +830,12 @@ void ViewportWidget::addPressedKey(int key) {
 
 void ViewportWidget::rmvPressedKey(int key) {
     m_camera->rmvPressedKey(key);
+}
+
+void ViewportWidget::updateCameraProp(float aperture, float disPlane) {
+    m_camera->setAperture(aperture);
+    m_camera->setDisPlane(disPlane);
+    updatePerspective();
 }
 
 /*
@@ -950,7 +927,9 @@ DisplayWidget::DisplayWidget(ZenoMainWindow* pMainWin)
     */
 
     m_view = new ViewportWidget;
-    m_view->setMouseTracking(true);
+    // viewport interaction need to set mouse tracking true
+    // but it will lead to a light panel edit bug
+    // m_view->setMouseTracking(true);
     pLayout->addWidget(m_view);
 
     m_timeline = new ZTimeline;
@@ -1000,6 +979,11 @@ void DisplayWidget::setTimelineInfo(TIMELINE_INFO info)
 {
     m_timeline->setAlways(info.bAlways);
     m_timeline->setFromTo(info.beginFrame, info.endFrame);
+}
+
+ViewportWidget* DisplayWidget::getViewportWidget()
+{
+    return m_view;
 }
 
 QSize DisplayWidget::sizeHint() const
