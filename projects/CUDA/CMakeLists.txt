@@ -41,12 +41,17 @@ target_link_libraries(zeno PRIVATE zshelper CUDA::cufft)
 target_sources(zeno PRIVATE
   test1.cu
 )
+#]=]
 set_target_properties(zeno
-  PROPERTIES  CUDA_EXTENSIONS ON
-  CUDA_SEPARABLE_COMPILATION ON
-# LINKER_LANGUAGE CUDA
-  POSITION_INDEPENDENT_CODE ON
-# CUDA_ARCHITECTURES OFF
+  PROPERTIES  #CUDA_EXTENSIONS ON
+              CUDA_SEPARABLE_COMPILATION ON
+              CUDA_RESOLVE_DEVICE_SYMBOLS ON
+              CUDA_ARCHITECTURES OFF
+)
+
+#[=[
+target_sources(zeno PRIVATE
+  POC/jit.cu
 )
 #]=]
 
