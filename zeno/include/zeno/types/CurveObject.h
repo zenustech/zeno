@@ -98,8 +98,14 @@ struct CurveData : private _CurveDataDetails {
             x = mix(newRg.xFrom, newRg.xTo, unmix(rg.xFrom, rg.xTo, x));
         }
         for (auto &cp: cpoints) {
-            auto &y = cp.v;
-            y = mix(newRg.yFrom, newRg.yTo, unmix(rg.yFrom, rg.yTo, y));
+            auto app = [&] (auto &y) {
+                y = mix(newRg.yFrom, newRg.yTo, unmix(rg.yFrom, rg.yTo, y));
+            };
+            app(cp.v);
+            app(cp.left_handler[0]);
+            app(cp.left_handler[1]);
+            app(cp.right_handler[0]);
+            app(cp.right_handler[1]);
         }
         rg = newRg;
     }
