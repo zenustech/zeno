@@ -230,6 +230,7 @@ struct PrimExtrude : INode {
             vec4i quad(l1[0], l1[1], l2[1], l2[0]);
             prim->quads.push_back(quad);
         }
+        prim->quads.update();
 
         if (extrude != 0 && inset != 0) {
             for (int i = 0; i < p2size; i++) {
@@ -262,7 +263,7 @@ ZENDEFNODE(PrimExtrude, {
     {"vec3f", "offset", "0,0,0"},
     //{"string", "bridgeMaskAttrO", ""},
     {"string", "sourceMaskAttrO", ""},
-    {"bool", "delOldFaces", "1"},
+    {"bool", "delOldFaces", "0"},
     {"bool", "autoFindEdges", "1"},
     {"bool", "averagedExtrude", "1"},
     },
