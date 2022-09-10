@@ -901,11 +901,9 @@ QDMRecordMenu::QDMRecordMenu()
 */
 
 
-DisplayWidget::DisplayWidget(ZenoMainWindow* pMainWin)
-    : QWidget(pMainWin)
+DisplayWidget::DisplayWidget(QWidget* parent)
+    : QWidget(parent)
     , m_view(nullptr)
-    , m_timeline(nullptr)
-    , m_mainWin(pMainWin)
     , m_pTimer(nullptr)
 {
     QVBoxLayout* pLayout = new QVBoxLayout;
@@ -932,25 +930,13 @@ DisplayWidget::DisplayWidget(ZenoMainWindow* pMainWin)
     // m_view->setMouseTracking(true);
     pLayout->addWidget(m_view);
 
-    m_timeline = new ZTimeline;
-    pLayout->addWidget(m_timeline);
     setLayout(pLayout);
 
     //RecordVideoDialog
     m_camera_keyframe = new CameraKeyframeWidget;
     Zenovis::GetInstance().m_camera_keyframe = m_camera_keyframe;
 
-	connect(&Zenovis::GetInstance(), SIGNAL(frameUpdated(int)), m_timeline, SLOT(onTimelineUpdate(int)));
-    connect(m_timeline, SIGNAL(playForward(bool)), this, SLOT(onPlayClicked(bool)));
-	connect(m_timeline, SIGNAL(sliderValueChanged(int)), this, SLOT(onSliderValueChanged(int)));
-	connect(m_timeline, SIGNAL(run()), this, SLOT(onRun()));
-    connect(m_timeline, SIGNAL(alwaysChecked()), this, SLOT(onRun()));
-    connect(m_timeline, SIGNAL(kill()), this, SLOT(onKill()));
-
     //connect(m_view, SIGNAL(sig_Draw()), this, SLOT(onRun()));
-
-    auto graphs = zenoApp->graphsManagment();
-    connect(&*graphs, SIGNAL(modelDataChanged()), this, SLOT(onModelDataChanged()));
 
 	m_pTimer = new QTimer(this);
     connect(m_pTimer, SIGNAL(timeout()), this, SLOT(updateFrame()));
@@ -966,21 +952,6 @@ void DisplayWidget::init()
     //m_camera->installEventFilter(this);
 }
 
-TIMELINE_INFO DisplayWidget::timelineInfo()
-{
-    TIMELINE_INFO info;
-    info.bAlways = m_timeline->isAlways();
-    info.beginFrame = m_timeline->fromTo().first;
-    info.endFrame = m_timeline->fromTo().second;
-    return info;
-}
-
-void DisplayWidget::setTimelineInfo(TIMELINE_INFO info)
-{
-    m_timeline->setAlways(info.bAlways);
-    m_timeline->setFromTo(info.beginFrame, info.endFrame);
-}
-
 ViewportWidget* DisplayWidget::getViewportWidget()
 {
     return m_view;
@@ -993,7 +964,8 @@ QSize DisplayWidget::sizeHint() const
 
 void DisplayWidget::updateFrame(const QString &action) // cihou optix
 {
-    if (m_mainWin && m_mainWin->inDlgEventLoop())
+    ZenoMainWindow* mainWin = zenoApp->getMainWindow();
+    if (mainWin && mainWin->inDlgEventLoop())
         return;
 
     if (action == "newFrame") {
@@ -1016,14 +988,17 @@ void DisplayWidget::updateFrame(const QString &action) // cihou optix
 
 void DisplayWidget::onFinished()
 {
-    int frameid_ui = m_timeline->value();
+    ZenoMainWindow* mainWin = zenoApp->getMainWindow();
+    ZTimeline* timeline = mainWin->timeline();
+    ZASSERT_EXIT(timeline);
+    int frameid_ui = timeline->value();
     if (frameid_ui != Zenovis::GetInstance().getCurrentFrameId())
     {
         Zenovis::GetInstance().setCurrentFrameId(frameid_ui);
         updateFrame();
         onPlayClicked(false);
-        BlockSignalScope scope(m_timeline);
-        m_timeline->setPlayButtonToggle(false);
+        BlockSignalScope scope(timeline);
+        timeline->setPlayButtonToggle(false);
     }
 }
 
@@ -1038,14 +1013,6 @@ bool DisplayWidget::isOptxRendering() const
         return false;
 
     return (scene->renderMan && scene->renderMan->getDefaultEngineName() == "optx");
-}
-
-void DisplayWidget::onModelDataChanged()
-{
-    if (m_timeline->isAlways())
-    {
-        onRun();
-    }
 }
 
 void DisplayWidget::onPlayClicked(bool bChecked)
@@ -1064,9 +1031,12 @@ void DisplayWidget::onPlayClicked(bool bChecked)
 
 void DisplayWidget::onSliderValueChanged(int frame)
 {
-    m_mainWin->clearErrorMark();
+    ZenoMainWindow* mainWin = zenoApp->getMainWindow();
+    mainWin->clearErrorMark();
 
-    if (m_timeline->isAlways())
+    ZTimeline* timeline = mainWin->timeline();
+    ZASSERT_EXIT(timeline);
+    if (timeline->isAlways())
     {
         auto pGraphsMgr = zenoApp->graphsManagment();
         IGraphsModel* pModel = pGraphsMgr->currentModel();
@@ -1079,18 +1049,21 @@ void DisplayWidget::onSliderValueChanged(int frame)
         Zenovis::GetInstance().setCurrentFrameId(frame);
         updateFrame();
         onPlayClicked(false);
-        BlockSignalScope scope(m_timeline);
-        m_timeline->setPlayButtonToggle(false);
+        BlockSignalScope scope(timeline);
+        timeline->setPlayButtonToggle(false);
     }
 }
 
 void DisplayWidget::onRun()
 {
-    m_mainWin->clearErrorMark();
+    ZenoMainWindow* mainWin = zenoApp->getMainWindow();
+    mainWin->clearErrorMark();
 
     Zenovis::GetInstance().getSession()->get_scene()->selected.clear();
 
-    QPair<int, int> fromTo = m_timeline->fromTo();
+    ZTimeline *timeline = mainWin->timeline();
+    ZASSERT_EXIT(timeline);
+    QPair<int, int> fromTo = timeline->fromTo();
     int beginFrame = fromTo.first;
     int endFrame = fromTo.second;
     if (endFrame >= beginFrame && beginFrame >= 0)

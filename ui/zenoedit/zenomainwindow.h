@@ -8,6 +8,7 @@
 #include "common.h"
 
 class DisplayWidget;
+class ZTimeline;
 
 class ZenoMainWindow : public QMainWindow
 {
@@ -19,6 +20,7 @@ public:
     void setInDlgEventLoop(bool bOn);
     TIMELINE_INFO timelineInfo();
     void setTimelineInfo(TIMELINE_INFO info);
+    ZTimeline* timeline() const;
     DisplayWidget *getDisplayWidget();
 
     QLineEdit* selected = nullptr;
@@ -61,6 +63,7 @@ private:
     QString getOpenFileByDialog();
     QString uniqueDockObjName(DOCK_TYPE type);
 
+    ZTimeline* m_pTimeline;
     bool m_bInDlgEventloop;
 };
 

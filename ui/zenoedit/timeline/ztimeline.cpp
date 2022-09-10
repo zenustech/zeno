@@ -5,6 +5,7 @@
 #include <zenoui/comctrl/effect/innershadoweffect.h>
 #include <zeno/utils/envconfig.h>
 #include <zenoui/util/uihelper.h>
+#include "../viewport/zenovis.h"
 #include "ui_ztimeline.h"
 
 
@@ -83,6 +84,7 @@ void ZTimeline::initSignals()
             emit run();
         }
     });
+    connect(&Zenovis::GetInstance(), SIGNAL(frameUpdated(int)), this, SLOT(onTimelineUpdate(int)));
 }
 
 void ZTimeline::initStyleSheet()

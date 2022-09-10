@@ -131,12 +131,10 @@ class DisplayWidget : public QWidget
 {
     Q_OBJECT
 public:
-    DisplayWidget(ZenoMainWindow* parent = nullptr);
+    DisplayWidget(QWidget* parent = nullptr);
     ~DisplayWidget();
     void init();
     QSize sizeHint() const override;
-    TIMELINE_INFO timelineInfo();
-    void setTimelineInfo(TIMELINE_INFO info);
     ViewportWidget* getViewportWidget();
 
 public slots:
@@ -144,7 +142,6 @@ public slots:
     void onRun();
     void onRecord();
     void onKill();
-    void onModelDataChanged();
     void onPlayClicked(bool);
     void onSliderValueChanged(int);
     void onFinished();
@@ -160,8 +157,6 @@ private:
     bool isOptxRendering() const;
 
     ViewportWidget* m_view;
-    ZTimeline* m_timeline;
-    ZenoMainWindow* m_mainWin;
     CameraKeyframeWidget* m_camera_keyframe;
     QTimer* m_pTimer;
     QThread m_recThread;

@@ -32,6 +32,7 @@
 ZenoMainWindow::ZenoMainWindow(QWidget *parent, Qt::WindowFlags flags)
     : QMainWindow(parent, flags)
     , m_bInDlgEventloop(false)
+    , m_pTimeline(nullptr)
 {
     init();
     setContextMenuPolicy(Qt::NoContextMenu);
@@ -289,8 +290,57 @@ void ZenoMainWindow::initDocks()
     splitDockWidget(viewDock, editorDock, Qt::Vertical);
     splitDockWidget(editorDock, paramDock, Qt::Horizontal);
     splitDockWidget(viewDock, logDock, Qt::Horizontal);
+
+    QDockWidget* pTimelineDock = new QDockWidget;
+    m_pTimeline = new ZTimeline;
+    pTimelineDock->setWidget(m_pTimeline);
+    pTimelineDock->setTitleBarWidget(new QWidget(pTimelineDock));
+    addDockWidget(Qt::BottomDockWidgetArea, pTimelineDock);
+
+    connect(m_pTimeline, &ZTimeline::playForward, this, [=](bool bPlaying) {
+        auto docks = findChildren<ZTabDockWidget*>(QString(), Qt::FindDirectChildrenOnly);
+        for (ZTabDockWidget* pDock : docks)
+            pDock->onPlayClicked(bPlaying);
+    });
+
+    connect(m_pTimeline, &ZTimeline::sliderValueChanged, this, [=](int frame) {
+        auto docks = findChildren<ZTabDockWidget*>(QString(), Qt::FindDirectChildrenOnly);
+        for (ZTabDockWidget* pDock : docks)
+            pDock->onSliderValueChanged(frame);
+    });
+
+    connect(m_pTimeline, &ZTimeline::run, this, [=]() {
+        auto docks = findChildren<ZTabDockWidget *>(QString(), Qt::FindDirectChildrenOnly);
+        for (ZTabDockWidget *pDock : docks)
+            pDock->onRun();
+    });
+
+    connect(m_pTimeline, &ZTimeline::kill, this, [=]() {
+        auto docks = findChildren<ZTabDockWidget *>(QString(), Qt::FindDirectChildrenOnly);
+        for (ZTabDockWidget *pDock : docks)
+            pDock->onKill();
+    });
+
+    connect(m_pTimeline, &ZTimeline::alwaysChecked, this, [=]() {
+        auto docks = findChildren<ZTabDockWidget *>(QString(), Qt::FindDirectChildrenOnly);
+        for (ZTabDockWidget *pDock : docks)
+            pDock->onRun();
+    });
+
+    auto graphs = zenoApp->graphsManagment();
+    connect(graphs, &GraphsManagment::modelDataChanged, this, [=]() {
+        if (m_pTimeline->isAlways()) {
+            auto docks = findChildren<ZTabDockWidget *>(QString(), Qt::FindDirectChildrenOnly);
+            for (ZTabDockWidget *pDock : docks)
+                pDock->onRun();
+        }
+    });
 }
 
+ZTimeline* ZenoMainWindow::timeline() const
+{
+    return m_pTimeline;
+}
 
 void ZenoMainWindow::onMaximumTriggered()
 {
@@ -597,23 +647,18 @@ void ZenoMainWindow::setInDlgEventLoop(bool bOn) {
 
 TIMELINE_INFO ZenoMainWindow::timelineInfo()
 {
-    //todo: time panel.
-    //DisplayWidget* view = qobject_cast<DisplayWidget*>(m_viewDock->widget());
     TIMELINE_INFO info;
-    //if (view)
-    //{
-    //    info = view->timelineInfo();
-    //}
+    ZASSERT_EXIT(m_pTimeline, info);
+    info.bAlways = m_pTimeline->isAlways();
+    info.beginFrame = m_pTimeline->fromTo().first;
+    info.endFrame = m_pTimeline->fromTo().second;
     return info;
 }
 
 void ZenoMainWindow::setTimelineInfo(TIMELINE_INFO info)
 {
-    //DisplayWidget* view = qobject_cast<DisplayWidget*>(m_viewDock->widget());
-    //if (view)
-    //{
-    //    view->setTimelineInfo(info);
-    //}
+    m_pTimeline->setAlways(info.bAlways);
+    m_pTimeline->setFromTo(info.beginFrame, info.endFrame);
 }
 
 void ZenoMainWindow::onFeedBack()

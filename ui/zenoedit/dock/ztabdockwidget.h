@@ -33,6 +33,15 @@ public:
     void onUpdateViewport(const QString& action);
     void onRunFinished();
 
+public slots:
+    /*timeline*/
+    void onRun();
+    void onRecord();
+    void onKill();
+    void onPlayClicked(bool);
+    void onSliderValueChanged(int);
+    void onFinished();
+
 protected:
     void paintEvent(QPaintEvent* event) override;
     bool event(QEvent* event) override;

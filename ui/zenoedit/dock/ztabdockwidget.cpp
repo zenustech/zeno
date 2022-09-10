@@ -155,6 +155,48 @@ void ZTabDockWidget::onRunFinished()
     }
 }
 
+void ZTabDockWidget::onRun()
+{
+    for (int i = 0; i < m_tabWidget->count(); i++)
+        if (DisplayWidget* pView = qobject_cast<DisplayWidget*>(m_tabWidget->widget(i)))
+            pView->onRun();
+}
+
+void ZTabDockWidget::onRecord()
+{
+    for (int i = 0; i < m_tabWidget->count(); i++)
+        if (DisplayWidget *pView = qobject_cast<DisplayWidget *>(m_tabWidget->widget(i)))
+            pView->onRecord();
+}
+
+void ZTabDockWidget::onKill()
+{
+    for (int i = 0; i < m_tabWidget->count(); i++)
+        if (DisplayWidget *pView = qobject_cast<DisplayWidget *>(m_tabWidget->widget(i)))
+            pView->onKill();
+}
+
+void ZTabDockWidget::onPlayClicked(bool bChecked)
+{
+    for (int i = 0; i < m_tabWidget->count(); i++)
+        if (DisplayWidget *pView = qobject_cast<DisplayWidget *>(m_tabWidget->widget(i)))
+            pView->onPlayClicked(bChecked);
+}
+
+void ZTabDockWidget::onSliderValueChanged(int frame)
+{
+    for (int i = 0; i < m_tabWidget->count(); i++)
+        if (DisplayWidget *pView = qobject_cast<DisplayWidget *>(m_tabWidget->widget(i)))
+            pView->onSliderValueChanged(frame);
+}
+
+void ZTabDockWidget::onFinished()
+{
+    for (int i = 0; i < m_tabWidget->count(); i++)
+        if (DisplayWidget *pView = qobject_cast<DisplayWidget *>(m_tabWidget->widget(i)))
+            pView->onFinished();
+}
+
 void ZTabDockWidget::paintEvent(QPaintEvent* event)
 {
     QPainter painter(this);
