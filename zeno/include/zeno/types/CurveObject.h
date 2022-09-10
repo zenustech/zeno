@@ -93,6 +93,17 @@ struct CurveData : private _CurveDataDetails {
         cpoints.push_back({v, cp_type, left_handler, right_handler});
     }
 
+    void updateRange(Range const &newRg) {
+        for (auto &x: cpbases) {
+            x = mix(newRg.xFrom, newRg.xTo, unmix(rg.xFrom, rg.xTo, x));
+        }
+        for (auto &cp: cpoints) {
+            auto &y = cp.v;
+            y = mix(newRg.yFrom, newRg.yTo, unmix(rg.yFrom, rg.yTo, y));
+        }
+        rg = newRg;
+    }
+
     float eval(float cf) const {
         assert(!cpoints.empty());
         assert(cpbases.size() == cpoints.size());

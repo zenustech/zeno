@@ -453,6 +453,11 @@ inline auto mix(T const &a, S const &b, F const &f) {
 }
 
 template <class T, class S, class F>
+inline auto unmix(T const &a, S const &b, F const &f) {
+  return (f - a) / (b - a);
+}
+
+template <class T, class S, class F>
 inline auto clamp(T const &x, S const &a, F const &b) {
   return min(max(x, a), b);
 }

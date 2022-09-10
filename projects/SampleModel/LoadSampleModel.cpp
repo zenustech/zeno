@@ -36,7 +36,7 @@ ZENO_DEFNODE(LoadSampleModel)({
 });
 
 struct LoadStringPrim : INode {
-    inline static std::shared_ptr<PrimitiveObject> cache[128];
+    inline static thread_local std::shared_ptr<PrimitiveObject> cache[128];
 
     virtual void apply() override {
         auto str = get_input2<std::string>("str");
