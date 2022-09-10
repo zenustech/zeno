@@ -33,6 +33,8 @@ static void bvh_vectors_wrangle(zfx::x64::Executable *exec,
                                 std::vector<Buffer> const &chs,
                                 std::vector<Buffer> const &chs2,
                                 std::vector<zeno::vec3f> const &pos,
+                                std::vector<zeno::vec3f> const &opos,
+                                bool isBox, float radius2,
                                 zeno::LBvh *lbvh) {
   if (chs.size() == 0)
     return;
@@ -45,6 +47,9 @@ static void bvh_vectors_wrangle(zfx::x64::Executable *exec,
         ctx.channel(k)[0] = chs[k].base[chs[k].stride * i];
     }
     lbvh->iter_neighbors(pos[i], [&](int pid) {
+      if (!isBox)
+        if (lengthSquared(pos[i] - opos[pid]) > radius2)
+          return;
       for (int k = 0; k < chs.size(); k++) {
         if (chs[k].which)
           ctx.channel(k)[0] = chs2[k].base[chs2[k].stride * pid];
@@ -422,7 +427,8 @@ struct ParticlesNeighborBvhWrangle : zeno::INode {
     }
 
     bvh_vectors_wrangle(exec, chs, chs2, prim->attr<zeno::vec3f>("pos"),
-                        lbvh.get());
+                        primNei->attr<zeno::vec3f>("pos"), get_input2<bool>("is_box"),
+                        lbvh.get()->thickness * lbvh.get()->thickness, lbvh.get());
 
     set_output("prim", std::move(prim));
   }
@@ -433,6 +439,7 @@ ZENDEFNODE(ParticlesNeighborBvhWrangle,
                {{"PrimitiveObject", "prim"},
                 {"PrimitiveObject", "primNei"},
                 {"LBvh", "lbvh"},
+                {"bool", "is_box", "1"},
                 {"string", "zfxCode"},
                 {"DictObject:NumericObject", "params"}},
                {{"PrimitiveObject", "prim"}},
