@@ -11,7 +11,7 @@
 #include <type_traits>
 #include <fstream>
 #include "MeshIO.hpp"
-#include "../myPrint.h"
+#include "../Utils/myPrint.h"
 #include <zeno/utils/log.h>
 
 namespace zeno {
