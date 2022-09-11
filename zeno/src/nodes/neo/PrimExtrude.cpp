@@ -214,7 +214,7 @@ struct PrimExtrude : INode {
         }
 
         if (delOldFaces && !maskAttr.empty()) {
-            primFilterVerts(prim.get(), maskAttr, 0, true, {}, "faces");
+            primFilterVerts(prim.get(), maskAttr, 0, false, {}, "faces");
         }
 
         int p1size = prim->verts.size();
@@ -263,7 +263,7 @@ ZENDEFNODE(PrimExtrude, {
     {"vec3f", "offset", "0,0,0"},
     //{"string", "bridgeMaskAttrO", ""},
     {"string", "sourceMaskAttrO", ""},
-    {"bool", "delOldFaces", "0"},
+    {"bool", "delOldFaces", "1"},
     {"bool", "autoFindEdges", "1"},
     {"bool", "averagedExtrude", "1"},
     },
