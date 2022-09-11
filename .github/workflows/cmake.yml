@@ -105,6 +105,7 @@ jobs:
         ls $env:CUDA_PATH\lib\x64
         echo PATH is $env:PATH
         nvcc -V
+        python misc/ci/fuckwenpath.py
 
     - name: Check CUDA toolkit (Ubuntu)
       if: ${{ matrix.gpu == 'cuda' && runner.os == 'Linux' }}
@@ -133,26 +134,27 @@ jobs:
         configurePreset: ${{ (needs.check.outputs.vcpkg == 'true' && (matrix.gpu == 'cuda' && 'cuda' || 'default') || 'basic') }}
         buildPreset: default
 
-    #- name: Process CMake Error
+    - name: Process CMake Error
+      if: ${{ (failure() && steps.run_cmake.outcome == 'failure') }}
       #if: ${{ (failure() && steps.run_cmake.outcome == 'failure') || success() }}
-      #working-directory: ${{ env.build_dir }}
-      #shell: bash
-      #run: |
-          #if [[ -f "build/CMakeFiles/CMakeOutput.log" ]]; then
-            #echo "---- build/CMakeFiles/CMakeOutput.log"
-            #cat build/CMakeFiles/CMakeOutput.log
-            #echo "----"
-          #fi
-          #if [[ -f "build/CMakeFiles/CMakeError.log" ]]; then
-            #echo "---- build/CMakeFiles/CMakeError.log"
-            #cat build/CMakeFiles/CMakeError.log
-            #echo "----"
-          #fi
-          #if [[ -f "build/CMakeCache.txt" ]]; then
-            #echo "---- build/CMakeCache.txt"
-            #cat build/CMakeCache.txt
-            #echo "----"
-          #fi
+      working-directory: ${{ github.workspace }}
+      shell: bash
+      run: |
+          if [[ -f "build/CMakeFiles/CMakeOutput.log" ]]; then
+            echo "---- build/CMakeFiles/CMakeOutput.log"
+            cat build/CMakeFiles/CMakeOutput.log
+            echo "----"
+          fi
+          if [[ -f "build/CMakeFiles/CMakeError.log" ]]; then
+            echo "---- build/CMakeFiles/CMakeError.log"
+            cat build/CMakeFiles/CMakeError.log
+            echo "----"
+          fi
+          if [[ -f "build/CMakeCache.txt" ]]; then
+            echo "---- build/CMakeCache.txt"
+            cat build/CMakeCache.txt
+            echo "----"
+          fi
 
     - name: Packaging
       if: ${{ needs.check.outputs.deploy == 'true' }}
