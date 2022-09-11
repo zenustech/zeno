@@ -103,6 +103,7 @@ jobs:
         ls $env:CUDA_PATH\lib
         ls $env:CUDA_PATH\lib\cmake
         ls $env:CUDA_PATH\lib\x64
+        echo PATH is $env:PATH
         nvcc -V
 
     - name: Check CUDA toolkit (Ubuntu)
