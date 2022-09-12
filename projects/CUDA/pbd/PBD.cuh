@@ -22,7 +22,7 @@ struct PBDSystem : IObject {
     using mat3 = zs::vec<T, 3, 3>;
     using ivec3 = zs::vec<int, 3>;
     using ivec2 = zs::vec<int, 2>;
-    using bvh_t = zs::LBvh<3, 32, int, T>;
+    using bvh_t = zs::LBvh<3, int, T>;
     using bv_t = zs::AABBBox<3, T>;
 
     struct PrimitiveHandle {

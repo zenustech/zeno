@@ -359,6 +359,13 @@ struct ZenoIndexBuckets : IObjectClone<ZenoIndexBuckets> {
   buckets_t ibs;
 };
 
+struct ZenoLinearBvh : IObjectClone<ZenoLinearBvh> {
+  using lbvh_t = zs::LBvh<3, int, zs::f32, zs::ZSPmrAllocator<false>>;
+  auto &get() noexcept { return bvh; }
+  const auto &get() const noexcept { return bvh; }
+  lbvh_t bvh;
+};
+
 struct ZenoLevelSet : IObjectClone<ZenoLevelSet> {
   // this supports a wide range of grid types (not just collocated)
   // default channel contains "sdf"

@@ -470,7 +470,6 @@ void ZenoLBvh<dim, lane_width, Index, Value, Allocator>::build(zs::CudaExecution
         // levels for trunk are already set
     });
     if constexpr (false) {
-        // check right childs
         policy(range(numTrunk), [lDepths, lOffsets, tLs, tRs, tLcs, tRcs, tPars, lPars, lLcas, tDst,
                                  auxIndices = proxy<space>(auxIndices), levels = proxy<space>(levels),
                                  parents = proxy<space>(parents), numTrunk] ZS_LAMBDA(Ti idx) mutable {
