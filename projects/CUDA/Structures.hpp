@@ -364,6 +364,7 @@ struct ZenoLinearBvh : IObjectClone<ZenoLinearBvh> {
   auto &get() noexcept { return bvh; }
   const auto &get() const noexcept { return bvh; }
   lbvh_t bvh;
+  zs::f32 thickness;
 };
 
 struct ZenoLevelSet : IObjectClone<ZenoLevelSet> {

@@ -62,6 +62,7 @@ struct MakeZSLBvh : zeno::INode {
             buildBvh(cudaPol, pars->getParticles<true>(), radius, bvh);
         else
             buildBvh(cudaPol, pars->getParticles(), radius, bvh);
+        out->thickness = radius;
 
         set_output("ZSLBvh", std::move(out));
     }
