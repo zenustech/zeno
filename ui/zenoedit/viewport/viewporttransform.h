@@ -41,7 +41,6 @@ class FakeTransformer {
           , m_status(false)
           , m_operation(NONE)
     {
-
     }
 
     FakeTransformer(const std::unordered_set<std::string>& names)
@@ -186,7 +185,7 @@ class FakeTransformer {
                 }
                 else {
                     auto linked_transform_node_index =
-                        linkedToVisibleTransformNode(node_index, pModel).value<QModelIndex>();
+                        linkedToVisibleTransformNode(node_id, node_index, pModel).value<QModelIndex>();
                     if (linked_transform_node_index.isValid()) {
                         auto linked_transform_node_id = linked_transform_node_index.data(ROLE_OBJID).toString();
                         syncToTransformNode(linked_transform_node_id, obj_name, pModel, linked_transform_node_index, subgraph_index);
@@ -250,9 +249,8 @@ class FakeTransformer {
         auto pos = node_index.data(ROLE_OBJPOS).toPointF();
         pos.setX(pos.x() + 10);
         auto new_node_id = NodesMgr::createNewNode(pModel, subgraph_index, "TransformPrimitive", pos);
-        QString out_sock = "prim";
-        if (node_id.contains("TransformPrimitive"))
-            out_sock = "outPrim";
+        QString node_name = node_id.section('-', 1);
+        QString out_sock = getNodePrimSockName(node_name.toStdString());
         EdgeInfo edge = {
             node_id,
             new_node_id,
@@ -318,13 +316,15 @@ class FakeTransformer {
         }
     }
 
-    QVariant linkedToVisibleTransformNode(QModelIndex& node_index, IGraphsModel* pModel) const {
+    QVariant linkedToVisibleTransformNode(QString& node_id, QModelIndex& node_index, IGraphsModel* pModel) {
         auto output_sockets = node_index.data(ROLE_OUTPUTS).value<OUTPUT_SOCKETS>();
-        auto linked_edges = output_sockets["prim"].linkIndice;
+        QString node_name = node_id.section("-", 1);
+        std::string out_sock = getNodePrimSockName(node_name.toStdString());
+        auto linked_edges = output_sockets[out_sock.c_str()].linkIndice;
         for (const auto& linked_edge : linked_edges) {
-            auto node_id = linked_edge.data(ROLE_INNODE).toString();
-            if (node_id.contains("TransformPrimitive")) {
-                auto search_result = pModel->search(node_id, SEARCH_NODEID);
+            auto next_node_id = linked_edge.data(ROLE_INNODE).toString();
+            if (next_node_id.contains("TransformPrimitive")) {
+                auto search_result = pModel->search(next_node_id, SEARCH_NODEID);
                 auto linked_node_index = search_result[0].targetIdx;
                 auto option = linked_node_index.data(ROLE_OPTIONS).toInt();
                 if (option & OPT_VIEW) {
@@ -413,14 +413,14 @@ class FakeTransformer {
             // print_mat4("rotate mat", rotate_matrix);
             auto scale_matrix = glm::scale(scale);
             // print_mat4("scale mat", scale_matrix);
-            auto transform_matrix = translate_matrix * rotate_matrix * scale_matrix;
+            auto transform_matrix = translate_matrix * rotate_matrix * scale_matrix * inv_pre_transform;
             // print_mat4("transform mat", transform_matrix);
             if (obj->has_attr("pos")) {
                 // transform pos
                 auto &pos = obj->attr<zeno::vec3f>("pos");
                 for (auto &po : pos) {
                     auto p = zeno::vec_to_other<glm::vec3>(po);
-                    auto t = transform_matrix * inv_pre_transform * glm::vec4(p, 1.0f);
+                    auto t = transform_matrix * glm::vec4(p, 1.0f);
                     auto pt = glm::vec3(t) / t.w;
                     po = zeno::other_to_vec<3>(pt);
                 }
@@ -449,6 +449,16 @@ class FakeTransformer {
         m_objects_center /= m_objects.size();
     }
 
+    const char* getNodePrimSockName(std::string node_name) {
+        if (table.empty()) {
+            table["TransformPrimitive"] = "outPrim";
+            table["BindMaterial"] = "object";
+        }
+        if (table.find(node_name) == table.end())
+            return "prim";
+        return table[node_name].c_str();
+    }
+
   private:
     std::unordered_map<std::string, PrimitiveObject*> m_objects;
 
@@ -461,6 +471,8 @@ class FakeTransformer {
 
     bool m_status;
     int m_operation;
+
+    std::unordered_map<std::string, std::string> table;
 };
 
 }
