@@ -93,7 +93,7 @@ struct CodimStepping : INode {
     using mat3 = zs::vec<T, 3, 3>;
     using pair_t = zs::vec<int, 2>;
     using pair3_t = zs::vec<int, 3>;
-    using bvh_t = zs::LBvh<3, 32, int, T>;
+    using bvh_t = zs::LBvh<3, int, T>;
     using bv_t = zs::AABBBox<3, T>;
 
     static constexpr vec3 s_groundNormal{0, 1, 0};
