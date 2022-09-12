@@ -15,6 +15,8 @@ class ZenoLights : public QWidget {
 public:
     ZLineEdit* sunLongitude = new ZLineEdit("0");
     ZLineEdit* sunLatitude = new ZLineEdit("30");
+    ZLineEdit* sunSoftness = new ZLineEdit("1");
+    ZLineEdit* elapsedTime = new ZLineEdit("0");
 
 
     QPushButton* write_btn = new QPushButton("Write");

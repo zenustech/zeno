@@ -48,6 +48,9 @@ struct Params
     float sunLightDirX;
     float sunLightDirY;
     float sunLightDirZ;
+
+    float sunSoftness;
+    float elapsedTime;
 };
 
 
