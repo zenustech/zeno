@@ -1,6 +1,7 @@
 file(GLOB ABC_SOURCE *.cpp *.h)
 
 target_sources(zeno PRIVATE ${ABC_SOURCE})
+zeno_disable_warning(${ABC_SOURCE})
 
 target_include_directories(zeno PRIVATE .)
 

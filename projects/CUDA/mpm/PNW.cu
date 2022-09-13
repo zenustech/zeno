@@ -106,7 +106,7 @@ struct ZSParticleNeighborWrangler : INode {
             opts.define_param(key, dim);
             //auto par = zeno::safe_any_cast<zeno::NumericValue>(obj);
         }
-        
+
         /// symbols
         auto def_sym = [&opts](const std::string &prefix, const std::string &key, int dim) {
             opts.define_symbol(prefix + key, dim);
@@ -220,14 +220,16 @@ struct ZSParticleNeighborWrangler : INode {
 
         // begin kernel launch
         std::size_t cnt = pars.size();
-        auto parsv = zs::proxy<zs::execspace_e::cuda>(pars);
-        auto neighborParsv = zs::proxy<zs::execspace_e::cuda>(neighborPars);
+        auto parsv = zs::proxy<zs::execspace_e::cuda>({}, pars);
+        auto neighborParsv = zs::proxy<zs::execspace_e::cuda>({}, neighborPars);
         auto ibsv = zs::proxy<zs::execspace_e::cuda>(ibs);
         zs::f32 *d_params = dparams.data();
         int nchns = daccessors.size();
         void *addr = daccessors.data();
-        void *args[] = {(void *)&cnt,      (void *)&parsv, (void *)&neighborParsv, (void *)&ibsv,
-                        (void *)&d_params, (void *)&nchns, (void *)&addr};
+        int isBox = get_input2<bool>("is_box") ? 1 : 0;
+        float radius = ibs._dx;
+        void *args[] = {(void *)&cnt,  (void *)&isBox,    (void *)&radius, (void *)&parsv, (void *)&neighborParsv,
+                        (void *)&ibsv, (void *)&d_params, (void *)&nchns,  (void *)&addr};
 
         cuLaunchKernel((CUfunction)function, (cnt + 127) / 128, 1, 1, 128, 1, 1, 0,
                        (CUstream)currentContext.streamSpare(0), args, (void **)nullptr);
@@ -246,6 +248,7 @@ ZENDEFNODE(ZSParticleNeighborWrangler, {
                                             {"ZenoParticles", "ZSNeighborParticles"},
                                             {"ZenoIndexBuckets", "ZSIndexBuckets"},
                                             {"string", "zfxCode"},
+                                            {"bool", "is_box", "1"},
                                             {"DictObject:NumericObject", "params"}},
                                            {"ZSParticles"},
                                            {},

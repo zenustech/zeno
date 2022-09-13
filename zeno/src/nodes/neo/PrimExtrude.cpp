@@ -23,13 +23,11 @@ struct PrimExtrude : INode {
         auto offset = get_input2<vec3f>("offset");
         //auto bridgeMaskAttrO = get_input2<std::string>("bridgeMaskAttrO");
         auto sourceMaskAttrO = get_input2<std::string>("sourceMaskAttrO");
-        auto autoFlipFace = get_input2<bool>("autoFlipFace");
+        auto delOldFaces = get_input2<bool>("delOldFaces");
         auto autoFindEdges = get_input2<bool>("autoFindEdges");
         auto averagedExtrude = get_input2<bool>("averagedExtrude");
 
         auto prim2 = std::make_shared<PrimitiveObject>(*prim);
-        bool flipNewFace = autoFlipFace && extrude < 0;
-        bool flipOldFace = autoFlipFace && extrude > 0;
 
         if (autoFindEdges && !maskAttr.empty()) {
             //AttrVector<vec2i> oldlines = std::move(prim2->lines);
@@ -73,7 +71,8 @@ struct PrimExtrude : INode {
 
         std::vector<vec3f> p2inset;
         if (inset != 0) {//havebug
-            p2inset.resize(prim2->verts.size());
+            auto *prim = prim2.get();//overla
+            p2inset.resize(prim->verts.size());
             //std::string tmpInsetAttr = "%%extrude3";
             //primCalcInsetDir(prim2.get(), 1.0f, tmpInsetAttr);
             auto &out = p2inset;
@@ -137,12 +136,12 @@ struct PrimExtrude : INode {
             p2norms.clear();
         }
 
-        if (flipNewFace) {
-            primFlipFaces(prim2.get());
-        }
-        if (flipOldFace) {
-            primFlipFaces(prim.get());
-        }
+        //if (flipNewFace) {
+            //primFlipFaces(prim2.get());
+        //}
+        //if (flipOldFace) {
+            //primFlipFaces(prim.get());
+        //}
 
         struct segment_less {
             bool operator()(vec2i const &a, vec2i const &b) const {
@@ -214,6 +213,10 @@ struct PrimExtrude : INode {
                 bounds.push_back(edge);
         }
 
+        if (delOldFaces && !maskAttr.empty()) {
+            primFilterVerts(prim.get(), maskAttr, 0, false, {}, "faces");
+        }
+
         int p1size = prim->verts.size();
         int p2size = prim2->verts.size();
         *prim = std::move(*primMerge({prim.get(), prim2.get()}, sourceMaskAttrO));
@@ -227,6 +230,7 @@ struct PrimExtrude : INode {
             vec4i quad(l1[0], l1[1], l2[1], l2[0]);
             prim->quads.push_back(quad);
         }
+        prim->quads.update();
 
         if (extrude != 0 && inset != 0) {
             for (int i = 0; i < p2size; i++) {
@@ -259,7 +263,7 @@ ZENDEFNODE(PrimExtrude, {
     {"vec3f", "offset", "0,0,0"},
     //{"string", "bridgeMaskAttrO", ""},
     {"string", "sourceMaskAttrO", ""},
-    {"bool", "autoFlipFace", "1"},
+    {"bool", "delOldFaces", "1"},
     {"bool", "autoFindEdges", "1"},
     {"bool", "averagedExtrude", "1"},
     },

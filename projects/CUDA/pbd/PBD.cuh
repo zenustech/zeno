@@ -22,7 +22,7 @@ struct PBDSystem : IObject {
     using mat3 = zs::vec<T, 3, 3>;
     using ivec3 = zs::vec<int, 3>;
     using ivec2 = zs::vec<int, 2>;
-    using bvh_t = zs::LBvh<3, 32, int, T>;
+    using bvh_t = zs::LBvh<3, int, T>;
     using bv_t = zs::AABBBox<3, T>;
 
     struct PrimitiveHandle {
@@ -110,7 +110,7 @@ struct PBDSystem : IObject {
     // bvs_t stBvs, seBvs;       // STQ
     // bvh_t bouStBvh, bouSeBvh; // for collision objects
     // bvs_t bouStBvs, bouSeBvs; // STQ
-    T dt;
+    T dt, framedt;
 };
 // config compliance, num solve iters, edge/volume extforce, dt
 

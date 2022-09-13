@@ -110,6 +110,7 @@ extern "C" __global__ void __raygen__rg()
         prd.diffDepth = 0;
         prd.isSS = false;
         prd.direction = ray_direction;
+        prd.curMatIdx = 0;
         for( ;; )
         {
             traceRadiance(
@@ -175,6 +176,11 @@ extern "C" __global__ void __raygen__rg()
 
 extern "C" __global__ void __miss__radiance()
 {
+    vec3 sunLightDir = vec3(
+            params.sunLightDirX,
+            params.sunLightDirY,
+            params.sunLightDirZ
+            );
     MissData* rt_data  = reinterpret_cast<MissData*>( optixGetSbtDataPointer() );
     RadiancePRD* prd = getPRD();
     prd->attenuation2 = prd->attenuation;
@@ -182,7 +188,7 @@ extern "C" __global__ void __miss__radiance()
     prd->countEmitted = false;
 
     if(prd->medium != DisneyBSDF::PhaseFunctions::isotropic){
-        prd->radiance = proceduralSky(normalize(prd->direction));
+        prd->radiance = proceduralSky2(normalize(prd->direction), sunLightDir, params.elapsedTime);
 
         //prd->radiance = vec3(0,0,0);
         prd->done      = true;

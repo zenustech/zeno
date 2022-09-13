@@ -41,12 +41,17 @@ target_link_libraries(zeno PRIVATE zshelper CUDA::cufft)
 target_sources(zeno PRIVATE
   test1.cu
 )
+#]=]
 set_target_properties(zeno
-  PROPERTIES  CUDA_EXTENSIONS ON
+  PROPERTIES # CUDA_EXTENSIONS ON
   CUDA_SEPARABLE_COMPILATION ON
-# LINKER_LANGUAGE CUDA
-  POSITION_INDEPENDENT_CODE ON
-# CUDA_ARCHITECTURES OFF
+  CUDA_RESOLVE_DEVICE_SYMBOLS ON
+  CUDA_ARCHITECTURES OFF
+)
+
+#[=[
+target_sources(zeno PRIVATE
+  POC/jit.cu
 )
 #]=]
 
@@ -85,7 +90,6 @@ target_sources(zeno PRIVATE
   fem/BoundaryCondition.cu
   fem/Collisions.cu
 
-  # fem/TimeStepping.cu
   fem/Check.cu
   fem/Generation.cpp
   fem/test.cpp
@@ -97,7 +101,6 @@ target_sources(zeno PRIVATE
   # fem/BaryCentricInterpolator.cu
   fem/Codim.cu
 
-  # fem/TestAugLag.cu
   fem/FastQuasiStaticStepping.cu
 
   fem/FleshQuasiStepping.cu
@@ -133,6 +136,7 @@ if(NOT MSVC)
   target_sources(zeno PRIVATE
     mpm/PW.cu
     mpm/PNW.cu
+    mpm/PNBVHW.cu
     mpm/PPW.cu
   )
 endif()

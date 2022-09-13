@@ -5,7 +5,7 @@ Zeno Python API module
 
 import ctypes
 import functools
-from typing import Union, Optional, Any, Iterator, Iterable
+from typing import Union, Optional, Any, Iterator, Iterable, Callable
 from types import MappingProxyType
 
 
@@ -19,7 +19,9 @@ def initDLLPath(path: str):
 
     def chkerr(ret):
         if ret != 0:
-            raise RuntimeError('[zeno internal error] {}'.format(ctypes.string_at(api.Zeno_GetLastErrorStr()).decode()))
+            msgRet_ = ctypes.c_char_p()
+            api.Zeno_GetLastError(ctypes.pointer(msgRet_))
+            raise RuntimeError('[zeno internal error] {}'.format(msgRet_.value.decode()))  # type: ignore
 
     def wrapchkerr(func):
         @functools.wraps(func)
@@ -33,10 +35,9 @@ def initDLLPath(path: str):
         func.argtypes = argtypes
         if do_checks:
             func = wrapchkerr(func)
-        setattr(api, funcname, func)
+            setattr(api, funcname, func)
 
-    define(ctypes.c_uint32, 'Zeno_GetLastErrorCode', do_checks=False)
-    define(ctypes.c_char_p, 'Zeno_GetLastErrorStr', do_checks=False)
+    define(ctypes.c_uint32, 'Zeno_GetLastError', ctypes.POINTER(ctypes.c_char_p), do_checks=False)
     define(ctypes.c_uint32, 'Zeno_CreateGraph', ctypes.POINTER(ctypes.c_uint64))
     define(ctypes.c_uint32, 'Zeno_DestroyGraph', ctypes.c_uint64)
     define(ctypes.c_uint32, 'Zeno_GraphIncReference', ctypes.c_uint64)
@@ -54,8 +55,12 @@ def initDLLPath(path: str):
     define(ctypes.c_uint32, 'Zeno_GetObjectFloat', ctypes.c_uint64, ctypes.POINTER(ctypes.c_float), ctypes.c_size_t)
     define(ctypes.c_uint32, 'Zeno_GetObjectString', ctypes.c_uint64, ctypes.POINTER(ctypes.c_char), ctypes.POINTER(ctypes.c_size_t))
     define(ctypes.c_uint32, 'Zeno_GetObjectPrimData', ctypes.c_uint64, ctypes.c_int, ctypes.c_char_p, ctypes.POINTER(ctypes.c_void_p), ctypes.POINTER(ctypes.c_size_t), ctypes.POINTER(ctypes.c_int))
+# ZENO_CAPI Zeno_Error Zeno_AddObjectPrimAttr(Zeno_Object object_, Zeno_PrimMembType primArrType_, const char *attrName_, Zeno_PrimDataType dataType_) ZENO_CAPI_NOEXCEPT;
+    define(ctypes.c_uint32, 'Zeno_AddObjectPrimAttr', ctypes.c_uint64, ctypes.c_int, ctypes.c_char_p, ctypes.c_int)
     define(ctypes.c_uint32, 'Zeno_GetObjectPrimDataKeys', ctypes.c_uint64, ctypes.c_int, ctypes.POINTER(ctypes.c_size_t), ctypes.POINTER(ctypes.c_char_p))
     define(ctypes.c_uint32, 'Zeno_ResizeObjectPrimData', ctypes.c_uint64, ctypes.c_int, ctypes.c_size_t)
+    define(ctypes.c_uint32, 'Zeno_InvokeObjectFactory', ctypes.POINTER(ctypes.c_uint64), ctypes.c_char_p, ctypes.py_object)
+    define(ctypes.c_uint32, 'Zeno_InvokeObjectDefactory', ctypes.c_uint64, ctypes.c_char_p, ctypes.POINTER(ctypes.py_object))
 
 
 class ZenoObject:
@@ -100,7 +105,24 @@ class ZenoObject:
             return ret
 
     @classmethod
-    def newPrim(cls):
+    def _newFunc(cls, func: Callable):
+        @functools.wraps(func)
+        def wrappedFunc(**kwargs):
+            ret = func(**kwargs)
+            if ret is None:
+                return {}
+            elif isinstance(ret, dict):
+                retObjs = {k: ZenoObject.fromLiterial(v) for k, v in ret}
+                wrappedFunc._retRAII = retObjs
+                return {k: v.toHandle() for k, v in retObjs}
+            else:
+                retObj = ZenoObject.fromLiterial(ret)
+                wrappedFunc._retRAII = retObj
+                return {'ret': retObj.toHandle()}
+        return cls(cls.__create_key, cls._makeSomeObject('FunctionObject', wrappedFunc))
+
+    @classmethod
+    def _newPrim(cls):
         return cls(cls.__create_key, cls._makePrimitive())
 
     @classmethod
@@ -108,6 +130,18 @@ class ZenoObject:
         object_ = ctypes.c_uint64(0)
         api.Zeno_CreateObjectPrimitive(ctypes.pointer(object_))
         return object_.value
+
+    @classmethod
+    def _makeSomeObject(cls, typeName_: str, ffiObj_: Any) -> int:
+        object_ = ctypes.c_uint64(0)
+        api.Zeno_InvokeObjectFactory(ctypes.pointer(object_), ctypes.c_char_p(typeName_.encode()), ctypes.py_object(ffiObj_))
+        return object_.value
+
+    @classmethod
+    def _fetchSomeObject(cls, typeName_: str, handle_: int) -> Any:
+        ffiObjRet_ = ctypes.py_object()
+        api.Zeno_InvokeObjectFactory(ctypes.c_uint64(handle_), ctypes.c_char_p(typeName_.encode()), ctypes.pointer(ffiObjRet_))
+        return ffiObjRet_.value
 
     @classmethod
     def _makeLiterial(cls, value: Literial) -> int:
@@ -217,9 +251,9 @@ class ZenoObject:
     @staticmethod
     def _fetchString(handle: int) -> str:
         strLen_ = ctypes.c_size_t(0)
-        api.Zeno_CreateObjectString(ctypes.c_uint64(handle), ctypes.c_void_p(0), ctypes.pointer(strLen_))
+        api.Zeno_GetObjectString(ctypes.c_uint64(handle), ctypes.cast(0, ctypes.POINTER(ctypes.c_char)), ctypes.pointer(strLen_))
         value_ = (ctypes.c_char * strLen_.value)()
-        api.Zeno_CreateObjectString(ctypes.c_uint64(handle), value_, ctypes.pointer(strLen_))
+        api.Zeno_GetObjectString(ctypes.c_uint64(handle), value_, ctypes.pointer(strLen_))
         return bytes(value_).decode()
 
 
@@ -232,7 +266,7 @@ class ZenoPrimitiveObject(ZenoObject):
 
     @classmethod
     def new(cls):
-        return cls.newPrim()
+        return cls._newPrim().asPrim()
 
     @property
     def verts(self):
@@ -327,6 +361,9 @@ class _MemSpanWrapper:
     def raw_data(self) -> tuple[int, int, Any, int]:
         return (self._ptr, self._len, self._type, self._dim)
 
+    def dtype(self) -> tuple[type, int]:
+        return (type(self._type()), self._dim)
+
     def __len__(self) -> int:
         return self._len
 
@@ -351,10 +388,25 @@ class _AttrVectorWrapper:
     _dimLut = [
         3, 1, 3, 1, 2, 2, 4, 4,
     ]
+    _typeUnlut: dict[tuple[type, int], int] = {
+        (float, 3): 0,
+        (float, 1): 1,
+        (int, 3): 2,
+        (int, 1): 3,
+        (float, 2): 4,
+        (int, 2): 5,
+        (float, 4): 6,
+        (int, 4): 7,
+    }
 
     def __init__(self, handle: int, kind: int):
         self._handle = handle
         self._kind = kind
+
+    def add_attr(self, attrName: str, dataType: tuple[type, int]):
+        dataTypeInd = self._typeUnlut[dataType]
+        api.Zeno_AddObjectPrimAttr(ctypes.c_uint64(self._handle), ctypes.c_int(self._kind), ctypes.c_char_p(attrName.encode()), ctypes.c_int(dataTypeInd))
+        return self.attr(attrName)
 
     def attr(self, attrName: str):
         ptrRet_ = ctypes.c_void_p()
@@ -448,6 +500,7 @@ class ZenoGraph:
 
 _args : dict[str, int] = {}
 _rets : dict[str, int] = {}
+_retsRAII : dict[str, Any] = {}
 _currgraph : int = 0
 
 
@@ -463,6 +516,7 @@ def get_input(key: str) -> ZenoObject:
 
 def set_output(key: str, value: ZenoObject):
     _rets[key] = ZenoObject.toHandle(value)
+    _retsRAII[key] = value
 
 
 def get_input2(key: str) -> Union[Literial, 'ZenoObject']:
@@ -502,6 +556,26 @@ class _TempNodeWrapper:
 no = _TempNodeWrapper()
 
 
+class _GetInputWrapper:
+    def __getattr__(self, key: str) -> Union[Literial, ZenoObject]:
+        return get_input2(key)
+
+    def __getitem__(self, key: str) -> Union[Literial, ZenoObject]:
+        return get_input2(key)
+
+args = _GetInputWrapper()
+
+
+class _SetOutputWrapper:
+    def __setattr__(self, key: str, value: Union[Literial, ZenoObject]):
+        return set_output2(key, value)
+
+    def __setitem__(self, key: str, value: Union[Literial, ZenoObject]):
+        return set_output2(key, value)
+
+rets = _SetOutputWrapper()
+
+
 __all__ = [
         'ZenoGraph',
         'ZenoObject',
@@ -512,4 +586,6 @@ __all__ = [
         'get_input2',
         'set_output2',
         'no',
+        'args',
+        'rets',
         ]

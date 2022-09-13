@@ -1558,11 +1558,11 @@ typename IPCSystem::T IPCSystem::energy(zs::CudaExecutionPolicy &pol, const zs::
     constexpr auto space = execspace_e::cuda;
     Vector<T> &es = temp;
 
-    es.resize(count_warps(coOffset));
-    es.reset(0);
     std::vector<T> Es(0);
 
     // inertial
+    es.resize(count_warps(coOffset));
+    es.reset(0);
     pol(range(coOffset), [vtemp = proxy<space>({}, vtemp), es = proxy<space>(es), tag, extForce = extForce,
                           dt = this->dt, n = coOffset] __device__(int vi) mutable {
         auto m = zs::sqr(vtemp("ws", vi));
@@ -1573,7 +1573,7 @@ typename IPCSystem::T IPCSystem::energy(zs::CudaExecutionPolicy &pol, const zs::
         {
             // inertia
             E += (T)0.5 * m * (x - vtemp.pack<3>("xtilde", vi)).l2NormSqr();
-            // external force
+            // gravity force
             if (vtemp("BCsoft", vi) == 0 && vtemp("BCorder", vi) != 3) {
                 E += -m * extForce.dot(x - xt) * dt * dt;
             }
@@ -1582,15 +1582,38 @@ typename IPCSystem::T IPCSystem::energy(zs::CudaExecutionPolicy &pol, const zs::
     });
     Es.push_back(reduce(pol, es));
 
+    if (vtemp.hasProperty("extf")) {
+        es.resize(count_warps(coOffset));
+        es.reset(0);
+        pol(range(coOffset), [vtemp = proxy<space>({}, vtemp), es = proxy<space>(es), tag, dt = this->dt,
+                              n = coOffset] ZS_LAMBDA(int vi) mutable {
+            auto x = vtemp.pack<3>(tag, vi);
+            auto xt = vtemp.pack<3>("xhat", vi);
+            int BCorder = vtemp("BCorder", vi);
+            T E = 0;
+            {
+                // external force
+                if (vtemp("BCsoft", vi) == 0 && vtemp("BCorder", vi) != 3) {
+                    auto extf = vtemp.template pack<3>("extf", vi);
+                    E += -extf.dot(x - xt) * dt * dt;
+                }
+            }
+            reduce_to(vi, n, E, es[vi / 32]);
+        });
+        Es.push_back(reduce(pol, es));
+    }
+
     for (auto &primHandle : prims) {
         match([&](auto &elasticModel) {
             Es.push_back(elasticityEnergy(pol, vtemp, primHandle, elasticModel, dt, es));
-        })(primHandle.models.getElasticModel());
+        })(primHandle.getModels().getElasticModel());
     }
     for (auto &primHandle : auxPrims) {
+        using ModelT = RM_CVREF_T(primHandle.getModels().getElasticModel());
+        const ModelT &model = primHandle.modelsPtr ? primHandle.getModels().getElasticModel() : ModelT{};
         match([&](auto &elasticModel) {
             Es.push_back(elasticityEnergy(pol, vtemp, primHandle, elasticModel, dt, es));
-        })(primHandle.models.getElasticModel());
+        })(model);
     }
     // contacts
     {
@@ -2156,7 +2179,7 @@ void IPCSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
             computeConstraints(pol);
             auto cr = constraintResidual(pol, true);
             if (cr < s_constraint_residual) {
-                zeno::log_info("satisfied cons res [{}] at newton iter [{}]\n", cr, newtonIter);
+                // zeno::log_info("satisfied cons res [{}] at newton iter [{}]\n", cr, newtonIter);
                 projectDBC = true;
                 BCsatisfied = true;
             }
@@ -2229,8 +2252,8 @@ void IPCSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
         T res = infNorm(pol, vtemp, "dir") / dt;
         T cons_res = constraintResidual(pol);
         if (res < targetGRes && cons_res == 0) {
-            zeno::log_info("\t# substep {} newton optimizer ends in {} iters with residual {}\n", substep, newtonIter,
-                           res);
+            // zeno::log_info("\t# substep {} newton optimizer ends in {} iters with residual {}\n", substep, newtonIter,
+            //               res);
             break;
         }
         fmt::print(fg(fmt::color::aquamarine),
@@ -2283,7 +2306,7 @@ void IPCSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
     }
 }
 
-struct AdvanceIPCSystem : INode {
+struct StepIPCSystem : INode {
     void apply() override {
         using namespace zs;
         constexpr auto space = execspace_e::cuda;
@@ -2317,19 +2340,25 @@ struct AdvanceIPCSystem : INode {
     }
 };
 
-ZENDEFNODE(AdvanceIPCSystem, {{
-                                  "ZSIPCSystem",
-                                  {"int", "num_substeps", "1"},
-                                  {"float", "dt", "0.01"},
-                              },
-                              {"ZSIPCSystem"},
-                              {},
-                              {"FEM"}});
+ZENDEFNODE(StepIPCSystem, {{
+                               "ZSIPCSystem",
+                               {"int", "num_substeps", "1"},
+                               {"float", "dt", "0.01"},
+                           },
+                           {"ZSIPCSystem"},
+                           {},
+                           {"FEM"}});
 
 struct IPCSystemClothBinding : INode { // usually called once before stepping
     using tiles_t = typename ZenoParticles::particles_t;
+#if 1
+    // unordered version
+    using bvh_t = zs::LBvh<3, int, zs::f32>;
+    using bv_t = typename bvh_t::Box;
+#else
     using bvh_t = typename IPCSystem::bvh_t;
     using bv_t = typename IPCSystem::bv_t;
+#endif
     template <typename VecT> static constexpr float distance(const bv_t &bv, const zs::VecInterface<VecT> &x) {
         using namespace zs;
         const auto &mi = bv._min;
@@ -2362,8 +2391,28 @@ struct IPCSystemClothBinding : INode { // usually called once before stepping
             if (lsv.getSignedDistance(x) < 0) {
                 float dist = distCap;
                 int j = -1;
-                int node = 0;
                 int numNodes = bvh.numNodes();
+#if 0
+                auto nt = bvh.numLeaves() - 1;
+                int node = bvh._root;
+                while (node != -1) {
+                    for (; node < nt; node = bvh._trunkTopo("lc", node))
+                        if (auto d = distance(bvh.getNodeBV(node), x); d > dist)
+                            break;
+                    // leaf node check
+                    if (node >= nt) {
+                        auto bouId = bvh._leafTopo("inds", node - nt) + coOffset;
+                        auto d = (vtemp.template pack<3>("xn", bouId) - x).length();
+                        if (d < dist) {
+                            dist = d;
+                            j = bouId;
+                        }
+                        node = bvh._leafTopo("esc", node - nt);
+                    } else // separate at internal nodes
+                        node = bvh._trunkTopo("esc", node);
+                }
+#else
+                int node = 0;
                 while (node != -1 && node != numNodes) {
                     int level = bvh._levels[node];
                     for (; level; --level, ++node)
@@ -2381,6 +2430,7 @@ struct IPCSystemClothBinding : INode { // usually called once before stepping
                     } else // separate at internal nodes
                         node = bvh._auxIndices[node];
                 }
+#endif
                 if (j != -1) {
                     auto no = atomic_add(exec_cuda, &cnt[0], 1);
                     eles.template tuple<2>("inds", no) = zs::vec<int, 2>{i, j}.template reinterpret_bits<float>();
@@ -2413,8 +2463,6 @@ struct IPCSystemClothBinding : INode { // usually called once before stepping
 
         auto zsls = get_input<ZenoLevelSet>("ZSLevelSet");
         bool ifHardCons = get_input2<bool>("hard_constraint");
-        // currently only impl soft bindings
-        ifHardCons = false;
 
         auto cudaPol = zs::cuda_exec().sync(true);
         bvh_t bouBvh;
@@ -2442,21 +2490,26 @@ struct IPCSystemClothBinding : INode { // usually called once before stepping
             if constexpr (is_same_v<RM_CVREF_T(ls), basic_ls_t>) {
                 match([&](const auto &lsPtr) {
                     auto lsv = get_level_set_view<execspace_e::cuda>(lsPtr);
-                    A->pushBoundarySprings(bindStrings(cudaPol, vtemp, numVerts, lsv, bouBvh, k, dist_cap, rl));
+                    A->pushBoundarySprings(bindStrings(cudaPol, vtemp, numVerts, lsv, bouBvh, k, dist_cap, rl),
+                                           ifHardCons ? ZenoParticles::category_e::tracker
+                                                      : ZenoParticles::category_e::curve);
                 })(ls._ls);
             } else if constexpr (is_same_v<RM_CVREF_T(ls), const_sdf_vel_ls_t>) {
                 match([&](auto lsv) {
                     A->pushBoundarySprings(
-                        bindStrings(cudaPol, vtemp, numVerts, SdfVelFieldView{lsv}, bouBvh, k, dist_cap, rl));
+                        bindStrings(cudaPol, vtemp, numVerts, SdfVelFieldView{lsv}, bouBvh, k, dist_cap, rl),
+                        ifHardCons ? ZenoParticles::category_e::tracker : ZenoParticles::category_e::curve);
                 })(ls.template getView<execspace_e::cuda>());
             } else if constexpr (is_same_v<RM_CVREF_T(ls), const_transition_ls_t>) {
                 match([&](auto fieldPair) {
                     auto &fvSrc = std::get<0>(fieldPair);
                     auto &fvDst = std::get<1>(fieldPair);
-                    A->pushBoundarySprings(bindStrings(
-                        cudaPol, vtemp, numVerts,
-                        TransitionLevelSetView{SdfVelFieldView{fvSrc}, SdfVelFieldView{fvDst}, ls._stepDt, ls._alpha},
-                        bouBvh, k, dist_cap, rl));
+                    A->pushBoundarySprings(
+                        bindStrings(cudaPol, vtemp, numVerts,
+                                    TransitionLevelSetView{SdfVelFieldView{fvSrc}, SdfVelFieldView{fvDst}, ls._stepDt,
+                                                           ls._alpha},
+                                    bouBvh, k, dist_cap, rl),
+                        ifHardCons ? ZenoParticles::category_e::tracker : ZenoParticles::category_e::curve);
                 })(ls.template getView<zs::execspace_e::cuda>());
             }
         })(zsls->getLevelSet());
@@ -2476,5 +2529,101 @@ ZENDEFNODE(IPCSystemClothBinding, {{
                                    {"ZSIPCSystem"},
                                    {},
                                    {"FEM"}});
+
+struct IPCSystemForceField : INode {
+    template <typename VelSplsViewT>
+    void computeForce(zs::CudaExecutionPolicy &cudaPol, float windDragCoeff, float windDensity, int vOffset,
+                      VelSplsViewT velLs, typename IPCSystem::dtiles_t &vtemp,
+                      const typename IPCSystem::tiles_t &eles) {
+        using namespace zs;
+        cudaPol(range(eles.size()), [windDragCoeff, windDensity, velLs, vtemp = proxy<execspace_e::cuda>({}, vtemp),
+                                     eles = proxy<execspace_e::cuda>({}, eles), vOffset] ZS_LAMBDA(size_t ei) mutable {
+            auto inds = eles.pack<3>("inds", ei).template reinterpret_bits<int>() + vOffset;
+            auto p0 = vtemp.template pack<3>("xn", inds[0]);
+            auto p1 = vtemp.template pack<3>("xn", inds[1]);
+            auto p2 = vtemp.template pack<3>("xn", inds[2]);
+            auto cp = (p1 - p0).cross(p2 - p0);
+            auto area = cp.length();
+            auto n = cp / area;
+            area *= 0.5;
+
+            auto pos = (p0 + p1 + p2) / 3; // get center to sample velocity
+            auto windVel = velLs.getMaterialVelocity(pos);
+
+            auto vel = (vtemp.template pack<3>("vn", inds[0]) + vtemp.template pack<3>("vn", inds[1]) +
+                        vtemp.template pack<3>("vn", inds[2])) /
+                       3;
+            auto vrel = windVel - vel;
+            auto vnSignedLength = n.dot(vrel);
+            auto vn = n * vnSignedLength;
+            auto vt = vrel - vn; // tangent
+            auto windForce = windDensity * area * zs::abs(vnSignedLength) * vn + windDragCoeff * area * vt;
+            auto f = windForce;
+            for (int i = 0; i != 3; ++i)
+                for (int d = 0; d != 3; ++d) {
+                    atomic_add(exec_cuda, &vtemp("extf", d, inds[i]), f[d] / 3);
+                }
+        });
+    }
+    void apply() override {
+        using namespace zs;
+        constexpr auto space = execspace_e::cuda;
+
+        auto A = get_input<IPCSystem>("ZSIPCSystem");
+        auto &vtemp = A->vtemp;
+        const auto numVerts = A->coOffset;
+        auto zsls = get_input<ZenoLevelSet>("ZSLevelSet");
+
+        auto cudaPol = zs::cuda_exec();
+        vtemp.append_channels(cudaPol, {{"extf", 3}});
+        cudaPol(range(numVerts), [vtemp = proxy<space>({}, vtemp)] ZS_LAMBDA(int i) mutable {
+            vtemp.template tuple<3>("extf", i) = zs::vec<double, 3>::zeros();
+        });
+
+        auto windDrag = get_input2<float>("wind_drag");
+        auto windDensity = get_input2<float>("wind_density");
+
+        for (auto &primHandle : A->prims) {
+            if (primHandle.category != ZenoParticles::category_e::surface)
+                continue;
+            const auto &eles = primHandle.getEles();
+            match([&](const auto &ls) {
+                using basic_ls_t = typename ZenoLevelSet::basic_ls_t;
+                using const_sdf_vel_ls_t = typename ZenoLevelSet::const_sdf_vel_ls_t;
+                using const_transition_ls_t = typename ZenoLevelSet::const_transition_ls_t;
+                if constexpr (is_same_v<RM_CVREF_T(ls), basic_ls_t>) {
+                    match([&](const auto &lsPtr) {
+                        auto lsv = get_level_set_view<execspace_e::cuda>(lsPtr);
+                        computeForce(cudaPol, windDrag, windDensity, primHandle.vOffset, lsv, vtemp, eles);
+                    })(ls._ls);
+                } else if constexpr (is_same_v<RM_CVREF_T(ls), const_sdf_vel_ls_t>) {
+                    match([&](auto lsv) {
+                        computeForce(cudaPol, windDrag, windDensity, primHandle.vOffset, SdfVelFieldView{lsv}, vtemp,
+                                     eles);
+                    })(ls.template getView<execspace_e::cuda>());
+                } else if constexpr (is_same_v<RM_CVREF_T(ls), const_transition_ls_t>) {
+                    match([&](auto fieldPair) {
+                        auto &fvSrc = std::get<0>(fieldPair);
+                        auto &fvDst = std::get<1>(fieldPair);
+                        computeForce(cudaPol, windDrag, windDensity, primHandle.vOffset,
+                                     TransitionLevelSetView{SdfVelFieldView{fvSrc}, SdfVelFieldView{fvDst}, ls._stepDt,
+                                                            ls._alpha},
+                                     vtemp, eles);
+                    })(ls.template getView<zs::execspace_e::cuda>());
+                }
+            })(zsls->getLevelSet());
+        }
+
+        set_output("ZSIPCSystem", A);
+    }
+};
+
+ZENDEFNODE(IPCSystemForceField,
+           {
+               {"ZSIPCSystem", "ZSLevelSet", {"float", "wind_drag", "0"}, {"float", "wind_density", "1"}},
+               {"ZSIPCSystem"},
+               {},
+               {"FEM"},
+           });
 
 } // namespace zeno

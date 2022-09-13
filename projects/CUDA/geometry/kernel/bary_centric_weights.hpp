@@ -172,7 +172,7 @@ namespace zeno {
         auto bvs = retrieve_bounding_volumes(pol,verts,quads,wrapv<4>{},bvh_thickness,x_tag);
         // std::cout << "TRY BUILDING TETS BVH" << std::endl;
 
-        auto tetsBvh = LBvh<3,32, int,T>{};
+        auto tetsBvh = LBvh<3, int,T>{};
 
 
         tetsBvh.build(pol,bvs);

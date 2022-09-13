@@ -5,6 +5,7 @@
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/StringObject.h>
 #include <zeno/types/NumericObject.h>
+#include <zeno/types/PrimitiveUtils.h>
 #include "ABCTree.h"
 #include <queue>
 #include <utility>
@@ -35,6 +36,18 @@ ZENDEFNODE(CountAlembicPrims, {
     {},
     {"alembic"},
 });
+
+void flipFrontBack(std::shared_ptr<PrimitiveObject> &prim) {
+    for (auto i = 0; i < prim->polys.size(); i++) {
+        auto [base, cnt] = prim->polys[i];
+        for (int j = 0; j < (cnt / 2); j++) {
+            std::swap(prim->loops[base + j], prim->loops[base + cnt - 1 - j]);
+            if (prim->loops.has_attr("uv")) {
+                std::swap(prim->loops.attr<zeno::vec3f>("uv")[base + j], prim->loops.attr<zeno::vec3f>("uv")[base + cnt - 1 - j]);
+            }
+        }
+    }
+}
 
 std::shared_ptr<PrimitiveObject> get_alembic_prim(std::shared_ptr<zeno::ABCTree> abctree, int index) {
     std::shared_ptr<PrimitiveObject> prim;
@@ -135,15 +148,23 @@ struct GetAlembicPrim : INode {
         } else {
             prim = get_alembic_prim(abctree, index);
         }
+        if (get_input2<bool>("flipFrontBack")) {
+            flipFrontBack(prim);
+        }
+        if (get_input2<bool>("triangulate")) {
+            zeno::primTriangulate(prim.get());
+        }
         set_output("prim", std::move(prim));
     }
 };
 
 ZENDEFNODE(GetAlembicPrim, {
     {
+        {"bool", "flipFrontBack", "1"},
         {"ABCTree", "abctree"},
         {"int", "index", "0"},
-        {"int", "use_xform", "0"}
+        {"bool", "use_xform", "0"},
+        {"bool", "triangulate", "0"},
     },
     {{"PrimitiveObject", "prim"}},
     {},
@@ -164,14 +185,22 @@ struct AllAlembicPrim : INode {
             });
         }
         auto outprim = prim_merge(prims);
+        if (get_input2<bool>("flipFrontBack")) {
+            flipFrontBack(outprim);
+        }
+        if (get_input2<int>("triangulate") == 1) {
+            zeno::primTriangulate(outprim.get());
+        }
         set_output("prim", std::move(outprim));
     }
 };
 
 ZENDEFNODE(AllAlembicPrim, {
     {
+        {"bool", "flipFrontBack", "1"},
         {"ABCTree", "abctree"},
-        {"int", "use_xform", "0"}
+        {"bool", "use_xform", "0"},
+        {"bool", "triangulate", "0"},
     },
     {{"PrimitiveObject", "prim"}},
     {},

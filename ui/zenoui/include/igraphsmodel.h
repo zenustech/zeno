@@ -20,6 +20,7 @@ public:
 	virtual int itemCount(const QModelIndex& subGpIdx) const = 0;
 
 	virtual void addNode(const NODE_DATA& nodeData, const QModelIndex& subGpIdx, bool enableTransaction = false) = 0;
+    virtual void setNodeData(const QModelIndex& nodeIndex, const QModelIndex& subGpIdx, const QVariant& value, int role) = 0;
 	virtual void importNodes(
 			const QMap<QString, NODE_DATA>& nodes,
 			const QList<EdgeInfo>& links,
