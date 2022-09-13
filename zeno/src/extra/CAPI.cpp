@@ -464,4 +464,10 @@ ZENO_API int capiRegisterObjectDefactory(std::string const &typeName_, void *(*f
     return 1;
 }
 
+ZENO_API Zeno_Error capiLastErrorCatched(std::function<void()> const &func) noexcept {
+    return lastError.catched([&] {
+        func();
+    });
+}
+
 }

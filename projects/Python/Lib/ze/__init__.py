@@ -105,21 +105,33 @@ class ZenoObject:
             return ret
 
     @classmethod
-    def _newFunc(cls, func: Callable):
+    def fromFunc(cls, func: Callable):
         @functools.wraps(func)
         def wrappedFunc(**kwargs):
-            ret = func(**kwargs)
+            argObjLits: dict[str, Union[Literial, 'ZenoObject']] = {k: ZenoObject.fromHandle(v).toLiterial() for k, v in kwargs.items()}  # type: ignore
+            ret = func(**argObjLits)
             if ret is None:
                 return {}
             elif isinstance(ret, dict):
-                retObjs = {k: ZenoObject.fromLiterial(v) for k, v in ret}
+                retObjs = {k: ZenoObject.fromLiterial(v) for k, v in ret.items()}
                 wrappedFunc._retRAII = retObjs
-                return {k: v.toHandle() for k, v in retObjs}
+                return {k: v.toHandle() for k, v in retObjs.items()}
             else:
                 retObj = ZenoObject.fromLiterial(ret)
                 wrappedFunc._retRAII = retObj
                 return {'ret': retObj.toHandle()}
         return cls(cls.__create_key, cls._makeSomeObject('FunctionObject', wrappedFunc))
+
+    def asFunc(self) -> Callable:
+        fetchedFunc: Callable = self._fetchSomeObject('FunctionObject', self._handle)
+        @functools.wraps(fetchedFunc)
+        def wrappedFunc(**kwargs: dict[str, Union[Literial, 'ZenoObject']]) -> _MappingProxyWrapper:
+            argObjsRAII = {k: ZenoObject.fromLiterial(v) for k, v in kwargs.items()}  # type: ignore
+            argHandles = {k: v.toHandle() for k, v in argObjsRAII.items()}  # type: ignore
+            retHandles = fetchedFunc(**argHandles)
+            del argObjsRAII
+            return _MappingProxyWrapper({k: ZenoObject.fromHandle(v).toLiterial() for k, v in retHandles.items()})
+        return wrappedFunc
 
     @classmethod
     def _newPrim(cls):
@@ -197,6 +209,7 @@ class ZenoObject:
 
     @staticmethod
     def _makeVecInt(value: Iterable[int]) -> int:
+        value = tuple(value)
         n = len(value)
         assert 1 <= n <= 4
         object_ = ctypes.c_uint64(0)
@@ -206,6 +219,7 @@ class ZenoObject:
 
     @staticmethod
     def _makeVecFloat(value: Iterable[float]) -> int:
+        value = tuple(value)
         n = len(value)
         assert 1 <= n <= 4
         object_ = ctypes.c_uint64(0)
@@ -255,6 +269,19 @@ class ZenoObject:
         value_ = (ctypes.c_char * strLen_.value)()
         api.Zeno_GetObjectString(ctypes.c_uint64(handle), value_, ctypes.pointer(strLen_))
         return bytes(value_).decode()
+
+
+class _MappingProxyWrapper:
+    _prox: MappingProxyType
+
+    def __init__(self, lut: dict[str, Union[Literial, ZenoObject]]):
+        self._prox = MappingProxyType(lut)
+
+    def __getattr__(self, key: str) -> Union[Literial, ZenoObject]:
+        return self._prox[key]
+
+    def __getitem__(self, key: str) -> Union[Literial, ZenoObject]:
+        return self._prox[key]
 
 
 class ZenoPrimitiveObject(ZenoObject):
@@ -528,18 +555,6 @@ def set_output2(key: str, value: Union[Literial, 'ZenoObject']):
 
 
 class _TempNodeWrapper:
-    class _MappingProxyWrapper:
-        _prox: MappingProxyType
-
-        def __init__(self, lut: dict[str, Union[Literial, ZenoObject]]):
-            self._prox = MappingProxyType(lut)
-
-        def __getattr__(self, key: str) -> Union[Literial, ZenoObject]:
-            return self._prox[key]
-
-        def __getitem__(self, key: str) -> Union[Literial, ZenoObject]:
-            return self._prox[key]
-
     def __getattr__(self, key: str):
         def wrapped(**args: dict[str, Union[Literial, ZenoObject]]):
             currGraph = ZenoGraph.current()
@@ -547,7 +562,7 @@ class _TempNodeWrapper:
             inputs : dict[str, int] = {k: ZenoObject.toHandle(v) for k, v in store_args.items()}
             outputs : dict[str, int] = currGraph.callTempNode(key, inputs)
             rets : dict[str, Union[Literial, ZenoObject]] = {k: ZenoObject.toLiterial(ZenoObject.fromHandle(v)) for k, v in outputs.items()}
-            return self._MappingProxyWrapper(rets)
+            return _MappingProxyWrapper(rets)
         wrapped.__name__ = key
         wrapped.__qualname__ = __name__ + '.no.' + key
         setattr(self, key, wrapped)

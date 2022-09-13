@@ -98,6 +98,10 @@ struct PythonFunctor {
             Py_DECREF(pyArgs);
         };
         PyObject *pyRet = PyObject_Call(pyFunc, pyArgs, pyKwargs);
+        if (!pyRet) {
+            PyErr_Print();
+            throw makeError("Python exception occurred (during function call), see console for more details");
+        }
         scope_exit pyRetDel = [=] {
             Py_DECREF(pyRet);
         };
@@ -140,6 +144,69 @@ static Zeno_Object factoryFunctionObject(void *inObj_) {
 
 static int defFunctionObjectFactory = capiRegisterObjectFactory("FunctionObject", factoryFunctionObject);
 
+static PyObject *zeno_pycfunc_funcobj_entry(PyObject *selfPtr_, PyObject *pyArgs_) noexcept {
+    PyObject *ret = Py_None;
+    Zeno_Error err = capiLastErrorCatched([&] {
+        PyObject *pyHandleVal = PyDict_GetItemString(selfPtr_, "handle");
+        if (!pyHandleVal) throw makeError("failed to invoke PyDict_GetItemString");
+        Zeno_Object obj = PyLong_AsUnsignedLongLong(pyHandleVal);
+        auto *objFunc = safe_dynamic_cast<FunctionObject>(capiFindObjectSharedPtr(obj).get(), "pycfunc_funcobj_entry");
+        FunctionObject::DictType objParams;
+        {
+            PyObject *key, *value;
+            Py_ssize_t pos = 0;
+            if (!PyDict_Check(pyArgs_)) throw makeError("expect to pyArgs_ be an dict");
+            while (PyDict_Next(pyArgs_, &pos, &key, &value)) {
+                Py_ssize_t keyLen = 0;
+                const char *keyDat = PyUnicode_AsUTF8AndSize(key, &keyLen);
+                if (keyDat == nullptr) {
+                    throw makeError("failed to cast rets key as string");
+                }
+                std::string keyStr(keyDat, keyLen);
+                Zeno_Object handle = PyLong_AsUnsignedLongLong(value);
+                if (handle == -1 && PyErr_Occurred()) {
+                    throw makeError("failed to cast rets value as integer");
+                }
+                objParams.emplace(std::move(keyStr), capiFindObjectSharedPtr(handle));
+            }
+        }
+        objParams = objFunc->call(objParams);
+        PyObject *pyRetDict = PyDict_New();
+        scope_exit pyRetDictDel = [=] {
+            Py_DECREF(pyRetDict);
+        };
+        for (auto const &[k, v]: objParams) {
+            auto handleObj = PyLong_FromUnsignedLongLong(capiLoadObjectSharedPtr(v));
+            PyDict_SetItemString(pyRetDict, k.c_str(), handleObj);
+        }
+        pyRetDictDel.release();
+        ret = pyRetDict;
+    });
+    if (err) return Py_None;
+    return ret;
+}
+
+static void *defactoryFunctionObject(Zeno_Object inHandle_) {
+    auto objSp = capiFindObjectSharedPtr(inHandle_);
+    auto funcObj = dynamic_cast<FunctionObject *>(objSp.get());
+    if (!funcObj) throw makeError<TypeError>(typeid(FunctionObject), typeid(*objSp),
+                                             "convert from zeno function to python function");
+    PyObject *selfPtr = PyDict_New();
+    PyObject *pyHandleVal = PyLong_FromUnsignedLongLong(inHandle_);
+    PyDict_SetItemString(selfPtr, "handle", pyHandleVal);
+    Py_DECREF(pyHandleVal);
+    PyMethodDef pyCFuncDef;
+    pyCFuncDef.ml_doc = NULL;
+    pyCFuncDef.ml_flags = 0;
+    pyCFuncDef.ml_meth = zeno_pycfunc_funcobj_entry;
+    pyCFuncDef.ml_name = "zeno_pycfunc_funcobj_entry";
+    PyObject *pycfunc = PyCFunction_New(&pyCFuncDef, selfPtr);
+    Py_DECREF(selfPtr);
+    return reinterpret_cast<void *>(pycfunc);
+}
+
+static int defFunctionObjectDefactory = capiRegisterObjectDefactory("FunctionObject", defactoryFunctionObject);
+
 //static Zeno_Object dictObjFactory() {
     //PyObject *zenoMod = PyImport_AddModule("ze");
     //PyObject *zenoModDict = PyModule_GetDict(zenoMod);
@@ -151,6 +218,8 @@ static int defFunctionObjectFactory = capiRegisterObjectFactory("FunctionObject"
 //}
 
 //static int defDictObjFactory = capiRegisterObjectFactory("DictObject", funcObjFactory);
+
+}
 
 struct PythonScript : INode {
     void apply() override {
@@ -268,5 +337,4 @@ ZENO_DEFNODE(PythonScript)({
     {"python"},
 });
 
-}
 }

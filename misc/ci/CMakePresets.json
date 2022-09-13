@@ -56,6 +56,7 @@
         "ZENO_WITH_MeshSubdiv": "ON",
         "ZENO_WITH_CalcGeometryUV": "ON",
         "ZENO_WITH_Python": "ON",
+        "ZENO_WITH_GUI": "ON",
         "ZENO_WITH_TOOL_cgmeshTools": "ON",
         "ZENO_WITH_TOOL_HerculesTools": "ON"
       }

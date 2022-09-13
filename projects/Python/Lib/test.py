@@ -1,7 +1,7 @@
 import ze
 
-def func():
-    print('func called')
+def func(**kwargs):
+    print('func called', kwargs)
     return 42
 
-ze.rets.obj0 = ze.ZenoObject._newFunc(func)
+ze.rets.obj0 = ze.ZenoObject.fromFunc(func)
