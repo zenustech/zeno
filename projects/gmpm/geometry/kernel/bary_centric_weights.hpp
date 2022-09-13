@@ -133,7 +133,7 @@ namespace zeno {
 
         T bvh_thickness = 0;
         auto bvs = retrieve_bounding_volumes(cudaExec,verts,quads,wrapv<4>{},bvh_thickness,x_tag);
-        auto tetsBvh = LBvh<3,32, int,T>{};
+        auto tetsBvh = LBvh<3, int,T>{};
         tetsBvh.build(cudaExec,bvs);
 
         int numEmbedVerts = everts.size();

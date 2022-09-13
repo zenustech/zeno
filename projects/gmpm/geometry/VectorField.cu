@@ -501,7 +501,7 @@ struct ZSGaussianNeighborQuadatureSampler : zeno::INode {
         // fmt::print("initial dst field\n");
         // build bvh for source
         auto bvs = retrieve_bounding_volumes(cudaPol,src_verts,xtag,src_quads,wrapv<4>{},0);
-        auto quadsBvh = LBvh<3,32,int,float>{};
+        auto quadsBvh = LBvh<3,int,float>{};
         quadsBvh.build(cudaPol,bvs);
 
         // fmt::print("finish setup bvh\n");

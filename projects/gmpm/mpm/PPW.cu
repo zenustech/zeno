@@ -71,7 +71,7 @@ struct ZSParticleParticleWrangler : INode {
         auto dim = std::visit(
             [&](auto const &v) {
               using T = std::decay_t<decltype(v)>;
-              if constexpr (std::is_same_v<T, zeno::vec3f>) {
+              if constexpr (std::is_convertible_v<T, zeno::vec3f>) {
                 parvals.push_back(v[0]);
                 parvals.push_back(v[1]);
                 parvals.push_back(v[2]);
@@ -79,7 +79,7 @@ struct ZSParticleParticleWrangler : INode {
                 parnames.emplace_back(key, 1);
                 parnames.emplace_back(key, 2);
                 return 3;
-              } else if constexpr (std::is_same_v<T, float>) {
+              } else if constexpr (std::is_convertible_v<T, float>) {
                 parvals.push_back(v);
                 parnames.emplace_back(key, 0);
                 return 1;
@@ -90,7 +90,9 @@ struct ZSParticleParticleWrangler : INode {
               }
             },
             par);
+        // dbg_printf("define param: %s dim %d\n", key.c_str(), dim);
         opts.define_param(key, dim);
+        // auto par = zeno::safe_any_cast<zeno::NumericValue>(obj);
       }
     }
 

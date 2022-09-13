@@ -2351,9 +2351,9 @@ ZENDEFNODE(StepIPCSystem, {{
 
 struct IPCSystemClothBinding : INode { // usually called once before stepping
     using tiles_t = typename ZenoParticles::particles_t;
-#if 0
+#if 1
     // unordered version
-    using bvh_t = zs::LBvh<3, 32, int, zs::f32>;
+    using bvh_t = zs::LBvh<3, int, zs::f32>;
     using bv_t = typename bvh_t::Box;
 #else
     using bvh_t = typename IPCSystem::bvh_t;
