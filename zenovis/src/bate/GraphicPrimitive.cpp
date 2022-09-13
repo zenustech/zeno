@@ -335,9 +335,6 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
         }
         if (thePrmHasFaces) {
             zeno::log_trace("demoting faces");
-            if (prim->loops.size() && prim->loop_uvs.size()) {
-                zeno::primDecodeUVs(&*prim);//loop_uvs to loop.attr("uv")
-            }
             zeno::primTriangulateQuads(&*prim);
             zeno::primTriangulate(&*prim);//will further loop.attr("uv") to tris.attr("uv0")...
         }
