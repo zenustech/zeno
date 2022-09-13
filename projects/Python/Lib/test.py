@@ -1,5 +1,8 @@
 import ze
 
+func0 = ze.args.obj0.asFunc()
+func0()
+
 def func(**kwargs):
     print('func called', kwargs)
     return 42

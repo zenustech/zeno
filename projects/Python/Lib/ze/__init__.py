@@ -152,7 +152,7 @@ class ZenoObject:
     @classmethod
     def _fetchSomeObject(cls, typeName_: str, handle_: int) -> Any:
         ffiObjRet_ = ctypes.py_object()
-        api.Zeno_InvokeObjectFactory(ctypes.c_uint64(handle_), ctypes.c_char_p(typeName_.encode()), ctypes.pointer(ffiObjRet_))
+        api.Zeno_InvokeObjectDefactory(ctypes.c_uint64(handle_), ctypes.c_char_p(typeName_.encode()), ctypes.pointer(ffiObjRet_))
         return ffiObjRet_.value
 
     @classmethod
