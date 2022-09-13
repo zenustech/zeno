@@ -99,6 +99,7 @@ void ReadFBXPrim::onEditClicked()
         }
 
         Zeno_SetView(fbxNode, false);
+        Zeno_SetInputDefl(fbxNode, "generate", false);
     }else{
         zeno::log_error("Not found ReadFBXPrim node in objectsMan");
     }

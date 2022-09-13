@@ -269,6 +269,21 @@ struct Mesh{
             processNode(node->mChildren[i], scene);
     }
 
+    void processNodeMat(aiNode *node, const aiScene *scene){
+        for(unsigned int i = 0; i < node->mNumMeshes; i++)
+            processMeshMat(scene->mMeshes[node->mMeshes[i]], scene);
+        for(unsigned int i = 0; i < node->mNumChildren; i++)
+            processNodeMat(node->mChildren[i], scene);
+    }
+
+    void processMeshMat(aiMesh *mesh, const aiScene *scene){
+        if(mesh->mNumVertices) {
+            aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
+            std::string matName = material->GetName().data;
+            m_loadedMat[matName] = SMaterial();
+        }
+    }
+
     void processCamera(const aiScene *scene){
         // If Maya's camera does not have `LookAt`, it will use A `InterestPosition`
 
@@ -895,6 +910,17 @@ void readFBXFile(
     Assimp::Importer importer;
     aiScene const* scene;
 
+    if(readOption.generate){
+        scene = importer.ReadFile(fbx_path, 0);
+        Mesh mesh;
+        mesh.processNodeMat(scene->mRootNode, scene);
+        for(auto const&[key, value]:mesh.m_loadedMat){
+            auto mat_data = std::make_shared<MatData>();
+            mats->lut[key] = mat_data;
+        }
+        return;
+    }
+
     if(true) {
         importer.SetPropertyInteger(AI_CONFIG_PP_PTV_NORMALIZE, true);
         scene = importer.ReadFile(fbx_path, aiProcess_Triangulate
@@ -1003,6 +1029,7 @@ struct ReadFBXPrim : zeno::INode {
         SFBXReadOption readOption;
         auto udim = get_param<std::string>("udim");
         auto primitive = get_param<bool>("primitive");
+        auto generate = get_input2<bool>("generate");
         auto invOpacity = get_param<bool>("invOpacity");
         if (udim == "ENABLE")
             readOption.enableUDIM = true;
@@ -1010,6 +1037,8 @@ struct ReadFBXPrim : zeno::INode {
             readOption.invertOpacity = true;
         if(primitive)
             readOption.makePrim = true;
+        if(generate)
+            readOption.generate = true;
 
         zeno::log_info("FBX: UDIM {} PRIM {} INVERT {}", readOption.enableUDIM,readOption.makePrim,readOption.invertOpacity);
 
@@ -1040,6 +1069,7 @@ ZENDEFNODE(ReadFBXPrim,
            {       /* inputs: */
                {
                    {"readpath", "path"},
+                   {"bool", "generate", "false"}
                },  /* outputs: */
                {
                    "prim", "prims", "data", "datas", "mats",
@@ -1048,7 +1078,7 @@ ZENDEFNODE(ReadFBXPrim,
                {
                 {"enum ENABLE DISABLE", "udim", "DISABLE"},
                 {"bool", "invOpacity", "true"},
-                {"bool", "primitive", "false"}
+                {"bool", "primitive", "false"},
                },  /* category: */
                {
                    "FBX",
