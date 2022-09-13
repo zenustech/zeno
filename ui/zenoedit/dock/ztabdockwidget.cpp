@@ -17,21 +17,22 @@
 #include <zenoui/model/modelrole.h>
 
 
-ZTabDockWidget::ZTabDockWidget(ZenoMainWindow* parent, Qt::WindowFlags flags)
-    : _base(parent, flags)
+ZTabDockWidget::ZTabDockWidget(ZenoMainWindow* mainWin, Qt::WindowFlags flags)
+    : _base(mainWin, flags)
     , m_tabWidget(new ZDockTabWidget)
-    , m_plblName(nullptr)
-    , m_pLineEdit(nullptr)
 {
     setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetFloatable);
     setWidget(m_tabWidget);
 
-    connect(this, SIGNAL(maximizeTriggered()), parent, SLOT(onMaximumTriggered()));
-    connect(this, SIGNAL(splitRequest(bool)), parent, SLOT(onSplitDock(bool)));
+    connect(this, SIGNAL(maximizeTriggered()), mainWin, SLOT(onMaximumTriggered()));
+    connect(this, SIGNAL(splitRequest(bool)), mainWin, SLOT(onSplitDock(bool)));
+    connect(this, SIGNAL(closeRequest()), mainWin, SLOT(onCloseDock()));
 
     setTitleBarWidget(new QWidget(this));
     connect(m_tabWidget, SIGNAL(addClicked()), this, SLOT(onAddTabClicked()));
     connect(m_tabWidget, SIGNAL(layoutBtnClicked()), this, SLOT(onDockOptionsClicked()));
+    connect(this, SIGNAL(dockLocationChanged(Qt::DockWidgetArea)),
+        mainWin, SLOT(onDockLocationChanged(Qt::DockWidgetArea)));
 }
 
 ZTabDockWidget::~ZTabDockWidget()
@@ -41,12 +42,26 @@ ZTabDockWidget::~ZTabDockWidget()
 
 void ZTabDockWidget::setCurrentWidget(PANEL_TYPE type)
 {
+    m_debugPanel = type;
     QWidget* wid = createTabWidget(type);
     if (wid)
     {
         int idx = m_tabWidget->addTab(wid, type2Title(type));
         m_tabWidget->setCurrentIndex(idx);
     }
+}
+
+int ZTabDockWidget::count() const
+{
+    return m_tabWidget ? m_tabWidget->count() : 0;
+}
+
+QWidget* ZTabDockWidget::widget(int i) const
+{
+    if (i < 0 || i >= count())
+        return nullptr;
+
+    return m_tabWidget->widget(i);
 }
 
 QWidget* ZTabDockWidget::createTabWidget(PANEL_TYPE type)
@@ -112,6 +127,19 @@ PANEL_TYPE ZTabDockWidget::title2Type(const QString& title)
         type = PANEL_LOG;
     }
     return type;
+}
+
+QString ZTabDockWidget::type2TabName(PANEL_TYPE type)
+{
+    switch (type)
+    {
+    case PANEL_NODE_PARAMS: return tr("Parameter");
+    case PANEL_VIEW:        return tr("View");
+    case PANEL_EDITOR:      return tr("Editor");
+    case PANEL_NODE_DATA:   return tr("Data");
+    case PANEL_LOG:         return tr("Logger");
+    default: return "";
+    }
 }
 
 void ZTabDockWidget::onNodesSelected(const QModelIndex& subgIdx, const QModelIndexList& nodes, bool select)
@@ -224,7 +252,9 @@ void ZTabDockWidget::onDockOptionsClicked()
 
     connect(pMaximize, SIGNAL(triggered()), this, SIGNAL(maximizeTriggered()));
     connect(pFloatWin, SIGNAL(triggered()), this, SLOT(onFloatTriggered()));
-    connect(pCloseLayout, SIGNAL(triggered()), this, SLOT(close()));
+    connect(pCloseLayout, &QAction::triggered, this, [=](){
+        emit closeRequest();
+        });
     connect(pSplitHor, &QAction::triggered, this, [=]() {
         emit splitRequest(true);
         });
@@ -269,12 +299,30 @@ void ZTabDockWidget::onAddTabClicked()
             if (wid)
             {
                 int idx = m_tabWidget->addTab(wid, name);
+                switch (panels.indexOf(name)) {
+                case 0: m_debugPanel = PANEL_NODE_PARAMS; break;
+                case 1: m_debugPanel = PANEL_VIEW; break;
+                case 2: m_debugPanel = PANEL_EDITOR; break;
+                case 3: m_debugPanel = PANEL_NODE_DATA; break;
+                case 4: m_debugPanel = PANEL_LOG; break;
+                }
                 m_tabWidget->setCurrentIndex(idx);
             }
         });
         menu->addAction(pAction);
     }
     menu->exec(QCursor::pos());
+}
+
+void ZTabDockWidget::onAddTab(PANEL_TYPE type)
+{
+    QWidget *wid = createTabWidget(type);
+    if (wid) {
+        QString name = type2TabName(type);
+        int idx = m_tabWidget->addTab(wid, name);
+        m_debugPanel = type;
+        m_tabWidget->setCurrentIndex(idx);
+    }
 }
 
 void ZTabDockWidget::init(ZenoMainWindow* pMainWin)

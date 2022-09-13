@@ -27,11 +27,16 @@ public:
     explicit ZTabDockWidget(ZenoMainWindow* parent, Qt::WindowFlags flags = Qt::WindowFlags());
     ~ZTabDockWidget();
 
+    int count() const;
+    QWidget* widget(int i) const;
     void setCurrentWidget(PANEL_TYPE type);
     void onNodesSelected(const QModelIndex& subgIdx, const QModelIndexList& nodes, bool select);
     void onPrimitiveSelected(const std::unordered_set<std::string>& primids);
     void onUpdateViewport(const QString& action);
     void onRunFinished();
+
+    static PANEL_TYPE title2Type(const QString &title);
+    static QString type2TabName(PANEL_TYPE type);
 
 public slots:
     /*timeline*/
@@ -41,6 +46,7 @@ public slots:
     void onPlayClicked(bool);
     void onSliderValueChanged(int);
     void onFinished();
+    void onAddTab(PANEL_TYPE type);
 
 protected:
     void paintEvent(QPaintEvent* event) override;
@@ -50,6 +56,7 @@ signals:
     void maximizeTriggered();
     void floatTriggered();
     void splitRequest(bool bHorzonal);
+    void closeRequest();
     void nodesSelected(const QModelIndex& subgIdx, const QModelIndexList& nodes);
 
 private slots:
@@ -63,13 +70,13 @@ private:
     bool isTopLevelWin();
     QWidget* createTabWidget(PANEL_TYPE type);
     QString type2Title(PANEL_TYPE type);
-    PANEL_TYPE title2Type(const QString& title);
+
+
+    PANEL_TYPE m_debugPanel;
 
     Qt::WindowFlags m_oldFlags;
     Qt::WindowFlags m_newFlags;
     ZDockTabWidget* m_tabWidget;
-    QLabel* m_plblName;
-    QLineEdit* m_pLineEdit;
 };
 
 #endif

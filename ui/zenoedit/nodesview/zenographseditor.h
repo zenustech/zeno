@@ -42,6 +42,7 @@ public slots:
     void onPageActivated(const QPersistentModelIndex& subgIdx, const QPersistentModelIndex& nodeIdx);
     void onLogInserted(const QModelIndex& parent, int first, int last);
     void onSubnetListPanel(bool bShow);
+    void onAction(const QString& text);
 
 private slots:
 	void onSubGraphsToRemove(const QModelIndex&, int, int);

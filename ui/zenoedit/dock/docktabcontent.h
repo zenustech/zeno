@@ -38,6 +38,13 @@ private:
 
 };
 
+class DockContent_View : public QWidget
+{
+    Q_OBJECT
+public:
+    explicit DockContent_View(QWidget* parent = nullptr);
+};
+
 
 
 #endif

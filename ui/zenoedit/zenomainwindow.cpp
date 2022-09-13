@@ -6,6 +6,7 @@
 #include "model/graphsmodel.h"
 #include "nodesview/zenographseditor.h"
 #include "dock/ztabdockwidget.h"
+#include "dock/docktabcontent.h"
 #include "panel/zenodatapanel.h"
 #include "panel/zenoproppanel.h"
 #include "panel/zenospreadsheet.h"
@@ -27,12 +28,14 @@
 #include "startup/zstartup.h"
 #include "settings/zsettings.h"
 #include "panel/zenolights.h"
+//#include <QtWidgets/private/qmainwindowlayout_p.h>
 
 
 ZenoMainWindow::ZenoMainWindow(QWidget *parent, Qt::WindowFlags flags)
     : QMainWindow(parent, flags)
     , m_bInDlgEventloop(false)
     , m_pTimeline(nullptr)
+    , m_layerRoot(nullptr)
 {
     init();
     setContextMenuPolicy(Qt::NoContextMenu);
@@ -184,6 +187,8 @@ void ZenoMainWindow::initMenu() {
         QAction* pSaveLayout = new QAction(tr("Save Layout"));
         connect(pSaveLayout, &QAction::triggered, this, [=]() {
             bool bOk = false;
+            saveLayout2();
+            return;
             QString name = QInputDialog::getText(this, tr("Save Layout"), tr("layout name:"),
                                                         QLineEdit::Normal, "layout_1", &bOk);
             if (bOk) {
@@ -209,10 +214,38 @@ void ZenoMainWindow::initMenu() {
         QSettings settings(QSettings::UserScope, zsCompanyName, zsEditor);
         settings.beginGroup("layout");
         QStringList lst = settings.childGroups();
-        if (!lst.isEmpty())
+        if (true/*!lst.isEmpty()*/)
         {
             QMenu* pCustomLayout = new QMenu(tr("Custom Layout"));
 
+            QAction *pTestAction = new QAction(tr("Test Layout io"));
+
+            connect(pTestAction, &QAction::triggered, this, [=]() {
+                DlgInEventLoopScope;
+                const QString &initialPath = ".";
+                QFileDialog fileDialog(this, tr("Open"), initialPath, "JSON file(*.json);;");
+                fileDialog.setAcceptMode(QFileDialog::AcceptOpen);
+                fileDialog.setFileMode(QFileDialog::ExistingFile);
+                fileDialog.setDirectory(initialPath);
+                if (fileDialog.exec() != QDialog::Accepted)
+                    return "";
+
+                QString filePath = fileDialog.selectedFiles().first();
+
+                m_layerRoot.reset();
+                auto docks = findChildren<ZTabDockWidget *>(QString(), Qt::FindDirectChildrenOnly);
+                for (ZTabDockWidget *pDock : docks) {
+                    pDock->close();
+                    delete pDock;
+                }
+
+                m_layerRoot = readLayout(filePath);
+                ZTabDockWidget* cake = new ZTabDockWidget(this);
+                addDockWidget(Qt::TopDockWidgetArea, cake);
+                initDocksWidget(cake, m_layerRoot);
+            });
+
+            /*
             for (QString name : lst)
             {
                 QAction *pCustomLayout_ = new QAction(name);
@@ -228,6 +261,8 @@ void ZenoMainWindow::initMenu() {
                 pCustomLayout->addAction(pCustomLayout_);
             }
             pView->addMenu(pCustomLayout);
+            */
+            pView->addAction(pTestAction);
         }
     }
 
@@ -270,31 +305,87 @@ void ZenoMainWindow::initMenu() {
     setMenuBar(pMenuBar);
 }
 
+void ZenoMainWindow::saveLayout2()
+{
+    auto docks = findChildren<ZTabDockWidget *>(QString(), Qt::FindDirectChildrenOnly);
+    QLayout* pLayout = this->layout();
+    //QMainWindowLayout* pWinLayout = qobject_cast<QMainWindowLayout*>(pLayout);
+    DlgInEventLoopScope;
+    QString path = QFileDialog::getSaveFileName(this, "Path to Save", "", "JSON file(*.json);;");
+    writeLayout(m_layerRoot, path);
+}
+
+void ZenoMainWindow::onDockLocationChanged(Qt::DockWidgetArea area)
+{
+    int j;
+    j = 0;
+}
+
+void ZenoMainWindow::initDocksWidget(ZTabDockWidget* pLeft, PtrLayoutNode root)
+{
+    if (!root)
+        return;
+
+    if (root->type == NT_HOR || root->type == NT_VERT)
+    {
+        ZTabDockWidget* pRight = new ZTabDockWidget(this);
+        splitDockWidget(pLeft, pRight, root->type == NT_HOR ? Qt::Horizontal : Qt::Vertical);
+        initDocksWidget(pLeft, root->pLeft);
+        initDocksWidget(pRight, root->pRight);
+    }
+    else if (root->type == NT_ELEM)
+    {
+        for (QString tab : root->tabs)
+        {
+            PANEL_TYPE type = ZTabDockWidget::title2Type(tab);
+            if (type != PANEL_EMPTY) {
+                pLeft->onAddTab(type);
+                root->pWidget = pLeft;
+                root->pWidget->setGeometry(root->geom);
+            }
+        }
+    }
+}
+
 void ZenoMainWindow::initDocks()
 {
     //setDockNestingEnabled(true);
 
+    m_layerRoot = std::make_shared<LayerOutNode>();
+    m_layerRoot->type = NT_ELEM;
+
     ZTabDockWidget* viewDock = new ZTabDockWidget(this);
     viewDock->setCurrentWidget(PANEL_VIEW);
+    viewDock->setObjectName("viewDock");
+
+    ZTabDockWidget *logDock = new ZTabDockWidget(this);
+    logDock->setCurrentWidget(PANEL_LOG);
+    logDock->setObjectName("logDock");
 
     ZTabDockWidget* paramDock = new ZTabDockWidget(this);
     paramDock->setCurrentWidget(PANEL_NODE_PARAMS);
+    paramDock->setObjectName("paramDock");
 
     ZTabDockWidget* editorDock = new ZTabDockWidget(this);
     editorDock->setCurrentWidget(PANEL_EDITOR);
-
-    ZTabDockWidget* logDock = new ZTabDockWidget(this);
-    logDock->setCurrentWidget(PANEL_LOG);
+    editorDock->setObjectName("editorDock");
 
     addDockWidget(Qt::TopDockWidgetArea, viewDock);
-    splitDockWidget(viewDock, editorDock, Qt::Vertical);
-    splitDockWidget(editorDock, paramDock, Qt::Horizontal);
-    splitDockWidget(viewDock, logDock, Qt::Horizontal);
+    m_layerRoot->type = NT_ELEM;
+    m_layerRoot->pWidget = viewDock;
+
+    SplitDockWidget(viewDock, editorDock, Qt::Vertical);
+    SplitDockWidget(viewDock, logDock, Qt::Horizontal);
+    SplitDockWidget(editorDock, paramDock, Qt::Horizontal);
+
+    //splitDockWidget(editorDock, paramDock, Qt::Horizontal);
+    //splitDockWidget(viewDock, logDock, Qt::Horizontal);
 
     QDockWidget* pTimelineDock = new QDockWidget;
     m_pTimeline = new ZTimeline;
     pTimelineDock->setWidget(m_pTimeline);
     pTimelineDock->setTitleBarWidget(new QWidget(pTimelineDock));
+    pTimelineDock->setObjectName("timelineDock");
     addDockWidget(Qt::BottomDockWidgetArea, pTimelineDock);
 
     connect(m_pTimeline, &ZTimeline::playForward, this, [=](bool bPlaying) {
@@ -381,15 +472,73 @@ void ZenoMainWindow::onRunFinished()
     }
 }
 
-void ZenoMainWindow::onSplitDock(bool bHorzontal)
+void ZenoMainWindow::onCloseDock()
 {
-    ZTabDockWidget*pDockWidget = qobject_cast<ZTabDockWidget*>(sender());
-    ZTabDockWidget*pDock = new ZTabDockWidget(this);
-    pDock->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetFloatable);
-    splitDockWidget(pDockWidget, pDock, bHorzontal ? Qt::Horizontal : Qt::Vertical);
+    ZTabDockWidget *pDockWidget = qobject_cast<ZTabDockWidget *>(sender());
+    ZASSERT_EXIT(pDockWidget);
+    pDockWidget->close();
+
+    PtrLayoutNode spParent = findParent(m_layerRoot, pDockWidget);
+    if (spParent)
+    {
+        if (spParent->pLeft->pWidget == pDockWidget)
+        {
+            PtrLayoutNode right = spParent->pRight;
+            spParent->pWidget = right->pWidget;
+            spParent->pLeft = right->pLeft;
+            spParent->pRight = right->pRight;
+            spParent->type = right->type;
+        }
+        else if (spParent->pRight->pWidget == pDockWidget)
+        {
+            PtrLayoutNode left = spParent->pLeft;
+            spParent->pWidget = left->pWidget;
+            spParent->pLeft = left->pLeft;
+            spParent->pRight = left->pRight;
+            spParent->type = left->type;
+        }
+    }
+    else
+    {
+        m_layerRoot = nullptr;
+    }
 }
 
-void ZenoMainWindow::openFileDialog() {
+void ZenoMainWindow::SplitDockWidget(ZTabDockWidget* after, ZTabDockWidget* dockwidget, Qt::Orientation orientation)
+{
+    splitDockWidget(after, dockwidget, orientation);
+
+    PtrLayoutNode spRoot = findNode(m_layerRoot, after);
+    ZASSERT_EXIT(spRoot);
+
+    spRoot->type = (orientation == Qt::Vertical ? NT_VERT : NT_HOR);
+    spRoot->pWidget = nullptr;
+
+    spRoot->pLeft = std::make_shared<LayerOutNode>();
+    spRoot->pLeft->pWidget = after;
+    spRoot->pLeft->type = NT_ELEM;
+
+    spRoot->pRight = std::make_shared<LayerOutNode>();
+    spRoot->pRight->pWidget = dockwidget;
+    spRoot->pRight->type = NT_ELEM;
+}
+
+void ZenoMainWindow::onSplitDock(bool bHorzontal)
+{
+    ZTabDockWidget* pDockWidget = qobject_cast<ZTabDockWidget*>(sender());
+    ZTabDockWidget* pDock = new ZTabDockWidget(this);
+
+    //QLayout* pLayout = this->layout();
+    //QMainWindowLayout* pWinLayout = qobject_cast<QMainWindowLayout*>(pLayout);
+
+    pDock->setObjectName("editorDock233");
+    pDock->setCurrentWidget(PANEL_EDITOR);
+    //pDock->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetFloatable);
+    SplitDockWidget(pDockWidget, pDock, bHorzontal ? Qt::Horizontal : Qt::Vertical);
+}
+
+void ZenoMainWindow::openFileDialog()
+{
     QString filePath = getOpenFileByDialog();
     if (filePath.isEmpty())
         return;
@@ -719,27 +868,6 @@ QString ZenoMainWindow::getOpenFileByDialog() {
 
     QString filePath = fileDialog.selectedFiles().first();
     return filePath;
-}
-
-void ZenoMainWindow::verticalLayout()
-{
-    //addDockWidget(Qt::TopDockWidgetArea, m_viewDock);
-    //splitDockWidget(m_viewDock, m_editor, Qt::Vertical);
-    //splitDockWidget(m_editor, m_parameter, Qt::Horizontal);
-    //splitDockWidget(m_viewDock, m_logger, Qt::Horizontal);
-}
-
-void ZenoMainWindow::onlyEditorLayout()
-{
-    verticalLayout();
-    auto docks = findChildren<ZenoDockWidget *>(QString(), Qt::FindDirectChildrenOnly);
-    for (ZenoDockWidget *dock : docks)
-    {
-        if (dock->type() != DOCK_EDITOR)
-        {
-            dock->close();
-        }
-    }
 }
 
 void ZenoMainWindow::onNodesSelected(const QModelIndex &subgIdx, const QModelIndexList &nodes, bool select) {

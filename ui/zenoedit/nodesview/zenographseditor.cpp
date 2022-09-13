@@ -565,7 +565,11 @@ void ZenoGraphsEditor::onSubnetListPanel(bool bShow)
 
 void ZenoGraphsEditor::onMenuActionTriggered(QAction* pAction)
 {
-    const QString& text = pAction->text();
+    onAction(pAction->text());
+}
+
+void ZenoGraphsEditor::onAction(const QString& text)
+{
     if (text == tr("Collaspe"))
     {
         ZenoSubGraphView* pView = qobject_cast<ZenoSubGraphView*>(m_ui->graphsViewTab->currentWidget());

@@ -6,6 +6,8 @@
 #include "dock/ztabdockwidget.h"
 #include "panel/zenolights.h"
 #include "common.h"
+#include "layout/winlayoutrw.h"
+
 
 class DisplayWidget;
 class ZTimeline;
@@ -13,6 +15,7 @@ class ZTimeline;
 class ZenoMainWindow : public QMainWindow
 {
     Q_OBJECT
+
 public:
     ZenoMainWindow(QWidget* parent = nullptr, Qt::WindowFlags flags = Qt::WindowFlags());
     ~ZenoMainWindow();
@@ -37,6 +40,7 @@ public slots:
     void saveAs();
     void onMaximumTriggered();
     void onSplitDock(bool);
+    void onCloseDock();
     void onToggleDockWidget(DOCK_TYPE, bool);
     void onDockSwitched(DOCK_TYPE);
     void importGraph();
@@ -48,6 +52,7 @@ public slots:
     void onFeedBack();
     void clearErrorMark();
     void updateLightList();
+    void onDockLocationChanged(Qt::DockWidgetArea area);
 
 protected:
     void resizeEvent(QResizeEvent* event) override;
@@ -56,14 +61,16 @@ private:
     void init();
     void initMenu();
     void initDocks();
-    void verticalLayout();
-    void onlyEditorLayout();
+    void initDocksWidget(ZTabDockWidget* pCake, PtrLayoutNode root);
     void adjustDockSize();
     void recordRecentFile(const QString& filePath);
+    void saveLayout2();
+    void SplitDockWidget(ZTabDockWidget* after, ZTabDockWidget* dockwidget, Qt::Orientation orientation);
     QString getOpenFileByDialog();
     QString uniqueDockObjName(DOCK_TYPE type);
 
     ZTimeline* m_pTimeline;
+    PtrLayoutNode m_layerRoot;
     bool m_bInDlgEventloop;
 };
 

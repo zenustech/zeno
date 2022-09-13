@@ -150,7 +150,19 @@ DockContent_Editor::DockContent_Editor(QWidget* parent)
     ZenoGraphsEditor* pEditor = new ZenoGraphsEditor(pMainWin);
 
     connect(pListView, &ZToolBarButton::toggled, pEditor, &ZenoGraphsEditor::onSubnetListPanel);
+    connect(pFold, &ZToolBarButton::clicked, this, [=]() {
+        pEditor->onAction(pEditor->tr("Collaspe"));
+    });
+    connect(pUnfold, &ZToolBarButton::clicked, this, [=]() {
+        pEditor->onAction(pEditor->tr("Expand"));
+    });
 
     pVLayout->addWidget(pEditor);
     setLayout(pVLayout);
+}
+
+DockContent_View::DockContent_View(QWidget* parent)
+    : QWidget(parent)
+{
+
 }
