@@ -184,7 +184,7 @@ struct AllAlembicPrim : INode {
                 prims->arr.push_back(np);
             });
         }
-        auto outprim = prim_merge(prims);
+        auto outprim = zeno::primMerge(prims->getRaw<PrimitiveObject>());
         if (get_input2<bool>("flipFrontBack")) {
             flipFrontBack(outprim);
         }
