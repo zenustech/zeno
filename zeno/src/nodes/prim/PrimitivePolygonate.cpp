@@ -88,7 +88,6 @@ ZENO_API void primPolygonate(PrimitiveObject *prim, bool with_uv) {
         auto &uv0 = prim->tris.attr<vec3f>("uv0");
         auto &uv1 = prim->tris.attr<vec3f>("uv1");
         auto &uv2 = prim->tris.attr<vec3f>("uv2");
-        auto &loop_uv = prim->loops.add_attr<vec3f>("uv");
         for (int i = 0; i < prim->tris.size(); i++) {
             prim->loop_uvs[old_loop_base + i * 3 + 0] = old_uvs_base + i * 3 + 0;
             prim->loop_uvs[old_loop_base + i * 3 + 1] = old_uvs_base + i * 3 + 1;
