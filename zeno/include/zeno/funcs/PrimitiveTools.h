@@ -84,6 +84,8 @@ static std::shared_ptr<PrimitiveObject> prim_merge(std::shared_ptr<ListObject> l
             std::vector<size_t> tribases(primList.size() + 1);
             std::vector<size_t> quadbases(primList.size() + 1);
             std::vector<size_t> loopbases(primList.size() + 1);
+            std::vector<size_t> loop_uvbases(primList.size() + 1);
+            std::vector<size_t> uvbases(primList.size() + 1);
             std::vector<size_t> polybases(primList.size() + 1);
             size_t total = 0;
             size_t pointtotal = 0;
@@ -91,6 +93,8 @@ static std::shared_ptr<PrimitiveObject> prim_merge(std::shared_ptr<ListObject> l
             size_t tritotal = 0;
             size_t quadtotal = 0;
             size_t looptotal = 0;
+            size_t loop_uvtotal = 0;
+            size_t uvtotal = 0;
             size_t polytotal = 0;
             for (size_t primIdx = 0; primIdx < primList.size(); primIdx++) {
                 auto prim = primList[primIdx].get();
@@ -99,12 +103,16 @@ static std::shared_ptr<PrimitiveObject> prim_merge(std::shared_ptr<ListObject> l
                 tritotal += prim->tris.size();
                 quadtotal += prim->quads.size();
                 looptotal += prim->loops.size();
+                loop_uvtotal += prim->loop_uvs.size();
+                uvtotal += prim->uvs.size();
                 polytotal += prim->polys.size();
                 bases[primIdx + 1] = total;
                 linebases[primIdx + 1] = linetotal;
                 tribases[primIdx + 1] = tritotal;
                 quadbases[primIdx + 1] = quadtotal;
                 loopbases[primIdx + 1] = looptotal;
+                loop_uvbases[primIdx + 1] = loop_uvtotal;
+                uvbases[primIdx + 1] = uvtotal;
                 polybases[primIdx + 1] = polytotal;
             }
             outprim->verts.resize(total);
@@ -112,6 +120,8 @@ static std::shared_ptr<PrimitiveObject> prim_merge(std::shared_ptr<ListObject> l
             outprim->tris.resize(tritotal);
             outprim->quads.resize(quadtotal);
             outprim->loops.resize(looptotal);
+            outprim->loop_uvs.resize(loop_uvtotal);
+            outprim->uvs.resize(uvtotal);
             outprim->polys.resize(polytotal);
 
             for (size_t primIdx = 0; primIdx < primList.size(); primIdx++) {
@@ -344,6 +354,66 @@ static std::shared_ptr<PrimitiveObject> prim_merge(std::shared_ptr<ListObject> l
                 if (tagAttr.size()) {
                     auto &outarr = outprim->loops.add_attr<int>(tagAttr);
                     for (size_t i = 0; i < prim->loops.size(); i++) {
+                        outarr[base + i] = primIdx;
+                    }
+                }
+            }
+
+            for (size_t primIdx = 0; primIdx < primList.size(); primIdx++) {
+                auto prim = primList[primIdx].get();
+                auto vbase = bases[primIdx];
+                auto base = loop_uvbases[primIdx];
+                auto core = [&] (auto key, auto const &arr) {
+                    using T = std::decay_t<decltype(arr[0])>;
+                    if constexpr (std::is_same_v<decltype(key), std::true_type>) {
+                        auto &outarr = outprim->loop_uvs.values;
+                        size_t n = std::min(arr.size(), prim->loop_uvs.size());
+                        for (size_t i = 0; i < n; i++) {
+                            outarr[base + i] = vbase + arr[i];
+                        }
+                    } else {
+                        auto &outarr = outprim->loop_uvs.add_attr<T>(key);
+                        size_t n = std::min(arr.size(), prim->loop_uvs.size());
+                        for (size_t i = 0; i < n; i++) {
+                            outarr[base + i] = arr[i];
+                        }
+                    }
+                };
+                core(std::true_type{}, prim->loop_uvs.values);
+                prim->loop_uvs.foreach_attr(core);
+                if (tagAttr.size()) {
+                    auto &outarr = outprim->loop_uvs.add_attr<int>(tagAttr);
+                    for (size_t i = 0; i < prim->loop_uvs.size(); i++) {
+                        outarr[base + i] = primIdx;
+                    }
+                }
+            }
+
+            for (size_t primIdx = 0; primIdx < primList.size(); primIdx++) {
+                auto prim = primList[primIdx].get();
+                auto vbase = bases[primIdx];
+                auto base = uvbases[primIdx];
+                auto core = [&] (auto key, auto const &arr) {
+                    using T = std::decay_t<decltype(arr[0])>;
+                    if constexpr (std::is_same_v<decltype(key), std::true_type>) {
+                        auto &outarr = outprim->uvs.values;
+                        size_t n = std::min(arr.size(), prim->uvs.size());
+                        for (size_t i = 0; i < n; i++) {
+                            outarr[base + i] = vbase + arr[i];
+                        }
+                    } else {
+                        auto &outarr = outprim->uvs.add_attr<T>(key);
+                        size_t n = std::min(arr.size(), prim->uvs.size());
+                        for (size_t i = 0; i < n; i++) {
+                            outarr[base + i] = arr[i];
+                        }
+                    }
+                };
+                core(std::true_type{}, prim->uvs.values);
+                prim->uvs.foreach_attr(core);
+                if (tagAttr.size()) {
+                    auto &outarr = outprim->uvs.add_attr<int>(tagAttr);
+                    for (size_t i = 0; i < prim->uvs.size(); i++) {
                         outarr[base + i] = primIdx;
                     }
                 }
