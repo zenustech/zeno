@@ -46,6 +46,7 @@
 #include "xinxinoptixapi.h"
 #include "OptiXStuff.h"
 #include <zeno/utils/vec.h>
+#include <zeno/utils/envconfig.h>
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -449,6 +450,11 @@ static void launchSubframe( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Path
         state.params.sunLightDirY = sin(sunLightDir[1] / 180.f * M_PI);
         state.params.sunLightDirX = cos(sunLightDir[1] / 180.f * M_PI) * sin(sunLightDir[0] / 180.f * M_PI);
         state.params.sunLightDirZ = cos(sunLightDir[1] / 180.f * M_PI) * cos(sunLightDir[0] / 180.f * M_PI);
+
+        float sunSoftness = ud.get2<float>("sunSoftness", 1.0f);
+        state.params.sunSoftness = clamp(sunSoftness, 0.01f, 1.0f);
+
+        state.params.elapsedTime = ud.get2<float>("elapsedTime", 0.0f);
     }
     CUDA_CHECK( cudaMemcpy(
                 reinterpret_cast<void*>( (CUdeviceptr)state.d_params ),
@@ -1821,8 +1827,9 @@ void set_perspective(float const *U, float const *V, float const *W, float const
 
 
 void optixrender(int fbo, int samples) {
-    // 张心欣请解除注释这行代码：
-    //samples = 256;
+    samples = zeno::envconfig::getInt("SAMPLES", samples);
+    // 张心欣老爷请添加环境变量：export ZENO_SAMPLES=256
+    zeno::log_debug("rendering samples {}", samples);
     if (!output_buffer_o) throw sutil::Exception("no output_buffer_o");
     if (!gl_display_o) throw sutil::Exception("no gl_display_o");
     updateState( *output_buffer_o, state.params );

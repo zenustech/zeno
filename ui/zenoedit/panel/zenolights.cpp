@@ -28,7 +28,7 @@ ZenoLights::ZenoLights(QWidget *parent) : QWidget(parent) {
 
     QHBoxLayout* pSunLightLayout = new QHBoxLayout;
 
-    QLabel* sunLongitudeLabel = new QLabel(tr("sunLongitude: "));
+    QLabel* sunLongitudeLabel = new QLabel(tr("Longitude: "));
     sunLongitudeLabel->setProperty("cssClass", "proppanel");
     pSunLightLayout->addWidget(sunLongitudeLabel);
 
@@ -36,13 +36,29 @@ ZenoLights::ZenoLights(QWidget *parent) : QWidget(parent) {
     sunLongitude->setNumSlider({ .1, 1, 10 });
     pSunLightLayout->addWidget(sunLongitude);
 
-    QLabel* sunLatitudeLabel = new QLabel(tr("sunLatitude: "));
+    QLabel* sunLatitudeLabel = new QLabel(tr("Latitude: "));
     sunLatitudeLabel->setProperty("cssClass", "proppanel");
     pSunLightLayout->addWidget(sunLatitudeLabel);
 
     sunLatitude->setProperty("cssClass", "proppanel");
     sunLatitude->setNumSlider({ .1, 1, 10 });
     pSunLightLayout->addWidget(sunLatitude);
+
+    QLabel* sunSoftnessLabel = new QLabel(tr("Softness: "));
+    sunSoftnessLabel->setProperty("cssClass", "proppanel");
+    pSunLightLayout->addWidget(sunSoftnessLabel);
+
+    sunSoftness->setProperty("cssClass", "proppanel");
+    sunSoftness->setNumSlider({ 0.01, .1 });
+    pSunLightLayout->addWidget(sunSoftness);
+
+    QLabel* elapsedTimeLabel = new QLabel(tr("Time: "));
+    elapsedTimeLabel->setProperty("cssClass", "proppanel");
+    pSunLightLayout->addWidget(elapsedTimeLabel);
+
+    elapsedTime->setProperty("cssClass", "proppanel");
+    elapsedTime->setNumSlider({ .1, 1, 10 });
+    pSunLightLayout->addWidget(elapsedTime);
 
     pMainLayout->addLayout(pSunLightLayout);
 
@@ -318,6 +334,8 @@ ZenoLights::ZenoLights(QWidget *parent) : QWidget(parent) {
 
     connect(sunLatitude, &QLineEdit::textChanged, this, [&](){ modifySunLightDir(); });
     connect(sunLongitude, &QLineEdit::textChanged, this, [&](){ modifySunLightDir(); });
+    connect(sunSoftness, &QLineEdit::textChanged, this, [&](){ modifySunLightDir(); });
+    connect(elapsedTime, &QLineEdit::textChanged, this, [&](){ modifySunLightDir(); });
 
     connect(posXEdit, &QLineEdit::textChanged, this, [&](){ modifyLightData(); });
     connect(posYEdit, &QLineEdit::textChanged, this, [&](){ modifyLightData(); });
@@ -447,6 +465,11 @@ void ZenoLights::modifySunLightDir() {
     zeno::vec2f sunLightDir = zeno::vec2f(sunLongitudeValue, sunLatitudeValue);
     auto &ud = zeno::getSession().userData();
     ud.set2("sunLightDir", sunLightDir);
+    float sunSoftnessValue = sunSoftness->text().toFloat();
+    ud.set2("sunSoftness", sunSoftnessValue);
+    float elapsedTimeValue = elapsedTime->text().toFloat();
+    ud.set2("elapsedTime", elapsedTimeValue);
+
     auto scene = Zenovis::GetInstance().getSession()->get_scene();
     scene->objectsMan->needUpdateLight = true;
     zenoApp->getMainWindow()->updateViewport();

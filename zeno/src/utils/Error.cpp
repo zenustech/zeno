@@ -75,6 +75,16 @@ ZENO_API KeyError::KeyError(std::string_view key, std::string_view hint) noexcep
 
 ZENO_API KeyError::~KeyError() noexcept = default;
 
+ZENO_API IndexError::IndexError(size_t index, size_t maxRange, std::string_view hint) noexcept
+    : Error(format("[IndexError] index {} out of range [0, {}) in [{}]", index, maxRange, hint))
+    , index(index)
+    , maxRange(maxRange)
+    , hint(hint)
+{
+}
+
+ZENO_API IndexError::~IndexError() noexcept = default;
+
 ZENO_API UnimplError::UnimplError(std::string_view hint) noexcept
     : Error(format("[UnimplError] unimplemented feature [{}]", hint))
     , hint(hint)
