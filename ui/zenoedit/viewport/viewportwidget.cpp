@@ -651,22 +651,10 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
                 float min_t = std::numeric_limits<float>::max();
                 std::string name("");
                 for (auto const &[key, ptr] : scene->objectsMan->pairs()) {
-                    zeno::vec3f center;
-                    float radius;
                     zeno::vec3f ro(cam_pos[0], cam_pos[1], cam_pos[2]);
                     zeno::vec3f rd(rdir[0], rdir[1], rdir[2]);
-//                    if (zeno::objectGetFocusCenterRadius(ptr, center, radius)) {
-//                        if (auto ret = ray_sphere_intersect(ro, rd, center, radius)) {
-//                            float t = *ret;
-//                            if (t < min_t) {
-//                                min_t = t;
-//                                name = key;
-//                            }
-//                        }
-//                    }
-
                     zeno::vec3f bmin,bmax;
-                    if (zeno::objectGetBoundingBox(ptr,bmin,bmax) ){
+                    if (zeno::objectGetBoundingBox(ptr, bmin, bmax) ){
                         if (auto ret = ray_box_intersect(bmin, bmax, ro, rd)) {
                             float t = *ret;
                             if (t < min_t) {
