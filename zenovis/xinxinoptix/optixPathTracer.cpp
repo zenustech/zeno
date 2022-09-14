@@ -454,7 +454,9 @@ static void launchSubframe( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Path
         float sunSoftness = ud.get2<float>("sunSoftness", 1.0f);
         state.params.sunSoftness = clamp(sunSoftness, 0.01f, 1.0f);
 
-        state.params.elapsedTime = ud.get2<float>("elapsedTime", 0.0f);
+        float elapsedTimeSpeed = ud.get2<float>("timeSpeed", 0.1f);
+        int frameid = ud.get2<int>("frameid", 0);
+        state.params.elapsedTime = elapsedTimeSpeed * frameid;
     }
     CUDA_CHECK( cudaMemcpy(
                 reinterpret_cast<void*>( (CUdeviceptr)state.d_params ),

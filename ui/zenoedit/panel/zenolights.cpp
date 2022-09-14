@@ -28,6 +28,7 @@ ZenoLights::ZenoLights(QWidget *parent) : QWidget(parent) {
     setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Expanding);
 
     QHBoxLayout* pSunLightLayout = new QHBoxLayout;
+    pMainLayout->addLayout(pSunLightLayout);
 
     QLabel* sunLongitudeLabel = new QLabel(tr("Longitude: "));
     sunLongitudeLabel->setProperty("cssClass", "proppanel");
@@ -53,15 +54,32 @@ ZenoLights::ZenoLights(QWidget *parent) : QWidget(parent) {
     sunSoftness->setNumSlider({ 0.01, .1 });
     pSunLightLayout->addWidget(sunSoftness);
 
-    QLabel* elapsedTimeLabel = new QLabel(tr("Time: "));
-    elapsedTimeLabel->setProperty("cssClass", "proppanel");
-    pSunLightLayout->addWidget(elapsedTimeLabel);
+    QHBoxLayout* pWindLayout = new QHBoxLayout;
+    pMainLayout->addLayout(pWindLayout);
 
-    elapsedTime->setProperty("cssClass", "proppanel");
-    elapsedTime->setNumSlider({ .1, 1, 10 });
-    pSunLightLayout->addWidget(elapsedTime);
+    QLabel* sunWindLongLabel = new QLabel(tr("WindLong: "));
+    sunWindLongLabel->setProperty("cssClass", "proppanel");
+    pWindLayout->addWidget(sunWindLongLabel);
 
-    pMainLayout->addLayout(pSunLightLayout);
+    windLong->setProperty("cssClass", "proppanel");
+    windLong->setNumSlider({ .1, 1, 10 });
+    pWindLayout->addWidget(windLong);
+
+    QLabel* sunWindLatLabel = new QLabel(tr("WindLat: "));
+    sunWindLatLabel->setProperty("cssClass", "proppanel");
+    pWindLayout->addWidget(sunWindLatLabel);
+
+    windLat->setProperty("cssClass", "proppanel");
+    windLat->setNumSlider({ .1, 1, 10 });
+    pWindLayout->addWidget(windLat);
+
+    QLabel* timeSpeedLabel = new QLabel(tr("TimeSpeed: "));
+    timeSpeedLabel->setProperty("cssClass", "proppanel");
+    pWindLayout->addWidget(timeSpeedLabel);
+
+    timeSpeed->setProperty("cssClass", "proppanel");
+    timeSpeed->setNumSlider({ .1, 1, 10 });
+    pWindLayout->addWidget(timeSpeed);
 
     QHBoxLayout* pTitleLayout = new QHBoxLayout;
 
@@ -336,7 +354,9 @@ ZenoLights::ZenoLights(QWidget *parent) : QWidget(parent) {
     connect(sunLatitude, &QLineEdit::textChanged, this, [&](){ modifySunLightDir(); });
     connect(sunLongitude, &QLineEdit::textChanged, this, [&](){ modifySunLightDir(); });
     connect(sunSoftness, &QLineEdit::textChanged, this, [&](){ modifySunLightDir(); });
-    connect(elapsedTime, &QLineEdit::textChanged, this, [&](){ modifySunLightDir(); });
+    connect(timeSpeed, &QLineEdit::textChanged, this, [&](){ modifySunLightDir(); });
+    connect(windLong, &QLineEdit::textChanged, this, [&](){ modifySunLightDir(); });
+    connect(windLat, &QLineEdit::textChanged, this, [&](){ modifySunLightDir(); });
 
     connect(posXEdit, &QLineEdit::textChanged, this, [&](){ modifyLightData(); });
     connect(posYEdit, &QLineEdit::textChanged, this, [&](){ modifyLightData(); });
@@ -466,10 +486,16 @@ void ZenoLights::modifySunLightDir() {
     zeno::vec2f sunLightDir = zeno::vec2f(sunLongitudeValue, sunLatitudeValue);
     auto &ud = zeno::getSession().userData();
     ud.set2("sunLightDir", sunLightDir);
+
+    float windLongValue = windLong->text().toFloat();
+    float windLatValue = windLat->text().toFloat();
+    zeno::vec2f windDir = zeno::vec2f(windLongValue, windLatValue);
+    ud.set2("windDir", windDir);
+
     float sunSoftnessValue = sunSoftness->text().toFloat();
     ud.set2("sunSoftness", sunSoftnessValue);
-    float elapsedTimeValue = elapsedTime->text().toFloat();
-    ud.set2("elapsedTime", elapsedTimeValue);
+    float timeSpeedValue = timeSpeed->text().toFloat();
+    ud.set2("timeSpeed", timeSpeedValue);
 
     auto scene = Zenovis::GetInstance().getSession()->get_scene();
     scene->objectsMan->needUpdateLight = true;
