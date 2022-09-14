@@ -664,7 +664,7 @@ extern "C" __global__ void __closesthit__radiance()
         else{
             outToIn = false;
             inToOut = true;
-            //prd->attenuation2 *= DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
+            prd->attenuation2 *= DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
             prd->attenuation *= DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
             prd->scatterPDF = 1.0;
             prd->extinction = prd->popMat();
@@ -674,7 +674,7 @@ extern "C" __global__ void __closesthit__radiance()
         }
     }else{
 	    if(prd->medium == DisneyBSDF::PhaseFunctions::isotropic){
-                //prd->attenuation2 *= DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
+                prd->attenuation2 *= DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
                 prd->attenuation *= DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
                 float tmpPDF = 1.0f;
                 prd->maxDistance = DisneyBSDF::SampleDistance(prd->seed,prd->scatterStep,prd->extinction,tmpPDF);
