@@ -145,9 +145,9 @@ static Zeno_Object factoryFunctionObject(void *inObj_) {
 
 static int defFunctionObjectFactory = capiRegisterObjectFactory("FunctionObject", factoryFunctionObject);
 
-static PyObject *callFunctionObjectCFunc(PyObject **pyHandleAndKwargs_) {
-    PyObject *pyHandleVal = pyHandleAndKwargs_[0];
-    PyObject *pyKwargs = pyHandleAndKwargs_[1];
+static PyObject *callFunctionObjectCFunc(PyObject *pyHandleAndKwargs_) {
+    PyObject *pyHandleVal = PyTuple_GetItem(pyHandleAndKwargs_, 0);
+    PyObject *pyKwargs = PyTuple_GetItem(pyHandleAndKwargs_, 1);
     Zeno_Object obj = PyLong_AsUnsignedLongLong(pyHandleVal);
     auto *objFunc = safe_dynamic_cast<FunctionObject>(capiFindObjectSharedPtr(obj).get(), "pycfunc_funcobj_entry");
     FunctionObject::DictType objParams;
