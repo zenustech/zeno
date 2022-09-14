@@ -77,7 +77,7 @@ public:
     int itemCount(const QModelIndex& subGpIdx) const override;
 	void addNode(const NODE_DATA& nodeData, const QModelIndex& subGpIdx, bool enableTransaction = false) override;
 	void appendNodes(const QList<NODE_DATA>& nodes, const QModelIndex& subGpIdx, bool enableTransaction = false);
-    void setNodeData(const QModelIndex& nodeIndex, const QModelIndex& subGpIdx, const QVariant& value, int role);
+    void setNodeData(const QModelIndex& nodeIndex, const QModelIndex& subGpIdx, const QVariant& value, int role) override;
     void importNodes(
             const QMap<QString, NODE_DATA>& nodes,
             const QList<EdgeInfo>& links,

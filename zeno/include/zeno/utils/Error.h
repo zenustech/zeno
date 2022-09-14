@@ -45,6 +45,15 @@ struct KeyError : Error {
     ZENO_API ~KeyError() noexcept override;
 };
 
+struct IndexError : Error {
+    size_t index;
+    size_t maxRange;
+    std::string hint;
+
+    ZENO_API explicit IndexError(size_t index, size_t maxRange, std::string_view hint) noexcept;
+    ZENO_API ~IndexError() noexcept override;
+};
+
 struct UnimplError : Error {
     std::string hint;
 

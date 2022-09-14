@@ -30,7 +30,8 @@ struct IPCSystem : IObject {
     using dpair_t = zs::vec<Ti, 2>;
     using dpair3_t = zs::vec<Ti, 3>;
     using dpair4_t = zs::vec<Ti, 4>;
-    using bvh_t = zeno::ZenoLBvh<3, 32, int, T>;
+    // using bvh_t = zeno::ZenoLBvh<3, 32, int, T>;
+    using bvh_t = zs::LBvh<3, int, T>;
     using bv_t = zs::AABBBox<3, T>;
 
     inline static const char s_meanMassTag[] = "MeanMass";

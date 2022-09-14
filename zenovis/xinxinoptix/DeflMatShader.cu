@@ -646,7 +646,10 @@ extern "C" __global__ void __closesthit__radiance()
         if(prd->is_inside){
             outToIn = true;
             inToOut = false;
-            if(prd->medium == DisneyBSDF::PhaseFunctions::isotropic){
+            //if(prd->medium == DisneyBSDF::PhaseFunctions::isotropic){
+                prd->medium = DisneyBSDF::PhaseFunctions::isotropic;
+                prd->attenuation *= prd->curMatIdx==0? vec3(1) : DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
+                prd->pushMat(extinction);
                 //prd->attenuation *= transmittanceColor;
                 prd->extinction = extinction;
                 prd->scatterDistance = scatterDistance;
@@ -656,28 +659,34 @@ extern "C" __global__ void __closesthit__radiance()
                 prd->maxDistance = DisneyBSDF::SampleDistance(prd->seed,prd->scatterStep,prd->extinction, tmpPDF);
                 //prd->maxDistance = scatterDistance;
                 prd->scatterPDF = tmpPDF;
-            }
+           //}
         }
         else{
             outToIn = false;
             inToOut = true;
-            //prd->attenuation2 *= DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
+            prd->attenuation2 *= DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
             prd->attenuation *= DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
-            prd->maxDistance = 1e16f;
-            prd->medium = DisneyBSDF::PhaseFunctions::vacuum;
             prd->scatterPDF = 1.0;
+            prd->extinction = prd->popMat();
+            prd->medium = prd->curMatIdx==0?DisneyBSDF::PhaseFunctions::vacuum : DisneyBSDF::PhaseFunctions::isotropic;
+            float tmpPDF = 1.0f;
+            prd->maxDistance = prd->medium==DisneyBSDF::PhaseFunctions::isotropic ? DisneyBSDF::SampleDistance(prd->seed,prd->scatterStep,prd->extinction, tmpPDF) : 1e16;
         }
     }else{
 	    if(prd->medium == DisneyBSDF::PhaseFunctions::isotropic){
-                //prd->attenuation2 *= DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
+                prd->attenuation2 *= DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
                 prd->attenuation *= DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
                 float tmpPDF = 1.0f;
                 prd->maxDistance = DisneyBSDF::SampleDistance(prd->seed,prd->scatterStep,prd->extinction,tmpPDF);
                 prd->scatterPDF = tmpPDF;
 
 	    }
+            else
+            {
+                prd->maxDistance = 1e16f;
+            }
     }
-    prd->medium = prd->is_inside?DisneyBSDF::PhaseFunctions::isotropic : DisneyBSDF::PhaseFunctions::vacuum;
+    prd->medium = prd->is_inside?DisneyBSDF::PhaseFunctions::isotropic : prd->curMatIdx==0?DisneyBSDF::PhaseFunctions::vacuum : DisneyBSDF::PhaseFunctions::isotropic;
 
 
 
@@ -839,7 +848,7 @@ extern "C" __global__ void __closesthit__radiance()
             params.sunLightDirY,
             params.sunLightDirZ
     );
-    auto sun_dir = BRDFBasics::halfPlaneSample(prd->seed, sunLightDir, 0.2);//perturb the sun to have some softness
+    auto sun_dir = BRDFBasics::halfPlaneSample(prd->seed, sunLightDir, params.sunSoftness * 0.2);//perturb the sun to have some softness
     sun_dir = normalize(sunLightDir);
 
     shadow_prd2.shadowAttanuation = make_float3(1.0f, 1.0f, 1.0f);
@@ -852,7 +861,7 @@ extern "C" __global__ void __closesthit__radiance()
                                               specularTint, anisotropic, sheen, sheenTint, clearcoat,
                                               clearcoatGloss, specTrans, scatterDistance, ior, flatness, sun_dir,
                                               -normalize(inDir), T, B, N, thin > 0.5f, flag == DisneyBSDF::transmissionEvent ? inToOut : prd->is_inside, ffPdf, rrPdf,dot(N, float3(sun_dir)));
-    prd->radiance += shadow_prd2.shadowAttanuation * float3(proceduralSky2(sun_dir, sunLightDir)) * lbrdf;
+    prd->radiance += shadow_prd2.shadowAttanuation * float3(proceduralSky2(sun_dir, sunLightDir, params.elapsedTime)) * lbrdf;
     prd->radiance +=  float3(mats.emission);
 }
 
