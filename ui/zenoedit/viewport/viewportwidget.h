@@ -8,8 +8,6 @@
 #include "common.h"
 #include "viewporttransform.h"
 
-#include <glm/glm.hpp>
-
 class ZTimeline;
 class ZenoMainWindow;
 
@@ -62,12 +60,7 @@ public:
     QVector3D realPos() const;
     QVector3D screenToWorldRay(float x, float y) const;
     QVariant hitOnFloor(float x, float y) const;
-    QVariant hitOnPlane(float x, float y, QVector3D n, QVector3D p) const;
-    QVector2D qtCoordToGLCoord(int x, int y);
-    bool mouseEnteredRing(int x, int y);
-    void addPressedKey(int key);
-    void rmvPressedKey(int key);
-
+    void changeTransformOperation();
 
 private:
     bool m_mmb_pressed;
@@ -102,9 +95,8 @@ public:
     QVector2D cameraRes() const;
     void setCameraRes(const QVector2D& res);
     void updatePerspective();
-    void addPressedKey(int key);
-    void rmvPressedKey(int key);
     void updateCameraProp(float aperture, float disPlane);
+    void changeTransformOperation();
 
 signals:
     void frameRecorded(int);
