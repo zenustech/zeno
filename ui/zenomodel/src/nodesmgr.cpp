@@ -1,23 +1,27 @@
 #include "nodesmgr.h"
-#include "fuzzy_search.h"
-#include <zenoui/util/uihelper.h>
-#include "util/apphelper.h"
+#include <zenomodel/include/uihelper.h>
 #include <zeno/utils/log.h>
-#include "zenoapplication.h"
-#include "graphsmanagment.h"
-#include <zenoui/model/curvemodel.h>
-#include <zenoui/model/variantptr.h>
-#include "curvemap/curveutil.h"
+#include <zenomodel/include/graphsmanagment.h>
+#include <zenomodel/include/curvemodel.h>
+#include <zenomodel/include/variantptr.h>
+#include <zenomodel/include/curveutil.h>
 
 
 QString NodesMgr::createNewNode(IGraphsModel* pModel, QModelIndex subgIdx, const QString& descName, const QPointF& pt)
 {
     zeno::log_debug("onNewNodeCreated");
+    NODE_DATA node = newNodeData(pModel, descName, pt);
+    pModel->addNode(node, subgIdx, true);
+    return node[ROLE_OBJID].toString();
+}
+
+NODE_DATA NodesMgr::newNodeData(IGraphsModel* pModel, const QString& descName, const QPointF& pt)
+{
     NODE_DESCS descs = pModel->descriptors();
     NODE_DESC desc = descs[descName];
-
-    const QString& nodeid = UiHelper::generateUuid(descName);
     NODE_DATA node;
+
+    const QString &nodeid = UiHelper::generateUuid(descName);
     node[ROLE_OBJID] = nodeid;
     node[ROLE_OBJNAME] = descName;
     node[ROLE_NODETYPE] = nodeType(descName);
@@ -30,10 +34,7 @@ QString NodesMgr::createNewNode(IGraphsModel* pModel, QModelIndex subgIdx, const
     node[ROLE_PARAMS_NO_DESC] = QVariant::fromValue(initParamsNotDesc(descName));
     node[ROLE_OBJPOS] = pt;
     node[ROLE_COLLASPED] = false;
-
-    pModel->addNode(node, subgIdx, true);
-
-    return nodeid;
+    return node;
 }
 
 NODE_TYPE NodesMgr::nodeType(const QString& name)
@@ -130,7 +131,7 @@ void NodesMgr::initParams(const QString& descName, IGraphsModel* pGraphsModel, P
         QLinearGradient grad;
         grad.setColorAt(0, QColor::fromRgbF(0., 0., 0.));
         grad.setColorAt(1, QColor::fromRgbF(1., 1., 1.));
-        param.value = AppHelper::gradient2colorString(grad);
+        param.value = UiHelper::gradient2colorString(grad);
         params.insert(param.name, param);
     }
 }

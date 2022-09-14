@@ -2,11 +2,10 @@
 #include "zenosubnetlistview.h"
 #include <comctrl/ztoolbutton.h>
 #include "zenoapplication.h"
+#include "../nodesys/zenosubgraphscene.h"
 #include "zenowelcomepage.h"
-#include "graphsmanagment.h"
-#include "model/graphsmodel.h"
-#include <model/graphstreemodel.h>
-#include <zenoui/model/modelrole.h>
+#include <zenomodel/include/graphsmanagment.h>
+#include <zenomodel/include/modelrole.h>
 #include <comctrl/zenocheckbutton.h>
 #include <comctrl/ziconbutton.h>
 #include <zenoui/style/zenostyle.h>
@@ -133,8 +132,7 @@ void ZenoGraphsEditor::resetModel(IGraphsModel* pModel)
     m_model = pModel;
     ZASSERT_EXIT(m_model);
 
-    GraphsTreeModel* pTreeModel = mgr->treeModel();
-    m_ui->subnetTree->setModel(pTreeModel);
+    m_ui->subnetTree->setModel(mgr->treeModel());
     m_ui->subnetList->setModel(pModel);
 
     m_ui->subnetList->setItemDelegate(new ZSubnetListItemDelegate(m_model, this));
@@ -160,7 +158,7 @@ void ZenoGraphsEditor::onSubGraphsToRemove(const QModelIndex& parent, int first,
 	for (int r = first; r <= last; r++)
 	{
 		QModelIndex subgIdx = m_model->index(r, 0);
-		const QString& name = m_model->name(subgIdx);
+		const QString& name = subgIdx.data(ROLE_OBJNAME).toString();
 		int idx = tabIndexOfName(name);
 		m_ui->graphsViewTab->removeTab(idx);
 	}
@@ -387,13 +385,19 @@ void ZenoGraphsEditor::activateTab(const QString& subGraphName, const QString& p
 	if (idx == -1)
 	{
 		const QModelIndex& subgIdx = pModel->index(subGraphName);
-		ZenoSubGraphScene* pScene = qobject_cast<ZenoSubGraphScene*>(pModel->scene(subgIdx));
-		ZASSERT_EXIT(pScene);
+
+        ZenoSubGraphScene* pScene = qobject_cast<ZenoSubGraphScene*>(graphsMgm->gvScene(subgIdx));
+        if (!pScene)
+        {
+            pScene = new ZenoSubGraphScene(graphsMgm);
+            graphsMgm->addScene(subgIdx, pScene);
+            pScene->initModel(subgIdx);
+        }
 
         ZenoSubGraphView* pView = new ZenoSubGraphView;
-		pView->initScene(pScene);
+        pView->initScene(pScene);
 
-		idx = m_ui->graphsViewTab->addTab(pView, subGraphName);
+        idx = m_ui->graphsViewTab->addTab(pView, subGraphName);
 
         connect(pView, &ZenoSubGraphView::zoomed, pScene, &ZenoSubGraphScene::onZoomed);
 
@@ -479,11 +483,14 @@ void ZenoGraphsEditor::onLogInserted(const QModelIndex& parent, int first, int l
                 else
                 {
                     const QModelIndex& subgIdx = m_model->index(subgName);
-                    ZenoSubGraphScene* pScene = qobject_cast<ZenoSubGraphScene*>(m_model->scene(subgIdx));
-                    if (pScene)
-                    {
-                        pScene->markError(objId);
+                    auto graphsMgm = zenoApp->graphsManagment();
+                    ZenoSubGraphScene* pScene = qobject_cast<ZenoSubGraphScene*>(graphsMgm->gvScene(subgIdx));
+                    if (!pScene) {
+                        pScene = new ZenoSubGraphScene(graphsMgm);
+                        graphsMgm->addScene(subgIdx, pScene);
+                        pScene->initModel(subgIdx);
                     }
+                    pScene->markError(objId);
                 }
             }
         }

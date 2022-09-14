@@ -1,8 +1,7 @@
 #include "subnetnode.h"
-#include "model/graphsmodel.h"
 #include "zenoapplication.h"
-#include "graphsmanagment.h"
-#include <zenoui/util/uihelper.h>
+#include <zenomodel/include/graphsmanagment.h>
+#include <zenomodel/include/uihelper.h>
 #include "util/log.h"
 
 
@@ -60,9 +59,9 @@ void SubnetNode::onParamEditFinished(const QString& paramName, const QVariant& t
     ZASSERT_EXIT(pModel);
     const QString& nodeid = nodeId();
     QModelIndex subgIdx = this->subGraphIndex();
-    const PARAMS_INFO& params = pModel->data2(subgIdx, index(), ROLE_PARAMETERS).value<PARAMS_INFO>();
+    const PARAMS_INFO& params = index().data(ROLE_PARAMETERS).value<PARAMS_INFO>();
     const QString& oldName = params["name"].value.toString();
-    const QString& subnetName = pModel->name(subgIdx);
+    const QString& subnetName = subgIdx.data(ROLE_OBJNAME).toString();
     if (oldName == textValue)
         return;
 

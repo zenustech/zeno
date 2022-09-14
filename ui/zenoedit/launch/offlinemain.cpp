@@ -1,10 +1,9 @@
 #include "corelaunch.h"
 #include "serialize.h"
 #include "util/log.h"
-#include "graphsmanagment.h"
-#include "model/graphsmodel.h"
-#include <zenoui/util/jsonhelper.h>
-#include <zenoui/model/modelrole.h>
+#include <zenomodel/include/graphsmanagment.h>
+#include <zenomodel/include/jsonhelper.h>
+#include <zenomodel/include/modelrole.h>
 #include <zeno/core/Session.h>
 #include <zeno/utils/scope_exit.h>
 #include <zeno/extra/GlobalComm.h>
@@ -61,7 +60,7 @@ int offline_main(const char *zsgfile, int beginFrame, int endFrame);
 int offline_main(const char *zsgfile, int beginFrame, int endFrame) {
     zeno::log_info("running in offline mode, file=[{}], begin={}, end={}", zsgfile, beginFrame, endFrame);
 
-    GraphsManagment gman;
+    GraphsManagment& gman = GraphsManagment::instance();
     gman.openZsgFile(zsgfile);
     IGraphsModel *pModel = gman.currentModel();
     ZASSERT_EXIT(pModel, 1);

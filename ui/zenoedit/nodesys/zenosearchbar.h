@@ -2,7 +2,7 @@
 #define __ZENO_SEARCHBAR_H__
 
 #include <zenoui/nodesys/nodesys_common.h>
-#include <zenoui/include/igraphsmodel.h>
+#include <zenomodel/include/igraphsmodel.h>
 
 class SubGraphModel;
 

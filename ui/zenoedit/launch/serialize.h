@@ -3,7 +3,7 @@
 
 #include <QtWidgets>
 #include <QString>
-#include <zenoui/util/jsonhelper.h>
+#include <zenomodel/include/jsonhelper.h>
 
 class IGraphsModel;
 

@@ -1,8 +1,8 @@
 #ifndef __CURVE_UTIL_H__
 #define __CURVE_UTIL_H__
 
-#include <zenoui/model/modeldata.h>
-#include <zenoui/model/curvemodel.h>
+#include <zenomodel/include/modeldata.h>
+#include <zenomodel/include/curvemodel.h>
 
 namespace curve_util
 {

@@ -1,7 +1,7 @@
 #ifndef __CURVE_SCALER_ITEM_H__
 #define __CURVE_SCALER_ITEM_H__
 
-#include <zenoui/model/modeldata.h>
+#include <zenomodel/include/modeldata.h>
 
 class CurveMapView;
 

@@ -2,8 +2,8 @@
 #define __ZCURVEMAP_EDITOR_H__
 
 #include <QtWidgets>
-#include <zenoui/model/modeldata.h>
-#include "curveutil.h"
+#include <zenomodel/include/modeldata.h>
+#include <zenomodel/include/curveutil.h>
 
 using namespace curve_util;
 

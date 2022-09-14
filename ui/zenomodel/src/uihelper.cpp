@@ -1,7 +1,10 @@
 #include "uihelper.h"
 #include <zeno/utils/logger.h>
-#include <zenoui/model/modelrole.h>
-#include <zenoui/model/curvemodel.h>
+#include "modelrole.h"
+#include "zassert.h"
+#include "curvemodel.h"
+#include "variantptr.h"
+#include "jsonhelper.h"
 #include <QUuid>
 
 
@@ -464,6 +467,30 @@ QPointF UiHelper::parsePoint(const rapidjson::Value& ptObj, bool& bSucceed)
     return pt;
 }
 
+NODE_TYPE UiHelper::nodeType(const QString& name)
+{
+    if (name == "Blackboard")
+    {
+        return BLACKBOARD_NODE;
+    }
+    else if (name == "SubInput")
+    {
+        return SUBINPUT_NODE;
+    }
+    else if (name == "SubOutput")
+    {
+        return SUBOUTPUT_NODE;
+    }
+    else if (name == "MakeHeatmap")
+    {
+        return HEATMAP_NODE;
+    }
+    else
+    {
+        return NORMAL_NODE;
+    }
+}
+
 int UiHelper::getMaxObjId(const QList<QString> &lst)
 {
     int maxObjId = -1;
@@ -651,4 +678,195 @@ QVector<qreal> UiHelper::getSlideStep(const QString& name, PARAM_CONTROL ctrl)
         steps = { .0001, .001, .01, .1, 1, 10, 100 };
     }
     return steps;
+}
+
+QString UiHelper::nthSerialNumName(QString name)
+{
+    QRegExp rx("\\((\\d+)\\)");
+    int idx = rx.lastIndexIn(name);
+    if (idx == -1) {
+        return name + "(1)";
+    }
+    else {
+        name = name.mid(0, idx);
+        QStringList lst = rx.capturedTexts();
+        ZASSERT_EXIT(lst.size() == 2, "");
+        bool bConvert = false;
+        int ith = lst[1].toInt(&bConvert);
+        ZASSERT_EXIT(bConvert, "");
+        return name + "(" + QString::number(ith + 1) + ")";
+    }
+}
+
+void UiHelper::reAllocIdents(
+            QMap<QString, NODE_DATA>& nodes,
+            QList<EdgeInfo>& links,
+            const QMap<QString, NODE_DATA>& oldGraphsToNew)
+{
+    QMap<QString, QString> old2new;
+    QMap<QString, NODE_DATA> newNodes;
+    for (QString key : nodes.keys())
+    {
+        const NODE_DATA data = nodes[key];
+        const QString& oldId = data[ROLE_OBJID].toString();
+        const QString& name = data[ROLE_OBJNAME].toString();
+        QString newId;
+
+        if (oldGraphsToNew.find(oldId) != oldGraphsToNew.end())
+        {
+            //fork case.
+            NODE_DATA newData = oldGraphsToNew[oldId];
+            newId = newData[ROLE_OBJID].toString();
+            newNodes.insert(newId, newData);
+        }
+        else
+        {
+            newId = UiHelper::generateUuid(name);
+            NODE_DATA newData = data;
+            newData[ROLE_OBJID] = newId;
+            newNodes.insert(newId, newData);
+        }
+        old2new.insert(oldId, newId);
+    }
+    //replace all the old-id in newNodes.
+    for (QString newId : newNodes.keys()) {
+        NODE_DATA& data = newNodes[newId];
+        INPUT_SOCKETS inputs = data[ROLE_INPUTS].value<INPUT_SOCKETS>();
+        for (INPUT_SOCKET& inputSocket : inputs) {
+            inputSocket.info.nodeid = newId;
+            inputSocket.linkIndice.clear();
+            inputSocket.outNodes.clear();
+        }
+
+        OUTPUT_SOCKETS outputs = data[ROLE_OUTPUTS].value<OUTPUT_SOCKETS>();
+        for (OUTPUT_SOCKET& outputSocket : outputs) {
+            outputSocket.info.nodeid = newId;
+            outputSocket.linkIndice.clear();
+            outputSocket.inNodes.clear();
+        }
+
+        data[ROLE_INPUTS] = QVariant::fromValue(inputs);
+        data[ROLE_OUTPUTS] = QVariant::fromValue(outputs);
+    }
+
+    for (EdgeInfo& link : links) {
+        ZASSERT_EXIT(old2new.find(link.inputNode) != old2new.end() && old2new.find(link.outputNode) != old2new.end());
+        link.inputNode = old2new[link.inputNode];
+        link.outputNode = old2new[link.outputNode];
+        ZASSERT_EXIT(newNodes.find(link.inputNode) != newNodes.end() &&
+            newNodes.find(link.outputNode) != newNodes.end());
+    }
+
+    nodes = newNodes;
+}
+
+QString UiHelper::correctSubIOName(IGraphsModel* pModel, const QString& subgName, const QString& newName, bool bInput)
+{
+    ZASSERT_EXIT(pModel, "");
+
+    NODE_DESCS descs = pModel->descriptors();
+    if (descs.find(subgName) == descs.end())
+        return "";
+
+    const NODE_DESC& desc = descs[subgName];
+    QString finalName = newName;
+    int i = 1;
+    if (bInput)
+    {
+        while (desc.inputs.find(finalName) != desc.inputs.end())
+        {
+            finalName = finalName + QString("_%1").arg(i);
+            i++;
+        }
+    }
+    else
+    {
+        while (desc.outputs.find(finalName) != desc.outputs.end())
+        {
+            finalName = finalName + QString("_%1").arg(i);
+            i++;
+        }
+    }
+    return finalName;
+}
+
+QVariant UiHelper::_parseToVariant(const QString& type, const rapidjson::Value& val, QObject* parentRef)
+{
+    if (val.GetType() == rapidjson::kStringType)
+    {
+        return val.GetString();
+    }
+    else if (val.GetType() == rapidjson::kNumberType)
+    {
+        //if (val.IsInt())
+            //zeno::log_critical("happy {}", val.GetInt());
+        if (val.IsDouble())
+            return val.GetDouble();
+        else if (val.IsInt())
+            return val.GetInt();
+        else {
+            zeno::log_warn("bad rapidjson number type {}", val.GetType());
+            return QVariant();
+        }
+    }
+    else if (val.GetType() == rapidjson::kTrueType)
+    {
+        return val.GetBool();
+    }
+    else if (val.GetType() == rapidjson::kFalseType)
+    {
+        return val.GetBool();
+    }
+    else if (val.GetType() == rapidjson::kNullType)
+    {
+        return QVariant();
+    }
+    else if (val.GetType() == rapidjson::kArrayType)
+    {
+        UI_VECTYPE vec;
+        auto values = val.GetArray();
+        for (int i = 0; i < values.Size(); i++)
+        {
+            vec.append(values[i].GetFloat());
+        }
+        return QVariant::fromValue(vec);
+    }
+    else if (val.GetType() == rapidjson::kObjectType)
+    {
+        if (type == "curve")
+        {
+            CurveModel* pModel = JsonHelper::_parseCurveModel(val, parentRef);
+            return QVariantPtr<CurveModel>::asVariant(pModel);
+        }
+    }
+
+    zeno::log_warn("bad rapidjson value type {}", val.GetType());
+    return QVariant();
+}
+
+QString UiHelper::gradient2colorString(const QLinearGradient& grad)
+{
+    QString colorStr;
+    const QGradientStops &stops = grad.stops();
+    colorStr += QString::number(stops.size());
+    colorStr += "\n";
+    for (QGradientStop grad : stops) {
+        colorStr += QString::number(grad.first);
+        colorStr += " ";
+        colorStr += QString::number(grad.second.redF());
+        colorStr += " ";
+        colorStr += QString::number(grad.second.greenF());
+        colorStr += " ";
+        colorStr += QString::number(grad.second.blueF());
+        colorStr += "\n";
+    }
+    return colorStr;
+}
+
+QVariant UiHelper::getParamValue(const QModelIndex& idx, const QString& name)
+{
+    PARAMS_INFO params = idx.data(ROLE_PARAMETERS).value<PARAMS_INFO>();
+    if (params.find(name) == params.end())
+        return QVariant();
+    return params[name].value;
 }

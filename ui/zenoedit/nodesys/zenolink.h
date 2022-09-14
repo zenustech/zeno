@@ -3,7 +3,7 @@
 
 #include <QtWidgets>
 #include <zenoui/nodesys/nodesys_common.h>
-#include <zenoui/model/modeldata.h>
+#include <zenomodel/include/modeldata.h>
 
 class ZenoSubGraphScene;
 class ZenoSocketItem;

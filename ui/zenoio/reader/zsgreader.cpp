@@ -1,10 +1,9 @@
 #include "zsgreader.h"
-#include "../../zenoui/util/uihelper.h"
+#include <zenomodel/include/uihelper.h>
 #include <zeno/utils/logger.h>
 #include <zeno/funcs/ParseObjectFromUi.h>
 #include "zenoedit/util/log.h"
-#include <zenoui/model/variantptr.h>
-#include <zenoui/model/curvemodel.h>
+#include <zenomodel/include/variantptr.h>
 #include "common.h"
 
 using namespace zeno::iotags;
@@ -264,147 +263,6 @@ void ZsgReader::_parseTimeline(const rapidjson::Value& jsonTimeline, IAcceptor* 
 QVariant ZsgReader::_parseDefaultValue(const QString& defaultValue, const QString& type)
 {
     return UiHelper::_parseDefaultValue(defaultValue, type);
-    //some data like vec3f, cast to string first.
-    //bool bOk = false;
-    //double val = defaultValue.toDouble(&bOk);
-    //QVariant var;
-    //if (bOk) {
-        //var = val;
-    //} else {
-        //var = defaultValue;
-    //}
-    //return var;
-}
-
-QVariant ZsgReader::_parseToVariant(const QString& type, const rapidjson::Value& val, QObject* parentRef)
-{
-    if (val.GetType() == rapidjson::kStringType)
-    {
-		return val.GetString();
-    }
-	else if (val.GetType() == rapidjson::kNumberType)
-    {
-        //if (val.IsInt())
-            //zeno::log_critical("happy {}", val.GetInt());
-        if (val.IsDouble())
-            return val.GetDouble();
-        else if (val.IsInt())
-            return val.GetInt();
-        else {
-            zeno::log_warn("bad rapidjson number type {}", val.GetType());
-            return QVariant();
-        }
-	}
-	else if (val.GetType() == rapidjson::kTrueType)
-    {
-		return val.GetBool();
-	}
-	else if (val.GetType() == rapidjson::kFalseType)
-    {
-		return val.GetBool();
-	}
-	else if (val.GetType() == rapidjson::kNullType)
-    {
-		return QVariant();
-    }
-    else if (val.GetType() == rapidjson::kArrayType)
-    {
-        UI_VECTYPE vec;
-        auto values = val.GetArray();
-        for (int i = 0; i < values.Size(); i++)
-        {
-            vec.append(values[i].GetFloat());
-        }
-        return QVariant::fromValue(vec);
-    }
-    else if (val.GetType() == rapidjson::kObjectType)
-    {
-	    if (type == "curve")
-        {
-            CurveModel *pModel = _parseCurveModel(val, parentRef);
-            return QVariantPtr<CurveModel>::asVariant(pModel);
-        }
-    }
-
-    zeno::log_warn("bad rapidjson value type {}", val.GetType());
-    return QVariant();
-}
-
-CurveModel* ZsgReader::_parseCurveModel(const rapidjson::Value& jsonCurve, QObject* parentRef)
-{
-    ZASSERT_EXIT(jsonCurve.HasMember(key_objectType), nullptr);
-    QString type = jsonCurve[key_objectType].GetString();
-    if (type != "curve") {
-        return nullptr;
-    }
-
-    ZASSERT_EXIT(jsonCurve.HasMember(key_range), nullptr);
-    const rapidjson::Value &rgObj = jsonCurve[key_range];
-    ZASSERT_EXIT(rgObj.HasMember(key_xFrom) && rgObj.HasMember(key_xTo) && rgObj.HasMember(key_yFrom) && rgObj.HasMember(key_yTo), nullptr);
-
-    CURVE_RANGE rg;
-    ZASSERT_EXIT(rgObj[key_xFrom].IsDouble() && rgObj[key_xTo].IsDouble() && rgObj[key_yFrom].IsDouble() && rgObj[key_yTo].IsDouble(), nullptr);
-    rg.xFrom = rgObj[key_xFrom].GetDouble();
-    rg.xTo = rgObj[key_xTo].GetDouble();
-    rg.yFrom = rgObj[key_yFrom].GetDouble();
-    rg.yTo = rgObj[key_yTo].GetDouble();
-
-    //todo: id
-    CurveModel* pModel = new CurveModel("x", rg, parentRef); 
-
-    if (jsonCurve.HasMember(key_timeline) && jsonCurve[key_timeline].IsBool())
-    {
-        bool bTimeline = jsonCurve[key_timeline].GetBool();
-        pModel->setTimeline(bTimeline);
-    }
-
-    ZASSERT_EXIT(jsonCurve.HasMember(key_nodes), nullptr);
-    for (const rapidjson::Value &nodeObj : jsonCurve[key_nodes].GetArray())
-    {
-        ZASSERT_EXIT(nodeObj.HasMember("x") && nodeObj["x"].IsDouble(), nullptr);
-        ZASSERT_EXIT(nodeObj.HasMember("y") && nodeObj["y"].IsDouble(), nullptr);
-        QPointF pos(nodeObj["x"].GetDouble(), nodeObj["y"].GetDouble());
-
-        ZASSERT_EXIT(nodeObj.HasMember(key_left_handle) && nodeObj[key_left_handle].IsObject(), nullptr);
-        auto leftHdlObj = nodeObj[key_left_handle].GetObject();
-        ZASSERT_EXIT(leftHdlObj.HasMember("x") && leftHdlObj.HasMember("y"), nullptr);
-        qreal leftX = leftHdlObj["x"].GetDouble();
-        qreal leftY = leftHdlObj["y"].GetDouble();
-        QPointF leftOffset(leftX, leftY);
-
-        ZASSERT_EXIT(nodeObj.HasMember(key_right_handle) && nodeObj[key_right_handle].IsObject(), nullptr);
-        auto rightHdlObj = nodeObj[key_right_handle].GetObject();
-        ZASSERT_EXIT(rightHdlObj.HasMember("x") && rightHdlObj.HasMember("y"), nullptr);
-        qreal rightX = rightHdlObj["x"].GetDouble();
-        qreal rightY = rightHdlObj["y"].GetDouble();
-        QPointF rightOffset(rightX, rightY);
-
-        HANDLE_TYPE hdlType = HDL_ASYM;
-        if (nodeObj.HasMember(key_type) && nodeObj[key_type].IsString())
-        {
-            QString type = nodeObj[key_type].GetString();
-            if (type == "aligned") {
-                hdlType = HDL_ALIGNED;
-            } else if (type == "asym") {
-                hdlType = HDL_ASYM;
-            } else if (type == "free") {
-                hdlType = HDL_FREE;
-            } else if (type == "vector") {
-                hdlType = HDL_VECTOR;
-            }
-        }
-
-        bool bLockX = (nodeObj.HasMember(key_lockX) && nodeObj[key_lockX].IsBool());
-        bool bLockY = (nodeObj.HasMember(key_lockY) && nodeObj[key_lockY].IsBool());
-
-        QStandardItem *pItem = new QStandardItem;
-        pItem->setData(pos, ROLE_NODEPOS);
-        pItem->setData(leftOffset, ROLE_LEFTPOS);
-        pItem->setData(rightOffset, ROLE_RIGHTPOS);
-        pItem->setData(hdlType, ROLE_TYPE);
-        pModel->appendRow(pItem);
-    }
-    return pModel;
 }
 
 void ZsgReader::_parseDictKeys(const QString& id, const rapidjson::Value& objValue, IAcceptor* pAcceptor)
