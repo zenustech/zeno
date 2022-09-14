@@ -11,6 +11,8 @@
 
 #include <string>
 
+#include "fbxsdk.h"
+
 namespace {
 
 struct ExportFBX : zeno::INode {
@@ -74,6 +76,64 @@ ZENDEFNODE(ExportFBX,
             },  /* params: */
             {
 
+            },  /* category: */
+            {
+                "FBX",
+            }
+           });
+
+struct WriteFBX : zeno::INode {
+
+    virtual void apply() override{
+        auto input = get_input2<std::string>("outpath");
+        zeno::log_info("Input: {}", input);
+
+        const char* lFileTypes[] =
+            {
+                "_dae.dae",            "Collada DAE (*.dae)",
+                "_fbx7binary.fbx", "FBX binary (*.fbx)",
+                "_fbx7ascii.fbx",  "FBX ascii (*.fbx)",
+                "_fbx6binary.fbx", "FBX 6.0 binary (*.fbx)",
+                "_fbx6ascii.fbx",  "FBX 6.0 ascii (*.fbx)",
+                "_obj.obj",            "Alias OBJ (*.obj)",
+                "_dxf.dxf",            "AutoCAD DXF (*.dxf)"
+            };
+
+
+        FbxManager* lSdkManager = FbxManager::Create();
+        FbxIOSettings* ios;
+        FbxImporter* lImporter;
+        FbxScene* lScene = FbxScene::Create(lSdkManager, "myScene");
+        FbxExporter* lExporter=FbxExporter::Create(lSdkManager, "");
+
+        // Get the appropriate file format.
+        //int lFileFormat=lSdkManager->GetIOPluginRegistry()->GetNativeWriterFormat();
+        int lFileFormat = lSdkManager->GetIOPluginRegistry()->FindWriterIDByDescription(lFileTypes[5]);
+
+        // Initialize the exporter.
+        if (!lExporter->Initialize(input.c_str(), lFileFormat, lSdkManager->GetIOSettings())){
+            zeno::log_error("Call to FbxExporter::Initialize() failed.");
+        }
+        // Export the scene to the file.
+        lExporter->Export(lScene);
+        //FbxCommon.SaveScene(SdkManager, Scene, out_fbx, 1);
+        lExporter->Destroy();
+
+        auto result = std::make_shared<zeno::NumericObject>();
+        result->set(1);
+        set_output("output", std::move(result));
+    };
+};
+
+ZENDEFNODE(WriteFBX,
+           {       /* inputs: */
+            {
+                {"readpath", "outpath"},
+            },  /* outputs: */
+            {
+                "output",
+            },  /* params: */
+            {
             },  /* category: */
             {
                 "FBX",

@@ -1,9 +1,14 @@
 file(GLOB FBX_SOURCE *.cpp *.h)
 
+set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}")
+
+find_package(FBXSDK)
+
 target_sources(zeno PRIVATE ${FBX_SOURCE})
 zeno_disable_warning(${FBX_SOURCE})
 target_include_directories(zeno PRIVATE .)
 target_include_directories(zeno PRIVATE ../../zenovis/stbi/include)
+target_include_directories(zeno PRIVATE "${FBXSDK_INCLUDE_DIR}")
 
 set(ASSIMP_BUILD_ALL_EXPORTERS_BY_DEFAULT FALSE CACHE BOOL "GUN TMD ASS" FORCE)
 set(ASSIMP_BUILD_ALL_IMPORTERS_BY_DEFAULT FALSE CACHE BOOL "GUN TMD ASS" FORCE)
@@ -12,6 +17,7 @@ set(ASSIMP_BUILD_FBX_EXPORTER TRUE CACHE BOOL "CIHOU FBX" FORCE)
 add_subdirectory(assimp)
 
 target_link_libraries(zeno PRIVATE assimp)
+target_link_libraries(zeno PRIVATE "${FBXSDK_LIBS}")
 
 set(DEM_DIR ${CMAKE_CURRENT_SOURCE_DIR}/dem-bones-bin/bin/${CMAKE_SYSTEM_NAME})
 if (NOT EXISTS ${DEM_DIR})
