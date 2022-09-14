@@ -982,3 +982,144 @@ static __inline__ __device__ vec3 proceduralSky2(vec3 dir, vec3 sunLightDir, flo
     //return vec3(0,0,0);
     return vec3(clouds)*0.5 + sunCol * (sunIntensity*0.0000075);
 }
+
+// ####################################
+
+#define sun_color vec3(1., .7, .55)
+static __inline__ __device__ vec3 render_sky_color(vec3 rd, vec3 sunLightDir)
+{
+	double sun_amount = max(dot(rd, normalize(sunLightDir)), 0.0);
+	vec3 sky = mix(vec3(.0, .1, .4), vec3(.3, .6, .8), 1.0 - rd.y);
+	sky = sky + sun_color * min(pow(sun_amount, 1500.0) * 5.0, 1.0);
+	sky = sky + sun_color * min(pow(sun_amount, 10.0) * .6, 1.0);
+	return sky;
+}
+#define FAKE_LIGHT
+#define THICKNESS		15.
+#define STEPS			20
+#define ABSORPTION		1.030725
+struct ray {
+	vec3 origin;
+	vec3 direction;
+};
+struct sphere {
+	vec3 origin;
+	float radius;
+	int material;
+};
+struct hit_record {
+	float t;
+	int material_id;
+	vec3 normal;
+	vec3 origin;
+};
+static __inline__ __device__ void intersect_sphere(
+	ray r,
+	sphere s,
+    hit_record& hit
+){
+	vec3 oc = s.origin - r.origin;
+    float a  = dot(r.direction, r.direction);
+	float b = 2 * dot(oc, r.direction);
+	float c = dot(oc, oc) - s.radius * s.radius;
+    float discriminant = b*b - 4*a*c;
+	if (discriminant < 0) return;
+
+    float t = (-b - sqrt(discriminant) ) / (2.0*a);
+
+	hit.t = t;
+	hit.material_id = s.material;
+	hit.origin = r.origin + t * r.direction;
+	hit.normal = (hit.origin - s.origin) / s.radius;
+}
+// #define FBM_FREQ	2.76434
+#define COVERAGE .4
+#define WIND vec3(0,0,8.)
+static __inline__ __device__ float density(vec3 pos, float t)
+{
+	// signal
+	vec3 p = pos * .0212242;
+     + WIND * t; // test time
+	float dens = fbm(p); //, FBM_FREQ);;
+
+	float cov = 1. - COVERAGE;
+	dens *= smoothstep (cov, cov + .05, dens);
+
+	return clamp(dens, 0., 1.);	
+}
+#define max_dist 1e8
+static __inline__ __device__ vec4 render_clouds(ray r, float t)
+{
+    vec3 C = vec3(0, 0, 0);
+    float alpha = 0.;
+
+    const float thickness = THICKNESS; 
+	const int steps = STEPS; 
+    float march_step = thickness / float(steps);
+	vec3 dir_step = r.direction / r.direction.y * march_step;
+
+    sphere atmosphere = {
+        vec3(0,-350, 0), 
+        500., 
+        0
+    };
+    hit_record hit = {
+        float(max_dist + 1e1),  // 'infinite' distance
+        -1,                     // material id
+        vec3(0., 0., 0.),       // normal
+        vec3(0., 0., 0.)        // origin
+    };
+
+    intersect_sphere(r, atmosphere, hit);
+	vec3 pos = hit.origin;
+
+    float T = 1.; // transmitance
+	for (int i = 0; i < steps; i++) {
+		float h = float(i) / float(steps);
+		float dens = density(pos, t);
+		float T_i = exp(
+            -ABSORPTION 
+            * dens 
+            * march_step
+        );
+		T *= T_i;
+		if (T < .01) break;
+        float C_i = 
+            T * 
+#ifdef FAKE_LIGHT
+			(exp(h) / 1.75) *
+#endif
+			dens * 
+            march_step;
+        C = vec3(
+            C.x + C_i,
+            C.y + C_i,
+            C.z + C_i
+        ); 
+        alpha += (1. - T_i) * (1. - alpha);
+		pos = vec3(
+            pos.x + dir_step.x,
+            pos.y + dir_step.y,
+            pos.z + dir_step.z
+        );
+		if (length(pos) > 1e3) break;
+	}
+
+    return vec4(C.x, C.y, C.z, alpha);
+}
+
+static __inline__ __device__ vec3 proceduralSky(vec3 dir, vec3 sunLightDir, float t)
+{
+    vec3 col = vec3(0,0,0);
+
+    vec3 r_dir = normalize(dir);
+    ray r = {vec3(0,0,0), r_dir};
+
+    
+    vec3 sky = render_sky_color(r.direction, sunLightDir);
+    if(r_dir.y<-0.001) return sky; // just being lazy
+
+    vec4 cld = render_clouds(r, t);
+    col = mix(sky, vec3(cld)/(0.000001+cld.w), cld.w);
+    return col;
+}

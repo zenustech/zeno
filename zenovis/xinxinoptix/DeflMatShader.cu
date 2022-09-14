@@ -849,7 +849,7 @@ extern "C" __global__ void __closesthit__radiance()
             params.sunLightDirZ
     );
     auto sun_dir = BRDFBasics::halfPlaneSample(prd->seed, sunLightDir, params.sunSoftness * 0.2);//perturb the sun to have some softness
-    sun_dir = normalize(sunLightDir);
+    sun_dir = normalize(sun_dir);
 
     shadow_prd2.shadowAttanuation = make_float3(1.0f, 1.0f, 1.0f);
     shadow_prd2.nonThinTransHit = (thin==false && specTrans>0)? 1:0;
@@ -861,7 +861,7 @@ extern "C" __global__ void __closesthit__radiance()
                                               specularTint, anisotropic, sheen, sheenTint, clearcoat,
                                               clearcoatGloss, specTrans, scatterDistance, ior, flatness, sun_dir,
                                               -normalize(inDir), T, B, N, thin > 0.5f, flag == DisneyBSDF::transmissionEvent ? inToOut : prd->is_inside, ffPdf, rrPdf,dot(N, float3(sun_dir)));
-    prd->radiance += shadow_prd2.shadowAttanuation * float3(proceduralSky2(sun_dir, sunLightDir, params.elapsedTime)) * lbrdf;
+    prd->radiance += shadow_prd2.shadowAttanuation * float3(proceduralSky(sun_dir, sunLightDir, params.elapsedTime)) * lbrdf;
     prd->radiance +=  float3(mats.emission);
 }
 
