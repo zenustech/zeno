@@ -62,6 +62,8 @@ private:
     void initMenu();
     void initDocks();
     void initDocksWidget(ZTabDockWidget* pCake, PtrLayoutNode root);
+    void _resizeDocks(PtrLayoutNode root);
+    void initTimelineDock();
     void adjustDockSize();
     void recordRecentFile(const QString& filePath);
     void saveLayout2();

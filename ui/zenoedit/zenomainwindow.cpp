@@ -187,8 +187,6 @@ void ZenoMainWindow::initMenu() {
         QAction* pSaveLayout = new QAction(tr("Save Layout"));
         connect(pSaveLayout, &QAction::triggered, this, [=]() {
             bool bOk = false;
-            saveLayout2();
-            return;
             QString name = QInputDialog::getText(this, tr("Save Layout"), tr("layout name:"),
                                                         QLineEdit::Normal, "layout_1", &bOk);
             if (bOk) {
@@ -210,42 +208,19 @@ void ZenoMainWindow::initMenu() {
         });
         pView->addAction(pSaveLayout);
 
+        QAction *pSaveLayout2 = new QAction(tr("Save Layout2"));
+        connect(pSaveLayout2, &QAction::triggered, this, [=]() {
+            saveLayout2();
+        });
+        pView->addAction(pSaveLayout2);
+
         //check user saved layout.
         QSettings settings(QSettings::UserScope, zsCompanyName, zsEditor);
         settings.beginGroup("layout");
         QStringList lst = settings.childGroups();
-        if (true/*!lst.isEmpty()*/)
+        if (!lst.isEmpty())
         {
             QMenu* pCustomLayout = new QMenu(tr("Custom Layout"));
-
-            QAction *pTestAction = new QAction(tr("Test Layout io"));
-
-            connect(pTestAction, &QAction::triggered, this, [=]() {
-                DlgInEventLoopScope;
-                const QString &initialPath = ".";
-                QFileDialog fileDialog(this, tr("Open"), initialPath, "JSON file(*.json);;");
-                fileDialog.setAcceptMode(QFileDialog::AcceptOpen);
-                fileDialog.setFileMode(QFileDialog::ExistingFile);
-                fileDialog.setDirectory(initialPath);
-                if (fileDialog.exec() != QDialog::Accepted)
-                    return "";
-
-                QString filePath = fileDialog.selectedFiles().first();
-
-                m_layerRoot.reset();
-                auto docks = findChildren<ZTabDockWidget *>(QString(), Qt::FindDirectChildrenOnly);
-                for (ZTabDockWidget *pDock : docks) {
-                    pDock->close();
-                    delete pDock;
-                }
-
-                m_layerRoot = readLayout(filePath);
-                ZTabDockWidget* cake = new ZTabDockWidget(this);
-                addDockWidget(Qt::TopDockWidgetArea, cake);
-                initDocksWidget(cake, m_layerRoot);
-            });
-
-            /*
             for (QString name : lst)
             {
                 QAction *pCustomLayout_ = new QAction(name);
@@ -261,9 +236,37 @@ void ZenoMainWindow::initMenu() {
                 pCustomLayout->addAction(pCustomLayout_);
             }
             pView->addMenu(pCustomLayout);
-            */
-            pView->addAction(pTestAction);
         }
+
+        QAction* pTestAction = new QAction(tr("Test Layout io"));
+        connect(pTestAction, &QAction::triggered, this, [=]() {
+            DlgInEventLoopScope;
+            const QString &initialPath = ".";
+            QFileDialog fileDialog(this, tr("Open"), initialPath, "JSON file(*.json);;");
+            fileDialog.setAcceptMode(QFileDialog::AcceptOpen);
+            fileDialog.setFileMode(QFileDialog::ExistingFile);
+            fileDialog.setDirectory(initialPath);
+            if (fileDialog.exec() != QDialog::Accepted)
+                return "";
+
+            QString filePath = fileDialog.selectedFiles().first();
+
+            m_layerRoot.reset();
+            auto docks = findChildren<ZTabDockWidget *>(QString(), Qt::FindDirectChildrenOnly);
+            for (ZTabDockWidget *pDock : docks) {
+                pDock->close();
+                delete pDock;
+            }
+
+            m_layerRoot = readLayout(filePath);
+            ZTabDockWidget *cake = new ZTabDockWidget(this);
+            addDockWidget(Qt::TopDockWidgetArea, cake);
+            initDocksWidget(cake, m_layerRoot);
+            _resizeDocks(m_layerRoot);
+            layout()->invalidate();
+            update();
+        });
+        pView->addAction(pTestAction);
     }
 
     //QMenu *pWindow = new QMenu(tr("Window"));
@@ -321,6 +324,22 @@ void ZenoMainWindow::onDockLocationChanged(Qt::DockWidgetArea area)
     j = 0;
 }
 
+void ZenoMainWindow::_resizeDocks(PtrLayoutNode root)
+{
+    if (!root)
+        return;
+
+    if (root->type == NT_ELEM)
+    {
+        resizeDocks({root->pWidget}, {root->geom.width()}, Qt::Horizontal);
+        resizeDocks({root->pWidget}, {root->geom.height()}, Qt::Vertical);
+    }
+    else{
+        _resizeDocks(root->pLeft);
+        _resizeDocks(root->pRight);
+    }
+}
+
 void ZenoMainWindow::initDocksWidget(ZTabDockWidget* pLeft, PtrLayoutNode root)
 {
     if (!root)
@@ -329,19 +348,20 @@ void ZenoMainWindow::initDocksWidget(ZTabDockWidget* pLeft, PtrLayoutNode root)
     if (root->type == NT_HOR || root->type == NT_VERT)
     {
         ZTabDockWidget* pRight = new ZTabDockWidget(this);
-        splitDockWidget(pLeft, pRight, root->type == NT_HOR ? Qt::Horizontal : Qt::Vertical);
+        Qt::Orientation ori = root->type == NT_HOR ? Qt::Horizontal : Qt::Vertical;
+        splitDockWidget(pLeft, pRight, ori);
         initDocksWidget(pLeft, root->pLeft);
         initDocksWidget(pRight, root->pRight);
     }
     else if (root->type == NT_ELEM)
     {
+        root->pWidget = pLeft;
         for (QString tab : root->tabs)
         {
             PANEL_TYPE type = ZTabDockWidget::title2Type(tab);
-            if (type != PANEL_EMPTY) {
+            if (type != PANEL_EMPTY)
+            {
                 pLeft->onAddTab(type);
-                root->pWidget = pLeft;
-                root->pWidget->setGeometry(root->geom);
             }
         }
     }
@@ -349,8 +369,6 @@ void ZenoMainWindow::initDocksWidget(ZTabDockWidget* pLeft, PtrLayoutNode root)
 
 void ZenoMainWindow::initDocks()
 {
-    //setDockNestingEnabled(true);
-
     m_layerRoot = std::make_shared<LayerOutNode>();
     m_layerRoot->type = NT_ELEM;
 
@@ -371,17 +389,18 @@ void ZenoMainWindow::initDocks()
     editorDock->setObjectName("editorDock");
 
     addDockWidget(Qt::TopDockWidgetArea, viewDock);
+    initTimelineDock();
     m_layerRoot->type = NT_ELEM;
     m_layerRoot->pWidget = viewDock;
 
     SplitDockWidget(viewDock, editorDock, Qt::Vertical);
     SplitDockWidget(viewDock, logDock, Qt::Horizontal);
     SplitDockWidget(editorDock, paramDock, Qt::Horizontal);
+}
 
-    //splitDockWidget(editorDock, paramDock, Qt::Horizontal);
-    //splitDockWidget(viewDock, logDock, Qt::Horizontal);
-
-    QDockWidget* pTimelineDock = new QDockWidget;
+void ZenoMainWindow::initTimelineDock()
+{
+    QDockWidget *pTimelineDock = new QDockWidget;
     m_pTimeline = new ZTimeline;
     pTimelineDock->setWidget(m_pTimeline);
     pTimelineDock->setTitleBarWidget(new QWidget(pTimelineDock));
@@ -556,7 +575,7 @@ void ZenoMainWindow::onNewFile() {
 void ZenoMainWindow::resizeEvent(QResizeEvent *event)
 {
     QMainWindow::resizeEvent(event);
-    //adjustDockSize();
+    _resizeDocks(m_layerRoot);
 }
 
 void ZenoMainWindow::adjustDockSize() {

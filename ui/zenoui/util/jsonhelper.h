@@ -7,6 +7,7 @@
 #include <QtWidgets>
 
 typedef rapidjson::Writer<rapidjson::StringBuffer> RAPIDJSON_WRITER;
+typedef rapidjson::PrettyWriter<rapidjson::StringBuffer> PRETTY_WRITER;
 
 class JsonObjBatch
 {

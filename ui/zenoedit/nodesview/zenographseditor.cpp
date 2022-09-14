@@ -48,7 +48,7 @@ void ZenoGraphsEditor::initUI()
 
     m_ui->splitter->setStretchFactor(1, 5);
 
-    m_ui->mainStackedWidget->setCurrentWidget(m_ui->welcomePage);
+    m_ui->mainStackedWidget->setCurrentWidget(m_ui->welcomeScrollPage);
     m_ui->stackedWidget->setCurrentIndex(0);
 
     m_ui->graphsViewTab->setFont(QFont("Segoe UI", 12));  //bug in qss font setting.
@@ -140,7 +140,7 @@ void ZenoGraphsEditor::resetModel(IGraphsModel* pModel)
 
 void ZenoGraphsEditor::onModelCleared()
 {
-    m_ui->mainStackedWidget->setCurrentWidget(m_ui->welcomePage);
+    m_ui->mainStackedWidget->setCurrentWidget(m_ui->welcomeScrollPage);
 }
 
 void ZenoGraphsEditor::onSubGraphsToRemove(const QModelIndex& parent, int first, int last)

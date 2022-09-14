@@ -55,7 +55,7 @@ PtrLayoutNode findParent(PtrLayoutNode root, ZTabDockWidget* pWidget)
     return nullptr;
 }
 
-static void _writeLayout(PtrLayoutNode root, RAPIDJSON_WRITER& writer)
+static void _writeLayout(PtrLayoutNode root, PRETTY_WRITER& writer)
 {
     JsonObjBatch scope(writer);
     if (root->type == NT_HOR || root->type == NT_VERT)
@@ -134,7 +134,8 @@ void writeLayout(PtrLayoutNode root, const QString &filePath)
     }
 
     rapidjson::StringBuffer s;
-    RAPIDJSON_WRITER writer(s);
+    PRETTY_WRITER writer(s);
+
     _writeLayout(root, writer);
     QString strJson = QString::fromUtf8(s.GetString());
     f.write(strJson.toUtf8());
@@ -197,3 +198,37 @@ PtrLayoutNode readLayout(const QString& filePath)
 
     return _readLayout(doc.GetObject());
 }
+
+int getDockSize(PtrLayoutNode root, bool bHori)
+{
+    if (!root)
+        return 0;
+
+    if (root->type == NT_ELEM)
+    {
+        return bHori ? root->geom.width() : root->geom.height();
+    }
+    else if (root->type == NT_HOR)
+    {
+        if (bHori) {
+            return getDockSize(root->pLeft, true) + 4 + getDockSize(root->pRight, true);
+        }
+        else {
+            return getDockSize(root->pLeft, false);
+        }
+    }
+    else if (root->type == NT_VERT)
+    {
+        if (bHori) {
+            return getDockSize(root->pLeft, true);
+        }
+        else {
+            return getDockSize(root->pLeft, false) + 4 + getDockSize(root->pRight, false);
+        }
+    }
+    else
+    {
+        return 0;
+    }
+}
+

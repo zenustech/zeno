@@ -29,6 +29,6 @@ PtrLayoutNode findNode(PtrLayoutNode root, ZTabDockWidget *pWidget);
 PtrLayoutNode findParent(PtrLayoutNode root, ZTabDockWidget *pWidget);
 void writeLayout(PtrLayoutNode root, const QString& filePath);
 PtrLayoutNode readLayout(const QString& filePath);
-
+int getDockSize(PtrLayoutNode root, bool bHori);
 
 #endif
