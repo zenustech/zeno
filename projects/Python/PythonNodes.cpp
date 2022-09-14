@@ -14,6 +14,7 @@
 #include <zeno_Python_config.h>
 #include <cwchar>
 #include <utility>
+#include <thread>
 
 namespace zeno {
 
@@ -144,21 +145,19 @@ static Zeno_Object factoryFunctionObject(void *inObj_) {
 
 static int defFunctionObjectFactory = capiRegisterObjectFactory("FunctionObject", factoryFunctionObject);
 
-static PyObject *zeno_pycfunc_funcobj_entry(PyObject *unusedSelfPtr_, PyObject *unusedListArgs_, PyObject *pyKwargs_) noexcept {
+static PyObject *callFunctionObjectCFunc(PyObject **pyHandleAndKwargs_) noexcept {
     PyObject *ret = Py_None;
+    PyObject *pyHandleVal = pyHandleAndKwargs_[0];
+    PyObject *pyKwargs = pyHandleAndKwargs_[1];
     Zeno_Error err = capiLastErrorCatched([&] {
-        PyObject *zenoMod = PyImport_AddModule("ze");
-        PyObject *zenoModDict = PyModule_GetDict(zenoMod);
-        PyObject *pyHandleVal = PyDict_GetItemString(zenoModDict, "_tmpfunchandle");
-        if (!pyHandleVal) throw makeError("failed to get function object handle (ze._tmpfunchandle)");
         Zeno_Object obj = PyLong_AsUnsignedLongLong(pyHandleVal);
         auto *objFunc = safe_dynamic_cast<FunctionObject>(capiFindObjectSharedPtr(obj).get(), "pycfunc_funcobj_entry");
         FunctionObject::DictType objParams;
         {
             PyObject *key, *value;
             Py_ssize_t pos = 0;
-            if (!PyDict_Check(pyKwargs_)) throw makeError("expect to pyArgs_ be an dict");
-            while (PyDict_Next(pyKwargs_, &pos, &key, &value)) {
+            if (!PyDict_Check(pyKwargs)) throw makeError("expect to pyArgs_ be an dict");
+            while (PyDict_Next(pyKwargs, &pos, &key, &value)) {
                 Py_ssize_t keyLen = 0;
                 const char *keyDat = PyUnicode_AsUTF8AndSize(key, &keyLen);
                 if (keyDat == nullptr) {
@@ -178,7 +177,7 @@ static PyObject *zeno_pycfunc_funcobj_entry(PyObject *unusedSelfPtr_, PyObject *
             Py_DECREF(pyRetDict);
         };
         for (auto const &[k, v]: objParams) {
-            auto handleObj = PyLong_FromUnsignedLongLong(capiLoadObjectSharedPtr(v));
+            PyObject *handleObj = PyLong_FromUnsignedLongLong(capiLoadObjectSharedPtr(v));
             PyDict_SetItemString(pyRetDict, k.c_str(), handleObj);
         }
         pyRetDictDel.release();
@@ -188,25 +187,17 @@ static PyObject *zeno_pycfunc_funcobj_entry(PyObject *unusedSelfPtr_, PyObject *
     return ret;
 }
 
+static int defCallFunctionObjectCFunc = capiRegisterCFunctionPtr("FunctionObject_call", reinterpret_cast<void *(*)(void *)>(callFunctionObjectCFunc));
+
 static void *defactoryFunctionObject(Zeno_Object inHandle_) {
     auto objSp = capiFindObjectSharedPtr(inHandle_);
     auto funcObj = dynamic_cast<FunctionObject *>(objSp.get());
     if (!funcObj) throw makeError<TypeError>(typeid(FunctionObject), typeid(*objSp),
                                              "convert from zeno function to python function");
-    PyObject *selfPtr = PyDict_New();
+    //PyObject *selfPtr = PyDict_New();
     PyObject *pyHandleVal = PyLong_FromUnsignedLongLong(inHandle_);
     if (!pyHandleVal) throw makeError("failed to invoke PyLong_FromUnsignedLongLong");
-    PyObject *zenoMod = PyImport_AddModule("ze");
-    PyObject *zenoModDict = PyModule_GetDict(zenoMod);
-    PyDict_SetItemString(zenoModDict, "_tmpfunchandle", pyHandleVal);
-    Py_DECREF(pyHandleVal);
-    PyMethodDef pyCFuncDef;
-    pyCFuncDef.ml_doc = "zeno_pycfunc_funcobj_entry";
-    pyCFuncDef.ml_flags = METH_VARARGS | METH_KEYWORDS;
-    pyCFuncDef.ml_meth = reinterpret_cast<PyCFunction>(zeno_pycfunc_funcobj_entry);
-    pyCFuncDef.ml_name = "zeno_pycfunc_funcobj_entry";
-    PyObject *pycfunc = PyCFunction_New(&pyCFuncDef, NULL);
-    return reinterpret_cast<void *>(pycfunc);
+    return reinterpret_cast<void *>(pyHandleVal);
 }
 
 static int defFunctionObjectDefactory = capiRegisterObjectDefactory("FunctionObject", defactoryFunctionObject);

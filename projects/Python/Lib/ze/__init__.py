@@ -61,6 +61,7 @@ def initDLLPath(path: str):
     define(ctypes.c_uint32, 'Zeno_ResizeObjectPrimData', ctypes.c_uint64, ctypes.c_int, ctypes.c_size_t)
     define(ctypes.c_uint32, 'Zeno_InvokeObjectFactory', ctypes.POINTER(ctypes.c_uint64), ctypes.c_char_p, ctypes.py_object)
     define(ctypes.c_uint32, 'Zeno_InvokeObjectDefactory', ctypes.c_uint64, ctypes.c_char_p, ctypes.POINTER(ctypes.py_object))
+    define(ctypes.c_uint32, 'Zeno_InvokeCFunctionPtr', ctypes.POINTER(ctypes.py_object), ctypes.c_char_p, ctypes.POINTER(ctypes.py_object))
 
 
 class ZenoObject:
@@ -123,12 +124,16 @@ class ZenoObject:
         return cls(cls.__create_key, cls._makeSomeObject('FunctionObject', wrappedFunc))
 
     def asFunc(self) -> Callable:
-        fetchedFunc: Callable = self._fetchSomeObject('FunctionObject', self._handle)
-        @functools.wraps(fetchedFunc)
+        fetchedHandle: int = self._fetchSomeObject('FunctionObject', self._handle)
+        assert isinstance(fetchedHandle, int), fetchedHandle
         def wrappedFunc(**kwargs: dict[str, Union[Literial, 'ZenoObject']]) -> _MappingProxyWrapper:
             argObjsRAII = {k: ZenoObject.fromLiterial(v) for k, v in kwargs.items()}  # type: ignore
-            argHandles = {k: v.toHandle() for k, v in argObjsRAII.items()}  # type: ignore
-            retHandles = fetchedFunc(**argHandles)
+            argHandles = {k: v.toHandle() for k, v in argObjsRAII.items()}
+            pyHandleAndKwargs_ = (ctypes.py_object * 2)(fetchedHandle, argHandles)
+            pyRetHandles_ = ctypes.py_object()
+            api.Zeno_InvokeCFunctionPtr(pyHandleAndKwargs_, ctypes.c_char_p('FunctionObject_call'.encode()), ctypes.pointer(pyRetHandles_))
+            retHandles = pyRetHandles_.value
+            assert retHandles is not None
             del argObjsRAII
             return _MappingProxyWrapper({k: ZenoObject.fromHandle(v).toLiterial() for k, v in retHandles.items()})
         return wrappedFunc
