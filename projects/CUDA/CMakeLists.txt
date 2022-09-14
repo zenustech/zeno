@@ -132,7 +132,8 @@ target_sources(zeno PRIVATE
 # )
 
 # wrangler
-if(NOT MSVC)
+#if(NOT MSVC)
+if(TRUE)
   target_sources(zeno PRIVATE
     mpm/PW.cu
     mpm/PNW.cu
