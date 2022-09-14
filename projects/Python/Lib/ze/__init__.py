@@ -124,18 +124,20 @@ class ZenoObject:
         return cls(cls.__create_key, cls._makeSomeObject('FunctionObject', wrappedFunc))
 
     def asFunc(self) -> Callable:
-        fetchedHandle: int = self._fetchSomeObject('FunctionObject', self._handle)
-        assert isinstance(fetchedHandle, int), fetchedHandle
+        fetchedHandleVal: int = self._fetchSomeObject('FunctionObject', self._handle)
+        fetchedObjRAII = ZenoObject.fromHandle(fetchedHandleVal)
         def wrappedFunc(**kwargs: dict[str, Union[Literial, 'ZenoObject']]) -> _MappingProxyWrapper:
             argObjsRAII = {k: ZenoObject.fromLiterial(v) for k, v in kwargs.items()}  # type: ignore
             argHandles = {k: v.toHandle() for k, v in argObjsRAII.items()}
+            fetchedHandle = fetchedObjRAII.toHandle()
             pyHandleAndKwargs_ = (ctypes.py_object * 2)(fetchedHandle, argHandles)
             pyRetHandles_ = ctypes.py_object()
             api.Zeno_InvokeCFunctionPtr(pyHandleAndKwargs_, ctypes.c_char_p('FunctionObject_call'.encode()), ctypes.pointer(pyRetHandles_))
             retHandles = pyRetHandles_.value
             assert retHandles is not None
             del argObjsRAII
-            return _MappingProxyWrapper({k: ZenoObject.fromHandle(v).toLiterial() for k, v in retHandles.items()})
+            retProxy = _MappingProxyWrapper({k: ZenoObject.fromHandle(v).toLiterial() for k, v in retHandles.items()})
+            return retProxy
         return wrappedFunc
 
     @classmethod

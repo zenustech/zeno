@@ -145,46 +145,41 @@ static Zeno_Object factoryFunctionObject(void *inObj_) {
 
 static int defFunctionObjectFactory = capiRegisterObjectFactory("FunctionObject", factoryFunctionObject);
 
-static PyObject *callFunctionObjectCFunc(PyObject **pyHandleAndKwargs_) noexcept {
-    PyObject *ret = Py_None;
+static PyObject *callFunctionObjectCFunc(PyObject **pyHandleAndKwargs_) {
     PyObject *pyHandleVal = pyHandleAndKwargs_[0];
     PyObject *pyKwargs = pyHandleAndKwargs_[1];
-    Zeno_Error err = capiLastErrorCatched([&] {
-        Zeno_Object obj = PyLong_AsUnsignedLongLong(pyHandleVal);
-        auto *objFunc = safe_dynamic_cast<FunctionObject>(capiFindObjectSharedPtr(obj).get(), "pycfunc_funcobj_entry");
-        FunctionObject::DictType objParams;
-        {
-            PyObject *key, *value;
-            Py_ssize_t pos = 0;
-            if (!PyDict_Check(pyKwargs)) throw makeError("expect to pyArgs_ be an dict");
-            while (PyDict_Next(pyKwargs, &pos, &key, &value)) {
-                Py_ssize_t keyLen = 0;
-                const char *keyDat = PyUnicode_AsUTF8AndSize(key, &keyLen);
-                if (keyDat == nullptr) {
-                    throw makeError("failed to cast rets key as string");
-                }
-                std::string keyStr(keyDat, keyLen);
-                Zeno_Object handle = PyLong_AsUnsignedLongLong(value);
-                if (handle == -1 && PyErr_Occurred()) {
-                    throw makeError("failed to cast rets value as integer");
-                }
-                objParams.emplace(std::move(keyStr), capiFindObjectSharedPtr(handle));
+    Zeno_Object obj = PyLong_AsUnsignedLongLong(pyHandleVal);
+    auto *objFunc = safe_dynamic_cast<FunctionObject>(capiFindObjectSharedPtr(obj).get(), "pycfunc_funcobj_entry");
+    FunctionObject::DictType objParams;
+    {
+        PyObject *key, *value;
+        Py_ssize_t pos = 0;
+        if (!PyDict_Check(pyKwargs)) throw makeError("expect to pyArgs_ be an dict");
+        while (PyDict_Next(pyKwargs, &pos, &key, &value)) {
+            Py_ssize_t keyLen = 0;
+            const char *keyDat = PyUnicode_AsUTF8AndSize(key, &keyLen);
+            if (keyDat == nullptr) {
+                throw makeError("failed to cast rets key as string");
             }
+            std::string keyStr(keyDat, keyLen);
+            Zeno_Object handle = PyLong_AsUnsignedLongLong(value);
+            if (handle == -1 && PyErr_Occurred()) {
+                throw makeError("failed to cast rets value as integer");
+            }
+            objParams.emplace(std::move(keyStr), capiFindObjectSharedPtr(handle));
         }
-        objParams = objFunc->call(objParams);
-        PyObject *pyRetDict = PyDict_New();
-        scope_exit pyRetDictDel = [=] {
-            Py_DECREF(pyRetDict);
-        };
-        for (auto const &[k, v]: objParams) {
-            PyObject *handleObj = PyLong_FromUnsignedLongLong(capiLoadObjectSharedPtr(v));
-            PyDict_SetItemString(pyRetDict, k.c_str(), handleObj);
-        }
-        pyRetDictDel.release();
-        ret = pyRetDict;
-    });
-    if (err) return Py_None;
-    return ret;
+    }
+    objParams = objFunc->call(objParams);
+    PyObject *pyRetDict = PyDict_New();
+    scope_exit pyRetDictDel = [=] {
+        Py_DECREF(pyRetDict);
+    };
+    for (auto const &[k, v]: objParams) {
+        PyObject *handleObj = PyLong_FromUnsignedLongLong(capiLoadObjectSharedPtr(v));
+        PyDict_SetItemString(pyRetDict, k.c_str(), handleObj);
+    }
+    pyRetDictDel.release();
+    return pyRetDict;
 }
 
 static int defCallFunctionObjectCFunc = capiRegisterCFunctionPtr("FunctionObject_call", reinterpret_cast<void *(*)(void *)>(callFunctionObjectCFunc));
