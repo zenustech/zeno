@@ -195,7 +195,7 @@ extern "C" __global__ void __miss__radiance()
         return;
     }
     prd->attenuation *= DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
-    //prd->attenuation2 *= DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
+    prd->attenuation2 *= DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
     prd->origin += prd->direction * optixGetRayTmax();
     prd->direction = DisneyBSDF::SampleScatterDirection(prd->seed);
     float tmpPDF;
