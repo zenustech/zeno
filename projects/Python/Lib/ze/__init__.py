@@ -134,6 +134,7 @@ class ZenoObject:
             pyRetHandles_ = ctypes.py_object()
             api.Zeno_InvokeCFunctionPtr(ctypes.py_object(pyHandleAndKwargs_), ctypes.c_char_p('FunctionObject_call'.encode()), ctypes.pointer(pyRetHandles_))
             retHandles = pyRetHandles_.value
+            return retHandles
             assert retHandles is not None
             del argObjsRAII
             retProxy = _MappingProxyWrapper({k: ZenoObject.fromHandle(v).toLiterial() for k, v in retHandles.items()})

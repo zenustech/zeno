@@ -149,7 +149,7 @@ static PyObject *callFunctionObjectCFunc(PyObject *pyHandleAndKwargs_) {
     PyObject *pyHandleVal = PyTuple_GetItem(pyHandleAndKwargs_, 0);
     PyObject *pyKwargs = PyTuple_GetItem(pyHandleAndKwargs_, 1);
     Zeno_Object obj = PyLong_AsUnsignedLongLong(pyHandleVal);
-    auto *objFunc = safe_dynamic_cast<FunctionObject>(capiFindObjectSharedPtr(obj).get(), "pycfunc_funcobj_entry");
+    auto *objFunc = safe_dynamic_cast<FunctionObject>(capiFindObjectSharedPtr(obj).get(), "callFunctionObjectCFunc");
     FunctionObject::DictType objParams;
     {
         PyObject *key, *value;
@@ -170,16 +170,12 @@ static PyObject *callFunctionObjectCFunc(PyObject *pyHandleAndKwargs_) {
         }
     }
     objParams = objFunc->call(objParams);
-    PyObject *pyRetDict = PyDict_New();
-    scope_exit pyRetDictDel = [=] {
-        Py_DECREF(pyRetDict);
-    };
+    PyDict_Clear(pyKwargs);
     for (auto const &[k, v]: objParams) {
         PyObject *handleObj = PyLong_FromUnsignedLongLong(capiLoadObjectSharedPtr(v));
-        PyDict_SetItemString(pyRetDict, k.c_str(), handleObj);
+        PyDict_SetItemString(pyKwargs, k.c_str(), handleObj);
     }
-    pyRetDictDel.release();
-    return pyRetDict;
+    return pyKwargs;
 }
 
 static int defCallFunctionObjectCFunc = capiRegisterCFunctionPtr("FunctionObject_call", reinterpret_cast<void *(*)(void *)>(callFunctionObjectCFunc));
