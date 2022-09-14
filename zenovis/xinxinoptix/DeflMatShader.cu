@@ -1009,7 +1009,17 @@ extern "C" __global__ void __closesthit__radiance()
                                               specularTint, anisotropic, sheen, sheenTint, clearcoat,
                                               clearcoatGloss, specTrans, scatterDistance, ior, flatness, sun_dir,
                                               -normalize(inDir), T, B, N, thin > 0.5f, flag == DisneyBSDF::transmissionEvent ? inToOut : prd->is_inside, ffPdf, rrPdf,dot(N, float3(sun_dir)));
-    prd->radiance += shadow_prd2.shadowAttanuation * float3(proceduralSky2(sun_dir, sunLightDir, params.elapsedTime)) * lbrdf;
+    prd->radiance += shadow_prd2.shadowAttanuation * 
+        float3(proceduralSky(
+            sun_dir, 
+            sunLightDir, 
+            make_float3(0., 0., 1.), 
+            40, // be careful
+            .5,
+            15., 
+            1.030725 * 0.3,
+            params.elapsedTime
+        )) * lbrdf;
     prd->radiance +=  float3(mats.emission);
 }
 
