@@ -451,6 +451,12 @@ static void launchSubframe( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Path
         state.params.sunLightDirX = cos(sunLightDir[1] / 180.f * M_PI) * sin(sunLightDir[0] / 180.f * M_PI);
         state.params.sunLightDirZ = cos(sunLightDir[1] / 180.f * M_PI) * cos(sunLightDir[0] / 180.f * M_PI);
 
+        auto windDir = ud.get2<zeno::vec2f>("windDir", zeno::vec2f(0, 0));
+        windDir[1] = clamp(windDir[1], -90.f, 90.f);
+        state.params.windDirY = sin(windDir[1] / 180.f * M_PI);
+        state.params.windDirX = cos(windDir[1] / 180.f * M_PI) * sin(windDir[0] / 180.f * M_PI);
+        state.params.windDirZ = cos(windDir[1] / 180.f * M_PI) * cos(windDir[0] / 180.f * M_PI);
+
         float sunSoftness = ud.get2<float>("sunSoftness", 1.0f);
         state.params.sunSoftness = clamp(sunSoftness, 0.01f, 1.0f);
 
