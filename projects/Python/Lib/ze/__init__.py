@@ -134,7 +134,6 @@ class ZenoObject:
             pyRetHandles_ = ctypes.py_object()
             api.Zeno_InvokeCFunctionPtr(ctypes.py_object(pyHandleAndKwargs_), ctypes.c_char_p('FunctionObject_call'.encode()), ctypes.pointer(pyRetHandles_))
             retHandles = pyRetHandles_.value
-            return retHandles
             assert retHandles is not None
             del argObjsRAII
             retProxy = _MappingProxyWrapper({k: ZenoObject.fromHandle(v).toLiterial() for k, v in retHandles.items()})
@@ -290,6 +289,27 @@ class _MappingProxyWrapper:
 
     def __getitem__(self, key: str) -> Union[Literial, ZenoObject]:
         return self._prox[key]
+
+    def __contains__(self, key: str) -> bool:
+        return key in self._prox
+
+    def keys(self) -> Iterable[str]:
+        return self._prox.keys()
+
+    def values(self) -> Iterable[Union[Literial, ZenoObject]]:
+        return self._prox.values()
+
+    def items(self) -> Iterable[tuple[str, Union[Literial, ZenoObject]]]:
+        return self._prox.items()
+
+    def __iter__(self) -> Iterable[str]:
+        return iter(self._prox)
+
+    def __len__(self) -> int:
+        return len(self._prox)
+
+    def __repr__(self) -> int:
+        return repr(self._prox)
 
 
 class ZenoPrimitiveObject(ZenoObject):
