@@ -33,6 +33,7 @@ set(ZENO_EXTENSIONS
     GUI
     PBD
     Python
+    ZenoAR
     )
 
 foreach (name IN ITEMS ${ZENO_EXTENSIONS})
