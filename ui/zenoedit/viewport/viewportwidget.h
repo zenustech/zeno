@@ -61,7 +61,7 @@ public:
     QVector3D screenToWorldRay(float x, float y) const;
     QVariant hitOnFloor(float x, float y) const;
     void clearTransformer();
-    void changeTransformOperation();
+    void changeTransformOperation(int mode);
 
 private:
     bool m_mmb_pressed;
@@ -98,7 +98,7 @@ public:
     void updatePerspective();
     void updateCameraProp(float aperture, float disPlane);
     void clearTransformer();
-    void changeTransformOperation();
+    void changeTransformOperation(int mode);
 
 signals:
     void frameRecorded(int);

@@ -116,8 +116,20 @@ void CameraControl::clearTransformer() {
     transformer->clear();
 }
 
-void CameraControl::changeTransformOperation() {
-    transformer->changeOperation();
+void CameraControl::changeTransformOperation(int mode) {
+    switch (mode) {
+    case 0:
+        transformer->toTranslate();
+        break;
+    case 1:
+        transformer->toRotate();
+        break;
+    case 2:
+        transformer->toScale();
+        break;
+    default:
+        break;
+    }
     zenoApp->getMainWindow()->updateViewport();
 }
 
@@ -540,8 +552,8 @@ void ViewportWidget::clearTransformer() {
     m_camera->clearTransformer();
 }
 
-void ViewportWidget::changeTransformOperation() {
-    m_camera->changeTransformOperation();
+void ViewportWidget::changeTransformOperation(int mode) {
+    m_camera->changeTransformOperation(mode);
 }
 
 void ViewportWidget::updateCameraProp(float aperture, float disPlane) {
@@ -826,7 +838,11 @@ void DisplayWidget::onRun()
 
 void DisplayWidget::keyPressEvent(QKeyEvent* event) {
     if (event->key() == Qt::Key_T)
-        m_view->changeTransformOperation();
+        m_view->changeTransformOperation(0);
+    if (event->key() == Qt::Key_R)
+        m_view->changeTransformOperation(1);
+    if (event->key() == Qt::Key_E)
+        m_view->changeTransformOperation(2);
 }
 
 void DisplayWidget::keyReleaseEvent(QKeyEvent* event) {

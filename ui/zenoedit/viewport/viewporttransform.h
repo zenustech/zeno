@@ -39,7 +39,9 @@ class FakeTransformer {
     void startTransform();
     void endTransform(bool moved);
     bool isTransforming() const;
-    void changeOperation();
+    void toTranslate();
+    void toRotate();
+    void toScale();
     bool isTransformMode() const;
     glm::vec3 getCenter() const;
     void clear();

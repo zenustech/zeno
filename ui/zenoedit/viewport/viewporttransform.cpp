@@ -291,25 +291,41 @@ bool FakeTransformer::isTransforming() const {
     return m_status;
 }
 
-void FakeTransformer::changeOperation() {
-    auto scene = Zenovis::GetInstance().getSession()->get_scene();
-    if (m_operation == SCALE)
+void FakeTransformer::toTranslate() {
+    if (m_operation == TRANSLATE) {
         m_operation = NONE;
-    else
-        m_operation += 1;
-    switch (m_operation) {
-    case TRANSLATE:
-        m_handler = zenovis::makeTransHandler(scene,zeno::other_to_vec<3>(m_objects_center));
-        break;
-    case ROTATE:
-        m_handler = zenovis::makeRotateHandler(scene, zeno::other_to_vec<3>(m_objects_center));
-        break;
-    case SCALE:
-        m_handler = zenovis::makeScaleHandler(scene,zeno::other_to_vec<3>(m_objects_center));
-        break;
-    case NONE:
         m_handler = std::shared_ptr<zenovis::IGraphicHandler>(nullptr);
-        break;
+    }
+    else {
+        m_operation = TRANSLATE;
+        auto scene = Zenovis::GetInstance().getSession()->get_scene();
+        m_handler = zenovis::makeTransHandler(scene,zeno::other_to_vec<3>(m_objects_center));
+    }
+    Zenovis::GetInstance().getSession()->set_handler(m_handler);
+}
+
+void FakeTransformer::toRotate() {
+    if (m_operation == ROTATE) {
+        m_operation = NONE;
+        m_handler = std::shared_ptr<zenovis::IGraphicHandler>(nullptr);
+    }
+    else {
+        m_operation = ROTATE;
+        auto scene = Zenovis::GetInstance().getSession()->get_scene();
+        m_handler = zenovis::makeRotateHandler(scene, zeno::other_to_vec<3>(m_objects_center));
+    }
+    Zenovis::GetInstance().getSession()->set_handler(m_handler);
+}
+
+void FakeTransformer::toScale() {
+    if (m_operation == SCALE) {
+        m_operation = NONE;
+        m_handler = std::shared_ptr<zenovis::IGraphicHandler>(nullptr);
+    }
+    else {
+        m_operation = SCALE;
+        auto scene = Zenovis::GetInstance().getSession()->get_scene();
+        m_handler = zenovis::makeScaleHandler(scene,zeno::other_to_vec<3>(m_objects_center));
     }
     Zenovis::GetInstance().getSession()->set_handler(m_handler);
 }
