@@ -10,7 +10,6 @@ class ZenoMainWindow;
 #if defined(ZENO_MULTIPROCESS) && defined(ZENO_IPC_USE_TCP)
 class ZTcpServer;
 #endif
-class GraphsModel;
 
 class ZenoApplication : public QApplication
 {
@@ -21,8 +20,6 @@ public:
     GraphsManagment *graphsManagment() const;
     void initFonts();
     void initStyleSheets();
-    void setIOProcessing(bool bIOProcessing);
-    bool IsIOProcessing() const;
     ZenoMainWindow* getMainWindow();
 	QWidget* getWindow(const QString& objName);
 #if defined(ZENO_MULTIPROCESS) && defined(ZENO_IPC_USE_TCP)
@@ -33,12 +30,10 @@ public:
 private:
     QString readQss(const QString& qssPath);
 
-    GraphsManagment *m_pGraphs;
     ZWidgetErrStream m_errSteam;
 #if defined(ZENO_MULTIPROCESS) && defined(ZENO_IPC_USE_TCP)
     ZTcpServer* m_server;
 #endif
-    bool m_bIOProcessing;
     QDir m_appDataPath;
 };
 

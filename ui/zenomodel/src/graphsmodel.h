@@ -4,10 +4,9 @@
 #include <QStandardItemModel>
 #include <QItemSelectionModel>
 
-#include <zenoui/include/igraphsmodel.h>
-#include "../nodesys/zenosubgraphscene.h"
+#include <zenomodel/include/igraphsmodel.h>
 #include "subgraphmodel.h"
-#include <zenoui/model/modeldata.h>
+#include "modeldata.h"
 #include <stack>
 
 class SubGraphModel;
@@ -25,13 +24,6 @@ class GraphsModel : public IGraphsModel
     Q_OBJECT
     typedef IGraphsModel _base;
 
-    struct SUBMODEL_SCENE
-    {
-        SubGraphModel* pModel;
-        ZenoSubGraphScene* pScene;
-        SUBMODEL_SCENE() : pModel(nullptr), pScene(nullptr) {}
-    };
-
 public:
     GraphsModel(QObject* parent = nullptr);
     ~GraphsModel();
@@ -40,7 +32,7 @@ public:
     SubGraphModel *currentGraph();
     void switchSubGraph(const QString& graphName) override;
     void newSubgraph(const QString& graphName) override;
-    void reloadSubGraph(const QString& graphName) override;
+    void initMainGraph() override;
     void renameSubGraph(const QString& oldName, const QString& newName) override;
     QItemSelectionModel* selectionModel() const;
     NODE_DESCS descriptors() const override;
@@ -58,9 +50,13 @@ public:
     QString fileName() const override;
     void setFilePath(const QString& fn) override;
     QModelIndex index(int row, int column, const QModelIndex& parent = QModelIndex()) const override;
+    QModelIndex nodeIndex(uint32_t id) override;
+    QModelIndex subgIndex(uint32_t sid) override;
+    QModelIndex subgByNodeId(uint32_t id) override;
     QModelIndex index(const QString& subGraphName) const override;
     QModelIndex indexBySubModel(SubGraphModel* pSubModel) const;
     QModelIndex linkIndex(int r) override;
+    QModelIndex linkIndex(const QString& outNode, const QString& outSock, const QString& inNode, const QString& inSock) override;
     QModelIndex parent(const QModelIndex& child) const override;
     bool setData(const QModelIndex& index, const QVariant& value, int role = Qt::EditRole) override;
     QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
@@ -73,7 +69,6 @@ public:
 
 	QModelIndex index(const QString& id, const QModelIndex& subGpIdx) override;
     QModelIndex index(int r, const QModelIndex& subGpIdx) override;
-	QVariant data2(const QModelIndex& subGpIdx, const QModelIndex& index, int role) override;
     int itemCount(const QModelIndex& subGpIdx) const override;
 	void addNode(const NODE_DATA& nodeData, const QModelIndex& subGpIdx, bool enableTransaction = false) override;
 	void appendNodes(const QList<NODE_DATA>& nodes, const QModelIndex& subGpIdx, bool enableTransaction = false);
@@ -87,43 +82,33 @@ public:
 	void removeNode(const QString& nodeid, const QModelIndex& subGpIdx, bool enableTransaction = false) override;
 	void removeNode(int row, const QModelIndex& subGpIdx);
     void removeLink(const QPersistentModelIndex& linkIdx, const QModelIndex& subGpIdx, bool enableTransaction = false) override;
-    void removeNodeLinks(const QList<QPersistentModelIndex>& nodes, const QList<QPersistentModelIndex>& links, const QModelIndex& subGpIdx) override;
 	void removeSubGraph(const QString& name) override;
     QModelIndex addLink(const EdgeInfo& info, const QModelIndex& subGpIdx, bool bAddDynamicSock, bool enableTransaction = false) override;
 
-    QVariant getParamValue(const QString& id, const QString& name, const QModelIndex& subGpIdx) override;
 	void updateParamInfo(const QString& id, PARAM_UPDATE_INFO info, const QModelIndex& subGpIdx, bool enableTransaction = false) override;
     void updateParamNotDesc(const QString& id, PARAM_UPDATE_INFO info, const QModelIndex& subGpIdx, bool enableTransaction = false) override;
     void updateSocketDefl(const QString& id, PARAM_UPDATE_INFO info, const QModelIndex& subGpIdx, bool enableTransaction = false) override;
-    QVariant getNodeStatus(const QString& id, int role, const QModelIndex& subGpIdx) override;
     void updateNodeStatus(const QString& nodeid, STATUS_UPDATE_INFO info, const QModelIndex& subgIdx, bool enableTransaction = false) override;
     void updateBlackboard(const QString& id, const BLACKBOARD_INFO& blackboard, const QModelIndex& subgIdx,
                           bool enableTransaction) override;
-    void copyPaste(const QModelIndex& fromSubg, const QModelIndexList& srcNodes, const QModelIndex& toSubg, QPointF pos, bool enableTrans = false) override;
+
     QModelIndex extractSubGraph(const QModelIndexList& nodes, const QModelIndex& fromSubg, const QString& toSubg, bool enableTrans = false) override;
     bool IsSubGraphNode(const QModelIndex& nodeIdx) const override;
 
 	NODE_DATA itemData(const QModelIndex& index, const QModelIndex& subGpIdx) const override;
-	QString name(const QModelIndex& subGpIdx) const override;
 	void setName(const QString& name, const QModelIndex& subGpIdx) override;
-	void replaceSubGraphNode(const QString& oldName, const QString& newName, const QModelIndex& subGpIdx) override;
-	NODES_DATA nodes(const QModelIndex& subGpIdx) override;
 	void clearSubGraph(const QModelIndex& subGpIdx) override;
     void clear() override;
-	void reload(const QModelIndex& subGpIdx) override;
-	void onModelInited() override;
 	void undo() override;
 	void redo() override;
     QModelIndexList searchInSubgraph(const QString& objName, const QModelIndex& subgIdx) override;
     QModelIndexList subgraphsIndice() const override;
     QStandardItemModel* linkModel() const;
     QModelIndex getSubgraphIndex(const QModelIndex& linkIdx);
-    QGraphicsScene* scene(const QModelIndex& subgIdx) override;
     QRectF viewRect(const QModelIndex& subgIdx) override;
     QList<SEARCH_RESULT> search(const QString& content, int searchOpts) override;
 	void collaspe(const QModelIndex& subgIdx) override;
 	void expand(const QModelIndex& subgIdx) override;
-    void getNodeIndices(const QModelIndex& subGpIdx, QModelIndexList& subgNodes, QModelIndexList& normNodes) override;
     bool updateSocketNameNotDesc(const QString &id, SOCKET_UPDATE_INFO info, const QModelIndex &subGpIdx, bool enableTransaction = false) override;
 
     bool hasDescriptor(const QString& nodeName) const;
@@ -132,6 +117,8 @@ public:
     void removeLinks(const QList<QPersistentModelIndex>& info, const QModelIndex& subGpIdx, bool enableTransaction = false);
     void updateSocket(const QString& id, SOCKET_UPDATE_INFO info, const QModelIndex& subGpIdx, bool enableTransaction = false);
     void updateLinkInfo(const QPersistentModelIndex& linkIdx, const LINK_UPDATE_INFO& info, bool enableTransaction = false);
+    void setIOProcessing(bool bIOProcessing) override;
+    bool IsIOProcessing() const override;
 
 signals:
     void graphRenamed(const QString& oldName, const QString& newName);
@@ -158,28 +145,33 @@ private:
     void updateDescInfo(const QString& descName, const SOCKET_UPDATE_INFO& updateInfo);
     void importNodeLinks(const QList<NODE_DATA> &nodes, const QModelIndex &subGpIdx);
     void resolveLinks(const QModelIndex& idx, SubGraphModel* pCurrentGraph);
+    void copyPaste(const QModelIndex &fromSubg, const QModelIndexList &srcNodes, const QModelIndex &toSubg, QPointF pos,
+                   bool enableTrans = false);
+    QModelIndex _createIndex(SubGraphModel* pSubModel) const;
     void initDescriptors();
     NODE_DESC getSubgraphDesc(SubGraphModel* pModel);
     void registerCate(const NODE_DESC& desc);
-    NODE_DATA _fork(const QModelIndex& subgIdx, const QModelIndex& subnetNodeIdx);
+    NODE_DATA _fork(const QString& forkSubgName);
     QString uniqueSubgraph(QString orginName);
 
     void beginApiLevel();
     void endApiLevel();
     void onApiBatchFinished();
 
-    QVector<SUBMODEL_SCENE> m_subGraphs;
+    QVector<SubGraphModel*> m_subGraphs;
+    QMap<uint32_t, QString> m_id2name;
+    QMap<QString, uint32_t> m_name2id;
     QItemSelectionModel* m_selection;
     QStandardItemModel* m_linkModel;
     NODE_DESCS m_nodesDesc;
     NODE_DESCS m_subgsDesc;
     NODE_CATES m_nodesCate;
     QString m_filePath;
-    QMutex m_mutex;
     QUndoStack* m_stack;
     std::stack<bool> m_retStack;
     int m_apiLevel;
     bool m_dirty;
+    bool m_bIOProcessing;
 
     friend class ApiLevelScope;
 };

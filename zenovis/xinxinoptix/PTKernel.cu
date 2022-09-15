@@ -188,14 +188,23 @@ extern "C" __global__ void __miss__radiance()
     prd->countEmitted = false;
 
     if(prd->medium != DisneyBSDF::PhaseFunctions::isotropic){
-        prd->radiance = proceduralSky2(normalize(prd->direction), sunLightDir, params.elapsedTime);
+        prd->radiance = proceduralSky(
+            normalize(prd->direction), 
+            sunLightDir, 
+            make_float3(0., 0., 1.), 
+            40, // be careful
+            .5, 
+            15.,
+            1.030725 * 0.3,
+            params.elapsedTime
+        );
 
         //prd->radiance = vec3(0,0,0);
         prd->done      = true;
         return;
     }
     prd->attenuation *= DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
-    //prd->attenuation2 *= DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
+    prd->attenuation2 *= DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
     prd->origin += prd->direction * optixGetRayTmax();
     prd->direction = DisneyBSDF::SampleScatterDirection(prd->seed);
     float tmpPDF;

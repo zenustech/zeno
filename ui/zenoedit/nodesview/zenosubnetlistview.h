@@ -2,23 +2,7 @@
 #define __ZENO_SUBNET_LISTVIEW_H__
 
 #include <QtWidgets>
-
-class GraphsModel;
-class GraphsPlainModel;
-class IGraphsModel;
-
-class ZSubnetListModel : public QStandardItemModel
-{
-    Q_OBJECT
-public:
-    ZSubnetListModel(IGraphsModel* pModel, QObject* parent = nullptr);
-    int rowCount(const QModelIndex& parent = QModelIndex()) const override;
-    QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
-    QModelIndex index(int row, int column, const QModelIndex& parent = QModelIndex()) const override;
-
-private:
-    GraphsModel* m_model;
-};
+#include <zenomodel/include/igraphsmodel.h>
 
 class ZenoSubnetListView : public QListView
 {

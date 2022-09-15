@@ -1,9 +1,9 @@
 #ifndef __UI_HELPER_H__
 #define __UI_HELPER_H__
 
-#include "../model/modeldata.h"
+#include <zenomodel/include/modeldata.h>
 #include <rapidjson/document.h>
-#include <zenoui/include/igraphsmodel.h>
+#include <zenomodel/include/igraphsmodel.h>
 
 
 class BlockSignalScope
@@ -42,12 +42,19 @@ public:
     static QString variantToString(const QVariant& var);
     static qreal parseNumeric(const rapidjson::Value& val, bool& bSucceed);
     static QPointF parsePoint(const rapidjson::Value& ptObj, bool& bSucceed);
+    static NODE_TYPE nodeType(const QString& name);
 
     //todo: place at other helper.
     static QMap<QString, NODE_DATA> dumpItems(IGraphsModel* pGraphsModel, const QPersistentModelIndex& subgIdx,
         const QModelIndexList& nodesIndice, const QModelIndexList& linkIndice);
     static int getMaxObjId(const QList<QString>& lst);
     static QVector<qreal> getSlideStep(const QString& name, PARAM_CONTROL ctrl);
+    static void reAllocIdents(QMap<QString, NODE_DATA>& nodes, QList<EdgeInfo>& links, const QMap<QString, NODE_DATA>& oldGraphsToNew);
+    static QString nthSerialNumName(QString name);
+    static QString correctSubIOName(IGraphsModel* pModel, const QString& subgName, const QString& newName, bool bInput);
+    static QVariant _parseToVariant(const QString& type, const rapidjson::Value& val, QObject* parentRef);
+    static QString gradient2colorString(const QLinearGradient& grad);
+    static QVariant getParamValue(const QModelIndex& idx, const QString& name);
 
 private:
     static std::pair<qreal, qreal> getRxx2(QRectF r, qreal xRadius, qreal yRadius, bool AbsoluteSize);

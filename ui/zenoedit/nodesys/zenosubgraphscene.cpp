@@ -3,20 +3,20 @@
 #include "subnetnode.h"
 #include "heatmapnode.h"
 #include "cameranode.h"
+#include "readfbxprim.h"
 #include "zenolink.h"
-#include <zenoui/model/modelrole.h>
+#include <zenomodel/include/modelrole.h>
 #include <zenoio/reader/zsgreader.h>
 #include <zenoio/writer/zsgwriter.h>
-#include <zenoui/util/uihelper.h>
+#include <zenomodel/include/uihelper.h>
 #include <zenoui/nodesys/nodesys_common.h>
 #include <zenoui/nodesys/nodegrid.h>
-#include <zenoui/include/igraphsmodel.h>
+#include <zenomodel/include/igraphsmodel.h>
 #include "zenoapplication.h"
-#include "graphsmanagment.h"
+#include <zenomodel/include/graphsmanagment.h>
 #include <zeno/utils/log.h>
 #include "util/log.h"
 #include "blackboardnode.h"
-#include "acceptor/modelacceptor.h"
 #include "acceptor/transferacceptor.h"
 
 
@@ -133,6 +133,10 @@ ZenoNode* ZenoSubGraphScene::createNode(const QModelIndex& idx, const NodeUtilPa
     else if (descName == "CameraNode")
     {
         return new CameraNode(params);
+    }
+    else if(descName == "ReadFBXPrim")
+    {
+        return new ReadFBXPrim(params);
     }
     else
     {
@@ -854,7 +858,18 @@ void ZenoSubGraphScene::keyPressEvent(QKeyEvent* event)
             {
                 IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
                 ZASSERT_EXIT(pGraphsModel);
-                pGraphsModel->removeNodeLinks(nodes, links, m_subgIdx);
+
+                pGraphsModel->beginTransaction("remove nodes and links");
+                for (const QModelIndex &linkIdx : links)
+                {
+                    pGraphsModel->removeLink(linkIdx, m_subgIdx, true);
+                }
+                for (const QModelIndex &nodeIdx : nodes)
+                {
+                    QString id = nodeIdx.data(ROLE_OBJID).toString();
+                    pGraphsModel->removeNode(id, m_subgIdx, true);
+                }
+                pGraphsModel->endTransaction();
             }
         }
     }

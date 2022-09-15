@@ -6,13 +6,13 @@
 #define __VIEWPORT_TRANSFORM_H__
 #include "zenovis.h"
 #include "zenoapplication.h"
-#include "graphsmanagment.h"
+#include <zenomodel/include/graphsmanagment.h>
 
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/funcs/PrimitiveTools.h>
 #include <zeno/types/UserData.h>
 #include <zenovis/ObjectsManager.h>
-#include <nodesys/nodesmgr.h>
+#include <zenomodel/include/nodesmgr.h>
 
 #include <QtWidgets>
 

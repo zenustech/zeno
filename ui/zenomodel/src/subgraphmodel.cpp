@@ -1,11 +1,10 @@
 #include "graphsmodel.h"
 #include "subgraphmodel.h"
-#include <zenoui/model/modelrole.h>
-#include <zenoui/model/modeldata.h>
+#include "modelrole.h"
+#include "modeldata.h"
 #include <zeno/utils/log.h>
-#include <zenoui/util/uihelper.h>
-#include "util/apphelper.h"
-#include "util/log.h"
+#include "uihelper.h"
+#include "zassert.h"
 
 
 SubGraphModel::SubGraphModel(GraphsModel* pGraphsModel, QObject *parent)
@@ -121,10 +120,12 @@ QModelIndex SubGraphModel::index(int row, int column, const QModelIndex& parent)
     auto itRow = m_row2Key.find(row);
     ZASSERT_EXIT(itRow != m_row2Key.end(), QModelIndex());
 
-    auto itItem = m_nodes.find(itRow.value());
+    QString nodeid = itRow.value();
+    auto itItem = m_nodes.find(nodeid);
     ZASSERT_EXIT(itItem != m_nodes.end(), QModelIndex());
 
-    return createIndex(row, 0, nullptr);
+    uint32_t interlId = (m_str2numId.find(nodeid) != m_str2numId.end()) ? m_str2numId[nodeid] : 0;
+    return createIndex(row, 0, interlId);
 }
 
 QModelIndex SubGraphModel::index(QString id, const QModelIndex& parent) const
@@ -134,7 +135,15 @@ QModelIndex SubGraphModel::index(QString id, const QModelIndex& parent) const
         return QModelIndex();
 
     int row = m_key2Row[id];
-    return createIndex(row, 0, nullptr);
+    uint32_t interlId = (m_str2numId.find(id) != m_str2numId.end()) ? m_str2numId[id] : 0;
+    return createIndex(row, 0, interlId);
+}
+
+QModelIndex SubGraphModel::index(int id) const
+{
+    if (m_num2strId.find(id) == m_num2strId.end())
+        return QModelIndex();
+    return index(m_num2strId[id]);
 }
 
 void SubGraphModel::appendItem(const NODE_DATA& nodeData, bool enableTransaction)
@@ -203,6 +212,11 @@ bool SubGraphModel::_removeRow(const QModelIndex& index)
     m_row2Key.remove(rowCount() - 1);
     m_key2Row.remove(id);
     m_nodes.remove(id);
+
+    uint32_t numId = m_str2numId[id];
+    m_num2strId.remove(numId);
+    m_str2numId.remove(id);
+
     m_pGraphsModel->markDirty();
     return true;
 }
@@ -584,8 +598,6 @@ bool SubGraphModel::_insertRow(int row, const NODE_DATA& nodeData, const QModelI
         m_nodes[id] = nodeData;
         m_row2Key[nRows] = id;
         m_key2Row[id] = nRows;
-        m_pGraphsModel->markDirty();
-        return true;
     }
     else if (row < nRows)
     {
@@ -601,14 +613,19 @@ bool SubGraphModel::_insertRow(int row, const NODE_DATA& nodeData, const QModelI
         m_nodes[id] = nodeData;
         m_row2Key[row] = id;
         m_key2Row[id] = row;
-        m_pGraphsModel->markDirty();
-        return true;
     }
     else
     {
         Q_ASSERT(false);
         return false;
     }
+
+    QUuid uuid = QUuid::createUuid();
+    uint32_t ident = uuid.data1;
+    m_num2strId[ident] = id;
+    m_str2numId[id] = ident;
+    m_pGraphsModel->markDirty();
+    return true;
 }
 
 bool SubGraphModel::insertRow(int row, const NODE_DATA &nodeData, const QModelIndex &parent)

@@ -2,7 +2,7 @@
 #define __MODEL_DATA_H__
 
 #include <QtWidgets>
-#include "zenoui/util/fuckqmap.h"
+#include "fuckqmap.h"
 
 enum PARAM_CONTROL {
     CONTROL_NONE,

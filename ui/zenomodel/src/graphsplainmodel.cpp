@@ -1,9 +1,7 @@
 #include "graphsplainmodel.h"
-#include "model/graphsmodel.h"
-#include <zenoui/model/modelrole.h>
-#include "zenoapplication.h"
-#include "graphsmanagment.h"
-#include "util/log.h"
+#include "graphsmodel.h"
+#include "modelrole.h"
+#include "zassert.h"
 
 
 GraphsPlainModel::GraphsPlainModel(QObject* parent)

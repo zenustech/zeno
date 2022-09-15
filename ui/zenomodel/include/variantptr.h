@@ -1,8 +1,6 @@
 #ifndef __VARIANT_PTR_H__
 #define __VARIANT_PTR_H__
 
-//TODO: a better file place.
-
 template<class T>
 class QVariantPtr
 {
