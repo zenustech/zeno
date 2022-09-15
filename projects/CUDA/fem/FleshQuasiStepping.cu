@@ -315,9 +315,19 @@ struct FleshQuasiStaticStepping : INode {
 
     auto volf = vec3::from_array(gravity * models.density);
 
-    auto nm_acts = get_input<zeno::ListObject>("Acts")->arr.size();
+    // auto nm_acts = get_input<zeno::ListObject>("Acts")->arr.size();
     // fmt::print("number of activations : {}\n",nm_acts);
-    auto act_ = get_input<zeno::ListObject>("Acts")->getLiterial<float>();
+
+    std::vector<float> act_;    
+    int nm_acts = 0;
+    // auto nm_acts_ = zstets->get().get("NM_MUSCLES");
+    // std::cout << "nm_acts_ : " << std::endl;
+
+    if(has_input("Acts")) {
+      act_ = get_input<zeno::ListObject>("Acts")->getLiterial<float>();
+      nm_acts = act_.size();
+    }
+    // auto act_ = get_input<zeno::ListObject>("Acts")->getLiterial<float>();
     // initialize on host qs[i] = qs_[i]->get<zeno::vec4f>();
 
     constexpr auto host_space = zs::execspace_e::openmp;
@@ -371,13 +381,15 @@ struct FleshQuasiStaticStepping : INode {
 
     // apply muscle activation
     cudaPol(range(etemp.size()),
-        [eles = proxy<space>({},eles),etemp = proxy<space>({},etemp),act_buffer = proxy<space>({},act_buffer),muscle_id_tag = SmallString(muscle_id_tag)] ZS_LAMBDA(int ei) mutable {
-            auto act = eles.template pack<3>("act",ei);
+        [eles = proxy<space>({},eles),etemp = proxy<space>({},etemp),act_buffer = proxy<space>({},act_buffer),muscle_id_tag = SmallString(muscle_id_tag),nm_acts] ZS_LAMBDA(int ei) mutable {
+            // auto act = eles.template pack<3>("act",ei);
             auto fiber = eles.template pack<3>("fiber",ei);
-            
+              
+            vec3 act{0};
+
             auto nfiber = fiber.norm();
             auto ID = eles(muscle_id_tag,ei);
-            if(nfiber < 0.5 || ID < -1e-6){ // if there is no local fiber orientaion, use the default act and fiber
+            if(nfiber < 0.5 || ID < -1e-6 || nm_acts == 0){ // if there is no local fiber orientaion, use the default act and fiber
                 fiber = vec3{1.0,0.0,0.0};
                 act = vec3{1.0,1.0,1.0};
             }else{
