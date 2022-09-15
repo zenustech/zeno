@@ -103,17 +103,19 @@ bool FakeTransformer::clickedAnyHandler(QVector3D ori, QVector3D dir) {
 }
 
 /**
-* do transformation with all objects
-* @param pos camera position
-* @param start_dir start point ray direction
-* @param end_dir end point ray direction
-*/
-void FakeTransformer::transform(QVector3D pos, QVector3D start_dir, QVector3D end_dir, glm::vec3 front) {
+ * apply transform to all objects
+ * @param camera_pos
+ * @param mouse_pos
+ * @param start_dir
+ * @param end_dir
+ * @param front
+ */
+void FakeTransformer::transform(QVector3D camera_pos, glm::vec2 mouse_pos, QVector3D start_dir, QVector3D end_dir, glm::vec3 front, glm::mat4 vp) {
     if (m_operation == NONE) return;
     auto scene = Zenovis::GetInstance().getSession()->get_scene();
-    auto start_o = QVec3ToGLMVec3(pos);
+    auto start_o = QVec3ToGLMVec3(camera_pos);
     auto start_d = QVec3ToGLMVec3(start_dir);
-    auto end_o = QVec3ToGLMVec3(pos);
+    auto end_o = QVec3ToGLMVec3(camera_pos);
     auto end_d = QVec3ToGLMVec3(end_dir);
 
     auto x_axis = glm::vec3(1, 0, 0);
@@ -203,12 +205,9 @@ void FakeTransformer::transform(QVector3D pos, QVector3D start_dir, QVector3D en
         }
     }
     else if (m_operation == SCALE) {
-        auto start = hitOnPlane(start_o, start_d, camera_front, m_objects_center);
-        auto end = hitOnPlane(end_o, end_d, camera_front, m_objects_center);
-        float scale_size;
-        if (start.has_value() && end.has_value())
-            scale_size = glm::length(start.value() - end.value());
-        else return;
+        auto t_ctr = vp * glm::vec4(m_objects_center, 1.0f);
+        glm::vec2 ctr = t_ctr / t_ctr[3];
+        auto scale_size = glm::length(ctr - mouse_pos);
         if (m_operation_mode == zenovis::INTERACT_X) {
             scale(scale_size, {1, 0, 0});
         }
@@ -299,13 +298,13 @@ void FakeTransformer::changeOperation() {
         m_operation += 1;
     switch (m_operation) {
     case TRANSLATE:
-        m_handler = zenovis::makeGraphicInteractTrans(scene,zeno::other_to_vec<3>(m_objects_center));
+        m_handler = zenovis::makeTransHandler(scene,zeno::other_to_vec<3>(m_objects_center));
         break;
     case ROTATE:
         m_handler = std::shared_ptr<zenovis::IGraphicHandler>(nullptr);
         break;
     case SCALE:
-        m_handler = std::shared_ptr<zenovis::IGraphicHandler>(nullptr);
+        m_handler = zenovis::makeScaleHandler(scene,zeno::other_to_vec<3>(m_objects_center));
         break;
     case NONE:
         m_handler = std::shared_ptr<zenovis::IGraphicHandler>(nullptr);
@@ -341,7 +340,7 @@ void FakeTransformer::translate(glm::vec3 start, glm::vec3 end, glm::vec3 axis) 
 void FakeTransformer::scale(float scale_size, vec3i axis) {
     glm::vec3 scale(1.0f);
     for (int i=0; i<3; i++)
-        if (axis[i] == 1) scale[i] = scale_size;
+        if (axis[i] == 1) scale[i] = fmax(scale_size * 3, 0.1);
     m_scale = scale;
     doTransform();
 }

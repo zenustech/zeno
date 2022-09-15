@@ -153,7 +153,14 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent* event)
         if (transformer->isTransforming()) {
             auto start_dir = screenToWorldRay(m_lastMovePos.x() / res().x(), m_lastMovePos.y() / res().y());
             auto end_dir = screenToWorldRay(event->pos().x() / res().x(), event->pos().y() / res().y());
-            transformer->transform(realPos(), start_dir, end_dir, scene->camera->m_lodfront);
+            auto camera_pos = realPos();
+            auto x = event->x() * 1.0f;
+            auto y = event->y() * 1.0f;
+            x = (2 * x / res().x()) - 1;
+            y = 1 - (2 * y / res().y());
+            auto mouse_pos = glm::vec2(x, y);
+            auto vp = scene->camera->m_proj * scene->camera->m_view;
+            transformer->transform(camera_pos, mouse_pos, start_dir, end_dir, scene->camera->m_lodfront, vp);
             m_lastMovePos = event->pos();
             zenoApp->getMainWindow()->updateViewport();
         }

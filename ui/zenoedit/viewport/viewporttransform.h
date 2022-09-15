@@ -34,7 +34,8 @@ class FakeTransformer {
     void removeObject(const std::string& name);
     void removeObject(const std::unordered_set<std::string>& names);
     bool clickedAnyHandler(QVector3D ori, QVector3D dir);
-    void transform(QVector3D pos, QVector3D start_dir, QVector3D end_dir, glm::vec3 front);
+    void transform(QVector3D camera_pos, glm::vec2 mouse_pos, QVector3D start_dir, QVector3D end_dir,
+                   glm::vec3 front, glm::mat4 vp);
     void startTransform();
     void endTransform(bool moved);
     bool isTransforming() const;

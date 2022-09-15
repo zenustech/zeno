@@ -58,7 +58,7 @@ static const char *frag_code = R"(
     }
 )";
 
-struct TransHandler final : IGraphicHandler {
+struct ScaleHandler final : IGraphicHandler {
     Scene *scene;
 
     std::unique_ptr<Buffer> vbo;
@@ -72,7 +72,7 @@ struct TransHandler final : IGraphicHandler {
     std::unique_ptr<Buffer> lines_ebo;
     size_t lines_count;
 
-    explicit TransHandler(Scene *scene_, vec3f &center_)
+    explicit ScaleHandler(Scene *scene_, vec3f &center_)
         : scene(scene_), center(center_), mode(INTERACT_NONE) {
         vbo = std::make_unique<Buffer>(GL_ARRAY_BUFFER);
     }
@@ -114,17 +114,17 @@ struct TransHandler final : IGraphicHandler {
         // x axis
         if (mode == INTERACT_NONE || mode == INTERACT_X) {
             drawAxis(center, x_axis, r, bound, vbo);
-            drawCone(center + bound * x_axis, y_axis, z_axis, r, bound * 0.1f, vbo);
+            drawCube(center + bound * x_axis, y_axis, z_axis, r, bound * 0.08f, vbo);
         }
 
         if (mode == INTERACT_NONE || mode == INTERACT_Y) {
             drawAxis(center, y_axis, g, bound, vbo);
-            drawCone(center + bound * y_axis, z_axis, x_axis, g, bound * 0.1f, vbo);
+            drawCube(center + bound * y_axis, z_axis, x_axis, g, bound * 0.08f, vbo);
         }
 
         if (mode == INTERACT_NONE || mode == INTERACT_Z) {
             drawAxis(center, z_axis, b, bound, vbo);
-            drawCone(center + bound * z_axis, x_axis, y_axis, b, bound * 0.1f, vbo);
+            drawCube(center + bound * z_axis, x_axis, y_axis, b, bound * 0.08f, vbo);
         }
 
         if (mode == INTERACT_NONE || mode == INTERACT_YZ)
@@ -230,8 +230,8 @@ struct TransHandler final : IGraphicHandler {
 
 } // namespace
 
-std::shared_ptr<IGraphicHandler> makeTransHandler(Scene *scene, vec3f center) {
-    return std::make_shared<TransHandler>(scene, center);
+std::shared_ptr<IGraphicHandler> makeScaleHandler(Scene *scene, vec3f center) {
+    return std::make_shared<ScaleHandler>(scene, center);
 }
 
 } // namespace zenovis
