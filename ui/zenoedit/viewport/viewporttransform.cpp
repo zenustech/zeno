@@ -6,6 +6,7 @@
 #include <zenomodel/include/nodesmgr.h>
 
 #include <glm/gtx/transform.hpp>
+#include <glm/gtx/quaternion.hpp>
 
 namespace zeno {
 
@@ -14,7 +15,7 @@ FakeTransformer::FakeTransformer()
       , m_trans(0.0f)
       , m_scale(1.0f)
       , m_last_scale(1.0f)
-      , m_rotate(0.0f)
+      , m_rotate({0, 0, 0, 1})
       , m_status(false)
       , m_operation(NONE) {}
 
@@ -23,7 +24,7 @@ FakeTransformer::FakeTransformer(const std::unordered_set<std::string>& names)
       , m_trans(0.0f)
       , m_scale(1.0f)
       , m_last_scale(1.0f)
-      , m_rotate(0.0f)
+      , m_rotate({0, 0, 0, 1})
       , m_status(true)
       , m_operation(NONE)
 {
@@ -47,7 +48,7 @@ void FakeTransformer::addObject(const std::string& name) {
     if (!user_data.has("_translate")) {
         zeno::vec3f translate = {0, 0, 0};
         user_data.setLiterial("_translate", translate);
-        zeno::vec3f rotate = {0, 0, 0};
+        zeno::vec4f rotate = {0, 0, 0, 1};
         user_data.setLiterial("_rotate", rotate);
         zeno::vec3f scale = {1, 1, 1};
         user_data.setLiterial("_scale", scale);
@@ -176,7 +177,7 @@ void FakeTransformer::transform(QVector3D camera_pos, glm::vec2 mouse_pos, QVect
         }
     }
     else if (m_operation == ROTATE) {
-        if (m_operation_mode == zenovis::INTERACT_X) {
+        if (m_operation_mode == zenovis::INTERACT_YZ) {
             auto start = hitOnPlane(start_o, start_d, x_axis, m_objects_center);
             auto end = hitOnPlane(end_o, end_d, x_axis, m_objects_center);
             if (start.has_value() && end.has_value()) {
@@ -185,7 +186,7 @@ void FakeTransformer::transform(QVector3D camera_pos, glm::vec2 mouse_pos, QVect
                 rotate(start_vec, end_vec, x_axis);
             }
         }
-        else if (m_operation_mode == zenovis::INTERACT_Y) {
+        else if (m_operation_mode == zenovis::INTERACT_XZ) {
             auto start = hitOnPlane(start_o, start_d, y_axis, m_objects_center);
             auto end = hitOnPlane(end_o, end_d, y_axis, m_objects_center);
             if (start.has_value() && end.has_value()) {
@@ -194,7 +195,7 @@ void FakeTransformer::transform(QVector3D camera_pos, glm::vec2 mouse_pos, QVect
                 rotate(start_vec, end_vec, y_axis);
             }
         }
-        else if (m_operation_mode == zenovis::INTERACT_Z){
+        else if (m_operation_mode == zenovis::INTERACT_XY){
             auto start = hitOnPlane(start_o, start_d, z_axis, m_objects_center);
             auto end = hitOnPlane(end_o, end_d, z_axis, m_objects_center);
             if (start.has_value() && end.has_value()) {
@@ -256,7 +257,7 @@ void FakeTransformer::endTransform(bool moved) {
             auto inputs = node_index.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
             if (node_id.contains("TransformPrimitive")  &&
                 inputs["translation"].linkIndice.empty() &&
-                inputs["eulerXYZ"].linkIndice.empty() &&
+                inputs["quatRotation"].linkIndice.empty() &&
                 inputs["scaling"].linkIndice.empty()) {
                 syncToTransformNode(node_id, obj_name, pModel, node_index, subgraph_index);
             }
@@ -278,7 +279,7 @@ void FakeTransformer::endTransform(bool moved) {
     m_trans = {0, 0, 0};
     m_scale = {1, 1, 1};
     m_last_scale = {1, 1, 1};
-    m_rotate = {0, 0, 0};
+    m_rotate = {0, 0, 0, 1};
 
     m_operation_mode = zenovis::INTERACT_NONE;
     m_handler->setMode(zenovis::INTERACT_NONE);
@@ -301,7 +302,7 @@ void FakeTransformer::changeOperation() {
         m_handler = zenovis::makeTransHandler(scene,zeno::other_to_vec<3>(m_objects_center));
         break;
     case ROTATE:
-        m_handler = std::shared_ptr<zenovis::IGraphicHandler>(nullptr);
+        m_handler = zenovis::makeRotateHandler(scene, zeno::other_to_vec<3>(m_objects_center));
         break;
     case SCALE:
         m_handler = zenovis::makeScaleHandler(scene,zeno::other_to_vec<3>(m_objects_center));
@@ -326,7 +327,7 @@ void FakeTransformer::clear() {
     m_trans = {0, 0, 0};
     m_scale = {1, 1, 1};
     m_last_scale = {1, 1, 1};
-    m_rotate = {0, 0, 0};
+    m_rotate = {0, 0, 0, 1};
     m_objects_center = {0, 0, 0};
 }
 
@@ -352,8 +353,9 @@ void FakeTransformer::rotate(glm::vec3 start_vec, glm::vec3 end_vec, glm::vec3 a
     float direct = 1.0f;
     if (glm::dot(cross_vec, axis) < 0)
         direct = -1.0f;
-    float angle = acos(fmin(fmax(glm::dot(start_vec, end_vec), -1.0f), 1.0f));
-    m_rotate = angle * direct * axis;
+    float angle = acos(fmin(fmax(glm::dot(start_vec, end_vec), -1.0f), 1.0f)) / 2.0f;
+    glm::quat q(angle * direct * axis);
+    m_rotate = {q.x, q.y, q.z, q.w};
     doTransform();
 }
 
@@ -399,15 +401,16 @@ void FakeTransformer::createNewTransformNode(QString& node_id, const std::string
         QVariant::fromValue(scaling)
     };
     pModel->updateSocketDefl(new_node_id, scaling_info, subgraph_index, true);
-    auto rotate_vec3 = user_data.getLiterial<zeno::vec3f>("_rotate");
+    auto rotate_vec4 = user_data.getLiterial<zeno::vec4f>("_rotate");
     QVector<double> rotate = {
-        rotate_vec3[0],
-        rotate_vec3[1],
-        rotate_vec3[2]
+        rotate_vec4[0],
+        rotate_vec4[1],
+        rotate_vec4[2],
+        rotate_vec4[3]
     };
     PARAM_UPDATE_INFO rotate_info = {
-        "eulerXYZ",
-        QVariant::fromValue(QVector<double>{0, 0, 0}),
+        "quatRotation",
+        QVariant::fromValue(QVector<double>{0, 0, 0, 1}),
         QVariant::fromValue(rotate)
     };
     pModel->updateSocketDefl(new_node_id, rotate_info, subgraph_index, true);
@@ -480,15 +483,16 @@ void FakeTransformer::syncToTransformNode(QString& node_id, const std::string& o
     };
     pModel->updateSocketDefl(node_id, scaling_info, subgraph_index, true);
     // update rotate
-    auto rotate_old = inputs["eulerXYZ"].info.defaultValue.value<UI_VECTYPE>();
-    auto rotate_vec3 = user_data.getLiterial<zeno::vec3f>("_rotate");
+    auto rotate_old = inputs["quatRotation"].info.defaultValue.value<UI_VECTYPE>();
+    auto rotate_vec4 = user_data.getLiterial<zeno::vec4f>("_rotate");
     QVector<double> rotate_new = {
-        rotate_vec3[0],
-        rotate_vec3[1],
-        rotate_vec3[2]
+        rotate_vec4[0],
+        rotate_vec4[1],
+        rotate_vec4[2],
+        rotate_vec4[3]
     };
     PARAM_UPDATE_INFO rotate_info = {
-        "eulerXYZ",
+        "quatRotation",
         QVariant::fromValue(rotate_old),
         QVariant::fromValue(rotate_new)
     };
@@ -501,27 +505,23 @@ void FakeTransformer::doTransform() {
         auto& user_data = obj->userData();
 
         auto translate = zeno::vec_to_other<glm::vec3>(user_data.getLiterial<zeno::vec3f>("_translate"));
-        auto rotate = zeno::vec_to_other<glm::vec3>(user_data.getLiterial<zeno::vec3f>("_rotate"));
+        auto rotate = zeno::vec_to_other<glm::vec4>(user_data.getLiterial<zeno::vec4f>("_rotate"));
         auto scale = zeno::vec_to_other<glm::vec3>(user_data.getLiterial<zeno::vec3f>("_scale"));
         auto pre_translate_matrix = glm::translate(translate);
-        auto pre_rotateX_matrix = glm::rotate(rotate[0], glm::vec3({1, 0, 0}));
-        auto pre_rotateY_matrix = glm::rotate(rotate[1], glm::vec3({0, 1, 0}));
-        auto pre_rotateZ_matrix = glm::rotate(rotate[2], glm::vec3({0, 0, 1}));
+        auto pre_quaternion = glm::quat(rotate[3], rotate[0], rotate[1], rotate[2]);
+        auto pre_rotate_matrix = glm::toMat4(pre_quaternion);
         auto pre_scale_matrix = glm::scale(scale * m_last_scale);
-        auto pre_transform_matrix = pre_translate_matrix * pre_rotateZ_matrix * pre_rotateY_matrix * pre_rotateX_matrix * pre_scale_matrix;
+        auto pre_transform_matrix = pre_translate_matrix * pre_rotate_matrix * pre_scale_matrix;
         auto inv_pre_transform = glm::inverse(pre_transform_matrix);
 
         translate += m_trans;
-        rotate += m_rotate;
         scale *= m_scale;
         m_last_scale = m_scale;
+        auto cur_quaternion = glm::quat(m_rotate[3], m_rotate[0], m_rotate[1], m_rotate[2]);
 
         auto translate_matrix = glm::translate(translate);
         // print_mat4("translate mat", translate_matrix);
-        auto rotateX_matrix = glm::rotate(rotate[0], glm::vec3({1, 0, 0}));
-        auto rotateY_matrix = glm::rotate(rotate[1], glm::vec3({0, 1, 0}));
-        auto rotateZ_matrix = glm::rotate(rotate[2], glm::vec3({0, 0, 1}));
-        auto rotate_matrix = rotateZ_matrix * rotateY_matrix * rotateX_matrix;
+        auto rotate_matrix = glm::toMat4(cur_quaternion) * pre_rotate_matrix;
         // print_mat4("rotate mat", rotate_matrix);
         auto scale_matrix = glm::scale(scale);
         // print_mat4("scale mat", scale_matrix);
@@ -555,7 +555,9 @@ void FakeTransformer::doTransform() {
             user_data.setLiterial("_bboxMax", bmax);
         }
         user_data.setLiterial("_translate", zeno::other_to_vec<3>(translate));
-        user_data.setLiterial("_rotate", zeno::other_to_vec<3>(rotate));
+        auto new_quaternion = glm::toQuat(rotate_matrix);
+        rotate = {new_quaternion.x, new_quaternion.y, new_quaternion.z, new_quaternion.w};
+        user_data.setLiterial("_rotate", zeno::other_to_vec<4>(rotate));
         m_objects_center += (zeno::vec_to_other<glm::vec3>(bmin) + zeno::vec_to_other<glm::vec3>(bmax)) / 2.0f;
     }
     m_objects_center /= m_objects.size();

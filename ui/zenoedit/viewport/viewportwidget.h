@@ -60,6 +60,7 @@ public:
     QVector3D realPos() const;
     QVector3D screenToWorldRay(float x, float y) const;
     QVariant hitOnFloor(float x, float y) const;
+    void clearTransformer();
     void changeTransformOperation();
 
 private:
@@ -96,6 +97,7 @@ public:
     void setCameraRes(const QVector2D& res);
     void updatePerspective();
     void updateCameraProp(float aperture, float disPlane);
+    void clearTransformer();
     void changeTransformOperation();
 
 signals:

@@ -63,4 +63,5 @@ std::unique_ptr<IGraphicDraw> makeGraphicSelectBox(Scene *scene);
 
 std::shared_ptr<IGraphicHandler> makeTransHandler(Scene *scene, zeno::vec3f center);
 std::shared_ptr<IGraphicHandler> makeScaleHandler(Scene *scene, zeno::vec3f center);
+std::shared_ptr<IGraphicHandler> makeRotateHandler(Scene *scene, zeno::vec3f center);
 } // namespace zenovis

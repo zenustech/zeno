@@ -112,6 +112,32 @@ void drawSquare(vec3f pos, vec3f a, vec3f b, vec3f color, float size, std::uniqu
     vbo->unbind();
 }
 
+void drawCircle(vec3f pos, vec3f a, vec3f b, vec3f color, float size, std::unique_ptr<Buffer> &vbo) {
+    std::vector<vec3f> mem;
+
+    double point_num = 100;
+    double step = 1.0 / point_num;
+    for (double t = 0; t < 1.0; t += step) {
+        double theta = 2.0 * 3.14159 * t;
+        auto p = pos + size * cos(theta) * a + size * sin(theta) * b;
+        mem.push_back(p);
+        mem.push_back(color);
+    }
+
+    auto vertex_count = mem.size() / 2;
+    vbo->bind_data(mem.data(), mem.size() * sizeof(mem[0]));
+
+    vbo->attribute(0, sizeof(float) * 0, sizeof(float) * 6, GL_FLOAT, 3);
+    vbo->attribute(1, sizeof(float) * 3, sizeof(float) * 6, GL_FLOAT, 3);
+
+    CHECK_GL(glDrawArrays(GL_LINE_STRIP, 0, vertex_count));
+
+    vbo->disable_attribute(0);
+    vbo->disable_attribute(1);
+    vbo->unbind();
+}
+
+
 void drawCube(vec3f pos, vec3f a, vec3f b, vec3f color, float size, std::unique_ptr<Buffer> &vbo) {
     std::vector<vec3f> mem;
 
@@ -349,6 +375,32 @@ bool rayIntersectOBB(glm::vec3 ray_origin, glm::vec3 ray_direction, glm::vec3 aa
 
     intersection_distance = tMin;
     return true;
+}
+
+void print_vec(const char* description, glm::vec3 vec) {
+    printf("%s: %.2lf, %.2lf, %.2lf\n", description, vec[0], vec[1], vec[2]);
+}
+
+bool rayIntersectRing(glm::vec3 ray_origin, glm::vec3 ray_direction, glm::vec3 center, float o_radius, float i_radius,
+                      glm::vec3 a, glm::vec3 b, float thickness, glm::mat4 ModelMatrix) {
+    // first test an obb
+    float t;
+    auto diagonal = glm::normalize(a + b);
+    auto normal = glm::normalize(glm::cross(a, b));
+    auto aabb_max = center + thickness * normal + o_radius * diagonal;
+    auto aabb_min = center - thickness * normal - o_radius * diagonal;
+//    if (!rayIntersectOBB(ray_origin, ray_direction, aabb_min, aabb_max, ModelMatrix, t)) {
+//        return false;
+//    }
+
+    // next test ring
+    auto tc = ModelMatrix * glm::vec4(center, 1.0);
+    center = tc / tc[3];
+    t = glm::dot(center - ray_origin, normal) / glm::dot(ray_direction, normal);
+    auto p = ray_origin + t * ray_direction;
+    if (t < 0) return false;
+    auto distance = glm::length(p - center);
+    return distance > i_radius && distance < o_radius;
 }
 
 }

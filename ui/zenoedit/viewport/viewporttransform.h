@@ -88,7 +88,7 @@ class FakeTransformer {
     glm::vec3 m_trans;
     glm::vec3 m_scale;
     glm::vec3 m_last_scale;
-    glm::vec3 m_rotate;
+    glm::vec4 m_rotate;
 
     bool m_status;
     int m_operation;

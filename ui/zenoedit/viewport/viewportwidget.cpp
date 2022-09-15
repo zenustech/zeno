@@ -112,6 +112,10 @@ void CameraControl::fakeMousePressEvent(QMouseEvent* event)
     }
 }
 
+void CameraControl::clearTransformer() {
+    transformer->clear();
+}
+
 void CameraControl::changeTransformOperation() {
     transformer->changeOperation();
     zenoApp->getMainWindow()->updateViewport();
@@ -532,6 +536,10 @@ void ViewportWidget::mouseReleaseEvent(QMouseEvent *event) {
     update();
 }
 
+void ViewportWidget::clearTransformer() {
+    m_camera->clearTransformer();
+}
+
 void ViewportWidget::changeTransformOperation() {
     m_camera->changeTransformOperation();
 }
@@ -792,6 +800,7 @@ void DisplayWidget::onRun()
 {
     m_mainWin->clearErrorMark();
 
+    m_view->clearTransformer();
     Zenovis::GetInstance().getSession()->get_scene()->selected.clear();
 
     QPair<int, int> fromTo = m_timeline->fromTo();
