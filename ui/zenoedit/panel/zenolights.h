@@ -21,6 +21,7 @@ public:
     ZLineEdit* timeSpeed = new ZLineEdit("0.1");
     QPushButton* write_btn = new QPushButton("Write");
     QPushButton* write_all_btn = new QPushButton("Write ALL");
+    QPushButton* procedural_sky_btn = new QPushButton("Procedural Sky");
 
     QLabel* pStatusBar = new QLabel();
     QLabel* pPrimName = new QLabel();

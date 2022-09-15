@@ -146,8 +146,8 @@ struct GraphicsManager {
         {
             if (auto prim_in = dynamic_cast<zeno::PrimitiveObject *>(obj))
             {
-                auto isL = prim_in->userData().getLiterial<int>("isL", 0);
-                if(isL != 1){
+                auto isRealTimeObject = prim_in->userData().get2<int>("isRealTimeObject", 0);
+                if(isRealTimeObject == 0){
                     prim_in->add_attr<zeno::vec3f>("uv");
                     bool primNormalCorrect = prim_in->has_attr("nrm") && length(prim_in->attr<zeno::vec3f>("nrm")[0])>1e-5;
                     bool need_computeNormal = !primNormalCorrect || !(prim_in->has_attr("nrm"));
@@ -208,7 +208,7 @@ struct GraphicsManager {
                     auto ts = (int const *)prim->tris.data();
                     auto nvs = prim->verts.size();
                     auto nts = prim->tris.size();
-                    auto mtlid = prim_in->userData().getLiterial<std::string>("mtlid", "Default");
+                    auto mtlid = prim_in->userData().get2<std::string>("mtlid", "Default");
                     xinxinoptix::load_object(key, mtlid, vs, nvs, ts, nts, vtab);
                 }
             }
@@ -230,8 +230,11 @@ struct GraphicsManager {
 
     void load_lights(std::string key, zeno::IObject *obj){
         if (auto prim_in = dynamic_cast<zeno::PrimitiveObject *>(obj)) {
-            auto isL = prim_in->userData().getLiterial<int>("isL", 0);
-            if (isL == 1) {
+            auto isRealTimeObject = prim_in->userData().get2<int>("isRealTimeObject", 0);
+            if (isRealTimeObject == 0) {
+                return;
+            }
+            if (prim_in->userData().get2<int>("isL", 0) == 1) {
                 //zeno::log_info("processing light key {}", key.c_str());
                 auto ivD = prim_in->userData().getLiterial<int>("ivD", 0);
 
@@ -263,6 +266,13 @@ struct GraphicsManager {
 
                 xinxinoptix::load_light(key, prim->verts[0].data(), prim->verts[1].data(), prim->verts[2].data(),
                                         prim->verts[3].data(), prim->verts[4].data());
+            }
+            else if (prim_in->userData().get2<int>("ProceduralSky", 0) == 1) {
+                zeno::vec2f sunLightDir = prim_in->userData().get2<zeno::vec2f>("sunLightDir");
+                float sunLightSoftness = prim_in->userData().get2<float>("sunLightSoftness");
+                zeno::vec2f windDir = prim_in->userData().get2<zeno::vec2f>("windDir");
+                float timeSpeed = prim_in->userData().get2<float>("timeSpeed");
+                xinxinoptix::update_procedural_sky(sunLightDir, sunLightSoftness, windDir, timeSpeed);
             }
         }
     }
