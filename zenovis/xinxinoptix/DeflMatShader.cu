@@ -1014,9 +1014,9 @@ extern "C" __global__ void __closesthit__radiance()
             sun_dir, 
             sunLightDir, 
             make_float3(0., 0., 1.), 
-            40, // be careful
-            .5,
-            15., 
+            10, // be careful
+            .45,
+            15.,
             1.030725 * 0.3,
             params.elapsedTime
         )) * lbrdf;
