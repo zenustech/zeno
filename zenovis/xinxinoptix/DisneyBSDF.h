@@ -928,25 +928,19 @@ static __inline__ __device__ float noise( vec3 x )
     return res;
 }
 
-static __inline__ __device__ float fbm( vec3 p )
+static __inline__ __device__ float fbm( vec3 p , int layer=6)
 {
     float f = 0.0;
     mat3 m = mat3( 0.00,  0.80,  0.60,
                   -0.80,  0.36, -0.48,
                   -0.60, -0.48,  0.64 );
     vec3 pp = p;
-    f += 0.5000*noise( pp );
-    pp = m*pp*2.02;
-    f += 0.2500*noise( pp );
-    pp = m*pp*2.03;
-    f += 0.1250*noise( pp );
-    pp = m*pp*2.01;
-    f += 0.0625*noise( pp );
-    pp = m*pp*2.01;
-    f += 0.03125*noise( pp );
-    pp = m*pp*2.01;
-    f += 0.5*0.03125*noise( pp );
-
+    float coef = 0.5;
+    for(int i=0;i<layer;i++) {
+        f += coef * noise(pp);
+        pp = m * pp *2.02;
+        coef *= 0.5;
+    }
     return f/0.9375;
 }
 static __inline__ __device__
@@ -1035,12 +1029,12 @@ static __inline__ __device__ float softlight(float base, float blend, float c)
 {
     return (blend < c) ? (2.0 * base * blend + base * base * (1.0 - 2.0 * blend)) : (sqrt(base) * (2.0 * blend - 1.0) + 2.0 * base * (1.0 - blend));
 }
-static __inline__ __device__ float density(vec3 pos, vec3 windDir, float coverage, float t, float freq = 1.0f)
+static __inline__ __device__ float density(vec3 pos, vec3 windDir, float coverage, float t, float freq = 1.0f, int layer = 6)
 {
 	// signal
 	vec3 p = 2.0 *  pos * .0212242 * freq; // test time
         vec3 pertb = vec3(noise(p*16), noise(vec3(p.x,p.z,p.y)*16), noise(vec3(p.y, p.x, p.z)*16)) * 0.05;
-	float dens = fbm(p + pertb + windDir * t); //, FBM_FREQ);;
+	float dens = fbm(p + pertb + windDir * t, layer); //, FBM_FREQ);;
 
 	float cov = 1. - coverage;
 //	dens = smoothstep (cov-0.1, cov + .1, dens);
@@ -1057,25 +1051,26 @@ static __inline__ __device__ float light(
     float t,
     float freq = 1.0
 ){
-	const int steps = 8;
-	float march_step = 1.;
+	const int steps = 4;
+	float march_step = 0.5;
 
 	vec3 pos = origin;
-	vec3 dir_step = sunLightDir * march_step;
+	vec3 dir_step = -sunLightDir * march_step;
 	float T = 1.; // transmitance
-
+        float coef = 1.0;
 	for (int i = 0; i < steps; i++) {
-		float dens = density(pos, windDir, coverage, t, freq);
+		float dens = density(pos, windDir, coverage, t, freq,6);
 
-		float T_i = exp(-absorption * dens * march_step);
+		float T_i = exp(-absorption * dens * coef * march_step);
 		T *= T_i;
 		//if (T < .01) break;
 
 		pos = vec3(
-            pos.x + dir_step.x,
-            pos.y + dir_step.y,
-            pos.z + dir_step.z
+            pos.x + coef * dir_step.x,
+            pos.y + coef * dir_step.y,
+            pos.z + coef * dir_step.z
         );
+            coef *= 2.0f;
 	}
 
 	return T;
@@ -1096,9 +1091,9 @@ static __inline__ __device__ vec4 render_clouds(
     //r.direction.x = r.direction.x * 2.0f;
     vec3 C = vec3(0, 0, 0);
     float alpha = 0.;
-    float s = mix(40, 10, sqrtf(r.direction.y));
-    float march_step = thickness / floor(s);
-    vec3 dir_step = r.direction / sqrtf(r.direction.y)  * march_step;
+    float s = mix(30, 10, sqrtf(r.direction.y));
+    float march_step = thickness / floor(s) / 2;
+    vec3 dir_step = r.direction / sqrtf(r.direction.y)  * march_step ;
 
     sphere atmosphere = {
         vec3(0,-350, 0),
@@ -1116,21 +1111,23 @@ static __inline__ __device__ vec4 render_clouds(
 	vec3 pos = hit.origin;
     float talpha = 0;
     float T = 1.; // transmitance
+    float coef = 1.0;
     for (int i =0; i < int(s)/2; i++)
     {
         float freq = mix(0.5f, 1.0f, smoothstep(0.0f, 0.5f, r.direction.y));
         float dens = density(pos, windDir, coverage, t, freq);
         dens = mix(0.0f,dens, smoothstep(0.0f, 0.2f, r.direction.y));
-        float T_i = exp(-absorption * dens * 2.0* march_step);
+        float T_i = exp(-absorption * dens * coef *  2.0* march_step);
         T *= T_i;
         if (T < .01)
             break;
         talpha += (1. - T_i) * (1. - talpha);
         pos = vec3(
-            pos.x + 2.0* dir_step.x,
-            pos.y + 2.0* dir_step.y,
-            pos.z + 2.0* dir_step.z
+            pos.x + coef * 2.0* dir_step.x,
+            pos.y + coef * 2.0* dir_step.y,
+            pos.z + coef * 2.0* dir_step.z
         );
+        coef *= 1.0f;
         if (length(pos) > 1e3) break;
     }
 
@@ -1138,6 +1135,7 @@ static __inline__ __device__ vec4 render_clouds(
     pos = hit.origin;
         alpha = 0;
         T = 1.; // transmitance
+        coef = 1.0;
     if (talpha > 1e-3) {
         for (int i = 0; i < int(s); i++) {
             float h = float(i) / float(steps);
@@ -1146,7 +1144,7 @@ static __inline__ __device__ vec4 render_clouds(
             dens = mix(0.0f, dens, smoothstep(0.0f, 0.2f, r.direction.y));
             float T_i =
 
-                exp(-absorption * dens * march_step);
+                exp(-absorption * dens * coef * march_step);
             T *= T_i;
             if (T < .01)
                 break;
@@ -1163,7 +1161,10 @@ static __inline__ __device__ vec4 render_clouds(
 
                 C = vec3(C.x + C_i, C.y + C_i, C.z + C_i);
                 alpha += (1. - T_i) * (1. - alpha);
-                pos = vec3(pos.x + dir_step.x, pos.y + dir_step.y, pos.z + dir_step.z);
+                pos = vec3(pos.x + coef * dir_step.x,
+                           pos.y + coef * dir_step.y,
+                           pos.z + coef * dir_step.z);
+                coef *= 1.0f;
                 if (length(pos) > 1e3)
                     break;
             }
