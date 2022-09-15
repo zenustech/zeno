@@ -271,8 +271,9 @@ struct GraphicsManager {
                 zeno::vec2f sunLightDir = prim_in->userData().get2<zeno::vec2f>("sunLightDir");
                 float sunLightSoftness = prim_in->userData().get2<float>("sunLightSoftness");
                 zeno::vec2f windDir = prim_in->userData().get2<zeno::vec2f>("windDir");
+                float timeStart = prim_in->userData().get2<float>("timeStart");
                 float timeSpeed = prim_in->userData().get2<float>("timeSpeed");
-                xinxinoptix::update_procedural_sky(sunLightDir, sunLightSoftness, windDir, timeSpeed);
+                xinxinoptix::update_procedural_sky(sunLightDir, sunLightSoftness, windDir, timeStart, timeSpeed);
             }
         }
     }

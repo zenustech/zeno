@@ -1296,6 +1296,7 @@ void update_procedural_sky(
     zeno::vec2f sunLightDir,
     float sunLightSoftness,
     zeno::vec2f windDir,
+    float timeStart,
     float timeSpeed
 ){
     auto &ud = zeno::getSession().userData();
@@ -1312,7 +1313,7 @@ void update_procedural_sky(
     state.params.sunSoftness = clamp(sunLightSoftness, 0.01f, 1.0f);
 
     int frameid = ud.get2<int>("frameid", 0);
-    state.params.elapsedTime = timeSpeed * frameid;
+    state.params.elapsedTime = timeStart + timeSpeed * frameid;
 }
 
 static void addLightMesh(float3 corner, float3 v2, float3 v1, float3 normal, float3 emission)

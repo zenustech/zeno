@@ -73,6 +73,14 @@ ZenoLights::ZenoLights(QWidget *parent) : QWidget(parent) {
     windLat->setNumSlider({ .1, 1, 10 });
     pWindLayout->addWidget(windLat);
 
+    QLabel* timeStartLabel = new QLabel(tr("TimeStart: "));
+    timeStartLabel->setProperty("cssClass", "proppanel");
+    pWindLayout->addWidget(timeStartLabel);
+
+    timeStart->setProperty("cssClass", "proppanel");
+    timeStart->setNumSlider({ .1, 1, 10 });
+    pWindLayout->addWidget(timeStart);
+
     QLabel* timeSpeedLabel = new QLabel(tr("TimeSpeed: "));
     timeSpeedLabel->setProperty("cssClass", "proppanel");
     pWindLayout->addWidget(timeSpeedLabel);
@@ -365,6 +373,7 @@ ZenoLights::ZenoLights(QWidget *parent) : QWidget(parent) {
     connect(sunLatitude, &QLineEdit::textChanged, this, [&](){ modifySunLightDir(); });
     connect(sunLongitude, &QLineEdit::textChanged, this, [&](){ modifySunLightDir(); });
     connect(sunSoftness, &QLineEdit::textChanged, this, [&](){ modifySunLightDir(); });
+    connect(timeStart, &QLineEdit::textChanged, this, [&](){ modifySunLightDir(); });
     connect(timeSpeed, &QLineEdit::textChanged, this, [&](){ modifySunLightDir(); });
     connect(windLong, &QLineEdit::textChanged, this, [&](){ modifySunLightDir(); });
     connect(windLat, &QLineEdit::textChanged, this, [&](){ modifySunLightDir(); });
@@ -501,6 +510,7 @@ void ZenoLights::modifySunLightDir() {
     zeno::vec2f windDir = zeno::vec2f(windLongValue, windLatValue);
 
     float sunSoftnessValue = sunSoftness->text().toFloat();
+    float timeStartValue = timeStart->text().toFloat();
     float timeSpeedValue = timeSpeed->text().toFloat();
 
     auto scene = Zenovis::GetInstance().getSession()->get_scene();
@@ -510,6 +520,7 @@ void ZenoLights::modifySunLightDir() {
                 prim_in->userData().set2("sunLightDir", std::move(sunLightDir));
                 prim_in->userData().set2("sunLightSoftness", std::move(sunSoftnessValue));
                 prim_in->userData().set2("windDir", std::move(windDir));
+                prim_in->userData().set2("timeStart", std::move(timeStartValue));
                 prim_in->userData().set2("timeSpeed", std::move(timeSpeedValue));
             }
         }
@@ -553,6 +564,7 @@ void ZenoLights::write_param_into_node(const QString& primid) {
                     inputs["sunLightDir"].info.defaultValue.setValue(UI_VECTYPE({d[0], d[1]}));
                     inputs["windDir"].info.defaultValue.setValue(UI_VECTYPE({w[0], w[1]}));
                     inputs["sunLightSoftness"].info.defaultValue = (double)ud.get2<float>("sunLightSoftness");
+                    inputs["timeStart"].info.defaultValue = (double)ud.get2<float>("timeStart");
                     inputs["timeSpeed"].info.defaultValue = (double)ud.get2<float>("timeSpeed");
                 }
                 auto nodeIndex = pIGraphsModel->index(item[ROLE_OBJID].toString(), subGpIdx);
