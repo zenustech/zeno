@@ -55,6 +55,7 @@ struct SFBXReadOption {
     bool invertOpacity = false;
     bool makePrim = false;
     bool enableUDIM = false;
+    bool generate = false;
 };
 
 struct SKeyPosition {

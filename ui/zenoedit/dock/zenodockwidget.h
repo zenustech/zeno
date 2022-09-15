@@ -6,6 +6,8 @@
 
 class ZenoMainWindow;
 
+#define TEST_ZENO_API_TRIGGER
+
 enum DOCK_TYPE
 {
     DOCK_EMPTY,
@@ -49,6 +51,9 @@ private slots:
     void onDockOptionsClicked();
     void onMaximizeTriggered();
     void onFloatTriggered();
+#ifdef TEST_ZENO_API_TRIGGER
+    void onTestAPI();
+#endif
 
 private:
     void init(ZenoMainWindow* pMainWin);

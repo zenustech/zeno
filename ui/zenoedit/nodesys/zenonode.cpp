@@ -1,21 +1,20 @@
 #include "zenonode.h"
 #include "zenosubgraphscene.h"
-#include <zenoui/model/modelrole.h>
-#include "model/subgraphmodel.h"
+#include <zenomodel/include/modelrole.h>
 #include <zenoui/render/common_id.h>
 #include <zenoui/comctrl/gv/zenoparamnameitem.h>
 #include <zenoui/comctrl/gv/zenoparamwidget.h>
-#include <zenoui/util/uihelper.h>
-#include <zenoui/include/igraphsmodel.h>
+#include <zenomodel/include/uihelper.h>
+#include <zenomodel/include/igraphsmodel.h>
 #include <zeno/utils/logger.h>
 #include <zeno/utils/scope_exit.h>
 #include <zenoui/style/zenostyle.h>
 #include <zenoui/comctrl/zveceditor.h>
-#include <zenoui/model/variantptr.h>
+#include <zenomodel/include/variantptr.h>
 #include "curvemap/zcurvemapeditor.h"
 #include "zenoapplication.h"
 #include "zenomainwindow.h"
-#include "graphsmanagment.h"
+#include <zenomodel/include/graphsmanagment.h>
 #include "../nodesview/zenographseditor.h"
 #include "util/log.h"
 #include "zenosubgraphview.h"
@@ -450,7 +449,7 @@ ZenoParamWidget* ZenoNode::initParamWidget(ZenoSubGraphScene* scene, const PARAM
                 const QString& nodeid = m_index.data(ROLE_OBJID).toString();
 
                 PARAM_UPDATE_INFO info;
-                info.oldValue = pGraphsModel->getParamValue(nodeid, paramName, m_subGpIndex);
+                info.oldValue = UiHelper::getParamValue(m_index, paramName);
                 info.newValue = bChecked;
                 info.name = paramName;
                 if (info.oldValue != info.newValue)
@@ -531,7 +530,7 @@ ZenoParamWidget* ZenoNode::initParamWidget(ZenoSubGraphScene* scene, const PARAM
                 IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
                 ZASSERT_EXIT(pGraphsModel);
                 CurveModel* pModel = nullptr;
-                const QVariant& val = pGraphsModel->getParamValue(m_index.data(ROLE_OBJID).toString(), paramName, m_subGpIndex);
+                const QVariant& val = UiHelper::getParamValue(m_index, paramName);
                 pModel = QVariantPtr<CurveModel>::asPtr(val);
                 if (!pModel)
                 {
@@ -1705,7 +1704,7 @@ void ZenoNode::onCollaspeBtnClicked()
 {
 	IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
     ZASSERT_EXIT(pGraphsModel);
-    bool bCollasped = pGraphsModel->data2(m_subGpIndex, m_index, ROLE_COLLASPED).toBool();
+    bool bCollasped = m_index.data(ROLE_COLLASPED).toBool();
 
     STATUS_UPDATE_INFO info;
     info.role = ROLE_COLLASPED;
@@ -1721,7 +1720,7 @@ void ZenoNode::onOptionsBtnToggled(STATUS_BTN btn, bool toggled)
 	IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
 	ZASSERT_EXIT(pGraphsModel);
 
-    int options = pGraphsModel->data2(m_subGpIndex, m_index, ROLE_OPTIONS).toInt();
+    int options = m_index.data(ROLE_OPTIONS).toInt();
     int oldOpts = options;
 
     if (btn == STATUS_MUTE)
@@ -1827,7 +1826,7 @@ QVariant ZenoNode::itemChange(GraphicsItemChange change, const QVariant &value)
     {
         IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
         QPointF newPos = value.toPointF();
-        QPointF oldPos = pGraphsModel->getNodeStatus(nodeId(), ROLE_OBJPOS, m_subGpIndex).toPointF();
+        QPointF oldPos = m_index.data(ROLE_OBJPOS).toPointF();
         if (newPos != oldPos)
         {
             STATUS_UPDATE_INFO info;

@@ -1,6 +1,6 @@
 #include "zveceditor.h"
 #include <zenoui/style/zenostyle.h>
-#include "util/uihelper.h"
+#include <zenomodel/include/uihelper.h>
 #include "zlineedit.h"
 
 

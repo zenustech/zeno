@@ -3,7 +3,7 @@
 #include <zeno/funcs/PrimitiveTools.h>
 #include <zeno/types/UserData.h>
 #include <zenovis/ObjectsManager.h>
-#include <nodesys/nodesmgr.h>
+#include <zenomodel/include/nodesmgr.h>
 
 #include <glm/gtx/transform.hpp>
 

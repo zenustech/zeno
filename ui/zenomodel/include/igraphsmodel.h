@@ -2,9 +2,9 @@
 #define __IGRAPHMODEL_H__
 
 #include <QtWidgets>
-
-#include "../model/modeldata.h"
 #include "common.h"
+#include "modeldata.h"
+
 
 class IGraphsModel : public QAbstractItemModel
 {
@@ -15,9 +15,15 @@ public:
 	virtual QModelIndex index(const QString& subGraphName) const = 0;
 	virtual QModelIndex index(const QString& id, const QModelIndex& subGpIdx) = 0;
 	virtual QModelIndex index(int r, const QModelIndex& subGpIdx) = 0;
+
+	virtual QModelIndex nodeIndex(uint32_t id) = 0;
+	virtual QModelIndex subgIndex(uint32_t sid) = 0;
+	virtual QModelIndex subgByNodeId(uint32_t id) = 0;
+
+	virtual int itemCount(const QModelIndex &subGpIdx) const = 0;
+
 	virtual QModelIndex linkIndex(int r) = 0;
-	virtual QVariant data2(const QModelIndex& subGpIdx, const QModelIndex& index, int role) = 0;
-	virtual int itemCount(const QModelIndex& subGpIdx) const = 0;
+	virtual QModelIndex linkIndex(const QString& outNode, const QString& outSock, const QString& inNode, const QString& inSock) = 0;
 
 	virtual void addNode(const NODE_DATA& nodeData, const QModelIndex& subGpIdx, bool enableTransaction = false) = 0;
     virtual void setNodeData(const QModelIndex& nodeIndex, const QModelIndex& subGpIdx, const QVariant& value, int role) = 0;
@@ -29,9 +35,7 @@ public:
 			bool enableTransaction = false) = 0;
 	virtual void removeNode(const QString& nodeid, const QModelIndex& subGpIdx, bool enableTransaction = false) = 0;
 	virtual void removeLink(const QPersistentModelIndex& linkIdx, const QModelIndex& subGpIdx, bool enableTransaction = false) = 0;
-	virtual void removeNodeLinks(const QList<QPersistentModelIndex>& nodes, const QList<QPersistentModelIndex>& links, const QModelIndex& subGpIdx) = 0;
 	virtual void removeSubGraph(const QString& name) = 0;
-	virtual void copyPaste(const QModelIndex& fromSubg, const QModelIndexList& srcNodes, const QModelIndex& toSubg, QPointF pos, bool enableTrans = false) = 0;
 	virtual QModelIndex extractSubGraph(const QModelIndexList& nodes, const QModelIndex& fromSubg, const QString& toSubg, bool enableTrans = false) = 0;
     virtual bool IsSubGraphNode(const QModelIndex& nodeIdx) const = 0;
 
@@ -40,40 +44,27 @@ public:
 	 */
 	virtual QModelIndex fork(const QModelIndex& subgIdx, const QModelIndex& subnetNodeIdx) = 0;
 
-	/* get the corresponding scene by model item*/
-	virtual QGraphicsScene* scene(const QModelIndex& subgIdx) = 0;
-
-	virtual void getNodeIndices(const QModelIndex& subGpIdx, QModelIndexList& subgNodes, QModelIndexList& normNodes) = 0;
-
-	//virtual QModelIndex clone()
 	virtual QModelIndex addLink(const EdgeInfo& info, const QModelIndex& subGpIdx, bool bAddDynamicSock, bool enableTransaction = false) = 0;
-	virtual QVariant getParamValue(const QString& id, const QString& name, const QModelIndex& subGpIdx) = 0;
 	virtual void updateParamInfo(const QString& id, PARAM_UPDATE_INFO info, const QModelIndex& subGpIdx, bool enableTransaction = false) = 0;
 	virtual void updateParamNotDesc(const QString& id, PARAM_UPDATE_INFO info, const QModelIndex& subGpIdx, bool enableTransaction = false) = 0;
 	virtual void updateSocketDefl(const QString& id, PARAM_UPDATE_INFO info, const QModelIndex& subGpIdx, bool enableTransaction = false) = 0;
 	virtual bool updateSocketNameNotDesc(const QString& id, SOCKET_UPDATE_INFO info, const QModelIndex& subGpIdx, bool enableTransaction = false) = 0;
-
-	virtual QVariant getNodeStatus(const QString& id, int role, const QModelIndex& subGpIdx) = 0;
 	virtual void updateNodeStatus(const QString& nodeid, STATUS_UPDATE_INFO info, const QModelIndex& subgIdx, bool enableTransaction = false) = 0;
 	virtual void updateBlackboard(const QString& id, const BLACKBOARD_INFO& blackboard, const QModelIndex& subgIdx, bool enableTransaction) = 0;
 
 	virtual NODE_DATA itemData(const QModelIndex& index, const QModelIndex& subGpIdx) const = 0;
-	virtual QString name(const QModelIndex& subGpIdx) const = 0;
 	virtual void setName(const QString& name, const QModelIndex& subGpIdx) = 0;
-	virtual void replaceSubGraphNode(const QString& oldName, const QString& newName, const QModelIndex& subGpIdx) = 0;
-	virtual NODES_DATA nodes(const QModelIndex& subGpIdx) = 0;
+
 	virtual NODE_DESCS descriptors() const = 0;
     virtual bool appendSubnetDescsFromZsg(const QList<NODE_DESC>& descs) = 0;
 	virtual bool getDescriptor(const QString& descName, NODE_DESC& desc) = 0;
 	virtual void clearSubGraph(const QModelIndex& subGpIdx) = 0;
 	virtual void clear() = 0;
-	virtual void reload(const QModelIndex& subGpIdx) = 0;
-	virtual void onModelInited() {};
 	virtual void undo() = 0;
 	virtual void redo() = 0;
 	virtual void switchSubGraph(const QString& graphName) {}
 	virtual void newSubgraph(const QString& graphName) = 0;
-	virtual void reloadSubGraph(const QString& graphName) = 0;
+	virtual void initMainGraph() = 0;
 	virtual void renameSubGraph(const QString& oldName, const QString& newName) = 0;
 	virtual bool isDirty() const = 0;
 	virtual NODE_CATES getCates() = 0;
@@ -89,6 +80,8 @@ public:
 	virtual void clearDirty() = 0;
 	virtual void collaspe(const QModelIndex& subgIdx) = 0;
 	virtual void expand(const QModelIndex& subgIdx) = 0;
+    virtual void setIOProcessing(bool bIOProcessing) = 0;
+	virtual bool IsIOProcessing() const = 0;
     virtual void beginTransaction(const QString& name) = 0;
     virtual void endTransaction() = 0;
 

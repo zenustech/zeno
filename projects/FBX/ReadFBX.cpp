@@ -22,6 +22,7 @@
 #include <zeno/types/StringObject.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/NumericObject.h>
+#include <zeno/types/UserData.h>
 #include <zeno/types/DictObject.h>
 #include <zeno/types/ListObject.h>
 #include <zeno/utils/logger.h>
@@ -266,6 +267,21 @@ struct Mesh{
             processMesh(scene->mMeshes[node->mMeshes[i]], scene);
         for(unsigned int i = 0; i < node->mNumChildren; i++)
             processNode(node->mChildren[i], scene);
+    }
+
+    void processNodeMat(aiNode *node, const aiScene *scene){
+        for(unsigned int i = 0; i < node->mNumMeshes; i++)
+            processMeshMat(scene->mMeshes[node->mMeshes[i]], scene);
+        for(unsigned int i = 0; i < node->mNumChildren; i++)
+            processNodeMat(node->mChildren[i], scene);
+    }
+
+    void processMeshMat(aiMesh *mesh, const aiScene *scene){
+        if(mesh->mNumVertices) {
+            aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
+            std::string matName = material->GetName().data;
+            m_loadedMat[matName] = SMaterial();
+        }
     }
 
     void processCamera(const aiScene *scene){
@@ -894,6 +910,17 @@ void readFBXFile(
     Assimp::Importer importer;
     aiScene const* scene;
 
+    if(readOption.generate){
+        scene = importer.ReadFile(fbx_path, 0);
+        Mesh mesh;
+        mesh.processNodeMat(scene->mRootNode, scene);
+        for(auto const&[key, value]:mesh.m_loadedMat){
+            auto mat_data = std::make_shared<MatData>();
+            mats->lut[key] = mat_data;
+        }
+        return;
+    }
+
     if(true) {
         importer.SetPropertyInteger(AI_CONFIG_PP_PTV_NORMALIZE, true);
         scene = importer.ReadFile(fbx_path, aiProcess_Triangulate
@@ -992,11 +1019,17 @@ struct ReadFBXPrim : zeno::INode {
         std::shared_ptr<zeno::DictObject> prims = std::make_shared<zeno::DictObject>();
         std::shared_ptr<zeno::DictObject> mats = std::make_shared<zeno::DictObject>();
 
-        zeno::log_info("FBX: File path {}", path);
+        auto fbxFileName = Path(path)
+                               .replace_extension("")
+                               .filename()
+                               .string();
+        std::replace(fbxFileName.begin(),fbxFileName.end(), ' ', '_');
+        zeno::log_info("FBX: File path {}, Replaced FBXName {}", path,fbxFileName);
 
         SFBXReadOption readOption;
         auto udim = get_param<std::string>("udim");
         auto primitive = get_param<bool>("primitive");
+        auto generate = get_input2<bool>("generate");
         auto invOpacity = get_param<bool>("invOpacity");
         if (udim == "ENABLE")
             readOption.enableUDIM = true;
@@ -1004,11 +1037,22 @@ struct ReadFBXPrim : zeno::INode {
             readOption.invertOpacity = true;
         if(primitive)
             readOption.makePrim = true;
+        if(generate)
+            readOption.generate = true;
 
         zeno::log_info("FBX: UDIM {} PRIM {} INVERT {}", readOption.enableUDIM,readOption.makePrim,readOption.invertOpacity);
 
         readFBXFile(datas, nodeTree, data, boneTree, animInfo,
                     path.c_str(), prim, prims, mats, readOption);
+
+        int count = 0;
+        for (auto it = mats->lut.begin(); it != mats->lut.end(); it++) {
+            zeno::log_info("FBX: Setting user data {} {}", count, it->first);
+            prim->userData().setLiterial(std::to_string(count), it->first);
+            count++;
+        }
+        prim->userData().setLiterial("matNum", count);
+        prim->userData().setLiterial("fbxName", fbxFileName);
 
         set_output("data", std::move(data));
         set_output("datas", std::move(datas));
@@ -1025,6 +1069,7 @@ ZENDEFNODE(ReadFBXPrim,
            {       /* inputs: */
                {
                    {"readpath", "path"},
+                   {"bool", "generate", "false"}
                },  /* outputs: */
                {
                    "prim", "prims", "data", "datas", "mats",
@@ -1033,7 +1078,7 @@ ZENDEFNODE(ReadFBXPrim,
                {
                 {"enum ENABLE DISABLE", "udim", "DISABLE"},
                 {"bool", "invOpacity", "true"},
-                {"bool", "primitive", "false"}
+                {"bool", "primitive", "false"},
                },  /* category: */
                {
                    "FBX",

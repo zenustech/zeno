@@ -1,5 +1,5 @@
 #include "curveutil.h"
-#include <zenoui/model/curvemodel.h>
+#include <zenomodel/include/curvemodel.h>
 
 namespace curve_util
 {

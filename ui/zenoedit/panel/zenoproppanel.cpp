@@ -1,14 +1,14 @@
 #include "zenoproppanel.h"
 #include "zenoapplication.h"
-#include "graphsmanagment.h"
-#include <zenoui/model/modelrole.h>
-#include <zenoui/include/igraphsmodel.h>
+#include <zenomodel/include/graphsmanagment.h>
+#include <zenomodel/include/modelrole.h>
+#include <zenomodel/include/igraphsmodel.h>
 #include <zenoui/comctrl/zcombobox.h>
 #include <zenoui/comctrl/zlabel.h>
 #include <zenoui/style/zenostyle.h>
 #include <zenoui/comctrl/gv/zenoparamwidget.h>
 #include <zenoui/comctrl/zveceditor.h>
-#include <zenoui/util/uihelper.h>
+#include <zenomodel/include/uihelper.h>
 #include <zenoui/comctrl/zexpandablesection.h>
 #include <zenoui/comctrl/zlinewidget.h>
 #include <zenoui/comctrl/zlineedit.h>
@@ -119,7 +119,10 @@ void ZenoPropPanel::reset(IGraphsModel* pModel, const QModelIndex& subgIdx, cons
 
 ZExpandableSection* ZenoPropPanel::paramsBox(IGraphsModel* pModel, const QModelIndex& subgIdx, const QModelIndexList& nodes)
 {
-	PARAMS_INFO params = pModel->data2(subgIdx, nodes[0], ROLE_PARAMETERS).value<PARAMS_INFO>();
+    if (nodes.isEmpty())
+        return nullptr;
+
+    PARAMS_INFO params = nodes[0].data(ROLE_PARAMETERS).value<PARAMS_INFO>();
 	if (params.isEmpty())
 		return nullptr;
 
@@ -293,7 +296,10 @@ ZExpandableSection* ZenoPropPanel::paramsBox(IGraphsModel* pModel, const QModelI
 
 ZExpandableSection* ZenoPropPanel::inputsBox(IGraphsModel* pModel, const QModelIndex& subgIdx, const QModelIndexList& nodes)
 {
-	INPUT_SOCKETS inputs = pModel->data2(subgIdx, nodes[0], ROLE_INPUTS).value<INPUT_SOCKETS>();
+    if (nodes.isEmpty())
+        return nullptr;
+
+	INPUT_SOCKETS inputs = nodes[0].data(ROLE_INPUTS).value<INPUT_SOCKETS>();
 	if (inputs.keys().isEmpty())
 		return nullptr;
 
@@ -481,7 +487,7 @@ void ZenoPropPanel::onParamEditFinish()
 	else if (ZCheckBoxBar *pCheckbox = qobject_cast<ZCheckBoxBar *>(pSender))
 	{
 		PARAM_UPDATE_INFO info;
-		info.oldValue = model->getParamValue(nodeid, paramName, m_subgIdx);
+		info.oldValue = UiHelper::getParamValue(m_idx, paramName);
 		info.newValue = pCheckbox->checkState() == Qt::Checked;
 		info.name = paramName;
 		if (info.newValue != info.oldValue)
@@ -496,7 +502,7 @@ void ZenoPropPanel::onParamEditFinish()
 	}
 
 	PARAM_UPDATE_INFO info;
-	info.oldValue = model->getParamValue(nodeid, paramName, m_subgIdx);
+	info.oldValue = UiHelper::getParamValue(m_idx, paramName);
 	info.newValue = UiHelper::parseTextValue(ctrl, textValue);;
 	info.name = paramName;
 	model->updateParamInfo(nodeid, info, m_subgIdx, true);
@@ -514,7 +520,7 @@ void ZenoPropPanel::onDataChanged(const QModelIndex& subGpIdx, const QModelIndex
 
 	if (role == ROLE_PARAMETERS)
 	{
-		const PARAMS_INFO& params = pModel->data2(m_subgIdx, m_idx, role).value<PARAMS_INFO>();
+		const PARAMS_INFO& params = m_idx.data(role).value<PARAMS_INFO>();
 		for (PARAM_INFO param : params)
 		{
 			switch (param.control)
@@ -581,7 +587,7 @@ void ZenoPropPanel::onDataChanged(const QModelIndex& subGpIdx, const QModelIndex
 	}
 	else if (role == ROLE_INPUTS)
 	{
-		const INPUT_SOCKETS& inSocks = pModel->data2(m_subgIdx, m_idx, role).value<INPUT_SOCKETS>();
+		const INPUT_SOCKETS& inSocks = m_idx.data(role).value<INPUT_SOCKETS>();
 		for (QString inSock : inSocks.keys())
 		{
 			const INPUT_SOCKET& inSocket = inSocks[inSock];

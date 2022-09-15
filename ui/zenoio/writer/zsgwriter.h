@@ -1,9 +1,9 @@
 #ifndef __ZSG_WRITER_H__
 #define __ZSG_WRITER_H__
 
-#include <zenoui/model/modeldata.h>
-#include <zenoui/include/igraphsmodel.h>
-#include <zenoui/util/jsonhelper.h>
+#include <zenomodel/include/modeldata.h>
+#include <zenomodel/include/igraphsmodel.h>
+#include <zenomodel/include/jsonhelper.h>
 #include "common.h"
 
 using namespace JsonHelper;

@@ -1,12 +1,12 @@
 #include <QtWidgets>
-#include <zenoui/model/modelrole.h>
-#include <zenoui/include/igraphsmodel.h>
+#include <zenomodel/include/modelrole.h>
+#include <zenomodel/include/igraphsmodel.h>
 #include "transferacceptor.h"
 #include <zeno/utils/logger.h>
 #include "util/log.h"
 #include <zenoio/reader/zsgreader.h>
-#include "../nodesys/nodesmgr.h"
-#include <zenoui/util/uihelper.h>
+#include <zenomodel/include/nodesmgr.h>
+#include <zenomodel/include/uihelper.h>
 
 
 TransferAcceptor::TransferAcceptor(IGraphsModel* pModel)
@@ -191,7 +191,7 @@ void TransferAcceptor::setInputSocket(
         }
 
         //curve?
-        defaultValue = ZsgReader::getInstance()._parseToVariant(descInfo.type, defaultVal, nullptr);
+        defaultValue = UiHelper::_parseToVariant(descInfo.type, defaultVal, nullptr);
     }
 
     ZASSERT_EXIT(m_nodes.find(id) != m_nodes.end());
@@ -256,7 +256,7 @@ void TransferAcceptor::setParamValue(const QString& id, const QString& nodeCls, 
             paramInfo = desc.params[name];
         }
         //todo: parentRef;
-        var = ZsgReader::getInstance()._parseToVariant(paramInfo.typeDesc, value, nullptr);
+        var = UiHelper::_parseToVariant(paramInfo.typeDesc, value, nullptr);
     }
 
     PARAMS_INFO params = data[ROLE_PARAMETERS].value<PARAMS_INFO>();
@@ -328,6 +328,11 @@ void TransferAcceptor::setBlackboard(const QString& id, const BLACKBOARD_INFO& b
 
 void TransferAcceptor::setTimeInfo(const TIMELINE_INFO& info)
 {
+}
+
+TIMELINE_INFO TransferAcceptor::timeInfo() const
+{
+    return TIMELINE_INFO();
 }
 
 void TransferAcceptor::setLegacyCurve(
