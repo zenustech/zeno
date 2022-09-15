@@ -1050,7 +1050,7 @@ static __inline__ __device__ float light(
 	float march_step = 1.;
 
 	vec3 pos = origin;
-	vec3 dir_step = sunLightDir * march_step;
+	vec3 dir_step = -sunLightDir * march_step; // reverse shadow?
 	float T = 1.; // transmitance
 
 	for (int i = 0; i < steps; i++) {
