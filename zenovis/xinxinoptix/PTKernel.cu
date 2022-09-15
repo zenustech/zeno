@@ -193,7 +193,7 @@ extern "C" __global__ void __miss__radiance()
             sunLightDir, 
             make_float3(0., 0., 1.), 
             40, // be careful
-            .5, 
+            .45,
             15.,
             1.030725 * 0.3,
             params.elapsedTime
