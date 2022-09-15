@@ -262,9 +262,6 @@ void ZenoMainWindow::initMenu() {
             ZTabDockWidget *cake = new ZTabDockWidget(this);
             addDockWidget(Qt::TopDockWidgetArea, cake);
             initDocksWidget(cake, m_layerRoot);
-            _resizeDocks(m_layerRoot);
-            layout()->invalidate();
-            update();
         });
         pView->addAction(pTestAction);
     }
@@ -331,8 +328,10 @@ void ZenoMainWindow::_resizeDocks(PtrLayoutNode root)
 
     if (root->type == NT_ELEM)
     {
-        resizeDocks({root->pWidget}, {root->geom.width()}, Qt::Horizontal);
-        resizeDocks({root->pWidget}, {root->geom.height()}, Qt::Vertical);
+        if (root->geom.width() > 0)
+            resizeDocks({root->pWidget}, {root->geom.width()}, Qt::Horizontal);
+        if (root->geom.height() > 0)
+            resizeDocks({root->pWidget}, {root->geom.height()}, Qt::Vertical);
     }
     else{
         _resizeDocks(root->pLeft);
@@ -575,18 +574,17 @@ void ZenoMainWindow::onNewFile() {
 void ZenoMainWindow::resizeEvent(QResizeEvent *event)
 {
     QMainWindow::resizeEvent(event);
-    _resizeDocks(m_layerRoot);
 }
 
-void ZenoMainWindow::adjustDockSize() {
-    //temp: different layout
-    //float height = size().height();
-    //int dockHeightA = 0.50 * height;
-    //int dockHeightB = 0.50 * height;
-
-    //QList<QDockWidget *> docks = {m_viewDock, m_editor};
-    //QList<int> dockSizes = {dockHeightA, dockHeightB};
-    //resizeDocks(docks, dockSizes, Qt::Vertical);
+bool ZenoMainWindow::event(QEvent* event)
+{
+    if (QEvent::LayoutRequest == event->type())
+    {
+        //resizing have to be done after fitting layout, which follows by LayoutRequest.
+        _resizeDocks(m_layerRoot);
+        return true;
+    }
+    return QMainWindow::event(event);
 }
 
 void ZenoMainWindow::importGraph() {

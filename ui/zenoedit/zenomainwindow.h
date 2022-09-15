@@ -56,6 +56,7 @@ public slots:
 
 protected:
     void resizeEvent(QResizeEvent* event) override;
+    bool event(QEvent* event) override;
 
 private:
     void init();
@@ -64,7 +65,6 @@ private:
     void initDocksWidget(ZTabDockWidget* pCake, PtrLayoutNode root);
     void _resizeDocks(PtrLayoutNode root);
     void initTimelineDock();
-    void adjustDockSize();
     void recordRecentFile(const QString& filePath);
     void saveLayout2();
     void SplitDockWidget(ZTabDockWidget* after, ZTabDockWidget* dockwidget, Qt::Orientation orientation);
