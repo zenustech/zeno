@@ -922,6 +922,7 @@ void readFBXFile(
 
     if(readOption.generate){
         scene = importer.ReadFile(fbx_path, 0);
+        mesh.createTexDir("valueTex");
         mesh.processNodeMat(scene->mRootNode, scene);
         for(auto const&[key, value]:mesh.m_loadedMat){
             mats->lut[key] = value.clone();

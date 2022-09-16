@@ -327,29 +327,12 @@ struct SMaterial : zeno::IObjectClone<SMaterial>{
         val.emplace("diffuseRoughness", SMaterialProp{2,    false, aiColor4D(), {aiTextureType_DIFFUSE_ROUGHNESS}, {"$ai.diffuseRoughness"}});
         val.emplace("specular", SMaterialProp{3,            false, aiColor4D(), {aiTextureType_SPECULAR}, {"$ai.specular", "$clr.specular"}});
         val.emplace("subsurface", SMaterialProp{4,          false, aiColor4D(), {aiTextureType_NONE}, {"$ai.subsurfaceFactor"}});
-        val.emplace("thinkness", SMaterialProp{5,           true, aiColor4D(), {aiTextureType_NONE}, {"",}});
-        val.emplace("sssParam", SMaterialProp{6,            false, aiColor4D(), {aiTextureType_NONE}, {""}});
         val.emplace("sssColor", SMaterialProp{7,            false, aiColor4D(), {aiTextureType_REFLECTION}, {"$ai.subsurface"}});
-        val.emplace("foliage", SMaterialProp{8,             false, aiColor4D(), {aiTextureType_NONE}, {""}});
-        val.emplace("skin", SMaterialProp{9,                false, aiColor4D(), {aiTextureType_NONE}, {""}});
-        val.emplace("curvature", SMaterialProp{10,          false, aiColor4D(), {aiTextureType_NONE}, {""}});
-        val.emplace("specularTint", SMaterialProp{11,       false, aiColor4D(), {aiTextureType_NONE}, {""}});
-        val.emplace("anisotropic", SMaterialProp{12,        false, aiColor4D(), {aiTextureType_NONE}, {""}});
         val.emplace("sheen", SMaterialProp{13,              false, aiColor4D(), {aiTextureType_SHININESS}, {"$ai.sheen"}});
-        val.emplace("sheenTint", SMaterialProp{14,          false, aiColor4D(), {aiTextureType_NONE}, {""}});
         val.emplace("clearcoat", SMaterialProp{15,          false, aiColor4D(), {aiTextureType_AMBIENT}, {"$ai.coat"}});
-        val.emplace("clearcoatGloss", SMaterialProp{16,     true, aiColor4D(), {aiTextureType_NONE}, {""}});
         val.emplace("normal", SMaterialProp{17,             false, aiColor4D(), {aiTextureType_NORMAL_CAMERA, aiTextureType_NORMALS}, {"",}});
         val.emplace("emission", SMaterialProp{18,           false, aiColor4D(), {aiTextureType_EMISSIVE, aiTextureType_EMISSION_COLOR}, {"$ai.emission", "$clr.emissive"}});
-        val.emplace("exposure", SMaterialProp{19,           false, aiColor4D(), {aiTextureType_NONE}, {""}});
         val.emplace("ao", SMaterialProp{20,                 false, aiColor4D(), {aiTextureType_AMBIENT_OCCLUSION}, {""}});
-        val.emplace("toon", SMaterialProp{21,               false, aiColor4D(), {aiTextureType_NONE}, {""}});
-        val.emplace("stroke", SMaterialProp{22,             false, aiColor4D(), {aiTextureType_NONE}, {""}});
-        val.emplace("shape", SMaterialProp{23,              false, aiColor4D(), {aiTextureType_NONE}, {""}});
-        val.emplace("style", SMaterialProp{24,              false, aiColor4D(), {aiTextureType_NONE}, {""}});
-        val.emplace("strokeNoise", SMaterialProp{25,        false, aiColor4D(), {aiTextureType_NONE}, {""}});
-        val.emplace("shad", SMaterialProp{26,               false, aiColor4D(), {aiTextureType_NONE}, {""}});
-        val.emplace("strokeTint", SMaterialProp{27,         false, aiColor4D(), {aiTextureType_NONE}, {""}});
         val.emplace("opacity", SMaterialProp{28,            false, aiColor4D(), {aiTextureType_LIGHTMAP}, {"$ai.opacity", "$clr.transparent"}});
         val.emplace("transmissionColor", SMaterialProp{29,  false, aiColor4D(), {aiTextureType_OPACITY}, {"$ai.transmission", "$clr.transparent"}});
         val.emplace("specularRoughness", SMaterialProp{30,  false, aiColor4D(), {aiTextureType_HEIGHT}, {"$ai.specularRoughness",}});
@@ -384,21 +367,21 @@ struct SMaterial : zeno::IObjectClone<SMaterial>{
         std::vector<std::string> tl;
 
         std::map<std::string, SMaterialProp> val_tmp;
-        val_tmp.emplace("basecolor", val["basecolor"]);                     //0
-        val_tmp.emplace("metallic", val["metallic"]);                       //1
-        val_tmp.emplace("diffuseRoughness", val["diffuseRoughness"]);       //2
-        val_tmp.emplace("specularRoughness", val["specularRoughness"]);     //3
-        val_tmp.emplace("specular", val["specular"]);                       //4
-        val_tmp.emplace("subsurface", val["subsurface"]);                   //5
-        val_tmp.emplace("sssColor", val["sssColor"]);                       //6
-        val_tmp.emplace("sheen", val["sheen"]);                             //7
-        val_tmp.emplace("clearcoat", val["clearcoat"]);                     //8
-        val_tmp.emplace("normal", val["normal"]);                           //9
-        val_tmp.emplace("emission", val["emission"]);                       //10
-        val_tmp.emplace("ao", val["ao"]);                                   //11
-        val_tmp.emplace("opacity", val["opacity"]);                         //12
-        val_tmp.emplace("transmissionColor", val["transmissionColor"]);     //13
-        val_tmp.emplace("displacement", val["displacement"]);               //14
+        val_tmp.emplace("basecolor", val["basecolor"]);                             //0
+        val_tmp.emplace("metallic", val["metallic"]);                               //1
+        val_tmp.emplace("diffuseRoughness", val["diffuseRoughness"]);               //2
+        val_tmp.emplace("specular", val["specular"]);                               //3
+        val_tmp.emplace("subsurface", val["subsurface"]);                           //4
+        val_tmp.emplace("sssColor", val["sssColor"]);                               //5
+        val_tmp.emplace("sheen", val["sheen"]);                                     //6
+        val_tmp.emplace("clearcoat", val["clearcoat"]);                             //7
+        val_tmp.emplace("normal", val["normal"]);                                   //8
+        val_tmp.emplace("emission", val["emission"]);                               //9
+        val_tmp.emplace("ao", val["ao"]);                                           //10
+        val_tmp.emplace("opacity", val["opacity"]);                                 //11
+        val_tmp.emplace("transmissionColor", val["transmissionColor"]);             //12
+        val_tmp.emplace("specularRoughness", val["specularRoughness"]);             //13
+        val_tmp.emplace("displacement", val["displacement"]);                       //14
 
         std::vector<pair> val_vec_tmp;
 
