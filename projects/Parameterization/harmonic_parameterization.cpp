@@ -16,6 +16,7 @@ namespace {
     struct CalPrimitveUVMapHarmonic : zeno::INode {
         virtual void apply() override {
             auto prim = get_input<zeno::PrimitiveObject>("prim");
+            auto order = get_param<int>("order");
 
             size_t nm_vertices = prim->size();
             size_t nm_tris= prim->tris.size();
@@ -41,7 +42,7 @@ namespace {
             Eigen::MatrixXd bnd_uv;
             igl::map_vertices_to_circle(V,bnd,bnd_uv);
 
-            igl::harmonic(V,F,bnd,bnd_uv,1,V_uv);
+            igl::harmonic(V,F,bnd,bnd_uv,order,V_uv);
 
             // Scale UV to make the texture more clear
             V_uv *= 5;                       
@@ -58,7 +59,7 @@ namespace {
     ZENDEFNODE(CalPrimitveUVMapHarmonic, {
         {"prim"},
         {"prim"},
-        {},
+        {{"int","order","1"}},
         {"Parameterization"},
     });
 
