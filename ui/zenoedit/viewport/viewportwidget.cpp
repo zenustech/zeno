@@ -24,7 +24,8 @@
 #include <zeno/extra/GlobalComm.h>
 #include <zenomodel/include/uihelper.h>
 #include "recordvideomgr.h"
-
+#define CMP(x, y) \
+	(fabsf(x - y) <= FLT_EPSILON * fmaxf(1.0f, fmaxf(fabsf(x), fabsf(y))))
 
 static std::optional<float> ray_sphere_intersect(
     zeno::vec3f const &ray_pos,
@@ -48,6 +49,51 @@ static std::optional<float> ray_sphere_intersect(
     float t_diff = std::sqrt(r * r - l * l);
     float final_t = t - t_diff;
     return final_t;
+}
+
+static std::optional<float> ray_box_intersect(
+    zeno::vec3f const &bmin,
+    zeno::vec3f const &bmax,
+    zeno::vec3f const &ray_pos,
+    zeno::vec3f const &ray_dir
+) {
+    //objectGetBoundingBox(IObject *ptr, vec3f &bmin, vec3f &bmax);
+
+    auto &min = bmin;
+    auto &max = bmax;
+    auto &p = ray_pos;
+    auto &d = ray_dir;
+    //auto &t = t;
+
+    float t1 = (min[0] - p[0]) / (CMP(d[0], 0.0f) ? 0.00001f : d[0]);
+    float t2 = (max[0] - p[0]) / (CMP(d[0], 0.0f) ? 0.00001f : d[0]);
+    float t3 = (min[1] - p[1]) / (CMP(d[1], 0.0f) ? 0.00001f : d[1]);
+    float t4 = (max[1] - p[1]) / (CMP(d[1], 0.0f) ? 0.00001f : d[1]);
+    float t5 = (min[2] - p[2]) / (CMP(d[2], 0.0f) ? 0.00001f : d[2]);
+    float t6 = (max[2] - p[2]) / (CMP(d[2], 0.0f) ? 0.00001f : d[2]);
+
+    float tmin = fmaxf(fmaxf(fminf(t1, t2), fminf(t3, t4)), fminf(t5, t6));
+    float tmax = fminf(fminf(fmaxf(t1, t2), fmaxf(t3, t4)), fmaxf(t5, t6));
+
+    // if tmax < 0, ray is intersecting AABB
+    // but entire AABB is behing it's origin
+    if (tmax < 0) {
+        return std::nullopt;
+    }
+
+    // if tmin > tmax, ray doesn't intersect AABB
+    if (tmin > tmax) {
+        return std::nullopt;
+    }
+
+    float t_result = tmin;
+
+    // If tmin is < 0, tmax is closer
+    if (tmin < 0.0f) {
+        t_result = tmax;
+    }
+    //zeno::vec3f  final_t = p + d * t_result;
+    return t_result;
 }
 
 
@@ -295,7 +341,6 @@ QVariant CameraControl::hitOnFloor(float x, float y) const {
 void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
     if (event->button() == Qt::LeftButton) {
 
-        
         //if (Zenovis::GetInstance().m_bAddPoint == true) {
         //float x = (float)event->x() / m_res.x();
         //float y = (float)event->y() / m_res.y();
@@ -313,8 +358,7 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
         //QVector3D right = QVector3D::crossProduct(up, back).normalized();
         //up = QVector3D::crossProduct(right, back).normalized();
         //QVector3D delta = right * x + up * y;
-                
-            
+
         //zeno::log_info("create point at x={} y={}", p[0], p[1]);
 
         ////createPointNode(QPointF(p[0], p[1]));
@@ -350,12 +394,11 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
                 float min_t = std::numeric_limits<float>::max();
                 std::string name("");
                 for (auto const &[key, ptr] : scene->objectsMan->pairs()) {
-                    zeno::vec3f center;
-                    float radius;
                     zeno::vec3f ro(cam_pos[0], cam_pos[1], cam_pos[2]);
                     zeno::vec3f rd(rdir[0], rdir[1], rdir[2]);
-                    if (zeno::objectGetFocusCenterRadius(ptr, center, radius)) {
-                        if (auto ret = ray_sphere_intersect(ro, rd, center, radius)) {
+                    zeno::vec3f bmin,bmax;
+                    if (zeno::objectGetBoundingBox(ptr, bmin, bmax) ){
+                        if (auto ret = ray_box_intersect(bmin, bmax, ro, rd)) {
                             float t = *ret;
                             if (t < min_t) {
                                 min_t = t;
