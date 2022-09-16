@@ -1,13 +1,21 @@
 # type: ignore
 import ze
 
-func0 = ze.args.obj0.asFunc()
-func0()
+key = ze.args.arg
+prim = ze.args.prim.asPrim()
 
-def func(**kwargs):
-    print('func called', kwargs)
-    r = func0()
-    print(r)
-    return 42
+dx = 0.1
+offset = None
+if key == 'A':
+    offset = [-dx, 0, 0]
+elif key == 'S':
+    offset = [0, -dx, 0]
+elif key == 'W':
+    offset = [0, +dx, 0]
+elif key == 'D':
+    offset = [+dx, 0, 0]
 
-ze.rets.obj0 = ze.ZenoObject.fromFunc(func)
+if offset is not None:
+    ze.no.PrimTranslate(prim=prim, offset=offset)
+
+ze.rets.ret = 0
