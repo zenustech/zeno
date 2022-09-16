@@ -126,18 +126,22 @@ static void _writeLayout(PtrLayoutNode root, PRETTY_WRITER& writer)
     }
 }
 
+QString exportLayout(PtrLayoutNode root)
+{
+    rapidjson::StringBuffer s;
+    PRETTY_WRITER writer(s);
+    _writeLayout(root, writer);
+    QString strJson = QString::fromUtf8(s.GetString());
+    return strJson;
+}
+
 void writeLayout(PtrLayoutNode root, const QString &filePath)
 {
     QFile f(filePath);
     if (!f.open(QIODevice::WriteOnly)) {
         return;
     }
-
-    rapidjson::StringBuffer s;
-    PRETTY_WRITER writer(s);
-
-    _writeLayout(root, writer);
-    QString strJson = QString::fromUtf8(s.GetString());
+    QString strJson = exportLayout(root);
     f.write(strJson.toUtf8());
 }
 
@@ -184,7 +188,7 @@ static PtrLayoutNode _readLayout(const rapidjson::Value& objValue)
     }
 }
 
-PtrLayoutNode readLayout(const QString& filePath)
+PtrLayoutNode readLayoutFile(const QString& filePath)
 {
     QFile file(filePath);
     bool ret = file.open(QIODevice::ReadOnly | QIODevice::Text);
@@ -196,6 +200,15 @@ PtrLayoutNode readLayout(const QString& filePath)
     QByteArray bytes = file.readAll();
     doc.Parse(bytes);
 
+    return _readLayout(doc.GetObject());
+}
+
+
+PtrLayoutNode readLayout(const QString& content)
+{
+    rapidjson::Document doc;
+    QByteArray bytes = content.toUtf8();
+    doc.Parse(bytes);
     return _readLayout(doc.GetObject());
 }
 

@@ -52,7 +52,6 @@ public slots:
     void onFeedBack();
     void clearErrorMark();
     void updateLightList();
-    void onDockLocationChanged(Qt::DockWidgetArea area);
 
 protected:
     void resizeEvent(QResizeEvent* event) override;
@@ -64,6 +63,7 @@ private:
     void initDocks();
     void initDocksWidget(ZTabDockWidget* pCake, PtrLayoutNode root);
     void _resizeDocks(PtrLayoutNode root);
+    void resetDocks(PtrLayoutNode root);
     void initTimelineDock();
     void recordRecentFile(const QString& filePath);
     void saveLayout2();
@@ -72,7 +72,7 @@ private:
     QString uniqueDockObjName(DOCK_TYPE type);
 
     ZTimeline* m_pTimeline;
-    PtrLayoutNode m_layerRoot;
+    PtrLayoutNode m_layoutRoot;
     bool m_bInDlgEventloop;
 };
 

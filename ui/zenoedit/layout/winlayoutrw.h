@@ -28,7 +28,9 @@ struct LayerOutNode {
 PtrLayoutNode findNode(PtrLayoutNode root, ZTabDockWidget *pWidget);
 PtrLayoutNode findParent(PtrLayoutNode root, ZTabDockWidget *pWidget);
 void writeLayout(PtrLayoutNode root, const QString& filePath);
-PtrLayoutNode readLayout(const QString& filePath);
+QString exportLayout(PtrLayoutNode root);
+PtrLayoutNode readLayoutFile(const QString& filePath);
+PtrLayoutNode readLayout(const QString& content);
 int getDockSize(PtrLayoutNode root, bool bHori);
 
 #endif

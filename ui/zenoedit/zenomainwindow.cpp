@@ -35,7 +35,7 @@ ZenoMainWindow::ZenoMainWindow(QWidget *parent, Qt::WindowFlags flags)
     : QMainWindow(parent, flags)
     , m_bInDlgEventloop(false)
     , m_pTimeline(nullptr)
-    , m_layerRoot(nullptr)
+    , m_layoutRoot(nullptr)
 {
     init();
     setContextMenuPolicy(Qt::NoContextMenu);
@@ -193,15 +193,19 @@ void ZenoMainWindow::initMenu() {
                 QSettings settings(QSettings::UserScope, zsCompanyName, zsEditor);
                 settings.beginGroup("layout");
                 if (settings.childGroups().indexOf(name) != -1) {
-                    QMessageBox msg(QMessageBox::Warning, "", tr("alreday has same layout"));
-                    msg.exec();
-                    settings.endGroup();
-                    return;
+                    QMessageBox msg(QMessageBox::Question, "", tr("alreday has same layout, override?"), 
+                        QMessageBox::Ok | QMessageBox::Cancel);
+                    int ret = msg.exec();
+                    if (ret == QMessageBox::Cancel)
+                    {
+                        settings.endGroup();
+                        return;
+                    }
                 }
 
+                QString layoutInfo = exportLayout(m_layoutRoot);
                 settings.beginGroup(name);
-                settings.setValue("geometry", saveGeometry());
-                settings.setValue("state", saveState());
+                settings.setValue("content", layoutInfo);
                 settings.endGroup();
                 settings.endGroup();
             }
@@ -228,8 +232,16 @@ void ZenoMainWindow::initMenu() {
                     QSettings settings(QSettings::UserScope, zsCompanyName, zsEditor);
                     settings.beginGroup("layout");
                     settings.beginGroup(name);
-                    restoreGeometry(settings.value("geometry").toByteArray());
-                    restoreState(settings.value("state").toByteArray());
+                    if (settings.allKeys().indexOf("content") != -1)
+                    {
+                        QString content = settings.value("content").toString();
+                        PtrLayoutNode root = readLayout(content);
+                        resetDocks(root);
+                    }
+                    else {
+                        QMessageBox msg(QMessageBox::Warning, "", tr("layout format is invalid."));
+                        msg.exec();
+                    }
                     settings.endGroup();
                     settings.endGroup();
                 });
@@ -250,18 +262,8 @@ void ZenoMainWindow::initMenu() {
                 return "";
 
             QString filePath = fileDialog.selectedFiles().first();
-
-            m_layerRoot.reset();
-            auto docks = findChildren<ZTabDockWidget *>(QString(), Qt::FindDirectChildrenOnly);
-            for (ZTabDockWidget *pDock : docks) {
-                pDock->close();
-                delete pDock;
-            }
-
-            m_layerRoot = readLayout(filePath);
-            ZTabDockWidget *cake = new ZTabDockWidget(this);
-            addDockWidget(Qt::TopDockWidgetArea, cake);
-            initDocksWidget(cake, m_layerRoot);
+            PtrLayoutNode root = readLayoutFile(filePath);
+            resetDocks(root);
         });
         pView->addAction(pTestAction);
     }
@@ -312,13 +314,25 @@ void ZenoMainWindow::saveLayout2()
     //QMainWindowLayout* pWinLayout = qobject_cast<QMainWindowLayout*>(pLayout);
     DlgInEventLoopScope;
     QString path = QFileDialog::getSaveFileName(this, "Path to Save", "", "JSON file(*.json);;");
-    writeLayout(m_layerRoot, path);
+    writeLayout(m_layoutRoot, path);
 }
 
-void ZenoMainWindow::onDockLocationChanged(Qt::DockWidgetArea area)
+void ZenoMainWindow::resetDocks(PtrLayoutNode root)
 {
-    int j;
-    j = 0;
+    if (root == nullptr)
+        return;
+
+    m_layoutRoot.reset();
+    auto docks = findChildren<ZTabDockWidget *>(QString(), Qt::FindDirectChildrenOnly);
+    for (ZTabDockWidget *pDock : docks) {
+        pDock->close();
+        delete pDock;
+    }
+
+    m_layoutRoot = root;
+    ZTabDockWidget *cake = new ZTabDockWidget(this);
+    addDockWidget(Qt::TopDockWidgetArea, cake);
+    initDocksWidget(cake, m_layoutRoot);
 }
 
 void ZenoMainWindow::_resizeDocks(PtrLayoutNode root)
@@ -368,8 +382,8 @@ void ZenoMainWindow::initDocksWidget(ZTabDockWidget* pLeft, PtrLayoutNode root)
 
 void ZenoMainWindow::initDocks()
 {
-    m_layerRoot = std::make_shared<LayerOutNode>();
-    m_layerRoot->type = NT_ELEM;
+    m_layoutRoot = std::make_shared<LayerOutNode>();
+    m_layoutRoot->type = NT_ELEM;
 
     ZTabDockWidget* viewDock = new ZTabDockWidget(this);
     viewDock->setCurrentWidget(PANEL_VIEW);
@@ -389,8 +403,8 @@ void ZenoMainWindow::initDocks()
 
     addDockWidget(Qt::TopDockWidgetArea, viewDock);
     initTimelineDock();
-    m_layerRoot->type = NT_ELEM;
-    m_layerRoot->pWidget = viewDock;
+    m_layoutRoot->type = NT_ELEM;
+    m_layoutRoot->pWidget = viewDock;
 
     SplitDockWidget(viewDock, editorDock, Qt::Vertical);
     SplitDockWidget(viewDock, logDock, Qt::Horizontal);
@@ -496,7 +510,7 @@ void ZenoMainWindow::onCloseDock()
     ZASSERT_EXIT(pDockWidget);
     pDockWidget->close();
 
-    PtrLayoutNode spParent = findParent(m_layerRoot, pDockWidget);
+    PtrLayoutNode spParent = findParent(m_layoutRoot, pDockWidget);
     if (spParent)
     {
         if (spParent->pLeft->pWidget == pDockWidget)
@@ -518,7 +532,7 @@ void ZenoMainWindow::onCloseDock()
     }
     else
     {
-        m_layerRoot = nullptr;
+        m_layoutRoot = nullptr;
     }
 }
 
@@ -526,7 +540,7 @@ void ZenoMainWindow::SplitDockWidget(ZTabDockWidget* after, ZTabDockWidget* dock
 {
     splitDockWidget(after, dockwidget, orientation);
 
-    PtrLayoutNode spRoot = findNode(m_layerRoot, after);
+    PtrLayoutNode spRoot = findNode(m_layoutRoot, after);
     ZASSERT_EXIT(spRoot);
 
     spRoot->type = (orientation == Qt::Vertical ? NT_VERT : NT_HOR);
@@ -581,7 +595,7 @@ bool ZenoMainWindow::event(QEvent* event)
     if (QEvent::LayoutRequest == event->type())
     {
         //resizing have to be done after fitting layout, which follows by LayoutRequest.
-        _resizeDocks(m_layerRoot);
+        _resizeDocks(m_layoutRoot);
         return true;
     }
     return QMainWindow::event(event);
