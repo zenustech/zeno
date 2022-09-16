@@ -332,7 +332,7 @@ struct FleshQuasiStaticStepping : INode {
 
     constexpr auto host_space = zs::execspace_e::openmp;
     auto ompExec = zs::omp_exec();
-    auto act_buffer = dtiles_t{{{"act",1}},nm_acts,zs::memsrc_e::host};
+    auto act_buffer = dtiles_t{{{"act",1}},(std::size_t)nm_acts,zs::memsrc_e::host};
     ompExec(range(act_buffer.size()),
         [act_buffer = proxy<host_space>({},act_buffer),act_] (int i) mutable{
             act_buffer("act",i) = act_[i];
