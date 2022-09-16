@@ -28,7 +28,6 @@ set(ZENO_EXTENSIONS
     MeshSubdiv
     CUDA
     Audio
-    Try_OpenVDB
     Parameterization
     GUI
     PBD
