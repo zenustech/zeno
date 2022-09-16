@@ -99,7 +99,7 @@ target_sources(zeno PRIVATE
   fem/QuasiStaticStepping.cu
 
   # fem/BaryCentricInterpolator.cu
-  fem/Codim.cu
+  # fem/Codim.cu
 
   fem/FastQuasiStaticStepping.cu
 
@@ -127,9 +127,9 @@ target_sources(zeno PRIVATE
 )
 
 # ocean
-# target_sources(zeno PRIVATE
-# oceanfft/Ocean.cu
-# )
+target_sources(zeno PRIVATE
+  oceanfft/Ocean.cu
+)
 
 # wrangler
 #if(NOT MSVC)
