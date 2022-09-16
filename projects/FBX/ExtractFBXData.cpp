@@ -165,6 +165,7 @@ struct ExtractMatData : zeno::INode {
 
     virtual void apply() override {
         auto data = get_input<MatData>("data");
+        auto texVer = get_param<std::string>("texVer");
         auto datas = std::make_shared<zeno::ListObject>();
         auto matName = std::make_shared<zeno::StringObject>();
 
@@ -174,7 +175,12 @@ struct ExtractMatData : zeno::INode {
         matName->set(data->sMaterial.matName);
 
         auto texLists = std::make_shared<zeno::ListObject>();
-        auto tl = data->sMaterial.getTexList();
+        std::vector<std::string> tl;
+        if(texVer == "V1")
+            tl = data->sMaterial.getTexList();
+        else if(texVer == "V2")
+            tl = data->sMaterial.getSimplestTexList();
+        zeno::log_info("TexLists Length: {}", tl.size());
         for(auto&p: tl){
             auto s = std::make_shared<zeno::StringObject>();
             s->value = p;
@@ -195,7 +201,7 @@ ZENDEFNODE(ExtractMatData,
                 "datas", "matName", "texLists"
             },  /* params: */
             {
-
+                {"enum V1 V2", "texVer", "V1"}
             },  /* category: */
             {
                 "FBX",

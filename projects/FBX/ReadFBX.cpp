@@ -129,7 +129,7 @@ struct Mesh{
         }
     }
 
-    void processMesh(aiMesh *mesh, const aiScene *scene) {
+    std::string getFixedMeshName(aiMesh *mesh){
         std::string meshName(mesh->mName.data);
         // Deal with face-mat
         if(m_LoadedMeshName.find(meshName) != m_LoadedMeshName.end()){
@@ -142,6 +142,12 @@ struct Mesh{
             m_MeshCorsName[meshName] = meshName;
             m_LoadedMeshName[meshName] = "Hello!";
         }
+
+        return meshName;
+    }
+
+    void processMesh(aiMesh *mesh, const aiScene *scene) {
+        std::string meshName = getFixedMeshName(mesh);
 
         auto numAnimMesh = mesh->mNumAnimMeshes;
         float uv_scale = 1.0f;
@@ -278,9 +284,9 @@ struct Mesh{
 
     void processMeshMat(aiMesh *mesh, const aiScene *scene){
         if(mesh->mNumVertices) {
-            aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
-            std::string matName = material->GetName().data;
-            m_loadedMat[matName] = SMaterial();
+            float uv_scale = 1.0f;
+            std::string meshName = getFixedMeshName(mesh);
+            readMaterial(mesh, meshName, scene, &uv_scale);
         }
     }
 
@@ -399,7 +405,6 @@ struct Mesh{
 
         SMaterial mat;
         mat.matName = matName;
-
 
         std::string tmpMatName = matName;
         std::replace(tmpMatName.begin(), tmpMatName.end(), ':', '_');
@@ -909,14 +914,18 @@ void readFBXFile(
 {
     Assimp::Importer importer;
     aiScene const* scene;
+    Mesh mesh;
+    mesh.m_readOption = readOption;
+    std::filesystem::path p(fbx_path);
+    mesh.fbxPath = p.remove_filename();
+    Anim anim;
 
     if(readOption.generate){
         scene = importer.ReadFile(fbx_path, 0);
-        Mesh mesh;
+        mesh.createTexDir("valueTex");
         mesh.processNodeMat(scene->mRootNode, scene);
         for(auto const&[key, value]:mesh.m_loadedMat){
-            auto mat_data = std::make_shared<MatData>();
-            mats->lut[key] = mat_data;
+            mats->lut[key] = value.clone();
         }
         return;
     }
@@ -966,14 +975,6 @@ void readFBXFile(
 
     if(! scene)
         zeno::log_error("FBX: Invalid assimp scene");
-
-    Mesh mesh;
-    Anim anim;
-
-    mesh.m_readOption = readOption;
-
-    std::filesystem::path p(fbx_path);
-    mesh.fbxPath = p.remove_filename();
 
     mesh.initMesh(scene);
     anim.initAnim(scene, &mesh);
@@ -1045,15 +1046,25 @@ struct ReadFBXPrim : zeno::INode {
         readFBXFile(datas, nodeTree, data, boneTree, animInfo,
                     path.c_str(), prim, prims, mats, readOption);
 
-        int count = 0;
-        for (auto it = mats->lut.begin(); it != mats->lut.end(); it++) {
-            zeno::log_info("FBX: Setting user data {} {}", count, it->first);
-            prim->userData().setLiterial(std::to_string(count), it->first);
-            count++;
-        }
-        prim->userData().setLiterial("matNum", count);
-        prim->userData().setLiterial("fbxName", fbxFileName);
+        if(generate){
+            int count = 0;
+            for (auto &[k, v]: mats->lut) {
+                auto vc = zeno::safe_dynamic_cast<SMaterial>(v);
+                zeno::log_info("FBX: Setting user data {} {}", count, k);
+                prim->userData().setLiterial(std::to_string(count), k);
 
+                auto texLists = vc->getSimplestTexList();
+                for(int i=0;i<texLists.size();i++){
+                    prim->userData().setLiterial(
+                        std::to_string(count)+"_tex_"+std::to_string(i),
+                        texLists[i]);
+                }
+
+                count++;
+            }
+            prim->userData().setLiterial("matNum", count);
+            prim->userData().setLiterial("fbxName", fbxFileName);
+        }
         set_output("data", std::move(data));
         set_output("datas", std::move(datas));
         set_output("animinfo", std::move(animInfo));

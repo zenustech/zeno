@@ -111,9 +111,6 @@ struct ReadObjPrim : INode {
         auto path = get_input<StringObject>("path")->get();
         auto binary = file_get_binary<std::vector<char>>(path);
         auto prim = parse_obj(std::move(binary));
-        if (get_param<bool>("decodeUVs")) {
-            primDecodeUVs(prim.get());
-        }
         if (get_param<bool>("triangulate")) {
             primTriangulate(prim.get());
         }
@@ -127,7 +124,6 @@ ZENDEFNODE(ReadObjPrim,
         }, /* outputs: */ {
         {"primitive", "prim"},
         }, /* params: */ {
-        {"bool", "decodeUVs", "1"},
         {"bool", "triangulate", "1"},
         }, /* category: */ {
         "primitive",
