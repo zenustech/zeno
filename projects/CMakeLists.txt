@@ -29,7 +29,7 @@ set(ZENO_EXTENSIONS
     CUDA
     Audio
     Try_OpenVDB
-    Pass
+    Parameterization
     GUI
     PBD
     Python
