@@ -1341,7 +1341,8 @@ QModelIndex GraphsModel::addLink(const EdgeInfo& info, const QModelIndex& subGpI
                 if (maxObjId == -1)
                     maxObjId = 0;
                 QString maxObjSock = QString("obj%1").arg(maxObjId);
-                if (info.outputSock == maxObjSock)
+                QString lastKey = outputs.lastKey();
+                if (info.outputSock == lastKey)
                 {
                     //add a new
                     const QString &newObjName = QString("obj%1").arg(maxObjId + 1);
@@ -1352,10 +1353,7 @@ QModelIndex GraphsModel::addLink(const EdgeInfo& info, const QModelIndex& subGpI
                     sockUpdateinfo.bInput = false;
                     sockUpdateinfo.updateWay = SOCKET_INSERT;
                     sockUpdateinfo.newInfo.name = newObjName;
-                    if (outNodeName == "ExtractDict")
-                    {
-                        sockUpdateinfo.newInfo.control = CONTROL_DICTKEY;
-                    }
+                    sockUpdateinfo.newInfo.control = CONTROL_DICTKEY;
                     updateSocket(info.outputNode, sockUpdateinfo, subGpIdx, false);
                 }
             }
