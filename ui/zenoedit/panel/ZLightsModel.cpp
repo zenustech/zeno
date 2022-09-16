@@ -28,8 +28,9 @@ void ZLightsModel::updateByObjectsMan() {
     light_names.clear();
     auto scene = Zenovis::GetInstance().getSession()->get_scene();
     for (auto const &[key, ptr]: scene->objectsMan->lightObjects) {
-        //printf("updateByObjectsMan\n");
-        light_names.push_back(key);
+        if (ptr->userData().get2<int>("isL", 0)) {
+            light_names.push_back(key);
+        }
     }
     endResetModel();
 }

@@ -386,14 +386,15 @@ struct LightNode : INode {
             }
         }
 
-        prim->userData().setLiterial("isL", std::move(isL));
-        prim->userData().setLiterial("ivD", std::move(inverdir));
-        prim->userData().setLiterial("pos", std::move(position));
-        prim->userData().setLiterial("scale", std::move(scale));
-        prim->userData().setLiterial("rotate", std::move(rotate));
-        prim->userData().setLiterial("shape", std::move(shape));
-        prim->userData().setLiterial("color", std::move(color));
-        prim->userData().setLiterial("intensity", std::move(intensity));
+        prim->userData().set2("isRealTimeObject", std::move(isL));
+        prim->userData().set2("isL", std::move(isL));
+        prim->userData().set2("ivD", std::move(inverdir));
+        prim->userData().set2("pos", std::move(position));
+        prim->userData().set2("scale", std::move(scale));
+        prim->userData().set2("rotate", std::move(rotate));
+        prim->userData().set2("shape", std::move(shape));
+        prim->userData().set2("color", std::move(color));
+        prim->userData().set2("intensity", std::move(intensity));
 
         set_output("prim", std::move(prim));
     }

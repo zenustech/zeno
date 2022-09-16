@@ -10,6 +10,7 @@
 #include <tinyexr.h>
 #include <functional>
 #include <map>
+#include <utility>
 
 namespace zenovis {
 
@@ -169,16 +170,8 @@ void Session::set_interactive(bool interactive) {
     impl->scene->drawOptions->interactive = interactive;
 }
 
-void Session::set_hovered_graphic(std::string hovered_graphic_id) {
-    impl->scene->drawOptions->hovered_graphic_id = std::move(hovered_graphic_id);
-}
-
-void Session::set_interactive_graphics(std::map<std::string, std::unique_ptr<IGraphicInteractDraw>> &interactGraphics) {
-    std::swap(impl->scene->drawOptions->interactGraphics, interactGraphics);
-}
-
-void Session::set_interacting_graphics(std::set<std::unique_ptr<IGraphicDraw>> &interactingGraphics) {
-    std::swap(impl->scene->drawOptions->interactingGraphics, interactingGraphics);
+void Session::set_handler(std::shared_ptr<IGraphicHandler> &handler) {
+    impl->scene->drawOptions->handler = handler;
 }
 
 void Session::load_opengl_api(void *procaddr) {

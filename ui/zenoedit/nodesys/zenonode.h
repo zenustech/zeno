@@ -8,7 +8,7 @@
 #include <zenoui/nodesys/nodesys_common.h>
 #include <zenoui/comctrl/gv/zenosocketitem.h>
 #include <zenoui/comctrl/gv/zenoparamwidget.h>
-#include <zenoui/model/modeldata.h>
+#include <zenomodel/include/modeldata.h>
 
 
 class ZenoGraphsEditor;

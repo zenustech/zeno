@@ -6,6 +6,8 @@
 
 #include <iostream>
 
+#include "geo_math.hpp"
+
 namespace zeno {
 
     template <typename TileVecT, int codim = 3>
@@ -109,11 +111,19 @@ namespace zeno {
         const zs::vec<T,3>& p2,
         const zs::vec<T,3>& p3
     ) {
+        #if 1
         auto vol = volume(p0,p1,p2,p3);
         auto vol0 = volume(p,p1,p2,p3);
         auto vol1 = volume(p0,p,p2,p3);      
         auto vol2 = volume(p0,p1,p,p3);
         auto vol3 = volume(p0,p1,p2,p);
+        #else
+        auto vol = LSL_GEO::volume<T>(p0,p1,p2,p3);
+        auto vol0 = LSL_GEO::volume<T>(p,p1,p2,p3);
+        auto vol1 = LSL_GEO::volume<T>(p0,p,p2,p3);      
+        auto vol2 = LSL_GEO::volume<T>(p0,p1,p,p3);
+        auto vol3 = LSL_GEO::volume<T>(p0,p1,p2,p);
+        #endif
         return zs::vec<T,4>{vol0/vol,vol1/vol,vol2/vol,vol3/vol};
     }
 
@@ -191,10 +201,10 @@ namespace zeno {
                     // if(vi == 10820)
                     //     printf("test neighbor element %d ei\n",ei);
                     auto inds = eles.template pack<4>(elm_tag, ei).template reinterpret_bits<int>();
-                    auto p0 = verts.pack<3>(x_tag,inds[0]);
-                    auto p1 = verts.pack<3>(x_tag,inds[1]);
-                    auto p2 = verts.pack<3>(x_tag,inds[2]);
-                    auto p3 = verts.pack<3>(x_tag,inds[3]);
+                    auto p0 = verts.template pack<3>(x_tag,inds[0]);
+                    auto p1 = verts.template pack<3>(x_tag,inds[1]);
+                    auto p2 = verts.template pack<3>(x_tag,inds[2]);
+                    auto p3 = verts.template pack<3>(x_tag,inds[3]);
 
                     auto ws = compute_barycentric_weights(p,p0,p1,p2,p3);
 

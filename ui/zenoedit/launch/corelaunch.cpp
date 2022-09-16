@@ -1,7 +1,6 @@
 #include "corelaunch.h"
-#include "model/graphsmodel.h"
-#include <zenoui/model/modelrole.h>
-#include <zenoui/util/jsonhelper.h>
+#include <zenomodel/include/modelrole.h>
+#include <zenomodel/include/jsonhelper.h>
 #include <zeno/extra/GlobalState.h>
 #include <zeno/utils/scope_exit.h>
 #include <zeno/extra/GlobalComm.h>
@@ -12,7 +11,7 @@
 #include <zeno/types/StringObject.h>
 #include "zenoapplication.h"
 #include "zenomainwindow.h"
-#include "graphsmanagment.h"
+#include <zenomodel/include/graphsmanagment.h>
 #include "serialize.h"
 #if !defined(ZENO_MULTIPROCESS) || !defined(ZENO_IPC_USE_TCP)
 #include <thread>

@@ -97,6 +97,11 @@ namespace {
         static std::map<std::string, void *(*)(Zeno_Object)> impl;
         return impl;
     }
+
+    static auto &getCFuncPtrs() {
+        static std::map<std::string, void *(*)(void *)> impl;
+        return impl;
+    }
 }
 
 extern "C" {
@@ -412,7 +417,7 @@ ZENO_CAPI Zeno_Error Zeno_InvokeObjectFactory(Zeno_Object *objectRet_, const cha
     return lastError.catched([=] {
         auto it = getObjFactory().find(typeName_);
         if (ZENO_UNLIKELY(it == getObjFactory().end()))
-            throw makeError("invalid typeName [" + (std::string)typeName_ + "]");
+            throw makeError("invalid typeName [" + (std::string)typeName_ + "] in ObjFactory");
         *objectRet_ = it->second(ffiObj_);
     });
 }
@@ -421,8 +426,17 @@ ZENO_CAPI Zeno_Error Zeno_InvokeObjectDefactory(Zeno_Object object_, const char 
     return lastError.catched([=] {
         auto it = getObjDefactory().find(typeName_);
         if (ZENO_UNLIKELY(it == getObjDefactory().end()))
-            throw makeError("invalid typeName [" + (std::string)typeName_ + "]");
+            throw makeError("invalid typeName [" + (std::string)typeName_ + "] in ObjDefactory");
         *ffiObjRet_ = it->second(object_);
+    });
+}
+
+ZENO_CAPI Zeno_Error Zeno_InvokeCFunctionPtr(void *ffiObjArg_, const char *typeName_, void **ffiObjRet_) ZENO_CAPI_NOEXCEPT {
+    return lastError.catched([=] {
+        auto it = getCFuncPtrs().find(typeName_);
+        if (ZENO_UNLIKELY(it == getCFuncPtrs().end()))
+            throw makeError("invalid typeName [" + (std::string)typeName_ + "] in CFuncPtrs");
+        *ffiObjRet_ = it->second(ffiObjArg_);
     });
 }
 
@@ -459,9 +473,20 @@ ZENO_API int capiRegisterObjectFactory(std::string const &typeName_, Zeno_Object
     return 1;
 }
 
-ZENO_API int capiRegisterObjectDefactory(std::string const &typeName_, void *(*factory_)(Zeno_Object)) {
-    getObjDefactory().emplace(typeName_, factory_);
+ZENO_API int capiRegisterObjectDefactory(std::string const &typeName_, void *(*defactory_)(Zeno_Object)) {
+    getObjDefactory().emplace(typeName_, defactory_);
     return 1;
+}
+
+ZENO_API int capiRegisterCFunctionPtr(std::string const &typeName_, void *(*cfunc_)(void *)) {
+    getCFuncPtrs().emplace(typeName_, cfunc_);
+    return 1;
+}
+
+ZENO_API Zeno_Error capiLastErrorCatched(std::function<void()> const &func) noexcept {
+    return lastError.catched([&] {
+        func();
+    });
 }
 
 }

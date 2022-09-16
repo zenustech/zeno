@@ -2,11 +2,11 @@
 #include <comctrl/ziconbutton.h>
 #include <comctrl/ztoolbutton.h>
 #include <zenoui/style/zenostyle.h>
-#include <zenoui/include/igraphsmodel.h>
+#include <zenomodel/include/igraphsmodel.h>
 #include "zenoapplication.h"
 #include "zenomainwindow.h"
 #include "viewport/viewportwidget.h"
-#include "graphsmanagment.h"
+#include <zenomodel/include/graphsmanagment.h>
 #include "viewport/zenovis.h"
 #include "util/log.h"
 #include <QFileDialog>

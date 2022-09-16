@@ -6,7 +6,7 @@
 #include "../zenoedit/launch/serialize.h"
 #include "../zenoedit/model/graphsmodel.h"
 #include <zenovis/DrawOptions.h>
-#include <zenoui/util/jsonhelper.h>
+#include <zenomodel/include/jsonhelper.h>
 #include <graphsmanagment.h>
 #include <viewport/zenovis.h>
 #include <cstdlib>
