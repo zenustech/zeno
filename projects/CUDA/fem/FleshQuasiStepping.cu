@@ -319,7 +319,7 @@ struct FleshQuasiStaticStepping : INode {
     // fmt::print("number of activations : {}\n",nm_acts);
 
     std::vector<float> act_;    
-    int nm_acts = 0;
+    std::size_t nm_acts = 0;
     // auto nm_acts_ = zstets->get().get("NM_MUSCLES");
     // std::cout << "nm_acts_ : " << std::endl;
 
