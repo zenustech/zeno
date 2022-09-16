@@ -1,10 +1,10 @@
 #include "curvenodeitem.h"
 #include "curvemapview.h"
 #include <zenoui/style/zenostyle.h>
-#include <zenoui/util/uihelper.h>
-#include "curveutil.h"
+#include <zenomodel/include/uihelper.h>
+#include <zenomodel/include/curveutil.h>
 #include "curvesitem.h"
-#include <zenoui/model/curvemodel.h>
+#include <zenomodel/include/curvemodel.h>
 
 using namespace curve_util;
 

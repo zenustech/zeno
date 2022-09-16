@@ -2,7 +2,7 @@
 #include "zenoheatmapeditor.h"
 #include <zenoui/style/zenostyle.h>
 #include <zenoui/nodesys/zenosvgitem.h>
-#include <zenoui/util/uihelper.h>
+#include <zenomodel/include/uihelper.h>
 #include "util/log.h"
 
 

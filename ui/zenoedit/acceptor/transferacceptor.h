@@ -29,6 +29,7 @@ public:
     void setColorRamps(const QString &id, const COLOR_RAMPS &colorRamps) override;
     void setBlackboard(const QString &id, const BLACKBOARD_INFO &blackboard) override;
     void setTimeInfo(const TIMELINE_INFO& info) override;
+    TIMELINE_INFO timeInfo() const override;
     void setLegacyCurve(
         const QString& id,
         const QVector<QPointF>& pts,

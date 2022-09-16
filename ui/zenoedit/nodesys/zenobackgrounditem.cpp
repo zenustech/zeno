@@ -1,5 +1,5 @@
 #include "zenobackgrounditem.h"
-#include <zenoui/util/uihelper.h>
+#include <zenomodel/include/uihelper.h>
 
 
 ZenoBackgroundItem::ZenoBackgroundItem(const BackgroundComponent &comp, QGraphicsItem *parent)

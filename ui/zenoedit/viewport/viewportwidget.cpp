@@ -3,8 +3,7 @@
 #include "zenovis.h"
 #include "camerakeyframe.h"
 #include "timeline/ztimeline.h"
-#include "graphsmanagment.h"
-#include "model/graphsmodel.h"
+#include <zenomodel/include/graphsmanagment.h>
 #include "launch/corelaunch.h"
 #include "zenoapplication.h"
 #include "zenomainwindow.h"
@@ -19,14 +18,14 @@
 #include <util/log.h>
 #include <zenoui/style/zenostyle.h>
 //#include <zeno/utils/zeno_p.h>
-#include <nodesys/nodesmgr.h>
+#include <zenomodel/include/nodesmgr.h>
 #include <cmath>
 #include <algorithm>
 #include <optional>
 #include <zeno/core/Session.h>
 #include <zeno/extra/GlobalState.h>
 #include <zeno/extra/GlobalComm.h>
-#include <zenoui/util/uihelper.h>
+#include <zenomodel/include/uihelper.h>
 #include "recordvideomgr.h"
 
 

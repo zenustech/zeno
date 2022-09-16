@@ -55,6 +55,7 @@ struct SFBXReadOption {
     bool invertOpacity = false;
     bool makePrim = false;
     bool enableUDIM = false;
+    bool generate = false;
 };
 
 struct SKeyPosition {
@@ -300,6 +301,7 @@ struct SDefaultMatProp{
         val.emplace("opacity", COMMON_DEFAULT_opacity);
         val.emplace("transmissionColor", COMMON_DEFAULT_transmissionColor);
         val.emplace("specularRoughness", COMMON_DEFAULT_defaultColor);
+        val.emplace("displacement", COMMON_DEFAULT_defaultColor);
         return val;
     }
 };
@@ -320,12 +322,12 @@ struct SMaterial : zeno::IObjectClone<SMaterial>{
     SMaterial(){
         // TODO trick - We use some unused tex properties to set some tex
         //
-        val.emplace("basecolor", SMaterialProp{0,           false, aiColor4D(), {aiTextureType_BASE_COLOR, aiTextureType_DIFFUSE}, {"$ai.base", "$clr.diffuse"}}); // texOk
-        val.emplace("metallic", SMaterialProp{1,            false, aiColor4D(), {aiTextureType_METALNESS}, {"$ai.metalness"}}); // texOk
+        val.emplace("basecolor", SMaterialProp{0,           false, aiColor4D(), {aiTextureType_BASE_COLOR, aiTextureType_DIFFUSE}, {"$ai.base", "$clr.diffuse"}});
+        val.emplace("metallic", SMaterialProp{1,            false, aiColor4D(), {aiTextureType_METALNESS}, {"$ai.metalness"}});
         val.emplace("diffuseRoughness", SMaterialProp{2,    false, aiColor4D(), {aiTextureType_DIFFUSE_ROUGHNESS}, {"$ai.diffuseRoughness"}});
         val.emplace("specular", SMaterialProp{3,            false, aiColor4D(), {aiTextureType_SPECULAR}, {"$ai.specular", "$clr.specular"}});
         val.emplace("subsurface", SMaterialProp{4,          false, aiColor4D(), {aiTextureType_NONE}, {"$ai.subsurfaceFactor"}});
-        val.emplace("thinkness", SMaterialProp{5,           true, aiColor4D(), {aiTextureType_NONE}, {"", /*"$ai.thinFilmThickness"*/}});
+        val.emplace("thinkness", SMaterialProp{5,           true, aiColor4D(), {aiTextureType_NONE}, {"",}});
         val.emplace("sssParam", SMaterialProp{6,            false, aiColor4D(), {aiTextureType_NONE}, {""}});
         val.emplace("sssColor", SMaterialProp{7,            false, aiColor4D(), {aiTextureType_REFLECTION}, {"$ai.subsurface"}});
         val.emplace("foliage", SMaterialProp{8,             false, aiColor4D(), {aiTextureType_NONE}, {""}});
@@ -337,7 +339,7 @@ struct SMaterial : zeno::IObjectClone<SMaterial>{
         val.emplace("sheenTint", SMaterialProp{14,          false, aiColor4D(), {aiTextureType_NONE}, {""}});
         val.emplace("clearcoat", SMaterialProp{15,          false, aiColor4D(), {aiTextureType_AMBIENT}, {"$ai.coat"}});
         val.emplace("clearcoatGloss", SMaterialProp{16,     true, aiColor4D(), {aiTextureType_NONE}, {""}});
-        val.emplace("normal", SMaterialProp{17,             false, aiColor4D(), {aiTextureType_NORMAL_CAMERA, aiTextureType_NORMALS}, {"",}}); // texOk
+        val.emplace("normal", SMaterialProp{17,             false, aiColor4D(), {aiTextureType_NORMAL_CAMERA, aiTextureType_NORMALS}, {"",}});
         val.emplace("emission", SMaterialProp{18,           false, aiColor4D(), {aiTextureType_EMISSIVE, aiTextureType_EMISSION_COLOR}, {"$ai.emission", "$clr.emissive"}});
         val.emplace("exposure", SMaterialProp{19,           false, aiColor4D(), {aiTextureType_NONE}, {""}});
         val.emplace("ao", SMaterialProp{20,                 false, aiColor4D(), {aiTextureType_AMBIENT_OCCLUSION}, {""}});
@@ -348,9 +350,10 @@ struct SMaterial : zeno::IObjectClone<SMaterial>{
         val.emplace("strokeNoise", SMaterialProp{25,        false, aiColor4D(), {aiTextureType_NONE}, {""}});
         val.emplace("shad", SMaterialProp{26,               false, aiColor4D(), {aiTextureType_NONE}, {""}});
         val.emplace("strokeTint", SMaterialProp{27,         false, aiColor4D(), {aiTextureType_NONE}, {""}});
-        val.emplace("opacity", SMaterialProp{28,            false, aiColor4D(), {aiTextureType_LIGHTMAP}, {"$ai.opacity", "$clr.transparent"}}); // texOk
+        val.emplace("opacity", SMaterialProp{28,            false, aiColor4D(), {aiTextureType_LIGHTMAP}, {"$ai.opacity", "$clr.transparent"}});
         val.emplace("transmissionColor", SMaterialProp{29,  false, aiColor4D(), {aiTextureType_OPACITY}, {"$ai.transmission", "$clr.transparent"}});
         val.emplace("specularRoughness", SMaterialProp{30,  false, aiColor4D(), {aiTextureType_HEIGHT}, {"$ai.specularRoughness",}});
+        val.emplace("displacement", SMaterialProp{31,       false, aiColor4D(), {aiTextureType_DISPLACEMENT}, {"",}});
     }
 
     std::vector<std::string> getTexList(){
