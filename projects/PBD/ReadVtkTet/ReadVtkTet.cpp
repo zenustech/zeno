@@ -3,17 +3,9 @@
 #include <zeno/zeno.h>
 #include <algorithm>
 #include <set>
-#include <map>
 #include <list>
-#include <unordered_set>
-#include <unordered_map>
-#include <typeinfo>
-#include <type_traits>
 #include <fstream>
 #include "MeshIO.hpp"
-#include "../myPrint.h"
-#include <zeno/utils/log.h>
-
 namespace zeno {
 
 struct ReadVtkTet : INode {
@@ -213,9 +205,6 @@ void ReadVtkTet::extractEdge()
         std::copy(line.begin(), line.end(), to.begin());
         edges.push_back(to);
     }
-
-    log_info("after extractEdges numEdges: ", edges.size());
-    
 
 }
 
