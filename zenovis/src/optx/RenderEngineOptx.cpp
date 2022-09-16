@@ -171,7 +171,6 @@ struct GraphicsManager {
                     std::cout<<"size verts:"<<prim_in->verts.size()<<std::endl;
                     auto &in_pos   = prim_in->verts;
                     auto &in_tan   = prim_in->attr<zeno::vec3f>("atang");
-                    auto &in_clr   = prim_in->add_attr<zeno::vec3f>("clr");
                     auto &in_nrm   = prim_in->add_attr<zeno::vec3f>("nrm");
                     auto &in_uv    = prim_in->attr<zeno::vec3f>("uv");
 
@@ -182,9 +181,6 @@ struct GraphicsManager {
                           prim->verts[vid]         = in_pos[prim_in->tris[tid][0]];
                           prim->verts[vid+1]       = in_pos[prim_in->tris[tid][1]];
                           prim->verts[vid+2]       = in_pos[prim_in->tris[tid][2]];
-                              att_clr[vid]         = in_clr[prim_in->tris[tid][0]];
-                              att_clr[vid+1]       = in_clr[prim_in->tris[tid][1]];
-                              att_clr[vid+2]       = in_clr[prim_in->tris[tid][2]];
                               att_nrm[vid]         = in_nrm[prim_in->tris[tid][0]];
                               att_nrm[vid+1]       = in_nrm[prim_in->tris[tid][1]];
                               att_nrm[vid+2]       = in_nrm[prim_in->tris[tid][2]];
@@ -196,6 +192,15 @@ struct GraphicsManager {
                               att_tan[vid+2]       = in_tan[prim_in->tris[tid][2]];
                              prim->tris[tid]       = zeno::vec3i(vid, vid+1, vid+2);
 
+                    }
+                    if (prim_in->has_attr("clr")) {
+                        auto &in_clr   = prim_in->add_attr<zeno::vec3f>("clr");
+                        for(size_t tid=0;tid<prim_in->tris.size();tid++) {
+                            size_t vid = tid*3;
+                            att_clr[vid]         = in_clr[prim_in->tris[tid][0]];
+                            att_clr[vid+1]       = in_clr[prim_in->tris[tid][1]];
+                            att_clr[vid+2]       = in_clr[prim_in->tris[tid][2]];
+                        }
                     }
                     //flatten here, keep the rest of codes unchanged.
 
