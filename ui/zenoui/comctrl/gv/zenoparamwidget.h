@@ -2,7 +2,8 @@
 #define __ZENO_PARAM_WIDGET_H__
 
 #include <QtWidgets>
-#include <zenoui/model/modelrole.h>
+#include <zenomodel/include/modelrole.h>
+#include <zenomodel/include/modeldata.h>
 #include "../../nodesys/nodesys_common.h"
 #include "zenosocketitem.h"
 #include "zgraphicstextitem.h"

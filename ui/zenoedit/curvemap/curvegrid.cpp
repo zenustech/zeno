@@ -1,8 +1,8 @@
 #include "curvegrid.h"
 #include "curvemapview.h"
 #include "curvenodeitem.h"
-#include "curveutil.h"
-#include <zenoui/util/uihelper.h>
+#include <zenomodel/include/curveutil.h>
+#include <zenomodel/include/uihelper.h>
 #include "curvesitem.h"
 #include "util/log.h"
 

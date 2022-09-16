@@ -1606,12 +1606,14 @@ typename IPCSystem::T IPCSystem::energy(zs::CudaExecutionPolicy &pol, const zs::
     for (auto &primHandle : prims) {
         match([&](auto &elasticModel) {
             Es.push_back(elasticityEnergy(pol, vtemp, primHandle, elasticModel, dt, es));
-        })(primHandle.models.getElasticModel());
+        })(primHandle.getModels().getElasticModel());
     }
     for (auto &primHandle : auxPrims) {
+        using ModelT = RM_CVREF_T(primHandle.getModels().getElasticModel());
+        const ModelT &model = primHandle.modelsPtr ? primHandle.getModels().getElasticModel() : ModelT{};
         match([&](auto &elasticModel) {
             Es.push_back(elasticityEnergy(pol, vtemp, primHandle, elasticModel, dt, es));
-        })(primHandle.models.getElasticModel());
+        })(model);
     }
     // contacts
     {
@@ -2351,7 +2353,7 @@ struct IPCSystemClothBinding : INode { // usually called once before stepping
     using tiles_t = typename ZenoParticles::particles_t;
 #if 1
     // unordered version
-    using bvh_t = zs::LBvh<3, 32, int, zs::f32>;
+    using bvh_t = zs::LBvh<3, int, zs::f32>;
     using bv_t = typename bvh_t::Box;
 #else
     using bvh_t = typename IPCSystem::bvh_t;
@@ -2390,7 +2392,7 @@ struct IPCSystemClothBinding : INode { // usually called once before stepping
                 float dist = distCap;
                 int j = -1;
                 int numNodes = bvh.numNodes();
-#if 1
+#if 0
                 auto nt = bvh.numLeaves() - 1;
                 int node = bvh._root;
                 while (node != -1) {

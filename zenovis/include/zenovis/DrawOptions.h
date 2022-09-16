@@ -15,7 +15,7 @@ struct DrawOptions {
     bool enable_gi = false;
     bool smooth_shading = false;
     bool normal_check = false;
-    int num_samples = 16;
+    int num_samples = 1;
 
     bool interactive = false;
     std::string hovered_graphic_id;

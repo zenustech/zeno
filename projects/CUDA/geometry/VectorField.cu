@@ -19,6 +19,8 @@
 #include "zensim/geometry/AnalyticLevelSet.h"
 #include "zensim/math/MathUtils.h"
 
+// #include "zensim/geometry/AnalyticLevelSet.h"
+
 
 namespace zeno {
 
@@ -122,12 +124,27 @@ ZENDEFNODE(ZSEvalGradientField, {
                                     {"ZSGeometry"}
 });
 
+
+struct HeatmapObject : zeno::IObject {
+    std::vector<zeno::vec3f> colors;
+
+    zeno::vec3f interp(float x) const {
+        x = zeno::clamp(x, 0, 1) * colors.size();
+        int i = (int)zeno::floor(x);
+        i = zeno::clamp(i, 0, colors.size() - 2);
+        float f = x - i;
+        return (1 - f) * colors.at(i) + f * colors.at(i + 1);
+    }
+};
+
 struct ZSRetrieveVectorField : zeno::INode {
     using T = float;
     using dtiles_t = zs::TileVector<T,32>;
     using tiles_t = typename ZenoParticles::particles_t;
     using vec3 = zs::vec<T,3>;
     using mat3 = zs::vec<T,3,3>;
+
+
     virtual void apply() override {
         using namespace zs;
         auto field = get_input<ZenoParticles>("field");
@@ -139,12 +156,13 @@ struct ZSRetrieveVectorField : zeno::INode {
         auto xtag = get_param<std::string>("xtag");
         // auto normalize = get_param<int>("normalize");
         auto scale = (T)get_param<float>("scale");
+        auto color_tag = get_param<std::string>("color_tag");
 
-        if(type == "element" && !eles.hasProperty(gtag)){
+        if(type == "element" && !eles.hasProperty(gtag) && !eles.hasProperty(color_tag)){
             fmt::print("the volume does not contain element-wise gradient field : {}\n",gtag);
             throw std::runtime_error("the volume does not contain element-wise gradient field");
         }
-        if(type == "vert" && !verts.hasProperty(gtag)){
+        if(type == "vert" && !verts.hasProperty(gtag) && !verts.hasProperty(color_tag)){
             fmt::print("the volume does not contain nodal-wize gradient field : {}\n",gtag);
             throw std::runtime_error("the volume does not contain nodal-wize gradient field");
         }
@@ -153,9 +171,10 @@ struct ZSRetrieveVectorField : zeno::INode {
             throw std::runtime_error("the volume does not contain specified position channel");
         }
 
-        std::vector<zs::PropertyTag> tags{{"x",3},{"vec",3}/*,{"clr",3}*/};
+        std::vector<zs::PropertyTag> tags{{"x",3},{"vec",3}};
         bool on_elm = (type == "element");
         auto vec_buffer = typename ZenoParticles::particles_t(tags,on_elm ? eles.size() : verts.size(),zs::memsrc_e::device,0);
+        auto zsvec_buffer = zs::Vector<float>(on_elm ? eles.size() : verts.size(),zs::memsrc_e::device,0);
         // transfer the data from gpu to cpu
         constexpr auto cuda_space = execspace_e::cuda;
         auto cudaPol = cuda_exec();
@@ -164,7 +183,8 @@ struct ZSRetrieveVectorField : zeno::INode {
 
         cudaPol(zs::range(vec_buffer.size()),
             [vec_buffer = proxy<cuda_space>({},vec_buffer),verts = proxy<cuda_space>({},verts),eles = proxy<cuda_space>({},eles),
-                gtag = zs::SmallString(gtag),xtag = zs::SmallString(xtag),on_elm,scale,elm_dim] ZS_LAMBDA(int i) mutable {
+                gtag = zs::SmallString(gtag),xtag = zs::SmallString(xtag),color_tag = zs::SmallString(color_tag),on_elm,scale,elm_dim,
+                zsvec_buffer = proxy<cuda_space>(zsvec_buffer)] ZS_LAMBDA(int i) mutable {
                     if(on_elm){
                         auto bx = vec3::zeros();
                         if(elm_dim == 4){
@@ -178,30 +198,51 @@ struct ZSRetrieveVectorField : zeno::INode {
                         }
                         vec_buffer.tuple<3>("x",i) = bx;
                         vec_buffer.tuple<3>("vec",i) = scale * eles.pack<3>(gtag,i)/* / eles.pack<3>(gtag,i).norm()*/;
+                        zsvec_buffer[i] = eles(color_tag,i);
+                        // vec_buffer(color_tag,i) = eles(color_tag,i);
                     }else{
                         vec_buffer.tuple<3>("x",i) = verts.pack<3>(xtag,i);
                         vec_buffer.tuple<3>("vec",i) = scale * verts.pack<3>(gtag,i)/* / verts.pack<3>(gtag,i).norm()*/;
+                        // vec_buffer(color_tag,i) = verts(color_tag,i);
+                        zsvec_buffer[i] = verts(color_tag,i);
                     }
         });
 
         vec_buffer = vec_buffer.clone({zs::memsrc_e::host});
+        zsvec_buffer = zsvec_buffer.clone({zs::memsrc_e::host});
         int vec_size = vec_buffer.size();
         constexpr auto omp_space = execspace_e::openmp;
         auto ompPol = omp_exec();
+
+        auto heatmap = get_input<HeatmapObject>("heatmap");
 
         auto vec_field = std::make_shared<zeno::PrimitiveObject>();
         vec_field->resize(vec_size * 2);
         auto& segs = vec_field->lines;
         segs.resize(vec_size);
         auto& sverts = vec_field->attr<zeno::vec3f>("pos");
+        auto& scolors = vec_field->add_attr<zeno::vec3f>("clr");
 
+        // detect the max and min of color_tag
+        std::vector<float> max_res(1);
+        zs::reduce(ompPol, std::begin(zsvec_buffer), std::end(zsvec_buffer), std::begin(max_res), zs::limits<float>::lowest(), zs::getmax<float>());
+        std::vector<float> min_res(1);
+        zs::reduce(ompPol, std::begin(zsvec_buffer), std::end(zsvec_buffer), std::begin(min_res), zs::limits<float>::max(), zs::getmin<float>());
+        
         ompPol(zs::range(vec_buffer.size()),
-            [vec_buffer = proxy<omp_space>({},vec_buffer),&segs,&sverts,vec_size] (int i) mutable {
+            [vec_buffer = proxy<omp_space>({},vec_buffer),&segs,&sverts,vec_size,&heatmap,&min_res,&max_res,&scolors,
+                    zsvec_buffer = proxy<omp_space>(zsvec_buffer)] (int i) mutable {
                 segs[i] = zeno::vec2i(i * 2 + 0,i * 2 + 1);
                 auto start = vec_buffer.pack<3>("x",i);
                 auto end = start + vec_buffer.pack<3>("vec",i);
                 sverts[i*2 + 0] = zeno::vec3f{start[0],start[1],start[2]};
                 sverts[i*2 + 1] = zeno::vec3f{end[0],end[1],end[2]};
+
+                auto x = (zsvec_buffer[i]-min_res[0])/(max_res[0]-min_res[0]);
+
+                auto color = heatmap->interp(x);
+                scolors[i*2 + 0] = color;     
+                scolors[i*2 + 1] = color;
         });
 
         set_output("vec_field",std::move(vec_field));
@@ -209,9 +250,9 @@ struct ZSRetrieveVectorField : zeno::INode {
 };
 
 ZENDEFNODE(ZSRetrieveVectorField, {
-    {"field"},
+    {"field","heatmap"},
     {"vec_field"},
-    {{"enum element vert","location","element"},{"string","gtag","vec_field"},{"string","xtag","xtag"},{"float","scale","1.0"}},
+    {{"enum element vert","location","element"},{"string","gtag","vec_field"},{"string","xtag","x"},{"float","scale","1.0"},{"string","color_tag","color_tag"}},
     {"ZSGeometry"},
 });
 
@@ -416,7 +457,7 @@ struct ZSGaussianNeighborQuadatureSampler : zeno::INode {
             auto x0 = vtemp.template pack<3>(xTag, inds[0]);
             bv_t bv{x0, x0};
             for (int d = 1; d != dim; ++d)
-            merge(bv, vtemp.template pack<3>(xTag, inds[d]));
+                merge(bv, vtemp.template pack<3>(xTag, inds[d]));
             bvs[ei] = bv;
         });
         return ret;
@@ -507,7 +548,7 @@ struct ZSGaussianNeighborQuadatureSampler : zeno::INode {
         // fmt::print("initial dst field\n");
         // build bvh for source
         auto bvs = retrieve_bounding_volumes(cudaPol,src_verts,xtag,src_quads,wrapv<4>{},0);
-        auto quadsBvh = LBvh<3,32,int,float>{};
+        auto quadsBvh = LBvh<3,int,float>{};
         quadsBvh.build(cudaPol,bvs);
 
         // fmt::print("finish setup bvh\n");
@@ -605,6 +646,45 @@ ZENDEFNODE(ZSGaussianNeighborQuadatureSampler,{
     },
     {"ZSGeometry"}
 });
+
+
+struct ZSGaussianNeighborSampler : zeno::INode {
+    using vec3 = zs::vec<float,3>;
+    using bv_t = zs::AABBBox<3,float>;
+
+    constexpr float gauss_kernel(float dist,float sigma) {
+        // using namespace zs;
+        auto distds = dist/sigma;
+        return 1/(sigma /** zs::sqrt(2*zs::g_pi)*/) * zs::exp(-0.5 * distds * distds);
+    }
+
+    template<typename Pol,typename VertBuffer,typename QuadBuffer,typename CenterBuffer>
+    void evaluate_quadrature_centers(Pol& pol,VertBuffer& verts,QuadBuffer& quads,CenterBuffer& centers,const std::string& xtag) {
+        using namespace zs;
+        constexpr auto space = execspace_e::cuda;   
+
+        // fmt::print("begin evaluate centers\n");
+
+        pol(range(centers.size()),
+            [src_centers = proxy<space>(centers),
+                    src_quads = proxy<space>({},quads),
+                    src_verts = proxy<space>({},verts),
+                    xtag = SmallString(xtag)] __device__(int ei) mutable {
+                int simplex_size = src_quads.propertySize("inds");
+                src_centers[ei] = vec3::zeros();
+                // if(ei == 1)
+                //     printf("simplex_size : %d\n",simplex_size);
+                for(int i = 0;i != simplex_size;++i){
+                    auto idx = reinterpret_bits<int>(src_quads("inds",i,ei));
+                    // if(ei == 1)
+                    //     printf("idx : %d\n",idx);
+                    src_centers[ei] += src_verts.pack<3>(xtag,idx) / simplex_size;
+                }
+        });       
+
+        // fmt::print("finish evaluate centers\n");  
+    }        
+};
 
 struct ZSAppendAttribute : zeno::INode {
     using tiles_t = typename ZenoParticles::particles_t;

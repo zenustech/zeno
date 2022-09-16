@@ -12,7 +12,8 @@
 //COMMON_CODE
 
 
-static __inline__ __device__ MatOutput evalMaterial(
+template<bool isDisplacement>
+static __inline__ __device__ MatOutput evalMat(
 cudaTextureObject_t zenotex0 , 
 cudaTextureObject_t zenotex1 , 
 cudaTextureObject_t zenotex2 , 
@@ -79,36 +80,183 @@ MatInput const &attrs) {
     vec3  mat_sssParam = vec3(0.0f,0.0f,0.0f);
     vec3  mat_normal = vec3(0.0f, 0.0f, 1.0f);
     vec3 mat_emission = vec3(0.0f, 0.0f,0.0f);
+    float mat_displacement = 0.0f;
     //GENERATED_END_MARK
     /** generated code here end **/
     MatOutput mats;
-    /* MODME */
-    mats.basecolor = mat_basecolor;
-    mats.metallic = clamp(mat_metallic,0.0f,1.0f);
-    mats.roughness = clamp(mat_roughness,0.01,0.99);
-    mats.subsurface = mat_subsurface;
-    mats.specular = mat_specular;
-    mats.specularTint = mat_specularTint;
-    mats.anisotropic = clamp(mat_anisotropic,0.0f,1.0f);
-    mats.sheen = mat_sheen;
-    mats.sheenTint = mat_sheenTint;
-    mats.clearcoat = clamp(mat_clearcoat,0.0f,1.0f);
-    mats.clearcoatGloss = mat_clearcoatGloss;
-    mats.opacity = mat_opacity;
-    mats.nrm = mat_normal;
-    mats.emission = mat_emission;
-    mats.specTrans = clamp(mat_specTrans,0.0f,1.0f);
-    mats.ior = mat_ior;
-    mats.scatterDistance = mat_scatterDistance;
-    mats.flatness = mat_flatness;
-    mats.thin = mat_thin;
-    mats.doubleSide = mat_doubleSide;
-    mats.sssColor = mat_sssColor;
-    mats.sssParam = mat_sssParam;
-    mats.scatterStep = mat_scatterStep;
-    mats.smoothness = mat_smoothness;
-    return mats;
+    if constexpr(isDisplacement)
+    {
+        mats.displacement = mat_displacement;
+        return mats;
+    }else {
+        /* MODME */
+        mats.basecolor = mat_basecolor;
+        mats.metallic = clamp(mat_metallic, 0.0f, 1.0f);
+        mats.roughness = clamp(mat_roughness, 0.01, 0.99);
+        mats.subsurface = mat_subsurface;
+        mats.specular = mat_specular;
+        mats.specularTint = mat_specularTint;
+        mats.anisotropic = clamp(mat_anisotropic, 0.0f, 1.0f);
+        mats.sheen = mat_sheen;
+        mats.sheenTint = mat_sheenTint;
+        mats.clearcoat = clamp(mat_clearcoat, 0.0f, 1.0f);
+        mats.clearcoatGloss = mat_clearcoatGloss;
+        mats.opacity = mat_opacity;
+        mats.nrm = mat_normal;
+        mats.emission = mat_emission;
+        mats.specTrans = clamp(mat_specTrans, 0.0f, 1.0f);
+        mats.ior = mat_ior;
+        mats.scatterDistance = mat_scatterDistance;
+        mats.flatness = mat_flatness;
+        mats.thin = mat_thin;
+        mats.doubleSide = mat_doubleSide;
+        mats.sssColor = mat_sssColor;
+        mats.sssParam = mat_sssParam;
+        mats.scatterStep = mat_scatterStep;
+        mats.smoothness = mat_smoothness;
+        return mats;
+    }
 }
+
+static __inline__ __device__ MatOutput evalMaterial(cudaTextureObject_t zenotex0 ,
+                                                    cudaTextureObject_t zenotex1 ,
+                                                    cudaTextureObject_t zenotex2 ,
+                                                    cudaTextureObject_t zenotex3 ,
+                                                    cudaTextureObject_t zenotex4 ,
+                                                    cudaTextureObject_t zenotex5 ,
+                                                    cudaTextureObject_t zenotex6 ,
+                                                    cudaTextureObject_t zenotex7 ,
+                                                    cudaTextureObject_t zenotex8 ,
+                                                    cudaTextureObject_t zenotex9 ,
+                                                    cudaTextureObject_t zenotex10,
+                                                    cudaTextureObject_t zenotex11,
+                                                    cudaTextureObject_t zenotex12,
+                                                    cudaTextureObject_t zenotex13,
+                                                    cudaTextureObject_t zenotex14,
+                                                    cudaTextureObject_t zenotex15,
+                                                    cudaTextureObject_t zenotex16,
+                                                    cudaTextureObject_t zenotex17,
+                                                    cudaTextureObject_t zenotex18,
+                                                    cudaTextureObject_t zenotex19,
+                                                    cudaTextureObject_t zenotex20,
+                                                    cudaTextureObject_t zenotex21,
+                                                    cudaTextureObject_t zenotex22,
+                                                    cudaTextureObject_t zenotex23,
+                                                    cudaTextureObject_t zenotex24,
+                                                    cudaTextureObject_t zenotex25,
+                                                    cudaTextureObject_t zenotex26,
+                                                    cudaTextureObject_t zenotex27,
+                                                    cudaTextureObject_t zenotex28,
+                                                    cudaTextureObject_t zenotex29,
+                                                    cudaTextureObject_t zenotex30,
+                                                    cudaTextureObject_t zenotex31,
+                                                    MatInput const &attrs)
+{
+    return evalMat<false>(zenotex0 ,
+                          zenotex1 ,
+                          zenotex2 ,
+                          zenotex3 ,
+                          zenotex4 ,
+                          zenotex5 ,
+                          zenotex6 ,
+                          zenotex7 ,
+                          zenotex8 ,
+                          zenotex9 ,
+                          zenotex10,
+                          zenotex11,
+                          zenotex12,
+                          zenotex13,
+                          zenotex14,
+                          zenotex15,
+                          zenotex16,
+                          zenotex17,
+                          zenotex18,
+                          zenotex19,
+                          zenotex20,
+                          zenotex21,
+                          zenotex22,
+                          zenotex23,
+                          zenotex24,
+                          zenotex25,
+                          zenotex26,
+                          zenotex27,
+                          zenotex28,
+                          zenotex29,
+                          zenotex30,
+                          zenotex31,
+                          attrs);
+}
+
+static __inline__ __device__ MatOutput evalGeometry(cudaTextureObject_t zenotex0 ,
+                                                    cudaTextureObject_t zenotex1 ,
+                                                    cudaTextureObject_t zenotex2 ,
+                                                    cudaTextureObject_t zenotex3 ,
+                                                    cudaTextureObject_t zenotex4 ,
+                                                    cudaTextureObject_t zenotex5 ,
+                                                    cudaTextureObject_t zenotex6 ,
+                                                    cudaTextureObject_t zenotex7 ,
+                                                    cudaTextureObject_t zenotex8 ,
+                                                    cudaTextureObject_t zenotex9 ,
+                                                    cudaTextureObject_t zenotex10,
+                                                    cudaTextureObject_t zenotex11,
+                                                    cudaTextureObject_t zenotex12,
+                                                    cudaTextureObject_t zenotex13,
+                                                    cudaTextureObject_t zenotex14,
+                                                    cudaTextureObject_t zenotex15,
+                                                    cudaTextureObject_t zenotex16,
+                                                    cudaTextureObject_t zenotex17,
+                                                    cudaTextureObject_t zenotex18,
+                                                    cudaTextureObject_t zenotex19,
+                                                    cudaTextureObject_t zenotex20,
+                                                    cudaTextureObject_t zenotex21,
+                                                    cudaTextureObject_t zenotex22,
+                                                    cudaTextureObject_t zenotex23,
+                                                    cudaTextureObject_t zenotex24,
+                                                    cudaTextureObject_t zenotex25,
+                                                    cudaTextureObject_t zenotex26,
+                                                    cudaTextureObject_t zenotex27,
+                                                    cudaTextureObject_t zenotex28,
+                                                    cudaTextureObject_t zenotex29,
+                                                    cudaTextureObject_t zenotex30,
+                                                    cudaTextureObject_t zenotex31,
+                                                    MatInput const &attrs)
+{
+    return evalMat<true>(zenotex0 ,
+                          zenotex1 ,
+                          zenotex2 ,
+                          zenotex3 ,
+                          zenotex4 ,
+                          zenotex5 ,
+                          zenotex6 ,
+                          zenotex7 ,
+                          zenotex8 ,
+                          zenotex9 ,
+                          zenotex10,
+                          zenotex11,
+                          zenotex12,
+                          zenotex13,
+                          zenotex14,
+                          zenotex15,
+                          zenotex16,
+                          zenotex17,
+                          zenotex18,
+                          zenotex19,
+                          zenotex20,
+                          zenotex21,
+                          zenotex22,
+                          zenotex23,
+                          zenotex24,
+                          zenotex25,
+                          zenotex26,
+                          zenotex27,
+                          zenotex28,
+                          zenotex29,
+                          zenotex30,
+                          zenotex31,
+                          attrs);
+}
+
+
 __forceinline__ __device__ float3 interp(float2 barys, float3 a, float3 b, float3 c)
 {
     float w0 = 1 - barys.x - barys.y;
@@ -646,7 +794,10 @@ extern "C" __global__ void __closesthit__radiance()
         if(prd->is_inside){
             outToIn = true;
             inToOut = false;
-            if(prd->medium == DisneyBSDF::PhaseFunctions::isotropic){
+            //if(prd->medium == DisneyBSDF::PhaseFunctions::isotropic){
+                prd->medium = DisneyBSDF::PhaseFunctions::isotropic;
+                prd->attenuation *= prd->curMatIdx==0? vec3(1) : DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
+                prd->pushMat(extinction);
                 //prd->attenuation *= transmittanceColor;
                 prd->extinction = extinction;
                 prd->scatterDistance = scatterDistance;
@@ -656,28 +807,34 @@ extern "C" __global__ void __closesthit__radiance()
                 prd->maxDistance = DisneyBSDF::SampleDistance(prd->seed,prd->scatterStep,prd->extinction, tmpPDF);
                 //prd->maxDistance = scatterDistance;
                 prd->scatterPDF = tmpPDF;
-            }
+           //}
         }
         else{
             outToIn = false;
             inToOut = true;
-            //prd->attenuation2 *= DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
+            prd->attenuation2 *= DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
             prd->attenuation *= DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
-            prd->maxDistance = 1e16f;
-            prd->medium = DisneyBSDF::PhaseFunctions::vacuum;
             prd->scatterPDF = 1.0;
+            prd->extinction = prd->popMat();
+            prd->medium = prd->curMatIdx==0?DisneyBSDF::PhaseFunctions::vacuum : DisneyBSDF::PhaseFunctions::isotropic;
+            float tmpPDF = 1.0f;
+            prd->maxDistance = prd->medium==DisneyBSDF::PhaseFunctions::isotropic ? DisneyBSDF::SampleDistance(prd->seed,prd->scatterStep,prd->extinction, tmpPDF) : 1e16;
         }
     }else{
 	    if(prd->medium == DisneyBSDF::PhaseFunctions::isotropic){
-                //prd->attenuation2 *= DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
+                prd->attenuation2 *= DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
                 prd->attenuation *= DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
                 float tmpPDF = 1.0f;
                 prd->maxDistance = DisneyBSDF::SampleDistance(prd->seed,prd->scatterStep,prd->extinction,tmpPDF);
                 prd->scatterPDF = tmpPDF;
 
 	    }
+            else
+            {
+                prd->maxDistance = 1e16f;
+            }
     }
-    prd->medium = prd->is_inside?DisneyBSDF::PhaseFunctions::isotropic : DisneyBSDF::PhaseFunctions::vacuum;
+    prd->medium = prd->is_inside?DisneyBSDF::PhaseFunctions::isotropic : prd->curMatIdx==0?DisneyBSDF::PhaseFunctions::vacuum : DisneyBSDF::PhaseFunctions::isotropic;
 
 
 
@@ -831,7 +988,17 @@ extern "C" __global__ void __closesthit__radiance()
 //        prd->radiance += shadow_prd2.shadowAttanuation * float3(proceduralSky(env_dir)) * lbrdf;
 //    }
 
-    auto sun_dir = normalize(vec3(-1.2,.8,0.5));
+
+
+
+    vec3 sunLightDir = vec3(
+            params.sunLightDirX,
+            params.sunLightDirY,
+            params.sunLightDirZ
+    );
+    auto sun_dir = BRDFBasics::halfPlaneSample(prd->seed, sunLightDir, params.sunSoftness * 0.2);//perturb the sun to have some softness
+    sun_dir = normalize(sun_dir);
+
     shadow_prd2.shadowAttanuation = make_float3(1.0f, 1.0f, 1.0f);
     shadow_prd2.nonThinTransHit = (thin==false && specTrans>0)? 1:0;
     traceOcclusion(params.handle, P, sun_dir,
@@ -842,7 +1009,17 @@ extern "C" __global__ void __closesthit__radiance()
                                               specularTint, anisotropic, sheen, sheenTint, clearcoat,
                                               clearcoatGloss, specTrans, scatterDistance, ior, flatness, sun_dir,
                                               -normalize(inDir), T, B, N, thin > 0.5f, flag == DisneyBSDF::transmissionEvent ? inToOut : prd->is_inside, ffPdf, rrPdf,dot(N, float3(sun_dir)));
-    prd->radiance += shadow_prd2.shadowAttanuation * float3(proceduralSky(sun_dir)) * lbrdf;
+    prd->radiance += shadow_prd2.shadowAttanuation * 
+        float3(proceduralSky(
+            sun_dir, 
+            sunLightDir, 
+            make_float3(0., 0., 1.), 
+            10, // be careful
+            .45,
+            15.,
+            1.030725 * 0.3,
+            params.elapsedTime
+        )) * lbrdf;
     prd->radiance +=  float3(mats.emission);
 }
 

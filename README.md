@@ -64,6 +64,13 @@ Fig.6 - Procedural modeling
 <img src="https://zenustech.oss-cn-beijing.aliyuncs.com/Place-in-Github/202208/Procedural_Modeling.gif" width="640" position="left">
 
 
+Fig.7 - Human rendering
+
+<img src="https://github.com/zenustech/zeno/blob/fuckzhxxdepigu/%E5%BE%AE%E4%BF%A1%E5%9B%BE%E7%89%87_20220907214042.jpg" width="640" position="left">
+<img src="https://github.com/zenustech/zeno/blob/fuckzhxxdepigu/%E5%BE%AE%E4%BF%A1%E5%9B%BE%E7%89%87_20220907214049.jpg" width="640" position="left">
+<img src="https://github.com/zenustech/zeno/blob/fuckzhxxdepigu/%E5%BE%AE%E4%BF%A1%E5%9B%BE%E7%89%87_20220907214053.jpg" width="640" position="left">
+<img src="https://github.com/zenustech/zeno/blob/fuckzhxxdepigu/%E5%BE%AE%E4%BF%A1%E5%9B%BE%E7%89%87_20220907214058.jpg" width="640" position="left">
+
 # End-user Installation
 
 ## Download binary release

@@ -23,12 +23,22 @@ static int subprogram_python_main(int argc, char **argv) {
     return Py_BytesMain(argc, argv);
 }
 
-static int defPythonInit = getSession().eventCallbacks->hookEvent("init", [] {
-    log_debug("Initializing Python...");
-    std::string s = getAssetDir(ZENO_PYTHON_HOME_DIR);
+static std::wstring s2ws(std::string const &s) {
     std::wstring ws(s.size(), L' '); // Overestimate number of code points.
     ws.resize(std::mbstowcs(ws.data(), s.data(), s.size())); // Shrink to fit.
-    Py_SetPythonHome(ws.c_str());
+    return ws;
+}
+
+static int defPythonInit = getSession().eventCallbacks->hookEvent("init", [] {
+    log_debug("Initializing Python...");
+    Py_SetPythonHome(s2ws(getAssetDir(ZENO_PYTHON_LIB_DIR, "..")).c_str());
+    static std::string execenvvar = "zenoedit_executable=" + getConfigVariable("EXECFILE") + "\0";
+    putenv(execenvvar.data());
+#ifdef _WIN32
+    Py_SetProgramName(s2ws(getAssetDir(ZENO_PYTHON_MODULE_DIR, "ze/zenobundlepython.bat")).c_str());
+#else
+    Py_SetProgramName(s2ws(getAssetDir(ZENO_PYTHON_MODULE_DIR, "ze/zenobundlepython.sh")).c_str());
+#endif
     Py_Initialize();
     std::string libpath = getAssetDir(ZENO_PYTHON_MODULE_DIR);
     std::string dllfile = ZENO_PYTHON_DLL_FILE;
@@ -91,13 +101,10 @@ struct PythonFunctor {
         scope_exit pyRetDel = [=] {
             Py_DECREF(pyRet);
         };
-        if (!PyDict_Check(pyRet)) {
-            Zeno_Object handle = PyLong_AsUnsignedLongLong(pyRet);
-            if (handle == -1 && PyErr_Occurred()) {
-                throw makeError("failed to cast rets value as integer");
-            }
-            rets.emplace("ret", capiFindObjectSharedPtr(handle));
-        } else {
+        scope_exit pyFuncRetsRAIIDel = [=] {
+            PyObject_DelAttrString(pyFunc, "_retsRAII");
+        };
+        if (PyDict_Check(pyRet)) {
             PyObject *key, *value;
             Py_ssize_t pos = 0;
             while (PyDict_Next(pyRet, &pos, &key, &value)) {
@@ -113,6 +120,12 @@ struct PythonFunctor {
                 }
                 rets.emplace(std::move(keyStr), capiFindObjectSharedPtr(handle));
             }
+        } else if (pyRet != Py_None) {
+            Zeno_Object handle = PyLong_AsUnsignedLongLong(pyRet);
+            if (handle == -1 && PyErr_Occurred()) {
+                throw makeError("failed to cast rets value as integer");
+            }
+            rets.emplace("ret", capiFindObjectSharedPtr(handle));
         }
         return rets;
     }
@@ -172,10 +185,6 @@ struct PythonScript : INode {
         PyObject *mainMod = PyImport_AddModule("__main__");
         if (!mainMod) throw makeError("failed to get module '__main__'");
         PyObject *globals = PyModule_GetDict(mainMod);
-        PyObject *locals = PyDict_New();
-        scope_exit localsDel = [=] {
-            Py_DECREF(locals);
-        };
         PyObject *zenoMod = PyImport_AddModule("ze");
         PyObject *zenoModDict = PyModule_GetDict(zenoMod);
         if (PyDict_SetItemString(zenoModDict, "_rets", retsDict) < 0)
@@ -204,14 +213,14 @@ struct PythonScript : INode {
         };
         if (path.empty()) {
             auto code = get_input2<std::string>("code");
-            mainMod = PyRun_StringFlags(code.c_str(), Py_file_input, globals, locals, NULL);
+            mainMod = PyRun_StringFlags(code.c_str(), Py_file_input, globals, globals, NULL);
         } else {
             FILE *fp = fopen(path.c_str(), "r");
             if (!fp) {
                 perror(path.c_str());
                 throw makeError("cannot open file for read: " + path);
             } else {
-                mainMod = PyRun_FileExFlags(fp, path.c_str(), Py_file_input, globals, locals, 1, NULL);
+                mainMod = PyRun_FileExFlags(fp, path.c_str(), Py_file_input, globals, globals, 1, NULL);
             }
         }
         currGraphLongReset.reset();

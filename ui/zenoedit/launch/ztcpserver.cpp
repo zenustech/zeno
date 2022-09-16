@@ -7,7 +7,7 @@
 #include "launch/viewdecode.h"
 #include "util/log.h"
 #include "zenoapplication.h"
-#include "graphsmanagment.h"
+#include <zenomodel/include/graphsmanagment.h>
 #include "settings/zsettings.h"
 
 
@@ -131,7 +131,15 @@ void ZTcpServer::onProcPipeReady()
         return;
     }
     QByteArray arr = m_proc->readAll();
-    zenoApp->graphsManagment()->appendMsgStream(arr);
+    QList<QByteArray> lst = arr.split('\n');
+    for (QByteArray line : lst)
+    {
+        if (!line.isEmpty())
+        {
+            std::cout << line.data() << std::endl;
+            ZWidgetErrStream::appendFormatMsg(line.toStdString());
+        }
+    }
 }
 
 void ZTcpServer::onDisconnect()

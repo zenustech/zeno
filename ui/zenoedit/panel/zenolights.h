@@ -13,6 +13,15 @@
 class ZenoLights : public QWidget {
     Q_OBJECT
 public:
+    ZLineEdit* sunLongitude = new ZLineEdit("0");
+    ZLineEdit* sunLatitude = new ZLineEdit("30");
+    ZLineEdit* sunSoftness = new ZLineEdit("1");
+    ZLineEdit* elapsedTime = new ZLineEdit("0");
+
+
+    QPushButton* write_btn = new QPushButton("Write");
+    QPushButton* write_all_btn = new QPushButton("Write ALL");
+
     QLabel* pStatusBar = new QLabel();
     QLabel* pPrimName = new QLabel();
     QListView *lights_view = new QListView();
@@ -34,8 +43,12 @@ public:
     ZLineEdit* colorYEdit = new ZLineEdit("1");
     ZLineEdit* colorZEdit = new ZLineEdit("1");
 
+    ZLineEdit* camApertureEdit = new ZLineEdit("0.2");
+    ZLineEdit* camDisPlaneEdit = new ZLineEdit("2.0");
     ZLineEdit* intensityEdit = new ZLineEdit("1");
     void modifyLightData();
+    void modifySunLightDir();
+    void write_param_into_node(const QString& primid);
 
 public:
     ZenoLights(QWidget* parent = nullptr);

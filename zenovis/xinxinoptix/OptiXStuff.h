@@ -85,7 +85,7 @@ inline bool createModule(OptixModule &m, OptixDeviceContext &context, const char
     size_t      inputSize = 0;
     //TODO: the file path problem
     bool is_success=false;
-    const char* input     = sutil::getInputData( nullptr, nullptr, source, location, inputSize, is_success);
+    const char* input     = sutil::getInputData( nullptr, nullptr, source, location, inputSize, is_success,nullptr, {"-std=c++17", "-default-device"});
     if(is_success==false)
     {
         return false;

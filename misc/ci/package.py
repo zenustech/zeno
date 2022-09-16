@@ -12,11 +12,6 @@ if os.path.exists(outpath):
 
 if sys.platform == 'win32':
     shutil.copytree(os.path.join('misc', 'ci', 'win'), outpath)
-    extra_lib_dir = os.path.join('projects', 'FBX', 'dem-bones-bin', 'files', 'Windows')
-    if os.path.isdir(extra_lib_dir):
-        for dirname, dirnames, filenames in os.walk(extra_lib_dir):
-            for name in filenames:
-                shutil.copyfile(os.path.join(dirname, name), os.path.join(outpath, name))
     shutil.move(os.path.join(binpath, 'zenoedit.exe'), os.path.join(outpath, 'zenoedit.exe'))
     for target in os.listdir(binpath):
         if target.endswith('.dll'):
@@ -38,11 +33,6 @@ if sys.platform == 'win32':
     print('finished with', outpath + '.zip')
 elif sys.platform == 'linux':
     shutil.copytree(os.path.join('misc', 'ci', 'nix'), outpath)
-    extra_lib_dir = os.path.join('projects', 'FBX', 'dem-bones-bin', 'files', 'Linux')
-    if os.path.isdir(extra_lib_dir):
-        for dirname, dirnames, filenames in os.walk(extra_lib_dir):
-            for name in filenames:
-                shutil.copyfile(os.path.join(dirname, name), os.path.join(outpath, name))
     subprocess.check_call([
         'wget',
         'https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage',

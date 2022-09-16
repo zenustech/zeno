@@ -30,7 +30,8 @@ struct IPCSystem : IObject {
     using dpair_t = zs::vec<Ti, 2>;
     using dpair3_t = zs::vec<Ti, 3>;
     using dpair4_t = zs::vec<Ti, 4>;
-    using bvh_t = zeno::ZenoLBvh<3, 32, int, T>;
+    // using bvh_t = zeno::ZenoLBvh<3, 32, int, T>;
+    using bvh_t = zs::LBvh<3, int, T>;
     using bv_t = zs::AABBBox<3, T>;
 
     inline static const char s_meanMassTag[] = "MeanMass";
@@ -53,28 +54,43 @@ struct IPCSystem : IObject {
 
         auto getModelLameParams() const {
             T mu = 0, lam = 0;
-            if (!isAuxiliary()) {
+            if (!isAuxiliary() && modelsPtr) {
                 zs::match([&](const auto &model) {
                     mu = model.mu;
                     lam = model.lam;
-                })(models.getElasticModel());
+                })(modelsPtr->getElasticModel());
             }
             return zs::make_tuple(mu, lam);
         }
 
+        decltype(auto) getModels() const {
+            if (!modelsPtr)
+                throw std::runtime_error("primhandle models not available");
+            return *modelsPtr;
+        }
         decltype(auto) getVerts() const {
+            if (!vertsPtr)
+                throw std::runtime_error("primhandle verts not available");
             return *vertsPtr;
         }
         decltype(auto) getEles() const {
+            if (!elesPtr)
+                throw std::runtime_error("primhandle eles not available");
             return *elesPtr;
         }
         decltype(auto) getSurfTris() const {
+            if (!surfTrisPtr)
+                throw std::runtime_error("primhandle surf tris not available");
             return *surfTrisPtr;
         }
         decltype(auto) getSurfEdges() const {
+            if (!surfEdgesPtr)
+                throw std::runtime_error("primhandle surf edges not available");
             return *surfEdgesPtr;
         }
         decltype(auto) getSurfVerts() const {
+            if (!surfVertsPtr)
+                throw std::runtime_error("primhandle surf verts not available");
             return *surfVertsPtr;
         }
         bool isAuxiliary() const noexcept {
@@ -89,7 +105,7 @@ struct IPCSystem : IObject {
         }
 
         std::shared_ptr<ZenoParticles> zsprimPtr{}; // nullptr if it is an auxiliary
-        const ZenoConstitutiveModel &models;
+        std::shared_ptr<const ZenoConstitutiveModel> modelsPtr;
         std::shared_ptr<ZenoParticles::dtiles_t> vertsPtr;
         std::shared_ptr<ZenoParticles::particles_t> elesPtr;
         typename ZenoParticles::dtiles_t etemp;

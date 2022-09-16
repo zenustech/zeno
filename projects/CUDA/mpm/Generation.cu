@@ -1266,9 +1266,17 @@ struct UpdatePrimitiveAttrFromZSParticles : INode {
         return;
       
       auto prim = parobjPtr->prim;
-      if(!pars.hasProperty(attrName) || !prim->has_attr(attrName))
-        throw std::runtime_error("the particle or primitive has no specified channel");
+      if(!pars.hasProperty(attrName))
+        throw std::runtime_error("the particles has no specified channel");
       // clone the specified attribute from particles to primitiveObject
+      if(!prim->has_attr(attrName)){
+        if(attrType == "float")
+          prim->add_attr<float>(attrName);
+        else
+          prim->add_attr<zeno::vec3f>(attrName);
+      }
+
+      
       auto ompExec = zs::omp_exec();
       if(attrType == "float"){
         fmt::print("update float attr {}\n",attrName);

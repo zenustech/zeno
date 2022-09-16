@@ -25,3 +25,6 @@
 [submodule "projects/python/CPython"]
 	path = projects/Python/CPython
 	url = https://github.com/zenustech/python-cmake-buildsystem.git
+[submodule "projects/LIBIGL/libigl"]
+	path = projects/LIBIGL/libigl
+	url = https://github.com/libigl/libigl.git

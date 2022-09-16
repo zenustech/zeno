@@ -44,6 +44,13 @@ struct Params
     unsigned int num_lights;
     ParallelogramLight     *lights;
     OptixTraversableHandle handle;
+
+    float sunLightDirX;
+    float sunLightDirY;
+    float sunLightDirZ;
+
+    float sunSoftness;
+    float elapsedTime;
 };
 
 

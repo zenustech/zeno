@@ -153,7 +153,13 @@ static int runner_start(std::string const &progJson, int sessionid) {
 
 int runner_main(int sessionid, int port);
 int runner_main(int sessionid, int port) {
-    zeno::set_log_stream(std::cout);
+#ifdef __linux__
+    stderr = freopen("/dev/stdout", "w", stderr);
+#endif
+    std::cerr.rdbuf(std::cout.rdbuf());
+    std::clog.rdbuf(std::cout.rdbuf());
+
+    zeno::set_log_stream(std::clog);
 
 #ifdef ZENO_IPC_USE_TCP
     zeno::log_debug("connecting to port {}", port);
@@ -171,11 +177,6 @@ int runner_main(int sessionid, int port) {
 #endif
 
     zeno::log_debug("runner started on sessionid={}", sessionid);
-
-#ifdef __linux__
-    stderr = freopen("/dev/stdout", "w", stderr);
-#endif
-    std::cerr.rdbuf(std::cout.rdbuf());
 
     std::string progJson;
     std::istreambuf_iterator<char> iit(std::cin.rdbuf()), eiit;
