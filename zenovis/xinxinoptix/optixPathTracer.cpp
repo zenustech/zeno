@@ -1060,6 +1060,7 @@ void optixinit( int argc, char* argv[] )
         if (!gl_display_o) {
             gl_display_o.emplace(sutil::BufferImageFormat::UNSIGNED_BYTE4);
         }
+    xinxinoptix::update_procedural_sky(zeno::vec2f(0, 30), 1, zeno::vec2f(0, 0), 0, 0.1);
 }
 
 
